@@ -24,17 +24,17 @@
 
 \begin{document}
 
-\title{Formal Verification of the RANKING Algorithm for Online Bipartite Matching}
-\author{Christoph Madlener}
+\title{A Formal Analysis of RANKING}
+\author{Mohammad Abdulaziz and Christoph Madlener}
 \maketitle
 
 \begin{abstract}
-We provide a formalization of the RANKING algorithm as introduced by Karp, Vazirani, and
-Vazirani~\cite{karp1990}, following a simplified proof by Birnbaum and Mathieu~\cite{birnbaum2008}.
-We formalize that the competitive ratio is determined by instances
-where a perfect matching exists. Based on this we prove the competitive ratio of $1 - \frac{1}{e}$
-(in the limit) for general instances. We also give the first proof that the competitive ratio
-of RANKING is determined by graphs with a perfect matching.
+We describe a formal correctness proof of RANKING, an online algorithm for online bipartite8
+matching. An outcome of our formalisation is that it shows that there is a gap in all combinatorial9
+proofs of the algorithm. Filling that gap constituted the majority of the effort which went into10
+this work. This is despite the algorithm being one of the most studied algorithms and a central11
+result in theoretical computer science. This gap is an example of difficulties in formalising graphical12
+arguments which are ubiquitous in the theory of computing.
 \end{abstract}
 
 \tableofcontents
