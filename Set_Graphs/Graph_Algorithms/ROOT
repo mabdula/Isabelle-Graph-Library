@@ -1,0 +1,11 @@
+session "Graph_Algorithms" = "Directed_Set_Graphs" +
+  options [document = pdf, document_output = "output"]
+
+  (*sessions*)
+
+  theories
+    DFS
+    BFS_2
+
+  document_files
+    "root.tex"
