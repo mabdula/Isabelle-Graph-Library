@@ -1,0 +1,34 @@
+session "Directed_Set_Graphs" = "HOL-Eisbach" +
+  options [document = pdf, document_output = "output"]
+
+  sessions
+    "HOL-Data_Structures"
+    "Graph_Theory"
+
+  directories
+    Adaptors
+
+  theories
+    Awalk
+    enat_misc
+    Pair_Graph
+    Set_Addons
+    Awalk_Defs
+    Pair_Graph_AVL
+    Dist
+    Pair_Graph_Specs
+    Tree_Defs
+    Vwalk
+    Component
+    Component_Defs
+    Map_Addons
+    Set2_Addons             
+    Summary
+
+    "Adaptors/Pair_Graph_Library_Adaptor"
+    "Adaptors/Pair_Graph_Library_Awalk_Adaptor"
+    "Adaptors/Pair_Graph_Library_Component_Adaptor"
+
+
+  document_files
+    "root.tex"
