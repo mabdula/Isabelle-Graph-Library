@@ -1,0 +1,14 @@
+session "Undirected_Set_Graphs" = "HOL-Eisbach" +
+  options [document = pdf, document_output = "output"]
+
+  sessions
+    "HOL-Data_Structures"
+    "Directed_Set_Graphs"
+
+  (*directories*)
+
+  theories
+    "Undirected_Set_Graphs"
+
+  document_files
+    "root.tex"
