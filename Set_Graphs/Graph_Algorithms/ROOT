@@ -6,6 +6,8 @@ session "Graph_Algorithms" = "Directed_Set_Graphs" +
   theories
     DFS
     BFS_2
+    DFS_Cycles_Aux
+    DFS_Cycles
 
   document_files
     "root.tex"
