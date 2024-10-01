@@ -1,0 +1,26 @@
+session "Primal_Dual_Bipartite_Matching" = "HOL-Probability" +
+  options [document = pdf, document_output = "output"]
+
+sessions
+    "LP_Duality"
+    "Treaps"
+    "Berge_Lemma"
+    "RANKING"
+  (*theories [document=false]*)
+
+  theories
+    "Even_More_Graph"
+    "More_Lattices_Big"
+    "Measure_Misc"
+    "Order_Relations"
+    "Order_Relations_From_Priorities"
+    "Bipartite_Matching_LP"
+    "Bipartite_Vertex_Weighted_Matching_LP"
+    "Bipartite_Vertex_Priorities"
+    "Ranking_Order"
+    "Ranking_Order_Probabilistic"
+    "Ranking_Order_Probabilistic_Vertex_Weighted"
+    "AdWords"
+    
+  document_files
+    "root.tex"

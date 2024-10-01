@@ -1,4 +1,4 @@
-session "Ranking" = "HOL" +
+session "RANKING" = "HOL" +
   options [document = pdf, document_output = "output", document_variants="document:outline=/proof,/ML"]
   
   sessions
