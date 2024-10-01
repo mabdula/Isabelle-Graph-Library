@@ -12,3 +12,9 @@ Results include:
  - Edmonds' blossom shrinking algorithm.
 
  - The RANKING algorithm for online bi-partite matching, by Karp, Vazirani, and Vazirani.
+
+ - An algorithm for vertex-weighted online matching.
+
+ - The AdWords algorithm for online auction allocation, by Mehta, Saberi, Vazirani, and Vazirani.
+
+For the more practically usable algorithms, we include an implementation. For others, we only focus on the analysis.
