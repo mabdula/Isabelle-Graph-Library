@@ -327,6 +327,25 @@ next
   then show ?case using step_awalk_to_apath[of _ _ p _ q r s] by simp
 qed
 
+lemma awalk_to_apath_subset:
+  "awalk E u p v \<Longrightarrow> set (awalk_to_apath E p) \<subseteq> set p"
+proof (induction p arbitrary: u v rule: awalk_to_apath_induct)
+  case (path p)
+  then have "awalk_to_apath E p = p"
+    by (meson awalk_to_apath.simps)
+  then show ?case by simp
+next
+  case (decomp p q r s)
+  with step_awalk_to_apath
+    have "awalk_to_apath E p = awalk_to_apath E (q @ s)" by force
+  moreover have "set (q @ s) \<subseteq> set p"
+    using awalk_cyc_decomp_def awalk_cyc_decomp_has_prop[OF \<open>awalk E u p v\<close> \<open>\<not> distinct (awalk_verts u p)\<close>]
+     using decomp.hyps(2) by auto
+  ultimately show ?case
+    using \<open>set (awalk_to_apath E (q @ s)) \<subseteq> set (q @ s)\<close> by auto
+qed
+
+
 lemma reachable1_awalk:
   "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v \<longleftrightarrow> (\<exists>p. awalk E u p v \<and> p \<noteq> [])"
 proof
