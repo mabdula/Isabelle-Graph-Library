@@ -236,6 +236,10 @@ lemma dblton_graphE[elim]:
 lemma finite_Vs: "finite (Vs G)"
   by (simp add: graph)
 
+lemma finite_G_Vsb: "finite (Vs G) = finite G"
+  using graph
+  using finite_E by auto
+
 end
 
 
