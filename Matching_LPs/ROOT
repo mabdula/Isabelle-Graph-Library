@@ -2,12 +2,11 @@ session "Matching_LPs" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
-  (*Smith_Normal_Form
+  Smith_Normal_Form
   Jordan_Normal_Form
   LP_Duality
   Linear_Inequalities
-  Primal_Dual_Bipartite_Matching*)
-  temp
+  Primal_Dual_Bipartite_Matching
 
 theories
   Even_More_Graph_2
