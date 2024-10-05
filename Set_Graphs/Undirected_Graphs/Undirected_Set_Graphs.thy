@@ -2685,4 +2685,46 @@ lemma finite_con_comps:
   "finite (Vs G) \<Longrightarrow> finite (connected_components G)"
   by (auto simp: connected_components_def)
 
+
+subsection \<open>Cycles\<close>
+
+fun epath :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> 'a \<Rightarrow> bool" where
+  "epath E u [] v = (u = v)"
+| "epath E u (x#xs) v \<longleftrightarrow> (\<exists>w. u \<noteq> w \<and> {u, w} = x \<and> epath E w xs v) \<and> x \<in> E"
+
+lemma epath_empty:
+  assumes "epath {} u p v"
+  shows "u = v" and "p = []"
+  using assms
+  by (auto elim: epath.elims)
+
+lemma epath_last:
+  "p \<noteq> [] \<Longrightarrow> epath E u p v \<Longrightarrow> v \<in> last p"
+  apply (induction p arbitrary: u v)
+  by auto
+
+lemma epath_edges_subset:
+  "epath X v p w \<Longrightarrow> set p \<subseteq> X"
+  apply (induction p arbitrary: v w)
+  apply simp
+  by auto
+
+lemma epath_subset:
+  "epath X v p w \<Longrightarrow> X \<subseteq> Y \<Longrightarrow> epath Y v p w"
+  apply (induction p arbitrary: v w)
+  apply simp
+  by auto
+
+definition depath :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> 'a \<Rightarrow> bool" where
+  "depath E u p v \<equiv> epath E u p v \<and> distinct p"
+
+definition decycle :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> bool" where
+  "decycle E u p \<equiv> epath E u p u \<and> length p > 2 \<and> distinct p"
+
+lemma decycle_subset:
+  "decycle X u p \<Longrightarrow> X \<subseteq> Y \<Longrightarrow> decycle Y u p"
+  unfolding decycle_def using epath_subset by metis
+
+
+
 end

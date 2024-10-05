@@ -35,6 +35,12 @@ definition closed_w :: "'a dgraph \<Rightarrow> ('a \<times> 'a) list \<Rightarr
 definition cycle :: "'a dgraph \<Rightarrow> 'a awalk \<Rightarrow> bool" where
   "cycle E p \<equiv> \<exists>u. awalk E u p u \<and> distinct (tl (awalk_verts u p)) \<and> p \<noteq> []"
 
+(* This definition is used in relation to undirected graphs: If we have a directed graph which
+is additionally assumed to be symmetric (and thus represents an undirected graph), a path satisfying
+the cycle' property corresponds to a cycle in the undirected graph. *)
+definition cycle' :: "'a dgraph \<Rightarrow> 'a awalk \<Rightarrow> bool" where
+  "cycle' E p \<equiv> cycle E p \<and> length p > 2"
+
 fun is_awalk_cyc_decomp :: "'a dgraph \<Rightarrow> ('a \<times> 'a) list \<Rightarrow> 
   (('a \<times> 'a) list \<times> ('a \<times> 'a) list \<times> ('a \<times> 'a) list) \<Rightarrow> bool" where
   "is_awalk_cyc_decomp E p (q, r, s) \<longleftrightarrow> p = q @ r @ s

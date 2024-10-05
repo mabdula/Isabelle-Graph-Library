@@ -891,6 +891,29 @@ proof-
 qed
 
 
+lemma BestInGreedy_correct_3_ret_1:
+  "\<lbrakk> BestInGreedy_ret_1_conds best_in_greedy_state ; invar_1 best_in_greedy_state ; 
+    invar_3 c order best_in_greedy_state ; invar_4 c order best_in_greedy_state \<rbrakk> \<Longrightarrow> 
+    indep_system.basis_in (matroid.indep_abs indep_set)
+    (matroid.carrier_abs carrier)
+    (to_set (result best_in_greedy_state))"
+proof-
+  assume "BestInGreedy_ret_1_conds best_in_greedy_state" "invar_1 best_in_greedy_state"
+    "invar_3 c order best_in_greedy_state" "invar_4 c order best_in_greedy_state"
+  then have num_iter: "num_iter c order best_in_greedy_state = length (sort_desc c order)"
+    by (auto simp add: num_iter_def elim!: call_cond_elims)
+  then have "carrier_pref c order (num_iter c order best_in_greedy_state) = to_set carrier"
+    unfolding carrier_pref_def using carrier_sorted_set by simp
+  moreover then
+    have "(pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state)) = 
+      (to_set (result best_in_greedy_state))"
+    unfolding pref_def using \<open>invar_3 c order best_in_greedy_state\<close>
+    by (auto elim!: invar_props_elims)
+  ultimately show "indep_system.basis_in (matroid.indep_abs indep_set)
+    (matroid.carrier_abs carrier) (to_set (result best_in_greedy_state))"
+    using \<open>invar_4 c order best_in_greedy_state\<close>
+    by (auto simp add: matroid.carrier_abs_def elim!: invar_props_elims)
+qed
 
 
 subsection \<open>Termination\<close>
@@ -965,6 +988,11 @@ lemma BestInGreedy_correct_2:
      indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) * 
      c_set c (to_set X)"
   apply (intro BestInGreedy_correct_2_ret_1[where best_in_greedy_state = "BestInGreedy (initial_state c order)"])
+  by (auto intro: invar_holds_intros ret_holds_intros)
+
+lemma BestInGreedy_correct_3:
+  "indep_system.basis_in (matroid.indep_abs indep_set) (matroid.carrier_abs carrier) (to_set (result (BestInGreedy (initial_state c order))))"
+  apply (intro BestInGreedy_correct_3_ret_1[where best_in_greedy_state = "BestInGreedy (initial_state c order)"])
   by (auto intro: invar_holds_intros ret_holds_intros)
 
 
