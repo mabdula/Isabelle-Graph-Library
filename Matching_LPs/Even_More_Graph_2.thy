@@ -6,10 +6,6 @@ begin
 
 (*abbreviation "graph_invar E \<equiv> (\<forall>e\<in>E. \<exists>u v. e = {u, v} \<and> u \<noteq> v) \<and> finite (Vs E)"*)
 
-definition bipartite where 
-  "bipartite E \<equiv> graph_invar E \<and> (\<exists> X \<subseteq> Vs E. \<forall> e \<in> E. \<exists> u v. 
-                                   e = {u, v} \<and> (u \<in> X \<and> v \<in> Vs E - X))" 
-
 lemma card_edge:
   assumes "graph_invar E"
   shows "\<forall> e\<in> E. card e = 2" 
