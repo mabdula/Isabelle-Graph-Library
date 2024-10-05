@@ -438,6 +438,10 @@ lemma awalk_other_edge_set:
   "u \<noteq> v \<Longrightarrow> awalk E u p v \<Longrightarrow> \<not>awalk E' u p v \<Longrightarrow> \<exists>e. e \<in> (E - E') \<and> e \<in> set p"
   by (metis (no_types, lifting) DiffI awalk_def awalk_ends cas_simp dVsI'(1) list.set_sel(1) subset_code(1))
 
+lemma awalk_hd_in_set:
+  "awalk G u p v \<Longrightarrow> p \<noteq> [] \<Longrightarrow> set p \<subseteq> X \<Longrightarrow> u \<in> dVs X"
+  by (metis (mono_tags, lifting) awalkE' cas_simp dVsI'(1) in_mono list.set_sel(1))
+
 
 lemma edges_of_vwalk_length_geq_2:
   "length p \<ge> 3 \<Longrightarrow> length (edges_of_vwalk p) \<ge> 2"

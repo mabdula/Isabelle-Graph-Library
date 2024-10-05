@@ -2677,16 +2677,162 @@ lemma edges_path_subset_edges:
     set (edges_of_path p) \<subseteq> component_edges G C"
   by (induction rule: path.induct) (auto simp add:  component_edges_def)
 
+lemma Vs_component_edges:
+  "dblton_graph G \<Longrightarrow> C \<in> connected_components G \<Longrightarrow> Vs (component_edges G C) = C"
+  unfolding component_edges_def Vs_def connected_components_def
+proof (standard, goal_cases)
+  case 1
+  then show ?case by auto
+next
+  case 2
+  then have "\<exists>v. v \<in> \<Union> G \<and> C = connected_component G v" by blast
+  then obtain v where "v \<in> \<Union> G" "C = connected_component G v" by blast
+  with in_connected_component_in_edges
+    have "\<forall>x \<in> C. x \<in> \<Union> G" using Vs_def by fastforce
+
+  have "\<forall>x \<in> C. \<exists>y \<in> C. {x, y} \<in> G"
+  proof
+    fix x
+    assume "x \<in> C"
+    with in_connected_component_in_edges \<open>v \<in> \<Union> G\<close> \<open>C = connected_component G v\<close>
+      have "x \<in> \<Union> G" using Vs_def by fastforce
+    then have "\<exists>e. e \<in> G \<and> x \<in> e" by blast
+    with dblton_graphE[OF \<open>dblton_graph G\<close>] have "\<exists>y. x \<noteq> y \<and> {x, y} \<in> G"
+      using insert_absorb
+      by (smt (verit, ccfv_SIG) empty_iff insert_commute insert_iff)
+    then obtain y where "x \<noteq> y" "{x, y} \<in> G" by blast
+    then have "walk_betw G x [x, y] y" 
+      unfolding walk_betw_def by auto
+    from has_path_in_connected_component[OF this] connected_components_member_eq
+      \<open>x \<in> C\<close> \<open>C = connected_component G v\<close>
+      have "y \<in> connected_component G v" by fast
+    with \<open>{x, y} \<in> G\<close> \<open>C = connected_component G v\<close>
+    show "\<exists>y \<in> C. {x, y} \<in> G" by blast
+  qed
+
+  then have "\<forall>x \<in> C. \<exists>y. {x, y} \<subseteq> C \<and> {x, y} \<in> G \<and> x \<in> {x, y}"
+     by auto 
+  then show ?case
+    using Complete_Lattices.Union_iff[where ?C = "{{x, y} |x y. {x, y} \<subseteq> C \<and> {x, y} \<in> G}"]
+    by (smt (verit) mem_Collect_eq subsetI)
+qed 
+
+lemma components_edges_image_Vs:
+  "dblton_graph G \<Longrightarrow> Vs ` (components_edges G) = connected_components G"
+  unfolding components_edges_def Vs_def
+proof-
+  assume "dblton_graph G"
+  have "\<Union> ` {component_edges G C |C. C \<in> connected_components G} = 
+    {\<Union> (component_edges G C) |C. C \<in> connected_components G}" by blast
+  also have "... = 
+    {C |C. C \<in> connected_components G}"
+    using Vs_component_edges[OF \<open>dblton_graph G\<close>] by (metis Vs_def)
+  finally show "\<Union> ` {component_edges G C |C. C \<in> connected_components G} = connected_components G"
+    by auto
+qed 
+
+lemma Union_connected_components:
+  "dblton_graph G \<Longrightarrow> Union (connected_components G) = (Vs G)"
+proof-
+  assume "dblton_graph G"
+  from \<open>dblton_graph G\<close> have "G = G \<inter> {{x, y} |x y. True}" by fast
+  with component_edges_partition have "\<Union> (components_edges G) = G" by fastforce
+  then have "Vs G = Vs (\<Union> (components_edges G))" by auto
+  also have "... = \<Union> (Vs ` (components_edges G))" unfolding Vs_def by auto
+  also have "... = \<Union> (connected_components G)"
+    using components_edges_image_Vs[OF \<open>dblton_graph G\<close>] by auto
+  finally show ?thesis by simp
+qed
+
+lemma component_edges_nonempty:
+  assumes "dblton_graph G"
+  shows "C \<in> connected_components G \<Longrightarrow> component_edges G C \<noteq> {}"
+  using Vs_component_edges assms connected_comp_nempty vs_member by fastforce
+
+
 lemma finite_con_comps:
   "finite (Vs G) \<Longrightarrow> finite (connected_components G)"
   by (auto simp: connected_components_def)
+
+lemma connected_component_finite:
+  "finite G \<Longrightarrow> dblton_graph G \<Longrightarrow> C \<in> connected_components G \<Longrightarrow> finite C"
+  by (meson connected_component_subs_Vs finite_dbl_finite_verts finite_subset)
+
+lemma component_edges_finite:
+  "finite G \<Longrightarrow> C \<in> connected_components G \<Longrightarrow> finite (component_edges G C)"
+  by (meson component_edges_subset rev_finite_subset)
+
+
+subsection \<open>Alternative definition of connected components\<close>
+
+text \<open>In some cases, an alternative definition of the connected_components of a graph is necessary,
+for example if we want to consider only a subset of the edges of a graph, but still consider all the vertices
+of the vertices. Then we can use the following definition, which gives the connected components of the
+graph (V, X), which includes the singleton connected components (the vertices in V which are not covered
+by the edge set X).\<close> 
+
+definition "connected_components' V X = connected_components X \<union> ((\<lambda>v. {v}) ` (V - (Vs X)))"
+
+lemma connected_components'_disj:
+  "\<lbrakk>C \<noteq> C'; C \<in> connected_components' V X; C' \<in> connected_components' V X\<rbrakk> \<Longrightarrow> C \<inter> C' = {}"
+proof-
+  assume "C \<noteq> C'" "C \<in> connected_components' V X" "C' \<in> connected_components' V X"
+  
+  then consider (1) "C \<in> connected_components X \<and> C' \<in> connected_components X" |
+                (2) "C \<in> {{v} | v. v \<in> V - (Vs X)} \<and> C' \<in> connected_components X" |
+                (3) "C \<in> connected_components X \<and> C' \<in> {{v} | v. v \<in> V - (Vs X)}" |
+                (4) "C \<in> {{v} | v. v \<in> V - (Vs X)} \<and> C' \<in> {{v} | v. v \<in> V - (Vs X)}"
+    unfolding connected_components'_def by auto
+  then show "C \<inter> C' = {}"
+  proof (cases)
+    case 1
+    with connected_components_disj[OF \<open>C \<noteq> C'\<close>] show ?thesis by auto
+  next
+    case 2
+    then have "C \<subseteq> V - Vs X" by blast
+    moreover have "C' \<subseteq> Vs X" using 2
+      by (simp add: connected_component_subs_Vs)
+    ultimately show ?thesis by auto
+  next
+    case 3
+    then have "C' \<subseteq> V - Vs X" by blast
+    moreover have "C \<subseteq> Vs X" using 3
+      by (simp add: connected_component_subs_Vs)
+    ultimately show ?thesis by auto
+  next
+    case 4
+    with \<open>C \<noteq> C'\<close> show ?thesis by blast
+  qed
+qed
+
+lemma union_connected_components':
+  "dblton_graph X \<Longrightarrow> Vs X \<subseteq> V \<Longrightarrow> \<Union> (connected_components' V X) = V"
+  unfolding connected_components'_def
+proof-
+  assume "dblton_graph X" "Vs X \<subseteq> V"
+  have "\<Union> (connected_components X \<union> ((\<lambda>v. {v}) ` (V - (Vs X)))) = 
+    \<Union> (connected_components X) \<union> \<Union> ((\<lambda>v. {v}) ` (V - (Vs X)))" by simp  
+  also have "... = Vs X \<union> \<Union> ((\<lambda>v. {v}) ` (V - (Vs X)))"
+    using Union_connected_components[OF \<open>dblton_graph X\<close>] by metis
+  also have "... = Vs X \<union> (V - Vs X)"
+    by auto
+  also have "... = V"
+    using \<open>Vs X \<subseteq> V\<close> by auto
+  finally show "\<Union> (connected_components X \<union> ((\<lambda>v. {v}) ` (V - (Vs X)))) = V" .
+qed
+
+lemma connected_component'_nonempty:
+  "C' \<in> connected_components' V X \<Longrightarrow> C' \<noteq> {}"
+  unfolding connected_components'_def using connected_comp_nempty by blast
+
+
 
 
 subsection \<open>Cycles\<close>
 
 fun epath :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "epath E u [] v = (u = v)"
-| "epath E u (x#xs) v \<longleftrightarrow> (\<exists>w. u \<noteq> w \<and> {u, w} = x \<and> epath E w xs v) \<and> x \<in> E"
+  "epath G u [] v = (u = v)"
+| "epath G u (x#xs) v \<longleftrightarrow> (\<exists>w. u \<noteq> w \<and> {u, w} = x \<and> epath G w xs v) \<and> x \<in> G"
 
 lemma epath_empty:
   assumes "epath {} u p v"
@@ -2695,31 +2841,54 @@ lemma epath_empty:
   by (auto elim: epath.elims)
 
 lemma epath_last:
-  "p \<noteq> [] \<Longrightarrow> epath E u p v \<Longrightarrow> v \<in> last p"
+  "p \<noteq> [] \<Longrightarrow> epath G u p v \<Longrightarrow> v \<in> last p"
   apply (induction p arbitrary: u v)
   by auto
 
 lemma epath_edges_subset:
-  "epath X v p w \<Longrightarrow> set p \<subseteq> X"
+  "epath G v p w \<Longrightarrow> set p \<subseteq> G"
   apply (induction p arbitrary: v w)
   apply simp
   by auto
 
 lemma epath_subset:
-  "epath X v p w \<Longrightarrow> X \<subseteq> Y \<Longrightarrow> epath Y v p w"
+  "epath G v p w \<Longrightarrow> G \<subseteq> G' \<Longrightarrow> epath G' v p w"
   apply (induction p arbitrary: v w)
   apply simp
   by auto
 
+lemma epath_subset_other_set:
+  "epath G u p v \<Longrightarrow> set p \<subseteq> G' \<Longrightarrow> epath G' u p v"
+  apply (induction p arbitrary: u v)
+  apply simp
+  by auto
+
+
 definition depath :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "depath E u p v \<equiv> epath E u p v \<and> distinct p"
+  "depath G u p v \<equiv> epath G u p v \<and> distinct p"
 
 definition decycle :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> bool" where
-  "decycle E u p \<equiv> epath E u p u \<and> length p > 2 \<and> distinct p"
+  "decycle G u p \<equiv> epath G u p u \<and> length p > 2 \<and> distinct p"
 
 lemma decycle_subset:
-  "decycle X u p \<Longrightarrow> X \<subseteq> Y \<Longrightarrow> decycle Y u p"
+  "decycle G u p \<Longrightarrow> G \<subseteq> G' \<Longrightarrow> decycle G' u p"
   unfolding decycle_def using epath_subset by metis
+
+lemma decycle_not_subset:
+  "\<exists>u. decycle G u p \<Longrightarrow> \<nexists>u. decycle G' u p \<Longrightarrow> \<not>set p \<subseteq> G'"
+proof (rule ccontr, goal_cases)
+  case 1
+  then have "set p \<subseteq> G'" by blast
+  from \<open>\<exists>u. decycle G u p\<close> decycle_def
+    have "(\<exists>u. epath G u p u \<and> length p > 2 \<and> distinct p)"
+    by metis
+  then obtain u where "epath G u p u" "length p > 2" "distinct p"
+    by blast
+
+  with epath_subset_other_set[OF \<open>epath G u p u\<close> \<open>set p \<subseteq> G'\<close>] decycle_def
+    have "decycle G' u p" by metis
+  with \<open>\<nexists>u. decycle G' u p\<close> show ?case by blast
+qed
 
 
 
