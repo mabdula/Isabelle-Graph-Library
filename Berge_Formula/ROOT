@@ -1,0 +1,13 @@
+session "Berge_Formula" = "HOL-Library" +
+  options [document = pdf, document_output = "output"]
+
+sessions    
+  "Tutte_Theorem"
+
+theories
+	"Berge_Formula"
+
+
+document_files
+  "root.tex"
+

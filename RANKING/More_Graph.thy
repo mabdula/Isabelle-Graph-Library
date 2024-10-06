@@ -879,4 +879,9 @@ next
     by (simp only: the_e, intro the_equality)
        (auto dest: bipartite_disjointD)
 qed
+
+definition is_bipartite where 
+  "is_bipartite E \<equiv> (\<exists> X \<subseteq> Vs E. \<forall> e \<in> E. \<exists> u v. 
+                                   e = {u, v} \<and> (u \<in> X \<and> v \<in> Vs E - X))"
+
 end

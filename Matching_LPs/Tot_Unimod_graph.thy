@@ -232,9 +232,8 @@ proof -
     using 1 by presburger
 qed
 
-lemma bipartite_submatrix_det_unimod:
-  assumes "bipartite E" 
-  assumes "B = submatrix (incidence_mat E) I J"
+lemma is_bipartite_submatrix_det_unimod:
+  assumes "is_bipartite E" "B = submatrix (incidence_mat E) I J" "graph_invar E"
   shows "det B \<in> {-1, 0, 1}" using assms(2)
 proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
   case less
@@ -318,7 +317,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
           have 8:"cofactor B i j = (-1)^(i+j) * det (mat_delete B i j)" 
             using Determinant.cofactor_def by blast
           have 9:"mat_delete B i j = submatrix (incidence_mat E) (I - {pick I i}) (J - {pick J j})"
-            using mat_delete_is_submatrix i_j less(2) by blast
+            using mat_delete_is_submatrix i_j less by blast
           have 11: "dim_row ( submatrix (incidence_mat E) (I - {pick I i}) (J - {pick J j})) < 
                     dim_row B" 
             by (metis "9" bot_nat_0.not_eq_extremum diff_less i_j less_nat_zero_code 
@@ -366,7 +365,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
               proof(rule ccontr)
                 assume "\<not> (\<exists>i<dim_row B. B $$ (i, k) = 1)"
                 then have "\<forall>i<dim_row B. B $$ (i, k) = 0" 
-                  by (metis \<open>k < dim_col B\<close> assms(1) bipartite_def 
+                  by (metis \<open>k < dim_col B\<close> assms(1) is_bipartite_def \<open>graph_invar E\<close>
                       gram_schmidt_floor.submatrix_incidence_zero_or_one less.prems)
                 then have "\<forall>i<dim_row B. col B k $ i = 0"
                   by (metis \<open>k < dim_col B\<close> index_col)
@@ -385,8 +384,8 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
                 proof(rule ccontr)
                   assume "B $$ (j, k) \<noteq> 0"
                   then have "B $$ (j, k) = 1" 
-                    using submatrix_incidence_zero_or_one 
-                    by (metis \<open>k < dim_col B\<close> asm(1) assms(1) bipartite_def less.prems)
+                    using submatrix_incidence_zero_or_one \<open>graph_invar E\<close>
+                    by (metis \<open>k < dim_col B\<close> asm(1) assms(1) is_bipartite_def less.prems)
                   then show False 
                     using asm_not i asm(1) asm(2) by blast
                 qed
@@ -405,7 +404,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
             qed
             obtain X where X: "graph_invar E \<and> 
                                X \<subseteq> Vs E \<and> (\<forall> e \<in> E. \<exists> u v.  e = {u, v} \<and> (u \<in> X \<and> v \<in> Vs E - X))"
-              using assms(1) unfolding bipartite_def by auto
+              using assms(1,3) unfolding is_bipartite_def by auto
             let ?u = "vec (dim_row B) 
                       (\<lambda> i. if (vertices_list E) ! pick I i \<in> X then (1::'a)  else -1)"
             define u where "u =?u" 
@@ -531,23 +530,23 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
   qed
 qed
 
-lemma bipartite_tot_unimod:
-  assumes "bipartite E"
+lemma is_bipartite_tot_unimod:
+  assumes "is_bipartite E" "graph_invar E"
   shows "tot_unimodular (incidence_mat E)" 
 proof -
   have "(\<forall> B. (\<exists> I J. submatrix (incidence_mat E) I J = B) \<longrightarrow> det B \<in> {-1, 0, 1})"
-    by (meson assms bipartite_submatrix_det_unimod)
+    by (meson assms is_bipartite_submatrix_det_unimod)
   then show ?thesis
     using tot_unimodular_def by blast
 qed
 
 lemma matching_polyh_int:
-  assumes "bipartite E"
+  assumes "is_bipartite E" "graph_invar E"
   shows "gram_schmidt_floor.int_polyh (card E) 
             (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E))))"
 proof -
   have 4:"tot_unimodular (incidence_mat E)" 
-    using bipartite_tot_unimod assms by auto
+    using is_bipartite_tot_unimod assms by auto
   have 1:"1\<^sub>v (card (Vs E)) \<in> \<int>\<^sub>v" 
     using gram_schmidt.one_vec_int by blast
   have 2:"(incidence_mat E) \<in> carrier_mat (card (Vs E)) (card E)" 
@@ -743,7 +742,7 @@ proof -
 qed
 
 lemma perfect_matching_polyhedron_integral:
-  assumes "bipartite E"
+  assumes "is_bipartite E" "graph_invar E"
   shows "gram_schmidt_floor.int_polyh (card E) 
             (gram_schmidt_floor.perfect_matching_polyhedron (card E) 
         (incidence_mat E) (1\<^sub>v (card (Vs E))))" 
@@ -762,7 +761,11 @@ proof -
       using gram_schmidt_floor.pos_polyh_is_polyh 
       by (metis gram_schmidt_floor.incidence_mat_def mat_carrier one_carrier_vec)
     have 1:"(incidence_mat E) @\<^sub>r - 1\<^sub>m (card E) \<in> \<int>\<^sub>m" 
-      using assms bipartite_tot_unimod dim_col_incidence_mat gram_schmidt_floor.tot_unimod_append_minus_one totally_unimod_mat_int by blast
+      using assms(1) is_bipartite_tot_unimod dim_col_incidence_mat
+            gram_schmidt_floor.tot_unimod_append_minus_one 
+            totally_unimod_mat_int 
+      by (metis assms(2) carrier_mat_triv)
+
     have 2: "(1\<^sub>v (card (Vs E))) @\<^sub>v 0\<^sub>v (card E) \<in> \<int>\<^sub>v" 
       by (simp add: append_int_vec_is_int carrier_dim_vec gram_schmidt.one_vec_int gram_schmidt.zero_vec_is_int)
     have 3: "gram_schmidt_floor.int_polyh (card E) (gram_schmidt.polyhedron (card E)
@@ -779,7 +782,9 @@ proof -
       using gram_schmidt_floor.int_poly_face_int[OF 5 6 3 4 1 2] by auto
   qed
   then show ?thesis using gram_schmidt_floor.perfect_matching_polyhedron_face 
-    by (metis Union_disjoint Union_empty carrier_matI dim_col_incidence_mat dim_row_incidence_mat gram_schmidt.convex_hull_empty(1) gram_schmidt.integer_hull_def gram_schmidt_floor.int_polyh_def mem_simps(2) one_carrier_vec)
+    by (metis Union_disjoint Union_empty carrier_matI dim_col_incidence_mat dim_row_incidence_mat 
+              gram_schmidt.convex_hull_empty(1) gram_schmidt.integer_hull_def 
+              gram_schmidt_floor.int_polyh_def mem_simps(2) one_carrier_vec)
 qed
   
 end
