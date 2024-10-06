@@ -9,6 +9,7 @@ session "Undirected_Set_Graphs" = "HOL-Eisbach" +
 
   theories
     "Undirected_Set_Graphs"
+    "Pair_Graph_Berge_Adaptor"
 
   document_files
     "root.tex"

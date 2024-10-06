@@ -1,0 +1,11 @@
+session "Spanning_Trees" = "HOL-Data_Structures" + 
+
+  (* TODO document *)
+  sessions
+    "Matroids_Greedy"
+    "Undirected_Set_Graphs"
+    "Graph_Algorithms"
+
+  theories
+    "Spanning_Trees"
+    "Kruskal_Greedy"
