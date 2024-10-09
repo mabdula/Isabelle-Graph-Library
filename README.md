@@ -16,5 +16,9 @@ Results include:
  - An algorithm for vertex-weighted online matching.
 
  - The AdWords algorithm for online auction allocation, by Mehta, Saberi, Vazirani, and Vazirani.
+ 
+ - Background theory on independence systems/matroids and the Best-In-Greedy algorithm on independence systems/matroids
+
+ - Kruskal's algorithm for finding minimum spanning trees, implemented as an instance of the Best-In-Greedy algorithm
 
 For the more practically usable algorithms, we include an implementation. For others, we only focus on the analysis.
