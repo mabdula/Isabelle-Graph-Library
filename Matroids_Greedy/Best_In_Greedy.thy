@@ -239,7 +239,7 @@ definition "valid_solution X \<equiv>
   set_inv X \<and> subseteq X carrier \<and> indep' X"
 
 context
-  includes matroid.set.automation
+  includes matroid.set.custom_automation
   assumes BestInGreedy_axioms sort_desc_axioms "matroid.indep_system_axioms carrier indep_set"
 begin
 
@@ -1000,7 +1000,7 @@ end
 
 
 context
-  includes matroid.set.automation
+  includes matroid.set.custom_automation
 begin
 
 lemma BestInGreedy_bound_tight_aux:
