@@ -11,7 +11,7 @@ locale Custom_Set = Set2
   assumes set_cardinality: "invar X \<Longrightarrow> cardinality X = card (set X)"
 begin
 
-bundle automation =
+bundle custom_automation =
   set_empty[simp] set_isin[simp] set_insert[simp] set_delete[simp]
   invar_empty[simp] invar_insert[simp] invar_delete[simp]
   set_union[simp] set_inter[simp] set_diff[simp]
@@ -156,7 +156,7 @@ definition indep_system_axioms where
     (\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep indep_set X \<longrightarrow> subseteq Y X \<longrightarrow> indep indep_set Y)"
 
 context
-  includes set.automation
+  includes set.custom_automation
   fixes carrier :: 's and indep_set :: 't
   assumes invar: "invar carrier indep_set" and
           finite_sets: "finite_sets"
@@ -254,7 +254,7 @@ definition matroid_axioms where
       cardinality X = Suc (cardinality Y) \<longrightarrow> (\<exists>x. set_isin (diff X Y) x \<and> indep indep_set (set_insert x Y)))"
 
 context
-  includes set.automation
+  includes set.custom_automation
   fixes carrier :: 's and indep_set :: 't
   assumes invar: "invar carrier indep_set" and
           finite_sets: "finite_sets"

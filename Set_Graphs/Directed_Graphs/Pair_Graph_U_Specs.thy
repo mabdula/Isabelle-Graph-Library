@@ -104,6 +104,14 @@ lemma graph_symmetric[simp, intro]:
   using \<open>pair_graph_u_invar G\<close>
   by (auto simp add: pair_graph_u_invar_def)
 
+lemma digraph_abs_irreflexive:
+  "\<forall>x \<in> dVs (digraph_abs G). (x, x) \<notin> digraph_abs G"
+  unfolding digraph_abs_def by fastforce
+
+lemma digraph_abs_symmetric:
+  "(\<forall>(x, y) \<in> (digraph_abs G). (y, x) \<in> digraph_abs G)"
+  unfolding digraph_abs_def by blast
+
 
 
 lemma adj_vertices_neq:
