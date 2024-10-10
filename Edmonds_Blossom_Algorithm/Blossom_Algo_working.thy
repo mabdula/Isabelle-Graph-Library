@@ -137,15 +137,13 @@ locale find_max_match = graph_abs G for G +
      \<Longrightarrow> (\<exists>p. aug_path_search G M = Some p)" and
     aug_path_search_sound:
     "\<lbrakk>matching M; M \<subseteq> G; finite M; aug_path_search G M = Some p\<rbrakk>
-     \<Longrightarrow> graph_augmenting_path G M p" (*and
-    graph: "dblton_graph G" "finite (Vs G)"*)
+     \<Longrightarrow> graph_augmenting_path G M p"
 begin
 
 text\<open>A measure function to prove termination\<close>
 
 definition find_max_matching_meas where
-  "find_max_matching_meas M \<equiv> 
-     (card (G - M))"
+  "find_max_matching_meas M \<equiv> (card (G - M))"
 
 lemma finite_G:
   shows "finite G"
@@ -437,7 +435,9 @@ subsection\<open>Contracting blossoms and lifting found augmenting paths\<close>
 text\<open>We refine the algorithm \<open>aug_path_search\<close>. Here we only handle contracting \<open>match_blossoms\<close> and lifting
      abstract augmenting paths.\<close>
 
-datatype 'a match_blossom_res = Path "'a list" | Blossom (stem_vs: "'a list") (cycle_vs: "'a list")
+datatype 'a match_blossom_res =
+   Path "'a list" 
+| Blossom (stem_vs: "'a list") (cycle_vs: "'a list")
 
 locale create_vert = 
   fixes create_vert::"'a set \<Rightarrow> 'a"
@@ -1902,7 +1902,7 @@ definition compute_alt_path_sound where
    (\<forall>p1 p2. compute_alt_path =  Some(p1, p2) \<longrightarrow> path G p2) \<and>
    (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow> {hd p1, hd p2} \<in> G))"
 
-locale compute_match_blossom' = match G M + choose_pair sel sel
+locale compute_match_blossom' = match G M + choose sel
    for sel::"'a set \<Rightarrow> 'a" and G M ::"'a set set" +
 
 fixes compute_alt_path:: "(('a list \<times> 'a list) option)"
@@ -2107,10 +2107,10 @@ lemma unmatched_edges_subset_G: "unmatched_edges \<subseteq> G"
   by auto
 
 lemma sel_unmatched_spec: "e \<in> unmatched_edges \<Longrightarrow> \<exists>v1 v2. (sel_unmatched) = [v1, v2] \<and> {v1,v2} \<in> unmatched_edges"
-  using unmatched_edges_subset_G
+  using unmatched_edges_subset_G graph
   apply(auto simp: sel_unmatched_def split: prod.split)
-  by (smt (z3) dblton_E doubleton_eq_iff equals0D finite_Vs graph_abs.edge_iff_edge_2 graph_abs_def
-               graph_invar_subset mem_Collect_eq sel_pair)
+  by (smt (z3) empty_iff finite_vertices_iff graph_abs.Vs_eq_dVs graph_abs.edge_iff_edge_1
+               graph_abs.intro graph_invar_subset mem_Collect_eq sel_pair)
 
 lemma sel_unmatched_spec': assumes "e \<in> unmatched_edges"
   obtains v1 v2 where "(sel_unmatched) = [v1, v2]" "{v1,v2} \<in> unmatched_edges"
@@ -2134,7 +2134,7 @@ end
 locale compute_match_blossom'_use =
   g: graph_abs E +
   (*compute_match_blossom' G M compute_alt_path +*)
-  choose_pair sel sel +
+  choose sel +
   create_vert create_vert 
   for E::"'a set set " and sel create_vert:: "'a set \<Rightarrow> 'a" +
   fixes compute_alt_path::"'a set set \<Rightarrow> 'a set set \<Rightarrow> ('a list \<times> 'a list) option"
@@ -2546,7 +2546,7 @@ subsubsection \<open>Modelling the Search Procedure as a Recursive Function\<clo
 
 datatype label = Odd | Even
 
-locale compute_alt_path = match G M + choose_pair sel sel 
+locale compute_alt_path = match G M + choose sel 
 
 for G M::"'a set set" and sel::"'a set \<Rightarrow> 'a"
 
@@ -2673,7 +2673,10 @@ proof-
       apply (clarsimp elim!: if1_cond_props'' simp: sel_if1_def edge_iff_edge_1 if1_def insert_commute split: prod.split)
       using insert_commute
       by blast
-    hence "sel_pair ?es \<in> ?es"
+    moreover have "finite ?es"
+      using Vs_eq_dVs finite_Vs finite_vertices_iff
+      by fastforce
+    ultimately have "sel_pair ?es \<in> ?es"
       by force
     moreover obtain v1 v2 where "sel_pair ?es = (v1,v2)"
       by (cases "sel_pair ?es") auto
@@ -2682,8 +2685,10 @@ proof-
       by (auto elim!: if1_cond_props''
                simp: sel_if1_def edge_iff_edge_1 if1_def neighbourhood_def 
                split: prod.split)
-    moreover hence "sel (neighbourhood M v2) \<in> (neighbourhood M v2)"
-      by (simp add: ch1.sel)
+    moreover have "finite (neighbourhood M v2)"
+      by (meson matching_graph.graph neighbourhood_subset_Vs rev_finite_subset)
+    ultimately have "sel (neighbourhood M v2) \<in> (neighbourhood M v2)"
+      by (auto simp add: sel)
     hence "{v2, sel (neighbourhood M v2)} \<in> M"
       by auto
 
@@ -2731,7 +2736,10 @@ proof-
     have "?es\<noteq>{}"
       using assms 
       by (auto elim!: if2_cond_props'' simp: sel_if2_def edge_iff_edge_1 if2_def insert_commute split: prod.split)
-    hence "sel_pair ?es \<in> ?es"
+    moreover have "finite ?es"
+      using Vs_eq_dVs finite_Vs finite_vertices_iff
+      by fastforce
+    ultimately have "sel_pair ?es \<in> ?es"
       by force
     moreover obtain v1 v2 where "sel_pair ?es = (v1,v2)"
       by (cases "sel_pair ?es") auto
@@ -5619,7 +5627,7 @@ end
 
 locale compute_alt_path_use =
   g: graph_abs E +
-  choose_pair sel sel +
+  choose sel +
   create_vert create_vert 
   for sel create_vert:: "'a set \<Rightarrow> 'a" and E::"'a set set "
 begin
