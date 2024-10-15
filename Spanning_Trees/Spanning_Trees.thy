@@ -869,7 +869,7 @@ qed
 
 (* --------------------------- *)
 
-definition "is_spanning_tree X \<equiv> has_no_cycle X \<and> (\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. reachable X v w)"
+definition "is_spanning_forest X \<equiv> has_no_cycle X \<and> (\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. {v, w} \<in> G \<longrightarrow> reachable X v w)"
 
 (* TODO probably do spanning tree = basis thm here !! *)
 

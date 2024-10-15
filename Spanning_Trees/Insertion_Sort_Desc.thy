@@ -18,10 +18,10 @@ lemma mset_insort1_key_desc: "mset (insort1_key_desc f x xs) = {#x#} + mset xs"
 lemma mset_insort_key_desc: "mset (insort_key_desc f xs) = mset xs"
   by (induction xs) (simp_all add: mset_insort1_key_desc)
 
-lemma "set (insort_key_desc c xs) = set xs"
+lemma set_insort_key_desc: "set (insort_key_desc c xs) = set xs"
   by (meson mset_eq_setD mset_insort_key_desc)
 
-lemma "length (insort_key_desc c xs) = length xs"
+lemma length_insort_key_desc: "length (insort_key_desc c xs) = length xs"
   using mset_eq_length mset_insort_key_desc by blast
 
 
