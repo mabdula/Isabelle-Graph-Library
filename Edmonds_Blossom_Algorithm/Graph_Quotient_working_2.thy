@@ -346,7 +346,7 @@ abbreviation "rev_P v \<equiv> (if v \<noteq> u then v else sel (Vs E - s))"
 lemma sel'[simp]: "sel (Vs E - s) \<in> (Vs E - s)"
   apply(rule sel)
   using good_quot_map
-  by auto
+  by (auto simp add: finite_Vs)
 
 lemma rev_map_works_1:
   assumes "v \<in> s"

@@ -2769,7 +2769,7 @@ lemma component_edges_finite:
 
 subsection \<open>Alternative definition of connected components\<close>
 
-text \<open>In some cases, an alternative definition of the connected_components of a graph is necessary,
+text \<open>In some cases, an alternative definition of the @{term connected_components} of a graph is necessary,
 for example if we want to consider only a subset of the edges of a graph, but still consider all the vertices
 of the vertices. Then we can use the following definition, which gives the connected components of the
 graph (V, X), which includes the singleton connected components (the vertices in V which are not covered

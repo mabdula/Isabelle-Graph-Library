@@ -1,0 +1,4 @@
+- Separate session for graphs to LPs
+- Unify notion of graph difference, move to graph library
+- Unify notion of perfect matching, move to matching session (Berge's lemma now)
+- Add adaptor for Wimmer's graph library
