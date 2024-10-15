@@ -274,9 +274,13 @@ definition "invar_cycle_true dfs_cycles_state \<equiv>
 
 
 context
-includes set_ops.automation Graph.adj.automation Graph.neighb.set.automation
+includes Graph.adj.automation Graph.neighb.set.automation
 assumes DFS_Cycles_axioms dfs_aux_axioms
 begin
+
+declare set_ops.set_union[simp] set_ops.set_inter[simp] 
+        set_ops.set_diff[simp] set_ops.invar_union[simp]
+        set_ops.invar_inter[simp] set_ops.invar_diff[simp]
 
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"

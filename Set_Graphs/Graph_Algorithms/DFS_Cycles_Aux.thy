@@ -1,7 +1,15 @@
 theory DFS_Cycles_Aux
-  imports Directed_Set_Graphs.Pair_Graph_Specs Directed_Set_Graphs.Set2_Addons
+  imports Directed_Set_Graphs.Pair_Graph_Specs
     Directed_Set_Graphs.Set_Addons Directed_Set_Graphs.Component_Defs Directed_Set_Graphs.Awalk
 begin
+
+context Set2
+begin
+
+  notation "inter" (infixl "\<inter>\<^sub>G" 100)
+  notation "diff" (infixl "-\<^sub>G" 100)
+  notation "union" (infixl "\<union>\<^sub>G" 100)
+end
 
 lemma dfs_tree_aux1:
   assumes "l = v # l_tl" "w \<notin> (set l \<union> F)"
@@ -417,9 +425,13 @@ definition "initial_state \<equiv> \<lparr>stack = [s], seen = insert s \<emptys
 
 
 context
-includes set_ops.automation Graph.adj.automation Graph.neighb.set.automation
+includes  Graph.adj.automation Graph.neighb.set.automation
 assumes DFS_Aux_axioms 
 begin
+
+declare set_ops.set_union[simp] set_ops.set_inter[simp] 
+        set_ops.set_diff[simp] set_ops.invar_union[simp]
+        set_ops.invar_inter[simp] set_ops.invar_diff[simp]
 
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"
