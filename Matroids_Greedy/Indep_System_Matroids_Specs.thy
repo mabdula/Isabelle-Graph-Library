@@ -25,9 +25,6 @@ locale Indep_System_Specs =
     empty = set_empty and insert = set_insert and delete = set_delete and isin = set_isin and 
     set = to_set and invar = set_inv and union = union and inter = inter and diff = diff and
     subseteq = subseteq and cardinality = cardinality
-+ set_of_sets: Set where 
-    empty = set_of_sets_empty and insert = set_of_sets_insert and delete = set_of_sets_delete and 
-    isin = set_of_sets_isin and set = to_set_of_sets and invar = set_of_sets_inv
   for set_empty :: "'s" and
       set_insert :: "('a::linorder) \<Rightarrow> 's \<Rightarrow> 's" and
       set_delete :: "'a \<Rightarrow> 's \<Rightarrow> 's" and
@@ -38,13 +35,8 @@ locale Indep_System_Specs =
       inter :: "'s \<Rightarrow> 's \<Rightarrow> 's" and
       diff :: "'s \<Rightarrow> 's \<Rightarrow> 's" and
       subseteq :: "'s \<Rightarrow> 's \<Rightarrow> bool" and
-      cardinality :: "'s \<Rightarrow> nat" and
-      set_of_sets_empty :: "'t" and
-      set_of_sets_insert :: "'s \<Rightarrow> 't \<Rightarrow> 't" and
-      set_of_sets_delete :: "'s \<Rightarrow> 't \<Rightarrow> 't" and
-      set_of_sets_isin :: "'t \<Rightarrow> 's \<Rightarrow> bool" and
-      to_set_of_sets :: "'t \<Rightarrow> 's set" and 
-      set_of_sets_inv :: "'t \<Rightarrow> bool"
+      cardinality :: "'s \<Rightarrow> nat" +
+  fixes set_of_sets_isin :: "'t \<Rightarrow> 's \<Rightarrow> bool"
 begin
 
 fun insert_elements :: "'a list \<Rightarrow> 's" where
@@ -108,14 +100,14 @@ lemma indep_abs_infinite:
 
 definition invar where
   "invar carrier indep_set =
-    (set_inv carrier \<and> set_of_sets_inv indep_set \<and>
+    (set_inv carrier \<and> 
     (\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> to_set X = to_set Y \<longrightarrow> 
       indep indep_set X = indep indep_set Y))"
 
 
 lemma invarE[elim]: 
   "invar carrier indep_set \<Longrightarrow> 
-    (\<lbrakk>set_inv carrier; set_of_sets_inv indep_set;
+    (\<lbrakk>set_inv carrier; 
     (\<And>X Y. set_inv X \<Longrightarrow> set_inv Y \<Longrightarrow> to_set X = to_set Y \<Longrightarrow> 
       indep indep_set X = indep indep_set Y)\<rbrakk> 
     \<Longrightarrow> P) \<Longrightarrow> P"
@@ -243,8 +235,8 @@ end
 end
 
 locale Matroid_Specs = Indep_System_Specs
-  where set_empty = set_empty and to_set = to_set and set_of_sets_empty = set_of_sets_empty
-  for set_empty :: 's and to_set :: "'s \<Rightarrow> ('a::linorder) set" and set_of_sets_empty :: 't
+  where set_empty = set_empty and to_set = to_set and set_of_sets_isin = set_of_sets_isin
+  for set_empty :: 's and to_set :: "'s \<Rightarrow> ('a::linorder) set" and set_of_sets_isin :: "'t \<Rightarrow> 's \<Rightarrow> bool"
 begin
 
 
