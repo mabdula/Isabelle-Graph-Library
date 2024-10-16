@@ -1,5 +1,6 @@
 theory Spanning_Trees
   imports Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor Directed_Set_Graphs.Pair_Graph_U_Specs
+    Matroids_Greedy.Matroids_Theory
 begin
 
 (* TODO: should everything be inside graph_abs context or not?
@@ -866,12 +867,83 @@ proof (rule ccontr, goal_cases)
   with \<open>card X = Suc (card Y)\<close> show ?case by simp
 qed
 
+lemma graph_matroid:
+  "matroid G has_no_cycle"
+  apply standard
+  using finite_E has_no_cycle_indep_subset_carrier has_no_cycle_indep_ex has_no_cycle_indep_subset 
+    has_no_cycle_augment
+  by blast+
+
+lemma graph_indep_system:
+  "indep_system G has_no_cycle"
+  using matroid.axioms(1)[OF graph_matroid] .
+
+(* interpretation graph_matroid: matroid
+  where carrier = "G" and indep = has_no_cycle
+  using graph_matroid by blast *)
 
 (* --------------------------- *)
 
 definition "is_spanning_forest X \<equiv> has_no_cycle X \<and> (\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. {v, w} \<in> G \<longrightarrow> reachable X v w)"
 
-(* TODO probably do spanning tree = basis thm here !! *)
+lemma spanning_forest_iff_basis:
+  "is_spanning_forest X = indep_system.basis G has_no_cycle X"
+  unfolding is_spanning_forest_def indep_system.basis_def[OF graph_indep_system]
+proof (standard, goal_cases)
+  case 1
+  then have "X \<subseteq> G" unfolding has_no_cycle_def by blast
+  have "(\<forall>x \<in> G - X. \<not> has_no_cycle (Set.insert x X))"
+  proof (rule ballI)
+    fix x
+    assume "x \<in> G - X"
+    then obtain v w where "x = {v, w}" "v \<noteq> w" by blast
+    with \<open>x \<in> G - X\<close> have "v \<in> Vs G" "w \<in> Vs G" by auto+
+    with \<open>x \<in> G - X\<close> \<open>x = {v, w}\<close> 1
+      have "\<exists>p. walk_betw X v p w" unfolding reachable_def by blast
+    
+    have "Set.insert {v, w} X \<subseteq> G"
+      using \<open>X \<subseteq> G\<close> \<open>x = {v, w}\<close> \<open>x \<in> G - X\<close> by auto
+    have "{v, w} \<notin> X"
+      using \<open>x = {v, w}\<close> \<open>x \<in> G - X\<close> by blast
+    from has_no_cycle_ex_unique_path[OF \<open>Set.insert {v, w} X \<subseteq> G\<close>] this \<open>\<exists>q. walk_betw X v q w\<close> \<open>x = {v, w}\<close> 
+      show "\<not> has_no_cycle (Set.insert x X)" by blast
+  qed
+  with 1 show ?case by blast
+next
+  case 2
+  then have "X \<subseteq> G" "\<nexists>u c. decycle X u c" unfolding has_no_cycle_def by blast+
+  have "(\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. {v, w} \<in> G \<longrightarrow> reachable X v w)"
+  proof (rule ballI, rule ballI, rule impI)
+    fix v w
+    assume "v \<in> Vs G " "w \<in> Vs G" "{v, w} \<in> G"
+    show "reachable X v w"
+    proof (cases "{v, w} \<in> X")
+      case True
+      then show ?thesis unfolding reachable_def
+        by (meson edges_are_walks)
+    next
+      case False
+      with 2 \<open>{v, w} \<in> G\<close> have "\<not> has_no_cycle (Set.insert {v, w} X)" by blast
+      moreover have "Set.insert {v, w} X \<subseteq> G"
+        using \<open>{v, w} \<in> G\<close> \<open>X \<subseteq> G\<close> by simp
+      ultimately obtain u c where "decycle (Set.insert {v, w} X) u c"
+        unfolding has_no_cycle_def by blast
+      with decycle_not_subset \<open>\<nexists>u c. decycle X u c\<close>
+        have "\<not> set c \<subseteq> X" by metis
+      moreover have "set c \<subseteq> (Set.insert {v, w} X)" 
+        using \<open>decycle (Set.insert {v, w} X) u c\<close> decycle_def epath_edges_subset by metis
+      ultimately have "{v, w} \<in> set c" by blast
+      
+      have "\<exists>p. walk_betw X v p w"
+        using decycle_edge_path[OF \<open>(Set.insert {v, w} X) \<subseteq> G\<close>
+          \<open>decycle (Set.insert {v, w} X) u c\<close> \<open>{v, w} \<in> set c\<close>] walk_symmetric
+        by fast
+      then show ?thesis
+        unfolding reachable_def by simp
+    qed
+  qed
+  with 2 show ?case by blast
+qed
 
 
 end
