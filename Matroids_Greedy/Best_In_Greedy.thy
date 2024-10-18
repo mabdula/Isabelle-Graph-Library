@@ -15,7 +15,7 @@ locale Best_In_Greedy = matroid: Matroid_Specs
   where set_empty = set_empty and set_of_sets_isin = set_of_sets_isin for set_empty :: "'s" and 
     set_of_sets_isin :: "'t \<Rightarrow> 's \<Rightarrow> bool" +
   fixes carrier :: "'s" and indep_set :: "'t" and
-    (* c :: "'a \<Rightarrow> rat" and *) sort_desc :: "('a \<Rightarrow> rat) \<Rightarrow> 'a list \<Rightarrow> 'a list" 
+    sort_desc :: "('a \<Rightarrow> rat) \<Rightarrow> 'a list \<Rightarrow> 'a list" 
 
 begin
 
