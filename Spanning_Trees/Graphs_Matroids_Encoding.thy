@@ -10,8 +10,7 @@ locale Graphs_Matroids_Encoding =
     set_of_sets_isin :: "'t \<Rightarrow> 's \<Rightarrow> bool" and adj_fold :: "'adj \<Rightarrow> ('v \<Rightarrow> 'neighb \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" and
     neighb_fold :: "'neighb \<Rightarrow> ('v \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" and set_fold_adj :: "'s \<Rightarrow> ('e \<Rightarrow> 'adj \<Rightarrow> 'adj) \<Rightarrow> 'adj \<Rightarrow> 'adj" and
     set_fold_neighb :: "'s \<Rightarrow> ('e \<Rightarrow> 'neighb \<Rightarrow> 'neighb) \<Rightarrow> 'neighb \<Rightarrow> 'neighb" +
-  fixes v1_of :: "'e \<Rightarrow> 'v" and v2_of :: "'e \<Rightarrow> 'v" and edge_of :: "'v \<Rightarrow> 'v \<Rightarrow> 'e"
-  (* maybe also do something here related to cost? *)
+  fixes v1_of :: "'e \<Rightarrow> 'v" and v2_of :: "'e \<Rightarrow> 'v" and edge_of :: "'v \<Rightarrow> 'v \<Rightarrow> 'e" and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
 begin
 
 (* TODO: Additional axioms/invariants necessary for proving properties *)
@@ -95,6 +94,13 @@ lemma card_graph_to_edges:
   assumes "set_inv X"
   shows "cardinality X = card (pair_graph_u.ugraph_abs (edges_to_graph X))"
   sorry
+
+lemma costs_transformation:
+  "sum c' (to_set E') \<le> sum c' (to_set E'') \<Longrightarrow>
+   sum c (pair_graph_u.ugraph_abs (Kruskal_E_to_G E')) \<ge>
+    sum c (pair_graph_u.ugraph_abs (Kruskal_E_to_G E''))"
+      sorry
+
 
 end
 

@@ -196,36 +196,7 @@ interpretation Matroid_Specs_Inst: Matroid_Specs
   apply (subst Indep_System_Specs_def)
   using Custom_Set_RBT.Custom_Set_axioms by blast
 
-
-(* NOW: Just specify 'e::linorder type, instantiate all remaining locales (+ add v1, v2 edge functions
-to encoding locale but not yet assumptions), have final two/three instantianted theorems that greedy
-result is basis/valid solution and matroid opt  
-\<Rightarrow> Need everything which still needs to be instantiated
-LATER: Add necessary assumptions to encoding locale (maybe don't even need this) *)
-
-
-(*
-
-===> HERE just assume v1, v2, edge of functions on arbitrary 'v and 'e types, then instantiate
-with concrete types for executing an example
-\<Rightarrow> satisfy edge_of assumption by defining as follows: if a \<le> b then (a, b) else (b, a)
-\<Rightarrow> for v1_of, v2_of: should v1_of always be first, v2_of always be second?
-((===> OR RATHER just assume vertex type, define functions here with simple pair/uedge!
-\<Rightarrow> Problem: How do we show that edge type itself is of sort linorder? \<Rightarrow> won't work))
-\<Longrightarrow> OR WILL WORK if I import the product linorder stuff
-
-\<Longrightarrow> IMPORTANT: Do I really need assumption that for any edge e, components are non-equal?
-\<Rightarrow> Maybe either remove this assumption or e.g. require this only for a certain set of edges 
-*)
-
-
-(* TODO NOW define indep function with subset check and DFS_Cycles', also need to ! negate ! result
-\<Rightarrow> where does has_no_cycle come into play? *)
-
 term "DFS_Cycles'"
-
-
-(* TODO what about remaining functions? v1, v2, edge *)
 
 
 fun rbt_set_fold :: "'a rbt \<Rightarrow> ('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'b" where
@@ -251,22 +222,11 @@ interpretation Kruskal_Graphs_Matroids: Graphs_Matroids_Encoding
     adj_fold = "rbt_map_fold" and neighb_fold = "rbt_set_fold" and set_fold_adj = "rbt_set_fold" and
     set_fold_neighb = "rbt_set_fold"
     for v1_of :: "('e::linorder) \<Rightarrow> ('v::linorder)" and v2_of :: "('e::linorder) \<Rightarrow> ('v::linorder)" and 
-        edge_of :: "('v::linorder) \<Rightarrow> 'v \<Rightarrow> ('e::linorder)"
+        edge_of :: "('v::linorder) \<Rightarrow> 'v \<Rightarrow> ('e::linorder)" and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
   apply (subst Graphs_Matroids_Encoding_def)
   using Pair_Graph_U_RBT.Pair_Graph_U_Specs_axioms Matroid_Specs_Inst.Matroid_Specs_axioms
   by blast
 
-
-(* When formulating final statement: operate in a context fixing a valid graph G or somehow else?
-\<Rightarrow> TODO !! What about c and order? *)
-
-
-(*
-thm Pair_Graph_U_RBT.pair_graph_u_invar_def
-term "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)"
-
-print_interps Pair_Graph_U_Specs
-*)
 
 term Kruskal_Graphs_Matroids.graph_to_edges
 
@@ -280,11 +240,8 @@ context
   fixes input_G :: "(('v::linorder) * ('v rbt)) rbt" and v1_of :: "('e::linorder) \<Rightarrow> 'v"
     and v2_of :: "('e::linorder) \<Rightarrow> 'v" and edge_of :: "'v \<Rightarrow> 'v \<Rightarrow> 'e"
     and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
-  (* assumes pair_graph_u: "Pair_Graph_U_RBT.pair_graph_u_invar graph" *) (* TODO THIS ASSM *)
 begin
 
-(* term "Kruskal_Graphs_Matroids.graph_to_edges edge_of" *)
-(* TODO do we need these two definitions? Maybe just turn into abbreviations? *)
 
 abbreviation Kruskal_G_to_E :: "(('v::linorder) \<times> ('v rbt)) rbt \<Rightarrow> ('e::linorder) rbt" where
   "Kruskal_G_to_E \<equiv> Kruskal_Graphs_Matroids.graph_to_edges edge_of"
@@ -306,36 +263,7 @@ fun indep_graph_matroid :: "('e::linorder) rbt \<Rightarrow> bool" where
     in
       (if rbt_subseteq E carrier_graph_matroid then \<not>DFS_Cycles_state.cycle (DFS_Cycles' G V)
       else False))"
-(* TODO somehow prove this is equivalent to E \<subseteq> carrier \<and> (\<nexists>c u. decycle (ugraph_abs ..)) *)
-(* Also connect implementation and abstract matroid through carrier_abs, indep_abs, etc. *)
 
-(* need to show that carrier_abs of carrier_graph_matroid is ugraph_abs graph
-For this need that to_set graph_to_edges graph = ugraph_abs graph
-
-need to show that indep_abs of indep_graph_matroid is has_no_cycle (ugraph_abs graph)
-given an arbitrary abstract set S: if it is not finite, it obviously cannot satisfy has_no_cycle 
-\<Rightarrow> will evaluate to false
-if it is finite: TODO NOW THINK ABOUT THIS
-\<Rightarrow> will evaluate to
-rbt_subseteq (from_set S) carrier_graph_matroid \<and> 
-  \<not>(\<exists>u c. decycle (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G (from_set S))) u c))
-
-Need to show that this is equivalent to:
-S \<subseteq> to_set (carrier_graph_matroid) \<and>
-  \<not>(\<exists>u c. decycle 
-
-PROBLEM: ARE WE DEALING WITH TWO REPRESENTATIONS? ABSTRACT SET OF SETS + ABSTRACT SET OF IMPL EDGES?
-\<Longrightarrow> Rather need equivalence between matroid abstractions of implementation and set of sets abstraction
-\<Longrightarrow> Do we need extra functions to convert between abstractions or not?
-
-*)
-
-(* ======== TODO NOW 2/3 things ========
-Think about matroid indep_abs equivalence
-Try instantiating one more of the axioms needed for greedy correctness
-(try to connect everything into final statement (maybe think about cost function properties)
-
-*)
 
 
 
@@ -384,63 +312,6 @@ thm Kruskal_Greedy.BestInGreedy_correct_3
 thm Kruskal_Greedy.BestInGreedy_matroid_iff_opt
 
 
-(* 
-We have (at least) two cost functions: 
-c from 'v set to rat
-c_imp from 'e to rat
-\<Rightarrow> note: names are not quite consistent with those below
-
-\<Rightarrow> maybe need a third intermediate cost function? the M - ... cost function, but on the abstract type
-
-
-we will have that
-for valid_solution X:
-Kruskal_Greedy.c_set c (Tree2.set_tree X) \<le> 
-  Kruskal_Greedy.c_set c (Tree2.set_tree (result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c order)))))))
-
-We need to prove that:
-for G' where ugraph_abs G' \<subseteq> ugraph_abs G (+ G' is spanning tree):
-sum c' ugraph_abs G' \<ge>
- sum c' ugraph_abs (Kruskal_E_to_G (result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c order))))
-
-Probably need to prove that:
-ugraph_abs G' \<subseteq> ugraph_abs G \<Longrightarrow> valid_solution (Kruskal_E_to_G G') (+ if G' is spanning tree, it is indep wrt function)
-
-we have (assuming E* is result of greedy):
-Kruskal_Greedy.c_set c (Tree2.set_tree (Kruskal_G_to_E G')) \<le> 
- Kruskal_Greedy.c_set c ( Tree2.set_tree E* )
-\<Longrightarrow>
-Kruskal_Greedy.c_set c (Tree2.set_tree (Kruskal_G_to_E G')) \<le> 
- Kruskal_Greedy.c_set c (Tree2.set_tree (Kruskal_G_to_E (Kruskal_E_to_G E* ) ))
-\<Longrightarrow> 
-sum c' (ugraph_abs G') \<ge> 
- sum c' (ugraph_abs (Kruskal_E_to_G E* ))
-
-Either assume last step directly (for two arbitary graphs G1, G2 that one implies the other, or maybe
-somehow show relationship between 
-Kruskal_Greedy.c_set c (Tree2.set_tree (Kruskal_G_to_E G')) and
-sum c' (ugraph_abs G') for arbitrary G'
-\<Rightarrow> Probably that:
-Kruskal_Greedy.c_set c (Tree2.set_tree (Kruskal_G_to_E G')) = 
-card (...) * M - Kruskal_Greedy.c_set ? (Tree2.set_tree (Kruskal_G_to_E G'))
-card (...) * M - sum c' (ugraph_abs G')
-
-TODO think can abstractions be related on a "direct" level?
-e.g. think about the image thing again, what would be two functions which relate elements?
-impl edge to set edge: e \<rightarrow> {v1_of e, v2_of e}
-set edge to impl edge: e', extract v1 and v2 by Hilbert choice \<longrightarrow> edge_of v1 v2
-
-\<Rightarrow> then show that under proper assumptions, it holds that
-Set.image (impl_edge_to_set_edge) (Tree2.set_tree (Kruskal_G_to_E G')) = (ugraph_abs G')
-and/or maybe
-Set.image (set_edge_to_impl_edge) (ugraph_abs (Kruskal_E_to_G E')) = (Tree2.set_tree E')
-
-
-\<Longrightarrow> NOTE: Should M be "hardcoded" or can M be assumed as a parameter (strictly greater than all costs
-within a certain set)
-
-
-*)
 
 term Matroid_Specs_Inst.indep
 term indep_graph_matroid
@@ -712,6 +583,14 @@ thm G_edges_abs.is_spanning_forest_def
 thm Kruskal_Greedy.BestInGreedy_correct_3[OF Kruskal_BestInGreedy_axioms[OF pair_graph_u]
     Kruskal_sort_desc_axioms Kruskal_indep_system_axioms[OF pair_graph_u]]
 
+lemma Kruskal_Greedy_valid_inst:
+  assumes "Kruskal_Greedy.nonnegative c'" "Kruskal_Greedy.valid_order order"
+  shows "Kruskal_Greedy.valid_solution (result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c' order)))"
+proof-
+  from Kruskal_Greedy.BestInGreedy_correct_1[OF Kruskal_BestInGreedy_axioms[OF pair_graph_u]
+    Kruskal_sort_desc_axioms Kruskal_indep_system_axioms[OF pair_graph_u], OF assms]
+  show ?thesis by metis
+qed
 
 lemma Kruskal_Greedy_opt_inst:
   assumes "Kruskal_Greedy.nonnegative c'" "Kruskal_Greedy.valid_order order" "Kruskal_Greedy.valid_solution X"
@@ -730,11 +609,13 @@ qed
 
 
 
-
+lemma nonneg_conv:
+  "cost_nonnegative c \<Longrightarrow> Kruskal_Greedy.nonnegative c'"
+  sorry
 
 
 lemma Kruskal_correct_final_1:
-  assumes "Kruskal_Greedy.nonnegative c'" "Kruskal_Greedy.valid_order order" (* WRONG ASSUMPTIONS !! *)
+  assumes "cost_nonnegative c" "Kruskal_Greedy.valid_order order" (* WRONG ASSUMPTIONS !! *)
   shows "G_edges_abs.is_spanning_forest (Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST order))"
   sorry
 
@@ -763,27 +644,23 @@ proof-
   thm Kruskal_Greedy.BestInGreedy_matroid_iff_opt[OF Kruskal_BestInGreedy_axioms Kruskal_sort_desc_axioms
       Kruskal_indep_system_axioms] pair_graph_u
 
-  have "Kruskal_Greedy.valid_solution (Kruskal_G_to_E G')" sorry
-
-  have "sum c (Pair_Graph_U_RBT.ugraph_abs G') \<ge> 0" sorry
-
-
-  show "sum c (Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST order)) \<le> sum c (Pair_Graph_U_RBT.ugraph_abs G')" sorry
+  have valid_soln: "Kruskal_Greedy.valid_solution (Kruskal_G_to_E G')" sorry
+  from Kruskal_Greedy_opt_inst[OF nonneg_conv[OF assms(1)] assms(2) valid_soln]
+  have "sum c' (Tree2.set_tree (Kruskal_G_to_E G'))
+    \<le> sum c' (Tree2.set_tree (result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c' order))))"
+    by blast
+  then have
+      "sum c (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G (Kruskal_G_to_E G')))
+    \<ge> sum c (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G (result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c' order)))))"
+      using Kruskal_Graphs_Matroids.costs_transformation[where E' ="(Kruskal_G_to_E G')" and
+          E'' = "(result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c' order)))"]
+    by blast
+  then
+    show "sum c (Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST order)) \<le> sum c (Pair_Graph_U_RBT.ugraph_abs G')"
+    using Kruskal_Graphs_Matroids.graph_to_edges_inverse[OF \<open>Pair_Graph_U_RBT.pair_graph_u_invar G'\<close>]
+    using Kruskal_E_to_G_def sorry
 qed
   
-
-(* TODO NOW: JUST GET FINAL THEOREM WORKING, WRITE DOWN CONVERSIONS \<Rightarrow> SORRY THE REST AND MENTION WAS NOT POSSIBLE
-DUE TO TIME CONSTRAINTS *)
-(* IF POSSIBLE: DO REASONING WITH COST FUNCTIONS IN SANDBOX \<Longrightarrow> AT LEAST PUT IT DOWN IN COMMENT MAYBE *)
-
-(*
-TODO NOW:
-CONNECT THMS
-PUT DOWN REASONING WITH COST FUNCTION IN COMMENT
-MAYBE DO ORDER FUNCTION
-
-*)
-
 
 
 end
