@@ -2,7 +2,8 @@ theory Pair_Graph_U_Specs
   imports Awalk "Map_Addons" "Set_Addons" Pair_Graph_Specs
 begin
 
-(* Note: This file is still a work-in-progress, might change/remove some things *)
+(* Note: Some of the definitions in this file are currently not relevant to the rest of
+the formalisation. *)
 
 definition "set_of_pair \<equiv> \<lambda>(u,v). {u,v}"
 
@@ -31,10 +32,7 @@ lemma is_rep:
 
 definition "uedges G \<equiv> (\<lambda>(u,v). rep (uEdge u v)) ` (digraph_abs G)"  
 
-(* Note: edges in other file corresponds to digraph_abs in Pair_Graph *)
 
-
-(* TODO how to define this? Maybe relate to set_of_edge ` uedges? *)
 definition ugraph_abs where "ugraph_abs G \<equiv> {{u, v} | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
 
 
@@ -63,7 +61,6 @@ lemma set_of_uedge: "set_of_uedge (uEdge u v) = {u,v}"
   unfolding set_of_uedge_def by auto
 
 (* Pair_Graph_Specs axioms + symmetric, irreflexive *)
-(* The axioms in ugraph_adj_map_invar are covered by these axioms *)
 definition "pair_graph_u_invar G \<equiv> 
   graph_inv G \<and> finite_graph G \<and> finite_neighbs \<and>
   (\<forall>v. \<not> v \<in>\<^sub>G (\<N>\<^sub>G G v)) \<and>
@@ -123,8 +120,6 @@ lemma vertices_def2:
   "vertices G = {u | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}"
   unfolding vertices_def using graph_symmetric by auto
 
-(* TODO vs_uedges_subset_vertices *)
-
 lemma isin_neighborhood_set_edge: 
   assumes "v \<in>\<^sub>G (\<N>\<^sub>G G u)"
   shows "{u,v} \<in> set_of_uedge ` uedges G"
@@ -139,20 +134,6 @@ proof -
   thus "{u,v} \<in> set_of_uedge ` uedges G"
     by cases (auto simp: set_of_uedge doubleton_eq_iff)
 qed
-
-(*
-lemma vertices_subset_vs_uedges:
-  assumes "u \<in> vertices G"
-  shows "u \<in> Vs (set_of_uedge ` uedges G)"
-proof -
-  consider v where "v \<in>\<^sub>G (\<N>\<^sub>G G u)" | v where "u \<in>\<^sub>G (\<N>\<^sub>G G v)"
-    using assms[unfolded vertices_def] by auto
-  then consider v where "{u,v} \<in> set_of_uedge ` uedges G"
-    using isin_neighborhood_set_edge by cases fast+
-  thus ?thesis
-    sorry
-qed
-*)
 
 lemma graph_abs_symmetric[simp]:
   "(u, v) \<in> (digraph_abs G) \<Longrightarrow> (v, u) \<in> (digraph_abs G)"
@@ -171,7 +152,6 @@ lemma rev_vwalk_bet:
   unfolding vwalk_bet_def using rev_vwalk
   by (simp add: hd_rev last_rev)
   
-(* finite paths, distinct_subpath *)
 
 lemma rep_idem: "rep (rep e) = rep e"
 proof -
@@ -396,13 +376,6 @@ qed
 lemma card_uedges:
   "card (set_of_uedge ` uedges G) = card (uedges G)"
   using inj_set_of_uedge by (intro card_image)
-
-(*
-lemma path_equiv: 
-  assumes "ugraph_adj_map_invar G" "path_betw G u P v"
-  shows "walk_betw (set_of_uedge ` uedges G) u P v"
-  oops (* TODO *)
-*)
 
 
 end
