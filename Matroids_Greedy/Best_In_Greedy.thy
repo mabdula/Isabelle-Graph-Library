@@ -1228,7 +1228,7 @@ proof-
         have "to_set (result (best_in_greedy_state)) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)"
         by blast
 
-      from aux[OF \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> \<open>B1 \<subseteq> F\<close> \<open>B1 \<subseteq> to_set (result (best_in_greedy_state))\<close> this]
+      from bound_tight_set_aux[OF \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> \<open>B1 \<subseteq> F\<close> \<open>B1 \<subseteq> to_set (result (best_in_greedy_state))\<close> this]
         have "\<exists>Y. to_set (result best_in_greedy_state) = Y \<union> B1 \<and> Y \<subseteq> matroid.carrier_abs carrier - F" .
       then obtain Y where "to_set (result best_in_greedy_state) = Y \<union> B1" "Y \<subseteq> matroid.carrier_abs carrier - F"
         by blast
@@ -1489,7 +1489,7 @@ proof-
     have "to_set (result (BestInGreedy (initial_state ?c ?order))) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)"
     by blast
 
-  from aux[OF \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> \<open>B1 \<subseteq> F\<close> \<open>B1 \<subseteq> to_set (result (BestInGreedy (initial_state ?c ?order)))\<close>
+  from bound_tight_set_aux[OF \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> \<open>B1 \<subseteq> F\<close> \<open>B1 \<subseteq> to_set (result (BestInGreedy (initial_state ?c ?order)))\<close>
     \<open>to_set (result (BestInGreedy (initial_state ?c ?order))) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)\<close>]
   have "\<exists>X. to_set (result (BestInGreedy (initial_state ?c ?order))) = X \<union> B1 \<and>
     X \<subseteq> (matroid.carrier_abs carrier) - F"
