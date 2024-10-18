@@ -385,7 +385,7 @@ lemma walk_transitive':
 text \<open>We also show equivalence between (existence of) cycles in undirected and directed graphs\<close>
 
 (* Note: for correctness of this function, need to assume that u is really the "head" of the path *)
-(* TODO should this function go somewhere else? *)
+(* TODO later: should this function go somewhere else? *)
 fun epath_to_awalk :: "'a \<Rightarrow> 'a set list \<Rightarrow> ('a \<times> 'a) list" where
   "epath_to_awalk u [] = []" |
   "epath_to_awalk u (e # p) = 
@@ -540,7 +540,7 @@ lemma cycle'_imp_decycle:
   by (metis length_map)
 
 
-lemma map_undirected_epath_to_awalk: (* TODO E or G? *)
+lemma map_undirected_epath_to_awalk:
   "epath E u p v \<Longrightarrow> map undirected (epath_to_awalk u p) = p"
 proof (induction p arbitrary: u v)
   case Nil
