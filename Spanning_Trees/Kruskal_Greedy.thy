@@ -4,50 +4,9 @@ theory Kruskal_Greedy
     "HOL-Data_Structures.Set2_Join_RBT" "HOL-Data_Structures.RBT_Map" "HOL-Library.Product_Lexorder"
 begin
 
-(* TODO can remove this *)
-context graph_abs
-begin
-
-interpretation graph_matroid: matroid
-  where carrier = "G" and indep = has_no_cycle
-  using graph_matroid by blast
-
-thm is_spanning_forest_def
-print_interps matroid
-
-thm graph_matroid.basis_def
-
-thm spanning_forest_iff_basis
-
-end
-
-(* Should connecting stuff go in separate file + locale? How to do this *)
-
-(* TODO NOW first probably put all instantiations here *)
 
 subsection \<open>Instantiations for Kruskal's algorithm\<close>
 
-(* TODO IMPORTANT MAKE SURE ALL TYPES ARE CORRECT (ESPECIALLY SINCE WE WILL HAVE
-SET DATATYPE FOR BOTH PAIR GRAPH AND FOR CUSTOM SET *)
-
-(* \<Longrightarrow> We will have vertex type 'v (probably with linorder) assumption, rest will be based on this
-(for pair graph we will have 'v being 'v, 'neighb being tree of 'v, 'adj tree of trees 
-
-For custom set implementation: will probably define uEdge 'v (as quotient type with unequal elements)
-
-\<Rightarrow> Potential problem: Does type class instantiation work in context? \<Rightarrow> How will we instantiate
-uEdge as linorder?
-*)
-
-
-
-
-(*
-type_synonym 'v vertex_rbt = "('v \<times> color) tree"
-
-term "\<langle>\<rangle>::('v rbt)"
-*)
-(* IMPORTANT: DO WE NEED TO SPECIFY EVERYTHING RELEVANT WITH ('v::linorder) or not? *)
 
 abbreviation "rbt_inv \<equiv> \<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t"
 
@@ -71,7 +30,7 @@ interpretation Set_Choose_RBT: Set_Choose
   done
   done
 
-(* Should we just do Pair_Graph_U or also Pair_Graph? *)
+
 interpretation Pair_Graph_U_RBT: Pair_Graph_U_Specs
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
     lookup = lookup and adj_inv = "M.invar" and neighb_empty = "\<langle>\<rangle>" and
@@ -172,7 +131,6 @@ abbreviation "DFS_Cycles' G V \<equiv> DFS_Cycles_Interp.DFS_Cycles V G DFS_Cycl
 thm Pair_Graph_U_RBT.pair_graph_u_invar_def
 thm DFS_Cycles.DFS_Cycles_axioms_def
 
-(* Split into multiple statements or not? *)
 lemma DFS_Cycles_correct_final:
   assumes "Pair_Graph_U_RBT.pair_graph_u_invar G" "rbt_inv V"
     "Tree2.set_tree (V::(('a::linorder) rbt)) = dVs (Pair_Graph_U_RBT.digraph_abs G)"
@@ -192,54 +150,7 @@ proof-
   show "DFS_Cycles_state.cycle (DFS_Cycles' G V) = (\<exists>u c. decycle (Pair_Graph_U_RBT.ugraph_abs G) u c)"
     by blast
 qed
-  
 
-
-thm insort_key_desc_stable
-
-(* NOTE: Maybe don't need quotient type but typedef? \<Rightarrow> for making sure that elements of pair are 
-non-equal *)
-(* TODO HOW DOES TYPEDEF WORK? \<Rightarrow> don't need for now, maybe do later
-\<Rightarrow> Also maybe just use uEdge and assume that elements are not equal for now at least *)
-
-value "uEdge True True"
-(*
-definition uEdge_rel :: "('v * 'v) \<Rightarrow> ('v * 'v) \<Rightarrow> bool" where
-  "uEdge_rel = (\<lambda>(u1, v1) (u2, v2). (u1 = u2) \<and> (v1 = v2))"
-
-quotient_type 'v uEdge_quot = "'v * 'v" / "uEdge_rel"
-  morphisms Rep_Integ Abs_Integ
-proof (rule equivpI)
-  show "reflp uEdge_rel" by (auto simp: reflp_def uEdge_rel_def)
-  show "symp uEdge_rel" by (auto simp: symp_def uEdge_rel_def)
-  show "transp uEdge_rel" by (auto simp: transp_def uEdge_rel_def)
-qed
-*)
-
-definition uEdge_rel :: "('v * 'v) \<Rightarrow> ('v * 'v) \<Rightarrow> bool" where
-  "uEdge_rel = (\<lambda>(u1, v1) (u2, v2). {u1, v1} = {u2, v2})"
-
-quotient_type 'v uEdge_quot = "'v * 'v" / "uEdge_rel"
-  morphisms Rep_Integ Abs_Integ
-proof (rule equivpI)
-  show "reflp uEdge_rel" by (auto simp: reflp_def uEdge_rel_def)
-  show "symp uEdge_rel" by (auto simp: symp_def uEdge_rel_def)
-  show "transp uEdge_rel" by (auto simp: transp_def uEdge_rel_def)
-qed
-
-(* NOTE probably don't need quotient type stuff *)
-
-(*
-typedef 'v uedge_new = "{uEdge (a::'v) (b::'v) | a b . a \<noteq> b}"
-  sorry
-*)
-
-(*
-term "(uEdge (0::nat) (1::nat))::(nat uedge_new)"
-
-lemma
-  "(e::('v uedge_new)) = uEdge a b \<Longrightarrow> a \<noteq> b" 
-*)
 
 text \<open>Instantiations for Greedy\<close>
 
@@ -255,9 +166,6 @@ lemma rbt_subseteq_correct:
   sorry
 
 
-
-(* TODO NOW first instantiate everything for Best_In_Greedy (probably just with uEdge for now)
-===> WHAT TO DO ABOUT ASSUMPTION that uEdges elements should not be equal? *)
 
 lemma rbt_size_correct:
   "rbt_inv X \<longrightarrow> size X = card (Tree2.set_tree X)"
@@ -276,27 +184,8 @@ interpretation Custom_Set_RBT: Custom_Set
     using rbt_subseteq_correct rbt_size_correct by blast
   done
 
-(* NOTE probably won't need this interpretation below, will just be indep function \<Rightarrow> Although do we specify indep 
-function in indep system specs or in matroid? \<Rightarrow> Probably in indep system system specs 
-\<Longrightarrow> TODO Do we need two parameters or not? We have set_of_sets_isin and indep_set
-\<Longrightarrow> TODO NEED TO CONSIDER THIS/ASK 
-Current possible idea: just define set_of_sets_isin as type (('s \<Rightarrow> bool) \<Rightarrow> 's \<Rightarrow> bool) and
-as set_of_sets_isin f a = f a, and then define indep_set as actual independence function with type
- ('s \<Rightarrow> bool), \<Rightarrow> or alternatively just define one parameter indep_impl as ('s \<Rightarrow> bool), already in
-indep system/matroid, then don't need to specify anything else in Matroids_Greedy
-*)
-
-(* TODO LATER REMOVE UNNECESSARY FUNCTIONS, Set_RBT interpretation *)
 
 definition "set_of_sets_isin f a = f a"
-
-(*
-interpretation Set_RBT: Set
-  where empty = set_of_sets_empty and insert = set_of_sets_insert and delete = set_of_sets_delete and 
-    isin = "set_of_sets_isin :: ('e rbt \<Rightarrow> bool) \<Rightarrow> 'e rbt \<Rightarrow> bool" and set = to_set_of_sets and invar = set_of_sets_inv 
-  apply (subst Set_def)
-  sorry
-*)
 
 interpretation Matroid_Specs_Inst: Matroid_Specs
   where set_empty = "\<langle>\<rangle>" and set_insert = insert_rbt and set_delete = delete_rbt and set_inv = "rbt_inv::(('e::linorder) rbt \<Rightarrow> bool)" and
@@ -315,9 +204,7 @@ result is basis/valid solution and matroid opt
 LATER: Add necessary assumptions to encoding locale (maybe don't even need this) *)
 
 
-(* IDEA NOW: maybe here in context, just specify 'e :: linorder and assume we have functions v1, v2 which 
-extract vertices from edge, then later (for executing everything on an example) can maybe instantiate
-relevant vertex and edge types as enum with a list, which should also satisfy linorder 
+(*
 
 ===> HERE just assume v1, v2, edge of functions on arbitrary 'v and 'e types, then instantiate
 with concrete types for executing an example
@@ -330,7 +217,6 @@ with concrete types for executing an example
 \<Longrightarrow> IMPORTANT: Do I really need assumption that for any edge e, components are non-equal?
 \<Rightarrow> Maybe either remove this assumption or e.g. require this only for a certain set of edges 
 *)
-value "uEdge (3::nat) (4::nat) = uEdge 3 4"
 
 
 (* TODO NOW define indep function with subset check and DFS_Cycles', also need to ! negate ! result
@@ -371,16 +257,8 @@ interpretation Kruskal_Graphs_Matroids: Graphs_Matroids_Encoding
   by blast
 
 
-
-
-
-(* TODO Best_In_Greedy instantiation probably needs to be within graph context *)
-
-
-
 (* When formulating final statement: operate in a context fixing a valid graph G or somehow else?
 \<Rightarrow> TODO !! What about c and order? *)
-
 
 
 (*
@@ -397,7 +275,7 @@ definition "cost_nonnegative (c::(('v set) \<Rightarrow> rat)) \<equiv> \<forall
 term Kruskal_Graphs_Matroids.graph_to_edges
 term Kruskal_Graphs_Matroids.edges_to_graph
 
-(* TODO NOW PUT SOME THINGS OUTSIDE OF CONTEXT (ESP KRUSKAL ITSELF) !! *)
+
 context
   fixes input_G :: "(('v::linorder) * ('v rbt)) rbt" and v1_of :: "('e::linorder) \<Rightarrow> 'v"
     and v2_of :: "('e::linorder) \<Rightarrow> 'v" and edge_of :: "'v \<Rightarrow> 'v \<Rightarrow> 'e"
@@ -933,18 +811,5 @@ definition order where "order = []"
 value "Kruskal_MST' (Leaf::((nat \<times> nat rbt) rbt)) c order"
 *)
 
-
-
-(* TODO how to instantiate a type as linorder easily using a list? *)
-(* TODO import HOL-Library.Product_Lexorder, then can just use pair as linorder *)
-
-(*
-thm carrier_graph_matroid_def
-thm DFS_Cycles_Interp.initial_state_def
-*)
-
-(* value "DFS_Cycles_state.cycle DFS_Cycles_Interp.initial_state" *)
-
-(* value "DFS_Cycles' (\<langle>\<rangle>::((nat \<times> (nat rbt)) rbt)) (\<langle>\<rangle>::(nat rbt))" *)
 
 end
