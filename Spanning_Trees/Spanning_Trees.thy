@@ -3,9 +3,6 @@ theory Spanning_Trees
     Matroids_Greedy.Matroids_Theory
 begin
 
-(* TODO: should everything be inside graph_abs context or not?
-Should has no_cycle be defined outside the context or not? *)
-
 context graph_abs
 begin
 
@@ -40,8 +37,8 @@ lemma has_no_cycle_indep_subset:
 
 
 
-(* TODO reorganise some of the following lemmas (put into e.g. Undirected_Set_Graphs, put outside
-of graph_abs context or use subset_graph/subgraph locale *)
+(* TODO later: maybe reorganise some of the following lemmas
+(put into e.g. Undirected_Set_Graphs, put outside of graph_abs context or use subset_graph/subgraph locale *)
 
 lemmas graph_abs_subset = graph_abs_mono[OF graph_abs_axioms]
 
@@ -67,7 +64,7 @@ lemma walk_betw_imp_epath: (* TODO maybe also add this to adaptor code *)
 
 
 
-(* TODO: Some of the following theorems before the augment property could maybe be in Undirected_Set_Graphs *)
+(* TODO later: Some of the following theorems before the augment property could maybe be in Undirected_Set_Graphs *)
 
 lemma has_no_cycle_ex_unique_path:
   "(insert {u, v} X) \<subseteq> G \<Longrightarrow> has_no_cycle (insert {u, v} X) \<Longrightarrow> {u, v} \<notin> X \<Longrightarrow> \<nexists>p. walk_betw X u p v"
@@ -377,7 +374,7 @@ next
       ultimately have card_component_edges: "card (component_edges (insert e F) C) = 
         card (component_edges F (connected_component F u)) +
         card (component_edges F (connected_component F v)) + 1"
-        (* TODO maybe simplify proof *)
+        (* TODO later: maybe simplify proof *)
         by (metis (no_types, lifting) "3"(3) One_nat_def \<open>connected_component F u \<in> connected_components F\<close>
         \<open>connected_component F v \<in> connected_components F\<close> \<open>{{x, y} |x y. {x, y} \<subseteq> C \<and> {x, y} = e} = {{u, v}}\<close>
         card.empty card.insert card_Un_disjoint component_edges_disj component_edges_expr component_edges_subset
@@ -527,7 +524,7 @@ proof-
     by (simp add: in_set_conv_nth)
   then obtain i where "i < length p" "p ! i = {v, w}" by blast
   
-  then have "p = take i p @ [{v, w}] @ drop (i + 1) p" (* Do we need this statement? *)
+  then have "p = take i p @ [{v, w}] @ drop (i + 1) p"
     by (metis Suc_eq_plus1 append.assoc append_take_drop_id hd_drop_conv_nth take_hd_drop)
   
   with \<open>distinct p\<close>
@@ -882,7 +879,7 @@ lemma graph_indep_system:
   where carrier = "G" and indep = has_no_cycle
   using graph_matroid by blast *)
 
-(* --------------------------- *)
+(* ----------------------------------------------------------------------------------------------- *)
 
 definition "is_spanning_forest X \<equiv> has_no_cycle X \<and> (\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. {v, w} \<in> G \<longrightarrow> reachable X v w)"
 
@@ -949,25 +946,13 @@ qed
 end
 
 
-(* TODO put statements together to show that has_no_cycle satisfies abstract matroid locale properties
-(interpretation or just property?) *)
-(* TODO define spanning_tree property (as having no cycle + every pair of vertices being connected), 
-show that spanning_tree property is equivalent to being a basis of cycle matroid *)
-
-
-
-
-
-
-
 
 context Pair_Graph_U_Specs
 begin
 
 context
   fixes G::'adj
-  assumes pair_graph_u_inv: "pair_graph_u_invar G" (* TODO how to handle this assumption? also,
-  automation which we would have in Pair_Graph_U_Specs file does not carry over *)
+  assumes pair_graph_u_inv: "pair_graph_u_invar G"
 begin
 
 
@@ -985,17 +970,12 @@ lemma graph_abs_ugraph:
   apply (simp add: graph_abs_def)
   using ugraph_dblton_graph ugraph_finite by force
 
-(* Normal lemma or interpretation of graph_abs? *)
 (*
 interpretation ugraph_abs_inst: graph_abs
   where E = "ugraph_abs G"
   apply (simp add: graph_abs_def)
   using ugraph_edges ugraph_finite by auto
 *)
-
-(* Should everything here be done inside an instantiation or not? Does it matter? *)
-(* term ugraph_abs_inst.D *)
-
 
 
 
@@ -1019,17 +999,6 @@ lemma cycle_equivalence:
   "(\<exists>c. cycle' (digraph_abs G) c) = (\<exists>u c. decycle (ugraph_abs G) u c)"
   using graph_abs.cycle'_iff_decycle[OF graph_abs_ugraph] ugraph_abs_digraph_abs
   by simp
-
-
-(* TODO NOW connect DFS stuff (undir and dir, DFS result with instantiation), prove that spanning tree =
-basis wrt has no cycle
-\<Longrightarrow> IMPORTANT: When instantiating implementation indep function, do we need to assume/compute somehow
-that input set is subset of G/E/carrier/whatever? Is this a problem or can we just instantiate with
-indep X = DFS_Cycles_inst' (edges_to_graph X)?
-\<Longrightarrow> Might need to add if-expression before which checks whether the input set is a subset of the carrier,
-if yes, then continue with cycle check, otherwise return false
-*)
-
 
 
 end

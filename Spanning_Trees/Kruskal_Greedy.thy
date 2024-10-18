@@ -243,13 +243,16 @@ lemma
 
 text \<open>Instantiations for Greedy\<close>
 
+lemma tree_split_case:
+  "(case t of Leaf \<Rightarrow> True | _ \<Rightarrow> False) = (t = Leaf)"
+  by (fastforce split: tree.splits) 
+
 fun rbt_subseteq :: "('a::linorder) rbt \<Rightarrow> 'a rbt \<Rightarrow> bool" where
   "rbt_subseteq t1 t2 = (case (RBT.diff t1 t2) of Leaf \<Rightarrow> True | _ \<Rightarrow> False)"
 
 lemma rbt_subseteq_correct:
   "rbt_inv t1 \<Longrightarrow> rbt_inv t2 \<Longrightarrow> (rbt_subseteq t1 t2) = (Tree2.set_tree t1 \<subseteq> Tree2.set_tree t2)"
   sorry
-
 
 
 
@@ -389,14 +392,24 @@ print_interps Pair_Graph_U_Specs
 
 term Kruskal_Graphs_Matroids.graph_to_edges
 
+definition "cost_nonnegative (c::(('v set) \<Rightarrow> rat)) \<equiv> \<forall>e. c e \<ge> 0"
+
+term Kruskal_Graphs_Matroids.graph_to_edges
+term Kruskal_Graphs_Matroids.edges_to_graph
+
 (* TODO NOW PUT SOME THINGS OUTSIDE OF CONTEXT (ESP KRUSKAL ITSELF) !! *)
 context
   fixes input_G :: "(('v::linorder) * ('v rbt)) rbt" and v1_of :: "('e::linorder) \<Rightarrow> 'v"
     and v2_of :: "('e::linorder) \<Rightarrow> 'v" and edge_of :: "'v \<Rightarrow> 'v \<Rightarrow> 'e"
+    and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
   (* assumes pair_graph_u: "Pair_Graph_U_RBT.pair_graph_u_invar graph" *) (* TODO THIS ASSM *)
 begin
 
+(* term "Kruskal_Graphs_Matroids.graph_to_edges edge_of" *)
 (* TODO do we need these two definitions? Maybe just turn into abbreviations? *)
+
+abbreviation Kruskal_G_to_E :: "(('v::linorder) \<times> ('v rbt)) rbt \<Rightarrow> ('e::linorder) rbt" where
+  "Kruskal_G_to_E \<equiv> Kruskal_Graphs_Matroids.graph_to_edges edge_of"
 
 definition Kruskal_E_to_G :: "('e::linorder) rbt \<Rightarrow> ('v \<times> ('v rbt)) rbt" where
   "Kruskal_E_to_G = Kruskal_Graphs_Matroids.edges_to_graph v1_of v2_of"
@@ -484,9 +497,14 @@ interpretation Kruskal_Greedy: Best_In_Greedy
   apply (subst Best_In_Greedy_def)
   using Matroid_Specs_Inst.Matroid_Specs_axioms by blast
 
+term Kruskal_Greedy.valid_solution 
+term Kruskal_Greedy.nonnegative 
+term Kruskal_Greedy.valid_order
+
 thm Kruskal_Greedy.BestInGreedy_correct_1
 thm Kruskal_Greedy.BestInGreedy_correct_3
 thm Kruskal_Greedy.BestInGreedy_matroid_iff_opt
+
 
 (* 
 We have (at least) two cost functions: 
@@ -640,7 +658,7 @@ proof-
     (\<nexists>u c. decycle (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G E)) u c))"
     unfolding Kruskal_E_to_G_def
     using Kruskal_Graphs_Matroids.subset_iff_graph_to_edges_subset[OF assms carrier_inv]
-    by (metis Kruskal_Greedy.Kruskal_E_to_G_def carrier_converted_back)
+    by (metis)
   finally show "indep_graph_matroid E =
     (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G E) \<subseteq> Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G carrier_graph_matroid) \<and>
      (\<nexists>u c. decycle (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G E)) u c))" .
@@ -798,9 +816,9 @@ fun Kruskal_MST :: "(('v::linorder) * ('v rbt)) rbt" where
   "Kruskal_MST = Kruskal_E_to_G (best_in_greedy_state.result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c order)))"
 *)
 
-fun Kruskal_MST :: "('e::linorder \<Rightarrow> rat) \<Rightarrow> ('e list) \<Rightarrow> (('v::linorder) * ('v rbt)) rbt" where
-  "Kruskal_MST c order =
-    Kruskal_E_to_G (best_in_greedy_state.result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c order)))"
+fun Kruskal_MST :: "('e::linorder list) \<Rightarrow> (('v::linorder) * ('v rbt)) rbt" where
+  "Kruskal_MST order =
+    Kruskal_E_to_G (best_in_greedy_state.result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c' order)))"
 
 context
   assumes pair_graph_u: "Pair_Graph_U_RBT.pair_graph_u_invar input_G"
@@ -816,9 +834,30 @@ thm G_edges_abs.is_spanning_forest_def
 thm Kruskal_Greedy.BestInGreedy_correct_3[OF Kruskal_BestInGreedy_axioms[OF pair_graph_u]
     Kruskal_sort_desc_axioms Kruskal_indep_system_axioms[OF pair_graph_u]]
 
+
+lemma Kruskal_Greedy_opt_inst:
+  assumes "Kruskal_Greedy.nonnegative c'" "Kruskal_Greedy.valid_order order" "Kruskal_Greedy.valid_solution X"
+  shows "sum c' (Tree2.set_tree X) \<le> sum c'
+           (Tree2.set_tree (result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c' order))))"
+proof-
+  from Kruskal_Greedy.BestInGreedy_matroid_iff_opt[OF Kruskal_BestInGreedy_axioms[OF pair_graph_u]
+    Kruskal_sort_desc_axioms Kruskal_indep_system_axioms[OF pair_graph_u]]
+    Kruskal_matroid_axioms[OF pair_graph_u]
+    assms Kruskal_Greedy.c_set_def
+  have "Kruskal_Greedy.c_set c' (Tree2.set_tree X) \<le>
+    Kruskal_Greedy.c_set c' (Tree2.set_tree (result (Kruskal_Greedy.BestInGreedy (Kruskal_Greedy.initial_state c' order))))"
+    by blast
+  with Kruskal_Greedy.c_set_def show ?thesis by metis
+qed
+
+
+
+
+
+
 lemma Kruskal_correct_final_1:
-  assumes "Kruskal_Greedy.nonnegative c" "Kruskal_Greedy.valid_order order" (* WRONG ASSUMPTIONS !! *)
-  shows "G_edges_abs.is_spanning_forest (Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST c order))"
+  assumes "Kruskal_Greedy.nonnegative c'" "Kruskal_Greedy.valid_order order" (* WRONG ASSUMPTIONS !! *)
+  shows "G_edges_abs.is_spanning_forest (Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST order))"
   sorry
 
 
@@ -826,17 +865,34 @@ thm Kruskal_matroid_axioms[OF pair_graph_u]
 thm Kruskal_Greedy.BestInGreedy_matroid_iff_opt[OF Kruskal_BestInGreedy_axioms[OF pair_graph_u]
     Kruskal_sort_desc_axioms Kruskal_indep_system_axioms[OF pair_graph_u]]
 
-term "(Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST c order))"
+term "(Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST order))"
 lemma Kruskal_correct_final_2:
-  assumes "Kruskal_Greedy.nonnegative c" "Kruskal_Greedy.valid_order order" (* WRONG ASSUMPTIONS !! *)
+  assumes "cost_nonnegative c" "Kruskal_Greedy.valid_order order" (* WRONG ASSUMPTIONS !! *)
     (* introduce new nonnegative predicate, maybe find some way to get order based on existing stuff or assume 
     function*)
     "Pair_Graph_U_RBT.pair_graph_u_invar G'"
     "Pair_Graph_U_RBT.ugraph_abs G' \<subseteq> Pair_Graph_U_RBT.ugraph_abs input_G"
     "G_edges_abs.is_spanning_forest (Pair_Graph_U_RBT.ugraph_abs G')"
   (* shows "sum c (Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST c order)) \<le> sum c (Pair_Graph_U_RBT.ugraph_abs G')"  *)
-  shows "True"
-  sorry
+  shows "sum c (Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST order)) \<le> sum c (Pair_Graph_U_RBT.ugraph_abs G')"
+proof-
+  from \<open>G_edges_abs.is_spanning_forest (Pair_Graph_U_RBT.ugraph_abs G')\<close>
+    have "graph_abs.has_no_cycle (Pair_Graph_U_RBT.ugraph_abs input_G) (Pair_Graph_U_RBT.ugraph_abs G')"
+    unfolding G_edges_abs.is_spanning_forest_def by blast
+
+  thm indep_graph_matroid_expr_3[OF pair_graph_u]
+
+  thm Kruskal_Greedy.BestInGreedy_matroid_iff_opt[OF Kruskal_BestInGreedy_axioms Kruskal_sort_desc_axioms
+      Kruskal_indep_system_axioms] pair_graph_u
+
+  have "Kruskal_Greedy.valid_solution (Kruskal_G_to_E G')" sorry
+
+  have "sum c (Pair_Graph_U_RBT.ugraph_abs G') \<ge> 0" sorry
+
+
+  show "sum c (Pair_Graph_U_RBT.ugraph_abs (Kruskal_MST order)) \<le> sum c (Pair_Graph_U_RBT.ugraph_abs G')" sorry
+qed
+  
 
 (* TODO NOW: JUST GET FINAL THEOREM WORKING, WRITE DOWN CONVERSIONS \<Rightarrow> SORRY THE REST AND MENTION WAS NOT POSSIBLE
 DUE TO TIME CONSTRAINTS *)
@@ -867,7 +923,7 @@ definition v1_of :: "('v \<times> 'v) \<Rightarrow> ('v::linorder)" where
 definition v2_of :: "('v \<times> 'v) \<Rightarrow> ('v::linorder)" where
   "v2_of e = snd e"
 
-definition "Kruskal_MST' input_G c order = Kruskal_MST input_G v1_of v2_of edge_of c order"
+definition "Kruskal_MST' input_G c' order = Kruskal_MST input_G v1_of v2_of edge_of c' order"
 
 (*
 definition c where "c e = 0"
