@@ -1861,7 +1861,7 @@ lemma DFS_Aux_ret_1[ret_holds_intros]:
   "DFS_Aux_ret_1_conds (dfs_aux_state) \<Longrightarrow> DFS_Aux_ret_1_conds (DFS_Aux_ret1 dfs_aux_state)"
   by (auto simp: DFS_Aux_ret1_def elim!: call_cond_elims intro!: call_cond_intros )
 
-(* TODO simplify this proof (or at least make sure it conforms to linter) *)
+(* TODO later: maybe simplify this proof (or at least make sure it conforms to linter) *)
 lemma ret1_holds[ret_holds_intros]:
    assumes "DFS_Aux_dom dfs_aux_state" "cycle (DFS_Aux dfs_aux_state) = True" "cycle dfs_aux_state = False"
    shows "DFS_Aux_ret_1_conds (DFS_Aux dfs_aux_state)" 
@@ -1899,7 +1899,6 @@ proof(induction  rule: DFS_Aux_induct[OF assms(1)])
     done
 qed
 
-(* TODO maybe re-do numbering of correctness theorems *)
 
 lemma DFS_Aux_correct_1_ret_1:
   "\<lbrakk>DFS_Aux_ret_1_conds dfs_aux_state; cycle dfs_aux_state; invar_cycle_true dfs_aux_state\<rbrakk> \<Longrightarrow>

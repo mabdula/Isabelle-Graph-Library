@@ -3122,9 +3122,8 @@ qed
 
 end
 
-(* TODO rename these theorems *)
 
-lemma aux:
+lemma bound_tight_set_aux:
   "F \<subseteq> carrier' \<Longrightarrow> B1 \<subseteq> F \<Longrightarrow>
     B1 \<subseteq> X \<Longrightarrow> X \<subseteq> carrier' - (F - B1) \<Longrightarrow> (\<exists>Y. X = Y \<union> B1 \<and> Y \<subseteq> carrier' - F)"
   by (smt (verit) Diff_Un Diff_eq_empty_iff Diff_partition Diff_subset Diff_subset_conv double_diff
