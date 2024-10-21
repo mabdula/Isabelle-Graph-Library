@@ -1795,7 +1795,7 @@ next
 qed
 
 subsubsection \<open>Generating $H$\<close>
-
+(*
 text \<open>$P$ and $C$ get disaggregated into another $s$-$t$-path and some cycles.
 Again, this is done via induction on the number of forward-backward pairs present in the setting.
 Foremost, it is clear that any $FBP$ has to be between the path and some cycle,
@@ -1815,7 +1815,7 @@ But this cycle may now contain $FBP$s. For getting around this issue, we first a
  By this, all the circuits are decomposed into cycles of equal costs,
 but without any $FBP$s. Finally, the induction hypothesis may be applied.
 
-\<close>
+\<close>*)
 
 lemma AA_not_in_FBPs: "AA redge \<notin> \<Union> (FBPs E)"
   unfolding FBPs_def isFBP_def by auto
