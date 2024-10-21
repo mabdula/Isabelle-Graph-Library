@@ -1795,27 +1795,6 @@ next
 qed
 
 subsubsection \<open>Generating $H$\<close>
-(*
-text \<open>$P$ and $C$ get disaggregated into another $s$-$t$-path and some cycles.
-Again, this is done via induction on the number of forward-backward pairs present in the setting.
-Foremost, it is clear that any $FBP$ has to be between the path and some cycle,
- since "internal" $FBP$s are impossible  by construction.
-Fix an arbitrary $FBP$ between the current path $P$ and some cycle $C$. 
-Now, we look at two cases. It might be that this the only forward-backward pair between $P$ and $C$.
-By dropping it we simply get a new $s$-$t$-path and get rid of one cycle.
-Still, there are no $FBP$s among or between cycles and the induction hypothesis can be applied immediately.
-
-However, the second case is a little bit more sophisticated.
-Instead of this arbitrary $FBP$ we now consider the first and last $FBP$ between $C$ and 
-$P$ according to the order given by $P$.
-
-By deleting those, we obtain a new $s$-$t$-path and some new cycle.
-But this cycle may now contain $FBP$s. For getting around this issue, we first apply the
- auxiliary lemma stated straight above.
- By this, all the circuits are decomposed into cycles of equal costs,
-but without any $FBP$s. Finally, the induction hypothesis may be applied.
-
-\<close>*)
 
 lemma AA_not_in_FBPs: "AA redge \<notin> \<Union> (FBPs E)"
   unfolding FBPs_def isFBP_def by auto
