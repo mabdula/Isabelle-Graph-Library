@@ -1,5 +1,6 @@
 theory Undirected_Set_Graphs
-imports "Directed_Set_Graphs.enat_misc" "HOL-Eisbach.Eisbach_Tools"
+  imports "Directed_Set_Graphs.enat_misc" "HOL-Eisbach.Eisbach_Tools" "HOL-Library.FuncSet" 
+(*needed for proofs on number + cardinality of comps*)
 begin
 
 subsection \<open>Misc\<close>
@@ -654,6 +655,10 @@ proof-
     by (induction arbitrary: a b rule: path.induct) (auto simp: nonempty_path_walk_between assms(2,3))
 qed
 
+lemma walk_betw_length:"a \<noteq> b \<Longrightarrow> walk_betw E a p b \<Longrightarrow> length p \<ge> 2" for a b E p
+    unfolding walk_betw_def 
+    by(induction p rule: edges_of_path.induct) auto
+
 definition reachable where
   "reachable G u v = (\<exists>p. walk_betw G u p v)"
 
@@ -684,6 +689,10 @@ lemma reachable_refl:
   "u \<in> Vs G \<Longrightarrow> reachable G u u"
   by(auto simp add: reachable_def dest: walk_reflexive)
 
+lemma not_reachable_empt: "reachable {} u v \<Longrightarrow> False"
+  using subset_path_Vs[of empty _, simplified Vs_def Union_empty] 
+  by (auto simp add: reachable_def walk_betw_def)
+
 definition connected_component where
   "connected_component G v = {v'. v' = v \<or> reachable G v v'}"
 
@@ -693,8 +702,15 @@ lemma connected_component_rechability:
   "connected_component G v = {v'. v' = v \<or> (reachable G v v')}"
   by (auto simp add: reachable_def connected_component_def)
 
-definition connected_components where
-  "connected_components G \<equiv> {vs. \<exists>v. vs = connected_component G v \<and> v \<in> (Vs G)}"
+definition "comps X E = connected_component E ` X"
+
+text \<open>The abbreviation is there to allow for the definition as a lemma.\<close>
+
+definition "connected_components_aux G \<equiv> comps (Vs G) G"
+abbreviation "connected_components G \<equiv> connected_components_aux G"
+
+lemma connected_components_def: "connected_components G = {vs. \<exists>v. vs = connected_component G v \<and> v \<in> (Vs G)}"
+  by(auto simp add: connected_components_aux_def comps_def)
 
 lemma in_own_connected_component: "v \<in> connected_component G v"
   unfolding connected_component_def by simp
@@ -2775,7 +2791,15 @@ of the vertices. Then we can use the following definition, which gives the conne
 graph (V, X), which includes the singleton connected components (the vertices in V which are not covered
 by the edge set X).\<close> 
 
-definition "connected_components' V X = connected_components X \<union> ((\<lambda>v. {v}) ` (V - (Vs X)))"
+text \<open>The abbreviation is there to allow for the definition as a lemma.\<close>
+definition "connected_components'_aux V X = comps (V \<union> (Vs X)) X"
+
+abbreviation "connected_components' V X \<equiv> connected_components'_aux V X"
+
+lemma connected_components'_def:
+  "connected_components' V X = connected_components X \<union> ((\<lambda>v. {v}) ` (V - (Vs X)))"
+  using connected_components_notE_singletons image_iff 
+  by (fastforce simp add: connected_components'_aux_def connected_components_def comps_def)
 
 lemma connected_components'_disj:
   "\<lbrakk>C \<noteq> C'; C \<in> connected_components' V X; C' \<in> connected_components' V X\<rbrakk> \<Longrightarrow> C \<inter> C' = {}"
@@ -2894,6 +2918,251 @@ proof (rule ccontr, goal_cases)
   with \<open>\<nexists>u. decycle G' u p\<close> show ?case by blast
 qed
 
+lemma connected_component_non_empt: "connected_component A x \<noteq> {}"
+  by(auto simp add: connected_component_def)
 
+thm connected_components'_def[where X = E for E, where V = X for X]
 
+lemma number_comps_below_vertex_card:
+  assumes "finite E" "finite X"
+  shows "card (comps X E) \<le> card X"
+  using assms(2) card_image_le 
+  by(auto simp add: comps_def connected_component_def)
+
+lemma new_edge_disjoint_components: 
+  assumes "u = u"  "v = v" "E = E"
+  defines "E_new \<equiv> insert {u,v} E"
+  shows "connected_component E_new u = connected_component E_new v"
+  using connected_components_member_eq in_con_comp_insert
+  by (fastforce simp add: E_new_def)
+
+lemma unite_disjoint_components_by_new_edge:
+  assumes "u \<notin>connected_component E x" "v \<notin>connected_component E x"
+  defines "E_new \<equiv> insert {u,v} E"
+  shows "connected_component E x =connected_component E_new x "
+  using  assms(1,2) connected_component_in_components[of x ]
+         unchanged_connected_component[of u "connected_component E x" v ] 
+         connected_components_notE_singletons[of x ] in_Vs_insertE
+  by (cases "x \<in> Vs E") 
+     (auto intro: in_Vs_insertE[of x "{u, v}" E]
+        simp add: connected_components_closed'' in_own_connected_component E_new_def)
+
+lemma insert_edge_endpoints_same_component:
+  assumes E_new_def: "E_new \<equiv> insert {u,v} E"
+  shows "connected_component E u \<union> connected_component E v = connected_component E_new u "
+    using assms  new_edge_disjoint_components[of u v E] con_comp_subset[of E "insert {u, v} E"] 
+          unite_disjoint_components_by_new_edge[of u E _ v] connected_components_member_sym 
+    by(fastforce simp add: E_new_def)
+
+text \<open>If an edge is added between two different components, how do the components change?\<close>
+
+lemma new_component_insert_edge: 
+  assumes "connected_component E u \<noteq> connected_component E v" "u \<in> X" "v \<in> X"
+  defines "E_new \<equiv> insert {u,v} E"
+    shows "comps X E_new = comps X E - {connected_component E u,  connected_component E v} \<union> 
+                             {connected_component E u \<union> connected_component E v}"
+proof
+  show "comps X E_new
+    \<subseteq> comps X E - {connected_component E u, connected_component E v} \<union>
+       {connected_component E u \<union> connected_component E v}"
+  proof
+    fix x
+    assume xasms:" x \<in> comps X E_new"
+    thus "x \<in> comps X E - {connected_component E u, connected_component E v} \<union>
+              {connected_component E u \<union> connected_component E v}"
+    proof(cases "x = (connected_component E u \<union> connected_component E v)")
+      case True
+      then show ?thesis by simp
+    next
+      case False
+      then obtain w where w: "w \<in> X " "x = connected_component E_new w" 
+        using xasms unfolding comps_def E_new_def by blast
+      have "connected_component E_new w = connected_component E w"
+      proof(rule ccontr)
+        assume "connected_component E_new w \<noteq> connected_component E w"
+        hence 11:"connected_component E w \<subset> connected_component E_new w"
+          by (simp add: E_new_def con_comp_subset psubsetI subset_insertI)
+        hence 12:"u \<in> connected_component E w \<or> v \<in> connected_component E w" unfolding E_new_def 
+          using unite_disjoint_components_by_new_edge[of u E w v] by auto
+        have " x = connected_component E u \<union> connected_component E v"
+        proof(subst w(2), rule)
+          show "connected_component E_new w \<subseteq> connected_component E u \<union> connected_component E v"
+            using 12 insert_edge_endpoints_same_component[of E_new u v E]  E_new_def connected_components_member_eq[of u E_new w] 
+                     connected_components_member_sym[of u E ]  11 insert_edge_endpoints_same_component[of E_new u v E]
+                     connected_components_member_eq[of v E_new w]
+                     connected_components_member_sym[of v E ]  insert_edge_endpoints_same_component[of E_new v u E]
+              by fastforce
+            show " connected_component E u \<union> connected_component E v \<subseteq> connected_component E_new w"
+                using 12 E_new_def 11 new_edge_disjoint_components[of u v E]
+                    con_comp_subset[of E E_new] connected_components_member_eq[of u _ w] 
+                connected_components_member_eq[of v _ w]
+                by blast           
+        qed
+        thus False using False by simp
+      qed 
+      moreover hence "x \<noteq> connected_component E u" "x \<noteq> connected_component E v"
+        using E_new_def assms(1) connected_components_member_eq[of u E_new w]
+              in_con_comp_insert[of v u E]  connected_components_member_eq[of v E u]
+              in_connected_componentI2[of u u E] w(2) connected_components_member_eq[of v E_new w]
+              in_con_comp_insert[of u v E, simplified]  connected_components_member_eq[of u E v]
+              in_connected_componentI2[of v v E] doubleton_eq_iff[of u v v u, simplified] 
+        by auto
+      ultimately have "x \<in> comps X E - {connected_component E u, connected_component E v}" 
+        by (simp add: comps_def w(1) w(2))
+      thus "x \<in> comps X E - {connected_component E u, connected_component E v} \<union>
+         {connected_component E u \<union> connected_component E v}" by simp
+    qed
+  qed
+  show "comps X E - {connected_component E u, connected_component E v} \<union>
+       {connected_component E u \<union> connected_component E v}
+        \<subseteq> comps X E_new"
+  proof
+    fix x
+    assume xasms: "x \<in> comps X E - {connected_component E u, connected_component E v} \<union>
+             {connected_component E u \<union> connected_component E v} "
+    thus "x \<in> comps X E_new "
+    proof(cases "x \<noteq> connected_component E u \<union> connected_component E v")
+      case True
+        then obtain w where w: "w \<in> X " "x = connected_component E w" "w \<noteq> u" "w\<noteq>v"
+        using xasms True by (auto simp add: comps_def E_new_def)
+      then show ?thesis 
+        using unite_disjoint_components_by_new_edge[of u E w v]  True  connected_components_member_eq[of u E w] 
+              connected_components_member_eq[of v E w] xasms
+        by (auto simp add: E_new_def comps_def)
+    next
+      case False
+      hence False: "x = connected_component E u \<union> connected_component E v" by simp
+      then show ?thesis using insert_edge_endpoints_same_component[of E_new u v E, OF E_new_def] assms(2)
+        by(simp add: comps_def)
+    qed
+  qed
+qed
+
+lemma unequal_components_disjoint: 
+"connected_component E u \<noteq> connected_component E v \<Longrightarrow> u \<in> X \<Longrightarrow>
+ v \<in> X \<Longrightarrow> connected_component E u \<inter> connected_component E v = {}"
+  by (metis Int_emptyI connected_components_member_eq)
+
+lemma finite_verts_finite_no_comps: "finite E \<Longrightarrow> finite X \<Longrightarrow> finite (comps X E)" 
+  by (simp add: comps_def)
+
+lemma same_component_after_insert: 
+  assumes "u \<in> X" "v \<in> X" "E=E"
+  defines "E_new \<equiv> insert {u,v} E"
+    shows "connected_component E_new u = connected_component E_new v"
+  using connected_components_member_eq[of v E_new u] in_con_comp_insert[of v u E] 
+  by (simp add: E_new_def)
+
+text \<open>By adding an edge between two different components, the number of components decreases.\<close>
+
+theorem card_decrease_component_join:
+  assumes "connected_component E u \<noteq> connected_component E v" "u \<in> X" "v \<in> X" "finite X" "finite E"
+  defines "E_new \<equiv> insert {u,v} E"
+  shows   "card (comps X E_new) + 1 = card (comps X E)"
+proof-
+  have comps:"comps X E_new = comps X E - {connected_component E u,  connected_component E v} \<union> 
+                             {connected_component E u \<union> connected_component E v}"
+    using new_component_insert_edge assms by simp
+  have aa:"connected_component E u \<union> connected_component E v
+         \<in> comps X E - {connected_component E u, connected_component E v} \<Longrightarrow>
+         connected_component E u \<union> connected_component E v = connected_component E x \<Longrightarrow>
+         x \<in> X \<Longrightarrow> False" for x
+    using connected_components_member_eq[of u E] in_own_connected_component[of u E]
+    by blast
+  have bb: "connected_component E u \<union> connected_component E v
+    \<in> comps X E - {connected_component E u, connected_component E v} \<Longrightarrow>
+    connected_component E u \<union> connected_component E v \<in> connected_component E ` X"
+    using  comps_def[of X E] connected_components_member_eq[of v E_new u]  
+     in_con_comp_insert[of v u E] E_new_def
+    by simp
+  have "card (comps X E_new) = card (comps X E - {connected_component E u,  connected_component E v}) + 1"
+    using finite_verts_finite_no_comps assms  aa bb comps
+    by (fastforce intro: card_insert_disjoint elim: imageE[of "connected_component E u \<union> connected_component E v"
+                                       "connected_component E" X])+
+  moreover have "card (comps X E - {connected_component E u,  connected_component E v}) = 
+                card (comps X E - {connected_component E u}) -1"
+    by (simp add: assms(1) assms(2) assms(3) comps_def)
+  moreover have "card (comps X E - {connected_component E u}) > 0"
+    using assms(1) assms(3) assms(4) assms(5)  
+          card_0_eq[of "comps X E - {connected_component E u}"] comps_def[of X E] finite_verts_finite_no_comps[of E X] 
+    by fastforce
+  moreover have " card (comps X E - {connected_component E u}) = 
+                  card (comps X E) -1"
+    by (simp add: assms(1) assms(2) assms(3) comps_def)
+  moreover have "card (comps X E) > 0" 
+    using calculation(3) calculation(4) by linarith
+  ultimately show ?thesis by simp
+qed
+
+lemma same_component_set_mono: 
+"A \<subseteq> B \<Longrightarrow> connected_component A x = connected_component A y \<Longrightarrow>
+     connected_component B x = connected_component B y"
+  using in_own_connected_component[of x A]
+  by (cases "x=y") (auto intro!: connected_components_member_eq in_connected_componentI reachable_subset[of A _ _ B] in_connected_componentE[of x A y])
+
+lemma same_connected_component_SOME:"x \<in> X \<Longrightarrow> connected_component A
+ (SOME xa. xa \<in> connected_component A x \<and> xa \<in> X)
+ = connected_component A x" 
+  using in_own_connected_component some_eq_ex[of "\<lambda> xa. xa \<in> connected_component A x \<and> xa \<in> X"]
+  by (force intro!: connected_components_member_eq)
+
+lemma number_of_comps_anti_mono_strict:
+  fixes A B
+  assumes "B \<subseteq> A" "finite A" "x \<in> X" "connected_component B x \<subset> connected_component A x" "Vs A \<subseteq> X"
+          "finite X"
+  shows "card (comps X B) > card (comps X A)" 
+proof-
+  define f where "f = (\<lambda> C. let v = (SOME v. C = connected_component A v \<and> v \<in> X) in connected_component B v)"
+  have some_value:"C \<in> (comps X A) \<Longrightarrow> C= connected_component A (SOME v. C = connected_component A v \<and> v \<in> X) \<and> 
+                            (SOME v. C = connected_component A v \<and> v \<in> X) \<in> X"
+    for C 
+    using some_eq_ex[of "\<lambda> v. C = connected_component A v \<and> v \<in> X"]
+    by(force simp add: comps_def) 
+  have uneq_comps_disj:"C \<in> (comps X A) \<Longrightarrow> D \<in> (comps X A) \<Longrightarrow> C \<noteq> D \<Longrightarrow> f C \<inter> f D = {}" for C D
+    unfolding  f_def  Let_def 
+    apply(rule unequal_components_disjoint[of _ _ _ UNIV, simplified])
+    using some_value[of C] some_value[of D]
+          same_component_set_mono[OF assms(1)]
+    by blast
+  have never_same:"C \<in> (comps X A) \<Longrightarrow> D \<in> (comps X A) \<Longrightarrow> C \<noteq> D \<Longrightarrow> f C \<noteq> f D" for C D
+    using uneq_comps_disj[of C D]  connected_component_non_empt by (fastforce simp add:  f_def)
+  have img_subs:"f ` (comps X A) \<subseteq>  (comps X B)"
+    by (simp add: f_def comps_def image_subsetI some_value)
+  obtain v where v_prop:"v \<in> X" "v \<in> connected_component A x" "v \<notin> connected_component B x"
+    using assms in_connected_component_in_edges[of _ A x] by force 
+  have x_not_in_comp_v: "x \<notin> connected_component B v"
+    using connected_components_member_sym v_prop(3) by fastforce
+  have "connected_component B x \<in>  f ` (comps X A) \<Longrightarrow>
+        connected_component B v \<in>  f ` (comps X A) \<Longrightarrow> False"
+    using  connected_components_member_eq[OF v_prop(2)] 
+     in_own_connected_component[of v B] same_component_set_mono[OF assms(1)]
+      some_value  v_prop(3) f_def  
+    by (metis (no_types, lifting) imageE)
+  hence not_all_b_comp_chosen:"f ` (comps X A) \<subset> (comps X B)"
+    using v_prop(1) assms(3) img_subs by(auto simp add: comps_def)
+  have "card (comps X A) = card ( f ` (comps X A))"
+    using never_same by (force intro!: sym[OF card_image] simp add: inj_on_def)
+  also have "... < card (comps X B)"
+    using psubset_card_mono[OF _ not_all_b_comp_chosen] assms
+    by(simp add: comps_def)
+  finally show ?thesis by simp
+qed
+
+lemma number_of_comps_anti_mono:"B \<subseteq> A  \<Longrightarrow> finite B \<Longrightarrow> finite X \<Longrightarrow> card (comps X B) \<ge> card (comps X A)"
+  unfolding comps_def
+  apply(rule card_inj[where f = "\<lambda> C. (let x = (SOME x. x \<in> C \<and> x \<in> X) in connected_component B x)"])
+  subgoal
+    using  some_eq_ex[of "\<lambda> x. (x = _ \<or> reachable A _ x) \<and> x \<in> X"] 
+    by(fastforce intro!: imageI simp add:  Pi_def connected_component_def Let_def Vs_def)
+  subgoal
+    unfolding inj_on_def Let_def
+    apply simp
+    apply (rule, rule)
+    subgoal for x y
+      apply(subst (2) sym[OF same_connected_component_SOME[of x X A]], simp)
+      apply(subst (2) sym[OF   same_connected_component_SOME[of y X A]], simp)
+      by (metis (no_types, lifting) con_comp_subset connected_components_member_eq 
+          in_connected_componentI2 in_mono)
+    done 
+  by simp
 end

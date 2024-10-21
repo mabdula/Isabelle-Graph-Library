@@ -139,7 +139,7 @@ definition "finite_neighbs \<equiv> (\<forall>N. finite (t_set N))"
 
 
 definition neighbourhood::"'adj \<Rightarrow> 'v \<Rightarrow> 'neighb" where
-  "neighbourhood G v \<equiv> (case (lookup G v) of Some neighb \<Rightarrow> neighb | _ \<Rightarrow> neighb_empty)"
+  "(neighbourhood G v) = (case (lookup G v) of Some neighb \<Rightarrow> neighb | _ \<Rightarrow> neighb_empty)"
 
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 

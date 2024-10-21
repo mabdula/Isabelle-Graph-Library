@@ -1129,4 +1129,24 @@ lemma no_outgoing_last:
 lemma not_vwalk_bet_empty: "\<not> Vwalk.vwalk_bet {} u p v"
   by (auto simp: vwalk_bet_def neq_Nil_conv split: if_splits)
 
+lemma edges_in_vwalk_split:
+     "(u, v) \<in> set (edges_of_vwalk p) \<Longrightarrow> \<exists> p1 p2. p = p1 @[u,v]@p2" 
+proof(induction p rule: edges_of_vwalk.induct)
+  case (3 a b p)
+  show ?case 
+  proof(cases "(a, b) = (u, v)")
+    case True
+    hence "a # b # p = [u, v] @ p" by auto
+    then show ?thesis by auto
+  next
+    case False
+    hence "(u, v) \<in> set (edges_of_vwalk (b # p))"
+      using 3(2) by auto
+    then obtain p1 p2 where "b # p = p1 @ [u, v] @ p2"
+      using 3(1) by auto
+    hence "a#b # p = (a#p1) @ [u, v] @ p2" by auto
+    then show ?thesis by fast
+  qed
+qed simp+
+
 end

@@ -1,7 +1,7 @@
 theory Awalk
   imports 
     "Adaptors/Pair_Graph_Library_Awalk_Adaptor"
-    Vwalk               
+    Vwalk         
 begin
 
 no_notation Digraph.dominates ("_ \<rightarrow>\<index> _")
@@ -828,10 +828,142 @@ proof (rule ccontr, goal_cases)
   with \<open>\<not>cycle' E' p\<close> show ?case by blast
 qed
 
+lemma awalk_intros: " e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> awalk E u [e] v"
+                    " e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e 
+                                        \<Longrightarrow> v = fst (hd (d#es)) \<Longrightarrow> awalk E v (d#es) w
+                                        \<Longrightarrow> awalk E u (e#d#es) w"
+  by (simp add: arc_implies_awalk) (simp add: awalk_Cons_iff)
 
+lemma awalk_induct: 
+  assumes "es \<noteq> []"
+          "awalk E u es v "
+          "\<And> E u v e. e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> P E u [e] v"
+          "\<And> E u v w e d es. e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e\<Longrightarrow> v = fst (hd (d#es))\<Longrightarrow> 
+                            P E v (d#es) w  \<Longrightarrow> P E u (e#d#es) w"
+  shows   " P E u es v"
+  using assms apply(induction es arbitrary: u, simp)
+  subgoal for a es u
+    by(cases es, simp, metis awalk_Cons_iff awalk_Nil_iff, simp, metis awalk_Cons_iff)
+  done
 
+lemma awalk_inductive_simps: 
+  assumes "a3 \<noteq> []"
+  shows   "awalk a1 a2 a3 a4 =
+((\<exists>e E u v.
+     a1 = E \<and> a2 = u \<and> a3 = [e] \<and> a4 = v \<and> e \<in> E \<and> u = fst e \<and> v = snd e) \<or>
+ (\<exists>e E u v s d ds w.
+     a1 = E \<and>
+     a2 = u \<and>
+     a3 = e # d # ds \<and>
+     a4 = w \<and> e \<in> E \<and> u = fst e \<and> v = snd e \<and> s = fst d \<and> awalk E v (d # ds) w))"
+  apply rule
+  subgoal
+   apply(rule awalk_induct[OF assms, where P = " \<lambda> a1 a2 a3 a4 .
+    ((\<exists>e E u v.
+     a1 = E \<and> a2 = u \<and> a3 = [e] \<and> a4 = v \<and> e \<in> E \<and> u = fst e \<and> v = snd e) \<or>
+    (\<exists>e E u v s d ds w.
+     a1 = E \<and>
+     a2 = u \<and>
+     a3 = e # d # ds \<and>
+     a4 = w \<and> e \<in> E \<and> u = fst e \<and> v = snd e \<and> s = fst d \<and> awalk E v (d # ds) w))"], simp)
+      by (blast, metis awalk_Cons_iff awalk_intros(1) list.distinct(1))
+    subgoal
+    apply(rule disjE, simp)
+      apply (simp add: arc_implies_awalk)
+      apply (auto intro: awalk_intros(2) simp add:  awalk_Cons_iff )
+  done
+  done
 
+lemma awalk_cases:
+"a3 \<noteq> [] \<Longrightarrow> awalk a1 a2 a3 a4 \<Longrightarrow>
+(\<And>e E u v.
+    a1 = E \<Longrightarrow>
+    a2 = u \<Longrightarrow> a3 = [e] \<Longrightarrow> a4 = v \<Longrightarrow> e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> P) \<Longrightarrow>
+(\<And>e E u v s d ds w.
+    a1 = E \<Longrightarrow>
+    a2 = u \<Longrightarrow>
+    a3 = e # d # ds \<Longrightarrow>
+    a4 = w \<Longrightarrow>
+    e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> s = fst d \<Longrightarrow> awalk E v (d # ds) w \<Longrightarrow> P) \<Longrightarrow>
+P"
+ using awalk_induct[of a3 a1 a2 a4 ]
+  by (metis awalk_inductive_simps)
 
+lemma subset_mono_awalk:
+  assumes "awalk A u es v"
+  shows   "A \<subseteq> C   \<Longrightarrow> awalk C u es v"
+  using assms by(auto simp add: awalk_def dVs_def)
 
+lemma subset_mono_awalk':
+  assumes "awalk A u es v" "es \<noteq> []"
+  shows   "set es \<subseteq> C   \<Longrightarrow> awalk C u es v"
+  using assms  unfolding awalk_def dVs_def 
+  apply(cases es, simp add: cas.simps(1))
+  subgoal for a list
+      using cas.simps(2)[of u _ _ list v]by (cases a) auto
+    done
 
+lemma awalk_fst_last:
+  assumes "es \<noteq> []" "awalk E u es v"
+  shows "fst (hd es) = u \<and> snd (last es) = v"
+  by(induction E u es v rule: awalk_induct) (auto simp add: assms)
+
+definition "unconstrained_awalk P = (\<exists> s t. cas s P t)"
+
+lemma unconstrained_awalk_drop_hd:"unconstrained_awalk (x#p) \<Longrightarrow> unconstrained_awalk p"
+  by (metis unconstrained_awalk_def cas.simps(2) surj_pair)
+
+lemma unconstrained_awalk_snd_verts_eq:"unconstrained_awalk ((a, b)#(c, d)# p) \<Longrightarrow>  b = c"
+  by (simp add: unconstrained_awalk_def)
+
+lemma awalk_UNIV_rev: "awalk UNIV s es t \<Longrightarrow> awalk UNIV t (map prod.swap (rev es)) s" for es
+  apply(induction es arbitrary: s t rule: induct_list012)
+  using awalk_Nil_iff apply fastforce
+  using awalk_inductive_simps apply fastforce
+  subgoal for x y xs s t
+  apply(subst rev.simps(2), subst map_append)
+    apply(rule awalk_appendI[of _ _ _ "snd x"])
+     apply (meson awalk_Cons_iff)
+    by (metis UNIV_I arc_implies_awalk awalk_Cons_iff list.simps(8) list.simps(9) prod.swap_def)
+  done
+
+lemma non_empty_awalk_fixed_vertex_exhange:"xs \<noteq> [] \<Longrightarrow> awalk_verts s xs = awalk_verts t xs"
+  by(cases xs) auto
+
+lemma awalk_verts_append_last:
+  shows" awalk_verts s (xs @[ (c,d)]) = butlast (awalk_verts s (xs)) @[c , d]"
+  by(induction xs arbitrary: d s c) auto
+
+lemma awalk_verts_append_last':
+  shows"(butlast (awalk_verts s (xs @ [(v, u)]))) @ [u] =
+        awalk_verts s (xs @ [(v, u)])"
+  by(induction xs arbitrary: s) auto
+
+lemma awalk_image: 
+ assumes "awalk E u p v " "p \<noteq> []"and g_def: "g= (\<lambda> (x,y). (f x, f y))"
+ shows "awalk (g ` E) (f u) (map g p) (f v)"
+  by(rule awalk_induct[OF assms(2,1) ])
+    (auto intro: awalk_intros simp add: g_def)
+
+lemma awalk_hd: "awalk E u p v \<Longrightarrow> p \<noteq> [] \<Longrightarrow> prod.fst (hd p) = u"
+  by (simp add: awalk_fst_last)
+
+lemma awalk_last: "awalk E u p v \<Longrightarrow> p \<noteq> [] \<Longrightarrow> prod.snd (last p) = v"
+  by (simp add: awalk_fst_last)
+
+lemma closed_w_rotate: "closed_w E (c1@c2) \<Longrightarrow> closed_w E (c2@c1)" 
+  unfolding closed_w_def
+  apply(cases c1 rule: rev_cases) apply simp
+  apply(cases c2) apply simp
+  subgoal for ys y a list
+    apply(rule exI[of _ "fst a"])
+    by (metis Nil_is_append_conv awalk_Cons_iff awalk_appendI awalk_append_iff length_greater_0_conv)
+  done
+
+lemma awalk_map:
+  assumes  "p \<noteq> []" "awalk E u p v" "g =(\<lambda> e. (f (fst e), f (snd e)))"
+  shows "awalk (g ` E) (f u) (map g p) (f v)"
+  using assms(3)
+  by(induction rule: awalk_induct[OF assms(1,2)])
+    (auto intro: awalk_intros(2)[OF _ _  refl] simp add: arc_implies_awalk)
 end

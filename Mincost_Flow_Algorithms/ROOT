@@ -1,0 +1,26 @@
+session "Mincost_Flow_Algorithms" = "HOL-Library" +
+  options [document = pdf, document_output = "output"]
+
+sessions
+  Berge_Lemma
+  Mincost_Flow_Theory
+
+theories
+  PathAugOpt
+  SSP_Preps
+  SuccessiveShortestPath
+  Scaling
+  IntermediateSummary
+  LoopA
+  LoopB
+  Orlins
+  Orlins_Implementation
+  LoopATime
+  LoopBTime
+  LaminarFamily
+  OrlinsTime
+  
+
+document_files
+  "root.tex"
+

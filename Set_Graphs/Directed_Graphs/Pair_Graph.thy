@@ -164,4 +164,10 @@ lemma in_dVsE: "v \<in> dVs G \<Longrightarrow> \<lbrakk>(\<And>u. (u, v) \<in> 
 lemma neighoubrhood_union[simp]: "neighbourhood (G \<union> G') u = neighbourhood G u \<union> neighbourhood G' u"
   by (auto simp: neighbourhood_def)
 
+lemma vs_are_gen: "dVs (set E_impl) = set (map prod.fst E_impl) \<union> set (map prod.snd E_impl)"
+  by(induction E_impl) auto
+
+lemma dVs_swap: "dVs (prod.swap ` E) = dVs E"
+  by(auto simp add: dVs_def)
+
 end

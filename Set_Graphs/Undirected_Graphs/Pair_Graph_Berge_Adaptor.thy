@@ -732,6 +732,14 @@ lemma edges_of_path_Vs': "Vs edge_set \<subseteq> set p"
   unfolding edge_set_def
   by (simp add: path_induced.subgraph.Vs_edges_of_path edges_of_vwalk_dVs)
 end
-
+(*proposed by Thomas: A general lemma on the connection between walks in directed an undirected graphs, respectively.
+This seems to be the lowest point in the theory graph where all definitions are available.
+Better move it elsewhere?*)
+lemma vwalk_arcs_to_edges_of_path: "e \<in> set (vwalk_arcs Q) \<Longrightarrow>
+                                        {fst e, snd e} \<in> set (edges_of_path Q)" for e Q
+ apply(induction Q, simp)
+  subgoal for a Q
+   by(cases Q, auto)
+ done
 
 end

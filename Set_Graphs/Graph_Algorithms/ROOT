@@ -8,6 +8,9 @@ session "Graph_Algorithms" = "Directed_Set_Graphs" +
     BFS_2
     DFS_Cycles_Aux
     DFS_Cycles
+    Bellman_Ford
+    Set2_Join_RBT
+    DFS_RBT
 
   document_files
     "root.tex"

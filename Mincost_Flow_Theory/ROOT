@@ -1,0 +1,24 @@
+session "Mincost_Flow_Theory" = "HOL-Library" +
+  options [document = pdf, document_output = "output"]
+
+sessions
+  Directed_Set_Graphs
+
+theories [document=false]
+  Arith_Lemmas
+  List_Lemmas
+  Logic_Lemmas
+
+theories
+  Augmentation
+  Decomposition
+  Hitchcock_Reduction
+  Optimality
+  Preliminaries
+  Residual
+  STFlow
+  
+
+document_files
+  "root.tex"
+

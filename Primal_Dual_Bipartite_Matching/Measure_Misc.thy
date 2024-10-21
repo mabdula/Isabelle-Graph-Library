@@ -71,7 +71,7 @@ proof -
   from \<open>0 \<le> \<theta>\<close> have sym_diff_singleton: "sym_diff {0..<\<theta>} {0..\<theta>} = {\<theta>}"
     by auto
 
-  then have *: "\<integral>\<^sup>+x\<in>{0..<\<theta>}. f x \<partial>lborel = \<integral>\<^sup>+x\<in>{0..\<theta>}. f x \<partial>lborel" for f
+  then have *: "(\<integral>\<^sup>+x\<in>{0..<\<theta>}. f x \<partial>lborel) = (\<integral>\<^sup>+x\<in>{0..\<theta>}. f x \<partial>lborel)" for f
     by (auto intro!: nn_integral_null_delta)
 
   have "?L = enn2real (\<integral>\<^sup>+y. (exp(y-1) * indicator {..<\<theta>} y) \<partial>uniform_measure lborel {0..1})"
