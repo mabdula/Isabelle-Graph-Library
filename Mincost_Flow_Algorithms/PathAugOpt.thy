@@ -1845,8 +1845,9 @@ proof-
   have "finite CCC'"
     by (simp add: CCC'_def assms(7))
   moreover have "C \<in> CCC' \<Longrightarrow> hcycle C" for C
-  proof(subst (asm) CCC'_def, rule in_insertE[of C "AA _ # _" CCC], simp, goal_cases)
-    case 1
+  proof(subst (asm) CCC'_def, rule in_insertE[of C "AA (create_edge_residual t s) # P" CCC], goal_cases)
+    case 2
+    note 1 = 2
     show ?case 
     proof(rule hcycleI)
       show "hpath (AA (F (create_edge t s)) # P)"
@@ -1859,7 +1860,7 @@ proof-
       show "distinct (AA (F (create_edge t s)) # P)" 
         using assms(14,5) by force
     qed
-  qed (simp add: assms(8))
+  qed (simp add: assms(8))+
   moreover have "C \<in> CCC' \<Longrightarrow> D \<in> CCC' \<Longrightarrow> D \<noteq> C \<Longrightarrow> set D \<inter> set C = {}" for C D
     apply((subst (asm) CCC'_def)+, rule in_insertE_pair[of C _ _ D], simp, simp, simp)
     using assms(10)[of C D] assms(14)[of "AA (F (create_edge t s))", simplified] assms(12)[of D] 
@@ -2020,7 +2021,7 @@ qed
 text \<open>Additionally, costs do not change by wrapping with $CC$s and $PP$s.\<close>
 
 lemma distinct_CC_sum:"distinct P \<Longrightarrow> sum \<cc> (set P) = sum cc (set (map CC P))"
-proof(induction P, simp)
+proof(induction P)
   case (Cons a P)
   have 1:" set (map CC [a]) \<inter> set (map CC P)= {}"
     using distinct_map Cons.prems
@@ -2034,10 +2035,10 @@ proof(induction P, simp)
   also have "... = sum cc (set (map CC P) \<union> {CC a})"
     using 1 by simp
   finally show ?case  by simp
-qed
+qed simp
 
 lemma distinct_PP_sum: "distinct P \<Longrightarrow> sum \<cc> (set P) = sum cc (set (map PP P))"
-proof(induction P, simp)
+proof(induction P)
   case (Cons a P)
   have 1:" set (map PP [a]) \<inter> set (map PP P)= {}"
     using  distinct_map  Cons.prems
@@ -2051,7 +2052,7 @@ proof(induction P, simp)
   also have "... = sum cc (set (map PP P) \<union> {PP a})"
     using 1 by simp
   finally show ?case by simp
-qed
+qed simp
 
 text \<open>For distinct paths, costs are reduced to the notion of costs already used
  for augmenting paths.\<close>
@@ -2737,7 +2738,7 @@ proof-
          But this constitutes a forward-backward pair and thus, gives rise to a contradiction.\<close>
 
     have P'_in_Gf:"e \<in>  set P' \<Longrightarrow> rcap f (to_redge e) > 0" for e
-    proof(cases "rcap f (to_redge e) > 0", simp)
+    proof(cases "rcap f (to_redge e) > 0")
       case False
       assume e_assm:" e \<in> set P'"
       hence "rcap f' (to_redge e) >0" using edges_rcap[of e] False by simp
@@ -2776,7 +2777,7 @@ proof-
     text \<open>Analogue argument concerning the cycles.\<close>
 
     moreover have CCC'_in_Gf:"e \<in>  set D \<Longrightarrow>D \<in> CCC' \<Longrightarrow>rcap f (to_redge e) > 0" for D e
-     proof(cases "rcap f (to_redge e) > 0", simp)
+     proof(cases "rcap f (to_redge e) > 0")
       case False
       assume e_assm: "e \<in>  set D" "D \<in> CCC'"     
       hence "rcap f' (to_redge e) >0" using edges_rcap[of e] False by auto

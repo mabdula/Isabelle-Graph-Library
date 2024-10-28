@@ -359,10 +359,14 @@ lemma set_invar_E':"set_invar \<E>'_impl"
                    \<E>'_impl_def \<E>1_impl_def \<E>2_impl_def \<E>3_impl_def  \<E>_impl_finite_def \<E>_impl_infty_def)
 
 lemma V_new_graph:"dVs (new_make_pair_gen (fst \<circ> make_pair) (snd \<circ> make_pair) ` to_set \<E>'_impl) = vertex ` \<V> \<union> edge ` (\<E> - \<E>\<^sub>\<infinity>)"
-proof(subst infty_edges_def, auto simp add:  \<E>'_impl_def \<E>1_impl_def \<E>2_impl_def \<E>_impl_finite_def \<E>_impl_infty_def \<E>3_impl_def
-            to_set_def new_make_pair_gen_def new_fstv_gen_def new_sndv_gen_def
-            image_Un image_comp Es_are us_are, goal_cases)
-  case (1 x)
+proof-
+  have 1:"x \<notin> edge `
+             (set \<E>_impl - {e \<in> set \<E>_impl. the_default \<infinity> (flow_lookup \<u>_impl e) = \<infinity>}) \<Longrightarrow>
+         x \<in> dVs ((\<lambda>x. (edge x, vertex (fst (make_pair x)))) `
+                   {x \<in> set \<E>_impl. the (flow_lookup \<u>_impl x) \<noteq> \<infinity>}) \<Longrightarrow>
+         x \<in> vertex ` dVs (make_pair ` set \<E>_impl)" for x
+  proof(goal_cases)
+  case (1)
    then obtain e where "x = edge e \<or> x = vertex (fst (make_pair e))" "e \<in> set \<E>_impl" 
                   " the (flow_lookup \<u>_impl e) \<noteq> \<infinity>" by(auto simp add: dVs_def)
    moreover hence "x \<noteq> edge e" using u_domain 1(1) 
@@ -370,24 +374,50 @@ proof(subst infty_edges_def, auto simp add:  \<E>'_impl_def \<E>1_impl_def \<E>2
   ultimately show ?case 
     unfolding dVs_def
     by(fastforce intro!: imageI intro: exI[of _ "{fst (make_pair e), snd (make_pair e)}"] simp add: dVs_def)
-next
-  case (2 x)
+  qed
+  moreover have 2:"x \<notin> edge `
+             (set \<E>_impl - {e \<in> set \<E>_impl. the_default \<infinity> (flow_lookup \<u>_impl e) = \<infinity>}) \<Longrightarrow>
+         x \<in> dVs ((\<lambda>x. (edge x, vertex (snd (make_pair x)))) `
+                   {x \<in> set \<E>_impl. the (flow_lookup \<u>_impl x) \<noteq> \<infinity>}) \<Longrightarrow>
+         x \<in> vertex ` dVs (make_pair ` set \<E>_impl)" for x
+  proof(goal_cases)
+    case 1
+    note 2 = this
    then obtain e where "x = edge e \<or> x = vertex (snd (make_pair e))" "e \<in> set \<E>_impl" 
                   " the (flow_lookup \<u>_impl e) \<noteq> \<infinity>" by(auto simp add: dVs_def)
-  moreover hence "x \<noteq> edge e" using u_domain 2(1) 
+    moreover hence "x \<noteq> edge e" using u_domain 2(1) 
      by(force simp add: dom_def the_default_def Es_are case_simp(1) to_set_def)
-  ultimately show ?case 
+    ultimately show ?case 
     unfolding dVs_def
     by(fastforce intro!: imageI intro: exI[of _ "{fst (make_pair e), snd (make_pair e)}"] simp add: dVs_def)
-next
-  case (3 x)
+   qed
+   moreover have 3:"x \<notin> edge `
+             (set \<E>_impl - {e \<in> set \<E>_impl. the_default \<infinity> (flow_lookup \<u>_impl e) = \<infinity>}) \<Longrightarrow>
+         x \<in> dVs ((\<lambda>x. (vertex (fst (make_pair x)), vertex (snd (make_pair x)))) `
+                   {x \<in> set \<E>_impl. the (flow_lookup \<u>_impl x) = \<infinity>}) \<Longrightarrow>
+         x \<in> vertex ` dVs (make_pair ` set \<E>_impl)" for x
+   proof(goal_cases)
+     case 1
+     note 3=1
    then obtain e where " x = vertex (fst (make_pair e)) \<or> x = vertex (snd (make_pair e))" "e \<in> set \<E>_impl" 
                   " the (flow_lookup \<u>_impl e) = \<infinity>" by(auto simp add: dVs_def)
    thus ?case 
     unfolding dVs_def
     by(fastforce intro!: imageI intro: exI[of _ "{fst (make_pair e), snd (make_pair e)}"] simp add: dVs_def)
-next
-  case (4 xa)
+qed
+  moreover have 4:"vertex xa
+          \<notin> dVs ((\<lambda>x. (edge x, vertex (fst (make_pair x)))) `
+                  {x \<in> set \<E>_impl. the (flow_lookup \<u>_impl x) \<noteq> \<infinity>}) \<Longrightarrow>
+          vertex xa
+          \<notin> dVs ((\<lambda>x. (vertex (fst (make_pair x)), vertex (snd (make_pair x)))) `
+                  {x \<in> set \<E>_impl. the (flow_lookup \<u>_impl x) = \<infinity>}) \<Longrightarrow>
+          xa \<in> dVs (make_pair ` set \<E>_impl) \<Longrightarrow>
+          vertex xa
+          \<in> dVs ((\<lambda>x. (edge x, vertex (snd (make_pair x)))) `
+                  {x \<in> set \<E>_impl. the (flow_lookup \<u>_impl x) \<noteq> \<infinity>})" for xa
+  proof(goal_cases)
+    case 1
+   note 4 = 1
   obtain e where e_prop:"xa = fst (make_pair e) \<or> xa = snd (make_pair e)" "e \<in>  set \<E>_impl"
     using 4(3) by (auto simp add: dVs_def)  (metis fst_conv snd_conv)+
   show ?case 
@@ -408,8 +438,21 @@ next
     then show ?case 
       using 2 e_prop(2) by auto
   qed
-next
-  case (5 e)
+qed
+  moreover have 5:"edge e
+          \<notin> dVs ((\<lambda>x. (edge x, vertex (fst (make_pair x)))) `
+                  {x \<in> set \<E>_impl. the (flow_lookup \<u>_impl x) \<noteq> \<infinity>}) \<Longrightarrow>
+          edge e
+          \<notin> dVs ((\<lambda>x. (vertex (fst (make_pair x)), vertex (snd (make_pair x)))) `
+                  {x \<in> set \<E>_impl. the (flow_lookup \<u>_impl x) = \<infinity>}) \<Longrightarrow>
+          e \<in> set \<E>_impl \<Longrightarrow>
+          edge e
+          \<notin> dVs ((\<lambda>x. (edge x, vertex (snd (make_pair x)))) `
+                  {x \<in> set \<E>_impl. the (flow_lookup \<u>_impl x) \<noteq> \<infinity>}) \<Longrightarrow>
+          the_default \<infinity> (flow_lookup \<u>_impl e) = \<infinity>" for e
+  proof(goal_cases)
+    case 1
+    note 5 = 1
   have "the (flow_lookup \<u>_impl e) = \<infinity>"
     using 5(1) 5(3) by(auto simp add:dVs_def)
   moreover have "e \<in> dom(flow_lookup \<u>_impl)"
@@ -418,6 +461,13 @@ next
   ultimately show ?case
     by(auto simp add: dom_def the_default_def)
 qed
+  show ?thesis
+    by(subst infty_edges_def)
+      (auto simp add: \<E>'_impl_def \<E>1_impl_def \<E>2_impl_def \<E>_impl_finite_def \<E>_impl_infty_def \<E>3_impl_def
+            to_set_def new_make_pair_gen_def new_fstv_gen_def new_sndv_gen_def
+            image_Un image_comp Es_are us_are intro: 1 2 3 4 5)
+qed
+
 
 lemma filter_neg_filter_empty:"filter P xs = ys \<Longrightarrow> filter (\<lambda> x. \<not> P x) xs = zs 
       \<Longrightarrow> ys =   [] \<Longrightarrow> zs  = [] \<Longrightarrow> xs = []" 
@@ -596,7 +646,7 @@ corollary correctness_of_implementation_success:
 corollary correctness_of_implementation_failure:
  "return_impl (final_state_cap) = failure \<Longrightarrow> 
          \<nexists> f. isbflow  f \<b> "
-proof(rule, rule exE, simp, goal_cases)
+proof(rule nexistsI, goal_cases)
   case (1 f)
   have "flow_network.isbflow (new_fstv_gen (fst \<circ> make_pair)) (new_sndv_gen (fst \<circ> make_pair) (snd \<circ> make_pair))
        (new_make_pair_gen (fst \<circ> make_pair) (snd \<circ> make_pair)) (\<lambda>e. PInfty) (to_set \<E>'_impl) 
@@ -604,7 +654,7 @@ proof(rule, rule exE, simp, goal_cases)
         (selection_functions.\<b> \<b>'_impl)"
     apply(rule cost_flow_network.isbflow_cong[OF cost_flow_network3 refl])
     using V_new_graph   conjunct1[OF reduction_of_mincost_flow_to_hitchcock_general(2)[OF flow_network_axioms 
-                         1(3) refl, of "(\<lambda> _. 0)"]]
+                         1(2) refl, of "(\<lambda> _. 0)"]]
     by(auto intro: new_b_domain_cong 
          simp add: sym[OF E1_impl_are] sym[OF E2_impl_are] sym[OF E3_impl_are] collapse_union_ofE1E2E3)
   moreover have "\<nexists>f. flow_network.isbflow (new_fstv_gen (fst \<circ> make_pair)) (new_sndv_gen (fst \<circ> make_pair) (snd \<circ> make_pair))
@@ -962,12 +1012,12 @@ begin
 
 lemma no_infinite_cycle: "\<not>(\<exists>D. closed_w (make_pair' ` set \<E>_impl') (map make_pair' D) \<and>
        foldr (\<lambda>e. (+) (\<c>' e)) D 0 < 0 \<and> set D \<subseteq> set \<E>_impl' \<and> (\<forall>e\<in>set D. \<u>' e = PInfty))"
-proof(rule ccontr, simp, rule exE, simp, goal_cases)
+proof(rule nexistsI, goal_cases)
   case (1 D)
   have top: "set D \<subseteq> set \<E>_impl'"
   "foldr (\<lambda>e. (+) (\<c>' e)) D 0 < 0" 
     "closed_w (make_pair' ` set \<E>_impl') (map make_pair' D)" "(\<forall>e\<in>set D. \<u>' e = \<infinity>)" 
-    using 1(2) by auto
+    using 1(1) by auto
   have "new_edge (create_edge t s) \<in> set D"
     using top(1,2)
     by(induction D)(auto simp add: \<E>_impl'_def \<c>'_def c_lookup'_def)
@@ -1039,7 +1089,7 @@ notation is_s_t_flow ( "_ is _ -- _ flow")
 
 lemma correctness_of_implementation_failure:
  "return_impl final_state_maxflow = failure \<Longrightarrow> False"
-proof(rule ccontr, auto, goal_cases)
+proof(rule ccontr,  goal_cases)
   case 1
   have f_prop: "(\<lambda> x. 0) is s -- t flow" 
     using s_in_V t_in_V s_neq_t  u_non_neg

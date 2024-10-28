@@ -876,7 +876,7 @@ proof-
     qed
 
     have x'_neq_y': "x' \<noteq> y'" 
-    proof(rule ccontr, simp, goal_cases)
+    proof(rule ccontr, goal_cases)
       case 1
       hence "reachable \<FF> x y \<or> x = y"
         using x'_def y'_def r_def xx_def yy_def xy_def 
@@ -891,8 +891,10 @@ proof-
     qed 
 
       have e_not_in_F: "{x, y} \<notin> \<FF>"
-      proof(rule ccontr, simp, goal_cases)
+      proof(rule ccontr, goal_cases)
         case 1
+        hence "{x, y} \<in> \<FF>" by auto
+        note 1 = this
         hence "e \<in> \<F> state"
           using new_edge_disjoint_components[OF refl refl refl, of x y \<FF>] 
                 e_in_E' E'_def \<FF>_def
@@ -1292,23 +1294,26 @@ proof-
       by(simp add:  aux_invar_def invar_aux15_def state'_def \<FF>'_def \<FF>_def Vs_def \<FF>_imp'_def \<FF>_imp_def)
   next
     case 16
-    show ?case 
-      unfolding invar_aux16_def state'_def cards'_def
-    proof(auto,  goal_cases)
-      case (1 v)
+    have "v \<in> \<V> \<Longrightarrow> y' = r' v \<Longrightarrow> cards x + cards y = card (connected_component \<FF>' v)"
+      for v
+    proof(goal_cases)
+     case 1
       hence comp_is:"(connected_component \<FF>' v) = (connected_component \<FF> x) \<union> (connected_component \<FF> y)"      
         by (metis \<FF>'_def connected_components_member_eq fst_conv in_connected_componentI
               insert_edge_endpoints_same_component new_edge_disjoint_components
                 r'_def same_reachability x'_def x_def xx_def xy_def y_def)
-show ?case
+     show ?case
         apply(subst comp_is,subst card_Un_disjnt)
         using 1 all_invars(14) all_invars(10)  fste_V snde_V  all_invars(11)  e_in_E' 
               unequal_components_disjoint[of "to_graph (Algo_state.\<FF>_imp state)" "fst e" "snd e" UNIV, simplified] 
         by (auto intro!: finite_subset[of "connected_component _ _", OF _ \<V>_finite]
                  simp add: invar_aux16_def invar_aux11_def E'_def disjnt_def cards_def
                             \<FF>_imp_def \<FF>_def invar_aux10_def x_def y_def )
-    next
-      case (2 v)
+    qed
+    moreover have "v \<in> \<V> \<Longrightarrow> r' v \<noteq> y' \<Longrightarrow> cards v = card (connected_component \<FF>' v) " for v
+    proof(goal_cases)
+      case 1
+      note 2 = this
       hence neither_x'_nor_y':"r v \<noteq> x'" "r v \<noteq> y'"
         unfolding r'_def by auto
       have " x \<notin> connected_component \<FF> v" 
@@ -1327,6 +1332,9 @@ show ?case
         using all_invars(14) 2(1) F_rewrite 
         by (simp add: cards_def invar_aux16_def \<FF>_def \<FF>_imp_def)
     qed
+    ultimately
+      show ?case
+        by(auto simp add: invar_aux16_def state'_def cards'_def)
   next
     case 17
     show ?case
@@ -1430,7 +1438,7 @@ show ?case
       fix d
       show "not_blocked state' d = (d \<in> \<F> state' \<union> to_set (actives state'))"
         unfolding state'_def 
-      proof(simp, cases "e = d", goal_cases)
+      proof(cases "e = d", goal_cases)
         case 1
         then show ?case
           using  nb'_def "112" F_rewrite by auto
@@ -1443,7 +1451,7 @@ show ?case
           have " d \<notin> to_set E''" 
             by (simp add: E''_def True local.set_filter(1) split_beta)
           have "d \<notin> oedge ` to_rdgs to_pair to_rdg \<FF>"
-          proof(rule ccontr, simp, goal_cases)
+          proof(rule ccontr,  goal_cases)
             case 1
             hence "{fst d, snd d} \<in> \<FF>"
               using in_oedge_F_to_in_undirected_F invar_aux6_def to_rdg_def all_invars(5) 
@@ -2092,10 +2100,10 @@ have set_invar_E': "set_invar E'"
       assume asm: "thr2 \<ge> 0"  "invarA_1 thr2 state" "invarA_2 thr1 thr2 state"
                   "thr2 \<le> 2 * current_\<gamma> state" "thr1 \<le> 8*real N * current_\<gamma> state"
     show " invarA_2 thr1 thr2 (loopA_upd state)"
-    proof(subst sym[OF state_state'], 
-          simp add: invarA_2_def state'_def ,
-          rule)
-      fix d
+    proof-
+      have "d \<in> to_rdgs to_pair to_rdg' (to_graph \<FF>_imp') \<Longrightarrow>
+         thr1 - thr2 * real (card (connected_component (to_graph \<FF>_imp') (fst (oedge d)))) < f' (oedge d)" for d
+      proof-
       assume asm2:"d \<in> to_rdgs to_pair to_rdg' (to_graph \<FF>_imp')"
       hence "d \<in> \<EE>" 
         using invar_aux_pres_one_step[OF assms(2) assms(1), simplified sym[OF state_state']]
@@ -2206,6 +2214,9 @@ have set_invar_E': "set_invar E'"
         qed
       qed
     qed
+    thus ?thesis
+    by(auto simp add: sym[OF state_state'] invarA_2_def state'_def)
+  qed
   qed
 
   have "invar_gamma state \<Longrightarrow> thr2 \<ge> 0  \<Longrightarrow>invarA_1 thr2 state \<Longrightarrow> invarA_2 thr1 thr2 state \<Longrightarrow>
@@ -2418,8 +2429,9 @@ have set_invar_E': "set_invar E'"
     unfolding f'_def
     apply(cases "0 < b x'", subst if_P, simp)
     defer
-    proof(subst if_not_P, simp, goal_cases)
-      case 1
+  proof(subst if_not_P, goal_cases)
+    case 2
+    note 1 = 2
 
       have min_path:"is_min_path f y' x' (to_redge_path to_rdg' (rev Q))"
         unfolding is_min_path_def
@@ -2510,7 +2522,8 @@ have set_invar_E': "set_invar E'"
 
       thus ?case using 1 unfolding f'_def by simp
     next
-      case 2
+      case 3
+      note 2 = 3
 
       have min_path:"is_min_path f x' y' (to_redge_path to_rdg' Q)"
         unfolding is_min_path_def

@@ -519,7 +519,7 @@ lemma append_butlast_last_cancel: "p \<noteq> [] \<Longrightarrow> butlast p @ l
 
 lemma induct_list_length2: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. P [x,y]) 
 \<Longrightarrow> (\<And> xs x y z. P (xs@[x,y]) \<Longrightarrow> P(xs@[x,y,z])) \<Longrightarrow> P xs"
-proof(induction xs rule: rev_induct, simp)
+proof(induction xs rule: rev_induct)
   case (snoc z xs)
   note IH = this
   show ?case 
@@ -544,7 +544,7 @@ proof(induction xs rule: rev_induct, simp)
       then show ?thesis 
         using snoc.prems(1) by force
     qed
-  qed
+  qed simp
 
 lemma list_cases_betw: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. xs = [x,y] \<Longrightarrow> P ) 
 \<Longrightarrow> (\<And> ys x y. xs = [x]@ys@[y] ==> P) \<Longrightarrow> P"

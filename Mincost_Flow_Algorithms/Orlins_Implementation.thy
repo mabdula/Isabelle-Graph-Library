@@ -272,8 +272,19 @@ lemma abstract_conv_consist: "conv_invar to_rdg \<Longrightarrow>  to_rdg_abs = 
                  make_pair e = (x,y) \<Longrightarrow>
                  consist to_rdg'_abs"
   unfolding  abstract_conv_map_def add_direction_def Let_def
-proof((subst (asm) conv_map.map_update, (force intro: conv_map.invar_update)?)+,
-      (insert default_conv_to_rdg), goal_cases)
+proof(goal_cases)
+  case 1
+  have helper:"consist to_rdg'_abs" if assms:"conv_invar to_rdg"
+    "to_rdg_abs =
+    (\<lambda>e. if conv_lookup to_rdg e \<noteq> None then the (conv_lookup to_rdg e)
+          else default_conv_to_rdg e)"
+    "consist to_rdg_abs"
+    "to_rdg'_abs =
+    (\<lambda>ea. if ((conv_lookup to_rdg)((y, x) \<mapsto> B e, (x, y) \<mapsto> F e)) ea \<noteq> None
+           then the (((conv_lookup to_rdg)((y, x) \<mapsto> B e, (x, y) \<mapsto> F e)) ea)
+           else default_conv_to_rdg ea)"
+    "make_pair e = (x, y)" "consist default_conv_to_rdg"
+  proof(insert assms, goal_cases)
   case 1
   note top=this
   show ?case
@@ -292,6 +303,11 @@ proof((subst (asm) conv_map.map_update, (force intro: conv_map.invar_update)?)+,
      by (smt (z3) consist_fstv consist_sndv default_conv_to_rdg erev.simps(1)
  erev.simps(2) fun_upd_apply option.distinct(1) option.sel)
  qed
+qed
+  show ?thesis
+   by(insert 1, (subst (asm) conv_map.map_update, 
+         (force intro: conv_map.invar_update)?)+, (insert default_conv_to_rdg),
+         intro helper) auto
 qed
 
 lemma abstract_conv_homo_complex: "conv_invar to_rdg \<Longrightarrow>  to_rdg_abs = abstract_conv_map to_rdg  

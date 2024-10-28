@@ -129,6 +129,9 @@ constraints $u$ (validity), and
 
 definition "is_Opt b f \<equiv> f is b flow \<and> (\<forall> f'. (f' is b flow \<longrightarrow> \<C> f'  \<ge> \<C> f))"
 
+lemma is_OptI: "f is b flow \<Longrightarrow> (\<And> f'. f' is b flow \<Longrightarrow> \<C> f' \<ge> \<C> f ) \<Longrightarrow> is_Opt b f"
+  by(auto simp add: is_Opt_def)
+
 lemma ex_cong: "(\<And>e. e \<in> \<E> \<Longrightarrow> f e = f' e) \<Longrightarrow>
     (\<And>v. v \<in> \<V> \<Longrightarrow> b v = b' v) \<Longrightarrow>v \<in> \<V> \<Longrightarrow>  - ex f v = b v \<Longrightarrow> - ex f' v = b' v"
   by(auto simp add: ex_def delta_minus_def delta_plus_def)
@@ -145,18 +148,28 @@ lemma isbflow_cong: "(\<And> e. e \<in> \<E> \<Longrightarrow> f e = f' e) \<Lon
 
 lemma is_Opt_cong: "(\<And> e. e \<in> \<E> \<Longrightarrow> f e = f' e) \<Longrightarrow> (\<And> v. v \<in> \<V> \<Longrightarrow> b v = b' v) 
                     \<Longrightarrow> is_Opt b f \<Longrightarrow> is_Opt b' f'"
-proof(subst is_Opt_def, rule, auto, goal_cases)
+proof(goal_cases)
+  case 1
+  moreover have "(\<And>e. e \<in> \<E> \<Longrightarrow> f e = f' e) \<Longrightarrow> (\<And>v. v \<in> \<V> \<Longrightarrow> b v = b' v) \<Longrightarrow> is_Opt b f \<Longrightarrow> f' is b' flow"
+  proof(goal_cases)
   case 1
   then show ?case 
     using is_Opt_def isbflow_cong by blast
-next
-  case (2 g)
+  qed
+  moreover have "\<And>g. (\<And>e. e \<in> \<E> \<Longrightarrow> f e = f' e) \<Longrightarrow>
+           (\<And>v. v \<in> \<V> \<Longrightarrow> b v = b' v) \<Longrightarrow> is_Opt b f \<Longrightarrow> g is b' flow \<Longrightarrow> \<C> f' \<le> \<C> g"
+  proof(goal_cases)
+    case (1 g)
+    note 2 =1
   moreover hence "isbflow g b"
     using isbflow_cong[OF refl] by simp
   moreover have "\<C> f' = \<C> f" 
     using 2(1) flow_costs_cong by fastforce
   ultimately show ?case 
     by(simp add: is_Opt_def) 
+qed
+  ultimately show ?thesis
+    by(auto simp add: is_Opt_def)
 qed
 
 subsection \<open>Absence of Augmenting Cycles from Optimality\<close>

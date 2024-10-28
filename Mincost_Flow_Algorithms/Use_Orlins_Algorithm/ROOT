@@ -6,7 +6,7 @@ sessions
   Graph_Algorithms
 
 theories
-  RBT_Map_extension
+  RBT_Map_Extension
   Instantiation
   Usage_Pair_Graph
   Usage_Multigraph

@@ -1,5 +1,5 @@
-theory DFS_RBT
-  imports DFS "HOL-Data_Structures.RBT_Map" Set2_Join_RBT
+theory BFS_Example
+  imports BFS_2"HOL-Data_Structures.RBT_Map" Set2_Join_RBT
 begin
 
 definition "t_set \<equiv> Tree2.set_tree"
@@ -46,7 +46,7 @@ lemma Set2_satisfied: "Set2 neighb_empty neighb_delete isin t_set neighb_inv nei
   by(auto simp add: RBT_Set.empty_def neighb_empty_def neighb_delete_def t_set_def neighb_inv_def neighb_insert_def
                     neighb_union_def neighb_inter_def neighb_diff_def)
 
-global_interpretation dfs: DFS 
+global_interpretation bfs: BFS
 where insert = neighb_insert 
 and sel = sel 
 and neighb_empty = neighb_empty 
@@ -68,21 +68,3 @@ and neighbourhood=dfs.Graph.neighbourhood
 and dfs_impl = dfs.DFS_impl
   using Pair_Graph_Specs_satisfied Set2_satisfied 
   by(auto intro!: DFS.intro)
-
-definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
-                     (7,2), (7,4), (4,3), (3,4), (3,3), (9, 8), (8, 1), (4,5), (5,10)]"
-
-definition "vertices = remdups (map prod.fst edges @ map prod.snd edges)"
-
-definition "nbs v = foldr (\<lambda> x tree. insert x tree) (remdups (map prod.snd (filter (\<lambda> e. prod.fst e = v) edges))) neighb_empty"
-
-definition "G = foldr (\<lambda> x tree. update x (nbs x) tree) vertices  empty"
-
-value edges
-value vertices
-value "neighb_diff (nbs 1) (nbs 2)"
-value G
-value "dfs_initial_state 1"   
-value "dfs_impl G 9 (dfs_initial_state 0)"
-value "dfs_impl G 3 (dfs_initial_state 0)"
-end

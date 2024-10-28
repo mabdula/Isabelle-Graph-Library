@@ -131,6 +131,24 @@ locale Adj_Map_Specs2 =
      neighb_empty :: "'neighb"  ("\<emptyset>\<^sub>N") and neighb_delete :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'neighb" and
      neighb_insert and neighb_inv and isin
 begin
+notation neighb_empty ("\<emptyset>\<^sub>N")
+notation empty ("\<emptyset>\<^sub>G")
+
+abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" 
+abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equiv> \<not> isin' G v"
+
+definition neighbourhood::"'adj \<Rightarrow> 'a \<Rightarrow> 'neighb" where
+  "neighbourhood G v \<equiv> (case (lookup G v) of Some neighb \<Rightarrow> neighb | _ \<Rightarrow> neighb_empty)"
+
+notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
+
+definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G \<equiv> {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
+
+definition "to_set_of_adjacency E \<equiv>  { (u, v) | u v. isin (the (lookup E u)) v }"
+
+definition "to_graph Forest = { {u, v} | u v. isin (the (lookup Forest u)) v 
+                                            \<or> isin (the (lookup Forest u)) v}"
+
 end
 
 locale algo_spec = alg where fst=fst +  Set3 +
@@ -167,26 +185,6 @@ for fst::"'edge_type \<Rightarrow> 'a" and edge_map_update +
  and default_conv_to_rdg: "consist default_conv_to_rdg" 
 and N_def: "N = card \<V>"
 begin 
-
-notation neighb_empty ("\<emptyset>\<^sub>N")
-notation empty ("\<emptyset>\<^sub>G")
-
-abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" 
-abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equiv> \<not> isin' G v"
-
-definition neighbourhood::"'d \<Rightarrow> 'a \<Rightarrow> 'c" where
-  "neighbourhood G v \<equiv> (case (lookup G v) of Some neighb \<Rightarrow> neighb | _ \<Rightarrow> neighb_empty)"
-
-notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
-
-definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G \<equiv> {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
-
-definition "to_set_of_adjacency E \<equiv>  { (u, v) | u v. isin (the (lookup E u)) v }"
-
-(*definition "to_set_of_adjacency E = digraph_abs E"*)
-
-definition "to_graph Forest = { {u, v} | u v. isin (the (lookup Forest u)) v 
-                                            \<or> isin (the (lookup Forest u)) v}"
 
 (*definition "to_graph Forest = { {u, v} | u v. (u, v) \<in> digraph_abs Forest}"*)
 
@@ -671,13 +669,13 @@ lemma perpath_to_redgepath:
 "invar_aux6 state \<Longrightarrow> walk_betw FFF u p v \<Longrightarrow> length p \<ge> 2 \<Longrightarrow>
            prepath (to_redge_path (conv_to_rdg state) p)"
   unfolding walk_betw_def
-proof(induction p arbitrary: u, simp)
+proof(induction p arbitrary: u)
   case (Cons a p u)
   then show ?case
         using path_pref[of "FFF " "[a]" p] 
         by (cases rule: list_cases4[of p], auto intro: prepath_intros 
               simp add: invar_aux6_conv_to_rdg_fstv invar_aux6_conv_to_rdg_sndv)
-  qed
+qed simp
 
 lemma concretize_walk:"validF state  \<Longrightarrow>walk_betw (to_graph (\<FF>_imp state)) u p v \<Longrightarrow> length p \<ge> 2 \<Longrightarrow>
        set (to_redge_path (conv_to_rdg state) p) \<subseteq> to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state))"

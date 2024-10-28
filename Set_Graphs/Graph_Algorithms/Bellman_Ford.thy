@@ -20,7 +20,7 @@ lemma list_cases_both_sides:
 
 lemma induct_list_length2: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. P [x,y]) 
 \<Longrightarrow> (\<And> xs x y z. P (xs@[x,y]) \<Longrightarrow> P(xs@[x,y,z])) \<Longrightarrow> P xs"
-proof(induction xs rule: rev_induct, simp)
+proof(induction xs rule: rev_induct)
   case (snoc z xs)
   note IH = this
   show ?case 
@@ -45,7 +45,7 @@ proof(induction xs rule: rev_induct, simp)
       then show ?thesis 
         using snoc.prems(1) by force
     qed
-  qed
+  qed simp
 
 lemma get_longest_common_tail:
 assumes "length p \<ge> 1" "length q \<ge> 1" "last p = last q"
@@ -291,7 +291,7 @@ lemma edge_and_Costs_none_pinfty_weight:
   done
 
 lemma real_path: "length xs \<ge> 2 \<Longrightarrow> weight xs < PInfty \<Longrightarrow> awalk (set es) (hd xs) (edges_of_vwalk xs) (last xs)"
-proof(induction xs rule: weight.induct, simp, simp)
+proof(induction xs rule: weight.induct)
   case (3 x y xs)
   have a: "weight (y # xs) < PInfty \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> awalk (set es) y (edges_of_vwalk (y # xs)) (last (y # xs))"
     using 3(1)
@@ -308,7 +308,7 @@ proof(induction xs rule: weight.induct, simp, simp)
     apply(rule awalk_appendI[of  _ _ _ y])
     using a b c
     by (auto simp add: arc_implies_awalk edge_costs_outside_es)
-qed
+qed auto
 
 lemma weight_not_MInfty:" weight xs > MInfty"
   using no_MInfty_costs by(induction xs rule: weight.induct) force+
@@ -595,13 +595,13 @@ lemma fold_in_dom_no_change_dom[invar_lemmas]: "connection_invar connections
   \<Longrightarrow> set (map snd ds) \<subseteq> dom (connection_lookup  connections) \<Longrightarrow>
  dom (connection_lookup (foldr (\<lambda>(x, y) done. relax done x y) ds connections))
  = dom (connection_lookup  connections)" 
-proof(induction ds, simp)
+proof(induction ds)
   case (Cons a ds)
   show ?case 
     apply(simp, subst case_prod_beta, subst relax_in_dom_no_change_dom)
     using Cons
     by (auto intro: connection_invar_relax_pres connection_inver_fold_pres)
-qed
+qed simp
 
 lemma dom_invar_connection_realx[invar_lemmas]:"connection_invar connections \<Longrightarrow> dom_invar s connections \<Longrightarrow> u \<in> dom (connection_lookup connections) \<Longrightarrow> 
          v \<in> dom (connection_lookup connections) \<Longrightarrow> (dom_invar s (relax connections u v))"
@@ -1286,21 +1286,6 @@ begin
 lemma pred_acyc_init:"invar_pred_acyc (bellman_ford_init s)"
   by(auto simp add: bellman_ford_init_is(1) invar_pred_acyc_def dom_def pred_graph_def not_vwalk_bet_empty)
 
-(*
-lemma vcycle_rotate: "vwalk_bet E a ([a]@xs@[v]@ys@[a]) a \<Longrightarrow> vwalk_bet E v ([v]@ys@[a]@xs@[v]) v" 
-  by (simp add: vwalk_bet_def vwalk_rotate)*)
-
-find_theorems Vwalk.vwalk distinct
-
-(*  x1 x2 x3 x4 x5   
-d(x5) \<ge> d(x4) + c(x4,x5)
-      \<ge> d(x3) + c(x3,x4) + c(x4, x5)
-      \<ge> d(x2) + c(x2, x3) + c(x3,x4) + c(x4,x5)
-      = d(x1) + weight (x1-x5)
-
-
-*)
-
 lemma weight_append_last: "weight (xs@[u,v]) = weight (xs@[u]) +edge_costs u v"
   apply(induction xs, simp)
   subgoal for a xs
@@ -1385,7 +1370,7 @@ proof(rule, goal_cases)
   next
     case True
     have u_no_v:"u \<noteq> v"
-    proof(rule ccontr, simp, goal_cases)
+    proof(rule ccontr, goal_cases)
       case 1
       hence "edge_costs u u < 0" 
         using True  ereal_le_add_self linorder_not_less by auto
@@ -2197,7 +2182,7 @@ proof(rule ccontr, goal_cases)
           calculation(1)
     by(auto simp add: spred_def invar_pred_in_dom_def)
   moreover have s_not_pred:"s \<noteq> spred"
-  proof(rule ccontr, simp, goal_cases)
+  proof(rule ccontr, goal_cases)
     case 1
     hence " vwalk_bet (pred_graph (local.bellman_ford (length vs - 1) (bellman_ford_init s))) s [s,s] s"
       using  edge_in_pred_Graph by auto

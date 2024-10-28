@@ -1,7 +1,7 @@
 section \<open>Instantiation of Abstract Datatypes\<close>
 
 theory Instantiation
-  imports RBT_Map_extension
+  imports RBT_Map_Extension
           Graph_Algorithms.Set2_Join_RBT
           Graph_Algorithms.Bellman_Ford
           Graph_Algorithms.DFS
@@ -934,15 +934,14 @@ lemmas remove_almost_all_empties = map'.remove_almost_all_empties
 
 lemma to_pair_axioms: "\<And> u v vs.  {u, v} = vs 
                                      \<Longrightarrow> to_pair vs = (u,v) \<or> to_pair vs = (v,u)"
-proof(subst to_pair_def, auto, goal_cases)
-  case (1 u v )
+proof(subst to_pair_def, goal_cases)
+  case (1 u v vs)
   moreover define sel where "sel  = (SOME e. {prod.fst e, prod.snd e} = {u, v})"
   moreover have vs_is:"{prod.fst sel, prod.snd sel} = {u, v}"
     apply((subst sel_def)+, rule someI[of _ "(u, v)"])
     using 1 by (auto intro: someI[of _ "(u, v)"])
   ultimately show ?case
-    unfolding to_pair_def sym[OF sel_def]
-    by (metis doubleton_eq_iff prod.collapse)
+   by(auto simp add: to_pair_def sym[OF sel_def], metis doubleton_eq_iff prod.collapse)
 qed
 
 lemma bal_invar_b:"bal_invar (foldr (\<lambda> xy tree. update (prod.fst xy) (prod.snd xy) tree)
@@ -1102,13 +1101,16 @@ lemma es_is_E:"set es = make_pair ` \<E> \<union> {(u, v) | u v.  (v, u) \<in> m
   by(auto simp add: es_def to_list_def \<E>_def  make_pair_fst_snd)
 
 lemma vs_is_V: "set vs = VV"
-proof(simp add: vs_def  es_is_E, rule, all \<open>rule\<close>, goal_cases)
-  case (1 x)
+proof-
+  have 1:"x \<in> prod.fst ` (make_pair ` local.\<E> \<union> {(u, v). (v, u) \<in> make_pair ` local.\<E>}) \<Longrightarrow>
+         x \<in> local.multigraph.\<V>" for x
+  proof(goal_cases)
+    case 1
   then obtain e where e_pr:"x = prod.fst e"
                 "e \<in> make_pair ` \<E> \<union> {(u, v). (v, u) \<in> make_pair ` \<E>}" by auto
   hence aa:"e \<in> make_pair ` \<E> \<or> prod.swap e \<in> make_pair ` \<E>" by auto
   show ?case  
-  proof(simp add:  e_pr(1) make_pair_fst_snd)
+  proof-
     obtain pp  where
       f1: "\<forall>X1. pp X1 = (fst X1, snd X1)"
       by moura
@@ -1116,14 +1118,23 @@ proof(simp add: vs_def  es_is_E, rule, all \<open>rule\<close>, goal_cases)
       using aa make_pair_fst_snd by auto
     then have "prod.fst e \<in> dVs (pp ` \<E>)" 
       by(auto intro: dVsI'(1) dVsI(2) simp add: prod.swap_def)
-    then show "prod.fst e \<in> dVs ((\<lambda>e. (fst e, snd e)) ` \<E>)"
+    then have "prod.fst e \<in> dVs ((\<lambda>e. (fst e, snd e)) ` \<E>)"
       using f1 by force
+    thus "x \<in> local.multigraph.\<V>"
+      by (auto simp add: e_pr(1) make_pair_fst_snd)
   qed
-next
-  case (2 x)
+qed
+ have 2:"x \<in> local.multigraph.\<V> \<Longrightarrow>
+         x \<in> prod.fst ` (make_pair ` local.\<E> \<union> {(u, v). (v, u) \<in> make_pair ` local.\<E>})" for x
+  proof(goal_cases)
+    case 1
+    note 2 = this
   then obtain a b where "x \<in>{a,b}" "(a,b) \<in> make_pair ` \<E>"
     by (meson in_dVsE(1) insertCI)
   then show ?case by force
+qed
+  show ?thesis
+    by(auto intro: 1 2 simp add: vs_def  es_is_E)
 qed
 
 lemma vs_and_es: "vs \<noteq> []" "set vs = dVs (set es)" "distinct vs" "distinct es"
@@ -1155,30 +1166,30 @@ lemma algo: "algo snd make_pair create_edge \<u> \<c> \<E> neighb_empty neighb_d
 
 lemmas dfs_defs = dfs.initial_state_def
 
-term "algo.digraph_abs neighb_empty isin lookup'"
+term "Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin"
 
 lemma remove_all_empty_neighbourhood:
-"adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow>  (algo.neighbourhood  neighb_empty lookup' E)
+"adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow>  (Adj_Map_Specs2.neighbourhood lookup' neighb_empty E)
               =  (Pair_Graph_Specs.neighbourhood  lookup neighb_empty (remove_all_empties E))"
   using transform_to_sets_lookup_lookup'[of E ]                  
- by(auto  simp add: algo.digraph_abs_def[OF algo] Pair_Graph_Specs.digraph_abs_def[OF Pair_Graph_Specs_satisfied]
-            algo.neighbourhood_def[OF algo] Pair_Graph_Specs.neighbourhood_def[OF Pair_Graph_Specs_satisfied])
+ by(auto  simp add: Adj_Map_Specs2.digraph_abs_def[OF Adj_Map_Specs2] Pair_Graph_Specs.digraph_abs_def[OF Pair_Graph_Specs_satisfied]
+            Adj_Map_Specs2.neighbourhood_def[OF Adj_Map_Specs2] Pair_Graph_Specs.neighbourhood_def[OF Pair_Graph_Specs_satisfied])
   
 lemma remove_all_empty_digraph_abs:
-"adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow>  (algo.digraph_abs  neighb_empty isin lookup' E)
+"adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow>  (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E)
               =  (Pair_Graph_Specs.digraph_abs  lookup isin neighb_empty (remove_all_empties E))"
   using transform_to_sets_lookup_lookup'[of E]
-  by (auto simp add: algo.digraph_abs_def[OF algo] Pair_Graph_Specs.digraph_abs_def[OF Pair_Graph_Specs_satisfied]
-            algo.neighbourhood_def[OF algo] Pair_Graph_Specs.neighbourhood_def[OF Pair_Graph_Specs_satisfied])
+  by (auto simp add: Adj_Map_Specs2.digraph_abs_def[OF Adj_Map_Specs2] Pair_Graph_Specs.digraph_abs_def[OF Pair_Graph_Specs_satisfied]
+            Adj_Map_Specs2.neighbourhood_def[OF Adj_Map_Specs2] Pair_Graph_Specs.neighbourhood_def[OF Pair_Graph_Specs_satisfied])
 
-lemma loopA_axioms_extended: "vwalk_bet (algo.digraph_abs  neighb_empty isin lookup' E) u q v \<Longrightarrow>
+lemma loopA_axioms_extended: "vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E) u q v \<Longrightarrow>
                        adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow> p = get_path u v E \<Longrightarrow> 
-                        u \<in> Vs ((algo.to_graph isin lookup') E) \<Longrightarrow>
+                        u \<in> Vs ((Adj_Map_Specs2.to_graph lookup' isin) E) \<Longrightarrow>
                         (\<And> x. lookup' E x \<noteq> None \<and> neighb_inv (the (lookup' E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
-                     vwalk_bet (algo.digraph_abs  neighb_empty isin lookup' E) u p v"
-"vwalk_bet (algo.digraph_abs  neighb_empty isin lookup' E) u q v \<Longrightarrow> 
+                     vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E) u p v"
+"vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E) u q v \<Longrightarrow> 
                        adj_inv' E \<Longrightarrow> p = get_path u v E \<Longrightarrow> 
-                        u \<in> Vs ((algo.to_graph isin lookup') E) \<Longrightarrow>
+                        u \<in> Vs ((Adj_Map_Specs2.to_graph lookup' isin) E) \<Longrightarrow>
                         (\<And> x. lookup' E x \<noteq> None \<and> neighb_inv (the (lookup' E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
                      distinct p"
 proof(goal_cases)
@@ -1197,11 +1208,11 @@ proof(goal_cases)
   have finite_neighbs:"dfs.Graph.finite_neighbs undefined"
     unfolding dfs.Graph.finite_neighbs_def 
     by (simp add: t_set_def)
-  obtain e where e_prop:"e \<in> (algo.digraph_abs  neighb_empty isin lookup' E)" "u = prod.fst e"
+  obtain e where e_prop:"e \<in> (Adj_Map_Specs2.digraph_abs lookup'  neighb_empty isin E)" "u = prod.fst e"
     using assms(1) assms(6) no_outgoing_last 
     unfolding vwalk_bet_def dfs.Graph.digraph_abs_def 
     by fastforce
-  hence neighb_u: "algo.neighbourhood  neighb_empty  lookup' E u \<noteq> neighb_empty"
+  hence neighb_u: "Adj_Map_Specs2.neighbourhood lookup' neighb_empty E u \<noteq> neighb_empty"
     using  Set.set_specs(1)  assms(2)
  dfs.Graph.are_connected_absI[OF _  graph_invar, of "prod.fst e" "prod.snd e", simplified]  
     by(auto simp add: neighbourhood_def   dfs.Graph.digraph_abs_def 
@@ -1209,11 +1220,11 @@ proof(goal_cases)
                       remove_all_empty_neighbourhood[OF assms(2)] )
   have q_non_empt: "q \<noteq> []"
     using assms(1) by auto
-  obtain d where "d \<in> (algo.digraph_abs  neighb_empty isin lookup' E)" "v = prod.snd d"
+  obtain d where "d \<in> (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E)" "v = prod.snd d"
     using assms(1)  assms(6)  singleton_hd_last'[OF q_non_empt]
            vwalk_append_edge[of _ "butlast q" "[last q]",simplified append_butlast_last_id[OF q_non_empt]] 
-    by(force simp add: vwalk_bet_def algo.digraph_abs_def[OF algo])
-  have u_in_Vs:"u \<in> dVs (algo.digraph_abs \<emptyset>\<^sub>N isin lookup' E)" 
+    by(force simp add: vwalk_bet_def Adj_Map_Specs2.digraph_abs_def[OF Adj_Map_Specs2])
+  have u_in_Vs:"u \<in> dVs (Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E)" 
     using assms(1) assms(2) remove_all_empty_digraph_abs by auto
   have dfs_axioms: "DFS.DFS_axioms isin t_set adj_inv \<emptyset>\<^sub>N neighb_inv lookup 
                          (remove_all_empties E) u"
@@ -1224,31 +1235,32 @@ proof(goal_cases)
     using dfs.initial_state_props(6)
     by (simp add: dfs_axioms dfs_initial_def dfs.initial_state_props(6) dfs_axioms)
   have rectified_map_subset:"dfs.Graph.digraph_abs (remove_all_empties E) \<subseteq> 
-                (algo.digraph_abs  neighb_empty isin lookup' E)"
+                (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E)"
     by (simp add: assms(2) remove_all_empty_digraph_abs)
-  have rectified_map_subset_rev:"algo.digraph_abs \<emptyset>\<^sub>N isin lookup' E 
+  have rectified_map_subset_rev:"Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E 
                                  \<subseteq> dfs.Graph.digraph_abs (remove_all_empties E)"
     by (simp add: assms(2) remove_all_empty_digraph_abs)
   have reachable:"DFS_state.return (dfs E v (dfs_initial u)) = Reachable"
-  proof(rule ccontr,rule DFS.return.exhaust, auto, goal_cases)
-    case 1
+  proof(rule ccontr,rule DFS.return.exhaust[of "DFS_state.return (dfs E v (dfs_initial u))"],goal_cases)
+    case 2
     hence "\<nexists>p. distinct p \<and> vwalk_bet (dfs.Graph.digraph_abs (remove_all_empties E)) u p v"
       using dfs_axioms  dfs.DFS_correct_1[of "remove_all_empties E" u v] 
       using  dfs.DFS_to_DFS_impl[OF dfs_dom] 
       by (auto simp add:  dfs_def dfs_initial_def dfs_initial_state_def)
-    moreover obtain q' where "vwalk_bet (algo.digraph_abs \<emptyset>\<^sub>N isin lookup' E ) u q' v" "distinct q'"
+    moreover obtain q' where "vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E ) u q' v" "distinct q'"
       using vwalk_bet_to_distinct_is_distinct_vwalk_bet[OF assms(1)]
       by(auto simp add: distinct_vwalk_bet_def )
     moreover hence "vwalk_bet (dfs.Graph.digraph_abs (remove_all_empties E)) u q' v"
       by (meson rectified_map_subset_rev vwalk_bet_subset)
     ultimately show False by auto
-  qed
+  next
+  qed simp
   have "vwalk_bet  (dfs.Graph.digraph_abs (remove_all_empties E))
             u (rev (stack (dfs E v (dfs_initial u)))) v"
     using reachable sym[OF dfs.DFS_to_DFS_impl[OF dfs_dom]]  
     by(auto intro: dfs.DFS_correct_2
          simp add: dfs_initial_def  dfs_def dfs_axioms)
-  thus "vwalk_bet (algo.digraph_abs \<emptyset>\<^sub>N isin lookup' E ) u p v"
+  thus "vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E ) u p v"
     unfolding assms(3) get_path_def
     by (meson rectified_map_subset vwalk_bet_subset)
   show "distinct p"
@@ -2164,7 +2176,7 @@ lemmas invar_isOptflow_def = algo.invar_isOptflow_def
 lemmas is_Opt_def = cost_flow_network.is_Opt_def
 lemmas from_aux_invar' = algo.from_aux_invar'
 
-abbreviation "to_graph == algo.to_graph"
+abbreviation "to_graph == Adj_Map_Specs2.to_graph"
 
 lemma get_source_axioms:
    "\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state;  s = get_source state;
@@ -2305,7 +2317,7 @@ qed
 lemma no_neg_cycle_in_bf: 
   assumes "invar_isOptflow state" "aux_invar state"
   shows   "\<nexists>c. weight (not_blocked state) (current_flow state) c < 0 \<and> hd c = last c"
-proof(rule ccontr, auto, goal_cases)
+proof(rule nexistsI, goal_cases)
   case (1 c)
   have bellman_ford:"bellman_ford connection_empty connection_lookup connection_invar connection_delete
      es vs (\<lambda> u v. prod.snd (get_edge_and_costs_forward (not_blocked state) (current_flow state) u v)) connection_update"
@@ -2392,7 +2404,7 @@ proof(rule ccontr, auto, goal_cases)
 qed
   obtain C where "augcycle (current_flow state) C"
     apply(rule cost_flow_network.augcycle_from_non_distinct_cycle[OF  agpath])
-    using "1"(2) awalk_f c_non_empt awalk_fst_last[OF _ awalk_f]
+    using "1"(1) awalk_f c_non_empt awalk_fst_last[OF _ awalk_f]
           awalk_fst_last[OF _ path_with_props(1)] same_edges  cc_in_E  "1"(1) cc_def path_with_props(2)
     by auto
   then show ?case 
@@ -2405,18 +2417,18 @@ lemma get_target_for_source_ax:
                          t = get_target_for_source state s; loopB_call1_cond state; invar_gamma state\<rbrakk>
                         \<Longrightarrow> t \<in> VV \<and> b t < - \<epsilon> * \<gamma> \<and> resreach f s t"
   unfolding get_target_for_source_def
-proof(rule if_E[where P= "\<lambda> x. t = x"], simp, goal_cases)
+proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
   case 1
   note assms = this
   have s_prop: "s \<in> VV" "(1 - \<epsilon>) * \<gamma> < b s"
   using get_source_axioms[OF 1(1) 1(2) 1(4)] "1"(6)[simplified sym[OF  get_target_for_source_def]] by auto
   from 1 have knowledge: "get_source state \<in> VV"
     "aux_invar state"
-    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (algo.to_graph  (\<FF>_imp state)).
+    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (orlins_impl_spec.to_graph  (\<FF>_imp state)).
         0 < current_flow state (flow_network.oedge e))"
     "invar_isOptflow state" 
     "(\<exists>t\<in>VV. balance state t < - (\<epsilon> * current_\<gamma> state) \<and> resreach (current_flow state) s t)"
-  by auto
+    by force+
   then obtain tt where tt_pr: " balance state tt < - (\<epsilon> * current_\<gamma> state)" "resreach (current_flow state) s tt" "tt \<in> VV"
     by auto
   then obtain p where "augpath (current_flow state) p" "fstv (hd p) = s"
@@ -2436,7 +2448,7 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], simp, goal_cases)
      "foldr (\<lambda>x. (+) (\<cc> x)) pp 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) p 0"
     using  algo.simulate_inactives_costs[ of "current_flow state" p, of s tt state, OF _ _ _ _ _  refl refl refl refl refl refl refl refl ]
            1(8) by auto
-  have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
+  have F_is: "\<FF> state = orlins_impl_spec.to_graph (\<FF>_imp state)" 
     using knowledge(2) from_aux_invar'(21) by auto
   hence e_in:"e \<in> set pp \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
@@ -2490,9 +2502,9 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], simp, goal_cases)
                simp add: s_prop(1) vs_is_V )   
   have t_prop:"balance state t < - \<epsilon> * current_\<gamma> state \<and>
          t \<in> set vs \<and> prod.snd (the (connection_lookup connections t)) < PInfty"
-    using tt_dist_le_PInfty tt_pr(1) tt_pr(3) vs_is_V  "1"(9)
+    using tt_dist_le_PInfty tt_pr(1) tt_pr(3) vs_is_V  "1"(9) assms(4)
     by(intro get_target_for_source_aux[of vs "balance state" "current_\<gamma> state" connections t]) 
-      (auto  simp add: connections_def)
+      (auto simp add: connections_def)
   have t_neq_s: "t \<noteq> s"
     using t_prop s_prop "1"(1) "1"(2) "1"(7) invar_gamma_def
     by (smt (verit, best) mult_less_cancel_right_pos)
@@ -2741,7 +2753,7 @@ proof(cases "invar_isOptflow state", goal_cases)
      apply (metis (no_types, lifting) mult_minus_left)
     using "1"(1) unfolding get_target_for_source_def by presburger+
   hence 
-    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (algo.to_graph (\<FF>_imp state)).
+    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (orlins_impl_spec.to_graph (\<FF>_imp state)).
         0 < current_flow state (flow_network.oedge e))"
     by auto
   have  loopB_call1_cond: " loopB_call1_cond state"
@@ -2780,7 +2792,7 @@ proof(cases "invar_isOptflow state", goal_cases)
   have qq_len: "length qq \<ge> 1" 
     using qq_prop(2,3,6) knowledge(4)
     by(cases qq rule: list_cases3) auto
-  have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
+  have F_is: "\<FF> state = orlins_impl_spec.to_graph (\<FF>_imp state)" 
     by (simp add: "1"(1) from_aux_invar'(21))
   hence e_in:"e \<in> set qq \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
@@ -3124,7 +3136,7 @@ lemma edges_of_vwalk_rev_swap:"(map prod.swap (rev (edges_of_vwalk c))) = edges_
 lemma no_neg_cycle_in_bf_backward: 
   assumes "invar_isOptflow state" "aux_invar state"
   shows   "\<nexists>c. weight_backward (not_blocked state) (current_flow state) c < 0 \<and> hd c = last c"
-proof(rule ccontr, auto, goal_cases)
+proof(rule nexistsI, goal_cases)
   case (1 c)
   have bellman_ford:"bellman_ford  connection_empty connection_lookup 
                  connection_invar connection_delete
@@ -3211,7 +3223,7 @@ proof(rule ccontr, auto, goal_cases)
 qed
   obtain C where "augcycle (current_flow state) C"
     apply(rule cost_flow_network.augcycle_from_non_distinct_cycle[OF  agpath])
-    using "1"(2) awalk_f c_non_empt awalk_fst_last[OF _ awalk_f]
+    using "1"(1) awalk_f c_non_empt awalk_fst_last[OF _ awalk_f]
           awalk_fst_last[OF _ path_with_props(1)]  cc_in_E  "1"(1) cc_def path_with_props(2)
     by (auto, metis list.map_comp same_edges)
   then show ?case 
@@ -3227,7 +3239,7 @@ lemma get_source_for_target_ax:
                          s = get_source_for_target state t; loopB_call2_cond state; invar_gamma state\<rbrakk>
                         \<Longrightarrow> s \<in> VV \<and> b s > \<epsilon> * \<gamma> \<and> resreach f s t"
   unfolding get_source_for_target_def
-proof(rule if_E[where P= "\<lambda> x. s = x"], simp, goal_cases)
+proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
   case 1
   note assms = this
   have call2_cond: "loopB_call2_cond state"
@@ -3237,7 +3249,7 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], simp, goal_cases)
     by auto
   from 1 have knowledge: "get_target state \<in> VV"
     "aux_invar state"
-    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (algo.to_graph (\<FF>_imp state)).
+    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (orlins_impl_spec.to_graph (\<FF>_imp state)).
         0 < current_flow state (cost_flow_network.oedge e))"
     "invar_isOptflow state" 
     "(\<exists>s\<in>VV. balance state s > (\<epsilon> * current_\<gamma> state) \<and> resreach (current_flow state) s t)"
@@ -3262,7 +3274,7 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], simp, goal_cases)
     using  algo.simulate_inactives_costs[of "current_flow state" p, of ss t state,
                         OF _ _ _ _ _  refl refl refl refl refl refl refl refl]
            1(8) by blast
-  have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
+  have F_is: "\<FF> state = orlins_impl_spec.to_graph (\<FF>_imp state)" 
     using knowledge(2) from_aux_invar'(21) by auto
   hence e_in:"e \<in> set pp \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
@@ -3324,7 +3336,7 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], simp, goal_cases)
             _ _ "(awalk_verts t (map cost_flow_network.to_vertex_pair (map cost_flow_network.erev (rev pp))))"] )   
   have s_prop:"balance state s >  \<epsilon> * current_\<gamma> state \<and>
          s \<in> set vs \<and> prod.snd (the (connection_lookup connections s)) < PInfty"
-    using ss_dist_le_PInfty ss_pr(1) ss_pr(3) vs_is_V  "1"(9)
+    using ss_dist_le_PInfty ss_pr(1) ss_pr(3) vs_is_V  "1"(9) assms(4)
     by(intro get_source_for_target_aux[of vs "current_\<gamma> state"  "balance state"  connections s]) 
       (auto  simp add: connections_def )
   have t_neq_s: "t \<noteq> s"
@@ -3594,7 +3606,7 @@ proof(cases "invar_isOptflow state", goal_cases)
     using "1"(1) unfolding get_source_for_target_def by presburger+
    
   hence 
-    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (algo.to_graph  (\<FF>_imp state)).
+    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (orlins_impl_spec.to_graph  (\<FF>_imp state)).
         0 < current_flow state (cost_flow_network.oedge e))"
     by auto
   have s_prop: "b s > \<epsilon> * \<gamma>" "resreach f s t" 
@@ -3631,7 +3643,7 @@ proof(cases "invar_isOptflow state", goal_cases)
   have qq_len: "length qq \<ge> 1" "qq \<noteq> []"
     using qq_prop(2,3,6) knowledge(4)
     by( all \<open>cases qq rule: list_cases3\<close>) auto
-  have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
+  have F_is: "\<FF> state = orlins_impl_spec.to_graph (\<FF>_imp state)" 
     by (simp add: "1"(1) from_aux_invar'(21))
   have consist: "cost_flow_network.consist (conv_to_rdg state)" 
     using from_aux_invar'(6) knowledge(5) by auto
@@ -4285,8 +4297,10 @@ proof(goal_cases)
      by (smt (verit, ccfv_SIG) divide_less_eq_1_pos mult_nonneg_nonneg)
   have "\<not> (\<exists> t \<in> VV. b t < - \<epsilon> * \<gamma> \<and> resreach f s t) \<longleftrightarrow> 
             (tt_impl = None)"
-  proof(rule,  all \<open>rule ccontr\<close>, auto, goal_cases)
-    case (1 t)
+  proof(rule,  all \<open>rule ccontr\<close>, goal_cases)
+    case (1 )
+    then obtain t where "tt_impl = Some t" by auto
+    note 1 = this 1
     hence "(\<exists>x\<in>set vs.
     the (bal_lookup (balance_impl state_impl) x) < - \<epsilon> * current_\<gamma>_impl state_impl \<and>
     prod.snd (the (connection_lookup bf_impl x)) < PInfty)"
@@ -4353,7 +4367,10 @@ proof(goal_cases)
       using 1 x_prop(1,2) knowledge(2) vs_is_V
       by simp
   next
-    case (2  t)
+    case 2
+    then obtain t where "t\<in>local.multigraph.\<V>"  "b t < - local.\<epsilon> * \<gamma> " "resreach f s t"
+      by auto
+    note 2 = this 2
     hence "b t < 0"
       using knowledge(11,2,1) \<epsilon>_axiom algo.invar_gamma_def
       by (smt (verit)  mult_minus_left mult_nonneg_nonneg)
@@ -4361,7 +4378,7 @@ proof(goal_cases)
       using bs0 by auto
     obtain q where q_props:"augpath f q" "fstv (hd q) = s" 
                     "sndv (last q) = t" "set q \<subseteq> EEE"
-      using  cost_flow_network.resreach_imp_augpath[OF  2(4)] by auto
+      using  cost_flow_network.resreach_imp_augpath[OF  2(3)] by auto
     then obtain qq where qq_props:"augpath f qq"
        "fstv (hd qq) = s"
        "sndv (last qq) = t"
@@ -4411,7 +4428,7 @@ proof(goal_cases)
       by(auto simp add: bf_def bellman_ford_forward_def bellman_ford_init_algo_def bellman_ford_algo_def)
     ultimately have "prod.snd (the (connection_lookup bf t)) < PInfty" by auto
     hence "t \<in> set vs" "b t < - \<epsilon> * current_\<gamma> state" "prod.snd (the (connection_lookup bf t)) < PInfty"
-      using "2"(3,2) knowledge(2) vs_is_V by auto
+      using "2" knowledge(2) vs_is_V by auto
     hence "(\<exists>x\<in>set vs.
     the (bal_lookup (balance_impl state_impl) x) < - \<epsilon> * current_\<gamma>_impl state_impl \<and>
     prod.snd (the (connection_lookup bf_impl x)) < PInfty)"
@@ -4502,8 +4519,10 @@ proof(goal_cases)
      by (smt (verit, del_insts) divide_less_eq_1_pos mult_minus_left mult_nonneg_nonneg)
   have "\<not> (\<exists> s \<in> VV. b s > \<epsilon> * \<gamma> \<and> resreach f s t) \<longleftrightarrow> 
             (ss_impl = None)"
-  proof(rule,  all \<open>rule ccontr\<close>, auto, goal_cases)
-    case (1 s)
+  proof(rule,  all \<open>rule ccontr\<close>, goal_cases)
+    case 1
+    then obtain s where "ss_impl = Some s" by auto
+    note 1 = this 1
     hence "(\<exists>x\<in>set vs.
     the (bal_lookup (balance_impl state_impl) x) > \<epsilon> * current_\<gamma>_impl state_impl \<and>
     prod.snd (the (connection_lookup bf_impl x)) < PInfty)"
@@ -4568,7 +4587,9 @@ proof(goal_cases)
       using 1 x_prop(1,2) knowledge(2) vs_is_V
       by simp
   next
-    case (2  s)
+    case 2
+    then obtain s where "s\<in>multigraph.\<V> " "\<epsilon> * \<gamma> < b s" "resreach f s t" by auto
+    note 2 = 2 this
     hence "b s > 0"
       using knowledge(11,2,1) \<epsilon>_axiom algo.invar_gamma_def 
       by (smt (verit)  mult_minus_left mult_nonneg_nonneg)
@@ -4576,7 +4597,7 @@ proof(goal_cases)
       using bt0 by auto
     obtain q where q_props:"augpath f q" "fstv (hd q) = s" 
                     "sndv (last q) = t" "set q \<subseteq> EEE"
-      using  cost_flow_network.resreach_imp_augpath[OF  2(4)] by auto
+      using  cost_flow_network.resreach_imp_augpath[OF  2(5)] by auto
     then obtain qq where qq_props:"augpath f qq"
        "fstv (hd qq) = s"
        "sndv (last qq) = t"
@@ -4643,7 +4664,7 @@ proof(goal_cases)
       by(auto simp add: bf_def bellman_ford_backward_def bellman_ford_algo_def bellman_ford_init_algo_def)
     ultimately have "prod.snd (the (connection_lookup bf s)) < PInfty" by auto
     hence "s \<in> set vs" "b s > \<epsilon> * current_\<gamma> state" "prod.snd (the (connection_lookup bf s)) < PInfty"
-      using "2"(3,2) knowledge(2) vs_is_V by auto
+      using "2" knowledge(2) vs_is_V by auto
     hence "(\<exists>x\<in>set vs.
     the (bal_lookup (balance_impl state_impl) x) > \<epsilon> * current_\<gamma>_impl state_impl \<and>
     prod.snd (the (connection_lookup bf_impl x)) < PInfty)"

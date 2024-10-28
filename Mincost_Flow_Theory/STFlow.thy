@@ -669,7 +669,7 @@ proof-
   hence bflow: "isbflow f (\<lambda> v. -ex f v)"
     by(auto simp add: isbflow_def)
   have t_not_in_Rescut:"t \<notin> Rescut f s"
-  proof(rule ccontr, simp, goal_cases)
+  proof(rule notI, goal_cases)
     case 1
     then obtain p where p_prop: "augpath f p" "fstv (hd p) = s" "sndv (last p) = t" "set p \<subseteq> \<EE>"
                                 "p \<noteq> []"

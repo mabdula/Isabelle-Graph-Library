@@ -2600,8 +2600,10 @@ proof-
    have Rescut_fV: "Rescut (current_flow state') s \<subseteq> \<V>" 
      by (simp add: Rescut_around_in_V s_prop(1))
    show ?case 
-   proof(rule ccontr, auto, goal_cases)
-     case (1 f)
+   proof(rule ccontr, goal_cases)
+     case (1)
+     then obtain f where "f is \<b> flow" by auto
+     note 1 = this
      have " (\<Sum> v \<in> Rescut (current_flow state') s. ereal (\<b> v)) \<le> Cap (Rescut (current_flow state') s)"
        using flow_less_cut[OF 1 Rescut_fV] by simp
      also have "... =  (\<Sum> v \<in> Rescut (current_flow state') s. ereal (\<b> v - balance state' v))"
@@ -2645,8 +2647,10 @@ proof-
    have ARescut_fV: "ARescut (current_flow state') t \<subseteq> \<V>" 
      by (simp add: ARescut_around_in_V t_prop)
    show ?case 
-   proof(rule ccontr, auto, goal_cases)
-     case (1 f)
+   proof(rule ccontr,  goal_cases)
+     case (1)
+     then obtain f where "f is \<b> flow" by auto
+      note 1 = this
      have " - (\<Sum> v \<in> ARescut (current_flow state') t. ereal (\<b> v)) \<le>
              ACap (ARescut (current_flow state') t)"
        using minus_leq_flip[OF flow_less_acut[OF 1 ARescut_fV]] by simp 

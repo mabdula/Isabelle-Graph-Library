@@ -120,12 +120,12 @@ proof(rule, goal_cases)
     using is_Opt_def by blast
   moreover have no_neg_cycle
     unfolding no_neg_cycle_def
-  proof(rule ccontr, auto, goal_cases)
+  proof(rule nexistsI, goal_cases)
     case (1 D)
     then obtain u where u_prop: "awalk (make_pair ` \<E>) u (map make_pair D) u" " 0 < length (map make_pair D)"
       by (auto simp add: closed_w_def)
     have rcap:"0 < Rcap f (set (map F D))"
-      using 1(4) 
+      using 1(1) 
       by (auto simp add: Min_gr_iff Rcap_def)
     have same_path:"(map (to_vertex_pair \<circ> F) D) = (map make_pair D)" 
       by simp
@@ -145,7 +145,7 @@ proof(rule, goal_cases)
       by(force simp add: \<EE>_def )
     obtain C where C_prop:"augcycle f C"
       apply(rule augcycle_from_non_distinct_cycle[OF augpath])
-      using D_EE  rescost_neg 1(2) 
+      using D_EE  rescost_neg 1(1) 
       by (auto simp add: fstv_is sndv_is)
     have rcap2:"Rcap f (set C) > 0"
       using C_prop augcycle_def augpath_rcap by blast
@@ -356,13 +356,13 @@ proof(rule, goal_cases)
     using isopt is_max_flow_def[OF s_in_V t_in_V s_neq_t]s_t_flow_is_ex_bflow[of f s t]  by blast+
   moreover have no_infty_path
     unfolding no_infty_path_def
-  proof(rule ccontr, auto, goal_cases)
+  proof(rule nexistsI, goal_cases)
     case (1 D)
     hence u_prop: "awalk UNIV s (map make_pair D) t" " set D \<subseteq> \<E>" "(\<forall>e\<in>set D. \<u> e = PInfty)"
         and Dlen: "length D > 0" 
       using s_neq_t by(auto simp add: awalk_def)
     have rcap:"0 < Rcap f (set (map F D))"
-      using 1(3) 
+      using 1(1) 
       by (auto simp add:  Rcap_def)
     have same_path:"(map (to_vertex_pair \<circ> F) D) = (map make_pair D)" 
       by simp
@@ -449,7 +449,7 @@ next
     using 2 by(auto simp add: no_infty_path_def)
   have no_infty_path':"\<nexists>D. awalk (make_pair ` \<E>) s (map make_pair D) t \<and>
         0 < length D \<and> set D \<subseteq> \<E> \<and> (\<forall>e\<in>set D. (the_default PInfty \<circ> flow_lookup \<u>_impl) e = PInfty)"
-  proof(rule ccontr, auto, goal_cases)
+  proof(rule nexistsI, goal_cases)
     case (1 D)
     moreover hence "awalk UNIV s (map make_pair D) t" 
       using awalk_ends s_neq_t by(auto intro: subset_mono_awalk')

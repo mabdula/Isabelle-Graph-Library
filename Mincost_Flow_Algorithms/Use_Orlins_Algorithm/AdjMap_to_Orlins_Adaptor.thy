@@ -90,7 +90,7 @@ lemma distinct_concat':
      \<And> ys. ys \<in> set xs \<Longrightarrow> distinct ys;
      \<And> ys zs. \<lbrakk> ys \<in> set xs ; zs \<in> set xs ; ys \<noteq> zs \<rbrakk> \<Longrightarrow> set ys \<inter> set zs = {}
    \<rbrakk> \<Longrightarrow> distinct (concat xs)"
-proof (induction xs, simp)
+proof (induction xs)
   case (Cons xs xss)
   have "distinct xs"
     using Cons by simp
@@ -101,14 +101,10 @@ proof (induction xs, simp)
          by(auto intro: case_split[of  "xs = ys"])
        using Cons(3,4) by auto
   moreover have "set xs \<inter> set (concat xss) = {}"
-  proof(rule ccontr, auto, goal_cases)
-    case (1 x ys)
-    show ?case
-       using Cons(4)[of xs ys] 1 Cons(2)[of xs, simplified trans[OF length_filter_fist(1) length_filter_none]] 
+       using Cons(4)[of xs _]  Cons(2)[of xs, simplified trans[OF length_filter_fist(1) length_filter_none]] 
        by force
-   qed
    ultimately show ?case by simp
- qed
+ qed simp
 
 lemma P_of_ifI: "(P \<Longrightarrow> Q x ) \<Longrightarrow> (\<not> P \<Longrightarrow> Q y) \<Longrightarrow> Q (if P then x else y)"
   by auto
@@ -147,17 +143,22 @@ proof-
       show ?case  
       proof(cases "ys = map (Pair zs) (to_list (the (lookup G zs)))")
         case True
-        show ?thesis 
-        proof(subst list.map(2), subst filter.simps(2), 
-                subst if_P, simp add: True, simp only: True, 
-                subst length_filter_fist(2)[of ], subst length_filter_none[of ],
-                rule ccontr, simp, rule imageE[of _ _ "set xs"], simp, goal_cases)
-          case (1 as)
-          hence "zs = as" 
+        have helper:"map (Pair zs) (to_list (the (lookup G zs)))
+         \<in> (\<lambda>x. map (Pair x) (to_list (the (lookup G x)))) ` set xs \<Longrightarrow>
+         map (Pair zs) (to_list (the (lookup G zs))) = map (Pair x) (to_list (the (lookup G x))) \<Longrightarrow>
+         x \<in> set xs \<Longrightarrow> False" for x
+        proof(goal_cases)     
+          case (1 )
+          hence "zs = x" 
             using Cons(2) True by (cases ys) auto
           thus ?case
             using 1(3)  Cons.prems(2) by auto
         qed
+        show?thesis
+          by(subst list.map(2), subst filter.simps(2), 
+                subst if_P, simp add: True, simp only: True, 
+                subst length_filter_fist(2)[of ], subst length_filter_none[of ])
+            (auto intro: helper)
       next
         case False
         then show ?thesis

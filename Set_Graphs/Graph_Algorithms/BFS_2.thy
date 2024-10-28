@@ -206,6 +206,23 @@ function (domintros) BFS::"('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neigh
           BFS_state)"
   by pat_completeness auto
 
+partial_function (tailrec) BFS_impl::"('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neighb) BFS_state" where
+  "BFS_impl BFS_state = 
+     (
+        if current BFS_state \<noteq> \<emptyset>\<^sub>N then
+          let
+            visited' = visited BFS_state \<union>\<^sub>G current BFS_state;
+            parents' = expand_tree (parents BFS_state) (current BFS_state) visited';
+            current' = next_frontier (current BFS_state) visited'
+          in 
+            BFS_impl (BFS_state \<lparr>parents:= parents', visited := visited', current := current'\<rparr>)
+         else
+          BFS_state)"
+
+lemma BFS_impl_same:
+  assumes "BFS_dom state" 
+  shows "BFS_impl state = BFS state"
+  by(induction rule: BFS.pinduct[OF assms])(auto simp add: BFS_impl.simps BFS.psimps)
 
 definition "BFS_call_1_conds bfs_state \<equiv> (current bfs_state) \<noteq> \<emptyset>\<^sub>N"
 

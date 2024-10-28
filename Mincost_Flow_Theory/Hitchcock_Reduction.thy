@@ -791,8 +791,10 @@ proof-
     hence C_inE: "set C \<subseteq> \<E>'" "C \<noteq> []"
       by(auto simp add:awalk_def closed_w_def)
     have C_in_E3: "set C \<subseteq> \<E>3"
-    proof(auto, rule ccontr, goal_cases)
-      case (1 e)
+    proof-
+      have "e \<in> set C \<Longrightarrow> e \<notin> \<E>3 \<Longrightarrow> False" for e
+      proof(goal_cases)
+      case 1
       hence ab_where:"e \<in> \<E>1 \<union> \<E>2" 
         using C_inE \<E>'_def by blast
       obtain C1 C2 where C_split: "C = C1@[e]@C2" 
@@ -836,6 +838,8 @@ proof-
             (auto simp add: \<E>'_def \<E>1_def \<E>2_def \<E>3_def sndv'_def fstv'_def) 
       qed
     qed
+    thus ?thesis by auto
+  qed
     hence closed_w_E3: "closed_w (make_pair' ` \<E>3) (map make_pair' C)"
       using C_inE(2) C_prop(1)   subset_mono_awalk'[of "(make_pair' ` \<E>')" _ "map make_pair' C" _ "make_pair' ` \<E>3"]
       by (auto intro!: image_mono simp add: closed_w_def)
@@ -1014,12 +1018,17 @@ theorem reduction_of_mincost_flow_to_hitchcock:
   defines "\<b>' \<equiv> new_\<b> \<E> \<u> \<b>"
 shows 
    "flow_network fst snd id Pair \<u>' \<E>'" (is ?case1) and
-   "flow_network.isbflow fst snd id (ereal o \<u>) \<E> f \<b> \<Longrightarrow> f' = new_f \<E> \<u> f
+   "\<And> f f'. flow_network.isbflow fst snd id (ereal o \<u>) \<E> f \<b> \<Longrightarrow> f' = new_f \<E> \<u> f
        \<Longrightarrow>flow_network.isbflow fst snd id \<u>' \<E>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
-      (is "?a \<Longrightarrow> ?b \<Longrightarrow> ?c") and
-"flow_network.isbflow fst snd id \<u>' \<E>' f' \<b>' \<Longrightarrow> f = old_f f' \<Longrightarrow>
+      (is "\<And> f f'. ?a f \<Longrightarrow> ?b f f' \<Longrightarrow> ?c  f f'") and
+"\<And> f f'. flow_network.isbflow fst snd id \<u>' \<E>' f' \<b>' \<Longrightarrow> f = old_f f' \<Longrightarrow>
           flow_network.isbflow fst snd id (ereal o \<u>) \<E> f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
-      (is "?x \<Longrightarrow> ?y \<Longrightarrow> ?z") and
+      (is "\<And> f f'. ?x f' \<Longrightarrow> ?y f f'\<Longrightarrow> ?z f f'") and
+"cost_flow_network.is_Opt fst snd id (ereal o \<u>) \<c> \<E> \<b> f \<Longrightarrow> f' = new_f \<E> \<u> f \<Longrightarrow>
+ cost_flow_network.is_Opt fst snd id  \<u>' \<c>' \<E>' \<b>' f'"
+ and
+"cost_flow_network.is_Opt fst snd id  \<u>' \<c>' \<E>' \<b>' f' \<Longrightarrow> f = old_f f' \<Longrightarrow>
+ cost_flow_network.is_Opt fst snd id (ereal o \<u>) \<c> \<E> \<b> f " and
  "\<nexists> C. closed_w \<E>' C" 
 proof-
   note  \<E>1_def_old =  \<E>1_def
@@ -1065,11 +1074,11 @@ then 0 else undefined)"
      using flow_network_def assms(1) by blast
    have Es_non_inter: "\<E>1 \<inter> \<E>2 = {}" 
      using \<E>1_def \<E>2_def assms(2) by fastforce
-   show "?a \<Longrightarrow> ?b \<Longrightarrow> ?c"
+   show claim1:"\<And> f f'. ?a f \<Longrightarrow> ?b f f' \<Longrightarrow> ?c f f'"
      unfolding new_f_def old_f_def
      unfolding symmetric[OF \<E>1_def_old] symmetric[OF \<E>2_def_old] 
    proof(goal_cases)
-     case 1
+     case (1 f f')
      note case1=this[simplified]
      have ex_b:"\<And> v. v\<in>dVs \<E> \<Longrightarrow> - flow_network.ex fst snd \<E> f v = \<b> v"
        using case1 flow_network.isbflow_def[OF assms(1)] by auto
@@ -1214,10 +1223,10 @@ then 0 else undefined)"
         by(auto simp add: sum_if_P)
     qed
   qed
-  show "?x \<Longrightarrow> ?y \<Longrightarrow> ?z"
+  show claim2:"\<And> f f'. ?x f' \<Longrightarrow> ?y f f' \<Longrightarrow> ?z f f'"
      unfolding new_f_def old_f_def
   proof(goal_cases)
-    case 1
+    case (1 f f')
     note case1=this
     show ?case 
     proof(rule, goal_cases)
@@ -1375,6 +1384,54 @@ then 0 else undefined)"
         by (metis awalk_Cons_iff u_props(1))
       ultimately show False by auto  
     qed
+  qed
+  show "cost_flow_network.is_Opt fst snd id (ereal \<circ> \<u>) \<c> \<E> \<b> f \<Longrightarrow>
+    f' = new_f \<E> \<u> f \<Longrightarrow> cost_flow_network.is_Opt fst snd id \<u>' \<c>' \<E>' \<b>' f'"
+  proof(goal_cases)
+    case 1
+    hence bflow:"flow_network.isbflow fst snd id (ereal o \<u>) \<E> f \<b>"
+      using assms(1) cost_flow_network.intro cost_flow_network.is_Opt_def by blast
+    hence bflow':"flow_network.isbflow fst snd id \<u>' \<E>' f' \<b>'"
+      using "1"(2) claim1 by blast 
+    moreover have "flow_network.isbflow fst snd id \<u>' \<E>' g' \<b>' \<Longrightarrow>
+           cost_flow_spec.\<C> \<E>' \<c>' f' \<le> cost_flow_spec.\<C> \<E>' \<c>' g'" for g'
+    proof-
+      assume asm: "flow_network.isbflow fst snd id \<u>' \<E>' g' \<b>'"
+      have "flow_network.isbflow fst snd id (ereal o \<u>) \<E> (old_f g') \<b>"
+           "cost_flow_spec.\<C> \<E> \<c> (old_f g') = cost_flow_spec.\<C> \<E>' \<c>' g'"
+        using claim2[OF asm refl] by auto
+      moreover have "cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'"
+        using claim1[OF bflow] 1(2) by simp
+      ultimately show ?thesis 
+        using 1(1) 
+        by(auto simp add: cost_flow_network.is_Opt_def[OF  cost_flow_network.intro[OF assms(1)]])
+    qed
+    ultimately show ?case
+      by(auto intro: cost_flow_network.is_OptI[OF cost_flow'])
+  qed
+  show "cost_flow_network.is_Opt fst snd id \<u>' \<c>' \<E>' \<b>' f' \<Longrightarrow>
+    f = old_f f' \<Longrightarrow> cost_flow_network.is_Opt fst snd id (ereal \<circ> \<u>) \<c> \<E> \<b> f"
+  proof(goal_cases)
+    case 1
+    hence bflow':"flow_network.isbflow fst snd id  \<u>' \<E>' f' \<b>'" 
+      using cost_flow' cost_flow_network.is_Opt_def by blast
+    hence bflow:"flow_network.isbflow fst snd id (ereal o \<u>) \<E> f \<b>"
+      using "1"(2) claim2 by blast 
+    moreover have "flow_network.isbflow fst snd id (ereal o \<u>) \<E> g \<b> \<Longrightarrow>
+           cost_flow_spec.\<C> \<E> \<c> f \<le> cost_flow_spec.\<C> \<E> \<c> g" for g
+    proof-
+      assume asm: "flow_network.isbflow fst snd id (ereal o \<u>) \<E> g \<b>"
+      have "flow_network.isbflow fst snd id  \<u>' \<E>' (new_f \<E> \<u> g) \<b>'"
+           "cost_flow_spec.\<C> \<E>' \<c>' (new_f \<E> \<u> g) = cost_flow_spec.\<C> \<E> \<c> g"
+        using claim1[OF asm refl] by auto
+      moreover have "cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'"
+        using claim2[OF bflow'] 1(2) by simp
+      ultimately show ?thesis 
+        using 1(1) 
+        by(auto simp add: cost_flow_network.is_Opt_def[OF  cost_flow_network.intro[OF flow_network']])
+    qed
+    ultimately show ?case 
+      by(auto intro: cost_flow_network.is_OptI[OF cost_flow_network.intro[OF assms(1)]])
   qed
 qed
 

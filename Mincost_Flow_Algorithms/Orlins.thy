@@ -210,11 +210,32 @@ proof(induction arbitrary:  k rule:
         cases "return state", goal_cases)
     case 3
     show ?case 
-      proof(insert 3, subst if_not_P, simp, subst if_not_P, simp, 
-            subst (asm)  if_not_P, simp, subst (asm)  if_not_P, simp, 
-             cases k, goal_cases)
+    proof(insert 3, subst if_not_P, goal_cases)
+      case 1
+      thus ?case by simp
+    next
+      case 2
+      thus ?case
+      proof(subst if_not_P, goal_cases)
+      case 1 
+      thus ?case by simp
+    next
+      case 2
+      thus ?case
+      proof( subst (asm)  if_not_P, goal_cases)
         case 1
+        thus ?case by simp
+      next
+        case 2 thus ?case
+          proof(subst (asm) if_not_P, goal_cases)
+        case 1
+        thus ?case by simp
+      next
+        case 2
         thus ?case
+        proof(cases k, goal_cases)
+          case 1
+          thus ?case
           unfolding Let_def
           by(subst orlins.psimps, auto intro: orlins.domintros)
       next
@@ -223,6 +244,7 @@ proof(induction arbitrary:  k rule:
           unfolding Let_def
         by(intro IH(2)[where k41 = "k-1"], auto simp add: algebra_simps)
     qed
+  qed qed qed qed
   qed (auto simp add: notyetterm_no_change)
 next
   case 1
@@ -1061,7 +1083,7 @@ lemma orlins_entry_after_compow:
         "orlins_entry state"
   shows "orlins_entry ((compow k orlins_one_step_check) state)"
   using assms 
-proof(induction k arbitrary: state, simp)
+proof(induction k arbitrary: state)
   case (Suc k)
   have state_ret:"return state = notyetterm" 
     using notyetterm_no_change[of state "Suc k"] Suc(5) by force
@@ -1077,7 +1099,7 @@ proof(induction k arbitrary: state, simp)
     by(intro Suc(1) some_balance_after_one_step | 
       (fastforce intro: aux_invar_pres_orlins_one_step invar_gamma_pres_orlins_one_step 
                         orlins_entry_ofter_one_step)+)+
-qed
+qed simp
 
 lemma orlins_compow_invar_forest_pres:
   assumes "invar_forest state"
@@ -1591,7 +1613,7 @@ proof-
       unfolding M_def Delta_minus_def Delta_plus_def
       by(auto intro: card_mono[OF finite_E] )
     have "\<exists> e \<in> \<Delta>\<^sup>+ Z \<union> \<Delta>\<^sup>- Z. current_flow state' e > 8 * real N * new_\<gamma> state'"
-    proof(rule ccontr, auto, goal_cases)
+    proof(rule ccontr, goal_cases)
       case 1
       hence asm:"\<And> e. e \<in> \<Delta>\<^sup>+ Z \<union> \<Delta>\<^sup>- Z \<Longrightarrow> current_flow state' e \<le> 8 * real N * new_\<gamma> state'" by force
       have "sum (current_flow state') (\<Delta>\<^sup>+ Z \<union> \<Delta>\<^sup>- Z) 
@@ -2265,23 +2287,33 @@ proof-
     case success
     show "is_Opt \<b> (current_flow state')"
       unfolding assms
-    proof(subst orlins.psimps, fastforce intro: orlins.domintros simp add: success, simp add: success, 
-            cases "\<forall> v \<in>\<V>. \<b> v = 0", goal_cases)
+    proof(subst orlins.psimps, goal_cases)
       case 1
-      then show ?case
+      thus ?case
+        by(fastforce intro: orlins.domintros simp add: success)
+    next
+      case 2 
+    have "\<forall>v\<in>\<V>. \<b> v = 0 \<Longrightarrow> is_Opt \<b> (current_flow (local.loopB initial))"
+        proof(goal_cases)
+       case 1
+       then show ?case
         apply(subst loopB_simps'(1))
         using invar_isOptflow_initial loopB_simps'(1)
-        unfolding invar_isOptflow_def is_Opt_def isbflow_def initial_def loopB_succ_upd_def Let_def
-        by (auto intro:  loopB_succ_condI)
-    next
-      case 2
+        by (auto intro:  loopB_succ_condI simp add:  invar_isOptflow_def is_Opt_def isbflow_def initial_def loopB_succ_upd_def Let_def)
+    qed
+    moreover have "\<not> (\<forall>v\<in>\<V>. \<b> v = 0) \<Longrightarrow> is_Opt \<b> (current_flow (local.loopB initial))"
+    proof(goal_cases)
+      case 1
       then show ?case
         using \<Phi>_initial[simplified invar_non_zero_b_def] loopB_entry_initial success
         by(fastforce intro: loopB_correctness loopB_invar_isOpt_pres aux_invar_initial 
                             loopB_termination 
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                    simp add: initial_def)
-  qed 
+    qed 
+    ultimately show ?case
+      by(auto simp add: success )
+qed
    next 
      case failure
      hence "return state' = failure" unfolding assms
@@ -2322,18 +2354,24 @@ qed
   next 
     case failure
     show "\<nexists>f. f is \<b> flow"
-      using fail_after
-    unfolding assms
-    proof(subst (asm) orlins.psimps, fastforce intro: orlins.domintros simp add: failure, simp add: failure, 
-            cases "\<forall> v \<in>\<V>. \<b> v = 0", goal_cases)
+  proof(goal_cases)
+    case 1
+    have 4: "return (local.orlins (local.loopB initial)) = failure"
+      using assms fail_after by simp
+     have 2:"return (local.orlins (local.loopB initial)) = failure \<Longrightarrow>
+    \<forall>v\<in>\<V>. \<b> v = 0 \<Longrightarrow> \<forall>f. \<not> f is \<b> flow"
+      proof(goal_cases)
       case 1
       then show ?case
         apply(subst (asm) loopB_simps'(1))
         apply(fastforce intro: loopB_succ_condI simp add: initial_def)
         unfolding loopB_succ_upd_def Let_def
         by(subst (asm) orlins.psimps, rule orlins.domintros, auto)
-    next
-      case 2
+    qed
+    have 3: "return (local.orlins (local.loopB initial)) = failure \<Longrightarrow>
+    \<not> (\<forall>v\<in>\<V>. \<b> v = 0) \<Longrightarrow> \<forall>f. \<not> f is \<b> flow"
+    proof(goal_cases)
+      case 1
       thus ?case
         using \<Phi>_initial[simplified invar_non_zero_b_def] loopB_entry_initial failure
         by(intro loopB_completeness[of initial, simplified],
@@ -2341,7 +2379,10 @@ qed
                             loopB_termination 
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
             simp add:  initial_def to_graph_def empty_forest_axioms)+)
-  qed 
+    qed 
+    show ?case
+      using 4 2 3 by auto
+  qed
    next 
      case success
      hence "return state' = success" unfolding assms

@@ -83,7 +83,10 @@ proof(induction rule: loopB.pinduct[OF assms])
     show ?case 
     proof(subst (13) Let_def, subst (13) Let_def, subst (13) Let_def, subst add_fst_def,
           subst snd_conv, subst if_distrib[of prod.snd],
-          rule if_cong, simp, simp, subst if_distrib[of prod.snd], rule if_cong, simp, goal_cases)
+          rule if_cong[OF refl], goal_cases)
+      case 2
+      show ?case
+      proof(insert 2, subst if_distrib[of prod.snd], rule if_cong[OF refl], goal_cases)
       case 1
       show ?case 
        apply(insert 1, subst Let_def, subst (6) Let_def, subst if_distrib[of prod.snd], rule if_cong, simp)
@@ -97,7 +100,8 @@ proof(induction rule: loopB.pinduct[OF assms])
     unfolding Let_def
     by(subst add_fst_snd_same,rule IH(3)[OF]) auto
   qed
- qed
+ qed simp
+qed
 qed
 
 definition "loopBtime_succ_upd state = (let
@@ -235,14 +239,15 @@ proof-
  qed   
 
 lemma loopB_call1_cond_Phi: "loopB_call1_cond state \<Longrightarrow> invar_gamma state \<Longrightarrow> \<Phi> state > 0"
-proof(rule loopB_call1_condE, simp, goal_cases)
-  case (1 f b \<gamma> s t P f' b' state')
+proof(rule loopB_call1_condE[of state],  goal_cases)
+  case (2 f b \<gamma> s t P f' b' state')
+  note 1 = 2
   show ?case 
   unfolding \<Phi>_def
-  proof(insert 1, rule bexE[where P = "\<lambda> s. (1 - \<epsilon>) * \<gamma> < b s" and A = \<V>], simp, goal_cases)
-    case (1 ss)
+  proof(insert 1, rule bexE[where P = "\<lambda> s. (1 - \<epsilon>) * \<gamma> < b s" and A = \<V>],  goal_cases)
+    case (2 ss)
     show ?case 
-    apply(insert 1, rule ordered_comm_monoid_add_class.sum_pos2[OF \<V>_finite, of ss], simp)
+    apply(insert 2, rule ordered_comm_monoid_add_class.sum_pos2[OF \<V>_finite, of ss], simp)
     unfolding invar_gamma_def 
      apply (simp add: pos_less_divide_eq)
     by (smt (verit, best) \<epsilon>_axiom(1) divide_nonneg_pos zero_le_ceiling)
@@ -250,14 +255,14 @@ qed
 qed
 
 lemma loopB_call2_cond_Phi: "loopB_call2_cond state \<Longrightarrow> invar_gamma state \<Longrightarrow> \<Phi> state > 0"
-proof(rule loopB_call2_condE, simp, goal_cases)
-  case (1 f b \<gamma> t s P f' b' state')
+proof(rule loopB_call2_condE[of state], goal_cases)
+  case (2 f b \<gamma> t s P f' b' state')
   show ?case
   unfolding \<Phi>_def
-  proof(insert 1, rule bexE[where P = "\<lambda> t. - (1 - \<epsilon>) * \<gamma> > b t" and A = \<V>], simp, goal_cases)
-    case (1 tt)
+  proof(insert 2, rule bexE[where P = "\<lambda> t. - (1 - \<epsilon>) * \<gamma> > b t" and A = \<V>],  goal_cases)
+    case (2 tt)
     show ?case 
-    apply(insert 1, rule ordered_comm_monoid_add_class.sum_pos2[OF \<V>_finite, of tt], simp)
+    apply(insert 2, rule ordered_comm_monoid_add_class.sum_pos2[OF \<V>_finite, of tt], simp)
     unfolding invar_gamma_def
     apply (smt (verit, ccfv_SIG) pos_minus_divide_less_eq zero_less_ceiling)
     by (smt (verit, best) \<epsilon>_axiom(1) divide_nonneg_pos zero_le_ceiling)

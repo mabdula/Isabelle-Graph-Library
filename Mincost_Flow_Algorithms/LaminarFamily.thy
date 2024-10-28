@@ -196,7 +196,7 @@ next
       using \<open>{X. X \<notin> \<X> \<and> x \<notin> X \<and> insert x X \<in> \<X> \<and> X \<noteq> {}} \<subseteq> \<Y>\<close> finite_Y infinite_super by auto
     have bb:"{X \<in> \<X>. x \<in> X \<and> X - {x} \<notin> \<X> \<and> X - {x} \<noteq> {}}
            \<subseteq> insert x ` {X. X \<notin> \<X> \<and> x \<notin> X \<and> insert x X \<in> \<X> \<and> X \<noteq> {}}"
-    proof(rule, simp, goal_cases)
+    proof(rule, goal_cases)
       case (1 Y)
       hence "(Y- {x}) \<notin> \<X> \<and> x \<notin> (Y- {x}) \<and> insert x (Y- {x}) \<in> \<X> \<and> (Y- {x}) \<noteq> {}"
         by (simp add: insert_absorb)
@@ -227,7 +227,7 @@ next
       apply(fastforce simp add: disjnt_iff , rule add_cong2, subst card_Un_disjnt)
       using finite_X disjnt_iff by auto
     also have "... = card (\<X> - insert {x} {X. X \<in> \<X> \<and> x \<in> X \<and> X - {x}  \<in> \<X> \<and> X - {x} \<noteq> {}})"
-    proof(rule cong[of _ card], simp, rule, goal_cases)
+    proof(rule cong[of _ card, OF refl], rule, goal_cases)
       case 1
       show ?case 
       proof(rule, goal_cases)
@@ -264,12 +264,12 @@ next
           subst card.insert_remove, goal_cases)
       case 2
       show ?case 
-      proof(simp, rule ccontr, goal_cases)
+      proof(rule ccontr, goal_cases)
         case 1
         then obtain X Y where X_prop: "X \<in> \<X>" "x \<in> X" "X - {x} \<in> \<X>" "\<not> X \<subseteq> {x}"
                         and   Y_prop: "Y \<in> \<X>" "x \<in> Y" "Y - {x} \<in> \<X>" "\<not> Y \<subseteq> {x}" 
-                        and  X_neq_Y: "X \<noteq> Y"
-          by (metis (mono_tags, lifting) card.infinite card_le_Suc0_iff_eq le_SucI le_zero_eq mem_Collect_eq)
+                        and  X_neq_Y: "X \<noteq> Y" 
+          by simp (metis (mono_tags, lifting) card.infinite card_le_Suc0_iff_eq le_SucI le_zero_eq mem_Collect_eq)
         hence X_Y_subs:"X \<subseteq> Y \<or> Y \<subseteq> X" using IH(4)[simplified laminar_def] by auto
         show ?case
         proof(rule disjE[OF X_Y_subs], goal_cases)

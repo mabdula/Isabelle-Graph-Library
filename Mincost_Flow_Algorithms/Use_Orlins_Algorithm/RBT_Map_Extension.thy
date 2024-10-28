@@ -1,4 +1,4 @@
-theory RBT_Map_extension
+theory RBT_Map_Extension
   imports "HOL-Data_Structures.RBT_Map"
 begin
 

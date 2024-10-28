@@ -1350,9 +1350,19 @@ next
         cases "return state", goal_cases)
     case 3
     show ?case 
-      proof(insert 3, subst if_not_P, simp, subst if_not_P, simp, 
-            subst (asm)  if_not_P, simp, subst (asm)  if_not_P, simp, 
-            (subst (asm) let_swap[of "add_fst tt"])+, cases k, goal_cases)
+    proof(insert 3, subst if_not_P, goal_cases)
+      case 2
+      thus ?case
+      proof( subst if_not_P, goal_cases)
+      case 2
+      thus ?case
+        proof(subst (asm)  if_not_P, goal_cases)
+        case 2
+        thus ?case
+        proof(subst (asm)  if_not_P,goal_cases)
+        case 2
+        show ?case
+        proof(insert 2,(subst (asm) let_swap[of "add_fst tt"])+, cases k, goal_cases)
         case 1
         show ?case
           apply(insert 1)
@@ -1370,6 +1380,10 @@ next
           by(fastforce intro!: succ_fail_term_same_with_time_dom[of "k - 1" _ _ tfin state'] IH(2)[where k42 = "k-1"] 
                      simp add: algebra_simps  Let_def add_fst_def sym[OF orlins_one_step_time_def[simplified Let_def]])+
       qed
+    qed simp
+  qed simp
+qed simp
+qed simp
     qed (auto simp add: terminated_mono[of 0, simplified])
   qed
 

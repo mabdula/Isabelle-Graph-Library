@@ -139,7 +139,7 @@ lemma sum_singleton: "(\<Sum> i \<in> {x}. f i) = f x"
   by(rule  trans[OF sum.insert_remove[of "{}" f x]], simp+)
 
 lemma sum_index_shift: "finite X \<Longrightarrow> sum f {x+(k::nat)|x. x \<in> X} = sum (\<lambda>x. f (x+k)) X"
-  proof(induction rule: finite.induct, simp)
+  proof(induction rule: finite.induct)
     case (insertI X x)
     then show ?case
     proof(cases "x \<in> X")
@@ -162,7 +162,7 @@ lemma sum_index_shift: "finite X \<Longrightarrow> sum f {x+(k::nat)|x. x \<in> 
        finally show "sum f {xa + k |xa. xa \<in> {x} \<union> X} = (\<Sum>x\<in>insert x X. f (x + k))" by simp
      qed
    qed (smt (verit, best) Collect_cong insert_absorb)
- qed
+ qed simp
 
 lemma distinct_sum: "distinct xs \<Longrightarrow> sum f (set xs)  = foldr (\<lambda> x acc. acc + f x) xs 0"
   by(induction xs) (simp add: add.commute)+
@@ -225,7 +225,7 @@ lemma sum_filter_zero: "finite X \<Longrightarrow> sum f X = sum f {x|x.   x \<i
   by (metis (mono_tags, lifting) DiffD1 DiffD2 mem_Collect_eq subsetI sum.mono_neutral_cong_left)
 
 lemma sum_up_leq:"(\<And> j. (a::nat) \<le> j \<Longrightarrow> j < i \<Longrightarrow> ((f j)::nat) \<le> g j) \<Longrightarrow> a < i \<Longrightarrow> n = i - a \<Longrightarrow> (\<Sum>j = a..<i. f j) \<le> (\<Sum>j = a..<i. g j)"
-proof(induction n arbitrary: a, simp)
+proof(induction n arbitrary: a)
   case (Suc n)
   have " sum f {a..<i} =  f a + sum f {Suc a..<i}" 
     using Suc.prems(2) sum.atLeast_Suc_lessThan by blast
@@ -236,11 +236,11 @@ proof(induction n arbitrary: a, simp)
   also have "... =  sum g {a..<i}" 
     by (simp add: Suc.prems(2) sum.atLeast_Suc_lessThan)
   finally show ?case by simp
-qed 
+qed simp
 
 lemma sum_up_same_cong:"(\<And> j. (a::nat) \<le> j \<Longrightarrow> j < i \<Longrightarrow> ((f j)::nat) = g j) \<Longrightarrow> a \<le> i \<Longrightarrow> 
 n = i - a \<Longrightarrow> (\<Sum>j = a..<i. f j) = (\<Sum>j = a..<i. g j)"
-proof(induction n arbitrary: a, simp)
+proof(induction n arbitrary: a)
   case (Suc n) 
     have a_less_i:"a < i" using Suc by auto
   have " sum f {a..<i} =  f a + sum f {Suc a..<i}" 
@@ -252,13 +252,13 @@ proof(induction n arbitrary: a, simp)
   also have "... =  sum g {a..<i}" 
     by (simp add: Suc.prems(2) a_less_i  sum.atLeast_Suc_lessThan)
   finally show ?case by simp
-qed 
+qed simp
 
 lemma sum_up_assoc:"(\<Sum>j = a..<(i::nat). f j)  + (\<Sum>j = a..<i. g j) = (\<Sum>j = a..<i. f j +  g j)"
   by (simp add: sum.distrib)
 
 lemma sum_ones_interval: "a \<le>(b::nat) \<Longrightarrow> n = b - a \<Longrightarrow> (\<Sum> j = a..<b. 1) = b-a"
-proof(induction n arbitrary: a, simp)
+proof(induction n arbitrary: a)
   case (Suc n)
   hence a_less_i: "a < b"by simp
   have " sum (\<lambda> x. 1) {a..<b} =  1 + sum (\<lambda> x. 1)  {Suc a..<b}" 
@@ -268,7 +268,7 @@ proof(induction n arbitrary: a, simp)
   also have "... =  b - a" 
     by (simp add: Suc.prems(2) sum.atLeast_Suc_lessThan)
   finally show ?case by simp
-qed
+qed simp
 
 lemma sum_indes_less_suc_conv:"(\<Sum> j \<in> {a..<Suc b}. f j) = (\<Sum> j \<in> {a.. b}. f j)" 
   using atLeastLessThanSuc_atLeastAtMost by presburger
