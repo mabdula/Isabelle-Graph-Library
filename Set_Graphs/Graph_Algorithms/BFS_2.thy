@@ -166,17 +166,17 @@ next_frontier::"'neighb \<Rightarrow> 'neighb \<Rightarrow> 'neighb"
 
 assumes
    expand_tree[simp]:
-     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow> 
+     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow> 
        Graph.graph_inv (expand_tree BFS_tree frontier vis)"
-     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow>
+     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>
         Graph.digraph_abs (expand_tree BFS_tree frontier vis) = 
          (Graph.digraph_abs BFS_tree) \<union> 
          {(u,v) | u v. u \<in> t_set (frontier) \<and> 
                        v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u -
                        t_set vis)}" and
    next_frontier[simp]:
-    "\<lbrakk>neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow>  neighb_inv (next_frontier frontier vis)"
-    "\<lbrakk>neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow>
+    "\<lbrakk>neighb_inv frontier; neighb_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>  neighb_inv (next_frontier frontier vis)"
+    "\<lbrakk>neighb_inv frontier; neighb_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>
        t_set (next_frontier frontier vis) =
          (\<Union> {Pair_Graph.neighbourhood (Graph.digraph_abs G) u | u . u \<in> t_set frontier}) - t_set vis"
 
@@ -303,6 +303,7 @@ definition
 
 definition "initial_state \<equiv> \<lparr>parents =  empty, current = srcs, visited = \<emptyset>\<^sub>N\<rparr>"
 
+lemmas[code] = BFS_impl.simps initial_state_def
 
 context
   includes Graph.adj.automation Graph.neighb.set.automation set_ops.automation

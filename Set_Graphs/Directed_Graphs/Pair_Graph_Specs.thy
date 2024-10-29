@@ -160,7 +160,6 @@ definition "add_edge G u v \<equiv>
     digraph' = update u neighb' G
   in
     digraph'
- 
 )"
 
 definition "delete_edge G u v \<equiv> 
