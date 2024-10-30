@@ -168,6 +168,8 @@ abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G"
 
 notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
+lemmas [code] = Graph.neighbourhood_def
+
 
 function (domintros) DFS_Aux::"('v, 'neighb) DFS_Aux_state \<Rightarrow> ('v, 'neighb) DFS_Aux_state" where
   "DFS_Aux dfs_aux_state = 
@@ -194,6 +196,37 @@ function (domintros) DFS_Aux::"('v, 'neighb) DFS_Aux_state \<Rightarrow> ('v, 'n
     )"
   by pat_completeness auto
 
+partial_function (tailrec) DFS_Aux_impl::"('v, 'neighb) DFS_Aux_state \<Rightarrow> ('v, 'neighb) DFS_Aux_state" where
+  "DFS_Aux_impl dfs_aux_state = 
+     (case (stack dfs_aux_state) of (v # stack_tl) \<Rightarrow>
+       let 
+         excl = (case stack_tl of [] \<Rightarrow> \<emptyset>\<^sub>N | u # _ \<Rightarrow> insert u \<emptyset>\<^sub>N)
+       in
+       (if ((\<N>\<^sub>G v) -\<^sub>G excl) \<inter>\<^sub>G (seen dfs_aux_state -\<^sub>G finished dfs_aux_state) \<noteq> \<emptyset>\<^sub>N then 
+          (dfs_aux_state \<lparr>cycle := True\<rparr>)
+        else ((if ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_aux_state)) \<noteq> \<emptyset>\<^sub>N then
+                let w = (sel ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_aux_state)));
+                    stack' = w # (stack dfs_aux_state);
+                    seen' = insert w (seen dfs_aux_state) 
+                in
+                  (DFS_Aux_impl (dfs_aux_state \<lparr>stack := stack', seen := seen' \<rparr>))
+              else
+                let stack' = stack_tl;
+                    finished' = insert v (finished dfs_aux_state)
+                in
+                   DFS_Aux_impl (dfs_aux_state \<lparr>stack := stack', finished := finished'\<rparr>))
+            )
+      )
+     | _ \<Rightarrow> dfs_aux_state
+    )"
+
+lemmas [code] = DFS_Aux_impl.simps
+
+lemma DFS_Aux_impl_same: 
+  assumes "DFS_Aux_dom state"
+  shows "DFS_Aux_impl state = DFS_Aux state"
+  by(induction rule: DFS_Aux.pinduct[OF assms])
+    (subst DFS_Aux.psimps, simp, subst DFS_Aux_impl.simps, auto split: list.split if_split simp add: Let_def)
 
 definition "DFS_Aux_call_1_conds dfs_aux_state \<equiv> 
     (case (stack dfs_aux_state) of (v # stack_tl) \<Rightarrow>
@@ -423,6 +456,7 @@ definition
 
 definition "initial_state \<equiv> \<lparr>stack = [s], seen = insert s \<emptyset>\<^sub>N, finished = \<emptyset>\<^sub>N, cycle = False\<rparr>"
 
+lemmas [code] = initial_state_def
 
 context
 includes  Graph.adj.automation Graph.neighb.set.automation

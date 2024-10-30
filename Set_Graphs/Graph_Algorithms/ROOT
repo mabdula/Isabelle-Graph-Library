@@ -6,11 +6,14 @@ session "Graph_Algorithms" = "Directed_Set_Graphs" +
   theories
     DFS
     BFS_2
+    BFS_Subprocedures
     DFS_Cycles_Aux
     DFS_Cycles
     Bellman_Ford
     Set2_Join_RBT
     DFS_Example
+    BFS_Example
+    DFS_Cycles_Example
     Bellman_Ford_Example
 
   document_files

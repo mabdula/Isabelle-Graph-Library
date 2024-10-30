@@ -125,6 +125,29 @@ function (domintros) DFS_Cycles::"('v, 'neighb) DFS_Cycles_state \<Rightarrow> (
       dfs_cycles_state)"
   by pat_completeness auto
 
+partial_function (tailrec) DFS_Cycles_impl::"('v, 'neighb) DFS_Cycles_state \<Rightarrow> ('v, 'neighb) DFS_Cycles_state" where
+  "DFS_Cycles_impl dfs_cycles_state = 
+    (if V -\<^sub>G (seen dfs_cycles_state) \<noteq> \<emptyset>\<^sub>N
+    then 
+    (let
+      s = sel (V -\<^sub>G (seen dfs_cycles_state));
+      dfs_aux_state = dfs_aux s;
+      cycle' = cycle_aux dfs_aux_state;
+      seen' = seen_aux dfs_aux_state
+    in
+      (if cycle'
+      then dfs_cycles_state \<lparr>cycle := True\<rparr>
+      else DFS_Cycles_impl (dfs_cycles_state \<lparr>seen := seen dfs_cycles_state \<union>\<^sub>G seen'\<rparr>)))
+    else
+      dfs_cycles_state)"
+
+lemmas [code] = DFS_Cycles_impl.simps
+
+lemma DFS_Cycles_impl_same: 
+  assumes "DFS_Cycles_dom state"
+  shows "DFS_Cycles_impl state = DFS_Cycles state"
+  by(induction rule: DFS_Cycles.pinduct[OF assms])
+    (subst DFS_Cycles.psimps, simp, subst DFS_Cycles_impl.simps, auto split: if_split simp add: Let_def)
 
 definition "DFS_Cycles_call_1_conds dfs_cycles_state = 
     (if V -\<^sub>G (seen dfs_cycles_state) \<noteq> \<emptyset>\<^sub>N
@@ -256,6 +279,7 @@ definition "DFS_Cycles_term_rel' \<equiv> call_measure <*mlex*> {}"
 
 definition "initial_state \<equiv> \<lparr>seen = \<emptyset>\<^sub>N, cycle = False\<rparr>"
 
+lemmas [code] = initial_state_def
 
 definition "invar_1 dfs_cycles_state \<equiv> neighb_inv (seen dfs_cycles_state)"
 
