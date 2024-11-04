@@ -1071,8 +1071,6 @@ subsubsection \<open>Choosing a neighbour from a given set\<close>
 definition choose_con_vert where
   "choose_con_vert vs v \<equiv> sel (vs \<inter> (neighbourhood E v))"
 
-
-
 lemma choose_vert_works_1:
   assumes cycle: "distinct (tl C)" and
     quot_aug_path: "p' = (p1 @ u # p2)" "distinct p'" "path (quotG E) p'" "p2 \<noteq> []" and 

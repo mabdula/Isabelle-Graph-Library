@@ -1874,8 +1874,8 @@ locale match = graph_abs G for G+
 
 subsection \<open>Computing a Blossom or an Augmenting Path\<close>
 
-definition compute_alt_path_sound where 
-  "compute_alt_path_sound G M compute_alt_path \<equiv>
+definition compute_alt_path_spec where 
+  "compute_alt_path_spec G M compute_alt_path \<equiv>
    (
     (\<forall>p1 p2 pref1 x post1 pref2 post2. compute_alt_path = Some (p1, p2) \<longrightarrow>
         p1 = pref1 @ x # post1 \<and> p2 = pref2 @ x # post2 \<longrightarrow>
@@ -1911,10 +1911,10 @@ fixes compute_alt_path:: "(('a list \<times> 'a list) option)"
 
 begin
 
-abbreviation "compute_alt_path_sound' \<equiv> compute_alt_path_sound G M compute_alt_path"
+abbreviation "compute_alt_path_spec' \<equiv> compute_alt_path_spec G M compute_alt_path"
   
-(*lemma compute_alt_path_sound_works_1:
-  assumes "compute_alt_path_sound"
+(*lemma compute_alt_path_spec_works_1:
+  assumes "compute_alt_path_spec"
   shows 
     "compute_alt_path = Some (p1, p2) \<Longrightarrow>
         p1 = pref1 @ x # post1 \<and> p2 = pref2 @ x # post2 \<Longrightarrow>
@@ -1946,10 +1946,10 @@ abbreviation "compute_alt_path_sound' \<equiv> compute_alt_path_sound G M comput
     "Some(p1, p2) = compute_alt_path \<Longrightarrow> path G p2"
     "compute_alt_path = Some (p1, p2) \<Longrightarrow> {hd p1, hd p2} \<in> G"
   using assms
-  unfolding compute_alt_path_sound_def
+  unfolding compute_alt_path_spec_def
   by metis+
 *)
-lemma compute_alt_path_sound_works_2:
+lemma compute_alt_path_spec_works_2:
   assumes from_tree:
     "\<And>G M p1 p2 pref1 x post1 pref2 post2. compute_alt_path = Some (p1, p2) \<Longrightarrow>
         p1 = pref1 @ x # post1 \<and> p2 = pref2 @ x # post2 \<Longrightarrow>
@@ -1980,18 +1980,17 @@ lemma compute_alt_path_sound_works_2:
     "\<And>G M p1 p2. compute_alt_path = Some (p1, p2) \<Longrightarrow> path G p1"
     "\<And>G M p1 p2. Some(p1, p2) = compute_alt_path \<Longrightarrow> path G p2"
     "\<And>G M p1 p2. compute_alt_path = Some (p1, p2) \<Longrightarrow> {hd p1, hd p2} \<in> G"
-  shows "compute_alt_path_sound'"
+  shows "compute_alt_path_spec'"
   using assms
-  unfolding compute_alt_path_sound_def
+  unfolding compute_alt_path_spec_def
   apply(intro conjI allI)
   by metis+
 
 context 
 assumes 
-
 (*soundness of compute_alt_path*)
-compute_alt_path_sound:
-"compute_alt_path_sound'" and
+compute_alt_path_spec:
+"compute_alt_path_spec'" and
 (*completeness of compute_alt_path*)
 compute_alt_path_complete:
 "(((\<exists>p. path G p \<and> distinct p \<and> matching_augmenting_path M p)))
@@ -2029,12 +2028,12 @@ lemma shows
   "compute_alt_path = Some (p1, p2) \<Longrightarrow> path G p1"
   "compute_alt_path = Some(p1, p2) \<Longrightarrow> path G p2"
   "compute_alt_path = Some (p1, p2) \<Longrightarrow> {hd p1, hd p2} \<in> G"
-  using compute_alt_path_sound
-  unfolding compute_alt_path_sound_def
+  using compute_alt_path_spec
+  unfolding compute_alt_path_spec_def
   by metis+
 
 
-lemmas compute_alt_path_sound' = from_tree alt_paths hds_neq even_lens distinct paths
+lemmas compute_alt_path_spec' = from_tree alt_paths hds_neq even_lens distinct paths
 
 lemma compute_alt_path_res_from_tree:
   assumes compute_alt_path_res: "Some (p1, p2) = compute_alt_path" and
@@ -2139,8 +2138,8 @@ locale compute_match_blossom'_use =
   for E::"'a set set " and sel create_vert:: "'a set \<Rightarrow> 'a" +
   fixes compute_alt_path::"'a set set \<Rightarrow> 'a set set \<Rightarrow> ('a list \<times> 'a list) option"
   assumes
-   compute_alt_path_sound:
-    "\<lbrakk>graph_invar G; matching M; M\<subseteq>G\<rbrakk> \<Longrightarrow> compute_alt_path_sound G M (compute_alt_path G M)" and
+   compute_alt_path_spec:
+    "\<lbrakk>graph_invar G; matching M; M\<subseteq>G\<rbrakk> \<Longrightarrow> compute_alt_path_spec G M (compute_alt_path G M)" and
    compute_alt_path_complete:
     "\<lbrakk>graph_invar G; matching M; M\<subseteq>G\<rbrakk> \<Longrightarrow> (((\<exists>p. path G p \<and> distinct p \<and> matching_augmenting_path M p)))
          \<Longrightarrow> (\<exists>blos_comp. compute_alt_path G M = Some blos_comp)"
@@ -2153,9 +2152,9 @@ proof(unfold_locales, goal_cases)
   case (1 G M)
 
   then interpret compute_match_blossom' sel G M "compute_alt_path G M"
-    using compute_alt_path_sound compute_alt_path_complete
+    using compute_alt_path_spec compute_alt_path_complete
     apply unfold_locales
-    by (auto simp: compute_alt_path_sound_def)
+    by (auto simp: compute_alt_path_spec_def)
 
   have "\<exists>p1 p2. compute_alt_path G M = Some (p1, p2)"
     using compute_alt_path_complete 1
@@ -2166,9 +2165,9 @@ proof(unfold_locales, goal_cases)
 next
   case (2 G M p)
   then interpret compute_match_blossom' sel G M "compute_alt_path G M"
-    using compute_alt_path_sound compute_alt_path_complete
+    using compute_alt_path_spec compute_alt_path_complete
     apply unfold_locales
-    by (auto simp: compute_alt_path_sound_def)
+    by (auto simp: compute_alt_path_spec_def)
 
   have "(\<exists>e. e \<in> unmatched_edges) \<or> (\<nexists>e. e \<in> unmatched_edges) \<and> (\<exists>p1 p2. compute_alt_path G M = Some (p1, p2) \<and> set p1 \<inter> set p2 = {})"
     using 2
@@ -2202,23 +2201,23 @@ next
       "set p1 \<inter> set p2 = {}"
       by blast
     then have paths: "path G p1" "path G p2" "{hd p1, hd p2} \<in> G" 
-      using paths compute_alt_path_sound compute_alt_path_complete 2
+      using paths compute_alt_path_spec compute_alt_path_complete 2
       by meson+
     then have "path G ((rev p1) @ p2)"
       by (simp add: construct_path)
 
     moreover have distincts: "distinct p1" "distinct p2" 
-      using distinct p1p2 compute_alt_path_sound compute_alt_path_complete 2
+      using distinct p1p2 compute_alt_path_spec compute_alt_path_complete 2
       by meson+
     then have "distinct ((rev p1) @ p2)"
       using p1p2(3)
       by (simp add: construct_path)
-    moreover have "compute_alt_path_sound'"
-      using compute_alt_path_sound
+    moreover have "compute_alt_path_spec'"
+      using compute_alt_path_spec
       by (simp add: "2"(2) "2"(3) graph)
     hence distincts: "matching_augmenting_path M ((rev p1) @ p2)"
       apply(intro construct_aug_path'[OF p1p2(3)] iffD2[OF length_greater_0_conv[symmetric]] odd_pos
-          compute_alt_path_sound'[OF _ _ p1p2(2)])
+          compute_alt_path_spec'[OF _ _ p1p2(2)])
       by (simp add: p1p2(2))+
  
     moreover have "p =  ((rev p1) @ p2)"
@@ -2230,16 +2229,16 @@ next
 next
   case (3 G M stem C)
   then interpret compute_match_blossom' sel G M "compute_alt_path G M"
-    using compute_alt_path_sound compute_alt_path_complete
+    using compute_alt_path_spec compute_alt_path_complete
     apply unfold_locales
-    by (auto simp: compute_alt_path_sound_def)
+    by (auto simp: compute_alt_path_spec_def)
 
   obtain p1 p2 where p1p2: "compute_alt_path G M = Some (p1, p2)" "set p1 \<inter> set p2 \<noteq> {}"
     using 3
     by(fastforce simp: Let_def compute_match_blossom_def
         split: option.splits if_splits simp add: split_beta)
-  moreover have "compute_alt_path_sound'"
-      using compute_alt_path_sound
+  moreover have "compute_alt_path_spec'"
+      using compute_alt_path_spec
       by (simp add: "3"(2) "3"(3) graph)
     ultimately have paths: "path G p1" "path G p2" "{hd p1, hd p2} \<in> G" 
     using paths
@@ -2259,12 +2258,12 @@ next
   moreover have "last pfx1 = last pfx2"
     using pfx12 pfx_common_end by fastforce
   ultimately have "p1' = p2'"
-    using compute_alt_path_res_from_tree[OF \<open>compute_alt_path_sound'\<close>] p1p2(1) pfx12
+    using compute_alt_path_res_from_tree[OF \<open>compute_alt_path_spec'\<close>] p1p2(1) pfx12
     by force
 
   have p2: "match_blossom M (rev (drop (length pfx1) p1)) (rev pfx1 @ pfx2)" if "matching M" (is ?p2)
     apply (intro  common_pfxs_form_match_blossom' [where ?p2.0 = p2 and ?p = p1'] pfx12)
-    using that p1p2 compute_alt_path_sound'[where ?p2.0 = p2 and ?p1.0 = p1, OF \<open>compute_alt_path_sound'\<close>]
+    using that p1p2 compute_alt_path_spec'[where ?p2.0 = p2 and ?p1.0 = p1, OF \<open>compute_alt_path_spec'\<close>]
     using \<open>p1 = pfx1 @ p1'\<close> \<open>p2 = pfx2 @ p2'\<close> \<open>p1' = p2'\<close>
     by metis+
 
@@ -2294,17 +2293,16 @@ definition follow_invar::"('a \<Rightarrow> 'a option) \<Rightarrow> bool" where
 
 (*Done: Invar 3*)
 
-definition follow_invar'::"('a \<Rightarrow> 'a option) \<Rightarrow> bool" where
-  "follow_invar' par \<equiv> wf {(x, y) |x y. (Some x = par y)}"
+definition parent_spec::"('a \<Rightarrow> 'a option) \<Rightarrow> bool" where
+  "parent_spec parent \<equiv> wf {(x, y) |x y. (Some x = parent y)}"
 
 
 locale parent = 
+  fixes parent::"'a \<Rightarrow> 'a option" and
+    parent_rel::"'a \<Rightarrow> 'a \<Rightarrow> bool"
 
-fixes parent::"'a \<Rightarrow> 'a option" and
-  parent_rel::"'a \<Rightarrow> 'a \<Rightarrow> bool"
-
-assumes parent_rel:
-  "follow_invar' parent"
+  assumes parent_rel:
+    "parent_spec parent"
 begin
 
 function (domintros) follow where
@@ -2346,7 +2344,7 @@ lemma parent_eq_follow_rel: "follow_rel = (\<lambda>v' v. Some v' = parent v)"
 lemma wf_found_rel:
   "wf {(x,y) | x y. follow_rel x y}"
   unfolding parent_eq_follow_rel
-  using parent_rel[unfolded follow_invar'_def]
+  using parent_rel[unfolded parent_spec_def]
   by simp
 
 lemma follow_dom:
@@ -2922,24 +2920,24 @@ shows "\<exists>v2 par. p2 = parent.follow par v2"
 subsubsection \<open>Algorithm is Partially Correct: Any Computed Alternating Paths Satisfy the Correctness Props\<close>
 
 lemma wf_par':
-  assumes wf: "follow_invar' par" and
+  assumes wf: "parent_spec par" and
     par': "par' = par(v2 := Some v1, v3 := Some v2)" and
     neq: "v1 \<noteq> v2" "v2 \<noteq> v3" "v1 \<noteq> v3" and
     no_ances: "\<forall>v. par v \<noteq> Some v2" "\<forall>v. par v \<noteq> Some v3" and
     no_par: "par v2 = None" "par v3 = None"
-  shows "follow_invar' par'" (is ?g1) "follow_invar' (par(v2 := Some v1))" (is ?g2)
+  shows "parent_spec par'" (is ?g1) "parent_spec (par(v2 := Some v1))" (is ?g2)
 proof-
   have "(v2, v1) \<notin> {(x,y) | x y. (Some x = par y)}\<^sup>*"
     using neq(1) no_ances(1)
     apply clarsimp
     by (metis (mono_tags, lifting) converse_rtranclE mem_Collect_eq old.prod.case)
   then have wf_v2_v1: "wf (insert (v1, v2) {(x,y) | x y. (Some x = par y)})"
-    using wf[unfolded follow_invar'_def] by blast
+    using wf[unfolded parent_spec_def] by blast
   moreover have "{(x, y) |x y. Some x = (par(v2 \<mapsto> v1)) y} = (insert (v1, v2) {(x, y) |x y. Some x = par y})"
     using neq(1) no_par
     by auto
   ultimately show ?g2
-    unfolding follow_invar'_def
+    unfolding parent_spec_def
     by simp
 
   have "(v3, v2) \<notin> {(x,y) | x y. (Some x = par y)}\<^sup>*"
@@ -2961,7 +2959,7 @@ proof-
     using neq(1,2) no_par
     by(auto simp add: par')
   ultimately show ?g1
-    unfolding follow_invar'_def
+    unfolding parent_spec_def
     by simp
 qed
 
@@ -2969,9 +2967,12 @@ qed
 
 definition flabel_invar where "flabel_invar flabel \<equiv> (\<forall>v1 v2. {v1, v2} \<in> M \<longrightarrow> ((flabel v1 = None) \<longleftrightarrow> (flabel v2 = None)))"
 
-(*Done: No *)
+(*Done: Invar 10 *)
 
-definition flabel_invar_2 where "flabel_invar_2 flabel \<equiv> (\<forall>v1 v2. {v1, v2} \<in> M \<longrightarrow> ((\<exists>r. flabel v1 = Some (r, Even)) \<longleftrightarrow> (\<exists>r. flabel v2 = Some (r, Odd))))"
+definition flabel_invar_2 where
+  "flabel_invar_2 flabel \<equiv> 
+     (\<forall>v1 v2. {v1, v2} \<in> M \<longrightarrow> ((\<exists>r. flabel v1 = Some (r, Even))
+                     \<longleftrightarrow> (\<exists>r. flabel v2 = Some (r, Odd))))"
 
 (*Done: Invar 5*)
 
@@ -3066,12 +3067,12 @@ proof-
     by (auto simp add: \<open>flabel v1 = Some (r, Even)\<close>)
 qed
 
-lemma follow_invar'_pres:
-  assumes invars: "follow_invar' par"
+lemma parent_spec_pres:
+  assumes invars: "parent_spec par"
     "flabel_invar flabel"
     "flabel_par_invar par flabel" and
     ass: "if1 flabel ex v1 v2 v3 r"
-  shows "follow_invar' (par(v2 \<mapsto> v1, v3 \<mapsto> v2))" (is ?g1) "follow_invar' (par(v2 := Some v1))" (is ?g2)
+  shows "parent_spec (par(v2 \<mapsto> v1, v3 \<mapsto> v2))" (is ?g1) "parent_spec (par(v2 := Some v1))" (is ?g2)
 proof-
   have "{v1,v2} \<in> G - ex" "flabel v1 = Some (r, Even)" "{v2, v3} \<in> M" "flabel v2 = None"
     by (intro if1_props[OF ass])+
@@ -3135,7 +3136,7 @@ fun alt_labels_invar where
 
 lemma alt_invars_then_alt_path:
   assumes 
-    "follow_invar' par"
+    "parent_spec par"
     "alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (parent.follow par v)"
     "alt_labels_invar flabel r (parent.follow par v)"
   shows "alt_path (-M) (parent.follow par v)"
@@ -3229,7 +3230,7 @@ lemma ancestors_unaffected:
   assumes
     ass: "if1 flabel ex v1 v2 v3 r" and
     invars: "flabel_par_invar par flabel"
-    "follow_invar' par"
+    "parent_spec par"
     "flabel_invar flabel" and
     neq: "v2 \<noteq> v" "v3 \<noteq> v"
   shows "par' = (par(v2 \<mapsto> v1, v3 \<mapsto> v2)) \<Longrightarrow> \<forall>v'\<in>set(parent.follow par v). par v' = par' v'" (is "?par' \<Longrightarrow> ?g1")
@@ -3247,7 +3248,7 @@ proof-
     by blast+
   have "parent (par(v2 \<mapsto> v1))"
     unfolding parent_def
-    by(intro follow_invar'_pres(2)[OF invars(2,3,1) ass] \<open>parent par\<close>[unfolded parent_def])
+    by(intro parent_spec_pres(2)[OF invars(2,3,1) ass] \<open>parent par\<close>[unfolded parent_def])
   moreover  have "\<forall>v''. (par(v2 \<mapsto> v1)) v'' \<noteq> Some v3"
     using flabel_par_invar_props[OF invars(1)] if1_props[OF ass]
     by (metis flabel_invar_def invars(3) map_upd_Some_unfold option.distinct(1))
@@ -3282,7 +3283,7 @@ lemma alt_labels_invar_pres:
   assumes  ass: "if1 flabel ex v1 v2 v3 r" and
     invars: "\<And>v r lab. flabel v = Some (r, lab) \<Longrightarrow> alt_labels_invar flabel r (parent.follow par v)"
     "\<And>v r. flabel v = Some (r, Even) \<Longrightarrow> alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (parent.follow par v)"
-    "follow_invar' par"
+    "parent_spec par"
     "flabel_invar flabel" 
     "flabel_par_invar par flabel" and
     inG: "\<exists>lab. flabel' v = Some (r', lab)" and
@@ -3298,7 +3299,7 @@ next
   case (2 flabel' r' v')
   have **:"parent par" "parent par'"
     unfolding parent_def par'
-    by(intro invars(3) follow_invar'_pres[OF invars(3-5) 2(2)])+
+    by(intro invars(3) parent_spec_pres[OF invars(3-5) 2(2)])+
   have "v1 \<noteq> v2"  "v2 \<noteq> v3"
     by(rule v1_neq_v2_neq_v3[OF 2(2)])+
   have "v1 \<noteq> v3"
@@ -3375,7 +3376,7 @@ next
   have **:"parent par" "parent par'"
     unfolding parent_def par'
     using 3(3-10)
-    by (intro invars(3) follow_invar'_pres)+
+    by (intro invars(3) parent_spec_pres)+
   have "v1' = v"
     using 3(2)[symmetric] parent.follow_cons[OF **(2)]
     by simp
@@ -3459,7 +3460,7 @@ qed
 lemma alt_list_pres:
   assumes  ass: "if1 flabel ex v1 v2 v3 r" and
     invars: "\<And>v r. flabel v = Some (r, Even) \<Longrightarrow> alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (parent.follow par v)"
-    "follow_invar' par"
+    "parent_spec par"
     "flabel_invar flabel" 
     "flabel_par_invar par flabel" and
     inG: "flabel' v = Some (r', Even)" and
@@ -3474,13 +3475,13 @@ proof(induction "(parent.follow par' v)" arbitrary: v rule: induct_list012)
 next
   case (single x)
   then show ?case
-    by (metis (mono_tags, lifting) alt_list.simps compute_alt_path.follow_invar'_pres(1) compute_alt_path_axioms par' parent.follow_cons parent.intro)
+    by (metis (mono_tags, lifting) alt_list.simps compute_alt_path.parent_spec_pres(1) compute_alt_path_axioms par' parent.follow_cons parent.intro)
 next
   case (sucsuc x y zs)
   have **:"parent par" "parent par'"
     unfolding parent_def par'
     using sucsuc
-    by (intro invars follow_invar'_pres)+
+    by (intro invars parent_spec_pres)+
   have "x = v"
     using sucsuc(3)[symmetric] parent.follow_cons[OF **(2)]
     by simp
@@ -3586,7 +3587,7 @@ lemma follow_pinduct:
 end
 
 lemma last_follow_eq:
-  assumes invar: "follow_invar' par" "follow_invar' (par (v \<mapsto> v''))"  and 
+  assumes invar: "parent_spec par" "parent_spec (par (v \<mapsto> v''))"  and 
     neq: "\<forall>v'. par v' \<noteq> Some v" "v'' \<noteq> v" "v' \<noteq> v"
   shows "last (parent.follow (par (v \<mapsto> v'')) v') = last (parent.follow par v')"
   using assms 
@@ -3631,7 +3632,7 @@ proof(induction v' rule: parent.follow_pinduct[OF parent.intro[OF invar(1)]])
 qed
 
 lemma follow_eq:
-  assumes invar: "follow_invar' par" "follow_invar' (par (v \<mapsto> v''))" and
+  assumes invar: "parent_spec par" "parent_spec (par (v \<mapsto> v''))" and
     neq: "\<forall>v'. par v' \<noteq> Some v" "v'' \<noteq> v"
   shows "parent.follow par v'' = parent.follow (par(v \<mapsto> v'')) v''"
   apply(rule follow_cong )
@@ -3651,7 +3652,7 @@ begin
 
 lemma compute_alt_path_follow_eq:
   assumes ass: "if1 flabel ex v1 v2 v3 r" and
-    invars: "follow_invar' par"
+    invars: "parent_spec par"
     "flabel_invar flabel"
     "flabel_par_invar par flabel" and
     neq: "v2 \<noteq> v" "v3 \<noteq> v"
@@ -3662,13 +3663,13 @@ lemma compute_alt_path_follow_eq:
   subgoal using parent.follow_dom[OF parent.intro[OF invars(1)]] .
   subgoal apply(intro ancestors_unaffected(1)[OF ass invars(3,1,2)])
     using neq by auto
-  subgoal using parent.intro[OF follow_invar'_pres(1)[OF invars ass]] .
+  subgoal using parent.intro[OF parent_spec_pres(1)[OF invars ass]] .
   done
 
 end
 
 lemma last_follow_eq_2:
-  assumes invar: "follow_invar' par" "follow_invar' (par (v \<mapsto> v''))" and
+  assumes invar: "parent_spec par" "parent_spec (par (v \<mapsto> v''))" and
     neq: "\<forall>v'. par v' \<noteq> Some v" "v'' \<noteq> v"
   shows "last (parent.follow (par (v \<mapsto> v'')) v) = last (parent.follow par v'')"
 proof(cases "par v''")
@@ -3698,7 +3699,7 @@ lemma flabel_invar_props: "flabel_invar flabel \<Longrightarrow> {v1, v2} \<in> 
 
 lemma compute_alt_path_last_eq:
   assumes ass: "if1 flabel ex v1 v2 v3 r" and
-    invars: "follow_invar' par"
+    invars: "parent_spec par"
     "flabel_invar flabel"
     "flabel_par_invar par flabel"
   shows  "last (parent.follow (par(v2 \<mapsto> v1)) v2) = last (parent.follow par v1)" (is ?g1)
@@ -3706,17 +3707,17 @@ lemma compute_alt_path_last_eq:
     "last (parent.follow (par(v2 \<mapsto> v1, v3 \<mapsto> v2)) v3) = last (parent.follow (par(v2 \<mapsto> v1)) v2)" (is ?g3)
     "\<And>v. v \<noteq> v3 \<Longrightarrow> last (parent.follow (par(v2 \<mapsto> v1, v3 \<mapsto> v2)) v) = last (parent.follow (par(v2 \<mapsto> v1)) v)" (is "\<And>v. ?p2 v \<Longrightarrow> ?g4 v")
 proof-
-  have follow_invar': "follow_invar' (par(v2 \<mapsto> v1))"
-    using follow_invar'_pres(2)[OF invars(1-3) ass]
+  have parent_spec: "parent_spec (par(v2 \<mapsto> v1))"
+    using parent_spec_pres(2)[OF invars(1-3) ass]
     .
   moreover have "\<forall>v'. par v' \<noteq> Some v2"
     by(intro if1_props[OF ass] flabel_par_invar_props(2)[OF invars(3)])
   moreover have "v1 \<noteq> v2"
     by(intro v1_neq_v2_neq_v3[OF ass])
   ultimately show ?g1 "\<And>v. ?p v \<Longrightarrow> ?g2 v"
-    by(intro last_follow_eq[OF invars(1) follow_invar'] last_follow_eq_2[OF invars(1) follow_invar']; simp)+
-  have "follow_invar' (par(v2 \<mapsto> v1))" "follow_invar' (par(v2 \<mapsto> v1, v3 \<mapsto> v2))"
-    by (intro follow_invar'_pres[OF invars(1-3) ass])+
+    by(intro last_follow_eq[OF invars(1) parent_spec] last_follow_eq_2[OF invars(1) parent_spec]; simp)+
+  have "parent_spec (par(v2 \<mapsto> v1))" "parent_spec (par(v2 \<mapsto> v1, v3 \<mapsto> v2))"
+    by (intro parent_spec_pres[OF invars(1-3) ass])+
   moreover have "v2 \<noteq> v3"
     by(intro v1_neq_v2_neq_v3[OF ass])
   moreover have  "\<forall>v'. (par(v2 \<mapsto> v1)) v' \<noteq> Some v3"
@@ -3731,7 +3732,7 @@ lemma last_not_matched_invar_pres:
   assumes 
     ass: "if1 flabel ex v1 v2 v3 r" and
     invars: 
-    "follow_invar' par"
+    "parent_spec par"
     "flabel_invar flabel"
     "flabel_par_invar par flabel"
     "last_not_matched_invar par flabel"                
@@ -3914,7 +3915,7 @@ lemma last_even_invar_props:
 
 lemma last_even_invar_pres:
   assumes  invars: 
-    "follow_invar' par"
+    "parent_spec par"
     "flabel_invar flabel"
     "flabel_par_invar par flabel"
     "last_even_invar par flabel" and
@@ -3925,7 +3926,7 @@ proof-
   define flabel' where "flabel' = (flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r, lab')))"
   have "parent par'"
     unfolding par'_def
-    using parent.intro[OF follow_invar'_pres(1)[OF invars(1-3) ass]]
+    using parent.intro[OF parent_spec_pres(1)[OF invars(1-3) ass]]
     .
   note follow_simps [simp] = parent.follow.psimps[OF \<open>parent par'\<close> parent.follow_dom[OF \<open>parent par'\<close>]]
   {
@@ -3989,7 +3990,7 @@ qed
 
 lemma last_even_invar_imp:
   assumes invars: 
-    "follow_invar' par"
+    "parent_spec par"
     "alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (parent.follow par v)"
     "last_even_invar par flabel" and
     "flabel v = Some (r, Even)"
@@ -4017,7 +4018,7 @@ lemma distinct_invar_props: "distinct_invar par \<Longrightarrow> distinct (pare
 
 lemma distinct_invar_pres:
   assumes invars: 
-    "follow_invar' par"
+    "parent_spec par"
     "flabel_invar flabel"
     "flabel_par_invar par flabel"
     "\<And>v r. flabel v = Some (r, Even) \<Longrightarrow> alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (parent.follow par v)"
@@ -4028,9 +4029,9 @@ lemma distinct_invar_pres:
 proof-
 
   define par' where "par' = (par(v2 \<mapsto> v1, v3 \<mapsto> v2))"
-  have invar': "follow_invar' par'"
+  have invar': "parent_spec par'"
     unfolding par'_def
-    by (meson assms(6) assms(5) follow_invar'_pres(1) invars(1) invars(2) invars(3))
+    by (meson assms(6) assms(5) parent_spec_pres(1) invars(1) invars(2) invars(3))
   note follow_simps [simp] = parent.follow.psimps[OF parent.intro[OF invar'] parent.follow_dom[OF parent.intro[OF invar']], of v2]
     parent.follow.psimps[OF parent.intro[OF invar'] parent.follow_dom[OF parent.intro[OF invar']], of v3]
 
@@ -4120,7 +4121,7 @@ lemma path_invar_props: "path_invar par \<Longrightarrow> v \<in> Vs G \<Longrig
 
 lemma path_invar_pres:
   assumes invars: 
-    "follow_invar' par"
+    "parent_spec par"
     "flabel_invar flabel"
     "flabel_par_invar par flabel"
     "path_invar par"
@@ -4129,9 +4130,9 @@ lemma path_invar_pres:
   shows "path_invar (par(v2 \<mapsto> v1, v3 \<mapsto> v2))"
 proof-
   define par' where "par' = (par(v2 \<mapsto> v1, v3 \<mapsto> v2))"
-  have invar': "follow_invar' par'"
+  have invar': "parent_spec par'"
     unfolding par'_def
-    by (meson ass follow_invar'_pres(1) invars(1) invars(2) invars(3))
+    by (meson ass parent_spec_pres(1) invars(1) invars(2) invars(3))
   note follow_simps [simp] = parent.follow.psimps[OF parent.intro[OF invar'] parent.follow_dom[OF parent.intro[OF invar']]]
 
   have "v2 \<noteq> v3"
@@ -4201,7 +4202,7 @@ lemma compute_alt_path_from_tree_1:
     "\<And>v r lab. flabel v = Some (r, lab) \<Longrightarrow> alt_labels_invar flabel r (parent.follow par v)"
     (*Done *)
     "\<And>v r. flabel v = Some (r, Even) \<Longrightarrow> alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (parent.follow par v)"
-    "follow_invar' par"
+    "parent_spec par"
     "flabel_invar flabel"
     "flabel_par_invar par flabel"
     "last_not_matched_invar par flabel"
@@ -4247,8 +4248,8 @@ next
     then have "compute_alt_path ?ex' ?par' ?flabel' = Some (p1, p2)"
       using 2
       by simp
-    moreover have "follow_invar' ?par'"
-      using follow_invar'_pres(1)[OF 2(5-7) sel(2)].
+    moreover have "parent_spec ?par'"
+      using parent_spec_pres(1)[OF 2(5-7) sel(2)].
     moreover have "flabel_invar (?flabel')"
       using flabel_invar_pres[OF 2(6) sel(2), of Odd _ Even].
     moreover have "flabel_par_invar (?par') (?flabel')"
@@ -4360,7 +4361,7 @@ qed
 
 subsubsection \<open>Algorithm is Totally Correct: it does not miss Alternating Paths\<close>
 
-(*Done: No*)
+(*Done: Invar 11*)
 
 definition "examined_have_odd_verts_invar ex flabel \<equiv> (\<forall>e\<in>ex. \<exists>v\<in>e.\<exists>r. flabel v = Some (r, Odd))"
 
@@ -4388,7 +4389,7 @@ lemma examined_have_odd_verts_invar_props:
   unfolding examined_have_odd_verts_invar_def
   by auto
 
-(*Done: No*)
+(*Done: Invar 12*)
 
 definition "unexamined_matched_unlabelled_invar ex flabel \<equiv> (\<forall>e\<in>M - ex. \<forall>v\<in>e. flabel v = None)"
 
@@ -4417,7 +4418,7 @@ proof-
     by blast
 qed
 
-(*Done: No*)
+(*Done: Invar 13*)
 
 definition "finite_odds_invar flabel \<equiv> finite {v. \<exists>r. flabel v = Some (r, Odd)}"
 
@@ -4445,7 +4446,7 @@ proof-
     by simp
 qed
 
-(*Done: No*)
+(*Done: Invar 14*)
 
 definition "odd_labelled_verts_num_invar ex flabel \<equiv> card {v. \<exists>r. flabel v = Some (r, Odd)} = card (M \<inter> ex)"
 
@@ -4497,9 +4498,10 @@ proof-
     by (auto simp: odd_labelled_verts_num_invar_def ex'_def flabel'_def)  
 qed
 
-(*Done: No*)
+(*Done: Invar 15*)
 
-definition "ulabelled_verts_matched_invar ex flabel \<equiv> \<forall>v \<in> (Vs G). flabel v = None \<longrightarrow> (\<exists>e\<in>(M - ex). v \<in> e)"
+definition
+  "ulabelled_verts_matched_invar ex flabel \<equiv> \<forall>v \<in> (Vs G). flabel v = None \<longrightarrow> (\<exists>e\<in>(M - ex). v \<in> e)"
 
 lemma ulabelled_verts_matched_invar_pres:
   assumes invars: 
@@ -4511,9 +4513,11 @@ lemma ulabelled_verts_matched_invar_pres:
   using if1_props(2)[OF ass]
   by (fastforce simp add: ulabelled_verts_matched_invar_def Vs_def)
 
-(*Done: No*)
+(*Done: Invar 16*)
 
-definition "odd_then_matched_examined_invar ex flabel \<equiv> \<forall>v \<in> (Vs G). \<exists>r. flabel v = Some(r, Odd) \<longrightarrow> (\<exists>e\<in>(M \<inter> ex). v \<in> e)"
+definition 
+  "odd_then_matched_examined_invar ex flabel \<equiv>
+     \<forall>v \<in> (Vs G). \<exists>r. flabel v = Some(r, Odd) \<longrightarrow> (\<exists>e\<in>(M \<inter> ex). v \<in> e)"
 
 lemma odd_then_matched_examined_invar_pres:
   assumes invars: 
@@ -5472,7 +5476,7 @@ lemma invar_init:
   shows
     "\<And>v r lab. flabel v = Some (r, lab) \<Longrightarrow> alt_labels_invar flabel r (parent.follow par v)"
     "\<And>v r. flabel v = Some (r, Even) \<Longrightarrow> alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (parent.follow par v)"
-    "follow_invar' par"
+    "parent_spec par"
     "flabel_invar flabel"
     "flabel_par_invar par flabel"
     "last_not_matched_invar par flabel"
@@ -5518,9 +5522,9 @@ proof-
     using assms  
     unfolding odd_then_matched_examined_invar_def
     by auto
-  show "follow_invar' par"
+  show "parent_spec par"
     using assms  
-    unfolding follow_invar'_def
+    unfolding parent_spec_def
     by auto
   then have "parent par"
     by (simp add: parent_def)
@@ -5602,9 +5606,9 @@ lemma compute_alt_path_from_tree_sound':
   assumes  initialisation:
     "\<And>v G M. flabel G M v = (if v \<in> Vs G \<and> v \<notin> Vs M then Some (v, Even) else None)" "ex = empty"
     "\<And>v. par v = None"
-  shows "compute_alt_path_sound G M (compute_alt_path ex par (flabel G M))"
+  shows "compute_alt_path_spec G M (compute_alt_path ex par (flabel G M))"
   using compute_alt_path_from_tree_sound[where par = par, OF initialisation]
-  unfolding compute_alt_path_sound_def
+  unfolding compute_alt_path_spec_def
   apply(intro conjI)
   by metis+
 

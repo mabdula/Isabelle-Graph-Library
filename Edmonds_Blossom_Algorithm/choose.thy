@@ -15,7 +15,7 @@ lemma neighbourhood_subset_Vs: "neighbourhood G v \<subseteq> Vs G"
 
 locale choose = 
   fixes sel
-  assumes sel: "finite s \<Longrightarrow> \<lbrakk>s \<noteq> {}\<rbrakk> \<Longrightarrow> (sel s) \<in> s"
+  assumes sel: "\<lbrakk>finite s; s \<noteq> {}\<rbrakk> \<Longrightarrow> (sel s) \<in> s"
 
 begin
 
