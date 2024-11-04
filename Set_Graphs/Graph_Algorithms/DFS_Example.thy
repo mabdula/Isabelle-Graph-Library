@@ -5,16 +5,16 @@ begin
 global_interpretation dfs: DFS 
 where insert = insert_rbt 
 and sel = sel 
-and neighb_empty = Leaf
+and vset_empty = Leaf
 and lookup=lookup 
 and empty = RBT_Set.empty
 and delete=delete
 and isin = isin 
 and t_set=Tree2.set_tree
 and update=update
-and adj_inv = M.invar
-and neighb_delete=delete_rbt
-and neighb_inv = neighb_inv 
+and adjmap_inv = M.invar
+and vset_delete=delete_rbt
+and vset_inv = vset_inv 
 and union=union_rbt 
 and inter=inter_rbt
 and diff=diff_rbt
@@ -24,7 +24,7 @@ and dfs_impl = dfs.DFS_impl
 and neighbourhood=G.neighbourhood
   apply unfold_locales (*unfold_locales doesn't finish it due to different invariants used in
                          Set2_Join vs Set instantiations*) 
-  by (simp add: neighb_inv_def RBT.set_tree_union RBT.set_tree_inter RBT.set_tree_diff 
+  by (simp add: vset_inv_def RBT.set_tree_union RBT.set_tree_inter RBT.set_tree_diff 
                 RBT.bst_union RBT.inv_union RBT.bst_inter RBT.inv_inter RBT.bst_diff RBT.inv_diff)+
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),

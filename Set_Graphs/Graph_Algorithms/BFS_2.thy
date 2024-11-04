@@ -3,50 +3,50 @@ theory BFS_2
           Directed_Set_Graphs.Set2_Addons More_Lists
 begin
 
-record ('parents, 'neighb) BFS_state = parents:: "'parents" current:: "'neighb" visited:: "'neighb"
+record ('parents, 'vset) BFS_state = parents:: "'parents" current:: "'vset" visited:: "'vset"
 
 locale BFS =
   Graph: Pair_Graph_Specs
     where lookup = lookup +
-  set_ops: Set2 neighb_empty neighb_delete _ t_set neighb_inv insert
+  set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
   
-for lookup :: "'adj \<Rightarrow> 'ver \<Rightarrow> 'neighb option" +
+for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option" +
 
 fixes  
-srcs::"'neighb" and
-G::"'adj" and expand_tree::"'adj \<Rightarrow> 'neighb \<Rightarrow> 'neighb \<Rightarrow> 'adj" and
-next_frontier::"'neighb \<Rightarrow> 'neighb \<Rightarrow> 'neighb" 
+srcs::"'vset" and
+G::"'adjmap" and expand_tree::"'adjmap \<Rightarrow> 'vset \<Rightarrow> 'vset \<Rightarrow> 'adjmap" and
+next_frontier::"'vset \<Rightarrow> 'vset \<Rightarrow> 'vset" 
 
 
 assumes
    expand_tree[simp]:
-     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow> 
+     "\<lbrakk>Graph.graph_inv BFS_tree; vset_inv frontier; vset_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow> 
        Graph.graph_inv (expand_tree BFS_tree frontier vis)"
-     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>
+     "\<lbrakk>Graph.graph_inv BFS_tree; vset_inv frontier; vset_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>
         Graph.digraph_abs (expand_tree BFS_tree frontier vis) = 
          (Graph.digraph_abs BFS_tree) \<union> 
          {(u,v) | u v. u \<in> t_set (frontier) \<and> 
                        v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u -
                        t_set vis)}" and
    next_frontier[simp]:
-    "\<lbrakk>neighb_inv frontier; neighb_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>  neighb_inv (next_frontier frontier vis)"
-    "\<lbrakk>neighb_inv frontier; neighb_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>
+    "\<lbrakk>vset_inv frontier; vset_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>  vset_inv (next_frontier frontier vis)"
+    "\<lbrakk>vset_inv frontier; vset_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>
        t_set (next_frontier frontier vis) =
          (\<Union> {Pair_Graph.neighbourhood (Graph.digraph_abs G) u | u . u \<in> t_set frontier}) - t_set vis"
 
 begin
 
 definition "BFS_axiom \<longleftrightarrow>
-  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_neighbs \<and>
+  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets \<and>
   t_set srcs \<subseteq> dVs (Graph.digraph_abs G) \<and>
   (\<forall>u. finite (Pair_Graph.neighbourhood (Graph.digraph_abs G) u)) \<and>
-  t_set srcs \<noteq> {} \<and> neighb_inv srcs"
+  t_set srcs \<noteq> {} \<and> vset_inv srcs"
 
 abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G" 
 notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
 
-function (domintros) BFS::"('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neighb) BFS_state" where
+function (domintros) BFS::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" where
   "BFS BFS_state = 
      (
         if current BFS_state \<noteq> \<emptyset>\<^sub>N then
@@ -60,7 +60,7 @@ function (domintros) BFS::"('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neigh
           BFS_state)"
   by pat_completeness auto
 
-partial_function (tailrec) BFS_impl::"('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neighb) BFS_state" where
+partial_function (tailrec) BFS_impl::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" where
   "BFS_impl BFS_state = 
      (
         if current BFS_state \<noteq> \<emptyset>\<^sub>N then
@@ -99,7 +99,7 @@ abbreviation "BFS_ret1 bfs_state \<equiv> bfs_state"
 
 
 definition "invar_1 bfs_state \<equiv>
-              neighb_inv (visited bfs_state) \<and> neighb_inv (current bfs_state) \<and>
+              vset_inv (visited bfs_state) \<and> vset_inv (current bfs_state) \<and>
               Graph.graph_inv (parents bfs_state) \<and> 
               finite (t_set (current bfs_state)) \<and> finite (t_set (visited bfs_state))"
 
@@ -160,21 +160,21 @@ definition "initial_state \<equiv> \<lparr>parents =  empty, current = srcs, vis
 lemmas[code] = BFS_impl.simps initial_state_def
 
 context
-  includes Graph.adj.automation and Graph.neighb.set.automation and set_ops.automation
+  includes Graph.adj.automation and Graph.vset.set.automation and set_ops.automation
   assumes BFS_axiom  
 begin
 
 lemma graph_inv[simp]:
      "Graph.graph_inv G" 
      "Graph.finite_graph G"
-     "Graph.finite_neighbs" and
+     "Graph.finite_vsets" and
    srcs_in_G[simp,intro]: 
      "t_set srcs \<subseteq> dVs (Graph.digraph_abs G)" and
-   finite_neighb:
+   finite_vset:
      "finite (Pair_Graph.neighbourhood (Graph.digraph_abs G) u)" and
   srcs_invar[simp]:
      "t_set srcs \<noteq> {}" 
-     "neighb_inv srcs"
+     "vset_inv srcs"
   using \<open>BFS_axiom\<close>
   by (auto simp: BFS_axiom_def)
 
@@ -253,14 +253,14 @@ qed
 
 lemma invar_1_props[invar_props_elims]: 
   "invar_1 bfs_state \<Longrightarrow> 
-  (\<lbrakk>neighb_inv (visited bfs_state) ; neighb_inv (current bfs_state) ;
+  (\<lbrakk>vset_inv (visited bfs_state) ; vset_inv (current bfs_state) ;
     Graph.graph_inv (parents bfs_state); 
     finite (t_set (current bfs_state)); finite (t_set (visited bfs_state))\<rbrakk> \<Longrightarrow> P)
      \<Longrightarrow> P"
   by (auto simp: invar_1_def)
 
 lemma invar_1_intro[invar_props_intros]:
-  "\<lbrakk>neighb_inv (visited bfs_state); neighb_inv (current bfs_state);
+  "\<lbrakk>vset_inv (visited bfs_state); vset_inv (current bfs_state);
     Graph.graph_inv (parents bfs_state);
     finite (t_set (current bfs_state)); finite (t_set (visited bfs_state))\<rbrakk> 
     \<Longrightarrow> invar_1 bfs_state"
@@ -275,7 +275,7 @@ lemma finite_simp:
   
 lemma invar_1_holds_upd1[invar_holds_intros]:
   "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state\<rbrakk> \<Longrightarrow> invar_1 (BFS_upd1 bfs_state)"
-  using finite_neighb
+  using finite_vset
   by(auto elim!: invar_1_props call_cond_elims simp: Let_def BFS_upd1_def BFS_call_1_conds_def intro!: invar_props_intros)+
 
 lemma invar_1_holds_ret_1[invar_holds_intros]:
@@ -1317,23 +1317,23 @@ next
   have *: "{{v1, v2} |v1 v2. (v1, v2) \<in> [G]\<^sub>g}
                  \<subseteq> (\<lambda>(x,y). {x,y} ) ` ({v. \<exists>y. lookup G v = Some y} \<times>
                                         (\<Union> {t_set N | v N. lookup G v = Some N}))"
-    including Graph.adj.automation and Graph.neighb.set.automation
+    including Graph.adj.automation and Graph.vset.set.automation
     apply (auto simp: Graph.digraph_abs_def Graph.neighbourhood_def image_def
                 split: option.splits)
-    by (metis Graph.graph_invE Graph.neighb.set.set_isin graph_inv(1))
+    by (metis Graph.graph_invE Graph.vset.set.set_isin graph_inv(1))
   moreover have "{uu. \<exists>v N. uu = t_set N \<and> lookup G v = Some N} = 
                    ((t_set o the o (lookup G)) ` {v | N v. lookup G v = Some N})"
     by (force simp: image_def)
   hence "finite (\<Union> {t_set N | v N. lookup G v = Some N})"
     using graph_inv(1,2,3)
-    apply(subst (asm) Graph.finite_neighbs_def )
+    apply(subst (asm) Graph.finite_vsets_def )
     by (auto simp: Graph.finite_graph_def Graph.graph_inv_def
              split: option.splits)
   ultimately have "finite {{v1, v2} |v1 v2. (v1,v2) \<in> [G]\<^sub>g}"
     using graph_inv(2)
     by (auto simp: Graph.finite_graph_def intro!: finite_subset[OF *])
   moreover have "finite {neighbourhood (Graph.digraph_abs G) u |u. u \<in> t_set (current BFS_state)}"
-    using Graph.finite_neighbs_def
+    using Graph.finite_vsets_def
     by (fastforce simp: ) 
   moreover have "t_set (visited (BFS_upd1 BFS_state)) \<union> t_set (current (BFS_upd1 BFS_state)) \<subseteq> dVs (Graph.digraph_abs G)"
     using \<open>invar_1 BFS_state\<close> \<open>invar_2 BFS_state\<close> 
@@ -1408,7 +1408,7 @@ lemma initial_state_props[invar_holds_intros, termination_intros, simp]:
 proof-
   show ?g1
     using graph_inv(3)
-    by (fastforce simp: initial_state_def dVs_def Graph.finite_neighbs_def
+    by (fastforce simp: initial_state_def dVs_def Graph.finite_vsets_def
         intro!: invar_props_intros)
 
   have "t_set (visited initial_state)\<union> t_set (current initial_state) \<subseteq> dVs (Graph.digraph_abs G)"

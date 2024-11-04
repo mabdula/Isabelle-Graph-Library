@@ -101,10 +101,10 @@ lemma invar_conjI: "\<lbrakk>J; invar P (\<lambda>s. J \<and> I s) f\<rbrakk> \<
 record ('parents, 'neighb) BFS_state = parents:: "'parents" current:: "'neighb" nexts:: "'neighb" visited:: "'neighb" 
 
 locale BFS =
-  (*set_ops: Set2 where empty = empty and insert = neighb_insert and isin = neighb_isin +*)
+  (*set_ops: Set2 where empty = empty and insert = vset_insert and isin = vset_isin +*)
   Graph: Pair_Graph_Specs
     where lookup = lookup +
-  set_ops: Set2 neighb_empty neighb_delete _ t_set neighb_inv neighb_insert
+  set_ops: Set2 vset_empty vset_delete _ t_set vset_inv vset_insert
   
 for lookup :: "'adj \<Rightarrow> 'ver \<Rightarrow> 'neighb option" +
 
@@ -243,16 +243,16 @@ lemma BFS_induct:
   by (auto simp add: BFS_call_1_conds_def BFS_upd1_def BFS_upd1_step_1_def BFS_upd1_step_2_def BFS_upd1_step_3_def  Let_def
            split: list.splits option.splits if_splits)
 
-definition "invar_1 bfs_state \<equiv> neighb_inv (visited bfs_state) \<and> neighb_inv (current bfs_state) \<and> neighb_inv (nexts bfs_state) \<and> Graph.graph_inv (parents bfs_state)"
+definition "invar_1 bfs_state \<equiv> vset_inv (visited bfs_state) \<and> vset_inv (current bfs_state) \<and> vset_inv (nexts bfs_state) \<and> Graph.graph_inv (parents bfs_state)"
 
 lemma invar_1_props[elim]: 
   "invar_1 bfs_state \<Longrightarrow> 
-  (\<lbrakk>neighb_inv (visited bfs_state) ; neighb_inv (current bfs_state) ; neighb_inv (nexts bfs_state) ;
+  (\<lbrakk>vset_inv (visited bfs_state) ; vset_inv (current bfs_state) ; vset_inv (nexts bfs_state) ;
     Graph.graph_inv (parents bfs_state)\<rbrakk> \<Longrightarrow> P)
      \<Longrightarrow> P"
   by (auto simp: invar_1_def)
 
-lemma invar_1_intro[invar_props_intros]: "\<lbrakk>neighb_inv (visited bfs_state); neighb_inv (current bfs_state); neighb_inv (nexts bfs_state); Graph.graph_inv (parents bfs_state)\<rbrakk>  \<Longrightarrow> invar_1 bfs_state"
+lemma invar_1_intro[invar_props_intros]: "\<lbrakk>vset_inv (visited bfs_state); vset_inv (current bfs_state); vset_inv (nexts bfs_state); Graph.graph_inv (parents bfs_state)\<rbrakk>  \<Longrightarrow> invar_1 bfs_state"
   by (auto simp: invar_1_def)
 
 lemma invar_1_holds_upd1_step_1[invar_holds_intros]: 
@@ -276,7 +276,7 @@ qed
 lemma invar_1_holds_upd1_step_2[invar_holds_intros]:
   shows "invar (\<lambda>_. True) (\<lambda> bfs_state. BFS_call_1_conds bfs_state \<and> invar_1 bfs_state) BFS_upd1_step_2"
 proof-
-  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G neighb\<rparr>))" if "neighb_inv neighb" for neighb
+  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G neighb\<rparr>))" if "vset_inv neighb" for neighb
     using that
     by(auto elim!: call_cond_elims simp: BFS_call_1_conds_def intro!: invar_props_intros invarI)
   have "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (\<lambda>s. BFS_upd1_step_2 s)"
@@ -353,7 +353,7 @@ qed
 lemma invar_2_holds_upd1_step_2[invar_holds_intros]:
   shows "invar (\<lambda>_. True) (\<lambda> bfs_state. BFS_call_1_conds bfs_state \<and> invar_1 bfs_state \<and> invar_2 bfs_state) BFS_upd1_step_2"
 proof-
-  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G neighb\<rparr>))" if "neighb_inv neighb" for neighb
+  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G neighb\<rparr>))" if "vset_inv neighb" for neighb
     using that
     by(fastforce elim!: call_cond_elims simp: BFS_call_1_conds_def intro!: invar_props_intros invarI)
   hence "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (\<lambda>s. BFS_upd1_step_2 s)"
@@ -530,7 +530,7 @@ lemma invar_3_holds_upd1_step_2[invar_holds_intros]:
   shows "invar (\<lambda>_. True) (\<lambda> bfs_state. BFS_call_1_conds bfs_state \<and> invar_1 bfs_state \<and> invar_3 bfs_state) BFS_upd1_step_2"
 proof-
   have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_3 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G neighb\<rparr>))" 
-    if "neighb_inv neighb" for neighb
+    if "vset_inv neighb" for neighb
     using that
     by (auto elim!: inv ar_1_props invar_2_props invar_3_props call_cond_elims simp: BFS_call_1_conds_def intro!: invar_props_intros invarI)
 

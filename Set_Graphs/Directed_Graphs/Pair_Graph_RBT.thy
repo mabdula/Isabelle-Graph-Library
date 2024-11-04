@@ -3,21 +3,21 @@ imports Pair_Graph_Specs "HOL-Data_Structures.RBT_Set" "HOL-Data_Structures.RBT_
        "Verified_SAT_Based_AI_Planning.Set2_Join_RBT"
 begin
 
-definition "neighb_inv \<equiv>  (\<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
+definition "vset_inv \<equiv>  (\<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
 
 fun sel where
 "sel Leaf = undefined" |
 "sel (B l a r) = a"|
 "sel (R l a r) = a"
              
-interpretation set: Set Leaf insert_rbt delete_rbt isin Tree2.set_tree neighb_inv
+interpretation set: Set Leaf insert_rbt delete_rbt isin Tree2.set_tree vset_inv
   apply unfold_locales
-  by (simp add: empty_def neighb_inv_def isin_set_tree RBT.set_isin RBT.set_tree_insert RBT.set_insert
+  by (simp add: empty_def vset_inv_def isin_set_tree RBT.set_isin RBT.set_tree_insert RBT.set_insert
                 RBT.set_tree_insert RBT.set_tree_delete RBT.set_delete RBT.set_delete 
                 RBT.invar_insert RBT.invar_insert RBT.invar_insert RBT.inv_delete RBT.invar_delete
                 RBT.inv_delete)+
 
-interpretation S_C: Set_Choose Leaf insert_rbt RBT.delete isin neighb_inv Tree2.set_tree sel
+interpretation S_C: Set_Choose Leaf insert_rbt RBT.delete isin vset_inv Tree2.set_tree sel
   apply unfold_locales
 proof(goal_cases)
   case (1 s)
@@ -26,7 +26,7 @@ proof(goal_cases)
 qed
 
 interpretation G: Pair_Graph_Specs RBT_Set.empty RBT_Map.delete lookup insert_rbt isin Tree2.set_tree sel
-     update M.invar Leaf RBT.delete neighb_inv
+     update M.invar Leaf RBT.delete vset_inv
   apply(rule Pair_Graph_Specs.intro)
   subgoal apply unfold_locales.
   apply unfold_locales .

@@ -8,7 +8,7 @@ subsection \<open>The program state\<close>
 
 datatype return = Reachable | NotReachable
 
-record ('ver, 'neighb) DFS_state = stack:: "'ver list" seen:: "'neighb"  return:: return
+record ('ver, 'vset) DFS_state = stack:: "'ver list" seen:: "'vset"  return:: return
 
 subsection \<open>Setup for automation\<close>
 
@@ -25,22 +25,22 @@ named_theorems state_rel_holds_intros
 subsection \<open>\emph{locale} for fixing data structures and their implemenations\<close>
 
 locale DFS =
-  (*set_ops: Set2 where empty = empty and insert = insert and isin = neighb_isin +*)
+  (*set_ops: Set2 where empty = empty and insert = insert and isin = vset_isin +*)
   Graph: Pair_Graph_Specs
     where lookup = lookup +
- set_ops: Set2 neighb_empty neighb_delete _ t_set neighb_inv insert
+ set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 
 
-for lookup :: "'adj \<Rightarrow> 'v \<Rightarrow> 'neighb option" +
+for lookup :: "'adjmapmap\<Rightarrow> 'v \<Rightarrow> 'vset option" +
 
-fixes G::"'adj" and s::"'v" and t::"'v" (*
-fixes T_diff::"'neighb \<Rightarrow> 'neighb \<Rightarrow> nat"
-and T_sel::"'neighb \<Rightarrow> nat" and T_insert::"'v \<Rightarrow> 'neighb \<Rightarrow> nat"
-and T_lookup::"'adj \<Rightarrow> 'v \<Rightarrow> nat" and T_G::nat and T_neighb_empty::nat*)
+fixes G::"'adjmapmap" and s::"'v" and t::"'v" (*
+fixes T_diff::"'vset \<Rightarrow> 'vset \<Rightarrow> nat"
+and T_sel::"'vset \<Rightarrow> nat" and T_insert::"'v \<Rightarrow> 'vset \<Rightarrow> nat"
+and T_lookup::"'adjmapmap\<Rightarrow> 'v \<Rightarrow> nat" and T_G::nat and T_vset_empty::nat*)
 
 begin
 
-definition "DFS_axioms \<equiv> Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_neighbs
+definition "DFS_axioms \<equiv> Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets
                          \<and> s \<in> dVs (Graph.digraph_abs G)"
 
 abbreviation "neighbourhood' v == Graph.neighbourhood G v"
@@ -49,7 +49,7 @@ notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
 subsection \<open>Using the function package to model while-loops\<close>
 
-function (domintros) DFS::"('v, 'neighb) DFS_state \<Rightarrow> ('v, 'neighb) DFS_state" where
+function (domintros) DFS::"('v, 'vset) DFS_state \<Rightarrow> ('v, 'vset) DFS_state" where
   "DFS dfs_state = 
      (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if v = t then 
@@ -235,7 +235,7 @@ next
     by (force split: list.splits option.splits if_splits)
 qed
 
-definition "invar_1 dfs_state \<equiv> neighb_inv (seen dfs_state)"
+definition "invar_1 dfs_state \<equiv> vset_inv (seen dfs_state)"
 
 definition "invar_2 dfs_state = (Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)))"
 
@@ -267,13 +267,13 @@ assumes DFS_axioms: DFS_axioms
 begin
 
 context
-includes set_ops.automation and Graph.adj.automation and Graph.neighb.set.automation 
+includes set_ops.automation and Graph.adj.automation and Graph.vset.set.automation 
 begin
 
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"
           "Graph.finite_graph G"
-          "Graph.finite_neighbs"
+          "Graph.finite_vsets"
   using DFS_axioms
   by (auto simp: DFS_axioms_def)
 
@@ -281,7 +281,7 @@ lemma s_in_G[simp,intro]: "s \<in> dVs (Graph.digraph_abs G)"
   using DFS_axioms
   by (auto simp: DFS_axioms_def)
 
-lemma finite_neighbourhoods[simp]:                                                 
+lemma finite_vsetourhoods[simp]:                                                 
           "finite (t_set N)"
   using graph_inv(3)
   by fastforce
@@ -290,11 +290,11 @@ lemmas simps[simp] = Graph.neighbourhood_abs[OF graph_inv(1)] Graph.are_connecte
 
 lemma invar_1_props[invar_props_elims]:
   "invar_1 dfs_state \<Longrightarrow>
-     (\<lbrakk>neighb_inv (seen dfs_state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
+     (\<lbrakk>vset_inv (seen dfs_state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
      P"
   by (auto simp: invar_1_def)
 
-lemma invar_1_intro[invar_props_intros]: "\<lbrakk>neighb_inv (seen dfs_state)\<rbrakk>
+lemma invar_1_intro[invar_props_intros]: "\<lbrakk>vset_inv (seen dfs_state)\<rbrakk>
                      \<Longrightarrow> invar_1 dfs_state"
   by (auto simp: invar_1_def)
 
@@ -379,7 +379,7 @@ lemma invar_seen_stack_holds_2[invar_holds_intros]:
   "\<lbrakk>DFS_call_2_conds dfs_state; invar_1 dfs_state; invar_seen_stack dfs_state\<rbrakk> \<Longrightarrow>
      invar_seen_stack (DFS_upd2 dfs_state)"
   by (auto elim!: call_cond_elims simp: DFS_upd2_def elim: vwalk_betE
-           elim!: invar_props_elims dest!: Graph.neighb.emptyD append_vwalk_pref intro!: invar_props_intros)
+           elim!: invar_props_elims dest!: Graph.vset.emptyD append_vwalk_pref intro!: invar_props_intros)
 
 lemma invar_seen_stack_holds_4[invar_holds_intros]:
    "\<lbrakk>DFS_ret_1_conds dfs_state; invar_seen_stack dfs_state\<rbrakk> \<Longrightarrow>
@@ -419,7 +419,7 @@ lemma invar_s_in_stack_holds_2[invar_holds_intros]:
   "\<lbrakk>DFS_call_2_conds dfs_state; invar_1 dfs_state; invar_s_in_stack dfs_state\<rbrakk> \<Longrightarrow>
      invar_s_in_stack (DFS_upd2 dfs_state)"
   by (auto elim!: call_cond_elims simp: DFS_upd2_def elim: vwalk_betE
-           elim!: invar_props_elims dest!: Graph.neighb.emptyD append_vwalk_pref intro!: invar_props_intros)
+           elim!: invar_props_elims dest!: Graph.vset.emptyD append_vwalk_pref intro!: invar_props_intros)
 
 lemma invar_s_in_stack_holds_4[invar_holds_intros]:
    "\<lbrakk>DFS_ret_1_conds dfs_state; invar_s_in_stack dfs_state\<rbrakk> \<Longrightarrow>
@@ -675,7 +675,7 @@ lemma call_1_terminates[termination_intros]:
   by(fastforce elim!: invar_props_elims call_cond_elims
           simp add: DFS_upd1_def call_1_measure_def Let_def 
           intro!: mlex_less psubset_card_mono
-          dest!: Graph.neighb.choose')
+          dest!: Graph.vset.choose')
 
 lemma call_2_measure_nonsym[simp]: "(call_2_measure dfs_state, call_2_measure dfs_state) \<notin> less_rel"
   by (auto simp: less_rel_def)
@@ -759,7 +759,7 @@ end
 context DFS
 begin
 
-partial_function (tailrec) DFS_impl::"('v, 'neighb) DFS_state \<Rightarrow> ('v, 'neighb) DFS_state" where
+partial_function (tailrec) DFS_impl::"('v, 'vset) DFS_state \<Rightarrow> ('v, 'vset) DFS_state" where
   "DFS_impl dfs_state = 
      (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if v = t then 
