@@ -1,11 +1,16 @@
 theory DFS
-  imports Directed_Set_Graphs.Pair_Graph_Specs Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.Set_Addons
-       
+  imports Directed_Set_Graphs.Pair_Graph_Specs Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.Set_Addons  
 begin
+
+section\<open>Depth-Frist Search\<close>
+
+subsection \<open>The program state\<close>
 
 datatype return = Reachable | NotReachable
 
 record ('ver, 'neighb) DFS_state = stack:: "'ver list" seen:: "'neighb"  return:: return
+
+subsection \<open>Setup for automation\<close>
 
 named_theorems call_cond_elims
 named_theorems call_cond_intros
@@ -17,6 +22,7 @@ named_theorems state_rel_intros
 named_theorems state_rel_holds_intros 
 
 
+subsection \<open>\emph{locale} for fixing data structures and their implemenations\<close>
 
 locale DFS =
   (*set_ops: Set2 where empty = empty and insert = insert and isin = neighb_isin +*)
@@ -41,6 +47,7 @@ abbreviation "neighbourhood' v == Graph.neighbourhood G v"
 
 notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
+subsection \<open>Using the function package to model while-loops\<close>
 
 function (domintros) DFS::"('v, 'neighb) DFS_state \<Rightarrow> ('v, 'neighb) DFS_state" where
   "DFS dfs_state = 
@@ -63,43 +70,7 @@ function (domintros) DFS::"('v, 'neighb) DFS_state \<Rightarrow> ('v, 'neighb) D
     )"
   by pat_completeness auto
 
-(*time_function DFS*)
-
-partial_function (tailrec) DFS_impl::"('v, 'neighb) DFS_state \<Rightarrow> ('v, 'neighb) DFS_state" where
-  "DFS_impl dfs_state = 
-     (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
-       (if v = t then 
-          (dfs_state \<lparr>return := Reachable\<rparr>)
-        else ((if (\<N>\<^sub>G v -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>N then
-                  let u = (sel ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)));
-                      stack' = u# (stack dfs_state);
-                      seen' = insert u (seen dfs_state)                      
-                  in
-                    (DFS_impl (dfs_state \<lparr>stack := stack',
-                                     seen := seen' \<rparr>))
-                else
-                  let stack' = stack_tl in
-                     DFS_impl (dfs_state \<lparr>stack := stack'\<rparr>))
-              )
-      )
-     | _ \<Rightarrow> (dfs_state \<lparr>return := NotReachable\<rparr>)
-    )"
-
-(*time_function DFS_impl*)
-
 definition "initial_state \<equiv> \<lparr>stack = [s], seen = insert s \<emptyset>\<^sub>N, return = NotReachable\<rparr>"
-
-lemmas [code] = DFS_impl.simps  initial_state_def 
-
-lemma DFS_to_DFS_impl: assumes "DFS_dom state"
-  shows " DFS state = DFS_impl state"
-  apply(induction rule: DFS.pinduct[OF assms])
-  subgoal for state
-  apply(subst DFS.psimps)
-   apply simp
-    apply(subst DFS_impl.simps)
-    by(auto simp add: Let_def split: if_split list.split)
-  done
 
 definition "DFS_call_1_conds dfs_state \<equiv> 
     (case stack dfs_state of (v # stack_tl) \<Rightarrow>
@@ -287,20 +258,27 @@ definition "call_2_measure dfs_state \<equiv> card (set (stack dfs_state))"
 definition
   "DFS_term_rel' \<equiv> (call_1_measure) <*mlex*> (call_2_measure) <*mlex*> {}"
 
+end
+
+locale DFS_thms = DFS +
+
+assumes DFS_axioms: DFS_axioms
+
+begin
+
 context
-includes set_ops.automation Graph.adj.automation Graph.neighb.set.automation
-assumes DFS_axioms 
+includes set_ops.automation and Graph.adj.automation and Graph.neighb.set.automation 
 begin
 
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"
           "Graph.finite_graph G"
           "Graph.finite_neighbs"
-  using \<open>DFS_axioms\<close>
+  using DFS_axioms
   by (auto simp: DFS_axioms_def)
 
 lemma s_in_G[simp,intro]: "s \<in> dVs (Graph.digraph_abs G)"
-  using \<open>DFS_axioms\<close>
+  using DFS_axioms
   by (auto simp: DFS_axioms_def)
 
 lemma finite_neighbourhoods[simp]:                                                 
@@ -775,8 +753,52 @@ proof-
   ultimately show ?thesis
     by auto
 qed
-
 end
+end
+
+context DFS
+begin
+
+partial_function (tailrec) DFS_impl::"('v, 'neighb) DFS_state \<Rightarrow> ('v, 'neighb) DFS_state" where
+  "DFS_impl dfs_state = 
+     (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
+       (if v = t then 
+          (dfs_state \<lparr>return := Reachable\<rparr>)
+        else ((if (\<N>\<^sub>G v -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>N then
+                  let u = (sel ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)));
+                      stack' = u# (stack dfs_state);
+                      seen' = insert u (seen dfs_state)                      
+                  in
+                    (DFS_impl (dfs_state \<lparr>stack := stack',
+                                     seen := seen' \<rparr>))
+                else
+                  let stack' = stack_tl in
+                     DFS_impl (dfs_state \<lparr>stack := stack'\<rparr>))
+              )
+      )
+     | _ \<Rightarrow> (dfs_state \<lparr>return := NotReachable\<rparr>)
+    )"
+
+lemmas [code] = DFS_impl.simps  initial_state_def 
+end
+
+context DFS_thms
+begin
+
+lemma DFS_to_DFS_impl: "DFS initial_state = DFS_impl initial_state"
+proof-
+  have DFS_to_DFS_impl: " DFS state = DFS_impl state" if  "DFS_dom state" for state
+  apply(induction rule: DFS.pinduct[OF that])
+  subgoal for state
+  apply(subst DFS.psimps)
+   apply simp
+    apply(subst DFS_impl.simps)
+    by(auto simp add: Let_def split: if_split list.split)
+  done
+  thus ?thesis
+    using initial_state_props(6)
+    by auto
+qed
 
 end
 

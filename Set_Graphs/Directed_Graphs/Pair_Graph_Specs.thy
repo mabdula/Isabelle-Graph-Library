@@ -109,7 +109,7 @@ named_theorems Graph_Spec_Elims
 named_theorems Graph_Spec_Intros
 named_theorems Graph_Spec_Simps
 
-locale  Pair_Graph_Specs = 
+locale Pair_Graph_Specs = 
  adj: Map 
  where update = update and invar = adj_inv +
 
@@ -177,22 +177,13 @@ definition "delete_edge G u v \<equiv>
 
 
 context \<comment>\<open>Locale properties\<close>
-  includes adj.automation neighb.set.automation
+  includes neighb.set.automation and adj.automation
   fixes G::'adj
-  (*assumes [simp]:"axioms G"*)
 begin
 
 lemma graph_invE[elim]: 
   "graph_inv G \<Longrightarrow> (\<lbrakk>adj_inv G; (\<And>v neighb. lookup G v = Some neighb \<Longrightarrow> neighb_inv neighb)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: graph_inv_def)
-
-(*end*)
-
-(*context \<comment>\<open>Locale properties\<close>
-  includes automation
-  fixes G::'adj
-  (*assumes [simp]:"axioms G"*)
-begin*)
 
 lemma graph_invI[intro]: 
   "\<lbrakk>adj_inv G; (\<And>v neighb. lookup G v = Some neighb \<Longrightarrow> neighb_inv neighb)\<rbrakk> \<Longrightarrow> graph_inv G"
@@ -294,8 +285,5 @@ lemma digraph_abs_delete[simp]:  "graph_inv G \<Longrightarrow> digraph_abs (del
 end \<comment> \<open>Properties context\<close>  
 
 end text \<open>@{const Pair_Graph_Specs}\<close>
-
-
-
 
 end

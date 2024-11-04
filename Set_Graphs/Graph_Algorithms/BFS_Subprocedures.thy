@@ -1,27 +1,35 @@
 theory BFS_Subprocedures
-  imports BFS_2 "HOL-Data_Structures.RBT_Map" Set2_Join_RBT
+  imports BFS_2 "HOL-Data_Structures.RBT_Map" Directed_Set_Graphs.Set_Addons 
 begin
 
 locale BFS_subprocedures =
   Graph: Pair_Graph_Specs
     where lookup = lookup +
+
   set_ops: Set2 neighb_empty neighb_delete _ t_set neighb_inv insert
   
 for lookup :: "'adj \<Rightarrow> 'ver \<Rightarrow> 'neighb option" +
-
 fixes G::"'adj" 
 fixes fold_neighb::"('ver \<Rightarrow> 'neighb \<Rightarrow> 'neighb) \<Rightarrow> 'neighb \<Rightarrow> 'neighb \<Rightarrow> 'neighb"
 fixes fold_adj::"('ver \<Rightarrow> 'adj \<Rightarrow> 'adj) \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj"
-assumes fold_neighb:"\<And> N f acc. neighb_inv N \<Longrightarrow> \<exists> xs. set xs = t_set N \<and>
-                        fold_neighb f N acc = foldr f xs acc"
+assumes fold_neighb:"\<And> N f acc. neighb_inv N \<Longrightarrow> \<exists> xs. set xs = t_set N \<and> fold_neighb f N acc = foldr f xs acc"
 assumes fold_adj:"\<And> N f acc. neighb_inv N \<Longrightarrow> \<exists> xs. set xs = t_set N \<and>
-                        fold_adj f N acc = foldr f xs acc"
+                        fold_adj f N acc = foldr f xs acc" 
 
 begin
 
+abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G" 
+notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
+
 definition next_frontier::"'neighb \<Rightarrow> 'neighb \<Rightarrow> 'neighb"  where
-"next_frontier frontier vis= fold_neighb (\<lambda> u nf. case (lookup G u) of None \<Rightarrow> nf
-                                                  | Some vs \<Rightarrow> union nf (diff vs vis)) frontier neighb_empty"
+"next_frontier frontier vis= 
+   fold_neighb (\<lambda> u nf. nf \<union>\<^sub>G ((\<N>\<^sub>G u) -\<^sub>G vis)) frontier \<emptyset>\<^sub>N"
+declare Graph.neighb.set.set_empty[simp] Graph.neighb.set.set_isin[simp] Graph.neighb.set.set_insert[simp]
+        Graph.neighb.set.set_delete[simp] Graph.neighb.set.invar_empty[simp] 
+        Graph.neighb.set.invar_insert[simp] Graph.neighb.set.invar_delete[simp]
+context
+  includes Graph.neighb.set.automation and set_ops.automation
+begin
 
 lemma next_frontier:
     "\<lbrakk>neighb_inv frontier; neighb_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>  neighb_inv (next_frontier frontier vis)"
@@ -30,125 +38,59 @@ lemma next_frontier:
          (\<Union> {Pair_Graph.neighbourhood (Graph.digraph_abs G) u | u . u \<in> t_set frontier}) - t_set vis"
 proof-
   assume assms: "neighb_inv frontier" "neighb_inv vis" "Graph.graph_inv G"
-  obtain xs where xs_prop:True
-       "set xs = [frontier]\<^sub>s"
-       "next_frontier frontier vis =
-        foldr (\<lambda>u nf. case lookup G u of None \<Rightarrow> nf | Some vs \<Rightarrow> nf \<union>\<^sub>G (vs -\<^sub>G vis)) xs \<emptyset>\<^sub>N"
-    using fold_neighb[OF assms(1)] by(fastforce simp add: next_frontier_def)
-  have goal1_gen:"neighb_inv (foldr (\<lambda>u nf. case lookup G u of None \<Rightarrow> nf | Some vs \<Rightarrow> nf \<union>\<^sub>G (vs -\<^sub>G vis)) xs \<emptyset>\<^sub>N)" for xs
+  have goal1_gen:"neighb_inv (foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N)" for xs
    using assms 
-    by (induction xs)(auto split: option.split intro!: Graph.neighb.set.invar_empty set_ops.invar_union Cons set_ops.invar_diff)
-  thus"neighb_inv (next_frontier frontier vis)"
-   by(simp add: xs_prop(3)) 
-  show "[next_frontier frontier vis]\<^sub>s = \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} - [vis]\<^sub>s"
-    unfolding xs_prop(3) 
-    using xs_prop(1,2) assms(1) 
-  proof(induction xs arbitrary: frontier)
-    case Nil
-    then show ?case by(auto intro!: Graph.neighb.set.set_empty)
-  next
-    case (Cons a xs)
-    show ?case 
-    proof(cases "a \<in> set xs")
-      case True
-      show ?thesis 
-      proof(cases "lookup G a")
-        case None
-        then show ?thesis 
-          using True Cons(2-) by (simp, intro Cons(1)) auto
-      next
-        case (Some vs)
-        have vs_already_in:"[vs]\<^sub>s 
-             \<subseteq>  \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s}"
-          using  Cons.prems(2) True Some insert_absorb 
-          by (fastforce simp add:  Graph.neighbourhood_abs[OF assms(3), symmetric] Graph.neighbourhood_def)   
-        have helper: " \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} - [vis]\<^sub>s \<union> [vs -\<^sub>G vis]\<^sub>s =
-         \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} - [vis]\<^sub>s"
-          using assms  vs_already_in  Some
-          by (subst set_ops.set_diff)(auto intro: set_ops.invar_diff)
-        have hlper2: "[foldr (\<lambda>u nf. case lookup G u of None \<Rightarrow> nf | Some vs \<Rightarrow> nf \<union>\<^sub>G (vs -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s \<union> [vs -\<^sub>G vis]\<^sub>s =
-    \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} - [vis]\<^sub>s"
-          using True Cons(2-) helper by (subst Cons(1)) auto
-        from Some show ?thesis
-          using assms(2) assms(3)  hlper2 
-          by (simp, subst set_ops.set_union)(auto intro: set_ops.invar_diff  goal1_gen)
-      qed
-    next
-      case False
-      thus ?thesis
-    proof(cases "lookup G a")
-      case None
-      hence same_neighbs:"\<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} =
-            \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [neighb_delete a frontier]\<^sub>s}"
-          using  Graph.neighb.set.set_delete[OF Cons(4)] Graph.neighb.set.set_empty  Graph.neighb.set.set_isin[OF  Graph.neighb.set.invar_empty]
-                 neighbourhoodI 
-          by(fastforce simp add: Graph.neighb.set.set_delete[OF Cons.prems(3)] Graph.digraph_abs_def Graph.neighbourhood_def)
-     have "[foldr (\<lambda>u nf. case lookup G u of None \<Rightarrow> nf | Some vs \<Rightarrow> nf \<union>\<^sub>G (vs -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s =
-         \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [neighb_delete a frontier]\<^sub>s} - [vis]\<^sub>s"
-          using Cons(2-4)  Graph.neighb.set.set_delete 
-          by (intro Cons(1))(auto simp add: Graph.neighb.set.invar_delete False)+
-        thus ?thesis by (simp add: None same_neighbs)
-    next
-      case (Some vs)
-      have same_neighbs:"\<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} =
-            \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [neighb_delete a frontier]\<^sub>s} \<union> [vs]\<^sub>s"
-      proof(rule, all \<open>rule\<close>, goal_cases)
-        case (1 x)
-        then obtain u where u_prop:"x \<in> neighbourhood [G]\<^sub>g u" "u \<in> [frontier]\<^sub>s" by auto
-        show ?case 
-        proof(cases "u = a")
-          case True
-          hence "x \<in> [vs]\<^sub>s"
-            using u_prop Some Graph.neighb.set.set_isin assms(3) 
-            by(auto split: option.split simp add: neighbourhood_def Graph.digraph_abs_def Graph.neighbourhood_def)
-          then show ?thesis  by simp
-        next
-          case False
-          hence "u \<in> [neighb_delete a frontier]\<^sub>s"
-            by (simp add: Cons.prems(3) Graph.neighb.set.set_delete u_prop(2))
-          thus ?thesis 
-            using u_prop(1) by auto
-        qed
-      next
-        case (2 x)
-        note 22 =this
-        show ?case 
-        proof(cases rule: UnE[OF 2])
-          case 1
-          then obtain u where "x \<in> neighbourhood [G]\<^sub>g u" "u \<in> [neighb_delete a frontier]\<^sub>s" by auto
-          moreover hence "u \<in> [frontier]\<^sub>s"
-            by (simp add: Cons.prems(3) Graph.neighb.set.set_delete)
-          ultimately show ?thesis by auto
-        next
-          case 2
-          hence "x \<in> neighbourhood [G]\<^sub>g a" 
-            using  Graph.neighbourhood_abs[OF assms(3)] Graph.neighbourhood_def Some by fastforce
-          moreover have "a  \<in> [frontier]\<^sub>s"
-            using Cons.prems(2) by auto
-          ultimately show ?thesis by auto
-        qed
-      qed
-      have diff_sol: "[vs -\<^sub>G vis]\<^sub>s = [vs]\<^sub>s - [vis]\<^sub>s"
-        using Some assms(2) 
-        by(auto intro: Graph.graph_invE[OF assms(3)]  simp add: set_ops.set_diff)
-      have IH_applied: "[foldr (\<lambda>u nf. case lookup G u of None \<Rightarrow> nf | Some vs \<Rightarrow> nf \<union>\<^sub>G (vs -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s =
-                   \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [neighb_delete a frontier]\<^sub>s} - [vis]\<^sub>s"
-        using Cons.prems(1)  Cons.prems(2)
-        by(intro  Cons(1)[of "neighb_delete a frontier"])
-          (auto simp add: False Cons.prems(3) Graph.neighb.set.invar_delete Graph.neighb.set.set_delete[OF  Cons.prems(3)] )
-      show ?thesis 
-        using Some assms(2) assms(3)  
-        by (simp add: Some same_neighbs Un_Diff, subst set_ops.set_union)
-           (auto intro: goal1_gen set_ops.invar_diff simp add: diff_sol IH_applied)
-      qed
-    qed
-  qed
+    by (induction xs)(auto split: option.split)
+
+  have "[(\<N>\<^sub>G a -\<^sub>G vis)]\<^sub>s \<subseteq> foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) xs {}" if "a \<in> set xs" for xs a
+    using that
+    by (induction xs) (auto simp add: assms(2) assms(3) goal1_gen in_mono)
+  hence "foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) xs {} =
+                   foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) (remdups xs) {}" for xs
+    by(induction xs) auto
+  moreover have "foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) xs {} = [(foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N)]\<^sub>s"  for xs
+    by (induction xs)
+       (simp add: assms(2) assms(3) goal1_gen)+
+  ultimately have "[(foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N)]\<^sub>s =
+                      [(foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) (remdups xs) \<emptyset>\<^sub>N)]\<^sub>s" for xs
+    by auto
+  moreover obtain xs where xs_props:
+       "set xs = [frontier]\<^sub>s"
+       "[next_frontier frontier vis]\<^sub>s =
+          [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s"
+    using fold_neighb[OF assms(1)]
+    apply(auto simp add: next_frontier_def)
+    by metis
+  ultimately obtain xs' where xs'_props: 
+       "set xs' = [frontier]\<^sub>s"
+       "[next_frontier frontier vis]\<^sub>s =
+           [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs' \<emptyset>\<^sub>N]\<^sub>s"
+       "distinct xs'"
+    using distinct_remdups set_remdups
+    by (metis )
+  moreover have "[foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs' \<emptyset>\<^sub>N]\<^sub>s =
+                    \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> set xs'} - [vis]\<^sub>s"
+    by(induction xs')
+      (auto simp add: Graph.neighb.emptyD(1) assms(2) assms(3) goal1_gen)+
+
+  ultimately show "[next_frontier frontier vis]\<^sub>s = \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} - [vis]\<^sub>s"
+    by presburger
+
+  have "neighb_inv (foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N)" for xs
+   using assms 
+    by (induction xs)(auto split: option.split intro!: Cons)
+
+  thus "neighb_inv (next_frontier frontier vis)"
+    apply (subst next_frontier_def)
+    using fold_neighb[OF assms(1)]
+    by metis
 qed
 
 definition expand_tree::"'adj \<Rightarrow> 'neighb \<Rightarrow> 'neighb \<Rightarrow> 'adj" where
 "expand_tree BFS_tree frontier vis = 
-fold_adj (\<lambda> u nf. case (lookup G u) of None \<Rightarrow> nf
-                | Some vs \<Rightarrow> (case (lookup nf u) of None \<Rightarrow> update u (diff vs vis) nf
+   fold_adj 
+     (\<lambda> u nf. case (lookup G u) of None \<Rightarrow> nf
+                     | Some vs \<Rightarrow> (case (lookup nf u) of None \<Rightarrow> update u (diff vs vis) nf
                               | Some vs' \<Rightarrow>update u (union vs' (diff vs vis)) nf)) frontier BFS_tree"
 
 lemma expand_tree:
@@ -329,6 +271,7 @@ qed
     [BFS_tree]\<^sub>g \<union> {(u, v) |u v. u \<in> [frontier]\<^sub>s \<and> v \<in> neighbourhood [G]\<^sub>g u - [vis]\<^sub>s}"
     using xs_prop(2) by argo
 qed
+end
 
 lemmas [code] = expand_tree_def next_frontier_def
 

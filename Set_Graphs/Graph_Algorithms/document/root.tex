@@ -18,11 +18,24 @@
 \maketitle
 
 \begin{abstract}
+In this entry, we verify the correctness of a number of simple graph algorithms. These include:
+\begin{itemize}
+  \item Depth-first search
+  \item Breadth-first search
+  \item A cycle detection algorithm based on depth-first search
+  \item The Bellman-Ford algorithm 
+\end{itemize}
+
+The entry's main aim is to show case the use of the Set\_Graphs library. Two main features are its
+automation setup aimed a verifying executable graph algorithms in a human-readable way and to verify
+the algorithms w.r.t.\ the same graph representation, making all of them compatible. The setup we
+use here includes using the function package to model loops and reason about their termination, using
+records to model program states, and using \emph{locales} to implement parametric as well as
+step-wise refinement based verification.
+
 \end{abstract}
 
 % \tableofcontents
-
-\section{Acknowledgements}
 
 % include generated text of all theories
 \input{session}

@@ -298,7 +298,7 @@ definition "invar_cycle_true dfs_cycles_state \<equiv>
 
 
 context
-includes Graph.adj.automation Graph.neighb.set.automation
+includes Graph.adj.automation and Graph.neighb.set.automation
 assumes DFS_Cycles_axioms dfs_aux_axioms
 begin
 

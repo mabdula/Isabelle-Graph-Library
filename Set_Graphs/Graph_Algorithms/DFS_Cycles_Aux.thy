@@ -1,4 +1,4 @@
-theory DFS_Cycles_Aux
+theory DFS_Cycles_Aux              
   imports Directed_Set_Graphs.Pair_Graph_Specs
     Directed_Set_Graphs.Set_Addons Directed_Set_Graphs.Component_Defs Directed_Set_Graphs.Awalk
 begin
@@ -459,7 +459,7 @@ definition "initial_state \<equiv> \<lparr>stack = [s], seen = insert s \<emptys
 lemmas [code] = initial_state_def
 
 context
-includes  Graph.adj.automation Graph.neighb.set.automation
+includes  Graph.adj.automation and Graph.neighb.set.automation
 assumes DFS_Aux_axioms 
 begin
 
