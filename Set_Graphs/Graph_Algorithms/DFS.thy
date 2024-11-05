@@ -267,7 +267,7 @@ assumes DFS_axioms: DFS_axioms
 begin
 
 context
-includes set_ops.automation and Graph.adj.automation and Graph.vset.set.automation 
+includes set_ops.automation and Graph.adjmap.automation and Graph.vset.set.automation 
 begin
 
 lemma graph_inv[simp,intro]:
@@ -281,7 +281,7 @@ lemma s_in_G[simp,intro]: "s \<in> dVs (Graph.digraph_abs G)"
   using DFS_axioms
   by (auto simp: DFS_axioms_def)
 
-lemma finite_vsetourhoods[simp]:                                                 
+lemma finite_neighbourhoods[simp]:                                                 
           "finite (t_set N)"
   using graph_inv(3)
   by fastforce

@@ -4,9 +4,9 @@ begin
 
 interpretation DFS_AVL: DFS
   where empty=AVL_Set_Code.empty and update=update and delete = AVL_Map.delete and
-        lookup =lookup and adj_inv = M.invar  and neighb_empty = AVL_Set_Code.empty and 
-        insert = AVL_Set_Code.insert and neighb_delete = AVL_Set_Code.delete and isin = isin and 
-        t_set = "set o inorder" and neighb_inv = S.invar and sel = avl_sel
+        lookup =lookup and adjmap_inv = M.invar  and vset_empty = AVL_Set_Code.empty and 
+        insert = AVL_Set_Code.insert and vset_delete = AVL_Set_Code.delete and isin = isin and 
+        t_set = "set o inorder" and vset_inv = S.invar and sel = avl_sel
   apply unfold_locales
   sledgehammer
 

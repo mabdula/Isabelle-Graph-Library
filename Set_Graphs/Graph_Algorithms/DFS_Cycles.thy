@@ -59,7 +59,7 @@ qed
 
 
 
-record ('ver, 'neighb) DFS_Cycles_state = seen:: "'neighb" cycle:: bool
+record ('ver, 'vset) DFS_Cycles_state = seen:: "'vset" cycle:: bool
 
 
 named_theorems call_cond_elims
@@ -74,24 +74,24 @@ named_theorems state_rel_holds_intros
 locale DFS_Cycles =
   Graph: Pair_Graph_Specs
     where lookup = lookup +
- set_ops: Set2 neighb_empty neighb_delete _ t_set neighb_inv insert
+ set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 
-for lookup :: "'adj \<Rightarrow> 'v \<Rightarrow> 'neighb option" +
+for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
 
-fixes G::"'adj" and V::"'neighb"
-  and dfs_aux::"'v \<Rightarrow> 'state" and seen_aux::"'state \<Rightarrow> 'neighb" and cycle_aux::"'state \<Rightarrow> bool"
+fixes G::"'adjmap" and V::"'vset"
+  and dfs_aux::"'v \<Rightarrow> 'state" and seen_aux::"'state \<Rightarrow> 'vset" and cycle_aux::"'state \<Rightarrow> bool"
 begin
 
 
 definition "DFS_Cycles_axioms \<equiv>
-  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_neighbs \<and>
-  neighb_inv V \<and> (t_set V = dVs (Graph.digraph_abs G)) \<and>
+  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets \<and>
+  vset_inv V \<and> (t_set V = dVs (Graph.digraph_abs G)) \<and>
   (\<forall>(x, y) \<in> (Graph.digraph_abs G). (y, x) \<in> Graph.digraph_abs G) \<and>
   (\<forall>x \<in> dVs (Graph.digraph_abs G). (x, x) \<notin> Graph.digraph_abs G)"
 
 
 definition "dfs_aux_axioms \<equiv>
-  (\<forall>s \<in> dVs (Graph.digraph_abs G). neighb_inv (seen_aux (dfs_aux s))) \<and>
+  (\<forall>s \<in> dVs (Graph.digraph_abs G). vset_inv (seen_aux (dfs_aux s))) \<and>
   (\<forall>s \<in> dVs (Graph.digraph_abs G). s \<in>  t_set (seen_aux (dfs_aux s))) \<and>
   (\<forall>s \<in> dVs (Graph.digraph_abs G). \<not>cycle_aux (dfs_aux s) \<longrightarrow>
     (\<nexists>c. cycle' ((Graph.digraph_abs G) \<downharpoonright> (t_set (seen_aux (dfs_aux s)))) c)) \<and>
@@ -108,7 +108,7 @@ abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G"
 notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
 
-function (domintros) DFS_Cycles::"('v, 'neighb) DFS_Cycles_state \<Rightarrow> ('v, 'neighb) DFS_Cycles_state" where
+function (domintros) DFS_Cycles::"('v, 'vset) DFS_Cycles_state \<Rightarrow> ('v, 'vset) DFS_Cycles_state" where
   "DFS_Cycles dfs_cycles_state = 
     (if V -\<^sub>G (seen dfs_cycles_state) \<noteq> \<emptyset>\<^sub>N
     then 
@@ -125,7 +125,7 @@ function (domintros) DFS_Cycles::"('v, 'neighb) DFS_Cycles_state \<Rightarrow> (
       dfs_cycles_state)"
   by pat_completeness auto
 
-partial_function (tailrec) DFS_Cycles_impl::"('v, 'neighb) DFS_Cycles_state \<Rightarrow> ('v, 'neighb) DFS_Cycles_state" where
+partial_function (tailrec) DFS_Cycles_impl::"('v, 'vset) DFS_Cycles_state \<Rightarrow> ('v, 'vset) DFS_Cycles_state" where
   "DFS_Cycles_impl dfs_cycles_state = 
     (if V -\<^sub>G (seen dfs_cycles_state) \<noteq> \<emptyset>\<^sub>N
     then 
@@ -281,7 +281,7 @@ definition "initial_state \<equiv> \<lparr>seen = \<emptyset>\<^sub>N, cycle = F
 
 lemmas [code] = initial_state_def
 
-definition "invar_1 dfs_cycles_state \<equiv> neighb_inv (seen dfs_cycles_state)"
+definition "invar_1 dfs_cycles_state \<equiv> vset_inv (seen dfs_cycles_state)"
 
 definition "invar_seen dfs_cycles_state \<equiv>
   \<forall>v \<in> t_set (seen dfs_cycles_state). \<forall>w \<in> t_set (V -\<^sub>G (seen dfs_cycles_state)).
@@ -298,7 +298,7 @@ definition "invar_cycle_true dfs_cycles_state \<equiv>
 
 
 context
-includes Graph.adj.automation and Graph.neighb.set.automation
+includes Graph.adjmap.automation and Graph.vset.set.automation
 assumes DFS_Cycles_axioms dfs_aux_axioms
 begin
 
@@ -309,7 +309,7 @@ declare set_ops.set_union[simp] set_ops.set_inter[simp]
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"
           "Graph.finite_graph G"
-          "Graph.finite_neighbs"
+          "Graph.finite_vsets"
   using \<open>DFS_Cycles_axioms\<close>
   by (auto simp: DFS_Cycles_axioms_def)
 
@@ -319,7 +319,7 @@ lemma finite_neighbourhoods[simp]:
   by fastforce
 
 lemma V_inv[simp, intro]:
-  "neighb_inv V"
+  "vset_inv V"
   using \<open>DFS_Cycles_axioms\<close>
   by (auto simp: DFS_Cycles_axioms_def)
 
@@ -343,7 +343,7 @@ lemma graph_no_self_loops2[simp]:
   using graph_no_self_loops1 by blast
 
 lemma dfs_aux_seen_inv[simp]:
-  "s \<in> dVs (Graph.digraph_abs G) \<Longrightarrow> neighb_inv (seen_aux (dfs_aux s))"
+  "s \<in> dVs (Graph.digraph_abs G) \<Longrightarrow> vset_inv (seen_aux (dfs_aux s))"
   using \<open>dfs_aux_axioms\<close>
   by (auto simp: dfs_aux_axioms_def)
 
@@ -378,12 +378,12 @@ lemmas simps[simp] = Graph.neighbourhood_abs[OF graph_inv(1)] Graph.are_connecte
 
 lemma invar_1_props[invar_props_elims]:
   "invar_1 dfs_cycles_state \<Longrightarrow>
-     (\<lbrakk>neighb_inv (seen dfs_cycles_state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
+     (\<lbrakk>vset_inv (seen dfs_cycles_state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
      P"
   by (auto simp: invar_1_def)
 
 lemma invar_1_intro[invar_props_intros]:
-  "\<lbrakk>neighb_inv (seen dfs_cycles_state)\<rbrakk> \<Longrightarrow> invar_1 dfs_cycles_state"
+  "\<lbrakk>vset_inv (seen dfs_cycles_state)\<rbrakk> \<Longrightarrow> invar_1 dfs_cycles_state"
   by (auto simp: invar_1_def)
 
 lemma invar_1_holds_upd1[invar_holds_intros]:

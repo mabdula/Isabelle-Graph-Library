@@ -133,8 +133,8 @@ qed
 
 
 
-record ('ver, 'neighb) DFS_Aux_state =
-  stack:: "'ver list" seen:: "'neighb" finished:: "'neighb" cycle:: bool
+record ('ver, 'vset) DFS_Aux_state =
+  stack:: "'ver list" seen:: "'vset" finished:: "'vset" cycle:: bool
 
 named_theorems call_cond_elims
 named_theorems call_cond_intros
@@ -148,18 +148,18 @@ named_theorems state_rel_holds_intros
 locale DFS_Aux =
   Graph: Pair_Graph_Specs
     where lookup = lookup +
- set_ops: Set2 neighb_empty neighb_delete _ t_set neighb_inv insert
+ set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 
 
-for lookup :: "'adj \<Rightarrow> 'v \<Rightarrow> 'neighb option" +
+for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
 
-fixes G::"'adj" and s::"'v"
+fixes G::"'adjmap" and s::"'v"
 begin
 
 (* We assume the graph is symmetric since we will run the algorithm on undirected graphs, and that
 it has no self-loops. *)
 definition "DFS_Aux_axioms \<equiv>
-  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_neighbs \<and> s \<in> dVs (Graph.digraph_abs G) \<and>
+  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets \<and> s \<in> dVs (Graph.digraph_abs G) \<and>
   (\<forall>(x, y) \<in> (Graph.digraph_abs G). (y, x) \<in> Graph.digraph_abs G) \<and>
   (\<forall>x \<in> dVs (Graph.digraph_abs G). (x, x) \<notin> Graph.digraph_abs G)"
 
@@ -171,7 +171,7 @@ notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 lemmas [code] = Graph.neighbourhood_def
 
 
-function (domintros) DFS_Aux::"('v, 'neighb) DFS_Aux_state \<Rightarrow> ('v, 'neighb) DFS_Aux_state" where
+function (domintros) DFS_Aux::"('v, 'vset) DFS_Aux_state \<Rightarrow> ('v, 'vset) DFS_Aux_state" where
   "DFS_Aux dfs_aux_state = 
      (case (stack dfs_aux_state) of (v # stack_tl) \<Rightarrow>
        let 
@@ -196,7 +196,7 @@ function (domintros) DFS_Aux::"('v, 'neighb) DFS_Aux_state \<Rightarrow> ('v, 'n
     )"
   by pat_completeness auto
 
-partial_function (tailrec) DFS_Aux_impl::"('v, 'neighb) DFS_Aux_state \<Rightarrow> ('v, 'neighb) DFS_Aux_state" where
+partial_function (tailrec) DFS_Aux_impl::"('v, 'vset) DFS_Aux_state \<Rightarrow> ('v, 'vset) DFS_Aux_state" where
   "DFS_Aux_impl dfs_aux_state = 
      (case (stack dfs_aux_state) of (v # stack_tl) \<Rightarrow>
        let 
@@ -410,7 +410,7 @@ definition "dfs_tree dfs_aux_state \<equiv>
   {(x, y). (x, y) \<in> (Graph.digraph_abs G) \<and> x \<in> t_set (finished dfs_aux_state) \<and> y \<in> t_set (finished dfs_aux_state)}"
 
 
-definition "invar_1 dfs_aux_state \<equiv> neighb_inv (seen dfs_aux_state) \<and> neighb_inv (finished dfs_aux_state)"
+definition "invar_1 dfs_aux_state \<equiv> vset_inv (seen dfs_aux_state) \<and> vset_inv (finished dfs_aux_state)"
 
 definition "invar_2 dfs_aux_state \<equiv> (Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_aux_state)))"
 
@@ -424,7 +424,7 @@ definition "invar_seen_stack_finished dfs_aux_state \<longleftrightarrow>
     \<and> t_set (finished dfs_aux_state) = t_set (seen dfs_aux_state) - set (stack dfs_aux_state)
     \<and> t_set (seen dfs_aux_state) \<subseteq> dVs (Graph.digraph_abs G)"
 
-definition "invar_finished_neighbs dfs_aux_state \<equiv>
+definition "invar_finished_vsets dfs_aux_state \<equiv>
   (\<forall>v \<in> t_set (finished (dfs_aux_state)). t_set (\<N>\<^sub>G v) \<subseteq> t_set (seen (dfs_aux_state)))"
 
 
@@ -459,7 +459,7 @@ definition "initial_state \<equiv> \<lparr>stack = [s], seen = insert s \<emptys
 lemmas [code] = initial_state_def
 
 context
-includes  Graph.adj.automation and Graph.neighb.set.automation
+includes  Graph.adjmap.automation and Graph.vset.set.automation
 assumes DFS_Aux_axioms 
 begin
 
@@ -470,7 +470,7 @@ declare set_ops.set_union[simp] set_ops.set_inter[simp]
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"
           "Graph.finite_graph G"
-          "Graph.finite_neighbs"
+          "Graph.finite_vsets"
   using \<open>DFS_Aux_axioms\<close>
   by (auto simp: DFS_Aux_axioms_def)
 
@@ -503,12 +503,12 @@ lemmas simps[simp] = Graph.neighbourhood_abs[OF graph_inv(1)] Graph.are_connecte
 
 lemma invar_1_props[invar_props_elims]:
   "invar_1 dfs_aux_state \<Longrightarrow>
-     (\<lbrakk>neighb_inv (seen dfs_aux_state); neighb_inv (finished dfs_aux_state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
+     (\<lbrakk>vset_inv (seen dfs_aux_state); vset_inv (finished dfs_aux_state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
      P"
   by (auto simp: invar_1_def)
 
 lemma invar_1_intro[invar_props_intros]:
-  "\<lbrakk>neighb_inv (seen dfs_aux_state); neighb_inv (finished dfs_aux_state)\<rbrakk> \<Longrightarrow> invar_1 dfs_aux_state"
+  "\<lbrakk>vset_inv (seen dfs_aux_state); vset_inv (finished dfs_aux_state)\<rbrakk> \<Longrightarrow> invar_1 dfs_aux_state"
   by (auto simp: invar_1_def)
 
 lemma invar_1_holds_upd1[invar_holds_intros]:
@@ -730,26 +730,26 @@ proof(induction rule: DFS_Aux_induct[OF assms(1)])
 qed
 
 
-lemma invar_finished_neighbs_props[invar_props_elims]:
-  "invar_finished_neighbs dfs_aux_state \<Longrightarrow>
+lemma invar_finished_vsets_props[invar_props_elims]:
+  "invar_finished_vsets dfs_aux_state \<Longrightarrow>
      (\<lbrakk>\<And>v. v \<in> t_set (finished (dfs_aux_state)) \<Longrightarrow> t_set (\<N>\<^sub>G v) \<subseteq> t_set (seen (dfs_aux_state))\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
      P"
-  by (auto simp: invar_finished_neighbs_def)
+  by (auto simp: invar_finished_vsets_def)
 
-lemma invar_finished_neighbs_intro[invar_props_intros]:
+lemma invar_finished_vsets_intro[invar_props_intros]:
   "\<lbrakk>\<And>v. v \<in> t_set (finished (dfs_aux_state)) \<Longrightarrow> t_set (\<N>\<^sub>G v) \<subseteq> t_set (seen (dfs_aux_state))\<rbrakk> \<Longrightarrow>
-    invar_finished_neighbs dfs_aux_state"
-  by (auto simp: invar_finished_neighbs_def)
+    invar_finished_vsets dfs_aux_state"
+  by (auto simp: invar_finished_vsets_def)
 
-lemma invar_finished_neighbs_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>DFS_Aux_call_1_conds dfs_aux_state; invar_1 dfs_aux_state; invar_finished_neighbs dfs_aux_state\<rbrakk> \<Longrightarrow> 
-    invar_finished_neighbs (DFS_Aux_upd1 dfs_aux_state)"
+lemma invar_finished_vsets_holds_upd1[invar_holds_intros]:
+  "\<lbrakk>DFS_Aux_call_1_conds dfs_aux_state; invar_1 dfs_aux_state; invar_finished_vsets dfs_aux_state\<rbrakk> \<Longrightarrow> 
+    invar_finished_vsets (DFS_Aux_upd1 dfs_aux_state)"
   by (force simp: Let_def DFS_Aux_upd1_def elim!: call_cond_elims
             elim!: invar_props_elims intro!: invar_props_intros)
 
-lemma invar_finished_neighbs_holds_upd2[invar_holds_intros]:
-  "\<lbrakk>DFS_Aux_call_2_conds dfs_aux_state; invar_1 dfs_aux_state; invar_finished_neighbs dfs_aux_state\<rbrakk> \<Longrightarrow> 
-    invar_finished_neighbs (DFS_Aux_upd2 dfs_aux_state)"
+lemma invar_finished_vsets_holds_upd2[invar_holds_intros]:
+  "\<lbrakk>DFS_Aux_call_2_conds dfs_aux_state; invar_1 dfs_aux_state; invar_finished_vsets dfs_aux_state\<rbrakk> \<Longrightarrow> 
+    invar_finished_vsets (DFS_Aux_upd2 dfs_aux_state)"
 proof (intro invar_props_intros, goal_cases)
   case (1 v)
   let ?v = "hd (stack dfs_aux_state)"
@@ -763,25 +763,25 @@ proof (intro invar_props_intros, goal_cases)
   moreover have "t_set (seen (DFS_Aux_upd2 dfs_aux_state)) = t_set (seen dfs_aux_state)"
     by (auto simp add: DFS_Aux_upd2_def Let_def)
   ultimately show ?case
-    using \<open>invar_finished_neighbs dfs_aux_state\<close> \<open>v \<in> t_set (finished (DFS_Aux_upd2 dfs_aux_state))\<close>
+    using \<open>invar_finished_vsets dfs_aux_state\<close> \<open>v \<in> t_set (finished (DFS_Aux_upd2 dfs_aux_state))\<close>
     by (force elim!: invar_props_elims)
 qed
 
-lemma invar_finished_neighbs_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>DFS_Aux_ret_1_conds dfs_aux_state; invar_finished_neighbs dfs_aux_state\<rbrakk> \<Longrightarrow> 
-    invar_finished_neighbs (DFS_Aux_ret1 dfs_aux_state)"
+lemma invar_finished_vsets_holds_ret_1[invar_holds_intros]:
+  "\<lbrakk>DFS_Aux_ret_1_conds dfs_aux_state; invar_finished_vsets dfs_aux_state\<rbrakk> \<Longrightarrow> 
+    invar_finished_vsets (DFS_Aux_ret1 dfs_aux_state)"
   by (force simp: Let_def DFS_Aux_ret1_def elim!: call_cond_elims
             elim!: invar_props_elims intro!: invar_props_intros)
 
-lemma invar_finished_neighbs_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>DFS_Aux_ret_2_conds dfs_aux_state; invar_finished_neighbs dfs_aux_state\<rbrakk> \<Longrightarrow> 
-    invar_finished_neighbs (DFS_Aux_ret2 dfs_aux_state)"
+lemma invar_finished_vsets_holds_ret_2[invar_holds_intros]:
+  "\<lbrakk>DFS_Aux_ret_2_conds dfs_aux_state; invar_finished_vsets dfs_aux_state\<rbrakk> \<Longrightarrow> 
+    invar_finished_vsets (DFS_Aux_ret2 dfs_aux_state)"
   by (force simp: Let_def DFS_Aux_ret2_def elim!: call_cond_elims
             elim!: invar_props_elims intro!: invar_props_intros)
 
-lemma invar_finished_neighbs_holds[invar_holds_intros]: 
-   assumes "DFS_Aux_dom dfs_aux_state" "invar_1 dfs_aux_state" "invar_finished_neighbs dfs_aux_state"
-   shows "invar_finished_neighbs (DFS_Aux dfs_aux_state)"
+lemma invar_finished_vsets_holds[invar_holds_intros]: 
+   assumes "DFS_Aux_dom dfs_aux_state" "invar_1 dfs_aux_state" "invar_finished_vsets dfs_aux_state"
+   shows "invar_finished_vsets (DFS_Aux dfs_aux_state)"
   using assms(2-)
 proof(induction rule: DFS_Aux_induct[OF assms(1)])
   case IH: (1 dfs_aux_state)
@@ -805,7 +805,7 @@ lemma invar_dfs_tree_seen_1_intro[invar_props_intros]:
 
 lemma invar_dfs_tree_seen_1_holds_upd1[invar_holds_intros]:
   "\<lbrakk>DFS_Aux_call_1_conds dfs_aux_state; invar_1 dfs_aux_state; invar_seen_stack_finished dfs_aux_state;
-    invar_finished_neighbs dfs_aux_state; invar_dfs_tree_seen_1 dfs_aux_state\<rbrakk> \<Longrightarrow> 
+    invar_finished_vsets dfs_aux_state; invar_dfs_tree_seen_1 dfs_aux_state\<rbrakk> \<Longrightarrow> 
     invar_dfs_tree_seen_1 (DFS_Aux_upd1 dfs_aux_state)"
 proof (intro invar_props_intros, goal_cases)
   case 1
@@ -818,13 +818,13 @@ proof (intro invar_props_intros, goal_cases)
   have w_not_in_seen: "?w \<notin> set (stack dfs_aux_state) \<union> t_set (finished dfs_aux_state)"
     using \<open>invar_1 dfs_aux_state\<close> \<open>invar_seen_stack_finished dfs_aux_state\<close> \<open>DFS_Aux_call_1_conds dfs_aux_state\<close>
     by (force elim!: invar_props_elims call_cond_elims)
-  have finished_neighbs: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
+  have finished_vsets: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
     (x \<in> t_set (finished dfs_aux_state) \<longrightarrow> y \<in> set (stack dfs_aux_state) \<union> t_set (finished dfs_aux_state)) \<and>
     (y \<in> t_set (finished dfs_aux_state) \<longrightarrow> x \<in> set (stack dfs_aux_state) \<union> t_set (finished dfs_aux_state))"
-    using \<open>invar_seen_stack_finished dfs_aux_state\<close> \<open>invar_finished_neighbs dfs_aux_state\<close>  
+    using \<open>invar_seen_stack_finished dfs_aux_state\<close> \<open>invar_finished_vsets dfs_aux_state\<close>  
     graph_symmetric Graph.digraph_abs_def
     by (fastforce elim!: invar_props_elims)
-  from dfs_tree_aux1[OF stack_expr w_not_in_seen finished_neighbs]
+  from dfs_tree_aux1[OF stack_expr w_not_in_seen finished_vsets]
     have dfs_tree_expr:
     "dfs_tree (DFS_Aux_upd1 dfs_aux_state) =
     {(?v, ?w), (?w, ?v)} \<union> dfs_tree dfs_aux_state"
@@ -905,7 +905,7 @@ proof (intro invar_props_intros, goal_cases)
     ultimately have "(t_set (\<N>\<^sub>G ?v) - {u}) \<subseteq> t_set (finished dfs_aux_state)"
       by blast
     with graph_symmetric
-      have v_neighbs: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
+      have v_vsets: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
         (x = ?v \<longrightarrow> y \<noteq> u \<longrightarrow> y \<in> t_set (finished dfs_aux_state)) \<and>
         (y = ?v \<longrightarrow> x \<noteq> u \<longrightarrow> x \<in> t_set (finished dfs_aux_state))"
       by blast
@@ -922,7 +922,7 @@ proof (intro invar_props_intros, goal_cases)
       apply (subst stack_upd_expr)+
       apply (subst finished_upd_expr)+
       using dfs_tree_aux2_2[OF stack_expr Cons \<open>\<forall>(x, y) \<in> (Graph.digraph_abs G). x \<noteq> y\<close> edges_in_G
-      sets_disjoint v_neighbs]
+      sets_disjoint v_vsets]
       by auto
   qed
 
@@ -956,7 +956,7 @@ lemma invar_dfs_tree_seen_1_holds_ret_2[invar_holds_intros]:
 
 lemma invar_dfs_tree_seen_1_holds[invar_holds_intros]: 
    assumes "DFS_Aux_dom dfs_aux_state" "invar_1 dfs_aux_state" "invar_2 dfs_aux_state"
-     "invar_seen_stack_finished dfs_aux_state" "invar_finished_neighbs dfs_aux_state"
+     "invar_seen_stack_finished dfs_aux_state" "invar_finished_vsets dfs_aux_state"
      "invar_dfs_tree_seen_1 dfs_aux_state"
    shows "invar_dfs_tree_seen_1 (DFS_Aux dfs_aux_state)"
   using assms(2-)
@@ -980,7 +980,7 @@ lemma invar_dfs_tree_seen_2_intro[invar_props_intros]:
 
 lemma invar_dfs_tree_seen_2_holds_upd1[invar_holds_intros]:
   "\<lbrakk>DFS_Aux_call_1_conds dfs_aux_state; invar_1 dfs_aux_state; invar_seen_stack_finished dfs_aux_state;
-    invar_finished_neighbs dfs_aux_state; invar_dfs_tree_seen_1 dfs_aux_state; invar_dfs_tree_seen_2 dfs_aux_state\<rbrakk> \<Longrightarrow> 
+    invar_finished_vsets dfs_aux_state; invar_dfs_tree_seen_1 dfs_aux_state; invar_dfs_tree_seen_2 dfs_aux_state\<rbrakk> \<Longrightarrow> 
     invar_dfs_tree_seen_2 (DFS_Aux_upd1 dfs_aux_state)"
 proof (intro invar_props_intros, goal_cases)
   case 1
@@ -993,13 +993,13 @@ proof (intro invar_props_intros, goal_cases)
   have w_not_in_seen: "?w \<notin> set (stack dfs_aux_state) \<union> t_set (finished dfs_aux_state)"
     using \<open>invar_1 dfs_aux_state\<close> \<open>invar_seen_stack_finished dfs_aux_state\<close> \<open>DFS_Aux_call_1_conds dfs_aux_state\<close>
     by (force elim!: invar_props_elims call_cond_elims)
-  have finished_neighbs: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
+  have finished_vsets: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
     (x \<in> t_set (finished dfs_aux_state) \<longrightarrow> y \<in> set (stack dfs_aux_state) \<union> t_set (finished dfs_aux_state)) \<and>
     (y \<in> t_set (finished dfs_aux_state) \<longrightarrow> x \<in> set (stack dfs_aux_state) \<union> t_set (finished dfs_aux_state))"
-    using \<open>invar_seen_stack_finished dfs_aux_state\<close> \<open>invar_finished_neighbs dfs_aux_state\<close>  
+    using \<open>invar_seen_stack_finished dfs_aux_state\<close> \<open>invar_finished_vsets dfs_aux_state\<close>  
     graph_symmetric Graph.digraph_abs_def
     by (fastforce elim!: invar_props_elims)
-  from dfs_tree_aux1[OF stack_expr w_not_in_seen finished_neighbs]
+  from dfs_tree_aux1[OF stack_expr w_not_in_seen finished_vsets]
     have dfs_tree_expr:
     "dfs_tree (DFS_Aux_upd1 dfs_aux_state) =
     {(?v, ?w), (?w, ?v)} \<union> dfs_tree dfs_aux_state"
@@ -1135,7 +1135,7 @@ proof (intro invar_props_intros, goal_cases)
     ultimately have "(t_set (\<N>\<^sub>G ?v) - {u}) \<subseteq> t_set (finished dfs_aux_state)"
       by blast
     with graph_symmetric
-      have v_neighbs: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
+      have v_vsets: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
         (x = ?v \<longrightarrow> y \<noteq> u \<longrightarrow> y \<in> t_set (finished dfs_aux_state)) \<and>
         (y = ?v \<longrightarrow> x \<noteq> u \<longrightarrow> x \<in> t_set (finished dfs_aux_state))"
       by blast
@@ -1152,7 +1152,7 @@ proof (intro invar_props_intros, goal_cases)
       apply (subst stack_upd_expr)+
       apply (subst finished_upd_expr)+
       using dfs_tree_aux2_2[OF stack_expr Cons \<open>\<forall>(x, y) \<in> (Graph.digraph_abs G). x \<noteq> y\<close> edges_in_G
-      sets_disjoint v_neighbs]
+      sets_disjoint v_vsets]
       by auto
   qed
 
@@ -1179,7 +1179,7 @@ lemma invar_dfs_tree_seen_2_holds_ret_2[invar_holds_intros]:
 
 lemma invar_dfs_tree_seen_2_holds[invar_holds_intros]: 
    assumes "DFS_Aux_dom dfs_aux_state" "invar_1 dfs_aux_state" "invar_2 dfs_aux_state"
-     "invar_seen_stack_finished dfs_aux_state" "invar_finished_neighbs dfs_aux_state"
+     "invar_seen_stack_finished dfs_aux_state" "invar_finished_vsets dfs_aux_state"
      "invar_dfs_tree_seen_1 dfs_aux_state" "invar_dfs_tree_seen_2 dfs_aux_state"
    shows "invar_dfs_tree_seen_2 (DFS_Aux dfs_aux_state)"
   using assms(2-)
@@ -1204,7 +1204,7 @@ lemma invar_cycle_false_intro[invar_props_intros]:
 
 lemma invar_cycle_false_holds_upd1[invar_holds_intros]:
   "\<lbrakk>DFS_Aux_call_1_conds dfs_aux_state; invar_1 dfs_aux_state; invar_seen_stack_finished dfs_aux_state;
-    invar_finished_neighbs dfs_aux_state; invar_dfs_tree_seen_2 dfs_aux_state; invar_cycle_false dfs_aux_state\<rbrakk> \<Longrightarrow>
+    invar_finished_vsets dfs_aux_state; invar_dfs_tree_seen_2 dfs_aux_state; invar_cycle_false dfs_aux_state\<rbrakk> \<Longrightarrow>
     invar_cycle_false (DFS_Aux_upd1 dfs_aux_state)"
 proof (intro invar_props_intros, goal_cases)
   case 1
@@ -1221,13 +1221,13 @@ proof (intro invar_props_intros, goal_cases)
   have w_not_in_seen: "?w \<notin> set (stack dfs_aux_state) \<union> t_set (finished dfs_aux_state)"
     using \<open>invar_1 dfs_aux_state\<close> \<open>invar_seen_stack_finished dfs_aux_state\<close> \<open>DFS_Aux_call_1_conds dfs_aux_state\<close>
     by (force elim!: invar_props_elims call_cond_elims)
-  have finished_neighbs: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
+  have finished_vsets: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
     (x \<in> t_set (finished dfs_aux_state) \<longrightarrow> y \<in> set (stack dfs_aux_state) \<union> t_set (finished dfs_aux_state)) \<and>
     (y \<in> t_set (finished dfs_aux_state) \<longrightarrow> x \<in> set (stack dfs_aux_state) \<union> t_set (finished dfs_aux_state))"
-    using \<open>invar_seen_stack_finished dfs_aux_state\<close> \<open>invar_finished_neighbs dfs_aux_state\<close>  
+    using \<open>invar_seen_stack_finished dfs_aux_state\<close> \<open>invar_finished_vsets dfs_aux_state\<close>  
     graph_symmetric Graph.digraph_abs_def
     by (fastforce elim!: invar_props_elims)
-  from dfs_tree_aux1[OF stack_expr w_not_in_seen finished_neighbs]
+  from dfs_tree_aux1[OF stack_expr w_not_in_seen finished_vsets]
     have dfs_tree_expr:
     "dfs_tree (DFS_Aux_upd1 dfs_aux_state) =
     {(?v, ?w), (?w, ?v)} \<union> dfs_tree dfs_aux_state"
@@ -1256,7 +1256,7 @@ proof (intro invar_props_intros, goal_cases)
     then show ?case
     proof (cases)
       case 1
-      from cycle'_adj_edge1[OF \<open>cycle' (dfs_tree (DFS_Aux_upd1 dfs_aux_state)) c\<close> \<open>?v \<noteq> ?w\<close> 1]
+      from cycle'_adjmap_edge1[OF \<open>cycle' (dfs_tree (DFS_Aux_upd1 dfs_aux_state)) c\<close> \<open>?v \<noteq> ?w\<close> 1]
         have "\<exists>z. (?w, z) \<in> set c \<and> z \<noteq> ?v" by blast
       then obtain z where "(?w, z) \<in> set c" "z \<noteq> ?v" by blast
       with \<open>set c \<subseteq> (dfs_tree (DFS_Aux_upd1 dfs_aux_state))\<close> dfs_tree_expr
@@ -1269,7 +1269,7 @@ proof (intro invar_props_intros, goal_cases)
         by (auto elim!: invar_props_elims call_cond_elims)
     next
       case 2
-      from cycle'_adj_edge2[OF \<open>cycle' (dfs_tree (DFS_Aux_upd1 dfs_aux_state)) c\<close> \<open>?v \<noteq> ?w\<close> 2]
+      from cycle'_adjmap_edge2[OF \<open>cycle' (dfs_tree (DFS_Aux_upd1 dfs_aux_state)) c\<close> \<open>?v \<noteq> ?w\<close> 2]
         have "\<exists>z. (z, ?w) \<in> set c \<and> z \<noteq> ?v" by blast
       then obtain z where "(z, ?w) \<in> set c" "z \<noteq> ?v" by blast
       with \<open>set c \<subseteq> (dfs_tree (DFS_Aux_upd1 dfs_aux_state))\<close> dfs_tree_expr
@@ -1356,7 +1356,7 @@ proof (intro invar_props_intros, goal_cases)
     ultimately have "(t_set (\<N>\<^sub>G ?v) - {u}) \<subseteq> t_set (finished dfs_aux_state)"
       by blast
     with graph_symmetric
-      have v_neighbs: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
+      have v_vsets: "\<forall>(x, y) \<in> (Graph.digraph_abs G).
         (x = ?v \<longrightarrow> y \<noteq> u \<longrightarrow> y \<in> t_set (finished dfs_aux_state)) \<and>
         (y = ?v \<longrightarrow> x \<noteq> u \<longrightarrow> x \<in> t_set (finished dfs_aux_state))"
       by blast
@@ -1373,7 +1373,7 @@ proof (intro invar_props_intros, goal_cases)
       apply (subst stack_upd_expr)+
       apply (subst finished_upd_expr)+
       using dfs_tree_aux2_2[OF stack_expr Cons \<open>\<forall>(x, y) \<in> (Graph.digraph_abs G). x \<noteq> y\<close> edges_in_G
-      sets_disjoint v_neighbs]
+      sets_disjoint v_vsets]
       by auto
   qed
 
@@ -1399,7 +1399,7 @@ lemma invar_cycle_false_holds_ret_2[invar_holds_intros]:
 
 lemma invar_cycle_false_holds[invar_holds_intros]: 
    assumes "DFS_Aux_dom dfs_aux_state" "invar_1 dfs_aux_state" "invar_2 dfs_aux_state"
-     "invar_seen_stack_finished dfs_aux_state" "invar_finished_neighbs dfs_aux_state"
+     "invar_seen_stack_finished dfs_aux_state" "invar_finished_vsets dfs_aux_state"
      "invar_dfs_tree_seen_1 dfs_aux_state" "invar_dfs_tree_seen_2 dfs_aux_state"
      "invar_cycle_false dfs_aux_state"
    shows "invar_cycle_false (DFS_Aux dfs_aux_state)"
@@ -1779,7 +1779,7 @@ proof(rule invar_props_intros, elim invar_visited_through_seen_props call_cond_e
       hence "hd p2 \<in> t_set (seen dfs_aux_state)"
         using 1
         by (metis DFS_Aux.invar_1_props DFS_Aux_axioms DFS_Aux_axioms_def Diff_iff
-         Graph.neighb.set.set_empty Graph.neighbourhood_invars' \<open>DFS_Aux_axioms\<close>
+         Graph.vset.set.set_empty Graph.neighbourhood_invars' \<open>DFS_Aux_axioms\<close>
          empty_iff list.sel(1) set_ops.set_diff)
       
       have "v' \<in> t_set (seen dfs_aux_state)"
@@ -1941,7 +1941,7 @@ lemma DFS_Aux_correct_1_ret_1:
 
 lemma DFS_Aux_correct_4_ret_1:
   "\<lbrakk>DFS_Aux_ret_1_conds dfs_aux_state; invar_1 dfs_aux_state\<rbrakk> \<Longrightarrow>
-    neighb_inv (seen dfs_aux_state)"
+    vset_inv (seen dfs_aux_state)"
   by (auto elim!: invar_props_elims)
 
 
@@ -2019,7 +2019,7 @@ qed
 
 lemma DFS_Aux_correct_4_ret_2:
   "\<lbrakk>DFS_Aux_ret_2_conds dfs_aux_state; invar_1 dfs_aux_state\<rbrakk> \<Longrightarrow>
-    neighb_inv (seen dfs_aux_state)"
+    vset_inv (seen dfs_aux_state)"
   by (auto elim!: invar_props_elims)
 
 lemma DFS_Aux_correct_5_ret:
@@ -2053,7 +2053,7 @@ lemma call_1_terminates[termination_intros]:
   by(fastforce elim!: invar_props_elims call_cond_elims
           simp add: DFS_Aux_upd1_def call_1_measure_def Let_def 
           intro!: mlex_less psubset_card_mono
-          dest!: Graph.neighb.choose')
+          dest!: Graph.vset.choose')
 
 lemma call_2_measure_nonsym[simp]: "(call_2_measure dfs_aux_state, call_2_measure dfs_aux_state) \<notin> less_rel"
   by (auto simp: less_rel_def)
@@ -2094,7 +2094,7 @@ qed
 lemma initial_state_props[invar_holds_intros, termination_intros]:
   "invar_1 (initial_state)" "invar_2 (initial_state)" "invar_seen_stack_finished (initial_state)"
   "invar_visited_through_seen (initial_state)" "invar_s_in_stack initial_state" 
-  "invar_finished_neighbs (initial_state)" "invar_dfs_tree_seen_1 initial_state"
+  "invar_finished_vsets (initial_state)" "invar_dfs_tree_seen_1 initial_state"
   "invar_dfs_tree_seen_2 initial_state" "invar_cycle_false (initial_state)"
   "invar_cycle_true (initial_state)" "invar_seen_reachable (initial_state)" "DFS_Aux_dom initial_state"
 proof-
@@ -2111,7 +2111,7 @@ proof-
            intro!: invar_props_intros)
   show "invar_s_in_stack initial_state"
     by (auto simp: initial_state_def intro!: invar_props_intros)
-  show "invar_finished_neighbs initial_state"
+  show "invar_finished_vsets initial_state"
     by (auto simp: initial_state_def intro!: invar_props_intros)
   show "invar_dfs_tree_seen_1 initial_state"
     by (auto simp: initial_state_def dfs_tree_def intro!: invar_props_intros)
@@ -2178,7 +2178,7 @@ lemma DFS_Aux_correct_3:
   using assms by (auto intro: invar_holds_intros ret_holds_intros)
 
 lemma DFS_Aux_correct_4:
-  "neighb_inv (seen (DFS_Aux initial_state))"
+  "vset_inv (seen (DFS_Aux initial_state))"
   using invar_1_holds
   by (auto intro!: invar_holds_intros elim!: invar_props_elims)
 

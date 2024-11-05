@@ -128,19 +128,19 @@ proof-
     have helper2: "lookup (foldr one_it xs BFS_tree) a = None \<Longrightarrow>
           lookup G a = Some x2 \<Longrightarrow> Graph.graph_inv (update a (x2 -\<^sub>G vis) (foldr one_it xs BFS_tree))"
       for x2
-      by(auto simp add: Graph.graph_inv_def Cons[simplified  Graph.graph_inv_def]  Graph.adj.map_update intro!: Graph.adj.invar_update helper1)
+      by(auto simp add: Graph.graph_inv_def Cons[simplified  Graph.graph_inv_def]  Graph.adjmap.map_update intro!: Graph.adjmap.invar_update helper1)
     have helper3: "lookup (foldr one_it xs BFS_tree) a = Some x2a \<Longrightarrow>
        lookup G a = Some x2 \<Longrightarrow>
-       lookup (update a (x2a \<union>\<^sub>G (x2 -\<^sub>G vis)) (foldr one_it xs BFS_tree)) v = Some neighb \<Longrightarrow> vset_inv neighb"
-      for x2 x2a v neighb
+       lookup (update a (x2a \<union>\<^sub>G (x2 -\<^sub>G vis)) (foldr one_it xs BFS_tree)) v = Some vset \<Longrightarrow> vset_inv vset"
+      for x2 x2a v vset
       apply(rule Graph.graph_invE[OF Cons] )
       apply(rule Graph.graph_invE[OF assms(4)] )
-      apply(subst (asm)  Graph.adj.map_update) 
+      apply(subst (asm)  Graph.adjmap.map_update) 
       by(simp, rule  case_split[of "v = a"], auto simp add:  assms(3) assms(4) Cons  set_ops.invar_diff set_ops.invar_union)
     have helper4:"lookup (foldr one_it xs BFS_tree) a = Some x2a \<Longrightarrow>
        lookup G a = Some x2 \<Longrightarrow> Graph.graph_inv (update a (x2a \<union>\<^sub>G (x2 -\<^sub>G vis)) (foldr one_it xs BFS_tree))"
       for x2 x2a
-      using Graph.adj.invar_update local.Cons 
+      using Graph.adjmap.invar_update local.Cons 
       by(auto intro: helper3 simp add:  Graph.graph_inv_def Cons[simplified  Graph.graph_inv_def])
     show ?case 
       using Cons 
@@ -166,32 +166,32 @@ proof-
       show ?thesis 
       proof(cases "lookup T u")
         case None
-        have helper:"{(ua, v). v \<in>\<^sub>G (case lookup (update u (vs -\<^sub>G vis) T) ua of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)} =
-    {(u, v). v \<in>\<^sub>G (case lookup T u of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)} \<union>
+        have helper:"{(ua, v). v \<in>\<^sub>G (case lookup (update u (vs -\<^sub>G vis) T) ua of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset)} =
+    {(u, v). v \<in>\<^sub>G (case lookup T u of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset)} \<union>
     {(u, v) |v. v \<in>\<^sub>G vs \<and> v \<notin> [vis]\<^sub>s}"
         proof(rule, all \<open>rule\<close>, goal_cases)
           case (1 e)
           then obtain x y where xy_prop: "e = (x,y)" 
-              "y \<in>\<^sub>G (case lookup (update u (vs -\<^sub>G vis) T) x of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)"
+              "y \<in>\<^sub>G (case lookup (update u (vs -\<^sub>G vis) T) x of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset)"
             by auto
           then show ?case
             using one 
-            by (subst (asm) Graph.adj.map_update) (auto intro: case_split[of "u = x"]split: option.split simp add: Graph.vset.set.set_isin vs_inv assms(3) set_ops.invar_diff set_ops.set_diff)
+            by (subst (asm) Graph.adjmap.map_update) (auto intro: case_split[of "u = x"]split: option.split simp add: Graph.vset.set.set_isin vs_inv assms(3) set_ops.invar_diff set_ops.set_diff)
         next
           case (2 e)
           show ?case 
           proof(cases rule: UnE[OF 2])
             case 1
-            then obtain x y where "e = (x,y)" "y \<in>\<^sub>G (case lookup T x of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)" by auto
+            then obtain x y where "e = (x,y)" "y \<in>\<^sub>G (case lookup T x of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset)" by auto
             then show ?thesis 
               using one 
-              by (subst Graph.adj.map_update)(auto simp add: Graph.vset.set.invar_empty Graph.vset.set.set_empty Graph.vset.set.set_isin None)
+              by (subst Graph.adjmap.map_update)(auto simp add: Graph.vset.set.invar_empty Graph.vset.set.set_empty Graph.vset.set.set_isin None)
           next
             case 2
             then obtain y where "e = (u,y)" "y \<in>\<^sub>G vs \<and> y \<notin> [vis]\<^sub>s" by auto
             then show ?thesis
               using one 
-              by (subst Graph.adj.map_update)(auto simp add: Graph.vset.set.set_isin assms(3) set_ops.invar_diff set_ops.set_diff vs_inv)
+              by (subst Graph.adjmap.map_update)(auto simp add: Graph.vset.set.set_isin assms(3) set_ops.invar_diff set_ops.set_diff vs_inv)
           qed
         qed 
         show ?thesis
@@ -200,15 +200,15 @@ proof-
       next
         case (Some vs')
         have "{(ua, y).
-     isin (case lookup (update u (vs' \<union>\<^sub>G (vs -\<^sub>G vis)) T) ua of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb) y} =
-    {(u, y). isin (case lookup T u of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb) y} \<union>
+     isin (case lookup (update u (vs' \<union>\<^sub>G (vs -\<^sub>G vis)) T) ua of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset) y} =
+    {(u, y). isin (case lookup T u of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset) y} \<union>
     {(u, v) |v. v \<in>\<^sub>G vs \<and> v \<notin> [vis]\<^sub>s}"
         proof(rule, all\<open>rule\<close>, goal_cases)
           case (1 e)
-           then obtain x y where "e= (x,y)" "y \<in>\<^sub>G (case lookup (update u (vs' \<union>\<^sub>G (vs -\<^sub>G vis)) T) x of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)"
+           then obtain x y where "e= (x,y)" "y \<in>\<^sub>G (case lookup (update u (vs' \<union>\<^sub>G (vs -\<^sub>G vis)) T) x of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset)"
              by blast
            thus ?case
-             apply(subst (asm) Graph.adj.map_update)
+             apply(subst (asm) Graph.adjmap.map_update)
              using one apply fast
              using Graph.vset.set.set_isin Some assms(3) one set_ops.invar_diff 
              set_ops.invar_union set_ops.set_diff set_ops.set_union vs_inv  
@@ -218,20 +218,20 @@ proof-
            show ?case
            proof(cases rule: UnE[OF 2])
              case 1
-             then obtain x y where "e = (x,y)" "y \<in>\<^sub>G (case lookup T x of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)"
+             then obtain x y where "e = (x,y)" "y \<in>\<^sub>G (case lookup T x of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset)"
                by auto
              moreover hence "lookup T x \<noteq> None" 
                using Graph.vset.set.invar_empty Graph.vset.set.set_empty Graph.vset.set.set_isin by fastforce
             ultimately show ?thesis 
               using Graph.vset.set.set_isin Some assms(3) 
                     one set_ops.invar_diff set_ops.invar_union set_ops.set_union vs_inv 
-              by (subst  Graph.adj.map_update) auto
+              by (subst  Graph.adjmap.map_update) auto
           next
             case 2
             thus ?thesis
               using Graph.vset.set.set_isin Some assms(3) one set_ops.invar_diff 
                     set_ops.invar_union set_ops.set_diff set_ops.set_union vs_inv 
-              by (subst  Graph.adj.map_update)auto
+              by (subst  Graph.adjmap.map_update)auto
           qed
         qed
         then show ?thesis

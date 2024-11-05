@@ -5,7 +5,7 @@ theory Pair_Graph_Specs
 section \<open>Locale for Executable Functions on Directed Graphs\<close>
 
 text \<open>We develop a locale modelling an abstract data type (ADT) which abstractly models a graph as an
-      adjacency map: i.e.\ every vertex is mapped to a \<open>set\<close> of adjacent vertices, and this latter
+      adjmapacency map: i.e.\ every vertex is mapped to a \<open>set\<close> of adjmapacent vertices, and this latter
       set is again modelled using the ADT of sets provided in Isabelle/HOL's distribution.
 
       We then show that this ADT can be implemented using existing implementations of the \<open>set\<close> ADT.
@@ -40,7 +40,7 @@ assumes map: "bij_betw f (t_set s) t  \<Longrightarrow> t_set (t_map f s) = t"
 
 locale Set_Choose = set: Set 
   where set = t_set for t_set ("[_]\<^sub>s") +
-fixes sel ::"'m \<Rightarrow> 'a"
+fixes sel ::"'s \<Rightarrow> 'a"
 
 assumes choose [simp]: "s \<noteq> empty \<Longrightarrow> isin s (sel s)"
 
@@ -79,7 +79,7 @@ end
 end
 (*
 locale Adjmap_Map_Specs = 
- adj: Map 
+ adjmap: Map 
  where update = update and invar = adjmap_inv +
 
 
@@ -87,7 +87,7 @@ locale Adjmap_Map_Specs =
  where empty = vset_empty and delete = vset_delete and insert = vset_insert and invar = vset_inv
       and isin = isin
 
- for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adj \<Rightarrow> 'adj" and adjmap_inv :: "'adj \<Rightarrow> bool"  and
+ for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and adjmap_inv :: "'adjmap \<Rightarrow> bool"  and
 
      vset_empty :: "'vset"  ("\<emptyset>\<^sub>N") and vset_delete :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset" and
      vset_insert and vset_inv and isin
@@ -110,19 +110,19 @@ named_theorems Graph_Spec_Intros
 named_theorems Graph_Spec_Simps
 
 locale Pair_Graph_Specs = 
- adj: Map 
+ adjmap: Map 
  where update = update and invar = adjmap_inv +
 
 
  vset: Set_Choose
  where empty = vset_empty and delete = vset_delete and invar = vset_inv
 
- for update :: "'v \<Rightarrow> 'vset \<Rightarrow> 'adj \<Rightarrow> 'adj" and adjmap_inv :: "'adj \<Rightarrow> bool"  and
+ for update :: "'v \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and adjmap_inv :: "'adjmap \<Rightarrow> bool"  and
 
      vset_empty :: "'vset" and vset_delete :: "'v \<Rightarrow> 'vset \<Rightarrow> 'vset" and
      vset_inv
 (*  Adjmap_Map_Specs where update = update
-for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adj \<Rightarrow> 'adj"*) 
+for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap"*) 
 begin
 
 notation vset_empty ("\<emptyset>\<^sub>N")
@@ -131,14 +131,14 @@ notation empty ("\<emptyset>\<^sub>G")
 abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" 
 abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equiv> \<not> isin' G v"
 
-definition "set_of_map (m::'adj) \<equiv> {(u,v). case (lookup m u) of Some vs \<Rightarrow> v \<in>\<^sub>G vs}"
+definition "set_of_map (m::'adjmap) \<equiv> {(u,v). case (lookup m u) of Some vs \<Rightarrow> v \<in>\<^sub>G vs}"
 
 definition "graph_inv G \<equiv> (adjmap_inv G \<and> (\<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset))"
 definition "finite_graph G \<equiv> (finite {v. (lookup G v) \<noteq> None})"
 definition "finite_vsets \<equiv> (\<forall>N. finite (t_set N))"
 
 
-definition neighbourhood::"'adj \<Rightarrow> 'v \<Rightarrow> 'vset" where
+definition neighbourhood::"'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset" where
   "(neighbourhood G v) = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
 
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
@@ -177,8 +177,8 @@ definition "delete_edge G u v \<equiv>
 
 
 context \<comment>\<open>Locale properties\<close>
-  includes vset.set.automation and adj.automation
-  fixes G::'adj
+  includes vset.set.automation and adjmap.automation
+  fixes G::'adjmap
 begin
 
 lemma graph_invE[elim]: 

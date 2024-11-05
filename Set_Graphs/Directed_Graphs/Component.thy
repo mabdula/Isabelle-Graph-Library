@@ -43,7 +43,7 @@ lemma subgraph_trans:
   using assms
   by (auto simp: subgraph_iff intro: subgraph_trans)
 
-lemma adj_mono:
+lemma adjmap_mono:
   fixes H G :: "'a dgraph"
   assumes "(u,v) \<in> H" "subgraph H G"
   shows "(u,v) \<in> G"
@@ -228,7 +228,7 @@ lemma induced_subgraphI':
   assumes subg: "subgraph H G"
     and max: "\<And>H'. subgraph H' G \<Longrightarrow> (dVs H' \<noteq> dVs H \<or> subgraph H' H)"
   shows "induced_subgraph H G"
-  by (meson Component_Defs.induced_subgraphI adj_mono in_induce_subgraphI induce_subgraph_of_subgraph_verts max subg subgraph_induce_subgraph)
+  by (meson Component_Defs.induced_subgraphI adjmap_mono in_induce_subgraphI induce_subgraph_of_subgraph_verts max subg subgraph_induce_subgraph)
 
 lemma induced_subgraph_altdef:
   "induced_subgraph H G \<longleftrightarrow> subgraph H G \<and> (\<forall>H'. subgraph H' G \<longrightarrow> dVs H' \<noteq> dVs H \<or> subgraph H' H)"

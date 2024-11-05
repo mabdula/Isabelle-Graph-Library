@@ -10,10 +10,10 @@ and isin = isin
 and t_set = Tree2.set_tree
 and sel = sel
 and update = update
-and adj_inv = M.invar
-and neighb_empty = Leaf
-and neighb_delete = delete_rbt
-and neighb_inv = neighb_inv
+and adjmap_inv = M.invar
+and vset_empty = Leaf
+and vset_delete = delete_rbt
+and vset_inv = vset_inv
 and union = union_rbt
 and inter = inter_rbt
 and diff = diff_rbt
@@ -24,7 +24,7 @@ and dfs_aux = dfs_cycle_aux.DFS_Aux_impl
 and neighbourhood = dfs_cycle_aux.neighbourhood'
   apply unfold_locales (*unfold_locales doesn't finish it due to different invariants used in
                          Set2_Join vs Set instantiations*) 
-  by (simp add: neighb_inv_def RBT.set_tree_union RBT.set_tree_inter RBT.set_tree_diff 
+  by (simp add: vset_inv_def RBT.set_tree_union RBT.set_tree_inter RBT.set_tree_diff 
                 RBT.bst_union RBT.inv_union RBT.bst_inter RBT.inv_inter RBT.bst_diff RBT.inv_diff)+
 
 global_interpretation dfs_cycles: DFS_Cycles
@@ -35,10 +35,10 @@ and isin = isin
 and t_set = Tree2.set_tree
 and sel = sel
 and update = update
-and adj_inv = M.invar
-and neighb_empty = Leaf
-and neighb_delete = delete_rbt
-and neighb_inv = neighb_inv
+and adjmap_inv = M.invar
+and vset_empty = Leaf
+and vset_delete = delete_rbt
+and vset_inv = vset_inv
 and union=union_rbt
 and inter = inter_rbt
 and diff = diff_rbt
