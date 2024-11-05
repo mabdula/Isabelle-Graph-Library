@@ -6,39 +6,39 @@ begin
 locale Graphs_Matroids_Encoding =
   pair_graph_u: Pair_Graph_U_Specs where lookup = lookup +
   matroid: Matroid_Specs where set_insert = set_insert and set_of_sets_isin = set_of_sets_isin
-  for lookup :: "'adj \<Rightarrow> ('v::linorder) \<Rightarrow> 'neighb option" and set_insert :: "('e::linorder) \<Rightarrow> 's \<Rightarrow> 's" and
-    set_of_sets_isin :: "'t \<Rightarrow> 's \<Rightarrow> bool" and adj_fold :: "'adj \<Rightarrow> ('v \<Rightarrow> 'neighb \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" and
-    neighb_fold :: "'neighb \<Rightarrow> ('v \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" and set_fold_adj :: "'s \<Rightarrow> ('e \<Rightarrow> 'adj \<Rightarrow> 'adj) \<Rightarrow> 'adj \<Rightarrow> 'adj" and
-    set_fold_neighb :: "'s \<Rightarrow> ('e \<Rightarrow> 'neighb \<Rightarrow> 'neighb) \<Rightarrow> 'neighb \<Rightarrow> 'neighb" +
+  for lookup :: "'adjmap \<Rightarrow> ('v::linorder) \<Rightarrow> 'vset option" and set_insert :: "('e::linorder) \<Rightarrow> 's \<Rightarrow> 's" and
+    set_of_sets_isin :: "'t \<Rightarrow> 's \<Rightarrow> bool" and adjmap_fold :: "'adjmap \<Rightarrow> ('v \<Rightarrow> 'vset \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" and
+    vset_fold :: "'vset \<Rightarrow> ('v \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" and set_fold_adjmap :: "'s \<Rightarrow> ('e \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap) \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and
+    set_fold_vset :: "'s \<Rightarrow> ('e \<Rightarrow> 'vset \<Rightarrow> 'vset) \<Rightarrow> 'vset \<Rightarrow> 'vset" +
   fixes v1_of :: "'e \<Rightarrow> 'v" and v2_of :: "'e \<Rightarrow> 'v" and edge_of :: "'v \<Rightarrow> 'v \<Rightarrow> 'e" and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
 begin
 
 (* TODO: Additional axioms/invariants necessary for proving properties *)
 
 (* Iterate through graph itself, then through neighbourhood in nested fashion  *)
-fun graph_to_edges :: "'adj \<Rightarrow> 's" where
+fun graph_to_edges :: "'adjmap \<Rightarrow> 's" where
   "graph_to_edges G =
-    adj_fold G 
-    (\<lambda>u N E. union E (neighb_fold N 
+    adjmap_fold G 
+    (\<lambda>u N E. union E (vset_fold N 
         (\<lambda>v E. (let e = (edge_of u v)
                 in (if \<not>(set_isin E e) then set_insert e E else E))) set_empty))
     set_empty"
 
 (* Iterate through all edges, just use add_edge and v1_of, v2_of to build a graph, make
 sure every edge is added symmetrically *)
-fun edges_to_graph :: "'s \<Rightarrow> 'adj" where
+fun edges_to_graph :: "'s \<Rightarrow> 'adjmap" where
   "edges_to_graph E =
-    set_fold_adj E
+    set_fold_adjmap E
     (\<lambda>e G. pair_graph_u.add_edge (pair_graph_u.add_edge G (v1_of e) (v2_of e)) (v2_of e) (v1_of e))
     empty"
 
-fun edges_to_vertices :: "'s \<Rightarrow> 'neighb" where
+fun edges_to_vertices :: "'s \<Rightarrow> 'vset" where
   "edges_to_vertices E = 
-    set_fold_neighb E
+    set_fold_vset E
     (\<lambda>e N. if isin N (v1_of e)
            then (if isin N (v2_of e) then N else insert (v2_of e) N)
            else (if isin N (v2_of e) then insert (v1_of e) N else insert (v1_of e) (insert (v2_of e) N)))
-    neighb_empty"
+    vset_empty"
 
 (* Correctness properties *)
 
@@ -52,7 +52,7 @@ lemma edges_invar_imp_graph_invar:
 
 lemma edges_invar_imp_vertices_props:
   assumes "set_inv E"
-  shows "neighb_inv (edges_to_vertices E)"
+  shows "vset_inv (edges_to_vertices E)"
     "t_set (edges_to_vertices E) = dVs (pair_graph_u.digraph_abs (edges_to_graph E))"
   sorry
 

@@ -951,7 +951,7 @@ context Pair_Graph_U_Specs
 begin
 
 context
-  fixes G::'adj
+  fixes G::'adjmap
   assumes pair_graph_u_inv: "pair_graph_u_invar G"
 begin
 
@@ -984,7 +984,7 @@ lemma ugraph_abs_digraph_abs: "graph_abs.D (ugraph_abs G) = digraph_abs G"
   unfolding graph_abs.D_def ugraph_abs_def digraph_abs_def
 proof-
   have 1: "\<And>u v. {u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<longleftrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v) \<or> v \<in>\<^sub>G (\<N>\<^sub>G G u)"
-    using isin_neighborhood_set_edge[OF pair_graph_u_inv] set_edge_isin_neighborhood[OF pair_graph_u_inv] by auto
+    using isin_vsetorhood_set_edge[OF pair_graph_u_inv] set_edge_isin_vsetorhood[OF pair_graph_u_inv] by auto
 
   have "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v) |u v. {u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}}"
     using graph_abs.D_def[OF graph_abs_ugraph] ugraph_abs_def by simp

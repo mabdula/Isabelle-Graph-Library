@@ -33,16 +33,16 @@ interpretation Set_Choose_RBT: Set_Choose
 
 interpretation Pair_Graph_U_RBT: Pair_Graph_U_Specs
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
-    lookup = lookup and adj_inv = "M.invar" and neighb_empty = "\<langle>\<rangle>" and
-    insert = insert_rbt and neighb_delete = delete_rbt and neighb_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
+    lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
+    insert = insert_rbt and vset_delete = delete_rbt and vset_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and sel = rbt_sel
   apply(simp add: Pair_Graph_U_Specs_def Pair_Graph_Specs_def)
   using M.Map_axioms Set_Choose_RBT.Set_Choose_axioms by simp
 
 interpretation DFS_Aux_Interp: DFS_Aux
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
-    lookup = lookup and adj_inv = "M.invar" and neighb_empty = "\<langle>\<rangle>" and
-    insert = insert_rbt and neighb_delete = delete_rbt and neighb_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
+    lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
+    insert = insert_rbt and vset_delete = delete_rbt and vset_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and union = "RBT.union" and inter = "RBT.inter" and 
     diff = "RBT.diff" and sel = rbt_sel for G and s
   apply(simp add: DFS_Aux_def)
@@ -52,8 +52,8 @@ abbreviation "DFS_Aux' G s \<equiv> DFS_Aux_Interp.DFS_Aux G (DFS_Aux_Interp.ini
 
 interpretation DFS_Cycles_Interp: DFS_Cycles
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
-    lookup = lookup and adj_inv = "M.invar" and neighb_empty = "\<langle>\<rangle>" and
-    insert = insert_rbt and neighb_delete = delete_rbt and neighb_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
+    lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
+    insert = insert_rbt and vset_delete = delete_rbt and vset_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and union = "RBT.union" and inter = "RBT.inter" and 
     diff = "RBT.diff" and sel = rbt_sel and seen_aux = "DFS_Aux_state.seen" and cycle_aux = "DFS_Aux_state.cycle" and
     dfs_aux = "DFS_Aux' G" for G and V
@@ -210,8 +210,8 @@ fun rbt_map_fold :: "('a \<times> 'd) rbt \<Rightarrow> ('a \<Rightarrow> 'd \<R
 
 interpretation Kruskal_Graphs_Matroids: Graphs_Matroids_Encoding
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
-    lookup = lookup and adj_inv = "M.invar" and neighb_empty = "\<langle>\<rangle>" and
-    insert = insert_rbt and neighb_delete = delete_rbt and neighb_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
+    lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
+    insert = insert_rbt and vset_delete = delete_rbt and vset_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and sel = rbt_sel and
 
     set_empty = "\<langle>\<rangle>" and set_insert = insert_rbt and set_delete = delete_rbt and set_inv = "rbt_inv::(('e::linorder) rbt \<Rightarrow> bool)" and
@@ -219,8 +219,8 @@ interpretation Kruskal_Graphs_Matroids: Graphs_Matroids_Encoding
     subseteq = rbt_subseteq and cardinality = size and 
     set_of_sets_isin = "set_of_sets_isin :: ('e rbt \<Rightarrow> bool) \<Rightarrow> 'e rbt \<Rightarrow> bool" and
 
-    adj_fold = "rbt_map_fold" and neighb_fold = "rbt_set_fold" and set_fold_adj = "rbt_set_fold" and
-    set_fold_neighb = "rbt_set_fold"
+    adjmap_fold = "rbt_map_fold" and vset_fold = "rbt_set_fold" and set_fold_adjmap = "rbt_set_fold" and
+    set_fold_vset = "rbt_set_fold"
     for v1_of :: "('e::linorder) \<Rightarrow> ('v::linorder)" and v2_of :: "('e::linorder) \<Rightarrow> ('v::linorder)" and 
         edge_of :: "('v::linorder) \<Rightarrow> 'v \<Rightarrow> ('e::linorder)" and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
   apply (subst Graphs_Matroids_Encoding_def)
