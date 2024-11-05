@@ -78,19 +78,19 @@ lemma emptyD[dest]:
 end
 end
 (*
-locale Adj_Map_Specs = 
+locale Adjmap_Map_Specs = 
  adj: Map 
- where update = update and invar = adj_inv +
+ where update = update and invar = adjmap_inv +
 
 
- neighb: Set_Choose
- where empty = neighb_empty and delete = neighb_delete and insert = neighb_insert and invar = neighb_inv
+ vset: Set_Choose
+ where empty = vset_empty and delete = vset_delete and insert = vset_insert and invar = vset_inv
       and isin = isin
 
- for update :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj" and adj_inv :: "'adj \<Rightarrow> bool"  and
+ for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adj \<Rightarrow> 'adj" and adjmap_inv :: "'adj \<Rightarrow> bool"  and
 
-     neighb_empty :: "'neighb"  ("\<emptyset>\<^sub>N") and neighb_delete :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'neighb" and
-     neighb_insert and neighb_inv and isin
+     vset_empty :: "'vset"  ("\<emptyset>\<^sub>N") and vset_delete :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset" and
+     vset_insert and vset_inv and isin
 
 
   \<comment> \<open>Why do we need ann efficient neghbourhood test?\<close>
@@ -109,23 +109,23 @@ named_theorems Graph_Spec_Elims
 named_theorems Graph_Spec_Intros
 named_theorems Graph_Spec_Simps
 
-locale  Pair_Graph_Specs = 
+locale Pair_Graph_Specs = 
  adj: Map 
- where update = update and invar = adj_inv +
+ where update = update and invar = adjmap_inv +
 
 
- neighb: Set_Choose
- where empty = neighb_empty and delete = neighb_delete and invar = neighb_inv
+ vset: Set_Choose
+ where empty = vset_empty and delete = vset_delete and invar = vset_inv
 
- for update :: "'v \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj" and adj_inv :: "'adj \<Rightarrow> bool"  and
+ for update :: "'v \<Rightarrow> 'vset \<Rightarrow> 'adj \<Rightarrow> 'adj" and adjmap_inv :: "'adj \<Rightarrow> bool"  and
 
-     neighb_empty :: "'neighb" and neighb_delete :: "'v \<Rightarrow> 'neighb \<Rightarrow> 'neighb" and
-     neighb_inv
-(*  Adj_Map_Specs where update = update
-for update :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj"*) 
+     vset_empty :: "'vset" and vset_delete :: "'v \<Rightarrow> 'vset \<Rightarrow> 'vset" and
+     vset_inv
+(*  Adjmap_Map_Specs where update = update
+for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adj \<Rightarrow> 'adj"*) 
 begin
 
-notation neighb_empty ("\<emptyset>\<^sub>N")
+notation vset_empty ("\<emptyset>\<^sub>N")
 notation empty ("\<emptyset>\<^sub>G")
 
 abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" 
@@ -133,13 +133,13 @@ abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equ
 
 definition "set_of_map (m::'adj) \<equiv> {(u,v). case (lookup m u) of Some vs \<Rightarrow> v \<in>\<^sub>G vs}"
 
-definition "graph_inv G \<equiv> (adj_inv G \<and> (\<forall>v neighb. lookup G v = Some neighb \<longrightarrow> neighb_inv neighb))"
+definition "graph_inv G \<equiv> (adjmap_inv G \<and> (\<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset))"
 definition "finite_graph G \<equiv> (finite {v. (lookup G v) \<noteq> None})"
-definition "finite_neighbs \<equiv> (\<forall>N. finite (t_set N))"
+definition "finite_vsets \<equiv> (\<forall>N. finite (t_set N))"
 
 
-definition neighbourhood::"'adj \<Rightarrow> 'v \<Rightarrow> 'neighb" where
-  "(neighbourhood G v) = (case (lookup G v) of Some neighb \<Rightarrow> neighb | _ \<Rightarrow> neighb_empty)"
+definition neighbourhood::"'adj \<Rightarrow> 'v \<Rightarrow> 'vset" where
+  "(neighbourhood G v) = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
 
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
@@ -147,28 +147,28 @@ definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G \<equiv> {(u,v). v \
 
 definition "add_edge G u v \<equiv> 
 ( 
-  case (lookup G u) of Some neighb \<Rightarrow> 
+  case (lookup G u) of Some vset \<Rightarrow> 
   let
-    neighb = the (lookup G u);
-    neighb' = insert v neighb;
-    digraph' = update u neighb' G
+    vset = the (lookup G u);
+    vset' = insert v vset;
+    digraph' = update u vset' G
   in
     digraph'
   | _ \<Rightarrow>
   let
-    neighb' = insert v neighb_empty;
-    digraph' = update u neighb' G
+    vset' = insert v vset_empty;
+    digraph' = update u vset' G
   in
     digraph'
 )"
 
 definition "delete_edge G u v \<equiv> 
 ( 
-  case (lookup G u) of Some neighb \<Rightarrow> 
+  case (lookup G u) of Some vset \<Rightarrow> 
   let
-    neighb = the (lookup G u);
-    neighb' = neighb_delete v neighb;
-    digraph' = update u neighb' G
+    vset = the (lookup G u);
+    vset' = vset_delete v vset;
+    digraph' = update u vset' G
   in
     digraph'
   | _ \<Rightarrow> G 
@@ -177,25 +177,16 @@ definition "delete_edge G u v \<equiv>
 
 
 context \<comment>\<open>Locale properties\<close>
-  includes adj.automation neighb.set.automation
+  includes vset.set.automation adj.automation
   fixes G::'adj
-  (*assumes [simp]:"axioms G"*)
 begin
 
 lemma graph_invE[elim]: 
-  "graph_inv G \<Longrightarrow> (\<lbrakk>adj_inv G; (\<And>v neighb. lookup G v = Some neighb \<Longrightarrow> neighb_inv neighb)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+  "graph_inv G \<Longrightarrow> (\<lbrakk>adjmap_inv G; (\<And>v vset. lookup G v = Some vset \<Longrightarrow> vset_inv vset)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: graph_inv_def)
 
-(*end*)
-
-(*context \<comment>\<open>Locale properties\<close>
-  includes automation
-  fixes G::'adj
-  (*assumes [simp]:"axioms G"*)
-begin*)
-
 lemma graph_invI[intro]: 
-  "\<lbrakk>adj_inv G; (\<And>v neighb. lookup G v = Some neighb \<Longrightarrow> neighb_inv neighb)\<rbrakk> \<Longrightarrow> graph_inv G"
+  "\<lbrakk>adjmap_inv G; (\<And>v vset. lookup G v = Some vset \<Longrightarrow> vset_inv vset)\<rbrakk> \<Longrightarrow> graph_inv G"
   by (auto simp: graph_inv_def)
 
 lemma finite_graphE[elim]: 
@@ -206,22 +197,22 @@ lemma finite_graphI[intro]:
   "finite {v. (lookup G v) \<noteq> None}  \<Longrightarrow> finite_graph G"
   by (auto simp: finite_graph_def)
 
-lemma finite_neighbsE[elim]: 
-  "finite_neighbs \<Longrightarrow> ((\<And>N. finite (t_set N)) \<Longrightarrow> P) \<Longrightarrow> P"
-  by (auto simp: finite_neighbs_def)
+lemma finite_vsetsE[elim]: 
+  "finite_vsets \<Longrightarrow> ((\<And>N. finite (t_set N)) \<Longrightarrow> P) \<Longrightarrow> P"
+  by (auto simp: finite_vsets_def)
 
-lemma finite_neighbsI[intro]: 
-  "(\<And>N. finite (t_set N)) \<Longrightarrow> finite_neighbs"
-  by (auto simp: finite_neighbs_def)
+lemma finite_vsetsI[intro]: 
+  "(\<And>N. finite (t_set N)) \<Longrightarrow> finite_vsets"
+  by (auto simp: finite_vsets_def)
 
 
 lemma neighbourhood_invars'[simp,dest]:
-   "graph_inv G \<Longrightarrow> neighb_inv (\<N>\<^sub>G G v)"
+   "graph_inv G \<Longrightarrow> vset_inv (\<N>\<^sub>G G v)"
   by (auto simp add: graph_inv_def neighbourhood_def split: option.splits)
 
 
 lemma finite_graph[intro!]:
-  assumes "graph_inv G" "finite_graph G" "finite_neighbs"
+  assumes "graph_inv G" "finite_graph G" "finite_vsets"
   shows "finite (digraph_abs G)"
 proof-
 
@@ -235,7 +226,7 @@ proof-
 
   moreover have "finite (\<Union> (t_set ` {N | N v. lookup G v = Some N}))"
     using assms
-    by (force elim!: finite_neighbsE finite_graphE
+    by (force elim!: finite_vsetsE finite_graphE
               intro!: finite_imageI 
                       rev_finite_subset
                         [where B = "(the o lookup G) ` {v. \<exists>y. lookup G v = Some y}"])
@@ -245,7 +236,7 @@ proof-
 qed
 
 corollary finite_vertices[intro!]:
-  assumes "graph_inv G" "finite_graph G" "finite_neighbs"
+  assumes "graph_inv G" "finite_graph G" "finite_vsets"
   shows "finite (dVs (digraph_abs G))"
   using finite_graph[OF assms]
   by (simp add: finite_vertices_iff)
@@ -278,13 +269,13 @@ lemma neighbourhood_abs[simp]:
   by(auto simp: digraph_abs_def neighbourhood_def Pair_Graph.neighbourhood_def option.discI graph_inv_def
           split: option.split)
 
-lemma adj_inv_insert[intro]: "graph_inv G \<Longrightarrow> graph_inv (add_edge G u v)"
+lemma adjmap_inv_insert[intro]: "graph_inv G \<Longrightarrow> graph_inv (add_edge G u v)"
   by (auto simp: add_edge_def graph_inv_def split: option.splits)
 
 lemma digraph_abs_insert[simp]: "graph_inv G \<Longrightarrow> digraph_abs (add_edge G u v) = Set.insert (u,v) (digraph_abs G)"
   by (fastforce simp add: digraph_abs_def set_of_map_def neighbourhood_def add_edge_def split: option.splits if_splits)
 
-lemma adj_inv_delete[intro]: "graph_inv G \<Longrightarrow> graph_inv (delete_edge G u v)"
+lemma adjmap_inv_delete[intro]: "graph_inv G \<Longrightarrow> graph_inv (delete_edge G u v)"
   by (auto simp: delete_edge_def graph_inv_def split: option.splits)
 
 lemma digraph_abs_delete[simp]:  "graph_inv G \<Longrightarrow> digraph_abs (delete_edge G u v) = (digraph_abs G) - {(u,v)}"
@@ -294,8 +285,5 @@ lemma digraph_abs_delete[simp]:  "graph_inv G \<Longrightarrow> digraph_abs (del
 end \<comment> \<open>Properties context\<close>  
 
 end text \<open>@{const Pair_Graph_Specs}\<close>
-
-
-
 
 end

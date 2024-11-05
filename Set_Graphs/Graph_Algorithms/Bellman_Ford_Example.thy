@@ -29,9 +29,7 @@ instance
     using order.trans by metis+
   subgoal for x y 
     apply(all \<open>cases x\<close>, all \<open>cases y\<close>)
-    apply(auto split: if_split simp add: less_le_not_le)
-    apply presburger
-    by (metis order_antisym_conv)
+    by(simp_all split: if_splits add: less_le_not_le)
   subgoal for x y 
     by(all \<open>cases x\<close>, all \<open>cases y\<close>)
       (auto split: if_split simp add: less_le_not_le)

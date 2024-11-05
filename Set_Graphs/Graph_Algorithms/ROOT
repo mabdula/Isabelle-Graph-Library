@@ -1,20 +1,20 @@
 session "Graph_Algorithms" = "Directed_Set_Graphs" +
   options [document = pdf, document_output = "output"]
 
-  (*sessions*)
-
+  sessions
+    Verified_SAT_Based_AI_Planning
   theories
     DFS
+    DFS_Example
+    More_Lists
     BFS_2
     BFS_Subprocedures
-    DFS_Cycles_Aux
-    DFS_Cycles
-    Bellman_Ford
-    Set2_Join_RBT
-    DFS_Example
     BFS_Example
+    (*DFS_Cycles_Aux
+    DFS_Cycles
     DFS_Cycles_Example
-    Bellman_Ford_Example
+    Bellman_Ford
+    Bellman_Ford_Example*)
 
   document_files
     "root.tex"

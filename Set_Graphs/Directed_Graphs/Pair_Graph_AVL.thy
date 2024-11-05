@@ -37,9 +37,9 @@ where empty = AVL_Set_Code.empty and insert = insert and delete = AVL_Set_Code.d
 (*
 interpretation G: Adj_Map_Specs
   where empty=AVL_Set_Code.empty and update=update and delete = AVL_Map.delete and
-        lookup =lookup and adj_inv = M.invar  and neighb_empty = AVL_Set_Code.empty and 
-        neighb_insert = insert and neighb_delete = AVL_Set_Code.delete and isin = isin and 
-        t_set = "set o inorder" and neighb_inv = S.invar and sel = avl_sel 
+        lookup =lookup and adjmap_inv = M.invar  and vset_empty = AVL_Set_Code.empty and 
+        vset_insert = insert and vset_delete = AVL_Set_Code.delete and isin = isin and 
+        t_set = "set o inorder" and vset_inv = S.invar and sel = avl_sel 
   apply(simp add: Adj_Map_Specs_def)
   apply(intro conjI)
   subgoal using M.Map_axioms .
@@ -53,9 +53,9 @@ interpretation G: Adj_Map_Specs
 
 interpretation G: Pair_Graph_Specs
   where empty=AVL_Set_Code.empty and update=update and delete = AVL_Map.delete and
-        lookup =lookup and adj_inv = M.invar  and neighb_empty = AVL_Set_Code.empty and
-        insert = AVL_Set_Code.insert and neighb_delete = AVL_Set_Code.delete and isin = isin and
-        t_set = "set o inorder" and neighb_inv = S.invar and sel = avl_sel
+        lookup =lookup and adjmap_inv = M.invar  and vset_empty = AVL_Set_Code.empty and
+        insert = AVL_Set_Code.insert and vset_delete = AVL_Set_Code.delete and isin = isin and
+        t_set = "set o inorder" and vset_inv = S.invar and sel = avl_sel
   apply unfold_locales.
 
 end

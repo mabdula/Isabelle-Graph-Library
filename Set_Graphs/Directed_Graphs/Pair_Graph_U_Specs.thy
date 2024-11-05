@@ -37,7 +37,7 @@ definition ugraph_abs where "ugraph_abs G \<equiv> {{u, v} | u v. v \<in>\<^sub>
 
 
 context
-  includes adj.automation neighb.set.automation
+  includes adj.automation and vset.set.automation
 begin
 
 lemma uedges_def2: "uedges G = {rep (uEdge u v) | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}"
@@ -47,14 +47,14 @@ lemma isin_uedges: "v \<in>\<^sub>G (\<N>\<^sub>G G u) \<Longrightarrow> rep (uE
   unfolding uedges_def2 by force
 
 thm adj.invar_empty
-thm neighb.set.invar_empty
+thm vset.set.invar_empty
 
 lemma uedges_empty: "uedges empty = {}"
   unfolding uedges_def digraph_abs_def neighbourhood_def 
   by (auto)
 
 lemma finite_uedges:
-  "graph_inv G \<Longrightarrow> finite_graph G \<Longrightarrow> finite_neighbs \<Longrightarrow> finite (uedges G)"
+  "graph_inv G \<Longrightarrow> finite_graph G \<Longrightarrow> finite_vsets \<Longrightarrow> finite (uedges G)"
   unfolding uedges_def by auto
 
 lemma set_of_uedge: "set_of_uedge (uEdge u v) = {u,v}"
@@ -62,7 +62,7 @@ lemma set_of_uedge: "set_of_uedge (uEdge u v) = {u,v}"
 
 (* Pair_Graph_Specs axioms + symmetric, irreflexive *)
 definition "pair_graph_u_invar G \<equiv> 
-  graph_inv G \<and> finite_graph G \<and> finite_neighbs \<and>
+  graph_inv G \<and> finite_graph G \<and> finite_vsets \<and>
   (\<forall>v. \<not> v \<in>\<^sub>G (\<N>\<^sub>G G v)) \<and>
   (\<forall>u v. v \<in>\<^sub>G (\<N>\<^sub>G G u) \<longrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v))"
 
@@ -82,8 +82,8 @@ lemma invar_finite_graph[simp, intro!]:
   using \<open>pair_graph_u_invar G\<close>
   by (auto simp add: pair_graph_u_invar_def)
 
-lemma invar_finite_neighbs[simp, intro!]:
-  "finite_neighbs"
+lemma invar_finite_vsets[simp, intro!]:
+  "finite_vsets"
   using \<open>pair_graph_u_invar G\<close>
   by (auto simp add: pair_graph_u_invar_def)
 
@@ -120,7 +120,7 @@ lemma vertices_def2:
   "vertices G = {u | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}"
   unfolding vertices_def using graph_symmetric by auto
 
-lemma isin_neighborhood_set_edge: 
+lemma isin_vsetorhood_set_edge: 
   assumes "v \<in>\<^sub>G (\<N>\<^sub>G G u)"
   shows "{u,v} \<in> set_of_uedge ` uedges G"
 proof -
@@ -266,7 +266,7 @@ next
     using is_rep by auto
 qed
 
-lemma set_edge_isin_neighborhood: 
+lemma set_edge_isin_vsetorhood: 
   assumes "{u,v} \<in> set_of_uedge ` uedges G"
   shows "v \<in>\<^sub>G (\<N>\<^sub>G G u)"
 proof -
@@ -300,7 +300,7 @@ proof (cases e)
     unfolding set_of_uedge_def using e_case by cases (auto simp add: doubleton_eq_iff)
 qed
 
-lemma set_edge_isin_neighborhood_elim: 
+lemma set_edge_isin_vsetorhood_elim: 
   assumes "e \<in> set_of_uedge ` uedges G"
   obtains u v where "e = {u,v}" and "v \<in>\<^sub>G (\<N>\<^sub>G G u)"
 proof -
@@ -312,9 +312,9 @@ proof -
     using that by auto
 qed
 
-lemma set_edge_isin_neighborhood_iff:
+lemma set_edge_isin_vsetorhood_iff:
   "e \<in> set_of_uedge ` uedges G \<longleftrightarrow> (\<exists>u v. e = {u,v} \<and> v \<in>\<^sub>G (\<N>\<^sub>G G u))"
-  using isin_neighborhood_set_edge set_edge_isin_neighborhood_elim by metis
+  using isin_vsetorhood_set_edge set_edge_isin_vsetorhood_elim by metis
 
 lemma inj_set_of_uedge:
   "inj_on set_of_uedge (uedges G)"
@@ -342,7 +342,7 @@ lemma neighborhood_eq_set_for_edge:
   "(\<lambda>u. {u,v}) ` t_set (\<N>\<^sub>G G v) = {e \<in> set_of_uedge ` uedges G. v \<in> e}"
 proof
   show "(\<lambda>u. {u,v}) ` t_set (\<N>\<^sub>G G v) \<subseteq> {e \<in> set_of_uedge ` uedges G. v \<in> e}"
-    by (auto intro!: isin_neighborhood_set_edge)
+    by (auto intro!: isin_vsetorhood_set_edge)
 next
   show "{e \<in> set_of_uedge ` uedges G. v \<in> e} \<subseteq> (\<lambda>u. {u,v}) ` t_set (\<N>\<^sub>G G v)"
   proof
@@ -351,7 +351,7 @@ next
     hence "e \<in> set_of_uedge ` uedges G" and "v \<in> e"
       by auto
     moreover then obtain u w where [simp]: "e = {u,w}" and w_isin_Nu: "w \<in>\<^sub>G (\<N>\<^sub>G G u)"
-      by (elim set_edge_isin_neighborhood_elim) auto
+      by (elim set_edge_isin_vsetorhood_elim) auto
     ultimately consider "v = u" | "v = w"
       by blast
     thus "e \<in> (\<lambda>u. {u,v}) ` t_set (\<N>\<^sub>G G v)"

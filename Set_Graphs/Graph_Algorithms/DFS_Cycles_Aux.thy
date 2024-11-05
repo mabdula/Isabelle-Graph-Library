@@ -1,4 +1,4 @@
-theory DFS_Cycles_Aux
+theory DFS_Cycles_Aux              
   imports Directed_Set_Graphs.Pair_Graph_Specs
     Directed_Set_Graphs.Set_Addons Directed_Set_Graphs.Component_Defs Directed_Set_Graphs.Awalk
 begin
@@ -148,7 +148,7 @@ named_theorems state_rel_holds_intros
 locale DFS_Aux =
   Graph: Pair_Graph_Specs
     where lookup = lookup +
- set_ops: Set2 neighb_empty neighb_delete _ t_set neighb_inv insert
+ set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 
 
 for lookup :: "'adj \<Rightarrow> 'v \<Rightarrow> 'neighb option" +
@@ -159,7 +159,7 @@ begin
 (* We assume the graph is symmetric since we will run the algorithm on undirected graphs, and that
 it has no self-loops. *)
 definition "DFS_Aux_axioms \<equiv>
-  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_neighbs \<and> s \<in> dVs (Graph.digraph_abs G) \<and>
+  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets \<and> s \<in> dVs (Graph.digraph_abs G) \<and>
   (\<forall>(x, y) \<in> (Graph.digraph_abs G). (y, x) \<in> Graph.digraph_abs G) \<and>
   (\<forall>x \<in> dVs (Graph.digraph_abs G). (x, x) \<notin> Graph.digraph_abs G)"
 
@@ -410,7 +410,7 @@ definition "dfs_tree dfs_aux_state \<equiv>
   {(x, y). (x, y) \<in> (Graph.digraph_abs G) \<and> x \<in> t_set (finished dfs_aux_state) \<and> y \<in> t_set (finished dfs_aux_state)}"
 
 
-definition "invar_1 dfs_aux_state \<equiv> neighb_inv (seen dfs_aux_state) \<and> neighb_inv (finished dfs_aux_state)"
+definition "invar_1 dfs_aux_state \<equiv> vset_inv (seen dfs_aux_state) \<and> vset_inv (finished dfs_aux_state)"
 
 definition "invar_2 dfs_aux_state \<equiv> (Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_aux_state)))"
 
@@ -459,7 +459,7 @@ definition "initial_state \<equiv> \<lparr>stack = [s], seen = insert s \<emptys
 lemmas [code] = initial_state_def
 
 context
-includes  Graph.adj.automation Graph.neighb.set.automation
+includes  Graph.adj.automation Graph.vset.set.automation
 assumes DFS_Aux_axioms 
 begin
 
@@ -470,7 +470,7 @@ declare set_ops.set_union[simp] set_ops.set_inter[simp]
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"
           "Graph.finite_graph G"
-          "Graph.finite_neighbs"
+          "Graph.finite_vsets"
   using \<open>DFS_Aux_axioms\<close>
   by (auto simp: DFS_Aux_axioms_def)
 
@@ -503,12 +503,12 @@ lemmas simps[simp] = Graph.neighbourhood_abs[OF graph_inv(1)] Graph.are_connecte
 
 lemma invar_1_props[invar_props_elims]:
   "invar_1 dfs_aux_state \<Longrightarrow>
-     (\<lbrakk>neighb_inv (seen dfs_aux_state); neighb_inv (finished dfs_aux_state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
+     (\<lbrakk>vset_inv (seen dfs_aux_state); vset_inv (finished dfs_aux_state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
      P"
   by (auto simp: invar_1_def)
 
 lemma invar_1_intro[invar_props_intros]:
-  "\<lbrakk>neighb_inv (seen dfs_aux_state); neighb_inv (finished dfs_aux_state)\<rbrakk> \<Longrightarrow> invar_1 dfs_aux_state"
+  "\<lbrakk>vset_inv (seen dfs_aux_state); vset_inv (finished dfs_aux_state)\<rbrakk> \<Longrightarrow> invar_1 dfs_aux_state"
   by (auto simp: invar_1_def)
 
 lemma invar_1_holds_upd1[invar_holds_intros]:
@@ -1779,7 +1779,7 @@ proof(rule invar_props_intros, elim invar_visited_through_seen_props call_cond_e
       hence "hd p2 \<in> t_set (seen dfs_aux_state)"
         using 1
         by (metis DFS_Aux.invar_1_props DFS_Aux_axioms DFS_Aux_axioms_def Diff_iff
-         Graph.neighb.set.set_empty Graph.neighbourhood_invars' \<open>DFS_Aux_axioms\<close>
+         Graph.vset.set.set_empty Graph.neighbourhood_invars' \<open>DFS_Aux_axioms\<close>
          empty_iff list.sel(1) set_ops.set_diff)
       
       have "v' \<in> t_set (seen dfs_aux_state)"
@@ -1941,7 +1941,7 @@ lemma DFS_Aux_correct_1_ret_1:
 
 lemma DFS_Aux_correct_4_ret_1:
   "\<lbrakk>DFS_Aux_ret_1_conds dfs_aux_state; invar_1 dfs_aux_state\<rbrakk> \<Longrightarrow>
-    neighb_inv (seen dfs_aux_state)"
+    vset_inv (seen dfs_aux_state)"
   by (auto elim!: invar_props_elims)
 
 
@@ -2019,7 +2019,7 @@ qed
 
 lemma DFS_Aux_correct_4_ret_2:
   "\<lbrakk>DFS_Aux_ret_2_conds dfs_aux_state; invar_1 dfs_aux_state\<rbrakk> \<Longrightarrow>
-    neighb_inv (seen dfs_aux_state)"
+    vset_inv (seen dfs_aux_state)"
   by (auto elim!: invar_props_elims)
 
 lemma DFS_Aux_correct_5_ret:
@@ -2053,7 +2053,7 @@ lemma call_1_terminates[termination_intros]:
   by(fastforce elim!: invar_props_elims call_cond_elims
           simp add: DFS_Aux_upd1_def call_1_measure_def Let_def 
           intro!: mlex_less psubset_card_mono
-          dest!: Graph.neighb.choose')
+          dest!: Graph.vset.choose')
 
 lemma call_2_measure_nonsym[simp]: "(call_2_measure dfs_aux_state, call_2_measure dfs_aux_state) \<notin> less_rel"
   by (auto simp: less_rel_def)
@@ -2178,7 +2178,7 @@ lemma DFS_Aux_correct_3:
   using assms by (auto intro: invar_holds_intros ret_holds_intros)
 
 lemma DFS_Aux_correct_4:
-  "neighb_inv (seen (DFS_Aux initial_state))"
+  "vset_inv (seen (DFS_Aux initial_state))"
   using invar_1_holds
   by (auto intro!: invar_holds_intros elim!: invar_props_elims)
 
