@@ -66,25 +66,32 @@ fun less_hitchcock_edge::"('a, 'b) hitchcock_edge \<Rightarrow> ('a, 'b) hitchco
 "less_hitchcock_edge (dummy x y) _ = True"
 
 instance 
-  apply(intro Orderings.linorder.intro_of_class  class.linorder.intro
+proof(intro Orderings.linorder.intro_of_class  class.linorder.intro
               class.order_axioms.intro class.order.intro class.preorder.intro
-              class.linorder_axioms.intro)
-  subgoal for x y 
+              class.linorder_axioms.intro, goal_cases)
+  case (1 x y)
+  then show ?case 
     by(all \<open>cases x\<close>, all \<open>cases y\<close>) force+
-  subgoal for x
+next
+  case (2 x)
+  then show ?case 
     by(cases x) auto
-   subgoal for x y z
+next
+  case (3 x y z)
+  then show ?case 
     apply(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
-    apply(auto split: if_split simp add: less_le_not_le) 
-     by (metis order.trans)+
-  subgoal for a b
-    apply(all \<open>cases a\<close>, all \<open>cases b\<close>)
-    apply(auto split: if_split simp add: less_le_not_le)
-    by (metis nle_le)+
-  subgoal for a b
-   by(all \<open>cases a\<close>, all \<open>cases b\<close>)
+    by(auto split: if_split simp add: less_le_not_le ) (metis order.trans)+
+next
+  case (4 x y)
+  then show ?case 
+    apply(all \<open>cases x\<close>, all \<open>cases y\<close>)
+    by(auto split: if_split simp add: less_le_not_le) (metis nle_le)+
+next
+  case (5 x y)
+  then show ?case 
+   by(all \<open>cases x\<close>, all \<open>cases y\<close>)
      (auto split: if_split simp add: less_le_not_le)
-  done
+qed
 end
 
 locale with_capacity =
@@ -282,20 +289,22 @@ lemma vertices_done_general_lookup:
             the (bal_lookup bs (vertex u))
           -  sum (\<lambda> e.  real_of_ereal (the (flow_lookup \<u>_impl e))) {e | e. e \<in> set ES \<and> u = fst (make_pair e)})
 |  _ \<Rightarrow> bal_lookup bs x)"
-  apply(induction ES)
-  subgoal
-    by(auto split: hitchcock_wrapper.split)
+proof(induction ES)
+  case Nil
+  then show ?case 
+   by(auto split: hitchcock_wrapper.split)
+next
+  case (Cons a ES)
+  then show ?case 
   apply simp
   apply(subst bal_map.map_update)
   subgoal
     by(auto intro: bal_invar_fold)
-  apply (auto split: hitchcock_wrapper.split)
-  subgoal 
-    by(subst sym[OF minus_distr], subst add.commute, subst sym[OF sum.insert])
-      (force intro!: cong[of uminus, OF refl] cong[of "sum _", OF refl] simp add: )+
-  subgoal for a ES y x2
-    by metis
-  done
+  by(auto split: hitchcock_wrapper.split) 
+    (((subst sym[OF minus_distr], subst add.commute, subst sym[OF sum.insert]);
+      (force intro!: cong[of uminus, OF refl] cong[of "sum _", OF refl] simp add: )+),
+      metis)
+qed
 
 lemma bal_invar_b_lifted: "bal_invar b_lifted"
   using  bal_map.invar_empty 
@@ -310,15 +319,13 @@ lemma bal_lookup_vertices_done:"x \<in>  \<V> \<Longrightarrow> bal_lookup verti
                         ((delta_plus  x) - (delta_plus_infty  x)))"
   unfolding vertices_done_def
   apply(subst vertices_done_general_lookup)
-  using dom_b_listed apply simp
-  using bal_invar_b_lifted apply simp
-  using finite_edges_invar apply(simp add: set_invar_def)
-  apply (simp add: b_lifted_lookup bs_are us_are)
+  using dom_b_listed  bal_invar_b_lifted finite_edges_invar 
+  apply(auto simp add: set_invar_def)[3]
   using u_domain b_domain 
-  unfolding delta_plus_def flow_network.delta_plus_infty_def[OF flow_network2[simplified]] the_default_def
-  by(cases "bal_lookup \<b>_impl x", blast, simp,intro sum_cong_extensive)
-    (force simp add: Es_are \<E>_impl_finite_def to_set_def delta_plus_def 
-              dom_def the_default_def )+
+  by(simp add: b_lifted_lookup bs_are us_are, unfold delta_plus_def flow_network.delta_plus_infty_def[OF flow_network2[simplified]] the_default_def)
+    (cases "bal_lookup \<b>_impl x", blast, simp,intro sum_cong_extensive, 
+          (force simp add: Es_are \<E>_impl_finite_def to_set_def delta_plus_def 
+              dom_def the_default_def )+)
 
 lemma dom_vertices_done:"dom (bal_lookup vertices_done) = vertex ` \<V>"
   using fst_E_V
@@ -350,8 +357,6 @@ lemma old_f_gen_final_flow_impl_original_cong:"e \<in> \<E> \<Longrightarrow>
   unfolding old_f_gen_def final_flow_impl_original_def Let_def  abstract_flow_map_def orlins_impl_spec.abstract_flow_map_def the_default_def
   apply(subst flow_lookup_fold, simp add: flow_invar_fold flow_map.invar_empty flow_map.invar_update)+
   by (auto simp add:sym[OF infty_edges_are, simplified to_set_def]  flow_map.map_empty finite_edges_are[simplified sym[OF infty_edges_are] to_set_def])
-  
-thm reduction_of_mincost_flow_to_hitchcock_general(1)[OF flow_network_axioms]
 
 lemma set_invar_E':"set_invar \<E>'_impl"
  using  set_invar_E 
@@ -631,9 +636,9 @@ corollary correctness_of_implementation_success:
     apply(rule is_Opt_cong[of "old_f_gen \<E> \<u> (abstract_flow_map final_flow_impl_cap)"
                                 , OF  old_f_gen_final_flow_impl_original_cong refl], simp)
     apply(rule reduction_of_mincost_flow_to_hitchcock_general(6)[OF flow_network_axioms refl, of "(dom (c_lookup \<c>_impl))" \<c> \<b>])
-    unfolding final_flow_impl_cap_def sym[OF E1_impl_are] sym[OF E2_impl_are] sym[OF E3_impl_are]
-              collapse_union_ofE1E2E3 \<u>_def  function_generation.\<u>_def[OF function_generation]
-    unfolding  new_gen_c_unfold
+    apply(unfold final_flow_impl_cap_def sym[OF E1_impl_are] sym[OF E2_impl_are] sym[OF E3_impl_are]
+              collapse_union_ofE1E2E3 \<u>_def  function_generation.\<u>_def[OF function_generation])
+    apply(unfold new_gen_c_unfold)
     using V_new_graph  no_cycle_in_reduction 
     by(fastforce simp add: final_state_cap_def 
          intro!: cost_flow_network.is_Opt_cong[OF cost_flow_network3 refl sym[OF new_b_domain_cong]] 

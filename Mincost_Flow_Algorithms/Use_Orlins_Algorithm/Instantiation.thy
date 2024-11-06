@@ -142,39 +142,33 @@ fun adjmap_inv' where
 
 lemma map': "adjmap_inv' m  \<Longrightarrow> lookup' (edge_map_update' a b m) = (lookup' m)(a \<mapsto> b)"
             "adjmap_inv' m \<Longrightarrow> adjmap_inv' (edge_map_update' a b m)"
-  subgoal
-    apply (cases m)
-    subgoal for mp
-        apply(cases "b = default")
-        apply (auto simp add: Let_def)
-        using adjmap.map_delete[of mp a] adjmap.map_empty adjmap.map_empty adjmap.map_update
-        using fun_upd_other[of _ a "lookup mp" None] by auto  
-      subgoal
-        by (auto simp add: Let_def adjmap.invar_delete adjmap.map_delete  adjmap.invar_empty adjmap.map_empty adjmap.map_update )
-      done
-    subgoal
-     apply (cases m)
-     subgoal for mp
-      apply(cases "b = default")
-       subgoal
-         by (auto simp add: Let_def adjmap.invar_delete adjmap.map_delete  adjmap.invar_empty adjmap.map_empty adjmap.map_update )
-       subgoal
-         apply (auto simp add: Let_def adjmap.invar_delete adjmap.map_delete  adjmap.invar_empty
-                                adjmap.map_empty adjmap.map_update adjmap.invar_update )
-         using adjmap.map_empty adjmap.map_update[of mp  a b] by auto
-     done
-   subgoal
-          apply(cases "b =default")
-       subgoal
-         by (auto simp add: Let_def adjmap.invar_delete adjmap.map_delete  adjmap.invar_empty adjmap.map_empty adjmap.map_update )
-       subgoal
-         apply (auto simp add: Let_def adjmap.invar_delete adjmap.map_delete  adjmap.invar_empty
-                                adjmap.map_empty adjmap.map_update adjmap.invar_update )
-         using adjmap.map_empty adjmap.map_update[of empty  a b]  adjmap.invar_empty map_upd_nonempty[of "lookup empty" a b] 
+proof(goal_cases)
+  case 1
+  have help1: "\<lbrakk> m = Replace mp; b = default;adjmap_inv mp;mp \<noteq> delete a mp;
+           \<forall>x y. lookup mp x = Some y \<longrightarrow> y \<noteq> default;finite (dom (lookup mp));
+          \<emptyset>\<^sub>G = delete a mp\<rbrakk> \<Longrightarrow> lookup' all_empty = (lookup' (Replace mp))(a \<mapsto> default)" 
+    for mp
+        using adjmap.map_delete[of mp a]  adjmap.map_empty fun_upd_other[of _ a "lookup mp" None]  
+        by auto 
+  from 1 show ?case 
+        using adjmap.map_delete[of _ a]  adjmap.map_update 
+        by (cases m)(auto  intro: help1 simp add: adjmap.invar_delete adjmap.map_delete  adjmap.invar_empty adjmap.map_empty adjmap.map_update )  
+  next
+    case 2
+    have help1: "\<lbrakk> m = Replace mp ; b \<noteq> default ; adjmap_inv mp ; mp \<noteq> edge_map_update a b mp;
+                  \<forall>x y. lookup mp x = Some y \<longrightarrow> y \<noteq> default ; finite (dom (lookup mp));
+                 \<emptyset>\<^sub>G = edge_map_update a b mp\<rbrakk> \<Longrightarrow> False"
+      for mp
+      using adjmap.map_empty adjmap.map_update[of mp  a b] by auto
+    have help2: "\<lbrakk>m = all_empty ; b \<noteq> default ; edge_map_update a b (\<emptyset>\<^sub>G) = \<emptyset>\<^sub>G\<rbrakk> \<Longrightarrow> False"
+       using adjmap.map_empty adjmap.map_update[of empty  a b]  adjmap.invar_empty map_upd_nonempty[of "lookup empty" a b] 
          by auto
-     done
-   done
-  done
+   from 2 show ?case
+     by (cases m)
+        (auto simp add:  adjmap.invar_delete adjmap.map_delete  adjmap.invar_empty
+                                adjmap.map_empty adjmap.map_update adjmap.invar_update 
+                intro: help1 case_split[of "b = default"] help2)
+ qed
 
 fun remove_all_empties where 
 "remove_all_empties (Replace m) = m"|
@@ -1108,25 +1102,7 @@ proof(goal_cases)
            dfs_dom DFS_thms.DFS_to_DFS_impl dfs.invar_seen_stack_def dfs_thms
     by(fastforce simp add:  assms(3) get_path_def dfs_def dfs_initial_def
                    dfs_initial_state_def  dfs_impl_def) 
-  qed
-
-lemma algo_impl_spec_axioms:"algo_impl_spec_axioms flow_lookup flow_invar bal_lookup bal_invar rep_comp_lookup rep_comp_invar not_blocked_lookup
-     not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max"
-    by(auto intro: algo_impl_spec_axioms.intro  
-         intro!: flow_update_all get_max not_blocked_update_all rep_comp_update_all)
-
-lemma algo_spec: "algo_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin get_from_set filter are_all set_invar
-     to_set lookup' t_set sel adjmap_inv'"
-  by(auto intro!: algo_spec.intro simp add: Adj_Map_Specs2 Set3_axioms algo_spec.intro)
-
-lemma algo_impl_spec: "algo_impl_spec edge_map_update' vset_empty vset_delete vset_insert vset_inv isin get_from_set filter are_all set_invar
-     to_set lookup' t_set sel adjmap_inv' flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update
-     bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar
-     conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty not_blocked_delete
-     not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max"
-  using  Map_bal.Map_axioms Map_conv Map_flow.Map_axioms Map_not_blocked.Map_axioms
-          algo_impl_spec_axioms algo_spec conv_map.Map_axioms  Map_axioms
-  by(auto intro!: algo_impl_spec.intro simp add: Adj_Map_Specs2 Set3_axioms algo_spec.intro)
+qed
 
 interpretation algo: algo where \<E> = \<E> and \<c> = \<c> 
 and \<u> = \<u> and edge_map_update = edge_map_update' and vset_empty = vset_empty
@@ -1140,6 +1116,16 @@ and snd = snd and fst = fst and make_pair = make_pair and create_edge=create_edg
   using cost_flow_network 
   by(auto intro!: algo.intro algo_spec.intro simp add: Adj_Map_Specs2 algo_axioms algo_def Set3_axioms)
 lemmas algo = algo.algo_axioms
+
+lemma algo_impl_spec: "algo_impl_spec edge_map_update' vset_empty vset_delete vset_insert vset_inv isin get_from_set filter are_all set_invar
+     to_set lookup' t_set sel adjmap_inv' flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update
+     bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar
+     conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty not_blocked_delete
+     not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max"
+  using  Map_bal.Map_axioms Map_conv Map_flow.Map_axioms Map_not_blocked.Map_axioms
+          algo_spec conv_map.Map_axioms  Map_axioms
+  by(auto intro!: algo_impl_spec.intro algo_impl_spec_axioms.intro flow_update_all get_max not_blocked_update_all rep_comp_update_all 
+         simp add: Adj_Map_Specs2 Set3_axioms algo_spec.intro)
  
 lemma algo_impl:"algo_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' vset_empty vset_delete vset_insert vset_inv isin
      get_from_set filter are_all set_invar to_set lookup' t_set sel adjmap_inv' to_pair \<epsilon> \<E>_impl all_empty N
@@ -1148,39 +1134,10 @@ lemma algo_impl:"algo_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_upd
      conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty not_blocked_delete not_blocked_lookup
      not_blocked_invar fst rep_comp_update_all not_blocked_update_all flow_update_all get_max conv_empty"
   using algo  Map_bal Map_conv Map_flow Map_not_blocked
-        Map_rep_comp  algo_impl_spec
-  by(auto intro!: algo_impl.intro) 
-
-lemma loopA_axioms:"loopA_axioms (\<emptyset>\<^sub>N::('a \<times> color) tree) vset_inv isin lookup' adjmap_inv' get_path"
-  by(auto simp add: loopA_axioms_def loopA_axioms_extended)
-
-lemma loopA_spec:"loopA_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set lookup'
-     t_set sel adjmap_inv' get_from_set"
-  by(auto intro!: loopA_spec.intro simp add: Adj_Map_Specs2 Set3 algo_spec)
-
-lemma loopA:"loopA snd make_pair create_edge \<u> \<E> \<c> edge_map_update' vset_empty vset_delete vset_insert vset_inv isin filter
-     are_all set_invar to_set lookup' t_set sel adjmap_inv' to_pair \<epsilon> N default_conv_to_rdg get_from_set all_empty \<E>_impl
-     get_path fst"
-  using loopA_spec loopA_axioms algo
-  by(auto intro!: loopA.intro)
-
-lemma loopA_impl_spec: "loopA_impl_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set
-     lookup' t_set sel adjmap_inv' get_from_set flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty
-     bal_update bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup
-     rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty
-     not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all
-     get_max"
-  using loopA_spec algo_impl_spec
-  by(auto intro!: loopA_impl_spec.intro)
-
-lemma loopA_impl:"Orlins_Implementation.loopA_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' vset_empty vset_delete vset_insert vset_inv isin
-     filter are_all set_invar to_set lookup' t_set sel adjmap_inv' to_pair \<epsilon> N default_conv_to_rdg get_from_set all_empty
-     \<E>_impl get_path flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete bal_lookup
-     bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_empty conv_update
-     conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty not_blocked_delete not_blocked_lookup
-     not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max fst"
-  using algo_impl loopA loopA_impl_spec
-  by(auto intro!: loopA_impl.intro)
+        Map_rep_comp  Map_bal.Map_axioms Map_conv Map_flow.Map_axioms Map_not_blocked.Map_axioms
+            conv_map.Map_axioms  Map_axioms Adj_Map_Specs2 Set3_axioms
+  by(auto intro!: algo_impl.intro algo_impl_spec.intro algo_impl_spec_axioms.intro
+ flow_update_all get_max not_blocked_update_all rep_comp_update_all algo_spec.intro) 
 
 lemma realising_edges_general_invar:
 "realising_edges_invar (realising_edges_general list)"
@@ -1215,16 +1172,14 @@ next
                    \<longleftrightarrow> (u, v) \<in> set (map make_pair (e#list))"
       using make_pair_fst_snd[of e] by auto
     note ih = Cons(1)[simplified in_list]
-    show ?thesis 
+      show ?thesis
       unfolding Let_def 
-      apply(subst foldr.foldr_Cons, subst o_apply)
-      apply(subst ih[simplified Let_def])
-      unfolding realising_edges_general_def[simplified Let_def, symmetric]
-      apply(auto split: option.split 
-              simp add: realising_edges_update_def realising_edges_lookup_def)
-        using realising_edges_general_invar False
-        by((subst (asm) Map_realising.map_update | subst Map_realising.map_update)+, 
-           (auto simp add: realising_edges_invar_def)[2])+
+      using realising_edges_general_invar False
+      by(subst foldr.foldr_Cons, subst o_apply,subst ih[simplified Let_def])
+        (auto split: option.split 
+              simp add: realising_edges_update_def realising_edges_lookup_def
+                        Map_realising.map_update realising_edges_invar_def
+                         realising_edges_general_def[simplified Let_def, symmetric] )
   qed
 qed
 
@@ -1267,23 +1222,21 @@ lemma get_edge_and_costs_forward_not_MInfty:
   shows "prod.snd( get_edge_and_costs_forward nb f u v) \<noteq>MInfty"
   unfolding get_edge_and_costs_forward_def
   using not_both_realising_edges_none[of u v] 
-  apply(auto split: if_split prod.split option.split)
-  using imageI[OF conjunct1[OF 
+        imageI[OF conjunct1[OF 
              find_cheapest_forward_props[OF prod.collapse refl, 
                           of f nb _ "create_edge u v" PInfty]],
-            of prod.snd, simplified image_def, simplified]
-  using imageI[OF conjunct1[OF 
+            of prod.snd , simplified image_def, simplified]
+        imageI[OF conjunct1[OF 
               find_cheapest_backward_props[OF prod.collapse refl, 
                           of f nb _ "create_edge v u" PInfty]],
                  of prod.snd, simplified image_def, simplified]
-  using  MInfty_neq_PInfty(1) MInfty_neq_ereal(1) snd_conv
-  by metis+
+  by(auto split: if_split prod.split option.split)
+    (metis MInfty_neq_PInfty(1) MInfty_neq_ereal(1) snd_conv)+
 
 lemma get_edge_and_costs_backward_not_MInfty:
   shows "prod.snd( get_edge_and_costs_backward nb f u v) \<noteq>MInfty"
   unfolding get_edge_and_costs_backward_def
   using not_both_realising_edges_none[of v u] 
-  apply(auto split: if_split prod.split option.split)
   using imageI[OF conjunct1[OF 
              find_cheapest_forward_props[OF prod.collapse refl, 
                           of f nb _ "create_edge v u" PInfty]],
@@ -1292,8 +1245,8 @@ lemma get_edge_and_costs_backward_not_MInfty:
               find_cheapest_backward_props[OF prod.collapse refl, 
                           of f nb _ "create_edge u v" PInfty]],
                  of prod.snd, simplified image_def, simplified]
-  using  MInfty_neq_PInfty(1) MInfty_neq_ereal(1) snd_conv
-  by metis+
+  by(auto split: if_split prod.split option.split)
+    (metis MInfty_neq_PInfty(1) MInfty_neq_ereal(1) snd_conv)+
 
 lemma realising_edges_general_result_None_and_Some:
   assumes "(case realising_edges_lookup (realising_edges_general list) (u, v) 
@@ -1305,20 +1258,19 @@ lemma realising_edges_general_result_None_and_Some:
   apply(simp add: realising_edges_lookup_def realising_edges_general_def 
                    realising_edges_empty_def Map_realising.map_empty)
   subgoal for a list ds
-  unfolding realising_edges_general_def
-  apply(subst (asm) foldr.foldr_Cons, subst (asm) o_apply)
-  unfolding realising_edges_general_def[symmetric]
-  unfolding Let_def  realising_edges_lookup_def realising_edges_update_def
-  apply(subst (asm) (9) option.split, subst (asm) Map_realising.map_update)
-  using  realising_edges_general_invar 
-  apply(force simp add: realising_edges_invar_def)
-  apply(subst (asm) Map_realising.map_update)
-  using realising_edges_general_invar 
-  apply(force simp add: realising_edges_invar_def)
-  apply(cases "make_pair a = (u, v)") 
-  apply (auto simp add: make_pair_fst_snd) 
-  apply(cases "realising_edges_lookup (realising_edges_general list) (fst a, snd a)")
-  by auto
+    unfolding realising_edges_general_def
+    apply(subst (asm) foldr.foldr_Cons, subst (asm) o_apply)
+    unfolding realising_edges_general_def[symmetric]
+    unfolding Let_def  realising_edges_lookup_def realising_edges_update_def
+    apply(subst (asm) (9) option.split, subst (asm) Map_realising.map_update)
+    using  realising_edges_general_invar 
+    apply(force simp add: realising_edges_invar_def)
+    apply(subst (asm) Map_realising.map_update)
+    using realising_edges_general_invar 
+    apply(force simp add: realising_edges_invar_def)
+  by(cases "make_pair a = (u, v)") 
+    (auto intro: option.exhaust[of "realising_edges_lookup (realising_edges_general list) (fst a, snd a)"]
+             simp add: make_pair_fst_snd)
   done
 
 lemma realising_edges_general_result:
@@ -1516,87 +1468,127 @@ qed
 lemmas EEE_def = flow_network.\<EE>_def
 
 lemma es_E_frac: "cost_flow_network.to_vertex_pair ` EEE = set es"
-  apply(subst es_is_E)
-  unfolding EEE_def cost_flow_network.\<EE>_def
-  apply(auto simp add: cost_flow_network.to_vertex_pair.simps) 
+proof(goal_cases)
+  case 1
+  have help1: "\<lbrakk> (a, b) = prod.swap (make_pair d); prod.swap (make_pair d) \<notin> make_pair ` \<E>; d \<in> \<E>\<rbrakk> 
+               \<Longrightarrow> (b, a) \<in> make_pair ` local.\<E>" for a b d
   using cost_flow_network.to_vertex_pair.simps 
-  apply (metis imageI swap_simp swap_swap)
-  using cost_flow_network.to_vertex_pair.simps
-   apply(metis (mono_tags, lifting) UnI1 imageI mem_Collect_eq)
+  by (metis imageI swap_simp swap_swap)
+  have help2: "\<lbrakk>(a, b) = make_pair x ; x \<in> local.\<E> \<rbrakk>\<Longrightarrow>
+       make_pair x \<in> to_edge `
+          ({cost_flow_network.F d |d. d \<in> local.\<E>} \<union> {cost_flow_network.B d |d. d \<in> local.\<E>})"
+    for a b x
+    using cost_flow_network.to_vertex_pair.simps
+    by(metis (mono_tags, lifting) UnI1 imageI mem_Collect_eq)
+  have help3: "\<lbrakk> (b, a) = make_pair x ; x \<in> local.\<E>\<rbrakk> \<Longrightarrow>
+       (a, b) \<in> to_edge `
+          ({cost_flow_network.F d |d. d \<in> local.\<E>} \<union> {cost_flow_network.B d |d. d \<in> local.\<E>})"
+    for a b x
   by (smt (verit, del_insts) cost_flow_network.\<EE>_def cost_flow_network.o_edge_res
- cost_flow_network.oedge_simps'(2) cost_flow_network.to_vertex_pair.simps(2) image_iff swap_simp)
+    cost_flow_network.oedge_simps'(2) cost_flow_network.to_vertex_pair.simps(2) image_iff swap_simp)
+    show ?case
+    by(auto simp add: cost_flow_network.to_vertex_pair.simps es_is_E EEE_def cost_flow_network.\<EE>_def
+          intro: help1 help2 help3) 
+qed
 
 lemma to_edge_get_edge_and_costs_forward:
       "to_edge (prod.fst ((get_edge_and_costs_forward nb f u v))) = (u, v)"
   unfolding get_edge_and_costs_forward_def Let_def
-  apply(auto split: if_split prod.split option.split simp add: multigraph.create_edge)
-  subgoal for x1 x2 x1a x2a 
-    using multigraph.create_edge
-    by(auto simp add: find_cheapest_forward_def find_cheapest_backward_def)
-  subgoal for x1 x2 x1a x2a
-    using multigraph.create_edge
-    by(auto simp add: find_cheapest_forward_def find_cheapest_backward_def)
-  subgoal for x2 x1 x2a x1a x2b
-    by(auto simp add: find_cheapest_forward_def multigraph.create_edge) 
-  subgoal for x2 x1 x2a x1a x2b
-    using realising_edges_dom[of v u]
-    using realising_edges_result[of v u x2]
-    using find_cheapest_backward_props[of x1a x2b f nb x2 "create_edge v u" PInfty, OF _ refl]
+proof(goal_cases)
+  case 1   
+  have help4: "\<lbrakk>realising_edges_lookup local.realising_edges (u, v) = None ;
+       realising_edges_lookup local.realising_edges (v, u) = Some x2 ; \<not> x2a \<le> x2b ;
+       local.find_cheapest_backward f nb x2 (create_edge v u) \<infinity> = (x1a, x2b) ;
+       local.find_cheapest_forward f nb [] (create_edge u v) \<infinity> = (x1, x2a)\<rbrakk> \<Longrightarrow>
+       prod.swap (make_pair x1a) = (u, v)"
+    for x2 x1 x2a x1a x2b
+    using realising_edges_dom[of v u] realising_edges_result[of v u x2]
+           find_cheapest_backward_props[of x1a x2b f nb x2 "create_edge v u" PInfty, OF _ refl]
     by (fastforce simp add:) 
-  subgoal for x2 x1 x2a x1a x2b
-    using realising_edges_dom[of u v]
-    using realising_edges_result[of u v x2]
-    using find_cheapest_forward_props[of x1 x2a f nb x2 "create_edge u v" PInfty, OF _ refl]
+  have help5: "\<lbrakk>realising_edges_lookup local.realising_edges (u, v) = Some x2 ;
+       realising_edges_lookup local.realising_edges (v, u) = None ;x2a \<le> x2b ;
+       local.find_cheapest_backward f nb [] (create_edge v u) \<infinity> = (x1a, x2b) ;
+       local.find_cheapest_forward f nb x2 (create_edge u v) \<infinity> = (x1, x2a) \<rbrakk>\<Longrightarrow>
+       make_pair x1 = (u, v)"
+    for x2 x1 x2a x1a x2b
+    using realising_edges_dom[of u v]  realising_edges_result[of u v x2]
+          find_cheapest_forward_props[of x1 x2a f nb x2 "create_edge u v" PInfty, OF _ refl]
     by (auto simp add: multigraph.create_edge )
-  subgoal for x2 x1 x2a x1a x2b
-    by(simp add: find_cheapest_backward_def)
-  subgoal for x2 x2a x1 x2b x1a x2c
+  have help6: "\<lbrakk>realising_edges_lookup local.realising_edges (u, v) = Some x2 ;
+    realising_edges_lookup local.realising_edges (v, u) = Some x2a ; x2b \<le> x2c ;
+    local.find_cheapest_backward f nb x2a (create_edge v u) \<infinity> = (x1a, x2c) ;
+    local.find_cheapest_forward f nb x2 (create_edge u v) \<infinity> = (x1, x2b) \<rbrakk>\<Longrightarrow>
+    make_pair x1 = (u, v)"
+    for x2 x2a x1 x2b x1a x2c
     using realising_edges_result[of u v x2] realising_edges_result[of v u x2a]
-    using find_cheapest_forward_props[of x1 x2b f nb x2 "create_edge u v" PInfty, OF _ refl]
-    using find_cheapest_backward_props[of x1a  x2c f nb x2a "create_edge v u" PInfty, OF _ refl]
+          find_cheapest_forward_props[of x1 x2b f nb x2 "create_edge u v" PInfty, OF _ refl]
+           find_cheapest_backward_props[of x1a  x2c f nb x2a "create_edge v u" PInfty, OF _ refl]
     by(auto simp add: multigraph.create_edge)
-  subgoal for x2 x2a x1 x2b x1a x2c
+  have help7: "\<lbrakk> realising_edges_lookup local.realising_edges (u, v) = Some x2 ;
+    realising_edges_lookup local.realising_edges (v, u) = Some x2a ;\<not> x2b \<le> x2c ;
+    local.find_cheapest_backward f nb x2a (create_edge v u) \<infinity> = (x1a, x2c) ;
+    local.find_cheapest_forward f nb x2 (create_edge u v) \<infinity> = (x1, x2b) \<rbrakk> \<Longrightarrow>
+    prod.swap (make_pair x1a) = (u, v)"
+   for x2 x2a x1 x2b x1a x2c
     using realising_edges_result[of u v x2] realising_edges_result[of v u x2a]
-    using find_cheapest_forward_props[of x1 x2b f nb x2 "create_edge u v" PInfty, OF _ refl]
-    using find_cheapest_backward_props[of x1a  x2c f nb x2a "create_edge v u" PInfty, OF _ refl]
+          find_cheapest_forward_props[of x1 x2b f nb x2 "create_edge u v" PInfty, OF _ refl]
+          find_cheapest_backward_props[of x1a  x2c f nb x2a "create_edge v u" PInfty, OF _ refl]
     by(auto simp add: multigraph.create_edge)
-  done
+  show ?case
+    by(auto split: if_split prod.split option.split 
+            simp add: multigraph.create_edge  find_cheapest_backward_def find_cheapest_forward_def
+                 intro: help4 help5 help6 help7)
+qed
 
 lemma to_edge_get_edge_and_costs_backward:
       "to_edge (prod.fst ((get_edge_and_costs_backward nb f v u))) = (u, v)"
   unfolding get_edge_and_costs_backward_def Let_def
-  apply(auto split: if_split prod.split option.split simp add: multigraph.create_edge )
-  subgoal for x1 x2 x1a x2a 
-    using multigraph.create_edge
-    by(auto simp add: find_cheapest_forward_def find_cheapest_backward_def)
-  subgoal for x1 x2 x1a x2a
-    using multigraph.create_edge
-    by(auto simp add: find_cheapest_forward_def find_cheapest_backward_def)
-  subgoal for x2 x1 x2a x1a x2b
-    by(auto simp add: find_cheapest_forward_def multigraph.create_edge) 
-  subgoal for x2 x1 x2a x1a x2b
-    using realising_edges_dom[of v u]
-    using realising_edges_result[of v u x2]
-    using find_cheapest_backward_props[of x1a x2b f nb x2 "create_edge v u" PInfty, OF _ refl]
-    by (fastforce simp add:) 
-  subgoal for x2 x1 x2a x1a x2b
+proof(goal_cases)
+  case 1
+  have help1: "\<lbrakk> realising_edges_lookup local.realising_edges (u, v) = None ;
+    realising_edges_lookup local.realising_edges (v, u) = Some x2 ;\<not> x2a \<le> x2b ;
+    local.find_cheapest_backward f nb x2 (create_edge v u) \<infinity> = (x1a, x2b) ;
+    local.find_cheapest_forward f nb [] (create_edge u v) \<infinity> = (x1, x2a)\<rbrakk> \<Longrightarrow>
+    prod.swap (make_pair x1a) = (u, v)"
+    for x2 x1 x2a x1a x2b
+    using realising_edges_dom[of v u]  realising_edges_result[of v u x2]
+          find_cheapest_backward_props[of x1a x2b f nb x2 "create_edge v u" PInfty, OF _ refl]
+    by (fastforce simp add:)
+  have help2: "\<lbrakk> realising_edges_lookup local.realising_edges (u, v) = Some x2 ;
+    realising_edges_lookup local.realising_edges (v, u) = None ; x2a \<le> x2b ;
+    local.find_cheapest_backward f nb [] (create_edge v u) \<infinity> = (x1a, x2b) ;
+    local.find_cheapest_forward f nb x2 (create_edge u v) \<infinity> = (x1, x2a)\<rbrakk> \<Longrightarrow>
+    make_pair x1 = (u, v)"
+    for x2 x1 x2a x1a x2b
     using realising_edges_dom[of u v]
     using realising_edges_result[of u v x2]
     using find_cheapest_forward_props[of x1 x2a f nb x2 "create_edge u v" PInfty, OF _ refl]
     by (auto simp add: multigraph.create_edge )
-  subgoal for x2 x1 x2a x1a x2b
-    by(simp add: find_cheapest_backward_def)
-  subgoal for x2 x2a x1 x2b x1a x2c
+  have help3: "\<lbrakk> realising_edges_lookup local.realising_edges (u, v) = Some x2 ;
+    realising_edges_lookup local.realising_edges (v, u) = Some x2a ; x2b \<le> x2c ;
+    local.find_cheapest_backward f nb x2a (create_edge v u) \<infinity> = (x1a, x2c) ;
+    local.find_cheapest_forward f nb x2 (create_edge u v) \<infinity> = (x1, x2b) \<rbrakk> \<Longrightarrow>
+    make_pair x1 = (u, v)"
+    for x2 x2a x1 x2b x1a x2c
     using realising_edges_result[of u v x2] realising_edges_result[of v u x2a]
     using find_cheapest_forward_props[of x1 x2b f nb x2 "create_edge u v" PInfty, OF _ refl]
     using find_cheapest_backward_props[of x1a  x2c f nb x2a "create_edge v u" PInfty, OF _ refl]
     by(auto simp add: multigraph.create_edge)
-  subgoal for x2 x2a x1 x2b x1a x2c
+  have help4: "\<lbrakk> realising_edges_lookup local.realising_edges (u, v) = Some x2 ;
+    realising_edges_lookup local.realising_edges (v, u) = Some x2a ; \<not> x2b \<le> x2c ;
+    local.find_cheapest_backward f nb x2a (create_edge v u) \<infinity> = (x1a, x2c) ;
+    local.find_cheapest_forward f nb x2 (create_edge u v) \<infinity> = (x1, x2b) \<rbrakk> \<Longrightarrow>
+    prod.swap (make_pair x1a) = (u, v)"
+    for x2 x2a x1 x2b x1a x2c
     using realising_edges_result[of u v x2] realising_edges_result[of v u x2a]
     using find_cheapest_forward_props[of x1 x2b f nb x2 "create_edge u v" PInfty, OF _ refl]
     using find_cheapest_backward_props[of x1a  x2c f nb x2a "create_edge v u" PInfty, OF _ refl]
     by(auto simp add: multigraph.create_edge)
-  done
+  show ?case
+    by(auto split: if_split prod.split option.split 
+            simp add: multigraph.create_edge find_cheapest_forward_def find_cheapest_backward_def
+             intro: help1 help2 help3 help4)
+qed
 
 lemma costs_forward_less_PInfty_in_es: "prod.snd (get_edge_and_costs_forward nb f u v) < PInfty \<Longrightarrow> (u, v) \<in> set es"
   using get_edge_and_costs_forward_result_props[OF prod.collapse[symmetric] _ refl, of nb f u v,
@@ -1609,7 +1601,6 @@ lemma costs_backward_less_PInfty_in_es: "prod.snd (get_edge_and_costs_backward n
           simplified cost_flow_network.o_edge_res]
         es_E_frac to_edge_get_edge_and_costs_backward[of nb f u v] 
   by force
-
 
 lemma bellman_ford:
   shows "bellman_ford  connection_empty connection_lookup connection_invar connection_delete
@@ -1650,17 +1641,6 @@ and connection_delete=connection_delete and connection_invar=connection_invar
 and es= es and vs=vs and edge_costs="  (\<lambda> u v. prod.snd (get_edge_and_costs_backward nb f u v))" 
 for nb f
   using bellman_ford_backward by auto
-
-lemma loopB_spec: " loopB_spec \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set lookup' t_set sel adjmap_inv'
-     edge_map_update' get_from_set"
-  using algo_spec
-  by(auto intro!: loopB_spec.intro)
-
-lemma loopB: "loopB snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete vset_insert vset_inv isin get_from_set filter
-     are_all set_invar to_set lookup' t_set sel adjmap_inv' to_pair \<epsilon> \<E>_impl all_empty N default_conv_to_rdg fst
-     edge_map_update'"
-  using  algo loopB_spec
-  by(auto intro!: loopB.intro)
  
 lemma get_source_aux:"(\<exists> x \<in> set xs. b x > (1 - \<epsilon>) * \<gamma> ) 
 \<Longrightarrow> res = (get_source_aux b \<gamma> xs) \<Longrightarrow> b res > (1 - \<epsilon>) * \<gamma> \<and> res \<in> set xs "
@@ -1672,10 +1652,8 @@ lemma get_target_aux:"(\<exists> x \<in> set xs. b x < - (1 - \<epsilon>) * \<ga
   unfolding get_target_aux_def
   by(induction b \<gamma> xs rule: get_target_aux_aux.induct) auto
 
-abbreviation "aux_invar (state)\<equiv> 
-algo.aux_invar  state"
-abbreviation "invar_isOptflow (state)\<equiv> 
-algo.invar_isOptflow state"
+abbreviation "aux_invar (state)\<equiv> algo.aux_invar  state"
+abbreviation "invar_isOptflow (state)\<equiv> algo.invar_isOptflow state"
 abbreviation "\<F> state \<equiv> algo.\<F>  (state)"
 abbreviation "resreach \<equiv> cost_flow_network.resreach"
 abbreviation "augpath \<equiv> cost_flow_network.augpath"
@@ -1683,14 +1661,11 @@ abbreviation "invar_gamma (state)== algo.invar_gamma state"
 abbreviation "augcycle == cost_flow_network.augcycle"
 abbreviation "prepath == cost_flow_network.prepath"
 
-
 lemmas prepath_def = cost_flow_network.prepath_def
 lemmas augpath_def = cost_flow_network.augpath_def
 
 definition "get_source (state) = get_source_aux (balance state) (current_\<gamma> state) vs"
 definition "get_target (state) = get_target_aux (balance state) (current_\<gamma> state) vs"
-
-
 
 lemma realising_edges_invar: 
 "realising_edges_invar realising_edges" 
@@ -1764,10 +1739,9 @@ next
     moreover have "cf \<noteq>MInfty" 
       using ef_cf_prop(1) by(auto simp add: edges_and_costs_def) 
     ultimately show ?case
-      apply auto
       using find_cheapest_backward_props[OF prod.collapse refl, of f nb outgoing_edges
                   "create_edge (sndv e) (fstv e)" PInfty]
-      by (auto simp add: cb_def)
+      by auto (auto simp add: cb_def)
   next
     case (2 ee)
     define edges_and_costs where "edges_and_costs =
@@ -1795,10 +1769,9 @@ next
    moreover have "cb \<noteq>MInfty" 
       using ef_cf_prop(1) by(auto simp add: edges_and_costs_def)
     ultimately show ?case
-      apply auto
       using find_cheapest_forward_props[OF prod.collapse refl, of f nb ingoing_edges
                   "create_edge (fstv e) (sndv e)" PInfty]
-      by(auto simp add: cf_def) 
+      by auto (auto simp add: cf_def) 
   qed
 qed
 
@@ -1863,10 +1836,9 @@ next
       moreover have "cf \<noteq>MInfty" 
       using ef_cf_prop(1) by(auto simp add: edges_and_costs_def) 
     ultimately show ?case
-      apply auto
       using find_cheapest_backward_props[OF prod.collapse refl, of f nb outgoing_edges
                   "create_edge (sndv e) (fstv e)" PInfty]
-      by (auto simp add: cb_def)
+      by auto (auto simp add: cb_def)
   next
     case (2 ee)
     define edges_and_costs where "edges_and_costs =
@@ -1894,10 +1866,9 @@ next
    moreover have "cb \<noteq>MInfty" 
       using ef_cf_prop(1) by(auto simp add: edges_and_costs_def)
     ultimately show ?case
-      apply auto
       using find_cheapest_forward_props[OF prod.collapse refl, of f nb ingoing_edges
                   "create_edge (fstv e) (sndv e)" PInfty]
-      by(auto simp add: cf_def) 
+      by auto (auto simp add: cf_def) 
   qed
 qed
 
@@ -1980,38 +1951,33 @@ definition "get_source_target_path_b state s t=
           P) 
   else [])"
 
-abbreviation "loopB_call1_cond state \<equiv> loopB.loopB_call1_cond make_pair   \<u>  \<E>   \<epsilon>  get_source_target_path_b 
-  get_source get_target  get_source_for_target get_target_for_source
-  get_source_target_path_a state"
+interpretation loopB: 
+ loopB snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete vset_insert vset_inv isin get_from_set filter
+    are_all set_invar to_set lookup' t_set sel adjmap_inv' \<b> to_pair \<epsilon> \<E>_impl all_empty N 
+    default_conv_to_rdg get_source_target_path_b  get_source  get_target get_source_for_target  get_target_for_source
+    fst get_source_target_path_a edge_map_update'
+  using  algo 
+  by(auto intro!: loopB.intro  loopB_spec.intro Adj_Map_Specs2 Set3_axioms algo_spec.intro)
 
-abbreviation "loopB_fail1_cond  state \<equiv>
-loopB.loopB_fail1_cond make_pair \<u> \<E> \<epsilon> get_source_target_path_b get_source get_target
- get_source_for_target get_target_for_source get_source_target_path_a state"
+lemmas loopB = loopB.loopB_axioms
 
-abbreviation "loopB_call2_cond state \<equiv> loopB.loopB_call2_cond make_pair \<u> \<E> \<epsilon> get_source_target_path_b get_source get_target
- get_source_for_target get_target_for_source get_source_target_path_a  state"
+abbreviation "loopB_call1_cond state \<equiv> loopB.loopB_call1_cond  state"
 
-abbreviation "loopB_fail2_cond  state \<equiv>
-loopB.loopB_fail2_cond make_pair \<u> \<E> \<epsilon>  get_source_target_path_b get_source get_target
- get_source_for_target get_target_for_source get_source_target_path_a  state"
+abbreviation "loopB_fail1_cond  state \<equiv> loopB.loopB_fail1_cond  state"
 
-thm loopB.loopB_fail1_cond_def[OF loopB]
+abbreviation "loopB_call2_cond state \<equiv> loopB.loopB_call2_cond  state"
 
-lemmas loopB_fail1_condE = loopB.loopB_fail1_condE[OF loopB, of  get_source_target_path_b get_source get_target
- get_source_for_target get_target_for_source get_source_target_path_a]
-lemmas loopB_call1_condE = loopB.loopB_call1_condE[OF loopB, of  get_source_target_path_b get_source get_target
- get_source_for_target get_target_for_source get_source_target_path_a]
-lemmas loopB_fail1_cond_def = loopB.loopB_fail1_cond_def[OF loopB, of get_source_target_path_b get_source get_target
- get_source_for_target get_target_for_source get_source_target_path_a]
-lemmas loopB_call1_cond_def= loopB.loopB_call1_cond_def[OF loopB]
+abbreviation "loopB_fail2_cond  state \<equiv> loopB.loopB_fail2_cond  state"
 
-lemmas loopB_fail2_condE = loopB.loopB_fail2_condE[OF loopB, of  get_source_target_path_b get_source get_target
- get_source_for_target get_target_for_source get_source_target_path_a]
-lemmas loopB_call2_condE = loopB.loopB_call2_condE[OF loopB, of  get_source_target_path_b get_source get_target
- get_source_for_target get_target_for_source get_source_target_path_a]
-lemmas loopB_fail2_cond_def = loopB.loopB_fail2_cond_def[OF loopB, of get_source_target_path_b get_source get_target
- get_source_for_target get_target_for_source get_source_target_path_a]
-lemmas loopB_call2_cond_def= loopB.loopB_call2_cond_def[OF loopB]
+lemmas loopB_fail1_condE = loopB.loopB_fail1_condE
+lemmas loopB_call1_condE = loopB.loopB_call1_condE
+lemmas loopB_fail1_cond_def = loopB.loopB_fail1_cond_def
+lemmas loopB_call1_cond_def= loopB.loopB_call1_cond_def
+
+lemmas loopB_fail2_condE = loopB.loopB_fail2_condE
+lemmas loopB_call2_condE = loopB.loopB_call2_condE
+lemmas loopB_fail2_cond_def = loopB.loopB_fail2_cond_def
+lemmas loopB_call2_cond_def= loopB.loopB_call2_cond_def
 
 lemmas invar_gamma_def = algo.invar_gamma_def
 lemmas invar_isOptflow_def = algo.invar_isOptflow_def
@@ -2181,25 +2147,34 @@ proof(rule nexistsI, goal_cases)
     using path_bf_flow_network_path[OF _ length_c weight_le_PInfty refl] by auto
   define cc where "cc = (map (\<lambda>e. prod.fst (get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e) (prod.snd e)))
                        (edges_of_vwalk c))"
-  have same_edges:"(map cost_flow_network.to_vertex_pair cc) = (edges_of_vwalk c)"
-    unfolding cc_def  Let_def apply auto
+  have "map (to_edge \<circ> (\<lambda>e. prod.fst (local.get_edge_and_costs_forward (not_blocked state)
+                     (current_flow state) (prod.fst e) (prod.snd e)))) (edges_of_vwalk c) =
+          edges_of_vwalk c"
     apply(subst (2) sym[OF List.list.map_id[of "edges_of_vwalk c"]])
     apply(rule map_ext)
     using cost_flow_network.to_vertex_pair.simps cost_flow_network.\<cc>.simps 
     by(auto intro:  map_ext simp add: to_edge_get_edge_and_costs_forward) 
+  hence same_edges:"(map cost_flow_network.to_vertex_pair cc) = (edges_of_vwalk c)"
+    by(auto simp add: cc_def )
   have c_non_empt:"cc \<noteq> []"
     using path_with_props(1)  "1"(1) awalk_fst_last bellman_ford.weight.simps[OF bellman_ford] 
            cost_flow_network.vs_to_vertex_pair_pres 
     by (auto intro:  edges_of_vwalk.elims [OF sym[OF same_edges]])
   moreover have awalk_f:" awalk UNIV (fstv (hd cc)) (map cost_flow_network.to_vertex_pair cc) (sndv (last cc))"
+  proof-
+    have helper: "\<lbrakk> c = v # v' # l; cc = z # zs; to_edge z = (v, v'); map to_edge zs = edges_of_vwalk (v' # l);
+                    awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (if l = [] then v' else last l);zs \<noteq> []\<rbrakk>
+        \<Longrightarrow> awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (prod.snd (to_edge (last zs)))"
+      for v v' l z zs 
+      by(metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+      show ?thesis
     apply(rule edges_of_vwalk.elims [OF sym[OF same_edges]])
     using path_with_props(1) same_edges 
     using "1"(1) awalk_fst_last bellman_ford.weight.simps[OF bellman_ford] 
            cost_flow_network.vs_to_vertex_pair_pres apply auto[2]
     using calculation  path_with_props(1) same_edges 
-    apply (auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
-                        arc_implies_awalk[OF UNIV_I refl]) 
-    by (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+    by(auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) intro: helper)
+   qed
   ultimately have "cost_flow_network.prepath cc"
     using prepath_def by blast
   moreover have "0 < cost_flow_network.Rcap (current_flow state) (set cc)"
@@ -2413,9 +2388,9 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
     using Pbf_props(1) same_edges length_Pbf  "1"(1) awalk_fst_last bellman_ford.weight.simps[OF bellman_ford] 
            cost_flow_network.vs_to_vertex_pair_pres apply auto[2]
     using calculation  Pbf_props(1) same_edges 
-    apply (auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
+    by(auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
                         arc_implies_awalk[OF UNIV_I refl]) 
-    by (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+      (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
   moreover have "P \<noteq> []"
     using  edges_of_vwalk.simps(3) length_Pbf same_edges
     by(cases Pbf rule: list_cases3) auto
@@ -2480,7 +2455,7 @@ next
   have "\<exists> t.
         t \<in> VV \<and> balance state t < (- \<epsilon>) * current_\<gamma> state \<and> resreach (current_flow state) s t"
     using 2(6)
-    unfolding loopB.loopB_call1_cond_def[OF loopB] 2(1-4) Let_def
+    unfolding 2(1-4) Let_def LoopB.loopB.loopB_call1_cond_def[OF loopB] 
     by metis
   moreover have "t = (SOME t. t \<in> VV \<and> balance state t < - \<epsilon> * current_\<gamma> state \<and>
              resreach (current_flow state) s t)"
@@ -2492,71 +2467,114 @@ qed
 
 lemma bf_weight_leq_res_costs:
 assumes "set (map oedge qq) \<subseteq> set \<E>_list"
-    " \<And> e. e \<in> set qq \<Longrightarrow> not_blocked state (flow_network.oedge e)"
-    "\<And> e. e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap (current_flow state) e"
-    "unconstrained_awalk (map cost_flow_network.to_vertex_pair qq)"
+        " \<And> e. e \<in> set qq \<Longrightarrow> not_blocked state (flow_network.oedge e)"
+        "\<And> e. e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap (current_flow state) e"
+        "unconstrained_awalk (map cost_flow_network.to_vertex_pair qq)"
    and  qq_len: "length qq \<ge> 1"
 shows "weight (not_blocked state) (current_flow state) (awalk_verts s (map cost_flow_network.to_vertex_pair qq))
  \<le> foldr (\<lambda>x. (+) (\<cc> x)) qq 0" 
   using assms
- apply(induction qq rule: list_induct2_len_geq_1)
-    subgoal
-      using qq_len by blast
-    subgoal for e
+proof(induction qq rule: list_induct2_len_geq_1)
+  case 1
+  then show ?case 
+    using qq_len by blast
+next
+  case (2 e)
+  then show ?case
       by(induction e rule: cost_flow_network.to_vertex_pair.induct) 
         (fastforce intro!: conjunct1[OF get_edge_and_costs_forward_makes_cheaper[OF 
                                   refl, of _ "not_blocked state" "current_flow state"]] 
                      intro: surjective_pairing prod.collapse
            simp add: \<E>_def \<E>_impl(1) \<E>_list_def to_list(1) make_pair_fst_snd
            simp del: cost_flow_network.\<cc>.simps)+
-    subgoal for e d xs
-      apply(induction e rule: cost_flow_network.to_vertex_pair.induct) 
-      apply(all \<open>induction d rule: cost_flow_network.to_vertex_pair.induct\<close>) 
-      apply (auto simp add: make_pair_fst_snd simp del: cost_flow_network.\<cc>.simps)
-      subgoal for e d
-       apply(subst ereal_add_homo[of _ "_ + _ "])
-       using  unconstrained_awalk_drop_hd[of "(fst d, snd d)"]  
-       by(fastforce intro!:  ordered_ab_semigroup_add_class.add_mono conjunct1[OF get_edge_and_costs_forward_makes_cheaper[OF 
+  next
+    case (3 e d xs)
+    have help1: 
+      "\<lbrakk>(unconstrained_awalk ((fst ee, snd ee) # map to_edge xs) \<Longrightarrow>
+        weight (not_blocked state) (current_flow state) (fst ee  # awalk_verts (snd ee) (map to_edge xs))
+                   \<le> ereal (\<cc> (F ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0)) ;
+        (\<And>e. e = F dd \<or> e = F ee \<or> e \<in> set xs \<Longrightarrow>  not_blocked state (oedge e)) ;
+        (\<And>e. e = F dd \<or> e = F ee \<or> e \<in> set xs \<Longrightarrow>  0 < rcap (current_flow state) e) ;
+        unconstrained_awalk ((fst dd, snd dd) # (fst ee, snd ee) # map to_edge xs) ;
+        dd \<in> set \<E>_list ; ee \<in> set \<E>_list ; oedge ` set xs \<subseteq> set \<E>_list\<rbrakk> \<Longrightarrow>
+       prod.snd (get_edge_and_costs_forward (not_blocked state) (current_flow state) (fst dd) (fst ee)) +
+       weight (not_blocked state) (current_flow state) (fst ee # awalk_verts (snd ee) (map to_edge xs))
+       \<le> ereal (\<cc> (F dd) + (\<cc> (F ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0))"for ee dd
+    using  unconstrained_awalk_drop_hd[of "(fst dd, snd dd)"]  
+    by(subst ereal_add_homo[of _ "_ + _ "])
+      (fastforce intro!:  ordered_ab_semigroup_add_class.add_mono conjunct1[OF get_edge_and_costs_forward_makes_cheaper[OF 
                                   refl, of _ "not_blocked state" "current_flow state"]]
                       intro:       trans[OF prod.collapse] 
-                               cong[OF refl unconstrained_awalk_snd_verts_eq[of "fst d" "snd d"
-                                       "fst e" "snd e", symmetric]]
+                               cong[OF refl unconstrained_awalk_snd_verts_eq[of "fst dd" "snd dd"
+                                       "fst ee" "snd ee", symmetric]]
                        simp add: \<E>_def \<E>_impl(1) \<E>_list_def to_list(1))
-      subgoal for e d
-       apply(subst ereal_add_homo[of _ "_ + _ "])
-       using  unconstrained_awalk_drop_hd[of "(fst d, snd d)"] 
-       by(fastforce intro!:  ordered_ab_semigroup_add_class.add_mono conjunct1[OF get_edge_and_costs_forward_makes_cheaper[OF 
+   have help2: 
+    "\<lbrakk> (unconstrained_awalk ((snd ee, fst ee) # map to_edge xs) \<Longrightarrow>
+        weight (not_blocked state) (current_flow state) (snd ee #  awalk_verts (fst ee) (map to_edge xs))
+        \<le> ereal (\<cc> (B ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0)) ;
+        (\<And>e. e = F dd \<or> e = B ee \<or> e \<in> set xs \<Longrightarrow>  not_blocked state (oedge e)) ;
+        (\<And>e. e = F dd \<or> e = B ee \<or> e \<in> set xs \<Longrightarrow>0 < rcap (current_flow state) e) ;
+        unconstrained_awalk ((fst dd, snd dd) # (snd ee, fst ee) # map to_edge xs) ;
+        dd \<in> set \<E>_list ; ee \<in> set \<E>_list; oedge ` set xs \<subseteq> set \<E>_list \<rbrakk> \<Longrightarrow>
+     prod.snd (get_edge_and_costs_forward (not_blocked state) (current_flow state) (fst dd) (snd ee)) +
+     weight (not_blocked state) (current_flow state) (snd ee # awalk_verts (fst ee) (map to_edge xs))
+     \<le> ereal (\<cc> (F dd) + (\<cc> (B ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0))"for ee dd
+    using  unconstrained_awalk_drop_hd[of "(fst dd, snd dd)"] 
+    by(subst ereal_add_homo[of _ "_ + _ "])
+         (fastforce intro!:  ordered_ab_semigroup_add_class.add_mono conjunct1[OF get_edge_and_costs_forward_makes_cheaper[OF 
                                   refl, of _ "not_blocked state" "current_flow state"]]
                       intro:       trans[OF prod.collapse] 
-                               cong[OF refl unconstrained_awalk_snd_verts_eq[of "fst d" "snd d"
-                                       "snd e" "fst e", symmetric]]
-                       simp add: \<E>_def \<E>_impl(1) \<E>_list_def to_list(1))+
-      subgoal for e d
-       apply(subst ereal_add_homo[of _ "_ + _ "])
-       using unconstrained_awalk_drop_hd[of "(snd d, fst d)"] 
-       by(fastforce intro!:  ordered_ab_semigroup_add_class.add_mono conjunct1[OF get_edge_and_costs_forward_makes_cheaper[OF 
+                               cong[OF refl unconstrained_awalk_snd_verts_eq[of "fst dd" "snd dd"
+                                       "snd ee" "fst ee", symmetric]]
+                       simp add: \<E>_def \<E>_impl(1) \<E>_list_def to_list(1))
+    have help3: 
+    "\<lbrakk>(unconstrained_awalk ((fst ee, snd ee) # map to_edge xs) \<Longrightarrow>
+       weight (not_blocked state) (current_flow state) (fst ee # awalk_verts (snd ee) (map to_edge xs))
+        \<le> ereal (\<cc> (F ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0));
+       (\<And>e. e = B dd \<or> e = F ee \<or> e \<in> set xs \<Longrightarrow> not_blocked state (oedge e));
+       (\<And>e. e = B dd \<or> e = F ee \<or> e \<in> set xs \<Longrightarrow> 0 < rcap (current_flow state) e) ;
+       unconstrained_awalk ((snd dd, fst dd) # (fst ee, snd ee) # map to_edge xs);
+       dd \<in> set \<E>_list; ee \<in> set \<E>_list; oedge ` set xs \<subseteq> set \<E>_list\<rbrakk> \<Longrightarrow>
+      prod.snd (get_edge_and_costs_forward (not_blocked state) (current_flow state) (snd dd) (fst ee)) +
+      weight (not_blocked state) (current_flow state) (fst ee # awalk_verts (snd ee) (map to_edge xs))
+      \<le> ereal (\<cc> (B dd) + (\<cc> (F ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0))"
+    for dd ee
+       using unconstrained_awalk_drop_hd[of "(snd dd, fst dd)"] 
+       by(subst ereal_add_homo[of _ "_ + _ "])
+         (fastforce intro!:  ordered_ab_semigroup_add_class.add_mono conjunct1[OF get_edge_and_costs_forward_makes_cheaper[OF 
                                   refl, of _ "not_blocked state" "current_flow state"]]
                       intro:       trans[OF prod.collapse] 
-                               cong[OF refl unconstrained_awalk_snd_verts_eq[of "snd d" "fst d"
-                                       "fst e" "snd e", symmetric]]
-                       simp add: \<E>_def \<E>_impl(1) \<E>_list_def to_list(1))+
-      subgoal for e d
-       apply(subst ereal_add_homo[of _ "_ + _ "])
-       using  unconstrained_awalk_drop_hd[of "(snd d, fst d)"] 
-       by(fastforce intro!:  ordered_ab_semigroup_add_class.add_mono conjunct1[OF get_edge_and_costs_forward_makes_cheaper[OF 
+                               cong[OF refl unconstrained_awalk_snd_verts_eq[of "snd dd" "fst dd"
+                                       "fst ee" "snd ee", symmetric]]
+                       simp add: \<E>_def \<E>_impl(1) \<E>_list_def to_list(1))
+     have help4: 
+       "\<lbrakk>(unconstrained_awalk ((snd ee, fst ee) # map to_edge xs) \<Longrightarrow>
+           weight (not_blocked state) (current_flow state) (snd ee # awalk_verts (fst ee) (map to_edge xs))
+           \<le> ereal (\<cc> (B ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0));
+          (\<And>e. e = B dd \<or> e = B ee \<or> e \<in> set xs \<Longrightarrow> not_blocked state (oedge e));
+          (\<And>e. e = cost_flow_network.B dd \<or> e = cost_flow_network.B ee \<or> e \<in> set xs \<Longrightarrow> 0 < rcap (current_flow state) e);
+           unconstrained_awalk ((snd dd, fst dd) # (snd ee, fst ee) # map to_edge xs);
+           dd \<in> set \<E>_list ;  ee \<in> set \<E>_list ; oedge ` set xs \<subseteq> set \<E>_list \<rbrakk> \<Longrightarrow>
+        prod.snd (local.get_edge_and_costs_forward (not_blocked state) (current_flow state) (snd dd) (snd ee)) +
+        weight (not_blocked state) (current_flow state) (snd ee # awalk_verts (fst ee) (map to_edge xs))
+         \<le> ereal (\<cc> (B dd) + (\<cc> (B ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0))" for ee dd
+       using  unconstrained_awalk_drop_hd[of "(snd dd, fst dd)"] 
+       by(subst ereal_add_homo[of _ "_ + _ "])
+         (fastforce intro!:  ordered_ab_semigroup_add_class.add_mono conjunct1[OF get_edge_and_costs_forward_makes_cheaper[OF 
                                   refl, of _ "not_blocked state" "current_flow state"]]
                       intro:       trans[OF prod.collapse] 
-                               cong[OF refl unconstrained_awalk_snd_verts_eq[of "snd d" "fst d"
-                                       "snd e" "fst e", symmetric]]
+                               cong[OF refl unconstrained_awalk_snd_verts_eq[of "snd dd" "fst dd"
+                                       "snd ee" "fst ee", symmetric]]
                        simp add: \<E>_def \<E>_impl(1) \<E>_list_def to_list(1))+
-     done
-   done
+    show ?case
+      using 3
+      by(induction e rule: cost_flow_network.to_vertex_pair.induct, 
+         all \<open>induction d rule: cost_flow_network.to_vertex_pair.induct\<close>) 
+        (auto simp add: make_pair_fst_snd simp del: cost_flow_network.\<cc>.simps 
+              intro: help1 help2 help3 help4)
+  qed
 
-abbreviation "get_source_target_path_a_cond \<equiv>
-     loopB.get_source_target_path_a_cond snd make_pair \<u> \<E>
- vset_inv isin set_invar to_set lookup'
-           adjmap_inv' to_pair \<epsilon> get_source_target_path_b get_source
-           get_target get_source_for_target get_target_for_source fst get_source_target_path_a"
+abbreviation "get_source_target_path_a_cond \<equiv> loopB.get_source_target_path_a_cond"
 
 lemma get_source_target_path_a_ax:
   assumes "get_source_target_path_a_cond  state s t P b \<gamma> f"
@@ -2565,8 +2583,8 @@ lemma get_source_target_path_a_ax:
          cost_flow_network.oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<and>
          distinct P"
   apply(insert assms)
-  unfolding  loopB.get_source_target_path_a_cond_def[OF loopB]
-             get_source_target_path_a_def loopB.loopB_call1_cond_def[OF loopB]
+  unfolding  loopB.get_source_target_path_a_cond_def
+             get_source_target_path_a_def loopB.loopB_call1_cond_def
 proof(cases "invar_isOptflow state", goal_cases)
   case 1
   define bf where  "bf = bellman_ford_forward (not_blocked state) (current_flow state) s"
@@ -2590,16 +2608,16 @@ proof(cases "invar_isOptflow state", goal_cases)
     "\<exists>s\<in>VV. (1 - \<epsilon>) * \<gamma> < b s"
     "\<exists>t\<in>VV. b t < - \<epsilon> * \<gamma> \<and> resreach f s t"
                   "t = tt"  "P = PP"
-    using 1 apply(auto simp add: bf_def tt_def Pbf_def PP_def split: if_split)
-    apply meson+ 
-     apply (metis (no_types, lifting) mult_minus_left)
-    using "1"(1) unfolding get_target_for_source_def by presburger+
+    using 1 
+    by(auto simp add: bf_def tt_def Pbf_def PP_def  split: if_split)
+      (meson+, metis (no_types, lifting) mult_minus_left,
+       insert "1"(1), unfold get_target_for_source_def, presburger+)
   hence 
     "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)).
         0 < current_flow state (flow_network.oedge e))"
     by auto
   have  loopB_call1_cond: " loopB_call1_cond state"
-    using  1 unfolding loopB.loopB_call1_cond_def[OF loopB] by presburger
+    using  1 unfolding loopB.loopB_call1_cond_def by presburger
   have t_prop: "b t < - \<epsilon> * \<gamma>" "resreach f s t" 
     using get_target_for_source_ax[OF knowledge (8,9,12,10,11) loopB_call1_cond knowledge(13)]
     by auto
@@ -2751,21 +2769,25 @@ proof(cases "invar_isOptflow state", goal_cases)
            (edges_of_vwalk Pbf)) \<Longrightarrow>
     not_blocked state (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
     by auto
-  have same_edges:"(map cost_flow_network.to_vertex_pair PP) = (edges_of_vwalk Pbf)"
-    unfolding PP_def apply auto
+  have "map (to_edge \<circ>
+         (\<lambda>e. prod.fst (local.get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e)
+                     (prod.snd e)))) (edges_of_vwalk Pbf) =
+    edges_of_vwalk Pbf"
     apply(subst (2) sym[OF List.list.map_id[of "edges_of_vwalk Pbf"]])
     apply(rule map_ext)
     using cost_flow_network.to_vertex_pair.simps cost_flow_network.\<cc>.simps 
     by(auto intro:  map_ext simp add: to_edge_get_edge_and_costs_forward)
+  hence same_edges:"(map cost_flow_network.to_vertex_pair PP) = (edges_of_vwalk Pbf)"
+    by(auto simp add: PP_def)
   moreover have awalk_f:" awalk UNIV (fstv (hd PP)) (map cost_flow_network.to_vertex_pair PP) 
 (sndv (last PP))"
     apply(rule edges_of_vwalk.elims [OF sym[OF same_edges]])
     using Pbf_props(1) same_edges length_Pbf  "1"(1) awalk_fst_last bellman_ford.weight.simps[OF bellman_ford] 
            cost_flow_network.vs_to_vertex_pair_pres apply auto[2]
     using calculation  Pbf_props(1) same_edges 
-    apply (auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
+    by(auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
                         arc_implies_awalk[OF UNIV_I refl]) 
-    by (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+    (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
   moreover have "PP \<noteq> []"
     using  edges_of_vwalk.simps(3) length_Pbf same_edges
     by(cases Pbf rule: list_cases3) auto
@@ -2842,8 +2864,6 @@ next
   thus ?case
     by(auto simp add: cost_flow_network.Rcap_def)
 qed 
-
-thm path_flow_network_path_bf
 
 lemma path_flow_network_path_bf_backward:
   assumes e_weight:"\<And> e. e \<in> set pp \<Longrightarrow> prod.snd (get_edge_and_costs_backward nb f (fstv e) (sndv e)) < PInfty"
@@ -3014,9 +3034,9 @@ proof(rule nexistsI, goal_cases)
     using "1"(1) awalk_fst_last bellman_ford.weight.simps[OF bellman_ford] 
            apply auto[2]
     using calculation  path_with_props(1) same_edges 
-    apply (auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
+    by (auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
                         arc_implies_awalk[OF UNIV_I refl]) 
-    by (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+       (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
   ultimately have "cost_flow_network.prepath cc"
     using prepath_def by blast
   moreover have "0 < cost_flow_network.Rcap (current_flow state) (set cc)"
@@ -3245,9 +3265,9 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
     using Pbf_props(1) same_edges length_Pbf  "1"(1) awalk_fst_last bellman_ford.weight.simps[OF bellman_ford] 
            cost_flow_network.vs_to_vertex_pair_pres apply auto[2]
     using calculation  Pbf_props(1) same_edges 
-    apply (auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
+    by(auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
                         arc_implies_awalk[OF UNIV_I refl]) 
-    by (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+       (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
   moreover have "P \<noteq> []"
     using  edges_of_vwalk.simps(3) length_Pbf same_edges
     by(cases Pbf rule: list_cases3) auto
@@ -3316,7 +3336,7 @@ next
   have "\<exists> s.
         s \<in> VV \<and> balance state s > \<epsilon> * current_\<gamma> state \<and> resreach (current_flow state) s t"
     using 2(6)
-    unfolding loopB.loopB_call2_cond_def[OF loopB] 2(1-4) Let_def
+    unfolding LoopB.loopB.loopB_call2_cond_def[OF loopB] 2(1-4) Let_def
     by metis
   moreover have "s = (SOME s. s \<in> VV \<and> balance state s > \<epsilon> * current_\<gamma> state \<and>
              resreach (current_flow state) s t)"
@@ -3325,8 +3345,6 @@ next
     using 2(1-4)
     by(auto intro!: someI_ex)
 qed
-
-thm bf_weight_leq_res_costs
 
 lemma bf_weight_backward_leq_res_costs:
 assumes "set (map cost_flow_network.oedge qq) \<subseteq> \<E>"
@@ -3354,47 +3372,96 @@ next
            simp del: cost_flow_network.\<cc>.simps)+
  next
    case (3 e d ds)
-   show ?case
- using 3
-      apply(induction e rule: cost_flow_network.to_vertex_pair.induct) 
-      apply(all \<open>induction d rule: cost_flow_network.to_vertex_pair.induct\<close>) 
-        apply (auto simp add: make_pair_fst_snd rev_map awalk_verts_append_last[of _ "_@[_]" 
-                                     "_ _" "_ _", simplified] 
-                              sym[OF bellman_ford.costs_last[OF bellman_ford_backward]])
-      subgoal for ee dd
-        apply(subst ereal_add_homo[of _ "_ + _ "])
-        apply(subst add.commute)
-        using unconstrained_awalk_snd_verts_eq  unconstrained_awalk_drop_hd[of "(fst _, snd _)" "(fst _, snd _)#map to_edge _"]
-        by(fastforce intro!: add_mono[OF conjunct1[OF get_edge_and_costs_backward_makes_cheaper[OF 
+   have help1: 
+  "weight_backward (not_blocked state) (current_flow state)
+     (butlast (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(snd ee, fst ee)])) @ [snd dd]) +
+    prod.snd (local.get_edge_and_costs_backward (not_blocked state) (current_flow state) (snd dd) (fst dd))
+    \<le> ereal (local.\<c> dd + (local.\<c> ee + foldr (\<lambda>x. (+) (\<cc> x)) ds 0))" 
+  if assms:"(\<And>s. unconstrained_awalk ((fst ee, snd ee) # map to_edge ds) \<Longrightarrow>
+          weight_backward (not_blocked state) (current_flow state)
+           (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(snd ee, fst ee)]))
+          \<le> ereal (local.\<c> ee + foldr (\<lambda>x. (+) (\<cc> x)) ds 0))"
+    "(\<And>e. e = cost_flow_network.F dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+          not_blocked state (oedge e))"
+    "(\<And>e. e = cost_flow_network.F dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+          0 < rcap (current_flow state) e)"
+    "unconstrained_awalk ((fst dd, snd dd) # (fst ee, snd ee) # map to_edge ds)"
+    "dd \<in> local.\<E> " "ee \<in> local.\<E> " "oedge ` set ds \<subseteq> local.\<E>"
+   for ee dd
+     using assms unconstrained_awalk_snd_verts_eq  unconstrained_awalk_drop_hd[of "(fst _, snd _)" "(fst _, snd _)#map to_edge _"]
+        by(subst ereal_add_homo[of _ "_ + _ "], subst add.commute) 
+          (fastforce intro!: add_mono[OF conjunct1[OF get_edge_and_costs_backward_makes_cheaper[OF 
                                   refl, of _ "not_blocked state" "current_flow state", of "F _", simplified]]] prod.collapse simp add: awalk_verts_append_last')
-       subgoal for ee dd
-        apply(subst ereal_add_homo[of _ "_ _ _ "])
-        apply(subst add.commute)
+      have help2: "weight_backward (not_blocked state) (current_flow state)
+     (butlast (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(fst ee, snd ee)])) @ [snd dd]) +
+    prod.snd (local.get_edge_and_costs_backward (not_blocked state) (current_flow state) (snd dd) (fst dd))
+    \<le> ereal (local.\<c> dd + (foldr (\<lambda>x. (+) (\<cc> x)) ds 0 - local.\<c> ee))"
+        if assms: "(\<And>s. unconstrained_awalk ((snd ee, fst ee) # map to_edge ds) \<Longrightarrow>
+          weight_backward (not_blocked state) (current_flow state)
+           (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(fst ee, snd ee)]))
+          \<le> ereal (foldr (\<lambda>x. (+) (\<cc> x)) ds 0 - local.\<c> ee))"
+         "(\<And>e. e = F dd \<or> e = B ee \<or> e \<in> set ds \<Longrightarrow> not_blocked state (oedge e))"
+         "(\<And>e. e = F dd \<or> e = B ee \<or> e \<in> set ds \<Longrightarrow> 0 < rcap (current_flow state) e)"
+         " unconstrained_awalk ((fst dd, snd dd) # (snd ee, fst ee) # map to_edge ds)"
+         "dd \<in> local.\<E>" "ee \<in> local.\<E>"
+         "oedge ` set ds \<subseteq> local.\<E>" for dd ee
+        using assms
         using unconstrained_awalk_snd_verts_eq  unconstrained_awalk_drop_hd[of "(fst _, snd _)" "(snd _, fst _)#map to_edge _"]
-        by(fastforce intro!: add_mono[OF conjunct1[OF get_edge_and_costs_backward_makes_cheaper[OF 
+        by(subst ereal_add_homo[of _ "_ _ _ "], subst add.commute)
+          (fastforce intro!: add_mono[OF conjunct1[OF get_edge_and_costs_backward_makes_cheaper[OF 
                                   refl, of _ "not_blocked state" "current_flow state", of "F _", simplified]]] prod.collapse simp add: awalk_verts_append_last')
-      subgoal for ee dd
+      have help3: "   weight_backward (not_blocked state) (current_flow state)
+     (butlast (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(snd ee, fst ee)])) @ [fst dd]) +
+    prod.snd (local.get_edge_and_costs_backward (not_blocked state) (current_flow state) (fst dd) (snd dd))
+    \<le> ereal (local.\<c> ee + foldr (\<lambda>x. (+) (\<cc> x)) ds 0 - local.\<c> dd)"
+        if assms: "(\<And>s. unconstrained_awalk ((fst ee, snd ee) # map to_edge ds) \<Longrightarrow>
+          weight_backward (not_blocked state) (current_flow state)
+           (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(snd ee, fst ee)]))
+          \<le> ereal (local.\<c> ee + foldr (\<lambda>x. (+) (\<cc> x)) ds 0))"
+          "(\<And>e. e = cost_flow_network.B dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+          not_blocked state (oedge e))"
+          "(\<And>e. e = cost_flow_network.B dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+          0 < rcap (current_flow state) e)"
+          "unconstrained_awalk ((snd dd, fst dd) # (fst ee, snd ee) # map to_edge ds)"
+          "dd \<in> local.\<E>" "ee \<in> local.\<E> " "oedge ` set ds \<subseteq> local.\<E>" for ee dd
         apply(rule forw_subst[of _ "ereal ((- \<c> dd) + (\<c> ee + (foldr (\<lambda>x. (+) (\<cc> x)) ds 0 )))"], simp)
-        apply(subst ereal_add_homo[of "_" "(_ + _)"], subst add.commute)
         using unconstrained_awalk_snd_verts_eq[of "snd _" "fst dd" "fst ee" "snd ee"]
         using unconstrained_awalk_drop_hd[of "(snd _, fst _)" "(fst _, snd _)#map to_edge _"] 
-        using awalk_verts_append_last'[of _ _"snd _" "fst ee"]
+        using awalk_verts_append_last'[of _ _"snd _" "fst ee"] assms
         using unconstrained_awalk_drop_hd[of "(snd _, fst _)" "(fst _, snd _)#map to_edge _"] 
-        by (fastforce intro: prod.collapse
+        by (subst ereal_add_homo[of "_" "(_ + _)"], subst add.commute)
+           (fastforce intro: prod.collapse
                       intro!: add_mono[OF conjunct1[OF get_edge_and_costs_backward_makes_cheaper[OF 
                                   refl, of _ "not_blocked state" "current_flow state", of "B _", simplified]]])
-      subgoal for ee dd
+      have help4: "  weight_backward (not_blocked state) (current_flow state)
+           (butlast (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(fst ee, snd ee)])) @ [fst dd]) +
+          prod.snd (local.get_edge_and_costs_backward (not_blocked state) (current_flow state) (fst dd) (snd dd))
+         \<le> ereal (foldr (\<lambda>x. (+) (\<cc> x)) ds 0 - local.\<c> ee - local.\<c> dd)" if assms:
+         "(\<And>s. unconstrained_awalk ((snd ee, fst ee) # map to_edge ds) \<Longrightarrow>
+          weight_backward (not_blocked state) (current_flow state)
+           (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(fst ee, snd ee)]))
+          \<le> ereal (foldr (\<lambda>x. (+) (\<cc> x)) ds 0 - local.\<c> ee))"
+         "(\<And>e. e = B dd \<or> e = B ee \<or> e \<in> set ds \<Longrightarrow> not_blocked state (oedge e)) "
+         " (\<And>e. e = B dd \<or> e = B ee \<or> e \<in> set ds \<Longrightarrow> 0 < rcap (current_flow state) e)"
+         "unconstrained_awalk ((snd dd, fst dd) # (snd ee, fst ee) # map to_edge ds)"
+          "dd \<in> local.\<E> ""ee \<in> local.\<E> "  "oedge ` set ds \<subseteq> local.\<E> " for dd ee
         apply(rule forw_subst[of _ "ereal ((- \<c> dd) + (- \<c> ee + (foldr (\<lambda>x. (+) (\<cc> x)) ds 0 )))"], simp)
-        apply(subst ereal_add_homo[of "_" "(_ + _)"], subst add.commute)
         using unconstrained_awalk_snd_verts_eq[of "snd dd" "fst dd" "snd ee" "fst ee"]
         using unconstrained_awalk_drop_hd[of "(snd dd, fst dd)" "(snd ee, fst ee)#map to_edge _"] 
-        using awalk_verts_append_last'[of _ _"fst _" "snd ee"]
+        using awalk_verts_append_last'[of _ _"fst _" "snd ee"] assms
         using unconstrained_awalk_drop_hd[of "(snd _, fst _)" "(snd _, fst _)#map to_edge _"] 
-        by (fastforce intro: prod.collapse
+        by (subst ereal_add_homo[of "_" "(_ + _)"], subst add.commute)
+           (fastforce intro: prod.collapse
                       intro!: add_mono[OF conjunct1[OF get_edge_and_costs_backward_makes_cheaper[OF 
-                                  refl, of _ "not_blocked state" "current_flow state", of "B _", simplified]]])
-      done
-  qed
+                                  refl, of _ "not_blocked state" "current_flow state", of "B _", simplified]]]) 
+   show ?case
+ using 3
+  by(induction e rule: cost_flow_network.to_vertex_pair.induct, 
+    all \<open>induction d rule: cost_flow_network.to_vertex_pair.induct\<close>) 
+    (auto simp add: make_pair_fst_snd rev_map awalk_verts_append_last[of _ "_@[_]" "_ _" "_ _", simplified] 
+                    sym[OF bellman_ford.costs_last[OF bellman_ford_backward]]
+             intro: help1 help2 help3 help4)
+qed
 
 lemma Forest_conv_erev_sym: 
   assumes"cost_flow_network.consist conv" 
@@ -3403,12 +3470,10 @@ shows " e \<in> to_rdgs to_pair conv forst \<longleftrightarrow>
   apply(rule cost_flow_network.consistencyE[OF  assms])
   unfolding  to_rdgs_def  cost_flow_network.\<EE>_def
   apply(induction e rule: cost_flow_network.erev.induct)
-  apply (auto simp add: make_pair_fst_snd)
-  by (smt (verit, best) Int_Collect swap_simp to_pair_axioms)+
+  by(auto simp add: make_pair_fst_snd)
+    (smt (verit, best) Int_Collect swap_simp to_pair_axioms)+
 
-abbreviation "get_source_target_path_b_cond \<equiv> loopB.get_source_target_path_b_cond snd make_pair \<u> \<E> vset_inv isin set_invar to_set lookup'
-           adjmap_inv' to_pair \<epsilon> get_source_target_path_b get_source
-           get_target get_source_for_target get_target_for_source fst get_source_target_path_a"
+abbreviation "get_source_target_path_b_cond \<equiv> loopB.get_source_target_path_b_cond "
 
 lemma get_source_target_path_b_ax:
   assumes "get_source_target_path_b_cond  state s t P b \<gamma> f"
@@ -3417,12 +3482,12 @@ lemma get_source_target_path_b_ax:
          cost_flow_network.oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<and>
          distinct P"
   apply(insert assms)
-  unfolding  loopB.get_source_target_path_b_cond_def[OF loopB]
-             get_source_target_path_b_def loopB.loopB_call2_cond_def[OF loopB]
+  unfolding  loopB.get_source_target_path_b_cond_def
+             get_source_target_path_b_def loopB.loopB_call2_cond_def
 proof(cases "invar_isOptflow state", goal_cases)
   case 1
   have loopB_call2_cond: "loopB_call2_cond state"
-    using 1 unfolding loopB.loopB_call2_cond_def[OF loopB] Let_def by force
+    using 1 unfolding loopB.loopB_call2_cond_def Let_def by force
   define bf where  "bf = bellman_ford_backward (not_blocked state) (current_flow state) t"
   define ss where "ss = get_source_for_target_aux bf (balance state) (current_\<gamma> state) vs"
   define Pbf where "Pbf = rev'(search_rev_path_exec t bf s Nil)"
@@ -3443,10 +3508,10 @@ proof(cases "invar_isOptflow state", goal_cases)
     "\<exists>t\<in>VV. -(1 - \<epsilon>) * \<gamma> > b t"
     "\<exists>s\<in>VV. b s > \<epsilon> * \<gamma> \<and> resreach f s t"
                   "s = ss"  "P = PP"
-    using 1 apply(auto intro: loopB.loopB_call2_condE[OF loopB  loopB_call2_cond] 
-                simp add: bf_def ss_def Pbf_def PP_def split: if_split)
-    using "1"(1) unfolding get_source_for_target_def by presburger+
-   
+    using 1 
+     by(auto intro: loopB.loopB_call2_condE[OF loopB_call2_cond] 
+          simp add: bf_def ss_def Pbf_def PP_def split: if_split)
+       (insert"1"(1) , unfold get_source_for_target_def, presburger+)  
   hence 
     "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (to_graph  (\<FF>_imp state)).
         0 < current_flow state (cost_flow_network.oedge e))"
@@ -3625,9 +3690,9 @@ proof(cases "invar_isOptflow state", goal_cases)
     using Pbf_props(1) same_edges length_Pbf  "1"(1) awalk_fst_last bellman_ford.weight.simps[OF bellman_ford] 
            cost_flow_network.vs_to_vertex_pair_pres apply auto[2]
     using calculation  Pbf_props(1) same_edges 
-    apply (auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
+    by (auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
                         arc_implies_awalk[OF UNIV_I refl]) 
-    by (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+       (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
   moreover have "PP \<noteq> []"
     using  edges_of_vwalk.simps(3) length_Pbf same_edges
     by(cases Pbf rule: list_cases3) auto
@@ -3707,21 +3772,15 @@ next
     by(auto simp add: cost_flow_network.Rcap_def)
 qed  
 
-
-lemma loopB_Reasoning_axioms:
-    "loopB_Reasoning_axioms snd make_pair \<u> \<c> \<E> vset_inv isin set_invar to_set lookup' adjmap_inv' \<b> to_pair \<epsilon>
-     get_source_target_path_b get_source get_target get_source_for_target get_target_for_source fst
-     get_source_target_path_a"
-  using get_source_target_path_a_ax get_source_target_path_b_ax get_source_axioms get_target_axioms
-        get_target_for_source_ax get_source_for_target_ax
-  by(simp add: loopB_Reasoning_axioms_def)
-
 interpretation loopB_Reasoning: loopB_Reasoning snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete
        vset_insert vset_inv isin get_from_set
      filter are_all set_invar to_set lookup' t_set sel adjmap_inv' \<b> to_pair \<epsilon> \<E>_impl all_empty N default_conv_to_rdg
      get_source_target_path_b get_source get_target get_source_for_target get_target_for_source fst
      get_source_target_path_a edge_map_update'
-  by (auto simp add: loopB_Reasoning_axioms loopB intro!: loopB_Reasoning.intro)
+  using get_source_target_path_a_ax get_source_target_path_b_ax get_source_axioms get_target_axioms
+        get_target_for_source_ax get_source_for_target_ax algo 
+  by (auto simp add:  loopB_Reasoning_axioms_def  Adj_Map_Specs2 Set3_axioms
+             intro!:  loopB.intro loopB_spec.intro loopB_Reasoning.intro  algo_spec.intro)
 
 lemmas loopB_Reasoning= loopB_Reasoning.loopB_Reasoning_axioms
 
@@ -3729,13 +3788,6 @@ definition "norma e = (to_pair {prod.fst e, prod.snd e})"
 
 lemma orlins_axioms: "orlins_axioms norma"
   by (simp add: orlins_axioms_def norma_def insert_commute to_pair_axioms)
- 
-lemma orlins:
-     "orlins snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete vset_insert vset_inv isin get_from_set filter
-     are_all set_invar to_set lookup' t_set sel adjmap_inv' \<b> to_pair \<epsilon> \<E>_impl N default_conv_to_rdg get_source_target_path_b
-     get_source get_target get_source_for_target get_target_for_source get_source_target_path_a edge_map_update'
-     all_empty get_path fst norma"
-  by (simp add: loopA loopB_Reasoning orlins_axioms orlins_def)
 
 lemma get_source_aux_aux_coincide:"(\<And> v. v \<in> set xs \<Longrightarrow> b v = b' v) \<Longrightarrow> get_source_aux_aux b g xs = get_source_aux_aux b' g xs"
   by(induction xs) auto
@@ -3809,8 +3861,8 @@ proof(all \<open>goal_cases\<close>)
                      algo_impl.implementation_invar_def[OF algo_impl] )+
 qed
 
-lemmas get_source_target_path_a_condE = loopB.get_source_target_path_a_condE[OF loopB]
-lemmas get_source_target_path_b_condE = loopB.get_source_target_path_b_condE[OF loopB]
+lemmas get_source_target_path_a_condE = loopB.get_source_target_path_a_condE
+lemmas get_source_target_path_b_condE = loopB.get_source_target_path_b_condE
 
 lemma get_target_for_source_aux_aux_cong:
 "(\<And> x. x \<in> set xs \<Longrightarrow> connection_lookup connections x = connection_lookup connections' x) \<Longrightarrow>
@@ -4473,20 +4525,35 @@ proof(goal_cases)
      apply(rule conjunct1[OF get_edge_and_costs_backward_makes_cheaper[OF refl _ _ , of e "not_blocked state" f]])
      using  e_in_qq_E  e_in_qq_not_blocked  e_in_qq_rcap Q_prop(4) 
      by(auto intro: prod.collapse)
-    hence costsQ': "e \<in> set Q' \<Longrightarrow>
+   have costsQ': "e \<in> set Q' \<Longrightarrow>
          prod.snd (get_edge_and_costs_backward (not_blocked state) f (fstv e) (sndv e)) < PInfty" for e
-      apply (auto simp add: Q'_def)
-      subgoal for d
+   proof(goal_cases)
+     case 1
+     have helper: "\<lbrakk> (\<And>e. e \<in> set Q \<Longrightarrow>
+                   prod.snd (get_edge_and_costs_backward (not_blocked state) f (cost_flow_network.sndv e)
+                    (cost_flow_network.fstv e)) \<noteq> \<infinity>); x \<in> set Q ; e = cost_flow_network.erev x;
+                   prod.snd (get_edge_and_costs_backward (not_blocked state) f
+                    (fstv (cost_flow_network.erev x)) (sndv (cost_flow_network.erev x))) = \<infinity>\<rbrakk>
+                  \<Longrightarrow> False" for x e
         by(induction e rule: cost_flow_network.erev.induct,
-              all \<open>induction d rule: cost_flow_network.erev.induct\<close>) fastforce+
-      done
+              all \<open>induction x rule: cost_flow_network.erev.induct\<close>) fastforce+
+      from 1 show ?thesis
+       using costsQ
+       by(auto simp add:  Q'_def intro: helper)
+    qed
     have awalk:"awalk UNIV t (map cost_flow_network.to_vertex_pair Q') s"
+    proof-
+      have helper: "\<lbrakk> s = fstv (hd Q);  Q \<noteq> []; 0 < cost_flow_network.Rcap f (set Q);
+           t = sndv (last Q); awalk UNIV (fstv (hd Q)) (map to_edge Q) (sndv (last Q))\<rbrakk> \<Longrightarrow>
+          awalk UNIV (cost_flow_network.sndv (last Q)) (map (prod.swap \<circ> to_edge) (rev Q))
+           (cost_flow_network.fstv (hd Q))"
+      by(subst sym[OF list.map_comp], subst sym[OF rev_map])
+        (auto simp add:  intro: awalk_UNIV_rev) 
+     show ?thesis
       using  Q_prop(1) Q_prop(2) Q_prop(5)
-      apply (auto simp add: cost_flow_network.to_vertex_pair_erev_swap cost_flow_network.augpath_def 
-            cost_flow_network.prepath_def Q'_def)
-      apply(subst sym[OF list.map_comp])
-      apply(subst sym[OF rev_map])
-      by(auto intro: awalk_UNIV_rev) 
+      by (auto simp add: cost_flow_network.to_vertex_pair_erev_swap cost_flow_network.augpath_def 
+            cost_flow_network.prepath_def Q'_def intro: helper)
+     qed
     have "weight_backward (not_blocked state) f (awalk_verts t (map cost_flow_network.to_vertex_pair Q')) < PInfty"
       using costsQ'  awalk Q'_prop(1) bellman_ford  knowledge(3) 
       by (intro path_flow_network_path_bf_backward[of Q' "not_blocked state" f t]) auto
@@ -4554,6 +4621,7 @@ lemma test_all_vertices_zero_balance:
                     algo_impl.abstract_def[OF algo_impl] Let_def dom_def 
                     algo_impl.abstract_bal_map_def[OF algo_impl]
                     test_all_vertices_zero_balance_def test_all_vertices_zero_balance_aux)
+
 lemma loopB_impl_axioms:
     "loopB_impl_axioms snd make_pair \<u> \<c> \<E> vset_inv isin set_invar to_set lookup' adjmap_inv' \<b> to_pair \<epsilon> default_conv_to_rdg
      get_source_target_path_b get_source get_target get_source_for_target get_target_for_source get_source_target_path_a
@@ -4579,25 +4647,6 @@ lemma loopB_impl_axioms:
     subgoal      
       using get_target_impl_axioms by auto 
     using test_all_vertices_zero_balance by auto
-
-lemma loopB_impl_spec: "loopB_impl_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set
-     lookup' t_set sel adjmap_inv' flow_update flow_delete flow_lookup flow_invar bal_update bal_delete bal_lookup bal_invar
-     rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_update conv_delete conv_lookup conv_invar
-     not_blocked_update not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all
-     flow_update_all get_max get_from_set flow_empty bal_empty rep_comp_empty conv_empty not_blocked_empty"
-  using algo_spec algo_impl_spec by(auto intro!: loopB_impl_spec.intro)
-
-lemma loopB_impl:"Orlins_Implementation.loopB_impl snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete vset_insert vset_inv isin get_from_set
-     filter are_all set_invar to_set lookup' t_set sel adjmap_inv' \<b> to_pair \<epsilon> \<E>_impl N default_conv_to_rdg
-     get_source_target_path_b get_source get_target get_source_for_target get_target_for_source get_source_target_path_a
-     edge_map_update' flow_update flow_delete flow_lookup flow_invar bal_update bal_delete bal_lookup bal_invar
-     rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_update conv_delete conv_lookup conv_invar
-     not_blocked_update not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all
-     flow_update_all get_max flow_empty bal_empty rep_comp_empty conv_empty not_blocked_empty
-     get_source_target_path_a_impl get_source_target_path_b_impl get_source_impl get_target_impl
-     test_all_vertices_zero_balance fst all_empty"
-  using loopB_Reasoning  loopB_impl_spec algo_impl loopB_impl_axioms
-  by(auto intro!: loopB_impl.intro)
 
 interpretation rep_comp_map2: Map where empty = rep_comp_empty and update=rep_comp_update and lookup= rep_comp_lookup
 and delete= rep_comp_delete and invar = rep_comp_invar
@@ -4681,15 +4730,6 @@ next
     by (simp add: init_impl_variables(7) local.init_not_blocked_def)
 qed
 
-lemma orlins_impl_spec: "orlins_impl_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set
-     lookup' t_set sel adjmap_inv' get_from_set flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty
-     bal_update bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup
-     rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty
-     not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all
-     get_max"
-  using loopA_impl_spec loopB_impl_spec
-  by(auto intro!: orlins_impl_spec.intro)
-
 interpretation orlins_impl: orlins_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' vset_empty vset_delete vset_insert vset_inv isin
      filter are_all set_invar to_set lookup' t_set sel adjmap_inv' \<b> to_pair \<epsilon> N default_conv_to_rdg get_from_set all_empty
      \<E>_impl get_path flow_empty  flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete bal_lookup
@@ -4699,20 +4739,17 @@ interpretation orlins_impl: orlins_impl snd make_pair create_edge \<u> \<E> \<c>
      get_source get_target get_source_for_target get_target_for_source get_source_target_path_a
      get_source_target_path_a_impl get_source_target_path_b_impl get_source_impl get_target_impl
      test_all_vertices_zero_balance norma init_flow init_bal init_rep_card init_not_blocked fst
-  using  orlins_impl_axioms
-  using   loopA_axioms_extended Adj_Map_Specs2 Set3 algo_spec
-  using algo_impl algo loopB_Reasoning  loopB_impl_axioms
-Map_bal.Map_axioms Map_conv Map_flow.Map_axioms Map_not_blocked.Map_axioms
-          algo_impl_spec_axioms algo_spec conv_map.Map_axioms  Map_axioms
+  using  orlins_impl_axioms loopA_axioms_extended Adj_Map_Specs2 Set3  Set3_axioms
+         algo loopB_Reasoning loopB_impl_axioms
+         Map_bal.Map_axioms Map_conv Map_flow.Map_axioms Map_not_blocked.Map_axioms
+         conv_map.Map_axioms  Map_axioms
   by(auto intro!: loopA.intro orlins_impl_spec.intro orlins_impl.intro  loopB_impl.intro
                   loopA_impl.intro loopB_impl_spec.intro loopA_impl_spec.intro loopA_spec.intro
-algo_impl_spec.intro
-        simp add: loopA_axioms_def orlins_def orlins_axioms_def norma_def insert_commute to_pair_axioms
-Adj_Map_Specs2 Set3_axioms algo_spec.intro)
+                  algo_impl_spec.intro algo_impl.intro algo_spec.intro algo_impl_spec_axioms.intro  
+                  flow_update_all get_max not_blocked_update_all rep_comp_update_all
+        simp add: loopA_axioms_def orlins_def orlins_axioms_def norma_def insert_commute to_pair_axioms)
 
 lemmas orlins_impl = orlins_impl.orlins_impl_axioms
-
-term \<epsilon>
 
 definition "initial_state_impl  =
 Orlins_Implementation.orlins_impl_spec.initial_impl snd filter all_empty \<E>_impl conv_empty rep_comp_update_all
@@ -4729,7 +4766,7 @@ definition "loopB_loop_impl = loopB_impl_spec.loopB_impl flow_update flow_lookup
  get_target_impl test_all_vertices_zero_balance "
 
 definition "orlins_loop_impl =
-Orlins_Implementation.orlins_impl_spec.orlins_impl snd edge_map_update' vset_insert filter are_all lookup'
+ Orlins_Implementation.orlins_impl_spec.orlins_impl snd edge_map_update' vset_insert filter are_all lookup'
  N get_from_set get_path flow_update flow_lookup bal_update bal_lookup
  rep_comp_lookup conv_update conv_lookup rep_comp_update_all not_blocked_update_all get_max
 get_source_target_path_a_impl get_source_target_path_b_impl get_source_impl
@@ -4741,13 +4778,9 @@ definition "final_flow_impl = current_flow_impl final_state"
 definition "abstract_flow_map = algo_impl_spec.abstract_flow_map flow_lookup"
 
 corollary correctness_of_implementation:
- "return_impl final_state = success \<Longrightarrow>  
-        cost_flow_network.is_Opt  \<b> 
- (abstract_flow_map final_flow_impl)"
- "return_impl final_state = failure \<Longrightarrow> 
-         \<nexists> f. cost_flow_network.isbflow f \<b>"
- "return_impl final_state = notyetterm \<Longrightarrow>  
-         False"
+ "return_impl final_state = success \<Longrightarrow>   cost_flow_network.is_Opt  \<b> (abstract_flow_map final_flow_impl)"
+ "return_impl final_state = failure \<Longrightarrow>  \<nexists> f. cost_flow_network.isbflow f \<b>"
+ "return_impl final_state = notyetterm \<Longrightarrow>  False"
   using orlins_impl.orlins_impl_is_correct[OF  refl] 
   by(auto simp add: final_flow_impl_def final_state_def abstract_flow_map_def
  orlins_loop_impl_def initial_state_impl_def loopB_loop_impl_def)
@@ -4773,29 +4806,17 @@ lemma function_generation_proof_axioms:
  \<E>_impl to_list (fst o make_pair) (snd o make_pair)  \<b>_impl set_invar to_set make_pair get_max"
   by (intro function_generation_proof_axioms.intro)(auto simp add: orlins_impl_spec.get_max to_list \<E>_def \<c>_def no_cycle_cond_def)
 
-lemma rep_comp_iterator:"Map_iterator rep_comp_invar rep_comp_lookup rep_comp_update_all"
+interpretation rep_comp_iterator: Map_iterator rep_comp_invar rep_comp_lookup rep_comp_update_all
   using Map_iterator_def rep_comp_update_all by blast
+lemmas rep_comp_iterator=rep_comp_iterator.Map_iterator_axioms
 
-lemma flow_iterator:"Map_iterator flow_invar flow_lookup flow_update_all"
+interpretation flow_iterator: Map_iterator flow_invar flow_lookup flow_update_all
   using Map_iterator_def flow_update_all  by blast
+lemmas flow_iterator=flow_iterator.Map_iterator_axioms
 
-lemma not_blocked_iterator:"Map_iterator not_blocked_invar not_blocked_lookup not_blocked_update_all"
+interpretation not_blocked_iterator: Map_iterator not_blocked_invar not_blocked_lookup not_blocked_update_all
   using Map_iterator_def not_blocked_update_all  by blast
-
-lemma function_generation_proof_holds:"set_invar \<E>_impl \<Longrightarrow> bal_invar \<b>_impl\<Longrightarrow>
- dVs (make_pair ` to_set \<E>_impl) = dom (bal_lookup \<b>_impl) \<Longrightarrow>
-0 < function_generation.N \<E>_impl to_list (fst \<circ> make_pair) (snd \<circ> make_pair) \<Longrightarrow>
-multigraph (fst \<circ> make_pair) (snd \<circ> make_pair) make_pair create_edge (function_generation.\<E> \<E>_impl to_set) \<Longrightarrow>
-      function_generation_proof realising_edges_empty realising_edges_update realising_edges_delete realising_edges_lookup
-     realising_edges_invar bal_empty bal_delete bal_lookup bal_invar flow_empty flow_delete flow_lookup flow_invar
-     not_blocked_empty not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_empty rep_comp_delete
-     rep_comp_lookup rep_comp_invar \<E>_impl to_list (fst o make_pair) (snd o make_pair) create_edge  \<b>_impl filter are_all set_invar
-     get_from_set to_set make_pair rep_comp_update conv_empty conv_delete conv_lookup conv_invar conv_update
-     not_blocked_update flow_update bal_update rep_comp_update_all flow_update_all not_blocked_update_all get_max"
-  using  rep_comp_iterator flow_iterator not_blocked_iterator  
- by(auto intro!:  function_generation_proof_axioms function_generation_proof.intro simp add: Map_realising_edges function_generation.intro bal_map.Map_axioms 
-flow_map.Map_axioms Map_not_blocked.Map_axioms Set3 \<E>_def Adj_Map_Specs2
- Map_rep_comp Map_conv) 
+lemmas not_blocked_iterator = not_blocked_iterator.Map_iterator_axioms
 
 definition "final_state make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup = orlins_impl  make_pair create_edge \<E>_impl \<c>_impl c_lookup
                     (loopB_impl  make_pair  create_edge \<E>_impl \<c>_impl c_lookup
@@ -4818,19 +4839,23 @@ and at_least_2_verts: "0 < function_generation.N \<E>_impl to_list (fst \<circ> 
 and multigraph: "multigraph (fst \<circ> make_pair) (snd \<circ> make_pair) make_pair create_edge (function_generation.\<E> \<E>_impl to_set)"
 begin
 
-
-lemma function_generation_proof:
-    "function_generation_proof realising_edges_empty realising_edges_update realising_edges_delete
+interpretation function_generation_proof:
+function_generation_proof realising_edges_empty realising_edges_update realising_edges_delete
      realising_edges_lookup realising_edges_invar bal_empty bal_delete bal_lookup bal_invar flow_empty flow_delete
      flow_lookup flow_invar not_blocked_empty not_blocked_delete not_blocked_lookup not_blocked_invar
      rep_comp_empty rep_comp_delete rep_comp_lookup rep_comp_invar \<E>_impl 
-to_list (fst o make_pair) (snd o make_pair) create_edge \<b>_impl
+     to_list "(fst o make_pair)" "(snd o make_pair)" create_edge \<c>_impl \<b>_impl c_lookup
      filter are_all set_invar get_from_set to_set make_pair rep_comp_update conv_empty conv_delete conv_lookup
      conv_invar conv_update not_blocked_update flow_update bal_update rep_comp_update_all flow_update_all
-     not_blocked_update_all get_max"
+     not_blocked_update_all get_max
   using  \<E>_impl_basic at_least_2_verts gt_zero multigraph
-  by(auto intro!: function_generation_proof_holds simp add:  bal_invar_b Vs_is_bal_dom  \<E>_def)
+  using  rep_comp_iterator flow_iterator not_blocked_iterator  
+  by(auto intro!:  function_generation_proof_axioms function_generation_proof.intro 
+        simp add: flow_map.Map_axioms Map_not_blocked.Map_axioms Set3 \<E>_def Adj_Map_Specs2
+                  Map_rep_comp Map_conv   bal_invar_b Vs_is_bal_dom  
+                  Map_realising_edges function_generation.intro bal_map.Map_axioms ) 
 
+lemmas function_generation_proof = function_generation_proof.function_generation_proof_axioms
 context 
   assumes no_cycle: "no_cycle_cond make_pair \<c>_impl \<E>_impl c_lookup"
 begin
@@ -4840,8 +4865,8 @@ lemma no_cycle: "closed_w (make_pair ` function_generation.\<E> \<E>_impl to_set
           foldr (\<lambda>e acc. acc + function_generation.\<c> \<c>_impl c_lookup e) C 0 < 0 \<Longrightarrow> False"
   using no_cycle  by (auto simp add: no_cycle_cond_def)
 
-lemma no_cycle_cond:"function_generation_proof.no_cycle_cond \<E>_impl \<c>_impl c_lookup to_set make_pair"
-  unfolding function_generation_proof.no_cycle_cond_def[OF  function_generation_proof]
+lemma no_cycle_cond:"function_generation_proof.no_cycle_cond "
+  unfolding function_generation_proof.no_cycle_cond_def
   using no_cycle by blast
 
 corollary correctness_of_implementation:
@@ -4852,33 +4877,32 @@ corollary correctness_of_implementation:
          \<nexists> f. flow_network.isbflow  (fst o make_pair) (snd o make_pair) make_pair \<u>  (\<E> \<E>_impl) f (\<b> \<b>_impl)"
  "return_impl (final_state  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = notyetterm \<Longrightarrow>  
          False"
-    using  function_generation_proof.correctness_of_implementation
-                  [OF function_generation_proof no_cycle_cond] 
+    using  function_generation_proof.correctness_of_implementation[OF  no_cycle_cond] 
     by(auto simp add: final_state_def 
-                function_generation_proof.final_state_def[OF function_generation_proof no_cycle_cond]
-                function_generation_proof.orlins_loop_impl_def[OF function_generation_proof no_cycle_cond]
+                function_generation_proof.final_state_def[OF  no_cycle_cond]
+                function_generation_proof.orlins_loop_impl_def[OF  no_cycle_cond]
                 orlins_impl_def loopB_impl_def N_def get_source_target_path_a_impl_def
                 get_source_target_path_b_impl_def get_source_impl_def get_target_impl_def get_path_def
                 test_all_vertices_zero_balance_def 
-function_generation_proof.loopB_loop_impl_def[OF function_generation_proof no_cycle_cond] initial_impl_def 
-function_generation_proof.initial_state_impl_def[OF function_generation_proof no_cycle_cond] init_flow_def
-init_bal_def init_rep_card_def init_not_blocked_def abstract_flow_map_def final_flow_impl_def
-function_generation_proof.final_flow_impl_def[OF function_generation_proof no_cycle_cond]
-function_generation_proof.abstract_flow_map_def[OF function_generation_proof no_cycle_cond] \<E>_def \<b>_def \<c>_def \<u>_def)
+                function_generation_proof.loopB_loop_impl_def[OF  no_cycle_cond] initial_impl_def 
+                function_generation_proof.initial_state_impl_def[OF  no_cycle_cond] init_flow_def
+                init_bal_def init_rep_card_def init_not_blocked_def abstract_flow_map_def final_flow_impl_def
+                function_generation_proof.final_flow_impl_def[OF  no_cycle_cond]
+                function_generation_proof.abstract_flow_map_def[OF  no_cycle_cond] \<E>_def \<b>_def \<c>_def \<u>_def)
 
 lemma final_flow_domain:
  "dom (flow_lookup (final_flow_impl  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup)) = \<E> \<E>_impl"
-  using function_generation_proof.final_flow_domain[OF function_generation_proof no_cycle_cond]
+  using function_generation_proof.final_flow_domain[OF no_cycle_cond]
      by(auto simp add: final_state_def 
-                function_generation_proof.final_state_def[OF function_generation_proof no_cycle_cond]
-                function_generation_proof.orlins_loop_impl_def[OF function_generation_proof no_cycle_cond]
+                function_generation_proof.final_state_def[OF  no_cycle_cond]
+                function_generation_proof.orlins_loop_impl_def[OF  no_cycle_cond]
                 orlins_impl_def loopB_impl_def N_def get_source_target_path_a_impl_def
                 get_source_target_path_b_impl_def get_source_impl_def get_target_impl_def get_path_def
                 test_all_vertices_zero_balance_def 
-function_generation_proof.loopB_loop_impl_def[OF function_generation_proof no_cycle_cond] initial_impl_def 
-function_generation_proof.initial_state_impl_def[OF function_generation_proof no_cycle_cond] init_flow_def
-init_bal_def init_rep_card_def init_not_blocked_def  final_flow_impl_def
-function_generation_proof.final_flow_impl_def[OF function_generation_proof no_cycle_cond] \<E>_def )
+                function_generation_proof.loopB_loop_impl_def[OF  no_cycle_cond] initial_impl_def 
+                function_generation_proof.initial_state_impl_def[OF  no_cycle_cond] init_flow_def
+                init_bal_def init_rep_card_def init_not_blocked_def  final_flow_impl_def
+                function_generation_proof.final_flow_impl_def[OF  no_cycle_cond] \<E>_def )
 
 end
 end

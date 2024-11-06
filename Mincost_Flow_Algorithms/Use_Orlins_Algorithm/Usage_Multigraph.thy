@@ -27,10 +27,11 @@ fun less_edge_type where
  "less_edge_type (an_edge (x, y)) (an_edge (a, b)) = ((x, y) < (a, b))"|
  "less_edge_type (another_edge (x, y)) (another_edge (a, b)) = ((x, y) < (a, b))"
 instance 
-  apply(intro Orderings.linorder.intro_of_class  class.linorder.intro
+proof(intro Orderings.linorder.intro_of_class  class.linorder.intro
               class.order_axioms.intro class.order.intro class.preorder.intro
-              class.linorder_axioms.intro)
-  subgoal for x y 
+              class.linorder_axioms.intro, goal_cases)
+  case (1 x y)
+  then show ?case 
     apply(all \<open>cases x\<close>, all \<open>cases y\<close>) 
     apply force
     subgoal for a b
@@ -39,22 +40,69 @@ instance
     subgoal for a b
     by(all \<open>cases a\<close>, all \<open>cases b\<close>)
       (auto split: if_split simp add: less_le_not_le)
-  by force
-  subgoal for x
-    by(cases x) auto  
-  subgoal for x y z
-    apply(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
-    apply(auto split: if_split simp add: less_le_not_le)
-    using order.trans by metis+
-  subgoal for x y 
-    apply(all \<open>cases x\<close>, all \<open>cases y\<close>)
-    apply(auto split: if_split simp add: less_le_not_le)
-    apply presburger+
-    by (metis order_antisym_conv)+
-  subgoal for x y 
+    by force
+next
+  case (2 x)
+  then show ?case by(cases x) auto 
+next
+  case (3 x y z)
+  have a: "\<lbrakk> if ab \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then b \<le> ba else False ;
+       if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
+       x = an_edge (ab, b) ; y = an_edge (aa, ba) ; z = an_edge (ab, bb) \<rbrakk> \<Longrightarrow> b \<le> bb"
+    for aa ab ba b bb
+    using order.trans by metis
+  have b: "\<lbrakk> if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
+       if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
+       x = an_edge (a, b) ;
+       y = an_edge (aa, ba) ; z = an_edge (ab, bb) ; a \<noteq> ab \<rbrakk> \<Longrightarrow> a \<le> ab"
+    for a aa ab b ba bb
+    using order.trans by metis
+  have c: "\<lbrakk> if ab \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then b \<le> ba else False ;
+       if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
+       x = another_edge (ab, b) ;
+       y = another_edge (aa, ba) ; z = another_edge (ab, bb)\<rbrakk> \<Longrightarrow> b \<le> bb"
+    for aa ab b ba bb
+    using order.trans by metis
+  have d: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
+       if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
+       x = another_edge (a, b) ;
+       y = another_edge (aa, ba) ; z = another_edge (ab, bb) ; a \<noteq> ab \<rbrakk> \<Longrightarrow> a \<le> ab"
+    for a aa ab b ba bb
+    using order.trans by metis
+  from 3 show ?case    
+    by(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
+      (auto split: if_split simp add: less_le_not_le intro: a b c d) 
+next
+  case (4 x y)
+  have a: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
+       if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
+       x = an_edge (a, b) ; y = an_edge (aa, ba)\<rbrakk> \<Longrightarrow> a = aa"
+    for a aa b ba bb
+    by presburger
+  have b: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
+       if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
+       x = an_edge (a, b) ;y = an_edge (aa, ba)\<rbrakk> \<Longrightarrow> b = ba"
+    for a aa b ba
+    by (metis order_antisym_conv)
+  have c: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
+       if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
+       x = another_edge (a, b) ; y = another_edge (aa, ba) \<rbrakk> \<Longrightarrow> b = ba"
+    for a aa b ba
+    by (metis order_antisym_conv)
+  have d: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
+       if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
+       x = another_edge (a, b) ; y = another_edge (aa, ba)\<rbrakk> \<Longrightarrow> a = aa"
+    for a aa b ba
+    by presburger
+  from 4 show ?case 
+    by(all \<open>cases x\<close>, all \<open>cases y\<close>)
+      (auto split: if_split simp add: less_le_not_le intro: a b c d)
+next
+  case (5 x y)
+  then show ?case 
     by(all \<open>cases x\<close>, all \<open>cases y\<close>) 
      (force intro: le_cases3)+
-  done
+qed
 end
 
 

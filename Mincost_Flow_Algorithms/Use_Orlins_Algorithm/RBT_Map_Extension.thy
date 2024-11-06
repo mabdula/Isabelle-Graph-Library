@@ -66,60 +66,63 @@ next
   proof(induction f map rule: update_all.induct)
     case (2 f l x y r)
     note IH = this
-    have coincide_left:"a \<in> dom (lookup l) \<Longrightarrow> f a (the (lookup l a)) = g a (the (lookup l a))" for a
-      using IH(4)[simplified domain_subtrees(1)[OF IH(3)], of a, simplified lookup.simps]
-      apply(cases "cmp a x")
-      apply(auto simp add: dom_def)
+    have help1: "f x y = g x y \<Longrightarrow> a = x \<Longrightarrow> lookup l x = Some ya \<Longrightarrow> f x ya = g x ya" for a ya 
       using  sorted_mid_iff  rbt_red_subtrees(1)[OF "2.prems"(1)]
             "2.prems"(1)[simplified rbt_red_def inorder.simps sorted_mid_iff]
-      by (subst (asm) lookup_map_of, force simp add: rbt_red_def, subst (asm) map_of_None2,
-          force, simp, simp add: lookup_map_of rbt_red_def,
+      by(subst (asm) lookup_map_of, force simp add: rbt_red_def, subst (asm) map_of_None2) force+
+    have help2: "f a (the (lookup r a)) = g a (the (lookup r a)) \<Longrightarrow> x < a \<Longrightarrow> lookup l a = Some y \<Longrightarrow> f a y = g a y" for y a
+      using  sorted_mid_iff  rbt_red_subtrees(1)[OF "2.prems"(1)]
+            "2.prems"(1)[simplified rbt_red_def inorder.simps sorted_mid_iff]
+      by (simp add: lookup_map_of rbt_red_def,
          (subst (asm) map_of_None2[OF  sorted_snoc_le[OF ASSUMPTION_I, of _ x]]; auto)) 
+    have coincide_left:"a \<in> dom (lookup l) \<Longrightarrow> f a (the (lookup l a)) = g a (the (lookup l a))" for a
+      using IH(4)[simplified domain_subtrees(1)[OF IH(3)], of a, simplified lookup.simps]
+      by(cases "cmp a x") (auto simp add: dom_def intro: help1 help2)
     have coincide_x: "f x y = g x y"
       using IH(4)[of x] by(auto simp add: dom_def)
-    have coincide_right:"a \<in> dom (lookup r) \<Longrightarrow> f a (the (lookup r a)) = g a (the (lookup r a))" for a
-      apply(cases "cmp a x")
-      subgoal
-      using IH(4)[simplified domain_subtrees(1)[OF IH(3)], of a, simplified lookup.simps]
-       apply(auto simp add: dom_def)  
+    have helper: "a < x \<Longrightarrow> f a (the (lookup l a)) = g a (the (lookup l a)) \<Longrightarrow> lookup r a = Some y \<Longrightarrow> f a y = g a y" for a y
        apply(subst (asm) (3) lookup_map_of, simp add: rbt_red_subtrees(2)[OF  IH(3), simplified rbt_red_def])
        using sym[OF  list.simps(9)[of fst "(x, y)" "Tree2.inorder r", simplified fst_conv]]
              IH(3)[simplified rbt_red_def Tree2.inorder.simps(2)  map_append ]
        by(subst (asm) map_of_sorted_Cons[of x])
-         (auto simp add:  map_of_sorted_Cons[of x] sorted_wrt_append)     
-      using IH(3)[simplified rbt_red_def Tree2.inorder.simps(2)  map_append ]
+         (auto simp add:  map_of_sorted_Cons[of x] sorted_wrt_append)
+     have coincide_right:"a \<in> dom (lookup r) \<Longrightarrow> f a (the (lookup r a)) = g a (the (lookup r a))" for a   
+      using IH(4)[simplified domain_subtrees(1)[OF IH(3)], of a, simplified lookup.simps]
+             IH(3)[simplified rbt_red_def Tree2.inorder.simps(2)  map_append ]
             IH(4)[simplified dom_def lookup.simps(2), of a]
-      by (auto simp add: lookup_map_of map_of_None sorted_wrt_append)
+      by (cases "cmp a x") (auto simp add: lookup_map_of map_of_None sorted_wrt_append dom_def intro: helper)
     show ?case
     using coincide_x coincide_left domain_subtrees IH(4,3) coincide_right
       by(force intro!: IH(2)  IH(1) intro: rbt_red_subtrees)
   next
     case (3 f l x y r)
     note IH = this
-    have coincide_left:"a \<in> dom (lookup l) \<Longrightarrow> f a (the (lookup l a)) = g a (the (lookup l a))" for a
-      using IH(4)[simplified domain_subtrees(2)[OF IH(3)], of a, simplified lookup.simps]
-      apply(cases "cmp a x")
-      apply(auto simp add: dom_def)
+    have help1: "f x y = g x y \<Longrightarrow> a = x \<Longrightarrow> lookup l x = Some ya \<Longrightarrow> f x ya = g x ya" for a ya
       using  sorted_mid_iff  rbt_red_subtrees(3)[OF "3.prems"(1)]
             "3.prems"(1)[simplified rbt_red_def inorder.simps sorted_mid_iff]
-      by (subst (asm) lookup_map_of, force simp add: rbt_red_def, subst (asm) map_of_None2, 
-          force, simp, simp add: lookup_map_of rbt_red_def,
+      by (subst (asm) lookup_map_of, force simp add: rbt_red_def, subst (asm) map_of_None2) force+
+    have help2: "f a (the (lookup r a)) = g a (the (lookup r a)) \<Longrightarrow> x < a \<Longrightarrow> lookup l a = Some y \<Longrightarrow> f a y = g a y" for a y
+      using  sorted_mid_iff  rbt_red_subtrees(3)[OF "3.prems"(1)]
+            "3.prems"(1)[simplified rbt_red_def inorder.simps sorted_mid_iff]
+      by ( simp add: lookup_map_of rbt_red_def,
          (subst (asm) map_of_None2[OF  sorted_snoc_le[OF ASSUMPTION_I, of _ x]]; auto)) 
+    have coincide_left:"a \<in> dom (lookup l) \<Longrightarrow> f a (the (lookup l a)) = g a (the (lookup l a))" for a
+      using IH(4)[simplified domain_subtrees(2)[OF IH(3)], of a, simplified lookup.simps]
+      by(cases "cmp a x")(auto simp add: dom_def intro: help1 help2)
     have coincide_x: "f x y = g x y"
       using IH(4)[of x] by(auto simp add: dom_def)
-    have coincide_right:"a \<in> dom (lookup r) \<Longrightarrow> f a (the (lookup r a)) = g a (the (lookup r a))" for a
-      apply(cases "cmp a x")
-      subgoal
-      using IH(4)[simplified domain_subtrees(2)[OF IH(3)], of a, simplified lookup.simps]
-       apply(auto simp add: dom_def)  
-       apply(subst (asm) (3) lookup_map_of, simp add: rbt_red_subtrees(4)[OF  IH(3), simplified rbt_red_def])
+    have helper: "a < x \<Longrightarrow> f a (the (lookup l a)) = g a (the (lookup l a)) \<Longrightarrow> lookup r a = Some y \<Longrightarrow> f a y = g a y" for a y 
+     apply(subst (asm) (3) lookup_map_of, simp add: rbt_red_subtrees(4)[OF  IH(3), simplified rbt_red_def])
        using sym[OF  list.simps(9)[of fst "(x, y)" "Tree2.inorder r", simplified fst_conv]]
              IH(3)[simplified rbt_red_def Tree2.inorder.simps(2)  map_append ]
        by(subst (asm) map_of_sorted_Cons[of x])
          (auto simp add:  map_of_sorted_Cons[of x] sorted_wrt_append)     
-      using IH(3)[simplified rbt_red_def Tree2.inorder.simps(2)  map_append ]
+
+   have coincide_right:"a \<in> dom (lookup r) \<Longrightarrow> f a (the (lookup r a)) = g a (the (lookup r a))" for a
+      using IH(4)[simplified domain_subtrees(2)[OF IH(3)], of a, simplified lookup.simps]      
+            IH(3)[simplified rbt_red_def Tree2.inorder.simps(2)  map_append ]
             IH(4)[simplified dom_def lookup.simps(2), of a]
-      by (auto simp add: lookup_map_of map_of_None sorted_wrt_append)
+      by (cases "cmp a x")(auto simp add: dom_def lookup_map_of map_of_None sorted_wrt_append intro: helper)
     show ?case
     using coincide_x coincide_left domain_subtrees IH(4,3) coincide_right
       by(force intro!: IH(2)  IH(1) intro: rbt_red_subtrees)
@@ -169,7 +172,7 @@ lemma finite_tree_dom: "finite  (dom (lookup tree))"
                                  \<union> {a. \<exists>y. lookup right a = Some y}"])
     done
   done
-(*TODO MOVE*)
+
 lemma sufficientE: "P \<Longrightarrow> (P \<Longrightarrow> Q) \<Longrightarrow> Q" by simp
 lemma append_single_elem: "xs@x#ys = (xs @ [x])@ ys" by auto
 
@@ -180,19 +183,31 @@ lemma image_of_domain_decomp:
      {f ya (the (lookup  lef ya)) |ya. ya \<in> dom (lookup  lef)}
      \<union> {f x y} \<union>
      {f ya (the (lookup righ ya)) |ya. ya \<in> dom (lookup righ)}"
-  apply rule
-  subgoal
+proof(rule, goal_cases)
+  case 1
+  then show ?case 
     by (auto split: if_split simp add: rbt_red_def dom_def)
-  subgoal
-    apply auto
-    subgoal for ya yb
+next
+  case 2
+  have help1: "\<lbrakk>rbt_red \<langle>lef, ((x, y), c), righ\<rangle>; lookup lef ya = Some yb \<rbrakk>\<Longrightarrow>
+       \<exists>yaa. (x < yaa \<longrightarrow>
+              f ya yb = f yaa (the (lookup righ yaa)) \<and> yaa \<in> dom (lookup \<langle>lef, ((x, y), c), righ\<rangle>)) \<and>
+             (\<not> x < yaa \<longrightarrow>
+              (yaa < x \<longrightarrow>
+               f ya yb = f yaa (the (lookup lef yaa)) \<and> yaa \<in> dom (lookup \<langle>lef, ((x, y), c), righ\<rangle>)) \<and>
+              (yaa = x \<longrightarrow> f ya yb = f x y \<and> x \<in> dom (lookup \<langle>lef, ((x, y), c), righ\<rangle>)))" for ya yb
       by(auto intro: exI[of _ ya] sufficientE[of "_ < x"] case_split[of " _ \<ge> x"] 
            simp add: lookup_map_of map_of_sorted_snoc[of _ x] sorted_wrt_append rbt_red_def dom_def)
-    subgoal for ya yb
+    have help2: "\<lbrakk>rbt_red \<langle>lef, ((x, y), c), righ\<rangle> ; lookup righ ya = Some yb\<rbrakk> \<Longrightarrow>
+    \<exists>yaa. (x < yaa \<longrightarrow> f ya yb = f yaa (the (lookup righ yaa)) \<and> yaa \<in> dom (lookup \<langle>lef, ((x, y), c), righ\<rangle>)) \<and>
+          (\<not> x < yaa \<longrightarrow>
+           (yaa < x \<longrightarrow> f ya yb = f yaa (the (lookup lef yaa)) \<and> yaa \<in> dom (lookup \<langle>lef, ((x, y), c), righ\<rangle>)) \<and>
+           (yaa = x \<longrightarrow> f ya yb = f x y \<and> x \<in> dom (lookup \<langle>lef, ((x, y), c), righ\<rangle>)))" for ya yb
       by (auto intro: exI[of _ ya] linorder_class.linorder_cases[of ya x] 
             simp add: lookup_map_of map_of_sorted_Cons[of x]  map_of_None rbt_red_def sorted_wrt_append)
-    done
-  done
+    from 2 show ?case
+    by (fastforce intro: help1 help2)
+qed
 
 lemma get_max_correct:
 "rbt_red tree \<Longrightarrow> dom (lookup tree) \<noteq> {} \<Longrightarrow>

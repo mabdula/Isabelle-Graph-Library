@@ -1,5 +1,4 @@
 section \<open>Eliminating Capacities\<close>
-
 theory Hitchcock_Reduction
   imports Optimality
 begin
