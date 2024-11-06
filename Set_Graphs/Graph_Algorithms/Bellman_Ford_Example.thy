@@ -69,12 +69,12 @@ global_interpretation bellford: bellman_ford_spec where connection_update=connec
 and connection_empty=connection_empty and connection_lookup=connection_lookup
 and connection_delete=connection_delete and connection_invar=connection_invar 
 and es= es and vs=vs and edge_costs=edge_costs
-for edge_costs es vs
+for nb f edge_costs es vs
 defines search_rev_path_exec = bellford.search_rev_path_exec 
 and bellman_ford_init_algo = bellford.bellman_ford_init
 and  bellman_ford_algo = bellford.bellman_ford
-and relax=bellford.relax       
-  using Map_connection.Map_axioms by(auto intro!: bellman_ford_spec.intro)
+and relax=bellford.relax              
+ using Map_connection.Map_axioms by(auto intro!: bellman_ford_spec.intro)
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
                      (7,2), (7,4), (4,3), (3,4), (3,3), (9, 8), (8, 1), (4,5), (5,10)]"
@@ -107,5 +107,7 @@ value "(search_rev_path_exec 0 final 1 Nil)"
 value "(search_rev_path_exec 0 final 10 Nil)"
 
 value "(search_rev_path_exec 0 final 4 Nil)"
+
+hide_const c_list c_impl edges vertices costs init final
 
 end

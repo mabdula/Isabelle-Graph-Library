@@ -3,63 +3,21 @@ section \<open>Instantiation of Abstract Datatypes\<close>
 theory Instantiation
   imports RBT_Map_Extension
           Directed_Set_Graphs.Pair_Graph_RBT
-          Graph_Algorithms.Bellman_Ford
-          Graph_Algorithms.DFS
+          Graph_Algorithms.Bellman_Ford_Example
+          Graph_Algorithms.DFS_Example
           Mincost_Flow_Algorithms.Orlins_Implementation
 begin
 
-instantiation prod::(linorder, linorder) linorder
-begin
-
-fun less_eq_prod where
- "less_eq_prod (x, y) (a, b) = (if x < a then True 
-                                  else if x = a then y \<le> b
-                                  else False)"
-fun less_prod where
- "less_prod (x, y) (a, b) = (if x < a then True 
-                                  else if x = a then y < b
-                                  else False)"
-instance 
-  apply(intro Orderings.linorder.intro_of_class  class.linorder.intro
-              class.order_axioms.intro class.order.intro class.preorder.intro
-              class.linorder_axioms.intro)
-  subgoal for x y 
-    by(all \<open>cases x\<close>, all \<open>cases y\<close>)
-      (auto split: if_split simp add: less_le_not_le)
-    subgoal for x  
-    by(all \<open>cases x\<close>)
-      (auto split: if_split simp add: less_le_not_le)
-  subgoal for x y z
-    apply(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
-    apply(auto split: if_split simp add: less_le_not_le)
-    using order.trans by metis+
-  subgoal for x y 
-    apply(all \<open>cases x\<close>, all \<open>cases y\<close>)
-    apply(auto split: if_split simp add: less_le_not_le)
-    apply presburger
-    by (metis order_antisym_conv)
-  subgoal for x y 
-    by(all \<open>cases x\<close>, all \<open>cases y\<close>)
-      (auto split: if_split simp add: less_le_not_le)
-  done
-end
-
 subsection \<open>Definitions\<close>
 
-abbreviation "empty' == RBT_Set.empty"
-abbreviation "neighb_union == union_rbt"
-abbreviation "neighb_insert == insert_rbt"
-abbreviation "neighb_diff == diff_rbt"
-abbreviation "neighb_delete == delete_rbt"
-abbreviation "neighb_inter == inter_rbt"
-
 hide_const RBT_Set.empty Set.empty  not_blocked_update
+notation vset_empty ("\<emptyset>\<^sub>N")
 
 fun list_to_rbt :: "('a::linorder) list \<Rightarrow> 'a rbt" where
   "list_to_rbt [] = Leaf"
-| "list_to_rbt (x#xs) = neighb_insert x (list_to_rbt xs)"
+| "list_to_rbt (x#xs) = vset_insert x (list_to_rbt xs)"
 
-value "neighb_diff (list_to_rbt [1::nat, 2, 3, 4,6]) (list_to_rbt [0..20])"
+value "vset_diff (list_to_rbt [1::nat, 2, 3, 4,6]) (list_to_rbt [0..20])"
 
 text \<open>set of edges\<close>
 definition "get_from_set = List.find"
@@ -69,53 +27,33 @@ definition "set_invar = distinct"
 definition "to_set = set"
 definition "to_list = id"
 
-definition "t_set = Tree2.set_tree"
-definition "neighb_inv =  (\<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
-definition "neighb_empty = Leaf"
+notation map_empty ("\<emptyset>\<^sub>G")
 
-notation neighb_empty ("\<emptyset>\<^sub>N")
-
-definition "edge_map_update = (update::('a::linorder)
-   \<Rightarrow> ('a \<times> color) tree
-      \<Rightarrow> (('a \<times> ('a \<times> color) tree) \<times> color) tree
-         \<Rightarrow> (('a\<times> ('a \<times> color) tree) \<times> color) tree)"
-definition "adj_inv = (\<lambda> t. rbt_red t \<and> color t = Black)"
-definition "empty = (Leaf:: (('a \<times> ('a \<times> color) tree) \<times> color) tree)"
-
-notation empty ("\<emptyset>\<^sub>G")
-
-definition "connection_empty = empty'"
-definition "connection_update = update"
-definition "connection_delete = RBT_Map.delete"
-definition "connection_lookup = lookup"
-definition "connection_invar = M.invar"
-
-definition "flow_empty = empty'"
+definition "flow_empty = vset_empty"
 definition "flow_update = update"
 definition "flow_delete = RBT_Map.delete"
 definition "flow_lookup = lookup"
 definition "flow_invar = (\<lambda>t. M.invar t \<and>  rbt_red t)"
 
-
-definition "bal_empty = empty'"
+definition "bal_empty = vset_empty"
 definition "bal_update = update"
 definition "bal_delete = RBT_Map.delete"
 definition "bal_lookup = lookup"
 definition "bal_invar = (\<lambda>t. M.invar t \<and>  rbt_red t)"
 
-definition "rep_comp_empty = empty'"
+definition "rep_comp_empty = vset_empty"
 definition "rep_comp_update = update"
 definition "rep_comp_delete = RBT_Map.delete"
 definition "rep_comp_lookup = lookup"
 definition "rep_comp_invar = (\<lambda>t. M.invar t \<and>  rbt_red t)"
 
-definition "conv_empty = empty'"
+definition "conv_empty = vset_empty"
 definition "conv_update = update"
 definition "conv_delete = RBT_Map.delete"
 definition "conv_lookup = lookup"
 definition "conv_invar = (\<lambda>t. M.invar t \<and>  rbt_red t)"
 
-definition "not_blocked_empty = empty'"
+definition "not_blocked_empty = vset_empty"
 definition "not_blocked_update = update"
 definition "not_blocked_delete = RBT_Map.delete"
 definition "not_blocked_lookup = lookup"
@@ -170,7 +108,7 @@ and to_list: "\<And> E. set_invar E \<Longrightarrow> to_set E = set (to_list E)
                      M.invar_def  update_all(1)  color_no_change rbt_red_def rbt_def 
                      not_blocked_invar_def not_blocked_lookup_def not_blocked_update_all_def
                      flow_invar_def flow_lookup_def flow_update_all_def bal_invar_def
-                     bal_update_def bal_lookup_def t_set_def to_list_def to_set_def set_invar_def
+                     bal_update_def bal_lookup_def  to_list_def to_set_def set_invar_def
              intro!: update_all(2,3,4) get_max_correct)
 
 
@@ -268,93 +206,61 @@ lemmas [code] = remove_all_empties.simps lookup'.simps
                 edge_map_update'.simps
 end
 
-lemma Map_satisfied: "Map neighb_empty edge_map_update RBT_Map.delete lookup adj_inv"
+interpretation adj: Map where empty = vset_empty and update=edge_map_update
+and delete=delete and lookup= lookup and invar=adj_inv
   using RBT_Map.M.Map_axioms
-  by(auto simp add: Map_def rbt_red_def rbt_def M.invar_def neighb_empty_def edge_map_update_def adj_inv_def RBT_Set.empty_def )
+  by(auto simp add: Map_def rbt_red_def rbt_def M.invar_def  edge_map_update_def adj_inv_def RBT_Set.empty_def )
+
+lemmas Map_satisfied = adj.Map_axioms
 
 global_interpretation map': Map_default where 
-empty=empty and edge_map_update=edge_map_update and delete=delete
-and  lookup=lookup and adj_inv= adj_inv and default = neighb_empty
+empty=map_empty and edge_map_update=edge_map_update and delete=delete
+and  lookup=lookup and adj_inv= adj_inv and default = vset_empty
 defines lookup'= map'.lookup' and edge_map_update'=map'.edge_map_update'
 and remove_all_empties=map'.remove_all_empties
 and adj_inv'=map'.adj_inv'
   using Map_satisfied
-  by (auto intro: Map_default.intro simp add: empty_def neighb_empty_def)
+  by (auto intro: Map_default.intro simp add: map_empty_def RBT_Set.empty_def)
 
 definition "to_pair S = (SOME e. {prod.fst e, prod.snd e} = S)"
 
-lemma Set_satisified: "Set neighb_empty neighb_insert neighb_delete isin t_set neighb_inv"
-  using  RBT.Set_axioms 
-  by(auto simp add: neighb_empty_def delete_rbt_def insert_rbt_def t_set_def neighb_inv_def)
+lemmas Set_satisified = dfs.Graph.vset.set.Set_axioms
 
-lemma Set_Choose_axioms: "Set_Choose_axioms neighb_empty isin sel"
+lemma Set_Choose_axioms: "Set_Choose_axioms vset_empty isin sel"
   apply(rule Set_Choose_axioms.intro)
-  unfolding neighb_empty_def  
+  unfolding RBT_Set.empty_def  
   subgoal for s
     by(induction rule: sel.induct) auto
   done
 
-lemma Set_Choose_satisfied:"Set_Choose neighb_empty neighb_insert neighb_delete isin neighb_inv t_set sel"
-  using Set_satisified Set_Choose_axioms
-  by(auto simp add: Set_Choose_def)
+lemmas Set_Choose_satisfied = dfs.Graph.vset.Set_Choose_axioms
 
-lemma Pair_Graph_Specs_satisfied: "Pair_Graph_Specs empty RBT_Map.delete lookup neighb_insert isin t_set sel
-     edge_map_update adj_inv neighb_empty neighb_delete neighb_inv"
+interpretation Pair_Graph_Specs_satisfied: Pair_Graph_Specs map_empty RBT_Map.delete lookup vset_insert isin t_set sel
+     edge_map_update adj_inv vset_empty vset_delete vset_inv
   using Set_Choose_satisfied Map_satisfied
   unfolding Pair_Graph_Specs_def
-  by(auto simp add: Pair_Graph_Specs_def empty_def  neighb_empty_def)
+  by(auto simp add: Pair_Graph_Specs_def map_empty_def  RBT_Set.empty_def)
 
-lemma Set2_satisfied: "Set2 neighb_empty neighb_delete isin t_set neighb_inv neighb_insert neighb_union
-     neighb_inter neighb_diff"
-  using  Set2_Join_RBT.RBT.Set2_axioms 
-  by(auto simp add: RBT_Set.empty_def neighb_empty_def delete_rbt_def t_set_def neighb_inv_def insert_rbt_def
-                    union_rbt_def inter_rbt_def diff_rbt_def)
+lemmas Pair_Graph_Specs_satisfied = Pair_Graph_Specs_satisfied.Pair_Graph_Specs_axioms
 
+lemmas Set2_satisfied = dfs.set_ops.Set2_axioms
 
-global_interpretation dfs: DFS where insert = neighb_insert and
- sel = sel and  vset_empty = neighb_empty and  diff = neighb_diff and
- lookup = lookup and empty = empty and delete=delete and isin = isin and t_set=t_set
-and update=update and adjmap_inv = adj_inv and vset_delete= neighb_delete
-and vset_inv = neighb_inv and union=neighb_union and inter=neighb_inter and G = F and
-t = "t::'a::linorder" and s = s  for F t s
-defines  dfs_initial_state = dfs.initial_state and
-neighbourhood=dfs.Graph.neighbourhood and
-dfs_impl = dfs.DFS_impl
-  using  Set2_satisfied Pair_Graph_Specs_satisfied
-  by(auto intro!: DFS.intro simp add: edge_map_update_def)
-
-definition "realising_edges_empty = (empty'::((('a ::linorder\<times> 'a) \<times> ('edge_type list)) \<times> color) tree)"
+definition "realising_edges_empty = (vset_empty::((('a ::linorder\<times> 'a) \<times> ('edge_type list)) \<times> color) tree)"
 definition "realising_edges_update = update"
 definition "realising_edges_delete = RBT_Map.delete"
 definition "realising_edges_lookup = lookup"
 definition "realising_edges_invar = M.invar"
 
-lemma Map_realising_edges:"Map realising_edges_empty realising_edges_update realising_edges_delete realising_edges_lookup realising_edges_invar"
+interpretation Map_realising_edges: Map realising_edges_empty realising_edges_update realising_edges_delete realising_edges_lookup realising_edges_invar
   using RBT_Map.M.Map_axioms     
   by(auto simp add: realising_edges_update_def realising_edges_empty_def  realising_edges_delete_def
                     realising_edges_lookup_def realising_edges_invar_def)
 
+lemmas Map_realising_edges = Map_realising_edges.Map_axioms
 
-lemma Map_connection:"Map connection_empty connection_update connection_delete connection_lookup connection_invar"
-  using RBT_Map.M.Map_axioms     
-  by(auto simp add: connection_update_def connection_empty_def  connection_delete_def
-                    connection_lookup_def connection_invar_def)
+lemmas Map_connection = Map_connection.Map_axioms
 
-lemma bellman_ford_spec: "bellman_ford_spec connection_update connection_empty connection_lookup connection_invar connection_delete"
-  using Map_connection by(auto intro!: bellman_ford_spec.intro)
-
-global_interpretation bellford: bellman_ford_spec where connection_update=connection_update
-and connection_empty=connection_empty and connection_lookup=connection_lookup
-and connection_delete=connection_delete and connection_invar=connection_invar 
-and es= es and vs=vs and edge_costs=edge_costs
-for nb f edge_costs es vs
-defines search_rev_path_exec = bellford.search_rev_path_exec 
-and bellman_ford_init_algo = bellford.bellman_ford_init
-and  bellman_ford_algo = bellford.bellman_ford
-and relax=bellford.relax                              
-  using bellman_ford_spec by auto
-
-term bellman_ford_algo
+lemmas bellman_ford_spec = bellford.bellman_ford_spec_axioms
 
 locale function_generation =
 Map_realising: Map realising_edges_empty "realising_edges_update::('a\<times> 'a) \<Rightarrow> 'edge_type list \<Rightarrow> 'realising_type \<Rightarrow> 'realising_type"
@@ -564,15 +470,16 @@ definition "init_rep_card = foldr (\<lambda> x fl. rep_comp_update x  (x,1) fl) 
 definition "init_not_blocked = foldr (\<lambda> x fl. not_blocked_update x False fl) ees not_blocked_empty"
 end
 
-lemma Set_Choose:"Set_Choose neighb_empty neighb_insert neighb_delete isin neighb_inv t_set sel"
-  by (simp add: Set_Choose_satisfied)
+lemmas Set_Choose = Set_Choose_satisfied
 
 lemmas map' = map'.map'
 
-lemma Adj_Map_Specs2:"Adj_Map_Specs2 lookup' t_set sel edge_map_update' adj_inv' neighb_empty neighb_delete neighb_insert
-     neighb_inv isin" 
+interpretation Adj_Map_Specs2: Adj_Map_Specs2 lookup' t_set sel edge_map_update' adj_inv' vset_empty vset_delete vset_insert
+     vset_inv isin 
   using Set_Choose map'
-  by(auto intro:  Adj_Map_Specs2.intro simp add: empty_def neighb_empty_def  Adj_Map_Specs2_def Map'_def)
+  by(auto intro:  Adj_Map_Specs2.intro simp add:  RBT_Set.empty_def  Adj_Map_Specs2_def Map'_def)
+
+lemmas Adj_Map_Specs2 = Adj_Map_Specs2.Adj_Map_Specs2_axioms
 
 lemma invar_filter: "\<lbrakk> set_invar s1\<rbrakk> \<Longrightarrow> set_invar(filter P s1)"
   by (simp add: set_invar_def)
@@ -589,90 +496,50 @@ lemma are_all: "\<lbrakk> set_invar S\<rbrakk> \<Longrightarrow> are_all P S \<l
   unfolding to_set_def set_invar_def
   by(induction S) auto
 
-lemma Set3: "Set3 get_from_set filter are_all set_invar to_set"
+interpretation Set3: Set3 get_from_set filter are_all set_invar to_set
   using set_filter invar_filter  set_get(1,2)
   by (auto intro!: filter_cong Set3.intro intro: set_get(3-) set_filter simp add: are_all to_set_def)
  fastforce+
 
-lemma loopA_spec:"loopA_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin filter are_all set_invar to_set lookup'
-     t_set sel adj_inv' get_from_set"
-  by(auto intro!: loopA_spec.intro simp add: Adj_Map_Specs2 Set3 algo_spec.intro)
+lemmas Set3 = Set3.Set3_axioms
 
-lemma algo_impl_spec_axioms:"algo_impl_spec_axioms flow_lookup flow_invar bal_lookup bal_invar rep_comp_lookup rep_comp_invar not_blocked_lookup
-     not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max"
-    by(auto intro: algo_impl_spec_axioms.intro  
-         intro!: flow_update_all get_max not_blocked_update_all rep_comp_update_all)
-
-lemma Map_bal:"Map bal_empty bal_update bal_delete bal_lookup bal_invar"
+interpretation bal_map: Map where empty = bal_empty and update=bal_update and lookup= bal_lookup
+and delete= bal_delete and invar = bal_invar
   using RBT_Map.M.Map_axioms
   by(auto simp add: bal_update_def bal_empty_def  bal_delete_def
                     bal_lookup_def bal_invar_def  M.invar_def Map_def rbt_red_def rbt_def)
 
-lemma Map_conv:"Map conv_empty conv_update conv_delete conv_lookup conv_invar"
+lemmas Map_bal = bal_map.Map_axioms
+
+interpretation Map_conv: Map conv_empty conv_update conv_delete conv_lookup conv_invar
   using RBT_Map.M.Map_axioms
   by(auto simp add: conv_update_def conv_empty_def  conv_delete_def
                     conv_lookup_def conv_invar_def  M.invar_def Map_def rbt_red_def rbt_def)
 
-lemma Map_flow:"Map flow_empty flow_update flow_delete flow_lookup flow_invar"
+lemmas Map_conv = Map_conv.Map_axioms
+
+interpretation flow_map: Map where empty = flow_empty and update=flow_update and lookup= flow_lookup
+and delete= flow_delete and invar = flow_invar
   using RBT_Map.M.Map_axioms
   by(auto simp add: flow_update_def flow_empty_def  flow_delete_def
                     flow_lookup_def flow_invar_def  M.invar_def Map_def rbt_red_def rbt_def)
 
-lemma Map_not_blocked:"Map not_blocked_empty not_blocked_update not_blocked_delete not_blocked_lookup not_blocked_invar"
+lemmas Map_flow = flow_map.Map_axioms
+
+interpretation Map_not_blocked: 
+ Map not_blocked_empty not_blocked_update not_blocked_delete not_blocked_lookup not_blocked_invar
   using RBT_Map.M.Map_axioms
   by(auto simp add: not_blocked_update_def not_blocked_empty_def  not_blocked_delete_def
                     not_blocked_lookup_def not_blocked_invar_def  M.invar_def Map_def rbt_red_def rbt_def)
 
-lemma Map_rep_comp:"Map rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar"
+lemmas Map_not_blocked = Map_not_blocked.Map_axioms
+
+interpretation Map_rep_comp:Map rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar
   using RBT_Map.M.Map_axioms
   by(auto simp add: rep_comp_update_def rep_comp_empty_def  rep_comp_delete_def
                     rep_comp_lookup_def rep_comp_invar_def  M.invar_def Map_def rbt_red_def rbt_def)
 
-lemma algo_impl_spec: "algo_impl_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin get_from_set filter are_all set_invar
-     to_set lookup' t_set sel adj_inv' flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update
-     bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar
-     conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty not_blocked_delete
-     not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max"
-  using  Map_bal Map_conv Map_flow Map_not_blocked
-        Map_rep_comp  algo_impl_spec_axioms
-  by(auto intro!: algo_impl_spec.intro simp add: Adj_Map_Specs2 Set3 algo_spec.intro)
-
-lemma loopA_impl_spec: "loopA_impl_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin filter are_all set_invar to_set
-     lookup' t_set sel adj_inv' get_from_set flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty
-     bal_update bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup
-     rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty
-     not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all
-     get_max"
-  using loopA_spec algo_impl_spec
-  by(auto intro!: loopA_impl_spec.intro)
-
-lemma algo_spec: "algo_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin get_from_set filter are_all set_invar
-     to_set lookup' t_set sel adj_inv'"
-  by (simp add: Adj_Map_Specs2 Set3 algo_spec.intro)
-
-lemma loopB_impl_spec: "loopB_impl_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin filter are_all set_invar to_set
-     lookup' t_set sel adj_inv' flow_update flow_delete flow_lookup flow_invar bal_update bal_delete bal_lookup bal_invar
-     rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_update conv_delete conv_lookup conv_invar
-     not_blocked_update not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all
-     flow_update_all get_max get_from_set flow_empty bal_empty rep_comp_empty conv_empty not_blocked_empty"
-  using algo_spec algo_impl_spec by(auto intro!: loopB_impl_spec.intro)
-
-lemma orlins_impl_spec: "orlins_impl_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin filter are_all set_invar to_set
-     lookup' t_set sel adj_inv' get_from_set flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty
-     bal_update bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup
-     rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty
-     not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all
-     get_max"
-  using loopA_impl_spec loopB_impl_spec
-  by(auto intro!: orlins_impl_spec.intro)
-
-lemma function_generation:"function_generation realising_edges_empty realising_edges_update realising_edges_delete realising_edges_lookup
-     realising_edges_invar bal_empty bal_update bal_delete bal_lookup bal_invar flow_empty flow_update flow_delete
-     flow_lookup flow_invar not_blocked_empty not_blocked_update not_blocked_delete not_blocked_lookup not_blocked_invar
-rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar"
-  by(auto intro!: function_generation.intro simp add: Map_realising_edges Map_bal Map_flow Map_not_blocked Map_rep_comp)
-
-term function_generation.\<c>
+lemmas Map_rep_comp = Map_rep_comp.Map_axioms
 
 global_interpretation selection_functions: function_generation
   where 
@@ -745,22 +612,16 @@ and \<u> = selection_functions.\<u>
 and \<c> = selection_functions.\<c>
 and \<E> = selection_functions.\<E>
 and \<b> = selection_functions.\<b>
-  using function_generation by simp
+  by(auto intro!: function_generation.intro simp add: Map_realising_edges Map_bal Map_flow Map_not_blocked Map_rep_comp)
 
-term  \<c> term selection_functions.\<b>
-
-term "get_source_target_path_a_impl \<E>_impl \<c>_impl"
-
-term default_conv_to_rdg
-
-term "get_source_target_path_a_impl (fst o make_pair) (snd o make_pair) create_edge make_pair \<E>_impl  \<c>_impl c_lookup"
+lemmas function_generation = selection_functions.function_generation_axioms
 
 global_interpretation orlins_impl_spec: orlins_impl_spec where
      edge_map_update =edge_map_update'
 and neighb_empty = "\<emptyset>\<^sub>N"
-and neighb_delete = neighb_delete 
-and neighb_insert=neighb_insert 
-and neighb_inv = neighb_inv
+and neighb_delete = vset_delete 
+and neighb_insert=vset_insert 
+and neighb_inv = vset_inv
 and isin = isin 
 and get_from_set = get_from_set 
 and filter = filter 
@@ -837,7 +698,19 @@ defines initial_impl = orlins_impl_spec.initial_impl and
         move_balance = orlins_impl_spec.move_balance and
         move= orlins_impl_spec.move and
         insert_undirected_edge_impl = orlins_impl_spec.insert_undirected_edge_impl
-  using orlins_impl_spec by simp
+  using  Map_bal Map_conv Map_flow Map_not_blocked
+        Map_rep_comp
+  by(auto intro!: orlins_impl_spec.intro algo_impl_spec.intro loopA_spec.intro rep_comp_update_all
+                  loopB_impl_spec.intro loopA_impl_spec.intro flow_update_all get_max not_blocked_update_all
+           intro: algo_impl_spec_axioms.intro
+        simp add: Set3 Adj_Map_Specs2   algo_spec.intro)
+
+lemmas orlins_impl_spec = orlins_impl_spec.orlins_impl_spec_axioms
+lemmas loopB_impl_spec = orlins_impl_spec.loopB_impl_spec_axioms
+lemmas algo_spec = orlins_impl_spec.algo_spec_axioms
+lemmas loopA_impl_spec = orlins_impl_spec.loopA_impl_spec_axioms
+lemmas algo_impl_spec = orlins_impl_spec.algo_impl_spec_axioms
+lemmas loopA_spec = orlins_impl_spec.loopA_spec_axioms
 
 subsection \<open>Proofs\<close>
 
@@ -846,29 +719,6 @@ lemma set_filter:   "\<lbrakk> set_invar s1 \<rbrakk> \<Longrightarrow> to_set(f
                            \<Longrightarrow> filter P s1 = filter Q s1"
   using filter_cong[OF refl, of s1 P Q]
   by (auto simp add: set_invar_def to_set_def)
-
-
-interpretation Set3: Set3 where get_from_set = get_from_set and
-filter = filter and are_all = are_all and set_invar = set_invar and to_set = to_set
-  using Set3 by simp
-
-interpretation Set: Set where 
-empty = neighb_empty and  insert = neighb_insert and
- delete = neighb_delete and isin = isin and  set = t_set and invar = neighb_inv
-  using Set_satisified by simp
-
-interpretation Set_Choose: Set_Choose where
-empty = neighb_empty and insert = neighb_insert and  delete = neighb_delete and
-isin = isin and invar = neighb_inv and t_set = t_set and sel = sel
-  using Set_Choose_satisfied by simp
-
-interpretation adj: Map where empty = neighb_empty and update=edge_map_update
-and delete=delete and lookup= lookup and invar=adj_inv
-  using Map_satisfied by simp
-
-interpretation flow_map: Map where empty = flow_empty and update=flow_update and lookup= flow_lookup
-and delete= flow_delete and invar = flow_invar
-  using Map_flow by auto
 
 lemma flow_invar_Leaf: "flow_invar Leaf"
   by (metis RBT_Set.empty_def flow_empty_def flow_map.invar_empty)
@@ -917,7 +767,6 @@ dom (bal_lookup (foldr (\<lambda>xy tree.  bal_update  (g xy) (f xy tree) tree) 
     by auto
   by(simp add: dom_def, subst bal_map.map_update) (auto intro: bal_invar_fold)
 
-
 interpretation rep_comp_map: Map where empty = rep_comp_empty and update=rep_comp_update and lookup= rep_comp_lookup
 and delete= rep_comp_delete and invar = rep_comp_invar
   using Map_rep_comp by auto
@@ -964,7 +813,7 @@ lemma M_dom_fold: "dom (lookup (foldr (\<lambda> xy tree. update (prod.fst xy) (
 lemma transform_to_sets_lookup_lookup':"adj_inv' E \<Longrightarrow>  (case lookup' E u of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb) =
        (case lookup (remove_all_empties E) u of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)"
   by(cases E)
-  (auto simp add:dfs.Graph.adjmap.map_empty  map'.adj.map_empty split: option.split)
+  (auto simp add:  map'.adj.map_empty split: option.split)
 
 hide_const RBT.B
 
@@ -1006,13 +855,11 @@ and to_list: "\<And> E. set_invar E \<Longrightarrow> to_set E = set (to_list E)
              "\<And> E. set_invar E \<Longrightarrow> distinct (to_list E)"
 begin
 
-find_theorems rep_comp_update_all
-
-lemmas  rep_comp_update_all = rep_comp_iterator.update_all
+lemmas rep_comp_update_all = rep_comp_iterator.update_all
 lemmas flow_update_all = flow_iterator.update_all
 lemmas not_blocked_update_all = not_blocked_iterator.update_all
 
-notation neighb_empty ("\<emptyset>\<^sub>N")
+notation vset_empty ("\<emptyset>\<^sub>N")
 
 lemma vs_are: "dVs (make_pair ` \<E>) = set (map fst \<E>_list) \<union> set (map snd \<E>_list)"
   using multigraph.make_pair[OF refl refl] to_list \<E>_impl_invar
@@ -1073,13 +920,12 @@ lemma \<E>_impl_basic: "set_invar \<E>_impl"  "\<exists> e. e \<in> (to_set \<E>
                   "finite \<E>"
   using \<E>_impl by auto
 
-lemma cost_flow_network[simp]: "cost_flow_network fst snd make_pair create_edge \<u> \<E>"   
+interpretation cost_flow_network: cost_flow_network where \<E> = \<E> and \<c> = \<c> and \<u> = \<u>
+and fst = fst and snd = snd and make_pair = make_pair and create_edge = create_edge
   using  \<E>_def multigraph.multigraph_axioms
   by(auto simp add: \<u>_def cost_flow_network_def flow_network_axioms_def flow_network_def)
 
-interpretation cost_flow_network: cost_flow_network where \<E> = \<E> and \<c> = \<c> and \<u> = \<u>
-and fst = fst and snd = snd and make_pair = make_pair and create_edge = create_edge
-  by simp
+lemmas cost_flow_network[simp] = cost_flow_network.cost_flow_network_axioms
 
 abbreviation "\<cc> \<equiv> cost_flow_network.\<cc>"
 abbreviation "F \<equiv> flow_network_spec.F"
@@ -1152,95 +998,87 @@ begin
 lemma  conservative_weights: "\<nexists> C. closed_w (make_pair ` \<E>) (map make_pair C) \<and> (set C \<subseteq> \<E>) \<and> foldr (\<lambda> e acc. acc + \<c> e) C 0 < 0"
   using no_cycle_cond no_cycle_cond_def by blast
 
-lemma algo_axioms: " algo_axioms make_pair \<u> \<c> \<E> neighb_empty set_invar to_set lookup' adj_inv' to_pair \<epsilon> \<E>_impl all_empty
+lemma algo_axioms: " algo_axioms make_pair \<u> \<c> \<E> vset_empty set_invar to_set lookup' adj_inv' to_pair \<epsilon> \<E>_impl all_empty
      N default_conv_to_rdg"
   using to_pair_axioms \<epsilon>_axiom conservative_weights  \<E>_impl(1) default_conv_to_rdg 
   by(fastforce intro!: algo_axioms.intro simp add: \<u>_def \<E>_def N_def')+
 
-lemma algo: "algo snd make_pair create_edge \<u> \<c> \<E> neighb_empty neighb_delete neighb_insert neighb_inv 
-       isin get_from_set filter
-     are_all set_invar to_set lookup' t_set sel adj_inv' to_pair \<epsilon> \<E>_impl all_empty N default_conv_to_rdg fst
-     edge_map_update'"
-  using cost_flow_network 
-  by(auto intro!: algo.intro algo_spec.intro simp add: Adj_Map_Specs2 algo_axioms algo_def Set3_axioms)
-
 lemmas dfs_defs = dfs.initial_state_def
 
-term "Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin"
-
 lemma remove_all_empty_neighbourhood:
-"adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow>  (Adj_Map_Specs2.neighbourhood lookup' neighb_empty E)
-              =  (Pair_Graph_Specs.neighbourhood  lookup neighb_empty (remove_all_empties E))"
+"adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow>  (Adj_Map_Specs2.neighbourhood  E)
+              =  (Pair_Graph_Specs.neighbourhood  lookup vset_empty (remove_all_empties E))"
   using transform_to_sets_lookup_lookup'[of E ]                  
- by(auto  simp add: Adj_Map_Specs2.digraph_abs_def[OF Adj_Map_Specs2] Pair_Graph_Specs.digraph_abs_def[OF Pair_Graph_Specs_satisfied]
-            Adj_Map_Specs2.neighbourhood_def[OF Adj_Map_Specs2] Pair_Graph_Specs.neighbourhood_def[OF Pair_Graph_Specs_satisfied])
+ by(auto  simp add: Adj_Map_Specs2.digraph_abs_def Pair_Graph_Specs.digraph_abs_def
+            Adj_Map_Specs2.neighbourhood_def Pair_Graph_Specs.neighbourhood_def[OF Pair_Graph_Specs_satisfied])
   
 lemma remove_all_empty_digraph_abs:
-"adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow>  (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E)
-              =  (Pair_Graph_Specs.digraph_abs  lookup isin neighb_empty (remove_all_empties E))"
+"adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow>  (Adj_Map_Specs2.digraph_abs E)
+              =  (Pair_Graph_Specs.digraph_abs  lookup isin vset_empty (remove_all_empties E))"
   using transform_to_sets_lookup_lookup'[of E]
-  by (auto simp add: Adj_Map_Specs2.digraph_abs_def[OF Adj_Map_Specs2] Pair_Graph_Specs.digraph_abs_def[OF Pair_Graph_Specs_satisfied]
-            Adj_Map_Specs2.neighbourhood_def[OF Adj_Map_Specs2] Pair_Graph_Specs.neighbourhood_def[OF Pair_Graph_Specs_satisfied])
+  by (auto simp add: Adj_Map_Specs2.digraph_abs_def Pair_Graph_Specs.digraph_abs_def[OF Pair_Graph_Specs_satisfied]
+            Adj_Map_Specs2.neighbourhood_def Pair_Graph_Specs.neighbourhood_def[OF Pair_Graph_Specs_satisfied])
 
-lemma loopA_axioms_extended: "vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E) u q v \<Longrightarrow>
+lemma loopA_axioms_extended: "vwalk_bet (Adj_Map_Specs2.digraph_abs  E) u q v \<Longrightarrow>
                        adj_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow> p = get_path u v E \<Longrightarrow> 
-                        u \<in> Vs ((Adj_Map_Specs2.to_graph lookup' isin) E) \<Longrightarrow>
-                        (\<And> x. lookup' E x \<noteq> None \<and> neighb_inv (the (lookup' E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
-                     vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E) u p v"
-"vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E) u q v \<Longrightarrow> 
+                        u \<in> Vs ((Adj_Map_Specs2.to_graph ) E) \<Longrightarrow>
+                        (\<And> x. lookup' E x \<noteq> None \<and> vset_inv (the (lookup' E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
+                     vwalk_bet (Adj_Map_Specs2.digraph_abs  E) u p v"
+"vwalk_bet (Adj_Map_Specs2.digraph_abs  E) u q v \<Longrightarrow> 
                        adj_inv' E \<Longrightarrow> p = get_path u v E \<Longrightarrow> 
-                        u \<in> Vs ((Adj_Map_Specs2.to_graph lookup' isin) E) \<Longrightarrow>
-                        (\<And> x. lookup' E x \<noteq> None \<and> neighb_inv (the (lookup' E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
+                        u \<in> Vs ((Adj_Map_Specs2.to_graph ) E) \<Longrightarrow>
+                        (\<And> x. lookup' E x \<noteq> None \<and> vset_inv (the (lookup' E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
                      distinct p"
 proof(goal_cases)
   case 1
   note assms = this
-  have graph_invar: "dfs.Graph.graph_inv (remove_all_empties E)"
-  proof(subst dfs.Graph.graph_inv_def, rule conjI[rotated], rule, rule, rule, goal_cases)
+  find_theorems Pair_Graph_Specs.graph_inv lookup
+  have graph_invar: "Pair_Graph_Specs_satisfied.graph_inv (remove_all_empties E)"
+  proof(subst Pair_Graph_Specs_satisfied.graph_inv_def, rule conjI[rotated], rule, rule, rule, goal_cases)
     case (1 v neighb)
     then show ?case 
       using assms(5)[of v] remove_almost_all_empties(2,4)[OF assms(2), of v]
       by(cases "lookup' E v = Some neighb") auto
   qed (simp add: assms(2) remove_almost_all_empties(5))
-  have finite_graph:"dfs.Graph.finite_graph (remove_all_empties E)"
+  have finite_graph:"Pair_Graph_Specs_satisfied.finite_graph (remove_all_empties E)"
     using assms(2) remove_almost_all_empties(1)
     by blast
-  have finite_neighbs:"dfs.Graph.finite_vsets undefined"
-    unfolding dfs.Graph.finite_vsets_def 
-    by (simp add: t_set_def)
-  obtain e where e_prop:"e \<in> (Adj_Map_Specs2.digraph_abs lookup'  neighb_empty isin E)" "u = prod.fst e"
+  have finite_neighbs:"Pair_Graph_Specs_satisfied.finite_vsets undefined"
+    unfolding Pair_Graph_Specs_satisfied.finite_vsets_def 
+    by (simp add: )
+  obtain e where e_prop:"e \<in> (Adj_Map_Specs2.digraph_abs  E)" "u = prod.fst e"
     using assms(1) assms(6) no_outgoing_last 
-    unfolding vwalk_bet_def dfs.Graph.digraph_abs_def 
+    unfolding vwalk_bet_def Pair_Graph_Specs_satisfied.digraph_abs_def 
     by fastforce
-  hence neighb_u: "Adj_Map_Specs2.neighbourhood lookup' neighb_empty E u \<noteq> neighb_empty"
+  hence neighb_u: "Adj_Map_Specs2.neighbourhood  E u \<noteq> vset_empty"
     using  Set.set_specs(1)  assms(2)
- dfs.Graph.are_connected_absI[OF _  graph_invar, of "prod.fst e" "prod.snd e", simplified]  
-    by(auto simp add: neighbourhood_def   dfs.Graph.digraph_abs_def 
+ Pair_Graph_Specs_satisfied.are_connected_absI[OF _  graph_invar, of "prod.fst e" "prod.snd e", simplified]  
+    by(auto simp add: neighbourhood_def   Pair_Graph_Specs_satisfied.digraph_abs_def 
                       remove_all_empty_digraph_abs [OF assms(2)]
                       remove_all_empty_neighbourhood[OF assms(2)] )
   have q_non_empt: "q \<noteq> []"
     using assms(1) by auto
-  obtain d where "d \<in> (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E)" "v = prod.snd d"
+  obtain d where "d \<in> (Adj_Map_Specs2.digraph_abs  E)" "v = prod.snd d"
     using assms(1)  assms(6)  singleton_hd_last'[OF q_non_empt]
            vwalk_append_edge[of _ "butlast q" "[last q]",simplified append_butlast_last_id[OF q_non_empt]] 
-    by(force simp add: vwalk_bet_def Adj_Map_Specs2.digraph_abs_def[OF Adj_Map_Specs2])
-  have u_in_Vs:"u \<in> dVs (Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E)" 
+    by(force simp add: vwalk_bet_def Adj_Map_Specs2.digraph_abs_def)
+  have u_in_Vs:"u \<in> dVs (Adj_Map_Specs2.digraph_abs  E)" 
     using assms(1) assms(2) remove_all_empty_digraph_abs by auto
-  have dfs_axioms: "DFS.DFS_axioms isin t_set adj_inv \<emptyset>\<^sub>N neighb_inv lookup 
+  have dfs_axioms: "DFS.DFS_axioms isin t_set adj_inv \<emptyset>\<^sub>N vset_inv lookup 
                          (remove_all_empties E) u"
     using finite_graph finite_neighbs graph_invar u_in_Vs remove_all_empty_digraph_abs[OF assms(2)]
-    by(simp only: dfs.DFS_axioms_def)
-  have dfs_thms: "DFS_thms empty delete neighb_insert isin t_set sel update adj_inv neighb_empty neighb_delete
-                   neighb_inv neighb_union neighb_inter neighb_diff lookup (remove_all_empties E) u"
+    by(simp only: dfs.DFS_axioms_def )
+  have dfs_thms: "DFS_thms map_empty delete vset_insert isin t_set sel update adj_inv vset_empty vset_delete
+                   vset_inv vset_union vset_inter vset_diff lookup (remove_all_empties E) u"
     by(auto intro!: DFS_thms.intro DFS_thms_axioms.intro simp add: dfs.DFS_axioms dfs_axioms)
-  have dfs_dom:"DFS.DFS_dom neighb_insert sel neighb_empty neighb_diff lookup 
+  have dfs_dom:"DFS.DFS_dom vset_insert sel vset_empty vset_diff lookup 
                            (remove_all_empties E) v (dfs_initial u)"
     using DFS_thms.initial_state_props(6)[OF dfs_thms]
     by(simp add:  dfs_initial_def dfs_initial_state_def DFS_thms.initial_state_props(6) dfs_axioms)
   have rectified_map_subset:"dfs.Graph.digraph_abs (remove_all_empties E) \<subseteq> 
-                (Adj_Map_Specs2.digraph_abs lookup' neighb_empty isin E)"
+                (Adj_Map_Specs2.digraph_abs E)"
     by (simp add: assms(2) remove_all_empty_digraph_abs)
-  have rectified_map_subset_rev:"Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E 
+  have rectified_map_subset_rev:"Adj_Map_Specs2.digraph_abs  E 
                                  \<subseteq> dfs.Graph.digraph_abs (remove_all_empties E)"
     by (simp add: assms(2) remove_all_empty_digraph_abs)
   have reachable:"DFS_state.return (dfs E v (dfs_initial u)) = Reachable"
@@ -1249,7 +1087,7 @@ proof(goal_cases)
     hence "\<nexists>p. distinct p \<and> vwalk_bet (dfs.Graph.digraph_abs (remove_all_empties E)) u p v"
       using  DFS_thms.DFS_correct_1[OF dfs_thms, of v]  DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of v] 
       by (auto simp add:  dfs_def dfs_initial_def dfs_initial_state_def simp add: dfs_impl_def)
-    moreover obtain q' where "vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E ) u q' v" "distinct q'"
+    moreover obtain q' where "vwalk_bet (Adj_Map_Specs2.digraph_abs  E ) u q' v" "distinct q'"
       using vwalk_bet_to_distinct_is_distinct_vwalk_bet[OF assms(1)]
       by(auto simp add: distinct_vwalk_bet_def )
     moreover hence "vwalk_bet (dfs.Graph.digraph_abs (remove_all_empties E)) u q' v"
@@ -1262,7 +1100,7 @@ proof(goal_cases)
     using reachable sym[OF DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of v]]  
     by(auto intro!: DFS_thms.DFS_correct_2[OF dfs_thms, of v]
          simp add: dfs_initial_def  dfs_def dfs_axioms dfs_impl_def dfs_initial_state_def) 
-  thus "vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E ) u p v"
+  thus "vwalk_bet (Adj_Map_Specs2.digraph_abs E ) u p v"
     unfolding assms(3) get_path_def
     by (meson rectified_map_subset vwalk_bet_subset)
   show "distinct p"
@@ -1277,11 +1115,11 @@ lemma algo_impl_spec_axioms:"algo_impl_spec_axioms flow_lookup flow_invar bal_lo
     by(auto intro: algo_impl_spec_axioms.intro  
          intro!: flow_update_all get_max not_blocked_update_all rep_comp_update_all)
 
-lemma algo_spec: "algo_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin get_from_set filter are_all set_invar
+lemma algo_spec: "algo_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin get_from_set filter are_all set_invar
      to_set lookup' t_set sel adj_inv'"
   by(auto intro!: algo_spec.intro simp add: Adj_Map_Specs2 Set3_axioms algo_spec.intro)
 
-lemma algo_impl_spec: "algo_impl_spec edge_map_update' neighb_empty neighb_delete neighb_insert neighb_inv isin get_from_set filter are_all set_invar
+lemma algo_impl_spec: "algo_impl_spec edge_map_update' vset_empty vset_delete vset_insert vset_inv isin get_from_set filter are_all set_invar
      to_set lookup' t_set sel adj_inv' flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update
      bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar
      conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty not_blocked_delete
@@ -1289,8 +1127,21 @@ lemma algo_impl_spec: "algo_impl_spec edge_map_update' neighb_empty neighb_delet
   using  Map_bal.Map_axioms Map_conv Map_flow.Map_axioms Map_not_blocked.Map_axioms
           algo_impl_spec_axioms algo_spec conv_map.Map_axioms  Map_axioms
   by(auto intro!: algo_impl_spec.intro simp add: Adj_Map_Specs2 Set3_axioms algo_spec.intro)
+
+interpretation algo: algo where \<E> = \<E> and \<c> = \<c> 
+and \<u> = \<u> and edge_map_update = edge_map_update' and neighb_empty = vset_empty
+and neighb_delete= vset_delete and neighb_insert = vset_insert
+and neighb_inv = vset_inv and isin = isin and get_from_set=get_from_set
+and filter=filter and are_all=are_all and set_invar=set_invar
+and to_set=to_set and lookup=lookup' and t_set=t_set and sel=sel and adj_inv=adj_inv'
+and to_pair=to_pair and \<epsilon> = \<epsilon> and \<E>_impl=\<E>_impl and empty_forest=all_empty
+and default_conv_to_rdg=default_conv_to_rdg and \<b> = \<b> and N = N
+and snd = snd and fst = fst and make_pair = make_pair and create_edge=create_edge
+  using cost_flow_network 
+  by(auto intro!: algo.intro algo_spec.intro simp add: Adj_Map_Specs2 algo_axioms algo_def Set3_axioms)
+lemmas algo = algo.algo_axioms
  
-lemma algo_impl:"algo_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' neighb_empty neighb_delete neighb_insert neighb_inv isin
+lemma algo_impl:"algo_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' vset_empty vset_delete vset_insert vset_inv isin
      get_from_set filter are_all set_invar to_set lookup' t_set sel adj_inv' to_pair \<epsilon> \<E>_impl all_empty N
      default_conv_to_rdg flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete
      bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_update
@@ -1300,20 +1151,20 @@ lemma algo_impl:"algo_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_upd
         Map_rep_comp  algo_impl_spec
   by(auto intro!: algo_impl.intro) 
 
-lemma loopA_axioms:"loopA_axioms (\<emptyset>\<^sub>N::('a \<times> color) tree) neighb_inv isin lookup' adj_inv' get_path"
+lemma loopA_axioms:"loopA_axioms (\<emptyset>\<^sub>N::('a \<times> color) tree) vset_inv isin lookup' adj_inv' get_path"
   by(auto simp add: loopA_axioms_def loopA_axioms_extended)
 
-lemma loopA_spec:"loopA_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin filter are_all set_invar to_set lookup'
+lemma loopA_spec:"loopA_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set lookup'
      t_set sel adj_inv' get_from_set"
   by(auto intro!: loopA_spec.intro simp add: Adj_Map_Specs2 Set3 algo_spec)
 
-lemma loopA:"loopA snd make_pair create_edge \<u> \<E> \<c> edge_map_update' neighb_empty neighb_delete neighb_insert neighb_inv isin filter
+lemma loopA:"loopA snd make_pair create_edge \<u> \<E> \<c> edge_map_update' vset_empty vset_delete vset_insert vset_inv isin filter
      are_all set_invar to_set lookup' t_set sel adj_inv' to_pair \<epsilon> N default_conv_to_rdg get_from_set all_empty \<E>_impl
      get_path fst"
   using loopA_spec loopA_axioms algo
   by(auto intro!: loopA.intro)
 
-lemma loopA_impl_spec: "loopA_impl_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin filter are_all set_invar to_set
+lemma loopA_impl_spec: "loopA_impl_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set
      lookup' t_set sel adj_inv' get_from_set flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty
      bal_update bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup
      rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty
@@ -1322,7 +1173,7 @@ lemma loopA_impl_spec: "loopA_impl_spec edge_map_update' \<emptyset>\<^sub>N nei
   using loopA_spec algo_impl_spec
   by(auto intro!: loopA_impl_spec.intro)
 
-lemma loopA_impl:"Orlins_Implementation.loopA_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' neighb_empty neighb_delete neighb_insert neighb_inv isin
+lemma loopA_impl:"Orlins_Implementation.loopA_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' vset_empty vset_delete vset_insert vset_inv isin
      filter are_all set_invar to_set lookup' t_set sel adj_inv' to_pair \<epsilon> N default_conv_to_rdg get_from_set all_empty
      \<E>_impl get_path flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete bal_lookup
      bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_empty conv_update
@@ -1800,12 +1651,12 @@ and es= es and vs=vs and edge_costs="  (\<lambda> u v. prod.snd (get_edge_and_co
 for nb f
   using bellman_ford_backward by auto
 
-lemma loopB_spec: " loopB_spec \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin filter are_all set_invar to_set lookup' t_set sel adj_inv'
+lemma loopB_spec: " loopB_spec \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set lookup' t_set sel adj_inv'
      edge_map_update' get_from_set"
   using algo_spec
   by(auto intro!: loopB_spec.intro)
 
-lemma loopB: "loopB snd make_pair create_edge \<u> \<c> \<E> neighb_empty neighb_delete neighb_insert neighb_inv isin get_from_set filter
+lemma loopB: "loopB snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete vset_insert vset_inv isin get_from_set filter
      are_all set_invar to_set lookup' t_set sel adj_inv' to_pair \<epsilon> \<E>_impl all_empty N default_conv_to_rdg fst
      edge_map_update'"
   using  algo loopB_spec
@@ -1820,17 +1671,6 @@ lemma get_target_aux:"(\<exists> x \<in> set xs. b x < - (1 - \<epsilon>) * \<ga
 \<Longrightarrow> res = (get_target_aux b \<gamma> xs) \<Longrightarrow> b res < - (1 - \<epsilon>) * \<gamma> \<and> res \<in> set xs "
   unfolding get_target_aux_def
   by(induction b \<gamma> xs rule: get_target_aux_aux.induct) auto
-
-interpretation algo: algo where \<E> = \<E> and \<c> = \<c> 
-and \<u> = \<u> and edge_map_update = edge_map_update' and neighb_empty = neighb_empty
-and neighb_delete= neighb_delete and neighb_insert = neighb_insert
-and neighb_inv = neighb_inv and isin = isin and get_from_set=get_from_set
-and filter=filter and are_all=are_all and set_invar=set_invar
-and to_set=to_set and lookup=lookup' and t_set=t_set and sel=sel and adj_inv=adj_inv'
-and to_pair=to_pair and \<epsilon> = \<epsilon> and \<E>_impl=\<E>_impl and empty_forest=all_empty
-and default_conv_to_rdg=default_conv_to_rdg and \<b> = \<b> and N = N
-and snd = snd and fst = fst and make_pair = make_pair and create_edge=create_edge
-  using algo by simp
 
 abbreviation "aux_invar (state)\<equiv> 
 algo.aux_invar  state"
@@ -2426,7 +2266,7 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
   using get_source_axioms[OF 1(1) 1(2) 1(4)] "1"(6)[simplified sym[OF  get_target_for_source_def]] by auto
   from 1 have knowledge: "get_source state \<in> VV"
     "aux_invar state"
-    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (orlins_impl_spec.to_graph  (\<FF>_imp state)).
+    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (Adj_Map_Specs2.to_graph  (\<FF>_imp state)).
         0 < current_flow state (flow_network.oedge e))"
     "invar_isOptflow state" 
     "(\<exists>t\<in>VV. balance state t < - (\<epsilon> * current_\<gamma> state) \<and> resreach (current_flow state) s t)"
@@ -2450,7 +2290,7 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
      "foldr (\<lambda>x. (+) (\<cc> x)) pp 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) p 0"
     using  algo.simulate_inactives_costs[ of "current_flow state" p, of s tt state, OF _ _ _ _ _  refl refl refl refl refl refl refl refl ]
            1(8) by auto
-  have F_is: "\<FF> state = orlins_impl_spec.to_graph (\<FF>_imp state)" 
+  have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
     using knowledge(2) from_aux_invar'(21) by auto
   hence e_in:"e \<in> set pp \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
@@ -2714,7 +2554,7 @@ shows "weight (not_blocked state) (current_flow state) (awalk_verts s (map cost_
 
 abbreviation "get_source_target_path_a_cond \<equiv>
      loopB.get_source_target_path_a_cond snd make_pair \<u> \<E>
- neighb_inv isin set_invar to_set lookup'
+ vset_inv isin set_invar to_set lookup'
            adj_inv' to_pair \<epsilon> get_source_target_path_b get_source
            get_target get_source_for_target get_target_for_source fst get_source_target_path_a"
 
@@ -2755,7 +2595,7 @@ proof(cases "invar_isOptflow state", goal_cases)
      apply (metis (no_types, lifting) mult_minus_left)
     using "1"(1) unfolding get_target_for_source_def by presburger+
   hence 
-    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (orlins_impl_spec.to_graph (\<FF>_imp state)).
+    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)).
         0 < current_flow state (flow_network.oedge e))"
     by auto
   have  loopB_call1_cond: " loopB_call1_cond state"
@@ -2794,7 +2634,7 @@ proof(cases "invar_isOptflow state", goal_cases)
   have qq_len: "length qq \<ge> 1" 
     using qq_prop(2,3,6) knowledge(4)
     by(cases qq rule: list_cases3) auto
-  have F_is: "\<FF> state = orlins_impl_spec.to_graph (\<FF>_imp state)" 
+  have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
     by (simp add: "1"(1) from_aux_invar'(21))
   hence e_in:"e \<in> set qq \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
@@ -3251,7 +3091,7 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
     by auto
   from 1 have knowledge: "get_target state \<in> VV"
     "aux_invar state"
-    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (orlins_impl_spec.to_graph (\<FF>_imp state)).
+    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)).
         0 < current_flow state (cost_flow_network.oedge e))"
     "invar_isOptflow state" 
     "(\<exists>s\<in>VV. balance state s > (\<epsilon> * current_\<gamma> state) \<and> resreach (current_flow state) s t)"
@@ -3276,7 +3116,7 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
     using  algo.simulate_inactives_costs[of "current_flow state" p, of ss t state,
                         OF _ _ _ _ _  refl refl refl refl refl refl refl refl]
            1(8) by blast
-  have F_is: "\<FF> state = orlins_impl_spec.to_graph (\<FF>_imp state)" 
+  have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
     using knowledge(2) from_aux_invar'(21) by auto
   hence e_in:"e \<in> set pp \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
@@ -3566,7 +3406,7 @@ shows " e \<in> to_rdgs to_pair conv forst \<longleftrightarrow>
   apply (auto simp add: make_pair_fst_snd)
   by (smt (verit, best) Int_Collect swap_simp to_pair_axioms)+
 
-abbreviation "get_source_target_path_b_cond \<equiv> loopB.get_source_target_path_b_cond snd make_pair \<u> \<E> neighb_inv isin set_invar to_set lookup'
+abbreviation "get_source_target_path_b_cond \<equiv> loopB.get_source_target_path_b_cond snd make_pair \<u> \<E> vset_inv isin set_invar to_set lookup'
            adj_inv' to_pair \<epsilon> get_source_target_path_b get_source
            get_target get_source_for_target get_target_for_source fst get_source_target_path_a"
 
@@ -3608,7 +3448,7 @@ proof(cases "invar_isOptflow state", goal_cases)
     using "1"(1) unfolding get_source_for_target_def by presburger+
    
   hence 
-    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (orlins_impl_spec.to_graph  (\<FF>_imp state)).
+    "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (to_graph  (\<FF>_imp state)).
         0 < current_flow state (cost_flow_network.oedge e))"
     by auto
   have s_prop: "b s > \<epsilon> * \<gamma>" "resreach f s t" 
@@ -3645,7 +3485,7 @@ proof(cases "invar_isOptflow state", goal_cases)
   have qq_len: "length qq \<ge> 1" "qq \<noteq> []"
     using qq_prop(2,3,6) knowledge(4)
     by( all \<open>cases qq rule: list_cases3\<close>) auto
-  have F_is: "\<FF> state = orlins_impl_spec.to_graph (\<FF>_imp state)" 
+  have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
     by (simp add: "1"(1) from_aux_invar'(21))
   have consist: "cost_flow_network.consist (conv_to_rdg state)" 
     using from_aux_invar'(6) knowledge(5) by auto
@@ -3869,15 +3709,15 @@ qed
 
 
 lemma loopB_Reasoning_axioms:
-    "loopB_Reasoning_axioms snd make_pair \<u> \<c> \<E> neighb_inv isin set_invar to_set lookup' adj_inv' \<b> to_pair \<epsilon>
+    "loopB_Reasoning_axioms snd make_pair \<u> \<c> \<E> vset_inv isin set_invar to_set lookup' adj_inv' \<b> to_pair \<epsilon>
      get_source_target_path_b get_source get_target get_source_for_target get_target_for_source fst
      get_source_target_path_a"
   using get_source_target_path_a_ax get_source_target_path_b_ax get_source_axioms get_target_axioms
         get_target_for_source_ax get_source_for_target_ax
   by(simp add: loopB_Reasoning_axioms_def)
 
-lemma loopB_Reasoning:" loopB_Reasoning snd make_pair create_edge \<u> \<c> \<E> neighb_empty neighb_delete
-       neighb_insert neighb_inv isin get_from_set
+lemma loopB_Reasoning:" loopB_Reasoning snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete
+       vset_insert vset_inv isin get_from_set
      filter are_all set_invar to_set lookup' t_set sel adj_inv' \<b> to_pair \<epsilon> \<E>_impl all_empty N default_conv_to_rdg
      get_source_target_path_b get_source get_target get_source_for_target get_target_for_source fst
      get_source_target_path_a edge_map_update'"
@@ -3889,7 +3729,7 @@ lemma orlins_axioms: "orlins_axioms norma"
   by (simp add: orlins_axioms_def norma_def insert_commute to_pair_axioms)
  
 lemma orlins:
-     "orlins snd make_pair create_edge \<u> \<c> \<E> neighb_empty neighb_delete neighb_insert neighb_inv isin get_from_set filter
+     "orlins snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete vset_insert vset_inv isin get_from_set filter
      are_all set_invar to_set lookup' t_set sel adj_inv' \<b> to_pair \<epsilon> \<E>_impl N default_conv_to_rdg get_source_target_path_b
      get_source get_target get_source_for_target get_target_for_source get_source_target_path_a edge_map_update'
      all_empty get_path fst norma"
@@ -3912,7 +3752,7 @@ abbreviation "abstract  \<equiv> algo_impl.abstract isin  lookup' \<b> default_c
                                      flow_lookup  bal_lookup rep_comp_lookup  conv_lookup 
                                       not_blocked_lookup"
 
-abbreviation "implementation_invar \<equiv> algo_impl.implementation_invar make_pair \<E> neighb_inv isin set_invar
+abbreviation "implementation_invar \<equiv> algo_impl.implementation_invar make_pair \<E> vset_inv isin set_invar
                                      lookup' adj_inv' flow_lookup flow_invar bal_lookup bal_invar
                                      rep_comp_lookup rep_comp_invar conv_lookup conv_invar
                                      not_blocked_lookup not_blocked_invar"
@@ -4713,7 +4553,7 @@ lemma test_all_vertices_zero_balance:
                     algo_impl.abstract_bal_map_def[OF algo_impl]
                     test_all_vertices_zero_balance_def test_all_vertices_zero_balance_aux)
 lemma loopB_impl_axioms:
-    "loopB_impl_axioms snd make_pair \<u> \<c> \<E> neighb_inv isin set_invar to_set lookup' adj_inv' \<b> to_pair \<epsilon> default_conv_to_rdg
+    "loopB_impl_axioms snd make_pair \<u> \<c> \<E> vset_inv isin set_invar to_set lookup' adj_inv' \<b> to_pair \<epsilon> default_conv_to_rdg
      get_source_target_path_b get_source get_target get_source_for_target get_target_for_source get_source_target_path_a
      flow_lookup flow_invar bal_lookup bal_invar rep_comp_lookup rep_comp_invar conv_lookup conv_invar not_blocked_lookup
      not_blocked_invar get_source_target_path_a_impl get_source_target_path_b_impl get_source_impl get_target_impl
@@ -4738,14 +4578,14 @@ lemma loopB_impl_axioms:
       using get_target_impl_axioms by auto 
     using test_all_vertices_zero_balance by auto
 
-lemma loopB_impl_spec: "loopB_impl_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin filter are_all set_invar to_set
+lemma loopB_impl_spec: "loopB_impl_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set
      lookup' t_set sel adj_inv' flow_update flow_delete flow_lookup flow_invar bal_update bal_delete bal_lookup bal_invar
      rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_update conv_delete conv_lookup conv_invar
      not_blocked_update not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all
      flow_update_all get_max get_from_set flow_empty bal_empty rep_comp_empty conv_empty not_blocked_empty"
   using algo_spec algo_impl_spec by(auto intro!: loopB_impl_spec.intro)
 
-lemma loopB_impl:"Orlins_Implementation.loopB_impl snd make_pair create_edge \<u> \<c> \<E> neighb_empty neighb_delete neighb_insert neighb_inv isin get_from_set
+lemma loopB_impl:"Orlins_Implementation.loopB_impl snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete vset_insert vset_inv isin get_from_set
      filter are_all set_invar to_set lookup' t_set sel adj_inv' \<b> to_pair \<epsilon> \<E>_impl N default_conv_to_rdg
      get_source_target_path_b get_source get_target get_source_for_target get_target_for_source get_source_target_path_a
      edge_map_update' flow_update flow_delete flow_lookup flow_invar bal_update bal_delete bal_lookup bal_invar
@@ -4839,7 +4679,7 @@ next
     by (simp add: init_impl_variables(7) local.init_not_blocked_def)
 qed
 
-lemma orlins_impl_spec: "orlins_impl_spec edge_map_update' \<emptyset>\<^sub>N neighb_delete neighb_insert neighb_inv isin filter are_all set_invar to_set
+lemma orlins_impl_spec: "orlins_impl_spec edge_map_update' \<emptyset>\<^sub>N vset_delete vset_insert vset_inv isin filter are_all set_invar to_set
      lookup' t_set sel adj_inv' get_from_set flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty
      bal_update bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup
      rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty
@@ -4848,18 +4688,24 @@ lemma orlins_impl_spec: "orlins_impl_spec edge_map_update' \<emptyset>\<^sub>N n
   using loopA_impl_spec loopB_impl_spec
   by(auto intro!: orlins_impl_spec.intro)
 
-lemma orlins_impl:
-     "Orlins_Implementation.orlins_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' neighb_empty neighb_delete neighb_insert neighb_inv isin
+interpretation orlins_impl: orlins_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' vset_empty vset_delete vset_insert vset_inv isin
      filter are_all set_invar to_set lookup' t_set sel adj_inv' \<b> to_pair \<epsilon> N default_conv_to_rdg get_from_set all_empty
-     \<E>_impl get_path flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete bal_lookup
+     \<E>_impl get_path flow_empty  flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete bal_lookup
      bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_empty conv_update
      conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty not_blocked_delete not_blocked_lookup
      not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max get_source_target_path_b
      get_source get_target get_source_for_target get_target_for_source get_source_target_path_a
      get_source_target_path_a_impl get_source_target_path_b_impl get_source_impl get_target_impl
-     test_all_vertices_zero_balance norma init_flow init_bal init_rep_card init_not_blocked fst"
-  using loopA_impl loopB_impl  orlins orlins_impl_spec orlins_impl_axioms
-  by(auto intro!: orlins_impl.intro)
+     test_all_vertices_zero_balance norma init_flow init_bal init_rep_card init_not_blocked fst
+  using  orlins_impl_axioms
+  using  algo_spec algo_impl_spec
+  using algo_impl  algo loopB_Reasoning  loopB_impl_spec algo_impl loopB_impl_axioms
+  by(auto intro!: loopA.intro orlins_impl_spec.intro orlins_impl.intro  loopB_impl.intro
+ loopA_impl.intro loopB_impl_spec.intro loopA_impl_spec.intro loopA_spec.intro
+simp add: loopA_axioms_def loopA_axioms_extended Adj_Map_Specs2 Set3 algo_spec
+loopB_Reasoning  orlins_def orlins_axioms_def norma_def insert_commute to_pair_axioms)
+
+lemmas orlins_impl = orlins_impl.orlins_impl_axioms
 
 term \<epsilon>
 
@@ -4868,7 +4714,7 @@ Orlins_Implementation.orlins_impl_spec.initial_impl snd filter all_empty \<E>_im
  not_blocked_update_all flow_update_all get_max fst init_flow 
 init_bal init_rep_card init_not_blocked"
 
-definition "loopA_loop_impl = loopA_impl_spec.loopA_impl snd edge_map_update' neighb_insert filter lookup'
+definition "loopA_loop_impl = loopA_impl_spec.loopA_impl snd edge_map_update' vset_insert filter lookup'
 N get_from_set get_path flow_update flow_lookup bal_update bal_lookup rep_comp_lookup conv_update
  conv_lookup rep_comp_update_all not_blocked_update_all fst"
 
@@ -4878,7 +4724,7 @@ definition "loopB_loop_impl = loopB_impl_spec.loopB_impl flow_update flow_lookup
  get_target_impl test_all_vertices_zero_balance "
 
 definition "orlins_loop_impl =
-Orlins_Implementation.orlins_impl_spec.orlins_impl snd edge_map_update' neighb_insert filter are_all lookup'
+Orlins_Implementation.orlins_impl_spec.orlins_impl snd edge_map_update' vset_insert filter are_all lookup'
  N get_from_set get_path flow_update flow_lookup bal_update bal_lookup
  rep_comp_lookup conv_update conv_lookup rep_comp_update_all not_blocked_update_all get_max
 get_source_target_path_a_impl get_source_target_path_b_impl get_source_impl
@@ -4897,12 +4743,12 @@ corollary correctness_of_implementation:
          \<nexists> f. cost_flow_network.isbflow f \<b>"
  "return_impl final_state = notyetterm \<Longrightarrow>  
          False"
-  using orlins_impl.orlins_impl_is_correct[OF orlins_impl refl] 
+  using orlins_impl.orlins_impl_is_correct[OF  refl] 
   by(auto simp add: final_flow_impl_def final_state_def abstract_flow_map_def
  orlins_loop_impl_def initial_state_impl_def loopB_loop_impl_def)
 
 lemma final_flow_domain: "dom (flow_lookup final_flow_impl) = \<E>"
-  using orlins_impl.final_flow_domain[OF orlins_impl]
+  using orlins_impl.final_flow_domain
   by(auto simp add: final_flow_impl_def final_state_def abstract_flow_map_def
  orlins_loop_impl_def initial_state_impl_def loopB_loop_impl_def)
 
@@ -4942,9 +4788,9 @@ multigraph (fst \<circ> make_pair) (snd \<circ> make_pair) make_pair create_edge
      get_from_set to_set make_pair rep_comp_update conv_empty conv_delete conv_lookup conv_invar conv_update
      not_blocked_update flow_update bal_update rep_comp_update_all flow_update_all not_blocked_update_all get_max"
   using  rep_comp_iterator flow_iterator not_blocked_iterator  
-  by(auto intro!:  function_generation_proof_axioms function_generation_proof.intro simp add: Map_realising_edges function_generation.intro selection_functions.Map_bal.Map_axioms 
-selection_functions.Map_flow.Map_axioms selection_functions.Map_not_blocked.Map_axioms Set3 \<E>_def Adj_Map_Specs2
- Map_rep_comp orlins_impl_spec.conv_map.Map_axioms)
+ by(auto intro!:  function_generation_proof_axioms function_generation_proof.intro simp add: Map_realising_edges function_generation.intro bal_map.Map_axioms 
+flow_map.Map_axioms Map_not_blocked.Map_axioms Set3 \<E>_def Adj_Map_Specs2
+ Map_rep_comp Map_conv) 
 
 definition "final_state make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup = orlins_impl  make_pair create_edge \<E>_impl \<c>_impl c_lookup
                     (loopB_impl  make_pair  create_edge \<E>_impl \<c>_impl c_lookup

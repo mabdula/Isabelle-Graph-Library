@@ -141,6 +141,8 @@ definition "finite_vsets = (\<forall>N. finite (t_set N))"
 definition neighbourhood::"'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset" where
   "(neighbourhood G v) = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
 
+lemmas [code] = neighbourhood_def
+
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
 definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 

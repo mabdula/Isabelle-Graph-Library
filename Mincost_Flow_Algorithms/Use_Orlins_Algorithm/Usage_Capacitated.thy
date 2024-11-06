@@ -143,10 +143,10 @@ definition "final_flow_impl_original =
 lemma dom_final_flow_impl_original:"dom (flow_lookup final_flow_impl_original) = set \<E>_impl"
   unfolding final_flow_impl_original_def Let_def
   apply(subst dom_fold)
-  apply(simp add: flow_invar_fold flow_map.invar_update selection_functions.Map_flow.invar_empty)
+  apply(simp add: flow_invar_fold flow_map.invar_update flow_map.invar_empty)
   apply(subst dom_fold)
-  by (auto simp add: selection_functions.Map_flow.map_empty dom_def \<E>_impl_finite_def \<E>_impl_infty_def
-                     flow_invar_fold flow_map.invar_update selection_functions.Map_flow.invar_empty)
+  by (auto simp add: flow_map.map_empty dom_def \<E>_impl_finite_def \<E>_impl_infty_def
+                     flow_invar_fold flow_map.invar_update flow_map.invar_empty)
 
 end
 
@@ -885,7 +885,7 @@ lemma abstract_flows_are:"abstract_flow_map final_flow_impl_maxflow_original =
 (\<lambda>e. abstract_flow_map final_flow_impl_maxflow (old_edge e))"
   using dom_final_flow_impl_maxflow
   by (fastforce simp add: flow_lookup_fold flow_map.invar_empty the_default_def
-            selection_functions.Map_flow.map_empty \<E>_impl'_def dom_def  orlins_impl_spec.abstract_flow_map_def
+            flow_map.map_empty \<E>_impl'_def dom_def  orlins_impl_spec.abstract_flow_map_def
              final_flow_impl_maxflow_original_def abstract_flow_map_def)
 
 lemma multigraph': "multigraph (fst \<circ> make_pair') (snd \<circ> make_pair') make_pair' create_edge' (set \<E>_impl')" 

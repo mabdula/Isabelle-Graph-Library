@@ -2,7 +2,7 @@ section \<open>Supplementary Theory for Orlin's Algorithm\<close>
 
 theory IntermediateSummary
   imports PathAugOpt Berge_Lemma.Berge  "HOL-Data_Structures.Set_Specs" 
-          Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor            
+          Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor  Directed_Set_Graphs.Pair_Graph_Specs        
 begin
 
 context flow_network

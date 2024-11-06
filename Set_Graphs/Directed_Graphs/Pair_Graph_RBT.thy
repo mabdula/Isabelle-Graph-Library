@@ -3,7 +3,22 @@ imports Pair_Graph_Specs "HOL-Data_Structures.RBT_Set" "HOL-Data_Structures.RBT_
        "Verified_SAT_Based_AI_Planning.Set2_Join_RBT"
 begin
 
+abbreviation "vset_empty == RBT_Set.empty"
+abbreviation "vset_union == union_rbt"
+abbreviation "vset_insert == insert_rbt"
+abbreviation "vset_diff == diff_rbt"
+abbreviation "vset_delete == delete_rbt"
+abbreviation "vset_inter == inter_rbt"
+abbreviation "t_set == Tree2.set_tree"
 definition "vset_inv =  (\<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
+
+definition "map_empty = (Leaf:: (('a \<times> ('a \<times> color) tree) \<times> color) tree)"
+definition "edge_map_update = (update::('a::linorder)
+   \<Rightarrow> ('a \<times> color) tree
+      \<Rightarrow> (('a \<times> ('a \<times> color) tree) \<times> color) tree
+         \<Rightarrow> (('a\<times> ('a \<times> color) tree) \<times> color) tree)"
+definition "adj_inv = M.invar"
+
 
 fun sel where
 "sel Leaf = undefined" |
@@ -46,5 +61,6 @@ definition "vertices edges = remdups (map prod.fst edges @ map prod.snd edges)"
 definition "nbs edges v = foldr (\<lambda> x tree. insert x tree) (remdups (map prod.snd (filter (\<lambda> e. prod.fst e = v) edges))) Leaf"
 
 definition "a_graph edges = foldr (\<lambda> x tree. update x (nbs edges x) tree) (vertices edges) empty"
+
 
 end
