@@ -267,7 +267,7 @@ assumes DFS_axioms: DFS_axioms
 begin
 
 context
-includes set_ops.automation  Graph.adjmap.automation  Graph.vset.set.automation 
+includes set_ops.automation and Graph.adjmap.automation and Graph.vset.set.automation 
 begin
 
 lemma graph_inv[simp,intro]:

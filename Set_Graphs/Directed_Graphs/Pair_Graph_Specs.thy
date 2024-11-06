@@ -5,7 +5,7 @@ theory Pair_Graph_Specs
 section \<open>Locale for Executable Functions on Directed Graphs\<close>
 
 text \<open>We develop a locale modelling an abstract data type (ADT) which abstractly models a graph as an
-      adjmapacency map: i.e.\ every vertex is mapped to a \<open>set\<close> of adjmapacent vertices, and this latter
+      adjacency map: i.e.\ every vertex is mapped to a \<open>set\<close> of adjacent vertices, and this latter
       set is again modelled using the ADT of sets provided in Isabelle/HOL's distribution.
 
       We then show that this ADT can be implemented using existing implementations of the \<open>set\<close> ADT.
@@ -218,7 +218,7 @@ definition "union_impl us vs = (if vs = vset_empty then us else recursive_union_
 *)
 
 context \<comment>\<open>Locale properties\<close>
-  includes vset.set.automation  adjmap.automation
+  includes vset.set.automation and adjmap.automation
   fixes G::'adjmap
 begin
 

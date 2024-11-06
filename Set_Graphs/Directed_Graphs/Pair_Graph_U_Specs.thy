@@ -37,7 +37,7 @@ definition ugraph_abs where "ugraph_abs G = {{u, v} | u v. v \<in>\<^sub>G (\<N>
 
 
 context
-  includes adjmap.automation  vset.set.automation
+  includes adjmap.automation and vset.set.automation
 begin
 
 lemma uedges_def2: "uedges G = {rep (uEdge u v) | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}"

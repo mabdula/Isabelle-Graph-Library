@@ -91,7 +91,7 @@ declare Graph.vset.set.set_empty[simp] Graph.vset.set.set_isin[simp] Graph.vset.
         Graph.vset.set.set_delete[simp] Graph.vset.set.invar_empty[simp] 
         Graph.vset.set.invar_insert[simp] Graph.vset.set.invar_delete[simp]
 context
-  includes Graph.vset.set.automation set_ops.automation
+  includes Graph.vset.set.automation and set_ops.automation
 begin
 
 lemma next_frontier:

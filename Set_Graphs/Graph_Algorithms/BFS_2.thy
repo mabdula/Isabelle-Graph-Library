@@ -159,7 +159,7 @@ definition "initial_state = \<lparr>parents =  empty, current = srcs, visited = 
 lemmas[code] = BFS_impl.simps initial_state_def
 
 context
-  includes Graph.adjmap.automation  Graph.vset.set.automation set_ops.automation
+  includes Graph.adjmap.automation and Graph.vset.set.automation and set_ops.automation
   assumes BFS_axiom  
 begin
 
@@ -1316,7 +1316,7 @@ next
   have *: "{{v1, v2} |v1 v2. (v1, v2) \<in> [G]\<^sub>g}
                  \<subseteq> (\<lambda>(x,y). {x,y} ) ` ({v. \<exists>y. lookup G v = Some y} \<times>
                                         (\<Union> {t_set N | v N. lookup G v = Some N}))"
-    including Graph.adjmap.automation Graph.vset.set.automation
+    including Graph.adjmap.automation and Graph.vset.set.automation
     apply (auto simp: Graph.digraph_abs_def Graph.neighbourhood_def image_def
                 split: option.splits)
     by (metis Graph.graph_invE Graph.vset.set.set_isin graph_inv(1))
