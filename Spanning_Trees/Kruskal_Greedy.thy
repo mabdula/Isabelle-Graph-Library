@@ -8,7 +8,7 @@ begin
 subsection \<open>Instantiations for Kruskal's algorithm\<close>
 
 
-abbreviation "rbt_inv \<equiv> \<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t"
+abbreviation "rbt_inv == ( \<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
 
 fun rbt_sel where
   "rbt_sel Leaf = undefined"
@@ -230,7 +230,7 @@ interpretation Kruskal_Graphs_Matroids: Graphs_Matroids_Encoding
 
 term Kruskal_Graphs_Matroids.graph_to_edges
 
-definition "cost_nonnegative (c::(('v set) \<Rightarrow> rat)) \<equiv> \<forall>e. c e \<ge> 0"
+definition "cost_nonnegative (c::(('v set) \<Rightarrow> rat)) = ( \<forall>e. c e \<ge> 0)"
 
 term Kruskal_Graphs_Matroids.graph_to_edges
 term Kruskal_Graphs_Matroids.edges_to_graph
@@ -242,7 +242,6 @@ context
     and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
 begin
 
-
 abbreviation Kruskal_G_to_E :: "(('v::linorder) \<times> ('v rbt)) rbt \<Rightarrow> ('e::linorder) rbt" where
   "Kruskal_G_to_E \<equiv> Kruskal_Graphs_Matroids.graph_to_edges edge_of"
 
@@ -253,7 +252,7 @@ definition Kruskal_E_to_V :: "('e::linorder) rbt \<Rightarrow> ('v rbt)" where
   "Kruskal_E_to_V = Kruskal_Graphs_Matroids.edges_to_vertices v1_of v2_of"
 
 definition carrier_graph_matroid :: "('e::linorder) rbt" where
-  "carrier_graph_matroid \<equiv> Kruskal_Graphs_Matroids.graph_to_edges edge_of input_G"
+  "carrier_graph_matroid = Kruskal_Graphs_Matroids.graph_to_edges edge_of input_G"
 
 fun indep_graph_matroid :: "('e::linorder) rbt \<Rightarrow> bool" where
   "indep_graph_matroid E = 

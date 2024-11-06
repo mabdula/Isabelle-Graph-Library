@@ -8,7 +8,7 @@ text \<open>Graphs are a fundamental structure in computer science and mathemati
 
 type_synonym 'a dgraph = "('a \<times> 'a) set"
 
-definition "dVs G \<equiv> \<Union> {{v1,v2} | v1 v2. (v1, v2) \<in> G}"
+definition "dVs G = \<Union> {{v1,v2} | v1 v2. (v1, v2) \<in> G}"
 
 (*<*)
 
@@ -65,7 +65,7 @@ abbreviation reachable1 :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 
   "reachable1 E u v \<equiv> (u,v) \<in> E\<^sup>+"
 
 definition reachable :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<^sup>*\<index> _" [100,100] 40) where
-  "reachable E u v \<equiv> (u,v) \<in> rtrancl_on (dVs E) E"
+  "reachable E u v = ( (u,v) \<in> rtrancl_on (dVs E) E)"
 
 lemma reachableE[elim?]:
   assumes "(u,v) \<in> E"

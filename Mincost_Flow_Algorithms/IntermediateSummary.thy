@@ -29,7 +29,7 @@ record ('b, 'actives, 'forest, 'edge_type) Algo_state = current_flow :: "'edge_t
                                   \<FF>_imp :: 'forest
                              not_blocked:: "'edge_type \<Rightarrow> bool"
 
-definition "to_rdgs to_pair to_rdg F \<equiv> 
+definition "to_rdgs to_pair to_rdg F = 
 \<Union> ((\<lambda> vs. (if \<exists> u v. u \<noteq> v \<and> {u, v} = vs 
            then {to_rdg (to_pair vs), to_rdg (prod.swap (to_pair vs))}  else {} )) 
    ` F)"
@@ -75,10 +75,10 @@ end
 context cost_flow_network
 begin
 
-definition "consist conv_to_rdg \<equiv> (\<forall> x y. \<exists> e. ((conv_to_rdg (x,y) = F e \<and> make_pair e = (x,y)) \<or>
+definition "consist conv_to_rdg = ((\<forall> x y. \<exists> e. ((conv_to_rdg (x,y) = F e \<and> make_pair e = (x,y)) \<or>
                                      conv_to_rdg (x,y) = B e \<and> make_pair e = (y,x))) \<and>
                              (\<forall> x y e. x \<noteq> y \<longrightarrow> (conv_to_rdg (x,y) = F e \<longleftrightarrow>
-                                     conv_to_rdg (y,x) = B e))" for conv_to_rdg
+                                     conv_to_rdg (y,x) = B e)))" for conv_to_rdg
 
 lemma consistencyE:
   assumes "consist to_rdg" 
@@ -138,13 +138,13 @@ abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v 
 abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equiv> \<not> isin' G v"
 
 definition neighbourhood::"'adjmap \<Rightarrow> 'a \<Rightarrow> 'vset" where
-  "neighbourhood G v \<equiv> (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
+  "neighbourhood G v = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
 
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
-definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G \<equiv> {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
+definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
 
-definition "to_set_of_adjacency E \<equiv>  { (u, v) | u v. isin (the (lookup E u)) v }"
+definition "to_set_of_adjacency E =  { (u, v) | u v. isin (the (lookup E u)) v }"
 
 definition "to_graph Forest = { {u, v} | u v. isin (the (lookup Forest u)) v 
                                             \<or> isin (the (lookup Forest u)) v}"
@@ -190,13 +190,13 @@ begin
 
 find_theorems lookup
 
-definition "validF state \<equiv> graph_invar (to_graph (\<FF>_imp state))"
+definition "validF state = graph_invar (to_graph (\<FF>_imp state))"
 
 lemma N_gtr_0: "N > 0"
   using cardV_0
   by (simp add: N_def )
 
-definition "invar_aux1 state \<equiv> to_set (actives state) \<subseteq> \<E>"
+definition "invar_aux1 state = (to_set (actives state) \<subseteq> \<E>)"
 
 lemma invar_aux1I: "to_set (actives state) \<subseteq> \<E> \<Longrightarrow> invar_aux1 state"
   unfolding invar_aux1_def by auto
@@ -206,7 +206,7 @@ lemma invar_aux1E: "invar_aux1 state \<Longrightarrow> (to_set (actives state) \
 
 abbreviation "\<F> state \<equiv>  oedge ` (to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)))"
 
-definition "invar_aux2 state \<equiv> to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)) \<subseteq> \<EE>"
+definition "invar_aux2 state = ( to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)) \<subseteq> \<EE>)"
 
 lemma invar_aux2I: "to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)) \<subseteq> \<EE> \<Longrightarrow> invar_aux2 state"
   unfolding invar_aux2_def by auto
@@ -215,7 +215,7 @@ lemma invar_aux2E: "invar_aux2 state \<Longrightarrow>
  (to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)) \<subseteq> \<EE>\<Longrightarrow> P) \<Longrightarrow> P"
   unfolding invar_aux2_def by auto
 
-definition "invar_aux3 state \<equiv> \<F> state \<subseteq> \<E>"
+definition "invar_aux3 state =( \<F> state \<subseteq> \<E>)"
 
 lemma invar_aux3I: "\<F> state \<subseteq> \<E>\<Longrightarrow> invar_aux3 state"
   unfolding invar_aux3_def by auto
@@ -223,7 +223,7 @@ lemma invar_aux3I: "\<F> state \<subseteq> \<E>\<Longrightarrow> invar_aux3 stat
 lemma invar_aux3E: "invar_aux3 state \<Longrightarrow> (\<F> state \<subseteq> \<E> \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding invar_aux3_def by auto
 
-definition "invar_aux4 state \<equiv> \<F> state \<inter> to_set (actives state) = {}"
+definition "invar_aux4 state =( \<F> state \<inter> to_set (actives state) = {})"
 
 lemma invar_aux4I: "\<F> state \<inter> to_set (actives state) = {} \<Longrightarrow> invar_aux4 state"
   unfolding invar_aux4_def by auto
@@ -231,7 +231,7 @@ lemma invar_aux4I: "\<F> state \<inter> to_set (actives state) = {} \<Longrighta
 lemma invar_aux4E: "invar_aux4 state \<Longrightarrow> (\<F> state \<inter> to_set (actives state) = {} \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding invar_aux4_def by auto
 
-definition "invar_aux5 state \<equiv> finite (to_graph (\<FF>_imp state))"
+definition "invar_aux5 state = finite (to_graph (\<FF>_imp state))"
 
 lemma invar_aux5I: "finite (to_graph (\<FF>_imp state)) \<Longrightarrow> invar_aux5 state"
   unfolding invar_aux5_def by auto
@@ -239,7 +239,7 @@ lemma invar_aux5I: "finite (to_graph (\<FF>_imp state)) \<Longrightarrow> invar_
 lemma invar_aux5E: "invar_aux5 state \<Longrightarrow> (finite (to_graph (\<FF>_imp state)) \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding invar_aux5_def by auto
 
-definition "invar_aux6 state \<equiv> consist (conv_to_rdg state)"
+definition "invar_aux6 state = consist (conv_to_rdg state)"
 
 thm invar_aux6_def[simplified consist_def]
 
@@ -256,7 +256,7 @@ lemma invar_aux6E: "invar_aux6 state \<Longrightarrow> to_rdg = conv_to_rdg stat
                                      to_rdg (y,x) = B e)) \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding invar_aux6_def consist_def by simp
 
-definition "invar_aux7 state \<equiv> (\<forall> u v. reachable (to_graph (\<FF>_imp state)) u v \<longrightarrow>
+definition "invar_aux7 state = (\<forall> u v. reachable (to_graph (\<FF>_imp state)) u v \<longrightarrow>
                                        (representative state) u =
                                        (representative state) v)"
 
@@ -270,7 +270,7 @@ lemma invar_aux7E: "invar_aux7 state \<Longrightarrow> ((\<And>u v. reachable (t
                                        (representative state) v) \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding invar_aux7_def by simp
 
-definition "invar_aux8 state \<equiv> (\<forall> v. reachable (to_graph (\<FF>_imp state)) v ((representative state) v) \<or> 
+definition "invar_aux8 state = (\<forall> v. reachable (to_graph (\<FF>_imp state)) v ((representative state) v) \<or> 
                                                            v = (representative state) v)"
 
 lemma invar_aux8I: "(\<And> v. reachable (to_graph (\<FF>_imp state)) v ((representative state) v) \<or> 
@@ -284,7 +284,7 @@ lemma invar_aux8E: "invar_aux8 state \<Longrightarrow> ((\<And> v. reachable (to
                     \<Longrightarrow>P"
   unfolding invar_aux8_def by auto
 
-definition "invar_aux9 state \<equiv> (\<forall> v \<in> \<V>. representative state v \<in> \<V>)"
+definition "invar_aux9 state = (\<forall> v \<in> \<V>. representative state v \<in> \<V>)"
 
 lemma invar_aux9I: "(\<And>v. v \<in> \<V> \<Longrightarrow> representative state v \<in> \<V>) \<Longrightarrow> invar_aux9 state"
   unfolding invar_aux9_def by auto
@@ -293,7 +293,7 @@ lemma invar_aux9E: "invar_aux9 state \<Longrightarrow>
                       ((\<And>v. v \<in> \<V> \<Longrightarrow> representative state v \<in> \<V> ) \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding invar_aux9_def by auto
 
-definition "invar_aux10 state \<equiv> (\<forall> v \<in> \<V>. connected_component (to_graph (\<FF>_imp state)) v \<subseteq> \<V>)"
+definition "invar_aux10 state = (\<forall> v \<in> \<V>. connected_component (to_graph (\<FF>_imp state)) v \<subseteq> \<V>)"
 
 lemma invar_aux10I: "(\<And>v. v \<in> \<V> \<Longrightarrow> connected_component (to_graph (\<FF>_imp state)) v \<subseteq> \<V>) \<Longrightarrow> invar_aux10 state"
   unfolding invar_aux10_def by auto
@@ -302,7 +302,7 @@ lemma invar_aux10E: "invar_aux10 state \<Longrightarrow>
                       ((\<And>v. v \<in> \<V> \<Longrightarrow>  connected_component (to_graph (\<FF>_imp state)) v \<subseteq> \<V>) ==> P) \<Longrightarrow> P"
   unfolding invar_aux10_def by auto
 
-definition "invar_aux11 state \<equiv> 
+definition "invar_aux11 state =
                (\<forall> e \<in> to_set (actives state). connected_component (to_graph (\<FF>_imp state)) (fst e) \<noteq>
                                      connected_component (to_graph (\<FF>_imp state)) (snd e))"
 
@@ -318,8 +318,8 @@ lemma invar_aux11E: "invar_aux11 state \<Longrightarrow>
   unfolding invar_aux11_def 
   by blast
 
-text \<open>Corresponds to 7th invariant from Thesis.\<close>
-definition "invar_aux12 state \<equiv> (\<forall> v \<in> \<V>. (balance state v \<noteq> 0 \<longrightarrow> representative state v = v))"
+
+definition "invar_aux12 state = (\<forall> v \<in> \<V>. (balance state v \<noteq> 0 \<longrightarrow> representative state v = v))"
 
 lemma invar_aux12E:"invar_aux12 state 
 \<Longrightarrow>((\<And> v.  v \<in> \<V> \<Longrightarrow> balance state v \<noteq> 0 \<Longrightarrow> representative state v = v) \<Longrightarrow> P) \<Longrightarrow>P"
@@ -329,7 +329,7 @@ lemma invar_aux12I:
 "(\<And> v.  v \<in> \<V> \<Longrightarrow> balance state v \<noteq> 0 \<Longrightarrow> representative state v = v) \<Longrightarrow> invar_aux12 state"
   unfolding invar_aux12_def by simp
 
-definition "invar_aux13 state \<equiv> 
+definition "invar_aux13 state = 
                (\<forall>  e \<in> \<E> - to_set (actives state). connected_component (to_graph (\<FF>_imp state)) (fst e) =
                                           connected_component (to_graph (\<FF>_imp state)) (snd e))"
 
@@ -344,29 +344,29 @@ lemma invar_aux13E: "invar_aux13 state \<Longrightarrow>
                       P"
   unfolding invar_aux13_def by simp
 
-definition "invar_aux14 state \<equiv> (validF state)"
+definition "invar_aux14 state = (validF state)"
 
 lemma invar_aux14E: "invar_aux14 state \<Longrightarrow> (validF state \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux14_def by auto
 
-definition "invar_aux15 state \<equiv> Vs (to_graph (\<FF>_imp state)) \<subseteq> \<V>"
+definition "invar_aux15 state =( Vs (to_graph (\<FF>_imp state)) \<subseteq> \<V>)"
 
 lemma invar_aux15E: "invar_aux15 state \<Longrightarrow> (Vs (to_graph (\<FF>_imp state)) \<subseteq> \<V>\<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux15_def by auto
 
-definition "invar_aux16 state \<equiv> (\<forall> x \<in> \<V>. comp_card state x = 
+definition "invar_aux16 state = (\<forall> x \<in> \<V>. comp_card state x = 
                        card (connected_component (to_graph (\<FF>_imp state)) x))"
 
 lemma invar_aux16E: "invar_aux16 state \<Longrightarrow> ((\<And> x. x \<in> \<V> ==> comp_card state x = 
                        card (connected_component (to_graph (\<FF>_imp state)) x)) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux16_def by auto
 
-definition "invar_aux17 state \<equiv> set_invar (actives state)"
+definition "invar_aux17 state = set_invar (actives state)"
 
 lemma invar_aux17E: "invar_aux17 state \<Longrightarrow> (set_invar (actives state) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux17_def by auto
 
-definition "invar_aux18 state \<equiv> adjmap_inv (\<FF>_imp state)"
+definition "invar_aux18 state = adjmap_inv (\<FF>_imp state)"
 
 lemma invar_aux18E: "invar_aux18 state \<Longrightarrow> (adjmap_inv (\<FF>_imp state) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux18_def by auto
@@ -377,36 +377,35 @@ lemma invar_aux19E: "invar_aux19 state \<Longrightarrow> ((\<And>v. lookup (\<FF
                                              (\<And> v. vset_inv (the (lookup (\<FF>_imp state) v))) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux19_def by auto
 
-definition "invar_aux20 state \<equiv> (\<forall> u v. isin (the (lookup (\<FF>_imp state) u)) v \<longleftrightarrow> {u, v} \<in> \<FF> state)"
+definition "invar_aux20 state = (\<forall> u v. isin (the (lookup (\<FF>_imp state) u)) v \<longleftrightarrow> {u, v} \<in> \<FF> state)"
 
 lemma invar_aux20E: "invar_aux20 state \<Longrightarrow>
  ((\<And> u v. isin (the (lookup (\<FF>_imp state) u)) v \<longleftrightarrow> {u, v} \<in> \<FF> state) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux20_def by auto
                                              
-definition "invar_aux21 state \<equiv> (\<FF> state = to_graph (\<FF>_imp state))"
+definition "invar_aux21 state = (\<FF> state = to_graph (\<FF>_imp state))"
 
 lemma invar_aux21E: "invar_aux21 state \<Longrightarrow> (\<FF> state = to_graph (\<FF>_imp state) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux21_def by auto
 
-definition "invar_aux22 state \<equiv> (\<forall> e. not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state))"
+definition "invar_aux22 state = (\<forall> e. not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state))"
 
 lemma invar_aux22E: "invar_aux22 state \<Longrightarrow> 
                          ((\<And> e. not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state)) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux22_def by auto
 
+definition "fit_together ff ff_imp =
+            ((\<forall> v. lookup ff_imp v \<noteq> None \<and> vset_inv (the (lookup ff_imp v)))\<and>
+            (\<forall> u v. isin (the (lookup ff_imp u)) v \<longleftrightarrow> {u, v} \<in> ff))"
 
-definition "fit_together ff ff_imp \<equiv>
-            (\<forall> v. lookup ff_imp v \<noteq> None \<and> vset_inv (the (lookup ff_imp v)))\<and>
-            (\<forall> u v. isin (the (lookup ff_imp u)) v \<longleftrightarrow> {u, v} \<in> ff)"
-
-definition "aux_invar state \<equiv>  invar_aux1 state
+definition "aux_invar state =(  invar_aux1 state
                               \<and> invar_aux2 state \<and> invar_aux3 state \<and> invar_aux4 state
                               \<and> invar_aux6 state \<and> invar_aux8 state \<and>
                               invar_aux7 state \<and> invar_aux9 state \<and> invar_aux5 state
                               \<and> invar_aux10 state \<and> invar_aux11 state \<and> invar_aux12 state \<and>
                               invar_aux13 state \<and> invar_aux14 state \<and> invar_aux15 state \<and> invar_aux16 state
                               \<and> invar_aux17 state \<and> invar_aux18 state \<and> invar_aux19 state \<and> invar_aux20 state
-                              \<and> invar_aux21 state \<and> invar_aux22 state"
+                              \<and> invar_aux21 state \<and> invar_aux22 state)"
 
 lemma aux_invarI: "invar_aux1 state \<Longrightarrow> invar_aux2 state \<Longrightarrow> invar_aux3 state 
                   \<Longrightarrow> invar_aux4 state \<Longrightarrow> invar_aux6 state \<Longrightarrow> invar_aux8 state \<Longrightarrow> 
@@ -860,8 +859,7 @@ proof(induction Q rule: edges_of_path.induct)
           unfolding to_rdgs_def
           apply(subst UN_insert)
           using 3 Cons
-          unfolding sym[OF meta_eq_to_obj_eq[OF 
-                    to_rdgs_def[of to_pair to_rdg' "set (edges_of_path (v' # l))"]]]
+          unfolding sym[OF to_rdgs_def[of to_pair to_rdg' "set (edges_of_path (v' # l))"]]
           using local.to_pair_axioms(1) by fastforce+
      qed (simp add: 3 Cons)
    qed
@@ -889,8 +887,7 @@ proof(induction Q rule: edges_of_path.induct)
                 subst Un_commute)
           unfolding to_rdgs_def
           apply(subst UN_insert)
-          unfolding sym[OF meta_eq_to_obj_eq[OF 
-                    to_rdgs_def[of to_pair to_rdg' "set (edges_of_path (v' # l))"]]]  
+          unfolding sym[OF to_rdgs_def[of to_pair to_rdg' "set (edges_of_path (v' # l))"]]  
           using local.to_pair_axioms(1) Cons 3 by fastforce
       qed(auto simp add: 3 Cons)
     qed
@@ -970,8 +967,7 @@ proof(induction Q rule: edges_of_path.induct)
       apply(subst edges_of_path.simps, subst set_simps(2))
       unfolding to_rdgs_def 
       apply(subst Union_image_insert)
-          unfolding sym[OF meta_eq_to_obj_eq[OF 
-                    to_rdgs_def[of to_pair to_rdg' "set (edges_of_path (v' # l))"]]]
+          unfolding sym[OF to_rdgs_def[of to_pair to_rdg' "set (edges_of_path (v' # l))"]]
       apply(subst image_Un, subst dVs_union_distr)
         proof(rule Un_least, goal_cases)
           case 1
@@ -985,8 +981,7 @@ proof(induction Q rule: edges_of_path.induct)
                     oedge_both_redges_image[of , simplified swap_simp] 
               make_pair consist_oedge_set[of to_rdg' v v'] dVs_empty 
               unfolding dVs_def image_def 
-              apply auto
-              using "3.prems"(1) by blast+
+               by auto (all \<open>insert "3.prems"(1)\<close>, blast+)
             subgoal
              apply(rule consistE[of to_rdg'], simp, simp)             
               using oedge_both_redges_image[of _, simplified swap_simp] 
@@ -994,8 +989,7 @@ proof(induction Q rule: edges_of_path.induct)
                                   dVs_single_edge[of v' v] 
               make_pair consist_oedge_set[of to_rdg' v v'] dVs_empty 
               unfolding dVs_def image_def 
-              apply auto
-              using "3.prems"(1) by blast+
+               by auto (all \<open>insert "3.prems"(1)\<close>, blast+)
             done
         qed auto
       qed (auto simp add: to_rdgs_def)
@@ -1125,7 +1119,7 @@ lemma vwalk_bet_reflexive_cong: "w \<in> dVs E \<Longrightarrow> a = w \<Longrig
 lemma  edges_are_vwalk_bet_cong: "(v,w)\<in> E \<Longrightarrow> a = v \<Longrightarrow> b = w \<Longrightarrow> vwalk_bet E a [v, w] b" for v E w a b
   using edges_are_vwalk_bet by auto
 
-definition "goodF F \<equiv> ((\<forall> v . \<exists> vset . (lookup F v = Some vset))
+definition "goodF F = ((\<forall> v . \<exists> vset . (lookup F v = Some vset))
                        \<and> (\<forall> v vset. lookup F v = Some vset \<longrightarrow> vset_inv vset))" for F
 
 lemma  from_undirected_edge_to_directed: 
@@ -1220,12 +1214,13 @@ lemma from_directed_walk_to_reachable:
   by (meson from_directed_walk_to_undirected_walk reachableI)
 
 
-definition "insert_undirected_edge u v forst \<equiv> (let vsets_u = the (lookup forst u);
+definition "insert_undirected_edge u v forst = (let vsets_u = the (lookup forst u);
                                                     vsets_v = the (lookup forst v);
                                                     vset_u_new = vset_insert v vsets_u;
                                                     vset_v_new = vset_insert u vsets_v
                                                  in edge_map_update v vset_v_new (
                                                     edge_map_update u vset_u_new forst))"
+
 
 lemma insert_abstraction[simp]:
   assumes "adjmap_inv ff " 
@@ -1369,19 +1364,15 @@ lemma vset_inv_pres_insert_undirected_edge:"adjmap_inv ff\<Longrightarrow> (\<An
   using adjmap.invar_update adjmap.map_update
   by (auto simp add: vset.set.invar_insert)
 
-text \<open>1st invariant from Thesis\<close>
-definition "invar_gamma state \<equiv> (current_\<gamma> state > 0)"
+definition "invar_gamma state = (current_\<gamma> state > 0)"
 
-text "2nd invariant from Thesis"
-definition "invar_non_zero_b state \<equiv> \<not> (\<forall>v\<in>\<V>. balance state v = 0)"
+definition "invar_non_zero_b state =( \<not> (\<forall>v\<in>\<V>. balance state v = 0))"
 
-text \<open>5th invariant from Thesis\<close>
-definition "invar_forest state \<equiv> 
+definition "invar_forest state =
                 (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state))).
                                (current_flow state) e > 4 * N * (current_\<gamma> state))"
 
-text \<open>4th invariant from Thesis\<close>
-definition "invar_integral state \<equiv> (\<forall> e \<in> to_set (actives state).
+definition "invar_integral state = (\<forall> e \<in> to_set (actives state).
                                \<exists> n::nat. (current_flow state) e = n * (current_\<gamma> state))"
 
 lemma invar_integralI: "(\<And> e. e \<in> to_set (actives state) \<Longrightarrow> \<exists> n::nat. (current_flow state) e = n * (current_\<gamma> state)) \<Longrightarrow>
@@ -1393,26 +1384,24 @@ lemma invar_integralE: " invar_integral state \<Longrightarrow>
                 P ) \<Longrightarrow> P"
   unfolding invar_integral_def by blast
 
-text \<open>6th invariant from Thesis\<close>
-definition "invar_isOptflow state \<equiv> is_Opt (\<b> - balance state) (current_flow state)"
+definition "invar_isOptflow state = is_Opt (\<b> - balance state) (current_flow state)"
 
-definition "\<Phi> state \<equiv> (\<Sum> v \<in>  \<V>. \<lceil> \<bar> balance state v\<bar> / (current_\<gamma> state) - (1 - \<epsilon>)\<rceil>)"
+definition "\<Phi> state = (\<Sum> v \<in>  \<V>. \<lceil> \<bar> balance state v\<bar> / (current_\<gamma> state) - (1 - \<epsilon>)\<rceil>)"
 
-definition "loopA_entry state \<equiv> (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state)
+definition "loopA_entry state = (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state)
                                        (to_graph (Algo_state.\<FF>_imp state))).
                                 current_flow state e > 8*N*current_\<gamma> state)"
 
-definition "loopB_entryF state \<equiv> (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state) 
+definition "loopB_entryF state = (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state) 
                                       (to_graph (Algo_state.\<FF>_imp state))).
                                 current_flow state e > 6*N*current_\<gamma> state)"
 
-text \<open>3rd invariant from Thesis\<close>
-definition "orlins_entry state \<equiv> (\<forall> v \<in> \<V>. \<bar> balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state)"
+definition "orlins_entry state = (\<forall> v \<in> \<V>. \<bar> balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state)"
 
-definition "invarA_1 (thr::real) state \<equiv> (\<forall> v \<in> \<V>. \<bar> balance state v \<bar> \<le> 
+definition "invarA_1 (thr::real) state = (\<forall> v \<in> \<V>. \<bar> balance state v \<bar> \<le> 
                                   thr * card (connected_component (to_graph (Algo_state.\<FF>_imp state)) v))"
 
-definition "invarA_2 (thr1::real) (thr2::real) state \<equiv> 
+definition "invarA_2 (thr1::real) (thr2::real) state = 
                    (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state) (to_graph (Algo_state.\<FF>_imp state))).
                                (current_flow state) e > thr1 - thr2 * 
                                 card (connected_component (to_graph (Algo_state.\<FF>_imp state)) (fst e)))"

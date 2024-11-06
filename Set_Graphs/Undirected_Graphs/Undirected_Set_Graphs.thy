@@ -31,7 +31,7 @@ proof-
 qed
 
 definition card' :: "'a set \<Rightarrow> enat" where
-  "card' A \<equiv> (if infinite A then \<infinity> else card A)"
+  "card' A = (if infinite A then \<infinity> else card A)"
 
 lemma card'_finite: "finite A \<Longrightarrow> card' A = card A"
   unfolding card'_def by simp
@@ -70,7 +70,7 @@ lemma card'_empty_2[simp]: "card' {} = enat 0"
 
 section\<open>Undirected Graphs\<close>
 
-definition Vs where "Vs G \<equiv> \<Union> G"
+definition Vs where "Vs G = \<Union> G"
 
 lemma Vs_subset:
   "G \<subseteq> G' \<Longrightarrow> Vs G \<subseteq> Vs G'"
@@ -111,7 +111,7 @@ lemma finite_Vs_then_finite:
   by (metis Vs_def finite_UnionD)
 
 definition degree where
-  "degree G v \<equiv> card' ({e. v \<in> e} \<inter> G)"
+  "degree G v = card' ({e. v \<in> e} \<inter> G)"
 
 lemma degree_def2: "degree G v \<equiv> card' {e \<in> G. v \<in> e}"
   unfolding degree_def
@@ -154,7 +154,7 @@ lemma less_edges_less_degree:
   by (intro subset_edges_less_degree)
      (simp add: subset_edges_less_degree)
 
-definition "neighbourhood G v \<equiv> {u. {u,v} \<in> G}"
+definition "neighbourhood G v = {u. {u,v} \<in> G}"
 
 lemma in_neighD[dest]: "v \<in> neighbourhood G u \<Longrightarrow> {u, v} \<in> G"
 "v \<in> neighbourhood G u \<Longrightarrow> {v, u} \<in> G"
@@ -163,7 +163,7 @@ lemma in_neighD[dest]: "v \<in> neighbourhood G u \<Longrightarrow> {u, v} \<in>
 locale graph_defs =
   fixes G :: "'a set set"
 
-definition "dblton_graph G \<equiv> (\<forall>e\<in>G. \<exists>u v. e = {u, v} \<and> u \<noteq> v)"
+definition "dblton_graph G = (\<forall>e\<in>G. \<exists>u v. e = {u, v} \<and> u \<noteq> v)"
 
 lemma dblton_graphE[elim]:
   assumes "dblton_graph G" "e \<in> G"
@@ -565,7 +565,7 @@ lemma edges_of_path_Vs: "Vs (set (edges_of_path p)) \<subseteq> set p"
 
 subsection \<open>Walks, and Connected Components\<close>
 
-definition "walk_betw G u p v \<equiv> (p \<noteq> [] \<and> path G p \<and> hd p = u \<and> last p = v)"
+definition "walk_betw G u p v = (p \<noteq> [] \<and> path G p \<and> hd p = u \<and> last p = v)"
 
 lemma nonempty_path_walk_between:
   "\<lbrakk>path G p; p \<noteq> []; hd p = u; last p = v\<rbrakk> \<Longrightarrow> walk_betw G u p v"
@@ -706,7 +706,7 @@ definition "comps X E = connected_component E ` X"
 
 text \<open>The abbreviation is there to allow for the definition as a lemma.\<close>
 
-definition "connected_components_aux G \<equiv> comps (Vs G) G"
+definition "connected_components_aux G = comps (Vs G) G"
 abbreviation "connected_components G \<equiv> connected_components_aux G"
 
 lemma connected_components_def: "connected_components G = {vs. \<exists>v. vs = connected_component G v \<and> v \<in> (Vs G)}"
@@ -2301,7 +2301,7 @@ lemma finite_dbl_finite_verts: "finite G \<Longrightarrow> dblton_graph G \<Long
   by (auto simp: Vs_def dblton_graph_def)
 
 definition connected_at where
-  "connected_at v e e' \<equiv> (v \<in> (e \<inter> e'))"
+  "connected_at v e e' = (v \<in> (e \<inter> e'))"
 
 lemma nempty_tl_hd_tl:
   "(tl l) \<noteq>[] \<Longrightarrow> l = (hd l) # (tl l)"
@@ -2678,7 +2678,7 @@ proof-
 qed
 
 definition component_path where
-"component_path G C \<equiv> (SOME p. path G p \<and> C = set p \<and> hd p \<noteq> last p)"
+"component_path G C = (SOME p. path G p \<and> C = set p \<and> hd p \<noteq> last p)"
 
 lemma component_path_works:
   assumes "finite C" "C \<in> connected_components G" "card C \<ge> 2"
@@ -2893,10 +2893,10 @@ lemma epath_subset_other_set:
 
 
 definition depath :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "depath G u p v \<equiv> epath G u p v \<and> distinct p"
+  "depath G u p v = ( epath G u p v \<and> distinct p)"
 
 definition decycle :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> bool" where
-  "decycle G u p \<equiv> epath G u p u \<and> length p > 2 \<and> distinct p"
+  "decycle G u p = (epath G u p u \<and> length p > 2 \<and> distinct p)"
 
 lemma decycle_subset:
   "decycle G u p \<Longrightarrow> G \<subseteq> G' \<Longrightarrow> decycle G' u p"

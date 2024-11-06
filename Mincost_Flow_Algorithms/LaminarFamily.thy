@@ -4,10 +4,10 @@ theory LaminarFamily
   imports Main
 begin
 
-definition "laminar U \<X> \<equiv> 
-            (\<forall> X Y. X \<in> \<X> \<longrightarrow> Y \<in> \<X> \<longrightarrow> (X \<subseteq> Y \<or> Y \<subseteq> X \<or> X \<inter> Y = {}))
+definition "laminar U \<X> = 
+            ((\<forall> X Y. X \<in> \<X> \<longrightarrow> Y \<in> \<X> \<longrightarrow> (X \<subseteq> Y \<or> Y \<subseteq> X \<or> X \<inter> Y = {}))
             \<and> (\<forall> X \<in> \<X>. X \<noteq> {} \<and> X \<subseteq> U)
-            \<and> U \<noteq> {}"
+            \<and> U \<noteq> {})"
 
 lemma laminarI: 
 "(\<And> X Y. X \<in> \<X> \<Longrightarrow> Y \<in> \<X> \<Longrightarrow> (X \<subseteq> Y \<or> Y \<subseteq> X \<or> X \<inter> Y = {}))

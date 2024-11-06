@@ -21,25 +21,25 @@ fun cas :: "'a \<Rightarrow> 'a awalk \<Rightarrow> 'a \<Rightarrow> bool" where
 
 
 definition awalk :: "'a dgraph \<Rightarrow> 'a \<Rightarrow> ('a \<times> 'a) list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "awalk E u p v \<equiv> u \<in> dVs E \<and> set p \<subseteq> E \<and> cas u p v"
+  "awalk E u p v = ( u \<in> dVs E \<and> set p \<subseteq> E \<and> cas u p v)"
 
 definition trail :: "'a dgraph \<Rightarrow> 'a \<Rightarrow> ('a \<times> 'a) list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "trail E u p v \<equiv> awalk E u p v \<and> distinct p"
+  "trail E u p v = ( awalk E u p v \<and> distinct p)"
 
 definition apath :: "'a dgraph \<Rightarrow> 'a \<Rightarrow> 'a awalk \<Rightarrow> 'a \<Rightarrow> bool" where
-  "apath E u p v \<equiv> awalk E u p v \<and> distinct (awalk_verts u p)"
+  "apath E u p v = ( awalk E u p v \<and> distinct (awalk_verts u p))"
 
 definition closed_w :: "'a dgraph \<Rightarrow> ('a \<times> 'a) list \<Rightarrow> bool" where
-  "closed_w E p \<equiv> \<exists>u. awalk E u p u \<and> 0 < length p"
+  "closed_w E p = ( \<exists>u. awalk E u p u \<and> 0 < length p)"
 
 definition cycle :: "'a dgraph \<Rightarrow> 'a awalk \<Rightarrow> bool" where
-  "cycle E p \<equiv> \<exists>u. awalk E u p u \<and> distinct (tl (awalk_verts u p)) \<and> p \<noteq> []"
+  "cycle E p = ( \<exists>u. awalk E u p u \<and> distinct (tl (awalk_verts u p)) \<and> p \<noteq> [])"
 
 (* This definition is used in relation to undirected graphs: If we have a directed graph which
 is additionally assumed to be symmetric (and thus represents an undirected graph), a path satisfying
 the cycle' property corresponds to a cycle in the undirected graph. *)
 definition cycle' :: "'a dgraph \<Rightarrow> 'a awalk \<Rightarrow> bool" where
-  "cycle' E p \<equiv> cycle E p \<and> length p > 2"
+  "cycle' E p = ( cycle E p \<and> length p > 2)"
 
 fun is_awalk_cyc_decomp :: "'a dgraph \<Rightarrow> ('a \<times> 'a) list \<Rightarrow> 
   (('a \<times> 'a) list \<times> ('a \<times> 'a) list \<times> ('a \<times> 'a) list) \<Rightarrow> bool" where

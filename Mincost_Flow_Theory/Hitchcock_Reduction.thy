@@ -27,11 +27,11 @@ lemma get_vertex_inv: "vertex_of (vertex x) = x"
 
 lemma get_vertex_inv_image:"vertex_of ` (vertex ` X) = X" by force
 
-definition "new_fstv_gen fstv \<equiv> (\<lambda> e. (case e of inedge e \<Rightarrow> edge e |
+definition "new_fstv_gen fstv = (\<lambda> e. (case e of inedge e \<Rightarrow> edge e |
                                      outedge e \<Rightarrow> edge e|
                                     vtovedge e \<Rightarrow> vertex (fstv e)|
                                    ( dummy u v) \<Rightarrow> u))"
-definition  "new_sndv_gen fstv sndv \<equiv> (\<lambda> e. (case e of inedge e \<Rightarrow> vertex(fstv e) |
+definition  "new_sndv_gen fstv sndv = (\<lambda> e. (case e of inedge e \<Rightarrow> vertex(fstv e) |
                                      outedge e \<Rightarrow> vertex (sndv e) |
                                     vtovedge e \<Rightarrow> vertex (sndv e)|
                                     (dummy u v) \<Rightarrow> v))"
@@ -40,18 +40,18 @@ definition "new_make_pair_gen fstv sndv = (\<lambda> e. (new_fstv_gen fstv e, ne
 
 definition "new_create_edge_gen = (\<lambda> u v. dummy u v)"
 
-definition "new_\<E>1_gen \<E> \<u> \<equiv> {inedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
-definition "new_\<E>2_gen \<E> \<u> \<equiv> {outedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
-definition "new_\<E>3_gen \<E> \<u> \<equiv> {vtovedge e | e. e \<in> flow_network.infty_edges \<u> \<E>}"
+definition "new_\<E>1_gen \<E> \<u> = {inedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
+definition "new_\<E>2_gen \<E> \<u> = {outedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
+definition "new_\<E>3_gen \<E> \<u> = {vtovedge e | e. e \<in> flow_network.infty_edges \<u> \<E>}"
 
-definition "new_\<c>_gen D fstv \<E> \<u> \<c>\<equiv> (\<lambda> e'. if e' \<in> new_\<E>1_gen \<E> \<u> then 0
+definition "new_\<c>_gen D fstv \<E> \<u> \<c> = (\<lambda> e'. if e' \<in> new_\<E>1_gen \<E> \<u> then 0
                        else if  e' \<in> new_\<E>2_gen \<E> \<u> then \<c> (edge_of (new_fstv_gen fstv e')) 
                        else if e' \<in> new_\<E>3_gen \<E> \<u> then \<c> (get_edge e')
                        else (case e' of dummy _ _  \<Rightarrow> 0 |
                                         inedge _ \<Rightarrow> 0 |
                                         e' \<Rightarrow> if get_edge e' \<in> D then \<c> (get_edge e') else 0))"
 
-definition "new_\<b>_gen fstv \<E> \<u> \<b> \<equiv> (\<lambda> x'. (case x' of edge e \<Rightarrow> real_of_ereal (\<u> e)
+definition "new_\<b>_gen fstv \<E> \<u> \<b> = (\<lambda> x'. (case x' of edge e \<Rightarrow> real_of_ereal (\<u> e)
                        | vertex x \<Rightarrow> \<b> x - sum (real_of_ereal o \<u>) 
                         ((multigraph.delta_plus fstv \<E> x) - (flow_network.delta_plus_infty fstv \<u> \<E> x))))"
 
@@ -109,27 +109,27 @@ proof-
   note  \<E>1_def_old =  \<E>1_def
   note  \<E>2_def_old =  \<E>2_def
   note  \<E>3_def_old =  \<E>3_def
-  have fstv'_def: "fstv' \<equiv> (\<lambda> e. (case e of inedge e \<Rightarrow> edge e |
+  have fstv'_def: "fstv' = (\<lambda> e. (case e of inedge e \<Rightarrow> edge e |
                                      outedge e \<Rightarrow> edge e|
                                     vtovedge e \<Rightarrow> vertex (fstv e)|
                                    ( dummy u v) \<Rightarrow> u))"
     by (simp add: fstv'_def new_fstv_gen_def)
-  have sndv'_def: "sndv' \<equiv> (\<lambda> e. (case e of inedge e \<Rightarrow> vertex(fstv e) |
+  have sndv'_def: "sndv' = (\<lambda> e. (case e of inedge e \<Rightarrow> vertex(fstv e) |
                                      outedge e \<Rightarrow> vertex (sndv e) |
                                     vtovedge e \<Rightarrow> vertex (sndv e)|
                                     (dummy u v) \<Rightarrow> v))" 
     by (simp add: new_sndv_gen_def sndv'_def)
-    have make_pair'_def: "make_pair' \<equiv> (\<lambda> e. (fstv' e, sndv' e))"
+    have make_pair'_def: "make_pair' = (\<lambda> e. (fstv' e, sndv' e))"
       by (simp add: assms(2) assms(3) make_pair'_def new_make_pair_gen_def)
-   have create_edge'_def: "create_edge' \<equiv> (\<lambda> u v. dummy u v)"
+   have create_edge'_def: "create_edge' = (\<lambda> u v. dummy u v)"
      by (simp add: create_edge'_def new_create_edge_gen_def)
-   have \<E>1_def: "\<E>1 \<equiv> {inedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
+   have \<E>1_def: "\<E>1 = {inedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
      by (simp add: \<E>1_def new_\<E>1_gen_def)
-   have \<E>2_def: "\<E>2 \<equiv> {outedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
+   have \<E>2_def: "\<E>2 = {outedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
      by (simp add: \<E>2_def new_\<E>2_gen_def)
-   have \<E>3_def: "\<E>3 \<equiv> {vtovedge e | e. e \<in> flow_network.infty_edges \<u> \<E>}"
+   have \<E>3_def: "\<E>3 = {vtovedge e | e. e \<in> flow_network.infty_edges \<u> \<E>}"
      by (simp add: \<E>3_def new_\<E>3_gen_def)
-   have \<c>'_def: "\<c>' \<equiv> (\<lambda> e'. if e' \<in> \<E>1 then 0
+   have \<c>'_def: "\<c>' = (\<lambda> e'. if e' \<in> \<E>1 then 0
                        else if  e' \<in> \<E>2 then \<c> (edge_of (fstv' e')) 
                        else if e' \<in> \<E>3 then \<c> (get_edge e')
                        else (case e' of dummy _ _  \<Rightarrow> 0 |
@@ -137,10 +137,10 @@ proof-
                                         e' \<Rightarrow> if get_edge e' \<in> D then \<c> (get_edge e') else 0))"
      unfolding \<c>'_def new_\<c>_gen_def new_\<E>1_gen_def new_\<E>2_gen_def new_\<E>3_gen_def
           \<E>1_def \<E>2_def \<E>3_def new_fstv_gen_def fstv'_def by simp
-  have \<b>'_def: "\<b>' \<equiv> (\<lambda> x'. (case x' of edge e \<Rightarrow> real_of_ereal (\<u> e)
+  have \<b>'_def: "\<b>' = (\<lambda> x'. (case x' of edge e \<Rightarrow> real_of_ereal (\<u> e)
                        | vertex x \<Rightarrow> \<b> x - sum (real_of_ereal o \<u>) 
                         ((multigraph.delta_plus fstv \<E> x) - (flow_network.delta_plus_infty fstv \<u> \<E> x))))"
-        unfolding \<b>'_def new_\<b>_gen_def by simp                  
+        unfolding \<b>'_def new_\<b>_gen_def by blast                 
   
   have u_pos: "\<And> e. \<u> e \<ge> 0" 
     using assms(1) by(auto simp add: flow_network_def flow_network_axioms_def)
@@ -229,26 +229,12 @@ proof-
              {e \<in> {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}.
              fstv' e = v} \<union>
              {e \<in> {vtovedge e | e. e \<in>  flow_network.infty_edges \<u> \<E>}.
-             fstv' e = v}" by auto
-         have d1:"sum g
-        {e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-              {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-              {vtovedge e | e . e \<in> flow_network.infty_edges \<u> \<E>}.
-         fstv' e = v} = 
-              (if \<u> x1 < PInfty then g (inedge x1) + g (outedge x1)
-               else 0)" for g 
-           apply(subst set_spliter)
-           apply(subst comm_monoid_add_class.sum.union_disjoint)
-           using finites flow_network.infty_edges_def[OF assms(1)] apply auto[3]
-           apply(subst comm_monoid_add_class.sum.union_disjoint)
-           using finites flow_network.infty_edges_def[OF assms(1)] assms(2) apply auto[3]
-           
-           apply(cases "\<u> x1 < PInfty")
-           subgoal
-             apply(subst if_P)
-              apply simp
-             unfolding flow_network.infty_edges_def[OF assms(1)]
-             using edge apply auto
+              fstv' e = v}" by auto
+         have da:"\<u> x1 \<noteq> \<infinity> \<Longrightarrow>
+                sum g {e. (\<exists>ea. e = inedge ea \<and> ea \<in> \<E> \<and> (ea \<in> \<E> \<longrightarrow> \<u> ea \<noteq> \<infinity>)) \<and> fstv' e = edge x1} +
+               sum g {e. (\<exists>ea. e = outedge ea \<and> ea \<in> \<E> \<and> (ea \<in> \<E> \<longrightarrow> \<u> ea \<noteq> \<infinity>)) \<and> fstv' e = edge x1} +
+                sum g {e. (\<exists>ea. e = vtovedge ea \<and> ea \<in> \<E> \<and> \<u> ea = \<infinity>) \<and> fstv' e = edge x1} =
+                g (inedge x1) + g (outedge x1) " for g 
              apply(rule forw_subst[of "sum _ _" 0])
               apply(rule forw_subst[of _ "{}"])
                apply (force simp add: fstv'_def)
@@ -263,10 +249,22 @@ proof-
              apply(rule forw_subst[of _ "sum _ {outedge x1}", OF _ ])
              using x1_in_E 
              by (force intro!: cong[of "sum g" _ _ "{_}", OF refl] simp add: fstv'_def)+
-           subgoal
-             using x1_in_E 
-             by(auto intro: forw_subst[of "sum _ _" 0] forw_subst[of _ "{}"] simp add: flow_network.infty_edges_def[OF assms(1)])
-             done
+         
+         have d1:"sum g
+        {e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
+              {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
+              {vtovedge e | e . e \<in> flow_network.infty_edges \<u> \<E>}.
+         fstv' e = v} = 
+              (if \<u> x1 < PInfty then g (inedge x1) + g (outedge x1)
+               else 0)" for g 
+           apply(subst set_spliter)
+           apply(subst comm_monoid_add_class.sum.union_disjoint)
+           using finites flow_network.infty_edges_def[OF assms(1)] apply auto[3]
+           apply(subst comm_monoid_add_class.sum.union_disjoint)
+           using finites flow_network.infty_edges_def[OF assms(1)] assms(2) apply auto[3]          
+           using x1_in_E edge
+           by(auto intro: da forw_subst[of "sum _ _" 0] forw_subst[of _ "{}"] 
+                  simp add: flow_network.infty_edges_def[OF assms(1)])
 
          show ?thesis 
           unfolding flow_network.ex_def[OF residual']  multigraph.delta_minus_def[OF mgraph']
@@ -298,27 +296,34 @@ proof-
          qed
            
          have i1: "(get_edge `
-    {vtovedge e |e. e \<in> \<E> \<and> fstv e = x1 \<and> \<u> e = \<infinity> }) =
-    {e \<in> \<E>. fstv e = x1 \<and> \<u> e = \<infinity>}"
+            {vtovedge e |e. e \<in> \<E> \<and> fstv e = x1 \<and> \<u> e = \<infinity> }) =
+              {e \<in> \<E>. fstv e = x1 \<and> \<u> e = \<infinity>}"
            by (auto simp add: image_def)
-         have h1: "sum f' {vtovedge e |e. e \<in> flow_network.delta_plus_infty fstv \<u> \<E> x1} =
-              sum f (flow_network.delta_plus_infty fstv \<u> \<E> x1)"
-           apply(auto simp add:  flow_network.delta_plus_infty_def[OF assms(1)]
-                 flow_network.infty_edges_def[OF assms(1)] case1(2) \<E>1_def \<E>2_def \<E>3_def Let_def)
-           apply(subst sum_if_not_P)
-           apply(auto simp add: \<E>2_def \<E>3_def)
-           apply(subst sum_if_not_P)
-           apply(auto simp add: \<E>2_def \<E>3_def)
-           apply(subst sum_if_P)
-           apply(auto simp add: \<E>2_def \<E>3_def  flow_network.infty_edges_def[OF assms(1)])
-           apply(subst sum_inj_on[of get_edge _ f,
-                      simplified, symmetric])
+         have h0: "(\<Sum>x\<in>{vtovedge e |e. e \<in> \<E> \<and> fstv e = x1 \<and> \<u> e = \<infinity>}. f (get_edge x)) =
+                     sum f {e \<in> \<E>. fstv e = x1 \<and> \<u> e = \<infinity>} "
+           apply(subst sum_inj_on[of get_edge _ f, simplified, symmetric])
            subgoal 
              apply(rule  inj_onI)
              subgoal for x y
                by(cases x, all \<open>cases y\<close>) auto
              done
-           by(simp add: i1 )
+           by(simp add: i1)
+         have "(\<Sum>x\<in>{vtovedge e |e. e \<in> \<E> \<and> fstv e = x1 \<and> \<u> e = \<infinity>}.
+                 if \<exists>e. x = inedge e \<and> e \<in> \<E> \<and> (e \<in> \<E> \<longrightarrow> \<u> e \<noteq> \<infinity>)
+                  then real_of_ereal (\<u> (edge_of (fstv' x))) - f (edge_of (fstv' x))
+                   else if x \<in> \<E>2 then f (edge_of (fstv' x)) else if x \<in> \<E>3 then f (get_edge x) else arbit x) =
+               sum f {e \<in> \<E>. fstv e = x1 \<and> \<u> e = \<infinity>}"
+           apply(subst sum_if_not_P)
+           apply(auto simp add: \<E>2_def \<E>3_def)[1]
+           apply(subst sum_if_not_P)
+           apply(auto simp add: \<E>2_def \<E>3_def)[1]
+           apply(subst sum_if_P)
+            by(auto simp add: \<E>2_def \<E>3_def sum_if_P flow_network.infty_edges_def[OF assms(1)]
+                       intro: h0)
+          hence h1: "sum f' {vtovedge e |e. e \<in> flow_network.delta_plus_infty fstv \<u> \<E> x1} =
+              sum f (flow_network.delta_plus_infty fstv \<u> \<E> x1)"
+           by(auto simp add:  flow_network.delta_plus_infty_def[OF assms(1)]
+                 flow_network.infty_edges_def[OF assms(1)] case1(2) \<E>1_def \<E>2_def \<E>3_def Let_def)
            have h2: "sum f'
         {e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E> } \<union>
               {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
@@ -402,7 +407,22 @@ proof-
                 flow_network.delta_minus_infty_def[OF assms(1)] flow_network.infty_edges_def[OF assms(1)] sndv'_def)+
         have excess_at_x1: " sum f (multigraph.delta_plus fstv \<E> x1) - sum f (multigraph.delta_minus sndv \<E> x1) = \<b> x1"
           using case1(1) x_in_V 
-               by(auto simp add: flow_network.isbflow_def[OF assms(1)] flow_network.ex_def[OF assms(1)])
+          by(auto simp add: flow_network.isbflow_def[OF assms(1)] flow_network.ex_def[OF assms(1)])
+        have h6: "sum f (flow_network.delta_plus_infty fstv \<u> \<E> x1) +
+                    sum f (multigraph.delta_plus fstv \<E> x1 - flow_network.delta_plus_infty fstv \<u> \<E> x1) =
+                     \<b> x1 +
+                      (sum f (flow_network.delta_minus_infty sndv \<u> \<E> x1) +
+                       sum f (multigraph.delta_minus sndv \<E> x1 - flow_network.delta_minus_infty sndv \<u> \<E> x1)) "
+           apply(subst comm_monoid_add_class.sum.union_disjoint[symmetric])
+          using multigraph.delta_plus_finite[OF mgraph, of x1] 
+                flow_network.infty_edges_del(6)[OF assms(1), of x1] 
+                Un_absorb1[OF flow_network.infty_edges_del(6)[OF flow_network, of x1]] 
+                multigraph.delta_minus_finite[OF mgraph, of x1] 
+                flow_network.infty_edges_del(5)[OF assms(1), of x1] 
+                Un_absorb1[OF flow_network.infty_edges_del(5)[OF assms(1), of x1]] 
+                excess_at_x1 
+          by (auto intro:  forw_subst[OF comm_monoid_add_class.sum.union_disjoint[symmetric]] simp add: finite_subset)
+      
         show ?thesis
           unfolding flow_network.ex_def[OF residual']  multigraph.delta_minus_def[OF mgraph']
            multigraph.delta_plus_def[OF mgraph']
@@ -428,23 +448,11 @@ proof-
           apply(subst (3) sum_if_not_P, force simp add: \<E>2_def)
           apply(subst (3) sum_if_P, simp add: \<E>3_def)
           (*transforming to sums over sets of edges in the original graph*)
-          apply(simp only: algebra_simps)
           apply(subst h3)
           apply(subst h4)
           apply(subst h5)
-          apply(subst sum_subtractf)+
-          apply (auto simp add: algebra_simps)
-          (*manipulating the sums to arrive at the definition of excess flow*)
-          apply(subst comm_monoid_add_class.sum.union_disjoint[symmetric])
-          using multigraph.delta_plus_finite[OF mgraph, of x1] 
-                flow_network.infty_edges_del(6)[OF assms(1), of x1] 
-                Un_absorb1[OF flow_network.infty_edges_del(6)[OF flow_network, of x1]] 
-                multigraph.delta_minus_finite[OF mgraph, of x1] 
-                flow_network.infty_edges_del(5)[OF assms(1), of x1] 
-                Un_absorb1[OF flow_network.infty_edges_del(5)[OF assms(1), of x1]] 
-                excess_at_x1 
-          by (auto intro:  forw_subst[OF comm_monoid_add_class.sum.union_disjoint[symmetric]] simp add: finite_subset)
-      qed
+          by(fastforce simp add: algebra_simps h6 sum_subtractf)
+       qed
     qed
     show ?case
     proof(rule, goal_cases)
@@ -528,16 +536,25 @@ proof-
          hence "e \<in> \<E>" "\<u> e \<noteq> PInfty"
            by(auto simp add: flow_network.infty_edges_def[OF assms(1)])
          moreover have "edge e  \<in> dVs (make_pair' ` \<E>')"
-           apply (auto simp add: make_pair'_def \<E>'_def fstv'_def sndv'_def dVs_def)
+         proof-
+           have "\<exists>x. (\<exists>v1 v2. x = {v1, v2} \<and> (v1, v2) \<in> make_pair' ` \<E>') \<and> edge e \<in> x"
            apply(rule exI[of _ "{edge e, vertex (fstv e)}"], auto)
            apply(rule exI[of _ "edge e"])
-           using 1 by (auto intro!: bexI[of _ "inedge e"] exI[of _ "vertex (fstv e)"] simp add: image_def)
+             using 1 by (auto intro!: bexI[of _ "inedge e"] exI[of _ "vertex (fstv e)"] 
+                            simp add: fstv'_def \<E>'_def  make_pair'_def image_def sndv'_def)
+         thus ?thesis
+           by (auto simp add:   dVs_def)
+         qed
          moreover have "vertex (sndv e) \<in> dVs (make_pair' ` \<E>')"
-           apply(auto simp add: make_pair'_def \<E>'_def fstv'_def sndv'_def dVs_def)
+         proof-
+           have "\<exists>x. (\<exists>v1 v2. x = {v1, v2} \<and> (v1, v2) \<in> make_pair' ` \<E>') \<and> vertex (sndv e) \<in> x"
            apply(rule exI[of _ "{edge e, vertex (sndv e)}"], auto)
            apply(rule exI[of _ "edge e"])
            using 1  \<E>2_def e_where 
-           by (auto intro!: bexI[of _ "outedge e"] exI[of _ "vertex (sndv e)"]  simp add: image_def)
+           by (auto intro!: bexI[of _ "outedge e"] exI[of _ "vertex (sndv e)"]  
+                  simp add: make_pair'_def \<E>'_def fstv'_def sndv'_def image_def)
+         thus ?thesis by(auto simp add:  dVs_def)
+         qed
          ultimately show ?thesis by simp
        qed
        hence dVs': "edge e  \<in> dVs (make_pair' ` \<E>')" "vertex (sndv e) \<in> dVs (make_pair' ` \<E>')" "\<u> e \<noteq> PInfty"
@@ -851,13 +868,19 @@ proof-
         using C_in_E3 assms(1)
         by(auto intro: map_cong[OF refl] simp add: make_pair'_def fstv'_def sndv'_def \<E>3_def flow_network_def multigraph_def
                   split: hitchcock_edge.split)
-    have "closed_w (make_pair ` \<E>) (map make_pair D)"
-      unfolding closed_w_def  D_def
-      apply(rule exI[of _ "vertex_of u"])
-      using u_prop(2) assms(1) apply(auto simp add: map_C_is) 
+      have "closed_w (make_pair ` \<E>) (map make_pair D)"
+      proof-
+        have "C \<noteq> [] \<Longrightarrow>
+        flow_network fstv sndv make_pair create_edge \<u> \<E> \<Longrightarrow>
+        awalk (make_pair ` \<E>) (vertex_of u) (map ((\<lambda>e. (vertex_of (fst e), vertex_of (snd e))) \<circ> make_pair') C)
+        (vertex_of u)"
       by(fastforce intro!: subset_mono_awalk[OF awalk_map[OF _ u_prop(1)], simplified, OF _ refl, of vertex_of] 
-                simp add: make_pair'_def fstv'_def sndv'_def \<E>3_def flow_network_def multigraph_def
+                 simp add: make_pair'_def fstv'_def sndv'_def \<E>3_def flow_network_def multigraph_def
                            flow_network.infty_edges_def[OF assms(1)] map_C_is)
+      thus ?thesis
+      using u_prop(2) assms(1) 
+      by(auto intro: exI[of _ "vertex_of u"] simp add: map_C_is closed_w_def  D_def) 
+     qed
     moreover have "foldr (\<lambda>e. (+) (\<c> e)) D start = foldr (\<lambda>e. (+) (\<c>' e)) C start" for start  
       using Es_non_inter C_in_E3
       unfolding D_def fold_map comp_def \<c>'_def
@@ -989,13 +1012,13 @@ proof-
 
 subsection \<open>Finite-Capacity Graphs\<close>
 
-definition "new_\<E>1 \<E> \<u> \<equiv>{(edge e, vertex (fst e))| e. e \<in> \<E>}"
-definition "new_\<E>2 \<E> \<u> \<equiv> {(edge e, vertex (snd e))| e. e \<in> \<E>}"
+definition "new_\<E>1 \<E> \<u> = {(edge e, vertex (fst e))| e. e \<in> \<E>}"
+definition "new_\<E>2 \<E> \<u> = {(edge e, vertex (snd e))| e. e \<in> \<E>}"
 
-definition "new_\<c> \<E> \<u> \<c>\<equiv> (\<lambda> e'. if e' \<in> new_\<E>2 \<E> \<u> then \<c> (edge_of (fst e')) else if e' \<in> new_\<E>1 \<E> \<u> 
+definition "new_\<c> \<E> \<u> \<c> = (\<lambda> e'. if e' \<in> new_\<E>2 \<E> \<u> then \<c> (edge_of (fst e')) else if e' \<in> new_\<E>1 \<E> \<u> 
 then 0 else undefined)"
 
-definition "new_\<b> \<E> \<u> \<b> \<equiv> (\<lambda> x'. (case x' of edge e \<Rightarrow> \<u> e
+definition "new_\<b> \<E> \<u> \<b> = (\<lambda> x'. (case x' of edge e \<Rightarrow> \<u> e
                        | vertex x \<Rightarrow> \<b> x -( sum \<u> (multigraph.delta_plus fst \<E> x))))"
 
 definition "new_f \<E> \<u> f = (\<lambda> e'. (let e = edge_of (fst e') 
@@ -1033,15 +1056,15 @@ shows
 proof-
   note  \<E>1_def_old =  \<E>1_def
   note  \<E>2_def_old =  \<E>2_def
-   have \<E>1_def: "\<E>1 \<equiv> {(edge e, vertex (fst e))| e. e \<in> \<E>}"
+   have \<E>1_def: "\<E>1 = {(edge e, vertex (fst e))| e. e \<in> \<E>}"
      by (simp add: \<E>1_def new_\<E>1_def)
-   have \<E>2_def: "\<E>2 \<equiv> {(edge e, vertex (snd e))| e. e \<in> \<E>}"
+   have \<E>2_def: "\<E>2 = {(edge e, vertex (snd e))| e. e \<in> \<E>}"
      by (simp add: \<E>2_def new_\<E>2_def)
-   have \<c>'_def: "\<c>' \<equiv> (\<lambda> e'. if e' \<in> \<E>2 then \<c> (edge_of (fst e')) else if e' \<in> \<E>1  
+   have \<c>'_def: "\<c>' = (\<lambda> e'. if e' \<in> \<E>2 then \<c> (edge_of (fst e')) else if e' \<in> \<E>1  
 then 0 else undefined)"
      unfolding \<c>'_def new_\<c>_def new_\<E>1_def new_\<E>2_def
           \<E>1_def \<E>2_def by simp
-  have \<b>'_def: "\<b>' \<equiv> (\<lambda> x'. (case x' of edge e \<Rightarrow> \<u> e
+  have \<b>'_def: "\<b>' = (\<lambda> x'. (case x' of edge e \<Rightarrow> \<u> e
                        | vertex x \<Rightarrow> \<b> x -( sum \<u> (multigraph.delta_plus fst \<E> x))))"
         unfolding \<b>'_def new_\<b>_def by simp  
   have finites: "finite {(edge (a, b), vertex a) |a b. (a, b) \<in> \<E>}"
@@ -1125,20 +1148,21 @@ then 0 else undefined)"
            using x1_in_E assms(2) 
            by(auto simp add: a1[of "fst x1" "snd x1", simplified prod.collapse] two_sum_remove, 
               cases x1, auto)
-         show ?thesis 
-          unfolding flow_network.ex_def[OF flow_network']  multigraph.delta_minus_def[OF mgraph']
-           multigraph.delta_plus_def[OF mgraph']
-          unfolding \<E>'_def \<E>1_def \<E>2_def \<b>'_def 
-          apply(simp only: empty_simper)
-          using edge x1_in_E apply (auto simp add: d1)
+         have d2: "v = edge x1 \<Longrightarrow> x1 \<in> \<E> \<Longrightarrow> f' (edge x1, vertex (snd x1)) 
+                        + f' (edge x1, vertex (fst x1)) = \<u> x1 "
           unfolding case1(2) Let_def \<E>1_def \<E>2_def  
           apply(subst if_P)
-           apply force
+          apply force
           apply(subst if_not_P)
           using assms(2) apply force
           apply(subst if_P)
-           apply force
-          by simp
+          by force+
+         show ?thesis 
+          unfolding flow_network.ex_def[OF flow_network']  multigraph.delta_minus_def[OF mgraph']
+           multigraph.delta_plus_def[OF mgraph']
+          apply(simp only: empty_simper \<E>'_def \<E>1_def \<E>2_def \<b>'_def )
+          using edge x1_in_E 
+          by (auto simp add: d1 intro: d2)
       next
         case (vertex x1)
          hence empty_simper:" {e \<in> {(edge e, vertex (fst e)) |e. e \<in> \<E>} \<union> {(edge e, vertex (snd e)) |e. e \<in> \<E>}. fst e = v}
@@ -1179,26 +1203,41 @@ then 0 else undefined)"
            subgoal
              by(auto split: hitchcock_wrapper.split simp add: inj_on_def)
            by(force intro: cong[of "sum _", OF refl] split: hitchcock_wrapper.split simp add:  image_Collect) 
-
-        show ?thesis
-          unfolding flow_network.ex_def[OF flow_network']  multigraph.delta_minus_def[OF mgraph']
-           multigraph.delta_plus_def[OF mgraph']
-          unfolding \<E>'_def \<E>1_def \<E>2_def \<b>'_def 
-          apply(simp only: empty_simper sum.empty)
-          using vertex assms(2)
-          unfolding case1(2) Let_def  \<E>1_def \<E>2_def apply auto
-          apply(simp only:a4[of x1] set_sum_split summation_split)
+         have final_helper: "v = vertex x1 \<Longrightarrow>
+                  \<forall>x. (x, x) \<notin> \<E> \<Longrightarrow>
+                   - (\<Sum>x\<in>{(edge (x1, b), vertex x1) |b. (x1, b) \<in> \<E>}. \<u> (edge_of (fst x)) - f (edge_of (fst x))) -
+                (\<Sum>x\<in>{(edge (a, x1), vertex x1) |a. (a, x1) \<in> \<E>}. f (edge_of (fst x))) =
+                \<b> x1 - sum \<u> (multigraph.delta_plus fst \<E> x1)"
+          using 1 
+          by(subst sym[OF ex_b])
+            (auto simp add: flow_network.ex_def[OF assms(1)]  multigraph.delta_minus_def[OF mgraph]
+                  multigraph.delta_plus_def[OF mgraph] summation_u summation_fst summation_snd sum_subtractf
+                  \<E>'_def \<E>1_def \<E>2_def dVs_def )
+        have second_final_helper: "v = vertex x1 \<Longrightarrow>
+    \<forall>x. (x, x) \<notin> \<E> \<Longrightarrow>
+    - (\<Sum>e'\<in>{e. ((\<exists>a b. e = (edge (a, b), vertex a) \<and> (a, b) \<in> \<E>) \<or>
+                  (\<exists>a b. e = (edge (a, b), vertex b) \<and> (a, b) \<in> \<E>)) \<and>
+                 snd e = vertex x1}.
+         if \<exists>a b. e' = (edge (a, b), vertex b) \<and> (a, b) \<in> \<E> then f (edge_of (fst e'))
+         else if e' \<in> {(edge e, vertex (fst e)) |e. e \<in> \<E>} then \<u> (edge_of (fst e')) - f (edge_of (fst e'))
+              else undefined) =
+    \<b> x1 - sum \<u> (multigraph.delta_plus fst \<E> x1)"
+          apply(simp only:a4[of x1] set_sum_split summation_split )
           apply(subst sum_if_not_P[where i="\<lambda> y x. x", simplified]) 
-           apply force
+          apply force
           apply(subst sum_if_P[where i="\<lambda> y x. x", simplified]) apply force
           apply(subst sum_if_P[where i="\<lambda> y x. x", simplified]) 
-          apply force
-          apply auto
-          apply(subst sym[OF ex_b])
-          using 1 
-          by(auto simp add: flow_network.ex_def[OF assms(1)]  multigraph.delta_minus_def[OF mgraph]
-           multigraph.delta_plus_def[OF mgraph] summation_u summation_fst summation_snd sum_subtractf
-           \<E>'_def \<E>1_def \<E>2_def dVs_def )
+          by (auto intro: final_helper )
+        have "- (sum f' {e \<in> {(edge e, vertex (fst e)) |e. e \<in> \<E>} \<union> {(edge e, vertex (snd e)) |e. e \<in> \<E>}. snd e = v} -
+       0) =
+    (case v of edge e \<Rightarrow> \<u> e | vertex x \<Rightarrow> \<b> x - sum \<u> (multigraph.delta_plus fst \<E> x))"
+          using vertex assms(2)
+          unfolding case1(2) Let_def  \<E>1_def \<E>2_def 
+          by (auto intro: second_final_helper)
+        thus ?thesis
+          unfolding flow_network.ex_def[OF flow_network']  multigraph.delta_minus_def[OF mgraph']
+           multigraph.delta_plus_def[OF mgraph']
+          by(auto simp only: empty_simper sum.empty simp add: \<E>'_def \<E>1_def \<E>2_def \<b>'_def)
       qed
     qed
     show ?case
@@ -1347,12 +1386,13 @@ then 0 else undefined)"
        apply(subst sum_if_P[of \<E>2 _ ])
         apply simp
        apply(subst sum_if_not_P[of \<E>1 _ ])
+       using Es_non_inter apply auto[1]
        using Es_non_inter sum_if_P[of \<E>1 _ ] collapse_to_img[of "\<lambda> e. (edge e, vertex (snd e))" \<E> ] 
              sum_inj_on[of "\<lambda> e. (edge e, vertex (snd e))" \<E> 
                     "\<lambda> e. f' e *  \<c> (edge_of (fst e))", simplified, symmetric]
              collapse_to_img[of "\<lambda> e. (edge e, vertex (snd e))" \<E> ]
-       apply(auto simp add: inj_on_def \<E>2_def case1(2) image_def) 
-       by (smt (verit, ccfv_threshold) Collect_cong prod.collapse snd_conv)
+       by(auto simp add: inj_on_def \<E>2_def case1(2) image_def) 
+         (smt (verit, ccfv_threshold) Collect_cong prod.collapse snd_conv)
    qed
  qed
   show  "\<nexists> C. closed_w \<E>' C"

@@ -10,7 +10,7 @@ context flow_network
 begin
 
 definition is_s_t_flow ( "_ is _ -- _ flow") where
-"is_s_t_flow f s t \<equiv> (isuflow f \<and> ex f s \<le> 0 \<and> s \<in> \<V> \<and> t \<in> \<V> \<and> s \<noteq> t \<and> 
+"is_s_t_flow f s t = (isuflow f \<and> ex f s \<le> 0 \<and> s \<in> \<V> \<and> t \<in> \<V> \<and> s \<noteq> t \<and> 
                       (\<forall> x \<in> \<V>. x\<noteq> s \<longrightarrow> x \<noteq> t \<longrightarrow> ex f x = 0))"
 
 lemma is_s_t_flowI:
@@ -304,8 +304,7 @@ filter (\<lambda> x. \<not> set (prod.fst x) \<subseteq> old_edge ` \<E>) css_ws
     moreover hence "make_pair ` set cs' = (id o 
                      make_pair') ` set cs " 
       using cs_prop(3)  cs_prop(2)  make_pair 
-      apply(auto split: prod.split) 
-      by (smt (verit) case_prod_conv imageI)
+      by (metis id_comp list.set_map)
     ultimately have "awalk (make_pair ` set cs') (fst (hd cs')) (map make_pair cs') (fst (hd cs'))"
       by(simp only:)
       (fastforce intro!: awalk_image[OF _ _ refl, of "make_pair' ` set cs" "prod.fst (make_pair' (hd cs))"
@@ -341,12 +340,16 @@ filter (\<lambda> x. \<not> set (prod.fst x) \<subseteq> old_edge ` \<E>) css_ws
       moreover have "set cs' \<subseteq> support f "
         using e_E posf by (force simp add: support_def)
       moreover have "distinct cs'"
+      proof-
+        have "distinct cs \<Longrightarrow> inj_on network_of_network.get_old_edge (set cs)"
+                apply(rule inj_onI)
+                subgoal for x y
+                  using cs_prop(2)  by(cases x, all \<open>cases y\<close>) auto
+                done
+        thus ?thesis
         using cs_further_prop(3) 
-        apply (auto simp add:  cs_prop(3) distinct_map)
-        apply(rule inj_onI)
-        subgoal for x y
-         using cs_prop(2)  by(cases x, all \<open>cases y\<close>) auto
-       done
+        by(auto simp add:  cs_prop(3) distinct_map)
+     qed
      ultimately show ?case by simp
    qed
    moreover have "\<forall>ps\<in>set pss. flowpath f ps \<and> set ps \<subseteq> support f \<and> distinct ps \<and>
@@ -601,7 +604,7 @@ next
             simp add: dVs_def )
 qed
 
-definition "is_s_t_cut X \<equiv> (s \<in> X \<and> t \<in> \<V> - X \<and> X \<subseteq> \<V>)"
+definition "is_s_t_cut X = (s \<in> X \<and> t \<in> \<V> - X \<and> X \<subseteq> \<V>)"
 
 lemma is_s_t_cutI: "s \<in> X \<Longrightarrow> t \<in> \<V> - X \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> is_s_t_cut X"
   by(auto simp add: is_s_t_cut_def)
@@ -609,7 +612,7 @@ lemma is_s_t_cutI: "s \<in> X \<Longrightarrow> t \<in> \<V> - X \<Longrightarro
 lemma is_s_t_cutE: "is_s_t_cut X \<Longrightarrow> (s \<in> X \<Longrightarrow> t \<in> \<V> - X \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> P) \<Longrightarrow> P"
   by(auto simp add: is_s_t_cut_def)
 
-definition "is_min_cut X \<equiv> (is_s_t_cut X \<and> (\<forall> Y. is_s_t_cut Y \<longrightarrow> Cap X \<le> Cap Y))"
+definition "is_min_cut X = (is_s_t_cut X \<and> (\<forall> Y. is_s_t_cut Y \<longrightarrow> Cap X \<le> Cap Y))"
 
 lemma mincut_exists:
   obtains mincut where  "is_min_cut mincut"
@@ -651,7 +654,7 @@ proof-
   finally show ?thesis by simp
 qed
 
-definition "is_max_flow f \<equiv> (f is s -- t flow \<and> (\<forall> g. g is s -- t flow \<longrightarrow> ex f t \<ge> ex g t))"
+definition "is_max_flow f = (f is s -- t flow \<and> (\<forall> g. g is s -- t flow \<longrightarrow> ex f t \<ge> ex g t))"
 
 lemma is_max_flowI: "f is s -- t flow \<Longrightarrow>
                      (\<And> g. g is s -- t flow \<Longrightarrow> ex f t \<ge> ex g t) \<Longrightarrow> is_max_flow f"
@@ -720,7 +723,7 @@ qed
 
 subsection \<open>Reduction of Maximum Flow to Minimum Cost Flow\<close>
 
-definition "\<E>' \<equiv> old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
+definition "\<E>' = old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
 
 interpretation cost_network_of_network: cost_flow_network where
 fst = fst' and snd = snd' and make_pair = make_pair' and create_edge = create_edge'
@@ -811,16 +814,24 @@ proof-
         by(subst cost_network_of_network.delta_plus_def )
           (auto simp add:  delta_plus_def  create_edge'(1) \<E>'_def fst'_def )
       have "- cost_network_of_network.ex f' t = 0"
-        unfolding cost_network_of_network.ex_def t_delta_plus delta_minus_same[OF not_sym[OF s_neq_t] t_in_V]
-         apply(subst sum.insert) 
-         apply (auto simp add: delta_plus_finite f'_def ) 
+      proof-
+        have "ex\<^bsub>f\<^esub> t + (\<Sum>x\<in>old_edge ` \<delta>\<^sup>+ t. case x of old_edge x \<Rightarrow> f x | new_edge b \<Rightarrow> ex\<^bsub>f\<^esub> t) =
+              (\<Sum>x\<in>old_edge ` \<delta>\<^sup>- t. case x of old_edge x \<Rightarrow> f x | new_edge b \<Rightarrow> ex\<^bsub>f\<^esub> t)"        
          by(subst sum_inj_on)(auto intro: forw_subst[OF sum_inj_on] simp add: inj_on_def  ex_def)
-       moreover have "- cost_network_of_network.ex f' s = 0"
-        unfolding cost_network_of_network.ex_def s_delta_minus delta_plus_same[OF s_neq_t s_in_V]
-         apply(subst sum.insert) 
-          apply(auto simp add: delta_minus_finite f'_def ) 
-         using  same_ex
-         by(subst sum_inj_on)(auto intro: forw_subst[OF sum_inj_on] simp add: inj_on_def  ex_def algebra_simps)
+       thus ?thesis
+       unfolding cost_network_of_network.ex_def t_delta_plus delta_minus_same[OF not_sym[OF s_neq_t] t_in_V]
+       by(subst sum.insert)(auto simp add: delta_plus_finite f'_def ) 
+       qed
+      moreover have "- cost_network_of_network.ex f' s = 0"
+       proof-
+         have "(\<Sum>x\<in>old_edge ` \<delta>\<^sup>+ s. case x of old_edge x \<Rightarrow> f x | new_edge b \<Rightarrow> ex\<^bsub>f\<^esub> t) =
+                 ex\<^bsub>f\<^esub> t + (\<Sum>x\<in>old_edge ` \<delta>\<^sup>- s. case x of old_edge x \<Rightarrow> f x | new_edge b \<Rightarrow> ex\<^bsub>f\<^esub> t) "
+             using  same_ex
+            by(subst sum_inj_on)(auto intro: forw_subst[OF sum_inj_on] simp add: inj_on_def  ex_def algebra_simps)
+          thus ?thesis
+          unfolding cost_network_of_network.ex_def s_delta_minus delta_plus_same[OF s_neq_t s_in_V]
+           by(subst sum.insert)(auto simp add: delta_minus_finite f'_def) 
+       qed
        moreover have "v \<noteq> s \<Longrightarrow> v \<noteq> t \<Longrightarrow> cost_network_of_network.ex f' v = 0"
          unfolding  cost_network_of_network.ex_def
          apply(subst delta_minus_same, simp, simp add: 1)
@@ -865,27 +876,37 @@ proof-
         apply(subst (asm) sum_inj_on, simp add: inj_on_def)
         by(auto simp add: ex_def f_def)
       moreover have "ex f s \<le> 0"
+      proof-
+        have "f' (new_edge (create_edge t s)) + sum f' (old_edge ` \<delta>\<^sup>- s) = sum f' (old_edge ` \<delta>\<^sup>+ s) \<Longrightarrow>
+              (\<Sum>e\<in>\<delta>\<^sup>- s. f' (old_edge e)) \<le> (\<Sum>e\<in>\<delta>\<^sup>+ s. f' (old_edge e)) "
+              apply(subst (asm) sum_inj_on, simp add: inj_on_def)
+              apply(subst (asm) sum_inj_on, simp add: inj_on_def)
+              using \<E>'_def network_of_network.isuflow_def uflow 
+              by auto
+         thus ?thesis
         using v_ex[OF s_in_V] 
         unfolding ex_def f_def
         apply(subst (asm) delta_plus_same, simp add: s_neq_t, simp add:  s_in_V)
         apply(subst (asm) s_delta_minus)
         apply(subst (asm) sum.insert)
-        apply (auto simp add: delta_minus_finite)
+        by(auto simp add: delta_minus_finite)
+      qed
+      moreover have "ex f t \<ge> 0"
+      proof-
+        have "sum f' (old_edge ` \<delta>\<^sup>- t) = f' (new_edge (create_edge t s)) + sum f' (old_edge ` \<delta>\<^sup>+ t) \<Longrightarrow>
+             (\<Sum>e\<in>\<delta>\<^sup>+ t. f' (old_edge e)) \<le> (\<Sum>e\<in>\<delta>\<^sup>- t. f' (old_edge e))"
         apply(subst (asm) sum_inj_on, simp add: inj_on_def)
         apply(subst (asm) sum_inj_on, simp add: inj_on_def)
         using \<E>'_def network_of_network.isuflow_def uflow 
         by auto
-      moreover have "ex f t \<ge> 0"
+      thus ?thesis
         using v_ex[OF t_in_V] 
         unfolding ex_def f_def
         apply(subst (asm) t_delta_plus)
         apply(subst (asm) delta_minus_same, simp add: not_sym[OF s_neq_t], simp add:  t_in_V)
         apply(subst (asm) sum.insert)
-        apply (auto simp add: delta_plus_finite)
-        apply(subst (asm) sum_inj_on, simp add: inj_on_def)
-        apply(subst (asm) sum_inj_on, simp add: inj_on_def)
-        using \<E>'_def network_of_network.isuflow_def uflow 
-        by auto
+        by(auto simp add: delta_plus_finite)
+    qed
       ultimately show ?case 
         using is_s_t_flow_def s_in_V s_neq_t t_in_V by blast
     next

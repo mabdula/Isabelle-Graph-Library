@@ -93,8 +93,8 @@ proof(induction rule: loopA.pinduct[OF assms(1)])
     apply(subst loopA.psimps[OF IH(1)], subst loopAtime.psimps[OF time_dom])
     apply(cases rule: loopA_cases[of state])
     subgoal
-      unfolding Let_def add_fst_def 
-      by(auto elim: loopA_ret_condE[of state ])
+      (*takes some time*)
+      by(auto elim: loopA_ret_condE[of state ] simp add: Let_def add_fst_def )
     subgoal
       apply(rule loopA_call_condE[of state], simp)
       apply((subst let_swap[of prod.snd])+, (rule let_cong, simp)+, subst add_fst_def, subst snd_conv)
@@ -102,6 +102,7 @@ proof(induction rule: loopA.pinduct[OF assms(1)])
       apply(subst let_swap[of prod.snd] | subst prod.case_distrib[of prod.snd])+
       apply(subst add_fst_def, subst snd_conv)
       apply((rule let_cong, simp)|(rule split_cong[rotated], simp))+
+      (*takes some time*)
       by(rule IH(2))(auto intro: invar_filter simp add: IH(3))
     done
 qed

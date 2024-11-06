@@ -99,7 +99,7 @@ no_syntax (ASCII)\<^marker>\<open>tag invisible\<close>
   "_Maplets ms1 (_Maplets ms2 ms3)" \<leftharpoondown> "_Maplets (_Maplets ms1 ms2) ms3"*)
 
 definition move_to :: "'a list \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> 'a list" ("_[_ \<mapsto> _]" [100,100]) where 
-  "move_to xs v i \<equiv> (take i [x <- xs. x \<noteq> v]) @ v # (drop i [x <- xs. x \<noteq> v])"
+  "move_to xs v i = (take i [x <- xs. x \<noteq> v]) @ v # (drop i [x <- xs. x \<noteq> v])"
 
 text \<open>
   This induction scheme is helpful in proving properties about \<^term>\<open>move_to\<close>.

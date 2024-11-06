@@ -2,7 +2,7 @@ section \<open>Instantiation of Abstract Datatypes\<close>
 
 theory Instantiation
   imports RBT_Map_Extension
-          Graph_Algorithms.Set2_Join_RBT
+          Directed_Set_Graphs.Pair_Graph_RBT
           Graph_Algorithms.Bellman_Ford
           Graph_Algorithms.DFS
           Mincost_Flow_Algorithms.Orlins_Implementation
@@ -47,6 +47,11 @@ end
 subsection \<open>Definitions\<close>
 
 abbreviation "empty' == RBT_Set.empty"
+abbreviation "neighb_union == union_rbt"
+abbreviation "neighb_insert == insert_rbt"
+abbreviation "neighb_diff == diff_rbt"
+abbreviation "neighb_delete == delete_rbt"
+abbreviation "neighb_inter == inter_rbt"
 
 hide_const RBT_Set.empty Set.empty  not_blocked_update
 
@@ -57,29 +62,26 @@ fun list_to_rbt :: "('a::linorder) list \<Rightarrow> 'a rbt" where
 value "vset_diff (list_to_rbt [1::nat, 2, 3, 4,6]) (list_to_rbt [0..20])"
 
 text \<open>set of edges\<close>
-definition "get_from_set \<equiv> List.find"
+definition "get_from_set = List.find"
 fun are_all where "are_all P (Nil) = True"|
                   "are_all P (x#xs) = (P x \<and> are_all P xs)"
-definition "set_invar \<equiv> distinct"
-definition "to_set \<equiv> set"
+definition "set_invar = distinct"
+definition "to_set = set"
 definition "to_list = id"
 
-definition "t_set \<equiv> Tree2.set_tree"
-definition "vset_inv \<equiv>  (\<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
+definition "t_set = Tree2.set_tree"
+definition "vset_inv =  (\<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
 definition "vset_empty = Leaf"
 
 notation vset_empty ("\<emptyset>\<^sub>N")
 
-fun sel where
-"sel Leaf = undefined" |
-"sel (B l a r) = a"|
-"sel (R l a r) = a"
-
-definition "edge_map_update \<equiv> update::('a::linorder)
+definition "edge_map_update = (update::('a::linorder)
    \<Rightarrow> ('a \<times> color) tree
       \<Rightarrow> (('a \<times> ('a \<times> color) tree) \<times> color) tree
-         \<Rightarrow> (('a\<times> ('a \<times> color) tree) \<times> color) tree"
-definition "adjmap_inv \<equiv> (\<lambda> t. rbt_red t \<and> color t = Black)"
+         \<Rightarrow> (('a\<times> ('a \<times> color) tree) \<times> color) tree)"
+
+definition "adjmap_inv = (\<lambda> t. rbt_red t \<and> color t = Black)"
+
 definition "empty = (Leaf:: (('a \<times> ('a \<times> color) tree) \<times> color) tree)"
 
 notation empty ("\<emptyset>\<^sub>G")
@@ -285,7 +287,7 @@ definition "to_pair S = (SOME e. {prod.fst e, prod.snd e} = S)"
 
 lemma Set_satisified: "Set vset_empty vset_insert vset_delete isin t_set vset_inv"
   using  RBT.Set_axioms 
-  by(auto simp add: vset_empty_def vset_delete_def vset_insert_def t_set_def vset_inv_def)
+  by(auto simp add: vset_empty_def delete_rbt_def insert_rbt_def t_set_def vset_inv_def)
 
 lemma Set_Choose_axioms: "Set_Choose_axioms vset_empty isin sel"
   apply(rule Set_Choose_axioms.intro)
@@ -307,15 +309,16 @@ lemma Pair_Graph_Specs_satisfied: "Pair_Graph_Specs empty RBT_Map.delete lookup 
 lemma Set2_satisfied: "Set2 vset_empty vset_delete isin t_set vset_inv vset_insert vset_union
      vset_inter vset_diff"
   using  Set2_Join_RBT.RBT.Set2_axioms 
-  by(auto simp add: RBT_Set.empty_def vset_empty_def vset_delete_def t_set_def vset_inv_def vset_insert_def
-                    vset_union_def vset_inter_def vset_diff_def)
+  by(auto simp add: RBT_Set.empty_def vset_empty_def delete_rbt_def t_set_def vset_inv_def insert_rbt_def
+                    union_rbt_def inter_rbt_def diff_rbt_def)
 
 
 global_interpretation dfs: DFS where insert = vset_insert and
  sel = sel and  vset_empty = vset_empty and  diff = vset_diff and
  lookup = lookup and empty = empty and delete=delete and isin = isin and t_set=t_set
-and update=update and adjmap_inv = adjmap_inv and vset_delete= vset_delete
+and update=update and adjmapmap_inv = adjmap_inv and vset_delete= vset_delete
 and vset_inv = vset_inv and union=vset_union and inter=vset_inter and G = F and
+
 t = "t::'a::linorder" and s = s  for F t s
 defines  dfs_initial_state = dfs.initial_state and
 neighbourhood=dfs.Graph.neighbourhood and
@@ -404,8 +407,8 @@ definition "es = remdups(map make_pair (to_list \<E>_impl)@(map prod.swap (map m
                                 
 definition "vs = remdups (map prod.fst es)"
 
-definition "dfs F t \<equiv> (dfs.DFS_impl (remove_all_empties F) t)" for F
-definition "dfs_initial s \<equiv> (dfs.initial_state  s)"
+definition "dfs F t = (dfs.DFS_impl (remove_all_empties F) t)" for F
+definition "dfs_initial s = (dfs.initial_state  s)"
 
 definition "get_path u v E = rev (stack (dfs E v (dfs_initial u)))"
 
@@ -1230,10 +1233,14 @@ proof(goal_cases)
                          (remove_all_empties E) u"
     using finite_graph finite_vsets graph_invar u_in_Vs remove_all_empty_digraph_abs[OF assms(2)]
     by(simp only: dfs.DFS_axioms_def)
+  have dfs_thms: "DFS_thms empty delete vset_insert isin t_set sel update adjmap_inv vset_empty vset_delete
+                   vset_inv vset_union vset_inter vset_diff lookup (remove_all_empties E) u"
+    by(auto intro!: DFS_thms.intro DFS_thms_axioms.intro simp add: dfs.DFS_axioms dfs_axioms)
   have dfs_dom:"DFS.DFS_dom vset_insert sel vset_empty vset_diff lookup 
+>>>>>>> 9cbcb175749d77f50d9af0f5f0420c36cc23da5e
                            (remove_all_empties E) v (dfs_initial u)"
-    using dfs.initial_state_props(6)
-    by (simp add: dfs_axioms dfs_initial_def dfs.initial_state_props(6) dfs_axioms)
+    using DFS_thms.initial_state_props(6)[OF dfs_thms]
+    by(simp add:  dfs_initial_def dfs_initial_state_def DFS_thms.initial_state_props(6) dfs_axioms)
   have rectified_map_subset:"dfs.Graph.digraph_abs (remove_all_empties E) \<subseteq> 
                 (Adj_Map_Specs2.digraph_abs lookup' vset_empty isin E)"
     by (simp add: assms(2) remove_all_empty_digraph_abs)
@@ -1244,9 +1251,8 @@ proof(goal_cases)
   proof(rule ccontr,rule DFS.return.exhaust[of "DFS_state.return (dfs E v (dfs_initial u))"],goal_cases)
     case 2
     hence "\<nexists>p. distinct p \<and> vwalk_bet (dfs.Graph.digraph_abs (remove_all_empties E)) u p v"
-      using dfs_axioms  dfs.DFS_correct_1[of "remove_all_empties E" u v] 
-      using  dfs.DFS_to_DFS_impl[OF dfs_dom] 
-      by (auto simp add:  dfs_def dfs_initial_def dfs_initial_state_def)
+      using  DFS_thms.DFS_correct_1[OF dfs_thms, of v]  DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of v] 
+      by (auto simp add:  dfs_def dfs_initial_def dfs_initial_state_def simp add: dfs_impl_def)
     moreover obtain q' where "vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E ) u q' v" "distinct q'"
       using vwalk_bet_to_distinct_is_distinct_vwalk_bet[OF assms(1)]
       by(auto simp add: distinct_vwalk_bet_def )
@@ -1257,18 +1263,18 @@ proof(goal_cases)
   qed simp
   have "vwalk_bet  (dfs.Graph.digraph_abs (remove_all_empties E))
             u (rev (stack (dfs E v (dfs_initial u)))) v"
-    using reachable sym[OF dfs.DFS_to_DFS_impl[OF dfs_dom]]  
-    by(auto intro: dfs.DFS_correct_2
-         simp add: dfs_initial_def  dfs_def dfs_axioms)
+    using reachable sym[OF DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of v]]  
+    by(auto intro!: DFS_thms.DFS_correct_2[OF dfs_thms, of v]
+         simp add: dfs_initial_def  dfs_def dfs_axioms dfs_impl_def dfs_initial_state_def) 
   thus "vwalk_bet (Adj_Map_Specs2.digraph_abs lookup' \<emptyset>\<^sub>N isin E ) u p v"
     unfolding assms(3) get_path_def
     by (meson rectified_map_subset vwalk_bet_subset)
   show "distinct p"
-    using  dfs.initial_state_props(1,3)[OF dfs_axioms]  dfs.invar_seen_stack_holds[OF dfs_axioms]
-           dfs.invar_seen_stack_props[OF  dfs_axioms] dfs_dom distinct_rev  
-    by(auto simp add:  assms(3) get_path_def dfs_def dfs_initial_def
-                  dfs.DFS_to_DFS_impl dfs_initial_state_def)
-qed
+    using  DFS_thms.initial_state_props(1,3) DFS_thms.invar_seen_stack_holds
+           dfs_dom DFS_thms.DFS_to_DFS_impl dfs.invar_seen_stack_def dfs_thms
+    by(fastforce simp add:  assms(3) get_path_def dfs_def dfs_initial_def
+                   dfs_initial_state_def  dfs_impl_def) 
+  qed
 
 lemma algo_impl_spec_axioms:"algo_impl_spec_axioms flow_lookup flow_invar bal_lookup bal_invar rep_comp_lookup rep_comp_invar not_blocked_lookup
      not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max"
@@ -4861,7 +4867,7 @@ lemma orlins_impl:
 
 term \<epsilon>
 
-definition "initial_state_impl  \<equiv>
+definition "initial_state_impl  =
 Orlins_Implementation.orlins_impl_spec.initial_impl snd filter all_empty \<E>_impl conv_empty rep_comp_update_all
  not_blocked_update_all flow_update_all get_max fst init_flow 
 init_bal init_rep_card init_not_blocked"

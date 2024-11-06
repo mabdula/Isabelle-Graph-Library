@@ -101,12 +101,12 @@ definition "\<E>_impl_infty = (filter (\<lambda> e. the (flow_lookup \<u>_impl e
 
 definition "\<E>_impl_finite = (filter (\<lambda> e. the (flow_lookup \<u>_impl e) < PInfty) \<E>_impl)"
 
-definition "\<E>1_impl \<equiv> map inedge \<E>_impl_finite"
-definition "\<E>2_impl \<equiv> map outedge \<E>_impl_finite"
-definition "\<E>3_impl \<equiv> map (vtovedge::'edge_type \<Rightarrow> ('a, 'edge_type) hitchcock_edge) \<E>_impl_infty"
+definition "\<E>1_impl = map inedge \<E>_impl_finite"
+definition "\<E>2_impl = map outedge \<E>_impl_finite"
+definition "\<E>3_impl = map (vtovedge::'edge_type \<Rightarrow> ('a, 'edge_type) hitchcock_edge) \<E>_impl_infty"
 definition "\<E>'_impl = \<E>1_impl@\<E>2_impl@\<E>3_impl"
 
-definition "\<c>'_impl \<equiv> \<c>_impl"
+definition "\<c>'_impl = \<c>_impl"
 
 definition "c_lookup' c e = (case e of inedge d \<Rightarrow> Some 0 |
                                        outedge d \<Rightarrow> c_lookup c d |

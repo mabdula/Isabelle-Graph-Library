@@ -4,40 +4,40 @@ theory Component_Defs
 begin
 
 definition subgraph :: "'a dgraph \<Rightarrow> 'a dgraph \<Rightarrow> bool" where
-  "subgraph H G \<equiv> H \<subseteq> G"
+  "subgraph H G = ( H \<subseteq> G)"
 
 definition induce_subgraph :: "'a dgraph \<Rightarrow> 'a set \<Rightarrow> 'a dgraph" (infix "\<downharpoonright>" 67) where
-  "G \<downharpoonright> vs \<equiv> {(u,v) \<in> G. u \<in> vs \<and> v \<in> vs}"
+  "G \<downharpoonright> vs = ( {(u,v) \<in> G. u \<in> vs \<and> v \<in> vs})"
 
 definition induced_subgraph :: "'a dgraph \<Rightarrow> 'a dgraph \<Rightarrow> bool" where
-  "induced_subgraph H G \<equiv> H = G \<downharpoonright> dVs H"
+  "induced_subgraph H G = ( H = G \<downharpoonright> dVs H)"
 
 definition spanning :: "'a dgraph \<Rightarrow> 'a dgraph \<Rightarrow> bool" where
-  "spanning H G \<equiv> subgraph H G \<and> dVs G = dVs H"
+  "spanning H G = ( subgraph H G \<and> dVs G = dVs H)"
 
 definition strongly_connected :: "'a dgraph \<Rightarrow> bool" where
-  "strongly_connected G \<equiv> G \<noteq> {} \<and> (\<forall>u \<in> dVs G. \<forall>v \<in> dVs G. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v)"
+  "strongly_connected G = ( G \<noteq> {} \<and> (\<forall>u \<in> dVs G. \<forall>v \<in> dVs G. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v))"
 
 definition mk_symmetric :: "'a dgraph \<Rightarrow> 'a dgraph" where
-  "mk_symmetric G \<equiv> G \<union> {(v,u). (u,v) \<in> G}"
+  "mk_symmetric G = ( G \<union> {(v,u). (u,v) \<in> G})"
 
 definition connected :: "'a dgraph \<Rightarrow> bool" where
-  "connected G \<equiv> strongly_connected (mk_symmetric G)"
+  "connected G = ( strongly_connected (mk_symmetric G))"
 
 definition max_subgraph :: "'a dgraph \<Rightarrow> ('a dgraph \<Rightarrow> bool) \<Rightarrow> 'a dgraph \<Rightarrow> bool" where
-  "max_subgraph G P H \<equiv> subgraph H G \<and> P H \<and> 
-    (\<forall>H'. H' \<noteq> H \<and> subgraph H H' \<longrightarrow> \<not>(subgraph H' G \<and> P H'))"
+  "max_subgraph G P H = ( subgraph H G \<and> P H \<and> 
+    (\<forall>H'. H' \<noteq> H \<and> subgraph H H' \<longrightarrow> \<not>(subgraph H' G \<and> P H')))"
 
 definition sccs :: "'a dgraph \<Rightarrow> 'a dgraph set" where
-  "sccs G \<equiv> 
+  "sccs G =
      {H. induced_subgraph H G \<and> strongly_connected H \<and>
          \<not>(\<exists>H'. induced_subgraph H' G \<and> strongly_connected H' \<and>  H \<subset> H')}"
 
 definition sccs_dVs :: "'a dgraph \<Rightarrow> 'a set set" where
-  "sccs_dVs G \<equiv> {S. S \<noteq> {} \<and> (\<forall>u \<in> S. \<forall>v \<in> S. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v) \<and> (\<forall>u \<in> S. \<forall>v. v \<notin> S \<longrightarrow> \<not>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> \<not>v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u)}"
+  "sccs_dVs G = {S. S \<noteq> {} \<and> (\<forall>u \<in> S. \<forall>v \<in> S. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v) \<and> (\<forall>u \<in> S. \<forall>v. v \<notin> S \<longrightarrow> \<not>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> \<not>v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u)}"
 
 definition scc_of :: "'a dgraph \<Rightarrow> 'a \<Rightarrow> 'a set" where
-  "scc_of G u \<equiv> {v. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<and> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u}"
+  "scc_of G u = {v. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<and> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u}"
 
 
 subsection \<open>Intro, destruction and elim rules\<close>

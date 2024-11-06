@@ -5,17 +5,17 @@ begin
 (* Note: Some of the definitions in this file are currently not relevant to the rest of
 the formalisation. *)
 
-definition "set_of_pair \<equiv> \<lambda>(u,v). {u,v}"
+definition "set_of_pair = ( \<lambda>(u,v). {u,v})"
 
 datatype 'v uedge = uEdge 'v 'v
 
-definition "set_of_uedge e \<equiv> case e of uEdge u v \<Rightarrow> {u,v}"
+definition "set_of_uedge e = ( case e of uEdge u v \<Rightarrow> {u,v})"
 
 locale Pair_Graph_U_Specs = Pair_Graph_Specs
   where lookup = lookup for lookup :: "'adjmap \<Rightarrow> ('v::linorder) \<Rightarrow> 'vset option"
 begin
 
-definition "vertices G \<equiv> {u | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)} \<union> {v | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
+definition "vertices G = {u | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)} \<union> {v | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
 
 lemma vertices_equiv_dVs:
   "vertices G = dVs (digraph_abs G)"
@@ -30,14 +30,14 @@ lemma is_rep:
   by auto
 
 
-definition "uedges G \<equiv> (\<lambda>(u,v). rep (uEdge u v)) ` (digraph_abs G)"  
+definition "uedges G = (\<lambda>(u,v). rep (uEdge u v)) ` (digraph_abs G)"  
 
 
-definition ugraph_abs where "ugraph_abs G \<equiv> {{u, v} | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
+definition ugraph_abs where "ugraph_abs G = {{u, v} | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
 
 
 context
-  includes adjmap.automation and vset.set.automation
+  includes adjmap.automation  vset.set.automation
 begin
 
 lemma uedges_def2: "uedges G = {rep (uEdge u v) | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}"
@@ -61,10 +61,10 @@ lemma set_of_uedge: "set_of_uedge (uEdge u v) = {u,v}"
   unfolding set_of_uedge_def by auto
 
 (* Pair_Graph_Specs axioms + symmetric, irreflexive *)
-definition "pair_graph_u_invar G \<equiv> 
+definition "pair_graph_u_invar G = (
   graph_inv G \<and> finite_graph G \<and> finite_vsets \<and>
   (\<forall>v. \<not> v \<in>\<^sub>G (\<N>\<^sub>G G v)) \<and>
-  (\<forall>u v. v \<in>\<^sub>G (\<N>\<^sub>G G u) \<longrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v))"
+  (\<forall>u v. v \<in>\<^sub>G (\<N>\<^sub>G G u) \<longrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v)))"
 
 
 context

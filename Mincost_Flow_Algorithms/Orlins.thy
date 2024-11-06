@@ -40,7 +40,7 @@ definition "new_\<gamma> state = (let f = current_flow state;
                              min (\<gamma> / 2) (Max { \<bar> b v\<bar> | v. v \<in> \<V>})
                            else (\<gamma> / 2)))"
 
-definition "important state v \<equiv> v\<in> \<V> \<and> ( \<bar>balance state v \<bar> > (1 - \<epsilon>)*new_\<gamma> state )"
+definition "important state v = ( v\<in> \<V> \<and> ( \<bar>balance state v \<bar> > (1 - \<epsilon>)*new_\<gamma> state ))"
 
 definition orlins_one_step::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> ('a, 'd, 'c, 'edge_type) Algo_state" where
 "orlins_one_step state =(  (let f = current_flow state;
@@ -1641,13 +1641,17 @@ proof-
       by (fastforce intro:  loopA_call_condI[OF refl refl refl refl refl refl])
   have e_comps:"connected_component (to_graph (\<FF>_imp (loopA (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (fst e) =
                 connected_component (to_graph (\<FF>_imp (loopA (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (snd e)"
-    using termination_of_loopA[OF _ refl] aux_invar_gamma[OF aux_invar_state'] aux_invar_def  e_active e_prop(2)
-    apply(intro component_strict_increase[of "state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>" e])
-    apply auto
-    using set_get(1)[OF invar_aux17_from_aux_invar[OF aux_invar_state', simplified invar_aux17_def],
+  proof-
+    have " e \<in> to_set (actives state') \<Longrightarrow>
+    8 * real N * new_\<gamma> state' < current_flow state' e \<Longrightarrow> loopA_call_cond (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)"
+       using set_get(1)[OF invar_aux17_from_aux_invar[OF aux_invar_state', simplified invar_aux17_def],
                      of "(\<lambda>e. 8 * real N * new_\<gamma> state'  <
                         current_flow state' e)"] 
-    by (intro loopA_call_condI[OF refl refl refl refl refl refl refl ], simp, fast)
+       by (fastforce intro!: loopA_call_condI[OF refl refl refl refl refl refl refl ])
+     thus ?thesis
+      using termination_of_loopA[OF _ refl] aux_invar_gamma[OF aux_invar_state'] aux_invar_def  e_active e_prop(2)
+      by(intro component_strict_increase[of "state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>" e]) auto
+  qed
   have fst_snd_e_comp_Z:"Z = connected_component (to_graph (\<FF>_imp state')) (fst e) \<or>
                                 Z = connected_component (to_graph (\<FF>_imp state')) (snd e)"
     using e_prop(1) same_comp[simplified sym[OF state'_def]]
@@ -2438,7 +2442,7 @@ qed
 qed
 qed
 
-definition "orlins_ret1_cond state \<equiv>  (if return state = success then True
+definition "orlins_ret1_cond state =  (if return state = success then True
                  else if return state= failure then False
                  else (let f = current_flow state;
                       b = balance state;
@@ -2459,7 +2463,7 @@ lemma orlins_ret1_condE: "orlins_ret1_cond state \<Longrightarrow>
 lemma orlins_ret1_condI: " return state = success \<Longrightarrow> orlins_ret1_cond state"
   unfolding  orlins_ret1_cond_def by presburger
 
-definition "orlins_call_cond state\<equiv> (if return state = success then False
+definition "orlins_call_cond state = (if return state = success then False
                  else if return state= failure then False
                  else (let f = current_flow state;
                       b = balance state;
@@ -2501,7 +2505,7 @@ lemma orlins_call_condI: " \<And> f b \<gamma> E' \<gamma>' state' state''. retu
                   \<Longrightarrow> orlins_call_cond state"
   unfolding  orlins_call_cond_def Let_def by force
 
-definition "orlins_ret2_cond state \<equiv> (if return state = success then False
+definition "orlins_ret2_cond state = (if return state = success then False
                  else if return state= failure then True
                  else (let f = current_flow state;
                       b = balance state;
@@ -2545,7 +2549,7 @@ proof-
     by auto
 qed
 
-definition "orlins_upd state \<equiv> (let f = current_flow state;
+definition "orlins_upd state = (let f = current_flow state;
                       b = balance state;
                       \<gamma> = current_\<gamma> state;
                       E' = actives state;

@@ -131,11 +131,11 @@ notation empty ("\<emptyset>\<^sub>G")
 abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" 
 abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equiv> \<not> isin' G v"
 
-definition "set_of_map (m::'adjmap) \<equiv> {(u,v). case (lookup m u) of Some vs \<Rightarrow> v \<in>\<^sub>G vs}"
+definition "set_of_map (m::'adjmap) = {(u,v). case (lookup m u) of Some vs \<Rightarrow> v \<in>\<^sub>G vs}"
 
-definition "graph_inv G \<equiv> (adjmap_inv G \<and> (\<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset))"
-definition "finite_graph G \<equiv> (finite {v. (lookup G v) \<noteq> None})"
-definition "finite_vsets \<equiv> (\<forall>N. finite (t_set N))"
+definition "graph_inv G = (adjmap_inv G \<and> (\<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset))"
+definition "finite_graph G = (finite {v. (lookup G v) \<noteq> None})"
+definition "finite_vsets = (\<forall>N. finite (t_set N))"
 
 
 definition neighbourhood::"'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset" where
@@ -143,9 +143,9 @@ definition neighbourhood::"'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset" where
 
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
-definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G \<equiv> {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
+definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
 
-definition "add_edge G u v \<equiv> 
+definition "add_edge G u v =
 ( 
   case (lookup G u) of Some vset \<Rightarrow> 
   let
@@ -162,7 +162,7 @@ definition "add_edge G u v \<equiv>
     digraph'
 )"
 
-definition "delete_edge G u v \<equiv> 
+definition "delete_edge G u v =
 ( 
   case (lookup G u) of Some vset \<Rightarrow> 
   let
@@ -173,11 +173,50 @@ definition "delete_edge G u v \<equiv>
     digraph'
   | _ \<Rightarrow> G 
 )"
+(*
+function (domintros) recursive_union where
+"recursive_union us vs = (if us = vset_empty then vs
+                          else let x= sel us in recursive_union (vset_delete x us) (insert x vs))"
+  by pat_completeness auto
+
+partial_function (tailrec) recursive_union_impl where
+"recursive_union_impl us vs = (if us = vset_empty then vs
+                          else let x= sel us in recursive_union_impl (vset_delete x us) (insert x vs))"
+
+lemmas [code] = recursive_union_impl.simps
+
+lemma recursive_union_same:
+  assumes "recursive_union_dom (us, vs)"
+  shows "recursive_union_impl us vs = recursive_union us vs"
+  by(induction rule: recursive_union.pinduct[OF assms])
+    (auto simp add: recursive_union.psimps recursive_union_impl.simps)
+
+lemma recursive_union_finite_dom:
+  assumes "card (t_set us) = n " "finite (t_set us)" "vset_inv us"
+  shows "recursive_union_dom (us, vs)"
+  using assms
+proof(induction n arbitrary: us vs )
+  case 0
+  then show ?case by(auto intro: recursive_union.domintros)
+next
+  case (Suc n)
+  show ?case 
+  apply(rule recursive_union.domintros)
+  using Suc(2-) 
+  by (auto intro:  recursive_union.domintros Suc(1) 
+        simp add: vset.set.set_delete Suc.prems(3) vset.set.invar_delete)
+qed
+
+lemma recursive_union_inv:
+  assumes "recursive_union_dom (us, vs)"  "vset_inv us"  "vset_inv vs"
+  shows "vset_inv ()"
 
 
+definition "union_impl us vs = (if vs = vset_empty then us else recursive_union_impl us vs)"
+*)
 
 context \<comment>\<open>Locale properties\<close>
-  includes vset.set.automation and adjmap.automation
+  includes vset.set.automation  adjmap.automation
   fixes G::'adjmap
 begin
 

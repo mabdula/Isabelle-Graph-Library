@@ -91,7 +91,7 @@ text \<open>
 \<close>
 abbreviation "total_bid_of M i \<equiv> \<Sum>e\<in>{e \<in> M. i \<in> e}. b e"
 abbreviation "charge_of M i \<equiv> min (B i) (total_bid_of M i)"
-definition "allocation_value M \<equiv> \<Sum>i\<in>L. charge_of M i"
+definition "allocation_value M = ( \<Sum>i\<in>L. charge_of M i)"
 
 definition "max_value_allocation M \<longleftrightarrow> one_sided_matching G M R \<and>
   (\<forall>M'. one_sided_matching G M' R \<longrightarrow> allocation_value M' \<le> allocation_value M)"
@@ -100,19 +100,20 @@ abbreviation bids_vec :: "real vec" where
   "bids_vec \<equiv> vec m (\<lambda>i. b (from_nat_into G i))"
 
 definition budget_constraint_mat :: "real mat" where
-  "budget_constraint_mat \<equiv> mat (card L) m (\<lambda>(i,j). b (from_nat_into G j) * of_bool (from_nat_into L i \<in> from_nat_into G j))"
+  "budget_constraint_mat = ( mat (card L) m (\<lambda>(i,j). b (from_nat_into G j) * 
+                                 of_bool (from_nat_into L i \<in> from_nat_into G j)))"
 
 definition budget_constraint_vec :: "real vec" where
-  "budget_constraint_vec \<equiv> vec (card L) (\<lambda>i. B (from_nat_into L i))"
+  "budget_constraint_vec = ( vec (card L) (\<lambda>i. B (from_nat_into L i)))"
 
 definition allocation_constraint_mat :: "real mat" where
-  "allocation_constraint_mat \<equiv> mat (card R) m (\<lambda>(i,j). of_bool (from_nat_into R i \<in> from_nat_into G j))"
+  "allocation_constraint_mat = ( mat (card R) m (\<lambda>(i,j). of_bool (from_nat_into R i \<in> from_nat_into G j)))"
 
 definition constraint_matrix :: "real mat" where
-  "constraint_matrix \<equiv> budget_constraint_mat @\<^sub>r allocation_constraint_mat"
+  "constraint_matrix = ( budget_constraint_mat @\<^sub>r allocation_constraint_mat)"
 
 definition constraint_vec :: "real vec" where
-  "constraint_vec \<equiv> budget_constraint_vec @\<^sub>v 1\<^sub>v (card R)"
+  "constraint_vec = ( budget_constraint_vec @\<^sub>v 1\<^sub>v (card R))"
 
 text \<open>
   Just taking \<^term>\<open>primal_sol\<close> of some produced allocation is not necessarily a feasible solution,
@@ -126,22 +127,22 @@ text \<open>
   all, since we use \<^term>\<open>min\<close> in the objective function).
 \<close>
 definition adwords_primal_sol :: "'a graph \<Rightarrow> real vec" where
-  "adwords_primal_sol M \<equiv> vec m 
+  "adwords_primal_sol M = ( vec m 
   (\<lambda>k. of_bool (from_nat_into G k \<in> M) * (let i = (THE i. i \<in> L \<and> i \<in> from_nat_into G k) in
     if total_bid_of M i \<le> B i
     \<comment> \<open>if budget is not used up, use assignment as is\<close>
     then 1
     \<comment> \<open>otherwise split up overspend over all edges\<close>
-    else B i / total_bid_of M i))"
+    else B i / total_bid_of M i)))"
 
 definition offline_dual :: "'a adwords_state \<Rightarrow> real vec" where
-  "offline_dual s \<equiv> vec (card L) (\<lambda>i. x s (from_nat_into L i))"
+  "offline_dual s = vec (card L) (\<lambda>i. x s (from_nat_into L i))"
 
 definition online_dual :: "'a adwords_state \<Rightarrow> real vec" where
-  "online_dual s \<equiv> vec (card R) (\<lambda>i. z s (from_nat_into R i))"
+  "online_dual s = vec (card R) (\<lambda>i. z s (from_nat_into R i))"
 
 definition dual_sol :: "'a adwords_state \<Rightarrow> real vec" where
-  "dual_sol s \<equiv> offline_dual s @\<^sub>v online_dual s"
+  "dual_sol s = offline_dual s @\<^sub>v online_dual s"
 
 lemma total_bid_of_nonneg[intro]:
   assumes "M \<subseteq> G"
@@ -453,11 +454,11 @@ lemma max_value_allocation_bound_by_feasible_dual:
   using assms
   by (auto intro: allocation_value_bound_by_feasible_dual dest: max_value_allocationD)
 
-definition "R_max \<equiv> Max {b {i, j} / B i | i j. {i,j} \<in> G \<and> i \<in> L \<and> j \<in> R}"
-definition "c \<equiv> (1 + R_max) powr (1 / R_max)"
+definition "R_max = Max {b {i, j} / B i | i j. {i,j} \<in> G \<and> i \<in> L \<and> j \<in> R}"
+definition "c = (1 + R_max) powr (1 / R_max)"
 
 definition adwords_step :: "'a adwords_state \<Rightarrow> 'a \<Rightarrow> 'a adwords_state" where
-  "adwords_step s j \<equiv> 
+  "adwords_step s j = ( 
     let ns = {i. {i, j} \<in> G} in
     if ns \<noteq> {} \<and> j \<notin> Vs (allocation s)
     then
@@ -469,9 +470,9 @@ definition adwords_step :: "'a adwords_state \<Rightarrow> 'a \<Rightarrow> 'a a
           x = (x s)(i := (x s) i * (1 + b {i, j} / B i) + b {i, j} / ((c-1) * B i)),
           z = (z s)(j := b {i, j} * (1 - (x s) i))
         \<rparr>
-    else s"
+    else s)"
 
-definition "adwords' s \<equiv> foldl adwords_step s"
+definition "adwords' s = foldl adwords_step s"
 abbreviation "adwords \<equiv> adwords' \<lparr> allocation = {}, x = \<lambda>_. 0, z = \<lambda>_. 0 \<rparr>"
 
 lemma adwords_Nil[simp]: "adwords' s [] = s"

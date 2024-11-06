@@ -1050,11 +1050,11 @@ locale wf_ranking =
   assumes max_card_matching: "max_card_matching G M"
 begin
 
-definition "ranking \<equiv>
+definition "ranking = (
   do {
     \<sigma> \<leftarrow> pmf_of_set (permutations_of_set V);
     return_pmf (online_match G \<pi> \<sigma>)
-  }"
+  })"
 
 lemma graph_invar_G[simp]: "graph_invar G"
   using finite_graph bipartite bipartite
@@ -1212,12 +1212,12 @@ text \<open>
   introduced.
 \<close>
 definition random_permutation_t :: "nat \<Rightarrow> ('a list) pmf" where
-  "random_permutation_t t \<equiv> 
+  "random_permutation_t t = (
     do {
       \<sigma> \<leftarrow> pmf_of_set (permutations_of_set V);
       v \<leftarrow> pmf_of_set V;
       return_pmf \<sigma>[v \<mapsto> t]
-  }"
+  })"
 
 lemma random_permutation_geq_card:
   "card V \<le> t \<Longrightarrow> random_permutation_t t = random_permutation_t (card V - 1)" (is "?geq \<Longrightarrow> ?L = ?R")
@@ -1298,14 +1298,14 @@ abbreviation rank_matched :: "nat \<Rightarrow> bool pmf" where
     }"
 
 definition matched_before :: "nat \<Rightarrow> bool pmf" where
-  "matched_before t \<equiv>
+  "matched_before t = (
     do {
       \<sigma> \<leftarrow> pmf_of_set (permutations_of_set V);
       v \<leftarrow> pmf_of_set V;
       let R = online_match G \<pi> \<sigma>; 
       let u = (THE u. {u,v} \<in> M);
       return_pmf (u \<in> Vs R \<and> index \<sigma> (THE v. {u,v} \<in> R) \<le> t)
-    }"
+    })"
 
 lemma rank_matched_False_rank_unmatched_True[simplified]: "measure_pmf.prob (rank_matched t) {False} = measure_pmf.prob (rank_unmatched t) {True}"
   using perms_of_V
@@ -2056,14 +2056,14 @@ abbreviation matching_instance_nat :: "nat \<Rightarrow> (nat \<times> nat) grap
   "matching_instance_nat n \<equiv> {{(0,k),(Suc 0,k)} |k. k < n}"
 
 definition ranking_instances_nat :: "nat \<Rightarrow> (nat \<times> nat) graph set" where
-  "ranking_instances_nat n \<equiv> {G. max_card_matching G (matching_instance_nat n) \<and>
+  "ranking_instances_nat n = {G. max_card_matching G (matching_instance_nat n) \<and>
      finite G \<and> G \<subseteq> {{(0,k),(Suc 0,l)} |k l. k < 2*n \<and> l < 2*n}}"
 
 definition arrival_orders :: "(nat \<times> nat) graph \<Rightarrow> (nat \<times> nat) list set" where
-  "arrival_orders G \<equiv> permutations_of_set {(Suc 0,l) |l. \<exists>k. {(0,k),(Suc 0,l)} \<in> G}"
+  "arrival_orders G = permutations_of_set {(Suc 0,l) |l. \<exists>k. {(0,k),(Suc 0,l)} \<in> G}"
 
 definition offline_vertices :: "(nat \<times> nat) graph \<Rightarrow> (nat \<times> nat) set" where
-  "offline_vertices G \<equiv> {(0, k) |k. \<exists>l. {(0, k),(Suc 0, l)} \<in> G}"
+  "offline_vertices G = {(0, k) |k. \<exists>l. {(0, k),(Suc 0, l)} \<in> G}"
 
 lemma matching_matching_instance_nat[simp]:
   "matching (matching_instance_nat n)"
@@ -2171,7 +2171,7 @@ lemma non_empty_arrival_orders:
   done
 
 definition comp_ratio_nat where
-  "comp_ratio_nat n \<equiv> Min {Min {measure_pmf.expectation (wf_ranking.ranking G \<pi> (offline_vertices G)) card / card (matching_instance_nat n) | \<pi>. \<pi> \<in> arrival_orders G} | G. G \<in> ranking_instances_nat n}"
+  "comp_ratio_nat n = Min {Min {measure_pmf.expectation (wf_ranking.ranking G \<pi> (offline_vertices G)) card / card (matching_instance_nat n) | \<pi>. \<pi> \<in> arrival_orders G} | G. G \<in> ranking_instances_nat n}"
 
 lemma comp_ratio_nat_bound:
   shows "1 - (1 - 1/real (n+1))^n \<le> comp_ratio_nat n"

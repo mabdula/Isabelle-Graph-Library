@@ -221,7 +221,7 @@ lemma card2_subset:
 subsection \<open>Odd Cycles\<close>
 
 definition odd_cycle where
-  "odd_cycle p \<equiv> (length p \<ge> 3) \<and> odd (length (edges_of_path p)) \<and> hd p = last p"
+  "odd_cycle p = ( (length p \<ge> 3) \<and> odd (length (edges_of_path p)) \<and> hd p = last p)"
 
 lemma odd_cycle_nempty:
   assumes "odd_cycle p"
@@ -245,9 +245,9 @@ subsection \<open>Blossoms\<close>
 text \<open>The definition of what a blossom is w.r.t. a matching.\<close>
 
 definition match_blossom where
-  "match_blossom M stem C \<equiv> alt_path M (stem @ C) \<and> distinct (stem @ (butlast C)) \<and>
+  "match_blossom M stem C = ( alt_path M (stem @ C) \<and> distinct (stem @ (butlast C)) \<and>
                       odd_cycle C \<and> hd (stem @ C) \<notin> Vs M \<and>
-                      even (length (edges_of_path (stem @ [hd C])))"
+                      even (length (edges_of_path (stem @ [hd C]))))"
 
 lemma match_blossom_feats:
   assumes "match_blossom M stem C"
@@ -1069,7 +1069,7 @@ begin
 subsubsection \<open>Choosing a neighbour from a given set\<close>
 
 definition choose_con_vert where
-  "choose_con_vert vs v \<equiv> sel (vs \<inter> (neighbourhood E v))"
+  "choose_con_vert vs v = sel (vs \<inter> (neighbourhood E v))"
 
 lemma choose_vert_works_1:
   assumes cycle: "distinct (tl C)" and
@@ -1143,12 +1143,12 @@ text\<open>A function to choose a vertex in the concrete graph connected to a ve
      if the vertex in the quotient graph is connected to the contracted odd cycle.\<close>
 
 definition stem2vert_path where
-"stem2vert_path C M v \<equiv>
+"stem2vert_path C M v =(
 let find_pfx' = (\<lambda>C. find_pfx ((=) (choose_con_vert (set C) v)) C) in
   if (last (edges_of_path (find_pfx' C)) \<in> M) then
     (find_pfx' C)
   else
-    (find_pfx' (rev C))"
+    (find_pfx' (rev C)))"
 
 lemma find_pfx_subset:
   "set (find_pfx Q l) \<subseteq> set l"
@@ -1177,7 +1177,7 @@ text\<open>A function to lift an augmenting path from a quotient to a concrete g
      polarity of the edges connected to the odd cycle.\<close> 
 
 definition replace_cycle where
-  "replace_cycle C M p1 p2 \<equiv>
+  "replace_cycle C M p1 p2 =(
    let stem2p2 = stem2vert_path C M (hd p2);
        p12stem = stem2vert_path C M (last p1) in
    if p1 = [] then
@@ -1189,7 +1189,7 @@ definition replace_cycle where
        (if {u, hd p2} \<notin> quotG M then
          p1 @ stem2p2 @ p2
        else
-         (rev p2) @ p12stem @ (rev p1)))"
+         (rev p2) @ p12stem @ (rev p1))))"
 
 lemma in_quot_graph_neq_u:
   assumes "v \<in> Vs(quot_graph P M)" "v \<noteq> u"
@@ -3231,10 +3231,10 @@ qed
 text\<open>The function the refines an augmenting path from a quotient graph to a concrete one.\<close>
 
 definition refine where
-  "refine C M p \<equiv>
+  "refine C M p =(
    if (u \<in> set p) then
      (replace_cycle C M (fst (pref_suf [] u p)) (snd (pref_suf [] u p)))
-   else p"
+   else p)"
 
 theorem refine:
   assumes cycle: "odd_cycle C" "alt_path M C" "distinct (tl C)" "path E C" and
@@ -4500,7 +4500,7 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         by blast
     next
       case stem_nempty: False
-      define M' where "M' \<equiv> M \<oplus> (set (edges_of_path (stem @ [hd C])))"
+      define M' where "M' = M \<oplus> (set (edges_of_path (stem @ [hd C])))"
       then have M'_finite: "finite M'"
         using matching(3)
         by (simp add: finite_symm_diff)

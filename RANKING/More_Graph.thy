@@ -356,7 +356,7 @@ text \<open>
   bipartiteness.
 \<close>
 definition bipartite :: "'a graph \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "bipartite G X Y \<equiv> X \<inter> Y = {} \<and> (\<forall>e \<in> G. \<exists>u v. e = {u,v} \<and> u \<in> X \<and> v \<in> Y)"
+  "bipartite G X Y  = ( X \<inter> Y = {} \<and> (\<forall>e \<in> G. \<exists>u v. e = {u,v} \<and> u \<in> X \<and> v \<in> Y))"
 
 lemma bipartiteI:
   assumes "X \<inter> Y = {}"
@@ -524,7 +524,7 @@ text \<open>
   which are not in a maximum matching.
 \<close>
 definition remove_vertices_graph :: "'a graph \<Rightarrow> 'a set \<Rightarrow> 'a graph" (infixl "\<setminus>" 60) where
-  "G \<setminus> X \<equiv> {e \<in> G. e \<inter> X = {}}"
+  "G \<setminus> X = {e \<in> G. e \<inter> X = {}}"
 
 lemma remove_vertices_empty[simp]:
   "G \<setminus> {} = G"
@@ -881,7 +881,7 @@ next
 qed
 
 definition is_bipartite where 
-  "is_bipartite E \<equiv> (\<exists> X \<subseteq> Vs E. \<forall> e \<in> E. \<exists> u v. 
+  "is_bipartite E = (\<exists> X \<subseteq> Vs E. \<forall> e \<in> E. \<exists> u v. 
                                    e = {u, v} \<and> (u \<in> X \<and> v \<in> Vs E - X))"
 
 end

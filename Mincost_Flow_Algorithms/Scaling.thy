@@ -241,12 +241,12 @@ qed
 
 text \<open>Now we extract the program state modifications before termination or recursion.\<close>
 
-definition "SSP_ret1 state \<equiv> state\<lparr>return := success\<rparr>"
+definition "SSP_ret1 state = state\<lparr>return := success\<rparr>"
 
-definition "SSP_ret2 state \<equiv> state \<lparr> return := notyetterm\<rparr>"
+definition "SSP_ret2 state = state \<lparr> return := notyetterm\<rparr>"
 
 
-definition "SSP_upd3 state \<equiv> (let b = balance state; f = current_flow state;
+definition "SSP_upd3 state = (let b = balance state; f = current_flow state;
                                   (s,t,P) = the (get_source_target_path f b);
                                   \<gamma> = real_of_ereal ( min (min (b s) (- b t)) (Rcap f (set P)));
                                   f' = augment_edges f \<gamma> P;
@@ -256,7 +256,7 @@ definition "SSP_upd3 state \<equiv> (let b = balance state; f = current_flow sta
 
 text \<open>Let's redefine for pleasing the simplifier.\<close>
 
-definition "SSP_upd3' state \<equiv> (let b = balance state; f = current_flow state;
+definition "SSP_upd3' state = (let b = balance state; f = current_flow state;
                                   (s,t,P) = the (get_source_target_path f b);
                                   \<gamma> = real_of_ereal ( min (min (b s) (- b t)) (Rcap f (set P)))
                                   in (state\<lparr> current_flow := augment_edges f \<gamma> P,
@@ -1153,9 +1153,9 @@ subsubsection \<open>Function Setup\<close>
 
 text \<open>The inner loop is parametrized by some threshold $L$.\<close>
 
-definition "ssp (L::nat) \<equiv> SSP.SSP  make_pair \<u> \<E> (get_source_target_path L)"
+definition "ssp (L::nat) = SSP.SSP  make_pair \<u> \<E> (get_source_target_path L)"
 
-definition "ssp_dom L  state \<equiv> SSP.SSP_dom make_pair \<u> \<E> (get_source_target_path L) state"
+definition "ssp_dom L  state = SSP.SSP_dom make_pair \<u> \<E> (get_source_target_path L) state"
 
 text \<open>The outer loop is realized by recursion on $l$. The threshold value $L$ is then $2^l$.
 If the inner loop  already successful, then a minimum cost flow was found.
@@ -1176,7 +1176,7 @@ function  (domintros) Scaling::"nat \<Rightarrow> ('a, 'edge_type) Algo_state \<
 
 text \<open>As in the previous locale, we decompose the function into conditioned execution paths.\<close>
 
-definition "Scaling_ret_1_cond k state \<equiv> 
+definition "Scaling_ret_1_cond k state =
              (let state' = ssp (2^k-1) state in 
                    (case return state' of
                      success \<Rightarrow> True
@@ -1199,7 +1199,7 @@ lemma Scaling_ret_1_condE: "Scaling_ret_1_cond k state \<Longrightarrow>
   
 text \<open>Failure.\<close>
 
-definition "Scaling_ret_2_cond k state \<equiv> 
+definition "Scaling_ret_2_cond k state = 
              (let state' = ssp (2^k-1) state in 
                    (case return state' of
                      success \<Rightarrow> False
@@ -1218,7 +1218,7 @@ lemma Scaling_ret_2_condE:"Scaling_ret_2_cond k state \<Longrightarrow>
   unfolding Scaling_ret_2_cond_def Let_def 
   by (metis return.exhaust return.simps(7) return.simps(9))
 
-definition "Scaling_ret_3_cond k state \<equiv> 
+definition "Scaling_ret_3_cond k state =
              (let state' = ssp (2^k-1) state in 
                    (case return state' of
                      success \<Rightarrow> False
@@ -1238,7 +1238,7 @@ lemma Scaling_ret_3_condE:
   unfolding Scaling_ret_3_cond_def Let_def 
   by (smt (verit) return.exhaust return.simps)
 
-definition "Scaling_call_4_cond k state \<equiv> 
+definition "Scaling_call_4_cond k state =
              (let state' = ssp (2^k-1) state in 
                    (case return state' of
                      success \<Rightarrow> False
@@ -1280,17 +1280,17 @@ qed
 
 text \<open>Modifications by the function.\<close>
 
-definition "Scaling_ret1 k state \<equiv> 
+definition "Scaling_ret1 k state =
                   (let state' = ssp (2^k-1) state in state')"
 
-definition "Scaling_ret2 k state \<equiv> 
+definition "Scaling_ret2 k state =
                   (let state' = ssp (2^k-1) state in state')"
 
-definition "Scaling_ret3 k state \<equiv> 
+definition "Scaling_ret3 k state = 
                   (let state' = ssp (2^k-1) state in state'\<lparr> return:= failure\<rparr>)"
 
 
-definition "Scaling_upd4 k state \<equiv> 
+definition "Scaling_upd4 k state = 
                   (let state' = ssp (2^k-1) state in  state')"
 
 
@@ -1330,7 +1330,7 @@ subsubsection \<open>Preservation of Invariants\<close>
 
 text \<open>We unite all three invariants.\<close>
 
-definition "invar_comb  state \<equiv> (invar1 state \<and> invar2 state \<and> invar3 state)"
+definition "invar_comb  state = (invar1 state \<and> invar2 state \<and> invar3 state)"
 
 text \<open>Introduction and elimination lemmas.\<close>
 

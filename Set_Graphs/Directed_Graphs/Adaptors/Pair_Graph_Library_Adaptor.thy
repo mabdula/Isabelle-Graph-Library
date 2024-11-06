@@ -29,7 +29,7 @@ fun is_arc_for_pair where
 
 text \<open>We cannot reconstruct the arc from its ends without the choice operator.\<close>
 definition arc_from_ends :: "('a \<times> 'a) \<Rightarrow> 'b" where
-  "arc_from_ends uv \<equiv> (SOME a. is_arc_for_pair a uv)"
+  "arc_from_ends uv = (SOME a. is_arc_for_pair a uv)"
 
 lemma pair_has_arc: 
   assumes "(u,v) \<in> D"
@@ -199,7 +199,7 @@ locale ddfs =
   fixes E :: "'a dgraph"
 begin
 
-definition "digraph_of \<equiv> \<lparr>verts = dVs E, arcs = E, tail = fst, head = snd\<rparr>"
+definition "digraph_of = \<lparr>verts = dVs E, arcs = E, tail = fst, head = snd\<rparr>"
 definition "pair_digraph_of = \<lparr>pverts = dVs E, arcs = E\<rparr>"
 
 lemma digraph_of_pair_conv:

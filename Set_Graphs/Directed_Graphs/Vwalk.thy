@@ -14,7 +14,7 @@ inductive_simps vwalk_1[simp]: "vwalk E [v]"
 
 inductive_simps vwalk_2[simp]: "vwalk E (v # v' # vs)"
 
-definition "vwalk_bet G v p v' \<equiv> vwalk G p \<and> p \<noteq> [] \<and> hd p = v \<and> last p = v'"
+definition "vwalk_bet G v p v' = ( vwalk G p \<and> p \<noteq> [] \<and> hd p = v \<and> last p = v')"
 
 lemma vwalk_then_edge: "vwalk_bet dG v p v' \<Longrightarrow> v \<noteq> v' \<Longrightarrow> (\<exists>v''. (v, v'') \<in> dG)"
   by(cases p; auto split: if_splits simp: neq_Nil_conv vwalk_bet_def)
@@ -592,7 +592,7 @@ fun is_vwalk_bet_vertex_decomp :: "('a \<times> 'a) set \<Rightarrow> 'a list \<
   "is_vwalk_bet_vertex_decomp E p v (q, r) \<longleftrightarrow> p = q @ tl r \<and> (\<exists>u w. vwalk_bet E u q v \<and> vwalk_bet E v r w)"
 
 definition vwalk_bet_vertex_decomp :: "('a \<times> 'a) set \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> 'a list \<times> 'a list" where
-  "vwalk_bet_vertex_decomp E p v \<equiv> SOME qr. is_vwalk_bet_vertex_decomp E p v qr"
+  "vwalk_bet_vertex_decomp E p v = ( SOME qr. is_vwalk_bet_vertex_decomp E p v qr)"
 
 
 lemma vwalk_bet_vertex_decompE:
@@ -657,7 +657,7 @@ qed
 
 
 definition vtrail :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "vtrail E u p v \<equiv> vwalk_bet E u p v \<and> distinct (edges_of_vwalk p)"
+  "vtrail E u p v = ( vwalk_bet E u p v \<and> distinct (edges_of_vwalk p))"
 
 abbreviation closed_vtrail :: "('a \<times> 'a) set \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> bool" where
   "closed_vtrail E c v \<equiv> vtrail E v c v \<and> Suc 0 < length c"
@@ -722,7 +722,7 @@ lemma vtrail_suffix_is_vtrail:
   by (auto simp: vwalk_bet_suffix_is_vwalk_bet edges_of_vwalk_append_2[OF \<open>q \<noteq> []\<close>])
 
 definition distinct_vwalk_bet :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "distinct_vwalk_bet E u p v \<equiv> vwalk_bet E u p v \<and> distinct p"
+  "distinct_vwalk_bet E u p v = ( vwalk_bet E u p v \<and> distinct p)"
 
 lemma distinct_vwalk_bet_length_le_card_vertices:
   assumes "distinct_vwalk_bet E u p v"
@@ -758,7 +758,7 @@ fun is_closed_decomp :: "('a \<times> 'a) set \<Rightarrow> 'a list \<Rightarrow
     distinct q"
 
 definition closed_vwalk_bet_decomp :: "('a \<times> 'a) set \<Rightarrow> 'a list \<Rightarrow> 'a list \<times> 'a list \<times> 'a list" where
-  "closed_vwalk_bet_decomp E p \<equiv> SOME qrs. is_closed_decomp E p qrs"
+  "closed_vwalk_bet_decomp E p = ( SOME qrs. is_closed_decomp E p qrs)"
 
 lemma closed_vwalk_bet_decompE:
   assumes p_vwalk: "vwalk_bet E u p v"

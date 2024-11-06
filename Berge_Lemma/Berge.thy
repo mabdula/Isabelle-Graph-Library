@@ -23,7 +23,7 @@ lemma in_singleton: "\<lbrakk>s = {x}; y \<in> s\<rbrakk> \<Longrightarrow> x = 
 subsection \<open>Symmetric Difference\<close>
 
 definition symmetric_diff (infixl "\<oplus>" 65) where
-  "symmetric_diff s t \<equiv> (s - t) \<union> (t - s)"
+  "symmetric_diff s t = (s - t) \<union> (t - s)"
 
 lemma sym_diff_subset:
   "s \<oplus> s' \<subseteq> s \<union> s'"
@@ -145,10 +145,10 @@ qed
 subsection \<open>Augmenting Paths\<close>
 
 definition matching_augmenting_path where
-  "matching_augmenting_path M p \<equiv> 
+  "matching_augmenting_path M p = ( 
     (length p \<ge> 2) \<and>
      alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path p) \<and> 
-     hd p \<notin> Vs M \<and> last p \<notin> Vs M"
+     hd p \<notin> Vs M \<and> last p \<notin> Vs M)"
 
 abbreviation "graph_augmenting_path G M p \<equiv>
   path G p \<and> distinct p \<and> matching_augmenting_path M p"
@@ -299,7 +299,7 @@ qed (simp_all add: alt_list_empty)
 *)
 
 definition component_path' where
-  "component_path' G C \<equiv> (SOME p. path G p \<and> C = set p \<and> distinct p)"
+  "component_path' G C = (SOME p. path G p \<and> C = set p \<and> distinct p)"
 
 lemma (in graph_abs) component_path'_works':
   "\<lbrakk> C \<in> connected_components G;
@@ -420,8 +420,8 @@ next
       assume ass: 
         "e \<in> component_edges (M \<oplus> M') C"
         "e \<notin> set (edges_of_path (component_path' (M \<oplus> M') C))"
-      define vs where "vs \<equiv> (component_path' (M \<oplus> M') C)"
-      define es where "es \<equiv> (edges_of_path (component_path' (M \<oplus> M') C))"
+      define vs where "vs = (component_path' (M \<oplus> M') C)"
+      define es where "es = (edges_of_path (component_path' (M \<oplus> M') C))"
       have doubleton_edges: "\<exists>u v. e = {u,v} \<and> u \<noteq> v" if "e\<in>(M \<oplus> M')" for e
         using doubleton_neq_edges that
         by fastforce
@@ -1058,7 +1058,7 @@ next
   have "{x, y} \<notin> M" "{y, z} \<in> M"
     by (simp_all add: alt_list_step)
 
-  define M' where "M' \<equiv> insert {x, y} (M - {{y, z}})"
+  define M' where "M' = insert {x, y} (M - {{y, z}})"
   have M'symmdiff: "M' = M \<oplus> {{x, y}, {y, z}}" unfolding symmetric_diff_def M'_def
     using \<open>{x, y} \<notin> M\<close> \<open>{y, z} \<in> M\<close>
     by fastforce

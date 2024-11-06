@@ -25,27 +25,27 @@ locale wf_ranking_order_prob = bipartite_vertex_priorities +
 begin
 
 definition ranking_prob :: "'a graph measure" where
-  "ranking_prob \<equiv> do {
+  "ranking_prob = (do {
     Y \<leftarrow> \<Y>;
     let r = linorder_from_keys L Y;
     return (count_space {M. M \<subseteq> G}) (ranking r G \<pi>)
-  }"
+  })"
 
 definition dual_sol :: "('a \<Rightarrow> real) \<Rightarrow> 'a graph \<Rightarrow> real vec" where
-  "dual_sol Y M \<equiv> vec n (\<lambda>k.
+  "dual_sol Y M = (vec n (\<lambda>k.
     if Vs_enum_inv k \<in> Vs M
     then
       if k < card L 
       then (g \<circ> Y) (Vs_enum_inv k) / F
       else (1 - (g \<circ> Y) (THE l. {l, Vs_enum_inv k} \<in> M)) / F
     else 0
-  )"
+  ))"
 
 definition y\<^sub>c :: "('a \<Rightarrow> real) \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> real" where
-  "y\<^sub>c Y js i j \<equiv>
+  "y\<^sub>c Y js i j = (
     if j \<in> Vs (ranking (linorder_from_keys L Y) (G \<setminus> {i}) js)
     then Y (THE i'. {i', j} \<in> ranking (linorder_from_keys L Y) (G \<setminus> {i}) js)
-    else 1"
+    else 1)"
 
 lemma g_nonnegI: "0 \<le> x \<Longrightarrow> x \<le> 1 \<Longrightarrow> 0 \<le> g x"
   using g_funcset

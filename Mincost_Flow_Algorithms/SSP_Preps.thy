@@ -28,7 +28,7 @@ begin
 text \<open>Reachability by a path with at least $cap$ residual capacity.\<close>
 
 definition resreach_cap::"('edge_type \<Rightarrow> real) \<Rightarrow> nat \<Rightarrow>'a \<Rightarrow> 'a \<Rightarrow> bool" where
-       "resreach_cap f cap u v \<equiv> (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
+       "resreach_cap f cap u v = (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
                             \<and> Rcap f (set p) > (real cap) \<and> p \<noteq> [] \<and> set p \<subseteq> \<EE>)"
 
 text \<open>We examine the relationship to augmenting paths.\<close>
@@ -67,7 +67,7 @@ qed
 text \<open>The first invariant is rather basic. It requires a total sum of $0$ for balances,
 which is the absolute modicum for having a well-defined and sound problem.\<close>
 
-definition "invar1 state \<equiv> is_balance (balance state)"
+definition "invar1 state = is_balance (balance state)"
 
 lemma invar_1_props[dest!]: "invar1 state \<Longrightarrow> is_balance (balance state)"
   by (auto simp: invar1_def)
@@ -77,7 +77,7 @@ lemma invar_1_intro: " is_balance (balance state) \<Longrightarrow> invar1 state
 
 text \<open>The second invariant talks about integrality.\<close>
 
-definition "invar2 state \<equiv> (is_integral_flow (current_flow state) \<and>
+definition "invar2 state = (is_integral_flow (current_flow state) \<and>
                             is_integral_balance (balance state))"
 
 text \<open>We provide corresponding introduction and elimination rules.\<close>
@@ -110,7 +110,7 @@ It states that the current flow is optimum for the
 We will always prove preservation by using the hard-earned Theorem 9.11 from the previous theory.
 \<close>
 
-definition "invar3 state \<equiv> (is_Opt (\<lambda> v. \<b> v - balance state v) (current_flow state))"
+definition "invar3 state = (is_Opt (\<lambda> v. \<b> v - balance state v) (current_flow state))"
 
 text \<open>By augmenting an integral flow along a single edge by an integer, integrality is preserved.\<close>
 

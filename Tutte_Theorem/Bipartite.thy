@@ -5,24 +5,24 @@ begin
 (*TODO: use definition of bipartite graphs from RANKING*)
 
 definition bipartite where 
-  "bipartite G \<equiv> (\<exists> X \<subseteq> Vs G. \<forall> e \<in> G. \<exists> u v. 
+  "bipartite G = (\<exists> X \<subseteq> Vs G. \<forall> e \<in> G. \<exists> u v. 
                                    e = {u, v} \<and> (u \<in> X \<and> v \<in> Vs G - X))" 
 
 definition partitioned_bipartite where
-  "partitioned_bipartite G X \<equiv> graph_invar G \<and> X \<subseteq> Vs G \<and> 
-              (\<forall> e \<in> G. \<exists> u v. e = {u, v} \<and> (u \<in> X \<and> v \<in> Vs G - X))"
+  "partitioned_bipartite G X = ( graph_invar G \<and> X \<subseteq> Vs G \<and> 
+              (\<forall> e \<in> G. \<exists> u v. e = {u, v} \<and> (u \<in> X \<and> v \<in> Vs G - X)))"
 
 lemma part_biparite_is_bipartite: "partitioned_bipartite G X \<longrightarrow> bipartite G "
   unfolding  partitioned_bipartite_def bipartite_def by auto
 
 definition perfect_matching where
-  "perfect_matching G M \<equiv> graph_invar G \<and> matching M \<and> M \<subseteq> G \<and> Vs M = Vs G"
+  "perfect_matching G M = ( graph_invar G \<and> matching M \<and> M \<subseteq> G \<and> Vs M = Vs G)"
 
 definition cover_matching where
-  "cover_matching G M A \<equiv> graph_invar G \<and> matching M \<and> M \<subseteq> G \<and> A \<subseteq> Vs M"
+  "cover_matching G M A = ( graph_invar G \<and> matching M \<and> M \<subseteq> G \<and> A \<subseteq> Vs M)"
 
 definition reachable where
-  "reachable G X  \<equiv> {v. \<exists> u \<in> X. \<exists> e \<in> G. v \<noteq> u \<and> u \<in> e \<and> v\<in> e}"
+  "reachable G X  = {v. \<exists> u \<in> X. \<exists> e \<in> G. v \<noteq> u \<and> u \<in> e \<and> v\<in> e}"
 
 lemma perfect_matching_member[iff?]: "perfect_matching G M \<longleftrightarrow>
   graph_invar G \<and> matching M \<and> M \<subseteq> G \<and> Vs M = Vs G"

@@ -13,11 +13,11 @@ We follow Korte, Vygen chapter 9.2.
 text \<open>Since we will need this notion frequently, 
       let us define residual costs for a list of residual edges.\<close>
 
-definition "\<CC> cs \<equiv> (\<Sum> c \<in> (set cs). \<cc> c)"
+definition "\<CC> cs = (\<Sum> c \<in> (set cs). \<cc> c)"
 
 text \<open>We define augmenting cycles as closed augmenting paths with negative residual costs.\<close>
 
-definition "augcycle f cs \<equiv> (\<CC> cs < 0 \<and> augpath f cs \<and> fstv (hd cs) = sndv (last cs)
+definition "augcycle f cs = (\<CC> cs < 0 \<and> augpath f cs \<and> fstv (hd cs) = sndv (last cs)
                               \<and> distinct cs \<and> set cs \<subseteq> \<EE>)"
 
 text \<open>Similarly, we obtain precycles from prepaths.\<close>
@@ -127,7 +127,7 @@ constraints $u$ (validity), and
 \end{itemize}
 \<close>
 
-definition "is_Opt b f \<equiv> f is b flow \<and> (\<forall> f'. (f' is b flow \<longrightarrow> \<C> f'  \<ge> \<C> f))"
+definition "is_Opt b f = (f is b flow \<and> (\<forall> f'. (f' is b flow \<longrightarrow> \<C> f'  \<ge> \<C> f)))"
 
 lemma is_OptI: "f is b flow \<Longrightarrow> (\<And> f'. f' is b flow \<Longrightarrow> \<C> f' \<ge> \<C> f ) \<Longrightarrow> is_Opt b f"
   by(auto simp add: is_Opt_def)

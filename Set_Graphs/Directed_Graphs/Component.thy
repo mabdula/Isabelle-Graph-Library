@@ -308,7 +308,7 @@ lemma subgraph_induce_subgraphI2:
   by (auto simp: subgraph_def induce_subgraph_def dVsI)
 
 definition arc_mono :: "('a dgraph \<Rightarrow> bool) \<Rightarrow> bool" where
-  "arc_mono P \<equiv> (\<forall>H1 H2. P H1 \<and> subgraph H1 H2 \<and> dVs H1 = dVs H2 \<longrightarrow> P H2)"
+  "arc_mono P = (\<forall>H1 H2. P H1 \<and> subgraph H1 H2 \<and> dVs H1 = dVs H2 \<longrightarrow> P H2)"
 
 lemma induced_subgraphI_arc_mono:
   assumes "max_subgraph G P H"
@@ -685,7 +685,7 @@ lemma vwalk_bet_subgraph:
 
 subsection \<open>Vertex induced subgraphs\<close>
 definition vertex_induced_subgraph :: "('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> bool" where
-  "vertex_induced_subgraph H V G \<equiv> H = {(u, v) \<in> G. {u, v} \<subseteq> V}"
+  "vertex_induced_subgraph H V G = ( H = {(u, v) \<in> G. {u, v} \<subseteq> V})"
 
 lemma vertex_induced_subgraphI[intro]:
   "H = {(u, v) \<in> G. {u, v} \<subseteq> V} \<Longrightarrow> vertex_induced_subgraph H V G" by (simp add: vertex_induced_subgraph_def)
