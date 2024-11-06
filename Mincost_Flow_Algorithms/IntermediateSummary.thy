@@ -100,9 +100,9 @@ end
 
 locale alg = cost_flow_spec  where fst=fst for fst::"'edge_type \<Rightarrow> 'a"+ 
   fixes
-   edge_map_update:: "'a \<Rightarrow> 'edge_neighb \<Rightarrow> 'edges \<Rightarrow> 'edges" and
-     neighb_empty :: "'neighb"  ("\<emptyset>\<^sub>N") and neighb_delete :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'neighb" and
-     neighb_insert and neighb_inv and isin 
+   edge_map_update:: "'a \<Rightarrow> 'edge_vset \<Rightarrow> 'edges \<Rightarrow> 'edges" and
+     vset_empty :: "'vset"  ("\<emptyset>\<^sub>N") and vset_delete :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset" and
+     vset_insert and vset_inv and isin 
 begin
 end
 
@@ -118,27 +118,27 @@ lemmas (in Map) map_specs' =
   map_empty map_update map_delete invar_empty invar_update invar_delete
 
 locale Adj_Map_Specs2 = 
- adj: Map' 
- where update = update and invar = adj_inv +
+ adjmap: Map' 
+ where update = update and invar = adjmap_inv +
 
 
- neighb: Set_Choose
- where empty = neighb_empty and delete = neighb_delete and insert = neighb_insert and invar = neighb_inv
+ vset: Set_Choose
+ where empty = vset_empty and delete = vset_delete and insert = vset_insert and invar = vset_inv
       and isin = isin
 
- for update :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj" and adj_inv :: "'adj \<Rightarrow> bool"  and
+ for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and adjmap_inv :: "'adjmap \<Rightarrow> bool"  and
 
-     neighb_empty :: "'neighb"  ("\<emptyset>\<^sub>N") and neighb_delete :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'neighb" and
-     neighb_insert and neighb_inv and isin
+     vset_empty :: "'vset"  ("\<emptyset>\<^sub>N") and vset_delete :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset" and
+     vset_insert and vset_inv and isin
 begin
-notation neighb_empty ("\<emptyset>\<^sub>N")
+notation vset_empty ("\<emptyset>\<^sub>N")
 notation empty ("\<emptyset>\<^sub>G")
 
 abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" 
 abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equiv> \<not> isin' G v"
 
-definition neighbourhood::"'adj \<Rightarrow> 'a \<Rightarrow> 'neighb" where
-  "neighbourhood G v = (case (lookup G v) of Some neighb \<Rightarrow> neighb | _ \<Rightarrow> neighb_empty)"
+definition neighbourhood::"'adjmap \<Rightarrow> 'a \<Rightarrow> 'vset" where
+  "neighbourhood G v = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
 
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
@@ -179,9 +179,9 @@ for fst::"'edge_type \<Rightarrow> 'a" and edge_map_update +
      and conservative_weights: "\<nexists> C. closed_w (make_pair ` \<E>) (map make_pair C) \<and> (set C \<subseteq> \<E>) \<and> foldr (\<lambda> e acc. acc + \<c> e) C 0 < 0"
   and \<E>_impl_meaning: "to_set \<E>_impl = \<E>"
                       "set_invar \<E>_impl"   and 
-      empty_forest_axioms:   "\<And> v. lookup empty_forest v = Some neighb_empty"
+      empty_forest_axioms:   "\<And> v. lookup empty_forest v = Some vset_empty"
                              (* "\<And> v. lookup empty_forest v = None"*)
-                             "adj_inv empty_forest"
+                             "adjmap_inv empty_forest"
  and default_conv_to_rdg: "consist default_conv_to_rdg" 
 and N_def: "N = card \<V>"
 begin 
@@ -366,15 +366,15 @@ definition "invar_aux17 state = set_invar (actives state)"
 lemma invar_aux17E: "invar_aux17 state \<Longrightarrow> (set_invar (actives state) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux17_def by auto
 
-definition "invar_aux18 state = adj_inv (\<FF>_imp state)"
+definition "invar_aux18 state = adjmap_inv (\<FF>_imp state)"
 
-lemma invar_aux18E: "invar_aux18 state \<Longrightarrow> (adj_inv (\<FF>_imp state) \<Longrightarrow> P) \<Longrightarrow> P"
+lemma invar_aux18E: "invar_aux18 state \<Longrightarrow> (adjmap_inv (\<FF>_imp state) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux18_def by auto
 
-definition "invar_aux19 state = (\<forall> v. lookup (\<FF>_imp state) v \<noteq> None \<and> neighb_inv (the (lookup (\<FF>_imp state) v)))"
+definition "invar_aux19 state = (\<forall> v. lookup (\<FF>_imp state) v \<noteq> None \<and> vset_inv (the (lookup (\<FF>_imp state) v)))"
 
 lemma invar_aux19E: "invar_aux19 state \<Longrightarrow> ((\<And>v. lookup (\<FF>_imp state) v \<noteq> None) \<Longrightarrow>
-                                             (\<And> v. neighb_inv (the (lookup (\<FF>_imp state) v))) \<Longrightarrow> P) \<Longrightarrow> P"
+                                             (\<And> v. vset_inv (the (lookup (\<FF>_imp state) v))) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux19_def by auto
 
 definition "invar_aux20 state = (\<forall> u v. isin (the (lookup (\<FF>_imp state) u)) v \<longleftrightarrow> {u, v} \<in> \<FF> state)"
@@ -394,9 +394,8 @@ lemma invar_aux22E: "invar_aux22 state \<Longrightarrow>
                          ((\<And> e. not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state)) \<Longrightarrow> P) \<Longrightarrow> P"
   using invar_aux22_def by auto
 
-
 definition "fit_together ff ff_imp =
-            ((\<forall> v. lookup ff_imp v \<noteq> None \<and> neighb_inv (the (lookup ff_imp v)))\<and>
+            ((\<forall> v. lookup ff_imp v \<noteq> None \<and> vset_inv (the (lookup ff_imp v)))\<and>
             (\<forall> u v. isin (the (lookup ff_imp u)) v \<longleftrightarrow> {u, v} \<in> ff))"
 
 definition "aux_invar state =(  invar_aux1 state
@@ -551,14 +550,14 @@ lemma invar_aux17I: "(set_invar (actives state)) \<Longrightarrow>
 
 lemmas invar_aux17I' = invar_aux17E[OF _  invar_aux17I]
 
-lemma invar_aux18I: "adj_inv (\<FF>_imp state) \<Longrightarrow>
+lemma invar_aux18I: "adjmap_inv (\<FF>_imp state) \<Longrightarrow>
                     invar_aux18 state"
   unfolding invar_aux18_def by simp
 
 lemmas invar_aux18I' = invar_aux18E[OF _  invar_aux18I]
 
 lemma invar_aux19I: "(\<And> v. lookup (\<FF>_imp state) v \<noteq> None) \<Longrightarrow>
-                     (\<And> v.  neighb_inv (the (lookup (\<FF>_imp state) v))) \<Longrightarrow>
+                     (\<And> v.  vset_inv (the (lookup (\<FF>_imp state) v))) \<Longrightarrow>
                     invar_aux19 state"
   unfolding invar_aux19_def by simp
 
@@ -1120,8 +1119,8 @@ lemma vwalk_bet_reflexive_cong: "w \<in> dVs E \<Longrightarrow> a = w \<Longrig
 lemma  edges_are_vwalk_bet_cong: "(v,w)\<in> E \<Longrightarrow> a = v \<Longrightarrow> b = w \<Longrightarrow> vwalk_bet E a [v, w] b" for v E w a b
   using edges_are_vwalk_bet by auto
 
-definition "goodF F = ((\<forall> v . \<exists> neighb . (lookup F v = Some neighb))
-                       \<and> (\<forall> v neighb. lookup F v = Some neighb \<longrightarrow> neighb_inv neighb))" for F
+definition "goodF F = ((\<forall> v . \<exists> vset . (lookup F v = Some vset))
+                       \<and> (\<forall> v vset. lookup F v = Some vset \<longrightarrow> vset_inv vset))" for F
 
 lemma  from_undirected_edge_to_directed: 
   assumes "fit_together ff ff_imp"  "goodF ff_imp"
@@ -1215,16 +1214,17 @@ lemma from_directed_walk_to_reachable:
   by (meson from_directed_walk_to_undirected_walk reachableI)
 
 
-definition "insert_undirected_edge u v forst = (let neighbs_u = the (lookup forst u);
-                                                    neighbs_v = the (lookup forst v);
-                                                    neighb_u_new = neighb_insert v neighbs_u;
-                                                    neighb_v_new = neighb_insert u neighbs_v
-                                                 in edge_map_update v neighb_v_new (
-                                                    edge_map_update u neighb_u_new forst))"
+definition "insert_undirected_edge u v forst = (let vsets_u = the (lookup forst u);
+                                                    vsets_v = the (lookup forst v);
+                                                    vset_u_new = vset_insert v vsets_u;
+                                                    vset_v_new = vset_insert u vsets_v
+                                                 in edge_map_update v vset_v_new (
+                                                    edge_map_update u vset_u_new forst))"
+
 
 lemma insert_abstraction[simp]:
-  assumes "adj_inv ff " 
-          "(\<And> x. neighb_inv (the (lookup ff x)))"
+  assumes "adjmap_inv ff " 
+          "(\<And> x. vset_inv (the (lookup ff x)))"
         shows "to_graph (insert_undirected_edge u v ff) = insert {u, v} (to_graph ff)"
 (*proof(rule, all \<open>rule\<close>, goal_cases)
   case (1 e) 
@@ -1234,7 +1234,7 @@ lemma insert_abstraction[simp]:
         and b: "isin (the (lookup (insert_undirected_edge u v ff) x)) y"
    by(auto simp add: digraph_abs_def neighbourhood_def
        option.split[where option = "lookup (insert_undirected_edge u v ff) x", 
-       of "\<lambda> x. y \<in>\<^sub>G x"] neighb.set.invar_empty neighb.set.set_empty neighb.set.set_isin)
+       of "\<lambda> x. y \<in>\<^sub>G x"] vset.set.invar_empty vset.set.set_empty vset.set.set_isin)
   have "(x = u \<and> y = v) \<or> (y = u \<and> x= v) \<or>
         (x = u \<and> y \<noteq> v \<and> isin (the (lookup ff u)) y) \<or> (y = u \<and> x \<noteq> v \<and> isin (the (lookup ff u)) )"
 
@@ -1243,19 +1243,19 @@ lemma insert_abstraction[simp]:
 
   have "x = u \<or> x = v \<or> (x \<noteq> u \<and> x \<noteq>  v \<and> (lookup ff x) \<noteq> None)"
     using a unfolding insert_undirected_edge_def Let_def
-    by(subst (asm) adj.map_update)(auto intro: adj.invar_update[OF assms(1)] simp add: adj.map_update[OF assms(1)])
+    by(subst (asm) adjmap.map_update)(auto intro: adjmap.invar_update[OF assms(1)] simp add: adjmap.map_update[OF assms(1)])
   moreover have "y = u \<or> y = v \<or> (y \<noteq> u \<and> y \<noteq> v \<and> isin (the (lookup ff x)) y)"
     using b unfolding insert_undirected_edge_def Let_def
-    apply(subst (asm) adj.map_update)
-     apply(rule adj.invar_update[OF assms(1)])
-    apply(subst (asm) adj.map_update[OF assms(1)])
+    apply(subst (asm) adjmap.map_update)
+     apply(rule adjmap.invar_update[OF assms(1)])
+    apply(subst (asm) adjmap.map_update[OF assms(1)])
    by( rule case_split[of "x= u"] , auto intro: case_split[of "x = v"]
-      simp add: assms(2) neighb.set.invar_insert neighb.set.set_insert neighb.set.set_isin)
+      simp add: assms(2) vset.set.invar_insert vset.set.set_insert vset.set.set_isin)
   ultimately show ?case 
     unfolding to_graph_def neighbourhood_def digraph_abs_def 
     apply(auto split: option.split simp add:  \<open>e = {x, y}\<close>)
     using  \<open>x = u \<or> x = v \<or> x \<noteq> u \<and> x \<noteq> v \<and> lookup ff x \<noteq> None\<close>
- adj.invar_update adj.map_update assms(1) b fun_upd_other 
+ adjmap.invar_update adjmap.map_update assms(1) b fun_upd_other 
 insert_undirected_edge_def option.sel
 
 next
@@ -1265,39 +1265,39 @@ qed*)
   unfolding to_graph_def insert_undirected_edge_def 
   apply(simp, rule, rule)
 
-    apply(subst (asm) adj.map_update)
-     apply(rule adj.invar_update[OF assms(1)])
-    apply(subst (asm) adj.map_update[OF assms(1)])
+    apply(subst (asm) adjmap.map_update)
+     apply(rule adjmap.invar_update[OF assms(1)])
+    apply(subst (asm) adjmap.map_update[OF assms(1)])
     apply simp
     apply(subst (asm) if_distrib[of the], subst (asm) option.sel)
     apply(subst (asm) fun_upd_apply)
    apply(subst (asm) if_distrib[of the], subst (asm) option.sel)
-    apply(subst neighb.set.set_isin) (*prior without .set.*)
+    apply(subst vset.set.set_isin) (*prior without .set.*)
     using assms(2) apply simp
-     apply(subst (asm) neighb.set.set_isin)
-    using assms(2) neighb.set.invar_insert apply simp (*prior without invar*)
+     apply(subst (asm) vset.set.set_isin)
+    using assms(2) vset.set.invar_insert apply simp (*prior without invar*)
     apply(subst (asm) if_distrib[of "\<lambda> x. _ \<in> _ x"])
     apply(subst (asm) (2) if_distrib[of "\<lambda> x. _ \<in> _ x"])
-    apply(subst (asm) neighb.set.set_insert)
-    using assms(2) neighb.set.invar_insert apply simp
-    apply(subst (asm) neighb.set.set_insert)
+    apply(subst (asm) vset.set.set_insert)
+    using assms(2) vset.set.invar_insert apply simp
+    apply(subst (asm) vset.set.set_insert)
     using assms(2) 
     apply simp 
     apply (metis Un_iff doubleton_eq_iff empty_iff insert_iff)
   
-    using assms(2) neighb.set.set_isin adj.map_update adj.invar_update assms(1) 
-          neighb.set.set_insert neighb.set.invar_insert 
+    using assms(2) vset.set.set_isin adjmap.map_update adjmap.invar_update assms(1) 
+          vset.set.set_insert vset.set.invar_insert 
     by auto
 
 lemma insert_adjacency_set[simp]:
-  assumes "adj_inv ff " 
-          "(\<And> x. neighb_inv (the (lookup ff x)))"
+  assumes "adjmap_inv ff " 
+          "(\<And> x. vset_inv (the (lookup ff x)))"
         shows "to_set_of_adjacency (insert_undirected_edge u v ff) =
                     {(u, v), (v, u)} \<union> (to_set_of_adjacency ff)"
   unfolding to_set_of_adjacency_def insert_undirected_edge_def Let_def
-    apply(subst  adj.map_update)
-     apply(rule adj.invar_update[OF assms(1)])
-    apply(subst  adj.map_update[OF assms(1)])
+    apply(subst  adjmap.map_update)
+     apply(rule adjmap.invar_update[OF assms(1)])
+    apply(subst  adjmap.map_update[OF assms(1)])
   apply rule
    apply rule apply simp
     apply(subst (asm) if_distrib[of the], subst (asm) option.sel)
@@ -1309,12 +1309,12 @@ lemma insert_adjacency_set[simp]:
    apply(subst split_beta) 
    apply(subst (asm) if_distribR)
    apply(subst (asm) if_distribR)
-   apply(subst (asm) neighb.set.set_isin , simp add: assms(2) neighb.set.invar_insert)+
-  apply(subst neighb.set.set_isin, simp add: assms(2)  neighb.set.invar_insert)
-  apply(subst (asm) neighb.set.set_insert, simp add: assms(2)  neighb.set.invar_insert)+
+   apply(subst (asm) vset.set.set_isin , simp add: assms(2) vset.set.invar_insert)+
+  apply(subst vset.set.set_isin, simp add: assms(2)  vset.set.invar_insert)
+  apply(subst (asm) vset.set.set_insert, simp add: assms(2)  vset.set.invar_insert)+
   apply (metis UnE equals0D insert_iff prod.exhaust_sel)
-  using assms(2) adj.map_update adj.invar_update assms(1) neighb.set.invar_insert 
-        neighb.set.set_insert neighb.set.set_isin 
+  using assms(2) adjmap.map_update adjmap.invar_update assms(1) vset.set.invar_insert 
+        vset.set.set_insert vset.set.set_isin 
   by auto
 
 lemma  vertex_path_to_redge_path_over_set_of_edges_subset:
@@ -1327,11 +1327,11 @@ lemma predicate_cong: "a = b \<Longrightarrow> c = d \<Longrightarrow> P a c \<L
   by simp
 
 lemma fit_together_pres:
-"fit_together X Y \<Longrightarrow> adj_inv Y \<Longrightarrow> fit_together (insert {x, y} X)
+"fit_together X Y \<Longrightarrow> adjmap_inv Y \<Longrightarrow> fit_together (insert {x, y} X)
      (insert_undirected_edge x y Y)" if "goodF Y"
   unfolding fit_together_def insert_undirected_edge_def Let_def 
-  using adj.map_update adj.invar_update  neighb.set.invar_insert that neighb.set.invar_insert 
-        neighb.set.set_insert neighb.set.set_isin
+  using adjmap.map_update adjmap.invar_update  vset.set.invar_insert that vset.set.invar_insert 
+        vset.set.set_insert vset.set.set_isin
   by (auto simp add: doubleton_eq_iff goodF_def)
 
 lemma Pair_graph_specs_from_aux_invar:
@@ -1341,28 +1341,28 @@ lemma Pair_graph_specs_from_aux_invar:
   by (metis option.exhaust option.sel)
 
 lemma Pair_Graph_Specs_insert_undirected_edge_pres:
-"goodF F \<Longrightarrow> goodF (insert_undirected_edge x y F)" if "adj_inv F" for F 
+"goodF F \<Longrightarrow> goodF (insert_undirected_edge x y F)" if "adjmap_inv F" for F 
   unfolding goodF_def  insert_undirected_edge_def Let_def
-  apply(subst adj.map_update, ((rule adj.invar_update,  simp add: that) | simp add: that))+
-  by(auto intro: adj.invar_update neighb.set.invar_insert)
+  apply(subst adjmap.map_update, ((rule adjmap.invar_update,  simp add: that) | simp add: that))+
+  by(auto intro: adjmap.invar_update vset.set.invar_insert)
 
 lemma neighbourhood_pres:
-      "(\<And>x. lookup F x \<noteq> None \<and> neighb_inv (the (lookup F x ))) \<Longrightarrow> adj_inv F 
+      "(\<And>x. lookup F x \<noteq> None \<and> vset_inv (the (lookup F x ))) \<Longrightarrow> adjmap_inv F 
       \<Longrightarrow> (\<And>x. lookup (insert_undirected_edge y z F) x \<noteq> None \<and> 
-                neighb_inv (the (lookup (insert_undirected_edge y z F) x)))" for F
+                vset_inv (the (lookup (insert_undirected_edge y z F) x)))" for F
   unfolding insert_undirected_edge_def Let_def 
   apply rule
-  by((subst adj.map_update, ((rule adj.invar_update,  simp) | simp))+; auto intro: neighb.set.invar_insert)+
+  by((subst adjmap.map_update, ((rule adjmap.invar_update,  simp) | simp))+; auto intro: vset.set.invar_insert)+
 
-lemma adj_inv_pres_insert_undirected_edge:"adj_inv ff \<Longrightarrow> adj_inv (insert_undirected_edge a b ff)"
+lemma adjmap_inv_pres_insert_undirected_edge:"adjmap_inv ff \<Longrightarrow> adjmap_inv (insert_undirected_edge a b ff)"
   unfolding insert_undirected_edge_def
-  by(auto intro: adj.invar_update)
+  by(auto intro: adjmap.invar_update)
 
-lemma neighb_inv_pres_insert_undirected_edge:"adj_inv ff\<Longrightarrow> (\<And> x. neighb_inv (the (lookup ff x))) \<Longrightarrow>
-           neighb_inv (the (lookup (insert_undirected_edge a b ff) x))"
+lemma vset_inv_pres_insert_undirected_edge:"adjmap_inv ff\<Longrightarrow> (\<And> x. vset_inv (the (lookup ff x))) \<Longrightarrow>
+           vset_inv (the (lookup (insert_undirected_edge a b ff) x))"
   unfolding insert_undirected_edge_def 
-  using adj.invar_update adj.map_update
-  by (auto simp add: neighb.set.invar_insert)
+  using adjmap.invar_update adjmap.map_update
+  by (auto simp add: vset.set.invar_insert)
 
 definition "invar_gamma state = (current_\<gamma> state > 0)"
 

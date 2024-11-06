@@ -3,75 +3,75 @@ theory AdjMap_to_Orlins_Adaptor
            Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.Set_Addons
 begin
 
-locale adj_map_to_orlins =
+locale adjmap_map_to_orlins =
 cost_cost_map: Map cc_empty cc_update cc_delte  cc_lookup cc_invar+
 cost_map: Map c_empty c_update  c_delte c_lookup c_invar+
 Cmap: Map Cempty Cupdate Cdelte Clookup Cinvar +
-Pair_Graph_Specs where empty = empty  and neighb_empty = neighb_empty
+Pair_Graph_Specs where empty = empty  and vset_empty = vset_empty
 and isin = isin
-for empty::"'adj_map" and neighb_empty::"'neighb" 
-and isin::"'neighb \<Rightarrow> 'a \<Rightarrow> bool"
+for empty::"'adjmap_map" and vset_empty::"'vset" 
+and isin::"'vset \<Rightarrow> 'a \<Rightarrow> bool"
 and cc_empty and cc_update::"'a \<Rightarrow> 'cm \<Rightarrow> 'ccm \<Rightarrow> 'ccm" 
 and cc_lookup cc_delte cc_invar and
 c_empty and c_update::"'a \<Rightarrow> real \<Rightarrow> 'cm \<Rightarrow> 'cm"  
 and c_lookup c_delte c_invar and
 Map Cempty and Cupdate::"('a \<times> 'a) \<Rightarrow> real \<Rightarrow> 'C \<Rightarrow> 'C" 
 and Clookup Cdelte Cinvar +
-fixes fold_adj::"('a \<Rightarrow> 'neighb option \<Rightarrow> ('a \<times> 'a) list \<Rightarrow> ('a \<times> 'a) list) 
-                     \<Rightarrow> 'adj_map \<Rightarrow> ('a \<times> 'a) list \<Rightarrow> ('a \<times> 'a) list"
+fixes fold_adjmap::"('a \<Rightarrow> 'vset option \<Rightarrow> ('a \<times> 'a) list \<Rightarrow> ('a \<times> 'a) list) 
+                     \<Rightarrow> 'adjmap_map \<Rightarrow> ('a \<times> 'a) list \<Rightarrow> ('a \<times> 'a) list"
 begin
 
 function (domintros) to_list_gen where
-"to_list_gen A acc = (if A = neighb_empty then acc
+"to_list_gen A acc = (if A = vset_empty then acc
                       else let x = sel A
-                              in to_list_gen (neighb_delete x A) (x#acc))"
+                              in to_list_gen (vset_delete x A) (x#acc))"
   by pat_completeness auto
 
 partial_function (tailrec) to_list_gen_exec where
-"to_list_gen_exec A acc = (if A = neighb_empty then acc
+"to_list_gen_exec A acc = (if A = vset_empty then acc
                       else let x = sel A
-                              in to_list_gen_exec (neighb_delete x A) (x#acc))"
+                              in to_list_gen_exec (vset_delete x A) (x#acc))"
 
 definition "to_list A = to_list_gen_exec A Nil"
 
 definition "add_edges = (\<lambda> x ys es. (case ys of None => es |
                                        Some ys \<Rightarrow> [(x, y). y \<leftarrow> to_list ys]@es))"
 
-definition "collect_edges G = fold_adj add_edges G Nil"
+definition "collect_edges G = fold_adjmap add_edges G Nil"
 
-lemma finite_A_terminating:"finite (t_set A) \<Longrightarrow>n = card (t_set A) \<Longrightarrow> neighb_inv A \<Longrightarrow> to_list_gen_dom (A, acc)"
+lemma finite_A_terminating:"finite (t_set A) \<Longrightarrow>n = card (t_set A) \<Longrightarrow> vset_inv A \<Longrightarrow> to_list_gen_dom (A, acc)"
   by(induction n arbitrary: A acc)
-    (auto intro: to_list_gen.domintros simp add: neighb.set.invar_delete neighb.set.set_delete)
+    (auto intro: to_list_gen.domintros simp add: vset.set.invar_delete vset.set.set_delete)
 
 lemma finite_fun_same_exec:
-  assumes "finite (t_set A)" "neighb_inv A"
+  assumes "finite (t_set A)" "vset_inv A"
   shows "to_list_gen_exec A acc = to_list_gen A acc"
  by(induction acc arbitrary: rule: to_list_gen.pinduct[OF finite_A_terminating[OF assms(1) refl assms(2)]])
    (auto simp add: to_list_gen.psimps to_list_gen_exec.simps) 
 
 lemma to_list_gen_distinct:
-  assumes  "finite (t_set A)" "neighb_inv A"
-  shows "neighb_inv A \<Longrightarrow> t_set A \<inter> set acc = {} \<Longrightarrow> distinct acc \<Longrightarrow>
+  assumes  "finite (t_set A)" "vset_inv A"
+  shows "vset_inv A \<Longrightarrow> t_set A \<inter> set acc = {} \<Longrightarrow> distinct acc \<Longrightarrow>
        distinct (to_list_gen A acc)"
     apply(induction acc arbitrary: rule: to_list_gen.pinduct[OF finite_A_terminating
                 [OF assms(1) refl assms(2)]])
-    using neighb.set.invar_delete neighb.set.set_delete 
+    using vset.set.invar_delete vset.set.set_delete 
     by (auto simp add: Let_def to_list_gen.psimps)
 
 lemma to_list_gen_set:
-  assumes  "finite (t_set A)" "neighb_inv A"
-  shows "neighb_inv A \<Longrightarrow> t_set A \<inter> set acc = {}  \<Longrightarrow>
+  assumes  "finite (t_set A)" "vset_inv A"
+  shows "vset_inv A \<Longrightarrow> t_set A \<inter> set acc = {}  \<Longrightarrow>
        set (to_list_gen A acc) = t_set A \<union> set acc"
     apply(induction acc arbitrary: rule: to_list_gen.pinduct[OF finite_A_terminating
                 [OF assms(1) refl assms(2)]])
-    using neighb.set.invar_delete neighb.set.set_delete 
-    by (auto simp add: Let_def to_list_gen.psimps neighb.set.set_empty) fastforce
+    using vset.set.invar_delete vset.set.set_delete 
+    by (auto simp add: Let_def to_list_gen.psimps vset.set.set_empty) fastforce
 
-lemma neighbs1:"\<And>n. neighb_inv n \<Longrightarrow> finite (t_set n) \<Longrightarrow> distinct (to_list n)"
+lemma vsets1:"\<And>n. vset_inv n \<Longrightarrow> finite (t_set n) \<Longrightarrow> distinct (to_list n)"
   using to_list_gen_distinct[of _  Nil, simplified] finite_fun_same_exec[of _  Nil, simplified]
   by(auto simp add: to_list_def)
 
-lemma neighbs2:"\<And> n. neighb_inv n \<Longrightarrow> finite (t_set n) \<Longrightarrow> set (to_list n) = t_set n"
+lemma vsets2:"\<And> n. vset_inv n \<Longrightarrow> finite (t_set n) \<Longrightarrow> set (to_list n) = t_set n"
   using to_list_gen_set[of _  Nil, simplified] finite_fun_same_exec[of _  Nil, simplified]
   by(auto simp add: to_list_def)
 
@@ -113,22 +113,22 @@ lemma image_cong: "A = B \<Longrightarrow> (\<And> x. x \<in> A \<Longrightarrow
   by auto
 
 context
-assumes adj_fold:"\<And> m acc. adj_inv m \<Longrightarrow> finite (dom (lookup m)) \<Longrightarrow>
+assumes adjmap_fold:"\<And> m acc. adjmap_inv m \<Longrightarrow> finite (dom (lookup m)) \<Longrightarrow>
           \<exists> xs. distinct xs \<and> set xs = dom (lookup m) \<and>
-                fold_adj f m acc = foldr (\<lambda> x acc. f x (lookup m x) acc) xs acc"
+                fold_adjmap f m acc = foldr (\<lambda> x acc. f x (lookup m x) acc) xs acc"
 begin
 
 lemma edges_right:
-  assumes "adj_inv G"
-              "\<And> x. lookup G x \<noteq> None \<Longrightarrow> neighb_inv (the (lookup G x))"
+  assumes "adjmap_inv G"
+              "\<And> x. lookup G x \<noteq> None \<Longrightarrow> vset_inv (the (lookup G x))"
               "finite (dom (lookup G))"
               "\<And> x. lookup G x \<noteq> None \<Longrightarrow> finite (t_set (the (lookup G x)))"
 shows "distinct (collect_edges G)"
       "set (collect_edges G) = digraph_abs G"
 proof-
   obtain xs where xs_prop: "distinct xs" "set xs = dom (lookup G)"
-     "fold_adj add_edges G [] = foldr (\<lambda> x acc. add_edges x (lookup G x) acc) xs []"
-    using adj_fold[OF assms(1,3)] by blast
+     "fold_adjmap add_edges G [] = foldr (\<lambda> x acc. add_edges x (lookup G x) acc) xs []"
+    using adjmap_fold[OF assms(1,3)] by blast
   moreover have "foldr (\<lambda> x acc. add_edges x (lookup G x) acc) xs [] = 
         concat [[(x, y) . y \<leftarrow> to_list (the (lookup G x))] . x \<leftarrow> xs]"
     using assms(1) equalityD1[OF xs_prop(2)]
@@ -172,7 +172,7 @@ proof-
     then obtain x where x_prop: "x \<in> set xs" " map (Pair x) (to_list (the (lookup G x))) = ys"
       by auto
     moreover hence "distinct (to_list (the (lookup G x)))"
-      using xs_prop(2) by(auto intro: assms(2,4)[of x] neighbs1) 
+      using xs_prop(2) by(auto intro: assms(2,4)[of x] vsets1) 
     ultimately show ?case
       by(auto simp add: distinct_map inj_on_def)
   qed(auto simp add: xs_prop(1)) 
@@ -183,7 +183,7 @@ proof-
          \<Union> { {(x, y) | y. y \<in> set(to_list (the (lookup G x)))}| x. x \<in> set xs}"
       by auto
     also have "... = \<Union> { {(x, y) | y. y \<in> t_set (the (lookup G x))}| x. x \<in> set xs}"
-      using  xs_prop(2) neighbs2  assms(2,4) by blast
+      using  xs_prop(2) vsets2  assms(2,4) by blast
     also have "... = {(x, y) | x y. y \<in> t_set (the (lookup G x)) \<and>  x \<in> set xs}" 
       by blast
     also have "... = {(x, y) | x y. y \<in> (case lookup G x of None \<Rightarrow> {}
@@ -191,8 +191,8 @@ proof-
       by(auto simp add: option.split xs_prop(2) dom_def)
     also have "... = digraph_abs G"     
       unfolding digraph_abs_def neighbourhood_def 
-      using neighb.set.set_isin[OF neighb.set.invar_empty, simplified neighb.emptyD(3)[OF refl]] 
-        option.simps(4) neighb.set.set_isin[OF assms(2)] 
+      using vset.set.set_isin[OF vset.set.invar_empty, simplified vset.emptyD(3)[OF refl]] 
+        option.simps(4) vset.set.set_isin[OF assms(2)] 
       by (fastforce intro: assms simp add: option.split)
     finally show ?thesis by simp
   qed
@@ -228,8 +228,8 @@ qed
 lemma option_collapse_cong: "a = b \<Longrightarrow> b \<noteq> None \<Longrightarrow> Some (the a) = b"
   by auto
 
-lemma assumes "adj_inv G"
-              "\<And> x. lookup G x \<noteq> None \<Longrightarrow> neighb_inv (the (lookup G x))"
+lemma assumes "adjmap_inv G"
+              "\<And> x. lookup G x \<noteq> None \<Longrightarrow> vset_inv (the (lookup G x))"
               "finite (dom (lookup G))"
               "\<And> x. lookup G x \<noteq> None \<Longrightarrow> finite (t_set (the (lookup G x)))"
               "dom (cc_lookup C) = dom (lookup G)"
@@ -247,7 +247,7 @@ proof-
     hence luG:"lookup G (fst e) \<noteq> None" "snd e \<in> [the (lookup G (fst e))]\<^sub>s"
       using assms(2) 
       by (fastforce simp add: option.split[of "\<lambda> x. _ \<in>\<^sub>G x"]
-           neighb.emptyD neighb.set.invar_empty neighb.set.set_isin 
+           vset.emptyD vset.set.invar_empty vset.set.set_isin 
            digraph_abs_def neighbourhood_def)+
     have snd_e_dom:"(snd e) \<in> dom (c_lookup (the (cc_lookup C (fst e))))"
       using luG assms(5,6) by(fastforce simp add: luG)

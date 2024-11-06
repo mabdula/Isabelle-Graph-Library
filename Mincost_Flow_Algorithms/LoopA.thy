@@ -20,16 +20,16 @@ algo where fst = fst
   for fst +
 assumes get_path_axioms:
         "\<And> u v E p q.  vwalk_bet (digraph_abs E) u q v \<Longrightarrow> 
-                       adj_inv E \<Longrightarrow> p = get_path u v E \<Longrightarrow> u \<in> Vs (to_graph E) \<Longrightarrow>
-                        (\<And> x. lookup E x \<noteq> None \<and> neighb_inv (the (lookup E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
+                       adjmap_inv E \<Longrightarrow> p = get_path u v E \<Longrightarrow> u \<in> Vs (to_graph E) \<Longrightarrow>
+                        (\<And> x. lookup E x \<noteq> None \<and> vset_inv (the (lookup E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
                      vwalk_bet (digraph_abs  E) u p v"
         "\<And> u v E p q.  vwalk_bet (digraph_abs  E) u q v \<Longrightarrow> 
-                       adj_inv E \<Longrightarrow> p = get_path u v E \<Longrightarrow> u \<in> Vs (to_graph E) \<Longrightarrow>
-                        (\<And> x. lookup E x \<noteq> None \<and> neighb_inv (the (lookup E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                    
+                       adjmap_inv E \<Longrightarrow> p = get_path u v E \<Longrightarrow> u \<in> Vs (to_graph E) \<Longrightarrow>
+                        (\<And> x. lookup E x \<noteq> None \<and> vset_inv (the (lookup E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                    
                      distinct p"
 begin
 
-term "Pair_Graph_Specs.digraph_abs lookup isin_neighb"
+term "Pair_Graph_Specs.digraph_abs lookup isin_vset"
 
 find_theorems Pair_Graph_Specs.digraph_abs 
 
@@ -1346,7 +1346,7 @@ proof-
     case 18
     show ?case
       using all_invars(16)
-      by(auto intro: adj.invar_update simp add: invar_aux18_def state'_def \<FF>_imp'_def \<FF>_imp_def 
+      by(auto intro: adjmap.invar_update simp add: invar_aux18_def state'_def \<FF>_imp'_def \<FF>_imp_def 
                 insert_undirected_edge_def Let_def )
   next
     case 19
@@ -1358,32 +1358,32 @@ proof-
          using all_invars(16) all_invars(17) 
          unfolding invar_aux18_def state'_def \<FF>_imp'_def \<FF>_imp_def state'_def 
                 insert_undirected_edge_def Let_def  invar_aux19_def 
-       by(simp, subst adj.map_update, auto intro: adj.invar_update simp add: adj.map_update)
+       by(simp, subst adjmap.map_update, auto intro: adjmap.invar_update simp add: adjmap.map_update)
     next
       case (2 v)
       then show ?case 
       using all_invars(16) x_not_y  all_invars(17) 
       unfolding invar_aux19_def invar_aux18_def state'_def \<FF>_imp'_def \<FF>_imp_def 
                 insert_undirected_edge_def Let_def state'_def
-      by (simp, subst  adj.map_update, auto intro: adj.invar_update neighb.set.invar_insert 
-                                         simp add: adj.map_update)
+      by (simp, subst  adjmap.map_update, auto intro: adjmap.invar_update vset.set.invar_insert 
+                                         simp add: adjmap.map_update)
     qed
   next
     case 20
     find_theorems "_ (_ := _)"
     have new_F_rewrite:"lookup (Algo_state.\<FF>_imp state') =
      (lookup ((Algo_state.\<FF>_imp state)))
-         ((fst e) \<mapsto> neighb_insert (snd e) (the (lookup (Algo_state.\<FF>_imp state) (fst e))), 
-          (snd e) \<mapsto> neighb_insert (fst e) (the (lookup (Algo_state.\<FF>_imp state) (snd e))))"
+         ((fst e) \<mapsto> vset_insert (snd e) (the (lookup (Algo_state.\<FF>_imp state) (fst e))), 
+          (snd e) \<mapsto> vset_insert (fst e) (the (lookup (Algo_state.\<FF>_imp state) (snd e))))"
       using all_invars(16) x_not_y  all_invars(17) 
       unfolding invar_aux19_def invar_aux18_def state'_def \<FF>_imp'_def \<FF>_imp_def 
                 insert_undirected_edge_def Let_def state'_def
-      by (simp, subst  adj.map_update, auto intro: adj.invar_update neighb.set.invar_insert 
-                                         simp add: adj.map_update)
-    have neighb_inv_init:"neighb_inv (the (lookup \<FF>_imp ua))" for ua
+      by (simp, subst  adjmap.map_update, auto intro: adjmap.invar_update vset.set.invar_insert 
+                                         simp add: adjmap.map_update)
+    have vset_inv_init:"vset_inv (the (lookup \<FF>_imp ua))" for ua
       using all_invars(16) x_not_y  all_invars(17) fste_V snde_V \<FF>_imp_def
-      by ( auto intro: adj.invar_update neighb.set.invar_insert 
-                                         simp add: adj.map_update invar_aux19_def invar_aux18_def)
+      by ( auto intro: adjmap.invar_update vset.set.invar_insert 
+                                         simp add: adjmap.map_update invar_aux19_def invar_aux18_def)
     show ?case
       unfolding invar_aux20_def 
     proof(subst new_F_rewrite, rule, rule, rule, goal_cases)
@@ -1393,18 +1393,18 @@ proof-
         case True
         then show ?thesis 
           using 1  sym[OF F_rewrite] all_invars(16) x_not_y  all_invars(17) fste_V snde_V  all_invars(18) 
-                neighb_inv_init neighb.set.invar_insert       
-          by (auto intro: adj.invar_update neighb.set.invar_insert 
-                simp add: adj.map_update neighb.set.set_isin neighb.set.set_insert
+                vset_inv_init vset.set.invar_insert       
+          by (auto intro: adjmap.invar_update vset.set.invar_insert 
+                simp add: adjmap.map_update vset.set.set_isin vset.set.set_insert
                           invar_aux19_def invar_aux18_def  state'_def \<FF>'_def \<FF>_def \<FF>_imp_def invar_aux20_def 
                           \<FF>_imp'_def a\<FF>_def a\<FF>'_def)  
       next
         case False
         note false = this
         show ?thesis 
-           using 1  false all_invars(16) x_not_y  all_invars(17) fste_V snde_V  all_invars(18) neighb_inv_init
-          by(cases "u = fst e") (auto intro: adj.invar_update neighb.set.invar_insert
-                simp add: adj.map_update  neighb.set.invar_insert neighb.set.set_insert neighb.set.set_isin
+           using 1  false all_invars(16) x_not_y  all_invars(17) fste_V snde_V  all_invars(18) vset_inv_init
+          by(cases "u = fst e") (auto intro: adjmap.invar_update vset.set.invar_insert
+                simp add: adjmap.map_update  vset.set.invar_insert vset.set.set_insert vset.set.set_isin
                          invar_aux19_def invar_aux18_def  state'_def \<FF>'_def \<FF>_def \<FF>_imp_def
                          invar_aux20_def a\<FF>_def a\<FF>'_def)
       qed
@@ -1415,8 +1415,8 @@ proof-
         case True
         then show ?thesis
           using  all_invars(17) 
-          by(auto simp add: doubleton_eq_iff neighb.set.invar_insert adj.invar_update 
-                           neighb.set.set_isin  neighb.set.set_insert invar_aux19_def )
+          by(auto simp add: doubleton_eq_iff vset.set.invar_insert adjmap.invar_update 
+                           vset.set.set_isin  vset.set.set_insert invar_aux19_def )
       next
         case False
         hence "{u, v} \<in> a\<FF>"
@@ -1424,8 +1424,8 @@ proof-
           by(simp add: \<FF>'_def state'_def \<FF>_imp'_def invar_aux21_def \<FF>_def a\<FF>_def a\<FF>'_def)
         then show ?thesis 
           using all_invars(17)   all_invars(18)
-          by(auto simp add: doubleton_eq_iff neighb.set.invar_insert adj.invar_update 
-                           neighb.set.set_isin  neighb.set.set_insert invar_aux19_def  a\<FF>_def  invar_aux20_def)
+          by(auto simp add: doubleton_eq_iff vset.set.invar_insert adjmap.invar_update 
+                           vset.set.set_isin  vset.set.set_insert invar_aux19_def  a\<FF>_def  invar_aux20_def)
       qed      
     qed     
   next 
@@ -1943,7 +1943,7 @@ have set_invar_E': "set_invar E'"
 
     have goodF:"goodF \<FF>_imp" 
       by (simp add: Pair_graph_specs_from_aux_invar assms(2) local.\<FF>_imp_def)
-    have adj_invF: "adj_inv \<FF>_imp"
+    have adjmap_invF: "adjmap_inv \<FF>_imp"
       by (simp add: assms(2) from_aux_invar'(18) local.\<FF>_imp_def)
     have goodF':"goodF \<FF>_imp'"
       using  \<FF>_imp_def goodF
@@ -2860,7 +2860,7 @@ have set_invar_E': "set_invar E'"
 
     have goodF:"goodF \<FF>_imp" 
       by (simp add: Pair_graph_specs_from_aux_invar assms(2) local.\<FF>_imp_def)
-    have adj_invF: "adj_inv \<FF>_imp"
+    have adjmap_invF: "adjmap_inv \<FF>_imp"
       by (simp add: assms(2) from_aux_invar'(18) local.\<FF>_imp_def)
     have goodF':"goodF \<FF>_imp'"
       using  \<FF>_imp_def goodF
