@@ -7,7 +7,7 @@ begin
 
 subsubsection \<open>One-sided Matchings\<close>
 definition one_sided_matching :: "'a graph \<Rightarrow> 'a graph \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "one_sided_matching G M A \<equiv> M \<subseteq> G \<and> (\<forall>a\<in>A. card {e\<in>M. a \<in> e} \<le> 1)"
+  "one_sided_matching G M A = ( M \<subseteq> G \<and> (\<forall>a\<in>A. card {e\<in>M. a \<in> e} \<le> 1))"
 
 lemma one_sided_matchingI:
   assumes "M \<subseteq> G"

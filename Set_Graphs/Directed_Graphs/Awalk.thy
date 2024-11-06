@@ -531,7 +531,7 @@ proof-
 qed
 
 
-lemma cycle'_adj_edge1:
+lemma cycle'_adjmap_edge1:
   "cycle' E p \<Longrightarrow> v \<noteq> w \<Longrightarrow> (v, w) \<in> set p \<Longrightarrow> (\<exists>z. (w, z) \<in> set p \<and> z \<noteq> v)"
 proof (cases "(v, w) = last p")
   case True
@@ -662,7 +662,7 @@ next
     show ?thesis by auto
 qed
 
-lemma cycle'_adj_edge2:
+lemma cycle'_adjmap_edge2:
   "cycle' E p \<Longrightarrow> v \<noteq> w \<Longrightarrow> (w, v) \<in> set p \<Longrightarrow> (\<exists>z. (z, w) \<in> set p \<and> z \<noteq> v)"
 proof (cases "(w, v) = hd p")
   case True

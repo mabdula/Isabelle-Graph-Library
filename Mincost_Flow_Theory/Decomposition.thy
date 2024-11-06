@@ -6,9 +6,9 @@ begin
 
 text \<open>We define integrality for balance and flow functions.\<close>
 
-definition "is_integral_flow (f::_\<Rightarrow> real) \<equiv> (\<forall> e \<in> \<E>. \<exists> n::int. f e =  n)"
+definition "is_integral_flow (f::_\<Rightarrow> real) = (\<forall> e \<in> \<E>. \<exists> n::int. f e =  n)"
 
-definition "is_integral_balance (b::'a \<Rightarrow> real) \<equiv> (\<forall> v \<in> \<V>. \<exists> n::int. b v = n)"
+definition "is_integral_balance (b::'a \<Rightarrow> real) = (\<forall> v \<in> \<V>. \<exists> n::int. b v = n)"
 
 section \<open>Decomposition of Flows\<close>
 
@@ -175,7 +175,7 @@ qed (force simp add: flowpath_intros)
 
 text \<open>Analogously to augmenting paths and cycles, we define the concept of a cycle.\<close>
 
-definition "flowcycle g es \<equiv> flowpath g es \<and> es \<noteq> [] \<and> fst (hd es) = snd(last es)"
+definition "flowcycle g es = (flowpath g es \<and> es \<noteq> [] \<and> fst (hd es) = snd(last es))"
 
 lemma flow_path_mono: 
 assumes "flowpath g' es " 

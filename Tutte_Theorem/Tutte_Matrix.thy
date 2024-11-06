@@ -7,7 +7,7 @@ text \<open>Embedding of indeterminates and constants in type-class polynomials,
   can be used as constructors.\<close>
 
 definition Var\<^sub>0 :: "'a \<Rightarrow> ('a \<Rightarrow>\<^sub>0 nat) \<Rightarrow>\<^sub>0 'b::{one,zero}" where
-  "Var\<^sub>0 n \<equiv> Poly_Mapping.single (Poly_Mapping.single n 1) 1"
+  "Var\<^sub>0 n =( Poly_Mapping.single (Poly_Mapping.single n 1) 1)"
 
 
 text \<open>this function is used to prove if a determinant is zero

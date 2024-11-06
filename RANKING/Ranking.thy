@@ -60,12 +60,13 @@ text \<open>
   follow the induction scheme provided by \<^term>\<open>online_match'\<close>.
 \<close>
 definition ranking_matching :: "'a graph \<Rightarrow> 'a graph \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> bool" where
-  "ranking_matching G M \<pi> \<sigma> \<equiv> graph_matching G M \<and>
+  "ranking_matching G M \<pi> \<sigma> = ( graph_matching G M \<and>
     bipartite G (set \<pi>) (set \<sigma>) \<and> maximal_matching G M \<and>
     \<comment> \<open>an \<^emph>\<open>online\<close> vertex \<^term>\<open>u\<in>set \<pi>\<close> is matched to the (available) offline vertex with the lowest rank\<close>
     (\<forall>u v v'. ({u,v}\<in>M \<and> {u,v'}\<in>G \<and> index \<sigma> v' < index \<sigma> v) \<longrightarrow> (\<exists>u'. {u',v'}\<in>M \<and> index \<pi> u' < index \<pi> u)) \<and>
     \<comment> \<open>an \<^emph>\<open>offline\<close> vertex \<^term>\<open>v\<in>set \<sigma>\<close> is matched to the earliest online vertex that makes an offer\<close>
-    (\<forall>u v u'. ({u,v}\<in>M \<and> {u',v}\<in>G \<and> index \<pi> u' < index \<pi> u) \<longrightarrow> (\<exists>v'. {u',v'}\<in>M \<and> index \<sigma> v' < index \<sigma> v))"
+    (\<forall>u v u'. ({u,v}\<in>M \<and> {u',v}\<in>G \<and> index \<pi> u' < index \<pi> u) \<longrightarrow> (\<exists>v'. {u',v'}\<in>M \<and> index \<sigma> v' < index \<sigma> v))
+    )"
 
 lemma ranking_matchingE:
   "ranking_matching G M \<pi> \<sigma> \<Longrightarrow> 
@@ -703,7 +704,7 @@ text \<open>
   \<^term>\<open>u \<in> set \<pi>\<close> would be matched to \<^term>\<open>v' \<in> set \<sigma>\<close>, when removing \<^term>\<open>v \<in> set \<sigma>\<close>
   (where \<^term>\<open>v\<close> is supposed to be the vertex \<^emph>\<open>originally\<close> matched to \<^term>\<open>u\<close>).
 \<close>
-definition "shifts_to G M u v v' \<pi> \<sigma> \<equiv>
+definition "shifts_to G M u v v' \<pi> \<sigma> = (
   \<comment> \<open>\<^term>\<open>v'::'a\<close> comes after \<^term>\<open>v::'a\<close> and there's an edge to \<^term>\<open>u::'a\<close>\<close>
   u \<in> set \<pi> \<and> v' \<in> set \<sigma> \<and> index \<sigma> v < index \<sigma> v' \<and> {u,v'} \<in> G \<and>
   \<comment> \<open>but \<^term>\<open>v'::'a\<close> is not matched to some \<^term>\<open>u'::'a\<close> before \<^term>\<open>u::'a\<close>\<close>
@@ -711,7 +712,8 @@ definition "shifts_to G M u v v' \<pi> \<sigma> \<equiv>
   \<comment> \<open>every other vertex between \<^term>\<open>v::'a\<close> and \<^term>\<open>v'::'a\<close> is not connected to \<^term>\<open>u::'a\<close> or
     matched to some \<^term>\<open>u'::'a\<close> before \<^term>\<open>u::'a\<close>\<close>
     (\<forall>v''. (index \<sigma> v < index \<sigma> v'' \<and> index \<sigma> v'' < index \<sigma> v') \<longrightarrow>
-      ({u,v''} \<notin> G \<or> (\<exists>u'. index \<pi> u' < index \<pi> u \<and> {u',v''} \<in> M)))"
+      ({u,v''} \<notin> G \<or> (\<exists>u'. index \<pi> u' < index \<pi> u \<and> {u',v''} \<in> M)))
+     )"
 
 text \<open>
   The following mutually recursive functions describe the alternating path that
@@ -755,7 +757,7 @@ and zag :: "'a graph \<Rightarrow> 'a graph \<Rightarrow> 'a \<Rightarrow> 'a li
   by auto (metis prod_cases5 sumE)
 
 definition zig_zag_relation where
-  "zig_zag_relation \<equiv>
+  "zig_zag_relation =
     {(Inr (G, M, u, \<pi>, \<sigma>), Inl (G, M, v, \<pi>, \<sigma>)) | (G :: 'a graph) M u v \<pi> \<sigma>. matching M \<and> {u,v} \<in> M \<and> ((\<exists>v'. shifts_to G M u v v' \<pi> \<sigma>) \<longrightarrow> index \<sigma> v < index \<sigma> (THE v'. shifts_to G M u v v' \<pi> \<sigma>))} \<union>
     {(Inl (G, M, v', \<pi>, \<sigma>), Inr (G, M, u, \<pi>, \<sigma>)) | (G :: 'a graph) M u v' \<pi> \<sigma>. matching M \<and> (\<exists>v. {u,v} \<in> M \<and> shifts_to G M u (THE v. {u,v} \<in> M) v' \<pi> \<sigma>) \<and> index \<sigma> (THE v. {u,v} \<in> M) < index \<sigma> v'}"
 
@@ -3277,7 +3279,7 @@ text \<open>
   for \<^term>\<open>zig\<close>.
 \<close>
 definition remove_vertex_path :: "'a graph \<Rightarrow> 'a graph \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
-  "remove_vertex_path G M x \<pi> \<sigma> \<equiv> if x \<in> set \<sigma> then zig G M x \<pi> \<sigma> else zig G M x \<sigma> \<pi>"
+  "remove_vertex_path G M x \<pi> \<sigma> = ( if x \<in> set \<sigma> then zig G M x \<pi> \<sigma> else zig G M x \<sigma> \<pi> )"
 
 lemma remove_vertex_path_offline_zig:
   "x \<in> set \<sigma> \<Longrightarrow> remove_vertex_path G M x \<pi> \<sigma> = zig G M x \<pi> \<sigma>"

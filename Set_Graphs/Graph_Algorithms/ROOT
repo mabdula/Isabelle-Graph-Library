@@ -10,11 +10,11 @@ session "Graph_Algorithms" = "Directed_Set_Graphs" +
     BFS_2
     BFS_Subprocedures
     BFS_Example
-    (*DFS_Cycles_Aux
+    DFS_Cycles_Aux
     DFS_Cycles
     DFS_Cycles_Example
     Bellman_Ford
-    Bellman_Ford_Example*)
+    Bellman_Ford_Example
 
   document_files
     "root.tex"

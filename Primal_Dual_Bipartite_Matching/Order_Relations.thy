@@ -10,7 +10,7 @@ definition "refl_on' S r \<longleftrightarrow> (\<forall>x\<in>S. (x,x) \<in> r)
 definition "preorder_on' S r \<longleftrightarrow> refl_on' S r \<and> trans r"
 definition "linorder_on' S r \<longleftrightarrow> refl_on' S r \<and> antisym r \<and> trans r \<and> total_on S r"
 
-definition "preorders_on S \<equiv> {r. preorder_on S r}"
+definition "preorders_on S = {r. preorder_on S r}"
 
 
 lemma refl_on'D: "refl_on' S r \<Longrightarrow> a \<in> S \<Longrightarrow> (a,a) \<in> r"

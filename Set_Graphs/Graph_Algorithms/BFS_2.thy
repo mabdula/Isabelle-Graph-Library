@@ -78,10 +78,10 @@ lemma BFS_impl_same:
   shows "BFS_impl state = BFS state"
   by(induction rule: BFS.pinduct[OF assms])(auto simp add: BFS_impl.simps BFS.psimps)
 
-definition "BFS_call_1_conds bfs_state \<equiv> (current bfs_state) \<noteq> \<emptyset>\<^sub>N"
+definition "BFS_call_1_conds bfs_state = ( (current bfs_state) \<noteq> \<emptyset>\<^sub>N)"
 
 
-definition "BFS_upd1 BFS_state \<equiv>
+definition "BFS_upd1 BFS_state =
 (        let
           visited' = visited BFS_state \<union>\<^sub>G current BFS_state;
           parents' = expand_tree (parents BFS_state) (current BFS_state) visited';
@@ -92,75 +92,74 @@ definition "BFS_upd1 BFS_state \<equiv>
 )" 
 
 
-definition "BFS_ret_1_conds bfs_state \<equiv>
-    (current bfs_state) = \<emptyset>\<^sub>N"
+definition "BFS_ret_1_conds bfs_state = ((current bfs_state) = \<emptyset>\<^sub>N)"
 
 abbreviation "BFS_ret1 bfs_state \<equiv> bfs_state"
 
 
-definition "invar_1 bfs_state \<equiv>
+definition "invar_1 bfs_state = (
               vset_inv (visited bfs_state) \<and> vset_inv (current bfs_state) \<and>
               Graph.graph_inv (parents bfs_state) \<and> 
-              finite (t_set (current bfs_state)) \<and> finite (t_set (visited bfs_state))"
+              finite (t_set (current bfs_state)) \<and> finite (t_set (visited bfs_state)))"
 
-definition "invar_2 bfs_state \<equiv> 
+definition "invar_2 bfs_state = ( 
   Graph.digraph_abs (parents bfs_state) \<subseteq> Graph.digraph_abs G \<and> 
   t_set (visited bfs_state) \<subseteq> dVs (Graph.digraph_abs G) \<and> 
   t_set (current bfs_state) \<subseteq> dVs (Graph.digraph_abs G) \<and> 
   dVs (Graph.digraph_abs (parents bfs_state)) \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state) \<and>
-  t_set srcs \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
+  t_set srcs \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state))"
 
-definition "invar_3_1 bfs_state \<equiv> 
+definition "invar_3_1 bfs_state = 
   (\<forall>v\<in>t_set (current bfs_state). \<forall>u. u \<in> t_set (current bfs_state) \<longleftrightarrow> 
       distance_set (Graph.digraph_abs G) (t_set srcs) v =
                            distance_set (Graph.digraph_abs G) (t_set srcs) u)"
 
-definition "invar_3_2 bfs_state \<equiv> 
+definition "invar_3_2 bfs_state = 
   (\<forall>v\<in>t_set (current bfs_state). \<forall>u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state).
      distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
        distance_set (Graph.digraph_abs G) (t_set srcs) v)"
 
-definition "invar_3_3 bfs_state \<equiv> 
+definition "invar_3_3 bfs_state = 
   (\<forall>v\<in>t_set (visited bfs_state).
      neighbourhood (Graph.digraph_abs G) v \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state))"
 
-definition "invar_3_4 bfs_state \<equiv> 
+definition "invar_3_4 bfs_state = 
   (\<forall>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state).
      \<forall>u. distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
            distance_set (Graph.digraph_abs G) (t_set srcs) v
              \<longrightarrow> u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state))"
 
-definition "invar_goes_through_current bfs_state \<equiv> 
+definition "invar_goes_through_current bfs_state =
          (\<forall>u\<in>t_set (visited bfs_state) \<union> t_set (current bfs_state). 
             \<forall>v. v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state) \<longrightarrow>
               (\<forall>p. Vwalk.vwalk_bet (Graph.digraph_abs G) u p v \<longrightarrow> 
                      set p \<inter> t_set (current bfs_state) \<noteq> {}))"
 
-definition "invar_dist' bfs_state \<equiv> 
+definition "invar_dist' bfs_state =
   (\<forall>v \<in> dVs (Graph.digraph_abs G) - t_set srcs.
      (v \<in> (t_set (visited bfs_state) \<union> t_set (current bfs_state)) \<longrightarrow> distance_set (Graph.digraph_abs G) (t_set srcs) v =
          distance_set (Graph.digraph_abs (parents bfs_state)) (t_set srcs) v))"
 
-definition "invar_parents_shortest_paths bfs_state \<equiv> 
+definition "invar_parents_shortest_paths bfs_state =
   (\<forall>u\<in>t_set srcs.
       \<forall> p v. Vwalk.vwalk_bet (Graph.digraph_abs (parents bfs_state)) u p v \<longrightarrow>
          length p - 1 = distance_set (Graph.digraph_abs G) (t_set srcs) v)"
 
-definition "call_1_measure_1 BFS_state\<equiv>
+definition "call_1_measure_1 BFS_state=
   card (dVs (Graph.digraph_abs G) - ((t_set (visited BFS_state)) \<union> t_set (current BFS_state)))"
 
-definition "call_1_measure_2 BFS_state \<equiv>
+definition "call_1_measure_2 BFS_state =
   card (t_set (current BFS_state))"
 
 definition
-  "BFS_term_rel' \<equiv> call_1_measure_1 <*mlex*> call_1_measure_2 <*mlex*> {}"
+  "BFS_term_rel' = call_1_measure_1 <*mlex*> call_1_measure_2 <*mlex*> {}"
 
-definition "initial_state \<equiv> \<lparr>parents =  empty, current = srcs, visited = \<emptyset>\<^sub>N\<rparr>"
+definition "initial_state = \<lparr>parents =  empty, current = srcs, visited = \<emptyset>\<^sub>N\<rparr>"
 
 lemmas[code] = BFS_impl.simps initial_state_def
 
 context
-  includes Graph.adj.automation  Graph.vset.set.automation  set_ops.automation
+  includes Graph.adjmap.automation  Graph.vset.set.automation set_ops.automation
   assumes BFS_axiom  
 begin
 
@@ -412,7 +411,7 @@ lemma invar_3_4_intro[invar_props_intros]:
   unfolding invar_3_4_def
   by blast
 
-definition "invar_current_reachable bfs_state \<equiv> 
+definition "invar_current_reachable bfs_state =
   (\<forall>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state).
      distance_set (Graph.digraph_abs G) (t_set srcs) v < \<infinity>)"
 
@@ -828,7 +827,7 @@ lemma invar_dist'_holds_upd1_new[invar_holds_intros]:
     invar_3_4 bfs_state; invar_dist' bfs_state\<rbrakk> 
     \<Longrightarrow> invar_dist' (BFS_upd1 bfs_state)"
 proof(intro invar_props_intros, goal_cases)
-  define bfs_state' where "bfs_state' \<equiv> BFS_upd1 bfs_state"
+  define bfs_state' where "bfs_state' = BFS_upd1 bfs_state"
   let ?dSrcsG = "distance_set (Graph.digraph_abs G) (t_set srcs)"
   let ?dSrcsT = "distance_set (Graph.digraph_abs (parents bfs_state)) (t_set srcs)"
   let ?dSrcsT' = "distance_set (Graph.digraph_abs (parents bfs_state')) (t_set srcs)"
@@ -980,7 +979,7 @@ proof(induction rule: BFS_induct[OF assms(1)])
     by (auto intro!: IH(2-) intro: invar_holds_intros  simp: BFS_simps[OF IH(1)])
 qed
 
-definition "invar_current_no_out bfs_state \<equiv> 
+definition "invar_current_no_out bfs_state =
   (\<forall>u\<in>t_set(current bfs_state). 
      \<forall>v. (u,v) \<notin> Graph.digraph_abs (parents bfs_state))"
 
@@ -1037,7 +1036,7 @@ lemma invar_parents_shortest_paths_holds_upd1[invar_holds_intros]:
 proof(intro invar_props_intros, goal_cases)
   case assms: (1 u p v)
 
-  define bfs_state' where "bfs_state' \<equiv> BFS_upd1 bfs_state"
+  define bfs_state' where "bfs_state' = BFS_upd1 bfs_state"
 
   have "invar_2 bfs_state'"
     using assms
@@ -1279,12 +1278,12 @@ lemma in_prod_relI[intro!,termination_intros]:
   "\<lbrakk>f1 a = f1 a'; (a, a') \<in> f2 <*mlex*> r\<rbrakk> \<Longrightarrow> (a,a') \<in> (f1 <*mlex*> f2 <*mlex*> r)"
    by (simp add: mlex_iff)+
 
-definition "less_rel \<equiv> {(x::nat, y::nat). x < y}"
+definition "less_rel = {(x::nat, y::nat). x < y}"
 
 lemma wf_less_rel[intro!]: "wf less_rel"
   by(auto simp: less_rel_def wf_less)
 
-definition "state_measure_rel call_measure \<equiv> inv_image less_rel call_measure"
+definition "state_measure_rel call_measure = inv_image less_rel call_measure"
 
 lemma call_1_measure_nonsym[simp]:
   "(call_1_measure_1 BFS_state, call_1_measure_1 BFS_state) \<notin> less_rel"
@@ -1317,7 +1316,7 @@ next
   have *: "{{v1, v2} |v1 v2. (v1, v2) \<in> [G]\<^sub>g}
                  \<subseteq> (\<lambda>(x,y). {x,y} ) ` ({v. \<exists>y. lookup G v = Some y} \<times>
                                         (\<Union> {t_set N | v N. lookup G v = Some N}))"
-    including Graph.adj.automation  Graph.vset.set.automation
+    including Graph.adjmap.automation Graph.vset.set.automation
     apply (auto simp: Graph.digraph_abs_def Graph.neighbourhood_def image_def
                 split: option.splits)
     by (metis Graph.graph_invE Graph.vset.set.set_isin graph_inv(1))

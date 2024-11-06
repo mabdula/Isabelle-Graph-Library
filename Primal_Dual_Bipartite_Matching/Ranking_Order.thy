@@ -14,7 +14,7 @@ definition step :: "('a \<times> 'a) set \<Rightarrow> 'a graph \<Rightarrow> 'a
       else M
   )"
 
-definition "ranking' r G M \<equiv> foldl (step r G) M"
+definition "ranking' r G M = foldl (step r G) M"
 abbreviation "ranking r G \<equiv> ranking' r G {}"
 
 lemma step_cases'[case_names no_neighbor j_matched new_match]:

@@ -14,28 +14,44 @@ fun less_prod where
                                   else if x = a then y < b
                                   else False)"
 instance 
-  apply(intro Orderings.linorder.intro_of_class  class.linorder.intro
+proof(intro Orderings.linorder.intro_of_class  class.linorder.intro
               class.order_axioms.intro class.order.intro class.preorder.intro
-              class.linorder_axioms.intro)
-  subgoal for x y 
+              class.linorder_axioms.intro, goal_cases)
+  case (1 x y)
+  then show ?case 
     by(all \<open>cases x\<close>, all \<open>cases y\<close>)
       (auto split: if_split simp add: less_le_not_le)
-    subgoal for x  
+next
+  case (2 x)
+  then show ?case 
     by(all \<open>cases x\<close>)
       (auto split: if_split simp add: less_le_not_le)
-  subgoal for x y z
-    apply(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
-    apply(auto split: if_split simp add: less_le_not_le)
-    using order.trans by metis+
-  subgoal for x y 
+next
+  case (3 x y z)
+  have a: "if (ab::'a) \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then (b::'b) \<le> ba else False \<Longrightarrow>
+       if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False \<Longrightarrow> b \<le> bb"
+    for ab b aa ba bb
+    using order.trans by metis
+  have b: "if a \<le> aa \<and> \<not> (aa::'a) \<le> a then True else if a = aa then (b::'b) \<le> ba else False \<Longrightarrow>
+       if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False \<Longrightarrow> a \<noteq> ab \<Longrightarrow> a \<le> ab "
+    for a aa ab ba b bb
+    using order.trans by metis
+  show ?case
+    using 3
+    by(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
+      (auto split: if_split simp add: less_le_not_le intro: a b)
+next
+  case (4 x y)
+  then show ?case 
     apply(all \<open>cases x\<close>, all \<open>cases y\<close>)
     by(simp_all split: if_splits add: less_le_not_le)
-  subgoal for x y 
+next
+  case (5 x y)
+  then show ?case 
     by(all \<open>cases x\<close>, all \<open>cases y\<close>)
       (auto split: if_split simp add: less_le_not_le)
-  done
+qed
 end
-
 
 definition "connection_empty = empty"
 definition "connection_update = update"
@@ -43,13 +59,11 @@ definition "connection_delete = RBT_Map.delete"
 definition "connection_lookup = lookup"
 definition "connection_invar = M.invar"
 
-lemma Map_connection:"Map connection_empty connection_update connection_delete connection_lookup connection_invar"
+interpretation Map_connection: 
+   Map connection_empty connection_update connection_delete connection_lookup connection_invar
   using RBT_Map.M.Map_axioms     
   by(auto simp add: connection_update_def connection_empty_def  connection_delete_def
                     connection_lookup_def connection_invar_def)
-
-lemma bellman_ford_spec: "bellman_ford_spec connection_update connection_empty connection_lookup connection_invar connection_delete"
-  using Map_connection by(auto intro!: bellman_ford_spec.intro)
 
 global_interpretation bellford: bellman_ford_spec where connection_update=connection_update
 and connection_empty=connection_empty and connection_lookup=connection_lookup
@@ -59,8 +73,8 @@ for edge_costs es vs
 defines search_rev_path_exec = bellford.search_rev_path_exec 
 and bellman_ford_init_algo = bellford.bellman_ford_init
 and  bellman_ford_algo = bellford.bellman_ford
-and relax=bellford.relax                              
-  using bellman_ford_spec by auto
+and relax=bellford.relax       
+  using Map_connection.Map_axioms by(auto intro!: bellman_ford_spec.intro)
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
                      (7,2), (7,4), (4,3), (3,4), (3,3), (9, 8), (8, 1), (4,5), (5,10)]"

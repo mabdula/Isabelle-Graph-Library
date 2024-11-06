@@ -40,7 +40,7 @@ lemma pos_subs_ineq: "a \<le> b \<Longrightarrow> c \<ge> 0 \<Longrightarrow> a 
 lemma minus_leq_flip:"- (a::ereal) \<le> b \<Longrightarrow> - b \<le> a" 
   by (simp add: ereal_uminus_le_reorder)
 
-definition "is_integral (x::real) \<equiv> (\<exists> n::int. x = n)"
+definition "is_integral (x::real) = (\<exists> n::int. x = n)"
 
 lemma integral_min: "is_integral x \<Longrightarrow> is_integral y \<Longrightarrow> is_integral (min x y)"
   unfolding is_integral_def

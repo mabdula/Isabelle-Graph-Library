@@ -6,7 +6,7 @@ section \<open>Distances\<close>
 
 subsection \<open>Distance from a vertex\<close>
 
-definition "distance G u v \<equiv> INF p. if Vwalk.vwalk_bet G u p v then length p - 1 else \<infinity>"
+definition "distance G u v = ( INF p. if Vwalk.vwalk_bet G u p v then length p - 1 else \<infinity>)"
 
 lemma vwalk_bet_dist:
   "Vwalk.vwalk_bet G u p v \<Longrightarrow> distance G u v \<le> length p - 1"
@@ -137,7 +137,7 @@ qed
 
 subsection \<open>Shortest Paths\<close>
 
-definition "shortest_path G u p v \<equiv> distance G u v = length p -1 \<and> vwalk_bet G u p v"
+definition "shortest_path G u p v = (distance G u v = length p -1 \<and> vwalk_bet G u p v)"
 
 lemma shortest_path_props[elim]:
   "shortest_path G u p v \<Longrightarrow> (\<lbrakk>distance G u v = length p -1; vwalk_bet G u p v\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
@@ -374,7 +374,7 @@ qed
 
 subsection \<open>Distance from a set of vertices\<close>
 
-definition "distance_set G U v \<equiv> INF u\<in>U. distance G u v"
+definition "distance_set G U v = ( INF u\<in>U. distance G u v)"
 
 (*TODO: intro rule*)
 
@@ -528,7 +528,7 @@ lemma shortest_path_dist_set_union:
        \<Longrightarrow> distance_set G (U \<union> V) v = distance_set G U v - distance G u x"
 proof(goal_cases)
   case assms: 1
-  define k where "k \<equiv> distance G u x"
+  define k where "k = distance G u x"
   have "distance_set G (U \<union> V) v \<le> distance_set G U v - k"
   proof-
     have "vwalk_bet G x (x#p2) v"

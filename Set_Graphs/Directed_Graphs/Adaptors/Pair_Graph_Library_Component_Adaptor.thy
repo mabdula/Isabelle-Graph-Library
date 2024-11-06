@@ -43,7 +43,7 @@ lemma subgraph_digraph_of_dVs_arcs_subset':
   using subgraph_digraph_of_dVs_arcs_subset by blast
 
 definition digraph_of_all_verts where
-  "digraph_of_all_verts H G \<equiv> pre_digraph.add_verts (ddfs.digraph_of H) (dVs G)"
+  "digraph_of_all_verts H G = pre_digraph.add_verts (ddfs.digraph_of H) (dVs G)"
 
 lemma "dVs G \<subseteq> verts (digraph_of_all_verts H G)"
   by (auto simp: digraph_of_all_verts_def pre_digraph.add_verts_simps)

@@ -39,9 +39,9 @@ and adjmap_inv = M.invar
 and vset_empty = Leaf
 and vset_delete = delete_rbt
 and vset_inv = vset_inv
-and union= RBT.union
+and union=union_rbt
 and inter = inter_rbt
-and diff = RBT.diff
+and diff = diff_rbt
 and lookup = lookup
 and dfs_aux = "\<lambda> s. dfs_aux G (initial_state_aux s)"
 and cycle_aux = DFS_Aux_state.cycle
@@ -54,16 +54,12 @@ and find_cycles_by_dfs = dfs_cycles.DFS_Cycles_impl
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
                      (7,2), (7,4), (4,3), (3,4), (3,3), (9, 8), (8, 1), (4,5), (5,10)]"
 
-definition "vertices = remdups (map prod.fst edges @ map prod.snd edges)"
+definition "G = a_graph edges"
 
-definition "nbs v = foldr (\<lambda> x tree. insert x tree) (remdups (map prod.snd (filter (\<lambda> e. prod.fst e = v) edges))) Leaf"
-
-definition "G = foldr (\<lambda> x tree. update x (nbs x) tree) vertices  empty"
-
-definition "V = foldr (\<lambda> x tree. insert_rbt x  tree) vertices Leaf"
+definition "V = foldr (\<lambda> x tree. insert_rbt x  tree) (vertices edges) Leaf"
 
 value edges
-value vertices
+value "vertices edges"
 
 value G
 value V

@@ -40,8 +40,8 @@ and T_lookup::"'adjmapmap\<Rightarrow> 'v \<Rightarrow> nat" and T_G::nat and T_
 
 begin
 
-definition "DFS_axioms \<equiv> Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets
-                         \<and> s \<in> dVs (Graph.digraph_abs G)"
+definition "DFS_axioms = ( Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets
+                         \<and> s \<in> dVs (Graph.digraph_abs G))"
 
 abbreviation "neighbourhood' v == Graph.neighbourhood G v"
 
@@ -70,9 +70,9 @@ function (domintros) DFS::"('v, 'vset) DFS_state \<Rightarrow> ('v, 'vset) DFS_s
     )"
   by pat_completeness auto
 
-definition "initial_state \<equiv> \<lparr>stack = [s], seen = insert s \<emptyset>\<^sub>N, return = NotReachable\<rparr>"
+definition "initial_state = \<lparr>stack = [s], seen = insert s \<emptyset>\<^sub>N, return = NotReachable\<rparr>"
 
-definition "DFS_call_1_conds dfs_state \<equiv> 
+definition "DFS_call_1_conds dfs_state = 
     (case stack dfs_state of (v # stack_tl) \<Rightarrow>
        (if v = t then 
           False
@@ -93,7 +93,7 @@ lemma DFS_call_1_conds[call_cond_elims]:
   by(auto simp: DFS_call_1_conds_def split: list.splits option.splits if_splits)
 
 
-definition "DFS_upd1 dfs_state \<equiv> (
+definition "DFS_upd1 dfs_state = (
     let
       N = (\<N>\<^sub>G (hd (stack dfs_state)));
       u = (sel ((N -\<^sub>G (seen dfs_state))));
@@ -102,7 +102,7 @@ definition "DFS_upd1 dfs_state \<equiv> (
     in
       dfs_state \<lparr>stack := stack', seen := seen'\<rparr>)" 
 
-definition "DFS_call_2_conds dfs_state \<equiv>
+definition "DFS_call_2_conds dfs_state =
 (case stack dfs_state of (v # stack_tl) \<Rightarrow>
        (if v = t then 
           False
@@ -123,11 +123,11 @@ lemma DFS_call_2_conds[call_cond_elims]:
    P"
   by(auto simp: DFS_call_2_conds_def split: list.splits option.splits if_splits)
 
-definition "DFS_upd2 dfs_state \<equiv> 
+definition "DFS_upd2 dfs_state = 
   ((dfs_state \<lparr>stack := tl (stack dfs_state)\<rparr>))"
 
 
-definition "DFS_ret_1_conds dfs_state \<equiv>
+definition "DFS_ret_1_conds dfs_state =
    (case stack dfs_state of (v # stack_tl) \<Rightarrow>
        (if v = t then 
           False
@@ -150,9 +150,9 @@ lemma DFS_call_4_condsI[call_cond_intros]:
   "\<lbrakk>stack dfs_state = []\<rbrakk> \<Longrightarrow> DFS_ret_1_conds dfs_state"
   by(auto simp: DFS_ret_1_conds_def split: list.splits option.splits if_splits)
 
-definition "DFS_ret1 dfs_state \<equiv> (dfs_state \<lparr>return := NotReachable\<rparr>)"
+definition "DFS_ret1 dfs_state = (dfs_state \<lparr>return := NotReachable\<rparr>)"
 
-definition "DFS_ret_2_conds dfs_state \<equiv>
+definition "DFS_ret_2_conds dfs_state =
    (case stack dfs_state of (v # stack_tl) \<Rightarrow>
        (if v = t then 
           True
@@ -177,7 +177,7 @@ lemma DFS_ret_2_condsI[call_cond_intros]:
   "\<And>v stack_tl. \<lbrakk>stack dfs_state = v # stack_tl; (hd (stack dfs_state)) = t\<rbrakk> \<Longrightarrow> DFS_ret_2_conds dfs_state"
   by(auto simp: DFS_ret_2_conds_def split: list.splits option.splits if_splits)
 
-definition "DFS_ret2 dfs_state \<equiv> (dfs_state \<lparr>return := Reachable\<rparr>)"
+definition "DFS_ret2 dfs_state = (dfs_state \<lparr>return := Reachable\<rparr>)"
 
 lemma DFS_cases:
   assumes "DFS_call_1_conds dfs_state \<Longrightarrow> P"
@@ -235,7 +235,7 @@ next
     by (force split: list.splits option.splits if_splits)
 qed
 
-definition "invar_1 dfs_state \<equiv> vset_inv (seen dfs_state)"
+definition "invar_1 dfs_state = vset_inv (seen dfs_state)"
 
 definition "invar_2 dfs_state = (Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)))"
 
@@ -251,12 +251,12 @@ definition "invar_visited_through_seen dfs_state =
     (\<forall>v \<in> t_set (seen dfs_state).
        (\<forall>p. Vwalk.vwalk_bet (Graph.digraph_abs G) v p t \<and> distinct p \<longrightarrow> (set p \<inter> set (stack dfs_state) \<noteq> {})))"
 
-definition "call_1_measure dfs_state \<equiv> card (dVs (Graph.digraph_abs G) -  t_set (seen dfs_state))"
+definition "call_1_measure dfs_state = card (dVs (Graph.digraph_abs G) -  t_set (seen dfs_state))"
 
-definition "call_2_measure dfs_state \<equiv> card (set (stack dfs_state))"
+definition "call_2_measure dfs_state = card (set (stack dfs_state))"
 
 definition
-  "DFS_term_rel' \<equiv> (call_1_measure) <*mlex*> (call_2_measure) <*mlex*> {}"
+  "DFS_term_rel' = (call_1_measure) <*mlex*> (call_2_measure) <*mlex*> {}"
 
 end
 
@@ -267,7 +267,7 @@ assumes DFS_axioms: DFS_axioms
 begin
 
 context
-includes set_ops.automation Graph.adj.automation Graph.vset.set.automation 
+includes set_ops.automation  Graph.adjmap.automation  Graph.vset.set.automation 
 begin
 
 lemma graph_inv[simp,intro]:
@@ -281,7 +281,7 @@ lemma s_in_G[simp,intro]: "s \<in> dVs (Graph.digraph_abs G)"
   using DFS_axioms
   by (auto simp: DFS_axioms_def)
 
-lemma finite_vsetourhoods[simp]:                                                 
+lemma finite_neighbourhoods[simp]:                                                 
           "finite (t_set N)"
   using graph_inv(3)
   by fastforce
@@ -568,7 +568,7 @@ qed
 (*abbreviation "seen_verts dfs_state \<equiv> (set (stack dfs_state) \<union> t_set (visited dfs_state))"*)
                                       
 definition "state_rel_1 dfs_state_1 dfs_state_2 
-              \<equiv> t_set (seen dfs_state_1) \<subseteq> t_set (seen dfs_state_2)"
+              = ( t_set (seen dfs_state_1) \<subseteq> t_set (seen dfs_state_2))"
 
 lemma state_rel_1_props[elim!]: "state_rel_1 dfs_state_1 dfs_state_2 \<Longrightarrow>
                                   (t_set (seen dfs_state_1) \<subseteq> t_set (seen dfs_state_2) \<Longrightarrow> P) \<Longrightarrow> P "
@@ -660,7 +660,7 @@ lemma in_prod_relI[intro!,termination_intros]:
   "\<lbrakk>f1 a = f1 a'; (a, a') \<in> f2 <*mlex*> r\<rbrakk> \<Longrightarrow> (a,a') \<in> (f1 <*mlex*> f2 <*mlex*> r)"
    by (simp add: mlex_iff)+
 
-definition "less_rel \<equiv> {(x::nat, y::nat). x < y}"
+definition "less_rel = {(x::nat, y::nat). x < y}"
 
 lemma wf_less_rel[intro!]: "wf less_rel"
   by(auto simp: less_rel_def wf_less)

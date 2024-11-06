@@ -6,7 +6,7 @@ begin
 context graph_abs
 begin
 
-definition "has_no_cycle X \<equiv> X \<subseteq> G \<and> (\<nexists>u c. decycle X u c)"
+definition "has_no_cycle X = ( X \<subseteq> G \<and> (\<nexists>u c. decycle X u c))"
 
 text \<open>We prove that in an undirected graph, the property of having no cycles forms a matroid
 (the graphic/cycle matroid), with the carrier set being the set of edges of the graph and the
@@ -881,7 +881,8 @@ lemma graph_indep_system:
 
 (* ----------------------------------------------------------------------------------------------- *)
 
-definition "is_spanning_forest X \<equiv> has_no_cycle X \<and> (\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. {v, w} \<in> G \<longrightarrow> reachable X v w)"
+definition "is_spanning_forest X = 
+( has_no_cycle X \<and> (\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. {v, w} \<in> G \<longrightarrow> reachable X v w))"
 
 lemma spanning_forest_iff_basis:
   "is_spanning_forest X = indep_system.basis G has_no_cycle X"
@@ -951,7 +952,7 @@ context Pair_Graph_U_Specs
 begin
 
 context
-  fixes G::'adj
+  fixes G::'adjmap
   assumes pair_graph_u_inv: "pair_graph_u_invar G"
 begin
 
@@ -983,9 +984,10 @@ interpretation ugraph_abs_inst: graph_abs
 lemma ugraph_abs_digraph_abs: "graph_abs.D (ugraph_abs G) = digraph_abs G"
   unfolding graph_abs.D_def ugraph_abs_def digraph_abs_def
 proof-
-  have 1: "\<And>u v. {u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<longleftrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v) \<or> v \<in>\<^sub>G (\<N>\<^sub>G G u)"
-    using isin_neighborhood_set_edge[OF pair_graph_u_inv] set_edge_isin_neighborhood[OF pair_graph_u_inv] by auto
-
+  have 1: "{u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<longleftrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v) \<or> v \<in>\<^sub>G (\<N>\<^sub>G G u)" for u v
+    using  doubleton_eq_iff[of u v] by auto
+  (*  using isin_neighborhood_set_edge[OF pair_graph_u_inv] set_edge_isin_neighborhood[OF pair_graph_u_inv] by auto
+*)
   have "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v) |u v. {u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}}"
     using graph_abs.D_def[OF graph_abs_ugraph] ugraph_abs_def by simp
   also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<union> {(u, v) |u v. u \<in>\<^sub>G \<N>\<^sub>G G v}"

@@ -78,7 +78,7 @@ function (domintros) loopA::"('a,'d, 'c, 'edge_type) Algo_state \<Rightarrow> ('
                     else state))"
   by auto
 
-definition "loopA_ret_cond state \<equiv> (let \<FF> = \<FF> state;
+definition "loopA_ret_cond state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
                     r = representative state;
@@ -111,7 +111,7 @@ lemma loopA_ret_condI: " f = current_flow state\<Longrightarrow>
                     \<not> (\<exists> aa. get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E' = Some aa) \<Longrightarrow>cards = comp_card state\<Longrightarrow> loopA_ret_cond state" 
   by(simp add: loopA_ret_cond_def)
 
-definition "(loopA_call_cond (state::('a, 'd, 'c, 'edge_type) Algo_state)) \<equiv> 
+definition "(loopA_call_cond (state::('a, 'd, 'c, 'edge_type) Algo_state)) = 
                    ((let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
@@ -806,10 +806,8 @@ proof-
           using "1110"  invar_aux8_def[of state]  all_invars(6) local.\<FF>_def r_def \<FF>_imp_def
           by force+
         thus ?thesis
-          using reach_rpop reach_rpop' 
-          apply (auto simp add: state'_def r'_def local.\<FF>_def \<FF>_imp_def r_def x'_def y'_def)
-          apply (metis all_invars(7) invar_aux7E)+
-          done
+          using reach_rpop reach_rpop' all_invars(7) 
+          by (auto simp add: state'_def r'_def local.\<FF>_def \<FF>_imp_def r_def x'_def y'_def invar_aux7_def)        
       qed 
     qed 
   qed
@@ -1256,17 +1254,21 @@ proof-
         moreover have a1:"reachable \<FF> x' xx \<or> x' = xx" 
           using all_invars(6) invar_aux8_def local.\<FF>_def r_def reachable_sym x'_def \<FF>_imp_def by fastforce 
         moreover have a2:"reachable \<FF>' xx y'"
-          apply(auto split: if_split simp add:  xx_def xy_def y'_def yy_def \<FF>'_def)
-          subgoal
+        proof-
+          have "cards x \<le> cards y \<Longrightarrow> Undirected_Set_Graphs.reachable (insert {fst e, snd e} \<FF>) x (r y)"
             using all_invars(6) invar_aux8_def[of state] \<FF>_def r_def 
             reachable_subset[of \<FF> y "r y" "insert {fst e, snd e} \<FF>"]
             by( cases "y = r y", simp add: edges_reachable insert_commute x_def y_def, 
               intro reachable_trans[of _  y x "r x"] reachable_trans[of _  x y "r y"],
               auto simp add: edges_reachable insert_commute x_def y_def \<FF>_imp_def)
-          using all_invars(6) invar_aux8_def[of state] \<FF>_def r_def reachable_subset[of \<FF> x "r x" "insert {fst e, snd e} \<FF>"]
-          by( cases "x = r x", simp add: edges_reachable insert_commute x_def y_def, 
+          moreover have "\<not> cards x \<le> cards y \<Longrightarrow> Undirected_Set_Graphs.reachable (insert {fst e, snd e} \<FF>) y (r x)"
+            using all_invars(6) invar_aux8_def[of state] \<FF>_def r_def reachable_subset[of \<FF> x "r x" "insert {fst e, snd e} \<FF>"]
+            by( cases "x = r x", simp add: edges_reachable insert_commute x_def y_def, 
               intro reachable_trans[of _  y x "r x"],
-              auto simp add: edges_reachable insert_commute x_def y_def \<FF>_imp_def) 
+              auto simp add: edges_reachable insert_commute x_def y_def \<FF>_imp_def)
+          ultimately show ?thesis
+            by(auto split: if_split simp add:  xx_def xy_def y'_def yy_def \<FF>'_def)
+        qed
         ultimately have  fst_y: "reachable \<FF>' (fst d) y' \<or> fst d = y'" 
           by (metis reachable_trans \<FF>'_def reachable_subset subset_insertI)
         have "r (snd d) = x' \<or> r (snd d) = y'"
@@ -2073,10 +2075,8 @@ have set_invar_E': "set_invar E'"
       apply(subst comps_union, subst card_Un_disjnt)
       using comps_inter_empt x'_not_y' bx' by' comps_inter_empt assms(2) x'_inV \<V>_finite
             finite_subset y'_inV  F_rewrite[simplified \<FF>'_def \<FF>_def \<FF>_imp_def \<FF>_imp'_def]
-       apply(auto simp add: algebra_simps card_Un_disjnt disjnt_def  b'_def  aux_invar_def invar_aux10_def  
-                      \<FF>'_def \<FF>_def \<FF>_imp_def \<FF>_imp'_def) 
-       apply (smt (verit) finite_subset)+
-      done
+      by(auto simp add: algebra_simps card_Un_disjnt disjnt_def  b'_def  aux_invar_def invar_aux10_def  
+                      \<FF>'_def \<FF>_def \<FF>_imp_def \<FF>_imp'_def) blast+
    moreover have 16:"v \<in> \<V> \<Longrightarrow> v \<noteq> x'  \<Longrightarrow> v \<noteq> y' \<Longrightarrow> \<bar> b' v \<bar>\<le> thr * card (connected_component \<FF>' v)" for v
       unfolding b'_def apply simp
       apply(rule order.trans[of _ "thr * real (card (connected_component \<FF> v))"])
@@ -3151,8 +3151,7 @@ theorem loopB_entryF:
       using \<V>_finite  invar_aux10_def[of "(local.loopA state)"] e_in_E
             loopA_invar_aux_pres[of state, OF _  assms(1)]
             termination_of_loopA[OF _ refl] assms(1) make_pair[OF refl refl, of e]
-      apply(auto simp add: aux_invar_def  N_def image_def dVs_def)
-      by (smt (z3) card_mono insertI1)
+      by(auto simp add: aux_invar_def  N_def image_def dVs_def) (smt (z3) card_mono insertI1)
     show ?case 
       using assms gamma_same_after_loopA  bb aa assms 
       by (auto intro: order.strict_trans1[of _ 

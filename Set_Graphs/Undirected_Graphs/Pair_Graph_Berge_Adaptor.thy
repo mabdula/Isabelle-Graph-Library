@@ -16,7 +16,7 @@ text \<open>Here we have adaptors between directed and undirected graphs. These 
 context graph_abs
 begin
 
-definition "D \<equiv> {(u,v) | u v. {u, v} \<in> G}"
+definition "D = {(u,v) | u v. {u, v} \<in> G}"
 
 lemma edge_iff_edge_1:
   "{u, v} \<in> G \<longleftrightarrow> (u, v) \<in> D"
@@ -704,7 +704,7 @@ locale path_graph = graph_abs +
   assumes p_path: "path G p"
 begin
 
-definition "edge_set \<equiv> set (edges_of_path p)"
+definition "edge_set = set (edges_of_path p)"
 
 text \<open>this also proves @{thm path_edges_subset}\<close>
 sublocale path_induced: subset_graph G edge_set

@@ -1944,11 +1944,13 @@ proof-
       also have "... = \<Union> {set C |C. C \<in> CCC'a}- {AA (F (create_edge t s))} "
         using CCC'a_props(4) by presburger
       also have "... = (insert (AA (F (create_edge t s))) (set P') \<union> \<Union> {set C |C. C \<in> CCC''}) - {AA (F (create_edge t s))}"
-        unfolding P'_def CCC''_def
-        apply(rule set_diff_eq_cong)
-        using C1_C2_prop apply auto
-        apply force
-        using C_prop by auto
+      proof-
+        have "\<Union> {set C |C. C \<in> CCC'a} =
+            insert (AA (create_edge_residual t s)) (set (C2 @ C1)) \<union> \<Union> {set Ca |Ca. Ca \<in> CCC'a - {C}}"
+          using C1_C2_prop C_prop by auto force
+        thus ?thesis
+          by(auto intro: set_diff_eq_cong simp add: P'_def CCC''_def)
+      qed
       also have "... = (set P') \<union> \<Union> {set C |C. C \<in> CCC''}" 
         using C1_C2_prop C_prop'(3)  CCC''_def CCC'a_props(3)[OF  C_prop(1)] 
         by (auto simp add:  P'_def CCC'_def)
@@ -2457,7 +2459,7 @@ subsection \<open>The final Theorem\<close>
 text \<open>Let us first precisely define the meanings of $s$-$t$-paths and
       minimum $s$-$t$-paths. We require distinctness.\<close>
 
-definition "is_s_t_path f s t P \<equiv> (augpath f P \<and> set P \<subseteq> \<EE> \<and> 
+definition "is_s_t_path f s t P = (augpath f P \<and> set P \<subseteq> \<EE> \<and> 
                                    fstv (hd P) = s \<and> sndv (last P) = t \<and> distinct P)"
 
 text \<open>The existence of a path implies the existence of a distinct path.\<close>
@@ -2504,7 +2506,7 @@ proof(induction l arbitrary: P thesis rule : less_induct)
 
 text \<open>An $s$-$t$-path is optimum iff there is no better $s$-$t$-path.\<close>
 
-definition "is_min_path f s t P \<equiv> (is_s_t_path f s t P  \<and>
+definition "is_min_path f s t P = (is_s_t_path f s t P  \<and>
                                    (\<forall> P'. is_s_t_path f s t P' \<longrightarrow> \<CC> P \<le> \<CC> P'))"
 
 text \<open>Due to distinctness, there is always a distinct minimum cost path.\<close>

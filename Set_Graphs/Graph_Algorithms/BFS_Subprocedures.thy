@@ -2,12 +2,75 @@ theory BFS_Subprocedures
   imports BFS_2 "HOL-Data_Structures.RBT_Map" Directed_Set_Graphs.Set_Addons 
 begin
 
-locale BFS_subprocedures =
+locale Pair_Graph_Sepcs_Set2 =
   Graph: Pair_Graph_Specs
     where lookup = lookup +
-
   set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
-  
+for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option"
+begin
+
+definition "add_neighbs G u vs = (if vs = vset_empty then G else 
+                                  (case (lookup G u) of None \<Rightarrow> update u vs G
+                                  | Some vs' \<Rightarrow> update u (union vs' vs) G))"
+
+lemmas [code] = add_neighbs_def
+
+lemma add_neighbs_inv: "Graph.graph_inv G \<Longrightarrow> vset_inv vs \<Longrightarrow> 
+                        Graph.graph_inv (add_neighbs G u vs)" 
+proof(goal_cases)
+  case 1
+  have b: "vset_inv vs \<Longrightarrow>
+       \<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset \<Longrightarrow>
+       lookup G u = Some x2 \<Longrightarrow> (if v = u then Some (x2 \<union>\<^sub>G vs) else lookup G v) = Some vset 
+        \<Longrightarrow> vset_inv vset " for v vset x2
+    by(rule case_split[of "v = u"])( auto simp add: set_ops.invar_union)
+  show ?case
+    using 1
+    by (auto split: if_split option.split 
+             intro: Graph.adjmap.invar_update b
+          simp add: Graph.adjmap.map_update Graph.graph_inv_def add_neighbs_def)
+qed
+
+lemma add_neighbs_digraph_abs:
+   "Graph.graph_inv G \<Longrightarrow> vset_inv vs \<Longrightarrow> Graph.digraph_abs (add_neighbs G u vs) =
+    Graph.digraph_abs G \<union> {(u, v) | v. v  \<in> t_set vs}"
+proof(goal_cases)
+  case 1
+  have a: "vset_inv vs \<Longrightarrow>
+       \<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset \<Longrightarrow>
+       lookup G u = Some x2 \<Longrightarrow>
+       b \<in> [case if a = u then Some (x2 \<union>\<^sub>G vs) else lookup G a of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset]\<^sub>s \<Longrightarrow>
+       b \<notin> [vs]\<^sub>s \<Longrightarrow> lookup G a = Some x2a \<Longrightarrow> b \<in> [x2a]\<^sub>s" for a b x2 x2a
+    by (auto intro: case_split[of "a = u"] simp add: set_ops.set_union)
+  have b: "\<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset \<Longrightarrow>
+       lookup G u = Some x2 \<Longrightarrow>
+       b \<in> [case if a = u then Some (x2 \<union>\<^sub>G vs) else lookup G a of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset]\<^sub>s \<Longrightarrow>
+       b \<notin> [vs]\<^sub>s \<Longrightarrow> \<exists>y. lookup G a = Some y" for a b x2 x2a 
+    using Graph.vset.emptyD(1) domIff by (fastforce intro: case_split[of "a = u"])
+  have c: "b \<in> [case if a = u then Some vs else lookup G a of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset]\<^sub>s \<Longrightarrow>
+       b \<notin> [vs]\<^sub>s \<Longrightarrow> lookup G a = Some x2 \<Longrightarrow> b \<in> [x2]\<^sub>s" for a b x2
+     by (fastforce intro: case_split[of "a = u"])
+  have d: "\<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset \<Longrightarrow>
+           b \<in> [case if a = u then Some vs else lookup G a of None \<Rightarrow> \<emptyset>\<^sub>N | Some vset \<Rightarrow> vset]\<^sub>s \<Longrightarrow>
+           b \<notin> [vs]\<^sub>s \<Longrightarrow> \<exists>y. lookup G a = Some y" for a b 
+    using Graph.vset.emptyD(3) domIff by (fastforce intro: case_split[of "a = u"])
+  show ?case 
+    using 1  Graph.vset.set.set_empty 
+    by(auto split: if_split option.split 
+            simp add:  add_neighbs_def Graph.digraph_abs_def 
+                      Graph.neighbourhood_def Graph.adjmap.map_update Graph.graph_inv_def
+                      Graph.vset.emptyD(3) Graph.vset.set.invar_empty
+                      Graph.vset.set.set_isin set_ops.invar_union set_ops.set_union)
+      (insert Graph.vset.emptyD(3), auto intro: a b c d)   
+qed
+end
+
+
+
+
+
+locale BFS_subprocedures =
+Pair_Graph_Sepcs_Set2 where lookup=lookup 
 for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option" +
 fixes G::"'adjmap" 
 fixes fold_vset::"('ver \<Rightarrow> 'vset \<Rightarrow> 'vset) \<Rightarrow> 'vset \<Rightarrow> 'vset \<Rightarrow> 'vset"
@@ -59,8 +122,7 @@ proof-
        "[next_frontier frontier vis]\<^sub>s =
           [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s"
     using fold_vset[OF assms(1)]
-    apply(auto simp add: next_frontier_def)
-    by metis
+    by(auto simp add: next_frontier_def) metis  
   ultimately obtain xs' where xs'_props: 
        "set xs' = [frontier]\<^sub>s"
        "[next_frontier frontier vis]\<^sub>s =
@@ -89,9 +151,7 @@ qed
 definition expand_tree::"'adjmap \<Rightarrow> 'vset \<Rightarrow> 'vset \<Rightarrow> 'adjmap" where
 "expand_tree BFS_tree frontier vis = 
    fold_adjmap 
-     (\<lambda> u nf. case (lookup G u) of None \<Rightarrow> nf
-                     | Some vs \<Rightarrow> (case (lookup nf u) of None \<Rightarrow> update u (diff vs vis) nf
-                              | Some vs' \<Rightarrow>update u (union vs' (diff vs vis)) nf)) frontier BFS_tree"
+     (\<lambda> u nf. add_neighbs nf u (diff (neighbourhood' u) vis)) frontier BFS_tree"
 
 lemma expand_tree:
      "\<lbrakk>Graph.graph_inv BFS_tree; vset_inv frontier; vset_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow> 
@@ -104,144 +164,28 @@ lemma expand_tree:
                        t_set vis)}"
 proof-
   assume assms: "Graph.graph_inv BFS_tree" "vset_inv frontier" "vset_inv vis" "Graph.graph_inv G"
-  define one_it where "one_it = (\<lambda>u nf.
-          case lookup G u of None \<Rightarrow> nf
-          | Some vs \<Rightarrow>
-              case lookup nf u of None \<Rightarrow> update u (vs -\<^sub>G vis) nf
-              | Some vs' \<Rightarrow> update u (vs' \<union>\<^sub>G (vs -\<^sub>G vis)) nf)"
   obtain xs where xs_prop:
-    "set xs = [frontier]\<^sub>s" "expand_tree BFS_tree frontier vis = foldr one_it xs BFS_tree"
+    "set xs = [frontier]\<^sub>s" "expand_tree BFS_tree frontier vis = foldr (\<lambda> u nf. add_neighbs nf u (diff (neighbourhood' u) vis)) xs BFS_tree"
     using fold_adjmap[OF assms(2), of _ BFS_tree]
-    by (auto simp add: expand_tree_def one_it_def)
-  have goal1_general:"Graph.graph_inv (foldr one_it xs BFS_tree)" for xs
+    by (auto simp add: expand_tree_def)
+  have goal1_general:"Graph.graph_inv (foldr  (\<lambda> u nf. add_neighbs nf u (diff (neighbourhood' u) vis))
+                          xs BFS_tree)" for xs
   proof(induction xs)
     case Nil
     then show ?case using assms(1) by simp
   next
     case (Cons a xs)
-    have helper1: "\<And>v vset.
-       lookup (foldr one_it xs BFS_tree) a = None \<Longrightarrow>
-       lookup G a = Some x2 \<Longrightarrow>
-       (if v = a then Some (x2 -\<^sub>G vis) else lookup (foldr one_it xs BFS_tree) v) = Some vset \<Longrightarrow>
-       vset_inv vset" for x2 
-      by (metis Graph.graph_invE assms(3) assms(4) local.Cons option.inject set_ops.invar_diff)
-    have helper2: "lookup (foldr one_it xs BFS_tree) a = None \<Longrightarrow>
-          lookup G a = Some x2 \<Longrightarrow> Graph.graph_inv (update a (x2 -\<^sub>G vis) (foldr one_it xs BFS_tree))"
-      for x2
-      by(auto simp add: Graph.graph_inv_def Cons[simplified  Graph.graph_inv_def]  Graph.adj.map_update intro!: Graph.adj.invar_update helper1)
-    have helper3: "lookup (foldr one_it xs BFS_tree) a = Some x2a \<Longrightarrow>
-       lookup G a = Some x2 \<Longrightarrow>
-       lookup (update a (x2a \<union>\<^sub>G (x2 -\<^sub>G vis)) (foldr one_it xs BFS_tree)) v = Some neighb \<Longrightarrow> vset_inv neighb"
-      for x2 x2a v neighb
-      apply(rule Graph.graph_invE[OF Cons] )
-      apply(rule Graph.graph_invE[OF assms(4)] )
-      apply(subst (asm)  Graph.adj.map_update) 
-      by(simp, rule  case_split[of "v = a"], auto simp add:  assms(3) assms(4) Cons  set_ops.invar_diff set_ops.invar_union)
-    have helper4:"lookup (foldr one_it xs BFS_tree) a = Some x2a \<Longrightarrow>
-       lookup G a = Some x2 \<Longrightarrow> Graph.graph_inv (update a (x2a \<union>\<^sub>G (x2 -\<^sub>G vis)) (foldr one_it xs BFS_tree))"
-      for x2 x2a
-      using Graph.adj.invar_update local.Cons 
-      by(auto intro: helper3 simp add:  Graph.graph_inv_def Cons[simplified  Graph.graph_inv_def])
-    show ?case 
-      using Cons 
-      by(simp, subst one_it_def)(auto intro: helper2 helper4 split: option.split )
+    show ?case
+      by (auto intro: Cons(1) add_neighbs_inv  simp add: assms(3) assms(4))
   qed
   thus " Graph.graph_inv (expand_tree BFS_tree frontier vis)"
     by (simp add: xs_prop(2))
-  have one_it_graph_abs:"Graph.graph_inv T \<Longrightarrow> [one_it u T]\<^sub>g = [T]\<^sub>g \<union> {(u, v) |v. v \<in> neighbourhood [G]\<^sub>g u - [vis]\<^sub>s}" for u T
-  proof(goal_cases)
-    case 1
-    note one=this
-    show ?case
-    proof(cases "lookup G u")
-      case None
-      then show ?thesis 
-        using  Graph.vset.emptyD(1) 
-        by(simp add: one_it_def Graph.neighbourhood_abs[OF assms(4), symmetric] Graph.neighbourhood_def) 
-    next
-      case (Some vs)
-      note some=this
-      hence vs_inv:"vset_inv vs" 
-        using assms(4) by auto
-      show ?thesis 
-      proof(cases "lookup T u")
-        case None
-        have helper:"{(ua, v). v \<in>\<^sub>G (case lookup (update u (vs -\<^sub>G vis) T) ua of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)} =
-    {(u, v). v \<in>\<^sub>G (case lookup T u of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)} \<union>
-    {(u, v) |v. v \<in>\<^sub>G vs \<and> v \<notin> [vis]\<^sub>s}"
-        proof(rule, all \<open>rule\<close>, goal_cases)
-          case (1 e)
-          then obtain x y where xy_prop: "e = (x,y)" 
-              "y \<in>\<^sub>G (case lookup (update u (vs -\<^sub>G vis) T) x of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)"
-            by auto
-          then show ?case
-            using one 
-            by (subst (asm) Graph.adj.map_update) (auto intro: case_split[of "u = x"]split: option.split simp add: Graph.vset.set.set_isin vs_inv assms(3) set_ops.invar_diff set_ops.set_diff)
-        next
-          case (2 e)
-          show ?case 
-          proof(cases rule: UnE[OF 2])
-            case 1
-            then obtain x y where "e = (x,y)" "y \<in>\<^sub>G (case lookup T x of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)" by auto
-            then show ?thesis 
-              using one 
-              by (subst Graph.adj.map_update)(auto simp add: Graph.vset.set.invar_empty Graph.vset.set.set_empty Graph.vset.set.set_isin None)
-          next
-            case 2
-            then obtain y where "e = (u,y)" "y \<in>\<^sub>G vs \<and> y \<notin> [vis]\<^sub>s" by auto
-            then show ?thesis
-              using one 
-              by (subst Graph.adj.map_update)(auto simp add: Graph.vset.set.set_isin assms(3) set_ops.invar_diff set_ops.set_diff vs_inv)
-          qed
-        qed 
-        show ?thesis
-          using helper 
-          by(auto simp add: one_it_def None Graph.digraph_abs_def Graph.neighbourhood_def some neighbourhood_def split: option.split)
-      next
-        case (Some vs')
-        have "{(ua, y).
-     isin (case lookup (update u (vs' \<union>\<^sub>G (vs -\<^sub>G vis)) T) ua of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb) y} =
-    {(u, y). isin (case lookup T u of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb) y} \<union>
-    {(u, v) |v. v \<in>\<^sub>G vs \<and> v \<notin> [vis]\<^sub>s}"
-        proof(rule, all\<open>rule\<close>, goal_cases)
-          case (1 e)
-           then obtain x y where "e= (x,y)" "y \<in>\<^sub>G (case lookup (update u (vs' \<union>\<^sub>G (vs -\<^sub>G vis)) T) x of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)"
-             by blast
-           thus ?case
-             apply(subst (asm) Graph.adj.map_update)
-             using one apply fast
-             using Graph.vset.set.set_isin Some assms(3) one set_ops.invar_diff 
-             set_ops.invar_union set_ops.set_diff set_ops.set_union vs_inv  
-             by(cases "u = x", all \<open>cases "lookup T x"\<close>) auto
-         next
-           case (2 e)
-           show ?case
-           proof(cases rule: UnE[OF 2])
-             case 1
-             then obtain x y where "e = (x,y)" "y \<in>\<^sub>G (case lookup T x of None \<Rightarrow> \<emptyset>\<^sub>N | Some neighb \<Rightarrow> neighb)"
-               by auto
-             moreover hence "lookup T x \<noteq> None" 
-               using Graph.vset.set.invar_empty Graph.vset.set.set_empty Graph.vset.set.set_isin by fastforce
-            ultimately show ?thesis 
-              using Graph.vset.set.set_isin Some assms(3) 
-                    one set_ops.invar_diff set_ops.invar_union set_ops.set_union vs_inv 
-              by (subst  Graph.adj.map_update) auto
-          next
-            case 2
-            thus ?thesis
-              using Graph.vset.set.set_isin Some assms(3) one set_ops.invar_diff 
-                    set_ops.invar_union set_ops.set_diff set_ops.set_union vs_inv 
-              by (subst  Graph.adj.map_update)auto
-          qed
-        qed
-        then show ?thesis
-          by(simp add: one_it_def Some some Graph.digraph_abs_def Graph.neighbourhood_def neighbourhood_def)
-      qed
-    qed
-  qed
+  have one_it_graph_abs:"Graph.graph_inv T \<Longrightarrow> 
+                 [(\<lambda> u nf. add_neighbs nf u (diff (neighbourhood' u) vis)) u T]\<^sub>g 
+               = [T]\<^sub>g \<union> {(u, v) |v. v \<in> neighbourhood [G]\<^sub>g u - [vis]\<^sub>s}" for u T
+    by(auto simp add: assms(3) assms(4) add_neighbs_digraph_abs)
 
-
-  have "[foldr one_it xs BFS_tree]\<^sub>g = [BFS_tree]\<^sub>g \<union> {(u, v) |u v. u \<in> [frontier]\<^sub>s \<and> v \<in> neighbourhood [G]\<^sub>g u - [vis]\<^sub>s}"
+  have "[foldr (\<lambda> u nf. add_neighbs nf u (diff (neighbourhood' u) vis)) xs BFS_tree]\<^sub>g = [BFS_tree]\<^sub>g \<union> {(u, v) |u v. u \<in> [frontier]\<^sub>s \<and> v \<in> neighbourhood [G]\<^sub>g u - [vis]\<^sub>s}"
     using xs_prop(1) assms(2)
   proof(induction xs arbitrary: frontier)
     case Nil
@@ -251,7 +195,7 @@ proof-
     show ?case 
     proof(cases "a \<in> set xs")
       case True
-      have heper: "[foldr one_it xs BFS_tree]\<^sub>g \<union> {(a, v) |v. v \<in> neighbourhood [G]\<^sub>g a - [vis]\<^sub>s} =
+      have heper: "[foldr (\<lambda> u nf. add_neighbs nf u (diff (neighbourhood' u) vis)) xs BFS_tree]\<^sub>g \<union> {(a, v) |v. v \<in> neighbourhood [G]\<^sub>g a - [vis]\<^sub>s} =
     [BFS_tree]\<^sub>g \<union> {(u, v). u \<in> [frontier]\<^sub>s \<and> v \<in> neighbourhood [G]\<^sub>g u \<and> v \<notin> [vis]\<^sub>s}"
       using Cons.prems(1) True 
       by (subst Cons(1)[of frontier])(auto simp add: Cons.prems(2))

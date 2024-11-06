@@ -67,7 +67,7 @@ context
            not_blocked_map.automation
 begin
 
-definition "insert_undirected_edge_impl u v forst \<equiv> (let neighbs_u = the (lookup forst u);
+definition "insert_undirected_edge_impl u v forst = (let neighbs_u = the (lookup forst u);
                                                     neighbs_v = the (lookup forst v);
                                                     neighb_u_new = neighb_insert v neighbs_u;
                                                     neighb_v_new = neighb_insert u neighbs_v
@@ -467,8 +467,8 @@ lemmas abstractE' = abstractE_extensive[OF refl refl refl refl refl refl refl re
 find_theorems "(_ = _) = (_ = _)"
 
 
-definition "implementation_invar state_impl \<equiv> 
-            adj_inv (\<FF>_impl state_impl) 
+definition "implementation_invar state_impl =
+            (adj_inv (\<FF>_impl state_impl) 
           \<and> (\<forall> x. neighb_inv (the (lookup (\<FF>_impl state_impl) x))) 
           \<and> set_invar (actives_impl state_impl)
           \<and> \<E> = flow_domain (current_flow_impl state_impl)
@@ -480,7 +480,7 @@ definition "implementation_invar state_impl \<equiv>
           \<and> \<V> = rep_comp_domain (representative_comp_card_impl state_impl)
           \<and> rep_comp_invar (representative_comp_card_impl state_impl)
           \<and> not_blocked_invar (not_blocked_impl state_impl)
-          \<and> \<E> = not_blocked_dom (not_blocked_impl state_impl)"
+          \<and> \<E> = not_blocked_dom (not_blocked_impl state_impl))"
 
 lemma implementation_invarI[simp]:
      "adj_inv (\<FF>_impl state_impl) 
@@ -1616,18 +1616,28 @@ define f_impl where "f_impl = current_flow_impl state_impl"
       by(auto  simp add: abstractE'  simp del: abstractE)
   next
     case 4
+    have helper: "oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<Longrightarrow>
+          xa \<in> set P \<Longrightarrow>
+          to_set (actives state) \<subseteq> flow_domain f_impl \<Longrightarrow>
+          \<F> state \<subseteq> flow_domain f_impl \<Longrightarrow> \<exists>y. flow_lookup f_impl (oedge xa) = Some y " for xa
+      by blast
     then show ?case 
-      apply(subst state'_impl_def, simp, subst f'_impl_def)
-      apply(subst conjunct1[OF augment_edges_impl_domain_invar])
       using in_F_and_actives[simplified  targets_coincide(1) sym[OF set_map]] alloweds_in_E
-            E_in_f_dom flow_invar_f apply auto by blast
+            E_in_f_dom flow_invar_f 
+      by(subst state'_impl_def, simp, subst f'_impl_def,subst conjunct1[OF augment_edges_impl_domain_invar])
+        (auto intro: helper)
   next
     case 5
-    then show ?case 
-      apply(subst state'_impl_def, simp, subst f'_impl_def)
-      apply(subst conjunct2[OF augment_edges_impl_domain_invar])
+    have helper: "oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<Longrightarrow>
+          xa \<in> set P \<Longrightarrow>
+          to_set (actives state) \<subseteq> flow_domain f_impl \<Longrightarrow>
+          \<F> state \<subseteq> flow_domain f_impl \<Longrightarrow> \<exists>y. flow_lookup f_impl (oedge xa) = Some y" for xa
+      by blast
+     show ?case 
       using in_F_and_actives[simplified  targets_coincide(1) sym[OF set_map]] alloweds_in_E
-            E_in_f_dom flow_invar_f apply auto by blast
+            E_in_f_dom flow_invar_f 
+      by (subst state'_impl_def, simp, subst f'_impl_def,subst conjunct2[OF augment_edges_impl_domain_invar])
+         (auto  intro: helper)
   next
     case 6
     then show ?case
@@ -2292,7 +2302,7 @@ begin
 
 definition "orlins_impl_ret state = state"
 
-definition "orlins_upd_impl state \<equiv>
+definition "orlins_upd_impl state =
                      (let f = current_flow_impl state;
                       b = balance_impl state;
                       \<gamma> = current_\<gamma>_impl state;
@@ -2541,12 +2551,12 @@ proof(induction arbitrary: state_impl rule: orlins_induct[OF assms(1)])
       apply(subst orlins.psimps[OF IH(1)])
       apply(subst if_not_P[of "_ = _"], simp add: ret_notyetterm IH(3))+
       apply(subst Let_def)+
-      apply(subst symmetric[OF orlins_upd_def[simplified Let_def]])
-      apply(subst symmetric[OF orlins_upd_impl_def[simplified Let_def]])
+      apply(subst sym[OF orlins_upd_def[simplified Let_def]])
+      apply(subst sym[OF orlins_upd_impl_def[simplified Let_def]])
       apply(subst (2) orlins_impl.simps)
       apply(subst if_not_P[of "_ = _"], simp add: ret_notyetterm IH(3))+
       apply(subst Let_def)+
-      apply(subst symmetric[OF orlins_upd_impl_def[simplified Let_def]])
+      apply(subst sym[OF orlins_upd_impl_def[simplified Let_def]])
       apply(rule IH(2))
       using IH(3-) 3 ret_notyetterm
       by(auto intro: IH(2)[OF 3] aux_invar_pres_orlins_upd_step invar_gamma_pres_orlins_one_step'

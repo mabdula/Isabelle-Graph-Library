@@ -30,16 +30,12 @@ and neighbourhood=G.neighbourhood
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
                      (7,2), (7,4), (4,3), (3,4), (3,3), (9, 8), (8, 1), (4,5), (5,10)]"
 
-definition "vertices = remdups (map prod.fst edges @ map prod.snd edges)"
-
-definition "nbs v = foldr (\<lambda> x tree. insert x tree) (remdups (map prod.snd (filter (\<lambda> e. prod.fst e = v) edges))) Leaf"
-
-definition "G = foldr (\<lambda> x tree. update x (nbs x) tree) vertices  empty"
+definition "G = a_graph edges"
 
 lemmas neighbourhood_def[unfolded G.neighbourhood_def, code]
 
 value edges
-value vertices
+value "vertices edges"
 value G
 value "neighbourhood G"
 value "dfs_initial_state 1"

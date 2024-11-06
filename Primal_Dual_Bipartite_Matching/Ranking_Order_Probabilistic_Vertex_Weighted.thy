@@ -27,26 +27,26 @@ abbreviation F :: real where
   "F \<equiv> 1 - exp(-1)"
 
 definition ranking_prob :: "'a graph measure" where
-  "ranking_prob \<equiv> do {
+  "ranking_prob = ( do {
     Y \<leftarrow> \<Y>;
     let r = weighted_linorder_from_keys L v g Y;
     return (count_space {M. M \<subseteq> G}) (ranking r G \<pi>)
-  }"
+  })"
 
-definition "max_weight \<equiv> if L = {} then 0 else Max (v ` L)"
+definition "max_weight = ( if L = {} then 0 else Max (v ` L))"
 
 definition dual_sol :: "('a \<Rightarrow> real) \<Rightarrow> 'a graph \<Rightarrow> real vec" where
-  "dual_sol Y M \<equiv> vec n (\<lambda>k.
+  "dual_sol Y M = (vec n (\<lambda>k.
     if Vs_enum_inv k \<in> Vs M
     then
       if k < card L
       then v (Vs_enum_inv k) * (g \<circ> Y) (Vs_enum_inv k) / F
       else v (THE l. {l, Vs_enum_inv k} \<in> M) * (1 - (g \<circ> Y) (THE l. {l, Vs_enum_inv k} \<in> M)) / F
     else 0
-  )"
+  ))"
 
 definition y\<^sub>c :: "('a \<Rightarrow> real) \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> real" where
-  "y\<^sub>c Y js i j \<equiv>
+  "y\<^sub>c Y js i j = (
     if j \<in> Vs (ranking (weighted_linorder_from_keys L v g Y) (G \<setminus> {i}) js)
     then
       let i' = (THE i'. {i', j} \<in> ranking (weighted_linorder_from_keys L v g Y) (G \<setminus> {i}) js) in
@@ -54,7 +54,7 @@ definition y\<^sub>c :: "('a \<Rightarrow> real) \<Rightarrow> 'a list \<Rightar
       if 1 - v i' * (1 - g (Y i')) / v i > exp(-1)
       then ln (1 - v i' * (1 - g (Y i')) / v i) + 1
       else 0
-    else 1"
+    else 1)"
 
 lemma g_less_eq_OneI: "0 \<le> x \<Longrightarrow> x \<le> 1 \<Longrightarrow> g x \<le> 1"
   by auto
@@ -1568,10 +1568,10 @@ locale wf_ranking_order_prob = bipartite_vertex_priorities +
   assumes perm: "\<pi> \<in> permutations_of_set R"
 begin
 
-definition "ranking_prob_discrete \<equiv> do {
+definition "ranking_prob_discrete = (do {
     r \<leftarrow> uniform_measure (count_space (preorders_on L)) (linorders_on L);
     return (count_space {M. M \<subseteq> G}) (ranking r G \<pi>)
-  }"
+  })"
 
 abbreviation "v \<equiv> \<lambda>_. 1"
 

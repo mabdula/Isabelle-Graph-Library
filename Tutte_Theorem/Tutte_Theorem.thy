@@ -3,10 +3,10 @@ theory Tutte_Theorem
 begin
 
 definition tutte_condition where
-  "tutte_condition G \<equiv> \<forall> X \<subseteq> Vs G. card (odd_comps_in_diff G X) \<le> card X"
+  "tutte_condition G = ( \<forall> X \<subseteq> Vs G. card (odd_comps_in_diff G X) \<le> card X)"
 
 definition comp_out where 
-  "comp_out G C X \<equiv> {e. e \<in> G \<and> (\<exists> x y. e = {x,y} \<and> y \<in> C \<and> x \<in> X)}"
+  "comp_out G C X = {e. e \<in> G \<and> (\<exists> x y. e = {x,y} \<and> y \<in> C \<and> x \<in> X)}"
 
 lemma tutte_condition_member[iff?]: "tutte_condition G \<longleftrightarrow>
   (\<forall> X \<subseteq> Vs G. card (odd_comps_in_diff G X) \<le> card X)"
@@ -249,7 +249,7 @@ lemma odd_comps_in_diff_connected:
   by (smt (verit, best) Collect_empty_eq assms(1) assms(2) assms(3) comp_out_def insert_commute)
 
 definition barrier where
-  "barrier G X \<equiv> X \<noteq> {} \<and> card (odd_comps_in_diff G X) = card X"
+  "barrier G X = ( X \<noteq> {} \<and> card (odd_comps_in_diff G X) = card X)"
 
 lemma diff_components_finite:
   assumes "graph_invar G"

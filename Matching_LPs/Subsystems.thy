@@ -5,7 +5,7 @@ theory Subsystems
 begin 
 
 definition sub_system where
-  "sub_system A b I \<equiv> (submatrix A I UNIV,  vec_of_list (nths (list_of_vec b) I))"
+  "sub_system A b I = (submatrix A I UNIV,  vec_of_list (nths (list_of_vec b) I))"
 
 lemma sub_system_fst:
   shows "fst (sub_system A b I) = submatrix A I UNIV" 

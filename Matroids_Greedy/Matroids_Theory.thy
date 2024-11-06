@@ -273,7 +273,7 @@ subsubsection \<open>Rank quotient definition\<close>
 (* Note: We cannot use Fract since Fract 0 0 evaluates to 0, when it should evaluate to 1, since
 an equal numerator and denominator in the rank quotient expression should yield a value of 1 *)
 definition rank_quotient :: "rat" where
-  "rank_quotient \<equiv> Min {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+  "rank_quotient = Min {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
 
 
 subsection \<open>Proposition 13.7\<close>
@@ -2167,7 +2167,7 @@ subsection \<open>Definition 13.13\<close>
 subsubsection \<open>Dual definition\<close>
 
 definition dual where 
-  "dual E indep \<equiv> (\<lambda> X. X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> (X \<inter> B = {})))"
+  "dual E indep = (\<lambda> X. X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> (X \<inter> B = {})))"
 
 subsubsection \<open>Additional lemma\<close>
 

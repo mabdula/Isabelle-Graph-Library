@@ -10,7 +10,7 @@ proof(goal_cases)
   case assms: 1
 
   define property 
-       where "property xs \<equiv>
+       where "property xs =
                 (\<forall>xs2 xs1 x. (xs = xs1 @ [x] @ xs2 \<and> P1 x) \<longrightarrow>
                    (\<exists>ys1 y ys2. x#xs2 = ys1 @ [y] @ ys2 \<and> P2 y))"
        for xs

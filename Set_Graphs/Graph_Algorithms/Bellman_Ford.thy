@@ -67,7 +67,7 @@ proof(goal_cases)
     by (auto intro!: 1[of p' ys q'] Max_ge[OF finiteset, simplified ys_prop(1)[symmetric]] )
 qed
 
-definition "backward_determ E \<equiv> (\<forall> u v w. ((u, v) \<in> E \<and> (w, v) \<in> E) \<longrightarrow> u = w)"
+definition "backward_determ E = (\<forall> u v w. ((u, v) \<in> E \<and> (w, v) \<in> E) \<longrightarrow> u = w)"
 
 definition "no_cycle E = (\<nexists> p v. closed_vwalk_bet E p v)"
 
@@ -1206,21 +1206,6 @@ proof(induction l)
     by (auto simp add: subsetI)
 qed (simp add: invar_lemmas)
 
-(*If s is reachable by iterating the predfunction, then termination, result is also distinct
-
-maybe use while combinator
-
-new invar: s is reachable by iterating the predecessor function
-*)
-(*
-definition  "jth_pred connections v j = compow j (\<lambda> w. the (fst (the (connection_lookup connections w)))) v"
-*)(*
-definition "invar_pred_acyc  connections = 
-(\<forall> v \<in> dom (connection_lookup connections). 
-(\<nexists> i. i > 0 \<and> jth_pred connections v i = v
-\<and> (\<forall> j < i.(fst (the (connection_lookup connections (jth_pred connections v j)))) \<noteq> None )))"
-*)
-
 definition "pred_graph connections =
             {((the (fst (the (connection_lookup connections v)))), v) |
                v. v \<in> dom (connection_lookup connections) 
@@ -1278,13 +1263,6 @@ proof(induction arbitrary:  acc bcc rule: search_rev_path.pinduct[OF assms])
     apply(subst (2) search_rev_path_exec.simps)
     by auto
 qed
-
-context 
-  assumes nexistence_of_negative_cycles:"\<nexists> c. weight c < 0 \<and> hd c = last c"
-begin
-
-lemma pred_acyc_init:"invar_pred_acyc (bellman_ford_init s)"
-  by(auto simp add: bellman_ford_init_is(1) invar_pred_acyc_def dom_def pred_graph_def not_vwalk_bet_empty)
 
 lemma weight_append_last: "weight (xs@[u,v]) = weight (xs@[u]) +edge_costs u v"
   apply(induction xs, simp)
@@ -1345,6 +1323,13 @@ lemma unused_edge_vwalk: "Vwalk.vwalk E p  \<Longrightarrow>e \<notin> set (edge
 lemma unused_edge_vwalk_bet: "Vwalk.vwalk_bet E u p v  \<Longrightarrow>e \<notin> set (edges_of_vwalk p) 
 \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk_bet(E-{e}) u p v"
   by (metis unused_edge_vwalk vwalk_bet_def)
+
+context 
+  assumes nexistence_of_negative_cycles:"\<nexists> c. weight c < 0 \<and> hd c = last c"
+begin
+
+lemma pred_acyc_init:"invar_pred_acyc (bellman_ford_init s)"
+  by(auto simp add: bellman_ford_init_is(1) invar_pred_acyc_def dom_def pred_graph_def not_vwalk_bet_empty)
 
 lemma relax_invar_pred_acyc_pres:
   assumes "invar_pred_acyc connections" "connection_invar connections"
@@ -1482,7 +1467,6 @@ moreover have "p1 = [] \<Longrightarrow> p2= b#pp2 \<Longrightarrow> vwalk_bet (
     hence "snd (the (connection_lookup connections u))
             > snd (the (connection_lookup connections u)) + edge_costs u v + weight r"
       using True 
-      apply(auto simp add: algebra_simps)
       by (smt (verit, del_insts) MInfty_eq_minfinity add.commute weight_not_MInfty
           ereal_add_le_add_iff2 ereal_plus_eq_PInfty nless_le order.strict_trans2)
     hence weight_sum:"edge_costs u v + weight r < 0"
@@ -2113,17 +2097,7 @@ theorem search_rev_path_dom_bellman_ford:
           "fst (the (connection_lookup (local.bellman_ford l (bellman_ford_init s)) v)) \<noteq> None"
     shows "search_rev_path_dom (s, (bellman_ford l (bellman_ford_init s)), v)"
   using assms(1) assms(2) s_compow_reachble_term s_reachbale_bellman_ford by blast
-(*
-corollary search_rev_path_dom_bellman_ford_always:
-  assumes "v \<in> set vs" "s \<in> set vs"
-    shows "search_rev_path_dom (s, (bellman_ford l (bellman_ford_init s)), v)"
-  apply(cases "s = v")
-  subgoal
-    by(auto intro: search_rev_path.domintros)
-  apply(rule search_rev_path_dom_bellman_ford)
-  using assms apply simp
-  find_theorems None connection_lookup
-*)
+
 lemma search_rev_path_is_pred_graph:
   assumes "connections = bellman_ford (length vs - 1) (bellman_ford_init s)"
           "v \<in> set vs" "v \<noteq> s" "s \<in> set vs"
@@ -2394,10 +2368,7 @@ proof(induction l arbitrary: s t xs rule: less_induct)
       by simp
     moreover obtain ys where ys:"s # ys @ [t] = as@[x]@cs"
       using dist_split less.prems(2) 
-       apply(cases cs, all \<open>cases bs\<close>,  all \<open>cases as\<close>)
-       apply auto
-       apply (metis append_eq_Cons_conv list.inject append.assoc append_butlast_last_id last.simps last_append list.distinct(1))+
-      done    
+       by(cases cs, all \<open>cases bs\<close>,  all \<open>cases as\<close>)(auto simp add: snoc_eq_iff_butlast)
     moreover have "length (s # ys @ [t])< length  (s # xs @ [t])" 
       using ys dist_split  by simp
     moreover hence "length ys < length xs" by simp

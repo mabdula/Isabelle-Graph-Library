@@ -32,7 +32,7 @@ typedef 'a mat = "{(nr, nc, mk_mat nr nc f) | nr nc f :: nat \<times> nat \<Righ
 *)
 definition
   one_vec :: "nat \<Rightarrow> 'a :: one vec" ("1\<^sub>v")
-  where "1\<^sub>v n \<equiv> vec n (\<lambda> i. 1)"
+  where "1\<^sub>v n = vec n (\<lambda> i. 1)"
 
 lemma one_carrier_vec[simp]: "1\<^sub>v n \<in> carrier_vec n"
   unfolding one_vec_def carrier_vec_def by auto
@@ -56,12 +56,12 @@ context gram_schmidt
 begin
 
 definition support_hyp where
-  "support_hyp P \<alpha> \<beta> \<equiv> (\<beta> = Maximum { \<alpha> \<bullet> x | x. x \<in> P}) 
+  "support_hyp P \<alpha> \<beta> =( (\<beta> = Maximum { \<alpha> \<bullet> x | x. x \<in> P}) 
                         \<and> has_Maximum { \<alpha> \<bullet> x | x. x \<in> P} 
-                        \<and> \<alpha> \<in> carrier_vec n"
+                        \<and> \<alpha> \<in> carrier_vec n)"
 
 definition valid_ineq where
-  "valid_ineq P \<alpha> \<beta> \<equiv> (\<forall>x \<in> P. \<alpha> \<bullet> x \<le> \<beta>) \<and> \<alpha> \<in> carrier_vec n" 
+  "valid_ineq P \<alpha> \<beta> =( (\<forall>x \<in> P. \<alpha> \<bullet> x \<le> \<beta>) \<and> \<alpha> \<in> carrier_vec n)" 
 
 lemma suport_hypE:
   "support_hyp P \<alpha> \<beta> \<Longrightarrow>
@@ -142,7 +142,7 @@ proof-
 qed
 
 definition face :: "'a vec set \<Rightarrow> 'a vec set \<Rightarrow> bool" where
-  "face P F \<equiv> P \<noteq> {} \<and> (\<exists> \<alpha> \<beta>. F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>} \<and> support_hyp P \<alpha> \<beta> )"
+  "face P F = ( P \<noteq> {} \<and> (\<exists> \<alpha> \<beta>. F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>} \<and> support_hyp P \<alpha> \<beta> ))"
 
 lemma faceE[elim]:
 "face P F \<Longrightarrow>
@@ -564,7 +564,7 @@ text \<open>Minimal Faces\<close>
 text \<open>Minimal faces are faces that doesn't contain any other face. They are affine spaces\<close>
 
 definition min_face where
-  "min_face P F \<equiv> face P F \<and> (\<nexists> F'. F' \<subset> F \<and> face P F')"
+  "min_face P F = (face P F \<and> (\<nexists> F'. F' \<subset> F \<and> face P F'))"
 
 lemma min_face_elim[elim]:
   assumes "min_face P F" 

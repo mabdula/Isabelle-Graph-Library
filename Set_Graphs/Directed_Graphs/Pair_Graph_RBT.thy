@@ -3,7 +3,7 @@ imports Pair_Graph_Specs "HOL-Data_Structures.RBT_Set" "HOL-Data_Structures.RBT_
        "Verified_SAT_Based_AI_Planning.Set2_Join_RBT"
 begin
 
-definition "vset_inv \<equiv>  (\<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
+definition "vset_inv =  (\<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
 
 fun sel where
 "sel Leaf = undefined" |
@@ -38,5 +38,13 @@ fun fold_rbt where
 
 lemma fold_rbt_is_foldr_of_preorder:"fold_rbt f T acc = foldr f (map fst (preorder T)) acc "
   by(induction f T acc arbitrary: rule: fold_rbt.induct) auto
+
+text \<open>We produce an adjacency map representing a graph from a list of edges.\<close>
+
+definition "vertices edges = remdups (map prod.fst edges @ map prod.snd edges)"
+
+definition "nbs edges v = foldr (\<lambda> x tree. insert x tree) (remdups (map prod.snd (filter (\<lambda> e. prod.fst e = v) edges))) Leaf"
+
+definition "a_graph edges = foldr (\<lambda> x tree. update x (nbs edges x) tree) (vertices edges) empty"
 
 end

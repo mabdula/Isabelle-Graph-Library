@@ -20,11 +20,11 @@ locale choose =
 begin
 
 definition
-  "sel_edge G \<equiv> 
+  "sel_edge G =( 
      let v1 = sel (Vs G);
          v2 = sel (neighbourhood G v1)
      in
-        {v1,v2}"
+        {v1,v2})"
 
 lemma sel_edge: 
   assumes "graph_invar G" "G \<noteq> {}"
@@ -49,11 +49,11 @@ proof-
 qed
 
 definition
-  "sel_pair (dG:: ('a \<times> 'a) set) \<equiv> 
+  "sel_pair (dG:: ('a \<times> 'a) set) =( 
      let v1 = sel (fst ` dG);
          v2 = sel (Pair_Graph.neighbourhood dG v1)
      in
-        (v1,v2)"
+        (v1,v2))"
 end
 
 lemma dir_neighbourhood_nempty: 

@@ -18,7 +18,7 @@ disregard residual capacities for now.
 \<close>
 
 definition prepath::" ('edge_type Redge) list \<Rightarrow> bool" where
-       "prepath p  \<equiv> (awalk UNIV (fstv (hd p)) (map to_vertex_pair p) (sndv (last p)) 
+       "prepath p  = (awalk UNIV (fstv (hd p)) (map to_vertex_pair p) (sndv (last p)) 
                              \<and> p \<noteq> [] )"
 
 text \<open>As for residual reachability, we will frequently use some inductive reasoning.
@@ -202,7 +202,7 @@ subsection \<open>Augmenting Paths\<close>
 text \<open>In addition to $prepath$, an \textit{augmenting path} requires strictly positive residual capacities.\<close>
 
 definition augpath::"('edge_type \<Rightarrow> real)   \<Rightarrow> ('edge_type Redge) list \<Rightarrow> bool" where
-       "augpath f p  \<equiv> (prepath p \<and> Rcap f (set p) > 0 )"
+       "augpath f p  = (prepath p \<and> Rcap f (set p) > 0 )"
 
 text \<open>Again, some technical lemmas.\<close>
 
@@ -969,10 +969,7 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
   proof(cases rule: redge_pair_cases, goal_cases)
     case (1  ee)
     then show ?thesis 
-      apply auto
-      apply(rule e_not_in_es_flow_not_change[of es "ee"  "f" \<gamma> ])
-      subgoal for ea by(auto intro: redge_pair_cases[of ea])        
-      done
+      by(auto intro: redge_pair_cases intro!: e_not_in_es_flow_not_change[of es "ee"  "f" \<gamma> ])        
   next
     case (2 ee)
     then show ?thesis 

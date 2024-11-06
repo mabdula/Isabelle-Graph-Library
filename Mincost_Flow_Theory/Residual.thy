@@ -122,7 +122,7 @@ definition ex::"('edge_type \<Rightarrow> real) \<Rightarrow> 'a \<Rightarrow> r
 text \<open>A circulation is a flow with zero excess everywhere.\<close>
 
 definition is_circ::"('edge_type \<Rightarrow> real) \<Rightarrow> bool" where
-"is_circ g \<equiv> (\<forall> v \<in> \<V>. ex g v = 0)"
+"is_circ g = (\<forall> v \<in> \<V>. ex g v = 0)"
 
 lemma is_circI: "(\<And> v. v \<in> \<V> \<Longrightarrow> ex g v = 0) \<Longrightarrow> is_circ g"
   by (auto simp add: is_circ_def)
@@ -150,10 +150,10 @@ text \<open>Unsurprisingly, a balance has somehow to be balanced.
       This means, that the overall sum of demands and supplies is zero.
       In fact, for invalid balances with non-zero sum no proper flow assignment to edges exists.\<close>
 
-definition "is_balance b \<equiv> (\<Sum> v \<in> \<V>. b v) = 0" 
+definition "is_balance b = ((\<Sum> v \<in> \<V>. b v) = 0)" 
 
 definition zero_balance::"('a \<Rightarrow> real) \<Rightarrow> bool" where
-"zero_balance b \<equiv> (\<forall> v \<in> \<V>. b v = 0)"
+"zero_balance b = (\<forall> v \<in> \<V>. b v = 0)"
 
 text \<open>We need to talk about paths in the graph alongside which a flow is
  non-negative.\<close>
@@ -564,7 +564,7 @@ For this we need naked pairs without wrapping constructors.
 \<close>
 
 definition resreach::"('edge_type \<Rightarrow> real)   \<Rightarrow>'a \<Rightarrow> 'a \<Rightarrow> bool" where
-       "resreach f u v \<equiv> (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
+       "resreach f u v = (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
                             \<and> Rcap f (set p) > 0 \<and> p \<noteq> [] \<and> set p \<subseteq> \<EE>)"
 
 text \<open>We will use this similarly to an inductive predicate which 

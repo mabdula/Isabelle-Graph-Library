@@ -193,13 +193,13 @@ proof-
     by auto
 qed
 
-definition "SSP_ret1 state \<equiv> state\<lparr>return := success\<rparr>"
+definition "SSP_ret1 state = state\<lparr>return := success\<rparr>"
 
-definition "SSP_ret2 state \<equiv> state \<lparr> return := failure\<rparr>"
+definition "SSP_ret2 state = state \<lparr> return := failure\<rparr>"
 
-definition "SSP_ret3 state \<equiv>  state\<lparr> return := failure\<rparr>"
+definition "SSP_ret3 state =  state\<lparr> return := failure\<rparr>"
 
-definition "SSP_upd4 state \<equiv> (let b = balance state; f = current_flow state;
+definition "SSP_upd4 state = (let b = balance state; f = current_flow state;
                                   s = the ( get_source b); 
                                   t = the (get_reachable_target f b s );
                                   P = get_min_augpath f s t;
@@ -209,7 +209,7 @@ definition "SSP_upd4 state \<equiv> (let b = balance state; f = current_flow sta
                                         if v = t then b t + \<gamma> else b v) 
                                   in (state\<lparr> current_flow := f',balance :=  b' \<rparr>))"
 
-definition "SSP_upd4' state \<equiv> (let b = balance state; f = current_flow state;
+definition "SSP_upd4' state = (let b = balance state; f = current_flow state;
                                   s = the ( get_source b); 
                                   t = the (get_reachable_target f b s );
                                   P = get_min_augpath f s t;

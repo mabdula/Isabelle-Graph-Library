@@ -81,18 +81,13 @@ begin
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
                      (7,2), (7,4), (4,3), (3,4), (3,3), (9, 8), (8, 1), (4,5), (5,10)]"
 
-definition "vertices = remdups (map prod.fst edges @ map prod.snd edges)"
-
-definition "nbs v = foldr (\<lambda> x tree. insert x tree) (remdups (map prod.snd (filter (\<lambda> e. prod.fst e = v) edges))) neighb_empty"
-
-definition "G = foldr (\<lambda> x tree. update x (nbs x) tree) vertices  empty"
+definition "G = a_graph edges"
 
 value edges
-value vertices
 value G
 value "dfs_initial_state (1::nat)"   
 value "dfs_impl G 9 (dfs_initial_state 0)"
-value "neighb_diff (nbs 1) (nbs 2)"
+value "neighb_diff (nbs edges 1) (nbs edges 2)"
 end
 
 context begin

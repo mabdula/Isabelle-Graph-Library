@@ -535,12 +535,12 @@ lemma loopB_induct:
     done
   done
 
-definition "get_source_target_path_a_cond state s t P b \<gamma> f \<equiv>
+definition "get_source_target_path_a_cond state s t P b \<gamma> f = (
              get_source_target_path_a state s t = P \<and> s \<in> \<V> \<and> t \<in> \<V> \<and>  s \<noteq> t \<and>
              aux_invar state \<and> (\<forall> e \<in> \<F> state . f e > 0)\<and> resreach f s t\<and>
              b = balance state\<and> \<gamma> = current_\<gamma> state \<and> s = get_source state \<and>
              t = get_target_for_source state s \<and> f = current_flow state  \<and>
-             loopB_call1_cond state \<and> invar_gamma state"
+             loopB_call1_cond state \<and> invar_gamma state)"
 
 lemma get_source_target_path_a_condI:
  " \<lbrakk>get_source_target_path_a state s t = P ; s \<in> \<V> ; t \<in> \<V> ;  s \<noteq> t;
@@ -551,11 +551,11 @@ lemma get_source_target_path_a_condI:
           \<Longrightarrow> get_source_target_path_a_cond state s t P b \<gamma> f"
   by(auto simp add: get_source_target_path_a_cond_def)
 
-definition "get_source_target_path_b_cond state s t P b \<gamma> f \<equiv>
-           get_source_target_path_b state s t = P \<and> s \<in> \<V> \<and> t \<in> \<V> \<and> s \<noteq> t\<and> aux_invar state \<and>
+definition "get_source_target_path_b_cond state s t P b \<gamma> f =
+           (get_source_target_path_b state s t = P \<and> s \<in> \<V> \<and> t \<in> \<V> \<and> s \<noteq> t\<and> aux_invar state \<and>
          (\<forall> e \<in> \<F> state . f e > 0)\<and> resreach f s t\<and> b = balance state\<and> \<gamma> = current_\<gamma> state \<and>
          t = get_target state \<and>  s = get_source_for_target state t \<and> f = current_flow state \<and>
-         loopB_call2_cond state \<and>  invar_gamma state"
+         loopB_call2_cond state \<and>  invar_gamma state)"
 
 lemma  get_source_target_path_b_condI:
        "\<lbrakk>get_source_target_path_b state s t = P; s \<in> \<V>; t \<in> \<V>; s \<noteq> t; aux_invar state;

@@ -59,7 +59,7 @@ qed
 
 
 
-record ('ver, 'neighb) DFS_Cycles_state = seen:: "'neighb" cycle:: bool
+record ('ver, 'vset) DFS_Cycles_state = seen:: "'vset" cycle:: bool
 
 
 named_theorems call_cond_elims
@@ -76,21 +76,21 @@ locale DFS_Cycles =
     where lookup = lookup +
  set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 
-for lookup :: "'adj \<Rightarrow> 'v \<Rightarrow> 'neighb option" +
+for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
 
-fixes G::"'adj" and V::"'neighb"
-  and dfs_aux::"'v \<Rightarrow> 'state" and seen_aux::"'state \<Rightarrow> 'neighb" and cycle_aux::"'state \<Rightarrow> bool"
+fixes G::"'adjmap" and V::"'vset"
+  and dfs_aux::"'v \<Rightarrow> 'state" and seen_aux::"'state \<Rightarrow> 'vset" and cycle_aux::"'state \<Rightarrow> bool"
 begin
 
 
-definition "DFS_Cycles_axioms \<equiv>
+definition "DFS_Cycles_axioms = (
   Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets \<and>
   vset_inv V \<and> (t_set V = dVs (Graph.digraph_abs G)) \<and>
   (\<forall>(x, y) \<in> (Graph.digraph_abs G). (y, x) \<in> Graph.digraph_abs G) \<and>
-  (\<forall>x \<in> dVs (Graph.digraph_abs G). (x, x) \<notin> Graph.digraph_abs G)"
+  (\<forall>x \<in> dVs (Graph.digraph_abs G). (x, x) \<notin> Graph.digraph_abs G))"
 
 
-definition "dfs_aux_axioms \<equiv>
+definition "dfs_aux_axioms = (
   (\<forall>s \<in> dVs (Graph.digraph_abs G). vset_inv (seen_aux (dfs_aux s))) \<and>
   (\<forall>s \<in> dVs (Graph.digraph_abs G). s \<in>  t_set (seen_aux (dfs_aux s))) \<and>
   (\<forall>s \<in> dVs (Graph.digraph_abs G). \<not>cycle_aux (dfs_aux s) \<longrightarrow>
@@ -100,7 +100,7 @@ definition "dfs_aux_axioms \<equiv>
   (\<forall>s \<in> dVs (Graph.digraph_abs G). \<forall>v \<in> t_set (seen_aux (dfs_aux s)).
     (\<exists>p. awalk (Graph.digraph_abs G) s p v)) \<and>
   (\<forall>s \<in> dVs (Graph.digraph_abs G). \<not>cycle_aux (dfs_aux s) \<longrightarrow> (\<forall>v \<in> t_set (seen_aux (dfs_aux s)). (\<forall>w \<in> dVs (Graph.digraph_abs G) - t_set (seen_aux (dfs_aux s)).
-    (\<nexists>p. awalk (Graph.digraph_abs G) v p w))))"
+    (\<nexists>p. awalk (Graph.digraph_abs G) v p w)))))"
 
 
 abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G"
@@ -108,7 +108,7 @@ abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G"
 notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
 
-function (domintros) DFS_Cycles::"('v, 'neighb) DFS_Cycles_state \<Rightarrow> ('v, 'neighb) DFS_Cycles_state" where
+function (domintros) DFS_Cycles::"('v, 'vset) DFS_Cycles_state \<Rightarrow> ('v, 'vset) DFS_Cycles_state" where
   "DFS_Cycles dfs_cycles_state = 
     (if V -\<^sub>G (seen dfs_cycles_state) \<noteq> \<emptyset>\<^sub>N
     then 
@@ -125,7 +125,7 @@ function (domintros) DFS_Cycles::"('v, 'neighb) DFS_Cycles_state \<Rightarrow> (
       dfs_cycles_state)"
   by pat_completeness auto
 
-partial_function (tailrec) DFS_Cycles_impl::"('v, 'neighb) DFS_Cycles_state \<Rightarrow> ('v, 'neighb) DFS_Cycles_state" where
+partial_function (tailrec) DFS_Cycles_impl::"('v, 'vset) DFS_Cycles_state \<Rightarrow> ('v, 'vset) DFS_Cycles_state" where
   "DFS_Cycles_impl dfs_cycles_state = 
     (if V -\<^sub>G (seen dfs_cycles_state) \<noteq> \<emptyset>\<^sub>N
     then 
@@ -273,32 +273,31 @@ proof(rule DFS_Cycles.domintros, goal_cases)
 qed
 
 
-definition "call_measure dfs_cycles_state \<equiv> card (t_set (V -\<^sub>G seen dfs_cycles_state))"
+definition "call_measure dfs_cycles_state = card (t_set (V -\<^sub>G seen dfs_cycles_state))"
 
-definition "DFS_Cycles_term_rel' \<equiv> call_measure <*mlex*> {}"
+definition "DFS_Cycles_term_rel' = call_measure <*mlex*> {}"
 
-definition "initial_state \<equiv> \<lparr>seen = \<emptyset>\<^sub>N, cycle = False\<rparr>"
+definition "initial_state = \<lparr>seen = \<emptyset>\<^sub>N, cycle = False\<rparr>"
 
 lemmas [code] = initial_state_def
 
-definition "invar_1 dfs_cycles_state \<equiv> vset_inv (seen dfs_cycles_state)"
+definition "invar_1 dfs_cycles_state = vset_inv (seen dfs_cycles_state)"
 
-definition "invar_seen dfs_cycles_state \<equiv>
+definition "invar_seen dfs_cycles_state = (
   \<forall>v \<in> t_set (seen dfs_cycles_state). \<forall>w \<in> t_set (V -\<^sub>G (seen dfs_cycles_state)).
-    ((\<nexists>p. awalk (Graph.digraph_abs G) v p w) \<and> (\<nexists>p. awalk (Graph.digraph_abs G) w p v))" 
+    ((\<nexists>p. awalk (Graph.digraph_abs G) v p w) \<and> (\<nexists>p. awalk (Graph.digraph_abs G) w p v)))" 
 
-definition "invar_seen_subset_V dfs_cycles_state \<equiv>
-  t_set (seen dfs_cycles_state) \<subseteq> t_set V"          
+definition "invar_seen_subset_V dfs_cycles_state = (t_set (seen dfs_cycles_state) \<subseteq> t_set V)"          
 
-definition "invar_cycle_false dfs_cycles_state \<equiv>
-  \<not>cycle dfs_cycles_state \<longrightarrow> (\<nexists>c. cycle' ((Graph.digraph_abs G) \<downharpoonright> (t_set (seen dfs_cycles_state))) c)"
+definition "invar_cycle_false dfs_cycles_state =
+  (\<not>cycle dfs_cycles_state \<longrightarrow> (\<nexists>c. cycle' ((Graph.digraph_abs G) \<downharpoonright> (t_set (seen dfs_cycles_state))) c))"
 
-definition "invar_cycle_true dfs_cycles_state \<equiv>
-  cycle dfs_cycles_state \<longrightarrow> (\<exists>c. cycle' (Graph.digraph_abs G) c)"
+definition "invar_cycle_true dfs_cycles_state =
+  (cycle dfs_cycles_state \<longrightarrow> (\<exists>c. cycle' (Graph.digraph_abs G) c))"
 
 
 context
-includes Graph.adj.automation Graph.vset.set.automation
+includes Graph.adjmap.automation Graph.vset.set.automation
 assumes DFS_Cycles_axioms dfs_aux_axioms
 begin
 
@@ -910,8 +909,8 @@ proof(induction rule: DFS_Cycles_induct[OF assms(1)])
     apply(rule DFS_Cycles_cases[where dfs_cycles_state = dfs_cycles_state])
     subgoal
       using IH(3-4)
-      apply (auto intro: ret_holds_intros intro!: IH(2-4) simp: DFS_Cycles_simps[OF IH(1)])
-      by (simp add: DFS_Cycles_upd1_def)
+      by (auto intro: ret_holds_intros intro!: IH(2-4) simp: DFS_Cycles_simps[OF IH(1)])
+         (simp add: DFS_Cycles_upd1_def)
     subgoal
       using IH(3-4)
       by (auto intro: ret_holds_intros intro!: IH(2-) simp: DFS_Cycles_simps[OF IH(1)] DFS_Cycles_ret2_def)
@@ -973,7 +972,7 @@ lemma in_prod_relI[intro!,termination_intros]:
   "\<lbrakk>f1 a = f1 a'; (a, a') \<in> f2 <*mlex*> r\<rbrakk> \<Longrightarrow> (a,a') \<in> (f1 <*mlex*> f2 <*mlex*> r)"
    by (simp add: mlex_iff)+
 
-definition "less_rel \<equiv> {(x::nat, y::nat). x < y}"
+definition "less_rel = {(x::nat, y::nat). x < y}"
 
 lemma wf_less_rel[intro!]: "wf less_rel"
   by(auto simp: less_rel_def wf_less)

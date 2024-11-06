@@ -71,7 +71,7 @@ lemma from_set_correct:
   unfolding from_set_def using set_correct_insert_elements set_sorted_list_of_set[OF assms]
   by blast
 
-definition "finite_sets \<equiv> (\<forall>X. finite (to_set X))"
+definition "finite_sets = (\<forall>X. finite (to_set X))"
 
 
 definition indep :: "'t \<Rightarrow> 's \<Rightarrow> bool" where
@@ -142,10 +142,10 @@ lemma finite_indep_abs_expr:
 
 
 definition indep_system_axioms where
-  "indep_system_axioms carrier indep_set \<equiv>
-    (\<forall>X. set_inv X \<longrightarrow> indep indep_set X \<longrightarrow> subseteq X carrier) \<and>
+  "indep_system_axioms carrier indep_set =
+    ((\<forall>X. set_inv X \<longrightarrow> indep indep_set X \<longrightarrow> subseteq X carrier) \<and>
     (\<exists>X. set_inv X \<and> indep indep_set X) \<and>
-    (\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep indep_set X \<longrightarrow> subseteq Y X \<longrightarrow> indep indep_set Y)"
+    (\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep indep_set X \<longrightarrow> subseteq Y X \<longrightarrow> indep indep_set Y))"
 
 context
   includes set.custom_automation
@@ -241,9 +241,9 @@ begin
 
 
 definition matroid_axioms where
-  "matroid_axioms carrier indep_set \<equiv> indep_system_axioms carrier indep_set \<and>
+  "matroid_axioms carrier indep_set = (indep_system_axioms carrier indep_set \<and>
     (\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep indep_set X \<longrightarrow> indep indep_set Y \<longrightarrow> 
-      cardinality X = Suc (cardinality Y) \<longrightarrow> (\<exists>x. set_isin (diff X Y) x \<and> indep indep_set (set_insert x Y)))"
+      cardinality X = Suc (cardinality Y) \<longrightarrow> (\<exists>x. set_isin (diff X Y) x \<and> indep indep_set (set_insert x Y))))"
 
 context
   includes set.custom_automation

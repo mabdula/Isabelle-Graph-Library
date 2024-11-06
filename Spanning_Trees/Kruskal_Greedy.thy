@@ -8,7 +8,7 @@ begin
 subsection \<open>Instantiations for Kruskal's algorithm\<close>
 
 
-abbreviation "rbt_inv \<equiv> \<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t"
+abbreviation "rbt_inv == ( \<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
 
 fun rbt_sel where
   "rbt_sel Leaf = undefined"
@@ -33,16 +33,16 @@ interpretation Set_Choose_RBT: Set_Choose
 
 interpretation Pair_Graph_U_RBT: Pair_Graph_U_Specs
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
-    lookup = lookup and adj_inv = "M.invar" and neighb_empty = "\<langle>\<rangle>" and
-    insert = insert_rbt and neighb_delete = delete_rbt and neighb_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
+    lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
+    insert = insert_rbt and vset_delete = delete_rbt and vset_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and sel = rbt_sel
   apply(simp add: Pair_Graph_U_Specs_def Pair_Graph_Specs_def)
   using M.Map_axioms Set_Choose_RBT.Set_Choose_axioms by simp
 
 interpretation DFS_Aux_Interp: DFS_Aux
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
-    lookup = lookup and adj_inv = "M.invar" and neighb_empty = "\<langle>\<rangle>" and
-    insert = insert_rbt and neighb_delete = delete_rbt and neighb_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
+    lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
+    insert = insert_rbt and vset_delete = delete_rbt and vset_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and union = "RBT.union" and inter = "RBT.inter" and 
     diff = "RBT.diff" and sel = rbt_sel for G and s
   apply(simp add: DFS_Aux_def)
@@ -52,8 +52,8 @@ abbreviation "DFS_Aux' G s \<equiv> DFS_Aux_Interp.DFS_Aux G (DFS_Aux_Interp.ini
 
 interpretation DFS_Cycles_Interp: DFS_Cycles
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
-    lookup = lookup and adj_inv = "M.invar" and neighb_empty = "\<langle>\<rangle>" and
-    insert = insert_rbt and neighb_delete = delete_rbt and neighb_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
+    lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
+    insert = insert_rbt and vset_delete = delete_rbt and vset_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and union = "RBT.union" and inter = "RBT.inter" and 
     diff = "RBT.diff" and sel = rbt_sel and seen_aux = "DFS_Aux_state.seen" and cycle_aux = "DFS_Aux_state.cycle" and
     dfs_aux = "DFS_Aux' G" for G and V
@@ -210,8 +210,8 @@ fun rbt_map_fold :: "('a \<times> 'd) rbt \<Rightarrow> ('a \<Rightarrow> 'd \<R
 
 interpretation Kruskal_Graphs_Matroids: Graphs_Matroids_Encoding
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
-    lookup = lookup and adj_inv = "M.invar" and neighb_empty = "\<langle>\<rangle>" and
-    insert = insert_rbt and neighb_delete = delete_rbt and neighb_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
+    lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
+    insert = insert_rbt and vset_delete = delete_rbt and vset_inv = "rbt_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and sel = rbt_sel and
 
     set_empty = "\<langle>\<rangle>" and set_insert = insert_rbt and set_delete = delete_rbt and set_inv = "rbt_inv::(('e::linorder) rbt \<Rightarrow> bool)" and
@@ -230,7 +230,7 @@ interpretation Kruskal_Graphs_Matroids: Graphs_Matroids_Encoding
 
 term Kruskal_Graphs_Matroids.graph_to_edges
 
-definition "cost_nonnegative (c::(('v set) \<Rightarrow> rat)) \<equiv> \<forall>e. c e \<ge> 0"
+definition "cost_nonnegative (c::(('v set) \<Rightarrow> rat)) = ( \<forall>e. c e \<ge> 0)"
 
 term Kruskal_Graphs_Matroids.graph_to_edges
 term Kruskal_Graphs_Matroids.edges_to_graph
@@ -242,7 +242,6 @@ context
     and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
 begin
 
-
 abbreviation Kruskal_G_to_E :: "(('v::linorder) \<times> ('v rbt)) rbt \<Rightarrow> ('e::linorder) rbt" where
   "Kruskal_G_to_E \<equiv> Kruskal_Graphs_Matroids.graph_to_edges edge_of"
 
@@ -253,7 +252,7 @@ definition Kruskal_E_to_V :: "('e::linorder) rbt \<Rightarrow> ('v rbt)" where
   "Kruskal_E_to_V = Kruskal_Graphs_Matroids.edges_to_vertices v1_of v2_of"
 
 definition carrier_graph_matroid :: "('e::linorder) rbt" where
-  "carrier_graph_matroid \<equiv> Kruskal_Graphs_Matroids.graph_to_edges edge_of input_G"
+  "carrier_graph_matroid = Kruskal_Graphs_Matroids.graph_to_edges edge_of input_G"
 
 fun indep_graph_matroid :: "('e::linorder) rbt \<Rightarrow> bool" where
   "indep_graph_matroid E = 

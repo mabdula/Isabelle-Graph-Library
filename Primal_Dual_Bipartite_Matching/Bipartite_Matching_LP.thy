@@ -5,7 +5,7 @@ theory Bipartite_Matching_LP
 begin
 
 definition one_vec :: "nat \<Rightarrow> 'a :: one vec" ("1\<^sub>v") where
-  "1\<^sub>v n \<equiv> vec n (\<lambda>i. 1)"
+  "1\<^sub>v n = vec n (\<lambda>i. 1)"
 
 lemma one_carrier_vec[simp]: "1\<^sub>v n \<in> carrier_vec n"
   unfolding one_vec_def carrier_vec_def by simp
@@ -97,23 +97,23 @@ proof -
     by (auto intro!: *)
 qed
 
-definition "n \<equiv> card (Vs G)"
+definition "n = card (Vs G)"
 abbreviation "m \<equiv> card G"
 
 definition Vs_enum :: "'a \<Rightarrow> nat" where
-  "Vs_enum x \<equiv> if x \<in> L then to_nat_on L x else to_nat_on R x + card L"
+  "Vs_enum x = ( if x \<in> L then to_nat_on L x else to_nat_on R x + card L)"
 
 definition Vs_enum_inv :: "nat \<Rightarrow> 'a" where
-  "Vs_enum_inv i \<equiv> if i < card L then from_nat_into L i else from_nat_into R (i - card L)"
+  "Vs_enum_inv i = ( if i < card L then from_nat_into L i else from_nat_into R (i - card L))"
 
 abbreviation G_enum :: "'a set \<Rightarrow> nat" where
   "G_enum \<equiv> to_nat_on G"
 
 definition incidence_matrix :: "real mat" where
-  "incidence_matrix \<equiv> mat n m (\<lambda>(i,j). of_bool (Vs_enum_inv i \<in> from_nat_into G j))"
+  "incidence_matrix = mat n m (\<lambda>(i,j). of_bool (Vs_enum_inv i \<in> from_nat_into G j))"
 
 definition primal_sol :: "'a graph \<Rightarrow> real vec" where
-  "primal_sol M \<equiv> vec m (\<lambda>i. of_bool (from_nat_into G i \<in> M))"
+  "primal_sol M = vec m (\<lambda>i. of_bool (from_nat_into G i \<in> M))"
 
 lemma incidence_matrix_carrier_mat[intro]: "incidence_matrix \<in> carrier_mat n m"
   unfolding incidence_matrix_def by simp

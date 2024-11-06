@@ -98,7 +98,7 @@ lemma invar_fold_conjI'':
 lemma invar_conjI: "\<lbrakk>J; invar P (\<lambda>s. J \<and> I s) f\<rbrakk> \<Longrightarrow> invar P I f"
   by (auto simp: invar_def)
 
-record ('parents, 'neighb) BFS_state = parents:: "'parents" current:: "'neighb" nexts:: "'neighb" visited:: "'neighb" 
+record ('parents, 'vset) BFS_state = parents:: "'parents" current:: "'vset" nexts:: "'vset" visited:: "'vset" 
 
 locale BFS =
   (*set_ops: Set2 where empty = empty and insert = vset_insert and isin = vset_isin +*)
@@ -106,12 +106,12 @@ locale BFS =
     where lookup = lookup +
   set_ops: Set2 vset_empty vset_delete _ t_set vset_inv vset_insert
   
-for lookup :: "'adj \<Rightarrow> 'ver \<Rightarrow> 'neighb option" +
+for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option" +
 
 fixes neighbourhood_fold ::
-  "('ver \<Rightarrow> ('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neighb) BFS_state) \<Rightarrow> 'neighb \<Rightarrow> 
-   ('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neighb) BFS_state" and
-   G ::"'adj"
+  "('ver \<Rightarrow> ('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state) \<Rightarrow> 'vset \<Rightarrow> 
+   ('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" and
+   G ::"'adjmap"
 assumes
    neighbourhood_fold:
     "valid_fold t_set neighbourhood_fold" and
@@ -139,9 +139,9 @@ declare set_ops.set_union[simp] set_ops.set_inter[simp] set_ops.set_diff[simp] s
 
 definition "update_parent v u BFS_state \<equiv> (BFS_state \<lparr>parents := Graph.add_edge (parents BFS_state) v u\<rparr>)"
 
-definition "update_parents v neighb BFS_state \<equiv> neighbourhood_fold (update_parent v) neighb BFS_state"
+definition "update_parents v vset BFS_state \<equiv> neighbourhood_fold (update_parent v) vset BFS_state"
 
-function (domintros) BFS::"('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neighb) BFS_state" where
+function (domintros) BFS::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" where
   "BFS BFS_state = 
      (if (current BFS_state) \<noteq> \<emptyset>\<^sub>N then
         let
@@ -258,9 +258,9 @@ lemma invar_1_intro[invar_props_intros]: "\<lbrakk>vset_inv (visited bfs_state);
 lemma invar_1_holds_upd1_step_1[invar_holds_intros]: 
   shows "invar (\<lambda>_. True) (\<lambda> bfs_state. BFS_call_1_conds bfs_state \<and> invar_1 bfs_state) BFS_upd1_step_1"
 proof-
-  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (\<lambda>bfs_state. update_parents v neighb bfs_state)" for v neighb
+  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (\<lambda>bfs_state. update_parents v vset bfs_state)" for v vset
   proof-
-    have "x \<in> t_set neighb \<Longrightarrow> invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (update_parent v x)" for x neighb v
+    have "x \<in> t_set vset \<Longrightarrow> invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (update_parent v x)" for x vset v
       by(force elim!: call_cond_elims simp: update_parent_def BFS_call_1_conds_def intro!: invar_props_intros invarI)
     thus ?thesis
       by(auto simp: update_parents_def
@@ -276,7 +276,7 @@ qed
 lemma invar_1_holds_upd1_step_2[invar_holds_intros]:
   shows "invar (\<lambda>_. True) (\<lambda> bfs_state. BFS_call_1_conds bfs_state \<and> invar_1 bfs_state) BFS_upd1_step_2"
 proof-
-  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G neighb\<rparr>))" if "vset_inv neighb" for neighb
+  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G vset\<rparr>))" if "vset_inv vset" for vset
     using that
     by(auto elim!: call_cond_elims simp: BFS_call_1_conds_def intro!: invar_props_intros invarI)
   have "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s) (\<lambda>s. BFS_upd1_step_2 s)"
@@ -331,11 +331,11 @@ lemma invar_2_intro[invar_props_intros]:
 lemma invar_2_holds_upd1_step_1[invar_holds_intros]: 
   shows "invar (\<lambda>_. True) (\<lambda> bfs_state. BFS_call_1_conds bfs_state \<and> invar_1 bfs_state \<and> invar_2 bfs_state) BFS_upd1_step_1"
 proof-
-  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (\<lambda>bfs_state. update_parents v neighb bfs_state)" 
-    if "t_set neighb \<subseteq> t_set (\<N>\<^sub>G v)" for v neighb
+  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (\<lambda>bfs_state. update_parents v vset bfs_state)" 
+    if "t_set vset \<subseteq> t_set (\<N>\<^sub>G v)" for v vset
   proof-
-    have "x \<in> t_set neighb \<Longrightarrow> invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (update_parent v x)"
-      if "t_set neighb \<subseteq> t_set (\<N>\<^sub>G v)" for x neighb v
+    have "x \<in> t_set vset \<Longrightarrow> invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (update_parent v x)"
+      if "t_set vset \<subseteq> t_set (\<N>\<^sub>G v)" for x vset v
       using that
       by(fastforce elim!: call_cond_elims simp: update_parent_def BFS_call_1_conds_def intro!: invar_props_intros invarI)
     thus ?thesis
@@ -353,7 +353,7 @@ qed
 lemma invar_2_holds_upd1_step_2[invar_holds_intros]:
   shows "invar (\<lambda>_. True) (\<lambda> bfs_state. BFS_call_1_conds bfs_state \<and> invar_1 bfs_state \<and> invar_2 bfs_state) BFS_upd1_step_2"
 proof-
-  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G neighb\<rparr>))" if "vset_inv neighb" for neighb
+  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G vset\<rparr>))" if "vset_inv vset" for vset
     using that
     by(fastforce elim!: call_cond_elims simp: BFS_call_1_conds_def intro!: invar_props_intros invarI)
   hence "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_2 s) (\<lambda>s. BFS_upd1_step_2 s)"
@@ -423,11 +423,11 @@ lemma invar_3_intro[invar_props_intros]:
 lemma invar_3_holds_upd1_step_1[invar_holds_intros]: 
   shows "invar (\<lambda>_. True) (\<lambda> bfs_state. BFS_call_1_conds bfs_state \<and> invar_1 bfs_state \<and> invar_3 bfs_state) BFS_upd1_step_1"
 proof-
-  have *: "invar (\<lambda>_. True ) (\<lambda>s. (v \<in> t_set (current s)) \<and> BFS_call_1_conds s \<and> invar_1 s \<and> invar_3 s) (\<lambda>bfs_state. update_parents v neighb bfs_state)" 
-    if "t_set neighb \<subseteq> t_set (\<N>\<^sub>G v)" for v neighb
+  have *: "invar (\<lambda>_. True ) (\<lambda>s. (v \<in> t_set (current s)) \<and> BFS_call_1_conds s \<and> invar_1 s \<and> invar_3 s) (\<lambda>bfs_state. update_parents v vset bfs_state)" 
+    if "t_set vset \<subseteq> t_set (\<N>\<^sub>G v)" for v vset
   proof-
     have "invar (\<lambda>_. True) (\<lambda>s. (v \<in> t_set (current s)) \<and> BFS_call_1_conds s \<and> invar_1 s \<and> invar_3 s) (update_parent v x)"
-      if "x \<in> t_set neighb" "t_set neighb \<subseteq> t_set (\<N>\<^sub>G v)" for x
+      if "x \<in> t_set vset" "t_set vset \<subseteq> t_set (\<N>\<^sub>G v)" for x
     proof(intro invarI conjI, goal_cases)
       case (1 s)
       then show ?case
@@ -451,7 +451,7 @@ proof-
         hence "invar_1 s" "v\<in>t_set (current s)"
           by auto
         have "v' \<noteq> x"
-          using \<open>v\<in>t_set (current s)\<close> \<open>x \<in> t_set neighb\<close> \<open>t_set neighb \<subseteq> t_set (\<N>\<^sub>G v)\<close> "1"(3)
+          using \<open>v\<in>t_set (current s)\<close> \<open>x \<in> t_set vset\<close> \<open>t_set vset \<subseteq> t_set (\<N>\<^sub>G v)\<close> "1"(3)
           by (auto simp: frontier_def update_parent_def)
         have "invar_3 s"
           using 1
@@ -515,7 +515,7 @@ proof-
     subgoal sorry
     apply(rule ])
     apply simp
-    apply (auto simp add: invar_def *[where ?v8 = v and ?neighb8 = "\<N>\<^sub>G v -\<^sub>G visited s" for v s, simplified invar_def subset_refl] intro!: )
+    apply (auto simp add: invar_def *[where ?v8 = v and ?vset8 = "\<N>\<^sub>G v -\<^sub>G visited s" for v s, simplified invar_def subset_refl] intro!: )
 
     by auto
   thus ?thesis
@@ -529,8 +529,8 @@ lemma False
 lemma invar_3_holds_upd1_step_2[invar_holds_intros]:
   shows "invar (\<lambda>_. True) (\<lambda> bfs_state. BFS_call_1_conds bfs_state \<and> invar_1 bfs_state \<and> invar_3 bfs_state) BFS_upd1_step_2"
 proof-
-  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_3 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G neighb\<rparr>))" 
-    if "vset_inv neighb" for neighb
+  have *: "invar (\<lambda>_. True) (\<lambda>s. BFS_call_1_conds s \<and> invar_1 s \<and> invar_3 s) (\<lambda> bfs_state. (bfs_state \<lparr>nexts := nexts bfs_state \<union>\<^sub>G vset\<rparr>))" 
+    if "vset_inv vset" for vset
     using that
     by (auto elim!: inv ar_1_props invar_2_props invar_3_props call_cond_elims simp: BFS_call_1_conds_def intro!: invar_props_intros invarI)
 

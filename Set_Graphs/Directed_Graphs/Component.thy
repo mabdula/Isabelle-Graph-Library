@@ -43,7 +43,7 @@ lemma subgraph_trans:
   using assms
   by (auto simp: subgraph_iff intro: subgraph_trans)
 
-lemma adj_mono:
+lemma adjmap_mono:
   fixes H G :: "'a dgraph"
   assumes "(u,v) \<in> H" "subgraph H G"
   shows "(u,v) \<in> G"
@@ -228,7 +228,7 @@ lemma induced_subgraphI':
   assumes subg: "subgraph H G"
     and max: "\<And>H'. subgraph H' G \<Longrightarrow> (dVs H' \<noteq> dVs H \<or> subgraph H' H)"
   shows "induced_subgraph H G"
-  by (meson Component_Defs.induced_subgraphI adj_mono in_induce_subgraphI induce_subgraph_of_subgraph_verts max subg subgraph_induce_subgraph)
+  by (meson Component_Defs.induced_subgraphI adjmap_mono in_induce_subgraphI induce_subgraph_of_subgraph_verts max subg subgraph_induce_subgraph)
 
 lemma induced_subgraph_altdef:
   "induced_subgraph H G \<longleftrightarrow> subgraph H G \<and> (\<forall>H'. subgraph H' G \<longrightarrow> dVs H' \<noteq> dVs H \<or> subgraph H' H)"
@@ -308,7 +308,7 @@ lemma subgraph_induce_subgraphI2:
   by (auto simp: subgraph_def induce_subgraph_def dVsI)
 
 definition arc_mono :: "('a dgraph \<Rightarrow> bool) \<Rightarrow> bool" where
-  "arc_mono P \<equiv> (\<forall>H1 H2. P H1 \<and> subgraph H1 H2 \<and> dVs H1 = dVs H2 \<longrightarrow> P H2)"
+  "arc_mono P = (\<forall>H1 H2. P H1 \<and> subgraph H1 H2 \<and> dVs H1 = dVs H2 \<longrightarrow> P H2)"
 
 lemma induced_subgraphI_arc_mono:
   assumes "max_subgraph G P H"
@@ -685,7 +685,7 @@ lemma vwalk_bet_subgraph:
 
 subsection \<open>Vertex induced subgraphs\<close>
 definition vertex_induced_subgraph :: "('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> bool" where
-  "vertex_induced_subgraph H V G \<equiv> H = {(u, v) \<in> G. {u, v} \<subseteq> V}"
+  "vertex_induced_subgraph H V G = ( H = {(u, v) \<in> G. {u, v} \<subseteq> V})"
 
 lemma vertex_induced_subgraphI[intro]:
   "H = {(u, v) \<in> G. {u, v} \<subseteq> V} \<Longrightarrow> vertex_induced_subgraph H V G" by (simp add: vertex_induced_subgraph_def)

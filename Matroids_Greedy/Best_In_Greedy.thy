@@ -21,13 +21,13 @@ begin
 
 
 
-definition "sort_desc_axioms \<equiv>
+definition "sort_desc_axioms =(
   (\<forall>c order. sorted_wrt (\<lambda>x1 x2. c x1 \<ge> c x2) (sort_desc c order) \<and>
   set order = set (sort_desc c order) \<and> length order = length (sort_desc c order) \<and>
-  (\<forall>k. filter (\<lambda>y. c y = k) (sort_desc c order) = filter (\<lambda>y. c y = k) order))"
+  (\<forall>k. filter (\<lambda>y. c y = k) (sort_desc c order) = filter (\<lambda>y. c y = k) order)))"
 
-definition "BestInGreedy_axioms \<equiv>
-  matroid.invar carrier indep_set \<and> matroid.finite_sets"
+definition "BestInGreedy_axioms =
+  (matroid.invar carrier indep_set \<and> matroid.finite_sets)"
 
 abbreviation "indep' \<equiv> matroid.indep indep_set"
 
@@ -50,7 +50,7 @@ function (domintros) BestInGreedy ::
   by pat_completeness auto
 
 
-definition "BestInGreedy_call_1_conds best_in_greedy_state \<equiv>
+definition "BestInGreedy_call_1_conds best_in_greedy_state =
     (case (carrier_list best_in_greedy_state) of
       [] \<Rightarrow> False
     | (x # xs) \<Rightarrow> 
@@ -70,7 +70,7 @@ lemma BestInGreedy_call_1_conds[call_cond_elims]:
   by(auto simp: BestInGreedy_call_1_conds_def split: list.splits if_splits)
 
 
-definition "BestInGreedy_upd1 best_in_greedy_state \<equiv> (
+definition "BestInGreedy_upd1 best_in_greedy_state = (
   let
     x = hd (carrier_list best_in_greedy_state);
     xs = tl (carrier_list best_in_greedy_state);
@@ -80,7 +80,7 @@ definition "BestInGreedy_upd1 best_in_greedy_state \<equiv> (
   )"
 
 
-definition "BestInGreedy_call_2_conds best_in_greedy_state \<equiv>
+definition "BestInGreedy_call_2_conds best_in_greedy_state =
     (case (carrier_list best_in_greedy_state) of
       [] \<Rightarrow> False
     | (x # xs) \<Rightarrow> 
@@ -100,7 +100,7 @@ lemma BestInGreedy_call_2_conds[call_cond_elims]:
   by(auto simp: BestInGreedy_call_2_conds_def split: list.splits if_splits)
 
 
-definition "BestInGreedy_upd2 best_in_greedy_state \<equiv> (
+definition "BestInGreedy_upd2 best_in_greedy_state = (
   let
     xs = tl (carrier_list best_in_greedy_state)
   in
@@ -109,7 +109,7 @@ definition "BestInGreedy_upd2 best_in_greedy_state \<equiv> (
 
 
 
-definition "BestInGreedy_ret_1_conds best_in_greedy_state \<equiv>
+definition "BestInGreedy_ret_1_conds best_in_greedy_state =
     (case (carrier_list best_in_greedy_state) of
       [] \<Rightarrow> True
     | (x # xs) \<Rightarrow> 
@@ -132,7 +132,7 @@ lemma BestInGreedy_ret_1_condsI[call_cond_intros]:
   "\<lbrakk>carrier_list best_in_greedy_state = []\<rbrakk> \<Longrightarrow> BestInGreedy_ret_1_conds best_in_greedy_state"
   by(auto simp: BestInGreedy_ret_1_conds_def split: list.splits if_splits)
 
-definition "BestInGreedy_ret1 best_in_greedy_state \<equiv> best_in_greedy_state"
+definition "BestInGreedy_ret1 best_in_greedy_state = best_in_greedy_state"
 
 
 lemma BestInGreedy_cases:
@@ -193,50 +193,50 @@ next
 qed
 
 
-definition "call_measure best_in_greedy_state \<equiv> length (carrier_list best_in_greedy_state)"
+definition "call_measure best_in_greedy_state = length (carrier_list best_in_greedy_state)"
 
-definition "BestInGreedy_term_rel' \<equiv> call_measure <*mlex*> {}"
+definition "BestInGreedy_term_rel' = call_measure <*mlex*> {}"
 
-definition "initial_state c order \<equiv> \<lparr>carrier_list = (sort_desc c order), result = set_empty\<rparr>"
-
-
-definition "nonnegative (c::('a \<Rightarrow> rat)) \<equiv> (\<forall>x. set_isin carrier x \<longrightarrow> c x \<ge> 0)"
-
-definition "valid_order order \<equiv> to_set carrier = set order \<and> cardinality carrier = length order"
+definition "initial_state c order = \<lparr>carrier_list = (sort_desc c order), result = set_empty\<rparr>"
 
 
+definition "nonnegative (c::('a \<Rightarrow> rat)) = (\<forall>x. set_isin carrier x \<longrightarrow> c x \<ge> 0)"
 
-definition
-  "num_iter c order best_in_greedy_state \<equiv> (length (sort_desc c order) - length (carrier_list best_in_greedy_state))"
+definition "valid_order order =( to_set carrier = set order \<and> cardinality carrier = length order)"
+
+
 
 definition
-  "carrier_pref c order j \<equiv> set (take j (sort_desc c order))"
+  "num_iter c order best_in_greedy_state = (length (sort_desc c order) - length (carrier_list best_in_greedy_state))"
 
 definition
-  "pref c order S j \<equiv> S \<inter> (carrier_pref c order j)"
+  "carrier_pref c order j = set (take j (sort_desc c order))"
 
-definition "invar_1 best_in_greedy_state \<equiv> set_inv (result best_in_greedy_state)"
+definition
+  "pref c order S j = S \<inter> (carrier_pref c order j)"
 
-definition "invar_2 c order best_in_greedy_state \<equiv>
-  (carrier_list best_in_greedy_state) = (drop (num_iter c order best_in_greedy_state) (sort_desc c order))"
+definition "invar_1 best_in_greedy_state = set_inv (result best_in_greedy_state)"
 
-definition "invar_3 c order best_in_greedy_state \<equiv>
-  to_set (result best_in_greedy_state) \<subseteq> (carrier_pref c order (num_iter c order best_in_greedy_state))"
+definition "invar_2 c order best_in_greedy_state =
+  ((carrier_list best_in_greedy_state) = (drop (num_iter c order best_in_greedy_state) (sort_desc c order)))"
 
-definition "invar_4 c order best_in_greedy_state \<equiv> 
-  \<forall>j \<in> {0..(num_iter c order best_in_greedy_state)}.
+definition "invar_3 c order best_in_greedy_state =
+  (to_set (result best_in_greedy_state) \<subseteq> (carrier_pref c order (num_iter c order best_in_greedy_state)))"
+
+definition "invar_4 c order best_in_greedy_state =
+  (\<forall>j \<in> {0..(num_iter c order best_in_greedy_state)}.
   (indep_system.basis_in (matroid.indep_abs indep_set)
   (carrier_pref c order j)
-  (pref c order (to_set (result best_in_greedy_state)) j))"
+  (pref c order (to_set (result best_in_greedy_state)) j)))"
 
-definition "c_set c S \<equiv> sum c S"
+definition "c_set c S = sum c S"
 
-definition "c_diff c order n j \<equiv>
+definition "c_diff c order n j =
   (if j < n then c ((sort_desc c order) ! (j - 1)) - c ((sort_desc c order) ! j) 
   else c ((sort_desc c order) ! (j - 1)))"
 
-definition "valid_solution X \<equiv>
-  set_inv X \<and> subseteq X carrier \<and> indep' X"
+definition "valid_solution X =
+  (set_inv X \<and> subseteq X carrier \<and> indep' X)"
 
 context
   includes matroid.set.custom_automation
@@ -926,7 +926,7 @@ lemma in_prod_relI[intro!,termination_intros]:
   "\<lbrakk>f1 a = f1 a'; (a, a') \<in> f2 <*mlex*> r\<rbrakk> \<Longrightarrow> (a,a') \<in> (f1 <*mlex*> f2 <*mlex*> r)"
    by (simp add: mlex_iff)+
 
-definition "less_rel \<equiv> {(x::nat, y::nat). x < y}"
+definition "less_rel = {(x::nat, y::nat). x < y}"
 
 lemma wf_less_rel[intro!]: "wf less_rel"
   by(auto simp: less_rel_def wf_less)

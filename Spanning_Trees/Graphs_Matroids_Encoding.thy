@@ -38,7 +38,7 @@ fun edges_to_vertices :: "'s \<Rightarrow> 'neighb" where
     (\<lambda>e N. if isin N (v1_of e)
            then (if isin N (v2_of e) then N else insert (v2_of e) N)
            else (if isin N (v2_of e) then insert (v1_of e) N else insert (v1_of e) (insert (v2_of e) N)))
-    neighb_empty"
+    vset_empty"
 
 (* Correctness properties *)
 
@@ -52,7 +52,7 @@ lemma edges_invar_imp_graph_invar:
 
 lemma edges_invar_imp_vertices_props:
   assumes "set_inv E"
-  shows "neighb_inv (edges_to_vertices E)"
+  shows "vset_inv (edges_to_vertices E)"
     "t_set (edges_to_vertices E) = dVs (pair_graph_u.digraph_abs (edges_to_graph E))"
   sorry
 

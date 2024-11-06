@@ -260,7 +260,7 @@ qed
 
 subsection \<open>Weighted Case\<close>
 definition weighted_linorder_from_keys :: "'a set \<Rightarrow> ('a \<Rightarrow> real) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> ('a \<Rightarrow> real) \<Rightarrow> ('a \<times> 'a) set" where
-  "weighted_linorder_from_keys A v g Y \<equiv> {(x, y) \<in> A \<times> A. v x * (1 - g (Y x)) \<ge> v y * (1 - g (Y y))}"
+  "weighted_linorder_from_keys A v g Y = {(x, y) \<in> A \<times> A. v x * (1 - g (Y x)) \<ge> v y * (1 - g (Y y))}"
 
 lemma preorder_on_weighted_linorder_from_keys[intro]: "preorder_on A (weighted_linorder_from_keys A v g f)"
   unfolding weighted_linorder_from_keys_def preorder_on_def

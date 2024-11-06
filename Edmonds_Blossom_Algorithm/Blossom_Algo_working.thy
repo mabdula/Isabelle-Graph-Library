@@ -143,7 +143,7 @@ begin
 text\<open>A measure function to prove termination\<close>
 
 definition find_max_matching_meas where
-  "find_max_matching_meas M \<equiv> (card (G - M))"
+  "find_max_matching_meas M = (card (G - M))"
 
 lemma finite_G:
   shows "finite G"
@@ -722,7 +722,7 @@ proof-
         case F2: False
         then obtain stem cyc where stem_cyc: "blos_comp = Blossom stem cyc"
           using match_blossom_res.exhaust_sel by blast
-        define s where "s \<equiv> (Vs G - (set cyc))"
+        define s where "s = (Vs G - (set cyc))"
         have blos: "blossom G M stem cyc"
           using bloss_algo_sound(2) blos_comp stem_cyc 1
           by metis
@@ -1875,7 +1875,7 @@ locale match = graph_abs G for G+
 subsection \<open>Computing a Blossom or an Augmenting Path\<close>
 
 definition compute_alt_path_spec where 
-  "compute_alt_path_spec G M compute_alt_path \<equiv>
+  "compute_alt_path_spec G M compute_alt_path =
    (
     (\<forall>p1 p2 pref1 x post1 pref2 post2. compute_alt_path = Some (p1, p2) \<longrightarrow>
         p1 = pref1 @ x # post1 \<and> p2 = pref2 @ x # post2 \<longrightarrow>
@@ -2088,7 +2088,7 @@ abbreviation "unmatched_edges \<equiv> {{v1,v2} | v1 v2. {v1, v2} \<in> G \<and>
 definition "sel_unmatched = (let (v1,v2) = sel_pair (graph_abs.D unmatched_edges) in [v1, v2])"
 
 definition compute_match_blossom where
-  "compute_match_blossom \<equiv> 
+  "compute_match_blossom = 
    (if (\<exists>e. e \<in> unmatched_edges) then
          let singleton_path = sel_unmatched in
            Some (Path singleton_path)
@@ -2287,14 +2287,14 @@ subsection \<open>Data Structure of Search Forest\<close>
 
 
 definition follow_invar::"('a \<Rightarrow> 'a option) \<Rightarrow> bool" where
-  "follow_invar par \<equiv> (\<forall>v. (\<exists>v'. (v' = v \<or> (v', v) \<in> {(v',v) | v' v. (Some v' = par v)}\<^sup>+) \<and> par v' = None)) \<and>
+  "follow_invar par = ((\<forall>v. (\<exists>v'. (v' = v \<or> (v', v) \<in> {(v',v) | v' v. (Some v' = par v)}\<^sup>+) \<and> par v' = None)) \<and>
                       (\<forall>v v'. par v = Some v' \<longrightarrow>  v \<noteq> v') \<and> 
-                      finite {(x, y) |x y. (Some x = par y)}"
+                      finite {(x, y) |x y. (Some x = par y)})"
 
 (*Done: Invar 3*)
 
 definition parent_spec::"('a \<Rightarrow> 'a option) \<Rightarrow> bool" where
-  "parent_spec parent \<equiv> wf {(x, y) |x y. (Some x = parent y)}"
+  "parent_spec parent = wf {(x, y) |x y. (Some x = parent y)}"
 
 
 locale parent = 
@@ -2560,12 +2560,13 @@ begin
 
 text \<open>At this stage we don't want t assume that the vertices have any ordering.\<close>
 
-definition if1_cond where "if1_cond flabel ex \<equiv> \<exists>v1 v2. {v1, v2} \<in> G - ex \<and>
+definition if1_cond where "if1_cond flabel ex = (\<exists>v1 v2. {v1, v2} \<in> G - ex \<and>
                                                          (\<exists>r. flabel v1 = Some (r, Even)) \<and>
-                                                         flabel v2 = None \<and> (\<exists>v3. {v2, v3} \<in> M)"
+                                                         flabel v2 = None \<and> (\<exists>v3. {v2, v3} \<in> M))"
 
 definition if1 where (*I am using this because when the RHS is in the function the function package messes up the pairing.*)
-  "if1 flabel ex v1 v2 v3 r \<equiv> {v1, v2} \<in> G - ex \<and> flabel v1 = Some (r, Even) \<and> flabel v2 = None \<and> {v2, v3} \<in> M"
+  "if1 flabel ex v1 v2 v3 r = ({v1, v2} \<in> G - ex \<and>
+             flabel v1 = Some (r, Even) \<and> flabel v2 = None \<and> {v2, v3} \<in> M)"
 
 find_theorems dblton_graph "(\<subseteq>)"
 
@@ -2574,27 +2575,27 @@ interpretation matching_graph: graph_abs M
   using graph_invar_subset[OF graph matching(2)] .
 
 definition 
-  "sel_if1 flabel ex \<equiv> 
-     let es = D \<inter> {(v1,v2)| v1 v2. {v1,v2} \<in> (G - ex) \<and> (\<exists>r. flabel v1 = Some (r, Even)) \<and> flabel v2 = None \<and> v2 \<in> Vs M};
+  "sel_if1 flabel ex = 
+     (let es = D \<inter> {(v1,v2)| v1 v2. {v1,v2} \<in> (G - ex) \<and> (\<exists>r. flabel v1 = Some (r, Even)) \<and> flabel v2 = None \<and> v2 \<in> Vs M};
          (v1,v2) = sel_pair es;
          v3 = sel (neighbourhood M v2);
          r = fst (the (flabel v1)) 
-     in (v1,v2,v3,r)"
+     in (v1,v2,v3,r))"
 
-definition if2_cond where "if2_cond flabel \<equiv>
-   \<exists>v1 v2 r r'. {v1, v2} \<in> G \<and> flabel v1 = Some (r, Even) \<and> flabel v2 = Some (r', Even)"
+definition if2_cond where "if2_cond flabel =
+   (\<exists>v1 v2 r r'. {v1, v2} \<in> G \<and> flabel v1 = Some (r, Even) \<and> flabel v2 = Some (r', Even))"
 
 definition if2 where 
-  "if2 flabel v1 v2 r r' \<equiv> {v1, v2} \<in> G \<and> flabel v1 = Some (r, Even) \<and> flabel v2 = Some (r', Even)"
+  "if2 flabel v1 v2 r r' = ({v1, v2} \<in> G \<and> flabel v1 = Some (r, Even) \<and> flabel v2 = Some (r', Even))"
 
 definition 
-  "sel_if2 flabel \<equiv> 
-     let es = D \<inter> {(v1,v2)| v1 v2. {v1, v2} \<in> G \<and> (\<exists>r1. flabel v1 = Some (r1, Even)) \<and> 
+  "sel_if2 flabel = 
+     (let es = D \<inter> {(v1,v2)| v1 v2. {v1, v2} \<in> G \<and> (\<exists>r1. flabel v1 = Some (r1, Even)) \<and> 
                                    (\<exists>r2. flabel v2 = Some (r2, Even))};
          (v1,v2) = sel_pair es;
          r1 = fst (the (flabel v1)); 
          r2 = fst (the (flabel v2)) 
-     in (v1,v2,r1,r2)"
+     in (v1,v2,r1,r2))"
 
 (*definition if1_1_cond where "if1_1_cond flabel v2 \<equiv> flabel v2 = None \<and> (\<exists>v3. {v2, v3} \<in> M)"*)
 
@@ -2813,7 +2814,7 @@ lemma compute_alt_path_pinduct_2:
 
 subsubsection \<open>Termination of the Search Procedure\<close>
 
-definition "compute_alt_path_meas ex \<equiv> card (G - ex)"
+definition "compute_alt_path_meas ex = card (G - ex)"
 
 lemma compute_alt_path_dom:
   assumes "finite ex" "ex \<subseteq> G"
@@ -2965,18 +2966,18 @@ qed
 
 (*Done: Invar 4*)
 
-definition flabel_invar where "flabel_invar flabel \<equiv> (\<forall>v1 v2. {v1, v2} \<in> M \<longrightarrow> ((flabel v1 = None) \<longleftrightarrow> (flabel v2 = None)))"
+definition flabel_invar where "flabel_invar flabel = (\<forall>v1 v2. {v1, v2} \<in> M \<longrightarrow> ((flabel v1 = None) \<longleftrightarrow> (flabel v2 = None)))"
 
 (*Done: Invar 10 *)
 
 definition flabel_invar_2 where
-  "flabel_invar_2 flabel \<equiv> 
+  "flabel_invar_2 flabel =
      (\<forall>v1 v2. {v1, v2} \<in> M \<longrightarrow> ((\<exists>r. flabel v1 = Some (r, Even))
                      \<longleftrightarrow> (\<exists>r. flabel v2 = Some (r, Odd))))"
 
 (*Done: Invar 5*)
 
-definition flabel_par_invar where "flabel_par_invar par flabel \<equiv> (\<forall>v. (flabel v = None) \<longrightarrow> (par v = None \<and> (\<forall>v'. par v' \<noteq> Some v)))"
+definition flabel_par_invar where "flabel_par_invar par flabel = (\<forall>v. (flabel v = None) \<longrightarrow> (par v = None \<and> (\<forall>v'. par v' \<noteq> Some v)))"
 
 lemma 
   assumes "(\<forall>v. par v = None)"
@@ -3562,7 +3563,7 @@ qed
 
 (*Done: Invar 6*)
 
-definition "last_not_matched_invar par flabel \<equiv>
+definition "last_not_matched_invar par flabel =
    (\<forall>v. (flabel v \<noteq> None \<longrightarrow> (last (parent.follow par v) \<notin> Vs M)))"
 
 end
@@ -3798,7 +3799,7 @@ lemma last_not_matched_invar_props:
 
 (*Done: Invar 8*)
 
-definition "matching_examined_invar flabel ex \<equiv> (\<forall>v1 v2. {v1, v2} \<in> M \<longrightarrow> flabel v1 \<noteq> None \<longrightarrow> {v1, v2} \<in> ex)"
+definition "matching_examined_invar flabel ex = (\<forall>v1 v2. {v1, v2} \<in> M \<longrightarrow> flabel v1 \<noteq> None \<longrightarrow> {v1, v2} \<in> ex)"
 
 lemma matching_examined_invar_props: 
   "matching_examined_invar flabel ex \<Longrightarrow> {v1, v2} \<in> M \<Longrightarrow> flabel v1 = Some (r, lab) \<Longrightarrow> {v1, v2} \<in> ex"
@@ -3906,7 +3907,7 @@ begin
 
 (*Done: Invar 7*)
 
-definition "last_even_invar par flabel \<equiv> (\<forall>v r lab. flabel v = Some(r, lab) \<longrightarrow> flabel (last (parent.follow par v)) = Some (r, Even))"
+definition "last_even_invar par flabel = (\<forall>v r lab. flabel v = Some(r, lab) \<longrightarrow> flabel (last (parent.follow par v)) = Some (r, Even))"
 
 lemma last_even_invar_props:
   "last_even_invar par flabel \<Longrightarrow> flabel v = Some (r, lab) \<Longrightarrow> flabel (last (parent.follow par v)) = Some (r, Even)"
@@ -4363,7 +4364,7 @@ subsubsection \<open>Algorithm is Totally Correct: it does not miss Alternating 
 
 (*Done: Invar 11*)
 
-definition "examined_have_odd_verts_invar ex flabel \<equiv> (\<forall>e\<in>ex. \<exists>v\<in>e.\<exists>r. flabel v = Some (r, Odd))"
+definition "examined_have_odd_verts_invar ex flabel = (\<forall>e\<in>ex. \<exists>v\<in>e.\<exists>r. flabel v = Some (r, Odd))"
 
 lemma examined_have_odd_verts_invar_pres:
   assumes invars: 
@@ -4391,7 +4392,7 @@ lemma examined_have_odd_verts_invar_props:
 
 (*Done: Invar 12*)
 
-definition "unexamined_matched_unlabelled_invar ex flabel \<equiv> (\<forall>e\<in>M - ex. \<forall>v\<in>e. flabel v = None)"
+definition "unexamined_matched_unlabelled_invar ex flabel = (\<forall>e\<in>M - ex. \<forall>v\<in>e. flabel v = None)"
 
 lemma unexamined_matched_unlabelled_invar_props:
   "unexamined_matched_unlabelled_invar ex flabel \<Longrightarrow> e \<in> M \<Longrightarrow> e \<notin> ex \<Longrightarrow> v \<in> e \<Longrightarrow> flabel v = None"
@@ -4420,7 +4421,7 @@ qed
 
 (*Done: Invar 13*)
 
-definition "finite_odds_invar flabel \<equiv> finite {v. \<exists>r. flabel v = Some (r, Odd)}"
+definition "finite_odds_invar flabel = finite {v. \<exists>r. flabel v = Some (r, Odd)}"
 
 lemma finite_odds_invar_pres:
   assumes invars: 
@@ -4430,7 +4431,7 @@ lemma finite_odds_invar_pres:
     ass: "if1 flabel ex v1 v2 v3 r"
   shows "finite_odds_invar(flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r', Even)))"
 proof-
-  define flabel' where "flabel' \<equiv> (flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r', Even)))"
+  define flabel' where "flabel' = (flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r', Even)))"
   have "flabel v2 = None"
     by(rule if1_props[OF ass])
   moreover have "flabel v3 = None"
@@ -4448,7 +4449,8 @@ qed
 
 (*Done: Invar 14*)
 
-definition "odd_labelled_verts_num_invar ex flabel \<equiv> card {v. \<exists>r. flabel v = Some (r, Odd)} = card (M \<inter> ex)"
+definition "odd_labelled_verts_num_invar ex flabel = 
+              (card {v. \<exists>r. flabel v = Some (r, Odd)} = card (M \<inter> ex))"
 
 lemma odd_labelled_verts_num_invar_pres:
   assumes invars: 
@@ -4460,7 +4462,7 @@ lemma odd_labelled_verts_num_invar_pres:
     ass: "if1 flabel ex v1 v2 v3 r"
   shows "odd_labelled_verts_num_invar (insert {v2, v3} (insert {v1, v2} ex)) (flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r', Even)))"
 proof-
-  define flabel' where "flabel' \<equiv> (flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r', Even)))"
+  define flabel' where "flabel' = (flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r', Even)))"
   have "v2 \<noteq> v3"
     by(rule v1_neq_v2_neq_v3[OF ass])
   moreover have "flabel v2 = None"
@@ -4476,7 +4478,7 @@ proof-
     by simp
   ultimately have i: "card {v. \<exists>r. flabel' v = Some (r, Odd)} = card {v. \<exists>r. flabel v = Some (r, Odd)} + 1"
     by simp
-  define ex' where "ex' \<equiv> (insert {v2, v3} (insert {v1, v2} ex))"
+  define ex' where "ex' = (insert {v2, v3} (insert {v1, v2} ex))"
   have "flabel v3 = None"
     by (simp add: \<open>flabel v3 = None\<close>)
   then have "{v2, v3} \<notin> ex"
@@ -4501,7 +4503,7 @@ qed
 (*Done: Invar 15*)
 
 definition
-  "ulabelled_verts_matched_invar ex flabel \<equiv> \<forall>v \<in> (Vs G). flabel v = None \<longrightarrow> (\<exists>e\<in>(M - ex). v \<in> e)"
+  "ulabelled_verts_matched_invar ex flabel = (\<forall>v \<in> (Vs G). flabel v = None \<longrightarrow> (\<exists>e\<in>(M - ex). v \<in> e))"
 
 lemma ulabelled_verts_matched_invar_pres:
   assumes invars: 
@@ -4516,8 +4518,8 @@ lemma ulabelled_verts_matched_invar_pres:
 (*Done: Invar 16*)
 
 definition 
-  "odd_then_matched_examined_invar ex flabel \<equiv>
-     \<forall>v \<in> (Vs G). \<exists>r. flabel v = Some(r, Odd) \<longrightarrow> (\<exists>e\<in>(M \<inter> ex). v \<in> e)"
+  "odd_then_matched_examined_invar ex flabel =
+     (\<forall>v \<in> (Vs G). \<exists>r. flabel v = Some(r, Odd) \<longrightarrow> (\<exists>e\<in>(M \<inter> ex). v \<in> e))"
 
 lemma odd_then_matched_examined_invar_pres:
   assumes invars: 
@@ -4533,25 +4535,25 @@ lemma odd_then_matched_examined_invar_pres:
 end
 
 definition odd_set_cover where
-  "odd_set_cover OSC G \<equiv> finite OSC \<and> (\<forall>s\<in>OSC. odd (card s) \<and> finite s) \<and>
-                         (\<forall>e\<in>G.\<exists>s\<in>OSC. (if card s = 1 then s \<inter> e \<noteq> empty else e \<subseteq> s))"
+  "odd_set_cover OSC G = (finite OSC \<and> (\<forall>s\<in>OSC. odd (card s) \<and> finite s) \<and>
+                         (\<forall>e\<in>G.\<exists>s\<in>OSC. (if card s = 1 then s \<inter> e \<noteq> empty else e \<subseteq> s)))"
 
 definition capacity1 where
-  "capacity1 s \<equiv> if card s = 1 then 1 else (card s) div 2"
+  "capacity1 s = (if card s = 1 then 1 else (card s) div 2)"
 
 lemma cap11[simp]: "capacity1 {x} = 1"
   unfolding capacity1_def
   by simp
 
 definition capacity2 where
-  "capacity2 OSC \<equiv> \<Sum>s\<in>OSC. capacity1 s"
+  "capacity2 OSC = (\<Sum>s\<in>OSC. capacity1 s)"
 
 lemma cap21[simp]: "capacity2 {{x}} = 1"
   unfolding capacity2_def
   by simp
 
 definition es where
-  "es s \<equiv> {e. card e = 2 \<and> e \<subseteq> s}"
+  "es s = {e. card e = 2 \<and> e \<subseteq> s}"
 
 lemma es_minus: "es (s - e) = (es s) - {e'. e' \<inter> e \<noteq> empty}"
   unfolding es_def
@@ -4596,8 +4598,8 @@ proof-
     obtain v1 v2 where e: "e = {v1, v2}" "v1 \<noteq> v2"
       using insert.prems(4) insert.prems(6)
       by (auto elim: dblton_graphE)
-    define es' where "es' \<equiv> es s - {e}"
-    define s' where "s' \<equiv> s - e"
+    define es' where "es' = es s - {e}"
+    define s' where "s' = s - e"
     consider (one) "card s = 1" | (three) "card s = 3" | (ge_five)"card s \<ge> 5"
       using insert(8)
       by (metis (no_types, lifting) One_nat_def Suc_leI antisym_conv card_gt_0_iff eval_nat_numeral(3) even_numeral insert.prems(2) not_less_eq_eq numeral_3_eq_3 numeral_4_eq_4 odd_card_imp_not_empty)
@@ -4612,7 +4614,7 @@ proof-
         using one
         by(simp add: capacity1_def)
     next
-      define M where "M \<equiv> insert e M'"
+      define M where "M = insert e M'"
       then have "matching M"
         using insert(6)
         by simp
@@ -4733,7 +4735,7 @@ proof-
       case True
       then obtain v where v: "s = {v}"
         by(elim card_1_singletonE)
-      define ev where "ev \<equiv> {e. v \<in> e}"
+      define ev where "ev = {e. v \<in> e}"
       have "odd_set_cover OSC (G - ev)"
         using insert(1,7)
         unfolding odd_set_cover_def ev_def
@@ -4918,7 +4920,7 @@ proof-
       then have if2_nholds: "\<not>if2_cond flabel"
         using 2
         by(auto simp add: compute_alt_path.psimps[OF 2(1)] split: prod.splits)
-      define lab_osc where "lab_osc \<equiv> {{v} | v . \<exists>r. flabel v = Some (r, Odd)}"
+      define lab_osc where "lab_osc = {{v} | v . \<exists>r. flabel v = Some (r, Odd)}"
       {
         fix es
         assume "\<And>e. e \<in> es \<Longrightarrow> \<exists>v \<in> e. \<exists>r. flabel v = Some (r, Odd)"
@@ -5027,8 +5029,8 @@ proof-
         then have "flabel v1 = None" "flabel v2 = None"
           using \<open>unexamined_matched_unlabelled_invar ex flabel\<close> \<open>M - ex = {e}\<close>
           by(auto simp: unexamined_matched_unlabelled_invar_def)
-        define unlab_osc where "unlab_osc \<equiv> {{v1}}"
-        define osc where "osc \<equiv> lab_osc \<union> unlab_osc"
+        define unlab_osc where "unlab_osc = {{v1}}"
+        define osc where "osc = lab_osc \<union> unlab_osc"
         have "\<exists>s\<in>osc. s \<inter> e' \<noteq> {} \<and> card s = 1" if "e' \<in> G - ex" for e'
         proof(cases "e' \<in> M")
           case True
@@ -5182,9 +5184,9 @@ proof-
           using \<open>e = {v1, v2}\<close> by auto
         then have "v2 \<notin> \<Union> M'"
           by (metis DiffD1 Diff_insert_absorb M'(2) M'(3) Union_iff matching(1) insertI1 matching_unique_match)
-        define unlab_osc1 where "unlab_osc1  \<equiv> {{v1}}"
-        define unlab_osc2 where "unlab_osc2  \<equiv> {{v2} \<union> \<Union>M'}"
-        define osc where "osc \<equiv> lab_osc \<union> unlab_osc1 \<union> unlab_osc2"
+        define unlab_osc1 where "unlab_osc1  = {{v1}}"
+        define unlab_osc2 where "unlab_osc2  = {{v2} \<union> \<Union>M'}"
+        define osc where "osc = lab_osc \<union> unlab_osc1 \<union> unlab_osc2"
         have card_unlab_osc2: "card ({v2} \<union> \<Union> M') = Suc (2 * card M')"
         proof-
           have "finite M'"

@@ -612,7 +612,7 @@ proof-
     by(auto simp add: algebra_simps)
 qed
 
-definition "important_initial state v \<equiv> v\<in> \<V> \<and> ( \<bar>balance state v \<bar> > (1 - \<epsilon>)*current_\<gamma> state )"
+definition "important_initial state v = ( v\<in> \<V> \<and> ( \<bar>balance state v \<bar> > (1 - \<epsilon>)*current_\<gamma> state ))"
 
 theorem running_time_sum_from_init:
   assumes 
@@ -803,10 +803,14 @@ proof-
           simp add: loopB_sim initial_def to_rdgs_def empty_forest_axioms to_graph_def   
                     \<E>_impl_meaning set_filter(1) neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty)
   have orlins_entry_pseudo_initial: "orlins_entry  pseudo_initial"
-    unfolding orlins_entry_def pseudo_initial_def initial_def apply auto
+  proof-
+    have "v \<in> \<V> \<Longrightarrow> \<bar>\<b> v\<bar> \<le> (1 - \<epsilon>) * (2 * Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>}) " for v
     apply(rule order.trans, rule Max.coboundedI[of "{\<bar>\<b> v\<bar> |v. v \<in> \<V>}"])
     using  \<epsilon>_axiom Max.coboundedI[of "{\<bar>\<b> v\<bar> |v. v \<in> \<V>}"] \<V>_finite Max_b_gtr_0 
     by auto
+  thus ?thesis
+    by(auto simp add: orlins_entry_def pseudo_initial_def initial_def)
+  qed
   have orlins_entry_one_step: "i > 0 \<Longrightarrow> orlins_entry (orlins_one_step_check pseudo_initial)"
     using  loopB_sim  assms(4) invar_gamma_initial loopB_term
     by (auto intro: orlins_entry_after_loopB[OF _ refl] simp add: assms(3))

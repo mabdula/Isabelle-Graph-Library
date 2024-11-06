@@ -33,7 +33,7 @@ definition count_odd_comps_in_diff where
   "count_odd_comps_in_diff G X = card (odd_comps_in_diff G X)"
 
 definition barrier where
-  "barrier G X \<equiv> X \<noteq> {} \<and> card (odd_comps_in_diff G X) = card X"
+  "barrier G X = ( X \<noteq> {} \<and> card (odd_comps_in_diff G X) = card X)"
 
 lemma graph_diff_member[iff?]: "e \<in> graph_diff G X \<longleftrightarrow>
    e \<in> G \<and> e \<inter> X = {}"
