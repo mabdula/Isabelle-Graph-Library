@@ -2033,19 +2033,19 @@ next
   case 2
   thus ?case
     apply(rule invar_aux2I)
-    using empty_forest_axioms(1) neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms(1) vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     unfolding initial_def to_rdgs_def to_graph_def by simp 
 next
   case 3
   thus?case
     apply(rule invar_aux3I)
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     unfolding initial_def to_rdgs_def to_graph_def  by simp
 next
   case 4
   thus ?case
     apply(rule invar_aux4I)
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     unfolding initial_def to_rdgs_def to_graph_def by simp
 next
   case 5
@@ -2059,7 +2059,7 @@ next
 next
   case 7
   thus ?case
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty  not_reachable_empt 
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty  not_reachable_empt 
     by (fastforce intro: invar_aux7I simp add: initial_def to_graph_def)
 next
   case 8
@@ -2068,12 +2068,12 @@ next
 next
   case 9
   thus ?case
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
    by(auto intro: invar_aux5I simp add: initial_def to_graph_def)
 next
   case 10
   thus ?case
-    using not_reachable_empt empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using not_reachable_empt empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by (fastforce intro: invar_aux10I simp add: initial_def connected_component_def to_graph_def)
 next
   case 11
@@ -2082,8 +2082,8 @@ next
     case (1 e)
     then show ?case
     unfolding initial_def  connected_component_def to_graph_def apply simp
-    using  \<E>_impl_meaning  not_reachable_empt empty_forest_axioms neighb.set.set_isin 
-           neighb.set.invar_empty neighb.set.set_empty
+    using  \<E>_impl_meaning  not_reachable_empt empty_forest_axioms vset.set.set_isin 
+           vset.set.invar_empty vset.set.set_empty
     by(subst (asm) set_filter[OF \<E>_impl_meaning(2)]) fastforce
   qed
 next
@@ -2099,19 +2099,19 @@ next
 next
   case 14
   thus ?case
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by(auto intro!: invar_aux14I simp add: validF_def Vs_def initial_def to_graph_def dblton_graph_def)
 next
   case 15
   thus ?case
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by(auto intro: invar_aux15I simp add: Vs_def initial_def to_graph_def)
 next
   case 16
   thus ?case    
     unfolding  invar_aux16_def initial_def connected_component_def  to_graph_def
     apply(simp, rule, rule sym)
-    using  not_reachable_empt empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using  not_reachable_empt empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by (fastforce simp add: sym[OF is_singleton_altdef[simplified], simplified is_singleton_def])
 next
   case 17
@@ -2126,22 +2126,22 @@ next
 next
   case 19
   thus ?case
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by (simp add: invar_aux19_def initial_def)
 next
   case 20
   thus ?case
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty 
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty 
     by (simp add: invar_aux20_def initial_def)
 next
   case 21
   show ?case
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by(simp add: invar_aux21_def initial_def to_graph_def)
 next
   case 22
   show ?case
-    using empty_forest_axioms \<E>_impl_meaning set_filter(1) neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms \<E>_impl_meaning set_filter(1) vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by(simp add: invar_aux22_def initial_def to_graph_def to_rdgs_def)
 qed
     
@@ -2153,7 +2153,7 @@ lemma invar_gamma_initial: "\<not> (\<forall> v \<in> \<V>. \<b> v = 0) \<Longri
   done
 
 lemma invar_forest_initial: "invar_forest initial"
-  using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+  using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
   unfolding invar_forest_def initial_def to_rdgs_def to_graph_def by simp
 
 lemma invar_integral_initial: "invar_integral initial"
@@ -2217,7 +2217,7 @@ lemma \<Phi>_initial: "invar_non_zero_b initial\<Longrightarrow> \<Phi> initial 
   done
 
 lemma loopB_entry_initial: "loopB_entryF initial"
-  using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+  using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
   unfolding loopB_entryF_def initial_def to_rdgs_def to_graph_def by simp
 
 theorem initial_state_orlins_dom_and_results:
@@ -2249,7 +2249,7 @@ proof-
                             loopB_invar_gamma_pres  aux_invar_initial loopB_termination loopB_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
-                            neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty))+
+                            vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
     qed
   qed (fastforce intro: orlins.domintros)+
   show "return state' = success \<Longrightarrow> is_Opt \<b> (current_flow state')"
@@ -2281,7 +2281,7 @@ proof-
                             loopB_invar_gamma_pres  aux_invar_initial loopB_termination loopB_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
-                          neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty))+
+                          vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
     qed
   next 
     case success
@@ -2349,7 +2349,7 @@ qed
                             loopB_invar_gamma_pres  aux_invar_initial loopB_termination loopB_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
-                            neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty))+
+                            vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
     qed
   next 
     case failure
@@ -2418,7 +2418,7 @@ qed
                             loopB_invar_gamma_pres  aux_invar_initial loopB_termination loopB_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
-                            neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty))+
+                            vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
     qed
   next 
      case success

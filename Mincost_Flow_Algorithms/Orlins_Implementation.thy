@@ -67,12 +67,12 @@ context
            not_blocked_map.automation
 begin
 
-definition "insert_undirected_edge_impl u v forst \<equiv> (let neighbs_u = the (lookup forst u);
-                                                    neighbs_v = the (lookup forst v);
-                                                    neighb_u_new = neighb_insert v neighbs_u;
-                                                    neighb_v_new = neighb_insert u neighbs_v
-                                                 in edge_map_update v neighb_v_new (
-                                                    edge_map_update u neighb_u_new forst))"
+definition "insert_undirected_edge_impl u v forst \<equiv> (let vsets_u = the (lookup forst u);
+                                                    vsets_v = the (lookup forst v);
+                                                    vset_u_new = vset_insert v vsets_u;
+                                                    vset_v_new = vset_insert u vsets_v
+                                                 in edge_map_update v vset_v_new (
+                                                    edge_map_update u vset_u_new forst))"
 
 definition "move_balance b x y = (let bx = the (bal_lookup b x);
                                       by = the (bal_lookup b y) in
@@ -468,8 +468,8 @@ find_theorems "(_ = _) = (_ = _)"
 
 
 definition "implementation_invar state_impl \<equiv> 
-            adj_inv (\<FF>_impl state_impl) 
-          \<and> (\<forall> x. neighb_inv (the (lookup (\<FF>_impl state_impl) x))) 
+            adjmap_inv (\<FF>_impl state_impl) 
+          \<and> (\<forall> x. vset_inv (the (lookup (\<FF>_impl state_impl) x))) 
           \<and> set_invar (actives_impl state_impl)
           \<and> \<E> = flow_domain (current_flow_impl state_impl)
           \<and> flow_invar (current_flow_impl state_impl) 
@@ -483,8 +483,8 @@ definition "implementation_invar state_impl \<equiv>
           \<and> \<E> = not_blocked_dom (not_blocked_impl state_impl)"
 
 lemma implementation_invarI[simp]:
-     "adj_inv (\<FF>_impl state_impl) 
-          \<Longrightarrow> (\<forall> x. neighb_inv (the (lookup (\<FF>_impl state_impl) x))) 
+     "adjmap_inv (\<FF>_impl state_impl) 
+          \<Longrightarrow> (\<forall> x. vset_inv (the (lookup (\<FF>_impl state_impl) x))) 
           \<Longrightarrow> set_invar (actives_impl state_impl)
           \<Longrightarrow> \<E>= flow_domain (current_flow_impl state_impl)
           \<Longrightarrow> flow_invar (current_flow_impl state_impl) 
@@ -500,8 +500,8 @@ lemma implementation_invarI[simp]:
 
 lemma implementation_invarE[simp, elim]:
      " implementation_invar state_impl \<Longrightarrow> 
-          (adj_inv (\<FF>_impl state_impl) 
-          \<Longrightarrow> (\<forall> x. neighb_inv (the (lookup (\<FF>_impl state_impl) x))) 
+          (adjmap_inv (\<FF>_impl state_impl) 
+          \<Longrightarrow> (\<forall> x. vset_inv (the (lookup (\<FF>_impl state_impl) x))) 
           \<Longrightarrow> set_invar (actives_impl state_impl)
           \<Longrightarrow> \<E> = flow_domain (current_flow_impl state_impl)
           \<Longrightarrow> flow_invar (current_flow_impl state_impl) 
@@ -516,8 +516,8 @@ lemma implementation_invarE[simp, elim]:
   unfolding implementation_invar_def by auto
 
 lemma implementation_invar_partialE:
-      "implementation_invar state_impl \<Longrightarrow>((adj_inv (\<FF>_impl state_impl)) \<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow>((\<forall> x. neighb_inv (the (lookup (\<FF>_impl state_impl) x)))\<Longrightarrow> P ) \<Longrightarrow> P"
+      "implementation_invar state_impl \<Longrightarrow>((adjmap_inv (\<FF>_impl state_impl)) \<Longrightarrow> P ) \<Longrightarrow> P"
+      "implementation_invar state_impl \<Longrightarrow>((\<forall> x. vset_inv (the (lookup (\<FF>_impl state_impl) x)))\<Longrightarrow> P ) \<Longrightarrow> P"
       "implementation_invar state_impl \<Longrightarrow>(set_invar (actives_impl state_impl) \<Longrightarrow> P ) \<Longrightarrow> P"
       "implementation_invar state_impl \<Longrightarrow>(\<E> = flow_domain (current_flow_impl state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
       "implementation_invar state_impl \<Longrightarrow>(flow_invar (current_flow_impl state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
@@ -533,8 +533,8 @@ lemma implementation_invar_partialE:
   unfolding implementation_invar_def by auto
 
 lemma implementation_invar_partial_props:
-      "implementation_invar state_impl \<Longrightarrow>(adj_inv (\<FF>_impl state_impl))"
-      "implementation_invar state_impl \<Longrightarrow>(\<forall> x. neighb_inv (the (lookup (\<FF>_impl state_impl) x)))"
+      "implementation_invar state_impl \<Longrightarrow>(adjmap_inv (\<FF>_impl state_impl))"
+      "implementation_invar state_impl \<Longrightarrow>(\<forall> x. vset_inv (the (lookup (\<FF>_impl state_impl) x)))"
       "implementation_invar state_impl \<Longrightarrow>set_invar (actives_impl state_impl)"
       "implementation_invar state_impl \<Longrightarrow>\<E> = flow_domain (current_flow_impl state_impl)"
       "implementation_invar state_impl \<Longrightarrow>flow_invar (current_flow_impl state_impl)"
@@ -692,8 +692,8 @@ definition loopA_impl_upd::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl
 lemma loopA_impl_upd_compatible_with_abstr:
   assumes " abstract state_impl = state"
           "loopA_call_cond state"
-          "adj_inv (\<FF>_impl state_impl)"
-           "(\<And> x. neighb_inv (the (lookup (\<FF>_impl state_impl) x)))"
+          "adjmap_inv (\<FF>_impl state_impl)"
+           "(\<And> x. vset_inv (the (lookup (\<FF>_impl state_impl) x)))"
           "set_invar (actives state)"
           "\<E> = flow_domain (current_flow_impl state_impl)"
           "flow_invar (current_flow_impl state_impl)"
@@ -708,8 +708,8 @@ lemma loopA_impl_upd_compatible_with_abstr:
           "\<E> = not_blocked_dom (not_blocked_impl state_impl)"
 
   shows   "abstract (loopA_impl_upd state_impl) = loopA_upd state"  
-     "adj_inv (\<FF>_impl (loopA_impl_upd state_impl))" 
-     "(\<forall> x. neighb_inv (the (lookup (\<FF>_impl (loopA_impl_upd state_impl)) x)))"        
+     "adjmap_inv (\<FF>_impl (loopA_impl_upd state_impl))" 
+     "(\<forall> x. vset_inv (the (lookup (\<FF>_impl (loopA_impl_upd state_impl)) x)))"        
       "set_invar (actives (loopA_upd state ))" 
       "\<E> = flow_domain (current_flow_impl (loopA_impl_upd state_impl))" 
       "flow_invar (current_flow_impl (loopA_impl_upd state_impl))"
@@ -760,13 +760,13 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
 
   have goodF:"goodF (\<FF>_imp state)" 
     by (simp add: Pair_graph_specs_from_aux_invar assms(8))
-    have adj_invF: "adj_inv (\<FF>_imp state)"
+    have adjmap_invF: "adjmap_inv (\<FF>_imp state)"
       using assms(8) from_aux_invar'(18) by auto
     have goodF':"goodF \<FF>_imp'"
-      by(auto intro: Pair_Graph_Specs_insert_undirected_edge_pres simp add: 1(15)  goodF adj_invF)
+      by(auto intro: Pair_Graph_Specs_insert_undirected_edge_pres simp add: 1(15)  goodF adjmap_invF)
     have forest'_fit_together: "fit_together \<FF>' \<FF>_imp'" 
     using forest_fit_together 
-    by (auto intro: fit_together_pres simp add:  defs(14,13)  goodF' goodF adj_invF)
+    by (auto intro: fit_together_pres simp add:  defs(14,13)  goodF' goodF adjmap_invF)
   have x_not_y: "x \<noteq> y" 
     using e_in_E' assms(8) 
     unfolding 1(10) 1(11) aux_invar_def invar_aux11_def 1(4) by auto
@@ -797,11 +797,11 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
     using  x_not_y from_aux_invar'(14,21)[OF assms(8)] 1
     by(auto simp add: validF_def Vs_def)
 
-  have adj_inv_F_imp':"adj_inv \<FF>_imp'"
-    using 1(15) adj.invar_update assms(3) from_aux_invar'(18) assms(1,8)
-    by (auto intro: adj_inv_pres_insert_undirected_edge)
+  have adjmap_inv_F_imp':"adjmap_inv \<FF>_imp'"
+    using 1(15) adjmap.invar_update assms(3) from_aux_invar'(18) assms(1,8)
+    by (auto intro: adjmap_inv_pres_insert_undirected_edge)
 
-   have superfluous_asm:"\<And>x. lookup \<FF>_imp' x \<noteq> None \<and> neighb_inv (the (lookup \<FF>_imp' x))"
+   have superfluous_asm:"\<And>x. lookup \<FF>_imp' x \<noteq> None \<and> vset_inv (the (lookup \<FF>_imp' x))"
      using fit_together_def forest'_fit_together by blast
 
    have " reachable \<FF>' x' xx \<or> xx =x'" 
@@ -830,7 +830,7 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
   have x'_inVs:"x' \<in> Vs (to_graph \<FF>_imp')"
     using F_rewrite reachable_in_Vs(1)[OF x'_reaches_y'] by auto
    have walk_betw_Q: " walk_betw \<FF>' x' Q y'"
-      using forest'_fit_together goodF' graph_invar_F'  q_prop  adj_inv_F_imp' 
+      using forest'_fit_together goodF' graph_invar_F'  q_prop  adjmap_inv_F_imp' 
              1(18) superfluous_asm x'_inVs x'_not_y'
       by (intro from_directed_walk_to_undirected_walk[OF _ _
               _ get_path_axioms(1)[of \<FF>_imp' x' _ y' Q]])
@@ -839,7 +839,7 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
       by(auto intro!:  path_edges_subset[of \<FF>' Q] walk_between_nonempty_pathD(1))
 
    have distinct_Q[simp]: "distinct Q"
-      using forest'_fit_together goodF' graph_invar_F'  q_prop  adj_inv_F_imp' 
+      using forest'_fit_together goodF' graph_invar_F'  q_prop  adjmap_inv_F_imp' 
              1(18) superfluous_asm x'_inVs x'_not_y'
       by (intro get_path_axioms(2)[of \<FF>_imp' x' _ y' Q])
      
@@ -1154,11 +1154,11 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
    thus "abstract (loopA_impl_upd state_impl) = loopA_upd state"
      using state'_is state'_impl_is by simp
 
-  show "adj_inv (Algo_state_impl.\<FF>_impl (loopA_impl_upd state_impl))"
-    using sym[OF state'_impl_is] 1(24) state'_impl_def adj_inv_F_imp' 
+  show "adjmap_inv (Algo_state_impl.\<FF>_impl (loopA_impl_upd state_impl))"
+    using sym[OF state'_impl_is] 1(24) state'_impl_def adjmap_inv_F_imp' 
     by(auto simp add: abstractE' simp del: abstractE)
 
-  show "\<forall> x. neighb_inv (the (lookup (Algo_state_impl.\<FF>_impl (loopA_impl_upd state_impl)) x))" 
+  show "\<forall> x. vset_inv (the (lookup (Algo_state_impl.\<FF>_impl (loopA_impl_upd state_impl)) x))" 
     using  sym[OF state'_impl_is] 1(24) state'_impl_def  superfluous_asm 
     by(auto simp add: abstractE' simp del: abstractE)
 
@@ -1343,8 +1343,8 @@ shows   "abstract (loopA_impl state_impl) = loopA state"
 lemma abstract_impl_same_sholw_loop:
   assumes "loopA_dom state" 
           "(abstract state_impl) = state"
-          " adj_inv (\<FF>_impl state_impl)"
-          "(\<And> x. neighb_inv (the (lookup (\<FF>_impl state_impl) x)))"
+          " adjmap_inv (\<FF>_impl state_impl)"
+          "(\<And> x. vset_inv (the (lookup (\<FF>_impl state_impl) x)))"
           "set_invar (actives state)"
           "\<E> = flow_domain (current_flow_impl state_impl)"
           "flow_invar (current_flow_impl state_impl)"
@@ -2611,16 +2611,16 @@ next
     unfolding dom_def 
     by fastforce+
 qed (simp del: abstractE  add: abstract_flow_map_def abstract_conv_map_def dom_def  conv_map.map_empty
-                               to_graph_def empty_forest_axioms(1) neighb.emptyD(3) neighb.set.invar_empty 
-                               neighb.set.set_isin  abstract_def Let_def )+
+                               to_graph_def empty_forest_axioms(1) vset.emptyD(3) vset.set.invar_empty 
+                               vset.set.set_isin  abstract_def Let_def )+
 
 lemma initial_impl_implementation_invar: "implementation_invar initial_impl"
   apply(subst initial_impl_def, rule implementation_invarI, simp_all del: abstractE)
   apply(auto intro: flow_update_all(3) invar_filter
           simp add: flow_update_all(4) init_flow init_bal \<E>_impl_meaning(2) empty_forest_axioms
-                     neighb.set.invar_empty)[7]
-  apply(auto simp add: to_set_of_adjacency_def dom_def empty_forest_axioms(1) neighb.set.set_isin 
-                       neighb.set.invar_empty neighb.set.set_empty  conv_map.map_empty )[1]
+                     vset.set.invar_empty)[7]
+  apply(auto simp add: to_set_of_adjacency_def dom_def empty_forest_axioms(1) vset.set.set_isin 
+                       vset.set.invar_empty vset.set.set_empty  conv_map.map_empty )[1]
   by (auto intro: rep_comp_update_all(3)
            simp add: conv_map.invar_empty init_rep_card rep_comp_update_all(4) init_not_blocked
                      not_blocked_update_all(4))
@@ -2654,7 +2654,7 @@ next
     by(auto intro: invar_gamma_initial)
   have emptyF: "\<F> initial  = {}"
     by (auto simp add:  initial_def to_graph_def empty_forest_axioms(1) to_rdgs_def 
-                        neighb.set.set_empty neighb.set.set_isin neighb.set.invar_empty)
+                        vset.set.set_empty vset.set.set_isin vset.set.invar_empty)
   have corresp_after_loopB:"abstract (loopB_impl initial_impl) = loopB initial"
     by(intro loopB_abstract_corresp_result(1))
       (auto intro: loopB_termination 

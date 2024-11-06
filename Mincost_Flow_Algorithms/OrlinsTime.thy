@@ -770,7 +770,7 @@ proof-
   have invar_integral_pseudo_initial: "invar_integral pseudo_initial"
     by(simp add: invar_integral_def pseudo_initial_def initial_def)
   have invar_forest_pseudo_initial: "invar_forest pseudo_initial"
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by(simp add: invar_forest_def pseudo_initial_def initial_def to_rdgs_def to_graph_def)
   have aux_invar_pres: "aux_invar ((orlins_one_step_check ^^ j) pseudo_initial)" for j
     using aux_invar_pseudo_initial invar_gamma_pseudo_initial invar_non_zero_b_pseudo_initial
@@ -795,13 +795,13 @@ proof-
     unfolding invar_forest_def
     using  loopB_termination[of initial] invar_gamma_initial assms(4)
     apply ((subst loopB_changes_\<F>| subst loopB_changes_current_\<gamma>), simp)+
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by(simp add: initial_def to_rdgs_def to_graph_def)
   have invar_integral_after_one:"invar_integral (orlins_one_step_check pseudo_initial)"
     using assms(4) invar_gamma_initial loopB_termination aux_invar_initial invar_integral_initial
     by (fastforce intro: loopB_invar_integral_pres 
           simp add: loopB_sim initial_def to_rdgs_def empty_forest_axioms to_graph_def   
-                    \<E>_impl_meaning set_filter(1) neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty)
+                    \<E>_impl_meaning set_filter(1) vset.set.set_isin vset.set.invar_empty vset.set.set_empty)
   have orlins_entry_pseudo_initial: "orlins_entry  pseudo_initial"
     unfolding orlins_entry_def pseudo_initial_def initial_def apply auto
     apply(rule order.trans, rule Max.coboundedI[of "{\<bar>\<b> v\<bar> |v. v \<in> \<V>}"])
@@ -1435,7 +1435,7 @@ next
   have invar_integral_pseudo_initial: "invar_integral pseudo_initial"
     by(simp add: invar_integral_def pseudo_initial_def initial_def)
   have invar_forest_pseudo_initial: "invar_forest pseudo_initial"
-    using empty_forest_axioms neighb.set.set_isin neighb.set.invar_empty neighb.set.set_empty
+    using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
     by(simp add: invar_forest_def pseudo_initial_def initial_def to_rdgs_def to_graph_def)
   have orlins_entry_pseudo_initial: "orlins_entry  pseudo_initial"
     using  \<epsilon>_axiom Max.coboundedI[of "{\<bar>\<b> v\<bar> |v. v \<in> \<V>}"] \<V>_finite Max_b_gtr_0 
@@ -1446,8 +1446,8 @@ next
   have card_F_pseudo_initial: "N = card (comps \<V> (to_graph (\<FF>_imp pseudo_initial)))"
     using not_reachable_empt empty_forest_axioms
     by (fastforce intro: bij_betw_same_card[of "\<lambda> x. {x}"] 
-               simp add: bij_betw_def inj_on_def neighb.set.set_isin neighb.set.invar_empty 
-                         neighb.set.set_empty pseudo_initial_def comps_def initial_def connected_component_def N_def to_graph_def)
+               simp add: bij_betw_def inj_on_def vset.set.set_isin vset.set.invar_empty 
+                         vset.set.set_empty pseudo_initial_def comps_def initial_def connected_component_def N_def to_graph_def)
   have "return ((orlins_one_step_check ^^ (N * (\<l> + \<k> + 2))) pseudo_initial) \<noteq> notyetterm"
     using \<l>_def \<k>_def invar_gamma_pseudo_initial aux_invar_pseudo_initial
           invar_non_zero_b_pseudo_initial invar_integral_pseudo_initial invar_forest_pseudo_initial

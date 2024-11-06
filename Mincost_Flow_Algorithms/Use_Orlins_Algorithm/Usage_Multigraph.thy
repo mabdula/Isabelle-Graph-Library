@@ -83,7 +83,7 @@ definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8
 
 definition "vertices = remdups (map prod.fst edges @ map prod.snd edges)"
 
-definition "nbs v = foldr (\<lambda> x tree. insert x tree) (remdups (map prod.snd (filter (\<lambda> e. prod.fst e = v) edges))) neighb_empty"
+definition "nbs v = foldr (\<lambda> x tree. insert x tree) (remdups (map prod.snd (filter (\<lambda> e. prod.fst e = v) edges))) vset_empty"
 
 definition "G = foldr (\<lambda> x tree. update x (nbs x) tree) vertices  empty"
 
@@ -92,7 +92,7 @@ value vertices
 value G
 value "dfs_initial_state (1::nat)"   
 value "dfs_impl G 9 (dfs_initial_state 0)"
-value "neighb_diff (nbs 1) (nbs 2)"
+value "vset_diff (nbs 1) (nbs 2)"
 end
 
 context begin
