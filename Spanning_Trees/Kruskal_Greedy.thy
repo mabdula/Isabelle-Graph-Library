@@ -486,10 +486,10 @@ proof-
   from Kruskal_indep'_eq_has_no_cycle[OF assms(1)] assms(3)
     have no_cycle: "graph_abs.has_no_cycle (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G local.carrier_graph_matroid))
       (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G X))" by blast
-
   have X_subset_Y: "Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G Y) \<subseteq>
-    Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G X)" sorry (* TODO HERE *)
-
+    Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G X)"
+    using Kruskal_Graphs_Matroids.subset_iff_graph_to_edges_subset[OF assms(2,1), of v1_of v2_of]
+    assms(4) by(force simp add: Kruskal_E_to_G_def) 
   from graph_abs.has_no_cycle_indep_subset[OF carrier_converted_graph_abs no_cycle X_subset_Y]
     have "graph_abs.has_no_cycle (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G carrier_graph_matroid))
       (Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G Y))" by blast
@@ -518,9 +518,10 @@ proof-
     obtain x where "x \<in> Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G X) - Pair_Graph_U_RBT.ugraph_abs (Kruskal_E_to_G Y)"
       "graph_abs.has_no_cycle (Pair_Graph_U_RBT.ugraph_abs (local.Kruskal_E_to_G local.carrier_graph_matroid))
        (Set.insert x (Pair_Graph_U_RBT.ugraph_abs (local.Kruskal_E_to_G Y)))" by blast
-
-  with Kruskal_indep'_eq_has_no_cycle (* TODO HERE !! *)
-  show ?thesis sorry
+find_theorems Pair_Graph_U_RBT.ugraph_abs Kruskal_E_to_G
+   (* TODO HERE !! *)
+  show ?thesis
+    apply(subst Kruskal_indep'_eq_has_no_cycle) sorry
 qed
 
 
