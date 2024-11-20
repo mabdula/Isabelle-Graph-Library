@@ -21,6 +21,6 @@ Results include:
 
  - Kruskal's algorithm for finding minimum spanning trees, implemented as an instance of the Best-In-Greedy algorithm.
  
- - Some fundamental theory for minimum cost flows and related algorithms, including Orlin's Algorithm, which is one of the most efficient methods for this class of problems.
+ - Some fundamental theory for minimum cost flows and related algorithms, including Orlin's Algorithm, which is one of the most efficient methods for this class of problems. 
 
 For the more practically usable algorithms, we include an implementation. For others, we only focus on the analysis.
