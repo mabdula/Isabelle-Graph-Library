@@ -4,3 +4,4 @@
 - Add adaptor for Wimmer's graph library
 - add Hypergraphs
 - fix Kruskal
+- move Pair_ugraph to undirected graph.
