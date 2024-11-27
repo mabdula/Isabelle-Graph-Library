@@ -8,4 +8,4 @@ session "Spanning_Trees" = "HOL-Data_Structures" +
 
   theories
     "Spanning_Trees"
-    "Kruskal_Greedy"
+    (*"Kruskal_Greedy"*)

@@ -1004,11 +1004,11 @@ lemma cycle_equivalence:
 
 
 end
-
+(*
 lemma ex_graph_impl_ugraph_abs:
   "graph_abs G \<Longrightarrow> \<exists>G_impl. pair_graph_u_invar G_impl \<and> ugraph_abs G_impl = G"
   sorry
-
+*)
 end
 
 

@@ -137,6 +137,8 @@ definition "graph_inv G = (adjmap_inv G \<and> (\<forall>v vset. lookup G v = So
 definition "finite_graph G = (finite {v. (lookup G v) \<noteq> None})"
 definition "finite_vsets = (\<forall>N. finite (t_set N))"
 
+lemma graph_inv_empty: "graph_inv \<emptyset>\<^sub>G"
+  by (simp add: adjmap.invar_empty adjmap.map_empty graph_inv_def)
 
 definition neighbourhood::"'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset" where
   "(neighbourhood G v) = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
@@ -146,6 +148,9 @@ lemmas [code] = neighbourhood_def
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
 definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
+
+lemma digraph_abs_empty: "digraph_abs empty = {}" 
+  by (simp add: adjmap.map_empty digraph_abs_def local.neighbourhood_def vset.set.invar_empty vset.set.set_empty vset.set.set_isin)
 
 definition "add_edge G u v =
 ( 
@@ -322,6 +327,17 @@ lemma adjmap_inv_delete[intro]: "graph_inv G \<Longrightarrow> graph_inv (delete
 lemma digraph_abs_delete[simp]:  "graph_inv G \<Longrightarrow> digraph_abs (delete_edge G u v) = (digraph_abs G) - {(u,v)}"
   by (fastforce simp add: digraph_abs_def set_of_map_def neighbourhood_def delete_edge_def split: option.splits if_splits)
 
+lemma finite_graph_add_edge: assumes "graph_inv G" "finite_graph G" 
+  shows "finite_graph (add_edge G u v)"
+proof-
+  have adjmap_inv: "adjmap_inv G" 
+    using assms by auto
+  have dom_is: "{va. lookup (add_edge G u v) va \<noteq> None} = Set.insert u {va. lookup G va \<noteq> None}" 
+    by(auto split: option.split simp add: adjmap.map_update[OF adjmap_inv] add_edge_def)
+  show ?thesis
+    using assms(2)
+    by(unfold finite_graph_def dom_is) auto
+qed
 
 end \<comment> \<open>Properties context\<close>  
 

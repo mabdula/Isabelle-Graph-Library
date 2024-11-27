@@ -1,5 +1,5 @@
 theory Pair_Graph_U_Specs
-  imports Awalk "Map_Addons" "Set_Addons" Pair_Graph_Specs
+  imports Awalk "Map_Addons" "Set_Addons" Pair_Graph_Specs "HOL-Eisbach.Eisbach"
 begin
 
 (* Note: Some of the definitions in this file are currently not relevant to the rest of
@@ -35,6 +35,8 @@ definition "uedges G = (\<lambda>(u,v). rep (uEdge u v)) ` (digraph_abs G)"
 
 definition ugraph_abs where "ugraph_abs G = {{u, v} | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
 
+lemma ugraph_and_digraph_abs:"ugraph_abs G = {{u, v} | u  v. (u, v) \<in> digraph_abs G}"
+ by(simp add: ugraph_abs_def digraph_abs_def)
 
 context
   includes adjmap.automation  vset.set.automation
@@ -66,6 +68,11 @@ definition "pair_graph_u_invar G = (
   (\<forall>v. \<not> v \<in>\<^sub>G (\<N>\<^sub>G G v)) \<and>
   (\<forall>u v. v \<in>\<^sub>G (\<N>\<^sub>G G u) \<longrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v)))"
 
+lemma pair_graph_u_invar_no_loop: 
+   "pair_graph_u_invar G \<Longrightarrow> x \<in> dom (lookup G) \<Longrightarrow> y \<in> t_set (the (lookup G x)) \<Longrightarrow> x \<noteq> y"
+  using  neighbourhood_invars'[of G]   
+ by (subst (asm) vset.set.set_isin[of "the (lookup G x)" y, symmetric])
+    (auto simp add: pair_graph_u_invar_def local.neighbourhood_def   option.split, metis option.simps(5))
 
 context
   fixes G::'adjmap
@@ -377,6 +384,52 @@ lemma card_uedges:
   "card (set_of_uedge ` uedges G) = card (uedges G)"
   using inj_set_of_uedge by (intro card_image)
 
+lemma pair_graph_u_invar_empty: "pair_graph_u_invar \<emptyset>\<^sub>G"
+  by (simp add: finite_graphI graph_inv_def local.neighbourhood_def pair_graph_u_invar_def)
+
+lemma pair_graph_u_invar_add_edge:
+  assumes "u \<noteq> v"
+  shows "pair_graph_u_invar (add_edge (add_edge G u v) v u)" 
+proof-
+  have set_is:"[add_edge G u v]\<^sub>g = Set.insert (u, v) [G]\<^sub>g"
+    using  digraph_abs_insert[of G u v] assms by(auto simp add: pair_graph_u_invar_def)
+  have finiteG: "finite_graph G" 
+    by simp
+  have adjmap_invG: "adjmap_inv G"
+    using invar_graph_inv by blast
+  have adjmap_invg': "adjmap_inv (add_edge G u v)"
+    using graph_inv_def by blast
+  have set_is':"{v. v \<noteq> u \<longrightarrow> (\<exists>y. lookup G v = Some y)} = Set.insert u {v.  (\<exists>y. lookup G v = Some y)}" by blast
+  have finite_graph_after:"finite_graph (add_edge G u v)"
+    using finiteG
+    by (auto split: option.split simp add: finite_graph_def add_edge_def adjmap.map_update[OF adjmap_invG] set_is') 
+  have not_Refl:"\<not> va \<in>\<^sub>G \<N>\<^sub>G G va" for va by simp
+  have not_Refl':"\<not> va \<in>\<^sub>G \<N>\<^sub>G add_edge G u v va" for va
+    using assms not_Refl[of va]  
+    by(auto split: option.split simp add: add_edge_def neighbourhood_def adjmap.map_update[OF adjmap_invG] intro: graph_invE[of G] )
+ have not_Refl_after:"\<not> va \<in>\<^sub>G \<N>\<^sub>G add_edge (add_edge G u v) v u va" for va
+    using assms not_Refl'[of va]  
+    by(auto split: option.split simp add: add_edge_def  adjmap.map_update[OF adjmap_invg', simplified add_edge_def] 
+                   neighbourhood_def adjmap.map_update[OF adjmap_invg'] intro: graph_invE[of G] )
+  have sym_before:"va \<in>\<^sub>G \<N>\<^sub>G G ua \<Longrightarrow> ua \<in>\<^sub>G \<N>\<^sub>G G va" for va ua by blast
+  have sym_after: "va \<in>\<^sub>G \<N>\<^sub>G add_edge (add_edge G u v) v u ua \<Longrightarrow> ua \<in>\<^sub>G \<N>\<^sub>G add_edge (add_edge G u v) v u va " for ua va
+  proof(goal_cases)
+    case 1
+    have"(ua, va) \<in> digraph_abs (add_edge (add_edge G u v) v u)"
+      using 1 adjmap_inv_insert neighbourhoodI by (subst digraph_abs_insert) fastforce+
+    hence "(ua, va) = (v, u) \<or> (ua, va) = (u, v) \<or> (ua, va) \<in> digraph_abs G"
+      by(auto simp add: adjmap_inv_insert) 
+    hence "(ua, va) = (v, u) \<or> (ua, va) = (u, v) \<or> (va, ua) \<in> digraph_abs G" 
+      by auto 
+    hence"(va, ua) \<in> digraph_abs (add_edge (add_edge G u v) v u)"
+      by(auto simp add:  adjmap_inv_insert)  
+    then show ?case 
+      by (simp add: digraph_abs_def)
+  qed
+  show ?thesis
+    using assms 
+    by(auto intro: adjmap_inv_insert finite_graph_add_edge simp add: pair_graph_u_invar_def not_Refl_after sym_after)
+qed
 
 end
 
