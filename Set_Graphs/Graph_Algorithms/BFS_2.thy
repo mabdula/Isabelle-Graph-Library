@@ -42,14 +42,14 @@ definition "BFS_axiom \<longleftrightarrow>
   (\<forall>u. finite (Pair_Graph.neighbourhood (Graph.digraph_abs G) u)) \<and>
   t_set srcs \<noteq> {} \<and> vset_inv srcs"
 
-abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G" 
-notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
+abbreviation "neighb' \<equiv> Graph.neighb G" 
+notation "neighb'" ("\<N>\<^sub>G _" 100)
 
 
 function (domintros) BFS::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" where
   "BFS BFS_state = 
      (
-        if current BFS_state \<noteq> \<emptyset>\<^sub>N then
+        if current BFS_state \<noteq> \<emptyset>\<^sub>V then
           let
             visited' = visited BFS_state \<union>\<^sub>G current BFS_state;
             parents' = expand_tree (parents BFS_state) (current BFS_state) visited';
@@ -63,7 +63,7 @@ function (domintros) BFS::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'v
 partial_function (tailrec) BFS_impl::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" where
   "BFS_impl BFS_state = 
      (
-        if current BFS_state \<noteq> \<emptyset>\<^sub>N then
+        if current BFS_state \<noteq> \<emptyset>\<^sub>V then
           let
             visited' = visited BFS_state \<union>\<^sub>G current BFS_state;
             parents' = expand_tree (parents BFS_state) (current BFS_state) visited';
@@ -78,7 +78,7 @@ lemma BFS_impl_same:
   shows "BFS_impl state = BFS state"
   by(induction rule: BFS.pinduct[OF assms])(auto simp add: BFS_impl.simps BFS.psimps)
 
-definition "BFS_call_1_conds bfs_state = ( (current bfs_state) \<noteq> \<emptyset>\<^sub>N)"
+definition "BFS_call_1_conds bfs_state = ( (current bfs_state) \<noteq> \<emptyset>\<^sub>V)"
 
 
 definition "BFS_upd1 BFS_state =
@@ -92,7 +92,7 @@ definition "BFS_upd1 BFS_state =
 )" 
 
 
-definition "BFS_ret_1_conds bfs_state = ((current bfs_state) = \<emptyset>\<^sub>N)"
+definition "BFS_ret_1_conds bfs_state = ((current bfs_state) = \<emptyset>\<^sub>V)"
 
 abbreviation "BFS_ret1 bfs_state \<equiv> bfs_state"
 
@@ -154,7 +154,7 @@ definition "call_1_measure_2 BFS_state =
 definition
   "BFS_term_rel' = call_1_measure_1 <*mlex*> call_1_measure_2 <*mlex*> {}"
 
-definition "initial_state = \<lparr>parents =  empty, current = srcs, visited = \<emptyset>\<^sub>N\<rparr>"
+definition "initial_state = \<lparr>parents =  empty, current = srcs, visited = \<emptyset>\<^sub>V\<rparr>"
 
 lemmas[code] = BFS_impl.simps initial_state_def
 
@@ -189,19 +189,19 @@ named_theorems state_rel_holds_intros
 
 lemma DFS_call_1_conds[call_cond_elims]: 
   "BFS_call_1_conds bfs_state \<Longrightarrow> 
-   \<lbrakk>(current bfs_state) \<noteq> \<emptyset>\<^sub>N \<Longrightarrow> P\<rbrakk>
+   \<lbrakk>(current bfs_state) \<noteq> \<emptyset>\<^sub>V \<Longrightarrow> P\<rbrakk>
    \<Longrightarrow> P"
   by(auto simp: BFS_call_1_conds_def split: list.splits option.splits if_splits)
 
 
 lemma BFS_ret_1_conds[call_cond_elims]:
   "BFS_ret_1_conds bfs_state \<Longrightarrow> 
-   \<lbrakk>(current bfs_state) = \<emptyset>\<^sub>N \<Longrightarrow> P\<rbrakk>
+   \<lbrakk>(current bfs_state) = \<emptyset>\<^sub>V \<Longrightarrow> P\<rbrakk>
    \<Longrightarrow> P"
   by(auto simp: BFS_ret_1_conds_def split: list.splits option.splits if_splits)
 
 lemma BFS_ret_1_condsI[call_cond_intros]:
-  "\<lbrakk>(current bfs_state) = \<emptyset>\<^sub>N\<rbrakk> \<Longrightarrow> BFS_ret_1_conds bfs_state"
+  "\<lbrakk>(current bfs_state) = \<emptyset>\<^sub>V\<rbrakk> \<Longrightarrow> BFS_ret_1_conds bfs_state"
   by(auto simp: BFS_ret_1_conds_def split: list.splits option.splits if_splits)
 
 lemma BFS_cases:
@@ -1313,11 +1313,11 @@ proof(cases "t_set (next_frontier (current BFS_state) (visited BFS_state \<union
           intro: mlex_less)
 next
   case False
-  have *: "{{v1, v2} |v1 v2. (v1, v2) \<in> [G]\<^sub>g}
+  have *: "{{v1, v2} |v1 v2. (v1, v2) \<in> [G]\<^sub>G}
                  \<subseteq> (\<lambda>(x,y). {x,y} ) ` ({v. \<exists>y. lookup G v = Some y} \<times>
                                         (\<Union> {t_set N | v N. lookup G v = Some N}))"
     including Graph.adjmap.automation and Graph.vset.set.automation
-    apply (auto simp: Graph.digraph_abs_def Graph.neighbourhood_def image_def
+    apply (auto simp: Graph.digraph_abs_def Graph.neighb_def image_def
                 split: option.splits)
     by (metis Graph.graph_invE Graph.vset.set.set_isin graph_inv(1))
   moreover have "{uu. \<exists>v N. uu = t_set N \<and> lookup G v = Some N} = 
@@ -1328,7 +1328,7 @@ next
     apply(subst (asm) Graph.finite_vsets_def )
     by (auto simp: Graph.finite_graph_def Graph.graph_inv_def
              split: option.splits)
-  ultimately have "finite {{v1, v2} |v1 v2. (v1,v2) \<in> [G]\<^sub>g}"
+  ultimately have "finite {{v1, v2} |v1 v2. (v1,v2) \<in> [G]\<^sub>G}"
     using graph_inv(2)
     by (auto simp: Graph.finite_graph_def intro!: finite_subset[OF *])
   moreover have "finite {neighbourhood (Graph.digraph_abs G) u |u. u \<in> t_set (current BFS_state)}"
@@ -1385,10 +1385,10 @@ qed
 
 lemma not_vwalk_bet_empty[simp]: "\<not> Vwalk.vwalk_bet (Graph.digraph_abs empty) u p v"
   using not_vwalk_bet_empty
-  by (force simp add: Graph.digraph_abs_def Graph.neighbourhood_def)+
+  by (force simp add: Graph.digraph_abs_def Graph.neighb_def)+
 
 lemma not_edge_in_empty[simp]: "(u,v) \<notin> (Graph.digraph_abs empty)"
-  by (force simp add: Graph.digraph_abs_def Graph.neighbourhood_def)+
+  by (force simp add: Graph.digraph_abs_def Graph.neighb_def)+
 
 lemma initial_state_props[invar_holds_intros, termination_intros, simp]:
   "invar_1 (initial_state)" (is ?g1)
@@ -1414,7 +1414,7 @@ proof-
     using srcs_in_G
     by(simp add: initial_state_def)
   thus ?g2 ?g3
-    by(force  simp: initial_state_def dVs_def Graph.digraph_abs_def Graph.neighbourhood_def 
+    by(force  simp: initial_state_def dVs_def Graph.digraph_abs_def Graph.neighb_def 
                   intro!: invar_props_intros)+
 
   show ?g4

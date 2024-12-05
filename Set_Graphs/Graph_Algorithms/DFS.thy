@@ -31,21 +31,21 @@ locale DFS =
  set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 
 
-for lookup :: "'adjmapmap\<Rightarrow> 'v \<Rightarrow> 'vset option" +
+for lookup :: "'adjmap\<Rightarrow> 'v \<Rightarrow> 'vset option" +
 
-fixes G::"'adjmapmap" and s::"'v" and t::"'v" (*
+fixes G::"'adjmap" and s::"'v" and t::"'v" (*
 fixes T_diff::"'vset \<Rightarrow> 'vset \<Rightarrow> nat"
 and T_sel::"'vset \<Rightarrow> nat" and T_insert::"'v \<Rightarrow> 'vset \<Rightarrow> nat"
-and T_lookup::"'adjmapmap\<Rightarrow> 'v \<Rightarrow> nat" and T_G::nat and T_vset_empty::nat*)
+and T_lookup::"'adjmap\<Rightarrow> 'v \<Rightarrow> nat" and T_G::nat and T_vset_empty::nat*)
 
 begin
 
 definition "DFS_axioms = ( Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets
                          \<and> s \<in> dVs (Graph.digraph_abs G))"
 
-abbreviation "neighbourhood' v == Graph.neighbourhood G v"
+abbreviation "neighb' v == Graph.neighb G v"
 
-notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
+notation "neighb'" ("\<N>\<^sub>G _" 100)
 
 subsection \<open>Using the function package to model while-loops\<close>
 
@@ -54,7 +54,7 @@ function (domintros) DFS::"('v, 'vset) DFS_state \<Rightarrow> ('v, 'vset) DFS_s
      (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if v = t then 
           (dfs_state \<lparr>return := Reachable\<rparr>)
-        else ((if (\<N>\<^sub>G v -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>N then
+        else ((if (\<N>\<^sub>G v -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>V then
                   let u = (sel ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)));
                       stack' = u# (stack dfs_state);
                       seen' = insert u (seen dfs_state)                      
@@ -70,13 +70,13 @@ function (domintros) DFS::"('v, 'vset) DFS_state \<Rightarrow> ('v, 'vset) DFS_s
     )"
   by pat_completeness auto
 
-definition "initial_state = \<lparr>stack = [s], seen = insert s \<emptyset>\<^sub>N, return = NotReachable\<rparr>"
+definition "initial_state = \<lparr>stack = [s], seen = insert s \<emptyset>\<^sub>V, return = NotReachable\<rparr>"
 
 definition "DFS_call_1_conds dfs_state = 
     (case stack dfs_state of (v # stack_tl) \<Rightarrow>
        (if v = t then 
           False
-        else ((if ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)) \<noteq> (\<emptyset>\<^sub>N) then
+        else ((if ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)) \<noteq> (\<emptyset>\<^sub>V) then
                   True
                  else False)
               )
@@ -88,7 +88,7 @@ lemma DFS_call_1_conds[call_cond_elims]:
   "DFS_call_1_conds dfs_state \<Longrightarrow> 
    \<lbrakk>\<lbrakk>\<exists>v stack_tl. stack dfs_state = v # stack_tl;
     hd (stack dfs_state) \<noteq> t;
-    (\<N>\<^sub>G (hd (stack dfs_state))) -\<^sub>G (seen dfs_state) \<noteq> (\<emptyset>\<^sub>N)\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> 
+    (\<N>\<^sub>G (hd (stack dfs_state))) -\<^sub>G (seen dfs_state) \<noteq> (\<emptyset>\<^sub>V)\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> 
    P"
   by(auto simp: DFS_call_1_conds_def split: list.splits option.splits if_splits)
 
@@ -107,7 +107,7 @@ definition "DFS_call_2_conds dfs_state =
        (if v = t then 
           False
         else (
-                (if ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)) \<noteq> (\<emptyset>\<^sub>N) then
+                (if ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)) \<noteq> (\<emptyset>\<^sub>V) then
                   False
                  else True)
               )
@@ -119,7 +119,7 @@ lemma DFS_call_2_conds[call_cond_elims]:
   "DFS_call_2_conds dfs_state \<Longrightarrow> 
    \<lbrakk>\<lbrakk>\<exists>v stack_tl. stack dfs_state = v # stack_tl;
     hd (stack dfs_state) \<noteq> t;
-    (\<N>\<^sub>G (hd (stack dfs_state))) -\<^sub>G (seen dfs_state) = (\<emptyset>\<^sub>N)\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> 
+    (\<N>\<^sub>G (hd (stack dfs_state))) -\<^sub>G (seen dfs_state) = (\<emptyset>\<^sub>V)\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> 
    P"
   by(auto simp: DFS_call_2_conds_def split: list.splits option.splits if_splits)
 
@@ -132,7 +132,7 @@ definition "DFS_ret_1_conds dfs_state =
        (if v = t then 
           False
         else (
-                (if ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>N then
+                (if ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>V then
                   False
                  else False)
               )
@@ -157,7 +157,7 @@ definition "DFS_ret_2_conds dfs_state =
        (if v = t then 
           True
         else (
-                (if (\<N>\<^sub>G v -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>N then
+                (if (\<N>\<^sub>G v -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>V then
                   False
                  else False)
               )
@@ -764,7 +764,7 @@ partial_function (tailrec) DFS_impl::"('v, 'vset) DFS_state \<Rightarrow> ('v, '
      (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if v = t then 
           (dfs_state \<lparr>return := Reachable\<rparr>)
-        else ((if (\<N>\<^sub>G v -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>N then
+        else ((if (\<N>\<^sub>G v -\<^sub>G (seen dfs_state)) \<noteq> \<emptyset>\<^sub>V then
                   let u = (sel ((\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)));
                       stack' = u# (stack dfs_state);
                       seen' = insert u (seen dfs_state)                      

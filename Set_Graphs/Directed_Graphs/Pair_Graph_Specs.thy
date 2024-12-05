@@ -125,7 +125,7 @@ locale Pair_Graph_Specs =
 for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap"*) 
 begin
 
-notation vset_empty ("\<emptyset>\<^sub>N")
+notation vset_empty ("\<emptyset>\<^sub>V")
 notation empty ("\<emptyset>\<^sub>G")
 
 abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" 
@@ -138,14 +138,14 @@ definition "finite_graph G = (finite {v. (lookup G v) \<noteq> None})"
 definition "finite_vsets = (\<forall>N. finite (t_set N))"
 
 
-definition neighbourhood::"'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset" where
-  "(neighbourhood G v) = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
+definition neighb::"'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset" where
+  "(neighb G v) = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
 
-lemmas [code] = neighbourhood_def
+lemmas [code] = neighb_def
 
-notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
+notation "neighb" ("\<N>\<^sub>G _ _" 100)
 
-definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
+definition digraph_abs ("[_]\<^sub>G") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
 
 definition "add_edge G u v =
 ( 
@@ -249,7 +249,7 @@ lemma finite_vsetsI[intro]:
 
 lemma neighbourhood_invars'[simp,dest]:
    "graph_inv G \<Longrightarrow> vset_inv (\<N>\<^sub>G G v)"
-  by (auto simp add: graph_inv_def neighbourhood_def split: option.splits)
+  by (auto simp add: graph_inv_def neighb_def split: option.splits)
 
 
 lemma finite_graph[intro!]:
@@ -259,7 +259,7 @@ proof-
 
   have "digraph_abs G \<subseteq> {v. lookup G v \<noteq> None} \<times> (\<Union> (t_set ` {N | N v. lookup G v = Some N}))"
     using assms 
-    by (fastforce simp: digraph_abs_def neighbourhood_def graph_inv_def split: option.splits)
+    by (fastforce simp: digraph_abs_def neighb_def graph_inv_def split: option.splits)
 
   moreover have "finite {v. lookup G v \<noteq> None}"
     using assms
@@ -306,21 +306,21 @@ lemma neighbourhood_absD[dest!]:
   by blast
 
 lemma neighbourhood_abs[simp]:
-  "graph_inv G \<Longrightarrow> t_set (\<N>\<^sub>G G u) = Pair_Graph.neighbourhood (digraph_abs G) u"
-  by(auto simp: digraph_abs_def neighbourhood_def Pair_Graph.neighbourhood_def option.discI graph_inv_def
+  "graph_inv G \<Longrightarrow> t_set (\<N>\<^sub>G G u) = neighbourhood (digraph_abs G) u"
+  by(auto simp: digraph_abs_def neighb_def Pair_Graph.neighbourhood_def option.discI graph_inv_def
           split: option.split)
 
 lemma adjmap_inv_insert[intro]: "graph_inv G \<Longrightarrow> graph_inv (add_edge G u v)"
   by (auto simp: add_edge_def graph_inv_def split: option.splits)
 
 lemma digraph_abs_insert[simp]: "graph_inv G \<Longrightarrow> digraph_abs (add_edge G u v) = Set.insert (u,v) (digraph_abs G)"
-  by (fastforce simp add: digraph_abs_def set_of_map_def neighbourhood_def add_edge_def split: option.splits if_splits)
+  by (fastforce simp add: digraph_abs_def set_of_map_def neighb_def add_edge_def split: option.splits if_splits)
 
 lemma adjmap_inv_delete[intro]: "graph_inv G \<Longrightarrow> graph_inv (delete_edge G u v)"
   by (auto simp: delete_edge_def graph_inv_def split: option.splits)
 
 lemma digraph_abs_delete[simp]:  "graph_inv G \<Longrightarrow> digraph_abs (delete_edge G u v) = (digraph_abs G) - {(u,v)}"
-  by (fastforce simp add: digraph_abs_def set_of_map_def neighbourhood_def delete_edge_def split: option.splits if_splits)
+  by (fastforce simp add: digraph_abs_def set_of_map_def neighb_def delete_edge_def split: option.splits if_splits)
 
 
 end \<comment> \<open>Properties context\<close>  

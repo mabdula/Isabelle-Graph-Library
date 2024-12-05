@@ -9,7 +9,7 @@ and update=update and adjmap_inv = adj_inv and vset_delete= vset_delete
 and vset_inv = vset_inv and union=vset_union and inter=vset_inter and G = F and
 t = "t::'a::linorder" and s = s  for F t s
 defines  dfs_initial_state = dfs.initial_state and
-neighbourhood=dfs.Graph.neighbourhood and
+neighbourhood=dfs.Graph.neighb and
 dfs_impl = dfs.DFS_impl 
   using G.Pair_Graph_Specs_axioms RBT.Set2_axioms
   by(auto intro!: DFS.intro  simp add: edge_map_update_def RBT_Set.empty_def adj_inv_def map_empty_def
