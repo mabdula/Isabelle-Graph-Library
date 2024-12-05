@@ -60,9 +60,31 @@ lemma walk_betw_imp_epath: (* TODO maybe also add this to adaptor code *)
   by (smt (verit) epath.elims(3) edges_of_path.elims graph_abs.edge_iff_edge_1
     graph_abs_axioms last.simps list.distinct(1) list.sel(1) list.sel(3) no_self_loops_1 path.simps)
 
-
-
-
+lemma epath_imp_walk_betw: (* TODO maybe also add this to adaptor code *)
+  "epath G u p v \<Longrightarrow>length p \<ge> 1  \<Longrightarrow>\<exists> q. walk_betw G u q v \<and> p = edges_of_path q"
+proof(induction p arbitrary: u v rule: edges_of_path.induct)
+  case (3 e d l u v)
+  then obtain a b where e_prop:"e = {a, b}" "a \<noteq> b" "a = u" "e \<in> G"
+    by auto 
+  hence epath:"epath G b (d # l) v" 
+    using "3.prems"(1) doubleton_eq_iff by auto
+  then obtain q where q_prop:"walk_betw G b q v"  "d # l = edges_of_path q"
+    using 3(1)[OF epath] by auto
+  moreover have "walk_betw G u [u, b] b" 
+    using e_prop edges_are_walks by force
+  moreover have "e#d#l = edges_of_path (u#q)" 
+ using e_prop(1) e_prop(3) q_prop(2) walk_between_nonempty_pathD(3)[OF q_prop(1)] 
+       walk_nonempty [OF q_prop(1)] by(cases q) auto
+  
+  ultimately show ?case 
+     using e_prop walk_betw_cons 
+     by (auto intro!: exI[of _ "u#q"], cases q)fastforce+
+ next
+   case (2 e u v)
+   hence "e \<in> G" "e = {u, v}" "u \<noteq> v" by auto
+   thus ?case 
+     by(auto intro: exI[of _ "[u, v]"] simp add: edges_are_walks)
+ qed simp
 
 (* TODO later: Some of the following theorems before the augment property could maybe be in Undirected_Set_Graphs *)
 
@@ -884,6 +906,43 @@ lemma graph_indep_system:
 definition "is_spanning_forest X = 
 ( has_no_cycle X \<and> (\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. {v, w} \<in> G \<longrightarrow> reachable X v w))"
 
+lemma spanning_forest_alternative:
+"is_spanning_forest X = (has_no_cycle X \<and> (\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. reachable G v w \<longrightarrow> reachable X v w))"
+proof(unfold is_spanning_forest_def, rule, goal_cases)
+  case 1
+  hence prem: "v\<in>Vs G \<Longrightarrow> w\<in>Vs G \<Longrightarrow> {v, w} \<in> G \<Longrightarrow> Undirected_Set_Graphs.reachable X v w" for v w by auto
+  have "walk_betw G v p w \<Longrightarrow> Undirected_Set_Graphs.reachable X v w" for v w p 
+  proof(insert prem, induction  v p w rule: induct_walk_betw)
+    case (path1 v)
+    then obtain u where "{v, u} \<in> G" 
+      by (metis insert_commute vs_member')
+    moreover hence "u \<in> Vs G" 
+      by auto
+    ultimately have "reachable X v u"
+      using path1 by blast
+    moreover hence "reachable X u v" 
+      by (simp add: reachable_sym)
+    ultimately show ?case 
+      by (simp add: Undirected_Set_Graphs.reachable_refl reachable_in_Vs(2))
+  next
+    case (path2 v v' vs b)
+    have "reachable X v' b"
+      using path2(3,4) by blast
+    moreover have "reachable X v v'"
+      using path2(1,4) 
+      by (simp add: edges_are_Vs edges_are_Vs_2)
+    ultimately show ?case 
+      by (auto intro: reachable_trans)
+  qed
+  then show ?case 
+    using 1
+    by (auto simp add: reachable_def)
+next
+  case 2
+  then show ?case 
+    by (auto simp add: edges_reachable)
+qed
+
 lemma spanning_forest_iff_basis:
   "is_spanning_forest X = indep_system.basis G has_no_cycle X"
   unfolding is_spanning_forest_def indep_system.basis_def[OF graph_indep_system]
@@ -1011,7 +1070,490 @@ lemma ex_graph_impl_ugraph_abs:
 *)
 end
 
+locale undirected_multigraph_spec =
+  fixes to_dbltn::"'e \<Rightarrow> 'v set" and E::"'e set"
+begin
+
+definition "G = to_dbltn ` E"
+definition decycle_multi :: "'e set \<Rightarrow> 'v \<Rightarrow> 'e list \<Rightarrow> bool" where
+  "decycle_multi X u p = ((epath (to_dbltn ` X) u (map to_dbltn p) u 
+                            \<and> set p \<subseteq> X \<and> length p \<ge> 2 \<and> distinct p))"
+
+definition reachable_multi where   
+  "reachable_multi X u v = (\<exists>p. walk_betw G u p v \<and> 
+                (\<forall> e \<in> set (edges_of_path p). \<exists> e' \<in> X. to_dbltn e' = e))"
+
+definition "has_no_cycle_multi X = ( X \<subseteq> E \<and> (\<nexists>u c. decycle_multi X u c))"
+
+definition "is_spanning_forest_multi X = 
+( has_no_cycle_multi X \<and> (\<forall>v w. reachable_multi E v w 
+                \<longrightarrow> reachable_multi X v w))"
+
+end
+
+locale undirected_multigraph = undirected_multigraph_spec 
+  where to_dbltn = to_dbltn and E = E for 
+      to_dbltn::"'e \<Rightarrow> 'v set"  and E::"'e set" +
+  assumes to_dbltn: "\<And> e. e \<in> E \<Longrightarrow> \<exists> u v.  to_dbltn e = {u, v} \<and> u \<noteq> v"
+   and    finite_edges: "finite E"
+begin
+
+lemma edges_of_path_to_multigraph_path:"set (edges_of_path p) \<subseteq> to_dbltn ` X \<Longrightarrow> \<exists> p'. map to_dbltn p' = edges_of_path p \<and> set p' \<subseteq> X"
+proof(induction p rule: edges_of_path.induct)
+  case (3 v v' l)
+  then obtain p' where "map to_dbltn p' = edges_of_path (v' # l)" "set p' \<subseteq> X" by auto
+  moreover obtain e where "to_dbltn e = {v, v'}" "e \<in> X"using 3(2) by auto
+  ultimately have  "map to_dbltn (e#p') = edges_of_path (v#v' # l)" "set (e#p') \<subseteq> X" by auto
+  then show ?case by blast
+qed auto
+
+lemma  edges_to_path_split_by_edge: 
+  assumes "to_dbltn e \<in> set (edges_of_path q)" "to_dbltn e = {a, b}" 
+  shows "\<exists> q1 q2. q = q1@[a, b]@ q2 \<or> q = q1@[b, a]@ q2"
+  using assms(1)
+       proof(induction q rule: edges_of_path.induct)
+         case (3 x y rest)
+         show ?case 
+         proof(cases "to_dbltn e = {x, y}")
+           case True
+           hence "x # y # rest = Nil @ [a, b] @ rest \<or>
+                 x # y # rest = Nil @ [b, a] @ rest"
+             using assms(2) by fastforce
+           thus ?thesis by auto
+         next
+           case False
+           hence "to_dbltn e \<in> set (edges_of_path (y # rest))" 
+             using 3(2) by simp
+           then obtain q1 q2 where "y # rest = q1 @ [a, b] @ q2 \<or>
+                       y # rest = q1 @ [b, a] @ q2" 
+             using "3.IH" by blast
+           hence  "\<exists> q2. x#y # rest = x#q1 @ [a, b] @ q2 \<or>
+                       x#y # rest = x#q1 @ [b, a] @ q2" by auto
+           then show ?thesis 
+            by(auto intro!: exI[of "\<lambda> q1a. \<exists> q2a. _ q1a q2a" "x#q1"]) 
+         qed
+       qed auto
+
+lemma decycle_multi_split:
+  
+  assumes "C = C1@[e]@C2"
+              "decycle_multi X u C" 
+              "to_dbltn e ={x, y}" 
+        shows "\<exists> d \<in> set C. x \<in> {x, y} \<inter> to_dbltn d  \<and> d \<noteq> e"
+proof-
+  have epath: "epath (to_dbltn ` X) u (map to_dbltn C) u" and distinctC:"distinct C"
+    using assms(2) decycle_multi_def by blast+
+  have "epath (to_dbltn ` X) u (map to_dbltn ((C1@[e]@C2)@(C1@[e]@C2)@(C1@[e]@C2))) u"
+    apply(subst map_append)+
+    apply(rule epath_append[OF epath[simplified assms(1) map_append]])+
+    by(rule epath[simplified assms(1) map_append])
+  hence big_epath:"epath (to_dbltn ` X) u (map to_dbltn (C1@[e]@C2@C1@[e]@C2@C1@[e]@C2)) u" by simp
+  have middle_list_rewrite:"xs@[x, y, z]@ys = ((xs@[x])@[y] @(z#ys))" for xs ys x y z by auto
+  have "\<exists>x y. to_dbltn e = {x, y} \<and>
+      x \<noteq> y \<and>
+      epath (to_dbltn ` X) u
+       (butlast (map to_dbltn (C1 @ [e] @ C2 @ C1)) @ [last (map to_dbltn (C1 @ [e] @ C2 @ C1))]) x \<and>
+      epath (to_dbltn ` X) y
+       ([hd (map to_dbltn (C2 @ C1 @ [e] @ C2))] @ tl (map to_dbltn (C2 @ C1 @ [e] @ C2))) u \<and>
+      x \<in> last (map to_dbltn (C1 @ [e] @ C2 @ C1)) \<inter> to_dbltn e \<and>
+      y \<in> to_dbltn e \<inter> hd (map to_dbltn (C2 @ C1 @ [e] @ C2))"
+    apply(rule epath_find_splitter_advanced)
+    apply(subst middle_list_rewrite)
+    apply(subst append_butlast_last_id)
+    subgoal by simp
+    apply(subst hd_Cons_tl)
+    subgoal by simp
+    using big_epath by auto
+  then obtain x' y' where x'_y'_prop:"to_dbltn e = {x', y'}" "x' \<noteq> y'"
+      "epath (to_dbltn ` X) u (map to_dbltn (C1 @ [e] @ C2 @ C1)) x'"
+      "epath (to_dbltn ` X) y' (map to_dbltn (C2 @ C1 @ [e] @ C2)) u"
+      "x' \<in> last (map to_dbltn (C1 @ [e] @ C2 @ C1)) \<inter> to_dbltn e"
+      "y' \<in> to_dbltn e \<inter> hd (map to_dbltn (C2 @ C1 @ [e] @ C2))"
+    apply(subst (asm) append_butlast_last_id) 
+    subgoal by simp
+    by force
+  have x'_y'_are:"(x' = x \<and> y' = y)\<or> (y' = x \<and> x' = y)" 
+    using assms(3) x'_y'_prop(1) by force
+  have C_rest_not_empty: "C2 @ C1 \<noteq> []" 
+    using assms(1) assms(2) decycle_multi_def by force
+  have pred_e_not_e:"last (C1 @ [e] @ C2 @ C1) \<noteq> e" 
+    using last_appendR[OF C_rest_not_empty] last_in_set[OF C_rest_not_empty] assms(1) distinctC 
+    by (auto intro: eq_neq_eq_imp_neq[of _ "last ((C1 @ [e]) @ (C2 @ C1))", OF _ _ refl])
+  have succ_e_not_e:"hd (C2 @ C1 @ [e] @ C2) \<noteq> e" 
+    using hd_append2[OF C_rest_not_empty] hd_in_set[OF C_rest_not_empty] assms(1) distinctC 
+    by (auto intro: eq_neq_eq_imp_neq[of _ "last ((C1 @ [e]) @ (C2 @ C1))", OF _ _ refl])
+  show ?thesis
+  proof(cases rule: disjE[OF x'_y'_are])
+    case 1
+    have "x \<in> {x, y} \<inter> to_dbltn (last (C1 @ [e] @ C2 @ C1))" 
+      using "1"  last_map[of _ to_dbltn]  x'_y'_prop(5) by blast
+    moreover have "last (C1 @ [e] @ C2 @ C1) \<in> set C" 
+      using  Un_iff last_in_set[OF C_rest_not_empty] set_append 
+      by (subst last_appendR)(auto simp add:  assms(1) last_appendR[OF  C_rest_not_empty])
+    ultimately show ?thesis
+       using pred_e_not_e
+       by(auto intro!: bexI[of _ "last ( (C1 @ [e] @ C2 @ C1))"])
+  next
+    case 2
+    have "x \<in> {x, y} \<inter> hd (map to_dbltn (C2 @ C1 @ [e] @ C2))" 
+      using 2 last_map[of _ to_dbltn]  x'_y'_prop(6) by blast
+    hence "x \<in>  to_dbltn (hd (C2 @ C1 @ [e] @ C2))"
+     by(subst (asm) list.map_sel(1)) auto
+    moreover have "hd (C2 @ C1 @ [e] @ C2) \<in> set C" 
+      using  Un_iff last_in_set[OF C_rest_not_empty] set_append 
+      by (simp add: assms(1) hd_append)
+    ultimately show ?thesis
+       using succ_e_not_e
+       by(auto intro!: bexI[of _ "hd (C2 @ C1 @ [e] @ C2)"])
+  qed
+qed
+
+interpretation graph_abs_interpretation: graph_abs where G = G
+  using  finite_edges finite_imageI imageE to_dbltn
+  by(auto intro!: to_dbltn 
+        simp add: graph_abs_def dblton_graph_def dblton_graph_finite_Vs[symmetric] G_def)
+
+lemma graph: "graph_invar G"
+  by (simp add: local.graph_abs_interpretation.graph)
+
+lemma decycle_multi_subset:
+  "decycle_multi E' u p \<Longrightarrow> E' \<subseteq> G' \<Longrightarrow> decycle_multi G' u p"
+  unfolding decycle_multi_def using epath_subset 
+  by (metis image_mono subset_eq)
+
+lemma has_no_cycle_multi_to_dbltn_inj: "has_no_cycle_multi X \<Longrightarrow>inj_on to_dbltn  X"
+proof(unfold  has_no_cycle_multi_def 
+            decycle_multi_def  inj_on_def, rule ccontr, goal_cases)
+  case 1
+  then obtain x y where xy_prop:"x \<in> X" "y \<in> X" "to_dbltn x = to_dbltn y" "x \<noteq> y"
+    by auto
+  then obtain u v where uv_prop:"to_dbltn x = {u, v}"  "u \<noteq> v"
+    using  "1"(1)  to_dbltn[of x]by blast
+  define p where "p = [x,y]"
+  have " epath (to_dbltn ` X) u (map to_dbltn p) u"
+    using xy_prop uv_prop by(auto simp add: p_def intro!:  exI[of _ v])
+  moreover have " 2 \<le> length p "
+    by(simp add: p_def)
+  moreover have "distinct p"
+    using xy_prop by(simp add: p_def)
+  moreover have "set p \<subseteq> X" 
+    by (simp add: p_def xy_prop(1) xy_prop(2))
+  ultimately show ?case 
+    using 1 by simp
+qed
+
+lemma has_no_cycle_multi_to_has_no_cycle:
+  assumes "has_no_cycle_multi X" 
+  shows "graph_abs_interpretation.has_no_cycle (to_dbltn ` X)"
+  unfolding graph_abs_interpretation.has_no_cycle_def
+proof(insert assms, unfold  has_no_cycle_multi_def decycle_def
+            decycle_multi_def G_def, rule ccontr, goal_cases)
+  case 1
+  then obtain u p where up_prop:"epath (to_dbltn ` X) u p u" "2 < length p"
+                         "distinct p" by auto
+  hence "set p \<subseteq> to_dbltn ` X"
+    by (simp add: epath_edges_subset)
+  hence "\<exists> q. p = map to_dbltn q \<and> set q \<subseteq> X"
+  proof(induction p)
+    case (Cons a p)
+    then obtain q where "p = map to_dbltn q"  "set q \<subseteq> X" by auto
+    moreover obtain aa where "a = to_dbltn aa" "aa \<in> X"
+      using Cons by auto
+    ultimately have "a # p = map to_dbltn (aa#q)" "set (aa # q) \<subseteq> X "
+      by auto
+    then show ?case 
+     by(force intro: exI[of _ "aa#q"])
+  qed auto
+  then obtain q where pq_prop: "p = map to_dbltn q" "set q \<subseteq> X"by auto
+  moreover  hence " epath (to_dbltn ` X) u (map to_dbltn q) u" 
+    using up_prop  by auto
+  moreover have "2 < length q"
+    using pq_prop(1) up_prop(2) by auto
+  moreover have " distinct q"
+    using distinct_map pq_prop(1) up_prop(3) by blast
+  ultimately show ?case 
+    using 1(1) by auto
+qed
 
 
+lemma has_no_cycle_to_has_no_cycle_multi:
+"graph_abs_interpretation.has_no_cycle (to_dbltn ` X) \<Longrightarrow> 
+inj_on to_dbltn X
+\<Longrightarrow> X \<subseteq> E \<Longrightarrow>
+ has_no_cycle_multi X"
+  unfolding graph_abs_interpretation.has_no_cycle_def
+proof(unfold  has_no_cycle_multi_def decycle_def
+            decycle_multi_def G_def, rule ccontr, goal_cases)
+  case 1
+  note one = this
+  then obtain u p where up_prop: " epath (to_dbltn ` X) u (map to_dbltn p) u"
+                        "2 \<le> length p" "distinct p" "set p \<subseteq> X"
+    by auto
+  moreover hence "distinct (map to_dbltn p)"
+    using 1(2) epath_edges_subset[OF up_prop(1)] 
+    by (simp add: subset_eq distinct_map inj_on_def) 
+  moreover have "length p > 2"
+  proof(rule ccontr, goal_cases)
+    case 1
+    hence "length p = 2" 
+      using up_prop by simp
+    then obtain e e' where pe:"p=[e, e']" 
+      by (metis (no_types, opaque_lifting) One_nat_def Suc_1 Suc_length_conv length_0_conv)
+    moreover then obtain a b  where "to_dbltn e= {a, b}" "a \<noteq> b" 
+      using to_dbltn[of e] epath_edges_subset one(2)  up_prop(1) by fastforce
+    moreover obtain c d where "to_dbltn e'= {c, d}" "c \<noteq> d" 
+      using to_dbltn[of e'] epath_edges_subset one(2) pe up_prop(1) by fastforce
+    ultimately have "to_dbltn e = to_dbltn e'"
+      using up_prop(1) 
+      by (clarsimp simp add: insert_commute)
+    then show ?case 
+      using one(2) pe up_prop(1)  \<open>distinct (map to_dbltn p)\<close> by auto
+  qed
+  ultimately show ?case 
+    using 1 by auto
+qed
 
+lemma double_edge_is_cycle:
+  assumes "e \<in> X" "e' \<in> X" "X \<subseteq> E" "to_dbltn e = to_dbltn e'" "e \<noteq> e'"
+  shows"\<not> has_no_cycle_multi X"
+proof-
+  obtain u v where dbltn_e:"to_dbltn e = {u, v}" "u \<noteq> v"
+    using to_dbltn[of e] assms by auto
+  hence dbltn_e':"to_dbltn e' = {u, v}"
+    using assms by simp
+  define p where "p = [e,e']"
+  hence epath_p:"epath (to_dbltn ` X) u (map to_dbltn p) u"
+    apply (auto intro!: exI[of _ v])
+    using dbltn_e dbltn_e' assms(1-3)
+    by fastforce+
+  moreover have "distinct p"
+    using assms by(simp add: p_def)
+  ultimately have " epath (to_dbltn ` X) u (map to_dbltn p) u
+                    \<and> set p \<subseteq> X \<and> 2 \<le> length p \<and> distinct p"
+    by(simp add: p_def assms(1,2))
+  thus ?thesis
+    by(auto simp add: has_no_cycle_multi_def decycle_multi_def)
+qed
+
+lemma has_no_cycle_to_has_no_cycle_multi_is:
+"(graph_abs_interpretation.has_no_cycle (to_dbltn ` X)\<and>  inj_on to_dbltn X \<and> X \<subseteq> E) =
+ has_no_cycle_multi X"
+  using has_no_cycle_multi_def has_no_cycle_multi_to_dbltn_inj
+     has_no_cycle_multi_to_has_no_cycle has_no_cycle_to_has_no_cycle_multi 
+  by auto
+
+
+lemma has_no_cycle_multi_indep_subset_carrier:
+  "has_no_cycle_multi X \<Longrightarrow> X \<subseteq> E"
+  by (simp add: has_no_cycle_multi_def)
+
+lemma empty_has_no_cycle_multi_indep:
+  " has_no_cycle_multi {}" 
+  by(auto simp add:has_no_cycle_multi_def decycle_multi_def)
+
+lemma has_no_cycle_multi_indep_ex:
+  "\<exists>X. has_no_cycle_multi X" 
+  using empty_has_no_cycle_multi_indep by auto
+
+lemma has_no_cycle_multi_indep_subset:
+  "has_no_cycle_multi X \<Longrightarrow> Y \<subseteq> X \<Longrightarrow> has_no_cycle_multi Y"
+  using decycle_multi_subset
+  by(unfold has_no_cycle_multi_def) blast
+
+lemma has_no_cycle_multi_augment:
+  assumes  "has_no_cycle_multi X" "has_no_cycle_multi Y"
+"card X = Suc (card Y)"
+  shows "\<exists>x. x \<in> (X - Y) \<and> has_no_cycle_multi (insert x Y)"
+proof-
+  have nc_X:"graph_abs_interpretation.has_no_cycle (to_dbltn ` X)"
+    using  has_no_cycle_multi_to_has_no_cycle assms(1) by simp
+  moreover have nc_Y:"graph_abs_interpretation.has_no_cycle (to_dbltn ` Y)"
+    using  has_no_cycle_multi_to_has_no_cycle assms(2) by simp
+  moreover have "card (to_dbltn ` X) = Suc (card (to_dbltn ` Y))"
+    using card_image[OF  has_no_cycle_multi_to_dbltn_inj] assms by simp
+  ultimately obtain x where x_prop: "x \<in> (to_dbltn ` X) - (to_dbltn ` Y)" 
+                             "graph_abs_interpretation.has_no_cycle (insert x (to_dbltn ` Y))"
+    using exE[OF graph_abs_interpretation.has_no_cycle_augment] by force
+  then obtain e where e_prop:"e \<in> X - Y" "to_dbltn e = x" by auto
+  moreover hence  "graph_abs_interpretation.has_no_cycle (to_dbltn ` (insert e Y))"
+    using x_prop by simp
+  moreover have "inj_on to_dbltn X"
+    using has_no_cycle_multi_to_dbltn_inj assms(1) by simp
+  moreover have "X \<subseteq> E"
+    by (simp add: assms(1) has_no_cycle_multi_indep_subset_carrier)
+  ultimately have  "has_no_cycle_multi (insert e Y)"
+    using   assms(2) has_no_cycle_multi_indep_subset_carrier has_no_cycle_multi_to_dbltn_inj x_prop(1) 
+    by (auto intro!: has_no_cycle_to_has_no_cycle_multi)
+  then show ?thesis 
+    using e_prop(1) by auto
+qed
+
+lemma graph_matroid_multi:
+  "matroid E has_no_cycle_multi"
+  apply standard
+  using finite_edges has_no_cycle_multi_indep_subset_carrier has_no_cycle_multi_indep_ex 
+        has_no_cycle_multi_indep_subset has_no_cycle_multi_augment
+  by blast+
+
+lemma graph_indep_system_multi:
+  "indep_system E has_no_cycle_multi"
+  using matroid.axioms(1)[OF graph_matroid_multi] .
+
+lemma is_spanning_forest_multi_and_simple:"is_spanning_forest_multi X = 
+(graph_abs_interpretation.is_spanning_forest (to_dbltn `X) \<and> inj_on to_dbltn X \<and> X \<subseteq> E)"
+  proof(rule, goal_cases)
+    case 1
+    note one = this
+    hence "inj_on to_dbltn X" 
+      by (simp add: has_no_cycle_multi_to_dbltn_inj is_spanning_forest_multi_def)
+    moreover have "graph_abs_interpretation.is_spanning_forest (to_dbltn ` X)"
+      unfolding graph_abs_interpretation.is_spanning_forest_def
+    proof(rule, goal_cases)
+      case 1
+      then show ?case 
+        using is_spanning_forest_multi_def one has_no_cycle_multi_to_has_no_cycle by blast
+    next
+      case 2
+      then show ?case
+      proof(rule, rule, rule, goal_cases)
+        case (1 v w)
+        then obtain e where "e \<in> E" "to_dbltn e = {v,w}"
+          using G_def by auto
+        hence "reachable_multi E v w" 
+          by(force intro!: exI[of _  "[v, w]"] simp add: reachable_multi_def "1"(3) edges_are_walks)
+        hence "reachable_multi X v w"
+          using is_spanning_forest_multi_def one by blast
+        then obtain p where p_rpop:"walk_betw G v p w"
+                "(\<forall> e \<in> set (edges_of_path p). \<exists> e' \<in> X. to_dbltn e' = e)"
+           using reachable_multi_def by auto
+         moreover hence  "set (edges_of_path p) \<subseteq> to_dbltn ` X" by auto
+         moreover have "walk_betw (set (edges_of_path p)) v p w"
+         proof-
+           have "v \<noteq> w" 
+             using "1"(3) by fastforce
+           hence "length p \<ge> 2"
+             by (meson p_rpop(1) walk_betw_length)
+           from  p_rpop(1)this show ?thesis 
+             by (simp add: walk_in_edges_of_path)
+         qed
+         ultimately show ?case 
+           by (meson reachableI walk_subset)
+      qed
+    qed
+    moreover have "X \<subseteq> E"
+      using has_no_cycle_multi_indep_subset_carrier one
+      by (auto simp add:  is_spanning_forest_multi_def)
+    ultimately show ?case by simp
+  next
+    case 2
+    have "has_no_cycle_multi X" 
+      using 2 has_no_cycle_multi_indep_subset has_no_cycle_to_has_no_cycle_multi 
+      by (force simp add:  graph_abs_interpretation.is_spanning_forest_def)
+    moreover have "\<And> v w. reachable_multi E v w \<Longrightarrow> reachable_multi X v w"
+    proof(goal_cases)
+      case (1 v w)
+      then obtain p where p_prop: " walk_betw G v p w" 
+          "(\<forall>e\<in>set (edges_of_path p). \<exists>e'\<in>E. to_dbltn e' = e)"
+        by(auto simp add: reachable_multi_def)
+      moreover have "v \<in> Vs G"  "w \<in> Vs G" 
+        using p_prop(1) by auto
+      ultimately obtain q where  q_prop:"walk_betw (to_dbltn ` X) v q w"
+        using 2
+        by(unfold graph_abs_interpretation.spanning_forest_alternative, unfold reachable_def) blast 
+      have X_in: "Vs (to_dbltn ` X) \<subseteq> Vs G" 
+        by (simp add: "2" G_def Vs_subset image_mono)
+      from q_prop show ?case 
+        unfolding reachable_multi_def
+      proof(induction _ v q w rule: induct_walk_betw)
+        case (path1 v)
+        then show ?case 
+          using X_in graph_abs_interpretation.walk_reflexive' 
+            by(auto intro!: exI[of _ "[v]"])
+      next
+        case (path2 v v' vs b)
+        then obtain p where p_prop:
+          "walk_betw G v' p b ""(\<forall>e\<in>set (edges_of_path p). \<exists>e'\<in>X. to_dbltn e' = e)"
+          by auto
+        hence "walk_betw G v (v#p) b" 
+          apply(cases p)
+          using p_prop(1) apply simp_all
+          using "2"  graph_abs.walk_between_nonempty_path'(3)[OF  graph_abs_interpretation.graph_abs_axioms ]  path2.hyps(1) 
+          by(subst walk_betw_cons)(fastforce intro:  edges_are_walks simp add: G_def)
+        moreover have " (\<forall>e\<in>set (edges_of_path (v#p)). \<exists>e'\<in>X. to_dbltn e' = e)"
+          using graph_abs_interpretation.walk_between_nonempty_path'(3)
+                 p_prop(1) p_prop(2) path2.hyps(1) by (cases p)fastforce+
+        ultimately show ?case  by auto
+      qed
+    qed
+    ultimately show ?case 
+      unfolding is_spanning_forest_multi_def by auto
+  qed
+
+lemma basis_imple_basis_multi:
+  "(indep_system.basis G graph_abs_interpretation.has_no_cycle (to_dbltn ` X) \<and> inj_on to_dbltn X \<and> X \<subseteq> E)
+ = indep_system.basis E has_no_cycle_multi X"
+  unfolding indep_system.basis_def[OF graph_abs_interpretation.graph_indep_system]
+indep_system.basis_def[OF graph_indep_system_multi]
+proof(rule, goal_cases)
+  case 1
+  hence all: "graph_abs_interpretation.has_no_cycle (to_dbltn ` X)"
+   "(\<forall>x\<in>G - to_dbltn ` X. \<not> graph_abs_interpretation.has_no_cycle (insert x (to_dbltn ` X)))"
+  "inj_on to_dbltn X" "X \<subseteq> E" by auto
+  have "has_no_cycle_multi X" 
+    using all has_no_cycle_to_has_no_cycle_multi by blast
+  moreover have " (\<forall>x\<in>E - X. \<not> has_no_cycle_multi (insert x X))"
+  proof(rule, goal_cases)
+    case (1 e)
+    show ?case
+    proof(cases "to_dbltn e \<in> to_dbltn ` X")
+      case True
+      then show ?thesis 
+        using 1  has_no_cycle_multi_to_dbltn_inj by auto
+    next
+      case False
+    hence "to_dbltn e \<in> G - to_dbltn ` X"
+      using 1 by (auto simp add: G_def)
+    hence "\<not> graph_abs_interpretation.has_no_cycle (insert (to_dbltn e) (to_dbltn ` X))" 
+      using all(2) by simp
+    then show ?thesis 
+      using has_no_cycle_multi_to_has_no_cycle by fastforce
+   qed
+  qed
+  ultimately show ?case by simp
+next
+  case 2
+  hence all: "has_no_cycle_multi X" 
+             "(\<forall>x\<in>E - X. \<not> has_no_cycle_multi (insert x X))"
+    by auto
+  have "graph_abs_interpretation.has_no_cycle (to_dbltn ` X)"
+    by (simp add: all(1) has_no_cycle_multi_to_has_no_cycle)
+  moreover have "(\<forall>x\<in>G - to_dbltn ` X. \<not> graph_abs_interpretation.has_no_cycle (insert x (to_dbltn ` X)))"
+  proof(rule, goal_cases)
+    case (1 e)
+    then obtain e' where "e' \<in> E" "to_dbltn e' = e" "e' \<notin> X"
+      by (fastforce simp add: G_def)
+    moreover hence "\<not> has_no_cycle_multi (insert e' X)" 
+      by (simp add: all(2))
+    ultimately show ?case 
+      using "1"  all(1) has_no_cycle_multi_indep_subset_carrier 
+            has_no_cycle_multi_to_dbltn_inj has_no_cycle_to_has_no_cycle_multi 
+      by auto
+  qed
+  moreover have " inj_on to_dbltn X" 
+    by (simp add: all(1) has_no_cycle_multi_to_dbltn_inj)
+  moreover have " X \<subseteq> E"
+    by (simp add: all(1) has_no_cycle_multi_indep_subset_carrier)
+  ultimately show ?case 
+    by simp
+qed
+
+term indep_system.basis 
+term indep_system.basis_in
+
+lemma spanning_forest_iff_basis_multi:
+  "is_spanning_forest_multi X = indep_system.basis E has_no_cycle_multi X"
+  by (simp add: basis_imple_basis_multi 
+is_spanning_forest_multi_and_simple graph_abs_interpretation.spanning_forest_iff_basis)
+
+end
 end

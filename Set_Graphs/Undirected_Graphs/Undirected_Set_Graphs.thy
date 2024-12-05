@@ -212,7 +212,6 @@ lemma graph_invar_subset[intro]:
   using dblton_graph_subset
   by (metis dblton_graph_finite_Vs finite_subset)
 
-
 locale graph_abs =
   graph_defs +
   assumes graph: "graph_invar G"
@@ -232,7 +231,6 @@ lemma dblton_graphE[elim]:
   assumes "e \<in> G"
   obtains u v where "e = {u,v}" "u \<noteq> v"
   using dblton_graphE[OF dblton_E assms] .
-
 
 lemma finite_Vs: "finite (Vs G)"
   by (simp add: graph)
@@ -475,11 +473,24 @@ proof(cases p')
     by auto
 qed auto
 
+lemma edges_of_path_append_subset_2:
+  "set (edges_of_path p) \<subseteq> set (edges_of_path (p @ p'))"
+proof(cases p)
+  case (Cons a list)
+  then show ?thesis 
+   by(metis edges_of_path_append_subset edges_of_path_rev rev_append set_rev)
+qed auto
+
 lemma path_edges_subset:
   assumes "path G p"
   shows "set (edges_of_path p) \<subseteq> G"
   using assms
   by (induction, simp_all)
+
+lemma edges_of_path_symmetric_split:"edges_of_path (xs@[x,y]@ys) = edges_of_path (xs@[x]) @[{x,y}] @ edges_of_path (y#ys)"
+  by (metis append_is_Nil_conv edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append_2 
+edges_of_path_append_3 hd_append2 last_ConsL last_ConsR list.discI list.sel(1))
+
 
 lemma induct_list012[case_names nil single sucsuc]:
   "\<lbrakk>P []; \<And>x. P [x]; \<And>x y zs. \<lbrakk> P zs; P (y # zs) \<rbrakk> \<Longrightarrow> P (x # y # zs)\<rbrakk> \<Longrightarrow> P xs"
@@ -1431,6 +1442,51 @@ next
       using walk_transitive[OF \<open>walk_betw G u [u, v3] v3\<close>] walk_betw_singletonD
       by fastforce
   qed (auto simp add: Vs_def walk_reflexive)
+qed
+
+lemma walk_in_edges_of_path:"walk_betw A v p w \<Longrightarrow> 2 \<le> length p \<Longrightarrow>
+ walk_betw (set (edges_of_path p)) v p w"
+ proof(induction v p w rule: induct_walk_betw)
+            case (path2 v v' vs b)
+            show ?case
+            proof(cases vs)
+              case Nil
+              hence b'_is_v:"b = v'" 
+                using path2.hyps(2) walk_between_nonempty_pathD(4) by force
+              show ?thesis
+                by (simp add: b'_is_v edges_are_walks local.Nil)
+            next
+              case (Cons a list)
+              hence elngth: "length ( v' # vs) \<ge> 2" by auto
+              show ?thesis 
+              by(subst walk_betw_cons)
+                (auto intro: walk_subset[OF path2(3)[OF elngth]] walk_subset[of "{{v, v'}}"] 
+                      simp add: edges_are_walks )
+          qed
+        qed auto
+
+lemma walk_betw_strengthen:"walk_betw G u p v \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> set (edges_of_path p) \<subseteq> G' \<Longrightarrow> walk_betw G' u p v"
+proof(induction  u p v rule: induct_walk_betw)
+  case (path1 v)
+  then show ?case by auto
+next
+  case (path2 v v' vs b)
+  hence helper: " vs = Nil \<Longrightarrow> v' = b"  
+    by (metis last_ConsL walk_betw_def)
+  show ?case 
+  proof(cases vs)
+    case Nil
+    then show ?thesis
+      using path2(5) by (auto intro!:  edges_are_walks simp add: helper)
+  next
+    case (Cons a list)
+    have "walk_betw G' v' (v' # vs) b"
+      using local.Cons path2.IH path2.prems(2) by auto
+    moreover have "walk_betw G' v [v, v'] v'" 
+      using edges_are_walks path2.prems(2) by force
+    ultimately show ?thesis 
+      by (meson walk_betw_cons)
+  qed
 qed
 
 lemma reachability_split3:
@@ -2891,6 +2947,122 @@ lemma epath_subset_other_set:
   apply simp
   by auto
 
+lemma epath_single: "e \<in> G \<Longrightarrow> e= {x, y} \<Longrightarrow> x \<noteq> y \<Longrightarrow> epath G x [e] y"
+  by auto
+
+lemma epath_non_empty: "epath G u p v \<Longrightarrow> u \<noteq> v \<Longrightarrow> length p \<ge> 1"
+  by (cases p) auto
+
+lemma epath_find_splitter:"epath X u (P@[e,d]@Q) v \<Longrightarrow> \<exists> x. epath X u (P@[e]) x \<and> epath X x ([d]@Q) v \<and> x \<in> e \<inter> d"
+proof(induction P arbitrary: u)
+  case Nil
+  then show ?case by auto
+next
+  case (Cons ee P)
+  obtain w where w_prop:"u \<noteq> w" "{u, w} = ee" "epath X w (P @ [e, d]@Q) v" " ee \<in> X" 
+    using Cons(2) by auto
+  obtain x where "epath X w (P @ [e]) x" "epath X x ([d] @ Q) v \<and> x \<in> e \<inter> d" 
+    using Cons(1)[OF w_prop(3)] by auto
+  hence "epath X u ((ee#P) @ [e]) x" "epath X x ([d] @ Q) v \<and> x \<in> e \<inter> d"
+    using w_prop by auto
+  then show ?case by blast
+qed
+
+lemma epath_find_splitter_advanced:
+"epath X u (P@[e1, e2, e3]@Q) v \<Longrightarrow> \<exists> x y.  e2 = {x, y} \<and> x \<noteq> y \<and> epath X u (P@[e1]) x \<and>
+                                      epath X y ([e3]@Q) v \<and> x \<in> e1 \<inter> e2 \<and> y \<in> e2 \<inter> e3"
+proof(induction P arbitrary: u)
+  case Nil
+  then show ?case by auto
+next
+  case (Cons ee P)
+  obtain w where w_prop:"u \<noteq> w" "{u, w} = ee" "epath X w (P @ [e1 ,e2 ,e3 ]@ Q) v" "ee \<in> X"
+    using Cons(2) by auto
+  obtain x y where xy_prop:"e2 = {x, y}"
+          "x \<noteq> y" "epath X w (P @ [e1]) x" "epath X y ([e3] @ Q) v" "x \<in> e1 \<inter> e2" "y \<in> e2 \<inter> e3"
+    using Cons(1)[OF w_prop(3)] by blast
+  hence "epath X u ((ee # P) @ [e1]) x"
+    using w_prop by auto
+  then show ?case 
+    using xy_prop by blast
+qed
+
+lemma epath_distinct_epath:"epath G u p v \<Longrightarrow>l = length p \<Longrightarrow> \<exists> q. epath G u q v \<and> set q \<subseteq> set p \<and> distinct q"
+proof(induction l arbitrary: u p v rule: less_induct)
+  case (less l)
+  show ?case
+  proof(cases l)
+    case 0
+    then show ?thesis 
+      using less.prems by force
+  next
+    case (Suc nat)
+    note Suc = less Suc
+  then obtain e p' where ep':"p = e#p'" by(cases p) auto
+  show ?thesis
+  proof(cases "e \<in> set p'")
+    case True
+    then obtain p1 p2 where p1p2:"p' = p1 @[e]@p2"
+      by (metis append_Cons append_self_conv2 in_set_conv_decomp_first)
+    have bulast_p1_subst:"butlast (e # p1) @ [last (e # p1)] = e#p1"
+      by simp
+    have epath_verbose:"epath G u (butlast (e # p1) @ [last (e # p1), e] @ p2) v"
+      by (metis append.assoc append_Cons append_Nil bulast_p1_subst ep' less.prems(1) p1p2)
+    obtain x where x_prop:"epath G u (e#p1) x" 
+         "epath G x ([e] @ p2) v" "x \<in> last (e # p1) \<inter> e"
+      using epath_find_splitter[OF epath_verbose] by (subst (asm) bulast_p1_subst[symmetric])auto
+    show ?thesis 
+    proof(cases p1)
+      case Nil
+      hence epath_p2:"epath G u p2 v"
+        using x_prop(2) Suc(2) p1p2 ep' by auto
+      have  "\<exists>q. epath G u q v \<and> set q \<subseteq> set p2 \<and> distinct q"
+        using p1p2 ep' Suc(3)  by(intro Suc(1)[OF _ epath_p2 refl]) simp
+      then obtain q where "epath G u q v" "set q \<subseteq> set p2"  "distinct q"
+        by auto
+      then show ?thesis
+        using ep' p1p2 by auto
+    next
+      case (Cons a list)
+      obtain a where e_endpoints:" e = {a, u}" "a \<noteq> u" 
+        using x_prop(1) by auto
+      hence x_is:"x = u \<or> x = a"
+        using x_prop(3) by blast
+      show ?thesis 
+      proof(cases rule: disjE[OF x_is])
+        case 1
+        hence  u_v_path:"epath G u ([e] @ p2) v" 
+          using x_prop(2) by force
+        obtain q where "epath G u q v" "set q \<subseteq> set ([e] @ p2)" "distinct q" 
+          using Suc(1)[OF _ u_v_path refl] Suc(3) ep' p1p2  by auto
+        then show ?thesis
+          using ep' p1p2 by auto
+      next
+        case 2
+        hence  u_v_path:"epath G u ([e, e] @ p2) v" 
+          using e_endpoints x_prop(2) by fastforce
+        obtain q where "epath G u q v" "set q \<subseteq> set ([e,e] @ p2)" "distinct q" 
+          using Suc(1)[OF _ u_v_path refl] Suc(3) ep' p1p2 Cons  by auto         
+        then show ?thesis
+          using ep' p1p2 by auto
+      qed
+    qed
+  next
+    case False
+    then obtain w where w_prop:"u \<noteq> w" "{u, w} = e" "epath G w p' v" "e \<in> G"
+      using ep' less.prems(1) by auto
+    obtain q where "epath G w q v" "set q \<subseteq> set p'" "distinct q"
+      using  Suc(1)[OF _ w_prop(3) refl] ep' Suc(3) by auto
+    moreover hence "epath G u (e#q) v"
+      using w_prop(1,2,4) by auto
+    ultimately show ?thesis 
+      using False ep' by(intro exI[of _ "e#q"]) auto
+  qed
+qed
+qed
+
+lemma epath_append:"epath X x P y \<Longrightarrow> epath X y Q z \<Longrightarrow> epath X x (P@Q) z"
+  by(induction X x P y rule: epath.induct) auto
 
 definition depath :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> 'a \<Rightarrow> bool" where
   "depath G u p v = ( epath G u p v \<and> distinct p)"

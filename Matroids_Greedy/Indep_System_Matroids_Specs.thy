@@ -77,7 +77,6 @@ definition "finite_sets = (\<forall>X. finite (to_set X))"
 definition indep :: "'t \<Rightarrow> 's \<Rightarrow> bool" where
   "indep indep_set X = (set_of_sets_isin indep_set X)"
 
-
 definition carrier_abs where
   "carrier_abs carrier = to_set carrier"
 
@@ -138,8 +137,6 @@ lemma invar_indep_impl_correct:
 lemma finite_indep_abs_expr:
   "finite S \<Longrightarrow> indep_abs indep_set S = indep indep_set (from_set S)"
   by (simp add: indep_abs_def indep_def to_function_def)
-
-
 
 definition indep_system_axioms where
   "indep_system_axioms carrier indep_set =

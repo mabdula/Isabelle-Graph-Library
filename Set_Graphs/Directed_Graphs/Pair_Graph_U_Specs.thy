@@ -11,11 +11,24 @@ datatype 'v uedge = uEdge 'v 'v
 
 definition "set_of_uedge e = ( case e of uEdge u v \<Rightarrow> {u,v})"
 
-locale Pair_Graph_U_Specs = Pair_Graph_Specs
+locale Pair_Graph_U_Specs = 
+pair_graph_specs: Pair_Graph_Specs
   where lookup = lookup for lookup :: "'adjmap \<Rightarrow> ('v::linorder) \<Rightarrow> 'vset option"
 begin
 
+abbreviation "neighbourhood' G v == pair_graph_specs.neighbourhood G v"
+notation "neighbourhood'" ("\<N>\<^sub>G _ _" 100)
+abbreviation "add_edge == pair_graph_specs.add_edge"
+abbreviation "delete_edge == pair_graph_specs.delete_edge"
+
+lemmas [code] = neighbourhood_def 
+pair_graph_specs.add_edge_def 
+pair_graph_specs.delete_edge_def
+
 definition "vertices G = {u | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)} \<union> {v | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
+
+lemmas digraph_abs_def = pair_graph_specs.digraph_abs_def
+abbreviation "digraph_abs \<equiv> pair_graph_specs.digraph_abs"
 
 lemma vertices_equiv_dVs:
   "vertices G = dVs (digraph_abs G)"
@@ -39,7 +52,7 @@ lemma ugraph_and_digraph_abs:"ugraph_abs G = {{u, v} | u  v. (u, v) \<in> digrap
  by(simp add: ugraph_abs_def digraph_abs_def)
 
 context
-  includes adjmap.automation  vset.set.automation
+  includes pair_graph_specs.adjmap.automation  pair_graph_specs.vset.set.automation
 begin
 
 lemma uedges_def2: "uedges G = {rep (uEdge u v) | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}"
@@ -48,12 +61,21 @@ lemma uedges_def2: "uedges G = {rep (uEdge u v) | u v. v \<in>\<^sub>G (\<N>\<^s
 lemma isin_uedges: "v \<in>\<^sub>G (\<N>\<^sub>G G u) \<Longrightarrow> rep (uEdge u v) = e \<Longrightarrow> e \<in> uedges G"
   unfolding uedges_def2 by force
 
-thm adjmap.invar_empty
-thm vset.set.invar_empty
+thm pair_graph_specs.adjmap.invar_empty
+thm pair_graph_specs.vset.set.invar_empty
+
+lemmas neighbourhood_def=pair_graph_specs.neighbourhood_def
 
 lemma uedges_empty: "uedges empty = {}"
   unfolding uedges_def digraph_abs_def neighbourhood_def 
   by (auto)
+
+abbreviation "graph_inv == pair_graph_specs.graph_inv"
+abbreviation "finite_graph == pair_graph_specs.finite_graph"
+abbreviation "finite_vsets == pair_graph_specs.finite_vsets"
+lemmas graph_inv_def= pair_graph_specs.graph_inv_def
+lemmas finite_graph_def= pair_graph_specs.finite_graph_def
+lemmas finite_vsets_def= pair_graph_specs.finite_vsets_def
 
 lemma finite_uedges:
   "graph_inv G \<Longrightarrow> finite_graph G \<Longrightarrow> finite_vsets \<Longrightarrow> finite (uedges G)"
@@ -68,10 +90,16 @@ definition "pair_graph_u_invar G = (
   (\<forall>v. \<not> v \<in>\<^sub>G (\<N>\<^sub>G G v)) \<and>
   (\<forall>u v. v \<in>\<^sub>G (\<N>\<^sub>G G u) \<longrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v)))"
 
+definition "none_symmetry H = (\<forall> e \<in> digraph_abs H. lookup H (fst e) \<noteq> None 
+             \<longleftrightarrow>  lookup H (snd e) \<noteq> None) "
+
+
+lemmas neighbourhood_invars' = pair_graph_specs.neighbourhood_invars'
+
 lemma pair_graph_u_invar_no_loop: 
    "pair_graph_u_invar G \<Longrightarrow> x \<in> dom (lookup G) \<Longrightarrow> y \<in> t_set (the (lookup G x)) \<Longrightarrow> x \<noteq> y"
   using  neighbourhood_invars'[of G]   
- by (subst (asm) vset.set.set_isin[of "the (lookup G x)" y, symmetric])
+ by (subst (asm) pair_graph_specs.vset.set.set_isin[of "the (lookup G x)" y, symmetric])
     (auto simp add: pair_graph_u_invar_def local.neighbourhood_def   option.split, metis option.simps(5))
 
 context
@@ -340,11 +368,12 @@ proof
     by (auto simp add: rep_of_edge simp del: rep.simps)
 qed
 
+lemmas neighbourhood_abs=pair_graph_specs.neighbourhood_abs
+
 lemma
   "v \<in>\<^sub>G (\<N>\<^sub>G G u) \<Longrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v)"
   by (auto simp del: neighbourhood_abs)
   
-
 lemma vsetorhood_eq_set_for_edge:
   "(\<lambda>u. {u,v}) ` t_set (\<N>\<^sub>G G v) = {e \<in> set_of_uedge ` uedges G. v \<in> e}"
 proof
@@ -384,12 +413,25 @@ lemma card_uedges:
   "card (set_of_uedge ` uedges G) = card (uedges G)"
   using inj_set_of_uedge by (intro card_image)
 
+lemmas finite_graphI=pair_graph_specs.finite_graphI
+
 lemma pair_graph_u_invar_empty: "pair_graph_u_invar \<emptyset>\<^sub>G"
   by (simp add: finite_graphI graph_inv_def local.neighbourhood_def pair_graph_u_invar_def)
 
-lemma pair_graph_u_invar_add_edge:
+lemmas digraph_abs_insert= pair_graph_specs.digraph_abs_insert
+lemmas add_edge_def = pair_graph_specs.add_edge_def
+lemmas graph_invE = pair_graph_specs.graph_invE
+lemmas adjmap_inv_insert =  pair_graph_specs.adjmap_inv_insert
+lemmas finite_graph_add_edge = pair_graph_specs.finite_graph_add_edge
+lemmas are_connected_abs = pair_graph_specs.are_connected_abs
+
+lemma pair_graph_u_invar_add_edge_both:
   assumes "u \<noteq> v"
-  shows "pair_graph_u_invar (add_edge (add_edge G u v) v u)" 
+  shows "pair_graph_u_invar (add_edge (add_edge G u v) v u)" (is ?thesis1)
+  and "\<forall> x y. lookup G x = Some y \<longrightarrow> y \<noteq> vset_empty
+ \<Longrightarrow>\<forall> x y. lookup (add_edge (add_edge G u v) v u) x = Some y \<longrightarrow> y \<noteq> vset_empty" 
+(is "?assm \<Longrightarrow> ?thesis2")
+and "none_symmetry G \<Longrightarrow> none_symmetry (add_edge (add_edge G u v) v u)" (is "?assm3 \<Longrightarrow> ?thesis3")
 proof-
   have set_is:"[add_edge G u v]\<^sub>g = Set.insert (u, v) [G]\<^sub>g"
     using  digraph_abs_insert[of G u v] assms by(auto simp add: pair_graph_u_invar_def)
@@ -402,15 +444,15 @@ proof-
   have set_is':"{v. v \<noteq> u \<longrightarrow> (\<exists>y. lookup G v = Some y)} = Set.insert u {v.  (\<exists>y. lookup G v = Some y)}" by blast
   have finite_graph_after:"finite_graph (add_edge G u v)"
     using finiteG
-    by (auto split: option.split simp add: finite_graph_def add_edge_def adjmap.map_update[OF adjmap_invG] set_is') 
+    by (auto split: option.split simp add: finite_graph_def add_edge_def pair_graph_specs.adjmap.map_update[OF adjmap_invG] set_is') 
   have not_Refl:"\<not> va \<in>\<^sub>G \<N>\<^sub>G G va" for va by simp
   have not_Refl':"\<not> va \<in>\<^sub>G \<N>\<^sub>G add_edge G u v va" for va
     using assms not_Refl[of va]  
-    by(auto split: option.split simp add: add_edge_def neighbourhood_def adjmap.map_update[OF adjmap_invG] intro: graph_invE[of G] )
+    by(auto split: option.split simp add: add_edge_def neighbourhood_def pair_graph_specs.adjmap.map_update[OF adjmap_invG] intro: graph_invE[of G] )
  have not_Refl_after:"\<not> va \<in>\<^sub>G \<N>\<^sub>G add_edge (add_edge G u v) v u va" for va
     using assms not_Refl'[of va]  
-    by(auto split: option.split simp add: add_edge_def  adjmap.map_update[OF adjmap_invg', simplified add_edge_def] 
-                   neighbourhood_def adjmap.map_update[OF adjmap_invg'] intro: graph_invE[of G] )
+    by(auto split: option.split simp add: add_edge_def  pair_graph_specs.adjmap.map_update[OF adjmap_invg', simplified add_edge_def] 
+                   neighbourhood_def pair_graph_specs.adjmap.map_update[OF adjmap_invg'] intro: graph_invE[of G] )
   have sym_before:"va \<in>\<^sub>G \<N>\<^sub>G G ua \<Longrightarrow> ua \<in>\<^sub>G \<N>\<^sub>G G va" for va ua by blast
   have sym_after: "va \<in>\<^sub>G \<N>\<^sub>G add_edge (add_edge G u v) v u ua \<Longrightarrow> ua \<in>\<^sub>G \<N>\<^sub>G add_edge (add_edge G u v) v u va " for ua va
   proof(goal_cases)
@@ -418,25 +460,69 @@ proof-
     have"(ua, va) \<in> digraph_abs (add_edge (add_edge G u v) v u)"
       using 1 adjmap_inv_insert neighbourhoodI by (subst digraph_abs_insert) fastforce+
     hence "(ua, va) = (v, u) \<or> (ua, va) = (u, v) \<or> (ua, va) \<in> digraph_abs G"
-      by(auto simp add: adjmap_inv_insert) 
+      by(auto simp add: pair_graph_specs.adjmap_inv_insert) 
     hence "(ua, va) = (v, u) \<or> (ua, va) = (u, v) \<or> (va, ua) \<in> digraph_abs G" 
       by auto 
     hence"(va, ua) \<in> digraph_abs (add_edge (add_edge G u v) v u)"
-      by(auto simp add:  adjmap_inv_insert)  
+      by(auto simp add: adjmap_inv_insert)  
     then show ?case 
       by (simp add: digraph_abs_def)
   qed
-  show ?thesis
+  show thesis1:?thesis1
     using assms 
     by(auto intro: adjmap_inv_insert finite_graph_add_edge simp add: pair_graph_u_invar_def not_Refl_after sym_after)
+  show "?assm \<Longrightarrow> ?thesis2" 
+  proof(rule, rule, goal_cases)
+    case (1 x y)
+    moreover have "lookup G v = Some vset \<Longrightarrow> vset_inv vset" for vset
+      using graph_invE[OF invar_graph_inv] by auto
+    moreover have "lookup G u = Some x2 \<Longrightarrow>
+          lookup G v = None \<Longrightarrow> y = insert v x2 \<Longrightarrow> \<emptyset>\<^sub>N = insert v x2 \<Longrightarrow> False" for x2
+      using graph_invE by fastforce
+    moreover have "lookup G u = Some x2 \<Longrightarrow>
+       lookup G v = Some x2a \<Longrightarrow> y = insert v x2 \<Longrightarrow> \<emptyset>\<^sub>N = insert v x2 \<Longrightarrow> False " for x2 x2a
+      using graph_invE by fastforce
+    ultimately show ?case 
+      using  assms 
+      by(auto split: option.split simp add: add_edge_def Let_def adjmap_invG  pair_graph_specs.adjmap.map_update)+
+  qed
+  show "?assm3 \<Longrightarrow> ?thesis3"
+    unfolding none_symmetry_def
+  proof(rule, goal_cases)
+    case (1 e)
+    have graph_abs_after:"[add_edge (add_edge G u v) v u]\<^sub>g = Set.insert (v, u) (Set.insert (u, v) [G]\<^sub>g)" 
+                          "[(add_edge G u v)]\<^sub>g = (Set.insert (u, v) [G]\<^sub>g)" 
+      by (simp add: adjmap_inv_insert)+
+    have lookup_is1:"lookup (update v (insert u \<emptyset>\<^sub>N) (update u (insert v \<emptyset>\<^sub>N) G)) =
+ ((lookup G)(u \<mapsto> insert v \<emptyset>\<^sub>N, v \<mapsto> insert u \<emptyset>\<^sub>N))" for u v
+      by (simp add: adjmap_invG)
+    obtain neighbs where neighbs_exists:"lookup (add_edge (add_edge G u v) v u) (fst e) = Some neighbs"
+      using "1"(2) thesis1 are_connected_abs[of "(add_edge (add_edge G u v) v u)" "snd e" "fst e"] 
+             pair_graph_specs.vset.set.set_empty
+     by(fastforce simp add: local.neighbourhood_def  pair_graph_u_invar_def)
+    have help1:"fst e \<noteq> v \<Longrightarrow> snd e \<noteq> v \<Longrightarrow> \<exists>y. lookup G (snd e) = Some y" 
+      using "1"(1) "1"(2) adjmap_inv_insert[OF  invar_graph_inv]
+       are_connected_abs[OF  invar_graph_inv, of "snd e" "fst e"] 
+         invar_graph_inv  pair_graph_specs.vset.emptyD(3)
+      by(auto simp add:  neighbourhood_def graph_abs_after)
+    have help3: "
+    snd e \<noteq> u \<Longrightarrow> v = fst e  \<Longrightarrow> lookup G (fst e) = None \<Longrightarrow> \<exists>y. lookup G (snd e) = Some y"   
+      using "1"(2) adjmap_inv_insert[OF invar_graph_inv] are_connected_abs[OF invar_graph_inv, of "snd e" "fst e"]
+                invar_graph_inv  pair_graph_specs.vset.emptyD(1)
+      by(auto intro: prod.exhaust[of e] simp add: neighbourhood_def  graph_abs_after )
+    have help4: " snd e \<noteq> u \<Longrightarrow>
+          v = fst e \<Longrightarrow>  lookup G (fst e) = Some x2 \<Longrightarrow> \<exists>y. lookup G (snd e) = Some y" for x2 
+      using "1"(2,1) adjmap_inv_insert[OF invar_graph_inv] are_connected_abs[OF invar_graph_inv, of "snd e" "fst e"]
+                invar_graph_inv  pair_graph_specs.vset.emptyD(1)
+      by(auto intro: prod.exhaust[of e] simp add: neighbourhood_def  graph_abs_after )
+   show ?case
+      using 1 assms neighbs_exists
+      by(auto intro: help1 help3 help4 split: option.split if_split simp add: add_edge_def lookup_is1 adjmap_invG )
+  qed
 qed
 
+lemmas pair_graph_u_invar_add_edge = pair_graph_u_invar_add_edge_both(1)
 end
-
 end
-
-
 end
-
-
 end

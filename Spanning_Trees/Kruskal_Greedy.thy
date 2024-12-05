@@ -7,7 +7,6 @@ begin
 
 subsection \<open>Instantiations for Kruskal's algorithm\<close>
 
-
 abbreviation "rbt_inv == ( \<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
 
 fun rbt_sel where

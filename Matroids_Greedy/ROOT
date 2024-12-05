@@ -1,6 +1,5 @@
 session "Matroids_Greedy" = "HOL-Data_Structures" + 
-
-  (* TODO document *)
+  options [document = pdf, document_output = "output"]
   sessions
     "Matroids"
 
