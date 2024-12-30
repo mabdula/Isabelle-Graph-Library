@@ -68,4 +68,6 @@ value "initial_state_aux (1::nat)"
 value "dfs_aux G (initial_state_aux (9::nat))"
 
 value "find_cycles_by_dfs V G initial"
+
+hide_const G V edges a_graph
 end

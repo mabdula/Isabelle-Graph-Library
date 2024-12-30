@@ -1,6 +1,5 @@
 session "Spanning_Trees" = "HOL-Data_Structures" + 
-
-  (* TODO document *)
+  options [document = pdf, document_output = "output"]
   sessions
     "Matroids_Greedy"
     "Undirected_Set_Graphs"
@@ -8,4 +7,6 @@ session "Spanning_Trees" = "HOL-Data_Structures" +
 
   theories
     "Spanning_Trees"
-    "Kruskal_Greedy"
+    "Encoding"
+    "Insertion_Sort_Desc"
+    "Kruskal_Greedy2"
