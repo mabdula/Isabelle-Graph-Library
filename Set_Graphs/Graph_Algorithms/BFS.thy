@@ -1304,6 +1304,13 @@ lemma BFS_correct_3_ret_1:
   apply(erule invar_props_elims)+
   by (auto elim!: call_cond_elims invar_props_elims)
 
+lemma BFS_correct_4_ret_1:
+  "\<lbrakk>invar_2 bfs_state; BFS_ret_1_conds bfs_state\<rbrakk> \<Longrightarrow>
+    (Graph.digraph_abs (parents bfs_state))\<subseteq> Graph.digraph_abs G"
+  apply(erule invar_props_elims)+
+  by (auto elim!: call_cond_elims invar_props_elims)
+
+
 subsection \<open>Termination\<close>
 
 named_theorems termination_intros
@@ -1548,6 +1555,10 @@ proof-
     by(cases p, all \<open>cases q\<close>)(auto simp add: vwalk_bet_def)
 qed
 
+lemma BFS_correct_4:
+  "(Graph.digraph_abs (parents (BFS initial_state))) \<subseteq> (Graph.digraph_abs G)"
+  apply(intro BFS_correct_4_ret_1[where bfs_state = "BFS initial_state"])
+  by(auto intro: invar_holds_intros ret_holds_intros)
 end text \<open>context\<close>
 
 end text \<open>locale @{const BFS}\<close>

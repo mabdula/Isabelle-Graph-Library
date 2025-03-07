@@ -30,8 +30,6 @@ lemma sel_edge:
   assumes "graph_invar G" "G \<noteq> {}"
   shows "sel_edge G \<in> G"
 proof-
-
-
   have "finite (Vs G)"
     by (simp add: assms(1))
   hence "finite (neighbourhood G (sel (Vs G)))"

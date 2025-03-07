@@ -1304,6 +1304,12 @@ lemma BFS_correct_3_ret_1:
   apply(erule invar_props_elims)+
   by (auto elim!: call_cond_elims invar_props_elims)
 
+lemma BFS_correct_4_ret_1:
+  "\<lbrakk>invar_2 bfs_state; BFS_ret_1_conds bfs_state\<rbrakk> \<Longrightarrow>
+    (Graph.digraph_abs (parents bfs_state))\<subseteq> Graph.digraph_abs G"
+  apply(erule invar_props_elims)+
+  by (auto elim!: call_cond_elims invar_props_elims)
+
 subsection \<open>Termination\<close>
 
 named_theorems termination_intros
@@ -1566,19 +1572,11 @@ proof-
     by(cases p, all \<open>cases q\<close>)(auto simp add: vwalk_bet_def)
 qed
 
-(*
-lemma no_parent_path_between_sources:
-  assumes "s \<in> t_set srcs"  "t \<in> t_set srcs"
-  shows "\<nexists> q. vwalk_bet (Graph.digraph_abs (parents (BFS initial_state))) s q t"
-proof(rule ccontr, goal_cases)
-  case 1
-  then obtain q where "vwalk_bet [parents (local.BFS initial_state)]\<^sub>g s q t"
-    by auto           
-  hence "distance_set_single  (Graph.digraph_abs (parents (BFS initial_state))) (t_set srcs)  t
-           = distance_set_single (Graph.digraph_abs (parents (BFS initial_state))) (t_set srcs) s + length q"
-    find_theorems distance_set_single "(+)"
-*)
 
+lemma BFS_correct_4:
+  "(Graph.digraph_abs (parents (BFS initial_state))) \<subseteq> (Graph.digraph_abs G)"
+  apply(intro BFS_correct_4_ret_1[where bfs_state = "BFS initial_state"])
+  by(auto intro: invar_holds_intros ret_holds_intros)
 
 end text \<open>context\<close>
 
