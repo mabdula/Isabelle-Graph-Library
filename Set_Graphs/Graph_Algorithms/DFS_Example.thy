@@ -7,7 +7,7 @@ global_interpretation dfs: DFS where insert = vset_insert and
  lookup = lookup and empty = map_empty and delete=delete and isin = isin and t_set=t_set
 and update=update and adjmap_inv = adj_inv and vset_delete= vset_delete
 and vset_inv = vset_inv and union=vset_union and inter=vset_inter and G = F and
-t = "t::'a::linorder" and s = s  for F t s
+P_T = P_T and s = s  for F P_T s
 defines  dfs_initial_state = dfs.initial_state and
 neighbourhood=dfs.Graph.neighbourhood and
 dfs_impl = dfs.DFS_impl  and
@@ -32,8 +32,8 @@ value "vertices edges"
 value G
 value "neighbourhood G"
 value "dfs_initial_state (1::nat)"
-value "dfs_impl G 9 (dfs_initial_state 0)"
-value "dfs_impl G 3 (dfs_initial_state 0)"
+value "dfs_impl G (\<lambda> w. w = 9) (dfs_initial_state 0)"
+value "dfs_impl G (\<lambda> w. w = 3) (dfs_initial_state 0)"
 
 hide_const edges G
 

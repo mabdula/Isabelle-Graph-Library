@@ -246,6 +246,9 @@ corollary finite_vertices[intro!]:
   using finite_graph[OF assms]
   by (simp add: finite_vertices_iff)
 
+lemma finite_empty: "finite_graph empty"
+  by (simp add: finite_graph_def)
+
 subsection \<open>Abstraction lemmas\<close>
 
 text \<open>These are lemmas for automation. Their purpose is to remove any mention of the neighbourhood
@@ -301,5 +304,95 @@ qed
 end \<comment> \<open>Properties context\<close>  
 
 end text \<open>@{const Pair_Graph_Specs}\<close>
+
+locale Pair_Graph_Specs_Reverse =
+pair_graph_specs: Pair_Graph_Specs where lookup=lookup 
+for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option" +
+fixes fold_vset::"('ver \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap) \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap"
+fixes fold_adjmap::"('ver \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap) \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap"
+assumes fold_vset:"\<And> N f acc. vset_inv N \<Longrightarrow> \<exists> xs. set xs = t_set N \<and> fold_vset f N acc = foldr f xs acc"
+assumes fold_adjmap:"\<And> N f acc. adjmap_inv N \<Longrightarrow> \<exists> xs. set xs = dom (lookup N) \<and>
+                        fold_adjmap f N acc = foldr (\<lambda> x acc. f x (the (lookup N x)) acc) xs acc" 
+begin
+
+lemmas [code] = pair_graph_specs.add_edge_def
+
+abbreviation "add_edge == pair_graph_specs.add_edge"
+
+definition "reverse_neighbourhood x N G = (fold_vset (\<lambda> y acc. add_edge acc y x) N G)"
+
+definition "reverse_graph G = (fold_adjmap reverse_neighbourhood G empty)"
+
+abbreviation "graph_inv == pair_graph_specs.graph_inv"
+abbreviation "finite_graph == pair_graph_specs.finite_graph"
+abbreviation "digraph_abs == pair_graph_specs.digraph_abs"
+
+lemma reverse_neighbourhood_correct:
+  assumes "graph_inv Gacc" "vset_inv N"
+  shows   "graph_inv (reverse_neighbourhood x N Gacc)"
+          "finite_graph Gacc \<Longrightarrow> finite_graph (reverse_neighbourhood x N Gacc)"
+          "digraph_abs (reverse_neighbourhood x N Gacc) = digraph_abs Gacc \<union> {(y, x) | y. y \<in>t_set N}"
+proof-
+  obtain xs where xs_prop: "set xs = [N]\<^sub>s" 
+     "fold_vset (\<lambda>y acc. add_edge acc y x) N Gacc = foldr (\<lambda>y acc. add_edge acc y x) xs Gacc"
+    using fold_vset[OF assms(2), of "\<lambda> y acc. add_edge acc y x" Gacc] by auto
+  have graph_inv_fold:"graph_inv(foldr (\<lambda>y acc. add_edge acc y x) xs Gacc)" for xs
+    by(induction xs)(auto simp add: assms(1))
+  show "graph_inv (reverse_neighbourhood x N Gacc)"
+    by(simp add: reverse_neighbourhood_def graph_inv_fold xs_prop(2))
+  have finite_graph_fold:"finite_graph Gacc \<Longrightarrow> finite_graph (foldr (\<lambda>y acc. add_edge acc y x) xs Gacc)" for xs
+   by(induction xs)(auto intro:pair_graph_specs.finite_graph_add_edge simp add: graph_inv_fold)
+  show "finite_graph Gacc \<Longrightarrow> finite_graph (reverse_neighbourhood x N Gacc)"
+    by(simp add: reverse_neighbourhood_def finite_graph_fold xs_prop(2))
+  have "[foldr (\<lambda>y acc. add_edge acc y x) xs Gacc]\<^sub>g = [Gacc]\<^sub>g \<union> {(y, x) |y. y \<in> [N]\<^sub>s}"
+    unfolding xs_prop(1)[symmetric]
+    by(induction xs)(auto simp add: graph_inv_fold)
+  thus "[reverse_neighbourhood x N Gacc]\<^sub>g = [Gacc]\<^sub>g \<union> {(y, x) |y. y \<in> [N]\<^sub>s}"
+    using reverse_neighbourhood_def xs_prop(2) by presburger
+qed
+
+lemma reverse_graph_correct:
+  assumes "graph_inv G" 
+  shows   "graph_inv (reverse_graph G)"
+          "finite_graph (reverse_graph G)"
+          "digraph_abs (reverse_graph G) = {(y, x) | x y. (x, y) \<in> digraph_abs G}"
+proof-
+  have adj_map_inv_G: "adjmap_inv G"
+    using assms by blast
+  obtain xs where xs_prop: "set xs = dom (lookup G)"
+     "fold_adjmap reverse_neighbourhood G \<emptyset>\<^sub>G = 
+        foldr (\<lambda>x. reverse_neighbourhood x (the (lookup G x))) xs \<emptyset>\<^sub>G"
+    using fold_adjmap[OF adj_map_inv_G, of reverse_neighbourhood empty] by auto
+  have graph_inv_fold:"set xs  \<subseteq> dom (lookup G) \<Longrightarrow> graph_inv (foldr (\<lambda>x. reverse_neighbourhood x (the (lookup G x))) xs \<emptyset>\<^sub>G)" for xs
+    by(induction xs)
+      (auto intro!: reverse_neighbourhood_correct(1) intro: pair_graph_specs.graph_invE[OF assms]
+                 simp add: pair_graph_specs.graph_inv_empty)
+  show "graph_inv (reverse_graph G)"
+    by(simp add: reverse_graph_def graph_inv_fold xs_prop)
+  have finite_graph_fold:"set xs  \<subseteq> dom (lookup G) \<Longrightarrow> finite_graph 
+                     (foldr (\<lambda>x. reverse_neighbourhood x (the (lookup G x))) xs \<emptyset>\<^sub>G)" for xs
+    using assms 
+    by(induction xs)
+      (auto intro: pair_graph_specs.finite_graph_add_edge intro!: 
+         reverse_neighbourhood_correct(2) simp add: graph_inv_fold pair_graph_specs.finite_empty)
+  show "finite_graph (reverse_graph G)" 
+    by(simp add: reverse_graph_def finite_graph_fold xs_prop)
+  have "set xs  \<subseteq> dom (lookup G) \<Longrightarrow> 
+  [(foldr (\<lambda>x. reverse_neighbourhood x (the (lookup G x))) xs \<emptyset>\<^sub>G)]\<^sub>g 
+     = {(y, x) | x y. x \<in> set xs \<and> y \<in> t_set (the (lookup G x))}"
+    using assms 
+    by (induction xs)
+       (force simp add: pair_graph_specs.digraph_abs_empty reverse_neighbourhood_correct(3) domIff graph_inv_fold)+
+  moreover have "{(y, x) | x y. x \<in> set xs \<and> y \<in> t_set (the (lookup G x))}
+                  = {(y, x) |x y. (x, y) \<in> [G]\<^sub>g}" 
+    using  xs_prop(1) assms  pair_graph_specs.vset.set.set_isin  pair_graph_specs.vset.emptyD(1) pair_graph_specs.vset.set.invar_empty 
+    by (auto simp add: pair_graph_specs.neighbourhood_def xs_prop(2) pair_graph_specs.digraph_abs_def )
+       (auto | rule option.exhaust[of "lookup G x" "y \<in> [the (lookup G x)]\<^sub>s" for x y])+
+  ultimately show "[reverse_graph G]\<^sub>g = {(y, x) |x y. (x, y) \<in> [G]\<^sub>g}" 
+    using  xs_prop(1) by(auto simp add: reverse_graph_def xs_prop(2) pair_graph_specs.digraph_abs_def)
+qed
+
+end
+
 
 end

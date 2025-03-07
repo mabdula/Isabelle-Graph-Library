@@ -85,4 +85,6 @@ value "diff_rbt (nbs edges 1) (nbs edges 2)"
 value G
 value "bfs_initial_state srcs"   
 value "bfs_impl G (bfs_initial_state srcs)"
+
+hide_const edges G src_list srcs
 end

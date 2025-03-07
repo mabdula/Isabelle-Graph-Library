@@ -1,5 +1,5 @@
 theory Dist
-  imports "../Misc/enat_misc" Vwalk
+  imports "../Misc/enat_misc" Vwalk "HOL-Eisbach.Eisbach"
 begin
 
 section \<open>Distances\<close>
@@ -374,12 +374,15 @@ qed
 
 subsection \<open>Distance from a set of vertices\<close>
 
-definition "distance_set G U v = ( INF u\<in>U. distance G u v)"
-
+definition "distance_set G U v =  ( INF u\<in>U. distance G u v)"
+definition "distance_set_single G U v = (if v \<in> U then 0 else distance_set G U v)"
 (*TODO: intro rule*)
 
 lemma dist_set_inf: "v \<notin> dVs G \<Longrightarrow> distance_set G U v = \<infinity>"
   by(auto simp: distance_set_def INF_eqI dist_inf)
+
+lemma dist_set_single_inf: "v \<notin> dVs G \<Longrightarrow>v \<notin> U \<Longrightarrow> distance_set_single G U v = \<infinity>"
+  by (simp add: dist_set_inf distance_set_single_def)
 
 lemma dist_set_mem[intro]: "u \<in> U \<Longrightarrow> distance_set G U v \<le> distance G u v"
   by (auto simp: distance_set_def wellorder_Inf_le1)
@@ -454,6 +457,11 @@ lemma finite_dist_nempty:
   "distance_set G V v \<noteq> \<infinity> \<Longrightarrow> V \<noteq> {}"
   by (auto simp: distance_set_def top_enat_def)
 
+lemma finite_dist_single_nempty:
+  "distance_set_single G V v \<noteq> \<infinity> \<Longrightarrow> V \<noteq> {}"
+  using  finite_dist_nempty
+  by (force simp add: distance_set_single_def)
+
 lemma distance_set_wit: 
   assumes "v \<in> V"
   obtains v' where "v' \<in> V" "distance_set G V x = distance G v' x"
@@ -470,9 +478,18 @@ lemma dist_set_not_inf: "distance_set G U v \<noteq> \<infinity> \<Longrightarro
   using distance_set_wit'
   by metis
 
+lemma dist_set_single_not_inf: "distance_set_single G U v \<noteq> \<infinity> 
+                 \<Longrightarrow> \<exists>u\<in>U. distance G u v = distance_set G U v \<or> u = v"
+  using distance_set_wit'[of G U v v "\<exists>u\<in>U. distance G u v = distance_set G U v \<or> u = v"]  
+  by(force simp add: distance_set_single_def)
+
 lemma dist_not_inf': "distance_set G U v \<noteq> \<infinity> \<Longrightarrow>
                         \<exists>u\<in>U. distance G u v = distance_set G U v \<and> reachable G u v"
   by (metis dist_reachable dist_set_not_inf enat_ord_simps(4))
+
+lemma dist_single_not_inf': "distance_set_single G U v \<noteq> \<infinity> \<Longrightarrow>
+                        \<exists>u\<in>U. (distance G u v = distance_set G U v \<and> reachable G u v) \<or> u = v"
+  using dist_not_inf' by (cases "v \<in> U")(fastforce simp add: distance_set_single_def)+
 
 lemma distance_on_vwalk:
   "\<lbrakk>distance_set G U v = distance G u v; u \<in> U; shortest_path G u p v; x \<in> set p\<rbrakk>
@@ -666,6 +683,12 @@ proof(goal_cases)
     by(simp only: distance_set_def)
 qed
 
+lemma distance_set_single_neighbourhood:
+  "\<lbrakk>v \<in> neighbourhood G u; Vs \<noteq> {}\<rbrakk> \<Longrightarrow> distance_set_single G Vs v \<le> distance_set_single G Vs u + 1"
+  using dist_set_mem[of u Vs G _] distance_neighbourhood[of v G u] distance_set_neighbourhood[of v G u Vs]
+        order_trans 
+  by(auto simp add:  distance_set_single_def)
+
 lemma distance_set_parent: 
   "\<lbrakk>distance_set G Vs v < \<infinity>; Vs \<noteq> {}; v \<notin> Vs\<rbrakk> \<Longrightarrow> 
      \<exists>w. distance_set G Vs w + 1 = distance_set G Vs v \<and> v \<in> neighbourhood G w"
@@ -690,6 +713,32 @@ lemma distance_set_parent':
   using distance_set_parent
   by (metis antisym_conv2 dist_set_inf distance_0 distance_set_def less_INF_D order.strict_implies_order)
 
+lemma distance_set_single_parent':
+  "\<lbrakk>0 < distance_set_single G Vs v; distance_set_single G Vs v < \<infinity>; Vs \<noteq> {}\<rbrakk> \<Longrightarrow> 
+     \<exists>w. distance_set_single G Vs w + 1 = distance_set_single G Vs v \<and> v \<in> neighbourhood G w"
+  unfolding  distance_set_single_def
+proof(cases "v \<in> Vs", goal_cases)
+  case 1
+  then show ?case by simp
+next
+  case 2
+  have a1: "0 < distance_set G Vs v"
+    using "2"(1) "2"(4) by auto
+  have a2:"distance_set G Vs v < \<infinity>"
+    using "2"(2) "2"(4) by auto
+  have a3: " Vs \<noteq> {}"
+    by (simp add: "2"(3))
+    show ?case 
+  proof(rule exE[OF distance_set_parent'[of G Vs v], OF a1 a2 a3], goal_cases)
+    case (1 w)
+    then show ?case 
+      using dVsI(1)[OF neighbourhoodI[of v G w]] 2(1)
+      dist_set_mem[of w Vs G w] distance_0[of w w G] distance_set_parent'[of G Vs v] 
+  by fastforce
+qed
+qed
+
+
 lemma distance_set_0[simp]: "\<lbrakk>v \<in> dVs G\<rbrakk> \<Longrightarrow> distance_set G Vs v = 0 \<longleftrightarrow> v \<in> Vs"
 proof(safe, goal_cases)
   case 2
@@ -703,6 +752,12 @@ next
     by (metis dist_set_not_inf distance_0 infinity_ne_i0)
 qed
 
+lemma distance_set_single_0[simp]: "\<lbrakk>v \<in> dVs G\<rbrakk> \<Longrightarrow> distance_set_single G Vs v = 0 \<longleftrightarrow> v \<in> Vs"
+  by (simp add: distance_set_single_def)
+
+lemma distance_set_single_0_if_in_V[simp]: "v \<in> Vs \<Longrightarrow> distance_set_single G Vs v = 0"
+  by (simp add: distance_set_single_def)
+
 lemma dist_set_leq: 
   "\<lbrakk>\<And>u. u \<in> Vs \<Longrightarrow> distance G u v \<le> distance G' u v\<rbrakk> \<Longrightarrow> distance_set G Vs v \<le> distance_set G' Vs v"
   by(auto simp: distance_set_def INF_superset_mono)             
@@ -715,10 +770,43 @@ lemma dist_set_eq:
 lemma distance_set_subset: "G \<subseteq> G' \<Longrightarrow> distance_set G' Vs v \<le> distance_set G Vs v"
   by (simp add: dist_set_leq distance_subset)
 
+lemma distance_set_single_subset: "G \<subseteq> G' \<Longrightarrow> distance_set_single G' Vs v \<le> distance_set_single G Vs v"
+  by (simp add: distance_set_single_def distance_set_subset)
+
 lemma vwalk_bet_dist_set:
   "\<lbrakk>Vwalk.vwalk_bet G u p v; u \<in> U\<rbrakk> \<Longrightarrow> distance_set G U v \<le> length p - 1"
   apply (auto simp: distance_set_def image_def intro!:)
   by (metis (mono_tags, lifting) Inf_lower One_nat_def dual_order.trans mem_Collect_eq vwalk_bet_dist)
+
+lemma vwalk_bet_dist_set_single:
+  "\<lbrakk>Vwalk.vwalk_bet G u p v; u \<in> U\<rbrakk> \<Longrightarrow> distance_set_single G U v \<le> length p - 1"
+  using  vwalk_bet_dist_set zero_le
+  by(cases "v \<in> U")
+    (fastforce simp add: distance_set_single_def)+
+
+
+lemma distance_not_infty_if_path:
+"vwalk_bet G u p v \<Longrightarrow> u \<in> U \<Longrightarrow> distance_set G U v < \<infinity>" 
+  using linorder_not_less vwalk_bet_dist_set by fastforce
+
+lemma distance_single_not_infty_if_path:
+"vwalk_bet G u p v \<Longrightarrow> u \<in> U \<Longrightarrow> distance_set_single G U v < \<infinity>" 
+  using distance_not_infty_if_path 
+  by (cases "v \<in> U")(fastforce simp add:  distance_set_single_def)+
+
+lemma distance_single_not_infty_if_single_path:
+  assumes "vwalk_bet_single_vertex G u p v" "u \<in> U" 
+  shows   "distance_set_single G U v < \<infinity>" 
+proof(cases "vwalk_bet G u p v")
+  case False
+  hence "distance_set_single G U v = 0" 
+   using assms by(simp add: vwalk_bet_single_vertex_def distance_set_single_def)
+  then show ?thesis  by simp
+next
+  case True
+  show ?thesis 
+    using distance_single_not_infty_if_path[OF True assms(2)] by simp
+qed
 (*
 section \<open>Forests\<close>
 
