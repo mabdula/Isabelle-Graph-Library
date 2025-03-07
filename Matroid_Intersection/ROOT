@@ -1,0 +1,11 @@
+session "Matroid_Intersection" = "HOL-Data_Structures" + 
+  options [document = pdf, document_output = "output"]
+  sessions
+    Matroids
+    Directed_Set_Graphs
+    Graph_Algorithms
+
+  theories
+    Matroid_Intersection
+    Matroid_Intersection_Algorithm
+    Compute_Path

@@ -4,6 +4,7 @@ session "Graph_Algorithms" = "Directed_Set_Graphs" +
   sessions
     Verified_SAT_Based_AI_Planning
   theories
+    RBT_Map_Extension
     DFS
     DFS_Example
     More_Lists
