@@ -1,293 +1,11 @@
 theory Greedoids_Optimisation
   imports Main Complex_Main Greedoids "HOL-Eisbach.Eisbach"
 begin
-
-lemma max_n: "(\<And> n. P n \<Longrightarrow> n \<le> bound) \<Longrightarrow> P (n::nat) \<Longrightarrow> (\<exists> nmax. P nmax \<and> (\<nexists> m. m > nmax \<and> P m))"
-  by (metis bounded_Max_nat leD)
-
-definition accessible where "accessible E F \<longleftrightarrow> set_system E F \<and> ({} \<in> F) \<and> (\<forall>X. (X \<in> F - {{}}) \<longrightarrow>
-(\<exists>x \<in> X.  X - {x} \<in> F))"
-definition closed_under_union where "closed_under_union F \<longleftrightarrow> (\<forall>X Y. X \<in> F \<and> Y \<in> F \<longrightarrow> X \<union> Y \<in> F)"
-
-
-definition maximal where "maximal P Z \<longleftrightarrow> (P Z \<and> (\<nexists> X. X \<supset> Z \<and> P X))"
-
-definition strong_exchange_property where "strong_exchange_property E F \<longleftrightarrow> 
-(\<forall>A B x. (A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> (maximal (\<lambda>B. B \<in> F) B) \<and> x \<in> E - B \<and> A \<union> {x} \<in> F) 
-      \<longrightarrow> (\<exists>y \<in> B - A. A \<union> {y} \<in> F \<and> (B - {y}) \<union> {x} \<in> F))"
-
-lemma  strong_exchange_propertyE: 
- "strong_exchange_property E F \<Longrightarrow> 
-  ((\<And> A B x. A \<in> F \<Longrightarrow> B \<in> F \<Longrightarrow> A \<subseteq> B \<Longrightarrow> (maximal (\<lambda>B. B \<in> F) B) \<Longrightarrow> x \<in> E - B \<Longrightarrow> A \<union> {x} \<in> F 
-      \<Longrightarrow> (\<exists>y \<in> B - A. A \<union> {y} \<in> F \<and> (B - {y}) \<union> {x} \<in> F))
- ==> P) \<Longrightarrow> P"
- by(auto simp add: strong_exchange_property_def)
-
-lemma set_take_union_nth:
-  assumes "i < length l"
-  shows "set (take i l) \<union> {nth l i} = set (take (i + 1) l)"
-proof -
-  have "take (i + 1) l = take i l @ [nth l i]"
-    using  take_Suc_conv_app_nth assms by simp
-  then have "set (take (i + 1) l) = set (take i l @ [nth l i])"
-    by simp
-  also have "... = set (take i l) \<union> set [nth l i]"
-    by simp
-  finally show ?thesis
-    by simp
-qed
-
-
-lemma accessible_property: assumes "set_system E F" "{} \<in> F"
-  shows "accessible E F \<longleftrightarrow> (\<forall>X. X \<in> F \<longrightarrow> (\<exists>l. set l = X \<and>  (\<forall>i. i \<le> length l \<longrightarrow> set (take i l) \<in> F) \<and> distinct l))"
-proof 
-  show "accessible E F \<Longrightarrow>
-    \<forall>X. X \<in> F \<longrightarrow> (\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l)"
-  proof -
-    assume "accessible E F"
-    show "\<forall>X. X \<in> F \<longrightarrow> (\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l)"
-    proof
-      fix X
-      show "X \<in> F \<longrightarrow> (\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l)"
-      proof
-        assume "X \<in> F"
-  have "set_system E F" using assms(1) unfolding accessible_def by simp
-  then have "finite E" unfolding set_system_def by simp
-  have "X \<subseteq> E" using assms \<open>X \<in> F\<close> unfolding set_system_def by auto
-  then have "finite X" using finite_subset \<open>finite E\<close> by auto
-  obtain k where "card X = k" using \<open>finite X\<close> by simp 
-  then show "(\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l)" using assms \<open>X \<in> F\<close> \<open>X \<subseteq> E\<close>
-  proof (induct k arbitrary: X rule: less_induct)
-    case (less a)
-    then have "card X = a" by simp
-    have "X \<in> F" using \<open>X \<in> F\<close> by auto
-    then have "X \<subseteq> E" using \<open>set_system E F\<close> unfolding set_system_def by simp
-    then have "finite X" using \<open>finite E\<close> finite_subset by auto
-    then show ?case
-    proof (cases "a = 0")
-      case True
-      then have "card X = 0" using \<open>card X = a\<close> by simp
-      have "\<not>(infinite X)" using \<open>finite X\<close> by simp        
-      then have "X = {}" using \<open>card X = 0\<close> by simp
-      then obtain l where l_prop: "set l = X" "distinct l" using finite_distinct_list by auto
-      then have "l = []" using l_prop \<open>X = {}\<close> by simp
-      have "{} \<in> F" using assms \<open>accessible E F\<close> unfolding accessible_def by simp
-      then have "\<forall>i. i \<le> length [] \<longrightarrow> set (take i l) \<in> F" using l_prop by simp
-      then show ?thesis using \<open>l = []\<close> l_prop by simp
-    next
-      case False
-      then have "X \<noteq> {}" using \<open>card X = a\<close> by auto
-      then have "X \<in> F - {{}}" using \<open>X \<in> F\<close> by simp
-      then obtain x where "x \<in> X" "X - {x} \<in> F" using \<open>X \<in> F\<close> \<open>accessible E F\<close> unfolding accessible_def by auto
-      have "finite {x}" by simp
-      then have factone: "finite (X - {x})" using \<open>finite X\<close> by simp
-      have "(X - {x}) \<subset>  X" using \<open>x \<in> X\<close> by auto
-      then have "card (X - {x}) < card (X)" by (meson \<open>finite X\<close> psubset_card_mono)
-      then have "card (X - {x}) < a" using \<open>card X = a\<close> by simp 
-      have "X - {x} \<subseteq> E" using \<open>X - {x} \<subset> X\<close> \<open>X \<subseteq> E\<close> by simp
-      then have "\<exists>l. set l = X - {x} \<and> (\<forall>i. i \<le> length l \<longrightarrow> set (take i l) \<in> F) \<and> distinct l" using \<open>X - {x} \<in> F\<close> 
-        using less.hyps \<open>X - {x} \<in> F\<close> \<open>card (X - {x}) < a\<close> assms by simp
-      then obtain l where l_prop: "set l = X - {x} \<and> (\<forall>i. i \<le> length l \<longrightarrow> set (take i l) \<in> F) \<and> distinct l" by auto
-      let ?l' = "l @ [x]"
-      have conc1: "distinct ?l'" using l_prop by simp
-      have l_prop2: "set l = X - {x}" using l_prop by simp
-      have "(X - {x}) \<union> {x} = X" using \<open>x \<in> X\<close> by auto
-      then have conc2: "(set ?l') = X" using l_prop2 by simp
-      have prop2: "(\<forall>i. i < length ?l' \<longrightarrow> set (take i ?l') \<in> F)" using l_prop by simp
-      have "set (take (length ?l') ?l') \<in> F" using \<open>set ?l' = X\<close> \<open>X \<in> F\<close> by simp
-      then have "(\<forall>i. i \<le> length ?l' \<longrightarrow> set (take i ?l') \<in> F)" using prop2
-        using antisym_conv2 by blast
-       then show ?thesis using conc1 conc2 by fast
-     qed
-   qed
- qed
-qed
-qed
-  show "\<forall>X. X \<in> F \<longrightarrow>
-        (\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l) \<Longrightarrow>
-    accessible E F"
-    unfolding accessible_def
-  proof 
-    show "\<forall>X. X \<in> F \<longrightarrow>
-        (\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l) \<Longrightarrow>
-    set_system E F" using assms by simp
-    show "\<forall>X. X \<in> F \<longrightarrow>
-        (\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l) \<Longrightarrow>
-    {} \<in> F \<and> (\<forall>X. X \<in> F - {{}} \<longrightarrow> (\<exists>x\<in>X. X - {x} \<in> F))"
-    proof 
-      show "\<forall>X. X \<in> F \<longrightarrow>
-        (\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l) \<Longrightarrow>
-    {} \<in> F" using assms by simp
-      show "\<forall>X. X \<in> F \<longrightarrow>
-        (\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l) \<Longrightarrow>
-    \<forall>X. X \<in> F - {{}} \<longrightarrow> (\<exists>x\<in>X. X - {x} \<in> F)"
-      proof -
-        assume assum1: "\<forall>X. X \<in> F \<longrightarrow>
-        (\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l)"
-        show "\<forall>X. X \<in> F - {{}} \<longrightarrow> (\<exists>x\<in>X. X - {x} \<in> F)"
-        proof
-          fix X
-          show "X \<in> F - {{}} \<longrightarrow> (\<exists>x\<in>X. X - {x} \<in> F)"
-          proof
-            assume "X \<in> F - {{}}"
-            then have "X \<noteq> {}" by simp
-            then have "(\<exists>l. set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l)" using assum1 \<open>X \<in> F - {{}}\<close> by simp
-            then obtain l where l_prop: "set l = X \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l" by auto
-            then have "l \<noteq> []" using \<open>X \<noteq> {}\<close> by auto
-            then obtain x where "(nth l (length l - 1)) = x" by simp
-            then have "set (take (length l) l) \<in> F" using l_prop by auto
-            have "length l > 0" using \<open>l \<noteq> []\<close> by simp
-            then have "length l - 1 < length l" by simp
-            then have factone: "(set (take (length l - 1) l)) \<union> {nth l (length l - 1)} = set (take (length l) l)" 
-              using set_take_union_nth by fastforce
-            have facttwo: "nth l (length l - 1) \<notin> set (take (length l - 1) l)" 
-            proof
-              assume assum2: "l ! (length l - 1) \<in> set (take (length l - 1) l)"
-              then have "(take (length l - 1)  l) \<noteq> []" by auto
-              then have assum3: "List.member (take (length l - 1) l) (nth l (length l - 1))" using in_set_member \<open>l \<noteq> []\<close>
-                assum2 by fast
-              have "l = (take (length l - 1) l) @ [nth l (length l - 1)]" using \<open>l \<noteq> []\<close> 
-                by (metis Suc_diff_1 \<open>0 < length l\<close> \<open>length l - 1 < length l\<close> order_refl take_Suc_conv_app_nth take_all_iff)
-              then have "\<not> (distinct l)"
-                using assum2 distinct_take not_distinct_conv_prefix by blast
-              then show False using l_prop by simp
-            qed
-            have "set (take (length l - 1) l) \<in> F" using l_prop by simp
-            then have  "((set (take (length l) l)) - {nth l (length l - 1)}) \<in> F" using factone facttwo 
-              by (metis Diff_insert_absorb Un_empty_right Un_insert_right)
-            then have "X - {x} \<in> F" using l_prop \<open>nth l (length l - 1) = x\<close> by simp
-            have "x \<in> X" using l_prop \<open>nth l (length l - 1) = x\<close> in_set_member \<open>l \<noteq> []\<close> by auto
-            then show "\<exists>x\<in>X. X - {x} \<in> F" using \<open>X - {x} \<in> F\<close> by auto
-          qed
-        qed
-      qed
-    qed
-  qed
-qed
-
-    
-
-lemma first_element_set:
-  assumes "l \<noteq> []"
-  shows "{nth l 0} = set (take 1 l)"
-proof -
-  from assms obtain a l' where l_def: "l = a # l'"
-    by (cases l) auto
-  then have "nth l 0 = a" by simp
-  moreover have "take 1 l = [a]" using l_def by simp
-  ultimately show "{nth l 0} = set (take 1 l)" by simp
-qed
-
-
-
-
-locale greedoid =
-  fixes E :: "'a set"
-  fixes F :: "'a set set"
-  assumes contains_empty_set: "{} \<in> F"
-  assumes third_condition: "(X \<in> F) \<and> (Y \<in> F) \<and> (card X > card Y) \<Longrightarrow> \<exists>x \<in> X - Y.  Y \<union> {x} \<in> F"
-  assumes ss_assum: "set_system E F"
-  assumes finite_E: "finite E"
-context greedoid
-begin
-
-lemma greedoid_accessible: 
-  shows "accessible E F" unfolding accessible_def
-proof
-   note assms = greedoid_axioms
-   show "set_system E F" using ss_assum assms by auto 
-   show "{} \<in> F \<and> (\<forall>X. X \<in> F - {{}} \<longrightarrow> (\<exists>x\<in>X. X - {x} \<in> F))"
-   proof
-     show "{} \<in> F" using contains_empty_set by simp
-     show "\<forall>X. X \<in> F - {{}} \<longrightarrow> (\<exists>x\<in>X. X - {x} \<in> F)"
-     proof
-       fix X
-       show "X \<in> F - {{}} \<longrightarrow> (\<exists>x\<in>X. X - {x} \<in> F)"
-       proof
-         assume "X \<in> F - {{}}"
-         then have "X \<subseteq> E" using ss_assum unfolding set_system_def by simp
-         have "X \<noteq> {}" using \<open>X \<in> F - {{}}\<close> by simp
-         have "finite E" using ss_assum unfolding set_system_def by simp
-         then have "finite X" using \<open>X \<subseteq> E\<close> finite_subset by auto    
-         have facttwo: "\<forall>i. i \<ge> 0 \<and> i < card X \<longrightarrow> (\<exists>x \<in> X. (\<exists>Y  Z. Y \<in> F \<and> Z \<in> F \<and> Y \<subseteq> X \<and> Z \<subset> Y \<and> card Y = i + 1 \<and> card Z = i \<and> (Y - Z) = {x} ))"
-         proof 
-           fix i
-           show "i \<ge> 0 \<and> i < card X \<longrightarrow> (\<exists>x \<in> X. (\<exists>Y  Z. Y \<in> F \<and> Z \<in> F \<and> Y \<subseteq> X \<and> Z \<subset> Y \<and> card Y = i + 1 \<and> card Z = i \<and> (Y - Z) ={x} ))"
-           proof
-             assume assum2: "0 \<le> i \<and> i < card X"
-             then show "(\<exists>x \<in> X. (\<exists>Y  Z. Y \<in> F \<and> Z \<in> F \<and> Y \<subseteq> X \<and> Z \<subset> Y \<and> card Y = i + 1 \<and> card Z = i \<and> (Y - Z) = {x} ))" using \<open>X \<in> F - {{}}\<close>
-                 \<open>finite X\<close>
-             proof (induct i arbitrary: X rule: less_induct)
-               case (less i)
-               then show ?case
-               proof (cases "i = 0")
-                 case True
-                 have 1: "card {} = 0" by simp
-                 have "X \<noteq> {}" using \<open>X \<in> F - {{}}\<close> by simp
-                 then have "card X > card {}" using \<open>finite X\<close> by auto
-                 then have "\<exists>x. x \<in> X - {} \<and> {} \<union> {x} \<in> F" using contains_empty_set \<open>X \<in> F - {{}}\<close> third_condition by blast
-                 then obtain x where x_prop: "x \<in> X - {} \<and> {} \<union> {x} \<in> F" by auto
-                 then have 2: "{x} \<in> F" by simp
-                 have 3: "{x} \<subseteq> X" using x_prop by simp
-                 have 4: "{} \<subset> {x}" by auto
-                 have 5: "card {x} = 0 + 1" by simp
-                 have "card ({x} - {}) = 1" by simp
-                 then show ?thesis using 1 2 3 4 5 contains_empty_set x_prop True by blast
-               next 
-                 case False
-                 then have "i > 0 \<and> i < card X" using \<open>i \<ge> 0 \<and> i < card X\<close> by simp
-                 then have factone: "i - 1 < i" by simp
-                 then have "i - 1 \<ge> 0 \<and> (i - 1) < card X" using \<open>i > 0 \<and> i < card X\<close> by auto
-                 then have "(\<exists>x \<in> X. (\<exists>Y  Z. Y \<in> F \<and> Z \<in> F \<and> Y \<subseteq> X \<and> Z \<subset> Y \<and> card Y = (i - 1) + 1  \<and> card Z = i - 1 \<and> (Y - Z) = {x} ))"
-                   using \<open>finite X\<close> \<open>X \<in> F - {{}}\<close> less.hyps factone by blast
-                 then have "(\<exists>x \<in> X. (\<exists>Y  Z. Y \<in> F \<and> Z \<in> F \<and> Y \<subseteq> X \<and> Z \<subset> Y \<and> card Y = i \<and> card Z = i - 1 \<and> (Y - Z) = {x} ))"
-                   using factone by simp
-                 then obtain x Y Z where x_Y_Z_prop: "x \<in> X \<and> Y \<in> F \<and> Z \<in> F \<and> Y \<subseteq> X \<and> Z \<subset> Y \<and> card Y = i \<and> card Z = i - 1 \<and> (Y - Z) = {x}" by auto
-                 then have "card Y < card X" using \<open>i > 0 \<and> i < card X\<close> by simp
-                 have 2: "card Y = i" using x_Y_Z_prop by simp
-                 have "Y \<in> F" using x_Y_Z_prop by simp
-                 then have "\<exists>x. x \<in> X - Y \<and> Y \<union> {x} \<in> F" using third_condition \<open>X \<in> F - {{}}\<close> \<open>card Y < card X\<close> by auto
-                 then obtain y where y_prop: "y \<in> X - Y \<and> Y \<union> {y} \<in> F" by auto
-                 then have "y \<notin> Y" by simp
-                 then have "card (Y \<union> {y}) = card Y + card {y}" using \<open>card Y = i\<close> 
-                   by (metis Nat.add_0_right \<open>0 < i \<and> i < card X\<close> add_Suc_right card_1_singleton_iff card_gt_0_iff card_insert_disjoint insert_is_Un sup_commute)
-                 then have 1: "card (Y \<union> {y}) = i + 1" using \<open>card Y = i\<close> by simp
-                 have 3: "Y \<union> {y} \<subseteq> X" using y_prop x_Y_Z_prop by simp
-                 have 4: "Y \<subset> Y \<union> {y}" using \<open>y \<notin> Y\<close> by auto
-                 then have "((Y \<union> {y}) - Y) = {y}" by auto
-                 then show ?thesis using 1 2 3 4 y_prop x_Y_Z_prop \<open>X \<in> F - {{}}\<close> \<open>finite X\<close>
-                   by (metis Diff_iff)
-               qed
-             qed
-           qed
-         qed
-         have "card X \<noteq> 0" using \<open>X \<noteq> {}\<close> \<open>finite X\<close> by simp
-         then have "card X - 1 < card X" by simp
-         have "card X - 1 \<ge> 0" by simp
-         then have "(\<exists>x \<in> X. (\<exists>Y  Z. Y \<in> F \<and> Z \<in> F \<and> Y \<subseteq> X \<and> Z \<subset> Y \<and> card Y = (card X - 1) + 1 \<and> card Z = card X - 1 \<and> (Y - Z) = {x} ))"
-           using \<open>card X - 1 < card X\<close> facttwo by blast
-         then obtain x Y Z where x_Y_Z_prop: "x \<in> X \<and> Y \<in> F \<and> Z \<in> F \<and> Y \<subseteq> X \<and> Z \<subset> Y \<and> card Y = (card X - 1) + 1 \<and> card Z = card X - 1 \<and> (Y - Z) = {x}"
-           by auto
-         then have "card Y = card X" using \<open>card X - 1 < card X\<close> by simp
-         have "Y \<subseteq> X" using x_Y_Z_prop by simp
-         then have "Y = X" using x_Y_Z_prop \<open>finite X\<close> \<open>card Y = card X\<close> 
-           using card_subset_eq by blast
-         have "Y - {x} = Z" using x_Y_Z_prop by auto
-         then have "X - {x} = Z" using \<open>Y = X\<close> by simp
-         also have "... \<in> F" using x_Y_Z_prop by simp
-         finally have "X - {x} \<in> F" by simp
-         then show "\<exists>x\<in>X. X - {x} \<in> F" using x_Y_Z_prop by auto
-       qed
-     qed
-   qed
- qed
-                
-end
   
-
 locale greedy_algorithm = greedoid +
   fixes orcl::"'a \<Rightarrow> 'a set \<Rightarrow> bool"
   assumes orcl_correct: "\<And> X x. X \<subseteq> E \<Longrightarrow> x \<in> E - X \<Longrightarrow> X \<in> F \<Longrightarrow> orcl x X \<longleftrightarrow> insert x X \<in> F"
+  assumes finite_E: "finite E"
 begin
 
 definition "valid_modular_weight_func (c::'a set \<Rightarrow> real) = 
@@ -352,33 +70,8 @@ lemma modular_function_elements_costs:
   apply(subst semiring_0_class.sum_distrib_left)+
   apply(subst comm_monoid_add_class.sum.distrib[symmetric])
   by simp
-(*
-lemma empty_minimal_monotone:
-  assumes "valid_modular_weight_func c" "empty_minimal c" "A \<subseteq> E" "B \<subseteq> A"
-  shows "c B \<le> c A"
-  apply(subst modular_function_single_costs[OF assms(1,3)]) 
-  apply(subst modular_function_single_costs[OF assms(1) order.trans[OF assms(4,3)]])
-  apply (auto simp add: algebra_simps)
-  apply(subst card_eq_sum[of A])
-  apply(subst card_eq_sum[of B])
-  apply(subst real_distrib_sum)+
-  apply(subst o_def)+
-  apply(subst semiring_0_class.sum_distrib_left)+
-  sorry*)
-  
-  find_theorems "_ * sum _ _ = sum (\<lambda>_. _ * _ ) _"
-
-(*
-lemma assumes "valid_modular_weight_func c" "(\<And> X. X \<subseteq> E \<Longrightarrow> c X \<ge> 0)" "X \<subseteq> E" "X \<subseteq> Y" "Y \<subseteq> E"
-  shows "c Y \<ge> c X"
-  apply(subst modular_function_single_costs[OF assms(1,3)])
-  apply(subst modular_function_single_costs[OF assms(1,5)])
-  apply(auto simp add: algebra_simps)
-*)
 
 definition "maximum_weight_set c X = (X \<in> F \<and> (\<forall> Y \<in> F. c X \<ge> c Y))"
-
-named_theorems algorithm_context
 
 definition "opt_solution (c::'a set \<Rightarrow> real) X = (maximal (\<lambda> X. X \<in> F) X \<and>
                               (\<forall> Y. maximal (\<lambda> X. X \<in> F) Y \<longrightarrow> c X \<ge> c Y))"
@@ -1054,40 +747,40 @@ thm no_strong_exchange[simplified strong_exchange_property_def]
 
 lemma no_strong_exchange_applied: 
   obtains A B x where
-    "A \<in> F" "B \<in> F" "A \<subseteq> B" "Greedoids_Optimisation.maximal (\<lambda>B. B \<in> F) B" "x \<in> E - B" 
+    "A \<in> F" "B \<in> F" "A \<subseteq> B" "maximal (\<lambda>B. B \<in> F) B" "x \<in> E - B" 
     "A \<union> {x} \<in> F"  "(\<And> y. y\<in>B - A \<Longrightarrow> A \<union> {y} \<in> F \<Longrightarrow> B - {y} \<union> {x} \<notin> F)"
   using no_strong_exchange by (auto simp add: strong_exchange_property_def)
 
 definition "A = (SOME A. \<exists> B x. 
-                  A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> Greedoids_Optimisation.maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
+                  A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
                   A \<union> {x} \<in> F  \<and> (\<forall>  y\<in>B - A. A \<union> {y} \<in> F \<longrightarrow> B - {y} \<union> {x} \<notin> F))"
 
 lemma there_is_A: "\<exists> A. (\<exists> B x. 
-                  A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> Greedoids_Optimisation.maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
+                  A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
                   A \<union> {x} \<in> F  \<and> (\<forall>  y\<in>B - A. A \<union> {y} \<in> F \<longrightarrow> B - {y} \<union> {x} \<notin> F))"
   using no_strong_exchange by (auto simp add: strong_exchange_property_def)
 
-lemma A_props: "\<exists>B x. A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> Greedoids_Optimisation.maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
+lemma A_props: "\<exists>B x. A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
                   A \<union> {x} \<in> F  \<and> (\<forall>  y\<in>B - A. A \<union> {y} \<in> F \<longrightarrow> B - {y} \<union> {x} \<notin> F)"
   by(unfold A_def )(rule someI_ex[OF there_is_A])
 
 definition "B = (SOME B. \<exists> x. 
-                  A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> Greedoids_Optimisation.maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
+                  A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
                   A \<union> {x} \<in> F  \<and> (\<forall>  y\<in>B - A. A \<union> {y} \<in> F \<longrightarrow> B - {y} \<union> {x} \<notin> F))"
 
-lemma B_props: "\<exists> x. A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> Greedoids_Optimisation.maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
+lemma B_props: "\<exists> x. A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
                   A \<union> {x} \<in> F  \<and> (\<forall>  y\<in>B - A. A \<union> {y} \<in> F \<longrightarrow> B - {y} \<union> {x} \<notin> F)"
   by(unfold B_def )(rule someI_ex[OF A_props])
 
 definition "x = (SOME x. 
-                  A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> Greedoids_Optimisation.maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
+                  A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
                   A \<union> {x} \<in> F  \<and> (\<forall>  y\<in>B - A. A \<union> {y} \<in> F \<longrightarrow> B - {y} \<union> {x} \<notin> F))"
 
-lemma x_props: "A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> Greedoids_Optimisation.maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
+lemma x_props: "A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> maximal (\<lambda>B. B \<in> F) B \<and>  x \<in> E - B \<and>
                   A \<union> {x} \<in> F  \<and> (\<forall>  y\<in>B - A. A \<union> {y} \<in> F \<longrightarrow> B - {y} \<union> {x} \<notin> F)"
   by(unfold x_def )(rule someI_ex[OF B_props])
 
-lemma ABx_props: "A \<in> F" "B \<in> F" "A \<subseteq> B" "Greedoids_Optimisation.maximal (\<lambda>B. B \<in> F) B" "x \<in> E - B" 
+lemma ABx_props: "A \<in> F" "B \<in> F" "A \<subseteq> B" "maximal (\<lambda>B. B \<in> F) B" "x \<in> E - B" 
     "A \<union> {x} \<in> F"  "(\<And> y. y\<in>B - A \<Longrightarrow> A \<union> {y} \<in> F \<Longrightarrow> B - {y} \<union> {x} \<notin> F)"
   using x_props by auto
 
@@ -1097,7 +790,7 @@ lemma Y_in_B_without_A: "Y \<subseteq> B -  A"
   using Y_def by blast
 
 lemma there_is_A_list: "(\<exists>l. set l = A \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l)"
-  using  accessible_property  contains_empty_set greedoid_accessible ss_assum x_props by blast
+  using  accessible_characterisation contains_empty_set greedoid_accessible ss_assum x_props by blast
 
 definition "A_list = (SOME l. set l = A \<and> (\<forall>i\<le>length l. set (take i l) \<in> F) \<and> distinct l)"
 
@@ -1162,9 +855,11 @@ lemma costs_are:
       "y \<in> Y \<Longrightarrow> c y = 1"
       "y \<in> E - B - {x} \<Longrightarrow> c y = 0"
       "y \<in> E \<Longrightarrow> c y \<le> 2"
+      "y \<in> B \<Longrightarrow> c y \<ge> 1"
+      "y \<in> E \<Longrightarrow> c y \<ge> 0"
   using ABx_props(5,3) all_in_E Y_in_B_without_A by(auto simp add: c_def split: if_split)
 
-definition "costs X = sum c X"
+definition "costs = sum c"
 
 lemma costs_modular: "valid_modular_weight_func costs"
   using  sum_is_modular 
@@ -1432,12 +1127,179 @@ proof-
   thus ?thesis by auto
 qed
 
-
-(*properties of the result*)
-
+lemma f_zero_sum_sero: "(\<And> x. x \<in> X \<Longrightarrow> f x = 0) \<Longrightarrow> sum f X =  0"
+  by auto
 
 lemma no_opt_solution: "\<not> opt_solution costs (set (greedy_algorithm es costs Nil))"
 proof-
+  have solution_in_E:" set (greedy_algorithm es costs Nil) \<subseteq> E"
+    by (meson properties_of_result(7) set_system_def ss_assum)
+  have "B \<inter> (E - set (greedy_algorithm es costs Nil)) \<noteq> {}"
+  proof(rule ccontr, goal_cases)
+    case 1
+    hence  "B \<subset>  set (greedy_algorithm es costs Nil)"
+      using solution_looks_like x_props  all_in_E(2) by auto
+    hence "\<not> maximal (\<lambda> X. X \<in> F) B" 
+      using  properties_of_result(12) by(auto simp add: maximal_def)
+    then show ?case
+      by (simp add: ABx_props(4))
+  qed
+  then obtain y where y_prop: "y \<in> E" "y \<in> B" "y \<notin> set (greedy_algorithm es costs Nil)"
+    by auto 
+  obtain others where others: "greedy_algorithm es costs [] = others @ [x] @ rev A_list"
+    using solution_looks_like by presburger
+  hence sol_distinct: "distinct (others @ [x] @ rev A_list)"
+    using result_props_specialised(3) by argo
+  have y_not_in_others:"y \<notin> set others" "y\<noteq> x" "y \<notin> set A_list"
+    using others y_prop(3) by auto 
+  have costs_less_eq_B:"costs (set (greedy_algorithm es costs Nil)) \<le> costs B"
+    unfolding costs_def
+  proof-
+    have "sum c (set (local.greedy_algorithm es (sum c) [])) =
+         sum c (set others) +  sum c {x} +  sum c (set A_list)"
+      using  sol_distinct  others[simplified costs_def] 
+      by (auto simp add:  comm_monoid_add_class.sum.union_disjoint[symmetric])
+    also have "... = sum c (set others \<inter> B) + (sum c (set others - B)) +  sum c {x} +  sum c (set A_list)"
+      using sum.Int_Diff by auto
+    also have "... = sum c (set others \<inter> B) +  sum c {x} +  sum c (set A_list)"
+      using others solution_in_E result_props_specialised(3)  
+       by (auto intro!: f_zero_sum_sero costs_are(6))
+     also have "... \<le>  sum c (set others \<inter> B) +  sum c {y} +  sum c (set A_list)"
+       using y_prop(2) by(auto simp add: costs_are(4) intro!: costs_are(8))
+     also have "... = sum c ((set others \<inter> B) \<union> {y} \<union> set A_list)"
+       using y_not_in_others others result_props_specialised(3)
+       by (subst  comm_monoid_add_class.sum.union_disjoint[symmetric] | 
+           force simp add:  y_not_in_others(3))+
+     also have "... \<le> sum c B"
+       using costs_are(8) A_list_props(1)  x_props y_prop(2) 
+       by  (force intro: sum_mono2 simp add: finites(2))
+     finally show "sum c (set (local.greedy_algorithm es (sum c) [])) \<le> sum c B" by simp
+   qed
+   show ?thesis
+   proof(cases "costs (set (local.greedy_algorithm es costs [])) < costs B")
+     case True
+     then show ?thesis 
+       using x_props by (fastforce simp add: opt_solution_def)
+   next
+     case False
+     hence costs_eq:"costs (set (local.greedy_algorithm es costs [])) = costs B"
+       using costs_less_eq_B by auto
+     have "B \<inter>  (E - (set (local.greedy_algorithm es costs []))) = {y} \<and> c y = 1"
+     proof(rule ccontr, goal_cases)
+       case 1
+       have "sum c (set (local.greedy_algorithm es (sum c) [])) =
+         sum c (set others) +  sum c {x} +  sum c (set A_list)"
+         using  sol_distinct  others[simplified costs_def] 
+          by (auto simp add:  comm_monoid_add_class.sum.union_disjoint[symmetric])
+       also have "... = sum c (set others \<inter> B) + (sum c (set others - B)) +  sum c {x} +  sum c (set A_list)"
+        using sum.Int_Diff by auto
+       also have "... = sum c (set others \<inter> B) +  sum c {x} +  sum c (set A_list)"
+        using others solution_in_E result_props_specialised(3)  
+        by (auto intro!: f_zero_sum_sero costs_are(6))
+      finally have eq_result: "sum c (set (local.greedy_algorithm es (sum c) [])) =
+              sum c (set others \<inter> B) + sum c {x} + sum c (set A_list)" by simp
+      have "c y = 2 \<Longrightarrow> False"
+      proof-
+        assume asm: "c y = 2"
+        have "sum c (set others \<inter> B) +  sum c {x} +  sum c (set A_list) 
+               \<le>  sum c (set others \<inter> B) +  sum c {y} +  sum c (set A_list) - 1"
+          using y_prop(2)  costs_are(8) asm by(auto simp add: costs_are(4)) 
+        also have "... =  sum c ((set others \<inter> B) \<union> {y} \<union> set A_list) -  1"
+          using y_not_in_others others result_props_specialised(3) 
+          by simp (subst  comm_monoid_add_class.sum.union_disjoint[symmetric] | 
+           force simp add:  y_not_in_others(3))+
+        also have "... \<le> sum c B - 1"
+          using costs_are(8) A_list_props(1)  x_props y_prop(2)
+          by  (force intro: sum_mono2 simp add: finites(2))
+        finally have "sum c (set (local.greedy_algorithm es (sum c) [])) \<le> sum c B -  1" 
+          using eq_result costs_eq by auto
+        thus False 
+          using  costs_eq by(auto simp add: costs_def)
+    qed
+      hence "c y = 1"
+        using costs_are(3) costs_are(5) y_prop(2) by auto
+      hence "B \<inter>  (E - (set (local.greedy_algorithm es costs []))) \<supset> {y}"
+         using all_in_E(2) y_prop(2) y_prop(3) 1 by auto
+       then obtain z where z_prop:"z \<in> B" "z \<in> (E - (set (local.greedy_algorithm es costs [])))"
+                           "z \<noteq> y" by auto
+       have "sum c (set (local.greedy_algorithm es (sum c) [])) =
+         sum c (set others) +  sum c {x} +  sum c (set A_list)"
+         using  sol_distinct  others[simplified costs_def] 
+          by (auto simp add:  comm_monoid_add_class.sum.union_disjoint[symmetric])
+        have "sum c (set others \<inter> B) +  sum c {x} +  sum c (set A_list) \<le>  sum c (set others \<inter> B) +  sum c {y, z} +  sum c (set A_list) - 1"
+        using y_prop(2) z_prop costs_are(8) ordered_ab_semigroup_add_class.add_mono[OF costs_are(8) costs_are(8), simplified, of y z]
+        by(auto simp add: costs_are(4))
+       also have "... =  sum c ((set others \<inter> B) \<union> {y, z} \<union> set A_list) -  1"
+        using y_not_in_others others result_props_specialised(3) z_prop
+        by simp (subst  comm_monoid_add_class.sum.union_disjoint[symmetric] | 
+           force simp add:  y_not_in_others(3))+
+       also have "... \<le> sum c B - 1"
+        using costs_are(8) A_list_props(1)  x_props y_prop(2) z_prop
+        by  (force intro: sum_mono2 simp add: finites(2))
+      finally have "sum c (set (local.greedy_algorithm es (sum c) [])) \<le> sum c B -  1" 
+         using eq_result by simp
+       thus False 
+         using  costs_eq by(auto simp add: costs_def)
+     qed
+     hence solution_shares_y: "B \<inter> (E - set (local.greedy_algorithm es costs [])) = {y}" "c y = 1" by auto
+     hence y_in_Y: "y \<in> Y"
+       using costs_are(3) by fastforce
+     show ?thesis 
+     proof(cases "(E - B - {x}) \<inter> (set (local.greedy_algorithm es costs [])) = {}")
+       case True
+       hence solution_is_now: "(set (local.greedy_algorithm es costs [])) = B - {y} \<union> {x}"
+         using others solution_in_E  y_not_in_others(1,3) solution_shares_y all_in_E(2) by auto
+       hence "(B - {y} \<union> {x}) \<in> F"
+         using result_props_specialised(2) by argo
+       moreover have "y \<in> B -  A"
+         using A_list_props(1) y_not_in_others(3) y_prop(2) by blast
+       moreover have "A \<union> {y} \<in> F" 
+         using y_in_Y by (auto simp add: Y_def)
+       ultimately have False 
+         using ABx_props(7) by blast
+       thus ?thesis by simp
+     next
+       case False
+       moreover have "(B \<union> {x}) \<inter> set (local.greedy_algorithm es costs []) = 
+             (B - {y} \<union> {x})"
+         using all_in_E(2) others solution_shares_y(1) by auto
+       moreover have "card (set (local.greedy_algorithm es costs [])) = 
+                     card ((B \<union> {x}) \<inter> set (local.greedy_algorithm es costs []))
+                   + card (set (local.greedy_algorithm es costs []) - B - {x})"
+         by(subst card_Un_disjoint[symmetric]) (auto intro!: cong[OF refl, of  _ _ card])
+       moreover have "set (local.greedy_algorithm es costs []) - B - {x} = 
+                 (E - B - {x}) \<inter> set (local.greedy_algorithm es costs [])" 
+         using solution_in_E by blast
+       ultimately have "card (set (local.greedy_algorithm es costs [])) > card  (B - {y} \<union> {x})"
+         by (simp add: card_gt_0_iff)
+       also have " card  (B - {y} \<union> {x}) = card B" 
+         using ABx_props(5) card.remove[OF finites(2) y_prop(2)] 
+         by (auto simp add: finites(2))
+       ultimately have "card (set (local.greedy_algorithm es costs [])) > card B"
+         by simp
+       then obtain z where "z \<in> (set (local.greedy_algorithm es costs [])) -  B"
+                           "insert z B \<in> F"
+         using ABx_props(2) result_props_specialised(2) third_condition by auto
+       hence "\<not> maximal (\<lambda> X. X \<in> F) B" 
+         by(auto simp add: maximal_def)
+       hence False
+         by (simp add: ABx_props(4))
+       thus ?thesis by simp
+     qed
+   qed
+ qed
 
+lemma costs_is_empty_minimal: "empty_minimal costs"
+  by(auto simp add: empty_minimal_def costs_def 
+          intro: ordered_comm_monoid_add_class.sum_nonneg costs_are(9))
+end
 
+theorem greedoid_characterisation:
+     "(\<forall> c es. empty_minimal c \<and> valid_modular_weight_func c \<and>  E = set es \<and> distinct es 
+          \<longrightarrow> opt_solution c (set (greedy_algorithm es c Nil)))
+ \<longleftrightarrow> strong_exchange_property E F"
+  using no_opt_solution  costs_is_empty_minimal costs_modular es_prop  strong_exchange_max_modular_weight
+  by fast
 
+end
+end
