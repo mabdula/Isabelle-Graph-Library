@@ -1,9 +1,11 @@
-session "Greedoids" = "HOL-Data_Structures" + 
+session "Greedoids" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
   sessions
-    Main "HOL-Eisbach"
-
+   "HOL-Eisbach" 
   theories
     Greedoids
     Greedoids_Example
     Greedoids_Optimisation
+    
+  document_files
+   "root.tex"
