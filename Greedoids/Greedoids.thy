@@ -142,20 +142,28 @@ section \<open>Definitions \<close>
 
 definition "set_system E F = (finite E \<and> (\<forall> X \<in> F. X \<subseteq> E))"
 
-definition accessible where "accessible E F =
+definition "accessible E F =
     (set_system E F \<and> ({} \<in> F) \<and> (\<forall>X. (X \<in> F - {{}}) \<longrightarrow> (\<exists>x \<in> X.  X - {x} \<in> F)))"
 
-definition closed_under_union where "closed_under_union F =
-             (\<forall>X Y. X \<in> F \<and> Y \<in> F \<longrightarrow> X \<union> Y \<in> F)"
+definition "closed_under_union F = (\<forall>X Y. X \<in> F \<and> Y \<in> F \<longrightarrow> X \<union> Y \<in> F)"
 
-definition maximal where "maximal P Z =
-       (P Z \<and> (\<nexists> X. X \<supset> Z \<and> P X))"
+definition "maximal P Z = (P Z \<and> (\<nexists> X. X \<supset> Z \<and> P X))"
 
-definition strong_exchange_property where "strong_exchange_property E F \<longleftrightarrow> 
-(\<forall>A B x. (A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> (maximal (\<lambda>B. B \<in> F) B) \<and> x \<in> E - B \<and> A \<union> {x} \<in> F) 
+definition "basis F Z = ( Z \<in> F \<and> (\<nexists> X. X \<supset> Z \<and>  X \<in> F))"
+
+lemma basis_alt_def: "basis F Z = maximal (\<lambda> X. X \<in> F) Z"
+  by(auto simp add:  basis_def maximal_def)
+
+definition "antimatroid E F = ( accessible E F \<and> closed_under_union F)"
+
+definition "valid_modular_weight_func E (c::'a set \<Rightarrow> real) = 
+               (\<forall> X Y. X \<subseteq> E \<and> Y \<subseteq> E \<longrightarrow> c (X \<union> Y) = c X +  c Y - c (X \<inter> Y))"
+
+definition "strong_exchange_property E F =
+(\<forall>A B x. (A \<in> F \<and> B \<in> F \<and> A \<subseteq> B \<and> (basis F B) \<and> x \<in> E - B \<and> A \<union> {x} \<in> F) 
       \<longrightarrow> (\<exists>y \<in> B - A. A \<union> {y} \<in> F \<and> (B - {y}) \<union> {x} \<in> F))"
 
-definition antimatroid where "antimatroid E F \<longleftrightarrow> accessible E F \<and> closed_under_union F"
+definition "empty_minimal E c = (\<forall> X \<subseteq> E. c X \<ge> c {})"
 
 locale greedoid =
   fixes E :: "'a set"
@@ -166,7 +174,7 @@ locale greedoid =
 
 lemma  strong_exchange_propertyE: 
  "strong_exchange_property E F \<Longrightarrow> 
-  ((\<And> A B x. A \<in> F \<Longrightarrow> B \<in> F \<Longrightarrow> A \<subseteq> B \<Longrightarrow> (maximal (\<lambda>B. B \<in> F) B) \<Longrightarrow> x \<in> E - B \<Longrightarrow> A \<union> {x} \<in> F 
+  ((\<And> A B x. A \<in> F \<Longrightarrow> B \<in> F \<Longrightarrow> A \<subseteq> B \<Longrightarrow> (basis F B) \<Longrightarrow> x \<in> E - B \<Longrightarrow> A \<union> {x} \<in> F 
       \<Longrightarrow> (\<exists>y \<in> B - A. A \<union> {y} \<in> F \<and> (B - {y}) \<union> {x} \<in> F))
  ==> P) \<Longrightarrow> P"
  by(auto simp add: strong_exchange_property_def)
