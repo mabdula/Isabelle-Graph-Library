@@ -15,14 +15,13 @@ abbreviation "graph_matching_multi M \<equiv> matching_multi M \<and> M \<subset
 end
 
 locale max_bimatch_by_matroid_spec =
-undirected_multigraph_spec where E = Edges
+undirected_multigraph where E = Edges
 for Edges
 + fixes  X Y left_vertex right_vertex
 
 
 locale max_bimatch_by_matroid =
   max_bimatch_by_matroid_spec +
-undirected_multigraph where E = Edges+
   assumes bipartite_G: "bipartite_multi X Y"
   and     finite_G: "finite Edges"
   and left_vertex: "\<And> e. e \<in> Edges \<Longrightarrow> left_vertex e  \<in> X"
@@ -101,11 +100,6 @@ lemma left_prop:
   shows "left_vertex  e \<in> to_dbltn e" "left_vertex e \<in> X"
   using assms(1) assms(2) to_dbltn_vertex  left_vertex by auto
 
-lemma right_prop:
-  assumes "E \<subseteq> Edges" "e \<in> E"
-  shows "right_vertex  e \<in> to_dbltn e" "right_vertex e \<in> Y"
-  using assms(1) assms(2) to_dbltn_vertex  right_vertex by auto
-
 lemma left_inj:
   assumes"indep1 E"
   shows "inj_on (left_vertex) E"
@@ -122,12 +116,7 @@ proof(rule inj_onI, goal_cases)
 qed
 
 lemma x_is_left:"x \<in> to_dbltn e \<Longrightarrow> e \<in> E \<Longrightarrow> E \<subseteq> Edges \<Longrightarrow> x \<in> X \<Longrightarrow> left_vertex e = x" 
-  by (meson bipartite_G bipartite_commute bipartite_eqI bipartite_multi_def image_eqI
- left_prop(1) left_prop(2) subsetD)
-
-lemma x_is_right:"x \<in> to_dbltn e \<Longrightarrow> e \<in> E \<Longrightarrow> E \<subseteq> Edges \<Longrightarrow> x \<in> Y \<Longrightarrow> right_vertex e = x" 
-  by (meson bipartite_G bipartite_commute bipartite_eqI bipartite_multi_def image_eqI
- right_prop subsetD)
+  by (meson bipartite_G bipartite_commute bipartite_eqI bipartite_multi_def image_eqI left_prop(1) left_prop(2) subsetD)
 (*
 definition "right_vertex  e = (SOME x. x \<in> Y \<and> x \<in> e)"
 
@@ -226,17 +215,14 @@ qed
 
 lemma  max_bimatch_by_matroid_commuted:"max_bimatch_by_matroid to_dbltn Edges Y X right_vertex left_vertex" 
     using bipartite_G bipartite_commute bipartite_multi_def  
-    by(auto intro!: max_bimatch_by_matroid.intro max_bimatch_by_matroid_axioms.intro right_vertex left_vertex
-          simp add: undirected_multigraph_axioms finite_edges  to_dbltn_vertex)
+    by(force intro!: max_bimatch_by_matroid.intro max_bimatch_by_matroid_axioms.intro right_vertex left_vertex
+          simp add: undirected_multigraph_axioms finite_edges  to_dbltn_vertex max_bimatch_by_matroid_spec_axioms)
 
 lemma matroid_axioms2: "matroid_axioms indep2"
     using max_bimatch_by_matroid.matroid_axioms1[OF max_bimatch_by_matroid_commuted]
     by(unfold max_bimatch_by_matroid.indep1_def[OF max_bimatch_by_matroid_commuted] indep2_def)
 
 interpretation double_matroid_concrete: double_matroid Edges indep1 indep2
- by(auto intro!: double_matroid.intro matroid.intro indep_system1 indep_system2 matroid_axioms1 matroid_axioms2)
-
-lemma double_matroid_concrete: "double_matroid Edges indep1 indep2"
  by(auto intro!: double_matroid.intro matroid.intro indep_system1 indep_system2 matroid_axioms1 matroid_axioms2)
 
 lemma in_dependent1_is: assumes "\<not> indep1 E"  "E \<subseteq> Edges"
@@ -393,7 +379,7 @@ and left_vertex = left_vertex and right_vertex = right_vertex
       for Edges::"('e::linorder) set" and X::"('v::linorder) set" and Y::"'v set" 
 and to_dbltn::"'e \<Rightarrow> 'v set" and
 left_vertex::"'e \<Rightarrow> 'v" and right_vertex::"'e \<Rightarrow> 'v"
-+ fixes Edges_impl::"('e \<times> color) tree"
++ fixes Edges_impl::"'e list"
 begin
 
 definition "the_edges mp v = (case (lookup mp v) of None \<Rightarrow> vset_empty | Some es \<Rightarrow> es)"
@@ -406,7 +392,6 @@ definition "insert_matching (e::'e) M=
                       update x (vset_insert e (the_edges lft x)) lft) 
                     (let y =  (right_vertex e) in
                       update y (vset_insert e (the_edges rht y)) rht))"
-
 definition "delete_matching (e::'e) M= 
               (case M of (MATCH edgs lft rht) \<Rightarrow> 
               MATCH (vset_delete e edgs) 
@@ -435,13 +420,6 @@ fun invar_matching where
 (vset_inv eds \<and> emap_lft_inv lft \<and> emap_rht_inv rht \<and>
  (\<exists> E. E = t_set eds \<and> E = {e | e. \<exists> x. lookup lft x \<noteq> None \<and> e \<in> t_set (the (lookup lft x))}
                \<and> E = {e | e. \<exists> x. lookup rht x \<noteq> None \<and> e \<in> t_set (the (lookup rht x))}))"
-
-lemma invar_matching_alt_def:
-"invar_matching (MATCH eds lft rht) = 
-(vset_inv eds \<and> emap_lft_inv lft \<and> emap_rht_inv rht 
- \<and> t_set eds = {e | e. \<exists> x. lookup rht x \<noteq> None \<and> e \<in> t_set (the (lookup rht x))}
-\<and>  t_set eds = {e | e. \<exists> x. lookup lft x \<noteq> None \<and> e \<in> t_set (the (lookup lft x))})"
-  by auto
 
 lemma set_matching_empty: "invar_matching empty_matching"
                           "set_matching empty_matching = {}"
@@ -555,7 +533,7 @@ qed (simp add: set_matching_def)
 
 lemma set_matching_delete: assumes "invar_matching  M"
   shows "invar_matching (delete_matching x M)" (is ?thesis)
-and  "set_matching (delete_matching x M) = set_matching M - {x}" (is ?thesis2)
+and  "set_matching (delete_matching x M) = set_matching M \<union> {x}" (is ?thesis2)
   using assms
 proof(induction M, unfold delete_matching_def matching_set.case invar_matching.simps, goal_cases)
   case (1 eds lft rht)
@@ -565,7 +543,7 @@ proof(induction M, unfold delete_matching_def matching_set.case invar_matching.s
     by(auto, force, force)
   hence minvar_lft:"M.invar lft" and minvar_rht:"M.invar rht"
     by (auto simp add: adj_inv_def emap_lft_inv_def emap_rht_inv_def)
-  have goal1:"vset_inv (vset_delete x eds)"
+  have goal1:"vset_inv (vset_insert x eds)"
     by (simp add: from_invar(1))
   have goal2:" emap_lft_inv
            (let xa = left_vertex x; new_es = vset_delete x (the_edges lft xa)
@@ -585,528 +563,82 @@ proof(induction M, unfold delete_matching_def matching_set.case invar_matching.s
                       dfs.Graph.vset.set.invar_empty RBT_Set.empty_def option.case_eq_if
                intro: Map.invar_update[OF M.Map_axioms] minvar_lft  M.invar_delete[OF minvar_lft]
                       option.exhaust[of "lookup lft (left_vertex x) "])
-  have g1: "vset_delete x (the_edges lft (left_vertex x)) = vset_empty \<Longrightarrow>
-          xa \<in> t_set (vset_delete x eds) \<Longrightarrow>
-          \<exists>xb. (\<exists>y. lookup (RBT_Map.delete (left_vertex x) lft) xb = Some y) \<and>
-               xa \<in> t_set (the (lookup (RBT_Map.delete (left_vertex x) lft) xb))" for xa
-    unfolding the_edges_def
-  proof(cases "lookup lft (left_vertex x)", goal_cases)
-    case 1
-    moreover then obtain x where x_prop:"lookup lft x \<noteq> None" "xa \<in> t_set (the (lookup lft x))"
-        using from_invar(4)[of xa] by(auto simp add: set.set_delete[OF from_invar(1)])
-    ultimately show ?case
-     using M.map_delete[OF minvar_lft] from_invar(2)[simplified emap_lft_inv_def]        
-     by (auto intro!:  exI[of _ x] simp add:  set.set_delete[OF from_invar(1)] M.map_delete[OF minvar_lft])
-  next
-    case (2 a)
-    then obtain xx where x_prop:"lookup lft xx \<noteq> None" "xa \<in> t_set (the (lookup lft xx))"
-        using from_invar(4)[of xa] by(auto simp add: set.set_delete[OF from_invar(1)])
-    then obtain y where y_prop:" lookup lft xx = Some y" by auto
-    hence aa:"vset_inv (the (lookup lft xx))"
-      using  from_invar(2)[simplified emap_lft_inv_def]  x_prop(1) x_prop(2)
-      by blast
-    show ?case using 2 y_prop  Diff_insert0  dfs.Graph.vset.set.set_delete[of "the (lookup lft xx)", OF aa, of x]  x_prop(1) x_prop(2) 
-      by(auto simp add: M.map_delete[OF minvar_lft, of "left_vertex x"] RBT_Set.empty_def 
-                        set.set_delete[OF from_invar(1)] intro!: exI[of _ xx])
-  qed
-  have g2:"vset_delete x (the_edges rht (right_vertex x)) = vset_empty \<Longrightarrow>
-          xa \<in> t_set (vset_delete x eds) \<Longrightarrow>
-          \<exists>xb. (\<exists>y. lookup (RBT_Map.delete (right_vertex x) rht) xb = Some y) \<and>
-               xa \<in> t_set (the (lookup (RBT_Map.delete (right_vertex x) rht) xb))" for xa
-    unfolding the_edges_def
-  proof(cases "lookup rht (right_vertex x)", goal_cases)
-    case 1
-    moreover then obtain x where x_prop:"lookup rht x \<noteq> None" "xa \<in> t_set (the (lookup rht x))"
-        using from_invar(5)[of xa] by(auto simp add: set.set_delete[OF from_invar(1)])
-    ultimately show ?case
-     using M.map_delete[OF minvar_rht] from_invar(3)[simplified emap_rht_inv_def]        
-     by (auto intro!:  exI[of _ x] simp add:  set.set_delete[OF from_invar(1)] M.map_delete[OF minvar_lft])
-  next
-    case (2 a)
-    then obtain xx where x_prop:"lookup rht xx \<noteq> None" "xa \<in> t_set (the (lookup rht xx))"
-        using from_invar(5)[of xa] by(auto simp add: set.set_delete[OF from_invar(1)])
-    then obtain y where y_prop:" lookup rht xx = Some y" by auto
-    hence aa:"vset_inv (the (lookup rht xx))"
-      using  from_invar(3)[simplified emap_rht_inv_def]  x_prop(1) x_prop(2)
-      by blast
-    show ?case using 2 y_prop  Diff_insert0  dfs.Graph.vset.set.set_delete[of "the (lookup rht xx)", OF aa, of x]  x_prop(1) x_prop(2) 
-      by(auto simp add: M.map_delete[OF minvar_rht, of "right_vertex x"] RBT_Set.empty_def 
-                        set.set_delete[OF from_invar(1)] intro!: exI[of _ xx])
-  qed
-  have g3: "vset_delete x (the_edges lft (left_vertex x)) = vset_empty \<Longrightarrow>
-       xa \<in> t_set y \<Longrightarrow>
-       lookup (RBT_Map.delete (left_vertex x) lft) xaa = Some y \<Longrightarrow> xa \<in> t_set (vset_delete x eds)" for xa xaa y
-    unfolding the_edges_def
-   proof(cases "lookup lft (left_vertex x)", goal_cases)
-     case 1
-     moreover hence "lookup lft xaa \<noteq> None" "xa \<in> t_set (the (lookup lft xaa))" "left_vertex xa = xaa"
-       using  from_invar(2)[simplified emap_lft_inv_def]  fun_upd_triv[of "lookup lft" "left_vertex x"] 
-       by(unfold M.map_delete[OF minvar_lft, of "left_vertex x"]  1(4)) auto
-     ultimately show ?thesis 
-       by(auto simp add: dfs.Graph.vset.set.set_delete[OF from_invar(1)]
-                M.map_delete[OF minvar_lft, of "left_vertex x"] from_invar(4)[of xa])
-   next
-     case (2 a)
-     moreover hence "lookup lft xaa \<noteq> None" "xa \<in> t_set (the (lookup lft xaa))" "left_vertex xa = xaa"
-       using  from_invar(2)[simplified emap_lft_inv_def] 
-       by(unfold M.map_delete[OF minvar_lft, of "left_vertex x"], all \<open>cases "left_vertex x = xaa"\<close>) 
-          auto
-     ultimately show ?thesis 
-      using  from_invar(4)
-     by(auto simp add: dfs.Graph.vset.set.set_delete[OF from_invar(1)] M.map_delete[OF minvar_lft]) 
-  qed
-  have g4: "vset_delete x (the_edges rht (right_vertex x)) = vset_empty \<Longrightarrow>
-       xa \<in> t_set y \<Longrightarrow>
-       lookup (RBT_Map.delete (right_vertex x) rht) xaa = Some y \<Longrightarrow> xa \<in> t_set (vset_delete x eds)" for xa xaa y
-    unfolding the_edges_def
-   proof(cases "lookup rht (right_vertex x)", goal_cases)
-     case 1
-     moreover hence "lookup rht xaa \<noteq> None" "xa \<in> t_set (the (lookup rht xaa))" "right_vertex xa = xaa"
-       using  from_invar(3)[simplified emap_rht_inv_def]  fun_upd_triv[of "lookup rht" "right_vertex x"] 
-       by(unfold M.map_delete[OF minvar_rht, of "right_vertex x"]  1(4)) auto
-     ultimately show ?thesis 
-       by(auto simp add: dfs.Graph.vset.set.set_delete[OF from_invar(1)]
-                M.map_delete[OF minvar_lft, of "right_vertex x"] from_invar(5)[of xa])
-   next
-     case (2 a)
-     moreover hence "lookup rht xaa \<noteq> None" "xa \<in> t_set (the (lookup rht xaa))" "right_vertex xa = xaa"
-       using  from_invar(3)[simplified emap_rht_inv_def] 
-       by(unfold M.map_delete[OF minvar_rht, of "right_vertex x"], all \<open>cases "right_vertex x = xaa"\<close>) 
-          auto
-     ultimately show ?thesis 
-      using  from_invar(5)
-      by(auto simp add: dfs.Graph.vset.set.set_delete[OF from_invar(1)] M.map_delete[OF minvar_rht]) 
-  qed
-  have g5: "vset_delete x (the_edges rht (right_vertex x)) \<noteq> vset_empty \<Longrightarrow>
-          xa \<in> t_set (vset_delete x eds) \<Longrightarrow>
-          \<exists>xb. (\<exists>y. lookup (update (right_vertex x) (vset_delete x (the_edges rht (right_vertex x))) rht) xb =
-                    Some y) \<and>
-               xa \<in> t_set
+  have goal4:" e \<in> t_set (vset_insert x eds) \<longleftrightarrow>
+         (\<exists>xa. lookup (let xa = left_vertex x in update xa (vset_insert x (the_edges lft xa)) lft) xa \<noteq>
+                None \<and>
+                e \<in> t_set
                       (the (lookup
-                             (update (right_vertex x) (vset_delete x (the_edges rht (right_vertex x))) rht)
-                             xb))" for xa
-   unfolding the_edges_def
-   proof(cases "lookup rht (right_vertex x)", goal_cases)
-     case 1
-     then show ?case 
-       using  Tree2.eq_set_tree_empty[symmetric]
-              dfs.Graph.vset.set.set_delete[OF dfs.Graph.vset.set.invar_empty, of x]      
-       by(auto simp add:  RBT_Set.empty_def)
-   next
-     case (2 a)
-     hence a1:"xa \<noteq> x" "xa \<in> t_set eds" 
-       by (simp add: from_invar(1))+
-     moreover then obtain y where a2:"lookup rht y \<noteq> None" "xa \<in> t_set (the (lookup rht y))"
-       using from_invar(5) by auto 
-     ultimately show ?case using 2 from_invar(3)
-       by(auto intro!: exI[of _ y] simp add:  M.map_update[OF minvar_rht] emap_rht_inv_def )
-   qed
-  have g6: "vset_delete x (the_edges lft (left_vertex x)) \<noteq> vset_empty \<Longrightarrow>
-          xa \<in> t_set (vset_delete x eds) \<Longrightarrow>
-          \<exists>xb. (\<exists>y. lookup (update (left_vertex x) (vset_delete x (the_edges lft (left_vertex x))) lft) xb =
-                    Some y) \<and>
-               xa \<in> t_set
+                             (let xa = left_vertex x in update xa (vset_insert x (the_edges lft xa)) lft)
+                             xa)))" for e
+  proof-
+    have g1:"lookup lft (left_vertex x) = None \<Longrightarrow>
+    e \<in> t_set eds \<Longrightarrow>
+    \<exists>xa. xa \<noteq> left_vertex x \<and>
+         (xa \<noteq> left_vertex x \<longrightarrow> (\<exists>y. lookup lft xa = Some y) \<and> e \<in> t_set (the (lookup lft xa)))"
+      using from_invar(4)[of e]  not_Some_eq[of " lookup lft _"] by metis
+    have g2: "\<And>xa y.  e \<in> t_set y \<Longrightarrow> lookup lft xa = Some y \<Longrightarrow> e \<in> t_set eds"
+      using from_invar(4) by auto
+    have g3: "\<And>a. lookup lft (left_vertex x) = Some a \<Longrightarrow>
+         \<exists>xa. (xa = left_vertex x \<longrightarrow> x \<in> t_set (vset_insert x a)) \<and>
+              (xa \<noteq> left_vertex x \<longrightarrow> (\<exists>y. lookup lft xa = Some y) \<and> x \<in> t_set (the (lookup lft xa)))"
+      using dfs.Graph.vset.set.set_insert  from_invar(2) 
+      by(force simp add: emap_lft_inv_def )
+    have g4: "\<And>a. lookup lft (left_vertex x) = Some a \<Longrightarrow>
+         e \<in> t_set eds \<Longrightarrow>
+         \<exists>xa. (xa = left_vertex x \<longrightarrow> e \<in> t_set (vset_insert x a)) \<and>
+              (xa \<noteq> left_vertex x \<longrightarrow> (\<exists>y. lookup lft xa = Some y) \<and> e \<in> t_set (the (lookup lft xa)))"
+      using Un_iff dfs.Graph.vset.set.set_insert 
+            emap_lft_inv_def from_invar(2) from_invar(4) option.collapse option.sel
+      by metis
+    have g6: " \<And>a. lookup lft (left_vertex x) = Some a \<Longrightarrow>
+         e \<noteq> x \<Longrightarrow> e \<in> t_set (vset_insert x a) \<Longrightarrow> e \<notin> t_set eds \<Longrightarrow> False" 
+      by (metis RBT.set_tree_insert emap_lft_inv_def from_invar(2) from_invar(4)
+             insert_iff insert_is_Un option.distinct(1) option.sel vset_inv_def)
+    show ?thesis
+    using g6 by (subst set.set_insert, all \<open>cases "lookup lft (left_vertex x)"\<close>, all \<open>cases "e = x"\<close>,
+                 auto simp add:  from_invar(1) the_edges_def M.map_update[OF minvar_lft] 
+                                 set.set_insert[OF dfs.Graph.vset.set.invar_empty]
+                                 dfs.Graph.vset.set.set_empty emap_lft_inv_def 
+                       intro: g1 g2 g3 g4 g6)
+    qed
+   have goal5:" e \<in> t_set (vset_insert x eds) \<longleftrightarrow>
+         (\<exists>xa. lookup (let xa = right_vertex x in update xa (vset_insert x (the_edges rht xa)) rht) xa \<noteq>
+                None \<and>
+                e \<in> t_set
                       (the (lookup
-                             (update (left_vertex x) (vset_delete x (the_edges lft (left_vertex x))) lft)
-                             xb))" for xa
-   unfolding the_edges_def
-   proof(cases "lookup lft (left_vertex x)", goal_cases)
-     case 1
-     then show ?case 
-       using  Tree2.eq_set_tree_empty[symmetric]
-              dfs.Graph.vset.set.set_delete[OF dfs.Graph.vset.set.invar_empty, of x]      
-       by(auto simp add:  RBT_Set.empty_def)
-   next
-     case (2 a)
-     hence a1:"xa \<noteq> x" "xa \<in> t_set eds" 
-       by (simp add: from_invar(1))+
-     moreover then obtain y where a2:"lookup lft y \<noteq> None" "xa \<in> t_set (the (lookup lft y))"
-       using from_invar(4) by auto 
-     ultimately show ?case using 2 from_invar(2)
-       by(auto intro!: exI[of _ y] simp add:  M.map_update[OF minvar_lft] emap_lft_inv_def )
-   qed
-   have g7: "vset_delete x (the_edges rht (right_vertex x)) \<noteq> vset_empty \<Longrightarrow>
-       xa \<in> t_set y \<Longrightarrow>
-       lookup (update (right_vertex x) (vset_delete x (the_edges rht (right_vertex x))) rht) xaa = Some y \<Longrightarrow>
-       xa \<in> t_set (vset_delete x eds)" for xa xaa y
-   unfolding the_edges_def
-   proof(cases "lookup rht (right_vertex x)", goal_cases)
-     case 1
-     then show ?case    
-       by(auto simp add:  RBT_Set.empty_def)
-   next
-     case (2 a)
-     then show ?case using from_invar(3,5)
-       by(cases "xaa = right_vertex x")
-         (auto simp add: M.map_update[OF minvar_rht] set.set_delete[OF  from_invar(1)]
-               emap_rht_inv_def, force, fastforce)      
-   qed
-   have g8: "vset_delete x (the_edges lft (left_vertex x)) \<noteq> vset_empty \<Longrightarrow>
-       xa \<in> t_set y \<Longrightarrow>
-       lookup (update (left_vertex x) (vset_delete x (the_edges lft (left_vertex x))) lft) xaa = Some y \<Longrightarrow>
-       xa \<in> t_set (vset_delete x eds)" for xa xaa y
-   unfolding the_edges_def
-   proof(cases "lookup lft (left_vertex x)", goal_cases)
-     case 1
-     then show ?case    
-       by(auto simp add:  RBT_Set.empty_def)
-   next
-     case (2 a)
-     then show ?case using from_invar(2,4)
-       by(cases "xaa = left_vertex x")
-         (auto simp add: M.map_update[OF minvar_lft] set.set_delete[OF  from_invar(1)]
-               emap_lft_inv_def, force, fastforce)      
-   qed
+                             (let xa = right_vertex x in update xa (vset_insert x (the_edges rht xa)) rht)
+                             xa)))" for e
+  proof-
+    have g1:"lookup rht (right_vertex x) = None \<Longrightarrow>
+    e \<in> t_set eds \<Longrightarrow>
+    \<exists>xa. xa \<noteq> right_vertex x \<and>
+         (xa \<noteq> right_vertex x \<longrightarrow> (\<exists>y. lookup rht xa = Some y) \<and> e \<in> t_set (the (lookup rht xa)))"
+      using from_invar(5)[of e]  not_Some_eq[of " lookup rht _"] by metis
+    have g2: "\<And>xa y.  e \<in> t_set y \<Longrightarrow> lookup rht xa = Some y \<Longrightarrow> e \<in> t_set eds"  
+      using from_invar(5) by auto
+    have g3: "\<And>a. lookup rht (right_vertex x) = Some a \<Longrightarrow>
+         \<exists>xa. (xa = right_vertex x \<longrightarrow> x \<in> t_set (vset_insert x a)) \<and>
+              (xa \<noteq> right_vertex x \<longrightarrow> (\<exists>y. lookup rht xa = Some y) \<and> x \<in> t_set (the (lookup rht xa)))"
+      using dfs.Graph.vset.set.set_insert  from_invar(3) 
+      by(force simp add: emap_rht_inv_def )
+    have g4: "\<And>a. lookup rht (right_vertex x) = Some a \<Longrightarrow>
+         e \<in> t_set eds \<Longrightarrow>
+         \<exists>xa. (xa = right_vertex x \<longrightarrow> e \<in> t_set (vset_insert x a)) \<and>
+              (xa \<noteq> right_vertex x \<longrightarrow> (\<exists>y. lookup rht xa = Some y) \<and> e \<in> t_set (the (lookup rht xa)))"
+      using Un_iff dfs.Graph.vset.set.set_insert 
+            emap_rht_inv_def from_invar(3) from_invar(5) option.collapse option.sel
+      by metis
+    have g6: " \<And>a. lookup rht (right_vertex x) = Some a \<Longrightarrow>
+         e \<noteq> x \<Longrightarrow> e \<in> t_set (vset_insert x a) \<Longrightarrow> e \<notin> t_set eds \<Longrightarrow> False" 
+      by (metis RBT.set_tree_insert emap_rht_inv_def from_invar(3) from_invar(5)
+             insert_iff insert_is_Un option.distinct(1) option.sel vset_inv_def)
+    show ?thesis
+      using g6  by (subst set.set_insert, all \<open>cases "lookup rht (right_vertex x)"\<close>, all \<open>cases "e = x"\<close>,
+                 auto simp add:  from_invar(1) the_edges_def M.map_update[OF minvar_rht] 
+                                 set.set_insert[OF dfs.Graph.vset.set.invar_empty]
+                                 dfs.Graph.vset.set.set_empty emap_rht_inv_def 
+                       intro: g1 g2 g3 g4  g6)
+  qed
   show ?case 
-    using goal1 goal2 goal3
-    by (auto intro: g1 g2 g3 g4 g5 g6 g7 g8)
+    using goal4 goal5 by (fastforce intro: goal3 goal2 goal1)
 qed (simp add: set_matching_def)
-
-fun weak_orcl1 where
-"weak_orcl1 e (MATCH eds lft rht) = 
-(case (lookup lft (left_vertex e)) of Some es \<Rightarrow> (if es = vset_empty then True else False) |
-                                      None \<Rightarrow> True)"
-
-fun weak_orcl2 where
-"weak_orcl2 e (MATCH eds lft rht) = 
-(case (lookup rht (right_vertex e)) of Some es \<Rightarrow> (if es = vset_empty then True else False) |
-                                      None \<Rightarrow> True)"
-
-fun circuit1 where
-"circuit1 e (MATCH eds lft rht) = (the_edges lft (left_vertex e))"
-
-fun circuit2 where
-"circuit2 e (MATCH eds lft rht) = (the_edges lft (left_vertex e))"
-
-fun complement_matching where
- "complement_matching (MATCH eds lft rht) = vset_diff Edges_impl eds"
-
-end
-
-locale compute_max_bimatch_by_matroid =
-compute_max_bimatch_by_matroid_spec +
-max_bimatch_by_matroid
-begin
-
-lemma weak_orcl1_correct:"invar_matching M \<Longrightarrow>
-           set_matching M \<subseteq> Edges \<Longrightarrow>
-           x \<in> Edges \<Longrightarrow>
-           x \<notin> set_matching M \<Longrightarrow>
-           indep1 (set_matching M) \<Longrightarrow> weak_orcl1 x M = indep1 ({x} \<union> set_matching M)"
-proof(induction M)
-  case (MATCH eds lft rht)
-  have P_of_ifI: "(b \<Longrightarrow> P left) \<Longrightarrow> (\<not> b \<Longrightarrow> P right) \<Longrightarrow> P (if b then left else right)"
-      for b P left right by auto
-  from MATCH show ?case 
-  proof(cases "lookup lft (left_vertex x)")
-    case None
-    hence "\<not> (\<exists> e \<in> set_matching (MATCH eds lft rht). left_vertex e = left_vertex x)"
-      using MATCH(1,4)
-      by(fastforce simp add: set_matching_def emap_lft_inv_def )
-    hence " indep1 ({x} \<union> set_matching (MATCH eds lft rht))"
-      using MATCH(2,3,5) x_is_left by (auto simp add: indep1_def)
-    moreover have  "weak_orcl1 x (MATCH eds lft rht)" using None by simp
-    ultimately show ?thesis by simp
-  next
-    case (Some es)
-    show ?thesis
-    proof(subst weak_orcl1.simps, subst Some, subst option.case(2), rule P_of_ifI, goal_cases)
-      case 1
-      note one = this
-      hence no_e: "\<not> (\<exists> e. e \<in> t_set (the (lookup lft (left_vertex x))))"
-       using MATCH(1,4) Some dfs.Graph.vset.emptyD(1)[of es]
-        by(auto simp add: set_matching_def emap_lft_inv_def )
-      have e_contr:" e \<in> set_matching (MATCH eds lft rht) \<Longrightarrow> left_vertex e = left_vertex x \<Longrightarrow> False" for e
-      proof(goal_cases)
-        case 1
-        then obtain y xa where "e \<in> t_set y" "lookup lft xa = Some y"
-          using MATCH(1)
-          by(auto simp add: set_matching_def emap_lft_inv_def )
-        hence " e \<in> t_set (the (lookup lft (left_vertex x)))"
-          using MATCH(1) 1 by(fastforce simp add:  emap_lft_inv_def )
-        thus False
-          using no_e by auto
-      qed
-      have "{x} \<union> set_matching (MATCH eds lft rht) \<subseteq> Edges"
-        using MATCH.prems(2) MATCH.prems(3) by auto
-      moreover have "(\<forall>xa\<in>X.
-         \<forall>e\<in>{x} \<union> set_matching (MATCH eds lft rht).
-            \<forall>d\<in>{x} \<union> set_matching (MATCH eds lft rht). xa \<in> to_dbltn d \<longrightarrow> xa \<in> to_dbltn e \<longrightarrow> e = d)"
-        using e_contr  MATCH.prems(2) MATCH.prems(3)  x_is_left  calculation x_is_left MATCH.prems(5)
-        by(fastforce simp add: indep1_def)
-      ultimately show ?case
-         by (auto simp add: indep1_def)
-    next
-      case 2
-      then obtain e where  "e \<in> t_set (the (lookup lft (left_vertex x)))"
-        using MATCH(1) Some dfs.Graph.vset.choose'[OF 2]
-        by (fastforce simp add:  emap_lft_inv_def set_matching_def)
-      hence  "e \<in> set_matching (MATCH eds lft rht)" "left_vertex e = left_vertex x" 
-        using MATCH.prems(1) Some set_matching_def  Some \<open>e \<in> t_set (the (lookup lft (left_vertex x)))\<close>
-         by(fastforce simp add: emap_lft_inv_def)+
-      hence "\<not> indep1 ({x} \<union> set_matching (MATCH eds lft rht))"
-        using left_prop MATCH(4)
-        by(simp add: indep1_def set_matching_def)
-          (fastforce intro!: bexI[of _ "left_vertex x"] bexI[of _ e])
-    thus ?case by simp
-  qed
- qed
-qed
-(*
-lemma compute_max_bimatch_by_matroid_symmetric:
- "compute_max_bimatch_by_matroid Edges Y X to_dbltn right_vertex left_vertex"      
-  by (simp add: compute_max_bimatch_by_matroid_def max_bimatch_by_matroid_commuted)
-
-lemma max_bimatch_by_matroid_symmetric:
- "max_bimatch_by_matroid to_dbltn Edges Y X right_vertex left_vertex"
-  by(auto intro!: max_bimatch_by_matroid.intro max_bimatch_by_matroid_axioms.intro 
-        simp add: undirected_multigraph_axioms  finite_edges right_vertex left_vertex to_dbltn_vertex
-                  max_bimatch_by_matroid.bipartite_G[OF max_bimatch_by_matroid_commuted])
-*)
-lemma weak_orcl2_correct:"invar_matching M \<Longrightarrow>
-           set_matching M \<subseteq> Edges \<Longrightarrow>
-           x \<in> Edges \<Longrightarrow>
-           x \<notin> set_matching M \<Longrightarrow>
-           indep2 (set_matching M) \<Longrightarrow> weak_orcl2 x M = indep2 ({x} \<union> set_matching M)"
-proof(induction M)
-  case (MATCH eds lft rht)
-  have P_of_ifI: "(b \<Longrightarrow> P left) \<Longrightarrow> (\<not> b \<Longrightarrow> P right) \<Longrightarrow> P (if b then left else right)"
-      for b P left right by auto
-  from MATCH show ?case 
-  proof(cases "lookup rht (right_vertex x)")
-    case None
-    hence "\<not> (\<exists> e \<in> set_matching (MATCH eds lft rht). right_vertex e = right_vertex x)"
-      using MATCH(1,4)
-      by(fastforce simp add: set_matching_def emap_rht_inv_def  invar_matching_alt_def 
-                   simp del: invar_matching.simps)     
-    hence " indep2 ({x} \<union> set_matching (MATCH eds lft rht))"
-      using MATCH(2,3,5) x_is_right by (auto simp add: indep2_def)
-    moreover have  "weak_orcl2 x (MATCH eds lft rht)" using None by simp
-    ultimately show ?thesis by simp
-  next
-    case (Some es)
-    show ?thesis
-    proof(subst weak_orcl2.simps, subst Some, subst option.case(2), rule P_of_ifI, goal_cases)
-      case 1
-      note one = this
-      hence no_e: "\<not> (\<exists> e. e \<in> t_set (the (lookup rht (right_vertex x))))"
-       using MATCH(1,4) Some dfs.Graph.vset.emptyD(1)[of es]
-        by(auto simp add: set_matching_def emap_lft_inv_def )
-      have e_contr:" e \<in> set_matching (MATCH eds lft rht) \<Longrightarrow> right_vertex e = right_vertex x \<Longrightarrow> False" for e
-      proof(goal_cases)
-        case 1
-        then obtain y xa where "e \<in> t_set y" "lookup rht xa = Some y"
-          using MATCH(1)
-          by(auto simp add: set_matching_def emap_rht_inv_def invar_matching_alt_def
-                  simp del: invar_matching.simps)
-        hence " e \<in> t_set (the (lookup rht (right_vertex x)))"
-          using MATCH(1) 1 by(fastforce simp add:  emap_rht_inv_def)
-        thus False
-          using no_e by auto
-      qed
-      have "{x} \<union> set_matching (MATCH eds lft rht) \<subseteq> Edges"
-        using MATCH.prems(2) MATCH.prems(3) by auto
-      moreover have "(\<forall>xa\<in>Y.
-         \<forall>e\<in>{x} \<union> set_matching (MATCH eds lft rht).
-            \<forall>d\<in>{x} \<union> set_matching (MATCH eds lft rht). xa \<in> to_dbltn d \<longrightarrow> xa \<in> to_dbltn e \<longrightarrow> e = d)"
-        using e_contr  MATCH.prems(2) MATCH.prems(3)  x_is_right  calculation MATCH.prems(5)
-        by(fastforce simp add: indep2_def invar_matching_alt_def simp del: invar_matching.simps)
-      ultimately show ?case
-         by (auto simp add: indep2_def)
-    next
-      case 2
-      then obtain e where  "e \<in> t_set (the (lookup rht (right_vertex x)))"
-        using MATCH(1) Some dfs.Graph.vset.choose'[OF 2]
-        by (fastforce simp add:  emap_lft_inv_def set_matching_def)
-      hence  "e \<in> set_matching (MATCH eds lft rht)" "right_vertex e = right_vertex x" 
-        using MATCH.prems(1) Some set_matching_def  Some \<open>e \<in> t_set (the (lookup rht (right_vertex x)))\<close>
-         by(fastforce simp add: emap_rht_inv_def invar_matching_alt_def simp del: invar_matching.simps)+
-      hence "\<not> indep2 ({x} \<union> set_matching (MATCH eds lft rht))"
-        using right_prop MATCH(4)
-        by(simp add: indep2_def set_matching_def)
-          (fastforce intro!: bexI[of _ "right_vertex x"] bexI[of _ e])
-    thus ?case by simp
-  qed
- qed
-qed
-end
-
-global_interpretation matching_basic_operations: compute_max_bimatch_by_matroid_spec
-  where Edges =Edges and to_dbltn = to_dbltn and right_vertex= right_vertex
-  and left_vertex = left_vertex
-for Edges to_dbltn left_vertex right_vertex Edges_impl
-defines the_edges=matching_basic_operations.the_edges
-    and empty_matching=matching_basic_operations.empty_matching
-    and insert_matching=matching_basic_operations.insert_matching
-    and delete_matching=matching_basic_operations.delete_matching
-    and set_matching=matching_basic_operations.set_matching
-    and invar_matching=matching_basic_operations.invar_matching
-    and weak_orcl1=matching_basic_operations.weak_orcl1
-    and weak_orcl2=matching_basic_operations.weak_orcl2
-    and circuit1=matching_basic_operations.circuit1
-    and circuit2=matching_basic_operations.circuit2
-    and complement_matching=matching_basic_operations.complement_matching
-  done
-
-fun inner_fold where "inner_fold (MATCH eds lft rht) f = fold_rbt f eds"
-
-definition "outer_fold X f= fold_rbt f X"
-
-term find_path
-
-global_interpretation matching_by_matroid: unweighted_intersection_spec
-  where empty = RBT_Set.empty
-and delete= RBT_Map.delete
-and lookup=lookup
-and insert=insert_rbt
-and isin=isin
-and t_set=t_set
-and sel=sel
-and update=update
-and adjmap_inv =M.invar
-and vset_empty=Leaf
-and vset_delete= RBT.delete
-and vset_inv=vset_inv
-and to_set=set_matching
-and set_invar="invar_matching left_vertex right_vertex"
-and set_empty=empty_matching
-and inner_fold=inner_fold
-and outer_fold=outer_fold
-and inner_fold_circuit=outer_fold
-and set_insert="insert_matching left_vertex right_vertex"
-and set_delete="delete_matching left_vertex right_vertex"
-and weak_orcl1="weak_orcl1 left_vertex"
-and weak_orcl2="weak_orcl2 right_vertex"
-and circuit1="circuit1 left_vertex"
-and circuit2="circuit2 right_vertex"
-and find_path="\<lambda> S T G. find_path s t G S T "
-and complement="complement_matching Edges_impl"
-for  left_vertex right_vertex s t Edges_impl
-defines treat1=matching_by_matroid.treat1
-and     treat2=matching_by_matroid.treat2
-and     compute_graph=matching_by_matroid.compute_graph
-and     augment=matching_by_matroid.augment
-and     matroid_intersection_impl=matching_by_matroid.matroid_intersection_impl
-and     treat1_circuit=matching_by_matroid.treat1_circuit
-and     treat2_circuit=matching_by_matroid.treat2_circuit
-and     compute_graph_circuit=matching_by_matroid.compute_graph_circuit
-and     matroid_intersection_circuit_impl=matching_by_matroid.matroid_intersection_circuit_impl
-  by(auto intro!: unweighted_intersection_spec.intro simp add: G.Pair_Graph_Specs_axioms)
-
-context 
-  fixes left_vertex::"'e::linorder \<Rightarrow> 'v::linorder" 
-    and right_vertex::"'e \<Rightarrow> 'v"
-    and s::'e
-    and t::'e
-    and Edges_impl::"('e \<times> color) tree"
-  assumes bipart:"\<not> (\<exists> e d. e \<in> t_set Edges_impl \<and> d \<in> t_set Edges_impl \<and>
-                                 left_vertex e = right_vertex d)"
-begin
-
-definition "to_dbltn e = {left_vertex e, right_vertex e}"
-definition "Edges=t_set Edges_impl"
-definition "X = left_vertex ` Edges"
-definition "Y = right_vertex ` Edges"
-
-lemma left_not_right: "e \<in> local.Edges \<Longrightarrow> \<exists>u v. {left_vertex e, right_vertex e} = {u, v} \<and> u \<noteq> v"
-  using bipart by(auto simp add: Edges_def)
-  
-lemma bipartite: "undirected_multigraph_spec.bipartite_multi to_dbltn Edges X Y"
-  using bipart 
-  by(auto simp add: Edges_def X_def Y_def bipartite_def to_dbltn_def 
-                    undirected_multigraph_spec.bipartite_multi_def)
-
-lemma correct_side: "e \<in> Edges \<Longrightarrow> left_vertex e \<in> X"
-                    "e \<in> Edges \<Longrightarrow> right_vertex e \<in> Y"
-  by(auto simp add: Edges_def X_def Y_def)
-
-lemma finite_Edges: "finite Edges"
-  by (simp add: Edges_def)
-
-interpretation matching_as_matroid_intersection: max_bimatch_by_matroid
-  where to_dbltn=to_dbltn and Edges=Edges and X = X and Y = Y and left_vertex = left_vertex 
-   and right_vertex=right_vertex
-  by(auto intro!: max_bimatch_by_matroid.intro undirected_multigraph.intro
-       max_bimatch_by_matroid_axioms.intro left_not_right bipartite  correct_side finite_Edges
-           simp add: to_dbltn_def)
-
-interpretation matching_as_matroid_intersection_proofs: compute_max_bimatch_by_matroid
-  where to_dbltn=to_dbltn and Edges=Edges and X = X and Y = Y and left_vertex = left_vertex 
-   and right_vertex=right_vertex
-  by (simp add: compute_max_bimatch_by_matroid_def 
-                  matching_as_matroid_intersection.max_bimatch_by_matroid_axioms)
-
-definition "indep1 = matching_as_matroid_intersection.indep1"
-definition "indep2 = matching_as_matroid_intersection.indep2"
-
-lemma double_matroid:"double_matroid Edges indep1 indep2"
-  by(auto intro: matching_as_matroid_intersection.double_matroid_concrete simp add: indep1_def indep2_def)
-
-lemma same_invar: "invar_matching left_vertex right_vertex= 
-            matching_as_matroid_intersection_proofs.invar_matching"
-  apply(rule ext)
-  subgoal for M
-    apply(cases M)
-    apply (simp add: matching_basic_operations.emap_lft_inv_def
-matching_basic_operations.emap_rht_inv_def) 
-    done
-  done
-
-
-interpretation matching_algorithm: unweighted_intersection
- where empty = RBT_Set.empty
-and delete= RBT_Map.delete
-and lookup=lookup
-and insert=insert_rbt
-and isin=isin
-and vset=t_set
-and sel=sel
-and update=update
-and adjmap_inv =M.invar
-and vset_empty=Leaf
-and vset_delete= RBT.delete
-and vset_inv=vset_inv
-and to_set=set_matching
-and set_invar="invar_matching left_vertex right_vertex"
-and set_empty=empty_matching
-and inner_fold=inner_fold
-and outer_fold=outer_fold
-and inner_fold_circuit=outer_fold
-and set_insert="insert_matching left_vertex right_vertex"
-and set_delete="delete_matching left_vertex right_vertex"
-and weak_orcl1="weak_orcl1 left_vertex"
-and weak_orcl2="weak_orcl2 right_vertex"
-and circuit1="circuit1 left_vertex"
-and circuit2="circuit2 right_vertex"
-and find_path="\<lambda> S T G. find_path s t G S T "
-and complement="complement_matching Edges_impl"
-and carrier=Edges
-and indep1=indep1
-and indep2=indep2
-  apply(rule unweighted_intersection.intro)
-  subgoal
-    by (simp add: matching_by_matroid.unweighted_intersection_spec_axioms)
-  subgoal
-    by(auto intro: double_matroid)
-  subgoal
-    apply(rule unweighted_intersection_axioms.intro)
-    subgoal
-      by (simp add: matching_basic_operations.set_matching_insert(1))
-    subgoal
-      by (simp add: matching_basic_operations.set_matching_insert(2))
-    subgoal
-      by (simp add: matching_basic_operations.set_matching_delete(1))
-    subgoal
-      by (simp add: matching_basic_operations.set_matching_delete(2))
-    subgoal
-      by (simp add: matching_basic_operations.set_matching_empty(1))
-    subgoal
-      by (simp add: matching_basic_operations.set_matching_empty(2))
-    subgoal 
-      by (auto simp add:matching_as_matroid_intersection_proofs.weak_orcl1_correct 
-               same_invar indep1_def weak_orcl1_def set_matching_def)
-    subgoal 
-      by (auto simp add:matching_as_matroid_intersection_proofs.weak_orcl2_correct 
-               same_invar indep2_def weak_orcl2_def set_matching_def)
-     
-    
