@@ -8,7 +8,10 @@ definition accessible where "accessible E F \<longleftrightarrow> set_system E F
 (\<exists>x \<in> X.  X - {x} \<in> F))"
 definition closed_under_union where "closed_under_union F \<longleftrightarrow> (\<forall>X Y. X \<in> F \<and> Y \<in> F \<longrightarrow> X \<union> Y \<in> F)"
 
+
 definition maximal where "maximal P Z \<longleftrightarrow> (P Z \<and> (\<nexists> X. X \<supset> Z \<and> P X))"
+
+
 
 lemma accessible_property:
   assumes "accessible E F"
@@ -64,6 +67,8 @@ proof -
      qed
 qed
 qed
+
+
 
 lemma exists_list_with_first_element:
   assumes "finite X" "x \<in> X"
