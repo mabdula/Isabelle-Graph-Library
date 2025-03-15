@@ -1,5 +1,5 @@
 theory BFS_Subprocedures
-  imports BFS "HOL-Data_Structures.RBT_Map" Directed_Set_Graphs.Set_Addons 
+  imports BFS_2 "HOL-Data_Structures.RBT_Map" Directed_Set_Graphs.Set_Addons 
 begin
 
 locale Pair_Graph_Sepcs_Set2 =
@@ -15,28 +15,20 @@ definition "add_neighbs G u vs = (if vs = vset_empty then G else
 
 lemmas [code] = add_neighbs_def
 
-lemma add_neighbs_inv: 
-  assumes "Graph.graph_inv G" "vset_inv vs"
-  shows  "Graph.graph_inv (add_neighbs G u vs)" 
-         "Graph.finite_graph G \<Longrightarrow> Graph.finite_graph (add_neighbs G u vs)"
-proof-
-  note 1 = assms
+lemma add_neighbs_inv: "Graph.graph_inv G \<Longrightarrow> vset_inv vs \<Longrightarrow> 
+                        Graph.graph_inv (add_neighbs G u vs)" 
+proof(goal_cases)
+  case 1
   have b: "vset_inv vs \<Longrightarrow>
        \<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset \<Longrightarrow>
        lookup G u = Some x2 \<Longrightarrow> (if v = u then Some (x2 \<union>\<^sub>G vs) else lookup G v) = Some vset 
         \<Longrightarrow> vset_inv vset " for v vset x2
     by(rule case_split[of "v = u"])( auto simp add: set_ops.invar_union)
-  show "Graph.graph_inv (add_neighbs G u vs)"
+  show ?case
     using 1
     by (auto split: if_split option.split 
              intro: Graph.adjmap.invar_update b
           simp add: Graph.adjmap.map_update Graph.graph_inv_def add_neighbs_def)
-  show  "Graph.finite_graph G \<Longrightarrow> Graph.finite_graph (add_neighbs G u vs)"
-    using 1
-    by (auto split: if_split option.split 
-             intro: Graph.adjmap.invar_update b
-          simp add: Graph.adjmap.map_update Graph.graph_inv_def add_neighbs_def Graph.finite_graph_def
-          finite_insert[of u "{v. \<exists>y. lookup G v = Some y}", symmetric]  insert_Collect)
 qed
 
 lemma add_neighbs_digraph_abs:
@@ -170,9 +162,6 @@ lemma expand_tree:
          {(u,v) | u v. u \<in> t_set (frontier) \<and> 
                        v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u -
                        t_set vis)}"
-     "\<lbrakk>Graph.graph_inv BFS_tree; vset_inv frontier; vset_inv vis; Graph.graph_inv G;
-       Graph.finite_graph BFS_tree\<rbrakk> \<Longrightarrow> 
-       Graph.finite_graph (expand_tree BFS_tree frontier vis)"
 proof-
   assume assms: "Graph.graph_inv BFS_tree" "vset_inv frontier" "vset_inv vis" "Graph.graph_inv G"
   obtain xs where xs_prop:
@@ -224,13 +213,6 @@ proof-
 qed
   thus "[expand_tree BFS_tree frontier vis]\<^sub>g =
     [BFS_tree]\<^sub>g \<union> {(u, v) |u v. u \<in> [frontier]\<^sub>s \<and> v \<in> neighbourhood [G]\<^sub>g u - [vis]\<^sub>s}"
-    using xs_prop(2) by argo
-  assume next_asm: "Graph.finite_graph BFS_tree"
-  hence "Graph.finite_graph (foldr  (\<lambda> u nf. add_neighbs nf u (diff (neighbourhood' u) vis))
-                          xs BFS_tree)"
-    by(induction xs)
-      (auto simp add: add_neighbs_inv(2) assms(3) assms(4) goal1_general)
- thus "Graph.finite_graph (expand_tree BFS_tree frontier vis)"
     using xs_prop(2) by argo
 qed
 end

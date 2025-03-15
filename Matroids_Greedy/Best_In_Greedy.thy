@@ -1813,6 +1813,8 @@ lemma BestInGreedy'_corresp:
 end
 end
 
+
+
 locale Use_Greedy_Thms
 =  Indep_System_Specs where set_of_sets_isin = "set_of_sets_isin::('a \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> bool"
 for set_of_sets_isin+

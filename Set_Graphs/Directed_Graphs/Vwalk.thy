@@ -16,8 +16,6 @@ inductive_simps vwalk_2[simp]: "vwalk E (v # v' # vs)"
 
 definition "vwalk_bet G v p v' = ( vwalk G p \<and> p \<noteq> [] \<and> hd p = v \<and> last p = v')"
 
-definition "vwalk_bet_single_vertex G v p v' = (vwalk_bet G v p v' \<or> (\<exists> x. p = [x] \<and> v = x \<and> v' = x))"
-
 lemma vwalk_then_edge: "vwalk_bet dG v p v' \<Longrightarrow> v \<noteq> v' \<Longrightarrow> (\<exists>v''. (v, v'') \<in> dG)"
   by(cases p; auto split: if_splits simp: neq_Nil_conv vwalk_bet_def)
 
@@ -1151,39 +1149,4 @@ proof(induction p rule: edges_of_vwalk.induct)
   qed
 qed simp+
 
-lemma vwalk_bet_cycle_delete: "vwalk_bet Y x ( xs@[a]@ys@[a]@zs) y \<Longrightarrow> vwalk_bet Y x ( xs@[a]@zs) y"
-  by (metis (no_types, lifting) append.assoc list.sel(3) vwalk_bet_pref vwalk_bet_suff vwalk_bet_transitive)
-
-lemma vwalk_in_its_own_edges: "Vwalk.vwalk E  p 
- \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk (set (edges_of_vwalk p)) p "
-  apply(induction p rule: Vwalk.vwalk.induct, simp, simp)
-  subgoal for v v' vs
-    apply(cases vs)
-     apply (simp add: dVsI(2))
-    apply(rule vwalk2)
-    apply simp
-    apply(rule vwalk_subset[of "(set (edges_of_vwalk (v' # vs)))" "(v' # vs)"])
-    by auto
-  done
-
-lemma vwalk_bet_in_its_own_edges: "Vwalk.vwalk_bet E u p  v
- \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk_bet (set (edges_of_vwalk p)) u p v" 
-  by (metis vwalk_bet_def vwalk_in_its_own_edges)
-
-lemma vwalk_bet_single_vertex_subset: 
-"vwalk_bet_single_vertex E u p v \<Longrightarrow> E \<subseteq> E' \<Longrightarrow> vwalk_bet_single_vertex E' u p v" 
-  by(auto simp add: vwalk_bet_single_vertex_def intro: vwalk_bet_subset)
-
-lemma vwalk_bet_single_vertex_single: "vwalk_bet_single_vertex E u [u] u" 
-  by (simp add: vwalk_bet_single_vertex_def)
-
-lemma vwalk_bet_single_vertex_append: 
-"vwalk_bet_single_vertex E u p v \<Longrightarrow> vwalk_bet_single_vertex E v' q w \<Longrightarrow>
-(v, v') \<in> E \<Longrightarrow>
-vwalk_bet_single_vertex E u (p@q) w" 
-  by(auto simp add: vwalk_bet_single_vertex_def append_vwalk vwalk_bet_def vwalk_append_single Vwalk.vwalkI)
-
-lemma vwalk_bet_single_vertex_edge: "(u,v) \<in> E \<Longrightarrow> vwalk_bet_single_vertex E u [u, v] v"
-  by (auto simp add: vwalk_bet_single_vertex_def)
-  
 end

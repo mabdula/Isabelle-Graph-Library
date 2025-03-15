@@ -149,93 +149,6 @@ next
     by(induction f map rule: update_all.induct) fastforce+
 qed
 
-lemma dom_is_preorder:
-"rbt_red map \<Longrightarrow> dom (lookup map) = set (List.map (fst o fst) (preorder map))" for map
-  proof(induction map)
-    case Leaf
-    then show ?case by force
-  next
-    case (Node map1 x2 map2)
-    have rbt_red_map1: "rbt_red map1" 
-      using Node.prems  rbt_red_subtrees 
-      by (metis (full_types) neq_Black old.prod.exhaust)
-    have rbt_red_map2: "rbt_red map2" 
-      using Node.prems  rbt_red_subtrees 
-      by (metis (full_types) neq_Black old.prod.exhaust)
-   show ?case 
-      apply(cases x2)
-      subgoal for pair C
-        apply(cases C)
-        using Node  rbt_red_map2 rbt_red_map1
-        by((cases pair, simp only:, (subst domain_subtrees(2) | subst domain_subtrees(1))), force, force)+
-      done
-  qed
-
-lemma inorder_inorder2: "map fst (Tree.inorder T)= Tree2.inorder T"
-  by(induction T) auto
-
-lemma rbt_fold_preorder_lookup: "rbt_red N\<Longrightarrow>
-    foldr (\<lambda>(x, y). f x y) (map fst (preorder N)) acc =
-    foldr (\<lambda>x. f x (the (lookup N x))) (map (fst \<circ> fst) (preorder N)) acc"
-proof(induction arbitrary: acc rule: preorder.induct)
-  case 1
-  then show ?case by simp
-next
-  case (2 l x r)
-    have rbt_redL: "rbt_red l" 
-      using 2(3)  rbt_red_subtrees 
-      by (metis (full_types) neq_Black old.prod.exhaust)
-    have rbt_redR: "rbt_red r" 
-      using 2(3)  rbt_red_subtrees 
-      by (metis (full_types) neq_Black old.prod.exhaust)
-  have help1:"x = ((a, b), C) \<Longrightarrow>
-       pair = (a, b) \<Longrightarrow>
-       cmp a a = EQ \<Longrightarrow> xa \<in> set (map (\<lambda>a. fst (fst a)) (preorder r)) \<Longrightarrow> a < xa" for a b C pair xa
-       using 2(3)  Tree.set_inorder[symmetric] cong[of set set, OF refl inorder_inorder2[of r]]
-    by(auto simp add: strict_sorted_simps(2) rbt_red_def
-                      sorted_mid_iff[of "map fst (Tree2.inorder l)" a "map fst (Tree2.inorder r)"])
-  have help2:"x = ((a, b), C) \<Longrightarrow>
-       pair = (a, b) \<Longrightarrow>
-       cmp a a = EQ \<Longrightarrow>
-       xa \<in> set (map (\<lambda>a. fst (fst a)) (preorder r)) \<Longrightarrow>
-       f xa (the (lookup \<langle>l, ((a, b), C), r\<rangle> xa)) aa = f xa (the (lookup r xa)) aa" for xa aa a b C pair
-    apply(subst lookup.simps(2))
-    using  help1 by force
-  have help3:"x = ((a, b), C) \<Longrightarrow>
-       pair = (a, b) \<Longrightarrow>
-       cmp a a = EQ \<Longrightarrow> xa \<in> set (map (\<lambda>a. fst (fst a)) (preorder l)) \<Longrightarrow>  xa < a" for a b C pair xa
-       using 2(3)  Tree.set_inorder[symmetric] cong[of set set, OF refl inorder_inorder2[of l]]
-             strict_sorted_simps(2)
-       by(auto simp add: sorted_mid_iff[of "map fst (Tree2.inorder l)" a "map fst (Tree2.inorder r)"]
-                   sorted_wrt_append rbt_red_def )
-  have help4: "x = ((a, b), C) \<Longrightarrow>
-       pair = (a, b) \<Longrightarrow>
-       cmp a a = EQ \<Longrightarrow>
-       xa \<in> set (map (\<lambda>a. fst (fst a)) (preorder l)) \<Longrightarrow>
-       f xa (the (lookup \<langle>l, ((a, b), C), r\<rangle> xa)) aa = f xa (the (lookup l xa)) aa" for xa aa a b C pair
-     apply(subst lookup.simps(2))
-    using  help3 by force
-  show ?case 
-    apply simp
-    apply(cases x)
-    subgoal for pair C
-      apply(cases pair)
-      subgoal for a b
-      apply (simp only:)
-        apply(subst lookup.simps(2))
-        apply(subst fst_conv)+
-        apply(cases "cmp a a")
-          apply simp
-          apply(simp only: cmp_val.case(2) prod.case option.sel)
-          apply(subst (2) foldr_cong[OF refl refl , of _ _ "(\<lambda>x. f x (the (lookup r x)))"])
-          apply(rule  help2, simp, simp, simp, simp)
-          apply(subst (1) foldr_cong[OF refl refl, of _ _  "(\<lambda>x. f x (the (lookup l x)))"])
-          using help4 2(1)[OF rbt_redL] 2(2)[OF rbt_redR] 
-          by auto
-      done
-    done
-qed
-
 fun get_max where
 "get_max f Leaf = undefined"|
 "get_max f (Node Leaf ((x, y),_::color ) Leaf) = f x y"|
@@ -391,15 +304,4 @@ locale Map_iterator =
    "\<And> rep f. invar rep \<Longrightarrow> invar (update_all f rep)"
    "\<And> rep f. invar rep \<Longrightarrow> dom (lookup (update_all f rep))
                               = dom (lookup rep)"
-(*
-fun fold2_tree where
-"fold2_tree f Leaf C = C"|
-"fold2_tree f (B l (x, y) r) C = (fold2_tree f l ( f x y (fold2_tree f r C)))"|
-"fold2_tree f (R l (x, y) r) C = (fold2_tree f l ( f x y (fold2_tree f r C)))"
-
-
-lemma "\<exists>xs. set xs = dom (lookup N) \<and>
-            fold2_tree f N acc = foldr (\<lambda>x. f x (the (lookup N x))) (inorder N) acc"
-*)
-
 end

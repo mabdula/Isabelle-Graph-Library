@@ -134,7 +134,7 @@ definition "G = a_graph edges"
 value edges
 value G
 value "dfs_initial_state (1::nat)"   
-value "dfs_impl G (\<lambda> x. x = 9) (dfs_initial_state (0::nat))"
+value "dfs_impl G 9 (dfs_initial_state 0)"
 value "vset_diff (nbs edges (1::nat)) (nbs edges (2::nat))"
 end
 

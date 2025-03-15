@@ -304,7 +304,7 @@ definition "es = remdups(map make_pair (to_list \<E>_impl)@(map prod.swap (map m
                                 
 definition "vs = remdups (map prod.fst es)"
 
-definition "dfs F t = (dfs.DFS_impl (remove_all_empties F) (\<lambda> w. w = t))" for F
+definition "dfs F t = (dfs.DFS_impl (remove_all_empties F) t)" for F
 definition "dfs_initial s = (dfs.initial_state  s)"
 
 definition "get_path u v E = rev (stack (dfs E v (dfs_initial u)))"
@@ -1066,7 +1066,7 @@ proof(goal_cases)
                    vset_inv vset_union vset_inter vset_diff lookup (remove_all_empties E) u"
     by(auto intro!: DFS_thms.intro DFS_thms_axioms.intro simp add: dfs.DFS_axioms dfs_axioms)
   have dfs_dom:"DFS.DFS_dom vset_insert sel vset_empty vset_diff lookup 
-     (remove_all_empties E) (\<lambda> w. w = v) (dfs_initial u)"
+     (remove_all_empties E) v (dfs_initial u)"
     using DFS_thms.initial_state_props(6)[OF dfs_thms]
     by(simp add:  dfs_initial_def dfs_initial_state_def DFS_thms.initial_state_props(6) dfs_axioms)
   have rectified_map_subset:"dfs.Graph.digraph_abs (remove_all_empties E) \<subseteq> 
@@ -1079,8 +1079,7 @@ proof(goal_cases)
   proof(rule ccontr,rule DFS.return.exhaust[of "DFS_state.return (dfs E v (dfs_initial u))"],goal_cases)
     case 2
     hence "\<nexists>p. distinct p \<and> vwalk_bet (dfs.Graph.digraph_abs (remove_all_empties E)) u p v"
-      using  DFS_thms.DFS_correct_1[OF dfs_thms, of "\<lambda> w. w=v"]  
-             DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of  "\<lambda> w. w=v"] 
+      using  DFS_thms.DFS_correct_1[OF dfs_thms, of v]  DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of v] 
       by (auto simp add:  dfs_def dfs_initial_def dfs_initial_state_def simp add: dfs_impl_def)
     moreover obtain q' where "vwalk_bet (Adj_Map_Specs2.digraph_abs  E ) u q' v" "distinct q'"
       using vwalk_bet_to_distinct_is_distinct_vwalk_bet[OF assms(1)]
@@ -1091,13 +1090,11 @@ proof(goal_cases)
   next
   qed simp
   have "vwalk_bet  (dfs.Graph.digraph_abs (remove_all_empties E))
-            u (rev (stack (dfs E v (dfs_initial u)))) v \<or>
-         (stack (dfs.DFS (remove_all_empties E) (\<lambda>w.  w = v) (DFS.initial_state vset_insert \<emptyset>\<^sub>N u)) = [u] \<and> u = v)"
-    using reachable sym[OF DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of "\<lambda> w. w = v"]] 
-          DFS_thms.DFS_correct_2[OF dfs_thms, of  "\<lambda> w. w = v"]
-    by(auto simp add: dfs_initial_def  dfs_def dfs_axioms dfs_impl_def dfs_initial_state_def) 
+            u (rev (stack (dfs E v (dfs_initial u)))) v"
+    using reachable sym[OF DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of v]]  
+    by(auto intro!: DFS_thms.DFS_correct_2[OF dfs_thms, of v]
+         simp add: dfs_initial_def  dfs_def dfs_axioms dfs_impl_def dfs_initial_state_def) 
   thus "vwalk_bet (Adj_Map_Specs2.digraph_abs E ) u p v"
-    using 1(6)
     unfolding assms(3) get_path_def
     by (meson rectified_map_subset vwalk_bet_subset)
   show "distinct p"

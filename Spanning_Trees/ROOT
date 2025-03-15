@@ -9,4 +9,4 @@ session "Spanning_Trees" = "HOL-Data_Structures" +
     "Spanning_Trees"
     "Encoding"
     "Insertion_Sort_Desc"
-    "Kruskal_Greedy"
+    "Kruskal_Greedy2"
