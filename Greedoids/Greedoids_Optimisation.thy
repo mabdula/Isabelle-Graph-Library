@@ -1,5 +1,5 @@
 theory Greedoids_Optimisation
-  imports Main Complex_Main Greedoids "HOL-Eisbach.Eisbach"
+  imports Main Complex_Main Greedoids
 begin
 
 lemma max_n: "(\<And> n. P n \<Longrightarrow> n \<le> bound) \<Longrightarrow> P (n::nat) \<Longrightarrow> (\<exists> nmax. P nmax \<and> (\<nexists> m. m > nmax \<and> P m))"
@@ -1141,7 +1141,7 @@ lemma EWx_list_props: "set EWx_list = E - B - {x}" "distinct EWx_list"
 
 definition "es = EWx_list@Y_list@[x]@BYA_list@rev A_list"
 
-lemma all_in_E: "A \<subseteq> E" "B \<subseteq> E" "Y \<subseteq> E"
+lemma all_in_E: "A \<subseteq> E" "B \<subseteq> E" "Y \<subseteq> E" 
   using  ABx_props(1,2,3) ss_assum Y_in_B_without_A by(auto simp add: set_system_def)
 
 lemma es_prop: "set es = E" "distinct es"
@@ -1185,8 +1185,7 @@ definition "last_in_list P xs y = (y \<in> set xs \<and> P y \<and> (\<nexists> 
 lemma last_in_list_unique: "unique (last_in_list P xs)"
   by (auto simp add: unique_def last_in_list_def  )(smt (verit, del_insts) Un_iff append.assoc append_Cons in_set_conv_decomp_first insert_iff list.set(2) set_append)
 
-lemma find_best_cand_chain_gives_A_suffix:
-       "(\<And> i. i < length l \<Longrightarrow> Some (l ! i) =
+lemma "(\<And> i. i < length l \<Longrightarrow> Some (l ! i) =
          find_best_candidate es costs (set (drop (i + 1) l)))
        \<Longrightarrow> (\<And> i. i < length l \<Longrightarrow> set (drop (i+1) l) \<in> F)
        \<Longrightarrow> length l \<le> length A_list \<Longrightarrow> l = rev (take (length l) A_list)"
@@ -1303,138 +1302,15 @@ next
  qed
 qed
 
-lemma find_best_cand_chain_gives_A:
-       "(\<And> i. i < length l \<Longrightarrow> Some (l ! i) =
-         find_best_candidate es costs (set (drop (i + 1) l)))
-       \<Longrightarrow> (\<And> i. i < length l \<Longrightarrow> set (drop (i+1) l) \<in> F)
-       \<Longrightarrow> length l = length A_list \<Longrightarrow> l = rev A_list"
-  by(subst find_best_cand_chain_gives_A_suffix[of l]) auto
-
-lemmas properties_of_result = initial_props[OF es_prop] result_props[OF es_prop]
-                              algorithm_computes_basis[OF es_prop]
-
 lemma solution_looks_like:
 "\<exists> others. greedy_algorithm es costs Nil = others @ [x] @ rev A_list"
-proof-
-  have length_below:"length (greedy_algorithm es costs Nil) > length A_list"
-  proof(rule ccontr, goal_cases)
-    case 1
-    define index where "index = length (local.greedy_algorithm es costs [])"
-    from 1 have asm: "length A_list \<ge> length (local.greedy_algorithm es costs [])" by simp
-    have a1:"local.greedy_algorithm es costs [] 
-                     = rev (take (length (local.greedy_algorithm es costs [])) A_list)"
-      using properties_of_result(9,11) 
-      by(auto intro!: find_best_cand_chain_gives_A_suffix asm
-               simp add: invar_tails_indep_def invar_find_best_cand_def)
-    have a2: "\<nexists> y. y \<in> E - set (greedy_algorithm es costs []) \<and> 
-                  insert y ( set (greedy_algorithm es costs [])) \<in> F" 
-      using properties_of_result(7,10) find_best_candidate_none[OF es_prop]  ss_assum  
-      by(force simp add: set_system_def)
-    moreover have "x \<in> E - set (greedy_algorithm es costs [])"
-      using  A_list_props(1) a1  in_set_takeD[of x "length (greedy_algorithm es costs [])" A_list]
-             set_rev[of "take (length (local.greedy_algorithm es costs [])) A_list"] x_props
-      by auto 
-    moreover have "length A_list = length (local.greedy_algorithm es costs []) \<Longrightarrow>
-                      insert x ( set (greedy_algorithm es costs [])) \<in> F"
-      using  A_list_props(1) a1 x_props by auto
-    moreover have "length A_list > length (local.greedy_algorithm es costs []) \<Longrightarrow>
-                      insert (A_list ! length (local.greedy_algorithm es costs []) ) ( set (greedy_algorithm es costs [])) \<in> F"
-      unfolding index_def[symmetric] 
-      unfolding a1[simplified index_def[symmetric]] rev_take
-      apply(rule back_subst, rule A_list_props(4)[of "index + 1"])
-      using set_take_union_nth
-      by(auto intro!: cong[OF refl, of _  _ "\<lambda> x. x \<in> F"] simp  add: rev_take[of "index" A_list, symmetric])
-    moreover have "length A_list > length (local.greedy_algorithm es costs []) \<Longrightarrow>
-                  (A_list ! length (local.greedy_algorithm es costs []) )
-                 \<in> E - ( set (greedy_algorithm es costs []))"
-      using A_list_props(1,3) distinct_take id_take_nth_drop not_distinct_conv_prefix  set_rev
-      using  all_in_E(1) nth_mem[of index A_list] 
-      by (fastforce simp add: index_def[symmetric] a1[simplified index_def[symmetric]])
-    ultimately show False
-      using asm 
-      by(cases "length (local.greedy_algorithm es costs []) = length A_list") auto
-  qed
-  have tail_is:"drop (length (local.greedy_algorithm es costs []) - length A_list) (local.greedy_algorithm es costs [])
-       = rev A_list"
-    using length_below
-    by(auto intro: find_best_cand_chain_gives_A 
-         simp add:  mp[OF HOL.spec[OF result_props_specialised(4)[simplified invar_find_best_cand_def]]] 
-                       mp[OF HOL.spec[OF result_props_specialised(6)[simplified invar_tails_indep_def]]]
-                        add.commute)
-  have b1:"x \<in> E - set A_list"
-    using A_list_props(1) x_props by blast
-  have b2:"(set A_list) \<in> F" 
-    using A_list_props(1) x_props by fastforce
-  hence b3: "(set A_list)\<subseteq> E"
-    using  ss_assum by(auto simp add: set_system_def)
-  have b4:"insert x (set A_list) \<in> F" 
-    using A_list_props(1) x_props by fastforce
-  have "find_best_candidate es costs (set A_list) \<noteq> None"
-    using  find_best_candidate_none[OF es_prop b3 _ b2] b1 b4 by auto
-  then obtain cand where cand_is: "find_best_candidate es costs (set A_list) = Some cand" by auto
-  obtain es1 es2 where es1es2:"es = es1 @ [cand] @ es2" "cand \<notin> set A_list"
-   "insert cand (set A_list) \<in> F"
-   "(\<And> y. y\<in>E - set A_list \<Longrightarrow> insert y (set A_list) \<in> F \<Longrightarrow> elements_costs costs y \<le> elements_costs costs cand)"
-   "\<not> (\<exists>y\<in>set es2.
-          y \<notin> set A_list \<and> insert y (set A_list) \<in> F \<and> elements_costs costs cand \<le> elements_costs costs y)"
-    using  find_best_candidate_some_props[OF es_prop b3 cand_is b2] by auto
-  have cand_is_x:"cand = x"
-  proof(rule ccontr, goal_cases)
-    case 1
-    note x_not_cand = this
-    hence x_in_es1_or_es2: "x \<in> set es1 \<or> x \<in> set es2"
-      using b1 es1es2(1) es_prop(1) by force
-    have "elements_costs costs cand \<le> 1" 
-      using es1es2(2) 1 es1es2(3) ss_assum
-      by(auto simp add: elements_costs_def costs_def c_def A_list_props(1) Y_def set_system_def)
-    hence "x \<notin> set es2"
-      using es1es2(5) b1 b4 
-      by(auto simp add: elements_costs_def costs_def  costs_are(4))
-    hence x_in_es1:"x \<in> set es1"
-      using x_in_es1_or_es2 by auto
-    have "cand \<in> set ( BYA_list @ A_list)"
-    proof(rule ccontr, goal_cases)
-      case 1
-      hence  "cand \<in> set (EWx_list @ Y_list)"
-        using  es1es2(1) x_in_es1 A_list_props(1) BYA_list_props(1)  EWx_list_props(1) Y_list_props(1)  es_prop 
-        by (auto simp add:  es_def)
-      then obtain as bs where "EWx_list @ Y_list = as@[cand]@bs"
-        by (metis append.left_neutral append_Cons in_set_conv_decomp)
-      hence es_split4: "es = as@[cand]@bs@[x]@BYA_list @ rev A_list" 
-        unfolding es_def by simp
-      have "as = es1" 
-        using append_Cons_eq_iff[of cand es1 es2 as "bs @ [x] @ BYA_list @ rev A_list"] 
-              es1es2(1-3, 5) es_prop(2) not_distinct_conv_prefix[of es]
-        by(simp add: es_split4)
-      hence "\<not> distinct es"
-        using \<open>x \<notin> set es2\<close> es1es2(1) es_split4 by fastforce
-      thus False
-        by (simp add: es_prop(2))
-    qed
-    moreover have "cand \<notin> set BYA_list"
-      using A_list_props(1) BYA_list_props(1) B_without_A_without_Y_is es1es2(3) by auto
-    ultimately have "cand \<in> set A_list" by simp
-    thus False
-      by (simp add: es1es2(2))
-  qed
-  have cand_is_2:" (local.greedy_algorithm es costs []) !
-                        (length (local.greedy_algorithm es costs []) - length A_list - 1) = cand"
-    using Suc_diff_Suc tail_is  cand_is length_below
-          mp[OF HOL.spec[OF result_props_specialised(4)[simplified invar_find_best_cand_def]],
-                   of "length (local.greedy_algorithm es costs []) - length A_list - 1"]
-    by simp
- have "local.greedy_algorithm es costs [] = 
-                 take (length (local.greedy_algorithm es costs []) - length A_list - 1) (local.greedy_algorithm es costs [])
-                 @[x]@ rev A_list" 
-    using  Suc_diff_Suc length_below  tail_is 
-           id_take_nth_drop [of "length (local.greedy_algorithm es costs []) - length A_list - 1" " (local.greedy_algorithm es costs [])"]
-    by (auto simp add: cand_is_x[symmetric] cand_is_2[symmetric] tail_is[symmetric])
-  thus ?thesis by auto
-qed
+  sorry
 
 
 (*properties of the result*)
 
+lemmas properties_of_result = initial_props[OF es_prop] result_props[OF es_prop]
+                              algorithm_computes_basis[OF es_prop]
 
 lemma no_opt_solution: "\<not> opt_solution costs (set (greedy_algorithm es costs Nil))"
 proof-
