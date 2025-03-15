@@ -1,9 +1,7 @@
 session "Greedoids" = "HOL-Data_Structures" + 
   options [document = pdf, document_output = "output"]
   sessions
-    Main "HOL-Eisbach"
+    Main
 
   theories
     Greedoids
-    Greedoids_Example
-    Greedoids_Optimisation
