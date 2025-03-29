@@ -31,28 +31,38 @@ For the more practically usable algorithms, we include an implementation. For ot
 
    Mohammad Abdulaziz, Thomas Ammer, Shriya Meenakshisundaram, and Adem Rimpapa
 
-   On arXiv, 2025 doi: [](https://)
+   On arXiv, 2025
+
+   doi: [](https://)
    
  - A Formal Correctness Proof of Edmonds' Blossom Shrinking Algorithm
 
    Mohammad Abdulaziz 
 
-   On arXiv, 2024 doi: [10.48550/arXiv.2412.20878](https://10.48550/arXiv.2412.20878).
+   On arXiv, 2024
+
+   doi: [10.48550/arXiv.2412.20878](https://10.48550/arXiv.2412.20878).
 
  - A Formal Analysis of Capacity Scaling Algorithms for Minimum Cost Flows
 
    Mohammad Abdulaziz and Thomas Ammer
 
-   In the International Conference on Interactive Theorem Proving (ITP), 2024 doi: [10.48550/arXiv.2302.13747](https://10.48550/arXiv.2302.13747)
+   In the International Conference on Interactive Theorem Proving (ITP), 2024
+
+   doi: [10.48550/arXiv.2302.13747](https://10.48550/arXiv.2302.13747)
 
  - A Formal Analysis of RANKING
 
    Mohammad Abdulaziz and Christoph Madlener
 
-   In the International Conference on Interactive Theorem Proving (ITP), 2023 doi: [10.4230/LIPIcs.ITP.2024.3](https://10.4230/LIPIcs.ITP.2024.3)
+   In the International Conference on Interactive Theorem Proving (ITP), 2023
+
+   doi: [10.4230/LIPIcs.ITP.2024.3](https://10.4230/LIPIcs.ITP.2024.3)
 
  - Trustworthy Graph Algorithms (Invited Talk)
 
    Mohammad Abdulaziz, Kurt Mehlhorn, and Tobias Nipkow
 
-   In the International Symposium on Mathematical Foundations of Computer Science (MFCS), 2019 doi: [10.4230/LIPIcs.MFCS.2019.1](https://10.4230/LIPIcs.MFCS.2019.1)
+   In the International Symposium on Mathematical Foundations of Computer Science (MFCS), 2019
+
+   doi: [10.4230/LIPIcs.MFCS.2019.1](https://10.4230/LIPIcs.MFCS.2019.1)
