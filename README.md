@@ -27,42 +27,13 @@ For the more practically usable algorithms, we include an implementation. For ot
 
 # Publications
 
- - A Formal Analysis of Algorithms for Matroids and Greedoids
-
-   Mohammad Abdulaziz, Thomas Ammer, Shriya Meenakshisundaram, and Adem Rimpapa
-
+ - M. Abdulaziz, T. Ammer, S. Meenakshisundaram, and A. Rimpapa. 'A Formal Analysis of Algorithms for Matroids and Greedoids'. Dec. 30, 2024, arXiv: arXiv:2412.20878. doi: 10.48550/arXiv.2412.20878.
    On arXiv, 2025
 
-   doi: [](https://)
-   
- - A Formal Correctness Proof of Edmonds' Blossom Shrinking Algorithm
+ - M. Abdulaziz, 'A Formal Correctness Proof of Edmonds’ Blossom Shrinking Algorithm', Dec. 30, 2024, arXiv: arXiv:2412.20878. doi: 10.48550/arXiv.2412.20878.
 
-   Mohammad Abdulaziz 
+ - M. Abdulaziz and T. Ammer, 'A Formal Analysis of Capacity Scaling Algorithms for Minimum Cost Flows', in The 15th International Conference on Interactive Theorem Proving (ITP 2024), Schloss Dagstuhl – Leibniz-Zentrum für Informatik, 2024. doi: [10.48550/arXiv.2302.13747](https://10.48550/arXiv.2302.13747)
 
-   On arXiv, 2024
+ - M. Abdulaziz and C. Madlener, 'A Formal Analysis of RANKING', in The 14th Conference on Interactive Theorem Proving (ITP), 2023. doi: [10.48550/arXiv.2302.13747](10.48550/arXiv.2302.13747).
 
-   doi: [10.48550/arXiv.2412.20878](https://10.48550/arXiv.2412.20878).
-
- - A Formal Analysis of Capacity Scaling Algorithms for Minimum Cost Flows
-
-   Mohammad Abdulaziz and Thomas Ammer
-
-   In the International Conference on Interactive Theorem Proving (ITP), 2024
-
-   doi: [10.48550/arXiv.2302.13747](https://10.48550/arXiv.2302.13747)
-
- - A Formal Analysis of RANKING
-
-   Mohammad Abdulaziz and Christoph Madlener
-
-   In the International Conference on Interactive Theorem Proving (ITP), 2023
-
-   doi: [10.4230/LIPIcs.ITP.2024.3](https://10.4230/LIPIcs.ITP.2024.3)
-
- - Trustworthy Graph Algorithms (Invited Talk)
-
-   Mohammad Abdulaziz, Kurt Mehlhorn, and Tobias Nipkow
-
-   In the International Symposium on Mathematical Foundations of Computer Science (MFCS), 2019
-
-   doi: [10.4230/LIPIcs.MFCS.2019.1](https://10.4230/LIPIcs.MFCS.2019.1)
+ - M. Abdulaziz, K. Mehlhorn, and T. Nipkow, 'Trustworthy graph algorithms (invited paper)', in the 44th International Symposium on Mathematical Foundations of Computer Science (MFCS), in LIPIcs, vol. 138. Schloss Dagstuhl - Leibniz-Zentrum für Informatik, 2019, p. 1:1-1:22. doi: [10.4230/LIPIcs.MFCS.2019.1](10.4230/LIPIcs.MFCS.2019.1).
