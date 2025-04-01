@@ -27,7 +27,10 @@ assumes
          (Graph.digraph_abs BFS_tree) \<union> 
          {(u,v) | u v. u \<in> t_set (frontier) \<and> 
                        v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u -
-                       t_set vis)}" and
+                       t_set vis)}"
+    "\<lbrakk>Graph.graph_inv BFS_tree; vset_inv frontier; vset_inv vis; Graph.graph_inv G;
+        Graph.finite_graph BFS_tree\<rbrakk> \<Longrightarrow> 
+        Graph.finite_graph (expand_tree BFS_tree frontier vis)" and
    next_frontier[simp]:
     "\<lbrakk>vset_inv frontier; vset_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>  vset_inv (next_frontier frontier vis)"
     "\<lbrakk>vset_inv frontier; vset_inv vis; Graph.graph_inv G\<rbrakk> \<Longrightarrow>
@@ -100,6 +103,7 @@ abbreviation "BFS_ret1 bfs_state \<equiv> bfs_state"
 definition "invar_1 bfs_state = (
               vset_inv (visited bfs_state) \<and> vset_inv (current bfs_state) \<and>
               Graph.graph_inv (parents bfs_state) \<and> 
+              Graph.finite_graph (parents bfs_state) \<and>
               finite (t_set (current bfs_state)) \<and> finite (t_set (visited bfs_state)))"
 
 definition "invar_2 bfs_state = ( 
@@ -159,7 +163,7 @@ definition "initial_state = \<lparr>parents =  empty, current = srcs, visited = 
 lemmas[code] = BFS_impl.simps initial_state_def
 
 context
-  includes Graph.adjmap.automation  Graph.vset.set.automation set_ops.automation
+  includes Graph.adjmap.automation and Graph.vset.set.automation and set_ops.automation
   assumes BFS_axiom  
 begin
 
@@ -254,14 +258,16 @@ lemma invar_1_props[invar_props_elims]:
   "invar_1 bfs_state \<Longrightarrow> 
   (\<lbrakk>vset_inv (visited bfs_state) ; vset_inv (current bfs_state) ;
     Graph.graph_inv (parents bfs_state); 
-    finite (t_set (current bfs_state)); finite (t_set (visited bfs_state))\<rbrakk> \<Longrightarrow> P)
+    finite (t_set (current bfs_state)); finite (t_set (visited bfs_state));
+    Graph.finite_graph (parents bfs_state)\<rbrakk> \<Longrightarrow> P)
      \<Longrightarrow> P"
   by (auto simp: invar_1_def)
 
 lemma invar_1_intro[invar_props_intros]:
   "\<lbrakk>vset_inv (visited bfs_state); vset_inv (current bfs_state);
     Graph.graph_inv (parents bfs_state);
-    finite (t_set (current bfs_state)); finite (t_set (visited bfs_state))\<rbrakk> 
+    finite (t_set (current bfs_state)); finite (t_set (visited bfs_state));
+    Graph.finite_graph (parents bfs_state)\<rbrakk> 
     \<Longrightarrow> invar_1 bfs_state"
   by (auto simp: invar_1_def)
 
@@ -275,7 +281,8 @@ lemma finite_simp:
 lemma invar_1_holds_upd1[invar_holds_intros]:
   "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state\<rbrakk> \<Longrightarrow> invar_1 (BFS_upd1 bfs_state)"
   using finite_vset
-  by(auto elim!: invar_1_props call_cond_elims simp: Let_def BFS_upd1_def BFS_call_1_conds_def intro!: invar_props_intros)+
+  by(auto elim!: invar_1_props call_cond_elims simp:
+    Let_def BFS_upd1_def BFS_call_1_conds_def intro!: invar_props_intros)+
 
 lemma invar_1_holds_ret_1[invar_holds_intros]:
   "\<lbrakk>BFS_ret_1_conds bfs_state; invar_1 bfs_state\<rbrakk> \<Longrightarrow> invar_1 (BFS_ret1 bfs_state)"
@@ -1322,7 +1329,7 @@ next
   have *: "{{v1, v2} |v1 v2. (v1, v2) \<in> [G]\<^sub>g}
                  \<subseteq> (\<lambda>(x,y). {x,y} ) ` ({v. \<exists>y. lookup G v = Some y} \<times>
                                         (\<Union> {t_set N | v N. lookup G v = Some N}))"
-    including Graph.adjmap.automation Graph.vset.set.automation
+    including Graph.adjmap.automation and Graph.vset.set.automation
     apply (auto simp: Graph.digraph_abs_def Graph.neighbourhood_def image_def
                 split: option.splits)
     by (metis Graph.graph_invE Graph.vset.set.set_isin graph_inv(1))
@@ -1469,6 +1476,65 @@ lemma BFS_correct_4:
   "(Graph.digraph_abs (parents (BFS initial_state))) \<subseteq> (Graph.digraph_abs G)"
   apply(intro BFS_correct_4_ret_1[where bfs_state = "BFS initial_state"])
   by(auto intro: invar_holds_intros ret_holds_intros)
+
+lemma BFS_graph_path_implies_parent_path:
+  assumes "s \<in> t_set srcs" "vwalk_bet (Graph.digraph_abs G) s p t"  "t \<notin> t_set srcs"
+  shows   "\<exists> q s'.
+      vwalk_bet (Graph.digraph_abs (parents (BFS initial_state))) s' q t \<and> s' \<in> t_set srcs
+                   \<and> length q \<le> length p" 
+proof-
+  have "distance_set (Graph.digraph_abs G) (t_set srcs) t < \<infinity>"  
+    using assms  enat_ord_simps(4) infinity_ileE vwalk_bet_dist_set
+             [of "Graph.digraph_abs G" s p t "t_set srcs"]
+    by fastforce
+  hence dist_parents:"distance_set
+(Graph.digraph_abs (parents (BFS initial_state))) (t_set srcs) t \<noteq> \<infinity>"
+    using BFS_correct_1 assms(1) assms(2) assms(3)
+    by(subst (asm) BFS_correct_2[of t]) auto
+  then obtain q s' where qs':"vwalk_bet [parents (local.BFS initial_state)]\<^sub>g s' q t \<or> s' = t" "s' \<in> [srcs]\<^sub>s"                 
+    using dist_not_inf'[OF dist_parents] reachable_dist_2 by meson
+  hence qs':"vwalk_bet [parents (local.BFS initial_state)]\<^sub>g s' q t" "s' \<in> [srcs]\<^sub>s"                 
+    using assms(3) by auto
+  moreover have "length q -1 \<le> length p -1"
+    using BFS_correct_3[OF assms(1), of p t] BFS_correct_3[OF qs'(2), of q t] qs'(2,1) 
+     vwalk_bet_dist_set[OF  assms(2,1) ] assms(3) enat_ord_simps(1) by fastforce
+  moreover hence "length q \<le> length p"
+    using  assms(2) qs'(1)
+    by(cases p, all \<open>cases q\<close>)(auto simp add: vwalk_bet_def)   
+  ultimately show ?thesis by auto
+qed
+
+lemma parent_path_cheaper:
+  assumes "s \<in> t_set srcs" "vwalk_bet (Graph.digraph_abs G) s p t" "t \<notin> t_set srcs"
+          "vwalk_bet (Graph.digraph_abs (parents (BFS initial_state))) s q t"
+        shows "length q \<le> length p" 
+proof-
+  have "length q-1 \<le> length p-1"
+    using BFS_correct_3[OF assms(1,4)] assms(1) assms(2) assms(4)  vwalk_bet_dist_set[OF assms(2,1)]  
+               enat_ord_simps(1) by fastforce
+  thus ?thesis 
+    using  assms(2,4)
+    by(cases p, all \<open>cases q\<close>)(auto simp add: vwalk_bet_def)
+qed
+                                                            
+lemma source_in_bfs_tree: 
+  assumes "(s, x) \<in> (Graph.digraph_abs G)" "s \<in> t_set srcs" "x \<notin> t_set srcs"
+  shows "\<exists> s'. s' \<in> t_set srcs 
+     \<and> s' \<in> dVs ((Graph.digraph_abs (parents (BFS initial_state))))"
+proof-
+  obtain q s' where qs':"vwalk_bet [parents (local.BFS initial_state)]\<^sub>g s' q x" "s' \<in> [srcs]\<^sub>s"
+                       "length q \<le> length [s, x]"
+    using BFS_graph_path_implies_parent_path[OF assms(2) _ assms(3), of "[s, x]"]
+            assms(1) by auto
+  moreover hence "q = [s', x]" 
+    using assms(3)
+    by(cases q rule: vwalk_arcs.cases)  (auto simp add: vwalk_bet_def)
+  ultimately have "(s', x) \<in> (Graph.digraph_abs (parents (BFS initial_state)))"
+    by simp
+  hence "s' \<in> [srcs]\<^sub>s \<and> s' \<in> dVs [parents (local.BFS initial_state)]\<^sub>g"
+    using  qs'(2) by auto
+  thus ?thesis by auto
+qed
 
 end text \<open>context\<close>
 

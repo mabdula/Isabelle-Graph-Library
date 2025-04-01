@@ -182,7 +182,7 @@ definition "delete_edge G u v =
 lemmas [code] = neighbourhood_def add_edge_def delete_edge_def
 
 context \<comment>\<open>Locale properties\<close>
-  includes vset.set.automation  adjmap.automation
+  includes vset.set.automation and  adjmap.automation
   fixes G::'adjmap
 begin
 

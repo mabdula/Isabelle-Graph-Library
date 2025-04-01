@@ -7,7 +7,7 @@ global_interpretation dfs: DFS where insert = vset_insert and
  lookup = lookup and empty = map_empty and delete=delete and isin = isin and t_set=t_set
 and update=update and adjmap_inv = adj_inv and vset_delete= vset_delete
 and vset_inv = vset_inv and union=vset_union and inter=vset_inter and G = F and
-t = "t::'a::linorder" and s = s  for F t s
+t = t and s = s  for F t s
 defines  dfs_initial_state = dfs.initial_state and
 neighbourhood=dfs.Graph.neighbourhood and
 dfs_impl = dfs.DFS_impl  and
