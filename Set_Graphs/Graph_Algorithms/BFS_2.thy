@@ -1,6 +1,6 @@
 theory BFS_2
   imports Directed_Set_Graphs.Pair_Graph_Specs "HOL-Eisbach.Eisbach_Tools" Directed_Set_Graphs.Dist
-          Directed_Set_Graphs.Set2_Addons More_Lists
+          Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.More_Lists
 begin
 
 record ('parents, 'vset) BFS_state = parents:: "'parents" current:: "'vset" visited:: "'vset"
@@ -1479,62 +1479,24 @@ lemma BFS_correct_4:
 
 lemma BFS_graph_path_implies_parent_path:
   assumes "s \<in> t_set srcs" "vwalk_bet (Graph.digraph_abs G) s p t"  "t \<notin> t_set srcs"
-  shows   "\<exists> q s'.
-      vwalk_bet (Graph.digraph_abs (parents (BFS initial_state))) s' q t \<and> s' \<in> t_set srcs
-                   \<and> length q \<le> length p" 
-proof-
-  have "distance_set (Graph.digraph_abs G) (t_set srcs) t < \<infinity>"  
-    using assms  enat_ord_simps(4) infinity_ileE vwalk_bet_dist_set
-             [of "Graph.digraph_abs G" s p t "t_set srcs"]
-    by fastforce
-  hence dist_parents:"distance_set
-(Graph.digraph_abs (parents (BFS initial_state))) (t_set srcs) t \<noteq> \<infinity>"
-    using BFS_correct_1 assms(1) assms(2) assms(3)
-    by(subst (asm) BFS_correct_2[of t]) auto
-  then obtain q s' where qs':"vwalk_bet [parents (local.BFS initial_state)]\<^sub>g s' q t \<or> s' = t" "s' \<in> [srcs]\<^sub>s"                 
-    using dist_not_inf'[OF dist_parents] reachable_dist_2 by meson
-  hence qs':"vwalk_bet [parents (local.BFS initial_state)]\<^sub>g s' q t" "s' \<in> [srcs]\<^sub>s"                 
-    using assms(3) by auto
-  moreover have "length q -1 \<le> length p -1"
-    using BFS_correct_3[OF assms(1), of p t] BFS_correct_3[OF qs'(2), of q t] qs'(2,1) 
-     vwalk_bet_dist_set[OF  assms(2,1) ] assms(3) enat_ord_simps(1) by fastforce
-  moreover hence "length q \<le> length p"
-    using  assms(2) qs'(1)
-    by(cases p, all \<open>cases q\<close>)(auto simp add: vwalk_bet_def)   
-  ultimately show ?thesis by auto
-qed
+  shows   "\<exists> q s'. vwalk_bet (Graph.digraph_abs (parents (BFS initial_state))) s' q t
+                 \<and> s' \<in> t_set srcs \<and> length q \<le> length p"
+    using BFS_correct_1[OF assms(1), of t] assms(2,3)  
+    by(fastforce intro!: exists_shorter_path_in_level_compliant_graph[OF _ _ assms(1,3,2)] 
+                 intro: BFS_correct_3 BFS_correct_2)
 
 lemma parent_path_cheaper:
   assumes "s \<in> t_set srcs" "vwalk_bet (Graph.digraph_abs G) s p t" "t \<notin> t_set srcs"
           "vwalk_bet (Graph.digraph_abs (parents (BFS initial_state))) s q t"
         shows "length q \<le> length p" 
-proof-
-  have "length q-1 \<le> length p-1"
-    using BFS_correct_3[OF assms(1,4)] assms(1) assms(2) assms(4)  vwalk_bet_dist_set[OF assms(2,1)]  
-               enat_ord_simps(1) by fastforce
-  thus ?thesis 
-    using  assms(2,4)
-    by(cases p, all \<open>cases q\<close>)(auto simp add: vwalk_bet_def)
-qed
+  by(auto intro!: shorter_path_in_level_compliant_graph[OF _  assms(1,3,2,4,1)] BFS_correct_3)
                                                             
 lemma source_in_bfs_tree: 
   assumes "(s, x) \<in> (Graph.digraph_abs G)" "s \<in> t_set srcs" "x \<notin> t_set srcs"
   shows "\<exists> s'. s' \<in> t_set srcs 
-     \<and> s' \<in> dVs ((Graph.digraph_abs (parents (BFS initial_state))))"
-proof-
-  obtain q s' where qs':"vwalk_bet [parents (local.BFS initial_state)]\<^sub>g s' q x" "s' \<in> [srcs]\<^sub>s"
-                       "length q \<le> length [s, x]"
-    using BFS_graph_path_implies_parent_path[OF assms(2) _ assms(3), of "[s, x]"]
-            assms(1) by auto
-  moreover hence "q = [s', x]" 
-    using assms(3)
-    by(cases q rule: vwalk_arcs.cases)  (auto simp add: vwalk_bet_def)
-  ultimately have "(s', x) \<in> (Graph.digraph_abs (parents (BFS initial_state)))"
-    by simp
-  hence "s' \<in> [srcs]\<^sub>s \<and> s' \<in> dVs [parents (local.BFS initial_state)]\<^sub>g"
-    using  qs'(2) by auto
-  thus ?thesis by auto
-qed
+     \<and> s' \<in> dVs ((Graph.digraph_abs (parents (BFS initial_state))))" 
+  using BFS_graph_path_implies_parent_path[OF assms(2) edges_are_vwalk_bet assms(3)] 
+        assms(1) vwalk_bet_endpoints(1)[OF ] by auto
 
 end text \<open>context\<close>
 

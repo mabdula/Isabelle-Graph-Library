@@ -6,7 +6,6 @@ session "Graph_Algorithms" = "Directed_Set_Graphs" +
   theories
     DFS
     DFS_Example
-    More_Lists
     BFS_2
     BFS_Subprocedures
     BFS_Example
