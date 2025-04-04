@@ -1,4 +1,4 @@
-session "Graph_Algorithms" = "Directed_Set_Graphs" +
+session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
   options [document = pdf, document_output = "output"]
 
   sessions
