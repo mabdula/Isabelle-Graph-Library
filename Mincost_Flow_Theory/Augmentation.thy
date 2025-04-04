@@ -517,7 +517,7 @@ proof(induction es arbitrary: f)
   have gamma_lesseq_res: "\<gamma> \<le> \<uu>\<^bsub>augment_edges f \<gamma> es\<^esub>e"
     using rev_e_in_p_aug[of e es f \<gamma>] distinct_es e_not_in_es Cons.prems(2) 
           \<open>\<gamma> \<le> \<uu>\<^bsub>f\<^esub>e\<close> e_not_in_p_aug[of e es f \<gamma>] e_not_in_es \<open>\<gamma> \<le> \<uu>\<^bsub>f\<^esub>e\<close> 
-    by (cases "erev e \<in> set es") (auto simp add: add.commute ereal_le_add_mono2)
+    by (cases "erev e \<in> set es") (auto simp add: add.commute  add_increasing)
   show ?case 
     using uflow_tail uflow_pres_single[of "(augment_edges f \<gamma> es)" \<gamma> e]
           Cons.prems(2) Cons.prems(4) gamma_lesseq_res 
@@ -916,9 +916,10 @@ proof
            unfolding isbflow_def
            using Cons  \<open>isuflow (augment_edges f \<gamma> es)\<close>  by simp    
          have bb: "\<gamma> \<le> \<uu>\<^bsub>augment_edges f \<gamma> es\<^esub>e"
-          using cons1 e_not_in_p_aug[of e es f \<gamma>] rcap_extr_head[of \<gamma> f e es]  
-                rev_e_in_p_aug[of e es f \<gamma>] cons1(4) cons1(6) ereal_le_add_mono1 ereal_less_eq(5)
-          by force
+          using cons1(1)[of v f]  cons1(2-) e_not_in_p_aug[of e es f \<gamma>] rcap_extr_head[of \<gamma> f e es]  
+                rev_e_in_p_aug[of e es f \<gamma>] cons1(4) cons1(6) ereal_less_eq(5)[of \<gamma>] 
+                dual_order.trans[of "ereal \<gamma>" "\<uu>\<^bsub>f\<^esub>e"] 
+                ereal_le_add_self2[of "\<uu>\<^bsub>f\<^esub>e" "ereal \<gamma>"] by force
          show ?thesis
          apply(subst augment_edges.simps, rule trans, rule augment_edge_b_flow_pres_unwrapped)
            using IH_used bb  augpath_cases cons1 local.Cons

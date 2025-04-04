@@ -62,5 +62,5 @@ definition "nbs edges v = foldr (\<lambda> x tree. insert x tree) (remdups (map 
 
 definition "a_graph edges = foldr (\<lambda> x tree. update x (nbs edges x) tree) (vertices edges) empty"
 
-
+definition "a_edge_set edges = foldr (\<lambda> x tree. insert x tree) edges empty"
 end

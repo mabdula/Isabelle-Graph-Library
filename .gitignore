@@ -1,1 +1,10 @@
 *.thy~
+Berge_Formula/output
+Berge_Lemma/output
+Edmonds_Blossom_Algorithm/output
+Matching_LPs/output
+Mincost_Flow_Algorithms/output
+Mincost_Flow_Theory/output
+Primal_Dual_Bipartite_Matching/output
+RANKING/output
+Tutte_Theorem/output

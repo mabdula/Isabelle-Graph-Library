@@ -2325,14 +2325,14 @@ lemma assumes "parent v' = Some v" "follow_dom v"
 lemma wfP_follow_rel:
   assumes "wfP follow_rel"
   shows "follow_dom v"
-  using accp_wfPD[OF assms]
+  using accp_wfpD[OF assms]
   by blast
 
 lemma wf_follow_rel:
   assumes "wf {(x,y) | x y. follow_rel x y}"
   shows "follow_dom v"
   using wfP_follow_rel assms
-  unfolding wfP_def
+  unfolding wfp_def
   by force
 
 lemma parent_eq_follow_rel: "follow_rel = (\<lambda>v' v. Some v' = parent v)"

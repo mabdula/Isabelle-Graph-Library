@@ -719,6 +719,42 @@ lemma vwalk_bet_dist_set:
   "\<lbrakk>Vwalk.vwalk_bet G u p v; u \<in> U\<rbrakk> \<Longrightarrow> distance_set G U v \<le> length p - 1"
   apply (auto simp: distance_set_def image_def intro!:)
   by (metis (mono_tags, lifting) Inf_lower One_nat_def dual_order.trans mem_Collect_eq vwalk_bet_dist)
+
+lemma shorter_path_in_level_compliant_graph:
+      assumes "\<And> u p v. u \<in> S \<Longrightarrow> vwalk_bet F u p v \<Longrightarrow> length p - 1 = distance_set G S v"
+              "u \<in> S" "v \<notin> S" "vwalk_bet G u p v" " vwalk_bet F s' p' v" "s' \<in> S"
+        shows "length p' \<le> length p"
+proof-
+  have "length p' -1 = distance_set G S v"
+    using assms(1,5,6) by blast
+  hence "length p' = distance_set G S v + 1" 
+    using  Suc_pred'[of "length p'"] assms(3) dist_set_inf[of v G S] distance_set_0[of v G S]
+         eSuc_enat[of "length p' - 1"] enat.distinct(2)[of "length p' - 1"]
+        length_greater_0_conv[of p']
+    by(fastforce simp add: zero_enat_def plus_1_eSuc(2))
+  moreover have "distance_set G S v + 1 \<le> length p"
+    using  Suc_pred[of "length p"] 
+           add_mono_thms_linordered_semiring(3)[of "distance_set G S v" "enat (length p - 1)" 1 1] 
+           assms(4) eSuc_enat plus_1_eSuc(2)  vwalk_bet_dist_set[OF assms(4,2)]
+    by(unfold vwalk_bet_def One_nat_def) simp
+  ultimately show "length p' \<le> length p" using enat_ord_simps(1) by fastforce
+qed
+
+lemma exists_shorter_path_in_level_compliant_graph:
+      assumes "distance_set G S v = distance_set F S v"
+              "\<And> u p v. u \<in> S \<Longrightarrow> vwalk_bet F u p v \<Longrightarrow> length p - 1 = distance_set G S v"
+              "u \<in> S" "v \<notin> S" "vwalk_bet G u p v"
+        shows "\<exists> p' s'. vwalk_bet F s' p' v  \<and> s' \<in> S \<and> length p' \<le> length p"
+proof-
+  have "distance_set G S v < \<infinity>"
+    using  enat_ord_simps(4) infinity_ileE vwalk_bet_dist_set[OF assms(5,3)] by fastforce
+  hence "distance_set F S v < \<infinity>" using assms(1,4) by auto
+  then obtain p' s' where  p's'_prop:"vwalk_bet F s' p' v" "s' \<in> S"
+    using dist_not_inf'[of F S v]
+    by(auto simp add:  reachable_vwalk_bet_iff)
+  thus ?thesis 
+    by (auto intro!: assms(1,2,3,4,5) shorter_path_in_level_compliant_graph)
+qed
 (*
 section \<open>Forests\<close>
 
@@ -781,5 +817,7 @@ proof(goal_cases)
   then show ?case
     by (metis (no_types, lifting) "1"(1) "1"(2) "1"(3) \<open>vwalk_bet G u p v\<close> distance_set_0 distance_set_shortest_path reachable_in_dVs(1) vwalk_bet_endpoints(2) vwalk_bet_subset)
 qed*)
-  
+
+
+
 end

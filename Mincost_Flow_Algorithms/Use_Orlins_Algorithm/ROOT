@@ -3,7 +3,7 @@ session "Use_Orlins_Algorithm" = "HOL-Library" +
 
 sessions
   Mincost_Flow_Algorithms
-  Graph_Algorithms
+  Graph_Algorithms_Dev
 
 theories
   RBT_Map_Extension

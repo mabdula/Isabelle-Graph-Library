@@ -491,7 +491,6 @@ lemma edges_of_path_symmetric_split:"edges_of_path (xs@[x,y]@ys) = edges_of_path
   by (metis append_is_Nil_conv edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append_2 
 edges_of_path_append_3 hd_append2 last_ConsL last_ConsR list.discI list.sel(1))
 
-
 lemma induct_list012[case_names nil single sucsuc]:
   "\<lbrakk>P []; \<And>x. P [x]; \<And>x y zs. \<lbrakk> P zs; P (y # zs) \<rbrakk> \<Longrightarrow> P (x # y # zs)\<rbrakk> \<Longrightarrow> P xs"
   by induction_schema (pat_completeness, lexicographic_order)
@@ -669,6 +668,44 @@ qed
 lemma walk_betw_length:"a \<noteq> b \<Longrightarrow> walk_betw E a p b \<Longrightarrow> length p \<ge> 2" for a b E p
     unfolding walk_betw_def 
     by(induction p rule: edges_of_path.induct) auto
+
+lemma walk_betw_different_verts_to_ditinct: 
+  assumes "walk_betw G u p v" "u \<noteq> v" "length p = l"
+  shows " \<exists> q. walk_betw G u q v \<and> distinct q \<and> set q \<subseteq> set p"
+  using assms
+proof(induction l arbitrary: u p v rule: less_induct)
+  case (less l)
+  show ?case
+  proof(cases "distinct p")
+    case True
+    then show ?thesis 
+      using less(2) by auto
+  next
+    case False
+    then obtain x p1 p2 p3 where p_split:"p = p1@[x]@p2@[x]@p3"
+      using not_distinct_decomp by blast
+    have new_walk:"walk_betw G u (p1@[x]@p3) v" 
+    proof(cases p1)
+      case Nil
+      hence "u =x"
+        using less.prems(1) p_split walk_between_nonempty_pathD(3) by fastforce
+      then show ?thesis 
+        using less.prems(1) local.Nil p_split path_suff walk_betw_def by fastforce
+    next
+      case (Cons a list)
+      then show ?thesis 
+        using  append.assoc less.prems(1) list.sel(3) walk_pref walk_suff[of G u "p1@[x]@p2" x p3 v]
+          walk_transitive[of G u "p1@[x]" x]
+        by(unfold p_split) fastforce
+    qed
+    have "length (p1 @ [x] @ p3) < l"
+      using p_split less(4) by simp
+    then obtain q where q_prop: " walk_betw G u q v" "distinct q" "set q \<subseteq> set (p1 @ [x] @ p3)"
+      using less(1)[OF _ new_walk less(3) refl] by auto
+    show ?thesis
+      using q_prop by(auto intro!: exI[of _ q] simp add: p_split)
+  qed
+qed
 
 definition reachable where
   "reachable G u v = (\<exists>p. walk_betw G u p v)"
@@ -2587,6 +2624,10 @@ next
   qed
 qed
 
+lemma xy_in_edges_of_path_split: 
+  "{x, y} \<in> set (edges_of_path p) \<Longrightarrow> \<exists> p1 p2. p =p1@[x,y]@p2 \<or> p =p1@[y, x]@p2"
+  by(force intro: exE[OF in_edges_of_path_split[of "{x, y}" p]] simp add: doubleton_eq_iff)
+
 lemma in_edges_of_path_hd_or_tl:
       assumes "e \<in> set (edges_of_path p)"
       shows "e = hd (edges_of_path p) \<or> e \<in> set (edges_of_path (tl p))"
@@ -2910,8 +2951,6 @@ lemma connected_component'_nonempty:
   unfolding connected_components'_def using connected_comp_nempty by blast
 
 
-
-
 subsection \<open>Cycles\<close>
 
 fun epath :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> 'a \<Rightarrow> bool" where
@@ -2987,7 +3026,8 @@ next
     using xy_prop by blast
 qed
 
-lemma epath_distinct_epath:"epath G u p v \<Longrightarrow>l = length p \<Longrightarrow> \<exists> q. epath G u q v \<and> set q \<subseteq> set p \<and> distinct q"
+lemma epath_distinct_epath:"epath G u p v \<Longrightarrow>
+l = length p \<Longrightarrow> \<exists> q. epath G u q v \<and> set q \<subseteq> set p \<and> distinct q" 
 proof(induction l arbitrary: u p v rule: less_induct)
   case (less l)
   show ?case
@@ -3064,6 +3104,44 @@ qed
 lemma epath_append:"epath X x P y \<Longrightarrow> epath X y Q z \<Longrightarrow> epath X x (P@Q) z"
   by(induction X x P y rule: epath.induct) auto
 
+lemma epath_one_split: " epath G u p v \<Longrightarrow> {x, y} \<in> set p \<Longrightarrow> x \<noteq> y \<Longrightarrow>
+                        \<exists> p1 p2. p = p1@[{x,y}]@p2 \<and> ((epath G u p1 x \<and> epath G y p2 v) \<or>
+                                                       (epath G u p1 y \<and> epath G x p2 v))"
+proof(induction p arbitrary: u )
+  case Nil
+  then show ?case by simp
+next
+  case (Cons e p)
+  show ?case 
+  proof(cases "{x,y} = e")
+    case True
+    show ?thesis 
+      apply(rule exI[of _ Nil])
+      apply(rule exI[of _ p])
+      using Cons True by fastforce
+  next
+    case False
+    obtain w where w_prop: "u \<noteq> w" "{u, w} = e" "epath G w p v" "e \<in> G"
+      using  Cons(2)[simplified] by auto
+    hence xy_in_p:"{x, y} \<in> set p"
+      using Cons.prems(2) False by auto
+    obtain p1 p2 where p1p2:"p = p1 @ [{x, y}] @ p2" 
+      "epath G w p1 x \<and> epath G y p2 v \<or> epath G w p1 y \<and> epath G x p2 v"
+      using Cons(1)[OF w_prop(3) xy_in_p Cons(4)] by auto
+    show ?thesis
+      apply(rule exI[of _ "{u, w}#p1"])
+      using p1p2(1) p1p2(2) w_prop(1) w_prop(2) w_prop(4) by (auto intro!: exI[of _ p2])
+  qed
+qed
+
+lemma epath_rev: "epath G u p v \<Longrightarrow> epath G v (rev p) u"
+proof(induction G u p v rule: epath.induct)
+  case (2  G u x p v)
+  thus ?case
+    using epath_append[of G v "rev p" _  "[x]" u] epath_single[of x G]  
+    by(auto simp add: doubleton_eq_iff )
+qed simp
+
 definition depath :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> 'a \<Rightarrow> bool" where
   "depath G u p v = ( epath G u p v \<and> distinct p)"
 
@@ -3089,6 +3167,12 @@ proof (rule ccontr, goal_cases)
     have "decycle G' u p" by metis
   with \<open>\<nexists>u. decycle G' u p\<close> show ?case by blast
 qed
+
+lemma new_edge_in_decycle: "\<not> decycle T u C \<Longrightarrow> decycle (insert e T) u C \<Longrightarrow> e \<in> set C" 
+  using   epath_edges_subset epath_subset_other_set subset_insert
+  by(fastforce simp add: decycle_def)
+
+subsection \<open>More on Components\<close>
 
 lemma connected_component_non_empt: "connected_component A x \<noteq> {}"
   by(auto simp add: connected_component_def)
@@ -3337,4 +3421,82 @@ lemma number_of_comps_anti_mono:"B \<subseteq> A  \<Longrightarrow> finite B \<L
           in_connected_componentI2 in_mono)
     done 
   by simp
+
+subsection \<open>Connected Graphs\<close>
+
+definition "Uconnected G = (\<forall> u\<in> Vs G. \<forall> v \<in> Vs G. reachable G u v)"
+
+lemma UconnectedI: "(\<And> u v. u \<in> Vs G \<Longrightarrow> v \<in> Vs G \<Longrightarrow> reachable G u v) \<Longrightarrow>Uconnected G"
+  by(auto simp add: Uconnected_def)
+
+lemma UconnectedE: "Uconnected G \<Longrightarrow> 
+           ((\<And> u v. u \<in> Vs G \<Longrightarrow> v \<in> Vs G \<Longrightarrow> reachable G u v) \<Longrightarrow>P) \<Longrightarrow> P"
+  by(auto simp add: Uconnected_def)
+
+lemma same_comp_Uconnected: 
+  "(\<And> u v. u \<in> Vs G \<Longrightarrow> v \<in> Vs G \<Longrightarrow> connected_component G u = connected_component G v)
+                            \<Longrightarrow> Uconnected G"
+  apply(rule UconnectedI) 
+  subgoal for u v
+    apply(rule in_connected_componentE[of v G u])
+      apply((insert in_own_connected_component[of v G])[1], blast) 
+    by (auto intro: Undirected_Set_Graphs.reachable_refl[of v G])
+  done  
+
+lemma Uconnected_same_comp: "Uconnected G \<Longrightarrow> u \<in> Vs G 
+        \<Longrightarrow> v \<in> Vs G \<Longrightarrow> connected_component G u = connected_component G v"
+  using connected_components_member_eq in_connected_componentI
+  by(unfold Uconnected_def) fast
+
+lemma connected_component_one_edge:
+  assumes "r \<in> e"  "\<exists> u v. {u,v} = e \<and> u \<noteq> v" 
+  shows   "Vs {e} = connected_component {e} r"
+proof-
+  obtain u v where e_split: "e = {u,v}" "u \<noteq> v"
+    using assms(2) by auto
+  hence "Vs {e} = {u,v}" 
+    by (simp add: Vs_def)
+  moreover have "connected_component {e} r = {u,v}"
+    using assms(1) e_split(2)  calculation e_split(1) in_connected_component_in_edges
+    by (fastforce simp add: e_split(1) in_own_connected_component in_con_comp_insert 
+        connected_components_member_sym)
+  ultimately show ?thesis by auto
+qed
+
+lemma Uconnected_def_via_components:
+"Uconnected G = ((\<forall> v \<in> Vs G. connected_component G v = Vs G))" 
+proof(cases "G = {}")
+  case True
+  then show ?thesis 
+    by (auto intro: UconnectedI vs_member_elim)
+next
+  case False
+  note false = this
+  show ?thesis
+  proof(cases "G = {{}}")
+    case True
+    hence "Uconnected G"
+      by(auto intro:  UconnectedI simp add: Vs_def )
+    moreover have "Vs G = {}"
+      using True by(auto simp add: Vs_def)
+    ultimately show ?thesis by auto
+  next
+    case False 
+    then obtain e where "e \<in> G" "e \<noteq> {}"
+      using false by blast
+    then obtain v where "v \<in> Vs G" 
+      by blast
+    show ?thesis 
+    proof(rule, goal_cases)
+      case 1
+      then show ?case using  in_connected_component_in_edges  
+        by(fastforce elim!: UconnectedE intro: in_connected_componentI)
+    next
+      case 2
+      then show ?case 
+        using UconnectedE[OF same_comp_Uconnected, of G] 
+        by(auto intro!: UconnectedI)
+    qed
+  qed
+qed
 end
