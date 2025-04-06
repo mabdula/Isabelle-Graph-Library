@@ -52,7 +52,7 @@ lemma ugraph_and_digraph_abs:"ugraph_abs G = {{u, v} | u  v. (u, v) \<in> digrap
  by(simp add: ugraph_abs_def digraph_abs_def)
 
 context
-  includes pair_graph_specs.adjmap.automation  pair_graph_specs.vset.set.automation
+  includes pair_graph_specs.adjmap.automation and pair_graph_specs.vset.set.automation
 begin
 
 lemma uedges_def2: "uedges G = {rep (uEdge u v) | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}"

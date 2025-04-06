@@ -3,8 +3,8 @@ section \<open>Instantiation of Abstract Datatypes\<close>
 theory Instantiation
   imports RBT_Map_Extension
           Directed_Set_Graphs.Pair_Graph_RBT
-          Graph_Algorithms.Bellman_Ford_Example
-          Graph_Algorithms.DFS_Example
+          Graph_Algorithms_Dev.Bellman_Ford_Example
+          Graph_Algorithms_Dev.DFS_Example
           Mincost_Flow_Algorithms.Orlins_Implementation
 begin
 

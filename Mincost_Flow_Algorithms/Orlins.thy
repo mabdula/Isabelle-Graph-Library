@@ -1598,7 +1598,10 @@ proof-
       using M_gtr_zero N_gtr_0 \<epsilon>_axiom(2)
       apply (smt (verit, del_insts) le_divide_eq_1_pos mul_zero_cancel of_nat_0_less_iff)
       using \<epsilon>_axiom apply simp
-      apply(subst  log_mult[of _  _2, simplified],  simp add: \<epsilon>_axiom, simp)
+      apply(subst log_mult[of _  _ "2 ^ _", simplified])
+      apply(subst if_P)
+      using \<epsilon>_axiom
+      apply( simp add: \<epsilon>_axiom, simp)
       unfolding assms(6) apply simp
       apply(subst add.commute[of "log 2 _"])
       apply(subst sym[OF diff_le_eq]) 

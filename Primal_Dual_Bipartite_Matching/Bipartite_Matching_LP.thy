@@ -294,7 +294,7 @@ proof (intro conjI allI impI, simp_all, rule ccontr, simp add: not_le)
   fix i
   assume "i < n"
   let ?indices = "{0..<m} \<inter> {e. from_nat_into G e \<in> M} \<inter> {e. local.Vs_enum_inv i \<in> from_nat_into G e}"
-  assume "1 < real (card ?indices)"
+  assume "Suc 0 <  (card ?indices)"
 
   then have gt_1: "1 < card ?indices"
     by simp
@@ -326,7 +326,7 @@ lemma feasible_matching:
 proof (use assms in \<open>simp add: incidence_matrix_def primal_sol_def mult_mat_vec_def scalar_prod_def less_eq_vec_def\<close>, intro ccontr[where P = "matching M"])
   assume "M \<subseteq> G"
   let ?indices = "\<lambda>i. {0..<m} \<inter> {i. from_nat_into G i \<in> M} \<inter> {x. Vs_enum_inv i \<in> from_nat_into G x}"
-  assume at_most_One: "\<forall>i<n. real (card (?indices i)) \<le> 1"
+  assume at_most_One: "\<forall>i<n. (card (?indices i)) \<le> Suc 0"
   assume "\<not>matching M"
 
   then obtain e1 e2 where "e1 \<in> M" "e2 \<in> M" "e1 \<noteq> e2" "e1 \<inter> e2 \<noteq> {}"
