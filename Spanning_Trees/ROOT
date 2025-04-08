@@ -3,7 +3,7 @@ session "Spanning_Trees" = "HOL-Data_Structures" +
   sessions
     "Matroids_Greedy"
     "Undirected_Set_Graphs"
-    "Graph_Algorithms"
+    "Graph_Algorithms_Dev"
 
   theories
     "Spanning_Trees"
