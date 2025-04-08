@@ -1,4 +1,4 @@
-theory Kruskal_Greedy2
+theory Kruskal_Greedy
   imports Matroids_Greedy.Best_In_Greedy Spanning_Trees Encoding
     Graph_Algorithms_Dev.DFS_Example Insertion_Sort_Desc "HOL-Library.Product_Lexorder"
 begin
@@ -337,7 +337,7 @@ lemma local_indep_oracle_correct:
     "e \<notin> t_set (id S)"
   shows "local_indep_oracle e S = indep' v1_of v2_of input_G (vset_insert e (id S))"
   apply(insert assms)
-  unfolding indep'_def Kruskal_Greedy2.indep_graph_matroid_def
+  unfolding indep'_def Kruskal_Greedy.indep_graph_matroid_def
     indep_graph_matroid_def
 proof(goal_cases)
   case 1
@@ -826,9 +826,9 @@ context fixes c::"'e \<Rightarrow> rat" and  order::"'e list"
 begin
 
 lemma best_in_greedy_axioms:"Best_In_Greedy.BestInGreedy_axioms vset_inv t_set input_G
-     (Kruskal_Greedy2.indep_graph_matroid v1_of v2_of input_G)"
+     (Kruskal_Greedy.indep_graph_matroid v1_of v2_of input_G)"
   by(auto simp add:  Matroid_Specs_Inst.invar_def local.indep_graph_matroid_def
-      Best_In_Greedy.BestInGreedy_axioms_def[OF Kruskal_Greedy2.Kruskal_Greedy.Best_In_Greedy_axioms] G_good Kruskal_Greedy2.indep_graph_matroid_def
+      Best_In_Greedy.BestInGreedy_axioms_def[OF Kruskal_Greedy.Kruskal_Greedy.Best_In_Greedy_axioms] G_good Kruskal_Greedy.indep_graph_matroid_def
       Matroid_Specs_Inst.finite_setsI)
 
 lemma sort_desc_axioms: "Best_In_Greedy.sort_desc_axioms Kruskal_Greedy.carrier_sorted"
@@ -836,13 +836,13 @@ lemma sort_desc_axioms: "Best_In_Greedy.sort_desc_axioms Kruskal_Greedy.carrier_
       length_insort_key_desc set_insort_key_desc sorted_desc_f_insort_key_desc)
 
 lemma indep_system_axioms:"Matroid_Specs_Inst.indep_system_axioms input_G
-             (Kruskal_Greedy2.indep_graph_matroid v1_of v2_of input_G)"
+             (Kruskal_Greedy.indep_graph_matroid v1_of v2_of input_G)"
   unfolding  Matroid_Specs_Inst.indep_system_axioms_def
 proof(rule conjI[OF _ conjI], goal_cases)
   case 1
   then show ?case 
     by(simp add: Card_Set2_RBT.set_subseteq[OF _ G_good, symmetric]
-        Kruskal_Greedy2.indep_graph_matroid_def
+        Kruskal_Greedy.indep_graph_matroid_def
         indep_graph_matroid_def undirected_multigraph.has_no_cycle_multi_def) 
 next
   case 2
@@ -850,12 +850,12 @@ next
     using undirected_multigraph.empty_has_no_cycle_multi_indep 
     by(auto intro!: exI[of _ Leaf] 
         simp add: Kruskal_Greedy.wrapper_axioms(5) 
-        Kruskal_Greedy2.indep_graph_matroid_def indep_graph_matroid_def 
+        Kruskal_Greedy.indep_graph_matroid_def indep_graph_matroid_def 
         local.undirected_multigraph.empty_has_no_cycle_multi_indep)
 next
   case 3
   show ?case
-    unfolding Kruskal_Greedy2.indep_graph_matroid_def indep_graph_matroid_def
+    unfolding Kruskal_Greedy.indep_graph_matroid_def indep_graph_matroid_def
   proof((rule allI)+, (rule impI)+, goal_cases)
     case (1 X Y)
     show ?case 
@@ -868,7 +868,7 @@ lemma nonnegative:" Kruskal_Greedy.nonnegative input_G c"
   by(auto simp add: Kruskal_Greedy.nonnegative_def Pair_Graph_RBT.set.set_isin G_good  non_negative_c )
 
 lemma size_G_length_order:"size input_G = length order"
-  by(simp add:  G_good  Kruskal_Greedy2.rbt_size_correct distinct_card order_is_G order_length_is_G_card)
+  by(simp add:  G_good  Kruskal_Greedy.rbt_size_correct distinct_card order_is_G order_length_is_G_card)
 
 lemma valid_order: "Kruskal_Greedy.valid_order input_G order"
   by(simp add: Kruskal_Greedy.valid_order_def Pair_Graph_RBT.set.set_isin G_good  non_negative_c 
@@ -880,7 +880,7 @@ lemma kruskal_impl_corespondence:
 proof((subst kruskal_def, subst indep'_def[symmetric]), rule Kruskal_Greedy.BestInGreedy'_corresp, goal_cases)
   case (1 S x)
   then show ?case 
-    by(unfold Kruskal_Greedy2.local_indep_oracle_def, intro local_indep_oracle_correct) auto
+    by(unfold Kruskal_Greedy.local_indep_oracle_def, intro local_indep_oracle_correct) auto
 next
   case 2
   then show ?case 
@@ -934,7 +934,7 @@ interpretation use_greedy_thms_kruskal:
 lemma kruskal_returns_basis: "indep_system.basis (t_set input_G) 
 (undirected_multigraph_spec.has_no_cycle_multi to_dbltn (t_set input_G))
  (t_set (result (kruskal v1_of v2_of input_G (kruskal_init c order))))"
-  by(simp add:  kruskal_def Kruskal_Greedy2.indep_graph_matroid_def local.indep_graph_matroid_def 
+  by(simp add:  kruskal_def Kruskal_Greedy.indep_graph_matroid_def local.indep_graph_matroid_def 
       kruskal_init_def use_greedy_thms_kruskal.algo_gives_basis )
 
 corollary kruskal_returns_spanning_forest: 
@@ -952,7 +952,7 @@ lemma rank_quotient_one: "indep_system.rank_quotient (t_set input_G)
 theorem kruskal_is_max:
   "undirected_multigraph_spec.has_no_cycle_multi to_dbltn (t_set input_G) X \<Longrightarrow>
 sum c X \<le> sum c (t_set (result (kruskal v1_of v2_of input_G (kruskal_init c order))))"
-  unfolding kruskal_def kruskal_init_def Kruskal_Greedy2.indep_graph_matroid_def
+  unfolding kruskal_def kruskal_init_def Kruskal_Greedy.indep_graph_matroid_def
     local.indep_graph_matroid_def
   apply(rule order.trans[rotated])
   apply(rule use_greedy_thms_kruskal.indep_predicate_greedy_correct[of X])
