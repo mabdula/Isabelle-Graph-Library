@@ -435,7 +435,7 @@ proof(goal_cases)
               vwalk_bet (dfs.Graph.digraph_abs (local.Kruskal_E_to_G S)) (v1_of e) p (v2_of e)"
             using DFS_thms.DFS_correct_1[OF DFS_thms] Some  one 1 by blast
           have no_other_e:"(to_dbltn e) \<notin> (to_dbltn ` t_set S)"
-          proof(rule, rule ccontr, goal_cases)
+          proof(rule ccontr, goal_cases)
             case 1
             then obtain d where d_prop:"to_dbltn d = to_dbltn e" "d \<in> t_set S" by auto
             hence "{(v1_of d, v2_of d), (v2_of d, v1_of d)} \<subseteq> (dfs.Graph.digraph_abs (local.Kruskal_E_to_G S))"
@@ -856,7 +856,7 @@ next
   case 3
   show ?case
     unfolding Kruskal_Greedy2.indep_graph_matroid_def indep_graph_matroid_def
-  proof(rule+, goal_cases)
+  proof((rule allI)+, (rule impI)+, goal_cases)
     case (1 X Y)
     show ?case 
       using 1(1,2,4) Card_Set2_RBT.set_subseteq 

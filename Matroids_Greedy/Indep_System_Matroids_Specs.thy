@@ -261,7 +261,7 @@ lemma augment_impl_to_abs:
     \<Longrightarrow>
     (\<forall>S T. indep_abs indep_fn S \<longrightarrow> indep_abs indep_fn T \<longrightarrow> card S = Suc (card T) \<longrightarrow>
       (\<exists>e. e \<in> (S - T) \<and> indep_abs indep_fn (Set.insert e T)))"
-proof (rule, rule, rule, rule, rule)
+proof ((rule allI)+, (rule impI)+)
   fix S T
   assume
     "\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep_fn X \<longrightarrow> indep_fn Y \<longrightarrow> 
@@ -341,7 +341,7 @@ lemma augment_abs_to_impl:
     \<Longrightarrow>
     (\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep_fn X \<longrightarrow> indep_fn Y \<longrightarrow> 
       cardinality X = Suc (cardinality Y) \<longrightarrow> (\<exists>x. set_isin (diff X Y) x \<and> indep_fn (set_insert x Y)))"
-proof (rule, rule, rule, rule, rule, rule, rule)
+proof ((rule allI)+, (rule impI)+)
   fix X Y
   assume "set_inv X" "set_inv Y" "indep_fn X" "indep_fn Y"
     "(\<forall>S T. indep_abs indep_fn S \<longrightarrow> indep_abs indep_fn T \<longrightarrow> card S = Suc (card T) \<longrightarrow>

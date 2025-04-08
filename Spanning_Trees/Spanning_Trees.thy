@@ -902,7 +902,7 @@ definition "is_spanning_forest X =
 
 lemma spanning_forest_alternative:
   "is_spanning_forest X = (has_no_cycle X \<and> (\<forall>v \<in> Vs G. \<forall>w \<in> Vs G. reachable G v w \<longrightarrow> reachable X v w))"
-proof(unfold is_spanning_forest_def, rule, goal_cases)
+proof(unfold is_spanning_forest_def, rule iffI, goal_cases)
   case 1
   hence prem: "v\<in>Vs G \<Longrightarrow> w\<in>Vs G \<Longrightarrow> {v, w} \<in> G \<Longrightarrow> Undirected_Set_Graphs.reachable X v w" for v w by auto
   have "walk_betw G v p w \<Longrightarrow> Undirected_Set_Graphs.reachable X v w" for v w p 
@@ -1317,7 +1317,7 @@ proof-
     using assms by simp
   define p where "p = [e,e']"
   hence epath_p:"epath (to_dbltn ` X) u (map to_dbltn p) u"
-    apply (auto intro!: exI[of _ v])
+    apply (clarsimp intro!: exI[of _ v])
     using dbltn_e dbltn_e' assms(1-3)
     by fastforce+
   moreover have "distinct p"
@@ -1395,21 +1395,21 @@ lemma graph_indep_system_multi:
 
 lemma is_spanning_forest_multi_and_simple:"is_spanning_forest_multi X = 
 (graph_abs_interpretation.is_spanning_forest (to_dbltn `X) \<and> inj_on to_dbltn X \<and> X \<subseteq> E)"
-proof(rule, goal_cases)
+proof(rule iffI, goal_cases)
   case 1
   note one = this
   hence "inj_on to_dbltn X" 
     by (simp add: has_no_cycle_multi_to_dbltn_inj is_spanning_forest_multi_def)
   moreover have "graph_abs_interpretation.is_spanning_forest (to_dbltn ` X)"
     unfolding graph_abs_interpretation.is_spanning_forest_def
-  proof(rule, goal_cases)
+  proof(rule conjI, goal_cases)
     case 1
     then show ?case 
       using is_spanning_forest_multi_def one has_no_cycle_multi_to_has_no_cycle by blast
   next
     case 2
     then show ?case
-    proof(rule, rule, rule, goal_cases)
+    proof((rule ballI)+, rule impI, goal_cases)
       case (1 v w)
       then obtain e where "e \<in> E" "to_dbltn e = {v,w}"
         using G_def by auto
@@ -1488,7 +1488,7 @@ lemma basis_imple_basis_multi:
  = indep_system.basis E has_no_cycle_multi X"
   unfolding indep_system.basis_def[OF graph_abs_interpretation.graph_indep_system]
     indep_system.basis_def[OF graph_indep_system_multi]
-proof(rule, goal_cases)
+proof(rule iffI, goal_cases)
   case 1
   hence all: "graph_abs_interpretation.has_no_cycle (to_dbltn ` X)"
     "(\<forall>x\<in>G - to_dbltn ` X. \<not> graph_abs_interpretation.has_no_cycle (insert x (to_dbltn ` X)))"
@@ -1496,7 +1496,7 @@ proof(rule, goal_cases)
   have "has_no_cycle_multi X" 
     using all has_no_cycle_to_has_no_cycle_multi by blast
   moreover have " (\<forall>x\<in>E - X. \<not> has_no_cycle_multi (insert x X))"
-  proof(rule, goal_cases)
+  proof(rule ballI, goal_cases)
     case (1 e)
     show ?case
     proof(cases "to_dbltn e \<in> to_dbltn ` X")
@@ -1522,7 +1522,7 @@ next
   have "graph_abs_interpretation.has_no_cycle (to_dbltn ` X)"
     by (simp add: all(1) has_no_cycle_multi_to_has_no_cycle)
   moreover have "(\<forall>x\<in>G - to_dbltn ` X. \<not> graph_abs_interpretation.has_no_cycle (insert x (to_dbltn ` X)))"
-  proof(rule, goal_cases)
+  proof(rule ballI, goal_cases)
     case (1 e)
     then obtain e' where "e' \<in> E" "to_dbltn e' = e" "e' \<notin> X"
       by (fastforce simp add: G_def)

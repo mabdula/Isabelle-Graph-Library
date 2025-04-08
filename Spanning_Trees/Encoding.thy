@@ -99,7 +99,7 @@ proof-
       apply(subst (1) foldr.simps, subst o_apply, subst (1) f_def)
       apply(subst (1) foldr.simps, subst o_apply, subst (2) f_def)
       apply(subst (1) foldr.simps, subst o_apply, subst (3) f_def)
-    proof( rule, goal_cases)
+    proof( rule ballI, goal_cases)
       case (1 e)
       have a1: "pair_graph_u.graph_inv (foldr f xs \<emptyset>\<^sub>G)"
         by (simp add: inv_after_list)

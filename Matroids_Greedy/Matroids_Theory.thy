@@ -618,7 +618,7 @@ lemma rank_quotient_lower_bound:
 proof-
   have basis_cards_ineq:
     "\<forall>F \<subseteq> carrier. (\<forall>J. basis_in F J \<longrightarrow> (\<forall>K. basis_in F K \<longrightarrow> card K \<le> p * card J))"
-  proof (rule, rule, rule, rule, rule, rule)
+  proof ((rule allI, rule impI)+)
     fix F J K
     assume "F \<subseteq> carrier" "basis_in F J" "basis_in F K"
 
@@ -1503,7 +1503,7 @@ proof-
 
   have R3': "\<forall>X \<subseteq> E. \<forall>x \<in> E. \<forall>y \<in> E. 
     (r (X \<union> {x}) = r X \<and> r (X \<union> {y}) = r X) \<longrightarrow> r (X \<union> {x, y}) = r X"
-  proof (rule allI, rule impI, rule, rule, rule impI)
+  proof (rule allI, rule impI, (rule ballI)+, rule impI)
     fix X x y
     assume "X \<subseteq> E" "x \<in> E" "y \<in> E" "(r (X \<union> {x}) = r X \<and> r (X \<union> {y}) = r X)"
     show "r (X \<union> {x, y}) = r X"
@@ -1745,7 +1745,7 @@ qed
 lemma matroid_indep_expr_rank:
   assumes "matroid E indep"
   shows "indep = (\<lambda>X. X \<subseteq> E \<and> matroid.rank_of indep X = card X)"
-proof (rule)
+proof (rule HOL.ext)
   fix X
   show "indep X = (X \<subseteq> E \<and> matroid.rank_of indep X = card X)"
   proof (cases "X \<subseteq> E")
@@ -1851,7 +1851,7 @@ next
     done
 
   have "\<forall>C. C \<in> \<C> = indep_system.circuit E ?indep C"
-  proof (rule allI, rule)
+  proof (rule allI, rule iffI)
     fix C
     assume "C \<in> \<C>"
     from \<open>C \<in> \<C>\<close> assms(2) have "C \<subseteq> E" by blast
@@ -1904,7 +1904,7 @@ qed
 lemma indep_system_indep_expr_circuits:
   assumes "indep_system E indep"
   shows "indep = (\<lambda>X. X \<subseteq> E \<and> \<not>(\<exists>C. indep_system.circuit E indep C \<and> C \<subseteq> X))"
-proof (rule)
+proof (rule HOL.ext)
   fix X
   show "indep X = (X \<subseteq> E \<and>  \<not>(\<exists>C. indep_system.circuit E indep C \<and> C \<subseteq> X))"
   proof (cases "X \<subseteq> E")
