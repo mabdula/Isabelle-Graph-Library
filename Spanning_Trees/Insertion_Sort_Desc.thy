@@ -33,7 +33,7 @@ lemma sorted_desc_insort1_key_desc: "sorted_wrt (\<ge>) (map f (insort1_key_desc
 
 lemma sorted_desc_insort_key_desc: "sorted_wrt (\<ge>) (map f (insort_key_desc f xs))"
   by(induction xs) (simp_all add: sorted_desc_insort1_key_desc)
-    
+
 lemma sorted_desc_f_insort_key_desc: "sorted_wrt (\<lambda>x1 x2. f x1 \<ge> f x2) (insort_key_desc f xs)"
   using sorted_desc_insort_key_desc sorted_wrt_map by force
 

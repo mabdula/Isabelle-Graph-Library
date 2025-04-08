@@ -6,17 +6,17 @@ begin
 locale Encoding =
   pair_graph_u: Pair_Graph_U_Specs where lookup = lookup +
   set2: Set2 where insert = set_insert  and isin = set_isin 
-             and delete = set_delete and invar = set_inv and empty = set_empty
-             and set = to_set
+  and delete = set_delete and invar = set_inv and empty = set_empty
+  and set = to_set
 for lookup :: "'adjmap \<Rightarrow> ('v::linorder) \<Rightarrow> 'vset option"
- and set_insert :: "('e::linorder) \<Rightarrow> 's \<Rightarrow> 's"  and set_empty and set_delete 
-and set_isin and set_inv and to_set
-and adjmap_fold :: "'adjmap \<Rightarrow> ('v \<Rightarrow> 'vset \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" and
-    vset_fold :: "'vset \<Rightarrow> ('v \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" 
-and set_fold_adjmap :: "'s \<Rightarrow> ('e \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap) \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and
-    set_fold_vset :: "'s \<Rightarrow> ('e \<Rightarrow> 'vset \<Rightarrow> 'vset) \<Rightarrow> 'vset \<Rightarrow> 'vset" +
-  fixes v1_of :: "'e \<Rightarrow> 'v" and v2_of :: "'e \<Rightarrow> 'v" 
- and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
+  and set_insert :: "('e::linorder) \<Rightarrow> 's \<Rightarrow> 's"  and set_empty and set_delete 
+  and set_isin and set_inv and to_set
+  and adjmap_fold :: "'adjmap \<Rightarrow> ('v \<Rightarrow> 'vset \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" and
+  vset_fold :: "'vset \<Rightarrow> ('v \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> 's \<Rightarrow> 's" 
+  and set_fold_adjmap :: "'s \<Rightarrow> ('e \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap) \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and
+  set_fold_vset :: "'s \<Rightarrow> ('e \<Rightarrow> 'vset \<Rightarrow> 'vset) \<Rightarrow> 'vset \<Rightarrow> 'vset" +
+fixes v1_of :: "'e \<Rightarrow> 'v" and v2_of :: "'e \<Rightarrow> 'v" 
+  and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
 begin
 
 fun edges_to_graph :: "'s \<Rightarrow> 'adjmap" where
@@ -35,17 +35,17 @@ fun edges_to_vertices :: "'s \<Rightarrow> 'vset" where
 end
 
 locale Encoding_Proofs =
-Encoding +
-assumes adjmap_fold: "\<And> G S f. adjmap_inv G \<Longrightarrow> \<exists> xs. distinct xs \<and> set xs = dom (lookup G) \<and>
+  Encoding +
+  assumes adjmap_fold: "\<And> G S f. adjmap_inv G \<Longrightarrow> \<exists> xs. distinct xs \<and> set xs = dom (lookup G) \<and>
                                  adjmap_fold G f S = foldr (\<lambda> x acc. f x (the (lookup G x)) acc) xs S "
-and set_fold_adjmap: "\<And> G S f.  set_inv S \<Longrightarrow> \<exists> xs. distinct xs \<and> set xs = to_set S \<and>
+    and set_fold_adjmap: "\<And> G S f.  set_inv S \<Longrightarrow> \<exists> xs. distinct xs \<and> set xs = to_set S \<and>
                                  set_fold_adjmap S f G = foldr f xs G"
-and vset_fold: "\<And> V f S. vset_inv V \<Longrightarrow> \<exists> xs. distinct xs \<and> set xs = t_set V \<and>
+    and vset_fold: "\<And> V f S. vset_inv V \<Longrightarrow> \<exists> xs. distinct xs \<and> set xs = t_set V \<and>
                                     vset_fold V f S = foldr f xs S"
-and set_fold_vset: "\<And>V f S. set_inv S \<Longrightarrow> \<exists> xs. distinct xs \<and> set xs = to_set S \<and>
+    and set_fold_vset: "\<And>V f S. set_inv S \<Longrightarrow> \<exists> xs. distinct xs \<and> set xs = to_set S \<and>
                                  set_fold_vset S f V = foldr f xs V"
-and finite_v_sets: "pair_graph_u.finite_vsets"
-and v1_never_v2:"\<And> e. v1_of e \<noteq> v2_of e"
+    and finite_v_sets: "pair_graph_u.finite_vsets"
+    and v1_never_v2:"\<And> e. v1_of e \<noteq> v2_of e"
 begin
 
 lemma pair_graph_u_invar_empty: "pair_graph_u.pair_graph_u_invar \<emptyset>\<^sub>G" 
@@ -57,7 +57,7 @@ proof-
   ultimately show ?thesis
     using finite_v_sets 
     by (unfold pair_graph_u.pair_graph_u_invar_def )
-       (simp add: pair_graph_u.pair_graph_specs.adjmap.map_empty pair_graph_u.neighbourhood_def 
+      (simp add: pair_graph_u.pair_graph_specs.adjmap.map_empty pair_graph_u.neighbourhood_def 
         pair_graph_u.pair_graph_specs.vset.set.invar_empty pair_graph_u.pair_graph_specs.vset.set.set_empty pair_graph_u.pair_graph_specs.vset.set.set_isin)
 qed
 
@@ -66,8 +66,8 @@ lemma P_of_ifE: "P (if b then x else y) \<Longrightarrow> (b \<Longrightarrow> P
 
 lemma edges_invar_imp_graph_invar:
   assumes "set_inv E" shows "pair_graph_u.pair_graph_u_invar (edges_to_graph E)" (is ?thesis1)
-                        and "\<forall> v y. lookup (edges_to_graph E) v = Some y \<longrightarrow> y \<noteq> vset_empty" (is ?thesis2)
-                        and "\<forall> e \<in> pair_graph_u.digraph_abs (edges_to_graph E).
+    and "\<forall> v y. lookup (edges_to_graph E) v = Some y \<longrightarrow> y \<noteq> vset_empty" (is ?thesis2)
+    and "\<forall> e \<in> pair_graph_u.digraph_abs (edges_to_graph E).
  lookup (edges_to_graph E) (fst e) \<noteq> None \<longleftrightarrow>  lookup (edges_to_graph E) (snd e) \<noteq> None" (is ?thesis3)
 proof-
   define f where "f = (\<lambda>e G. pair_graph_u.add_edge (pair_graph_u.add_edge G (v1_of e) (v2_of e)) (v2_of e) (v1_of e))"
@@ -78,7 +78,7 @@ proof-
       (auto intro: pair_graph_u.pair_graph_u_invar_add_edge simp add: pair_graph_u_invar_empty v1_never_v2  f_def)  
   then show ?thesis1
     by(simp add: edges_to_graph.simps f_def[symmetric]  xs_prop(3)) 
-   show ?thesis2
+  show ?thesis2
     unfolding edges_to_graph.simps f_def[symmetric]  xs_prop(3) 
     apply(induction xs)
     apply (simp add: pair_graph_u.pair_graph_specs.adjmap.map_empty)
@@ -86,8 +86,8 @@ proof-
     apply(rule pair_graph_u.pair_graph_u_invar_add_edge_both(2))
     using inv_after_list  v1_never_v2 
     by (auto intro:  pair_graph_u.pair_graph_u_invar_add_edge_both(2))
-  
-   show ?thesis3
+
+  show ?thesis3
     unfolding edges_to_graph.simps f_def[symmetric]  xs_prop(3) xs_prop(2)[symmetric]
   proof(induction xs)
     case Nil
@@ -106,30 +106,30 @@ proof-
       have "(lookup (foldr f xs \<emptyset>\<^sub>G) x \<noteq> None) = (lookup (foldr f xs \<emptyset>\<^sub>G) y \<noteq> None)" 
         if assms1: "(x, y)\<in>[foldr f xs \<emptyset>\<^sub>G]\<^sub>g" for x y       
         using pair_graph_u.pair_graph_specs.are_connected_absI[OF assms1 a1]  pair_graph_u.graph_abs_symmetric[OF inv_after_list assms1]
-              pair_graph_u.pair_graph_specs.vset.emptyD(3) pair_graph_u.pair_graph_specs.adjmap.map_empty pair_graph_u.graph_irreflexive[OF  pair_graph_u_invar_empty]
+          pair_graph_u.pair_graph_specs.vset.emptyD(3) pair_graph_u.pair_graph_specs.adjmap.map_empty pair_graph_u.graph_irreflexive[OF  pair_graph_u_invar_empty]
         by (cases "lookup (foldr f xs \<emptyset>\<^sub>G) x", all \<open>cases "lookup (foldr f xs \<emptyset>\<^sub>G) y"\<close>)
-            (auto split: option.split simp add:  pair_graph_u.digraph_abs_def pair_graph_u.neighbourhood_def)
+          (auto split: option.split simp add:  pair_graph_u.digraph_abs_def pair_graph_u.neighbourhood_def)
       hence ih_prem1: "\<forall>x\<in>[foldr f xs \<emptyset>\<^sub>G]\<^sub>g.
        (lookup (foldr f xs \<emptyset>\<^sub>G) (fst x) \<noteq> None) = (lookup (foldr f xs \<emptyset>\<^sub>G) (snd x) \<noteq> None)" 
         by auto
       show ?case
         using ih_prem1
         by(intro bspec[OF pair_graph_u.pair_graph_u_invar_add_edge_both(3)
-               [simplified pair_graph_u.none_symmetry_def], of _ _ _ "(fst e, snd e)", simplified fst_conv snd_conv]
-             ) (auto simp add: inv_after_list v1_never_v2 "1")
+              [simplified pair_graph_u.none_symmetry_def], of _ _ _ "(fst e, snd e)", simplified fst_conv snd_conv]
+            ) (auto simp add: inv_after_list v1_never_v2 "1")
     qed
   qed
 qed 
 
 lemma digraph_abs_of_edges_of_to_graph:
   assumes ys_prop: "set ys = to_set E" "set_fold_adjmap E g \<emptyset>\<^sub>G = foldr g ys \<emptyset>\<^sub>G" and
-                g_def: "g = (\<lambda>e G. pair_graph_u.add_edge (pair_graph_u.add_edge G (v1_of e) (v2_of e)) (v2_of e) (v1_of e))" 
-     shows  "[edges_to_graph E]\<^sub>g = (\<lambda> e. (v1_of e, v2_of e)) ` (to_set E) \<union> (\<lambda> e. (v2_of e, v1_of e)) ` (to_set E)"
+    g_def: "g = (\<lambda>e G. pair_graph_u.add_edge (pair_graph_u.add_edge G (v1_of e) (v2_of e)) (v2_of e) (v1_of e))" 
+  shows  "[edges_to_graph E]\<^sub>g = (\<lambda> e. (v1_of e, v2_of e)) ` (to_set E) \<union> (\<lambda> e. (v2_of e, v1_of e)) ` (to_set E)"
 proof-
   have graph_inv_fold_g:"pair_graph_u.graph_inv (foldr g ys \<emptyset>\<^sub>G)" for ys
     by(induction ys) 
-     (auto intro: simp add: g_def pair_graph_u.pair_graph_specs.adjmap_inv_insert
-            pair_graph_u.pair_graph_specs.graph_inv_empty)
+      (auto intro: simp add: g_def pair_graph_u.pair_graph_specs.adjmap_inv_insert
+        pair_graph_u.pair_graph_specs.graph_inv_empty)
   show ?thesis
     unfolding edges_to_graph.simps g_def[symmetric] ys_prop(2) ys_prop(1)[symmetric]
   proof(induction ys)
@@ -138,12 +138,12 @@ proof-
   next
     case (Cons a ys)   
     then show ?case 
-    apply simp
-    apply(subst g_def)
+      apply simp
+      apply(subst g_def)
       apply(subst pair_graph_u.digraph_abs_insert[OF pair_graph_u_invar_empty])
-    apply(rule pair_graph_u.adjmap_inv_insert[OF pair_graph_u_invar_empty])
-    apply(rule graph_inv_fold_g)
-    apply(subst pair_graph_u.digraph_abs_insert[OF pair_graph_u_invar_empty])
+      apply(rule pair_graph_u.adjmap_inv_insert[OF pair_graph_u_invar_empty])
+      apply(rule graph_inv_fold_g)
+      apply(subst pair_graph_u.digraph_abs_insert[OF pair_graph_u_invar_empty])
       by(auto intro!: graph_inv_fold_g) 
   qed
 qed
@@ -155,11 +155,11 @@ proof-
   have set_inv_G:"set_inv E"
     using assms  by blast
   define g where "g = (\<lambda>e G. pair_graph_u.add_edge (pair_graph_u.add_edge G (v1_of e) (v2_of e)) (v2_of e) (v1_of e))"
-   obtain xs where xs_prop:"distinct xs" "set xs = to_set E" 
-       "set_fold_adjmap E g empty = foldr g xs empty"
-      using set_fold_adjmap[OF  set_inv_G, of g empty] by blast 
+  obtain xs where xs_prop:"distinct xs" "set xs = to_set E" 
+    "set_fold_adjmap E g empty = foldr g xs empty"
+    using set_fold_adjmap[OF  set_inv_G, of g empty] by blast 
   show ?thesis
-  by(rule digraph_abs_of_edges_of_to_graph[OF xs_prop(2,3) g_def])
+    by(rule digraph_abs_of_edges_of_to_graph[OF xs_prop(2,3) g_def])
 qed 
 
 find_theorems edges_to_graph
@@ -170,7 +170,7 @@ lemma dbltn_set_and_ugraph_abs:
   assumes "set_inv X"
   shows "to_doubltn_set X = pair_graph_u.ugraph_abs (edges_to_graph X)"
 proof-
-   define g where "g =  (\<lambda>e G. pair_graph_u.add_edge (pair_graph_u.add_edge G (v1_of e) (v2_of e)) (v2_of e) (v1_of e))" 
+  define g where "g =  (\<lambda>e G. pair_graph_u.add_edge (pair_graph_u.add_edge G (v1_of e) (v2_of e)) (v2_of e) (v1_of e))" 
   obtain xs where xs_prop:" distinct xs" "set xs = to_set X" "set_fold_adjmap X g \<emptyset>\<^sub>G = foldr g xs \<emptyset>\<^sub>G"
     using set_fold_adjmap[OF assms(1), of g empty] by auto
   have X_vs_are:"[edges_to_graph X]\<^sub>g = (\<lambda>e. (v1_of e, v2_of e)) ` to_set X \<union> (\<lambda>e. (v2_of e, v1_of e)) ` to_set X"
