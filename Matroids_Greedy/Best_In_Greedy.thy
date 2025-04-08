@@ -19,9 +19,8 @@ abbreviation "sort_desc_axioms' == sort_desc_axioms"
 hide_const sort_desc_axioms
 
 locale Best_In_Greedy = matroid: Matroid_Specs 
-  where set_empty = set_empty and set_of_sets_isin = set_of_sets_isin for set_empty :: "'s" and 
-    set_of_sets_isin :: "'t \<Rightarrow> 's \<Rightarrow> bool" +
-  fixes carrier :: "'s" and indep_set :: "'t" and
+  where set_empty = set_empty for set_empty :: "'s" +
+  fixes carrier :: "'s" and indep_fn :: "'s \<Rightarrow> bool" and
     sort_desc :: "('a \<Rightarrow> rat) \<Rightarrow> 'a list \<Rightarrow> 'a list" 
 
 begin
@@ -37,9 +36,9 @@ lemma sort_desc_axioms_def: "sort_desc_axioms =(
   using sort_desc_axioms_def by blast
 
 definition "BestInGreedy_axioms =
-  (matroid.invar carrier indep_set \<and> matroid.finite_sets)"
+  (matroid.invar carrier indep_fn \<and> matroid.finite_sets)"
 
-abbreviation "indep' \<equiv> matroid.indep indep_set"
+abbreviation "indep' \<equiv> indep_fn"
 
 function (domintros) BestInGreedy :: 
   "('a, 's) best_in_greedy_state \<Rightarrow> ('a, 's) best_in_greedy_state" where
@@ -146,8 +145,8 @@ definition "BestInGreedy_ret1 best_in_greedy_state = best_in_greedy_state"
 
 lemma BestInGreedy_cases:
   assumes "BestInGreedy_call_1_conds best_in_greedy_state \<Longrightarrow> P"
-      "BestInGreedy_call_2_conds best_in_greedy_state \<Longrightarrow> P"
-      "BestInGreedy_ret_1_conds best_in_greedy_state \<Longrightarrow> P"
+    "BestInGreedy_call_2_conds best_in_greedy_state \<Longrightarrow> P"
+    "BestInGreedy_ret_1_conds best_in_greedy_state \<Longrightarrow> P"
   shows "P"
 proof-
   have "BestInGreedy_call_1_conds best_in_greedy_state \<or> BestInGreedy_call_2_conds best_in_greedy_state \<or>
@@ -164,9 +163,9 @@ lemma BestInGreedy_simps:
   assumes "BestInGreedy_dom best_in_greedy_state" 
   shows"BestInGreedy_call_1_conds best_in_greedy_state \<Longrightarrow> 
           BestInGreedy best_in_greedy_state = BestInGreedy (BestInGreedy_upd1 best_in_greedy_state)"
-      "BestInGreedy_call_2_conds best_in_greedy_state \<Longrightarrow> 
+    "BestInGreedy_call_2_conds best_in_greedy_state \<Longrightarrow> 
           BestInGreedy best_in_greedy_state = BestInGreedy (BestInGreedy_upd2 best_in_greedy_state)"
-      "BestInGreedy_ret_1_conds best_in_greedy_state \<Longrightarrow> 
+    "BestInGreedy_ret_1_conds best_in_greedy_state \<Longrightarrow> 
           BestInGreedy best_in_greedy_state = BestInGreedy_ret1 best_in_greedy_state"
   by (auto simp add: BestInGreedy.psimps[OF assms] Let_def
       BestInGreedy_call_1_conds_def BestInGreedy_upd1_def BestInGreedy_call_2_conds_def BestInGreedy_upd2_def
@@ -214,6 +213,7 @@ definition "nonnegative (c::('a \<Rightarrow> rat)) = (\<forall>x. set_isin carr
 definition "valid_order order =( to_set carrier = set order \<and> cardinality carrier = length order)"
 
 
+abbreviation "subseteq \<equiv> matroid.set.subseteq"
 
 definition
   "num_iter c order best_in_greedy_state = (length (sort_desc c order) - length (carrier_list best_in_greedy_state))"
@@ -234,7 +234,7 @@ definition "invar_3 c order best_in_greedy_state =
 
 definition "invar_4 c order best_in_greedy_state =
   (\<forall>j \<in> {0..(num_iter c order best_in_greedy_state)}.
-  (indep_system.basis_in (matroid.indep_abs indep_set)
+  (indep_system.basis_in (matroid.indep_abs indep_fn)
   (carrier_pref c order j)
   (pref c order (to_set (result best_in_greedy_state)) j)))"
 
@@ -249,19 +249,19 @@ definition "valid_solution X =
 
 context
   includes matroid.set.custom_automation
-  assumes BestInGreedy_axioms sort_desc_axioms "matroid.indep_system_axioms carrier indep_set"
+  assumes BestInGreedy_axioms sort_desc_axioms "matroid.indep_system_axioms carrier indep_fn"
 begin
 
 lemma matroid_inv:
-  "matroid.invar carrier indep_set"
+  "matroid.invar carrier indep_fn"
   "matroid.finite_sets"
   using \<open>BestInGreedy_axioms\<close>
   by (auto simp: BestInGreedy_axioms_def) 
 
 lemma indep_system_axioms_abs:
-  "indep_system (matroid.carrier_abs carrier) (matroid.indep_abs indep_set)"
+  "indep_system (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn)"
   using matroid.indep_system_impl_to_abs[OF matroid_inv(1) matroid_inv(2)]
-    \<open>matroid.indep_system_axioms carrier indep_set\<close> by simp
+    \<open>matroid.indep_system_axioms carrier indep_fn\<close> by simp
 
 lemma set_inv_carrier:
   "set_inv carrier"
@@ -286,7 +286,7 @@ lemma valid_solution_c_set_nonnegative:
 proof-
   assume "valid_solution X"
   from \<open>valid_solution X\<close> valid_solution_def set_inv_carrier
-    have "(to_set X) \<subseteq> (to_set carrier)"
+  have "(to_set X) \<subseteq> (to_set carrier)"
     by force
   with set_inv_carrier \<open>nonnegative c\<close> nonnegative_def have
     "\<forall>x \<in> (to_set X). c x \<ge> 0"
@@ -348,8 +348,8 @@ lemma invar_1_holds_ret_1[invar_holds_intros]:
   by (auto simp: BestInGreedy_ret1_def)
 
 lemma invar_1_holds[invar_holds_intros]: 
-   assumes "BestInGreedy_dom best_in_greedy_state" "invar_1 best_in_greedy_state"
-   shows "invar_1 (BestInGreedy best_in_greedy_state)"
+  assumes "BestInGreedy_dom best_in_greedy_state" "invar_1 best_in_greedy_state"
+  shows "invar_1 (BestInGreedy best_in_greedy_state)"
   using assms(2)
 proof(induction rule: BestInGreedy_induct[OF assms(1)])
   case IH: (1 best_in_greedy_state)
@@ -417,8 +417,8 @@ lemma invar_2_holds_ret_1[invar_holds_intros]:
   by (auto simp: BestInGreedy_ret1_def)
 
 lemma invar_2_holds[invar_holds_intros]: 
-   assumes "BestInGreedy_dom best_in_greedy_state" "invar_2 c order best_in_greedy_state"
-   shows "invar_2 c order (BestInGreedy best_in_greedy_state)"
+  assumes "BestInGreedy_dom best_in_greedy_state" "invar_2 c order best_in_greedy_state"
+  shows "invar_2 c order (BestInGreedy best_in_greedy_state)"
   using assms(2)
 proof(induction rule: BestInGreedy_induct[OF assms(1)])
   case IH: (1 best_in_greedy_state)
@@ -482,9 +482,9 @@ lemma invar_3_holds_ret_1[invar_holds_intros]:
   by (auto simp: BestInGreedy_ret1_def)
 
 lemma invar_3_holds[invar_holds_intros]: 
-   assumes "BestInGreedy_dom best_in_greedy_state" "invar_1 best_in_greedy_state" "invar_2 c order best_in_greedy_state"
-     "invar_3 c order best_in_greedy_state"
-   shows "invar_3 c order (BestInGreedy best_in_greedy_state)"
+  assumes "BestInGreedy_dom best_in_greedy_state" "invar_1 best_in_greedy_state" "invar_2 c order best_in_greedy_state"
+    "invar_3 c order best_in_greedy_state"
+  shows "invar_3 c order (BestInGreedy best_in_greedy_state)"
   using assms(2-)
 proof(induction rule: BestInGreedy_induct[OF assms(1)])
   case IH: (1 best_in_greedy_state)
@@ -498,14 +498,14 @@ qed
 lemma invar_4_props[invar_props_elims]:
   "invar_4 c order best_in_greedy_state \<Longrightarrow>
     (\<lbrakk>\<And>j. j \<in> {0..(num_iter c order best_in_greedy_state)} \<Longrightarrow>
-      (indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order j)
+      (indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order j)
       (pref c order (to_set (result best_in_greedy_state)) j))\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
     P"
   by (auto simp: invar_4_def)
 
 lemma invar_4_intro[invar_props_intros]:
   "\<lbrakk>\<And>j. j \<in> {0..(num_iter c order best_in_greedy_state)} \<Longrightarrow>
-    (indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order j)
+    (indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order j)
     (pref c order (to_set (result best_in_greedy_state)) j))\<rbrakk> \<Longrightarrow> invar_4 c order best_in_greedy_state"
   by (auto simp: invar_4_def)
 
@@ -516,13 +516,13 @@ proof(rule invar_props_intros, goal_cases)
   case (1 j)
 
   show ?case
-    
+
   proof (cases "j \<le> (num_iter c order best_in_greedy_state)")
     case True
 
     have "set (carrier_list best_in_greedy_state) \<inter> (carrier_pref c order j) = {}"
       unfolding carrier_pref_def using set_take_disj_set_drop_if_distinct[OF carrier_sorted_distinct True]
-      \<open>invar_2 c order best_in_greedy_state\<close>
+        \<open>invar_2 c order best_in_greedy_state\<close>
       by (fastforce elim!: invar_props_elims)
     then have "hd (carrier_list best_in_greedy_state) \<notin> (carrier_pref c order j)"
       using \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close>
@@ -531,11 +531,11 @@ proof(rule invar_props_intros, goal_cases)
       = (pref c order (to_set (result best_in_greedy_state)) j)"
       unfolding pref_def by auto
 
-    then have "indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order j)
+    then have "indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order j)
      (pref c order (insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state))) j)"
       using \<open>invar_4 c order best_in_greedy_state\<close> True by (auto elim!: invar_props_elims)
 
-    then show "indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order j)
+    then show "indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order j)
       (pref c order (to_set (result (BestInGreedy_upd1 best_in_greedy_state))) j)"
       using \<open>invar_1 best_in_greedy_state\<close>
       by (auto simp add: Let_def BestInGreedy_upd1_def elim!: invar_props_elims)
@@ -554,13 +554,13 @@ proof(rule invar_props_intros, goal_cases)
       unfolding num_iter_def 
       using \<open>invar_2 c order best_in_greedy_state\<close> by (fastforce elim!: invar_props_elims)
     with 1(6) False have j_expr: "j = num_iter c order (BestInGreedy_upd1 best_in_greedy_state)" by auto
-    
+
     have carrier_pref_expr:
       "carrier_pref c order (num_iter c order (BestInGreedy_upd1 best_in_greedy_state)) = 
       insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
       apply (simp add: BestInGreedy_upd1_def carrier_pref_def Let_def num_iter_def)
-        using \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
-        apply (clarsimp elim!: invar_props_elims call_cond_elims)
+      using \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
+      apply (clarsimp elim!: invar_props_elims call_cond_elims)
       by (metis drop_Suc length_drop num_iter_def set_take_aux_lemma tl_drop)
 
     have
@@ -578,13 +578,13 @@ proof(rule invar_props_intros, goal_cases)
       using \<open>invar_3 c order best_in_greedy_state\<close> 
       by (auto simp: pref_def elim: invar_3_props)
 
-    then have indep_abs: "matroid.indep_abs indep_set (insert (hd (carrier_list best_in_greedy_state))
+    then have indep_abs: "matroid.indep_abs indep_fn (insert (hd (carrier_list best_in_greedy_state))
       (pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state)))"
       using \<open>invar_1 best_in_greedy_state\<close> \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close> 
       by (auto elim!: invar_props_elims call_cond_elims)
 
     from indep_system.basis_in_preserved_indep[OF indep_system_axioms_abs insert_subset_carrier] indep_abs
-      have "indep_system.basis_in (matroid.indep_abs indep_set)
+    have "indep_system.basis_in (matroid.indep_abs indep_fn)
    (insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state)))
    (insert (hd (carrier_list best_in_greedy_state)) (pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state)))"
       using \<open>invar_4 c order best_in_greedy_state\<close>
@@ -596,11 +596,11 @@ proof(rule invar_props_intros, goal_cases)
         (num_iter c order (BestInGreedy_upd1 best_in_greedy_state)))"
       unfolding pref_def using carrier_pref_expr by simp
 
-    ultimately have "indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order j)
+    ultimately have "indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order j)
       (pref c order (insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state))) j)"
       using carrier_pref_expr j_expr by auto
 
-    then show "indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order j)
+    then show "indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order j)
       (pref c order (to_set (result (BestInGreedy_upd1 best_in_greedy_state))) j)"
       using \<open>invar_1 best_in_greedy_state\<close>
       by (auto simp add: Let_def BestInGreedy_upd1_def elim!: invar_props_elims)
@@ -617,7 +617,7 @@ proof(rule invar_props_intros, goal_cases)
   show ?case
   proof (cases "j \<le> (num_iter c order best_in_greedy_state)") 
     case True
-    show "indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order j)
+    show "indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order j)
       (pref c order (to_set (result (BestInGreedy_upd2 best_in_greedy_state))) j)"
       using \<open>invar_4 c order best_in_greedy_state\<close>
       by (auto simp add: True Let_def BestInGreedy_upd2_def elim!: invar_props_elims)
@@ -636,13 +636,13 @@ proof(rule invar_props_intros, goal_cases)
       unfolding num_iter_def 
       using \<open>invar_2 c order best_in_greedy_state\<close> by (fastforce elim!: invar_props_elims)
     with 1(6) False have j_expr: "j = num_iter c order (BestInGreedy_upd2 best_in_greedy_state)" by auto
-   
+
     have carrier_pref_expr:
       "carrier_pref c order (num_iter c order (BestInGreedy_upd2 best_in_greedy_state)) = 
       insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
       apply (simp add: BestInGreedy_upd2_def carrier_pref_def Let_def num_iter_def)
       using \<open>BestInGreedy_call_2_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
-        apply (clarsimp elim!: invar_props_elims call_cond_elims)
+      apply (clarsimp elim!: invar_props_elims call_cond_elims)
       by (metis drop_Suc length_drop num_iter_def set_take_aux_lemma tl_drop)
 
     have
@@ -654,34 +654,34 @@ proof(rule invar_props_intros, goal_cases)
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
       \<subseteq> matroid.carrier_abs carrier"
       using matroid.carrier_abs_def carrier_sorted_set by simp
-      
+
     have "(pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state)) =
       to_set (result best_in_greedy_state)"
       using \<open>invar_3 c order best_in_greedy_state\<close> 
       by (auto simp: pref_def elim: invar_3_props)
 
     then
-      have indep_abs: "\<not>matroid.indep_abs indep_set (insert (hd (carrier_list best_in_greedy_state))
+    have indep_abs: "\<not>matroid.indep_abs indep_fn (insert (hd (carrier_list best_in_greedy_state))
       (pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state)))"
       using \<open>invar_1 best_in_greedy_state\<close> \<open>BestInGreedy_call_2_conds best_in_greedy_state\<close> 
       by (auto elim!: invar_props_elims call_cond_elims)
 
     from indep_system.basis_in_preserved_not_indep[OF indep_system_axioms_abs insert_subset_carrier] indep_abs
-      have "indep_system.basis_in (matroid.indep_abs indep_set)
+    have "indep_system.basis_in (matroid.indep_abs indep_fn)
    (insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state)))
    (pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state))"
       using \<open>invar_4 c order best_in_greedy_state\<close> by (auto elim!: invar_props_elims)
 
     moreover 
-      have "(pref c order (to_set (result best_in_greedy_state))) (num_iter c order (BestInGreedy_upd2 best_in_greedy_state)) =
+    have "(pref c order (to_set (result best_in_greedy_state))) (num_iter c order (BestInGreedy_upd2 best_in_greedy_state)) =
             (pref c order (to_set (result best_in_greedy_state))) (num_iter c order best_in_greedy_state)"
       unfolding pref_def using carrier_pref_expr \<open>invar_3 c order best_in_greedy_state\<close> invar_3_def by fastforce
 
-    ultimately have "indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order j)
+    ultimately have "indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order j)
       (pref c order ((to_set (result best_in_greedy_state))) j)"
       using carrier_pref_expr j_expr by auto
 
-    then show "indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order j)
+    then show "indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order j)
       (pref c order (to_set (result (BestInGreedy_upd2 best_in_greedy_state))) j)"
       by (simp add: Let_def BestInGreedy_upd2_def)
   qed 
@@ -694,9 +694,9 @@ lemma invar_4_holds_ret_1[invar_holds_intros]:
   by (auto simp: BestInGreedy_ret1_def)
 
 lemma invar_4_holds[invar_holds_intros]: 
-   assumes "BestInGreedy_dom best_in_greedy_state" "invar_1 best_in_greedy_state" "invar_2 c order best_in_greedy_state"
-     "invar_3 c order best_in_greedy_state" "invar_4 c order best_in_greedy_state"
-   shows "invar_4 c order (BestInGreedy best_in_greedy_state)"
+  assumes "BestInGreedy_dom best_in_greedy_state" "invar_1 best_in_greedy_state" "invar_2 c order best_in_greedy_state"
+    "invar_3 c order best_in_greedy_state" "invar_4 c order best_in_greedy_state"
+  shows "invar_4 c order (BestInGreedy best_in_greedy_state)"
   using assms(2-)
 proof(induction rule: BestInGreedy_induct[OF assms(1)])
   case IH: (1 best_in_greedy_state)
@@ -711,14 +711,14 @@ lemma BestInGreedy_ret_1[ret_holds_intros]:
   by (auto simp: BestInGreedy_ret1_def elim!: call_cond_elims intro!: call_cond_intros)
 
 lemma ret1_holds[ret_holds_intros]:
-   assumes "BestInGreedy_dom best_in_greedy_state" 
-   shows "BestInGreedy_ret_1_conds (BestInGreedy best_in_greedy_state)" 
+  assumes "BestInGreedy_dom best_in_greedy_state" 
+  shows "BestInGreedy_ret_1_conds (BestInGreedy best_in_greedy_state)" 
 proof(induction rule: BestInGreedy_induct[OF assms(1)])
   case IH: (1 best_in_greedy_state)
   show ?case
     apply(rule BestInGreedy_cases[where best_in_greedy_state = best_in_greedy_state])
     by (auto intro: ret_holds_intros intro!: IH(2-)
-             simp: BestInGreedy_simps[OF IH(1)])
+        simp: BestInGreedy_simps[OF IH(1)])
 qed
 
 
@@ -736,12 +736,12 @@ proof-
     using \<open>invar_1 best_in_greedy_state\<close> \<open>invar_3 c order best_in_greedy_state\<close>
     by (auto simp add: carrier_sorted_set set_inv_carrier elim!: invar_props_elims)
 
-  have "\<And>X. indep_system.basis_in (matroid.indep_abs indep_set) (carrier_pref c order (num_iter c order best_in_greedy_state)) X \<Longrightarrow> 
-    (matroid.indep_abs indep_set) X" 
+  have "\<And>X. indep_system.basis_in (matroid.indep_abs indep_fn) (carrier_pref c order (num_iter c order best_in_greedy_state)) X \<Longrightarrow> 
+    (matroid.indep_abs indep_fn) X" 
     using \<open>carrier_pref c order (num_iter c order best_in_greedy_state) \<subseteq> set (carrier_sorted)\<close>
       indep_system.basis_in_indep_in[OF indep_system_axioms_abs]
       indep_system.indep_in_indep[OF indep_system_axioms_abs] 
-      by (metis carrier_sorted_set matroid.carrier_abs_def)
+    by (metis carrier_sorted_set matroid.carrier_abs_def)
   moreover have "pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state) = (to_set (result best_in_greedy_state))"
     unfolding pref_def using \<open>invar_3 c order best_in_greedy_state\<close> by (auto elim!: invar_props_elims)
   ultimately have result_indep: "indep' (result best_in_greedy_state)"
@@ -758,7 +758,7 @@ lemma BestInGreedy_correct_2_ret_1:
   "\<lbrakk> invar_3 c order best_in_greedy_state; invar_4 c order best_in_greedy_state ;
       BestInGreedy_ret_1_conds best_in_greedy_state ; valid_solution X \<rbrakk> \<Longrightarrow> 
       c_set c (to_set (result best_in_greedy_state)) \<ge> 
-      indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) * 
+      indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) * 
       c_set c (to_set X)"
 proof-
   assume "invar_3 c order best_in_greedy_state" "invar_4 c order best_in_greedy_state"
@@ -781,7 +781,7 @@ proof-
   have X_subset_carrier: "(to_set X) \<subseteq> to_set carrier"
     using \<open>valid_solution X\<close> valid_solution_def set_inv_carrier by auto
 
-  have X_indep: "(matroid.indep_abs indep_set) (to_set X)"
+  have X_indep: "(matroid.indep_abs indep_fn) (to_set X)"
     using \<open>valid_solution X\<close> valid_solution_def by auto
 
   have g_pos: "\<forall>j \<in> {0..?n}. rat_of_nat (card (pref c order ?G j)) \<ge> 0"
@@ -805,45 +805,45 @@ proof-
     unfolding carrier_pref_def matroid.carrier_abs_def using set_take_subset set_carrier_sorted by fastforce
   ultimately have G_j_geq_lower_rank_E_j:
     "\<forall>j \<in> {1..?n}. rat_of_nat (card (pref c order ?G j)) \<ge> 
-       rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_set) (carrier_pref c order j))"
+       rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j))"
     using \<open>invar_4 c order best_in_greedy_state\<close> indep_system.lower_rank_of_leq_card_basis_in[OF indep_system_axioms_abs]
     by (auto elim!: invar_props_elims)
-  
+
   have d_geq_0: "\<forall>j \<in> {1..?n}. ?d j \<ge> 0"
     unfolding c_diff_def using sorted_wrt_iff_nth_less
     by (smt (verit, ccfv_SIG) c_carrier_sorted_nonneg carrier_sorted_sorted_desc diff_ge_0_iff_ge
-    diff_le_self dual_order.refl nat_less_le)
-  
+        diff_le_self dual_order.refl nat_less_le)
+
   from G_j_geq_lower_rank_E_j d_geq_0 have G_j_prod_geq_lower_rank_E_j_prod:
     "\<forall>j \<in> {1..?n}. rat_of_nat (card (pref c order ?G j)) * (?d j) \<ge>
-    rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_set) (carrier_pref c order j)) * (?d j)"
+    rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)"
     using mult_right_mono by blast
 
   from indep_system.lower_rank_geq_rank_quotient_prod_rank[OF indep_system_axioms_abs]
     carrier_pref_subseteq_carrier have rank_quotient_ineq:
-    "\<forall>j \<in> {1..?n}. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_set) (carrier_pref c order j)) \<ge>
-    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) * 
-    rat_of_nat (indep_system.rank (matroid.indep_abs indep_set) (carrier_pref c order j))"
+    "\<forall>j \<in> {1..?n}. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) \<ge>
+    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) * 
+    rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j))"
     by simp
   then have rank_quotient_prod_ineq:
-    "\<forall>j \<in> {1..?n}. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_set) (carrier_pref c order j)) * (?d j) \<ge>
-    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) * 
-    rat_of_nat (indep_system.rank (matroid.indep_abs indep_set) (carrier_pref c order j)) * (?d j)"
+    "\<forall>j \<in> {1..?n}. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j) \<ge>
+    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) * 
+    rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)"
     using d_geq_0 mult_right_mono by blast
 
   from indep_system.rank_quotient_geq_0[OF indep_system_axioms_abs]
-    have rank_quotient_geq_0:
-    "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) \<ge> 0" .
+  have rank_quotient_geq_0:
+    "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) \<ge> 0" .
 
   from indep_system.indep_subset[OF indep_system_axioms_abs X_indep] pref_def
-    have "\<forall>j \<in> {1..?n}. indep_system.indep_in (matroid.indep_abs indep_set) (carrier_pref c order j) (pref c order (to_set X) j)"
+  have "\<forall>j \<in> {1..?n}. indep_system.indep_in (matroid.indep_abs indep_fn) (carrier_pref c order j) (pref c order (to_set X) j)"
     by (metis Int_lower1 Int_lower2 indep_system.indep_in_def indep_system_axioms_abs)
   with carrier_pref_subseteq_carrier indep_system.rank_geq_card_indep_in[OF indep_system_axioms_abs]
-    have rank_E_j_geq_X_j:
-    "\<forall>j \<in> {1..?n}. card (pref c order (to_set X) j) \<le> indep_system.rank (matroid.indep_abs indep_set) (carrier_pref c order j)"
+  have rank_E_j_geq_X_j:
+    "\<forall>j \<in> {1..?n}. card (pref c order (to_set X) j) \<le> indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)"
     by auto
   then have rank_E_j_prod_geq_X_j_prod:
-    "\<forall>j \<in> {1..?n}. rat_of_nat (indep_system.rank (matroid.indep_abs indep_set) (carrier_pref c order j)) * (?d j) \<ge>
+    "\<forall>j \<in> {1..?n}. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j) \<ge>
     rat_of_nat (card (pref c order (to_set X) j)) * (?d j)" using d_geq_0 by (meson mult_right_mono of_nat_mono)
 
   have pref_X_pos: "\<forall>j \<in> {0..?n}. rat_of_nat (card (pref c order (to_set X) j)) \<ge> 0"
@@ -855,47 +855,47 @@ proof-
     by (meson Int_mono List.finite_set card_mono diff_le_self finite_Int order_eq_refl set_take_subset_set_take)
 
 
-  
-  (* Main chain of inequalities *)
+
+(* Main chain of inequalities *)
 
   have "c_set c ?G = 
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) * c ((carrier_sorted) ! (j - 1)))"
     using sum_set_union_expr[OF n set_carrier_sorted length_carrier_sorted greedy_subset_carrier] c_set_def[of c]
-    carrier_pref_def[of c] pref_def[of c] by simp
+      carrier_pref_def[of c] pref_def[of c] by simp
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) * c ((carrier_sorted) ! (j - 1))) = 
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j))"
     using sum_diff_mult_distr[OF g_pos c_carrier_sorted_nonneg g_zero] semiring_1_cancel_class.of_nat_diff g_leq c_diff_def
     by (smt (verit) sum.cong)
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j)) \<ge> 
-    (\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_set) (carrier_pref c order j)) * (?d j))"
+    (\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
     using G_j_prod_geq_lower_rank_E_j_prod sum_mono by fastforce 
-  moreover have "(\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_set) (carrier_pref c order j)) * (?d j)) \<ge>  
-    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) *
-    (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_set) (carrier_pref c order j)) * (?d j))"
+  moreover have "(\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) \<ge>  
+    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+    (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
     using rank_quotient_prod_ineq sum_distrib_left sum_mono
     by (smt (verit, del_insts) ab_semigroup_mult_class.mult_ac(1))
-  moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) *
-    (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_set) (carrier_pref c order j)) * (?d j)) \<ge>
-    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) *
+  moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+    (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) \<ge>
+    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j))"
     using rank_E_j_prod_geq_X_j_prod sum_mono rank_quotient_geq_0
     by (smt (verit) mult_left_mono)
-  moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) *
+  moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j)) \<ge> 
-    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) *
+    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c ((carrier_sorted) ! (j - 1)))"
     using sum_diff_mult_distr[OF pref_X_pos c_carrier_sorted_nonneg pref_X_zero] semiring_1_cancel_class.of_nat_diff
-    pref_X_leq c_diff_def rank_quotient_geq_0 mult_left_mono 
+      pref_X_leq c_diff_def rank_quotient_geq_0 mult_left_mono 
     by (smt (verit, best) order.refl sum.cong)
-  moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) *
+  moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c ((carrier_sorted) ! (j - 1))) = 
-    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) *
+    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     c_set c (to_set X)"
     using sum_set_union_expr[OF n set_carrier_sorted length_carrier_sorted X_subset_carrier]
-    c_set_def[of c] carrier_pref_def[of c] pref_def[of c] by simp
+      c_set_def[of c] carrier_pref_def[of c] pref_def[of c] by simp
 
   ultimately show
-    "c_set c ?G \<ge> indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) *
+    "c_set c ?G \<ge> indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     c_set c (to_set X)" by auto
 qed
 
@@ -903,7 +903,7 @@ qed
 lemma BestInGreedy_correct_3_ret_1:
   "\<lbrakk> BestInGreedy_ret_1_conds best_in_greedy_state ; invar_1 best_in_greedy_state ; 
     invar_3 c order best_in_greedy_state ; invar_4 c order best_in_greedy_state \<rbrakk> \<Longrightarrow> 
-    indep_system.basis_in (matroid.indep_abs indep_set)
+    indep_system.basis_in (matroid.indep_abs indep_fn)
     (matroid.carrier_abs carrier)
     (to_set (result best_in_greedy_state))"
 proof-
@@ -914,11 +914,11 @@ proof-
   then have "carrier_pref c order (num_iter c order best_in_greedy_state) = to_set carrier"
     unfolding carrier_pref_def using carrier_sorted_set by simp
   moreover then
-    have "(pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state)) = 
+  have "(pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state)) = 
       (to_set (result best_in_greedy_state))"
     unfolding pref_def using \<open>invar_3 c order best_in_greedy_state\<close>
     by (auto elim!: invar_props_elims)
-  ultimately show "indep_system.basis_in (matroid.indep_abs indep_set)
+  ultimately show "indep_system.basis_in (matroid.indep_abs indep_fn)
     (matroid.carrier_abs carrier) (to_set (result best_in_greedy_state))"
     using \<open>invar_4 c order best_in_greedy_state\<close>
     by (auto simp add: matroid.carrier_abs_def elim!: invar_props_elims)
@@ -933,7 +933,7 @@ declare termination_intros
 
 lemma in_prod_relI[intro!,termination_intros]:
   "\<lbrakk>f1 a = f1 a'; (a, a') \<in> f2 <*mlex*> r\<rbrakk> \<Longrightarrow> (a,a') \<in> (f1 <*mlex*> f2 <*mlex*> r)"
-   by (simp add: mlex_iff)+
+  by (simp add: mlex_iff)+
 
 definition "less_rel = {(x::nat, y::nat). x < y}"
 
@@ -941,7 +941,7 @@ lemma wf_less_rel[intro!]: "wf less_rel"
   by(auto simp: less_rel_def wf_less)
 
 
-lemma call_measure_nonsym[simp]: "(call_measure dfs_state, call_measure dfs_state) \<notin> less_rel"
+lemma call_measure_nonsym[simp]: "(call_measure best_in_greedy_state, call_measure best_in_greedy_state) \<notin> less_rel"
   by (auto simp: less_rel_def)
 
 lemma call_1_terminates[termination_intros]:
@@ -969,8 +969,8 @@ lemma in_BestInGreedy_term_rel'[termination_intros]:
   by (simp add: BestInGreedy_term_rel'_def termination_intros)+
 
 lemma BestInGreedy_terminates[termination_intros]:
-  assumes "invar_1 dfs_state"
-  shows "BestInGreedy_dom dfs_state"
+  assumes "invar_1 best_in_greedy_state"
+  shows "BestInGreedy_dom best_in_greedy_state"
   using wf_term_rel assms
 proof(induction rule: wf_induct_rule)
   case (less x)
@@ -983,8 +983,8 @@ lemma initial_state_props[invar_holds_intros, termination_intros]:
   "invar_4 c order (initial_state c order)"
   "BestInGreedy_dom (initial_state c order)"
   by (auto simp: initial_state_def num_iter_def carrier_pref_def pref_def 
-           intro!: termination_intros invar_props_intros indep_system.basis_inI[OF indep_system_axioms_abs]
-           indep_system.indep_inI[OF indep_system_axioms_abs] indep_system.indep_empty[OF indep_system_axioms_abs])
+      intro!: termination_intros invar_props_intros indep_system.basis_inI[OF indep_system_axioms_abs]
+      indep_system.indep_inI[OF indep_system_axioms_abs] indep_system.indep_empty[OF indep_system_axioms_abs])
 
 
 lemma BestInGreedy_correct_1:
@@ -994,13 +994,13 @@ lemma BestInGreedy_correct_1:
 
 lemma BestInGreedy_correct_2:
   "\<lbrakk> valid_solution X \<rbrakk> \<Longrightarrow> c_set c (to_set (result (BestInGreedy (initial_state c order)))) \<ge> 
-     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) * 
+     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) * 
      c_set c (to_set X)"
   apply (intro BestInGreedy_correct_2_ret_1[where best_in_greedy_state = "BestInGreedy (initial_state c order)"])
   by (auto intro: invar_holds_intros ret_holds_intros)
 
 lemma BestInGreedy_correct_3:
-  "indep_system.basis_in (matroid.indep_abs indep_set) (matroid.carrier_abs carrier) (to_set (result (BestInGreedy (initial_state c order))))"
+  "indep_system.basis_in (matroid.indep_abs indep_fn) (matroid.carrier_abs carrier) (to_set (result (BestInGreedy (initial_state c order))))"
   apply (intro BestInGreedy_correct_3_ret_1[where best_in_greedy_state = "BestInGreedy (initial_state c order)"])
   by (auto intro: invar_holds_intros ret_holds_intros)
 
@@ -1014,46 +1014,46 @@ begin
 
 lemma BestInGreedy_bound_tight_aux:
   "\<exists>F B1 B2 c order X.
-  F \<subseteq> (matroid.carrier_abs carrier) \<and> (indep_system.basis_in (matroid.indep_abs indep_set) F B1) \<and>
-  (indep_system.basis_in (matroid.indep_abs indep_set) F B2) \<and> nonnegative c \<and> valid_order order \<and> valid_solution X \<and> 
+  F \<subseteq> (matroid.carrier_abs carrier) \<and> (indep_system.basis_in (matroid.indep_abs indep_fn) F B1) \<and>
+  (indep_system.basis_in (matroid.indep_abs indep_fn) F B2) \<and> nonnegative c \<and> valid_order order \<and> valid_solution X \<and> 
   c_set c (to_set (result (BestInGreedy (initial_state c order)))) = rat_of_nat (card B1) \<and>
   c_set c (to_set X) = rat_of_nat (card B2) \<and> card B1 \<le> card B2 \<and>
-  indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) =
+  indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) =
   Frac (int (card B1)) (int (card B2))"
 proof-
   let ?carrier_abs = "(matroid.carrier_abs carrier)"
 
   from indep_system.carrier_finite[OF indep_system_axioms_abs]
-    have "finite ?carrier_abs" by simp
+  have "finite ?carrier_abs" by simp
 
   from indep_system.ex_rank_quotient_frac[OF indep_system_axioms_abs]
-    have "\<exists>F B1 B2. F \<subseteq> (matroid.carrier_abs carrier) \<and>
-    indep_system.basis_in (matroid.indep_abs indep_set) F B1 \<and>
-    indep_system.basis_in (matroid.indep_abs indep_set) F B2 \<and>
+  have "\<exists>F B1 B2. F \<subseteq> (matroid.carrier_abs carrier) \<and>
+    indep_system.basis_in (matroid.indep_abs indep_fn) F B1 \<and>
+    indep_system.basis_in (matroid.indep_abs indep_fn) F B2 \<and>
     card B1 \<le> card B2 \<and>
-    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) = Frac (int (card B1)) (int (card B2))" by metis
+    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) = Frac (int (card B1)) (int (card B2))" by metis
   then obtain F B1 B2 where "F \<subseteq> (matroid.carrier_abs carrier)"
-    "indep_system.basis_in (matroid.indep_abs indep_set) F B1"
-    "indep_system.basis_in (matroid.indep_abs indep_set) F B2"
+    "indep_system.basis_in (matroid.indep_abs indep_fn) F B1"
+    "indep_system.basis_in (matroid.indep_abs indep_fn) F B2"
     "card B1 \<le> card B2"
-    "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) = Frac (int (card B1)) (int (card B2))"
+    "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) = Frac (int (card B1)) (int (card B2))"
     by blast
 
   from indep_system.basis_in_subset_carrier[OF indep_system_axioms_abs \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
-    \<open>indep_system.basis_in (matroid.indep_abs indep_set) F B1\<close>]
-    have "B1 \<subseteq> F" .
+      \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B1\<close>]
+  have "B1 \<subseteq> F" .
   from indep_system.indep_in_indep[OF indep_system_axioms_abs
-    indep_system.basis_in_indep_in[OF indep_system_axioms_abs \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
-    \<open>indep_system.basis_in (matroid.indep_abs indep_set) F B1\<close>]]
-    have "(matroid.indep_abs indep_set) B1" .
-    
+      indep_system.basis_in_indep_in[OF indep_system_axioms_abs \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
+        \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B1\<close>]]
+  have "(matroid.indep_abs indep_fn) B1" .
+
   from indep_system.basis_in_subset_carrier[OF indep_system_axioms_abs \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
-    \<open>indep_system.basis_in (matroid.indep_abs indep_set) F B2\<close>]
-    have "B2 \<subseteq> F" .
+      \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B2\<close>]
+  have "B2 \<subseteq> F" .
 
   from indep_system.basis_in_finite[OF indep_system_axioms_abs \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
-    \<open>indep_system.basis_in (matroid.indep_abs indep_set) F B1\<close>]
-    have "finite B1" .
+      \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B1\<close>]
+  have "finite B1" .
   from indep_system.carrier_finite[OF indep_system_axioms_abs] \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
     finite_subset have "finite (F - B1)" by blast
   from indep_system.carrier_finite[OF indep_system_axioms_abs]
@@ -1076,42 +1076,42 @@ proof-
   let ?l_F = "?l_B1 @ ?l_F_not_B1"
 
   from \<open>length ?l_B1 = card B1\<close> \<open>length ?l_F_not_B1 = card (F - B1)\<close>
-    have "length ?l_F = card F" 
+  have "length ?l_F = card F" 
     by (metis Diff_disjoint Int_Diff_Un \<open>B1 \<subseteq> F\<close> \<open>finite (F - B1)\<close> \<open>finite B1\<close> card_Un_disjoint
-    inf.absorb_iff2 length_append)
+        inf.absorb_iff2 length_append)
   from \<open>set ?l_B1 = B1\<close> \<open>set ?l_F_not_B1 = (F - B1)\<close> set_append[of ?l_B1 ?l_F_not_B1] \<open>B1 \<subseteq> F\<close>
-    have "set ?l_F = F" by auto
+  have "set ?l_F = F" by auto
 
   let ?l_not_B1 = "?l_F_not_B1 @ ?l_not_F"
 
   from \<open>length ?l_F_not_B1 = card (F - B1)\<close> \<open>length ?l_not_F = card (?carrier_abs - F)\<close>
-    have "length ?l_not_B1 = card (?carrier_abs - B1)" 
+  have "length ?l_not_B1 = card (?carrier_abs - B1)" 
     by (smt (verit) \<open>B1 \<subseteq> F\<close> \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>finite (matroid.carrier_abs carrier)\<close>
-    card_Diff_subset card_mono dual_order.trans finite_subset le_add_diff_inverse length_append
-    ordered_cancel_comm_monoid_diff_class.add_diff_assoc2)
+        card_Diff_subset card_mono dual_order.trans finite_subset le_add_diff_inverse length_append
+        ordered_cancel_comm_monoid_diff_class.add_diff_assoc2)
   from \<open>set ?l_F_not_B1 = (F - B1)\<close> \<open>set ?l_not_F = (?carrier_abs - F)\<close> set_append[of ?l_F_not_B1 ?l_not_F]
     \<open>B1 \<subseteq> F\<close> \<open>F \<subseteq> matroid.carrier_abs carrier\<close>
-    have "set ?l_not_B1 = (?carrier_abs - B1)"
+  have "set ?l_not_B1 = (?carrier_abs - B1)"
     by auto
 
   from \<open>set ?l_B1 = B1\<close> \<open>set ?l_not_B1 = (?carrier_abs - B1)\<close>
-    have "set ?l_B1 \<inter> set ?l_not_B1 = {}" by blast
+  have "set ?l_B1 \<inter> set ?l_not_B1 = {}" by blast
 
   have order_expr1: "?order = ?l_F @ ?l_not_F" by simp
   have order_expr2: "?order = ?l_B1 @ ?l_not_B1" by simp
 
   from \<open>length ?l_F = card F\<close> \<open>length ?l_not_F = card (?carrier_abs - F)\<close> order_expr1
-    have "length ?order = card ?carrier_abs"
+  have "length ?order = card ?carrier_abs"
     by (metis Diff_partition \<open>F \<subseteq> ?carrier_abs\<close> \<open>length ?l_not_B1 = card (?carrier_abs - B1)\<close>
-      \<open>set ?l_not_B1 = ?carrier_abs - B1\<close> \<open>set ?l_not_F = ?carrier_abs - F\<close>
-      \<open>set ?l_F = F\<close> \<open>set ?l_B1 \<inter> set ?l_not_B1 = {}\<close>
-      card_distinct distinct_append distinct_card set_append)
+        \<open>set ?l_not_B1 = ?carrier_abs - B1\<close> \<open>set ?l_not_F = ?carrier_abs - F\<close>
+        \<open>set ?l_F = F\<close> \<open>set ?l_B1 \<inter> set ?l_not_B1 = {}\<close>
+        card_distinct distinct_append distinct_card set_append)
   from \<open>set ?l_F = F\<close> \<open>set ?l_not_F = (?carrier_abs - F)\<close> order_expr1
-    have "set ?order = ?carrier_abs"
+  have "set ?order = ?carrier_abs"
     using \<open>F \<subseteq> matroid.carrier_abs carrier\<close> by auto
 
   from \<open>length ?order = card ?carrier_abs\<close> \<open>set ?order = ?carrier_abs\<close> 
-    have "valid_order ?order" unfolding valid_order_def
+  have "valid_order ?order" unfolding valid_order_def
     by (simp add: matroid.carrier_abs_def set_inv_carrier)
   then have "distinct ?order" unfolding valid_order_def using set_inv_carrier card_distinct
     by (metis matroid.set.set_cardinality)
@@ -1134,48 +1134,48 @@ proof-
     case (2 x)
     with \<open>set ?l_F = F\<close> show ?case by auto
   qed
-    
+
   with sorted_aux3[OF \<open>distinct ?order\<close> \<open>?order = ?l_F @ ?l_not_F\<close>]
-    have "?l_F = filter (\<lambda>y. ?c y = 1) ?order" by presburger
+  have "?l_F = filter (\<lambda>y. ?c y = 1) ?order" by presburger
 
   with \<open>?order = ?l_F @ ?l_not_F\<close>
-    have "?order = (filter (\<lambda>y. ?c y = 1) ?order) @ ?l_not_F" by auto
+  have "?order = (filter (\<lambda>y. ?c y = 1) ?order) @ ?l_not_F" by auto
 
   from sorted_aux4[OF \<open>distinct ?order\<close> this]
-    have "?l_not_F = (filter (\<lambda>y. ?c y \<noteq> 1) ?order)" .
+  have "?l_not_F = (filter (\<lambda>y. ?c y \<noteq> 1) ?order)" .
   with \<open>\<And>x. ?c x = 1 \<longleftrightarrow> ?c x \<noteq> 0\<close>
-    have "?l_not_F = (filter (\<lambda>y. ?c y = 0) ?order)" by simp
+  have "?l_not_F = (filter (\<lambda>y. ?c y = 0) ?order)" by simp
 
   from \<open>?l_F = filter (\<lambda>y. ?c y = 1) ?order\<close>
-    have "length (filter (\<lambda>y. ?c y = 1) ?order) = card F"
+  have "length (filter (\<lambda>y. ?c y = 1) ?order) = card F"
     using \<open>length ?l_F = card F\<close> by simp
   then have "length (filter (\<lambda>y. ?c y = 1) (sort_desc ?c ?order)) = card F"
     using sort_desc_stable[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>] by auto
 
   from carrier_sorted_distinct[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>]
-    have "distinct (sort_desc ?c ?order)" by simp
+  have "distinct (sort_desc ?c ?order)" by simp
 
   from \<open>length ?order = card ?carrier_abs\<close> order_expr1 \<open>length ?l_F = card F\<close>
-    have "card F \<le> card ?carrier_abs"
+  have "card F \<le> card ?carrier_abs"
     using \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>finite (matroid.carrier_abs carrier)\<close> card_mono by blast
   with length_carrier_sorted[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>]
-    have "card F \<le> length (sort_desc ?c ?order)"
+  have "card F \<le> length (sort_desc ?c ?order)"
     using set_inv_carrier \<open>length ?order = card (matroid.carrier_abs carrier)\<close> \<open>sort_desc_axioms\<close> sort_desc_axioms_def
     by presburger
   from sorted_aux5[OF \<open>distinct (sort_desc ?c ?order)\<close> carrier_sorted_sorted_desc[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>] \<open>\<forall>x. ?c x = 1 \<or> ?c x = 0\<close>
-    \<open>length (filter (\<lambda>y. ?c y = 1) (sort_desc ?c ?order)) = card F\<close> \<open>card F \<le> length (sort_desc ?c ?order)\<close>]
-    have "sort_desc ?c ?order = (filter (\<lambda>y. ?c y = 1) (sort_desc ?c ?order)) @
+      \<open>length (filter (\<lambda>y. ?c y = 1) (sort_desc ?c ?order)) = card F\<close> \<open>card F \<le> length (sort_desc ?c ?order)\<close>]
+  have "sort_desc ?c ?order = (filter (\<lambda>y. ?c y = 1) (sort_desc ?c ?order)) @
     (filter (\<lambda>y. ?c y \<noteq> 1) (sort_desc ?c ?order))" .
   with \<open>\<And>x. ?c x = 1 \<longleftrightarrow> ?c x \<noteq> 0\<close>
-    have "sort_desc ?c ?order = (filter (\<lambda>y. ?c y = 1) (sort_desc ?c ?order)) @
+  have "sort_desc ?c ?order = (filter (\<lambda>y. ?c y = 1) (sort_desc ?c ?order)) @
     (filter (\<lambda>y. ?c y = 0) (sort_desc ?c ?order))"
     by simp
   with sort_desc_stable[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>]
-    have "sort_desc ?c ?order = (filter (\<lambda>y. ?c y = 1) ?order) @ (filter (\<lambda>y. ?c y = 0) ?order)"
+  have "sort_desc ?c ?order = (filter (\<lambda>y. ?c y = 1) ?order) @ (filter (\<lambda>y. ?c y = 0) ?order)"
     by simp
 
   with \<open>?l_F = filter (\<lambda>y. ?c y = 1) ?order\<close> \<open>?l_not_F = (filter (\<lambda>y. ?c y = 0) ?order)\<close>
-    have carrier_sorted_expr: "sort_desc ?c ?order = ?l_B1 @ ?l_not_B1" by fastforce
+  have carrier_sorted_expr: "sort_desc ?c ?order = ?l_B1 @ ?l_not_B1" by fastforce
 
 
   have num_iter_in_B1: "\<And>best_in_greedy_state. length (carrier_list best_in_greedy_state) \<ge> 1 \<Longrightarrow>
@@ -1183,7 +1183,7 @@ proof-
     hd (carrier_list best_in_greedy_state) \<in> B1 \<Longrightarrow> num_iter ?c ?order best_in_greedy_state < length ?l_B1"
     using carrier_sorted_expr \<open>set ?l_B1 \<inter> set ?l_not_B1 = {}\<close> \<open>set ?l_B1 = B1\<close>
     by (smt (verit) append_Nil disjoint_iff_not_equal drop_all drop_append in_set_dropD length_greater_0_conv
-    less_numeral_extra(1) linorder_le_less_linear list.set_sel(1) order_less_le_trans)
+        less_numeral_extra(1) linorder_le_less_linear list.set_sel(1) order_less_le_trans)
   have num_iter_not_in_B1: "\<And>best_in_greedy_state. hd (carrier_list best_in_greedy_state) \<notin> B1 \<Longrightarrow>
     (carrier_list best_in_greedy_state) = drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order) \<Longrightarrow>
     num_iter ?c ?order best_in_greedy_state \<ge> length ?l_B1"
@@ -1228,36 +1228,36 @@ proof-
       with num_iter_not_in_B1 have "num_iter ?c ?order best_in_greedy_state \<ge> length ?l_B1"
         using \<open>invar_2 ?c ?order best_in_greedy_state\<close>
         by (auto elim!: invar_2_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>])
-      
+
       with \<open>?prop best_in_greedy_state\<close> \<open>set ?l_B1 = B1\<close>
-        have "B1 \<subseteq> to_set (result (best_in_greedy_state))"
+      have "B1 \<subseteq> to_set (result (best_in_greedy_state))"
         by simp 
 
       with \<open>?prop best_in_greedy_state\<close>
-        have "to_set (result (best_in_greedy_state)) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)"
+      have "to_set (result (best_in_greedy_state)) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)"
         by blast
 
       from bound_tight_set_aux[OF \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> \<open>B1 \<subseteq> F\<close> \<open>B1 \<subseteq> to_set (result (best_in_greedy_state))\<close> this]
-        have "\<exists>Y. to_set (result best_in_greedy_state) = Y \<union> B1 \<and> Y \<subseteq> matroid.carrier_abs carrier - F" .
+      have "\<exists>Y. to_set (result best_in_greedy_state) = Y \<union> B1 \<and> Y \<subseteq> matroid.carrier_abs carrier - F" .
       then obtain Y where "to_set (result best_in_greedy_state) = Y \<union> B1" "Y \<subseteq> matroid.carrier_abs carrier - F"
         by blast
 
       from indep_system.basis_in_max_indep_in[OF indep_system_axioms_abs \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
-        \<open>indep_system.basis_in (matroid.indep_abs indep_set) F B1\<close>]
-      have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_set) (insert x B1)"
+          \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B1\<close>]
+      have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_fn) (insert x B1)"
         using indep_system.indep_in_def[OF indep_system_axioms_abs]
-        by (metis DiffD1 \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>indep_system.basis_in (matroid.indep_abs indep_set) F B1\<close>
-        indep_system.basis_in_indep_in indep_system_axioms_abs insert_subset)
+        by (metis DiffD1 \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B1\<close>
+            indep_system.basis_in_indep_in indep_system_axioms_abs insert_subset)
       moreover have "\<forall>x \<in> F - B1. insert x B1 \<subseteq> insert x (B1 \<union> Y)" by blast
-      ultimately have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_set) (insert x (B1 \<union> Y))"
+      ultimately have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_fn) (insert x (B1 \<union> Y))"
         using indep_system.indep_subset[OF indep_system_axioms_abs] by metis
-      then have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_set)
+      then have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_fn)
         (insert x (to_set (result best_in_greedy_state)))"
         using \<open>to_set (result best_in_greedy_state) = Y \<union> B1\<close>
         by (simp add: Un_commute)
 
       with \<open>hd (carrier_list best_in_greedy_state) \<in> F - B1\<close> 
-        have "\<not>(indep' (set_insert (hd (carrier_list best_in_greedy_state)) (result best_in_greedy_state)))"
+      have "\<not>(indep' (set_insert (hd (carrier_list best_in_greedy_state)) (result best_in_greedy_state)))"
         using \<open>invar_1 best_in_greedy_state\<close>
         by (metis insert_is_Un invar_1_def matroid.indep_impl_to_abs matroid.set.invar_insert matroid.set.set_insert matroid_inv(1) matroid_inv(2) sup.commute)
 
@@ -1269,10 +1269,10 @@ proof-
     moreover have "hd (carrier_list best_in_greedy_state) \<in> (matroid.carrier_abs carrier)"
       using \<open>invar_2 ?c ?order best_in_greedy_state\<close> \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close>
       by (metis BestInGreedy_call_1_conds carrier_sorted_set[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>] in_set_dropD
-        invar_2_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>] list.set_sel(1) list.simps(3) matroid.carrier_abs_def)
+          invar_2_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>] list.set_sel(1) list.simps(3) matroid.carrier_abs_def)
     ultimately have 
       "hd (carrier_list best_in_greedy_state) \<in> (matroid.carrier_abs carrier) - (F - B1)" by auto
-      
+
     have to_set_upd: "to_set (result (BestInGreedy_upd1 best_in_greedy_state)) =
       insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state))"
       using \<open>invar_1 best_in_greedy_state\<close>
@@ -1280,7 +1280,7 @@ proof-
 
     from \<open>hd (carrier_list best_in_greedy_state) \<in> (matroid.carrier_abs carrier) - (F - B1)\<close>
       \<open>B1 \<subseteq> F\<close> \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> indep_system.carrier_finite[OF indep_system_axioms_abs]
-      consider "hd (carrier_list best_in_greedy_state) \<in> B1" |
+    consider "hd (carrier_list best_in_greedy_state) \<in> B1" |
       "hd (carrier_list best_in_greedy_state) \<in> (matroid.carrier_abs carrier) - F" by blast
     then have 
       prop1: "set (take (num_iter ?c ?order (BestInGreedy_upd1 best_in_greedy_state)) ?l_B1) \<subseteq>
@@ -1289,10 +1289,10 @@ proof-
       case 1
       with num_iter_in_B1 have "num_iter ?c ?order best_in_greedy_state < length ?l_B1"
         using \<open>1 \<le> length (carrier_list best_in_greedy_state)\<close>
-        \<open>invar_2 ?c ?order best_in_greedy_state\<close> 
+          \<open>invar_2 ?c ?order best_in_greedy_state\<close> 
         by (auto elim!: invar_2_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>])
       with carrier_sorted_expr have "num_iter ?c ?order best_in_greedy_state < length (sort_desc ?c ?order)" by auto 
-      
+
       then have "set (take (num_iter ?c ?order (BestInGreedy_upd1 best_in_greedy_state)) (sort_desc ?c ?order)) =
         insert (hd (drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order)))
         (set (take (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order)))"
@@ -1303,7 +1303,7 @@ proof-
         (set (take (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order)))"
         using \<open>invar_2 ?c ?order best_in_greedy_state\<close> 
         by (simp add: invar_2_def)
-      
+
       moreover have
         "take (num_iter ?c ?order (BestInGreedy_upd1 best_in_greedy_state)) (sort_desc ?c ?order) =
           take (num_iter ?c ?order (BestInGreedy_upd1 best_in_greedy_state)) ?l_B1"
@@ -1317,7 +1317,7 @@ proof-
         (set (take (num_iter ?c ?order best_in_greedy_state) ?l_B1))" by auto   
 
       with \<open>?prop best_in_greedy_state\<close> to_set_upd 
-        show ?thesis by blast
+      show ?thesis by blast
     next
       case 2
       with \<open>B1 \<subseteq> F\<close> num_iter_not_in_B1 have "num_iter ?c ?order best_in_greedy_state \<ge> length ?l_B1"
@@ -1327,12 +1327,12 @@ proof-
       then have "set (take (num_iter ?c ?order (BestInGreedy_upd1 best_in_greedy_state)) ?l_B1) =
         set (take (num_iter ?c ?order best_in_greedy_state) ?l_B1)" using num_iter_upd by auto
       with \<open>?prop best_in_greedy_state\<close> to_set_upd 
-        show ?thesis by blast
+      show ?thesis by blast
     qed
 
     with \<open>hd (carrier_list best_in_greedy_state) \<in> (matroid.carrier_abs carrier) - (F - B1)\<close>
       \<open>?prop best_in_greedy_state\<close>
-      have "insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state))
+    have "insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state))
         \<subseteq> matroid.carrier_abs carrier - (F - B1)"
       by blast
 
@@ -1374,10 +1374,10 @@ proof-
     proof (rule ccontr, goal_cases)
       case 1
       then have "hd (carrier_list best_in_greedy_state) \<in> B1" by blast
-      
+
       with num_iter_in_B1 have "num_iter ?c ?order best_in_greedy_state < length ?l_B1"
         using \<open>1 \<le> length (carrier_list best_in_greedy_state)\<close>
-        \<open>invar_2 ?c ?order best_in_greedy_state\<close> 
+          \<open>invar_2 ?c ?order best_in_greedy_state\<close> 
         by (auto elim!: invar_2_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>])
 
       have "(to_set (result best_in_greedy_state)) \<subseteq> 
@@ -1385,22 +1385,22 @@ proof-
         using \<open>invar_3 ?c ?order best_in_greedy_state\<close>
         by (auto simp add: carrier_pref_def carrier_sorted_expr elim!: invar_3_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>])
       with \<open>num_iter ?c ?order best_in_greedy_state < length ?l_B1\<close> \<open>set ?l_B1 = B1\<close> set_take_subset
-        have "(to_set (result best_in_greedy_state)) \<subseteq> B1"
+      have "(to_set (result best_in_greedy_state)) \<subseteq> B1"
         by force
 
       with \<open>hd (carrier_list best_in_greedy_state) \<in> B1\<close>
-        have "insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state)) \<subseteq> B1"
+      have "insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state)) \<subseteq> B1"
         by auto
 
-      from indep_system.indep_subset[OF indep_system_axioms_abs \<open>(matroid.indep_abs (indep_set)) B1\<close> this]
-        have "matroid.indep_abs indep_set (insert (hd (carrier_list best_in_greedy_state))
+      from indep_system.indep_subset[OF indep_system_axioms_abs \<open>(matroid.indep_abs (indep_fn)) B1\<close> this]
+      have "matroid.indep_abs indep_fn (insert (hd (carrier_list best_in_greedy_state))
           (to_set (result best_in_greedy_state)))" .
 
       show ?case
         using \<open>invar_1 best_in_greedy_state\<close> \<open>BestInGreedy_call_2_conds best_in_greedy_state\<close>
-        by (metis BestInGreedy_call_2_conds\<open>matroid.indep_abs indep_set (insert (hd (carrier_list best_in_greedy_state))
+        by (metis BestInGreedy_call_2_conds\<open>matroid.indep_abs indep_fn (insert (hd (carrier_list best_in_greedy_state))
           (to_set (result best_in_greedy_state)))\<close> inf_sup_aci(5) insert_is_Un invar_1_def local.simps matroid.set.invar_insert
-          matroid.set.set_insert)
+            matroid.set.set_insert)
     qed
 
     with num_iter_not_in_B1 have "num_iter ?c ?order best_in_greedy_state \<ge> length ?l_B1"
@@ -1410,13 +1410,13 @@ proof-
     then have "set (take (num_iter ?c ?order (BestInGreedy_upd2 best_in_greedy_state)) ?l_B1) =
       set (take (num_iter ?c ?order best_in_greedy_state) ?l_B1)" using num_iter_upd by auto
     with \<open>?prop best_in_greedy_state\<close>
-      have prop1: "set (take (num_iter ?c ?order (BestInGreedy_upd2 best_in_greedy_state)) ?l_B1) \<subseteq>
+    have prop1: "set (take (num_iter ?c ?order (BestInGreedy_upd2 best_in_greedy_state)) ?l_B1) \<subseteq>
         to_set (result (BestInGreedy_upd2 best_in_greedy_state))"
       using \<open>BestInGreedy_call_2_conds best_in_greedy_state\<close>
       by (auto simp add: BestInGreedy_upd2_def elim!: call_cond_elims)
 
     with \<open>?prop best_in_greedy_state\<close>
-      have prop2: "to_set (result (BestInGreedy_upd2 best_in_greedy_state)) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)"
+    have prop2: "to_set (result (BestInGreedy_upd2 best_in_greedy_state)) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)"
       by (auto simp add: BestInGreedy_upd2_def)
 
     from prop1 prop2 show "?prop (BestInGreedy_upd2 best_in_greedy_state)" by blast
@@ -1434,7 +1434,7 @@ proof-
 
     show "?prop (BestInGreedy best_in_greedy_state)"
       using \<open>invar_1 best_in_greedy_state\<close> \<open>invar_2 ?c ?order best_in_greedy_state\<close>
-      \<open>invar_3 ?c ?order best_in_greedy_state\<close> \<open>?prop best_in_greedy_state\<close>
+        \<open>invar_3 ?c ?order best_in_greedy_state\<close> \<open>?prop best_in_greedy_state\<close>
     proof (induction rule: BestInGreedy_induct[OF \<open>BestInGreedy_dom best_in_greedy_state\<close>])
       case IH: (1 best_in_greedy_state)
       show ?case
@@ -1465,7 +1465,7 @@ proof-
   have "?prop (initial_state ?c ?order)"
     unfolding num_iter_def initial_state_def by auto
   with prop_holds initial_state_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>]
-    have "?prop (BestInGreedy (initial_state ?c ?order))" by blast
+  have "?prop (BestInGreedy (initial_state ?c ?order))" by blast
 
 
   have "length ?order = length (sort_desc ?c ?order)"
@@ -1482,24 +1482,24 @@ proof-
       show ?case 
         apply(rule BestInGreedy_cases[where best_in_greedy_state = best_in_greedy_state])
         by (auto simp add: IH BestInGreedy_ret1_def BestInGreedy_simps[OF \<open>BestInGreedy_dom best_in_greedy_state\<close>] 
-          elim!: BestInGreedy_ret_1_conds)
+            elim!: BestInGreedy_ret_1_conds)
     qed
   qed
 
   with initial_state_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>]
-    have "num_iter ?c ?order (BestInGreedy (initial_state ?c ?order)) = length (sort_desc ?c ?order)"
+  have "num_iter ?c ?order (BestInGreedy (initial_state ?c ?order)) = length (sort_desc ?c ?order)"
     unfolding num_iter_def by auto
   with order_expr2 \<open>length ?order = length (sort_desc ?c ?order)\<close>
-    have "num_iter ?c ?order (BestInGreedy (initial_state ?c ?order)) \<ge> length ?l_B1" by simp
+  have "num_iter ?c ?order (BestInGreedy (initial_state ?c ?order)) \<ge> length ?l_B1" by simp
 
   with \<open>?prop (BestInGreedy (initial_state ?c ?order))\<close> \<open>set ?l_B1 = B1\<close> 
-    have "B1 \<subseteq> to_set (result (BestInGreedy (initial_state ?c ?order)))" by simp
+  have "B1 \<subseteq> to_set (result (BestInGreedy (initial_state ?c ?order)))" by simp
   from \<open>?prop (BestInGreedy (initial_state ?c ?order))\<close>
-    have "to_set (result (BestInGreedy (initial_state ?c ?order))) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)"
+  have "to_set (result (BestInGreedy (initial_state ?c ?order))) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)"
     by blast
 
   from bound_tight_set_aux[OF \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> \<open>B1 \<subseteq> F\<close> \<open>B1 \<subseteq> to_set (result (BestInGreedy (initial_state ?c ?order)))\<close>
-    \<open>to_set (result (BestInGreedy (initial_state ?c ?order))) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)\<close>]
+      \<open>to_set (result (BestInGreedy (initial_state ?c ?order))) \<subseteq> (matroid.carrier_abs carrier) - (F - B1)\<close>]
   have "\<exists>X. to_set (result (BestInGreedy (initial_state ?c ?order))) = X \<union> B1 \<and>
     X \<subseteq> (matroid.carrier_abs carrier) - F"
     by simp
@@ -1508,17 +1508,17 @@ proof-
     by blast
   with \<open>B1 \<subseteq> F\<close> have "X \<inter> B1 = {}" by blast
 
-  (* Cost of greedy solution *)
+(* Cost of greedy solution *)
   from \<open>X \<subseteq> (matroid.carrier_abs carrier) - F\<close> indep_system.carrier_finite[OF indep_system_axioms_abs]
     finite_subset
-    have "finite X" by auto
+  have "finite X" by auto
   from \<open>B1 \<subseteq> F\<close> \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> indep_system.carrier_finite[OF indep_system_axioms_abs]
     finite_subset
-    have "finite B1" by metis
+  have "finite B1" by metis
 
   from sum.union_disjoint[OF \<open>finite X\<close> \<open>finite B1\<close> \<open>X \<inter> B1 = {}\<close>] 
     \<open>to_set (result (BestInGreedy (initial_state ?c ?order))) = X \<union> B1\<close>
-    have "sum ?c (to_set (result (BestInGreedy (initial_state ?c ?order)))) = sum ?c X + sum ?c B1" by auto
+  have "sum ?c (to_set (result (BestInGreedy (initial_state ?c ?order)))) = sum ?c X + sum ?c B1" by auto
   also have "... = sum ?c B1" using \<open>X \<subseteq> (matroid.carrier_abs carrier) - F\<close>
     using in_mono by fastforce
   also have "... = rat_of_nat (card B1)"
@@ -1527,66 +1527,66 @@ proof-
   then have "c_set ?c (to_set (result (BestInGreedy (initial_state ?c ?order)))) = rat_of_nat (card B1)"
     using c_set_def by metis
 
-  (* Cost of B2 solution *)
+(* Cost of B2 solution *)
   have "\<exists>X_B2. set_inv X_B2 \<and> to_set X_B2 = B2"
     by (metis \<open>B2 \<subseteq> F\<close> \<open>F \<subseteq> matroid.carrier_abs carrier\<close> indep_system_axioms_abs indep_system_def
-    matroid.from_set_correct matroid.invar_from_set rev_finite_subset)
+        matroid.from_set_correct matroid.invar_from_set rev_finite_subset)
   then obtain X_B2 where "set_inv X_B2" "to_set X_B2 = B2" by blast
   then have "sum ?c (to_set X_B2) = rat_of_nat (card B2)"
     using in_mono \<open>B2 \<subseteq> F\<close> by fastforce
   then have "c_set ?c (to_set X_B2) = rat_of_nat (card B2)"
     using c_set_def by metis
 
-  (* B2 solution is valid *)
+(* B2 solution is valid *)
   from \<open>B2 \<subseteq> F\<close> \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> set_inv_carrier matroid.carrier_abs_def \<open>to_set X_B2 = B2\<close>
-    have "subseteq X_B2 carrier"
+  have "subseteq X_B2 carrier"
     using Best_In_Greedy.set_inv_carrier Best_In_Greedy_axioms \<open>set_inv X_B2\<close> by force
 
   from indep_system.basis_in_indep_in[OF indep_system_axioms_abs \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
-    \<open>indep_system.basis_in (matroid.indep_abs indep_set) F B2\<close>]
+      \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B2\<close>]
     indep_system.indep_in_def[OF indep_system_axioms_abs] \<open>to_set X_B2 = B2\<close> \<open>set_inv X_B2\<close>
-    have "indep' X_B2" by simp
+  have "indep' X_B2" by simp
 
   from \<open>set_inv X_B2\<close> \<open>subseteq X_B2 carrier\<close> \<open>indep' X_B2\<close> valid_solution_def 
-    have "valid_solution X_B2" by simp
+  have "valid_solution X_B2" by simp
 
-  from \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>indep_system.basis_in (matroid.indep_abs indep_set) F B1\<close>
-    \<open>indep_system.basis_in (matroid.indep_abs indep_set) F B2\<close> \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>
+  from \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B1\<close>
+    \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B2\<close> \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>
     \<open>valid_solution X_B2\<close> \<open>c_set ?c (to_set (result (BestInGreedy (initial_state ?c ?order)))) = rat_of_nat (card B1)\<close>
     \<open>c_set ?c (to_set X_B2) = rat_of_nat (card B2)\<close> \<open>card B1 \<le> card B2\<close>
-    \<open>indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) = Frac (int (card B1)) (int (card B2))\<close>
+    \<open>indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) = Frac (int (card B1)) (int (card B2))\<close>
   show ?thesis by blast
 qed
 
 lemma BestInGreedy_bound_tight:
   "(\<exists>c. nonnegative c \<and> (\<exists>order. valid_order order \<and> (\<exists>X. valid_solution X \<and> 
      c_set c (to_set (result (BestInGreedy (initial_state c order)))) = 
-     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) * 
+     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) * 
      c_set c (to_set X))))"
   using BestInGreedy_bound_tight_aux Frac_of_int_leq_quotient by fastforce
 
 lemma BestInGreedy_matroid_iff_opt:
-  "(matroid.matroid_axioms carrier indep_set) = 
+  "(matroid.matroid_axioms carrier indep_fn) = 
     (\<forall>c. nonnegative c \<longrightarrow> (\<forall>order. valid_order order \<longrightarrow> (\<forall>X. valid_solution X \<longrightarrow>
     c_set c (to_set (result (BestInGreedy (initial_state c order)))) \<ge> c_set c (to_set X))))"
 proof-
 
   have greedy_opt_iff_rq_eq_1: "(\<forall>c. nonnegative c \<longrightarrow> (\<forall>order. valid_order order \<longrightarrow> (\<forall>X. valid_solution X \<longrightarrow>
     c_set c (to_set (result (BestInGreedy (initial_state c order)))) \<ge> c_set c (to_set X)))) = 
-    (indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) = 1)"
+    (indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) = 1)"
   proof (rule iffI, erule HOL.contrapos_pp)
-    assume "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) \<noteq> 1"
+    assume "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) \<noteq> 1"
     with indep_system.rank_quotient_leq_1[OF indep_system_axioms_abs]
-      have rq_less_1: "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) < 1" 
+    have rq_less_1: "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) < 1" 
       by simp
 
     from BestInGreedy_bound_tight_aux obtain F B1 B2 c order X 
       where bound_tight: 
-      "F \<subseteq> (matroid.carrier_abs carrier)" "(indep_system.basis_in (matroid.indep_abs indep_set) F B1)"
-      "(indep_system.basis_in (matroid.indep_abs indep_set) F B2)" "nonnegative c" "valid_order order" "valid_solution X"
-      "c_set c (to_set (result (BestInGreedy (initial_state c order)))) = rat_of_nat (card B1)"
-      "c_set c (to_set X) = rat_of_nat (card B2)" "card B1 \<le> card B2"
-      "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) =
+        "F \<subseteq> (matroid.carrier_abs carrier)" "(indep_system.basis_in (matroid.indep_abs indep_fn) F B1)"
+        "(indep_system.basis_in (matroid.indep_abs indep_fn) F B2)" "nonnegative c" "valid_order order" "valid_solution X"
+        "c_set c (to_set (result (BestInGreedy (initial_state c order)))) = rat_of_nat (card B1)"
+        "c_set c (to_set X) = rat_of_nat (card B2)" "card B1 \<le> card B2"
+        "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) =
       Frac (int (card B1)) (int (card B2))" by blast
 
     have
@@ -1598,53 +1598,53 @@ proof-
       using valid_solution_c_set_nonnegative[OF \<open>nonnegative c\<close> \<open>valid_order order\<close> \<open>valid_solution X\<close>] by simp
 
     from rq_less_1 Frac_def bound_tight
-      have "card B1 \<noteq> card B2" by auto
+    have "card B1 \<noteq> card B2" by auto
     with bound_tight Frac_def have
-      "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) =
+      "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) =
       Fract (int (card B1)) (int (card B2))" by auto
-      
+
     from bound_tight Frac_of_int_leq_quotient \<open>card B1 \<le> card B2\<close> have rank_quotient_prod:
       "c_set c (to_set (result (BestInGreedy (initial_state c order)))) =
-      indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) * c_set c (to_set X)"
+      indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) * c_set c (to_set X)"
       by simp
-    
+
     have c_X_pos: "c_set c (to_set X) > 0"
     proof (rule ccontr, goal_cases)
       case 1
       with c_X_nonneg have "c_set c (to_set X) = 0" by simp
       with \<open>c_set c (to_set X) = rat_of_nat (card B2)\<close>
-        have "card B2 = 0" by simp
-      
+      have "card B2 = 0" by simp
+
       with \<open>card B1 \<le> card B2\<close> have "card B1 = 0" by simp
 
       from \<open>card B1 = 0\<close> \<open>card B2 = 0\<close>
-        \<open>indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) =
+        \<open>indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) =
         Frac (int (card B1)) (int (card B2))\<close>
-      have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) = 1"
+      have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) = 1"
         using Frac_def by auto
 
       with rq_less_1 show ?case by simp
     qed
 
     from c_greedy_nonneg c_X_pos rank_quotient_prod rq_less_1
-      have "c_set c (to_set (result (BestInGreedy (initial_state c order)))) < c_set c (to_set X)"
+    have "c_set c (to_set (result (BestInGreedy (initial_state c order)))) < c_set c (to_set X)"
       by auto
     with \<open>nonnegative c\<close> \<open>valid_order order\<close> \<open>valid_solution X\<close>
-      show "\<not>(\<forall>c. nonnegative c \<longrightarrow> (\<forall>order. valid_order order \<longrightarrow> (\<forall>X. valid_solution X \<longrightarrow>
+    show "\<not>(\<forall>c. nonnegative c \<longrightarrow> (\<forall>order. valid_order order \<longrightarrow> (\<forall>X. valid_solution X \<longrightarrow>
       c_set c (to_set (result (BestInGreedy (initial_state c order)))) \<ge> c_set c (to_set X))))"
       by force
   next
-    assume "(indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_set) = 1)"
+    assume "(indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) = 1)"
     then show "(\<forall>c. nonnegative c \<longrightarrow> (\<forall>order. valid_order order \<longrightarrow> (\<forall>X. valid_solution X \<longrightarrow>
       c_set c (to_set (result (BestInGreedy (initial_state c order)))) \<ge> c_set c (to_set X))))"
-    using BestInGreedy_correct_2 by simp
+      using BestInGreedy_correct_2 by simp
   qed
 
   from indep_system.matroid_iff_rq_eq_1[OF indep_system_axioms_abs] greedy_opt_iff_rq_eq_1
   show ?thesis 
     using BestInGreedy_axioms_def matroid.matroid_abs_equiv \<open>BestInGreedy_axioms\<close> by presburger
 qed
-  
+
 end
 
 end
@@ -1652,20 +1652,19 @@ end
 end
 
 locale Best_In_Greedy' = 
-Best_In_Greedy where set_empty = "set_empty::'s" and set_insert= "set_insert::('a::linorder) \<Rightarrow> 's \<Rightarrow> 's"
-and set_of_sets_isin= "set_of_sets_isin::'t \<Rightarrow> 's \<Rightarrow> bool" 
-for set_empty set_insert  set_of_sets_isin +
+  Best_In_Greedy where set_empty = "set_empty::'s" and set_insert= "set_insert::('a::linorder) \<Rightarrow> 's \<Rightarrow> 's"
+for set_empty set_insert  +
 fixes local_indep_oracle::"'a \<Rightarrow> 'wrps \<Rightarrow> bool"
-and   remove_wrapper::"'wrps \<Rightarrow> 's"
-and  wrapper_invar::"'wrps \<Rightarrow> bool"
-and wrapper_insert::"'a::linorder \<Rightarrow> 'wrps \<Rightarrow> 'wrps"
-and wrapper_empty::"'wrps"
+  and   remove_wrapper::"'wrps \<Rightarrow> 's"
+  and  wrapper_invar::"'wrps \<Rightarrow> bool"
+  and wrapper_insert::"'a::linorder \<Rightarrow> 'wrps \<Rightarrow> 'wrps"
+  and wrapper_empty::"'wrps"
 assumes wrapper_axioms:
-        "\<And> S x. wrapper_invar S \<Longrightarrow> wrapper_invar (wrapper_insert x S)"
-        "\<And> S. wrapper_invar S \<Longrightarrow> set_inv (remove_wrapper S)"
-        "\<And> S x. wrapper_invar S \<Longrightarrow> remove_wrapper (wrapper_insert x S) = set_insert x (remove_wrapper S)"
-        "set_empty = remove_wrapper wrapper_empty"
-        "wrapper_invar wrapper_empty"
+  "\<And> S x. wrapper_invar S \<Longrightarrow> wrapper_invar (wrapper_insert x S)"
+  "\<And> S. wrapper_invar S \<Longrightarrow> set_inv (remove_wrapper S)"
+  "\<And> S x. wrapper_invar S \<Longrightarrow> remove_wrapper (wrapper_insert x S) = set_insert x (remove_wrapper S)"
+  "set_empty = remove_wrapper wrapper_empty"
+  "wrapper_invar wrapper_empty"
 begin
 
 definition "to_ordinary (state::('a, 'wrps) best_in_greedy_state) = \<lparr>carrier_list = carrier_list state, result = remove_wrapper (result state) \<rparr>"
@@ -1701,22 +1700,22 @@ definition "initial_state' c order = \<lparr>carrier_list = (sort_desc c order),
 lemmas [code] = initial_state'_def BestInGreedy'.simps
 context 
   assumes local_indep_oracle:
-"\<And> S x. wrapper_invar S \<Longrightarrow> indep' (remove_wrapper S) \<Longrightarrow> subseteq (remove_wrapper S) carrier \<Longrightarrow>
+    "\<And> S x. wrapper_invar S \<Longrightarrow> indep' (remove_wrapper S) \<Longrightarrow> subseteq (remove_wrapper S) carrier \<Longrightarrow>
          \<not> x \<in> to_set (remove_wrapper S)
     \<Longrightarrow> (local_indep_oracle x S
  \<longleftrightarrow> indep' (set_insert x (remove_wrapper S)))"
-and carrier_inv: "set_inv carrier"
+    and carrier_inv: "set_inv carrier"
 begin
 
 lemma BestInGreedy'_corresp_general:
   assumes 
- "BestInGreedy_dom state'" 
- "indep' (result state')" "wrapper_invar  (result state)" 
-"subseteq (result state') carrier"
-"set (carrier_list state) \<subseteq> to_set carrier"
- "state' = to_ordinary state"
-  "to_set (result state') \<inter> set (carrier_list state) = {}"
-  "distinct (carrier_list state)"
+    "BestInGreedy_dom state'" 
+    "indep' (result state')" "wrapper_invar  (result state)" 
+    "subseteq (result state') carrier"
+    "set (carrier_list state) \<subseteq> to_set carrier"
+    "state' = to_ordinary state"
+    "to_set (result state') \<inter> set (carrier_list state) = {}"
+    "distinct (carrier_list state)"
   shows "to_ordinary (BestInGreedy' state) = BestInGreedy state'"
   using assms(2-)
 proof(induction arbitrary: state rule: BestInGreedy_induct[OF assms(1)])
@@ -1730,7 +1729,7 @@ proof(induction arbitrary: state rule: BestInGreedy_induct[OF assms(1)])
     proof(rule BestInGreedy_call_1_conds[OF 1], goal_cases)
       case 1
       then obtain x xs where 1: "carrier_list state' = x # xs"
-      "indep' (set_insert (hd (carrier_list state')) (result state'))" by auto
+        "indep' (set_insert (hd (carrier_list state')) (result state'))" by auto
       have new_state_is:"state'\<lparr>carrier_list := xs, result := set_insert x (result state')\<rparr>
            = BestInGreedy_upd1 state'"
         by (simp add: "1"(1) BestInGreedy_upd1_def)
@@ -1744,20 +1743,20 @@ proof(induction arbitrary: state rule: BestInGreedy_induct[OF assms(1)])
         using local_indep_oracle[of "result state" x] IH(4,5,6,8) x_not_in_result 
         by(auto simp add: to_ordinary_def) 
       have 11: "subseteq (set_insert (hd (carrier_list state')) (result state')) carrier"
-          using "1"(1) IH(6) IH(7)  carrier_inv matroid.set.set_insert matroid.set.set_subseteq IH(5) 
-          by(subst matroid.set.set_subseteq)
-            (auto intro: matroid.set.invar_insert simp add:  IH(8) wrapper_axioms(2) to_ordinary_def carrier_inv)+
-        have 12: "to_set (result (BestInGreedy_upd1 state')) \<inter> 
+        using "1"(1) IH(6) IH(7)  carrier_inv matroid.set.set_insert matroid.set.set_subseteq IH(5) 
+        by(subst matroid.set.set_subseteq)
+          (auto intro: matroid.set.invar_insert simp add:  IH(8) wrapper_axioms(2) to_ordinary_def carrier_inv)+
+      have 12: "to_set (result (BestInGreedy_upd1 state')) \<inter> 
                   set (carrier_list (BestInGreedy'_upd1 state)) = {}"
-          using "1"(1) IH(10) IH(8) IH(9) to_ordinary_def  
-          by(auto simp add: BestInGreedy_upd1_def BestInGreedy'_upd1_def matroid.set.set_insert IH(5) IH(8) to_ordinary_def wrapper_axioms(2))
-        have 13: "distinct (carrier_list (BestInGreedy'_upd1 state))" 
-          using "1"(1)  IH(10) IH(8)  by (auto simp add: to_ordinary_def BestInGreedy'_upd1_def)
-        have "to_ordinary (BestInGreedy' (BestInGreedy'_upd1 state)) =
+        using "1"(1) IH(10) IH(8) IH(9) to_ordinary_def  
+        by(auto simp add: BestInGreedy_upd1_def BestInGreedy'_upd1_def matroid.set.set_insert IH(5) IH(8) to_ordinary_def wrapper_axioms(2))
+      have 13: "distinct (carrier_list (BestInGreedy'_upd1 state))" 
+        using "1"(1)  IH(10) IH(8)  by (auto simp add: to_ordinary_def BestInGreedy'_upd1_def)
+      have "to_ordinary (BestInGreedy' (BestInGreedy'_upd1 state)) =
              BestInGreedy (BestInGreedy_upd1 state')"
         using "1"(1) IH(7) 11 12 13
         by(fastforce intro!: IH(2)[OF c1  indep_new_state] simp add: BestInGreedy_upd1_def BestInGreedy'_upd1_def
-                  IH(8) wrapper_axioms to_ordinary_def IH(5))
+            IH(8) wrapper_axioms to_ordinary_def IH(5))
       then show ?case 
         using 1(1) local_indep_oracle IH(8)
         by(subst BestInGreedy_simps(1)[OF IH(1) c1], subst BestInGreedy'.simps)
@@ -1769,8 +1768,8 @@ proof(induction arbitrary: state rule: BestInGreedy_induct[OF assms(1)])
     proof(cases rule: BestInGreedy_call_2_conds[OF 2])
       case 1
       then obtain x xs where 1:"carrier_list state' = x # xs"
-       "\<not> indep' (set_insert (hd (carrier_list state')) (result state'))" by auto
-       have new_state_is:"state'\<lparr>carrier_list := xs\<rparr>
+        "\<not> indep' (set_insert (hd (carrier_list state')) (result state'))" by auto
+      have new_state_is:"state'\<lparr>carrier_list := xs\<rparr>
            = BestInGreedy_upd2 state'"
         by (simp add: "1"(1) BestInGreedy_upd2_def)
       hence "\<not> indep' (set_insert x (result state'))"
@@ -1779,12 +1778,12 @@ proof(induction arbitrary: state rule: BestInGreedy_induct[OF assms(1)])
         using local_indep_oracle[of "result state" ] IH(4,5,6,8, 9)1 by (simp add: to_ordinary_def)
       have same_result:"to_ordinary (BestInGreedy' (BestInGreedy_upd2 state)) = BestInGreedy (BestInGreedy_upd2 state')"
         using IH(4-) 1(1) new_state_is  IH(3)[OF 2]
-         by(auto simp add: BestInGreedy_upd2_def to_ordinary_def)
+        by(auto simp add: BestInGreedy_upd2_def to_ordinary_def)
       show ?thesis 
         using 1  local_indep_oracle  same_result 2 BestInGreedy_simps(2)[OF IH(1) 2]
         by(subst BestInGreedy'.simps)
           (auto intro!: IH(3) simp add: IH(8) new_state_is  to_ordinary_def  BestInGreedy_upd2_def) 
-      qed
+    qed
   next
     case 3
     then show ?thesis 
@@ -1794,85 +1793,81 @@ proof(induction arbitrary: state rule: BestInGreedy_induct[OF assms(1)])
   qed
 qed
 
-lemma indep'_empty: "matroid.indep_system_axioms carrier indep_set \<Longrightarrow> indep' set_empty"
-using  matroid.set.invar_empty  matroid.set.set_empty matroid.set.set_subseteq
+lemma indep'_empty: "matroid.indep_system_axioms carrier indep_fn \<Longrightarrow> indep' set_empty"
+  using  matroid.set.invar_empty  matroid.set.set_empty matroid.set.set_subseteq
   by(unfold matroid.indep_system_axioms_def) fast
-  
+
 lemma BestInGreedy'_corresp:
   assumes BestInGreedy_axioms sort_desc_axioms
-          "matroid.indep_system_axioms carrier indep_set"
-          "nonnegative c" "valid_order  order"
+    "matroid.indep_system_axioms carrier indep_fn"
+    "nonnegative c" "valid_order  order"
   shows "to_ordinary (BestInGreedy' (initial_state' c order)) = BestInGreedy (initial_state c order)"
   by(auto intro!: BestInGreedy'_corresp_general  initial_state_props(5)
-           simp add: assms,
-     auto intro: indep'_empty[OF assms(3)] 
-     simp add: initial_state_def matroid.set.invar_empty  carrier_inv 
-     matroid.set.set_empty matroid.set.set_subseteq  carrier_sorted_set[OF assms(1-5)]
-     indep'_empty initial_state'_def  to_ordinary_def)
-    (auto simp add: wrapper_axioms assms(1-5) carrier_sorted_distinct)
+      simp add: assms,
+      auto intro: indep'_empty[OF assms(3)] 
+      simp add: initial_state_def matroid.set.invar_empty  carrier_inv 
+      matroid.set.set_empty matroid.set.set_subseteq  carrier_sorted_set[OF assms(1-5)]
+      indep'_empty initial_state'_def  to_ordinary_def)
+    (auto simp add: wrapper_axioms carrier_sorted_distinct[OF assms(1-5)])
 end
 end
 
 
 
 locale Use_Greedy_Thms
-=  Indep_System_Specs where set_of_sets_isin = "set_of_sets_isin::('a \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> bool"
-for set_of_sets_isin+
-fixes indep_predicate input_G  c order and sort_desc :: "('b \<Rightarrow> rat) \<Rightarrow> 'b list \<Rightarrow> 'b list"
-assumes set_of_sets_is_id:"set_of_sets_isin = id"
-assumes indep_system: "indep_system (to_set input_G) indep_predicate"
-assumes indep_finite: "(\<And>X. indep_predicate X \<Longrightarrow> finite X)"
-assumes indep_in_input_G: "(\<And>X. indep_predicate X \<Longrightarrow> X \<subseteq> to_set input_G)"
-assumes G_good: "set_inv input_G"
-assumes non_negative_c:"\<And> e. e \<in> to_set input_G \<Longrightarrow> c e \<ge> (0::rat)"
-assumes order_is_G: "to_set input_G = set order"
-assumes order_length_is_G_card: "distinct order"
-assumes finite_sets: "\<And> X. finite (to_set X)"
-assumes sort_desc_axioms: "sort_desc_axioms' sort_desc"
+  =  Indep_System_Specs +
+  fixes indep_predicate input_G  c order and sort_desc :: "('b \<Rightarrow> rat) \<Rightarrow> 'b list \<Rightarrow> 'b list"
+  assumes indep_system: "indep_system (to_set input_G) indep_predicate"
+  assumes indep_finite: "(\<And>X. indep_predicate X \<Longrightarrow> finite X)"
+  assumes indep_in_input_G: "(\<And>X. indep_predicate X \<Longrightarrow> X \<subseteq> to_set input_G)"
+  assumes G_good: "set_inv input_G"
+  assumes non_negative_c:"\<And> e. e \<in> to_set input_G \<Longrightarrow> c e \<ge> (0::rat)"
+  assumes order_is_G: "to_set input_G = set order"
+  assumes order_length_is_G_card: "distinct order"
+  assumes finite_sets: "\<And> X. finite (to_set X)"
+  assumes sort_desc_axioms: "sort_desc_axioms' sort_desc"
 begin
 
 lemma indep_system_abs_lift:"
     indep_system (to_set input_G) (indep_abs (\<lambda>Z. indep_predicate (to_set Z)))"
   using indep_system indep_finite
   by(subst indep_abs_def, subst to_function_def)
-    (auto simp add: to_function_def from_set_def set_correct_insert_elements indep_system_def set_of_sets_is_id)
+    (auto simp add: to_function_def from_set_def set_correct_insert_elements indep_system_def)
 
 lemma indep_predicate_same:"
 (\<lambda>S. (finite S \<longrightarrow> indep_predicate (set (sorted_list_of_set S))) \<and> finite S) = indep_predicate"
   using indep_finite by auto
 
-lemma indep_abs_id_indep_predicate: "(Indep_System_Specs.indep_abs set_empty set_insert set_of_sets_isin (\<lambda>Z. indep_predicate (to_set Z)))
+lemma indep_abs_id_indep_predicate: "(Indep_System_Specs.indep_abs set_empty set_insert (\<lambda>Z. indep_predicate (to_set Z)))
        = indep_predicate"
   apply(subst indep_abs_def)
   apply(subst to_function_def)
   apply(subst from_set_def)
-  apply (simp add: set_of_sets_is_id)
   apply(subst set_correct_insert_elements)
-  apply(subst indep_predicate_same)
   using  indep_system indep_finite indep_in_input_G 
-  by (auto simp add: indep_system.indep_in_E_indep_in_same)
+  by auto
 
 
 lemma indep_in_same_indep:"
     (indep_system.indep_in
-       (Indep_System_Specs.indep_abs set_empty set_insert set_of_sets_isin (\<lambda>Z. indep_predicate (to_set Z)))
+       (Indep_System_Specs.indep_abs set_empty set_insert (\<lambda>Z. indep_predicate (to_set Z)))
        (Indep_System_Specs.carrier_abs to_set input_G)) = indep_predicate"
   apply(subst indep_abs_id_indep_predicate)
   apply(subst carrier_abs_def)
   using  indep_system indep_finite indep_in_input_G 
-  by (auto simp add: indep_system.indep_in_E_indep_in_same)
+  by (fastforce simp add: indep_system.indep_in_def)
 
 
 lemma basis_predicate_same:
-"(indep_system.basis (to_set input_G) (indep_predicate) S) =
+  "(indep_system.basis (to_set input_G) (indep_predicate) S) =
 (indep_system.basis_in (indep_abs (\<lambda> Z. indep_predicate (to_set Z)))(carrier_abs input_G) S)"
   apply(subst indep_system.basis_in_def[OF indep_system_abs_lift])
   apply(subst indep_in_same_indep)
   by(auto simp add: carrier_abs_def)
 
 interpretation greedy:  Best_In_Greedy set_insert set_delete set_isin set_inv union inter 
-                        diff subseteq cardinality to_set  set_empty set_of_sets_isin input_G
-                        "(\<lambda> Z. indep_predicate (to_set Z))" sort_desc
+  diff cardinality to_set  set_empty input_G
+  "(\<lambda> Z. indep_predicate (to_set Z))" sort_desc
   by(auto intro!: Best_In_Greedy.intro Matroid_Specs.intro simp add: Indep_System_Specs_axioms)
 
 lemma nonnegative:"greedy.nonnegative c"
@@ -1885,8 +1880,8 @@ lemma valid_order: "greedy.valid_order order"
   by (simp add: greedy.valid_order_def order_is_G size_G_length_order)
 
 lemma bestingreedy_axioms: "greedy.BestInGreedy_axioms"
-  unfolding greedy.BestInGreedy_axioms_def invar_def finite_sets_def indep_def
-  by (auto simp add: set_of_sets_is_id G_good finite_sets)
+  unfolding greedy.BestInGreedy_axioms_def invar_def finite_sets_def
+  by (auto simp add: G_good finite_sets)
 
 lemma greedy_sort_desc_axioms: "greedy.sort_desc_axioms"
   using sort_desc_axioms 
@@ -1894,23 +1889,23 @@ lemma greedy_sort_desc_axioms: "greedy.sort_desc_axioms"
 
 lemma indep_system_axioms2: "indep_system_axioms input_G (\<lambda>Z. indep_predicate (to_set Z))"
   using bestingreedy_axioms carrier_abs_def greedy.BestInGreedy_axioms_def indep_abs_id_indep_predicate 
-indep_system indep_system_abs_to_impl by presburger
+    indep_system indep_system_abs_to_impl by presburger
 
 lemmas BestInGreedy_correct_1 = greedy.BestInGreedy_correct_1[OF bestingreedy_axioms 
-        greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
+    greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
 
 lemmas BestInGreedy_correct_2 = greedy.BestInGreedy_correct_2[OF bestingreedy_axioms 
-        greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
+    greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
 
 lemmas BestInGreedy_correct_3 = greedy.BestInGreedy_correct_3[OF bestingreedy_axioms 
-        greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
+    greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
 
 lemma algo_gives_basis:
- "(indep_system.basis (to_set input_G) (indep_predicate)
+  "(indep_system.basis (to_set input_G) (indep_predicate)
  (to_set (result (greedy.BestInGreedy (greedy.initial_state c order)))))"
   using basis_predicate_same
- greedy.BestInGreedy_correct_3[OF bestingreedy_axioms 
-        greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
+    greedy.BestInGreedy_correct_3[OF bestingreedy_axioms 
+      greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
   by simp
 
 thm greedy.valid_solution_def
@@ -1921,16 +1916,16 @@ lemma indep_to_set_from_set_inv:"indep_predicate S \<Longrightarrow> to_set (fro
 lemma indep_is_valid_solution: "indep_predicate X \<Longrightarrow> greedy.valid_solution (from_set X)"
   using finite_indep_abs_expr[OF indep_finite, of X ] indep_abs_id_indep_predicate 
   by (fastforce simp add:   G_good indep_in_input_G indep_to_set_from_set_inv invar_from_set
-           set.set_subseteq greedy.valid_solution_def)
+      set.set_subseteq greedy.valid_solution_def)
 
 lemma indep_predicate_greedy_correct:"indep_predicate X \<Longrightarrow>
 indep_system.rank_quotient (to_set input_G) indep_predicate * sum c X
 \<le> sum c (to_set (result (greedy.BestInGreedy (greedy.initial_state c order))))"
   by(subst sym[OF carrier_abs_def] , subst sym[OF indep_abs_id_indep_predicate],
-     subst indep_to_set_from_set_inv[of X, symmetric])
+      subst indep_to_set_from_set_inv[of X, symmetric])
     (auto intro: greedy.BestInGreedy_correct_2[OF bestingreedy_axioms 
         greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order  indep_is_valid_solution,
-       simplified greedy.c_set_def])
+        simplified greedy.c_set_def])
 
 end
 end
