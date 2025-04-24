@@ -9,6 +9,7 @@ session "Directed_Set_Graphs" = "HOL-Eisbach" +
     Adaptors
 
   theories
+    More_Lists
     Awalk
     enat_misc
     Pair_Graph

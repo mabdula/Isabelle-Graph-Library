@@ -6,7 +6,6 @@ sessions
 
 theories [document=false]
   Arith_Lemmas
-  List_Lemmas
   Logic_Lemmas
 
 theories

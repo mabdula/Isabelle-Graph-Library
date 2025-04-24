@@ -267,7 +267,7 @@ assumes DFS_axioms: DFS_axioms
 begin
 
 context
-includes set_ops.automation  Graph.adjmap.automation  Graph.vset.set.automation 
+includes set_ops.automation and Graph.adjmap.automation and Graph.vset.set.automation 
 begin
 
 lemma graph_inv[simp,intro]:
@@ -754,6 +754,12 @@ proof-
     by auto
 qed
 end
+
+lemma s_not_in_dVs_not_reachable:"s \<notin> dVs (Graph.digraph_abs G) \<Longrightarrow> return (DFS initial_state) = NotReachable"
+  apply(subst initial_state_def)
+  apply(subst DFS.psimps)
+  by(auto intro!: DFS.domintros)
+
 end
 
 context DFS
@@ -799,6 +805,12 @@ proof-
     using initial_state_props(6)
     by auto
 qed
+
+lemma s_not_in_dVs_same:"s \<notin> dVs (Graph.digraph_abs G) 
+           \<Longrightarrow> DFS initial_state = DFS_impl initial_state"
+  apply(subst initial_state_def)
+  apply(subst DFS.psimps)
+  by(auto intro!: DFS.domintros)
 
 end
 
