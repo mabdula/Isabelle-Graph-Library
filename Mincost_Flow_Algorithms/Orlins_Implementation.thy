@@ -63,8 +63,8 @@ and get_max: "\<And> b f. bal_invar b \<Longrightarrow> dom (bal_lookup b) \<not
  \<Longrightarrow> get_max f b = Max {f y (the (bal_lookup b y)) | y. y \<in> dom (bal_lookup b)}"
 begin
 context
-  includes flow_map.automation bal_map.automation rep_comp_map.automation conv_map.automation
-           not_blocked_map.automation
+  includes flow_map.automation and bal_map.automation and rep_comp_map.automation and conv_map.automation
+          and not_blocked_map.automation
 begin
 
 definition "insert_undirected_edge_impl u v forst = (let vsets_u = the (lookup forst u);
@@ -123,8 +123,8 @@ and conv_empty = "conv_empty::'conv_impl"
 for rep_comp_update_all not_blocked_update_all flow_update_all get_max conv_empty
 begin
 context
-  includes flow_map.automation bal_map.automation rep_comp_map.automation conv_map.automation
-           not_blocked_map.automation
+  includes flow_map.automation and bal_map.automation and rep_comp_map.automation and conv_map.automation
+       and not_blocked_map.automation
 begin
 
 lemma insert_undirected_edge_equivalent[simp]: "insert_undirected_edge_impl = insert_undirected_edge"

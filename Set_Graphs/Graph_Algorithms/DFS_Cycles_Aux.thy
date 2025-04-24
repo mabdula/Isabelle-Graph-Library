@@ -461,7 +461,7 @@ definition "initial_state = \<lparr>stack = [s], seen = insert s \<emptyset>\<^s
 lemmas [code] = initial_state_def
 
 context
-includes  Graph.adjmap.automation  Graph.vset.set.automation
+includes  Graph.adjmap.automation and Graph.vset.set.automation
 assumes DFS_Aux_axioms 
 begin
 

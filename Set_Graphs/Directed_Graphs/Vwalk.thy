@@ -1117,7 +1117,6 @@ lemma vwalk_bet_transitive_2:
    apply (auto simp: vwalk_bet_def)
    by blast
 
-
 lemma vwalk_bet_props:
   "vwalk_bet G u p v \<Longrightarrow> (\<lbrakk>vwalk G p; p\<noteq>[]; hd p = u; last p = v\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: vwalk_bet_def)
@@ -1148,5 +1147,17 @@ proof(induction p rule: edges_of_vwalk.induct)
     then show ?thesis by fast
   qed
 qed simp+
+
+lemma vwalk_in_its_own_edges: "Vwalk.vwalk E  p 
+  \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk (set (edges_of_vwalk p)) p "
+  using vwalk_not_vwalk_elim_2 by fastforce
+
+lemma vwalk_bet_in_its_own_edges: "Vwalk.vwalk_bet E u p  v
+  \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk_bet (set (edges_of_vwalk p)) u p v" 
+  using  vwalk_in_its_own_edges by(auto simp add: vwalk_bet_def)
+
+lemma vwalk_bet_cycle_delete: "vwalk_bet Y x ( xs@[a]@ys@[a]@zs) y \<Longrightarrow> vwalk_bet Y x ( xs@[a]@zs) y"
+  by(auto intro!: vwalk_bet_transitive[of Y x "xs@[a]" a "[a]@zs" y, simplified]
+           intro: vwalk_bet_pref vwalk_bet_suff[of Y x "xs@a#ys" a zs y])
 
 end

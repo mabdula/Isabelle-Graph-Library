@@ -297,7 +297,7 @@ definition "invar_cycle_true dfs_cycles_state =
 
 
 context
-includes Graph.adjmap.automation Graph.vset.set.automation
+includes Graph.adjmap.automation and Graph.vset.set.automation
 assumes DFS_Cycles_axioms dfs_aux_axioms
 begin
 
