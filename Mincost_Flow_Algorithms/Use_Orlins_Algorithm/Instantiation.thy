@@ -1037,7 +1037,7 @@ proof(goal_cases)
   have finite_graph:"Pair_Graph_Specs_satisfied.finite_graph (remove_all_empties E)"
     using assms(2) remove_almost_all_empties(1)
     by blast
-  have finite_neighbs:"Pair_Graph_Specs_satisfied.finite_vsets undefined"
+  have finite_neighbs:"Pair_Graph_Specs_satisfied.finite_vsets (remove_all_empties E)"
     unfolding Pair_Graph_Specs_satisfied.finite_vsets_def 
     by (simp add: )
   obtain e where e_prop:"e \<in> (Adj_Map_Specs2.digraph_abs  E)" "u = prod.fst e"
@@ -1061,7 +1061,7 @@ proof(goal_cases)
   have dfs_axioms: "DFS.DFS_axioms isin t_set adj_inv \<emptyset>\<^sub>N vset_inv lookup 
                          (remove_all_empties E) u"
     using finite_graph finite_neighbs graph_invar u_in_Vs remove_all_empty_digraph_abs[OF assms(2)]
-    by(simp only: dfs.DFS_axioms_def )
+    by(simp only: dfs.DFS_axioms_def)
   have dfs_thms: "DFS_thms map_empty delete vset_insert isin t_set sel update adj_inv vset_empty vset_delete
                    vset_inv vset_union vset_inter vset_diff lookup (remove_all_empties E) u"
     by(auto intro!: DFS_thms.intro DFS_thms_axioms.intro simp add: dfs.DFS_axioms dfs_axioms)

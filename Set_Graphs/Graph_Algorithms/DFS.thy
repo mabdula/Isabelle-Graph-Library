@@ -40,7 +40,7 @@ and T_lookup::"'adjmapmap\<Rightarrow> 'v \<Rightarrow> nat" and T_G::nat and T_
 
 begin
 
-definition "DFS_axioms = ( Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets
+definition "DFS_axioms = ( Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets G
                          \<and> s \<in> dVs (Graph.digraph_abs G))"
 
 abbreviation "neighbourhood' v == Graph.neighbourhood G v"
@@ -273,7 +273,7 @@ begin
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"
           "Graph.finite_graph G"
-          "Graph.finite_vsets"
+          "Graph.finite_vsets G"
   using DFS_axioms
   by (auto simp: DFS_axioms_def)
 
@@ -282,7 +282,7 @@ lemma s_in_G[simp,intro]: "s \<in> dVs (Graph.digraph_abs G)"
   by (auto simp: DFS_axioms_def)
 
 lemma finite_neighbourhoods[simp]:                                                 
-          "finite (t_set N)"
+          "lookup G v = Some N \<Longrightarrow> finite (t_set N)"
   using graph_inv(3)
   by fastforce
 
