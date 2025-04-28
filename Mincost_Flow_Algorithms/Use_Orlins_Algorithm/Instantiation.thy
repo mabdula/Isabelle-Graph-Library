@@ -1,7 +1,7 @@
 section \<open>Instantiation of Abstract Datatypes\<close>
 
 theory Instantiation
-  imports RBT_Map_Extension
+  imports Graph_Algorithms_Dev.RBT_Map_Extension
           Directed_Set_Graphs.Pair_Graph_RBT
           Graph_Algorithms_Dev.Bellman_Ford_Example
           Graph_Algorithms_Dev.DFS_Example
