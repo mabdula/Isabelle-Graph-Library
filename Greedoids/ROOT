@@ -1,4 +1,4 @@
-session "Greedoids_Paper" = "HOL-Library" +
+session "Greedoids" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
   sessions
    "HOL-Eisbach" 

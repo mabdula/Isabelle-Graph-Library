@@ -40,7 +40,7 @@ assumes
 begin
 
 definition "BFS_axiom \<longleftrightarrow>
-  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets \<and>
+  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets G \<and>
   t_set srcs \<subseteq> dVs (Graph.digraph_abs G) \<and>
   (\<forall>u. finite (Pair_Graph.neighbourhood (Graph.digraph_abs G) u)) \<and>
   t_set srcs \<noteq> {} \<and> vset_inv srcs"
@@ -170,7 +170,7 @@ begin
 lemma graph_inv[simp]:
      "Graph.graph_inv G" 
      "Graph.finite_graph G"
-     "Graph.finite_vsets" and
+     "Graph.finite_vsets G" and
    srcs_in_G[simp,intro]: 
      "t_set srcs \<subseteq> dVs (Graph.digraph_abs G)" and
    finite_vset:
@@ -1345,8 +1345,9 @@ next
     using graph_inv(2)
     by (auto simp: Graph.finite_graph_def intro!: finite_subset[OF *])
   moreover have "finite {neighbourhood (Graph.digraph_abs G) u |u. u \<in> t_set (current BFS_state)}"
-    using Graph.finite_vsets_def
-    by (fastforce simp: ) 
+    using assms(3)
+    by (auto intro!: finite_imageI finite_subset[of "[current BFS_state]\<^sub>s" "dVs [G]\<^sub>g"] 
+           simp add: Graph.finite_vertices invar_2_def Setcompr_eq_image)
   moreover have "t_set (visited (BFS_upd1 BFS_state)) \<union> t_set (current (BFS_upd1 BFS_state)) \<subseteq> dVs (Graph.digraph_abs G)"
     using \<open>invar_1 BFS_state\<close> \<open>invar_2 BFS_state\<close> 
     by(auto elim!: invar_props_elims call_cond_elims
@@ -1420,8 +1421,8 @@ lemma initial_state_props[invar_holds_intros, termination_intros, simp]:
 proof-
   show ?g1
     using graph_inv(3)
-    by (fastforce simp: initial_state_def dVs_def Graph.finite_vsets_def
-        intro!: invar_props_intros)
+    by (auto simp: initial_state_def dVs_def 
+        intro!: invar_props_intros finite_subset[OF srcs_in_G])
 
   have "t_set (visited initial_state)\<union> t_set (current initial_state) \<subseteq> dVs (Graph.digraph_abs G)"
     using srcs_in_G
