@@ -4,5 +4,4 @@ session "Greedoids" = "HOL-Library" +
    "HOL-Eisbach" 
   theories
     Greedoids
-    Greedoids_Example
     Greedoids_Optimisation
