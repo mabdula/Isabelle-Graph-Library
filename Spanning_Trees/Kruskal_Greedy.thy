@@ -10,7 +10,8 @@ global_interpretation Pair_Graph_U_RBT: Pair_Graph_U_Specs
     insert = vset_insert and vset_delete = vset_delete and vset_inv = "vset_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and sel = sel
   defines add_edge =Pair_Graph_U_RBT.add_edge
-    and  delete_edge =Pair_Graph_U_RBT.delete_edge
+   (* and  delete_edge =Pair_Graph_U_RBT.delete_edge*)
+    and  add_u_edge =Pair_Graph_U_RBT.add_u_edge
   by(simp add: Pair_Graph_U_Specs_def Pair_Graph_Specs_def M.Map_axioms S_C.Set_Choose_axioms)
 
 find_theorems add_edge
@@ -282,25 +283,11 @@ next
   then show ?case 
     by (simp add: rbt_set_fold_correct)
 next
-  case 5
-  then show ?case 
-    by (simp add: dfs.Graph.finite_vsetsI)
-next
-  case (6 e)
+  case (5 e)
   then show ?case 
     by (simp add: v1_never_v2)
 qed
-  (*
-next
-  case (7 x y)
-  then show ?case
-    by (simp add: v1_of_edge_of)
-next
-  case (8 x y)
-  then show ?case
-    by (simp add: v2_of_edge_of)
-qed
-*)
+
 interpretation Kruskal_Graphs_Matroids_proofs: Encoding_Proofs
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
     lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and

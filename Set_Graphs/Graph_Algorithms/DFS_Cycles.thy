@@ -84,7 +84,7 @@ begin
 
 
 definition "DFS_Cycles_axioms = (
-  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets \<and>
+  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets G \<and>
   vset_inv V \<and> (t_set V = dVs (Graph.digraph_abs G)) \<and>
   (\<forall>(x, y) \<in> (Graph.digraph_abs G). (y, x) \<in> Graph.digraph_abs G) \<and>
   (\<forall>x \<in> dVs (Graph.digraph_abs G). (x, x) \<notin> Graph.digraph_abs G))"
@@ -308,12 +308,12 @@ declare set_ops.set_union[simp] set_ops.set_inter[simp]
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"
           "Graph.finite_graph G"
-          "Graph.finite_vsets"
+          "Graph.finite_vsets G"
   using \<open>DFS_Cycles_axioms\<close>
   by (auto simp: DFS_Cycles_axioms_def)
 
 lemma finite_neighbourhoods[simp]:                                                 
-          "finite (t_set N)"
+          "lookup G v = Some N \<Longrightarrow> finite (t_set N)"
   using graph_inv(3)
   by fastforce
 
@@ -985,7 +985,7 @@ lemma call_1_terminates[termination_intros]:
   "\<lbrakk>DFS_Cycles_call_1_conds dfs_cycles_state; invar_1 dfs_cycles_state; invar_seen dfs_cycles_state;
     invar_seen_subset_V dfs_cycles_state\<rbrakk> \<Longrightarrow> (DFS_Cycles_upd1 dfs_cycles_state, dfs_cycles_state) \<in> call_measure <*mlex*> r"
 proof-
-  assume "DFS_Cycles_call_1_conds dfs_cycles_state" "invar_1 dfs_cycles_state" "invar_seen dfs_cycles_state"
+  assume assms: "DFS_Cycles_call_1_conds dfs_cycles_state" "invar_1 dfs_cycles_state" "invar_seen dfs_cycles_state"
     "invar_seen_subset_V dfs_cycles_state"
   let ?s = "sel (V -\<^sub>G (seen dfs_cycles_state))"
   let ?seen' = "t_set (seen_aux (dfs_aux ?s))"
@@ -997,7 +997,7 @@ proof-
   have "t_set (V -\<^sub>G (seen dfs_cycles_state)) \<noteq> {}"
     using \<open>DFS_Cycles_call_1_conds dfs_cycles_state\<close> \<open>invar_1 dfs_cycles_state\<close>
     by (force elim!: call_cond_elims invar_props_elims)
-  then have "?s \<in> t_set (V -\<^sub>G (seen dfs_cycles_state))"
+  then have a1:"?s \<in> t_set (V -\<^sub>G (seen dfs_cycles_state))"
     using \<open>DFS_Cycles_call_1_conds dfs_cycles_state\<close> \<open>invar_1 dfs_cycles_state\<close>
     by (force elim!: call_cond_elims invar_props_elims)
   then have "?seen' \<noteq> {}"
@@ -1007,11 +1007,17 @@ proof-
     (t_set (seen dfs_cycles_state)) \<union> ?seen'"
     using \<open>invar_1 dfs_cycles_state\<close> \<open>?s \<in> dVs (Graph.digraph_abs G)\<close> dfs_aux_seen_inv
     by (force simp add: DFS_Cycles_upd1_def elim!: invar_props_elims)
-  with \<open>?seen' \<noteq> {}\<close> have "card (t_set (seen (DFS_Cycles_upd1 dfs_cycles_state))) > 
-    card (t_set (seen dfs_cycles_state))"
-    using \<open>DFS_Cycles_call_1_conds dfs_cycles_state\<close> \<open>invar_1 dfs_cycles_state\<close> \<open>?s \<in> dVs (Graph.digraph_abs G)\<close> dfs_aux_s_in_seen
-    by (metis DiffD2 UnCI V_inv \<open>?s \<in> [V -\<^sub>G DFS_Cycles_state.seen dfs_cycles_state]\<^sub>s\<close> card_seteq
-     finite_neighbourhoods inf_sup_ord(3) invar_1_props linorder_not_le set_ops.set_diff)
+  have finite_old_seen: "finite [DFS_Cycles_state.seen dfs_cycles_state]\<^sub>s"
+    using V_graph_verts assms(4) finite_subset  by (fastforce simp add: invar_seen_subset_V_def)
+  have finite_new_seen:"finite [DFS_Cycles_state.seen (DFS_Cycles_upd1 dfs_cycles_state)]\<^sub>s"
+    using  Graph.finite_vertices[OF graph_inv(1,2,3) ]
+           V_graph_verts assms(1,2,3,4) finite_subset
+           invar_seen_subset_V_props[OF invar_seen_subset_V_holds_upd1[OF assms]] by auto
+  hence "card (t_set (seen (DFS_Cycles_upd1 dfs_cycles_state))) > 
+    card (t_set (seen dfs_cycles_state))" 
+   using a1 assms(2)
+   by(force intro: psubset_card_mono simp add: invar_1_def seen_expr \<open>sel (V -\<^sub>G DFS_Cycles_state.seen dfs_cycles_state) \<in> dVs [G]\<^sub>g\<close>)
+
   moreover have "t_set (seen (DFS_Cycles_upd1 dfs_cycles_state)) \<subseteq> t_set V"
     using invar_seen_subset_V_holds_upd1[OF \<open>DFS_Cycles_call_1_conds dfs_cycles_state\<close> \<open>invar_1 dfs_cycles_state\<close>
       \<open>invar_seen dfs_cycles_state\<close> \<open>invar_seen_subset_V dfs_cycles_state\<close>]
@@ -1023,10 +1029,11 @@ proof-
   ultimately have "card (t_set (V -\<^sub>G seen (DFS_Cycles_upd1 dfs_cycles_state))) < 
     card (t_set (V -\<^sub>G seen dfs_cycles_state))"
     using invar_1_holds_upd1[OF \<open>DFS_Cycles_call_1_conds dfs_cycles_state\<close> \<open>invar_1 dfs_cycles_state\<close>]
-    using \<open>invar_1 dfs_cycles_state\<close>
-    apply (clarsimp elim!: invar_props_elims invar_holds_intros)
-    by (metis Diff_Diff_Int Diff_Un V_inv card_seteq finite_neighbourhoods inf.absorb_iff2 inf_le1
-      leI nat_less_le seen_expr set_ops.set_diff)
+          \<open>invar_1 dfs_cycles_state\<close>  Graph.finite_vertices[OF  graph_inv(1,2,3)]  card_mono
+         le_diff_iff' 
+    by (fastforce elim!: invar_props_elims invar_holds_intros 
+        simp add: card_Diff_subset[OF  finite_new_seen] card_Diff_subset[OF finite_old_seen] 
+                  less_le_not_le  V_graph_verts[symmetric])
   then show ?thesis
     by (auto simp add: call_measure_def Let_def intro!: mlex_less)
 qed
