@@ -17,11 +17,15 @@ Results include:
 
  - The AdWords algorithm for online auction allocation, by Mehta, Saberi, Vazirani, and Vazirani.
  
- - Background theory on independence systems/matroids and the Best-In-Greedy algorithm for matroids and greedoids.
+ - Background theory on independence systems/matroids and the Best-In-Greedy algorithms for matroids and greedoids.
+ 
+ - The matroid intersection algorithm for unweighted matroids.
 
  - Kruskal's algorithm for finding minimum spanning trees, implemented as an instance of the Best-In-Greedy algorithm for Matroids.
  
  - Prim's algorithm for finding minimum spanning trees, implemented as an instance of the Best-In-Greedy algorithm for Greedoids.
+ 
+ - An $O(n·m·(log n + log m))$ algorithm for bi-partite maximum cardinality matching based on the matroid intersection algorithm.
  
  - Some fundamental theory for minimum cost flows and related algorithms, including Orlin's Algorithm, which is one of the most efficient methods for this class of problems.
 
