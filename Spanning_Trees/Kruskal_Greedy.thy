@@ -1,7 +1,12 @@
 theory Kruskal_Greedy
   imports Matroids_Greedy.Best_In_Greedy Spanning_Trees Encoding
     Graph_Algorithms_Dev.DFS_Example Insertion_Sort_Desc "HOL-Library.Product_Lexorder"
+    Graph_Algorithms_Dev.RBT_Map_Extension 
 begin
+
+(*TODO?
+move lemmas on rbtsto RBT_Map_Extension?
+*)
 
 hide_const RBT_Set.insert
 global_interpretation Pair_Graph_U_RBT: Pair_Graph_U_Specs
@@ -13,41 +18,18 @@ global_interpretation Pair_Graph_U_RBT: Pair_Graph_U_Specs
     and  add_u_edge =Pair_Graph_U_RBT.add_u_edge
   by(simp add: Pair_Graph_U_Specs_def Pair_Graph_Specs_def M.Map_axioms S_C.Set_Choose_axioms)
 
-find_theorems add_edge
-
 text \<open>Instantiations for Greedy\<close>
 
 lemma tree_split_case:
   "(case t of Leaf \<Rightarrow> True | _ \<Rightarrow> False) = (t = Leaf)"
   by (fastforce split: tree.splits) 
 
-
-lemma rbt_size_correct:
-  "vset_inv X \<Longrightarrow> size X = card (Tree2.set_tree X)"
-  unfolding set_inorder[symmetric]
-proof(induction X rule: inorder.induct)
-  case 1
-  then show ?case by simp
-next
-  case (2 l a uu r)
-  have inter_empty:"set (Tree2.inorder l) \<inter> Set.insert a (set (Tree2.inorder r)) = {}"
-    using 2(3) bst.simps(2)[simplified Tree2.set_inorder[symmetric]]
-    by (metis (no_types, lifting) Int_emptyI insert_iff not_less_iff_gr_or_eq vset_inv_def)
-  have vset_inv_l: "vset_inv l" 
-    by (metis "2.prems" RBT.inv_Node bst.simps(2) vset_inv_def)
-  have vset_inv_r: "vset_inv r" 
-    by (metis "2.prems" RBT.inv_Node bst.simps(2) vset_inv_def)
-  have a_not_down: "a \<notin> set (Tree2.inorder r)" 
-    using 2(3) bst.simps(2)[simplified Tree2.set_inorder[symmetric]] 
-    by (metis not_less_iff_gr_or_eq vset_inv_def)
-  show ?case 
-    using a_not_down inter_empty 
-    by(auto  simp add: card_Un_disjoint card_insert_if  2(1)[OF vset_inv_l] 2(2)[OF vset_inv_r])
-qed
-
-lemma rbt_nonempty_repr:
-  "vset_inv X \<Longrightarrow> X \<noteq> \<langle>\<rangle> \<Longrightarrow> Tree2.set_tree X \<noteq> Tree2.set_tree \<langle>\<rangle>"
-  by auto
+lemmas rbt_size_correct = rbt_size_correct[simplified
+    vset_inv_def[simplified t_inv_def[symmetric], symmetric]]
+lemmas rbt_nonempty_repr = rbt_nonempty_repr[simplified
+    vset_inv_def[simplified t_inv_def[symmetric], symmetric]]
+lemmas rbt_set_fold_correct = rbt_set_fold_correct[simplified
+    vset_inv_def[simplified t_inv_def[symmetric], symmetric]]
 
 global_interpretation Card_Set2_RBT: Card_Set2
   where empty = "\<langle>\<rangle>" and insert = insert_rbt and delete = delete_rbt and invar = "vset_inv::(('e::linorder) rbt \<Rightarrow> bool)" and
@@ -72,130 +54,20 @@ interpretation Matroid_Specs_Inst: Matroid_Specs
   apply (subst Indep_System_Specs_def)
   using Card_Set2_RBT.Card_Set2_axioms by blast
 
-fun rbt_set_fold :: "'a rbt \<Rightarrow> ('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'b" where
-  "rbt_set_fold Leaf f acc = acc"
-| "rbt_set_fold (Node l (a, _) r) f acc = rbt_set_fold r f (f a (rbt_set_fold l f acc))"
-
-lemma rbt_set_fold_revinorder: "rbt_set_fold T f acc = foldr f (rev (inorder T)) acc"
-  by(induction T f acc rule: rbt_set_fold.induct) auto
-
-fun rbt_map_fold :: "('a \<times> 'd) rbt \<Rightarrow> ('a \<Rightarrow> 'd \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'b" where
-  "rbt_map_fold Leaf f acc = acc"
-| "rbt_map_fold (Node l ((a, d), _) r) f acc = rbt_map_fold r f (f a d (rbt_map_fold l f acc))"
-
-lemma rbt_map_fold_revinorder: "rbt_map_fold T f acc = foldr (\<lambda> (x, y) acc. f x y acc) (rev (inorder T)) acc"
-  by(induction T f acc rule: rbt_map_fold.induct) auto
-
 global_interpretation Kruskal_Graphs_Matroids: Encoding
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
     lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
     insert = insert_rbt and vset_delete = delete_rbt and vset_inv = "vset_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and sel = sel and
-
-set_empty = "\<langle>\<rangle>" and set_insert = insert_rbt and set_delete = delete_rbt and set_inv = "vset_inv::(('e::linorder) rbt \<Rightarrow> bool)" and
-set_isin = isin and to_set = "Tree2.set_tree" and union = "RBT.union" and inter = "RBT.inter" and diff = "RBT.diff" and
-adjmap_fold = "rbt_map_fold" and vset_fold = "rbt_set_fold" and set_fold_adjmap = "rbt_set_fold" and
-set_fold_vset = "rbt_set_fold"
-for v1_of :: "('e::linorder) \<Rightarrow> ('v::linorder)" and v2_of :: "('e::linorder) \<Rightarrow> ('v::linorder)" 
-  and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
-defines edges_to_graph = Kruskal_Graphs_Matroids.edges_to_graph
-  and edges_to_vertices = Kruskal_Graphs_Matroids.edges_to_vertices
+    set_empty = "\<langle>\<rangle>" and set_insert = insert_rbt and set_delete = delete_rbt and set_inv = "vset_inv::(('e::linorder) rbt \<Rightarrow> bool)" and
+    set_isin = isin and to_set = "Tree2.set_tree" and union = "RBT.union" and inter = "RBT.inter" and diff = "RBT.diff" and
+    adjmap_fold = "rbt_map_fold" and vset_fold = "rbt_set_fold" and set_fold_adjmap = "rbt_set_fold" and
+    set_fold_vset = "rbt_set_fold"
+  for v1_of :: "('e::linorder) \<Rightarrow> ('v::linorder)" and v2_of :: "('e::linorder) \<Rightarrow> ('v::linorder)" 
+    and c :: "('v set) \<Rightarrow> rat" and c' :: "'e \<Rightarrow> rat"
+  defines edges_to_graph = Kruskal_Graphs_Matroids.edges_to_graph
+    and edges_to_vertices = Kruskal_Graphs_Matroids.edges_to_vertices
   by (auto intro: Encoding.intro simp add: Card_Set2_RBT.Set2_axioms Pair_Graph_U_RBT.Pair_Graph_U_Specs_axioms)
-
-
-
-lemma map_of_dom_is:"set (map fst list) = {a. AList_Upd_Del.map_of list a \<noteq> None}"
-proof(induction list)
-  case Nil
-  then show ?case by simp
-next
-  case (Cons a list)
-  have "set (map fst (a # list)) = Set.insert (fst a) (set (map fst list))" by simp
-  also have "... = Set.insert (fst a) {a. AList_Upd_Del.map_of list a \<noteq> None}" 
-    using Cons by simp
-  also have "... =  {aa. AList_Upd_Del.map_of (a # list) aa \<noteq> None}"
-    by(cases a) auto
-  finally show ?case by simp
-qed
-
-lemma map_of_rev: "distinct (map fst xs) \<Longrightarrow> map_of (rev xs) x = map_of xs x"
-  by(induction xs)
-    (auto simp add: map_of_append map_of_dom_is[simplified] split: option.split)
-
-lemma  rbt_map_fold_correct: "M.invar G \<Longrightarrow>
-       \<exists>xs. distinct xs \<and>
-            set xs = dom (lookup G) \<and> rbt_map_fold G f S = foldr (\<lambda>x. f x (the (lookup G x))) xs S"
-proof(subst rbt_map_fold_revinorder, rule exI[of _ "map fst (rev (inorder G))"], goal_cases)
-  case 1
-  have invar_inorder:"rbt G \<and> sorted1 (Tree2.inorder G)"
-    using "1" M.invar_def by auto
-  define list where "list = Tree2.inorder G"
-  define list' where "list' = rev (inorder G)"
-  have distinct_list:"distinct (map fst (Tree2.inorder G))" 
-    using "1" M.invar_def strict_sorted_iff by blast
-  moreover have "set (map fst (Tree2.inorder G)) = dom (lookup G)"
-    using invar_inorder
-    by(subst dom_def, subst M.inorder_lookup, unfold list_def[symmetric] map_of_dom_is) simp+
-  moreover have "foldr (\<lambda>(x, y). f x y) (rev (Tree2.inorder G)) S =
-    foldr (\<lambda>x. f x (the (lookup G x))) (map fst (rev (Tree2.inorder G))) S"
-  proof-
-    have "distinct (map fst list')" 
-      by (metis distinct_list distinct_rev list'_def rev_map)
-    hence same_fold:"foldr (\<lambda>(x, y). f x y) list' S =
-    foldr (\<lambda>x. f x (the (AList_Upd_Del.map_of list' x))) (map fst list') S"
-    proof(induction list')
-      case Nil
-      then show ?case by simp
-    next
-      case (Cons a list')
-      show ?case 
-      proof(cases a)
-        case (Pair x y)
-        have distinct_fsts: "distinct (x # map fst list')" 
-          using Cons(2)[simplified Pair list.map(2) fst_conv] by fast
-        have first_f_apply:"foldr (\<lambda>a. case a of (x, y) \<Rightarrow> f x y) (a # list') S = f x y (foldr (\<lambda>(x, y). f x y) list' S)"
-          by(simp add: Pair)
-        have map_of_same:"(foldr (\<lambda>xa. f xa (the (AList_Upd_Del.map_of ((x, y) # list') xa))) (map fst list') S)
-              = (foldr (\<lambda>xa. f xa (the (AList_Upd_Del.map_of  list' xa))) (map fst list') S)"
-          apply(rule foldr_cong[OF refl refl])
-          subgoal for s t
-            using distinct_fsts[simplified distinct.simps(2)] 
-            by (subst map_of.simps, subst if_not_P)force+
-          done
-        have almost_result: "(foldr (\<lambda>(x, y). f x y) list' S) =
-                   (foldr (\<lambda>xa. f xa (the (AList_Upd_Del.map_of ((x, y) # list') xa))) (map fst list') S)"
-          using distinct_fsts[simplified distinct.simps(2)]
-          by (subst map_of_same, subst Cons(1)[symmetric])force+
-        show ?thesis
-          apply(subst  first_f_apply)
-          apply(subst Pair)+
-          apply(subst  list.map(2))
-          apply(subst foldr.simps)
-          apply(subst o_apply)
-          apply(subst map_of.simps)
-          apply(subst if_P)
-          apply simp
-          apply(subst option.sel)
-          apply(subst fst_conv)
-          by(subst almost_result[symmetric] ) force
-      qed
-    qed
-    show ?thesis
-      using invar_inorder 
-      by(simp add:  lookup_map_of map_of_rev[OF distinct_list, symmetric] list'_def[symmetric] same_fold)+  
-  qed
-  ultimately show ?case 
-    by (metis distinct_rev rev_map set_rev)
-qed
-
-lemma bst_distinct_inorder:"bst T \<Longrightarrow> distinct (inorder T)"
-  by(induction T rule: inorder.induct) fastforce+
-
-lemma rbt_set_fold_correct: "vset_inv S \<Longrightarrow> \<exists>xs. distinct xs \<and> set xs = Tree2.set_tree S \<and> rbt_set_fold S f G = foldr f xs G"
-  apply(subst rbt_set_fold_revinorder)
-  apply(rule exI[of _ "rev (Tree2.inorder S)"])
-  using  bst_distinct_inorder[of S]
-  by(unfold set_inorder[symmetric] set_rev distinct_rev)(simp add: vset_inv_def )
 
 locale Oracle =
   fixes  input_G :: "('v::linorder \<times> 'v) rbt"
@@ -256,7 +128,7 @@ global_interpretation Kruskal_Greedy: Best_In_Greedy'
 
 locale Kruskal_Proof_Matroid_Edges =
   Oracle +
-assumes v1_never_v2:"\<And> e d. e \<in> t_set input_G \<Longrightarrow> d \<in> t_set input_G \<Longrightarrow> prod.swap e \<noteq> d"
+  assumes v1_never_v2:"\<And> e d. e \<in> t_set input_G \<Longrightarrow> d \<in> t_set input_G \<Longrightarrow> prod.swap e \<noteq> d"
 begin
 
 context 
@@ -264,7 +136,7 @@ context
 begin
 lemma Encoding_Proofs_axioms:
   " Encoding_Proofs_axioms t_set M.invar vset_inv lookup vset_inv t_set rbt_map_fold
-     rbt_set_fold rbt_set_fold rbt_set_fold"(* edge_of"*)
+     rbt_set_fold rbt_set_fold rbt_set_fold"
 proof(rule Encoding_Proofs_axioms.intro, goal_cases)
   case (1 G S f)
   then show ?case 
@@ -287,16 +159,15 @@ interpretation Kruskal_Graphs_Matroids_proofs: Encoding_Proofs
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
     lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
     insert = insert_rbt and vset_delete = delete_rbt 
-   and vset_inv = "vset_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
+    and vset_inv = "vset_inv::(('v::linorder) rbt \<Rightarrow> bool)" and
     isin = isin and t_set = "Tree2.set_tree" and sel = sel and
-
-set_empty = "\<langle>\<rangle>" and set_insert = insert_rbt and set_delete = delete_rbt 
-and set_inv = "vset_inv::(('v::linorder \<times> 'v) rbt \<Rightarrow> bool)" and
-set_isin = isin and to_set = "Tree2.set_tree" and union = "RBT.union" and inter = "RBT.inter" and diff = "RBT.diff" and
-adjmap_fold = "rbt_map_fold" and vset_fold = "rbt_set_fold" and set_fold_adjmap = "rbt_set_fold" and
-set_fold_vset = "rbt_set_fold"
-and v1_of = fst and v2_of = snd
-for c :: "(('v::linorder) set) \<Rightarrow> rat" and c' :: "('v \<times> 'v) \<Rightarrow> rat"
+    set_empty = "\<langle>\<rangle>" and set_insert = insert_rbt and set_delete = delete_rbt 
+    and set_inv = "vset_inv::(('v::linorder \<times> 'v) rbt \<Rightarrow> bool)" and
+    set_isin = isin and to_set = "Tree2.set_tree" and union = "RBT.union" and inter = "RBT.inter" and diff = "RBT.diff" and
+    adjmap_fold = "rbt_map_fold" and vset_fold = "rbt_set_fold" and set_fold_adjmap = "rbt_set_fold" and
+    set_fold_vset = "rbt_set_fold"
+    and v1_of = fst and v2_of = snd
+  for c :: "(('v::linorder) set) \<Rightarrow> rat" and c' :: "('v \<times> 'v) \<Rightarrow> rat"
   by(auto intro!: Encoding_Proofs.intro  Encoding_Proofs_axioms 
       simp add: Encoding_def 
       Pair_Graph_U_RBT.Pair_Graph_U_Specs_axioms Card_Set2_RBT.Set2_axioms)
@@ -315,10 +186,7 @@ lemma same_dgraphabs:"dfs.Graph.digraph_abs = G.digraph_abs"
 abbreviation "to_dbltn == (\<lambda>x. {fst x, snd x})"
 
 lemma to_dbltn_sym: "{fst x, snd x} = to_dbltn x" by auto
-(*
-interpretation graph_abs: graph_abs "Tree2.set_tree G"
-  using v1_never_v2 apply (auto intro!: graph_abs.intro)
- *)
+
 (*TODO MOVE: this is a general lemma about to_dbltn*)
 lemma get_urlist_to_dbltn: "set X \<subseteq> to_dbltn ` Y \<Longrightarrow> \<exists> urX. map to_dbltn urX = X \<and> set urX \<subseteq> Y" 
 proof(induction X)
@@ -342,15 +210,13 @@ lemma to_dbltn_inj: "S \<subseteq> t_set input_G \<Longrightarrow> inj_on to_dbl
 proof(rule inj_onI, goal_cases)
   case (1 x y)
   then show ?case 
-  using v1_never_v2[of x y]
-  by(fastforce simp add: doubleton_eq_iff prod.swap_def prod_eqI)
+    using v1_never_v2[of x y]
+    by(fastforce simp add: doubleton_eq_iff prod.swap_def prod_eqI)
 qed
 
 lemma local_indep_oracle_correct:
-  assumes "vset_inv S"
-    "indep'  input_G (id S)"
-    "Card_Set2_RBT.subseteq (id S) input_G"
-    "e \<notin> t_set (id S)"
+  assumes "vset_inv S" "indep'  input_G (id S)" 
+    "Card_Set2_RBT.subseteq (id S) input_G"  "e \<notin> t_set (id S)"
   shows "local_indep_oracle e S = indep' input_G (vset_insert e (id S))"
   apply(insert assms)
   unfolding indep'_def Kruskal_Greedy.indep_graph_matroid_def
@@ -360,9 +226,10 @@ proof(goal_cases)
   note case_assms = this
   have S_in_input_G: "t_set S \<subseteq> t_set input_G"
     using Card_Set2_RBT.set_subseteq G_good case_assms(1,3) by auto
-  have first_eq:"Card_Set2_RBT.subseteq (vset_insert e S) input_G = (t_set (vset_insert e (id S)) \<subseteq> t_set input_G)" 
+  have first_eq:"Card_Set2_RBT.subseteq (vset_insert e S) input_G
+                 = (t_set (vset_insert e (id S)) \<subseteq> t_set input_G)" 
     using G_good assms(1) dfs.Graph.vset.set.invar_insert Card_Set2_RBT.set_subseteq 
-   by(unfold id_def) blast
+    by(unfold id_def) blast
   have second_eq:"(((lookup (local.Kruskal_E_to_G S) (snd e) \<noteq> None 
                      \<and> lookup (Kruskal_E_to_G S) (fst e) \<noteq> None) \<longrightarrow>
                  (return (dfs_impl (local.Kruskal_E_to_G S) (snd e) 
@@ -384,7 +251,7 @@ proof(goal_cases)
     have lookup_in_dVs:"lookup (local.Kruskal_E_to_G S) x = Some y\<Longrightarrow> 
           x \<in> dVs (dfs.Graph.digraph_abs (local.Kruskal_E_to_G S))" for x y
       using Kruskal_Graphs_Matroids_proofs.edges_invar_imp_graph_invar(2)[OF assms(1)]
-            S_C.choose  G_arefl S_in_input_G
+        S_C.choose  G_arefl S_in_input_G
       by(unfold  dfs.Graph.digraph_abs_def DFS_Example.neighbourhood_def)
         (force simp add: Kruskal_E_to_G_def edges_to_graph_def
           neighbourhood_def[symmetric] dfs.Graph.neighbourhood_def dVs_def
@@ -403,9 +270,9 @@ proof(goal_cases)
     have graph_abs_with_e: "graph_abs (to_dbltn ` insert e (t_set S))"
       using that  G_arefl
       by(fastforce intro!: graph_abs.intro 
-               exI[of "\<lambda> u. \<exists> v. {fst e, snd e} = {u, v} \<and> u \<noteq> v" "fst e"] 
-               exI[of "\<lambda> v. {fst e, snd e} = {fst e, v} \<and> fst e \<noteq> v" "snd e"]
-                 simp add: dblton_graph_def Vs_def)
+          exI[of "\<lambda> u. \<exists> v. {fst e, snd e} = {u, v} \<and> u \<noteq> v" "fst e"] 
+          exI[of "\<lambda> v. {fst e, snd e} = {fst e, v} \<and> fst e \<noteq> v" "snd e"]
+          simp add: dblton_graph_def Vs_def)
     have graph_abs_without_e: "graph_abs (to_dbltn `(t_set S))"
       using graph_abs_mono graph_abs_with_e by auto
     have graph_abs_vset_insert:"graph_abs (to_dbltn ` t_set (vset_insert e S))"
@@ -421,7 +288,7 @@ proof(goal_cases)
       note one = this
       show ?case
       proof(subst DFS_thms.DFS_to_DFS_impl[OF DFS_thms, symmetric, OF 1(1)],
-               rule, all \<open>rule ccontr\<close>, goal_cases)
+          rule, all \<open>rule ccontr\<close>, goal_cases)
         case 1
         then obtain u C where uC_prop:"decycle 
                  (to_dbltn ` (t_set (vset_insert e S))) u C" by auto
@@ -430,14 +297,14 @@ proof(goal_cases)
           by(simp add: graph_abs.has_no_cycle_def[OF graph_abs_input_G ])
         ultimately have e_and_C:"to_dbltn e \<in> set C" "set C \<subseteq> to_dbltn ` (t_set (vset_insert e S))"      
           using case_assms(1) dfs.Graph.vset.set.set_insert[of S]
-                new_edge_in_decycle not_cycle_old uC_prop epath_edges_subset  
+            new_edge_in_decycle not_cycle_old uC_prop epath_edges_subset  
           by (fastforce simp add:  decycle_def )+
         then obtain C1 C2 where C_split:"C = C1@[to_dbltn e]@C2"
           by (metis append_Cons append_self_conv2 split_list_last)
         obtain urC where urC_props: "map to_dbltn urC = C" "set urC \<subseteq> t_set (vset_insert e S)"
-           using  get_urlist_to_dbltn[OF e_and_C(2)] by blast
+          using  get_urlist_to_dbltn[OF e_and_C(2)] by blast
         obtain q where q_prop:"walk_betw (to_dbltn ` (insert e (t_set S))) u q u"
-               "C = edges_of_path q"
+          "C = edges_of_path q"
           using graph_abs.epath_imp_walk_betw[of _ u "C" u, OF graph_abs_with_e] 
             uC_prop 
           by(auto simp add: decycle_def  Pair_Graph_RBT.set.set_insert[OF case_assms(1)])
@@ -453,10 +320,6 @@ proof(goal_cases)
             by (simp add: one(2))
         next
           case (Some neighb)
-          have "\<exists>q. walk_betw (to_dbltn ` t_set (vset_insert e S)) u q u 
-                   \<and>  C = edges_of_path q"
-            using graph_abs_vset_insert  uC_prop 
-            by(auto intro:graph_abs.epath_imp_walk_betw simp add: decycle_def)
           have no_distinct_path:"\<nexists>p. distinct p \<and>
               vwalk_bet (dfs.Graph.digraph_abs (local.Kruskal_E_to_G S)) (fst e) p (snd e)"
             using DFS_thms.DFS_correct_1[OF DFS_thms] Some  one 1 by blast
@@ -490,7 +353,7 @@ proof(goal_cases)
           have e_vs_in_new_v_set:"to_dbltn e \<subseteq> Vs (to_dbltn ` insert e (t_set S))"
             by (simp add: vs_member)
           then obtain q1 q2 where q1_q2_prop: 
-              "q = q1@[fst e, snd e]@ q2 \<or> q = q1@[snd e, fst e]@ q2"
+            "q = q1@[fst e, snd e]@ q2 \<or> q = q1@[snd e, fst e]@ q2"
             using e_and_C(1) q_prop(2) xy_in_edges_of_path_split[of "fst e" "snd e" q] by blast
           obtain q' where  path_without_e:"walk_betw (to_dbltn `  (t_set S)) (fst e) q' (snd e)"
           proof(cases rule: disjE[OF q1_q2_prop], all "cases q1", all \<open>cases q2\<close>, goal_cases)
@@ -618,7 +481,7 @@ proof(goal_cases)
               using 8(2-) edges_of_path_append_subset_2 by fastforce
             moreover have a5:"to_dbltn e \<notin> set (edges_of_path (q1@ [snd e]))" 
               using  distinct_edges_q 8(2) edges_of_path_symmetric_split[of q1 "snd e" "fst e" q2]
-               by (simp add: insert_commute)
+              by (simp add: insert_commute)
             ultimately have a6:"set (edges_of_path (q1@ [snd e])) \<subseteq> (to_dbltn `(t_set S))" 
               using graph_abs.path_ball_edges' graph_abs_with_e walk_between_nonempty_pathD(1) by fast
             have a4:"set (edges_of_path ([fst e] @ q2)) \<subseteq> set (edges_of_path q)"
@@ -641,7 +504,7 @@ proof(goal_cases)
           have  dfs_vwalk:"vwalk_bet (dfs.Graph.digraph_abs (local.Kruskal_E_to_G S)) (fst e) q' (snd e)"
             apply(subst same_dgraphabs, subst Pair_Graph_U_RBT.ugraph_abs_digraph_abs[symmetric])
             using local.Kruskal_E_to_G_def pair_graph_u_invar 
-                   graph_abs.walk_betw_iff_vwalk_bet[OF graph_abs_without_e]  path_without_e 
+              graph_abs.walk_betw_iff_vwalk_bet[OF graph_abs_without_e]  path_without_e 
             by (simp  add: ugraph_abs_is )+
           obtain q'' where "vwalk_bet (dfs.Graph.digraph_abs (local.Kruskal_E_to_G S)) (fst e) q'' (snd e)"
             "distinct q''" 
@@ -671,7 +534,7 @@ proof(goal_cases)
             using DFS_thms.DFS_correct_2[OF DFS_thms[OF one(1)]] dfs_reachable by auto
           have walk_betw_around_e:"walk_betw (to_dbltn ` t_set S) (fst e) p (snd e)"
             apply(subst  ugraph_abs_is[symmetric], subst graph_abs.walk_betw_iff_vwalk_bet,
-           simp add: graph_abs_without_e ugraph_abs_is)
+                simp add: graph_abs_without_e ugraph_abs_is)
             using  pair_graph_u_invar  p_vwalk 
             by(auto simp add: Pair_Graph_U_RBT.ugraph_abs_digraph_abs same_dgraphabs Kruskal_E_to_G_def)
           have "epath (to_dbltn ` t_set S) (fst e) (edges_of_path p) (snd e)" 
@@ -704,39 +567,39 @@ proof(goal_cases)
             proof(goal_cases)
               case 1
               then obtain d where p_mul_is:"p_mul= [d]"
-               by(cases p_mul rule: vwalk_arcs.cases) auto
-             have "snd d = snd e \<or> snd d = fst e"
-               using epath3[simplified p_mul_is] by auto
-             moreover have "fst d = snd e \<or> fst d = fst e"
-               using epath3[simplified p_mul_is] by auto
-             ultimately have "e = d \<or> e = prod.swap d \<or> e = prod.swap e \<or> d= prod.swap d" 
-               using surjective_pairing[of e] surjective_pairing[of d] 
-               by (fastforce simp add: prod.swap_def)
-             thus False 
-               using case_assms(4) p'_prop(2) p_mul(2)
-                   p_mul_is that v1_never_v2[of e e] v1_never_v2[of d d] 
-                v1_never_v2[of d e] 
-               by auto
-           qed
-           ultimately show ?thesis by fastforce
-         qed
-         moreover have " distinct (map (\<lambda>x. {fst x, snd x}) (p_mul @ [e]))"
-         proof-
-           have "distinct (p_mul@[e])"
-          proof-
-            have "distinct p_mul"
-              using p_mul(1)  p''_prop(3) by (auto simp add: distinct_map)
-            moreover have "set p_mul \<subseteq> t_set S" 
-              using p'_prop(2) p_mul(2) by order
-            ultimately show ?thesis using assms(4) by auto
+                by(cases p_mul rule: vwalk_arcs.cases) auto
+              have "snd d = snd e \<or> snd d = fst e"
+                using epath3[simplified p_mul_is] by auto
+              moreover have "fst d = snd e \<or> fst d = fst e"
+                using epath3[simplified p_mul_is] by auto
+              ultimately have "e = d \<or> e = prod.swap d \<or> e = prod.swap e \<or> d= prod.swap d" 
+                using surjective_pairing[of e] surjective_pairing[of d] 
+                by (fastforce simp add: prod.swap_def)
+              thus False 
+                using case_assms(4) p'_prop(2) p_mul(2)
+                  p_mul_is that v1_never_v2[of e e] v1_never_v2[of d d] 
+                  v1_never_v2[of d e] 
+                by auto
+            qed
+            ultimately show ?thesis by fastforce
           qed
-          moreover have "inj_on to_dbltn (set (p_mul @ [e]))"
-            using \<open>set (p_mul @ [e]) \<subseteq> insert e (t_set S)\<close> that to_dbltn_inj by blast
-          ultimately show ?thesis
-            by(simp add: distinct_map)
-        qed
-       ultimately have "decycle (to_dbltn ` (t_set (vset_insert e S))) (fst e) (map to_dbltn (p_mul@[e]))" 
-         by(simp add: decycle_def dfs.Graph.vset.set.set_insert[OF case_assms(1)])
+          moreover have " distinct (map (\<lambda>x. {fst x, snd x}) (p_mul @ [e]))"
+          proof-
+            have "distinct (p_mul@[e])"
+            proof-
+              have "distinct p_mul"
+                using p_mul(1)  p''_prop(3) by (auto simp add: distinct_map)
+              moreover have "set p_mul \<subseteq> t_set S" 
+                using p'_prop(2) p_mul(2) by order
+              ultimately show ?thesis using assms(4) by auto
+            qed
+            moreover have "inj_on to_dbltn (set (p_mul @ [e]))"
+              using \<open>set (p_mul @ [e]) \<subseteq> insert e (t_set S)\<close> that to_dbltn_inj by blast
+            ultimately show ?thesis
+              by(simp add: distinct_map)
+          qed
+          ultimately have "decycle (to_dbltn ` (t_set (vset_insert e S))) (fst e) (map to_dbltn (p_mul@[e]))" 
+            by(simp add: decycle_def dfs.Graph.vset.set.set_insert[OF case_assms(1)])
           thus ?thesis 
             using 2(1) by simp
         qed
@@ -749,7 +612,7 @@ proof(goal_cases)
         then obtain u C where uC:"decycle (to_dbltn ` (insert e (t_set S))) u C"
           using case_assms(1) dfs.Graph.vset.set.set_insert by fastforce
         hence C_prop: "epath (to_dbltn ` insert e (t_set S)) u ( C) u"
-           " 2 \<le> length C" "distinct C"
+          " 2 \<le> length C" "distinct C"
           by(auto simp add: decycle_def) 
         obtain urC where urC: "set urC \<subseteq> insert e (t_set S)" "map to_dbltn urC = C"
           using  epath_edges_subset[OF C_prop(1)] get_urlist_to_dbltn by blast
@@ -758,7 +621,7 @@ proof(goal_cases)
           case 1
           have "epath ((\<lambda>x. {fst x, snd x}) ` t_set S) u C u" 
             using "1" image_mono[OF urC(1), of to_dbltn]  urC(1,2) 
-                  image_mono[of "set urC" "t_set S" to_dbltn] image_set[of to_dbltn urC] 
+              image_mono[of "set urC" "t_set S" to_dbltn] image_set[of to_dbltn urC] 
             by (intro epath_subset_other_set[OF C_prop(1)])(auto simp add: list.set_map  subset_insert[OF 1, of "t_set S"])
           hence "decycle (to_dbltn ` (t_set S)) u C"
             using uC
@@ -772,25 +635,17 @@ proof(goal_cases)
           using epath_append C_prop(1)[simplified C1C2] urC by force
         have middle_three_rewrite:"xs@[x,y,z]@ys = (xs@[x])@[y]@(z#ys)" for x y z xs ys by auto
         have e_path_very_verbose: "epath (to_dbltn ` insert e (t_set S)) u
- (butlast (map to_dbltn (C1 @ [e] @ C2 @ C1)) @
-  [last (map to_dbltn (C1 @ [e] @ C2 @ C1)), to_dbltn e, hd (map to_dbltn (C2 @ C1 @ [e] @ C2))] @
-  tl (map to_dbltn (C2 @ C1 @ [e] @ C2))) u"
+                    (butlast (map to_dbltn (C1 @ [e] @ C2 @ C1)) @
+                    [last (map to_dbltn (C1 @ [e] @ C2 @ C1)), to_dbltn e, hd (map to_dbltn (C2 @ C1 @ [e] @ C2))] @
+                    tl (map to_dbltn (C2 @ C1 @ [e] @ C2))) u"
           using epath_extended
           apply(rule back_subst[of "\<lambda> p. epath _ _ p _ "])
           apply(subst middle_three_rewrite) 
           apply(subst append_butlast_last_id, simp)
           apply(subst hd_Cons_tl,simp)
           by auto
-        have "\<exists>x y. to_dbltn e = {x, y} \<and>
-      x \<noteq> y \<and>
-      epath (to_dbltn ` insert e (t_set S)) u
-       (butlast (map to_dbltn (C1 @ [e] @ C2 @ C1)) @ [last (map to_dbltn (C1 @ [e] @ C2 @ C1))]) x \<and>
-      epath (to_dbltn ` insert e (t_set S)) y
-       ([hd (map to_dbltn (C2 @ C1 @ [e] @ C2))] @ tl (map to_dbltn (C2 @ C1 @ [e] @ C2))) u \<and>
-      x \<in> last (map to_dbltn (C1 @ [e] @ C2 @ C1)) \<inter> to_dbltn e \<and>
-      y \<in> to_dbltn e \<inter> hd (map to_dbltn (C2 @ C1 @ [e] @ C2))"
-          using epath_find_splitter_advanced[OF e_path_very_verbose] by simp
-        then obtain x y where xy_prop:"to_dbltn e = {x, y}"
+       from epath_find_splitter_advanced[OF e_path_very_verbose] 
+       obtain x y where xy_prop:"to_dbltn e = {x, y}"
           "x \<noteq> y"
           "epath (to_dbltn ` insert e (t_set S)) u (map to_dbltn (C1 @ [e] @ C2 @ C1)) x"
           "epath (to_dbltn ` insert e (t_set S)) y (map to_dbltn (C2 @ C1 @ [e] @ C2)) u"
@@ -853,13 +708,13 @@ proof(goal_cases)
         have graph_inv:"G.graph_inv (local.Kruskal_E_to_G S)" 
           using local.Kruskal_E_to_G_def pair_graph_u_invar by force
         have fst_and_snd_same_none:
-   "\<And> e. e \<in> Pair_Graph_U_RBT.digraph_abs (Kruskal_E_to_G S) \<Longrightarrow>
+          "\<And> e. e \<in> Pair_Graph_U_RBT.digraph_abs (Kruskal_E_to_G S) \<Longrightarrow>
        (lookup (Kruskal_E_to_G S) (fst e) \<noteq> None) =
        (lookup (Kruskal_E_to_G S) (snd e) \<noteq> None)" 
-       using  G_arefl
-              Kruskal_Graphs_Matroids_proofs.edges_invar_imp_graph_invar(3)
-              [simplified edges_to_graph_def[of fst snd, simplified atomize_eq, symmetric]]             
-             S_in_input_G case_assms(1) by (unfold Kruskal_E_to_G_def) blast
+          using  G_arefl
+            Kruskal_Graphs_Matroids_proofs.edges_invar_imp_graph_invar(3)
+            [simplified edges_to_graph_def[of fst snd, simplified atomize_eq, symmetric]]             
+            S_in_input_G case_assms(1) by (unfold Kruskal_E_to_G_def) blast
         have "lookup (local.Kruskal_E_to_G S) (fst e) \<noteq> None" 
           using dir_ds_in  d1_prop(2) d2_prop(2) 2 d1_not_e d2_not_e  isin.simps(1)  xy_prop(1) xy_prop' 
           apply(cases "lookup (local.Kruskal_E_to_G S) (fst d1)")
@@ -867,7 +722,7 @@ proof(goal_cases)
           apply(all \<open>cases "lookup (local.Kruskal_E_to_G S) (fst d2)"\<close>)
           apply(all \<open>cases "lookup (local.Kruskal_E_to_G S) (snd d2)"\<close>)
           using fst_and_snd_same_none[of d1] fst_and_snd_same_none[of d2] 
-           apply(all \<open>simp add: doubleton_eq_iff  G.neighbourhood_def
+          apply(all \<open>simp add: doubleton_eq_iff  G.neighbourhood_def
                 Pair_Graph_RBT.G.are_connected_abs[OF graph_inv, symmetric]\<close>) 
           by metis
         moreover have "lookup (local.Kruskal_E_to_G S) (snd e) \<noteq> None"
@@ -890,8 +745,8 @@ proof(goal_cases)
   show ?case 
     using second_eq dfs.Graph.vset.set.set_insert[OF assms(1)]
     by (cases "Card_Set2_RBT.subseteq (vset_insert e S) input_G ",
-       unfold local_indep_oracle_def graph_abs.has_no_cycle_def[OF graph_abs_input_G] first_eq ) 
-  auto    
+        unfold local_indep_oracle_def graph_abs.has_no_cycle_def[OF graph_abs_input_G] first_eq ) 
+      auto    
 qed
 
 context fixes c::"('a \<times> 'a) \<Rightarrow> rat" and  order::"('a \<times> 'a ) list"
@@ -935,8 +790,8 @@ next
     have "graph_abs.has_no_cycle ((\<lambda>e. {fst e, snd e}) ` t_set input_G) ((\<lambda>e. {fst e, snd e}) ` t_set Y)"
       using 1(4,3)
       by(auto intro: graph_abs.has_no_cycle_indep_subset[OF 
-                        graph_abs_input_G, of "to_dbltn ` t_set X"]
-              simp add: Card_Set2_RBT.set_subseteq [OF 1(2,1)])
+            graph_abs_input_G, of "to_dbltn ` t_set X"]
+          simp add: Card_Set2_RBT.set_subseteq [OF 1(2,1)])
     moreover have "t_set Y \<subseteq> t_set input_G"
       using "1"(1,2,3,4) Card_Set2_RBT.set_subseteq by blast
     ultimately show ?case by simp
@@ -991,11 +846,6 @@ lemma indep_finite: "graph_abs.has_no_cycle (to_dbltn ` (t_set input_G)) (to_dbl
                      \<Longrightarrow> finite X"
   using finite_subset graph_abs.has_no_cycle_def graph_abs_input_G 
   by fastforce
-(*
-lemma idnep_in_G:"graph_abs.has_no_cycle (to_dbltn ` (t_set input_G)) (to_dbltn ` X) \<Longrightarrow>
-           x \<in> X \<Longrightarrow> x \<in> t_set input_G" sledgehammer
-  using local.undirected_multigraph.has_no_cycle_multi_indep_subset_carrier by auto
-*)
 
 definition "has_no_cycle_in_graph E = 
 (graph_abs.has_no_cycle (to_dbltn ` t_set input_G ) (to_dbltn ` E) \<and> E \<subseteq> t_set input_G)"
@@ -1019,7 +869,7 @@ next
   case (4 X Y)
   then show ?case 
     by(auto intro: graph_abs.has_no_cycle_indep_subset[OF graph_abs_input_G, simplified order_is_G]
-simp add: order_is_G )
+        simp add: order_is_G )
 qed
 
 interpretation use_greedy_thms_kruskal:
@@ -1036,7 +886,7 @@ interpretation use_greedy_thms_kruskal:
 
 lemma kruskal_returns_basis: "indep_system.basis (t_set input_G)  has_no_cycle_in_graph
  (t_set (result (kruskal input_G (kruskal_init c order))))"
- using order_is_G use_greedy_thms_kruskal.algo_gives_basis
+  using order_is_G use_greedy_thms_kruskal.algo_gives_basis
   by(simp add:  kruskal_def Kruskal_Greedy.indep_graph_matroid_def local.indep_graph_matroid_def 
       kruskal_init_def has_no_cycle_in_graph_def)
 
@@ -1062,7 +912,7 @@ next
     proof(rule, rule, goal_cases)
       case (1 e)
       then obtain edir where edir_props:"edir \<in> t_set input_G" "to_dbltn edir = e"
-                             "edir \<notin>  t_set (result (kruskal input_G (kruskal_init c order)))" by auto
+        "edir \<notin>  t_set (result (kruskal input_G (kruskal_init c order)))" by auto
       have "graph_abs.has_no_cycle ((\<lambda>e. {fst e, snd e}) ` t_set input_G)
       (to_dbltn ` (Set.insert edir (t_set (result (kruskal input_G (kruskal_init c order))))))"
         by (simp add: "1"(2) edir_props(2))
@@ -1083,20 +933,19 @@ next
 qed
 
 lemma has_no_cycle_in_graph_defines_matroid: 
-"matroid (t_set input_G) has_no_cycle_in_graph"
+  "matroid (t_set input_G) has_no_cycle_in_graph"
 proof(rule matroid.intro[OF  use_greedy_thms_kruskal.indep_system], rule matroid_axioms.intro, goal_cases)
   case (1 X Y)
   hence XY_in_G:"X \<subseteq> t_set input_G" "Y \<subseteq> t_set input_G" 
     using use_greedy_thms_kruskal.indep_in_input_G by auto
   then obtain e where e_prop:" e\<in> to_dbltn ` X - to_dbltn ` Y"
-   "graph_abs.has_no_cycle ((\<lambda>x. {fst x, snd x}) ` t_set input_G)
+    "graph_abs.has_no_cycle ((\<lambda>x. {fst x, snd x}) ` t_set input_G)
                     (insert e ((\<lambda>x. {fst x, snd x}) ` ( Y)))"
     using  graph_abs.graph_matroid[OF graph_abs_input_G] 1
     by(unfold has_no_cycle_in_graph_def matroid_def matroid_axioms_def 
-     card_image[OF to_dbltn_inj, OF XY_in_G(1), symmetric]
-     card_image[OF to_dbltn_inj, OF XY_in_G(2), symmetric]) blast
+        card_image[OF to_dbltn_inj, OF XY_in_G(1), symmetric]
+        card_image[OF to_dbltn_inj, OF XY_in_G(2), symmetric]) blast
   then obtain ure where ure:"to_dbltn ure = e" "ure \<in> X - Y" by blast
-  
   show ?case 
     using XY_in_G(1,2) e_prop(2) has_no_cycle_in_graph_def ure(1,2) by (auto intro: bexI[OF _ ure(2)])
 qed
@@ -1105,11 +954,11 @@ qed
 lemma rank_quotient_one: "indep_system.rank_quotient (t_set input_G)has_no_cycle_in_graph = 1"
   by(subst Matroids_Theory.indep_system.matroid_iff_rq_eq_1[symmetric])
     (auto simp add: use_greedy_thms_kruskal.indep_system 
-    has_no_cycle_in_graph_defines_matroid )
+      has_no_cycle_in_graph_defines_matroid )
 
 theorem kruskal_is_max:
-  "has_no_cycle_in_graph X \<Longrightarrow>
-sum c X \<le> sum c (t_set (result (kruskal  input_G (kruskal_init c order))))"
+ "has_no_cycle_in_graph X \<Longrightarrow>
+    sum c X \<le> sum c (t_set (result (kruskal  input_G (kruskal_init c order))))"
   unfolding kruskal_def kruskal_init_def Kruskal_Greedy.indep_graph_matroid_def indep_graph_matroid_def
   using use_greedy_thms_kruskal.indep_predicate_greedy_correct[of X]
   by(simp add:  rank_quotient_one  has_no_cycle_in_graph_def[simplified order_is_G[symmetric], symmetric])+
@@ -1121,12 +970,10 @@ definition "max_forest X =
 
 corollary kruskal_computes_max_spanning_forest:
   "max_forest (t_set (result (kruskal  input_G (kruskal_init c order))))"
-  using kruskal_is_max kruskal_returns_spanning_forest 
-  apply(auto simp add: max_forest_def)
-  apply (meson has_no_cycle_in_graph_def in_mono indep_system.basis_def kruskal_returns_basis
-      use_greedy_thms_kruskal.indep_system)
-  using graph_abs.spanning_forest_alternative graph_abs_input_G has_no_cycle_in_graph_def
-  by auto
+  using kruskal_is_max kruskal_returns_spanning_forest   kruskal_returns_basis
+        use_greedy_thms_kruskal.indep_system graph_abs.spanning_forest_alternative graph_abs_input_G
+  by(force simp add: has_no_cycle_in_graph_def in_mono indep_system.basis_def  max_forest_def)+
+
 end
 end
 end
@@ -1135,9 +982,6 @@ context
   fixes G::"(('v::linorder \<times> 'v) \<times> color) tree"
   assumes G_good:"\<And>e d. e \<in> t_set G \<Longrightarrow> d \<in> t_set G \<Longrightarrow> prod.swap e \<noteq> d"
 begin
-
-term input_G
-
 interpretation kruskal_proof_maitroid_edges: Kruskal_Proof_Matroid_Edges G 
 proof(rule  Kruskal_Proof_Matroid_Edges.intro, goal_cases)
   case (1 e d)
@@ -1146,7 +990,7 @@ proof(rule  Kruskal_Proof_Matroid_Edges.intro, goal_cases)
 qed
 
 lemmas kruskal_computes_max_spanning_forest = 
-        kruskal_proof_maitroid_edges.kruskal_computes_max_spanning_forest
+  kruskal_proof_maitroid_edges.kruskal_computes_max_spanning_forest
 end
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),

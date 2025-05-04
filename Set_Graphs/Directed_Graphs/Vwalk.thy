@@ -156,6 +156,9 @@ qed (auto dest!: Suc_leI simp: Suc_le_length_iff)
 lemma edges_of_vwalk_length: "length (edges_of_vwalk p) = length p - 1"
   by (induction p rule: edges_of_vwalk.induct, auto)
 
+lemma edges_of_vwalk_length': "p \<noteq> [] \<Longrightarrow> length (edges_of_vwalk p) + 1 = length p"
+  by (induction p rule: edges_of_vwalk.induct, auto)
+
 text \<open>With the given assumptions we can only obtain an outgoing edge from \<^term>\<open>v\<close>.\<close>
 lemma edges_of_vwalk_for_inner:
   assumes "p ! i = v" "Suc i < length p"

@@ -672,7 +672,8 @@ proof-
   have "set p \<subseteq> carrier \<Longrightarrow> set_invar (augment X p)" for p
     using  assms(1,2) 
   proof(induction p arbitrary: X rule: induct_list012)
-    case (3 x y zs)
+    case (sucsuc x y zs)
+    note 3 = this
     show ?case 
       using 3(2-) 
       by(auto intro!: 3(1) intro: set_insert set_delete simp add: set_insert set_delete)
@@ -682,18 +683,18 @@ proof-
   show "to_set (augment X p) = X'"
     using assms
   proof(induction p arbitrary: X X' rule: induct_list012)
-    case (3 x y zs)
+    case (sucsuc x y zs)
     have same_set:"Set.insert x (to_set X - {y}) \<union> {zs ! i |i. i < length zs \<and> even i} - {zs ! i |i. i < length zs \<and> odd i} =
     to_set X \<union> {(x # y # zs) ! i |i. i < length (x # y # zs) \<and> even i} -
     {(x # y # zs) ! i |i. i < length (x # y # zs) \<and> odd i}"
-      using  "3.prems"(4)  
+      using  "sucsuc.prems"(4)  
       by (auto simp add: nth_eq_iff_index_eq less_Suc_eq_0_disj gr0_conv_Suc)
         (metis dvd_0_right nth_Cons_0  nth_Cons_Suc even_Suc)+
     have help1: "to_set (set_insert x (set_delete y X)) \<subseteq> carrier" 
-      using "3.prems"(1) "3.prems"(2) "3.prems"(3) local.set_insert(2) set_delete(1) set_delete(2) by auto
+      using "sucsuc.prems"(1-3) local.set_insert(2) set_delete(1) set_delete(2) by auto
     show ?case 
-      using 3(2-) same_set set_insert set_delete
-      by (auto simp add:  3(1)[OF  _ help1 _ _ refl])
+      using sucsuc(2-) same_set set_insert set_delete
+      by (auto simp add:  sucsuc(1)[OF  _ help1 _ _ refl])
   qed (auto simp add: set_insert)
 qed
 
