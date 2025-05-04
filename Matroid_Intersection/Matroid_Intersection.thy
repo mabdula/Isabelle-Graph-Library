@@ -475,27 +475,9 @@ lemma walk_is_odd:
   shows   "odd (length p)" 
  using assms(1)  walk_is_even[OF vwalk_imp_awalk[OF assms(1)] assms(2,3)]
  by (auto simp add:  edges_of_vwalk_length'[symmetric])
-(*TODO MOVE*)
-lemma shortest_vwalk_bet_distinct: 
-  assumes "vwalk_bet Y x p y"  "\<nexists> q. vwalk_bet Y x q y \<and> length q < length p"
-  shows "distinct p"
-proof(rule ccontr, goal_cases)
-  case 1
-  then obtain xs a ys zs where p_is:"p = xs@[a]@ys@[a]@zs" 
-    using not_distinct_decomp by blast
-  hence "vwalk_bet Y x (xs@[a]@zs) y" 
-    using  vwalk_bet_cycle_delete[OF assms(1)[simplified p_is]] by simp
-  moreover have "length (xs@[a]@zs) < length p" 
-    using p_is by simp
-  ultimately show ?case 
-    using assms(2) by auto
-qed
-(*TODO MOVE*)
+
 lemma take_last:"i < length xs  \<Longrightarrow> last (take (i+1) xs) = xs ! i"
   using take_Suc_conv_app_nth by fastforce
-
-lemma vwalk_append_intermediate_edge:"vwalk_bet A x p y \<Longrightarrow> (y, x') \<in> A \<Longrightarrow> vwalk_bet A x' p' y' \<Longrightarrow> vwalk_bet A x (p@p') y'"
-  by (simp add: append_vwalk vwalk_bet_def)
 
 lemma augment_in_matroid1: 
   assumes  "vwalk_bet (A1 \<union> A2) x p y" "x \<in> S" "y \<in> T" 
@@ -619,13 +601,6 @@ proof-
         thm_precond5 thm_precond1]
     by simp
 qed
-(*TODO MOVE*)
-lemma upt_image_nat_0: "f ` {..<(y::nat)} = {f z | z. z < y} " 
-  by auto
-
-lemma edges_of_vwalk_rev: "edges_of_vwalk (rev xs) = map prod.swap (rev (edges_of_vwalk  xs))"
-  by(induction xs rule: edges_of_vwalk.induct)
-    (simp | subst edges_of_vwalk_append_2)+
 
 lemma augment_in_matroid1_single: 
   assumes  "x \<in> S" "x \<in> T" 
@@ -642,6 +617,8 @@ lemma augment_in_matroid2:
     "\<nexists> q. vwalk_bet (A1 \<union> A2) x q y \<and> length q < length p"
   shows "indep2 ((X \<union> {p ! i | i. i < length p \<and> even i}) -  {p ! i | i. i < length p \<and> odd i})"
 proof-
+  have upt_image_nat_0: "f ` {..<(y::nat)} = {f z | z. z < y} " for f  y
+  by auto
   have p_non_empt:"p \<noteq> []"
     using assms(1) by auto
   have p_init:"p ! (length p -1) = y"
