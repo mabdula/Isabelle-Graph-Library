@@ -384,6 +384,31 @@ fun augment_edges::"('edge_type \<Rightarrow> real) \<Rightarrow> real \<Rightar
 lemma augment_edges_fold: "augment_edges f \<gamma> es = foldr (\<lambda> e f. augment_edge f \<gamma> e) es f"
   by(induction es) simp+
 
+text \<open>For convenience during inductions, fist single edge augment, then recursion\<close>
+
+fun augment_edges'::"('edge_type \<Rightarrow> real) \<Rightarrow> real \<Rightarrow>('edge_type Redge) list \<Rightarrow> ('edge_type \<Rightarrow> real)" where
+"augment_edges' f \<gamma> [] = f"|
+"augment_edges' f \<gamma> (e#es) = augment_edges' (augment_edge f \<gamma> e) \<gamma> es"
+
+lemma augment_edges'_is_augment_edges:"augment_edges'= augment_edges"
+proof-
+  have "augment_edges' f g es d= augment_edges f g es d" for f g es d
+proof-
+  have subgoals:
+"augment_edges (\<lambda>da. if da = d then f d + g else f da) g es d = augment_edges f g es d + g"
+"augment_edges (\<lambda>da. if da = d then f d - g else f da) g es d = augment_edges f g es d - g"
+"\<And> x1. d \<noteq> x1 \<Longrightarrow> augment_edges (\<lambda>d. if d = x1 then f x1 + g else f d) g es d = augment_edges f g es d"
+"\<And> x2. d \<noteq> x2 \<Longrightarrow>
+       augment_edges (\<lambda>d. if d = x2 then f x2 - g else f d) g es d = augment_edges f g es d"
+for f es
+    by(induction es) (auto split: Redge.split)
+  show ?thesis
+  by(induction es arbitrary: f)
+    (auto split: Redge.split simp add: subgoals)
+qed
+  thus ?thesis by fast
+qed
+
 text \<open>Residual capacities related to edges that have got nothing to do
       with the augmentation do not change.\<close>
 

@@ -73,6 +73,15 @@ proof-
   finally show ?thesis by simp
 qed
 
+lemma augment_along_s_t_path:
+  assumes "is_s_t_flow f s t" "0 \<le> \<gamma>" "ereal \<gamma> \<le> Rcap f (set p)" "set p \<subseteq> \<EE>" "distinct p"
+          "fstv (hd p) = s" "sndv (last p) = t" "augpath f p" "s \<in> \<V>" "t \<in> \<V>"
+        shows "is_s_t_flow (augment_edges  f \<gamma> p) s t"
+  using s_t_flow_excess_s_t[OF assms(1)] assms 
+        augment_path_validness_b_pres_source_target_distinct[OF
+             s_t_flow_is_ex_bflow[OF assms(1)] assms(2)  assms(8,3,4,5)]
+  by(auto simp add: is_s_t_flow_def isbflow_def ex_def intro: augment_path_validness_pres)
+
 subsection \<open>Decomposition of $s$-$t$-Flows\<close>
 
 fun make_pair' where

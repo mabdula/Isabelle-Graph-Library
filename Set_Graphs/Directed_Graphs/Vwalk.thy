@@ -215,6 +215,8 @@ lemma edges_of_vwalk_append_3:
   using assms
   by (auto simp flip: append_butlast_last_cancel simp: edges_of_vwalk_append_2)
 
+lemmas edges_of_vwalk_append_two_vertices = edges_of_vwalk_append_3[of "_ @[_]" "[_]", simplified]
+
 lemma vwalk_vertex_has_edge:
   assumes "length p \<ge> 2" "v \<in> set p"
   obtains e u where "e \<in> set (edges_of_vwalk p)" "e = (u, v) \<or> e = (v, u)"
