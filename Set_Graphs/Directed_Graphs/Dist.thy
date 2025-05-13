@@ -818,6 +818,81 @@ proof(goal_cases)
     by (metis (no_types, lifting) "1"(1) "1"(2) "1"(3) \<open>vwalk_bet G u p v\<close> distance_set_0 distance_set_shortest_path reachable_in_dVs(1) vwalk_bet_endpoints(2) vwalk_bet_subset)
 qed*)
 
+section \<open>Level Graphs\<close>
 
+definition "level_graph G S = {(u, v) | u v. (u, v) \<in> G 
+                              \<and> distance_set G S v = distance_set G S u +1}"
+
+lemma in_level_graphI: "(u, v) \<in> G \<Longrightarrow> distance_set G S v = distance_set G S u +1 \<Longrightarrow>
+                        (u, v) \<in> level_graph G S"
+  by(auto simp add: level_graph_def)
+
+lemma in_level_graphE: "(u, v) \<in> level_graph G S \<Longrightarrow>
+              ((u, v) \<in> G \<Longrightarrow> distance_set G S v = distance_set G S u +1 \<Longrightarrow> P ) \<Longrightarrow> P"
+  by(auto simp add: level_graph_def)
+
+lemma walk_in_level_graph_distance_rev:
+  assumes "vwalk_bet (level_graph G S) s (rev p) t" "s \<in> S"
+  shows  "length p = distance_set G S t + 1"
+  using assms(1)
+proof(induction p arbitrary: t rule: edges_of_vwalk.induct)
+  case 1
+  then show ?case
+    by simp
+next
+  case (2 v)
+  hence all_verts_same: "s = t" "s= v" 
+    by (auto intro: vwalk_bet_props)
+  obtain x where x_prop:"(t, x) \<in> level_graph G S \<or> (x, t) \<in> level_graph G S"
+    by(auto elim: in_dVsE(1) intro: in_dVsE(1)[OF vwalk_bet_endpoints(2)[OF "2.prems"(1)]])
+  have t_in_G: "t \<in> dVs G" 
+   by(auto intro:  disjE[OF x_prop] elim!:  in_level_graphE)
+  have dist_0:"distance G s t = 0"
+    using t_in_G
+    by(auto simp add: distance_0[symmetric] all_verts_same)
+  hence "distance_set G S t = 0"
+    using all_verts_same(1) assms(2) t_in_G by auto
+  then show ?case 
+    using one_eSuc by (auto simp add:  zero_enat_def)
+next
+  case (3 v v' l)
+  hence t_is_v:"t = v" 
+    by(auto simp add: vwalk_bet_def)
+  have vwalk_to_v':"vwalk_bet (level_graph G S) s (rev (v' # l)) v'" 
+    using 3(2) 
+    by(auto intro!: vwalk_bet_prefix_is_vwalk_bet[of "rev (v' # l)" _ s "[v]" v, simplified]
+          simp add: t_is_v)
+  hence IH_applied: "enat (length (v' # l)) = distance_set G S v' + 1"
+    by(fastforce intro!: 3(1))
+  have "(v', v) \<in> level_graph G S" 
+    using 3(2) by (auto intro!:  vwalk_snoc_edge_2)
+  hence dist_increase: "distance_set G S v = distance_set G S v' + 1" 
+    by (auto elim: in_level_graphE)
+  then show ?case 
+    using IH_applied t_is_v 
+    by(auto simp add: eSuc_plus_1) 
+qed
+
+lemma walk_in_level_graph_distance:
+  assumes "vwalk_bet (level_graph G S) s p t" "s \<in> S"
+  shows  "length p = distance_set G S t + 1"
+  using assms
+  by(auto intro!: walk_in_level_graph_distance_rev[where p = "(rev p)", simplified])
+
+lemma edges_between_infty_verts_in_level_graph:
+ "distance_set G S u = \<infinity> \<Longrightarrow> distance_set G S v = \<infinity> \<Longrightarrow> (u, v) \<in> G \<Longrightarrow> (u, v) \<in> level_graph G S"
+  by (simp add: in_level_graphI)
+
+(*TODO MOVE*)
+
+lemma infty_dist_is_unreachable:
+"distance_set G S u = \<infinity> \<longleftrightarrow> \<not> (\<exists> s \<in> S. reachable G s u)"
+  using  dist_not_inf'[of G S u] dist_set_mem[of _ S G u]  reachable_dist[of G _ u] 
+  by force
+
+lemma infty_dist_is_unreachables:
+" {(u, v) | u v. distance_set G S u = \<infinity>} = 
+  {(u, v) | u v. \<not> (\<exists> s \<in> S. reachable G s u)}" 
+  by(simp add: infty_dist_is_unreachable)
 
 end
