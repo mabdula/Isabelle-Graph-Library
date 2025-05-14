@@ -38,6 +38,10 @@ lemma foldl_invar: "inv x \<Longrightarrow> (\<And> y z. inv y \<Longrightarrow>
                     inv (foldl f x xs)" for inv
   by(induction xs arbitrary: x) auto
 
+lemma foldr_invar: "inv x \<Longrightarrow> (\<And> y z. inv y \<Longrightarrow> inv (f z y)) \<Longrightarrow>
+                    inv (foldr f xs x)" for inv
+  by(induction xs arbitrary: x) auto
+
 record  ('flow, 'map) blocking_state = flow::'flow graph::'map
 
 locale blocking_simple =
@@ -142,6 +146,15 @@ lemma compute_blocking_loop_domintros:
            compute_blocking_loop_dom (compute_blocking_loop_upd state) \<Longrightarrow>
            compute_blocking_loop_dom state"
   by(auto intro: compute_blocking_loop.domintros simp add: compute_blocking_loop_upd_def Let_def)
+
+lemma termination_same:
+  assumes "compute_blocking_loop_dom state"
+  shows   "compute_blocking_loop_impl state = compute_blocking_loop state"
+  apply(induction rule: compute_blocking_loop.pinduct[OF assms(1)])
+  apply(subst compute_blocking_loop.psimps)
+  apply simp
+  apply(subst compute_blocking_loop_impl.simps)
+  by(auto simp add: Let_def split: option.split)
 end
 
 locale blocking_simple_thms =
@@ -579,14 +592,34 @@ end
 
 lemma correctness:
         "flow (compute_blocking_loop initial_state) = flow_empty
-         \<Longrightarrow> \<nexists> p. vwalk_bet (Graph.digraph_abs G) s p t"
+         \<Longrightarrow> (\<nexists> p. vwalk_bet (Graph.digraph_abs G) s p t)"
         "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty 
          \<Longrightarrow> \<exists> p. vwalk_bet (Graph.digraph_abs G) s p t"
         "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty 
          \<Longrightarrow> flow_network.is_blocking_flow fst snd id u (Graph.digraph_abs G) s t 
                (abstract_real_map (flow_lookup (flow (compute_blocking_loop initial_state))))"
+        "compute_blocking_loop_dom initial_state"
 proof-
-  show "flow (compute_blocking_loop initial_state) = flow_empty \<Longrightarrow> \<nexists>p. vwalk_bet [G]\<^sub>g s p t"
+  show "compute_blocking_loop_dom initial_state"
+  proof(cases "find_path (blocking_state.graph initial_state) s t")
+    case None
+    then show ?thesis by(auto intro!: compute_blocking_loop_domintros(1))
+  next
+    case (Some a)
+    then obtain p del where a_split:"a = (p, del)" by(cases a) auto
+    hence p_prop:"vwalk_bet [G]\<^sub>g s (fst a) t" 
+      using find_path(2)[of "graph initial_state", OF  _ _ _ Some[simplified a_split] s_neq_t]
+         acyc graph_invars(1,2,3) 
+      by(auto simp add: initial_state_def)
+     hence G_props: "[G]\<^sub>g \<noteq> {}" "s \<in> dVs [G]\<^sub>g" "t \<in> dVs [G]\<^sub>g"
+          by (simp add: s_neq_t vwalk_bet_hd_neq_last_implies_edges_nonempty)+    
+        note invar_flow_intial = initial_flow_invar[OF G_props]
+        thus ?thesis
+    using computer_blocking_loop_terminates
+                      [OF G_props(1) initial_invars(1,2) invar_flow_intial] by simp
+  qed
+  show "flow (compute_blocking_loop initial_state) = flow_empty 
+      \<Longrightarrow> \<nexists>p. vwalk_bet [G]\<^sub>g s p t"
   proof(goal_cases)
     case 1
     note asm = this
@@ -683,5 +716,7 @@ proof-
     qed
   qed
 qed
+
+
 end
 end

@@ -17,6 +17,9 @@ delete_edge = dfs.Graph.delete_edge
   by(auto intro!: DFS.intro  simp add: edge_map_update_def RBT_Set.empty_def adj_inv_def map_empty_def
                                            vset_inv_def)
 
+lemma empty_digraph_abs: "dfs.Graph.digraph_abs vset_empty = {}"
+  by (metis G.digraph_abs_empty RBT_Set.empty_def)
+
 thm Pair_Graph_Specs.add_edge_def
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (1,5), (5,8), (8,7),

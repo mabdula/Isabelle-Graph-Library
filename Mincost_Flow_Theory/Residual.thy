@@ -314,11 +314,6 @@ text \<open>Similarly, we introduce the notion of residual capacities.
      For backward arcs this is the amount of flow that can be cancelled by
      abrogating the assignment due to $f$.\<close>
 
-end
-
-context flow_network
-begin
-
 fun rcap::"('edge_type \<Rightarrow> real) \<Rightarrow> 'edge_type Redge \<Rightarrow> ereal" ("\<uu>\<^bsub>_\<^esub>_") where 
 "\<uu>\<^bsub>f\<^esub> (F e) = \<u> e - f e"|
 "\<uu>\<^bsub>f\<^esub> (B e) = f e"
@@ -348,6 +343,10 @@ text \<open>We can also generate regular arcs just by omitting the constructors.
 fun to_vertex_pair::"'edge_type Redge \<Rightarrow> 'a \<times> 'a" where
  "to_vertex_pair (F e) = make_pair e"|     
  "to_vertex_pair (B e) = prod.swap (make_pair e)"
+end
+
+context flow_network
+begin
 
 lemma to_vertex_pair_fst_snd: "to_vertex_pair e = (fstv e, sndv e)"
   by(cases e) (auto simp add: make_pair')

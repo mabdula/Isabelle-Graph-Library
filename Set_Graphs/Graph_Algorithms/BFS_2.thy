@@ -1700,7 +1700,7 @@ proof-
       by(auto intro: invar_level_so_far_in_parentsE[OF assms(2)])
     have case6: "u \<in> [current state]\<^sub>s"
       if asm: "v \<in> neighbourhood [G]\<^sub>g uaa"  "uaa \<in> [current state]\<^sub>s" 
-              "(u, v) \<notin> [parents state]\<^sub>g" for uaa ua
+              "(u, v) \<notin> [parents state]\<^sub>g" for uaa
     proof-
       have v_not_in:"v \<notin> [current state]\<^sub>s" "v \<notin> [visited state]\<^sub>s"
         using case2 case3 case5 that(3) by auto
