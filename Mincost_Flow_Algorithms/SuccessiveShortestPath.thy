@@ -620,7 +620,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
       show ?case 
         by(rule less(1)[OF abs_less invar2])
     qed
-  qed
+  qed 
 qed
 
 lemma termination_initial_state:
