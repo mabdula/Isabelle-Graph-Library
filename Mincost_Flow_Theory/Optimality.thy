@@ -2,7 +2,7 @@ theory Optimality
 imports Augmentation Decomposition
 begin
 
-context cost_flow_network
+context cost_flow_spec
 begin
 section \<open>An Optimality Criterion\<close>
 
@@ -26,7 +26,9 @@ definition "precycle cs = (prepath cs \<and> fstv (hd cs) = sndv (last cs) \<and
 
 text \<open>This means, that precycles are cycles in the residual graph without
  any restrictions on residual capacities.\<close>
-
+end
+context cost_flow_network
+begin
 text \<open>A conditioned lemma of equivalence.\<close>
 
 lemma augcycle_from_precycle: 
@@ -118,7 +120,9 @@ proof(induction l arbitrary: cs rule : less_induct)
     qed
   qed
 qed
-
+end
+context cost_flow_spec
+begin
 text \<open>A flow $f$ is an optimum $b$-flow iff
 \begin{itemize}
 \item it is a flow assignment respecting the required balance $b$ and the fixed capacity 
@@ -171,7 +175,9 @@ qed
   ultimately show ?thesis
     by(auto simp add: is_Opt_def)
 qed
-
+end
+context cost_flow_network
+begin
 subsection \<open>Absence of Augmenting Cycles from Optimality\<close>
 
 text \<open>We present a proof of the first direction:
@@ -212,7 +218,9 @@ Differences of flows as defined in the following are residual flows.
 
 We follow the presentation from section 9.1 in the book by Korte and Vygen.
 \<close>
-
+end
+context flow_network_spec
+begin
 subsubsection \<open>Difference Flows and their Properties\<close>
 
 text \<open>We reinterpret past results on residual graphs.\<close>
@@ -220,13 +228,10 @@ text \<open>We reinterpret past results on residual graphs.\<close>
 abbreviation "make_pair_residual \<equiv> (\<lambda> e. (fstv e, sndv e))"
 
 abbreviation "create_edge_residual \<equiv> (\<lambda> u v. F (create_edge u v))"
+end
 
-interpretation residual_flow: cost_flow_network where
-fst = fstv and snd = sndv and make_pair = make_pair_residual and create_edge = create_edge_residual
-and \<E> = \<EE>  and \<c> = \<cc> and \<u> = "\<lambda> _. PInfty"
-  using  make_pair create_edge  E_not_empty oedge_on_\<EE> 
-  by(auto simp add: finite_\<EE> make_pair[OF refl refl] create_edge cost_flow_network_def flow_network_axioms_def flow_network_def multigraph_def)
- 
+context flow_network_spec
+begin
 
 text \<open>Difference between flows.\<close>
 
@@ -248,7 +253,9 @@ lemma diff_of_diff_edge:
   "difference f' f (F e) - difference f' f (B e) = f' e - f e"
   using  difference.simps
   by simp
-
+end
+context flow_network
+begin
 lemma difference_less_rcap: "isuflow f \<Longrightarrow> isuflow f' \<Longrightarrow> e\<in> \<EE> \<Longrightarrow> rcap f e \<ge> difference f' f e"
   apply(cases e)
   using prod_elim[where P= "\<lambda> ee. (e = _ ee)"] o_edge_res
@@ -259,6 +266,12 @@ lemma pos_difference_pos_rcap:
  "isuflow f \<Longrightarrow> isuflow f' \<Longrightarrow> e\<in> \<EE> \<Longrightarrow>  difference f' f e > 0 \<Longrightarrow> rcap f e > 0"
   using difference_less_rcap dual_order.strict_trans1 ereal_less(2)
   by blast
+
+interpretation residual_flow: flow_network where
+fst = fstv and snd = sndv and make_pair = make_pair_residual and create_edge = create_edge_residual
+and \<E> = \<EE>   and \<u> = "\<lambda> _. PInfty"
+  using  make_pair create_edge  E_not_empty oedge_on_\<EE> 
+  by(auto simp add: finite_\<EE> make_pair[OF refl refl] create_edge cost_flow_network_def flow_network_axioms_def flow_network_def multigraph_def)
 
 lemma difference_flow_pos: "isuflow f \<Longrightarrow> isuflow f' \<Longrightarrow> residual_flow.flow_non_neg (difference f' f)"
   by (simp add: diff_non_neg residual_flow.flow_non_neg_def)
@@ -345,11 +358,20 @@ proof
   finally show"residual_flow.ex (difference f' f) v = 0" 
     by blast
 qed
-
+end
+context cost_flow_network
+begin
 text \<open>
 Residual costs of a difference flow is the difference between costs of two flows.
 Another part of Proposition 9.4 by Korte and Vygen.
 \<close>
+
+interpretation residual_flow: cost_flow_network where
+fst = fstv and snd = sndv and make_pair = make_pair_residual and create_edge = create_edge_residual
+and \<E> = \<EE> and \<c> = \<cc>   and \<u> = "\<lambda> _. PInfty"
+  using  make_pair create_edge  E_not_empty oedge_on_\<EE> 
+  by(auto simp add: finite_\<EE> make_pair[OF refl refl] create_edge cost_flow_network_def flow_network_axioms_def flow_network_def multigraph_def)
+
 
 lemma  rcost_difference: "residual_flow.\<C> (difference f' f) = \<C> f' - \<C> f"
   unfolding residual_flow.\<C>_def \<C>_def

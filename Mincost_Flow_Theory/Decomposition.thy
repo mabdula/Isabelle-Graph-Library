@@ -1,7 +1,7 @@
 theory Decomposition
   imports Augmentation
 begin
-context flow_network
+context flow_network_spec
 begin
 
 text \<open>We define integrality for balance and flow functions.\<close>
@@ -28,7 +28,9 @@ fun find_cycle::" ('edge_type \<Rightarrow> real) \<Rightarrow> nat \<Rightarrow
                                  (let e = (SOME e.  g e > 0  \<and> fst e = v \<and> e \<in>\<E>) 
                                    in find_cycle g n (snd e))
                              else [])"
-
+end
+context flow_network
+begin
 text \<open>For any non-trivial circulation we can find a list of vertices 
 connected by edges carrying some flow. 
 The length of this list is exactly the maximum iteration number,
@@ -172,11 +174,15 @@ proof(induction g n v rule: find_cycle.induct)
       then show ?thesis by simp
   qed
 qed (force simp add: flowpath_intros)
-
+end
+context flow_network_spec
+begin
 text \<open>Analogously to augmenting paths and cycles, we define the concept of a cycle.\<close>
 
 definition "flowcycle g es = (flowpath g es \<and> es \<noteq> [] \<and> fst (hd es) = snd(last es))"
-
+end
+context flow_network
+begin
 lemma flow_path_mono: 
 assumes "flowpath g' es " 
 shows   "(\<And> e. e \<in> (set es) \<Longrightarrow> g e \<ge> g' e)  \<Longrightarrow> flowpath g es"

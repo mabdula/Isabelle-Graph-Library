@@ -1014,8 +1014,7 @@ proof-
       proof(cases "0 = sum b (Rescut \<f> s)")
         case True
         have "s \<in> (Rescut \<f> s)" "b s > 0"
-          using flow_network.Rescut_def flow_network_axioms
-           by (fastforce simp add: s_prop(2))+
+           by (fastforce simp add: s_prop(2) Rescut_def)+
          then obtain t where t_prop:"t \<in> (Rescut \<f> s)" "b t < 0"
            using True           
            by (smt (verit) Int_absorb1 Rescut_around_in_V \<V>_finite finite_Int s_prop(1) sum_pos2)

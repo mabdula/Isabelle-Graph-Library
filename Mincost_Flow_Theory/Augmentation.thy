@@ -2,7 +2,7 @@ theory Augmentation
   imports Residual
 begin
 
-context flow_network
+context flow_network_spec
 begin
 
 section \<open>Augmentations in a Residual Graph\<close>
@@ -20,7 +20,9 @@ disregard residual capacities for now.
 definition prepath::" ('edge_type Redge) list \<Rightarrow> bool" where
        "prepath p  = (awalk UNIV (fstv (hd p)) (map to_vertex_pair p) (sndv (last p)) 
                              \<and> p \<noteq> [] )"
-
+end
+context flow_network
+begin
 text \<open>As for residual reachability, we will frequently use some inductive reasoning.
 For doing this properly we carefully prepare the rules.
 \<close>
@@ -196,14 +198,19 @@ proof(induction "length es" arbitrary: es  thesis rule: less_induct)
     qed
   qed
 qed
-
+end
+context
+flow_network_spec
+begin
 subsection \<open>Augmenting Paths\<close>
 
 text \<open>In addition to $prepath$, an \textit{augmenting path} requires strictly positive residual capacities.\<close>
 
 definition augpath::"('edge_type \<Rightarrow> real)   \<Rightarrow> ('edge_type Redge) list \<Rightarrow> bool" where
        "augpath f p  = (prepath p \<and> Rcap f (set p) > 0 )"
-
+end
+context flow_network
+begin
 text \<open>Again, some technical lemmas.\<close>
 
 lemma augpath_intros:
@@ -351,6 +358,14 @@ lemma augpath_split3:
   unfolding augpath_def
   by simp
 
+text \<open>Reachability by a path with at least $cap$ residual capacity.\<close>
+
+definition resreach_cap::"('edge_type \<Rightarrow> real) \<Rightarrow> nat \<Rightarrow>'a \<Rightarrow> 'a \<Rightarrow> bool" where
+       "resreach_cap f cap u v = (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
+                            \<and> Rcap f (set p) > (real cap) \<and> p \<noteq> [] \<and> set p \<subseteq> \<EE>)"
+end
+context flow_network_spec
+begin
 subsection \<open>Augmentations\<close>
 
 text \<open>For a plethora of flow computing algorithms the notion of \textit{augmentation}
@@ -366,7 +381,9 @@ fun augment_edge::"('edge_type  \<Rightarrow> real) \<Rightarrow> real \<Rightar
             (case e of F d \<Rightarrow> f d + \<gamma> |
                        B d \<Rightarrow> f d - \<gamma>)
      else f d)"
-
+end
+context flow_network
+begin
 text \<open>If we augment below residual capacity, we obtain another flow respecting edge capacities.\<close>
 
 lemma augment_edge_validness_pres:
@@ -374,7 +391,9 @@ lemma augment_edge_validness_pres:
   unfolding isuflow_def
   using ereal_umst ereal_le_le
   by(cases rule:  redge_pair_cases)(auto simp add: add.commute u_non_neg )
-
+end
+context flow_network_spec
+begin
 text \<open>The augmentation along a path is defined as the sequentially preformed augmentation of the edges.\<close>
 
 fun augment_edges::"('edge_type \<Rightarrow> real) \<Rightarrow> real \<Rightarrow>('edge_type Redge) list \<Rightarrow> ('edge_type \<Rightarrow> real)" where
@@ -459,7 +478,9 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
       using "4" by presburger
   qed
 qed simp
-
+end
+context flow_network
+begin
 text \<open>For any valid flow an augmentation respecting residual capacities will preserve respect
  for capacities.\<close>
 

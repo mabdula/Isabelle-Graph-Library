@@ -288,7 +288,7 @@ definition "N = length (remdups (map fst (to_list \<E>_impl) @ map snd  (to_list
 definition "\<epsilon> = 1 / (max 3 (real N))"
 
 definition "\<b> = (\<lambda> v. if bal_lookup \<b>_impl v \<noteq> None then the (bal_lookup \<b>_impl v) else 0)"
-abbreviation "EEE \<equiv> flow_network.\<EE> \<E>"
+abbreviation "EEE \<equiv> flow_network_spec.\<EE> \<E>"
 abbreviation "fstv == flow_network_spec.fstv fst snd"
 abbreviation "sndv == flow_network_spec.sndv fst snd"
 
@@ -1465,7 +1465,7 @@ proof-
   qed
 qed
 
-lemmas EEE_def = flow_network.\<EE>_def
+lemmas EEE_def = flow_network_spec.\<EE>_def
 
 lemma es_E_frac: "cost_flow_network.to_vertex_pair ` EEE = set es"
 proof(goal_cases)
@@ -3585,7 +3585,7 @@ proof(cases "invar_isOptflow state", goal_cases)
       ultimately show ?case 
         using "11" cost_flow_network.augpath_rcap_pos_strict cost_flow_network.oedge_and_reversed cost_flow_network.vs_erev
                 get_edge_and_costs_backward_makes_cheaper[OF refl _ _ _ prod.collapse, 
-                       of "flow_network.erev e" "not_blocked state" "current_flow state"] knowledge(12)  qq_prop(1) 
+                       of "flow_network_spec.erev e" "not_blocked state" "current_flow state"] knowledge(12)  qq_prop(1) 
         by auto
   qed 
   have bellman_ford:"bellman_ford connection_empty connection_lookup connection_invar connection_delete
@@ -4871,10 +4871,10 @@ lemma no_cycle_cond:"function_generation_proof.no_cycle_cond "
 
 corollary correctness_of_implementation:
  "return_impl (final_state  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = success \<Longrightarrow>  
-        cost_flow_network.is_Opt (fst o make_pair) (snd o make_pair) make_pair \<u> (\<c> \<c>_impl c_lookup) (\<E> \<E>_impl) (\<b> \<b>_impl) 
+        cost_flow_spec.is_Opt (fst o make_pair) (snd o make_pair) make_pair \<u> (\<E> \<E>_impl) (\<c> \<c>_impl c_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map (final_flow_impl  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup))"
  "return_impl (final_state  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = failure \<Longrightarrow> 
-         \<nexists> f. flow_network.isbflow  (fst o make_pair) (snd o make_pair) make_pair \<u>  (\<E> \<E>_impl) f (\<b> \<b>_impl)"
+         \<nexists> f. flow_network_spec.isbflow  (fst o make_pair) (snd o make_pair) make_pair (\<E> \<E>_impl) \<u>  f (\<b> \<b>_impl)"
  "return_impl (final_state  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = notyetterm \<Longrightarrow>  
          False"
     using  function_generation_proof.correctness_of_implementation[OF  no_cycle_cond] 

@@ -6,7 +6,7 @@ begin
 
 datatype 'b edge_wrapper = is_old: old_edge 'b | new_edge 'b
 
-context flow_network
+context flow_network_spec
 begin
 
 definition is_s_t_flow ( "_ is _ -- _ flow") where
@@ -17,7 +17,9 @@ lemma is_s_t_flowI:
 "isuflow f \<Longrightarrow> ex f s \<le> 0 \<Longrightarrow> s \<in> \<V> \<Longrightarrow> t \<in> \<V> \<Longrightarrow> s \<noteq> t \<Longrightarrow>
                       (\<And> x. x \<in> \<V> \<Longrightarrow> x\<noteq> s \<Longrightarrow> x \<noteq> t \<Longrightarrow> ex f x = 0) \<Longrightarrow> is_s_t_flow f s t"
   by(auto simp add: is_s_t_flow_def)
-
+end
+context flow_network
+begin
 lemma s_t_flow_excess_s_t:"f is s -- t flow \<Longrightarrow> ex f t = - ex f s"
 proof(goal_cases)
   case 1
@@ -81,13 +83,17 @@ lemma augment_along_s_t_path:
         augment_path_validness_b_pres_source_target_distinct[OF
              s_t_flow_is_ex_bflow[OF assms(1)] assms(2)  assms(8,3,4,5)]
   by(auto simp add: is_s_t_flow_def isbflow_def ex_def intro: augment_path_validness_pres)
-
+end
+context flow_network_spec
+begin
 subsection \<open>Decomposition of $s$-$t$-Flows\<close>
 
 fun make_pair' where
 "make_pair' (old_edge e) = ((fst e), (snd e))"|
 "make_pair' (new_edge e) = ( (fst e), (snd e))"
-
+end
+context flow_network
+begin
 lemma case_edge_wrapper_make_pair:"case_edge_wrapper make_pair make_pair = make_pair'" 
   by(auto split: edge_wrapper.split simp add: make_pair')
 
@@ -579,13 +585,36 @@ next
     using 2(2) conjunct1[OF assms[simplified is_s_t_flow_def]]  sum_pos2[of \<E> _ f, OF finite_E]
     by (force intro!: 2(1)[of Nil Nil Nil Nil] simp add:  Abs_def isuflow_def )
 qed
-
+end
 subsection \<open>Maximum Flow and Minimum Cut\<close>
 
 text \<open>As we have a notion of $s$-$t$-flows, we should also formalise the Maxflow-Mincut Theorem\<close>
 
+context flow_network_spec
+begin
+definition "is_s_t_cut s t X= (s \<in> X \<and> t \<in> \<V> - X \<and> X \<subseteq> \<V>)"
+
+lemma is_s_t_cutI: "s \<in> X \<Longrightarrow> t \<in> \<V> - X \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> is_s_t_cut s t X"
+  by(auto simp add: is_s_t_cut_def)
+
+lemma is_s_t_cutE: "is_s_t_cut s t X \<Longrightarrow> (s \<in> X \<Longrightarrow> t \<in> \<V> - X \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: is_s_t_cut_def)
+
+definition "is_min_cut s t X = (is_s_t_cut s t X \<and> (\<forall> Y. is_s_t_cut s t Y \<longrightarrow> Cap X \<le> Cap Y))"
+
+
+definition "is_max_flow s t f = (f is s -- t flow \<and> (\<forall> g. g is s -- t flow \<longrightarrow> ex f t \<ge> ex g t))"
+
+lemma is_max_flowI: "f is s -- t flow \<Longrightarrow>
+                     (\<And> g. g is s -- t flow \<Longrightarrow> ex f t \<ge> ex g t) \<Longrightarrow> is_max_flow s t f"
+  by(auto simp add: is_max_flow_def)
+
+
+end
+context flow_network
+begin
 context 
-  fixes s t
+  fixes s t::'a
   assumes s_in_V: "s \<in> \<V>"
   assumes t_in_V: "t \<in> \<V>"
   assumes s_neq_t: "s \<noteq> t"
@@ -613,31 +642,21 @@ next
             simp add: dVs_def )
 qed
 
-definition "is_s_t_cut X = (s \<in> X \<and> t \<in> \<V> - X \<and> X \<subseteq> \<V>)"
-
-lemma is_s_t_cutI: "s \<in> X \<Longrightarrow> t \<in> \<V> - X \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> is_s_t_cut X"
-  by(auto simp add: is_s_t_cut_def)
-
-lemma is_s_t_cutE: "is_s_t_cut X \<Longrightarrow> (s \<in> X \<Longrightarrow> t \<in> \<V> - X \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> P) \<Longrightarrow> P"
-  by(auto simp add: is_s_t_cut_def)
-
-definition "is_min_cut X = (is_s_t_cut X \<and> (\<forall> Y. is_s_t_cut Y \<longrightarrow> Cap X \<le> Cap Y))"
-
 lemma mincut_exists:
-  obtains mincut where  "is_min_cut mincut"
+  obtains mincut where  "is_min_cut s t mincut"
 proof(goal_cases)
   case 1
-  have finite_number_of_cuts_finite:"finite {X . is_s_t_cut X}"
+  have finite_number_of_cuts_finite:"finite {X . is_s_t_cut s t X}"
     by (auto intro: finite_subset[of _ "Pow \<V>"] simp add: \<V>_finite is_s_t_cut_def)
-  have finite_number_of_cuts_pos:"{X . is_s_t_cut X} \<noteq> {}"
+  have finite_number_of_cuts_pos:"{X . is_s_t_cut s t X} \<noteq> {}"
     using t_in_V  s_in_V  s_neq_t 
     by (auto intro: exI[of _ "\<V> - {t}"] simp add: is_s_t_cut_def)
-  define mincap where "mincap = Min {Cap X | X. is_s_t_cut X}"
-  have "mincap \<in> {Cap X | X. is_s_t_cut X}"
+  define mincap where "mincap = Min {Cap X | X. is_s_t_cut s t  X}"
+  have "mincap \<in> {Cap X | X. is_s_t_cut s t X}"
     using finite_imageI[OF finite_number_of_cuts_finite, of Cap] finite_number_of_cuts_pos
     by( auto intro: linorder_class.Min_in simp add: mincap_def image_Collect[symmetric])
-  then obtain X where X_prop: "Cap X = mincap" "is_s_t_cut X" by auto
-  have mincut: "is_min_cut X" 
+  then obtain X where X_prop: "Cap X = mincap" "is_s_t_cut s t X" by auto
+  have mincut: "is_min_cut s t X" 
     using X_prop finite_imageI[OF finite_number_of_cuts_finite, of Cap]
      by(auto intro!: Min.coboundedI  simp add: image_Collect[symmetric] is_min_cut_def mincap_def )
    thus ?thesis
@@ -645,7 +664,7 @@ proof(goal_cases)
  qed
 
 lemma stcut_ex: 
-  assumes "f is s--t flow" "is_s_t_cut Y" 
+  assumes "f is s--t flow" "is_s_t_cut s t Y" 
   shows "ex f t = (\<Sum>x\<in>Y. ereal (- ex\<^bsub>f\<^esub> x))" 
 proof-
   have props:"isuflow f" "ex f s \<le> 0" "s \<in> \<V>" "t \<in> \<V>" "s \<noteq> t" 
@@ -663,15 +682,9 @@ proof-
   finally show ?thesis by simp
 qed
 
-definition "is_max_flow f = (f is s -- t flow \<and> (\<forall> g. g is s -- t flow \<longrightarrow> ex f t \<ge> ex g t))"
-
-lemma is_max_flowI: "f is s -- t flow \<Longrightarrow>
-                     (\<And> g. g is s -- t flow \<Longrightarrow> ex f t \<ge> ex g t) \<Longrightarrow> is_max_flow f"
-  by(auto simp add: is_max_flow_def)
-
 theorem max_flow_min_cut:
-      assumes "is_max_flow f"
-              "is_min_cut X"
+      assumes "is_max_flow s t f"
+              "is_min_cut s t X"
         shows "ex f t = Cap X"
 proof-
   have props:"isuflow f" "ex f s \<le> 0" "s \<in> \<V>" "t \<in> \<V>" "s \<noteq> t" 
@@ -712,7 +725,7 @@ proof-
    ultimately show False 
      using assms(1) by (force simp add: is_max_flow_def)
  qed
-  have rescut_s_t_cut: "is_s_t_cut (Rescut f s)" 
+  have rescut_s_t_cut: "is_s_t_cut s t (Rescut f s)" 
     using Rescut_around_in_V[OF props(3), of f] t_not_in_Rescut props(4)
     by(auto simp add: Rescut_def is_s_t_cut_def )
   hence a1:"ex f t = (\<Sum>x\<in>Rescut f s. ereal (- ex\<^bsub>f\<^esub> x))"
@@ -739,14 +752,16 @@ fst = fst' and snd = snd' and make_pair = make_pair' and create_edge = create_ed
 and \<E> = \<E>'
  and \<u> = " (\<lambda> e. case e of  old_edge e \<Rightarrow> \<u> e |  _ \<Rightarrow> sum \<u> \<E>)" 
 and \<c> = "(\<lambda> e. case e of old_edge _ \<Rightarrow> 0 | _ \<Rightarrow> -1)"
-  using network_of_network.flow_network_axioms 
-  by(auto simp add: cost_flow_network_def \<E>'_def)
+  using u_non_neg u_sum_pos
+by(auto simp add: cost_flow_network_def \<E>'_def fst'_def snd'_def create_edge' finite_E
+intro!: flow_network.intro multigraph.intro flow_network_axioms.intro
+split: edge_wrapper.split)
 
 lemma same_Vs:"cost_network_of_network.\<V> = \<V>"
 proof(rule, all \<open>rule\<close>, goal_cases)
   case (1 x)
   then obtain e where "e \<in> \<E>'" "x = prod.fst (make_pair' e) \<or> x = prod.snd (make_pair' e)"
-    by (auto simp add: network_of_network.make_pair' dVs_def)
+    by (auto simp add: cost_network_of_network.make_pair' dVs_def)
   moreover then obtain d where "(d \<in> \<E> \<and> e = old_edge d) \<or> x = s \<or> x = t"
     unfolding \<E>'_def by(auto simp add: create_edge') 
   ultimately have "(d \<in> \<E> \<and> (x = fst d \<or> x = snd d)) \<or> x = s \<or> x = t"
@@ -792,13 +807,13 @@ lemma maxflow_to_mincost_flow_reduction:
          f = (\<lambda> e. f' (old_edge e)) \<Longrightarrow>
          f is s--t flow \<and> cost_network_of_network.\<C> f' = - ex f t"
 (is "\<And> f f'. ?a2 f f' \<Longrightarrow> ?b2 f f' \<Longrightarrow> ?c2 f f'")
-"\<And> f f'. is_max_flow f \<Longrightarrow> 
+"\<And> f f'. is_max_flow s t f \<Longrightarrow> 
          f' = (\<lambda> e. case e of old_edge e \<Rightarrow> f e |  _ \<Rightarrow> ex f t) \<Longrightarrow>
          cost_network_of_network.is_Opt (\<lambda> e. 0) f'"
 (is "\<And> f f'. ?a3 f f' \<Longrightarrow> ?b3 f f' \<Longrightarrow> ?c3 f f'")
 "\<And> f f'. cost_network_of_network.is_Opt (\<lambda> e. 0) f' \<Longrightarrow> 
          f = (\<lambda> e. f' (old_edge e)) \<Longrightarrow>
-         is_max_flow f"
+         is_max_flow s t f"
 (is "\<And> f f'. ?a4 f f' \<Longrightarrow> ?b4 f f' \<Longrightarrow> ?c4 f f'")
 proof-
   show goal1:"\<And> f f'. ?a1 f f' \<Longrightarrow> ?b1 f f' \<Longrightarrow> ?c1 f f'"
@@ -890,7 +905,7 @@ proof-
               (\<Sum>e\<in>\<delta>\<^sup>- s. f' (old_edge e)) \<le> (\<Sum>e\<in>\<delta>\<^sup>+ s. f' (old_edge e)) "
               apply(subst (asm) sum_inj_on, simp add: inj_on_def)
               apply(subst (asm) sum_inj_on, simp add: inj_on_def)
-              using \<E>'_def network_of_network.isuflow_def uflow 
+              using \<E>'_def cost_network_of_network.isuflow_def uflow 
               by auto
          thus ?thesis
         using v_ex[OF s_in_V] 
@@ -906,7 +921,7 @@ proof-
              (\<Sum>e\<in>\<delta>\<^sup>+ t. f' (old_edge e)) \<le> (\<Sum>e\<in>\<delta>\<^sup>- t. f' (old_edge e))"
         apply(subst (asm) sum_inj_on, simp add: inj_on_def)
         apply(subst (asm) sum_inj_on, simp add: inj_on_def)
-        using \<E>'_def network_of_network.isuflow_def uflow 
+        using \<E>'_def cost_network_of_network.isuflow_def uflow 
         by auto
       thus ?thesis
         using v_ex[OF t_in_V] 

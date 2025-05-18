@@ -38,7 +38,7 @@ locale flow_network =
 locale cost_flow_spec = flow_network_spec where \<E> = "\<E>::'edge_type set" for \<E>  + 
   fixes \<c>::"'edge_type \<Rightarrow> real"
 
-context flow_network
+context flow_network_spec
 begin
 
 definition delta_plus_infty::"'a \<Rightarrow> 'edge_type set" ("\<delta>\<^sup>+\<^sub>\<infinity>") where
@@ -49,6 +49,9 @@ definition delta_minus_infty::"'a \<Rightarrow> 'edge_type set" ("\<delta>\<^sup
 
 definition infty_edges ("\<E>\<^sub>\<infinity>") where
  "infty_edges = {e. e \<in> \<E> \<and> \<u> e = PInfty}"
+end
+context flow_network
+begin
 
 lemma finite_infty_edges:"finite (infty_edges)" 
   by(auto intro: finite_E finite_subset[OF _ finite_E] simp add:  infty_edges_def)
@@ -69,7 +72,9 @@ lemma infty_edges_del:
 
 lemma finite_infinite_deltas: "finite (delta_plus_infty x)" "finite (delta_minus_infty x)"
  by (auto simp add:  delta_minus_infty_def  delta_plus_infty_def finite_E)
-
+end
+context flow_network_spec
+begin
 
 definition flow_non_neg::"('edge_type \<Rightarrow> real) \<Rightarrow> bool" ("_ \<ge>\<^sub>F 0") where
 "g \<ge>\<^sub>F 0 \<longleftrightarrow> (\<forall> e \<in> \<E>. g e \<ge> 0)"
@@ -90,7 +95,9 @@ definition "Abs g = (\<Sum> e \<in> \<E>. g e)"
 
 text \<open>If a circulation is non-trivial, 
       then there has to be a vertex with strictly positive excess.\<close>
-
+end
+context flow_network
+begin
 lemma Abs_pos_some_node_pos: "Abs g > 0 \<Longrightarrow> g \<ge>\<^sub>F 0 \<Longrightarrow>\<exists> v. flow_out g v > 0 \<and> v \<in> \<V>"
 proof(rule ccontr)
   assume c: " 0 < Abs g"  " g \<ge>\<^sub>F 0"
@@ -108,7 +115,9 @@ proof(rule ccontr)
   ultimately show False 
     using c(3) by blast
 qed
-
+end
+context flow_network_spec
+begin
 text \<open>The support is the set of all edges with non-zero flow.\<close>
 
 definition "support g = {(e::'edge_type)| e. g e > (0::real) \<and> e \<in> \<E>}"
@@ -179,7 +188,9 @@ lemma flowpathE': "flowpath g es \<Longrightarrow> (es = [] \<Longrightarrow> P)
                       awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) \<Longrightarrow>
                           (\<forall> e \<in> set es. g e > 0) \<Longrightarrow> P) \<Longrightarrow>P"
   unfolding flowpath_def multigraph_path_def by (cases es) auto
-
+end
+context flow_network
+begin
 lemma flowpath_intros:
   "flowpath g []"
   "0 < g e \<Longrightarrow> flowpath g [e]"
@@ -364,7 +375,9 @@ lemma sndv_in_verts: "e \<in>  E \<Longrightarrow> sndv e \<in> dVs (to_vertex_p
   unfolding dVs_def
   apply(rule UnionI[of "{prod.fst (to_vertex_pair e), prod.snd (to_vertex_pair e)}"])
   by fastforce (simp add: to_vertex_pair_same_vertex)
-
+end
+context flow_network_spec
+begin
 
 text \<open>For any residual edge, there is a counterpart in the opposite direction.
       A residual arc and its reverse both emerge from the same original edge.\<close>
@@ -395,7 +408,9 @@ lemma redge_case_flip: "f (case e of F a \<Rightarrow> x a  |
                         (case e of F a \<Rightarrow> f (x a) |
                                    B a \<Rightarrow> f (y a)) " 
   by (simp add: Redge.case_eq_if split_beta)
-
+end
+context flow_network
+begin
 lemma to_vertex_pair_erev_swap:"to_vertex_pair \<circ> erev = prod.swap  \<circ> to_vertex_pair"
   by(auto intro!: ext intro: redge_erve_cases_with_e[OF refl ] simp del: make_pair')
 
@@ -411,7 +426,9 @@ lemma rev_prepath_fst_to_lst:"pp \<noteq> [] \<Longrightarrow> fstv (hd (map ere
 
 lemma rev_prepath_lst_to_fst:"pp \<noteq> [] \<Longrightarrow> sndv (last (map erev (rev pp))) = fstv (hd pp)"
   by(auto intro: erev.induct[of  _ "(hd pp)"] simp add:  sym[OF rev_map] last_rev hd_map)
-
+end
+context flow_network_spec
+begin
 text \<open>The set of residual arcs for the fixed set of edges $\mathcal{E}$.\<close>
 
 definition "\<EE> = {e. \<exists> d. e = F d \<and> d \<in> \<E>} \<union>
@@ -438,7 +455,9 @@ next
     by blast+
   ultimately show ?case by simp
 qed
-
+end 
+context flow_network
+begin
 lemma finite_\<EE>: "finite \<EE>" 
   unfolding \<EE>_def 
   using finite_img[of \<E> "\<lambda> x. F x"] finite_E  finite_img[of \<E> "\<lambda> x. B ((snd x), (fst x))"] finite_E 
@@ -457,7 +476,9 @@ lemma is_flow_rcap_non_neg:
 
 lemma o_edge_res: "oedge e \<in> \<E> \<longleftrightarrow> e \<in> \<EE>"
   by(auto intro: redge_pair_cases  oedge.elims[OF refl, of e] simp add: \<EE>_def )
-
+end
+context flow_network_spec
+begin
 text \<open>We define the residual capacity of a path, i.e. formally a list of residual edges.\<close>
 
 definition "Rcap f es = Min (insert PInfty {rc. (\<exists> e.  rc = (rcap f e) \<and> e \<in> es)})"
@@ -565,7 +586,9 @@ For this we need naked pairs without wrapping constructors.
 definition resreach::"('edge_type \<Rightarrow> real)   \<Rightarrow>'a \<Rightarrow> 'a \<Rightarrow> bool" where
        "resreach f u v = (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
                             \<and> Rcap f (set p) > 0 \<and> p \<noteq> [] \<and> set p \<subseteq> \<EE>)"
-
+end
+context flow_network
+begin
 text \<open>We will use this similarly to an inductive predicate which 
       raises the need for some introduction rules.\<close>
 
@@ -690,7 +713,9 @@ lemma resreach_app_single':
   shows   "rcap f e > 0 \<Longrightarrow> v = fstv e \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> resreach  f u (sndv e)"
   by(induction rule: resreach_induct[OF assms])
     (auto simp add: resreach_intros(1) resreach_intros(2))
-
+end
+context flow_network_spec
+begin
 subsection \<open>Cuts\<close>
 
 text \<open>In general a \textit{cut} $(A, \mathcal{V} \setminus A)$ is a partition of $\mathcal{V}$.\<close>
@@ -699,7 +724,9 @@ text \<open>The \textit{residual cut} w.r.t. $f$ and $v$ is anything that is rea
            in the residual graph defined by $f$\<close>
 
 definition "Rescut f v = insert v {u. resreach f v u}"
-
+end
+context flow_network
+begin
 text \<open>After that, let's look a some properties of the rescut.\<close>
 
 lemma Rescut_around_in_V:
@@ -723,11 +750,15 @@ proof
       using False assms by blast
   qed 
 qed
-
+end
+context flow_network_spec
+begin
 text \<open>The capacity of a cut $(X, \mathcal{E} \setminus X)$ is the accumulated capacity of all leaving edges.\<close>
 
 definition "Cap X = (\<Sum> e \<in> \<Delta>\<^sup>+ X. \<u> e)"
-
+end
+context flow_network
+begin
 text \<open>A variant of the flow value lemma:
      The sum of balances within a set of vertices equals the difference of outgoing and incoming flow.
 We prove this by expanding the definition of excess flow and subsequent rearranging of summations.
@@ -933,11 +964,15 @@ theorem flow_saturates_res_cut:
           "(Rescut f v) \<subseteq> \<V>"
   shows   "sum b (Rescut f v)= Cap (Rescut f v)"
   using assms(1) assms(2) rescut_all_edges_sat rescut_outgoing_cap by auto
-
+end
+context flow_network_spec
+begin
 text \<open>Similarly, we define the Anti-Rescut which is formed out of the residually reaching vertices.\<close>
 
 definition "ARescut f v = insert v {u. resreach f u v}"
-
+end
+context flow_network
+begin
 text \<open>After that, let's look a some properties of the rescut.\<close>
 
 lemma ARescut_around_in_V:
@@ -979,8 +1014,13 @@ lemma finite_ARescut: "x \<in> \<V> \<Longrightarrow> finite (ARescut f x)"
 
 lemma cardV_0:"card \<V> > 0" 
   by (simp add: E_not_empty \<V>_finite card_gt_0_iff)
-
+end
+context flow_network_spec
+begin
 definition "ACap X = (\<Sum> e \<in> \<Delta>\<^sup>- X. \<u> e)"
+end
+context flow_network
+begin
 
 lemma flow_cross_acut_less_acap:"isuflow f \<Longrightarrow>  sum f (\<Delta>\<^sup>- X) \<le> ACap X"
   unfolding Delta_minus_def ACap_def isuflow_def 
@@ -1097,12 +1137,7 @@ text \<open>Since graph arcs from $\mathcal{E}$ get some costs assigned, we lift
      On the contrary, using a \textit{backward} edge means cancelling some flow 
      and thus, the costs are reduced according to $c$.
 \<close>
-end
 
-
-locale cost_flow_network= flow_network where \<E> = "\<E>::'edge_type set" +
-cost_flow_spec where \<E> = "\<E>::'edge_type set" for \<E>
-begin
 fun \<cc>::"'edge_type Redge \<Rightarrow> real" where
 "\<cc> (F e) = \<c> e"|
 "\<cc> (B e) = - \<c> e"
@@ -1110,5 +1145,9 @@ fun \<cc>::"'edge_type Redge \<Rightarrow> real" where
 lemma erev_costs: " \<cc> (erev e) = - \<cc> e" for e
   by(cases rule: erev.cases[of e], auto)
 end
+
+
+locale cost_flow_network= flow_network where \<E> = "\<E>::'edge_type set" +
+cost_flow_spec where \<E> = "\<E>::'edge_type set" for \<E>
 
 end
