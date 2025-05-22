@@ -1,4 +1,4 @@
-theory Optimality
+theory Cost_Optimality
 imports Augmentation Decomposition
 begin
 
@@ -588,8 +588,7 @@ proof(rule ccontr)
       by(auto intro: mul_zero_cancel[of "ws ! i"])
   qed
   ultimately have "augcycle f (css ! i)"
-    unfolding augcycle_def 
-    by simp
+    by(auto simp add: augcycle_def)
   thus False 
     using assms(2) 
     by simp

@@ -1,6 +1,6 @@
 section \<open>Eliminating Capacities\<close>
 theory Hitchcock_Reduction
-  imports Optimality
+  imports Cost_Optimality
 begin
 
 subsection \<open>Mixed-Capacity Graphs\<close>

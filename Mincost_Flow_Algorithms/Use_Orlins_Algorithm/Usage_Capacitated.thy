@@ -2,7 +2,7 @@ subsection \<open>Flows in Multigraphs with Capacities\<close>
 
 theory Usage_Capacitated
   imports Instantiation 
-          Mincost_Flow_Theory.Hitchcock_Reduction Mincost_Flow_Theory.STFlow
+          Flow_Theory.Hitchcock_Reduction Flow_Theory.STFlow
 begin
 
   instantiation hitchcock_wrapper::(linorder, linorder) linorder

@@ -1,5 +1,5 @@
 theory Dinic
-imports Mincost_Flow_Theory.Blocking_Flow
+imports Flow_Theory.Blocking_Flow
 begin
 
 record 'f dinic_state = current_flow::'f
@@ -117,8 +117,7 @@ end
 
 locale dinic =
 dinic_spec where fst = "fst::'edge_type \<Rightarrow> 'v" +
-flow_network where fst = fst 
-for fst +
+flow_network where fst = fst for fst +
 assumes find_blocking_flow:
        "\<And> f. flow_invar f \<Longrightarrow> find_blocking_flow f = None
             \<longleftrightarrow> \<not> resreach (abstract_real_map (flow_lookup f)) s t"

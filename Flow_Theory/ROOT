@@ -1,4 +1,4 @@
-session "Mincost_Flow_Theory" = "HOL-Library" +
+session "Flow_Theory" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
@@ -12,7 +12,7 @@ theories
   Augmentation
   Decomposition
   Hitchcock_Reduction
-  Optimality
+  Cost_Optimality
   Preliminaries
   Residual
   STFlow

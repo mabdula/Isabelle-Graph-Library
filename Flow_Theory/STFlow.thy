@@ -1,7 +1,7 @@
 section \<open>Single-Source-Single-Target Flows\<close>
 
 theory STFlow
-  imports Decomposition Optimality
+  imports Decomposition Cost_Optimality
 begin
 
 datatype 'b edge_wrapper = is_old: old_edge 'b | new_edge 'b
