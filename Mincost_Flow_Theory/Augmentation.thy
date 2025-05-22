@@ -20,6 +20,16 @@ disregard residual capacities for now.
 definition prepath::" ('edge_type Redge) list \<Rightarrow> bool" where
        "prepath p  = (awalk UNIV (fstv (hd p)) (map to_vertex_pair p) (sndv (last p)) 
                              \<and> p \<noteq> [] )"
+
+lemma prepathI:"awalk UNIV (fstv (hd p)) (map to_vertex_pair p) (sndv (last p)) 
+                             \<Longrightarrow> p \<noteq> []  \<Longrightarrow> prepath p"
+  by(auto simp add: prepath_def)
+
+
+lemma prepathE:"prepath p \<Longrightarrow>(awalk UNIV (fstv (hd p)) (map to_vertex_pair p) (sndv (last p)) 
+                             \<Longrightarrow> p \<noteq> []  \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: prepath_def)
+
 end
 context flow_network
 begin
@@ -208,6 +218,12 @@ text \<open>In addition to $prepath$, an \textit{augmenting path} requires stric
 
 definition augpath::"('edge_type \<Rightarrow> real)   \<Rightarrow> ('edge_type Redge) list \<Rightarrow> bool" where
        "augpath f p  = (prepath p \<and> Rcap f (set p) > 0 )"
+
+lemma augpathI: "prepath p \<Longrightarrow> Rcap f (set p) > 0 \<Longrightarrow> augpath f p"
+  by(auto simp add: augpath_def)
+
+lemma augpathE: "augpath f p \<Longrightarrow> (prepath p \<Longrightarrow> Rcap f (set p) > 0 \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: augpath_def)
 end
 context flow_network
 begin
@@ -334,7 +350,6 @@ lemma augpath_rcap:
   shows"Rcap f (set es) > 0"
   using assms unfolding augpath_def  by simp
 
-
 lemma augpath_split1: 
   assumes "augpath f (xs@ys)" "xs \<noteq> []" 
   shows   "augpath f xs "
@@ -357,6 +372,33 @@ lemma augpath_split3:
   using assms prepath_split3[of xs ys] 
   unfolding augpath_def
   by simp
+
+lemma  e_in_augpath_resreach_fstv_e:
+  assumes "augpath f p" "set p \<subseteq> \<EE>" "fstv (hd p) = s" "e \<in> set p"
+  shows "resreach f s (fstv e) \<or> fstv e = s"
+proof-
+  obtain p1 p2 where p_split: "p = p1@[e]@p2" 
+    using assms(4)  single_in_append split_list_last by fastforce
+  show ?thesis
+  proof(cases p1)
+    case Nil
+    hence "fstv e = s"
+      using assms(3) p_split by force
+    then show ?thesis by simp    
+  next
+    case (Cons a list)
+    hence "augpath f p1" 
+      using assms(1) p_split by(auto intro:  augpath_split1)
+    moreover have "fstv (hd p1) = s"
+      using assms(3) local.Cons p_split by auto
+    moreover have "sndv (last p1) = fstv e"
+      using assms(1) p_split Cons  augpath_split3 by fastforce
+    moreover have "set p1 \<subseteq> \<EE>" 
+      using p_split assms(2) by auto
+    ultimately show ?thesis
+      using augpath_imp_resreach by force   
+  qed
+qed
 
 text \<open>Reachability by a path with at least $cap$ residual capacity.\<close>
 
@@ -478,6 +520,7 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
       using "4" by presburger
   qed
 qed simp
+
 end
 context flow_network
 begin

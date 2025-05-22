@@ -152,13 +152,13 @@ lemma dom_same: "DFS_dom (to_ordinary_DFS_state dfs_state) \<Longrightarrow> DFS
   and  "DFS_dom (to_ordinary_DFS_state dfs_state) = DFS_collect_backtrack_dom dfs_state"   (is ?goal3)
 proof-
   have "old_state = (to_ordinary_DFS_state dfs_state)
-           \<Longrightarrow> DFS_collect_backtrack_dom dfs_state" if asm: "DFS_dom old_state"
-    for old_state
+           \<Longrightarrow> DFS_collect_backtrack_dom dfs_state" 
+    if asm: "DFS_dom old_state"for old_state
     by(induction arbitrary: dfs_state rule: DFS.pinduct[OF asm])
       (auto intro: DFS_collect_backtrack.domintros)
   moreover have "old_state = (to_ordinary_DFS_state dfs_state)
-           \<Longrightarrow> DFS_dom old_state" if asm: " DFS_collect_backtrack_dom dfs_state"
-    for old_state
+           \<Longrightarrow> DFS_dom old_state" 
+    if asm: " DFS_collect_backtrack_dom dfs_state"for old_state
     by(induction arbitrary: old_state rule: DFS_collect_backtrack.pinduct[OF asm])
       (auto intro: DFS.domintros) 
   ultimately show "?goal2 \<Longrightarrow> ?goal1" and "?goal1 \<Longrightarrow> ?goal2" and ?goal3

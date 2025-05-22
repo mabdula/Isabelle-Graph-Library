@@ -1049,4 +1049,28 @@ proof-
     by (fastforce simp add:  one_eSuc) 
 qed
 
+lemma distance_less_vert_card:
+  assumes "distance G u v < \<infinity>"
+          "finite G"
+   shows  "distance G u v < card (dVs G)"
+proof-
+  obtain p where p_prop:
+    "vwalk_bet G u p v" "distance G u v = length p - 1"
+    using dist_reachable[OF assms(1)] 
+    by(auto intro: reachable_dist_2)
+  hence "shortest_path G u p v" 
+    by(auto intro: shortest_path_intro)
+  hence dist_p:"distinct p"
+    by(auto intro: shortest_path_distinct)
+  have "set p \<subseteq> dVs G" 
+    using p_prop(1)  vwalk_bet_in_dVs by force
+  hence "length p \<le> card (dVs G)" 
+    using assms(2) finite_vertices_iff[of G] 
+    by(auto intro!: card_mono[of "dVs G" "set p", simplified distinct_card[OF dist_p]])
+  moreover have "length p > 0"
+    using p_prop(1) by auto
+  ultimately show ?thesis
+    by(auto simp add: p_prop(2) dual_order.strict_trans1)
+qed
+
 end

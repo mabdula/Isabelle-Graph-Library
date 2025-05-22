@@ -504,4 +504,8 @@ qed simp
 lemma min_integral: "\<exists> n::nat. x = real n \<Longrightarrow> \<exists> n::nat. y = real n \<Longrightarrow>
                                     \<exists> n::nat. min x y = real n" for x y 
   by (simp add: min_def)
+
+lemma enat_less_plus_1_leq:"(x::enat) < (y::enat) + 1 \<Longrightarrow> x \<le> y" 
+  by(cases y, all \<open>cases x\<close>)
+    (auto simp add: plus_1_eSuc(2))
 end

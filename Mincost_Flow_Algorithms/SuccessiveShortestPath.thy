@@ -615,8 +615,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
         apply(rule bABSnat_mono[of _ _ s, OF int_b conjunct2[OF less(2)[simplified invar2_def]]
                                              _ s_in_V])
           using t_red s_red
-          unfolding b'_def  SSP_upd4_def Let_def  \<gamma>_def s_def t_def b_def f_def P_def 
-          by auto        
+          by(unfold  b'_def  SSP_upd4_def Let_def  \<gamma>_def s_def t_def b_def f_def P_def) auto        
       show ?case 
         by(rule less(1)[OF abs_less invar2])
     qed

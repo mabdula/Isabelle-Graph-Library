@@ -2,9 +2,6 @@ theory Compute_Blocking_Residual
   imports DFS_Collect_Backtrack_Example Compute_Blocking_Simple "HOL-Library.Product_Lexorder"
     Graph_Algorithms_Dev.BFS_Example
 begin
-  (*TODO MOVE*)
-lemma vwalk_bet_diff_verts_length_geq_2:"vwalk_bet E s  p t\<Longrightarrow> s \<noteq> t \<Longrightarrow> length p \<ge> 2"
-  by(cases p rule: edges_of_vwalk.cases) (auto simp add: vwalk_bet_def)
 
 lemma same_graph_consts: "G.graph_inv = dfs.Graph.graph_inv"
   "G.digraph_abs = dfs.Graph.digraph_abs"
@@ -12,13 +9,9 @@ lemma same_graph_consts: "G.graph_inv = dfs.Graph.graph_inv"
   "DFS_Collect_Backtrack_Example.neighbourhood = 
                           dfs.Graph.neighbourhood"
   "G.graph_inv = dfs.Graph.graph_inv"
-      apply (auto simp add: adj_inv_def RBT_Set.empty_def
-      BFS_Example.neighbourhood_def DFS_Collect_Backtrack_Example.neighbourhood_def
-      )
+      by (auto simp add: adj_inv_def RBT_Set.empty_def
+      BFS_Example.neighbourhood_def DFS_Collect_Backtrack_Example.neighbourhood_def)
 
-
-
-  done
 global_interpretation blocking_simple: blocking_simple where insert = vset_insert and
   sel = sel and  vset_empty = vset_empty and  diff = vset_diff and
   lookup = lookup and empty = map_empty and delete=delete and isin = isin and t_set=t_set
@@ -189,7 +182,7 @@ definition "u_simple e = sum_list (map (\<lambda> e. real_of_ereal (rcap \<f> e)
 definition "blocking_flow_simple = 
       (if neighbourhood E_simple s = vset_empty 
        then None
-       else let f = flow (blocking_simple_loop s t find_path u_simple 
+       else let f = blocking_state.flow (blocking_simple_loop s t find_path u_simple 
                  (blocking_simple_initial level_simple))
             in if f = empty then None
             else Some f)"
@@ -426,8 +419,8 @@ lemma flow_network_axioms_for_simple_graph:
 
 abbreviation "simple_level_graph_abstract ==  (level_graph (dfs.Graph.digraph_abs E_simple) {s}
      - {(u, v) | u v. distance  (dfs.Graph.digraph_abs E_simple) s u = \<infinity>})"
-abbreviation "is_blocking_flow_simple == flow_network.is_blocking_flow prod.fst prod.snd id u_simple 
-     simple_level_graph_abstract"
+abbreviation "is_blocking_flow_simple == 
+flow_network_spec.is_blocking_flow prod.fst prod.snd id simple_level_graph_abstract u_simple"
 
 lemma "blocking_flow_simple = None \<Longrightarrow> \<nexists> p. vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t" (is "?none \<Longrightarrow> ?nowalk")
   "blocking_flow_simple = Some f \<Longrightarrow>\<exists> p. vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t" (is "?some \<Longrightarrow> ?walk")
@@ -588,7 +581,10 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
   qed
   note  flow_network_axioms_for_simple_graph = 
     flow_network_axioms_for_simple_graph[OF residual_leaving_s]
-  note is_blocking_flow_def=flow_network.is_blocking_flow_def[OF  flow_network_axioms_for_simple_graph]
+  note is_blocking_flow_def=flow_network_spec.is_blocking_flow_def[of
+            prod.fst prod.snd id
+   "(level_graph (dfs.Graph.digraph_abs E_simple) {s} -
+    {(u, v) |u v. distance (dfs.Graph.digraph_abs E_simple) s u = \<infinity>})" "(\<lambda>x. ereal (u_simple x))"]
   note bfs_level_graph_def=BFS_level_graph[simplified same_graph_consts(2) srcs_are_s 
       distance_set_single_source, symmetric]
   have flow_non_empt: "blocking_state.flow (blocking_simple_loop s t find_path u_simple 

@@ -1185,4 +1185,8 @@ qed
 
 lemma vwalk_append_intermediate_edge:"vwalk_bet A x p y \<Longrightarrow> (y, x') \<in> A \<Longrightarrow> vwalk_bet A x' p' y' \<Longrightarrow> vwalk_bet A x (p@p') y'"
   by (simp add: append_vwalk vwalk_bet_def)
+
+lemma vwalk_bet_diff_verts_length_geq_2:"vwalk_bet E s  p t\<Longrightarrow> s \<noteq> t \<Longrightarrow> length p \<ge> 2"
+  by(cases p rule: edges_of_vwalk.cases) (auto simp add: vwalk_bet_def)
+
 end

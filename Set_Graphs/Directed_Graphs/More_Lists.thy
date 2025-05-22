@@ -802,4 +802,22 @@ qed
 
 lemma inter_Big_union_distr_empt_list:
                "(\<And> C. C \<in> B \<Longrightarrow> A \<inter> set C = {}) \<Longrightarrow> (A \<inter> \<Union> { set C| C. C \<in> B}) = {}" for A B by auto
+
+lemma foldl_invar: "inv x \<Longrightarrow> (\<And> y z. inv y \<Longrightarrow> inv (f y z)) \<Longrightarrow>
+                    inv (foldl f x xs)" for inv
+  by(induction xs arbitrary: x) auto
+
+lemma foldr_invar: "inv x \<Longrightarrow> (\<And> y z. inv y \<Longrightarrow> inv (f z y)) \<Longrightarrow>
+                    inv (foldr f xs x)" for inv
+  by(induction xs arbitrary: x) auto
+
+lemma list_in_image_map: "set ys \<subseteq> f ` X \<Longrightarrow> \<exists> xs. map f xs = ys \<and> set xs \<subseteq> X"
+proof(induction ys)
+  case (Cons y ys)
+  then obtain x where "x \<in> X" "f x = y"  by auto
+  moreover obtain xs where "map f xs = ys" "set xs \<subseteq> X"
+    using Cons by auto
+  ultimately show ?case 
+    by(auto intro!: exI[of _ "x#xs"])
+qed simp
 end

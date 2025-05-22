@@ -141,6 +141,12 @@ text \<open>$f$ is a valid $u$-flow iff all flow values assigned by $f$ are belo
 definition  isuflow::"('edge_type \<Rightarrow> real) \<Rightarrow> bool" where
 "isuflow f \<longleftrightarrow> (\<forall> e \<in> \<E>. f e \<le> \<u> e \<and> f e \<ge> 0)"
 
+lemma isuflowI: "(\<And> e. e \<in> \<E> \<Longrightarrow> f e \<le> \<u> e) \<Longrightarrow>(\<And> e. e \<in> \<E> \<Longrightarrow> f e \<ge> 0) \<Longrightarrow> isuflow f"
+  by(auto simp add:isuflow_def)
+
+lemma isuflowE: "isuflow f\<Longrightarrow> ((\<And> e. e \<in> \<E> \<Longrightarrow> f e \<le> \<u> e) \<Longrightarrow>(\<And> e. e \<in> \<E> \<Longrightarrow> f e \<ge> 0) \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add:isuflow_def)
+
 text \<open>Of course, we can also impose some constraints on the excesses. 
      A function $b$ returning the desired excess flow for any node is a \textit{balance}.
      Positive balances indicate some kind of supply, whereas negative values display a demand.\<close>
@@ -301,6 +307,9 @@ text \<open>For any original edge we have two residual edges:
      The Isabelle constructors $F$ and $B$ indicate this difference.\<close>
 
 datatype 'type Redge = is_forward: F 'type | is_backward: B 'type
+
+lemma F_and_B_inj_on: "inj_on F X"  "inj_on B X" 
+  by(auto intro: inj_onI)
 
 text \<open>Between vertices $u$ and $v$ there might be up to four residual arcs.
      In fact, this makes the residual graph a multigraph. 
@@ -496,6 +505,11 @@ lemma  Rcap_strictI: "finite ES \<Longrightarrow> ES \<noteq> {} \<Longrightarro
                 (\<And> e. e \<in> ES \<Longrightarrow> rcap f e > th) \<Longrightarrow> Rcap f ES > th"
     for ES f th unfolding Rcap_def 
   using Min_gr_iff by auto
+
+lemma  Rcap_strictI': "finite ES \<Longrightarrow>
+                (\<And> e. e \<in> ES \<Longrightarrow> rcap f e > th) \<Longrightarrow> th < PInfty \<Longrightarrow> Rcap f ES > th"
+  for ES f th unfolding Rcap_def 
+  by(auto simp add: Min_gr_iff)
 
 lemma Rcap_union: "finite A \<Longrightarrow> finite B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {} \<Longrightarrow>
                              Rcap f A > x \<Longrightarrow> Rcap f B > x \<Longrightarrow> Rcap f (A \<union> B) > x" for f A B x
@@ -1146,8 +1160,7 @@ lemma erev_costs: " \<cc> (erev e) = - \<cc> e" for e
   by(cases rule: erev.cases[of e], auto)
 end
 
-
-locale cost_flow_network= flow_network where \<E> = "\<E>::'edge_type set" +
+locale cost_flow_network= 
+flow_network where \<E> = "\<E>::'edge_type set" +
 cost_flow_spec where \<E> = "\<E>::'edge_type set" for \<E>
-
 end
