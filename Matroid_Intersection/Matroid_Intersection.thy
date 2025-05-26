@@ -1,6 +1,6 @@
 theory Matroid_Intersection
   imports Matroids.Matroid Directed_Set_Graphs.Awalk "HOL-Eisbach.Eisbach" 
-    "Directed_Set_Graphs.Pair_Graph_Specs"
+    "Directed_Set_Graphs.Pair_Graph_Specs" Berge_Lemma.Alternating_Lists
 begin
 
 lemma exists_smallest_witness: 
@@ -406,11 +406,12 @@ lemma A2_single_edge_endpoints_X_carrier:
   shows "y \<in> X" "x \<in> carrier - X"
   using assms unfolding A2_def
   using A2_edges(1) assms by auto
-
-lemma walk_is_alternating:
+(*express as alternating list*) 
+lemma walk_is_alternating_gen:
   assumes "awalk (A1 \<union> A2) start p end" "start \<in> carrier - X" "end \<in> carrier - X"
     "l = length p"
-  shows "even l \<and> (\<forall> i < l. (even i \<longrightarrow> p ! i \<in> A2) \<and> (odd i \<longrightarrow> p ! i \<in> A1))"
+  shows "even l \<and>  alt_list (\<lambda> e. e\<in>  A2) (\<lambda> e. e \<in> A1) p"
+(*"even l \<and> (\<forall> i < l. (even i \<longrightarrow> p ! i \<in> A2) \<and> (odd i \<longrightarrow> p ! i \<in> A1))"*)
   using assms
 proof(induction l arbitrary: start p "end" rule: less_induct)
   case (less l)
@@ -419,7 +420,7 @@ proof(induction l arbitrary: start p "end" rule: less_induct)
   show ?case 
   proof(rule l_cases[of l], goal_cases)
     case 1
-    then show ?case by auto
+    then show ?case using less(5) by (auto intro: alt_list.intros)
   next
     case 2
     then obtain e where p_is: "p = [e]" 
@@ -436,8 +437,7 @@ proof(induction l arbitrary: start p "end" rule: less_induct)
   next
     case (3 ll)
     then obtain e1 e2 q where p_decompose:"p = e1#e2#q"
-      using less(5) 
-      by (metis One_nat_def Suc_1 Zero_neq_Suc add_Suc add_cancel_left_left length_Cons list.exhaust list.size(3))
+      using less(5) by(auto intro: vwalk_arcs.cases[of p])
     have some_properties: "e1 \<in> A1 \<union> A2" "fst e1 = start" "snd e1 = fst e2" 
       "e2 \<in> A1 \<union> A2" "awalk (A1 \<union> A2) (snd e2) q end"
       using  less.prems(1) by(auto simp add: awalk_Cons_iff p_decompose)
@@ -448,54 +448,36 @@ proof(induction l arbitrary: start p "end" rule: less_induct)
       by (auto intro: UnE[OF  some_properties(4)] DiffE[OF A2_edges(2)[of e2]])
     have snd_e2_in:"snd e2 \<in> carrier - X"
       using A1_edges(2) e2A1 by auto
-    have IH_applied:"even ll \<and> (\<forall>i<ll. (even i \<longrightarrow> q ! i \<in> A2) \<and> (odd i \<longrightarrow> q ! i \<in> A1))"
-      using 3 less(4,5) p_decompose
+    have IH_applied:"even ll \<and> alt_list (\<lambda>e. e \<in> A2) (\<lambda>e. e \<in> A1) q"
+      using 3 less(4,5) p_decompose 
       by (intro less.IH[ OF _  some_properties(5)  snd_e2_in]) auto
     hence "even l" 
       by (simp add: "3")
-    moreover have " i<l \<Longrightarrow> even i \<Longrightarrow> p ! i \<in> A2" for i
-      using e1A2 e2A1 IH_applied 
-      by (auto intro: l_cases[of i] simp add: p_decompose 3)
-    moreover have " i<l \<Longrightarrow> odd i \<Longrightarrow> p ! i \<in> A1" for i
-      using e1A2 e2A1 IH_applied 
-      by (auto intro: l_cases[of i] simp add: p_decompose 3)   
+    moreover have "alt_list (\<lambda>e. e \<in> A2) (\<lambda>e. e \<in> A1) p"
+      using e1A2 e2A1 IH_applied
+      by(auto intro: alt_list.intros simp add: p_decompose )  
     ultimately show ?case by auto
   qed
 qed
 
+lemma walk_is_alternating:
+  assumes "awalk (A1 \<union> A2) start p end" "start \<in> carrier - X" "end \<in> carrier - X"
+  shows "alt_list (\<lambda> e. e\<in>  A2) (\<lambda> e. e \<in> A1) p"
+  using assms(1,2,3) walk_is_alternating_gen by blast
+
+lemma walk_is_even:
+  assumes "awalk (A1 \<union> A2) start p end" "start \<in> carrier - X" "end \<in> carrier - X"
+  shows "even (length p)"
+  using assms(1,2,3) walk_is_alternating_gen by blast
+
 lemma walk_is_odd:
   assumes "vwalk_bet (A1 \<union> A2) start p end" "start \<in> carrier - X" "end \<in> carrier - X"
-  shows   "odd (length p)"
-proof-
-  have "p \<noteq> []"
-    using assms(1) by auto
-  hence "length (edges_of_vwalk p) + 1 = length p"
-    using  edges_of_vwalk_length[of p]by auto
-  moreover  have "even (length (edges_of_vwalk p))"
-    using  walk_is_alternating[OF vwalk_imp_awalk[OF assms(1)] assms(2,3) refl ] by simp
-  ultimately show ?thesis by presburger
-qed
-
-lemma shortest_vwalk_bet_distinct: 
-  assumes "vwalk_bet Y x p y"  "\<nexists> q. vwalk_bet Y x q y \<and> length q < length p"
-  shows "distinct p"
-proof(rule ccontr, goal_cases)
-  case 1
-  then obtain xs a ys zs where p_is:"p = xs@[a]@ys@[a]@zs" 
-    using not_distinct_decomp by blast
-  hence "vwalk_bet Y x (xs@[a]@zs) y" 
-    using  vwalk_bet_cycle_delete[OF assms(1)[simplified p_is]] by simp
-  moreover have "length (xs@[a]@zs) < length p" 
-    using p_is by simp
-  ultimately show ?case 
-    using assms(2) by auto
-qed
+  shows   "odd (length p)" 
+ using assms(1)  walk_is_even[OF vwalk_imp_awalk[OF assms(1)] assms(2,3)]
+ by (auto simp add:  edges_of_vwalk_length'[symmetric])
 
 lemma take_last:"i < length xs  \<Longrightarrow> last (take (i+1) xs) = xs ! i"
   using take_Suc_conv_app_nth by fastforce
-
-lemma vwalk_append_intermediate_edge:"vwalk_bet A x p y \<Longrightarrow> (y, x') \<in> A \<Longrightarrow> vwalk_bet A x' p' y' \<Longrightarrow> vwalk_bet A x (p@p') y'"
-  by (simp add: append_vwalk vwalk_bet_def)
 
 lemma augment_in_matroid1: 
   assumes  "vwalk_bet (A1 \<union> A2) x p y" "x \<in> S" "y \<in> T" 
@@ -513,75 +495,23 @@ proof-
     by(intro  walk_is_odd[OF assms(1)])(auto simp add: S_def T_def) 
   have distinct_p: "distinct p" 
     using shortest_vwalk_bet_distinct assms by auto
-
   define s where "s = (length p -1) div 2"
-
   define list where "list = [(p! (2*i+1), p ! (2*i+2)).  i <-[0..<s]]"
   have "s -1 = length list - 1"
     by(auto simp add:  s_def list_def)
   have odds_are:"set (map fst list) =  {p ! i | i. i < length p \<and> odd i}"
-    unfolding list_def s_def 
-  proof(rule, all \<open>rule\<close>, goal_cases)
-    case (1 x)
-    then obtain i where i_prop:"x = p ! (2 * i + 1)" "i <(length p - 1) div 2"
-      by auto
-    moreover hence " (2 * i + 1) < length p"
-      by simp
-    ultimately show ?case by auto
-  next
-    case (2 x)
-    then obtain i where x_prop:"x= p ! i" "i < length p" "odd i" by auto
-    have "i + 1 < length p"
-      using odd_p x_prop(2,3) by presburger
-    hence "i < length p -1"
-      using odd_p by simp
-    hence "i div 2 < (length p -1) div 2" 
-      by (simp add: less_mult_imp_div_less odd_p)
-    hence " (i div 2) <(length p - 1) div 2"
-      by auto
-    moreover have "x = p ! (2 * (i div 2) + 1)" using x_prop by simp
-    ultimately show ?case by auto
-  qed
+    using odd_p 
+    by (presburger | 
+        auto intro!: image_eqI[of "_ i" _ "(i - 1) div 2" for i] image_eqI[of "p ! i" fst for i]
+        intro: less_mult_imp_div_less 
+        simp add: dvd_div_mult_self list_def s_def)+
   have evens_are:"set (map snd list) \<union> {p! 0} =  {p ! i | i. i < length p \<and> even i}"
-    unfolding list_def s_def 
-  proof(rule, all \<open>rule\<close>, goal_cases)
-    case (1 x)
-    show ?case 
-    proof(cases "p ! 0 = x")
-      case True
-      then show ?thesis 
-        using odd_p by auto
-    next
-      case False
-      then obtain i where i_prop:"x = p ! (2 * i + 2)" "i <(length p - 1) div 2"
-        using 1 by auto
-      moreover hence " (2 * i + 2) < length p"
-        by simp
-      ultimately show ?thesis by auto
-    qed
-  next
-    case (2 x)
-    then obtain i where x_prop:"x= p ! i" "i < length p" "even i" by auto
-    show ?case
-    proof(cases "i = 0")
-      case True
-      then show ?thesis 
-        using x_prop(1) by simp
-    next
-      case False
-      have "i  < length p"
-        using  x_prop(2,3) by presburger
-      hence "i -1 < length p -1"
-        using False by simp
-      hence "(i-1) div 2 < (length p -1) div 2" 
-        by (simp add: less_mult_imp_div_less odd_p)
-      hence " ((i-1) div 2) <(length p - 1) div 2"
-        by auto
-      moreover have "x = p ! ((2 * ((i-1) div 2) + 1) + 1)" 
-        using x_prop  False by (subst odd_two_times_div_two_succ) auto
-      ultimately show ?thesis by auto
-    qed
-  qed
+    using odd_p not_less_eq_eq
+    by (auto intro!: less_mult_imp_div_less  diff_less_mono cong[OF refl, of _ _ "\<lambda> i. p ! i"]
+                     image_eqI[of "_ i" _ "(i -1) div 2" for i]
+                     image_eqI[of "p!i" snd 
+                     "(p ! Suc (2 * ((i-1) div 2)), p ! Suc (Suc (2 * ((i-1) div 2))))" for i]
+          simp add: dvd_div_mult_self list_def s_def)+
   have helper1:"i < length p \<Longrightarrow> odd i \<Longrightarrow> (a, p ! i) \<in> set list \<Longrightarrow> False" for i a
     using distinct_p 
     by (auto simp add:  list_def nth_eq_iff_index_eq s_def)
@@ -596,42 +526,14 @@ proof-
     using S_def assms(2) by blast
   have y_not_inX: "y \<in> carrier - X" 
     using T_def assms(3) by blast
+  have list_in_A1:"set list \<subseteq> A1"
+    using walk_is_alternating[OF awalk_p x_not_inX y_not_inX]
+    by (force intro: alternating_list_odd_index 
+           simp add: edges_of_vwalk_length  edges_of_vwalk_index[symmetric] list_def s_def)
   have fst_list_in_X: "set (map fst list) \<subseteq> X"
-  proof-
-    have "i < (length p - Suc 0) div 2 \<Longrightarrow> p ! Suc (2 * i) \<in> X" for i
-    proof(goal_cases)
-      case 1
-      have "edges_of_vwalk p ! (2*i) = (p ! (2 * i), p ! Suc (2 * i))"
-        using 1 by (auto intro: edges_of_vwalk_index)
-      moreover have "2*i < length (edges_of_vwalk p)"
-        using 1
-        by (auto simp add:  edges_of_vwalk_length)
-      ultimately have "(p ! (2 * i), p ! Suc (2 * i)) \<in> A2"
-        using walk_is_alternating[OF awalk_p x_not_inX y_not_inX refl] by auto
-      thus ?case 
-        by (simp add: A2_single_edge_endpoints_X_carrier(1))
-    qed
-    thus ?thesis
-      by(auto simp add:  list_def s_def)
-  qed
+    using A1_edges(1) list_in_A1 by auto
   have snd_list_not_in_X: "set (map snd list) \<subseteq> carrier - X"
-  proof-
-    have "i < (length p - Suc 0) div 2 \<Longrightarrow> p ! Suc (Suc (2 * i)) \<in> carrier - X" for i
-    proof(goal_cases)
-      case 1
-      have "edges_of_vwalk p ! (2*i+1) = (p ! (2 * i+1), p ! (2 * i+ 2))"
-        using 1 by (auto intro: edges_of_vwalk_index)
-      moreover have "2*i +1 < length (edges_of_vwalk p)"
-        using 1
-        by (auto simp add:  edges_of_vwalk_length)
-      ultimately have " (p ! (2 * i+1), p ! (2 * i+ 2)) \<in> A1"
-        using walk_is_alternating[OF awalk_p x_not_inX y_not_inX refl] by auto
-      thus ?case 
-        using A1_single_edge_endpoints_X_carrier(2) by auto
-    qed
-    then show ?thesis
-      by(auto simp add:  list_def s_def)
-  qed
+    using A1_edges(2) list_in_A1 by auto
   have thm_precond2: "set (map fst list) \<subseteq> insert (p ! 0) X"
     using fst_list_in_X by blast
   have helper3:" snd ` set list \<subseteq> carrier - X \<Longrightarrow> (a, p ! 0) \<in> set list \<Longrightarrow> False" for a
@@ -642,27 +544,10 @@ proof-
     using assms(1) dVs_A1A2_carrier vwalk_bet_in_dVs by fast
   have thm_precond4:" i < length list \<Longrightarrow>
       fst (list ! i) \<in> matroid1.the_circuit (insert (snd (list ! i)) (insert (p ! 0) X))" for i
-  proof(goal_cases)
-    case 1
-    hence "fst (list ! i) \<in> set (map fst list)" using 1 by simp
-    have i_length_p:"2 * i + 2 < length p" 
-      using 1 by(simp add: list_def s_def)
-    have list_i_is:"list ! i = (p ! (2*i+1) , p! (2*i + 2))"
-      using 1 by(simp add: list_def s_def)
-    have "edges_of_vwalk p ! (2*i+1) = (p ! (2 * i+1), p ! (2 * i+ 2))"
-      using 1 by (auto intro: edges_of_vwalk_index simp add: list_def s_def)
-    moreover have "2*i +1 < length (edges_of_vwalk p)"
-      using 1
-      by (auto simp add:  edges_of_vwalk_length list_def s_def)
-    ultimately have " (p ! (2 * i+1), p ! (2 * i+ 2)) \<in> A1"
-      using walk_is_alternating[OF awalk_p x_not_inX y_not_inX refl] by auto
-    hence " p ! Suc (2 * i) \<in> matroid1.the_circuit (insert (p ! Suc (Suc (2 * i))) (insert (p ! 0) X))"
-      using X0  matroid1.the_circuit_non_empty_dependent  
-      by (subst matroid1.same_cicuit_indep_part_extended[of "p ! Suc (Suc (2 * i))" X])  
-        (auto simp add: list_i_is  A1_def )
-    then show ?case
-      by (simp add: list_i_is)
-  qed
+      using nth_mem  list_in_A1
+      by(subst matroid1.same_cicuit_indep_part_extended[of "snd (list ! i)" X, OF _ X0],
+         (force intro!: matroid1.the_circuit_non_empty_dependent 
+              simp add: A1_def )+)
   have thm_precond5: "i < length list \<Longrightarrow>
         j < length list \<Longrightarrow>
         j < i \<Longrightarrow> fst (list ! j) \<notin> matroid1.the_circuit (insert (snd (list ! i)) (insert (p ! 0) X))" for i j
@@ -677,15 +562,9 @@ proof-
       using 1 by(simp add: list_def s_def)
     have list_i_is:"list ! i = (p ! (2*i+1) , p! (2*i + 2))"
       using 1 by(simp add: list_def s_def)
-    have "edges_of_vwalk p ! (2*i+1) = (p ! (2 * i+1), p ! (2 * i+ 2))"
-      using 1 by (auto intro: edges_of_vwalk_index simp add: list_def s_def)
-    moreover have "2*i +1 < length (edges_of_vwalk p)"
-      using 1
-      by (auto simp add:  edges_of_vwalk_length list_def s_def)
-    ultimately have ith_in_A1: " (p ! (2 * i+1), p ! (2 * i+ 2)) \<in> A1"
-      using walk_is_alternating[OF awalk_p x_not_inX y_not_inX refl] by auto
-    hence non_indep_snd:" \<not> indep1 (insert (snd (list ! i)) X)" 
-      using  matroid1.the_circuit_non_empty_dependent list_i_is by (auto simp add: A1_def)
+    have non_indep_snd:" \<not> indep1 (insert (snd (list ! i)) X)" 
+      using list_in_A1 1(1)  nth_mem 
+      by (force intro!: matroid1.the_circuit_non_empty_dependent simp add: A1_def)
     have snd_j_in_carrier:"snd (list ! i) \<in> carrier -  X" 
       using "1"(1) nth_mem thm_precond3 by fastforce
     have circuit_is:" matroid1.the_circuit (insert (snd (list ! i)) (insert (p ! 0) X)) =
@@ -701,13 +580,12 @@ proof-
         i_length_p  assms(1) 
       by (simp add: list_j_is)
     have found_edge_in:"(fst (list ! j) , (snd (list ! i))) \<in> A1"
-      using 1(4) snd_j_in_carrier   unfolding A1_def circuit_is
-      using fst_not_snd by auto
+      using 1(4) snd_j_in_carrier  fst_not_snd by (auto simp add: A1_def circuit_is)
     have "hd (drop (2 * i + 2) p) = snd (list ! i)"
       by(subst hd_drop_conv_nth[OF i_length_p])(simp add: list_i_is)   
     hence vwalk_further:"vwalk_bet (A1 \<union> A2)  (snd (list ! i)) (drop (2*i+2) p) y"
       using vwalk_bet_suffix_is_vwalk_bet[of "(drop (2*i +2) p)" "A1 \<union> A2" x "take (2*i +2) p" y]
-      using i_length_p  assms(1) 
+            i_length_p  assms(1) 
       by auto
     have better_walk: "vwalk_bet (A1 \<union> A2) x (take (2*j + 2) p  @
                                               (drop (2*i+2) p)) y"
@@ -739,6 +617,8 @@ lemma augment_in_matroid2:
     "\<nexists> q. vwalk_bet (A1 \<union> A2) x q y \<and> length q < length p"
   shows "indep2 ((X \<union> {p ! i | i. i < length p \<and> even i}) -  {p ! i | i. i < length p \<and> odd i})"
 proof-
+  have upt_image_nat_0: "f ` {..<(y::nat)} = {f z | z. z < y} " for f  y
+  by auto
   have p_non_empt:"p \<noteq> []"
     using assms(1) by auto
   have p_init:"p ! (length p -1) = y"
@@ -757,64 +637,18 @@ proof-
   have "s -1 = length list - 1"
     by(auto simp add:  s_def list_def)
   have odds_are:"set (map fst list) =  {p ! i | i. i < length p \<and> odd i}"
-    unfolding list_def s_def 
-  proof(rule, all \<open>rule\<close>, goal_cases)
-    case (1 x)
-    then obtain i where i_prop:"x = p ! (2 * i + 1)" "i <(length p - 1) div 2"
-      by auto
-    moreover hence " (2 * i + 1) < length p"
-      by simp
-    ultimately show ?case by auto
-  next
-    case (2 x)
-    then obtain i where x_prop:"x= p ! i" "i < length p" "odd i" by auto
-    have "i + 1 < length p"
-      using odd_p x_prop(2,3) by presburger
-    hence "i < length p -1"
-      using odd_p by simp
-    hence "i div 2 < (length p -1) div 2" 
-      by (simp add: less_mult_imp_div_less odd_p)
-    hence " (i div 2) <(length p - 1) div 2"
-      by auto
-    moreover have "x = p ! (2 * (i div 2) + 1)" using x_prop by simp
-    ultimately show ?case by auto
-  qed
+    using odd_p 
+    by (presburger | 
+        auto intro!: image_eqI[of "_ i" _ "(i - 1) div 2" for i] image_eqI[of "p ! i" fst for i]
+        intro: less_mult_imp_div_less 
+        simp add: list_def s_def)+
   have evens_are:"set (map snd list) \<union> {p! (length p -1)} =  {p ! i | i. i < length p \<and> even i}"
-    unfolding list_def s_def 
-  proof(rule, all \<open>rule\<close>, goal_cases)
-    case (1 x)
-    show ?case 
-    proof(cases "p ! (length p -1) = x")
-      case True
-      then show ?thesis 
-        using odd_p  odd_pos by force
-    next
-      case False
-      then obtain i where i_prop:"x = p ! (2 * i )" "i <(length p - 1) div 2"
-        using 1 by auto
-      moreover hence " (2 * i ) < length p"
-        by simp
-      ultimately show ?thesis by auto
-    qed
-  next
-    case (2 x)
-    then obtain i where x_prop:"x= p ! i" "i < length p" "even i" by auto
-    show ?case
-    proof(cases "i = length p - 1")
-      case True
-      then show ?thesis 
-        using x_prop(1) by simp
-    next
-      case False
-      have "i  < length p -1"
-        using  x_prop(2,3) False by auto
-      hence "i div 2 < (length p -1) div 2" 
-        by (simp add: less_mult_imp_div_less odd_p)
-      moreover have "x = p ! (2 * (i div 2))" 
-        using x_prop  False by auto
-      ultimately show ?thesis by auto
-    qed
-  qed
+    using odd_p  p_non_empt
+    by (auto intro!: less_mult_imp_div_less  diff_less_mono cong[OF refl, of _ _ "\<lambda> i. p ! i"]
+                     image_eqI[of "_ i" _ "(i ) div 2" for i]
+                     image_eqI[of "p!i" snd 
+                     "(p ! Suc (2 * ((i) div 2)), p !  (2 * ((i) div 2)))" for i]
+          simp add: list_def s_def)
   have helper1:"i < length p \<Longrightarrow> odd i \<Longrightarrow> (a, p ! i) \<in> set list \<Longrightarrow> False" for i a
     using distinct_p 
     by (auto simp add:  list_def nth_eq_iff_index_eq s_def)
@@ -832,42 +666,16 @@ proof-
     using S_def assms(2) by blast
   have y_not_inX: "y \<in> carrier - X" 
     using T_def assms(3) by blast
+  have list_in_A2:"set list \<subseteq> prod.swap ` A2" "set (map prod.swap list) \<subseteq>  A2"
+    using walk_is_alternating[OF awalk_p x_not_inX y_not_inX]
+    by (force intro: alternating_list_even_index 
+           simp add: edges_of_vwalk_length  edges_of_vwalk_index[symmetric] list_def s_def)+
   have fst_list_in_X: "set (map fst list) \<subseteq> X"
-  proof-
-    have "i < (length p - Suc 0) div 2 \<Longrightarrow> p ! Suc (2 * i) \<in> X" for i
-    proof(goal_cases)
-      case 1
-      have "edges_of_vwalk p ! (2*i) = (p ! (2 * i), p ! Suc (2 * i))"
-        using 1 by (auto intro: edges_of_vwalk_index)
-      moreover have "2*i < length (edges_of_vwalk p)"
-        using 1
-        by (auto simp add:  edges_of_vwalk_length)
-      ultimately have "(p ! (2 * i), p ! Suc (2 * i)) \<in> A2"
-        using walk_is_alternating[OF awalk_p x_not_inX y_not_inX refl] by auto
-      thus ?case 
-        by (simp add: A2_single_edge_endpoints_X_carrier(1))
-    qed
-    thus ?thesis
-      by(auto simp add:  list_def s_def)
-  qed
+    using list_in_A2 
+    by(force intro: A2_single_edge_endpoints_X_carrier(1))
   have snd_list_not_in_X: "set (map snd list) \<subseteq> carrier - X"
-  proof-
-    have "i < (length p - Suc 0) div 2 \<Longrightarrow> p ! (2 * i) \<in> carrier - X" for i
-    proof(goal_cases)
-      case 1
-      have "edges_of_vwalk p ! (2*i) = (p ! (2 * i), p ! (2 * i+1))"
-        using 1 by (auto intro: edges_of_vwalk_index)
-      moreover have "2*i  < length (edges_of_vwalk p)"
-        using 1
-        by (auto simp add:  edges_of_vwalk_length)
-      ultimately have " (p ! (2 * i), p ! (2 * i+ 1)) \<in> A2"
-        using walk_is_alternating[OF awalk_p x_not_inX y_not_inX refl] by auto
-      thus ?case 
-        using A2_single_edge_endpoints_X_carrier(2) by auto
-    qed
-    then show ?thesis
-      by(auto simp add:  list_def s_def)
-  qed
+    using list_in_A2
+    by(force dest: A2_single_edge_endpoints_X_carrier(2))
   have thm_precond2: "set (map fst list) \<subseteq> insert (p ! (length p -1)) X"
     using fst_list_in_X by blast
   hence thm_precond2: "set (map fst (rev list)) \<subseteq> insert (p ! (length p -1)) X"
@@ -882,27 +690,9 @@ proof-
     using assms(1) dVs_A1A2_carrier vwalk_bet_in_dVs by fast
   have thm_precond4:" i < length list \<Longrightarrow>
       fst (list ! i) \<in> matroid2.the_circuit (insert (snd (list ! i)) (insert (p ! (length p -1)) X))" for i
-  proof(goal_cases)
-    case 1
-    hence "fst (list ! i) \<in> set (map fst list)" using 1 by simp
-    have i_length_p:"2 * i + 2 < length p" 
-      using 1 by(simp add: list_def s_def)
-    have list_i_is:"list ! i = (p ! (2*i+1) , p! (2*i))"
-      using 1 by(simp add: list_def s_def)
-    have "edges_of_vwalk p ! (2*i) = (p ! (2 * i), p ! (2 * i + 1))"
-      using 1 by (auto intro: edges_of_vwalk_index simp add: list_def s_def)
-    moreover have "2*i < length (edges_of_vwalk p)"
-      using 1
-      by (auto simp add:  edges_of_vwalk_length list_def s_def)
-    ultimately have " ( p ! (2 * i), p ! (2 * i+1)) \<in> A2"
-      using walk_is_alternating[OF awalk_p x_not_inX y_not_inX refl] by auto
-    hence " p ! Suc (2 * i) \<in> matroid2.the_circuit (insert (p ! (2 * i)) (insert (p ! (length p -1)) X))"
-      using X0  matroid2.the_circuit_non_empty_dependent  
-      by(subst  matroid2.same_cicuit_indep_part_extended[of "p ! (2 * i)" X])
-        (auto simp add: list_i_is  A2_def )
-    then show ?case
-      by (simp add: list_i_is)
-  qed
+        using nth_mem  list_in_A2(1)  list_and_p(2) p_carrier nth_mem 
+        by(subst matroid2.same_cicuit_indep_part_extended[of "snd (list ! i)" X, OF _ X0])
+          (force intro!: matroid2.the_circuit_non_empty_dependent simp add: A2_def image_Collect)+
   have thm_precond4: "i < length (rev list) \<Longrightarrow>
          fst (rev list ! i)
          \<in> matroid2.the_circuit (insert (snd (rev list ! i)) (insert (p ! (length p - 1)) X))" for i
@@ -921,15 +711,9 @@ proof-
       using 1 by(simp add: list_def s_def)
     have list_i_is:"list ! i = (p ! (2*i+1) , p! (2*i))"
       using 1 by(simp add: list_def s_def)
-    have "edges_of_vwalk p ! (2*i) = (p ! (2 * i), p ! (2 * i+ 1))"
-      using 1 by (auto intro: edges_of_vwalk_index simp add: list_def s_def)
-    moreover have "2*i  < length (edges_of_vwalk p)"
-      using 1
-      by (auto simp add:  edges_of_vwalk_length list_def s_def)
-    ultimately have ith_in_A2: " (p ! (2 * i), p ! (2 * i+ 1)) \<in> A2"
-      using walk_is_alternating[OF awalk_p x_not_inX y_not_inX refl] by auto
-    hence non_indep_snd:" \<not> indep2 (insert (snd (list ! i)) X)" 
-      using  matroid2.the_circuit_non_empty_dependent list_i_is by (auto simp add: A2_def)
+    have non_indep_snd:" \<not> indep2 (insert (snd (list ! i)) X)" 
+      using list_in_A2 1(1)  nth_mem 
+      by (force intro!: matroid2.the_circuit_non_empty_dependent simp add: A2_def)
     have snd_j_in_carrier:"snd (list ! i) \<in> carrier -  X" 
       using "1"(1) nth_mem thm_precond3 by fastforce
     have circuit_is:" matroid2.the_circuit (insert (snd (list ! i)) (insert (p ! (length p -1)) X)) =
@@ -1044,19 +828,22 @@ proof-
   have alternation: "even (length (edges_of_vwalk p))"
     "(\<And> i. i<length (edges_of_vwalk p) \<Longrightarrow> even i \<Longrightarrow> edges_of_vwalk p ! i \<in> A2)"
     "\<And> i. i<length (edges_of_vwalk p) \<Longrightarrow> odd i \<Longrightarrow> edges_of_vwalk p ! i \<in> A1"
-    using  walk_is_alternating[OF awalk x_in_carrier y_in_carrier refl] by auto
+    by(auto intro: alternating_list_even_index[OF 
+           walk_is_alternating[OF awalk x_in_carrier y_in_carrier]]
+                      alternating_list_odd_index[OF 
+           walk_is_alternating[OF awalk x_in_carrier y_in_carrier]]
+            simp add: walk_is_even[OF awalk x_in_carrier y_in_carrier])
   have odd_in_X: "{p ! i | i. i < length p \<and> odd i} \<subseteq> X"
-  proof(rule, goal_cases)
-    case (1 x)
-    then obtain i where i_prop:"i < length p" "odd i" "p ! i = x" by auto
-    have p_edge_is: " (p ! (i-1), p ! i) = edges_of_vwalk p ! (i-1)"
-      using edges_of_vwalk_index[of "i-1" p] i_prop by simp
-    have "(p ! (i-1), p ! i) \<in> A2"
-      by(subst  p_edge_is)(auto intro: alternation(2)[simplified edges_of_vwalk_length] simp add: i_prop(1) i_prop(2) less_diff_conv)
-    then show ?case 
-      using i_prop(3) A2_edges(1) by (auto simp add: A2_def)
-  qed
-  have even_not_in_X: "a \<in> {p ! i | i. i < length p \<and> even i} \<Longrightarrow> a \<notin> X" for a
+      using alternation(1)[simplified edges_of_vwalk_length]
+      by(intro  forw_subst[ of "p!i" "fst (p ! i, p ! Suc i)" "\<lambda> x. x \<in> X" for i,
+                              OF fst_conv[symmetric]]|
+         subst edges_of_vwalk_index[of _ p, symmetric]|
+         presburger | 
+         auto intro!: A1_edges(1)[OF alternating_list_odd_index[OF 
+                          walk_is_alternating[OF awalk x_in_carrier y_in_carrier],
+                                simplified edges_of_vwalk_length]]
+         simp add: edges_of_vwalk_index[of _ p, symmetric])+
+    have even_not_in_X: "a \<in> {p ! i | i. i < length p \<and> even i} \<Longrightarrow> a \<notin> X" for a
   proof( goal_cases)
     case 1
     then obtain i where i_prop:"i < length p" "even i" "p ! i = a" by auto

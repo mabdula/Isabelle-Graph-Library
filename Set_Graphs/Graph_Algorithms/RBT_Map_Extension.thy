@@ -304,4 +304,145 @@ locale Map_iterator =
    "\<And> rep f. invar rep \<Longrightarrow> invar (update_all f rep)"
    "\<And> rep f. invar rep \<Longrightarrow> dom (lookup (update_all f rep))
                               = dom (lookup rep)"
+
+lemma tree_split_case:
+  "(case t of Leaf \<Rightarrow> True | _ \<Rightarrow> False) = (t = Leaf)"
+  by (fastforce split: tree.splits) 
+
+definition "t_inv = (\<lambda>t. (invc t \<and> invh t) \<and> Tree2.bst t)"
+
+lemma rbt_size_correct:
+  "t_inv X \<Longrightarrow> size X = card (Tree2.set_tree X)"
+  unfolding set_inorder[symmetric]
+proof(induction X rule: inorder.induct)
+  case 1
+  then show ?case by simp
+next
+  case (2 l a uu r)
+  have inter_empty:"set (Tree2.inorder l) \<inter> Set.insert a (set (Tree2.inorder r)) = {}"
+    using 2(3) bst.simps(2)[simplified Tree2.set_inorder[symmetric]]
+    by (metis (no_types, lifting) Int_emptyI insert_iff not_less_iff_gr_or_eq t_inv_def)
+  have t_inv_l: "t_inv l" 
+    using "2.prems"  bst.simps(2) by(simp add: t_inv_def) 
+  have t_inv_r: "t_inv r" 
+    using "2.prems"  bst.simps(2) by(simp add: t_inv_def)
+  have a_not_down: "a \<notin> set (Tree2.inorder r)" 
+    using 2(3) bst.simps(2)[simplified Tree2.set_inorder[symmetric]] 
+    by (metis not_less_iff_gr_or_eq t_inv_def)
+  show ?case 
+    using a_not_down inter_empty 
+    by(auto  simp add: card_Un_disjoint card_insert_if  2(1)[OF t_inv_l] 2(2)[OF t_inv_r])
+qed
+
+lemma rbt_nonempty_repr:
+  "t_inv X \<Longrightarrow> X \<noteq> \<langle>\<rangle> \<Longrightarrow> Tree2.set_tree X \<noteq> Tree2.set_tree \<langle>\<rangle>"
+  by auto
+
+fun rbt_set_fold :: "'a rbt \<Rightarrow> ('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'b" where
+  "rbt_set_fold Leaf f acc = acc"
+| "rbt_set_fold (Node l (a, _) r) f acc = rbt_set_fold r f (f a (rbt_set_fold l f acc))"
+
+lemma rbt_set_fold_revinorder: "rbt_set_fold T f acc = foldr f (rev (inorder T)) acc"
+  by(induction T f acc rule: rbt_set_fold.induct) auto
+
+fun rbt_map_fold :: "('a \<times> 'd) rbt \<Rightarrow> ('a \<Rightarrow> 'd \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'b" where
+  "rbt_map_fold Leaf f acc = acc"
+| "rbt_map_fold (Node l ((a, d), _) r) f acc = rbt_map_fold r f (f a d (rbt_map_fold l f acc))"
+
+lemma rbt_map_fold_revinorder: "rbt_map_fold T f acc = foldr (\<lambda> (x, y) acc. f x y acc) (rev (inorder T)) acc"
+  by(induction T f acc rule: rbt_map_fold.induct) auto
+
+lemma map_of_dom_is:"set (map fst list) = {a. AList_Upd_Del.map_of list a \<noteq> None}"
+proof(induction list)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons a list)
+  have "set (map fst (a # list)) = Set.insert (fst a) (set (map fst list))" by simp
+  also have "... = Set.insert (fst a) {a. AList_Upd_Del.map_of list a \<noteq> None}" 
+    using Cons by simp
+  also have "... =  {aa. AList_Upd_Del.map_of (a # list) aa \<noteq> None}"
+    by(cases a) auto
+  finally show ?case by simp
+qed
+
+lemma map_of_rev: "distinct (map fst xs) \<Longrightarrow> map_of (rev xs) x = map_of xs x"
+  by(induction xs)
+    (auto simp add: map_of_append map_of_dom_is[simplified] split: option.split)
+
+lemma  rbt_map_fold_correct: "M.invar G \<Longrightarrow>
+       \<exists>xs. distinct xs \<and>
+            set xs = dom (lookup G) \<and> rbt_map_fold G f S = foldr (\<lambda>x. f x (the (lookup G x))) xs S"
+proof(subst rbt_map_fold_revinorder, rule exI[of _ "map fst (rev (inorder G))"], goal_cases)
+  case 1
+  have invar_inorder:"rbt G \<and> sorted1 (Tree2.inorder G)"
+    using "1" M.invar_def by auto
+  define list where "list = Tree2.inorder G"
+  define list' where "list' = rev (inorder G)"
+  have distinct_list:"distinct (map fst (Tree2.inorder G))" 
+    using "1" M.invar_def strict_sorted_iff by blast
+  moreover have "set (map fst (Tree2.inorder G)) = dom (lookup G)"
+    using invar_inorder
+    by(subst dom_def, subst M.inorder_lookup, unfold list_def[symmetric] map_of_dom_is) simp+
+  moreover have "foldr (\<lambda>(x, y). f x y) (rev (Tree2.inorder G)) S =
+    foldr (\<lambda>x. f x (the (lookup G x))) (map fst (rev (Tree2.inorder G))) S"
+  proof-
+    have "distinct (map fst list')" 
+      by (metis distinct_list distinct_rev list'_def rev_map)
+    hence same_fold:"foldr (\<lambda>(x, y). f x y) list' S =
+    foldr (\<lambda>x. f x (the (AList_Upd_Del.map_of list' x))) (map fst list') S"
+    proof(induction list')
+      case Nil
+      then show ?case by simp
+    next
+      case (Cons a list')
+      show ?case 
+      proof(cases a)
+        case (Pair x y)
+        have distinct_fsts: "distinct (x # map fst list')" 
+          using Cons(2)[simplified Pair list.map(2) fst_conv] by fast
+        have first_f_apply:"foldr (\<lambda>a. case a of (x, y) \<Rightarrow> f x y) (a # list') S = f x y (foldr (\<lambda>(x, y). f x y) list' S)"
+          by(simp add: Pair)
+        have map_of_same:"(foldr (\<lambda>xa. f xa (the (AList_Upd_Del.map_of ((x, y) # list') xa))) (map fst list') S)
+              = (foldr (\<lambda>xa. f xa (the (AList_Upd_Del.map_of  list' xa))) (map fst list') S)"
+          apply(rule foldr_cong[OF refl refl])
+          subgoal for s t
+            using distinct_fsts[simplified distinct.simps(2)] 
+            by (subst map_of.simps, subst if_not_P)force+
+          done
+        have almost_result: "(foldr (\<lambda>(x, y). f x y) list' S) =
+                   (foldr (\<lambda>xa. f xa (the (AList_Upd_Del.map_of ((x, y) # list') xa))) (map fst list') S)"
+          using distinct_fsts[simplified distinct.simps(2)]
+          by (subst map_of_same, subst Cons(1)[symmetric])force+
+        show ?thesis
+          apply(subst  first_f_apply)
+          apply(subst Pair)+
+          apply(subst  list.map(2))
+          apply(subst foldr.simps)
+          apply(subst o_apply)
+          apply(subst map_of.simps)
+          apply(subst if_P)
+          apply simp
+          apply(subst option.sel)
+          apply(subst fst_conv)
+          by(subst almost_result[symmetric] ) force
+      qed
+    qed
+    show ?thesis
+      using invar_inorder 
+      by(simp add:  lookup_map_of map_of_rev[OF distinct_list, symmetric] list'_def[symmetric] same_fold)+  
+  qed
+  ultimately show ?case 
+    by (metis distinct_rev rev_map set_rev)
+qed
+
+lemma bst_distinct_inorder:"bst T \<Longrightarrow> distinct (inorder T)"
+  by(induction T rule: inorder.induct) fastforce+
+
+lemma rbt_set_fold_correct: "t_inv S \<Longrightarrow> \<exists>xs. distinct xs \<and> set xs = Tree2.set_tree S \<and> rbt_set_fold S f G = foldr f xs G"
+  apply(subst rbt_set_fold_revinorder)
+  apply(rule exI[of _ "rev (Tree2.inorder S)"])
+  using  bst_distinct_inorder[of S]
+  by(unfold set_inorder[symmetric] set_rev distinct_rev)(simp add: t_inv_def )
+
 end
