@@ -33,11 +33,11 @@ For the more practically usable algorithms, we include an implementation. For ot
 
 # Publications
 
- - M. Abdulaziz, T. Ammer, S. Meenakshisundaram, and A. Rimpapa. 'A Formal Analysis of Algorithms for Matroids and Greedoids', Accepted in The 16th International Conference on Interactive Theorem Proving (ITP 2025), Schloss Dagstuhl – Leibniz-Zentrum für Informatik, 2025. doi: [10.48550/arXiv.2505.19816](https://doi.org/10.48550/arXiv.2505.19816).
+ - M. Abdulaziz, T. Ammer, S. Meenakshisundaram, and A. Rimpapa. 'A Formal Analysis of Algorithms for Matroids and Greedoids', Accepted in The 16th International Conference on Interactive Theorem Proving (ITP), 2025. doi: [10.48550/arXiv.2505.19816](https://doi.org/10.48550/arXiv.2505.19816).
 
  - M. Abdulaziz, 'A Formal Correctness Proof of Edmonds’ Blossom Shrinking Algorithm', Dec. 30, 2024, arXiv: arXiv:2412.20878. doi: [10.48550/arXiv.2412.20878](https://doi.org/10.48550/arXiv.2412.20878).
 
- - M. Abdulaziz and T. Ammer, 'A Formal Analysis of Capacity Scaling Algorithms for Minimum Cost Flows', in The 15th International Conference on Interactive Theorem Proving (ITP 2024), Schloss Dagstuhl – Leibniz-Zentrum für Informatik, 2024. doi: [10.4230/LIPIcs.ITP.2024.3](https://doi.org/10.4230/LIPIcs.ITP.2024.3)
+ - M. Abdulaziz and T. Ammer, 'A Formal Analysis of Capacity Scaling Algorithms for Minimum Cost Flows', in The 15th International Conference on Interactive Theorem Proving (ITP), 2024. doi: [10.4230/LIPIcs.ITP.2024.3](https://doi.org/10.4230/LIPIcs.ITP.2024.3)
 
  - M. Abdulaziz and C. Madlener, 'A Formal Analysis of RANKING', in The 14th Conference on Interactive Theorem Proving (ITP), 2023. doi: [10.48550/arXiv.2302.13747](https://doi.org/10.48550/arXiv.2302.13747).
 
