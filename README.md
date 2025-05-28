@@ -41,4 +41,4 @@ For the more practically usable algorithms, we include an implementation. For ot
 
  - M. Abdulaziz and C. Madlener, 'A Formal Analysis of RANKING', in The 14th Conference on Interactive Theorem Proving (ITP), 2023. doi: [10.48550/arXiv.2302.13747](https://doi.org/10.48550/arXiv.2302.13747).
 
- - M. Abdulaziz, K. Mehlhorn, and T. Nipkow, 'Trustworthy graph algorithms (invited paper)', in the 44th International Symposium on Mathematical Foundations of Computer Science (MFCS), in LIPIcs, vol. 138. Schloss Dagstuhl - Leibniz-Zentrum für Informatik, 2019, p. 1:1-1:22. doi: [10.4230/LIPIcs.MFCS.2019.1](https://doi.org/10.4230/LIPIcs.MFCS.2019.1).
+ - M. Abdulaziz, K. Mehlhorn, and T. Nipkow, 'Trustworthy graph algorithms (invited paper)', in the 44th International Symposium on Mathematical Foundations of Computer Science (MFCS), 2019. doi: [10.4230/LIPIcs.MFCS.2019.1](https://doi.org/10.4230/LIPIcs.MFCS.2019.1).
