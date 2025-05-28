@@ -33,7 +33,7 @@ For the more practically usable algorithms, we include an implementation. For ot
 
 # Publications
 
- - M. Abdulaziz, T. Ammer, S. Meenakshisundaram, and A. Rimpapa. 'A Formal Analysis of Algorithms for Matroids and Greedoids'. Mar. 30, 2025, arXiv: arXiv:2412.20878. doi: [10.48550/arXiv.2412.20878](https://doi.org/10.48550/arXiv.2412.20878).
+ - M. Abdulaziz, T. Ammer, S. Meenakshisundaram, and A. Rimpapa. 'A Formal Analysis of Algorithms for Matroids and Greedoids', Accepted in The 16th International Conference on Interactive Theorem Proving (ITP 2025), Schloss Dagstuhl – Leibniz-Zentrum für Informatik, 2025. doi: [10.48550/arXiv.2505.19816](https://doi.org/10.48550/arXiv.2505.19816).
 
  - M. Abdulaziz, 'A Formal Correctness Proof of Edmonds’ Blossom Shrinking Algorithm', Dec. 30, 2024, arXiv: arXiv:2412.20878. doi: [10.48550/arXiv.2412.20878](https://doi.org/10.48550/arXiv.2412.20878).
 
