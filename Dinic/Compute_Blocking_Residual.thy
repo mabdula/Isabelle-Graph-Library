@@ -61,7 +61,7 @@ lemma find_path_correct:
        \<exists>p del. vwalk_bet (dfs.Graph.digraph_abs F) s p t \<and> find_path F s t = Some (p, del)"
     (is "?asm1 \<Longrightarrow> ?thesis1")
     and "find_path F s t = Some (p, dlt) \<Longrightarrow>
-       acyc (dfs.Graph.digraph_abs F) \<Longrightarrow>
+       dir_acyc (dfs.Graph.digraph_abs F) \<Longrightarrow>
        vwalk_bet (dfs.Graph.digraph_abs F) s p t \<and>
        distinct p \<and>
        (\<forall>e\<in>set dlt. \<nexists>p. e \<in> set (edges_of_vwalk p) \<and> vwalk_bet (dfs.Graph.digraph_abs F) s p t)"
@@ -136,8 +136,8 @@ proof(all \<open>cases "DFS_Collect_Backtrack_Example.neighbourhood F s = vset_e
     moreover have "e\<in>set dlt \<Longrightarrow>
                   \<nexists>p. e \<in> set (edges_of_vwalk p) \<and> vwalk_bet (dfs.Graph.digraph_abs F) s p t" for e
       using  same_final_state  "1"(2) DFS_thms.dfs_backtrack_final(5)[OF dfs_thms, of t]       
-      by(simp add: dfs.invar_dfs_backtrack_5_def acyc_def  dfs_backtrack_initial_state_def 
-          final_state_def  dfs_backtrack_result(2,3)[symmetric])     
+      by(auto simp add: dfs_backtrack_initial_state_def  final_state_def dfs_backtrack_result(2,3)[symmetric] 
+                 elim!: dir_acycE dfs.invar_dfs_backtrack_5E)     
     ultimately show ?case by auto
   qed
 qed
@@ -208,27 +208,7 @@ definition "find_blocking_flow =
        rbt_map_fold flw (\<lambda> e fl acc. split_flow_single e fl acc) 
          residual_flow_empty
       ))"
-  (*
-definition "residual_blocking_flow =
-    (case blocking_flow_simple 
-     of None \<Rightarrow> None |
-        Some flw \<Rightarrow>
-     Some (
-       foldr 
-          (\<lambda> e acc. 
-             prod.fst 
-              (
-               foldr 
-                 (\<lambda> ee (resf, f). 
-                  let \<gamma> = min (real_of_ereal (rcap \<f> ee)) (abstract_real_map (lookup f) e)
-                  in (residual_add_flow resf ee \<gamma>, add_flow_simple f (-\<gamma>) e))
-                 (the (realising_edges_lookup realising_edges e)) 
-                 (acc, flw)
-              )
-          )
-         (map to_vertex_pair pos_es)
-         residual_flow_empty
-      ))"*)
+
 lemmas [code] =pos_es_def
   realising_edges_general_def
   realising_edges_def
@@ -349,9 +329,9 @@ proof-
         M.map_empty dfs.Graph.finite_graphI  empty_digraph_abs)
 
   have "?goal1 \<and> ?goal2 \<and> ?goal3 \<and> ?goal4"
-    unfolding E_simple_def init_def[symmetric] list_def[symmetric]
     using init_props 
-    by(induction list)(auto intro: dfs.Graph.finite_graph_add_edge)
+    by(unfold E_simple_def init_def[symmetric] list_def[symmetric], induction list)
+      (auto intro: dfs.Graph.finite_graph_add_edge)
   thus ?goal1 ?goal2 ?goal3 ?goal4 by auto
 qed
 lemma distinct_pairs_no_reaising_in_common:
@@ -482,9 +462,10 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
   define prnts where "prnts =  parents ((bfs.BFS E_simple (bfs_initial_state 
                           (vset_insert s Pair_Graph_RBT.vset_empty))))"
   have acyc_bfs_result:
-    "acyc (dfs.Graph.digraph_abs prnts)"
+    "dir_acyc (dfs.Graph.digraph_abs prnts)"
     using reachable_level_graph_acyclic
-    by(force simp add: prnts_def bfs.BFS_level_graph[OF bfs_axiom, simplified same_graph_consts] acyc_def reachable_level_graph_def)
+    by(force simp add: prnts_def bfs.BFS_level_graph[OF bfs_axiom,
+              simplified same_graph_consts] reachable_level_graph_def)
 
   have blocking_simple_thms: "blocking_simple_thms map_empty RBT_Map.delete vset_insert isin t_set sel 
                    update adj_inv vset_empty vset_delete vset_inv vset_union vset_inter vset_diff
@@ -493,13 +474,13 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
       rule blocking_simple_thms_axioms.intro, goal_cases)
     case 1
     then show ?case 
-      using bfs_invar_1[simplified bfs.invar_1_def]
-      by (simp add: adj_inv_def prnts_def)
+      by (auto intro: bfs.invar_1_props[OF bfs_axiom bfs_invar_1] 
+            simp add: adj_inv_def prnts_def)
   next
     case 2
     then show ?case 
-      using bfs_invar_1[simplified bfs.invar_1_def]
-      by (simp add: adj_inv_def prnts_def)
+      by (auto intro: bfs.invar_1_props[OF bfs_axiom bfs_invar_1] 
+            simp add: adj_inv_def prnts_def)
   next
     case 3
     then show ?case 
@@ -571,8 +552,9 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
     using BFS_correct_4  parent_path 
     by(auto intro!:  vwalk_bet_subset simp add: RBT_Set.empty_def prnts_def)
   then obtain p where p_prop: "vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t" "distinct p"
-    using  vwalk_bet_to_distinct_is_distinct_vwalk_bet by(force simp add: distinct_vwalk_bet_def)
-
+    using  vwalk_bet_to_distinct_is_distinct_vwalk_bet 
+    by(force simp add: distinct_vwalk_bet_def)
+(*TODO: elim rule for distinct_vwalk_bet*)
   have srcs_are_s:"t_set (vset_insert s vset_empty) = {s}"
     using sources(1) by blast
 
@@ -590,19 +572,15 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
       hence "\<exists> xs. p = [s,s]@xs"
         using p_prop(1,2) fst_eqD[of s x] vs_to_vertex_pair_pres(1) e_prop(2) x_prop(1) s_neq_t
         by(cases p rule: edges_of_vwalk.cases, all \<open>cases e\<close>)
-          (auto simp add: vwalk_bet_def vs_to_vertex_pair_pres split_pairs)
+          (auto elim: vwalk_bet_props simp add: vs_to_vertex_pair_pres split_pairs)
       thus False
         using p_prop(2) by force
     qed
     ultimately show ?thesis by auto
   qed
-  note  flow_network_axioms_for_simple_graph = 
+  note flow_network_axioms_for_simple_graph = 
     flow_network_axioms_for_simple_graph[OF residual_leaving_s]
-  note is_blocking_flow_def=flow_network_spec.is_blocking_flow_def[of
-      prod.fst prod.snd id
-      "(level_graph (dfs.Graph.digraph_abs E_simple) {s} -
-    {(u, v) |u v. distance (dfs.Graph.digraph_abs E_simple) s u = \<infinity>})" "(\<lambda>x. ereal (u_simple x))"]
-  note bfs_level_graph_def=BFS_level_graph[simplified same_graph_consts(2) srcs_are_s 
+   note bfs_level_graph_def=BFS_level_graph[simplified same_graph_consts(2) srcs_are_s 
       distance_set_single_source, symmetric]
   have flow_non_empt: "blocking_state.flow (blocking_simple_loop s t find_path u_simple 
                  (blocking_simple_initial level_simple)) \<noteq> Leaf"
@@ -610,9 +588,6 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
     by(auto simp add: blocking_flow_simple_def if_not_P[OF assm1] RBT_Set.empty_def[symmetric]) 
   note same_final_state =
     Compute_Blocking_Residual.blocking_simple.termination_same[OF blocking_simple_correctness(4)]
-  note flow_non_empt'=flow_non_empt[simplified blocking_simple_loop_def parents_def[symmetric]]
-  note same_final_state'= same_final_state[simplified parents_def[symmetric] blocking_simple_loop_def]
-
   show "is_blocking_flow_simple s t (abstract_real_map (lookup f))"
     using same_final_state blocking_simple_correctness(3) assms2(1)
       flow_non_empt is_blocking_flow_def[of s t]  not_None_eq option.inject
@@ -696,10 +671,6 @@ lemma residual_add_flow_correct:
         simp add: residual_add_flow_def abstract_real_map_def 
                   Map_residual_flow.map_update Map_residual_flow.invar_update 
            split: option.split if_split)
-
-(*TODO MOVE*)
-lemma ereal_of_real_of_ereal_leq: "x \<ge> 0 \<Longrightarrow> ereal (real_of_ereal x) \<le> x"
-  by (simp add: ereal_real)
 
   (*To be solved by split lemmas/ to be outsourced*)
 
@@ -856,9 +827,15 @@ proof-
     qed
   qed
 qed
-
+(*TODO: To be outsourced later*)
 lemma find_blocking_flow_properties:
   assumes "find_blocking_flow = Some rsfl"
+          "\<And> e. e \<in> dom (lookup (the blocking_flow_simple) ) \<Longrightarrow>
+                 abstract_real_map (lookup (the blocking_flow_simple) ) e \<le> u_simple e"
+          "\<And> e. e \<in> dom (lookup (the blocking_flow_simple) ) \<Longrightarrow>
+                 abstract_real_map (lookup (the blocking_flow_simple) ) e \<ge> 0"
+          "\<And> e. e \<in> dom (lookup (the blocking_flow_simple) )  \<Longrightarrow>
+           realising_edges_lookup realising_edges e \<noteq> None "
   shows   "residual_flow_invar rsfl"
     "dom (residual_flow_lookup rsfl) 
            \<subseteq> \<Union> {set (the (realising_edges_lookup realising_edges e)) 
@@ -886,16 +863,10 @@ proof-
     using   rbt_map_fold_correct[OF blocking_flow_simple_correct(6)
              [OF bfs_prop , simplified  adj_inv_def], of split_flow_single residual_flow_empty]
     by auto
-
-  note simple_flow_in_lg = blocking_flow_simple_correct(5)[OF bfs_prop]
-
   have in_xs_realising_no_none:"e \<in> set xs \<Longrightarrow>
            realising_edges_lookup realising_edges e \<noteq> None " for e
-    using order.trans[OF simple_flow_in_lg 
-              order.trans[OF _ level_graph_subset_graph[of 
-             "(dfs.Graph.digraph_abs E_simple)" "{s}"]]]
-         realising_edges_result(3)[of e]
-    by(auto simp add: E_simple_props(4) pos_es_props(1) iteration_order(2))
+    using assms(3) realising_edges_result(3)[of e] 
+    by (simp add: assms(4) bfs_prop iteration_order(2))
   have resflow_invar:"residual_flow_invar
      (foldr (\<lambda>x. split_flow_single x (the (lookup bfs x))) xs residual_flow_empty)"
     if "\<And> e. e \<in> set xs \<Longrightarrow>
@@ -947,8 +918,7 @@ qed
     for e
     using in_xs_realising_no_none iteration_order(1)
           equalityD1[OF iteration_order(2)]
-    unfolding rsfl_is bfs_prop option.sel
-    unfolding  iteration_order(3)
+    unfolding rsfl_is bfs_prop option.sel iteration_order(3)
   proof (induction xs)
     case Nil
     then show ?case 
@@ -979,13 +949,10 @@ qed
     proof-
       have a_in_dom: "a \<in> dom (lookup bfs)"
         using Cons.prems(4) by auto
-      show "the (lookup bfs a) \<le> u_simple a" "0 \<le> the (lookup bfs a)"
-        apply(all \<open>rule flow_network_spec.is_blocking_flowE[OF 
-                             blocking_flow_simple_correct(3)[OF  bfs_prop]]\<close>)
-        using set_mp[OF simple_flow_in_lg  a_in_dom]
-        by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.isuflowE 
-             simp add: abstract_real_map_in_dom_the[OF a_in_dom, symmetric])
-    qed    
+      then show "the (lookup bfs a) \<le> u_simple a" "0 \<le> the (lookup bfs a)"
+        using  abstract_real_map_in_dom_the[OF a_in_dom] assms(2,3)[of a]
+        by(auto simp add: bfs_prop)
+    qed 
     show ?case 
     proof(cases "e \<in> set ds")
       case True
@@ -1000,9 +967,9 @@ qed
            ds_obtain False, of xs, simplified]
     note flow_no_change_abstract = abstract_real_map_cong[of "residual_flow_lookup _" e "residual_flow_lookup _", 
             OF  flow_no_change]
-    show ?thesis
+   show ?thesis
       using Cons.prems(1) flow_no_change  immediately_fom_IH_prems  Cons.prems(4) 
-      by(auto intro!: conjunct1[OF Cons(1)] conjunct2[OF Cons(1)] simp add: flow_no_change_abstract)
+      by(auto intro!: conjunct1[OF Cons(1)] conjunct2[OF Cons(1)] simp add: flow_no_change_abstract) 
     qed
   qed
   thus "ereal (abstract_real_map (residual_flow_lookup rsfl) e) \<le> \<uu>\<^bsub>\<f>\<^esub>e" 
@@ -1045,13 +1012,10 @@ qed
     proof-
       have a_in_dom: "a \<in> dom (lookup bfs)"
         using Cons.prems(4) by auto
-      show "the (lookup bfs a) \<le> u_simple a" "0 \<le> the (lookup bfs a)"
-        apply(all \<open>rule flow_network_spec.is_blocking_flowE[OF 
-                             blocking_flow_simple_correct(3)[OF  bfs_prop]]\<close>)
-        using set_mp[OF simple_flow_in_lg  a_in_dom]
-        by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.isuflowE 
-             simp add: abstract_real_map_in_dom_the[OF a_in_dom, symmetric])
-    qed  
+      then show "the (lookup bfs a) \<le> u_simple a" "0 \<le> the (lookup bfs a)"
+        using  abstract_real_map_in_dom_the[OF a_in_dom] assms(2,3)[of a]
+        by(auto simp add: bfs_prop)
+    qed 
     have the_lookup_abstract:"the (lookup bfs a) = abstract_real_map (lookup bfs) a"
       using Cons.prems(4) abstract_real_map_in_dom_the by force
     show ?case 
@@ -1139,12 +1103,6 @@ qed
   qed 
 qed
 
-    (*TODO MOVE*)
-lemma sum_split_off: "A \<subseteq> B \<Longrightarrow> finite B \<Longrightarrow> (\<And> x. x \<in> B - A \<Longrightarrow> f x = 0) \<Longrightarrow> sum f A = sum f B" for f A B
-  by (simp add: sum.mono_neutral_cong_right)
-
-lemma if_non_empty_finite_finite: " (A \<noteq> {} \<Longrightarrow> finite A) \<Longrightarrow> finite A" by auto
-
 lemma find_blocking_flow:
   "find_blocking_flow  = None
             \<longleftrightarrow> \<not> resreach \<f> s t" (is ?thesis1)
@@ -1167,11 +1125,32 @@ proof-
   then obtain rfs where asm':"blocking_flow_simple = Some rfs"
     by(auto simp add: find_blocking_flow_def 
         intro: option.exhaust[of blocking_flow_simple])
+  note simple_flow_in_lg = blocking_flow_simple_correct(5)[OF asm']
+  have find_blocking_flow_properties_precond:
+       "abstract_real_map (lookup (the blocking_flow_simple)) e \<le> u_simple e"
+       "abstract_real_map (lookup (the blocking_flow_simple)) e \<ge> 0"
+       "realising_edges_lookup realising_edges e \<noteq> None" if
+          "e \<in> dom (lookup (the blocking_flow_simple))"
+        for e
+  proof-
+    show "abstract_real_map (lookup (the blocking_flow_simple)) e \<le> u_simple e"
+         "abstract_real_map (lookup (the blocking_flow_simple)) e \<ge> 0"
+        apply(all \<open>rule flow_network_spec.is_blocking_flowE[OF 
+                             blocking_flow_simple_correct(3)[OF asm']]\<close>)
+        using set_mp[OF simple_flow_in_lg, of e] that asm'
+        by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.isuflowE 
+             simp add: abstract_real_map_in_dom_the[OF that, symmetric])
+      show "realising_edges_lookup realising_edges e \<noteq> None" 
+        using realising_edges_result(1,3)[of e] that  set_mp[OF simple_flow_in_lg, of e]  
+              level_graph_subset_graph[of "(dfs.Graph.digraph_abs E_simple)" "{s}"] 
+        by(fastforce simp add: E_simple_props(4) pos_es_props(1) asm')
+    qed  
+    note  find_blocking_flow_properties= 
+     find_blocking_flow_properties[OF _ find_blocking_flow_properties_precond, simplified]
   show "residual_flow_invar rf"
     by (simp add: asm find_blocking_flow_properties(1))
   have dom_goal:"dom (residual_flow_lookup rf) \<subseteq> residual_level_graph \<f> s 
-                - {e | e. multigraph_spec.multigraph_distance 
-                  {e | e. e \<in> \<EE> \<and> rcap \<f> e > 0} to_vertex_pair s (fstv e) = \<infinity>}"
+      - {e | e.  distance_set ( to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap \<f> e > 0}) {s} (fstv e) = \<infinity>}"
   proof(rule order.trans[OF find_blocking_flow_properties(2)[OF asm]],
       rule Union_least, goal_cases)
     case (1 X)
@@ -1184,13 +1163,13 @@ proof-
       using realising_edges_result(3)[of e]
         level_graph_subset_graph[of "(dfs.Graph.digraph_abs E_simple)" "{s}"]
       by(fastforce simp add: E_simple_props(4) pos_es_props(1) )
-
     show ?case
       using e_in_lg 
-      by(auto simp add: X_props(1) ds_prop  realising_edges_result(1)[OF ds_prop]  
-          residual_level_graph_def multigraph_spec.multi_level_graph_def E_simple_props(4)
-          pos_es_props(1)  multigraph_spec.multigraph_distance_set_def level_graph_def 
-          to_vertex_pair_fst_snd multigraph_spec.multigraph_distance_def)
+      by(auto intro: in_level_graphI
+        elim: in_level_graphE 
+        simp add: X_props(1) ds_prop residual_level_graph_is
+              realising_edges_result(1)[OF ds_prop]  distance_set_single_source  
+               E_simple_props(4)  pos_es_props(1) to_vertex_pair_fst_snd) 
   qed
   thus "dom (residual_flow_lookup rf) \<subseteq> residual_level_graph \<f> s" by auto
   have valid_s_t_flow: "flow_network_spec.is_s_t_flow fstv sndv to_vertex_pair (residual_level_graph \<f> s) (rcap \<f>)
@@ -1232,12 +1211,10 @@ proof-
         using dom_goal realising_edges_result(1,3)[of "make_pair_residual e"]
         by(auto dest: option.exhaust[of "realising_edges_lookup realising_edges
                                        (make_pair_residual e)"]
-              elim!: abstract_real_map_not_zeroE[of "residual_flow_lookup rf" ]
-              intro!: exI[of _ "fstv e"]
-              simp add: to_vertex_pair_fst_snd multigraph_spec.delta_minus_def residual_level_graph_def
-              multigraph_spec.multi_level_graph_def multigraph_spec.multigraph_distance_set_def
-              level_graph_def E_simple_props(4) pos_es_props(1)  distance_set_def 
-              multigraph_spec.multigraph_distance_def)
+              elim!: abstract_real_map_not_zeroE[of "residual_flow_lookup rf" ] in_level_graphE
+              intro!: exI[of _ "fstv e"] in_level_graphI
+              simp add: to_vertex_pair_fst_snd multigraph_spec.delta_minus_def
+                        residual_level_graph_is E_simple_props(4) pos_es_props(1) distance_set_single_source)
       have helper_plus: "e \<in> multigraph_spec.delta_plus (residual_level_graph \<f> s) fstv x \<Longrightarrow>
          abstract_real_map (residual_flow_lookup rf) e \<noteq> 0 \<Longrightarrow>
          \<exists>x\<in>multigraph_spec.delta_plus
@@ -1250,11 +1227,8 @@ proof-
                                        (make_pair_residual e)"]
               elim!: abstract_real_map_not_zeroE[of "residual_flow_lookup rf" ]
               intro!: exI[of _ "sndv e"]
-              simp add: to_vertex_pair_fst_snd multigraph_spec.delta_plus_def residual_level_graph_def
-              multigraph_spec.multi_level_graph_def multigraph_spec.multigraph_distance_set_def
-              level_graph_def E_simple_props(4) pos_es_props(1)  distance_set_def 
-              multigraph_spec.multigraph_distance_def)
-
+              simp add: to_vertex_pair_fst_snd multigraph_spec.delta_plus_def residual_level_graph_is
+                        level_graph_def E_simple_props(4) pos_es_props(1) distance_set_single_source)
       have same_big_sum_minus: "sum (abstract_real_map (residual_flow_lookup rf))
           (multigraph_spec.delta_minus (residual_level_graph \<f> s) sndv x) =
           sum (abstract_real_map (residual_flow_lookup rf))
@@ -1265,10 +1239,9 @@ proof-
          {xa. \<exists>uu. Some uu = realising_edges_lookup realising_edges x \<and> xa \<in> set uu})"
         using realising_edges_result(1) realising_edges_result(3) helper_minus
         by(auto intro: sum.mono_neutral_cong_right[OF _ _ _ refl]
-            simp add: multigraph_spec.delta_minus_def residual_level_graph_def
-            multigraph_spec.multi_level_graph_def Collect_bex_eq[symmetric]
-            multigraph_spec.multigraph_distance_set_def to_vertex_pair_fst_snd
-            level_graph_def E_simple_props(4) pos_es_props(1)  distance_set_def 
+            simp add: multigraph_spec.delta_minus_def residual_level_graph_is
+             Collect_bex_eq[symmetric] to_vertex_pair_fst_snd
+            level_graph_def E_simple_props(4) pos_es_props(1) distance_set_single_source
             finite_\<EE> multigraph_spec.delta_minus_def[of "residual_level_graph \<f> s" sndv x]
             residual_level_graph_in_E[of \<f> s] rev_finite_subset[of \<EE> "residual_level_graph \<f> s"])
       have finite_if_list: "finite {x. \<exists>uu. Some uu = realising_edges_lookup realising_edges e \<and> x \<in> set uu}" for e
@@ -1284,10 +1257,9 @@ proof-
          {xa. \<exists>uu. Some uu = realising_edges_lookup realising_edges x \<and> xa \<in> set uu})"
         using realising_edges_result(1) realising_edges_result(3) helper_plus
         by(auto intro: sum.mono_neutral_cong_right[OF _ _ _ refl]
-            simp add: multigraph_spec.delta_plus_def residual_level_graph_def
-            multigraph_spec.multi_level_graph_def Collect_bex_eq[symmetric]
-            multigraph_spec.multigraph_distance_set_def to_vertex_pair_fst_snd
-            level_graph_def E_simple_props(4) pos_es_props(1)  distance_set_def 
+            simp add: multigraph_spec.delta_plus_def residual_level_graph_is  Collect_bex_eq[symmetric]
+             to_vertex_pair_fst_snd level_graph_def E_simple_props(4) pos_es_props(1)
+            distance_set_single_source
             finite_\<EE> multigraph_spec.delta_minus_def[of "residual_level_graph \<f> s" sndv x]
             residual_level_graph_in_E[of \<f> s] rev_finite_subset[of \<EE> "residual_level_graph \<f> s"])     
       show ?thesis
@@ -1306,9 +1278,9 @@ proof-
               {uu.
                \<exists>u. (\<exists>v. uu = (u, v)) \<and> distance (dfs.Graph.digraph_abs E_simple) s u = \<infinity>} 
            \<subseteq> to_vertex_pair ` residual_level_graph \<f> s"
-      by(auto simp add: level_graph_def distance_set_def E_simple_props(4) pos_es_props(1)
-          residual_level_graph_def multigraph_spec.multi_level_graph_def
-          multigraph_spec.multigraph_distance_set_def to_vertex_pair_fst_snd)
+      by(auto elim: in_level_graphE intro: in_level_graphI 
+          simp add: distance_set_single_source E_simple_props(4) pos_es_props(1)
+          residual_level_graph_is  to_vertex_pair_fst_snd)
     show ?thesis
     proof(rule flow_network_spec.is_s_t_flowI, goal_cases)
       case 1
@@ -1318,26 +1290,22 @@ proof-
       case 2
       then show ?case 
         using same_excess blocking_flow_simple_correct(3)[OF asm']
-        by(auto elim!: flow_network_spec.is_s_t_flowE 
-            simp add: flow_network_spec.is_blocking_flow_def)
+        by(auto elim!: flow_network_spec.is_s_t_flowE  flow_network_spec.is_blocking_flowE)
     next
       case 3
       then show ?case
         using  dVs_subset[OF level_graph_simple_subset]  blocking_flow_simple_correct(3)[OF asm']
-        by(auto elim!: flow_network_spec.is_s_t_flowE 
-            simp add: flow_network_spec.is_blocking_flow_def)
+        by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.is_blocking_flowE)
     next
       case 4
       then show ?case 
         using  dVs_subset[OF level_graph_simple_subset]  blocking_flow_simple_correct(3)[OF asm']
-        by(auto elim!: flow_network_spec.is_s_t_flowE 
-            simp add: flow_network_spec.is_blocking_flow_def)
+        by(auto elim!: flow_network_spec.is_s_t_flowE  flow_network_spec.is_blocking_flowE)
     next
       case 5
       then show ?case 
         using   blocking_flow_simple_correct(3)[OF asm']
-        by(auto elim!: flow_network_spec.is_s_t_flowE 
-            simp add: flow_network_spec.is_blocking_flow_def)
+        by(auto elim!: flow_network_spec.is_s_t_flowE  flow_network_spec.is_blocking_flowE)
     next
       case (6 x)
       then show ?case 
@@ -1347,8 +1315,7 @@ proof-
         case True
         then show ?thesis 
           using same_excess  6  blocking_flow_simple_correct(3)[OF asm']         
-          by(auto elim!: flow_network_spec.is_s_t_flowE 
-              simp add: flow_network_spec.is_blocking_flow_def)
+          by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.is_blocking_flowE)
       next
         case False
         have deltas_0:"e \<in> multigraph_spec.delta_minus (residual_level_graph \<f> s) sndv x \<Longrightarrow>
@@ -1356,11 +1323,10 @@ proof-
           "e \<in> multigraph_spec.delta_plus (residual_level_graph \<f> s) fstv x \<Longrightarrow>
                    abstract_real_map (residual_flow_lookup rf) e = 0" for e
           using set_mp[OF dom_goal, of e] False
-          by(auto intro!: abstract_real_map_none 
-              simp add: multigraph_spec.delta_minus_def multigraph_spec.multigraph_distance_def 
-              E_simple_props(4) pos_es_props(1) residual_level_graph_def multigraph_spec.multi_level_graph_def
-              level_graph_def multigraph_spec.multigraph_distance_set_def distance_set_def
-              dom_def to_vertex_pair_fst_snd multigraph_spec.delta_plus_def)
+          by(auto intro!: abstract_real_map_none in_level_graphI
+              simp add: multigraph_spec.delta_minus_def  E_simple_props(4) pos_es_props(1)
+                        residual_level_graph_is distance_set_single_source
+                        dom_def to_vertex_pair_fst_snd multigraph_spec.delta_plus_def)
         then show ?thesis
           by(auto simp add: flow_network_spec.ex_def comm_monoid_add_class.sum.neutral)
       qed
@@ -1392,8 +1358,7 @@ proof-
         then show ?thesis 
           using ee p_prop(5)
           by(intro ord_class.ord_eq_less_trans[OF distance_0I, of _ _ _ \<infinity>])
-            (auto intro!: dVsI'(1) 
-              simp add: residual_level_graph_def multigraph_spec.multi_level_graph_def)
+            (auto intro!: dVsI'(1) simp add: residual_level_graph_is)
       next
         case (Cons a list)
         have awalk_help: "awalk UNIV s p1 (prod.fst e)"
@@ -1410,10 +1375,9 @@ proof-
       qed
       then show ?case 
         using set_mp[OF p_prop(5) ee(1)] 1 ee
-        by(auto simp add: level_graph_def E_simple_props(4) pos_es_props(1) distance_set_def
-            residual_level_graph_def multigraph_spec.multi_level_graph_def
-            multigraph_spec.multigraph_distance_set_def image_iff
-            split_pairs vs_to_vertex_pair_pres(1,2))
+        by(auto simp add: level_graph_def E_simple_props(4) pos_es_props(1)
+                          distance_set_single_source residual_level_graph_is image_iff
+                          split_pairs vs_to_vertex_pair_pres(1,2))
     qed
     moreover have pos_cap_old: "e\<in>set (map to_vertex_pair p) \<Longrightarrow>
          ereal (abstract_real_map (lookup rfs) e) < ereal (u_simple e)" for e
@@ -1444,8 +1408,7 @@ proof-
         by(auto intro!: ordered_cancel_comm_monoid_add_class.sum_strict_mono_strong[of _ ee] 
             capacity_respected 
             simp add: pos_es_props(1) find_blocking_flow_properties(5)[OF asm,
-              simplified asm' option.sel]
-            u_simple_is ds realising_edges_result(1)[OF ds(1)])
+              simplified asm' option.sel] u_simple_is ds realising_edges_result(1)[OF ds(1)])
     qed
     moreover have "multigraph_spec.multigraph_path prod.fst prod.snd id (map to_vertex_pair p)"
       using awalk_fst_last  p_prop(1)

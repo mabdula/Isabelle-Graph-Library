@@ -366,8 +366,11 @@ end
 context flow_network
 begin
 
-lemma to_vertex_pair_fst_snd: "to_vertex_pair e = (fstv e, sndv e)"
-  by(cases e) (auto simp add: make_pair')
+lemma to_vertex_pair_fst_snd: "to_vertex_pair  = (\<lambda> e. (fstv e, sndv e))"
+  apply(rule ext)
+  subgoal for e
+    by(cases e, auto simp add: make_pair')
+  done
 
 lemma to_vertex_pair_same_vertex:"{prod.fst (to_vertex_pair e), prod.snd (to_vertex_pair e)} = {fstv e, sndv e}"
   using fst_conv fstv.simps snd_conv sndv.simps to_vertex_pair.elims 
@@ -598,6 +601,14 @@ For this we need naked pairs without wrapping constructors.
 definition resreach::"('edge_type \<Rightarrow> real)   \<Rightarrow>'a \<Rightarrow> 'a \<Rightarrow> bool" where
        "resreach f u v = (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
                             \<and> Rcap f (set p) > 0 \<and> p \<noteq> [] \<and> set p \<subseteq> \<EE>)"
+
+lemma resreachI: "awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
+                            \<Longrightarrow> Rcap f (set p) > 0 \<Longrightarrow> p \<noteq> [] \<Longrightarrow> set p \<subseteq> \<EE> \<Longrightarrow> resreach f u v"
+  by(auto simp add: resreach_def)
+
+lemma resreachE: "resreach f u v \<Longrightarrow> (\<And> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
+                            \<Longrightarrow> Rcap f (set p) > 0 \<Longrightarrow> p \<noteq> [] \<Longrightarrow> set p \<subseteq> \<EE> \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: resreach_def)
 end
 context flow_network
 begin

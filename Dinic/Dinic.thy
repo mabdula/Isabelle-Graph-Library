@@ -369,8 +369,7 @@ proof(induction d arbitrary: state rule: less_induct)
                       (flow_lookup (current_flow (dinic_upd state)))) s t")
       case (enat nat)
       then show ?thesis 
-        using d_prop(1)[symmetric] d_prop(2) 
-        using resreach_dist_number_of_verts_bound[OF resreach]
+        using d_prop(1)[symmetric] d_prop(2)  resreach_dist_number_of_verts_bound[OF resreach]
         by simp(fastforce intro!: diff_less_mono2[of d nat "card \<V>"] 
                       intro: Suc_le_lessD [of d nat]
                    simp add: enat_ord_simps(1)[symmetric] plus_1_eSuc(2))

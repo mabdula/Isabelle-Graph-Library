@@ -1189,4 +1189,12 @@ lemma vwalk_append_intermediate_edge:"vwalk_bet A x p y \<Longrightarrow> (y, x'
 lemma vwalk_bet_diff_verts_length_geq_2:"vwalk_bet E s  p t\<Longrightarrow> s \<noteq> t \<Longrightarrow> length p \<ge> 2"
   by(cases p rule: edges_of_vwalk.cases) (auto simp add: vwalk_bet_def)
 
+definition "dir_acyc G = (\<nexists> p u. vwalk_bet G u p u \<and> length p \<ge> 2)"
+
+lemma dir_acycI: "(\<And> u p. vwalk_bet G u p u \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> False) \<Longrightarrow> dir_acyc G"
+  by(auto simp add: dir_acyc_def)
+
+lemma dir_acycE: "dir_acyc G \<Longrightarrow>
+((\<And> u p. vwalk_bet G u p u \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> False) \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: dir_acyc_def)
 end

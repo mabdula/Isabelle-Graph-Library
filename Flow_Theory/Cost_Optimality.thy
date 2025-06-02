@@ -570,9 +570,9 @@ proof(rule ccontr)
   hence "\<forall> e \<in> set (css ! i). rcap f e > 0" 
     using \<open>set (css ! i) \<subseteq> residual_flow.support g\<close> by blast
   hence "augpath f (css ! i)"
-    using flowpath ext[of to_vertex_pair make_pair_residual, OF to_vertex_pair_fst_snd]
+    using flowpath ext[of to_vertex_pair make_pair_residual]
           linorder_class.Min_gr_iff[of "rcap f ` (set (css ! i))"]
-    by(auto simp add: augpath_def prepath_def residual_flow.flowpath_def residual_flow.multigraph_path_def Rcap_def)
+    by(auto simp add: augpath_def prepath_def residual_flow.flowpath_def to_vertex_pair_fst_snd residual_flow.multigraph_path_def Rcap_def)
   moreover have "fstv (hd  (css ! i)) = sndv (last  (css ! i))"
                               " distinct  (css ! i) \<and> set  (css ! i) \<subseteq> \<EE>" 
     using css_ws_def i_Def unfolding residual_flow.flowcycle_def 

@@ -966,4 +966,22 @@ lemma awalk_map:
   using assms(3)
   by(induction rule: awalk_induct[OF assms(1,2)])
     (auto intro: awalk_intros(2)[OF _ _  refl] simp add: arc_implies_awalk)
+
+lemma vwalk_awalk_id:
+  "cas u p v \<Longrightarrow> edges_of_vwalk (awalk_verts u p) = p"
+proof(induction p arbitrary: u rule: edges_of_vwalk.induct)
+  case 1
+  then show ?case by simp
+next
+  case (2 e)
+  then show ?case by (cases e) simp
+next
+  case (3 e d es)
+  have ed_share_vert:"snd e = fst d" "cas (fst d) (d # es) v"
+    using  "3.prems" 
+    by(auto simp add: cas_simp[of "e#d#es", simplified]  cas_simp[of "d#es", simplified])
+  show ?case 
+    using ed_share_vert(1) 3(1)[OF ed_share_vert(2)]
+    by (cases e, cases d) auto
+qed
 end

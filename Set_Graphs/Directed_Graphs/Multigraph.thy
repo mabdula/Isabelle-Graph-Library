@@ -54,7 +54,36 @@ lemma multigraph_pathE': "multigraph_path es \<Longrightarrow> (es = [] \<Longri
                           \<Longrightarrow> P) \<Longrightarrow>P"
   unfolding multigraph_path_def by (cases es) auto
 
+lemma deltas_in_E: "delta_plus x \<subseteq> \<E>" "delta_minus x \<subseteq> \<E>"
+  by(auto simp add: delta_plus_def delta_minus_def)
+
 end
+
+lemma delta_plus_mono:
+ "E \<subseteq> F \<Longrightarrow> multigraph_spec.delta_plus E fst x \<subseteq> multigraph_spec.delta_plus F fst x" for fst
+  by(auto simp add: multigraph_spec.delta_plus_def)
+
+lemma delta_minus_mono:
+ "E \<subseteq> F \<Longrightarrow> multigraph_spec.delta_minus E fst x \<subseteq> multigraph_spec.delta_minus F fst x" for fst
+  by(auto simp add: multigraph_spec.delta_minus_def)
+
+lemma in_delta_plusI: 
+"e \<in> E \<Longrightarrow> fst e = x \<Longrightarrow> e \<in> multigraph_spec.delta_plus E fst x" for fst
+  by(auto simp add: multigraph_spec.delta_plus_def)
+
+lemma in_delta_plusD: 
+"e \<in> multigraph_spec.delta_plus E fst x \<Longrightarrow> e \<in> E"
+"e \<in> multigraph_spec.delta_plus E fst x \<Longrightarrow> fst e = x"for fst
+  by(auto simp add: multigraph_spec.delta_plus_def)
+
+lemma in_delta_minusI: 
+"e \<in> E \<Longrightarrow> fst e = x \<Longrightarrow> e \<in> multigraph_spec.delta_minus E fst x" for fst
+  by(auto simp add: multigraph_spec.delta_minus_def)
+
+lemma in_delta_minusD: 
+"e \<in> multigraph_spec.delta_minus E fst x \<Longrightarrow> e \<in> E"
+"e \<in> multigraph_spec.delta_minus E fst x \<Longrightarrow> fst e = x"for fst
+  by(auto simp add: multigraph_spec.delta_minus_def)
 
 locale multigraph = multigraph_spec where \<E> = "\<E>::'edge_type set" for \<E> +
 assumes make_pair:"\<And> e x y. fst e = x \<Longrightarrow> snd e = y \<Longrightarrow> make_pair e = (x,y)"

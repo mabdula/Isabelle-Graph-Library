@@ -834,6 +834,18 @@ lemma in_level_graphE: "(u, v) \<in> level_graph G S \<Longrightarrow>
               ((u, v) \<in> G \<Longrightarrow> distance_set G S v = distance_set G S u +1 \<Longrightarrow> P ) \<Longrightarrow> P"
   by(auto simp add: level_graph_def)
 
+lemma in_level_graphI': "e \<in> G \<Longrightarrow> distance_set G S (snd e) = distance_set G S (fst e) +1 \<Longrightarrow>
+                        e \<in> level_graph G S"
+  by(auto simp add: level_graph_def)
+
+lemma in_level_graphE': "e \<in> level_graph G S \<Longrightarrow>
+              (e \<in> G \<Longrightarrow> distance_set G S (snd e) = distance_set G S (fst e) +1 \<Longrightarrow> P ) \<Longrightarrow> P"
+  by(auto simp add: level_graph_def)
+
+lemma in_level_graphD: "e \<in> level_graph G S \<Longrightarrow> e \<in> G"
+"e \<in> level_graph G S \<Longrightarrow> distance_set G S (snd e) = distance_set G S (fst e) +1"
+  by(auto simp add: level_graph_def)
+
 lemma level_graph_subset_graph: "level_graph G S \<subseteq>  G"
   by (meson in_level_graphE subrelI)
 
@@ -908,14 +920,20 @@ lemma infty_dist_is_unreachables:
 lemma dist_set_less_infty_get_path:
   assumes "distance_set G S x \<noteq> \<infinity>"
   shows "\<exists> q s. vwalk_bet G s q x \<and> s \<in> S \<and> length q - 1 = distance_set G S x"
-    apply(rule bexE[OF dist_not_inf'[of G S x]])
-    subgoal
-      using assms lt_lt_infnty by auto
-    apply(rule bexE[OF dist_not_inf'[OF assms]])
-    subgoal for a q
+proof(rule bexE[OF dist_not_inf'[of G S x]], goal_cases)
+  case 1
+  then show ?case 
+    using assms lt_lt_infnty by auto
+next
+  case (2 aa)
+  show ?thesis
+  proof(rule bexE[OF dist_not_inf'[OF assms]], goal_cases)
+    case (1 a)
+    show ?case 
       apply(rule  reachable_dist_2[of G a x])
-      by auto
-  done
+      using 1 2 by auto
+  qed
+qed
 
 lemma distance_path_prefices_and_suffices:
   assumes "vwalk_bet G s (p1@[x]@p2) t" "length  (p1@[x]@p2) - 1 = distance_set G S t" "s \<in> S"
@@ -990,12 +1008,10 @@ qed
 definition "reachable_level_graph G S = level_graph G S - {(u, v) | u v. distance_set G S u = \<infinity>}"
 
 lemma reachable_level_graph_acyclic:
-   "\<nexists> p u. vwalk_bet (reachable_level_graph G S) u p u \<and> length p \<ge> 2"
-proof(rule ccontr, goal_cases)
-  case 1
-  then obtain u p where assms:
-        "vwalk_bet (reachable_level_graph G S) u p u" "2 \<le> length p"
-    by auto
+   "dir_acyc (reachable_level_graph G S)"
+proof(rule dir_acycI, goal_cases)
+  case (1 u p)
+  note assms=1
   obtain x y es where p_split: "p = x#y#es"using assms(2)
     by(cases p rule: edges_of_vwalk.cases) auto
   hence x_props: "x = u" "(x, y) \<in>  (reachable_level_graph G S)"  

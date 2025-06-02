@@ -424,7 +424,7 @@ lemma invar_dfs_backtrack_5_holds_1[invar_holds_intros]:
 
 lemma invar_dfs_backtrack_5_holds_2[invar_holds_intros]:
   assumes "DFS_call_2_conds (to_ordinary_DFS_state dfs_state)"
-    "\<nexists> p v. vwalk_bet (Graph.digraph_abs G) v p v \<and> length p \<ge> 2"
+    "dir_acyc (Graph.digraph_abs G)"
     "invar_dfs_backtrack_5 dfs_state"
     "invar_dfs_backtrack_4 dfs_state"
     "invar_dfs_backtrack_3 dfs_state"
@@ -498,7 +498,7 @@ next
             simp add: walk_x_u)
       moreover have "length (u#pp1@[x]@ rev stck1) \<ge> 2" by auto
       ultimately show False
-        using assms(2) by blast
+        using assms(2) by(force elim: dir_acycE)
     next
       case 2
       then show ?thesis 
@@ -522,7 +522,7 @@ lemma invar_dfs_backtrack_5_holds_4[invar_holds_intros]:
 
 lemma invar_dfs_backtrack_5_holds: 
   assumes "DFS_collect_backtrack_dom dfs_state" 
-    "\<nexists> p v. vwalk_bet (Graph.digraph_abs G) v p v \<and> length p \<ge> 2"
+    "dir_acyc (Graph.digraph_abs G)"
     "invar_dfs_backtrack_5 dfs_state" "invar_dfs_backtrack_4 dfs_state" 
     "invar_dfs_backtrack_3 dfs_state"
     "invar_dfs_backtrack_1 dfs_state"
@@ -558,7 +558,7 @@ lemma dfs_backtrack_final:
   "invar_dfs_backtrack_2 (DFS_collect_backtrack dfs_backtrack_initial_state)"
   "invar_dfs_backtrack_3 (DFS_collect_backtrack dfs_backtrack_initial_state)"
   "invar_dfs_backtrack_4 (DFS_collect_backtrack dfs_backtrack_initial_state)"
-  "\<nexists> p v. vwalk_bet (Graph.digraph_abs G) v p v \<and> length p \<ge> 2 \<Longrightarrow> 
+  "dir_acyc (Graph.digraph_abs G) \<Longrightarrow> 
  invar_dfs_backtrack_5 (DFS_collect_backtrack dfs_backtrack_initial_state)"
   by(auto intro!: invar_dfs_backtrack_1_holds invar_dfs_backtrack_3_holds
       invar_dfs_backtrack_4_holds invar_dfs_backtrack_5_holds

@@ -508,4 +508,31 @@ lemma min_integral: "\<exists> n::nat. x = real n \<Longrightarrow> \<exists> n:
 lemma enat_less_plus_1_leq:"(x::enat) < (y::enat) + 1 \<Longrightarrow> x \<le> y" 
   by(cases y, all \<open>cases x\<close>)
     (auto simp add: plus_1_eSuc(2))
+
+lemma ereal_of_real_of_ereal_leq: "x \<ge> 0 \<Longrightarrow> ereal (real_of_ereal x) \<le> x"
+  by (simp add: ereal_real)
+
+definition "abstract_real_map mp x = (case mp x of None \<Rightarrow> 0 | Some y \<Rightarrow> y)"
+
+lemma abstract_real_map_empty: "abstract_real_map (\<lambda> _ . None) = (\<lambda> _ . 0)"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_some: "mp x = Some y \<Longrightarrow> abstract_real_map mp x = y"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_cong: "mp x = mp' x \<Longrightarrow> abstract_real_map mp x = abstract_real_map mp' x"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_none: "mp x = None \<Longrightarrow> abstract_real_map mp x = 0"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_not_zeroE: 
+"abstract_real_map mp x \<noteq> 0 \<Longrightarrow> (\<And> y. mp x = Some y \<Longrightarrow> y \<noteq> 0 \<Longrightarrow> P) \<Longrightarrow> P"
+  by(cases "mp x")(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_outside_dom: "x \<notin> dom mp \<Longrightarrow> abstract_real_map mp x = 0"
+  by(cases "mp x")(auto simp add: abstract_real_map_def dom_if)
+
+lemma abstract_real_map_in_dom_the: "x \<in> dom mp \<Longrightarrow> abstract_real_map mp x = the (mp x)"
+  by(cases "mp x")(auto simp add: abstract_real_map_def dom_if)
 end

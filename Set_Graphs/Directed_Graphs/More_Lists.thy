@@ -820,4 +820,9 @@ proof(induction ys)
   ultimately show ?case 
     by(auto intro!: exI[of _ "x#xs"])
 qed simp
+
+lemma rev_cases3: "(xs = Nil \<Longrightarrow> P) \<Longrightarrow> (\<And> x. xs = [x] \<Longrightarrow> P) \<Longrightarrow>
+                   (\<And> ys y x. xs=ys@[y,x] \<Longrightarrow> P) \<Longrightarrow> P" 
+  by (metis More_Lists.append_butlast_last_cancel append_Nil neq_Nil_conv_snoc)
+
 end
