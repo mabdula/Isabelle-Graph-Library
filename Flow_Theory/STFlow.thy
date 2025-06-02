@@ -1107,35 +1107,35 @@ proof-
         "B (new_edge (create_edge t s)) \<notin> set C1" 
         "B (new_edge (create_edge t s)) \<notin> set C2" 
         using C_split C_unfolded (4)  B_new_edge_not_in_C by auto
-      hence C1_C2_in:"set C1 \<subseteq> cost_network_of_network.F ` old_edge ` \<E> 
-                      \<union> cost_network_of_network.B ` old_edge ` \<E>" 
-        "set C2 \<subseteq> cost_network_of_network.F ` old_edge ` \<E> 
-                      \<union> cost_network_of_network.B ` old_edge ` \<E>" 
+      hence C1_C2_in:"set C1 \<subseteq> F ` old_edge ` \<E> 
+                      \<union> B ` old_edge ` \<E>" 
+        "set C2 \<subseteq> F ` old_edge ` \<E> 
+                      \<union> B ` old_edge ` \<E>" 
         using  C_unfolded(5) cost_network_of_network.\<EE>_def 
         by(auto simp add: \<E>'_def C_split ) 
 
       define p where "p = (map (\<lambda> e. case e of F e \<Rightarrow> F (get_old_edge e)
                              | B e \<Rightarrow> B (get_old_edge e)))
                         (C2@C1)"
-      have big_cong_C1C2:"e \<in> set C1 \<union> set C2 \<Longrightarrow>( to_vertex_pair o (cost_network_of_network.case_Redge
-                  (\<lambda>e. cost_network_of_network.F (cost_network_of_network.get_old_edge e))
-                  (\<lambda>e. cost_network_of_network.B (cost_network_of_network.get_old_edge e)))) e
+      have big_cong_C1C2:"e \<in> set C1 \<union> set C2 \<Longrightarrow>( to_vertex_pair o (case_Redge
+                  (\<lambda>e. F (cost_network_of_network.get_old_edge e))
+                  (\<lambda>e. B (cost_network_of_network.get_old_edge e)))) e
            = cost_network_of_network.to_vertex_pair e" 
         "e \<in> set (C2@C1) \<Longrightarrow> (fstv o
-                  (cost_network_of_network.case_Redge
-                  (\<lambda>e. cost_network_of_network.F (cost_network_of_network.get_old_edge e))
-                  (\<lambda>e. cost_network_of_network.B (cost_network_of_network.get_old_edge e)))) e
+                  (case_Redge
+                  (\<lambda>e. F (cost_network_of_network.get_old_edge e))
+                  (\<lambda>e. B (cost_network_of_network.get_old_edge e)))) e
                   = cost_network_of_network.fstv e"
         "e \<in> set (C2@C1) \<Longrightarrow> (sndv o
-                  (cost_network_of_network.case_Redge
-                  (\<lambda>e. cost_network_of_network.F (cost_network_of_network.get_old_edge e))
-                  (\<lambda>e. cost_network_of_network.B (cost_network_of_network.get_old_edge e)))) e
+                  (case_Redge
+                  (\<lambda>e. F (cost_network_of_network.get_old_edge e))
+                  (\<lambda>e. B (cost_network_of_network.get_old_edge e)))) e
                   = cost_network_of_network.sndv e"
         "e \<in> set (C2@C1) \<Longrightarrow> cost_network_of_network.rcap f' e = rcap f
-             (cost_network_of_network.case_Redge
-                               (\<lambda>e. cost_network_of_network.F
+             (case_Redge
+                               (\<lambda>e. F
                                       (cost_network_of_network.get_old_edge e))
-                               (\<lambda>e. cost_network_of_network.B
+                               (\<lambda>e. B
                                       (cost_network_of_network.get_old_edge e)) e)" 
         for e      
         using C1_C2_in make_pair  

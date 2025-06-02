@@ -383,7 +383,7 @@ proof-
   have same_as_augmentation:
     "(abstract_real_map (flow_lookup new_flow)) =
      (local.flow_network.augment_edges 
-          (abstract_real_map (flow_lookup current_flow)) \<gamma> (map flow_network.F p_edges))"
+          (abstract_real_map (flow_lookup current_flow)) \<gamma> (map F p_edges))"
     using basic_invs(1)
     unfolding new_flow_def 
       flow_network.augment_edges'_is_augment_edges[symmetric]
@@ -394,7 +394,7 @@ proof-
     case (Cons a p_edges)
     have same_flow_one_step:"(abstract_real_map (flow_lookup (add_flow current_flow \<gamma> a))) = 
          flow_network.augment_edge (abstract_real_map (flow_lookup current_flow)) \<gamma>
-          (flow_network.F a)"
+          (F a)"
       by(auto simp add: add_flow(2)[OF Cons(2)])
     show ?case
       by(subst foldl.foldl_Cons, subst  Cons(1))
@@ -409,24 +409,24 @@ proof-
   hence gamma_pos: "0 \<le> \<gamma>"  by simp
   have gamma_less_cap: "ereal \<gamma>
     \<le> flow_network.Rcap (abstract_real_map (flow_lookup current_flow))
-        (flow_network.F ` set p_edges)"
+        (F ` set p_edges)"
     using gamma(1) by (force simp add: flow_network.Rcap_def )
   have rcap_strict_pops:"flow_network.Rcap (abstract_real_map (flow_lookup current_flow))
-        (flow_network.F ` set p_edges) > 0"
+        (F ` set p_edges) > 0"
     using dual_order.strict_trans1 ereal_less(2) gamma_less_cap gamma_strict_pos by blast
-  have p_edges_in_E:"flow_network.F ` set p_edges \<subseteq> flow_network.\<EE>"
+  have p_edges_in_E:"F ` set p_edges \<subseteq> flow_network.\<EE>"
     using local.flow_network.o_edge_res p_edges_in_G by fastforce
-  have distinct_augpath: "distinct (map flow_network.F p_edges)"
+  have distinct_augpath: "distinct (map F p_edges)"
     by(auto simp add: distinct_map distinct_p_edges intro!: inj_onI)
-  have s_hd_path: "flow_network.fstv (hd (map flow_network.F p_edges)) = s"
+  have s_hd_path: "flow_network.fstv (hd (map F p_edges)) = s"
     using p_props(1) s_neq_t 
     by (auto intro: list_cases3[of p] simp add: p_edges_def vwalk_bet_def)
-  have t_tl_path: "flow_network.sndv (last (map flow_network.F p_edges)) = t"
+  have t_tl_path: "flow_network.sndv (last (map F p_edges)) = t"
     using p_props(1) s_neq_t  
     by(cases p rule: rev_cases3)
       (auto intro:  simp add: p_edges_def vwalk_bet_def edges_of_vwalk_append_two_vertices)
   have augpath_p:"flow_network.augpath (abstract_real_map (flow_lookup current_flow))
-     (map flow_network.F p_edges)"
+     (map F p_edges)"
     using rcap_strict_pops vwalk_bet_subset[OF p_props(1), of UNIV, simplified]
       s_hd_path t_tl_path p_non_empt
     by(auto simp add: flow_network.augpath_def  flow_network.prepath_def o_def p_edges_def 
@@ -587,6 +587,8 @@ lemma correctness:
          \<Longrightarrow> flow_network_spec.is_blocking_flow fst snd id (Graph.digraph_abs G) u s t 
                (abstract_real_map (flow_lookup (flow (compute_blocking_loop initial_state))))"
         "compute_blocking_loop_dom initial_state"
+        "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty  \<Longrightarrow> dom (flow_lookup (flow (compute_blocking_loop initial_state))) \<subseteq> Graph.digraph_abs G"
+        "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty  \<Longrightarrow> flow_invar  (flow (compute_blocking_loop initial_state))"
 proof-
   show "compute_blocking_loop_dom initial_state"
   proof(cases "find_path (blocking_state.graph initial_state) s t")
@@ -703,8 +705,11 @@ proof-
         using final_no_path by auto
     qed
   qed
+  show "dom (flow_lookup (flow (compute_blocking_loop initial_state))) \<subseteq> Graph.digraph_abs G"
+    by (auto intro: basic_invarE[OF final_basic_invar])
+  show "flow_invar  (flow (compute_blocking_loop initial_state))"
+    using basic_invarE final_basic_invar by auto
 qed
-
 
 end
 end

@@ -294,10 +294,10 @@ abbreviation "sndv == flow_network_spec.sndv fst snd"
 
 abbreviation "VV \<equiv> dVs (make_pair ` \<E>)"
 
-definition default_conv_to_rdg::"'a \<times> 'a \<Rightarrow> 'edge_type flow_network_spec.Redge"  where
+definition default_conv_to_rdg::"'a \<times> 'a \<Rightarrow> 'edge_type Redge"  where
 "default_conv_to_rdg e = (case e of (u, v) \<Rightarrow> (let oedg = to_pair {u, v} in (
-                                if oedg = (u, v) then flow_network_spec.F (create_edge u v)
-                                else flow_network_spec.B (create_edge v u))))"
+                                if oedg = (u, v) then F (create_edge u v)
+                                else B (create_edge v u))))"
                                 
 definition "es = remdups(map make_pair (to_list \<E>_impl)@(map prod.swap (map make_pair (to_list \<E>_impl))))"
                                 
@@ -362,8 +362,8 @@ definition "get_edge_and_costs_forward nb (f::'edge_type \<Rightarrow> real) =
                  (eb, cb) = find_cheapest_backward f nb outgoing_edges
                             (create_edge v u) PInfty
                   in (if cf \<le> cb then
-                      (flow_network_spec.F ef, cf)
-                      else (flow_network_spec.B eb, cb))))"
+                      (F ef, cf)
+                      else (B eb, cb))))"
                       
                       
 definition "get_edge_and_costs_backward nb (f::'edge_type \<Rightarrow> real) = 
@@ -378,8 +378,8 @@ definition "get_edge_and_costs_backward nb (f::'edge_type \<Rightarrow> real) =
                  (eb, cb) = find_cheapest_backward f nb outgoing_edges
                             (create_edge v u) PInfty
                   in (if cf \<le> cb then
-                      (flow_network_spec.F ef, cf)
-                      else (flow_network_spec.B eb, cb))))"
+                      (F ef, cf)
+                      else (B eb, cb))))"
 
 definition "bellman_ford_forward nb (f::'edge_type \<Rightarrow> real) s =
          bellman_ford_algo (\<lambda> u v. prod.snd (get_edge_and_costs_forward nb f u v)) es (length vs - 1)
@@ -827,7 +827,7 @@ Set3: Set3 get_from_set filter are_all set_invar to_set +
 
 rep_comp_maper: Map  rep_comp_empty "rep_comp_update::'a \<Rightarrow> ('a \<times> nat) \<Rightarrow> 'r_comp_impl \<Rightarrow> 'r_comp_impl"
               rep_comp_delete rep_comp_lookup rep_comp_invar +
-conv_map: Map  conv_empty "conv_update::'a \<times> 'a \<Rightarrow> 'edge_type flow_network_spec.Redge \<Rightarrow> 'conv_impl \<Rightarrow> 'conv_impl"
+conv_map: Map  conv_empty "conv_update::'a \<times> 'a \<Rightarrow> 'edge_type Redge \<Rightarrow> 'conv_impl \<Rightarrow> 'conv_impl"
               conv_delete conv_lookup conv_invar +
 not_blocked_map: Map  not_blocked_empty "not_blocked_update::'edge_type \<Rightarrow> bool \<Rightarrow> 'not_blocked_impl\<Rightarrow> 'not_blocked_impl"
               not_blocked_delete not_blocked_lookup not_blocked_invar +
@@ -922,14 +922,12 @@ and fst = fst and snd = snd and make_pair = make_pair and create_edge = create_e
 lemmas cost_flow_network[simp] = cost_flow_network.cost_flow_network_axioms
 
 abbreviation "\<cc> \<equiv> cost_flow_network.\<cc>"
-abbreviation "F \<equiv> flow_network_spec.F"
-abbreviation "B \<equiv> flow_network_spec.B"
 abbreviation "to_edge == cost_flow_network.to_vertex_pair"
 abbreviation "oedge == flow_network_spec.oedge"
 abbreviation "rcap == cost_flow_network.rcap"
 
 lemma default_conv_to_rdg: "cost_flow_network.consist default_conv_to_rdg"
-  using to_pair_axioms[of , OF refl] flow_network_spec.Redge.simps(3,4) multigraph.create_edge
+  using to_pair_axioms[of , OF refl] Redge.simps(3,4) multigraph.create_edge
   by(auto split: prod.split simp add:  cost_flow_network.consist_def default_conv_to_rdg_def
      insert_commute) fastforce+
 
@@ -1308,13 +1306,13 @@ proof-
              (create_edge v u) PInfty)"
   define cb where "cb = prod.snd (find_cheapest_backward f nb outgoing_edges
              (create_edge v u) PInfty)"
-  have result_simp:"(e, c) = (if cf \<le> cb then (flow_network_spec.F ef, cf) else (flow_network_spec.B eb, cb))"
+  have result_simp:"(e, c) = (if cf \<le> cb then (F ef, cf) else (B eb, cb))"
     by(auto split: option.split prod.split 
         simp add: get_edge_and_costs_forward_def sym[OF assms(1)] cf_def cb_def ingoing_edges_def outgoing_edges_def ef_def eb_def )
   show ?thesis
   proof(cases "cf \<le> cb")
     case True
-    hence result_is:"flow_network_spec.F ef = e" "cf = c" "ef = d"
+    hence result_is:"F ef = e" "cf = c" "ef = d"
       using result_simp  assms(3) by auto
     define edges_and_costs where "edges_and_costs =
   Set.insert (create_edge u v, PInfty)
@@ -1344,7 +1342,7 @@ proof-
       by(auto simp add: ef_props  ereal_diff_gr0 result_is[symmetric])
   next
     case False
-    hence result_is:"flow_network_spec.B eb = e" "cb = c" "eb = d"
+    hence result_is:"B eb = e" "cb = c" "eb = d"
       using result_simp  assms(3) by auto
     define edges_and_costs where "edges_and_costs =
   Set.insert (create_edge v u, PInfty)
@@ -1398,13 +1396,13 @@ proof-
              (create_edge v u) PInfty)"
   define cb where "cb = prod.snd (find_cheapest_backward f nb outgoing_edges
              (create_edge v u) PInfty)"
-  have result_simp:"(e, c) = (if cf \<le> cb then (flow_network_spec.F ef, cf) else (flow_network_spec.B eb, cb))"
+  have result_simp:"(e, c) = (if cf \<le> cb then (F ef, cf) else (B eb, cb))"
     by(auto split: option.split prod.split 
         simp add: get_edge_and_costs_backward_def sym[OF assms(1)] cf_def cb_def ingoing_edges_def outgoing_edges_def ef_def eb_def )
   show ?thesis
   proof(cases "cf \<le> cb")
     case True
-    hence result_is:"flow_network_spec.F ef = e" "cf = c" "ef = d"
+    hence result_is:"F ef = e" "cf = c" "ef = d"
       using result_simp  assms(3) by auto
     define edges_and_costs where "edges_and_costs =
   Set.insert (create_edge u v, PInfty)
@@ -1434,7 +1432,7 @@ proof-
       by(auto simp add: ef_props  ereal_diff_gr0 result_is[symmetric])
   next
     case False
-    hence result_is:"flow_network_spec.B eb = e" "cb = c" "eb = d"
+    hence result_is:"B eb = e" "cb = c" "eb = d"
       using result_simp  assms(3) by auto
     define edges_and_costs where "edges_and_costs =
   Set.insert (create_edge v u, PInfty)
@@ -1476,13 +1474,13 @@ proof(goal_cases)
   by (metis imageI swap_simp swap_swap)
   have help2: "\<lbrakk>(a, b) = make_pair x ; x \<in> local.\<E> \<rbrakk>\<Longrightarrow>
        make_pair x \<in> to_edge `
-          ({cost_flow_network.F d |d. d \<in> local.\<E>} \<union> {cost_flow_network.B d |d. d \<in> local.\<E>})"
+          ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
     for a b x
     using cost_flow_network.to_vertex_pair.simps
     by(metis (mono_tags, lifting) UnI1 imageI mem_Collect_eq)
   have help3: "\<lbrakk> (b, a) = make_pair x ; x \<in> local.\<E>\<rbrakk> \<Longrightarrow>
        (a, b) \<in> to_edge `
-          ({cost_flow_network.F d |d. d \<in> local.\<E>} \<union> {cost_flow_network.B d |d. d \<in> local.\<E>})"
+          ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
     for a b x
   by (smt (verit, del_insts) cost_flow_network.\<EE>_def cost_flow_network.o_edge_res
     flow_network_spec.oedge_simps'(2) cost_flow_network.to_vertex_pair.simps(2) image_iff swap_simp)
@@ -2552,7 +2550,7 @@ next
            weight (not_blocked state) (current_flow state) (snd ee # awalk_verts (fst ee) (map to_edge xs))
            \<le> ereal (\<cc> (B ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0));
           (\<And>e. e = B dd \<or> e = B ee \<or> e \<in> set xs \<Longrightarrow> not_blocked state (oedge e));
-          (\<And>e. e = cost_flow_network.B dd \<or> e = cost_flow_network.B ee \<or> e \<in> set xs \<Longrightarrow> 0 < rcap (current_flow state) e);
+          (\<And>e. e = B dd \<or> e = B ee \<or> e \<in> set xs \<Longrightarrow> 0 < rcap (current_flow state) e);
            unconstrained_awalk ((snd dd, fst dd) # (snd ee, fst ee) # map to_edge xs);
            dd \<in> set \<E>_list ;  ee \<in> set \<E>_list ; oedge ` set xs \<subseteq> set \<E>_list \<rbrakk> \<Longrightarrow>
         prod.snd (local.get_edge_and_costs_forward (not_blocked state) (current_flow state) (snd dd) (snd ee)) +
@@ -3381,9 +3379,9 @@ next
           weight_backward (not_blocked state) (current_flow state)
            (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(snd ee, fst ee)]))
           \<le> ereal (local.\<c> ee + foldr (\<lambda>x. (+) (\<cc> x)) ds 0))"
-    "(\<And>e. e = cost_flow_network.F dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+    "(\<And>e. e = F dd \<or> e = F ee \<or> e \<in> set ds \<Longrightarrow>
           not_blocked state (oedge e))"
-    "(\<And>e. e = cost_flow_network.F dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+    "(\<And>e. e = F dd \<or> e = F ee \<or> e \<in> set ds \<Longrightarrow>
           0 < rcap (current_flow state) e)"
     "unconstrained_awalk ((fst dd, snd dd) # (fst ee, snd ee) # map to_edge ds)"
     "dd \<in> local.\<E> " "ee \<in> local.\<E> " "oedge ` set ds \<subseteq> local.\<E>"
@@ -3418,9 +3416,9 @@ next
           weight_backward (not_blocked state) (current_flow state)
            (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(snd ee, fst ee)]))
           \<le> ereal (local.\<c> ee + foldr (\<lambda>x. (+) (\<cc> x)) ds 0))"
-          "(\<And>e. e = cost_flow_network.B dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+          "(\<And>e. e = B dd \<or> e = F ee \<or> e \<in> set ds \<Longrightarrow>
           not_blocked state (oedge e))"
-          "(\<And>e. e = cost_flow_network.B dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+          "(\<And>e. e = B dd \<or> e = F ee \<or> e \<in> set ds \<Longrightarrow>
           0 < rcap (current_flow state) e)"
           "unconstrained_awalk ((snd dd, fst dd) # (fst ee, snd ee) # map to_edge ds)"
           "dd \<in> local.\<E>" "ee \<in> local.\<E> " "oedge ` set ds \<subseteq> local.\<E>" for ee dd

@@ -12,8 +12,21 @@ lemma abstract_real_map_empty: "abstract_real_map (\<lambda> _ . None) = (\<lamb
 lemma abstract_real_map_some: "mp x = Some y \<Longrightarrow> abstract_real_map mp x = y"
   by(auto simp add: abstract_real_map_def)
 
+lemma abstract_real_map_cong: "mp x = mp' x \<Longrightarrow> abstract_real_map mp x = abstract_real_map mp' x"
+  by(auto simp add: abstract_real_map_def)
+
 lemma abstract_real_map_none: "mp x = None \<Longrightarrow> abstract_real_map mp x = 0"
   by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_not_zeroE: 
+"abstract_real_map mp x \<noteq> 0 \<Longrightarrow> (\<And> y. mp x = Some y \<Longrightarrow> y \<noteq> 0 \<Longrightarrow> P) \<Longrightarrow> P"
+  by(cases "mp x")(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_outside_dom: "x \<notin> dom mp \<Longrightarrow> abstract_real_map mp x = 0"
+  by(cases "mp x")(auto simp add: abstract_real_map_def dom_if)
+
+lemma abstract_real_map_in_dom_the: "x \<in> dom mp \<Longrightarrow> abstract_real_map mp x = the (mp x)"
+  by(cases "mp x")(auto simp add: abstract_real_map_def dom_if)
 
 definition "unsaturated_path_simple G (u::_ \<Rightarrow> 'a::order) f s p t = (vwalk_bet G s p t
                                      \<and> (\<forall> e \<in> set (edges_of_vwalk p). f e < u e))"
@@ -64,6 +77,21 @@ definition "is_blocking_flow s t f = (is_s_t_flow f s t \<and>
                                            fst (hd p) = s \<and> snd (last p) = t \<and> set p \<subseteq> \<E> \<and>
                                            (\<forall> e \<in> set p. f e < \<u> e)))"
 
+lemma is_blocking_flowI:
+"is_s_t_flow f s t \<Longrightarrow> (\<And> p.
+ multigraph_path p \<Longrightarrow> p \<noteq> [] \<Longrightarrow> fst (hd p) = s \<Longrightarrow>snd (last p) = t
+ \<Longrightarrow> set p \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set p \<Longrightarrow> f e < \<u> e) \<Longrightarrow> False) 
+\<Longrightarrow> is_blocking_flow s t f"
+  by(auto simp add: is_blocking_flow_def)
+
+lemma is_blocking_flowE:
+"is_blocking_flow s t f \<Longrightarrow>
+(is_s_t_flow f s t \<Longrightarrow> (\<And> p.
+ multigraph_path p \<Longrightarrow> p \<noteq> [] \<Longrightarrow> fst (hd p) = s \<Longrightarrow>snd (last p) = t
+ \<Longrightarrow> set p \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set p \<Longrightarrow> f e < \<u> e) \<Longrightarrow> False) 
+\<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: is_blocking_flow_def)
+
 interpretation residual_multigraph_spec: 
   multigraph_spec  "{e | e. e \<in> \<EE> \<and> rcap f e > 0}"  fstv sndv to_vertex_pair 
   "\<lambda> u v. F (create_edge u v)" for f
@@ -105,7 +133,7 @@ lemma augment_s_t_flow_by_residual_s_t_flow:
 proof(rule is_s_t_flowI)
   show "s \<in> \<V>"  "t \<in> \<V>"  "s \<noteq> t"
     using assms(1) by(auto elim: is_s_t_flowE)
-  show "isuflow (\<lambda>e. f e + rf (residual_network_spec.F e) - rf (residual_network_spec.B e))"
+  show "isuflow (\<lambda>e. f e + rf (F e) - rf (B e))"
   proof(rule isuflowI)
     fix e
     assume asm: "e \<in> \<E>"
@@ -136,7 +164,7 @@ proof(rule is_s_t_flowI)
     by auto
   note help1 = comm_monoid_add_class.sum.union_disjoint[OF
                                        many_finites  many_finites some_disjoint]
-  show "ex\<^bsub>\<lambda>e. f e + rf (residual_network_spec.F e) - rf (residual_network_spec.B e)\<^esub> s \<le> 0"
+  show "ex\<^bsub>\<lambda>e. f e + rf (F e) - rf (B e)\<^esub> s \<le> 0"
   proof-
     have "ex\<^bsub>f\<^esub> s \<le> 0" "residual_network_spec.ex rf s \<le> 0" 
       by(auto intro: is_s_t_flowE[OF assms(1)] residual_network_spec.is_s_t_flowE[OF assms(2)])
@@ -156,7 +184,7 @@ proof(rule is_s_t_flowI)
   qed
   note helper3=comm_monoid_add_class.sum.union_disjoint
                               [OF many_finites many_finites some_disjoint]
-  show "ex\<^bsub>\<lambda>e. f e + rf (residual_network_spec.F e) - rf (residual_network_spec.B e)\<^esub> x = 0" 
+  show "ex\<^bsub>\<lambda>e. f e + rf (F e) - rf (B e)\<^esub> x = 0" 
     if asm: "x \<in> \<V>" "x \<noteq> s" "x \<noteq> t" for x
   proof(goal_cases)
     case 1

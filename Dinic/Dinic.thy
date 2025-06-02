@@ -44,7 +44,7 @@ partial_function (tailrec) dinic_impl::"'flow_impl dinic_state \<Rightarrow> 'fl
                          of None \<Rightarrow> state |
                          Some rf \<Rightarrow> dinic_impl (state \<lparr> current_flow := augment_impl f rf \<rparr>)))"
 
-lemmas [code] = dinic_initial_def dinic_impl.simps
+lemmas [code] = dinic_initial_def dinic_impl.simps augment_impl_def add_flow_def
 
 definition dinic_upd::"'flow_impl dinic_state \<Rightarrow> 'flow_impl dinic_state"
   where "dinic_upd state = (let f = current_flow state;
@@ -193,7 +193,7 @@ proof-
     case (Cons e es)
     hence dinstinct_es_and_dom: "distinct es" "set  es \<subseteq> dom (resflow_lookup rf)" by auto
     have flow_invar_now: "flow_invar (foldr (?iteration rf) es f)"
-      by (simp add: Cons.prems(1) add_flow_correct(1) flow_network_spec.Redge.split_sel foldr_invar)
+      by (simp add: Cons.prems(1) add_flow_correct(1) Redge.split_sel foldr_invar)
     show ?case 
         using Cons(3,4)  
         by(cases e)
@@ -213,7 +213,7 @@ proof-
    proof(induction es arbitrary: f)
      case (Cons e es)
       have flow_invar_now: "flow_invar (foldr (?iteration rf) es f)"
-      by (simp add: Cons.prems(1) add_flow_correct(1) flow_network_spec.Redge.split_sel foldr_invar)  
+      by (simp add: Cons.prems(1) add_flow_correct(1) Redge.split_sel foldr_invar)  
      then show ?case 
        by(cases e)
          (force simp add: add_flow_correct(3)[OF flow_invar_now] Cons(1)[OF Cons(2)])+

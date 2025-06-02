@@ -286,9 +286,6 @@ proof(induction es rule: flowpath_induct, goal_cases)
 qed (auto simp add: flowpath_intros assms)
 end
 
-context flow_network_spec
-begin
-
 
 subsection \<open>Residual Arcs\<close>
 
@@ -317,7 +314,8 @@ text \<open>Between vertices $u$ and $v$ there might be up to four residual arcs
      (forward-pointing residual edge from $u$ to $v$) and $B (u, v)$ (a backward residual arc).
 In common literature the residual graph w.r.t. to some flow $f$ is usually denoted by $G_f.$
 \<close>
-
+context flow_network_spec
+begin
 text \<open>We can obtain heads and tails of arcs.\<close>
 
 fun fstv::"'edge_type Redge \<Rightarrow> 'a" where 
