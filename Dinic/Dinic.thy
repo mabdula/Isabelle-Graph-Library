@@ -1,5 +1,5 @@
 theory Dinic
-imports Flow_Theory.Blocking_Flow
+imports Blocking_Flow
 begin
 
 record 'f dinic_state = current_flow::'f

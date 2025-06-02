@@ -1,0 +1,18 @@
+session "Dinic" = "HOL-Library" +
+  options [document = pdf, document_output = "output"]
+
+sessions
+  Flow_Theory
+  Graph_Algorithms_Dev
+
+theories
+Blocking_Flow
+Compute_Blocking_Residual
+Compute_Blocking_Simple
+Dinic
+Dinic_Instantiation
+  
+
+document_files
+  "root.tex"
+

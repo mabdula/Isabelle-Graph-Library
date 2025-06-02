@@ -1,7 +1,7 @@
 theory Compute_Blocking_Simple
   imports Directed_Set_Graphs.Pair_Graph_Specs
     Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.Set_Addons
-    Flow_Theory.Blocking_Flow
+    Blocking_Flow
 
 begin
 (*TODO MOVE*)

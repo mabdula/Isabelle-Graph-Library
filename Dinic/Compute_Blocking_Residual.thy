@@ -1,5 +1,6 @@
 theory Compute_Blocking_Residual                 
-  imports DFS_Collect_Backtrack_Example Compute_Blocking_Simple "HOL-Library.Product_Lexorder"
+  imports Graph_Algorithms_Dev.DFS_Collect_Backtrack_Example Compute_Blocking_Simple
+          "HOL-Library.Product_Lexorder"
     Graph_Algorithms_Dev.BFS_Example Graph_Algorithms_Dev.RBT_Map_Extension
 begin
 
