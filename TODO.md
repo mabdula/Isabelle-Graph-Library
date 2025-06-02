@@ -1,5 +1,9 @@
+- move to_dbltn, or reuse an equivalent definition from Undirected Graphs.
+- intro and elim rule for every definition
+- no unnamed contexts in matroids, greedoids
+
+
 - add Hypergraphs 
-- fix Kruskal
 - move Pair_ugraph to undirected graph.
 
 - Separate session for graphs to LPs

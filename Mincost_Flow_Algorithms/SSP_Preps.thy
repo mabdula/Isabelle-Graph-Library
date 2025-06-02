@@ -25,12 +25,6 @@ locale algo = cost_flow_network where fst = fst
    and   is_balance_b: "is_balance \<b>"
 begin
 
-text \<open>Reachability by a path with at least $cap$ residual capacity.\<close>
-
-definition resreach_cap::"('edge_type \<Rightarrow> real) \<Rightarrow> nat \<Rightarrow>'a \<Rightarrow> 'a \<Rightarrow> bool" where
-       "resreach_cap f cap u v = (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
-                            \<and> Rcap f (set p) > (real cap) \<and> p \<noteq> [] \<and> set p \<subseteq> \<EE>)"
-
 text \<open>We examine the relationship to augmenting paths.\<close>
 
 lemma augpath_cap_to_resreach:

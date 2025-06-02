@@ -20,7 +20,7 @@ text \<open>Then we setup the program state.\<close>
 record ('b, 'actives, 'forest, 'edge_type) Algo_state = current_flow :: "'edge_type \<Rightarrow> real" 
                             balance :: "'b \<Rightarrow> real"
                                   \<FF> :: "'b set set"
-                             conv_to_rdg :: "'b \<times> 'b \<Rightarrow> 'edge_type flow_network_spec.Redge"
+                             conv_to_rdg :: "'b \<times> 'b \<Rightarrow> 'edge_type Redge"
                              actives:: 'actives
                              return :: return
                              current_\<gamma>::real
@@ -32,7 +32,7 @@ record ('b, 'actives, 'forest, 'edge_type) Algo_state = current_flow :: "'edge_t
 definition "to_rdgs to_pair to_rdg F = 
 \<Union> ((\<lambda> vs. (if \<exists> u v. u \<noteq> v \<and> {u, v} = vs 
            then {to_rdg (to_pair vs), to_rdg (prod.swap (to_pair vs))}  else {} )) 
-   ` F)"
+   ` F)" for F
 
 lemma  to_rdg_mono: "A \<subseteq> B \<Longrightarrow> to_rdgs  a b A \<subseteq> to_rdgs a b B" for A B a b
     unfolding to_rdgs_def by auto
