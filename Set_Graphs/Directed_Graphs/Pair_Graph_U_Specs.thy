@@ -5,7 +5,7 @@ begin
 (* Note: Some of the definitions in this file are currently not relevant to the rest of
 the formalisation. *)
 
-definition "set_of_pair = ( \<lambda>(u,v). {u,v})"
+(*definition "set_of_pair = ( \<lambda>(u,v). {u,v})"*)
 
 datatype 'v uedge = uEdge 'v 'v
 

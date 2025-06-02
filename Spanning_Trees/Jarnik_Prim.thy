@@ -3,7 +3,10 @@ theory Jarnik_Prim
     Directed_Set_Graphs.Pair_Graph_RBT
 begin
 hide_const RBT_Set.insert
-abbreviation "to_dbltn == (\<lambda>x. case x of (x, y) \<Rightarrow> {x, y})"
+(*abbreviation "to_dbltn == (\<lambda>x. case x of (x, y) \<Rightarrow> {x, y})"
+*)
+
+lemmas [simp] = set_of_pair_def
 
 locale jarnik_prim_functions_spec = 
   fixes t_set::"'T \<Rightarrow> ('a::linorder \<times> 'a) set"
@@ -16,7 +19,7 @@ begin
 
 definition "JP_empty = (vset_insert seed (empty::('a \<times> color) tree), t_empty)"
 fun JP_invar where  "JP_invar (vs::('a \<times> color) tree, T) = 
-        (Tree2.set_tree vs = Set.insert seed (Vs (to_dbltn ` t_set T)) \<and> t_invar T \<and> vset_inv vs)"
+        (Tree2.set_tree vs = Set.insert seed (Vs (set_of_pair ` t_set T)) \<and> t_invar T \<and> vset_inv vs)"
 fun JP_insert where "JP_insert (x::'a, y::'a) (vs::('a \<times> color) tree, T)
                                 = (vset_insert y (vset_insert x vs), t_insert (x, y) T)"
 fun JP_set where "JP_set  (vs::('a \<times> color) tree, T) = t_set T"
@@ -104,13 +107,13 @@ assumes t_set: "t_set t_empty = {}"
 begin
 
 definition "E = set es"
-definition "abstract_E = to_dbltn ` E"
+definition "abstract_E = set_of_pair ` E"
 definition "cc = sum c_impl"
 
 interpretation jp_graph: graph_abs where G = abstract_E 
   using es(2) by(fastforce intro!: graph_abs.intro simp add: dblton_graph_def abstract_E_def E_def Vs_def)
 
-definition "jp_arborescence X = ((X \<subseteq> E) \<and> jp_graph.arborescence seed (to_dbltn `X))"
+definition "jp_arborescence X = ((X \<subseteq> E) \<and> jp_graph.arborescence seed (set_of_pair `X))"
 definition "F = {X | X. jp_arborescence X}"
 definition "orcl e X = jp_arborescence (Set.insert e X)"
 
@@ -122,8 +125,8 @@ lemma M3:
   shows   "\<exists>e\<in>T - S. S \<union> {e} \<in> F" 
 proof-
   have assms_unfolded: "S \<subseteq> E" "T \<subseteq> E" 
-    "jp_graph.arborescence seed ( to_dbltn `S)"
-    "jp_graph.arborescence seed ( to_dbltn `T)"
+    "jp_graph.arborescence seed (set_of_pair `S)"
+    "jp_graph.arborescence seed (set_of_pair `T)"
     using assms(1,2) by(auto simp add: jp_arborescence_def)
   have to_dbltn_inj: "inj_on (\<lambda>(x, y). {x, y}) E"
   proof(rule inj_onI, goal_cases)
@@ -143,7 +146,7 @@ proof-
     using card_image[OF inj_ST(1)] card_image[OF inj_ST(2)] assms(3) by simp
   obtain e where e_prop:"e \<in> (\<lambda>(x, y). {x, y}) ` T - (\<lambda>(x, y). {x, y}) ` S"
     "jp_graph.arborescence seed ((\<lambda>(x, y). {x, y}) ` S \<union> {e})"
-    using  jp_graph.extension_property_one[OF assms_unfolded(3,4) card_abstract_less] by auto
+    using  jp_graph.extension_property_one[OF assms_unfolded(3,4)] card_abstract_less by auto
   then obtain x y where xy: "e = {x, y}"  "(x, y) \<in> T"
     by auto
   moreover hence "(x, y) \<notin> S"
@@ -177,16 +180,16 @@ proof(induction e, induction T, goal_cases)
   case (1 vs eds x y)
   have a1: "insert (x, y) (JP_set (vs, eds)) \<subseteq> E"
     using 1 assms(2) by auto
-  have a2: "jp_graph.arborescence seed ((\<lambda>(x, y). {x, y}) ` JP_set (vs, eds))"
+  have a2: "jp_graph.arborescence seed (set_of_pair ` JP_set (vs, eds))"
     using F_def 1 jp_arborescence_def by blast
   have a3:"{x, y} \<in> abstract_E"
     using 1 by(auto simp add:  abstract_E_def)
   have a4: "{x, y} \<notin> (\<lambda>(x, y). {x, y}) ` JP_set (vs, eds)" 
     using es(2) 1 by (auto simp add:  doubleton_eq_iff E_def)
-  have a5: "G.isin' x vs = ( x \<in> Set.insert seed (Vs (to_dbltn ` t_set eds)))" for x
+  have a5: "G.isin' x vs = ( x \<in> Set.insert seed (Vs (set_of_pair ` t_set eds)))" for x
     using 1 set.set_isin by auto
   show ?case 
-    using  jp_graph.arborescence_extend_one_characterisation[OF a2 a3 a4]  a1 
+    using  jp_graph.arborescence_extend_one_characterisation[OF a2 a3] a4 a1 
     by(auto simp add: a5 jp_arborescence_def  orcl_def)
 qed 
 
@@ -257,22 +260,22 @@ qed
 lemma cc_single: "c_impl x = cc {x}" 
   by(auto simp add: cc_def)
 
-lemma basis_equiv: "(basis {T | T . jp_graph.arborescence seed T}  (to_dbltn `T)  \<and> T \<subseteq> E)
+lemma basis_equiv: "(basis {T | T . jp_graph.arborescence seed T}  (set_of_pair `T)  \<and> T \<subseteq> E)
 = basis F T" 
 proof(rule sym, rule, goal_cases)
   case 1
   hence one: "T \<subseteq> E" "jp_graph.arborescence seed ((\<lambda>(x, y). {x, y}) ` T)"
     "T \<subset> S \<Longrightarrow> S \<subseteq> E \<Longrightarrow> jp_graph.arborescence seed ((\<lambda>(x, y). {x, y}) ` S) \<Longrightarrow> False" for S
     using  1[simplified F_def basis_def jp_arborescence_def] by auto
-  have helper:"to_dbltn ` T \<subseteq> X \<Longrightarrow>
-           x \<in> X \<Longrightarrow> x \<notin> to_dbltn ` T 
+  have helper:"set_of_pair ` T \<subseteq> X \<Longrightarrow>
+           x \<in> X \<Longrightarrow> x \<notin> set_of_pair ` T 
            \<Longrightarrow> jp_graph.arborescence seed X \<Longrightarrow> False" for x X
   proof(goal_cases)
     case 1
     note top=this
     hence one': "X \<subseteq> abstract_E" "(\<nexists>u c. decycle X u c)" "Vs X = connected_component X seed"
       using 1(4)[simplified jp_graph.arborescence_def jp_graph.has_no_cycle_def] by auto
-    then obtain X_impl where X_impl: "X = to_dbltn ` X_impl" "X_impl \<subseteq> E"
+    then obtain X_impl where X_impl: "X = set_of_pair ` X_impl" "X_impl \<subseteq> E"
       by(auto simp add: abstract_E_def subset_image_iff)
     have strict_subs:"T \<subset> X_impl"
     proof-
@@ -293,7 +296,7 @@ proof(rule sym, rule, goal_cases)
       moreover obtain u v where "x = {u, v}" "(u, v) \<in> X_impl"
         using X_impl(1) top(2) by force
       moreover hence "(u, v) \<notin> T" 
-        using top(3) by blast
+        using top(3) by auto
       ultimately show ?thesis by blast
     qed
     show ?case 
@@ -305,22 +308,22 @@ proof(rule sym, rule, goal_cases)
     by(auto simp add:  F_def jp_arborescence_def basis_def jp_graph.arborescence_def jp_graph.has_no_cycle_def  abstract_E_def)
 next
   case 2
-  have two: "jp_graph.arborescence seed (to_dbltn ` T)" "T \<subseteq> E"
-    "to_dbltn ` T \<subset> S \<Longrightarrow>  jp_graph.arborescence seed S \<Longrightarrow> False" for S
+  have two: "jp_graph.arborescence seed (set_of_pair ` T)" "T \<subseteq> E"
+    "set_of_pair ` T \<subset> S \<Longrightarrow>  jp_graph.arborescence seed S \<Longrightarrow> False" for S
     using 2[simplified basis_def] by auto
   have "jp_arborescence T"
     using "2" by(auto simp add: basis_def jp_arborescence_def)
   moreover have "T \<subset> S \<Longrightarrow>  jp_arborescence S \<Longrightarrow> False" for S
   proof(goal_cases)
     case 1
-    hence one_unfolded: "T \<subset> S" "S \<subseteq> E" "jp_graph.arborescence seed (to_dbltn ` S)"
+    hence one_unfolded: "T \<subset> S" "S \<subseteq> E" "jp_graph.arborescence seed (set_of_pair ` S)"
       using 1[simplified jp_arborescence_def] by auto
     then obtain u v where uv:"(u, v) \<in> S" "(u, v) \<notin> T" by auto
-    have strict_subset: "to_dbltn ` T \<subset> to_dbltn ` S"
+    have strict_subset: "set_of_pair ` T \<subset> set_of_pair ` S"
     proof-
-      have "to_dbltn ` T \<subseteq> to_dbltn ` S" 
+      have "set_of_pair ` T \<subseteq> set_of_pair ` S" 
         using "1"(1) by blast
-      moreover have "{u, v} \<notin> to_dbltn ` T" 
+      moreover have "{u, v} \<notin> set_of_pair ` T" 
       proof(rule ccontr, goal_cases)
         case 1
         hence "(v, u) \<in> T"
@@ -332,8 +335,8 @@ next
         ultimately show False 
           using es(2) by(auto simp add: E_def)
       qed
-      moreover have "{u, v} \<in> to_dbltn ` S"
-        using uv(1) by blast
+      moreover have "{u, v} \<in> set_of_pair ` S"
+        using uv(1) by auto
       ultimately show ?thesis by auto
     qed
 
@@ -350,20 +353,20 @@ lemma seed_in: "seed \<in> Vs abstract_E"
 lemma strong_exchange: "strong_exchange_property E F"
 proof(rule strong_exchange_propertyI, goal_cases)
   case (1 S T e)
-  hence one: "S \<subseteq> E" "jp_graph.arborescence seed (to_dbltn ` S)"
-    "T \<subseteq> E" "jp_graph.arborescence seed (to_dbltn ` T)"
+  hence one: "S \<subseteq> E" "jp_graph.arborescence seed (set_of_pair ` S)"
+    "T \<subseteq> E" "jp_graph.arborescence seed (set_of_pair ` T)"
     "S \<subseteq> T"
-    "basis {uu. uu \<subseteq> E \<and> jp_graph.arborescence seed (to_dbltn ` uu)} T"
+    "basis {uu. uu \<subseteq> E \<and> jp_graph.arborescence seed (set_of_pair ` uu)} T"
     "e \<in> E" "e \<notin> T"
     "e \<in> E"
-    "S \<subseteq> E" "jp_graph.arborescence seed (insert (case e of (x, y) \<Rightarrow> {x, y}) (to_dbltn ` S))"
+    "S \<subseteq> E" "jp_graph.arborescence seed (insert (case e of (x, y) \<Rightarrow> {x, y}) (set_of_pair ` S))"
     using 1[simplified F_def jp_arborescence_def, simplified] by auto
 
   show ?case 
   proof(rule strong_exchange_propertyE[OF jp_graph.strong_exchange[OF seed_in], simplified], goal_cases)
     case 1
     note bigI=this
-    have e_not_in_T:"{fst e, snd e} \<notin> to_dbltn ` T"
+    have e_not_in_T:"{fst e, snd e} \<notin> set_of_pair ` T"
     proof(rule ccontr, goal_cases)
       case 1
       hence "(fst e, snd e) \<in> T\<or> (snd e, fst e) \<in> T"
@@ -375,23 +378,22 @@ proof(rule strong_exchange_propertyI, goal_cases)
       then show ?case
         using E_def es(2) one(7) by auto
     qed
-    have "\<exists>y\<in> to_dbltn ` T - to_dbltn ` S.
-            jp_graph.arborescence seed (insert y (to_dbltn ` S)) \<and>
-            jp_graph.arborescence seed (insert {fst e, snd e} (to_dbltn` T - {y}))"
+    have "\<exists>y\<in> set_of_pair ` T - set_of_pair ` S.
+            jp_graph.arborescence seed (insert y (set_of_pair ` S)) \<and>
+            jp_graph.arborescence seed (insert {fst e, snd e} (set_of_pair` T - {y}))"
       using basis_equiv  one(6)  one(7) e_not_in_T  one(11) 
       by(intro bigI[OF one(2,4), of "{fst e, snd e}"])
         (auto simp add: F_def  jp_arborescence_def  abstract_E_def
           case_prod_unfold image_mono one(5))
-    then obtain d where d_prop: "d \<in> to_dbltn ` T - to_dbltn ` S"
-      "jp_graph.arborescence seed (insert d (to_dbltn ` S))"
-      "jp_graph.arborescence seed (insert {fst e, snd e} (to_dbltn` T - {d}))"
+    then obtain d where d_prop: "d \<in> set_of_pair ` T - set_of_pair ` S"
+      "jp_graph.arborescence seed (insert d (set_of_pair ` S))"
+      "jp_graph.arborescence seed (insert {fst e, snd e} (set_of_pair` T - {d}))"
       by auto
     then obtain d1 d2 where d_split: "d = {d1, d2}" "(d1, d2) \<in> T - S" 
       by auto
     hence d_in_E:"(d1, d2) \<in> E"
       using one(3) by auto
-    have "to_dbltn ` T - {d} =
-              to_dbltn ` (T - {(d1, d2)})"
+    have "set_of_pair ` T - {d} = set_of_pair ` (T - {(d1, d2)})"
     proof(rule, all \<open>rule\<close>, goal_cases)
       case (1 ee)
       then obtain ee1 ee2 where ee_split:"ee = {ee1, ee2}" "(ee1, ee2) \<in> T" by auto
@@ -402,14 +404,14 @@ proof(rule strong_exchange_propertyI, goal_cases)
       case (2 ee)
       then obtain ee1 ee2 where ee_split:"ee = {ee1, ee2}" "(ee1, ee2) \<in> T"
         "(ee1, ee2) \<noteq> (d1, d2)"by auto
-      hence "ee \<in> to_dbltn ` T" by auto
+      hence "ee \<in> set_of_pair ` T" by auto
       moreover have "ee \<noteq> d" 
         using   d_in_E d_split(1) doubleton_eq_iff ee_split(1,2,3) es(2)  one(3)
         by(auto simp add: E_def doubleton_eq_iff)
       ultimately show ?case by simp
     qed
-    hence  same_set_T:"(insert {fst e, snd e} (to_dbltn` T - {d})) 
-               = (insert (to_dbltn e) (to_dbltn ` (T - {(d1, d2)})))"  by force
+    hence  same_set_T:"(insert {fst e, snd e} (set_of_pair` T - {d})) 
+               = (insert (set_of_pair e) (set_of_pair ` (T - {(d1, d2)})))"  by force
     have "S \<union> {(d1, d2)} \<in> F"
       using d_in_E one(1) d_prop(2) d_split  by(auto simp add: F_def jp_arborescence_def)
     moreover have "T - {(d1, d2)} \<union> {e} \<in> F" 
@@ -468,9 +470,9 @@ proof-
 qed
 
 definition "stree_around_seed T = 
-   (  connected_component abstract_E seed = connected_component (to_dbltn ` T) seed 
-    \<and> jp_graph.has_no_cycle (to_dbltn ` T)
-    \<and> Uconnected (to_dbltn ` T) 
+   (  connected_component abstract_E seed = connected_component (set_of_pair ` T) seed 
+    \<and> jp_graph.has_no_cycle (set_of_pair ` T)
+    \<and> Uconnected (set_of_pair ` T) 
     \<and> T \<subseteq> E
    )"
 

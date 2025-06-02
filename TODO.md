@@ -1,4 +1,5 @@
-- move to_dbltn, or reuse an equivalent definition from Undirected Graphs.
+- move to_dbltn, or reuse an equivalent definition from Undirected Graphs. 
+      (there is to_dbltn in Jarnik Prim, set_of_pair in Pair_Graph_U_Specs, an assumed to_dbltn in Max_Bipartite_Matching)
 - intro and elim rule for every definition
 - no unnamed contexts in matroids, greedoids
 

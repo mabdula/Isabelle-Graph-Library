@@ -170,4 +170,8 @@ lemma vs_are_gen: "dVs (set E_impl) = set (map prod.fst E_impl) \<union> set (ma
 lemma dVs_swap: "dVs (prod.swap ` E) = dVs E"
   by(auto simp add: dVs_def)
 
+text \<open>Ordered pair to undirected edge\<close>
+
+definition "set_of_pair = ( \<lambda>(u,v). {u,v})"
+
 end
