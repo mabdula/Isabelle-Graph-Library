@@ -1,5 +1,6 @@
 theory Spanning_Trees
-  imports Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor Directed_Set_Graphs.Pair_Graph_U_Specs
+  imports Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor 
+          Undirected_Set_Graphs.Pair_Graph_U_Specs
     Matroids_Greedy.Matroids_Theory
 begin
 
@@ -996,51 +997,5 @@ next
   with 2 show ?case by blast
 qed
 
-end
-
-context Pair_Graph_U_Specs
-begin
-
-context
-  fixes G::'adjmap
-  assumes pair_graph_u_inv: "pair_graph_u_invar G"
-begin
-
-
-lemma ugraph_dblton_graph:
-  "dblton_graph (ugraph_abs G)"
-  unfolding ugraph_abs_def dblton_graph_def using graph_irreflexive[OF pair_graph_u_inv] by blast
-
-lemma ugraph_finite:
-  "finite (Vs (ugraph_abs G))"
-  unfolding ugraph_abs_def Vs_def using invar_finite_vertices[OF pair_graph_u_inv] unfolding dVs_def digraph_abs_def
-  by simp
-
-lemma graph_abs_ugraph:
-  "graph_abs (ugraph_abs G)"
-  apply (simp add: graph_abs_def)
-  using ugraph_dblton_graph ugraph_finite by force
-
-lemma ugraph_abs_digraph_abs: "graph_abs.D (ugraph_abs G) = digraph_abs G"
-  unfolding graph_abs.D_def ugraph_abs_def digraph_abs_def
-proof-
-  have 1: "{u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<longleftrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v) \<or> v \<in>\<^sub>G (\<N>\<^sub>G G u)" for u v
-    using  doubleton_eq_iff[of u v] by auto
-  have "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v) |u v. {u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}}"
-    using graph_abs.D_def[OF graph_abs_ugraph] ugraph_abs_def by simp
-  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<union> {(u, v) |u v. u \<in>\<^sub>G \<N>\<^sub>G G v}"
-    using 1 by auto
-  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}"
-    using graph_symmetric[OF pair_graph_u_inv] by blast
-  finally show "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v). v \<in>\<^sub>G \<N>\<^sub>G G u}" by simp
-qed
-
-lemma cycle_equivalence:
-  "(\<exists>c. cycle' (digraph_abs G) c) = (\<exists>u c. decycle (ugraph_abs G) u c)"
-  using graph_abs.cycle'_iff_decycle[OF graph_abs_ugraph] ugraph_abs_digraph_abs
-  by simp
-
-
-end
 end
 end

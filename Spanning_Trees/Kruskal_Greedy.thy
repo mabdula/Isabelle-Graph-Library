@@ -53,7 +53,7 @@ interpretation Matroid_Specs_Inst: Matroid_Specs
   apply (subst Matroid_Specs_def)
   apply (subst Indep_System_Specs_def)
   using Card_Set2_RBT.Card_Set2_axioms by blast
-
+                                                   
 global_interpretation Kruskal_Graphs_Matroids: Encoding
   where empty = RBT_Set.empty and update = update and delete = RBT_Map.delete and
     lookup = lookup and adjmap_inv = "M.invar" and vset_empty = "\<langle>\<rangle>" and
@@ -131,9 +131,6 @@ locale Kruskal_Proof_Matroid_Edges =
   assumes v1_never_v2:"\<And> e d. e \<in> t_set input_G \<Longrightarrow> d \<in> t_set input_G \<Longrightarrow> prod.swap e \<noteq> d"
 begin
 
-context 
-  assumes  G_good: "vset_inv input_G"
-begin
 lemma Encoding_Proofs_axioms:
   " Encoding_Proofs_axioms t_set M.invar vset_inv lookup vset_inv t_set rbt_map_fold
      rbt_set_fold rbt_set_fold rbt_set_fold"
@@ -204,7 +201,9 @@ next
     by(auto intro!: exI[of _ "ura#urX"])
 qed
 
-lemma graph_abs_input_G: "graph_abs (set_of_pair ` t_set input_G)"
+lemma graph_abs_input_G:   
+  assumes  G_good: "vset_inv input_G"
+  shows "graph_abs (set_of_pair ` t_set input_G)"
   by (simp add: G_arefl G_good Kruskal_Graphs_Matroids_proofs.dbltn_set_and_ugraph_abs
       Kruskal_Graphs_Matroids_proofs.edges_invar_imp_graph_invar(1)
       Pair_Graph_U_RBT.graph_abs_ugraph)
@@ -220,6 +219,7 @@ qed
 lemma local_indep_oracle_correct:
   assumes "vset_inv S" "indep'  input_G (id S)" 
     "Card_Set2_RBT.subseteq (id S) input_G"  "e \<notin> t_set (id S)"
+  and   G_good: "vset_inv input_G"
   shows "local_indep_oracle e S = indep' input_G (vset_insert e (id S))"
   apply(insert assms)
   unfolding indep'_def Kruskal_Greedy.indep_graph_matroid_def
@@ -296,7 +296,7 @@ proof(goal_cases)
         then obtain u C where uC_prop:"decycle 
                  (set_of_pair ` (t_set (vset_insert e S))) u C" by auto
         moreover have  not_cycle_old:"\<not> decycle (set_of_pair `(t_set S)) u C" 
-          using case_assms(2)  graph_abs.has_no_cycle_def[OF graph_abs_input_G ] 
+          using case_assms(2)  graph_abs.has_no_cycle_def[OF graph_abs_input_G ] G_good
           by simp
         ultimately have e_and_C:"set_of_pair e \<in> set C" "set C \<subseteq> set_of_pair ` (t_set (vset_insert e S))"      
           using case_assms(1) dfs.Graph.vset.set.set_insert[of S]
@@ -631,7 +631,7 @@ proof(goal_cases)
             using uC
             by (auto simp add: decycle_def)
           then show ?case 
-            using case_assms(2)  graph_abs.has_no_cycle_def[OF graph_abs_input_G] by simp
+            using case_assms(2)  graph_abs.has_no_cycle_def[OF graph_abs_input_G] G_good by simp
         qed
         obtain C1 C2 where C1C2:"urC = C1@[e]@C2"
           by (metis append_Cons append_Nil e_in_C in_set_conv_decomp_first)
@@ -750,16 +750,23 @@ proof(goal_cases)
     using second_eq dfs.Graph.vset.set.set_insert[OF assms(1)] graph_abs.has_no_cycle_def[OF graph_abs_input_G]
     by (cases "Card_Set2_RBT.subseteq (vset_insert e S) input_G ",
         unfold local_indep_oracle_def  first_eq ) 
-      auto    
+      (auto simp add: G_good)  
 qed
+end
 
-context fixes c::"('a \<times> 'a) \<Rightarrow> rat" and  order::"('a \<times> 'a ) list"
+
+locale Kruskal_Proof_Matroid_Edges' = 
+Kruskal_Proof_Matroid_Edges where input_G = input_G
+for input_G::"(('a::linorder \<times> 'a) \<times> color) tree"+
+  fixes c::"('a \<times> 'a) \<Rightarrow> rat" and  order::"('a \<times> 'a ) list"
   assumes non_negative_c:"\<And> e. e \<in> t_set input_G \<Longrightarrow> c e \<ge> 0"
     and order_is_G: "t_set input_G = set order"
     and order_length_is_G_card: "distinct order"
+    and G_good: "vset_inv input_G"
 begin
 
-lemma best_in_greedy_axioms:"Best_In_Greedy.BestInGreedy_axioms vset_inv t_set input_G
+lemma best_in_greedy_axioms:
+  shows "Best_In_Greedy.BestInGreedy_axioms vset_inv t_set input_G
      (Kruskal_Greedy.indep_graph_matroid input_G)"
   by(auto simp add:  Matroid_Specs_Inst.invar_def local.indep_graph_matroid_def
       Best_In_Greedy.BestInGreedy_axioms_def[OF Kruskal_Greedy.Kruskal_Greedy.Best_In_Greedy_axioms] G_good Kruskal_Greedy.indep_graph_matroid_def
@@ -769,7 +776,8 @@ lemma sort_desc_axioms: "Best_In_Greedy.sort_desc_axioms Kruskal_Greedy.carrier_
   by (simp add: Kruskal_Greedy.sort_desc_axioms_def insort_key_desc_stable
       length_insort_key_desc set_insort_key_desc sorted_desc_f_insort_key_desc)
 
-lemma indep_system_axioms:"Matroid_Specs_Inst.indep_system_axioms input_G
+lemma indep_system_axioms: 
+  shows "Matroid_Specs_Inst.indep_system_axioms input_G
              (Kruskal_Greedy.indep_graph_matroid input_G)"
   unfolding  Matroid_Specs_Inst.indep_system_axioms_def
 proof(rule conjI[OF _ conjI], goal_cases)
@@ -784,7 +792,7 @@ next
     using graph_abs.has_no_cycle_indep_ex[OF graph_abs_input_G] graph_abs.has_no_cycle_indep_subset[OF graph_abs_input_G]
     by(auto intro!: exI[of _ Leaf] 
         simp add: Kruskal_Greedy.wrapper_axioms(5) 
-        Kruskal_Greedy.indep_graph_matroid_def indep_graph_matroid_def)
+        Kruskal_Greedy.indep_graph_matroid_def indep_graph_matroid_def G_good)
 next
   case 3
   show ?case
@@ -794,30 +802,34 @@ next
     have "graph_abs.has_no_cycle ((\<lambda>e. {fst e, snd e}) ` t_set input_G) ((\<lambda>e. {fst e, snd e}) ` t_set Y)"
       using 1(4,3) graph_abs.has_no_cycle_indep_subset[OF 
             graph_abs_input_G, of "(\<lambda>e. {fst e, snd e}) ` t_set X"]
-      by(auto simp add: Card_Set2_RBT.set_subseteq [OF 1(2,1)] image_mono)
+      by(auto simp add: Card_Set2_RBT.set_subseteq [OF 1(2,1)] image_mono G_good)
     moreover have "t_set Y \<subseteq> t_set input_G"
       using "1"(1,2,3,4) Card_Set2_RBT.set_subseteq by blast
     ultimately show ?case by simp
   qed
 qed
 
-lemma nonnegative:" Kruskal_Greedy.nonnegative input_G c"
+lemma nonnegative:
+  shows " Kruskal_Greedy.nonnegative input_G c"
   by(auto simp add: Kruskal_Greedy.nonnegative_def Pair_Graph_RBT.set.set_isin G_good  non_negative_c )
 
-lemma size_G_length_order:"size input_G = length order"
+lemma size_G_length_order:
+  shows "size input_G = length order"
   by(simp add:  G_good  Kruskal_Greedy.rbt_size_correct distinct_card order_is_G order_length_is_G_card)
 
-lemma valid_order: "Kruskal_Greedy.valid_order input_G order"
+lemma valid_order: 
+  shows "Kruskal_Greedy.valid_order input_G order"
   by(simp add: Kruskal_Greedy.valid_order_def Pair_Graph_RBT.set.set_isin G_good  non_negative_c 
       size_G_length_order order_is_G)
 
-lemma kruskal_impl_corespondence: 
-  "to_ordinary (kruskal'  input_G (kruskal_init' c order)) =
+lemma kruskal_impl_corespondence:
+  shows "to_ordinary (kruskal'  input_G (kruskal_init' c order)) =
   kruskal  input_G (kruskal_init c order)"
 proof((subst kruskal_def, subst indep'_def[symmetric]), rule Kruskal_Greedy.BestInGreedy'_corresp, goal_cases)
   case (1 S x)
   then show ?case 
-    by(unfold Kruskal_Greedy.local_indep_oracle_def, intro local_indep_oracle_correct) (auto simp add: subseteq_def)
+    by(unfold Kruskal_Greedy.local_indep_oracle_def, intro local_indep_oracle_correct)
+      (auto simp add: subseteq_def G_good)
 next
   case 2
   then show ?case 
@@ -867,11 +879,11 @@ next
   case 3
   then show ?case
     using graph_abs.has_no_cycle_indep_ex graph_abs.has_no_cycle_indep_subset graph_abs_input_G
-      order_is_G by (force intro: exI[of _ "{}"])
+      order_is_G by (force intro: exI[of _ "{}"] simp add: G_good)
 next
   case (4 X Y)
   then show ?case 
-    by(auto intro: graph_abs.has_no_cycle_indep_subset[OF graph_abs_input_G, simplified order_is_G set_of_pair_def']
+    by(auto intro: graph_abs.has_no_cycle_indep_subset[OF graph_abs_input_G[OF G_good], simplified order_is_G set_of_pair_def']
         simp add: order_is_G )
 qed
 
@@ -896,11 +908,11 @@ lemma kruskal_returns_basis: "indep_system.basis (t_set input_G)  has_no_cycle_i
 corollary kruskal_returns_spanning_forest: 
   "graph_abs.is_spanning_forest (set_of_pair ` (t_set input_G)) 
    (set_of_pair ` (t_set (result (kruskal input_G (kruskal_init c order)))))"
-proof(subst graph_abs.spanning_forest_iff_basis[OF graph_abs_input_G],
+proof(subst graph_abs.spanning_forest_iff_basis[OF graph_abs_input_G[OF G_good]],
     subst indep_system.basis_def, goal_cases)
   case 1
   then show ?case
-    using graph_abs.graph_indep_system graph_abs_input_G by auto
+    using graph_abs.graph_indep_system graph_abs_input_G by (auto simp add: G_good)
 next
   case 2
   show ?case
@@ -944,7 +956,7 @@ proof(rule matroid.intro[OF  use_greedy_thms_kruskal.indep_system], rule matroid
   then obtain e where e_prop:" e\<in> set_of_pair ` X - set_of_pair ` Y"
     "graph_abs.has_no_cycle ((\<lambda>x. {fst x, snd x}) ` t_set input_G)
                     (insert e ((\<lambda>x. {fst x, snd x}) ` ( Y)))"
-    using  graph_abs.graph_matroid[OF graph_abs_input_G] 1
+    using  graph_abs.graph_matroid[OF graph_abs_input_G[OF G_good]] 1
     by(unfold has_no_cycle_in_graph_def matroid_def matroid_axioms_def set_of_pair_def'
         card_image[OF to_dbltn_inj, OF XY_in_G(1), symmetric]
         card_image[OF to_dbltn_inj, OF XY_in_G(2), symmetric]) blast
@@ -975,21 +987,40 @@ corollary kruskal_computes_max_spanning_forest:
   "max_forest (t_set (result (kruskal  input_G (kruskal_init c order))))"
   using kruskal_is_max kruskal_returns_spanning_forest   kruskal_returns_basis
         use_greedy_thms_kruskal.indep_system graph_abs.spanning_forest_alternative graph_abs_input_G
-  by(force simp add: has_no_cycle_in_graph_def in_mono indep_system.basis_def  max_forest_def)+
+  by(force simp add: has_no_cycle_in_graph_def in_mono indep_system.basis_def G_good  max_forest_def)+
 
 end
-end
-end
 
-context
+locale kruskal_correct =
   fixes G::"(('v::linorder \<times> 'v) \<times> color) tree"
+  and c order
   assumes G_good:"\<And>e d. e \<in> t_set G \<Longrightarrow> d \<in> t_set G \<Longrightarrow> prod.swap e \<noteq> d"
+                 "vset_inv G" "t_set G = set order" "distinct order"
+and pos_c: "\<And>e. e \<in> t_set G \<Longrightarrow> (0::rat) \<le> c e"
 begin
-interpretation kruskal_proof_maitroid_edges: Kruskal_Proof_Matroid_Edges G 
-proof(rule  Kruskal_Proof_Matroid_Edges.intro, goal_cases)
+
+interpretation kruskal_proof_maitroid_edges: Kruskal_Proof_Matroid_Edges' G 
+proof(rule  Kruskal_Proof_Matroid_Edges'.intro, 
+all \<open>rule Kruskal_Proof_Matroid_Edges.intro | rule Kruskal_Proof_Matroid_Edges'_axioms.intro\<close>, goal_cases)
   case (1 e d)
   then show ?case 
-    using G_good by simp  
+    using G_good by simp
+next
+  case (2 e)
+  then show ?case 
+    by (simp add: pos_c)
+next
+  case 3
+  then show ?case 
+    by (simp add: G_good(3))
+next
+  case 4
+  then show ?case
+    by (simp add: G_good(4))
+next
+  case 5
+  then show ?case
+    by (simp add: G_good(2))
 qed
 
 lemmas kruskal_computes_max_spanning_forest = 
@@ -1015,5 +1046,5 @@ value "kruskal_init' costs edges"
 value  "kruskal' G (kruskal_init' costs edges)"
 value "inorder (result (kruskal'  G (kruskal_init' costs edges)))"
 
-thm kruskal_computes_max_spanning_forest[of G]
+thm  kruskal_correct.kruskal_computes_max_spanning_forest[of G]
 end

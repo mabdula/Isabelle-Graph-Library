@@ -1,5 +1,7 @@
 theory Pair_Graph_U_Specs
-  imports Awalk "Map_Addons" "Set_Addons" Pair_Graph_Specs "HOL-Eisbach.Eisbach"
+  imports Directed_Set_Graphs.Awalk "Directed_Set_Graphs.Map_Addons" 
+"Directed_Set_Graphs.Set_Addons" Directed_Set_Graphs.Pair_Graph_Specs "HOL-Eisbach.Eisbach"
+Undirected_Set_Graphs Pair_Graph_Berge_Adaptor
 begin
 
 (* Note: Some of the definitions in this file are currently not relevant to the rest of
@@ -559,19 +561,20 @@ proof-
     by (simp add: pair_graph_specs.adjmap_inv_delete)+
   have abstr_concr_double_del_neighb_equiv:
        "(va \<in>\<^sub>G \<N>\<^sub>G delete_edge (delete_edge G u v) v u ua) =
-        (va \<in> neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) ua)" for ua va
+        (va \<in> Pair_Graph.neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) ua)" for ua va
     by(simp add:  neighbourhood_abs[OF graph_inv_del_del(1)] 
                   pair_graph_specs.digraph_abs_delete[OF graph_inv_del_del(2)]
                   pair_graph_specs.digraph_abs_delete[OF invar_graph_inv]
                   pair_graph_specs.adjmap_inv_delete )+
-  have help1: "\<forall>u v. v \<in> neighbourhood (digraph_abs G) u \<longrightarrow> u \<in> neighbourhood (digraph_abs G) v \<Longrightarrow>
-          va \<in> neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) va \<Longrightarrow> False" for va
+  have help1: "\<forall>u v. v \<in> Pair_Graph.neighbourhood (digraph_abs G) u 
+                  \<longrightarrow> u \<in> Pair_Graph.neighbourhood (digraph_abs G) v \<Longrightarrow>
+          va \<in> Pair_Graph.neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) va \<Longrightarrow> False" for va
    using   digraph_abs_irreflexive 
    by(fastforce elim!: in_dVsE(2)[of _  "digraph_abs G - {(u, v)} - {(v, u)}"] 
           dest: neighbourhoodI[of _ "digraph_abs G - {(u, v)} - {(v, u)}"])
-  have help2:"\<forall>u v. v \<in> neighbourhood (digraph_abs G) u \<longrightarrow> u \<in> neighbourhood (digraph_abs G) v \<Longrightarrow>
-       va \<in> neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) ua \<Longrightarrow>
-       ua \<in> neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) va " for ua va
+  have help2:"\<forall>u v. v \<in> Pair_Graph.neighbourhood (digraph_abs G) u \<longrightarrow> u \<in> Pair_Graph.neighbourhood (digraph_abs G) v \<Longrightarrow>
+       va \<in> Pair_Graph.neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) ua \<Longrightarrow>
+       ua \<in> Pair_Graph.neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) va " for ua va
     by(fastforce intro: neighbourhoodD graph_abs_symmetric 
     dest: neighbourhoodI[of _ "(digraph_abs G - {(u, v)} - {(v, u)})"])
   show thesis1:?thesis1
@@ -623,8 +626,36 @@ proof-
   thus "ugraph_abs (delete_u_edge G u v) = ugraph_abs G - {{u, v}}"
     by(auto simp add: ugraph_and_digraph_abs thesis4) 
 qed
-    
 
+lemmas pair_graph_u_inv = pair_graph_u_invar_G
+
+lemma ugraph_dblton_graph:
+  "dblton_graph (ugraph_abs G)"
+  using graph_irreflexive by (unfold ugraph_abs_def dblton_graph_def) blast
+
+lemma ugraph_finite:
+  "finite (Vs (ugraph_abs G))"
+ using invar_finite_vertices 
+ by(unfold  ugraph_abs_def Vs_def dVs_def digraph_abs_def) simp
+
+lemma graph_abs_ugraph:
+  "graph_abs (ugraph_abs G)"
+  apply (simp add: graph_abs_def)
+  using ugraph_dblton_graph ugraph_finite by force
+
+lemma ugraph_abs_digraph_abs: "graph_abs.D (ugraph_abs G) = digraph_abs G"
+  unfolding graph_abs.D_def ugraph_abs_def digraph_abs_def
+proof-
+  have 1: "{u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<longleftrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v) \<or> v \<in>\<^sub>G (\<N>\<^sub>G G u)" for u v
+    using  doubleton_eq_iff[of u v] by auto
+  have "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v) |u v. {u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}}"
+    using graph_abs.D_def[OF graph_abs_ugraph] ugraph_abs_def by simp
+  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<union> {(u, v) |u v. u \<in>\<^sub>G \<N>\<^sub>G G v}"
+    using 1 by auto
+  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}"
+    using graph_symmetric by blast
+  finally show "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v). v \<in>\<^sub>G \<N>\<^sub>G G u}" by simp
+qed
 end
 end
 end

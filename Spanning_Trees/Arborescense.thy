@@ -266,12 +266,9 @@ next
     by(auto simp add: arborescence_def)
 qed
 
-context
-  fixes r
+lemma basis_is: 
   assumes r_in_G: "r \<in> Vs G"
-begin
-
-lemma basis_is: "connected_component G r = connected_component T r \<and> has_no_cycle T \<and> Uconnected T
+  shows "connected_component G r = connected_component T r \<and> has_no_cycle T \<and> Uconnected T
                   \<longleftrightarrow> basis {T | T. arborescence r T} T"
 proof(rule, goal_cases)
   case 1
@@ -438,7 +435,8 @@ lemma arborescense_connected: "arborescence  r T \<Longrightarrow> Uconnected T 
   using  Undirected_Set_Graphs.reachable_refl[of _ T ] connected_components_member_eq not_reachable_empt 
   by(intro same_comp_Uconnected)(force simp add: arborescence_def)
 
-lemma strong_exchange: "strong_exchange_property G {T |T. arborescence r T}"
+lemma strong_exchange: assumes r_in_G: "r \<in> Vs G" 
+  shows "strong_exchange_property G {T |T. arborescence r T}"
 proof(rule strong_exchange_propertyI, goal_cases)
   case (1 A B e)
   note one = this
@@ -454,7 +452,7 @@ proof(rule strong_exchange_propertyI, goal_cases)
   hence  "{x, y} \<subseteq> connected_component G r"
     using con_comp_subset[OF  one_unfolded(9)] by auto
   then obtain pp where pp_prop: "walk_betw B x pp y" 
-    using basis_is[of B] one(4) in_connected_component_has_walk[of y B x]xy(2)
+    using basis_is[OF r_in_G, of B] one(4) in_connected_component_has_walk[of y B x] xy(2)
       connected_components_member_eq[of x B r] connected_components_notE_singletons[of x B]
     by force
   then obtain p where p_prop:"distinct p" "walk_betw B x p y" "set p \<subseteq> set pp"
@@ -787,6 +785,5 @@ proof(rule strong_exchange_propertyI, goal_cases)
     using u'v'B_without_A 
     by auto
 qed
-end
 end
 end

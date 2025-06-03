@@ -1,7 +1,6 @@
 theory Encoding
-  imports Directed_Set_Graphs.Pair_Graph_U_Specs Matroids_Greedy.Indep_System_Matroids_Specs
+  imports Undirected_Set_Graphs.Pair_Graph_U_Specs Matroids_Greedy.Indep_System_Matroids_Specs
 begin
-
 
 locale Encoding =
   pair_graph_u: Pair_Graph_U_Specs where lookup = lookup +
