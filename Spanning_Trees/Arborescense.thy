@@ -142,9 +142,10 @@ proof(rule , goal_cases)
       by auto
     then obtain p where p_prop:"walk_betw T x p y" "distinct p"
       using  walk_betw_different_verts_to_ditinct x_not_y by fast
-    hence epath_p:"epath T x (edges_of_path p) y"
-      by (simp add: arbor_unfolded(3) graph_abs.walk_betw_imp_epath graph_abs_subset
-          has_no_cycle_indep_subset_carrier)
+    hence epath_p:"epath T x (edges_of_path p) y" 
+      using dblton_E 
+       by (auto intro!: walk_betw_imp_epath dblton_graph_subset[of G]  has_no_cycle_indep_subset_carrier 
+         simp add: arbor_unfolded(3) graph_abs_subset  )
     have distinct_edges_p: "distinct (edges_of_path p)" 
       by (simp add: distinct_edges_of_vpath' p_prop(2))
     have xy_not_in_p: "{x, y} \<notin> set (edges_of_path p)"
@@ -305,7 +306,8 @@ proof(rule, goal_cases)
       using connected_components_member_eq[of u T r]  uv(2)
       by(auto intro: in_con_comp_has_walk[of v T u])
     hence "epath T u (edges_of_path p) v" 
-      by (simp add: T_in_G graph_abs.walk_betw_imp_epath graph_abs_subset)
+      using T_in_G by (auto intro!: walk_betw_imp_epath dblton_graph_subset[of G T] 
+                          simp add:  graph_abs_subset  dblton_E)
     then obtain q where  q:"epath T u q v" "distinct q"
       by (auto dest: epath_distinct_epath)
     hence "epath S u q v" 
@@ -576,7 +578,9 @@ proof(rule strong_exchange_propertyI, goal_cases)
       hence epathBC1C2:"(epath (B) y (C2@C1) x \<or> epath (B ) x (C2@C1) y)"
         using  Diff_subset epath_subset by fast
       have epath_p: "epath B x (edges_of_path p) y" 
-        by (simp add: graph_abs.walk_betw_imp_epath graph_abs_subset one_unfolded(8) p_prop)
+        using one_unfolded(8) 
+        by (auto intro!: walk_betw_imp_epath dblton_graph_subset[of G B] 
+               simp add:  graph_abs_subset  p_prop  dblton_E)
       obtain p1 p2 where p1p2:"edges_of_path p = p1 @ [{u', v'}] @ p2"
         "(epath B x p1 u' \<and> epath B v' p2 y \<or> epath B x p1 v' \<and> epath B u' p2 y)"
         using epath_one_split[OF epath_p u'v'(3) u'notv'] by auto
@@ -655,10 +659,10 @@ proof(rule strong_exchange_propertyI, goal_cases)
         show ?thesis
         proof(cases "{u', v'}\<in> set (edges_of_path q)")
           case True
-          have epath_q:"epath B r (edges_of_path q ) a" 
-            by (simp add: graph_abs.walk_betw_imp_epath graph_abs_subset one_unfolded(8) q_prop(1))
-          have epath_p:"epath B x (edges_of_path p) y"
-            by (simp add: graph_abs.walk_betw_imp_epath graph_abs_subset one_unfolded(8) p_prop(2))
+          have epath_q:"epath B r (edges_of_path q ) a" and epath_p:"epath B x (edges_of_path p) y"
+            using  one_unfolded(8)
+            by (auto intro!: walk_betw_imp_epath dblton_graph_subset[of G B]
+                   simp add:  graph_abs_subset q_prop(1) p_prop(2) dblton_E)
           obtain q1 q2 where q1q2:"edges_of_path q = q1 @ [{u', v'}] @ q2" 
             "(epath B r q1 u' \<and> epath B v' q2 a \<or> epath B r q1 v' \<and> epath B u' q2 a)"
             using epath_one_split[OF epath_q True] u'notv' by blast
@@ -728,8 +732,7 @@ proof(rule strong_exchange_propertyI, goal_cases)
             using epath_edges_subset[OF pra_prop(1)] 
             by(auto intro!: epath_subset_other_set[OF pra_prop(1)])
           obtain prav where "walk_betw (insert e (B - {{u', v'}})) r prav a" "pra = edges_of_path prav"
-            using graph_abs.epath_imp_walk_betw[OF _ epath_without_u'v' pra_prop(3)] 
-              Bu'v'e_inG graph_abs_subset by auto
+            using epath_imp_walk_betw[OF epath_without_u'v' pra_prop(3)] by auto
           thus ?thesis
             by (simp add: has_path_in_connected_component)
         next

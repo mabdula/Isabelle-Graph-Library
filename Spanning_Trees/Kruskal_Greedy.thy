@@ -308,8 +308,7 @@ proof(goal_cases)
           using  get_urlist_to_dbltn[OF e_and_C(2)] by blast
         obtain q where q_prop:"walk_betw (set_of_pair ` (insert e (t_set S))) u q u"
           "C = edges_of_path q"
-          using graph_abs.epath_imp_walk_betw[of _ u "C" u, OF graph_abs_with_e] 
-            uC_prop 
+          using epath_imp_walk_betw[of _ u "C" u]  uC_prop 
           by(auto simp add: decycle_def  Pair_Graph_RBT.set.set_insert[OF case_assms(1)])
         hence e_in_p: "set_of_pair e \<in> set (edges_of_path q)"
           using e_and_C(1) by blast
@@ -542,7 +541,7 @@ proof(goal_cases)
             by(auto simp add: Pair_Graph_U_RBT.ugraph_abs_digraph_abs same_dgraphabs Kruskal_E_to_G_def)
             have "epath (set_of_pair ` t_set S) (fst e) (edges_of_path p) (snd e)"
               using walk_betw_around_e graph_abs_without_e 
-                by(auto intro!: graph_abs.walk_betw_imp_epath) 
+              by(auto elim:  graph_abs.dblton_E intro!: walk_betw_imp_epath)
           moreover then obtain p' where p'_prop:"map set_of_pair p' = edges_of_path p" "set p' \<subseteq>  (t_set S)"
             using epath_edges_subset get_urlist_to_dbltn by force
           ultimately have epath_first_path:"epath (set_of_pair `  (t_set S)) (fst e) (map set_of_pair p') (snd e)"  
