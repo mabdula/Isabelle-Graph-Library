@@ -107,16 +107,16 @@ lemma correctness_of_algo:"correctness_of_algo id \<E>_impl Pair \<b>_impl"
 
 corollary correctness_of_implementation:
  "return_impl final_state_pair = success \<Longrightarrow>  
-        cost_flow_network.is_Opt fst snd id \<u> (\<c> \<c>_impl flow_lookup) (\<E> \<E>_impl) (\<b> \<b>_impl) 
+        cost_flow_spec.is_Opt fst snd id \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map final_flow_impl_pair)"
  "return_impl final_state_pair = failure \<Longrightarrow> 
-         \<nexists> f. flow_network.isbflow  fst snd id  \<u>  (\<E> \<E>_impl) f (\<b> \<b>_impl)"
+         \<nexists> f. flow_network_spec.isbflow  fst snd id (\<E> \<E>_impl) \<u> f (\<b> \<b>_impl)"
  "return_impl final_state_pair = notyetterm \<Longrightarrow>  
          False"
   using correctness_of_algo.correctness_of_implementation[OF correctness_of_algo no_cycle_cond]
   by(auto simp add: final_state_pair_def final_flow_impl_pair_def)
 
-lemma opt_flow_found: "cost_flow_network.is_Opt fst snd id \<u> (\<c> \<c>_impl flow_lookup) (\<E> \<E>_impl) (\<b> \<b>_impl)  (abstract_flow_map final_flow_impl_pair)"
+lemma opt_flow_found: "cost_flow_spec.is_Opt fst snd id \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl)  (abstract_flow_map final_flow_impl_pair)"
   apply(rule correctness_of_implementation(1))
   by eval
 end

@@ -3499,4 +3499,40 @@ next
     qed
   qed
 qed
+
+lemma walk_betw_imp_epath:
+  assumes "dblton_graph G" 
+  shows "walk_betw G u p v \<Longrightarrow> epath G u (edges_of_path p) v" 
+  by (induction p  arbitrary: u v rule: edges_of_path.induct)
+     (auto elim!:  dblton_graphE[OF assms] simp add: doubleton_eq_iff walk_betw_def)
+
+lemma epath_imp_walk_betw:
+  "epath G u p v \<Longrightarrow>length p \<ge> 1  \<Longrightarrow>\<exists> q. walk_betw G u q v \<and> p = edges_of_path q"
+proof(induction p arbitrary: u v rule: edges_of_path.induct)
+  case (3 e d l u v)
+  then obtain a b where e_prop:"e = {a, b}" "a \<noteq> b" "a = u" "e \<in> G"
+    by auto 
+  hence epath:"epath G b (d # l) v" 
+    using "3.prems"(1) doubleton_eq_iff by auto
+  then obtain q where q_prop:"walk_betw G b q v"  "d # l = edges_of_path q"
+    using 3(1)[OF epath] by auto
+  moreover have "walk_betw G u [u, b] b" 
+    using e_prop edges_are_walks by force
+  moreover have "e#d#l = edges_of_path (u#q)" 
+    using e_prop(1) e_prop(3) q_prop(2) walk_between_nonempty_pathD(3)[OF q_prop(1)] 
+      walk_nonempty [OF q_prop(1)] by(cases q) auto
+
+  ultimately show ?case 
+    using e_prop walk_betw_cons 
+    by (auto intro!: exI[of _ "u#q"], cases q)fastforce+
+next
+  case (2 e u v)
+  hence "e \<in> G" "e = {u, v}" "u \<noteq> v" by auto
+  thus ?case 
+    by(auto intro: exI[of _ "[u, v]"] simp add: edges_are_walks)
+qed simp
+
+text \<open>Ordered pair to undirected edge\<close>
+
+definition "set_of_pair = ( \<lambda>(u,v). {u,v})"
 end

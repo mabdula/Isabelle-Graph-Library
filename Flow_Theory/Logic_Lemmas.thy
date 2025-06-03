@@ -219,4 +219,9 @@ lemma insert_with_P: "P x \<Longrightarrow> insert x {y \<in> S. P y} = { y \<in
 
 lemma Collect_cong_set: "(\<And>x. x \<in> S \<Longrightarrow> P x = Q x) \<Longrightarrow> {x \<in> S. P x} = {x \<in> S. Q x}"
   by auto
+
+lemma sum_split_off: "A \<subseteq> B \<Longrightarrow> finite B \<Longrightarrow> (\<And> x. x \<in> B - A \<Longrightarrow> f x = 0) \<Longrightarrow> sum f A = sum f B" for f A B
+  by (simp add: sum.mono_neutral_cong_right)
+
+lemma if_non_empty_finite_finite: " (A \<noteq> {} \<Longrightarrow> finite A) \<Longrightarrow> finite A" by auto
 end
