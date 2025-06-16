@@ -1,0 +1,9 @@
+theory Undirected_Simple_Hypergraph
+  imports Undirected_Multihypergraph Simple_Hypergraph
+begin
+
+locale undirected_simple_hypergraph =
+undirected_multihypergraph + simple_hypergraph
+begin
+end
+end
