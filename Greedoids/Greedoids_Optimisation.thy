@@ -2,6 +2,8 @@ theory Greedoids_Optimisation
   imports Greedoids "HOL-Eisbach.Eisbach"
 begin
 
+(*Authored by Shriya Meenakshisundaram and Thomas Ammer*)
+
 locale greedoid_algorithm = greedoid +
   fixes orcl::"'a \<Rightarrow> 'a set \<Rightarrow> bool"
   assumes orcl_correct: "\<And> X x. x \<in> E - X \<Longrightarrow> X \<in> F \<Longrightarrow> orcl x X \<longleftrightarrow> insert x X \<in> F"
