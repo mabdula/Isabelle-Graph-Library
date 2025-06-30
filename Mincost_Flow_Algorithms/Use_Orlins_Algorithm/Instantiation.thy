@@ -683,8 +683,8 @@ and \<b> = "\<b> \<b>_impl"
 for  make_pair create_edge \<E>_impl \<b>_impl \<c>_impl c_lookup
 defines initial_impl = orlins_impl_spec.initial_impl and
         orlins_impl = orlins_impl_spec.orlins_impl and
-        loopB_impl = orlins_impl_spec.loopB_impl and
-        loopA_impl =orlins_impl_spec.loopA_impl and
+        send_flow_impl = orlins_impl_spec.send_flow_impl and
+        maintain_forest_impl =orlins_impl_spec.maintain_forest_impl and
         augment_edges_impl = orlins_impl_spec.augment_edges_impl and
         to_redge_path_impl = orlins_impl_spec.to_redge_path_impl and
         augment_edge_impl=orlins_impl_spec.augment_edge_impl and
@@ -694,17 +694,18 @@ defines initial_impl = orlins_impl_spec.initial_impl and
         insert_undirected_edge_impl = orlins_impl_spec.insert_undirected_edge_impl
   using  Map_bal Map_conv Map_flow Map_not_blocked
         Map_rep_comp
-  by(auto intro!: orlins_impl_spec.intro algo_impl_spec.intro loopA_spec.intro rep_comp_update_all
-                  loopB_impl_spec.intro loopA_impl_spec.intro flow_update_all get_max not_blocked_update_all
+  by(auto intro!: orlins_impl_spec.intro algo_impl_spec.intro maintain_forest_spec.intro rep_comp_update_all
+                  send_flow_impl_spec.intro maintain_forest_impl_spec.intro flow_update_all get_max not_blocked_update_all
+                  map_update_all.intro map_update_all_axioms.intro
            intro: algo_impl_spec_axioms.intro
         simp add: Set3 Adj_Map_Specs2   algo_spec.intro)
 
 lemmas orlins_impl_spec = orlins_impl_spec.orlins_impl_spec_axioms
-lemmas loopB_impl_spec = orlins_impl_spec.loopB_impl_spec_axioms
+lemmas send_flow_impl_spec = orlins_impl_spec.send_flow_impl_spec_axioms
 lemmas algo_spec = orlins_impl_spec.algo_spec_axioms
-lemmas loopA_impl_spec = orlins_impl_spec.loopA_impl_spec_axioms
+lemmas maintain_forest_impl_spec = orlins_impl_spec.maintain_forest_impl_spec_axioms
 lemmas algo_impl_spec = orlins_impl_spec.algo_impl_spec_axioms
-lemmas loopA_spec = orlins_impl_spec.loopA_spec_axioms
+lemmas maintain_forest_spec = orlins_impl_spec.maintain_forest_spec_axioms
 
 subsection \<open>Proofs\<close>
 
@@ -1011,18 +1012,16 @@ lemma remove_all_empty_digraph_abs:
   using transform_to_sets_lookup_lookup'[of E]
   by (auto simp add: Adj_Map_Specs2.digraph_abs_def Pair_Graph_Specs.digraph_abs_def[OF Pair_Graph_Specs_satisfied]
             Adj_Map_Specs2.neighbourhood_def Pair_Graph_Specs.neighbourhood_def[OF Pair_Graph_Specs_satisfied])
+thm maintain_forest_spec.maintain_forest_get_path_cond_def
 
-lemma loopA_axioms_extended: "vwalk_bet (Adj_Map_Specs2.digraph_abs  E) u q v \<Longrightarrow>
-                       adjmap_inv' (E::(('a \<times> ('a \<times> color) tree) \<times> color) tree dd) \<Longrightarrow> p = get_path u v E \<Longrightarrow> 
-                        u \<in> Vs ((Adj_Map_Specs2.to_graph ) E) \<Longrightarrow>
-                        (\<And> x. lookup' E x \<noteq> None \<and> vset_inv (the (lookup' E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
-                     vwalk_bet (Adj_Map_Specs2.digraph_abs  E) u p v"
-"vwalk_bet (Adj_Map_Specs2.digraph_abs  E) u q v \<Longrightarrow> 
-                       adjmap_inv' E \<Longrightarrow> p = get_path u v E \<Longrightarrow> 
-                        u \<in> Vs ((Adj_Map_Specs2.to_graph ) E) \<Longrightarrow>
-                        (\<And> x. lookup' E x \<noteq> None \<and> vset_inv (the (lookup' E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
-                     distinct p"
-proof(goal_cases)
+lemma maintain_forest_axioms_extended: 
+  assumes "maintain_forest_spec.maintain_forest_get_path_cond \<emptyset>\<^sub>N vset_inv isin lookup'
+             adjmap_inv' get_path u v (E::
+                   (('a \<times> ('a \<times> color) tree) \<times> color) tree dd) p q"
+  shows "vwalk_bet (Adj_Map_Specs2.digraph_abs  E) u p v"
+        "distinct p"
+proof(insert maintain_forest_spec.maintain_forest_get_path_cond_unfold_meta[OF maintain_forest_spec assms], 
+      goal_cases)
   case 1
   note assms = this
   have graph_invar: "Pair_Graph_Specs_satisfied.graph_inv (remove_all_empties E)"
@@ -1058,7 +1057,8 @@ proof(goal_cases)
     using assms(1) assms(2) remove_all_empty_digraph_abs by auto
   have dfs_axioms: "DFS.DFS_axioms isin t_set adj_inv \<emptyset>\<^sub>N vset_inv lookup 
                          (remove_all_empties E) u"
-    using finite_graph finite_neighbs graph_invar u_in_Vs remove_all_empty_digraph_abs[OF assms(2)]
+    using finite_graph finite_neighbs graph_invar u_in_Vs
+            remove_all_empty_digraph_abs[OF assms(2)]
     by(simp only: dfs.DFS_axioms_def)
   have dfs_thms: "DFS_thms map_empty delete vset_insert isin t_set sel update adj_inv vset_empty vset_delete
                    vset_inv vset_union vset_inter vset_diff lookup (remove_all_empties E) u"
@@ -1115,14 +1115,18 @@ and snd = snd and fst = fst and make_pair = make_pair and create_edge=create_edg
   by(auto intro!: algo.intro algo_spec.intro simp add: Adj_Map_Specs2 algo_axioms algo_def Set3_axioms)
 lemmas algo = algo.algo_axioms
 
+thm algo_impl_spec_def
+
 lemma algo_impl_spec: "algo_impl_spec edge_map_update' vset_empty vset_delete vset_insert vset_inv isin get_from_set filter are_all set_invar
      to_set lookup' t_set sel adjmap_inv' flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update
      bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar
      conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty not_blocked_delete
-     not_blocked_lookup not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max"
+     not_blocked_lookup not_blocked_invar rep_comp_update_all flow_update_all not_blocked_update_all get_max"
   using  Map_bal.Map_axioms Map_conv Map_flow.Map_axioms Map_not_blocked.Map_axioms
           algo_spec conv_map.Map_axioms  Map_axioms
-  by(auto intro!: algo_impl_spec.intro algo_impl_spec_axioms.intro flow_update_all get_max not_blocked_update_all rep_comp_update_all 
+  by(auto intro!: algo_impl_spec.intro algo_impl_spec_axioms.intro flow_update_all 
+                  get_max not_blocked_update_all rep_comp_update_all 
+                  map_update_all.intro map_update_all_axioms.intro
          simp add: Adj_Map_Specs2 Set3_axioms algo_spec.intro)
  
 lemma algo_impl:"algo_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_update' vset_empty vset_delete vset_insert vset_inv isin
@@ -1135,7 +1139,8 @@ lemma algo_impl:"algo_impl snd make_pair create_edge \<u> \<E> \<c> edge_map_upd
         Map_rep_comp  Map_bal.Map_axioms Map_conv Map_flow.Map_axioms Map_not_blocked.Map_axioms
             conv_map.Map_axioms  Map_axioms Adj_Map_Specs2 Set3_axioms
   by(auto intro!: algo_impl.intro algo_impl_spec.intro algo_impl_spec_axioms.intro
- flow_update_all get_max not_blocked_update_all rep_comp_update_all algo_spec.intro) 
+ flow_update_all get_max not_blocked_update_all rep_comp_update_all algo_spec.intro 
+      map_update_all.intro map_update_all_axioms.intro) 
 
 lemma realising_edges_general_invar:
 "realising_edges_invar (realising_edges_general list)"
@@ -1949,33 +1954,33 @@ definition "get_source_target_path_b state s t=
           P) 
   else [])"
 
-interpretation loopB: 
- loopB snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete vset_insert vset_inv isin get_from_set filter
+interpretation send_flow: 
+ send_flow snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete vset_insert vset_inv isin get_from_set filter
     are_all set_invar to_set lookup' t_set sel adjmap_inv' \<b> to_pair \<epsilon> \<E>_impl all_empty N 
     default_conv_to_rdg get_source_target_path_b  get_source  get_target get_source_for_target  get_target_for_source
     fst get_source_target_path_a edge_map_update'
   using  algo 
-  by(auto intro!: loopB.intro  loopB_spec.intro Adj_Map_Specs2 Set3_axioms algo_spec.intro)
+  by(auto intro!: send_flow.intro  send_flow_spec.intro Adj_Map_Specs2 Set3_axioms algo_spec.intro)
 
-lemmas loopB = loopB.loopB_axioms
+lemmas send_flow = send_flow.send_flow_axioms
 
-abbreviation "loopB_call1_cond state \<equiv> loopB.loopB_call1_cond  state"
+abbreviation "send_flow_call1_cond state \<equiv> send_flow.send_flow_call1_cond  state"
 
-abbreviation "loopB_fail1_cond  state \<equiv> loopB.loopB_fail1_cond  state"
+abbreviation "send_flow_fail1_cond  state \<equiv> send_flow.send_flow_fail1_cond  state"
 
-abbreviation "loopB_call2_cond state \<equiv> loopB.loopB_call2_cond  state"
+abbreviation "send_flow_call2_cond state \<equiv> send_flow.send_flow_call2_cond  state"
 
-abbreviation "loopB_fail2_cond  state \<equiv> loopB.loopB_fail2_cond  state"
+abbreviation "send_flow_fail2_cond  state \<equiv> send_flow.send_flow_fail2_cond  state"
 
-lemmas loopB_fail1_condE = loopB.loopB_fail1_condE
-lemmas loopB_call1_condE = loopB.loopB_call1_condE
-lemmas loopB_fail1_cond_def = loopB.loopB_fail1_cond_def
-lemmas loopB_call1_cond_def= loopB.loopB_call1_cond_def
+lemmas send_flow_fail1_condE = send_flow.send_flow_fail1_condE
+lemmas send_flow_call1_condE = send_flow.send_flow_call1_condE
+lemmas send_flow_fail1_cond_def = send_flow.send_flow_fail1_cond_def
+lemmas send_flow_call1_cond_def= send_flow.send_flow_call1_cond_def
 
-lemmas loopB_fail2_condE = loopB.loopB_fail2_condE
-lemmas loopB_call2_condE = loopB.loopB_call2_condE
-lemmas loopB_fail2_cond_def = loopB.loopB_fail2_cond_def
-lemmas loopB_call2_cond_def= loopB.loopB_call2_cond_def
+lemmas send_flow_fail2_condE = send_flow.send_flow_fail2_condE
+lemmas send_flow_call2_condE = send_flow.send_flow_call2_condE
+lemmas send_flow_fail2_cond_def = send_flow.send_flow_fail2_cond_def
+lemmas send_flow_call2_cond_def= send_flow.send_flow_call2_cond_def
 
 lemmas invar_gamma_def = algo.invar_gamma_def
 lemmas invar_isOptflow_def = algo.invar_isOptflow_def
@@ -1986,17 +1991,17 @@ abbreviation "to_graph == Adj_Map_Specs2.to_graph"
 
 lemma get_source_axioms:
    "\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state;  s = get_source state;
-                    loopB_call1_cond state \<or> loopB_fail1_cond state\<rbrakk> 
+                    send_flow_call1_cond state \<or> send_flow_fail1_cond state\<rbrakk> 
                     \<Longrightarrow> s \<in> VV \<and> b s > (1 - \<epsilon>) * \<gamma>"
     using get_source_aux[of vs \<gamma> b s] vs_is_V 
-    by (auto elim!: loopB_call1_condE  loopB_fail1_condE simp add: get_source_def)
+    by (auto elim!: send_flow_call1_condE  send_flow_fail1_condE simp add: get_source_def)
 
 lemma get_target_axioms:
    "\<lbrakk>b = balance state ; \<gamma> = current_\<gamma> state; t = get_target state;
-                     loopB_call2_cond state \<or> loopB_fail2_cond state\<rbrakk> 
+                     send_flow_call2_cond state \<or> send_flow_fail2_cond state\<rbrakk> 
                     \<Longrightarrow> t \<in> VV \<and> b t < - (1 -\<epsilon>) * \<gamma>"
     using get_target_aux[of vs b \<gamma> t] vs_is_V 
-    by(auto elim!: loopB_call2_condE  loopB_fail2_condE simp add: get_target_def) auto  
+    by(auto elim!: send_flow_call2_condE  send_flow_fail2_condE simp add: get_target_def) auto  
 
 lemma path_flow_network_path_bf:
   assumes e_weight:"\<And> e. e \<in> set pp \<Longrightarrow> prod.snd (get_edge_and_costs_forward nb f (fstv e) (sndv e)) < PInfty"
@@ -2229,7 +2234,7 @@ qed
 
 lemma get_target_for_source_ax:
 " \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state; s = get_source state;
-                         t = get_target_for_source state s; loopB_call1_cond state; invar_gamma state\<rbrakk>
+                         t = get_target_for_source state s; send_flow_call1_cond state; invar_gamma state\<rbrakk>
                         \<Longrightarrow> t \<in> VV \<and> b t < - \<epsilon> * \<gamma> \<and> resreach f s t"
   unfolding get_target_for_source_def
 proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
@@ -2453,7 +2458,7 @@ next
   have "\<exists> t.
         t \<in> VV \<and> balance state t < (- \<epsilon>) * current_\<gamma> state \<and> resreach (current_flow state) s t"
     using 2(6)
-    unfolding 2(1-4) Let_def LoopB.loopB.loopB_call1_cond_def[OF loopB] 
+    unfolding 2(1-4) Let_def Send_Flow.send_flow.send_flow_call1_cond_def[OF send_flow] 
     by metis
   moreover have "t = (SOME t. t \<in> VV \<and> balance state t < - \<epsilon> * current_\<gamma> state \<and>
              resreach (current_flow state) s t)"
@@ -2572,7 +2577,7 @@ next
               intro: help1 help2 help3 help4)
   qed
 
-abbreviation "get_source_target_path_a_cond \<equiv> loopB.get_source_target_path_a_cond"
+abbreviation "get_source_target_path_a_cond \<equiv> send_flow.get_source_target_path_a_cond"
 
 lemma get_source_target_path_a_ax:
   assumes "get_source_target_path_a_cond  state s t P b \<gamma> f"
@@ -2581,8 +2586,8 @@ lemma get_source_target_path_a_ax:
          flow_network_spec.oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<and>
          distinct P"
   apply(insert assms)
-  unfolding  loopB.get_source_target_path_a_cond_def
-             get_source_target_path_a_def loopB.loopB_call1_cond_def
+  unfolding  send_flow.get_source_target_path_a_cond_def
+             get_source_target_path_a_def send_flow.send_flow_call1_cond_def
 proof(cases "invar_isOptflow state", goal_cases)
   case 1
   define bf where  "bf = bellman_ford_forward (not_blocked state) (current_flow state) s"
@@ -2614,10 +2619,10 @@ proof(cases "invar_isOptflow state", goal_cases)
     "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)).
         0 < current_flow state (flow_network_spec.oedge e))"
     by auto
-  have  loopB_call1_cond: " loopB_call1_cond state"
-    using  1 unfolding loopB.loopB_call1_cond_def by presburger
+  have  send_flow_call1_cond: " send_flow_call1_cond state"
+    using  1 unfolding send_flow.send_flow_call1_cond_def by presburger
   have t_prop: "b t < - \<epsilon> * \<gamma>" "resreach f s t" 
-    using get_target_for_source_ax[OF knowledge (8,9,12,10,11) loopB_call1_cond knowledge(13)]
+    using get_target_for_source_ax[OF knowledge (8,9,12,10,11) send_flow_call1_cond knowledge(13)]
     by auto
   then obtain pp where pp_prop:"augpath f pp" "fstv (hd pp) = s" "sndv (last pp) = t" "set pp \<subseteq> EEE"
     using cost_flow_network.resreach_imp_augpath[OF , of f s t] by auto
@@ -3096,13 +3101,13 @@ lemma to_edge_of_get_edge_and_costs_backward:
 
 lemma get_source_for_target_ax:
 " \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state; t = get_target state;
-                         s = get_source_for_target state t; loopB_call2_cond state; invar_gamma state\<rbrakk>
+                         s = get_source_for_target state t; send_flow_call2_cond state; invar_gamma state\<rbrakk>
                         \<Longrightarrow> s \<in> VV \<and> b s > \<epsilon> * \<gamma> \<and> resreach f s t"
   unfolding get_source_for_target_def
 proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
   case 1
   note assms = this
-  have call2_cond: "loopB_call2_cond state"
+  have call2_cond: "send_flow_call2_cond state"
     using  "1"(6) unfolding sym[OF get_source_for_target_def] by simp
   have t_prop: "t \<in> VV" "- (1 - \<epsilon>) * \<gamma> > b t"
     using get_target_axioms[OF 1(1,2,4)] "1"(6) unfolding sym[OF get_source_for_target_def] 
@@ -3334,7 +3339,7 @@ next
   have "\<exists> s.
         s \<in> VV \<and> balance state s > \<epsilon> * current_\<gamma> state \<and> resreach (current_flow state) s t"
     using 2(6)
-    unfolding LoopB.loopB.loopB_call2_cond_def[OF loopB] 2(1-4) Let_def
+    unfolding Send_Flow.send_flow.send_flow_call2_cond_def[OF send_flow] 2(1-4) Let_def
     by metis
   moreover have "s = (SOME s. s \<in> VV \<and> balance state s > \<epsilon> * current_\<gamma> state \<and>
              resreach (current_flow state) s t)"
@@ -3471,7 +3476,7 @@ shows " e \<in> to_rdgs to_pair conv forst \<longleftrightarrow>
   by(auto simp add: make_pair_fst_snd)
     (smt (verit, best) Int_Collect swap_simp to_pair_axioms)+
 
-abbreviation "get_source_target_path_b_cond \<equiv> loopB.get_source_target_path_b_cond "
+abbreviation "get_source_target_path_b_cond \<equiv> send_flow.get_source_target_path_b_cond "
 
 lemma get_source_target_path_b_ax:
   assumes "get_source_target_path_b_cond  state s t P b \<gamma> f"
@@ -3480,12 +3485,12 @@ lemma get_source_target_path_b_ax:
          flow_network_spec.oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<and>
          distinct P"
   apply(insert assms)
-  unfolding  loopB.get_source_target_path_b_cond_def
-             get_source_target_path_b_def loopB.loopB_call2_cond_def
+  unfolding  send_flow.get_source_target_path_b_cond_def
+             get_source_target_path_b_def send_flow.send_flow_call2_cond_def
 proof(cases "invar_isOptflow state", goal_cases)
   case 1
-  have loopB_call2_cond: "loopB_call2_cond state"
-    using 1 unfolding loopB.loopB_call2_cond_def Let_def by force
+  have send_flow_call2_cond: "send_flow_call2_cond state"
+    using 1 unfolding send_flow.send_flow_call2_cond_def Let_def by force
   define bf where  "bf = bellman_ford_backward (not_blocked state) (current_flow state) t"
   define ss where "ss = get_source_for_target_aux bf (balance state) (current_\<gamma> state) vs"
   define Pbf where "Pbf = rev'(search_rev_path_exec t bf s Nil)"
@@ -3507,7 +3512,7 @@ proof(cases "invar_isOptflow state", goal_cases)
     "\<exists>s\<in>VV. b s > \<epsilon> * \<gamma> \<and> resreach f s t"
                   "s = ss"  "P = PP"
     using 1 
-     by(auto intro: loopB.loopB_call2_condE[OF loopB_call2_cond] 
+     by(auto intro: send_flow.send_flow_call2_condE[OF send_flow_call2_cond] 
           simp add: bf_def ss_def Pbf_def PP_def split: if_split)
        (insert"1"(1) , unfold get_source_for_target_def, presburger+)  
   hence 
@@ -3515,7 +3520,7 @@ proof(cases "invar_isOptflow state", goal_cases)
         0 < current_flow state (flow_network_spec.oedge e))"
     by auto
   have s_prop: "b s > \<epsilon> * \<gamma>" "resreach f s t" 
-    using get_source_for_target_ax[OF knowledge (8,9,12,10,11) loopB_call2_cond knowledge(13)]
+    using get_source_for_target_ax[OF knowledge (8,9,12,10,11) send_flow_call2_cond knowledge(13)]
     by auto
   then obtain pp where pp_prop:"augpath f pp" "fstv (hd pp) = s" "sndv (last pp) = t" "set pp \<subseteq> EEE"
     using cost_flow_network.resreach_imp_augpath[OF , of f s t] by auto
@@ -3770,17 +3775,19 @@ next
     by(auto simp add: cost_flow_network.Rcap_def)
 qed  
 
-interpretation loopB_Reasoning: loopB_Reasoning snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete
+interpretation send_flow_reasoning: send_flow_reasoning snd make_pair create_edge \<u> \<c> \<E> vset_empty vset_delete
        vset_insert vset_inv isin get_from_set
      filter are_all set_invar to_set lookup' t_set sel adjmap_inv' \<b> to_pair \<epsilon> \<E>_impl all_empty N default_conv_to_rdg
      get_source_target_path_b get_source get_target get_source_for_target get_target_for_source fst
      get_source_target_path_a edge_map_update'
   using get_source_target_path_a_ax get_source_target_path_b_ax get_source_axioms get_target_axioms
         get_target_for_source_ax get_source_for_target_ax algo 
-  by (auto simp add:  loopB_Reasoning_axioms_def  Adj_Map_Specs2 Set3_axioms
-             intro!:  loopB.intro loopB_spec.intro loopB_Reasoning.intro  algo_spec.intro)
+  by (auto simp add:  send_flow_reasoning_axioms_def  Adj_Map_Specs2 Set3_axioms
+             intro!:  send_flow.intro send_flow_spec.intro send_flow_reasoning.intro  algo_spec.intro
+              elim!: send_flow.get_source_condE send_flow.get_target_condE send_flow.get_target_for_source_condE
+                     send_flow.get_source_for_target_condE)
 
-lemmas loopB_Reasoning= loopB_Reasoning.loopB_Reasoning_axioms
+lemmas send_flow_reasoning= send_flow_reasoning.send_flow_reasoning_axioms
 
 definition "norma e = (to_pair {prod.fst e, prod.snd e})"
 
@@ -3809,14 +3816,61 @@ abbreviation "implementation_invar \<equiv> algo_impl.implementation_invar make_
                                      rep_comp_lookup rep_comp_invar conv_lookup conv_invar
                                      not_blocked_lookup not_blocked_invar"
 
+lemmas send_flow_impl_spec = send_flow_impl_spec.intro[OF algo.algo_spec_axioms local.algo_impl_spec]
+lemmas send_flow_impl_precond_defs = send_flow_impl_precond_defs.intro[OF send_flow send_flow_impl_spec  algo_impl]
+
+abbreviation "abstract_impl_correspond_a_cond == 
+         send_flow_impl_precond_defs.abstract_impl_correspond_a_cond snd make_pair
+         local.\<u> local.\<c> local.\<E> vset_inv isin set_invar to_set lookup' adjmap_inv'
+         local.\<b> to_pair local.\<epsilon> local.default_conv_to_rdg get_source_target_path_b
+         get_source get_target get_source_for_target get_target_for_source
+         get_source_target_path_a flow_lookup flow_invar bal_lookup bal_invar
+         rep_comp_lookup rep_comp_invar conv_lookup conv_invar not_blocked_lookup
+         not_blocked_invar local.get_source_target_path_a_impl fst "
+lemmas abstract_impl_correspond_a_condE = 
+     send_flow_impl_precond_defs.abstract_impl_correspond_a_condE[OF send_flow_impl_precond_defs]
+
+abbreviation "impl_a_None_cond == send_flow_impl_precond_defs.impl_a_None_cond snd make_pair local.\<u> local.\<E>
+         vset_inv isin set_invar to_set lookup' adjmap_inv' local.\<b> to_pair local.\<epsilon>
+         local.default_conv_to_rdg get_source_target_path_b get_source get_target
+         get_source_for_target get_target_for_source get_source_target_path_a
+         flow_lookup flow_invar bal_lookup bal_invar rep_comp_lookup rep_comp_invar
+         conv_lookup conv_invar not_blocked_lookup not_blocked_invar fst"
+lemmas impl_a_None_condE = send_flow_impl_precond_defs.impl_a_None_condE[OF send_flow_impl_precond_defs]
+
+abbreviation "abstract_impl_correspond_b_cond == 
+         send_flow_impl_precond_defs.abstract_impl_correspond_b_cond snd make_pair
+         local.\<u> local.\<c> local.\<E> vset_inv isin set_invar to_set lookup' adjmap_inv'
+         local.\<b> to_pair local.\<epsilon> local.default_conv_to_rdg get_source_target_path_b
+         get_source get_target get_source_for_target get_target_for_source
+         get_source_target_path_a flow_lookup flow_invar bal_lookup bal_invar
+         rep_comp_lookup rep_comp_invar conv_lookup conv_invar not_blocked_lookup
+         not_blocked_invar local.get_source_target_path_b_impl fst"
+lemmas abstract_impl_correspond_b_condE = send_flow_impl_precond_defs.abstract_impl_correspond_b_condE[OF send_flow_impl_precond_defs]
+
+abbreviation "impl_b_None_cond == 
+         send_flow_impl_precond_defs.impl_b_None_cond snd make_pair local.\<u> local.\<E>
+         vset_inv isin set_invar to_set lookup' adjmap_inv' local.\<b> to_pair local.\<epsilon>
+         local.default_conv_to_rdg get_source_target_path_b get_source get_target
+         get_source_for_target get_target_for_source get_source_target_path_a
+         flow_lookup flow_invar bal_lookup bal_invar rep_comp_lookup rep_comp_invar
+         conv_lookup conv_invar not_blocked_lookup not_blocked_invar fst"
+lemmas impl_b_None_condE = send_flow_impl_precond_defs.impl_b_None_condE[OF send_flow_impl_precond_defs]
+
+abbreviation "vertex_selection_cond \<equiv> send_flow_impl_precond_defs.vertex_selection_cond make_pair local.\<E> vset_inv isin set_invar
+         lookup' adjmap_inv' local.\<b> local.default_conv_to_rdg flow_lookup flow_invar bal_lookup
+         bal_invar rep_comp_lookup rep_comp_invar conv_lookup conv_invar not_blocked_lookup
+         not_blocked_invar"
+lemmas vertex_selection_condE = send_flow_impl_precond_defs.vertex_selection_condE[OF send_flow_impl_precond_defs]
+
 lemma get_source_impl_axioms:
-"\<lbrakk>abstract state_impl = state; b = balance state; \<gamma> = current_\<gamma> state;
-              \<exists> s \<in> VV. b s > (1 - \<epsilon>) * \<gamma>; implementation_invar state_impl\<rbrakk> \<Longrightarrow> get_source state = the (get_source_impl state_impl )"
-"\<lbrakk>abstract state_impl = state; b = balance state; \<gamma> = current_\<gamma> state; implementation_invar state_impl\<rbrakk>
-   \<Longrightarrow> \<not> (\<exists> s \<in> VV. b s > (1 - \<epsilon>) * \<gamma>) \<longleftrightarrow> ((get_source_impl state_impl) = None )"
-proof(all \<open>goal_cases\<close>)
-  assume assms: "abstract state_impl = state" "b = balance state"
+  assumes "vertex_selection_cond state b \<gamma> state_impl"
+  shows "\<exists> s \<in> VV. b s > (1 - \<epsilon>) * \<gamma> \<Longrightarrow> get_source state = the (get_source_impl state_impl )"
+        "\<not> (\<exists> s \<in> VV. b s > (1 - \<epsilon>) * \<gamma>) \<longleftrightarrow> ((get_source_impl state_impl) = None )"
+proof-
+  have assms: "abstract state_impl = state" "b = balance state"
                 "\<gamma> = current_\<gamma> state " "implementation_invar state_impl"
+    using assms by(auto intro: vertex_selection_condE)
   show goal1:"get_source state = the (get_source_impl state_impl)" 
     using assms(4) vs_is_V 
     by (auto intro!: arg_cong[of _ _ the] get_source_aux_aux_coincide 
@@ -3834,14 +3888,13 @@ proof(all \<open>goal_cases\<close>)
 qed
 
 lemma get_target_impl_axioms:
-"\<lbrakk>abstract state_impl = state; b = balance state; \<gamma> = current_\<gamma> state;
-              \<exists> t \<in> VV. b t < - (1 - \<epsilon>) * \<gamma>; implementation_invar state_impl\<rbrakk> 
-\<Longrightarrow> get_target state = the (get_target_impl state_impl )"
-"\<lbrakk>abstract state_impl = state; b = balance state; \<gamma> = current_\<gamma> state; implementation_invar state_impl\<rbrakk>
-   \<Longrightarrow> \<not> (\<exists> t \<in> VV. b t < - (1 - \<epsilon>) * \<gamma>) \<longleftrightarrow> ((get_target_impl state_impl) = None )"
-proof(all \<open>goal_cases\<close>)
-  assume assms: "abstract state_impl = state" "b = balance state"
+  assumes "vertex_selection_cond state b \<gamma> state_impl"
+  shows " \<exists> t \<in> VV. b t < - (1 - \<epsilon>) * \<gamma> \<Longrightarrow> get_target state = the (get_target_impl state_impl )"
+        "\<not> (\<exists> t \<in> VV. b t < - (1 - \<epsilon>) * \<gamma>) \<longleftrightarrow> ((get_target_impl state_impl) = None )"
+proof-
+  have assms: "abstract state_impl = state" "b = balance state"
                 "\<gamma> = current_\<gamma> state " "implementation_invar state_impl"
+    using assms by(auto intro: vertex_selection_condE)
   show goal1:"get_target state = the (get_target_impl state_impl)" 
     using assms(4) vs_is_V 
     by (auto intro!: arg_cong[of _ _ the] get_target_aux_aux_coincide 
@@ -3859,8 +3912,8 @@ proof(all \<open>goal_cases\<close>)
                      algo_impl.implementation_invar_def[OF algo_impl] )+
 qed
 
-lemmas get_source_target_path_a_condE = loopB.get_source_target_path_a_condE
-lemmas get_source_target_path_b_condE = loopB.get_source_target_path_b_condE
+lemmas get_source_target_path_a_condE = send_flow.get_source_target_path_a_condE
+lemmas get_source_target_path_b_condE = send_flow.get_source_target_path_b_condE
 
 lemma get_target_for_source_aux_aux_cong:
 "(\<And> x. x \<in> set xs \<Longrightarrow> connection_lookup connections x = connection_lookup connections' x) \<Longrightarrow>
@@ -3976,12 +4029,17 @@ proof-
     using forward_cong ingoing_edges_def backward_cong outgoing_edges_def
     by simp
 qed
-  
+
 lemma  abstract_impl_correspond_a:
-  assumes "get_source_target_path_a_cond state s t P b \<gamma> f"
+  assumes "abstract_impl_correspond_a_cond state state_impl s t P P_impl t_impl b \<gamma> f"
+shows "P_impl= P \<and> t_impl = t"
+proof-
+  have assms: "get_source_target_path_a_cond state s t P b \<gamma> f"
     "get_source_target_path_a_impl state_impl s = Some (t_impl, P_impl)" " invar_isOptflow state"
     "implementation_invar state_impl" "state = abstract state_impl"
-    shows "P_impl= P \<and> t_impl = t"
+    using assms
+    by(auto elim: abstract_impl_correspond_a_condE)
+  show ?thesis
 proof(rule get_source_target_path_a_condE[OF assms(1)], goal_cases)
   case 1
   note knowledge= this
@@ -3994,7 +4052,7 @@ proof(rule get_source_target_path_a_condE[OF assms(1)], goal_cases)
                          (edges_of_vwalk Pbf)"
   have PP_is_P_tt_is_t:"PP = P"  "tt = t"
    using knowledge(1,2,5,6,10-12) assms(3)
-   by(auto intro: loopB_call1_condE[OF "1"(13)] 
+   by(auto intro: send_flow_call1_condE[OF "1"(13)] 
         simp add: PP_def Pbf_def tt_def bf_def  get_target_for_source_def 
                   get_source_target_path_a_def get_target_for_source_aux_def )
   define bf_impl where "bf_impl = bellman_ford_forward (\<lambda>e. TB (not_blocked_lookup (not_blocked_impl state_impl) e))
@@ -4055,12 +4113,17 @@ proof(rule get_source_target_path_a_condE[OF assms(1)], goal_cases)
     using PP_is_P_tt_is_t PP_is_P_tt_is_t_impl 
     by simp
 qed
+qed
 
 lemma  abstract_impl_correspond_b:
-  assumes "get_source_target_path_b_cond state s t P b \<gamma> f"
+  assumes "abstract_impl_correspond_b_cond state state_impl s t P P_impl s_impl b \<gamma> f"
+  shows "P_impl= P \<and> s_impl = s"
+proof-
+  have assms: "get_source_target_path_b_cond state s t P b \<gamma> f"
     "get_source_target_path_b_impl state_impl t = Some (s_impl, P_impl)" " invar_isOptflow state"
     "implementation_invar state_impl" "state = abstract state_impl"
-    shows "P_impl= P \<and> s_impl = s"
+    using assms by(auto intro: abstract_impl_correspond_b_condE)
+  show ?thesis
 proof(rule get_source_target_path_b_condE[OF assms(1)], goal_cases)
   case 1
   note knowledge= this
@@ -4073,7 +4136,7 @@ proof(rule get_source_target_path_b_condE[OF assms(1)], goal_cases)
                          (edges_of_vwalk Pbf)"
   have PP_is_P_ss_is_s:"PP = P"  "ss = s"
    using knowledge(1,3,5,6,10-12) assms(3)
-   by(auto intro: loopB_call2_condE[OF "1"(13)] 
+   by(auto intro: send_flow_call2_condE[OF "1"(13)] 
         simp add: PP_def Pbf_def ss_def bf_def  get_source_for_target_def 
                   get_source_target_path_b_def get_source_for_target_aux_def )
   define bf_impl where "bf_impl = bellman_ford_backward (\<lambda>e. TB (not_blocked_lookup (not_blocked_impl state_impl) e))
@@ -4132,13 +4195,14 @@ proof(rule get_source_target_path_b_condE[OF assms(1)], goal_cases)
     using PP_is_P_ss_is_s PP_is_P_ss_is_s_impl 
     by simp
 qed
+qed
 
 lemma impl_a_None_aux:
 " \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
-            s \<in> VV; aux_invar state; (\<forall> e \<in> \<F> state . f e > 0);
-            loopB_call1_cond state \<or> loopB_fail1_cond state; s = get_source state;
-           state = abstract state_impl; implementation_invar state_impl;
-           invar_gamma state\<rbrakk>
+   s \<in> VV; aux_invar state; (\<forall> e \<in> \<F> state . f e > 0);
+   send_flow_call1_cond state \<or> send_flow_fail1_cond state; s = get_source state;
+   state = abstract state_impl; implementation_invar state_impl;
+   invar_gamma state\<rbrakk>
     \<Longrightarrow> \<not> (\<exists> t \<in> VV. b t < - \<epsilon> * \<gamma> \<and> resreach f s t) \<longleftrightarrow> get_source_target_path_a_impl state_impl s = None"
 proof(goal_cases)
   case 1
@@ -4184,7 +4248,7 @@ proof(goal_cases)
     by (simp add: bellman_ford)
   have s_prop: "(1 - \<epsilon>) * \<gamma> < b s" "s \<in> VV" 
      by(rule disjE[OF knowledge(7)], insert get_source_aux[of vs \<gamma> b, OF _  refl] vs_is_V;
-     auto elim!: disjE[OF knowledge(7)] loopB_call1_condE loopB_fail1_condE 
+     auto elim!: disjE[OF knowledge(7)] send_flow_call1_condE send_flow_fail1_condE 
         simp add:  get_source_def knowledge)+
    hence bs0:"b s > 0"   
      using knowledge(11,2,1) \<epsilon>_axiom(2,4) algo.invar_gamma_def 
@@ -4339,25 +4403,15 @@ proof(goal_cases)
 qed
 
 lemma  impl_a_None:
-       "b = balance state \<Longrightarrow>
-       \<gamma> = current_\<gamma> state \<Longrightarrow>
-       f = current_flow state \<Longrightarrow>
-       abstract state_impl = state \<Longrightarrow>
-       s \<in> VV \<Longrightarrow>
-       aux_invar state \<Longrightarrow>
-       (\<forall>e\<in>\<F> state. 0 < f e) \<Longrightarrow>
-       loopB_call1_cond state \<or> loopB_fail1_cond state \<Longrightarrow>
-       s = get_source state \<Longrightarrow>
-       implementation_invar state_impl \<Longrightarrow>
-       algo.invar_gamma state \<Longrightarrow>
+     "impl_a_None_cond state state_impl s b \<gamma> f \<Longrightarrow>
        (\<not> (\<exists>t\<in>VV. b t < - \<epsilon> * \<gamma> \<and> resreach f s t)) = (get_source_target_path_a_impl state_impl s = None)"
   using impl_a_None_aux 
-  by force
+  by (force elim!: impl_a_None_condE)
 
 lemma impl_b_None_aux:
 " \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
             t \<in> VV; aux_invar state; (\<forall> e \<in> \<F> state . f e > 0);
-            loopB_call2_cond state \<or> loopB_fail2_cond state; t = get_target state;
+            send_flow_call2_cond state \<or> send_flow_fail2_cond state; t = get_target state;
            state = abstract state_impl; implementation_invar state_impl;
            invar_gamma state\<rbrakk>
     \<Longrightarrow> \<not> (\<exists> s \<in> VV. b s > \<epsilon> * \<gamma> \<and> resreach f s t) \<longleftrightarrow> get_source_target_path_b_impl state_impl t = None"
@@ -4406,7 +4460,7 @@ proof(goal_cases)
   have t_prop: "- (1 - \<epsilon>) * \<gamma> > b t" "t \<in> VV" 
     by(rule disjE[OF knowledge(7)]) 
       (insert get_target_aux[of vs b \<gamma> , OF _  refl] vs_is_V knowledge;
-         fastforce elim!: loopB_call2_condE loopB_fail2_condE 
+         fastforce elim!: send_flow_call2_condE send_flow_fail2_condE 
         simp add:  get_target_def knowledge)+ 
    hence bt0:"b t < 0"   
      using knowledge(11,2,1) \<epsilon>_axiom(2,4) algo.invar_gamma_def
@@ -4590,20 +4644,10 @@ proof(goal_cases)
 qed
 
 lemma impl_b_None:
-" b = balance state \<Longrightarrow>
-       \<gamma> = current_\<gamma> state \<Longrightarrow>
-       f = current_flow state \<Longrightarrow>
-       abstract state_impl = state \<Longrightarrow>
-       t \<in> VV \<Longrightarrow>
-       aux_invar state \<Longrightarrow>
-       (\<forall>e\<in>\<F> state. 0 < f e) \<Longrightarrow>
-       loopB_call2_cond state \<or> loopB_fail2_cond state \<Longrightarrow>
-       t = get_target state \<Longrightarrow>
-       implementation_invar state_impl \<Longrightarrow>
-       algo.invar_gamma state \<Longrightarrow>
+"impl_b_None_cond state state_impl t b \<gamma> f\<Longrightarrow>
        (\<not> (\<exists>s\<in>VV. \<epsilon> * \<gamma> < b s \<and> resreach f s t)) = (get_source_target_path_b_impl state_impl t = None)"
   using  impl_b_None_aux
-  by force
+  by (force elim!: impl_b_None_condE)
 
 lemma test_all_vertices_zero_balance_aux:
 "test_all_vertices_zero_balance_aux b xs \<longleftrightarrow> (\<forall> x \<in> set xs. b x = 0)"
@@ -4620,31 +4664,15 @@ lemma test_all_vertices_zero_balance:
                     algo_impl.abstract_bal_map_def[OF algo_impl]
                     test_all_vertices_zero_balance_def test_all_vertices_zero_balance_aux)
 
-lemma loopB_impl_axioms:
-    "loopB_impl_axioms snd make_pair \<u> \<c> \<E> vset_inv isin set_invar to_set lookup' adjmap_inv' \<b> to_pair \<epsilon> default_conv_to_rdg
+lemma send_flow_impl_axioms:
+    "send_flow_impl_axioms snd make_pair \<u> \<c> \<E> vset_inv isin set_invar to_set lookup' adjmap_inv' \<b> to_pair \<epsilon> default_conv_to_rdg
      get_source_target_path_b get_source get_target get_source_for_target get_target_for_source get_source_target_path_a
      flow_lookup flow_invar bal_lookup bal_invar rep_comp_lookup rep_comp_invar conv_lookup conv_invar not_blocked_lookup
      not_blocked_invar get_source_target_path_a_impl get_source_target_path_b_impl get_source_impl get_target_impl
      test_all_vertices_zero_balance fst"
-  unfolding loopB_impl_axioms_def
-  apply rule
-  subgoal
-    apply rule
-    subgoal
-       using abstract_impl_correspond_a  impl_a_None by auto fastforce+
-    subgoal
-      using abstract_impl_correspond_b impl_b_None by auto fastforce+
-      done
-    apply rule
-    subgoal      
-      using get_source_impl_axioms by auto
-    apply rule
-    subgoal      
-      using get_target_impl_axioms by auto     
-    apply rule
-    subgoal      
-      using get_target_impl_axioms by auto 
-    using test_all_vertices_zero_balance by auto
+  using abstract_impl_correspond_a  impl_a_None  abstract_impl_correspond_b impl_b_None  
+        get_source_impl_axioms  get_target_impl_axioms  test_all_vertices_zero_balance 
+    by (auto  simp add: send_flow_impl_axioms_def)
 
 interpretation rep_comp_map2: Map where empty = rep_comp_empty and update=rep_comp_update and lookup= rep_comp_lookup
 and delete= rep_comp_delete and invar = rep_comp_invar
@@ -4733,32 +4761,34 @@ interpretation orlins_impl: orlins_impl snd make_pair create_edge \<u> \<E> \<c>
      \<E>_impl get_path flow_empty  flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete bal_lookup
      bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_empty conv_update
      conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty not_blocked_delete not_blocked_lookup
-     not_blocked_invar rep_comp_update_all not_blocked_update_all flow_update_all get_max get_source_target_path_b
+     not_blocked_invar rep_comp_update_all  flow_update_all not_blocked_update_all get_max get_source_target_path_b
      get_source get_target get_source_for_target get_target_for_source get_source_target_path_a
      get_source_target_path_a_impl get_source_target_path_b_impl get_source_impl get_target_impl
      test_all_vertices_zero_balance norma init_flow init_bal init_rep_card init_not_blocked fst
-  using  orlins_impl_axioms loopA_axioms_extended Adj_Map_Specs2 Set3  Set3_axioms
-         algo loopB_Reasoning loopB_impl_axioms
+  using  orlins_impl_axioms maintain_forest_axioms_extended Adj_Map_Specs2 Set3  Set3_axioms
+         algo send_flow_reasoning send_flow_impl_axioms
          Map_bal.Map_axioms Map_conv Map_flow.Map_axioms Map_not_blocked.Map_axioms
          conv_map.Map_axioms  Map_axioms
-  by(auto intro!: loopA.intro orlins_impl_spec.intro orlins_impl.intro  loopB_impl.intro
-                  loopA_impl.intro loopB_impl_spec.intro loopA_impl_spec.intro loopA_spec.intro
+ by(auto intro!: maintain_forest.intro orlins_impl_spec.intro orlins_impl.intro  send_flow_impl.intro
+                  maintain_forest_impl.intro send_flow_impl_spec.intro maintain_forest_impl_spec.intro maintain_forest_spec.intro
                   algo_impl_spec.intro algo_impl.intro algo_spec.intro algo_impl_spec_axioms.intro  
-                  flow_update_all get_max not_blocked_update_all rep_comp_update_all
-        simp add: loopA_axioms_def orlins_def orlins_axioms_def norma_def insert_commute to_pair_axioms)
+                  flow_update_all get_max not_blocked_update_all rep_comp_update_all 
+                  map_update_all.intro map_update_all_axioms.intro
+        simp add: maintain_forest_axioms_def orlins_def orlins_axioms_def 
+                  norma_def insert_commute to_pair_axioms send_flow_impl_precond_defs )
 
 lemmas orlins_impl = orlins_impl.orlins_impl_axioms
 
 definition "initial_state_impl  =
-Orlins_Implementation.orlins_impl_spec.initial_impl snd filter all_empty \<E>_impl conv_empty rep_comp_update_all
- not_blocked_update_all flow_update_all get_max fst init_flow 
+Orlins_Implementation.orlins_impl_spec.initial_impl snd filter all_empty \<E>_impl 
+    conv_empty rep_comp_update_all  flow_update_all not_blocked_update_all get_max fst init_flow 
 init_bal init_rep_card init_not_blocked"
 
-definition "loopA_loop_impl = loopA_impl_spec.loopA_impl snd edge_map_update' vset_insert filter lookup'
+definition "maintain_forest_loop_impl = maintain_forest_impl_spec.maintain_forest_impl snd edge_map_update' vset_insert filter lookup'
 N get_from_set get_path flow_update flow_lookup bal_update bal_lookup rep_comp_lookup conv_update
- conv_lookup rep_comp_update_all not_blocked_update_all fst"
+ conv_lookup rep_comp_update_all  not_blocked_update_all fst"
 
-definition "loopB_loop_impl = loopB_impl_spec.loopB_impl flow_update flow_lookup bal_update bal_lookup
+definition "send_flow_loop_impl = send_flow_impl_spec.send_flow_impl flow_update flow_lookup bal_update bal_lookup
  get_source_target_path_a_impl
  get_source_target_path_b_impl get_source_impl
  get_target_impl test_all_vertices_zero_balance "
@@ -4770,7 +4800,7 @@ definition "orlins_loop_impl =
 get_source_target_path_a_impl get_source_target_path_b_impl get_source_impl
  get_target_impl test_all_vertices_zero_balance fst"
 
-definition "final_state = orlins_loop_impl (loopB_loop_impl  (initial_state_impl))"
+definition "final_state = orlins_loop_impl (send_flow_loop_impl  (initial_state_impl))"
 definition "final_flow_impl = current_flow_impl final_state"
 
 definition "abstract_flow_map = algo_impl_spec.abstract_flow_map flow_lookup"
@@ -4781,12 +4811,12 @@ corollary correctness_of_implementation:
  "return_impl final_state = notyetterm \<Longrightarrow>  False"
   using orlins_impl.orlins_impl_is_correct[OF  refl] 
   by(auto simp add: final_flow_impl_def final_state_def abstract_flow_map_def
- orlins_loop_impl_def initial_state_impl_def loopB_loop_impl_def)
+ orlins_loop_impl_def initial_state_impl_def send_flow_loop_impl_def)
 
 lemma final_flow_domain: "dom (flow_lookup final_flow_impl) = \<E>"
   using orlins_impl.final_flow_domain
   by(auto simp add: final_flow_impl_def final_state_def abstract_flow_map_def
- orlins_loop_impl_def initial_state_impl_def loopB_loop_impl_def)
+ orlins_loop_impl_def initial_state_impl_def send_flow_loop_impl_def)
 
 end
 end
@@ -4817,7 +4847,7 @@ interpretation not_blocked_iterator: Map_iterator not_blocked_invar not_blocked_
 lemmas not_blocked_iterator = not_blocked_iterator.Map_iterator_axioms
 
 definition "final_state make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup = orlins_impl  make_pair create_edge \<E>_impl \<c>_impl c_lookup
-                    (loopB_impl  make_pair  create_edge \<E>_impl \<c>_impl c_lookup
+                    (send_flow_impl  make_pair  create_edge \<E>_impl \<c>_impl c_lookup
                             (initial_impl  make_pair \<E>_impl \<b>_impl))"
 
 definition "final_flow_impl  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup=
@@ -4879,10 +4909,10 @@ corollary correctness_of_implementation:
     by(auto simp add: final_state_def 
                 function_generation_proof.final_state_def[OF  no_cycle_cond]
                 function_generation_proof.orlins_loop_impl_def[OF  no_cycle_cond]
-                orlins_impl_def loopB_impl_def N_def get_source_target_path_a_impl_def
+                orlins_impl_def send_flow_impl_def N_def get_source_target_path_a_impl_def
                 get_source_target_path_b_impl_def get_source_impl_def get_target_impl_def get_path_def
                 test_all_vertices_zero_balance_def 
-                function_generation_proof.loopB_loop_impl_def[OF  no_cycle_cond] initial_impl_def 
+                function_generation_proof.send_flow_loop_impl_def[OF  no_cycle_cond] initial_impl_def 
                 function_generation_proof.initial_state_impl_def[OF  no_cycle_cond] init_flow_def
                 init_bal_def init_rep_card_def init_not_blocked_def abstract_flow_map_def final_flow_impl_def
                 function_generation_proof.final_flow_impl_def[OF  no_cycle_cond]
@@ -4892,15 +4922,15 @@ lemma final_flow_domain:
  "dom (flow_lookup (final_flow_impl  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup)) = \<E> \<E>_impl"
   using function_generation_proof.final_flow_domain[OF no_cycle_cond]
      by(auto simp add: final_state_def 
-                function_generation_proof.final_state_def[OF  no_cycle_cond]
-                function_generation_proof.orlins_loop_impl_def[OF  no_cycle_cond]
-                orlins_impl_def loopB_impl_def N_def get_source_target_path_a_impl_def
+                function_generation_proof.final_state_def[OF no_cycle_cond]
+                function_generation_proof.orlins_loop_impl_def[OF no_cycle_cond]
+                orlins_impl_def send_flow_impl_def N_def get_source_target_path_a_impl_def
                 get_source_target_path_b_impl_def get_source_impl_def get_target_impl_def get_path_def
                 test_all_vertices_zero_balance_def 
-                function_generation_proof.loopB_loop_impl_def[OF  no_cycle_cond] initial_impl_def 
-                function_generation_proof.initial_state_impl_def[OF  no_cycle_cond] init_flow_def
-                init_bal_def init_rep_card_def init_not_blocked_def  final_flow_impl_def
-                function_generation_proof.final_flow_impl_def[OF  no_cycle_cond] \<E>_def )
+                function_generation_proof.send_flow_loop_impl_def[OF no_cycle_cond] initial_impl_def 
+                function_generation_proof.initial_state_impl_def[OF no_cycle_cond] init_flow_def
+                init_bal_def init_rep_card_def init_not_blocked_def final_flow_impl_def
+                function_generation_proof.final_flow_impl_def[OF no_cycle_cond] \<E>_def )
 
 end
 end

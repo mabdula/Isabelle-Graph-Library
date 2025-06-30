@@ -1,6 +1,6 @@
 section \<open>Laminar Families\<close>
 
-theory LaminarFamily
+theory Laminar_Family
   imports Main
 begin
 

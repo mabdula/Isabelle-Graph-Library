@@ -1,7 +1,7 @@
 section \<open>Implementation with Abstract Datatypes\<close>
 
 theory Orlins_Implementation
-  imports IntermediateSummary LoopA LoopB Orlins
+  imports Maintain_Forest Send_Flow Orlins
 begin
 context Map
 begin
@@ -11,61 +11,33 @@ end
 
 locale algo_impl_spec =
 algo_spec where fst = "fst::'edge_type \<Rightarrow> 'a"+ 
-flow_map: Map  flow_empty "flow_update::'edge_type \<Rightarrow> real \<Rightarrow> 'f_impl \<Rightarrow> 'f_impl"
-                flow_delete flow_lookup flow_invar +
+flow_map: map_update_all  flow_empty "flow_update::'edge_type \<Rightarrow> real \<Rightarrow> 'f_impl \<Rightarrow> 'f_impl"
+                flow_delete flow_lookup flow_invar flow_update_all+
 bal_map: Map  bal_empty "bal_update:: 'a \<Rightarrow> real \<Rightarrow> 'b_impl \<Rightarrow> 'b_impl" 
                bal_delete bal_lookup bal_invar +
-rep_comp_map: Map  rep_comp_empty "rep_comp_update::'a \<Rightarrow> ('a \<times> nat) \<Rightarrow> 'r_comp_impl \<Rightarrow> 'r_comp_impl"
-              rep_comp_delete rep_comp_lookup rep_comp_invar +
+rep_comp_map: map_update_all rep_comp_empty "rep_comp_update::'a \<Rightarrow> ('a \<times> nat) \<Rightarrow> 'r_comp_impl \<Rightarrow> 'r_comp_impl"
+              rep_comp_delete rep_comp_lookup rep_comp_invar rep_comp_update_all +
 conv_map: Map  conv_empty "conv_update::('a \<times> 'a) \<Rightarrow> 'edge_type Redge \<Rightarrow> 'conv_impl \<Rightarrow> 'conv_impl"
               conv_delete conv_lookup conv_invar +
-not_blocked_map: Map  not_blocked_empty "not_blocked_update::'edge_type \<Rightarrow> bool \<Rightarrow> 'not_blocked_impl\<Rightarrow> 'not_blocked_impl"
-              not_blocked_delete not_blocked_lookup not_blocked_invar 
+not_blocked_map: map_update_all  not_blocked_empty "not_blocked_update::'edge_type \<Rightarrow> bool \<Rightarrow> 'not_blocked_impl\<Rightarrow> 'not_blocked_impl"
+              not_blocked_delete not_blocked_lookup not_blocked_invar not_blocked_update_all
 for flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete 
     bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup 
     rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update 
-    not_blocked_empty not_blocked_delete not_blocked_lookup not_blocked_invar fst+
-fixes rep_comp_update_all::"('a \<Rightarrow> ('a \<times> nat) \<Rightarrow> ('a \<times> nat)) \<Rightarrow>  'r_comp_impl \<Rightarrow> 'r_comp_impl"
-fixes not_blocked_update_all::"('edge_type \<Rightarrow> bool \<Rightarrow> bool) \<Rightarrow> 'not_blocked_impl \<Rightarrow> 'not_blocked_impl"
-fixes flow_update_all::"('edge_type \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'f_impl \<Rightarrow> 'f_impl"
+    not_blocked_empty not_blocked_delete not_blocked_lookup not_blocked_invar fst 
+   rep_comp_update_all flow_update_all not_blocked_update_all+
 fixes get_max::"('a \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'b_impl \<Rightarrow> real"
-assumes  rep_comp_update_all: 
-    "\<And> rep f. rep_comp_invar rep \<Longrightarrow> (\<And> x. x \<in> dom (rep_comp_lookup rep) 
-                  \<Longrightarrow> rep_comp_lookup (rep_comp_update_all f rep) x =
-                      Some (f x (the (rep_comp_lookup rep x))))"
-    "\<And> rep f g. rep_comp_invar rep \<Longrightarrow> (\<And> x. x \<in> dom (rep_comp_lookup rep)  \<Longrightarrow>
-                     f x (the (rep_comp_lookup rep x)) = g x (the (rep_comp_lookup rep x))) \<Longrightarrow>
-          rep_comp_update_all f rep = rep_comp_update_all g rep "
-   "\<And> rep f. rep_comp_invar rep \<Longrightarrow> rep_comp_invar (rep_comp_update_all f rep)"
-   "\<And> rep f. rep_comp_invar rep \<Longrightarrow> dom (rep_comp_lookup (rep_comp_update_all f rep))
-                              = dom (rep_comp_lookup rep)"
- and not_blocked_update_all: 
-    "\<And> nblckd f. not_blocked_invar nblckd \<Longrightarrow> (\<And> x. x \<in> dom (not_blocked_lookup nblckd) 
-                  \<Longrightarrow> not_blocked_lookup (not_blocked_update_all f nblckd) x =
-                      Some (f x (the (not_blocked_lookup nblckd x))))"
-    "\<And> nblckd f g. not_blocked_invar nblckd \<Longrightarrow> (\<And> x. x \<in> dom (not_blocked_lookup nblckd)  \<Longrightarrow>
-                     f x (the (not_blocked_lookup nblckd x)) = g x (the (not_blocked_lookup nblckd x))) \<Longrightarrow>
-          not_blocked_update_all f nblckd = not_blocked_update_all g nblckd "
-   "\<And> nblckd f. not_blocked_invar nblckd \<Longrightarrow> not_blocked_invar (not_blocked_update_all f nblckd)"
-   "\<And> nblckd f. not_blocked_invar nblckd \<Longrightarrow> dom (not_blocked_lookup (not_blocked_update_all f nblckd))
-                              = dom (not_blocked_lookup nblckd)"
- and flow_update_all: 
-    "\<And> fl f. flow_invar fl \<Longrightarrow> (\<And> x. x \<in> dom (flow_lookup fl) 
-                  \<Longrightarrow> flow_lookup (flow_update_all f fl) x =
-                      Some (f x (the (flow_lookup fl x))))"
-    "\<And> fl f g. flow_invar fl \<Longrightarrow> (\<And> x. x \<in> dom (flow_lookup fl)  \<Longrightarrow>
-                     f x (the (flow_lookup fl x)) = g x (the (flow_lookup fl x))) \<Longrightarrow>
-          flow_update_all f fl = flow_update_all g fl "
-   "\<And> fl f. flow_invar fl \<Longrightarrow> flow_invar (flow_update_all f fl)"
-   "\<And> fl f. flow_invar fl \<Longrightarrow> dom (flow_lookup (flow_update_all f fl))
-                              = dom (flow_lookup fl)"
-and get_max: "\<And> b f. bal_invar b \<Longrightarrow> dom (bal_lookup b) \<noteq> {}
- \<Longrightarrow> get_max f b = Max {f y (the (bal_lookup b y)) | y. y \<in> dom (bal_lookup b)}"
+assumes  get_max: "\<And> b f. \<lbrakk> bal_invar b; dom (bal_lookup b) \<noteq> {}\<rbrakk>
+                  \<Longrightarrow> get_max f b = Max {f y (the (bal_lookup b y)) | y. y \<in> dom (bal_lookup b)}"
 begin
 context
-  includes flow_map.automation and bal_map.automation and rep_comp_map.automation and conv_map.automation
-          and not_blocked_map.automation
+  includes flow_map.map.automation and bal_map.automation and rep_comp_map.map.automation and conv_map.automation
+          and not_blocked_map.map.automation
 begin
+
+lemmas rep_comp_update_all = rep_comp_map.update_all
+lemmas not_blocked_update_all = not_blocked_map.update_all
+lemmas flow_update_all=flow_map.update_all
 
 definition "insert_undirected_edge_impl u v forst = (let vsets_u = the (lookup forst u);
                                                     vsets_v = the (lookup forst v);
@@ -114,22 +86,21 @@ end
 end
 
 locale algo_impl = algo_impl_spec where rep_comp_update_all = 
-"rep_comp_update_all::('a \<Rightarrow> ('a \<times> nat) \<Rightarrow> ('a \<times> nat)) \<Rightarrow>  'r_comp_impl \<Rightarrow> 'r_comp_impl" and
-not_blocked_update_all="not_blocked_update_all::('edge_type \<Rightarrow> bool \<Rightarrow> bool) \<Rightarrow> 'not_blocked_impl \<Rightarrow> 'not_blocked_impl" and
- flow_update_all="flow_update_all::('edge_type \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'f_impl \<Rightarrow> 'f_impl" and
- get_max="get_max::('a \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'b_impl \<Rightarrow> real"
-and conv_empty = "conv_empty::'conv_impl"
- + algo
+"rep_comp_update_all::('a \<Rightarrow> ('a \<times> nat) \<Rightarrow> ('a \<times> nat)) \<Rightarrow>  'r_comp_impl \<Rightarrow> 'r_comp_impl" 
+and not_blocked_update_all="not_blocked_update_all::('edge_type \<Rightarrow> bool \<Rightarrow> bool) \<Rightarrow> 'not_blocked_impl \<Rightarrow> 'not_blocked_impl" 
+and flow_update_all="flow_update_all::('edge_type \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'f_impl \<Rightarrow> 'f_impl" 
+and get_max="get_max::('a \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'b_impl \<Rightarrow> real"
+and conv_empty = "conv_empty::'conv_impl" + 
+algo
 for rep_comp_update_all not_blocked_update_all flow_update_all get_max conv_empty
 begin
 context
-  includes flow_map.automation and bal_map.automation and rep_comp_map.automation and conv_map.automation
-       and not_blocked_map.automation
+  includes flow_map.map.automation and bal_map.automation and rep_comp_map.map.automation and conv_map.automation
+       and not_blocked_map.map.automation
 begin
 
 lemma insert_undirected_edge_equivalent[simp]: "insert_undirected_edge_impl = insert_undirected_edge"
   using insert_undirected_edge_def insert_undirected_edge_impl_def by presburger
-
 
 lemma augment_edge_impl_domain:
       "e = oedge ee \<Longrightarrow> e \<in> flow_domain f \<Longrightarrow> flow_invar f \<Longrightarrow>
@@ -462,11 +433,6 @@ lemmas abstractE' = abstractE_extensive[OF refl refl refl refl refl refl refl re
                                           refl refl refl refl refl refl refl refl refl refl refl refl refl refl
                                           refl refl refl]
 
-
-
-find_theorems "(_ = _) = (_ = _)"
-
-
 definition "implementation_invar state_impl =
             (adjmap_inv (\<FF>_impl state_impl) 
           \<and> (\<forall> x. vset_inv (the (lookup (\<FF>_impl state_impl) x))) 
@@ -575,17 +541,17 @@ end
 
 subsection \<open>Forest Maintenance\<close>
 
-locale loopA_impl_spec = 
-loopA_spec where fst=fst +
+locale maintain_forest_impl_spec = 
+maintain_forest_spec where fst=fst +
 algo_impl_spec where fst=fst
 for fst::"'edge_type \<Rightarrow> 'a"
 begin
 
 lemmas update_alls[simp, intro] = rep_comp_update_all(1,3,4) not_blocked_update_all(1,3,4)
 
-partial_function (tailrec) loopA_impl::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl  
-\<Rightarrow> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl " where
-"loopA_impl state = (let \<FF> = \<FF>_impl state;
+partial_function (tailrec) maintain_forest_impl::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl  
+\<Rightarrow>('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl " where
+"maintain_forest_impl state = (let \<FF> = \<FF>_impl state;
                     f = current_flow_impl state;
                     b = balance_impl state;
                     r_card = representative_comp_card_impl state;
@@ -628,23 +594,23 @@ case get_from_set  (\<lambda> e. the (flow_lookup f e) > 8 * real N *\<gamma>) E
                                     actives_impl := E'', conv_to_rdg_impl := to_rdg',
                                     representative_comp_card_impl:= r_card',
                                     not_blocked_impl := nb'\<rparr>
-                            in loopA_impl state')
+                            in maintain_forest_impl state')
                             | None \<Rightarrow> state))"
 
-lemmas [code] = loopA_impl.simps
+lemmas [code] = maintain_forest_impl.simps
 end
 
-locale loopA_impl =
-loopA where fst=fst +
-loopA_impl_spec where fst=fst +
+locale maintain_forest_impl =
+maintain_forest where fst=fst +
+maintain_forest_impl_spec where fst=fst +
 algo_impl where fst = fst 
 for fst::"'edge_type \<Rightarrow> 'a"
 begin
 
 
-definition loopA_impl_upd::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl  
+definition maintain_forest_impl_upd::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl 
 \<Rightarrow> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl " where
-"loopA_impl_upd state = (let \<FF> = \<FF>_impl state;
+"maintain_forest_impl_upd state = (let \<FF> = \<FF>_impl state;
                                      f = current_flow_impl state;
                     b = balance_impl state;
                     r_card = representative_comp_card_impl state;
@@ -689,9 +655,9 @@ definition loopA_impl_upd::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl
                                     not_blocked_impl := nb'\<rparr>
                             in  state')"
 
-lemma loopA_impl_upd_compatible_with_abstr:
+lemma maintain_forest_impl_upd_compatible_with_abstr:
   assumes " abstract state_impl = state"
-          "loopA_call_cond state"
+          "maintain_forest_call_cond state"
           "adjmap_inv (\<FF>_impl state_impl)"
            "(\<And> x. vset_inv (the (lookup (\<FF>_impl state_impl) x)))"
           "set_invar (actives state)"
@@ -707,23 +673,23 @@ lemma loopA_impl_upd_compatible_with_abstr:
           "not_blocked_invar (not_blocked_impl state_impl)"
           "\<E> = not_blocked_dom (not_blocked_impl state_impl)"
 
-  shows   "abstract (loopA_impl_upd state_impl) = loopA_upd state"  
-     "adjmap_inv (\<FF>_impl (loopA_impl_upd state_impl))" 
-     "(\<forall> x. vset_inv (the (lookup (\<FF>_impl (loopA_impl_upd state_impl)) x)))"        
-      "set_invar (actives (loopA_upd state ))" 
-      "\<E> = flow_domain (current_flow_impl (loopA_impl_upd state_impl))" 
-      "flow_invar (current_flow_impl (loopA_impl_upd state_impl))"
-      "\<V> = bal_domain (balance_impl (loopA_impl_upd state_impl))"
-      "bal_invar (balance_impl (loopA_impl_upd state_impl))"
-      "to_set_of_adjacency (\<FF>_impl (loopA_impl_upd state_impl)) 
-       = conv_domain (conv_to_rdg_impl (loopA_impl_upd state_impl))"
-      "conv_invar (conv_to_rdg_impl (loopA_impl_upd state_impl))"
-      "\<V> = rep_comp_domain (representative_comp_card_impl (loopA_impl_upd state_impl))"
-      "rep_comp_invar (representative_comp_card_impl (loopA_impl_upd state_impl))"
-      "not_blocked_invar (not_blocked_impl (loopA_impl_upd state_impl))"
-      "\<E> = not_blocked_dom (not_blocked_impl (loopA_impl_upd state_impl))"
+  shows   "abstract (maintain_forest_impl_upd state_impl) = maintain_forest_upd state"  
+     "adjmap_inv (\<FF>_impl (maintain_forest_impl_upd state_impl))" 
+     "(\<forall> x. vset_inv (the (lookup (\<FF>_impl (maintain_forest_impl_upd state_impl)) x)))"        
+      "set_invar (actives (maintain_forest_upd state ))" 
+      "\<E> = flow_domain (current_flow_impl (maintain_forest_impl_upd state_impl))" 
+      "flow_invar (current_flow_impl (maintain_forest_impl_upd state_impl))"
+      "\<V> = bal_domain (balance_impl (maintain_forest_impl_upd state_impl))"
+      "bal_invar (balance_impl (maintain_forest_impl_upd state_impl))"
+      "to_set_of_adjacency (\<FF>_impl (maintain_forest_impl_upd state_impl)) 
+       = conv_domain (conv_to_rdg_impl (maintain_forest_impl_upd state_impl))"
+      "conv_invar (conv_to_rdg_impl (maintain_forest_impl_upd state_impl))"
+      "\<V> = rep_comp_domain (representative_comp_card_impl (maintain_forest_impl_upd state_impl))"
+      "rep_comp_invar (representative_comp_card_impl (maintain_forest_impl_upd state_impl))"
+      "not_blocked_invar (not_blocked_impl (maintain_forest_impl_upd state_impl))"
+      "\<E> = not_blocked_dom (not_blocked_impl (maintain_forest_impl_upd state_impl))"
 
-proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
+proof(all \<open>rule maintain_forest_call_condE[OF assms(2)]\<close>, goal_cases)
   case (1 f b r E' to_rdg \<gamma> e x y xx yy to_rdg' \<FF>' x' y' f' b' r' Q E'' state' cards
           cards' \<FF>_imp' nb nb')
   note state=this
@@ -833,7 +799,7 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
       using forest'_fit_together goodF' graph_invar_F'  q_prop  adjmap_inv_F_imp' 
              1(18) superfluous_asm x'_inVs x'_not_y'
       by (intro from_directed_walk_to_undirected_walk[OF _ _
-              _ get_path_axioms(1)[of \<FF>_imp' x' _ y' Q]])
+              _ get_path_axioms_unfolded(1)[of \<FF>_imp' x' _ y' Q]])
 
     hence Q_inF':"(List.set (edges_of_path Q)) \<subseteq>  \<FF>'"   
       by(auto intro!:  path_edges_subset[of \<FF>' Q] walk_between_nonempty_pathD(1))
@@ -841,7 +807,7 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
    have distinct_Q[simp]: "distinct Q"
       using forest'_fit_together goodF' graph_invar_F'  q_prop  adjmap_inv_F_imp' 
              1(18) superfluous_asm x'_inVs x'_not_y'
-      by (intro get_path_axioms(2)[of \<FF>_imp' x' _ y' Q])
+      by (intro get_path_axioms_unfolded(2)[of \<FF>_imp' x' _ y' Q])
      
     have Q_length: "length Q \<ge> 2" 
       using walk_betw_Q x'_not_y' 
@@ -980,13 +946,13 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
               to_rdg'_impl_def y'_impl_def to_rdg_impl_def yy_impl_def E''_impl_def nb_impl_def
               nb'_impl_def
 
-   have state'_is: "state' = loopA_upd state"
-    unfolding loopA_upd_def Let_def 1 xx_def yy_def xy_def 
+   have state'_is: "state' = maintain_forest_upd state"
+    unfolding maintain_forest_upd_def Let_def 1 xx_def yy_def xy_def 
     apply(rule Algo_state.equality)
     by(auto split: prod.split)
 
-  have state'_impl_is:"state'_impl = loopA_impl_upd state_impl"
-    unfolding loopA_impl_upd_def Let_def defs_impl  
+  have state'_impl_is:"state'_impl = maintain_forest_impl_upd state_impl"
+    unfolding maintain_forest_impl_upd_def Let_def defs_impl  
     apply(subst split_beta)+
     apply(rule Algo_state_impl.equality)
     by(auto split: prod.split)    
@@ -1151,18 +1117,18 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
     apply(subst 1(27), subst state'_impl_def)
     by(auto simp add: abstractE' simp del: abstractE)
    
-   thus "abstract (loopA_impl_upd state_impl) = loopA_upd state"
+   thus "abstract (maintain_forest_impl_upd state_impl) = maintain_forest_upd state"
      using state'_is state'_impl_is by simp
 
-  show "adjmap_inv (Algo_state_impl.\<FF>_impl (loopA_impl_upd state_impl))"
+  show "adjmap_inv (Algo_state_impl.\<FF>_impl (maintain_forest_impl_upd state_impl))"
     using sym[OF state'_impl_is] 1(24) state'_impl_def adjmap_inv_F_imp' 
     by(auto simp add: abstractE' simp del: abstractE)
 
-  show "\<forall> x. vset_inv (the (lookup (Algo_state_impl.\<FF>_impl (loopA_impl_upd state_impl)) x))" 
+  show "\<forall> x. vset_inv (the (lookup (Algo_state_impl.\<FF>_impl (maintain_forest_impl_upd state_impl)) x))" 
     using  sym[OF state'_impl_is] 1(24) state'_impl_def  superfluous_asm 
     by(auto simp add: abstractE' simp del: abstractE)
 
-  show "set_invar (actives (loopA_upd state))"
+  show "set_invar (actives (maintain_forest_upd state))"
     using sym[OF state'_is]  1(27) state'_impl_def 
     by (simp add: assms(5) invar_filter state(21) state(4))
 
@@ -1170,94 +1136,94 @@ proof(all \<open>rule loopA_call_condE[OF assms(2)]\<close>, goal_cases)
     using   oedge_of_to_redge_path_rev[OF distinct_Q consist_to_rdg'] assms(7)  assms(6) 
           f_impl_def f'_impl_def oedges_of_Q_in_domain by auto
     
-  thus " \<E> = flow_domain (current_flow_impl (loopA_impl_upd state_impl))"
+  thus " \<E> = flow_domain (current_flow_impl (maintain_forest_impl_upd state_impl))"
     using state'_impl_is state'_impl_def  by force
 
-  show "\<V> = bal_domain (balance_impl (loopA_impl_upd state_impl))"
+  show "\<V> = bal_domain (balance_impl (maintain_forest_impl_upd state_impl))"
     using sym[OF state'_impl_is] 1(24) state'_impl_def  b'_impl_def  assms(10) assms(9) b_impl_def 
           x'_y'_bal_domain by simp
 
-  show "flow_invar (current_flow_impl (loopA_impl_upd state_impl))"
+  show "flow_invar (current_flow_impl (maintain_forest_impl_upd state_impl))"
     using state'_impl_is state'_impl_def  assms(7)  f'_impl_def f_impl_def 
           oedge_of_to_redge_path_rev[OF distinct_Q consist_to_rdg'] oedges_of_Q_in_domain transformed_paths_coincide(1)
           transformed_paths_coincide(2) by force
 
-  show "bal_invar (balance_impl (loopA_impl_upd state_impl))"
+  show "bal_invar (balance_impl (maintain_forest_impl_upd state_impl))"
     using  sym[OF state'_impl_is] 1(24) state'_impl_def  b'_impl_def  assms(10) b_impl_def
     by auto
 
-  show "to_set_of_adjacency (Algo_state_impl.\<FF>_impl (loopA_impl_upd state_impl))
-       = conv_domain (conv_to_rdg_impl (loopA_impl_upd state_impl))"
+  show "to_set_of_adjacency (Algo_state_impl.\<FF>_impl (maintain_forest_impl_upd state_impl))
+       = conv_domain (conv_to_rdg_impl (maintain_forest_impl_upd state_impl))"
     using sym[OF state'_impl_is] state'_impl_def symmetric_set_of_F'_in_domain 
     by(auto simp add: abstractE' simp del: abstractE)
 
-  show "conv_invar (conv_to_rdg_impl (loopA_impl_upd state_impl))"
+  show "conv_invar (conv_to_rdg_impl (maintain_forest_impl_upd state_impl))"
     using sym[OF state'_impl_is] state'_impl_def assms(12) to_rdg'_impl_def to_rdg_impl_def
     by simp
   note  rep_comp_update_all(1,3,4)[simp]
-  show "\<V> = rep_comp_domain (representative_comp_card_impl (loopA_impl_upd state_impl))"
+  show "\<V> = rep_comp_domain (representative_comp_card_impl (maintain_forest_impl_upd state_impl))"
     using  assms(13) assms(14) sym[OF state'_impl_is] 
           state'_impl_def r_card'_impl_def  r_card_impl_def 
     by simp
 
-  show "rep_comp_invar (representative_comp_card_impl (loopA_impl_upd state_impl))"
+  show "rep_comp_invar (representative_comp_card_impl (maintain_forest_impl_upd state_impl))"
     using  rep_comp_update_all(3)  assms(13) assms(14) sym[OF state'_impl_is] state'_impl_def 
            r_card'_impl_def  r_card_impl_def 
     by simp
   note  not_blocked_update_all(1,3,4)[simp]
-  show "not_blocked_invar (not_blocked_impl (loopA_impl_upd state_impl))"
+  show "not_blocked_invar (not_blocked_impl (maintain_forest_impl_upd state_impl))"
     using  assms(15) sym[OF state'_impl_is] state'_impl_def nb_impl_def nb'_impl_def
     by simp
 
-  show "\<E> = not_blocked_dom (not_blocked_impl (loopA_impl_upd state_impl))"
+  show "\<E> = not_blocked_dom (not_blocked_impl (maintain_forest_impl_upd state_impl))"
     using  assms(15) assms(16)  nb_impl_def nb'_impl_def sym[OF state'_impl_is] state'_impl_def 
     by simp    
 qed   
 
-lemma loopA_impl_upd_compatible_with_abstr':
+lemma maintain_forest_impl_upd_compatible_with_abstr':
   assumes "abstract state_impl = state"
-          "loopA_call_cond state"
+          "maintain_forest_call_cond state"
           "aux_invar state"
           "implementation_invar state_impl"
 
-  shows   "abstract (loopA_impl_upd state_impl) = loopA_upd state"  
-          "implementation_invar (loopA_impl_upd state_impl)"
+  shows   "abstract (maintain_forest_impl_upd state_impl) = maintain_forest_upd state"  
+          "implementation_invar (maintain_forest_impl_upd state_impl)"
   subgoal first
-  using loopA_impl_upd_compatible_with_abstr[of state_impl state] assms from_aux_invar'(17)
+  using maintain_forest_impl_upd_compatible_with_abstr[of state_impl state] assms from_aux_invar'(17)
   by(auto simp add: implementation_invar_def abstract_def Let_def abstractE' simp del: abstractE)
   subgoal
   apply(rule implementation_invarI)
   prefer 4
     subgoal
       using assms 
-      by (intro loopA_impl_upd_compatible_with_abstr(5)[of state_impl state])
+      by (intro maintain_forest_impl_upd_compatible_with_abstr(5)[of state_impl state])
          (auto simp add: implementation_invar_def)
     using assms invar_aux_pres_one_step 
-               apply( all\<open>(intro loopA_impl_upd_compatible_with_abstr[of state_impl state]; 
+               apply( all\<open>(intro maintain_forest_impl_upd_compatible_with_abstr[of state_impl state]; 
                            auto simp add: implementation_invar_def from_aux_invar'(17) invar_aux_pres_one_step)?\<close>)
     by(auto simp add: first from_aux_invar'(17) invar_aux_pres_one_step)
   done
 
-lemma loopA_impl_upd_compatible_with_abstr'':
+lemma maintain_forest_impl_upd_compatible_with_abstr'':
   assumes "state = abstract state_impl"
-          "loopA_call_cond state"
+          "maintain_forest_call_cond state"
           "aux_invar state"
           "implementation_invar state_impl"
 
-shows   "loopA_upd state = abstract (loopA_impl_upd state_impl) \<and>
-        implementation_invar (loopA_impl_upd state_impl)"
-  using loopA_impl_upd_compatible_with_abstr' assms by auto
+shows   "maintain_forest_upd state = abstract (maintain_forest_impl_upd state_impl) \<and>
+        implementation_invar (maintain_forest_impl_upd state_impl)"
+  using maintain_forest_impl_upd_compatible_with_abstr' assms by auto
 
-lemma abstract_impl_same_whole_loopA:
-  assumes "loopA_dom state"
+lemma abstract_impl_same_whole_maintain_forest:
+  assumes "maintain_forest_dom state"
           "abstract state_impl = state"
           "aux_invar state"
           "implementation_invar state_impl"
 
-shows   "loopA state = abstract (loopA_impl state_impl) \<and>
-         implementation_invar (loopA_impl state_impl)"
+shows   "maintain_forest state = abstract (maintain_forest_impl state_impl) \<and>
+         implementation_invar (maintain_forest_impl state_impl)"
   using assms(2-)
-proof(induction arbitrary: state_impl rule: loopA_induct[OF assms(1)])
+proof(induction arbitrary: state_impl rule: maintain_forest_induct[OF assms(1)])
   case (1 state)
   note IH=this
   have actives_subs_E:"to_set (actives state) \<subseteq> \<E>"
@@ -1283,13 +1249,13 @@ proof(induction arbitrary: state_impl rule: loopA_induct[OF assms(1)])
     have set_invar_impl: "set_invar (actives_impl state_impl)"
       using \<open>actives_impl state_impl = actives state\<close> set_invar by force
   show ?case
-  proof(cases rule: loopA_cases[of state])
+  proof(cases rule: maintain_forest_cases[of state])
     case 1
     then show ?thesis 
       unfolding  IH(3) 
-      apply(subst loopA_simps(2), simp add: IH(1,3))
-      apply(rule loopA_ret_condE, simp)
-      apply(subst loopA_impl.simps)+
+      apply(subst maintain_forest_simps(2), simp add: IH(1,3))
+      apply(rule maintain_forest_ret_condE, simp)
+      apply(subst maintain_forest_impl.simps)+
       using choice_coincidence[simplified gamma_coincidence flows_coincide]
             set_get(4)[OF set_invar,
                        OF  choice_coincidence[simplified gamma_coincidence flows_coincide]]
@@ -1302,10 +1268,10 @@ proof(induction arbitrary: state_impl rule: loopA_induct[OF assms(1)])
        using IH(5)[simplified implementation_invar_def]  IH(3) 
        by(auto simp add: abstract_def Let_def abstractE' simp del: abstractE)
      then show ?thesis
-       apply(subst loopA_simps(1)[OF IH(1) 2])
-       apply(subst loopA_impl.simps)
-       apply(subst loopA_impl.simps)
-       apply(rule loopA_call_condE[OF 2])
+       apply(subst maintain_forest_simps(1)[OF IH(1) 2])
+       apply(subst maintain_forest_impl.simps)
+       apply(subst maintain_forest_impl.simps)
+       apply(rule maintain_forest_call_condE[OF 2])
        unfolding Let_def
        apply(subst case_simp(1))
        subgoal
@@ -1322,26 +1288,26 @@ proof(induction arbitrary: state_impl rule: loopA_induct[OF assms(1)])
          by auto
        apply(rule P_of_case_prod_I[of "if _ then _ else _"])
        apply(rule iffD2[rotated])
-       apply( rule IH(2)[OF 2, of "loopA_impl_upd state_impl"])
-       using loopA_impl_upd_compatible_with_abstr'(1)[OF IH(3) call IH(4) IH(5)] 
+       apply( rule IH(2)[OF 2, of "maintain_forest_impl_upd state_impl"])
+       using maintain_forest_impl_upd_compatible_with_abstr'(1)[OF IH(3) call IH(4) IH(5)] 
              invar_aux_pres_one_step[OF IH(4) call] 
-             loopA_impl_upd_compatible_with_abstr''[OF sym[OF IH(3)] call IH(4) IH(5)] 
-      unfolding loopA_impl_upd_def Let_def by auto       
+             maintain_forest_impl_upd_compatible_with_abstr''[OF sym[OF IH(3)] call IH(4) IH(5)] 
+       by(auto simp only: maintain_forest_impl_upd_def Let_def)     
    qed
  qed
 
-lemma abstract_impl_same_whole_loopA':
-  assumes "loopA_dom state"
+lemma abstract_impl_same_whole_maintain_forest':
+  assumes "maintain_forest_dom state"
           "abstract state_impl = state"
           "aux_invar state"
           "implementation_invar state_impl"
 
-shows   "abstract (loopA_impl state_impl) = loopA state"
-        "implementation_invar (loopA_impl state_impl)"
-  using abstract_impl_same_whole_loopA assms by auto
+shows   "abstract (maintain_forest_impl state_impl) = maintain_forest state"
+        "implementation_invar (maintain_forest_impl state_impl)"
+  using abstract_impl_same_whole_maintain_forest assms by auto
 
 lemma abstract_impl_same_sholw_loop:
-  assumes "loopA_dom state" 
+  assumes "maintain_forest_dom state" 
           "(abstract state_impl) = state"
           " adjmap_inv (\<FF>_impl state_impl)"
           "(\<And> x. vset_inv (the (lookup (\<FF>_impl state_impl) x)))"
@@ -1357,33 +1323,32 @@ lemma abstract_impl_same_sholw_loop:
           "rep_comp_invar (representative_comp_card_impl state_impl)"
           "not_blocked_invar (not_blocked_impl state_impl)"
           "\<E> = not_blocked_dom (not_blocked_impl state_impl)"
-    shows "abstract (loopA_impl state_impl) = loopA (abstract state_impl)"
-  using abstract_impl_same_whole_loopA[OF assms(1,2,8)] assms
+    shows "abstract (maintain_forest_impl state_impl) = maintain_forest (abstract state_impl)"
+  using abstract_impl_same_whole_maintain_forest[OF assms(1,2,8)] assms
   unfolding implementation_invar_def abstract_def Let_def
   by auto
 end
 
 subsection \<open>Ordinary Augmentations\<close>
 
-locale loopB_impl_spec = 
+locale send_flow_impl_spec = 
 algo_spec where fst = fst and get_from_set = get_from_set and \<E>_impl = "\<E>_impl ::'d" +
  algo_impl_spec where fst = fst and get_from_set= "get_from_set ::('edge_type \<Rightarrow> bool) \<Rightarrow> 'd \<Rightarrow> 'edge_type option"
 and flow_empty = "flow_empty::'e" and bal_empty = "bal_empty::'f" and rep_comp_empty = "rep_comp_empty::'g"
 and conv_empty = "conv_empty::'h" and not_blocked_empty = "not_blocked_empty::'i"
 for fst::"'edge_type \<Rightarrow> 'a" and get_from_set
-and flow_empty and bal_empty and rep_comp_empty and conv_empty and not_blocked_empty
-+
-  fixes get_source_target_path_a_impl
+and flow_empty and bal_empty and rep_comp_empty and conv_empty and not_blocked_empty +
+fixes get_source_target_path_a_impl
         ::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl  \<Rightarrow> 'a \<Rightarrow> ('a \<times> 'edge_type Redge list) option" 
-    and get_source_target_path_b_impl
+and get_source_target_path_b_impl
         ::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl  \<Rightarrow> 'a \<Rightarrow> ('a \<times> 'edge_type Redge list) option" 
 and get_source_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl \<Rightarrow> 'a option"
 and get_target_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl \<Rightarrow> 'a option"
 and test_all_vertices_zero_balance::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl \<Rightarrow> bool"
 begin
-partial_function (tailrec) loopB_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl  
+partial_function (tailrec) send_flow_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl  
 \<Rightarrow> ('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl " where
-  "loopB_impl state = (let
+  "send_flow_impl state = (let
                     f = current_flow_impl state;
                     b = balance_impl state;
                     \<gamma> = current_\<gamma>_impl state
@@ -1393,7 +1358,7 @@ partial_function (tailrec) loopB_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_
                    (let f' = augment_edges_impl f \<gamma> P;
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow_impl := f', balance_impl := b'\<rparr> in   
-                           loopB_impl state')
+                           send_flow_impl state')
                  | None \<Rightarrow> state \<lparr> return_impl := failure\<rparr>) 
      | None \<Rightarrow> 
           (case get_target_impl state of Some t \<Rightarrow> 
@@ -1401,32 +1366,32 @@ partial_function (tailrec) loopB_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_
                    (let f' = augment_edges_impl f \<gamma> P;
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow_impl := f', balance_impl := b'\<rparr> in   
-                           loopB_impl state')
+                           send_flow_impl state')
                  | None \<Rightarrow> state \<lparr> return_impl := failure\<rparr>)
          | None \<Rightarrow> state \<lparr> return_impl := notyetterm\<rparr>
     ))))"
 
-lemmas [code] = loopB_impl.simps
+lemmas [code] = send_flow_impl.simps
 
-definition loopB_succ_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl 
+definition send_flow_succ_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl 
 \<Rightarrow> ('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl " where
-  "loopB_succ_impl state = (let
+  "send_flow_succ_impl state = (let
                     f = current_flow_impl state;
                     b = balance_impl state;
                     \<gamma> = current_\<gamma>_impl state
                        in state \<lparr> return_impl:=success\<rparr>)"
 
-definition loopB_fail_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl  
+definition send_flow_fail_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl  
 \<Rightarrow> ('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl " where
-  "loopB_fail_impl state = (let
+  "send_flow_fail_impl state = (let
                     f = current_flow_impl state;
                     b = balance_impl state;
                     \<gamma> = current_\<gamma>_impl state
                        in state \<lparr> return_impl:=failure\<rparr>)"
 
-definition loopB_call1_upd_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl 
+definition send_flow_call1_upd_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl 
 \<Rightarrow> ('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl " where
-  "loopB_call1_upd_impl state = (let
+  "send_flow_call1_upd_impl state = (let
                     f = current_flow_impl state;
                     b = balance_impl state;
                     \<gamma> = current_\<gamma>_impl state;
@@ -1437,9 +1402,9 @@ definition loopB_call1_upd_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl
                        state' = state \<lparr> current_flow_impl := f', balance_impl := b'\<rparr> in   
                            state')"
 
-definition loopB_call2_upd_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl  
+definition send_flow_call2_upd_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl  
 \<Rightarrow> ('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl" where
-  "loopB_call2_upd_impl state = (let
+  "send_flow_call2_upd_impl state = (let
                     f = current_flow_impl state;
                     b = balance_impl state;
                     \<gamma> = current_\<gamma>_impl state;
@@ -1450,74 +1415,176 @@ definition loopB_call2_upd_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl
                        state' = state \<lparr> current_flow_impl := f', balance_impl := b'\<rparr> in   
                            state')"
 
-definition loopB_cont_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl 
+definition send_flow_cont_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl 
 \<Rightarrow> ('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state_impl " where
-  "loopB_cont_impl state = (let
+  "send_flow_cont_impl state = (let
                     f = current_flow_impl state;
                     b = balance_impl state;
                     \<gamma> = current_\<gamma>_impl state;
                     t = the (get_target_impl state)
                    in state \<lparr> return_impl := notyetterm\<rparr>)"
+end
+
+
+locale send_flow_impl_precond_defs = 
+send_flow where fst = fst and empty_forest = "empty_forest::'c"+ 
+send_flow_impl_spec where fst = fst and empty_forest = empty_forest+
+algo_impl where fst = fst and empty_forest=empty_forest 
+for fst::"'edge_type \<Rightarrow> 'a" and empty_forest 
+begin
+
+definition "abstract_impl_correspond_a_cond state state_impl s t P P_impl t_impl b \<gamma> f = 
+ (get_source_target_path_a_cond state s t P b \<gamma> f \<and>
+    get_source_target_path_a_impl state_impl s = Some (t_impl, P_impl)\<and> invar_isOptflow state
+   \<and> implementation_invar state_impl \<and> state = abstract state_impl)"
+
+lemma abstract_impl_correspond_a_condI:
+ "\<lbrakk>get_source_target_path_a_cond state s t P b \<gamma> f;
+   get_source_target_path_a_impl state_impl s = Some (t_impl, P_impl);  invar_isOptflow state;
+   implementation_invar state_impl; state = abstract state_impl \<rbrakk>
+  \<Longrightarrow> abstract_impl_correspond_a_cond state state_impl s t P P_impl t_impl b \<gamma> f"
+  by(auto simp add: abstract_impl_correspond_a_cond_def)
+
+lemma abstract_impl_correspond_a_condE:
+ "abstract_impl_correspond_a_cond state state_impl s t P P_impl t_impl b \<gamma> f \<Longrightarrow> 
+     (\<lbrakk>get_source_target_path_a_cond state s t P b \<gamma> f;
+   get_source_target_path_a_impl state_impl s = Some (t_impl, P_impl);  invar_isOptflow state;
+   implementation_invar state_impl; state = abstract state_impl \<rbrakk>
+  \<Longrightarrow> Q) \<Longrightarrow> Q"
+  by(auto simp add: abstract_impl_correspond_a_cond_def)
+
+definition "impl_a_None_cond state state_impl s b \<gamma> f = (
+    b = balance state \<and> \<gamma> = current_\<gamma> state \<and> f = current_flow state\<and>
+            abstract state_impl = state \<and> s \<in> \<V> \<and> aux_invar state \<and> (\<forall> e \<in> \<F> state . f e > 0)\<and>
+            (send_flow_call1_cond state \<or> send_flow_fail1_cond state)\<and> s = get_source state \<and>
+            implementation_invar state_impl \<and> invar_gamma state)"
+
+lemma impl_a_None_condI:
+"\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
+            abstract state_impl = state; s \<in> \<V>; aux_invar state; (\<forall> e \<in> \<F> state . f e > 0);
+            send_flow_call1_cond state \<or> send_flow_fail1_cond state; s = get_source state;
+            implementation_invar state_impl; invar_gamma state\<rbrakk>
+    \<Longrightarrow>impl_a_None_cond state state_impl s b \<gamma> f"
+  by(auto simp add: impl_a_None_cond_def)
+
+lemma impl_a_None_condE:
+"impl_a_None_cond state state_impl s b \<gamma> f \<Longrightarrow>
+   (\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
+            abstract state_impl = state; s \<in> \<V>; aux_invar state; (\<forall> e \<in> \<F> state . f e > 0);
+            send_flow_call1_cond state \<or> send_flow_fail1_cond state; s = get_source state;
+            implementation_invar state_impl; invar_gamma state\<rbrakk>
+    \<Longrightarrow>P) \<Longrightarrow> P"
+  by(auto simp add: impl_a_None_cond_def)
+
+definition "abstract_impl_correspond_b_cond state state_impl s t P P_impl s_impl b \<gamma> f =
+  ( get_source_target_path_b_cond state s t P b \<gamma> f \<and> 
+    get_source_target_path_b_impl state_impl t = Some (s_impl, P_impl) \<and> invar_isOptflow state \<and>
+    implementation_invar state_impl \<and> state = abstract state_impl)"
+
+lemma abstract_impl_correspond_b_condI:
+"get_source_target_path_b_cond state s t P b \<gamma> f  \<Longrightarrow> 
+    get_source_target_path_b_impl state_impl t = Some (s_impl, P_impl) \<Longrightarrow> invar_isOptflow state
+    \<Longrightarrow> implementation_invar state_impl \<Longrightarrow> state = abstract state_impl 
+\<Longrightarrow> abstract_impl_correspond_b_cond state state_impl s t P P_impl s_impl b \<gamma> f"
+  by(auto simp add: abstract_impl_correspond_b_cond_def)
+
+lemma abstract_impl_correspond_b_condE:
+"abstract_impl_correspond_b_cond state state_impl s t P P_impl s_impl b \<gamma> f \<Longrightarrow>
+  (get_source_target_path_b_cond state s t P b \<gamma> f  \<Longrightarrow> 
+    get_source_target_path_b_impl state_impl t = Some (s_impl, P_impl) \<Longrightarrow> invar_isOptflow state
+    \<Longrightarrow> implementation_invar state_impl \<Longrightarrow> state = abstract state_impl \<Longrightarrow> Q) \<Longrightarrow> Q"
+  by(auto simp add: abstract_impl_correspond_b_cond_def)
+
+definition "impl_b_None_cond state state_impl t b \<gamma> f = 
+(b = balance state\<and> \<gamma> = current_\<gamma> state\<and> f = current_flow state\<and>  abstract state_impl = state \<and>
+ t \<in> \<V> \<and> aux_invar state \<and> (\<forall> e \<in> \<F> state . f e > 0)\<and>
+ (send_flow_call2_cond state \<or> send_flow_fail2_cond state)\<and> t = get_target state \<and>
+ implementation_invar state_impl \<and> invar_gamma state )"
+
+lemma impl_b_None_condI:
+"\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
+             abstract state_impl = state; t \<in> \<V>; aux_invar state; (\<forall> e \<in> \<F> state . f e > 0);
+             send_flow_call2_cond state \<or> send_flow_fail2_cond state; t = get_target state;
+             implementation_invar state_impl; invar_gamma state \<rbrakk>
+     \<Longrightarrow> impl_b_None_cond state state_impl t b \<gamma> f"
+  by(auto simp add: impl_b_None_cond_def)
+
+lemma impl_b_None_condE:
+"impl_b_None_cond state state_impl t b \<gamma> f \<Longrightarrow> 
+     (\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
+             abstract state_impl = state; t \<in> \<V>; aux_invar state; (\<forall> e \<in> \<F> state . f e > 0);
+             send_flow_call2_cond state \<or> send_flow_fail2_cond state; t = get_target state;
+             implementation_invar state_impl; invar_gamma state \<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: impl_b_None_cond_def)
+
+definition "vertex_selection_cond state b  \<gamma> state_impl =
+( abstract state_impl = state \<and> b = balance state \<and> \<gamma> = current_\<gamma> state\<and>
+      implementation_invar state_impl)"
+
+lemma vertex_selection_condI: 
+"abstract state_impl = state \<Longrightarrow> b = balance state \<Longrightarrow> \<gamma> = current_\<gamma> state\<Longrightarrow>
+      implementation_invar state_impl \<Longrightarrow> vertex_selection_cond state b  \<gamma> state_impl"
+  by(auto simp add: vertex_selection_cond_def)
+
+lemma vertex_selection_condE: 
+"vertex_selection_cond state b  \<gamma> state_impl \<Longrightarrow> 
+(abstract state_impl = state \<Longrightarrow> b = balance state \<Longrightarrow> \<gamma> = current_\<gamma> state\<Longrightarrow>
+      implementation_invar state_impl \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: vertex_selection_cond_def)
 
 end
 
-locale loopB_impl = 
-loopB_Reasoning where fst = fst and empty_forest = "empty_forest::'c"+ 
-loopB_impl_spec where fst = fst and empty_forest = empty_forest+
-algo_impl where fst = fst and empty_forest=empty_forest 
+locale send_flow_impl = 
+send_flow_reasoning where fst = fst and empty_forest = "empty_forest::'c"+ 
+send_flow_impl_spec where fst = fst and empty_forest = empty_forest+
+algo_impl where fst = fst and empty_forest=empty_forest +
+send_flow_impl_precond_defs where fst = fst and empty_forest=empty_forest
 for fst::"'edge_type \<Rightarrow> 'a" and empty_forest +
-assumes
- abstract_impl_correspond_a:
-"\<And> state state_impl s t P P_impl t_impl b \<gamma> f. get_source_target_path_a_cond state s t P b \<gamma> f \<Longrightarrow> 
-    get_source_target_path_a_impl state_impl s = Some (t_impl, P_impl) \<Longrightarrow>  invar_isOptflow state
-    \<Longrightarrow> implementation_invar state_impl \<Longrightarrow> state = abstract state_impl \<Longrightarrow>P_impl= P \<and> t_impl = t"
+assumes abstract_impl_correspond_a:
+"\<And> state state_impl s t P P_impl t_impl b \<gamma> f. 
+       abstract_impl_correspond_a_cond state state_impl s t P P_impl t_impl b \<gamma> f \<Longrightarrow>P_impl= P \<and> t_impl = t"
 and impl_a_None:
-"\<And> state state_impl s b \<gamma> f. \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
-            abstract state_impl = state; s \<in> \<V>; aux_invar state; (\<forall> e \<in> \<F> state . f e > 0);
-            loopB_call1_cond state \<or> loopB_fail1_cond state; s = get_source state;
-            implementation_invar state_impl; invar_gamma state\<rbrakk>
+"\<And> state state_impl s b \<gamma> f. 
+ impl_a_None_cond state state_impl s b \<gamma> f
     \<Longrightarrow> \<not> (\<exists> t \<in> \<V>. b t < - \<epsilon> * \<gamma> \<and> resreach f s t) \<longleftrightarrow> get_source_target_path_a_impl state_impl s = None"
-and
-abstract_impl_correspond_b:
-"\<And> state state_impl s t P P_impl s_impl b \<gamma> f. get_source_target_path_b_cond state s t P b \<gamma> f  \<Longrightarrow> 
-    get_source_target_path_b_impl state_impl t = Some (s_impl, P_impl) \<Longrightarrow> invar_isOptflow state
-    \<Longrightarrow> implementation_invar state_impl \<Longrightarrow> state = abstract state_impl \<Longrightarrow>P_impl = P \<and> s_impl = s"
+and abstract_impl_correspond_b:
+"\<And> state state_impl s t P P_impl s_impl b \<gamma> f. 
+     abstract_impl_correspond_b_cond state state_impl s t P P_impl s_impl b \<gamma> f
+             \<Longrightarrow>P_impl = P \<and> s_impl = s"
 and impl_b_None:
-"\<And> state state_impl t b \<gamma> f. \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
-             abstract state_impl = state; t \<in> \<V>; aux_invar state; (\<forall> e \<in> \<F> state . f e > 0);
-             loopB_call2_cond state \<or> loopB_fail2_cond state; t = get_target state;
-             implementation_invar state_impl; invar_gamma state \<rbrakk>
+"\<And> state state_impl t b \<gamma> f. impl_b_None_cond state state_impl t b \<gamma> f
      \<Longrightarrow> \<not> (\<exists> s \<in> \<V>. b s > \<epsilon> * \<gamma> \<and> resreach f s t) \<longleftrightarrow> get_source_target_path_b_impl state_impl t = None"
-and
-get_source_impl_axioms:
-"\<And> state b \<gamma> state_impl. \<lbrakk>abstract state_impl = state; b = balance state; \<gamma> = current_\<gamma> state;
-              \<exists> s \<in> \<V>. b s > (1 - \<epsilon>) * \<gamma>;implementation_invar state_impl\<rbrakk> \<Longrightarrow> get_source state = the (get_source_impl state_impl )"
-"\<And> state b \<gamma> state_impl. \<lbrakk>abstract state_impl = state; b = balance state; \<gamma> = current_\<gamma> state;
-                          implementation_invar state_impl\<rbrakk>
-   \<Longrightarrow> \<not> (\<exists> s \<in> \<V>. b s > (1 - \<epsilon>) * \<gamma>) \<longleftrightarrow> ((get_source_impl state_impl) = None )"
-and
-get_target_impl_axioms:
-"\<And> state b \<gamma> state_impl. \<lbrakk>abstract state_impl = state; b = balance state; \<gamma> = current_\<gamma> state;
-              \<exists> t \<in> \<V>. b t < -(1 - \<epsilon>) * \<gamma> ; implementation_invar state_impl\<rbrakk> \<Longrightarrow> get_target state = the (get_target_impl state_impl)"
-"\<And> state b \<gamma> state_impl. \<lbrakk>abstract state_impl = state; b = balance state; \<gamma> = current_\<gamma> state;
-                         implementation_invar state_impl \<rbrakk>
-      \<Longrightarrow> \<not> (\<exists> t \<in> \<V>. b t < -(1 - \<epsilon>) * \<gamma>) \<longleftrightarrow> ((get_target_impl state_impl) = None)"
+and get_source_impl_axioms:
+"\<And> state b \<gamma> state_impl.
+  \<lbrakk>vertex_selection_cond state b  \<gamma> state_impl;  \<exists> s \<in> \<V>. b s > (1 - \<epsilon>) * \<gamma>\<rbrakk> \<Longrightarrow> get_source state = the (get_source_impl state_impl )"
+"\<And> state b \<gamma> state_impl. vertex_selection_cond state b  \<gamma> state_impl \<Longrightarrow> \<not> (\<exists> s \<in> \<V>. b s > (1 - \<epsilon>) * \<gamma>) \<longleftrightarrow> ((get_source_impl state_impl) = None )"
+and get_target_impl_axioms:
+"\<And> state b \<gamma> state_impl. 
+\<lbrakk>vertex_selection_cond state b  \<gamma> state_impl; \<exists> t \<in> \<V>. b t < -(1 - \<epsilon>) * \<gamma> \<rbrakk> \<Longrightarrow> get_target state = the (get_target_impl state_impl)"
+"\<And> state b \<gamma> state_impl. vertex_selection_cond state b  \<gamma> state_impl \<Longrightarrow> \<not> (\<exists> t \<in> \<V>. b t < -(1 - \<epsilon>) * \<gamma>) \<longleftrightarrow> ((get_target_impl state_impl) = None)"
 and test_all_vertices_zero_balance:
 "\<And> state b state_impl. \<lbrakk>abstract state_impl = state; b = balance state; implementation_invar state_impl\<rbrakk>
         \<Longrightarrow> test_all_vertices_zero_balance state_impl \<longleftrightarrow> (\<forall> v \<in> \<V>. b v = 0)"
 begin
 
-lemma loopB_call1_abstract_corresp:
+lemmas abstract_impl_correspond_a_unfold = abstract_impl_correspond_a[OF abstract_impl_correspond_a_condI]
+lemmas impl_a_None_unfold = impl_a_None[OF impl_a_None_condI]
+lemmas abstract_impl_correspond_b_unfold = abstract_impl_correspond_b[OF abstract_impl_correspond_b_condI]
+lemmas impl_b_None_unfold=impl_b_None[OF impl_b_None_condI]
+lemmas get_source_impl_axioms_unfold = get_source_impl_axioms[OF vertex_selection_condI]
+lemmas get_target_impl_axioms_unfold = get_target_impl_axioms[OF vertex_selection_condI]
+
+lemma send_flow_call1_abstract_corresp:
   assumes "abstract state_impl = state"
-          "loopB_call1_cond state"
+          "send_flow_call1_cond state"
           "aux_invar state"
           "implementation_invar state_impl"
           "invar_gamma state"
           "\<forall>e\<in>\<F> state. 0 < current_flow state e"
           "invar_isOptflow state"
-    shows "abstract (loopB_call1_upd_impl state_impl) = loopB_call1_upd state"
-          "implementation_invar (loopB_call1_upd_impl state_impl)"
-proof(all \<open>rule loopB_call1_condE[OF assms(2)]\<close>, goal_cases)
+    shows "abstract (send_flow_call1_upd_impl state_impl) = send_flow_call1_upd state"
+          "implementation_invar (send_flow_call1_upd_impl state_impl)"
+proof(all \<open>rule send_flow_call1_condE[OF assms(2)]\<close>, goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
 define f_impl where "f_impl = current_flow_impl state_impl"
   define b_impl where "b_impl = balance_impl state_impl"
@@ -1530,36 +1597,36 @@ define f_impl where "f_impl = current_flow_impl state_impl"
   define b'_impl where "b'_impl = move b_impl \<gamma>_impl s_impl t_impl"
   define state'_impl where "state'_impl = state_impl \<lparr> current_flow_impl := f'_impl, balance_impl := b'_impl\<rparr>"
 
-  have state'_impl_is:"state'_impl = loopB_call1_upd_impl state_impl"
+  have state'_impl_is:"state'_impl = send_flow_call1_upd_impl state_impl"
     unfolding state'_impl_def b'_impl_def f'_impl_def P_impl_def t_impl_def tP_def s_impl_def
-              \<gamma>_impl_def b_impl_def f_impl_def loopB_call1_upd_impl_def Let_def 
+              \<gamma>_impl_def b_impl_def f_impl_def send_flow_call1_upd_impl_def Let_def 
     by(auto split: prod.split)
 
-  have state'_is:"state' =loopB_call1_upd state "
-    unfolding 1 loopB_call1_upd_def Let_def by simp
+  have state'_is:"state' =send_flow_call1_upd state "
+    unfolding 1 send_flow_call1_upd_def Let_def by simp
 
   have sources_coincide[simp]: "s_impl = s"
-    using get_source_impl_axioms(1)[OF assms(1) refl refl] 1 s_impl_def assms(4)  by simp
+    using get_source_impl_axioms_unfold(1)[OF assms(1) refl refl] 1 s_impl_def assms(4)  by simp
 
   have gamma_gtr_0: "\<gamma> > 0"
     using "1"(3) assms(5) invar_gamma_def by auto
   have s_in_V: "s \<in> \<V>" 
-    using "1"(2) "1"(3) "1"(5) "1"(6) get_source_axioms assms(2) by blast
+    using "1"(2) "1"(3) "1"(5) "1"(6) get_source_axioms_unfolded assms(2) by blast
   have t_in_V: "t \<in> \<V>"
-    using "1"(1) "1"(2) "1"(3) "1"(5) "1"(6) "1"(7) "1"(8) get_target_for_source_axioms assms(2,5) by blast
+    using "1"(1) "1"(2) "1"(3) "1"(5) "1"(6) "1"(7) "1"(8) get_target_for_source_axioms_unfolded assms(2,5) by blast
   have t_prop:"t \<in> \<V>" "b t < - \<epsilon> * \<gamma>" "resreach f s t"
-    using get_target_for_source_axioms[OF 1(2,3,1,6)] assms(2,5) 1 by auto
+    using get_target_for_source_axioms_unfolded[OF 1(2,3,1,6)] assms(2,5) 1 by auto
   have s_prop: "s \<in> \<V> \<and> (1 - \<epsilon>) * \<gamma> < b s"
-    using get_source_axioms[OF 1(2,3,6)] assms(2) by auto
+    using get_source_axioms_unfolded[OF 1(2,3,6)] assms(2) by auto
   have s_neq_t:"s \<noteq> t" 
     by (smt (verit) gamma_gtr_0 left_diff_distrib s_prop t_prop(2) zero_less_mult_iff) 
   have there_are_target_and_path: 
        "get_source_target_path_a_impl state_impl s = Some (t_impl, P_impl)"
-    using impl_a_None[OF 1(2,3,1) assms(1) s_in_V] assms s_in_V  t_impl_def
+    using impl_a_None_unfold[OF 1(2,3,1) assms(1) s_in_V] assms s_in_V  t_impl_def
           P_impl_def tP_def sources_coincide 1 
     by auto
   have  "P_impl = P \<and> t_impl = t"
-    apply(rule abstract_impl_correspond_a[of state s t P b \<gamma> f])
+    apply(rule abstract_impl_correspond_a_unfold[of state s t P b \<gamma> f])
     using t_in_V  s_neq_t assms 1 t_prop there_are_target_and_path  s_in_V assms(2)
     by (auto intro!: get_source_target_path_a_condI)
   hence targets_coincide[simp]: "P_impl = P" "t_impl = t"
@@ -1595,10 +1662,10 @@ define f_impl where "f_impl = current_flow_impl state_impl"
     using 1(12) state'_impl_def balances_coincide flows_coincide assms(1)
     by (auto simp del: abstractE simp add: abstractE')
     
-  thus "abstract (loopB_call1_upd_impl state_impl) = loopB_call1_upd state" 
+  thus "abstract (send_flow_call1_upd_impl state_impl) = send_flow_call1_upd state" 
     using state'_is state'_impl_is by simp
  
-  show "implementation_invar (loopB_call1_upd_impl state_impl)" 
+  show "implementation_invar (send_flow_call1_upd_impl state_impl)" 
   proof(subst sym[OF state'_impl_is], rule implementation_invarI, goal_cases)
     case 1
     show ?case 
@@ -1681,17 +1748,17 @@ define f_impl where "f_impl = current_flow_impl state_impl"
   qed
 qed
 
-lemma loopB_call2_abstract_corresp:
+lemma send_flow_call2_abstract_corresp:
   assumes "abstract state_impl = state"
-          "loopB_call2_cond state"
+          "send_flow_call2_cond state"
           "aux_invar state"
           "implementation_invar state_impl"
           "invar_gamma state"
           "\<forall>e\<in>\<F> state. 0 < current_flow state e"
           "invar_isOptflow state"
-    shows "abstract (loopB_call2_upd_impl state_impl) = loopB_call2_upd state"
-          "implementation_invar (loopB_call2_upd_impl state_impl)"
-proof(all \<open>rule loopB_call2_condE[OF assms(2)]\<close>, goal_cases)
+    shows "abstract (send_flow_call2_upd_impl state_impl) = send_flow_call2_upd state"
+          "implementation_invar (send_flow_call2_upd_impl state_impl)"
+proof(all \<open>rule send_flow_call2_condE[OF assms(2)]\<close>, goal_cases)
   case (1 f b \<gamma> t s P f' b' state')
 define f_impl where "f_impl = current_flow_impl state_impl"
   define b_impl where "b_impl = balance_impl state_impl"
@@ -1704,39 +1771,39 @@ define f_impl where "f_impl = current_flow_impl state_impl"
   define b'_impl where "b'_impl = move b_impl \<gamma>_impl s_impl t_impl"
   define state'_impl where "state'_impl = state_impl \<lparr> current_flow_impl := f'_impl, balance_impl := b'_impl\<rparr>"
 
-  have state'_impl_is:"state'_impl = loopB_call2_upd_impl state_impl"
+  have state'_impl_is:"state'_impl = send_flow_call2_upd_impl state_impl"
     unfolding state'_impl_def b'_impl_def f'_impl_def P_impl_def t_impl_def sP_def s_impl_def
-              \<gamma>_impl_def b_impl_def f_impl_def loopB_call2_upd_impl_def Let_def 
+              \<gamma>_impl_def b_impl_def f_impl_def send_flow_call2_upd_impl_def Let_def 
     by(auto split: prod.split)
 
-  have state'_is:"state' =loopB_call2_upd state "
-    unfolding 1 loopB_call2_upd_def Let_def by simp
+  have state'_is:"state' =send_flow_call2_upd state "
+    unfolding 1 send_flow_call2_upd_def Let_def by simp
 
   have targets_coincide[simp]: "t_impl = t"
-    using get_target_impl_axioms(1)[OF assms(1) refl refl] 1 t_impl_def assms(4) by simp
+    using get_target_impl_axioms_unfold(1)[OF assms(1) refl refl] 1 t_impl_def assms(4) by simp
   have flow_coincide[simp]:"abstract_flow_map f_impl = f"
     using 1(1) f_impl_def assms by simp
 
   have gamma_gtr_0: "\<gamma> > 0"
     using "1"(3) assms(5) invar_gamma_def by auto
   have t_in_V[simp]: "t \<in> \<V>" 
-    using 1(2,3,5,6,7) get_target_axioms assms(2)by blast
+    using 1(2,3,5,6,7) get_target_axioms_unfolded assms(2)by blast
   have s_in_V[simp]: "s \<in> \<V>"
-    using "1"(1) "1"(2) "1"(3) "1"(6) "1"(7) "1"(8) "1"(9) get_source_for_target_axioms assms(2,5) by blast
+    using "1"(1) "1"(2) "1"(3) "1"(6) "1"(7) "1"(8) "1"(9) get_source_for_target_axioms_unfolded assms(2,5) by blast
   have s_prop[simp]:"s \<in> \<V>" "b s > \<epsilon> * \<gamma>" "resreach f s t"
-    using get_source_for_target_axioms[OF 1(2,3,1,7,9)] assms(2,5) 1 by auto
+    using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)] assms(2,5) 1 by auto
   have t_prop: "t \<in> \<V> \<and> - (1 - \<epsilon>) * \<gamma> > b t"
-    using get_target_axioms[OF 1(2,3,7)] assms(2) by auto
+    using get_target_axioms_unfolded[OF 1(2,3,7)] assms(2) by auto
   have gammas_coincide[simp]: "\<gamma>_impl = \<gamma>" 
     using \<gamma>_impl_def 1(3) assms by auto
   have s_neq_t:"s \<noteq> t" 
     by (smt (verit) gamma_gtr_0 left_diff_distrib s_prop(2) t_prop zero_less_mult_iff) 
   have there_are_target_and_path: 
        "get_source_target_path_b_impl state_impl t= Some (s_impl, P_impl)"
-    using impl_b_None[OF 1(2,3,1) assms(1)] t_in_V  s_impl_def P_impl_def sP_def  assms 1 
+    using impl_b_None_unfold[OF 1(2,3,1) assms(1)] t_in_V  s_impl_def P_impl_def sP_def  assms 1 
     by auto
   have  "P_impl = P \<and> s_impl = s"
-    apply(rule abstract_impl_correspond_b[of state s t P b \<gamma> f])
+    apply(rule abstract_impl_correspond_b_unfold[of state s t P b \<gamma> f])
     using s_in_V t_in_V s_neq_t assms 1 s_prop there_are_target_and_path
     by (auto intro!: get_source_target_path_b_condI)
   hence sources_coincide[simp]: "P_impl = P" "s_impl = s"
@@ -1767,10 +1834,10 @@ define f_impl where "f_impl = current_flow_impl state_impl"
     using assms(1) 
     by(auto simp add: abstractE' 1(13) state'_impl_def  simp del: abstractE)
     
-  thus "abstract (loopB_call2_upd_impl state_impl) = loopB_call2_upd state" 
+  thus "abstract (send_flow_call2_upd_impl state_impl) = send_flow_call2_upd state" 
     using state'_is state'_impl_is by simp
  
-  show "implementation_invar (loopB_call2_upd_impl state_impl)" 
+  show "implementation_invar (send_flow_call2_upd_impl state_impl)" 
   proof(subst sym[OF state'_impl_is], rule implementation_invarI, goal_cases)
     case 1
     show ?case 
@@ -1836,13 +1903,13 @@ define f_impl where "f_impl = current_flow_impl state_impl"
   qed
 qed
 
-lemma loopB_fail1_abstract_corresp:
+lemma send_flow_fail1_abstract_corresp:
   assumes "abstract state_impl = state"
-          "loopB_fail1_cond state"
+          "send_flow_fail1_cond state"
           "implementation_invar state_impl"
-    shows "abstract (loopB_fail_impl state_impl) = loopB_fail_upd state"
-          "implementation_invar (loopB_fail_impl state_impl)"
-proof(all \<open>rule loopB_fail1_condE[OF assms(2)]\<close>, goal_cases)
+    shows "abstract (send_flow_fail_impl state_impl) = send_flow_fail_upd state"
+          "implementation_invar (send_flow_fail_impl state_impl)"
+proof(all \<open>rule send_flow_fail1_condE[OF assms(2)]\<close>, goal_cases)
  case (1 f b \<gamma> s)
   define f_impl where "f_impl = current_flow_impl state_impl"
   define b_impl where "b_impl = balance_impl state_impl"
@@ -1853,33 +1920,33 @@ proof(all \<open>rule loopB_fail1_condE[OF assms(2)]\<close>, goal_cases)
 
   define state' where "state' = state \<lparr>return := failure \<rparr>"
 
-  have state'_impl_is:"state'_impl = loopB_fail_impl state_impl"
+  have state'_impl_is:"state'_impl = send_flow_fail_impl state_impl"
     unfolding state'_impl_def  tP_def s_impl_def
-              \<gamma>_impl_def b_impl_def f_impl_def loopB_fail_impl_def Let_def 
+              \<gamma>_impl_def b_impl_def f_impl_def send_flow_fail_impl_def Let_def 
     by(auto split: prod.split)
 
-  have state'_is:"state' =loopB_fail_upd state "
-    unfolding state'_def loopB_fail_upd_def Let_def by simp
+  have state'_is:"state' =send_flow_fail_upd state "
+    unfolding state'_def send_flow_fail_upd_def Let_def by simp
 
-  show "abstract (loopB_fail_impl state_impl) = loopB_fail_upd state" 
+  show "abstract (send_flow_fail_impl state_impl) = send_flow_fail_upd state" 
     apply(subst sym[OF state'_is], subst sym[OF state'_impl_is]) 
     unfolding state'_def state'_impl_def abstract_def Let_def sym[OF assms(1)]
     by(auto simp add: abstractE' simp del: abstractE)
     
-  show "implementation_invar (loopB_fail_impl state_impl)"
+  show "implementation_invar (send_flow_fail_impl state_impl)"
     apply(subst sym[OF state'_impl_is]) 
     using assms(3)
     unfolding state'_def state'_impl_def abstract_def Let_def sym[OF assms(1)] implementation_invar_def
     by(auto simp add: abstractE' simp del: abstractE)
 qed
 
-lemma loopB_fail2_abstract_corresp:
+lemma send_flow_fail2_abstract_corresp:
   assumes "abstract state_impl = state"
-          "loopB_fail2_cond state"
+          "send_flow_fail2_cond state"
           "implementation_invar state_impl"
-    shows "abstract (loopB_fail_impl state_impl) = loopB_fail_upd state"
-          "implementation_invar (loopB_fail_impl state_impl)"
-proof(all \<open>rule loopB_fail2_condE[OF assms(2)]\<close>, goal_cases)
+    shows "abstract (send_flow_fail_impl state_impl) = send_flow_fail_upd state"
+          "implementation_invar (send_flow_fail_impl state_impl)"
+proof(all \<open>rule send_flow_fail2_condE[OF assms(2)]\<close>, goal_cases)
  case (1 f b \<gamma> s)
   define f_impl where "f_impl = current_flow_impl state_impl"
   define b_impl where "b_impl = balance_impl state_impl"
@@ -1890,33 +1957,33 @@ proof(all \<open>rule loopB_fail2_condE[OF assms(2)]\<close>, goal_cases)
 
   define state' where "state' = state \<lparr>return := failure \<rparr>"
 
-  have state'_impl_is:"state'_impl = loopB_fail_impl state_impl"
+  have state'_impl_is:"state'_impl = send_flow_fail_impl state_impl"
     unfolding state'_impl_def  tP_def s_impl_def
-              \<gamma>_impl_def b_impl_def f_impl_def loopB_fail_impl_def Let_def 
+              \<gamma>_impl_def b_impl_def f_impl_def send_flow_fail_impl_def Let_def 
     by(auto split: prod.split)
 
-  have state'_is:"state' =loopB_fail_upd state "
-    unfolding state'_def loopB_fail_upd_def Let_def by simp
+  have state'_is:"state' =send_flow_fail_upd state "
+    unfolding state'_def send_flow_fail_upd_def Let_def by simp
 
-  show "abstract (loopB_fail_impl state_impl) = loopB_fail_upd state" 
+  show "abstract (send_flow_fail_impl state_impl) = send_flow_fail_upd state" 
     apply(subst sym[OF state'_is], subst sym[OF state'_impl_is]) 
     unfolding state'_def state'_impl_def abstract_def Let_def sym[OF assms(1)]
     by(auto simp add: abstractE' simp del: abstractE)
     
-  show "implementation_invar (loopB_fail_impl state_impl)"
+  show "implementation_invar (send_flow_fail_impl state_impl)"
     apply(subst sym[OF state'_impl_is]) 
     using assms(3)
     unfolding state'_def state'_impl_def abstract_def Let_def sym[OF assms(1)] implementation_invar_def
     by(auto simp add: abstractE' simp del: abstractE)
 qed
 
-lemma loopB_succ_abstract_corresp:
+lemma send_flow_succ_abstract_corresp:
   assumes "abstract state_impl = state"
-          "loopB_succ_cond state"
+          "send_flow_succ_cond state"
           "implementation_invar state_impl"
-    shows "abstract (loopB_succ_impl state_impl) = loopB_succ_upd state"
-          "implementation_invar (loopB_succ_impl state_impl)"
-proof(all \<open>rule loopB_succ_condE[OF assms(2)]\<close>, goal_cases)
+    shows "abstract (send_flow_succ_impl state_impl) = send_flow_succ_upd state"
+          "implementation_invar (send_flow_succ_impl state_impl)"
+proof(all \<open>rule send_flow_succ_condE[OF assms(2)]\<close>, goal_cases)
  case (1 f b \<gamma> )
   define f_impl where "f_impl = current_flow_impl state_impl"
   define b_impl where "b_impl = balance_impl state_impl"
@@ -1925,33 +1992,33 @@ proof(all \<open>rule loopB_succ_condE[OF assms(2)]\<close>, goal_cases)
 
   define state' where "state' = state \<lparr>return := success \<rparr>"
 
-  have state'_impl_is:"state'_impl = loopB_succ_impl state_impl"
+  have state'_impl_is:"state'_impl = send_flow_succ_impl state_impl"
     unfolding state'_impl_def 
-              \<gamma>_impl_def b_impl_def f_impl_def loopB_succ_impl_def Let_def 
+              \<gamma>_impl_def b_impl_def f_impl_def send_flow_succ_impl_def Let_def 
     by(auto split: prod.split)
 
-  have state'_is:"state' =loopB_succ_upd state "
-    unfolding state'_def loopB_succ_upd_def Let_def by simp
+  have state'_is:"state' =send_flow_succ_upd state "
+    unfolding state'_def send_flow_succ_upd_def Let_def by simp
 
-  show "abstract (loopB_succ_impl state_impl) = loopB_succ_upd state" 
+  show "abstract (send_flow_succ_impl state_impl) = send_flow_succ_upd state" 
     apply(subst sym[OF state'_is], subst sym[OF state'_impl_is]) 
     unfolding state'_def state'_impl_def abstract_def Let_def sym[OF assms(1)]
     by(auto simp add: abstractE' simp del: abstractE)
     
-  show "implementation_invar (loopB_succ_impl state_impl)"
+  show "implementation_invar (send_flow_succ_impl state_impl)"
     apply(subst sym[OF state'_impl_is]) 
     using assms(3)
     unfolding state'_def state'_impl_def abstract_def Let_def sym[OF assms(1)] implementation_invar_def
     by(auto simp add: abstractE' simp del: abstractE)
 qed
 
-lemma loopB_cont_abstract_corresp:
+lemma send_flow_cont_abstract_corresp:
   assumes "abstract state_impl = state"
-          "loopB_cont_cond state"
+          "send_flow_cont_cond state"
           "implementation_invar state_impl"
-    shows "abstract (loopB_cont_impl state_impl) = loopB_cont_upd state"
-          "implementation_invar (loopB_cont_impl state_impl)"
-proof(all \<open>rule loopB_cont_condE[OF assms(2)]\<close>, goal_cases)
+    shows "abstract (send_flow_cont_impl state_impl) = send_flow_cont_upd state"
+          "implementation_invar (send_flow_cont_impl state_impl)"
+proof(all \<open>rule send_flow_cont_condE[OF assms(2)]\<close>, goal_cases)
  case (1 f b \<gamma>)
   define f_impl where "f_impl = current_flow_impl state_impl"
   define b_impl where "b_impl = balance_impl state_impl"
@@ -1961,189 +2028,189 @@ proof(all \<open>rule loopB_cont_condE[OF assms(2)]\<close>, goal_cases)
 
   define state' where "state' = state \<lparr>return := notyetterm \<rparr>"
 
-  have state'_impl_is:"state'_impl = loopB_cont_impl state_impl"
+  have state'_impl_is:"state'_impl = send_flow_cont_impl state_impl"
     unfolding state'_impl_def  tP_def s_impl_def
-               b_impl_def f_impl_def loopB_cont_impl_def Let_def 
+               b_impl_def f_impl_def send_flow_cont_impl_def Let_def 
     by(auto split: prod.split)
 
-  have state'_is:"state' =loopB_cont_upd state "
-    unfolding state'_def loopB_cont_upd_def Let_def by simp
+  have state'_is:"state' =send_flow_cont_upd state "
+    unfolding state'_def send_flow_cont_upd_def Let_def by simp
 
-  show "abstract (loopB_cont_impl state_impl) = loopB_cont_upd state" 
+  show "abstract (send_flow_cont_impl state_impl) = send_flow_cont_upd state" 
     apply(subst sym[OF state'_is], subst sym[OF state'_impl_is]) 
     unfolding state'_def state'_impl_def abstract_def Let_def sym[OF assms(1)]
     by(auto simp add: abstractE' simp del: abstractE)
     
-  show "implementation_invar (loopB_cont_impl state_impl)"
+  show "implementation_invar (send_flow_cont_impl state_impl)"
     apply(subst sym[OF state'_impl_is]) 
     using assms(3)
     unfolding state'_def state'_impl_def abstract_def Let_def sym[OF assms(1)] implementation_invar_def
     by(auto simp add: abstractE' simp del: abstractE)
 qed  
 
-lemma loopB_impl_simps_succ: 
+lemma send_flow_impl_simps_succ: 
   assumes "abstract state_impl = state"
           "implementation_invar state_impl"
-  shows   "loopB_succ_cond state \<Longrightarrow> loopB_impl state_impl = (loopB_succ_impl state_impl)" 
-    by (auto intro: loopB_succ_condE
-          simp add: sym[OF assms(1)] abstract_def Let_def loopB_succ_impl_def
+  shows   "send_flow_succ_cond state \<Longrightarrow> send_flow_impl state_impl = (send_flow_succ_impl state_impl)" 
+    by (auto intro: send_flow_succ_condE
+          simp add: sym[OF assms(1)] abstract_def Let_def send_flow_succ_impl_def
                     test_all_vertices_zero_balance[OF refl refl assms(2)]
-                    loopB_impl.simps abstractE' simp del: abstractE)
+                    send_flow_impl.simps abstractE' simp del: abstractE)
 
-lemma loopB_impl_simps: 
+lemma send_flow_impl_simps: 
   assumes "abstract state_impl = state"
           "implementation_invar state_impl"
           "invar_gamma state"
-  shows   "loopB_succ_cond state \<Longrightarrow> loopB_impl state_impl = (loopB_succ_impl state_impl)" 
-          "loopB_cont_cond state \<Longrightarrow>  loopB_impl state_impl = (loopB_cont_impl state_impl)"
-          "loopB_fail1_cond state \<Longrightarrow> aux_invar state \<Longrightarrow> \<forall>e\<in>\<F> state. 0 < current_flow state e \<Longrightarrow>
-                                      loopB_impl state_impl = (loopB_fail_impl state_impl)"
-          "loopB_fail2_cond state \<Longrightarrow> aux_invar state \<Longrightarrow> \<forall>e\<in>\<F> state. 0 < current_flow state e \<Longrightarrow>
-                                      loopB_impl state_impl = (loopB_fail_impl state_impl)"
-          "loopB_call1_cond state \<Longrightarrow> aux_invar state \<Longrightarrow> \<forall>e\<in>\<F> state. 0 < current_flow state e \<Longrightarrow>
-                                      loopB_impl state_impl = loopB_impl (loopB_call1_upd_impl state_impl)"
-          "loopB_call2_cond state \<Longrightarrow> aux_invar state \<Longrightarrow> \<forall>e\<in>\<F> state. 0 < current_flow state e \<Longrightarrow>
-                                      loopB_impl state_impl = loopB_impl (loopB_call2_upd_impl state_impl)"
+  shows   "send_flow_succ_cond state \<Longrightarrow> send_flow_impl state_impl = (send_flow_succ_impl state_impl)" 
+          "send_flow_cont_cond state \<Longrightarrow>  send_flow_impl state_impl = (send_flow_cont_impl state_impl)"
+          "send_flow_fail1_cond state \<Longrightarrow> aux_invar state \<Longrightarrow> \<forall>e\<in>\<F> state. 0 < current_flow state e \<Longrightarrow>
+                                      send_flow_impl state_impl = (send_flow_fail_impl state_impl)"
+          "send_flow_fail2_cond state \<Longrightarrow> aux_invar state \<Longrightarrow> \<forall>e\<in>\<F> state. 0 < current_flow state e \<Longrightarrow>
+                                      send_flow_impl state_impl = (send_flow_fail_impl state_impl)"
+          "send_flow_call1_cond state \<Longrightarrow> aux_invar state \<Longrightarrow> \<forall>e\<in>\<F> state. 0 < current_flow state e \<Longrightarrow>
+                                      send_flow_impl state_impl = send_flow_impl (send_flow_call1_upd_impl state_impl)"
+          "send_flow_call2_cond state \<Longrightarrow> aux_invar state \<Longrightarrow> \<forall>e\<in>\<F> state. 0 < current_flow state e \<Longrightarrow>
+                                      send_flow_impl state_impl = send_flow_impl (send_flow_call2_upd_impl state_impl)"
 proof(goal_cases)
   case 1
   show ?case 
-    by (auto intro: loopB_succ_condE[OF 1] 
-          simp add: sym[OF assms(1)] abstract_def Let_def loopB_succ_impl_def
+    by (auto intro: send_flow_succ_condE[OF 1] 
+          simp add: sym[OF assms(1)] abstract_def Let_def send_flow_succ_impl_def
                     test_all_vertices_zero_balance[OF refl refl assms(2)]
-                    loopB_impl.simps abstractE' simp del: abstractE)
+                    send_flow_impl.simps abstractE' simp del: abstractE)
 next
   case 2
   have no_source:"get_source_impl state_impl = None"
-    using  assms(2,3) get_source_impl_axioms(2)[OF assms(1) refl refl]
-    by(auto intro: loopB_cont_condE[OF 2] simp add: abstract_def Let_def abstractE' simp del: abstractE)
+    using  assms(2,3) get_source_impl_axioms_unfold(2)[OF assms(1) refl refl]
+    by(auto intro: send_flow_cont_condE[OF 2] simp add: abstract_def Let_def abstractE' simp del: abstractE)
   have still_a_vertex: "\<not> test_all_vertices_zero_balance state_impl"
     using test_all_vertices_zero_balance[OF refl refl assms(2)]
-    by (auto intro: loopB_cont_condE[OF 2] simp add: sym[OF assms(1)] abstract_def Let_def 
+    by (auto intro: send_flow_cont_condE[OF 2] simp add: sym[OF assms(1)] abstract_def Let_def 
 abstractE' simp del: abstractE)
   have no_target: " get_target_impl state_impl =  None"
-    using  assms(2,3) get_target_impl_axioms(2)[OF assms(1) refl refl]
-    by(auto intro: loopB_cont_condE[OF 2] simp add: abstract_def Let_def abstractE' simp del: abstractE)
+    using  assms(2,3) get_target_impl_axioms_unfold(2)[OF assms(1) refl refl]
+    by(auto intro: send_flow_cont_condE[OF 2] simp add: abstract_def Let_def abstractE' simp del: abstractE)
   show ?case 
     using no_source still_a_vertex  no_target 
-    by (auto simp add: case_simp(2) Let_def loopB_cont_impl_def loopB_impl.simps)
+    by (auto simp add: case_simp(2) Let_def send_flow_cont_impl_def send_flow_impl.simps)
 next
   case 3
   show ?case
-  proof(rule loopB_fail1_condE[OF 3(1)], goal_cases)
+  proof(rule send_flow_fail1_condE[OF 3(1)], goal_cases)
     case (1 f b \<gamma> s)
      define b_impl where "b_impl = balance_impl state_impl"
      define \<gamma>_impl where "\<gamma>_impl = current_\<gamma>_impl state_impl"
      define s_impl where "s_impl = the (get_source_impl state_impl)"
 
   have sources_coincide: "s = s_impl"
-    using get_source_impl_axioms(1)[OF assms(1) refl refl] 1 s_impl_def assms(2) by simp
+    using get_source_impl_axioms_unfold(1)[OF assms(1) refl refl] 1 s_impl_def assms(2) by simp
   have s_in_V: "s \<in> \<V>" 
-    using "1"(2) "1"(3) "1"(5) "1"(6) get_source_axioms 3 by blast
+    using "1"(2) "1"(3) "1"(5) "1"(6) get_source_axioms_unfolded 3 by blast
   have source:"get_source_impl state_impl \<noteq> None"
-    using  assms(2,3) get_source_impl_axioms(2)[OF assms(1) refl refl] 
-    by(auto intro: loopB_fail1_condE[OF 3(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
+    using  assms(2,3) get_source_impl_axioms_unfold(2)[OF assms(1) refl refl] 
+    by(auto intro: send_flow_fail1_condE[OF 3(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
   have still_a_vertex: "\<not> test_all_vertices_zero_balance state_impl"
     using test_all_vertices_zero_balance[OF refl refl assms(2)]
-    by (auto intro: loopB_fail1_condE[OF 3(1)] simp add: sym[OF assms(1)] abstract_def Let_def abstractE' simp del: abstractE)
+    by (auto intro: send_flow_fail1_condE[OF 3(1)] simp add: sym[OF assms(1)] abstract_def Let_def abstractE' simp del: abstractE)
   have no_target: " get_source_target_path_a_impl state_impl s =  None"
-    using  assms(1,2,3) impl_a_None[OF refl refl refl assms(1) s_in_V 3(2) 3(3)] 1 3
-    by (auto intro: loopB_fail1_condE[OF 3(1)])
+    using  assms(1,2,3) impl_a_None_unfold[OF refl refl refl assms(1) s_in_V 3(2) 3(3)] 1 3
+    by (auto intro: send_flow_fail1_condE[OF 3(1)])
   show ?case 
     using still_a_vertex  source  no_target s_impl_def sources_coincide 
-    by (auto simp add: Let_def loopB_fail_upd_def loopB_fail_impl_def
-                       loopB_impl.simps)
+    by (auto simp add: Let_def send_flow_fail_upd_def send_flow_fail_impl_def
+                       send_flow_impl.simps)
   qed
 next
   case 4
   show ?case 
-  proof(rule loopB_fail2_condE[OF 4(1)], goal_cases)
+  proof(rule send_flow_fail2_condE[OF 4(1)], goal_cases)
     case (1 f b \<gamma> t)
      define b_impl where "b_impl = balance_impl state_impl"
      define \<gamma>_impl where "\<gamma>_impl = current_\<gamma>_impl state_impl"
      define t_impl where "t_impl = the (get_target_impl state_impl)"
 
   have no_source:"get_source_impl state_impl = None"
-    using  assms(1,2) get_source_impl_axioms(2)[OF assms(1) refl refl]
-    by(auto intro: loopB_fail2_condE[OF 4(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
+    using  assms(1,2) get_source_impl_axioms_unfold(2)[OF assms(1) refl refl]
+    by(auto intro: send_flow_fail2_condE[OF 4(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
   have sources_coincide: "t = t_impl"
-    using get_target_impl_axioms(1)[OF assms(1) refl refl] 1 t_impl_def assms(2) by simp
+    using get_target_impl_axioms_unfold(1)[OF assms(1) refl refl] 1 t_impl_def assms(2) by simp
   have t_in_V: "t \<in> \<V>"
-    using "1"(2) "1"(3) "1"(6) "1"(7) get_target_axioms 4 by presburger
+    using "1"(2) "1"(3) "1"(6) "1"(7) get_target_axioms_unfolded 4 by presburger
   have target:"get_target_impl state_impl \<noteq> None"
-    using  assms(2) get_target_impl_axioms(2)[OF assms(1) refl refl]
-    by(auto intro: loopB_fail2_condE[OF 4(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
+    using  assms(2) get_target_impl_axioms_unfold(2)[OF assms(1) refl refl]
+    by(auto intro: send_flow_fail2_condE[OF 4(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
   have still_a_vertex: "\<not> test_all_vertices_zero_balance state_impl"
     using test_all_vertices_zero_balance[OF refl refl assms(2)]
-    by (auto intro: loopB_fail2_condE[OF 4(1)] simp add: sym[OF assms(1)] abstract_def Let_def abstractE' simp del: abstractE)
+    by (auto intro: send_flow_fail2_condE[OF 4(1)] simp add: sym[OF assms(1)] abstract_def Let_def abstractE' simp del: abstractE)
   have no_source2: " get_source_target_path_b_impl state_impl t =  None"
-    using  assms(1,2,3) impl_b_None[OF refl refl refl assms(1) t_in_V 4(2) 4(3)] 1 4
-    by (auto intro: loopB_fail2_condE[OF 4(1)])
+    using  assms(1,2,3) impl_b_None_unfold[OF refl refl refl assms(1) t_in_V 4(2) 4(3)] 1 4
+    by (auto intro: send_flow_fail2_condE[OF 4(1)])
   show ?case 
     using still_a_vertex target no_source no_source2 t_impl_def sources_coincide 
-    by (auto simp add: Let_def loopB_fail_upd_def loopB_fail_impl_def
-                      loopB_impl.simps)
+    by (auto simp add: Let_def send_flow_fail_upd_def send_flow_fail_impl_def
+                      send_flow_impl.simps)
   qed
 next
   case 5
   show ?case
-  proof(rule loopB_call1_condE[OF 5(1)], goal_cases)
+  proof(rule send_flow_call1_condE[OF 5(1)], goal_cases)
     case (1 f b \<gamma> s t P f' b' state')
      define b_impl where "b_impl = balance_impl state_impl"
      define \<gamma>_impl where "\<gamma>_impl = current_\<gamma>_impl state_impl"
      define s_impl where "s_impl = the (get_source_impl state_impl)"
 
   have sources_coincide: "s = s_impl"
-    using get_source_impl_axioms(1)[OF assms(1) refl refl] 1 s_impl_def assms(2)  by simp
+    using get_source_impl_axioms_unfold(1)[OF assms(1) refl refl] 1 s_impl_def assms(2)  by simp
   have s_in_V: "s \<in> \<V>" 
-    using "1"(2) "1"(3) "1"(5) "1"(6) get_source_axioms 5 by blast
+    using "1"(2) "1"(3) "1"(5) "1"(6) get_source_axioms_unfolded 5 by blast
   have source:"get_source_impl state_impl \<noteq> None"
-    using  assms(1,2) get_source_impl_axioms(2)[OF assms(1) refl refl]
-    by(auto intro: loopB_call1_condE[OF 5(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
+    using  assms(1,2) get_source_impl_axioms_unfold(2)[OF assms(1) refl refl]
+    by(auto intro: send_flow_call1_condE[OF 5(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
   have still_a_vertex: "\<not> test_all_vertices_zero_balance state_impl"
     using test_all_vertices_zero_balance[OF refl refl assms(2)]
-    by (auto intro: loopB_call1_condE[OF 5(1)] simp add: sym[OF assms(1)] abstract_def Let_def abstractE' simp del: abstractE)
+    by (auto intro: send_flow_call1_condE[OF 5(1)] simp add: sym[OF assms(1)] abstract_def Let_def abstractE' simp del: abstractE)
   have target: " get_source_target_path_a_impl state_impl s \<noteq>  None"
-    using  assms(1-3) impl_a_None[OF refl refl refl assms(1) s_in_V 5(2) 5(3)] 1 5
-    by (auto intro: loopB_call1_condE[OF 5(1)])
+    using  assms(1-3) impl_a_None_unfold[OF refl refl refl assms(1) s_in_V 5(2) 5(3)] 1 5
+    by (auto intro: send_flow_call1_condE[OF 5(1)])
   show ?case 
     using still_a_vertex  source  target s_impl_def sources_coincide 
-    by(fastforce simp add: Let_def loopB_call1_upd_def loopB_call1_upd_impl_def
-                       loopB_impl.simps)
+    by(fastforce simp add: Let_def send_flow_call1_upd_def send_flow_call1_upd_impl_def
+                       send_flow_impl.simps)
   qed
 next
   case 6
   show ?case
-  proof(rule loopB_call2_condE[OF 6(1)], goal_cases)
+  proof(rule send_flow_call2_condE[OF 6(1)], goal_cases)
     case (1 f b \<gamma> t s P f' b' state')
      define b_impl where "b_impl = balance_impl state_impl"
      define \<gamma>_impl where "\<gamma>_impl = current_\<gamma>_impl state_impl"
      define t_impl where "t_impl = the (get_target_impl state_impl)"
 
   have no_source:"get_source_impl state_impl = None"
-    using  assms(1,2) get_source_impl_axioms(2)[OF assms(1) refl refl]
-    by(auto intro: loopB_call2_condE[OF 6(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
+    using  assms(1,2) get_source_impl_axioms_unfold(2)[OF assms(1) refl refl]
+    by(auto intro: send_flow_call2_condE[OF 6(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
   have sources_coincide: "t = t_impl"
-    using get_target_impl_axioms(1)[OF assms(1) refl refl] 1 t_impl_def assms(2) by simp
+    using get_target_impl_axioms_unfold(1)[OF assms(1) refl refl] 1 t_impl_def assms(2) by simp
   have t_in_V: "t \<in> \<V>"
-    using "1"(2) "1"(3) "1"(6) "1"(7) get_target_axioms 6 by presburger
+    using "1"(2) "1"(3) "1"(6) "1"(7) get_target_axioms_unfolded 6 by presburger
   have target:"get_target_impl state_impl \<noteq> None"
-    using  assms(2,3) get_target_impl_axioms(2)[OF assms(1) refl refl]
-    by(auto intro: loopB_call2_condE[OF 6(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
+    using  assms(2,3) get_target_impl_axioms_unfold(2)[OF assms(1) refl refl]
+    by(auto intro: send_flow_call2_condE[OF 6(1)] simp add: abstract_def Let_def abstractE' simp del: abstractE)
   have still_a_vertex: "\<not> test_all_vertices_zero_balance state_impl"
     using test_all_vertices_zero_balance[OF refl refl assms(2)]
-    by (auto intro: loopB_call2_condE[OF 6(1)] simp add: sym[OF assms(1)] abstract_def Let_def abstractE' simp del: abstractE)
+    by (auto intro: send_flow_call2_condE[OF 6(1)] simp add: sym[OF assms(1)] abstract_def Let_def abstractE' simp del: abstractE)
   have no_source2: " get_source_target_path_b_impl state_impl t \<noteq>  None"
-    using  assms(1-3) impl_b_None[OF refl refl refl assms(1) t_in_V 6(2) 6(3)] 1 6
-    by (auto intro: loopB_call2_condE[OF 6(1)])
+    using  assms(1-3) impl_b_None_unfold[OF refl refl refl assms(1) t_in_V 6(2) 6(3)] 1 6
+    by (auto intro: send_flow_call2_condE[OF 6(1)])
   show ?case 
     using still_a_vertex target no_source no_source2 t_impl_def sources_coincide 
-    by (fastforce simp add: Let_def loopB_call2_upd_def loopB_call2_upd_impl_def
-                       loopB_impl.simps)
+    by (fastforce simp add: Let_def send_flow_call2_upd_def send_flow_call2_upd_impl_def
+                       send_flow_impl.simps)
   qed
 qed
 
-lemma loopB_abstract_corresp_result_with_conj:
-  assumes "loopB_dom state"
+lemma send_flow_abstract_corresp_result_with_conj:
+  assumes "send_flow_dom state"
           "abstract state_impl = state"
           "aux_invar state"
           "implementation_invar state_impl"
@@ -2152,10 +2219,10 @@ lemma loopB_abstract_corresp_result_with_conj:
                                  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
           "invar_isOptflow state" 
           "invar_integral state"          
-        shows "abstract (loopB_impl state_impl) = loopB state \<and>
-               implementation_invar (loopB_impl state_impl)"
+        shows "abstract (send_flow_impl state_impl) = send_flow state \<and>
+               implementation_invar (send_flow_impl state_impl)"
   using assms(2-)
-proof(induction  arbitrary: state_impl rule: loopB_induct[OF assms(1)])
+proof(induction  arbitrary: state_impl rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   have gamma_0: "current_\<gamma> state > 0" 
@@ -2166,91 +2233,91 @@ proof(induction  arbitrary: state_impl rule: loopB_induct[OF assms(1)])
     using  gamma_0 Phi_nonneg[of state, OF IH(7)] N_gtr_0
     by(intro order.trans[OF _ IH(8)[of e]] )(auto simp add: mult.commute right_diff_distrib')
   show ?case 
-  proof(rule loopB_cases[of state], goal_cases)
+  proof(rule send_flow_cases[of state], goal_cases)
     case 1
     show ?case
-      using loopB_impl_simps(2)[OF IH(4) IH(6,7) 1]
-            loopB_simps(2)[OF IH(1) 1]
-            loopB_cont_abstract_corresp[OF IH(4) 1 IH(6)] 
+      using send_flow_impl_simps(2)[OF IH(4) IH(6,7) 1]
+            send_flow_simps(2)[OF IH(1) 1]
+            send_flow_cont_abstract_corresp[OF IH(4) 1 IH(6)] 
       by auto
   next
     case 2
     then show ?case 
-           using loopB_impl_simps(1)[OF  IH(4) IH(6,7) 2]
-            loopB_simps(1)[OF IH(1) 2]
-            loopB_succ_abstract_corresp[OF IH(4) 2 IH(6)] 
+           using send_flow_impl_simps(1)[OF  IH(4) IH(6,7) 2]
+            send_flow_simps(1)[OF IH(1) 2]
+            send_flow_succ_abstract_corresp[OF IH(4) 2 IH(6)] 
       by auto
   next
     case 3
-    have a1: "aux_invar (loopB_call1_upd state)"
+    have a1: "aux_invar (send_flow_call1_upd state)"
       using invar_aux_pres_call1[of state] IH 3 by simp
     have flowF:  " \<forall>e\<in>\<F> state. 0 < current_flow state e"
       using gamma_0 gamma_flow by fastforce
-    have gamma_Phi_flow: "e \<in> \<F> (loopB_call1_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call1_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call1_upd state)) * current_\<gamma> (loopB_call1_upd state)
-         \<le> current_flow (loopB_call1_upd state) e" for e
+    have gamma_Phi_flow: "e \<in> \<F> (send_flow_call1_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call1_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call1_upd state)) * current_\<gamma> (send_flow_call1_upd state)
+         \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call1_cond_flow_Phi[OF 3])
-         using IH(5)  IH(8)[of e] loopB_call1_upd_changes(6)[of state] 
-               loopB_call1_upd_changes(4)[of state]  loopB_call1_cond_Phi_decr[OF 3 IH(7)] IH(7)
+         apply(rule send_flow_call1_cond_flow_Phi[OF 3])
+         using IH(5)  IH(8)[of e] send_flow_call1_upd_changes(6)[of state] 
+               send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(7)] IH(7)
          by (auto simp add: left_diff_distrib' flowF)
        show ?case 
-         apply(subst loopB_impl_simps(5)[OF IH(4) IH(6,7) 3 IH(5) flowF])+
-         apply(subst loopB_simps(5)[OF IH(1) 3])
+         apply(subst send_flow_impl_simps(5)[OF IH(4) IH(6,7) 3 IH(5) flowF])+
+         apply(subst send_flow_simps(5)[OF IH(1) 3])
          using IH(4-10) 3 flowF a1 gamma_Phi_flow gamma_flow
-         by(intro IH(2)[OF 3]  invar_gamma_pres_call1 loopB_call1_abstract_corresp
-                  loopB_call1_invar_integral_pres loopB_invar_isOptflow_call1
+         by(intro IH(2)[OF 3]  invar_gamma_pres_call1 send_flow_call1_abstract_corresp
+                  send_flow_call1_invar_integral_pres send_flow_invar_isOptflow_call1
            | simp)+
   next
     case 4
-    have a1: "aux_invar (loopB_call2_upd state)"
+    have a1: "aux_invar (send_flow_call2_upd state)"
       using invar_aux_pres_call2[of state] IH 4 by simp
     have flowF:  " \<forall>e\<in>\<F> state. 0 < current_flow state e"
       using gamma_0 gamma_flow by fastforce
-    have gamma_Phi_flow: "e \<in> \<F> (loopB_call2_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call2_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call2_upd state)) * current_\<gamma> (loopB_call2_upd state)
-         \<le> current_flow (loopB_call2_upd state) e" for e
+    have gamma_Phi_flow: "e \<in> \<F> (send_flow_call2_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call2_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call2_upd state)) * current_\<gamma> (send_flow_call2_upd state)
+         \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call2_cond_flow_Phi[OF 4])
-         using IH(5)  IH(8)[of e] loopB_call2_upd_changes(6)[of state] 
-               loopB_call2_upd_changes(4)[of state]  loopB_call2_cond_Phi_decr[OF 4 IH(7)] IH(7)
+         apply(rule send_flow_call2_cond_flow_Phi[OF 4])
+         using IH(5)  IH(8)[of e] send_flow_call2_upd_changes(6)[of state] 
+               send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(7)] IH(7)
          by (auto simp add: left_diff_distrib' flowF)
        show ?case 
-         apply(subst loopB_impl_simps(6)[OF IH(4) IH(6,7) 4 IH(5) flowF])+
-         apply(subst loopB_simps(6)[OF IH(1) 4])
+         apply(subst send_flow_impl_simps(6)[OF IH(4) IH(6,7) 4 IH(5) flowF])+
+         apply(subst send_flow_simps(6)[OF IH(1) 4])
          using IH(4-10) 4 flowF a1 gamma_Phi_flow gamma_flow
-         by(intro IH(3)[OF 4]  invar_gamma_pres_call2 loopB_call2_abstract_corresp
-                  loopB_call2_invar_integral_pres loopB_invar_isOptflow_call2
+         by(intro IH(3)[OF 4]  invar_gamma_pres_call2 send_flow_call2_abstract_corresp
+                  send_flow_call2_invar_integral_pres send_flow_invar_isOptflow_call2
            | simp)+
   next
     case 5
     have flowF:  " \<forall>e\<in>\<F> state. 0 < current_flow state e"
       using gamma_0 gamma_flow by fastforce
     show ?case 
-      using loopB_impl_simps(3)[OF IH(4) IH(6,7) 5 IH(5) flowF]  loopB_simps(3)[OF IH(1) 5]
-            IH(4-7) 5 flowF loopB_fail1_abstract_corresp 
+      using send_flow_impl_simps(3)[OF IH(4) IH(6,7) 5 IH(5) flowF]  send_flow_simps(3)[OF IH(1) 5]
+            IH(4-7) 5 flowF send_flow_fail1_abstract_corresp 
       by auto
   next
     case 6
     have flowF:  " \<forall>e\<in>\<F> state. 0 < current_flow state e"
       using gamma_0 gamma_flow by fastforce
     show ?case 
-      using loopB_impl_simps(4)[OF IH(4) IH(6,7) 6 IH(5) flowF]  loopB_simps(4)[OF IH(1) 6]
-            IH(4-7) 6 flowF loopB_fail2_abstract_corresp 
+      using send_flow_impl_simps(4)[OF IH(4) IH(6,7) 6 IH(5) flowF]  send_flow_simps(4)[OF IH(1) 6]
+            IH(4-7) 6 flowF send_flow_fail2_abstract_corresp 
       by auto
   qed
 qed
 
-lemmas loopB_abstract_corresp_result = conjunct1[OF loopB_abstract_corresp_result_with_conj]
-                                       conjunct2[OF loopB_abstract_corresp_result_with_conj]
+lemmas send_flow_abstract_corresp_result = conjunct1[OF send_flow_abstract_corresp_result_with_conj]
+                                       conjunct2[OF send_flow_abstract_corresp_result_with_conj]
 end
 
 subsection \<open>Top Loop\<close>
 
-locale orlins_impl_spec = loopA_impl_spec where fst = fst + 
-                     loopB_impl_spec where fst = fst 
+locale orlins_impl_spec = maintain_forest_impl_spec where fst = fst + 
+                     send_flow_impl_spec where fst = fst 
                    for fst ::"'edge_type \<Rightarrow> 'a"+
   fixes init_flow :: "'e"
     and init_bal :: "'f"
@@ -2259,7 +2326,7 @@ locale orlins_impl_spec = loopA_impl_spec where fst = fst +
 begin
 
 partial_function (tailrec) orlins_impl::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl  
-\<Rightarrow> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl  " where
+\<Rightarrow> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_impl" where
 "orlins_impl state = (if return_impl state = success then state 
                  else if return_impl state= failure then state
                  else (let f = current_flow_impl state;
@@ -2269,8 +2336,8 @@ partial_function (tailrec) orlins_impl::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state_
                       \<gamma>' = (if are_all (\<lambda> e. the (flow_lookup f e) = (0::real)) E' then
                              min (\<gamma> / 2) (get_max (\<lambda> x bx. \<bar> bx \<bar>) b)
                              else (\<gamma> / 2));
-                      state' = loopA_impl (state \<lparr>current_\<gamma>_impl := \<gamma>' \<rparr>);
-                      state'' = loopB_impl state' 
+                      state' = maintain_forest_impl (state \<lparr>current_\<gamma>_impl := \<gamma>' \<rparr>);
+                      state'' = send_flow_impl state' 
                       in orlins_impl state''))"
 
 definition "initial_impl = \<lparr> current_flow_impl = flow_update_all (\<lambda> e fe. 0) init_flow, 
@@ -2287,11 +2354,11 @@ lemmas [code] = orlins_impl.simps initial_impl_def
 
 end
 
-locale orlins_impl = loopA_impl where fst = fst + 
-                     loopB_impl where fst = fst +
+locale orlins_impl = maintain_forest_impl where fst = fst + 
+                     send_flow_impl where fst = fst +
                      orlins where fst = fst +
                      orlins_impl_spec where fst = fst
-                   for fst ::"'edge_type \<Rightarrow> 'a"+
+                 for fst ::"'edge_type \<Rightarrow> 'a"+
   assumes init_flow: "flow_invar init_flow" "flow_domain init_flow = \<E>"
   assumes init_bal: "bal_invar init_bal" "bal_domain init_bal = \<V>" 
                     "\<And> x. x \<in> \<V> \<Longrightarrow> the (bal_lookup init_bal x) = \<b> x"
@@ -2310,8 +2377,8 @@ definition "orlins_upd_impl state =
                       \<gamma>' = (if are_all (\<lambda> e. the (flow_lookup f e) = (0::real)) E' then
                              min (\<gamma> / 2) (get_max (\<lambda> x bx. \<bar> bx \<bar>) b)
                              else (\<gamma> / 2));
-                      state' = loopA_impl (state \<lparr>current_\<gamma>_impl := \<gamma>' \<rparr>);
-                      state'' = loopB_impl state' 
+                      state' = maintain_forest_impl (state \<lparr>current_\<gamma>_impl := \<gamma>' \<rparr>);
+                      state'' = send_flow_impl state' 
                       in state'')"
 
 lemma orlins_step_corresp:
@@ -2339,8 +2406,8 @@ proof(all \<open>rule orlins_call_condE[OF assms(2)]\<close>, goal_cases)
   define \<gamma>'_impl where "\<gamma>'_impl = (if are_all (\<lambda> e. the (flow_lookup f_impl e) = (0::real)) E'_impl then
                              min (\<gamma>_impl / 2) (get_max (\<lambda> x bx. \<bar> bx \<bar>) b_impl)
                              else (\<gamma>_impl / 2))"
-  define state'_impl where "state'_impl = loopA_impl (state_impl\<lparr>current_\<gamma>_impl := \<gamma>'_impl\<rparr>)"
-  define state''_impl where "state''_impl = loopB_impl state'_impl"
+  define state'_impl where "state'_impl = maintain_forest_impl (state_impl\<lparr>current_\<gamma>_impl := \<gamma>'_impl\<rparr>)"
+  define state''_impl where "state''_impl = send_flow_impl state'_impl"
   have state''_impl_is: "state''_impl = orlins_upd_impl state_impl"
     by(auto simp add: state''_impl_def state'_impl_def \<gamma>'_impl_def E'_impl_def \<gamma>_impl_def 
                       b_impl_def f_impl_def orlins_upd_impl_def Let_def)
@@ -2389,8 +2456,8 @@ proof(all \<open>rule orlins_call_condE[OF assms(2)]\<close>, goal_cases)
 
   have aux_invar_g[simp]: "aux_invar (state\<lparr>current_\<gamma> := \<gamma>'\<rparr>)"
     using assms aux_invar_gamma by auto
-  hence loopA_g_dom[simp]:"loopA_dom (state\<lparr>current_\<gamma> := \<gamma>'\<rparr>)"
-    using termination_of_loopA' by blast
+  hence maintain_forest_g_dom[simp]:"maintain_forest_dom (state\<lparr>current_\<gamma> := \<gamma>'\<rparr>)"
+    using termination_of_maintain_forest' by blast
   have abstract_g[simp]: "abstract (state_impl\<lparr>current_\<gamma>_impl := \<gamma>'\<rparr>) = state\<lparr>current_\<gamma> := \<gamma>'\<rparr>"
     using assms by(auto simp add: abstractE' simp del: abstractE)
   have impl_inv_abstr[simp]: " implementation_invar (state_impl\<lparr>current_\<gamma>_impl := \<gamma>'\<rparr>)"
@@ -2399,16 +2466,16 @@ proof(all \<open>rule orlins_call_condE[OF assms(2)]\<close>, goal_cases)
   have invar_Gamma_g[simp]: "invar_gamma (state\<lparr>current_\<gamma> := \<gamma>'\<rparr>)"
     using assms by ((subst 1)+, intro gamma_upd_aux_invar_pres) auto
   have state'_coincide[simp]: "abstract state'_impl = state'"
-    by(auto intro: abstract_impl_same_whole_loopA'(1) simp add: state'_impl_def 1(7))
+    by(auto intro: abstract_impl_same_whole_maintain_forest'(1) simp add: state'_impl_def 1(7))
   have impl_inv_state'[simp]: "implementation_invar state'_impl"
-    by(auto intro!: abstract_impl_same_whole_loopA'(2) simp add: state'_impl_def 1(7))
+    by(auto intro!: abstract_impl_same_whole_maintain_forest'(2) simp add: state'_impl_def 1(7))
   have invar_gamma_state'[simp]: "invar_gamma state'"
     using assms(5-6) 
-    by (auto intro: loopA_invar_gamma_pres simp add: 1(7)) 
-  have loopB_dom_state'[simp]: "loopB_dom state'"
-    by(auto intro: loopB_termination)
+    by (auto intro: maintain_forest_invar_gamma_pres simp add: 1(7)) 
+  have send_flow_dom_state'[simp]: "send_flow_dom state'"
+    by(auto intro: send_flow_termination)
   have aux_invar_state'[simp]:"aux_invar state'"
-    by(auto intro: loopA_invar_aux_pres simp add: 1(7))
+    by(auto intro: maintain_forest_invar_aux_pres simp add: 1(7))
 
 
  have aux_invar_gamma_upd: "aux_invar (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
@@ -2417,13 +2484,13 @@ proof(all \<open>rule orlins_call_condE[OF assms(2)]\<close>, goal_cases)
     unfolding new_\<gamma>_def Let_def
     by(fastforce intro: gamma_upd_aux_invar_pres simp add: assms)
   hence new_gamma_0: "new_\<gamma> state > 0" unfolding invar_gamma_def by auto
-  have same_gamma_loopA: "current_\<gamma> (loopA (state \<lparr>current_\<gamma> := \<gamma>'\<rparr>)) =
+  have same_gamma_maintain_forest: "current_\<gamma> (maintain_forest (state \<lparr>current_\<gamma> := \<gamma>'\<rparr>)) =
                             \<gamma>'"
     using gamma_pres aux_invar_g
     by auto
   have init_Phi_below_N:"\<Phi> (state\<lparr>current_\<gamma> := \<gamma>'\<rparr>) \<le> N"
     by((subst 1)+, intro Phi_init[simplified new_\<gamma>_def Let_def]) (auto simp add: assms)
-  have Phi_after_below2N: " \<Phi> ((loopA (state \<lparr>current_\<gamma> := \<gamma>'\<rparr>))) \<le> 2*N"
+  have Phi_after_below2N: " \<Phi> ((maintain_forest (state \<lparr>current_\<gamma> := \<gamma>'\<rparr>))) \<le> 2*N"
     using Phi_increase_below_N init_Phi_below_N aux_invar_g  init_Phi_below_N by fastforce
   have card_below_N: "v \<in> \<V> \<Longrightarrow> card (connected_component (to_graph (\<FF>_imp state)) v) \<le> N" for v
     using N_def assms aux_invar_def[of state] invar_aux10_def[of state] 
@@ -2444,14 +2511,14 @@ proof(all \<open>rule orlins_call_condE[OF assms(2)]\<close>, goal_cases)
     using new_gamma_0 new_gamma_below_half_gamma[of state]  N_gtr_0 assms(8)[simplified invar_forest_def] 
     by(auto intro:  order.strict_trans1[of _ "8* real N * (current_\<gamma> state / 2)"]
          simp add: algebra_simps)
-   have loopA_entry: "loopA_entry (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-    unfolding loopA_entry_def
+   have maintain_forest_entry: "maintain_forest_entry (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+    unfolding maintain_forest_entry_def
     using new_gamma_0 new_gamma_below_half_gamma[of state]  N_gtr_0 assms(8)[simplified invar_forest_def] 
     by(auto intro:  order.strict_trans1[of _ "8* real N * (current_\<gamma> state / 2)"]
          simp add: algebra_simps)
-  have loopB_entryF:"loopB_entryF (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) "
+  have send_flow_entryF:"send_flow_entryF (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) "
     using invarA_1 invar_A2 
-    by(auto intro: loopB_entryF[OF aux_invar_gamma_upd loopA_entry invar_gamma_gamma_upd refl])
+    by(auto intro: send_flow_entryF[OF aux_invar_gamma_upd maintain_forest_entry invar_gamma_gamma_upd refl])
   have Phi_N_diff_pos:"real_of_int (int (2 * N) - \<Phi> state') * current_\<gamma> state' \<ge> 0"
     using invar_gamma_state' Phi_after_below2N 
     by(auto simp add: invar_gamma_def 1 new_\<gamma>_def Let_def )
@@ -2461,7 +2528,7 @@ proof(all \<open>rule orlins_call_condE[OF assms(2)]\<close>, goal_cases)
     apply(rule order.trans[of _ "real (6 * N) * current_\<gamma> state'"])
     using Phi_N_diff_pos apply simp
     apply(rule order.strict_implies_order)
-    using loopB_entryF  unfolding loopB_entryF new_\<gamma>_def 1 Let_def loopB_entryF_def 
+    using send_flow_entryF  unfolding send_flow_entryF new_\<gamma>_def 1 Let_def send_flow_entryF_def 
     by force
   have optflow_state_upd[simp]: "invar_isOptflow (state\<lparr>current_\<gamma> := \<gamma>'\<rparr>)"
     using assms(9) by(simp add: invar_isOptflow_def)
@@ -2479,15 +2546,15 @@ proof(all \<open>rule orlins_call_condE[OF assms(2)]\<close>, goal_cases)
   have integral_state'[simp]: "invar_integral state'"
     unfolding 1(7)
     using invarA_1 sym[OF new_gamma_gamma'] invar_A2 new_gamma_0 
-    by(intro loopA_invar_integral_pres) auto
+    by(intro maintain_forest_invar_integral_pres) auto
     
   have state''_coincide[simp]: "abstract state''_impl = state''"
     using forest_flow 
-    by(fastforce intro!: loopB_abstract_corresp_result(1) simp add: state''_impl_def 1(8))
+    by(fastforce intro!: send_flow_abstract_corresp_result(1) simp add: state''_impl_def 1(8))
 
   have impl_inv_state''[simp]:"implementation_invar state''_impl"
     using forest_flow 
-    by (fastforce intro!: loopB_abstract_corresp_result(2)[of state'] simp add: state''_impl_def 1(8))
+    by (fastforce intro!: send_flow_abstract_corresp_result(2)[of state'] simp add: state''_impl_def 1(8))
 
   show "abstract (orlins_upd_impl state_impl) = orlins_upd state"
     using sym[OF state''_is] sym[OF state''_impl_is] by simp
@@ -2496,7 +2563,7 @@ proof(all \<open>rule orlins_call_condE[OF assms(2)]\<close>, goal_cases)
     using sym[OF state''_impl_is] by simp
 
   have "return state'' = notyetterm \<Longrightarrow> invar_non_zero_b state''"
-    by(force intro: remaining_balance_after_loopB[OF _ refl] simp add:  1(8))
+    by(force intro: remaining_balance_after_send_flow[OF _ refl] simp add:  1(8))
 
   thus "return (orlins_upd state) = notyetterm \<Longrightarrow> invar_non_zero_b (orlins_upd state)"
     using sym[OF state''_is] by simp
@@ -2636,25 +2703,25 @@ lemma initial_impl_implementation_invar: "implementation_invar initial_impl"
                      not_blocked_update_all(4))
 
 lemma init_orlins_impl_corresp_general:
-"abstract (orlins_impl (loopB_impl initial_impl)) = orlins (loopB initial)
-\<and> implementation_invar (orlins_impl (loopB_impl initial_impl))"
+"abstract (orlins_impl (send_flow_impl initial_impl)) = orlins (send_flow initial)
+\<and> implementation_invar (orlins_impl (send_flow_impl initial_impl))"
 proof(cases "\<forall> v \<in> \<V>. \<b> v = 0")
   case True
-  hence succ_Cond:"loopB_succ_cond initial"
-    by(auto intro: loopB_succ_condI simp add: initial_def)
-  hence dom:"loopB_dom initial" 
-    by(auto intro: loopB.domintros simp add: True initial_def)
-  have sorresp:"abstract (loopB_impl initial_impl) = loopB initial"
-    apply(subst loopB_simps(1)[OF dom succ_Cond], subst loopB_impl_simps_succ)
+  hence succ_Cond:"send_flow_succ_cond initial"
+    by(auto intro: send_flow_succ_condI simp add: initial_def)
+  hence dom:"send_flow_dom initial" 
+    by(auto intro: send_flow.domintros simp add: True initial_def)
+  have sorresp:"abstract (send_flow_impl initial_impl) = send_flow initial"
+    apply(subst send_flow_simps(1)[OF dom succ_Cond], subst send_flow_impl_simps_succ)
     using dom initial_corresp aux_invar_initial initial_impl_implementation_invar succ_Cond
-    by(auto intro: loopB_succ_abstract_corresp(1))
-  moreover have "return (loopB initial) = success"
-    by(auto simp add: loopB_simps'(1)[OF succ_Cond] loopB_succ_upd_def Let_def)
-  moreover hence "return_impl (loopB_impl initial_impl) = success" 
+    by(auto intro: send_flow_succ_abstract_corresp(1))
+  moreover have "return (send_flow initial) = success"
+    by(auto simp add: send_flow_simps'(1)[OF succ_Cond] send_flow_succ_upd_def Let_def)
+  moreover hence "return_impl (send_flow_impl initial_impl) = success" 
     by(auto simp add: sorresp)
-  moreover have " implementation_invar (local.loopB_impl initial_impl)"
+  moreover have " implementation_invar (local.send_flow_impl initial_impl)"
     using initial_corresp initial_impl_implementation_invar
-           loopB_impl_simps_succ loopB_succ_abstract_corresp(2) succ_Cond by presburger
+           send_flow_impl_simps_succ send_flow_succ_abstract_corresp(2) succ_Cond by presburger
   ultimately show ?thesis
     by(subst orlins.psimps)      
       (auto simp add: Let_def orlins_impl.simps intro: orlins.domintros)
@@ -2665,41 +2732,41 @@ next
   have emptyF: "\<F> initial  = {}"
     by (auto simp add:  initial_def to_graph_def empty_forest_axioms(1) to_rdgs_def 
                         vset.set.set_empty vset.set.set_isin vset.set.invar_empty)
-  have corresp_after_loopB:"abstract (loopB_impl initial_impl) = loopB initial"
-    by(intro loopB_abstract_corresp_result(1))
-      (auto intro: loopB_termination 
+  have corresp_after_send_flow:"abstract (send_flow_impl initial_impl) = send_flow initial"
+    by(intro send_flow_abstract_corresp_result(1))
+      (auto intro: send_flow_termination 
          simp add: invar_gamma_initial invar_isOptflow_initial   invar_integral_initial initial_corresp 
                    initial_impl_implementation_invar aux_invar_initial emptyF)
-  have impl_inv_after_loopB:"implementation_invar (loopB_impl initial_impl)"
-    using emptyF by(intro loopB_abstract_corresp_result(2))
-      (auto intro: loopB_termination 
+  have impl_inv_after_send_flow:"implementation_invar (send_flow_impl initial_impl)"
+    using emptyF by(intro send_flow_abstract_corresp_result(2))
+      (auto intro: send_flow_termination 
          simp add: invar_gamma_initial invar_isOptflow_initial  invar_integral_initial initial_corresp 
                    initial_impl_implementation_invar   aux_invar_initial)
   show ?thesis
-  proof(cases "return (loopB initial) \<noteq> notyetterm")
+  proof(cases "return (send_flow initial) \<noteq> notyetterm")
     case True
     thus ?thesis 
-      using corresp_after_loopB impl_inv_after_loopB
+      using corresp_after_send_flow impl_inv_after_send_flow
       apply(subst orlins.psimps)
       subgoal
         apply(rule orlins.domintros) 
         by(auto intro: return.exhaust)
-      by(auto simp add: orlins_impl.simps intro: return.exhaust[of "return (local.loopB initial)"])
+      by(auto simp add: orlins_impl.simps intro: return.exhaust[of "return (local.send_flow initial)"])
   next
     case False
-    hence notyetterm: "return (loopB initial) = notyetterm"
+    hence notyetterm: "return (send_flow initial) = notyetterm"
       by(auto intro: return.exhaust)
-    have invar_Forest_after_loopB: "invar_forest (loopB initial)"
+    have invar_Forest_after_send_flow: "invar_forest (send_flow initial)"
       using  emptyF
-      by(subst invar_forest_def, subst loopB_changes_\<F>) 
-        (auto intro!:  loopB_termination simp add: invar_gamma_initial notyetterm)
+      by(subst invar_forest_def, subst send_flow_changes_\<F>) 
+        (auto intro!:  send_flow_termination simp add: invar_gamma_initial notyetterm)
     show ?thesis 
       using emptyF
-      by(auto intro!: orlins_impl_corresp remaining_balance_after_loopB[OF _ refl] loopB_termination
-                      loopB_invar_aux_pres loopB_invar_gamma_pres orlins_entry_after_loopB[OF _ refl]  
-                        loopB_invar_isOpt_pres loopB_invar_integral_pres orlins_impl_impl_invar
-             simp add: invar_gamma_initial invar_Forest_after_loopB notyetterm aux_invar_initial
-                      impl_inv_after_loopB corresp_after_loopB initial_state_orlins_dom_and_results(1)[OF refl]
+      by(auto intro!: orlins_impl_corresp remaining_balance_after_send_flow[OF _ refl] send_flow_termination
+                      send_flow_invar_aux_pres send_flow_invar_gamma_pres orlins_entry_after_send_flow[OF _ refl]  
+                        send_flow_invar_isOpt_pres send_flow_invar_integral_pres orlins_impl_impl_invar
+             simp add: invar_gamma_initial invar_Forest_after_send_flow notyetterm aux_invar_initial
+                      impl_inv_after_send_flow corresp_after_send_flow initial_state_orlins_dom_and_results(1)[OF refl]
                       invar_isOptflow_initial  invar_integral_initial )
   qed
 qed
@@ -2708,18 +2775,18 @@ lemmas init_orlins_impl_corresp = conjunct1[OF init_orlins_impl_corresp_general]
 lemmas final_implementation_invar = conjunct2[OF init_orlins_impl_corresp_general]
 
 corollary orlins_impl_is_correct:
-  assumes "state' = orlins_impl (loopB_impl initial_impl)"
+  assumes "state' = orlins_impl (send_flow_impl initial_impl)"
     shows "return_impl state' = success \<Longrightarrow> is_Opt \<b> (abstract_flow_map (current_flow_impl state'))"
           "return_impl state' = failure \<Longrightarrow> \<nexists> f. f is \<b> flow"
           "return_impl state' = notyetterm \<Longrightarrow> False"
   using  assms  init_orlins_impl_corresp initial_state_orlins_dom_and_results[OF refl]
   by auto 
 
-lemma final_flow_domain: "flow_domain (current_flow_impl (orlins_impl (loopB_impl initial_impl))) = \<E>"
+lemma final_flow_domain: "flow_domain (current_flow_impl (orlins_impl (send_flow_impl initial_impl))) = \<E>"
   using final_implementation_invar
   by(simp add: implementation_invar_def)
 
-lemmas code_lemmas[code] = loopB_impl.simps loopA_impl.simps orlins_impl.simps
+lemmas code_lemmas[code] = send_flow_impl.simps maintain_forest_impl.simps orlins_impl.simps
                            augment_edges_impl.simps 
 end
 end

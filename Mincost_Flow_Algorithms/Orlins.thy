@@ -1,15 +1,15 @@
 section \<open>Top Loop of Orlin's Algorithm\<close>
 
 theory Orlins
-  imports LoopA LoopB
+  imports Maintain_Forest Send_Flow
 begin
 
 locale orlins_spec = 
-loopB_spec where fst = fst + loopA_spec where fst = fst
+send_flow_spec where fst = fst + maintain_forest_spec where fst = fst
 for fst::"'edge_type \<Rightarrow> 'a"
 
 locale orlins = 
-loopB_Reasoning where fst = fst and empty_forest = "empty_forest::'c"+ loopA where fst = fst
+send_flow_reasoning where fst = fst and empty_forest = "empty_forest::'c"+ maintain_forest where fst = fst
 for fst::"'edge_type \<Rightarrow> 'a"+
 fixes norma::"'a \<times> 'a \<Rightarrow> 'a \<times> 'a "
 assumes norma_axioms: "\<And> x y. norma (x, y) = (x,y) \<or> norma (x, y) = (y,x)"
@@ -26,8 +26,8 @@ function (domintros) orlins::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> 
                       \<gamma>' = (if \<forall> e \<in> to_set E'. f e = 0 then
                              min (\<gamma> / 2) (Max { \<bar> b v\<bar> | v. v \<in> \<V>})
                            else (\<gamma> / 2));
-                      state' = loopA (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
-                      state'' = loopB state' 
+                      state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
+                      state'' = send_flow state' 
                       in orlins state'')
 )"
   by auto
@@ -50,8 +50,8 @@ definition orlins_one_step::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> (
                       \<gamma>' = (if \<forall> e \<in> to_set E'. f e = 0 then
                              min (\<gamma> / 2) (Max { \<bar> b v\<bar> | v. v \<in> \<V>})
                            else (\<gamma> / 2));
-                      state' = loopA (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
-                      state'' = loopB state' in
+                      state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
+                      state'' = send_flow state' in
                       state''
 ))"
 
@@ -95,7 +95,7 @@ proof(induction k arbitrary: state)
   have A: "orlins_dom state"
   proof(rule orlins.domintros, goal_cases)
     case 1
-    have "loopB (loopA
+    have "send_flow (maintain_forest
          (state\<lparr>current_\<gamma> := min (current_\<gamma> state / 2) (Max {\<bar>balance state v\<bar> |v. v \<in> \<V>})\<rparr>)) =
           state'"
       using 0[simplified] 1
@@ -105,7 +105,7 @@ proof(induction k arbitrary: state)
       by(auto intro: orlins.domintros)
   next
     case (2 e)
-    have "(loopB (loopA (state\<lparr>current_\<gamma> := current_\<gamma> state / 2\<rparr>))) = state'"
+    have "(send_flow (maintain_forest (state\<lparr>current_\<gamma> := current_\<gamma> state / 2\<rparr>))) = state'"
       using 0[simplified] 2
       unfolding orlins_one_step_def orlins_one_step_check_def Let_def by auto
     thus ?case 
@@ -270,18 +270,18 @@ lemma aux_invar_pres_orlins_one_step:
   assumes "aux_invar state" "invar_gamma state" "invar_non_zero_b state"
   shows "aux_invar (orlins_one_step state)"
   unfolding orlins_one_step_def Let_def
-  apply(rule loopB_invar_aux_pres)
-    apply(rule loopB_termination)
+  apply(rule send_flow_invar_aux_pres)
+    apply(rule send_flow_termination)
   subgoal invar_gammaA
-    apply(rule loopA_invar_gamma_pres)
+    apply(rule maintain_forest_invar_gamma_pres)
      apply(rule aux_invar_gamma)
     using assms apply simp
     apply(rule gamma_upd_aux_invar_pres[of state])
     using assms by auto
   subgoal aux_invar
-    apply(rule loopA_invar_aux_pres)
+    apply(rule maintain_forest_invar_aux_pres)
     subgoal
-      apply(rule termination_of_loopA[OF _ refl])
+      apply(rule termination_of_maintain_forest[OF _ refl])
       apply(rule aux_invarE)
       using assms aux_invar_def 
       by (auto  intro: aux_invar_gamma)
@@ -296,7 +296,7 @@ lemma invar_gamma_pres_orlins_one_step:
   shows "invar_gamma (orlins_one_step state)"
   unfolding orlins_one_step_def Let_def
   using assms
-   by (fastforce intro!: loopB_invar_gamma_pres loopB_termination loopA_invar_gamma_pres 
+   by (fastforce intro!: send_flow_invar_gamma_pres send_flow_termination maintain_forest_invar_gamma_pres 
                          aux_invar_gamma gamma_upd_aux_invar_pres)
 
 lemma is_multiple_multiple: "(\<exists> n::nat.  y = (real n) * x) \<Longrightarrow>
@@ -392,24 +392,24 @@ proof(goal_cases)
     unfolding new_\<gamma>_def Let_def
     by(fastforce intro: gamma_upd_aux_invar_pres simp add: assms)
   hence new_gamma_0: "new_\<gamma> state > 0" unfolding invar_gamma_def by auto
-  have loopA_dom: "loopA_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+  have maintain_forest_dom: "maintain_forest_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     using aux_invar_def aux_invar_gamma_upd 
-    by(fastforce intro: termination_of_loopA[OF _ refl])
-  have invar_gamma_after_loopA: "invar_gamma (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto intro: loopA_invar_gamma_pres simp add: aux_invar_gamma_upd invar_gamma_gamma_upd)
-  have aux_invar_after_loopA: "aux_invar (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto intro: loopA_invar_aux_pres simp add: aux_invar_gamma_upd loopA_dom)
-  have loopB_dom:"loopB_dom (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto simp add: invar_gamma_after_loopA intro: loopB_termination)
-  have same_gamma_loopB: "current_\<gamma> (loopB(loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) =
-                   current_\<gamma> (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto intro: loopB_changes_current_\<gamma> simp add: loopB_dom)
-  have same_gamma_loopA: "current_\<gamma> (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) =
+    by(fastforce intro: termination_of_maintain_forest[OF _ refl])
+  have invar_gamma_after_maintain_forest: "invar_gamma (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: maintain_forest_invar_gamma_pres simp add: aux_invar_gamma_upd invar_gamma_gamma_upd)
+  have aux_invar_after_maintain_forest: "aux_invar (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: maintain_forest_invar_aux_pres simp add: aux_invar_gamma_upd maintain_forest_dom)
+  have send_flow_dom:"send_flow_dom (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto simp add: invar_gamma_after_maintain_forest intro: send_flow_termination)
+  have same_gamma_send_flow: "current_\<gamma> (send_flow(maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) =
+                   current_\<gamma> (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: send_flow_changes_current_\<gamma> simp add: send_flow_dom)
+  have same_gamma_maintain_forest: "current_\<gamma> (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) =
                             new_\<gamma> state"
     by(subst gamma_pres, auto simp add: aux_invar_gamma_upd)
   have init_Phi_below_N:"\<Phi> (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>) \<le> N"
     by(auto intro: Phi_init simp add: assms)
-  have Phi_after_below2N: " \<Phi> ((loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) \<le> 2*N"
+  have Phi_after_below2N: " \<Phi> ((maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) \<le> 2*N"
     using Phi_increase_below_N[OF aux_invar_gamma_upd invar_gamma_gamma_upd] init_Phi_below_N by simp
   have card_below_N: "v \<in> \<V> \<Longrightarrow> card (connected_component (to_graph (\<FF>_imp state)) v) \<le> N" for v
     using N_def assms(2) aux_invar_def[of state] invar_aux10_def[of state] 
@@ -430,34 +430,34 @@ proof(goal_cases)
     using new_gamma_0 new_gamma_below_half_gamma[of state]  N_gtr_0 assms(1)[simplified invar_forest_def] 
     by(auto intro:  order.strict_trans1[of _ "8* real N * (current_\<gamma> state / 2)"]
          simp add: algebra_simps)
-   have loopA_entry: "loopA_entry (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-    unfolding loopA_entry_def
+   have maintain_forest_entry: "maintain_forest_entry (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+    unfolding maintain_forest_entry_def
     using new_gamma_0 new_gamma_below_half_gamma[of state]  N_gtr_0 assms(1)[simplified invar_forest_def] 
     by(auto intro:  order.strict_trans1[of _ "8* real N * (current_\<gamma> state / 2)"]
          simp add: algebra_simps)
-  have loopB_entryF:"loopB_entryF (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) "
+  have send_flow_entryF:"send_flow_entryF (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) "
     using invarA_1 invar_A2 
-    by(auto intro: loopB_entryF[OF aux_invar_gamma_upd loopA_entry invar_gamma_gamma_upd refl])
-  have curr_flow:"current_flow (loopB (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) e
-        \<ge> current_flow (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 
-          \<Phi> ((loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) *
-          current_\<gamma> (loopB(loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))" for e
-      apply(rule loopB_flow_Phi_final[OF _ refl])
-      using invar_gamma_after_loopA loopB_dom loopB_entryF aux_invar_after_loopA
-      unfolding loopB_entryF_def 
-      by (simp, simp, smt (verit) Phi_after_below2N invar_gamma_after_loopA invar_gamma_def mult_nonneg_nonneg of_int_nonneg, simp)
-  have current_flow_after_loopB:
-         "current_flow (loopB (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) e
-        \<ge> current_flow (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 2*N*new_\<gamma> state" for e
+    by(auto intro: send_flow_entryF[OF aux_invar_gamma_upd maintain_forest_entry invar_gamma_gamma_upd refl])
+  have curr_flow:"current_flow (send_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) e
+        \<ge> current_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 
+          \<Phi> ((maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) *
+          current_\<gamma> (send_flow(maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))" for e
+      apply(rule send_flow_flow_Phi_final[OF _ refl])
+      using invar_gamma_after_maintain_forest send_flow_dom send_flow_entryF aux_invar_after_maintain_forest
+      unfolding send_flow_entryF_def 
+      by (simp, simp, smt (verit) Phi_after_below2N invar_gamma_after_maintain_forest invar_gamma_def mult_nonneg_nonneg of_int_nonneg, simp)
+  have current_flow_after_send_flow:
+         "current_flow (send_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) e
+        \<ge> current_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 2*N*new_\<gamma> state" for e
     apply(rule order.trans)
-    using curr_flow[of e, simplified  same_gamma_loopB[simplified same_gamma_loopA]]
+    using curr_flow[of e, simplified  same_gamma_send_flow[simplified same_gamma_maintain_forest]]
           Phi_after_below2N new_gamma_0 
     by auto
-  from loopB_entryF show ?case 
-    using   loopB_changes_\<F>[OF loopB_dom]
-    unfolding same_gamma_loopB same_gamma_loopA loopB_entryF_def 
+  from send_flow_entryF show ?case 
+    using   send_flow_changes_\<F>[OF send_flow_dom]
+    unfolding same_gamma_send_flow same_gamma_maintain_forest send_flow_entryF_def 
               sym[OF new_\<gamma>_def[simplified Let_def]] invar_forest_def 
-    by (auto intro!: order.strict_trans2[OF _ current_flow_after_loopB[of ]])
+    by (auto intro!: order.strict_trans2[OF _ current_flow_after_send_flow[of ]])
 qed
 
 lemma invar_forest_pres_orlins_one_step:
@@ -487,24 +487,24 @@ proof-
     by(fastforce intro: gamma_upd_aux_invar_pres 
               simp add: assms)
   hence new_gamma_0: "new_\<gamma> state > 0" unfolding invar_gamma_def by auto
-  have loopA_dom: "loopA_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+  have maintain_forest_dom: "maintain_forest_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     using aux_invar_def aux_invar_gamma_upd 
-    by(fastforce intro: termination_of_loopA[OF _ refl])
-  have invar_gamma_after_loopA: "invar_gamma (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto intro: loopA_invar_gamma_pres simp add: aux_invar_gamma_upd invar_gamma_gamma_upd)
-  have aux_invar_after_loopA: "aux_invar (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto intro: loopA_invar_aux_pres simp add: aux_invar_gamma_upd loopA_dom)
-  have loopB_dom:"loopB_dom (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto simp add: invar_gamma_after_loopA intro: loopB_termination)
-  have same_gamma_loopB: "current_\<gamma> (loopB(loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) =
-                   current_\<gamma> (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto intro: loopB_changes_current_\<gamma> simp add: loopB_dom)
-  have same_gamma_loopA: "current_\<gamma> (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) =
+    by(fastforce intro: termination_of_maintain_forest[OF _ refl])
+  have invar_gamma_after_maintain_forest: "invar_gamma (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: maintain_forest_invar_gamma_pres simp add: aux_invar_gamma_upd invar_gamma_gamma_upd)
+  have aux_invar_after_maintain_forest: "aux_invar (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: maintain_forest_invar_aux_pres simp add: aux_invar_gamma_upd maintain_forest_dom)
+  have send_flow_dom:"send_flow_dom (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto simp add: invar_gamma_after_maintain_forest intro: send_flow_termination)
+  have same_gamma_send_flow: "current_\<gamma> (send_flow(maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) =
+                   current_\<gamma> (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: send_flow_changes_current_\<gamma> simp add: send_flow_dom)
+  have same_gamma_maintain_forest: "current_\<gamma> (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) =
                             new_\<gamma> state"
     by(subst gamma_pres, auto simp add: aux_invar_gamma_upd)
   have init_Phi_below_N:"\<Phi> (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>) \<le> N"
     by(auto intro: Phi_init simp add: assms)
-  have Phi_after_below2N: " \<Phi> ((loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) \<le> 2*N"
+  have Phi_after_below2N: " \<Phi> ((maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) \<le> 2*N"
     using Phi_increase_below_N[OF aux_invar_gamma_upd invar_gamma_gamma_upd] init_Phi_below_N by simp
  have card_below_N: "v \<in> \<V> \<Longrightarrow> card (connected_component (to_graph (\<FF>_imp state)) v) \<le> N" for v
     using N_def assms(2) aux_invar_def[of state] invar_aux10_def[of state] 
@@ -525,53 +525,53 @@ proof-
     using new_gamma_0 new_gamma_below_half_gamma[of state]  N_gtr_0 assms(5)[simplified invar_forest_def] 
     by(auto intro:  order.strict_trans1[of _ "8* real N * (current_\<gamma> state / 2)"]
          simp add: algebra_simps)
-   have loopA_entry: "loopA_entry (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-    unfolding loopA_entry_def
+   have maintain_forest_entry: "maintain_forest_entry (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+    unfolding maintain_forest_entry_def
     using new_gamma_0 new_gamma_below_half_gamma[of state]  N_gtr_0 assms(5)[simplified invar_forest_def] 
     by(auto intro:  order.strict_trans1[of _ "8* real N * (current_\<gamma> state / 2)"]
          simp add: algebra_simps)
-  have loopB_entryF:"loopB_entryF (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) "
+  have send_flow_entryF:"send_flow_entryF (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) "
     using invarA_1 invar_A2 
-    by(auto intro: loopB_entryF[OF aux_invar_gamma_upd loopA_entry invar_gamma_gamma_upd refl])
-  have curr_flow:"current_flow (loopB (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) e
-        \<ge> current_flow (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 
-          \<Phi> ((loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) *
-          current_\<gamma> (loopB(loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))" for e
-    apply(rule loopB_flow_Phi_final[OF _ refl])
-      using invar_gamma_after_loopA loopB_dom loopB_entryF aux_invar_after_loopA
-      unfolding loopB_entryF_def 
-      by (simp, simp, smt (verit) Phi_after_below2N invar_gamma_after_loopA invar_gamma_def mult_nonneg_nonneg of_int_nonneg, simp)
-  have current_flow_after_loopB:
-         "current_flow (loopB (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) e
-        \<ge> current_flow (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 2*N*new_\<gamma> state" for e
+    by(auto intro: send_flow_entryF[OF aux_invar_gamma_upd maintain_forest_entry invar_gamma_gamma_upd refl])
+  have curr_flow:"current_flow (send_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) e
+        \<ge> current_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 
+          \<Phi> ((maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) *
+          current_\<gamma> (send_flow(maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))" for e
+    apply(rule send_flow_flow_Phi_final[OF _ refl])
+      using invar_gamma_after_maintain_forest send_flow_dom send_flow_entryF aux_invar_after_maintain_forest
+      unfolding send_flow_entryF_def 
+      by (simp, simp, smt (verit) Phi_after_below2N invar_gamma_after_maintain_forest invar_gamma_def mult_nonneg_nonneg of_int_nonneg, simp)
+  have current_flow_after_send_flow:
+         "current_flow (send_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) e
+        \<ge> current_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 2*N*new_\<gamma> state" for e
     apply(rule order.trans)
-    using curr_flow[of e, simplified  same_gamma_loopB[simplified same_gamma_loopA]]
+    using curr_flow[of e, simplified  same_gamma_send_flow[simplified same_gamma_maintain_forest]]
           Phi_after_below2N new_gamma_0 
     by auto
   show ?thesis
   unfolding orlins_one_step_check_def orlins_one_step_def Let_def
   apply(cases "return state", simp add: assms, simp add: assms)
-  apply(subst if_not_P, simp, subst if_not_P, simp, rule loopB_invar_integral_pres)  
+  apply(subst if_not_P, simp, subst if_not_P, simp, rule send_flow_invar_integral_pres)  
   subgoal
-    apply(rule loopB_termination, rule loopA_invar_gamma_pres )
+    apply(rule send_flow_termination, rule maintain_forest_invar_gamma_pres )
     using assms 
-    by (force intro!: loopA_invar_gamma_pres  aux_invar_gamma gamma_upd_aux_invar_pres)+
+    by (force intro!: maintain_forest_invar_gamma_pres  aux_invar_gamma gamma_upd_aux_invar_pres)+
   subgoal
-    apply(rule loopA_invar_aux_pres, rule termination_of_loopA[OF _ refl])
+    apply(rule maintain_forest_invar_aux_pres, rule termination_of_maintain_forest[OF _ refl])
     using assms(2) aux_invar_gamma[of state] 
     by (fastforce intro:  aux_invarE[OF aux_invar_gamma[of state]])+
   subgoal
-    by(rule loopA_invar_integral_pres, fastforce intro: aux_invar_gamma simp add: assms,
+    by(rule maintain_forest_invar_integral_pres, fastforce intro: aux_invar_gamma simp add: assms,
        rule invar_integralI, cases "\<forall>e\<in>to_set (actives state). current_flow state e = 0", simp,
        (rule invar_integralE[OF assms(1)],
             auto intro: is_multiple_multiple[of _ "current_\<gamma> state"])+) 
-  apply(fastforce intro!: loopA_invar_gamma_pres aux_invar_gamma gamma_upd_aux_invar_pres
+  apply(fastforce intro!: maintain_forest_invar_gamma_pres aux_invar_gamma gamma_upd_aux_invar_pres
             simp add: assms)
   unfolding sym[OF new_\<gamma>_def[of state], simplified Let_def]
     apply(rule order.trans) defer
     apply(rule order.strict_implies_order[OF allTurnSet[OF 
-           loopB_entryF[simplified loopB_entryF_def], of ]])
-    using Phi_after_below2N new_gamma_0 same_gamma_loopA 
+           send_flow_entryF[simplified send_flow_entryF_def], of ]])
+    using Phi_after_below2N new_gamma_0 same_gamma_maintain_forest 
     by force+
 qed
 
@@ -593,8 +593,8 @@ lemma orlins_entry_ofter_one_step:
         "return (orlins_one_step state) = notyetterm"
   shows "orlins_entry (orlins_one_step state)"
    using assms unfolding orlins_one_step_def Let_def
-  by(fastforce intro!: orlins_entry_after_loopB[OF _ refl] loopB_termination
-                       loopA_invar_gamma_pres gamma_upd_aux_invar_pres aux_invar_gamma)
+  by(fastforce intro!: orlins_entry_after_send_flow[OF _ refl] send_flow_termination
+                       maintain_forest_invar_gamma_pres gamma_upd_aux_invar_pres aux_invar_gamma)
 
 lemma optimality_pres_orlins_one_step_check:
   assumes "invar_forest state"
@@ -621,24 +621,24 @@ proof-
     by(fastforce intro: gamma_upd_aux_invar_pres 
               simp add: assms)
   hence new_gamma_0: "new_\<gamma> state > 0" unfolding invar_gamma_def by auto
-  have loopA_dom: "loopA_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+  have maintain_forest_dom: "maintain_forest_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     using aux_invar_def aux_invar_gamma_upd 
-    by(fastforce intro: termination_of_loopA[OF _ refl])
-  have invar_gamma_after_loopA: "invar_gamma (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto intro: loopA_invar_gamma_pres simp add: aux_invar_gamma_upd invar_gamma_gamma_upd)
-  have aux_invar_after_loopA: "aux_invar (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto intro: loopA_invar_aux_pres simp add: aux_invar_gamma_upd loopA_dom)
-  have loopB_dom:"loopB_dom (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto simp add: invar_gamma_after_loopA intro: loopB_termination)
-  have same_gamma_loopB: "current_\<gamma> (loopB(loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) =
-                   current_\<gamma> (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-    by(auto intro: loopB_changes_current_\<gamma> simp add: loopB_dom)
-  have same_gamma_loopA: "current_\<gamma> (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) =
+    by(fastforce intro: termination_of_maintain_forest[OF _ refl])
+  have invar_gamma_after_maintain_forest: "invar_gamma (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: maintain_forest_invar_gamma_pres simp add: aux_invar_gamma_upd invar_gamma_gamma_upd)
+  have aux_invar_after_maintain_forest: "aux_invar (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: maintain_forest_invar_aux_pres simp add: aux_invar_gamma_upd maintain_forest_dom)
+  have send_flow_dom:"send_flow_dom (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto simp add: invar_gamma_after_maintain_forest intro: send_flow_termination)
+  have same_gamma_send_flow: "current_\<gamma> (send_flow(maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) =
+                   current_\<gamma> (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: send_flow_changes_current_\<gamma> simp add: send_flow_dom)
+  have same_gamma_maintain_forest: "current_\<gamma> (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) =
                             new_\<gamma> state"
     by(subst gamma_pres, auto simp add: aux_invar_gamma_upd)
   have init_Phi_below_N:"\<Phi> (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>) \<le> N"
     by(auto intro: Phi_init simp add: assms)
-  have Phi_after_below2N: " \<Phi> ((loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) \<le> 2*N"
+  have Phi_after_below2N: " \<Phi> ((maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) \<le> 2*N"
     using Phi_increase_below_N[OF aux_invar_gamma_upd invar_gamma_gamma_upd] init_Phi_below_N by simp
   have card_below_N: "v \<in> \<V> \<Longrightarrow> card (connected_component (to_graph (\<FF>_imp state)) v) \<le> N" for v
     using N_def assms(2) aux_invar_def[of state] invar_aux10_def[of state] 
@@ -659,41 +659,41 @@ proof-
     using new_gamma_0 new_gamma_below_half_gamma[of state]  N_gtr_0 assms(1)[simplified invar_forest_def] 
     by(auto intro:  order.strict_trans1[of _ "8* real N * (current_\<gamma> state / 2)"]
          simp add: algebra_simps)
-  have invarA_2_AfterloopA: "invarA_2 (8 * real N * new_\<gamma> state)
-                                (2 * new_\<gamma> state) (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+  have invarA_2_Aftermaintain_forest: "invarA_2 (8 * real N * new_\<gamma> state)
+                                (2 * new_\<gamma> state) (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
     using new_gamma_0 invarA_1 invar_A2
     by(auto intro!: invarA2_pres[OF aux_invar_gamma_upd _ _ _ _ , of "2*new_\<gamma> state",simplified])
-  have loopA_entry: "loopA_entry (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-    unfolding loopA_entry_def
+  have maintain_forest_entry: "maintain_forest_entry (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+    unfolding maintain_forest_entry_def
     using new_gamma_0 new_gamma_below_half_gamma[of state]  N_gtr_0 assms(1)[simplified invar_forest_def] 
     by(auto intro:  order.strict_trans1[of _ "8* real N * (current_\<gamma> state / 2)"]
          simp add: algebra_simps)
-  have loopB_entryF:"loopB_entryF (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) "
+  have send_flow_entryF:"send_flow_entryF (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) "
     using invarA_1 invar_A2 
-    by(auto intro: loopB_entryF[OF aux_invar_gamma_upd loopA_entry invar_gamma_gamma_upd refl])
-  have optA:"invar_isOptflow (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+    by(auto intro: send_flow_entryF[OF aux_invar_gamma_upd maintain_forest_entry invar_gamma_gamma_upd refl])
+  have optA:"invar_isOptflow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
     using new_gamma_0 invar_isOpt_gamma_change[OF assms(7)] invar_A2 invar_gamma_gamma_upd 
     by(fastforce intro: flow_optimatlity_pres[OF aux_invar_gamma_upd _ invarA_1 _ _ refl ])
   have invar_integralbeforeA: "invar_integral (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     using assms(6)
     unfolding new_\<gamma>_def invar_integral_def Let_def
     by(auto intro: is_multiple_multiple[of "current_flow state _"  "current_\<gamma> state"]) 
-  have invar_integralA: "invar_integral (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+  have invar_integralA: "invar_integral (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
     using aux_invar_gamma_upd assms
-    by(fastforce intro: loopA_invar_integral_pres invar_integralbeforeA)
+    by(fastforce intro: maintain_forest_invar_integral_pres invar_integralbeforeA)
   have card_below_N_afterA: "v \<in> \<V> \<Longrightarrow>
-     card (connected_component (to_graph (\<FF>_imp (loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))) v) \<le> N" for v
-    using N_def  aux_invar_after_loopA  card_mono[OF \<V>_finite ] 
+     card (connected_component (to_graph (\<FF>_imp (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))) v) \<le> N" for v
+    using N_def  aux_invar_after_maintain_forest  card_mono[OF \<V>_finite ] 
     unfolding aux_invar_def invar_aux10_def by simp 
-  have optB:"invar_isOptflow (loopB(loopA (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))"
-    apply(rule loopB_invar_isOpt_pres[OF loopB_dom aux_invar_after_loopA invar_gamma_after_loopA 
+  have optB:"invar_isOptflow (send_flow(maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))"
+    apply(rule send_flow_invar_isOpt_pres[OF send_flow_dom aux_invar_after_maintain_forest invar_gamma_after_maintain_forest 
                                          invar_integralA optA])
-    unfolding same_gamma_loopA
+    unfolding same_gamma_maintain_forest
     apply(rule order.trans) defer
      apply(rule order.strict_implies_order[OF all_to_meta_set[OF
-                            invarA_2_AfterloopA[simplified invarA_2_def]]])
+                            invarA_2_Aftermaintain_forest[simplified invarA_2_def]]])
     using   card_below_N_afterA[OF fst_E_V] Phi_after_below2N new_gamma_0 N_gtr_0
-             conjunct1[OF conjunct2[OF conjunct2[OF aux_invar_after_loopA[simplified
+             conjunct1[OF conjunct2[OF conjunct2[OF aux_invar_after_maintain_forest[simplified
                      aux_invar_def invar_aux3_def] ]]]
     by(simp, intro pos_subs_ineq[of _ _ "(real_of_int _) * _"] ,  
        auto simp add: in_mono algebra_simps)
@@ -702,12 +702,12 @@ proof-
   show "return (orlins_one_step state) = success \<Longrightarrow> 
            is_Opt \<b> (current_flow (orlins_one_step state))"
     unfolding orlins_one_step_def Let_def sym[OF new_\<gamma>_def[simplified Let_def]]
-    by(auto intro:loopB_correctness[OF loopB_dom aux_invar_after_loopA invar_gamma_after_loopA
-                                    invar_integralA loopB_entryF optA Phi_after_below2N])
+    by(auto intro:send_flow_correctness[OF send_flow_dom aux_invar_after_maintain_forest invar_gamma_after_maintain_forest
+                                    invar_integralA send_flow_entryF optA Phi_after_below2N])
   show "return (orlins_one_step state) = failure \<Longrightarrow> \<nexists>f. f is \<b> flow"
     unfolding orlins_one_step_def Let_def sym[OF new_\<gamma>_def[simplified Let_def]]
-    by(rule loopB_completeness[OF loopB_dom aux_invar_after_loopA invar_gamma_after_loopA
-                                    invar_integralA loopB_entryF optA Phi_after_below2N])
+    by(rule send_flow_completeness[OF send_flow_dom aux_invar_after_maintain_forest invar_gamma_after_maintain_forest
+                                    invar_integralA send_flow_entryF optA Phi_after_below2N])
 qed
 
 lemma optimality_pres_orlins_one_step:
@@ -729,8 +729,8 @@ lemma some_balance_after_one_step:
  shows    "invar_non_zero_b (orlins_one_step state)"
   using assms(2-) assms(1)[simplified orlins_one_step_def Let_def]
   unfolding orlins_one_step_def Let_def
-     by (intro remaining_balance_after_loopB[OF _ refl]) 
-        (fastforce intro!: loopB_termination loopA_invar_gamma_pres 
+     by (intro remaining_balance_after_send_flow[OF _ refl]) 
+        (fastforce intro!: send_flow_termination maintain_forest_invar_gamma_pres 
                            aux_invar_gamma gamma_upd_aux_invar_pres)+
 
 lemma no_important_no_merge_gamma:
@@ -759,17 +759,17 @@ next
       apply(rule ccontr)
       using succ_fail_not_changes[of state "Suc k"] Suc
       by (metis (full_types) return.exhaust)     
-    hence loopB_unfold:"(orlins_one_step_check^^Suc k') state = 
+    hence send_flow_unfold:"(orlins_one_step_check^^Suc k') state = 
            (orlins_one_step_check^^ k') (orlins_one_step state)" for k'
       apply(subst funpow_Suc_right, simp)
       unfolding orlins_one_step_check_def using returnValue 
       by(auto split: if_split)
-    hence loopB_unfold':"(orlins_one_step_check^^Suc k') state = 
+    hence send_flow_unfold':"(orlins_one_step_check^^Suc k') state = 
            (orlins_one_step_check^^ k') (orlins_one_step_check state)" for k'
       by(subst funpow_Suc_right, simp)      
     have returnValue':"return (orlins_one_step_check state) = notyetterm"
       apply(rule ccontr)
-       using succ_fail_not_changes[of "orlins_one_step_check state" "k"] loopB_unfold'[of k]
+       using succ_fail_not_changes[of "orlins_one_step_check state" "k"] send_flow_unfold'[of k]
        Suc(4-)
        by (metis (full_types) orlins_one_step_check_def return.exhaust)
      hence returnValue'':"return (orlins_one_step state) = notyetterm"
@@ -786,8 +786,8 @@ next
    have afterIH:"current_\<gamma> state' = (1 / 2) ^ k * current_\<gamma> ((orlins_one_step state)) \<and>
           state'\<lparr>current_\<gamma> := current_\<gamma> (orlins_one_step state)\<rparr> = (orlins_one_step state)"
       apply(rule  Suc(1))
-      using Suc(2) loopB_unfold apply fastforce 
-      using card_Same  loopB_unfold[of k] Suc balance_oneStep sym[OF loopB_unfold]
+      using Suc(2) send_flow_unfold apply fastforce 
+      using card_Same  send_flow_unfold[of k] Suc balance_oneStep sym[OF send_flow_unfold]
       by (auto intro: Suc(3)[of "Suc _"] invar_gamma_pres_orlins_one_step 
                       aux_invar_pres_orlins_one_step)
 
@@ -818,24 +818,24 @@ next
 
   hence gamma_halved:"current_\<gamma> ((orlins_one_step state)) = (1/2) * current_\<gamma> state"
     unfolding orlins_one_step_def new_\<gamma>_def Let_def
-    using Suc by (subst loopB_changes_current_\<gamma> | subst gamma_pres |
-                  fastforce intro!: loopB_termination loopA_invar_gamma_pres 
+    using Suc by (subst send_flow_changes_current_\<gamma> | subst gamma_pres |
+                  fastforce intro!: send_flow_termination maintain_forest_invar_gamma_pres 
                                     aux_invar_gamma gamma_upd_aux_invar_pres)+
 
-  have not_call_cond_loopA: "loopA_call_cond (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>) \<Longrightarrow> False"
+  have not_call_cond_maintain_forest: "maintain_forest_call_cond (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>) \<Longrightarrow> False"
   proof(goal_cases)
     case 1
-    have "card (comps \<V> (to_graph (\<FF>_imp (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))) <
+    have "card (comps \<V> (to_graph (\<FF>_imp (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))) <
               card (comps \<V> (to_graph (\<FF>_imp (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))"
       using Suc 1 by (intro card_strict_decrease[of "state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>"]) 
                      (fastforce intro: aux_invarE[of "state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>"] 
-                                       termination_of_loopA[OF _ refl] aux_invar_gamma)+
+                                       termination_of_maintain_forest[OF _ refl] aux_invar_gamma)+
 
-    moreover have "card (comps \<V> (to_graph (\<FF>_imp (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))) = 
-                   card (comps \<V> (to_graph (\<FF>_imp (loopB (loopA (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))))"
+    moreover have "card (comps \<V> (to_graph (\<FF>_imp (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))) = 
+                   card (comps \<V> (to_graph (\<FF>_imp (send_flow (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))))"
           using Suc[simplified invar_non_zero_b_def]
-          by(subst loopB_changes_\<FF>_imp, intro loopB_termination) 
-            (fastforce intro: loopA_invar_gamma_pres aux_invar_gamma 
+          by(subst send_flow_changes_\<FF>_imp, intro send_flow_termination) 
+            (fastforce intro: maintain_forest_invar_gamma_pres aux_invar_gamma 
                               gamma_upd_aux_invar_pres[simplified invar_non_zero_b_def] 
                     simp add: new_\<gamma>_def Let_def)+
         ultimately have "card (comps \<V> (to_graph (\<FF>_imp (orlins_one_step_check state)))) < 
@@ -846,17 +846,17 @@ next
       using Suc(3)[of 1, OF _ refl] by simp
   qed
 
-  hence loopA_no_change:"loopA (state  \<lparr>current_\<gamma> := new_\<gamma> state \<rparr>) = state \<lparr>current_\<gamma> := new_\<gamma> state \<rparr>"
+  hence maintain_forest_no_change:"maintain_forest (state  \<lparr>current_\<gamma> := new_\<gamma> state \<rparr>) = state \<lparr>current_\<gamma> := new_\<gamma> state \<rparr>"
     using Suc 
-    by(cases rule: loopA_cases[of "state  \<lparr>current_\<gamma> := new_\<gamma> state \<rparr>"])
-      (subst loopA_simps(2) | 
-       fastforce intro: termination_of_loopA[OF _ refl] 
-       aux_invarE[of "state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>"]  aux_invar_gamma simp add: loopA_simps(2))+
+    by(cases rule: maintain_forest_cases[of "state  \<lparr>current_\<gamma> := new_\<gamma> state \<rparr>"])
+      (subst maintain_forest_simps(2) | 
+       fastforce intro: termination_of_maintain_forest[OF _ refl] 
+       aux_invarE[of "state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>"]  aux_invar_gamma simp add: maintain_forest_simps(2))+
       
   have same_state:"(orlins_one_step state) \<lparr> current_\<gamma> := current_\<gamma> state \<rparr> = state"
     unfolding orlins_one_step_def Let_def
-    apply(subst loopA_no_change[simplified new_\<gamma>_def Let_def])
-    apply(subst loopB_nothing_done)
+    apply(subst maintain_forest_no_change[simplified new_\<gamma>_def Let_def])
+    apply(subst send_flow_nothing_done)
     using Suc Suc(2)[of 0, OF _ refl] returnValue
     unfolding sym[OF  new_\<gamma>_def[simplified Let_def]] important_def invar_non_zero_b_def
     by auto
@@ -883,14 +883,14 @@ lemma forest_increase_orlins_one_step:
   subgoal
     unfolding new_\<gamma>_def Let_def
     using assms 
-    by (fastforce intro!: loopB_changes_\<FF>_imp loopB_termination loopA_invar_gamma_pres 
+    by (fastforce intro!: send_flow_changes_\<FF>_imp send_flow_termination maintain_forest_invar_gamma_pres 
                           aux_invar_gamma gamma_upd_aux_invar_pres)
   subgoal
     apply(rule order.trans, rule forest_increase)
     unfolding new_\<gamma>_def Let_def
     using assms 
-    by(subst loopB_changes_\<FF>_imp[simplified  new_\<gamma>_def Let_def] | 
-       fastforce intro!: loopB_termination termination_of_loopA loopA_invar_gamma_pres 
+    by(subst send_flow_changes_\<FF>_imp[simplified  new_\<gamma>_def Let_def] | 
+       fastforce intro!: send_flow_termination termination_of_maintain_forest maintain_forest_invar_gamma_pres 
                          gamma_upd_aux_invar_pres assms aux_invar_gamma 
                          invar_aux_to_invar_aux1[of "state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>", simplified  new_\<gamma>_def Let_def]
                          invar_aux17_from_aux_invar[of "state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>", simplified  new_\<gamma>_def Let_def])+
@@ -1211,9 +1211,9 @@ proof-
     by(rule sym, subst sym[OF gamma_after_k(2)], simp)
   have same_flow: "current_flow ((orlins_one_step_check ^^ \<k>) state) = current_flow state"
     by(rule sym, subst sym[OF gamma_after_k(2)], simp)
-  have call_cond:"loopA_call_cond
+  have call_cond:"maintain_forest_call_cond
      ((orlins_one_step_check ^^ \<k>) state\<lparr>current_\<gamma> := new_\<gamma> ((orlins_one_step_check ^^ \<k>) state)\<rparr>)"
-    apply(rule loopA_call_condI[OF refl refl refl refl refl refl refl], simp)
+    apply(rule maintain_forest_call_condI[OF refl refl refl refl refl refl refl], simp)
     apply(subst same_actives, subst same_flow)
     using e_gamma_k e_prop(1) 
           set_get(1)[OF invar_aux17_from_aux_invar[OF assms(2), simplified invar_aux17_def],
@@ -1225,13 +1225,13 @@ proof-
         card (comps \<V> (to_graph (\<FF>_imp ((orlins_one_step_check ^^ \<k>) state))))"
     apply(simp, subst orlins_one_step_check_def[of "(orlins_one_step_check ^^ \<k>) state"],simp add: return_state)
     unfolding orlins_one_step_def Let_def
-    apply(subst loopB_changes_\<FF>_imp)
+    apply(subst send_flow_changes_\<FF>_imp)
     subgoal using assms return_state
-      by(intro loopB_termination loopA_invar_gamma_pres aux_invar_gamma orlins_compow_aux_invar_pres
+      by(intro send_flow_termination maintain_forest_invar_gamma_pres aux_invar_gamma orlins_compow_aux_invar_pres
                gamma_upd_aux_invar_pres orlins_compow_invar_gamma_pres some_balance_after_k_steps| simp)+    
     apply(rule order.strict_trans2, rule card_strict_decrease)
     using call_cond[simplified new_\<gamma>_def Let_def]
-    by( auto intro: termination_of_loopA[OF _ refl] 
+    by( auto intro: termination_of_maintain_forest[OF _ refl] 
         aux_invarE[OF aux_invar_gamma[OF orlins_compow_aux_invar_pres[OF assms(2) assms(1) assms(3)]]]
         aux_invar_gamma[OF orlins_compow_aux_invar_pres[OF assms(2) assms(1) assms(3)]])
   hence "card (comps \<V> (to_graph (\<FF>_imp ((orlins_one_step_check ^^ (Suc \<k>)) state)))) < 
@@ -1265,17 +1265,17 @@ next
       apply(rule ccontr)
       using succ_fail_not_changes[of state "Suc k"] Suc
       by (metis (full_types) return.exhaust)     
-    hence loopB_unfold:"(orlins_one_step_check^^Suc k') state = 
+    hence send_flow_unfold:"(orlins_one_step_check^^Suc k') state = 
            (orlins_one_step_check^^ k') (orlins_one_step state)" for k'
       apply(subst funpow_Suc_right, simp)
       unfolding orlins_one_step_check_def using returnValue 
       by(auto split: if_split)
-    hence loopB_unfold':"(orlins_one_step_check^^Suc k') state = 
+    hence send_flow_unfold':"(orlins_one_step_check^^Suc k') state = 
            (orlins_one_step_check^^ k') (orlins_one_step_check state)" for k'
       by(subst funpow_Suc_right, simp)      
     have returnValue':"return (orlins_one_step_check state) = notyetterm"
       apply(rule ccontr)
-       using succ_fail_not_changes[of "orlins_one_step_check state" "k"] loopB_unfold'[of k]
+       using succ_fail_not_changes[of "orlins_one_step_check state" "k"] send_flow_unfold'[of k]
        Suc(2-)
        by (metis (full_types) orlins_one_step_check_def return.exhaust)
      hence returnValue'':"return (orlins_one_step state) = notyetterm"
@@ -1286,16 +1286,16 @@ next
        using  Suc(4-) returnValue'' by auto     
    have afterIH:"current_\<gamma> state' \<le> (1 / 2) ^ k * current_\<gamma> ((orlins_one_step state))"
       apply(rule  Suc(1))
-      using Suc(2) loopB_unfold  apply force
-      using   loopB_unfold[of k] Suc balance_oneStep sym[OF loopB_unfold]
+      using Suc(2) send_flow_unfold  apply force
+      using   send_flow_unfold[of k] Suc balance_oneStep sym[OF send_flow_unfold]
       by (auto intro: invar_gamma_pres_orlins_one_step 
                       aux_invar_pres_orlins_one_step)
     have new_gamma:"new_\<gamma> state \<le> current_\<gamma> state / 2"
       unfolding new_\<gamma>_def Let_def by(auto split: if_split)
   hence gamma_halved:"current_\<gamma> ((orlins_one_step state)) \<le> (1/2) * current_\<gamma> state"
     unfolding orlins_one_step_def new_\<gamma>_def Let_def
-    using Suc by (subst loopB_changes_current_\<gamma> | subst gamma_pres |
-                  fastforce intro!: loopB_termination loopA_invar_gamma_pres 
+    using Suc by (subst send_flow_changes_current_\<gamma> | subst gamma_pres |
+                  fastforce intro!: send_flow_termination maintain_forest_invar_gamma_pres 
                                     aux_invar_gamma gamma_upd_aux_invar_pres)+
   have invar_gamma: "invar_gamma (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     using  Max_lower_bound[of \<V> _ 0 "\<lambda> v. \<bar> balance state v\<bar>"]
@@ -1349,7 +1349,7 @@ lemma one_step_current_gamma_new_gamma:
   using assms apply simp
   unfolding orlins_one_step_def Let_def new_\<gamma>_def
   using assms gamma_pres
-   by(subst gamma_pres loopB_changes_current_\<gamma>| fastforce intro!: loopB_termination loopA_invar_gamma_pres aux_invar_gamma
+   by(subst gamma_pres send_flow_changes_current_\<gamma>| fastforce intro!: send_flow_termination maintain_forest_invar_gamma_pres aux_invar_gamma
                          gamma_upd_aux_invar_pres)+
 
 lemma if_important_then_comp_increase_or_termination:
@@ -1635,24 +1635,24 @@ proof-
       by (simp add: Z_def state'_def Delta_plus_def Delta_minus_def  same_comp) fast
     hence e_active: "e \<in> to_set (actives state')"
       using aux_invar_state' e_E unfolding aux_invar_def invar_aux13_def by auto
-    have call_cond: "loopA_call_cond (state' \<lparr> current_\<gamma> := new_\<gamma> state'\<rparr>)"
-      apply(rule loopA_call_condI[OF refl refl refl refl refl refl refl])
+    have call_cond: "maintain_forest_call_cond (state' \<lparr> current_\<gamma> := new_\<gamma> state'\<rparr>)"
+      apply(rule maintain_forest_call_condI[OF refl refl refl refl refl refl refl])
       using  e_active e_prop(2) 
              set_get(1)[OF invar_aux17_from_aux_invar[OF aux_invar_state', simplified invar_aux17_def],
                      of "(\<lambda>e. 8 * real N * new_\<gamma> state'  <
                         current_flow state' e)"]
-      by (fastforce intro:  loopA_call_condI[OF refl refl refl refl refl refl])
-  have e_comps:"connected_component (to_graph (\<FF>_imp (loopA (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (fst e) =
-                connected_component (to_graph (\<FF>_imp (loopA (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (snd e)"
+      by (fastforce intro:  maintain_forest_call_condI[OF refl refl refl refl refl refl])
+  have e_comps:"connected_component (to_graph (\<FF>_imp (maintain_forest (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (fst e) =
+                connected_component (to_graph (\<FF>_imp (maintain_forest (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (snd e)"
   proof-
     have " e \<in> to_set (actives state') \<Longrightarrow>
-    8 * real N * new_\<gamma> state' < current_flow state' e \<Longrightarrow> loopA_call_cond (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)"
+    8 * real N * new_\<gamma> state' < current_flow state' e \<Longrightarrow> maintain_forest_call_cond (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)"
        using set_get(1)[OF invar_aux17_from_aux_invar[OF aux_invar_state', simplified invar_aux17_def],
                      of "(\<lambda>e. 8 * real N * new_\<gamma> state'  <
                         current_flow state' e)"] 
-       by (fastforce intro!: loopA_call_condI[OF refl refl refl refl refl refl refl ])
+       by (fastforce intro!: maintain_forest_call_condI[OF refl refl refl refl refl refl refl ])
      thus ?thesis
-      using termination_of_loopA[OF _ refl] aux_invar_gamma[OF aux_invar_state'] aux_invar_def  e_active e_prop(2)
+      using termination_of_maintain_forest[OF _ refl] aux_invar_gamma[OF aux_invar_state'] aux_invar_def  e_active e_prop(2)
       by(intro component_strict_increase[of "state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>" e]) auto
   qed
   have fst_snd_e_comp_Z:"Z = connected_component (to_graph (\<FF>_imp state')) (fst e) \<or>
@@ -1661,17 +1661,17 @@ proof-
     unfolding Delta_plus_def Delta_minus_def 
     using  connected_components_member_eq[of "fst e" "to_graph (\<FF>_imp state')" z] 
            connected_components_member_eq[of "snd e" "to_graph (\<FF>_imp state')" z] by auto
-  have z_same_e:"connected_component (to_graph (\<FF>_imp (loopA (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) z =
-        connected_component (to_graph (\<FF>_imp (loopA (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (fst e)"
+  have z_same_e:"connected_component (to_graph (\<FF>_imp (maintain_forest (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) z =
+        connected_component (to_graph (\<FF>_imp (maintain_forest (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (fst e)"
       using same_comp[simplified sym[OF state'_def]] e_comps fst_snd_e_comp_Z
-            same_component_set_mono[OF  forest_increase[OF termination_of_loopA[OF _ refl]],
+            same_component_set_mono[OF  forest_increase[OF termination_of_maintain_forest[OF _ refl]],
              of "state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>" z]    
           aux_invar_gamma[OF aux_invar_state', of "new_\<gamma> state'"] 
           invar_aux_to_invar_aux1  invar_aux17_from_aux_invar
       by fastforce
   have comps_monotone: " connected_component (to_graph (\<FF>_imp (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>))) u
-    \<subseteq> connected_component (to_graph (\<FF>_imp (loopA (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) u" for u
-     using con_comp_subset[OF  forest_increase[OF termination_of_loopA[OF _ refl]],
+    \<subseteq> connected_component (to_graph (\<FF>_imp (maintain_forest (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) u" for u
+     using con_comp_subset[OF  forest_increase[OF termination_of_maintain_forest[OF _ refl]],
              of "state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>" ]    
             aux_invar_gamma[OF aux_invar_state', of "new_\<gamma> state'"] 
             invar_aux_to_invar_aux1 invar_aux17_from_aux_invar by auto
@@ -1682,7 +1682,7 @@ proof-
            e_comps_neq unequal_components_disjoint [of _ "fst e" "snd e"]
            fst_E_V make_pair[OF refl refl] by auto
    have comp_strict_suubst_z:"connected_component (to_graph (\<FF>_imp state')) z
-    \<subset> connected_component (to_graph (\<FF>_imp (loopA (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) z"
+    \<subset> connected_component (to_graph (\<FF>_imp (maintain_forest (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) z"
       apply(rule disjE[OF fst_snd_e_comp_Z])
       using z_same_e same_comp[simplified sym[OF state'_def]] fst_snd_e_comp_Z
       using  e_comps comps_monotone[of "fst e", simplified] comps_monotone[of "snd e", simplified]
@@ -1692,10 +1692,10 @@ proof-
         connected_component (to_graph (\<FF>_imp ((orlins_one_step_check ^^ \<l>) state))) z"
     apply(simp, subst orlins_one_step_check_def[of "(orlins_one_step_check ^^ \<l>) state"],simp add: 1(1)[of \<l>])
     unfolding orlins_one_step_def Let_def
-    apply(subst loopB_changes_\<FF>_imp)
+    apply(subst send_flow_changes_\<FF>_imp)
     subgoal
       using aux_invar_state' state'_def  invar_gamma_state'  remaining_balance_after 
-      by(fastforce intro!: loopB_termination loopA_invar_gamma_pres aux_invar_gamma gamma_upd_aux_invar_pres)
+      by(fastforce intro!: send_flow_termination maintain_forest_invar_gamma_pres aux_invar_gamma gamma_upd_aux_invar_pres)
     unfolding sym[OF new_\<gamma>_def[simplified  Let_def]] sym[OF state'_def]
     using comp_strict_suubst_z by simp
   thus ?case 
@@ -2223,37 +2223,37 @@ lemma \<Phi>_initial: "invar_non_zero_b initial\<Longrightarrow> \<Phi> initial 
     done
   done
 
-lemma loopB_entry_initial: "loopB_entryF initial"
+lemma send_flow_entry_initial: "send_flow_entryF initial"
   using empty_forest_axioms vset.set.set_isin vset.set.invar_empty vset.set.set_empty
-  unfolding loopB_entryF_def initial_def to_rdgs_def to_graph_def by simp
+  unfolding send_flow_entryF_def initial_def to_rdgs_def to_graph_def by simp
 
 theorem initial_state_orlins_dom_and_results:
-  assumes "state' = orlins (loopB initial)"
-    shows "orlins_dom (loopB initial)"
+  assumes "state' = orlins (send_flow initial)"
+    shows "orlins_dom (send_flow initial)"
           "return state' = success \<Longrightarrow> is_Opt \<b> (current_flow state')"
           "return state' = failure \<Longrightarrow> \<nexists> f. f is \<b> flow"
           "return state' = notyetterm \<Longrightarrow> False"
 proof-
-  show "orlins_dom (loopB initial)"
-  proof(cases "return (loopB initial)")
+  show "orlins_dom (send_flow initial)"
+  proof(cases "return (send_flow initial)")
     case notyetterm
     then show ?thesis    
     proof(cases "\<forall> v \<in>\<V>. \<b> v = 0")
       case True
       thus ?thesis
-        apply(subst loopB_simps'(1))
-        unfolding loopB_succ_upd_def Let_def
-        apply(rule loopB_succ_condI, simp, simp, simp, simp add: initial_def)
-        by(auto intro:  loopB_succ_condI orlins.domintros)
+        apply(subst send_flow_simps'(1))
+        unfolding send_flow_succ_upd_def Let_def
+        apply(rule send_flow_succ_condI, simp, simp, simp, simp add: initial_def)
+        by(auto intro:  send_flow_succ_condI orlins.domintros)
     next
       case False
       thus  ?thesis
         apply(insert False notyetterm)
         apply(rule orlins_dom_and_results(1)[OF _ _ _ _ _ _ _ _ refl], simp)
-        by(intro remaining_balance_after_loopB[OF loopB_termination refl, OF invar_gamma_initial]|
-        (subst invar_forest_def, subst loopB_changes_\<F> ) |
-        (fastforce intro: orlins_entry_after_loopB[OF _ refl] loopB_invar_isOpt_pres loopB_invar_aux_pres 
-                            loopB_invar_gamma_pres  aux_invar_initial loopB_termination loopB_invar_integral_pres
+        by(intro remaining_balance_after_send_flow[OF send_flow_termination refl, OF invar_gamma_initial]|
+        (subst invar_forest_def, subst send_flow_changes_\<F> ) |
+        (fastforce intro: orlins_entry_after_send_flow[OF _ refl] send_flow_invar_isOpt_pres send_flow_invar_aux_pres 
+                            send_flow_invar_gamma_pres  aux_invar_initial send_flow_termination send_flow_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
                             vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
@@ -2264,16 +2264,16 @@ proof-
     case 1
     note succ_after = this
     show ?case
-  proof(cases "return (loopB initial)")
+  proof(cases "return (send_flow initial)")
     case notyetterm
     then show ?thesis    
     proof(cases "\<forall> v \<in>\<V>. \<b> v = 0")
       case True
       thus ?thesis
-        apply(subst assms(1), subst loopB_simps'(1))
-        unfolding loopB_succ_upd_def Let_def
-        apply(rule loopB_succ_condI, simp, simp, simp, simp add: initial_def)
-        apply(subst (asm) subst loopB_simps'(1), simp, simp add: notyetterm)
+        apply(subst assms(1), subst send_flow_simps'(1))
+        unfolding send_flow_succ_upd_def Let_def
+        apply(rule send_flow_succ_condI, simp, simp, simp, simp add: initial_def)
+        apply(subst (asm) subst send_flow_simps'(1), simp, simp add: notyetterm)
         apply(subst orlins.psimps, rule orlins.domintros)
         using invar_isOptflow_initial 
         unfolding invar_isOptflow_def initial_def is_Opt_def isbflow_def by auto
@@ -2282,10 +2282,10 @@ proof-
       show ?thesis 
         apply(insert False notyetterm)
         apply(rule orlins_dom_and_results(2)[OF _ _ _ _ _ _ _ _ assms(1) succ_after])
-        by(intro remaining_balance_after_loopB[OF loopB_termination refl, OF invar_gamma_initial]|
-        (subst invar_forest_def, subst loopB_changes_\<F> ) |
-        (fastforce intro: orlins_entry_after_loopB[OF _ refl] loopB_invar_isOpt_pres loopB_invar_aux_pres 
-                            loopB_invar_gamma_pres  aux_invar_initial loopB_termination loopB_invar_integral_pres
+        by(intro remaining_balance_after_send_flow[OF send_flow_termination refl, OF invar_gamma_initial]|
+        (subst invar_forest_def, subst send_flow_changes_\<F> ) |
+        (fastforce intro: orlins_entry_after_send_flow[OF _ refl] send_flow_invar_isOpt_pres send_flow_invar_aux_pres 
+                            send_flow_invar_gamma_pres  aux_invar_initial send_flow_termination send_flow_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
                           vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
@@ -2300,21 +2300,21 @@ proof-
         by(fastforce intro: orlins.domintros simp add: success)
     next
       case 2 
-    have "\<forall>v\<in>\<V>. \<b> v = 0 \<Longrightarrow> is_Opt \<b> (current_flow (local.loopB initial))"
+    have "\<forall>v\<in>\<V>. \<b> v = 0 \<Longrightarrow> is_Opt \<b> (current_flow (local.send_flow initial))"
         proof(goal_cases)
        case 1
        then show ?case
-        apply(subst loopB_simps'(1))
-        using invar_isOptflow_initial loopB_simps'(1)
-        by (auto intro:  loopB_succ_condI simp add:  invar_isOptflow_def is_Opt_def isbflow_def initial_def loopB_succ_upd_def Let_def)
+        apply(subst send_flow_simps'(1))
+        using invar_isOptflow_initial send_flow_simps'(1)
+        by (auto intro:  send_flow_succ_condI simp add:  invar_isOptflow_def is_Opt_def isbflow_def initial_def send_flow_succ_upd_def Let_def)
     qed
-    moreover have "\<not> (\<forall>v\<in>\<V>. \<b> v = 0) \<Longrightarrow> is_Opt \<b> (current_flow (local.loopB initial))"
+    moreover have "\<not> (\<forall>v\<in>\<V>. \<b> v = 0) \<Longrightarrow> is_Opt \<b> (current_flow (local.send_flow initial))"
     proof(goal_cases)
       case 1
       then show ?case
-        using \<Phi>_initial[simplified invar_non_zero_b_def] loopB_entry_initial success
-        by(fastforce intro: loopB_correctness loopB_invar_isOpt_pres aux_invar_initial 
-                            loopB_termination 
+        using \<Phi>_initial[simplified invar_non_zero_b_def] send_flow_entry_initial success
+        by(fastforce intro: send_flow_correctness send_flow_invar_isOpt_pres aux_invar_initial 
+                            send_flow_termination 
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                    simp add: initial_def)
     qed 
@@ -2335,25 +2335,25 @@ qed
     case 1
     note fail_after = this
     show ?case
-  proof(cases "return (loopB initial)")
+  proof(cases "return (send_flow initial)")
     case notyetterm
     then show ?thesis    
     proof(cases "\<forall> v \<in>\<V>. \<b> v = 0")
       case True
       thus ?thesis 
-        apply(insert True fail_after notyetterm, subst (asm) loopB_simps'(1))
-        unfolding loopB_succ_upd_def Let_def
-         apply(rule loopB_succ_condI, simp, simp, simp, simp add: initial_def)
+        apply(insert True fail_after notyetterm, subst (asm) send_flow_simps'(1))
+        unfolding send_flow_succ_upd_def Let_def
+         apply(rule send_flow_succ_condI, simp, simp, simp, simp add: initial_def)
         by simp
     next
       case False
       thus ?thesis 
         apply(insert False fail_after notyetterm)
         apply(rule orlins_dom_and_results(3)[OF _ _ _ _ _ _ _ _ assms(1) fail_after])
-        by(intro remaining_balance_after_loopB[OF loopB_termination refl, OF invar_gamma_initial]|
-        (subst invar_forest_def, subst loopB_changes_\<F> ) |
-        (fastforce intro: orlins_entry_after_loopB[OF _ refl] loopB_invar_isOpt_pres loopB_invar_aux_pres 
-                            loopB_invar_gamma_pres  aux_invar_initial loopB_termination loopB_invar_integral_pres
+        by(intro remaining_balance_after_send_flow[OF send_flow_termination refl, OF invar_gamma_initial]|
+        (subst invar_forest_def, subst send_flow_changes_\<F> ) |
+        (fastforce intro: orlins_entry_after_send_flow[OF _ refl] send_flow_invar_isOpt_pres send_flow_invar_aux_pres 
+                            send_flow_invar_gamma_pres  aux_invar_initial send_flow_termination send_flow_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
                             vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
@@ -2363,27 +2363,27 @@ qed
     show "\<nexists>f. f is \<b> flow"
   proof(goal_cases)
     case 1
-    have 4: "return (local.orlins (local.loopB initial)) = failure"
+    have 4: "return (local.orlins (local.send_flow initial)) = failure"
       using assms fail_after by simp
-     have 2:"return (local.orlins (local.loopB initial)) = failure \<Longrightarrow>
+     have 2:"return (local.orlins (local.send_flow initial)) = failure \<Longrightarrow>
     \<forall>v\<in>\<V>. \<b> v = 0 \<Longrightarrow> \<forall>f. \<not> f is \<b> flow"
       proof(goal_cases)
       case 1
       then show ?case
-        apply(subst (asm) loopB_simps'(1))
-        apply(fastforce intro: loopB_succ_condI simp add: initial_def)
-        unfolding loopB_succ_upd_def Let_def
+        apply(subst (asm) send_flow_simps'(1))
+        apply(fastforce intro: send_flow_succ_condI simp add: initial_def)
+        unfolding send_flow_succ_upd_def Let_def
         by(subst (asm) orlins.psimps, rule orlins.domintros, auto)
     qed
-    have 3: "return (local.orlins (local.loopB initial)) = failure \<Longrightarrow>
+    have 3: "return (local.orlins (local.send_flow initial)) = failure \<Longrightarrow>
     \<not> (\<forall>v\<in>\<V>. \<b> v = 0) \<Longrightarrow> \<forall>f. \<not> f is \<b> flow"
     proof(goal_cases)
       case 1
       thus ?case
-        using \<Phi>_initial[simplified invar_non_zero_b_def] loopB_entry_initial failure
-        by(intro loopB_completeness[of initial, simplified],
-           (fastforce intro: loopB_invar_isOpt_pres aux_invar_initial 
-                            loopB_termination 
+        using \<Phi>_initial[simplified invar_non_zero_b_def] send_flow_entry_initial failure
+        by(intro send_flow_completeness[of initial, simplified],
+           (fastforce intro: send_flow_invar_isOpt_pres aux_invar_initial 
+                            send_flow_termination 
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
             simp add:  initial_def to_graph_def empty_forest_axioms)+)
     qed 
@@ -2404,25 +2404,25 @@ qed
     case 1
     note notyetterm_after = this
     show ?case
-  proof(cases "return (loopB initial)")
+  proof(cases "return (send_flow initial)")
     case notyetterm
     then show ?thesis    
     proof(cases "\<forall> v \<in>\<V>. \<b> v = 0")
       case True
       thus ?thesis 
-        apply(insert True notyetterm,  subst (asm) loopB_simps'(1))
-        unfolding loopB_succ_upd_def Let_def
-        apply(rule loopB_succ_condI, simp, simp, simp, simp add: initial_def)
+        apply(insert True notyetterm,  subst (asm) send_flow_simps'(1))
+        unfolding send_flow_succ_upd_def Let_def
+        apply(rule send_flow_succ_condI, simp, simp, simp, simp add: initial_def)
         by simp
     next
       case False
       thus ?thesis
         apply(insert False notyetterm)
         apply(rule orlins_dom_and_results(4)[OF _ _ _ _ _ _ _ _ assms(1) notyetterm_after])
-        by(intro remaining_balance_after_loopB[OF loopB_termination refl, OF invar_gamma_initial]|
-        (subst invar_forest_def, subst loopB_changes_\<F> ) |
-        (fastforce intro: orlins_entry_after_loopB[OF _ refl] loopB_invar_isOpt_pres loopB_invar_aux_pres 
-                            loopB_invar_gamma_pres  aux_invar_initial loopB_termination loopB_invar_integral_pres
+        by(intro remaining_balance_after_send_flow[OF send_flow_termination refl, OF invar_gamma_initial]|
+        (subst invar_forest_def, subst send_flow_changes_\<F> ) |
+        (fastforce intro: orlins_entry_after_send_flow[OF _ refl] send_flow_invar_isOpt_pres send_flow_invar_aux_pres 
+                            send_flow_invar_gamma_pres  aux_invar_initial send_flow_termination send_flow_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
                             vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
@@ -2454,8 +2454,8 @@ definition "orlins_ret1_cond state =  (if return state = success then True
                       \<gamma>' = (if \<forall> e \<in> to_set E'. f e = 0 then
                              min (\<gamma> / 2) (Max { \<bar> b v\<bar> | v. v \<in> \<V>})
                            else (\<gamma> / 2));
-                      state' = loopA (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
-                      state'' = loopB state' 
+                      state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
+                      state'' = send_flow state' 
                       in False)
 )"
 
@@ -2475,8 +2475,8 @@ definition "orlins_call_cond state = (if return state = success then False
                       \<gamma>' = (if \<forall> e \<in> to_set E'. f e = 0 then
                              min (\<gamma> / 2) (Max { \<bar> b v\<bar> | v. v \<in> \<V>})
                            else (\<gamma> / 2));
-                      state' = loopA (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
-                      state'' = loopB state' 
+                      state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
+                      state'' = send_flow state' 
                       in True)
 )"
 
@@ -2489,8 +2489,8 @@ lemma orlins_call_condE: "orlins_call_cond state \<Longrightarrow>
                       \<gamma>' = (if \<forall> e \<in> to_set E' . f e = 0 then
                              min (\<gamma> / 2) (Max { \<bar> b v\<bar> | v. v \<in> \<V>})
                            else (\<gamma> / 2)) \<Longrightarrow>
-                      state' = loopA (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>) \<Longrightarrow>
-                      state'' = loopB state'
+                      state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>) \<Longrightarrow>
+                      state'' = send_flow state'
                   \<Longrightarrow> P \<rbrakk> \<Longrightarrow> P"
   unfolding orlins_call_cond_def  Let_def 
   by(rule return.exhaust[of "return state"], simp, simp, simp)
@@ -2503,8 +2503,8 @@ lemma orlins_call_condI: " \<And> f b \<gamma> E' \<gamma>' state' state''. retu
                       \<gamma>' = (if \<forall> e \<in> to_set E' . f e = 0 then
                              min (\<gamma> / 2) (Max { \<bar> b v\<bar> | v. v \<in> \<V>})
                            else (\<gamma> / 2)) \<Longrightarrow>
-                      state' = loopA (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>) \<Longrightarrow>
-                      state'' = loopB state'
+                      state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>) \<Longrightarrow>
+                      state'' = send_flow state'
                   \<Longrightarrow> orlins_call_cond state"
   unfolding  orlins_call_cond_def Let_def by force
 
@@ -2517,8 +2517,8 @@ definition "orlins_ret2_cond state = (if return state = success then False
                       \<gamma>' = (if \<forall> e \<in> to_set E'. f e = 0 then
                              min (\<gamma> / 2) (Max { \<bar> b v\<bar> | v. v \<in> \<V>})
                            else (\<gamma> / 2));
-                      state' = loopA (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
-                      state'' = loopB state' 
+                      state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
+                      state'' = send_flow state' 
                       in False))"
 
 lemma if_PQ:"if P then False else if Q then False else True \<Longrightarrow> \<not> P \<and> \<not> Q"
@@ -2559,8 +2559,8 @@ definition "orlins_upd state = (let f = current_flow state;
                       \<gamma>' = (if \<forall> e \<in> to_set E'. f e = 0 then
                              min (\<gamma> / 2) (Max { \<bar> b v\<bar> | v. v \<in> \<V>})
                            else (\<gamma> / 2));
-                      state' = loopA (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
-                      state'' = loopB state' 
+                      state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
+                      state'' = send_flow state' 
                       in state'')"
 
 lemma orlins_simps:

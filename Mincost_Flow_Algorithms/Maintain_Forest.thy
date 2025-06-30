@@ -1,41 +1,64 @@
 section \<open>Formalisation of Forest Maintenance\<close>
 
-theory LoopA
-  imports IntermediateSummary
+theory Maintain_Forest
+  imports Intermediate_Summary
 begin
 
 subsection \<open>The Locale\<close>
 
-locale loopA_spec = algo_spec where fst="fst::'edge_type \<Rightarrow> 'a" 
+locale maintain_forest_spec = algo_spec where fst="fst::'edge_type \<Rightarrow> 'a" 
 and get_from_set = "get_from_set::('edge_type \<Rightarrow> bool) \<Rightarrow> 'd \<Rightarrow> 'edge_type option"
 and empty_forest = "empty_forest :: 'c"
 and \<E>_impl = "\<E>_impl :: 'd"
 for fst  get_from_set empty_forest \<E>_impl+
 fixes get_path::"'a \<Rightarrow> 'a \<Rightarrow> 'c \<Rightarrow> 'a list" 
-
-
-
-locale loopA = loopA_spec where fst ="fst::'edge_type \<Rightarrow> 'a" +
-algo where fst = fst
-  for fst +
-assumes get_path_axioms:
-        "\<And> u v E p q.  vwalk_bet (digraph_abs E) u q v \<Longrightarrow> 
-                       adjmap_inv E \<Longrightarrow> p = get_path u v E \<Longrightarrow> u \<in> Vs (to_graph E) \<Longrightarrow>
-                        (\<And> x. lookup E x \<noteq> None \<and> vset_inv (the (lookup E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                      
-                     vwalk_bet (digraph_abs  E) u p v"
-        "\<And> u v E p q.  vwalk_bet (digraph_abs  E) u q v \<Longrightarrow> 
-                       adjmap_inv E \<Longrightarrow> p = get_path u v E \<Longrightarrow> u \<in> Vs (to_graph E) \<Longrightarrow>
-                        (\<And> x. lookup E x \<noteq> None \<and> vset_inv (the (lookup E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>                    
-                     distinct p"
 begin
+definition "maintain_forest_get_path_cond u v E p q =
+      (vwalk_bet (digraph_abs  E) u q v \<and> adjmap_inv E \<and>
+       p = get_path u v E \<and> u \<in> Vs (to_graph E) \<and>
+       (\<forall> x. lookup E x \<noteq> None \<and> vset_inv (the (lookup E x))) \<and> u \<noteq> v)"
+
+lemma maintain_forest_get_path_condI:
+"vwalk_bet (digraph_abs E) u q v \<Longrightarrow> 
+                       adjmap_inv E \<Longrightarrow> p = get_path u v E \<Longrightarrow> u \<in> Vs (to_graph E) \<Longrightarrow>
+                        (\<And> x. lookup E x \<noteq> None \<and> vset_inv (the (lookup E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>
+      maintain_forest_get_path_cond u v E p q"
+  by(auto simp add: maintain_forest_get_path_cond_def)
+
+lemma maintain_forest_get_path_condE:
+"maintain_forest_get_path_cond u v E p q \<Longrightarrow> 
+(vwalk_bet (digraph_abs E) u q v \<Longrightarrow> 
+                       adjmap_inv E \<Longrightarrow> p = get_path u v E \<Longrightarrow> u \<in> Vs (to_graph E) \<Longrightarrow>
+                        (\<And> x. lookup E x \<noteq> None \<and> vset_inv (the (lookup E x))) \<Longrightarrow> u \<noteq> v \<Longrightarrow>
+    P) \<Longrightarrow> P"
+  by(auto simp add: maintain_forest_get_path_cond_def)
+
+lemma maintain_forest_get_path_cond_unfold_meta:
+  assumes "maintain_forest_get_path_cond u v E p q"
+  shows "vwalk_bet (digraph_abs E) u q v" "adjmap_inv E" "p = get_path u v E" 
+        "u \<in> Vs (to_graph E)"
+        "(\<And> x. lookup E x \<noteq> None \<and> vset_inv (the (lookup E x)))" 
+        "u \<noteq> v"
+  using maintain_forest_get_path_condE[OF assms(1)] by auto
+end
+
+locale maintain_forest = 
+maintain_forest_spec where fst ="fst::'edge_type \<Rightarrow> 'a" +
+algo where fst = fst  for fst +
+assumes get_path_axioms:
+        "\<And> u v E p q. maintain_forest_get_path_cond u v E p q\<Longrightarrow>vwalk_bet (digraph_abs  E) u p v"
+        "\<And> u v E p q. maintain_forest_get_path_cond u v E p q \<Longrightarrow> distinct p"
+begin
+
+lemmas get_path_axioms_unfolded=get_path_axioms[OF maintain_forest_get_path_condI]
 
 term "Pair_Graph_Specs.digraph_abs lookup isin_vset"
 
 find_theorems Pair_Graph_Specs.digraph_abs 
 
 subsection \<open>Function and Setup\<close>
-function (domintros) loopA::"('a,'d, 'c, 'edge_type) Algo_state \<Rightarrow> ('a, 'd, 'c, 'edge_type) Algo_state" where
-"loopA state = (let \<FF> = \<FF> state;
+function (domintros) maintain_forest::"('a,'d, 'c, 'edge_type) Algo_state \<Rightarrow> ('a, 'd, 'c, 'edge_type) Algo_state" where
+"maintain_forest state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
                     r = representative state;
@@ -74,11 +97,11 @@ function (domintros) loopA::"('a,'d, 'c, 'edge_type) Algo_state \<Rightarrow> ('
                                     balance := b',  representative := r',
                                     actives := E'', conv_to_rdg := to_rdg', comp_card := cards',
                                     \<FF>_imp:= \<FF>_imp', not_blocked := nb'\<rparr>
-                            in loopA state'
+                            in maintain_forest state'
                     else state))"
   by auto
 
-definition "loopA_ret_cond state = (let \<FF> = \<FF> state;
+definition "maintain_forest_ret_cond state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
                     r = representative state;
@@ -91,8 +114,8 @@ definition "loopA_ret_cond state = (let \<FF> = \<FF> state;
                     then False
                     else True))"
 
-lemma loopA_ret_condE: 
-"loopA_ret_cond state \<Longrightarrow> (\<And> f b r E' to_rdg \<gamma> cards.
+lemma maintain_forest_ret_condE: 
+"maintain_forest_ret_cond state \<Longrightarrow> (\<And> f b r E' to_rdg \<gamma> cards.
                     f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
                     r = representative state \<Longrightarrow>
@@ -102,16 +125,16 @@ lemma loopA_ret_condE:
                     cards = comp_card state \<Longrightarrow>
                     \<not> (\<exists> aa. get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E' = Some aa) \<Longrightarrow>P)
                 \<Longrightarrow> P"
-  unfolding loopA_ret_cond_def Let_def 
+  unfolding maintain_forest_ret_cond_def Let_def 
   by presburger
   
-lemma loopA_ret_condI: " f = current_flow state\<Longrightarrow>
+lemma maintain_forest_ret_condI: " f = current_flow state\<Longrightarrow>
                     E' = actives state\<Longrightarrow>
                     \<gamma> = current_\<gamma> state \<Longrightarrow>
-                    \<not> (\<exists> aa. get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E' = Some aa) \<Longrightarrow>cards = comp_card state\<Longrightarrow> loopA_ret_cond state" 
-  by(simp add: loopA_ret_cond_def)
+                    \<not> (\<exists> aa. get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E' = Some aa) \<Longrightarrow>cards = comp_card state\<Longrightarrow> maintain_forest_ret_cond state" 
+  by(simp add: maintain_forest_ret_cond_def)
 
-definition "(loopA_call_cond (state::('a, 'd, 'c, 'edge_type) Algo_state)) = 
+definition "(maintain_forest_call_cond (state::('a, 'd, 'c, 'edge_type) Algo_state)) = 
                    ((let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
@@ -153,9 +176,9 @@ definition "(loopA_call_cond (state::('a, 'd, 'c, 'edge_type) Algo_state)) =
                           in True
                     else False)))"
 
-lemma loopA_call_condE:
+lemma maintain_forest_call_condE:
   assumes 
-"loopA_call_cond state" "(\<And> f b r E' to_rdg \<gamma> e x y xx yy to_rdg' \<FF>' x' y' f' b' r' Q E''
+"maintain_forest_call_cond state" "(\<And> f b r E' to_rdg \<gamma> e x y xx yy to_rdg' \<FF>' x' y' f' b' r' Q E''
                              state' cards cards' \<FF>_imp' nb nb'.
                     f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
@@ -196,10 +219,10 @@ lemma loopA_call_condE:
                                     \<FF>_imp:= \<FF>_imp', not_blocked := nb'\<rparr> \<Longrightarrow> P)"
 shows P
   using assms
-  unfolding loopA_call_cond_def Let_def
+  unfolding maintain_forest_call_cond_def Let_def
   by (simp, metis (no_types, lifting))
 
-lemma loopA_call_condI: " f = current_flow state \<Longrightarrow>
+lemma maintain_forest_call_condI: " f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
                     r = representative state \<Longrightarrow>
                     E' = actives state \<Longrightarrow>
@@ -207,17 +230,17 @@ lemma loopA_call_condI: " f = current_flow state \<Longrightarrow>
                     (\<gamma>::real) = current_\<gamma> state \<Longrightarrow>
                     cards = comp_card state \<Longrightarrow>
                      \<exists> aa. get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E' = Some aa \<Longrightarrow>
-                     loopA_call_cond state"
-  by(simp add: loopA_call_cond_def Let_def)
+                     maintain_forest_call_cond state"
+  by(simp add: maintain_forest_call_cond_def Let_def)
  
- lemma loopA_cases:
+ lemma maintain_forest_cases:
   assumes
-   "loopA_ret_cond state \<Longrightarrow> P"
-   "loopA_call_cond state \<Longrightarrow> P"
+   "maintain_forest_ret_cond state \<Longrightarrow> P"
+   "maintain_forest_call_cond state \<Longrightarrow> P"
  shows P
 proof-
-  have "loopA_call_cond state  \<or> loopA_ret_cond state "
-    by (auto simp add: loopA_call_cond_def loopA_ret_cond_def
+  have "maintain_forest_call_cond state  \<or> maintain_forest_ret_cond state "
+    by (auto simp add: maintain_forest_call_cond_def maintain_forest_ret_cond_def
                        Let_def
            split: list.split_asm option.split_asm if_splits)
   then show ?thesis
@@ -225,7 +248,7 @@ proof-
     by auto
 qed
 
-definition "loopA_upd state = (let \<FF> = \<FF> state;
+definition "maintain_forest_upd state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
                     r = representative state;
@@ -264,32 +287,32 @@ definition "loopA_upd state = (let \<FF> = \<FF> state;
                                     \<FF>_imp:= \<FF>_imp', not_blocked := nb'\<rparr>
                     in state')"
 
-lemma loopA_simps:
-  "loopA_dom state \<Longrightarrow>loopA_call_cond state \<Longrightarrow> loopA state = loopA (loopA_upd state)"
-  "loopA_ret_cond state \<Longrightarrow> loopA state =  state"
+lemma maintain_forest_simps:
+  "maintain_forest_dom state \<Longrightarrow>maintain_forest_call_cond state \<Longrightarrow> maintain_forest state = maintain_forest (maintain_forest_upd state)"
+  "maintain_forest_ret_cond state \<Longrightarrow> maintain_forest state =  state"
 proof(goal_cases)
   case 1
   note assms = this
   show ?case 
     apply(insert assms(2))
-    apply(subst loopA.psimps[OF assms(1)])
-    unfolding loopA_upd_def Let_def
-    apply(rule loopA_call_condE, simp) 
+    apply(subst maintain_forest.psimps[OF assms(1)])
+    unfolding maintain_forest_upd_def Let_def
+    apply(rule maintain_forest_call_condE, simp) 
     apply(auto split: if_splits prod.splits)
     done 
 next
   case 2
   show ?case
-    apply(subst loopA.psimps)
+    apply(subst maintain_forest.psimps)
     subgoal
-      apply(rule loopA.domintros)
-      using 2 by(auto simp add:loopA_ret_cond_def Let_def)
-    using 2 by(auto simp add:loopA_ret_cond_def Let_def)
+      apply(rule maintain_forest.domintros)
+      using 2 by(auto simp add:maintain_forest_ret_cond_def Let_def)
+    using 2 by(auto simp add:maintain_forest_ret_cond_def Let_def)
 qed
 
-lemma loopA_upd_Forest'_destr:
+lemma maintain_forest_upd_Forest'_destr:
 assumes 
-  "state' = loopA_upd state"
+  "state' = maintain_forest_upd state"
 
   "\<FF>a = Algo_state.\<FF> state"
   "f = current_flow state"
@@ -298,29 +321,29 @@ assumes
   "e = the ( get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E')"
 shows 
 "\<FF> state'= (let sth =sth in insert {fst e, snd e} \<FF>a )"
-    using assms by(auto simp add: loopA_upd_def Let_def split: prod.splits)
+    using assms by(auto simp add: maintain_forest_upd_def Let_def split: prod.splits)
 
-lemma loopA_upd_Forest'_unfold:
+lemma maintain_forest_upd_Forest'_unfold:
   assumes "\<FF>a = Algo_state.\<FF> state"
    "f = current_flow state"
   "E' = actives state"
   "\<gamma> = current_\<gamma> state"
   "e = the (get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E')"
   "\<FF>' = insert {fst e, snd e} \<FF>a" 
-shows "\<FF>' = \<FF> (loopA_upd state)"
-  using assms by(auto simp add: loopA_upd_def Let_def split: prod.splits)
+shows "\<FF>' = \<FF> (maintain_forest_upd state)"
+  using assms by(auto simp add: maintain_forest_upd_def Let_def split: prod.splits)
 
-lemma loopA_upd_Forest'_impl_unfold:
+lemma maintain_forest_upd_Forest'_impl_unfold:
   assumes "\<FF>a_imp = Algo_state.\<FF>_imp state"
    "f = current_flow state"
   "E' = actives state"
   "\<gamma> = current_\<gamma> state"
   "e = the (get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E')"
   "\<FF>_imp' = insert_undirected_edge (fst e) (snd e) \<FF>a_imp" 
-shows "\<FF>_imp' = \<FF>_imp (loopA_upd state)"
-  using assms by(simp add: loopA_upd_def Let_def split: prod.splits)
+shows "\<FF>_imp' = \<FF>_imp (maintain_forest_upd state)"
+  using assms by(simp add: maintain_forest_upd_def Let_def split: prod.splits)
 
-lemma loopA_upd_conv_to_rdg_unfold:
+lemma maintain_forest_upd_conv_to_rdg_unfold:
   assumes "\<FF>a = Algo_state.\<FF> state"
    "f = current_flow state"
   "E' = actives state"
@@ -329,10 +352,10 @@ lemma loopA_upd_conv_to_rdg_unfold:
   "e = the ( get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E')"
   "to_rdg' = (\<lambda> d. if d = make_pair e then F e else if prod.swap d = make_pair e then B e 
                                              else to_rdg d)"
-shows "to_rdg' = conv_to_rdg (loopA_upd state)"
-  using assms by(auto simp add: loopA_upd_def Let_def split: prod.split)
+shows "to_rdg' = conv_to_rdg (maintain_forest_upd state)"
+  using assms by(auto simp add: maintain_forest_upd_def Let_def split: prod.split)
 
-lemma   loopA_upd_flow_unfold:
+lemma   maintain_forest_upd_flow_unfold:
   assumes "\<FF>a_imp = Algo_state.\<FF>_imp state"
    "f = current_flow state"
   "b = balance state"
@@ -354,10 +377,10 @@ lemma   loopA_upd_flow_unfold:
   "Q = get_path x' y' \<FF>_imp'"
   "f' = (if b x' > 0 then augment_edges f (b x') (to_redge_path to_rdg' Q) 
                                    else augment_edges f (- b x') (to_redge_path to_rdg' (rev Q)))"
-shows "f' = current_flow (loopA_upd state)"
-  using assms by(auto simp add: loopA_upd_def Let_def split: prod.split)
+shows "f' = current_flow (maintain_forest_upd state)"
+  using assms by(auto simp add: maintain_forest_upd_def Let_def split: prod.split)
 
-lemma   loopA_upd_balance_unfold:
+lemma   maintain_forest_upd_balance_unfold:
    assumes "\<FF>a = Algo_state.\<FF> state"
    "f = current_flow state"
   "b = balance state"
@@ -374,10 +397,10 @@ lemma   loopA_upd_balance_unfold:
   "y' = r yy"
   "b' = (\<lambda> v. if v= x' then 0 else if v = y' then b y' + b x'
                                         else b v)"
-shows "b' = balance (loopA_upd state)"
-  using assms by(auto simp add:  loopA_upd_def Let_def split: prod.split)
+shows "b' = balance (maintain_forest_upd state)"
+  using assms by(auto simp add:  maintain_forest_upd_def Let_def split: prod.split)
 
-lemma loopA_upd_actives_unfold:
+lemma maintain_forest_upd_actives_unfold:
   assumes 
   "\<FF>a = Algo_state.\<FF> state"
   "f = current_flow state"
@@ -393,25 +416,25 @@ lemma loopA_upd_actives_unfold:
   "x' = r xx"
   "y' = r yy"
   "E'' = filter (\<lambda> d. {r (fst d), r (snd d)} \<noteq> {x', y'}) E'"
-shows "E'' = actives (loopA_upd state)"
-  using assms by(auto simp add: loopA_upd_def Let_def split: prod.splits)
+shows "E'' = actives (maintain_forest_upd state)"
+  using assms by(auto simp add: maintain_forest_upd_def Let_def split: prod.splits)
 
-lemma loopA_upd_current_gamma_unfold: 
-"current_\<gamma> state = current_\<gamma> (loopA_upd state)"
-  by(auto simp add: loopA_upd_def Let_def split: prod.split)
+lemma maintain_forest_upd_current_gamma_unfold: 
+"current_\<gamma> state = current_\<gamma> (maintain_forest_upd state)"
+  by(auto simp add: maintain_forest_upd_def Let_def split: prod.split)
 
-lemma loopA_upd_return_unfold: 
-"return state = return  (loopA_upd state)"
-  by(auto simp add: loopA_upd_def Let_def split: prod.split)
+lemma maintain_forest_upd_return_unfold: 
+"return state = return  (maintain_forest_upd state)"
+  by(auto simp add: maintain_forest_upd_def Let_def split: prod.split)
 
-lemma loopA_upd_more_unfold: 
-"Algo_state.more state = Algo_state.more  (loopA_upd state)"
-  by(auto simp add: loopA_upd_def Let_def split: prod.split)
+lemma maintain_forest_upd_more_unfold: 
+"Algo_state.more state = Algo_state.more  (maintain_forest_upd state)"
+  by(auto simp add: maintain_forest_upd_def Let_def split: prod.split)
 
 method intro_simp uses subst intro simp = 
 ((subst subst; simp)?; intro intro; auto simp add: simp)
 
-lemma loopA_upd_representative_unfold:
+lemma maintain_forest_upd_representative_unfold:
   assumes 
   "\<FF>a = Algo_state.\<FF> state"
   "f = current_flow state"
@@ -432,10 +455,10 @@ lemma loopA_upd_representative_unfold:
   "y' = r yy"
   "r' = (\<lambda> v. if r v = x' \<or> r v = y' then y' else r v)"
 
-shows "r' = representative (loopA_upd state)"
-  using assms by(auto simp add: loopA_upd_def Let_def split: prod.split)
+shows "r' = representative (maintain_forest_upd state)"
+  using assms by(auto simp add: maintain_forest_upd_def Let_def split: prod.split)
 
-lemma loopA_upd_comp_card_unfold:
+lemma maintain_forest_upd_comp_card_unfold:
   assumes 
   "\<FF>a = Algo_state.\<FF> state"
   "f = current_flow state"
@@ -457,10 +480,10 @@ lemma loopA_upd_comp_card_unfold:
   "r' = (\<lambda> v. if r v = x' \<or> r v = y' then y' else r v)"
   "cards' = (\<lambda> v. if r' v = y' then cards x + cards y else cards v)"
 
-shows "cards' = comp_card (loopA_upd state)"
-  using assms by(auto simp add: loopA_upd_def Let_def split: prod.split)
+shows "cards' = comp_card (maintain_forest_upd state)"
+  using assms by(auto simp add: maintain_forest_upd_def Let_def split: prod.split)
 
-lemma   loopA_not_blocked_upd_unfold:
+lemma   maintain_forest_not_blocked_upd_unfold:
   assumes   "f = current_flow state"
   "r = representative state"
   "E' = actives state"
@@ -477,11 +500,11 @@ lemma   loopA_not_blocked_upd_unfold:
   "nb' = (\<lambda> d. if e = d then True
           else if {r (fst d) , r (snd d)} = {x', y'} then False
           else nb d)"
-shows "nb' = not_blocked (loopA_upd state)"
+shows "nb' = not_blocked (maintain_forest_upd state)"
   using assms
-  by(auto simp add: loopA_upd_def Let_def split: prod.split)
+  by(auto simp add: maintain_forest_upd_def Let_def split: prod.split)
 
-lemma   loopA_upd_unfold:
+lemma   maintain_forest_upd_unfold:
   assumes "\<FF>a = Algo_state.\<FF> state"
    "f = current_flow state"
   "b = balance state"
@@ -518,32 +541,32 @@ lemma   loopA_upd_unfold:
                     balance := b',  representative := r',
                     actives := E'', conv_to_rdg := to_rdg', comp_card := cards',
                     \<FF>_imp:= \<FF>_imp', not_blocked := nb'\<rparr>" 
-shows "state' = loopA_upd state"
+shows "state' = maintain_forest_upd state"
   by(intro Algo_state.equality) 
     (intro_simp subst:  assms(29) 
-                intro: loopA_upd_representative_unfold[of \<FF>a state f  r E' to_rdg \<gamma> cards e x y
+                intro: maintain_forest_upd_representative_unfold[of \<FF>a state f  r E' to_rdg \<gamma> cards e x y
                                          to_rdg' xy xx yy \<FF>' x' y' r'] 
-                       loopA_upd_more_unfold
-                       loopA_upd_conv_to_rdg_unfold[of \<FF>a state f  E' to_rdg \<gamma> e to_rdg']
-                       loopA_upd_current_gamma_unfold loopA_upd_return_unfold
-                       loopA_upd_actives_unfold[of \<FF>a state f r \<gamma> E' cards e x y xy xx yy x' y' E'']
-                       loopA_upd_Forest'_unfold[of \<FF>a state f  E'  \<gamma> e \<FF>']
-                       loopA_upd_Forest'_impl_unfold[of \<FF>a_imp state f  E'  \<gamma> e \<FF>_imp']
-                       loopA_upd_balance_unfold[of \<FF>a state f b r E'  \<gamma> cards e x y xy xx yy  x' y']
-                       loopA_upd_comp_card_unfold[of \<FF>a state f r E' to_rdg \<gamma> cards e x y to_rdg' xy xx yy \<FF>'
+                       maintain_forest_upd_more_unfold
+                       maintain_forest_upd_conv_to_rdg_unfold[of \<FF>a state f  E' to_rdg \<gamma> e to_rdg']
+                       maintain_forest_upd_current_gamma_unfold maintain_forest_upd_return_unfold
+                       maintain_forest_upd_actives_unfold[of \<FF>a state f r \<gamma> E' cards e x y xy xx yy x' y' E'']
+                       maintain_forest_upd_Forest'_unfold[of \<FF>a state f  E'  \<gamma> e \<FF>']
+                       maintain_forest_upd_Forest'_impl_unfold[of \<FF>a_imp state f  E'  \<gamma> e \<FF>_imp']
+                       maintain_forest_upd_balance_unfold[of \<FF>a state f b r E'  \<gamma> cards e x y xy xx yy  x' y']
+                       maintain_forest_upd_comp_card_unfold[of \<FF>a state f r E' to_rdg \<gamma> cards e x y to_rdg' xy xx yy \<FF>'
                                                      x' y' r' cards']
-                       loopA_upd_flow_unfold[of \<FF>a_imp state f b r E' to_rdg \<gamma> cards e x y
+                       maintain_forest_upd_flow_unfold[of \<FF>a_imp state f b r E' to_rdg \<gamma> cards e x y
                                                             to_rdg' xy xx yy \<FF>_imp' x' y' Q]
-                       loopA_not_blocked_upd_unfold[of f state r E'  \<gamma> cards e x y
+                       maintain_forest_not_blocked_upd_unfold[of f state r E'  \<gamma> cards e x y
                                                             xy xx yy  x' y' nb nb']   
           simp: assms)+
 
-lemma loopA_induct: 
-  assumes "loopA_dom state"
-  assumes "\<And>state. \<lbrakk>loopA_dom state;
-                     loopA_call_cond state \<Longrightarrow> P (loopA_upd state)\<rbrakk> \<Longrightarrow> P state"
+lemma maintain_forest_induct: 
+  assumes "maintain_forest_dom state"
+  assumes "\<And>state. \<lbrakk>maintain_forest_dom state;
+                     maintain_forest_call_cond state \<Longrightarrow> P (maintain_forest_upd state)\<rbrakk> \<Longrightarrow> P state"
   shows "P state"
-proof(rule loopA.pinduct, goal_cases)
+proof(rule maintain_forest.pinduct, goal_cases)
   case 1
   then show ?case using assms by simp
 next
@@ -595,10 +618,10 @@ next
     apply(rule assms(2), simp add: 2)
     apply(rule back_subst[where a = state'])
     apply(rule 2(2)[of \<FF> f b r E' to_rdg \<gamma> cards \<FF>_imp e x y to_rdg' xy xx yy \<FF>' \<FF>_imp' x' y' Q f' b' E'' r' cards' nb nb' state'])  
-     using loopA_upd_unfold[of \<FF> state f b r E' to_rdg \<gamma> cards \<FF>_imp e x y to_rdg' xy xx yy \<FF>' \<FF>_imp' x' y' Q f' b'
+     using maintain_forest_upd_unfold[of \<FF> state f b r E' to_rdg \<gamma> cards \<FF>_imp e x y to_rdg' xy xx yy \<FF>' \<FF>_imp' x' y' Q f' b'
                               E'' r' cards' nb nb' state']
      (*Takes some time*)
-     by (auto elim!: loopA_call_condE[of state] 
+     by (auto elim!: maintain_forest_call_condE[of state] 
             simp add:  \<FF>_def f_def  b_def  r_def  E'_def to_rdg_def \<gamma>_def  e_def  x_def 
                  y_def to_rdg'_def xy_def  xx_def yy_def  \<FF>'_def x'_def y'_def Q_def f'_def  b'_def
                  E''_def r'_def  state'_def cards'_def cards_def same_card_sum \<FF>_imp_def \<FF>_imp'_def
@@ -611,8 +634,8 @@ subsection \<open>Invariants and Monotone Properties\<close>
 
 lemma invar_aux_pres_one_step:
   assumes "aux_invar state"
-          "loopA_call_cond state"
-  shows   "aux_invar (loopA_upd state)"
+          "maintain_forest_call_cond state"
+  shows   "aux_invar (maintain_forest_upd state)"
 proof-
   have all_invars: "invar_aux1 state" "invar_aux2 state" "invar_aux3 state" "invar_aux4 state"
                    "invar_aux6 state" "invar_aux8 state" "invar_aux7 state" "invar_aux9 state "
@@ -663,8 +686,8 @@ proof-
                                     balance := b',  representative := r',
                                     actives := E'', conv_to_rdg := to_rdg', comp_card := cards',
                                     \<FF>_imp:= \<FF>_imp', not_blocked := nb'\<rparr>"
-  have 10:"state' = loopA_upd state"
-    by(rule loopA_upd_unfold[OF a\<FF>_def f_def b_def r_def E'_def to_rdg_def \<gamma>_def cards_def \<FF>_imp_def e_def x_def y_def
+  have 10:"state' = maintain_forest_upd state"
+    by(rule maintain_forest_upd_unfold[OF a\<FF>_def f_def b_def r_def E'_def to_rdg_def \<gamma>_def cards_def \<FF>_imp_def e_def x_def y_def
                                 to_rdg'_def xy_def xx_def yy_def a\<FF>'_def \<FF>_imp'_def x'_def y'_def Q_def f'_def
                                 b'_def E''_def r'_def cards'_def nb_def nb'_def state'_def])
   define \<FF> where "\<FF> = to_graph \<FF>_imp" 
@@ -680,7 +703,7 @@ proof-
 
   have "\<exists> e. e \<in> to_set E' \<and> 8 * real N * \<gamma> < f e"
     unfolding E'_def \<gamma>_def f_def
-    apply(rule loopA_call_condE[OF assms(2)])
+    apply(rule maintain_forest_call_condE[OF assms(2)])
     using set_get(1-3)[OF set_invar_E', simplified E'_def] 
     by fastforce
 
@@ -688,7 +711,7 @@ proof-
     by auto
 
   have e_prop: "e \<in> to_set E' \<and> f e > 8 * real N *\<gamma>"
-    apply(rule loopA_call_condE[OF assms(2)])
+    apply(rule maintain_forest_call_condE[OF assms(2)])
     using   ee_prop E'_substE set_get(1-3)[OF set_invar_E'] 
     by (fastforce simp add: E'_def f_def e_def \<gamma>_def)
   have fste_V[simp]: "fst e \<in> \<V>" 
@@ -1500,9 +1523,9 @@ proof-
   thus ?thesis using 10 by simp
 qed
 
-lemma loopA_dom_upd:
-  assumes "loopA_dom (loopA_upd state)" "loopA_call_cond state" 
-  shows "loopA_dom state"
+lemma maintain_forest_dom_upd:
+  assumes "maintain_forest_dom (maintain_forest_upd state)" "maintain_forest_call_cond state" 
+  shows "maintain_forest_dom state"
 proof-
   define \<FF> where "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
@@ -1545,19 +1568,19 @@ proof-
                                     balance := b',  representative := r',
                                     actives := E'', conv_to_rdg := to_rdg', comp_card := cards',
                                     \<FF>_imp:= \<FF>_imp', not_blocked := nb'\<rparr>"
-  have 10:"state' = loopA_upd state"
-    by(rule loopA_upd_unfold[OF \<FF>_def f_def b_def r_def E'_def to_rdg_def \<gamma>_def cards_def \<FF>_imp_def e_def x_def y_def
+  have 10:"state' = maintain_forest_upd state"
+    by(rule maintain_forest_upd_unfold[OF \<FF>_def f_def b_def r_def E'_def to_rdg_def \<gamma>_def cards_def \<FF>_imp_def e_def x_def y_def
                                 to_rdg'_def xy_def xx_def yy_def \<FF>'_def \<FF>_imp'_def x'_def y'_def Q_def f'_def
                                 b'_def E''_def r'_def cards'_def nb_def nb'_def state'_def])
 
-  have 12: "loopA_dom state'"
+  have 12: "maintain_forest_dom state'"
     using assms 10 by simp
 
   have 13: "e = the ( get_from_set (\<lambda> e. 8 * real N * current_\<gamma> state < current_flow state e) (actives state))"
     by(simp add: e_def E'_def \<gamma>_def f_def)
 
-  show "loopA_dom state"
-  proof(rule loopA.domintros, goal_cases)
+  show "maintain_forest_dom state"
+  proof(rule maintain_forest.domintros, goal_cases)
     case (1 g h xeb ya)
     show ?case 
       apply(rule HOL.forw_subst[of _ state'])
@@ -1588,25 +1611,25 @@ proof-
   qed
 qed
 
-lemma loopA_invar_aux_pres:
-  assumes "loopA_dom state"
+lemma maintain_forest_invar_aux_pres:
+  assumes "maintain_forest_dom state"
           "aux_invar state"
-  shows   "aux_invar (loopA state)"
+  shows   "aux_invar (maintain_forest state)"
   using assms(2) 
-  apply(induction rule: loopA_induct[OF assms(1)])
-     using loopA_simps  invar_aux_pres_one_step 
-     by (fastforce intro: loopA_cases)
+  apply(induction rule: maintain_forest_induct[OF assms(1)])
+     using maintain_forest_simps  invar_aux_pres_one_step 
+     by (fastforce intro: maintain_forest_cases)
 
-lemma termination_of_loopA:
+lemma termination_of_maintain_forest:
   assumes "invar_aux1 state"
           "n = card (to_set (actives state))"
           "invar_aux17 state"
-  shows "loopA_dom state"
+  shows "maintain_forest_dom state"
   using assms 
 proof(induction n arbitrary: state rule: less_induct)
   case (less n)
   then show ?case 
-  proof(cases "loopA_call_cond state")
+  proof(cases "maintain_forest_call_cond state")
     case True
     define \<FF> where "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
@@ -1628,10 +1651,10 @@ proof(induction n arbitrary: state rule: less_induct)
   define y' where  "y' = r yy"
   define E'' where "E'' = filter (\<lambda> d. {r (fst d), r (snd d)} \<noteq> {x', y'}) E'"
 
-  have actives_upd:"E'' = actives (loopA_upd state)"
+  have actives_upd:"E'' = actives (maintain_forest_upd state)"
     using \<FF>_def f_def  r_def E'_def  \<gamma>_def e_def x_def y_def
                                  xy_def xx_def yy_def \<FF>'_def x'_def y'_def  E''_def cards_def 
-    by(intro loopA_upd_actives_unfold[of \<FF> state f r \<gamma> E' cards e x y xy xx], simp+)
+    by(intro maintain_forest_upd_actives_unfold[of \<FF> state f r \<gamma> E' cards e x y xy xx], simp+)
 
   have set_invar_E': "set_invar E'"
     using E'_def less invar_aux17_def by blast
@@ -1641,7 +1664,7 @@ proof(induction n arbitrary: state rule: less_induct)
 
   have "\<exists> e. e \<in> to_set E' \<and> 8 * real N * \<gamma> < f e"
     unfolding E'_def \<gamma>_def f_def
-    apply(rule loopA_call_condE[OF True])
+    apply(rule maintain_forest_call_condE[OF True])
     using set_get(1-3)[OF set_invar_E', simplified E'_def] 
     by fastforce
 
@@ -1649,12 +1672,12 @@ proof(induction n arbitrary: state rule: less_induct)
     by auto
 
   have e_prop: "e \<in> to_set E' \<and> f e > 8 * real N *\<gamma>"
-    apply(rule loopA_call_condE[OF True])
+    apply(rule maintain_forest_call_condE[OF True])
     using   ee_prop E'_substE set_get(1-3)[OF set_invar_E'] 
     by(fastforce simp add: E'_def f_def e_def \<gamma>_def)
 
   have e_in_E:"e \<in> to_set E'"
-    apply(rule loopA_call_condE[OF True])
+    apply(rule maintain_forest_call_condE[OF True])
     using  set_get(1-3)[OF set_invar_E', simplified E'_def]
     by(auto simp add:  e_def E'_def f_def \<gamma>_def)
 
@@ -1673,24 +1696,24 @@ proof(induction n arbitrary: state rule: less_induct)
   ultimately have 115: "card (to_set E'') < card (to_set E')"
     using e_in_E psubset_card_mono[of "to_set E'" "to_set E''"] by auto
 
-  have card_less: "card (to_set (actives (loopA_upd state))) < n"
+  have card_less: "card (to_set (actives (maintain_forest_upd state))) < n"
     using actives_upd 115 less(3)  E'_def by simp
 
-  have inva_aux1: "invar_aux1 (loopA_upd state)"
+  have inva_aux1: "invar_aux1 (maintain_forest_upd state)"
     using actives_upd 113 less(2) E'_def 
     by(auto elim: invar_aux1E intro: invar_aux1I)
 
-  have invar_aux17: "invar_aux17 (loopA_upd state)"
+  have invar_aux17: "invar_aux17 (maintain_forest_upd state)"
     using actives_upd  invar_filter[OF set_invar_E', of "(\<lambda> d. {r (fst d), r (snd d)} \<noteq> {x', y'})"]
     by(simp add:invar_aux17_def E''_def)
    
-  have "loopA_dom (loopA_upd state)"
+  have "maintain_forest_dom (maintain_forest_upd state)"
      using card_less invar_aux1_def[of state]  "113" E'_substE 
            invar_aux_pres_one_step[of state] inva_aux1 invar_aux17
-    by (auto intro: less(1)[of "card (to_set (actives (loopA_upd state)))"])
+    by (auto intro: less(1)[of "card (to_set (actives (maintain_forest_upd state)))"])
 
   thus ?thesis 
-    by(auto intro: loopA_dom_upd simp add: True)
+    by(auto intro: maintain_forest_dom_upd simp add: True)
   next
     case False
    define \<FF> where "\<FF> = Algo_state.\<FF> state"
@@ -1699,39 +1722,39 @@ proof(induction n arbitrary: state rule: less_induct)
    define \<gamma> where "\<gamma> = current_\<gamma> state"
    have "\<nexists> aa. get_from_set (\<lambda> e. f e > 8 * real N *\<gamma>) E' = Some aa"
      using False option.collapse
-     by(force split: if_split prod.splits simp add: E'_def f_def \<gamma>_def loopA_call_cond_def Let_def)  
+     by(force split: if_split prod.splits simp add: E'_def f_def \<gamma>_def maintain_forest_call_cond_def Let_def)  
    thus ?thesis
-    by (auto intro: loopA.domintros simp add: E'_def \<gamma>_def f_def )
+    by (auto intro: maintain_forest.domintros simp add: E'_def \<gamma>_def f_def )
   qed
 qed
 
-lemma termination_of_loopA':
+lemma termination_of_maintain_forest':
   assumes "aux_invar state"
-  shows "loopA_dom state"
-  using assms termination_of_loopA 
+  shows "maintain_forest_dom state"
+  using assms termination_of_maintain_forest 
   by(simp add: aux_invar_def)
 
 lemma invar_gamma_pres_one_step:
-  assumes "loopA_call_cond state"
+  assumes "maintain_forest_call_cond state"
           "invar_gamma state" 
-    shows "invar_gamma (loopA_upd state)"
+    shows "invar_gamma (maintain_forest_upd state)"
   using assms(2) 
-  by(auto elim: loopA_call_condE[OF assms(1)] 
-         split: if_split prod.split simp add: loopA_upd_def Let_def invar_gamma_def)
+  by(auto elim: maintain_forest_call_condE[OF assms(1)] 
+         split: if_split prod.split simp add: maintain_forest_upd_def Let_def invar_gamma_def)
 
 lemma invars_pres_one_step:
-  assumes "loopA_call_cond state"
+  assumes "maintain_forest_call_cond state"
           "aux_invar state"
   shows 
-        "thr \<ge> 0 \<Longrightarrow> invarA_1 thr state \<Longrightarrow> invarA_1 thr (loopA_upd state)"
+        "thr \<ge> 0 \<Longrightarrow> invarA_1 thr state \<Longrightarrow> invarA_1 thr (maintain_forest_upd state)"
 
         "thr2 \<ge> 0 \<Longrightarrow> invarA_1 thr2 state \<Longrightarrow> invarA_2 thr1 thr2 state 
          \<Longrightarrow> thr2 \<le> 2 * current_\<gamma> state \<Longrightarrow> thr1 \<le> 8*real N * current_\<gamma> state 
-         \<Longrightarrow> invarA_2 thr1 thr2 (loopA_upd state)"
+         \<Longrightarrow> invarA_2 thr1 thr2 (maintain_forest_upd state)"
 
         "invar_gamma state \<Longrightarrow> thr2 \<ge> 0  \<Longrightarrow>invarA_1 thr2 state \<Longrightarrow> invarA_2 thr1 thr2 state \<Longrightarrow>
          thr2 \<le> 2 * current_\<gamma> state \<Longrightarrow> thr1 = 8*real N * current_\<gamma> state \<Longrightarrow>
-         invar_isOptflow state \<Longrightarrow> invar_isOptflow (loopA_upd state)"
+         invar_isOptflow state \<Longrightarrow> invar_isOptflow (maintain_forest_upd state)"
 proof-
   define a\<FF> where "a\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
@@ -1774,8 +1797,8 @@ proof-
                                     balance := b',  representative := r',
                                     actives := E'', conv_to_rdg := to_rdg', comp_card := cards',
                                     \<FF>_imp:= \<FF>_imp', not_blocked := nb'\<rparr>"
-  have state_state':"state' = loopA_upd state"
-      by(rule loopA_upd_unfold[OF a\<FF>_def f_def b_def r_def E'_def to_rdg_def \<gamma>_def cards_def \<FF>_imp_def e_def x_def y_def
+  have state_state':"state' = maintain_forest_upd state"
+      by(rule maintain_forest_upd_unfold[OF a\<FF>_def f_def b_def r_def E'_def to_rdg_def \<gamma>_def cards_def \<FF>_imp_def e_def x_def y_def
                                 to_rdg'_def xy_def xx_def yy_def a\<FF>'_def \<FF>_imp'_def x'_def y'_def Q_def f'_def
                                 b'_def E''_def r'_def cards'_def nb_def nb'_def state'_def])
 
@@ -1797,7 +1820,7 @@ have set_invar_E': "set_invar E'"
 
   have "\<exists> e. e \<in> to_set E' \<and> 8 * real N * \<gamma> < f e"
     unfolding E'_def \<gamma>_def f_def
-    apply(rule loopA_call_condE[OF assms(1)])
+    apply(rule maintain_forest_call_condE[OF assms(1)])
     using set_get(1-3)[OF set_invar_E', simplified E'_def] 
     by fastforce
 
@@ -1805,7 +1828,7 @@ have set_invar_E': "set_invar E'"
     by auto
 
   have e_prop: "e \<in> to_set E' \<and> f e > 8 * real N *\<gamma>"
-    apply(rule loopA_call_condE[OF assms(1)])
+    apply(rule maintain_forest_call_condE[OF assms(1)])
     using   ee_prop E'_substE set_get(1-3)[OF set_invar_E'] 
     by(fastforce simp add: E'_def f_def e_def \<gamma>_def)
 
@@ -1971,7 +1994,7 @@ have set_invar_E': "set_invar E'"
    have distinctQ: "distinct Q"
      using qqq_prop  invar_aux_pres_one_step[OF assms(2) assms(1), simplified sym[OF state_state']] 
            x'_inVs x'_not_y'
-      by (auto intro: get_path_axioms(2)[of \<FF>_imp' x' qqq y'] 
+      by (auto intro: get_path_axioms_unfolded(2)[of \<FF>_imp' x' qqq y'] 
             simp add:  aux_invar_def invar_aux19_def invar_aux18_def state'_def Q_def )
 
     have oedge_of_Q:"oedge ` List.set (to_redge_path to_rdg' Q) = 
@@ -2011,7 +2034,7 @@ have set_invar_E': "set_invar E'"
       unfolding Q_def           
       apply (intro walk_betw_subset_conn_comp[of \<FF>' x' "get_path x' y' \<FF>_imp'" y', 
                OF from_directed_walk_to_undirected_walk[OF fit_together goodF']]) 
-      by(auto intro!: get_path_axioms(1)[of \<FF>_imp' x' qqq y', OF _ _ _ x'_inVs _ x'_not_y', simplified \<FF>_imp_def \<FF>_imp'_def \<FF>'_def ]
+      by(auto intro!: get_path_axioms_unfolded(1)[of \<FF>_imp' x' qqq y', OF _ _ _ x'_inVs _ x'_not_y', simplified \<FF>_imp_def \<FF>_imp'_def \<FF>'_def ]
                simp add: \<FF>_def \<FF>_imp_def \<FF>_imp'_def \<FF>'_def validF_def  invar_aux14_def state'_def
                          aux_invar_def invar_aux19_def invar_aux18_def) 
   qed
@@ -2046,7 +2069,7 @@ have set_invar_E': "set_invar E'"
 
     have Q_inF':"(List.set (edges_of_path Q)) \<subseteq>  \<FF>'"   
       using from_directed_walk_to_undirected_walk[OF fit_together goodF' 
-              axioms_conds3 get_path_axioms(1)[of \<FF>_imp' x' qqq y' Q, simplified Q_def, OF qqq_prop]]
+              axioms_conds3 get_path_axioms_unfolded(1)[of \<FF>_imp' x' qqq y' Q, simplified Q_def, OF qqq_prop]]
               invar_aux_pres_one_step[OF assms(2) assms(1), simplified sym[OF state_state']] qqq_prop 
               x'_inVs x'_not_y'
       by(auto intro!: path_edges_subset simp add: aux_invar_def invar_aux19_def invar_aux18_def state'_def walk_betw_def Q_def)
@@ -2057,12 +2080,12 @@ have set_invar_E': "set_invar E'"
 
       have lengthQ:"length Q \<ge> 2"
         apply(rule ccontr, rule sufficientE[of "length Q = 0 \<or> length Q = 1"], linarith)
-        using get_path_axioms(1)[of \<FF>_imp' x' qqq y' Q, simplified Q_def, OF qqq_prop] x'_not_y' 
+        using get_path_axioms_unfolded(1)[of \<FF>_imp' x' qqq y' Q, simplified Q_def, OF qqq_prop] x'_not_y' 
              hd_last_same[of Q] x'_inVs
              invar_aux_pres_one_step[OF assms(2) assms(1), simplified sym[OF state_state']] 
        by(auto simp add: aux_invar_def invar_aux19_def invar_aux18_def state'_def vwalk_bet_def Q_def)
      
-  show "thr \<ge> 0  \<Longrightarrow> invarA_1 thr state \<Longrightarrow> invarA_1 thr (loopA_upd state)"
+  show "thr \<ge> 0  \<Longrightarrow> invarA_1 thr state \<Longrightarrow> invarA_1 thr (maintain_forest_upd state)"
   proof-
     assume asm: "thr \<ge> 0"  "invarA_1 thr state"
     have bx':"\<bar> b x' \<bar> \<le> thr*card (connected_component \<FF> x')"
@@ -2087,7 +2110,7 @@ have set_invar_E': "set_invar E'"
               card_mono[of "connected_component \<FF>' v" "connected_component \<FF> v"] rev_finite_subset
         by (intro mult_left_mono, auto intro: mult_left_mono)
       done
-    ultimately show "invarA_1 thr (loopA_upd state)"
+    ultimately show "invarA_1 thr (maintain_forest_upd state)"
       using sym[OF state_state'] asm(1) sym[OF F_rewrite]
       unfolding invarA_1_def state'_def \<FF>_imp_def  b'_def \<FF>_def \<FF>_imp'_def \<FF>'_def
       by auto
@@ -2095,11 +2118,11 @@ have set_invar_E': "set_invar E'"
     
   show "thr2 \<ge> 0  \<Longrightarrow>invarA_1 thr2 state \<Longrightarrow> invarA_2 thr1 thr2 state \<Longrightarrow>
         thr2 \<le> 2 * current_\<gamma> state \<Longrightarrow> thr1 \<le> 8*real N * current_\<gamma> state
-               \<Longrightarrow>invarA_2 thr1 thr2 (loopA_upd state)"    
+               \<Longrightarrow>invarA_2 thr1 thr2 (maintain_forest_upd state)"    
     proof-
       assume asm: "thr2 \<ge> 0"  "invarA_1 thr2 state" "invarA_2 thr1 thr2 state"
                   "thr2 \<le> 2 * current_\<gamma> state" "thr1 \<le> 8*real N * current_\<gamma> state"
-    show " invarA_2 thr1 thr2 (loopA_upd state)"
+    show " invarA_2 thr1 thr2 (maintain_forest_upd state)"
     proof-
       have "d \<in> to_rdgs to_pair to_rdg' (to_graph \<FF>_imp') \<Longrightarrow>
          thr1 - thr2 * real (card (connected_component (to_graph \<FF>_imp') (fst (oedge d)))) < f' (oedge d)" for d
@@ -2342,7 +2365,7 @@ have set_invar_E': "set_invar E'"
   have walk_betwQ: "walk_betw \<FF>' x' Q y'"
     apply(rule from_directed_walk_to_undirected_walk[OF fit_together goodF' ])
     using qqq_prop invar_aux_pres_one_step[OF assms(2) assms(1), simplified sym[OF state_state']] x'_inVs x'_not_y'
-    by(auto intro: get_path_axioms(1) simp add: aux_invar_def invar_aux19_def invar_aux18_def state'_def Q_def
+    by(auto intro: get_path_axioms_unfolded(1) simp add: aux_invar_def invar_aux19_def invar_aux18_def state'_def Q_def
                                                 invar_aux14_def validF_def \<FF>'_def)
    
   have hd_rev_Q:"hd (rev Q) = y'"
@@ -2620,7 +2643,7 @@ qed
 
   thus "invar_gamma state \<Longrightarrow> thr2 \<ge> 0  \<Longrightarrow>invarA_1 thr2 state \<Longrightarrow> invarA_2 thr1 thr2 state \<Longrightarrow>
          thr2 \<le> 2 * current_\<gamma> state \<Longrightarrow> thr1 = 8*real N * current_\<gamma> state \<Longrightarrow>
-         invar_isOptflow state \<Longrightarrow> invar_isOptflow (loopA_upd state)"
+         invar_isOptflow state \<Longrightarrow> invar_isOptflow (maintain_forest_upd state)"
     using sym[OF state_state']
     by(simp add: invar_isOptflow_def state'_def f_def b_def)
 qed 
@@ -2628,40 +2651,40 @@ qed
 text \<open>The monotone properties\<close>
 
 lemma mono_one_step_gamma:
-  assumes "loopA_call_cond state"
-  shows "current_\<gamma> state = current_\<gamma> (loopA_upd state)"
-  by(auto elim: loopA_call_condE[OF assms] 
+  assumes "maintain_forest_call_cond state"
+  shows "current_\<gamma> state = current_\<gamma> (maintain_forest_upd state)"
+  by(auto elim: maintain_forest_call_condE[OF assms] 
          split: if_split prod.splits
-         simp add: loopA_upd_def Let_def)
+         simp add: maintain_forest_upd_def Let_def)
 
 lemma mono_one_step_actives:
-  assumes "loopA_call_cond state" "invar_aux17 state"
-  shows "to_set (actives (loopA_upd state)) \<subseteq> to_set (actives state)"
+  assumes "maintain_forest_call_cond state" "invar_aux17 state"
+  shows "to_set (actives (maintain_forest_upd state)) \<subseteq> to_set (actives state)"
   using set_filter(1)[OF assms(2)[simplified invar_aux17_def]]
-  by(auto elim: loopA_call_condE[OF assms(1)] 
-         split: if_split prod.splits simp add: loopA_upd_def Let_def)
+  by(auto elim: maintain_forest_call_condE[OF assms(1)] 
+         split: if_split prod.splits simp add: maintain_forest_upd_def Let_def)
 
 lemma mono_one_step:
-  assumes "loopA_call_cond state"
+  assumes "maintain_forest_call_cond state"
           "aux_invar state" 
   shows 
-        "invar_gamma state \<Longrightarrow> \<Phi> (loopA_upd state) \<le> \<Phi> state + 1" 
+        "invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state + 1" 
 
         "(to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state))) \<subseteq> 
-         (to_rdgs to_pair (conv_to_rdg (loopA_upd state)) (to_graph (\<FF>_imp (loopA_upd state))))"
+         (to_rdgs to_pair (conv_to_rdg (maintain_forest_upd state)) (to_graph (\<FF>_imp (maintain_forest_upd state))))"
 
-        "card (comps \<V> (to_graph (\<FF>_imp (loopA_upd state)))) +1 = card (comps \<V> (to_graph (\<FF>_imp state)))"
+        "card (comps \<V> (to_graph (\<FF>_imp (maintain_forest_upd state)))) +1 = card (comps \<V> (to_graph (\<FF>_imp state)))"
 
-        "invar_gamma state \<Longrightarrow> \<Phi> (loopA_upd state) \<le> \<Phi> state + (card (comps \<V> (to_graph (\<FF>_imp state)))) - 
-                                                     (card (comps \<V> (to_graph (\<FF>_imp (loopA_upd state)))))"
+        "invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state + (card (comps \<V> (to_graph (\<FF>_imp state)))) - 
+                                                     (card (comps \<V> (to_graph (\<FF>_imp (maintain_forest_upd state)))))"
 
-        "\<And> d. d \<in> (UNIV -  oedge ` (to_rdgs to_pair (conv_to_rdg (loopA_upd state)) 
-                                  (to_graph (\<FF>_imp(loopA_upd state))) ))  \<Longrightarrow>
-               current_flow (loopA_upd state) d =  current_flow state d"
-        "to_graph (\<FF>_imp (loopA_upd state)) \<supset> to_graph (\<FF>_imp state)"
+        "\<And> d. d \<in> (UNIV -  oedge ` (to_rdgs to_pair (conv_to_rdg (maintain_forest_upd state)) 
+                                  (to_graph (\<FF>_imp(maintain_forest_upd state))) ))  \<Longrightarrow>
+               current_flow (maintain_forest_upd state) d =  current_flow state d"
+        "to_graph (\<FF>_imp (maintain_forest_upd state)) \<supset> to_graph (\<FF>_imp state)"
         "\<exists> e . e \<in> to_set (actives state) \<and> 8 * real N * current_\<gamma> state < current_flow state e 
                \<and> connected_component (to_graph (\<FF>_imp  state)) (fst e)
-              \<subset> connected_component (to_graph (\<FF>_imp (loopA_upd state))) (fst e)"
+              \<subset> connected_component (to_graph (\<FF>_imp (maintain_forest_upd state))) (fst e)"
 proof-
   define a\<FF> where "a\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
@@ -2704,8 +2727,8 @@ proof-
                                     balance := b',  representative := r',
                                     actives := E'', conv_to_rdg := to_rdg', comp_card := cards',
                                     \<FF>_imp:= \<FF>_imp', not_blocked := nb'\<rparr>"
-  have state_state':"state' = loopA_upd state"
-    by(rule loopA_upd_unfold[OF a\<FF>_def f_def b_def r_def E'_def to_rdg_def  \<gamma>_def cards_def \<FF>_imp_def e_def x_def y_def
+  have state_state':"state' = maintain_forest_upd state"
+    by(rule maintain_forest_upd_unfold[OF a\<FF>_def f_def b_def r_def E'_def to_rdg_def  \<gamma>_def cards_def \<FF>_imp_def e_def x_def y_def
                                 to_rdg'_def xy_def xx_def yy_def a\<FF>'_def \<FF>_imp'_def x'_def y'_def Q_def f'_def
                                 b'_def E''_def r'_def cards'_def nb_def nb'_def state'_def])
 
@@ -2717,7 +2740,7 @@ have set_invar_E': "set_invar E'"
 
   have "\<exists> e. e \<in> to_set E' \<and> 8 * real N * \<gamma> < f e"
     unfolding E'_def \<gamma>_def f_def
-    apply(rule loopA_call_condE[OF assms(1)])
+    apply(rule maintain_forest_call_condE[OF assms(1)])
     using set_get(1-3)[OF set_invar_E', simplified E'_def] 
     by fastforce
 
@@ -2725,7 +2748,7 @@ have set_invar_E': "set_invar E'"
     by auto
 
   have e_prop: "e \<in> to_set E' \<and> f e > 8 * real N *\<gamma>"
-    apply(rule loopA_call_condE[OF assms(1)])
+    apply(rule maintain_forest_call_condE[OF assms(1)])
     using ee_prop E'_substE set_get(1-3)[OF set_invar_E'] 
     by (fastforce simp add: E'_def f_def e_def \<gamma>_def)
 
@@ -2886,7 +2909,7 @@ have set_invar_E': "set_invar E'"
    have distinctQ: "distinct Q"
      using qqq_prop  invar_aux_pres_one_step[OF assms(2) assms(1), simplified sym[OF state_state']] 
            x'_inVs x'_not_y'
-      by (auto intro: get_path_axioms(2)[of \<FF>_imp' x' qqq y'] simp add: aux_invar_def invar_aux19_def invar_aux18_def state'_def Q_def )
+      by (auto intro: get_path_axioms_unfolded(2)[of \<FF>_imp' x' qqq y'] simp add: aux_invar_def invar_aux19_def invar_aux18_def state'_def Q_def )
      
     have oedge_of_Q:"oedge ` List.set (to_redge_path to_rdg' Q) = 
           oedge ` to_rdgs to_pair to_rdg' (List.set (edges_of_path Q))"
@@ -2922,7 +2945,7 @@ have set_invar_E': "set_invar E'"
             using comps_representative cards_same_cond
             by(auto split: if_split simp add:  y'_def x'_def xx_def yy_def xy_def)
 
-  show goal3:" invar_gamma state \<Longrightarrow> \<Phi> (loopA_upd state) \<le> \<Phi> state + 1"
+  show goal3:" invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state + 1"
   proof-
     assume invar_gamma_asm: "invar_gamma state "
     have invar6_asm: "invar_aux11 state" using assms unfolding aux_invar_def by simp
@@ -2969,25 +2992,25 @@ have set_invar_E': "set_invar E'"
            \<lceil> \<bar> balance state y' \<bar> / (current_\<gamma> state) - (1 - \<epsilon>)\<rceil> + 1
                       + \<lceil> \<bar> balance state x'\<bar> / (current_\<gamma> state) - (1 - \<epsilon>)\<rceil>"
       unfolding state'_def b_def by simp
-    show "\<Phi> (loopA_upd state) \<le> \<Phi> state + 1"
+    show "\<Phi> (maintain_forest_upd state) \<le> \<Phi> state + 1"
       using sym[OF state_state'] ineq by (auto simp add: 10 11 12)
   qed
 
-   show goal4:"card (comps \<V> (to_graph (Algo_state.\<FF>_imp (loopA_upd state)))) +1 = 
+   show goal4:"card (comps \<V> (to_graph (Algo_state.\<FF>_imp (maintain_forest_upd state)))) +1 = 
                                    card (comps \<V> (to_graph (Algo_state.\<FF>_imp state))) "
     proof-
       have invar6_asm:"invar_aux11 state"
         using assms(2) by (simp add: aux_invar_def invar_aux11_def)
-      show "card (comps \<V> (to_graph (Algo_state.\<FF>_imp (loopA_upd state)))) +1 = 
+      show "card (comps \<V> (to_graph (Algo_state.\<FF>_imp (maintain_forest_upd state)))) +1 = 
                    card (comps \<V> (to_graph (Algo_state.\<FF>_imp state)))"
         using  sym[OF state_state'] 1100 invar6_asm fste_V snde_V  \<V>_finite assms(2)  F_rewrite 
        by (auto intro: card_decrease_component_join[simplified]
              simp add: state'_def  \<FF>'_def \<FF>_def aux_invar_def invar_aux5_def \<FF>_imp_def \<FF>_imp'_def) 
     qed
 
-    show "invar_gamma state \<Longrightarrow> \<Phi> (loopA_upd state) \<le> \<Phi> state +
+    show "invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state +
   (card (comps \<V> (to_graph (Algo_state.\<FF>_imp state)))) - 
-                                            (card (comps \<V> (to_graph (Algo_state.\<FF>_imp (loopA_upd state)))))"
+                                            (card (comps \<V> (to_graph (Algo_state.\<FF>_imp (maintain_forest_upd state)))))"
     proof-
       assume invar6_asm: "invar_gamma state"   
       have invar6_asm':"invar_aux11 state"
@@ -2998,15 +3021,15 @@ have set_invar_E': "set_invar E'"
       moreover have "connected_component (to_graph \<FF>_imp) (snd e) \<in> 
                 (comps \<V> (to_graph (Algo_state.\<FF>_imp state)))"
         using snde_V by (simp add: comps_def \<FF>_imp_def)
-      ultimately show " \<Phi> (loopA_upd state) \<le> \<Phi> state + card (comps \<V> (to_graph (Algo_state.\<FF>_imp state))) - 
-                                           card (comps \<V> (to_graph (Algo_state.\<FF>_imp (loopA_upd state))))"       
+      ultimately show " \<Phi> (maintain_forest_upd state) \<le> \<Phi> state + card (comps \<V> (to_graph (Algo_state.\<FF>_imp state))) - 
+                                           card (comps \<V> (to_graph (Algo_state.\<FF>_imp (maintain_forest_upd state))))"       
       using goal4 goal3 invar6_asm
       by simp
   qed
 
     have Q_inF':"(List.set (edges_of_path Q)) \<subseteq>  \<FF>'"   
       using from_directed_walk_to_undirected_walk[OF fit_together goodF'
-              axioms_conds3 get_path_axioms(1)[of \<FF>_imp' x' qqq y' Q, simplified Q_def, OF qqq_prop]]
+              axioms_conds3 get_path_axioms_unfolded(1)[of \<FF>_imp' x' qqq y' Q, simplified Q_def, OF qqq_prop]]
               invar_aux_pres_one_step[OF assms(2) assms(1), simplified sym[OF state_state']] qqq_prop 
               x'_inVs x'_not_y'
       by(fastforce intro!: path_edges_subset[of \<FF>' Q] 
@@ -3026,29 +3049,29 @@ have set_invar_E': "set_invar E'"
     qed
   qed
 
-  thus "\<And> d. d\<in>UNIV - oedge ` to_rdgs to_pair (conv_to_rdg (loopA_upd state))
-                                                   (to_graph (Algo_state.\<FF>_imp (loopA_upd state))) \<Longrightarrow>
-       current_flow (loopA_upd state) d = current_flow state d"
+  thus "\<And> d. d\<in>UNIV - oedge ` to_rdgs to_pair (conv_to_rdg (maintain_forest_upd state))
+                                                   (to_graph (Algo_state.\<FF>_imp (maintain_forest_upd state))) \<Longrightarrow>
+       current_flow (maintain_forest_upd state) d = current_flow state d"
     apply(subst sym[OF state_state'])+
     apply(subst (asm)sym[OF state_state'])+
     by(simp add: F_rewrite state'_def  f_def \<FF>'_def \<FF>_def)
 
   show "to_rdgs to_pair (conv_to_rdg state) (to_graph (Algo_state.\<FF>_imp state))
-        \<subseteq> to_rdgs to_pair (conv_to_rdg (loopA_upd state)) (to_graph (Algo_state.\<FF>_imp (loopA_upd state)))"
+        \<subseteq> to_rdgs to_pair (conv_to_rdg (maintain_forest_upd state)) (to_graph (Algo_state.\<FF>_imp (maintain_forest_upd state)))"
     apply(subst sym[OF state_state']|subst state'_def)+
      apply simp
     apply(subst concretization_of_F'[simplified sym[OF F_rewrite]])
     using "1100" new_edge_disjoint_components[of "fst e" "snd e"]  local.\<FF>_def F_rewrite
     unfolding to_rdg_def \<FF>_def  to_rdgs_def \<FF>_imp_def 
     by (metis (no_types, lifting) Un_iff insert_absorb single_diff_remove subsetI)
-  show "to_graph (Algo_state.\<FF>_imp state) \<subset> to_graph (Algo_state.\<FF>_imp (loopA_upd state))"
+  show "to_graph (Algo_state.\<FF>_imp state) \<subset> to_graph (Algo_state.\<FF>_imp (maintain_forest_upd state))"
     using  add_eq_self_zero goal4 less_one 
-    loopA_upd_Forest'_impl_unfold[OF \<FF>_imp_def f_def E'_def \<gamma>_def e_def \<FF>_imp'_def]
+    maintain_forest_upd_Forest'_impl_unfold[OF \<FF>_imp_def f_def E'_def \<gamma>_def e_def \<FF>_imp'_def]
     order_less_irrefl psubsetI subset_insertI \<FF>'_def \<FF>_def F_rewrite \<FF>_imp_def by auto
   show "\<exists>e. e \<in> to_set (actives state) \<and>
         8 * real N * current_\<gamma> state < current_flow state e \<and>
         connected_component (to_graph (Algo_state.\<FF>_imp  state)) (fst e)
-        \<subset> connected_component (to_graph (Algo_state.\<FF>_imp (loopA_upd state))) (fst e)"
+        \<subset> connected_component (to_graph (Algo_state.\<FF>_imp (maintain_forest_upd state))) (fst e)"
     using E'_def  \<gamma>_def e_prop f_def F_rewrite sym[OF state_state']  1100  
           connected_components_member_eq[of "snd e"  "to_graph (Algo_state.\<FF>_imp state)" "fst e"] 
           insert_edge_endpoints_same_component[OF reflexive, of "to_graph (Algo_state.\<FF>_imp state)" "fst e" "snd e"]
@@ -3058,32 +3081,32 @@ qed
 
 lemma gamma_pres: 
   assumes "aux_invar state"
-  shows "current_\<gamma> (loopA state) = current_\<gamma> state"
+  shows "current_\<gamma> (maintain_forest state) = current_\<gamma> state"
   using assms
-  apply(induction rule: loopA_induct)
+  apply(induction rule: maintain_forest_induct)
  subgoal
-  using  assms termination_of_loopA[OF _ refl]
+  using  assms termination_of_maintain_forest[OF _ refl]
   by(simp add: aux_invar_def)
   subgoal for state
     using  mono_one_step_gamma[of state]
            invar_aux_pres_one_step[of state] 
-    by (auto intro: loopA_cases[of state] 
-          simp add: loopA_simps)
+    by (auto intro: maintain_forest_cases[of state] 
+          simp add: maintain_forest_simps)
   done
 
-theorem loopA_invar_gamma_pres:
+theorem maintain_forest_invar_gamma_pres:
   assumes "aux_invar state"
-  shows "invar_gamma state \<Longrightarrow> invar_gamma (loopA state)"
+  shows "invar_gamma state \<Longrightarrow> invar_gamma (maintain_forest state)"
   using assms 
-  apply(induction rule: loopA_induct[of state])
+  apply(induction rule: maintain_forest_induct[of state])
   subgoal
-  using  assms termination_of_loopA[OF _ refl]
+  using  assms termination_of_maintain_forest[OF _ refl]
  by(simp add: aux_invar_def)
   subgoal for state
     using  invar_gamma_pres_one_step[of state]
            invar_aux_pres_one_step[of state] 
-    by (auto intro: loopA_cases[of state] 
-          simp add: loopA_simps)
+    by (auto intro: maintain_forest_cases[of state] 
+          simp add: maintain_forest_simps)
   done
 
 lemma invarA2_pres: 
@@ -3095,21 +3118,21 @@ lemma invarA2_pres:
    "thr2 \<le> 2 * current_\<gamma> state"
    "thr1 \<le> 8 * real N * current_\<gamma> state"
 shows
-     "invarA_2 thr1 thr2 (loopA state)"
-using assms proof(induction rule: loopA_induct[where state=state])
+     "invarA_2 thr1 thr2 (maintain_forest state)"
+using assms proof(induction rule: maintain_forest_induct[where state=state])
   case 1
   then show ?case 
-  using  assms termination_of_loopA[OF _ refl]
+  using  assms termination_of_maintain_forest[OF _ refl]
   by(simp add: aux_invar_def)
 next
   case (2 state)
   note IH = this
   show ?case 
-  proof(cases rule: loopA_cases[of state])
+  proof(cases rule: maintain_forest_cases[of state])
     case 1
     then show ?thesis 
       using 2 
-      by (auto simp add: loopA_simps(2))
+      by (auto simp add: maintain_forest_simps(2))
   next
     case 2
     then show ?thesis 
@@ -3119,41 +3142,41 @@ next
               mono_one_step_gamma[of state] IH 2
         by (auto  elim:  aux_invarE 
                  intro: IH(2) 
-              simp add: loopA_simps(1))
+              simp add: maintain_forest_simps(1))
   qed 
 qed
 
-theorem loopB_entryF: 
+theorem send_flow_entryF: 
   assumes "aux_invar state" 
-          "loopA_entry state"
+          "maintain_forest_entry state"
           "invar_gamma state"
           "(\<gamma>::real) = current_\<gamma> state"
           "invarA_1 (2 * (\<gamma>::real)) state"
           "invarA_2 (8 * N * (\<gamma>::real))  (2 * (\<gamma>::real)) state"
-  shows "loopB_entryF (loopA state)"
-  unfolding loopB_entryF_def
+  shows "send_flow_entryF (maintain_forest state)"
+  unfolding send_flow_entryF_def
   proof(rule, goal_cases)
     case (1 e)
     hence e_in_E:"e \<in>  \<E>"
-      using invar_aux3_def[of "loopA state"]
-            loopA_invar_aux_pres[of state, OF _  assms(1)]
-            termination_of_loopA[OF _ refl]
+      using invar_aux3_def[of "maintain_forest state"]
+            maintain_forest_invar_aux_pres[of state, OF _  assms(1)]
+            termination_of_maintain_forest[OF _ refl]
             assms(1) by(auto simp add: aux_invar_def)     
-    have gamma_same_after_loopA: "current_\<gamma> (loopA state) = \<gamma>"
+    have gamma_same_after_maintain_forest: "current_\<gamma> (maintain_forest state) = \<gamma>"
       using assms gamma_pres[OF assms(1)] by simp
-    have " invarA_2 (real (8 * N) * \<gamma>) (2 * \<gamma>) (local.loopA state)"
+    have " invarA_2 (real (8 * N) * \<gamma>) (2 * \<gamma>) (local.maintain_forest state)"
       using assms
       by(intro invarA2_pres[OF assms(1), of "2*\<gamma> " "8*N*\<gamma> "], auto simp add: invar_gamma_def)
-    hence aa:"(current_flow (local.loopA state)) e > 
-             8*N*\<gamma> - 2 * \<gamma> * card (connected_component (to_graph (\<FF>_imp (local.loopA state))) (fst e))"
+    hence aa:"(current_flow (local.maintain_forest state)) e > 
+             8*N*\<gamma> - 2 * \<gamma> * card (connected_component (to_graph (\<FF>_imp (local.maintain_forest state))) (fst e))"
       using 1 by(auto simp add: invarA_2_def)
-    have bb:"card (connected_component (to_graph (\<FF>_imp (local.loopA state))) (fst e)) \<le> N"
-      using \<V>_finite  invar_aux10_def[of "(local.loopA state)"] e_in_E
-            loopA_invar_aux_pres[of state, OF _  assms(1)]
-            termination_of_loopA[OF _ refl] assms(1) make_pair[OF refl refl, of e]
+    have bb:"card (connected_component (to_graph (\<FF>_imp (local.maintain_forest state))) (fst e)) \<le> N"
+      using \<V>_finite  invar_aux10_def[of "(local.maintain_forest state)"] e_in_E
+            maintain_forest_invar_aux_pres[of state, OF _  assms(1)]
+            termination_of_maintain_forest[OF _ refl] assms(1) make_pair[OF refl refl, of e]
       by(auto simp add: aux_invar_def  N_def image_def dVs_def) (smt (z3) card_mono insertI1)
     show ?case 
-      using assms gamma_same_after_loopA  bb aa assms 
+      using assms gamma_same_after_maintain_forest  bb aa assms 
       by (auto intro: order.strict_trans1[of _ 
                  " 8*N*\<gamma> - 2 * \<gamma> * card (_ (_ (_ (_ state))) (fst e))"] simp add: invar_gamma_def )
   qed
@@ -3161,27 +3184,27 @@ theorem loopB_entryF:
 lemma Phi_increase: 
   assumes "aux_invar state"
           "invar_gamma state"
-    shows "\<Phi> (loopA state) \<le> \<Phi> state + (card (comps \<V> (to_graph (\<FF>_imp state)))) - 
-                                    (card (comps \<V> (to_graph (\<FF>_imp(loopA state)))))"
+    shows "\<Phi> (maintain_forest state) \<le> \<Phi> state + (card (comps \<V> (to_graph (\<FF>_imp state)))) - 
+                                    (card (comps \<V> (to_graph (\<FF>_imp(maintain_forest state)))))"
   using assms 
-  apply(induction rule: loopA_induct[of state])
-  subgoal using assms termination_of_loopA[OF _ refl]
+  apply(induction rule: maintain_forest_induct[of state])
+  subgoal using assms termination_of_maintain_forest[OF _ refl]
       by(simp add: aux_invar_def)
   subgoal for state
-      using loopA_simps[of state] 
+      using maintain_forest_simps[of state] 
            invar_aux_pres_one_step[of state]
            invar_gamma_pres_one_step[of state]
            mono_one_step(4)[of state] 
-      by (auto intro: loopA_cases[of state])
+      by (auto intro: maintain_forest_cases[of state])
     done  
 
 theorem Phi_increase_below_N:
  assumes "aux_invar state"
          "invar_gamma state"
-   shows "\<Phi> (loopA state) \<le> \<Phi> state + N"
-  using  Phi_increase[of state, OF assms] loopA_invar_aux_pres[of state] assms
+   shows "\<Phi> (maintain_forest state) \<le> \<Phi> state + N"
+  using  Phi_increase[of state, OF assms] maintain_forest_invar_aux_pres[of state] assms
          number_comps_below_vertex_card[of "to_graph (\<FF>_imp state)" \<V>, OF _ \<V>_finite]
-         termination_of_loopA
+         termination_of_maintain_forest
   by(simp add:  aux_invar_def invar_aux5_def N_def)
 
 lemma to_rdgs_mono: "A \<subseteq> B \<Longrightarrow> to_rdgs t1 t2 A \<subseteq> to_rdgs t1 t2 B" for A B
@@ -3190,38 +3213,38 @@ lemma to_rdgs_mono: "A \<subseteq> B \<Longrightarrow> to_rdgs t1 t2 A \<subsete
 lemma F_superset:
   assumes "aux_invar state"
   shows "to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)) \<subseteq> 
-         to_rdgs to_pair (conv_to_rdg (loopA state)) (to_graph (\<FF>_imp (loopA state)))"
+         to_rdgs to_pair (conv_to_rdg (maintain_forest state)) (to_graph (\<FF>_imp (maintain_forest state)))"
   using assms 
-  apply(induction rule: loopA_induct[of state])
-  subgoal using assms termination_of_loopA
+  apply(induction rule: maintain_forest_induct[of state])
+  subgoal using assms termination_of_maintain_forest
     by(simp add: aux_invar_def)
   subgoal for state
-     using mono_one_step(2)[of state] loopA_simps[of state] 
+     using mono_one_step(2)[of state] maintain_forest_simps[of state] 
            invar_aux_pres_one_step(1)[of state]
-      by (fastforce intro: loopA_cases[of state])    
+      by (fastforce intro: maintain_forest_cases[of state])    
     done 
 
 lemma actives_superset:
   assumes "aux_invar state"
-  shows "to_set (actives (loopA state)) \<subseteq> to_set (actives state)"
+  shows "to_set (actives (maintain_forest state)) \<subseteq> to_set (actives state)"
   using assms 
-  apply(induction rule: loopA_induct[of state])
-  subgoal using assms termination_of_loopA
+  apply(induction rule: maintain_forest_induct[of state])
+  subgoal using assms termination_of_maintain_forest
     by(simp add: aux_invar_def)
   subgoal for state
-     using mono_one_step_actives[of state, OF _ invar_aux17_from_aux_invar] loopA_simps[of state] 
+     using mono_one_step_actives[of state, OF _ invar_aux17_from_aux_invar] maintain_forest_simps[of state] 
            invar_aux_pres_one_step(1)[of state] 
-      by (cases rule: loopA_cases[of state], auto)    
+      by (cases rule: maintain_forest_cases[of state], auto)    
     done 
 
 lemma outside_F_no_flow_change:
   assumes "aux_invar state"
-  shows   "\<And> d. d \<in> (UNIV -  oedge ` (to_rdgs to_pair (conv_to_rdg (loopA state))
-                                  (to_graph (\<FF>_imp(loopA state))))) \<Longrightarrow>
-               current_flow (loopA state) d =  current_flow state d"
+  shows   "\<And> d. d \<in> (UNIV -  oedge ` (to_rdgs to_pair (conv_to_rdg (maintain_forest state))
+                                  (to_graph (\<FF>_imp(maintain_forest state))))) \<Longrightarrow>
+               current_flow (maintain_forest state) d =  current_flow state d"
   using assms 
-proof(induction rule: loopA_induct[of state, 
-        OF termination_of_loopA[of _ "card (to_set  (actives state))"], simplified])
+proof(induction rule: maintain_forest_induct[of state, 
+        OF termination_of_maintain_forest[of _ "card (to_set  (actives state))"], simplified])
   case 1
   then show ?case 
     using assms unfolding aux_invar_def by simp
@@ -3233,55 +3256,55 @@ next
   case (3 state)
   note IH = this
   then show ?case 
-  proof(cases rule: loopA_cases[of state])
+  proof(cases rule: maintain_forest_cases[of state])
     case 1
     then show ?thesis 
-    using loopA_simps(2)loopA_simps(2) IH by auto
+    using maintain_forest_simps(2)maintain_forest_simps(2) IH by auto
   next
     case 2
-    have dom:"loopA_dom state"
-    using IH termination_of_loopA
+    have dom:"maintain_forest_dom state"
+    using IH termination_of_maintain_forest
     unfolding aux_invar_def by simp
     then show ?thesis 
-    apply(subst loopA_simps(1)[of state], simp add: dom, simp add: 2)+
+    apply(subst maintain_forest_simps(1)[of state], simp add: dom, simp add: 2)+
     proof(goal_cases)
       case 1
-      have cc:"to_rdgs to_pair (conv_to_rdg (loopA_upd state)) (to_graph (\<FF>_imp (loopA_upd state)))
-            \<subseteq> to_rdgs to_pair (conv_to_rdg (local.loopA (loopA_upd state)))
-           (to_graph (\<FF>_imp (local.loopA (loopA_upd state))))"
+      have cc:"to_rdgs to_pair (conv_to_rdg (maintain_forest_upd state)) (to_graph (\<FF>_imp (maintain_forest_upd state)))
+            \<subseteq> to_rdgs to_pair (conv_to_rdg (local.maintain_forest (maintain_forest_upd state)))
+           (to_graph (\<FF>_imp (local.maintain_forest (maintain_forest_upd state))))"
         using invar_aux_pres_one_step[of state] IH 2 
-        by(auto intro!:  F_superset[of "loopA_upd state"])
-      have "current_flow (local.loopA (loopA_upd state)) d = current_flow (loopA_upd state) d"
-        using 2  cc IH(3) loopA_simps(1)[of state, OF dom 2] 
+        by(auto intro!:  F_superset[of "maintain_forest_upd state"])
+      have "current_flow (local.maintain_forest (maintain_forest_upd state)) d = current_flow (maintain_forest_upd state) d"
+        using 2  cc IH(3) maintain_forest_simps(1)[of state, OF dom 2] 
               invar_aux_pres_one_step[of state, OF IH(4) 2] 
         by (auto intro: IH(2))
-      moreover have "current_flow (loopA_upd state) d = current_flow state d"
+      moreover have "current_flow (maintain_forest_upd state) d = current_flow state d"
         using mono_one_step(5)[of state d, OF 2 IH(4)]  3(3) cc 
-              2 dom loopA_simps(1) by auto    
+              2 dom maintain_forest_simps(1) by auto    
       ultimately show ?case by simp
     qed
   qed    
 qed 
    
-theorem loopA_invar_integral_pres:
+theorem maintain_forest_invar_integral_pres:
   assumes "aux_invar state" "invar_integral state"
-  shows "invar_integral (loopA state)"
+  shows "invar_integral (maintain_forest state)"
   unfolding invar_integral_def
 proof
   fix e
-  assume e_asm:" e \<in> to_set (actives (loopA state))"
-  hence "e \<notin> oedge ` to_rdgs to_pair (conv_to_rdg (loopA state)) (to_graph (\<FF>_imp (loopA state)))"
-    using loopA_invar_aux_pres[of state, OF termination_of_loopA]
+  assume e_asm:" e \<in> to_set (actives (maintain_forest state))"
+  hence "e \<notin> oedge ` to_rdgs to_pair (conv_to_rdg (maintain_forest state)) (to_graph (\<FF>_imp (maintain_forest state)))"
+    using maintain_forest_invar_aux_pres[of state, OF termination_of_maintain_forest]
           assms(1) 
     unfolding aux_invar_def invar_aux4_def 
     by auto
-  hence "current_flow (loopA state) e = current_flow state e"
+  hence "current_flow (maintain_forest state) e = current_flow state e"
     using outside_F_no_flow_change[of state e] assms(1) by simp
-  moreover have "current_\<gamma> (local.loopA state) = current_\<gamma>  state"
+  moreover have "current_\<gamma> (local.maintain_forest state) = current_\<gamma>  state"
     using gamma_pres[OF assms(1)] by simp
   moreover obtain x where "current_flow state e = real x * current_\<gamma> state"
     using assms(2) actives_superset[OF assms(1)] e_asm unfolding invar_integral_def by auto
-  ultimately show  "\<exists>x. current_flow (local.loopA state) e = real x * current_\<gamma> (local.loopA state)"
+  ultimately show  "\<exists>x. current_flow (local.maintain_forest state) e = real x * current_\<gamma> (local.maintain_forest state)"
     by simp
 qed
 
@@ -3299,25 +3322,25 @@ lemma flow_optimatlity_pres:
    "thr1 = 8 * real N * current_\<gamma> state"
    "invarA_2 thr1 thr2 state"
    "invar_gamma state"
- shows "invar_isOptflow (loopA state)"
+ shows "invar_isOptflow (maintain_forest state)"
   using assms 
-proof(induction rule: loopA_induct[where state=state])
+proof(induction rule: maintain_forest_induct[where state=state])
   case 1
   then show ?case 
-  using  assms termination_of_loopA
+  using  assms termination_of_maintain_forest
   by(simp add: aux_invar_def)
 next
   case (2 state)
   note IH = this
   show ?case 
-  proof(cases rule: loopA_cases[of state])
+  proof(cases rule: maintain_forest_cases[of state])
     case 1
     then show ?thesis 
-      using 2 by (auto simp add: loopA_simps(2))
+      using 2 by (auto simp add: maintain_forest_simps(2))
   next
     case 2
     show ?thesis 
-      using loopA_simps(1) invar_aux_pres_one_step[of state]
+      using maintain_forest_simps(1) invar_aux_pres_one_step[of state]
             invars_pres_one_step(1)[of state thr2] invars_pres_one_step(3)[of state]
             mono_one_step_gamma[of state] invars_pres_one_step(2)[of state thr2 thr1] 
             invar_gamma_pres_one_step[of state ] IH 2 
@@ -3327,90 +3350,90 @@ next
 qed
 
 lemma forest_increase: 
-  assumes "loopA_dom state" "aux_invar state"
-  shows   "to_graph (\<FF>_imp (loopA state)) \<supseteq> to_graph (\<FF>_imp state)"
+  assumes "maintain_forest_dom state" "aux_invar state"
+  shows   "to_graph (\<FF>_imp (maintain_forest state)) \<supseteq> to_graph (\<FF>_imp state)"
   using assms(2) 
-  apply(induction rule: loopA_induct[OF assms(1)])
+  apply(induction rule: maintain_forest_induct[OF assms(1)])
   subgoal for state
-    apply(cases rule: loopA_cases[of state])
-    using loopA_simps(2) loopA_simps(1)  mono_one_step(6)[of state] invar_aux_pres_one_step[of state]
+    apply(cases rule: maintain_forest_cases[of state])
+    using maintain_forest_simps(2) maintain_forest_simps(1)  mono_one_step(6)[of state] invar_aux_pres_one_step[of state]
     by auto
   done
 
 lemma card_decrease: 
-  assumes "loopA_dom state" "aux_invar state"
-  shows   "card (comps \<V> (to_graph (\<FF>_imp(loopA state)))) \<le> card (comps \<V> (to_graph (\<FF>_imp state)))"
+  assumes "maintain_forest_dom state" "aux_invar state"
+  shows   "card (comps \<V> (to_graph (\<FF>_imp(maintain_forest state)))) \<le> card (comps \<V> (to_graph (\<FF>_imp state)))"
   using assms(2) 
-  apply(induction rule: loopA_induct[OF assms(1)])
+  apply(induction rule: maintain_forest_induct[OF assms(1)])
   subgoal for state
-    apply(cases rule: loopA_cases[of state])
-    using loopA_simps(2) loopA_simps(1)  mono_one_step(3)[of state] invar_aux_pres_one_step[of state]
+    apply(cases rule: maintain_forest_cases[of state])
+    using maintain_forest_simps(2) maintain_forest_simps(1)  mono_one_step(3)[of state] invar_aux_pres_one_step[of state]
     by auto
   done
 
 lemma card_strict_decrease: 
-  assumes "loopA_dom state" "aux_invar state"
-          "loopA_call_cond state"
-  shows   "card (comps \<V>  (to_graph (\<FF>_imp (loopA state)))) < card (comps \<V> (to_graph (\<FF>_imp state)))"
-  apply(subst loopA_simps(1)[OF assms(1) assms(3)])
+  assumes "maintain_forest_dom state" "aux_invar state"
+          "maintain_forest_call_cond state"
+  shows   "card (comps \<V>  (to_graph (\<FF>_imp (maintain_forest state)))) < card (comps \<V> (to_graph (\<FF>_imp state)))"
+  apply(subst maintain_forest_simps(1)[OF assms(1) assms(3)])
   using mono_one_step(3)[of state, OF assms(3) assms(2)] assms(2,3)
-        card_decrease[of "loopA_upd state",
-                         OF termination_of_loopA] invar_aux_pres_one_step[of state]
+        card_decrease[of "maintain_forest_upd state",
+                         OF termination_of_maintain_forest] invar_aux_pres_one_step[of state]
   by(simp add: aux_invar_def)
 
 lemma component_strict_increase: 
-  assumes "loopA_dom state" "aux_invar state"
-          "loopA_call_cond state"
+  assumes "maintain_forest_dom state" "aux_invar state"
+          "maintain_forest_call_cond state"
           "e \<in> to_set (actives state)"
           "current_flow state e > 8 * real N * current_\<gamma> state"
-        shows   "connected_component (to_graph (\<FF>_imp (loopA state))) (fst e) = 
-                 connected_component (to_graph (\<FF>_imp (loopA state))) (snd e)"
+        shows   "connected_component (to_graph (\<FF>_imp (maintain_forest state))) (fst e) = 
+                 connected_component (to_graph (\<FF>_imp (maintain_forest state))) (snd e)"
   using assms(2-)
-proof(induction rule: loopA_induct[OF assms(1)])
+proof(induction rule: maintain_forest_induct[OF assms(1)])
   case (1 state)
   note IH = this
-  have loopA_dom_upd:"loopA_dom (loopA_upd state)"
+  have maintain_forest_dom_upd:"maintain_forest_dom (maintain_forest_upd state)"
     using  invar_aux_pres_one_step[OF IH(3) IH(4)]
-            termination_of_loopA[OF _ refl, of "loopA_upd state"] aux_invar_def by auto
+            termination_of_maintain_forest[OF _ refl, of "maintain_forest_upd state"] aux_invar_def by auto
   have e_in_E:"e \<in> \<E>" 
     using  IH(5) aux_invarE[OF IH(3)] invar_aux1E by auto
   show ?case
-  proof(subst loopA_simps(1)[OF IH(1) IH(4)], subst loopA_simps(1)[OF IH(1) IH(4)], goal_cases)
+  proof(subst maintain_forest_simps(1)[OF IH(1) IH(4)], subst maintain_forest_simps(1)[OF IH(1) IH(4)], goal_cases)
     case 1
     then show ?case 
-     proof(cases "\<not> e \<in> to_set (actives (loopA_upd state))")
+     proof(cases "\<not> e \<in> to_set (actives (maintain_forest_upd state))")
        case True
-       hence "connected_component (to_graph (\<FF>_imp  (loopA_upd state))) (fst e) =
-              connected_component (to_graph (\<FF>_imp (loopA_upd state))) (snd e)"
+       hence "connected_component (to_graph (\<FF>_imp  (maintain_forest_upd state))) (fst e) =
+              connected_component (to_graph (\<FF>_imp (maintain_forest_upd state))) (snd e)"
          using  IH(5)  invar_aux_pres_one_step[OF IH(3) IH(4)] e_in_E
          by(simp add: aux_invar_def  invar_aux13_def)
        then show ?thesis       
       using  invar_aux_pres_one_step[OF IH(3) IH(4)]
-             loopA_dom_upd  same_component_set_mono[OF forest_increase[of "loopA_upd state"]] 
+             maintain_forest_dom_upd  same_component_set_mono[OF forest_increase[of "maintain_forest_upd state"]] 
       by blast
   next
     case False
-    hence e_active_upd:"e \<in> to_set (actives (loopA_upd state))" by simp
-    have same_flow:"current_flow (loopA_upd state) e = current_flow state e"
+    hence e_active_upd:"e \<in> to_set (actives (maintain_forest_upd state))" by simp
+    have same_flow:"current_flow (maintain_forest_upd state) e = current_flow state e"
       using  invar_aux_pres_one_step[OF IH(3) IH(4)] e_active_upd 
       by (auto intro: mono_one_step(5)[OF IH(4) IH(3), of e] simp add: aux_invar_def invar_aux4_def )
-    have same_gamma: "current_\<gamma> (loopA_upd state) = current_\<gamma> state"
+    have same_gamma: "current_\<gamma> (maintain_forest_upd state) = current_\<gamma> state"
       using IH(4) mono_one_step_gamma by force
     show ?thesis
       using  invar_aux_pres_one_step[OF IH(3) IH(4)] IH(6) same_flow same_gamma e_active_upd         
-             set_get(1)[OF invar_aux17_from_aux_invar[simplified invar_aux17_def], of "loopA_upd state" 
-                   "(\<lambda>e. 8 * real N * current_\<gamma> state < current_flow (loopA_upd state) e)"]   
+             set_get(1)[OF invar_aux17_from_aux_invar[simplified invar_aux17_def], of "maintain_forest_upd state" 
+                   "(\<lambda>e. 8 * real N * current_\<gamma> state < current_flow (maintain_forest_upd state) e)"]   
       by (intro IH(2)[OF IH(4)])
-         (fastforce intro!: bexI[of _ e] loopA_call_condI[OF refl refl refl refl refl refl])+
+         (fastforce intro!: bexI[of _ e] maintain_forest_call_condI[OF refl refl refl refl refl refl])+
     qed
   qed
 qed
 
 lemma same_number_comps_abort:
-  assumes "aux_invar state" "loopA_dom state"
-          "card (comps \<V> (to_graph (\<FF>_imp (loopA state)))) = card (comps \<V> (to_graph (\<FF>_imp state)))"
-    shows "loopA_ret_cond state"
-  using assms apply(cases rule: loopA_cases[of state], simp)
+  assumes "aux_invar state" "maintain_forest_dom state"
+          "card (comps \<V> (to_graph (\<FF>_imp (maintain_forest state)))) = card (comps \<V> (to_graph (\<FF>_imp state)))"
+    shows "maintain_forest_ret_cond state"
+  using assms apply(cases rule: maintain_forest_cases[of state], simp)
   using card_strict_decrease[of state] assms by simp
 end
 end

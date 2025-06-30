@@ -1,6 +1,6 @@
 section \<open>Supplementary Theory for Orlin's Algorithm\<close>
 
-theory IntermediateSummary
+theory Intermediate_Summary
   imports PathAugOpt Berge_Lemma.Berge  "HOL-Data_Structures.Set_Specs" 
           Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor  Directed_Set_Graphs.Pair_Graph_Specs        
 begin
@@ -48,7 +48,6 @@ record ('f, 'b, '\<FF>, 'conv_to_rdg, 'actives, 'representative_comp_card, 'not_
                              representative_comp_card_impl::'representative_comp_card
                              not_blocked_impl::'not_blocked
 
-
 locale Set3 = 
 fixes get_from_set   :: "('a \<Rightarrow> bool) \<Rightarrow> 'actives  \<Rightarrow> 'a option"
 fixes filter:: "('a => bool) =>'actives  => 'actives "
@@ -72,6 +71,22 @@ lemma set_get':"\<lbrakk> set_invar s1; s1= s2; \<And> x. x \<in> to_set s1 \<Lo
   using set_get by blast
 end
 
+locale map_update_all = map:
+ Map map_empty "update::'a \<Rightarrow> 'b \<Rightarrow> 'map \<Rightarrow> 'map" delete lookup map_invar
+  for map_empty update delete lookup map_invar +
+fixes update_all::"('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow>  'map \<Rightarrow> 'map"
+assumes update_all: 
+    "\<And> rep f x. \<lbrakk>map_invar rep ; x \<in> dom (lookup rep)\<rbrakk> 
+                  \<Longrightarrow> lookup (update_all f rep) x =
+                           Some (f x (the (lookup rep x)))"
+    "\<And> rep f g. \<lbrakk>map_invar rep;
+                (\<And> x. x \<in> dom (lookup rep)  \<Longrightarrow>
+                     f x (the (lookup rep x)) = g x (the (lookup rep x)))\<rbrakk> \<Longrightarrow>
+          update_all f rep = update_all g rep "
+   "\<And> rep f. map_invar rep \<Longrightarrow> map_invar (update_all f rep)"
+   "\<And> rep f. map_invar rep \<Longrightarrow> dom (lookup (update_all f rep))
+                                    = dom (lookup rep)"
+
 context cost_flow_network
 begin
 
@@ -93,16 +108,16 @@ lemma consist_conv_inj:"consist conv \<Longrightarrow> conv a = conv b \<Longrig
   apply(rule Redge.induct[of _ "conv a"])
   apply(all \<open>rule Redge.induct[ of _ "conv b"]\<close>)
   apply(all \<open>cases a\<close>, all \<open>cases b\<close>)
-  using Redge.inject Redge.distinct
+  using Redge.inject Redge.distinct 
   by (metis swap_simp)+
 
 end
 
 locale alg = cost_flow_spec  where fst=fst for fst::"'edge_type \<Rightarrow> 'a"+ 
-  fixes
-   edge_map_update:: "'a \<Rightarrow> 'edge_vset \<Rightarrow> 'edges \<Rightarrow> 'edges" and
-     vset_empty :: "'vset"  ("\<emptyset>\<^sub>N") and vset_delete :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset" and
-     vset_insert and vset_inv and isin 
+  fixes edge_map_update:: "'a \<Rightarrow> 'edge_vset \<Rightarrow> 'edges \<Rightarrow> 'edges" 
+    and vset_empty :: "'vset"  ("\<emptyset>\<^sub>N") 
+    and vset_delete :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset" 
+    and vset_insert and vset_inv and isin 
 begin
 end
 
@@ -118,16 +133,10 @@ lemmas (in Map) map_specs' =
   map_empty map_update map_delete invar_empty invar_update invar_delete
 
 locale Adj_Map_Specs2 = 
- adjmap: Map' 
- where update = update and invar = adjmap_inv +
-
-
- vset: Set_Choose
- where empty = vset_empty and delete = vset_delete and insert = vset_insert and invar = vset_inv
-      and isin = isin
-
+ adjmap: Map'  where update = update and invar = adjmap_inv +
+ vset: Set_Choose where empty = vset_empty and delete = vset_delete and insert = vset_insert 
+        and invar = vset_inv and isin = isin
  for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and adjmap_inv :: "'adjmap \<Rightarrow> bool"  and
-
      vset_empty :: "'vset"  ("\<emptyset>\<^sub>N") and vset_delete :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset" and
      vset_insert and vset_inv and isin
 begin
@@ -154,41 +163,29 @@ end
 locale algo_spec = alg where fst=fst +  Set3 +
  Adj_Map_Specs2 where  update =  "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd"
 for fst::"'edge_type \<Rightarrow> 'a" +
-  fixes
-           \<b>::"'a \<Rightarrow> real" and
-           to_pair::"'a set \<Rightarrow> 'a \<times> 'a" and
-           \<epsilon>::real
-    and \<E>_impl::'b 
-    and empty_forest::"'d"
-    and N::nat
-fixes default_conv_to_rdg::"'a \<times> 'a \<Rightarrow> 'edge_type Redge"
-begin
-
-end
+fixes \<b>::"'a \<Rightarrow> real" 
+  and to_pair::"'a set \<Rightarrow> 'a \<times> 'a" 
+  and \<epsilon>::real
+  and \<E>_impl::'b 
+  and empty_forest::"'d"
+  and N::nat
+  and default_conv_to_rdg::"'a \<times> 'a \<Rightarrow> 'edge_type Redge"
 
 locale algo =  cost_flow_network where fst = fst +
  algo_spec where fst=fst and edge_map_update = "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd"+  Set3 +
  Adj_Map_Specs2 where  update =  "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd"
 for fst::"'edge_type \<Rightarrow> 'a" and edge_map_update +
-   assumes 
-         infinite_u:  "\<And> e. \<u> e = PInfty"
-       and
-         to_pair_axioms: "\<And> u v vs. u \<noteq> v  \<Longrightarrow> {u, v} = vs 
+   assumes infinite_u:  "\<And> e. \<u> e = PInfty"
+       and to_pair_axioms: "\<And> u v vs. \<lbrakk> u \<noteq> v; {u, v} = vs \<rbrakk>
                                      \<Longrightarrow> to_pair vs = (u,v) \<or> to_pair vs = (v,u)"
        and \<epsilon>_axiom: "0 < \<epsilon>" "\<epsilon> \<le> 1 / 2" "\<epsilon> \<le> 1/ card \<V>" "\<epsilon> < 1/2"
-     and conservative_weights: "\<nexists> C. closed_w (make_pair ` \<E>) (map make_pair C) \<and> (set C \<subseteq> \<E>) \<and> foldr (\<lambda> e acc. acc + \<c> e) C 0 < 0"
-  and \<E>_impl_meaning: "to_set \<E>_impl = \<E>"
-                      "set_invar \<E>_impl"   and 
-      empty_forest_axioms:   "\<And> v. lookup empty_forest v = Some vset_empty"
-                             (* "\<And> v. lookup empty_forest v = None"*)
+       and conservative_weights: "\<nexists> C. closed_w (make_pair ` \<E>) (map make_pair C) \<and> (set C \<subseteq> \<E>) \<and> foldr (\<lambda> e acc. acc + \<c> e) C 0 < 0"
+       and \<E>_impl_meaning: "to_set \<E>_impl = \<E>" "set_invar \<E>_impl"   
+       and empty_forest_axioms:   "\<And> v. lookup empty_forest v = Some vset_empty"
                              "adjmap_inv empty_forest"
- and default_conv_to_rdg: "consist default_conv_to_rdg" 
-and N_def: "N = card \<V>"
+       and default_conv_to_rdg: "consist default_conv_to_rdg" 
+       and N_def: "N = card \<V>"
 begin 
-
-(*definition "to_graph Forest = { {u, v} | u v. (u, v) \<in> digraph_abs Forest}"*)
-
-find_theorems lookup
 
 definition "validF state = graph_invar (to_graph (\<FF>_imp state))"
 
@@ -1221,51 +1218,13 @@ definition "insert_undirected_edge u v forst = (let vsets_u = the (lookup forst 
                                                  in edge_map_update v vset_v_new (
                                                     edge_map_update u vset_u_new forst))"
 
-
 lemma insert_abstraction[simp]:
   assumes "adjmap_inv ff " 
           "(\<And> x. vset_inv (the (lookup ff x)))"
-        shows "to_graph (insert_undirected_edge u v ff) = insert {u, v} (to_graph ff)"
-(*proof(rule, all \<open>rule\<close>, goal_cases)
-  case (1 e) 
-  then obtain x y where "e = {x, y}" "(x, y) \<in> digraph_abs (insert_undirected_edge u v ff)" 
-    by(auto simp add: to_graph_def)
-  hence a:"lookup (insert_undirected_edge u v ff) x \<noteq> None"
-        and b: "isin (the (lookup (insert_undirected_edge u v ff) x)) y"
-   by(auto simp add: digraph_abs_def neighbourhood_def
-       option.split[where option = "lookup (insert_undirected_edge u v ff) x", 
-       of "\<lambda> x. y \<in>\<^sub>G x"] vset.set.invar_empty vset.set.set_empty vset.set.set_isin)
-  have "(x = u \<and> y = v) \<or> (y = u \<and> x= v) \<or>
-        (x = u \<and> y \<noteq> v \<and> isin (the (lookup ff u)) y) \<or> (y = u \<and> x \<noteq> v \<and> isin (the (lookup ff u)) )"
-
-
- 
-
-  have "x = u \<or> x = v \<or> (x \<noteq> u \<and> x \<noteq>  v \<and> (lookup ff x) \<noteq> None)"
-    using a unfolding insert_undirected_edge_def Let_def
-    by(subst (asm) adjmap.map_update)(auto intro: adjmap.invar_update[OF assms(1)] simp add: adjmap.map_update[OF assms(1)])
-  moreover have "y = u \<or> y = v \<or> (y \<noteq> u \<and> y \<noteq> v \<and> isin (the (lookup ff x)) y)"
-    using b unfolding insert_undirected_edge_def Let_def
-    apply(subst (asm) adjmap.map_update)
-     apply(rule adjmap.invar_update[OF assms(1)])
-    apply(subst (asm) adjmap.map_update[OF assms(1)])
-   by( rule case_split[of "x= u"] , auto intro: case_split[of "x = v"]
-      simp add: assms(2) vset.set.invar_insert vset.set.set_insert vset.set.set_isin)
-  ultimately show ?case 
-    unfolding to_graph_def neighbourhood_def digraph_abs_def 
-    apply(auto split: option.split simp add:  \<open>e = {x, y}\<close>)
-    using  \<open>x = u \<or> x = v \<or> x \<noteq> u \<and> x \<noteq> v \<and> lookup ff x \<noteq> None\<close>
- adjmap.invar_update adjmap.map_update assms(1) b fun_upd_other 
-insert_undirected_edge_def option.sel
-
-next
-  case (2 x)
-  then show ?case sorry
-qed*)
+    shows "to_graph (insert_undirected_edge u v ff) = insert {u, v} (to_graph ff)"
   unfolding to_graph_def insert_undirected_edge_def 
   apply(simp, rule, rule)
-
-    apply(subst (asm) adjmap.map_update)
+   apply(subst (asm) adjmap.map_update)
      apply(rule adjmap.invar_update[OF assms(1)])
     apply(subst (asm) adjmap.map_update[OF assms(1)])
     apply simp
@@ -1282,9 +1241,8 @@ qed*)
     using assms(2) vset.set.invar_insert apply simp
     apply(subst (asm) vset.set.set_insert)
     using assms(2) 
-    apply simp 
-    apply (metis Un_iff doubleton_eq_iff empty_iff insert_iff)
-  
+      apply simp
+    apply (metis Un_iff doubleton_eq_iff empty_iff insert_iff) 
     using assms(2) vset.set.set_isin adjmap.map_update adjmap.invar_update assms(1) 
           vset.set.set_insert vset.set.invar_insert 
     by auto
@@ -1388,11 +1346,11 @@ definition "invar_isOptflow state = is_Opt (\<b> - balance state) (current_flow 
 
 definition "\<Phi> state = (\<Sum> v \<in>  \<V>. \<lceil> \<bar> balance state v\<bar> / (current_\<gamma> state) - (1 - \<epsilon>)\<rceil>)"
 
-definition "loopA_entry state = (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state)
+definition "maintain_forest_entry state = (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state)
                                        (to_graph (Algo_state.\<FF>_imp state))).
                                 current_flow state e > 8*N*current_\<gamma> state)"
 
-definition "loopB_entryF state = (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state) 
+definition "send_flow_entryF state = (\<forall> e \<in> oedge ` (to_rdgs to_pair (conv_to_rdg state) 
                                       (to_graph (Algo_state.\<FF>_imp state))).
                                 current_flow state e > 6*N*current_\<gamma> state)"
 

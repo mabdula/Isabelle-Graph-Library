@@ -188,7 +188,7 @@ next
   have an_opt:"algo_locale.is_Opt (the_default 0 \<circ> bal_lookup (b_impl b))
    (abstract_flow_map (with_capacity.final_flow_impl_original make_pair \<E>_impl \<c>_impl \<u>_impl (b_impl b) c_lookup))"
     using  algo_locale.correctness_of_implementation[OF no_neg_cycle'] a_flow 
-            IntermediateSummary.return.exhaust by blast
+           return.exhaust by blast
   have another_opt:"is_Opt (the_default 0 \<circ> bal_lookup (b_impl b))
    (abstract_flow_map (with_capacity.final_flow_impl_original make_pair \<E>_impl \<c>_impl \<u>_impl (b_impl b) c_lookup))"
     using  cost_flow_network_axioms  \<u>_impl_props 
@@ -462,7 +462,7 @@ next
       using no_infty_path by blast
   qed
   have success:"return_impl (solve_maxflow.final_state_maxflow make_pair create_edge \<E>_impl \<u>_impl s t) = success"
-    using algo_locale.correctness_of_implementation(2,3)[OF no_infty_path'] IntermediateSummary.return.exhaust by blast
+    using algo_locale.correctness_of_implementation(2,3)[OF no_infty_path'] return.exhaust by blast
   have max_flow_algo:"algo_locale.is_max_flow s t
  (abstract_flow_map (solve_maxflow.final_flow_impl_maxflow_original make_pair create_edge \<E>_impl \<u>_impl s t))"
     using algo_locale.correctness_of_implementation(1)[OF no_infty_path' success] by simp

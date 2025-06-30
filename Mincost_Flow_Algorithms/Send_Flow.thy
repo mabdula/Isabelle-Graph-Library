@@ -1,13 +1,14 @@
 section \<open>Formalisation of Loop for Ordinary Augmentations\<close>
 
-theory LoopB
-  imports IntermediateSummary
+theory Send_Flow
+  imports Intermediate_Summary
 begin
 
-locale loopB_spec = algo_spec where fst="fst::'edge_type \<Rightarrow>'a" 
+locale send_flow_spec = 
+algo_spec where fst="fst::'edge_type \<Rightarrow>'a" 
   and edge_map_update = "edge_map_update :: 'a \<Rightarrow> 'b \<Rightarrow> 'c \<Rightarrow> 'c"
-and get_from_set = "get_from_set :: ('edge_type \<Rightarrow> bool) \<Rightarrow> 'd \<Rightarrow> 'edge_type option"
-for fst edge_map_update get_from_set+
+  and get_from_set = "get_from_set :: ('edge_type \<Rightarrow> bool) \<Rightarrow> 'd \<Rightarrow> 'edge_type option"
+  for fst edge_map_update get_from_set+
 fixes get_source_target_path_a ::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'edge_type Redge list" 
   and get_source_target_path_b ::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'edge_type Redge list"
   and get_source::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> 'a"
@@ -15,18 +16,18 @@ fixes get_source_target_path_a ::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarr
   and get_source_for_target::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> 'a \<Rightarrow> 'a"
   and get_target_for_source::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> 'a \<Rightarrow> 'a"
 
-locale loopB = algo where fst="fst::'edge_type \<Rightarrow>'a" and edge_map_update = "edge_map_update :: 'a \<Rightarrow> 'b \<Rightarrow> 'c \<Rightarrow> 'c"+
-loopB_spec where  fst= fst and get_source_target_path_a
- = "get_source_target_path_a::('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'edge_type Redge list" 
+locale send_flow = 
+algo where fst="fst::'edge_type \<Rightarrow>'a" 
+          and edge_map_update = "edge_map_update :: 'a \<Rightarrow> 'b \<Rightarrow> 'c \<Rightarrow> 'c"+
+send_flow_spec where  fst= fst and get_source_target_path_a
+             = "get_source_target_path_a::('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'edge_type Redge list" 
   and edge_map_update = "edge_map_update :: 'a \<Rightarrow> 'b \<Rightarrow> 'c \<Rightarrow> 'c"
-and get_from_set = "get_from_set :: ('edge_type \<Rightarrow> bool) \<Rightarrow> 'd \<Rightarrow> 'edge_type option"
+  and get_from_set = "get_from_set :: ('edge_type \<Rightarrow> bool) \<Rightarrow> 'd \<Rightarrow> 'edge_type option"
 for fst  get_source_target_path_a edge_map_update
 begin
 
-term \<F>
-
-function (domintros) loopB::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> ('a, 'd, 'c, 'edge_type) Algo_state" where
-  "loopB state = (let
+function (domintros) send_flow::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> ('a, 'd, 'c, 'edge_type) Algo_state" where
+  "send_flow state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state
@@ -41,7 +42,7 @@ function (domintros) loopB::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> (
                                   else if v = t then b t + \<gamma>
                                   else b v);
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in   
-                           loopB state'             
+                           send_flow state'             
                 else
                         state \<lparr> return := failure\<rparr>)) 
      else if \<exists> t \<in> \<V>. b t < - (1 -\<epsilon>) * \<gamma> then 
@@ -54,7 +55,7 @@ function (domintros) loopB::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> (
                                   else if v = t then b t + \<gamma>
                                   else b v);
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in
-                         loopB state'                    
+                         send_flow state'                    
                 else
                        state \<lparr> return := failure\<rparr>)
           ) 
@@ -62,8 +63,7 @@ function (domintros) loopB::"('a, 'd, 'c, 'edge_type) Algo_state \<Rightarrow> (
     ))"
   by auto
 
-
-definition "loopB_succ_cond state = (let
+definition "send_flow_succ_cond state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state
@@ -96,20 +96,20 @@ definition "loopB_succ_cond state = (let
       else False
     ))"
 
-lemma loopB_succ_condE:" loopB_succ_cond state \<Longrightarrow> (
+lemma send_flow_succ_condE:" send_flow_succ_cond state \<Longrightarrow> (
                        \<And> f b \<gamma> . f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
                     \<gamma> = current_\<gamma> state \<Longrightarrow>
                     \<forall> v \<in> \<V>. b v = 0 \<Longrightarrow> P) \<Longrightarrow> P"
-  unfolding  loopB_succ_cond_def by presburger
+  unfolding  send_flow_succ_cond_def by presburger
 
-lemma loopB_succ_condI:"  f = current_flow state \<Longrightarrow>
+lemma send_flow_succ_condI:"  f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
                     \<gamma> = current_\<gamma> state \<Longrightarrow>
-                    \<forall> v \<in> \<V>. b v = 0 \<Longrightarrow> loopB_succ_cond state"
-  unfolding  loopB_succ_cond_def by presburger
+                    \<forall> v \<in> \<V>. b v = 0 \<Longrightarrow> send_flow_succ_cond state"
+  unfolding  send_flow_succ_cond_def by presburger
 
-definition "loopB_call1_cond state = (let
+definition "send_flow_call1_cond state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state
@@ -142,7 +142,7 @@ definition "loopB_call1_cond state = (let
       else False
     ))"
 
-lemma loopB_call1_condE: "loopB_call1_cond state \<Longrightarrow>
+lemma send_flow_call1_condE: "send_flow_call1_cond state \<Longrightarrow>
                      ( \<And> f b \<gamma> s t P f' b' state'. f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
                     \<gamma> = current_\<gamma> state \<Longrightarrow>
@@ -158,10 +158,10 @@ lemma loopB_call1_condE: "loopB_call1_cond state \<Longrightarrow>
                                   else b v) \<Longrightarrow>
               state' = state \<lparr> current_flow := f', balance := b'\<rparr> \<Longrightarrow>
  PP) \<Longrightarrow> PP" for PP
-  unfolding loopB_call1_cond_def Let_def by presburger
+  unfolding send_flow_call1_cond_def Let_def by presburger
 
 
-definition "loopB_call2_cond state = (let
+definition "send_flow_call2_cond state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state
@@ -194,7 +194,7 @@ definition "loopB_call2_cond state = (let
       else False
     ))"
 
-lemma loopB_call2_condE: "loopB_call2_cond state \<Longrightarrow>( \<And> f b \<gamma> t s P f' b' state'.
+lemma send_flow_call2_condE: "send_flow_call2_cond state \<Longrightarrow>( \<And> f b \<gamma> t s P f' b' state'.
                     f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
                     \<gamma> = current_\<gamma> state \<Longrightarrow>
@@ -211,9 +211,9 @@ lemma loopB_call2_condE: "loopB_call2_cond state \<Longrightarrow>( \<And> f b \
                                   else b v) \<Longrightarrow>
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr>
                      \<Longrightarrow> PP) \<Longrightarrow> PP" for PP
-unfolding loopB_call2_cond_def Let_def by presburger
+unfolding send_flow_call2_cond_def Let_def by presburger
 
-definition "loopB_fail1_cond state = (let
+definition "send_flow_fail1_cond state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state
@@ -246,8 +246,8 @@ definition "loopB_fail1_cond state = (let
       else False
     ))"
 
-lemma loopB_fail1_condE:
-"loopB_fail1_cond state \<Longrightarrow>
+lemma send_flow_fail1_condE:
+"send_flow_fail1_cond state \<Longrightarrow>
 (\<And> f b \<gamma> s. f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
                     \<gamma> = current_\<gamma> state \<Longrightarrow>
@@ -255,10 +255,10 @@ lemma loopB_fail1_condE:
  \<Longrightarrow> ( \<exists> s \<in> \<V>. b s > (1 - \<epsilon>) * \<gamma>)  \<Longrightarrow>
            s = get_source state \<Longrightarrow>
            \<not>( \<exists> t \<in> \<V>. b t < - \<epsilon> * \<gamma> \<and> resreach f s t)  \<Longrightarrow> P ) \<Longrightarrow> P"
-  unfolding loopB_fail1_cond_def Let_def
+  unfolding send_flow_fail1_cond_def Let_def
   by presburger
  
-definition "loopB_fail2_cond state = (let
+definition "send_flow_fail2_cond state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state
@@ -291,8 +291,8 @@ definition "loopB_fail2_cond state = (let
       else False
     ))"
 
-lemma loopB_fail2_condE:
-"loopB_fail2_cond state \<Longrightarrow>
+lemma send_flow_fail2_condE:
+"send_flow_fail2_cond state \<Longrightarrow>
 (\<And> f b \<gamma> t. f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
                     \<gamma> = current_\<gamma> state \<Longrightarrow>
@@ -301,10 +301,10 @@ lemma loopB_fail2_condE:
        \<exists> t \<in> \<V>. b t < - (1 -\<epsilon>) * \<gamma> \<Longrightarrow>
            t = get_target state \<Longrightarrow>
            \<not>( \<exists> s \<in> \<V>.  b s > \<epsilon> * \<gamma> \<and> resreach f s t)  \<Longrightarrow> P ) \<Longrightarrow> P"
-  unfolding loopB_fail2_cond_def Let_def
+  unfolding send_flow_fail2_cond_def Let_def
   by presburger
 
-definition "loopB_cont_cond state = (let
+definition "send_flow_cont_cond state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state
@@ -337,58 +337,58 @@ definition "loopB_cont_cond state = (let
       else True
     ))"
 
-lemma loopB_cont_condE:
-"loopB_cont_cond state \<Longrightarrow>
+lemma send_flow_cont_condE:
+"send_flow_cont_cond state \<Longrightarrow>
 (\<And> f b \<gamma> . f = current_flow state \<Longrightarrow>
                     b = balance state \<Longrightarrow>
                     \<gamma> = current_\<gamma> state \<Longrightarrow>
  \<not> ( \<forall> v \<in> \<V>. b v = 0) 
  \<Longrightarrow> \<not> (\<exists> s \<in> \<V>. b s > (1 - \<epsilon>) * \<gamma>)  \<Longrightarrow>
       \<not>( \<exists> t \<in> \<V>. b t < - (1 -\<epsilon>) * \<gamma> )  \<Longrightarrow> P ) \<Longrightarrow> P"
-  unfolding loopB_cont_cond_def Let_def
+  unfolding send_flow_cont_cond_def Let_def
   by presburger
 
-lemma loopB_cases: 
-  assumes "loopB_cont_cond  state \<Longrightarrow> P"
-          "loopB_succ_cond  state \<Longrightarrow> P"
-          "loopB_call1_cond  state \<Longrightarrow> P"
-          "loopB_call2_cond  state \<Longrightarrow> P"
-          "loopB_fail1_cond  state \<Longrightarrow> P"
-          "loopB_fail2_cond  state \<Longrightarrow> P"
+lemma send_flow_cases: 
+  assumes "send_flow_cont_cond  state \<Longrightarrow> P"
+          "send_flow_succ_cond  state \<Longrightarrow> P"
+          "send_flow_call1_cond  state \<Longrightarrow> P"
+          "send_flow_call2_cond  state \<Longrightarrow> P"
+          "send_flow_fail1_cond  state \<Longrightarrow> P"
+          "send_flow_fail2_cond  state \<Longrightarrow> P"
         shows P
 proof-
-  have "loopB_cont_cond  state \<or> loopB_succ_cond  state \<or>
-        loopB_call1_cond  state \<or> loopB_call2_cond  state \<or>
-        loopB_fail1_cond  state \<or> loopB_fail2_cond  state"
-    unfolding loopB_cont_cond_def loopB_succ_cond_def
-              loopB_call1_cond_def loopB_call2_cond_def
-              loopB_fail1_cond_def loopB_fail2_cond_def Let_def
+  have "send_flow_cont_cond  state \<or> send_flow_succ_cond  state \<or>
+        send_flow_call1_cond  state \<or> send_flow_call2_cond  state \<or>
+        send_flow_fail1_cond  state \<or> send_flow_fail2_cond  state"
+    unfolding send_flow_cont_cond_def send_flow_succ_cond_def
+              send_flow_call1_cond_def send_flow_call2_cond_def
+              send_flow_fail1_cond_def send_flow_fail2_cond_def Let_def
     by(auto split: if_split)    
   thus P
     using assms by auto
 qed
 
-definition "loopB_succ_upd state = (let
+definition "send_flow_succ_upd state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state
  in  state \<lparr> return:=success\<rparr>)"
 
-lemma loopB_succ_upd_changes: 
-"\<FF> (loopB_succ_upd state) = \<FF> state"
-"conv_to_rdg (loopB_succ_upd state) = conv_to_rdg state"
-"actives (loopB_succ_upd state) = actives state"
-"current_\<gamma> (loopB_succ_upd state) = current_\<gamma>  state"
-"representative (loopB_succ_upd state) = representative state"
-"\<F> (loopB_succ_upd state) = \<F> state"
-"comp_card (loopB_succ_upd state) = comp_card state"
-"\<FF>_imp (loopB_succ_upd state) = \<FF>_imp state"
-"not_blocked (loopB_succ_upd state) = not_blocked state"
-  unfolding loopB_succ_upd_def Let_def by auto
+lemma send_flow_succ_upd_changes: 
+"\<FF> (send_flow_succ_upd state) = \<FF> state"
+"conv_to_rdg (send_flow_succ_upd state) = conv_to_rdg state"
+"actives (send_flow_succ_upd state) = actives state"
+"current_\<gamma> (send_flow_succ_upd state) = current_\<gamma>  state"
+"representative (send_flow_succ_upd state) = representative state"
+"\<F> (send_flow_succ_upd state) = \<F> state"
+"comp_card (send_flow_succ_upd state) = comp_card state"
+"\<FF>_imp (send_flow_succ_upd state) = \<FF>_imp state"
+"not_blocked (send_flow_succ_upd state) = not_blocked state"
+  unfolding send_flow_succ_upd_def Let_def by auto
 
 term "\<F> (state::('a, 'd, 'c, 'edge_type) Algo_state)"
 
-definition "loopB_call1_upd state = (let
+definition "send_flow_call1_upd state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state;
@@ -401,33 +401,33 @@ definition "loopB_call1_upd state = (let
                                   else b v) in
                     state \<lparr> current_flow := f', balance := b'\<rparr>)"
 
-lemma loopB_call1_upd_changes: 
-"\<FF> (loopB_call1_upd state) = \<FF> state"
-"conv_to_rdg (loopB_call1_upd state) = conv_to_rdg state"
-"actives (loopB_call1_upd state) = actives state"
-"current_\<gamma> (loopB_call1_upd state) = current_\<gamma>  state"
-"representative (loopB_call1_upd state) = representative state"
-"\<F> (loopB_call1_upd state) = \<F> state"
-"comp_card (loopB_call1_upd state) = comp_card state"
-"\<FF>_imp (loopB_call1_upd state) = \<FF>_imp state"
-"not_blocked (loopB_call1_upd state) = not_blocked state"
-  unfolding loopB_call1_upd_def Let_def by auto
+lemma send_flow_call1_upd_changes: 
+"\<FF> (send_flow_call1_upd state) = \<FF> state"
+"conv_to_rdg (send_flow_call1_upd state) = conv_to_rdg state"
+"actives (send_flow_call1_upd state) = actives state"
+"current_\<gamma> (send_flow_call1_upd state) = current_\<gamma>  state"
+"representative (send_flow_call1_upd state) = representative state"
+"\<F> (send_flow_call1_upd state) = \<F> state"
+"comp_card (send_flow_call1_upd state) = comp_card state"
+"\<FF>_imp (send_flow_call1_upd state) = \<FF>_imp state"
+"not_blocked (send_flow_call1_upd state) = not_blocked state"
+  unfolding send_flow_call1_upd_def Let_def by auto
 
-definition "loopB_fail_upd state = state \<lparr> return :=failure \<rparr>"
+definition "send_flow_fail_upd state = state \<lparr> return :=failure \<rparr>"
 
-lemma loopB_fail_upd_changes: 
-"\<FF> (loopB_fail_upd state) = \<FF> state"
-"conv_to_rdg (loopB_fail_upd state) = conv_to_rdg state"
-"actives (loopB_fail_upd state) = actives state"
-"current_\<gamma> (loopB_fail_upd state) = current_\<gamma>  state"
-"representative (loopB_fail_upd state) = representative state"
-"\<F> (loopB_fail_upd state) = \<F> state"
-"comp_card (loopB_fail_upd state) = comp_card state"
-"\<FF>_imp (loopB_fail_upd state) = \<FF>_imp state"
-"not_blocked (loopB_fail_upd state) = not_blocked state"
-  unfolding loopB_fail_upd_def Let_def by auto
+lemma send_flow_fail_upd_changes: 
+"\<FF> (send_flow_fail_upd state) = \<FF> state"
+"conv_to_rdg (send_flow_fail_upd state) = conv_to_rdg state"
+"actives (send_flow_fail_upd state) = actives state"
+"current_\<gamma> (send_flow_fail_upd state) = current_\<gamma>  state"
+"representative (send_flow_fail_upd state) = representative state"
+"\<F> (send_flow_fail_upd state) = \<F> state"
+"comp_card (send_flow_fail_upd state) = comp_card state"
+"\<FF>_imp (send_flow_fail_upd state) = \<FF>_imp state"
+"not_blocked (send_flow_fail_upd state) = not_blocked state"
+  unfolding send_flow_fail_upd_def Let_def by auto
 
-definition "loopB_call2_upd state= (let
+definition "send_flow_call2_upd state= (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state;
@@ -440,98 +440,98 @@ definition "loopB_call2_upd state= (let
                                   else b v) in
                        state \<lparr> current_flow := f', balance := b'\<rparr>)"
 
-lemma loopB_call2_upd_changes: 
-"\<FF> (loopB_call2_upd state) = \<FF> state"
-"conv_to_rdg (loopB_call2_upd state) = conv_to_rdg state"
-"actives (loopB_call2_upd state) = actives state"
-"current_\<gamma> (loopB_call2_upd state) = current_\<gamma>  state"
-"representative (loopB_call2_upd state) = representative state"
-"\<F> (loopB_call2_upd state) = \<F> state"
-"comp_card (loopB_call2_upd state) = comp_card state"
-"\<FF>_imp (loopB_call2_upd state) = \<FF>_imp state"
-"not_blocked (loopB_call2_upd state) = not_blocked state"
-  unfolding loopB_call2_upd_def Let_def by auto
+lemma send_flow_call2_upd_changes: 
+"\<FF> (send_flow_call2_upd state) = \<FF> state"
+"conv_to_rdg (send_flow_call2_upd state) = conv_to_rdg state"
+"actives (send_flow_call2_upd state) = actives state"
+"current_\<gamma> (send_flow_call2_upd state) = current_\<gamma>  state"
+"representative (send_flow_call2_upd state) = representative state"
+"\<F> (send_flow_call2_upd state) = \<F> state"
+"comp_card (send_flow_call2_upd state) = comp_card state"
+"\<FF>_imp (send_flow_call2_upd state) = \<FF>_imp state"
+"not_blocked (send_flow_call2_upd state) = not_blocked state"
+  unfolding send_flow_call2_upd_def Let_def by auto
 
-definition "loopB_cont_upd state = state \<lparr> return := notyetterm\<rparr>"
+definition "send_flow_cont_upd state = state \<lparr> return := notyetterm\<rparr>"
 
-lemma loopB_cont_upd_changes: 
-"\<FF> (loopB_cont_upd state) = \<FF> state"
-"conv_to_rdg (loopB_cont_upd state) = conv_to_rdg state"
-"actives (loopB_cont_upd state) = actives state"
-"current_\<gamma> (loopB_cont_upd state) = current_\<gamma>  state"
-"representative (loopB_cont_upd state) = representative state"
-"\<F> (loopB_cont_upd state) = \<F> state"
-"comp_card (loopB_cont_upd state) = comp_card state"
-"\<FF>_imp (loopB_cont_upd state) = \<FF>_imp state"
-"not_blocked (loopB_cont_upd state) = not_blocked state"
-  unfolding loopB_cont_upd_def Let_def by auto
+lemma send_flow_cont_upd_changes: 
+"\<FF> (send_flow_cont_upd state) = \<FF> state"
+"conv_to_rdg (send_flow_cont_upd state) = conv_to_rdg state"
+"actives (send_flow_cont_upd state) = actives state"
+"current_\<gamma> (send_flow_cont_upd state) = current_\<gamma>  state"
+"representative (send_flow_cont_upd state) = representative state"
+"\<F> (send_flow_cont_upd state) = \<F> state"
+"comp_card (send_flow_cont_upd state) = comp_card state"
+"\<FF>_imp (send_flow_cont_upd state) = \<FF>_imp state"
+"not_blocked (send_flow_cont_upd state) = not_blocked state"
+  unfolding send_flow_cont_upd_def Let_def by auto
 
-lemma loopB_simps: 
-  assumes "loopB_dom state"
-  shows   "loopB_succ_cond state \<Longrightarrow> loopB state = (loopB_succ_upd state)"
-          "loopB_cont_cond state \<Longrightarrow> loopB state = (loopB_cont_upd state)"
-          "loopB_fail1_cond state \<Longrightarrow> loopB state = (loopB_fail_upd state)"
-          "loopB_fail2_cond state \<Longrightarrow> loopB state = (loopB_fail_upd state)"
-          "loopB_call1_cond state \<Longrightarrow> loopB state = loopB (loopB_call1_upd state)"
-          "loopB_call2_cond state \<Longrightarrow> loopB state = loopB (loopB_call2_upd state)"
+lemma send_flow_simps: 
+  assumes "send_flow_dom state"
+  shows   "send_flow_succ_cond state \<Longrightarrow> send_flow state = (send_flow_succ_upd state)"
+          "send_flow_cont_cond state \<Longrightarrow> send_flow state = (send_flow_cont_upd state)"
+          "send_flow_fail1_cond state \<Longrightarrow> send_flow state = (send_flow_fail_upd state)"
+          "send_flow_fail2_cond state \<Longrightarrow> send_flow state = (send_flow_fail_upd state)"
+          "send_flow_call1_cond state \<Longrightarrow> send_flow state = send_flow (send_flow_call1_upd state)"
+          "send_flow_call2_cond state \<Longrightarrow> send_flow state = send_flow (send_flow_call2_upd state)"
 proof-
-  show "loopB_succ_cond state \<Longrightarrow> local.loopB state = loopB_succ_upd state"
-    using  loopB.psimps  assms
-    unfolding loopB_succ_upd_def Let_def 
-    by (auto elim: loopB_succ_condE)
-  show "loopB_cont_cond state \<Longrightarrow> local.loopB state = loopB_cont_upd state"
-    apply(subst loopB.psimps, simp add: assms)
-    unfolding loopB_cont_upd_def loopB_cont_cond_def Let_def 
+  show "send_flow_succ_cond state \<Longrightarrow> local.send_flow state = send_flow_succ_upd state"
+    using  send_flow.psimps  assms
+    unfolding send_flow_succ_upd_def Let_def 
+    by (auto elim: send_flow_succ_condE)
+  show "send_flow_cont_cond state \<Longrightarrow> local.send_flow state = send_flow_cont_upd state"
+    apply(subst send_flow.psimps, simp add: assms)
+    unfolding send_flow_cont_upd_def send_flow_cont_cond_def Let_def 
     by presburger
-  show " loopB_fail1_cond state \<Longrightarrow> loopB state = loopB_fail_upd state"
-    apply(subst loopB.psimps, simp add: assms)
-    unfolding loopB_fail_upd_def loopB_fail1_cond_def Let_def 
+  show " send_flow_fail1_cond state \<Longrightarrow> send_flow state = send_flow_fail_upd state"
+    apply(subst send_flow.psimps, simp add: assms)
+    unfolding send_flow_fail_upd_def send_flow_fail1_cond_def Let_def 
     by presburger
-  show "loopB_fail2_cond state \<Longrightarrow> loopB state = loopB_fail_upd state"
-    apply(subst loopB.psimps, simp add: assms)
-    unfolding loopB_fail_upd_def loopB_fail2_cond_def Let_def 
+  show "send_flow_fail2_cond state \<Longrightarrow> send_flow state = send_flow_fail_upd state"
+    apply(subst send_flow.psimps, simp add: assms)
+    unfolding send_flow_fail_upd_def send_flow_fail2_cond_def Let_def 
     by presburger
-  show " loopB_call1_cond state \<Longrightarrow> loopB state = loopB (loopB_call1_upd state)"
+  show " send_flow_call1_cond state \<Longrightarrow> send_flow state = send_flow (send_flow_call1_upd state)"
   proof- 
-    assume asm:"loopB_call1_cond state"
-    show "loopB state = loopB (loopB_call1_upd state)"
-    proof(rule loopB_call1_condE[OF asm], goal_cases)
+    assume asm:"send_flow_call1_cond state"
+    show "send_flow state = send_flow (send_flow_call1_upd state)"
+    proof(rule send_flow_call1_condE[OF asm], goal_cases)
       case (1 f b \<gamma> s t P f' b' state')
       thus ?case  
-       using loopB.psimps assms
-        unfolding loopB_call1_upd_def Let_def 
-         by (auto elim: loopB_call1_condE)
+       using send_flow.psimps assms
+        unfolding send_flow_call1_upd_def Let_def 
+         by (auto elim: send_flow_call1_condE)
      qed
    qed
-   show " loopB_call2_cond state \<Longrightarrow> loopB state = loopB (loopB_call2_upd state)"
+   show " send_flow_call2_cond state \<Longrightarrow> send_flow state = send_flow (send_flow_call2_upd state)"
    proof-
-    assume asm:"loopB_call2_cond state"
-    show "loopB state = loopB (loopB_call2_upd state)"
-    proof(rule loopB_call2_condE[OF asm], goal_cases)
+    assume asm:"send_flow_call2_cond state"
+    show "send_flow state = send_flow (send_flow_call2_upd state)"
+    proof(rule send_flow_call2_condE[OF asm], goal_cases)
       case (1 f b \<gamma> s t P f' b' state')
       thus ?case  
-       using loopB.psimps assms
-        unfolding loopB_call2_upd_def Let_def 
-         by (auto elim: loopB_call2_condE)
+       using send_flow.psimps assms
+        unfolding send_flow_call2_upd_def Let_def 
+         by (auto elim: send_flow_call2_condE)
      qed
    qed
  qed   
     
-lemma loopB_induct:
-  assumes "loopB_dom state"
- "\<And> state. \<lbrakk> loopB_dom state ; 
-             loopB_call1_cond state \<Longrightarrow> P (loopB_call1_upd state);
-             loopB_call2_cond state \<Longrightarrow> P (loopB_call2_upd state) \<rbrakk> \<Longrightarrow> P state"
+lemma send_flow_induct:
+  assumes "send_flow_dom state"
+ "\<And> state. \<lbrakk> send_flow_dom state ; 
+             send_flow_call1_cond state \<Longrightarrow> P (send_flow_call1_upd state);
+             send_flow_call2_cond state \<Longrightarrow> P (send_flow_call2_upd state) \<rbrakk> \<Longrightarrow> P state"
     shows "P state"
-  apply(rule loopB.pinduct[OF assms(1)])
+  apply(rule send_flow.pinduct[OF assms(1)])
   subgoal for state
     apply(rule assms(2), simp)
     subgoal
-      apply(rule loopB_call1_condE[of state], simp)
-      unfolding loopB_call1_upd_def Let_def by auto
+      apply(rule send_flow_call1_condE[of state], simp)
+      unfolding send_flow_call1_upd_def Let_def by auto
     subgoal
-      apply(rule loopB_call2_condE[of state], simp)
-      unfolding loopB_call2_upd_def Let_def by auto
+      apply(rule send_flow_call2_condE[of state], simp)
+      unfolding send_flow_call2_upd_def Let_def by auto
     done
   done
 
@@ -540,14 +540,14 @@ definition "get_source_target_path_a_cond state s t P b \<gamma> f = (
              aux_invar state \<and> (\<forall> e \<in> \<F> state . f e > 0)\<and> resreach f s t\<and>
              b = balance state\<and> \<gamma> = current_\<gamma> state \<and> s = get_source state \<and>
              t = get_target_for_source state s \<and> f = current_flow state  \<and>
-             loopB_call1_cond state \<and> invar_gamma state)"
+             send_flow_call1_cond state \<and> invar_gamma state)"
 
 lemma get_source_target_path_a_condI:
  " \<lbrakk>get_source_target_path_a state s t = P ; s \<in> \<V> ; t \<in> \<V> ;  s \<noteq> t;
     aux_invar state; (\<forall> e \<in> \<F> state . f e > 0); resreach f s t;
     b = balance state; \<gamma> = current_\<gamma> state ;  s = get_source state ;
     t = get_target_for_source state s;
-       f = current_flow state; loopB_call1_cond state; invar_gamma state\<rbrakk> 
+       f = current_flow state; send_flow_call1_cond state; invar_gamma state\<rbrakk> 
           \<Longrightarrow> get_source_target_path_a_cond state s t P b \<gamma> f"
   by(auto simp add: get_source_target_path_a_cond_def)
 
@@ -555,13 +555,13 @@ definition "get_source_target_path_b_cond state s t P b \<gamma> f =
            (get_source_target_path_b state s t = P \<and> s \<in> \<V> \<and> t \<in> \<V> \<and> s \<noteq> t\<and> aux_invar state \<and>
          (\<forall> e \<in> \<F> state . f e > 0)\<and> resreach f s t\<and> b = balance state\<and> \<gamma> = current_\<gamma> state \<and>
          t = get_target state \<and>  s = get_source_for_target state t \<and> f = current_flow state \<and>
-         loopB_call2_cond state \<and>  invar_gamma state)"
+         send_flow_call2_cond state \<and>  invar_gamma state)"
 
 lemma  get_source_target_path_b_condI:
        "\<lbrakk>get_source_target_path_b state s t = P; s \<in> \<V>; t \<in> \<V>; s \<noteq> t; aux_invar state;
          (\<forall> e \<in> \<F> state . f e > 0); resreach f s t; b = balance state; \<gamma> = current_\<gamma> state ;
           t = get_target state; s = get_source_for_target state t; f = current_flow state;
-          loopB_call2_cond state ;  invar_gamma state\<rbrakk>
+          send_flow_call2_cond state ;  invar_gamma state\<rbrakk>
          \<Longrightarrow> get_source_target_path_b_cond state s t P b \<gamma> f"
   by(auto simp add: get_source_target_path_b_cond_def)
 
@@ -571,7 +571,7 @@ lemma get_source_target_path_a_condE:
     aux_invar state; (\<forall> e \<in> \<F> state . f e > 0); resreach f s t;
     b = balance state; \<gamma> = current_\<gamma> state ;  s = get_source state ;
     t = get_target_for_source state s;
-       f = current_flow state; loopB_call1_cond state; invar_gamma state\<rbrakk> 
+       f = current_flow state; send_flow_call1_cond state; invar_gamma state\<rbrakk> 
           \<Longrightarrow> Q) \<Longrightarrow> Q"
   by(auto simp add: get_source_target_path_a_cond_def)
 
@@ -580,55 +580,112 @@ lemma  get_source_target_path_b_condE:
         (\<lbrakk>get_source_target_path_b state s t = P; s \<in> \<V>; t \<in> \<V>; s \<noteq> t; aux_invar state;
          (\<forall> e \<in> \<F> state . f e > 0); resreach f s t; b = balance state; \<gamma> = current_\<gamma> state ;
           t = get_target state; s = get_source_for_target state t; f = current_flow state;
-          loopB_call2_cond state ;  invar_gamma state\<rbrakk>
+          send_flow_call2_cond state ;  invar_gamma state\<rbrakk>
          \<Longrightarrow> Q) \<Longrightarrow> Q"
   by(auto simp add: get_source_target_path_b_cond_def)
+
+definition "get_source_cond s state b \<gamma>=
+          (b = balance state \<and> \<gamma> = current_\<gamma> state \<and>  s = get_source state \<and>
+                    (send_flow_call1_cond state \<or> send_flow_fail1_cond state))"
+
+lemma get_source_condI: 
+"\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state;  s = get_source state;
+                    send_flow_call1_cond state \<or> send_flow_fail1_cond state\<rbrakk> 
+                    \<Longrightarrow>get_source_cond s state b \<gamma>"
+  by(auto simp add: get_source_cond_def)
+
+lemma get_source_condE: 
+"get_source_cond s state b \<gamma> \<Longrightarrow> 
+     (\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state;  s = get_source state;
+                    send_flow_call1_cond state \<or> send_flow_fail1_cond state\<rbrakk> 
+                    \<Longrightarrow>P) \<Longrightarrow> P"
+  by(auto simp add: get_source_cond_def)
+
+definition "get_target_cond t state b \<gamma>= (b = balance state \<and> \<gamma> = current_\<gamma> state \<and> t = get_target state \<and>
+                     (send_flow_call2_cond state \<or> send_flow_fail2_cond state))"
+
+lemma get_target_condI: "\<lbrakk>b = balance state ; \<gamma> = current_\<gamma> state; t = get_target state;
+                     send_flow_call2_cond state \<or> send_flow_fail2_cond state\<rbrakk> \<Longrightarrow> get_target_cond t state b \<gamma>"
+  by(auto simp add: get_target_cond_def)
+
+lemma get_target_condE: "get_target_cond t state b \<gamma> \<Longrightarrow>
+               (\<lbrakk>b = balance state ; \<gamma> = current_\<gamma> state; t = get_target state;
+                     send_flow_call2_cond state \<or> send_flow_fail2_cond state\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: get_target_cond_def)
+
+definition "get_target_for_source_cond s t state b \<gamma> f =
+           (b = balance state \<and> \<gamma> = current_\<gamma> state \<and> f = current_flow state \<and> s = get_source state \<and> 
+                         t = get_target_for_source state s\<and> send_flow_call1_cond state\<and> invar_gamma state)"
+
+lemma get_target_for_source_condI:
+"\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state; s = get_source state; 
+   t = get_target_for_source state s; send_flow_call1_cond state; invar_gamma state\<rbrakk> \<Longrightarrow>
+get_target_for_source_cond s t state b \<gamma> f"
+  by(auto simp add: get_target_for_source_cond_def)
+
+lemma get_target_for_source_condE:
+"get_target_for_source_cond s t state b \<gamma> f \<Longrightarrow>
+(\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state; s = get_source state; 
+   t = get_target_for_source state s; send_flow_call1_cond state; invar_gamma state\<rbrakk> \<Longrightarrow>P) \<Longrightarrow> P"
+  by(auto simp add: get_target_for_source_cond_def)
+
+definition "get_source_for_target_cond s t state b \<gamma> f = 
+(b = balance state \<and> \<gamma> = current_\<gamma> state \<and> f = current_flow state\<and> t = get_target state\<and>
+  s = get_source_for_target state t\<and> send_flow_call2_cond state\<and> invar_gamma  state)"
+
+lemma get_source_for_target_condI:
+"\<lbrakk> b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
+   t = get_target state; s = get_source_for_target state t; send_flow_call2_cond state ; invar_gamma  state\<rbrakk>
+                        \<Longrightarrow>get_source_for_target_cond s t state b \<gamma> f"
+  by(auto simp add:get_source_for_target_cond_def)
+
+lemma get_source_for_target_condE:
+"get_source_for_target_cond s t state b \<gamma> f \<Longrightarrow>
+    (\<lbrakk> b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
+   t = get_target state; s = get_source_for_target state t; send_flow_call2_cond state ; invar_gamma  state\<rbrakk>
+                        \<Longrightarrow>P) \<Longrightarrow> P"
+  by(auto simp add:get_source_for_target_cond_def)
+
 end
-locale loopB_Reasoning = loopB +
+
+locale send_flow_reasoning = send_flow +
 assumes get_source_target_path_a_axioms:                         
-     "\<And> state s t P b \<gamma> f. get_source_target_path_a_cond state s t P b \<gamma> f \<Longrightarrow> Rcap f (set P) > 0"
-     "\<And> state s t P b \<gamma> f. get_source_target_path_a_cond state s t P b \<gamma> f \<Longrightarrow> invar_isOptflow state
-                            \<Longrightarrow> is_min_path f s t P"
-     "\<And> state s t P b \<gamma> f. get_source_target_path_a_cond state s t P b \<gamma> f
-                            \<Longrightarrow> oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state"
-     "\<And> state s t P b \<gamma> f. get_source_target_path_a_cond state s t P b \<gamma> f \<Longrightarrow>  distinct P"
+  "\<And> state s t P b \<gamma> f. get_source_target_path_a_cond state s t P b \<gamma> f \<Longrightarrow> Rcap f (set P) > 0"
+  "\<And> state s t P b \<gamma> f. \<lbrakk> get_source_target_path_a_cond state s t P b \<gamma> f; invar_isOptflow state\<rbrakk> \<Longrightarrow> is_min_path f s t P"
+  "\<And> state s t P b \<gamma> f. get_source_target_path_a_cond state s t P b \<gamma> f  \<Longrightarrow> oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state"
+  "\<And> state s t P b \<gamma> f. get_source_target_path_a_cond state s t P b \<gamma> f \<Longrightarrow>  distinct P"
 and get_source_target_path_b_axioms:
-   "\<And> state s t P b \<gamma> f. get_source_target_path_b_cond state s t P b \<gamma> f \<Longrightarrow> Rcap f (set P) > 0"
-   "\<And> state s t P b \<gamma> f. get_source_target_path_b_cond state s t P b \<gamma> f  \<Longrightarrow> invar_isOptflow state 
-                          \<Longrightarrow> is_min_path f s t P"
-   "\<And> state s t P b \<gamma> f. get_source_target_path_b_cond state s t P b \<gamma> f 
-                          \<Longrightarrow> oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state"
-   "\<And> state s t P b \<gamma> f. get_source_target_path_b_cond state s t P b \<gamma> f \<Longrightarrow> distinct P"
+  "\<And> state s t P b \<gamma> f. get_source_target_path_b_cond state s t P b \<gamma> f \<Longrightarrow> Rcap f (set P) > 0"
+  "\<And> state s t P b \<gamma> f. \<lbrakk>get_source_target_path_b_cond state s t P b \<gamma> f; invar_isOptflow state \<rbrakk> \<Longrightarrow> is_min_path f s t P"
+  "\<And> state s t P b \<gamma> f. get_source_target_path_b_cond state s t P b \<gamma> f \<Longrightarrow> oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state"
+  "\<And> state s t P b \<gamma> f. get_source_target_path_b_cond state s t P b \<gamma> f \<Longrightarrow> distinct P"
 and get_source_axioms:
-   "\<And> s state b \<gamma>. \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state;  s = get_source state;
-                    loopB_call1_cond state \<or> loopB_fail1_cond state\<rbrakk> 
-                    \<Longrightarrow> s \<in> \<V> \<and> b s > (1 - \<epsilon>) * \<gamma>"
+   "\<And> s state b \<gamma>. get_source_cond s state b \<gamma> \<Longrightarrow> s \<in> \<V> \<and> b s > (1 - \<epsilon>) * \<gamma>"
 and get_target_axioms:
-   "\<And> t state b \<gamma>. \<lbrakk>b = balance state ; \<gamma> = current_\<gamma> state; t = get_target state;
-                     loopB_call2_cond state \<or> loopB_fail2_cond state\<rbrakk> 
-                    \<Longrightarrow> t \<in> \<V> \<and> b t < - (1 -\<epsilon>) * \<gamma>"
+   "\<And> t state b \<gamma>. get_target_cond t state b \<gamma>\<Longrightarrow> t \<in> \<V> \<and> b t < - (1 -\<epsilon>) * \<gamma>"
 and get_target_for_source_axioms:
-    "\<And> s t state b \<gamma> f. \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state; s = get_source state; 
-                         t = get_target_for_source state s; loopB_call1_cond state; invar_gamma state\<rbrakk>
-                        \<Longrightarrow> t \<in> \<V> \<and> b t < - \<epsilon> * \<gamma> \<and> resreach f s t "
+    "\<And> s t state b \<gamma> f. get_target_for_source_cond s t state b \<gamma> f\<Longrightarrow> t \<in> \<V> \<and> b t < - \<epsilon> * \<gamma> \<and> resreach f s t "
 and get_source_for_target_axioms:
-    "\<And> s t state b \<gamma> f. \<lbrakk> b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
-                          t = get_target state; s = get_source_for_target state t; loopB_call2_cond state ; invar_gamma  state\<rbrakk>
-                        \<Longrightarrow> s \<in> \<V> \<and> b s >  \<epsilon> * \<gamma> \<and> resreach f s t"
+    "\<And> s t state b \<gamma> f. get_source_for_target_cond s t state b \<gamma> f \<Longrightarrow> s \<in> \<V> \<and> b s >  \<epsilon> * \<gamma> \<and> resreach f s t"
 begin
 
-lemma loopB_call1_invar_aux12_pres:
-  assumes "loopB_call1_cond state"
+lemmas  get_source_axioms_unfolded= get_source_axioms[OF get_source_condI]
+lemmas get_target_axioms_unfolded=get_target_axioms[OF get_target_condI]
+lemmas get_target_for_source_axioms_unfolded=get_target_for_source_axioms[OF get_target_for_source_condI]
+lemmas get_source_for_target_axioms_unfolded=get_source_for_target_axioms[OF get_source_for_target_condI]
+
+lemma send_flow_call1_invar_aux12_pres:
+  assumes "send_flow_call1_cond state"
           "invar_aux12 state"
           "invar_gamma state"
-    shows "invar_aux12 (loopB_call1_upd state)"
-proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
+    shows "invar_aux12 (send_flow_call1_upd state)"
+proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
   note unf = this
   hence s_prop:"(1 - \<epsilon>) * \<gamma> < b s " "s \<in> \<V>"
-    using assms(1) get_source_axioms by blast+
+    using assms(1) get_source_axioms_unfolded by blast+
   have t_prop:" b t < - \<epsilon> * \<gamma> " "resreach f s t " " t \<in> \<V>"
-    using 1 get_target_for_source_axioms assms(1,3) by blast+
+    using 1 get_target_for_source_axioms_unfolded assms(1,3) by blast+
   have b_s: "b s > 0"
     using s_prop assms(3)
     unfolding invar_gamma_def unf 
@@ -646,10 +703,10 @@ proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
   show ?case 
   proof(rule invar_aux12I, goal_cases)
     case (1 v)
-    have same_rep:"representative (loopB_call1_upd state) v = representative state v"
-      unfolding loopB_call1_upd_def Let_def by simp
-    have b_b': "b' = balance (loopB_call1_upd state)" 
-      unfolding unf loopB_call1_upd_def Let_def by simp
+    have same_rep:"representative (send_flow_call1_upd state) v = representative state v"
+      unfolding send_flow_call1_upd_def Let_def by simp
+    have b_b': "b' = balance (send_flow_call1_upd state)" 
+      unfolding unf send_flow_call1_upd_def Let_def by simp
     then show ?case 
     proof(cases "v = s")
       case True
@@ -673,24 +730,24 @@ proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
         hence "b v \<noteq> 0" using 1 b_b' by simp
         hence "representative state v = v"
           using assms(2) 1 unfolding invar_aux12_def unf by simp
-        then show ?thesis  unfolding loopB_call1_upd_def Let_def by simp
+        then show ?thesis  unfolding send_flow_call1_upd_def Let_def by simp
       qed
     qed
   qed
 qed
 
-lemma loopB_call2_invar_aux12_pres:
-  assumes "loopB_call2_cond state"
+lemma send_flow_call2_invar_aux12_pres:
+  assumes "send_flow_call2_cond state"
           "invar_aux12 state"
           "invar_gamma state"
-    shows "invar_aux12 (loopB_call2_upd state)"
-proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
+    shows "invar_aux12 (send_flow_call2_upd state)"
+proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> t s P f' b' state')
   note unf = this
   have t_prop:" b t < - (1-\<epsilon>) * \<gamma> "  " t \<in> \<V>"
-    using 1 get_target_axioms assms(1) by blast+
+    using 1 get_target_axioms_unfolded assms(1) by blast+
   hence s_prop:"\<epsilon> * \<gamma> < b s " "s \<in> \<V>" "resreach f s t " 
-    using  get_source_for_target_axioms[OF 1(2) 1(3) 1(1) 1(7) 1(9) assms(1,3)] by auto
+    using  get_source_for_target_axioms_unfolded[OF 1(2) 1(3) 1(1) 1(7) 1(9) assms(1,3)] by auto
   have b_s: "b s > 0"
     using s_prop assms(3)
     unfolding invar_gamma_def unf 
@@ -708,10 +765,10 @@ proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
   show ?case 
   proof(rule invar_aux12I, goal_cases)
     case (1 v)
-    have same_rep:"representative (loopB_call2_upd state) v = representative state v"
-      unfolding loopB_call2_upd_def Let_def by simp
-    have b_b': "b' = balance (loopB_call2_upd state)" 
-      unfolding unf loopB_call2_upd_def Let_def by simp
+    have same_rep:"representative (send_flow_call2_upd state) v = representative state v"
+      unfolding send_flow_call2_upd_def Let_def by simp
+    have b_b': "b' = balance (send_flow_call2_upd state)" 
+      unfolding unf send_flow_call2_upd_def Let_def by simp
     then show ?case 
     proof(cases "v = s")
       case True
@@ -735,533 +792,533 @@ proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
         hence "b v \<noteq> 0" using 1 b_b' by simp
         hence "representative state v = v"
           using assms(2) 1 unfolding invar_aux12_def unf by simp
-        then show ?thesis  unfolding loopB_call2_upd_def Let_def by simp
+        then show ?thesis  unfolding send_flow_call2_upd_def Let_def by simp
       qed
     qed
   qed
 qed
 
-theorem loopB_invar_aux_pres: 
-  assumes "loopB_dom state" "aux_invar state" "invar_gamma state"
-  shows   "aux_invar (loopB state)"
+theorem send_flow_invar_aux_pres: 
+  assumes "send_flow_dom state" "aux_invar state" "invar_gamma state"
+  shows   "aux_invar (send_flow state)"
   using assms(2, 3) 
-proof(induction rule: loopB_induct[OF assms(1)])
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note "1a" = this
   then show ?case 
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     show ?thesis 
-      apply(subst loopB_simps(2), simp add: 1 "1a" , simp add: 1 "1a")
+      apply(subst send_flow_simps(2), simp add: 1 "1a" , simp add: 1 "1a")
       apply(rule aux_invar_pres[of state ]) 
-      by(auto simp add: loopB_cont_upd_def[of state] 1 "1a" validF_def )
+      by(auto simp add: send_flow_cont_upd_def[of state] 1 "1a" validF_def )
   next
     case 2
     show ?thesis
-      apply(subst loopB_simps(1), simp add: 1 2, simp add: 1 2)
+      apply(subst send_flow_simps(1), simp add: 1 2, simp add: 1 2)
       apply(rule aux_invar_pres[of state ]) 
-      by(auto simp add: loopB_succ_upd_def[of state] 1 2 validF_def)
+      by(auto simp add: send_flow_succ_upd_def[of state] 1 2 validF_def)
   next 
     case 3
-    have invar_gamma:"invar_gamma (loopB_call1_upd state)" 
-      using 1(5) unfolding invar_gamma_def loopB_call1_upd_def Let_def by simp
+    have invar_gamma:"invar_gamma (send_flow_call1_upd state)" 
+      using 1(5) unfolding invar_gamma_def send_flow_call1_upd_def Let_def by simp
     show ?thesis
-        apply(subst loopB_simps(5)[OF 1(1) 3])
+        apply(subst send_flow_simps(5)[OF 1(1) 3])
         apply(rule 1(2)[OF 3 _ invar_gamma])
         apply(rule aux_invar_pres[of state ])      
-         using loopB_call1_upd_changes[of state] 1 
-         by(auto elim: invar_aux12E[OF loopB_call1_invar_aux12_pres[OF 3 _ 1(5)]] 
+         using send_flow_call1_upd_changes[of state] 1 
+         by(auto elim: invar_aux12E[OF send_flow_call1_invar_aux12_pres[OF 3 _ 1(5)]] 
              simp add: validF_def) 
    next 
      case 4
-      have invar_gamma:"invar_gamma (loopB_call2_upd state)" 
-      using 1(5) unfolding invar_gamma_def loopB_call2_upd_def Let_def by simp
+      have invar_gamma:"invar_gamma (send_flow_call2_upd state)" 
+      using 1(5) unfolding invar_gamma_def send_flow_call2_upd_def Let_def by simp
     show ?thesis
-        apply(subst loopB_simps(6)[OF 1(1) 4])
+        apply(subst send_flow_simps(6)[OF 1(1) 4])
         apply(rule 1(3)[OF 4 _ invar_gamma])
         apply(rule aux_invar_pres)      
-         using loopB_call2_upd_changes[of state] 1 
-         by (auto elim: invar_aux12E[OF loopB_call2_invar_aux12_pres[OF 4 _ 1(5)]] 
+         using send_flow_call2_upd_changes[of state] 1 
+         by (auto elim: invar_aux12E[OF send_flow_call2_invar_aux12_pres[OF 4 _ 1(5)]] 
               simp add: validF_def)
     next
       case 5
       show ?thesis
-      apply(subst loopB_simps(3), simp add: 5 "1a" , simp add: 5 "1a")
+      apply(subst send_flow_simps(3), simp add: 5 "1a" , simp add: 5 "1a")
       apply(rule aux_invar_pres[of state ]) 
-        by(auto simp add: loopB_fail_upd_def[of state] 5 "1a" validF_def)
+        by(auto simp add: send_flow_fail_upd_def[of state] 5 "1a" validF_def)
     next
       case 6
       show ?thesis
-      apply(subst loopB_simps(4), simp add: 6 "1a" , simp add: 6 "1a")
+      apply(subst send_flow_simps(4), simp add: 6 "1a" , simp add: 6 "1a")
       apply(rule aux_invar_pres[of state ]) 
-      by(auto simp add: loopB_fail_upd_def[of state] 6 "1a" validF_def)
+      by(auto simp add: send_flow_fail_upd_def[of state] 6 "1a" validF_def)
   qed
 qed
 
 lemma invar_aux_pres_call1:
-  assumes "loopB_call1_cond state"
+  assumes "send_flow_call1_cond state"
           "aux_invar state"
           "invar_gamma state"
-    shows "aux_invar (loopB_call1_upd state)"
+    shows "aux_invar (send_flow_call1_upd state)"
     apply(rule aux_invar_pres[of state, OF assms(2)])      
-         using loopB_call1_upd_changes[of state]
-         by(auto elim: invar_aux12E[OF loopB_call1_invar_aux12_pres[OF assms(1) _ assms(3)]]
+         using send_flow_call1_upd_changes[of state]
+         by(auto elim: invar_aux12E[OF send_flow_call1_invar_aux12_pres[OF assms(1) _ assms(3)]]
               simp add: validF_def) 
 
 lemma invar_aux_pres_call2:
-  assumes "loopB_call2_cond state"
+  assumes "send_flow_call2_cond state"
           "aux_invar state"
           "invar_gamma state"
-    shows "aux_invar (loopB_call2_upd state)"
+    shows "aux_invar (send_flow_call2_upd state)"
     apply(rule aux_invar_pres[of state, OF assms(2)])      
-         using loopB_call2_upd_changes[of state]
-         by(auto elim: invar_aux12E[OF loopB_call2_invar_aux12_pres[OF assms(1) _ assms(3)]]
+         using send_flow_call2_upd_changes[of state]
+         by(auto elim: invar_aux12E[OF send_flow_call2_invar_aux12_pres[OF assms(1) _ assms(3)]]
               simp add: validF_def) 
 
 lemma invar_gamma_pres_succ:
-"invar_gamma state \<Longrightarrow> invar_gamma (loopB_succ_upd state)"
-  unfolding loopB_succ_upd_def invar_gamma_def by simp
+"invar_gamma state \<Longrightarrow> invar_gamma (send_flow_succ_upd state)"
+  unfolding send_flow_succ_upd_def invar_gamma_def by simp
 
 lemma invar_gamma_pres_cont:
-"invar_gamma state \<Longrightarrow> invar_gamma (loopB_cont_upd state)"
-  unfolding loopB_cont_upd_def invar_gamma_def by simp
+"invar_gamma state \<Longrightarrow> invar_gamma (send_flow_cont_upd state)"
+  unfolding send_flow_cont_upd_def invar_gamma_def by simp
 
 lemma invar_gamma_pres_fail:
-"invar_gamma state \<Longrightarrow> invar_gamma (loopB_fail_upd state)"
-  unfolding loopB_fail_upd_def invar_gamma_def by simp
+"invar_gamma state \<Longrightarrow> invar_gamma (send_flow_fail_upd state)"
+  unfolding send_flow_fail_upd_def invar_gamma_def by simp
 
 lemma invar_gamma_pres_call1:
-"invar_gamma state \<Longrightarrow> invar_gamma (loopB_call1_upd state)"
-  unfolding loopB_call1_upd_def invar_gamma_def Let_def by simp
+"invar_gamma state \<Longrightarrow> invar_gamma (send_flow_call1_upd state)"
+  unfolding send_flow_call1_upd_def invar_gamma_def Let_def by simp
 
 lemma invar_gamma_pres_call2:
-"invar_gamma state \<Longrightarrow> invar_gamma (loopB_call2_upd state)"
-  unfolding loopB_call2_upd_def invar_gamma_def Let_def by simp
+"invar_gamma state \<Longrightarrow> invar_gamma (send_flow_call2_upd state)"
+  unfolding send_flow_call2_upd_def invar_gamma_def Let_def by simp
 
-theorem loopB_invar_gamma_pres: 
-  assumes "loopB_dom state" "invar_gamma state"
-  shows   "invar_gamma (loopB state)"
+theorem send_flow_invar_gamma_pres: 
+  assumes "send_flow_dom state" "invar_gamma state"
+  shows   "invar_gamma (send_flow state)"
   using assms(2) 
-proof(induction rule: loopB_induct[OF assms(1)])
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note "1a" = this
   then show ?case 
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     show ?thesis 
-      apply(subst loopB_simps(2), simp add: 1 "1a" , simp add: 1 "1a")
+      apply(subst send_flow_simps(2), simp add: 1 "1a" , simp add: 1 "1a")
       apply(rule invar_gamma_pres_cont[of state ]) 
-      by(auto simp add: loopB_cont_upd_def[of state] 1 "1a")
+      by(auto simp add: send_flow_cont_upd_def[of state] 1 "1a")
   next
     case 2
     show ?thesis
-      apply(subst loopB_simps(1), simp add: 1 2, simp add: 1 2)
+      apply(subst send_flow_simps(1), simp add: 1 2, simp add: 1 2)
       apply(rule invar_gamma_pres_succ[of state ]) 
-      by(auto simp add: loopB_succ_upd_def[of state] 1 2)
+      by(auto simp add: send_flow_succ_upd_def[of state] 1 2)
   next 
     case 3
     show ?thesis
-        apply(subst loopB_simps(5)[OF 1(1) 3])
+        apply(subst send_flow_simps(5)[OF 1(1) 3])
         apply(rule 1(2)[OF 3])
         apply(rule invar_gamma_pres_call1)      
-        using loopB_call1_upd_changes[of state] 1 
+        using send_flow_call1_upd_changes[of state] 1 
         by auto
    next 
     case 4
     show ?thesis
-        apply(subst loopB_simps(6)[OF 1(1) 4])
+        apply(subst send_flow_simps(6)[OF 1(1) 4])
         apply(rule 1(3)[OF 4])
         apply(rule invar_gamma_pres_call2)      
-        using loopB_call2_upd_changes[of state] 1 
+        using send_flow_call2_upd_changes[of state] 1 
         by auto
     next
       case 5
       show ?thesis
-      apply(subst loopB_simps(3), simp add: 5 "1a" , simp add: 5 "1a")
+      apply(subst send_flow_simps(3), simp add: 5 "1a" , simp add: 5 "1a")
       apply(rule invar_gamma_pres_fail[of state ]) 
-        by(auto simp add: loopB_fail_upd_def[of state] 5 "1a")
+        by(auto simp add: send_flow_fail_upd_def[of state] 5 "1a")
     next
       case 6
       show ?thesis
-      apply(subst loopB_simps(4), simp add: 6 "1a" , simp add: 6 "1a")
+      apply(subst send_flow_simps(4), simp add: 6 "1a" , simp add: 6 "1a")
       apply(rule invar_gamma_pres_fail[of state ]) 
-      by(auto simp add: loopB_fail_upd_def[of state] 6 "1a")
+      by(auto simp add: send_flow_fail_upd_def[of state] 6 "1a")
   qed
 qed
 
 
-lemma loopB_changes_\<FF>: 
-  assumes "loopB_dom state"
-  shows "\<FF> (loopB state) = \<FF> state"
-proof(induction rule: loopB_induct[OF assms(1)])
+lemma send_flow_changes_\<FF>: 
+  assumes "send_flow_dom state"
+  shows "\<FF> (send_flow state) = \<FF> state"
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     then show ?thesis 
-      apply(subst loopB_simps(2)[OF IH(1) 1])
-      using loopB_cont_upd_changes[of state] by simp
+      apply(subst send_flow_simps(2)[OF IH(1) 1])
+      using send_flow_cont_upd_changes[of state] by simp
   next
     case 2
     then show ?thesis
-      apply(subst loopB_simps(1)[OF IH(1) 2])
-      using loopB_succ_upd_changes[of state] by simp
+      apply(subst send_flow_simps(1)[OF IH(1) 2])
+      using send_flow_succ_upd_changes[of state] by simp
   next
     case 3
     then show ?thesis 
-      using loopB_simps(5)[OF IH(1) 3] IH loopB_call1_upd_changes 
+      using send_flow_simps(5)[OF IH(1) 3] IH send_flow_call1_upd_changes 
       by auto
   next
     case 4
     then show ?thesis 
-      using loopB_simps(6)[OF IH(1) 4] IH loopB_call2_upd_changes 
+      using send_flow_simps(6)[OF IH(1) 4] IH send_flow_call2_upd_changes 
       by auto
   next
     case 5
     then show ?thesis 
-      apply(subst loopB_simps(3)[OF IH(1) 5])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(3)[OF IH(1) 5])
+      using send_flow_fail_upd_changes[of state] by simp
   next
     case 6
     then show ?thesis
-      apply(subst loopB_simps(4)[OF IH(1) 6])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(4)[OF IH(1) 6])
+      using send_flow_fail_upd_changes[of state] by simp
   qed
 qed
 
-lemma loopB_changes_conv_to_rdg: 
-  assumes "loopB_dom state"
-  shows "conv_to_rdg (loopB state) = conv_to_rdg state"
-proof(induction rule: loopB_induct[OF assms(1)])
+lemma send_flow_changes_conv_to_rdg: 
+  assumes "send_flow_dom state"
+  shows "conv_to_rdg (send_flow state) = conv_to_rdg state"
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     then show ?thesis 
-      apply(subst loopB_simps(2)[OF IH(1) 1])
-      using loopB_cont_upd_changes[of state] by simp
+      apply(subst send_flow_simps(2)[OF IH(1) 1])
+      using send_flow_cont_upd_changes[of state] by simp
   next
     case 2
     then show ?thesis
-      apply(subst loopB_simps(1)[OF IH(1) 2])
-      using loopB_succ_upd_changes[of state] by simp
+      apply(subst send_flow_simps(1)[OF IH(1) 2])
+      using send_flow_succ_upd_changes[of state] by simp
   next
     case 3
     then show ?thesis 
-      using loopB_simps(5)[OF IH(1) 3] IH loopB_call1_upd_changes 
+      using send_flow_simps(5)[OF IH(1) 3] IH send_flow_call1_upd_changes 
       by auto
   next
     case 4
     then show ?thesis 
-      using loopB_simps(6)[OF IH(1) 4] IH loopB_call2_upd_changes 
+      using send_flow_simps(6)[OF IH(1) 4] IH send_flow_call2_upd_changes 
       by auto
   next
     case 5
     then show ?thesis 
-      apply(subst loopB_simps(3)[OF IH(1) 5])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(3)[OF IH(1) 5])
+      using send_flow_fail_upd_changes[of state] by simp
   next
     case 6
     then show ?thesis
-      apply(subst loopB_simps(4)[OF IH(1) 6])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(4)[OF IH(1) 6])
+      using send_flow_fail_upd_changes[of state] by simp
   qed
 qed
 
-lemma loopB_changes_actives: 
-  assumes "loopB_dom state"
-  shows "actives (loopB state) = actives state"
-proof(induction rule: loopB_induct[OF assms(1)])
+lemma send_flow_changes_actives: 
+  assumes "send_flow_dom state"
+  shows "actives (send_flow state) = actives state"
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     then show ?thesis 
-      apply(subst loopB_simps(2)[OF IH(1) 1])
-      using loopB_cont_upd_changes[of state] by simp
+      apply(subst send_flow_simps(2)[OF IH(1) 1])
+      using send_flow_cont_upd_changes[of state] by simp
   next
     case 2
     then show ?thesis
-      apply(subst loopB_simps(1)[OF IH(1) 2])
-      using loopB_succ_upd_changes[of state] by simp
+      apply(subst send_flow_simps(1)[OF IH(1) 2])
+      using send_flow_succ_upd_changes[of state] by simp
   next
     case 3
     then show ?thesis 
-      using loopB_simps(5)[OF IH(1) 3] IH loopB_call1_upd_changes 
+      using send_flow_simps(5)[OF IH(1) 3] IH send_flow_call1_upd_changes 
       by auto
   next
     case 4
     then show ?thesis 
-      using loopB_simps(6)[OF IH(1) 4] IH loopB_call2_upd_changes 
+      using send_flow_simps(6)[OF IH(1) 4] IH send_flow_call2_upd_changes 
       by auto
   next
     case 5
     then show ?thesis 
-      apply(subst loopB_simps(3)[OF IH(1) 5])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(3)[OF IH(1) 5])
+      using send_flow_fail_upd_changes[of state] by simp
   next
     case 6
     then show ?thesis
-      apply(subst loopB_simps(4)[OF IH(1) 6])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(4)[OF IH(1) 6])
+      using send_flow_fail_upd_changes[of state] by simp
   qed
 qed
 
-lemma loopB_changes_current_\<gamma>: 
-  assumes "loopB_dom state"
-  shows "current_\<gamma> (loopB state) = current_\<gamma> state"
-proof(induction rule: loopB_induct[OF assms(1)])
+lemma send_flow_changes_current_\<gamma>: 
+  assumes "send_flow_dom state"
+  shows "current_\<gamma> (send_flow state) = current_\<gamma> state"
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     then show ?thesis 
-      apply(subst loopB_simps(2)[OF IH(1) 1])
-      using loopB_cont_upd_changes[of state] by simp
+      apply(subst send_flow_simps(2)[OF IH(1) 1])
+      using send_flow_cont_upd_changes[of state] by simp
   next
     case 2
     then show ?thesis
-      apply(subst loopB_simps(1)[OF IH(1) 2])
-      using loopB_succ_upd_changes[of state] by simp
+      apply(subst send_flow_simps(1)[OF IH(1) 2])
+      using send_flow_succ_upd_changes[of state] by simp
   next
     case 3
     then show ?thesis 
-      using loopB_simps(5)[OF IH(1) 3] IH loopB_call1_upd_changes 
+      using send_flow_simps(5)[OF IH(1) 3] IH send_flow_call1_upd_changes 
       by auto
   next
     case 4
     then show ?thesis 
-      using loopB_simps(6)[OF IH(1) 4] IH loopB_call2_upd_changes 
+      using send_flow_simps(6)[OF IH(1) 4] IH send_flow_call2_upd_changes 
       by auto
   next
     case 5
     then show ?thesis 
-      apply(subst loopB_simps(3)[OF IH(1) 5])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(3)[OF IH(1) 5])
+      using send_flow_fail_upd_changes[of state] by simp
   next
     case 6
     then show ?thesis
-      apply(subst loopB_simps(4)[OF IH(1) 6])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(4)[OF IH(1) 6])
+      using send_flow_fail_upd_changes[of state] by simp
   qed
 qed
 
-lemma loopB_changes_representative: 
-  assumes "loopB_dom state"
-  shows "representative (loopB state) = representative state"
-proof(induction rule: loopB_induct[OF assms(1)])
+lemma send_flow_changes_representative: 
+  assumes "send_flow_dom state"
+  shows "representative (send_flow state) = representative state"
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     then show ?thesis 
-      apply(subst loopB_simps(2)[OF IH(1) 1])
-      using loopB_cont_upd_changes[of state] by simp
+      apply(subst send_flow_simps(2)[OF IH(1) 1])
+      using send_flow_cont_upd_changes[of state] by simp
   next
     case 2
     then show ?thesis
-      apply(subst loopB_simps(1)[OF IH(1) 2])
-      using loopB_succ_upd_changes[of state] by simp
+      apply(subst send_flow_simps(1)[OF IH(1) 2])
+      using send_flow_succ_upd_changes[of state] by simp
   next
     case 3
     then show ?thesis 
-      using loopB_simps(5)[OF IH(1) 3] IH loopB_call1_upd_changes 
+      using send_flow_simps(5)[OF IH(1) 3] IH send_flow_call1_upd_changes 
       by auto
   next
     case 4
     then show ?thesis 
-      using loopB_simps(6)[OF IH(1) 4] IH loopB_call2_upd_changes 
+      using send_flow_simps(6)[OF IH(1) 4] IH send_flow_call2_upd_changes 
       by auto
   next
     case 5
     then show ?thesis 
-      apply(subst loopB_simps(3)[OF IH(1) 5])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(3)[OF IH(1) 5])
+      using send_flow_fail_upd_changes[of state] by simp
   next
     case 6
     then show ?thesis
-      apply(subst loopB_simps(4)[OF IH(1) 6])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(4)[OF IH(1) 6])
+      using send_flow_fail_upd_changes[of state] by simp
   qed
 qed
 
-lemma loopB_changes_comp_card: 
-  assumes "loopB_dom state"
-  shows "comp_card (loopB state) = comp_card state"
-proof(induction rule: loopB_induct[OF assms(1)])
+lemma send_flow_changes_comp_card: 
+  assumes "send_flow_dom state"
+  shows "comp_card (send_flow state) = comp_card state"
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     then show ?thesis 
-      apply(subst loopB_simps(2)[OF IH(1) 1])
-      using loopB_cont_upd_changes[of state] by simp
+      apply(subst send_flow_simps(2)[OF IH(1) 1])
+      using send_flow_cont_upd_changes[of state] by simp
   next
     case 2
     then show ?thesis
-      apply(subst loopB_simps(1)[OF IH(1) 2])
-      using loopB_succ_upd_changes[of state] by simp
+      apply(subst send_flow_simps(1)[OF IH(1) 2])
+      using send_flow_succ_upd_changes[of state] by simp
   next
     case 3
     then show ?thesis 
-      using loopB_simps(5)[OF IH(1) 3] IH loopB_call1_upd_changes 
+      using send_flow_simps(5)[OF IH(1) 3] IH send_flow_call1_upd_changes 
       by auto
   next
     case 4
     then show ?thesis 
-      using loopB_simps(6)[OF IH(1) 4] IH loopB_call2_upd_changes 
+      using send_flow_simps(6)[OF IH(1) 4] IH send_flow_call2_upd_changes 
       by auto
   next
     case 5
     then show ?thesis 
-      apply(subst loopB_simps(3)[OF IH(1) 5])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(3)[OF IH(1) 5])
+      using send_flow_fail_upd_changes[of state] by simp
   next
     case 6
     then show ?thesis
-      apply(subst loopB_simps(4)[OF IH(1) 6])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(4)[OF IH(1) 6])
+      using send_flow_fail_upd_changes[of state] by simp
   qed
 qed
 
-lemma loopB_changes_\<FF>_imp: 
-  assumes "loopB_dom state"
-  shows "\<FF>_imp (loopB state) = \<FF>_imp state"
-proof(induction rule: loopB_induct[OF assms(1)])
+lemma send_flow_changes_\<FF>_imp: 
+  assumes "send_flow_dom state"
+  shows "\<FF>_imp (send_flow state) = \<FF>_imp state"
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     then show ?thesis 
-      apply(subst loopB_simps(2)[OF IH(1) 1])
-      using loopB_cont_upd_changes[of state] by simp
+      apply(subst send_flow_simps(2)[OF IH(1) 1])
+      using send_flow_cont_upd_changes[of state] by simp
   next
     case 2
     then show ?thesis
-      apply(subst loopB_simps(1)[OF IH(1) 2])
-      using loopB_succ_upd_changes[of state] by simp
+      apply(subst send_flow_simps(1)[OF IH(1) 2])
+      using send_flow_succ_upd_changes[of state] by simp
   next
     case 3
     then show ?thesis 
-      using loopB_simps(5)[OF IH(1) 3] IH loopB_call1_upd_changes 
+      using send_flow_simps(5)[OF IH(1) 3] IH send_flow_call1_upd_changes 
       by auto
   next
     case 4
     then show ?thesis 
-      using loopB_simps(6)[OF IH(1) 4] IH loopB_call2_upd_changes 
+      using send_flow_simps(6)[OF IH(1) 4] IH send_flow_call2_upd_changes 
       by auto
   next
     case 5
     then show ?thesis 
-      apply(subst loopB_simps(3)[OF IH(1) 5])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(3)[OF IH(1) 5])
+      using send_flow_fail_upd_changes[of state] by simp
   next
     case 6
     then show ?thesis
-      apply(subst loopB_simps(4)[OF IH(1) 6])
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(4)[OF IH(1) 6])
+      using send_flow_fail_upd_changes[of state] by simp
   qed
 qed
 
-lemma loopB_changes_\<F>: 
-  assumes "loopB_dom state"
-  shows "\<F> (loopB state) = \<F> state"
-proof(induction rule: loopB_induct[OF assms(1)])
+lemma send_flow_changes_\<F>: 
+  assumes "send_flow_dom state"
+  shows "\<F> (send_flow state) = \<F> state"
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     then show ?thesis 
-      apply(subst loopB_simps(2)[OF IH(1) 1])+
-      using loopB_cont_upd_changes[of state] by simp
+      apply(subst send_flow_simps(2)[OF IH(1) 1])+
+      using send_flow_cont_upd_changes[of state] by simp
   next
     case 2
     then show ?thesis
-      apply(subst loopB_simps(1)[OF IH(1) 2])+
-      using loopB_succ_upd_changes[of state] by simp
+      apply(subst send_flow_simps(1)[OF IH(1) 2])+
+      using send_flow_succ_upd_changes[of state] by simp
   next
     case 3
     then show ?thesis 
-      using loopB_simps(5)[OF IH(1) 3] IH loopB_call1_upd_changes 
+      using send_flow_simps(5)[OF IH(1) 3] IH send_flow_call1_upd_changes 
       by auto
   next
     case 4
     then show ?thesis 
-      using loopB_simps(6)[OF IH(1) 4] IH loopB_call2_upd_changes 
+      using send_flow_simps(6)[OF IH(1) 4] IH send_flow_call2_upd_changes 
       by auto
   next
     case 5
     then show ?thesis 
-      apply(subst loopB_simps(3)[OF IH(1) 5])+
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(3)[OF IH(1) 5])+
+      using send_flow_fail_upd_changes[of state] by simp
   next
     case 6
     then show ?thesis
-      apply(subst loopB_simps(4)[OF IH(1) 6])+
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(4)[OF IH(1) 6])+
+      using send_flow_fail_upd_changes[of state] by simp
   qed
 qed
 
-lemma loopB_changes_not_blocked: 
-  assumes "loopB_dom state"
-  shows "not_blocked (loopB state) = not_blocked state"
-proof(induction rule: loopB_induct[OF assms(1)])
+lemma send_flow_changes_not_blocked: 
+  assumes "send_flow_dom state"
+  shows "not_blocked (send_flow state) = not_blocked state"
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     then show ?thesis 
-      apply(subst loopB_simps(2)[OF IH(1) 1])+
-      using loopB_cont_upd_changes[of state] by simp
+      apply(subst send_flow_simps(2)[OF IH(1) 1])+
+      using send_flow_cont_upd_changes[of state] by simp
   next
     case 2
     then show ?thesis
-      apply(subst loopB_simps(1)[OF IH(1) 2])+
-      using loopB_succ_upd_changes[of state] by simp
+      apply(subst send_flow_simps(1)[OF IH(1) 2])+
+      using send_flow_succ_upd_changes[of state] by simp
   next
     case 3
     then show ?thesis 
-      using loopB_simps(5)[OF IH(1) 3] IH loopB_call1_upd_changes 
+      using send_flow_simps(5)[OF IH(1) 3] IH send_flow_call1_upd_changes 
       by auto
   next
     case 4
     then show ?thesis 
-      using loopB_simps(6)[OF IH(1) 4] IH loopB_call2_upd_changes 
+      using send_flow_simps(6)[OF IH(1) 4] IH send_flow_call2_upd_changes 
       by auto
   next
     case 5
     then show ?thesis 
-      apply(subst loopB_simps(3)[OF IH(1) 5])+
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(3)[OF IH(1) 5])+
+      using send_flow_fail_upd_changes[of state] by simp
   next
     case 6
     then show ?thesis
-      apply(subst loopB_simps(4)[OF IH(1) 6])+
-      using loopB_fail_upd_changes[of state] by simp
+      apply(subst send_flow_simps(4)[OF IH(1) 6])+
+      using send_flow_fail_upd_changes[of state] by simp
   qed
 qed
 
-lemma loopB_call1_cond_Phi_decr:
-  assumes "loopB_call1_cond state" "invar_gamma state"
-  shows "\<Phi> (loopB_call1_upd state) \<le> \<Phi> state - 1"
-proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
+lemma send_flow_call1_cond_Phi_decr:
+  assumes "send_flow_call1_cond state" "invar_gamma state"
+  shows "\<Phi> (send_flow_call1_upd state) \<le> \<Phi> state - 1"
+proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
-  hence "state' = loopB_call1_upd state" 
-    unfolding loopB_call1_upd_def  Let_def by fast
+  hence "state' = send_flow_call1_upd state" 
+    unfolding send_flow_call1_upd_def  Let_def by fast
   have gamma_0: "\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
   have sP: "(1 - \<epsilon>) * \<gamma> < b s"  "s \<in> \<V>" unfolding 1(6)
-    using get_source_axioms 1  assms(1) by blast+
+    using get_source_axioms_unfolded 1  assms(1) by blast+
   have tP: "b t < - \<epsilon> * \<gamma>" "resreach f s t" "t \<in> \<V>" 
-    using 1 get_target_for_source_axioms  assms(1,2) by blast+
+    using 1 get_target_for_source_axioms_unfolded  assms(1,2) by blast+
   have s_neq_t:"s \<noteq> t" using sP tP gamma_0
     by (smt (verit, best) mult_less_cancel_right_disj)
   have bs_decr:"\<lceil> \<bar> b s - \<gamma>\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> \<le> \<lceil> \<bar> b s\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> - 1"
@@ -1328,8 +1385,8 @@ proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
       by (smt (verit, del_insts) mult_neg_pos)
     finally show ?thesis by simp
   qed
-  have "\<Phi> (loopB_call1_upd state) = \<Phi> state'"
-    by (simp add: \<open>state' = loopB_call1_upd state\<close>)
+  have "\<Phi> (send_flow_call1_upd state) = \<Phi> state'"
+    by (simp add: \<open>state' = send_flow_call1_upd state\<close>)
   also have "... = (\<Sum> v \<in>  \<V>. \<lceil> \<bar> b' v\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil>)"
     using 1  unfolding \<Phi>_def by simp
   also have "... = (\<Sum> v \<in>  \<V> - {s, t}. \<lceil> \<bar> b' v\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil>) + 
@@ -1351,19 +1408,19 @@ proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
    finally show ?case by simp
 qed
   
-lemma loopB_call2_cond_Phi_decr:
-  assumes "loopB_call2_cond state" "invar_gamma state"
-  shows "\<Phi> (loopB_call2_upd state) \<le> \<Phi> state - 1"
-proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
+lemma send_flow_call2_cond_Phi_decr:
+  assumes "send_flow_call2_cond state" "invar_gamma state"
+  shows "\<Phi> (send_flow_call2_upd state) \<le> \<Phi> state - 1"
+proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> t s P f' b' state')
-  hence "state' = loopB_call2_upd state" 
-    unfolding loopB_call2_upd_def  Let_def by fast
+  hence "state' = send_flow_call2_upd state" 
+    unfolding send_flow_call2_upd_def  Let_def by fast
   have gamma_0: "\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
   have sP: "\<epsilon> * \<gamma> < b s" "resreach f s t"  "s \<in> \<V>" 
-    using get_source_for_target_axioms[OF 1(2) 1(3) 1(1)  1(7) 1(9) assms(1,2)]
+    using get_source_for_target_axioms_unfolded[OF 1(2) 1(3) 1(1)  1(7) 1(9) assms(1,2)]
     by auto
   have tP: "b t < - (1-\<epsilon>) * \<gamma>"  "t \<in> \<V>" 
-    using 1 get_target_axioms assms(1) by blast+
+    using 1 get_target_axioms_unfolded assms(1) by blast+
   have s_neq_t:"s \<noteq> t" using sP tP gamma_0
     by (smt (verit, best) mult_less_cancel_right_disj)
   have bt_decr:"\<lceil> \<bar> b t + \<gamma>\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> \<le> \<lceil> \<bar> b t\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> - 1"
@@ -1431,8 +1488,8 @@ proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
       by (smt (verit) mult_less_0_iff)
     finally show ?thesis by simp
   qed
-  have "\<Phi> (loopB_call2_upd state) = \<Phi> state'"
-    by (simp add: \<open>state' = loopB_call2_upd state\<close>)
+  have "\<Phi> (send_flow_call2_upd state) = \<Phi> state'"
+    by (simp add: \<open>state' = send_flow_call2_upd state\<close>)
   also have "... = (\<Sum> v \<in>  \<V>. \<lceil> \<bar> b' v\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil>)"
     using 1  unfolding \<Phi>_def by simp
   also have "... = (\<Sum> v \<in>  \<V> - {s, t}. \<lceil> \<bar> b' v\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil>) + 
@@ -1454,217 +1511,217 @@ proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
    finally show ?case by simp
  qed
 
-lemma loopB_succ_upd_Phi_pres:
-  shows "\<Phi> (loopB_succ_upd state) = \<Phi> state"
-  unfolding \<Phi>_def loopB_succ_upd_def Let_def by simp
+lemma send_flow_succ_upd_Phi_pres:
+  shows "\<Phi> (send_flow_succ_upd state) = \<Phi> state"
+  unfolding \<Phi>_def send_flow_succ_upd_def Let_def by simp
 
-lemma loopB_cont_upd_Phi_pres:
-  shows "\<Phi> (loopB_cont_upd state) = \<Phi> state"
-  unfolding \<Phi>_def loopB_cont_upd_def Let_def by simp
+lemma send_flow_cont_upd_Phi_pres:
+  shows "\<Phi> (send_flow_cont_upd state) = \<Phi> state"
+  unfolding \<Phi>_def send_flow_cont_upd_def Let_def by simp
 
-lemma loopB_fail_upd_Phi_pres:
-  shows "\<Phi> (loopB_fail_upd state) = \<Phi> state"
-  unfolding \<Phi>_def loopB_fail_upd_def Let_def by simp
+lemma send_flow_fail_upd_Phi_pres:
+  shows "\<Phi> (send_flow_fail_upd state) = \<Phi> state"
+  unfolding \<Phi>_def send_flow_fail_upd_def Let_def by simp
 
-lemma loopB_cont_upd_flow_pres: "current_flow (loopB_cont_upd state) = current_flow state"
-  unfolding loopB_cont_upd_def by simp
+lemma send_flow_cont_upd_flow_pres: "current_flow (send_flow_cont_upd state) = current_flow state"
+  unfolding send_flow_cont_upd_def by simp
 
-lemma loopB_succ_upd_flow_pres: "current_flow (loopB_succ_upd state) = current_flow state"
-  unfolding loopB_succ_upd_def by simp
+lemma send_flow_succ_upd_flow_pres: "current_flow (send_flow_succ_upd state) = current_flow state"
+  unfolding send_flow_succ_upd_def by simp
 
-lemma loopB_fail_upd_flow_pres: "current_flow (loopB_fail_upd state) = current_flow state"
-  unfolding loopB_fail_upd_def by simp
+lemma send_flow_fail_upd_flow_pres: "current_flow (send_flow_fail_upd state) = current_flow state"
+  unfolding send_flow_fail_upd_def by simp
 
-lemma loopB_dom_succ: "loopB_succ_cond state \<Longrightarrow> loopB_dom state"
-  by(auto elim: loopB_succ_condE intro: loopB.domintros)
+lemma send_flow_dom_succ: "send_flow_succ_cond state \<Longrightarrow> send_flow_dom state"
+  by(auto elim: send_flow_succ_condE intro: send_flow.domintros)
 
-lemma loopB_dom_cont: "loopB_cont_cond state \<Longrightarrow> loopB_dom state"
-  by(auto elim!: loopB_cont_condE intro: loopB.domintros)
+lemma send_flow_dom_cont: "send_flow_cont_cond state \<Longrightarrow> send_flow_dom state"
+  by(auto elim!: send_flow_cont_condE intro: send_flow.domintros)
 
-lemma loopB_dom_fail1: "loopB_fail1_cond state \<Longrightarrow> loopB_dom state"
-  by(auto elim!: loopB_fail1_condE intro: loopB.domintros)
+lemma send_flow_dom_fail1: "send_flow_fail1_cond state \<Longrightarrow> send_flow_dom state"
+  by(auto elim!: send_flow_fail1_condE intro: send_flow.domintros)
 
-lemma loopB_dom_fail2: "loopB_fail2_cond state \<Longrightarrow> loopB_dom state"
-  by(auto elim!: loopB_fail2_condE intro: loopB.domintros)
+lemma send_flow_dom_fail2: "send_flow_fail2_cond state \<Longrightarrow> send_flow_dom state"
+  by(auto elim!: send_flow_fail2_condE intro: send_flow.domintros)
 
-lemma loopB_dom_call1: "loopB_call1_cond state \<Longrightarrow> (loopB_dom (loopB_call1_upd state))
-                          \<Longrightarrow> loopB_dom state"
-  apply(rule loopB_call1_condE, simp)
-  apply(rule loopB.domintros) 
-  unfolding loopB_call1_upd_def Let_def
+lemma send_flow_dom_call1: "send_flow_call1_cond state \<Longrightarrow> (send_flow_dom (send_flow_call1_upd state))
+                          \<Longrightarrow> send_flow_dom state"
+  apply(rule send_flow_call1_condE, simp)
+  apply(rule send_flow.domintros) 
+  unfolding send_flow_call1_upd_def Let_def
   subgoal for f b \<gamma> s t P f' b' state' v sa ta 
-    apply(rule back_subst[of loopB_dom])
+    apply(rule back_subst[of send_flow_dom])
     apply simp 
     apply(rule Algo_state.equality)
     by auto
   by simp
 
-lemma loopB_dom_call2: "loopB_call2_cond state \<Longrightarrow> (loopB_dom (loopB_call2_upd state))
-                          \<Longrightarrow> loopB_dom state"
-  apply(rule loopB_call2_condE, simp)
-  apply(rule loopB.domintros) 
-  unfolding loopB_call2_upd_def Let_def
+lemma send_flow_dom_call2: "send_flow_call2_cond state \<Longrightarrow> (send_flow_dom (send_flow_call2_upd state))
+                          \<Longrightarrow> send_flow_dom state"
+  apply(rule send_flow_call2_condE, simp)
+  apply(rule send_flow.domintros) 
+  unfolding send_flow_call2_upd_def Let_def
   apply simp
   subgoal for f b \<gamma> s t P f' b' state' v sa ta 
-    apply(rule back_subst[of loopB_dom])
+    apply(rule back_subst[of send_flow_dom])
     apply simp 
     apply(rule Algo_state.equality)
     by auto
   done
 
-lemma loopB_term:
+lemma send_flow_term:
   assumes "invar_gamma state"
           "\<phi> = nat (\<Phi> state)"
-  shows "loopB_dom state"
+  shows "send_flow_dom state"
   using assms 
 proof(induction \<phi> arbitrary: state rule: less_induct)
   case (less \<phi>)
   then show ?case
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 3
     show ?thesis 
-      using loopB_call1_cond_Phi_decr[of state] 3 Phi_nonneg invar_gamma_pres_call1 less 
-      by (force intro: loopB_dom_call1 less(1)[of "nat (\<Phi> (loopB_call1_upd state))"])
+      using send_flow_call1_cond_Phi_decr[of state] 3 Phi_nonneg invar_gamma_pres_call1 less 
+      by (force intro: send_flow_dom_call1 less(1)[of "nat (\<Phi> (send_flow_call1_upd state))"])
   next
     case 4
     show ?thesis 
-      using loopB_call2_cond_Phi_decr[of state] 4 Phi_nonneg invar_gamma_pres_call2 less 
-      by (force intro: loopB_dom_call2 less(1)[of "nat (\<Phi> (loopB_call2_upd state))"])
-  qed (simp add: loopB_dom_succ 
-                 loopB_dom_cont 
-                 loopB_dom_fail1
-                 loopB_dom_fail2)+
+      using send_flow_call2_cond_Phi_decr[of state] 4 Phi_nonneg invar_gamma_pres_call2 less 
+      by (force intro: send_flow_dom_call2 less(1)[of "nat (\<Phi> (send_flow_call2_upd state))"])
+  qed (simp add: send_flow_dom_succ 
+                 send_flow_dom_cont 
+                 send_flow_dom_fail1
+                 send_flow_dom_fail2)+
 qed
 
-lemmas loopB_termination = loopB_term[OF _ refl]
+lemmas send_flow_termination = send_flow_term[OF _ refl]
 
-lemma orlins_entry_after_loopB:
-  assumes "loopB_dom state"
-          "loopB state = state'"
+lemma orlins_entry_after_send_flow:
+  assumes "send_flow_dom state"
+          "send_flow state = state'"
           "invar_gamma state"
           "return state' = notyetterm"
-   shows "orlins_entry (loopB state)"
+   shows "orlins_entry (send_flow state)"
   using assms(2-4) unfolding invar_gamma_def
-  apply(induction rule: loopB_induct[OF assms(1)])
+  apply(induction rule: send_flow_induct[OF assms(1)])
   subgoal for state
-    apply(cases rule: loopB_cases[of state])
+    apply(cases rule: send_flow_cases[of state])
     subgoal
-      apply(rule loopB_cont_condE[of state], simp)
+      apply(rule send_flow_cont_condE[of state], simp)
       subgoal for f b \<gamma>
-        apply(subst loopB_simps(2), simp, simp)
-        unfolding loopB_cont_upd_def orlins_entry_def apply simp
+        apply(subst send_flow_simps(2), simp, simp)
+        unfolding send_flow_cont_upd_def orlins_entry_def apply simp
         by (smt (verit, ccfv_threshold) \<epsilon>_axiom(1) minus_mult_minus mult_le_cancel_right1 mult_minus_right)
       done
-    using loopB_simps(1)[of state] loopB_simps(3)[of state] loopB_simps(4)[of state]
-          loopB_simps(5)[of state] invar_gamma_pres_call1[of state, simplified invar_gamma_def]
-          loopB_simps(6)[of state] invar_gamma_pres_call2[of state, simplified invar_gamma_def]            
-    unfolding loopB_fail_upd_def loopB_succ_upd_def Let_def by auto
+    using send_flow_simps(1)[of state] send_flow_simps(3)[of state] send_flow_simps(4)[of state]
+          send_flow_simps(5)[of state] invar_gamma_pres_call1[of state, simplified invar_gamma_def]
+          send_flow_simps(6)[of state] invar_gamma_pres_call2[of state, simplified invar_gamma_def]            
+    unfolding send_flow_fail_upd_def send_flow_succ_upd_def Let_def by auto
   done
 
-lemma remaining_balance_after_loopB:
-  assumes "loopB_dom state"
-          "loopB state = state'"
+lemma remaining_balance_after_send_flow:
+  assumes "send_flow_dom state"
+          "send_flow state = state'"
           "return state' = notyetterm"
-   shows "invar_non_zero_b (loopB state)"
+   shows "invar_non_zero_b (send_flow state)"
   using assms(2-) unfolding invar_gamma_def invar_non_zero_b_def
-  apply(induction rule: loopB_induct[OF assms(1)])
+  apply(induction rule: send_flow_induct[OF assms(1)])
   subgoal for state
-    apply(cases rule: loopB_cases[of state])
+    apply(cases rule: send_flow_cases[of state])
     subgoal
-      apply(rule loopB_cont_condE[of state], simp)
+      apply(rule send_flow_cont_condE[of state], simp)
       subgoal for f b \<gamma>
-        apply(subst loopB_simps(2), simp, simp)
-        unfolding loopB_cont_upd_def orlins_entry_def by simp
+        apply(subst send_flow_simps(2), simp, simp)
+        unfolding send_flow_cont_upd_def orlins_entry_def by simp
       done
-    using loopB_simps(1)[of state] loopB_simps(3)[of state] loopB_simps(4)[of state]
-          loopB_simps(5)[of state] invar_gamma_pres_call1[of state, simplified invar_gamma_def]
-          loopB_simps(6)[of state] invar_gamma_pres_call2[of state, simplified invar_gamma_def]            
-    unfolding loopB_fail_upd_def loopB_succ_upd_def Let_def by auto
+    using send_flow_simps(1)[of state] send_flow_simps(3)[of state] send_flow_simps(4)[of state]
+          send_flow_simps(5)[of state] invar_gamma_pres_call1[of state, simplified invar_gamma_def]
+          send_flow_simps(6)[of state] invar_gamma_pres_call2[of state, simplified invar_gamma_def]            
+    unfolding send_flow_fail_upd_def send_flow_succ_upd_def Let_def by auto
   done
 
-lemma loopB_call1_cond_flow_Phi:
-  assumes "loopB_call1_cond state"
-          "state' = loopB_call1_upd state"
+lemma send_flow_call1_cond_flow_Phi:
+  assumes "send_flow_call1_cond state"
+          "state' = send_flow_call1_upd state"
           "invar_gamma state" "(\<forall> e \<in> \<F> state . current_flow state e > 0)" "aux_invar state"
      shows"current_flow  state' e \<ge> current_flow state e - (\<Phi> state - \<Phi> state')*current_\<gamma> state'"
   unfolding assms(2)
-proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
+proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
   have gamma_0:"\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
   have s_not_t: " s \<noteq> t "
-    using get_target_for_source_axioms[OF 1(2,3,1,6,7) assms(1,3)]
-          get_source_axioms[OF 1(2,3,6)] assms(1) \<epsilon>_axiom gamma_0
+    using get_target_for_source_axioms_unfolded[OF 1(2,3,1,6,7) assms(1,3)]
+          get_source_axioms_unfolded[OF 1(2,3,6)] assms(1) \<epsilon>_axiom gamma_0
     by (smt (verit, ccfv_SIG) mult_less_cancel_right_disj)
   have s_V: " s \<in> \<V>"
-    using 1 get_source_axioms assms(1) by blast
+    using 1 get_source_axioms_unfolded assms(1) by blast
   have t_V: "t \<in> \<V>"
-    using get_target_for_source_axioms[OF 1(2,3,1,6,7)] assms(1,3) by simp
+    using get_target_for_source_axioms_unfolded[OF 1(2,3,1,6,7)] assms(1,3) by simp
   have resreach: "resreach f s t"
-    using get_target_for_source_axioms[OF 1(2,3,1,6,7)] assms(1,3) by simp
+    using get_target_for_source_axioms_unfolded[OF 1(2,3,1,6,7)] assms(1,3) by simp
   have "f e- \<gamma> \<le> f' e" 
     using invar_gamma_def  distinct_path_augment[of P \<gamma> f e]
           get_source_target_path_a_axioms(4) s_V t_V s_not_t  assms(3-5) resreach 1
           assms(1)
     by (fastforce intro!: get_source_target_path_a_condI)
-  moreover have "\<Phi> state - \<Phi> (loopB_call1_upd state) \<ge> 1"
-    using loopB_call1_cond_Phi_decr[of state, OF assms(1) assms(3)] by simp
-  ultimately have "f' e \<ge> f e - \<gamma> * (\<Phi> state - \<Phi> (loopB_call1_upd state))"
+  moreover have "\<Phi> state - \<Phi> (send_flow_call1_upd state) \<ge> 1"
+    using send_flow_call1_cond_Phi_decr[of state, OF assms(1) assms(3)] by simp
+  ultimately have "f' e \<ge> f e - \<gamma> * (\<Phi> state - \<Phi> (send_flow_call1_upd state))"
     using gamma_0 
     by (smt (verit) mult_less_cancel_left2 of_int_less_1_iff)
-  moreover have "current_\<gamma> (loopB_call1_upd state) = \<gamma>"
-    by (simp add: "1"(3) loopB_call1_upd_changes(4))
-  moreover have "current_flow (loopB_call1_upd state) = f'"
-    unfolding 1 loopB_call1_upd_def Let_def by simp
+  moreover have "current_\<gamma> (send_flow_call1_upd state) = \<gamma>"
+    by (simp add: "1"(3) send_flow_call1_upd_changes(4))
+  moreover have "current_flow (send_flow_call1_upd state) = f'"
+    unfolding 1 send_flow_call1_upd_def Let_def by simp
   ultimately show ?case unfolding 1(1) 1(3) 
     by (simp add: mult.commute) 
 qed
 
-lemma loopB_call2_cond_flow_Phi:
-  assumes "loopB_call2_cond state"
-          "state' = loopB_call2_upd state"
+lemma send_flow_call2_cond_flow_Phi:
+  assumes "send_flow_call2_cond state"
+          "state' = send_flow_call2_upd state"
           "invar_gamma state" "(\<forall> e \<in> \<F> state . current_flow state e > 0)" "aux_invar state"
      shows"current_flow  state' e \<ge> current_flow state e - (\<Phi> state - \<Phi> state')*current_\<gamma> state'"
   unfolding assms(2)
-proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
+proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
   have gamma_0:"\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
   have s_not_t: " t \<noteq> s "
     apply(rule bexE[OF 1(6)], rule bexE[OF 1(8)])
     subgoal for ss tt     
-      using get_source_for_target_axioms[OF 1(2,3,1,7,9)]
-            get_target_axioms[OF 1(2,3,7)] \<epsilon>_axiom(1) gamma_0 assms(1,3)
+      using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)]
+            get_target_axioms_unfolded[OF 1(2,3,7)] \<epsilon>_axiom(1) gamma_0 assms(1,3)
       by (smt (verit, ccfv_SIG) "1"(5) zero_less_mult_iff)
     done
   have s_V: "s \<in> \<V>"
-    using get_target_axioms[OF 1(2,3,7) ] assms(1)
+    using get_target_axioms_unfolded[OF 1(2,3,7) ] assms(1)
     by auto
   have t_V: "t \<in> \<V>"
-    using get_source_for_target_axioms[OF 1(2,3,1,7,9)] assms(1,3)
+    using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)] assms(1,3)
     by auto
   have resreach: "resreach f t s"
-    using get_source_for_target_axioms[OF 1(2,3,1,7,9)] assms(1,3)
+    using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)] assms(1,3)
     by auto
   have "f e- \<gamma> \<le> f' e"
      using  assms(3,4,5) invar_gamma_def  distinct_path_augment[of P \<gamma> f e] 1
             get_source_target_path_b_axioms(4) s_not_t t_V s_V resreach assms(1)
     by (fastforce intro!: get_source_target_path_b_condI)
-  moreover have "\<Phi> state - \<Phi> (loopB_call2_upd state) \<ge> 1"
-    using loopB_call2_cond_Phi_decr[of state, OF assms(1) assms(3)] by simp
-  ultimately have "f' e \<ge> f e - \<gamma> * (\<Phi> state - \<Phi> (loopB_call2_upd state))"
+  moreover have "\<Phi> state - \<Phi> (send_flow_call2_upd state) \<ge> 1"
+    using send_flow_call2_cond_Phi_decr[of state, OF assms(1) assms(3)] by simp
+  ultimately have "f' e \<ge> f e - \<gamma> * (\<Phi> state - \<Phi> (send_flow_call2_upd state))"
     using gamma_0 
     by (smt (verit) mult_less_cancel_left2 of_int_less_1_iff)
-  moreover have "current_\<gamma> (loopB_call2_upd state) = \<gamma>"
-    by (simp add: "1"(3) loopB_call2_upd_changes(4))
-  moreover have "current_flow (loopB_call2_upd state) = f'"
-    unfolding 1 loopB_call2_upd_def Let_def by simp
+  moreover have "current_\<gamma> (send_flow_call2_upd state) = \<gamma>"
+    by (simp add: "1"(3) send_flow_call2_upd_changes(4))
+  moreover have "current_flow (send_flow_call2_upd state) = f'"
+    unfolding 1 send_flow_call2_upd_def Let_def by simp
   ultimately show ?case unfolding 1(1) 1(3) 
     by (simp add: mult.commute) 
 qed
 
 
-theorem loopB_flow_Phi:
-  assumes "loopB_dom state"
-          "state' = loopB state"
+theorem send_flow_flow_Phi:
+  assumes "send_flow_dom state"
+          "state' = send_flow state"
           "invar_gamma state"
           "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
                                  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
@@ -1672,7 +1729,7 @@ theorem loopB_flow_Phi:
      shows"current_flow  state' e \<ge> current_flow state e - (\<Phi> state - \<Phi> state')*current_\<gamma> state'"
   unfolding assms(2)
   using assms(3-5)
-proof(induction rule: loopB_induct[OF assms(1)])
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
   have gamma_0: "current_\<gamma> state > 0" using IH unfolding invar_gamma_def by auto
@@ -1684,119 +1741,119 @@ proof(induction rule: loopB_induct[OF assms(1)])
   have flowF: "\<forall>e\<in>\<F> state. 0 < current_flow state e "
     using gamma_0 gamma_flow by force
   show ?case 
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 3
-    have invar_gamma_ud:"invar_gamma (loopB_call1_upd state)" 
+    have invar_gamma_ud:"invar_gamma (send_flow_call1_upd state)" 
       using invar_gamma_pres_call1 IH by simp
-    hence gamma_0:"current_\<gamma> (local.loopB (loopB_call1_upd state)) > 0"
-      using  invar_gamma_def loopB_changes_current_\<gamma> loopB_termination 
+    hence gamma_0:"current_\<gamma> (local.send_flow (send_flow_call1_upd state)) > 0"
+      using  invar_gamma_def send_flow_changes_current_\<gamma> send_flow_termination 
       by auto
-    have gamma_same: "current_\<gamma> (local.loopB (loopB_call1_upd state)) = 
-                      current_\<gamma> (loopB_call1_upd state)" 
-      by (simp add: invar_gamma_ud loopB_changes_current_\<gamma> loopB_termination)  
-    have invar_gamma: "invar_gamma (loopB_call1_upd state)"
+    have gamma_same: "current_\<gamma> (local.send_flow (send_flow_call1_upd state)) = 
+                      current_\<gamma> (send_flow_call1_upd state)" 
+      by (simp add: invar_gamma_ud send_flow_changes_current_\<gamma> send_flow_termination)  
+    have invar_gamma: "invar_gamma (send_flow_call1_upd state)"
       using IH
-      unfolding loopB_call1_upd_def Let_def invar_gamma_def by simp
-    have gamma_Phi_flow: "e \<in> \<F> (loopB_call1_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call1_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call1_upd state)) * current_\<gamma> (loopB_call1_upd state)
-         \<le> current_flow (loopB_call1_upd state) e" for e
+      unfolding send_flow_call1_upd_def Let_def invar_gamma_def by simp
+    have gamma_Phi_flow: "e \<in> \<F> (send_flow_call1_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call1_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call1_upd state)) * current_\<gamma> (send_flow_call1_upd state)
+         \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call1_cond_flow_Phi[OF 3], simp, simp add: IH)
-         using IH(4)  IH(5)[of e] loopB_call1_upd_changes(6)[of state] 
-               loopB_call1_upd_changes(4)[of state]  loopB_call1_cond_Phi_decr[OF 3 IH(4)] IH(6)
+         apply(rule send_flow_call1_cond_flow_Phi[OF 3], simp, simp add: IH)
+         using IH(4)  IH(5)[of e] send_flow_call1_upd_changes(6)[of state] 
+               send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(4)] IH(6)
          by (auto  simp add: left_diff_distrib' flowF)
     show ?thesis
-      using  loopB_simps(5)[of state] 3 invar_gamma_ud IH 
-             loopB_call1_cond_flow_Phi[of state "loopB_call1_upd state" e] gamma_Phi_flow flowF
+      using  send_flow_simps(5)[of state] 3 invar_gamma_ud IH 
+             send_flow_call1_cond_flow_Phi[of state "send_flow_call1_upd state" e] gamma_Phi_flow flowF
              invar_aux_pres_call1
       by (auto simp add: gamma_same left_diff_distrib)
   next
     case 4
-    have invar_gamma_ud:"invar_gamma (loopB_call2_upd state)" 
+    have invar_gamma_ud:"invar_gamma (send_flow_call2_upd state)" 
       using invar_gamma_pres_call2 IH by simp
-    hence gamma_0:"current_\<gamma> (local.loopB (loopB_call2_upd state)) > 0"
-      using  invar_gamma_def loopB_changes_current_\<gamma> loopB_termination 
+    hence gamma_0:"current_\<gamma> (local.send_flow (send_flow_call2_upd state)) > 0"
+      using  invar_gamma_def send_flow_changes_current_\<gamma> send_flow_termination 
       by auto
-    have gamma_same: "current_\<gamma> (local.loopB (loopB_call2_upd state)) = 
-                      current_\<gamma> (loopB_call2_upd state)" 
-      by (simp add: invar_gamma_ud loopB_changes_current_\<gamma> loopB_termination)      
-    have invar_gamma: "invar_gamma (loopB_call2_upd state)"
+    have gamma_same: "current_\<gamma> (local.send_flow (send_flow_call2_upd state)) = 
+                      current_\<gamma> (send_flow_call2_upd state)" 
+      by (simp add: invar_gamma_ud send_flow_changes_current_\<gamma> send_flow_termination)      
+    have invar_gamma: "invar_gamma (send_flow_call2_upd state)"
          using IH
-         unfolding loopB_call2_upd_def Let_def invar_gamma_def by simp
-    have gamma_Phi_flow: "e \<in> \<F> (loopB_call2_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call2_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call2_upd state)) * current_\<gamma> (loopB_call2_upd state)
-         \<le> current_flow (loopB_call2_upd state) e" for e
+         unfolding send_flow_call2_upd_def Let_def invar_gamma_def by simp
+    have gamma_Phi_flow: "e \<in> \<F> (send_flow_call2_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call2_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call2_upd state)) * current_\<gamma> (send_flow_call2_upd state)
+         \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call2_cond_flow_Phi[OF 4], simp, simp add: IH)
-         using IH(4)  IH(5)[of e] loopB_call2_upd_changes(6)[of state] 
-               loopB_call2_upd_changes(4)[of state]  loopB_call2_cond_Phi_decr[OF 4 IH(4)] IH(6)
+         apply(rule send_flow_call2_cond_flow_Phi[OF 4], simp, simp add: IH)
+         using IH(4)  IH(5)[of e] send_flow_call2_upd_changes(6)[of state] 
+               send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(4)] IH(6)
          by (auto intro:  simp add: left_diff_distrib' flowF)
     show ?thesis 
-      using  loopB_simps(6)[of state] 4 invar_gamma_ud IH 
-             loopB_call2_cond_flow_Phi[of state "loopB_call2_upd state" e] gamma_Phi_flow flowF
+      using  send_flow_simps(6)[of state] 4 invar_gamma_ud IH 
+             send_flow_call2_cond_flow_Phi[of state "send_flow_call2_upd state" e] gamma_Phi_flow flowF
              invar_aux_pres_call2
       by (auto simp add: gamma_same left_diff_distrib)
-  qed (auto simp add: loopB_simps IH
-                      loopB_cont_upd_Phi_pres[of state] loopB_cont_upd_flow_pres[of state]
-                      loopB_succ_upd_Phi_pres[of state] loopB_succ_upd_flow_pres[of state]
-                      loopB_fail_upd_Phi_pres[of state] loopB_fail_upd_flow_pres[of state])
+  qed (auto simp add: send_flow_simps IH
+                      send_flow_cont_upd_Phi_pres[of state] send_flow_cont_upd_flow_pres[of state]
+                      send_flow_succ_upd_Phi_pres[of state] send_flow_succ_upd_flow_pres[of state]
+                      send_flow_fail_upd_Phi_pres[of state] send_flow_fail_upd_flow_pres[of state])
 qed
 
-lemma loopB_flow_Phi_final:
-  assumes "loopB_dom state"
-          "state' = loopB state"
+lemma send_flow_flow_Phi_final:
+  assumes "send_flow_dom state"
+          "state' = send_flow state"
           "invar_gamma state"
           "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
                                  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
           "aux_invar state"
      shows"current_flow  state' e \<ge> current_flow state e - \<Phi> state*current_\<gamma> state'"
-  using loopB_flow_Phi[of state state' e] Phi_nonneg[of state] assms
-  by (smt (verit, best) invar_gamma_def loopB_invar_gamma_pres Phi_nonneg loopB_axioms 
-                     loopB_flow_Phi mult_less_cancel_right_disj of_int_le_iff)
+  using send_flow_flow_Phi[of state state' e] Phi_nonneg[of state] assms
+  by (smt (verit, best) invar_gamma_def send_flow_invar_gamma_pres Phi_nonneg send_flow_axioms 
+                     send_flow_flow_Phi mult_less_cancel_right_disj of_int_le_iff)
 
-lemma loopB_call1_invar_integral_pres:
-  assumes "loopB_call1_cond state"
+lemma send_flow_call1_invar_integral_pres:
+  assumes "send_flow_call1_cond state"
           "invar_integral state"
           "aux_invar state"
           "invar_gamma state"
           " \<forall>e\<in>\<F> state. 0 < current_flow state e"
-    shows "invar_integral (loopB_call1_upd state)"
-proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
+    shows "invar_integral (send_flow_call1_upd state)"
+proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
   have gamma_0:"\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
   have s_not_t: " s \<noteq> t "
-    using get_target_for_source_axioms[OF 1(2,3,1,6,7)]
-          get_source_axioms[OF 1(2,3,6)] \<epsilon>_axiom gamma_0 assms(1,4)
+    using get_target_for_source_axioms_unfolded[OF 1(2,3,1,6,7)]
+          get_source_axioms_unfolded[OF 1(2,3,6)] \<epsilon>_axiom gamma_0 assms(1,4)
       by (smt (verit, ccfv_SIG) mult_less_cancel_right_disj)
   have s_V: "s \<in> \<V>"
-    using 1 get_source_axioms assms(1) by blast
+    using 1 get_source_axioms_unfolded assms(1) by blast
   have t_V: "t \<in> \<V>"
-    using get_target_for_source_axioms[OF 1(2,3,1,6,7)] assms(1,4)
+    using get_target_for_source_axioms_unfolded[OF 1(2,3,1,6,7)] assms(1,4)
     by simp
    have resreach: "resreach f s t"
-    using get_target_for_source_axioms[OF 1(2,3,1,6,7)] assms(1,4)
+    using get_target_for_source_axioms_unfolded[OF 1(2,3,1,6,7)] assms(1,4)
     by simp
   have distinctP: "distinct P" 
     using "1"(9)  get_source_target_path_a_axioms(4)[ OF
          get_source_target_path_a_condI[OF _ s_V t_V s_not_t _ _ _ 1(2,3,6,7)]] 
         resreach 1(1) assms by auto
-  have gamma_same: "current_\<gamma> (loopB_call1_upd state) = current_\<gamma> state" 
-    using loopB_call1_upd_changes(4) by auto
+  have gamma_same: "current_\<gamma> (send_flow_call1_upd state) = current_\<gamma> state" 
+    using send_flow_call1_upd_changes(4) by auto
   show ?case  unfolding invar_integral_def
   proof
     fix e
-    assume "e \<in> to_set (actives (loopB_call1_upd state))"
-    moreover have "actives (loopB_call1_upd state) = 
+    assume "e \<in> to_set (actives (send_flow_call1_upd state))"
+    moreover have "actives (send_flow_call1_upd state) = 
                    actives state" 
-      by (simp add: loopB_call1_upd_changes(3))
+      by (simp add: send_flow_call1_upd_changes(3))
     ultimately have "e \<in> to_set (actives state)" by simp
     then obtain x where x_prop:" current_flow state e = real (x::nat) * \<gamma>"
       using assms(2) unfolding invar_integral_def 1 by auto
-    have f': "f' = current_flow (loopB_call1_upd state)"
-      unfolding 1 loopB_call1_upd_def Let_def by simp
-    show "\<exists>x. current_flow (loopB_call1_upd state) e = real x * current_\<gamma> (loopB_call1_upd state)"
+    have f': "f' = current_flow (send_flow_call1_upd state)"
+      unfolding 1 send_flow_call1_upd_def Let_def by simp
+    show "\<exists>x. current_flow (send_flow_call1_upd state) e = real x * current_\<gamma> (send_flow_call1_upd state)"
     proof(cases "e \<in> oedge ` set P")
       case True 
       then obtain ee where ee_prop:"ee \<in> set P" "e = oedge ee" by auto
@@ -1818,7 +1875,7 @@ proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
         thus False 
           using get_source_target_path_a_axioms(1)[of state s t P, 
                          OF  get_source_target_path_a_condI[OF _ _ _ s_not_t]] 1
-                get_target_for_source_axioms assms(5) get_source_axioms assms(1) assms(4)
+                get_target_for_source_axioms_unfolded assms(5) get_source_axioms_unfolded assms(1) assms(4)
           unfolding is_s_t_path_def augpath_def
           by (metis (no_types, lifting) assms(3) linorder_not_less)
       qed
@@ -1851,44 +1908,44 @@ proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
   qed
 qed
 
-lemma loopB_call2_invar_integral_pres:
-  assumes "loopB_call2_cond state"
+lemma send_flow_call2_invar_integral_pres:
+  assumes "send_flow_call2_cond state"
           "invar_integral state"
           "aux_invar state"
           "invar_gamma state"
           "\<forall>e\<in>\<F> state. 0 < current_flow state e"
-    shows "invar_integral (loopB_call2_upd state)"
-proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
+    shows "invar_integral (send_flow_call2_upd state)"
+proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
   have gamma_0:"\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
   have s_not_t: " t \<noteq> s "
-    using get_source_for_target_axioms[OF 1(2,3,1,7,9)]
-          get_target_axioms[OF 1(2,3,7)] \<epsilon>_axiom gamma_0 assms(1,4)
+    using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)]
+          get_target_axioms_unfolded[OF 1(2,3,7)] \<epsilon>_axiom gamma_0 assms(1,4)
       by (smt (verit, ccfv_SIG) mult_less_cancel_right_disj)
  have s_V: "s \<in> \<V> "
-      using get_target_axioms[OF 1(2,3,7)] assms(1) by simp
+      using get_target_axioms_unfolded[OF 1(2,3,7)] assms(1) by simp
  have t_V: "t \<in> \<V> "
-      using get_source_for_target_axioms[OF 1(2,3,1,7,9)] assms(1,4) by simp
+      using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)] assms(1,4) by simp
  have resreach: "resreach f t s"
-     using get_source_for_target_axioms[OF 1(2,3,1,7,9)] assms(1,4) by simp
+     using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)] assms(1,4) by simp
   have distinctP: "distinct P" 
     using  get_source_target_path_b_axioms(4)  s_not_t t_V s_V assms(1,5,3,4) resreach 1 
     by (fastforce intro!: get_source_target_path_b_condI)
-  have gamma_same: "current_\<gamma> (loopB_call2_upd state) = current_\<gamma> state" 
-    using loopB_call2_upd_changes(4) by auto
+  have gamma_same: "current_\<gamma> (send_flow_call2_upd state) = current_\<gamma> state" 
+    using send_flow_call2_upd_changes(4) by auto
   show ?case unfolding invar_integral_def
   proof
     fix e
-    assume "e \<in> to_set (actives (loopB_call2_upd state))"
-    moreover have "actives (loopB_call2_upd state) = 
+    assume "e \<in> to_set (actives (send_flow_call2_upd state))"
+    moreover have "actives (send_flow_call2_upd state) = 
                    actives state" 
-      by (simp add: loopB_call2_upd_changes(3))
+      by (simp add: send_flow_call2_upd_changes(3))
     ultimately have "e \<in> to_set (actives state)" by simp
     then obtain x where x_prop:" current_flow state e = real (x::nat) * \<gamma>"
       using assms(2) unfolding invar_integral_def 1 by auto
-    have f': "f' = current_flow (loopB_call2_upd state)"
-      unfolding 1 loopB_call2_upd_def Let_def by simp
-    show "\<exists>x. current_flow (loopB_call2_upd state) e = real x * current_\<gamma> (loopB_call2_upd state)"
+    have f': "f' = current_flow (send_flow_call2_upd state)"
+      unfolding 1 send_flow_call2_upd_def Let_def by simp
+    show "\<exists>x. current_flow (send_flow_call2_upd state) e = real x * current_\<gamma> (send_flow_call2_upd state)"
     proof(cases "e \<in> oedge ` set P")
       case True 
       then obtain ee where ee_prop:"ee \<in> set P" "e = oedge ee" by auto
@@ -1909,8 +1966,8 @@ proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
           by (force intro!: Min.coboundedI)
         thus False
           using get_source_target_path_b_axioms(1)[of state t s P] s_not_t 1 
-                assms(5) get_source_for_target_axioms[OF 1(2,3,1,7,9)]
-                get_target_axioms[OF 1(2,3,7)] assms(3) linorder_not_le
+                assms(5) get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)]
+                get_target_axioms_unfolded[OF 1(2,3,7)] assms(3) linorder_not_le
           unfolding is_s_t_path_def augpath_def
           by (fastforce intro: get_source_target_path_b_condI assms(1,4))
        qed
@@ -1943,28 +2000,28 @@ proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
   qed
 qed
 
-lemma loopB_cont_invar_integral_pres:
-  "invar_integral state \<Longrightarrow> invar_integral (loopB_cont_upd state)"
-  unfolding loopB_cont_upd_def invar_integral_def by simp
+lemma send_flow_cont_invar_integral_pres:
+  "invar_integral state \<Longrightarrow> invar_integral (send_flow_cont_upd state)"
+  unfolding send_flow_cont_upd_def invar_integral_def by simp
 
-lemma loopB_fail_invar_integral_pres:
-  "invar_integral state \<Longrightarrow> invar_integral (loopB_fail_upd state)"
-  unfolding loopB_fail_upd_def invar_integral_def by simp
+lemma send_flow_fail_invar_integral_pres:
+  "invar_integral state \<Longrightarrow> invar_integral (send_flow_fail_upd state)"
+  unfolding send_flow_fail_upd_def invar_integral_def by simp
 
-lemma loopB_succ_invar_integral_pres:
-  "invar_integral state \<Longrightarrow> invar_integral (loopB_succ_upd state)"
-  unfolding loopB_succ_upd_def invar_integral_def by simp
+lemma send_flow_succ_invar_integral_pres:
+  "invar_integral state \<Longrightarrow> invar_integral (send_flow_succ_upd state)"
+  unfolding send_flow_succ_upd_def invar_integral_def by simp
 
-theorem loopB_invar_integral_pres:
-  assumes "loopB_dom state"
+theorem send_flow_invar_integral_pres:
+  assumes "send_flow_dom state"
           "aux_invar state"
           "invar_integral state"
           "invar_gamma state"
           "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
                                  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
-    shows "invar_integral (loopB state)"
+    shows "invar_integral (send_flow state)"
   using assms(2-)
-proof(induction rule: loopB_induct[OF assms(1)])
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH=this
   have gamma_0: "current_\<gamma> state > 0" using IH unfolding invar_gamma_def by auto
@@ -1976,84 +2033,84 @@ proof(induction rule: loopB_induct[OF assms(1)])
   have flowF: "\<forall>e\<in>\<F> state. 0 < current_flow state e "
     using gamma_0 gamma_flow by force
   then show ?case 
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 3
-    have invar_gamma: "invar_gamma (loopB_call1_upd state)"
+    have invar_gamma: "invar_gamma (send_flow_call1_upd state)"
       using IH
-      unfolding loopB_call1_upd_def Let_def invar_gamma_def by simp
-    have gamma_Phi_flow: "e \<in> \<F> (loopB_call1_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call1_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call1_upd state)) * current_\<gamma> (loopB_call1_upd state)
-         \<le> current_flow (loopB_call1_upd state) e" for e
+      unfolding send_flow_call1_upd_def Let_def invar_gamma_def by simp
+    have gamma_Phi_flow: "e \<in> \<F> (send_flow_call1_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call1_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call1_upd state)) * current_\<gamma> (send_flow_call1_upd state)
+         \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call1_cond_flow_Phi[OF 3], simp, simp add: IH)
-         using IH(4)  IH(7)[of e] loopB_call1_upd_changes(6)[of state] 
-               loopB_call1_upd_changes(4)[of state]  loopB_call1_cond_Phi_decr[OF 3 IH(6)]
+         apply(rule send_flow_call1_cond_flow_Phi[OF 3], simp, simp add: IH)
+         using IH(4)  IH(7)[of e] send_flow_call1_upd_changes(6)[of state] 
+               send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(6)]
          by (auto  simp add: left_diff_distrib' flowF)
        show ?thesis 
-         apply(subst loopB_simps(5))
-         using 3 IH loopB_call1_cond_flow_Phi[OF 3, of "loopB_call1_upd state"] gamma_Phi_flow
+         apply(subst send_flow_simps(5))
+         using 3 IH send_flow_call1_cond_flow_Phi[OF 3, of "send_flow_call1_upd state"] gamma_Phi_flow
          by (intro IH(2)[OF 3 _ _ invar_gamma]| 
-             auto intro: IH(2)[OF 3 _ _ invar_gamma] loopB_call1_invar_integral_pres[of state, OF _ _ _ _ flowF]
+             auto intro: IH(2)[OF 3 _ _ invar_gamma] send_flow_call1_invar_integral_pres[of state, OF _ _ _ _ flowF]
              invar_aux_pres_call1)+
     next
       case 4
-        have invar_gamma: "invar_gamma (loopB_call2_upd state)"
+        have invar_gamma: "invar_gamma (send_flow_call2_upd state)"
          using IH
-         unfolding loopB_call2_upd_def Let_def invar_gamma_def by simp
-          have gamma_Phi_flow: "e \<in> \<F> (loopB_call2_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call2_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call2_upd state)) * current_\<gamma> (loopB_call2_upd state)
-         \<le> current_flow (loopB_call2_upd state) e" for e
+         unfolding send_flow_call2_upd_def Let_def invar_gamma_def by simp
+          have gamma_Phi_flow: "e \<in> \<F> (send_flow_call2_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call2_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call2_upd state)) * current_\<gamma> (send_flow_call2_upd state)
+         \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call2_cond_flow_Phi[OF 4], simp, simp add: IH)
-         using IH(4)  IH(7)[of e] loopB_call2_upd_changes(6)[of state] 
-               loopB_call2_upd_changes(4)[of state]  loopB_call2_cond_Phi_decr[OF 4 IH(6)]
+         apply(rule send_flow_call2_cond_flow_Phi[OF 4], simp, simp add: IH)
+         using IH(4)  IH(7)[of e] send_flow_call2_upd_changes(6)[of state] 
+               send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(6)]
          by (auto intro:  simp add: left_diff_distrib' flowF)
        show ?thesis 
-         apply(subst loopB_simps(6))
-         using 4 IH loopB_call2_cond_flow_Phi[OF 4, of "loopB_call2_upd state"] gamma_Phi_flow
+         apply(subst send_flow_simps(6))
+         using 4 IH send_flow_call2_cond_flow_Phi[OF 4, of "send_flow_call2_upd state"] gamma_Phi_flow
          by (intro IH(3)[OF 4 _ _ invar_gamma]| 
-             auto intro: IH(3)[OF 4  _ _ invar_gamma] loopB_call2_invar_integral_pres[of state, OF _ _ _ _ flowF]
+             auto intro: IH(3)[OF 4  _ _ invar_gamma] send_flow_call2_invar_integral_pres[of state, OF _ _ _ _ flowF]
              invar_aux_pres_call2)+
-  qed (auto simp add: loopB_simps      IH      loopB_fail_invar_integral_pres
-                      loopB_succ_invar_integral_pres loopB_cont_invar_integral_pres) 
+  qed (auto simp add: send_flow_simps      IH      send_flow_fail_invar_integral_pres
+                      send_flow_succ_invar_integral_pres send_flow_cont_invar_integral_pres) 
 qed
 
 lemma outside_actives_and_F_no_change_succ:
   assumes "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
-  shows   "current_flow state e = current_flow (loopB_succ_upd state) e"
-  unfolding loopB_succ_upd_def Let_def by simp
+  shows   "current_flow state e = current_flow (send_flow_succ_upd state) e"
+  unfolding send_flow_succ_upd_def Let_def by simp
 
 lemma outside_actives_and_F_no_change_cont:
   assumes "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
-  shows   "current_flow state e = current_flow (loopB_cont_upd state) e"
-  unfolding loopB_cont_upd_def Let_def by simp
+  shows   "current_flow state e = current_flow (send_flow_cont_upd state) e"
+  unfolding send_flow_cont_upd_def Let_def by simp
 
 lemma outside_actives_and_F_no_change_fail:
   assumes "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
-  shows   "current_flow state e = current_flow (loopB_fail_upd state) e"
-  unfolding loopB_fail_upd_def Let_def by simp
+  shows   "current_flow state e = current_flow (send_flow_fail_upd state) e"
+  unfolding send_flow_fail_upd_def Let_def by simp
   
 lemma outside_actives_and_F_no_change_call1:
-  assumes "loopB_call1_cond state" "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
+  assumes "send_flow_call1_cond state" "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
           "invar_gamma state" "(\<forall> e \<in> \<F> state . current_flow state e > 0)" "aux_invar state"
-  shows   "current_flow state e = current_flow (loopB_call1_upd state) e"
-proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
+  shows   "current_flow state e = current_flow (send_flow_call1_upd state) e"
+proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
   have gamma_0:"\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
   have s_not_t: " s \<noteq> t "
-    using get_target_for_source_axioms[OF 1(2) 1(3) 1(1)  1(6)1(7)]
-          get_source_axioms[OF 1(2) 1(3)  1(6)] \<epsilon>_axiom gamma_0 assms(1,4)
+    using get_target_for_source_axioms_unfolded[OF 1(2) 1(3) 1(1)  1(6)1(7)]
+          get_source_axioms_unfolded[OF 1(2) 1(3)  1(6)] \<epsilon>_axiom gamma_0 assms(1,4)
       by (smt (verit, ccfv_SIG) mult_less_cancel_right_disj)
   have s_V: " s \<in> \<V> "
-    using get_source_axioms 1 assms(1) by simp
+    using get_source_axioms_unfolded 1 assms(1) by simp
   have t_V: " t \<in> \<V> "
-    using get_target_for_source_axioms[OF 1(2) 1(3) 1(1) 1(6) 1(7)] assms(1,4) by simp
+    using get_target_for_source_axioms_unfolded[OF 1(2) 1(3) 1(1) 1(6) 1(7)] assms(1,4) by simp
   have resreach: "resreach f s t "
-    using get_target_for_source_axioms[OF 1(2) 1(3) 1(1) 1(6) 1(7)] assms(1,4) by simp
-  have f': "f' = current_flow (loopB_call1_upd state)"
-    unfolding 1 loopB_call1_upd_def Let_def by simp
+    using get_target_for_source_axioms_unfolded[OF 1(2) 1(3) 1(1) 1(6) 1(7)] assms(1,4) by simp
+  have f': "f' = current_flow (send_flow_call1_upd state)"
+    unfolding 1 send_flow_call1_upd_def Let_def by simp
   show ?case 
     using f' assms(2-3) get_source_target_path_a_axioms(3)[of state s t P]
           get_source_target_path_a_condI[OF _ s_V t_V s_not_t assms(6) assms(5)] assms(4)
@@ -2062,24 +2119,24 @@ proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
 qed
   
 lemma outside_actives_and_F_no_change_call2:
-  assumes "loopB_call2_cond state" "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
+  assumes "send_flow_call2_cond state" "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
           "invar_gamma state" "(\<forall> e \<in> \<F> state . current_flow state e > 0)" "aux_invar state"
-  shows   "current_flow state e = current_flow (loopB_call2_upd state) e"
-proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
+  shows   "current_flow state e = current_flow (send_flow_call2_upd state) e"
+proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> t s P f' b' state')
   have gamma_0:"\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
   have s_not_t: " t \<noteq> s "
-    using get_source_for_target_axioms[OF 1(2,3,1,7,9)]
-          get_target_axioms[OF 1(2,3,7)] \<epsilon>_axiom gamma_0 assms(1,4)
+    using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)]
+          get_target_axioms_unfolded[OF 1(2,3,7)] \<epsilon>_axiom gamma_0 assms(1,4)
       by (smt (verit, ccfv_SIG) mult_less_cancel_right_disj)
     have s_V: "s \<in> \<V> "
-      using get_source_for_target_axioms[OF 1(2,3,1,7,9)] assms(1,4) by simp
+      using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)] assms(1,4) by simp
     have t_V: "t \<in> \<V> "
-      using get_target_axioms[OF 1(2,3,7)] assms(1) by simp
+      using get_target_axioms_unfolded[OF 1(2,3,7)] assms(1) by simp
     have resreach: "resreach f s t"
-      using get_source_for_target_axioms[OF 1(2,3,1,7,9)]  assms(1,4) by simp
-  have f': "f' = current_flow (loopB_call2_upd state)"
-    unfolding 1 loopB_call2_upd_def Let_def by simp
+      using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)]  assms(1,4) by simp
+  have f': "f' = current_flow (send_flow_call2_upd state)"
+    unfolding 1 send_flow_call2_upd_def Let_def by simp
   show ?case 
     using f'  assms(2-4) get_source_target_path_b_axioms(3)
           get_source_target_path_b_condI[OF _ s_V t_V _ assms(6,5)]  resreach  1 s_not_t assms(1)
@@ -2087,15 +2144,15 @@ proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
 qed
 
 theorem outside_actives_and_F_no_change:
-  assumes "loopB_dom state"
+  assumes "send_flow_dom state"
           "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
           "invar_gamma state" 
           "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
                                  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
           "aux_invar state"
-    shows "current_flow state e = current_flow (loopB state) e"
+    shows "current_flow state e = current_flow (send_flow state) e"
   using assms(2-6)
-proof(induction rule: loopB_induct[OF assms(1)])
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
     note IH=this
   have gamma_0: "current_\<gamma> state > 0" using IH unfolding invar_gamma_def by auto
@@ -2107,92 +2164,91 @@ proof(induction rule: loopB_induct[OF assms(1)])
   have flowF: "\<forall>e\<in>\<F> state. 0 < current_flow state e "
     using gamma_0 gamma_flow by force
   show ?case 
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 3
-    have invar_gamma: "invar_gamma (loopB_call1_upd state)"
+    have invar_gamma: "invar_gamma (send_flow_call1_upd state)"
       using IH
-      unfolding loopB_call1_upd_def Let_def invar_gamma_def by simp
-    have gamma_Phi_flow: "e \<in> \<F> (loopB_call1_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call1_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call1_upd state)) * current_\<gamma> (loopB_call1_upd state)
-         \<le> current_flow (loopB_call1_upd state) e" for e
+      unfolding send_flow_call1_upd_def Let_def invar_gamma_def by simp
+    have gamma_Phi_flow: "e \<in> \<F> (send_flow_call1_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call1_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call1_upd state)) * current_\<gamma> (send_flow_call1_upd state)
+         \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call1_cond_flow_Phi[OF 3], simp, simp add: IH)
-         using IH(4)  IH(7)[of e] loopB_call1_upd_changes(6)[of state] 
-               loopB_call1_upd_changes(4)[of state]  loopB_call1_cond_Phi_decr[OF 3 IH(6)] IH(8)
+         apply(rule send_flow_call1_cond_flow_Phi[OF 3], simp, simp add: IH)
+         using IH(4)  IH(7)[of e] send_flow_call1_upd_changes(6)[of state] 
+               send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(6)] IH(8)
          by (auto  simp add: left_diff_distrib' flowF)
-    moreover have "current_flow state e = current_flow (loopB_call1_upd state) e"
-         using IH 3 loopB_call1_upd_changes invar_gamma 
+    moreover have "current_flow state e = current_flow (send_flow_call1_upd state) e"
+         using IH 3 send_flow_call1_upd_changes invar_gamma 
          using flowF by (auto intro: outside_actives_and_F_no_change_call1)
     ultimately show ?thesis 
-         using loopB_simps(5) IH 3 loopB_call1_upd_changes invar_gamma invar_aux_pres_call1
+         using send_flow_simps(5) IH 3 send_flow_call1_upd_changes invar_gamma invar_aux_pres_call1
          by (auto intro: IH(2))
   next
     case 4
-    have invar_gamma: "invar_gamma (loopB_call2_upd state)"
+    have invar_gamma: "invar_gamma (send_flow_call2_upd state)"
       using IH
-      unfolding loopB_call2_upd_def Let_def invar_gamma_def by simp
-    have gamma_Phi_flow: "e \<in> \<F> (loopB_call2_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call2_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call2_upd state)) * current_\<gamma> (loopB_call2_upd state)
-         \<le> current_flow (loopB_call2_upd state) e" for e
+      unfolding send_flow_call2_upd_def Let_def invar_gamma_def by simp
+    have gamma_Phi_flow: "e \<in> \<F> (send_flow_call2_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call2_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call2_upd state)) * current_\<gamma> (send_flow_call2_upd state)
+         \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call2_cond_flow_Phi[OF 4], simp, simp add: IH)
-         using IH(4)  IH(7)[of e] loopB_call2_upd_changes(6)[of state] 
-               loopB_call2_upd_changes(4)[of state]  loopB_call2_cond_Phi_decr[OF 4 IH(6)] IH(8)
+         apply(rule send_flow_call2_cond_flow_Phi[OF 4], simp, simp add: IH)
+         using IH(4)  IH(7)[of e] send_flow_call2_upd_changes(6)[of state] 
+               send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(6)] IH(8)
          by (auto simp add: left_diff_distrib' flowF)
-    moreover have "current_flow state e = current_flow (loopB_call2_upd state) e"
-         using IH 4 loopB_call2_upd_changes invar_gamma 
+    moreover have "current_flow state e = current_flow (send_flow_call2_upd state) e"
+         using IH 4 send_flow_call2_upd_changes invar_gamma 
          using flowF by (auto intro: outside_actives_and_F_no_change_call2)
     ultimately show ?thesis 
-         using loopB_simps(6) IH 4 loopB_call2_upd_changes invar_gamma invar_aux_pres_call2
+         using send_flow_simps(6) IH 4 send_flow_call2_upd_changes invar_gamma invar_aux_pres_call2
          by (auto intro: IH(2))
      next
        case 1
        then show ?thesis
          by(auto simp add:
           outside_actives_and_F_no_change_cont[of e state] 
-          loopB_simps[of state] IH)
+          send_flow_simps[of state] IH)
      next
        case 2
        then show ?thesis
          using 
           outside_actives_and_F_no_change_succ[of  e state]
-          loopB_simps[of state] IH by simp
+          send_flow_simps[of state] IH by simp
      next
        case 5
        thus ?thesis
          using 
           outside_actives_and_F_no_change_fail[of e state]
-          loopB_simps[of state] IH
+          send_flow_simps[of state] IH
          by simp
      next
        case 6
        thus ?thesis
          using 
           outside_actives_and_F_no_change_fail[of e state]
-          loopB_simps[of state] IH
+          send_flow_simps[of state] IH
          by simp
      qed
    qed
 
-lemma loopB_invar_isOptflow_call1:
-  assumes "loopB_call1_cond state" "aux_invar state" 
+lemma send_flow_invar_isOptflow_call1:
+  assumes "send_flow_call1_cond state" "aux_invar state" 
           "invar_gamma state" "invar_integral state"
           "invar_isOptflow state"  
           "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge> current_\<gamma> state"
-    shows "invar_isOptflow (loopB_call1_upd state)"
-proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
+    shows "invar_isOptflow (send_flow_call1_upd state)"
+proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
   note basics = this
   have gamma_0: "\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
-  have state_cond:"state' = loopB_call1_upd state"
-    unfolding 1 loopB_call1_upd_def Let_def by simp
-  have sP: "(1 - \<epsilon>) * \<gamma> < b s"  "s \<in> \<V>" using 1 get_source_axioms assms(1)
+  have state_cond:"state' = send_flow_call1_upd state"
+    unfolding 1 send_flow_call1_upd_def Let_def by simp
+  have sP: "(1 - \<epsilon>) * \<gamma> < b s"  "s \<in> \<V>" using 1 get_source_axioms_unfolded assms(1)
     by blast+
   have tP: "b t < - \<epsilon> * \<gamma>" "resreach f s t" "t \<in> \<V>"
-    using 1 get_target_for_source_axioms  assms(1,3)
-    by (metis (no_types, lifting))+
+    using 1 get_target_for_source_axioms_unfolded  assms(1,3) by force+
   have s_neq_t: "s \<noteq> t" using sP tP \<epsilon>_axiom gamma_0 
     by (smt (verit, best) mult_less_cancel_right_disj)
   have flowF:"(\<forall> e \<in> \<F> state . current_flow state e > 0)"
@@ -2241,20 +2297,20 @@ proof(rule loopB_call1_condE[OF assms(1)], goal_cases)
     by(auto intro!: path_aug_opt_pres[of s t "\<b> -b" f \<gamma> P] split: if_split)
 qed
  
-lemma loopB_invar_isOptflow_call2:
-  assumes "loopB_call2_cond state" "aux_invar state" "invar_gamma state" "invar_integral state"
+lemma send_flow_invar_isOptflow_call2:
+  assumes "send_flow_call2_cond state" "aux_invar state" "invar_gamma state" "invar_integral state"
           "invar_isOptflow state"  "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge> current_\<gamma> state"
-    shows "invar_isOptflow (loopB_call2_upd state)"
-proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
+    shows "invar_isOptflow (send_flow_call2_upd state)"
+proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> t s P f' b' state')
   note basics = this
   have gamma_0: "\<gamma> > 0" using assms unfolding 1 invar_gamma_def by simp
-  have state_cond:"state' = loopB_call2_upd state"
-    unfolding 1 loopB_call2_upd_def Let_def by simp
+  have state_cond:"state' = send_flow_call2_upd state"
+    unfolding 1 send_flow_call2_upd_def Let_def by simp
   have tP: "b t < - (1-\<epsilon>) * \<gamma>"  "t \<in> \<V>"
-    using get_target_axioms[OF 1(2,3,7)] assms(1) by auto
+    using get_target_axioms_unfolded[OF 1(2,3,7)] assms(1) by auto
   have sP: "\<epsilon> * \<gamma> < b s"  "s \<in> \<V>" "resreach f s t" 
-    using get_source_for_target_axioms[OF 1(2,3,1,7,9)] assms(1,3) by auto
+    using get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)] assms(1,3) by auto
   have s_neq_t: "s \<noteq> t" using sP tP \<epsilon>_axiom gamma_0 
     by (smt (verit, best) mult_less_cancel_right_disj)
   have flowF:"(\<forall> e \<in> \<F> state . current_flow state e > 0)"
@@ -2304,30 +2360,30 @@ proof(rule loopB_call2_condE[OF assms(1)], goal_cases)
     by(auto intro!: path_aug_opt_pres[of s t "\<b> -b" f \<gamma> P] split: if_split)
 qed
 
-lemma loopB_invar_isOptflow_cont:
+lemma send_flow_invar_isOptflow_cont:
   assumes "invar_isOptflow state"  
-    shows "invar_isOptflow (loopB_cont_upd state)"
-  using assms unfolding loopB_cont_upd_def invar_isOptflow_def by simp
+    shows "invar_isOptflow (send_flow_cont_upd state)"
+  using assms unfolding send_flow_cont_upd_def invar_isOptflow_def by simp
 
-lemma loopB_invar_isOptflow_succ:
+lemma send_flow_invar_isOptflow_succ:
   assumes "invar_isOptflow state"  
-    shows "invar_isOptflow (loopB_succ_upd state)"
-  using assms unfolding loopB_succ_upd_def invar_isOptflow_def by simp
+    shows "invar_isOptflow (send_flow_succ_upd state)"
+  using assms unfolding send_flow_succ_upd_def invar_isOptflow_def by simp
 
-lemma loopB_invar_isOptflow_fail:
+lemma send_flow_invar_isOptflow_fail:
   assumes "invar_isOptflow state"  
-    shows "invar_isOptflow (loopB_fail_upd state)"
-  using assms unfolding loopB_fail_upd_def invar_isOptflow_def by simp
+    shows "invar_isOptflow (send_flow_fail_upd state)"
+  using assms unfolding send_flow_fail_upd_def invar_isOptflow_def by simp
 
-theorem loopB_invar_isOpt_pres:
-  assumes "loopB_dom state"
+theorem send_flow_invar_isOpt_pres:
+  assumes "send_flow_dom state"
           "aux_invar state" "invar_gamma state" "invar_integral state"
           "invar_isOptflow state"
           "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
                                  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
-        shows "invar_isOptflow (loopB state)"
+        shows "invar_isOptflow (send_flow state)"
   using assms(2-)
-proof(induction rule: loopB_induct[OF assms(1)])
+proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this    
   have gamma_0: "current_\<gamma> state > 0" 
@@ -2338,125 +2394,125 @@ proof(induction rule: loopB_induct[OF assms(1)])
     using  gamma_0 Phi_nonneg[of state, OF IH(5)] N_gtr_0 
     by(intro order.trans[OF _ IH(8)[of e]])(auto simp add: mult.commute right_diff_distrib')
   show ?case 
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 3
-    have a1: "aux_invar (loopB_call1_upd state)"
+    have a1: "aux_invar (send_flow_call1_upd state)"
       using invar_aux_pres_call1[of state] IH 3 by simp
     have flowF:  " \<forall>e\<in>\<F> state. 0 < current_flow state e"
       using gamma_0 gamma_flow by fastforce
-    have gamma_Phi_flow: "e \<in> \<F> (loopB_call1_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call1_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call1_upd state)) * current_\<gamma> (loopB_call1_upd state)
-         \<le> current_flow (loopB_call1_upd state) e" for e
+    have gamma_Phi_flow: "e \<in> \<F> (send_flow_call1_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call1_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call1_upd state)) * current_\<gamma> (send_flow_call1_upd state)
+         \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call1_cond_flow_Phi[OF 3])
-         using IH(5)  IH(8)[of e] loopB_call1_upd_changes(6)[of state] 
-               loopB_call1_upd_changes(4)[of state]  loopB_call1_cond_Phi_decr[OF 3 IH(5)] IH(4)
+         apply(rule send_flow_call1_cond_flow_Phi[OF 3])
+         using IH(5)  IH(8)[of e] send_flow_call1_upd_changes(6)[of state] 
+               send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(5)] IH(4)
          by (auto simp add: left_diff_distrib' flowF)
-    have opt:"invar_isOptflow (loopB_call1_upd state)"
-       apply(rule loopB_invar_isOptflow_call1)
+    have opt:"invar_isOptflow (send_flow_call1_upd state)"
+       apply(rule send_flow_invar_isOptflow_call1)
       using 3  IH   gamma_flow  gamma_Phi_flow by auto
     show ?thesis 
-      using a1 invar_gamma_pres_call1[of state]  loopB_call1_invar_integral_pres[of state, OF _ _ _ _ flowF] 3 
-            IH gamma_flow gamma_Phi_flow opt loopB_simps(5)[OF IH(1) 3]
+      using a1 invar_gamma_pres_call1[of state]  send_flow_call1_invar_integral_pres[of state, OF _ _ _ _ flowF] 3 
+            IH gamma_flow gamma_Phi_flow opt send_flow_simps(5)[OF IH(1) 3]
       by (auto intro: IH(2))
   next
     case 4
-    have a1: "aux_invar (loopB_call2_upd state)"
+    have a1: "aux_invar (send_flow_call2_upd state)"
       using invar_aux_pres_call2[of state] IH 4 by simp
     have flowF:  " \<forall>e\<in>\<F> state. 0 < current_flow state e"
       using gamma_0 gamma_flow by fastforce
-    have gamma_Phi_flow: "e \<in> \<F> (loopB_call2_upd state) \<Longrightarrow>
-         real (6 * N) * current_\<gamma> (loopB_call2_upd state) -
-         real_of_int (int (2 * N) - \<Phi> (loopB_call2_upd state)) * current_\<gamma> (loopB_call2_upd state)
-         \<le> current_flow (loopB_call2_upd state) e" for e
+    have gamma_Phi_flow: "e \<in> \<F> (send_flow_call2_upd state) \<Longrightarrow>
+         real (6 * N) * current_\<gamma> (send_flow_call2_upd state) -
+         real_of_int (int (2 * N) - \<Phi> (send_flow_call2_upd state)) * current_\<gamma> (send_flow_call2_upd state)
+         \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
-         apply(rule loopB_call2_cond_flow_Phi[OF 4])
-         using IH(5)  IH(8)[of e] loopB_call2_upd_changes(6)[of state] 
-               loopB_call2_upd_changes(4)[of state]  loopB_call2_cond_Phi_decr[OF 4 IH(5)] IH(4)
+         apply(rule send_flow_call2_cond_flow_Phi[OF 4])
+         using IH(5)  IH(8)[of e] send_flow_call2_upd_changes(6)[of state] 
+               send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(5)] IH(4)
          by (auto simp add: left_diff_distrib' flowF)
-    have opt:"invar_isOptflow (loopB_call2_upd state)"
-       apply(rule loopB_invar_isOptflow_call2)
+    have opt:"invar_isOptflow (send_flow_call2_upd state)"
+       apply(rule send_flow_invar_isOptflow_call2)
       using 4 IH gamma_flow  gamma_Phi_flow by auto
     show ?thesis 
-      using a1 invar_gamma_pres_call2[of state]  loopB_call2_invar_integral_pres[of state, OF _ _ _ _ flowF] 4
-            IH gamma_flow gamma_Phi_flow opt loopB_simps(6)[OF IH(1) 4]
+      using a1 invar_gamma_pres_call2[of state]  send_flow_call2_invar_integral_pres[of state, OF _ _ _ _ flowF] 4
+            IH gamma_flow gamma_Phi_flow opt send_flow_simps(6)[OF IH(1) 4]
       by (auto intro: IH(3))
-  qed (auto simp add: IH loopB_simps loopB_invar_isOptflow_fail 
-                      loopB_invar_isOptflow_succ
-                      loopB_invar_isOptflow_cont)
+  qed (auto simp add: IH send_flow_simps send_flow_invar_isOptflow_fail 
+                      send_flow_invar_isOptflow_succ
+                      send_flow_invar_isOptflow_cont)
 qed
 
-lemma loopB_succ_balance: 
-  assumes "loopB_dom state"
-          "return (loopB state) = success"
-        shows "\<forall> v \<in> \<V>. balance (loopB state) v = 0"
+lemma send_flow_succ_balance: 
+  assumes "send_flow_dom state"
+          "return (send_flow state) = success"
+        shows "\<forall> v \<in> \<V>. balance (send_flow state) v = 0"
   using assms(2)
-proof(induction rule : loopB_induct[OF assms(1)])
+proof(induction rule : send_flow_induct[OF assms(1)])
   case (1 state)
   note IH =this
   then show ?case 
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     show ?thesis 
-      using loopB_simps(2)[OF IH(1) 1] IH(4) 
-      by (auto simp add: loopB_cont_upd_def)
+      using send_flow_simps(2)[OF IH(1) 1] IH(4) 
+      by (auto simp add: send_flow_cont_upd_def)
   next
     case 2
     then show ?thesis 
-      using loopB_simps(1)[OF IH(1) 2] IH(4) 
-      unfolding loopB_succ_upd_def Let_def
-      by (auto elim: loopB_succ_condE)
+      using send_flow_simps(1)[OF IH(1) 2] IH(4) 
+      unfolding send_flow_succ_upd_def Let_def
+      by (auto elim: send_flow_succ_condE)
   next
     case 3
     then show ?thesis 
       using IH(4)
-      apply(subst loopB_simps(5)[OF IH(1) 3], subst (asm) loopB_simps(5)[OF IH(1) 3])
+      apply(subst send_flow_simps(5)[OF IH(1) 3], subst (asm) send_flow_simps(5)[OF IH(1) 3])
       by(rule IH(2), auto)
   next
     case 4
     then show ?thesis 
       using IH(4)
-      apply(subst loopB_simps(6)[OF IH(1) 4], subst (asm) loopB_simps(6)[OF IH(1) 4])
+      apply(subst send_flow_simps(6)[OF IH(1) 4], subst (asm) send_flow_simps(6)[OF IH(1) 4])
       by(rule IH(3), auto)
   next
     case 5
     then show ?thesis 
-      using loopB_simps(3)[OF IH(1) 5] IH(4) 
-      by (auto simp add: loopB_fail_upd_def)
+      using send_flow_simps(3)[OF IH(1) 5] IH(4) 
+      by (auto simp add: send_flow_fail_upd_def)
   next
     case 6
     then show ?thesis 
-      using loopB_simps(4)[OF IH(1) 6] IH(4) 
-      by (auto simp add: loopB_fail_upd_def)
+      using send_flow_simps(4)[OF IH(1) 6] IH(4) 
+      by (auto simp add: send_flow_fail_upd_def)
   qed
 qed
 
-theorem loopB_correctness:
-  assumes "loopB_dom state" 
+theorem send_flow_correctness:
+  assumes "send_flow_dom state" 
           "aux_invar state"
           "invar_gamma state"
           "invar_integral state"
-          "loopB_entryF state"
+          "send_flow_entryF state"
           "invar_isOptflow state"
           "\<Phi> state \<le> 2*N"
-          "return (loopB state) = success"
-  shows   "is_Opt \<b> (current_flow (loopB state))"
+          "return (send_flow state) = success"
+  shows   "is_Opt \<b> (current_flow (send_flow state))"
 proof-
-  have "\<forall> v \<in> \<V>. balance (loopB state) v = 0"
-    using loopB_succ_balance[of state] assms by simp
-  moreover have "is_Opt (\<b> - balance (loopB state)) (current_flow (loopB state))"
-    apply(rule loopB_invar_isOpt_pres[OF assms(1,2,3,4,6), simplified invar_isOptflow_def])
-    using assms(5) assms(3) assms(7) unfolding loopB_entryF_def invar_gamma_def 
+  have "\<forall> v \<in> \<V>. balance (send_flow state) v = 0"
+    using send_flow_succ_balance[of state] assms by simp
+  moreover have "is_Opt (\<b> - balance (send_flow state)) (current_flow (send_flow state))"
+    apply(rule send_flow_invar_isOpt_pres[OF assms(1,2,3,4,6), simplified invar_isOptflow_def])
+    using assms(5) assms(3) assms(7) unfolding send_flow_entryF_def invar_gamma_def 
     by (smt (verit, ccfv_threshold) mult_nonneg_nonneg of_int_nonneg)
   ultimately show ?thesis
     unfolding is_Opt_def isbflow_def by simp
 qed
 
-lemma loopB_fail_balance: 
-  assumes "loopB_dom state"
-          "state' = loopB state"
-          "return (loopB state) = failure"
+lemma send_flow_fail_balance: 
+  assumes "send_flow_dom state"
+          "state' = send_flow state"
+          "return (send_flow state) = failure"
         shows "(\<exists> s \<in> \<V>. (balance state' s > (1 - \<epsilon>) * current_\<gamma> state' \<and>
                      (\<forall> t \<in> \<V>. resreach (current_flow state') s t \<longrightarrow>
                                balance state' t \<ge> - \<epsilon> * current_\<gamma> state'))) \<or>
@@ -2465,79 +2521,77 @@ lemma loopB_fail_balance:
                      (\<forall> s \<in> \<V>. resreach (current_flow state') s t \<longrightarrow>
                                balance state' s \<le>  \<epsilon> * current_\<gamma> state')))"
   using assms(2, 3)
-proof(induction rule : loopB_induct[OF assms(1)])
+proof(induction rule : send_flow_induct[OF assms(1)])
   case (1 state)
   note IH =this
   then show ?case 
-  proof(cases rule: loopB_cases[of state])
+  proof(cases rule: send_flow_cases[of state])
     case 1
     show ?thesis 
-      using IH(5) loopB_simps(2)[OF IH(1) 1]
-      unfolding loopB_cont_upd_def IH(4) by simp     
+      using IH(5) send_flow_simps(2)[OF IH(1) 1]
+      unfolding send_flow_cont_upd_def IH(4) by simp     
   next
     case 2
     then show ?thesis 
-      using IH(5) loopB_simps(1)[OF IH(1) 2]
-      unfolding loopB_succ_upd_def IH(4) by simp 
+      using IH(5) send_flow_simps(1)[OF IH(1) 2]
+      unfolding send_flow_succ_upd_def IH(4) by simp 
   next
     case 3
     then show ?thesis 
       apply(rule IH(2))
-      using loopB_simps(5)[OF IH(1) 3] IH(4) IH(5) 
+      using send_flow_simps(5)[OF IH(1) 3] IH(4) IH(5) 
       by auto
   next
     case 4
     then show ?thesis 
       apply(rule IH(3))
-      using loopB_simps(6)[OF IH(1) 4] IH(4) IH(5) 
+      using send_flow_simps(6)[OF IH(1) 4] IH(4) IH(5) 
       by auto
   next
     case 5
     show ?thesis 
-    proof(rule loopB_fail1_condE[OF 5], goal_cases)
+    proof(rule send_flow_fail1_condE[OF 5], goal_cases)
       case (1 f b \<gamma> s)
       have "(1 - \<epsilon>) * \<gamma> < b s" "s \<in> \<V>"
-        using 1 get_source_axioms 5
-        by (metis (no_types, lifting))+
+        using 1 get_source_axioms_unfolded 5 by force+
       moreover have "(\<forall>t\<in>\<V>. resreach (current_flow state') s t \<longrightarrow>
                        - \<epsilon> * current_\<gamma> state' \<le> balance state' t)"
-        using  1(7)  IH(4) loopB_simps(3)[OF IH(1) 5] 
-        unfolding 1(1-3) loopB_fail_upd_def by auto
+        using  1(7)  IH(4) send_flow_simps(3)[OF IH(1) 5] 
+        unfolding 1(1-3) send_flow_fail_upd_def by auto
       ultimately show ?case 
-        using  IH(4) loopB_simps(3)[OF IH(1) 5] 
-        unfolding 1(1-3) loopB_fail_upd_def by auto
+        using  IH(4) send_flow_simps(3)[OF IH(1) 5] 
+        unfolding 1(1-3) send_flow_fail_upd_def by auto
     qed
   next
     case 6
     show ?thesis 
-    proof(rule loopB_fail2_condE[OF 6], goal_cases)
+    proof(rule send_flow_fail2_condE[OF 6], goal_cases)
       case (1 f b \<gamma> t)
       have "b t < - (1 - \<epsilon>) * \<gamma> " "t \<in> \<V>"
-        using 1 get_target_axioms 6
-        by (metis (no_types, lifting))+
+        using 1 get_target_axioms_unfolded 6 by fastforce+
       moreover have "(\<forall>s\<in>\<V>. resreach (current_flow state') s t \<longrightarrow>
                        \<epsilon> * current_\<gamma> state' \<ge> balance state' s)"
-        using  1(8)  IH(4) loopB_simps(4)[OF IH(1) 6] 
-        unfolding 1(1-3) loopB_fail_upd_def by auto
+        using  1(8)  IH(4) send_flow_simps(4)[OF IH(1) 6] 
+        unfolding 1(1-3) send_flow_fail_upd_def by auto
       ultimately show ?case 
-        using  IH(4) loopB_simps(4)[OF IH(1) 6] 
-        unfolding 1(1-3) loopB_fail_upd_def by auto
+        using  IH(4) send_flow_simps(4)[OF IH(1) 6] 
+        unfolding 1(1-3) send_flow_fail_upd_def by auto
     qed
   qed
 qed
 
-theorem loopB_completeness:
-  assumes "loopB_dom state" 
+theorem send_flow_completeness:
+  assumes "send_flow_dom state" 
           "aux_invar state"
           "invar_gamma state"
           "invar_integral state"
-          "loopB_entryF state"
+          "send_flow_entryF state"
           "invar_isOptflow state"
           "\<Phi> state \<le> 2*N"
-          "return (loopB state) = failure"
+          "return (send_flow state) = failure"
   shows   "\<nexists> f. (f is  \<b> flow)"
 proof-
-  define state' where "state' = loopB state"
+  define state' where "state' = send_flow state"
   have s_and_t:"(\<exists> s \<in> \<V>. (balance state' s > (1 - \<epsilon>) * current_\<gamma> state' \<and>
                      (\<forall> t \<in> \<V>. resreach (current_flow state') s t \<longrightarrow>
                                balance state' t \<ge> - \<epsilon> * current_\<gamma> state'))) \<or>
@@ -2545,22 +2599,20 @@ proof-
         (\<exists> t \<in> \<V>. (balance state' t < - (1 - \<epsilon>) * current_\<gamma> state' \<and>
                      (\<forall> s \<in> \<V>. resreach (current_flow state') s t \<longrightarrow>
                                balance state' s \<le>  \<epsilon> * current_\<gamma> state')))"
-    using loopB_fail_balance[of state state', simplified state'_def, OF assms(1) refl assms(8)]
+    using send_flow_fail_balance[of state state', simplified state'_def, OF assms(1) refl assms(8)]
     unfolding state'_def by simp
-  moreover have is_Opt:"is_Opt (\<b> - balance (loopB state)) (current_flow (loopB state))"
-    apply(rule loopB_invar_isOpt_pres[OF assms(1,2,3,4,6), simplified invar_isOptflow_def])
-    using assms(5) assms(3) assms(7) unfolding loopB_entryF_def invar_gamma_def 
+  moreover have is_Opt:"is_Opt (\<b> - balance (send_flow state)) (current_flow (send_flow state))"
+    apply(rule send_flow_invar_isOpt_pres[OF assms(1,2,3,4,6), simplified invar_isOptflow_def])
+    using assms(5) assms(3) assms(7) unfolding send_flow_entryF_def invar_gamma_def 
     by (smt (verit, ccfv_threshold) mult_nonneg_nonneg of_int_nonneg)
   have gamma_0: "current_\<gamma> state' > 0"
     unfolding state'_def using assms
-    by (simp add: invar_gamma_def loopB_changes_current_\<gamma>)
+    by (simp add: invar_gamma_def send_flow_changes_current_\<gamma>)
   have gamma_same: "current_\<gamma> state' = current_\<gamma> state"
-    by (simp add: assms(1) loopB_changes_current_\<gamma> state'_def)
+    by (simp add: assms(1) send_flow_changes_current_\<gamma> state'_def)
   have eps_card_V:"0 \<le> - real (card \<V>) * \<epsilon> + 1"
-     using  \<epsilon>_axiom cardV_0 unfolding N_def 
-     by (metis (no_types, opaque_lifting) add.inverse_inverse linorder_not_le mult.commute 
-          mult_minus_right nonzero_mult_div_cancel_left of_nat_0_le_iff of_nat_less_iff 
-      ordered_comm_semiring_class.comm_mult_left_mono real_0_le_add_iff times_divide_eq_right)
+     using  \<epsilon>_axiom cardV_0
+     by (simp add: mult.commute pos_le_divide_eq N_def)
    have eps_card_V':"real (card \<V> ) * \<epsilon> - 1 \<le> 0"
      using eps_card_V by linarith
    have eps_card_rewrite:"- real (card \<V>) * \<epsilon> + 1 \<le> - real (card \<V> - 1) * \<epsilon> + 1 - \<epsilon>"
@@ -2669,52 +2721,53 @@ proof-
   qed
 qed
 
-lemma loopB_simps': 
-  shows   "loopB_succ_cond state \<Longrightarrow> loopB state = (loopB_succ_upd state)"
-          "loopB_cont_cond state \<Longrightarrow> loopB state = (loopB_cont_upd state)"
-          "loopB_fail1_cond state \<Longrightarrow> loopB state = (loopB_fail_upd state)"
-          "loopB_fail2_cond state \<Longrightarrow> loopB state = (loopB_fail_upd state)"
+lemma send_flow_simps': 
+  shows   "send_flow_succ_cond state \<Longrightarrow> send_flow state = (send_flow_succ_upd state)"
+          "send_flow_cont_cond state \<Longrightarrow> send_flow state = (send_flow_cont_upd state)"
+          "send_flow_fail1_cond state \<Longrightarrow> send_flow state = (send_flow_fail_upd state)"
+          "send_flow_fail2_cond state \<Longrightarrow> send_flow state = (send_flow_fail_upd state)"
 proof-
-  show "loopB_succ_cond state \<Longrightarrow> local.loopB state = loopB_succ_upd state"
-    using  loopB.psimps  loopB_dom_succ[of state]
-    unfolding loopB_succ_upd_def Let_def 
-    by (auto elim: loopB_succ_condE)
-  show "loopB_cont_cond state \<Longrightarrow> local.loopB state = loopB_cont_upd state"
-    apply(subst loopB.psimps, simp add:  loopB_dom_cont[of state])
-    unfolding loopB_cont_upd_def loopB_cont_cond_def Let_def 
+  show "send_flow_succ_cond state \<Longrightarrow> local.send_flow state = send_flow_succ_upd state"
+    using  send_flow.psimps  send_flow_dom_succ[of state]
+    unfolding send_flow_succ_upd_def Let_def 
+    by (auto elim: send_flow_succ_condE)
+  show "send_flow_cont_cond state \<Longrightarrow> local.send_flow state = send_flow_cont_upd state"
+    apply(subst send_flow.psimps, simp add:  send_flow_dom_cont[of state])
+    unfolding send_flow_cont_upd_def send_flow_cont_cond_def Let_def 
     by presburger
-  show " loopB_fail1_cond state \<Longrightarrow> loopB state = loopB_fail_upd state"
-    apply(subst loopB.psimps, simp add:  loopB_dom_fail1[of state])
-    unfolding loopB_fail_upd_def loopB_fail1_cond_def Let_def 
+  show " send_flow_fail1_cond state \<Longrightarrow> send_flow state = send_flow_fail_upd state"
+    apply(subst send_flow.psimps, simp add:  send_flow_dom_fail1[of state])
+    unfolding send_flow_fail_upd_def send_flow_fail1_cond_def Let_def 
     by presburger
-  show "loopB_fail2_cond state \<Longrightarrow> loopB state = loopB_fail_upd state"
-    apply(subst loopB.psimps, simp add:  loopB_dom_fail2[of state])
-    unfolding loopB_fail_upd_def loopB_fail2_cond_def Let_def 
+  show "send_flow_fail2_cond state \<Longrightarrow> send_flow state = send_flow_fail_upd state"
+    apply(subst send_flow.psimps, simp add:  send_flow_dom_fail2[of state])
+    unfolding send_flow_fail_upd_def send_flow_fail2_cond_def Let_def 
     by presburger
  qed    
 
-lemma loopB_nothing_done: 
+lemma send_flow_nothing_done: 
   assumes "\<not> (\<forall> v \<in> \<V>. balance  state v = 0)"
           "\<not> (\<exists> v \<in> \<V>. \<bar> balance state v\<bar> > (1- \<epsilon>) * current_\<gamma> state)"
-    shows "loopB state = state\<lparr> return:= notyetterm\<rparr>"
-  apply(subst loopB_cases[of state])
+    shows "send_flow state = state\<lparr> return:= notyetterm\<rparr>"
+  apply(subst send_flow_cases[of state])
   subgoal
-    using loopB_cont_upd_def loopB_simps'(2) 
-    by (auto intro: loopB_cont_condE)
-  using assms by(fastforce elim: loopB_call1_condE loopB_call2_condE loopB_fail1_condE
-                               loopB_succ_condE loopB_fail2_condE)+
+    using send_flow_cont_upd_def send_flow_simps'(2) 
+    by (auto intro: send_flow_cont_condE)
+  using assms 
+  by(fastforce elim: send_flow_call1_condE send_flow_call2_condE send_flow_fail1_condE
+                               send_flow_succ_condE send_flow_fail2_condE)+
     
-lemma loopB_forest_no_change:
-  assumes "loopB_dom state"
-  shows "(loopB state) \<lparr>  current_flow := current_flow state,
+lemma send_flow_forest_no_change:
+  assumes "send_flow_dom state"
+  shows "(send_flow state) \<lparr>  current_flow := current_flow state,
                           balance := balance state,
                           return:= return state\<rparr> = state"
   using assms by(intro Algo_state.equality, 
-                 auto intro!: loopB_changes_\<FF> loopB_changes_conv_to_rdg
-                              loopB_changes_actives loopB_changes_current_\<gamma>
-                              loopB_changes_representative
-                              loopB_changes_comp_card
-                              loopB_changes_\<FF>_imp
-                              loopB_changes_not_blocked)
+                 auto intro!: send_flow_changes_\<FF> send_flow_changes_conv_to_rdg
+                              send_flow_changes_actives send_flow_changes_current_\<gamma>
+                              send_flow_changes_representative
+                              send_flow_changes_comp_card
+                              send_flow_changes_\<FF>_imp
+                              send_flow_changes_not_blocked)
 end
 end
