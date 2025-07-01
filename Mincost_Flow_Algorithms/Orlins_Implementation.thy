@@ -2215,8 +2215,7 @@ lemma send_flow_abstract_corresp_result_with_conj:
           "aux_invar state"
           "implementation_invar state_impl"
           "invar_gamma state"
-          "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
-                                 6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
+          "invar_above_6Ngamma state"
           "invar_isOptflow state" 
           "invar_integral state"          
         shows "abstract (send_flow_impl state_impl) = send_flow state \<and>
@@ -2229,9 +2228,9 @@ proof(induction  arbitrary: state_impl rule: send_flow_induct[OF assms(1)])
     using IH(7) invar_gamma_def by blast
   have gamma_flow:"e \<in> \<F> state \<Longrightarrow> current_\<gamma> state \<le> current_flow state e" for e
     apply(rule order.trans[of _ "4*N*current_\<gamma> state"])
-    using IH(8)[of e] gamma_0 Phi_nonneg[of state, OF IH(7)] N_gtr_0 apply simp
+    using gamma_0 Phi_nonneg[of state, OF IH(7)] N_gtr_0 apply simp
     using  gamma_0 Phi_nonneg[of state, OF IH(7)] N_gtr_0
-    by(intro order.trans[OF _ IH(8)[of e]] )(auto simp add: mult.commute right_diff_distrib')
+    by(intro order.trans[OF _ invar_above_6NgammaD[OF IH(8),of e]] )(auto simp add: mult.commute right_diff_distrib')
   show ?case 
   proof(rule send_flow_cases[of state], goal_cases)
     case 1
@@ -2259,13 +2258,15 @@ proof(induction  arbitrary: state_impl rule: send_flow_induct[OF assms(1)])
          \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call1_cond_flow_Phi[OF 3])
-         using IH(5)  IH(8)[of e] send_flow_call1_upd_changes(6)[of state] 
+         using IH(5)  invar_above_6NgammaD[OF IH(8),of e] send_flow_call1_upd_changes(6)[of state] 
                send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(7)] IH(7)
          by (auto simp add: left_diff_distrib' flowF)
-       show ?case 
+       hence "invar_above_6Ngamma (send_flow_call1_upd state)"
+         by(auto intro: invar_above_6NgammaI)
+       thus ?case 
          apply(subst send_flow_impl_simps(5)[OF IH(4) IH(6,7) 3 IH(5) flowF])+
          apply(subst send_flow_simps(5)[OF IH(1) 3])
-         using IH(4-10) 3 flowF a1 gamma_Phi_flow gamma_flow
+         using IH(4-10) 3 flowF a1  gamma_flow
          by(intro IH(2)[OF 3]  invar_gamma_pres_call1 send_flow_call1_abstract_corresp
                   send_flow_call1_invar_integral_pres send_flow_invar_isOptflow_call1
            | simp)+
@@ -2281,13 +2282,15 @@ proof(induction  arbitrary: state_impl rule: send_flow_induct[OF assms(1)])
          \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call2_cond_flow_Phi[OF 4])
-         using IH(5)  IH(8)[of e] send_flow_call2_upd_changes(6)[of state] 
+         using IH(5)  invar_above_6NgammaD[OF IH(8), of e] send_flow_call2_upd_changes(6)[of state] 
                send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(7)] IH(7)
          by (auto simp add: left_diff_distrib' flowF)
-       show ?case 
+       hence "invar_above_6Ngamma (send_flow_call2_upd state)"
+         by(auto intro: invar_above_6NgammaI)
+       thus ?case 
          apply(subst send_flow_impl_simps(6)[OF IH(4) IH(6,7) 4 IH(5) flowF])+
          apply(subst send_flow_simps(6)[OF IH(1) 4])
-         using IH(4-10) 4 flowF a1 gamma_Phi_flow gamma_flow
+         using IH(4-10) 4 flowF a1  gamma_flow
          by(intro IH(3)[OF 4]  invar_gamma_pres_call2 send_flow_call2_abstract_corresp
                   send_flow_call2_invar_integral_pres send_flow_invar_isOptflow_call2
            | simp)+
@@ -2550,11 +2553,11 @@ proof(all \<open>rule orlins_call_condE[OF assms(2)]\<close>, goal_cases)
     
   have state''_coincide[simp]: "abstract state''_impl = state''"
     using forest_flow 
-    by(fastforce intro!: send_flow_abstract_corresp_result(1) simp add: state''_impl_def 1(8))
+    by(fastforce intro!: invar_above_6NgammaI send_flow_abstract_corresp_result(1) simp add: state''_impl_def 1(8))
 
   have impl_inv_state''[simp]:"implementation_invar state''_impl"
     using forest_flow 
-    by (fastforce intro!: send_flow_abstract_corresp_result(2)[of state'] simp add: state''_impl_def 1(8))
+    by (fastforce intro!: invar_above_6NgammaI send_flow_abstract_corresp_result(2)[of state'] simp add: state''_impl_def 1(8))
 
   show "abstract (orlins_upd_impl state_impl) = orlins_upd state"
     using sym[OF state''_is] sym[OF state''_impl_is] by simp
@@ -2698,9 +2701,7 @@ lemma initial_impl_implementation_invar: "implementation_invar initial_impl"
                      vset.set.invar_empty)[7]
   apply(auto simp add: to_set_of_adjacency_def dom_def empty_forest_axioms(1) vset.set.set_isin 
                        vset.set.invar_empty vset.set.set_empty  conv_map.map_empty )[1]
-  by (auto intro: rep_comp_update_all(3)
-           simp add: conv_map.invar_empty init_rep_card rep_comp_update_all(4) init_not_blocked
-                     not_blocked_update_all(4))
+  by (auto simp add: conv_map.invar_empty init_rep_card init_not_blocked)
 
 lemma init_orlins_impl_corresp_general:
 "abstract (orlins_impl (send_flow_impl initial_impl)) = orlins (send_flow initial)
@@ -2733,12 +2734,13 @@ next
     by (auto simp add:  initial_def to_graph_def empty_forest_axioms(1) to_rdgs_def 
                         vset.set.set_empty vset.set.set_isin vset.set.invar_empty)
   have corresp_after_send_flow:"abstract (send_flow_impl initial_impl) = send_flow initial"
-    by(intro send_flow_abstract_corresp_result(1))
-      (auto intro: send_flow_termination 
+    by(intro send_flow_abstract_corresp_result(1)[OF _ _ _ _ _ invar_above_6NgammaI])
+      (auto intro: send_flow_termination
          simp add: invar_gamma_initial invar_isOptflow_initial   invar_integral_initial initial_corresp 
                    initial_impl_implementation_invar aux_invar_initial emptyF)
   have impl_inv_after_send_flow:"implementation_invar (send_flow_impl initial_impl)"
-    using emptyF by(intro send_flow_abstract_corresp_result(2))
+    using emptyF
+    by(intro send_flow_abstract_corresp_result(2)[OF _ _ _ _ _ invar_above_6NgammaI])
       (auto intro: send_flow_termination 
          simp add: invar_gamma_initial invar_isOptflow_initial  invar_integral_initial initial_corresp 
                    initial_impl_implementation_invar   aux_invar_initial)
@@ -2765,6 +2767,7 @@ next
       by(auto intro!: orlins_impl_corresp remaining_balance_after_send_flow[OF _ refl] send_flow_termination
                       send_flow_invar_aux_pres send_flow_invar_gamma_pres orlins_entry_after_send_flow[OF _ refl]  
                         send_flow_invar_isOpt_pres send_flow_invar_integral_pres orlins_impl_impl_invar
+                      invar_above_6NgammaI
              simp add: invar_gamma_initial invar_Forest_after_send_flow notyetterm aux_invar_initial
                       impl_inv_after_send_flow corresp_after_send_flow initial_state_orlins_dom_and_results(1)[OF refl]
                       invar_isOptflow_initial  invar_integral_initial )

@@ -799,7 +799,7 @@ proof-
     by(simp add: initial_def to_rdgs_def to_graph_def)
   have invar_integral_after_one:"invar_integral (orlins_one_step_check pseudo_initial)"
     using assms(4) invar_gamma_initial send_flow_termination aux_invar_initial invar_integral_initial
-    by (fastforce intro: send_flow_invar_integral_pres 
+    by (fastforce intro: send_flow_invar_integral_pres invar_above_6NgammaI
           simp add: send_flow_sim initial_def to_rdgs_def empty_forest_axioms to_graph_def   
                     \<E>_impl_meaning set_filter(1) vset.set.set_isin vset.set.invar_empty vset.set.set_empty)
   have orlins_entry_pseudo_initial: "orlins_entry  pseudo_initial"

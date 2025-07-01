@@ -386,8 +386,6 @@ lemma send_flow_succ_upd_changes:
 "not_blocked (send_flow_succ_upd state) = not_blocked state"
   unfolding send_flow_succ_upd_def Let_def by auto
 
-term "\<F> (state::('a, 'd, 'c, 'edge_type) Algo_state)"
-
 definition "send_flow_call1_upd state = (let
                     f = current_flow state;
                     b = balance state;
@@ -849,9 +847,8 @@ proof(induction rule: send_flow_induct[OF assms(1)])
     next
       case 6
       show ?thesis
-      apply(subst send_flow_simps(4), simp add: 6 "1a" , simp add: 6 "1a")
-      apply(rule aux_invar_pres[of state ]) 
-      by(auto simp add: send_flow_fail_upd_def[of state] 6 "1a" validF_def)
+        by(force intro: aux_invar_pres[of state ] 
+              simp add: send_flow_simps(4) send_flow_fail_upd_def[of state] 6 "1a" validF_def)
   qed
 qed
 
@@ -861,8 +858,8 @@ lemma invar_aux_pres_call1:
           "invar_gamma state"
     shows "aux_invar (send_flow_call1_upd state)"
     apply(rule aux_invar_pres[of state, OF assms(2)])      
-         using send_flow_call1_upd_changes[of state]
-         by(auto elim: invar_aux12E[OF send_flow_call1_invar_aux12_pres[OF assms(1) _ assms(3)]]
+    using send_flow_call1_upd_changes[of state]
+    by(auto elim: invar_aux12E[OF send_flow_call1_invar_aux12_pres[OF assms(1) _ assms(3)]]
               simp add: validF_def) 
 
 lemma invar_aux_pres_call2:
@@ -871,8 +868,8 @@ lemma invar_aux_pres_call2:
           "invar_gamma state"
     shows "aux_invar (send_flow_call2_upd state)"
     apply(rule aux_invar_pres[of state, OF assms(2)])      
-         using send_flow_call2_upd_changes[of state]
-         by(auto elim: invar_aux12E[OF send_flow_call2_invar_aux12_pres[OF assms(1) _ assms(3)]]
+    using send_flow_call2_upd_changes[of state]
+    by(auto elim: invar_aux12E[OF send_flow_call2_invar_aux12_pres[OF assms(1) _ assms(3)]]
               simp add: validF_def) 
 
 lemma invar_gamma_pres_succ:
@@ -1544,30 +1541,19 @@ lemma send_flow_dom_fail1: "send_flow_fail1_cond state \<Longrightarrow> send_fl
 lemma send_flow_dom_fail2: "send_flow_fail2_cond state \<Longrightarrow> send_flow_dom state"
   by(auto elim!: send_flow_fail2_condE intro: send_flow.domintros)
 
-lemma send_flow_dom_call1: "send_flow_call1_cond state \<Longrightarrow> (send_flow_dom (send_flow_call1_upd state))
+lemma send_flow_dom_call1: 
+"send_flow_call1_cond state \<Longrightarrow> (send_flow_dom (send_flow_call1_upd state))
                           \<Longrightarrow> send_flow_dom state"
-  apply(rule send_flow_call1_condE, simp)
-  apply(rule send_flow.domintros) 
-  unfolding send_flow_call1_upd_def Let_def
-  subgoal for f b \<gamma> s t P f' b' state' v sa ta 
-    apply(rule back_subst[of send_flow_dom])
-    apply simp 
-    apply(rule Algo_state.equality)
-    by auto
-  by simp
+  by(auto intro:  send_flow.domintros back_subst[of send_flow_dom] Algo_state.equality
+       simp add: send_flow_call1_upd_def Let_def
+        elim:   send_flow_call1_condE)
 
-lemma send_flow_dom_call2: "send_flow_call2_cond state \<Longrightarrow> (send_flow_dom (send_flow_call2_upd state))
+lemma send_flow_dom_call2: 
+"send_flow_call2_cond state \<Longrightarrow> (send_flow_dom (send_flow_call2_upd state))
                           \<Longrightarrow> send_flow_dom state"
-  apply(rule send_flow_call2_condE, simp)
-  apply(rule send_flow.domintros) 
-  unfolding send_flow_call2_upd_def Let_def
-  apply simp
-  subgoal for f b \<gamma> s t P f' b' state' v sa ta 
-    apply(rule back_subst[of send_flow_dom])
-    apply simp 
-    apply(rule Algo_state.equality)
-    by auto
-  done
+  by(auto intro:  send_flow.domintros back_subst[of send_flow_dom] Algo_state.equality
+       simp add: send_flow_call2_upd_def Let_def
+        elim:   send_flow_call2_condE)
 
 lemma send_flow_term:
   assumes "invar_gamma state"
@@ -1718,13 +1704,31 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     by (simp add: mult.commute) 
 qed
 
+definition "invar_above_6Ngamma state =
+(\<forall> e \<in> \<F> state. current_flow state e \<ge>  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state)"
+
+lemma invar_above_6NgammaI: 
+"(\<And> e. e \<in> \<F> state \<Longrightarrow>
+ current_flow state e \<ge>  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state)
+\<Longrightarrow> invar_above_6Ngamma state"
+  by(auto simp add: invar_above_6Ngamma_def)
+
+lemma invar_above_6NgammaE: 
+"invar_above_6Ngamma state \<Longrightarrow> ((\<And> e. e \<in> \<F> state \<Longrightarrow>
+ current_flow state e \<ge>  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state)
+  \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: invar_above_6Ngamma_def)
+
+lemma invar_above_6NgammaD: 
+"invar_above_6Ngamma state \<Longrightarrow>  e \<in> \<F> state \<Longrightarrow>
+ current_flow state e \<ge>  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
+  by(auto simp add: invar_above_6Ngamma_def)
 
 theorem send_flow_flow_Phi:
   assumes "send_flow_dom state"
           "state' = send_flow state"
           "invar_gamma state"
-          "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
-                                 6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
+          "invar_above_6Ngamma state"
           "aux_invar state"
      shows"current_flow  state' e \<ge> current_flow state e - (\<Phi> state - \<Phi> state')*current_\<gamma> state'"
   unfolding assms(2)
@@ -1732,12 +1736,13 @@ theorem send_flow_flow_Phi:
 proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
-  have gamma_0: "current_\<gamma> state > 0" using IH unfolding invar_gamma_def by auto
+  have gamma_0: "current_\<gamma> state > 0" using IH by(auto simp add: invar_gamma_def)
   have gamma_flow:"e \<in> \<F> state \<Longrightarrow> current_\<gamma> state \<le> current_flow state e" for e
     apply(rule order.trans[of _ "4*N*current_\<gamma> state"])
     using  gamma_0  N_gtr_0 apply simp
     using  gamma_0 Phi_nonneg[of state, OF IH(4)] N_gtr_0 
-    by(intro order.trans[OF _ IH(5)[of e]])(auto simp add: mult.commute right_diff_distrib)
+    by(intro order.trans[OF _ invar_above_6NgammaD[OF IH(5)]])
+ (auto simp add: mult.commute right_diff_distrib)
   have flowF: "\<forall>e\<in>\<F> state. 0 < current_flow state e "
     using gamma_0 gamma_flow by force
   show ?case 
@@ -1760,14 +1765,16 @@ proof(induction rule: send_flow_induct[OF assms(1)])
          \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call1_cond_flow_Phi[OF 3], simp, simp add: IH)
-         using IH(4)  IH(5)[of e] send_flow_call1_upd_changes(6)[of state] 
+         using IH(4) invar_above_6NgammaD[OF IH(5),of e] send_flow_call1_upd_changes(6)[of state] 
                send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(4)] IH(6)
          by (auto  simp add: left_diff_distrib' flowF)
-    show ?thesis
+       hence "invar_above_6Ngamma (send_flow_call1_upd state)"
+         by(auto  intro: invar_above_6NgammaI)
+       thus ?thesis
       using  send_flow_simps(5)[of state] 3 invar_gamma_ud IH 
              send_flow_call1_cond_flow_Phi[of state "send_flow_call1_upd state" e] gamma_Phi_flow flowF
              invar_aux_pres_call1
-      by (auto simp add: gamma_same left_diff_distrib)
+      by (auto simp add: gamma_same left_diff_distrib )
   next
     case 4
     have invar_gamma_ud:"invar_gamma (send_flow_call2_upd state)" 
@@ -1779,18 +1786,19 @@ proof(induction rule: send_flow_induct[OF assms(1)])
                       current_\<gamma> (send_flow_call2_upd state)" 
       by (simp add: invar_gamma_ud send_flow_changes_current_\<gamma> send_flow_termination)      
     have invar_gamma: "invar_gamma (send_flow_call2_upd state)"
-         using IH
-         unfolding send_flow_call2_upd_def Let_def invar_gamma_def by simp
+         using IH by(simp add: send_flow_call2_upd_def Let_def invar_gamma_def)
     have gamma_Phi_flow: "e \<in> \<F> (send_flow_call2_upd state) \<Longrightarrow>
          real (6 * N) * current_\<gamma> (send_flow_call2_upd state) -
          real_of_int (int (2 * N) - \<Phi> (send_flow_call2_upd state)) * current_\<gamma> (send_flow_call2_upd state)
          \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call2_cond_flow_Phi[OF 4], simp, simp add: IH)
-         using IH(4)  IH(5)[of e] send_flow_call2_upd_changes(6)[of state] 
+         using IH(4)  invar_above_6NgammaD[OF IH(5),of e] send_flow_call2_upd_changes(6)[of state] 
                send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(4)] IH(6)
          by (auto intro:  simp add: left_diff_distrib' flowF)
-    show ?thesis 
+       hence "invar_above_6Ngamma (send_flow_call2_upd state)"
+         by(auto intro: invar_above_6NgammaI)
+       thus ?thesis 
       using  send_flow_simps(6)[of state] 4 invar_gamma_ud IH 
              send_flow_call2_cond_flow_Phi[of state "send_flow_call2_upd state" e] gamma_Phi_flow flowF
              invar_aux_pres_call2
@@ -1805,14 +1813,14 @@ lemma send_flow_flow_Phi_final:
   assumes "send_flow_dom state"
           "state' = send_flow state"
           "invar_gamma state"
-          "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
-                                 6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
+          "invar_above_6Ngamma state"
           "aux_invar state"
      shows"current_flow  state' e \<ge> current_flow state e - \<Phi> state*current_\<gamma> state'"
   using send_flow_flow_Phi[of state state' e] Phi_nonneg[of state] assms
-  by (smt (verit, best) invar_gamma_def send_flow_invar_gamma_pres Phi_nonneg send_flow_axioms 
-                     send_flow_flow_Phi mult_less_cancel_right_disj of_int_le_iff)
-
+          invar_gammaE send_flow_invar_gamma_pres Phi_nonneg  
+                     send_flow_flow_Phi[of state state' e] 
+   by(smt mult_less_cancel_right_disj of_int_le_iff)
+ 
 lemma send_flow_call1_invar_integral_pres:
   assumes "send_flow_call1_cond state"
           "invar_integral state"
@@ -1883,27 +1891,16 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
         apply(cases rule: disjE[OF e_erev])
         subgoal 
           using e_rev_in_es_flow_change[of e P  f \<gamma>, OF _ _ distinctP] x_prop 
-          unfolding 1(1) sym[OF f'] 1(10) gamma_same 1(3) 
-          by (auto intro: exI[of _ "x+1"] simp add: distrib_left mult.commute)
-        apply(cases rule: disjE[where P="F e \<notin> set P \<and> B e \<in> set P"], simp)
-        subgoal 
-          apply(rule exI[of _ "x-1"])
-          using rev_e_in_es_flow_change[of e P  f \<gamma>, OF _ _ distinctP, simplified] 
-                x_prop x_0 
-          unfolding 1(1) sym[OF f'] 1(10) gamma_same 1(3) 
-          by (metis Suc_eq_plus1_left Suc_pred' add_diff_cancel_right' diff_le_self left_diff_distrib 
-             mult_cancel_right1 of_nat_1 of_nat_diff )
-        subgoal
-          using there_and_back_flow_not_change[of e P  f \<gamma>, OF _ _ distinctP, simplified] 
-                x_prop 
-          unfolding 1(1) sym[OF f'] 1(10) gamma_same 1(3)
-          by auto
-        done
+          by (auto intro: exI[of _ "x+1"] simp add: 1(1) sym[OF f'] 1(10) gamma_same 1(3)  distrib_left mult.commute)  
+        using rev_e_in_es_flow_change[of e P  f \<gamma>, OF _ _ distinctP, simplified] 
+                x_prop x_0  there_and_back_flow_not_change[of e P  f \<gamma>, OF _ _ distinctP, simplified] 
+        by (auto intro: disjE[where P="F e \<notin> set P \<and> B e \<in> set P"] exI[of _ "x-1"] 
+            simp add: left_diff_distrib' 1(1) sym[OF f'] 1(10) gamma_same 1(3) )
     next
       case False
       thus ?thesis
          using e_not_in_es_flow_not_change[of P e f \<gamma>] x_prop 
-         unfolding 1(1) sym[OF f'] 1(10) gamma_same 1(3) by auto
+         by(auto simp add: 1(1) sym[OF f'] 1(10) gamma_same 1(3))
     qed
   qed
 qed
@@ -1968,29 +1965,16 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
           using get_source_target_path_b_axioms(1)[of state t s P] s_not_t 1 
                 assms(5) get_source_for_target_axioms_unfolded[OF 1(2,3,1,7,9)]
                 get_target_axioms_unfolded[OF 1(2,3,7)] assms(3) linorder_not_le
-          unfolding is_s_t_path_def augpath_def
-          by (fastforce intro: get_source_target_path_b_condI assms(1,4))
+          by (fastforce intro: get_source_target_path_b_condI assms(1,4) simp add: is_s_t_path_def augpath_def)
        qed
       show ?thesis
         apply(cases rule: disjE[OF e_erev])
         subgoal 
           using e_rev_in_es_flow_change[of e P  f \<gamma>, OF _ _ distinctP] x_prop 
-          unfolding 1(1) sym[OF f'] 1(11) gamma_same 1(3) 
-          by (auto intro: exI[of _ "x+1"] simp add: distrib_left mult.commute)
-        apply(cases rule: disjE[where P="F e \<notin> set P \<and> B e \<in> set P"], simp)
-        subgoal 
-          apply(rule exI[of _ "x-1"])
-          using rev_e_in_es_flow_change[of e P  f \<gamma>, OF _ _ distinctP, simplified] 
-                x_prop x_0 
-          unfolding 1(1) sym[OF f'] 1(11) gamma_same 1(3) 
-          by (metis Suc_eq_plus1_left Suc_pred' add_diff_cancel_right' diff_le_self left_diff_distrib 
-             mult_cancel_right1 of_nat_1 of_nat_diff)
-        subgoal
-          using there_and_back_flow_not_change[of e P  f \<gamma>, OF _ _ distinctP, simplified] 
-                x_prop 
-          unfolding 1(1) sym[OF f'] 1(11) gamma_same 1(3)
-          by auto
-        done
+          by (auto intro: exI[of _ "x+1"] simp add: distrib_left mult.commute  1(1) sym[OF f'] 1(11) gamma_same 1(3) )
+       using rev_e_in_es_flow_change[of e P  f \<gamma>, OF _ _ distinctP, simplified] 
+                x_prop x_0 there_and_back_flow_not_change[of e P  f \<gamma>, OF _ _ distinctP, simplified] 
+       by (auto intro:  disjE[where P="F e \<notin> set P \<and> B e \<in> set P"] exI[of _ "x-1"] simp add: left_diff_distrib'  1(1) sym[OF f'] 1(11) gamma_same 1(3) )
     next
       case False
       thus ?thesis
@@ -2017,8 +2001,7 @@ theorem send_flow_invar_integral_pres:
           "aux_invar state"
           "invar_integral state"
           "invar_gamma state"
-          "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
-                                 6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
+          "invar_above_6Ngamma state"
     shows "invar_integral (send_flow state)"
   using assms(2-)
 proof(induction rule: send_flow_induct[OF assms(1)])
@@ -2029,7 +2012,7 @@ proof(induction rule: send_flow_induct[OF assms(1)])
     apply(rule order.trans[of _ "4*N*current_\<gamma> state"])
     using  gamma_0  N_gtr_0 apply simp  
     using  gamma_0 Phi_nonneg[of state, OF IH(6)] N_gtr_0
-    by (intro order.trans[OF _ IH(7)[of e]])(auto simp add: mult.commute right_diff_distrib')
+    by (intro order.trans[OF _ invar_above_6NgammaD[OF IH(7),of e]])(auto simp add: mult.commute right_diff_distrib')
   have flowF: "\<forall>e\<in>\<F> state. 0 < current_flow state e "
     using gamma_0 gamma_flow by force
   then show ?case 
@@ -2044,10 +2027,12 @@ proof(induction rule: send_flow_induct[OF assms(1)])
          \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call1_cond_flow_Phi[OF 3], simp, simp add: IH)
-         using IH(4)  IH(7)[of e] send_flow_call1_upd_changes(6)[of state] 
+         using IH(4)  invar_above_6NgammaD[OF IH(7),of e] send_flow_call1_upd_changes(6)[of state] 
                send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(6)]
          by (auto  simp add: left_diff_distrib' flowF)
-       show ?thesis 
+       hence "invar_above_6Ngamma (send_flow_call1_upd state)"
+         by(auto intro: invar_above_6NgammaI)
+       thus ?thesis 
          apply(subst send_flow_simps(5))
          using 3 IH send_flow_call1_cond_flow_Phi[OF 3, of "send_flow_call1_upd state"] gamma_Phi_flow
          by (intro IH(2)[OF 3 _ _ invar_gamma]| 
@@ -2064,10 +2049,12 @@ proof(induction rule: send_flow_induct[OF assms(1)])
          \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call2_cond_flow_Phi[OF 4], simp, simp add: IH)
-         using IH(4)  IH(7)[of e] send_flow_call2_upd_changes(6)[of state] 
+         using IH(4)  invar_above_6NgammaD[OF IH(7), of e] send_flow_call2_upd_changes(6)[of state] 
                send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(6)]
          by (auto intro:  simp add: left_diff_distrib' flowF)
-       show ?thesis 
+       hence "invar_above_6Ngamma (send_flow_call2_upd state)"
+         by(auto intro: invar_above_6NgammaI)
+       thus ?thesis 
          apply(subst send_flow_simps(6))
          using 4 IH send_flow_call2_cond_flow_Phi[OF 4, of "send_flow_call2_upd state"] gamma_Phi_flow
          by (intro IH(3)[OF 4 _ _ invar_gamma]| 
@@ -2147,8 +2134,7 @@ theorem outside_actives_and_F_no_change:
   assumes "send_flow_dom state"
           "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
           "invar_gamma state" 
-          "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
-                                 6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
+          "invar_above_6Ngamma state"
           "aux_invar state"
     shows "current_flow state e = current_flow (send_flow state) e"
   using assms(2-6)
@@ -2160,7 +2146,7 @@ proof(induction rule: send_flow_induct[OF assms(1)])
     apply(rule order.trans[of _ "4*N*current_\<gamma> state"])
     using  gamma_0  N_gtr_0 apply simp
     using  gamma_0 Phi_nonneg[of state, OF IH(6)] N_gtr_0 
-    by (intro  order.trans[OF _ IH(7)[of e]])(auto simp add: mult.commute right_diff_distrib)
+    by (intro  order.trans[OF _ invar_above_6NgammaD[OF IH(7),of e]])(auto simp add: mult.commute right_diff_distrib)
   have flowF: "\<forall>e\<in>\<F> state. 0 < current_flow state e "
     using gamma_0 gamma_flow by force
   show ?case 
@@ -2175,9 +2161,11 @@ proof(induction rule: send_flow_induct[OF assms(1)])
          \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call1_cond_flow_Phi[OF 3], simp, simp add: IH)
-         using IH(4)  IH(7)[of e] send_flow_call1_upd_changes(6)[of state] 
+         using IH(4)  invar_above_6NgammaD[OF IH(7),of e] send_flow_call1_upd_changes(6)[of state] 
                send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(6)] IH(8)
          by (auto  simp add: left_diff_distrib' flowF)
+    hence "invar_above_6Ngamma (send_flow_call1_upd state)"
+         by(auto intro: invar_above_6NgammaI)
     moreover have "current_flow state e = current_flow (send_flow_call1_upd state) e"
          using IH 3 send_flow_call1_upd_changes invar_gamma 
          using flowF by (auto intro: outside_actives_and_F_no_change_call1)
@@ -2195,9 +2183,11 @@ proof(induction rule: send_flow_induct[OF assms(1)])
          \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call2_cond_flow_Phi[OF 4], simp, simp add: IH)
-         using IH(4)  IH(7)[of e] send_flow_call2_upd_changes(6)[of state] 
+         using IH(4)  invar_above_6NgammaD[OF IH(7),of e] send_flow_call2_upd_changes(6)[of state] 
                send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(6)] IH(8)
          by (auto simp add: left_diff_distrib' flowF)
+       hence "invar_above_6Ngamma (send_flow_call2_upd state)"
+         by(auto intro: invar_above_6NgammaI)
     moreover have "current_flow state e = current_flow (send_flow_call2_upd state) e"
          using IH 4 send_flow_call2_upd_changes invar_gamma 
          using flowF by (auto intro: outside_actives_and_F_no_change_call2)
@@ -2379,9 +2369,8 @@ theorem send_flow_invar_isOpt_pres:
   assumes "send_flow_dom state"
           "aux_invar state" "invar_gamma state" "invar_integral state"
           "invar_isOptflow state"
-          "\<And> e. e \<in> \<F> state \<Longrightarrow> current_flow state e \<ge>
-                                 6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
-        shows "invar_isOptflow (send_flow state)"
+          "invar_above_6Ngamma state"
+    shows "invar_isOptflow (send_flow state)"
   using assms(2-)
 proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
@@ -2390,9 +2379,9 @@ proof(induction rule: send_flow_induct[OF assms(1)])
     using IH(5) invar_gamma_def by blast
   have gamma_flow:"e \<in> \<F> state \<Longrightarrow> current_\<gamma> state \<le> current_flow state e" for e
     apply(rule order.trans[of _ "4*N*current_\<gamma> state"])
-    using IH(8)[of e] gamma_0 Phi_nonneg[of state, OF IH(5)] N_gtr_0 apply simp
+    using  gamma_0 Phi_nonneg[of state, OF IH(5)] N_gtr_0 apply simp
     using  gamma_0 Phi_nonneg[of state, OF IH(5)] N_gtr_0 
-    by(intro order.trans[OF _ IH(8)[of e]])(auto simp add: mult.commute right_diff_distrib')
+    by(intro order.trans[OF _ invar_above_6NgammaD[OF IH(8),of e]])(auto simp add: mult.commute right_diff_distrib')
   show ?case 
   proof(cases rule: send_flow_cases[of state])
     case 3
@@ -2406,15 +2395,17 @@ proof(induction rule: send_flow_induct[OF assms(1)])
          \<le> current_flow (send_flow_call1_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call1_cond_flow_Phi[OF 3])
-         using IH(5)  IH(8)[of e] send_flow_call1_upd_changes(6)[of state] 
+         using IH(5)  invar_above_6NgammaD[OF IH(8), of e] send_flow_call1_upd_changes(6)[of state] 
                send_flow_call1_upd_changes(4)[of state]  send_flow_call1_cond_Phi_decr[OF 3 IH(5)] IH(4)
          by (auto simp add: left_diff_distrib' flowF)
-    have opt:"invar_isOptflow (send_flow_call1_upd state)"
+    hence  "invar_above_6Ngamma (send_flow_call1_upd state)"
+         by(auto intro: invar_above_6NgammaI)
+    moreover have opt:"invar_isOptflow (send_flow_call1_upd state)"
        apply(rule send_flow_invar_isOptflow_call1)
       using 3  IH   gamma_flow  gamma_Phi_flow by auto
-    show ?thesis 
+    ultimately show ?thesis 
       using a1 invar_gamma_pres_call1[of state]  send_flow_call1_invar_integral_pres[of state, OF _ _ _ _ flowF] 3 
-            IH gamma_flow gamma_Phi_flow opt send_flow_simps(5)[OF IH(1) 3]
+            IH gamma_flow send_flow_simps(5)[OF IH(1) 3]
       by (auto intro: IH(2))
   next
     case 4
@@ -2428,15 +2419,17 @@ proof(induction rule: send_flow_induct[OF assms(1)])
          \<le> current_flow (send_flow_call2_upd state) e" for e
          apply(rule order.trans) defer
          apply(rule send_flow_call2_cond_flow_Phi[OF 4])
-         using IH(5)  IH(8)[of e] send_flow_call2_upd_changes(6)[of state] 
+         using IH(5)  invar_above_6NgammaD[OF IH(8), of e] send_flow_call2_upd_changes(6)[of state] 
                send_flow_call2_upd_changes(4)[of state]  send_flow_call2_cond_Phi_decr[OF 4 IH(5)] IH(4)
          by (auto simp add: left_diff_distrib' flowF)
-    have opt:"invar_isOptflow (send_flow_call2_upd state)"
+       hence "invar_above_6Ngamma (send_flow_call2_upd state)"
+         by(auto intro: invar_above_6NgammaI)
+    moreover have opt:"invar_isOptflow (send_flow_call2_upd state)"
        apply(rule send_flow_invar_isOptflow_call2)
       using 4 IH gamma_flow  gamma_Phi_flow by auto
-    show ?thesis 
+    ultimately show ?thesis 
       using a1 invar_gamma_pres_call2[of state]  send_flow_call2_invar_integral_pres[of state, OF _ _ _ _ flowF] 4
-            IH gamma_flow gamma_Phi_flow opt send_flow_simps(6)[OF IH(1) 4]
+            IH gamma_flow send_flow_simps(6)[OF IH(1) 4]
       by (auto intro: IH(3))
   qed (auto simp add: IH send_flow_simps send_flow_invar_isOptflow_fail 
                       send_flow_invar_isOptflow_succ
@@ -2446,7 +2439,7 @@ qed
 lemma send_flow_succ_balance: 
   assumes "send_flow_dom state"
           "return (send_flow state) = success"
-        shows "\<forall> v \<in> \<V>. balance (send_flow state) v = 0"
+    shows "\<forall> v \<in> \<V>. balance (send_flow state) v = 0"
   using assms(2)
 proof(induction rule : send_flow_induct[OF assms(1)])
   case (1 state)
@@ -2503,6 +2496,7 @@ proof-
     using send_flow_succ_balance[of state] assms by simp
   moreover have "is_Opt (\<b> - balance (send_flow state)) (current_flow (send_flow state))"
     apply(rule send_flow_invar_isOpt_pres[OF assms(1,2,3,4,6), simplified invar_isOptflow_def])
+    apply(rule invar_above_6NgammaI)
     using assms(5) assms(3) assms(7) unfolding send_flow_entryF_def invar_gamma_def 
     by (smt (verit, ccfv_threshold) mult_nonneg_nonneg of_int_nonneg)
   ultimately show ?thesis
@@ -2557,10 +2551,10 @@ proof(induction rule : send_flow_induct[OF assms(1)])
       moreover have "(\<forall>t\<in>\<V>. resreach (current_flow state') s t \<longrightarrow>
                        - \<epsilon> * current_\<gamma> state' \<le> balance state' t)"
         using  1(7)  IH(4) send_flow_simps(3)[OF IH(1) 5] 
-        unfolding 1(1-3) send_flow_fail_upd_def by auto
+        by(auto simp add:1(1-3) send_flow_fail_upd_def)
       ultimately show ?case 
         using  IH(4) send_flow_simps(3)[OF IH(1) 5] 
-        unfolding 1(1-3) send_flow_fail_upd_def by auto
+        by(auto simp add:  1(1-3) send_flow_fail_upd_def)
     qed
   next
     case 6
@@ -2603,6 +2597,7 @@ proof-
     unfolding state'_def by simp
   moreover have is_Opt:"is_Opt (\<b> - balance (send_flow state)) (current_flow (send_flow state))"
     apply(rule send_flow_invar_isOpt_pres[OF assms(1,2,3,4,6), simplified invar_isOptflow_def])
+    apply(rule invar_above_6NgammaI)
     using assms(5) assms(3) assms(7) unfolding send_flow_entryF_def invar_gamma_def 
     by (smt (verit, ccfv_threshold) mult_nonneg_nonneg of_int_nonneg)
   have gamma_0: "current_\<gamma> state' > 0"
@@ -2616,8 +2611,8 @@ proof-
    have eps_card_V':"real (card \<V> ) * \<epsilon> - 1 \<le> 0"
      using eps_card_V by linarith
    have eps_card_rewrite:"- real (card \<V>) * \<epsilon> + 1 \<le> - real (card \<V> - 1) * \<epsilon> + 1 - \<epsilon>"
-     by(auto simp add: algebra_simps)
-       (metis Suc_diff_Suc cardV_0 minus_nat.diff_0 mult.right_neutral of_nat_Suc order.refl ring_class.ring_distribs(1))
+     by(auto simp add: algebra_simps) 
+          (metis Suc_pred cardV_0 distrib_left dual_order.refl mult.right_neutral of_nat_Suc)
   show ?thesis
   proof(rule disjE[OF s_and_t], goal_cases)
     case 1

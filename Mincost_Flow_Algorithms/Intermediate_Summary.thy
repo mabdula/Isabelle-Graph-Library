@@ -1324,6 +1324,9 @@ lemma vset_inv_pres_insert_undirected_edge:"adjmap_inv ff\<Longrightarrow> (\<An
 
 definition "invar_gamma state = (current_\<gamma> state > 0)"
 
+lemma invar_gammaE: "invar_gamma state \<Longrightarrow> (current_\<gamma> state > 0 \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: invar_gamma_def)
+
 definition "invar_non_zero_b state =( \<not> (\<forall>v\<in>\<V>. balance state v = 0))"
 
 definition "invar_forest state =

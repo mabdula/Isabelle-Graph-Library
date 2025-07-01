@@ -442,7 +442,7 @@ proof(goal_cases)
         \<ge> current_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 
           \<Phi> ((maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) *
           current_\<gamma> (send_flow(maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))" for e
-      apply(rule send_flow_flow_Phi_final[OF _ refl])
+      apply(rule send_flow_flow_Phi_final[OF _ refl  _ invar_above_6NgammaI])
       using invar_gamma_after_maintain_forest send_flow_dom send_flow_entryF aux_invar_after_maintain_forest
       unfolding send_flow_entryF_def 
       by (simp, simp, smt (verit) Phi_after_below2N invar_gamma_after_maintain_forest invar_gamma_def mult_nonneg_nonneg of_int_nonneg, simp)
@@ -537,7 +537,7 @@ proof-
         \<ge> current_flow (maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) e - 
           \<Phi> ((maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))) *
           current_\<gamma> (send_flow(maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))" for e
-    apply(rule send_flow_flow_Phi_final[OF _ refl])
+    apply(rule send_flow_flow_Phi_final[OF _ refl _ invar_above_6NgammaI])
       using invar_gamma_after_maintain_forest send_flow_dom send_flow_entryF aux_invar_after_maintain_forest
       unfolding send_flow_entryF_def 
       by (simp, simp, smt (verit) Phi_after_below2N invar_gamma_after_maintain_forest invar_gamma_def mult_nonneg_nonneg of_int_nonneg, simp)
@@ -568,11 +568,11 @@ proof-
   apply(fastforce intro!: maintain_forest_invar_gamma_pres aux_invar_gamma gamma_upd_aux_invar_pres
             simp add: assms)
   unfolding sym[OF new_\<gamma>_def[of state], simplified Let_def]
+    apply(rule invar_above_6NgammaI)
     apply(rule order.trans) defer
-    apply(rule order.strict_implies_order[OF allTurnSet[OF 
-           send_flow_entryF[simplified send_flow_entryF_def], of ]])
     using Phi_after_below2N new_gamma_0 same_gamma_maintain_forest 
-    by force+
+    by (fastforce intro!: order.strict_implies_order[OF allTurnSet[OF 
+           send_flow_entryF[simplified send_flow_entryF_def], of ]])+
 qed
 
 lemma invar_integral_pres_orlins_one_step:
@@ -686,16 +686,16 @@ proof-
     using N_def  aux_invar_after_maintain_forest  card_mono[OF \<V>_finite ] 
     unfolding aux_invar_def invar_aux10_def by simp 
   have optB:"invar_isOptflow (send_flow(maintain_forest (state \<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)))"
-    apply(rule send_flow_invar_isOpt_pres[OF send_flow_dom aux_invar_after_maintain_forest invar_gamma_after_maintain_forest 
-                                         invar_integralA optA])
+    apply(rule send_flow_invar_isOpt_pres[OF send_flow_dom aux_invar_after_maintain_forest
+         invar_gamma_after_maintain_forest invar_integralA optA invar_above_6NgammaI])
     unfolding same_gamma_maintain_forest
     apply(rule order.trans) defer
-     apply(rule order.strict_implies_order[OF all_to_meta_set[OF
+    apply(rule order.strict_implies_order[OF all_to_meta_set[OF
                             invarA_2_Aftermaintain_forest[simplified invarA_2_def]]])
     using   card_below_N_afterA[OF fst_E_V] Phi_after_below2N new_gamma_0 N_gtr_0
              conjunct1[OF conjunct2[OF conjunct2[OF aux_invar_after_maintain_forest[simplified
                      aux_invar_def invar_aux3_def] ]]]
-    by(simp, intro pos_subs_ineq[of _ _ "(real_of_int _) * _"] ,  
+   by(simp, intro pos_subs_ineq[of _ _ "(real_of_int _) * _"] ,  
        auto simp add: in_mono algebra_simps)
   thus "return state = notyetterm \<Longrightarrow> invar_isOptflow (orlins_one_step state)"
     unfolding orlins_one_step_def new_\<gamma>_def Let_def by simp
@@ -2255,6 +2255,7 @@ proof-
         (fastforce intro: orlins_entry_after_send_flow[OF _ refl] send_flow_invar_isOpt_pres send_flow_invar_aux_pres 
                             send_flow_invar_gamma_pres  aux_invar_initial send_flow_termination send_flow_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
+                            invar_above_6NgammaI
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
                             vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
     qed
@@ -2287,6 +2288,7 @@ proof-
         (fastforce intro: orlins_entry_after_send_flow[OF _ refl] send_flow_invar_isOpt_pres send_flow_invar_aux_pres 
                             send_flow_invar_gamma_pres  aux_invar_initial send_flow_termination send_flow_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
+                            invar_above_6NgammaI
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
                           vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
     qed
@@ -2355,6 +2357,7 @@ qed
         (fastforce intro: orlins_entry_after_send_flow[OF _ refl] send_flow_invar_isOpt_pres send_flow_invar_aux_pres 
                             send_flow_invar_gamma_pres  aux_invar_initial send_flow_termination send_flow_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
+                            invar_above_6NgammaI
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
                             vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
     qed
@@ -2385,6 +2388,7 @@ qed
            (fastforce intro: send_flow_invar_isOpt_pres aux_invar_initial 
                             send_flow_termination 
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
+                            invar_above_6NgammaI
             simp add:  initial_def to_graph_def empty_forest_axioms)+)
     qed 
     show ?case
@@ -2424,6 +2428,7 @@ qed
         (fastforce intro: orlins_entry_after_send_flow[OF _ refl] send_flow_invar_isOpt_pres send_flow_invar_aux_pres 
                             send_flow_invar_gamma_pres  aux_invar_initial send_flow_termination send_flow_invar_integral_pres
                             invar_gamma_initial  invar_integral_initial  invar_isOptflow_initial
+                            invar_above_6NgammaI
                   simp add: initial_def to_rdgs_def to_graph_def empty_forest_axioms
                             vset.set.set_isin vset.set.invar_empty vset.set.set_empty))+
     qed
