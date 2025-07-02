@@ -2,6 +2,8 @@ theory Greedoids
   imports Main Complex_Main
 begin    
 
+(*Authored by Shriya Meenakshisundaram*)
+
 subsection \<open>Auxiliary Lemmas\<close>
 
 lemma max_n: "(\<And> n. P n \<Longrightarrow> n \<le> bound) \<Longrightarrow> P (n::nat) \<Longrightarrow> (\<exists> nmax. P nmax \<and> (\<nexists> m. m > nmax \<and> P m))"
