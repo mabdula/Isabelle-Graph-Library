@@ -1098,10 +1098,8 @@ proof-
         unfolding y_def r_def y'_def yy_def xy_def state'_def \<FF>'_def \<FF>_def \<FF>_imp_def \<FF>_imp'_def
         apply (simp add: in_connected_componentI reachable_sym) 
         apply(intro connected_components_member_eq in_connected_componentI)
-        apply(
-            cases rule: disjE[OF spec[OF all_invars(6)[simplified invar_aux8_def], of "snd e"]])  
-         apply (smt (verit, best) insertI1 subset_insertI)+
-        done
+        apply(cases rule: disjE[OF spec[OF all_invars(6)[simplified invar_aux8_def], of "snd e"]])
+        by auto
     next
       case False
       then show ?thesis 
@@ -2223,17 +2221,10 @@ have set_invar_E': "set_invar E'"
           have strict_non_strict_mono: "(a::real) < b \<Longrightarrow> c \<ge> d \<Longrightarrow> a -c < b -d" for a b c d by simp
           show ?case 
             apply(subst  106[simplified \<FF>'_def], subst comps_union[simplified \<FF>'_def], subst card_Un_disjnt)
-            using comps_inter_empt  144[of x'] 144[of y']
-                  154[OF x'_inV] 154[OF y'_inV]  \<V>_finite 
-                  finite_subset[of "connected_component \<FF> _"] finite_subset[of "connected_component \<FF>' _"]
-            unfolding disjnt_def  
-            apply(simp, simp, simp)
-            apply(rule order.strict_trans2[OF _ 110], rule strict_non_strict_mono)
-            subgoal
-              using e_prop asm 2 unfolding \<gamma>_def 
-              by auto
-            using 103 asm 
-            by (smt (verit) mult_left_mono of_nat_0_le_iff of_nat_add)
+            using comps_inter_empt  144[of x'] 144[of y'] e_prop asm 2 103  154[OF x'_inV] 154[OF y'_inV]  \<V>_finite 
+                  finite_subset[of "connected_component \<FF> _"] finite_subset[of "connected_component \<FF>' _"] 
+              by (auto intro!: order.strict_trans2[OF _ 110]  strict_non_strict_mono 
+                     simp add: add_increasing distrib_left  \<gamma>_def  disjnt_def  )
         qed
       qed
     qed
@@ -2280,15 +2271,13 @@ have set_invar_E': "set_invar E'"
           apply(rule Orderings.xt1(1)[of _  "ereal (f _)"])
         using rcap.simps(2)[of f ] apply simp
         apply(subst less_ereal.simps(1))
-        apply(rule order.strict_trans[of _ "(8 * real N * \<gamma>)"])  
-        apply(rule mult_less_le_imp_less)
-        using asm(1) V_non_empt \<V>_finite unfolding invar_gamma_def \<gamma>_def N_def 
-        by auto
+        apply(rule order.strict_trans[of _ "(8 * real N * \<gamma>)"]) 
+        using asm(1) V_non_empt \<V>_finite 
+        by(auto intro: mult_less_le_imp_less simp add: invar_gamma_def \<gamma>_def N_def)
         subgoal
           apply(cases rule: oedge.cases[of d])        
           using d_oedge_card[of d] infinite_u[of "oedge d"]  asm(4)  asm(5) 
           apply (auto)[1]
-
           apply(rule order.strict_trans2[of _ "ereal (current_flow state (oedge d))"])
           apply(rule order.strict_trans1[of _ "ereal (8 * real (card \<V>) * current_\<gamma> state -
                  thr2 * real (card (connected_component (to_graph (Algo_state.\<FF>_imp state)) (fst (oedge d)))))"])      
@@ -2334,7 +2323,7 @@ have set_invar_E': "set_invar E'"
      by(auto simp add: invarA_1_def b_def  \<FF>_def  \<gamma>_def)
     done
 
-      have to_rdg_Q_non_empt: "List.set (to_redge_path to_rdg' Q) \<noteq> {}"
+    have to_rdg_Q_non_empt: "List.set (to_redge_path to_rdg' Q) \<noteq> {}"
         using lengthQ
         by (simp add: proper_path_some_redges)
 
@@ -2365,7 +2354,8 @@ have set_invar_E': "set_invar E'"
   have walk_betwQ: "walk_betw \<FF>' x' Q y'"
     apply(rule from_directed_walk_to_undirected_walk[OF fit_together goodF' ])
     using qqq_prop invar_aux_pres_one_step[OF assms(2) assms(1), simplified sym[OF state_state']] x'_inVs x'_not_y'
-    by(auto intro: get_path_axioms_unfolded(1) simp add: aux_invar_def invar_aux19_def invar_aux18_def state'_def Q_def
+    by(auto intro: get_path_axioms_unfolded(1) 
+         simp add: aux_invar_def invar_aux19_def invar_aux18_def state'_def Q_def
                                                 invar_aux14_def validF_def \<FF>'_def)
    
   have hd_rev_Q:"hd (rev Q) = y'"
