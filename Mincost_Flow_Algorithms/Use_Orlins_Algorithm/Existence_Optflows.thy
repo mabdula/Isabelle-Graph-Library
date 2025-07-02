@@ -106,8 +106,9 @@ interpretation algo_locale: with_capacity_proofs
  and \<b> = "the_default 0 \<circ> bal_lookup (b_impl b)"
   using with_capacity_proofs by simp
 
-lemma algo_locale_isbflow_def:"algo_locale.isbflow f b = flow_network.isbflow (prod.fst o make_pair) (prod.snd o make_pair)
-                                 make_pair (the_default PInfty \<circ> flow_lookup \<u>_impl) \<E> f b"
+lemma algo_locale_isbflow_def:"algo_locale.isbflow f b = flow_network_spec.isbflow
+                               (prod.fst o make_pair) (prod.snd o make_pair)
+                                 make_pair \<E> (the_default PInfty \<circ> flow_lookup \<u>_impl) f b"
   by auto
 thm algo_locale.correctness_of_implementation
 
@@ -302,8 +303,9 @@ interpretation algo_locale: solve_maxflow_proofs
   and \<u> = "the_default PInfty \<circ> flow_lookup \<u>_impl" 
   using solve_maxflow_proofs by simp
 
-lemma algo_locale_isbflow_def:"algo_locale.isbflow f b = flow_network.isbflow (prod.fst o make_pair) (prod.snd o make_pair)
-                                 make_pair (the_default PInfty \<circ> flow_lookup \<u>_impl) \<E> f b"
+lemma algo_locale_isbflow_def:"algo_locale.isbflow f b =
+                   flow_network_spec.isbflow (prod.fst o make_pair) (prod.snd o make_pair)
+                                 make_pair \<E> (the_default PInfty \<circ> flow_lookup \<u>_impl) f b"
   by auto
 
 lemma to_maxflow_from_algo: "algo_locale.is_s_t_flow f s t \<Longrightarrow> f is s--t flow"
@@ -343,7 +345,7 @@ proof(goal_cases)
    by (auto simp add: algo_locale.ex_def   algo_locale.delta_minus_def algo_locale.delta_plus_def make_pair'' ex_def delta_plus_def delta_minus_def)
   ultimately show ?case
     using s_in_V t_in_V s_neq_t flow_network_impl 
-    by(auto intro!: flow_network.is_s_t_flowI)
+    by(auto intro!: flow_network_spec.is_s_t_flowI)
 qed
 
 lemma existence_of_maximum_flow:
@@ -353,7 +355,7 @@ proof(rule, goal_cases)
   then obtain f where isopt: " is_max_flow s t f" by auto
   define b where "b = (\<lambda>x. if x = s then ex\<^bsub>f\<^esub> t else if x = t then - ex\<^bsub>f\<^esub> t else 0)"
   hence fbflow:"f is s--t flow" "f is b flow"
-    using isopt is_max_flow_def[OF s_in_V t_in_V s_neq_t]s_t_flow_is_ex_bflow[of f s t]  by blast+
+    using isopt is_max_flow_def s_t_flow_is_ex_bflow  by blast+
   moreover have no_infty_path
     unfolding no_infty_path_def
   proof(rule nexistsI, goal_cases)
@@ -440,7 +442,7 @@ proof(rule, goal_cases)
         by simp
     qed
     ultimately show ?case 
-      using isopt by(auto simp add: is_max_flow_def[OF s_in_V t_in_V s_neq_t])
+      using isopt by(auto simp add: is_max_flow_def)
   qed
   thus ?case by simp
 next
@@ -466,11 +468,11 @@ next
     using algo_locale.correctness_of_implementation(1)[OF no_infty_path' success] by simp
   have "is_max_flow s t
  (abstract_flow_map (solve_maxflow.final_flow_impl_maxflow_original make_pair create_edge \<E>_impl \<u>_impl s t))"
-  proof(rule is_max_flowI[OF s_in_V t_in_V s_neq_t], goal_cases)
+  proof(rule is_max_flowI, goal_cases)
     case 1
     have "algo_locale.is_s_t_flow (abstract_flow_map 
            (solve_maxflow.final_flow_impl_maxflow_original make_pair create_edge \<E>_impl \<u>_impl s t)) s t"
-      using max_flow_algo by(subst(asm) algo_locale.is_max_flow_def[OF s_in_V t_in_V s_neq_t]) simp
+      using max_flow_algo by(subst(asm) algo_locale.is_max_flow_def) simp
     thus ?case
       by(auto intro: to_maxflow_from_algo)
     case (2 g)

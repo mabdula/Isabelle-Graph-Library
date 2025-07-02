@@ -3,7 +3,7 @@ session "Mincost_Flow_Algorithms" = "HOL-Library" +
 
 sessions
   Berge_Lemma
-  Mincost_Flow_Theory
+  Flow_Theory
 
 theories
   PathAugOpt

@@ -1,5 +1,5 @@
 theory PathAugOpt 
-  imports "Mincost_Flow_Theory.Optimality"
+  imports "Flow_Theory.Cost_Optimality"
 begin
 
 context cost_flow_network

@@ -288,16 +288,16 @@ definition "N = length (remdups (map fst (to_list \<E>_impl) @ map snd  (to_list
 definition "\<epsilon> = 1 / (max 3 (real N))"
 
 definition "\<b> = (\<lambda> v. if bal_lookup \<b>_impl v \<noteq> None then the (bal_lookup \<b>_impl v) else 0)"
-abbreviation "EEE \<equiv> flow_network.\<EE> \<E>"
+abbreviation "EEE \<equiv> flow_network_spec.\<EE> \<E>"
 abbreviation "fstv == flow_network_spec.fstv fst snd"
 abbreviation "sndv == flow_network_spec.sndv fst snd"
 
 abbreviation "VV \<equiv> dVs (make_pair ` \<E>)"
 
-definition default_conv_to_rdg::"'a \<times> 'a \<Rightarrow> 'edge_type flow_network_spec.Redge"  where
+definition default_conv_to_rdg::"'a \<times> 'a \<Rightarrow> 'edge_type Redge"  where
 "default_conv_to_rdg e = (case e of (u, v) \<Rightarrow> (let oedg = to_pair {u, v} in (
-                                if oedg = (u, v) then flow_network_spec.F (create_edge u v)
-                                else flow_network_spec.B (create_edge v u))))"
+                                if oedg = (u, v) then F (create_edge u v)
+                                else B (create_edge v u))))"
                                 
 definition "es = remdups(map make_pair (to_list \<E>_impl)@(map prod.swap (map make_pair (to_list \<E>_impl))))"
                                 
@@ -362,8 +362,8 @@ definition "get_edge_and_costs_forward nb (f::'edge_type \<Rightarrow> real) =
                  (eb, cb) = find_cheapest_backward f nb outgoing_edges
                             (create_edge v u) PInfty
                   in (if cf \<le> cb then
-                      (flow_network_spec.F ef, cf)
-                      else (flow_network_spec.B eb, cb))))"
+                      (F ef, cf)
+                      else (B eb, cb))))"
                       
                       
 definition "get_edge_and_costs_backward nb (f::'edge_type \<Rightarrow> real) = 
@@ -378,8 +378,8 @@ definition "get_edge_and_costs_backward nb (f::'edge_type \<Rightarrow> real) =
                  (eb, cb) = find_cheapest_backward f nb outgoing_edges
                             (create_edge v u) PInfty
                   in (if cf \<le> cb then
-                      (flow_network_spec.F ef, cf)
-                      else (flow_network_spec.B eb, cb))))"
+                      (F ef, cf)
+                      else (B eb, cb))))"
 
 definition "bellman_ford_forward nb (f::'edge_type \<Rightarrow> real) s =
          bellman_ford_algo (\<lambda> u v. prod.snd (get_edge_and_costs_forward nb f u v)) es (length vs - 1)
@@ -827,7 +827,7 @@ Set3: Set3 get_from_set filter are_all set_invar to_set +
 
 rep_comp_maper: Map  rep_comp_empty "rep_comp_update::'a \<Rightarrow> ('a \<times> nat) \<Rightarrow> 'r_comp_impl \<Rightarrow> 'r_comp_impl"
               rep_comp_delete rep_comp_lookup rep_comp_invar +
-conv_map: Map  conv_empty "conv_update::'a \<times> 'a \<Rightarrow> 'edge_type flow_network_spec.Redge \<Rightarrow> 'conv_impl \<Rightarrow> 'conv_impl"
+conv_map: Map  conv_empty "conv_update::'a \<times> 'a \<Rightarrow> 'edge_type Redge \<Rightarrow> 'conv_impl \<Rightarrow> 'conv_impl"
               conv_delete conv_lookup conv_invar +
 not_blocked_map: Map  not_blocked_empty "not_blocked_update::'edge_type \<Rightarrow> bool \<Rightarrow> 'not_blocked_impl\<Rightarrow> 'not_blocked_impl"
               not_blocked_delete not_blocked_lookup not_blocked_invar +
@@ -922,14 +922,12 @@ and fst = fst and snd = snd and make_pair = make_pair and create_edge = create_e
 lemmas cost_flow_network[simp] = cost_flow_network.cost_flow_network_axioms
 
 abbreviation "\<cc> \<equiv> cost_flow_network.\<cc>"
-abbreviation "F \<equiv> flow_network_spec.F"
-abbreviation "B \<equiv> flow_network_spec.B"
 abbreviation "to_edge == cost_flow_network.to_vertex_pair"
-abbreviation "oedge == cost_flow_network.oedge"
+abbreviation "oedge == flow_network_spec.oedge"
 abbreviation "rcap == cost_flow_network.rcap"
 
 lemma default_conv_to_rdg: "cost_flow_network.consist default_conv_to_rdg"
-  using to_pair_axioms[of , OF refl] flow_network_spec.Redge.simps(3,4) multigraph.create_edge
+  using to_pair_axioms[of , OF refl] Redge.simps(3,4) multigraph.create_edge
   by(auto split: prod.split simp add:  cost_flow_network.consist_def default_conv_to_rdg_def
      insert_commute) fastforce+
 
@@ -1308,13 +1306,13 @@ proof-
              (create_edge v u) PInfty)"
   define cb where "cb = prod.snd (find_cheapest_backward f nb outgoing_edges
              (create_edge v u) PInfty)"
-  have result_simp:"(e, c) = (if cf \<le> cb then (flow_network_spec.F ef, cf) else (flow_network_spec.B eb, cb))"
+  have result_simp:"(e, c) = (if cf \<le> cb then (F ef, cf) else (B eb, cb))"
     by(auto split: option.split prod.split 
         simp add: get_edge_and_costs_forward_def sym[OF assms(1)] cf_def cb_def ingoing_edges_def outgoing_edges_def ef_def eb_def )
   show ?thesis
   proof(cases "cf \<le> cb")
     case True
-    hence result_is:"flow_network_spec.F ef = e" "cf = c" "ef = d"
+    hence result_is:"F ef = e" "cf = c" "ef = d"
       using result_simp  assms(3) by auto
     define edges_and_costs where "edges_and_costs =
   Set.insert (create_edge u v, PInfty)
@@ -1344,7 +1342,7 @@ proof-
       by(auto simp add: ef_props  ereal_diff_gr0 result_is[symmetric])
   next
     case False
-    hence result_is:"flow_network_spec.B eb = e" "cb = c" "eb = d"
+    hence result_is:"B eb = e" "cb = c" "eb = d"
       using result_simp  assms(3) by auto
     define edges_and_costs where "edges_and_costs =
   Set.insert (create_edge v u, PInfty)
@@ -1398,13 +1396,13 @@ proof-
              (create_edge v u) PInfty)"
   define cb where "cb = prod.snd (find_cheapest_backward f nb outgoing_edges
              (create_edge v u) PInfty)"
-  have result_simp:"(e, c) = (if cf \<le> cb then (flow_network_spec.F ef, cf) else (flow_network_spec.B eb, cb))"
+  have result_simp:"(e, c) = (if cf \<le> cb then (F ef, cf) else (B eb, cb))"
     by(auto split: option.split prod.split 
         simp add: get_edge_and_costs_backward_def sym[OF assms(1)] cf_def cb_def ingoing_edges_def outgoing_edges_def ef_def eb_def )
   show ?thesis
   proof(cases "cf \<le> cb")
     case True
-    hence result_is:"flow_network_spec.F ef = e" "cf = c" "ef = d"
+    hence result_is:"F ef = e" "cf = c" "ef = d"
       using result_simp  assms(3) by auto
     define edges_and_costs where "edges_and_costs =
   Set.insert (create_edge u v, PInfty)
@@ -1434,7 +1432,7 @@ proof-
       by(auto simp add: ef_props  ereal_diff_gr0 result_is[symmetric])
   next
     case False
-    hence result_is:"flow_network_spec.B eb = e" "cb = c" "eb = d"
+    hence result_is:"B eb = e" "cb = c" "eb = d"
       using result_simp  assms(3) by auto
     define edges_and_costs where "edges_and_costs =
   Set.insert (create_edge v u, PInfty)
@@ -1465,7 +1463,7 @@ proof-
   qed
 qed
 
-lemmas EEE_def = flow_network.\<EE>_def
+lemmas EEE_def = flow_network_spec.\<EE>_def
 
 lemma es_E_frac: "cost_flow_network.to_vertex_pair ` EEE = set es"
 proof(goal_cases)
@@ -1476,16 +1474,16 @@ proof(goal_cases)
   by (metis imageI swap_simp swap_swap)
   have help2: "\<lbrakk>(a, b) = make_pair x ; x \<in> local.\<E> \<rbrakk>\<Longrightarrow>
        make_pair x \<in> to_edge `
-          ({cost_flow_network.F d |d. d \<in> local.\<E>} \<union> {cost_flow_network.B d |d. d \<in> local.\<E>})"
+          ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
     for a b x
     using cost_flow_network.to_vertex_pair.simps
     by(metis (mono_tags, lifting) UnI1 imageI mem_Collect_eq)
   have help3: "\<lbrakk> (b, a) = make_pair x ; x \<in> local.\<E>\<rbrakk> \<Longrightarrow>
        (a, b) \<in> to_edge `
-          ({cost_flow_network.F d |d. d \<in> local.\<E>} \<union> {cost_flow_network.B d |d. d \<in> local.\<E>})"
+          ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
     for a b x
   by (smt (verit, del_insts) cost_flow_network.\<EE>_def cost_flow_network.o_edge_res
-    cost_flow_network.oedge_simps'(2) cost_flow_network.to_vertex_pair.simps(2) image_iff swap_simp)
+    flow_network_spec.oedge_simps'(2) cost_flow_network.to_vertex_pair.simps(2) image_iff swap_simp)
     show ?case
     by(auto simp add: cost_flow_network.to_vertex_pair.simps es_is_E EEE_def cost_flow_network.\<EE>_def
           intro: help1 help2 help3) 
@@ -2081,8 +2079,8 @@ next
     using 2  bellman_ford.weight.simps[OF bellman_ford]  
     by(auto simp add: arc_implies_awalk get_edge_and_costs_forward_result_props)
     moreover have "(\<forall>e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_forward nb f (prod.fst e) (prod.snd e))) ppp).
-        nb (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap f e)"
-      using 2  bellman_ford.weight.simps[OF bellman_ford] cost_flow_network.oedge_simps'
+        nb (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap f e)"
+      using 2  bellman_ford.weight.simps[OF bellman_ford] flow_network_spec.oedge_simps'
                 cost_flow_network.rcap.simps get_edge_and_costs_forward_result_props[OF sym[OF prod.collapse], of nb f x y]
       by(auto simp add: \<u>_def)
     ultimately show ?case by simp
@@ -2106,9 +2104,9 @@ ereal
     using  "3.prems"(1) bellman_ford.weight.simps[OF bellman_ford]
     by (simp add: get_edge_and_costs_forward_result_props)
   moreover have "(\<forall>e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_forward nb f (prod.fst e) (prod.snd e))) (edges_of_vwalk (y # xs))).
-    nb (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap f e)" 
+    nb (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap f e)" 
     by (simp add: "3.IH" calculation(3))
-  moreover have "nb (flow_network.oedge (prod.fst (get_edge_and_costs_forward nb f x y)))"
+  moreover have "nb (flow_network_spec.oedge (prod.fst (get_edge_and_costs_forward nb f x y)))"
     using  "3.prems"(1) bellman_ford.weight.simps[OF bellman_ford]
              get_edge_and_costs_forward_result_props[OF prod.collapse[symmetric], of nb f x y]
     by auto
@@ -2143,7 +2141,7 @@ proof(rule nexistsI, goal_cases)
       "(\<And> e. e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e)
                          (prod.snd e)))
            (edges_of_vwalk c)) \<Longrightarrow>
-        not_blocked state (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+        not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
     using path_bf_flow_network_path[OF _ length_c weight_le_PInfty refl] by auto
   define cc where "cc = (map (\<lambda>e. prod.fst (get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e) (prod.snd e)))
                        (edges_of_vwalk c))"
@@ -2242,7 +2240,7 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
   from 1 have knowledge: "get_source state \<in> VV"
     "aux_invar state"
     "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (Adj_Map_Specs2.to_graph  (\<FF>_imp state)).
-        0 < current_flow state (flow_network.oedge e))"
+        0 < current_flow state (flow_network_spec.oedge e))"
     "invar_isOptflow state" 
     "(\<exists>t\<in>VV. balance state t < - (\<epsilon> * current_\<gamma> state) \<and> resreach (current_flow state) s t)"
     by force+
@@ -2261,13 +2259,13 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
   ultimately obtain pp where pp_prop:"augpath (current_flow state) pp"
      "fstv (hd pp) = s" "sndv (last pp) = tt"
      "set pp
-     \<subseteq> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)"
+     \<subseteq> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)"
      "foldr (\<lambda>x. (+) (\<cc> x)) pp 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) p 0"
     using  algo.simulate_inactives_costs[ of "current_flow state" p, of s tt state, OF _ _ _ _ _  refl refl refl refl refl refl refl refl ]
            1(8) by auto
   have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
     using knowledge(2) from_aux_invar'(21) by auto
-  hence e_in:"e \<in> set pp \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
+  hence e_in:"e \<in> set pp \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
       using pp_prop(4)  by auto
     hence e_es:"e \<in> set pp \<Longrightarrow> cost_flow_network.to_vertex_pair e \<in> set es" for e
@@ -2284,7 +2282,7 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
       using oedge_where from_aux_invar'(1,3)[OF knowledge(2)] by auto
     have posflow:"\<exists> d. e = B d \<Longrightarrow> current_flow state (oedge e) > 0" 
       using cost_flow_network.augpath_rcap_pos_strict'[OF  pp_prop(1) 1]
-      by(induction  rule: cost_flow_network.oedge.cases[OF  , of e])
+      by(induction  rule: flow_network_spec.oedge.cases[OF  , of e])
          auto
     have "prod.snd (get_edge_and_costs_forward (not_blocked state) (current_flow state)
      (fstv e) (sndv e)) \<le> \<cc> e"
@@ -2363,7 +2361,7 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
          (\<forall>e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e)
                          (prod.snd e)))
            (edges_of_vwalk Pbf)).
-    not_blocked state (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+    not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
     by(intro path_bf_flow_network_path[OF _ length_Pbf weight_le_PInfty refl]) simp
   hence Pbf_props: "awalk UNIV (hd Pbf) (edges_of_vwalk Pbf) (last Pbf)"
                    " weight (not_blocked state) (current_flow state) Pbf =
@@ -2373,7 +2371,7 @@ proof(rule if_E[where P= "\<lambda> x. t = x"], fast, goal_cases)
                    "(\<And> e. e \<in> set (map (\<lambda>e. prod.fst (get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e)
                          (prod.snd e)))
            (edges_of_vwalk Pbf)) \<Longrightarrow>
-    not_blocked state (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+    not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
     by auto
   define P where "P = (map (\<lambda>e. prod.fst (get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e) (prod.snd e)))
                    (edges_of_vwalk Pbf))"
@@ -2467,7 +2465,7 @@ qed
 
 lemma bf_weight_leq_res_costs:
 assumes "set (map oedge qq) \<subseteq> set \<E>_list"
-        " \<And> e. e \<in> set qq \<Longrightarrow> not_blocked state (flow_network.oedge e)"
+        " \<And> e. e \<in> set qq \<Longrightarrow> not_blocked state (flow_network_spec.oedge e)"
         "\<And> e. e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap (current_flow state) e"
         "unconstrained_awalk (map cost_flow_network.to_vertex_pair qq)"
    and  qq_len: "length qq \<ge> 1"
@@ -2552,7 +2550,7 @@ next
            weight (not_blocked state) (current_flow state) (snd ee # awalk_verts (fst ee) (map to_edge xs))
            \<le> ereal (\<cc> (B ee) + foldr (\<lambda>x. (+) (\<cc> x)) xs 0));
           (\<And>e. e = B dd \<or> e = B ee \<or> e \<in> set xs \<Longrightarrow> not_blocked state (oedge e));
-          (\<And>e. e = cost_flow_network.B dd \<or> e = cost_flow_network.B ee \<or> e \<in> set xs \<Longrightarrow> 0 < rcap (current_flow state) e);
+          (\<And>e. e = B dd \<or> e = B ee \<or> e \<in> set xs \<Longrightarrow> 0 < rcap (current_flow state) e);
            unconstrained_awalk ((snd dd, fst dd) # (snd ee, fst ee) # map to_edge xs);
            dd \<in> set \<E>_list ;  ee \<in> set \<E>_list ; oedge ` set xs \<subseteq> set \<E>_list \<rbrakk> \<Longrightarrow>
         prod.snd (local.get_edge_and_costs_forward (not_blocked state) (current_flow state) (snd dd) (snd ee)) +
@@ -2580,7 +2578,7 @@ lemma get_source_target_path_a_ax:
   assumes "get_source_target_path_a_cond  state s t P b \<gamma> f"
   shows "0 < cost_flow_network.Rcap f (set P) \<and>
         (invar_isOptflow state \<longrightarrow> cost_flow_network.is_min_path f s t P) \<and>
-         cost_flow_network.oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<and>
+         flow_network_spec.oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<and>
          distinct P"
   apply(insert assms)
   unfolding  loopB.get_source_target_path_a_cond_def
@@ -2614,7 +2612,7 @@ proof(cases "invar_isOptflow state", goal_cases)
        insert "1"(1), unfold get_target_for_source_def, presburger+)
   hence 
     "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)).
-        0 < current_flow state (flow_network.oedge e))"
+        0 < current_flow state (flow_network_spec.oedge e))"
     by auto
   have  loopB_call1_cond: " loopB_call1_cond state"
     using  1 unfolding loopB.loopB_call1_cond_def by presburger
@@ -2643,7 +2641,7 @@ proof(cases "invar_isOptflow state", goal_cases)
      "fstv (hd qq) = s"
      "sndv (last qq) = t"
      "set qq
-     \<subseteq> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} \<union>
+     \<subseteq> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} \<union>
         to_rdgs to_pair (conv_to_rdg state) (\<FF> state)"
      "foldr (\<lambda>x. (+) (\<cc> x)) qq 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0" "qq \<noteq> []"
   using algo.simulate_inactives_costs[OF  Q_prop(1-4) knowledge(5)
@@ -2654,7 +2652,7 @@ proof(cases "invar_isOptflow state", goal_cases)
     by(cases qq rule: list_cases3) auto
   have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
     by (simp add: "1"(1) from_aux_invar'(21))
-  hence e_in:"e \<in> set qq \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
+  hence e_in:"e \<in> set qq \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
       using qq_prop(4)  by auto
     hence e_es:"e \<in> set qq \<Longrightarrow> cost_flow_network.to_vertex_pair e \<in> set es" for e
@@ -2757,7 +2755,7 @@ proof(cases "invar_isOptflow state", goal_cases)
          (\<forall>e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e)
                          (prod.snd e)))
            (edges_of_vwalk Pbf)).
-    not_blocked state (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+    not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
     by(intro path_bf_flow_network_path[OF _ length_Pbf weight_le_PInfty refl]) simp
   hence Pbf_props: "awalk UNIV (hd Pbf) (edges_of_vwalk Pbf) (last Pbf)"
                    " weight (not_blocked state) (current_flow state) Pbf =
@@ -2767,7 +2765,7 @@ proof(cases "invar_isOptflow state", goal_cases)
                    "(\<And> e. e \<in> set (map (\<lambda>e. prod.fst (get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e)
                          (prod.snd e)))
            (edges_of_vwalk Pbf)) \<Longrightarrow>
-    not_blocked state (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+    not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
     by auto
   have "map (to_edge \<circ>
          (\<lambda>e. prod.fst (local.get_edge_and_costs_forward (not_blocked state) (current_flow state) (prod.fst e)
@@ -2824,7 +2822,7 @@ proof(cases "invar_isOptflow state", goal_cases)
           distinct_map by auto
   have qq_in_E:"set (map cost_flow_network.to_vertex_pair qq) \<subseteq> set es"
     using e_es by auto
-  have qq_in_E':"set (map cost_flow_network.oedge qq) \<subseteq> \<E>" 
+  have qq_in_E':"set (map flow_network_spec.oedge qq) \<subseteq> \<E>" 
     using e_es' by auto
   have not_blocked_qq: "\<And> e . e \<in> set qq \<Longrightarrow> not_blocked state (oedge e)" 
     using  F_is from_aux_invar'(22)[OF knowledge(5)]  qq_prop(4) by fastforce
@@ -2837,9 +2835,9 @@ bf_weight_leq_res_costs:"weight (not_blocked state) (current_flow state) (awalk_
  \<le> foldr (\<lambda>x. (+) (\<cc> x)) qq 0" 
     using qq_in_E not_blocked_qq rcap_qq awalk' qq_len  e_es'
     by(auto intro!: bf_weight_leq_res_costs simp add:  \<E>_def \<E>_impl(1) \<E>_list_def  to_list(1))
-  have oedge_of_EE: "flow_network.oedge ` EEE = \<E>" 
+  have oedge_of_EE: "flow_network_spec.oedge ` EEE = \<E>" 
     by (meson  cost_flow_network.oedge_on_\<EE>)
-  have " cost_flow_network.oedge ` set PP \<subseteq> \<E>"
+  have " flow_network_spec.oedge ` set PP \<subseteq> \<E>"
     using from_aux_invar'(1,3)[OF knowledge(5)] oedge_of_p_allowed by blast
   hence P_in_E: "set PP \<subseteq> EEE"
     by (meson image_subset_iff cost_flow_network.o_edge_res subsetI) 
@@ -2948,7 +2946,7 @@ next
     using "2.prems"(1)  
     by(auto simp add: es_sym[of "(y,x)"] bellman_ford.weight.simps[OF bellman_ford] 2(2) get_edge_and_costs_backward_result_props)
     moreover have "(\<forall>e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_backward nb f (prod.snd e) (prod.fst e))) (map prod.swap (rev ppp))).
-        nb (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap f e)"
+        nb (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap f e)"
       using 2  get_edge_and_costs_backward_result_props[OF prod.collapse[symmetric] _ refl, of nb f x y]
       by auto
     ultimately show ?case by simp
@@ -2975,9 +2973,9 @@ ereal
       by auto
   moreover have "(\<forall>e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_backward nb f (prod.snd e) (prod.fst e)))
                         (map prod.swap (rev (edges_of_vwalk (y # xs))))).
-    nb (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap f e)" 
+    nb (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap f e)" 
     by (simp add: "3.IH" calculation(3))
-  moreover have "nb (flow_network.oedge (prod.fst (get_edge_and_costs_backward nb f x y)))"
+  moreover have "nb (flow_network_spec.oedge (prod.fst (get_edge_and_costs_backward nb f x y)))"
      using 3  get_edge_and_costs_backward_result_props[OF prod.collapse[symmetric] _ refl, of nb f x y]
       by auto
   moreover have "0 < cost_flow_network.rcap f  (prod.fst (get_edge_and_costs_backward nb f x y))"
@@ -3018,7 +3016,7 @@ proof(rule nexistsI, goal_cases)
      0)"
       "(\<And> e. e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_backward (not_blocked state) (current_flow state) (prod.snd e) (prod.fst e)))
              (map prod.swap (rev (edges_of_vwalk c)))) \<Longrightarrow>
-      not_blocked state (flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+      not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
     using path_bf_flow_network_path_backward[OF _ length_c weight_le_PInfty refl] by auto
   define cc where "cc = (map (\<lambda>e. prod.fst (get_edge_and_costs_backward (not_blocked state) (current_flow state) (prod.snd e) (prod.fst e)))
        (map prod.swap (rev (edges_of_vwalk c))))"
@@ -3112,7 +3110,7 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
   from 1 have knowledge: "get_target state \<in> VV"
     "aux_invar state"
     "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (to_graph (\<FF>_imp state)).
-        0 < current_flow state (cost_flow_network.oedge e))"
+        0 < current_flow state (flow_network_spec.oedge e))"
     "invar_isOptflow state" 
     "(\<exists>s\<in>VV. balance state s > (\<epsilon> * current_\<gamma> state) \<and> resreach (current_flow state) s t)"
     using t_prop(1) by auto
@@ -3131,14 +3129,14 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
   ultimately obtain pp where pp_prop:"augpath (current_flow state) pp"
      "fstv (hd pp) = ss" "sndv (last pp) = t"
      "set pp
-     \<subseteq> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)"
+     \<subseteq> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)"
      "foldr (\<lambda>x. (+) (\<cc> x)) pp 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) p 0"
     using  algo.simulate_inactives_costs[of "current_flow state" p, of ss t state,
                         OF _ _ _ _ _  refl refl refl refl refl refl refl refl]
            1(8) by blast
   have F_is: "\<FF> state = to_graph (\<FF>_imp state)" 
     using knowledge(2) from_aux_invar'(21) by auto
-  hence e_in:"e \<in> set pp \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
+  hence e_in:"e \<in> set pp \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
       using pp_prop(4)  by auto
     hence e_es:"e \<in> set pp \<Longrightarrow> cost_flow_network.to_vertex_pair e \<in> set es" for e
@@ -3155,7 +3153,7 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
       using oedge_where from_aux_invar'(1,3)[OF knowledge(2)] by auto
     have posflow:"\<exists> d. e = B d \<Longrightarrow> current_flow state (oedge e) > 0" 
       using cost_flow_network.augpath_rcap_pos_strict'[OF  pp_prop(1) 1]
-      by(induction  rule: cost_flow_network.oedge.cases[OF  , of e])
+      by(induction  rule: flow_network_spec.oedge.cases[OF  , of e])
          auto
     have "prod.snd (get_edge_and_costs_backward (not_blocked state) (current_flow state)
      (sndv e) (fstv e)) \<le> \<cc> e"
@@ -3242,7 +3240,7 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
      0) \<and>
   (\<forall>e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_backward (not_blocked state) (current_flow state) (prod.snd e) (prod.fst e)))
              (map prod.swap (rev (edges_of_vwalk Pbf)))).
-      not_blocked state (cost_flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+      not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
    using path_bf_flow_network_path_backward[OF _ length_Pbf weight_le_PInfty refl] by simp
    hence Pbf_props: "awalk UNIV (last Pbf) (map prod.swap (rev (edges_of_vwalk Pbf))) (hd Pbf)"
                    "weight_backward (not_blocked state) (current_flow state) Pbf =
@@ -3253,7 +3251,7 @@ proof(rule if_E[where P= "\<lambda> x. s = x"], fast, goal_cases)
      0)"
          "(\<And> e. e  \<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_backward (not_blocked state) (current_flow state) (prod.snd e) (prod.fst e)))
              (map prod.swap (rev (edges_of_vwalk Pbf)))) \<Longrightarrow>
-      not_blocked state (cost_flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+      not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
     by auto
   define P where "P = (map (\<lambda>e. prod.fst (get_edge_and_costs_backward (not_blocked state) (current_flow state) (prod.snd e) (prod.fst e)))
              (map prod.swap (rev (edges_of_vwalk Pbf))))"
@@ -3347,8 +3345,8 @@ next
 qed
 
 lemma bf_weight_backward_leq_res_costs:
-assumes "set (map cost_flow_network.oedge qq) \<subseteq> \<E>"
-    " \<And> e. e \<in> set qq \<Longrightarrow> not_blocked state (cost_flow_network.oedge e)"
+assumes "set (map flow_network_spec.oedge qq) \<subseteq> \<E>"
+    " \<And> e. e \<in> set qq \<Longrightarrow> not_blocked state (flow_network_spec.oedge e)"
     "\<And> e. e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap (current_flow state) e"
     "unconstrained_awalk (map cost_flow_network.to_vertex_pair qq)"
    and  qq_len: "length qq \<ge> 1"
@@ -3381,9 +3379,9 @@ next
           weight_backward (not_blocked state) (current_flow state)
            (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(snd ee, fst ee)]))
           \<le> ereal (local.\<c> ee + foldr (\<lambda>x. (+) (\<cc> x)) ds 0))"
-    "(\<And>e. e = cost_flow_network.F dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+    "(\<And>e. e = F dd \<or> e = F ee \<or> e \<in> set ds \<Longrightarrow>
           not_blocked state (oedge e))"
-    "(\<And>e. e = cost_flow_network.F dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+    "(\<And>e. e = F dd \<or> e = F ee \<or> e \<in> set ds \<Longrightarrow>
           0 < rcap (current_flow state) e)"
     "unconstrained_awalk ((fst dd, snd dd) # (fst ee, snd ee) # map to_edge ds)"
     "dd \<in> local.\<E> " "ee \<in> local.\<E> " "oedge ` set ds \<subseteq> local.\<E>"
@@ -3418,9 +3416,9 @@ next
           weight_backward (not_blocked state) (current_flow state)
            (awalk_verts s (map (prod.swap \<circ> to_edge) (rev ds) @ [(snd ee, fst ee)]))
           \<le> ereal (local.\<c> ee + foldr (\<lambda>x. (+) (\<cc> x)) ds 0))"
-          "(\<And>e. e = cost_flow_network.B dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+          "(\<And>e. e = B dd \<or> e = F ee \<or> e \<in> set ds \<Longrightarrow>
           not_blocked state (oedge e))"
-          "(\<And>e. e = cost_flow_network.B dd \<or> e = cost_flow_network.F ee \<or> e \<in> set ds \<Longrightarrow>
+          "(\<And>e. e = B dd \<or> e = F ee \<or> e \<in> set ds \<Longrightarrow>
           0 < rcap (current_flow state) e)"
           "unconstrained_awalk ((snd dd, fst dd) # (fst ee, snd ee) # map to_edge ds)"
           "dd \<in> local.\<E>" "ee \<in> local.\<E> " "oedge ` set ds \<subseteq> local.\<E>" for ee dd
@@ -3479,7 +3477,7 @@ lemma get_source_target_path_b_ax:
   assumes "get_source_target_path_b_cond  state s t P b \<gamma> f"
   shows "0 < cost_flow_network.Rcap f (set P) \<and>
         (invar_isOptflow state \<longrightarrow> cost_flow_network.is_min_path f s t P) \<and>
-         cost_flow_network.oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<and>
+         flow_network_spec.oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state \<and>
          distinct P"
   apply(insert assms)
   unfolding  loopB.get_source_target_path_b_cond_def
@@ -3514,7 +3512,7 @@ proof(cases "invar_isOptflow state", goal_cases)
        (insert"1"(1) , unfold get_source_for_target_def, presburger+)  
   hence 
     "(\<forall>e\<in>to_rdgs to_pair (conv_to_rdg state) (to_graph  (\<FF>_imp state)).
-        0 < current_flow state (cost_flow_network.oedge e))"
+        0 < current_flow state (flow_network_spec.oedge e))"
     by auto
   have s_prop: "b s > \<epsilon> * \<gamma>" "resreach f s t" 
     using get_source_for_target_ax[OF knowledge (8,9,12,10,11) loopB_call2_cond knowledge(13)]
@@ -3541,7 +3539,7 @@ proof(cases "invar_isOptflow state", goal_cases)
      "fstv (hd qq) = s"
      "sndv (last qq) = t"
      "set qq
-     \<subseteq> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} \<union>
+     \<subseteq> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} \<union>
         to_rdgs to_pair (conv_to_rdg state) (\<FF> state)"
      "foldr (\<lambda>x. (+) (\<cc> x)) qq 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0" "qq \<noteq> []"
   using algo.simulate_inactives_costs[OF Q_prop(1-4) knowledge(5)
@@ -3554,10 +3552,10 @@ proof(cases "invar_isOptflow state", goal_cases)
     by (simp add: "1"(1) from_aux_invar'(21))
   have consist: "cost_flow_network.consist (conv_to_rdg state)" 
     using from_aux_invar'(6) knowledge(5) by auto
-  hence "e \<in> set qq \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
+  hence "e \<in> set qq \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
     using qq_prop(4)  by auto
- hence e_in:"e \<in> set (map cost_flow_network.erev (rev qq)) \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)} 
+ hence e_in:"e \<in> set (map cost_flow_network.erev (rev qq)) \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} 
                    \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)" for e
    using cost_flow_network.Residuals_project_erev_sym Forest_conv_erev_sym[OF consist] by (auto, blast, meson)
     hence e_es:"e \<in> set (map cost_flow_network.erev (rev qq)) \<Longrightarrow> oedge e \<in> \<E>" for e
@@ -3580,12 +3578,12 @@ proof(cases "invar_isOptflow state", goal_cases)
       using oedgeF  from_aux_invar'(22)[OF knowledge(5)] by auto
     moreover have flowpos:"\<exists> d. (cost_flow_network.erev e) = B d\<Longrightarrow> current_flow state (oedge (cost_flow_network.erev e)) > 0" 
       using cost_flow_network.augpath_rcap_pos_strict'[OF  qq_prop(1) 11] knowledge(12)
-      by(induction rule: cost_flow_network.oedge.cases[OF  , of e])
+      by(induction rule: flow_network_spec.oedge.cases[OF  , of e])
       auto  
       ultimately show ?case 
         using "11" cost_flow_network.augpath_rcap_pos_strict cost_flow_network.oedge_and_reversed cost_flow_network.vs_erev
                 get_edge_and_costs_backward_makes_cheaper[OF refl _ _ _ prod.collapse, 
-                       of "flow_network.erev e" "not_blocked state" "current_flow state"] knowledge(12)  qq_prop(1) 
+                       of "flow_network_spec.erev e" "not_blocked state" "current_flow state"] knowledge(12)  qq_prop(1) 
         by auto
   qed 
   have bellman_ford:"bellman_ford connection_empty connection_lookup connection_invar connection_delete
@@ -3664,7 +3662,7 @@ proof(cases "invar_isOptflow state", goal_cases)
          (\<forall>e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_backward(not_blocked state) (current_flow state) (prod.snd e)
                          (prod.fst e)))
            (map prod.swap (rev (edges_of_vwalk (rev Pbf)))) ).
-    not_blocked state (cost_flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+    not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
     using path_bf_flow_network_path_backward[OF _ length_Pbf[simplified sym[OF length_rev[of Pbf]]]
                     weight_le_PInfty refl, simplified last_rev hd_rev] by simp
     hence Pbf_props: "awalk UNIV (hd Pbf) (edges_of_vwalk  Pbf)  (last Pbf)"
@@ -3675,7 +3673,7 @@ proof(cases "invar_isOptflow state", goal_cases)
          "\<And> e. e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_backward(not_blocked state) (current_flow state) (prod.snd e)
                          (prod.fst e)))
            ( edges_of_vwalk  Pbf) ) \<Longrightarrow>
-    not_blocked state (cost_flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e"
+    not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e"
       using edges_of_vwalk_rev_swap[of "rev Pbf"] 
       by auto 
   have same_edges:"(map cost_flow_network.to_vertex_pair PP) = (edges_of_vwalk Pbf)"
@@ -3726,9 +3724,9 @@ proof(cases "invar_isOptflow state", goal_cases)
   have distinctP:"distinct PP" 
     using distinct_edges_of_vwalk[OF distinct_Pbf, simplified sym[OF same_edges ]]
           distinct_map by auto
-  have qq_in_E:"set (map cost_flow_network.oedge (map cost_flow_network.erev (rev qq))) \<subseteq> \<E>"
+  have qq_in_E:"set (map flow_network_spec.oedge (map cost_flow_network.erev (rev qq))) \<subseteq> \<E>"
     using e_es by auto
-  hence qq_rev_in_E:"set ( map cost_flow_network.oedge qq) \<subseteq> \<E>" 
+  hence qq_rev_in_E:"set ( map flow_network_spec.oedge qq) \<subseteq> \<E>" 
     by(auto simp add: es_sym image_subset_iff cost_flow_network.oedge_and_reversed)
   have not_blocked_qq: "\<And> e . e \<in> set qq \<Longrightarrow> not_blocked state (oedge e)" 
     using  F_is from_aux_invar'(22)[OF knowledge(5)]  qq_prop(4) by fastforce
@@ -3744,9 +3742,9 @@ bf_weight_leq_res_costs:"weight_backward (not_blocked state) (current_flow state
  \<le> foldr (\<lambda>x. (+) (\<cc> x)) qq 0" 
     using qq_rev_in_E not_blocked_qq rcap_qq awalk'  qq_len 
     by(fastforce intro!: bf_weight_backward_leq_res_costs[simplified cost_flow_network.rev_erev_swap , simplified rev_map, of qq state t])   
-  have oedge_of_EE: "flow_network.oedge ` EEE = \<E>" 
+  have oedge_of_EE: "flow_network_spec.oedge ` EEE = \<E>" 
     by (meson cost_flow_network.oedge_on_\<EE>)
-  have " cost_flow_network.oedge ` set PP \<subseteq> \<E>"
+  have " flow_network_spec.oedge ` set PP \<subseteq> \<E>"
     using from_aux_invar'(1,3)[OF knowledge(5)] oedge_of_p_allowed by blast
   hence P_in_E: "set PP \<subseteq> EEE"
     by (meson image_subset_iff cost_flow_network.o_edge_res subsetI) 
@@ -4232,7 +4230,7 @@ proof(goal_cases)
                   (prod.fst e) (prod.snd e)))
              (edges_of_vwalk (p @ [x])))"
     have transformed:" awalk UNIV (hd (p @ [x])) (edges_of_vwalk (p @ [x])) (last (p @ [x]))"
-         "(\<And>e. e\<in>set pp \<Longrightarrow> not_blocked state (cost_flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+         "(\<And>e. e\<in>set pp \<Longrightarrow> not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
       using path_bf_flow_network_path[OF _ _ pw_le_PInfty refl] p_prop pp_def by auto
     have path_hd: "hd (p @ [x]) = fstv (hd pp)"
       by(subst  pp_def , subst hd_map, ((insert p_prop(4), cases p rule: list_cases3, auto)[1]),
@@ -4278,14 +4276,14 @@ proof(goal_cases)
     then obtain qq where qq_props:"augpath f qq"
        "fstv (hd qq) = s"
        "sndv (last qq) = t"
-       "set qq \<subseteq> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)}
+       "set qq \<subseteq> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)}
             \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)"
        "qq \<noteq> []"
     using algo.simulate_inactives[OF q_props(1-4) 1(5) refl 1(3) refl refl refl refl refl refl _  1(6)]
         t_not_s by auto
-    have e_in_qq_not_blocked: "e \<in> set qq \<Longrightarrow> not_blocked state (cost_flow_network.oedge e)" for e   
+    have e_in_qq_not_blocked: "e \<in> set qq \<Longrightarrow> not_blocked state (flow_network_spec.oedge e)" for e   
       using qq_props(4) 
-      by(induction e rule: cost_flow_network.oedge.induct)
+      by(induction e rule: flow_network_spec.oedge.induct)
         (force simp add: spec[OF from_aux_invar'(22)[OF 1(5)]] from_aux_invar'(21)[OF 1(5)])+
     have e_in_qq_rcap: "e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap f e" for e
       using qq_props(1)  linorder_class.Min_gr_iff 
@@ -4454,7 +4452,7 @@ proof(goal_cases)
     define pp where "pp = (map (\<lambda>e. prod.fst (get_edge_and_costs_backward (not_blocked state) (current_flow state) (prod.snd e) (prod.fst e)))
                (map prod.swap (rev (edges_of_vwalk (p @ [x])))))"
     have transformed:" awalk UNIV (last (p @ [x])) (map prod.swap (rev (edges_of_vwalk (p @ [x])))) (hd (p @ [x]))"
-         "(\<And>e. e\<in>set pp \<Longrightarrow> not_blocked state (cost_flow_network.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
+         "(\<And>e. e\<in>set pp \<Longrightarrow> not_blocked state (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap (current_flow state) e)"
       using path_bf_flow_network_path_backward[OF _ _ pw_le_PInfty refl] p_prop pp_def by auto
     have non_empt: "(rev (edges_of_vwalk (p @ [x]))) \<noteq> []"
       by(insert p_prop(4); cases p rule: list_cases3; auto)
@@ -4497,14 +4495,14 @@ proof(goal_cases)
     then obtain qq where qq_props:"augpath f qq"
        "fstv (hd qq) = s"
        "sndv (last qq) = t"
-       "set qq \<subseteq> {e |e. e \<in> EEE \<and> cost_flow_network.oedge e \<in> to_set (actives state)}
+       "set qq \<subseteq> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)}
             \<union> to_rdgs to_pair (conv_to_rdg state) (\<FF> state)"
        "qq \<noteq> []"
     using algo.simulate_inactives[OF  q_props(1-4) 1(5) refl 1(3) refl refl refl refl refl refl _  1(6)]
         t_not_s by auto
-    have e_in_qq_not_blocked: "e \<in> set qq \<Longrightarrow> not_blocked state (flow_network.oedge e)" for e   
+    have e_in_qq_not_blocked: "e \<in> set qq \<Longrightarrow> not_blocked state (flow_network_spec.oedge e)" for e   
       using qq_props(4) 
-      by(induction e rule: cost_flow_network.oedge.induct)
+      by(induction e rule: flow_network_spec.oedge.induct)
         (force simp add: spec[OF from_aux_invar'(22)[OF 1(5)]] from_aux_invar'(21)[OF 1(5)])+
     have e_in_qq_rcap: "e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap f e" for e
       using qq_props(1)  linorder_class.Min_gr_iff 
@@ -4871,10 +4869,10 @@ lemma no_cycle_cond:"function_generation_proof.no_cycle_cond "
 
 corollary correctness_of_implementation:
  "return_impl (final_state  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = success \<Longrightarrow>  
-        cost_flow_network.is_Opt (fst o make_pair) (snd o make_pair) make_pair \<u> (\<c> \<c>_impl c_lookup) (\<E> \<E>_impl) (\<b> \<b>_impl) 
+        cost_flow_spec.is_Opt (fst o make_pair) (snd o make_pair) make_pair \<u> (\<E> \<E>_impl) (\<c> \<c>_impl c_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map (final_flow_impl  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup))"
  "return_impl (final_state  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = failure \<Longrightarrow> 
-         \<nexists> f. flow_network.isbflow  (fst o make_pair) (snd o make_pair) make_pair \<u>  (\<E> \<E>_impl) f (\<b> \<b>_impl)"
+         \<nexists> f. flow_network_spec.isbflow  (fst o make_pair) (snd o make_pair) make_pair (\<E> \<E>_impl) \<u>  f (\<b> \<b>_impl)"
  "return_impl (final_state  make_pair create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = notyetterm \<Longrightarrow>  
          False"
     using  function_generation_proof.correctness_of_implementation[OF  no_cycle_cond] 

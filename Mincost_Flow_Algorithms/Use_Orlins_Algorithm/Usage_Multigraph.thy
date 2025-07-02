@@ -233,16 +233,16 @@ lemma correctness_of_algo:"correctness_of_algo make_pair \<E>_impl create_edge \
  
 corollary correctness_of_implementation:
  "return_impl final_state_multi = success \<Longrightarrow>  
-        cost_flow_network.is_Opt (fst o make_pair) (snd o make_pair) make_pair \<u> (\<c> \<c>_impl flow_lookup) (\<E> \<E>_impl) (\<b> \<b>_impl) 
+        cost_flow_spec.is_Opt (fst o make_pair) (snd o make_pair) make_pair \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map final_flow_impl_multi)"
  "return_impl final_state_multi = failure \<Longrightarrow> 
-         \<nexists> f. flow_network.isbflow  (fst o make_pair) (snd o make_pair) make_pair \<u>  (\<E> \<E>_impl) f (\<b> \<b>_impl)"
+         \<nexists> f. flow_network_spec.isbflow  (fst o make_pair) (snd o make_pair) make_pair (\<E> \<E>_impl) \<u>  f (\<b> \<b>_impl)"
  "return_impl final_state_multi = notyetterm \<Longrightarrow>  
          False"
   using correctness_of_algo.correctness_of_implementation[OF correctness_of_algo no_cycle_cond]
   by(auto simp add: final_state_multi_def final_flow_impl_multi_def)
 
-lemma opt_flow_found: "cost_flow_network.is_Opt (fst o make_pair) (snd o make_pair) make_pair \<u> (\<c> \<c>_impl flow_lookup) (\<E> \<E>_impl) (\<b> \<b>_impl)  (abstract_flow_map final_flow_impl_multi)"
+lemma opt_flow_found: "cost_flow_spec.is_Opt (fst o make_pair) (snd o make_pair) make_pair \<u>  (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl)  (abstract_flow_map final_flow_impl_multi)"
   apply(rule correctness_of_implementation(1))
   by eval
 end

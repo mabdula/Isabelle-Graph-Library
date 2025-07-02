@@ -2,7 +2,7 @@ subsection \<open>Flows in Multigraphs with Capacities\<close>
 
 theory Usage_Capacitated
   imports Instantiation 
-          Mincost_Flow_Theory.Hitchcock_Reduction Mincost_Flow_Theory.STFlow
+          Flow_Theory.Hitchcock_Reduction Flow_Theory.STFlow
 begin
 
   instantiation hitchcock_wrapper::(linorder, linorder) linorder
@@ -322,7 +322,7 @@ lemma bal_lookup_vertices_done:"x \<in>  \<V> \<Longrightarrow> bal_lookup verti
   using dom_b_listed  bal_invar_b_lifted finite_edges_invar 
   apply(auto simp add: set_invar_def)[3]
   using u_domain b_domain 
-  by(simp add: b_lifted_lookup bs_are us_are, unfold delta_plus_def flow_network.delta_plus_infty_def[OF flow_network2[simplified]] the_default_def)
+  by(simp add: b_lifted_lookup bs_are us_are, unfold delta_plus_def flow_network_spec.delta_plus_infty_def the_default_def)
     (cases "bal_lookup \<b>_impl x", blast, simp,intro sum_cong_extensive, 
           (force simp add: Es_are \<E>_impl_finite_def to_set_def delta_plus_def 
               dom_def the_default_def )+)
@@ -641,7 +641,7 @@ corollary correctness_of_implementation_success:
     apply(unfold new_gen_c_unfold)
     using V_new_graph  no_cycle_in_reduction 
     by(fastforce simp add: final_state_cap_def 
-         intro!: cost_flow_network.is_Opt_cong[OF cost_flow_network3 refl sym[OF new_b_domain_cong]] 
+         intro!: cost_flow_spec.is_Opt_cong[OF refl sym[OF new_b_domain_cong]] 
                 correctness_of_algo.correctness_of_implementation(1)
            [OF correctness_of_algo_red.correctness_of_algo_axioms, of \<c>'_impl,
             simplified \<u>_def function_generation.\<u>_def[OF function_generation]
@@ -653,17 +653,17 @@ corollary correctness_of_implementation_failure:
          \<nexists> f. isbflow  f \<b> "
 proof(rule nexistsI, goal_cases)
   case (1 f)
-  have "flow_network.isbflow (new_fstv_gen (fst \<circ> make_pair)) (new_sndv_gen (fst \<circ> make_pair) (snd \<circ> make_pair))
-       (new_make_pair_gen (fst \<circ> make_pair) (snd \<circ> make_pair)) (\<lambda>e. PInfty) (to_set \<E>'_impl) 
+  have "flow_network_spec.isbflow (new_fstv_gen (fst \<circ> make_pair)) (new_sndv_gen (fst \<circ> make_pair) (snd \<circ> make_pair))
+       (new_make_pair_gen (fst \<circ> make_pair) (snd \<circ> make_pair)) (to_set \<E>'_impl) (\<lambda>e. PInfty)  
         (new_f_gen (fst o make_pair) \<E> \<u> (\<lambda> _. 0) f)
         (selection_functions.\<b> \<b>'_impl)"
-    apply(rule cost_flow_network.isbflow_cong[OF cost_flow_network3 refl])
+    apply(rule cost_flow_spec.isbflow_cong[OF refl])
     using V_new_graph   conjunct1[OF reduction_of_mincost_flow_to_hitchcock_general(2)[OF flow_network_axioms 
                          1(2) refl, of "(\<lambda> _. 0)"]]
     by(auto intro: new_b_domain_cong 
          simp add: sym[OF E1_impl_are] sym[OF E2_impl_are] sym[OF E3_impl_are] collapse_union_ofE1E2E3)
-  moreover have "\<nexists>f. flow_network.isbflow (new_fstv_gen (fst \<circ> make_pair)) (new_sndv_gen (fst \<circ> make_pair) (snd \<circ> make_pair))
-         (new_make_pair_gen (fst \<circ> make_pair) (snd \<circ> make_pair)) (\<lambda>e. PInfty) (to_set \<E>'_impl) f 
+  moreover have "\<nexists>f. flow_network_spec.isbflow (new_fstv_gen (fst \<circ> make_pair)) (new_sndv_gen (fst \<circ> make_pair) (snd \<circ> make_pair))
+         (new_make_pair_gen (fst \<circ> make_pair) (snd \<circ> make_pair)) (to_set \<E>'_impl) (\<lambda>e. PInfty)  f 
               (selection_functions.\<b> \<b>'_impl)"
     using no_cycle_in_reduction 1(1) 
     by(intro correctness_of_algo.correctness_of_implementation(2)
@@ -827,26 +827,21 @@ lemma capacity_Opt_cong:
   assumes cost_flow_network1: "cost_flow_network  fst snd make_pair create_edge u E"
      and cost_flow_network2: "cost_flow_network  fst snd make_pair create_edge u' E"
      and "\<And> e. e \<in> E \<Longrightarrow> u e = u' e"
-     and "cost_flow_network.is_Opt fst snd make_pair u c E b f" 
-   shows "cost_flow_network.is_Opt fst snd make_pair u' c E b f" 
+     and "cost_flow_spec.is_Opt fst snd make_pair u E c b f" 
+   shows "cost_flow_spec.is_Opt fst snd make_pair u' E c b f" 
   using assms(3,4)
-  by(simp add: cost_flow_network.is_Opt_def[OF cost_flow_network1]
-            cost_flow_network.is_Opt_def[OF cost_flow_network2]
-flow_network.isbflow_def[OF cost_flow_network.axioms[OF cost_flow_network1]]
-flow_network.isbflow_def[OF cost_flow_network.axioms[OF cost_flow_network2]]
-flow_network.isuflow_def[OF cost_flow_network.axioms[OF cost_flow_network1]]
-flow_network.isuflow_def[OF cost_flow_network.axioms[OF cost_flow_network2]])
+  by(simp add: cost_flow_spec.is_Opt_def flow_network_spec.isbflow_def
+               flow_network_spec.isuflow_def)
 
 lemma capacity_bflow_cong:
   fixes fst snd make_pair u c E b f create_edge
   assumes cost_flow_network1: "flow_network  fst snd make_pair create_edge u E"
      and cost_flow_network2: "flow_network  fst snd make_pair create_edge u' E"
      and "\<And> e. e \<in> E \<Longrightarrow> u e = u' e"
-     and "flow_network.isbflow fst snd make_pair u  E b f" 
-   shows "flow_network.isbflow fst snd make_pair u'  E b f" 
+     and "flow_network_spec.isbflow fst snd make_pair E u  b f" 
+   shows "flow_network_spec.isbflow fst snd make_pair E u' b f" 
   using assms(3,4)
-  by(simp add: flow_network.isbflow_def[OF  cost_flow_network1] flow_network.isbflow_def[OF  cost_flow_network2]
-               flow_network.isuflow_def[OF cost_flow_network1] flow_network.isuflow_def[OF  cost_flow_network2])
+  by(simp add: flow_network_spec.isbflow_def  flow_network_spec.isuflow_def)
 
 locale solve_maxflow_proofs =
 solve_maxflow where make_pair = "make_pair::'edge_type::linorder \<Rightarrow> 'a::linorder \<times> 'a"
@@ -1080,7 +1075,7 @@ lemma correctness_of_implementation_success:
   apply(rule maxflow_to_mincost_flow_reduction(4)[OF s_in_V t_in_V s_neq_t _ abstract_flows_are])+
   apply(subst E'_are)
   apply(rule capacity_Opt_cong[OF cost_flow_network2 cost_flow_network1 capacity_cong], simp)
-  apply(rule cost_flow_network.is_Opt_cong[OF cost_flow_network2 refl, of "the_default 0 o bal_lookup \<b>_impl'"])
+  apply(rule cost_flow_spec.is_Opt_cong[OF refl, of _ _ "the_default 0 o bal_lookup \<b>_impl'"])
   
   using E'_are  with_capacity_proofs.correctness_of_implementation_success[of \<c>_impl' \<b>_impl' c_lookup' make_pair'
                           create_edge' \<E>_impl' \<u>_impl' _  _ _ "the_default 0 \<circ> bal_lookup \<b>_impl'"]
@@ -1099,9 +1094,9 @@ proof(rule ccontr,  goal_cases)
   have f_prop: "(\<lambda> x. 0) is s -- t flow" 
     using s_in_V t_in_V s_neq_t  u_non_neg
     by(auto simp add:  is_s_t_flow_def isuflow_def ex_def zero_ereal_def)  
-  have no_flow:"\<nexists>f. flow_network.isbflow (fst \<circ> make_pair') (snd \<circ> make_pair')
-               make_pair' (\<lambda>e. case flow_lookup \<u>_impl' e of None \<Rightarrow> PInfty |
-        Some x \<Rightarrow> case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>) (set \<E>_impl') f (the_default 0 \<circ> bal_lookup \<b>_impl')"
+  have no_flow:"\<nexists>f. flow_network_spec.isbflow (fst \<circ> make_pair')   (snd \<circ> make_pair')
+               make_pair'  (set \<E>_impl') (\<lambda>e. case flow_lookup \<u>_impl' e of None \<Rightarrow> PInfty |
+        Some x \<Rightarrow> case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>)f (the_default 0 \<circ> bal_lookup \<b>_impl')"
     using  with_capacity_proofs.correctness_of_implementation_failure[of \<c>_impl' \<b>_impl' c_lookup' make_pair'
                           create_edge' \<E>_impl' \<u>_impl' _  _ _ "the_default 0 \<circ> bal_lookup \<b>_impl'"]
         with_capacity_proofs  no_infinite_cycle[simplified \<c>'_def o_apply c_lookup'_def \<u>'_def edge_wrapper.case_distrib[of the]
@@ -1109,21 +1104,23 @@ proof(rule ccontr,  goal_cases)
      by (auto intro!: b_impl'_0_cong simp add:  to_set_def capacity_aux_rewrite[symmetric] \<E>_impl'_def  
             final_flow_impl_maxflow_def final_state_maxflow_def fst'_def snd'_def
             final_flow_impl_original_def final_state_cap_def case_edge_wrapper_make_pair)
-    have a:"flow_network.isbflow fst' snd' make_pair' (\<lambda>e. case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>) (set \<E>_impl')
+   have a:"flow_network_spec.isbflow fst' snd' make_pair'
+          (set \<E>_impl') (\<lambda>e. case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>)
        (\<lambda>e. case e of old_edge e \<Rightarrow> (\<lambda> x. 0) e | new_edge b \<Rightarrow> ex (\<lambda> x. 0) t) (\<lambda>e. 0)"
      using maxflow_to_mincost_flow_reduction(1)[OF s_in_V t_in_V s_neq_t f_prop refl] E'_are by auto
-   have b:"flow_network.isbflow fst' snd' make_pair'(\<lambda>e. case flow_lookup \<u>_impl' e of None \<Rightarrow> PInfty |
-        Some x \<Rightarrow> case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>) (set \<E>_impl')
+   have b:"flow_network_spec.isbflow fst' snd' make_pair' (set \<E>_impl')
+          (\<lambda>e. case flow_lookup \<u>_impl' e of None \<Rightarrow> PInfty |
+        Some x \<Rightarrow> case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>) 
        (\<lambda>e. case e of old_edge e \<Rightarrow> (\<lambda> x. 0) e | new_edge b \<Rightarrow> ex (\<lambda> x. 0) t) (\<lambda>e. 0)"
      using capacity_aux_rewrite capacity_cong cost_flow_network.axioms[OF cost_flow_network2]
            cost_flow_network.axioms[OF cost_flow_network1] 
      by (force intro: capacity_bflow_cong[OF _ _ _ a])
-   have "flow_network.isbflow fst' snd' make_pair'
+   have "flow_network_spec.isbflow fst' snd' make_pair'  (set \<E>_impl') 
      (\<lambda>e. case flow_lookup \<u>_impl' e of None \<Rightarrow> PInfty
            | Some x \<Rightarrow> case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>)
-     (set \<E>_impl') (\<lambda>e. case e of old_edge e \<Rightarrow> (\<lambda> x. 0) e | new_edge b \<Rightarrow> ex (\<lambda> x. 0) t) (the_default 0 \<circ> bal_lookup \<b>_impl')"
+    (\<lambda>e. case e of old_edge e \<Rightarrow> (\<lambda> x. 0) e | new_edge b \<Rightarrow> ex (\<lambda> x. 0) t) (the_default 0 \<circ> bal_lookup \<b>_impl')"
      using b_impl'_0_cong E'_are 
-     by (auto intro!: cost_flow_network.isbflow_cong[OF cost_flow_network2 _ _ b])
+     by (auto intro!: cost_flow_spec.isbflow_cong[OF  _ _ b])
    thus ?case 
      using no_flow 
      by (simp add: fst'_def snd'_def)

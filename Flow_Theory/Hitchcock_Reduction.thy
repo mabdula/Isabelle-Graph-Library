@@ -1,6 +1,6 @@
 section \<open>Eliminating Capacities\<close>
 theory Hitchcock_Reduction
-  imports Optimality
+  imports Cost_Optimality
 begin
 
 subsection \<open>Mixed-Capacity Graphs\<close>
@@ -39,11 +39,11 @@ definition "new_make_pair_gen fstv sndv = (\<lambda> e. (new_fstv_gen fstv e, ne
 
 definition "new_create_edge_gen = (\<lambda> u v. dummy u v)"
 
-definition "new_\<E>1_gen \<E> \<u> = {inedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
-definition "new_\<E>2_gen \<E> \<u> = {outedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
-definition "new_\<E>3_gen \<E> \<u> = {vtovedge e | e. e \<in> flow_network.infty_edges \<u> \<E>}"
+definition "new_\<E>1_gen \<E> \<u> = {inedge e| e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}"
+definition "new_\<E>2_gen \<E> \<u> = {outedge e| e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u> }"
+definition "new_\<E>3_gen \<E> \<u> = {vtovedge e | e. e \<in> flow_network_spec.infty_edges \<E> \<u> }"
 
-definition "new_\<c>_gen D fstv \<E> \<u> \<c> = (\<lambda> e'. if e' \<in> new_\<E>1_gen \<E> \<u> then 0
+definition "new_\<c>_gen D fstv \<E> \<u> \<c> = (\<lambda> e'. if e' \<in> new_\<E>1_gen  \<E> \<u>  then 0
                        else if  e' \<in> new_\<E>2_gen \<E> \<u> then \<c> (edge_of (new_fstv_gen fstv e')) 
                        else if e' \<in> new_\<E>3_gen \<E> \<u> then \<c> (get_edge e')
                        else (case e' of dummy _ _  \<Rightarrow> 0 |
@@ -52,7 +52,7 @@ definition "new_\<c>_gen D fstv \<E> \<u> \<c> = (\<lambda> e'. if e' \<in> new_
 
 definition "new_\<b>_gen fstv \<E> \<u> \<b> = (\<lambda> x'. (case x' of edge e \<Rightarrow> real_of_ereal (\<u> e)
                        | vertex x \<Rightarrow> \<b> x - sum (real_of_ereal o \<u>) 
-                        ((multigraph.delta_plus fstv \<E> x) - (flow_network.delta_plus_infty fstv \<u> \<E> x))))"
+                        ((multigraph_spec.delta_plus \<E> fstv x) - (flow_network_spec.delta_plus_infty fstv \<E> \<u> x))))"
 
 definition "new_f_gen fstv \<E> \<u> arbit f = (\<lambda> e'. (let e = edge_of (new_fstv_gen fstv e') in
                                (if e' \<in> new_\<E>1_gen \<E> \<u> then real_of_ereal (\<u> e) - f e
@@ -60,7 +60,7 @@ definition "new_f_gen fstv \<E> \<u> arbit f = (\<lambda> e'. (let e = edge_of (
                                 if e' \<in> new_\<E>3_gen \<E> \<u>  then f (get_edge e')
                                 else arbit e')))"
 
-definition "old_f_gen \<E> \<u> f' = (\<lambda> e. if e \<in> flow_network.infty_edges \<u> \<E> then f' (vtovedge e)
+definition "old_f_gen \<E> \<u> f' = (\<lambda> e. if e \<in> flow_network_spec.infty_edges \<E> \<u> then f' (vtovedge e)
                     else  f' (outedge e))"
 
 theorem reduction_of_mincost_flow_to_hitchcock_general:
@@ -79,14 +79,14 @@ theorem reduction_of_mincost_flow_to_hitchcock_general:
   defines "\<c>' \<equiv> new_\<c>_gen D fstv \<E> \<u> \<c>"
   defines "\<b>' \<equiv> new_\<b>_gen fstv \<E> \<u> \<b>"
 shows 
-   "flow_network fstv' sndv' make_pair' create_edge'  \<u>' \<E>'" (is ?case1) and
-   "\<And> f f' arbit. flow_network.isbflow fstv sndv make_pair \<u> \<E> f \<b> \<Longrightarrow> 
+   "flow_network fstv' sndv' make_pair' create_edge' \<u>' \<E>'" (is ?case1) and
+   "\<And> f f' arbit. flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f \<b> \<Longrightarrow> 
                    f' = new_f_gen fstv \<E> \<u> arbit f
-       \<Longrightarrow>flow_network.isbflow fstv' sndv' make_pair' \<u>'  \<E>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
+       \<Longrightarrow>flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
       (is "\<And> f f' arbit. ?a f f' \<Longrightarrow> ?b f f' arbit \<Longrightarrow> ?c f f'") and
-   "\<And> f f'. flow_network.isbflow fstv' sndv' make_pair' \<u>'  \<E>' f' \<b>' \<Longrightarrow> 
+   "\<And> f f'. flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>' \<Longrightarrow> 
           f = old_f_gen \<E> \<u>  f' \<Longrightarrow>
-          flow_network.isbflow fstv sndv make_pair \<u> \<E> f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
+          flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
       (is "\<And> f f'. ?x f f' \<Longrightarrow> ?y f f' \<Longrightarrow> ?z f f'") and
      "(\<exists> C. closed_w (make_pair' ` \<E>') (map make_pair' C) \<and> foldr (\<lambda> e acc. \<c>' e + acc) C 0 < 0 \<and> set C \<subseteq> \<E>') \<longleftrightarrow>
       (\<exists> D. closed_w (make_pair ` \<E>) (map make_pair D) \<and> foldr (\<lambda> e acc. \<c> e + acc) D 0 < 0 \<and> set D \<subseteq> \<E>
@@ -96,12 +96,12 @@ shows
                                           else arbit e'))) \<Longrightarrow> arbit = (\<lambda> e'. f (edge_of (fstv' e'))) \<Longrightarrow>
 f = (\<lambda>e. f' (outedge e))" (is "\<And> f f' arbit. ?x1 f f' arbit \<Longrightarrow> ?y1 f arbit \<Longrightarrow> ?z1 f f'")
    "\<And> f f' . f = old_f_gen \<E> \<u> f' \<Longrightarrow>
-    cost_flow_network.is_Opt fstv' sndv' make_pair' \<u>' \<c>' \<E>' \<b>' f'
-\<Longrightarrow> cost_flow_network.is_Opt fstv sndv make_pair \<u> \<c> \<E> \<b> f" 
+    cost_flow_spec.is_Opt fstv' sndv' make_pair' \<u>' \<E>' \<c>' \<b>' f'
+\<Longrightarrow> cost_flow_spec.is_Opt fstv sndv make_pair \<u> \<E> \<c> \<b> f" 
 (is "\<And> f f'.  ?b1 f f'\<Longrightarrow> ?c1 f' \<Longrightarrow> ?d1 f ") and
    "\<And> f f' . f' = new_f_gen fstv \<E> \<u> arbit f
-\<Longrightarrow> cost_flow_network.is_Opt fstv sndv make_pair \<u> \<c> \<E> \<b> f
-\<Longrightarrow>  cost_flow_network.is_Opt fstv' sndv' make_pair' \<u>' \<c>' \<E>' \<b>' f'" 
+\<Longrightarrow> cost_flow_spec.is_Opt fstv sndv make_pair \<u> \<E> \<c> \<b> f
+\<Longrightarrow>  cost_flow_spec.is_Opt fstv' sndv' make_pair' \<u>' \<E>' \<c>' \<b>' f'" 
 (is "\<And> f f'.  ?b2 f f'\<Longrightarrow> ?c2 f \<Longrightarrow> ?d3 f' ")
 proof-
   note fstv'_def_old = fstv'_def
@@ -122,11 +122,11 @@ proof-
       by (simp add: assms(2) assms(3) make_pair'_def new_make_pair_gen_def)
    have create_edge'_def: "create_edge' = (\<lambda> u v. dummy u v)"
      by (simp add: create_edge'_def new_create_edge_gen_def)
-   have \<E>1_def: "\<E>1 = {inedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
+   have \<E>1_def: "\<E>1 = {inedge e| e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}"
      by (simp add: \<E>1_def new_\<E>1_gen_def)
-   have \<E>2_def: "\<E>2 = {outedge e| e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
+   have \<E>2_def: "\<E>2 = {outedge e| e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}"
      by (simp add: \<E>2_def new_\<E>2_gen_def)
-   have \<E>3_def: "\<E>3 = {vtovedge e | e. e \<in> flow_network.infty_edges \<u> \<E>}"
+   have \<E>3_def: "\<E>3 = {vtovedge e | e. e \<in> flow_network_spec.infty_edges \<E> \<u>}"
      by (simp add: \<E>3_def new_\<E>3_gen_def)
    have \<c>'_def: "\<c>' = (\<lambda> e'. if e' \<in> \<E>1 then 0
                        else if  e' \<in> \<E>2 then \<c> (edge_of (fstv' e')) 
@@ -138,29 +138,31 @@ proof-
           \<E>1_def \<E>2_def \<E>3_def new_fstv_gen_def fstv'_def by simp
   have \<b>'_def: "\<b>' = (\<lambda> x'. (case x' of edge e \<Rightarrow> real_of_ereal (\<u> e)
                        | vertex x \<Rightarrow> \<b> x - sum (real_of_ereal o \<u>) 
-                        ((multigraph.delta_plus fstv \<E> x) - (flow_network.delta_plus_infty fstv \<u> \<E> x))))"
+                        ((multigraph_spec.delta_plus \<E> fstv x) 
+                    - (flow_network_spec.delta_plus_infty fstv \<E> \<u> x))))"
         unfolding \<b>'_def new_\<b>_gen_def by blast                 
   
   have u_pos: "\<And> e. \<u> e \<ge> 0" 
     using assms(1) by(auto simp add: flow_network_def flow_network_axioms_def)
   have finites: "finite {inedge e |e .e \<in> \<E>}"
        "finite {outedge e |e. e \<in> \<E>}"
-       "finite {vtovedge e |e. e \<in> flow_network.infty_edges \<u> \<E>}"
-       "finite {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
-       "finite {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
+       "finite {vtovedge e |e. e \<in> flow_network_spec.infty_edges \<E> \<u>}"
+       "finite {inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}"
+       "finite {outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}"
     using assms(1) finite_img[of \<E> inedge]  finite_img[of \<E> outedge] 
            finite_img[of _ vtovedge, OF
                flow_network.finite_infty_edges[OF assms(1)]] 
-          finite_subset[of "{inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
+          finite_subset[of "{inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}"
                            "{inedge e|e. e \<in> \<E>}"]
-          finite_subset[of "{outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}"
+          finite_subset[of "{outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}"
                            "{outedge e |e. e \<in> \<E>}"]
           multigraph.finite_E flow_network_def by blast+
     hence finiteE':"finite \<E>'"
       by(auto simp add: \<E>'_def \<E>1_def \<E>2_def \<E>3_def) 
    moreover have nonemptyE': "\<E>' \<noteq> {}"
      using assms(1) 
-     by(auto simp add: \<E>'_def \<E>1_def \<E>2_def \<E>3_def flow_network_def multigraph_def flow_network_axioms_def flow_network.infty_edges_def[OF assms(1)])    
+     by(auto simp add: \<E>'_def \<E>1_def \<E>2_def \<E>3_def flow_network_def multigraph_def
+              flow_network_axioms_def flow_network_spec.infty_edges_def)    
   moreover have mgraph':"multigraph fstv' sndv' make_pair' create_edge'  \<E>'"
     using assms(1) finiteE' nonemptyE'
     by(auto simp add: flow_network_def multigraph_def fstv'_def sndv'_def make_pair'_def create_edge'_def)   
@@ -184,18 +186,18 @@ proof-
    proof(goal_cases)
      case (1 f f' arbit)
      note case1=this[simplified]
-     have ex_b:"\<And> v. v\<in>dVs (make_pair ` \<E>) \<Longrightarrow> - flow_network.ex fstv sndv \<E> f v = \<b> v"
-       using case1 flow_network.isbflow_def[OF assms(1)]  by auto
+     have ex_b:"\<And> v. v\<in>dVs (make_pair ` \<E>) \<Longrightarrow> - flow_network_spec.ex fstv sndv \<E> f v = \<b> v"
+       using case1 by(auto simp add: flow_network_spec.isbflow_def)
      have "e \<in> \<E>' \<Longrightarrow> ereal (f' e) \<le> \<u>' e" for e
        by(simp add: \<E>'_def case1(2) \<u>'_def)
      moreover have "e \<in> \<E>' \<Longrightarrow> 0 \<le> f' e" for e
        using case1(1) fstv'_def ereal_le_real_iff u_pos
        by(auto split: prod.split 
-            simp add: \<E>1_def \<E>2_def \<E>'_def case1(2) \<u>'_def flow_network.isbflow_def[OF assms(1)]
-                      flow_network.isuflow_def[OF assms(1)] Let_def \<E>3_def 
-                      flow_network.infty_edges_def[OF assms(1)]  u_pos)
-     ultimately have isuflow': "flow_network.isuflow \<u>' \<E>' f'"
-       unfolding flow_network.isuflow_def[OF residual'] by auto
+            simp add: \<E>1_def \<E>2_def \<E>'_def case1(2) \<u>'_def flow_network_spec.isbflow_def
+                      flow_network_spec.isuflow_def Let_def \<E>3_def 
+                      flow_network_spec.infty_edges_def  u_pos)
+     ultimately have isuflow': "flow_network_spec.isuflow \<E>' \<u>' f'"
+       unfolding flow_network_spec.isuflow_def by auto
      have a1: "{e. ((\<exists> d. e = inedge d \<and> d \<in> \<E>) \<or>
                 (\<exists> d. e = outedge d \<and> d \<in> \<E>)) \<and>
                fstv' e = edge ee} = 
@@ -206,28 +208,28 @@ proof-
                sndv' e = edge ee} = 
              {}" for ee
        by (auto simp add: sndv'_def)
-     have b'_met:"v\<in>dVs (make_pair' ` \<E>') \<Longrightarrow> - flow_network.ex fstv' sndv' \<E>' f' v = \<b>' v" for v
+     have b'_met:"v\<in>dVs (make_pair' ` \<E>') \<Longrightarrow> - flow_network_spec.ex fstv' sndv' \<E>' f' v = \<b>' v" for v
      proof(goal_cases)
        case 1
        show ?case
        proof(cases v)
          case (edge x1)
-         hence empty_simper:" {e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-              {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-              {vtovedge e |e. e \<in> flow_network.infty_edges \<u> \<E>}.
+         hence empty_simper:" {e \<in> {inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>} \<union>
+              {outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>} \<union>
+              {vtovedge e |e. e \<in> flow_network_spec.infty_edges \<E> \<u>}.
          sndv' e = v}
                 = {}" by (auto simp add: sndv'_def)
-         have x1_in_E:"x1 \<in> \<E> - flow_network.infty_edges \<u> \<E>" 
+         have x1_in_E:"x1 \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>" 
            using 1 edge by(auto simp add:dVs_def \<E>'_def \<E>1_def \<E>2_def \<E>3_def  make_pair'_def sndv'_def fstv'_def)
-         have set_spliter: "{e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-                  {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-                  {vtovedge e |e. e \<in> flow_network.infty_edges \<u> \<E>}.
+         have set_spliter: "{e \<in> {inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>} \<union>
+                  {outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>} \<union>
+                  {vtovedge e |e. e \<in> flow_network_spec.infty_edges \<E> \<u>}.
              fstv' e = v} 
-            = {e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}.
+            = {e \<in> {inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}.
              fstv' e = v} \<union>
-             {e \<in> {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}.
+             {e \<in> {outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}.
              fstv' e = v} \<union>
-             {e \<in> {vtovedge e | e. e \<in>  flow_network.infty_edges \<u> \<E>}.
+             {e \<in> {vtovedge e | e. e \<in>  flow_network_spec.infty_edges \<E> \<u>}.
               fstv' e = v}" by auto
          have da:"\<u> x1 \<noteq> \<infinity> \<Longrightarrow>
                 sum g {e. (\<exists>ea. e = inedge ea \<and> ea \<in> \<E> \<and> (ea \<in> \<E> \<longrightarrow> \<u> ea \<noteq> \<infinity>)) \<and> fstv' e = edge x1} +
@@ -250,37 +252,37 @@ proof-
              by (force intro!: cong[of "sum g" _ _ "{_}", OF refl] simp add: fstv'_def)+
          
          have d1:"sum g
-        {e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-              {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-              {vtovedge e | e . e \<in> flow_network.infty_edges \<u> \<E>}.
+        {e \<in> {inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>} \<union>
+              {outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>} \<union>
+              {vtovedge e | e . e \<in> flow_network_spec.infty_edges \<E> \<u>}.
          fstv' e = v} = 
               (if \<u> x1 < PInfty then g (inedge x1) + g (outedge x1)
                else 0)" for g 
            apply(subst set_spliter)
            apply(subst comm_monoid_add_class.sum.union_disjoint)
-           using finites flow_network.infty_edges_def[OF assms(1)] apply auto[3]
+           using finites flow_network_spec.infty_edges_def apply auto[3]
            apply(subst comm_monoid_add_class.sum.union_disjoint)
-           using finites flow_network.infty_edges_def[OF assms(1)] assms(2) apply auto[3]          
+           using finites flow_network_spec.infty_edges_def assms(2) apply auto[3]          
            using x1_in_E edge
            by(auto intro: da forw_subst[of "sum _ _" 0] forw_subst[of _ "{}"] 
-                  simp add: flow_network.infty_edges_def[OF assms(1)])
+                  simp add: flow_network_spec.infty_edges_def)
 
          show ?thesis 
-          unfolding flow_network.ex_def[OF residual']  multigraph.delta_minus_def[OF mgraph']
-           multigraph.delta_plus_def[OF mgraph']
+          unfolding flow_network_spec.ex_def  multigraph_spec.delta_minus_def
+           multigraph_spec.delta_plus_def
           unfolding \<E>'_def \<E>1_def \<E>2_def \<b>'_def \<E>3_def
           apply(simp only: empty_simper)
           using edge x1_in_E  d1[of f'] fstv'_def
           by(auto simp add: fstv'_def case1(2) Let_def \<E>1_def \<E>2_def \<E>3_def)  
       next
         case (vertex x1)
-         hence almost_empty_simper:" {e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-              {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-              {vtovedge e | e. e \<in> flow_network.infty_edges \<u> \<E>}.
+         hence almost_empty_simper:" {e \<in> {inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>} \<union>
+              {outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>} \<union>
+              {vtovedge e | e. e \<in> flow_network_spec.infty_edges \<E> \<u>}.
              fstv' e = v}
-                = {vtovedge e | e. e \<in> flow_network.delta_plus_infty fstv \<u> \<E> x1}" 
-           by(auto simp add: vertex flow_network.delta_plus_infty_def[OF assms(1)]
-                     flow_network.infty_edges_def[OF assms(1)] fstv'_def)
+                = {vtovedge e | e. e \<in> flow_network_spec.delta_plus_infty fstv \<E> \<u> x1}" 
+           by(auto simp add: vertex flow_network_spec.delta_plus_infty_def
+                     flow_network_spec.infty_edges_def fstv'_def)
          have x_in_V: "x1 \<in> dVs (make_pair ` \<E>)"
          proof-
            have "vertex x1 \<in> dVs (make_pair' ` \<E>')"
@@ -317,23 +319,23 @@ proof-
            apply(subst sum_if_not_P)
            apply(auto simp add: \<E>2_def \<E>3_def)[1]
            apply(subst sum_if_P)
-            by(auto simp add: \<E>2_def \<E>3_def sum_if_P flow_network.infty_edges_def[OF assms(1)]
+            by(auto simp add: \<E>2_def \<E>3_def sum_if_P flow_network_spec.infty_edges_def
                        intro: h0)
-          hence h1: "sum f' {vtovedge e |e. e \<in> flow_network.delta_plus_infty fstv \<u> \<E> x1} =
-              sum f (flow_network.delta_plus_infty fstv \<u> \<E> x1)"
-           by(auto simp add:  flow_network.delta_plus_infty_def[OF assms(1)]
-                 flow_network.infty_edges_def[OF assms(1)] case1(2) \<E>1_def \<E>2_def \<E>3_def Let_def)
+          hence h1: "sum f' {vtovedge e |e. e \<in> flow_network_spec.delta_plus_infty fstv \<E> \<u> x1} =
+              sum f (flow_network_spec.delta_plus_infty fstv \<E> \<u> x1)"
+           by(auto simp add:  flow_network_spec.delta_plus_infty_def
+                 flow_network_spec.infty_edges_def case1(2) \<E>1_def \<E>2_def \<E>3_def Let_def)
            have h2: "sum f'
-        {e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E> } \<union>
-              {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>} \<union>
-              {vtovedge e | e. e \<in> flow_network.infty_edges \<u> \<E>}.
+        {e \<in> {inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u> } \<union>
+              {outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>} \<union>
+              {vtovedge e | e. e \<in> flow_network_spec.infty_edges \<E> \<u>}.
          sndv' e = v} = 
          sum f'
-           {e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}.sndv' e = v} +
+           {e \<in> {inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}.sndv' e = v} +
         (sum f'
-        {e \<in> {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}. sndv' e = v} +
+        {e \<in> {outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}. sndv' e = v} +
          sum f'
-        {e \<in> {vtovedge e | e. e \<in> flow_network.infty_edges \<u> \<E>}. sndv' e = v})"
+        {e \<in> {vtovedge e | e. e \<in> flow_network_spec.infty_edges \<E> \<u>}. sndv' e = v})"
            apply(subst sym[OF comm_monoid_add_class.sum.union_disjoint])
            using  finiteE'[simplified \<E>'_def \<E>1_def \<E>2_def \<E>3_def] apply auto[3]
            apply(subst sym[OF comm_monoid_add_class.sum.union_disjoint])
@@ -344,10 +346,11 @@ proof-
          have i5: "(\<lambda>x. edge_of (fstv' x)) ` {outedge e |e. e \<in> {e \<in> \<E>. \<u> e = PInfty} \<and> sndv e = x1} = 
                     {e \<in> \<E>. sndv e = x1 \<and> \<u> e = PInfty}"
            by(auto simp add: image_def fstv'_def)
-         have h3: "(\<Sum>x\<in>{e \<in> {outedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}.
+         have h3: "(\<Sum>x\<in>{e \<in> {outedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}.
               sndv' e = vertex x1}.
           f (edge_of (fstv' x))) =
-          sum f (multigraph.delta_minus sndv \<E> x1 - flow_network.delta_minus_infty sndv \<u> \<E> x1)"
+          sum f (multigraph_spec.delta_minus \<E> sndv x1 
+                 - flow_network_spec.delta_minus_infty sndv \<E> \<u> x1)"
            apply(subst sum_inj_on[of "\<lambda> x. (edge_of (fstv' x))" _ f, simplified, symmetric])
            subgoal 
              apply(rule  inj_onI)
@@ -356,27 +359,28 @@ proof-
              done
            apply(rule forw_subst[of _ 
             "{outedge e |e. e \<in> \<E> \<and> sndv e = x1} - 
-                {outedge e | e. e \<in> flow_network.infty_edges \<u> \<E> \<and> sndv e = x1}"])
+                {outedge e | e. e \<in> flow_network_spec.infty_edges \<E> \<u> \<and> sndv e = x1}"])
            apply(force simp add: sndv'_def)
-           apply(subst flow_network.infty_edges_def[OF assms(1)])
-           using multigraph.delta_minus_def[OF mgraph] flow_network.delta_minus_infty_def[OF flow_network]
+           apply(subst flow_network_spec.infty_edges_def)
+           using multigraph_spec.delta_minus_def flow_network_spec.delta_minus_infty_def
           apply(subst inj_on_image_set_diff[OF _ Diff_subset])
            subgoal 
              apply(rule  inj_onI)
              subgoal for x y
                by(cases x, all \<open>cases y\<close>) (auto simp add: fstv'_def)
              done
-           using i4 i5 by auto
+           using i4 i5 
+           by (auto simp add: flow_network_spec.delta_minus_infty_def multigraph_spec.delta_minus_def)
          have i6: "(\<lambda>x. edge_of (fstv' x)) ` {inedge e |e. e \<in> \<E> \<and> fstv e = x1} =
                     {e \<in> \<E>. fstv e = x1}" 
            by(auto simp add: image_def fstv'_def)
          have i7: "(\<lambda>x. edge_of (fstv' x)) ` {inedge e |e. e \<in> {e \<in> \<E>. \<u> e = PInfty} \<and> fstv e = x1} 
             = {e \<in> \<E>. fstv e = x1 \<and> \<u> e = PInfty}" 
            by(auto simp add: image_def fstv'_def)
-         have h4: "(\<Sum>x\<in>{e \<in> {inedge e |e. e \<in> \<E> - flow_network.infty_edges \<u> \<E>}.
+         have h4: "(\<Sum>x\<in>{e \<in> {inedge e |e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}.
               sndv' e = vertex x1}.
           (real_of_ereal (\<u> (edge_of (fstv' x))) - f (edge_of (fstv' x)))) =
-          sum (\<lambda> e. real_of_ereal (\<u> e) - f e) (multigraph.delta_plus fstv \<E> x1 - flow_network.delta_plus_infty fstv \<u> \<E> x1)"
+          sum (\<lambda> e. real_of_ereal (\<u> e) - f e) (multigraph_spec.delta_plus \<E> fstv x1 - flow_network_spec.delta_plus_infty fstv \<E> \<u> x1)"
            apply(subst sum_inj_on[of "\<lambda> x. (edge_of (fstv' x))" _ _, simplified, symmetric])
            subgoal 
              apply(rule  inj_onI)
@@ -385,10 +389,10 @@ proof-
              done
            apply(rule forw_subst[of _ 
             "{inedge e |e. e \<in> \<E> \<and> fstv e = x1} - 
-                {inedge e | e. e \<in> flow_network.infty_edges \<u> \<E> \<and> fstv e = x1}"])
+                {inedge e | e. e \<in> flow_network_spec.infty_edges \<E> \<u> \<and> fstv e = x1}"])
             apply (force simp add: sndv'_def)
-           apply(subst flow_network.infty_edges_def[OF assms(1)])
-          unfolding multigraph.delta_plus_def[OF mgraph] flow_network.delta_plus_infty_def[OF flow_network]
+           apply(subst flow_network_spec.infty_edges_def)
+          unfolding multigraph_spec.delta_plus_def flow_network_spec.delta_plus_infty_def
           apply(subst inj_on_image_set_diff[OF _ Diff_subset])
            subgoal 
              apply(rule  inj_onI)
@@ -396,22 +400,22 @@ proof-
                by(cases x, all \<open>cases y\<close>) (auto simp add: fstv'_def)
              done
            using i6 i7 by auto
-        have h5: "(\<Sum>x\<in>{e \<in> {vtovedge e |e. e \<in> flow_network.infty_edges \<u> \<E>}.
+        have h5: "(\<Sum>x\<in>{e \<in> {vtovedge e |e. e \<in> flow_network_spec.infty_edges \<E> \<u>}.
                sndv' e = vertex x1}.
            f (get_edge x)) = 
-                 sum f (flow_network.delta_minus_infty sndv \<u> \<E> x1)"
+                 sum f (flow_network_spec.delta_minus_infty sndv \<E> \<u> x1)"
            apply(subst sum_inj_on[of get_edge _ _, simplified, symmetric],
                    force simp add: inj_on_def, rule cong[of "sum _", OF refl])
-          by(fastforce simp add: image_def inj_on_def multigraph.delta_minus_def[OF mgraph] 
-                flow_network.delta_minus_infty_def[OF assms(1)] flow_network.infty_edges_def[OF assms(1)] sndv'_def)+
-        have excess_at_x1: " sum f (multigraph.delta_plus fstv \<E> x1) - sum f (multigraph.delta_minus sndv \<E> x1) = \<b> x1"
+          by(fastforce simp add: image_def inj_on_def multigraph_spec.delta_minus_def 
+                flow_network_spec.delta_minus_infty_def flow_network_spec.infty_edges_def sndv'_def)+
+        have excess_at_x1: " sum f (multigraph_spec.delta_plus \<E> fstv x1) - sum f (multigraph_spec.delta_minus \<E> sndv x1) = \<b> x1"
           using case1(1) x_in_V 
-          by(auto simp add: flow_network.isbflow_def[OF assms(1)] flow_network.ex_def[OF assms(1)])
-        have h6: "sum f (flow_network.delta_plus_infty fstv \<u> \<E> x1) +
-                    sum f (multigraph.delta_plus fstv \<E> x1 - flow_network.delta_plus_infty fstv \<u> \<E> x1) =
+          by(auto simp add: flow_network_spec.isbflow_def flow_network_spec.ex_def)
+        have h6: "sum f (flow_network_spec.delta_plus_infty fstv \<E> \<u> x1) +
+                    sum f (multigraph_spec.delta_plus \<E> fstv x1 - flow_network_spec.delta_plus_infty fstv \<E> \<u> x1) =
                      \<b> x1 +
-                      (sum f (flow_network.delta_minus_infty sndv \<u> \<E> x1) +
-                       sum f (multigraph.delta_minus sndv \<E> x1 - flow_network.delta_minus_infty sndv \<u> \<E> x1)) "
+                      (sum f (flow_network_spec.delta_minus_infty sndv \<E> \<u> x1) +
+                       sum f (multigraph_spec.delta_minus \<E> sndv x1 - flow_network_spec.delta_minus_infty sndv \<E> \<u> x1)) "
            apply(subst comm_monoid_add_class.sum.union_disjoint[symmetric])
           using multigraph.delta_plus_finite[OF mgraph, of x1] 
                 flow_network.infty_edges_del(6)[OF assms(1), of x1] 
@@ -423,8 +427,8 @@ proof-
           by (auto intro:  forw_subst[OF comm_monoid_add_class.sum.union_disjoint[symmetric]] simp add: finite_subset)
       
         show ?thesis
-          unfolding flow_network.ex_def[OF residual']  multigraph.delta_minus_def[OF mgraph']
-           multigraph.delta_plus_def[OF mgraph']
+          unfolding flow_network_spec.ex_def  multigraph_spec.delta_minus_def
+           multigraph_spec.delta_plus_def
           unfolding \<E>'_def \<E>1_def \<E>2_def \<b>'_def \<E>3_def
           apply(simp only: almost_empty_simper)
           apply(subst h1)
@@ -457,14 +461,14 @@ proof-
     proof(rule, goal_cases)
       case 1
       then show ?case 
-        by(auto simp add: b'_met flow_network.isbflow_def[OF residual'] isuflow')
+        by(auto simp add: b'_met flow_network_spec.isbflow_def isuflow')
     next
       case 2
       have is_E: "(\<lambda>x. edge_of (fstv' x)) `
-          {outedge e |e. e \<in> \<E> \<and> e \<notin> flow_network.infty_edges \<u> \<E>} \<union>
+          {outedge e |e. e \<in> \<E> \<and> e \<notin> flow_network_spec.infty_edges \<E> \<u>} \<union>
            get_edge `
-          {vtovedge e |e. e \<in> flow_network.infty_edges \<u> \<E>} = \<E>"
-        by(fastforce simp add: image_def flow_network.infty_edges_def[OF assms(1)] fstv'_def split: hitchcock_edge.split
+          {vtovedge e |e. e \<in> flow_network_spec.infty_edges \<E> \<u>} = \<E>"
+        by(fastforce simp add: image_def flow_network_spec.infty_edges_def fstv'_def split: hitchcock_edge.split
                   elim!: get_edge.cases)
       show ?case 
         text \<open>unfold the costs and edges\<close>
@@ -530,10 +534,10 @@ proof-
        thm 1[simplified \<E>1_def]
        have  "edge e  \<in> dVs (make_pair' ` \<E>') \<and> vertex (sndv e) \<in> dVs (make_pair' ` \<E>') \<and> \<u> e \<noteq> PInfty \<and>e \<in> \<E>"
        proof-
-         have e_where:"e \<in> \<E> - flow_network.infty_edges \<u> \<E>"
+         have e_where:"e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>"
            using 1[simplified \<E>1_def] by simp
          hence "e \<in> \<E>" "\<u> e \<noteq> PInfty"
-           by(auto simp add: flow_network.infty_edges_def[OF assms(1)])
+           by(auto simp add: flow_network_spec.infty_edges_def)
          moreover have "edge e  \<in> dVs (make_pair' ` \<E>')"
          proof-
            have "\<exists>x. (\<exists>v1 v2. x = {v1, v2} \<and> (v1, v2) \<in> make_pair' ` \<E>') \<and> edge e \<in> x"
@@ -559,23 +563,22 @@ proof-
        hence dVs': "edge e  \<in> dVs (make_pair' ` \<E>')" "vertex (sndv e) \<in> dVs (make_pair' ` \<E>')" "\<u> e \<noteq> PInfty"
                    "e \<in> \<E>" by simp+
       
-        hence "(\<u> e) = - flow_network.ex fstv' sndv' \<E>' f' (edge e)"
+        hence "(\<u> e) = - flow_network_spec.ex fstv' sndv' \<E>' f' (edge e)"
           using case1(1) 1 not_MInfty_nonneg[OF u_pos, of e] 
           by(auto intro: real_of_ereal.elims[of "\<u> e", OF refl]
-                   simp add: flow_network.isbflow_def[OF residual']  \<b>'_def \<E>1_def )
-       moreover have "multigraph.delta_plus fstv' \<E>' (edge e) = {inedge e, outedge e}"
-         unfolding multigraph.delta_plus_def[OF mgraph']
+                   simp add: flow_network_spec.isbflow_def  \<b>'_def \<E>1_def )
+       moreover have "multigraph_spec.delta_plus \<E>' fstv' (edge e) = {inedge e, outedge e}"
+         unfolding multigraph_spec.delta_plus_def
          using 1
          by (auto simp add: \<E>'_def \<E>1_def \<E>2_def \<E>3_def fstv'_def)
-       moreover have "multigraph.delta_minus sndv' \<E>' (edge e) = {}"
-         using multigraph.delta_minus_def[OF mgraph']
-         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def \<E>3_def sndv'_def)
+       moreover have "multigraph_spec.delta_minus \<E>' sndv' (edge e) = {}"
+         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def \<E>3_def sndv'_def  multigraph_spec.delta_minus_def)
        ultimately have "\<u> e = f' (inedge e) + f' (outedge e)"
-         by ( simp add: flow_network.ex_def[OF residual'])
+         by ( simp add: flow_network_spec.ex_def)
        then show ?case by simp
      qed
-      have "flow_network.isuflow \<u> \<E> f"
-        unfolding flow_network.isuflow_def[OF assms(1)]
+      have "flow_network_spec.isuflow \<E> \<u> f"
+        unfolding flow_network_spec.isuflow_def
       proof(rule,  goal_cases)
         case (1 e)
         show ?case
@@ -583,28 +586,28 @@ proof-
           case (real r)
           hence edges_in:"outedge e  \<in> \<E>2" "inedge e \<in> \<E>1"
             using 1  PInfty_neq_ereal(1)[of r] 
-            by(auto simp add: \<E>2_def \<E>1_def flow_network.infty_edges_def[OF assms(1)])
+            by(auto simp add: \<E>2_def \<E>1_def flow_network_spec.infty_edges_def)
         hence dVs': "edge e  \<in> dVs (make_pair' ` \<E>')" "vertex (sndv e) \<in> dVs (make_pair' ` \<E>')" 
           using  1
            by(auto intro!: exI[of _ "{edge e, vertex (sndv e)}"] exI[of "\<lambda> v1. \<exists> v2.  {edge e, vertex (sndv e)} = {v1, v2} \<and> _ v1 v2" "edge e"]
              exI[of "\<lambda> v2.  {edge e, vertex (sndv e)} = {_ , v2} \<and> _ _ v2" "vertex (sndv e)"]
                   simp add: dVs_def \<E>'_def make_pair'_def fstv'_def sndv'_def image_def split: hitchcock_edge.split)
-        hence "\<u> e = - ereal ( flow_network.ex fstv'  sndv' \<E>' f' (edge e))"
+        hence "\<u> e = - ereal ( flow_network_spec.ex fstv'  sndv' \<E>' f' (edge e))"
          using case1(1) real
-         by (auto simp add: flow_network.isbflow_def[OF residual']  \<b>'_def)
-       moreover have "multigraph.delta_plus fstv' \<E>' (edge e) = {inedge e, outedge e}"
-         unfolding multigraph.delta_plus_def[OF mgraph']
+         by (auto simp add: flow_network_spec.isbflow_def  \<b>'_def)
+       moreover have "multigraph_spec.delta_plus \<E>' fstv' (edge e) = {inedge e, outedge e}"
+         unfolding multigraph_spec.delta_plus_def
          using 1 real 
-         by (auto simp add: \<E>'_def \<E>1_def \<E>2_def \<E>3_def flow_network.infty_edges_def[OF assms(1)] fstv'_def)
-       moreover have "multigraph.delta_minus sndv' \<E>' (edge e) = {}"
-         unfolding multigraph.delta_minus_def[OF mgraph'] 
-         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def \<E>3_def flow_network.infty_edges_def[OF assms(1)] sndv'_def)
+         by (auto simp add: \<E>'_def \<E>1_def \<E>2_def \<E>3_def flow_network_spec.infty_edges_def fstv'_def)
+       moreover have "multigraph_spec.delta_minus \<E>' sndv' (edge e) = {}"
+         unfolding multigraph_spec.delta_minus_def 
+         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def \<E>3_def flow_network_spec.infty_edges_def sndv'_def)
        ultimately have "\<u> e = f' (inedge e) + f' (outedge e)"
-         by (auto simp add: flow_network.ex_def[OF residual'] )
+         by (auto simp add: flow_network_spec.ex_def )
        moreover have "f' (inedge e) \<ge> 0" "f' (outedge e) \<ge> 0"
          using case1(1)
-         unfolding flow_network.isbflow_def[OF residual']
-         unfolding flow_network.isuflow_def[OF residual'] 
+         unfolding flow_network_spec.isbflow_def
+         unfolding flow_network_spec.isuflow_def 
          using edges_in
          by(auto simp add: \<E>'_def)
        ultimately show ?thesis
@@ -614,14 +617,14 @@ proof-
        case PInf
        moreover hence edges_in:"vtovedge e  \<in> \<E>'"
          using 1
-         by(auto simp add: \<E>3_def \<E>'_def flow_network.infty_edges_def[OF assms(1)])
-       moreover have "e \<in> flow_network.infty_edges \<u> \<E>"
+         by(auto simp add: \<E>3_def \<E>'_def flow_network_spec.infty_edges_def)
+       moreover have "e \<in> flow_network_spec.infty_edges \<E> \<u>"
          using PInf 1
-         by(auto simp add: flow_network.infty_edges_def[OF assms(1)])
+         by(auto simp add: flow_network_spec.infty_edges_def)
        ultimately show ?thesis
          using case1(1,2)
-         unfolding flow_network.isbflow_def[OF residual']
-         unfolding flow_network.isuflow_def[OF residual'] 
+         unfolding flow_network_spec.isbflow_def
+         unfolding flow_network_spec.isuflow_def 
          by(auto simp add: \<E>'_def)
      next
        case MInf
@@ -629,7 +632,7 @@ proof-
          by (simp add: u_pos)
      qed
      qed
-     moreover have "\<forall>v\<in>dVs (make_pair ` \<E>). - flow_network.ex fstv sndv \<E> f v = \<b> v"
+     moreover have "\<forall>v\<in>dVs (make_pair ` \<E>). - flow_network_spec.ex fstv sndv \<E> f v = \<b> v"
      proof(rule, goal_cases)
        case (1 v)
        then obtain e where "e \<in> \<E>" "v = fstv e \<or> v = sndv e"
@@ -644,78 +647,78 @@ proof-
               force intro!: exI[of _ "{vertex (sndv e), edge e}"]|
               force intro!: exI[of _ "{vertex (fstv e), edge e}"] )+
        hence "  \<b> v  = 
-          - sum f' (multigraph.delta_minus sndv' \<E>' (vertex v)) + sum f' (multigraph.delta_plus fstv' \<E>' (vertex v))
-               + (sum (real_of_ereal o \<u>) (multigraph.delta_plus fstv \<E> v -flow_network.delta_plus_infty fstv \<u> \<E> v ))"
+          - sum f' (multigraph_spec.delta_minus \<E>' sndv' (vertex v)) + sum f' (multigraph_spec.delta_plus \<E>' fstv' (vertex v))
+               + (sum (real_of_ereal o \<u>) (multigraph_spec.delta_plus \<E> fstv v -flow_network_spec.delta_plus_infty fstv \<E> \<u> v ))"
         using case1(1) 
-         by(auto simp add: flow_network.isbflow_def[OF residual'] \<b>'_def flow_network.ex_def[OF residual'])
-       moreover have "multigraph.delta_plus fstv' \<E>' (vertex v) = 
-                     {vtovedge d | d. d \<in> flow_network.delta_plus_infty fstv \<u> \<E> v}"
-         unfolding multigraph.delta_plus_def[OF mgraph']
+         by(auto simp add: flow_network_spec.isbflow_def \<b>'_def flow_network_spec.ex_def)
+       moreover have "multigraph_spec.delta_plus \<E>' fstv' (vertex v) = 
+                     {vtovedge d | d. d \<in> flow_network_spec.delta_plus_infty fstv \<E> \<u> v}"
+         unfolding multigraph_spec.delta_plus_def
          unfolding  \<E>'_def \<E>1_def \<E>2_def \<E>3_def
-         by(auto simp add: flow_network.infty_edges_def[OF assms(1)] flow_network.delta_plus_infty_def[OF assms(1)]
+         by(auto simp add: flow_network_spec.infty_edges_def flow_network_spec.delta_plus_infty_def
                            fstv'_def)
-       moreover have "sum f' (multigraph.delta_minus sndv' \<E>' (vertex v)) = 
-                     sum f' ( multigraph.delta_minus sndv' \<E>' (vertex v) \<inter> \<E>1) +
-                     sum f' (multigraph.delta_minus sndv' \<E>' (vertex v) \<inter> \<E>2) +
-                     sum f' (multigraph.delta_minus sndv' \<E>' (vertex v) \<inter> \<E>3)"
-         unfolding  multigraph.delta_minus_def[OF mgraph']
+       moreover have "sum f' (multigraph_spec.delta_minus \<E>' sndv' (vertex v)) = 
+                     sum f' ( multigraph_spec.delta_minus \<E>' sndv' (vertex v) \<inter> \<E>1) +
+                     sum f' (multigraph_spec.delta_minus \<E>' sndv' (vertex v) \<inter> \<E>2) +
+                     sum f' (multigraph_spec.delta_minus \<E>' sndv' (vertex v) \<inter> \<E>3)"
+         unfolding  multigraph_spec.delta_minus_def
          unfolding \<E>'_def
          apply(subst sym[OF comm_monoid_add_class.sum.union_disjoint])
          using \<E>'_def finiteE'  Es_non_inter 
          by(auto intro: forw_subst[OF  sym[OF comm_monoid_add_class.sum.union_disjoint]]
                         cong[of "sum f'", OF refl]) 
-       moreover have "sum f' (multigraph.delta_minus sndv' \<E>' (vertex v) \<inter> \<E>2) = 
+       moreover have "sum f' (multigraph_spec.delta_minus \<E>' sndv' (vertex v) \<inter> \<E>2) = 
                       sum (\<lambda> e. f' (outedge e)) 
-                           (multigraph.delta_minus sndv \<E> v - flow_network.delta_minus_infty sndv \<u> \<E> v)"
+                           (multigraph_spec.delta_minus \<E> sndv v - flow_network_spec.delta_minus_infty sndv \<E> \<u> v)"
          apply(subst sum_inj_on[of outedge _ f', simplified, symmetric])
          subgoal
            unfolding inj_on_def by simp
          apply(rule cong[of "sum f'", OF refl])
-         unfolding multigraph.delta_minus_def[OF mgraph'] 
-         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def  multigraph.delta_minus_def[OF mgraph] flow_network.delta_minus_infty_def[OF assms(1)]
-                           flow_network.infty_edges_def[OF assms(1)] sndv'_def)
+         unfolding multigraph_spec.delta_minus_def 
+         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def  multigraph_spec.delta_minus_def flow_network_spec.delta_minus_infty_def
+                           flow_network_spec.infty_edges_def sndv'_def)
         
-       moreover have "sum f' ( multigraph.delta_minus sndv' \<E>' (vertex v) \<inter> \<E>1) = 
+       moreover have "sum f' ( multigraph_spec.delta_minus \<E>' sndv' (vertex v) \<inter> \<E>1) = 
                      sum (\<lambda> e. real_of_ereal (\<u> e) - f' (outedge e)) 
-                          (multigraph.delta_plus fstv \<E> v - flow_network.delta_plus_infty fstv \<u> \<E> v)"
+                          (multigraph_spec.delta_plus \<E> fstv v - flow_network_spec.delta_plus_infty fstv \<E> \<u> v)"
          apply(subst (2) sum_cong flow_distr_two_edges)
           apply(rule sym[OF flow_distr_two_edges])
          subgoal
            unfolding \<E>1_def 
-           by(fastforce simp add: multigraph.delta_plus_def[OF mgraph] flow_network.delta_plus_infty_def[OF assms(1)]
-                                   flow_network.infty_edges_def[OF assms(1)])   
+           by(fastforce simp add: multigraph_spec.delta_plus_def flow_network_spec.delta_plus_infty_def
+                                   flow_network_spec.infty_edges_def)   
          apply(subst sum_inj_on[of inedge _ "f'", 
                  symmetric, simplified o_def])
          subgoal
            unfolding inj_on_def by simp
          apply(rule cong[of "sum f'", OF refl])
-         unfolding multigraph.delta_plus_def[OF mgraph] 
-                   multigraph.delta_minus_def[OF mgraph']
+         unfolding multigraph_spec.delta_plus_def 
+                   multigraph_spec.delta_minus_def
          by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def \<E>3_def  
-                           flow_network.delta_plus_infty_def[OF assms(1)]
-                           flow_network.infty_edges_def[OF assms(1)] sndv'_def)
+                           flow_network_spec.delta_plus_infty_def
+                           flow_network_spec.infty_edges_def sndv'_def)
        moreover have "sum (\<lambda> e. real_of_ereal (\<u> e) - f' (outedge e)) 
-                          (multigraph.delta_plus fstv \<E> v - flow_network.delta_plus_infty fstv \<u> \<E> v)
-                      = sum (real_of_ereal \<circ> \<u>) (multigraph.delta_plus fstv \<E> v - flow_network.delta_plus_infty fstv \<u> \<E> v)
+                          (multigraph_spec.delta_plus \<E> fstv v - flow_network_spec.delta_plus_infty fstv \<E> \<u> v)
+                      = sum (real_of_ereal \<circ> \<u>) (multigraph_spec.delta_plus \<E> fstv v - flow_network_spec.delta_plus_infty fstv \<E> \<u> v)
                          - sum (\<lambda> e. f' (outedge e)) 
-                             (multigraph.delta_plus fstv \<E> v - flow_network.delta_plus_infty fstv \<u> \<E> v)"
-         by(auto simp add: sum_subtractf[of _ _ "multigraph.delta_plus fstv \<E> v - flow_network.delta_plus_infty fstv \<u> \<E> v"])
-       moreover have "sum f' (multigraph.delta_minus sndv' \<E>' (vertex v) \<inter> \<E>3) 
+                             (multigraph_spec.delta_plus \<E> fstv v - flow_network_spec.delta_plus_infty fstv \<E> \<u> v)"
+         by(auto simp add: sum_subtractf[of _ _ "multigraph_spec.delta_plus \<E> fstv v - flow_network_spec.delta_plus_infty fstv \<E> \<u> v"])
+       moreover have "sum f' (multigraph_spec.delta_minus \<E>' sndv' (vertex v) \<inter> \<E>3) 
                        =  sum (\<lambda> e. f' (vtovedge e))
-                          (flow_network.delta_minus_infty sndv \<u> \<E> v)" 
+                          (flow_network_spec.delta_minus_infty sndv \<E> \<u> v)" 
          apply(subst sum_inj_on[of vtovedge _ "f'", symmetric, simplified o_def])
          subgoal
            unfolding inj_on_def by auto
          apply(rule cong[of "sum f'", OF refl])
-         unfolding multigraph.delta_minus_def[OF mgraph']
+         unfolding multigraph_spec.delta_minus_def
          by(auto simp add: \<E>'_def \<E>1_def \<E>2_def \<E>3_def image_def 
-                           flow_network.infty_edges_def[OF assms(1)]  
-                           flow_network.delta_minus_infty_def[OF assms(1)] sndv'_def)
+                           flow_network_spec.infty_edges_def  
+                           flow_network_spec.delta_minus_infty_def sndv'_def)
        moreover have "
-          (\<Sum>e\<in>multigraph.delta_minus sndv \<E> v - flow_network.delta_minus_infty sndv \<u> \<E> v.
+          (\<Sum>e\<in>multigraph_spec.delta_minus \<E> sndv v - flow_network_spec.delta_minus_infty sndv \<E> \<u> v.
                   f' (outedge e)) +      
-          (\<Sum>e\<in>flow_network.delta_minus_infty sndv \<u> \<E> v. f' (vtovedge e)) = 
-          sum f (multigraph.delta_minus sndv \<E> v)"
+          (\<Sum>e\<in>flow_network_spec.delta_minus_infty sndv \<E> \<u> v. f' (vtovedge e)) = 
+          sum f (multigraph_spec.delta_minus \<E> sndv v)"
          apply(subst sum_inj_on[of outedge _ f', simplified, symmetric], simp add: inj_on_def)
          apply(subst sum_inj_on[of vtovedge _ f', simplified, symmetric], force simp add: inj_on_def)
          apply(subst comm_monoid_add_class.sum.union_disjoint[symmetric])
@@ -726,14 +729,14 @@ proof-
          apply(subst sum_inj_on[of "\<lambda> e. if _ e then _ e else _ e" _ f',
                      simplified, symmetric])
          by (fastforce intro!: cong[of "sum f'", OF refl] 
-                simp add: image_def multigraph.delta_minus_def[OF mgraph]
-                          flow_network.delta_minus_infty_def[OF assms(1)]
-                          flow_network.infty_edges_def[OF assms(1)] inj_on_def)+
+                simp add: image_def multigraph_spec.delta_minus_def
+                          flow_network_spec.delta_minus_infty_def
+                          flow_network_spec.infty_edges_def inj_on_def)+
         moreover have "
-          (\<Sum>e\<in>multigraph.delta_plus fstv \<E> v - flow_network.delta_plus_infty fstv \<u> \<E> v.
+          (\<Sum>e\<in>multigraph_spec.delta_plus \<E> fstv v - flow_network_spec.delta_plus_infty fstv \<E> \<u> v.
                   f' (outedge e)) +      
-          (\<Sum>e\<in>flow_network.delta_plus_infty fstv \<u> \<E> v. f' (vtovedge e)) = 
-          sum f (multigraph.delta_plus fstv \<E> v)"
+          (\<Sum>e\<in>flow_network_spec.delta_plus_infty fstv \<E> \<u> v. f' (vtovedge e)) = 
+          sum f (multigraph_spec.delta_plus \<E> fstv v)"
          apply(subst sum_inj_on[of outedge _ f', simplified, symmetric], simp add: inj_on_def)
          apply(subst sum_inj_on[of vtovedge _ f',simplified, symmetric], force simp add: inj_on_def)
          apply(subst comm_monoid_add_class.sum.union_disjoint[symmetric])
@@ -744,37 +747,37 @@ proof-
          apply(subst sum_inj_on[of "\<lambda> e. if _ e then _ e else _ e" _ f',
                      simplified, symmetric])
          by (force intro: cong[of "sum f'", OF refl] 
-                simp add: image_def multigraph.delta_plus_def[OF mgraph]
-                          flow_network.delta_plus_infty_def[OF assms(1)]
-                          flow_network.infty_edges_def[OF assms(1)] inj_on_def )+
-      moreover have "sum f' {vtovedge e | e. e \<in> flow_network.delta_plus_infty fstv \<u> \<E> v}
-             = (\<Sum>e\<in>flow_network.delta_plus_infty fstv \<u> \<E> v. f' (vtovedge e))" 
+                simp add: image_def multigraph_spec.delta_plus_def
+                          flow_network_spec.delta_plus_infty_def
+                          flow_network_spec.infty_edges_def inj_on_def )+
+      moreover have "sum f' {vtovedge e | e. e \<in> flow_network_spec.delta_plus_infty fstv \<E> \<u> v}
+             = (\<Sum>e\<in>flow_network_spec.delta_plus_infty fstv \<E> \<u> v. f' (vtovedge e))" 
         by(subst sum_inj_on[of vtovedge _ f', simplified, symmetric])
           (force intro: cong[of "sum f'", OF refl] simp add: image_def inj_on_def)+    
        ultimately show ?case 
-         by(auto simp add: flow_network.ex_def[OF assms(1)])
+         by(auto simp add: flow_network_spec.ex_def)
      qed
      ultimately show ?case 
-       by(auto simp add: flow_network.isbflow_def[OF assms(1)])
+       by(auto simp add: flow_network_spec.isbflow_def)
    next
      case 2
      have helper1:"(\<Sum>e\<in>\<E>. f e * \<c> e) = 
-        (\<Sum>e \<in> flow_network.infty_edges \<u> \<E>.  f' (vtovedge e) * \<c> e) +
-        (\<Sum>e \<in> \<E> - flow_network.infty_edges \<u> \<E>. f' (outedge e) * \<c> e)"
+        (\<Sum>e \<in> flow_network_spec.infty_edges \<E> \<u>.  f' (vtovedge e) * \<c> e) +
+        (\<Sum>e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>. f' (outedge e) * \<c> e)"
        unfolding 1(2)
-       apply(subst (2) Un_Diff_cancel2[of \<E> "flow_network.infty_edges \<u> \<E>", simplified
+       apply(subst (2) Un_Diff_cancel2[of \<E> "flow_network_spec.infty_edges \<E> \<u>", simplified
               flow_network.infty_edges_in_E[OF assms(1), simplified subset_Un_eq Un_commute],
               symmetric])
        apply(subst comm_monoid_add_class.sum.union_disjoint)
        using multigraph.finite_E[OF mgraph]  flow_network.finite_infty_edges[OF flow_network]
-        sum_if_not_P[of "\<E> - flow_network.infty_edges \<u> \<E>"]
-        sum_if_P[of "flow_network.infty_edges \<u> \<E>"]
+        sum_if_not_P[of "\<E> - flow_network_spec.infty_edges \<E> \<u>"]
+        sum_if_P[of "flow_network_spec.infty_edges \<E> \<u>"]
        by auto
-     have helper2: "(\<Sum>e\<in>\<E> - flow_network.infty_edges \<u> \<E>. f' (outedge e) * \<c> e) =
+     have helper2: "(\<Sum>e\<in>\<E> - flow_network_spec.infty_edges \<E> \<u>. f' (outedge e) * \<c> e) =
                     (\<Sum>x\<in>\<E>2. f' x * \<c> (edge_of (fstv' x)))"
        unfolding \<E>2_def Setcompr_eq_image
        by(auto intro: forw_subst[OF  sum_inj_on] simp add: inj_on_def fstv'_def)
-     have helper3: "(\<Sum>e\<in>flow_network.infty_edges \<u> \<E>. f' (vtovedge e) * \<c> e) =
+     have helper3: "(\<Sum>e\<in>flow_network_spec.infty_edges \<E> \<u>. f' (vtovedge e) * \<c> e) =
                     (\<Sum>x\<in>\<E>3. f' x * \<c> (get_edge x))"
        unfolding \<E>3_def  Setcompr_eq_image[of vtovedge,
                                  simplified]
@@ -829,7 +832,7 @@ proof-
       proof(rule disjE[OF  ab_where[simplified Un_iff]], goal_cases)
         case 1
         then obtain d where "e = inedge d"
-                            "d \<in> \<E> - flow_network.infty_edges \<u> \<E>"
+                            "d \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>"
           by(auto simp add: \<E>1_def)
         moreover have  "sndv' (last ([e] @ C2 @ C1)) = fstv' e" 
           using  snd_last
@@ -842,7 +845,7 @@ proof-
       next
         case 2
         then obtain d where "e = outedge d"
-                            "d \<in> \<E> - flow_network.infty_edges \<u> \<E>"
+                            "d \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>"
           by(auto simp add: \<E>2_def)
         moreover have  "sndv' (last ([e] @ C2 @ C1)) = fstv' e" 
           using  snd_last
@@ -875,7 +878,7 @@ proof-
         (vertex_of u)"
       by(fastforce intro!: subset_mono_awalk[OF awalk_map[OF _ u_prop(1)], simplified, OF _ refl, of vertex_of] 
                  simp add: make_pair'_def fstv'_def sndv'_def \<E>3_def flow_network_def multigraph_def
-                           flow_network.infty_edges_def[OF assms(1)] map_C_is)
+                           flow_network_spec.infty_edges_def map_C_is)
       thus ?thesis
       using u_prop(2) assms(1) 
       by(auto intro: exI[of _ "vertex_of u"] simp add: map_C_is closed_w_def  D_def) 
@@ -886,10 +889,10 @@ proof-
       by(induction C arbitrary: start) auto
     moreover have "\<forall>e\<in>set D. \<u> e = PInfty"
       using C_in_E3
-      by(auto simp add: D_def \<E>3_def flow_network.infty_edges_def[OF assms(1)])
+      by(auto simp add: D_def \<E>3_def flow_network_spec.infty_edges_def)
     moreover have "set D \<subseteq> \<E>" 
       using C_in_E3
-      by (auto simp add: flow_network.infty_edges_def[OF assms(1)] D_def \<E>3_def )
+      by (auto simp add: flow_network_spec.infty_edges_def D_def \<E>3_def )
     ultimately show ?case
       using C_prop(2) by auto
   next
@@ -898,9 +901,9 @@ proof-
                                 "(\<forall>e\<in>set D. \<u> e = PInfty)" "set D \<subseteq> \<E>"by auto
     then obtain u where u_prop: "awalk (make_pair ` \<E>)  u (map make_pair D) u" "0 < length D"
       by(auto simp add: closed_w_def)
-    have D_infty_edges:"set D \<subseteq> flow_network.infty_edges \<u> \<E>"
+    have D_infty_edges:"set D \<subseteq> flow_network_spec.infty_edges \<E> \<u>"
       using D_prop(3,4) 
-      by(fastforce simp add:flow_network.infty_edges_def[OF assms(1)])
+      by(fastforce simp add:flow_network_spec.infty_edges_def)
     have map_make_pair': "(map make_pair' (map vtovedge D)) =  map (\<lambda>e. (vertex (fst e), vertex (snd e))) (map make_pair D)"
       using assms(1) by (auto simp add: make_pair'_def fstv'_def sndv'_def flow_network_def multigraph_def)
 
@@ -913,7 +916,7 @@ proof-
                  split: hitchcock_edge.split)
     hence C_in_E3:"set (map vtovedge D) \<subseteq> \<E>3" 
       using D_prop(3,4)
-      by(auto simp add: \<E>3_def flow_network.infty_edges_def[OF assms(1)])
+      by(auto simp add: \<E>3_def flow_network_spec.infty_edges_def)
     hence "awalk (make_pair' ` \<E>') (vertex u) (map make_pair' (map vtovedge D)) (vertex u)"
       using awalk_E3 by(auto intro: subset_mono_awalk simp add: \<E>'_def )
     hence "closed_w (make_pair' ` \<E>') (map make_pair' (map vtovedge D))"
@@ -944,26 +947,25 @@ proof-
     case (1 f f')
     note case1=this
      note optf=1
-      hence opt_unfold: "flow_network.isbflow fstv' sndv' make_pair' \<u>'  \<E>' f' \<b>'"
-    "(\<And> f''. flow_network.isbflow fstv' sndv' make_pair' \<u>'  \<E>' f'' \<b>' 
+      hence opt_unfold: "flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>'"
+    "(\<And> f''. flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f'' \<b>' 
             \<Longrightarrow> cost_flow_spec.\<C> \<E>' \<c>' f' \<le> cost_flow_spec.\<C> \<E>' \<c>' f'')"
-        using cost_flow_network.is_Opt_def[OF cost_flow', of \<c>' \<b>' f']  by auto
-      have claim2_result:"cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'" "flow_network.isbflow fstv sndv make_pair \<u> \<E> f \<b>"
+        by(auto simp add: cost_flow_spec.is_Opt_def)
+      have claim2_result:"cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'" "flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f \<b>"
         using claim2[OF opt_unfold(1)] case1 by simp+
       show ?case
       proof(rule ccontr, goal_cases)
         case 1
-        then obtain d where d_prop:"flow_network.isbflow fstv sndv make_pair \<u> \<E> d \<b>" 
+        then obtain d where d_prop:"flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> d \<b>" 
                              "cost_flow_spec.\<C> \<E> \<c> d < cost_flow_spec.\<C> \<E> \<c> f"
-          using claim2_result(2) cost_flow_network.is_Opt_def[OF cost_flow]
-          by auto
+          using claim2_result(2) by(auto simp add: cost_flow_spec.is_Opt_def)
         define d' where "d' =
     (\<lambda>e'. let e = edge_of (fstv' e')
            in if e' \<in> \<E>1 then real_of_ereal (\<u> e) - d e
               else if e' \<in> \<E>2 then d e
                    else if e' \<in> \<E>3 then d (get_edge e')
                         else undefined)"
-        have d'_flow: "flow_network.isbflow fstv' sndv' make_pair' \<u>'  \<E>' d' \<b>'" 
+        have d'_flow: "flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' d' \<b>'" 
               "cost_flow_spec.\<C> \<E> \<c> d = cost_flow_spec.\<C> \<E>' \<c>' d'"
           using  claim1[of d d'] d_prop(1) d'_def by auto 
         moreover hence "cost_flow_spec.\<C> \<E>' \<c>' d' < cost_flow_spec.\<C> \<E>' \<c>' f'"
@@ -980,25 +982,25 @@ proof-
     case (1 f f')
     note optf=this
     note case1 = this
-    hence opt_unfold: "flow_network.isbflow fstv sndv make_pair \<u> \<E> f \<b>"
-    "(\<And> f'. flow_network.isbflow fstv sndv make_pair \<u> \<E> f' \<b> \<Longrightarrow> cost_flow_spec.\<C> \<E> \<c> f \<le> cost_flow_spec.\<C> \<E> \<c> f')"
-        using cost_flow_network.is_Opt_def[OF cost_flow, of \<c> \<b> f] by auto
-      have claim1_result: "flow_network.isbflow fstv' sndv' make_pair' \<u>'  \<E>' f' \<b>' \<and>
+    hence opt_unfold: "flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f \<b>"
+    "(\<And> f'. flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f' \<b> \<Longrightarrow> cost_flow_spec.\<C> \<E> \<c> f \<le> cost_flow_spec.\<C> \<E> \<c> f')"
+        by(auto simp add: cost_flow_spec.is_Opt_def)
+      have claim1_result: "flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>' \<and>
                            cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'" 
         using  case1 by(auto intro!: claim1[OF opt_unfold(1)]) 
       hence claim1_result:"cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'" 
-        "flow_network.isbflow fstv' sndv' make_pair' \<u>'  \<E>' f' \<b>'"
+        "flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>'"
         by auto
       show ?case
       proof(rule ccontr, goal_cases)
         case 1
-        then obtain d' where d'_prop:"flow_network.isbflow fstv' sndv' make_pair' \<u>' \<E>' d' \<b>'" 
+        then obtain d' where d'_prop:"flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' d' \<b>'" 
                              "cost_flow_spec.\<C> \<E>' \<c>' d' < cost_flow_spec.\<C> \<E>' \<c>' f'"
           using claim1_result 
-          by(auto simp add: cost_flow_network.is_Opt_def[OF cost_flow'])
-        define d where "d = (\<lambda>e. if e \<in> flow_network.infty_edges \<u> \<E> then d' (vtovedge e)
+          by(auto simp add: cost_flow_spec.is_Opt_def)
+        define d where "d = (\<lambda>e. if e \<in> flow_network_spec.infty_edges \<E> \<u> then d' (vtovedge e)
           else d' (outedge e))"
-        have d_flow: "flow_network.isbflow fstv sndv make_pair \<u> \<E> d \<b>" 
+        have d_flow: "flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> d \<b>" 
                 "cost_flow_spec.\<C> \<E> \<c> d = cost_flow_spec.\<C> \<E>' \<c>' d'"
           using claim2[of d'] d'_prop(1) d_def  by auto
         moreover hence "cost_flow_spec.\<C> \<E> \<c> d < cost_flow_spec.\<C> \<E> \<c> f"
@@ -1018,7 +1020,7 @@ definition "new_\<c> \<E> \<u> \<c> = (\<lambda> e'. if e' \<in> new_\<E>2 \<E> 
 then 0 else undefined)"
 
 definition "new_\<b> \<E> \<u> \<b> = (\<lambda> x'. (case x' of edge e \<Rightarrow> \<u> e
-                       | vertex x \<Rightarrow> \<b> x -( sum \<u> (multigraph.delta_plus fst \<E> x))))"
+                       | vertex x \<Rightarrow> \<b> x -( sum \<u> (multigraph_spec.delta_plus \<E> fst x))))"
 
 definition "new_f \<E> \<u> f = (\<lambda> e'. (let e = edge_of (fst e') 
                                                   in
@@ -1040,17 +1042,17 @@ theorem reduction_of_mincost_flow_to_hitchcock:
   defines "\<b>' \<equiv> new_\<b> \<E> \<u> \<b>"
 shows 
    "flow_network fst snd id Pair \<u>' \<E>'" (is ?case1) and
-   "\<And> f f'. flow_network.isbflow fst snd id (ereal o \<u>) \<E> f \<b> \<Longrightarrow> f' = new_f \<E> \<u> f
-       \<Longrightarrow>flow_network.isbflow fst snd id \<u>' \<E>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
+   "\<And> f f'. flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) f \<b> \<Longrightarrow> f' = new_f \<E> \<u> f
+       \<Longrightarrow>flow_network_spec.isbflow fst snd id \<E>' \<u>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
       (is "\<And> f f'. ?a f \<Longrightarrow> ?b f f' \<Longrightarrow> ?c  f f'") and
-"\<And> f f'. flow_network.isbflow fst snd id \<u>' \<E>' f' \<b>' \<Longrightarrow> f = old_f f' \<Longrightarrow>
-          flow_network.isbflow fst snd id (ereal o \<u>) \<E> f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
+"\<And> f f'. flow_network_spec.isbflow fst snd id \<E>' \<u>' f' \<b>' \<Longrightarrow> f = old_f f' \<Longrightarrow>
+          flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
       (is "\<And> f f'. ?x f' \<Longrightarrow> ?y f f'\<Longrightarrow> ?z f f'") and
-"cost_flow_network.is_Opt fst snd id (ereal o \<u>) \<c> \<E> \<b> f \<Longrightarrow> f' = new_f \<E> \<u> f \<Longrightarrow>
- cost_flow_network.is_Opt fst snd id  \<u>' \<c>' \<E>' \<b>' f'"
+"cost_flow_spec.is_Opt fst snd id (ereal o \<u>) \<E> \<c> \<b> f \<Longrightarrow> f' = new_f \<E> \<u> f \<Longrightarrow>
+ cost_flow_spec.is_Opt fst snd id  \<u>' \<E>' \<c>' \<b>' f'"
  and
-"cost_flow_network.is_Opt fst snd id  \<u>' \<c>' \<E>' \<b>' f' \<Longrightarrow> f = old_f f' \<Longrightarrow>
- cost_flow_network.is_Opt fst snd id (ereal o \<u>) \<c> \<E> \<b> f " and
+"cost_flow_spec.is_Opt fst snd id  \<u>' \<E>' \<c>' \<b>' f' \<Longrightarrow> f = old_f f' \<Longrightarrow>
+ cost_flow_spec.is_Opt fst snd id (ereal o \<u>) \<E> \<c> \<b> f " and
  "\<nexists> C. closed_w \<E>' C" 
 proof-
   note  \<E>1_def_old =  \<E>1_def
@@ -1064,7 +1066,7 @@ then 0 else undefined)"
      unfolding \<c>'_def new_\<c>_def new_\<E>1_def new_\<E>2_def
           \<E>1_def \<E>2_def by simp
   have \<b>'_def: "\<b>' = (\<lambda> x'. (case x' of edge e \<Rightarrow> \<u> e
-                       | vertex x \<Rightarrow> \<b> x -( sum \<u> (multigraph.delta_plus fst \<E> x))))"
+                       | vertex x \<Rightarrow> \<b> x -( sum \<u> (multigraph_spec.delta_plus \<E> fst x))))"
         unfolding \<b>'_def new_\<b>_def by simp  
   have finites: "finite {(edge (a, b), vertex a) |a b. (a, b) \<in> \<E>}"
        "finite {(edge (a, b), vertex b) |a b. (a, b) \<in> \<E>}"
@@ -1102,19 +1104,19 @@ then 0 else undefined)"
    proof(goal_cases)
      case (1 f f')
      note case1=this[simplified]
-     have ex_b:"\<And> v. v\<in>dVs \<E> \<Longrightarrow> - flow_network.ex fst snd \<E> f v = \<b> v"
-       using case1 flow_network.isbflow_def[OF assms(1)] by auto
+     have ex_b:"\<And> v. v\<in>dVs \<E> \<Longrightarrow> - flow_network_spec.ex fst snd \<E> f v = \<b> v"
+       using case1 by(auto simp add: flow_network_spec.isbflow_def)
      have "e \<in> \<E>' \<Longrightarrow> ereal (f' e) \<le> \<u>' e" for e
        by(simp add: \<E>'_def case1(2) \<u>'_def)
      moreover have "e \<in> \<E>' \<Longrightarrow> 0 \<le> f' e" for e
        using case1(1)
        by(auto split: prod.split 
-            simp add: \<E>1_def \<E>2_def \<E>'_def case1(2) \<u>'_def flow_network.isbflow_def[OF assms(1)]
-                      flow_network.isuflow_def[OF assms(1)] Let_def
+            simp add: \<E>1_def \<E>2_def \<E>'_def case1(2) \<u>'_def flow_network_spec.isbflow_def
+                      flow_network_spec.isuflow_def Let_def
           intro!: ereal_diff_positive real_of_ereal_pos)
   
-     ultimately have isuflow': "flow_network.isuflow \<u>' \<E>' f'"
-       unfolding flow_network.isuflow_def[OF residual'] by auto
+     ultimately have isuflow': "flow_network_spec.isuflow \<E>' \<u>' f'"
+       unfolding flow_network_spec.isuflow_def by auto
      have a1: "{e. ((\<exists>a b. e = (edge (a, b), vertex a) \<and> (a, b) \<in> \<E>) \<or>
                 (\<exists>a b. e = (edge (a, b), vertex b) \<and> (a, b) \<in> \<E>)) \<and>
                fst e = edge (a, b)} = 
@@ -1130,7 +1132,7 @@ then 0 else undefined)"
                     snd e = vertex x2} = 
                {(edge (a, b), vertex x2)| a b. (a, b) \<in> \<E> \<and> (x2 = a \<or> x2 = b)}" for x2 
        by auto
-     have b'_met:"v\<in>dVs \<E>' \<Longrightarrow> - flow_network.ex fst snd \<E>' f' v = \<b>' v" for v
+     have b'_met:"v\<in>dVs \<E>' \<Longrightarrow> - flow_network_spec.ex fst snd \<E>' f' v = \<b>' v" for v
      proof(goal_cases)
        case 1
        show ?case
@@ -1157,8 +1159,8 @@ then 0 else undefined)"
           apply(subst if_P)
           by force+
          show ?thesis 
-          unfolding flow_network.ex_def[OF flow_network']  multigraph.delta_minus_def[OF mgraph']
-           multigraph.delta_plus_def[OF mgraph']
+          unfolding flow_network_spec.ex_def  multigraph_spec.delta_minus_def
+           multigraph_spec.delta_plus_def
           apply(simp only: empty_simper \<E>'_def \<E>1_def \<E>2_def \<b>'_def )
           using edge x1_in_E 
           by (auto simp add: d1 intro: d2)
@@ -1206,11 +1208,11 @@ then 0 else undefined)"
                   \<forall>x. (x, x) \<notin> \<E> \<Longrightarrow>
                    - (\<Sum>x\<in>{(edge (x1, b), vertex x1) |b. (x1, b) \<in> \<E>}. \<u> (edge_of (fst x)) - f (edge_of (fst x))) -
                 (\<Sum>x\<in>{(edge (a, x1), vertex x1) |a. (a, x1) \<in> \<E>}. f (edge_of (fst x))) =
-                \<b> x1 - sum \<u> (multigraph.delta_plus fst \<E> x1)"
+                \<b> x1 - sum \<u> (multigraph_spec.delta_plus \<E> fst x1)"
           using 1 
           by(subst sym[OF ex_b])
-            (auto simp add: flow_network.ex_def[OF assms(1)]  multigraph.delta_minus_def[OF mgraph]
-                  multigraph.delta_plus_def[OF mgraph] summation_u summation_fst summation_snd sum_subtractf
+            (auto simp add: flow_network_spec.ex_def  multigraph_spec.delta_minus_def
+                  multigraph_spec.delta_plus_def summation_u summation_fst summation_snd sum_subtractf
                   \<E>'_def \<E>1_def \<E>2_def dVs_def )
         have second_final_helper: "v = vertex x1 \<Longrightarrow>
     \<forall>x. (x, x) \<notin> \<E> \<Longrightarrow>
@@ -1220,7 +1222,7 @@ then 0 else undefined)"
          if \<exists>a b. e' = (edge (a, b), vertex b) \<and> (a, b) \<in> \<E> then f (edge_of (fst e'))
          else if e' \<in> {(edge e, vertex (fst e)) |e. e \<in> \<E>} then \<u> (edge_of (fst e')) - f (edge_of (fst e'))
               else undefined) =
-    \<b> x1 - sum \<u> (multigraph.delta_plus fst \<E> x1)"
+    \<b> x1 - sum \<u> (multigraph_spec.delta_plus \<E> fst x1)"
           apply(simp only:a4[of x1] set_sum_split summation_split )
           apply(subst sum_if_not_P[where i="\<lambda> y x. x", simplified]) 
           apply force
@@ -1229,21 +1231,21 @@ then 0 else undefined)"
           by (auto intro: final_helper )
         have "- (sum f' {e \<in> {(edge e, vertex (fst e)) |e. e \<in> \<E>} \<union> {(edge e, vertex (snd e)) |e. e \<in> \<E>}. snd e = v} -
        0) =
-    (case v of edge e \<Rightarrow> \<u> e | vertex x \<Rightarrow> \<b> x - sum \<u> (multigraph.delta_plus fst \<E> x))"
+    (case v of edge e \<Rightarrow> \<u> e | vertex x \<Rightarrow> \<b> x - sum \<u> (multigraph_spec.delta_plus \<E> fst x))"
           using vertex assms(2)
           unfolding case1(2) Let_def  \<E>1_def \<E>2_def 
           by (auto intro: second_final_helper)
         thus ?thesis
-          unfolding flow_network.ex_def[OF flow_network']  multigraph.delta_minus_def[OF mgraph']
-           multigraph.delta_plus_def[OF mgraph']
-          by(auto simp only: empty_simper sum.empty simp add: \<E>'_def \<E>1_def \<E>2_def \<b>'_def)
+          by(auto simp only: empty_simper sum.empty 
+                   simp add: flow_network_spec.ex_def  multigraph_spec.delta_minus_def
+                             multigraph_spec.delta_plus_def \<E>'_def \<E>1_def \<E>2_def \<b>'_def)
       qed
     qed
     show ?case
     proof(rule, goal_cases)
       case 1
       then show ?case 
-        by(auto simp add: b'_met flow_network.isbflow_def[OF residual'] isuflow')
+        by(auto simp add: b'_met flow_network_spec.isbflow_def isuflow')
     next
       case 2
       then show ?case 
@@ -1276,103 +1278,102 @@ then 0 else undefined)"
         hence dVs': "edge e  \<in> dVs \<E>'" "vertex (snd e) \<in> dVs \<E>'"
           unfolding dVs_def \<E>'_def \<E>1_def \<E>2_def
           by blast+
-        hence "real_of_ereal (\<u> e) = - flow_network.ex fst snd \<E>' f' (edge e)"
+        hence "real_of_ereal (\<u> e) = - flow_network_spec.ex fst snd \<E>' f' (edge e)"
          using case1(1)
-         by (auto simp add: flow_network.isbflow_def[OF residual']  \<b>'_def)
-       moreover have "multigraph.delta_plus fst \<E>' (edge e) = {(edge e, vertex (fst e)), (edge e, vertex (snd e))}"
-         unfolding multigraph.delta_plus_def[OF mgraph']
+         by (auto simp add: flow_network_spec.isbflow_def  \<b>'_def)
+       moreover have "multigraph_spec.delta_plus \<E>' fst (edge e)
+                = {(edge e, vertex (fst e)), (edge e, vertex (snd e))}"
+         unfolding multigraph_spec.delta_plus_def
          using 1
          by(cases e) (auto simp add:  \<E>'_def \<E>1_def \<E>2_def)
-       moreover have "multigraph.delta_minus snd \<E>' (edge e) = {}"
-         using multigraph.delta_minus_def[OF mgraph']
-         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def)
+       moreover have "multigraph_spec.delta_minus \<E>' snd (edge e) = {}"
+         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def multigraph_spec.delta_minus_def)
        moreover have "(edge e, vertex (fst e))\<noteq> (edge e, vertex (snd e))"
          using 1 assms(2) by(cases e) (auto simp add: \<E>'_def \<E>1_def)
        ultimately have "\<u> e = f' (edge e, vertex (fst e)) + f' (edge e, vertex (snd e))"
-         by (auto simp add: flow_network.ex_def[OF residual'])
+         by (auto simp add: flow_network_spec.ex_def)
        then show ?case by simp
      qed
-      have "flow_network.isuflow (ereal o \<u>) \<E> f" 
-        unfolding flow_network.isuflow_def[OF flow_network] comp_def
+      have "flow_network_spec.isuflow \<E> (ereal o \<u>) f" 
+        unfolding flow_network_spec.isuflow_def comp_def
       proof(rule, goal_cases)
         case (1 e)
         hence dVs': "edge e  \<in> dVs \<E>'" "vertex (snd e) \<in> dVs \<E>'"
           unfolding dVs_def \<E>'_def \<E>1_def \<E>2_def
           by blast+
-        hence "real_of_ereal (\<u> e) = - flow_network.ex fst snd \<E>' f' (edge e)"
+        hence "real_of_ereal (\<u> e) = - flow_network_spec.ex fst snd \<E>' f' (edge e)"
          using case1(1)
-         by (auto simp add: flow_network.isbflow_def[OF residual']  \<b>'_def)
-       moreover have "multigraph.delta_plus fst \<E>' (edge e) = {(edge e, vertex (fst e)), (edge e, vertex (snd e))}"
-         unfolding multigraph.delta_plus_def[OF mgraph']
+         by (auto simp add: flow_network_spec.isbflow_def  \<b>'_def)
+       moreover have "multigraph_spec.delta_plus \<E>' fst (edge e) = {(edge e, vertex (fst e)), (edge e, vertex (snd e))}"
+         unfolding multigraph_spec.delta_plus_def
          using 1
          by(cases e) (auto simp add:  \<E>'_def \<E>1_def \<E>2_def)
-       moreover have "multigraph.delta_minus snd \<E>' (edge e) = {}"
-         using multigraph.delta_minus_def[OF mgraph']
-         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def)
+       moreover have "multigraph_spec.delta_minus \<E>' snd (edge e) = {}"
+         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def multigraph_spec.delta_minus_def)
        moreover have "(edge e, vertex (fst e))\<noteq> (edge e, vertex (snd e))"
          using 1 assms(2) by(cases e) auto
        ultimately have "\<u> e = f' (edge e, vertex (fst e)) + f' (edge e, vertex (snd e))"
-         by (auto simp add: flow_network.ex_def[OF residual'] )
+         by (auto simp add: flow_network_spec.ex_def )
        moreover have "f' (edge e, vertex (fst e)) \<ge> 0" "f' (edge e, vertex (snd e)) \<ge> 0"
          using case1(1) 1
-         unfolding flow_network.isbflow_def[OF residual']
-         unfolding flow_network.isuflow_def[OF residual'] 
+         unfolding flow_network_spec.isbflow_def
+         unfolding flow_network_spec.isuflow_def 
          unfolding \<E>'_def \<E>1_def \<E>2_def
          by fast+
        ultimately show ?case
          by(simp add: case1(2))
      qed
-     moreover have "\<forall>v\<in>dVs \<E>. - flow_network.ex fst snd \<E> f v = \<b> v"
+     moreover have "\<forall>v\<in>dVs \<E>. - flow_network_spec.ex fst snd \<E> f v = \<b> v"
      proof(rule, goal_cases)
        case (1 v)
        hence "vertex v \<in> dVs \<E>'"
          by(auto simp add: \<E>'_def \<E>1_def \<E>2_def dVs_def , blast, metis insertI1 insert_commute)
-       hence "- (sum f' (multigraph.delta_minus snd \<E>' (vertex v)) - sum f' (multigraph.delta_plus fst \<E>' (vertex v))) =
-                    \<b> v - real_of_ereal (sum \<u> (multigraph.delta_plus fst \<E> v))"
+       hence "- (sum f' (multigraph_spec.delta_minus  \<E>' snd (vertex v)) 
+                         - sum f' (multigraph_spec.delta_plus \<E>' fst (vertex v))) =
+                    \<b> v - real_of_ereal (sum \<u> (multigraph_spec.delta_plus \<E> fst v))"
          using case1(1) 
-         by(auto simp add: flow_network.isbflow_def[OF residual'] \<b>'_def flow_network.ex_def[OF residual'])
-       moreover have "multigraph.delta_plus fst \<E>' (vertex v) = {}"
-         using multigraph.delta_plus_def[OF mgraph']
-         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def)
-       moreover have "sum f' (multigraph.delta_minus snd \<E>' (vertex v)) = 
-                     sum f' ( multigraph.delta_minus snd \<E>' (vertex v) \<inter> \<E>1) +
-                     sum f' (multigraph.delta_minus snd \<E>' (vertex v) \<inter> \<E>2)"
-         unfolding  multigraph.delta_minus_def[OF mgraph']
+         by(auto simp add: flow_network_spec.isbflow_def \<b>'_def flow_network_spec.ex_def)
+       moreover have "multigraph_spec.delta_plus \<E>' fst (vertex v) = {}"
+         by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def  multigraph_spec.delta_plus_def)
+       moreover have "sum f' (multigraph_spec.delta_minus \<E>' snd (vertex v)) = 
+                     sum f' ( multigraph_spec.delta_minus \<E>' snd (vertex v) \<inter> \<E>1) +
+                     sum f' (multigraph_spec.delta_minus \<E>' snd (vertex v) \<inter> \<E>2)"
+         unfolding  multigraph_spec.delta_minus_def
          unfolding \<E>'_def
          apply(subst sym[OF comm_monoid_add_class.sum.union_disjoint])
          using \<E>'_def finiteE'  Es_non_inter 
          by(auto intro: cong[of "sum f'", OF refl]) 
-       moreover have "sum f' (multigraph.delta_minus snd \<E>' (vertex v) \<inter> \<E>2) = 
-                      sum (\<lambda> e. f' (edge e, vertex (snd e))) (multigraph.delta_minus snd \<E> v)"
+       moreover have "sum f' (multigraph_spec.delta_minus \<E>' snd (vertex v) \<inter> \<E>2) = 
+                      sum (\<lambda> e. f' (edge e, vertex (snd e))) (multigraph_spec.delta_minus \<E> snd v)"
          apply(subst sum_inj_on[of "(\<lambda> e. (edge e, vertex (snd e)))" _ f', simplified, symmetric])
          subgoal
            unfolding inj_on_def by simp
          apply(rule cong[of "sum f'", OF refl])
-         unfolding multigraph.delta_minus_def[OF mgraph] multigraph.delta_minus_def[OF mgraph']
+         unfolding multigraph_spec.delta_minus_def multigraph_spec.delta_minus_def
          by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def)
         
-       moreover have "sum f' ( multigraph.delta_minus snd \<E>' (vertex v) \<inter> \<E>1) = 
-                     sum (\<lambda> e. \<u> e - f' (edge e, vertex (snd e))) (multigraph.delta_plus fst \<E> v)"
+       moreover have "sum f' ( multigraph_spec.delta_minus \<E>' snd (vertex v) \<inter> \<E>1) = 
+                     sum (\<lambda> e. \<u> e - f' (edge e, vertex (snd e))) (multigraph_spec.delta_plus \<E> fst v)"
          apply(subst (2) sum_cong flow_distr_two_edges)
           apply(rule sym[OF flow_distr_two_edges])
          subgoal
-           unfolding \<E>1_def  multigraph.delta_plus_def[OF mgraph] by fast
+           unfolding \<E>1_def  multigraph_spec.delta_plus_def by fast
          apply(subst sum_inj_on[of "(\<lambda> e. (edge e, vertex (fst e)))" _ "ereal o f'", 
                 simplified, symmetric])
          subgoal
            unfolding inj_on_def by simp
          apply(rule cong[of "sum f'", OF refl])
-         unfolding multigraph.delta_plus_def[OF mgraph] multigraph.delta_minus_def[OF mgraph']
+         unfolding multigraph_spec.delta_plus_def multigraph_spec.delta_minus_def
          by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def)
-       moreover have "sum (\<lambda> e. \<u> e - f' (edge e, vertex (snd e))) (multigraph.delta_plus fst \<E> v)
-                      = sum \<u> (multigraph.delta_plus fst \<E> v)
-                         - sum (\<lambda> e. f' (edge e, vertex (snd e))) (multigraph.delta_plus fst \<E> v)"
-         by(auto simp add: sum_subtractf[of _ _ "multigraph.delta_plus fst \<E> v"])
+       moreover have "sum (\<lambda> e. \<u> e - f' (edge e, vertex (snd e))) (multigraph_spec.delta_plus \<E> fst v)
+                      = sum \<u> (multigraph_spec.delta_plus \<E> fst v)
+                         - sum (\<lambda> e. f' (edge e, vertex (snd e))) (multigraph_spec.delta_plus \<E> fst v)"
+         by(auto simp add: sum_subtractf[of _ _ "multigraph_spec.delta_plus \<E> fst v"])
        ultimately show ?case
-         by(simp add: flow_network.ex_def[OF assms(1)] case1(2))
+         by(simp add: flow_network_spec.ex_def case1(2))
      qed
      ultimately show ?case
-       by(simp add: flow_network.isbflow_def[OF assms(1)])
+       by(simp add: flow_network_spec.isbflow_def)
    next
      case 2
      show ?case 
@@ -1424,53 +1425,53 @@ then 0 else undefined)"
       ultimately show False by auto  
     qed
   qed
-  show "cost_flow_network.is_Opt fst snd id (ereal \<circ> \<u>) \<c> \<E> \<b> f \<Longrightarrow>
-    f' = new_f \<E> \<u> f \<Longrightarrow> cost_flow_network.is_Opt fst snd id \<u>' \<c>' \<E>' \<b>' f'"
+  show "cost_flow_spec.is_Opt fst snd id (ereal \<circ> \<u>) \<E> \<c> \<b> f \<Longrightarrow>
+    f' = new_f \<E> \<u> f \<Longrightarrow> cost_flow_spec.is_Opt fst snd id \<u>' \<E>' \<c>' \<b>' f'"
   proof(goal_cases)
     case 1
-    hence bflow:"flow_network.isbflow fst snd id (ereal o \<u>) \<E> f \<b>"
-      using assms(1) cost_flow_network.intro cost_flow_network.is_Opt_def by blast
-    hence bflow':"flow_network.isbflow fst snd id \<u>' \<E>' f' \<b>'"
+    hence bflow:"flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) f \<b>"
+      using assms(1) cost_flow_network.intro cost_flow_spec.is_Opt_def by blast
+    hence bflow':"flow_network_spec.isbflow fst snd id \<E>' \<u>' f' \<b>'"
       using "1"(2) claim1 by blast 
-    moreover have "flow_network.isbflow fst snd id \<u>' \<E>' g' \<b>' \<Longrightarrow>
+    moreover have "flow_network_spec.isbflow fst snd id \<E>' \<u>' g' \<b>' \<Longrightarrow>
            cost_flow_spec.\<C> \<E>' \<c>' f' \<le> cost_flow_spec.\<C> \<E>' \<c>' g'" for g'
     proof-
-      assume asm: "flow_network.isbflow fst snd id \<u>' \<E>' g' \<b>'"
-      have "flow_network.isbflow fst snd id (ereal o \<u>) \<E> (old_f g') \<b>"
+      assume asm: "flow_network_spec.isbflow fst snd id \<E>' \<u>' g' \<b>'"
+      have "flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) (old_f g') \<b>"
            "cost_flow_spec.\<C> \<E> \<c> (old_f g') = cost_flow_spec.\<C> \<E>' \<c>' g'"
         using claim2[OF asm refl] by auto
       moreover have "cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'"
         using claim1[OF bflow] 1(2) by simp
       ultimately show ?thesis 
         using 1(1) 
-        by(auto simp add: cost_flow_network.is_Opt_def[OF  cost_flow_network.intro[OF assms(1)]])
+        by(auto simp add: cost_flow_spec.is_Opt_def)
     qed
     ultimately show ?case
-      by(auto intro: cost_flow_network.is_OptI[OF cost_flow'])
+      by(auto intro: cost_flow_spec.is_OptI)
   qed
-  show "cost_flow_network.is_Opt fst snd id \<u>' \<c>' \<E>' \<b>' f' \<Longrightarrow>
-    f = old_f f' \<Longrightarrow> cost_flow_network.is_Opt fst snd id (ereal \<circ> \<u>) \<c> \<E> \<b> f"
+  show "cost_flow_spec.is_Opt fst snd id \<u>' \<E>' \<c>' \<b>' f' \<Longrightarrow>
+    f = old_f f' \<Longrightarrow> cost_flow_spec.is_Opt fst snd id (ereal \<circ> \<u>) \<E> \<c> \<b> f"
   proof(goal_cases)
     case 1
-    hence bflow':"flow_network.isbflow fst snd id  \<u>' \<E>' f' \<b>'" 
-      using cost_flow' cost_flow_network.is_Opt_def by blast
-    hence bflow:"flow_network.isbflow fst snd id (ereal o \<u>) \<E> f \<b>"
+    hence bflow':"flow_network_spec.isbflow fst snd id  \<E>' \<u>' f' \<b>'" 
+      using cost_flow' cost_flow_spec.is_Opt_def by blast
+    hence bflow:"flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) f \<b>"
       using "1"(2) claim2 by blast 
-    moreover have "flow_network.isbflow fst snd id (ereal o \<u>) \<E> g \<b> \<Longrightarrow>
+    moreover have "flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) g \<b> \<Longrightarrow>
            cost_flow_spec.\<C> \<E> \<c> f \<le> cost_flow_spec.\<C> \<E> \<c> g" for g
     proof-
-      assume asm: "flow_network.isbflow fst snd id (ereal o \<u>) \<E> g \<b>"
-      have "flow_network.isbflow fst snd id  \<u>' \<E>' (new_f \<E> \<u> g) \<b>'"
+      assume asm: "flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) g \<b>"
+      have "flow_network_spec.isbflow fst snd id  \<E>' \<u>' (new_f \<E> \<u> g) \<b>'"
            "cost_flow_spec.\<C> \<E>' \<c>' (new_f \<E> \<u> g) = cost_flow_spec.\<C> \<E> \<c> g"
         using claim1[OF asm refl] by auto
       moreover have "cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'"
         using claim2[OF bflow'] 1(2) by simp
       ultimately show ?thesis 
         using 1(1) 
-        by(auto simp add: cost_flow_network.is_Opt_def[OF  cost_flow_network.intro[OF flow_network']])
+        by(auto simp add: cost_flow_spec.is_Opt_def)
     qed
     ultimately show ?case 
-      by(auto intro: cost_flow_network.is_OptI[OF cost_flow_network.intro[OF assms(1)]])
+      by(auto intro: cost_flow_spec.is_OptI)
   qed
 qed
 
