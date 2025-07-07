@@ -709,6 +709,16 @@ proof-
   finally show ?thesis by simp
 qed
 
+lemma ex_less_cut_cap:
+  assumes "is_s_t_cut s t X" "is_s_t_flow f s t"
+  shows   "ex f t \<le> Cap X"
+  using  assms
+  by(unfold stcut_ex[OF assms(2,1)])
+    (force elim!: is_s_t_flowE is_s_t_cutE 
+          intro!: ordered_comm_monoid_add_class.sum_mono  s_t_flow_is_ex_bflow[OF assms(2)]
+                  order.trans[OF _ flow_less_cut, OF _ s_t_flow_is_ex_bflow[OF assms(2)]]
+        simp add: s_t_flow_excess_s_t[OF assms(2)]) 
+
 lemma max_flow_no_augpath:
   assumes   "is_max_flow s t f" 
   shows     "\<not> resreach f s t"
@@ -790,6 +800,12 @@ proof-
       (force intro!: flow_less_cut[OF bflow] simp add: is_max_flow_def is_min_cut_def is_s_t_cut_def)+
   finally show ?thesis1 by simp
 qed
+
+lemma sends_min_cut_then_maxflow:
+  assumes "is_s_t_flow f s t" "ex f t = Cap X" "is_min_cut s t X"
+  shows "is_max_flow s t f"
+  using assms  ereal_less_eq(3) ex_less_cut_cap 
+  by (fastforce intro!: is_max_flowI elim!:  is_min_cutE)
 
 subsection \<open>Reduction of Maximum Flow to Minimum Cost Flow\<close>
 
@@ -1013,6 +1029,41 @@ proof-
       using 1(1) goal2[OF _ 1(2)] goal1
       by(force simp add: cost_network_of_network.is_Opt_def is_max_flow_def)
   qed
+qed
+
+lemma no_maxflow_resreach_standard_proof:
+  assumes "is_s_t_flow f s t " "\<not> resreach f s t"
+  shows   "is_max_flow s t f"
+proof-
+  have props:"isuflow f"  "s \<in> \<V>" "t \<in> \<V>" 
+    using assms(1)
+    by (auto simp add: is_s_t_flow_def is_max_flow_def)
+  hence bflow: "isbflow f (\<lambda> v. -ex f v)"
+    by(auto simp add: isbflow_def)
+  have t_not_in_Rescut:"t \<notin> Rescut f s" 
+    using assms(2) s_neq_t by(auto simp add: Rescut_def)
+  have rescut_s_t_cut: "is_s_t_cut s t (Rescut f s)"  
+    using Rescut_around_in_V[OF props(2), of f] t_not_in_Rescut props(3)
+    by(auto simp add: Rescut_def is_s_t_cut_def)
+  obtain X where X_exists: "is_min_cut s t X"
+    using mincut_exists by auto
+  from rescut_s_t_cut have a1:"ex f t = (\<Sum>x\<in>Rescut f s. ereal (- ex\<^bsub>f\<^esub> x))"
+    using assms(1) by(fastforce intro!: stcut_ex simp add: is_max_flow_def)
+  also have a4:"... = Cap (Rescut f s)"
+    using Rescut_around_in_V[OF props(2), of f]
+    by(force intro!: flow_saturates_res_cut[OF bflow])
+  also have a5:"Cap (Rescut f s) \<ge> Cap X"
+    using X_exists Rescut_around_in_V Rescut_def s_in_V t_not_in_Rescut 
+    by (auto simp add: is_min_cut_def is_s_t_cut_def Rescut_def)
+  also have a6:"Cap X \<ge> ex\<^bsub>f\<^esub> t" 
+    using assms X_exists
+    by(subst stcut_ex[of _ X])
+      (force intro!: flow_less_cut[OF bflow] simp add: is_max_flow_def is_min_cut_def is_s_t_cut_def)+
+  finally have "Cap X = ereal ex\<^bsub>f\<^esub> t"
+    by auto
+  thus ?thesis 
+    using X_exists assms(1) 
+  by(auto intro!: sends_min_cut_then_maxflow)
 qed
 
 lemma no_maxflow_resreach:
