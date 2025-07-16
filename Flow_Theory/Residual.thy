@@ -161,6 +161,13 @@ text \<open> Now, we call $f$ a $b$-flow for some balance $b$ iff
 definition isbflow::"('edge_type \<Rightarrow> real) \<Rightarrow> ('a \<Rightarrow> real)  \<Rightarrow> bool"  ("_ is _ flow")where
 "f is b flow \<longleftrightarrow> (isuflow f \<and> (\<forall> v \<in> \<V> . (- ex f v) = b v))"
 
+lemma isbflowE:
+"f is b flow \<Longrightarrow> (isuflow f  \<Longrightarrow> (\<And> v.  v \<in> \<V>  \<Longrightarrow> (- ex f v) = b v) \<Longrightarrow> P) \<Longrightarrow>P"
+and isbflowI:
+"isuflow f  \<Longrightarrow> (\<And> v.  v \<in> \<V>  \<Longrightarrow> (- ex f v) = b v) \<Longrightarrow> f is b flow"
+  by(auto simp add: isbflow_def)
+
+
 text \<open>Unsurprisingly, a balance has somehow to be balanced. 
       This means, that the overall sum of demands and supplies is zero.
       In fact, for invalid balances with non-zero sum no proper flow assignment to edges exists.\<close>
@@ -499,6 +506,11 @@ lemma Rcap_same: "es \<noteq> {} \<Longrightarrow> finite es \<Longrightarrow> R
 
 lemma RcapI: "finite ES \<Longrightarrow> ES \<noteq> {} \<Longrightarrow>
                 (\<And> e. e \<in> ES \<Longrightarrow> rcap f e \<ge> th) \<Longrightarrow> Rcap f ES \<ge> th"
+    for ES f th unfolding Rcap_def 
+  using Min_gr_iff by auto
+
+lemma RcapI0: "finite ES \<Longrightarrow>
+                (\<And> e. e \<in> ES \<Longrightarrow> rcap f e \<ge> 0) \<Longrightarrow> Rcap f ES \<ge> 0"
     for ES f th unfolding Rcap_def 
     using Min_gr_iff by auto
 

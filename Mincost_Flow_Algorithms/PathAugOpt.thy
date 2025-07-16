@@ -2453,14 +2453,54 @@ lemma distinct_hpath_to_distinct_augpath_and_augcycles:
     ultimately show ?thesis using PP_CCC1_def by blast
   qed
 qed
-
+end
 subsection \<open>The final Theorem\<close>
 
 text \<open>Let us first precisely define the meanings of $s$-$t$-paths and
       minimum $s$-$t$-paths. We require distinctness.\<close>
-
+context
+cost_flow_spec
+begin
 definition "is_s_t_path f s t P = (augpath f P \<and> set P \<subseteq> \<EE> \<and> 
                                    fstv (hd P) = s \<and> sndv (last P) = t \<and> distinct P)"
+
+lemma is_s_t_pathE: "is_s_t_path f s t P  \<Longrightarrow>
+(augpath f P \<Longrightarrow> set P \<subseteq> \<EE> \<Longrightarrow>fstv (hd P) = s \<Longrightarrow> sndv (last P) = t \<Longrightarrow> distinct P \<Longrightarrow> Q) 
+\<Longrightarrow> Q"
+  by(auto simp add: is_s_t_path_def)
+
+lemma is_s_t_pathI: 
+"augpath f P \<Longrightarrow> set P \<subseteq> \<EE> \<Longrightarrow>fstv (hd P) = s \<Longrightarrow> sndv (last P) = t \<Longrightarrow> distinct P \<Longrightarrow>
+is_s_t_path f s t P "
+  by(auto simp add: is_s_t_path_def)
+
+definition "is_min_path f s t P = (is_s_t_path f s t P  \<and>
+                                   (\<forall> P'. is_s_t_path f s t P' \<longrightarrow> \<CC> P \<le> \<CC> P'))"
+
+lemma is_min_pathE:
+"is_min_path f s t P \<Longrightarrow> (is_s_t_path f s t P  \<Longrightarrow>
+                                   (\<And> P'. is_s_t_path f s t P' \<Longrightarrow> \<CC> P \<le> \<CC> P')
+                          \<Longrightarrow> Q) \<Longrightarrow>
+Q"
+  by(auto simp add: is_min_path_def)
+
+lemma is_min_pathI:
+"is_s_t_path f s t P  \<Longrightarrow>(\<And> P'. is_s_t_path f s t P' \<Longrightarrow> \<CC> P \<le> \<CC> P') 
+\<Longrightarrow> is_min_path f s t P "
+  by(auto simp add: is_min_path_def)
+
+lemma is_s_t_path_resreach: "is_s_t_path f s t P \<Longrightarrow> resreach f s t"
+and is_min_path_resreach: "is_min_path f s t P \<Longrightarrow> resreach f s t"
+and is_s_t_path_distinct: "is_s_t_path f s t P \<Longrightarrow> distinct P"
+and is_min_path_distinct: "is_min_path f s t P \<Longrightarrow> distinct P"
+and is_s_t_path_Rcap: "is_s_t_path f s t P \<Longrightarrow> Rcap f (set P) > 0"
+and is_min_path_Rcap: "is_min_path f s t P \<Longrightarrow> Rcap f (set P) > 0"
+by(auto elim!: is_s_t_pathE augpathE prepathE is_min_pathE
+       intro!: resreachI 
+     simp add: image_mono subset_mono_awalk')
+end
+context cost_flow_network
+begin
 
 text \<open>The existence of a path implies the existence of a distinct path.\<close>
 
@@ -2502,12 +2542,6 @@ proof(induction l arbitrary: P thesis rule : less_induct)
         using cs_split by (auto intro!: less(2)[of Q])
     qed
   qed
-
-
-text \<open>An $s$-$t$-path is optimum iff there is no better $s$-$t$-path.\<close>
-
-definition "is_min_path f s t P = (is_s_t_path f s t P  \<and>
-                                   (\<forall> P'. is_s_t_path f s t P' \<longrightarrow> \<CC> P \<le> \<CC> P'))"
 
 text \<open>Due to distinctness, there is always a distinct minimum cost path.\<close>
 

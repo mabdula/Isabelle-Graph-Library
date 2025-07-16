@@ -461,7 +461,7 @@ next
     ultimately show ?case 
       using no_infty_path by blast
   qed
-  have success:"return_impl (solve_maxflow.final_state_maxflow make_pair create_edge \<E>_impl \<u>_impl s t) = success"
+  have success:"return (solve_maxflow.final_state_maxflow make_pair create_edge \<E>_impl \<u>_impl s t) = success"
     using algo_locale.correctness_of_implementation(2,3)[OF no_infty_path'] return.exhaust by blast
   have max_flow_algo:"algo_locale.is_max_flow s t
  (abstract_flow_map (solve_maxflow.final_flow_impl_maxflow_original make_pair create_edge \<E>_impl \<u>_impl s t))"

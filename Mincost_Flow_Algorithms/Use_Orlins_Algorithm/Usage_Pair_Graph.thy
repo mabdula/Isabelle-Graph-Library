@@ -22,14 +22,13 @@ definition "c_list = [( (1::nat, 2::nat), 1::real),
 definition "\<c>_impl = foldr (\<lambda> xy tree. update (prod.fst xy) (prod.snd xy) tree) c_list Leaf"
 value "\<c>_impl"
 
-
 definition "final_state_pair = final_state id Pair \<E>_impl \<c>_impl \<b>_impl flow_lookup"
 value final_state_pair
 
 definition "final_flow_impl_pair = final_flow_impl id Pair \<E>_impl \<c>_impl \<b>_impl flow_lookup"
 value final_flow_impl_pair
 
-definition "final_forest = remove_all_empties(\<FF>_impl final_state_pair)"
+definition "final_forest = (\<FF> final_state_pair)"
 
 value "inorder final_flow_impl_pair"
 value "map (\<lambda> (x, y). (x, inorder y)) (inorder final_forest)"
@@ -106,12 +105,12 @@ lemma correctness_of_algo:"correctness_of_algo id \<E>_impl Pair \<b>_impl"
   by(auto intro!: correctness_of_algo.intro simp add:  bal_invar_b    \<E>_def)
 
 corollary correctness_of_implementation:
- "return_impl final_state_pair = success \<Longrightarrow>  
+ "return final_state_pair = success \<Longrightarrow>  
         cost_flow_spec.is_Opt fst snd id \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map final_flow_impl_pair)"
- "return_impl final_state_pair = failure \<Longrightarrow> 
+ "return final_state_pair = failure \<Longrightarrow> 
          \<nexists> f. flow_network_spec.isbflow  fst snd id (\<E> \<E>_impl) \<u> f (\<b> \<b>_impl)"
- "return_impl final_state_pair = notyetterm \<Longrightarrow>  
+ "return final_state_pair = notyetterm \<Longrightarrow>  
          False"
   using correctness_of_algo.correctness_of_implementation[OF correctness_of_algo no_cycle_cond]
   by(auto simp add: final_state_pair_def final_flow_impl_pair_def)

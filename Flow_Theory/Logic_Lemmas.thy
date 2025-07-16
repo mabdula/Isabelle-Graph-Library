@@ -224,4 +224,8 @@ lemma sum_split_off: "A \<subseteq> B \<Longrightarrow> finite B \<Longrightarro
   by (simp add: sum.mono_neutral_cong_right)
 
 lemma if_non_empty_finite_finite: " (A \<noteq> {} \<Longrightarrow> finite A) \<Longrightarrow> finite A" by auto
+
+lemma if_of_bools: "(if b then True else False) \<Longrightarrow> b"
+                   "(if b then False else True) \<Longrightarrow> \<not> b"
+  by argo+
 end

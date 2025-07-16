@@ -155,13 +155,12 @@ value final_state_multi
 definition "final_flow_impl_multi =  final_flow_impl make_pair create_edge \<E>_impl \<c>_impl \<b>_impl flow_lookup"
 value final_flow_impl_multi
 
-definition "final_forest = remove_all_empties(\<FF>_impl final_state_multi)"
+definition "final_forest = (\<FF> final_state_multi)"
 
 value "inorder final_flow_impl_multi"
 value "map (\<lambda> (x, y). (x, inorder y)) (inorder final_forest)"
-value "inorder (conv_to_rdg_impl final_state_multi)"
-value "inorder (not_blocked_impl final_state_multi)"
-
+value "inorder (conv_to_rdg final_state_multi)"
+value "inorder (not_blocked final_state_multi)"
 
 lemma no_cycle: "closed_w (make_pair ` \<E> \<E>_impl) (map make_pair C) \<Longrightarrow> (set C \<subseteq> \<E> \<E>_impl) \<Longrightarrow>
         foldr (\<lambda>e acc. acc + \<c> \<c>_impl flow_lookup e) C 0 < 0 \<Longrightarrow> False"
@@ -232,12 +231,12 @@ lemma correctness_of_algo:"correctness_of_algo make_pair \<E>_impl create_edge \
   by (auto intro!: correctness_of_algo.intro simp add: \<b>_impl_def bal_invar_b Vs_is_bal_dom  \<E>_def)
  
 corollary correctness_of_implementation:
- "return_impl final_state_multi = success \<Longrightarrow>  
+ "return final_state_multi = success \<Longrightarrow>  
         cost_flow_spec.is_Opt (fst o make_pair) (snd o make_pair) make_pair \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map final_flow_impl_multi)"
- "return_impl final_state_multi = failure \<Longrightarrow> 
+ "return final_state_multi = failure \<Longrightarrow> 
          \<nexists> f. flow_network_spec.isbflow  (fst o make_pair) (snd o make_pair) make_pair (\<E> \<E>_impl) \<u>  f (\<b> \<b>_impl)"
- "return_impl final_state_multi = notyetterm \<Longrightarrow>  
+ "return final_state_multi = notyetterm \<Longrightarrow>  
          False"
   using correctness_of_algo.correctness_of_implementation[OF correctness_of_algo no_cycle_cond]
   by(auto simp add: final_state_multi_def final_flow_impl_multi_def)

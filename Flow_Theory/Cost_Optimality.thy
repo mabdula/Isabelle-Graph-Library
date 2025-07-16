@@ -136,6 +136,9 @@ definition "is_Opt b f = (f is b flow \<and> (\<forall> f'. (f' is b flow \<long
 lemma is_OptI: "f is b flow \<Longrightarrow> (\<And> f'. f' is b flow \<Longrightarrow> \<C> f' \<ge> \<C> f ) \<Longrightarrow> is_Opt b f"
   by(auto simp add: is_Opt_def)
 
+lemma is_OptE: "is_Opt b f \<Longrightarrow> (f is b flow \<Longrightarrow> (\<And> f'. f' is b flow \<Longrightarrow> \<C> f' \<ge> \<C> f ) \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: is_Opt_def)
+
 lemma ex_cong: "(\<And>e. e \<in> \<E> \<Longrightarrow> f e = f' e) \<Longrightarrow>
     (\<And>v. v \<in> \<V> \<Longrightarrow> b v = b' v) \<Longrightarrow>v \<in> \<V> \<Longrightarrow>  - ex f v = b v \<Longrightarrow> - ex f' v = b' v"
   by(auto simp add: ex_def delta_minus_def delta_plus_def)

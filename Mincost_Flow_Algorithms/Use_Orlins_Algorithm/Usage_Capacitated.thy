@@ -354,7 +354,7 @@ lemma b'_impl_lookup:"x \<in> vertex ` \<V> \<union> edge ` (\<E> - infty_edges)
 
 lemma old_f_gen_final_flow_impl_original_cong:"e \<in> \<E> \<Longrightarrow>
          old_f_gen \<E> \<u> (abstract_flow_map final_flow_impl_cap) e = abstract_flow_map final_flow_impl_original e"
-  unfolding old_f_gen_def final_flow_impl_original_def Let_def  abstract_flow_map_def orlins_impl_spec.abstract_flow_map_def the_default_def
+  unfolding old_f_gen_def final_flow_impl_original_def Let_def  abstract_flow_map_def the_default_def abstract_real_map_def
   apply(subst flow_lookup_fold, simp add: flow_invar_fold flow_map.invar_empty flow_map.invar_update)+
   by (auto simp add:sym[OF infty_edges_are, simplified to_set_def]  flow_map.map_empty finite_edges_are[simplified sym[OF infty_edges_are] to_set_def])
 
@@ -631,7 +631,7 @@ qed
 
 
 corollary correctness_of_implementation_success:
- "return_impl (final_state_cap) = success \<Longrightarrow>  
+ "return (final_state_cap) = success \<Longrightarrow>  
         is_Opt \<b> (abstract_flow_map (final_flow_impl_original))"
     apply(rule is_Opt_cong[of "old_f_gen \<E> \<u> (abstract_flow_map final_flow_impl_cap)"
                                 , OF  old_f_gen_final_flow_impl_original_cong refl], simp)
@@ -649,7 +649,7 @@ corollary correctness_of_implementation_success:
                       helper1 helper2])
 
 corollary correctness_of_implementation_failure:
- "return_impl (final_state_cap) = failure \<Longrightarrow> 
+ "return (final_state_cap) = failure \<Longrightarrow> 
          \<nexists> f. isbflow  f \<b> "
 proof(rule nexistsI, goal_cases)
   case (1 f)
@@ -676,7 +676,7 @@ qed
 
 
 corollary correctness_of_implementation_excluded_case:
- "return_impl final_state_cap = notyetterm \<Longrightarrow>  False"
+ "return final_state_cap = notyetterm \<Longrightarrow>  False"
   using no_cycle_in_reduction
   by(auto intro: correctness_of_algo.correctness_of_implementation(3)
            [OF correctness_of_algo_red.correctness_of_algo_axioms, of \<c>'_impl] simp add:  final_state_cap_def)
@@ -684,11 +684,12 @@ corollary correctness_of_implementation_excluded_case:
 lemmas correctness_of_implementation = correctness_of_implementation_success 
                                        correctness_of_implementation_failure
                                        correctness_of_implementation_excluded_case
-
+(*
 lemma final_flow_domain: "dom (flow_lookup final_flow_impl_cap) = (set \<E>'_impl)"
   using correctness_of_algo.final_flow_domain[OF correctness_of_algo_red.correctness_of_algo_axioms
          no_cycle_in_reduction] 
   by(auto simp add: final_flow_impl_cap_def \<E>_def function_generation.\<E>_def[OF function_generation] to_set_def)
+*)
 end
 end
 
@@ -885,7 +886,7 @@ lemma abstract_flows_are:"abstract_flow_map final_flow_impl_maxflow_original =
 (\<lambda>e. abstract_flow_map final_flow_impl_maxflow (old_edge e))"
   using dom_final_flow_impl_maxflow
   by (fastforce simp add: flow_lookup_fold flow_map.invar_empty the_default_def
-            flow_map.map_empty \<E>_impl'_def dom_def  orlins_impl_spec.abstract_flow_map_def
+            flow_map.map_empty \<E>_impl'_def dom_def abstract_real_map_def
              final_flow_impl_maxflow_original_def abstract_flow_map_def)
 
 lemma multigraph': "multigraph (fst \<circ> make_pair') (snd \<circ> make_pair') make_pair' create_edge' (set \<E>_impl')" 
@@ -1071,7 +1072,7 @@ proof(rule nexistsI, goal_cases)
 qed
 
 lemma correctness_of_implementation_success:
- "return_impl final_state_maxflow = success \<Longrightarrow> is_max_flow s t (abstract_flow_map local.final_flow_impl_maxflow_original)"
+ "return final_state_maxflow = success \<Longrightarrow> is_max_flow s t (abstract_flow_map local.final_flow_impl_maxflow_original)"
   apply(rule maxflow_to_mincost_flow_reduction(4)[OF s_in_V t_in_V s_neq_t _ abstract_flows_are])+
   apply(subst E'_are)
   apply(rule capacity_Opt_cong[OF cost_flow_network2 cost_flow_network1 capacity_cong], simp)
@@ -1088,7 +1089,7 @@ lemma correctness_of_implementation_success:
 notation is_s_t_flow ( "_ is _ -- _ flow")
 
 lemma correctness_of_implementation_failure:
- "return_impl final_state_maxflow = failure \<Longrightarrow> False"
+ "return final_state_maxflow = failure \<Longrightarrow> False"
 proof(rule ccontr,  goal_cases)
   case 1
   have f_prop: "(\<lambda> x. 0) is s -- t flow" 
@@ -1127,7 +1128,7 @@ proof(rule ccontr,  goal_cases)
  qed
 
 lemma correctness_of_implementation_excluded_case:
- "return_impl final_state_maxflow = notyetterm \<Longrightarrow> False"
+ "return final_state_maxflow = notyetterm \<Longrightarrow> False"
   using with_capacity_proofs  no_infinite_cycle[simplified \<c>'_def o_apply c_lookup'_def \<u>'_def edge_wrapper.case_distrib[of the]
                                            option.sel \<E>_impl'_def] 
      by (intro with_capacity_proofs.correctness_of_implementation_excluded_case[of \<c>_impl' \<b>_impl' c_lookup' make_pair'
@@ -1142,9 +1143,6 @@ lemmas correctness_of_implementation = correctness_of_implementation_success
   
 end
 end
-
-  
-term final_state_maxflow
  
 value "final_state_maxflow id Pair \<E>_impl \<u>_impl 1 3"
 value "final_flow_impl_maxflow id Pair \<E>_impl \<u>_impl 1 3"
