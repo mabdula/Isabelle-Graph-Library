@@ -336,8 +336,6 @@ abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equ
 definition neighbourhood::"'adjmap \<Rightarrow> 'a \<Rightarrow> 'vset" where
   "neighbourhood G v = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
 
-lemmas [code] = neighbourhood_def
-
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
 definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
@@ -372,6 +370,140 @@ lemma good_graph_invarI:
                (\<And> v N. (lookup G v) = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> good_graph_invar G"
   by(auto simp add: good_graph_invar_def)
 
+definition "insert_undirected_edge u v forst = (let vsets_u = neighbourhood forst u;
+                                                    vsets_v = neighbourhood forst v;
+                                                    vset_u_new = vset_insert v vsets_u;
+                                                    vset_v_new = vset_insert u vsets_v
+                                                 in update v vset_v_new (
+                                                    update u vset_u_new forst))"
+lemmas [code] = neighbourhood_def insert_undirected_edge_def
+lemma insert_digraph_abstraction[simp]:
+  assumes "adjmap_inv ff " 
+          "(\<And> x N. lookup ff x = Some N \<longrightarrow> vset_inv N)"
+   shows "digraph_abs (insert_undirected_edge u v ff) =  (digraph_abs ff) \<union> {(u, v), (v, u)}"
+  unfolding insert_undirected_edge_def Let_def neighbourhood_def digraph_abs_def
+proof(rule, all \<open>rule\<close>,  goal_cases)
+  case (1 e)
+  then show ?case 
+  proof(cases e,  goal_cases)
+    case (1 a b)
+    then show ?case 
+      apply(cases "lookup ff v")
+      apply(all \<open>cases "lookup ff a"\<close>)
+      apply(all \<open>cases "lookup ff u"\<close>)
+      apply(all \<open>cases "a = v"\<close>)
+      apply(all \<open>cases "a = u"\<close>)
+      by (auto simp add: adjmap.map_update[OF adjmap.invar_update[OF assms(1)]]
+                         adjmap.map_update[OF assms(1)] 
+                         vset.set.set_isin[OF vset.set.invar_insert[OF vset.set.invar_empty]]
+                         vset.set.set_insert[OF vset.set.invar_empty] vset.set.set_empty
+                          assms(2) vset.set.invar_insert vset.set.set_insert vset.set.set_isin)     
+  qed
+next
+  case (2 e)
+  then show ?case 
+  proof(cases e,  goal_cases)
+    case (1 a b)
+    then show ?case 
+      apply(cases "lookup ff v")
+      apply(all \<open>cases "lookup ff a"\<close>)
+      apply(all \<open>cases "lookup ff u"\<close>)
+      apply(all \<open>cases "a = v"\<close>)
+      apply(all \<open>cases "a = u"\<close>)
+      by (auto simp add: adjmap.map_update[OF adjmap.invar_update[OF assms(1)]]
+                         adjmap.map_update[OF assms(1)] 
+                         vset.set.set_isin[OF vset.set.invar_insert[OF vset.set.invar_empty]]
+                         vset.set.set_insert[OF vset.set.invar_empty] vset.set.set_empty
+                          assms(2) vset.set.invar_insert vset.set.set_insert vset.set.set_isin 
+                          vset.emptyD(3) vset.set.invar_empty)
+  qed
+qed
+
+lemma insert_abstraction[simp]:
+  assumes "adjmap_inv ff " 
+          "(\<And> x N. lookup ff x = Some N \<longrightarrow> vset_inv N)"
+        shows "to_graph (insert_undirected_edge u v ff) = insert {u, v} (to_graph ff)"
+  by(auto simp add: to_graph'_def insert_digraph_abstraction[OF assms])
+
+lemma insert_abstraction':
+  assumes "good_graph_invar ff"
+  shows "to_graph (insert_undirected_edge u v ff) = insert {u, v} (to_graph ff)"
+  using assms  by (auto elim: good_graph_invarE)
+
+lemma predicate_cong: "a = b \<Longrightarrow> c = d \<Longrightarrow> P a c \<Longrightarrow> P b d"
+  by simp
+
+lemma insert_undirected_edge_symmetric:
+  assumes "adjmap_inv ff " 
+          "(\<And> x N. lookup ff x = Some N \<longrightarrow> vset_inv N)"
+          "\<And> x y. (x, y) \<in> digraph_abs ff \<Longrightarrow> (y, x) \<in> digraph_abs ff"
+    shows "\<And> x y. (x, y) \<in> digraph_abs (insert_undirected_edge x y ff) 
+                   \<Longrightarrow> (y, x) \<in> digraph_abs (insert_undirected_edge x y ff)"
+  by (simp add: assms(1,2))
+
+lemma adjmap_inv_pres_insert_undirected_edge:"adjmap_inv ff \<Longrightarrow> adjmap_inv (insert_undirected_edge a b ff)"
+  unfolding insert_undirected_edge_def
+  by(auto intro: adjmap.invar_update)
+
+lemma insert_undirected_edge_good_graph_invar_pres:
+  assumes "good_graph_invar ff" 
+  shows "good_graph_invar (insert_undirected_edge a b ff)"
+proof(rule  good_graph_invarI, goal_cases)
+  case 1
+  then show ?case 
+    using adjmap_inv_pres_insert_undirected_edge assms good_graph_invar_def by blast
+next
+  case (2 v N)
+  have adjmap_inv: "adjmap_inv ff " 
+     and vset_inv: "\<And>v N. lookup ff v = Some N \<Longrightarrow> vset_inv N"
+    using good_graph_invarE[OF assms(1)] by auto
+  from 2 show ?case
+    apply(cases "lookup ff b")
+     apply(all \<open>cases "lookup ff a"\<close>)
+    apply(all \<open>cases "v = b"\<close>)
+    apply(all \<open>cases "v = a"\<close>)
+    by(auto simp add: insert_undirected_edge_def neighbourhood_def
+            adjmap.map_update[OF adjmap.invar_update[OF adjmap_inv]]
+                         adjmap.map_update[OF adjmap_inv] 
+                         vset.set.set_isin[OF vset.set.invar_insert[OF vset.set.invar_empty]]
+                         vset.set.set_insert[OF vset.set.invar_empty] vset.set.set_empty
+                         vset.set.invar_insert vset.set.set_insert vset.set.set_isin 
+                         vset.emptyD(3) vset.set.invar_empty
+         intro: vset_inv vset.set.invar_insert)
+next
+  case 3
+  have adjmap_inv: "adjmap_inv ff " 
+     and vset_inv: "\<And>v N. lookup ff v = Some N \<Longrightarrow> vset_inv N"
+       and finite: "finite {v. lookup ff v \<noteq> None}"
+    using good_graph_invarE[OF assms(1)] by auto
+  have finite_after: "finite {v. v \<noteq> a \<longrightarrow> v \<noteq> b \<longrightarrow> (\<exists>y. lookup ff v = Some y)}"
+    using finite by (auto intro: rev_finite_subset[of "{v. lookup ff v \<noteq> None} \<union> {a, b}"])
+  from 3 show ?case
+    apply(cases "lookup ff b")
+    apply(all \<open>cases "lookup ff a"\<close>)
+    using  finite_after
+    by(auto simp add: insert_undirected_edge_def neighbourhood_def
+            adjmap.map_update[OF adjmap.invar_update[OF adjmap_inv]]
+                         adjmap.map_update[OF adjmap_inv])
+next
+  case (4 v N)
+  have adjmap_inv: "adjmap_inv ff " 
+     and vset_inv: "\<And>v N. lookup ff v = Some N \<Longrightarrow> vset_inv N"
+       and finite: "finite {v. lookup ff v \<noteq> None}"
+and finite_neighbs: "\<And>v N. lookup ff v = Some N \<Longrightarrow> finite [N]\<^sub>s"
+    using good_graph_invarE[OF assms(1)] by auto
+  from 4 show ?case 
+    apply(cases "lookup ff b")
+    apply(all \<open>cases "lookup ff a"\<close>)
+    apply(all \<open>cases "v = b"\<close>)
+    apply(all \<open>cases "v = a"\<close>)
+    by(auto simp add: insert_undirected_edge_def neighbourhood_def
+            adjmap.map_update[OF adjmap.invar_update[OF adjmap_inv]]
+                         adjmap.map_update[OF adjmap_inv]
+           vset.set.invar_empty vset.set.set_empty vset.set.set_insert
+           finite_neighbs  vset_inv
+            intro:  finite_neighbs)
+qed
 end
 
 context Map
@@ -383,7 +515,7 @@ end
 locale algo_spec = alg where fst="fst::'edge_type \<Rightarrow> 'a" +  Set3
  where get_from_set = "get_from_set::('edge_type \<Rightarrow> bool) \<Rightarrow> 'e \<Rightarrow> 'edge_type option"
  +
- Adj_Map_Specs2 where  update =  "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd" +
+adj_map_specs: Adj_Map_Specs2 where  update =  "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd" +
 flow_map: map_update_all  flow_empty "flow_update::'edge_type \<Rightarrow> real \<Rightarrow> 'f_impl \<Rightarrow> 'f_impl"
                 flow_delete flow_lookup flow_invar flow_update_all+
 bal_map: Map  bal_empty "bal_update:: 'a \<Rightarrow> real \<Rightarrow> 'b_impl \<Rightarrow> 'b_impl" 
@@ -407,6 +539,26 @@ and  get_max::"('a \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'b_impl 
   and empty_forest::"'d"
   and N::nat
 begin
+
+abbreviation "digraph_abs \<equiv> adj_map_specs.digraph_abs"
+abbreviation "to_graph \<equiv> adj_map_specs.to_graph"
+abbreviation "neighbourhood' \<equiv> adj_map_specs.neighbourhood"
+abbreviation "insert_undirected_edge \<equiv> adj_map_specs.insert_undirected_edge"
+abbreviation "good_graph_invar \<equiv> adj_map_specs.good_graph_invar"
+
+lemmas in_to_graphE = adj_map_specs.in_to_graphE
+lemmas good_graph_invarE=adj_map_specs.good_graph_invarE
+lemmas to_graph_def=adj_map_specs.to_graph_def
+lemmas good_graph_invar_def=adj_map_specs.good_graph_invar_def
+lemmas digraph_abs_def=adj_map_specs.digraph_abs_def
+lemmas insert_undirected_edge_def=adj_map_specs.insert_undirected_edge_def
+lemmas neighbourhood'_def=adj_map_specs.neighbourhood_def
+lemmas good_graph_invarI=adj_map_specs.good_graph_invarI
+lemmas to_graph'_def=adj_map_specs.to_graph'_def
+lemmas dVs_Vs_same=adj_map_specs.dVs_Vs_same
+lemmas insert_abstraction'=adj_map_specs.insert_abstraction'
+lemmas insert_undirected_edge_good_graph_invar_pres=
+     adj_map_specs.insert_undirected_edge_good_graph_invar_pres
 
 lemmas rep_comp_update_all = rep_comp_map.update_all
 lemmas not_blocked_update_all = not_blocked_map.update_all
@@ -468,13 +620,6 @@ fun to_redge_path where
 "to_redge_path to_rdg [u,v] = [abstract_conv_map to_rdg (u,v)]"|
 "to_redge_path to_rdg (u#v#vs) = ((abstract_conv_map to_rdg (u,v)) # to_redge_path to_rdg (v#vs))"|
 "to_redge_path  _ _ = []"
-
-definition "insert_undirected_edge u v forst = (let vsets_u = neighbourhood forst u;
-                                                    vsets_v = neighbourhood forst v;
-                                                    vset_u_new = vset_insert v vsets_u;
-                                                    vset_v_new = vset_insert u vsets_v
-                                                 in edge_map_update v vset_v_new (
-                                                    edge_map_update u vset_u_new forst))"
 
 definition "\<F> (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
      \<equiv>  oedge ` ((abstract_conv_map (conv_to_rdg state)) ` (digraph_abs (\<FF> state)))"
@@ -1223,6 +1368,7 @@ add_direction_def
 move_def
 to_redge_path.simps
 insert_undirected_edge_def
+neighbourhood'_def
 end
 
 locale algo =  cost_flow_network where fst = fst +
@@ -1247,9 +1393,9 @@ lemma "oedge e \<in> \<E> \<Longrightarrow> f (oedge e ) \<ge> thr \<Longrightar
 
 lemma empty_forest_empty: "digraph_abs empty_forest = {}"
                           "to_graph empty_forest = {}"
- by(auto simp add: digraph_abs_def to_graph_def UD_def neighbourhood_def
-                   empty_forest_axioms(1) vset.set.invar_empty vset.set.set_empty
-                   vset.set.set_isin)
+ by(auto simp add: digraph_abs_def to_graph_def UD_def neighbourhood'_def
+                   empty_forest_axioms(1) adj_map_specs.vset.set.invar_empty adj_map_specs.vset.set.set_empty
+                   adj_map_specs.vset.set.set_isin)
 
 lemma empty_forest_good_graph:
 "good_graph_invar empty_forest"
@@ -1606,136 +1752,6 @@ proof(induction Q rule: edges_of_path.induct)
            by (auto simp add: dVs_def)
     qed auto
  qed auto
-
-lemma insert_digraph_abstraction[simp]:
-  assumes "adjmap_inv ff " 
-          "(\<And> x N. lookup ff x = Some N \<longrightarrow> vset_inv N)"
-   shows "digraph_abs (insert_undirected_edge u v ff) =  (digraph_abs ff) \<union> {(u, v), (v, u)}"
-  unfolding insert_undirected_edge_def Let_def neighbourhood_def digraph_abs_def
-proof(rule, all \<open>rule\<close>,  goal_cases)
-  case (1 e)
-  then show ?case 
-  proof(cases e,  goal_cases)
-    case (1 a b)
-    then show ?case 
-      apply(cases "lookup ff v")
-      apply(all \<open>cases "lookup ff a"\<close>)
-      apply(all \<open>cases "lookup ff u"\<close>)
-      apply(all \<open>cases "lookup (edge_map_update v (vset_insert u \<emptyset>\<^sub>N) (edge_map_update u (vset_insert v \<emptyset>\<^sub>N) ff)) a"\<close>)
-      apply(all \<open>cases "a = v"\<close>)
-      apply(all \<open>cases "a = u"\<close>)
-      by (auto simp add: adjmap.map_update[OF adjmap.invar_update[OF assms(1)]]
-                         adjmap.map_update[OF assms(1)] 
-                         vset.set.set_isin[OF vset.set.invar_insert[OF vset.set.invar_empty]]
-                         vset.set.set_insert[OF vset.set.invar_empty] vset.set.set_empty
-                          assms(2) vset.set.invar_insert vset.set.set_insert vset.set.set_isin)     
-  qed
-next
-  case (2 e)
-  then show ?case 
-  proof(cases e,  goal_cases)
-    case (1 a b)
-    then show ?case 
-      apply(cases "lookup ff v")
-      apply(all \<open>cases "lookup ff a"\<close>)
-      apply(all \<open>cases "lookup ff u"\<close>)
-      apply(all \<open>cases "lookup (edge_map_update v (vset_insert u \<emptyset>\<^sub>N) (edge_map_update u (vset_insert v \<emptyset>\<^sub>N) ff)) a"\<close>)
-      apply(all \<open>cases "a = v"\<close>)
-      apply(all \<open>cases "a = u"\<close>)
-      by (auto simp add: adjmap.map_update[OF adjmap.invar_update[OF assms(1)]]
-                         adjmap.map_update[OF assms(1)] 
-                         vset.set.set_isin[OF vset.set.invar_insert[OF vset.set.invar_empty]]
-                         vset.set.set_insert[OF vset.set.invar_empty] vset.set.set_empty
-                          assms(2) vset.set.invar_insert vset.set.set_insert vset.set.set_isin 
-                          vset.emptyD(3) vset.set.invar_empty)
-  qed
-qed
-
-lemma insert_abstraction[simp]:
-  assumes "adjmap_inv ff " 
-          "(\<And> x N. lookup ff x = Some N \<longrightarrow> vset_inv N)"
-        shows "to_graph (insert_undirected_edge u v ff) = insert {u, v} (to_graph ff)"
-  by(auto simp add: to_graph'_def insert_digraph_abstraction[OF assms])
-
-lemma insert_abstraction':
-  assumes "good_graph_invar ff"
-  shows "to_graph (insert_undirected_edge u v ff) = insert {u, v} (to_graph ff)"
-  using assms  by (auto elim: good_graph_invarE)
-
-lemma predicate_cong: "a = b \<Longrightarrow> c = d \<Longrightarrow> P a c \<Longrightarrow> P b d"
-  by simp
-
-lemma insert_undirected_edge_symmetric:
-  assumes "adjmap_inv ff " 
-          "(\<And> x N. lookup ff x = Some N \<longrightarrow> vset_inv N)"
-          "\<And> x y. (x, y) \<in> digraph_abs ff \<Longrightarrow> (y, x) \<in> digraph_abs ff"
-    shows "\<And> x y. (x, y) \<in> digraph_abs (insert_undirected_edge x y ff) 
-                   \<Longrightarrow> (y, x) \<in> digraph_abs (insert_undirected_edge x y ff)"
-  by (simp add: assms(1,2))
-
-lemma adjmap_inv_pres_insert_undirected_edge:"adjmap_inv ff \<Longrightarrow> adjmap_inv (insert_undirected_edge a b ff)"
-  unfolding insert_undirected_edge_def
-  by(auto intro: adjmap.invar_update)
-
-lemma insert_undirected_edge_good_graph_invar_pres:
-  assumes "good_graph_invar ff" 
-  shows "good_graph_invar (insert_undirected_edge a b ff)"
-proof(rule  good_graph_invarI, goal_cases)
-  case 1
-  then show ?case 
-    using adjmap_inv_pres_insert_undirected_edge assms good_graph_invar_def by blast
-next
-  case (2 v N)
-  have adjmap_inv: "adjmap_inv ff " 
-     and vset_inv: "\<And>v N. lookup ff v = Some N \<Longrightarrow> vset_inv N"
-    using good_graph_invarE[OF assms(1)] by auto
-  from 2 show ?case
-    apply(cases "lookup ff b")
-     apply(all \<open>cases "lookup ff a"\<close>)
-    apply(all \<open>cases "v = b"\<close>)
-    apply(all \<open>cases "v = a"\<close>)
-    by(auto simp add: insert_undirected_edge_def neighbourhood_def
-            adjmap.map_update[OF adjmap.invar_update[OF adjmap_inv]]
-                         adjmap.map_update[OF adjmap_inv] 
-                         vset.set.set_isin[OF vset.set.invar_insert[OF vset.set.invar_empty]]
-                         vset.set.set_insert[OF vset.set.invar_empty] vset.set.set_empty
-                         vset.set.invar_insert vset.set.set_insert vset.set.set_isin 
-                         vset.emptyD(3) vset.set.invar_empty
-         intro: vset_inv vset.set.invar_insert)
-next
-  case 3
-  have adjmap_inv: "adjmap_inv ff " 
-     and vset_inv: "\<And>v N. lookup ff v = Some N \<Longrightarrow> vset_inv N"
-       and finite: "finite {v. lookup ff v \<noteq> None}"
-    using good_graph_invarE[OF assms(1)] by auto
-  have finite_after: "finite {v. v \<noteq> a \<longrightarrow> v \<noteq> b \<longrightarrow> (\<exists>y. lookup ff v = Some y)}"
-    using finite by (auto intro: rev_finite_subset[of "{v. lookup ff v \<noteq> None} \<union> {a, b}"])
-  from 3 show ?case
-    apply(cases "lookup ff b")
-    apply(all \<open>cases "lookup ff a"\<close>)
-    using  finite_after
-    by(auto simp add: insert_undirected_edge_def neighbourhood_def
-            adjmap.map_update[OF adjmap.invar_update[OF adjmap_inv]]
-                         adjmap.map_update[OF adjmap_inv])
-next
-  case (4 v N)
-  have adjmap_inv: "adjmap_inv ff " 
-     and vset_inv: "\<And>v N. lookup ff v = Some N \<Longrightarrow> vset_inv N"
-       and finite: "finite {v. lookup ff v \<noteq> None}"
-and finite_neighbs: "\<And>v N. lookup ff v = Some N \<Longrightarrow> finite [N]\<^sub>s"
-    using good_graph_invarE[OF assms(1)] by auto
-  from 4 show ?case 
-    apply(cases "lookup ff b")
-    apply(all \<open>cases "lookup ff a"\<close>)
-    apply(all \<open>cases "v = b"\<close>)
-    apply(all \<open>cases "v = a"\<close>)
-    by(auto simp add: insert_undirected_edge_def neighbourhood_def
-            adjmap.map_update[OF adjmap.invar_update[OF adjmap_inv]]
-                         adjmap.map_update[OF adjmap_inv]
-           vset.set.invar_empty vset.set.set_empty vset.set.set_insert
-           finite_neighbs  vset_inv
-            intro:  finite_neighbs)
-qed
 
 lemma Phi_nonneg: "invar_gamma state\<Longrightarrow> \<Phi> state \<ge> 0"
   unfolding \<Phi>_def invar_gamma_def

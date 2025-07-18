@@ -6,9 +6,19 @@ locale multigraph_spec =
   fixes \<E>::"'edge_type set"
 and fst::"'edge_type \<Rightarrow> 'a"
 and snd::"'edge_type \<Rightarrow> 'a"
-and make_pair::"'edge_type \<Rightarrow> 'a \<times> 'a"
 and create_edge:: "'a \<Rightarrow> 'a \<Rightarrow> 'edge_type"
 begin
+
+definition "make_pair e = (fst e, snd e)"
+
+lemmas [code] = make_pair_def
+
+lemma make_pair:"\<And> e x y. fst e = x \<Longrightarrow> snd e = y \<Longrightarrow> make_pair e = (x,y)"
+  by(auto simp add: make_pair_def)
+
+lemma make_pair_function:
+"make_pair = (\<lambda> e. (fst e, snd e))"
+  by(auto simp add: make_pair_def)
 
 abbreviation "\<V> \<equiv> dVs (make_pair ` \<E>)"
 subsection \<open>Basic Definitions\<close>
@@ -86,11 +96,14 @@ lemma in_delta_minusD:
   by(auto simp add: multigraph_spec.delta_minus_def)
 
 locale multigraph = multigraph_spec where \<E> = "\<E>::'edge_type set" for \<E> +
-assumes make_pair:"\<And> e x y. fst e = x \<Longrightarrow> snd e = y \<Longrightarrow> make_pair e = (x,y)"
-assumes create_edge: "\<And> x y. make_pair (create_edge x y) = (x, y)"
+assumes fst_create_edge:"\<And> x y. fst (create_edge x y) = x"
+assumes snd_create_edge:"\<And> x y. snd (create_edge x y) = y"
 assumes finite_E: "finite \<E>" 
 assumes E_not_empty: "\<E> \<noteq> {}"
 begin
+
+lemma  create_edge: "\<And> x y. make_pair (create_edge x y) = (x, y)"
+  by(auto simp add: make_pair_def fst_create_edge snd_create_edge)
 
 lemmas make_pair' = make_pair[OF refl refl]
 

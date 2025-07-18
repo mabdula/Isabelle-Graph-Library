@@ -1139,12 +1139,12 @@ and conservative_weights: "\<nexists> C. closed_w (make_pair ` \<E>) (map make_p
 
 begin
 
-lemma Scaling_from_this[simp]: "Scaling snd make_pair create_edge \<u> \<c> \<E> \<b> fst get_source_target_path" 
+lemma Scaling_from_this[simp]: "Scaling snd  create_edge \<u> \<c> \<E> \<b> fst get_source_target_path" 
   by (simp add: Scaling_axioms)
 
 text \<open>For all $L$.\<close>
 
-lemma SSP_from_this[simp]: "\<And> L . SSP snd make_pair create_edge  \<u> \<c> \<E>  \<b> fst L (get_source_target_path L)"
+lemma SSP_from_this[simp]: "\<And> L . SSP snd create_edge  \<u> \<c> \<E>  \<b> fst L (get_source_target_path L)"
   using Scaling_axioms unfolding Scaling_def Scaling_axioms_def SSP_axioms_def SSP_def
   by(auto simp add: get_source_target_path_axioms)
 
@@ -1152,9 +1152,9 @@ subsubsection \<open>Function Setup\<close>
 
 text \<open>The inner loop is parametrized by some threshold $L$.\<close>
 
-definition "ssp (L::nat) = SSP.SSP  make_pair \<u> \<E> (get_source_target_path L)"
+definition "ssp (L::nat) = SSP.SSP snd \<u> \<E> fst (get_source_target_path L)"
 
-definition "ssp_dom L  state = SSP.SSP_dom make_pair \<u> \<E> (get_source_target_path L) state"
+definition "ssp_dom L  state = SSP.SSP_dom snd \<u> \<E> fst (get_source_target_path L) state"
 
 text \<open>The outer loop is realized by recursion on $l$. The threshold value $L$ is then $2^l$.
 If the inner loop  already successful, then a minimum cost flow was found.
@@ -1344,17 +1344,17 @@ lemma invar_combI: "invar1 state \<Longrightarrow> invar2 state \<Longrightarrow
 named_theorems invar_holds_intros
 
 text \<open>Preservation during recursion.\<close>
-thm  SSP.invar_1_holds[of   _ _ _ _ _ _ _ _ "2^k -1", OF SSP_from_this]
+thm  SSP.invar_1_holds[of   _ _ _ _ _ _ _  "2^k -1", OF SSP_from_this]
 
 lemma invar_comb_holds_4[invar_holds_intros]: 
       "\<lbrakk>Scaling_call_4_cond k state; invar_comb  state \<rbrakk>  \<Longrightarrow> invar_comb(Scaling_upd4 k state)"
   unfolding Scaling_upd4_def Let_def
   apply(rule Scaling_call_4_condE, simp, rule invar_combI)
   apply(all \<open>rule invar_combE[of state]\<close>)
-  using  SSP.invar_1_holds[of   _ _ _ _ _ _ _ _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_2_holds[of   _ _ _ _ _ _ _ _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_3_holds[of   _ _ _ _ _ _ _ _ "2^k -1", OF SSP_from_this, of state]
-           SSP.integral_balance_termination[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+  using  SSP.invar_1_holds[of   _ _ _ _ _ _ _  "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_2_holds[of   _ _ _ _ _ _ _  "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_3_holds[of   _ _ _ _ _ _ _  "2^k -1", OF SSP_from_this, of state]
+           SSP.integral_balance_termination[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
   by(auto  simp add:  ssp_def)
 
      
@@ -1362,10 +1362,10 @@ lemma invar_comb_holds_1[invar_holds_intros]:
        "\<lbrakk>Scaling_ret_1_cond k state; invar_comb  state \<rbrakk>  \<Longrightarrow> invar_comb(Scaling_ret1 k state)"
   apply(rule invar_combI)
   apply(all \<open>rule invar_combE[of state]\<close>)
-  using  SSP.invar_1_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_2_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_3_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.integral_balance_termination[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+  using  SSP.invar_1_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_2_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_3_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.integral_balance_termination[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
   by(auto simp add:  ssp_def  Scaling_ret1_def)
 
 lemma invar_comb_holds_2[invar_holds_intros]: 
@@ -1373,10 +1373,10 @@ lemma invar_comb_holds_2[invar_holds_intros]:
             \<Longrightarrow> invar_comb(Scaling_ret2 k state)"
   apply(rule invar_combI)
   apply(all \<open>rule invar_combE[of state]\<close>)
-  using  SSP.invar_1_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_2_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_3_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.integral_balance_termination[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+  using  SSP.invar_1_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_2_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_3_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.integral_balance_termination[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
   by(auto simp add:  ssp_def  Scaling_ret2_def)
 
 lemma reset_return_invar1_pres: "invar1 state \<Longrightarrow> invar1 (state \<lparr> return:= val \<rparr>)"
@@ -1392,10 +1392,10 @@ lemma invar_comb_holds_3[invar_holds_intros]:
        "\<lbrakk>Scaling_ret_3_cond k state; invar_comb  state \<rbrakk>  \<Longrightarrow> invar_comb(Scaling_ret3 k state)"
    apply(rule invar_combI)
   apply(all \<open>rule invar_combE[of state]\<close>)
-  using  SSP.invar_1_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_2_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_3_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.integral_balance_termination[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+  using  SSP.invar_1_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_2_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_3_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.integral_balance_termination[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
            reset_return_invar1_pres[of state failure] reset_return_invar2_pres[of state failure]
            reset_return_invar3_pres[of state failure]
   by(auto simp add:  ssp_def  Scaling_ret3_def invar1_def invar2_def invar3_def) 
@@ -1546,7 +1546,7 @@ lemma invar3_initial_state:
 text \<open>Finally, we obtain total correctness and completeness for the initial state and threshold value $L$.\<close>
 
 theorem total_correctness:
-  assumes "L = \<lceil> log 2 (max 1 (0.5 * (\<Sum> v \<in> \<V>. abs (\<b> v))))\<rceil>"
+  assumes "L = \<lceil> log 2 (max 1 ((\<Sum> v \<in> \<V>. abs (\<b> v))/2))\<rceil>"
           "final = Scaling L \<lparr>current_flow = (\<lambda> e. 0), balance = \<b>,  return = notyetterm\<rparr>"
   shows   "return final = success \<Longrightarrow> is_Opt \<b> (current_flow final)" (is "?succ \<Longrightarrow> ?opt")
           "return final = failure \<Longrightarrow> \<nexists> f. f is \<b> flow" (is "?fail \<Longrightarrow> ?noopt")

@@ -103,6 +103,26 @@ subsection \<open>Decomposition of $s$-$t$-Flows\<close>
 fun make_pair' where
   "make_pair' (old_edge e) = ((fst e), (snd e))"|
   "make_pair' (new_edge e) = ( (fst e), (snd e))"
+
+fun fst' where
+"fst' (old_edge e) = fst e"|
+"fst' (new_edge e) = fst e"
+
+fun snd' where
+"snd' (old_edge e) = snd e"|
+"snd' (new_edge e) = snd e"
+
+lemma make_pair'_alt: "make_pair' = (\<lambda> e. case e of old_edge e \<Rightarrow> (fst e, snd e) |
+                                           new_edge e \<Rightarrow> (fst e, snd e))"
+  by(auto split: edge_wrapper.split)
+
+lemma fst'_def2: "fst' = case_edge_wrapper fst fst"
+                 "case_edge_wrapper fst fst = fst'"
+  by(auto intro!: ext split: edge_wrapper.split)
+
+lemma snd'_def2: "snd' = case_edge_wrapper snd snd"
+                 "case_edge_wrapper snd snd =snd'"
+  by(auto intro!: ext split: edge_wrapper.split)
 end
 context flow_network
 begin
@@ -115,21 +135,54 @@ fun create_edge' where
 fun get_old_edge where
   "get_old_edge (old_edge e) = e"
 
-definition "fst' = prod.fst o make_pair'"
-definition "snd' = prod.snd o make_pair'" 
+lemma fst'_def: "fst' = prod.fst o make_pair'" 
+  apply(rule ext)
+  subgoal for x
+    by(cases x) auto
+  done
+lemma snd'_def: "snd' = prod.snd o make_pair'" 
+  apply(rule ext)
+  subgoal for x
+    by(cases x) auto
+  done
+
+lemma make_pair'_is_make_pair_of_get_old_edge:
+  assumes "X \<subseteq> old_edge ` Y"
+shows "make_pair' ` X = make_pair ` get_old_edge ` X"
+proof-
+  obtain Yr where Yr: "X = old_edge ` Yr" 
+    using assms by blast
+  show ?thesis
+    unfolding Yr
+    by (metis (no_types, lifting) case_edge_wrapper_make_pair edge_wrapper.simps(5)
+        flow_network.get_old_edge.simps flow_network_axioms image_cong image_image)
+qed
+
+lemma map_make_pair'_is_make_pair_of_get_old_edge:
+  assumes "set X \<subseteq> old_edge ` Y"
+shows "map make_pair'  X = map (make_pair o get_old_edge) X"
+  using assms
+  by(induction X) (auto simp add: make_pair)
+
 
 lemma  fst_of_wrapped_edges:"fst x1 = fst' (old_edge x1)" "snd x1 = snd' (old_edge x1)"
   "fst x1 = fst' (new_edge x1)" "snd x1 = snd' (new_edge x1)"
   by (auto simp add: fst'_def snd'_def)
 
 interpretation network_of_network: flow_network where
-  fst = fst' and snd = snd' and make_pair = make_pair' and create_edge = create_edge'
+  fst = fst' and snd = snd' and create_edge = create_edge'
   and \<E> = "old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
   and \<u> = " (\<lambda> e. case e of  old_edge e \<Rightarrow> \<u> e |  _ \<Rightarrow> sum \<u> \<E>)"
   using  make_pair create_edge  E_not_empty u_non_neg make_pair'.elims[of "create_edge' _ _", OF refl] u_sum_pos
   by(auto simp add: finite_E make_pair[OF refl refl] create_edge 
       flow_network_axioms_def flow_network_def multigraph_def fst'_def snd'_def
       split: edge_wrapper.split)
+
+lemma make_pair'_is: "network_of_network.make_pair = make_pair'"
+                     "make_pair' = network_of_network.make_pair"
+  using fst'_def network_of_network.fstv.simps(1) network_of_network.sndv.simps(1)
+    network_of_network.to_vertex_pair.simps(1) network_of_network.to_vertex_pair_fst_snd snd'_def
+  by auto
 
 lemma s_t_flow_decomposition:
   assumes "f is s -- t flow"
@@ -170,7 +223,7 @@ proof(cases "Abs f > 0", goal_cases)
   proof(rule network_of_network.is_circI , goal_cases)
     case (1 v)
     hence v_possibilities: "(v \<noteq> s \<and> v \<noteq> t \<and> v \<in> \<V>) \<or> v = s \<or> v = t " 
-      using create_edge make_pair' by ( auto simp add:  dVs_def) blast+
+      using create_edge make_pair' by ( auto simp add:  dVs_def make_pair'_is(1)) blast+
     have disj3E: "A \<or> B \<or> C  \<Longrightarrow> 
                   (A \<Longrightarrow> P) \<Longrightarrow> (B \<Longrightarrow> P) \<Longrightarrow> (C \<Longrightarrow> P) 
                   \<Longrightarrow> P" for A B C D P by auto
@@ -318,10 +371,10 @@ filter (\<lambda> x. \<not> set (prod.fst x) \<subseteq> old_edge ` \<E>) css_ws
       by (force simp add:  cs_prop(3))+
     have "awalk UNIV (prod.fst (make_pair' (hd cs))) (map make_pair' cs)
      (prod.fst (make_pair' (hd cs)))"
-      using cs_further_prop(1) unfolding
-        network_of_network.flowcycle_def 
-      unfolding network_of_network.flowpath_def network_of_network.multigraph_path_def
-      by(auto simp add: snd'_def fst'_def) 
+      using cs_further_prop(1) fst'_def snd'_def  make_pair'_is(1)
+      unfolding network_of_network.flowcycle_def network_of_network.flowpath_def 
+                network_of_network.multigraph_path_def     
+      by auto
     hence "awalk (make_pair' ` set cs) (prod.fst (make_pair' (hd cs))) (map make_pair' cs)
      (prod.fst (make_pair' (hd cs)))" 
       using cs_non_empty(1)
@@ -425,7 +478,8 @@ filter (\<lambda> x. \<not> set (prod.fst x) \<subseteq> old_edge ` \<E>) css_ws
     hence flowcycle_elt:"cs' \<noteq> []" "(fst' (hd cs')) = (snd' (last cs'))"
       "awalk UNIV (fst' (hd cs')) (map make_pair' cs') (snd' (last cs'))" "(\<forall>e\<in>set cs'. 0 < f' e)"
       using cs'_split  flowpath' network_of_network.flowpath_def 
-        network_of_network.flowcycle_def network_of_network.multigraph_path_def by auto
+        network_of_network.flowcycle_def network_of_network.multigraph_path_def 
+      by (auto simp add: make_pair'_is(1))
     have "awalk UNIV s (map make_pair' (C2@C1)) t"
       using flowcycle_elt(2) flowcycle_elt(3)  props(5) 
       by(auto simp add:awalk_Cons_iff snd'_def  fst'_def  create_edge' cs'_split )   
@@ -796,7 +850,7 @@ subsection \<open>Reduction of Maximum Flow to Minimum Cost Flow\<close>
 definition "\<E>' = old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
 
 interpretation cost_network_of_network: cost_flow_network where
-  fst = fst' and snd = snd' and make_pair = make_pair' and create_edge = create_edge'
+  fst = fst' and snd = snd'  and create_edge = create_edge'
   and \<E> = \<E>'
   and \<u> = " (\<lambda> e. case e of  old_edge e \<Rightarrow> \<u> e |  _ \<Rightarrow> sum \<u> \<E>)" 
   and \<c> = "(\<lambda> e. case e of old_edge _ \<Rightarrow> 0 | _ \<Rightarrow> -1)"
@@ -809,7 +863,7 @@ lemma same_Vs:"cost_network_of_network.\<V> = \<V>"
 proof(rule, all \<open>rule\<close>, goal_cases)
   case (1 x)
   then obtain e where "e \<in> \<E>'" "x = prod.fst (make_pair' e) \<or> x = prod.snd (make_pair' e)"
-    by (auto simp add: cost_network_of_network.make_pair' dVs_def)
+    by (auto simp add: cost_network_of_network.make_pair' dVs_def make_pair'_is(2))
   moreover then obtain d where "(d \<in> \<E> \<and> e = old_edge d) \<or> x = s \<or> x = t"
     unfolding \<E>'_def by(auto simp add: create_edge') 
   ultimately have "(d \<in> \<E> \<and> (x = fst d \<or> x = snd d)) \<or> x = s \<or> x = t"
@@ -824,7 +878,7 @@ next
     using make_pair by auto
   then show ?case 
     by (force intro!: exI[of _ "{prod.fst (make_pair' (old_edge e)), prod.snd (make_pair' (old_edge e))}"]
-        simp add: dVs_def \<E>'_def)  
+        simp add: dVs_def \<E>'_def make_pair'_is(1))  
 qed
 
 lemma t_delta_plus:"cost_network_of_network.delta_plus t 
@@ -1095,12 +1149,12 @@ proof-
         subgoal
           using C_or C_cases(3)  C_split C_unfolded(3) cost_network_of_network.vs_to_vertex_pair_pres(2)
             create_edge'(2)
-          by(cases C1, all \<open>cases C2\<close>) auto
+          by(cases C1, all \<open>cases C2\<close>) (auto simp add: make_pair'_is(1))
         subgoal
           using C_or  cost_network_of_network.vs_to_vertex_pair_pres(1) create_edge'(1)
             C_split C_unfolded(3) cost_network_of_network.vs_to_vertex_pair_pres(1) 
             C_cases(4) 
-          by (cases C1, all \<open>cases C2\<close>)auto
+          by (cases C1, all \<open>cases C2\<close>)(auto simp add: make_pair'_is(1))
         done
       have "F (new_edge (create_edge t s)) \<notin> set C1" 
         "F (new_edge (create_edge t s)) \<notin> set C2" 
@@ -1140,7 +1194,8 @@ proof-
         for e      
         using C1_C2_in make_pair  
         by(auto split: edge_wrapper.split Redge.split
-            simp add: cost_network_of_network.make_pair''  fst_of_wrapped_edges[symmetric] f'_def)     
+            simp add: cost_network_of_network.make_pair''  fst_of_wrapped_edges[symmetric]
+                      f'_def make_pair'_is(1))     
       have "prepath p"
         using C2C1_augphat_f'(1)[ simplified cost_network_of_network.augpath_def]
         unfolding prepath_def p_def cost_network_of_network.prepath_def map_map

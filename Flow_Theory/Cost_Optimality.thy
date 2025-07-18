@@ -271,10 +271,13 @@ lemma pos_difference_pos_rcap:
   by blast
 
 interpretation residual_flow: flow_network where
-fst = fstv and snd = sndv and make_pair = make_pair_residual and create_edge = create_edge_residual
+fst = fstv and snd = sndv and  create_edge = create_edge_residual
 and \<E> = \<EE>   and \<u> = "\<lambda> _. PInfty"
   using  make_pair create_edge  E_not_empty oedge_on_\<EE> 
   by(auto simp add: finite_\<EE> make_pair[OF refl refl] create_edge cost_flow_network_def flow_network_axioms_def flow_network_def multigraph_def)
+
+lemma residual_flow_make_pair[simp]:"residual_flow.make_pair = make_pair_residual"
+  using residual_flow.make_pair by auto
 
 lemma difference_flow_pos: "isuflow f \<Longrightarrow> isuflow f' \<Longrightarrow> residual_flow.flow_non_neg (difference f' f)"
   by (simp add: diff_non_neg residual_flow.flow_non_neg_def)
@@ -370,7 +373,7 @@ Another part of Proposition 9.4 by Korte and Vygen.
 \<close>
 
 interpretation residual_flow: cost_flow_network where
-fst = fstv and snd = sndv and make_pair = make_pair_residual and create_edge = create_edge_residual
+fst = fstv and snd = sndv and create_edge = create_edge_residual
 and \<E> = \<EE> and \<c> = \<cc>   and \<u> = "\<lambda> _. PInfty"
   using  make_pair create_edge  E_not_empty oedge_on_\<EE> 
   by(auto simp add: finite_\<EE> make_pair[OF refl refl] create_edge cost_flow_network_def flow_network_axioms_def flow_network_def multigraph_def)

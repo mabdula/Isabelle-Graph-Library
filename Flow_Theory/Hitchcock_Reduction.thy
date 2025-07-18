@@ -34,9 +34,9 @@ definition  "new_sndv_gen fstv sndv = (\<lambda> e. (case e of inedge e \<Righta
                                      outedge e \<Rightarrow> vertex (sndv e) |
                                     vtovedge e \<Rightarrow> vertex (sndv e)|
                                     (dummy u v) \<Rightarrow> v))"
-
+(*
 definition "new_make_pair_gen fstv sndv = (\<lambda> e. (new_fstv_gen fstv e, new_sndv_gen fstv sndv e))"
-
+*)
 definition "new_create_edge_gen = (\<lambda> u v. dummy u v)"
 
 definition "new_\<E>1_gen \<E> \<u> = {inedge e| e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}"
@@ -65,10 +65,11 @@ definition "old_f_gen \<E> \<u> f' = (\<lambda> e. if e \<in> flow_network_spec.
 
 theorem reduction_of_mincost_flow_to_hitchcock_general:
   fixes \<c> \<b> D
-  assumes "flow_network fstv sndv make_pair create_edge (\<u>::'edge_type \<Rightarrow> ereal) \<E>"
+  assumes "flow_network fstv sndv create_edge (\<u>::'edge_type \<Rightarrow> ereal) \<E>"
+  defines "make_pair \<equiv> multigraph_spec.make_pair fstv sndv"
   defines "fstv' \<equiv> new_fstv_gen fstv"
   defines "sndv' \<equiv> new_sndv_gen fstv sndv"
-  defines "make_pair' \<equiv> new_make_pair_gen fstv sndv"
+  defines "make_pair' \<equiv> multigraph_spec.make_pair fstv' sndv'"
   defines "create_edge' \<equiv> new_create_edge_gen"
 
   defines "\<E>1 \<equiv> new_\<E>1_gen \<E> \<u>"
@@ -79,14 +80,14 @@ theorem reduction_of_mincost_flow_to_hitchcock_general:
   defines "\<c>' \<equiv> new_\<c>_gen D fstv \<E> \<u> \<c>"
   defines "\<b>' \<equiv> new_\<b>_gen fstv \<E> \<u> \<b>"
 shows 
-   "flow_network fstv' sndv' make_pair' create_edge' \<u>' \<E>'" (is ?case1) and
-   "\<And> f f' arbit. flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f \<b> \<Longrightarrow> 
+   "flow_network fstv' sndv' create_edge' \<u>' \<E>'" (is ?case1) and
+   "\<And> f f' arbit. flow_network_spec.isbflow fstv sndv  \<E> \<u> f \<b> \<Longrightarrow> 
                    f' = new_f_gen fstv \<E> \<u> arbit f
-       \<Longrightarrow>flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
+       \<Longrightarrow>flow_network_spec.isbflow fstv' sndv'  \<E>' \<u>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
       (is "\<And> f f' arbit. ?a f f' \<Longrightarrow> ?b f f' arbit \<Longrightarrow> ?c f f'") and
-   "\<And> f f'. flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>' \<Longrightarrow> 
+   "\<And> f f'. flow_network_spec.isbflow fstv' sndv' \<E>' \<u>' f' \<b>' \<Longrightarrow> 
           f = old_f_gen \<E> \<u>  f' \<Longrightarrow>
-          flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
+          flow_network_spec.isbflow fstv sndv \<E> \<u> f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
       (is "\<And> f f'. ?x f f' \<Longrightarrow> ?y f f' \<Longrightarrow> ?z f f'") and
      "(\<exists> C. closed_w (make_pair' ` \<E>') (map make_pair' C) \<and> foldr (\<lambda> e acc. \<c>' e + acc) C 0 < 0 \<and> set C \<subseteq> \<E>') \<longleftrightarrow>
       (\<exists> D. closed_w (make_pair ` \<E>) (map make_pair D) \<and> foldr (\<lambda> e acc. \<c> e + acc) D 0 < 0 \<and> set D \<subseteq> \<E>
@@ -96,12 +97,12 @@ shows
                                           else arbit e'))) \<Longrightarrow> arbit = (\<lambda> e'. f (edge_of (fstv' e'))) \<Longrightarrow>
 f = (\<lambda>e. f' (outedge e))" (is "\<And> f f' arbit. ?x1 f f' arbit \<Longrightarrow> ?y1 f arbit \<Longrightarrow> ?z1 f f'")
    "\<And> f f' . f = old_f_gen \<E> \<u> f' \<Longrightarrow>
-    cost_flow_spec.is_Opt fstv' sndv' make_pair' \<u>' \<E>' \<c>' \<b>' f'
-\<Longrightarrow> cost_flow_spec.is_Opt fstv sndv make_pair \<u> \<E> \<c> \<b> f" 
+    cost_flow_spec.is_Opt fstv' sndv' \<u>' \<E>' \<c>' \<b>' f'
+\<Longrightarrow> cost_flow_spec.is_Opt fstv sndv \<u> \<E> \<c> \<b> f" 
 (is "\<And> f f'.  ?b1 f f'\<Longrightarrow> ?c1 f' \<Longrightarrow> ?d1 f ") and
    "\<And> f f' . f' = new_f_gen fstv \<E> \<u> arbit f
-\<Longrightarrow> cost_flow_spec.is_Opt fstv sndv make_pair \<u> \<E> \<c> \<b> f
-\<Longrightarrow>  cost_flow_spec.is_Opt fstv' sndv' make_pair' \<u>' \<E>' \<c>' \<b>' f'" 
+\<Longrightarrow> cost_flow_spec.is_Opt fstv sndv  \<u> \<E> \<c> \<b> f
+\<Longrightarrow>  cost_flow_spec.is_Opt fstv' sndv'  \<u>' \<E>' \<c>' \<b>' f'" 
 (is "\<And> f f'.  ?b2 f f'\<Longrightarrow> ?c2 f \<Longrightarrow> ?d3 f' ")
 proof-
   note fstv'_def_old = fstv'_def
@@ -118,8 +119,8 @@ proof-
                                     vtovedge e \<Rightarrow> vertex (sndv e)|
                                     (dummy u v) \<Rightarrow> v))" 
     by (simp add: new_sndv_gen_def sndv'_def)
-    have make_pair'_def: "make_pair' = (\<lambda> e. (fstv' e, sndv' e))"
-      by (simp add: assms(2) assms(3) make_pair'_def new_make_pair_gen_def)
+  have make_pair'_def: "make_pair' = (\<lambda> e. (fstv' e, sndv' e))"
+    by(auto simp add: assms(2) assms(3) make_pair'_def multigraph_spec.make_pair_def)
    have create_edge'_def: "create_edge' = (\<lambda> u v. dummy u v)"
      by (simp add: create_edge'_def new_create_edge_gen_def)
    have \<E>1_def: "\<E>1 = {inedge e| e. e \<in> \<E> - flow_network_spec.infty_edges \<E> \<u>}"
@@ -163,19 +164,19 @@ proof-
      using assms(1) 
      by(auto simp add: \<E>'_def \<E>1_def \<E>2_def \<E>3_def flow_network_def multigraph_def
               flow_network_axioms_def flow_network_spec.infty_edges_def)    
-  moreover have mgraph':"multigraph fstv' sndv' make_pair' create_edge'  \<E>'"
+  moreover have mgraph':"multigraph fstv' sndv'  create_edge'  \<E>'"
     using assms(1) finiteE' nonemptyE'
     by(auto simp add: flow_network_def multigraph_def fstv'_def sndv'_def make_pair'_def create_edge'_def)   
-  ultimately show residual':"flow_network fstv' sndv' make_pair' create_edge' \<u>' \<E>'"
+  ultimately show residual':"flow_network fstv' sndv'  create_edge' \<u>' \<E>'"
      using assms(1) 
      by(auto simp add: flow_network_def \<u>'_def flow_network_axioms_def)
-  have cost_flow: "cost_flow_network fstv sndv make_pair create_edge \<u> \<E>"
+  have cost_flow: "cost_flow_network fstv sndv  create_edge \<u> \<E>"
     by (simp add: assms(1) cost_flow_network.intro)
-  have mgraph: "multigraph fstv sndv make_pair create_edge \<E>"
+  have mgraph: "multigraph fstv sndv  create_edge \<E>"
     using assms(1) flow_network_def by blast
-  have flow_network: "flow_network fstv sndv make_pair create_edge \<u> \<E>" 
+  have flow_network: "flow_network fstv sndv  create_edge \<u> \<E>" 
     by (simp add: assms(1))
-  have cost_flow': "cost_flow_network fstv' sndv' make_pair' create_edge' \<u>' \<E>'"
+  have cost_flow': "cost_flow_network fstv' sndv' create_edge' \<u>' \<E>'"
         by (simp add: residual' cost_flow_network.intro)
    have Es_non_inter: "\<E>1 \<inter> \<E>2 = {}"  "\<E>1 \<inter> \<E>3 = {}"  "\<E>2 \<inter> \<E>3 = {}"
      using \<E>1_def \<E>2_def \<E>3_def assms(2) by fastforce+
@@ -187,7 +188,7 @@ proof-
      case (1 f f' arbit)
      note case1=this[simplified]
      have ex_b:"\<And> v. v\<in>dVs (make_pair ` \<E>) \<Longrightarrow> - flow_network_spec.ex fstv sndv \<E> f v = \<b> v"
-       using case1 by(auto simp add: flow_network_spec.isbflow_def)
+       using case1 by(auto simp add: flow_network_spec.isbflow_def make_pair_def)
      have "e \<in> \<E>' \<Longrightarrow> ereal (f' e) \<le> \<u>' e" for e
        by(simp add: \<E>'_def case1(2) \<u>'_def)
      moreover have "e \<in> \<E>' \<Longrightarrow> 0 \<le> f' e" for e
@@ -293,7 +294,7 @@ proof-
              using flow_network.infty_edges_in_E[OF assms(1)] 
              by(cases d)
                (auto  intro: multigraph.snd_E_V[OF mgraph]  multigraph.fst_E_V[OF mgraph]
-                                simp add: \<E>'_def make_pair'_def sndv'_def fstv'_def \<E>1_def \<E>2_def \<E>3_def)
+                simp add: \<E>'_def make_pair'_def sndv'_def fstv'_def \<E>1_def \<E>2_def \<E>3_def make_pair_def)
          qed
            
          have i1: "(get_edge `
@@ -410,7 +411,7 @@ proof-
                 flow_network_spec.delta_minus_infty_def flow_network_spec.infty_edges_def sndv'_def)+
         have excess_at_x1: " sum f (multigraph_spec.delta_plus \<E> fstv x1) - sum f (multigraph_spec.delta_minus \<E> sndv x1) = \<b> x1"
           using case1(1) x_in_V 
-          by(auto simp add: flow_network_spec.isbflow_def flow_network_spec.ex_def)
+          by(auto simp add: flow_network_spec.isbflow_def flow_network_spec.ex_def make_pair_def)
         have h6: "sum f (flow_network_spec.delta_plus_infty fstv \<E> \<u> x1) +
                     sum f (multigraph_spec.delta_plus \<E> fstv x1 - flow_network_spec.delta_plus_infty fstv \<E> \<u> x1) =
                      \<b> x1 +
@@ -461,7 +462,8 @@ proof-
     proof(rule, goal_cases)
       case 1
       then show ?case 
-        by(auto simp add: b'_met flow_network_spec.isbflow_def isuflow')
+        by(auto simp add: b'_met flow_network_spec.isbflow_def isuflow' make_pair'_def make_pair_def
+                           multigraph_spec.make_pair_def)
     next
       case 2
       have is_E: "(\<lambda>x. edge_of (fstv' x)) `
@@ -566,7 +568,8 @@ proof-
         hence "(\<u> e) = - flow_network_spec.ex fstv' sndv' \<E>' f' (edge e)"
           using case1(1) 1 not_MInfty_nonneg[OF u_pos, of e] 
           by(auto intro: real_of_ereal.elims[of "\<u> e", OF refl]
-                   simp add: flow_network_spec.isbflow_def  \<b>'_def \<E>1_def )
+                   simp add: flow_network_spec.isbflow_def  \<b>'_def \<E>1_def make_pair_def
+                              make_pair'_def multigraph_spec.make_pair_def)
        moreover have "multigraph_spec.delta_plus \<E>' fstv' (edge e) = {inedge e, outedge e}"
          unfolding multigraph_spec.delta_plus_def
          using 1
@@ -594,7 +597,7 @@ proof-
                   simp add: dVs_def \<E>'_def make_pair'_def fstv'_def sndv'_def image_def split: hitchcock_edge.split)
         hence "\<u> e = - ereal ( flow_network_spec.ex fstv'  sndv' \<E>' f' (edge e))"
          using case1(1) real
-         by (auto simp add: flow_network_spec.isbflow_def  \<b>'_def)
+         by (auto simp add: flow_network_spec.isbflow_def  \<b>'_def multigraph_spec.make_pair_def make_pair_def make_pair'_def)
        moreover have "multigraph_spec.delta_plus \<E>' fstv' (edge e) = {inedge e, outedge e}"
          unfolding multigraph_spec.delta_plus_def
          using 1 real 
@@ -637,7 +640,8 @@ proof-
        case (1 v)
        then obtain e where "e \<in> \<E>" "v = fstv e \<or> v = sndv e"
          using assms(1)
-         by(auto simp add: dVs_def flow_network_def multigraph_def) 
+         by(auto simp add: dVs_def flow_network_def multigraph_def
+                            multigraph_spec.make_pair_def make_pair'_def make_pair_def) 
        moreover hence "vtovedge e \<in> \<E>' \<or>( 
               (outedge e) \<in> \<E>' \<and> (inedge e) \<in> \<E>')"
          unfolding \<E>'_def \<E>1_def \<E>3_def \<E>2_def by fastforce
@@ -650,7 +654,8 @@ proof-
           - sum f' (multigraph_spec.delta_minus \<E>' sndv' (vertex v)) + sum f' (multigraph_spec.delta_plus \<E>' fstv' (vertex v))
                + (sum (real_of_ereal o \<u>) (multigraph_spec.delta_plus \<E> fstv v -flow_network_spec.delta_plus_infty fstv \<E> \<u> v ))"
         using case1(1) 
-         by(auto simp add: flow_network_spec.isbflow_def \<b>'_def flow_network_spec.ex_def)
+        by(auto simp add: flow_network_spec.isbflow_def \<b>'_def flow_network_spec.ex_def
+                           multigraph_spec.make_pair_def make_pair'_def make_pair_def)
        moreover have "multigraph_spec.delta_plus \<E>' fstv' (vertex v) = 
                      {vtovedge d | d. d \<in> flow_network_spec.delta_plus_infty fstv \<E> \<u> v}"
          unfolding multigraph_spec.delta_plus_def
@@ -758,7 +763,7 @@ proof-
          by(auto simp add: flow_network_spec.ex_def)
      qed
      ultimately show ?case 
-       by(auto simp add: flow_network_spec.isbflow_def)
+       by(auto simp add: flow_network_spec.isbflow_def multigraph_spec.make_pair_def make_pair'_def make_pair_def)
    next
      case 2
      have helper1:"(\<Sum>e\<in>\<E>. f e * \<c> e) = 
@@ -868,17 +873,19 @@ proof-
     have map_C_is:"map (make_pair \<circ> get_edge) C =
          (map ((\<lambda>e. (vertex_of (fst e), vertex_of (snd e))) \<circ> make_pair') C)"
         using C_in_E3 assms(1)
-        by(auto intro: map_cong[OF refl] simp add: make_pair'_def fstv'_def sndv'_def \<E>3_def flow_network_def multigraph_def
-                  split: hitchcock_edge.split)
+        by(auto intro: map_cong[OF refl] 
+              simp add: make_pair'_def fstv'_def sndv'_def \<E>3_def flow_network_def 
+                        multigraph_def multigraph_spec.make_pair_def  make_pair_def
+                 split: hitchcock_edge.split)
       have "closed_w (make_pair ` \<E>) (map make_pair D)"
       proof-
         have "C \<noteq> [] \<Longrightarrow>
-        flow_network fstv sndv make_pair create_edge \<u> \<E> \<Longrightarrow>
+        flow_network fstv sndv  create_edge \<u> \<E> \<Longrightarrow>
         awalk (make_pair ` \<E>) (vertex_of u) (map ((\<lambda>e. (vertex_of (fst e), vertex_of (snd e))) \<circ> make_pair') C)
         (vertex_of u)"
       by(fastforce intro!: subset_mono_awalk[OF awalk_map[OF _ u_prop(1)], simplified, OF _ refl, of vertex_of] 
                  simp add: make_pair'_def fstv'_def sndv'_def \<E>3_def flow_network_def multigraph_def
-                           flow_network_spec.infty_edges_def map_C_is)
+                           flow_network_spec.infty_edges_def map_C_is multigraph_spec.make_pair_def  make_pair_def)
       thus ?thesis
       using u_prop(2) assms(1) 
       by(auto intro: exI[of _ "vertex_of u"] simp add: map_C_is closed_w_def  D_def) 
@@ -905,14 +912,15 @@ proof-
       using D_prop(3,4) 
       by(fastforce simp add:flow_network_spec.infty_edges_def)
     have map_make_pair': "(map make_pair' (map vtovedge D)) =  map (\<lambda>e. (vertex (fst e), vertex (snd e))) (map make_pair D)"
-      using assms(1) by (auto simp add: make_pair'_def fstv'_def sndv'_def flow_network_def multigraph_def)
-
+      using assms(1)
+      by (auto simp add: make_pair'_def fstv'_def sndv'_def flow_network_def multigraph_def multigraph_spec.make_pair_def make_pair_def)
     have awalk_E3:"awalk (make_pair' ` \<E>3) (vertex u) (map make_pair' (map vtovedge D)) (vertex u)"
       using u_prop(2) D_infty_edges
       apply(subst map_make_pair')
       using assms(1) 
       by (fastforce intro!: subset_mono_awalk'[OF awalk_map[OF _ u_prop(1)], OF _ refl, of vertex] 
                       simp add: make_pair'_def fstv'_def sndv'_def \<E>3_def image_def flow_network_def multigraph_def 
+                                multigraph_spec.make_pair_def make_pair_def
                  split: hitchcock_edge.split)
     hence C_in_E3:"set (map vtovedge D) \<subseteq> \<E>3" 
       using D_prop(3,4)
@@ -947,16 +955,16 @@ proof-
     case (1 f f')
     note case1=this
      note optf=1
-      hence opt_unfold: "flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>'"
-    "(\<And> f''. flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f'' \<b>' 
+      hence opt_unfold: "flow_network_spec.isbflow fstv' sndv' \<E>' \<u>' f' \<b>'"
+    "(\<And> f''. flow_network_spec.isbflow fstv' sndv' \<E>' \<u>' f'' \<b>' 
             \<Longrightarrow> cost_flow_spec.\<C> \<E>' \<c>' f' \<le> cost_flow_spec.\<C> \<E>' \<c>' f'')"
         by(auto simp add: cost_flow_spec.is_Opt_def)
-      have claim2_result:"cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'" "flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f \<b>"
+      have claim2_result:"cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'" "flow_network_spec.isbflow fstv sndv \<E> \<u> f \<b>"
         using claim2[OF opt_unfold(1)] case1 by simp+
       show ?case
       proof(rule ccontr, goal_cases)
         case 1
-        then obtain d where d_prop:"flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> d \<b>" 
+        then obtain d where d_prop:"flow_network_spec.isbflow fstv sndv  \<E> \<u> d \<b>" 
                              "cost_flow_spec.\<C> \<E> \<c> d < cost_flow_spec.\<C> \<E> \<c> f"
           using claim2_result(2) by(auto simp add: cost_flow_spec.is_Opt_def)
         define d' where "d' =
@@ -965,7 +973,7 @@ proof-
               else if e' \<in> \<E>2 then d e
                    else if e' \<in> \<E>3 then d (get_edge e')
                         else undefined)"
-        have d'_flow: "flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' d' \<b>'" 
+        have d'_flow: "flow_network_spec.isbflow fstv' sndv'  \<E>' \<u>' d' \<b>'" 
               "cost_flow_spec.\<C> \<E> \<c> d = cost_flow_spec.\<C> \<E>' \<c>' d'"
           using  claim1[of d d'] d_prop(1) d'_def by auto 
         moreover hence "cost_flow_spec.\<C> \<E>' \<c>' d' < cost_flow_spec.\<C> \<E>' \<c>' f'"
@@ -982,25 +990,25 @@ proof-
     case (1 f f')
     note optf=this
     note case1 = this
-    hence opt_unfold: "flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f \<b>"
-    "(\<And> f'. flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> f' \<b> \<Longrightarrow> cost_flow_spec.\<C> \<E> \<c> f \<le> cost_flow_spec.\<C> \<E> \<c> f')"
+    hence opt_unfold: "flow_network_spec.isbflow fstv sndv \<E> \<u> f \<b>"
+    "(\<And> f'. flow_network_spec.isbflow fstv sndv \<E> \<u> f' \<b> \<Longrightarrow> cost_flow_spec.\<C> \<E> \<c> f \<le> cost_flow_spec.\<C> \<E> \<c> f')"
         by(auto simp add: cost_flow_spec.is_Opt_def)
-      have claim1_result: "flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>' \<and>
+      have claim1_result: "flow_network_spec.isbflow fstv' sndv'  \<E>' \<u>' f' \<b>' \<and>
                            cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'" 
         using  case1 by(auto intro!: claim1[OF opt_unfold(1)]) 
       hence claim1_result:"cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'" 
-        "flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' f' \<b>'"
+        "flow_network_spec.isbflow fstv' sndv'  \<E>' \<u>' f' \<b>'"
         by auto
       show ?case
       proof(rule ccontr, goal_cases)
         case 1
-        then obtain d' where d'_prop:"flow_network_spec.isbflow fstv' sndv' make_pair' \<E>' \<u>' d' \<b>'" 
+        then obtain d' where d'_prop:"flow_network_spec.isbflow fstv' sndv'  \<E>' \<u>' d' \<b>'" 
                              "cost_flow_spec.\<C> \<E>' \<c>' d' < cost_flow_spec.\<C> \<E>' \<c>' f'"
           using claim1_result 
           by(auto simp add: cost_flow_spec.is_Opt_def)
         define d where "d = (\<lambda>e. if e \<in> flow_network_spec.infty_edges \<E> \<u> then d' (vtovedge e)
           else d' (outedge e))"
-        have d_flow: "flow_network_spec.isbflow fstv sndv make_pair \<E> \<u> d \<b>" 
+        have d_flow: "flow_network_spec.isbflow fstv sndv  \<E> \<u> d \<b>" 
                 "cost_flow_spec.\<C> \<E> \<c> d = cost_flow_spec.\<C> \<E>' \<c>' d'"
           using claim2[of d'] d'_prop(1) d_def  by auto
         moreover hence "cost_flow_spec.\<C> \<E> \<c> d < cost_flow_spec.\<C> \<E> \<c> f"
@@ -1032,7 +1040,7 @@ definition "old_f f' = (\<lambda> e. f' (edge e, vertex (snd e)))"
 
 theorem reduction_of_mincost_flow_to_hitchcock:
   fixes \<c> \<b>
-  assumes "flow_network fst snd id Pair (ereal o \<u>) \<E>"
+  assumes "flow_network fst snd Pair (ereal o \<u>) \<E>"
   assumes "\<nexists> x. (x,x) \<in> \<E>"
   defines "\<E>1 \<equiv> new_\<E>1 \<E> \<u>"
   defines "\<E>2 \<equiv> new_\<E>2 \<E> \<u>"
@@ -1041,18 +1049,18 @@ theorem reduction_of_mincost_flow_to_hitchcock:
   defines "\<c>' \<equiv> new_\<c> \<E> \<u> \<c>"
   defines "\<b>' \<equiv> new_\<b> \<E> \<u> \<b>"
 shows 
-   "flow_network fst snd id Pair \<u>' \<E>'" (is ?case1) and
-   "\<And> f f'. flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) f \<b> \<Longrightarrow> f' = new_f \<E> \<u> f
-       \<Longrightarrow>flow_network_spec.isbflow fst snd id \<E>' \<u>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
+   "flow_network fst snd Pair \<u>' \<E>'" (is ?case1) and
+   "\<And> f f'. flow_network_spec.isbflow fst snd \<E> (ereal o \<u>) f \<b> \<Longrightarrow> f' = new_f \<E> \<u> f
+       \<Longrightarrow>flow_network_spec.isbflow fst snd \<E>' \<u>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
       (is "\<And> f f'. ?a f \<Longrightarrow> ?b f f' \<Longrightarrow> ?c  f f'") and
-"\<And> f f'. flow_network_spec.isbflow fst snd id \<E>' \<u>' f' \<b>' \<Longrightarrow> f = old_f f' \<Longrightarrow>
-          flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
+"\<And> f f'. flow_network_spec.isbflow fst snd  \<E>' \<u>' f' \<b>' \<Longrightarrow> f = old_f f' \<Longrightarrow>
+          flow_network_spec.isbflow fst snd  \<E> (ereal o \<u>) f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
       (is "\<And> f f'. ?x f' \<Longrightarrow> ?y f f'\<Longrightarrow> ?z f f'") and
-"cost_flow_spec.is_Opt fst snd id (ereal o \<u>) \<E> \<c> \<b> f \<Longrightarrow> f' = new_f \<E> \<u> f \<Longrightarrow>
- cost_flow_spec.is_Opt fst snd id  \<u>' \<E>' \<c>' \<b>' f'"
+"cost_flow_spec.is_Opt fst snd  (ereal o \<u>) \<E> \<c> \<b> f \<Longrightarrow> f' = new_f \<E> \<u> f \<Longrightarrow>
+ cost_flow_spec.is_Opt fst snd   \<u>' \<E>' \<c>' \<b>' f'"
  and
-"cost_flow_spec.is_Opt fst snd id  \<u>' \<E>' \<c>' \<b>' f' \<Longrightarrow> f = old_f f' \<Longrightarrow>
- cost_flow_spec.is_Opt fst snd id (ereal o \<u>) \<E> \<c> \<b> f " and
+"cost_flow_spec.is_Opt fst snd   \<u>' \<E>' \<c>' \<b>' f' \<Longrightarrow> f = old_f f' \<Longrightarrow>
+ cost_flow_spec.is_Opt fst snd  (ereal o \<u>) \<E> \<c> \<b> f " and
  "\<nexists> C. closed_w \<E>' C" 
 proof-
   note  \<E>1_def_old =  \<E>1_def
@@ -1077,24 +1085,24 @@ then 0 else undefined)"
      by(simp add: \<E>'_def \<E>1_def \<E>2_def)
    moreover have nonemptyE': "\<E>' \<noteq> {}"
      using assms(1) by(auto simp add: \<E>'_def \<E>1_def \<E>2_def flow_network_def multigraph_def flow_network_axioms_def)
-   ultimately show residual':"flow_network fst snd id Pair \<u>' \<E>'"
+   ultimately show residual':"flow_network fst snd  Pair \<u>' \<E>'"
      using assms(1) 
      by(auto simp add: flow_network_def \<u>'_def multigraph_def flow_network_axioms_def)
-   have cost_flow: "cost_flow_network fst snd id Pair \<u> \<E>" 
+   have cost_flow: "cost_flow_network fst snd  Pair \<u> \<E>" 
      using assms(1)
      by (auto simp add: comp_def cost_flow_network_def)
-   have cost_flow': "cost_flow_network fst snd id Pair \<u>' \<E>'"
+   have cost_flow': "cost_flow_network fst snd  Pair \<u>' \<E>'"
      using residual'
      by (auto simp add: comp_def cost_flow_network_def)
-   have flow_network': "flow_network fst snd id Pair \<u>' \<E>'"
+   have flow_network': "flow_network fst snd  Pair \<u>' \<E>'"
      using residual'
      by (auto simp add: comp_def cost_flow_network_def)
-   have flow_network: "flow_network fst snd id Pair \<u> \<E>"
+   have flow_network: "flow_network fst snd  Pair \<u> \<E>"
      using assms(1)
      by (auto simp add: comp_def cost_flow_network_def)
-   have mgraph': "multigraph fst snd id Pair \<E>'"
+   have mgraph': "multigraph fst snd  Pair \<E>'"
      using flow_network_def residual' by blast
-   have mgraph: "multigraph fst snd id Pair \<E>"
+   have mgraph: "multigraph fst snd  Pair \<E>"
      using flow_network_def assms(1) by blast
    have Es_non_inter: "\<E>1 \<inter> \<E>2 = {}" 
      using \<E>1_def \<E>2_def assms(2) by fastforce
@@ -1105,7 +1113,7 @@ then 0 else undefined)"
      case (1 f f')
      note case1=this[simplified]
      have ex_b:"\<And> v. v\<in>dVs \<E> \<Longrightarrow> - flow_network_spec.ex fst snd \<E> f v = \<b> v"
-       using case1 by(auto simp add: flow_network_spec.isbflow_def)
+       using case1 by(auto simp add: flow_network_spec.isbflow_def multigraph_spec.make_pair_def)
      have "e \<in> \<E>' \<Longrightarrow> ereal (f' e) \<le> \<u>' e" for e
        by(simp add: \<E>'_def case1(2) \<u>'_def)
      moreover have "e \<in> \<E>' \<Longrightarrow> 0 \<le> f' e" for e
@@ -1245,7 +1253,7 @@ then 0 else undefined)"
     proof(rule, goal_cases)
       case 1
       then show ?case 
-        by(auto simp add: b'_met flow_network_spec.isbflow_def isuflow')
+        by(auto simp add: b'_met flow_network_spec.isbflow_def isuflow' multigraph_spec.make_pair_def)
     next
       case 2
       then show ?case 
@@ -1280,7 +1288,7 @@ then 0 else undefined)"
           by blast+
         hence "real_of_ereal (\<u> e) = - flow_network_spec.ex fst snd \<E>' f' (edge e)"
          using case1(1)
-         by (auto simp add: flow_network_spec.isbflow_def  \<b>'_def)
+         by (auto simp add: flow_network_spec.isbflow_def  \<b>'_def multigraph_spec.make_pair_def)
        moreover have "multigraph_spec.delta_plus \<E>' fst (edge e)
                 = {(edge e, vertex (fst e)), (edge e, vertex (snd e))}"
          unfolding multigraph_spec.delta_plus_def
@@ -1303,7 +1311,7 @@ then 0 else undefined)"
           by blast+
         hence "real_of_ereal (\<u> e) = - flow_network_spec.ex fst snd \<E>' f' (edge e)"
          using case1(1)
-         by (auto simp add: flow_network_spec.isbflow_def  \<b>'_def)
+         by (auto simp add: flow_network_spec.isbflow_def  \<b>'_def multigraph_spec.make_pair_def)
        moreover have "multigraph_spec.delta_plus \<E>' fst (edge e) = {(edge e, vertex (fst e)), (edge e, vertex (snd e))}"
          unfolding multigraph_spec.delta_plus_def
          using 1
@@ -1332,7 +1340,7 @@ then 0 else undefined)"
                          - sum f' (multigraph_spec.delta_plus \<E>' fst (vertex v))) =
                     \<b> v - real_of_ereal (sum \<u> (multigraph_spec.delta_plus \<E> fst v))"
          using case1(1) 
-         by(auto simp add: flow_network_spec.isbflow_def \<b>'_def flow_network_spec.ex_def)
+         by(auto simp add: flow_network_spec.isbflow_def \<b>'_def flow_network_spec.ex_def multigraph_spec.make_pair_def)
        moreover have "multigraph_spec.delta_plus \<E>' fst (vertex v) = {}"
          by(auto simp add:  \<E>'_def \<E>1_def \<E>2_def  multigraph_spec.delta_plus_def)
        moreover have "sum f' (multigraph_spec.delta_minus \<E>' snd (vertex v)) = 
@@ -1373,7 +1381,7 @@ then 0 else undefined)"
          by(simp add: flow_network_spec.ex_def case1(2))
      qed
      ultimately show ?case
-       by(simp add: flow_network_spec.isbflow_def)
+       by(simp add: flow_network_spec.isbflow_def multigraph_spec.make_pair_def)
    next
      case 2
      show ?case 
@@ -1425,19 +1433,19 @@ then 0 else undefined)"
       ultimately show False by auto  
     qed
   qed
-  show "cost_flow_spec.is_Opt fst snd id (ereal \<circ> \<u>) \<E> \<c> \<b> f \<Longrightarrow>
-    f' = new_f \<E> \<u> f \<Longrightarrow> cost_flow_spec.is_Opt fst snd id \<u>' \<E>' \<c>' \<b>' f'"
+  show "cost_flow_spec.is_Opt fst snd  (ereal \<circ> \<u>) \<E> \<c> \<b> f \<Longrightarrow>
+    f' = new_f \<E> \<u> f \<Longrightarrow> cost_flow_spec.is_Opt fst snd \<u>' \<E>' \<c>' \<b>' f'"
   proof(goal_cases)
     case 1
-    hence bflow:"flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) f \<b>"
+    hence bflow:"flow_network_spec.isbflow fst snd  \<E> (ereal o \<u>) f \<b>"
       using assms(1) cost_flow_network.intro cost_flow_spec.is_Opt_def by blast
-    hence bflow':"flow_network_spec.isbflow fst snd id \<E>' \<u>' f' \<b>'"
+    hence bflow':"flow_network_spec.isbflow fst snd  \<E>' \<u>' f' \<b>'"
       using "1"(2) claim1 by blast 
-    moreover have "flow_network_spec.isbflow fst snd id \<E>' \<u>' g' \<b>' \<Longrightarrow>
+    moreover have "flow_network_spec.isbflow fst snd  \<E>' \<u>' g' \<b>' \<Longrightarrow>
            cost_flow_spec.\<C> \<E>' \<c>' f' \<le> cost_flow_spec.\<C> \<E>' \<c>' g'" for g'
     proof-
-      assume asm: "flow_network_spec.isbflow fst snd id \<E>' \<u>' g' \<b>'"
-      have "flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) (old_f g') \<b>"
+      assume asm: "flow_network_spec.isbflow fst snd  \<E>' \<u>' g' \<b>'"
+      have "flow_network_spec.isbflow fst snd  \<E> (ereal o \<u>) (old_f g') \<b>"
            "cost_flow_spec.\<C> \<E> \<c> (old_f g') = cost_flow_spec.\<C> \<E>' \<c>' g'"
         using claim2[OF asm refl] by auto
       moreover have "cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'"
@@ -1449,19 +1457,19 @@ then 0 else undefined)"
     ultimately show ?case
       by(auto intro: cost_flow_spec.is_OptI)
   qed
-  show "cost_flow_spec.is_Opt fst snd id \<u>' \<E>' \<c>' \<b>' f' \<Longrightarrow>
-    f = old_f f' \<Longrightarrow> cost_flow_spec.is_Opt fst snd id (ereal \<circ> \<u>) \<E> \<c> \<b> f"
+  show "cost_flow_spec.is_Opt fst snd  \<u>' \<E>' \<c>' \<b>' f' \<Longrightarrow>
+    f = old_f f' \<Longrightarrow> cost_flow_spec.is_Opt fst snd  (ereal \<circ> \<u>) \<E> \<c> \<b> f"
   proof(goal_cases)
     case 1
-    hence bflow':"flow_network_spec.isbflow fst snd id  \<E>' \<u>' f' \<b>'" 
+    hence bflow':"flow_network_spec.isbflow fst snd   \<E>' \<u>' f' \<b>'" 
       using cost_flow' cost_flow_spec.is_Opt_def by blast
-    hence bflow:"flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) f \<b>"
+    hence bflow:"flow_network_spec.isbflow fst snd  \<E> (ereal o \<u>) f \<b>"
       using "1"(2) claim2 by blast 
-    moreover have "flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) g \<b> \<Longrightarrow>
+    moreover have "flow_network_spec.isbflow fst snd  \<E> (ereal o \<u>) g \<b> \<Longrightarrow>
            cost_flow_spec.\<C> \<E> \<c> f \<le> cost_flow_spec.\<C> \<E> \<c> g" for g
     proof-
-      assume asm: "flow_network_spec.isbflow fst snd id \<E> (ereal o \<u>) g \<b>"
-      have "flow_network_spec.isbflow fst snd id  \<E>' \<u>' (new_f \<E> \<u> g) \<b>'"
+      assume asm: "flow_network_spec.isbflow fst snd  \<E> (ereal o \<u>) g \<b>"
+      have "flow_network_spec.isbflow fst snd   \<E>' \<u>' (new_f \<E> \<u> g) \<b>'"
            "cost_flow_spec.\<C> \<E>' \<c>' (new_f \<E> \<u> g) = cost_flow_spec.\<C> \<E> \<c> g"
         using claim1[OF asm refl] by auto
       moreover have "cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f'"

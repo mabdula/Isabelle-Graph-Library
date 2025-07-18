@@ -1563,8 +1563,8 @@ have aux_invar_pseudo_initial: "aux_invar pseudo_initial"
   have card_F_pseudo_initial: "N = card (comps \<V> (to_graph (\<FF> pseudo_initial)))"
     using not_reachable_empt empty_forest_axioms
     by(fastforce intro!: bij_betw_same_card[of "\<lambda> x. {x}"] 
-               simp add: bij_betw_def inj_on_def vset.set.set_isin vset.set.invar_empty 
-                         vset.set.set_empty pseudo_initial_def comps_def initial_def 
+               simp add: bij_betw_def inj_on_def adj_map_specs.vset.set.set_isin adj_map_specs.vset.set.invar_empty 
+                         adj_map_specs.vset.set.set_empty pseudo_initial_def comps_def initial_def 
                          connected_component_def N_def empty_forest_empty(2))
 
   have "return ((orlins_one_step_check ^^ (N * (\<l> + \<k> + 2))) pseudo_initial) \<noteq> notyetterm"
