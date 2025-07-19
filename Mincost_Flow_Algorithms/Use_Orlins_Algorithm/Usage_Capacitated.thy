@@ -602,35 +602,34 @@ lemma cost_flow_network3: "cost_flow_network (new_fstv_gen fst) (new_sndv_gen fs
   by(auto intro: flow_network_axioms.intro)
 
 context
-assumes no_infinite_cycle: "\<not>(\<exists>D. closed_w (make_pair ` \<E>) (map make_pair D) \<and>
-       foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<and> set D \<subseteq> \<E> \<and> (\<forall>e\<in>set D. \<u> e = PInfty))"
+assumes no_infinite_cycle: "\<not> has_neg_infty_cycle make_pair \<E> \<c> \<u>"
 begin
 
 
 lemma no_cycle_in_reduction:"no_cycle_cond (new_fstv_gen fst) (new_sndv_gen fst snd) \<c>'_impl \<E>'_impl c_lookup'"
-proof(subst  no_cycle_cond_def, rule+, goal_cases)
+proof(rule no_cycle_condI, goal_cases)
   case (1 C)
-  hence "(\<exists>D. closed_w (make_pair ` to_set \<E>_impl) (map make_pair D) \<and>
-         foldr (\<lambda>e. (+) ((the \<circ> c_lookup \<c>_impl) e)) D 0 < 0 \<and>
-         set D \<subseteq> to_set \<E>_impl \<and> (\<forall>e\<in>set D. \<u> e = PInfty))"
+  hence "has_neg_cycle (multigraph_spec.make_pair (new_fstv_gen fst) (new_sndv_gen fst snd)) (to_set \<E>'_impl)
+     (function_generation.\<c> \<c>'_impl c_lookup')"
+    by(auto intro!: has_neg_cycleI[of _ _ C] 
+             simp add: function_generation.\<E>_def[OF function_generation]
+                add.commute[of _ "_ \<c>'_impl c_lookup' _"])
+  hence "has_neg_infty_cycle local.make_pair \<E> \<c> \<u>"
   using sym[OF reduction_of_mincost_flow_to_hitchcock_general(4)[OF flow_network_axioms, of "(dom (c_lookup \<c>_impl))" \<c>]]
   unfolding  sym[OF E1_impl_are]  sym[OF E2_impl_are]  sym[OF E3_impl_are] 
             collapse_union_ofE1E2E3 function_generation.\<E>_def[OF function_generation]
             new_gen_c_unfold 
-  unfolding Es_are cs_are \<c>_def
-  by(force intro!:  exI[of _ C] simp add: add.commute) 
+  by(auto simp add: Es_are cs_are \<c>_def)
   thus False
-    using no_infinite_cycle
-    by(auto simp add: Es_are cs_are)
+    using no_infinite_cycle by simp
 qed
-
 
 corollary correctness_of_implementation_success:
  "return (final_state_cap) = success \<Longrightarrow>  
         is_Opt \<b> (abstract_flow_map (final_flow_impl_original))"
     apply(rule is_Opt_cong[of "old_f_gen \<E> \<u> (abstract_flow_map final_flow_impl_cap)"
                                 , OF  old_f_gen_final_flow_impl_original_cong refl], simp)
-    apply(rule reduction_of_mincost_flow_to_hitchcock_general(6)[OF flow_network_axioms refl, of "(dom (c_lookup \<c>_impl))" \<c> \<b>])
+    apply(rule reduction_of_mincost_flow_to_hitchcock_general(5)[OF flow_network_axioms refl, of "(dom (c_lookup \<c>_impl))" \<c> \<b>])
     apply(unfold final_flow_impl_cap_def sym[OF E1_impl_are] sym[OF E2_impl_are] sym[OF E3_impl_are]
               collapse_union_ofE1E2E3 \<u>_def  function_generation.\<u>_def[OF function_generation])
     apply(unfold new_gen_c_unfold)
@@ -648,7 +647,7 @@ corollary correctness_of_implementation_failure:
 proof(rule nexistsI, goal_cases)
   case (1 f)
   have "flow_network_spec.isbflow (new_fstv_gen fst) (new_sndv_gen fst snd) (to_set \<E>'_impl) (\<lambda>e. PInfty)  
-        (new_f_gen fst \<E> \<u> (\<lambda> _. 0) f)
+        (new_f_gen fst \<E> \<u>  f)
         (selection_functions.\<b> \<b>'_impl)"
     apply(rule cost_flow_spec.isbflow_cong[OF refl])
     using V_new_graph   conjunct1[OF reduction_of_mincost_flow_to_hitchcock_general(2)[OF flow_network_axioms 
@@ -795,7 +794,6 @@ definition "final_state_maxflow = final_state_cap
 (\<lambda> e. case e of old_edge e \<Rightarrow> fst e | new_edge e \<Rightarrow> fst e)
 (\<lambda> e. case e of old_edge e \<Rightarrow> snd e | new_edge e \<Rightarrow> snd e)
 \<E>_impl' \<c>_impl' \<u>_impl' \<b>_impl' c_lookup'"
-
 
 definition "final_flow_impl_maxflow =  final_flow_impl_original 
 (\<lambda> e. case e of old_edge e \<Rightarrow> fst e | new_edge e \<Rightarrow> fst e)
@@ -1012,19 +1010,18 @@ lemma capacity_aux_rewrite:"the_default PInfty (flow_lookup \<u>_impl' e) =(case
   by(fastforce split: option.split edge_wrapper.split 
                simp add: Es_are to_set_def \<E>_impl'_def us_are the_default_def)
 
+
 context
-  assumes no_infty_path:"\<not> (\<exists> D. awalk (make_pair ` \<E>) s (map make_pair D) t \<and> length D > 0 \<and>  set D \<subseteq> \<E>
-                               \<and> (\<forall> e \<in> set D. \<u> e = PInfty))"
+  assumes no_infty_path:"\<not> has_infty_st_path make_pair \<E> \<u> s t"
 begin
 
-lemma no_infinite_cycle: "\<not>(\<exists>D. closed_w (make_pair' ` set \<E>_impl') (map make_pair' D) \<and>
-       foldr (\<lambda>e. (+) (\<c>' e)) D 0 < 0 \<and> set D \<subseteq> set \<E>_impl' \<and> (\<forall>e\<in>set D. \<u>' e = PInfty))"
-proof(rule nexistsI, goal_cases)
+lemma no_infinite_cycle: "\<not> has_neg_infty_cycle make_pair' ( set \<E>_impl') \<c>' \<u>'"
+proof(rule not_has_neg_infty_cycleI, goal_cases)
   case (1 D)
   have top: "set D \<subseteq> set \<E>_impl'"
   "foldr (\<lambda>e. (+) (\<c>' e)) D 0 < 0" 
     "closed_w (make_pair' ` set \<E>_impl') (map make_pair' D)" "(\<forall>e\<in>set D. \<u>' e = \<infinity>)" 
-    using 1(1) by auto
+    using 1 by auto
   have "new_edge (create_edge t s) \<in> set D"
     using top(1,2)
     by(induction D)(auto simp add: \<E>_impl'_def \<c>'_def c_lookup'_def)
@@ -1073,9 +1070,16 @@ proof(rule nexistsI, goal_cases)
       using in_E_same_cap[of e]
       by(simp add: \<u>'_def the_default_def us_are \<u>_def Es_are to_set_def comp_def)
   qed
-  ultimately show ?case 
-    using no_infty_path not_nil by blast
+  ultimately have "has_infty_st_path local.make_pair \<E> \<u> s t"
+    using not_nil 
+    by(fastforce intro!: has_infty_st_pathI[of _ _ _ "map get_old_edge (D22@D1)"]) 
+  thus ?case 
+    using no_infty_path by simp
 qed
+
+lemma "\<u>' =  (\<lambda>e. case flow_lookup \<u>_impl' e of None \<Rightarrow> PInfty
+              | Some x \<Rightarrow> case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>)" 
+  using \<u>'_def capacity_aux_rewrite by auto
 
 lemma correctness_of_implementation_success:
  "return final_state_maxflow = success \<Longrightarrow> is_max_flow s t (abstract_flow_map final_flow_impl_maxflow_original)"
@@ -1087,10 +1091,11 @@ lemma correctness_of_implementation_success:
   apply(simp add: E'_are make_pair'_is(1))
   unfolding final_flow_impl_maxflow_def fst'_def2(2) snd'_def2(2) final_flow_impl_original_def
   apply(rule with_capacity_proofs.correctness_of_implementation_success[OF with_capacity_proofs])
-  using no_infinite_cycle[simplified \<c>'_def o_apply c_lookup'_def \<u>'_def edge_wrapper.case_distrib[of the]
-                                     option.sel ] 
-  by(unfold  \<E>_impl'_def capacity_aux_rewrite make_pair'_is(2))
-    (auto simp add: final_state_maxflow_def final_state_cap_def \<E>_impl'_def fst'_def2(1) snd'_def2(1))
+  using no_infinite_cycle
+  by(auto simp add: final_state_maxflow_def final_state_cap_def \<E>_impl'_def fst'_def2(1) 
+     snd'_def2(1) \<c>'_def \<c>_impl'_def \<u>'_def with_capacity_proofs.cs_are[OF  with_capacity_proofs]
+    with_capacity_proofs.us_are[OF  with_capacity_proofs]
+    capacity_aux_rewrite make_pair'_is(2))
 
 notation is_s_t_flow ( "_ is _ -- _ flow")
 
@@ -1105,12 +1110,19 @@ proof(rule ccontr,  goal_cases)
                (set \<E>_impl') (\<lambda>e. case flow_lookup \<u>_impl' e of None \<Rightarrow> PInfty |
         Some x \<Rightarrow> case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>)f 
            (the_default 0 \<circ> bal_lookup \<b>_impl')"
-    apply(rule  with_capacity_proofs.correctness_of_implementation_failure[OF with_capacity_proofs])
-    using no_infinite_cycle[simplified \<c>'_def o_apply c_lookup'_def \<u>'_def edge_wrapper.case_distrib[of the]
-                                     option.sel \<E>_impl'_def]"1"(1)
-    by(unfold  capacity_aux_rewrite  )
-      (simp add: local.final_state_maxflow_def fst'_def2(2) 
-        snd'_def2(2) final_state_cap_def  \<E>_impl'_def make_pair'_is(1)) +
+  proof(rule  with_capacity_proofs.correctness_of_implementation_failure[OF with_capacity_proofs], goal_cases)
+    case 1
+    then show ?case 
+    using no_infinite_cycle
+    by(simp add: \<c>'_def \<c>_impl'_def \<u>'_def make_pair'_is(1)
+        with_capacity_proofs.cs_are[OF with_capacity_proofs]
+        with_capacity_proofs.us_are[OF with_capacity_proofs])
+next
+  case 2
+  thus ?case
+    using "1"(1)
+    by(simp add: final_state_cap_def fst'_def2(1) local.final_state_maxflow_def snd'_def2(1))
+qed
    have a:"flow_network_spec.isbflow fst' snd' 
           (set \<E>_impl') (\<lambda>e. case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>)
        (\<lambda>e. case e of old_edge e \<Rightarrow> (\<lambda> x. 0) e | new_edge b \<Rightarrow> ex (\<lambda> x. 0) t) (\<lambda>e. 0)"
@@ -1135,15 +1147,16 @@ proof(rule ccontr,  goal_cases)
 
 lemma correctness_of_implementation_excluded_case:
  "return final_state_maxflow = notyetterm \<Longrightarrow> False"
-  using with_capacity_proofs  no_infinite_cycle[simplified \<c>'_def o_apply c_lookup'_def \<u>'_def edge_wrapper.case_distrib[of the]
+  using  no_infinite_cycle[simplified \<c>'_def o_apply c_lookup'_def \<u>'_def edge_wrapper.case_distrib[of the]
                                            option.sel \<E>_impl'_def]  make_pair'_is(1) 
+    no_infinite_cycle
+    with_capacity_proofs.correctness_of_implementation_excluded_case[OF with_capacity_proofs]
+     with_capacity_proofs.cs_are[OF with_capacity_proofs]
+    with_capacity_proofs.us_are[OF with_capacity_proofs]
   by (intro with_capacity_proofs.correctness_of_implementation_excluded_case[of snd' \<c>_impl' \<b>_impl' c_lookup' fst'
                           create_edge' \<E>_impl' \<u>_impl' _  _ _ "the_default 0 \<circ> bal_lookup \<b>_impl'"])
-     (auto intro!: b_impl'_0_cong 
-        simp add:  final_state_cap_def fst'_def2(1)  snd'_def2(1) 
-            to_set_def capacity_aux_rewrite[symmetric] \<E>_impl'_def  
-             final_state_maxflow_def fst'_def 
-            final_flow_impl_original_def  case_edge_wrapper_make_pair)+
+     (auto simp add:  final_state_cap_def \<c>'_def \<c>_impl'_def \<u>'_def fst'_def2(2)
+             final_state_maxflow_def   snd'_def2(2) )
  
 lemmas correctness_of_implementation = correctness_of_implementation_success
                                        correctness_of_implementation_failure

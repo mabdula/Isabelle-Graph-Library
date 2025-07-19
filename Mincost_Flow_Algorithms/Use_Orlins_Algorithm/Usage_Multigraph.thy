@@ -207,8 +207,9 @@ lemma at_least_2_verts:" 1 < function_generation.N \<E>_impl to_list fstt sndd"
 
 lemma no_cycle_cond: "no_cycle_cond fstt sndd \<c>_impl \<E>_impl flow_lookup" 
   using no_cycle
-  by(auto simp add: no_cycle_cond_def \<c>_def make_pair_def \<E>_def) 
-
+  by(auto intro!: no_cycle_condI elim!: has_neg_cycleE 
+        simp add: no_cycle_cond_def \<c>_def make_pair_def \<E>_def add.commute[of _ "_ \<c>_impl _ _"]) 
+ 
 lemma correctness_of_algo:"correctness_of_algo fstt sndd \<E>_impl create_edge \<b>_impl"
   using \<E>_impl_basic at_least_2_verts gt_zero multigraph Vs_is_bal_dom
   by (auto intro!: correctness_of_algo.intro 

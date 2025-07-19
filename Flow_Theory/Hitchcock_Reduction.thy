@@ -54,11 +54,11 @@ definition "new_\<b>_gen fstv \<E> \<u> \<b> = (\<lambda> x'. (case x' of edge e
                        | vertex x \<Rightarrow> \<b> x - sum (real_of_ereal o \<u>) 
                         ((multigraph_spec.delta_plus \<E> fstv x) - (flow_network_spec.delta_plus_infty fstv \<E> \<u> x))))"
 
-definition "new_f_gen fstv \<E> \<u> arbit f = (\<lambda> e'. (let e = edge_of (new_fstv_gen fstv e') in
+definition "new_f_gen fstv \<E> \<u>  f = (\<lambda> e'. (let e = edge_of (new_fstv_gen fstv e') in
                                (if e' \<in> new_\<E>1_gen \<E> \<u> then real_of_ereal (\<u> e) - f e
                                 else if e' \<in> new_\<E>2_gen \<E> \<u>  then f e else
                                 if e' \<in> new_\<E>3_gen \<E> \<u>  then f (get_edge e')
-                                else arbit e')))"
+                                else undefined)))"
 
 definition "old_f_gen \<E> \<u> f' = (\<lambda> e. if e \<in> flow_network_spec.infty_edges \<E> \<u> then f' (vtovedge e)
                     else  f' (outedge e))"
@@ -81,27 +81,19 @@ theorem reduction_of_mincost_flow_to_hitchcock_general:
   defines "\<b>' \<equiv> new_\<b>_gen fstv \<E> \<u> \<b>"
 shows 
    "flow_network fstv' sndv' create_edge' \<u>' \<E>'" (is ?case1) and
-   "\<And> f f' arbit. flow_network_spec.isbflow fstv sndv  \<E> \<u> f \<b> \<Longrightarrow> 
-                   f' = new_f_gen fstv \<E> \<u> arbit f
+   "\<And> f f' . \<lbrakk>flow_network_spec.isbflow fstv sndv  \<E> \<u> f \<b>; f' = new_f_gen fstv \<E> \<u>  f\<rbrakk>
        \<Longrightarrow>flow_network_spec.isbflow fstv' sndv'  \<E>' \<u>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
-      (is "\<And> f f' arbit. ?a f f' \<Longrightarrow> ?b f f' arbit \<Longrightarrow> ?c f f'") and
-   "\<And> f f'. flow_network_spec.isbflow fstv' sndv' \<E>' \<u>' f' \<b>' \<Longrightarrow> 
-          f = old_f_gen \<E> \<u>  f' \<Longrightarrow>
-          flow_network_spec.isbflow fstv sndv \<E> \<u> f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
+      (is "\<And> f f' . ?a f f' \<Longrightarrow> ?b f f'  \<Longrightarrow> ?c f f'") and
+   "\<And> f f'. \<lbrakk>flow_network_spec.isbflow fstv' sndv' \<E>' \<u>' f' \<b>';
+          f = old_f_gen \<E> \<u>  f' \<rbrakk> \<Longrightarrow>
+          flow_network_spec.isbflow fstv sndv \<E> \<u> f \<b> 
+        \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
       (is "\<And> f f'. ?x f f' \<Longrightarrow> ?y f f' \<Longrightarrow> ?z f f'") and
-     "(\<exists> C. closed_w (make_pair' ` \<E>') (map make_pair' C) \<and> foldr (\<lambda> e acc. \<c>' e + acc) C 0 < 0 \<and> set C \<subseteq> \<E>') \<longleftrightarrow>
-      (\<exists> D. closed_w (make_pair ` \<E>) (map make_pair D) \<and> foldr (\<lambda> e acc. \<c> e + acc) D 0 < 0 \<and> set D \<subseteq> \<E>
-           \<and> (\<forall> e \<in> set D. \<u> e = PInfty))" and
-"\<And> f f' arbit. f' = (\<lambda> e'. (let e = edge_of (fstv' e') in (if e' \<in> \<E>2 then f e else
-                                          if e' \<in> \<E>1 then real_of_ereal (\<u> e) - f e
-                                          else arbit e'))) \<Longrightarrow> arbit = (\<lambda> e'. f (edge_of (fstv' e'))) \<Longrightarrow>
-f = (\<lambda>e. f' (outedge e))" (is "\<And> f f' arbit. ?x1 f f' arbit \<Longrightarrow> ?y1 f arbit \<Longrightarrow> ?z1 f f'")
-   "\<And> f f' . f = old_f_gen \<E> \<u> f' \<Longrightarrow>
-    cost_flow_spec.is_Opt fstv' sndv' \<u>' \<E>' \<c>' \<b>' f'
-\<Longrightarrow> cost_flow_spec.is_Opt fstv sndv \<u> \<E> \<c> \<b> f" 
+     "has_neg_cycle make_pair' \<E>' \<c>' \<longleftrightarrow> has_neg_infty_cycle make_pair \<E> \<c> \<u>" and
+   "\<And> f f' . \<lbrakk> f = old_f_gen \<E> \<u> f'; cost_flow_spec.is_Opt fstv' sndv' \<u>' \<E>' \<c>' \<b>' f'\<rbrakk>
+          \<Longrightarrow> cost_flow_spec.is_Opt fstv sndv \<u> \<E> \<c> \<b> f" 
 (is "\<And> f f'.  ?b1 f f'\<Longrightarrow> ?c1 f' \<Longrightarrow> ?d1 f ") and
-   "\<And> f f' . f' = new_f_gen fstv \<E> \<u> arbit f
-\<Longrightarrow> cost_flow_spec.is_Opt fstv sndv  \<u> \<E> \<c> \<b> f
+   "\<And> f f' . \<lbrakk> f' = new_f_gen fstv \<E> \<u> f; cost_flow_spec.is_Opt fstv sndv  \<u> \<E> \<c> \<b> f\<rbrakk>
 \<Longrightarrow>  cost_flow_spec.is_Opt fstv' sndv'  \<u>' \<E>' \<c>' \<b>' f'" 
 (is "\<And> f f'.  ?b2 f f'\<Longrightarrow> ?c2 f \<Longrightarrow> ?d3 f' ")
 proof-
@@ -180,12 +172,12 @@ proof-
         by (simp add: residual' cost_flow_network.intro)
    have Es_non_inter: "\<E>1 \<inter> \<E>2 = {}"  "\<E>1 \<inter> \<E>3 = {}"  "\<E>2 \<inter> \<E>3 = {}"
      using \<E>1_def \<E>2_def \<E>3_def assms(2) by fastforce+
-   show claim1:"\<And> f f' arbit. ?a f f' \<Longrightarrow> ?b f f' arbit \<Longrightarrow> ?c f f'"
+   show claim1:"\<And> f f' . ?a f f' \<Longrightarrow> ?b f f'  \<Longrightarrow> ?c f f'"
      unfolding new_f_gen_def old_f_gen_def
      unfolding symmetric[OF \<E>1_def_old] symmetric[OF \<E>2_def_old] symmetric[OF \<E>3_def_old]
             symmetric[OF fstv'_def_old] 
    proof(goal_cases)
-     case (1 f f' arbit)
+     case (1 f f')
      note case1=this[simplified]
      have ex_b:"\<And> v. v\<in>dVs (make_pair ` \<E>) \<Longrightarrow> - flow_network_spec.ex fstv sndv \<E> f v = \<b> v"
        using case1 by(auto simp add: flow_network_spec.isbflow_def make_pair_def)
@@ -313,7 +305,7 @@ proof-
          have "(\<Sum>x\<in>{vtovedge e |e. e \<in> \<E> \<and> fstv e = x1 \<and> \<u> e = \<infinity>}.
                  if \<exists>e. x = inedge e \<and> e \<in> \<E> \<and> (e \<in> \<E> \<longrightarrow> \<u> e \<noteq> \<infinity>)
                   then real_of_ereal (\<u> (edge_of (fstv' x))) - f (edge_of (fstv' x))
-                   else if x \<in> \<E>2 then f (edge_of (fstv' x)) else if x \<in> \<E>3 then f (get_edge x) else arbit x) =
+                   else if x \<in> \<E>2 then f (edge_of (fstv' x)) else if x \<in> \<E>3 then f (get_edge x) else undefined) =
                sum f {e \<in> \<E>. fstv e = x1 \<and> \<u> e = \<infinity>}"
            apply(subst sum_if_not_P)
            apply(auto simp add: \<E>2_def \<E>3_def)[1]
@@ -804,14 +796,12 @@ proof-
        by (auto intro: forw_subst[OF  sum_if_not_P[of \<E>3 _ ]])
    qed
  qed
-  show claim3:  "(\<exists> C. closed_w (make_pair' ` \<E>') (map make_pair' C) \<and> foldr (\<lambda> e acc. \<c>' e + acc) C 0 < 0 \<and> set C \<subseteq> \<E>') \<longleftrightarrow>
-      (\<exists> D. closed_w (make_pair ` \<E>) (map make_pair D) \<and> foldr (\<lambda> e acc. \<c> e + acc) D 0 < 0 \<and> set D \<subseteq> \<E>
-           \<and> (\<forall> e \<in> set D. \<u> e = PInfty))"
+  show claim3:  "has_neg_cycle make_pair' \<E>' \<c>' = has_neg_infty_cycle make_pair \<E> \<c> \<u>"
   proof(rule, goal_cases)
     case 1
     then obtain C where C_prop:"closed_w (make_pair' ` \<E>') (map make_pair' C)"
                                "foldr (\<lambda>e. (+) (\<c>' e)) C 0 < 0" "set C \<subseteq> \<E>'"
-      by auto
+      by (auto elim!: has_neg_cycleE)
     hence C_inE: "set C \<subseteq> \<E>'" "C \<noteq> []"
       by(auto simp add:awalk_def closed_w_def)
     have C_in_E3: "set C \<subseteq> \<E>3"
@@ -901,11 +891,12 @@ proof-
       using C_in_E3
       by (auto simp add: flow_network_spec.infty_edges_def D_def \<E>3_def )
     ultimately show ?case
-      using C_prop(2) by auto
+      using C_prop(2) by (auto intro!: has_neg_infty_cycleI)
   next
     case 2
     then obtain D where D_prop: "closed_w (make_pair ` \<E>) (map make_pair D)" "foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0" 
-                                "(\<forall>e\<in>set D. \<u> e = PInfty)" "set D \<subseteq> \<E>"by auto
+                                "(\<forall>e\<in>set D. \<u> e = PInfty)" "set D \<subseteq> \<E>"
+       by (auto elim!: has_neg_infty_cycleE)
     then obtain u where u_prop: "awalk (make_pair ` \<E>)  u (map make_pair D) u" "0 < length D"
       by(auto simp add: closed_w_def)
     have D_infty_edges:"set D \<subseteq> flow_network_spec.infty_edges \<E> \<u>"
@@ -937,7 +928,7 @@ proof-
     moreover have "set (map vtovedge D) \<subseteq> \<E>'" 
       using C_in_E3 \<E>'_def by blast
     ultimately show ?case 
-      using  D_prop(2) by fastforce
+      using  D_prop(2) by (fastforce intro!: has_neg_cycleI)
   qed
   note claim1=claim1[simplified new_f_gen_def old_f_gen_def, simplified
         symmetric[OF \<E>1_def_old] symmetric[OF \<E>2_def_old] symmetric[OF \<E>3_def_old]
@@ -945,8 +936,8 @@ proof-
   note claim2=claim2[simplified new_f_gen_def old_f_gen_def, simplified
         symmetric[OF \<E>1_def_old] symmetric[OF \<E>2_def_old] symmetric[OF \<E>3_def_old]
             symmetric[OF fstv'_def_old]]
-  show claim5: "\<And> f f' arbit. ?x1 f f' arbit \<Longrightarrow> ?y1 f arbit \<Longrightarrow> ?z1 f f'"
-    by(auto simp add: Let_def \<E>1_def \<E>2_def fstv'_def) 
+  (*have claim5: "\<And> f f' arbit. ?x1 f f' arbit \<Longrightarrow> ?y1 f arbit \<Longrightarrow> ?z1 f f'"
+    by(auto simp add: Let_def \<E>1_def \<E>2_def fstv'_def) *)
   show claim4: "\<And> f f'.  ?b1 f f'\<Longrightarrow> ?c1 f' \<Longrightarrow> ?d1 f "
      unfolding new_f_gen_def old_f_gen_def
      unfolding symmetric[OF \<E>1_def_old] symmetric[OF \<E>2_def_old] symmetric[OF \<E>3_def_old]
@@ -1050,16 +1041,16 @@ theorem reduction_of_mincost_flow_to_hitchcock:
   defines "\<b>' \<equiv> new_\<b> \<E> \<u> \<b>"
 shows 
    "flow_network fst snd Pair \<u>' \<E>'" (is ?case1) and
-   "\<And> f f'. flow_network_spec.isbflow fst snd \<E> (ereal o \<u>) f \<b> \<Longrightarrow> f' = new_f \<E> \<u> f
+   "\<And> f f'. \<lbrakk> flow_network_spec.isbflow fst snd \<E> (ereal o \<u>) f \<b>; f' = new_f \<E> \<u> f\<rbrakk>
        \<Longrightarrow>flow_network_spec.isbflow fst snd \<E>' \<u>' f' \<b>' \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')" 
       (is "\<And> f f'. ?a f \<Longrightarrow> ?b f f' \<Longrightarrow> ?c  f f'") and
-"\<And> f f'. flow_network_spec.isbflow fst snd  \<E>' \<u>' f' \<b>' \<Longrightarrow> f = old_f f' \<Longrightarrow>
+"\<And> f f'. \<lbrakk> flow_network_spec.isbflow fst snd  \<E>' \<u>' f' \<b>'; f = old_f f'\<rbrakk> \<Longrightarrow>
           flow_network_spec.isbflow fst snd  \<E> (ereal o \<u>) f \<b> \<and> (cost_flow_spec.\<C> \<E> \<c> f = cost_flow_spec.\<C> \<E>' \<c>' f')"
       (is "\<And> f f'. ?x f' \<Longrightarrow> ?y f f'\<Longrightarrow> ?z f f'") and
-"cost_flow_spec.is_Opt fst snd  (ereal o \<u>) \<E> \<c> \<b> f \<Longrightarrow> f' = new_f \<E> \<u> f \<Longrightarrow>
+"\<lbrakk> cost_flow_spec.is_Opt fst snd  (ereal o \<u>) \<E> \<c> \<b> f; f' = new_f \<E> \<u> f\<rbrakk> \<Longrightarrow>
  cost_flow_spec.is_Opt fst snd   \<u>' \<E>' \<c>' \<b>' f'"
  and
-"cost_flow_spec.is_Opt fst snd   \<u>' \<E>' \<c>' \<b>' f' \<Longrightarrow> f = old_f f' \<Longrightarrow>
+"\<lbrakk> cost_flow_spec.is_Opt fst snd   \<u>' \<E>' \<c>' \<b>' f'; f = old_f f'\<rbrakk> \<Longrightarrow>
  cost_flow_spec.is_Opt fst snd  (ereal o \<u>) \<E> \<c> \<b> f " and
  "\<nexists> C. closed_w \<E>' C" 
 proof-

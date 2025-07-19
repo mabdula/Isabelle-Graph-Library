@@ -10,9 +10,6 @@ locale cost_flow_network_flow_existence
 where fst = fst for fst:: "('edge_type::linorder) \<Rightarrow> ('a::linorder)"
 begin
 
-definition "no_neg_cycle = (\<not>(\<exists>D. closed_w (make_pair ` \<E>) (map make_pair D) \<and>
-              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<and> set D \<subseteq> \<E> \<and> (\<forall>e\<in>set D. \<u> e = PInfty)))"
-
 lemma es_exist: "\<exists> es. set es = \<E> \<and> distinct es"
   using finite_E
  by(induction \<E> rule: finite_induct)(auto intro: exI[of _ "_ # _"])
@@ -105,14 +102,14 @@ lemma algo_locale_isbflow_def:"algo_locale.isbflow f b = flow_network_spec.isbfl
 thm algo_locale.correctness_of_implementation
 
 lemma existence_of_optimum_flow:
-"(\<exists> f. is_Opt b f) \<longleftrightarrow> ((\<exists> f. f is b flow) \<and> no_neg_cycle )"
+"(\<exists> f. is_Opt b f) \<longleftrightarrow> ((\<exists> f. f is b flow) \<and> \<not> has_neg_infty_cycle make_pair \<E> \<c> \<u>)"
 proof(rule, goal_cases)
   case 1
   then obtain f where isopt: "is_Opt b f" by auto
   hence fbflow:"f is b flow"
     using is_Opt_def by blast
-  moreover have no_neg_cycle
-    unfolding no_neg_cycle_def
+  moreover have "\<not> has_neg_infty_cycle make_pair \<E> \<c> \<u>"
+    unfolding has_neg_infty_cycle_def
   proof(rule nexistsI, goal_cases)
     case (1 D)
     then obtain u where u_prop: "awalk (make_pair ` \<E>) u (map make_pair D) u" " 0 < length (map make_pair D)"
@@ -164,7 +161,7 @@ next
   then obtain f where f_prop: "f is b flow" by auto
   have no_neg_cycle:"(\<not>(\<exists>D. closed_w (make_pair ` \<E>) (map make_pair D) \<and>
               foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<and> set D \<subseteq> \<E> \<and> (\<forall>e\<in>set D. \<u> e = PInfty)))"
-    using 2 by(auto simp add: no_neg_cycle_def)
+    using 2  has_neg_infty_cycleI by blast
   have a1:"f is \<lambda>x. the_default 0 (bal_lookup (b_impl b) x) flow"
     using b_impl_props[of b] 
     by( auto intro: isbflow_cong[OF _ _ f_prop] simp add: the_default_def  make_pair'')
@@ -177,9 +174,11 @@ next
       set D \<subseteq> \<E> \<and> (\<forall>e\<in>set D. (the_default PInfty \<circ> flow_lookup \<u>_impl) e = PInfty)"
     using no_neg_cycle \<u>_impl_props(1,2) 
     by(force simp add: the_default_def) 
+  hence no_neg_cycle'':"\<not> has_neg_infty_cycle local.make_pair \<E> \<c> (the_default PInfty \<circ> flow_lookup \<u>_impl)"
+    by(auto intro!: not_has_neg_infty_cycleI)
   have an_opt:"algo_locale.is_Opt (the_default 0 \<circ> bal_lookup (b_impl b))
    (abstract_flow_map (with_capacity.final_flow_impl_original fst snd \<E>_impl \<c>_impl \<u>_impl (b_impl b) c_lookup))"
-    using  algo_locale.correctness_of_implementation[OF no_neg_cycle'] a_flow 
+    using  algo_locale.correctness_of_implementation[OF no_neg_cycle''] a_flow
            return.exhaust by blast
   have another_opt:"is_Opt (the_default 0 \<circ> bal_lookup (b_impl b))
    (abstract_flow_map (with_capacity.final_flow_impl_original fst snd \<E>_impl \<c>_impl \<u>_impl (b_impl b) c_lookup))"
@@ -208,9 +207,6 @@ context
   assumes t_in_V: "t \<in> \<V>"
   assumes s_neq_t: "s \<noteq> t"
 begin
-
-definition "no_infty_path = (\<not>(\<exists>D. awalk UNIV s (map make_pair D) t
-                               \<and> set D \<subseteq> \<E> \<and> (\<forall>e\<in>set D. \<u> e = PInfty)))"
 
 lemma es_exist: "\<exists> es. set es = \<E> \<and> distinct es"
   using finite_E
@@ -336,22 +332,21 @@ proof(goal_cases)
 qed
 term "(\<lambda>x. (if (x = s) then 0 else 0))"
 lemma existence_of_maximum_flow:
-"(\<exists> f. is_max_flow s t f) \<longleftrightarrow>  no_infty_path"
+"(\<exists> f. is_max_flow s t f) \<longleftrightarrow>  \<not> has_infty_st_path make_pair \<E> \<u> s t"
 proof(rule, goal_cases)
   case 1
   then obtain f where isopt: " is_max_flow s t f" by auto
   define b where "b = (\<lambda>x. (if (x = s) then (ex f t) else ( if (x = t) then (- ex f t) else 0)))"
   hence fbflow:"f is s--t flow" "f is b flow"
     using isopt is_max_flow_def s_t_flow_is_ex_bflow  by blast+
-  moreover have no_infty_path
-    unfolding no_infty_path_def
-  proof(rule nexistsI, goal_cases)
+  moreover have "\<not>has_infty_st_path make_pair \<E> \<u> s t"
+  proof(rule not_has_infty_st_pathI, goal_cases)
     case (1 D)
     hence u_prop: "awalk UNIV s (map make_pair D) t" " set D \<subseteq> \<E>" "(\<forall>e\<in>set D. \<u> e = PInfty)"
         and Dlen: "length D > 0" 
       using s_neq_t by(auto simp add: awalk_def)
     have rcap:"0 < Rcap f (set (map F D))"
-      using 1(1) 
+      using 1(4) 
       by (auto simp add:  Rcap_def)
     have same_path:"(map (to_vertex_pair \<circ> F) D) = (map make_pair D)" 
       by (simp add: make_pair_def Instantiation.make_pair_def)
@@ -365,7 +360,7 @@ proof(rule, goal_cases)
       using 1(1) u_prop(1) Dlen rcap
       by(auto simp add: same_path fstv_is sndv_is augpath_def  prepath_def closed_w_def intro: subset_mono_awalk)
     have D_EE: "set (map F D) \<subseteq> \<EE>"
-      using 1(1)
+      using 1(3)
       by(force simp add: \<EE>_def)
     obtain ds where ds_prop:"prepath ds" "distinct ds" "set ds \<subseteq> set (map F D)" "fstv (hd (map F D)) = fstv (hd ds)"
        "sndv (last (map F D)) = sndv (last ds)" "ds \<noteq> []"
@@ -434,25 +429,14 @@ proof(rule, goal_cases)
   thus ?case by simp
 next
   case 2
-  have no_infty_path:" (\<not>(\<exists>D. awalk UNIV s (map make_pair D) t \<and> set D \<subseteq> \<E> \<and> (\<forall>e\<in>set D. \<u> e = PInfty)))"
-    using 2 by(auto simp add: no_infty_path_def)
-  have no_infty_path':"\<nexists>D. awalk (make_pair ` \<E>) s (map make_pair D) t \<and>
-        0 < length D \<and> set D \<subseteq> \<E> \<and> (\<forall>e\<in>set D. (the_default PInfty \<circ> flow_lookup \<u>_impl) e = PInfty)"
-  proof(rule nexistsI, goal_cases)
-    case (1 D)
-    moreover hence "awalk UNIV s (map make_pair D) t" 
-      using awalk_ends s_neq_t by(auto intro: subset_mono_awalk')
-    moreover have "(\<forall>e\<in>set D. \<u> e = PInfty)" 
-      using 1 \<E>_impl_prop(1) \<u>_impl_props(2) algo_locale.in_E_same_cap 
-            algo_locale.u_impl'_same_u by fastforce
-    ultimately show ?case 
-      using no_infty_path by blast
-  qed
+  hence two': "\<not> has_infty_st_path local.make_pair \<E> (the_default PInfty \<circ> flow_lookup \<u>_impl) s t"
+    using \<u>_impl_props(2) 
+    by(force intro!: not_has_infty_st_pathI elim!: not_has_infty_st_pathE simp add: the_default_def)
   have success:"return (solve_maxflow.final_state_maxflow fst snd create_edge \<E>_impl \<u>_impl s t) = success"
-    using algo_locale.correctness_of_implementation(2,3)[OF no_infty_path'] return.exhaust by blast
+    using algo_locale.correctness_of_implementation(2,3)[OF two'] return.exhaust by blast
   have max_flow_algo:"algo_locale.is_max_flow s t
  (abstract_flow_map (solve_maxflow.final_flow_impl_maxflow_original fst snd create_edge \<E>_impl \<u>_impl s t))"
-    using algo_locale.correctness_of_implementation(1)[OF no_infty_path' success] by simp
+    using algo_locale.correctness_of_implementation(1)[OF two' success] by simp
   have "is_max_flow s t
  (abstract_flow_map (solve_maxflow.final_flow_impl_maxflow_original fst snd create_edge \<E>_impl \<u>_impl s t))"
     using  max_flow_algo to_alog_max_flow

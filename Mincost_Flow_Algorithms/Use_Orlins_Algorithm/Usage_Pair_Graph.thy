@@ -92,9 +92,8 @@ lemma at_least_2_verts:" 1 < function_generation.N \<E>_impl to_list (prod.fst o
   by(auto simp add: to_list_def \<E>_impl_def)
 
 lemma no_cycle_cond: "no_cycle_cond fst snd \<c>_impl \<E>_impl flow_lookup" 
-  using no_cycle 
-  by(unfold selection_functions.\<E>_def[symmetric] to_set_def no_cycle_cond_def
-           \<E>_def \<c>_def multigraph_spec.make_pair_def prod.collapse) auto
+  by(auto intro!: not_has_neg_cycleI no_cycle simp add: \<E>_def multigraph_spec.make_pair_def
+      map_idI  add.commute[of _ "_ \<c>_impl _ _"] \<c>_def no_cycle_cond_def)
 
 lemma correctness_of_algo:"correctness_of_algo fst snd \<E>_impl Pair \<b>_impl"
   using \<E>_impl_basic at_least_2_verts gt_zero multigraph  Vs_is_bal_dom  bal_invar_b[of b_list, simplified sym[OF  \<b>_impl_def]]

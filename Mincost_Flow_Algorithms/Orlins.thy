@@ -2542,38 +2542,6 @@ lemma invar_forest_initial: "invar_forest initial"
 lemma invar_integral_initial: "invar_integral initial"
   by(auto intro!: invar_integralI simp add: initial_def init_flow')
 
-lemma no_augcycle_at_beginning:
-   "\<nexists> C. augcycle (\<lambda> e. 0) C"
-proof(rule ccontr)
-  assume "\<not> (\<nexists>C. augcycle (\<lambda>e. 0) C)"
-  then obtain C where C_prop:"augcycle (\<lambda> e. 0) C" by auto
-  hence aa:"closed_w (make_pair ` \<E>) (map to_vertex_pair C)"
-        "foldr (\<lambda> e acc. acc + \<cc> e) C 0 = 
-         foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0"
-    by(rule augcycle_to_closed_w, simp)+
-  have "foldr (\<lambda> e acc. acc + \<cc> e) C 0 < 0"
-    using C_prop unfolding augcycle_def \<CC>_def using distinct_sum[of C \<cc>] by simp
-  hence "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0" using aa by simp
-  moreover have "map to_vertex_pair C = map make_pair (map oedge C)"
-  proof-
-    have "e \<in> set C \<Longrightarrow> to_vertex_pair e = make_pair (oedge e)" for e
-    proof(goal_cases)
-      case 1
-      hence "rcap (\<lambda> e. 0) e > 0" 
-        using C_prop by(auto simp add: augcycle_def intro: augpath_rcap_pos_strict')
-      then obtain ee where "e = F ee" by (cases e) auto
-      then show ?case by simp
-    qed
-    thus "map to_vertex_pair C = map make_pair (map oedge C)" 
-      by simp
-  qed
-  moreover have "set (map oedge C) \<subseteq> \<E> " 
-    using C_prop  
-    by (auto simp add: image_def augcycle_def \<EE>_def)
-  ultimately show False using conservative_weights aa(1)
-    by metis  
-qed
-
 lemma abstract_bal_map_init_is:
 "abstract_bal_map init_bal = (\<lambda> v. if  v \<in> \<V> then \<b> v else 0)"
   using init_bal(2)[symmetric] init_bal(3)
@@ -2584,7 +2552,7 @@ lemma invar_isOptflow_initial: "invar_isOptflow initial"
   using u_non_neg   no_augcycle_at_beginning 
   by(auto intro!: invar_isOptflowI no_augcycle_min_cost_flow isbflowI isuflowI 
              simp add: init_flow' initial_def zero_ereal_def ex_def 
-                       abstract_bal_map_init_is
+                       abstract_bal_map_init_is conservative_weights
                 split: option.split)
 
 lemma \<Phi>_initial: "invar_non_zero_b initial\<Longrightarrow> \<Phi> initial \<le> N"
@@ -2711,9 +2679,9 @@ proof(cases "return (send_flow initial)")
      unfolding assms orlins.psimps[OF orlins_dom] success
      apply(subst send_flow_simps(1)[OF send_flow_dom])
      apply(rule all_bal_zero_send_flow_dom(2)[OF implementation_invar_initial])
-     by (auto intro: all_bal_zero_send_flow_dom(2)[OF implementation_invar_initial]
+     by (auto intro!: all_bal_zero_send_flow_dom(2)[OF implementation_invar_initial]
            simp add: abstract_bal_map_init_is initial_def send_flow_succ_upd_def
-                     init_flow'(1) ex_def infinite_u isbflowI isuflowI
+                     init_flow'(1) ex_def infinite_u isbflowI isuflowI conservative_weights
                      no_augcycle_at_beginning no_augcycle_min_cost_flow)
  next
    case False

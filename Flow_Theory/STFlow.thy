@@ -900,21 +900,21 @@ lemma delta_minus_same:" x \<noteq> s \<Longrightarrow> x \<in> \<V> \<Longright
   by (subst  cost_network_of_network.delta_minus_def)(auto simp add:  delta_minus_def   \<E>'_def snd'_def)
 
 lemma maxflow_to_mincost_flow_reduction:
-  "\<And> f f'. f is s--t flow \<Longrightarrow> 
-         f' = (\<lambda> e. case e of old_edge e \<Rightarrow> f e |  _ \<Rightarrow> ex f t) \<Longrightarrow>
+  "\<And> f f'. \<lbrakk> f is s--t flow;
+         f' = (\<lambda> e. case e of old_edge e \<Rightarrow> f e |  _ \<Rightarrow> ex f t)\<rbrakk> \<Longrightarrow>
          cost_network_of_network.isbflow f' (\<lambda> e. 0) \<and> cost_network_of_network.\<C> f' = - ex f t" 
   (is "\<And> f f'. ?a1 f f' \<Longrightarrow> ?b1 f f' \<Longrightarrow> ?c1 f f'")
 
-"\<And> f f'. cost_network_of_network.isbflow f' (\<lambda> e. 0)  \<Longrightarrow> 
-         f = (\<lambda> e. f' (old_edge e)) \<Longrightarrow>
+"\<And> f f'. \<lbrakk> cost_network_of_network.isbflow f' (\<lambda> e. 0);
+         f = (\<lambda> e. f' (old_edge e))\<rbrakk> \<Longrightarrow>
          f is s--t flow \<and> cost_network_of_network.\<C> f' = - ex f t"
 (is "\<And> f f'. ?a2 f f' \<Longrightarrow> ?b2 f f' \<Longrightarrow> ?c2 f f'")
-"\<And> f f'. is_max_flow s t f \<Longrightarrow> 
-         f' = (\<lambda> e. case e of old_edge e \<Rightarrow> f e |  _ \<Rightarrow> ex f t) \<Longrightarrow>
+"\<And> f f'.\<lbrakk> is_max_flow s t f ;
+         f' = (\<lambda> e. case e of old_edge e \<Rightarrow> f e |  _ \<Rightarrow> ex f t)\<rbrakk> \<Longrightarrow>
          cost_network_of_network.is_Opt (\<lambda> e. 0) f'"
 (is "\<And> f f'. ?a3 f f' \<Longrightarrow> ?b3 f f' \<Longrightarrow> ?c3 f f'")
-"\<And> f f'. cost_network_of_network.is_Opt (\<lambda> e. 0) f' \<Longrightarrow> 
-         f = (\<lambda> e. f' (old_edge e)) \<Longrightarrow>
+"\<And> f f'. \<lbrakk> cost_network_of_network.is_Opt (\<lambda> e. 0) f' ;
+         f = (\<lambda> e. f' (old_edge e)) \<rbrakk>\<Longrightarrow>
          is_max_flow s t f"
 (is "\<And> f f'. ?a4 f f' \<Longrightarrow> ?b4 f f' \<Longrightarrow> ?c4 f f'")
 proof-

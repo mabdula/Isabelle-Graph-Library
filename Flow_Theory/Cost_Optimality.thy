@@ -621,4 +621,105 @@ However, there is a different approach maintaining optimality throughout the alg
 the balances. We will see an invariant for this way of proceeding in the next section.
 \<close>
 end
+
+definition "has_neg_cycle make_pair \<E> \<c>= 
+               (\<exists>D. closed_w (make_pair ` \<E>) (map make_pair D) \<and>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<and> set D \<subseteq> \<E>)"
+
+lemma has_neg_cycleE:
+"has_neg_cycle make_pair \<E> \<c> \<Longrightarrow> 
+               (\<And> D. closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> P) \<Longrightarrow> P"
+and has_neg_cycleI:
+"closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow>  has_neg_cycle make_pair \<E> \<c>"
+and not_has_neg_cycleI:
+"(\<And> D. closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> False) \<Longrightarrow>  \<not> has_neg_cycle make_pair \<E> \<c>"
+  by(auto simp add: has_neg_cycle_def)
+
+definition "has_neg_infty_cycle make_pair \<E> \<c> \<u>= 
+               (\<exists>D. closed_w (make_pair ` \<E>) (map make_pair D) \<and>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<and> set D \<subseteq> \<E> \<and> (\<forall> e \<in> set D. \<u> e = PInfty))"
+
+lemma has_neg_infty_cycleE:
+"has_neg_infty_cycle make_pair \<E> \<c> \<u>\<Longrightarrow> 
+               (\<And> D. closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow>
+ P) \<Longrightarrow> P"
+and has_neg_infty_cycleI:
+"closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow>  (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty)
+\<Longrightarrow> has_neg_infty_cycle make_pair \<E> \<c> \<u>" 
+and not_has_neg_infty_cycleI:
+"(\<And> D. closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow>  (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty)
+\<Longrightarrow> False) \<Longrightarrow>\<not> has_neg_infty_cycle make_pair \<E> \<c> \<u>"
+  by(auto simp add: has_neg_infty_cycle_def)
+
+definition "has_infty_st_path make_pair \<E> \<u> s t= 
+             (\<exists> D. awalk (make_pair ` \<E>) s (map make_pair D) t \<and> length D > 0 \<and>  set D \<subseteq> \<E>
+                               \<and> (\<forall> e \<in> set D. \<u> e = PInfty))"
+  for make_pair \<E> \<c> \<u>
+
+lemma has_infty_st_pathE:
+"has_infty_st_path make_pair \<E> \<u> s t\<Longrightarrow> 
+               (\<And> D.  awalk (make_pair ` \<E>) s (map make_pair D) t  \<Longrightarrow> length D > 0
+              \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow>
+ P) \<Longrightarrow> P"
+and has_infty_st_pathI:
+"awalk (make_pair ` \<E>) s (map make_pair D) t  \<Longrightarrow> length D > 0
+              \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow>
+has_infty_st_path make_pair \<E> \<u> s t" 
+and not_has_infty_st_pathI:
+"(\<And> D. awalk (make_pair ` \<E>) s (map make_pair D) t  \<Longrightarrow> length D > 0
+              \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow> False) \<Longrightarrow>
+\<not> has_infty_st_path make_pair \<E> \<u> s t"
+and not_has_infty_st_pathE:
+"\<not> has_infty_st_path make_pair \<E> \<u> s t \<Longrightarrow>
+((\<And> D. awalk (make_pair ` \<E>) s (map make_pair D) t  \<Longrightarrow> length D > 0
+              \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow> False) \<Longrightarrow> P) \<Longrightarrow> P"
+for make_pair \<E> \<u> t s
+  by(auto simp add: has_infty_st_path_def)
+
+context
+cost_flow_network
+begin
+
+lemma no_augcycle_at_beginning:
+  assumes conservative_weights: "\<not> has_neg_cycle make_pair \<E> \<c>"
+  shows "\<nexists> C. augcycle (\<lambda> e. 0) C"
+proof(rule ccontr)
+  assume "\<not> (\<nexists>C. augcycle (\<lambda>e. 0) C)"
+  then obtain C where C_prop:"augcycle (\<lambda> e. 0) C" by auto
+  hence aa:"closed_w (make_pair ` \<E>) (map to_vertex_pair C)"
+        "foldr (\<lambda> e acc. acc + \<cc> e) C 0 = 
+         foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0"
+    by(rule augcycle_to_closed_w, simp)+
+  have "foldr (\<lambda> e acc. acc + \<cc> e) C 0 < 0"
+    using C_prop unfolding augcycle_def \<CC>_def using distinct_sum[of C \<cc>] by simp
+  hence "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0" using aa by simp
+  moreover have bbb:"map to_vertex_pair C = map make_pair (map oedge C)"
+  proof-
+    have "e \<in> set C \<Longrightarrow> to_vertex_pair e = make_pair (oedge e)" for e
+    proof(goal_cases)
+      case 1
+      hence "rcap (\<lambda> e. 0) e > 0" 
+        using C_prop by(auto simp add: augcycle_def intro: augpath_rcap_pos_strict')
+      then obtain ee where "e = F ee" by (cases e) auto
+      then show ?case by simp
+    qed
+    thus "map to_vertex_pair C = map make_pair (map oedge C)" 
+      by simp
+  qed
+  moreover have "set (map oedge C) \<subseteq> \<E> " 
+    using C_prop  
+    by (auto simp add: image_def augcycle_def \<EE>_def)
+  ultimately
+  have "has_neg_cycle make_pair \<E> \<c>"
+    using  aa(1) 
+    by(auto intro!: has_neg_cycleI[of _ _ "map oedge C"] simp add: bbb add.commute[of _ "\<c> _"])
+ thus False using  conservative_weights by simp
+qed
+end
 end

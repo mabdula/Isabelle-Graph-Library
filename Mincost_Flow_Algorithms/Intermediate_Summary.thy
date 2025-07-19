@@ -1377,7 +1377,7 @@ locale algo =  cost_flow_network where fst = fst +
 for fst::"'edge_type \<Rightarrow> 'a" and edge_map_update +
    assumes infinite_u:  "\<And> e. \<u> e = PInfty"
        and \<epsilon>_axiom: "0 < \<epsilon>" "\<epsilon> \<le> 1 / 2" "\<epsilon> \<le> 1/ (real (card \<V>))" "\<epsilon> < 1/2"
-       and conservative_weights: "\<nexists> C. closed_w (make_pair ` \<E>) (map make_pair C) \<and> (set C \<subseteq> \<E>) \<and> foldr (\<lambda> e acc. acc + \<c> e) C 0 < 0"
+       and conservative_weights: "\<not> has_neg_cycle make_pair \<E> \<c>"
        and \<E>_impl_meaning: "to_set \<E>_impl = \<E>" "set_invar \<E>_impl"   
        and empty_forest_axioms:   "\<And> v. lookup empty_forest v = None"
                              "adjmap_inv empty_forest"

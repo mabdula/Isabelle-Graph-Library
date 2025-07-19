@@ -864,25 +864,25 @@ lemma vs_and_es: "vs \<noteq> []" "set vs = dVs (set es)" "distinct vs" "distinc
   using \<E>_def  es_is_E  vs_def vs_is_V es_is_E \<E>_impl_basic
   by (auto simp add: vs_def es_def dVs_def )
 
-definition "no_cycle_cond =
-        (\<forall> C. closed_w (make_pair ` function_generation.\<E> \<E>_impl to_set) (map make_pair C) \<longrightarrow>
-         set C \<subseteq> function_generation.\<E> \<E>_impl to_set \<longrightarrow>
-         foldr (\<lambda>e acc. acc + \<c> e) C 0 < 0 \<longrightarrow> False)"
+definition "no_cycle_cond = (\<not> has_neg_cycle make_pair (function_generation.\<E> \<E>_impl to_set) \<c>)"
 
 context
   assumes no_cycle_cond: no_cycle_cond
 begin
-lemma  conservative_weights: "\<nexists> C. closed_w (make_pair ` \<E>) (map make_pair C) \<and> (set C \<subseteq> \<E>) \<and> foldr (\<lambda> e acc. acc + \<c> e) C 0 < 0"
-  using no_cycle_cond no_cycle_cond_def by blast
+lemma  conservative_weights: 
+"\<nexists> C. closed_w (make_pair ` \<E>) (map make_pair C) \<and> (set C \<subseteq> \<E>) \<and> foldr (\<lambda> e acc. acc + \<c> e) C 0 < 0"
+  using no_cycle_cond 
+  by(auto simp add: no_cycle_cond_def has_neg_cycle_def
+          ab_semigroup_add_class.add.commute[of _ "\<c> _"])
 
 thm algo_axioms_def
 
 lemma algo_axioms: " algo_axioms snd \<u> \<c> \<E> set_invar to_set lookup adj_inv
                 \<epsilon> \<E>_impl map_empty N fst"
-  using  \<epsilon>_axiom conservative_weights  \<E>_impl(1) 
+  using  \<epsilon>_axiom  \<E>_impl(1)  no_cycle_cond
   by(auto intro!: algo_axioms.intro 
         simp add: \<u>_def \<E>_def N_def' Pair_Graph_Specs_satisfied.adjmap.map_empty
-                  Pair_Graph_Specs_satisfied.adjmap.invar_empty make_pairs_are)
+                  Pair_Graph_Specs_satisfied.adjmap.invar_empty make_pairs_are no_cycle_cond_def)
  
 lemmas dfs_defs = dfs.initial_state_def
 
@@ -4355,10 +4355,17 @@ end
 end
 
 definition "no_cycle_cond fst snd \<c>_impl \<E>_impl c_lookup =
-         (\<forall> C. closed_w (multigraph_spec.make_pair fst snd ` function_generation.\<E> \<E>_impl to_set) 
-                   (map (multigraph_spec.make_pair fst snd) C) \<longrightarrow>
-         set C \<subseteq> function_generation.\<E> \<E>_impl to_set \<longrightarrow>
-         foldr (\<lambda>e acc. acc + function_generation.\<c> \<c>_impl c_lookup e) C 0 < 0 \<longrightarrow> False)" for fst snd
+            (\<not> has_neg_cycle (multigraph_spec.make_pair fst snd) 
+                (function_generation.\<E> \<E>_impl to_set) (function_generation.\<c> \<c>_impl c_lookup))" 
+  for fst snd
+
+lemma no_cycle_condI:
+"(\<And> D. closed_w ((multigraph_spec.make_pair fst snd) `   (function_generation.\<E> \<E>_impl to_set))
+          (map (multigraph_spec.make_pair fst snd) D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) ( (function_generation.\<c> \<c>_impl c_lookup) e)) D 0 < 0 
+        \<Longrightarrow> set D \<subseteq>   (function_generation.\<E> \<E>_impl to_set) \<Longrightarrow> False)
+    \<Longrightarrow> no_cycle_cond fst snd \<c>_impl \<E>_impl c_lookup" for fst snd
+  by(auto simp add: no_cycle_cond_def has_neg_cycle_def)
 
 term \<open>multigraph_spec.make_pair fst snd\<close>
 thm function_generation_proof_axioms_def
@@ -4407,6 +4414,7 @@ and  Vs_is_bal_dom: "dVs (multigraph_spec.make_pair fst snd ` to_set \<E>_impl) 
 and at_least_2_verts: "0 < function_generation.N \<E>_impl to_list fst snd"
 and multigraph: "multigraph fst snd create_edge (function_generation.\<E> \<E>_impl to_set)"
 begin
+thm  function_generation_proof.no_cycle_cond_def
 
 interpretation function_generation_proof:
 function_generation_proof realising_edges_empty realising_edges_update realising_edges_delete
@@ -4429,19 +4437,19 @@ lemmas function_generation_proof = function_generation_proof.function_generation
 context   
   assumes no_cycle: "no_cycle_cond fst snd \<c>_impl \<E>_impl c_lookup"
 begin
-
+(*
 lemma no_cycle: "closed_w (multigraph_spec.make_pair fst snd ` function_generation.\<E> \<E>_impl to_set)
                         (map (multigraph_spec.make_pair fst snd) C) \<Longrightarrow>
           set C \<subseteq> function_generation.\<E> \<E>_impl to_set \<Longrightarrow>
           foldr (\<lambda>e acc. acc + function_generation.\<c> \<c>_impl c_lookup e) C 0 < 0 \<Longrightarrow> False"
   using no_cycle
   by (auto simp add: no_cycle_cond_def multigraph_spec.make_pair_def)
-
+*) thm function_generation_proof.no_cycle_cond_def
 lemma no_cycle_cond:"function_generation_proof.no_cycle_cond "
   using no_cycle
-  unfolding function_generation_proof.no_cycle_cond_def function_generation_proof.multigraph.make_pair_def
-            selection_functions.make_pair_def 
-  by blast
+  unfolding no_cycle_cond_def  function_generation_proof.no_cycle_cond_def
+  function_generation_proof.multigraph.make_pair_def selection_functions.make_pair_def
+  by simp
 
 corollary correctness_of_implementation:
  "return (final_state fst snd create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = success \<Longrightarrow>  
