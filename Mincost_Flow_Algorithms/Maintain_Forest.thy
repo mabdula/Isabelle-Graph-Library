@@ -43,7 +43,7 @@ function (domintros) maintain_forest::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state
 "maintain_forest state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
-                    r_card = representative_comp_card state;
+                    r_card = rep_comp_card state;
                     E' = actives state;
                     to_rdg = conv_to_rdg state;
                     \<gamma> = current_\<gamma> state
@@ -66,11 +66,11 @@ case get_from_set  (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E
                             E'' = filter (\<lambda> d. {abstract_rep_map r_card (fst d) ,
                                                 abstract_rep_map r_card (snd d)}
                                                  \<noteq> {x', y'} ) E';
-                            r_card' = rep_comp_update_all 
+                            r_card' = rep_comp_upd_all 
                                 (\<lambda> u urc. if prod.fst (urc) = x' \<or> prod.fst (urc) = y'
                                     then (y', cardx + cardy) else urc) r_card;
                             nb = not_blocked state;
-                            nb' = not_blocked_update_all (\<lambda> d b. 
+                            nb' = not_blocked_upd_all (\<lambda> d b. 
                                    if d = e then True
                                    else if {abstract_rep_map r_card (fst d) ,
                                             abstract_rep_map r_card (snd d)} = {x', y'} 
@@ -79,7 +79,7 @@ case get_from_set  (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E
                             state' = state \<lparr>  \<FF> := \<FF>', current_flow := f',
                                     balance := b', 
                                     actives := E'', conv_to_rdg := to_rdg',
-                                    representative_comp_card:= r_card',
+                                    rep_comp_card:= r_card',
                                     not_blocked := nb'\<rparr>
                             in maintain_forest state')
                             | None \<Rightarrow> state))"
@@ -90,7 +90,7 @@ partial_function (tailrec) maintain_forest_impl::"('e, 'f, 'c,'h, 'd, 'g, 'i) Al
 "maintain_forest_impl state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
-                    r_card = representative_comp_card state;
+                    r_card = rep_comp_card state;
                     E' = actives state;
                     to_rdg = conv_to_rdg state;
                     \<gamma> = current_\<gamma> state
@@ -113,11 +113,11 @@ case get_from_set  (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E
                             E'' = filter (\<lambda> d. {abstract_rep_map r_card (fst d) ,
                                                 abstract_rep_map r_card (snd d)}
                                                  \<noteq> {x', y'} ) E';
-                            r_card' = rep_comp_update_all 
+                            r_card' = rep_comp_upd_all 
                                 (\<lambda> u urc. if prod.fst (urc) = x' \<or> prod.fst (urc) = y'
                                     then (y', cardx + cardy) else urc) r_card;
                             nb = not_blocked state;
-                            nb' = not_blocked_update_all (\<lambda> d b. 
+                            nb' = not_blocked_upd_all (\<lambda> d b. 
                                    if d = e then True
                                    else if {abstract_rep_map r_card (fst d),
                                     abstract_rep_map r_card (snd d)} = {x', y'} 
@@ -126,7 +126,7 @@ case get_from_set  (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E
                             state' = state \<lparr>  \<FF> := \<FF>', current_flow := f',
                                     balance := b', 
                                     actives := E'', conv_to_rdg := to_rdg',
-                                    representative_comp_card:= r_card',
+                                    rep_comp_card:= r_card',
                                     not_blocked := nb'\<rparr>
                             in maintain_forest_impl state')
                             | None \<Rightarrow> state))"
@@ -161,7 +161,7 @@ lemmas get_path_axioms_unfolded=get_path_axioms[OF maintain_forest_get_path_cond
 definition "maintain_forest_ret_cond state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
-                    r_card = representative_comp_card state;
+                    r_card = rep_comp_card state;
                     E' = actives state;
                     to_rdg = conv_to_rdg state;
                     \<gamma> = current_\<gamma> state
@@ -173,14 +173,14 @@ definition "maintain_forest_ret_cond state = (let \<FF> = \<FF> state;
 lemma maintain_forest_ret_condE: 
 "maintain_forest_ret_cond state \<Longrightarrow> 
 (\<And> f b r_card E' to_rdg \<gamma> cards.
-   \<lbrakk>f = current_flow state;  r_card = representative_comp_card state;
+   \<lbrakk>f = current_flow state;  r_card = rep_comp_card state;
     E' = actives state;  \<gamma> = current_\<gamma> state;
     get_from_set  (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = None \<rbrakk>\<Longrightarrow>P)
                 \<Longrightarrow> P"
   by(fastforce simp add: maintain_forest_ret_cond_def Let_def)
 
 lemma maintain_forest_ret_condI: 
-"\<lbrakk> f = current_flow state; r_card = representative_comp_card state;  E' = actives state;
+"\<lbrakk> f = current_flow state; r_card = rep_comp_card state;  E' = actives state;
    \<gamma> = current_\<gamma> state; get_from_set  (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = None\<rbrakk>
           \<Longrightarrow> maintain_forest_ret_cond state"
   by(fastforce simp add: maintain_forest_ret_cond_def Let_def)
@@ -188,7 +188,7 @@ lemma maintain_forest_ret_condI:
 definition "maintain_forest_call_cond state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
-                    r_card = representative_comp_card state;
+                    r_card = rep_comp_card state;
                     E' = actives state;
                     to_rdg = conv_to_rdg state;
                     \<gamma> = current_\<gamma> state
@@ -200,14 +200,14 @@ definition "maintain_forest_call_cond state = (let \<FF> = \<FF> state;
 lemma maintain_forest_call_condE: 
 "maintain_forest_call_cond state \<Longrightarrow> 
 (\<And> f b r_card E' to_rdg \<gamma> cards a.
-   \<lbrakk>f = current_flow state;  r_card = representative_comp_card state;
+   \<lbrakk>f = current_flow state;  r_card = rep_comp_card state;
     E' = actives state;  \<gamma> = current_\<gamma> state;
     get_from_set  (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = Some a \<rbrakk>\<Longrightarrow>P)
                 \<Longrightarrow> P"
   by(fastforce simp add: maintain_forest_call_cond_def Let_def)
 
 lemma maintain_forest_call_condI: 
-"\<lbrakk> f = current_flow state; r_card = representative_comp_card state;  E' = actives state;
+"\<lbrakk> f = current_flow state; r_card = rep_comp_card state;  E' = actives state;
    \<gamma> = current_\<gamma> state; get_from_set  (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = Some a\<rbrakk>
           \<Longrightarrow> maintain_forest_call_cond state"
   by(fastforce simp add: maintain_forest_call_cond_def Let_def)
@@ -230,7 +230,7 @@ qed
 definition "maintain_forest_upd state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
-                    r_card = representative_comp_card state;
+                    r_card = rep_comp_card state;
                     E' = actives state;
                     to_rdg = conv_to_rdg state;
                     \<gamma> = current_\<gamma> state;
@@ -251,11 +251,11 @@ definition "maintain_forest_upd state = (let \<FF> = \<FF> state;
                             E'' = filter (\<lambda> d. {abstract_rep_map r_card (fst d) ,
                                                 abstract_rep_map r_card (snd d)}
                                                  \<noteq> {x', y'} ) E';
-                            r_card' = rep_comp_update_all 
+                            r_card' = rep_comp_upd_all 
                                 (\<lambda> u urc. if prod.fst (urc) = x' \<or> prod.fst (urc) = y'
                                     then (y', cardx + cardy) else urc) r_card;
                             nb = not_blocked state;
-                            nb' = not_blocked_update_all (\<lambda> d b. 
+                            nb' = not_blocked_upd_all (\<lambda> d b. 
                                    if d = e then True
                                    else if 
                                  {abstract_rep_map r_card (fst d),
@@ -266,7 +266,7 @@ definition "maintain_forest_upd state = (let \<FF> = \<FF> state;
                             state' = state \<lparr>  \<FF> := \<FF>', current_flow := f',
                                     balance := b', 
                                     actives := E'', conv_to_rdg := to_rdg',
-                                    representative_comp_card:= r_card',
+                                    rep_comp_card:= r_card',
                                     not_blocked := nb'\<rparr>
                             in  state')"
 
@@ -324,7 +324,7 @@ next
                        refl refl refl refl refl refl refl refl refl refl, rotated])
     apply(rule Algo_state.equality)
     by (auto  elim!: maintain_forest_call_condE
-            intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_update_all] 
+            intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_upd_all] 
                     ext Algo_state.equality
           simp add: maintain_forest_upd_def Let_def)
  qed
@@ -350,7 +350,7 @@ proof-
   define  \<FF> where  "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
   define b where "b = balance state"
-  define r_card where "r_card = representative_comp_card state"
+  define r_card where "r_card = rep_comp_card state"
   define E' where "E' = actives state"
   define to_rdg where "to_rdg = conv_to_rdg state"
   define \<gamma> where "\<gamma> = current_\<gamma> state"
@@ -374,11 +374,11 @@ proof-
   define b' where "b' = move_balance b x' y'"
   define E'' where "E'' = filter (\<lambda> d. 
 {abstract_rep_map r_card (fst d) , abstract_rep_map r_card (snd d) } \<noteq> {x', y'} ) E'"
-  define r_card' where "r_card' = rep_comp_update_all 
+  define r_card' where "r_card' = rep_comp_upd_all 
                                 (\<lambda> u urc. if prod.fst (urc) = x' \<or> prod.fst (urc) = y'
                                     then (y', cardx + cardy) else urc) r_card"
   define nb where "nb = not_blocked state"
-  define nb' where "nb' = not_blocked_update_all (\<lambda> d b. 
+  define nb' where "nb' = not_blocked_upd_all (\<lambda> d b. 
                                    if d =  e then True
                                    else if {abstract_rep_map r_card (fst d) , abstract_rep_map r_card (snd d) } = {x', y'} 
                                    then False
@@ -387,7 +387,7 @@ proof-
               \<lparr>  \<FF> := \<FF>', current_flow := f',
                 balance := b',
                 actives := E'', conv_to_rdg := to_rdg', 
-                representative_comp_card := r_card',
+                rep_comp_card := r_card',
                 not_blocked := nb'\<rparr>"
 
   note defs_impl = state'_def \<FF>'_def e_def \<gamma>_def E'_def
@@ -398,7 +398,7 @@ proof-
 
    have state'_is: "state' = maintain_forest_upd state"
     apply(rule Algo_state.equality)
-    by (auto intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_update_all] ext 
+    by (auto intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_upd_all] ext 
           simp add: maintain_forest_upd_def Let_def defs_impl)
   note 10= state'_is
 
@@ -507,14 +507,14 @@ proof-
         note true=this
         hence same_r:"abstract_rep_map r_card u =  abstract_rep_map r_card v"  
           using all_invars(7) by(simp add: r_card_def invar_aux7_def)
-         have reps_dom:"u \<in> rep_comp_domain (representative_comp_card state)"
-                      "v \<in> rep_comp_domain (representative_comp_card state)"
+         have reps_dom:"u \<in> rep_comp_domain (rep_comp_card state)"
+                      "v \<in> rep_comp_domain (rep_comp_card state)"
           apply(all \<open>rule implementation_invar_partialE(7)[OF assms(3)]\<close>)
           using True reachable_in_forest_fst_in_V reachable_in_forest_snd_in_V
           by(auto simp add: \<FF>_def)
          show ?thesis
           using assms(3) same_r reps_dom
-          by(force simp add:r_card_def state'_def r_card'_def  abstract_rep_map_rep_comp_update_all) 
+          by(force simp add:r_card_def state'_def r_card'_def  abstract_rep_map_rep_comp_upd_all) 
       next
         case False
         hence False': "\<not> reachable (to_graph (Algo_state.\<FF> state)) v u" 
@@ -550,8 +550,8 @@ proof-
                                 "reachable (to_graph \<FF>) yy (abstract_rep_map r_card yy) \<or> abstract_rep_map r_card yy = yy"
           using "1110"  invar_aux8_def[of state]  all_invars(6) local.\<FF>_def r_card_def \<FF>_def
           by force+
-        have reps_dom:"u \<in> rep_comp_domain (representative_comp_card state)"
-                      "v \<in> rep_comp_domain (representative_comp_card state)"
+        have reps_dom:"u \<in> rep_comp_domain (rep_comp_card state)"
+                      "v \<in> rep_comp_domain (rep_comp_card state)"
           apply(all \<open>rule implementation_invar_partialE(7)[OF assms(3)]\<close>)
           using  reachable_in_forest_fst_in_V reachable_in_forest_snd_in_V  asm' 
                new_forest_Vs_in_V reachable_to_Vs(4)[of _ v]  asm reachable_to_Vs(4)[of _ u]  
@@ -563,7 +563,7 @@ proof-
                 invar_aux7D[OF all_invars(7), of u xx] invar_aux7D[OF all_invars(7), of u yy]
                 invar_aux7D[OF all_invars(7), of v xx] invar_aux7D[OF all_invars(7), of v yy]
                 reach_rpop reach_rpop'
-          by (auto  simp add:state'_def r_card'_def abstract_rep_map_rep_comp_update_all local.\<FF>_def r_card_def x'_def y'_def)     
+          by (auto  simp add:state'_def r_card'_def abstract_rep_map_rep_comp_upd_all local.\<FF>_def r_card_def x'_def y'_def)     
       qed 
     qed 
   qed
@@ -675,11 +675,11 @@ qed
       case False
       hence "v \<in> rep_comp_domain r_card" 
         using  rep_comp_invar_r_card not_in_dom_id [of v r_card'] not_in_dom_id [of v r_card]
-            rep_comp_update_all(4)[OF rep_comp_invar_r_card]
+            rep_comp_upd_all(4)[OF rep_comp_invar_r_card]
         by(force simp add: r_card'_def r_card_def) 
       hence "reachable (to_graph \<FF>') y' v" "abstract_rep_map r_card' v = y'"
         using same_reachability[of v] False
-                 abstract_rep_map_rep_comp_update_all[OF rep_comp_invar_r_card, of _ v]
+                 abstract_rep_map_rep_comp_upd_all[OF rep_comp_invar_r_card, of _ v]
         by(auto simp add: r_card'_def \<FF>'_def y'_def r_card_def )
       then show ?thesis 
         by (simp add: reachable_sym)
@@ -829,7 +829,7 @@ qed
               reachable_trans[of "(to_graph \<FF>')" y' "snd d" "fst d"] reachable_sym[of "(to_graph \<FF>')" "fst d" "snd d"]
               \<open>fst d \<noteq> snd d \<Longrightarrow> reachable (to_graph \<FF>') (fst d) (snd d)\<close> same_reachability
          apply (cases "fst d \<in> rep_comp_domain r_card", all \<open>cases "snd d \<in> rep_comp_domain r_card"\<close>) 
-          by (simp_all add: r_card'_def abstract_rep_map_rep_comp_update_all[OF rep_comp_invar_r_card]) 
+          by (simp_all add: r_card'_def abstract_rep_map_rep_comp_upd_all[OF rep_comp_invar_r_card]) 
                fastforce+
       show False 
         using dE(2) different_reps_before insert_commute lst same_reachability[of "fst d"] 
@@ -845,7 +845,7 @@ qed
         case True
         then show ?thesis using y'_y'_reach same_reachability
           by(simp add: state'_def r_card'_def 
-                abstract_rep_map_rep_comp_update_all not_in_dom_id rep_comp_invar_r_card)
+                abstract_rep_map_rep_comp_upd_all not_in_dom_id rep_comp_invar_r_card)
       next
         case False 
         moreover have not_x': "v \<noteq> x'" using b'_def 1 state'_def new_balance_is by auto
@@ -880,9 +880,9 @@ qed
           moreover have "v \<in> rep_comp_domain r_card"
             using "1"(1) assms(3) r_card_def by blast
           ultimately show ?thesis
-           unfolding abstract_rep_map_rep_comp_update_all[OF rep_comp_invar_r_card]
+           unfolding abstract_rep_map_rep_comp_upd_all[OF rep_comp_invar_r_card]
             using reachable_sym[of "to_graph \<FF>'" v y'] same_r same_reachability[of ]
-            by (auto simp add: state'_def r_card'_def  abstract_rep_map_rep_comp_update_all[OF rep_comp_invar_r_card])
+            by (auto simp add: state'_def r_card'_def  abstract_rep_map_rep_comp_upd_all[OF rep_comp_invar_r_card])
       qed
     qed
     show "invar_aux13 state'"
@@ -985,7 +985,7 @@ qed
             same_reachability[of x]  same_reachability[of v] 
             same_reachability[of y] 
        by(auto simp add: x'_def x_def xx_def xy_def y_def r_card'_def   F'_to_graph_is
-                 abstract_rep_map_rep_comp_update_all[OF rep_comp_invar_r_card])
+                 abstract_rep_map_rep_comp_upd_all[OF rep_comp_invar_r_card])
      show ?case
         apply(subst comp_is,subst card_Un_disjnt)
         using 1 all_invars(14) all_invars(10)  fste_V snde_V  all_invars(11)  e_in_E' 
@@ -1002,7 +1002,7 @@ qed
       moreover hence "v \<in> rep_comp_domain r_card" 
         using assms(3) r_card_def by auto
      ultimately have neither_x'_nor_y':"abstract_rep_map r_card v \<noteq> x'" "abstract_rep_map r_card v \<noteq> y'"
-       using abstract_rep_map_rep_comp_update_all[OF rep_comp_invar_r_card] 
+       using abstract_rep_map_rep_comp_upd_all[OF rep_comp_invar_r_card] 
        by(auto simp add: r_card'_def)
      have " x \<notin> connected_component (to_graph \<FF>) v" 
           " y \<notin> connected_component (to_graph \<FF>) v"
@@ -1024,8 +1024,8 @@ qed
       show ?case 
         using a1[OF 1] a2[OF 1] in_V_rep_dom[OF 1]
         apply(unfold state'_def, simp)
-        apply(unfold r_card'_def abstract_comp_map_rep_comp_update_all[OF rep_comp_invar_r_card]
-                  abstract_rep_map_rep_comp_update_all[OF rep_comp_invar_r_card]) 
+        apply(unfold r_card'_def abstract_comp_map_rep_comp_upd_all[OF rep_comp_invar_r_card]
+                  abstract_rep_map_rep_comp_upd_all[OF rep_comp_invar_r_card]) 
         by simp(fastforce simp add:  cardx_def cardy_def if_P[OF  a_ind_dom]  \<FF>'_def F'_to_graph_is state'_def r_card'_def)+
     qed
     show "invar_aux17 state'"
@@ -1124,7 +1124,7 @@ lemma maintain_forest_dom_upd:
   by(rule back_subst[of maintain_forest_dom , OF assms(1)];
      auto simp add: maintain_forest_upd_def Let_def
      elim!: maintain_forest_call_condE[OF assms(2)]
-     intro!: Algo_state.equality cong[OF cong, OF refl, of _ _ _ _ rep_comp_update_all] ext)+
+     intro!: Algo_state.equality cong[OF cong, OF refl, of _ _ _ _ rep_comp_upd_all] ext)+
 
 lemma maintain_forest_dom_ret:
   assumes "maintain_forest_ret_cond state" 
@@ -1167,7 +1167,7 @@ proof-
   define  \<FF> where  "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
   define b where "b = balance state"
-  define r_card where "r_card = representative_comp_card state"
+  define r_card where "r_card = rep_comp_card state"
   define E' where "E' = actives state"
   define to_rdg where "to_rdg = conv_to_rdg state"
   define \<gamma> where "\<gamma> = current_\<gamma> state"
@@ -1191,11 +1191,11 @@ proof-
   define b' where "b' = move_balance b x' y'"
   define E'' where "E'' = filter (\<lambda> d. 
 {abstract_rep_map r_card (fst d) , abstract_rep_map r_card (snd d) } \<noteq> {x', y'} ) E'"
-  define r_card' where "r_card' = rep_comp_update_all 
+  define r_card' where "r_card' = rep_comp_upd_all 
                                 (\<lambda> u urc. if prod.fst (urc) = x' \<or> prod.fst (urc) = y'
                                     then (y', cardx + cardy) else urc) r_card"
   define nb where "nb = not_blocked state"
-  define nb' where "nb' = not_blocked_update_all (\<lambda> d b. 
+  define nb' where "nb' = not_blocked_upd_all (\<lambda> d b. 
                                    if d =  e then True
                                    else if {abstract_rep_map r_card (fst d) , abstract_rep_map r_card (snd d) } = {x', y'} 
                                    then False
@@ -1204,7 +1204,7 @@ proof-
               \<lparr>  \<FF> := \<FF>', current_flow := f',
                 balance := b',
                 actives := E'', conv_to_rdg := to_rdg', 
-                representative_comp_card := r_card',
+                rep_comp_card := r_card',
                 not_blocked := nb'\<rparr>"
 
   note defs_impl = state'_def \<FF>'_def e_def \<gamma>_def E'_def
@@ -1215,7 +1215,7 @@ proof-
 
    have state'_is: "state' = maintain_forest_upd state"
     apply(rule Algo_state.equality)
-    by (auto intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_update_all] ext 
+    by (auto intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_upd_all] ext 
           simp add: maintain_forest_upd_def Let_def defs_impl)
   note 10= state'_is
 
@@ -2118,13 +2118,13 @@ proof-
   show "conv_invar (conv_to_rdg state')"
     using abstract_conv_invar assms(3) 
     by (auto simp add: state'_def to_rdg'_def to_rdg_def)
-  note  rep_comp_update_all(1,3,4)[simp]
-  show "\<V> = rep_comp_domain (representative_comp_card state')"
+  note  rep_comp_upd_all(1,3,4)[simp]
+  show "\<V> = rep_comp_domain (rep_comp_card state')"
     using assms(3)  rep_comp_invar_r_card 
     by (force simp add: r_card'_def r_card_def state'_def)
-  show "rep_comp_invar (representative_comp_card state')"
+  show "rep_comp_invar (rep_comp_card state')"
     by (simp add: state'_def r_card'_def rep_comp_invar_r_card)
-  note  not_blocked_update_all(1,3,4)[simp]
+  note  not_blocked_upd_all(1,3,4)[simp]
   show "not_blocked_invar (not_blocked state')"
     by (simp add: state'_def nb'_def not_blocked_invar_nb)
   show "\<E> = not_blocked_dom (not_blocked state')"
@@ -2176,7 +2176,7 @@ proof-
   define  \<FF> where  "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
   define b where "b = balance state"
-  define r_card where "r_card = representative_comp_card state"
+  define r_card where "r_card = rep_comp_card state"
   define E' where "E' = actives state"
   define to_rdg where "to_rdg = conv_to_rdg state"
   define \<gamma> where "\<gamma> = current_\<gamma> state"
@@ -2200,11 +2200,11 @@ proof-
   define b' where "b' = move_balance b x' y'"
   define E'' where "E'' = filter (\<lambda> d. 
 {abstract_rep_map r_card (fst d) , abstract_rep_map r_card (snd d) } \<noteq> {x', y'} ) E'"
-  define r_card' where "r_card' = rep_comp_update_all 
+  define r_card' where "r_card' = rep_comp_upd_all 
                                 (\<lambda> u urc. if prod.fst (urc) = x' \<or> prod.fst (urc) = y'
                                     then (y', cardx + cardy) else urc) r_card"
   define nb where "nb = not_blocked state"
-  define nb' where "nb' = not_blocked_update_all (\<lambda> d b. 
+  define nb' where "nb' = not_blocked_upd_all (\<lambda> d b. 
                                    if d =  e then True
                                    else if {abstract_rep_map r_card (fst d) , abstract_rep_map r_card (snd d) } = {x', y'} 
                                    then False
@@ -2213,7 +2213,7 @@ proof-
               \<lparr>  \<FF> := \<FF>', current_flow := f',
                 balance := b',
                 actives := E'', conv_to_rdg := to_rdg', 
-                representative_comp_card := r_card',
+                rep_comp_card := r_card',
                 not_blocked := nb'\<rparr>"
 
   note defs_impl = state'_def \<FF>'_def e_def \<gamma>_def E'_def
@@ -2224,7 +2224,7 @@ proof-
 
    have state'_is: "state' = maintain_forest_upd state"
     apply(rule Algo_state.equality)
-    by (auto intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_update_all] ext 
+    by (auto intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_upd_all] ext 
           simp add: maintain_forest_upd_def Let_def defs_impl)
   note 10= state'_is
   have set_invar_E'[simp]: "set_invar E'"

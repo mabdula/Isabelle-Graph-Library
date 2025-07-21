@@ -57,8 +57,8 @@ definition "initial = \<lparr> current_flow = flow_update_all (\<lambda> e fe. 0
                              actives = filter (\<lambda> e. fst e \<noteq> snd e) \<E>_impl,
                              return = notyetterm, 
                              current_\<gamma> = (get_max (\<lambda> x bx. \<bar> bx \<bar>) init_bal),
-                             representative_comp_card = rep_comp_update_all (\<lambda> x val. (x, 1)) init_rep_card, 
-                             not_blocked = not_blocked_update_all 
+                             rep_comp_card = rep_comp_upd_all (\<lambda> x val. (x, 1)) init_rep_card, 
+                             not_blocked = not_blocked_upd_all 
                                 (\<lambda> e b . if fst e \<noteq> snd e then True else False) init_not_blocked\<rparr>"
 
 lemmas [code] = orlins_impl.simps initial_def new_\<gamma>_def
@@ -358,7 +358,7 @@ lemma new_gamma_changes:
 "\<FF> ( (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) = \<FF> state"
 "conv_to_rdg ( (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) = conv_to_rdg state"
 "actives ( (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) = actives state"
-"representative_comp_card ( (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) = representative_comp_card state"
+"rep_comp_card ( (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) = rep_comp_card state"
 "\<F> ( (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) = \<F> state"
 "\<F>_redges ( (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) = \<F>_redges state"
 "not_blocked ( (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) = not_blocked state"
@@ -2379,14 +2379,14 @@ proof-
 qed
 
 lemma init_rep_comp: 
-  assumes "init_rep_comp' = rep_comp_update_all (\<lambda> x val. (x, 1)) init_rep_card"
+  assumes "init_rep_comp' = rep_comp_upd_all (\<lambda> x val. (x, 1)) init_rep_card"
   shows   "rep_comp_invar init_rep_comp'"
           "rep_comp_domain init_rep_comp'= \<V>"
           "abstract_rep_map init_rep_comp' = id"
           "abstract_comp_map init_rep_comp' = (\<lambda> x. 1)"
-  using init_rep_card rep_comp_update_all(3,4)
-         abstract_rep_map_rep_comp_update_all  not_in_dom_id 
-        abstract_comp_map_rep_comp_update_all not_in_dom_1
+  using init_rep_card rep_comp_upd_all(3,4)
+         abstract_rep_map_rep_comp_upd_all  not_in_dom_id 
+        abstract_comp_map_rep_comp_upd_all not_in_dom_1
   by (auto simp add: assms)
 
 lemma actives_init:
@@ -2397,14 +2397,14 @@ lemma actives_init:
   by (auto simp add: assms  local.set_filter(1))
 
 lemma not_blocked_init:
-  assumes "not_blocked_init = (not_blocked_update_all
+  assumes "not_blocked_init = (not_blocked_upd_all
              (\<lambda>e b. if fst e \<noteq> snd e then True else False) init_not_blocked)"
   shows "not_blocked_invar not_blocked_init"
         "not_blocked_dom not_blocked_init = \<E>"
         "abstract_not_blocked_map not_blocked_init = 
          (\<lambda> e. if fst e \<noteq> snd e \<and> e \<in> \<E> then True else False)"
-    apply (auto simp add: assms init_not_blocked(1) not_blocked_update_all(3)
-                          not_blocked_update_all(4) init_not_blocked(1,2) 
+    apply (auto simp add: assms init_not_blocked(1) not_blocked_upd_all(3)
+                          not_blocked_upd_all(4) init_not_blocked(1,2) 
                           not_blocket_update_all_abstract_not_blocked_map[OF init_not_blocked(1)])
   using abstract_not_blocked_map_def init_not_blocked(2) by auto
 
@@ -2615,7 +2615,7 @@ next
 next
   case 8
   then show ?case
-    by(auto simp add: initial_def  init_rep_card(1) rep_comp_update_all(3))
+    by(auto simp add: initial_def  init_rep_card(1) rep_comp_upd_all(3))
 next
   case 9
   then show ?case 

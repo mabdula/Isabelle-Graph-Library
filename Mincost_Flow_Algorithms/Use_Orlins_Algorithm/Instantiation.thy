@@ -59,35 +59,35 @@ definition "not_blocked_delete = RBT_Map.delete"
 definition "not_blocked_lookup = lookup"
 definition "not_blocked_invar = (\<lambda>t. M.invar t \<and>  rbt_red t)"
 
-definition "rep_comp_update_all = (update_all :: ('a \<Rightarrow> 'a \<times> nat \<Rightarrow> 'a \<times> nat)
+definition "rep_comp_upd_all = (update_all :: ('a \<Rightarrow> 'a \<times> nat \<Rightarrow> 'a \<times> nat)
    \<Rightarrow> (('a \<times> 'a \<times> nat) \<times> color) tree
       \<Rightarrow> (('a \<times> 'a \<times> nat) \<times> color) tree)"
-definition "not_blocked_update_all = (update_all :: ('edge_type \<Rightarrow> bool \<Rightarrow> bool)
+definition "not_blocked_upd_all = (update_all :: ('edge_type \<Rightarrow> bool \<Rightarrow> bool)
    \<Rightarrow> (('edge_type \<times> bool) \<times> color) tree
       \<Rightarrow> (('edge_type \<times> bool) \<times> color) tree)"
 definition "flow_update_all = (update_all :: ('edge_type \<Rightarrow> real \<Rightarrow> real)
    \<Rightarrow> (('edge_type \<times> real) \<times> color) tree
       \<Rightarrow> (('edge_type \<times> real) \<times> color) tree)"
 
-lemma  rep_comp_update_all: 
+lemma  rep_comp_upd_all: 
     "\<And> rep f. rep_comp_invar rep \<Longrightarrow> (\<And> x. x \<in> dom (rep_comp_lookup rep) 
-                  \<Longrightarrow> rep_comp_lookup (rep_comp_update_all f rep) x =
+                  \<Longrightarrow> rep_comp_lookup (rep_comp_upd_all f rep) x =
                       Some (f x (the (rep_comp_lookup rep x))))"
     "\<And> rep f g. rep_comp_invar rep \<Longrightarrow> (\<And> x. x \<in> dom (rep_comp_lookup rep)  \<Longrightarrow>
                      f x (the (rep_comp_lookup rep x)) = g x (the (rep_comp_lookup rep x))) \<Longrightarrow>
-          rep_comp_update_all f rep = rep_comp_update_all g rep "
-   "\<And> rep f. rep_comp_invar rep \<Longrightarrow> rep_comp_invar (rep_comp_update_all f rep)"
-   "\<And> rep f. rep_comp_invar rep \<Longrightarrow> dom (rep_comp_lookup (rep_comp_update_all f rep))
+          rep_comp_upd_all f rep = rep_comp_upd_all g rep "
+   "\<And> rep f. rep_comp_invar rep \<Longrightarrow> rep_comp_invar (rep_comp_upd_all f rep)"
+   "\<And> rep f. rep_comp_invar rep \<Longrightarrow> dom (rep_comp_lookup (rep_comp_upd_all f rep))
                               = dom (rep_comp_lookup rep)"
- and not_blocked_update_all: 
+ and not_blocked_upd_all: 
     "\<And> nblckd f. not_blocked_invar nblckd \<Longrightarrow> (\<And> x. x \<in> dom (not_blocked_lookup nblckd) 
-                  \<Longrightarrow> not_blocked_lookup (not_blocked_update_all f nblckd) x =
+                  \<Longrightarrow> not_blocked_lookup (not_blocked_upd_all f nblckd) x =
                       Some (f x (the (not_blocked_lookup nblckd x))))"
     "\<And> nblckd f g. not_blocked_invar nblckd \<Longrightarrow> (\<And> x. x \<in> dom (not_blocked_lookup nblckd)  \<Longrightarrow>
                      f x (the (not_blocked_lookup nblckd x)) = g x (the (not_blocked_lookup nblckd x))) \<Longrightarrow>
-          not_blocked_update_all f nblckd = not_blocked_update_all g nblckd "
-   "\<And> nblckd f. not_blocked_invar nblckd \<Longrightarrow> not_blocked_invar (not_blocked_update_all f nblckd)"
-   "\<And> nblckd f. not_blocked_invar nblckd \<Longrightarrow> dom (not_blocked_lookup (not_blocked_update_all f nblckd))
+          not_blocked_upd_all f nblckd = not_blocked_upd_all g nblckd "
+   "\<And> nblckd f. not_blocked_invar nblckd \<Longrightarrow> not_blocked_invar (not_blocked_upd_all f nblckd)"
+   "\<And> nblckd f. not_blocked_invar nblckd \<Longrightarrow> dom (not_blocked_lookup (not_blocked_upd_all f nblckd))
                               = dom (not_blocked_lookup nblckd)"
  and flow_update_all: 
     "\<And> fl f. flow_invar fl \<Longrightarrow> (\<And> x. x \<in> dom (flow_lookup fl) 
@@ -104,9 +104,9 @@ and get_max: "\<And> b f. bal_invar b \<Longrightarrow> dom (bal_lookup b) \<not
 and to_list: "\<And> E. set_invar E \<Longrightarrow> to_set E = set (to_list E)"
              "\<And> E. set_invar E \<Longrightarrow> distinct (to_list E)"
   using update_all(3)
-  by (auto simp add: rep_comp_lookup_def rep_comp_update_all_def rep_comp_invar_def 
+  by (auto simp add: rep_comp_lookup_def rep_comp_upd_all_def rep_comp_invar_def 
                      M.invar_def  update_all(1)  color_no_change rbt_red_def rbt_def 
-                     not_blocked_invar_def not_blocked_lookup_def not_blocked_update_all_def
+                     not_blocked_invar_def not_blocked_lookup_def not_blocked_upd_all_def
                      flow_invar_def flow_lookup_def flow_update_all_def bal_invar_def
                      bal_update_def bal_lookup_def  to_list_def to_set_def set_invar_def
              intro!: update_all(2,3,4) get_max_correct)
@@ -534,8 +534,8 @@ and not_blocked_empty=not_blocked_empty
 and not_blocked_delete=not_blocked_delete 
 and not_blocked_lookup=not_blocked_lookup 
 and not_blocked_invar= not_blocked_invar 
-and rep_comp_update_all = rep_comp_update_all
-and not_blocked_update_all =  not_blocked_update_all 
+and rep_comp_upd_all = rep_comp_upd_all
+and not_blocked_upd_all =  not_blocked_upd_all 
 and flow_update_all = flow_update_all 
 and get_max = get_max 
 and get_source_target_path_a= 
@@ -588,8 +588,8 @@ and make_pair = orlins_spec.make_pair
 and neighbourhood' = orlins_spec.neighbourhood'
   using  Map_bal Map_conv Map_flow Map_not_blocked
         Map_rep_comp 
-  by(auto intro!: orlins_spec.intro algo_spec.intro maintain_forest_spec.intro rep_comp_update_all
-                  send_flow_spec.intro maintain_forest_spec.intro flow_update_all get_max not_blocked_update_all
+  by(auto intro!: orlins_spec.intro algo_spec.intro maintain_forest_spec.intro rep_comp_upd_all
+                  send_flow_spec.intro maintain_forest_spec.intro flow_update_all get_max not_blocked_upd_all
                   map_update_all.intro map_update_all_axioms.intro
         simp add: Set3 Adj_Map_Specs2)
 
@@ -707,12 +707,12 @@ conv_map: Map  conv_empty "conv_update::'a \<times> 'a \<Rightarrow> 'edge_type 
               conv_delete conv_lookup conv_invar +
 not_blocked_map: Map  not_blocked_empty "not_blocked_update::'edge_type \<Rightarrow> bool \<Rightarrow> 'not_blocked_impl\<Rightarrow> 'not_blocked_impl"
               not_blocked_delete not_blocked_lookup not_blocked_invar +
-rep_comp_iterator: Map_iterator rep_comp_invar rep_comp_lookup rep_comp_update_all+
+rep_comp_iterator: Map_iterator rep_comp_invar rep_comp_lookup rep_comp_upd_all+
 flow_iterator: Map_iterator flow_invar flow_lookup flow_update_all+
-not_blocked_iterator: Map_iterator not_blocked_invar not_blocked_lookup not_blocked_update_all
+not_blocked_iterator: Map_iterator not_blocked_invar not_blocked_lookup not_blocked_upd_all
    for get_from_set  to_set fst snd rep_comp_update conv_empty
 conv_delete conv_lookup conv_invar conv_update not_blocked_update flow_update  bal_update 
- rep_comp_update_all flow_update_all not_blocked_update_all
+ rep_comp_upd_all flow_update_all not_blocked_upd_all
           + 
 fixes get_max::"('a \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'b_impl \<Rightarrow> real"
 assumes  \<E>_impl_invar: "set_invar \<E>_impl"
@@ -725,9 +725,9 @@ and to_list: "\<And> E. set_invar E \<Longrightarrow> to_set E = set (to_list E)
              "\<And> E. set_invar E \<Longrightarrow> distinct (to_list E)"
 begin
 
-lemmas rep_comp_update_all = rep_comp_iterator.update_all
+lemmas rep_comp_upd_all = rep_comp_iterator.update_all
 lemmas flow_update_all = flow_iterator.update_all
-lemmas not_blocked_update_all = not_blocked_iterator.update_all
+lemmas not_blocked_upd_all = not_blocked_iterator.update_all
 
 notation vset_empty ("\<emptyset>\<^sub>N")
 
@@ -972,15 +972,15 @@ lemma flow_map_update_all: " map_update_all flow_empty flow_update flow_delete f
 
 lemma rep_comp_map_update_all: 
 " map_update_all rep_comp_empty rep_comp_update rep_comp_delete 
-                   rep_comp_lookup rep_comp_invar rep_comp_update_all"
-  using local.rep_comp_update_all
+                   rep_comp_lookup rep_comp_invar rep_comp_upd_all"
+  using local.rep_comp_upd_all
   by(fastforce intro!: map_update_all.intro map_update_all_axioms.intro
            simp add: Map_rep_comp.Map_axioms domIff Map_axioms)
 
-lemma not_blocked_update_all_locale:
+lemma not_blocked_upd_all_locale:
  " map_update_all not_blocked_empty not_blocked_update not_blocked_delete
- not_blocked_lookup not_blocked_invar not_blocked_update_all"
-  using local.not_blocked_update_all
+ not_blocked_lookup not_blocked_invar not_blocked_upd_all"
+  using local.not_blocked_upd_all
   by(fastforce intro!: map_update_all.intro map_update_all_axioms.intro
            simp add: Map_not_blocked.Map_axioms domIff )
 
@@ -1006,7 +1006,7 @@ and not_blocked_delete=not_blocked_delete and not_blocked_invar = not_blocked_in
   using cost_flow_network 
   by(auto intro!: algo.intro algo_spec.intro 
   simp add: Adj_Map_Specs2 algo_axioms algo_def Set3_axioms flow_map_update_all
-    Map_bal.Map_axioms rep_comp_map_update_all  conv_map.Map_axioms not_blocked_update_all_locale)
+    Map_bal.Map_axioms rep_comp_map_update_all  conv_map.Map_axioms not_blocked_upd_all_locale)
 
 lemmas algo = algo.algo_axioms
 
@@ -1019,8 +1019,8 @@ interpretation maintain_forest: Maintain_Forest.maintain_forest snd  create_edge
      adj_inv flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update
      bal_delete bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup
      rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update
-     not_blocked_empty not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all
-     flow_update_all not_blocked_update_all \<b> get_max \<epsilon> N get_from_set map_empty \<E>_impl get_path fst
+     not_blocked_empty not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_upd_all
+     flow_update_all not_blocked_upd_all \<b> get_max \<epsilon> N get_from_set map_empty \<E>_impl get_path fst
  by(auto intro!: maintain_forest.intro maintain_forest_axioms
         simp add: algo.algo_spec_axioms maintain_forest_spec_def algo)
 
@@ -4213,7 +4213,7 @@ interpretation send_flow_reasoning: send_flow_reasoning snd  create_edge local.\
      flow_update flow_delete flow_lookup flow_invar bal_update bal_delete bal_lookup bal_invar
      rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar conv_update conv_delete
      conv_lookup conv_invar not_blocked_update not_blocked_delete not_blocked_lookup
-     not_blocked_invar rep_comp_update_all flow_update_all not_blocked_update_all local.\<b> get_max local.\<epsilon>
+     not_blocked_invar rep_comp_upd_all flow_update_all not_blocked_upd_all local.\<b> get_max local.\<epsilon>
      \<E>_impl "\<emptyset>\<^sub>G" local.N fst get_from_set flow_empty bal_empty rep_comp_empty conv_empty
      not_blocked_empty local.get_source_target_path_a local.get_source_target_path_b
      local.get_source local.get_target local.test_all_vertices_zero_balance
@@ -4313,8 +4313,8 @@ interpretation orlins: Orlins.orlins snd  create_edge \<u> \<E> \<c> edge_map_up
      flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete bal_lookup
      bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup rep_comp_invar
      conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update not_blocked_empty
-     not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_update_all flow_update_all
-     not_blocked_update_all \<b> get_max \<epsilon> N get_from_set map_empty \<E>_impl get_path fst
+     not_blocked_delete not_blocked_lookup not_blocked_invar rep_comp_upd_all flow_update_all
+     not_blocked_upd_all \<b> get_max \<epsilon> N get_from_set map_empty \<E>_impl get_path fst
      get_source_target_path_a get_source_target_path_b get_source get_target
      test_all_vertices_zero_balance init_flow init_bal init_rep_card init_not_blocked
   by(auto intro!: orlins.intro
@@ -4373,16 +4373,16 @@ lemma function_generation_proof_axioms:
     (auto simp add: to_list \<E>_def \<c>_def no_cycle_cond_def
       get_max multigraph_spec.make_pair_def selection_functions.make_pair_def)
 
-interpretation rep_comp_iterator: Map_iterator rep_comp_invar rep_comp_lookup rep_comp_update_all
-  using Map_iterator_def rep_comp_update_all by blast
+interpretation rep_comp_iterator: Map_iterator rep_comp_invar rep_comp_lookup rep_comp_upd_all
+  using Map_iterator_def rep_comp_upd_all by blast
 lemmas rep_comp_iterator=rep_comp_iterator.Map_iterator_axioms
 
 interpretation flow_iterator: Map_iterator flow_invar flow_lookup flow_update_all
   using Map_iterator_def flow_update_all  by blast
 lemmas flow_iterator=flow_iterator.Map_iterator_axioms
 
-interpretation not_blocked_iterator: Map_iterator not_blocked_invar not_blocked_lookup not_blocked_update_all
-  using Map_iterator_def not_blocked_update_all  by blast
+interpretation not_blocked_iterator: Map_iterator not_blocked_invar not_blocked_lookup not_blocked_upd_all
+  using Map_iterator_def not_blocked_upd_all  by blast
 lemmas not_blocked_iterator = not_blocked_iterator.Map_iterator_axioms
 
 definition "final_state fst snd create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup =
@@ -4417,8 +4417,8 @@ function_generation_proof realising_edges_empty realising_edges_update realising
      to_list create_edge \<c>_impl \<b>_impl c_lookup
      filter are_all set_invar get_from_set to_set  fst snd
       rep_comp_update conv_empty conv_delete conv_lookup
-     conv_invar conv_update not_blocked_update flow_update bal_update rep_comp_update_all flow_update_all
-     not_blocked_update_all get_max
+     conv_invar conv_update not_blocked_update flow_update bal_update rep_comp_upd_all flow_update_all
+     not_blocked_upd_all get_max
   using  \<E>_impl_basic at_least_2_verts gt_zero multigraph
   using  rep_comp_iterator flow_iterator not_blocked_iterator  
   by(auto intro!:  function_generation_proof_axioms function_generation_proof.intro 

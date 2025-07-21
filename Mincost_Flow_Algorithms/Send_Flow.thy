@@ -336,7 +336,7 @@ lemma send_flow_succ_upd_changes:
 "conv_to_rdg (send_flow_succ_upd state) = conv_to_rdg state"
 "actives (send_flow_succ_upd state) = actives state"
 "current_\<gamma> (send_flow_succ_upd state) = current_\<gamma>  state"
-"representative_comp_card (send_flow_succ_upd state) = representative_comp_card state"
+"rep_comp_card (send_flow_succ_upd state) = rep_comp_card state"
 "\<F> (send_flow_succ_upd state) = \<F> state"
 "\<F>_redges (send_flow_succ_upd state) = \<F>_redges state"
 "not_blocked (send_flow_succ_upd state) = not_blocked state"
@@ -350,7 +350,7 @@ lemma send_flow_call1_upd_changes:
 "conv_to_rdg (send_flow_call1_upd state) = conv_to_rdg state"
 "actives (send_flow_call1_upd state) = actives state"
 "current_\<gamma> (send_flow_call1_upd state) = current_\<gamma>  state"
-"representative_comp_card (send_flow_call1_upd state) = representative_comp_card state"
+"rep_comp_card (send_flow_call1_upd state) = rep_comp_card state"
 "\<F> (send_flow_call1_upd state) = \<F> state"
 "\<F>_redges (send_flow_call1_upd state) = \<F>_redges state"
 "not_blocked (send_flow_call1_upd state) = not_blocked state"
@@ -362,7 +362,7 @@ lemma send_flow_fail_upd_changes:
 "conv_to_rdg (send_flow_fail_upd state) = conv_to_rdg state"
 "actives (send_flow_fail_upd state) = actives state"
 "current_\<gamma> (send_flow_fail_upd state) = current_\<gamma>  state"
-"representative_comp_card (send_flow_fail_upd state) = representative_comp_card state"
+"rep_comp_card (send_flow_fail_upd state) = rep_comp_card state"
 "\<F> (send_flow_fail_upd state) = \<F> state"
 "\<F>_redges (send_flow_fail_upd state) = \<F>_redges state"
 "not_blocked (send_flow_fail_upd state) = not_blocked state"
@@ -376,7 +376,7 @@ lemma send_flow_call2_upd_changes:
 "conv_to_rdg (send_flow_call2_upd state) = conv_to_rdg state"
 "actives (send_flow_call2_upd state) = actives state"
 "current_\<gamma> (send_flow_call2_upd state) = current_\<gamma>  state"
-"representative_comp_card (send_flow_call2_upd state) = representative_comp_card state"
+"rep_comp_card (send_flow_call2_upd state) = rep_comp_card state"
 "\<F> (send_flow_call2_upd state) = \<F> state"
 "\<F>_redges (send_flow_call2_upd state) = \<F>_redges state"
 "not_blocked (send_flow_call2_upd state) = not_blocked state"
@@ -387,7 +387,7 @@ lemma send_flow_cont_upd_changes:
 "conv_to_rdg (send_flow_cont_upd state) = conv_to_rdg state"
 "actives (send_flow_cont_upd state) = actives state"
 "current_\<gamma> (send_flow_cont_upd state) = current_\<gamma>  state"
-"representative_comp_card (send_flow_cont_upd state) = representative_comp_card state"
+"rep_comp_card (send_flow_cont_upd state) = rep_comp_card state"
 "\<F> (send_flow_cont_upd state) = \<F> state"
 "\<F>_redges (send_flow_cont_upd state) = \<F>_redges state"
 "not_blocked (send_flow_cont_upd state) = not_blocked state"
@@ -1247,9 +1247,9 @@ proof(induction rule: send_flow_induct[OF assms(1)])
   qed
 qed
 
-lemma send_flow_changes_representative_comp_card: 
+lemma send_flow_changes_rep_comp_card: 
   assumes "send_flow_dom state"
-  shows "representative_comp_card (send_flow state) = representative_comp_card state"
+  shows "rep_comp_card (send_flow state) = rep_comp_card state"
 proof(induction rule: send_flow_induct[OF assms(1)])
   case (1 state)
   note IH = this
@@ -1290,12 +1290,12 @@ qed
 lemma send_flow_changes_representative: 
   assumes "send_flow_dom state"
   shows "representative (send_flow state) = representative state"
-  by (simp add: assms send_flow_changes_representative_comp_card)
+  by (simp add: assms send_flow_changes_rep_comp_card)
 
 lemma send_flow_changes_comp_card: 
   assumes "send_flow_dom state"
   shows "comp_card (send_flow state) = comp_card state"
-  by (simp add: assms send_flow_changes_representative_comp_card)
+  by (simp add: assms send_flow_changes_rep_comp_card)
 
 lemma send_flow_changes_\<F>_redges: 
   assumes "send_flow_dom state"
@@ -2997,7 +2997,7 @@ lemma send_flow_forest_no_change:
   using assms 
   by(auto intro!: Algo_state.equality send_flow_changes_\<FF> send_flow_changes_conv_to_rdg
                   send_flow_changes_actives send_flow_changes_current_\<gamma>
-                  send_flow_changes_representative_comp_card
+                  send_flow_changes_rep_comp_card
                   send_flow_changes_not_blocked)
 
 lemma send_flow_invar_forest:

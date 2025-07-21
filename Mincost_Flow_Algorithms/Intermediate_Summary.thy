@@ -216,7 +216,7 @@ datatype return = success | failure | notyetterm
 
 text \<open>Then we setup the program state.\<close>
 
-record ('f, 'b, '\<FF>, 'conv_to_rdg, 'actives, 'representative_comp_card, 'not_blocked)
+record ('f, 'b, '\<FF>, 'conv_to_rdg, 'actives, 'rep_comp_card, 'not_blocked)
           Algo_state = current_flow :: 'f
                             balance :: 'b
                                   \<FF> :: '\<FF>
@@ -224,7 +224,7 @@ record ('f, 'b, '\<FF>, 'conv_to_rdg, 'actives, 'representative_comp_card, 'not_
                              actives:: 'actives
                              return:: return
                              current_\<gamma>::real
-                             representative_comp_card::'representative_comp_card
+                             rep_comp_card::'rep_comp_card
                              not_blocked::'not_blocked
 
 locale Set3 = 
@@ -521,16 +521,16 @@ flow_map: map_update_all  flow_empty "flow_update::'edge_type \<Rightarrow> real
 bal_map: Map  bal_empty "bal_update:: 'a \<Rightarrow> real \<Rightarrow> 'b_impl \<Rightarrow> 'b_impl" 
                bal_delete bal_lookup bal_invar +
 rep_comp_map: map_update_all rep_comp_empty "rep_comp_update::'a \<Rightarrow> ('a \<times> nat) \<Rightarrow> 'r_comp_impl \<Rightarrow> 'r_comp_impl"
-              rep_comp_delete rep_comp_lookup rep_comp_invar rep_comp_update_all +
+              rep_comp_delete rep_comp_lookup rep_comp_invar rep_comp_upd_all +
 conv_map: Map  conv_empty "conv_update::('a \<times> 'a) \<Rightarrow> 'edge_type Redge \<Rightarrow> 'conv_impl \<Rightarrow> 'conv_impl"
               conv_delete conv_lookup conv_invar +
 not_blocked_map: map_update_all  not_blocked_empty "not_blocked_update::'edge_type \<Rightarrow> bool \<Rightarrow> 'not_blocked_impl\<Rightarrow> 'not_blocked_impl"
-              not_blocked_delete not_blocked_lookup not_blocked_invar not_blocked_update_all
+              not_blocked_delete not_blocked_lookup not_blocked_invar not_blocked_upd_all
 for flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete 
     bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup 
     rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update 
     not_blocked_empty not_blocked_delete not_blocked_lookup not_blocked_invar fst 
-   rep_comp_update_all flow_update_all not_blocked_update_all get_from_set
+   rep_comp_upd_all flow_update_all not_blocked_upd_all get_from_set
  +
 fixes \<b>::"'a \<Rightarrow> real" 
 and  get_max::"('a \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'b_impl \<Rightarrow> real"
@@ -560,8 +560,8 @@ lemmas insert_abstraction'=adj_map_specs.insert_abstraction'
 lemmas insert_undirected_edge_good_graph_invar_pres=
      adj_map_specs.insert_undirected_edge_good_graph_invar_pres
 
-lemmas rep_comp_update_all = rep_comp_map.update_all
-lemmas not_blocked_update_all = not_blocked_map.update_all
+lemmas rep_comp_upd_all = rep_comp_map.update_all
+lemmas not_blocked_upd_all = not_blocked_map.update_all
 lemmas flow_update_all=flow_map.update_all
 
 abbreviation "abstract_flow_map mp == (abstract_real_map (flow_lookup mp))"
@@ -647,8 +647,8 @@ definition "implementation_invar (state_impl::
           \<and> bal_invar (balance state_impl)
           \<and> digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl)
           \<and> conv_invar (conv_to_rdg state_impl)
-          \<and> \<V> = rep_comp_domain (representative_comp_card state_impl)
-          \<and> rep_comp_invar (representative_comp_card state_impl)
+          \<and> \<V> = rep_comp_domain (rep_comp_card state_impl)
+          \<and> rep_comp_invar (rep_comp_card state_impl)
           \<and> not_blocked_invar (not_blocked state_impl)
           \<and> \<E> = not_blocked_dom (not_blocked state_impl))"
 
@@ -659,8 +659,8 @@ lemma implementation_invarI[simp]:
           \<Longrightarrow> bal_invar (balance state_impl)
           \<Longrightarrow> digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl)
           \<Longrightarrow> conv_invar (conv_to_rdg state_impl)
-          \<Longrightarrow> \<V>  = rep_comp_domain (representative_comp_card state_impl)
-          \<Longrightarrow> rep_comp_invar (representative_comp_card state_impl)
+          \<Longrightarrow> \<V>  = rep_comp_domain (rep_comp_card state_impl)
+          \<Longrightarrow> rep_comp_invar (rep_comp_card state_impl)
           \<Longrightarrow> not_blocked_invar (not_blocked state_impl)
           \<Longrightarrow> \<E>  = not_blocked_dom (not_blocked state_impl) \<Longrightarrow> implementation_invar state_impl"
   unfolding implementation_invar_def by simp
@@ -673,8 +673,8 @@ lemma implementation_invarE[simp, elim]:
           \<Longrightarrow> bal_invar (balance state_impl)
           \<Longrightarrow> digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl)
           \<Longrightarrow> conv_invar (conv_to_rdg state_impl)
-          \<Longrightarrow> \<V>  = rep_comp_domain (representative_comp_card state_impl)
-          \<Longrightarrow> rep_comp_invar (representative_comp_card state_impl)
+          \<Longrightarrow> \<V>  = rep_comp_domain (rep_comp_card state_impl)
+          \<Longrightarrow> rep_comp_invar (rep_comp_card state_impl)
           \<Longrightarrow> not_blocked_invar (not_blocked state_impl)
           \<Longrightarrow> \<E>  = not_blocked_dom (not_blocked state_impl) \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding implementation_invar_def by auto
@@ -687,8 +687,8 @@ lemma implementation_invar_partialE:
       "implementation_invar state_impl \<Longrightarrow>(digraph_abs (\<FF> state_impl) =
                      conv_domain (conv_to_rdg state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
       "implementation_invar state_impl \<Longrightarrow> (conv_invar (conv_to_rdg state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow> (\<V>  = rep_comp_domain (representative_comp_card state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow> (rep_comp_invar (representative_comp_card state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+      "implementation_invar state_impl \<Longrightarrow> (\<V>  = rep_comp_domain (rep_comp_card state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+      "implementation_invar state_impl \<Longrightarrow> (rep_comp_invar (rep_comp_card state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
       "implementation_invar state_impl \<Longrightarrow> (not_blocked_invar (not_blocked state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
       "implementation_invar state_impl \<Longrightarrow> (\<E>  = not_blocked_dom (not_blocked state_impl) \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding implementation_invar_def by auto
@@ -701,8 +701,8 @@ lemma implementation_invar_partial_props:
       "implementation_invar state_impl \<Longrightarrow>digraph_abs (\<FF> state_impl) =
                      conv_domain (conv_to_rdg state_impl)"
       "implementation_invar state_impl \<Longrightarrow> conv_invar (conv_to_rdg state_impl)"
-      "implementation_invar state_impl \<Longrightarrow> \<V>  = rep_comp_domain (representative_comp_card state_impl)"
-      "implementation_invar state_impl \<Longrightarrow> rep_comp_invar (representative_comp_card state_impl)"
+      "implementation_invar state_impl \<Longrightarrow> \<V>  = rep_comp_domain (rep_comp_card state_impl)"
+      "implementation_invar state_impl \<Longrightarrow> rep_comp_invar (rep_comp_card state_impl)"
       "implementation_invar state_impl \<Longrightarrow> not_blocked_invar (not_blocked state_impl)"
       "implementation_invar state_impl \<Longrightarrow> \<E>  = not_blocked_dom (not_blocked state_impl)"
   unfolding implementation_invar_def by auto
@@ -804,7 +804,7 @@ lemma invar_aux6E'':
   by(auto simp add: invar_aux6_def)
 
 abbreviation "representative state ==
- (\<lambda> u.  (abstract_rep_map (representative_comp_card state) u))"
+ (\<lambda> u.  (abstract_rep_map (rep_comp_card state) u))"
 
 definition "invar_aux7 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
                   = (\<forall> u v. reachable (to_graph (\<FF> state)) u v \<longrightarrow>
@@ -931,7 +931,7 @@ lemma invar_aux15I: "Vs (to_graph (\<FF> state)) \<subseteq> \<V>\<Longrightarro
   using invar_aux15_def by auto
 
 abbreviation "comp_card state ==
- (\<lambda> u.  (abstract_comp_map (representative_comp_card state) u))"
+ (\<lambda> u.  (abstract_comp_map (rep_comp_card state) u))"
 
 definition "invar_aux16 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
         (\<forall> x \<in> \<V>. comp_card state x = 
@@ -2766,19 +2766,19 @@ lemma not_in_dom_1:"x \<notin> dom (rep_comp_lookup r_card_impl) \<Longrightarro
 
 lemma
   assumes "rep_comp_invar r_card" 
-  shows  abstract_rep_map_rep_comp_update_all:
-         "abstract_rep_map (rep_comp_update_all f r_card) x =
+  shows  abstract_rep_map_rep_comp_upd_all:
+         "abstract_rep_map (rep_comp_upd_all f r_card) x =
           (if x \<in> rep_comp_domain r_card then
            prod.fst (f x (abstract_rep_map r_card x, abstract_comp_map r_card x))
           else abstract_rep_map r_card x)"
-  and abstract_comp_map_rep_comp_update_all:
-          "abstract_comp_map (rep_comp_update_all f r_card) x =
+  and abstract_comp_map_rep_comp_upd_all:
+          "abstract_comp_map (rep_comp_upd_all f r_card) x =
           (if x \<in> rep_comp_domain r_card then
            prod.snd (f x (abstract_rep_map r_card x, abstract_comp_map r_card x))
           else abstract_comp_map r_card x)"
-  using rep_comp_update_all(4)[OF assms]
+  using rep_comp_upd_all(4)[OF assms]
   apply(all \<open>cases "x \<in> rep_comp_domain r_card"\<close>)
-  by (auto simp add: abstract_rep_map_def abstract_comp_map_def rep_comp_update_all(1)[OF assms] )
+  by (auto simp add: abstract_rep_map_def abstract_comp_map_def rep_comp_upd_all(1)[OF assms] )
 
 
 lemma  reachable_to_Vs:
@@ -2790,11 +2790,11 @@ lemma  reachable_to_Vs:
 
 lemma not_blocket_update_all_abstract_not_blocked_map:
   assumes "not_blocked_invar nb"
-  shows   "abstract_not_blocked_map (not_blocked_update_all f nb) =
+  shows   "abstract_not_blocked_map (not_blocked_upd_all f nb) =
           (\<lambda> e. if e \<in> not_blocked_dom nb then f e (the (not_blocked_lookup nb e))
                 else abstract_not_blocked_map nb e)"
   apply(rule ext)
-  using not_blocked_update_all(1,4)[OF assms]
+  using not_blocked_upd_all(1,4)[OF assms]
   by(auto simp add: abstract_not_blocked_map_def) force 
 end
 end
