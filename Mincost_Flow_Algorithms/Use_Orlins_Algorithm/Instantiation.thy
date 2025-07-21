@@ -303,6 +303,11 @@ definition "get_source state = get_source_aux_aux
 definition "get_target state = get_target_aux_aux
  (\<lambda> v. abstract_real_map (bal_lookup (balance state)) v) (current_\<gamma> state) vs"
 
+definition "pair_to_realising_redge_forward state=
+(\<lambda>e. prod.fst (get_edge_and_costs_forward 
+    (abstract_bool_map (not_blocked_lookup (not_blocked state)))
+    (abstract_real_map (flow_lookup (current_flow state))) (prod.fst e) (prod.snd e)))"
+
 definition "get_source_target_path_a state s =
       (let bf = bellman_ford_forward (abstract_bool_map (not_blocked_lookup (not_blocked state)))
                                      (abstract_real_map (flow_lookup (current_flow state))) s
@@ -310,12 +315,15 @@ definition "get_source_target_path_a state s =
                      (\<lambda> v. abstract_real_map (bal_lookup (balance state)) v)
                                            (current_\<gamma> state) vs) of 
             Some t \<Rightarrow> (let Pbf = search_rev_path_exec s bf t Nil;
-                             P = (map (\<lambda>e. prod.fst (get_edge_and_costs_forward 
-                                 (abstract_bool_map (not_blocked_lookup (not_blocked state)))
-                                  (abstract_real_map (flow_lookup (current_flow state))) (prod.fst e) (prod.snd e)))
+                             P = (map (pair_to_realising_redge_forward state)
                                       (edges_of_vwalk Pbf)) 
                        in Some (t, P))|
             None \<Rightarrow> None)"
+
+definition "pair_to_realising_redge_backward state =
+(\<lambda>e. prod.fst (get_edge_and_costs_backward 
+                (abstract_bool_map (not_blocked_lookup (not_blocked state)))
+                (abstract_real_map (flow_lookup (current_flow state))) (prod.snd e) (prod.fst e)))"
 
 definition "get_source_target_path_b state t =
       (let bf = bellman_ford_backward (abstract_bool_map (not_blocked_lookup (not_blocked state)))
@@ -324,9 +332,7 @@ definition "get_source_target_path_b state t =
                        (\<lambda> v. abstract_real_map (bal_lookup (balance state)) v)
                                            (current_\<gamma> state) vs) of
           Some s \<Rightarrow> let Pbf =itrev (search_rev_path_exec t bf s Nil);
-                         P = (map (\<lambda>e. prod.fst (get_edge_and_costs_backward 
-                                 (abstract_bool_map (not_blocked_lookup (not_blocked state)))
-                                  (abstract_real_map (flow_lookup (current_flow state))) (prod.snd e) (prod.fst e)))
+                         P = (map (pair_to_realising_redge_backward state)
                                         (edges_of_vwalk Pbf)) 
                     in Some (s, P) |
           None \<Rightarrow> None)"
@@ -472,6 +478,8 @@ and get_edge_and_costs_backward = selection_functions.get_edge_and_costs_backwar
 and get_edge_and_costs_forward = selection_functions.get_edge_and_costs_forward
 and bellman_ford_backward =selection_functions.bellman_ford_backward
 and bellman_ford_forward = selection_functions.bellman_ford_forward
+and pair_to_realising_redge_forward=selection_functions.pair_to_realising_redge_forward
+and pair_to_realising_redge_backward=selection_functions.pair_to_realising_redge_backward
 and get_target_aux_aux = selection_functions.get_target_aux_aux
 and get_source_aux_aux = selection_functions.get_source_aux_aux
 and ees =selection_functions.ees
@@ -2171,7 +2179,7 @@ proof( goal_cases)
       (auto simp add: option_none_simp[of "get_target_for_source_aux_aux _ _ _ _"] 
                  algo.abstract_not_blocked_map_def option.case_eq_if 
                    tt_opt_def bf_def get_source_target_path_a_def tt_def
-                   PP_def Pbf_def)
+                   PP_def Pbf_def pair_to_realising_redge_forward_def)
   hence tt_is_t: "tt = t" and PP_is_P: "PP = P" by auto 
   have t_props: "tt \<in> set local.vs"
      "a_balance state tt < - local.\<epsilon> * current_\<gamma> state"
@@ -2470,7 +2478,7 @@ proof-
       (auto simp add: option_none_simp[of "get_target_for_source_aux_aux _ _ _ _"] 
                  algo.abstract_not_blocked_map_def option.case_eq_if 
                    tt_opt_def bf_def get_source_target_path_a_def tt_def
-                  get_source_target_path_a_cond_def PP_def Pbf_def)
+                  get_source_target_path_a_cond_def PP_def Pbf_def pair_to_realising_redge_forward_def)
   hence tt_is_t: "tt = t" and PP_is_P: "PP = P" by auto 
   have tt_props: "tt \<in> set local.vs"
      "a_balance state tt < - local.\<epsilon> * current_\<gamma> state"
@@ -3029,7 +3037,7 @@ lemma get_source_for_target_ax:
       (auto simp add: option_none_simp[of "get_source_for_target_aux_aux _ _ _ _"] 
                  algo.abstract_not_blocked_map_def option.case_eq_if 
                    ss_opt_def bf_def get_source_target_path_b_def ss_def
-                   PP_def Pbf_def)
+                   PP_def Pbf_def pair_to_realising_redge_backward_def)
   hence ss_is_s: "ss = s" and PP_is_P: "PP = P" by auto 
   have s_props: "ss \<in> set local.vs"
      "a_balance state ss > local.\<epsilon> * current_\<gamma> state"
@@ -3403,7 +3411,7 @@ proof-
       (auto simp add: option_none_simp[of "get_source_for_target_aux_aux _ _ _ _"] 
                  algo.abstract_not_blocked_map_def option.case_eq_if 
                    ss_opt_def bf_def get_source_target_path_b_def ss_def
-                  get_source_target_path_b_cond_def PP_def Pbf_def)
+                  get_source_target_path_b_cond_def PP_def Pbf_def pair_to_realising_redge_backward_def)
   hence ss_is_s: "ss = s" and PP_is_P: "PP = P" by auto 
   have ss_props: "ss \<in> set local.vs"
      "a_balance state ss > local.\<epsilon> * current_\<gamma> state"
