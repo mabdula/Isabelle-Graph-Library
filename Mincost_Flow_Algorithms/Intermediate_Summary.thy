@@ -572,8 +572,13 @@ definition "abstract_conv_map mp = (\<lambda> e. if conv_lookup mp e \<noteq> No
                                          then the (conv_lookup mp e)
                                          else undefined)"
 
-definition "abstract_not_blocked_map mp = (\<lambda> e. if not_blocked_lookup mp e = None then False
+abbreviation "abstract_not_blocked_map mp \<equiv>
+    (abstract_bool_map (not_blocked_lookup mp))"
+
+lemma abstract_not_blocked_map_def: "abstract_not_blocked_map mp =
+ (\<lambda> e. if not_blocked_lookup mp e = None then False
                                                  else the (not_blocked_lookup mp e))"
+  by(auto simp add: abstract_bool_map_def split: option.split)
 
 abbreviation "not_blocked_dom mp \<equiv> dom (not_blocked_lookup mp)"
 

@@ -256,9 +256,7 @@ definition "get_edge_and_costs_forward nb (f::'edge_type \<Rightarrow> real) =
                             (create_edge u v) PInfty; 
                  (eb, cb) = find_cheapest_backward f nb outgoing_edges
                             (create_edge v u) PInfty
-                  in (if cf \<le> cb then
-                      (F ef, cf)
-                      else (B eb, cb))))"
+                  in (if cf \<le> cb then (F ef, cf) else (B eb, cb))))"
                       
                       
 definition "get_edge_and_costs_backward nb (f::'edge_type \<Rightarrow> real) = 
@@ -272,9 +270,7 @@ definition "get_edge_and_costs_backward nb (f::'edge_type \<Rightarrow> real) =
                             (create_edge u v) PInfty; 
                  (eb, cb) = find_cheapest_backward f nb outgoing_edges
                             (create_edge v u) PInfty
-                  in (if cf \<le> cb then
-                      (F ef, cf)
-                      else (B eb, cb))))"
+                  in (if cf \<le> cb then (F ef, cf) else (B eb, cb))))"
 
 definition "bellman_ford_forward nb (f::'edge_type \<Rightarrow> real) s =
          bellman_ford_algo (\<lambda> u v. prod.snd (get_edge_and_costs_forward nb f u v)) es (length vs - 1)
@@ -306,34 +302,31 @@ definition "get_source state = get_source_aux_aux
  
 definition "get_target state = get_target_aux_aux
  (\<lambda> v. abstract_real_map (bal_lookup (balance state)) v) (current_\<gamma> state) vs"
-  
-abbreviation "TB opt \<equiv> (case opt of None \<Rightarrow> False
-                                | Some x \<Rightarrow> x)"
 
 definition "get_source_target_path_a state s =
-      (let bf = bellman_ford_forward (\<lambda> e. TB (not_blocked_lookup (not_blocked state) e))
-                                     (\<lambda> e. abstract_real_map (flow_lookup (current_flow state)) e) s
+      (let bf = bellman_ford_forward (abstract_bool_map (not_blocked_lookup (not_blocked state)))
+                                     (abstract_real_map (flow_lookup (current_flow state))) s
       in case (get_target_for_source_aux_aux bf 
                      (\<lambda> v. abstract_real_map (bal_lookup (balance state)) v)
                                            (current_\<gamma> state) vs) of 
             Some t \<Rightarrow> (let Pbf = search_rev_path_exec s bf t Nil;
                              P = (map (\<lambda>e. prod.fst (get_edge_and_costs_forward 
-                                 (\<lambda> e. TB (not_blocked_lookup (not_blocked state) e))
-                                  (\<lambda> e. abstract_real_map (flow_lookup (current_flow state)) e) (prod.fst e) (prod.snd e)))
+                                 (abstract_bool_map (not_blocked_lookup (not_blocked state)))
+                                  (abstract_real_map (flow_lookup (current_flow state))) (prod.fst e) (prod.snd e)))
                                       (edges_of_vwalk Pbf)) 
                        in Some (t, P))|
             None \<Rightarrow> None)"
 
 definition "get_source_target_path_b state t =
-      (let bf = bellman_ford_backward (\<lambda> e. TB (not_blocked_lookup (not_blocked state) e))
-                                     (\<lambda> e. abstract_real_map (flow_lookup (current_flow state)) e) t
+      (let bf = bellman_ford_backward (abstract_bool_map (not_blocked_lookup (not_blocked state)))
+                                     (abstract_real_map (flow_lookup (current_flow state))) t
        in case ( get_source_for_target_aux_aux bf 
                        (\<lambda> v. abstract_real_map (bal_lookup (balance state)) v)
                                            (current_\<gamma> state) vs) of
           Some s \<Rightarrow> let Pbf =itrev (search_rev_path_exec t bf s Nil);
                          P = (map (\<lambda>e. prod.fst (get_edge_and_costs_backward 
-                                 (\<lambda> e. TB (not_blocked_lookup (not_blocked state) e))
-                                  (\<lambda> e. abstract_real_map (flow_lookup (current_flow state)) e) (prod.snd e) (prod.fst e)))
+                                 (abstract_bool_map (not_blocked_lookup (not_blocked state)))
+                                  (abstract_real_map (flow_lookup (current_flow state))) (prod.snd e) (prod.fst e)))
                                         (edges_of_vwalk Pbf)) 
                     in Some (s, P) |
           None \<Rightarrow> None)"
