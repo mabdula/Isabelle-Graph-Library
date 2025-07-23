@@ -641,8 +641,8 @@ corollary correctness_of_implementation_success:
             simplified \<u>_def function_generation.\<u>_def[OF function_generation]
                       \<E>_def function_generation.\<E>_def[OF function_generation] ])
 
-corollary correctness_of_implementation_failure:
- "return (final_state_cap) = failure \<Longrightarrow> 
+corollary correctness_of_implementation_infeasible:
+ "return (final_state_cap) = infeasible \<Longrightarrow> 
          \<nexists> f. isbflow  f \<b> "
 proof(rule nexistsI, goal_cases)
   case (1 f)
@@ -673,7 +673,7 @@ corollary correctness_of_implementation_excluded_case:
            [OF correctness_of_algo_red.correctness_of_algo_axioms, of \<c>'_impl] simp add:  final_state_cap_def)
 
 lemmas correctness_of_implementation = correctness_of_implementation_success 
-                                       correctness_of_implementation_failure
+                                       correctness_of_implementation_infeasible
                                        correctness_of_implementation_excluded_case
 (*
 lemma final_flow_domain: "dom (flow_lookup final_flow_impl_cap) = (set \<E>'_impl)"
@@ -1099,8 +1099,8 @@ lemma correctness_of_implementation_success:
 
 notation is_s_t_flow ( "_ is _ -- _ flow")
 
-lemma correctness_of_implementation_failure:
- "return final_state_maxflow = failure \<Longrightarrow> False"
+lemma correctness_of_implementation_infeasible:
+ "return final_state_maxflow = infeasible \<Longrightarrow> False"
 proof(rule ccontr,  goal_cases)
   case 1
   have f_prop: "(\<lambda> x. 0) is s -- t flow" 
@@ -1110,7 +1110,7 @@ proof(rule ccontr,  goal_cases)
                (set \<E>_impl') (\<lambda>e. case flow_lookup \<u>_impl' e of None \<Rightarrow> PInfty |
         Some x \<Rightarrow> case e of old_edge e \<Rightarrow> \<u> e | new_edge b \<Rightarrow> sum \<u> \<E>)f 
            (the_default 0 \<circ> bal_lookup \<b>_impl')"
-  proof(rule  with_capacity_proofs.correctness_of_implementation_failure[OF with_capacity_proofs], goal_cases)
+  proof(rule  with_capacity_proofs.correctness_of_implementation_infeasible[OF with_capacity_proofs], goal_cases)
     case 1
     then show ?case 
     using no_infinite_cycle
@@ -1159,7 +1159,7 @@ lemma correctness_of_implementation_excluded_case:
              final_state_maxflow_def   snd'_def2(2) )
  
 lemmas correctness_of_implementation = correctness_of_implementation_success
-                                       correctness_of_implementation_failure
+                                       correctness_of_implementation_infeasible
                                        correctness_of_implementation_excluded_case
   
 end

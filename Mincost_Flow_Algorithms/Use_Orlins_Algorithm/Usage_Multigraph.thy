@@ -219,7 +219,7 @@ corollary correctness_of_implementation:
  "return final_state_multi = success \<Longrightarrow>  
         cost_flow_spec.is_Opt fstt sndd \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map final_flow_impl_multi)"
- "return final_state_multi = failure \<Longrightarrow> 
+ "return final_state_multi = infeasible \<Longrightarrow> 
          \<nexists> f. flow_network_spec.isbflow  fstt sndd (\<E> \<E>_impl) \<u>  f (\<b> \<b>_impl)"
  "return final_state_multi = notyetterm \<Longrightarrow>  
          False"

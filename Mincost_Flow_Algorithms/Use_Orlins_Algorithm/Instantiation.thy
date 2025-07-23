@@ -4340,7 +4340,7 @@ definition "final_flow_impl = current_flow final_state"
 
 corollary correctness_of_implementation:
  "return final_state = success \<Longrightarrow> cost_flow_network.is_Opt  \<b> (abstract_flow_map final_flow_impl)"
- "return final_state = failure \<Longrightarrow>  \<nexists> f. cost_flow_network.isbflow f \<b>"
+ "return final_state = infeasible \<Longrightarrow>  \<nexists> f. cost_flow_network.isbflow f \<b>"
  "return final_state = notyetterm \<Longrightarrow>  False"
   using  orlins.initial_state_orlins_dom_and_results[OF refl]
   by(auto simp add: final_state_def send_flow_loop_impl_def orlins_loop_impl_def
@@ -4456,7 +4456,7 @@ corollary correctness_of_implementation:
  "return (final_state fst snd create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = success \<Longrightarrow>  
         cost_flow_spec.is_Opt fst snd  \<u> (\<E> \<E>_impl) (\<c> \<c>_impl c_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map (final_flow_impl fst snd create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup))"
- "return (final_state  fst snd create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = failure \<Longrightarrow> 
+ "return (final_state  fst snd create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = infeasible \<Longrightarrow> 
          \<nexists> f. flow_network_spec.isbflow  fst snd (\<E> \<E>_impl) \<u>  f (\<b> \<b>_impl)"
  "return (final_state fst snd create_edge \<E>_impl \<c>_impl \<b>_impl c_lookup) = notyetterm \<Longrightarrow>  
          False"

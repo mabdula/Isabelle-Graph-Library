@@ -33,7 +33,7 @@ definition "new_\<gamma> state = (let f = current_flow state;
 function (domintros) orlins::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state 
 \<Rightarrow> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state" where
 "orlins state = (if return state = success then state 
-                 else if return state= failure then state
+                 else if return state= infeasible then state
                  else (let 
                       \<gamma>' = new_\<gamma> state;
                       state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
@@ -44,7 +44,7 @@ function (domintros) orlins::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state
 partial_function (tailrec) orlins_impl::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state 
 \<Rightarrow> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state" where
 "orlins_impl state = (if return state = success then state 
-                 else if return state= failure then state
+                 else if return state= infeasible then state
                  else (let 
                       \<gamma>' = new_\<gamma> state;
                       state' = maintain_forest_impl (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
@@ -84,7 +84,7 @@ definition orlins_one_step::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state
 definition orlins_one_step_check::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state 
 \<Rightarrow> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state" where
 "orlins_one_step_check state =(  if return state = success then state
-                                 else if return state = failure then state
+                                 else if return state = infeasible then state
                                  else orlins_one_step state)"
 
 definition "orlins_upd_impl state =
@@ -95,7 +95,7 @@ definition "orlins_upd_impl state =
 
 definition "orlins_upd_impl_check state =
                      (if return state = success then state
-                      else if return state = failure then state
+                      else if return state = infeasible then state
                       else orlins_upd_impl state)"
 
 lemma notyetterm_no_change:"return state \<noteq> notyetterm \<Longrightarrow> 
@@ -114,7 +114,7 @@ lemma iterated_orlins_one_step_check_mono:
     by(subst add_Suc, subst funpow_Suc_right, subst (asm) funpow_Suc_right, simp)
   done
 
-lemma succ_fail_not_changes: " return state' = success \<or> return state' = failure  \<Longrightarrow>
+lemma succ_fail_not_changes: " return state' = success \<or> return state' = infeasible  \<Longrightarrow>
      compow k orlins_one_step_check state' = state'"
   apply(induction k, simp)
   subgoal for k
@@ -125,7 +125,7 @@ lemma succ_fail_not_changes: " return state' = success \<or> return state' = fai
 
 lemma succ_fail_term_same_dom:
 "compow (Suc k) orlins_one_step_check state = state' \<Longrightarrow>
-       return state' = success \<or> return state' = failure \<Longrightarrow> 
+       return state' = success \<or> return state' = infeasible \<Longrightarrow> 
          orlins_dom state"
 proof(induction k arbitrary: state)
   case 0
@@ -164,7 +164,7 @@ next
        qed
       then show ?thesis by simp
     next
-      case failure
+      case infeasible
       note Failure = this
       hence same_state:"(orlins_one_step_check ^^ Suc k) (orlins_one_step_check state) = 
                        orlins_one_step_check state"
@@ -173,7 +173,7 @@ next
       proof(rule orlins.domintros, goal_cases)
         case 1
         then show ?case 
-           using failure(1) 1 
+           using infeasible(1) 1 
            by(auto intro: orlins.domintros 
                 simp add: orlins_one_step_def Let_def orlins_one_step_check_def)
        qed
@@ -198,7 +198,7 @@ next
 
 lemma succ_fail_term_same:
   assumes "compow (Suc k) orlins_one_step_check state = state'"
-          "return state' = success \<or> return state' = failure"
+          "return state' = success \<or> return state' = infeasible"
     shows "orlins state = state'"
   using assms
 proof(induction arbitrary:  k rule:
@@ -257,7 +257,7 @@ qed (rule assms)
 
 lemma succ_fail_term_same_check:
        "compow k orlins_one_step_check state = state' \<Longrightarrow> return state = notyetterm \<Longrightarrow>
-       return state' = success \<or> return state' = failure \<Longrightarrow>
+       return state' = success \<or> return state' = infeasible \<Longrightarrow>
        orlins_dom state \<and> orlins state = state'"
  by(induction k, auto intro!: succ_fail_term_same succ_fail_term_same_dom)
 end
@@ -464,7 +464,7 @@ lemma invars_pres_orlins_one_step:
           "invar_isOptflow (orlins_one_step state)"
           "return (orlins_one_step state) = success \<Longrightarrow>
            is_Opt \<b> (a_current_flow (orlins_one_step state))"
-          "return (orlins_one_step state) = failure \<Longrightarrow>
+          "return (orlins_one_step state) = infeasible \<Longrightarrow>
            \<nexists> f. f is \<b> flow"
           "\<And> x. x \<in> \<V> \<Longrightarrow> \<bar> a_balance state x \<bar>\<le> 2*new_\<gamma> state"
           "return (orlins_one_step state) = notyetterm \<Longrightarrow>
@@ -622,7 +622,7 @@ proof-
                         invar_above_6Ngamma invar_forest_after_send_flow
                         send_flow_changes_current_\<gamma> gamma_pres implementation_invar_gamma_upd
                         aux_invar_gamma_upd) 
-     show "return (orlins_one_step state) = failure \<Longrightarrow> \<nexists>f. f is \<b> flow" 
+     show "return (orlins_one_step state) = infeasible \<Longrightarrow> \<nexists>f. f is \<b> flow" 
       using Phi_increase_bound new_phi_less_N send_flow_completeness
       by(intro send_flow_completeness)
         (auto simp add: orlins_one_step_def send_flow_dom invars_after_maintain_forest
@@ -778,14 +778,14 @@ lemma
           "return (orlins_one_step_check state) = success \<Longrightarrow>
            return state = notyetterm \<Longrightarrow>
            is_Opt \<b> (a_current_flow (orlins_one_step_check state))"
-          "return (orlins_one_step_check state) = failure \<Longrightarrow> 
+          "return (orlins_one_step_check state) = infeasible \<Longrightarrow> 
            return state = notyetterm \<Longrightarrow>
            \<nexists> f. f is \<b> flow"
     and optimality_pres_orlins_one_step:
          "invar_isOptflow (orlins_one_step state)"
           "return (orlins_one_step state) = success \<Longrightarrow>
            is_Opt \<b> (a_current_flow (orlins_one_step state))"
-          "return (orlins_one_step state) = failure \<Longrightarrow>
+          "return (orlins_one_step state) = infeasible \<Longrightarrow>
            \<nexists> f. f is \<b> flow"
   using invars_pres_orlins_one_step(9)[OF assms]
   by(auto simp add: assms(1,2,3,4,5,6,7,8) invars_pres_orlins_one_step(7,8)
@@ -1290,7 +1290,7 @@ next
       using Suc(2-) 
       by(unfold orlins_one_step_check_def funpow.simps(2)) simp
   next
-    case failure
+    case infeasible
     then show ?thesis 
       using Suc(2-) 
       by(unfold orlins_one_step_check_def funpow.simps(2)) simp
@@ -2158,7 +2158,7 @@ next
   have no_changes_at_end:
        "return ((orlins_one_step_check ^^ k) state) = success \<Longrightarrow>
         (orlins_one_step_check ^^ Suc k) state = (orlins_one_step_check ^^ k) state"
-       "return ((orlins_one_step_check ^^ k) state) = failure \<Longrightarrow>
+       "return ((orlins_one_step_check ^^ k) state) = infeasible \<Longrightarrow>
         (orlins_one_step_check ^^ Suc k) state = (orlins_one_step_check ^^ k) state"
     by(auto simp add: orlins_one_step_check_def)
   show ?case 
@@ -2225,7 +2225,7 @@ theorem compow_completeness:
           "implementation_invar state"
           "return state = notyetterm"
           "state' = (orlins_one_step_check ^^ (Suc k)) state"
-        shows "return state' = failure \<Longrightarrow> \<nexists> f. f is \<b> flow"
+        shows "return state' = infeasible \<Longrightarrow> \<nexists> f. f is \<b> flow"
   unfolding assms
   using assms(1-9)
 proof(induction k arbitrary: state)
@@ -2238,7 +2238,7 @@ next
   have no_changes_at_end:
        "return ((orlins_one_step_check ^^ k) state) = success \<Longrightarrow>
         (orlins_one_step_check ^^ Suc k) state = (orlins_one_step_check ^^ k) state"
-       "return ((orlins_one_step_check ^^ k) state) = failure \<Longrightarrow>
+       "return ((orlins_one_step_check ^^ k) state) = infeasible \<Longrightarrow>
         (orlins_one_step_check ^^ Suc k) state = (orlins_one_step_check ^^ k) state"
     by(auto simp add: orlins_one_step_check_def)
   show ?case 
@@ -2250,7 +2250,7 @@ next
       by (metis Suc.prems(1) alt_1 return.simps(2) succ_fail_term_same)
   next
     case 2
-    hence alt_2:"return ((orlins_one_step_check ^^ Suc k) state) = failure"
+    hence alt_2:"return ((orlins_one_step_check ^^ Suc k) state) = infeasible"
       by simp
      show ?case 
        using  Suc(1)[OF alt_2 Suc(3-11)]  "2" no_changes_at_end 
@@ -2278,7 +2278,7 @@ corollary compow_completeness_gtr0:
           "implementation_invar state"
           "return state = notyetterm"
           "state' = (orlins_one_step_check ^^ k) state"
-          "k > 0" "return state' = failure"
+          "k > 0" "return state' = infeasible"
         shows "\<nexists> f. f is \<b> flow"
 proof-
   obtain k' where k': "k = Suc k'"
@@ -2356,7 +2356,7 @@ theorem orlins_dom_and_results:
           "state' = orlins state"
     shows "orlins_dom state"
           "return state' = success \<Longrightarrow> is_Opt \<b> (a_current_flow state')"
-          "return state' = failure \<Longrightarrow> \<nexists> f. f is \<b> flow"
+          "return state' = infeasible \<Longrightarrow> \<nexists> f. f is \<b> flow"
           "return state' = notyetterm \<Longrightarrow> False"
           "orlins_impl state = state'"
 proof-
@@ -2372,7 +2372,7 @@ proof-
     by(auto intro!: orlins_dom_impl_same simp add: assms)
   show "return state' = success \<Longrightarrow> is_Opt \<b> (a_current_flow state')"
     by(auto intro!: compow_correctness_gtr0 simp add: assms orlins_it k_term(2))
-  show "return state' = failure \<Longrightarrow> \<nexists> f. f is \<b> flow"
+  show "return state' = infeasible \<Longrightarrow> \<nexists> f. f is \<b> flow"
     by(intro compow_completeness_gtr0)(auto simp add: assms orlins_it k_term(2))
   show "return state' = notyetterm \<Longrightarrow> False"
     by(auto simp add: orlins_it assms k_term)
@@ -2640,7 +2640,7 @@ theorem initial_state_orlins_dom_and_results:
   assumes "state' = orlins (send_flow initial)"
     shows "orlins_dom (send_flow initial)"
           "return state' = success \<Longrightarrow> is_Opt \<b> (a_current_flow state')"
-          "return state' = failure \<Longrightarrow> \<nexists> f. f is \<b> flow"
+          "return state' = infeasible \<Longrightarrow> \<nexists> f. f is \<b> flow"
           "return state' = notyetterm \<Longrightarrow> False"
           "send_flow_dom initial"
           "orlins_impl (send_flow_impl initial) = state'"
@@ -2665,7 +2665,7 @@ proof-
 
   have  "orlins_dom (send_flow initial) \<and>
          (return state' = success \<longrightarrow> is_Opt \<b> (a_current_flow state'))\<and>
-          (return state' = failure \<longrightarrow> (\<nexists> f. f is \<b> flow)) \<and>
+          (return state' = infeasible \<longrightarrow> (\<nexists> f. f is \<b> flow)) \<and>
           (return state' = notyetterm \<longrightarrow> False) \<and>
           orlins_impl (send_flow_impl initial) = state'"
 proof(cases "return (send_flow initial)")
@@ -2705,14 +2705,14 @@ qed
      using success
      by(auto simp add: assms)
 next
-  case failure
+  case infeasible
   have orlins_dom:"orlins_dom (send_flow initial)"
-    by(auto intro: orlins.domintros simp add: failure)
+    by(auto intro: orlins.domintros simp add: infeasible)
   moreover have "orlins_impl (send_flow_impl initial) = local.orlins (send_flow initial)"
-    using failure after_send_flow_same 
+    using infeasible after_send_flow_same 
     by(auto  simp add: assms orlins.psimps[OF orlins_dom] 
         orlins_impl.simps[of "send_flow initial"])
-  moreover have "(\<nexists>f. f is \<b> flow)" if "return state' = failure"
+  moreover have "(\<nexists>f. f is \<b> flow)" if "return state' = infeasible"
 proof(cases "\<forall>v\<in>\<V>. \<b> v = 0")
   case True
   hence send_flow_succ_cond:"send_flow_succ_cond initial"
@@ -2722,18 +2722,18 @@ proof(cases "\<forall>v\<in>\<V>. \<b> v = 0")
     by(auto simp add: send_flow_simps(1)[OF send_flow_dom send_flow_succ_cond] 
                        send_flow_succ_upd_def)
    then show ?thesis 
-     using failure by simp
+     using infeasible by simp
  next
    case False
    then show ?thesis
     by(intro send_flow_completeness)
       (auto intro!: invar_gamma_initial send_flow_entry_initial
                       implementation_invar_initial  aux_invar_initial  invar_integral_initial
-                      invar_isOptflow_initial invar_above_6Ngamma_initial failure phi_initial_leq_2N
-         simp add: assms orlins.psimps[OF orlins_dom] failure)
+                      invar_isOptflow_initial invar_above_6Ngamma_initial infeasible phi_initial_leq_2N
+         simp add: assms orlins.psimps[OF orlins_dom] infeasible)
 qed
   ultimately show ?thesis 
-    by (auto simp add: assms orlins.psimps[OF orlins_dom] failure)
+    by (auto simp add: assms orlins.psimps[OF orlins_dom] infeasible)
 next
   case notyetterm
   have not_all_zero: "\<forall>v\<in>\<V>. \<b> v = 0 \<Longrightarrow> False"
@@ -2772,7 +2772,7 @@ next
   moreover have "return state' = success \<Longrightarrow> is_Opt \<b> (a_current_flow state')"
     by(auto intro!: orlins_dom_and_results(2)  intermediate_invars 
           simp add: assms notyetterm)
-  moreover have "return state' = failure \<Longrightarrow> (\<nexists>f. f is \<b> flow)"
+  moreover have "return state' = infeasible \<Longrightarrow> (\<nexists>f. f is \<b> flow)"
     by(intro orlins_dom_and_results(3))
       (auto simp add:  intermediate_invars assms notyetterm)
   moreover have "return state' = notyetterm \<Longrightarrow> False"
@@ -2785,14 +2785,14 @@ next
  qed
   thus  "orlins_dom (send_flow initial)"
         "return state' = success \<Longrightarrow> is_Opt \<b> (a_current_flow state')"
-        "return state' = failure \<Longrightarrow> \<nexists> f. f is \<b> flow"
+        "return state' = infeasible \<Longrightarrow> \<nexists> f. f is \<b> flow"
         "return state' = notyetterm \<Longrightarrow> False"
         "orlins_impl (send_flow_impl initial) = state'"
     by auto
 qed
 
 definition "orlins_ret1_cond state =  (if return state = success then True
-                 else if return state= failure then False
+                 else if return state= infeasible then False
                  else (let  \<gamma>' = new_\<gamma> state;
                       state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
                       state'' = send_flow state'  
@@ -2806,7 +2806,7 @@ lemma orlins_ret1_condI: " return state = success \<Longrightarrow> orlins_ret1_
   unfolding  orlins_ret1_cond_def by presburger
 
 definition "orlins_call_cond state = (if return state = success then False
-                 else if return state= failure then False
+                 else if return state= infeasible then False
                  else (let  \<gamma>' = new_\<gamma> state;
                       state' = maintain_forest (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
                       state'' = send_flow state' 
@@ -2833,7 +2833,7 @@ lemma orlins_call_condI: " \<And>  \<gamma>' state' state''. return state = noty
   unfolding  orlins_call_cond_def Let_def by force
 
 definition "orlins_ret2_cond state = (if return state = success then False
-                 else if return state= failure then True
+                 else if return state= infeasible then True
                  else False)"
 
 lemma if_PQ:"if P then False else if Q then False else True \<Longrightarrow> \<not> P \<and> \<not> Q"
@@ -2843,10 +2843,10 @@ lemma if_PQ_E: "if P then False else if Q then False else True \<Longrightarrow>
   by metis
 
 lemma orlins_ret2_condE: "orlins_ret2_cond state \<Longrightarrow>
-                 \<lbrakk>  return state = failure \<Longrightarrow> P \<rbrakk> \<Longrightarrow> P"
+                 \<lbrakk>  return state = infeasible \<Longrightarrow> P \<rbrakk> \<Longrightarrow> P"
   unfolding orlins_ret2_cond_def Let_def by meson
 
-lemma orlins_ret2_condI: " return state = failure
+lemma orlins_ret2_condI: " return state = infeasible
                   \<Longrightarrow> orlins_ret2_cond state"
   unfolding  orlins_ret2_cond_def Let_def by force
 

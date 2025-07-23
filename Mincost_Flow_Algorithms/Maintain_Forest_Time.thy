@@ -13,7 +13,7 @@ function (domintros) maintain_forest_time::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_sta
 "maintain_forest_time state = (let \<FF> = \<FF> state;
                     f = current_flow state;
                     b = balance state;
-                    r_card = representative_comp_card state;
+                    r_card = rep_comp_card state;
                     E' = actives state;
                     to_rdg = conv_to_rdg state;
                     \<gamma> = current_\<gamma> state
@@ -37,11 +37,11 @@ function (domintros) maintain_forest_time::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_sta
                             E'' = filter (\<lambda> d. {abstract_rep_map r_card (fst d) ,
                                                 abstract_rep_map r_card (snd d)}
                                                  \<noteq> {x', y'} ) E';
-                            r_card' = rep_comp_update_all 
+                            r_card' = rep_comp_upd_all 
                                 (\<lambda> u urc. if prod.fst (urc) = x' \<or> prod.fst (urc) = y'
                                     then (y', cardx + cardy) else urc) r_card;
                             nb = not_blocked state;
-                            nb' = not_blocked_update_all (\<lambda> d b. 
+                            nb' = not_blocked_upd_all (\<lambda> d b. 
                                    if d = e then True
                                    else if {abstract_rep_map r_card (fst d) ,
                                             abstract_rep_map r_card (snd d)} = {x', y'} 
@@ -50,7 +50,7 @@ function (domintros) maintain_forest_time::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_sta
                             state' = state \<lparr>  \<FF> := \<FF>', current_flow := f',
                                     balance := b', 
                                     actives := E'', conv_to_rdg := to_rdg',
-                                    representative_comp_card:= r_card',
+                                    rep_comp_card:= r_card',
                                     not_blocked := nb'\<rparr>
                             in  ((t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B) +++ (maintain_forest_time state')))
                     | None \<Rightarrow> ( t\<^sub>A\<^sub>C, state))))"

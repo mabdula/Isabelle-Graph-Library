@@ -32,7 +32,7 @@ function (domintros) send_flow::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state  \<Righ
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in   
                            send_flow state')
-                 | None \<Rightarrow> state \<lparr> return := failure\<rparr>) 
+                 | None \<Rightarrow> state \<lparr> return := infeasible\<rparr>) 
      | None \<Rightarrow> 
           (case get_target state of Some t \<Rightarrow> 
             (case get_source_target_path_b state t of Some (s, P) \<Rightarrow>
@@ -40,7 +40,7 @@ function (domintros) send_flow::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state  \<Righ
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in   
                            send_flow state')
-                 | None \<Rightarrow> state \<lparr> return := failure\<rparr>)
+                 | None \<Rightarrow> state \<lparr> return := infeasible\<rparr>)
          | None \<Rightarrow> state \<lparr> return := notyetterm\<rparr>
     ))))"
   by pat_completeness auto
@@ -55,7 +55,7 @@ partial_function (tailrec) send_flow_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_st
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in   
                            send_flow_impl state')
-                 | None \<Rightarrow> state \<lparr> return := failure\<rparr>) 
+                 | None \<Rightarrow> state \<lparr> return := infeasible\<rparr>) 
      | None \<Rightarrow> 
           (case get_target state of Some t \<Rightarrow> 
             (case get_source_target_path_b state t of Some (s, P) \<Rightarrow>
@@ -63,7 +63,7 @@ partial_function (tailrec) send_flow_impl::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_st
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in   
                            send_flow_impl state')
-                 | None \<Rightarrow> state \<lparr> return := failure\<rparr>)
+                 | None \<Rightarrow> state \<lparr> return := infeasible\<rparr>)
          | None \<Rightarrow> state \<lparr> return := notyetterm\<rparr>
     ))))"
 
@@ -75,7 +75,7 @@ definition send_flow_succ_upd::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state
 
 definition send_flow_fail_upd::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state  
 \<Rightarrow> ('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state " where
-  "send_flow_fail_upd state =  state \<lparr> return:=failure\<rparr>"
+  "send_flow_fail_upd state =  state \<lparr> return:=infeasible\<rparr>"
 
 definition send_flow_call1_upd::"('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state 
 \<Rightarrow> ('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state " where
@@ -2730,7 +2730,7 @@ lemma send_flow_fail_balance:
           "invar_isOptflow state"
           "invar_above_6Ngamma state"
           "state' = (send_flow state)" 
-          "return state' = failure"
+          "return state' = infeasible"
     shows "(\<exists> s \<in> \<V>. (a_balance state' s > (1 - \<epsilon>) * current_\<gamma> state' \<and>
                      (\<forall> t \<in> \<V>. resreach (a_current_flow state') s t \<longrightarrow>
                                a_balance state' t \<ge> - \<epsilon> * current_\<gamma> state'))) \<or>
@@ -2814,7 +2814,7 @@ theorem send_flow_completeness:
           "send_flow_entryF state"
           "invar_isOptflow state"
           "\<Phi> state \<le> 2*N"
-          "return (send_flow state) = failure"
+          "return (send_flow state) = infeasible"
   shows   "\<nexists> f. (f is  \<b> flow)"
 proof-
   define state' where "state' = send_flow state"

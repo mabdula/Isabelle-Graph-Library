@@ -15,7 +15,7 @@ begin
 function (domintros) orlins_time::"nat \<Rightarrow> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state  
                          \<Rightarrow> nat \<times> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state " where
 "(orlins_time tt\<^sub>O\<^sub>C  state) = (if (return state = success) then (tt\<^sub>O\<^sub>C, state)
-                 else if (return state = failure) then (tt\<^sub>O\<^sub>C, state)
+                 else if (return state = infeasible) then (tt\<^sub>O\<^sub>C, state)
                  else (let \<gamma>' = new_\<gamma> state;
                       state'time = maintain_forest_time (state \<lparr>current_\<gamma> := \<gamma>' \<rparr>);
                       state''time = send_flow_time (prod.snd state'time)
@@ -35,7 +35,7 @@ fun orlins_one_step_time_check::"nat \<times> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_s
                                   \<Rightarrow> nat \<times> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state " where
 "orlins_one_step_time_check (t, state) = (  
                                  if return state = success then (t, state)
-                                 else if return state = failure then (t, state)
+                                 else if return state = infeasible then (t, state)
                                  else (t +++ orlins_one_step_time state))"
 
 lemma terminated_mono_one_step: "return (prod.snd ((orlins_one_step_time_check  ^^ i) init)) \<noteq> notyetterm \<Longrightarrow>
@@ -55,7 +55,7 @@ lemma terminated_mono: "return (prod.snd ((orlins_one_step_time_check  ^^ i) ini
   by (smt (z3) return.exhaust surjective_pairing)
 
 lemma succ_fail_not_changes_time: " return (prod.snd (t, state')) = success
-                                  \<or> return (prod.snd (t, state')) = failure  \<Longrightarrow>
+                                  \<or> return (prod.snd (t, state')) = infeasible  \<Longrightarrow>
 compow k orlins_one_step_time_check (t, state') = (t, state')"
   apply(induction k, simp)
   subgoal for k
@@ -63,7 +63,7 @@ compow k orlins_one_step_time_check (t, state') = (t, state')"
   done
 
 lemma succ_fail_not_changes_time': " return (prod.snd tstate) = success
-                                  \<or> return (prod.snd tstate) = failure  \<Longrightarrow>
+                                  \<or> return (prod.snd tstate) = infeasible  \<Longrightarrow>
 compow k orlins_one_step_time_check tstate = tstate"
   using succ_fail_not_changes_time by(cases tstate) auto
 
@@ -99,7 +99,7 @@ qed
 
 lemma succ_fail_term_same_with_time_dom:
 "compow (Suc k) orlins_one_step_time_check (tt, state) = (tfin, state') \<Longrightarrow>
-       return state' = success \<or> return state' = failure \<Longrightarrow> 
+       return state' = success \<or> return state' = infeasible \<Longrightarrow> 
          orlins_time_dom (tt, state)"
 proof(induction k arbitrary: state tt)
   case 0
@@ -142,7 +142,7 @@ next
        qed
       then show ?thesis by simp
     next
-      case failure
+      case infeasible
       note Failure = this
      hence same_state:"(orlins_one_step_time_check ^^ Suc k) (orlins_one_step_time_check (tt, state)) = 
                        orlins_one_step_time_check (tt, state)"
@@ -154,7 +154,7 @@ next
       proof(rule orlins_time.domintros, goal_cases)
         case 1
         then show ?case 
-           using failure(1) 1
+           using infeasible(1) 1
            by(auto intro: orlins_time.domintros simp add: orlins_one_step_time_def Let_def orlins_one_step_time_check.simps add_fst_def)
        qed
       then show ?thesis by simp
@@ -188,7 +188,7 @@ next
 
 lemma succ_fail_term_same_with_time:
   assumes "compow (Suc k) orlins_one_step_time_check (tt, state) = (tfin, state')"
-          "return state' = success \<or> return state' = failure" 
+          "return state' = success \<or> return state' = infeasible" 
     shows "orlins_time tt state  = (tfin, state')"
   using assms
 proof(induction arbitrary:  tt k rule:
@@ -367,7 +367,7 @@ lemma orlins_compow_time_invars_pres':
           "invar_isOptflow final"
           "\<lbrakk> return final = success; k > 0; return state = notyetterm\<rbrakk> \<Longrightarrow>
            is_Opt \<b> (a_current_flow final)"
-          "\<lbrakk>return final = failure; k > 0; return state = notyetterm \<rbrakk> \<Longrightarrow>
+          "\<lbrakk>return final = infeasible; k > 0; return state = notyetterm \<rbrakk> \<Longrightarrow>
            \<nexists> f. f is \<b> flow"
           "return final = notyetterm \<Longrightarrow>  invar_non_zero_b final"
   using orlins_compow_aux_invar_pres[OF assms(1,2,3,5,6,7,8,9)]

@@ -22,7 +22,7 @@ function (domintros) send_flow_time::
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in   
                            ((t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B) +++ (send_flow_time state')))          
-                  | None \<Rightarrow>  ((t\<^sub>B\<^sub>C +  t\<^sub>B\<^sub>F), state \<lparr> return := failure\<rparr>)) 
+                  | None \<Rightarrow>  ((t\<^sub>B\<^sub>C +  t\<^sub>B\<^sub>F), state \<lparr> return := infeasible\<rparr>)) 
      | None \<Rightarrow> 
           (case get_target state of Some t \<Rightarrow> 
             (case get_source_target_path_b state t of Some (s, P) \<Rightarrow>
@@ -30,7 +30,7 @@ function (domintros) send_flow_time::
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in
                          ((t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B) +++ (send_flow_time state')))                    
-                | None \<Rightarrow> ((t\<^sub>B\<^sub>C +  t\<^sub>B\<^sub>F) , state \<lparr> return := failure\<rparr>))
+                | None \<Rightarrow> ((t\<^sub>B\<^sub>C +  t\<^sub>B\<^sub>F) , state \<lparr> return := infeasible\<rparr>))
           | None \<Rightarrow> ((t\<^sub>B\<^sub>C +  t\<^sub>B\<^sub>F), state \<lparr> return := notyetterm\<rparr>)))))"
   by auto
 
@@ -125,7 +125,7 @@ lemma send_flow_call1_upd_changes:
 "\<F> (send_flow_call1_upd state) = \<F> state"
   by (auto simp add: send_flow_call1_upd_def Let_def \<F>_def split: prod.split)
 
-definition "send_flow_time_fail_upd state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f +  t\<^sub>B\<^sub>F, state \<lparr> return :=failure \<rparr>)"
+definition "send_flow_time_fail_upd state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f +  t\<^sub>B\<^sub>F, state \<lparr> return :=infeasible \<rparr>)"
 
 lemma send_flow_time_fail_upd_changes: 
 "\<FF> (prod.snd (send_flow_time_fail_upd state)) = \<FF> state"

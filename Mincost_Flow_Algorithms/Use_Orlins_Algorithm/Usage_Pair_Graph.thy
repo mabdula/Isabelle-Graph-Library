@@ -103,7 +103,7 @@ corollary correctness_of_implementation:
  "return final_state_pair = success \<Longrightarrow>  
         cost_flow_spec.is_Opt fst snd \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map final_flow_impl_pair)"
- "return final_state_pair = failure \<Longrightarrow> 
+ "return final_state_pair = infeasible \<Longrightarrow> 
          \<nexists> f. flow_network_spec.isbflow  fst snd (\<E> \<E>_impl) \<u> f (\<b> \<b>_impl)"
  "return final_state_pair = notyetterm \<Longrightarrow>  
          False"

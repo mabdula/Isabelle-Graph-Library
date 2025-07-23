@@ -212,7 +212,7 @@ end
 
 subsection \<open>Program States and Invariants\<close>
 
-datatype return = success | failure | notyetterm
+datatype return = success | infeasible | notyetterm
 
 text \<open>Then we setup the program state.\<close>
 
