@@ -26,11 +26,11 @@ lemma dVs_empty[simp]: "dVs {} = {}"
 lemma dVs_empty_iff[simp]: "dVs E = {} \<longleftrightarrow> E = {}"
   unfolding dVs_def by auto
 
-lemma dVsI[intro]:
+lemma dVsI[intro]: (*MBG*)
   assumes "(a, v) \<in> dG" shows "a \<in> dVs dG" and "v \<in> dVs dG"
   using assms unfolding dVs_def by auto
 
-lemma dVsI':
+lemma dVsI': (*MBG*)
   assumes "e \<in> dG" shows "fst e \<in> dVs dG" and "snd e \<in> dVs dG"
   using assms
   by (auto intro: dVsI[of "fst e" "snd e"])
@@ -44,10 +44,10 @@ lemma dVs_union_big_distr: "dVs (\<Union>G) = \<Union>(dVs ` G)"
    apply (smt dVs_def mem_Collect_eq mem_simps(9))
   by (metis Sup_insert UnCI dVs_union_distr mk_disjoint_insert)
 
-lemma dVs_eq: "dVs E = fst ` E \<union> snd ` E"
+lemma dVs_eq: "dVs E = fst ` E \<union> snd ` E" (*MBG*)
   by (induction E rule: infinite_finite_induct)
      (auto simp: dVs_def intro!: image_eqI, blast+)
-
+(*HSG*)
 lemma finite_vertices_iff: "finite (dVs E) \<longleftrightarrow> finite E" (is "?L \<longleftrightarrow> ?R")
 proof
   show "?R \<Longrightarrow> ?L"
@@ -67,7 +67,7 @@ abbreviation reachable1 :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 
 definition reachable :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<^sup>*\<index> _" [100,100] 40) where
   "reachable E u v = ( (u,v) \<in> rtrancl_on (dVs E) E)"
 
-lemma reachableE[elim?]:
+lemma reachableE[elim?]: (*SBG*)
   assumes "(u,v) \<in> E"
   obtains e where "e \<in> E" "e = (u, v)"
   using assms by auto
@@ -80,18 +80,18 @@ lemma reachable_refl[intro!, Pure.intro!, simp]: "v \<in> dVs E \<Longrightarrow
 lemma reachable_trans[trans,intro]:
   assumes "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v" "v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w" shows "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
   using assms unfolding reachable_def by (rule rtrancl_on_trans)
-
+(*SBG, MBG*)
 lemma reachable_edge[dest,intro]: "(u,v) \<in> E \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
   unfolding reachable_def
   by (auto intro!: rtrancl_consistent_rtrancl_on)
-
+(*SBG, MBG*)
 lemma reachable_induct[consumes 1, case_names base step]:
   assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
     and cases: "\<lbrakk>u \<in> dVs E\<rbrakk> \<Longrightarrow> P u"
       "\<And>x y. \<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> x; (x,y) \<in> E; P x\<rbrakk> \<Longrightarrow> P y"
   shows "P v"
   using assms unfolding reachable_def by (rule rtrancl_on_induct)
-
+(*SBG, MBG*)
 lemma converse_reachable_induct[consumes 1, case_names base step, induct pred: reachable]:
   assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
     and cases: "v \<in> dVs E \<Longrightarrow> P v"
@@ -126,12 +126,12 @@ lemma reachable_neq_reachable1[intro]:
   by (auto dest: rtrancl_on_rtranclI rtranclD)
 
 lemmas reachable_neq_reachable1E[elim] = reachable_neq_reachable1[elim_format]
-
+(*MBG*)
 lemma arc_implies_dominates: "e \<in> E \<Longrightarrow> (fst e, snd e) \<in> E" by auto
 (*>*)
 
 definition "neighbourhood G u = {v. (u,v) \<in> G}"
-
+(*SBG*)
 lemma 
   neighbourhoodI[intro]: "v \<in> (neighbourhood G u) \<Longrightarrow> (u,v) \<in> G" and
   neighbourhoodD[dest]: "(u,v) \<in> G \<Longrightarrow> v \<in> (neighbourhood G u)"
@@ -144,7 +144,7 @@ definition "sinks G = {v | u v . (u,v) \<in> G}"
 
 lemma dVs_subset: "G \<subseteq> G' \<Longrightarrow> dVs G \<subseteq> dVs G'"
   by (auto simp: dVs_def)
-
+(*SBG*)
 lemma dVs_insert[elim]:
   "v\<in> dVs (insert (x,y) G) \<Longrightarrow> \<lbrakk>v = x \<Longrightarrow> P; v = y \<Longrightarrow> P; v \<in> dVs G \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   by (auto simp: dVs_def)
@@ -156,17 +156,17 @@ lemma in_neighbourhood_dVs[simp, intro]:
 lemma subset_neighbourhood_dVs[simp, intro]:
   "neighbourhood G u \<subseteq> dVs G"
   by auto
-
+(*SBG*)
 lemma in_dVsE: "v \<in> dVs G \<Longrightarrow> \<lbrakk>(\<And>u. (u, v) \<in> G \<Longrightarrow> P); (\<And>u. (v, u) \<in> G \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
                "v \<notin> dVs G \<Longrightarrow> (\<lbrakk>(\<And>u. (u, v) \<notin> G); (\<And>u. (v, u) \<notin> G)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: dVs_def)
 
 lemma neighoubrhood_union[simp]: "neighbourhood (G \<union> G') u = neighbourhood G u \<union> neighbourhood G' u"
   by (auto simp: neighbourhood_def)
-
-lemma vs_are_gen: "dVs (set E_impl) = set (map prod.fst E_impl) \<union> set (map prod.snd E_impl)"
+(*SBG*)
+lemma vs_are_gen: "dVs (set E_impl) = set (map prod.fst E_impl) \<union> set (map prod.snd E_impl)" 
   by(induction E_impl) auto
-
+(*SBG*)
 lemma dVs_swap: "dVs (prod.swap ` E) = dVs E"
   by(auto simp add: dVs_def)
 

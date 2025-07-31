@@ -207,9 +207,12 @@ lemma initial_invars: "basic_invar initial_state"
 context  assumes  non_empty_G: "[G]\<^sub>g \<noteq> {}"
 begin
 
-interpretation flow_network: flow_network fst snd id Pair u "Graph.digraph_abs G"
+interpretation flow_network: flow_network fst snd  Pair u "Graph.digraph_abs G"
   by(auto intro!:  flow_network.intro multigraph.intro flow_network_axioms.intro
       graph_invars positive_capacities simp add: non_empty_G )
+
+lemma flow_network_make_pair[simp]: "flow_network.make_pair = id"
+  by(auto simp add: flow_network.make_pair_def multigraph_spec.make_pair_def)
 
 lemma zero_flow_valid: "s \<in> dVs [G]\<^sub>g \<Longrightarrow> t \<in> dVs [G]\<^sub>g \<Longrightarrow> flow_network.is_s_t_flow (\<lambda> e. 0) s t"
   using s_neq_t positive_capacities
@@ -553,13 +556,16 @@ proof(induction m arbitrary: state rule: less_induct)
 qed
 end
 
+lemma multigraph_spec_make_pair[simp]:  "multigraph_spec.make_pair fst snd = id"
+  by(auto simp add: multigraph_spec.make_pair_def)
+
 lemma correctness:
         "flow (compute_blocking_loop initial_state) = flow_empty
          \<Longrightarrow> (\<nexists> p. vwalk_bet (Graph.digraph_abs G) s p t)"
         "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty 
          \<Longrightarrow> \<exists> p. vwalk_bet (Graph.digraph_abs G) s p t"
         "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty 
-         \<Longrightarrow> flow_network_spec.is_blocking_flow fst snd id (Graph.digraph_abs G) u s t 
+         \<Longrightarrow> flow_network_spec.is_blocking_flow fst snd (Graph.digraph_abs G) u s t 
                (abstract_real_map (flow_lookup (flow (compute_blocking_loop initial_state))))"
         "compute_blocking_loop_dom initial_state"
         "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty  \<Longrightarrow> dom (flow_lookup (flow (compute_blocking_loop initial_state))) \<subseteq> Graph.digraph_abs G"
@@ -633,7 +639,7 @@ proof-
   note multigraph_pathE = multigraph_spec.multigraph_pathE
   note is_blocking_flow_def = flow_network_spec.is_blocking_flow_def
 
-  show "flow_network_spec.is_blocking_flow fst snd id [G]\<^sub>g (\<lambda>x. ereal (u x)) s t
+  show "flow_network_spec.is_blocking_flow fst snd [G]\<^sub>g (\<lambda>x. ereal (u x)) s t
      (abstract_real_map (flow_lookup (flow (compute_blocking_loop initial_state))))"
     unfolding is_blocking_flow_def
   proof(rule conjI, goal_cases)
@@ -646,7 +652,7 @@ proof-
     proof(rule ccontr, goal_cases)
       case 1
       then obtain q where q_prop: 
-          "multigraph_spec.multigraph_path fst snd id q" "q \<noteq> []"
+          "multigraph_spec.multigraph_path fst snd q" "q \<noteq> []"
           "fst (hd q) = s"  "snd (last q) = t" "set q \<subseteq> [G]\<^sub>g"
           "\<And> e. e\<in>set q \<Longrightarrow>
               ereal (abstract_real_map (flow_lookup (flow 
@@ -657,7 +663,7 @@ proof-
         using q_prop(1,2,5)
         by(auto intro!: awalk_imp_vwalk intro: subset_mono_awalk' 
                  elim!: multigraph_pathE
-           simp add: q_prop(3,4))
+              simp add: q_prop(3,4))
       moreover have "e\<in>set (edges_of_vwalk (awalk_verts s q)) \<Longrightarrow>
         abstract_real_map (flow_lookup (flow (compute_blocking_loop initial_state))) e < u e" for e
         using q_prop(6)[of e]  q_prop(1,2)

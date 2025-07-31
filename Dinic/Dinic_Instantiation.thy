@@ -47,7 +47,6 @@ global_interpretation dinic_subprocedures:
 blocking_level_residual_spec where
 fst = fst and
 snd = snd and
-make_pair = make_pair and
 realising_edges_empty = empty and
  realising_edges_update = update and
 realising_edges_delete = delete and
@@ -65,7 +64,7 @@ and \<f> = \<f>
 and es = es
 and s = s
 and t = t
-for fst snd  \<E> make_pair \<u> create_edge \<f> es s t
+for fst snd  \<E>  \<u> create_edge \<f> es s t
 defines pos_es =  dinic_subprocedures.pos_es
 and reslising_edges_general= dinic_subprocedures.realising_edges_general
 and realising_edges=dinic_subprocedures.realising_edges
@@ -78,15 +77,14 @@ and residual_blocking_flow=dinic_subprocedures.find_blocking_flow
 and split_flow_single=dinic_subprocedures.split_flow_single
   by(auto intro!: blocking_level_residual_spec.intro simp add: M.Map_axioms)
 
-definition "find_blocking_flow flow_lookup make_pair es \<u> s t f
- = residual_blocking_flow make_pair \<u> (abstract_real_map (flow_lookup f))
- es s t"
+definition "find_blocking_flow flow_lookup fst snd es \<u> s t f
+ = residual_blocking_flow fst snd \<u> (abstract_real_map (flow_lookup f))
+ es s t"  for fst snd
 term "\<lambda> T f init. fold_rbt (\<lambda> (e, fl) acc.  f acc e fl) T init"
 term rbt_map_fold term fold_rbt
 global_interpretation dinic_exec: dinic_spec
   where fst = fst
 and snd = snd
-and make_pair = make_pair
 and \<E> = \<E>
 and \<u> = \<u>
 and create_edge = create_edge
@@ -94,12 +92,12 @@ and s = s
 and t = t
 and flow_update = flow_update
 and find_blocking_flow = 
-     "find_blocking_flow flow_lookup make_pair es \<u> s t"
+     "find_blocking_flow flow_lookup fst snd es \<u> s t"
 and flow_lookup=flow_lookup
 and flow_empty = flow_empty
 and flow_invar = flow_invar
 and resflow_iterate = "\<lambda> T f init. rbt_map_fold T (\<lambda> e fl acc.  f acc e fl) init"
-for fst snd  \<E> make_pair \<u> create_edge es s t flow_update  flow_lookup
+for fst snd  \<E>  \<u> create_edge es s t flow_update  flow_lookup
 flow_empty flow_invar
 defines dinic_intial = dinic_exec.dinic_initial
 and dinic_loop= dinic_exec.dinic_impl
@@ -131,7 +129,6 @@ interpretation dinic_subprocedures_proofs:
 blocking_level_residual where
 fst = fst and
 snd = snd and
-make_pair = make_pair and
 realising_edges_empty = empty and
  realising_edges_update = update and
 realising_edges_delete = delete and
@@ -157,7 +154,6 @@ by(auto intro!: blocking_level_residual.intro blocking_level_residual_axioms.int
 interpretation dinic_proofs: dinic 
 where fst = fst
 and snd = snd
-and make_pair = make_pair
 and \<E> = \<E>
 and \<u> = \<u>
 and create_edge = create_edge
@@ -165,7 +161,7 @@ and s = s
 and t = t
 and flow_update = flow_update
 and find_blocking_flow = 
-     "find_blocking_flow flow_lookup make_pair es \<u> s t"
+     "find_blocking_flow flow_lookup fst snd es \<u> s t"
 and flow_lookup=flow_lookup
 and flow_empty = flow_empty
 and flow_invar = flow_invar
@@ -243,11 +239,11 @@ definition "dinic_initial_example = dinic_intial (empty::(((nat \<times> nat) \<
 value "dinic_initial_example "
 
 definition "dinic_loop_example =
- dinic_loop id (abstract_real_map (lookup \<u>_impl)) \<E>_impl 1 6 
+ dinic_loop fst snd (abstract_real_map (lookup \<u>_impl)) \<E>_impl 1 6 
 (\<lambda> T e fl. update e fl T) lookup "
 
 definition "dinic_step_example =
- dinic_step id (abstract_real_map (lookup \<u>_impl)) \<E>_impl 1 6 
+ dinic_step fst snd (abstract_real_map (lookup \<u>_impl)) \<E>_impl 1 6 
 (\<lambda> T e fl. update e fl T) lookup "
 
 value "dinic_loop_example (dinic_initial_example)"

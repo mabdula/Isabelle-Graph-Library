@@ -1,6 +1,6 @@
 section \<open>Laminar Families\<close>
 
-theory LaminarFamily
+theory Laminar_Family
   imports Main
 begin
 
@@ -13,16 +13,19 @@ lemma laminarI:
 "(\<And> X Y. X \<in> \<X> \<Longrightarrow> Y \<in> \<X> \<Longrightarrow> (X \<subseteq> Y \<or> Y \<subseteq> X \<or> X \<inter> Y = {}))
 \<Longrightarrow> (\<And> X.  X \<in> \<X> \<Longrightarrow> X \<noteq> {} \<and> X \<subseteq> U)
 \<Longrightarrow> U \<noteq> {} \<Longrightarrow> laminar U \<X>"
-  unfolding laminar_def by simp
+and  laminarE: 
+"laminar U \<X> \<Longrightarrow>
+ ((\<And> X Y. X \<in> \<X> \<Longrightarrow> Y \<in> \<X> \<Longrightarrow> (X \<subseteq> Y \<or> Y \<subseteq> X \<or> X \<inter> Y = {}))
+\<Longrightarrow> (\<And> X.  X \<in> \<X> \<Longrightarrow> X \<noteq> {} \<and> X \<subseteq> U)
+\<Longrightarrow> U \<noteq> {} \<Longrightarrow> P ) \<Longrightarrow> P"
+  by(auto simp add: laminar_def)
 
 lemma finite_U_finite_family:
 "finite U \<Longrightarrow> laminar U \<X> \<Longrightarrow> finite \<X>"
   by (meson Sup_le_iff finite_UnionD finite_subset laminar_def)
 
 lemma laminar_family_number_of_sets:
-  assumes "n = card U"
-          "finite U"
-          "laminar U \<X>"
+  assumes "n = card U" "finite U" "laminar U \<X>"
   shows "card \<X> \<le> 2 * n - 1"
   using assms
 proof(induction n arbitrary: \<X> U)
@@ -319,6 +322,5 @@ next
   ultimately show ?thesis by force
  qed
 qed
-
 
 end

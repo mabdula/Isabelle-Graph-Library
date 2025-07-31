@@ -395,7 +395,7 @@ lemma has_elem_not_emptyI:"x \<in> A \<Longrightarrow> A \<noteq> {}"
 
 lemma flow_network_axioms_for_simple_graph:
   "(\<exists> e\<in> \<EE>. rcap \<f> e > 0 \<and> fstv e = s \<and> sndv e \<noteq> s) \<Longrightarrow>
-         flow_network prod.fst prod.snd id Pair (\<lambda>x. ereal (u_simple x))
+         flow_network prod.fst prod.snd  Pair (\<lambda>x. ereal (u_simple x))
      (level_graph (dfs.Graph.digraph_abs E_simple) {s} -
       {(u, v) |u v. distance (dfs.Graph.digraph_abs E_simple) s u = \<infinity>})"
   apply(rule flow_network.intro)
@@ -411,7 +411,7 @@ lemma flow_network_axioms_for_simple_graph:
 abbreviation "simple_level_graph_abstract ==  (level_graph (dfs.Graph.digraph_abs E_simple) {s}
      - {(u, v) | u v. distance  (dfs.Graph.digraph_abs E_simple) s u = \<infinity>})"
 abbreviation "is_blocking_flow_simple == 
-flow_network_spec.is_blocking_flow prod.fst prod.snd id simple_level_graph_abstract u_simple"
+flow_network_spec.is_blocking_flow prod.fst prod.snd  simple_level_graph_abstract u_simple"
 
 lemma blocking_flow_simple_correct:
 
@@ -1172,7 +1172,7 @@ proof-
                E_simple_props(4)  pos_es_props(1) to_vertex_pair_fst_snd) 
   qed
   thus "dom (residual_flow_lookup rf) \<subseteq> residual_level_graph \<f> s" by auto
-  have valid_s_t_flow: "flow_network_spec.is_s_t_flow fstv sndv to_vertex_pair (residual_level_graph \<f> s) (rcap \<f>)
+  have valid_s_t_flow: "flow_network_spec.is_s_t_flow fstv sndv  (residual_level_graph \<f> s) (rcap \<f>)
      (abstract_real_map (residual_flow_lookup rf)) s t"
   proof-
     have uflow:"flow_network_spec.isuflow (residual_level_graph \<f> s) (rcap \<f>)
@@ -1264,9 +1264,9 @@ proof-
             residual_level_graph_in_E[of \<f> s] rev_finite_subset[of \<EE> "residual_level_graph \<f> s"])     
       show ?thesis
         using flow_network_axioms_for_simple_graph[OF blocking_flow_simple_correct(4), OF asm']
-          multigraph.delta_minus_finite[of prod.fst prod.snd id Pair 
+          multigraph.delta_minus_finite[of prod.fst prod.snd  Pair 
             "level_graph (dfs.Graph.digraph_abs E_simple) {s} - _"] 
-          multigraph.delta_plus_finite[of prod.fst prod.snd id Pair 
+          multigraph.delta_plus_finite[of prod.fst prod.snd  Pair 
             "level_graph (dfs.Graph.digraph_abs E_simple) {s} - _"] 
           finite_if_list same_big_sum_minus same_big_sum_plus
         by (auto simp add: find_blocking_flow_properties(5)[OF asm, simplified asm', simplified]
@@ -1295,12 +1295,14 @@ proof-
       case 3
       then show ?case
         using  dVs_subset[OF level_graph_simple_subset]  blocking_flow_simple_correct(3)[OF asm']
-        by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.is_blocking_flowE)
+        by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.is_blocking_flowE
+             simp add:  multigraph_spec.make_pair)
     next
       case 4
       then show ?case 
         using  dVs_subset[OF level_graph_simple_subset]  blocking_flow_simple_correct(3)[OF asm']
-        by(auto elim!: flow_network_spec.is_s_t_flowE  flow_network_spec.is_blocking_flowE)
+        by(auto elim!: flow_network_spec.is_s_t_flowE  flow_network_spec.is_blocking_flowE
+             simp add: multigraph_spec.make_pair)
     next
       case 5
       then show ?case 
@@ -1315,7 +1317,8 @@ proof-
         case True
         then show ?thesis 
           using same_excess  6  blocking_flow_simple_correct(3)[OF asm']         
-          by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.is_blocking_flowE)
+          by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.is_blocking_flowE
+               simp add: multigraph_spec.make_pair)
       next
         case False
         have deltas_0:"e \<in> multigraph_spec.delta_minus (residual_level_graph \<f> s) sndv x \<Longrightarrow>
@@ -1410,9 +1413,10 @@ proof-
             simp add: pos_es_props(1) find_blocking_flow_properties(5)[OF asm,
               simplified asm' option.sel] u_simple_is ds realising_edges_result(1)[OF ds(1)])
     qed
-    moreover have "multigraph_spec.multigraph_path prod.fst prod.snd id (map to_vertex_pair p)"
-      using awalk_fst_last  p_prop(1)
-      by(force simp add: multigraph_spec.multigraph_path_def) 
+    moreover have "multigraph_spec.multigraph_path prod.fst prod.snd (map to_vertex_pair p)"
+      using  p_prop(1,2)  awalk_fst_last[OF _  p_prop(1)]
+      by(auto intro!: multigraph_spec.multigraph_pathI (2)
+            simp add: multigraph_spec.make_pair_function id_def[symmetric])
     moreover have "prod.fst (hd (map to_vertex_pair p)) = s"
       using awalk_hd[OF p_prop(1)] p_prop(2,3)
       by(cases p) auto
@@ -1427,5 +1431,4 @@ qed
 
 
 end
-
 end

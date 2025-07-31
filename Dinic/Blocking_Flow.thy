@@ -142,12 +142,19 @@ lemma is_blocking_flowE:
   by(auto simp add: is_blocking_flow_def)
 
 interpretation residual_multigraph_spec: 
-  multigraph_spec  "{e | e. e \<in> \<EE> \<and> rcap f e > 0}"  fstv sndv to_vertex_pair 
+  multigraph_spec  "{e | e. e \<in> \<EE> \<and> rcap f e > 0}"  fstv sndv
   "\<lambda> u v. F (create_edge u v)" for f
   done
 
 definition "residual_distance f u v =
             residual_multigraph_spec.multigraph_distance f u v"
+
+lemma residual_make_pair_is[simp]: "residual_multigraph_spec.make_pair = to_vertex_pair"
+  apply(rule ext)
+  subgoal for e
+    by(cases e)
+       (auto simp add: residual_multigraph_spec.make_pair_def make_pair)
+  done
 
 lemma residual_distance_is:
 "residual_distance f u v = distance (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) u v"
@@ -186,10 +193,17 @@ lemma in_residual_level_graphE:
 (e \<in> residual_multigraph_spec.multi_level_graph f {s} \<Longrightarrow>  P) \<Longrightarrow> P"
   by(auto simp add: residual_level_graph_def)
 
-interpretation residual_level_flow: flow_network_spec fstv sndv to_vertex_pair
+interpretation residual_level_flow: flow_network_spec fstv sndv 
   "\<lambda> u v. F (create_edge u v)" "residual_level_graph f s" 
   "rcap f" 
   for f s
+  done
+
+lemma residual_level_flow_make_pair_is[simp]: "residual_level_flow.make_pair = to_vertex_pair"
+  apply(rule ext)
+  subgoal for e
+    by(cases e)
+       (auto simp add: residual_multigraph_spec.make_pair_def make_pair)
   done
 
 definition "residual_level_blocking_flow f s t g= 
@@ -198,6 +212,13 @@ definition "residual_level_blocking_flow f s t g=
 lemma residual_level_blocking_flowI: 
 " residual_level_flow.is_blocking_flow f s s t g ==> residual_level_blocking_flow f s t g "
   by(auto simp add: residual_level_blocking_flow_def)
+
+lemma not_residual_level_blocking_flowI: 
+"residual_level_flow.multigraph_path p \<Longrightarrow> p \<noteq> [] \<Longrightarrow>
+ fstv (hd p) = s  \<Longrightarrow> sndv (last p) = t \<Longrightarrow> set p \<subseteq> residual_level_graph f s \<Longrightarrow>
+ (\<And> e. e\<in>set p \<Longrightarrow> ereal (g e) < \<uu>\<^bsub>f\<^esub>e) \<Longrightarrow>
+\<not> residual_level_blocking_flow f s t g"
+  by(auto simp add: residual_level_flow.is_blocking_flow_def residual_level_blocking_flow_def)
 
 lemma residual_level_blocking_flowE: 
 "residual_level_blocking_flow f s t g \<Longrightarrow>
@@ -213,8 +234,15 @@ end
 context flow_network
 begin
 interpretation residual_network_spec: 
-  flow_network_spec fstv sndv to_vertex_pair 
+  flow_network_spec fstv sndv 
   "\<lambda> u v. F (create_edge u v)" \<EE> "rcap f"for f
+  done
+
+lemma residual_network_spec_make_pair_is[simp]: "residual_network_spec.make_pair = to_vertex_pair"
+  apply(rule ext)
+  subgoal for e
+    by(cases e)
+       (auto simp add: residual_network_spec.make_pair_def make_pair)
   done
 
 lemma same_V: "residual_network_spec.\<V> = \<V>" 
@@ -309,9 +337,9 @@ proof(rule P_of_augment_residual_flowI, rule is_s_t_flowI)
   proof(goal_cases)
     case 1
     have "ex\<^bsub>f\<^esub> x = 0" "residual_network_spec.ex rf x = 0"
-      using asm 
-      by(auto intro: is_s_t_flowE assms(1) residual_network_spec.is_s_t_flowE assms(2) 
-          simp add: same_V)
+      using asm  
+      by(auto intro: is_s_t_flowE assms(1) residual_network_spec.is_s_t_flowE[OF assms(2)]
+          simp add: same_V[symmetric])
     then show ?case 
       by(auto simp add: ex_def delta_plus_def residual_network_spec.ex_def delta_minus_def \<EE>_def
           residual_network_spec.delta_minus_def residual_network_spec.delta_plus_def 
@@ -527,7 +555,7 @@ lemma residual_level_blocking_flow_to_residual_flow:
     "isuflow f"
   shows "residual_network_spec.is_s_t_flow f rf s t"
 proof-
-  have rf_s_t_flow: "flow_network_spec.is_s_t_flow fstv sndv to_vertex_pair
+  have rf_s_t_flow: "flow_network_spec.is_s_t_flow fstv sndv 
                       (residual_level_graph f s) (rcap f) rf s t"
     using assms(1) by(auto elim: flow_network_spec.is_blocking_flowE
                                  flow_network_spec.residual_level_blocking_flowE)
@@ -722,15 +750,16 @@ proof-
       using augpath_rcap_pos_strict[OF asms(1)]  p_in_lg  
         e_in_augpath_resreach_fstv_e[OF augpathpf asms(2,3)]
       by(auto intro!: reach_before_pos_after_in_lg_unsatured_before)
-    moreover have "flow_network_spec.is_s_t_flow fstv sndv to_vertex_pair
+    moreover have "flow_network_spec.is_s_t_flow fstv sndv 
                        (residual_level_graph f s) (rcap f) rf s t"
       using assms(1)
       by(auto elim: flow_network_spec.is_blocking_flowE flow_network_spec.residual_level_blocking_flowE)
     ultimately have "\<not> residual_level_blocking_flow f s t rf"
-      using p_in_lg asms(1,3,4) 
-      by(auto intro!: exI[of _ p]
+      using p_in_lg asms(1,3,4)
+      by(intro not_residual_level_blocking_flowI)
+        (auto intro!: exI[of _ p]
                elim!: flow_network_spec.is_blocking_flowE augpathE prepathE residual_level_blocking_flowE
-               intro: residual_network_spec.multigraph_pathI)
+               intro: residual_network_spec.multigraph_pathI ) 
     thus False 
       using assms(1) by simp
   qed

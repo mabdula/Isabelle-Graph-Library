@@ -744,7 +744,9 @@ lemma DFS_correct_1_weak:
 
 lemma DFS_correct_2:
   assumes  "return (DFS initial_state) = Reachable"
-  shows "vwalk_bet (Graph.digraph_abs G) s (rev (stack (DFS initial_state))) t"
+  shows "vwalk_bet (Graph.digraph_abs G) s (rev (stack (DFS initial_state))) t" (is ?thesis1)
+  and DFS_correct_2_distinct:
+      "distinct (rev (stack (DFS initial_state))) " (is ?thesis2)
 proof-
   have "vwalk_bet
               (Graph.digraph_abs G)
@@ -756,7 +758,10 @@ proof-
   moreover hence "(last (stack (DFS initial_state))) = s"
     by(fastforce intro!: invar_holds_intros
                  intro: invar_s_in_stack_props[where dfs_state = "DFS initial_state"])+
-  ultimately show ?thesis
+  ultimately show ?thesis1
+    by auto
+  show ?thesis2 
+    using DFS_terminates initial_state_props(1,3) invar_seen_stack_holds invar_seen_stack_props
     by auto
 qed
 end

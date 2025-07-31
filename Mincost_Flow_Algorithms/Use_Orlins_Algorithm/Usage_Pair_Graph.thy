@@ -22,14 +22,13 @@ definition "c_list = [( (1::nat, 2::nat), 1::real),
 definition "\<c>_impl = foldr (\<lambda> xy tree. update (prod.fst xy) (prod.snd xy) tree) c_list Leaf"
 value "\<c>_impl"
 
-
-definition "final_state_pair = final_state id Pair \<E>_impl \<c>_impl \<b>_impl flow_lookup"
+definition "final_state_pair = final_state fst snd Pair \<E>_impl \<c>_impl \<b>_impl flow_lookup"
 value final_state_pair
 
-definition "final_flow_impl_pair = final_flow_impl id Pair \<E>_impl \<c>_impl \<b>_impl flow_lookup"
+definition "final_flow_impl_pair = final_flow_impl fst snd Pair \<E>_impl \<c>_impl \<b>_impl flow_lookup"
 value final_flow_impl_pair
 
-definition "final_forest = remove_all_empties(\<FF>_impl final_state_pair)"
+definition "final_forest = (\<FF> final_state_pair)"
 
 value "inorder final_flow_impl_pair"
 value "map (\<lambda> (x, y). (x, inorder y)) (inorder final_forest)"
@@ -37,7 +36,7 @@ value "inorder (conv_to_rdg_impl final_state_pair)"
 value "inorder (not_blocked_impl final_state_pair)"
 
 
-lemma no_cycle: "closed_w (id ` \<E> \<E>_impl) (map id C) \<Longrightarrow> (set C \<subseteq> \<E> \<E>_impl) \<Longrightarrow>
+lemma no_cycle: "closed_w (\<E> \<E>_impl) C \<Longrightarrow> (set C \<subseteq> \<E> \<E>_impl) \<Longrightarrow>
         foldr (\<lambda>e acc. acc + \<c> \<c>_impl flow_lookup e) C 0 < 0 \<Longrightarrow> False"
 proof(goal_cases)
   case 1
@@ -72,15 +71,9 @@ next
     by(auto simp add: \<E>_impl_def set_invar_def selection_functions.\<E>_def to_set_def)
 qed
 
-lemma multigraph: "multigraph (prod.fst o id) (prod.snd o  id) id Pair (\<E> \<E>_impl)"
-  apply(rule multigraph.intro)
-  subgoal for e x y
-    by(cases e) auto
-  subgoal for x y
-    by simp
-   apply (simp add: \<E>_impl_basic(3))
-  using selection_functions.\<E>_def \<E>_impl_basic(2) by blast
-
+lemma multigraph: "multigraph fst snd  Pair (\<E> \<E>_impl)"
+  using \<E>_impl_basic(2,3)
+  by(auto intro!: multigraph.intro simp add: selection_functions.\<E>_def)
 
 lemma Vs_is: "dVs (id ` to_set \<E>_impl) = {1,2,3,4,5,6}"
   unfolding to_set_def \<E>_impl_def by (auto simp add: dVs_def)
@@ -98,25 +91,26 @@ lemma at_least_2_verts:" 1 < function_generation.N \<E>_impl to_list (prod.fst o
   apply(subst function_generation.N_def[OF selection_functions.function_generation_axioms])
   by(auto simp add: to_list_def \<E>_impl_def)
 
-lemma no_cycle_cond: "no_cycle_cond id \<c>_impl \<E>_impl flow_lookup" 
-  by (metis \<E>_def \<c>_def no_cycle no_cycle_cond_def)
+lemma no_cycle_cond: "no_cycle_cond fst snd \<c>_impl \<E>_impl flow_lookup" 
+  by(auto intro!: not_has_neg_cycleI no_cycle simp add: \<E>_def multigraph_spec.make_pair_def
+      map_idI  add.commute[of _ "_ \<c>_impl _ _"] \<c>_def no_cycle_cond_def)
 
-lemma correctness_of_algo:"correctness_of_algo id \<E>_impl Pair \<b>_impl"
+lemma correctness_of_algo:"correctness_of_algo fst snd \<E>_impl Pair \<b>_impl"
   using \<E>_impl_basic at_least_2_verts gt_zero multigraph  Vs_is_bal_dom  bal_invar_b[of b_list, simplified sym[OF  \<b>_impl_def]]
-  by(auto intro!: correctness_of_algo.intro simp add:  bal_invar_b    \<E>_def)
+  by(auto intro!: correctness_of_algo.intro simp add:  bal_invar_b   \<E>_def multigraph_spec.make_pair_def)
 
 corollary correctness_of_implementation:
- "return_impl final_state_pair = success \<Longrightarrow>  
-        cost_flow_spec.is_Opt fst snd id \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl) 
+ "return final_state_pair = success \<Longrightarrow>  
+        cost_flow_spec.is_Opt fst snd \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl) 
  (abstract_flow_map final_flow_impl_pair)"
- "return_impl final_state_pair = failure \<Longrightarrow> 
-         \<nexists> f. flow_network_spec.isbflow  fst snd id (\<E> \<E>_impl) \<u> f (\<b> \<b>_impl)"
- "return_impl final_state_pair = notyetterm \<Longrightarrow>  
+ "return final_state_pair = infeasible \<Longrightarrow> 
+         \<nexists> f. flow_network_spec.isbflow  fst snd (\<E> \<E>_impl) \<u> f (\<b> \<b>_impl)"
+ "return final_state_pair = notyetterm \<Longrightarrow>  
          False"
   using correctness_of_algo.correctness_of_implementation[OF correctness_of_algo no_cycle_cond]
   by(auto simp add: final_state_pair_def final_flow_impl_pair_def)
 
-lemma opt_flow_found: "cost_flow_spec.is_Opt fst snd id \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl)  (abstract_flow_map final_flow_impl_pair)"
+lemma opt_flow_found: "cost_flow_spec.is_Opt fst snd \<u> (\<E> \<E>_impl) (\<c> \<c>_impl flow_lookup) (\<b> \<b>_impl)  (abstract_flow_map final_flow_impl_pair)"
   apply(rule correctness_of_implementation(1))
   by eval
 end

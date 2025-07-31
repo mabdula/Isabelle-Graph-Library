@@ -535,4 +535,13 @@ lemma abstract_real_map_outside_dom: "x \<notin> dom mp \<Longrightarrow> abstra
 
 lemma abstract_real_map_in_dom_the: "x \<in> dom mp \<Longrightarrow> abstract_real_map mp x = the (mp x)"
   by(cases "mp x")(auto simp add: abstract_real_map_def dom_if)
+
+definition "abstract_bool_map mp = (\<lambda> opt. (case mp opt of None \<Rightarrow> False
+                                | Some x \<Rightarrow> x))"
+
+lemma abstract_bool_map_None: "mp x = None \<Longrightarrow> abstract_bool_map mp x = False"
+and abstract_bool_map_Some: "mp x = Some b \<Longrightarrow> abstract_bool_map mp x = b"
+and abstract_bool_map_upd: "abstract_bool_map (mp(x:=Some bb)) = 
+                        (\<lambda> y. if x = y then bb else abstract_bool_map mp y)" 
+  by(auto simp add: abstract_bool_map_def)
 end
