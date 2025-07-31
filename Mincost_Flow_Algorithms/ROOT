@@ -3,22 +3,21 @@ session "Mincost_Flow_Algorithms" = "HOL-Library" +
 
 sessions
   Berge_Lemma
-  Mincost_Flow_Theory
+  Flow_Theory
 
 theories
   PathAugOpt
   SSP_Preps
   SuccessiveShortestPath
   Scaling
-  IntermediateSummary
-  LoopA
-  LoopB
+  Intermediate_Summary
+  Maintain_Forest
+  Send_Flow
   Orlins
-  Orlins_Implementation
-  LoopATime
-  LoopBTime
-  LaminarFamily
-  OrlinsTime
+  Maintain_Forest_Time
+  Send_Flow_Time
+  Laminar_Family
+  Orlins_Time
   
 
 document_files

@@ -1,5 +1,6 @@
 theory Spanning_Trees
-  imports Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor Directed_Set_Graphs.Pair_Graph_U_Specs
+  imports Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor 
+          Undirected_Set_Graphs.Pair_Graph_U_Specs
     Matroids_Greedy.Matroids_Theory
 begin
 
@@ -35,8 +36,6 @@ lemma has_no_cycle_indep_subset:
   using has_no_cycle_def decycle_subset
   by (metis dual_order.trans)
 
-
-
 (* TODO later: maybe reorganise some of the following lemmas
 (put into e.g. Undirected_Set_Graphs, put outside of graph_abs context or use subset_graph/subgraph locale *)
 
@@ -51,40 +50,6 @@ lemma set_aux:
   "S1 = S2 \<union> S3 \<Longrightarrow> S2 \<inter> S3 = {} \<Longrightarrow>
     ({x, y} \<subseteq> S1 \<longleftrightarrow> ({x, y} \<subseteq> S2 \<or> {x, y} \<subseteq> S3 \<or> (x \<in> S2 \<and> y \<in> S3) \<or> (x \<in> S3 \<and> y \<in> S2)))"
   by auto
-
-
-lemma walk_betw_imp_epath: (* TODO maybe also add this to adaptor code *)
-  "walk_betw G u p v \<Longrightarrow> epath G u (edges_of_path p) v"
-  apply (induction p arbitrary: u v)
-  unfolding walk_betw_def apply simp
-  by (smt (verit) epath.elims(3) edges_of_path.elims graph_abs.edge_iff_edge_1
-      graph_abs_axioms last.simps list.distinct(1) list.sel(1) list.sel(3) no_self_loops_1 path.simps)
-
-lemma epath_imp_walk_betw: (* TODO maybe also add this to adaptor code *)
-  "epath G u p v \<Longrightarrow>length p \<ge> 1  \<Longrightarrow>\<exists> q. walk_betw G u q v \<and> p = edges_of_path q"
-proof(induction p arbitrary: u v rule: edges_of_path.induct)
-  case (3 e d l u v)
-  then obtain a b where e_prop:"e = {a, b}" "a \<noteq> b" "a = u" "e \<in> G"
-    by auto 
-  hence epath:"epath G b (d # l) v" 
-    using "3.prems"(1) doubleton_eq_iff by auto
-  then obtain q where q_prop:"walk_betw G b q v"  "d # l = edges_of_path q"
-    using 3(1)[OF epath] by auto
-  moreover have "walk_betw G u [u, b] b" 
-    using e_prop edges_are_walks by force
-  moreover have "e#d#l = edges_of_path (u#q)" 
-    using e_prop(1) e_prop(3) q_prop(2) walk_between_nonempty_pathD(3)[OF q_prop(1)] 
-      walk_nonempty [OF q_prop(1)] by(cases q) auto
-
-  ultimately show ?case 
-    using e_prop walk_betw_cons 
-    by (auto intro!: exI[of _ "u#q"], cases q)fastforce+
-next
-  case (2 e u v)
-  hence "e \<in> G" "e = {u, v}" "u \<noteq> v" by auto
-  thus ?case 
-    by(auto intro: exI[of _ "[u, v]"] simp add: edges_are_walks)
-qed simp
 
 (* TODO later: Some of the following theorems before the augment property could maybe be in Undirected_Set_Graphs *)
 
@@ -996,51 +961,5 @@ next
   with 2 show ?case by blast
 qed
 
-end
-
-context Pair_Graph_U_Specs
-begin
-
-context
-  fixes G::'adjmap
-  assumes pair_graph_u_inv: "pair_graph_u_invar G"
-begin
-
-
-lemma ugraph_dblton_graph:
-  "dblton_graph (ugraph_abs G)"
-  unfolding ugraph_abs_def dblton_graph_def using graph_irreflexive[OF pair_graph_u_inv] by blast
-
-lemma ugraph_finite:
-  "finite (Vs (ugraph_abs G))"
-  unfolding ugraph_abs_def Vs_def using invar_finite_vertices[OF pair_graph_u_inv] unfolding dVs_def digraph_abs_def
-  by simp
-
-lemma graph_abs_ugraph:
-  "graph_abs (ugraph_abs G)"
-  apply (simp add: graph_abs_def)
-  using ugraph_dblton_graph ugraph_finite by force
-
-lemma ugraph_abs_digraph_abs: "graph_abs.D (ugraph_abs G) = digraph_abs G"
-  unfolding graph_abs.D_def ugraph_abs_def digraph_abs_def
-proof-
-  have 1: "{u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<longleftrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v) \<or> v \<in>\<^sub>G (\<N>\<^sub>G G u)" for u v
-    using  doubleton_eq_iff[of u v] by auto
-  have "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v) |u v. {u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}}"
-    using graph_abs.D_def[OF graph_abs_ugraph] ugraph_abs_def by simp
-  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<union> {(u, v) |u v. u \<in>\<^sub>G \<N>\<^sub>G G v}"
-    using 1 by auto
-  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}"
-    using graph_symmetric[OF pair_graph_u_inv] by blast
-  finally show "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v). v \<in>\<^sub>G \<N>\<^sub>G G u}" by simp
-qed
-
-lemma cycle_equivalence:
-  "(\<exists>c. cycle' (digraph_abs G) c) = (\<exists>u c. decycle (ugraph_abs G) u c)"
-  using graph_abs.cycle'_iff_decycle[OF graph_abs_ugraph] ugraph_abs_digraph_abs
-  by simp
-
-
-end
 end
 end

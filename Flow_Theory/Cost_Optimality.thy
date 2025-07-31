@@ -1,8 +1,8 @@
-theory Optimality
+theory Cost_Optimality
 imports Augmentation Decomposition
 begin
 
-context cost_flow_network
+context cost_flow_spec
 begin
 section \<open>An Optimality Criterion\<close>
 
@@ -26,7 +26,9 @@ definition "precycle cs = (prepath cs \<and> fstv (hd cs) = sndv (last cs) \<and
 
 text \<open>This means, that precycles are cycles in the residual graph without
  any restrictions on residual capacities.\<close>
-
+end
+context cost_flow_network
+begin
 text \<open>A conditioned lemma of equivalence.\<close>
 
 lemma augcycle_from_precycle: 
@@ -118,7 +120,9 @@ proof(induction l arbitrary: cs rule : less_induct)
     qed
   qed
 qed
-
+end
+context cost_flow_spec
+begin
 text \<open>A flow $f$ is an optimum $b$-flow iff
 \begin{itemize}
 \item it is a flow assignment respecting the required balance $b$ and the fixed capacity 
@@ -130,6 +134,9 @@ constraints $u$ (validity), and
 definition "is_Opt b f = (f is b flow \<and> (\<forall> f'. (f' is b flow \<longrightarrow> \<C> f'  \<ge> \<C> f)))"
 
 lemma is_OptI: "f is b flow \<Longrightarrow> (\<And> f'. f' is b flow \<Longrightarrow> \<C> f' \<ge> \<C> f ) \<Longrightarrow> is_Opt b f"
+  by(auto simp add: is_Opt_def)
+
+lemma is_OptE: "is_Opt b f \<Longrightarrow> (f is b flow \<Longrightarrow> (\<And> f'. f' is b flow \<Longrightarrow> \<C> f' \<ge> \<C> f ) \<Longrightarrow> P) \<Longrightarrow> P"
   by(auto simp add: is_Opt_def)
 
 lemma ex_cong: "(\<And>e. e \<in> \<E> \<Longrightarrow> f e = f' e) \<Longrightarrow>
@@ -171,7 +178,9 @@ qed
   ultimately show ?thesis
     by(auto simp add: is_Opt_def)
 qed
-
+end
+context cost_flow_network
+begin
 subsection \<open>Absence of Augmenting Cycles from Optimality\<close>
 
 text \<open>We present a proof of the first direction:
@@ -212,7 +221,9 @@ Differences of flows as defined in the following are residual flows.
 
 We follow the presentation from section 9.1 in the book by Korte and Vygen.
 \<close>
-
+end
+context flow_network_spec
+begin
 subsubsection \<open>Difference Flows and their Properties\<close>
 
 text \<open>We reinterpret past results on residual graphs.\<close>
@@ -220,13 +231,10 @@ text \<open>We reinterpret past results on residual graphs.\<close>
 abbreviation "make_pair_residual \<equiv> (\<lambda> e. (fstv e, sndv e))"
 
 abbreviation "create_edge_residual \<equiv> (\<lambda> u v. F (create_edge u v))"
+end
 
-interpretation residual_flow: cost_flow_network where
-fst = fstv and snd = sndv and make_pair = make_pair_residual and create_edge = create_edge_residual
-and \<E> = \<EE>  and \<c> = \<cc> and \<u> = "\<lambda> _. PInfty"
-  using  make_pair create_edge  E_not_empty oedge_on_\<EE> 
-  by(auto simp add: finite_\<EE> make_pair[OF refl refl] create_edge cost_flow_network_def flow_network_axioms_def flow_network_def multigraph_def)
- 
+context flow_network_spec
+begin
 
 text \<open>Difference between flows.\<close>
 
@@ -248,7 +256,9 @@ lemma diff_of_diff_edge:
   "difference f' f (F e) - difference f' f (B e) = f' e - f e"
   using  difference.simps
   by simp
-
+end
+context flow_network
+begin
 lemma difference_less_rcap: "isuflow f \<Longrightarrow> isuflow f' \<Longrightarrow> e\<in> \<EE> \<Longrightarrow> rcap f e \<ge> difference f' f e"
   apply(cases e)
   using prod_elim[where P= "\<lambda> ee. (e = _ ee)"] o_edge_res
@@ -259,6 +269,15 @@ lemma pos_difference_pos_rcap:
  "isuflow f \<Longrightarrow> isuflow f' \<Longrightarrow> e\<in> \<EE> \<Longrightarrow>  difference f' f e > 0 \<Longrightarrow> rcap f e > 0"
   using difference_less_rcap dual_order.strict_trans1 ereal_less(2)
   by blast
+
+interpretation residual_flow: flow_network where
+fst = fstv and snd = sndv and  create_edge = create_edge_residual
+and \<E> = \<EE>   and \<u> = "\<lambda> _. PInfty"
+  using  make_pair create_edge  E_not_empty oedge_on_\<EE> 
+  by(auto simp add: finite_\<EE> make_pair[OF refl refl] create_edge cost_flow_network_def flow_network_axioms_def flow_network_def multigraph_def)
+
+lemma residual_flow_make_pair[simp]:"residual_flow.make_pair = make_pair_residual"
+  using residual_flow.make_pair by auto
 
 lemma difference_flow_pos: "isuflow f \<Longrightarrow> isuflow f' \<Longrightarrow> residual_flow.flow_non_neg (difference f' f)"
   by (simp add: diff_non_neg residual_flow.flow_non_neg_def)
@@ -345,11 +364,20 @@ proof
   finally show"residual_flow.ex (difference f' f) v = 0" 
     by blast
 qed
-
+end
+context cost_flow_network
+begin
 text \<open>
 Residual costs of a difference flow is the difference between costs of two flows.
 Another part of Proposition 9.4 by Korte and Vygen.
 \<close>
+
+interpretation residual_flow: cost_flow_network where
+fst = fstv and snd = sndv and create_edge = create_edge_residual
+and \<E> = \<EE> and \<c> = \<cc>   and \<u> = "\<lambda> _. PInfty"
+  using  make_pair create_edge  E_not_empty oedge_on_\<EE> 
+  by(auto simp add: finite_\<EE> make_pair[OF refl refl] create_edge cost_flow_network_def flow_network_axioms_def flow_network_def multigraph_def)
+
 
 lemma  rcost_difference: "residual_flow.\<C> (difference f' f) = \<C> f' - \<C> f"
   unfolding residual_flow.\<C>_def \<C>_def
@@ -548,9 +576,9 @@ proof(rule ccontr)
   hence "\<forall> e \<in> set (css ! i). rcap f e > 0" 
     using \<open>set (css ! i) \<subseteq> residual_flow.support g\<close> by blast
   hence "augpath f (css ! i)"
-    using flowpath ext[of to_vertex_pair make_pair_residual, OF to_vertex_pair_fst_snd]
+    using flowpath ext[of to_vertex_pair make_pair_residual]
           linorder_class.Min_gr_iff[of "rcap f ` (set (css ! i))"]
-    by(auto simp add: augpath_def prepath_def residual_flow.flowpath_def residual_flow.multigraph_path_def Rcap_def)
+    by(auto simp add: augpath_def prepath_def residual_flow.flowpath_def to_vertex_pair_fst_snd residual_flow.multigraph_path_def Rcap_def)
   moreover have "fstv (hd  (css ! i)) = sndv (last  (css ! i))"
                               " distinct  (css ! i) \<and> set  (css ! i) \<subseteq> \<EE>" 
     using css_ws_def i_Def unfolding residual_flow.flowcycle_def 
@@ -566,8 +594,7 @@ proof(rule ccontr)
       by(auto intro: mul_zero_cancel[of "ws ! i"])
   qed
   ultimately have "augcycle f (css ! i)"
-    unfolding augcycle_def 
-    by simp
+    by(auto simp add: augcycle_def)
   thus False 
     using assms(2) 
     by simp
@@ -593,5 +620,106 @@ Correctness finally follows by termination due to the non-existence of any other
 However, there is a different approach maintaining optimality throughout the algorithm while changing
 the balances. We will see an invariant for this way of proceeding in the next section.
 \<close>
+end
+
+definition "has_neg_cycle make_pair \<E> \<c>= 
+               (\<exists>D. closed_w (make_pair ` \<E>) (map make_pair D) \<and>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<and> set D \<subseteq> \<E>)"
+
+lemma has_neg_cycleE:
+"has_neg_cycle make_pair \<E> \<c> \<Longrightarrow> 
+               (\<And> D. closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> P) \<Longrightarrow> P"
+and has_neg_cycleI:
+"closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow>  has_neg_cycle make_pair \<E> \<c>"
+and not_has_neg_cycleI:
+"(\<And> D. closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> False) \<Longrightarrow>  \<not> has_neg_cycle make_pair \<E> \<c>"
+  by(auto simp add: has_neg_cycle_def)
+
+definition "has_neg_infty_cycle make_pair \<E> \<c> \<u>= 
+               (\<exists>D. closed_w (make_pair ` \<E>) (map make_pair D) \<and>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<and> set D \<subseteq> \<E> \<and> (\<forall> e \<in> set D. \<u> e = PInfty))"
+
+lemma has_neg_infty_cycleE:
+"has_neg_infty_cycle make_pair \<E> \<c> \<u>\<Longrightarrow> 
+               (\<And> D. closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow>
+ P) \<Longrightarrow> P"
+and has_neg_infty_cycleI:
+"closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow>  (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty)
+\<Longrightarrow> has_neg_infty_cycle make_pair \<E> \<c> \<u>" 
+and not_has_neg_infty_cycleI:
+"(\<And> D. closed_w (make_pair ` \<E>) (map make_pair D) \<Longrightarrow>
+              foldr (\<lambda>e. (+) (\<c> e)) D 0 < 0 \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow>  (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty)
+\<Longrightarrow> False) \<Longrightarrow>\<not> has_neg_infty_cycle make_pair \<E> \<c> \<u>"
+  by(auto simp add: has_neg_infty_cycle_def)
+
+definition "has_infty_st_path make_pair \<E> \<u> s t= 
+             (\<exists> D. awalk (make_pair ` \<E>) s (map make_pair D) t \<and> length D > 0 \<and>  set D \<subseteq> \<E>
+                               \<and> (\<forall> e \<in> set D. \<u> e = PInfty))"
+  for make_pair \<E> \<c> \<u>
+
+lemma has_infty_st_pathE:
+"has_infty_st_path make_pair \<E> \<u> s t\<Longrightarrow> 
+               (\<And> D.  awalk (make_pair ` \<E>) s (map make_pair D) t  \<Longrightarrow> length D > 0
+              \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow>
+ P) \<Longrightarrow> P"
+and has_infty_st_pathI:
+"awalk (make_pair ` \<E>) s (map make_pair D) t  \<Longrightarrow> length D > 0
+              \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow>
+has_infty_st_path make_pair \<E> \<u> s t" 
+and not_has_infty_st_pathI:
+"(\<And> D. awalk (make_pair ` \<E>) s (map make_pair D) t  \<Longrightarrow> length D > 0
+              \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow> False) \<Longrightarrow>
+\<not> has_infty_st_path make_pair \<E> \<u> s t"
+and not_has_infty_st_pathE:
+"\<not> has_infty_st_path make_pair \<E> \<u> s t \<Longrightarrow>
+((\<And> D. awalk (make_pair ` \<E>) s (map make_pair D) t  \<Longrightarrow> length D > 0
+              \<Longrightarrow> set D \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set D \<Longrightarrow> \<u> e = PInfty) \<Longrightarrow> False) \<Longrightarrow> P) \<Longrightarrow> P"
+for make_pair \<E> \<u> t s
+  by(auto simp add: has_infty_st_path_def)
+
+context
+cost_flow_network
+begin
+
+lemma no_augcycle_at_beginning:
+  assumes conservative_weights: "\<not> has_neg_cycle make_pair \<E> \<c>"
+  shows "\<nexists> C. augcycle (\<lambda> e. 0) C"
+proof(rule ccontr)
+  assume "\<not> (\<nexists>C. augcycle (\<lambda>e. 0) C)"
+  then obtain C where C_prop:"augcycle (\<lambda> e. 0) C" by auto
+  hence aa:"closed_w (make_pair ` \<E>) (map to_vertex_pair C)"
+        "foldr (\<lambda> e acc. acc + \<cc> e) C 0 = 
+         foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0"
+    by(rule augcycle_to_closed_w, simp)+
+  have "foldr (\<lambda> e acc. acc + \<cc> e) C 0 < 0"
+    using C_prop unfolding augcycle_def \<CC>_def using distinct_sum[of C \<cc>] by simp
+  hence "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0" using aa by simp
+  moreover have bbb:"map to_vertex_pair C = map make_pair (map oedge C)"
+  proof-
+    have "e \<in> set C \<Longrightarrow> to_vertex_pair e = make_pair (oedge e)" for e
+    proof(goal_cases)
+      case 1
+      hence "rcap (\<lambda> e. 0) e > 0" 
+        using C_prop by(auto simp add: augcycle_def intro: augpath_rcap_pos_strict')
+      then obtain ee where "e = F ee" by (cases e) auto
+      then show ?case by simp
+    qed
+    thus "map to_vertex_pair C = map make_pair (map oedge C)" 
+      by simp
+  qed
+  moreover have "set (map oedge C) \<subseteq> \<E> " 
+    using C_prop  
+    by (auto simp add: image_def augcycle_def \<EE>_def)
+  ultimately
+  have "has_neg_cycle make_pair \<E> \<c>"
+    using  aa(1) 
+    by(auto intro!: has_neg_cycleI[of _ _ "map oedge C"] simp add: bbb add.commute[of _ "\<c> _"])
+ thus False using  conservative_weights by simp
+qed
 end
 end

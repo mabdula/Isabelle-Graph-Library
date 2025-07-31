@@ -504,4 +504,44 @@ qed simp
 lemma min_integral: "\<exists> n::nat. x = real n \<Longrightarrow> \<exists> n::nat. y = real n \<Longrightarrow>
                                     \<exists> n::nat. min x y = real n" for x y 
   by (simp add: min_def)
+
+lemma enat_less_plus_1_leq:"(x::enat) < (y::enat) + 1 \<Longrightarrow> x \<le> y" 
+  by(cases y, all \<open>cases x\<close>)
+    (auto simp add: plus_1_eSuc(2))
+
+lemma ereal_of_real_of_ereal_leq: "x \<ge> 0 \<Longrightarrow> ereal (real_of_ereal x) \<le> x"
+  by (simp add: ereal_real)
+
+definition "abstract_real_map mp x = (case mp x of None \<Rightarrow> 0 | Some y \<Rightarrow> y)"
+
+lemma abstract_real_map_empty: "abstract_real_map (\<lambda> _ . None) = (\<lambda> _ . 0)"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_some: "mp x = Some y \<Longrightarrow> abstract_real_map mp x = y"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_cong: "mp x = mp' x \<Longrightarrow> abstract_real_map mp x = abstract_real_map mp' x"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_none: "mp x = None \<Longrightarrow> abstract_real_map mp x = 0"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_not_zeroE: 
+"abstract_real_map mp x \<noteq> 0 \<Longrightarrow> (\<And> y. mp x = Some y \<Longrightarrow> y \<noteq> 0 \<Longrightarrow> P) \<Longrightarrow> P"
+  by(cases "mp x")(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_outside_dom: "x \<notin> dom mp \<Longrightarrow> abstract_real_map mp x = 0"
+  by(cases "mp x")(auto simp add: abstract_real_map_def dom_if)
+
+lemma abstract_real_map_in_dom_the: "x \<in> dom mp \<Longrightarrow> abstract_real_map mp x = the (mp x)"
+  by(cases "mp x")(auto simp add: abstract_real_map_def dom_if)
+
+definition "abstract_bool_map mp = (\<lambda> opt. (case mp opt of None \<Rightarrow> False
+                                | Some x \<Rightarrow> x))"
+
+lemma abstract_bool_map_None: "mp x = None \<Longrightarrow> abstract_bool_map mp x = False"
+and abstract_bool_map_Some: "mp x = Some b \<Longrightarrow> abstract_bool_map mp x = b"
+and abstract_bool_map_upd: "abstract_bool_map (mp(x:=Some bb)) = 
+                        (\<lambda> y. if x = y then bb else abstract_bool_map mp y)" 
+  by(auto simp add: abstract_bool_map_def)
 end
