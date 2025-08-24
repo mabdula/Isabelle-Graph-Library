@@ -3,10 +3,13 @@ session "Spanning_Trees" = "HOL-Data_Structures" +
   sessions
     "Matroids_Greedy"
     "Undirected_Set_Graphs"
-    "Graph_Algorithms"
+    "Graph_Algorithms_Dev"
+    Greedoids
 
   theories
     "Spanning_Trees"
     "Encoding"
     "Insertion_Sort_Desc"
-    "Kruskal_Greedy2"
+    "Kruskal_Greedy"
+    Arborescense
+    Jarnik_Prim

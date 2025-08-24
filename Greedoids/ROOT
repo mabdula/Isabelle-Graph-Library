@@ -1,0 +1,7 @@
+session "Greedoids" = "HOL-Library" +
+  options [document = pdf, document_output = "output"]
+  sessions
+   "HOL-Eisbach" 
+  theories
+    Greedoids
+    Greedoids_Optimisation

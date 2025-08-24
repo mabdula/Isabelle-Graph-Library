@@ -1,5 +1,5 @@
 theory Pair_Graph_Specs
-  imports Awalk "Map_Addons" "Set_Addons"
+  imports Awalk "Map_Addons" "Set_Addons" "HOL-Eisbach.Eisbach"
  begin
 
 section \<open>Locale for Executable Functions on Directed Graphs\<close>
@@ -135,7 +135,10 @@ definition "set_of_map (m::'adjmap) = {(u,v). case (lookup m u) of Some vs \<Rig
 
 definition "graph_inv G = (adjmap_inv G \<and> (\<forall>v vset. lookup G v = Some vset \<longrightarrow> vset_inv vset))"
 definition "finite_graph G = (finite {v. (lookup G v) \<noteq> None})"
-definition "finite_vsets = (\<forall>N. finite (t_set N))"
+definition "finite_vsets G = (\<forall>v N. (lookup G v) = Some N \<longrightarrow> finite (t_set N))"
+
+lemma finite_vsets_empty: "finite_vsets  \<emptyset>\<^sub>G"
+  by (simp add: adjmap.map_empty finite_vsets_def)
 
 lemma graph_inv_empty: "graph_inv \<emptyset>\<^sub>G"
   by (simp add: adjmap.invar_empty adjmap.map_empty graph_inv_def)
@@ -183,7 +186,6 @@ lemmas [code] = neighbourhood_def add_edge_def delete_edge_def
 
 context \<comment>\<open>Locale properties\<close>
   includes vset.set.automation and  adjmap.automation
-  fixes G::'adjmap
 begin
 
 lemma graph_invE[elim]: 
@@ -203,11 +205,11 @@ lemma finite_graphI[intro]:
   by (auto simp: finite_graph_def)
 
 lemma finite_vsetsE[elim]: 
-  "finite_vsets \<Longrightarrow> ((\<And>N. finite (t_set N)) \<Longrightarrow> P) \<Longrightarrow> P"
+  "finite_vsets G \<Longrightarrow> ((\<And> v N. lookup G v = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: finite_vsets_def)
 
 lemma finite_vsetsI[intro]: 
-  "(\<And>N. finite (t_set N)) \<Longrightarrow> finite_vsets"
+  "(\<And> v N. lookup G v = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> finite_vsets G"
   by (auto simp: finite_vsets_def)
 
 
@@ -217,7 +219,7 @@ lemma neighbourhood_invars'[simp,dest]:
 
 
 lemma finite_graph[intro!]:
-  assumes "graph_inv G" "finite_graph G" "finite_vsets"
+  assumes "graph_inv G" "finite_graph G" "finite_vsets G"
   shows "finite (digraph_abs G)"
 proof-
 
@@ -241,7 +243,7 @@ proof-
 qed
 
 corollary finite_vertices[intro!]:
-  assumes "graph_inv G" "finite_graph G" "finite_vsets"
+  assumes "graph_inv G" "finite_graph G" "finite_vsets G"
   shows "finite (dVs (digraph_abs G))"
   using finite_graph[OF assms]
   by (simp add: finite_vertices_iff)
@@ -252,8 +254,13 @@ text \<open>These are lemmas for automation. Their purpose is to remove any ment
       concept implemented using the locale constructs and replace it with abstract terms
       on pair graphs.\<close>
 
+lemma are_connected_abs_general: 
+  "graph_inv F \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G F u) \<longleftrightarrow> (u,v) \<in> digraph_abs F" 
+  by(auto simp: digraph_abs_def neighbourhood_def option.discI graph_inv_def
+          split: option.split)
+
 lemma are_connected_abs[simp]: 
-  "graph_inv G \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u) \<longleftrightarrow> (u,v) \<in> digraph_abs G"
+  "graph_inv G \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u) \<longleftrightarrow> (u,v) \<in> digraph_abs G" 
   by(auto simp: digraph_abs_def neighbourhood_def option.discI graph_inv_def
           split: option.split)
 
@@ -296,6 +303,60 @@ proof-
   show ?thesis
     using assms(2)
     by(unfold finite_graph_def dom_is) auto
+qed
+
+lemma finite_graph_delete_edge: assumes "graph_inv G" "finite_graph G" 
+  shows "finite_graph (delete_edge G u v)"
+proof-
+  have adjmap_inv: "adjmap_inv G" 
+    using assms by auto
+  have dom_is: "{va. lookup (delete_edge G u v) va \<noteq> None} = {va. lookup G va \<noteq> None}" 
+    by(auto split: option.split simp add: adjmap.map_update[OF adjmap_inv] delete_edge_def)
+  show ?thesis
+    using assms(2)
+    by(unfold finite_graph_def dom_is) auto
+qed
+
+lemma neighbourhood_add_edge:
+  assumes "graph_inv G"
+  shows    "t_set (\<N>\<^sub>G (add_edge G u v) u) = Set.insert v (t_set (\<N>\<^sub>G G u))"
+           "\<And> x. x \<noteq> u \<Longrightarrow> t_set (\<N>\<^sub>G (add_edge G u v) x) = t_set (\<N>\<^sub>G G x)"
+    by(auto simp add: are_connected_abs[OF assms] digraph_abs_insert[OF assms]
+                      are_connected_abs_general[OF adjmap_inv_insert[OF assms]])
+
+lemma neighbourhood_delete_edge:
+  assumes "graph_inv G"
+  shows    "t_set (\<N>\<^sub>G (delete_edge G u v) u) = (t_set (\<N>\<^sub>G G u)) - {v}"
+           "\<And> x. x \<noteq> u \<Longrightarrow> t_set (\<N>\<^sub>G (delete_edge G u v) x) = t_set (\<N>\<^sub>G G x)"
+    by(auto simp add: are_connected_abs[OF assms] digraph_abs_delete[OF assms]
+                      are_connected_abs_general[OF adjmap_inv_delete[OF assms]])
+
+lemma finite_vsets_add_edge: 
+  assumes "graph_inv G" "finite_vsets G" 
+  shows   "finite_vsets (add_edge G u v)"
+proof(rule finite_vsetsI, goal_cases)
+  case (1 x N)
+  have adj_inv:"adjmap_inv G"
+    using assms(1) by auto
+  from 1 show ?case 
+    using assms(1,2)
+    by(cases "x = u")
+      (force intro: option.exhaust[of  "lookup G u"] 
+          simp add: add_edge_def adjmap.map_update[OF adj_inv]  graph_inv_def)+
+qed
+
+lemma finite_vsets_delete_edge: 
+  assumes "graph_inv G" "finite_vsets G" 
+  shows   "finite_vsets (delete_edge G u v)"
+proof(rule finite_vsetsI, goal_cases)
+  case (1 x N)
+  have adj_inv:"adjmap_inv G"
+    using assms(1) by auto
+  from 1 show ?case 
+    using assms(1,2)
+    by(cases "x = u", all \<open>cases "lookup G u"\<close>)
+      (force intro: option.exhaust[of  "lookup G u"] 
+          simp add: delete_edge_def adjmap.map_update[OF adj_inv]  graph_inv_def)+
 qed
 
 end \<comment> \<open>Properties context\<close>  

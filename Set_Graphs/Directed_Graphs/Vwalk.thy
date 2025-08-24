@@ -135,7 +135,6 @@ proof(induction vs arbitrary: v v' rule: rev_induct)
   qed
 qed auto
 
-
 fun edges_of_vwalk where
   "edges_of_vwalk [] = []" |
   "edges_of_vwalk [v] = []" |
@@ -154,6 +153,9 @@ proof (induction i arbitrary: p)
 qed (auto dest!: Suc_leI simp: Suc_le_length_iff)
 
 lemma edges_of_vwalk_length: "length (edges_of_vwalk p) = length p - 1"
+  by (induction p rule: edges_of_vwalk.induct, auto)
+
+lemma edges_of_vwalk_length': "p \<noteq> [] \<Longrightarrow> length (edges_of_vwalk p) + 1 = length p"
   by (induction p rule: edges_of_vwalk.induct, auto)
 
 text \<open>With the given assumptions we can only obtain an outgoing edge from \<^term>\<open>v\<close>.\<close>
@@ -1160,4 +1162,25 @@ lemma vwalk_bet_cycle_delete: "vwalk_bet Y x ( xs@[a]@ys@[a]@zs) y \<Longrightar
   by(auto intro!: vwalk_bet_transitive[of Y x "xs@[a]" a "[a]@zs" y, simplified]
            intro: vwalk_bet_pref vwalk_bet_suff[of Y x "xs@a#ys" a zs y])
 
+lemma edges_of_vwalk_rev: "edges_of_vwalk (rev xs) = map prod.swap (rev (edges_of_vwalk  xs))"
+  by(induction xs rule: edges_of_vwalk.induct)
+    (simp | subst edges_of_vwalk_append_2)+
+
+lemma shortest_vwalk_bet_distinct: 
+  assumes "vwalk_bet Y x p y"  "\<nexists> q. vwalk_bet Y x q y \<and> length q < length p"
+  shows "distinct p"
+proof(rule ccontr, goal_cases)
+  case 1
+  then obtain xs a ys zs where p_is:"p = xs@[a]@ys@[a]@zs" 
+    using not_distinct_decomp by blast
+  hence "vwalk_bet Y x (xs@[a]@zs) y" 
+    using  vwalk_bet_cycle_delete[OF assms(1)[simplified p_is]] by simp
+  moreover have "length (xs@[a]@zs) < length p" 
+    using p_is by simp
+  ultimately show ?case 
+    using assms(2) by auto
+qed
+
+lemma vwalk_append_intermediate_edge:"vwalk_bet A x p y \<Longrightarrow> (y, x') \<in> A \<Longrightarrow> vwalk_bet A x' p' y' \<Longrightarrow> vwalk_bet A x (p@p') y'"
+  by (simp add: append_vwalk vwalk_bet_def)
 end
