@@ -1913,8 +1913,8 @@ proof-
             hence costs:"\<CC> (to_redge_path to_rdg' Q) + \<CC> P' < 0" 
               using C_Q_rev_Q by fastforce
             define Q' where "Q' = to_redge_path to_rdg' Q"
-            define Qpp where "Qpp = map PP (to_redge_path to_rdg' Q)"
-            define P'cc where "P'cc = map CC P'"
+            define Qpp where "Qpp = map blue (to_redge_path to_rdg' Q)"
+            define P'cc where "P'cc = map red P'"
             have markers_removeQ: "to_redge_path to_rdg' Q = map to_redge Qpp"
               unfolding Qpp_def sym[OF Q'_def]
               by(induction Q') auto
@@ -1927,8 +1927,8 @@ proof-
               by (induction Q') auto
             have hpath: "hpath (Qpp @ P'cc)"
               using hpath_first_node[of P'cc] P'_asm markers_removeP hpath_last_node[of Qpp] 
-                    is_s_t_path_Q markers_removeQ augpath_to_hpath_CC[of "(abstract_flow_map f)"]
-                     augpath_to_hpath_PP[of "(abstract_flow_map f)"]
+                    is_s_t_path_Q markers_removeQ augpath_to_hpath_red[of "(abstract_flow_map f)"]
+                     augpath_to_hpath_blue[of "(abstract_flow_map f)"]
               unfolding is_s_t_path_def Qpp_def P'cc_def 
               by (auto intro: h_path_append)
             have distinct:"distinct (Qpp @ P'cc)"
@@ -1944,32 +1944,32 @@ proof-
              have sndvv_x':"sndvv (last (Qpp @ P'cc)) = x'"
                using P'_asm  unfolding P'cc_def is_s_t_path_def augpath_def prepath_def
                by (simp add: last_map)
-            have "\<exists>PP CCC.
-                  Ball (List.set CCC) precycle \<and>
-                  prepath PP \<and>
-                  distinct PP \<and>
-                  sum cc (List.set (Qpp@P'cc)) = \<CC> PP + foldr (\<lambda>D. (+) (\<CC> D)) CCC 0 \<and>
-                  List.set ((to_redge_path to_rdg' Q)@P') = List.set PP \<union> \<Union> {List.set D |D. D \<in> List.set CCC} \<and> 
-                  fstv (hd PP) = x' \<and> sndv (last PP) = x'"
+            have "\<exists>blue redC.
+                  Ball (List.set redC) precycle \<and>
+                  prepath blue \<and>
+                  distinct blue \<and>
+                  sum cc (List.set (Qpp@P'cc)) = \<CC> blue + foldr (\<lambda>D. (+) (\<CC> D)) redC 0 \<and>
+                  List.set ((to_redge_path to_rdg' Q)@P') = List.set blue \<union> \<Union> {List.set D |D. D \<in> List.set redC} \<and> 
+                  fstv (hd blue) = x' \<and> sndv (last blue) = x'"
               using markers_remove  hpath  distinct  setE fstvv_x' sndvv_x' 
               by (fastforce intro!: distinct_hpath_to_distinct_augpath_and_augcycles)
-            then obtain P'' CCC where all_props:" Ball (List.set CCC) precycle"
+            then obtain P'' redC where all_props:" Ball (List.set redC) precycle"
                   "prepath P''"
                   "distinct P''"
-                  "sum cc (List.set (Qpp@P'cc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) CCC 0"
-                  "List.set ((to_redge_path to_rdg' Q)@P') = List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set CCC}"
+                  "sum cc (List.set (Qpp@P'cc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) redC 0"
+                  "List.set ((to_redge_path to_rdg' Q)@P') = List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}"
                   "fstv (hd P'') = x'" "sndv (last P'') = x'" by auto
             have "sum cc (List.set (Qpp@P'cc)) = \<CC> (to_redge_path to_rdg' Q) + \<CC> P'"
-              using distinct_CC_sum distinct_PP_sum Qpp_def P'cc_def
+              using distinct_red_sum distinct_blue_sum Qpp_def P'cc_def
                     P'_asm is_s_t_path_Q unfolding is_s_t_path_def augpath_def prepath_def  \<CC>_def 
               by (subst set_append, subst sum.union_disjoint) auto
-            then obtain C where C_prop:"(C = P'') \<or> C \<in> List.set CCC" "\<CC> C < 0"
-              using costs all_props(4) fold_sum_neg_neg_element[of \<CC> CCC]
+            then obtain C where C_prop:"(C = P'') \<or> C \<in> List.set redC" "\<CC> C < 0"
+              using costs all_props(4) fold_sum_neg_neg_element[of \<CC> redC]
               by force
             have Rcap_pos:"Rcap (abstract_flow_map f) (List.set C) > 0"
               using is_s_t_path_Q  C_prop  P'_asm is_s_t_path_Q sym[OF all_props(5)]
               unfolding augcycle_def augpath_def precycle_def is_s_t_path_def prepath_def \<CC>_def
-              by (intro Rcap_subset[of "List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set CCC}" "List.set C"], 
+              by (intro Rcap_subset[of "List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}" "List.set C"], 
                 auto intro: Rcap_union[of "List.set (to_redge_path to_rdg' Q)" "List.set P'"])
             have "augcycle (abstract_flow_map f) C"
               using C_prop all_props P'_asm is_s_t_path_Q Rcap_pos
@@ -2001,8 +2001,8 @@ proof-
             hence costs:"\<CC> (to_redge_path to_rdg' (rev Q)) + \<CC> P' < 0" 
               using C_Q_rev_Q by fastforce
             define Q' where "Q' = to_redge_path to_rdg' (rev Q)"
-            define Qpp where "Qpp = map PP (to_redge_path to_rdg' (rev Q))"
-            define P'cc where "P'cc = map CC P'"
+            define Qpp where "Qpp = map blue (to_redge_path to_rdg' (rev Q))"
+            define P'cc where "P'cc = map red P'"
             have markers_removeQ: "to_redge_path to_rdg' (rev Q) = map to_redge Qpp"
               unfolding Qpp_def sym[OF Q'_def]
               by(induction Q') auto
@@ -2015,8 +2015,8 @@ proof-
               by (induction Q') auto
             have hpath: "hpath (Qpp @ P'cc)"
               using hpath_first_node[of P'cc] P'_asm markers_removeP hpath_last_node[of Qpp] a2 a6
-                    is_s_t_path_Q markers_removeQ augpath_to_hpath_CC[of "(abstract_flow_map f)"]
-                     augpath_to_hpath_PP[of "(abstract_flow_map f)"]
+                    is_s_t_path_Q markers_removeQ augpath_to_hpath_red[of "(abstract_flow_map f)"]
+                     augpath_to_hpath_blue[of "(abstract_flow_map f)"]
               unfolding is_s_t_path_def Qpp_def P'cc_def 
               by (auto intro: h_path_append)
             have distinct:"distinct (Qpp @ P'cc)"
@@ -2032,33 +2032,33 @@ proof-
              have sndvv_x':"sndvv (last (Qpp @ P'cc)) = y'"
                using P'_asm
                by (simp add: last_map P'cc_def is_s_t_path_def augpath_def prepath_def)
-            have "\<exists>PP CCC.
-                  Ball (List.set CCC) precycle \<and>
-                  prepath PP \<and>
-                  distinct PP \<and>
-                  sum cc (List.set (Qpp@P'cc)) = \<CC> PP + foldr (\<lambda>D. (+) (\<CC> D)) CCC 0 \<and>
-                  List.set ((to_redge_path to_rdg' (rev Q))@P') = List.set PP \<union> \<Union> {List.set D |D. D \<in> List.set CCC} \<and> 
-                  fstv (hd PP) = y' \<and> sndv (last PP) = y'"
+            have "\<exists>blue redC.
+                  Ball (List.set redC) precycle \<and>
+                  prepath blue \<and>
+                  distinct blue \<and>
+                  sum cc (List.set (Qpp@P'cc)) = \<CC> blue + foldr (\<lambda>D. (+) (\<CC> D)) redC 0 \<and>
+                  List.set ((to_redge_path to_rdg' (rev Q))@P') = List.set blue \<union> \<Union> {List.set D |D. D \<in> List.set redC} \<and> 
+                  fstv (hd blue) = y' \<and> sndv (last blue) = y'"
               using markers_remove  hpath  distinct  setE_rev fstvv_x' sndvv_x' 
               by (fastforce intro!: distinct_hpath_to_distinct_augpath_and_augcycles)
-            then obtain P'' CCC where all_props:" Ball (List.set CCC) precycle"
+            then obtain P'' redC where all_props:" Ball (List.set redC) precycle"
                   "prepath P''"
                   "distinct P''"
-                  "sum cc (List.set (Qpp@P'cc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) CCC 0"
-                  "List.set ((to_redge_path to_rdg' (rev Q))@P') = List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set CCC}"
+                  "sum cc (List.set (Qpp@P'cc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) redC 0"
+                  "List.set ((to_redge_path to_rdg' (rev Q))@P') = List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}"
                   "fstv (hd P'') = y'" "sndv (last P'') = y'" by auto
             have "sum cc (List.set (Qpp@P'cc)) = \<CC> (to_redge_path to_rdg' (rev Q)) + \<CC> P'"
               unfolding \<CC>_def 
-              using distinct_CC_sum distinct_PP_sum Qpp_def P'cc_def
+              using distinct_red_sum distinct_blue_sum Qpp_def P'cc_def
                     P'_asm is_s_t_path_rev_Q unfolding is_s_t_path_def augpath_def prepath_def
               by (subst set_append, subst sum.union_disjoint) auto
-            then obtain C where C_prop:"(C = P'') \<or> C \<in> List.set CCC" "\<CC> C < 0"
-              using costs all_props(4) fold_sum_neg_neg_element[of \<CC> CCC]
+            then obtain C where C_prop:"(C = P'') \<or> C \<in> List.set redC" "\<CC> C < 0"
+              using costs all_props(4) fold_sum_neg_neg_element[of \<CC> redC]
               by force
             have Rcap_pos:"Rcap (abstract_flow_map f) (List.set C) > 0"
               using is_s_t_path_rev_Q  C_prop  P'_asm is_s_t_path_Q sym[OF all_props(5)]
               unfolding augcycle_def augpath_def precycle_def is_s_t_path_def prepath_def \<CC>_def
-              by (intro Rcap_subset[of "List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set CCC}" "List.set C"], 
+              by (intro Rcap_subset[of "List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}" "List.set C"], 
                     auto intro: Rcap_union[of "List.set (to_redge_path to_rdg' (rev Q))" "List.set P'"])
             have "augcycle (abstract_flow_map f) C"
               using C_prop all_props P'_asm is_s_t_path_rev_Q Rcap_pos

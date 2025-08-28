@@ -1,5 +1,5 @@
-theory Arith_Lemmas
-  imports Main Complex_Main "HOL-Library.Extended_Real" Logic_Lemmas
+theory More_Arith
+  imports Main Complex_Main "HOL-Library.Extended_Real" More_Logic
 begin
 
 lemma sum_cong_extensive: "A = B \<Longrightarrow> (\<And> x. x \<in> A \<Longrightarrow> x \<in> B \<Longrightarrow> f x = g x) \<Longrightarrow> sum f A = sum g B" for B
@@ -93,6 +93,18 @@ lemma sum_if_P: "(\<And> x. x \<in> X \<Longrightarrow> P x) \<Longrightarrow> s
 lemma sum_if_not_P: "(\<And> x. x \<in> X \<Longrightarrow> \<not> P x) \<Longrightarrow> sum (\<lambda> x. i x (if P x then g x else h x)) X = sum (\<lambda> x. i x (h x)) X" for h g X P 
   by simp
 
+lemma sum_if_not_P_not_Q_but_R:
+  "\<lbrakk>(\<And> x. x \<in> X \<Longrightarrow> \<not> P x); (\<And> x. x \<in> X \<Longrightarrow> \<not> Q x);(\<And> x. x \<in> X \<Longrightarrow> R x)\<rbrakk> \<Longrightarrow> 
+   sum (\<lambda> x. i x (if P x then g x else if Q x then h x else if R x then h1 x else h2 x)) X 
+   = sum (\<lambda> x. i x (h1 x)) X" 
+  by simp
+
+lemma sum_if_not_P_not_Q_not_R:
+  "\<lbrakk>(\<And> x. x \<in> X \<Longrightarrow> \<not> P x); (\<And> x. x \<in> X \<Longrightarrow> \<not> Q x);(\<And> x. x \<in> X \<Longrightarrow> R x)\<rbrakk> \<Longrightarrow> 
+   sum (\<lambda> x. i x (if P x then g x else if Q x then h x else if R x then h1 x else h2 x)) X 
+   = sum (\<lambda> x. i x (h1 x)) X" 
+  by simp
+
 lemma two_sum_remove:"(\<Sum>e'\<in>{x, y}. g e') = (if x \<noteq> y then g x + g y else g x)" for x y g 
        by simp
 
@@ -137,6 +149,11 @@ lemma diff_eq_split: "a  = b \<Longrightarrow> c = d \<Longrightarrow> a - c = b
 
 lemma sum_singleton: "(\<Sum> i \<in> {x}. f i) = f x"
   by(rule  trans[OF sum.insert_remove[of "{}" f x]], simp+)
+
+lemma union_disjoint_triple: 
+  "\<lbrakk>finite A; finite B; finite C; A \<inter> B = {}; A \<inter> C = {}; B \<inter> C = {} \<rbrakk> \<Longrightarrow>
+     sum f (A \<union> B \<union> C) = sum f A + sum f B + sum f C" for A B C
+  by (simp add: boolean_algebra.conj_disj_distrib2 sum_Un_eq)
 
 lemma sum_index_shift: "finite X \<Longrightarrow> sum f {x+(k::nat)|x. x \<in> X} = sum (\<lambda>x. f (x+k)) X"
   proof(induction rule: finite.induct)
@@ -188,6 +205,9 @@ lemma sum_except_two: "finite X \<Longrightarrow> a \<noteq> b \<Longrightarrow>
       for a b X f
   by (metis DiffI Diff_insert add.commute finite_Diff insert_absorb singletonD 
                sum.insert_remove)
+
+lemma sum_split_off: "A \<subseteq> B \<Longrightarrow> finite B \<Longrightarrow> (\<And> x. x \<in> B - A \<Longrightarrow> f x = 0) \<Longrightarrow> sum f A = sum f B" for f A B
+  by (simp add: sum.mono_neutral_cong_right)
 
 lemma sum_integer_multiple:
 "finite E \<Longrightarrow>(\<And> e. e\<in> E \<Longrightarrow> \<exists> (n::int). n * (\<gamma>::real) = f e) \<Longrightarrow> \<exists> (n::int). n *\<gamma> = sum f E"

@@ -1372,8 +1372,8 @@ proof(goal_cases)
        (a, b) \<in> to_edge `
           ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
     for a b x
-  by (smt (verit, del_insts) cost_flow_network.\<EE>_def cost_flow_network.o_edge_res make_pairs_are
-    flow_network_spec.oedge_simps'(2) cost_flow_network.to_vertex_pair.simps(2) image_iff swap_simp)
+    by (smt (verit, del_insts) cost_flow_network.\<EE>_def cost_flow_network.o_edge_res make_pairs_are
+    flow_network_spec.oedge.simps(2) cost_flow_network.to_vertex_pair.simps(2) image_iff swap_simp)
     show ?case
      by(auto simp add: cost_flow_network.to_vertex_pair.simps es_is_E EEE_def
           cost_flow_network.\<EE>_def make_pairs_are Instantiation.make_pair_def
@@ -1993,7 +1993,7 @@ next
     by(auto simp add: arc_implies_awalk get_edge_and_costs_forward_result_props)
     moreover have "(\<forall>e\<in>set (map (\<lambda>e. prod.fst (get_edge_and_costs_forward nb f (prod.fst e) (prod.snd e))) ppp).
         nb (flow_network_spec.oedge e) \<and> 0 < cost_flow_network.rcap f e)"
-      using 2  bellman_ford.weight.simps[OF bellman_ford] flow_network_spec.oedge_simps'
+      using 2  bellman_ford.weight.simps[OF bellman_ford] flow_network_spec.oedge.simps
                 cost_flow_network.rcap.simps get_edge_and_costs_forward_result_props[OF sym[OF prod.collapse], of nb f x y]
       by(auto simp add: \<u>_def)
     ultimately show ?case by simp
@@ -3854,7 +3854,7 @@ proof(goal_cases)
     have e_in_qq_not_blocked: "e \<in> set qq \<Longrightarrow> a_not_blocked state (flow_network_spec.oedge e)" for e   
       using qq_props(4) 
       by(induction e rule: flow_network_spec.oedge.induct)
-        (fastforce simp add: spec[OF algo.from_aux_invar'(20)[OF 1(4)]] flow_network_spec.oedge_simps'(1) 
+        (fastforce simp add: spec[OF algo.from_aux_invar'(20)[OF 1(4)]] flow_network_spec.oedge.simps(1) 
                    image_iff \<F>_def dest!: set_mp)+
     have e_in_qq_rcap: "e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap (abstract_flow_map f) e" for e
       using qq_props(1)  linorder_class.Min_gr_iff 
@@ -4041,7 +4041,7 @@ proof(goal_cases)
     have e_in_qq_not_blocked: "e \<in> set qq \<Longrightarrow> a_not_blocked state (flow_network_spec.oedge e)" for e   
       using qq_props(4) 
       by(induction e rule: flow_network_spec.oedge.induct)
-        (fastforce simp add: spec[OF algo.from_aux_invar'(20)[OF 1(4)]] flow_network_spec.oedge_simps'(1) 
+        (fastforce simp add: spec[OF algo.from_aux_invar'(20)[OF 1(4)]] flow_network_spec.oedge.simps(1) 
                    image_iff \<F>_def dest!: set_mp)+
     have e_in_qq_rcap: "e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap (abstract_flow_map f) e" for e
       using qq_props(1)  linorder_class.Min_gr_iff 

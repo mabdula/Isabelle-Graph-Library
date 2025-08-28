@@ -1,7 +1,6 @@
-theory Logic_Lemmas
+theory More_Logic
   imports Complex_Main  "HOL-Eisbach.Eisbach"
 begin
-
 
 lemma inj_onI: "(\<And> x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> f x = f y \<Longrightarrow> x = y) \<Longrightarrow> inj_on f A" for f A
            by(auto simp add: inj_on_def)
@@ -196,6 +195,12 @@ lemma piar_setE: "X \<subseteq> {x, y} \<Longrightarrow>
 
 lemma set_union_subset_cong: "A \<subseteq> B \<Longrightarrow> C \<subseteq> D \<Longrightarrow> A \<union> C \<subseteq> B \<union> D" for A B C D by auto
 
+lemma disjoint_subs_commute: "B \<inter> C = {} \<Longrightarrow> (A - B) -C = (A - C) - B" for A B C
+  by blast
+
+lemma set_diff_eq_cong: "A = B \<Longrightarrow> C = D \<Longrightarrow> A - C = B - D" for A B C D
+  by simp
+
 lemma image_sigleton: "f ` {x} = {f x}" for f x by simp
 
 lemma non_emptyE:"X \<noteq> {} \<Longrightarrow> (\<And> x. x \<in> X \<Longrightarrow> P) \<Longrightarrow>P" by auto
@@ -220,12 +225,13 @@ lemma insert_with_P: "P x \<Longrightarrow> insert x {y \<in> S. P y} = { y \<in
 lemma Collect_cong_set: "(\<And>x. x \<in> S \<Longrightarrow> P x = Q x) \<Longrightarrow> {x \<in> S. P x} = {x \<in> S. Q x}"
   by auto
 
-lemma sum_split_off: "A \<subseteq> B \<Longrightarrow> finite B \<Longrightarrow> (\<And> x. x \<in> B - A \<Longrightarrow> f x = 0) \<Longrightarrow> sum f A = sum f B" for f A B
-  by (simp add: sum.mono_neutral_cong_right)
-
 lemma if_non_empty_finite_finite: " (A \<noteq> {} \<Longrightarrow> finite A) \<Longrightarrow> finite A" by auto
 
 lemma if_of_bools: "(if b then True else False) \<Longrightarrow> b"
                    "(if b then False else True) \<Longrightarrow> \<not> b"
   by argo+
+
+lemma f_of_double_if_cond_same:
+ "f (if b then a1 else c1) (if b then a2 else c2) = (if b then f a1 a2 else f c1 c2)"
+  by auto
 end

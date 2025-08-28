@@ -5,8 +5,8 @@ sessions
   Directed_Set_Graphs
 
 theories [document=false]
-  Arith_Lemmas
-  Logic_Lemmas
+  More_Arith
+  More_Logic
 
 theories
   Augmentation

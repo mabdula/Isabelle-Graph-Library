@@ -2,7 +2,8 @@ theory Augmentation
   imports Residual
 begin
 
-context flow_network_spec
+context 
+ flow_network_spec
 begin
 
 section \<open>Augmentations in a Residual Graph\<close>
@@ -31,7 +32,8 @@ lemma prepathE:"prepath p \<Longrightarrow>(awalk UNIV (fstv (hd p)) (map to_ver
   by(auto simp add: prepath_def)
 
 end
-context flow_network
+context
+ flow_network
 begin
 text \<open>As for residual reachability, we will frequently use some inductive reasoning.
 For doing this properly we carefully prepare the rules.
@@ -79,7 +81,7 @@ proof-
 
 lemma prepath_simps: "prepath a2 = ((\<exists> e. a2 = [e] ) \<or>  (\<exists>e d es.
                                            a2 = e # d # es \<and> sndv e = fstv d \<and> prepath  (d # es)))"
-  by(rule, rule prepath_induct[of a2 ], auto intro: prepath_intros)
+  by(rule iffI, rule prepath_induct[of a2 ], auto intro: prepath_intros)
 
 lemma prepath_cases: "prepath a2 \<Longrightarrow>
                      (\<And>e. a2 = [e]  \<Longrightarrow> P) \<Longrightarrow>
@@ -209,8 +211,9 @@ proof(induction "length es" arbitrary: es  thesis rule: less_induct)
   qed
 qed
 end
+
 context
-flow_network_spec
+ flow_network_spec
 begin
 subsection \<open>Augmenting Paths\<close>
 
@@ -225,7 +228,9 @@ lemma augpathI: "prepath p \<Longrightarrow> Rcap f (set p) > 0 \<Longrightarrow
 lemma augpathE: "augpath f p \<Longrightarrow> (prepath p \<Longrightarrow> Rcap f (set p) > 0 \<Longrightarrow> P) \<Longrightarrow> P"
   by(auto simp add: augpath_def)
 end
-context flow_network
+
+context 
+ flow_network
 begin
 text \<open>Again, some technical lemmas.\<close>
 
@@ -271,7 +276,7 @@ lemma augpath_simps:
 "augpath a1 a2 =
 ((\<exists>f e. a1 = f \<and> a2 = [e] \<and> 0 < \<uu>\<^bsub>f\<^esub>e) \<or>
  (\<exists>f e d es. a1 = f \<and> a2 = e # d # es \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = fstv d \<and> augpath f (d # es)))"
-  by(rule, rule augpath_induct[of a1 a2 ], auto simp add: augpath_intros) 
+  by(rule iffI, rule augpath_induct[of a1 a2 ], auto simp add: augpath_intros) 
 
 lemma augpath_cases:
 "augpath a1 a2 \<Longrightarrow>
@@ -406,7 +411,9 @@ definition resreach_cap::"('edge_type \<Rightarrow> real) \<Rightarrow> nat \<Ri
        "resreach_cap f cap u v = (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
                             \<and> Rcap f (set p) > (real cap) \<and> p \<noteq> [] \<and> set p \<subseteq> \<EE>)"
 end
-context flow_network_spec
+
+context 
+ flow_network_spec
 begin
 subsection \<open>Augmentations\<close>
 
@@ -424,17 +431,21 @@ fun augment_edge::"('edge_type  \<Rightarrow> real) \<Rightarrow> real \<Rightar
                        B d \<Rightarrow> f d - \<gamma>)
      else f d)"
 end
-context flow_network
+
+context 
+ flow_network
 begin
 text \<open>If we augment below residual capacity, we obtain another flow respecting edge capacities.\<close>
 
 lemma augment_edge_validness_pres:
-  "isuflow f \<Longrightarrow> 0 \<le> \<gamma> \<Longrightarrow> ereal \<gamma> \<le> rcap f e \<Longrightarrow> isuflow (augment_edge f \<gamma> e)"
+  "\<lbrakk>isuflow f; 0 \<le> \<gamma>; ereal \<gamma> \<le> rcap f e\<rbrakk> \<Longrightarrow> isuflow (augment_edge f \<gamma> e)"
   unfolding isuflow_def
   using ereal_umst ereal_le_le
   by(cases rule:  redge_pair_cases)(auto simp add: add.commute u_non_neg )
 end
-context flow_network_spec
+
+context 
+ flow_network_spec
 begin
 text \<open>The augmentation along a path is defined as the sequentially preformed augmentation of the edges.\<close>
 
@@ -456,13 +467,13 @@ proof-
   have "augment_edges' f g es d= augment_edges f g es d" for f g es d
 proof-
   have subgoals:
-"augment_edges (\<lambda>da. if da = d then f d + g else f da) g es d = augment_edges f g es d + g"
-"augment_edges (\<lambda>da. if da = d then f d - g else f da) g es d = augment_edges f g es d - g"
-"\<And> x1. d \<noteq> x1 \<Longrightarrow> augment_edges (\<lambda>d. if d = x1 then f x1 + g else f d) g es d = augment_edges f g es d"
-"\<And> x2. d \<noteq> x2 \<Longrightarrow>
+   "augment_edges (\<lambda>da. if da = d then f d + g else f da) g es d = augment_edges f g es d + g"
+   "augment_edges (\<lambda>da. if da = d then f d - g else f da) g es d = augment_edges f g es d - g"
+   "\<And> x1. d \<noteq> x1 \<Longrightarrow> augment_edges (\<lambda>d. if d = x1 then f x1 + g else f d) g es d = augment_edges f g es d"
+   "\<And> x2. d \<noteq> x2 \<Longrightarrow>
        augment_edges (\<lambda>d. if d = x2 then f x2 - g else f d) g es d = augment_edges f g es d"
-for f es
-    by(induction es) (auto split: Redge.split)
+   for f es
+   by(induction es) (auto split: Redge.split)
   show ?thesis
   by(induction es arbitrary: f)
     (auto split: Redge.split simp add: subgoals)
@@ -474,16 +485,24 @@ text \<open>Residual capacities related to edges that have got nothing to do
       with the augmentation do not change.\<close>
 
 lemma e_not_in_p_aug: 
-  "e \<notin> set es \<Longrightarrow> erev e \<notin> set es \<Longrightarrow> rcap (augment_edges f \<gamma> es) e = rcap f e"
+  "\<lbrakk>e \<notin> set es; erev e \<notin> set es\<rbrakk> \<Longrightarrow> rcap (augment_edges f \<gamma> es) e = rcap f e"
   apply(induction f \<gamma> es rule: augment_edges.induct, simp)
-     by(rule redge_pair_cases)(simp, metis  oedge.simps sndv.cases)+
+  by(rule redge_pair_cases)(simp, metis  oedge.simps sndv.cases)+
 
 text \<open>If we augment a forward residual arc, the flow increases accordingly.\<close>
 
 lemma erev_augment: "rcap (augment_edge f \<gamma> e) (erev e) = rcap f (erev e) + \<gamma>"
-  apply(cases rule: redge_pair_cases) 
-  apply (smt (verit, ccfv_threshold) Redge.simps(6) add.right_neutral add_diff_eq_ereal augment_edge.elims case_prod_conv ereal_diff_add_assoc2 ereal_minus(1) erev.simps(1) erve_erve_id oedge.simps(1) oedge_and_reversed rcap.simps(1) zero_ereal_def)
-  by (metis (no_types, lifting) Redge.simps(5) augment_edge.elims case_prod_conv erev.simps(2) erve_erve_id oedge.simps(2) oedge_and_reversed plus_ereal.simps(1) rcap.simps(2))
+proof(cases rule: redge_pair_cases, goal_cases)
+  case (1 ee)
+  then show ?case 
+    apply(cases "\<u> ee")
+    by(auto intro: Redge.exhaust[of e] simp add: algebra_simps)  
+next
+  case (2 ee)
+  then show ?case 
+    apply(cases "\<u> ee")
+    by(auto intro: Redge.exhaust[of e] simp add: algebra_simps)  
+qed 
 
 lemma e_ot_first_unfold: 
   "e \<noteq> d \<Longrightarrow> e \<noteq> erev d \<Longrightarrow>rcap (augment_edges f \<gamma> (d#es)) e = rcap (augment_edges f \<gamma> es) e"
@@ -522,7 +541,9 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
 qed simp
 
 end
-context flow_network
+
+context 
+ flow_network
 begin
 text \<open>For any valid flow an augmentation respecting residual capacities will preserve respect
  for capacities.\<close>
@@ -870,7 +891,7 @@ proof
             then show ?thesis
               using augment_edge_tail_forward[OF _ _ _ _ refl]
                       F \<open>v \<in> \<V>\<close> assms(1) assms(4)  caseFalse 
-                      fst_E_V[of ee]  o_edge_res[of e] oedge_simps'(1) 
+                      fst_E_V[of ee]  o_edge_res[of e] 
               by(auto simp add: b'_def isbflow_def)
             next
             case False
@@ -1152,7 +1173,8 @@ lemma rcap_extr_strict: "e \<in> set es \<Longrightarrow>  \<gamma> < Rcap f (se
 
 end
 
-context cost_flow_network
+context 
+ cost_flow_network
 begin
 subsection \<open>Affecting Costs\<close>
 
