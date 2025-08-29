@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory Bipartite_Matching_LP
   imports
     Even_More_Graph
