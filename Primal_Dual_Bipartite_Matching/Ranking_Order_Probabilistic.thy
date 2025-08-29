@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory Ranking_Order_Probabilistic
   imports
     Ranking_Order

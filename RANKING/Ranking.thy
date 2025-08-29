@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 section \<open>RANKING (in a deterministic setting)\label{sec:ranking}\<close>
 theory Ranking
   imports

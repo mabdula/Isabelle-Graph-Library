@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory More_Lattices_Big
   imports Main
 begin
