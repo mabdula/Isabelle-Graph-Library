@@ -42,6 +42,12 @@ lemma minus_leq_flip:"- (a::ereal) \<le> b \<Longrightarrow> - b \<le> a"
 
 definition "is_integral (x::real) = (\<exists> n::int. x = n)"
 
+lemma is_integralI:
+"(x::real) = (n::int) \<Longrightarrow> is_integral x"
+and is_integralE:
+"is_integral x \<Longrightarrow> (\<And> n. (x::real) = (n::int) \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: is_integral_def)
+
 lemma integral_min: "is_integral x \<Longrightarrow> is_integral y \<Longrightarrow> is_integral (min x y)"
   unfolding is_integral_def
   by (simp add: min_def)
