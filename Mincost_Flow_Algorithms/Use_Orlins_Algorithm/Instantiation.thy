@@ -379,12 +379,12 @@ lemma are_all: "\<lbrakk> set_invar S\<rbrakk> \<Longrightarrow> are_all P S \<l
   unfolding to_set_def set_invar_def
   by(induction S) auto
 
-interpretation Set3: Set3 get_from_set filter are_all set_invar to_set
+interpretation Set_with_predicate: Set_with_predicate get_from_set filter are_all set_invar to_set
   using set_filter invar_filter  set_get(1,2)
-  by (auto intro!: filter_cong Set3.intro intro: set_get(3-) set_filter simp add: are_all to_set_def)
+  by (auto intro!: filter_cong Set_with_predicate.intro intro: set_get(3-) set_filter simp add: are_all to_set_def)
  fastforce+
 
-lemmas Set3 = Set3.Set3_axioms
+lemmas Set_with_predicate = Set_with_predicate.Set_with_predicate_axioms
 
 interpretation bal_map: Map where empty = bal_empty and update=bal_update and lookup= bal_lookup
 and delete= bal_delete and invar = bal_invar
@@ -599,7 +599,7 @@ and neighbourhood' = orlins_spec.neighbourhood'
   by(auto intro!: orlins_spec.intro algo_spec.intro maintain_forest_spec.intro rep_comp_upd_all
                   send_flow_spec.intro maintain_forest_spec.intro flow_update_all get_max not_blocked_upd_all
                   map_update_all.intro map_update_all_axioms.intro
-        simp add: Set3 Adj_Map_Specs2)
+        simp add: Set_with_predicate Adj_Map_Specs2)
 
 lemmas [code] = orlins_spec.orlins_impl.simps[folded orlins_impl_def]
 
@@ -702,12 +702,12 @@ function_generation where to_set =" to_set:: 'edge_type_set_impl \<Rightarrow> '
       and flow_update =  "flow_update::'edge_type \<Rightarrow> real \<Rightarrow> 'f_impl \<Rightarrow> 'f_impl"
      and bal_update = "bal_update:: 'a \<Rightarrow> real \<Rightarrow> 'b_impl \<Rightarrow> 'b_impl" 
 and  rep_comp_update="rep_comp_update:: 'a \<Rightarrow> 'a \<times> nat \<Rightarrow> 'r_comp_impl\<Rightarrow> 'r_comp_impl"+
-Set3  where get_from_set="get_from_set::('edge_type \<Rightarrow> bool) \<Rightarrow>  'edge_type_set_impl \<Rightarrow> 'edge_type option"
+Set_with_predicate  where get_from_set="get_from_set::('edge_type \<Rightarrow> bool) \<Rightarrow>  'edge_type_set_impl \<Rightarrow> 'edge_type option"
          and to_set =to_set +
 
 multigraph: multigraph fst snd create_edge \<E>+
 
-Set3: Set3 get_from_set filter are_all set_invar to_set +
+Set_with_predicate: Set_with_predicate get_from_set filter are_all set_invar to_set +
 
 rep_comp_maper: Map  rep_comp_empty "rep_comp_update::'a \<Rightarrow> ('a \<times> nat) \<Rightarrow> 'r_comp_impl \<Rightarrow> 'r_comp_impl"
               rep_comp_delete rep_comp_lookup rep_comp_invar +
@@ -1013,7 +1013,7 @@ and not_blocked_empty = not_blocked_empty and not_blocked_lookup = not_blocked_l
 and not_blocked_delete=not_blocked_delete and not_blocked_invar = not_blocked_invar
   using cost_flow_network 
   by(auto intro!: algo.intro algo_spec.intro 
-  simp add: Adj_Map_Specs2 algo_axioms algo_def Set3_axioms flow_map_update_all
+  simp add: Adj_Map_Specs2 algo_axioms algo_def Set_with_predicate_axioms flow_map_update_all
     Map_bal.Map_axioms rep_comp_map_update_all  conv_map.Map_axioms not_blocked_upd_all_locale)
 
 lemmas algo = algo.algo_axioms
@@ -1547,7 +1547,7 @@ lemma get_target_aux:
   unfolding get_target_aux_def
   by(induction b \<gamma> xs rule: get_target_aux_aux.induct) force+
 
-abbreviation "aux_invar (state)\<equiv> algo.aux_invar  state"
+abbreviation "underlying_invars (state)\<equiv> algo.underlying_invars  state"
 abbreviation "invar_isOptflow (state)\<equiv> algo.invar_isOptflow state"
 abbreviation "\<F> state \<equiv> algo.\<F>  (state)"
 abbreviation "resreach \<equiv> cost_flow_network.resreach"
@@ -1868,7 +1868,7 @@ lemmas vertex_selection_condE = send_flow_spec.vertex_selection_condE
 lemmas invar_gamma_def = algo.invar_gamma_def
 lemmas invar_isOptflow_def = algo.invar_isOptflow_def
 lemmas is_Opt_def = cost_flow_network.is_Opt_def
-lemmas from_aux_invar' = algo.from_aux_invar'
+lemmas from_underlying_invars' = algo.from_underlying_invars'
 
 abbreviation "to_graph == Adj_Map_Specs2.to_graph"
 abbreviation "digraph_abs == Adj_Map_Specs2.digraph_abs"
@@ -2034,7 +2034,7 @@ qed
 qed
 
 lemma no_neg_cycle_in_bf: 
-  assumes "invar_isOptflow state" "aux_invar state"
+  assumes "invar_isOptflow state" "underlying_invars state"
   shows   "\<nexists>c. weight (a_not_blocked state) (a_current_flow state) c < 0 \<and> hd c = last c"
 proof(rule nexistsI, goal_cases)
   case (1 c)
@@ -2124,8 +2124,8 @@ proof(rule nexistsI, goal_cases)
     using less_PInfty_not_blocked  "1"(1) cc_def path_with_props(3) by blast
   hence "oedge e \<in> \<E>"
     using assms(2) 
-    unfolding algo.aux_invar_def  algo.invar_aux22_def
-                algo.invar_aux1_def  algo.invar_aux3_def
+    unfolding algo.underlying_invars_def  algo.inv_unbl_iff_forest_active_def
+                algo.inv_actives_in_E_def  algo.inv_forest_in_E_def
     by auto
   thus ?case
     using  1(2) cost_flow_network.o_edge_res by blast
@@ -2143,7 +2143,7 @@ qed
 lemma get_target_for_source_ax:
 " \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state; Some s = get_source state;
    get_source_target_path_a state s = Some (t,P); invar_gamma state; invar_isOptflow state;
-   aux_invar state\<rbrakk>
+   underlying_invars state\<rbrakk>
   \<Longrightarrow> t \<in> VV \<and> (abstract_bal_map b) t < - \<epsilon> * \<gamma> \<and> resreach (abstract_flow_map f) s t \<and> s \<noteq> t"
 proof( goal_cases)
   case 1
@@ -2317,7 +2317,7 @@ proof( goal_cases)
     using less_PInfty_not_blocked  "1"(1) P_def Pbf_props(3) by blast
   hence "oedge e \<in> \<E>"
     using one(8)
-    by(auto elim!: algo.aux_invarE algo.invar_aux22E algo.invar_aux1E algo.invar_aux3E)
+    by(auto elim!: algo.underlying_invarsE algo.inv_unbl_iff_forest_activeE algo.inv_actives_in_EE algo.inv_forest_in_EE)
   thus ?case 
     using "1"(2) cost_flow_network.o_edge_res by blast
   qed
@@ -2503,7 +2503,7 @@ proof-
     using assms by(force simp add: get_source_target_path_a_cond_def)
   have knowledge: True
     "s \<in> VV" "t \<in> VV" "s \<noteq> t"
-    "aux_invar state"
+    "underlying_invars state"
     "(\<forall>e\<in>\<F> state. 0 < abstract_flow_map f e)"
     "resreach (abstract_flow_map f) s t"
     "b = balance state"
@@ -2562,9 +2562,9 @@ proof-
                    \<union> (abstract_conv_map (conv_to_rdg state)) ` (digraph_abs (\<FF> state))" for e
       using qq_prop(4)  by auto
     hence e_es:"e \<in> set qq \<Longrightarrow> cost_flow_network.to_vertex_pair e \<in> set es" for e
-      using es_E_frac algo.aux_invar_subs  knowledge(5) by (fastforce simp add: algo.\<F>_redges_def)
+      using es_E_frac algo.underlying_invars_subs  knowledge(5) by (fastforce simp add: algo.\<F>_redges_def)
     have e_es':"e \<in> set qq \<Longrightarrow> oedge e \<in> \<E>" for e
-      using algo.from_aux_invar'(2) cost_flow_network.o_edge_res e_in knowledge(5) by auto
+      using algo.from_underlying_invars'(2) cost_flow_network.o_edge_res e_in knowledge(5) by auto
     have e_in_pp_weight:"e \<in> set qq \<Longrightarrow> prod.snd (get_edge_and_costs_forward (a_not_blocked state) 
                                  (a_current_flow state) (fstv e) (sndv e)) < PInfty" for e
   proof(goal_cases)
@@ -2573,9 +2573,9 @@ proof-
     moreover have oedge_where: "oedge e \<in> to_set (actives state) \<or> oedge e \<in> \<F> state"
       using e_in  1  by(auto simp add: \<F>_def)
     hence nb:"a_not_blocked state (oedge e)"
-      using algo.from_aux_invar'(20) knowledge(5) by auto
+      using algo.from_underlying_invars'(20) knowledge(5) by auto
      have oedgeE:"oedge e \<in> \<E>"
-      using oedge_where from_aux_invar'(1,3)[OF knowledge(5)] by auto
+      using oedge_where from_underlying_invars'(1,3)[OF knowledge(5)] by auto
     have "prod.snd (get_edge_and_costs_forward (a_not_blocked state) (a_current_flow state)
      (fstv e) (sndv e)) \<le> \<cc> e"
       using nb cost_flow_network.augpath_rcap_pos_strict'[OF qq_prop(1) 1] knowledge(11)
@@ -2717,7 +2717,7 @@ proof-
     have "a_not_blocked state e"
       using map_in_set same_edges "1"(1) PP_def Pbf_props(3) list.set_map by blast
     thus ?case 
-      using "1"(2) algo.from_aux_invar'(20) knowledge(5) by force
+      using "1"(2) algo.from_underlying_invars'(20) knowledge(5) by force
   qed
   have distinct_Pbf: "distinct Pbf"
     using no_neg_cycle_in_bf knowledge(2,3,4) vs_is_V pred_of_t_not_None 
@@ -2732,7 +2732,7 @@ proof-
   have qq_in_E':"set (map flow_network_spec.oedge qq) \<subseteq> \<E>" 
     using e_es' by auto
   have not_blocked_qq: "\<And> e . e \<in> set qq \<Longrightarrow> a_not_blocked state (oedge e)" 
-    using  algo.from_aux_invar'(20) e_in knowledge(5) by (fastforce simp add: \<F>_def)
+    using  algo.from_underlying_invars'(20) e_in knowledge(5) by (fastforce simp add: \<F>_def)
   have rcap_qq: "\<And> e . e \<in> set qq \<Longrightarrow> cost_flow_network.rcap (a_current_flow state) e > 0" 
     using  cost_flow_network.augpath_rcap_pos_strict'[OF  qq_prop(1) ] knowledge by simp
   have awalk': "unconstrained_awalk (map cost_flow_network.to_vertex_pair qq)"
@@ -2745,7 +2745,7 @@ bf_weight_leq_res_costs:"weight (a_not_blocked state) (a_current_flow state) (aw
   have oedge_of_EE: "flow_network_spec.oedge ` EEE = \<E>" 
     by (meson  cost_flow_network.oedge_on_\<EE>)
   have " flow_network_spec.oedge ` set PP \<subseteq> \<E>"
-    using from_aux_invar'(1,3)[OF knowledge(5)] oedge_of_p_allowed by blast
+    using from_underlying_invars'(1,3)[OF knowledge(5)] oedge_of_p_allowed by blast
   hence P_in_E: "set PP \<subseteq> EEE"
     by (meson image_subset_iff cost_flow_network.o_edge_res subsetI) 
   have "(foldr (\<lambda>e. (+) (\<cc> e)) PP 0) \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0"
@@ -2898,7 +2898,7 @@ lemma edges_of_vwalk_rev_swap:"(map prod.swap (rev (edges_of_vwalk c))) = edges_
   done
 
 lemma no_neg_cycle_in_bf_backward: 
-  assumes "invar_isOptflow state" "aux_invar state"
+  assumes "invar_isOptflow state" "underlying_invars state"
   shows   "\<nexists>c. weight_backward (a_not_blocked state) (a_current_flow state) c < 0 \<and> hd c = last c"
 proof(rule nexistsI, goal_cases)
   case (1 c)
@@ -2981,7 +2981,7 @@ proof(rule nexistsI, goal_cases)
     using less_PInfty_not_blocked  "1"(1) cc_def path_with_props(3) by blast
   hence "oedge e \<in> \<E>"
     using assms(2) 
-    by(auto elim!: algo.aux_invarE algo.invar_aux22E algo.invar_aux1E algo.invar_aux3E)
+    by(auto elim!: algo.underlying_invarsE algo.inv_unbl_iff_forest_activeE algo.inv_actives_in_EE algo.inv_forest_in_EE)
   thus ?case
     using  1(2) cost_flow_network.o_edge_res by blast
 qed
@@ -3001,7 +3001,7 @@ lemma to_edge_of_get_edge_and_costs_backward:
 lemma get_source_for_target_ax:
 " \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state; Some t = get_target state;
    get_source_target_path_b state t = Some (s,P); invar_gamma state; invar_isOptflow state;
-   aux_invar state\<rbrakk>
+   underlying_invars state\<rbrakk>
                         \<Longrightarrow> s \<in> VV \<and> (abstract_bal_map b) s > \<epsilon> * \<gamma> \<and> resreach (abstract_flow_map f) s t \<and> s \<noteq> t"
  proof( goal_cases)
   case 1
@@ -3183,7 +3183,7 @@ lemma get_source_for_target_ax:
     using less_PInfty_not_blocked  "1"(1) P_def Pbf_props(3) by blast
   hence "oedge e \<in> \<E>"
     using one
-    by(auto elim!: algo.aux_invarE algo.invar_aux22E algo.invar_aux1E algo.invar_aux3E)
+    by(auto elim!: algo.underlying_invarsE algo.inv_unbl_iff_forest_activeE algo.inv_actives_in_EE algo.inv_forest_in_EE)
   thus ?case 
     using "1"(2)  cost_flow_network.o_edge_res by blast
   qed
@@ -3436,7 +3436,7 @@ proof-
     using assms by(force simp add: get_source_target_path_b_cond_def)
   have knowledge: True
     "s \<in> VV" "t \<in> VV" "s \<noteq> t"
-    "aux_invar state"
+    "underlying_invars state"
     "(\<forall>e\<in>\<F> state. 0 < abstract_flow_map f e)"
     "resreach (abstract_flow_map f) s t"
     "b = balance state"
@@ -3494,15 +3494,15 @@ proof-
     using qq_prop(2,3,6) knowledge(4)
     by( all \<open>cases qq rule: list_cases3\<close>) auto
   have symmetric_digraph: "symmetric_digraph (Instantiation.Adj_Map_Specs2.digraph_abs (\<FF> state))"
-    using algo.from_aux_invar'(19) knowledge(5) by auto
+    using algo.from_underlying_invars'(19) knowledge(5) by auto
   have forest_no_loop: "(\<And>e. e \<in> Instantiation.Adj_Map_Specs2.digraph_abs (\<FF> state) \<Longrightarrow>
           prod.fst e \<noteq> prod.snd e)" 
-    using algo.from_aux_invar'(14)[OF knowledge(5)]
+    using algo.from_underlying_invars'(14)[OF knowledge(5)]
     by(auto elim!: algo.validFE 
          simp add: dblton_graph_def Adj_Map_Specs2.to_graph_def UD_def) blast    
   have consist: "cost_flow_network.consist (digraph_abs (\<FF> state))
                       (abstract_conv_map (conv_to_rdg state))" 
-    using from_aux_invar'(6) knowledge(5) by auto
+    using from_underlying_invars'(6) knowledge(5) by auto
   hence e_in_pre:"e \<in> set qq \<Longrightarrow> e \<in> {e |e. e \<in> EEE \<and> flow_network_spec.oedge e \<in> to_set (actives state)} 
                    \<union> (abstract_conv_map (conv_to_rdg state)) ` (digraph_abs (\<FF> state))" for e
     using qq_prop(4)  by auto
@@ -3513,7 +3513,7 @@ proof-
       cost_flow_network.erev_\<EE> cost_flow_network.oedge_and_reversed qq_prop(4)
     by auto
   hence e_es:"e \<in> set (map cost_flow_network.erev (rev qq)) \<Longrightarrow> oedge e \<in> \<E>" for e
-    using algo.from_aux_invar'(2) cost_flow_network.o_edge_res knowledge(5)
+    using algo.from_underlying_invars'(2) cost_flow_network.o_edge_res knowledge(5)
     by auto
   have e_in_pp_weight:"e \<in> set (map cost_flow_network.erev (rev qq)) \<Longrightarrow>
          prod.snd (get_edge_and_costs_backward (a_not_blocked state) (a_current_flow state) (fstv e)
@@ -3529,7 +3529,7 @@ proof-
     hence oedgeE:"oedge e \<in> \<E>"
       using calculation by blast
     hence not_blocked:"a_not_blocked state (oedge e)"
-      using oedgeF  from_aux_invar'(20)[OF knowledge(5)] by auto
+      using oedgeF  from_underlying_invars'(20)[OF knowledge(5)] by auto
     moreover have flowpos:"\<exists> d. (cost_flow_network.erev e) = B d\<Longrightarrow> a_current_flow state (oedge (cost_flow_network.erev e)) > 0" 
       using cost_flow_network.augpath_rcap_pos_strict'[OF  qq_prop(1) 11] knowledge(11)
       by(induction rule: flow_network_spec.oedge.cases[OF  , of e]) auto  
@@ -3674,7 +3674,7 @@ proof-
     have "a_not_blocked state e"
       using map_in_set same_edges "1"(1) PP_def Pbf_props(3) list.set_map by blast
     thus ?case
-      using  from_aux_invar'(20)[of state, OF knowledge(5)] 1 by simp
+      using  from_underlying_invars'(20)[of state, OF knowledge(5)] 1 by simp
   qed
   have distinct_Pbf: "distinct Pbf"
     using no_neg_cycle_in_bf knowledge(2,3,4) vs_is_V pred_of_s_not_None 
@@ -3688,7 +3688,7 @@ proof-
   hence qq_rev_in_E:"set ( map flow_network_spec.oedge qq) \<subseteq> \<E>" 
     by(auto simp add: es_sym image_subset_iff cost_flow_network.oedge_and_reversed)
   have not_blocked_qq: "\<And> e . e \<in> set qq \<Longrightarrow> a_not_blocked state (oedge e)" 
-    using  from_aux_invar'(20)[OF knowledge(5)]  qq_prop(4) by(auto simp add: \<F>_def)
+    using  from_underlying_invars'(20)[OF knowledge(5)]  qq_prop(4) by(auto simp add: \<F>_def)
   have rcap_qq: "\<And> e . e \<in> set qq \<Longrightarrow> cost_flow_network.rcap (a_current_flow state) e > 0" 
     using  cost_flow_network.augpath_rcap_pos_strict'[OF  qq_prop(1) ] knowledge by simp
   have awalk': "unconstrained_awalk (map cost_flow_network.to_vertex_pair (map cost_flow_network.erev (rev qq)))"
@@ -3705,7 +3705,7 @@ bf_weight_leq_res_costs:"weight_backward (a_not_blocked state) (a_current_flow s
   have oedge_of_EE: "flow_network_spec.oedge ` EEE = \<E>" 
     by (meson cost_flow_network.oedge_on_\<EE>)
   have " flow_network_spec.oedge ` set PP \<subseteq> \<E>"
-    using from_aux_invar'(1,3)[OF knowledge(5)] oedge_of_p_allowed by blast
+    using from_underlying_invars'(1,3)[OF knowledge(5)] oedge_of_p_allowed by blast
   hence P_in_E: "set PP \<subseteq> EEE"
     by (meson image_subset_iff cost_flow_network.o_edge_res subsetI) 
   have "(foldr (\<lambda>e. (+) (\<cc> e)) PP 0) \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0"
@@ -3734,7 +3734,7 @@ lemma get_target_aux_nexistence: "(\<not> (\<exists>s\<in> set xs. - (1 - \<epsi
 
 lemma impl_a_None_aux:
 " \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
-    aux_invar state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
+    underlying_invars state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
    Some s = get_source state;
    invar_gamma state\<rbrakk>
     \<Longrightarrow> \<not> (\<exists> t \<in> VV. abstract_bal_map b t < - \<epsilon> * \<gamma> \<and> resreach (abstract_flow_map f) s t) 
@@ -3748,7 +3748,7 @@ proof(goal_cases)
                                    vs"
   have not_blocked_in_E: "a_not_blocked state e \<Longrightarrow> e \<in> \<E>" for e
     using knowledge(4)
-    by(auto elim!: algo.aux_invarE algo.invar_aux22E algo.invar_aux1E algo.invar_aux3E)
+    by(auto elim!: algo.underlying_invarsE algo.inv_unbl_iff_forest_activeE algo.inv_actives_in_EE algo.inv_forest_in_EE)
  have bellman_ford:"bellman_ford connection_empty connection_lookup connection_invar connection_delete
      es vs (\<lambda> u v. prod.snd (get_edge_and_costs_forward (a_not_blocked state) (a_current_flow state) u v)) connection_update"
     by (simp add: bellman_ford)
@@ -3854,7 +3854,7 @@ proof(goal_cases)
     have e_in_qq_not_blocked: "e \<in> set qq \<Longrightarrow> a_not_blocked state (flow_network_spec.oedge e)" for e   
       using qq_props(4) 
       by(induction e rule: flow_network_spec.oedge.induct)
-        (fastforce simp add: spec[OF algo.from_aux_invar'(20)[OF 1(4)]] flow_network_spec.oedge.simps(1) 
+        (fastforce simp add: spec[OF algo.from_underlying_invars'(20)[OF 1(4)]] flow_network_spec.oedge.simps(1) 
                    image_iff \<F>_def dest!: set_mp)+
     have e_in_qq_rcap: "e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap (abstract_flow_map f) e" for e
       using qq_props(1)  linorder_class.Min_gr_iff 
@@ -3924,7 +3924,7 @@ lemma  impl_a_None:
 
 lemma impl_b_None_aux:
 " \<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
-   aux_invar state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
+   underlying_invars state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
    Some t = get_target state; invar_gamma state\<rbrakk>
     \<Longrightarrow> \<not> (\<exists> s \<in> VV. abstract_bal_map b s > \<epsilon> * \<gamma> \<and> resreach (abstract_flow_map f) s t) 
         \<longleftrightarrow> get_source_target_path_b state t = None"
@@ -3937,7 +3937,7 @@ proof(goal_cases)
                                    vs"
   have not_blocked_in_E: "a_not_blocked state e \<Longrightarrow> e \<in> \<E>" for e
     using knowledge(4)
-    by(auto elim!: algo.aux_invarE algo.invar_aux22E algo.invar_aux1E algo.invar_aux3E)
+    by(auto elim!: algo.underlying_invarsE algo.inv_unbl_iff_forest_activeE algo.inv_actives_in_EE algo.inv_forest_in_EE)
   have bellman_ford:"bellman_ford connection_empty connection_lookup connection_invar connection_delete
      es vs (\<lambda> u v. prod.snd (get_edge_and_costs_backward (a_not_blocked state) (a_current_flow state) u v)) connection_update"
     by (simp add: bellman_ford_backward)
@@ -4041,7 +4041,7 @@ proof(goal_cases)
     have e_in_qq_not_blocked: "e \<in> set qq \<Longrightarrow> a_not_blocked state (flow_network_spec.oedge e)" for e   
       using qq_props(4) 
       by(induction e rule: flow_network_spec.oedge.induct)
-        (fastforce simp add: spec[OF algo.from_aux_invar'(20)[OF 1(4)]] flow_network_spec.oedge.simps(1) 
+        (fastforce simp add: spec[OF algo.from_underlying_invars'(20)[OF 1(4)]] flow_network_spec.oedge.simps(1) 
                    image_iff \<F>_def dest!: set_mp)+
     have e_in_qq_rcap: "e \<in> set qq \<Longrightarrow> 0 < cost_flow_network.rcap (abstract_flow_map f) e" for e
       using qq_props(1)  linorder_class.Min_gr_iff 
@@ -4430,7 +4430,7 @@ function_generation_proof realising_edges_empty realising_edges_update realising
   using  \<E>_impl_basic at_least_2_verts gt_zero multigraph
   using  rep_comp_iterator flow_iterator not_blocked_iterator  
   by(auto intro!:  function_generation_proof_axioms function_generation_proof.intro 
-        simp add: flow_map.Map_axioms Map_not_blocked.Map_axioms Set3 \<E>_def Adj_Map_Specs2
+        simp add: flow_map.Map_axioms Map_not_blocked.Map_axioms Set_with_predicate \<E>_def Adj_Map_Specs2
                   Map_rep_comp Map_conv   bal_invar_b Vs_is_bal_dom 
                   Map_realising_edges function_generation.intro bal_map.Map_axioms) 
 

@@ -167,4 +167,7 @@ lemma vs_are_gen: "dVs (set G) = set (map prod.fst G) \<union> set (map prod.snd
 lemma dVs_swap: "dVs (prod.swap ` E) = dVs E"
   by(auto simp add: dVs_def)
 
+lemma insert_edge_dVs: "dVs (insert (x, y) E) = {x, y} \<union> dVs E"
+  by(auto simp add: dVs_def)
+
 end

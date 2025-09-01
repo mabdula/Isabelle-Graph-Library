@@ -212,6 +212,10 @@ lemma graph_invar_subset[intro]:
   using dblton_graph_subset
   by (metis dblton_graph_finite_Vs finite_subset)
 
+lemma  undirected_of_directed_of_undirected_idem: 
+  "graph_invar G \<Longrightarrow> {{v1, v2} |v1 v2. (v1,v2) \<in> {(u, v). {u, v} \<in> G}} = G" 
+  by fast
+
 locale graph_abs =
   graph_defs +
   assumes graph: "graph_invar G"
@@ -311,6 +315,10 @@ next
   thus ?case using \<open>p = u#v#ps\<close>
     by simp
 qed
+
+lemma edge_not_in_edges_in_path:
+  "a \<notin> set p \<or> b \<notin> set p \<Longrightarrow> {a, b} \<notin> set (edges_of_path p)"
+  by(induction p rule: edges_of_path.induct) auto
 
 lemma edges_of_path_length: "length (edges_of_path p) = length p - 1"
   by (induction p rule: edges_of_path.induct, auto)
@@ -601,6 +609,10 @@ lemma walk_reflexive:
   "w \<in> Vs G \<Longrightarrow> walk_betw G w [w] w"
   by (simp add: nonempty_path_walk_between)
 
+lemma walk_reflexive_cong: 
+  "\<lbrakk>w \<in> Vs E;  a = w;  b = w\<rbrakk> \<Longrightarrow>  walk_betw E a [w] b"
+  using walk_reflexive by simp
+
 lemma walk_symmetric:
   "walk_betw G u p v \<Longrightarrow> walk_betw G v (rev p) u"
   by (auto simp add: hd_rev last_rev walk_betw_def intro: rev_path_is_path)
@@ -646,6 +658,10 @@ lemma edges_are_walks:
   "{v, w} \<in> G \<Longrightarrow> walk_betw G v [v, w] w"
   using edges_are_Vs insert_commute
   by (auto 4 3 intro!: nonempty_path_walk_between)
+
+lemma edges_are_walks_cong:
+  "\<lbrakk>{v, w} \<in> E;  a = v; w = b\<rbrakk> \<Longrightarrow> walk_betw E a [v, w] b"
+  using edges_are_walks by fast
 
 lemma walk_subset:
   "\<lbrakk>walk_betw G u p v; G \<subseteq> G'\<rbrakk> \<Longrightarrow> walk_betw G' u p v"
@@ -740,6 +756,116 @@ lemma reachable_refl:
 lemma not_reachable_empt: "reachable {} u v \<Longrightarrow> False"
   using subset_path_Vs[of empty _, simplified Vs_def Union_empty] 
   by (auto simp add: reachable_def walk_betw_def)
+
+lemma extract_first_x:
+  "\<lbrakk>x \<in> set xs; P x\<rbrakk> \<Longrightarrow> \<exists> y ys zs. xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set ys \<and>  P z)"
+  apply(induction xs, simp)
+  subgoal for a xs
+    apply(cases "P a") 
+    apply fastforce
+    by (metis append_Cons set_ConsD)
+  done
+
+lemma reachable_after_insert:
+  assumes "\<not> reachable E u v" "reachable (insert {a, b} E) u v"
+          "\<not> (reachable E u a)" "u \<noteq> v"
+   shows "reachable E u b \<or> u = a \<or> u = b"
+proof-
+  note asm = assms
+  then obtain p where p_prop:"walk_betw (insert {a, b} E) u p v" 
+    using asm  unfolding reachable_def by auto
+  hence "\<not> walk_betw E u p v" 
+    by (meson \<open>\<not> reachable E u v\<close> reachableI)
+  have "set (edges_of_path p) \<subseteq> (insert {a, b} E)"
+    using path_edges_subset p_prop unfolding walk_betw_def by auto
+  have length_p: "length p \<ge> 2"
+  proof(rule ccontr)
+    assume " \<not> 2 \<le> length p"
+    hence "length p \<le> 1" by simp
+    hence "length p = 1"
+      using   p_prop  unfolding walk_betw_def 
+      by (cases p) auto
+    hence "hd p = last p" 
+      by (cases p) auto
+    thus False
+      using p_prop asm unfolding walk_betw_def by simp
+  qed
+  have 12:"path (set (edges_of_path p)) p"
+    by(auto intro: path_edges_of_path_refl simp add: length_p)
+  have "\<not> set (edges_of_path p) \<subseteq> E"
+  proof
+    assume "set (edges_of_path p) \<subseteq> E"
+    hence "path E p" 
+      using "12" path_subset by blast
+    hence "reachable E u v"
+      unfolding reachable_def walk_betw_def 
+      by (metis p_prop walk_betw_def)
+    thus False using asm by simp
+  qed
+  hence "{a, b} \<in> set (edges_of_path p)" 
+    using \<open>set (edges_of_path p) \<subseteq> insert {a, b} E\<close> by blast
+  hence "a \<in> set p" "b \<in> set p"
+    by (meson insertCI v_in_edge_in_path_gen)+
+  then obtain p' x q where p'xq:"p = p'@[x]@q" "x = a \<or> x = b" "a \<notin> set p'" "b \<notin> set p'"
+    using extract_first_x[of a p "\<lambda> x. x = a \<or> x = b"]
+    by blast
+  have 13:"{a, b} \<notin> set (edges_of_path (p'@[x]))" 
+    apply(cases "a=b")
+    using p'xq  edges_of_path.simps(2)[of x] edges_of_path.simps(3)[of "last p'" x Nil]
+             edges_of_path_append_3[of p' "[x]"]   v_in_edge_in_path[of a b "p'@[x]"]
+             v_in_edge_in_path[of a b "p'"] edge_not_in_edges_in_path[of a "p'@[x]" b] 
+    by(cases p', force, auto)
+  show "reachable E u b \<or> u = a\<or> u = b"
+  proof(cases "x = b")
+    case True
+    have "path (insert {a,b} E) (p' @ [x])" 
+      using p'xq(1) p_prop walk_between_nonempty_pathD(1)[of "insert {a,b} E" u "p'@[x]" x]
+             walk_pref[of "insert {a,b} E" u p' x q v] by simp
+    show ?thesis 
+    proof(cases "u = b")
+      case False
+      hence p'_not_empt:"p' \<noteq> []" 
+        using True  p'xq(1) p_prop  walk_betw_def[of "insert {a,b} E" u p v] by force
+    have "path E (p' @ [x])" 
+      apply(rule path_subset, rule path_edges_of_path_refl)
+      using  p'_not_empt  "13" \<open>path (insert {a, b} E) (p' @ [x])\<close> path_edges_subset 
+      by (auto  simp add: Suc_leI)
+    hence "walk_betw E u (p'@[x]) b"
+      unfolding walk_betw_def
+      using True p'_not_empt p'xq(1) p_prop
+                walk_between_nonempty_pathD(3)[of "insert {a,b} E" u p v] by simp
+    then show ?thesis unfolding reachable_def by auto
+  qed simp
+next
+  case False
+  note false = this
+  show ?thesis
+  proof(cases "x = a")
+    case True
+    have "path (insert {a,b} E) (p' @ [x])"
+      using p'xq(1) p_prop walk_between_nonempty_pathD(1)[of "insert {a,b} E" u "p'@[x]" x]
+            walk_pref[of "insert {a,b} E" u p' x q v] by simp
+    show ?thesis 
+    proof(cases "u = a")
+      case False
+      hence p'_not_empt:"p' \<noteq> []" 
+        using True  p'xq(1) p_prop  walk_betw_def[of "insert {a,b} E" u p v] by force
+     have "path E (p' @ [x])" 
+      apply(rule path_subset, rule path_edges_of_path_refl)
+      using  p'_not_empt  "13" \<open>path (insert {a, b} E) (p' @ [x])\<close> path_edges_subset 
+      by (auto  simp add: Suc_leI)
+    hence "walk_betw E u (p'@[x]) a"
+      unfolding walk_betw_def 
+      using True  p'_not_empt p'xq(1) p_prop 
+             walk_between_nonempty_pathD(3)[of "insert {a,b} E" u p v] by simp
+    then show ?thesis using asm unfolding reachable_def by auto
+  qed simp
+next 
+  case False
+  then show ?thesis using false p'xq by simp
+qed
+qed
+qed
 
 definition connected_component where
   "connected_component G v = {v'. v' = v \<or> reachable G v v'}"
@@ -3173,6 +3299,11 @@ lemma new_edge_in_decycle: "\<not> decycle T u C \<Longrightarrow> decycle (inse
   by(fastforce simp add: decycle_def)
 
 subsection \<open>More on Components\<close>
+
+lemma connected_component_empty_edges_is_self:
+  "connected_component {} v = {v}"
+  using not_reachable_empt[of v]
+  by(auto simp add: connected_component_def)
 
 lemma connected_component_non_empt: "connected_component A x \<noteq> {}"
   by(auto simp add: connected_component_def)

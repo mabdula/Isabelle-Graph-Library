@@ -612,8 +612,8 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
     by (auto elim: is_min_pathE is_s_t_pathE)
 
   have Rcap_pos: "(Rcap f (set P)) > L"
-    using stp_prop get_source_target_path_axioms[of f ] resreach_f_s_t[of ]
-    by metis
+    using stp_prop get_source_target_path_axioms(7)[of f b s t P ] resreach_f_s_t 
+    by auto
 
   have gamma_pos: "\<gamma> > L"
     using Rcap_pos t_is_neg b_s_pos  P_augpath augpath_rcap 
@@ -1177,8 +1177,8 @@ lemma Scaling_ret_1_condI:
 lemma Scaling_ret_1_condE: "Scaling_ret_1_cond k state \<Longrightarrow>
                           (\<And> state'. state' = ssp (2^k-1) state \<Longrightarrow> return state' = success \<Longrightarrow> P)
                             \<Longrightarrow> P"
-  unfolding Scaling_ret_1_cond_def Let_def 
-  by (metis return.exhaust return.simps(8) return.simps(9))
+  by(cases "return (ssp (2 ^ k - 1) state)")
+    (auto simp add: Scaling_ret_1_cond_def Let_def) 
   
 text \<open>Failure.\<close>
 
@@ -1195,11 +1195,12 @@ lemma Scaling_ret_2_condI:
     "state' = ssp (2^k-1) state \<Longrightarrow> return state' = failure \<Longrightarrow> Scaling_ret_2_cond k state"
   unfolding Scaling_ret_2_cond_def by simp
 
-lemma Scaling_ret_2_condE:"Scaling_ret_2_cond k state \<Longrightarrow>
-                           (\<And> state'. state' = ssp (2^k-1) state \<Longrightarrow> return state' = failure \<Longrightarrow> P)
-                           \<Longrightarrow> P"
-  unfolding Scaling_ret_2_cond_def Let_def 
-  by (metis return.exhaust return.simps(7) return.simps(9))
+lemma Scaling_ret_2_condE:
+ "\<lbrakk>Scaling_ret_2_cond k state;
+      (\<And> state'. \<lbrakk>state' = ssp (2^k-1) state; return state' = failure\<rbrakk> \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
+  by(cases "return (ssp (2 ^ k - 1) state)")
+    (auto simp add: Scaling_ret_2_cond_def Let_def) 
 
 definition "Scaling_ret_3_cond k state =
              (let state' = ssp (2^k-1) state in 

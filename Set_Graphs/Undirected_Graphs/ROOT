@@ -11,6 +11,7 @@ session "Undirected_Set_Graphs" = "HOL-Eisbach" +
     "Undirected_Set_Graphs"
     "Pair_Graph_Berge_Adaptor"
     Pair_Graph_U_Specs
+    Directed_Undirected
 
   document_files
     "root.tex"

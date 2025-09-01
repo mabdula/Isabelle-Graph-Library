@@ -1,7 +1,7 @@
 section \<open>Formalisation of Forest Maintenance\<close>
 
 theory Maintain_Forest
-  imports Intermediate_Summary
+  imports Orlins_Preparation
 begin
 subsection \<open>Setup\<close>
 
@@ -334,18 +334,18 @@ text \<open>The basic invariants are interdependent\<close>
 subsection \<open>Auxiliary Invariant for One Step\<close>
 
 lemma invar_aux_pres_one_step:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "maintain_forest_call_cond state"
           "implementation_invar state"
-  shows   "aux_invar (maintain_forest_upd state)"
+  shows   "underlying_invars (maintain_forest_upd state)"
 proof-
-  have all_invars: "invar_aux1 state" "invar_aux2 state" "invar_aux3 state" "invar_aux4 state"
-                   "invar_aux6 state" "invar_aux8 state" "invar_aux7 state" "invar_aux9 state "
-                   "invar_aux5 state" "invar_aux10 state" "invar_aux11 state" "invar_aux12 state"
-                   "invar_aux13 state" "invar_aux16 state" "invar_aux17 state" "invar_aux18 state"
-                    "invar_aux20 state" "invar_aux14 state"
-                   "invar_aux22 state"
-    using assms by(auto simp add: aux_invar_def)
+  have all_invars: "inv_actives_in_E state" "inv_digraph_abs_F_in_E state" "inv_forest_in_E state" "inv_forest_actives_disjoint state"
+                   "inv_conversion_consistent state" "inv_rep_reachable state" "inv_reachable_same_rep state" "inv_reps_in_V state "
+                   "inv_finite_forest state" "inv_components_in_V state" "inv_active_different_comps state" "inv_pos_bal_rep state"
+                   "inv_inactive_same_component state" "inv_comp_card_correct state" "inv_set_invar_actives state" "inv_forest_good_graph state"
+                    "inv_digraph_abs_\<FF>_sym state" "inv_dbltn_graph_forest state"
+                   "inv_unbl_iff_forest_active state"
+    using assms by(auto simp add: underlying_invars_def)
 
   define  \<FF> where  "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
@@ -403,10 +403,10 @@ proof-
   note 10= state'_is
 
   have set_invar_E'[simp]: "set_invar E'"
-    using E'_def all_invars(15) invar_aux17_def by blast
+    using E'_def all_invars(15) inv_set_invar_actives_def by blast
 
   have E'_substE:"to_set E' \<subseteq> \<E>"
-    using all_invars(1) by(simp add: E'_def invar_aux1_def)
+    using all_invars(1) by(simp add: E'_def inv_actives_in_E_def)
   have e_prop: "e \<in> to_set E'" "abstract_flow_map f e > 8 * real N *\<gamma>"
                 "get_from_set (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = Some e"
     apply(all \<open>rule maintain_forest_call_condE[OF assms(2)]\<close>)
@@ -425,7 +425,7 @@ proof-
     by simp
   have x_not_y: "fst e \<noteq> snd e" 
     using all_invars(11)  e_in_E' 
-    by(force simp add: invar_aux11_def E'_def )
+    by(force simp add: inv_active_different_comps_def E'_def )
   have rep_comp_invar_r_card: "rep_comp_invar r_card"
     using assms(3) r_card_def by blast
   have not_blocked_invar_nb: "not_blocked_invar nb"
@@ -433,7 +433,7 @@ proof-
   have in_V_rep_dom: "a \<in> \<V> \<Longrightarrow> a \<in> rep_comp_domain r_card" for a
     using assms(3) by(auto simp add: r_card_def)
   have good_graphF: "good_graph_invar \<FF>"
-    using all_invars(16) invar_aux18_def local.\<FF>_def by force
+    using all_invars(16) inv_forest_good_graph_def local.\<FF>_def by force
   have F'_digraph_abs_is:"[\<FF>']\<^sub>g = [\<FF>]\<^sub>g \<union> {(fst e, snd e), (snd e, fst e)}"
     using good_graphF by (auto simp add: \<FF>'_def good_graph_invar_def)
   hence F'_to_graph_is:"to_graph \<FF>' = to_graph \<FF> \<union> {{fst e, snd e}}"
@@ -444,7 +444,7 @@ proof-
     by(subst to_rdg'_def  add_direction_result)+
       (auto simp add: add_direction_result to_rdg_def)
   have forest_edges_neq_e:"{a, b} \<in> to_graph \<FF> \<Longrightarrow> {a, b} \<noteq> {x, y}" for a b
-    using  assms(1) e_in_E' from_aux_invar'(11)  mk_disjoint_insert
+    using  assms(1) e_in_E' from_underlying_invars'(11)  mk_disjoint_insert
         new_edge_disjoint_components[OF refl refl refl]
     by(fastforce simp add: x_def y_def local.\<FF>_def E'_def)
   hence dir_forest_edges_neq_e:"(a, b) \<in> digraph_abs \<FF> \<Longrightarrow> (a, b) \<noteq> (x, y)" 
@@ -464,17 +464,17 @@ proof-
     using 114 set_filter(1)[OF set_invar_E']
     by(auto simp add: E''_def)
   have reachable_in_forest_fst_in_V:"reachable (to_graph \<FF>) a b \<Longrightarrow> a \<in> \<V>" for a b 
-    using assms(1) from_aux_invar'(15) local.\<FF>_def reachable_to_Vs(1) by blast
+    using assms(1) from_underlying_invars'(15) local.\<FF>_def reachable_to_Vs(1) by blast
   have reachable_in_forest_snd_in_V:"reachable (to_graph \<FF>) a b \<Longrightarrow> b \<in> \<V>" for a b 
     using reachable_in_forest_fst_in_V reachable_sym by fast
   have new_forest_Vs_in_V: "dVs (digraph_abs (Algo_state.\<FF> state')) \<subseteq> \<V>"
-    by (auto intro:  invar_aux15E aux_invarE[OF assms(1)] 
+    by (auto intro:  inv_forest_in_VE underlying_invarsE[OF assms(1)] 
              simp add: state'_def F'_digraph_abs_is insert_edge_dVs dVs_Vs_same \<FF>_def)
   have 1110:"reachable (to_graph \<FF>) v x \<Longrightarrow> reachable (to_graph \<FF>') v x" for v x
       by (auto simp add: reachable_subset subset_insertI  \<FF>'_def
                             insert_abstraction'[OF good_graphF])
     have x'_y'_in_V:"x' \<in> \<V>"  "y' \<in> \<V>" 
-      using "114"  from_aux_invar'(9)[OF assms(1)] fste_V snde_V
+      using "114"  from_underlying_invars'(9)[OF assms(1)] fste_V snde_V
       by(auto simp add: r_card_def doubleton_eq_iff)
     have new_balance_is: "a_balance state' = (\<lambda>v. if v = x' then 0
           else if v = y' then abstract_bal_map b y' + abstract_bal_map b x'
@@ -486,10 +486,10 @@ proof-
       using dir_forest_edges_neq_e(1,2) 
       by (auto simp add: to_rdg'_is F'_digraph_abs_is x_def y_def)
 
-  have invar_aux7_state':"invar_aux7 state'"
+  have inv_reachable_same_rep_state':"inv_reachable_same_rep state'"
   proof-
     show ?thesis 
-    proof(rule invar_aux7I)
+    proof(rule inv_reachable_same_repI)
       fix u v
       assume asm: "reachable (to_graph (Algo_state.\<FF> state')) u v"
       hence asm': "reachable (to_graph (Algo_state.\<FF> state')) v u" 
@@ -506,7 +506,7 @@ proof-
         case True
         note true=this
         hence same_r:"abstract_rep_map r_card u =  abstract_rep_map r_card v"  
-          using all_invars(7) by(simp add: r_card_def invar_aux7_def)
+          using all_invars(7) by(simp add: r_card_def inv_reachable_same_rep_def)
          have reps_dom:"u \<in> rep_comp_domain (rep_comp_card state)"
                       "v \<in> rep_comp_domain (rep_comp_card state)"
           apply(all \<open>rule implementation_invar_partialE(7)[OF assms(3)]\<close>)
@@ -539,16 +539,16 @@ proof-
                                    \<or> abstract_rep_map r_card xx = xx"
                                 "reachable (to_graph \<FF>') yy (abstract_rep_map r_card yy) 
                                    \<or> abstract_rep_map r_card yy = yy"
-          using "1110"  invar_aux8_def[of state]  all_invars(6) local.\<FF>_def r_card_def 
+          using "1110"  inv_rep_reachable_def[of state]  all_invars(6) local.\<FF>_def r_card_def 
                 \<FF>_def by force+
         have rachbale_with_reps:"reachable (to_graph \<FF>) xx (abstract_rep_map r_card xx) \<or> abstract_rep_map r_card xx = xx"
                                 "reachable (to_graph \<FF>) yy (abstract_rep_map r_card yy) \<or> abstract_rep_map r_card yy = yy"
-          using "1110"  invar_aux8_def[of state]  all_invars(6) local.\<FF>_def r_card_def 
+          using "1110"  inv_rep_reachable_def[of state]  all_invars(6) local.\<FF>_def r_card_def 
                  \<FF>_def
           by force+
         have rachbale_with_reps:"reachable (to_graph \<FF>) xx (abstract_rep_map r_card xx) \<or> abstract_rep_map r_card xx = xx"
                                 "reachable (to_graph \<FF>) yy (abstract_rep_map r_card yy) \<or> abstract_rep_map r_card yy = yy"
-          using "1110"  invar_aux8_def[of state]  all_invars(6) local.\<FF>_def r_card_def \<FF>_def
+          using "1110"  inv_rep_reachable_def[of state]  all_invars(6) local.\<FF>_def r_card_def \<FF>_def
           by force+
         have reps_dom:"u \<in> rep_comp_domain (rep_comp_card state)"
                       "v \<in> rep_comp_domain (rep_comp_card state)"
@@ -560,8 +560,8 @@ proof-
         show ?thesis
           apply(all \<open>rule implementation_invar_partialE(8)[OF assms(3)]\<close>)
           using reps_dom  assms(3)
-                invar_aux7D[OF all_invars(7), of u xx] invar_aux7D[OF all_invars(7), of u yy]
-                invar_aux7D[OF all_invars(7), of v xx] invar_aux7D[OF all_invars(7), of v yy]
+                inv_reachable_same_repD[OF all_invars(7), of u xx] inv_reachable_same_repD[OF all_invars(7), of u yy]
+                inv_reachable_same_repD[OF all_invars(7), of v xx] inv_reachable_same_repD[OF all_invars(7), of v yy]
                 reach_rpop reach_rpop'
           by (auto  simp add:state'_def r_card'_def abstract_rep_map_rep_comp_upd_all local.\<FF>_def r_card_def x'_def y'_def)     
       qed 
@@ -572,12 +572,12 @@ qed
     comps \<V> (to_graph \<FF>) - {connected_component (to_graph \<FF>) (fst e), connected_component (to_graph \<FF>) (snd e)} \<union>
     {connected_component (to_graph \<FF>) (fst e) \<union> connected_component (to_graph \<FF>) (snd e)}"
        using all_invars(11) e_prop  fste_V snde_V 
-      by(intro new_component_insert_edge)(auto simp add: invar_aux11_def \<FF>_def  E'_def )
+      by(intro new_component_insert_edge)(auto simp add: inv_active_different_comps_def \<FF>_def  E'_def )
     have cards_same_cond: "card (connected_component (to_graph \<FF>) x) 
                           \<le> card (connected_component (to_graph \<FF>) y) \<longleftrightarrow>
                           abstract_comp_map r_card x \<le> abstract_comp_map r_card y"
       using assms(1) 
-      by (simp add: r_card_def \<FF>_def aux_invar_def invar_aux16_def x_def y_def)
+      by (simp add: r_card_def \<FF>_def underlying_invars_def inv_comp_card_correct_def x_def y_def)
 
     have same_reachability: "abstract_rep_map r_card v = x' \<or> abstract_rep_map r_card v = y'
                                 \<longleftrightarrow> reachable (to_graph \<FF>') y' v" for v
@@ -586,13 +586,13 @@ qed
       proof(goal_cases)
         case 1
         hence reachable_to_reps:"reachable (to_graph \<FF>) v x' \<or> v = x' \<or> reachable (to_graph \<FF>) v y' \<or> v = y'"
-          using all_invars(6) by(auto elim: invar_aux8E simp add: local.\<FF>_def r_card_def)
+          using all_invars(6) by(auto elim: inv_rep_reachableE simp add: local.\<FF>_def r_card_def)
         have "reachable (to_graph \<FF>) v x \<or> v = x \<or> reachable (to_graph \<FF>) v y \<or> v = y"
           using reachable_to_reps 
           unfolding x'_def xx_def xy_def y'_def yy_def r_card_def local.\<FF>_def
           apply(cases "cardx \<le> cardy") 
           apply auto
-          using invar_aux8D[OF all_invars(6)]  reachable_trans[OF _ iffD2[OF reachable_sym]] 
+          using inv_rep_reachableD[OF all_invars(6)]  reachable_trans[OF _ iffD2[OF reachable_sym]] 
                 reachable_sym       
           by fastforce+
         hence "reachable (to_graph \<FF>') v x \<or> v = x "
@@ -606,7 +606,7 @@ qed
           using reachable_refl  \<open>reachable  (to_graph \<FF>') v x \<or> v = x\<close> reachable_in_Vs(1)
           by (force simp add:  \<FF>'_def x_def y_def )
         ultimately have "reachable (to_graph \<FF>') v y'" (*REMOVE METIS, if possible*)
-          by (metis "1110" reachable_trans all_invars(6) invar_aux8D local.\<FF>_def
+          by (metis "1110" reachable_trans all_invars(6) inv_rep_reachableD local.\<FF>_def
               prod.sel(2) r_card_def xy_def y'_def yy_def)
          thus ?thesis
           by (simp add: reachable_sym)
@@ -621,7 +621,7 @@ qed
           by(force simp add: insert_abstraction'[OF good_graphF]   \<FF>'_def) 
         moreover have "reachable (to_graph \<FF>') (snd e) v \<or> reachable (to_graph \<FF>') (fst e) v"
           using 1 
-          by (metis 1110 Undirected_Set_Graphs.reachable_trans all_invars(6) invar_aux8E local.\<FF>_def
+          by (metis 1110 Undirected_Set_Graphs.reachable_trans all_invars(6) inv_rep_reachableE local.\<FF>_def
               r_card_def snd_conv x_def xy_def y'_def y_def yy_def)
         ultimately have "reachable (to_graph \<FF>) (snd e) v \<or> 
                 reachable (to_graph \<FF>) (fst e) v \<or> fst e = v \<or> snd e = v"
@@ -630,13 +630,13 @@ qed
           unfolding \<FF>'_def 
           by metis
         hence "reachable (to_graph \<FF>) x' v \<or> reachable (to_graph \<FF>) y' v \<or> y' = v \<or> x' = v"
-          by (smt (verit, best) Undirected_Set_Graphs.reachable_trans all_invars(6) fst_conv invar_aux8E
+          by (smt (verit, best) Undirected_Set_Graphs.reachable_trans all_invars(6) fst_conv inv_rep_reachableE
               local.\<FF>_def r_card_def reachable_sym snd_conv x'_def x_def xx_def xy_def y'_def y_def
               yy_def)
          then show ?case 
-           using invar_aux7D[OF all_invars(7)]
-                 invar_aux8D[OF all_invars(6), of xx]
-                 invar_aux8D[OF all_invars(6), of yy]
+           using inv_reachable_same_repD[OF all_invars(7)]
+                 inv_rep_reachableD[OF all_invars(6), of xx]
+                 inv_rep_reachableD[OF all_invars(6), of yy]
            unfolding  local.\<FF>_def r_card_def x'_def y'_def 
            by metis
       qed
@@ -646,30 +646,30 @@ qed
     proof(rule ccontr, goal_cases)
       case 1
       hence "reachable (to_graph \<FF>) x y \<or> x = y"
-        using  invar_aux8D[OF all_invars(6)] 
+        using  inv_rep_reachableD[OF all_invars(6)] 
         using reachable_trans fst_conv reachable_sym
             snd_conv
         unfolding x'_def y'_def  xx_def yy_def xy_def r_card_def local.\<FF>_def 
         by (smt (verit, best))
       moreover have "connected_component (to_graph \<FF>) x \<noteq> connected_component (to_graph \<FF>) y"
-        using all_invars(11)[simplified invar_aux11_def ] E'_def e_in_E'
+        using all_invars(11)[simplified inv_active_different_comps_def ] E'_def e_in_E'
         by(fastforce simp add: x_def y_def  E'_def local.\<FF>_def)
       ultimately show False 
         using connected_components_member_eq in_connected_componentI by fast
     qed 
       have e_not_in_F: "{x, y} \<notin> (to_graph \<FF>)" 
-        using  e_in_E' from_aux_invar'(11)[OF assms(1)] insert_absorb
+        using  e_in_E' from_underlying_invars'(11)[OF assms(1)] insert_absorb
             new_edge_disjoint_components[OF refl refl refl, of x y "to_graph \<FF>"]
         by(fastforce simp add: x_def y_def E'_def local.\<FF>_def)
 
-  have invar8: "invar_aux8 state'"
+  have invar8: "inv_rep_reachable state'"
   proof-
     have 1111:"reachable (to_graph \<FF>') v (abstract_rep_map r_card' v) 
                  \<or> v = abstract_rep_map r_card' v"  for v
     proof(cases "abstract_rep_map r_card' v = abstract_rep_map r_card v")
       case True
       then show ?thesis 
-        using "1110" all_invars(6) invar_aux8D
+        using "1110" all_invars(6) inv_rep_reachableD
         by(auto simp add: local.\<FF>_def r_card_def)
     next
       case False
@@ -685,7 +685,7 @@ qed
         by (simp add: reachable_sym)
     qed
     then show ?thesis 
-      by(simp add: invar_aux8_def state'_def)
+      by(simp add: inv_rep_reachable_def state'_def)
   qed
 
    have y'_y'_reach:"reachable (to_graph \<FF>') y' y'" 
@@ -701,39 +701,39 @@ qed
     case False
      show ?thesis
         apply(rule reachable_refl[of y' "to_graph \<FF>'"], rule reachable_in_Vs(2)[of "to_graph \<FF>'" yy y'])
-        apply(rule reachable_subset[of "to_graph \<FF>" yy y' "to_graph \<FF>'"], rule invar_aux8E[OF all_invars(6)])
+        apply(rule reachable_subset[of "to_graph \<FF>" yy y' "to_graph \<FF>'"], rule inv_rep_reachableE[OF all_invars(6)])
         using False F'_to_graph_is
         by(fastforce simp add: y'_def \<FF>'_def  \<FF>_def r_card_def)+
   qed
 
-  have "aux_invar state'" 
-  proof(rule aux_invarI)
-    show "invar_aux1 state'" 
+  have "underlying_invars state'" 
+  proof(rule underlying_invarsI)
+    show "inv_actives_in_E state'" 
       using all_invars(1) set_filter(1)[OF set_invar_E']
-      by(auto simp add: invar_aux1_def state'_def E''_def E'_def)    
-    show "invar_aux2 state'" 
+      by(auto simp add: inv_actives_in_E_def state'_def E''_def E'_def)    
+    show "inv_digraph_abs_F_in_E state'" 
       using res_edges_new_forest_are  eeinfracE all_invars(2)
-      by(auto intro!: invar_aux2I simp add: state'_def to_rdg_def invar_aux2_def local.\<FF>_def )
-    show "invar_aux3 state'" 
+      by(auto intro!: inv_digraph_abs_F_in_EI simp add: state'_def to_rdg_def inv_digraph_abs_F_in_E_def local.\<FF>_def )
+    show "inv_forest_in_E state'" 
       using all_invars(2) eeinfracE   o_edge_res 
-      by(intro invar_aux3I)
+      by(intro inv_forest_in_EI)
         (auto simp add: to_rdg_def local.\<FF>_def res_edges_new_forest_are  state'_def F_def F_redges_def
-                 elim!: invar_aux2E) 
-    show "invar_aux4 state'" 
-      using "113" from_aux_invar'(4)[OF assms(1)]
-      by(intro  invar_aux4I)
+                 elim!: inv_digraph_abs_F_in_EE) 
+    show "inv_forest_actives_disjoint state'" 
+      using "113" from_underlying_invars'(4)[OF assms(1)]
+      by(intro  inv_forest_actives_disjointI)
         (auto  simp add: to_rdg_def res_edges_new_forest_are local.\<FF>_def 
                image_Un oedge_both_redges_image
                 E'_def  state'_def F_def F_redges_def )
     have "consist ([\<FF>]\<^sub>g \<union> {(fst e, snd e), (snd e, fst e)})
      (abstract_conv_map (add_direction to_rdg (fst e) (snd e) e))"
-      using assms(3)  assms(1) from_aux_invar'(6)  x_not_y 
+      using assms(3)  assms(1) from_underlying_invars'(6)  x_not_y 
       by(intro abstract_conv_consist[OF _ _ refl]) (auto simp add: make_pair' local.\<FF>_def to_rdg_def)   
-    thus "invar_aux6 state'"
-      by(auto  intro!: invar_aux6I'' simp add:state'_def to_rdg'_def  F'_digraph_abs_is x_def y_def)
-    show "invar_aux8 state'" using invar8 by simp
-    show "invar_aux7 state'" 
-      using invar_aux7_state' by blast
+    thus "inv_conversion_consistent state'"
+      by(auto  intro!: inv_conversion_consistentI'' simp add:state'_def to_rdg'_def  F'_digraph_abs_is x_def y_def)
+    show "inv_rep_reachable state'" using invar8 by simp
+    show "inv_reachable_same_rep state'" 
+      using inv_reachable_same_rep_state' by blast
     have "x \<in> \<V>" 
       by (simp add: dVsI'(1) x_def)
     moreover have "y \<in> \<V>" 
@@ -741,26 +741,26 @@ qed
     ultimately have "yy \<in> \<V>" by(simp add: yy_def xy_def)
     hence y'_in_V:"y' \<in> \<V>" 
       using all_invars(8)
-      by(auto elim: invar_aux9E simp add: r_card_def y'_def)
-    show"invar_aux9 state'" 
-    proof(rule invar_aux9I, goal_cases)
+      by(auto elim: inv_reps_in_VE simp add: r_card_def y'_def)
+    show"inv_reps_in_V state'" 
+    proof(rule inv_reps_in_VI, goal_cases)
       case (1 v)
       then show ?case 
-      using invar_aux8D[OF invar8, of v] set_mp[OF new_forest_Vs_in_V reachable_to_Vs(4)] y'_in_V
+      using inv_rep_reachableD[OF invar8, of v] set_mp[OF new_forest_Vs_in_V reachable_to_Vs(4)] y'_in_V
       by auto
   qed
-  show "invar_aux5 state'"
-      by(auto intro!: invar_aux5I simp add: state'_def F'_to_graph_is
-                assms(1) from_aux_invar'(5) local.\<FF>_def)
+  show "inv_finite_forest state'"
+      by(auto intro!: inv_finite_forestI simp add: state'_def F'_to_graph_is
+                assms(1) from_underlying_invars'(5) local.\<FF>_def)
     have "connected_component (to_graph \<FF>) (fst e) \<subseteq> \<V>"
       using all_invars(10) dVsI'(1)[of "make_pair e"] einE make_pair[OF refl refl]
-      by(simp add: invar_aux10_def \<FF>_def )
+      by(simp add: inv_components_in_V_def \<FF>_def )
     moreover have snd_comp_in_V:"connected_component (to_graph \<FF>) (snd e) \<subseteq> \<V>"
       using all_invars(10)  dVsI'(2)[of "make_pair e"] einE make_pair[OF refl refl] 
-      by (simp add: invar_aux10_def \<FF>_def)
-    ultimately show "invar_aux10 state'"
+      by (simp add: inv_components_in_V_def \<FF>_def)
+    ultimately show "inv_components_in_V state'"
       using all_invars(10)
-      apply(simp add: state'_def invar_aux10_def \<FF>'_def \<FF>_def)
+      apply(simp add: state'_def inv_components_in_V_def \<FF>'_def \<FF>_def)
     proof(rule, goal_cases)
       case (1 v)
       then show ?case 
@@ -787,8 +787,8 @@ qed
               insert_abstraction' insert_commute local.\<FF>_def snd_comp_in_V sup.bounded_iff)+
     qed
   qed 
-    show "invar_aux11 state'"
-    proof(rule invar_aux11I, rule ccontr, unfold neg_neq)
+    show "inv_active_different_comps state'"
+    proof(rule inv_active_different_compsI, rule ccontr, unfold neg_neq)
       fix d
       assume assm: "d \<in> to_set (actives state')"
                    "connected_component (to_graph (Algo_state.\<FF> state')) (fst d) =
@@ -799,7 +799,7 @@ qed
         unfolding E''_def by auto
       have different_comps: "connected_component (to_graph \<FF>) (fst d) 
                          \<noteq> connected_component (to_graph \<FF>) (snd d)"
-        using assms(1) dE(1) from_aux_invar'(11)
+        using assms(1) dE(1) from_underlying_invars'(11)
         by(auto simp add: E'_def local.\<FF>_def)
      have different_reps_before: "abstract_rep_map r_card (fst d) \<noteq> abstract_rep_map r_card (snd d)"
       proof
@@ -808,8 +808,8 @@ qed
           using  reachable_trans[of "to_graph (Algo_state.\<FF> state)" "fst d" 
                       "representative state (fst d)" "snd d"] 
                  reachable_sym[of "to_graph (Algo_state.\<FF> state)" "snd d" "representative state (snd d)"] 
-                  spec[OF all_invars(6)[simplified invar_aux8_def], of "fst d"]
-                  spec[OF all_invars(6)[simplified invar_aux8_def], of "snd d"]
+                  spec[OF all_invars(6)[simplified inv_rep_reachable_def], of "fst d"]
+                  spec[OF all_invars(6)[simplified inv_rep_reachable_def], of "snd d"]
           by(auto simp add: state'_def  r_card_def \<FF>_def)
         thus False 
           using connected_components_member_eq[of "snd d" "to_graph \<FF>" "fst d"] 
@@ -822,8 +822,8 @@ qed
         using  in_connected_componentE[of "snd d" "to_graph \<FF>'" "fst d"] 
                in_own_connected_component[of "snd d" "to_graph \<FF>'"] by auto 
       hence "abstract_rep_map r_card' (fst d) = abstract_rep_map r_card' (snd d)"
-          using   invar_aux7_state'
-          by (cases "fst d \<noteq>  snd d", auto elim: invar_aux7E simp add: state'_def)
+          using   inv_reachable_same_rep_state'
+          by (cases "fst d \<noteq>  snd d", auto elim: inv_reachable_same_repE simp add: state'_def)
       hence lst:"reachable (to_graph \<FF>') y' (fst d) \<and> reachable (to_graph \<FF>') y' (snd d)" 
         using different_reps_before  reachable_trans[of "(to_graph \<FF>')" y' "fst d" "snd d"] 
               reachable_trans[of "(to_graph \<FF>')" y' "snd d" "fst d"] reachable_sym[of "(to_graph \<FF>')" "fst d" "snd d"]
@@ -836,8 +836,8 @@ qed
               same_reachability[of "snd d"] 
         by auto
     qed
-    show "invar_aux12 state'"
-    proof(rule invar_aux12I, goal_cases)
+    show "inv_pos_bal_rep state'"
+    proof(rule inv_pos_bal_repI, goal_cases)
       case (1 v) 
      
       show ?case 
@@ -853,13 +853,13 @@ qed
           using new_balance_is by(simp add: state'_def)
         hence "abstract_bal_map b v \<noteq> 0" using b'_def False 1 state'_def not_x' by simp
         hence same_r:"abstract_rep_map r_card v = v" using all_invars(12) 1 
-         by(auto simp add: b_def r_card_def invar_aux12_def)
+         by(auto simp add: b_def r_card_def inv_pos_bal_rep_def)
         have not_reach_y: "reachable (to_graph \<FF>) v y \<Longrightarrow> False"
         proof-
           assume "reachable (to_graph \<FF>) v y"
           hence "abstract_rep_map r_card y = v"
             using all_invars(7) same_r
-            by(fastforce simp add: invar_aux7_def local.\<FF>_def r_card_def )
+            by(fastforce simp add: inv_reachable_same_rep_def local.\<FF>_def r_card_def )
           hence "v = abstract_rep_map r_card xx \<or> v = abstract_rep_map r_card yy" 
             by(auto split: if_split simp add: xx_def yy_def xy_def)
           thus False using not_x' False y'_def x'_def by simp
@@ -869,7 +869,7 @@ qed
           assume "reachable (to_graph \<FF>) v x"
           hence "abstract_rep_map r_card x = v"
             using all_invars(7) same_r
-            by(fastforce simp add: invar_aux7_def local.\<FF>_def r_card_def )
+            by(fastforce simp add: inv_reachable_same_rep_def local.\<FF>_def r_card_def )
           hence "v = abstract_rep_map r_card xx \<or> v = abstract_rep_map r_card yy"
             by(auto split: if_split simp add: xx_def yy_def xy_def)
           thus False using not_x' False by(simp add: y'_def x'_def)
@@ -885,15 +885,15 @@ qed
             by (auto simp add: state'_def r_card'_def  abstract_rep_map_rep_comp_upd_all[OF rep_comp_invar_r_card])
       qed
     qed
-    show "invar_aux13 state'"
-      unfolding invar_aux13_def
+    show "inv_inactive_same_component state'"
+      unfolding inv_inactive_same_component_def
     proof(rule, goal_cases)
       case (1 d)
       then show ?case 
       proof(cases "d \<in> \<E> - to_set (actives state)")
         case True
         hence "connected_component (to_graph \<FF>) (fst d) = connected_component (to_graph \<FF>)  (snd d)"
-          using invar_aux13_def  all_invars(13) \<FF>_def by blast
+          using inv_inactive_same_component_def  all_invars(13) \<FF>_def by blast
         hence "(snd d) \<in> connected_component  (to_graph \<FF>) (fst d)" 
           by (simp add: in_connected_componentI2)
         hence "reachable  (to_graph \<FF>) (snd d) (fst d) \<or> fst d = snd d"
@@ -912,15 +912,15 @@ qed
         hence "abstract_rep_map r_card (fst d) = x' \<or> abstract_rep_map r_card (fst d) = y'"
           by fastforce
         hence "reachable (to_graph \<FF>) (fst d) x' \<or> fst d = x' \<or> fst d = y' \<or> reachable (to_graph \<FF>) (fst d) y'" 
-          using all_invars(6) by(auto elim: invar_aux8E simp add: local.\<FF>_def r_card_def)
+          using all_invars(6) by(auto elim: inv_rep_reachableE simp add: local.\<FF>_def r_card_def)
         moreover have a1:"reachable (to_graph \<FF>) x' xx \<or> x' = xx" 
-          using all_invars(6) invar_aux8_def local.\<FF>_def r_card_def reachable_sym x'_def  by fastforce 
+          using all_invars(6) inv_rep_reachable_def local.\<FF>_def r_card_def reachable_sym x'_def  by fastforce 
         moreover have a2:"reachable (to_graph \<FF>') xx y'"
         proof-
           have "abstract_comp_map r_card x \<le> abstract_comp_map r_card y 
               \<Longrightarrow> reachable (insert {fst e, snd e} (to_graph \<FF>)) 
                          x (abstract_rep_map r_card y)"
-            using all_invars(6) invar_aux8_def[of state] \<FF>_def r_card_def 
+            using all_invars(6) inv_rep_reachable_def[of state] \<FF>_def r_card_def 
             reachable_subset[of " (to_graph \<FF>)" y "abstract_rep_map r_card y" 
                              "insert {fst e, snd e}  (to_graph \<FF>)"]
             by( cases "y = abstract_rep_map r_card y", simp add: edges_reachable insert_commute x_def y_def, 
@@ -929,7 +929,7 @@ qed
               auto simp add: edges_reachable insert_commute x_def y_def)
           moreover have "\<not> abstract_comp_map r_card x \<le> abstract_comp_map r_card y \<Longrightarrow> 
                           reachable (insert {fst e, snd e} (to_graph \<FF>)) y (abstract_rep_map r_card x)"
-            using all_invars(6) invar_aux8_def[of state] \<FF>_def r_card_def
+            using all_invars(6) inv_rep_reachable_def[of state] \<FF>_def r_card_def
               reachable_subset[of "(to_graph \<FF>)" x "abstract_rep_map r_card x" "insert {fst e, snd e} (to_graph \<FF>)"]
             by( cases "x = abstract_rep_map r_card x", simp add: edges_reachable insert_commute x_def y_def, 
               intro reachable_trans[of _  y x "abstract_rep_map r_card x"],
@@ -939,16 +939,16 @@ qed
                 insert_abstraction' xx_def xy_def y'_def yy_def)
         qed
         ultimately have  fst_y: "reachable (to_graph \<FF>') (fst d) y' \<or> fst d = y'" 
-          using "1110"  invar_aux7D[OF all_invars(7), of] reachable_sym[of _ y']
+          using "1110"  inv_reachable_same_repD[OF all_invars(7), of] reachable_sym[of _ y']
               same_reachability[of "fst d"]  same_reachability[of xx]
           by(auto simp add: local.\<FF>_def r_card_def)
         have "abstract_rep_map r_card (snd d) = x' \<or> abstract_rep_map r_card (snd d) = y'"
           using dd by force
         hence "reachable (to_graph \<FF>) (snd d) x' \<or> snd d = x' \<or> snd d = y' 
                        \<or> reachable (to_graph \<FF>) (snd d) y'" 
-          using all_invars(6) by(auto elim: invar_aux8E simp add: local.\<FF>_def r_card_def)
+          using all_invars(6) by(auto elim: inv_rep_reachableE simp add: local.\<FF>_def r_card_def)
         hence  "reachable (to_graph \<FF>') (snd d) y' \<or> snd d = y'" 
-          using a1 a2  "1110"  invar_aux7D[OF all_invars(7), of] reachable_sym[of _ y']
+          using a1 a2  "1110"  inv_reachable_same_repD[OF all_invars(7), of] reachable_sym[of _ y']
               same_reachability[of "snd d"]  same_reachability[of xx]
           by(auto simp add: local.\<FF>_def r_card_def)
         then show ?thesis
@@ -959,15 +959,15 @@ qed
                simp add:  state'_def in_own_connected_component)
       qed
     qed
-    show "invar_aux14 state'"
-      apply(rule invar_aux14I, rule validFI)
+    show "inv_dbltn_graph_forest state'"
+      apply(rule inv_dbltn_graph_forestI, rule validFI)
       using  x_not_y 
       by (auto intro!:  graph_invar_insert 
-                intro: invar_aux14E[OF all_invars(18)] validFE 
+                intro: inv_dbltn_graph_forestE[OF all_invars(18)] validFE 
              simp add: \<FF>_def  state'_def  F'_to_graph_is)
-    show "invar_aux15 state'"
+    show "inv_forest_in_V state'"
       using  new_forest_Vs_in_V
-      by(auto intro: invar_aux15I simp add: dVs_Vs_same)
+      by(auto intro: inv_forest_in_VI simp add: dVs_Vs_same)
     have a1:"v \<in> \<V> \<Longrightarrow> y' = abstract_rep_map r_card' v 
                \<Longrightarrow> abstract_comp_map r_card x +  abstract_comp_map r_card y 
                = card (connected_component (to_graph \<FF>') v)"
@@ -991,8 +991,8 @@ qed
         using 1 all_invars(14) all_invars(10)  fste_V snde_V  all_invars(11)  e_in_E' 
               unequal_components_disjoint[of "to_graph (Algo_state.\<FF> state)" "fst e" "snd e" UNIV, simplified] 
         by (auto intro!: finite_subset[of "connected_component _ _", OF _ \<V>_finite]
-                 elim!: invar_aux16E invar_aux11E
-                 simp add:  E'_def disjnt_def r_card_def \<FF>_def invar_aux10_def x_def y_def )
+                 elim!: inv_comp_card_correctE inv_active_different_compsE
+                 simp add:  E'_def disjnt_def r_card_def \<FF>_def inv_components_in_V_def x_def y_def )
     qed
     have a2:"v \<in> \<V> \<Longrightarrow> abstract_rep_map r_card' v \<noteq> y' 
                \<Longrightarrow> abstract_comp_map r_card v = card (connected_component (to_graph \<FF>') v) " for v
@@ -1008,16 +1008,16 @@ qed
           " y \<notin> connected_component (to_graph \<FF>) v"
         using  all_invars(7)  neither_x'_nor_y' 
         by(auto intro: case_split[of "cardx \<le> cardy"]
-                 elim!: invar_aux7E in_connected_componentE
+                 elim!: inv_reachable_same_repE in_connected_componentE
               simp add: r_card_def x'_def y'_def xx_def yy_def xy_def \<FF>_def)
       hence "(connected_component (to_graph \<FF>') v) = (connected_component (to_graph \<FF>) v)" 
         using  unite_disjoint_components_by_new_edge[of x "to_graph \<FF>" v y]
         by (auto simp add: F'_to_graph_is  x_def y_def)
       then show ?case 
-        by (simp add: "2"(1) assms(1) from_aux_invar'(16) local.\<FF>_def r_card_def)
+        by (simp add: "2"(1) assms(1) from_underlying_invars'(16) local.\<FF>_def r_card_def)
     qed
-    show "invar_aux16 state'"
-    proof(rule invar_aux16I, goal_cases)
+    show "inv_comp_card_correct state'"
+    proof(rule inv_comp_card_correctI, goal_cases)
       case (1 a)
       hence a_ind_dom: "a \<in> rep_comp_domain r_card"
         by(auto intro!: in_V_rep_dom)
@@ -1028,18 +1028,18 @@ qed
                   abstract_rep_map_rep_comp_upd_all[OF rep_comp_invar_r_card]) 
         by simp(fastforce simp add:  cardx_def cardy_def if_P[OF  a_ind_dom]  \<FF>'_def F'_to_graph_is state'_def r_card'_def)+
     qed
-    show "invar_aux17 state'"
+    show "inv_set_invar_actives state'"
       using all_invars(15) invar_filter[OF set_invar_E']
-      by(simp add: invar_aux17_def state'_def E''_def E'_def)
-    show "invar_aux18 state'" 
-      by(auto intro!: invar_aux18I'' insert_undirected_edge_good_graph_invar_pres
+      by(simp add: inv_set_invar_actives_def state'_def E''_def E'_def)
+    show "inv_forest_good_graph state'" 
+      by(auto intro!: inv_forest_good_graphI'' insert_undirected_edge_good_graph_invar_pres
                  simp add: state'_def  \<FF>'_def good_graphF)
-    show "invar_aux20 state'"
+    show "inv_digraph_abs_\<FF>_sym state'"
       using  forest_symmetic[OF all_invars(17)]
-      by(auto intro!: invar_aux20I' 
+      by(auto intro!: inv_digraph_abs_\<FF>_symI' 
                  simp add: state'_def  good_graphF F'_digraph_abs_is \<FF>_def)
-    show "invar_aux22 state'"
-      unfolding invar_aux22_def
+    show "inv_unbl_iff_forest_active state'"
+      unfolding inv_unbl_iff_forest_active_def
     proof(rule)
       fix d
       show "a_not_blocked state' d = (d \<in> \<F> state' \<union> to_set (actives state'))"
@@ -1071,15 +1071,15 @@ qed
             case 1
             then obtain a b where ab: "(a, b) \<in> [\<FF>]\<^sub>g" "oedge ( abstract_conv_map to_rdg (a, b)) = d" by auto
             have "{a, b} = {fst d, snd d}" 
-              using  ab(1) invar_aux6_conv_to_rdg_fstv[OF all_invars(5), of a b] 
-                  invar_aux6_conv_to_rdg_sndv[OF all_invars(5), of a b]
+              using  ab(1) inv_conversion_consistent_conv_to_rdg_fstv[OF all_invars(5), of a b] 
+                  inv_conversion_consistent_conv_to_rdg_sndv[OF all_invars(5), of a b]
                by(auto intro: oedge.elims[OF ab(2)]simp add: to_rdg_def local.\<FF>_def)
             hence "{fst d, snd d} \<in> to_graph \<FF>" 
               using ab(1)  by (auto simp add: doubleton_eq_iff to_graph'_def)
             hence "reachable (to_graph \<FF>) (fst d) (snd d)"
               by(auto intro!: edges_reachable)
             hence "abstract_rep_map r_card (fst d) = abstract_rep_map r_card (snd d)"
-              using assms(1)by(auto dest:  from_aux_invar'(7) simp add: local.\<FF>_def r_card_def)
+              using assms(1)by(auto dest:  from_underlying_invars'(7) simp add: local.\<FF>_def r_card_def)
             hence "x' = y'" 
               using one by auto
             thus False 
@@ -1095,7 +1095,7 @@ qed
                                 not_blocked_invar_nb] in_not_blocked_dom_same_as_lookup)
           also have "... = (d \<in> oedge ` abstract_conv_map to_rdg ` digraph_abs \<FF>
                                 \<or> d \<in> to_set E')"
-            by (simp add: E'_def assms(1) from_aux_invar'(20) local.\<FF>_def nb_def to_rdg_def F_def F_redges_def)
+            by (simp add: E'_def assms(1) from_underlying_invars'(20) local.\<FF>_def nb_def to_rdg_def F_def F_redges_def)
           also have "... = (d \<in> oedge ` abstract_conv_map to_rdg' ` digraph_abs \<FF>'
                                 \<or> d \<in> to_set E'')" 
             using "2" a113a e_neq_d new_redge_F_is by auto
@@ -1107,7 +1107,7 @@ qed
         thus ?case 
           using  E'_substE  implementation_invar_partial_props(10)[OF assms(3)]
           by (auto simp add: to_rdg_def local.\<FF>_def nb_def new_redge_F_is
-                            invar_aux22D[OF all_invars(19)]  a113a E'_def F_def F_redges_def)
+                            inv_unbl_iff_forest_activeD[OF all_invars(19)]  a113a E'_def F_def F_redges_def)
       qed
       thus ?case by (simp add: F_def F_redges_def)
     qed
@@ -1144,7 +1144,7 @@ lemma invar_gamma_pres_one_step:
 
 lemma invars_pres_one_step:
   assumes "maintain_forest_call_cond state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
    shows "implementation_invar (maintain_forest_upd state)"
     
         "thr \<ge> 0 \<Longrightarrow> invarA_1 thr state \<Longrightarrow> invarA_1 thr (maintain_forest_upd state)"
@@ -1157,13 +1157,13 @@ lemma invars_pres_one_step:
          thr2 \<le> 2 * current_\<gamma> state \<Longrightarrow> thr1 = 8*real N * current_\<gamma> state \<Longrightarrow>
          invar_isOptflow state \<Longrightarrow> invar_isOptflow (maintain_forest_upd state)"
 proof-
-  have all_invars: "invar_aux1 state" "invar_aux2 state" "invar_aux3 state" "invar_aux4 state"
-                   "invar_aux6 state" "invar_aux8 state" "invar_aux7 state" "invar_aux9 state "
-                   "invar_aux5 state" "invar_aux10 state" "invar_aux11 state" "invar_aux12 state"
-                   "invar_aux13 state" "invar_aux16 state" "invar_aux17 state" "invar_aux18 state"
-                    "invar_aux20 state" "invar_aux14 state"
-                   "invar_aux22 state"
-    using assms by(auto simp add: aux_invar_def)
+  have all_invars: "inv_actives_in_E state" "inv_digraph_abs_F_in_E state" "inv_forest_in_E state" "inv_forest_actives_disjoint state"
+                   "inv_conversion_consistent state" "inv_rep_reachable state" "inv_reachable_same_rep state" "inv_reps_in_V state "
+                   "inv_finite_forest state" "inv_components_in_V state" "inv_active_different_comps state" "inv_pos_bal_rep state"
+                   "inv_inactive_same_component state" "inv_comp_card_correct state" "inv_set_invar_actives state" "inv_forest_good_graph state"
+                    "inv_digraph_abs_\<FF>_sym state" "inv_dbltn_graph_forest state"
+                   "inv_unbl_iff_forest_active state"
+    using assms by(auto simp add: underlying_invars_def)
   define  \<FF> where  "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
   define b where "b = balance state"
@@ -1220,10 +1220,10 @@ proof-
   note 10= state'_is
 
   have set_invar_E'[simp]: "set_invar E'"
-    using E'_def all_invars(15) invar_aux17_def by blast
+    using E'_def all_invars(15) inv_set_invar_actives_def by blast
 
   have E'_substE:"to_set E' \<subseteq> \<E>"
-    using all_invars(1) by(simp add: E'_def invar_aux1_def)
+    using all_invars(1) by(simp add: E'_def inv_actives_in_E_def)
   have e_prop: "e \<in> to_set E'" "abstract_flow_map f e > 8 * real N *\<gamma>"
                 "get_from_set (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = Some e"
     apply(all \<open>rule maintain_forest_call_condE[OF assms(1)]\<close>)
@@ -1242,7 +1242,7 @@ proof-
     by simp
   have x_not_y: "fst e \<noteq> snd e" 
     using all_invars(11)  e_in_E' 
-    by(force simp add: invar_aux11_def E'_def )
+    by(force simp add: inv_active_different_comps_def E'_def )
   have rep_comp_invar_r_card: "rep_comp_invar r_card"
     using assms(3) r_card_def by blast
   have not_blocked_invar_nb: "not_blocked_invar nb"
@@ -1250,7 +1250,7 @@ proof-
   have in_V_rep_dom: "a \<in> \<V> \<Longrightarrow> a \<in> rep_comp_domain r_card" for a
     using assms(3) by(auto simp add: r_card_def)
   have good_graphF: "good_graph_invar \<FF>"
-    using all_invars(16) invar_aux18_def local.\<FF>_def by force
+    using all_invars(16) inv_forest_good_graph_def local.\<FF>_def by force
   have F'_digraph_abs_is:"[\<FF>']\<^sub>g = [\<FF>]\<^sub>g \<union> {(fst e, snd e), (snd e, fst e)}"
     using good_graphF by (auto simp add: \<FF>'_def good_graph_invar_def)
   hence F'_to_graph_is:"to_graph \<FF>' = to_graph \<FF> \<union> {{fst e, snd e}}"
@@ -1263,7 +1263,7 @@ proof-
     by(subst to_rdg'_def  add_direction_result)+
       (auto simp add: add_direction_result to_rdg_def)
   have forest_edges_neq_e:"{a, b} \<in> to_graph \<FF> \<Longrightarrow> {a, b} \<noteq> {x, y}" for a b
-    using  assms(2) e_in_E' from_aux_invar'(11)  mk_disjoint_insert
+    using  assms(2) e_in_E' from_underlying_invars'(11)  mk_disjoint_insert
         new_edge_disjoint_components[OF refl refl refl]
     by(fastforce simp add: x_def y_def local.\<FF>_def E'_def)
   hence dir_forest_edges_neq_e:"(a, b) \<in> digraph_abs \<FF> \<Longrightarrow> (a, b) \<noteq> (x, y)" 
@@ -1283,17 +1283,17 @@ proof-
     using 114 set_filter(1)[OF set_invar_E']
     by(auto simp add: E''_def)
   have reachable_in_forest_fst_in_V:"reachable (to_graph \<FF>) a b \<Longrightarrow> a \<in> \<V>" for a b 
-    using assms(2) from_aux_invar'(15) local.\<FF>_def reachable_to_Vs(1) by blast
+    using assms(2) from_underlying_invars'(15) local.\<FF>_def reachable_to_Vs(1) by blast
   have reachable_in_forest_snd_in_V:"reachable (to_graph \<FF>) a b \<Longrightarrow> b \<in> \<V>" for a b 
     using reachable_in_forest_fst_in_V reachable_sym by fast
   have new_forest_Vs_in_V: "dVs (digraph_abs (Algo_state.\<FF> state')) \<subseteq> \<V>"
-    by (auto intro:  invar_aux15E aux_invarE[OF assms(2)] 
+    by (auto intro:  inv_forest_in_VE underlying_invarsE[OF assms(2)] 
              simp add: state'_def F'_digraph_abs_is insert_edge_dVs dVs_Vs_same \<FF>_def)
   have 1110:"reachable (to_graph \<FF>) v x \<Longrightarrow> reachable (to_graph \<FF>') v x" for v x
       by (auto simp add: reachable_subset subset_insertI  \<FF>'_def
                             insert_abstraction'[OF good_graphF])
     have x'_y'_in_V:"x' \<in> \<V>"  "y' \<in> \<V>" 
-      using "114"  from_aux_invar'(9)[OF assms(2)] fste_V snde_V
+      using "114"  from_underlying_invars'(9)[OF assms(2)] fste_V snde_V
       by(auto simp add: r_card_def doubleton_eq_iff)
     have new_balance_is: "a_balance state' = (\<lambda>v. if v = x' then 0
           else if v = y' then abstract_bal_map b y' + abstract_bal_map b x'
@@ -1306,27 +1306,27 @@ proof-
       by (auto simp add: to_rdg'_is F'_digraph_abs_is x_def y_def)
     note state_state' = state'_is
    have set_invar_E': "set_invar E'"
-    using E'_def assms aux_invar_def invar_aux17_def by blast
+    using E'_def assms underlying_invars_def inv_set_invar_actives_def by blast
   have E'_substE:"to_set E' \<subseteq> \<E>"
-    using assms by(simp add: E'_def aux_invar_def invar_aux1_def)
+    using assms by(simp add: E'_def underlying_invars_def inv_actives_in_E_def)
   have 01:"reachable (to_graph \<FF>) xx x' \<or> xx = x'"
-    by (simp add: assms(2) from_aux_invar'(8) local.\<FF>_def r_card_def x'_def)
+    by (simp add: assms(2) from_underlying_invars'(8) local.\<FF>_def r_card_def x'_def)
   have 02:"reachable (to_graph \<FF>) yy y' \<or> yy = y'"
-    by (simp add: assms(2) from_aux_invar'(8) local.\<FF>_def r_card_def y'_def)
+    by (simp add: assms(2) from_underlying_invars'(8) local.\<FF>_def r_card_def y'_def)
   hence 1100:"connected_component (to_graph \<FF>) (fst e) \<noteq> connected_component (to_graph \<FF>) (snd e)"
     using e_prop assms(2)
-    by(simp add: invar_aux11_def aux_invar_def  \<FF>'_def E'_def \<FF>_def)
+    by(simp add: inv_active_different_comps_def underlying_invars_def  \<FF>'_def E'_def \<FF>_def)
   have fst_snd_e_neq: "fst e \<noteq> snd e"
     using  1100 by auto
   hence x_not_y:"x \<noteq> y"
     using x_def y_def by simp
-    have asm': "invar_aux11 state" using assms  aux_invar_def by auto
+    have asm': "inv_active_different_comps state" using assms  underlying_invars_def by auto
 
     have cards_same_cond: "card (connected_component (to_graph \<FF>) x)
                            \<le> card (connected_component (to_graph \<FF>) y) \<longleftrightarrow>
                           abstract_comp_map r_card x \<le> abstract_comp_map r_card y" 
-      using "01" "02"  invar_aux16D[OF all_invars(14), of x]
-            invar_aux16D[OF all_invars(14), of y]
+      using "01" "02"  inv_comp_card_correctD[OF all_invars(14), of x]
+            inv_comp_card_correctD[OF all_invars(14), of y]
             reachable_in_forest_fst_in_V x'_y'_in_V(1,2)
       by(cases "cardx \<le> cardy") (auto simp add: xx_def xy_def yy_def  local.\<FF>_def r_card_def)
  
@@ -1385,21 +1385,21 @@ proof-
      note concretization_of_F' = res_edges_new_forest_are
      have consist_to_rdg':"consist (digraph_abs \<FF>') (abstract_conv_map to_rdg')"
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
-       by(auto elim!: invar_aux6E''  aux_invarE simp add: state'_def)
+       by(auto elim!: inv_conversion_consistentE''  underlying_invarsE simp add: state'_def)
     have axioms_conds1: "x' \<in> Vs (to_graph \<FF>')" 
       using comps_union in_connected_component_in_edges[of x' "(to_graph \<FF>')" y']
              x'_not_y' in_own_connected_component[of x' "(to_graph \<FF>)"]
       by simp
     have axioms_conds2: "Vs (to_graph \<FF>') \<subseteq> \<V> " 
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
-       by(auto elim!:  aux_invarE invar_aux15E simp add: state'_def)
+       by(auto elim!:  underlying_invarsE inv_forest_in_VE simp add: state'_def)
      have axioms_conds3: "graph_invar (to_graph \<FF>')"
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
              validFD[of state'] 
-       by(auto elim!: aux_invarE invar_aux14E simp add: state'_def)
+       by(auto elim!: underlying_invarsE inv_dbltn_graph_forestE simp add: state'_def)
      have good_graphF': "good_graph_invar \<FF>'"
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-       by(auto elim!: aux_invarE invar_aux18E'' simp add: state'_def)
+       by(auto elim!: underlying_invarsE inv_forest_good_graphE'' simp add: state'_def)
      obtain qqq_u where qqq_prop_u:"walk_betw (to_graph  \<FF>') x' qqq_u y'"
     using comps_union connected_components_member_sym[of x' "to_graph \<FF>'" y'] 
           axioms_conds1 axioms_conds2 axioms_conds3
@@ -1408,7 +1408,7 @@ proof-
     by(auto intro: in_connected_component_has_walk)
   have symmetric_F': "symmetric_digraph (digraph_abs \<FF>')" 
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-       by(auto elim!: aux_invarE invar_aux20E simp add: state'_def)
+       by(auto elim!: underlying_invarsE inv_digraph_abs_\<FF>_symE simp add: state'_def)
   obtain qqq where qqq_prop:"vwalk_bet (digraph_abs  \<FF>') x' qqq y'"
     using symmetric_digraph_walk_betw_vwalk_bet symmetric_F' qqq_prop_u 
     by(force simp add: to_graph_def) 
@@ -1445,13 +1445,13 @@ proof-
       using redge_of_Q  edges_of_Q_in_F' by(auto simp add: state'_def F_def F_redges_def)
     hence  Q_oedges_in_E:"set (map oedge (to_redge_path to_rdg' Q)) \<subseteq> \<E>" 
       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-      by(auto elim!: invar_aux3E[OF invar_aux3_from_aux_invar] 
+      by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
            simp add: state'_def  image_subset_iff F_def F_redges_def)
     have Q_rev_redges_in_F:"set (to_redge_path to_rdg' (rev Q)) \<subseteq> \<F>_redges state'" 
       using redge_of_Q_rev  edges_of_Q_rev_in_F' by(auto simp add: state'_def F_def F_redges_def)
     hence  Q_rev_oedges_in_E:"set (map oedge (to_redge_path to_rdg' (rev Q))) \<subseteq> \<E>" 
       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-      by(auto elim!: invar_aux3E[OF invar_aux3_from_aux_invar] 
+      by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
            simp add: state'_def  image_subset_iff F_def F_redges_def)
     have f'_is:
    "abstract_flow_map (augment_edges_impl f (abstract_bal_map b x') (to_redge_path to_rdg' Q)) =
@@ -1537,7 +1537,7 @@ proof-
       using "157" \<V>_finite x'_y'_in_V by (auto intro:  finite_subset)
     have old_comps_disjnt:"disjnt (connected_component (to_graph \<FF>) y') (connected_component (to_graph \<FF>) x')"
       by (simp add: comps_inter_empt disjnt_def)
-    note aux_invar_state' = invar_aux_pres_one_step[of state, OF assms(2,1,3), 
+    note underlying_invars_state' = invar_aux_pres_one_step[of state, OF assms(2,1,3), 
                            simplified sym[OF state_state']]
   show "thr \<ge> 0  \<Longrightarrow> invarA_1 thr state \<Longrightarrow> invarA_1 thr (maintain_forest_upd state)"
   proof-
@@ -1551,7 +1551,7 @@ proof-
       using comps_inter_empt x'_not_y' bx' by' comps_inter_empt assms(2)  \<V>_finite
             finite_subset  x'_y'_in_V
       by(auto simp add: algebra_simps card_Un_disjnt disjnt_def  b'_def  \<FF>'_def \<FF>_def b'_is 
-                 elim!: aux_invarE invar_aux10E)
+                 elim!: underlying_invarsE inv_components_in_VE)
     moreover have 16:"v \<in> \<V> \<Longrightarrow> v \<noteq> x'  \<Longrightarrow> v \<noteq> y' \<Longrightarrow>
                 \<bar>abstract_bal_map b' v \<bar>\<le> thr * card (connected_component (to_graph \<FF>') v)" for v
     proof(rule order.trans[of _ "thr * real (card (connected_component (to_graph \<FF>) v))"], goal_cases)
@@ -1586,7 +1586,7 @@ proof-
       assume asm2:"d \<in> abstract_conv_map to_rdg' ` (digraph_abs \<FF>')"
       hence "d \<in> \<EE>" 
         using  eeinfracE res_edges_new_forest_are
-        by (auto  intro: invar_aux2E[OF all_invars(2)] simp add: to_rdg_def  local.\<FF>_def)
+        by (auto  intro: inv_digraph_abs_F_in_EE[OF all_invars(2)] simp add: to_rdg_def  local.\<FF>_def)
       hence fstdV:"fst (oedge d) \<in> \<V>" 
         using dVsI'(1)[of ] o_edge_res make_pair[OF refl refl]  fst_E_V by presburger
       hence compd:"connected_component (to_graph \<FF>') (fst (oedge d)) \<subseteq> \<V>"
@@ -1689,7 +1689,7 @@ proof-
     have d_oedge_inE:
      "d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF> - {(fst e, snd e), (fst e, snd e)}) \<Longrightarrow>
                  oedge d \<in> \<E>" for d 
-      using all_invars(2) o_edge_res  by (auto elim!: invar_aux2E simp add: local.\<FF>_def to_rdg_def)
+      using all_invars(2) o_edge_res  by (auto elim!: inv_digraph_abs_F_in_EE simp add: local.\<FF>_def to_rdg_def)
     hence d_oedge_V:"d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF> - {(fst e, snd e), (fst e, snd e)}) \<Longrightarrow>
               fst (oedge d) \<in> \<V>" for d 
       using fst_E_V by presburger
@@ -1700,7 +1700,7 @@ proof-
      have d_oedge_inE':
      "d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF>) \<Longrightarrow>
                  oedge d \<in> \<E>" for d 
-      using all_invars(2) o_edge_res  by (auto elim!: invar_aux2E simp add: local.\<FF>_def to_rdg_def)
+      using all_invars(2) o_edge_res  by (auto elim!: inv_digraph_abs_F_in_EE simp add: local.\<FF>_def to_rdg_def)
     hence d_oedge_V':"d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF>) \<Longrightarrow>
               fst (oedge d) \<in> \<V>" for d 
       using fst_E_V by presburger
@@ -1842,8 +1842,8 @@ proof-
       case 1
       then show ?case 
          unfolding to_redg'_def'
-         using aux_invar_state' walk_betwQ_rev lengthQ  
-         by(fastforce intro!:  perpath_to_redgepath simp add: state'_def invar_aux6_from_aux_invar invar_aux20_from_aux_invar)
+         using underlying_invars_state' walk_betwQ_rev lengthQ  
+         by(fastforce intro!:  perpath_to_redgepath simp add: state'_def inv_conversion_consistent_from_underlying_invars inv_digraph_abs_\<FF>_sym_from_underlying_invars)
      next
        case 2
        show ?case  using Rcap_rev_Q abs_ereal_pos[of "abstract_bal_map b x'"]
@@ -1851,7 +1851,7 @@ proof-
          by auto
      qed
       have a3: "List.set (to_redge_path to_rdg' (rev Q)) \<subseteq> \<EE>"
-        using aux_invar_state' Q_rev_redges_in_F assms(3) from_aux_invar'(2)
+        using underlying_invars_state' Q_rev_redges_in_F assms(3) from_underlying_invars'(2)
         by(auto simp add: F_def F_redges_def)
       have a4: "distinct (to_redge_path to_rdg' (rev Q))"
         using consist_to_rdg' distinctQ
@@ -1871,8 +1871,8 @@ proof-
       case 1
       then show ?case 
          unfolding to_redg'_def'
-         using aux_invar_state' walk_betwQ lengthQ  
-         by(fastforce intro!:  perpath_to_redgepath simp add: state'_def invar_aux6_from_aux_invar invar_aux20_from_aux_invar)
+         using underlying_invars_state' walk_betwQ lengthQ  
+         by(fastforce intro!:  perpath_to_redgepath simp add: state'_def inv_conversion_consistent_from_underlying_invars inv_digraph_abs_\<FF>_sym_from_underlying_invars)
      next
        case 2
        show ?case  using Rcap_Q abs_ereal_pos[of "abstract_bal_map b x'"]
@@ -2143,15 +2143,15 @@ lemma mono_one_step_gamma:
          simp add: maintain_forest_upd_def Let_def)
 
 lemma mono_one_step_actives:
-  assumes "maintain_forest_call_cond state" "invar_aux17 state"
+  assumes "maintain_forest_call_cond state" "inv_set_invar_actives state"
   shows "to_set (actives (maintain_forest_upd state)) \<subseteq> to_set (actives state)"
-  using set_filter(1)[OF assms(2)[simplified invar_aux17_def]]
+  using set_filter(1)[OF assms(2)[simplified inv_set_invar_actives_def]]
   by(auto elim: maintain_forest_call_condE[OF assms(1)] 
          split: if_split prod.splits simp add: maintain_forest_upd_def Let_def)
 
 lemma mono_one_step:
   assumes "maintain_forest_call_cond state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
   shows "invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state + 1" 
         "\<F>_redges state \<subseteq> \<F>_redges(maintain_forest_upd state)"
         "card (comps \<V> (to_graph (\<FF> (maintain_forest_upd state)))) +1 =
@@ -2166,13 +2166,13 @@ lemma mono_one_step:
                \<and> connected_component (to_graph (\<FF>  state)) (fst e)
               \<subset> connected_component (to_graph (\<FF> (maintain_forest_upd state))) (fst e)"
 proof-
-  have all_invars: "invar_aux1 state" "invar_aux2 state" "invar_aux3 state" "invar_aux4 state"
-                   "invar_aux6 state" "invar_aux8 state" "invar_aux7 state" "invar_aux9 state "
-                   "invar_aux5 state" "invar_aux10 state" "invar_aux11 state" "invar_aux12 state"
-                   "invar_aux13 state" "invar_aux16 state" "invar_aux17 state" "invar_aux18 state"
-                    "invar_aux20 state" "invar_aux14 state"
-                   "invar_aux22 state"
-    using assms by(auto simp add: aux_invar_def)
+  have all_invars: "inv_actives_in_E state" "inv_digraph_abs_F_in_E state" "inv_forest_in_E state" "inv_forest_actives_disjoint state"
+                   "inv_conversion_consistent state" "inv_rep_reachable state" "inv_reachable_same_rep state" "inv_reps_in_V state "
+                   "inv_finite_forest state" "inv_components_in_V state" "inv_active_different_comps state" "inv_pos_bal_rep state"
+                   "inv_inactive_same_component state" "inv_comp_card_correct state" "inv_set_invar_actives state" "inv_forest_good_graph state"
+                    "inv_digraph_abs_\<FF>_sym state" "inv_dbltn_graph_forest state"
+                   "inv_unbl_iff_forest_active state"
+    using assms by(auto simp add: underlying_invars_def)
   define  \<FF> where  "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
   define b where "b = balance state"
@@ -2228,9 +2228,9 @@ proof-
           simp add: maintain_forest_upd_def Let_def defs_impl)
   note 10= state'_is
   have set_invar_E'[simp]: "set_invar E'"
-    using E'_def all_invars(15) invar_aux17_def by blast
+    using E'_def all_invars(15) inv_set_invar_actives_def by blast
   have E'_substE:"to_set E' \<subseteq> \<E>"
-    using all_invars(1) by(simp add: E'_def invar_aux1_def)
+    using all_invars(1) by(simp add: E'_def inv_actives_in_E_def)
   have e_prop: "e \<in> to_set E'" "abstract_flow_map f e > 8 * real N *\<gamma>"
                 "get_from_set (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = Some e"
     apply(all \<open>rule maintain_forest_call_condE[OF assms(1)]\<close>)
@@ -2244,9 +2244,9 @@ proof-
     using e_prop by simp
   have x_not_y: "fst e \<noteq> snd e" 
     using all_invars(11)  e_in_E' 
-    by(force simp add: invar_aux11_def E'_def )
+    by(force simp add: inv_active_different_comps_def E'_def )
   have good_graphF: "good_graph_invar \<FF>"
-    using all_invars(16) invar_aux18_def local.\<FF>_def by force
+    using all_invars(16) inv_forest_good_graph_def local.\<FF>_def by force
   have F'_digraph_abs_is:"[\<FF>']\<^sub>g = [\<FF>]\<^sub>g \<union> {(fst e, snd e), (snd e, fst e)}"
     using good_graphF by (auto simp add: \<FF>'_def good_graph_invar_def)
   hence F'_to_graph_is:"to_graph \<FF>' = to_graph \<FF> \<union> {{fst e, snd e}}"
@@ -2259,7 +2259,7 @@ proof-
     by(subst to_rdg'_def  add_direction_result)+
       (auto simp add: add_direction_result to_rdg_def)
   have forest_edges_neq_e:"{a, b} \<in> to_graph \<FF> \<Longrightarrow> {a, b} \<noteq> {x, y}" for a b
-    using  assms(2) e_in_E' from_aux_invar'(11)  mk_disjoint_insert
+    using  assms(2) e_in_E' from_underlying_invars'(11)  mk_disjoint_insert
         new_edge_disjoint_components[OF refl refl refl]
     by(fastforce simp add: x_def y_def local.\<FF>_def E'_def)
   hence dir_forest_edges_neq_e:"(a, b) \<in> digraph_abs \<FF> \<Longrightarrow> (a, b) \<noteq> (x, y)" 
@@ -2273,9 +2273,9 @@ proof-
   have 114: "{x', y'} = {abstract_rep_map r_card (fst e), abstract_rep_map r_card (snd e)}"
     by(auto simp add: x'_def y'_def xx_def yy_def xy_def x_def y_def)
   have reachable_in_forest_fst_in_V:"reachable (to_graph \<FF>) a b \<Longrightarrow> a \<in> \<V>" for a b 
-    using assms(2) from_aux_invar'(15) local.\<FF>_def reachable_to_Vs(1) by blast
+    using assms(2) from_underlying_invars'(15) local.\<FF>_def reachable_to_Vs(1) by blast
     have x'_y'_in_V:"x' \<in> \<V>"  "y' \<in> \<V>" 
-      using "114"  from_aux_invar'(9)[OF assms(2)] fste_V snde_V
+      using "114"  from_underlying_invars'(9)[OF assms(2)] fste_V snde_V
       by(auto simp add: r_card_def doubleton_eq_iff)
     have new_balance_is: "a_balance state' = (\<lambda>v. if v = x' then 0
           else if v = y' then abstract_bal_map b y' + abstract_bal_map b x'
@@ -2284,21 +2284,21 @@ proof-
       by(auto simp add:state'_def b'_def  abstract_bal_map_homo[OF  _  refl] b_def)
     note state_state' = state'_is
   have 01:"reachable (to_graph \<FF>) xx x' \<or> xx = x'"
-    by (simp add: assms(2) from_aux_invar'(8) local.\<FF>_def r_card_def x'_def)
+    by (simp add: assms(2) from_underlying_invars'(8) local.\<FF>_def r_card_def x'_def)
   have 02:"reachable (to_graph \<FF>) yy y' \<or> yy = y'"
-    by (simp add: assms(2) from_aux_invar'(8) local.\<FF>_def r_card_def y'_def)
+    by (simp add: assms(2) from_underlying_invars'(8) local.\<FF>_def r_card_def y'_def)
   hence 1100:"connected_component (to_graph \<FF>) (fst e) \<noteq> connected_component (to_graph \<FF>) (snd e)"
     using e_prop assms(2)
-    by(simp add: invar_aux11_def aux_invar_def  \<FF>'_def E'_def \<FF>_def)
+    by(simp add: inv_active_different_comps_def underlying_invars_def  \<FF>'_def E'_def \<FF>_def)
   have fst_snd_e_neq: "fst e \<noteq> snd e"
     using  1100 by auto
-    have asm': "invar_aux11 state" using assms  aux_invar_def by auto
+    have asm': "inv_active_different_comps state" using assms  underlying_invars_def by auto
 
     have cards_same_cond: "card (connected_component (to_graph \<FF>) x)
                            \<le> card (connected_component (to_graph \<FF>) y) \<longleftrightarrow>
                           abstract_comp_map r_card x \<le> abstract_comp_map r_card y" 
-      using "01" "02"  invar_aux16D[OF all_invars(14), of x]
-            invar_aux16D[OF all_invars(14), of y]
+      using "01" "02"  inv_comp_card_correctD[OF all_invars(14), of x]
+            inv_comp_card_correctD[OF all_invars(14), of y]
             reachable_in_forest_fst_in_V x'_y'_in_V(1,2)
       by(cases "cardx \<le> cardy") (auto simp add: xx_def xy_def yy_def  local.\<FF>_def r_card_def)
     have x'_not_y':"x' \<noteq> y'" 
@@ -2348,21 +2348,21 @@ proof-
      note concretization_of_F' = res_edges_new_forest_are
      have consist_to_rdg':"consist (digraph_abs \<FF>') (abstract_conv_map to_rdg')"
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
-       by(auto elim!: invar_aux6E''  aux_invarE simp add: state'_def)
+       by(auto elim!: inv_conversion_consistentE''  underlying_invarsE simp add: state'_def)
     have axioms_conds1: "x' \<in> Vs (to_graph \<FF>')" 
       using comps_union in_connected_component_in_edges[of x' "(to_graph \<FF>')" y']
              x'_not_y' in_own_connected_component[of x' "(to_graph \<FF>)"]
       by simp
     have axioms_conds2: "Vs (to_graph \<FF>') \<subseteq> \<V> " 
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
-       by(auto elim!:  aux_invarE invar_aux15E simp add: state'_def)
+       by(auto elim!:  underlying_invarsE inv_forest_in_VE simp add: state'_def)
      have axioms_conds3: "graph_invar (to_graph \<FF>')"
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
              validFD[of state'] 
-       by(auto elim!: aux_invarE invar_aux14E simp add: state'_def)
+       by(auto elim!: underlying_invarsE inv_dbltn_graph_forestE simp add: state'_def)
      have good_graphF': "good_graph_invar \<FF>'"
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-       by(auto elim!: aux_invarE invar_aux18E'' simp add: state'_def)
+       by(auto elim!: underlying_invarsE inv_forest_good_graphE'' simp add: state'_def)
      obtain qqq_u where qqq_prop_u:"walk_betw (to_graph  \<FF>') x' qqq_u y'"
     using comps_union connected_components_member_sym[of x' "to_graph \<FF>'" y'] 
           axioms_conds1 axioms_conds2 axioms_conds3
@@ -2371,7 +2371,7 @@ proof-
     by(auto intro: in_connected_component_has_walk)
   have symmetric_F': "symmetric_digraph (digraph_abs \<FF>')" 
        using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-       by(auto elim!: aux_invarE invar_aux20E simp add: state'_def)
+       by(auto elim!: underlying_invarsE inv_digraph_abs_\<FF>_symE simp add: state'_def)
   obtain qqq where qqq_prop:"vwalk_bet (digraph_abs  \<FF>') x' qqq y'"
     using symmetric_digraph_walk_betw_vwalk_bet symmetric_F' qqq_prop_u 
     by(force simp add: to_graph_def) 
@@ -2406,13 +2406,13 @@ proof-
       using redge_of_Q  edges_of_Q_in_F' by(auto simp add: state'_def F_def F_redges_def)
     hence  Q_oedges_in_E:"set (map oedge (to_redge_path to_rdg' Q)) \<subseteq> \<E>" 
       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-      by(auto elim!: invar_aux3E[OF invar_aux3_from_aux_invar] 
+      by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
            simp add: state'_def  image_subset_iff F_def F_redges_def)
     have Q_rev_redges_in_F:"set (to_redge_path to_rdg' (rev Q)) \<subseteq> \<F>_redges state'" 
       using redge_of_Q_rev  edges_of_Q_rev_in_F' by(auto simp add: state'_def F_def F_redges_def)
     hence  Q_rev_oedges_in_E:"set (map oedge (to_redge_path to_rdg' (rev Q))) \<subseteq> \<E>" 
       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-      by(auto elim!: invar_aux3E[OF invar_aux3_from_aux_invar] 
+      by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
            simp add: state'_def  image_subset_iff F_def F_redges_def)
     have f'_is:
    "abstract_flow_map (augment_edges_impl f (abstract_bal_map b x') (to_redge_path to_rdg' Q)) =
@@ -2439,7 +2439,7 @@ proof-
   show goal3:" invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state + 1"
   proof-
     assume invar_gamma_asm: "invar_gamma state "
-    have invar6_asm: "invar_aux11 state"
+    have invar6_asm: "inv_active_different_comps state"
       by (simp add: asm')
     have 10:"\<Phi> state = 
           (\<Sum> v \<in>  \<V> - {x', y'}. \<lceil> \<bar> a_balance state v\<bar> / (current_\<gamma> state) - (1 - \<epsilon>)\<rceil>) +
@@ -2489,21 +2489,21 @@ proof-
    show goal4:"card (comps \<V> (to_graph (Algo_state.\<FF> (maintain_forest_upd state)))) +1 = 
                                    card (comps \<V> (to_graph (Algo_state.\<FF> state))) "
     proof-
-      have invar6_asm:"invar_aux11 state"
-        using assms(2) by (simp add: aux_invar_def invar_aux11_def)
+      have invar6_asm:"inv_active_different_comps state"
+        using assms(2) by (simp add: underlying_invars_def inv_active_different_comps_def)
       show "card (comps \<V> (to_graph (Algo_state.\<FF> (maintain_forest_upd state)))) +1 = 
                    card (comps \<V> (to_graph (Algo_state.\<FF> state)))"
         using  sym[OF state_state'] 1100 invar6_asm fste_V snde_V  \<V>_finite assms(2)  F_rewrite 
        by (auto intro: card_decrease_component_join[simplified]
-             simp add: state'_def  \<FF>'_def \<FF>_def aux_invar_def invar_aux5_def) 
+             simp add: state'_def  \<FF>'_def \<FF>_def underlying_invars_def inv_finite_forest_def) 
    qed
     show "invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state +
                  (card (comps \<V> (to_graph (Algo_state.\<FF> state)))) - 
                  (card (comps \<V> (to_graph (Algo_state.\<FF> (maintain_forest_upd state)))))"
     proof-
       assume invar6_asm: "invar_gamma state"   
-      have invar6_asm':"invar_aux11 state"
-        using assms(2) by (simp add:  aux_invar_def invar_aux11_def)   
+      have invar6_asm':"inv_active_different_comps state"
+        using assms(2) by (simp add:  underlying_invars_def inv_active_different_comps_def)   
       moreover have "connected_component (to_graph \<FF>) (fst e) \<in> 
                (comps \<V> (to_graph (Algo_state.\<FF> state)))"
         using fste_V by (simp add: comps_def \<FF>_def)
@@ -2559,8 +2559,8 @@ qed
 
 lemma maintain_forest_invar_aux_pres:
   assumes "maintain_forest_dom state"
-          "aux_invar state" "implementation_invar state"
-  shows   "aux_invar (maintain_forest state)"
+          "underlying_invars state" "implementation_invar state"
+  shows   "underlying_invars (maintain_forest state)"
   using assms(2-) 
 proof(induction rule: maintain_forest_induct[OF assms(1)])
   case (1 state)
@@ -2574,7 +2574,7 @@ subsection \<open>Inductions\<close>
 
 lemma maintain_forest_implementation_invar_pres:
   assumes "maintain_forest_dom state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
   shows   "implementation_invar (maintain_forest state)"
   using assms(2-) 
 proof(induction rule: maintain_forest_induct[OF assms(1)])
@@ -2586,7 +2586,7 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
 qed
 
 lemma termination_of_maintain_forest:
-  assumes "aux_invar state" "implementation_invar state"
+  assumes "underlying_invars state" "implementation_invar state"
           "n = card (comps \<V> (to_graph (\<FF> state)))"
   shows "maintain_forest_dom state"
   using assms 
@@ -2610,13 +2610,13 @@ proof(induction n arbitrary: state rule: less_induct)
 qed
 
 lemma termination_of_maintain_forest':
-  assumes "aux_invar state" "implementation_invar state"
+  assumes "underlying_invars state" "implementation_invar state"
   shows "maintain_forest_dom state"
   using assms termination_of_maintain_forest 
-  by(simp add: aux_invar_def)
+  by(simp add: underlying_invars_def)
 
 lemma gamma_pres: 
-  assumes "aux_invar state" "implementation_invar state"
+  assumes "underlying_invars state" "implementation_invar state"
   shows "current_\<gamma> (maintain_forest state) = current_\<gamma> state"
   using assms
 proof(induction rule: maintain_forest_induct[OF
@@ -2630,7 +2630,7 @@ proof(induction rule: maintain_forest_induct[OF
 qed
 
 theorem maintain_forest_invar_gamma_pres:
-  assumes "aux_invar state" "implementation_invar state"
+  assumes "underlying_invars state" "implementation_invar state"
   shows "invar_gamma state \<Longrightarrow> invar_gamma (maintain_forest state)"
   using assms 
 proof(induction rule: maintain_forest_induct[OF
@@ -2644,7 +2644,7 @@ proof(induction rule: maintain_forest_induct[OF
 qed
 
 lemma invarA2_pres: 
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "0 \<le> thr2"
           "invarA_1 thr2 state"
           "invarA_2 thr1 thr2 state"
@@ -2679,7 +2679,7 @@ next
 qed
 
 theorem send_flow_entryF: 
-  assumes "aux_invar state" 
+  assumes "underlying_invars state" 
           "maintain_forest_entry state"
           "invar_gamma state"
           "(\<gamma>::real) = current_\<gamma> state"
@@ -2691,7 +2691,7 @@ theorem send_flow_entryF:
     case (1 e)
     hence e_in_E:"e \<in>  \<E>"
       using maintain_forest_invar_aux_pres[of state] termination_of_maintain_forest assms(1,7) 
-      by(auto elim!: aux_invarE invar_aux3E)     
+      by(auto elim!: underlying_invarsE inv_forest_in_EE)     
     have gamma_same_after_maintain_forest: "current_\<gamma> (maintain_forest state) = \<gamma>"
       using assms gamma_pres[OF assms(1)] by simp
     have " invarA_2 (real (8 * N) * \<gamma>) (2 * \<gamma>) (local.maintain_forest state)"
@@ -2701,10 +2701,10 @@ theorem send_flow_entryF:
              8*N*\<gamma> - 2 * \<gamma> * card (connected_component (to_graph (\<FF> (local.maintain_forest state))) (fst e))"
       using 1 by(auto simp add: invarA_2_def)
     have bb:"card (connected_component (to_graph (\<FF> (local.maintain_forest state))) (fst e)) \<le> N"
-      using \<V>_finite  invar_aux10_def[of "(local.maintain_forest state)"] e_in_E
+      using \<V>_finite  inv_components_in_V_def[of "(local.maintain_forest state)"] e_in_E
             maintain_forest_invar_aux_pres[of state, OF _  assms(1,7)]
             termination_of_maintain_forest[OF assms(1,7) refl] assms(1) make_pair[OF refl refl, of e]
-      by(auto simp add: aux_invar_def  N_def image_def dVs_def) (smt (z3) card_mono insertI1)
+      by(auto simp add: underlying_invars_def  N_def image_def dVs_def) (smt (z3) card_mono insertI1)
     show ?case 
       using assms gamma_same_after_maintain_forest  bb aa assms 
       by (auto intro: order.strict_trans1[of _ 
@@ -2712,7 +2712,7 @@ theorem send_flow_entryF:
   qed
 
 lemma Phi_increase: 
-  assumes "aux_invar state" "invar_gamma state" "implementation_invar state"
+  assumes "underlying_invars state" "invar_gamma state" "implementation_invar state"
     shows "\<Phi> (maintain_forest state) \<le> \<Phi> state + (card (comps \<V> (to_graph (\<FF> state)))) - 
                                     (card (comps \<V> (to_graph (\<FF>(maintain_forest state)))))"
   using assms 
@@ -2741,15 +2741,15 @@ next
 qed
 
 theorem Phi_increase_below_N:
- assumes "aux_invar state" "invar_gamma state" "implementation_invar state"
+ assumes "underlying_invars state" "invar_gamma state" "implementation_invar state"
    shows "\<Phi> (maintain_forest state) \<le> \<Phi> state + N"
   using  Phi_increase[of state, OF assms] maintain_forest_invar_aux_pres[of state] assms
          number_comps_below_vertex_card[of "to_graph (\<FF> state)" \<V>, OF _ \<V>_finite]
          termination_of_maintain_forest
-  by(simp add:  aux_invar_def invar_aux5_def N_def)
+  by(simp add:  underlying_invars_def inv_finite_forest_def N_def)
 
 lemma F_superset:
-  assumes "aux_invar state" "implementation_invar state"
+  assumes "underlying_invars state" "implementation_invar state"
   shows "\<F>_redges state \<subseteq> \<F>_redges (maintain_forest state)"
   using assms 
 proof(induction rule: maintain_forest_induct[of state])
@@ -2777,7 +2777,7 @@ next
 qed
 
 lemma actives_superset:
-  assumes "aux_invar state" "implementation_invar state"
+  assumes "underlying_invars state" "implementation_invar state"
   shows "to_set (actives (maintain_forest state)) \<subseteq> to_set (actives state)"
   using assms
 proof(induction rule: maintain_forest_induct[of state])
@@ -2800,13 +2800,13 @@ next
            invars_pres_one_step(1)[OF 2 IH(3,4)]
            invar_gamma_pres_one_step[OF 2 ] 2
            mono_one_step(6)[OF 2 IH(3,4)] IH(2) 
-           mono_one_step_actives[OF 2 from_aux_invar(17)[OF IH(3)]]
+           mono_one_step_actives[OF 2 from_underlying_invars(17)[OF IH(3)]]
       by auto
   qed
 qed
 
 lemma outside_F_no_flow_change:
-  assumes "aux_invar state" "implementation_invar state"
+  assumes "underlying_invars state" "implementation_invar state"
   shows   "\<And> d. d \<in> (UNIV -  \<F> (maintain_forest state)) \<Longrightarrow>
                a_current_flow (maintain_forest state) d =  a_current_flow state d"
   using assms 
@@ -2850,7 +2850,7 @@ proof(induction rule: maintain_forest_induct)
 qed 
    
 theorem maintain_forest_invar_integral_pres:
-  assumes "aux_invar state" "invar_integral state" "implementation_invar state"
+  assumes "underlying_invars state" "invar_integral state" "implementation_invar state"
   shows "invar_integral (maintain_forest state)"
   unfolding invar_integral_def
 proof
@@ -2859,7 +2859,7 @@ proof
   hence "e \<notin> \<F> (maintain_forest state)"
     using maintain_forest_invar_aux_pres[of state, OF termination_of_maintain_forest']
           assms(1,3) 
-    by(auto elim!: aux_invarE invar_aux4E)
+    by(auto elim!: underlying_invarsE inv_forest_actives_disjointE)
   hence "a_current_flow (maintain_forest state) e = a_current_flow state e"
     using outside_F_no_flow_change[of state e] assms(1,3) by simp
   moreover have "current_\<gamma> (maintain_forest state) = current_\<gamma>  state"
@@ -2873,7 +2873,7 @@ proof
 qed
 
 lemma flow_optimatlity_pres: 
-  assumes "aux_invar (state)"
+  assumes "underlying_invars (state)"
           "0 \<le> thr2"
           "invarA_1 thr2 state"
           "invar_isOptflow state"
@@ -2910,7 +2910,7 @@ next
 qed
 
 lemma forest_increase: 
-  assumes "maintain_forest_dom state" "aux_invar state" 
+  assumes "maintain_forest_dom state" "underlying_invars state" 
           "implementation_invar state"
   shows   "to_graph (\<FF> (maintain_forest state)) \<supseteq> to_graph (\<FF> state)"
   using assms(2-) 
@@ -2925,7 +2925,7 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
 qed
 
 lemma card_decrease: 
-  assumes "maintain_forest_dom state" "aux_invar state" "implementation_invar state"
+  assumes "maintain_forest_dom state" "underlying_invars state" "implementation_invar state"
   shows   "card (comps \<V> (to_graph (\<FF>(maintain_forest state))))
                    \<le> card (comps \<V> (to_graph (\<FF> state)))"
   using assms(2-)
@@ -2940,7 +2940,7 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
 qed
 
 lemma card_strict_decrease: 
-  assumes "maintain_forest_dom state" "aux_invar state"
+  assumes "maintain_forest_dom state" "underlying_invars state"
           "maintain_forest_call_cond state" "implementation_invar state"
   shows   "card (comps \<V>  (to_graph (\<FF> (maintain_forest state)))) 
                    < card (comps \<V> (to_graph (\<FF> state)))"
@@ -2952,7 +2952,7 @@ lemma card_strict_decrease:
   by (simp add: assms(4))
 
 lemma component_strict_increase: 
-  assumes "maintain_forest_dom state" "aux_invar state"
+  assumes "maintain_forest_dom state" "underlying_invars state"
           "maintain_forest_call_cond state"
           "e \<in> to_set (actives state)"
           "a_current_flow state e > 8 * real N * current_\<gamma> state"
@@ -2969,7 +2969,7 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
             termination_of_maintain_forest' 
     by simp
   have e_in_E:"e \<in> \<E>" 
-    using  IH(5) by(auto intro: aux_invarE[OF IH(3)] invar_aux1E)
+    using  IH(5) by(auto intro: underlying_invarsE[OF IH(3)] inv_actives_in_EE)
   show ?case
   proof(subst maintain_forest_simps(1)[OF IH(1) IH(4)], 
         subst maintain_forest_simps(1)[OF IH(1) IH(4)], goal_cases)
@@ -2980,7 +2980,7 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
        hence "connected_component (to_graph (\<FF>  (maintain_forest_upd state))) (fst e) =
               connected_component (to_graph (\<FF> (maintain_forest_upd state))) (snd e)"
          using  IH(5)  invar_aux_pres_one_step[OF IH(3,4,7)] e_in_E
-         by(simp add: aux_invar_def  invar_aux13_def)
+         by(simp add: underlying_invars_def  inv_inactive_same_component_def)
        then show ?thesis       
          using  invar_aux_pres_one_step[OF IH(3,4,7)]
                 invars_pres_one_step(1)[OF IH(4,3,7)]
@@ -2992,14 +2992,14 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
     hence e_active_upd:"e \<in> to_set (actives (maintain_forest_upd state))" by simp
     have same_flow:"a_current_flow (maintain_forest_upd state) e = a_current_flow state e"
       using  invar_aux_pres_one_step[OF IH(3,4,7)] e_active_upd 
-      by (auto intro: mono_one_step(5)[OF IH(4,3,7), of e] simp add: aux_invar_def invar_aux4_def )
+      by (auto intro: mono_one_step(5)[OF IH(4,3,7), of e] simp add: underlying_invars_def inv_forest_actives_disjoint_def )
     have same_gamma: "current_\<gamma> (maintain_forest_upd state) = current_\<gamma> state"
       using IH(4) mono_one_step_gamma by force
     have "\<exists>y. get_from_set (\<lambda>e. 8 * real N * current_\<gamma> state < a_current_flow (maintain_forest_upd state) e)
        (actives (maintain_forest_upd state)) =
          Some y"
       using  invar_aux_pres_one_step[OF IH(3,4,7)] IH(6) same_flow  e_active_upd   
-      by (auto intro!: set_get(1) elim: aux_invarE invar_aux17E)
+      by (auto intro!: set_get(1) elim: underlying_invarsE inv_set_invar_activesE)
     hence "maintain_forest_call_cond (maintain_forest_upd state)"
       using same_gamma 
       by(auto intro: maintain_forest_call_condI[OF refl refl refl refl])
@@ -3012,7 +3012,7 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
 qed
 
 lemma same_number_comps_abort:
-  assumes "aux_invar state" "maintain_forest_dom state" 
+  assumes "underlying_invars state" "maintain_forest_dom state" 
           "card (comps \<V> (to_graph (\<FF> (maintain_forest state)))) = 
               card (comps \<V> (to_graph (\<FF> state)))" "implementation_invar state"
     shows "maintain_forest_ret_cond state"
@@ -3021,7 +3021,7 @@ lemma same_number_comps_abort:
 
 lemma all_actives_zero_flow_same_state:
   assumes "\<forall>e\<in>to_set (actives state). a_current_flow state e = 0"
-          "aux_invar state" "invar_gamma state" 
+          "underlying_invars state" "invar_gamma state" 
   shows   "maintain_forest state = state"
 proof(subst maintain_forest_simps(2)[OF maintain_forest_ret_condI, OF refl refl refl refl], goal_cases)
   case 1
@@ -3029,7 +3029,7 @@ proof(subst maintain_forest_simps(2)[OF maintain_forest_ret_condI, OF refl refl 
   proof(rule ccontr, clarsimp, goal_cases)
     case (1 e)
     have set_invar:"set_invar (actives state)" 
-      by (simp add: assms(2) from_aux_invar'(17))
+      by (simp add: assms(2) from_underlying_invars'(17))
     have "8 * real N * current_\<gamma> state < a_current_flow state e" "e \<in> to_set (actives state)"
       using set_get(2,3)[OF set_invar 1] by auto
     moreover have "current_\<gamma> state > 0"

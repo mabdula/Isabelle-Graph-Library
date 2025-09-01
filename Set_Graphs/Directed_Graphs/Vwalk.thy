@@ -312,6 +312,10 @@ lemma vwalk_bet_reflexive[intro]:
   using assms 
   unfolding vwalk_bet_def by simp
 
+lemma vwalk_bet_reflexive_cong: 
+"\<lbrakk>w \<in> dVs E;  a = w; b = w\<rbrakk> \<Longrightarrow> vwalk_bet E a [w] b" 
+  by (meson vwalk_bet_reflexive)
+
 lemma singleton_hd_last: "q \<noteq> [] \<Longrightarrow> tl q = [] \<Longrightarrow> hd q = last q"
   by (cases q) simp_all
 
@@ -357,6 +361,10 @@ lemma edges_are_vwalk_bet:
   unfolding vwalk_bet_def
   using assms
   by (simp add: dVsI)
+
+lemma  edges_are_vwalk_bet_cong: 
+ "\<lbrakk>(v,w)\<in> E; a = v;  b = w\<rbrakk> \<Longrightarrow> vwalk_bet E a [v, w] b" for v E w a b
+  using edges_are_vwalk_bet by auto
 
 lemma induct_vwalk_bet[case_names path1 path2, consumes 1, induct set: vwalk_bet]:
   assumes "vwalk_bet E a p b"

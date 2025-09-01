@@ -1,7 +1,7 @@
 section \<open>Formalisation of Loop for Ordinary Augmentations (Send-Flow)\<close>
  
 theory Send_Flow
-  imports Intermediate_Summary
+  imports Orlins_Preparation
 begin
 
 subsection \<open>Setup\<close>
@@ -529,20 +529,20 @@ lemma send_flow_simps':
 
 definition "get_source_target_path_a_cond state s t P b \<gamma> f = (
              get_source_target_path_a state s = Some (t, P) \<and> s \<in> \<V>  \<and>
-             aux_invar state \<and> (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0)\<and>
+             underlying_invars state \<and> (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0)\<and>
              b = balance state\<and> \<gamma> = current_\<gamma> state \<and> Some s = get_source state \<and>
              f = current_flow state  \<and> invar_gamma state \<and>
              implementation_invar state \<and> invar_isOptflow state)"
 
 definition "impl_a_None_cond state  s b \<gamma> f = (
             b = balance state \<and> \<gamma> = current_\<gamma> state \<and> f = current_flow state\<and>
-            s \<in> \<V> \<and> aux_invar state \<and> (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0)\<and>
+            s \<in> \<V> \<and> underlying_invars state \<and> (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0)\<and>
             get_source_target_path_a state s = None \<and> Some s = get_source state \<and>
             implementation_invar state \<and> invar_gamma state)"
 
 definition "get_source_target_path_b_cond state s t P b \<gamma> f =
            (get_source_target_path_b state t = Some (s, P) \<and> t \<in> \<V> \<and>
-           aux_invar state \<and>
+           underlying_invars state \<and>
            (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0)
            \<and> b = balance state\<and> \<gamma> = current_\<gamma> state \<and>
             Some t = get_target state \<and> f = current_flow state \<and>
@@ -551,7 +551,7 @@ definition "get_source_target_path_b_cond state s t P b \<gamma> f =
 
 definition "impl_b_None_cond state t b \<gamma> f = 
 (b = balance state\<and> \<gamma> = current_\<gamma> state\<and> f = current_flow state \<and>
- t \<in> \<V> \<and> aux_invar state \<and> (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0)\<and>
+ t \<in> \<V> \<and> underlying_invars state \<and> (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0)\<and>
  get_source_target_path_b state t = None\<and> Some t = get_target state \<and>
  implementation_invar state \<and> invar_gamma state )"
 
@@ -560,7 +560,7 @@ definition "vertex_selection_cond state b \<gamma> =
 
 lemma get_source_target_path_a_condI:
  " \<lbrakk>get_source_target_path_a state s = Some (t, P) ; s \<in> \<V> ; 
-    aux_invar state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0); 
+    underlying_invars state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0); 
     b = balance state; \<gamma> = current_\<gamma> state ; Some s = get_source state;
        f = current_flow state;  invar_gamma state;
      implementation_invar state;  invar_isOptflow state\<rbrakk> 
@@ -568,7 +568,7 @@ lemma get_source_target_path_a_condI:
   by(auto simp add: get_source_target_path_a_cond_def)
 
 lemma  get_source_target_path_b_condI:
-       "\<lbrakk>get_source_target_path_b state t = Some (s, P); t \<in> \<V>; aux_invar state;
+       "\<lbrakk>get_source_target_path_b state t = Some (s, P); t \<in> \<V>; underlying_invars state;
          (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
           b = balance state; \<gamma> = current_\<gamma> state ;
           Some t = get_target state; f = current_flow state;
@@ -580,7 +580,7 @@ lemma  get_source_target_path_b_condI:
 lemma get_source_target_path_a_condE:
  " get_source_target_path_a_cond state s t P b \<gamma> f \<Longrightarrow>
    ( \<lbrakk>get_source_target_path_a state s = Some (t, P) ; s \<in> \<V> ; 
-    aux_invar state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0); 
+    underlying_invars state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0); 
     b = balance state; \<gamma> = current_\<gamma> state ;  Some s = get_source state ;
        f = current_flow state; invar_gamma state;
           implementation_invar state;  invar_isOptflow state\<rbrakk> 
@@ -589,7 +589,7 @@ lemma get_source_target_path_a_condE:
 
 lemma  get_source_target_path_b_condE:
        "get_source_target_path_b_cond state s t P b \<gamma> f \<Longrightarrow>
-        (\<lbrakk>get_source_target_path_b state t = Some (s, P); t \<in> \<V>; aux_invar state;
+        (\<lbrakk>get_source_target_path_b state t = Some (s, P); t \<in> \<V>; underlying_invars state;
          (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0); b = balance state; \<gamma> = current_\<gamma> state ;
           Some t = get_target state;  f = current_flow state;
           invar_gamma state;
@@ -629,7 +629,7 @@ implementation_invar state\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
 
 lemma impl_a_None_condI:
 "\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
-   s \<in> \<V>; aux_invar state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
+   s \<in> \<V>; underlying_invars state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
 get_source_target_path_a state s = None; Some s = get_source state;
             implementation_invar state; invar_gamma state\<rbrakk>
     \<Longrightarrow>impl_a_None_cond state s b \<gamma> f"
@@ -638,7 +638,7 @@ get_source_target_path_a state s = None; Some s = get_source state;
 lemma impl_a_None_condE:
 "impl_a_None_cond state s b \<gamma> f \<Longrightarrow>
    (\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
-      s \<in> \<V>; aux_invar state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
+      s \<in> \<V>; underlying_invars state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
      get_source_target_path_a state s = None; Some s = get_source state;
      implementation_invar state; invar_gamma state\<rbrakk>
     \<Longrightarrow>P) \<Longrightarrow> P"
@@ -646,7 +646,7 @@ lemma impl_a_None_condE:
 
 lemma impl_b_None_condI:
 "\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;
-    t \<in> \<V>; aux_invar state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
+    t \<in> \<V>; underlying_invars state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
    get_source_target_path_b state t = None; Some t = get_target state;
    implementation_invar state; invar_gamma state \<rbrakk>
      \<Longrightarrow> impl_b_None_cond state t b \<gamma> f"
@@ -655,7 +655,7 @@ lemma impl_b_None_condI:
 lemma impl_b_None_condE:
 "impl_b_None_cond state t b \<gamma> f \<Longrightarrow> 
      (\<lbrakk>b = balance state; \<gamma> = current_\<gamma> state; f = current_flow state;  t \<in> \<V>; 
-         aux_invar state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
+         underlying_invars state; (\<forall> e \<in> \<F> state . abstract_flow_map f e > 0);
         get_source_target_path_b state t = None; Some t = get_target state;
         implementation_invar state; invar_gamma state \<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by(auto simp add: impl_b_None_cond_def)
@@ -730,7 +730,7 @@ lemma if_send_flow_call1_cond_advanced:
           "implementation_invar state"
           "Some s = get_source state"
           "Some (t, P) = get_source_target_path_a state s"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_gamma state"
           "pos_flow_F state"
           "invar_isOptflow state"
@@ -760,7 +760,7 @@ lemma if_send_flow_fail1_cond_advanced:
           "implementation_invar state"
           "Some s = get_source state"
           "None = get_source_target_path_a state s"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_gamma state"
           "pos_flow_F state"
           "invar_isOptflow state"
@@ -787,7 +787,7 @@ lemma if_send_flow_call2_cond_advanced:
           "None = get_source state"
           "Some t = get_target state"
           "Some (s, P) = get_source_target_path_b state t"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_gamma state"
           "pos_flow_F state"
           "invar_isOptflow state"
@@ -819,7 +819,7 @@ lemma if_send_flow_fail2_cond_advanced:
           "None = get_source state"
           "Some t = get_target state"
           "None = get_source_target_path_b state t"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_gamma state"
           "pos_flow_F state"
           "invar_isOptflow state"
@@ -842,12 +842,12 @@ lemma if_send_flow_cont_cond_basic:
   using assms test_all_vertices_zero_balance
   by(auto elim: send_flow_cont_condE)
 
-lemma send_flow_call1_invar_aux12_pres:
+lemma send_flow_call1_inv_pos_bal_rep_pres:
   assumes "send_flow_call1_cond state"
           "invar_gamma state" "implementation_invar state"
-          "aux_invar state" "pos_flow_F state"
+          "underlying_invars state" "pos_flow_F state"
           "invar_isOptflow state"
-    shows "invar_aux12 (send_flow_call1_upd state)"
+    shows "inv_pos_bal_rep (send_flow_call1_upd state)"
 proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> s t P f' b' state')
   note unf = this
@@ -865,12 +865,12 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
     by (smt (verit, del_insts) \<epsilon>_axiom(1) mult_neg_pos)
   have s_rep: "representative state s = s" 
     using s_prop  b_s unf
-    by (simp add: assms(4) from_aux_invar'(12))
+    by (simp add: assms(4) from_underlying_invars'(12))
   have t_rep: "representative state t = t" 
     using t_prop  b_t unf
-    by (simp add: assms(4) from_aux_invar'(12))
+    by (simp add: assms(4) from_underlying_invars'(12))
   show ?case 
-  proof(rule invar_aux12I, goal_cases)
+  proof(rule inv_pos_bal_repI, goal_cases)
     case (1 v)
     have same_rep:"representative (send_flow_call1_upd state) v = representative state v"
       using send_flow_call1_upd_changes(5) by fastforce
@@ -896,7 +896,7 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
           using assms(3) false unf(2,8) by fastforce
         hence "abstract_bal_map b v \<noteq> 0" using 1 b_b' by simp
         hence "representative state v = v"
-          using 1 assms(4) from_aux_invar'(12) unf(2) by blast
+          using 1 assms(4) from_underlying_invars'(12) unf(2) by blast
         then show ?thesis
           by (simp add: send_flow_call1_upd_changes(5))
       qed
@@ -904,12 +904,12 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   qed
 qed
  
-lemma send_flow_call2_invar_aux12_pres:
+lemma send_flow_call2_inv_pos_bal_rep_pres:
   assumes "send_flow_call2_cond state" 
           "invar_gamma state" "implementation_invar state"
-          "aux_invar state" "pos_flow_F state"
+          "underlying_invars state" "pos_flow_F state"
           "invar_isOptflow state"
-    shows "invar_aux12 (send_flow_call2_upd state)"
+    shows "inv_pos_bal_rep (send_flow_call2_upd state)"
 proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   case (1 f b \<gamma> t s P f' b' state')
   note unf = this
@@ -927,12 +927,12 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     by auto (smt (z3) mult_neg_pos)
   have s_rep: "representative state s = s" 
     using s_prop assms(3) b_s unf
-    by (simp add: assms(4) from_aux_invar'(12))
+    by (simp add: assms(4) from_underlying_invars'(12))
   have t_rep: "representative state t = t" 
     using t_prop assms(3) b_t unf 
-    by (simp add: assms(4) from_aux_invar'(12))
+    by (simp add: assms(4) from_underlying_invars'(12))
   show ?case 
-  proof(rule invar_aux12I, goal_cases)
+  proof(rule inv_pos_bal_repI, goal_cases)
     case (1 v)
     have same_rep:"representative (send_flow_call2_upd state) v = representative state v"
       by (simp add: send_flow_call2_upd_changes(5))
@@ -958,7 +958,7 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
           using assms(3) false unf(2,9) by fastforce
         hence "abstract_bal_map b v \<noteq> 0" using 1 b_b' by simp
         hence "representative state v = v"
-          by (simp add: "1"(1) assms(4) from_aux_invar'(12) unf(2))
+          by (simp add: "1"(1) assms(4) from_underlying_invars'(12) unf(2))
         then show ?thesis 
           using same_rep by auto
       qed
@@ -969,41 +969,41 @@ qed
 lemma invar_aux_pres_call1:
   assumes "send_flow_call1_cond state"
           "invar_gamma state" "implementation_invar state"
-          "aux_invar state" "pos_flow_F state"
+          "underlying_invars state" "pos_flow_F state"
           "invar_isOptflow state"
-        shows "aux_invar (send_flow_call1_upd state)"
-  apply(rule aux_invar_pres[of state, OF assms(4)])      
+        shows "underlying_invars (send_flow_call1_upd state)"
+  apply(rule underlying_invars_pres[of state, OF assms(4)])      
   using send_flow_call1_upd_changes[of state] 
-        send_flow_call1_invar_aux12_pres[OF assms(1,2,3,4,5,6)]
-   by(auto elim!:  invar_aux12E intro: forest_symmetic
+        send_flow_call1_inv_pos_bal_rep_pres[OF assms(1,2,3,4,5,6)]
+   by(auto elim!:  inv_pos_bal_repE intro: forest_symmetic
               simp add: validF_def) 
 
 lemma invar_aux_pres_call2:
   assumes "send_flow_call2_cond state"
           "invar_gamma state" "implementation_invar state"
-          "aux_invar state" "pos_flow_F state"
+          "underlying_invars state" "pos_flow_F state"
           "invar_isOptflow state"
-        shows "aux_invar (send_flow_call2_upd state)"
-  apply(rule aux_invar_pres[of state, OF assms(4)])      
+        shows "underlying_invars (send_flow_call2_upd state)"
+  apply(rule underlying_invars_pres[of state, OF assms(4)])      
   using send_flow_call2_upd_changes[of state] 
-        send_flow_call2_invar_aux12_pres[OF assms(1,2,3,4,5,6)]
-   by(auto elim!:  invar_aux12E intro: forest_symmetic
+        send_flow_call2_inv_pos_bal_rep_pres[OF assms(1,2,3,4,5,6)]
+   by(auto elim!:  inv_pos_bal_repE intro: forest_symmetic
               simp add: validF_def) 
 
-lemma aux_invar_pres_succ:
-"aux_invar state \<Longrightarrow> aux_invar (send_flow_succ_upd state)"
-and aux_invar_pres_cont:
-"aux_invar state \<Longrightarrow> aux_invar (send_flow_cont_upd state)"
-and aux_invar_pres_fail:
-"aux_invar  state \<Longrightarrow> aux_invar  (send_flow_fail_upd state)"
+lemma underlying_invars_pres_succ:
+"underlying_invars state \<Longrightarrow> underlying_invars (send_flow_succ_upd state)"
+and underlying_invars_pres_cont:
+"underlying_invars state \<Longrightarrow> underlying_invars (send_flow_cont_upd state)"
+and underlying_invars_pres_fail:
+"underlying_invars  state \<Longrightarrow> underlying_invars  (send_flow_fail_upd state)"
   using  send_flow_succ_upd_changes[of state] send_flow_cont_upd_changes[of state]
          send_flow_fail_upd_changes[of state]
-  by(auto simp add: aux_invar_def invar_aux1_def invar_aux2_def invar_aux3_def
-                       invar_aux4_def invar_aux5_def invar_aux6_def invar_aux7_def 
-                       invar_aux8_def invar_aux9_def invar_aux10_def invar_aux11_def 
-                       invar_aux12_def invar_aux13_def invar_aux14_def invar_aux15_def
-                       invar_aux16_def  invar_aux17_def invar_aux18_def invar_aux20_def 
-                       invar_aux22_def
+  by(auto simp add: underlying_invars_def inv_actives_in_E_def inv_digraph_abs_F_in_E_def inv_forest_in_E_def
+                       inv_forest_actives_disjoint_def inv_finite_forest_def inv_conversion_consistent_def inv_reachable_same_rep_def 
+                       inv_rep_reachable_def inv_reps_in_V_def inv_components_in_V_def inv_active_different_comps_def 
+                       inv_pos_bal_rep_def inv_inactive_same_component_def inv_dbltn_graph_forest_def inv_forest_in_V_def
+                       inv_comp_card_correct_def  inv_set_invar_actives_def inv_forest_good_graph_def inv_digraph_abs_\<FF>_sym_def 
+                       inv_unbl_iff_forest_active_def
            elim: validFE intro!: validFI)
 
 lemma implementation_invar_pres_succ:
@@ -1349,7 +1349,7 @@ qed
 
 lemma send_flow_call1_cond_Phi_decr:
   assumes "send_flow_call1_cond state" "invar_gamma state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state"
   shows "\<Phi> (send_flow_call1_upd state) \<le> \<Phi> state - 1"
 proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
@@ -1458,7 +1458,7 @@ qed
   
 lemma send_flow_call2_cond_Phi_decr:
   assumes "send_flow_call2_cond state" "invar_gamma state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state"
   shows "\<Phi> (send_flow_call2_upd state) \<le> \<Phi> state - 1"
 proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
@@ -1585,7 +1585,7 @@ lemma send_flow_fail_upd_flow_pres: "current_flow (send_flow_fail_upd state) = c
 
 lemma send_flow_call1_cond_flow_Phi:
   assumes  "send_flow_call1_cond state" "invar_gamma state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state"
           "state' = send_flow_call1_upd state"
      shows"a_current_flow  state' e \<ge> a_current_flow state e - (\<Phi> state - \<Phi> state')*current_\<gamma> state'"
@@ -1607,7 +1607,7 @@ hence "state' = send_flow_call1_upd state"
     using assms(4) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
     unfolding 1
-    using tP(5) from_aux_invar'(1,3)[OF assms(3)]
+    using tP(5) from_underlying_invars'(1,3)[OF assms(3)]
     by(intro augment_edges_homo[OF _ flow_dom_is(2)])
       (auto simp add: image_set  flow_dom_is(1) simp del: set_map)
   have "abstract_flow_map f e- \<gamma> \<le> abstract_flow_map f' e" 
@@ -1629,7 +1629,7 @@ qed
 
 lemma send_flow_call2_cond_flow_Phi:
   assumes  "send_flow_call2_cond state" "invar_gamma state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state"
           "state' = send_flow_call2_upd state"
      shows"a_current_flow  state' e \<ge> a_current_flow state e - (\<Phi> state - \<Phi> state')*current_\<gamma> state'"
@@ -1650,7 +1650,7 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     using assms(4) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
     unfolding 1
-    using sP(5) from_aux_invar'(1,3)[OF assms(3)]
+    using sP(5) from_underlying_invars'(1,3)[OF assms(3)]
     by(intro augment_edges_homo[OF _ flow_dom_is(2)])
       (auto simp add: image_set  flow_dom_is(1) simp del: set_map)
   have "abstract_flow_map f e- \<gamma> \<le> abstract_flow_map f' e" 
@@ -1674,7 +1674,7 @@ qed
 lemma send_flow_call1_invar_integral_pres:
   assumes "send_flow_call1_cond state"
           "invar_integral state" "invar_gamma state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state"
     shows "invar_integral (send_flow_call1_upd state)"
 proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
@@ -1692,7 +1692,7 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
     using assms(5) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
     unfolding 1
-    using tP(5) from_aux_invar'(1,3)[OF assms(4)]
+    using tP(5) from_underlying_invars'(1,3)[OF assms(4)]
     by(intro augment_edges_homo[OF _ flow_dom_is(2)])
       (auto simp add: image_set  flow_dom_is(1) simp del: set_map)
   show ?case  
@@ -1752,7 +1752,7 @@ qed
 lemma send_flow_call2_invar_integral_pres:
   assumes "send_flow_call2_cond state"
           "invar_integral state" "invar_gamma state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state"
     shows "invar_integral (send_flow_call2_upd state)"
 proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
@@ -1771,7 +1771,7 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     using assms(5) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
     unfolding 1
-    using sP(5) from_aux_invar'(1,3)[OF assms(4)]
+    using sP(5) from_underlying_invars'(1,3)[OF assms(4)]
     by(intro augment_edges_homo[OF _ flow_dom_is(2)])
       (auto simp add: image_set  flow_dom_is(1) simp del: set_map)
   show ?case unfolding invar_integral_def
@@ -1854,7 +1854,7 @@ lemma outside_actives_and_F_no_change_fail:
   
 lemma outside_actives_and_F_no_change_call1:
   assumes "send_flow_call1_cond state" "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
-         "invar_gamma state" "aux_invar state" "implementation_invar state"
+         "invar_gamma state" "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state"
   shows   "a_current_flow state e = a_current_flow (send_flow_call1_upd state) e"
 proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
@@ -1872,7 +1872,7 @@ have gamma_0: "\<gamma> > 0" using assms by(auto elim!: invar_gammaE simp add: 1
     using assms(6) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
     unfolding 1
-    using tP(5) from_aux_invar'(1,3)[OF assms(5)]
+    using tP(5) from_underlying_invars'(1,3)[OF assms(5)]
     by(intro augment_edges_homo[OF _ flow_dom_is(2)])
       (auto simp add: image_set  flow_dom_is(1) simp del: set_map)
   have f': "f' = current_flow (send_flow_call1_upd state)"
@@ -1886,7 +1886,7 @@ qed
   
 lemma outside_actives_and_F_no_change_call2:
   assumes "send_flow_call2_cond state" "e \<notin> to_set (actives state)" "e \<notin> \<F> state"
-          "invar_gamma state" "aux_invar state" "implementation_invar state"
+          "invar_gamma state" "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state"
   shows   "a_current_flow state e = a_current_flow (send_flow_call2_upd state) e"
 proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
@@ -1905,7 +1905,7 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     using assms(6) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
     unfolding 1
-    using sP(5) from_aux_invar'(1,3)[OF assms(5)]
+    using sP(5) from_underlying_invars'(1,3)[OF assms(5)]
     by(intro augment_edges_homo[OF _ flow_dom_is(2)])
       (auto simp add: image_set  flow_dom_is(1) simp del: set_map)
   have f': "f' = current_flow (send_flow_call2_upd state)"
@@ -1919,7 +1919,7 @@ qed
 
 lemma send_flow_invar_isOptflow_call1:
   assumes "send_flow_call1_cond state"
-          "invar_gamma state" "aux_invar state" "implementation_invar state"
+          "invar_gamma state" "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state" "invar_integral state"
           "\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e \<ge> current_\<gamma> state"
     shows "invar_isOptflow (send_flow_call1_upd state)"
@@ -1942,7 +1942,7 @@ proof(all \<open>rule send_flow_call1_condE[OF assms(1)]\<close>, goal_cases)
     using assms(4) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
     unfolding 1
-    using tP(5) from_aux_invar'(1,3)[OF assms(3)]
+    using tP(5) from_underlying_invars'(1,3)[OF assms(3)]
     by(intro augment_edges_homo[OF _ flow_dom_is(2)])
       (auto simp add: image_set  flow_dom_is(1) simp del: set_map)
   have b'_is: "abstract_bal_map b'= 
@@ -1995,7 +1995,7 @@ proof(all \<open>rule send_flow_call1_condE[OF assms(1)]\<close>, goal_cases)
             intro: is_Opt_cong[OF refl, rotated]
              simp add: basics bal_after_is flow_after_is b'_is f'_is)
   have P_in_E:"set (map oedge P) \<subseteq> \<E>" 
-    using  from_aux_invar'(1,3)[OF assms(3)] tP(5) by auto
+    using  from_underlying_invars'(1,3)[OF assms(3)] tP(5) by auto
   have flow_dom_is_after: "flow_domain (current_flow  (send_flow_call1_upd state)) = \<E>"
                           "flow_invar (current_flow  (send_flow_call1_upd state))"
     using augment_edges_impl_invar[of P f] augment_edges_impl_domain[of P f] flow_dom_is P_in_E 
@@ -2017,7 +2017,7 @@ qed
  
 lemma send_flow_invar_isOptflow_call2:
   assumes "send_flow_call2_cond state"
-          "invar_gamma state" "aux_invar state" "implementation_invar state"
+          "invar_gamma state" "underlying_invars state" "implementation_invar state"
           "pos_flow_F state"  "invar_isOptflow state" "invar_integral state"
           "\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e \<ge> current_\<gamma> state"
     shows "invar_isOptflow (send_flow_call2_upd state)"
@@ -2041,7 +2041,7 @@ proof(all \<open>rule send_flow_call2_condE[OF assms(1)]\<close>, goal_cases)
     using assms(4) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
     unfolding 1
-    using sP(5) from_aux_invar'(1,3)[OF assms(3)]
+    using sP(5) from_underlying_invars'(1,3)[OF assms(3)]
     by(intro augment_edges_homo[OF _ flow_dom_is(2)])
       (auto simp add: image_set  flow_dom_is(1) simp del: set_map)
   have b'_is: "abstract_bal_map b'= 
@@ -2094,7 +2094,7 @@ proof(all \<open>rule send_flow_call2_condE[OF assms(1)]\<close>, goal_cases)
             intro: is_Opt_cong[OF refl, rotated]
              simp add: basics bal_after_is flow_after_is b'_is f'_is)
   have P_in_E:"set (map oedge P) \<subseteq> \<E>" 
-    using  from_aux_invar'(1,3)[OF assms(3)] sP(5) by auto
+    using  from_underlying_invars'(1,3)[OF assms(3)] sP(5) by auto
   have flow_dom_is_after: "flow_domain (current_flow  (send_flow_call2_upd state)) = \<E>"
                           "flow_invar (current_flow  (send_flow_call2_upd state))"
     using augment_edges_impl_invar[of P f] augment_edges_impl_domain[of P f] flow_dom_is P_in_E 
@@ -2152,7 +2152,7 @@ proof-
 
 theorem 
   assumes "send_flow_call1_cond state"
-          "aux_invar state" "invar_gamma state"
+          "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_isOptflow state"
           "invar_above_6Ngamma state"
@@ -2189,7 +2189,7 @@ proof-
 
 theorem 
   assumes "send_flow_call2_cond state"
-          "aux_invar state" "invar_gamma state"
+          "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_isOptflow state"
           "invar_above_6Ngamma state"
@@ -2268,12 +2268,12 @@ subsection \<open>Inductions\<close>
 
 theorem send_flow_invars_pres:
   assumes "send_flow_dom state"
-          "aux_invar state" "invar_gamma state"
+          "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
           "invar_above_6Ngamma state"
-    shows "aux_invar (send_flow state)" 
+    shows "underlying_invars (send_flow state)" 
           "invar_gamma (send_flow state)"
           "implementation_invar (send_flow state)"
           "invar_integral (send_flow state)"
@@ -2284,7 +2284,7 @@ theorem send_flow_invars_pres:
           "\<And> e. e \<notin> to_set (actives state) \<Longrightarrow>e \<notin> \<F> state \<Longrightarrow>
                a_current_flow state e = a_current_flow (send_flow state) e"
 proof-
-  have  "aux_invar (send_flow state) \<and> 
+  have  "underlying_invars (send_flow state) \<and> 
          invar_gamma (send_flow state) \<and> 
          implementation_invar (send_flow state) \<and>
          invar_integral (send_flow state) \<and>
@@ -2306,7 +2306,7 @@ proof(induction rule: send_flow_induct[OF assms(1)])
       by(auto intro!: invar_above_6Ngamma_pos_flow_F 
             simp add:  IH(4-) 3)
     have IH_applied:
-        "aux_invar (send_flow (send_flow_call1_upd state))"
+        "underlying_invars (send_flow (send_flow_call1_upd state))"
         "invar_gamma (send_flow (send_flow_call1_upd state))"
         "implementation_invar (send_flow (send_flow_call1_upd state))"
         "invar_integral (send_flow (send_flow_call1_upd state))"
@@ -2346,7 +2346,7 @@ proof(induction rule: send_flow_induct[OF assms(1)])
       by(auto intro!: invar_above_6Ngamma_pos_flow_F
             simp add:  IH(4-) 4)
     have IH_applied:
-        "aux_invar (send_flow (send_flow_call2_upd state))"
+        "underlying_invars (send_flow (send_flow_call2_upd state))"
         "invar_gamma (send_flow (send_flow_call2_upd state))"
         "implementation_invar (send_flow (send_flow_call2_upd state))"
         "invar_integral (send_flow (send_flow_call2_upd state))"
@@ -2386,7 +2386,7 @@ proof(induction rule: send_flow_induct[OF assms(1)])
      using IH(4-) 
      by(auto simp add: send_flow_simps(2)[OF IH(1) 1] 
                           send_flow_cont_upd_Phi_pres send_flow_cont_upd_flow_pres
-           intro: aux_invar_pres_cont  invar_gamma_pres_cont
+           intro: underlying_invars_pres_cont  invar_gamma_pres_cont
                   implementation_invar_pres_cont send_flow_cont_invar_integral_pres
                   send_flow_invar_isOptflow_cont invar_above_6Ngamma_cont_pres)
  next
@@ -2395,7 +2395,7 @@ proof(induction rule: send_flow_induct[OF assms(1)])
      using IH(4-) 
      by(auto simp add: send_flow_simps(1)[OF IH(1) 2] 
                           send_flow_succ_upd_Phi_pres send_flow_succ_upd_flow_pres
-           intro: aux_invar_pres_succ  invar_gamma_pres_succ
+           intro: underlying_invars_pres_succ  invar_gamma_pres_succ
                   implementation_invar_pres_succ send_flow_succ_invar_integral_pres
                   send_flow_invar_isOptflow_succ invar_above_6Ngamma_succ_pres) 
  next
@@ -2404,7 +2404,7 @@ proof(induction rule: send_flow_induct[OF assms(1)])
      using IH(4-) 
      by(auto simp add: send_flow_simps(3)[OF IH(1) 5] 
                           send_flow_fail_upd_Phi_pres send_flow_fail_upd_flow_pres
-           intro: aux_invar_pres_fail  invar_gamma_pres_fail
+           intro: underlying_invars_pres_fail  invar_gamma_pres_fail
                   implementation_invar_pres_fail send_flow_fail_invar_integral_pres
                   send_flow_invar_isOptflow_fail invar_above_6Ngamma_fail1_pres)
  next
@@ -2413,12 +2413,12 @@ proof(induction rule: send_flow_induct[OF assms(1)])
      using IH(4-) 
      by(auto simp add: send_flow_simps(4)[OF IH(1) 6] 
                           send_flow_fail_upd_Phi_pres send_flow_fail_upd_flow_pres
-           intro: aux_invar_pres_fail  invar_gamma_pres_fail
+           intro: underlying_invars_pres_fail  invar_gamma_pres_fail
                   implementation_invar_pres_fail send_flow_fail_invar_integral_pres
                   send_flow_invar_isOptflow_fail invar_above_6Ngamma_fail2_pres)
  qed
 qed
-  thus  "aux_invar (send_flow state)" 
+  thus  "underlying_invars (send_flow state)" 
           "invar_gamma (send_flow state)"
           "implementation_invar (send_flow state)"
           "invar_integral (send_flow state)"
@@ -2433,16 +2433,16 @@ qed
 
 theorem send_flow_invar_aux_pres: 
   assumes  "send_flow_dom state"
-          "aux_invar state" "invar_gamma state"
+          "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
           "invar_above_6Ngamma state"
-  shows   "aux_invar (send_flow state)"
+  shows   "underlying_invars (send_flow state)"
   using assms by(auto intro: send_flow_invars_pres(1))
 
 lemma send_flow_term:
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2495,7 +2495,7 @@ lemma all_bal_zero_send_flow_dom:
   by(auto intro!: send_flow_dom_succ send_flow_succ_condI)
 
 lemma 
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2564,7 +2564,7 @@ qed
 qed
 
 theorem send_flow_flow_Phi:
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2576,7 +2576,7 @@ theorem send_flow_flow_Phi:
   by auto
 
 lemma send_flow_flow_Phi_final:
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2590,7 +2590,7 @@ lemma send_flow_flow_Phi_final:
    by(smt mult_less_cancel_right_disj of_int_le_iff)
 
 theorem send_flow_invar_integral_pres:
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2599,7 +2599,7 @@ theorem send_flow_invar_integral_pres:
   using assms send_flow_termination send_flow_invars_pres(4) by blast
 
 theorem send_flow_implementation_invar_pres:
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2608,7 +2608,7 @@ theorem send_flow_implementation_invar_pres:
   using assms send_flow_termination send_flow_invars_pres(3) by blast
 
 theorem outside_actives_and_F_no_change:
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2618,7 +2618,7 @@ theorem outside_actives_and_F_no_change:
   using assms send_flow_termination send_flow_invars_pres(8) by blast
 
 theorem send_flow_invar_isOpt_pres:
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2627,7 +2627,7 @@ theorem send_flow_invar_isOpt_pres:
   using assms send_flow_termination send_flow_invars_pres(5) by blast
 
 lemma  send_flow_succ_balance: 
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2695,14 +2695,14 @@ lemma send_flow_entry_invar_above_6Ngamma:
     apply(rule invar_above_6NgammaI)
     apply(rule  send_flow_entryFE[OF assms(2)])
     apply(rule invar_gammaE[OF assms(1)])
+    apply(rule order.strict_trans1[of _ "current_\<gamma> state * (real N * 6)"])
     using  assms(3) 
-    apply(auto simp add: algebra_simps intro!: preorder_class.order.strict_implies_order)
-    by(force intro: order.strict_trans1[of _ "current_\<gamma> state * (real N * 6)"])
-
+    by(auto simp add: algebra_simps intro!: preorder_class.order.strict_implies_order)
+    
 subsection \<open>Final Results\<close>
 
 theorem send_flow_correctness:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "implementation_invar state"
           "invar_gamma state"
           "invar_integral state"
@@ -2724,7 +2724,7 @@ proof-
 qed
 
 lemma send_flow_fail_balance: 
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"
@@ -2807,7 +2807,7 @@ proof(induction rule: send_flow_induct[OF dom])
 qed
 
 theorem send_flow_completeness:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "implementation_invar state"
           "invar_gamma state"
           "invar_integral state"
@@ -3001,7 +3001,7 @@ lemma send_flow_forest_no_change:
                   send_flow_changes_not_blocked)
 
 lemma send_flow_invar_forest:
-  assumes "aux_invar state" "invar_gamma state"
+  assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"

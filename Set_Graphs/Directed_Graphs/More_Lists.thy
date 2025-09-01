@@ -825,4 +825,15 @@ lemma rev_cases3: "(xs = Nil \<Longrightarrow> P) \<Longrightarrow> (\<And> x. x
                    (\<And> ys y x. xs=ys@[y,x] \<Longrightarrow> P) \<Longrightarrow> P" 
   by (metis More_Lists.append_butlast_last_cancel append_Nil neq_Nil_conv_snoc)
 
+fun itrev_aux :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
+"itrev_aux  [] ys = ys" |
+"itrev_aux  (x #xs) ys = itrev_aux  xs (x #ys)"
+definition "itrev xs = itrev_aux  xs Nil"
+
+lemma itrev_rev_gen:"itrev_aux xs ys = rev xs @ ys"
+  by(induction xs ys arbitrary: rule: itrev_aux.induct) auto
+
+lemma itrev_is_rev[simp]: "itrev = rev"
+  by(auto simp add: itrev_rev_gen[of _ Nil, simplified] itrev_def)
+
 end

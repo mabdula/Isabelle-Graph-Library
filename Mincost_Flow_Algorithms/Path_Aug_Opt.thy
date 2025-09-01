@@ -1,4 +1,4 @@
-theory PathAugOpt 
+theory Path_Aug_Opt 
   imports "Flow_Theory.Cost_Optimality"
 begin
 

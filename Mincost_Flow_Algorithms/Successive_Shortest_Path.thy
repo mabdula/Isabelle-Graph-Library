@@ -1,4 +1,4 @@
-theory SuccessiveShortestPath
+theory Successive_Shortest_Path
   imports SSP_Preps
 begin
 

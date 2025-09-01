@@ -6,11 +6,11 @@ sessions
   Flow_Theory
 
 theories
-  PathAugOpt
+  Path_Aug_Opt
   SSP_Preps
-  SuccessiveShortestPath
+  Successive_Shortest_Path
   Scaling
-  Intermediate_Summary
+  Orlins_Preparation
   Maintain_Forest
   Send_Flow
   Orlins

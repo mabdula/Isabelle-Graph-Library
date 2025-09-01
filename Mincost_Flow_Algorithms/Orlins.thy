@@ -279,7 +279,7 @@ assumes  get_max: "\<And> b f. \<lbrakk> bal_invar b; dom (bal_lookup b) \<noteq
 begin
 
 lemma new_gamma_is:
-  assumes "implementation_invar state" "aux_invar state"
+  assumes "implementation_invar state" "underlying_invars state"
   shows "new_\<gamma> state = 
               (if \<forall> e \<in> to_set (actives state). a_current_flow state e = 0 
                then min (current_\<gamma> state / 2) (Max {\<bar>a_balance state v\<bar> | v. v \<in> \<V>})
@@ -309,7 +309,7 @@ proof-
   show thesis3:?thesis3
     using assms(1)V_non_empt  thesis2 by (subst get_max) auto
   show thesis4: ?thesis4
-    using assms(2) from_aux_invar'(17) 
+    using assms(2) from_underlying_invars'(17) 
     by (auto simp add: are_all)
   show thesis1: ?thesis1
     by(auto simp add: new_\<gamma>_def Let_def  thesis3 thesis4)
@@ -345,9 +345,9 @@ lemma gamma_upd_invar_non_zero_b_pres:
   using assms
   by(auto intro!: invar_non_zero_bI elim: invar_non_zero_bE)
 
-lemma gamma_upd_aux_invar_pres:
+lemma gamma_upd_underlying_invars_pres:
   assumes "invar_gamma state" "invar_non_zero_b state"
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
   shows "invar_gamma (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
   using Max_lower_bound[OF \<V>_finite V_non_empt , of _ 0 "\<lambda> v. \<bar>a_balance state v\<bar>"]
   by(auto elim!: invar_gammaE[OF assms(1)] invar_non_zero_bE'[OF assms(2)]
@@ -376,7 +376,7 @@ lemma minE: "((a::real) \<le> b \<Longrightarrow> P a) \<Longrightarrow> (b \<le
 lemma Phi_init:
       assumes "orlins_entry state" "invar_non_zero_b state"
               "invar_gamma state" "implementation_invar state"
-              "aux_invar state"
+              "underlying_invars state"
         shows "\<Phi> (state\<lparr>current_\<gamma> := new_\<gamma> state \<rparr>) \<le> N"
           and "\<And> x. x \<in> \<V> \<Longrightarrow> \<lceil> \<bar> a_balance state x\<bar> / (new_\<gamma> state) - (1 - \<epsilon>)\<rceil> \<le> 1" 
           and "\<And>x. x \<in> \<V> \<Longrightarrow> \<lceil>\<bar>a_balance state x\<bar> / new_\<gamma> state - (1 - \<epsilon>)\<rceil> \<ge> 0" 
@@ -428,7 +428,7 @@ proof-
 qed
 
 lemma invar_integral_gamma_upd:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "implementation_invar state"
           "invar_integral state"
     shows "invar_integral (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
@@ -446,7 +446,7 @@ next
 qed
 
 lemma invars_pres_orlins_one_step:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -454,7 +454,7 @@ lemma invars_pres_orlins_one_step:
           "invar_forest state"
           "invar_integral state"
           "invar_isOptflow state"
-    shows "aux_invar  (orlins_one_step state)"
+    shows "underlying_invars  (orlins_one_step state)"
           "invar_gamma  (orlins_one_step state)"
           "implementation_invar (orlins_one_step state)"
           "return (orlins_one_step state) = notyetterm
@@ -475,7 +475,7 @@ lemma invars_pres_orlins_one_step:
            "send_flow_impl (maintain_forest_impl (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) =
             send_flow (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
     and  invars_after_maintain_forest:
-          "aux_invar  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+          "underlying_invars  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
           "invar_gamma  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
           "implementation_invar  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
           "send_flow_entryF (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
@@ -488,15 +488,15 @@ lemma invars_pres_orlins_one_step:
          " (maintain_forest_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
         "send_flow_dom (local.maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
 proof-
-  have aux_invar_gamma_upd: "aux_invar (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-    by(auto intro: aux_invar_gamma simp add: assms)
+  have underlying_invars_gamma_upd: "underlying_invars (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+    by(auto intro: underlying_invars_gamma simp add: assms)
   have invar_gamma_gamma_upd: "invar_gamma (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-    by (simp add: assms(1,2,3,4) gamma_upd_aux_invar_pres)
+    by (simp add: assms(1,2,3,4) gamma_upd_underlying_invars_pres)
   hence new_gamma_0: "new_\<gamma> state > 0" by(auto elim!: invar_gammaE)
   have implementation_invar_gamma_upd:"implementation_invar (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)" 
     by(auto intro!: implementation_invar_gamm_upd assms(3))
   show maintain_forest_dom: "maintain_forest_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-    using aux_invar_gamma_upd implementation_invar_gamma_upd termination_of_maintain_forest'
+    using underlying_invars_gamma_upd implementation_invar_gamma_upd termination_of_maintain_forest'
     by blast
   have maintain_forest_entry: "maintain_forest_entry (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     using new_gamma_is(5)[OF assms(3,1)] N_gtr_0
@@ -507,7 +507,7 @@ proof-
                       maintain_forest_entryI)
   have component_card_gtr_0: "v \<in> \<V> \<Longrightarrow> (card (connected_component (to_graph (\<FF> state)) v)) > 0"
    and  component_card_geq_0: "v \<in> \<V> \<Longrightarrow> (card (connected_component (to_graph (\<FF> state)) v)) \<ge> 1"for v
-    using finite_subset[OF _ \<V>_finite] from_aux_invar'(10)[OF assms(1)]
+    using finite_subset[OF _ \<V>_finite] from_underlying_invars'(10)[OF assms(1)]
     by(auto simp add: card_gt_0_iff connected_component_non_empt leI)
   show invar_A1: "invarA_1 (2 * new_\<gamma> state) (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
   proof(rule invarA_1I, goal_cases)
@@ -525,7 +525,7 @@ proof-
   proof(rule invarA_2I, goal_cases)
     case (1 e)
     hence fst_in_V:"fst e \<in> \<V>"
-      using aux_invar_gamma_upd from_aux_invar'(3) fst_E_V by blast
+      using underlying_invars_gamma_upd from_underlying_invars'(3) fst_E_V by blast
     have "8 * real N * new_\<gamma> state -
         2 * new_\<gamma> state * real (card (connected_component (to_graph (\<FF> state)) (fst e)))
        \<le> 8 * real N * new_\<gamma> state"
@@ -543,7 +543,7 @@ proof-
   have invar_isOptflow_upd:"invar_isOptflow (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     by (simp add: assms(8) invar_isOpt_gamma_change)
   show invars_after_maintain_forest:
-          "aux_invar  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+          "underlying_invars  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
           "invar_gamma  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
           "implementation_invar  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
           "send_flow_entryF (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
@@ -557,7 +557,7 @@ proof-
                        maintain_forest_invar_integral_pres
                        flow_optimatlity_pres[OF _ _  invar_A1 _ _ refl]
                        invarA2_pres[OF _ _ invar_A1 invarA_2]
-               simp add: maintain_forest_dom aux_invar_gamma_upd 
+               simp add: maintain_forest_dom underlying_invars_gamma_upd 
                          implementation_invar_gamma_upd invar_gamma_gamma_upd
                          maintain_forest_entry invar_A1 invarA_2 invar_integral_upd
                          invar_isOptflow_upd )
@@ -565,7 +565,7 @@ proof-
   have Phi_increase_bound: "\<Phi> (local.maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))
                   \<le> \<Phi> (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>) + int N"
     by(auto intro!: Phi_increase_below_N 
-          simp add:  aux_invar_gamma_upd invar_gamma_gamma_upd implementation_invar_gamma_upd)
+          simp add:  underlying_invars_gamma_upd invar_gamma_gamma_upd implementation_invar_gamma_upd)
   have new_phi_nonneg: "0 \<le> \<Phi> (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     by(auto intro: Phi_nonneg simp add:  invar_gamma_gamma_upd)
   have new_phi_less_N: "\<Phi> (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>) \<le> N" 
@@ -582,7 +582,7 @@ proof-
       using  Phi_after_forest_leq_2N  new_gamma_0 by auto
     thus ?case 
       using send_flow_entryFD[OF invars_after_maintain_forest(4) 1]
-      by(auto simp add: gamma_pres[OF aux_invar_gamma_upd implementation_invar_gamma_upd])
+      by(auto simp add: gamma_pres[OF underlying_invars_gamma_upd implementation_invar_gamma_upd])
   qed
   show send_flow_dom: "send_flow_dom (local.maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
     by(auto intro!: send_flow_termination
@@ -596,7 +596,7 @@ proof-
     using Phi_after_forest_leq_2N 
     by(auto intro!: send_flow_invar_forest
           simp add: invars_after_maintain_forest invar_above_6Ngamma )
-  show  "aux_invar  (orlins_one_step state)"
+  show  "underlying_invars  (orlins_one_step state)"
          "invar_gamma  (orlins_one_step state)"
           "implementation_invar (orlins_one_step state)"
           "return (orlins_one_step state) = notyetterm
@@ -621,7 +621,7 @@ proof-
               simp add: orlins_one_step_def send_flow_dom invars_after_maintain_forest
                         invar_above_6Ngamma invar_forest_after_send_flow
                         send_flow_changes_current_\<gamma> gamma_pres implementation_invar_gamma_upd
-                        aux_invar_gamma_upd) 
+                        underlying_invars_gamma_upd) 
      show "return (orlins_one_step state) = infeasible \<Longrightarrow> \<nexists>f. f is \<b> flow" 
       using Phi_increase_bound new_phi_less_N send_flow_completeness
       by(intro send_flow_completeness)
@@ -644,7 +644,7 @@ proof-
   qed
 
 lemma invars_pres_orlins_one_step_check:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -652,7 +652,7 @@ lemma invars_pres_orlins_one_step_check:
           "invar_forest state"
           "invar_integral state"
           "invar_isOptflow state"
-    shows "aux_invar  (orlins_one_step_check state)"
+    shows "underlying_invars  (orlins_one_step_check state)"
           "invar_gamma  (orlins_one_step_check state)"
           "implementation_invar (orlins_one_step_check state)"
           "return (orlins_one_step_check state) = notyetterm
@@ -667,18 +667,18 @@ lemma invars_pres_orlins_one_step_check:
    by(auto simp add: orlins_one_step_check_def assms
            intro!: invars_pres_orlins_one_step)
 
-lemma aux_invar_pres_orlins_one_step:
-  assumes "aux_invar state" "invar_gamma state" "invar_non_zero_b state"
+lemma underlying_invars_pres_orlins_one_step:
+  assumes "underlying_invars state" "invar_gamma state" "invar_non_zero_b state"
           "implementation_invar state"
           "orlins_entry state"
           "invar_forest state"
           "invar_integral state"
           "invar_isOptflow state"
-  shows "aux_invar (orlins_one_step state)"
+  shows "underlying_invars (orlins_one_step state)"
   by (simp add: assms(1,2,3,4,5,6,7,8) invars_pres_orlins_one_step(1))
 
 lemma invar_gamma_pres_orlins_one_step:
-  assumes "aux_invar state" "invar_gamma state" "invar_non_zero_b state"
+  assumes "underlying_invars state" "invar_gamma state" "invar_non_zero_b state"
           "implementation_invar state"
           "orlins_entry state"
           "invar_forest state"
@@ -688,7 +688,7 @@ lemma invar_gamma_pres_orlins_one_step:
   using assms(1,2,3,4,5,6,7,8) invars_pres_orlins_one_step(2) by blast
 
 lemma balance_less_new_gamma:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -702,7 +702,7 @@ lemma new_gamma_below_half_gamma: "new_\<gamma> state \<le> current_\<gamma> sta
   by(auto simp add: new_\<gamma>_def Let_def)
 
 lemma invar_forest_pres_orlins_one_step_check:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -715,7 +715,7 @@ lemma invar_forest_pres_orlins_one_step_check:
       orlins_one_step_check_def)
 
 lemma invar_forest_pres_orlins_one_step:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -727,7 +727,7 @@ lemma invar_forest_pres_orlins_one_step:
   by (simp add: assms(1,2,3,4,5,6,7,8) invars_pres_orlins_one_step(5))
 
 lemma invar_integral_pres_orlins_one_step_check:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -740,7 +740,7 @@ lemma invar_integral_pres_orlins_one_step_check:
       orlins_one_step_check_def)
 
 lemma invar_integral_pres_orlins_one_step:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -752,7 +752,7 @@ lemma invar_integral_pres_orlins_one_step:
   by (simp add: assms(1,2,3,4,5,6,7,8) invars_pres_orlins_one_step(6))
 
 lemma orlins_entry_ofter_one_step:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -765,7 +765,7 @@ lemma orlins_entry_ofter_one_step:
   using assms(1,2,3,4,5,6,7,8,9) invars_pres_orlins_one_step(4) by blast
 
 lemma 
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -792,7 +792,7 @@ lemma
       orlins_one_step_check_def)
   
 lemma some_balance_after_one_step:
-  assumes "return (orlins_one_step state) = notyetterm" "aux_invar state" "invar_gamma state"
+  assumes "return (orlins_one_step state) = notyetterm" "underlying_invars state" "invar_gamma state"
           "invar_non_zero_b state"
           "implementation_invar state"
           "orlins_entry state"
@@ -812,7 +812,7 @@ lemma no_important_no_merge_gamma:
                           card (comps \<V> (to_graph (\<FF> state'))) = card (comps \<V> (to_graph (\<FF> state))))"
           "state' = (compow k orlins_one_step_check state)"
           "return state' =notyetterm"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -902,7 +902,7 @@ next
               card (comps \<V> (to_graph (\<FF> (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))"
       using Suc 1
       by(fastforce intro!: card_strict_decrease[of "state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>"] 
-                      termination_of_maintain_forest aux_invar_gamma
+                      termination_of_maintain_forest underlying_invars_gamma
                       implementation_invar_gamm_upd)
     moreover have "card (comps \<V> (to_graph (\<FF> (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))) = 
                    card (comps \<V> (to_graph (\<FF> (send_flow (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))))))"
@@ -924,7 +924,7 @@ next
     apply(subst send_flow_nothing_done)
     using Suc.prems(1)[of 0, OF _ refl] returnValue
     by(auto intro: invar_non_zero_bE[OF  Suc.prems(8)] dest: importantI
-           simp add: send_flow_nothing_done implementation_invar_gamm_upd Suc.prems(5-8) gamma_upd_aux_invar_pres)   
+           simp add: send_flow_nothing_done implementation_invar_gamm_upd Suc.prems(5-8) gamma_upd_underlying_invars_pres)   
   show ?case 
       apply rule
       subgoal
@@ -936,11 +936,11 @@ next
       done
   qed
 
-lemma invar_aux_to_invar_aux1: "aux_invar state \<Longrightarrow> invar_aux1 state"
-  by(auto simp add: aux_invar_def)
+lemma invar_aux_to_inv_actives_in_E: "underlying_invars state \<Longrightarrow> inv_actives_in_E state"
+  by(auto simp add: underlying_invars_def)
  
 lemma forest_increase_orlins_one_step:
-  assumes "aux_invar state" "invar_gamma state" "invar_non_zero_b state"
+  assumes "underlying_invars state" "invar_gamma state" "invar_non_zero_b state"
           "implementation_invar state"
           "orlins_entry state"
           "invar_forest state"
@@ -953,10 +953,10 @@ lemma forest_increase_orlins_one_step:
   apply(rule order.trans, rule forest_increase)
   by (auto simp add: send_flow_changes_\<FF>
           assms invars_after_maintain_forest(10,11) implementation_invar_gamm_upd
-          aux_invar_gamma)
+          underlying_invars_gamma)
 
 lemma forest_increase_orlins_one_step_check:
-  assumes "aux_invar state" "invar_gamma state" "invar_non_zero_b state"
+  assumes "underlying_invars state" "invar_gamma state" "invar_non_zero_b state"
           "implementation_invar state"
           "orlins_entry state"
           "invar_forest state"
@@ -967,7 +967,7 @@ lemma forest_increase_orlins_one_step_check:
   by(auto simp add: orlins_one_step_check_def)
 
 lemma card_decrease_orlins_one_step:
-  assumes "aux_invar state" "invar_gamma state" "invar_non_zero_b state"
+  assumes "underlying_invars state" "invar_gamma state" "invar_non_zero_b state"
           "implementation_invar state"
           "orlins_entry state"
           "invar_forest state"
@@ -977,11 +977,11 @@ lemma card_decrease_orlins_one_step:
             card (comps \<V> (to_graph (\<FF> state)))"
   using assms(1)
   by(auto intro: number_of_comps_anti_mono[OF forest_increase_orlins_one_step[OF assms]] 
-           elim: aux_invarE invar_aux5E)
+           elim: underlying_invarsE inv_finite_forestE)
 
 lemma orlins_some_steps_forest_increase:
   assumes "state' = (orlins_one_step_check ^^ k) state"
-              "aux_invar state" "invar_gamma state" "invar_non_zero_b  state"
+              "underlying_invars state" "invar_gamma state" "invar_non_zero_b  state"
                "implementation_invar state"
               "orlins_entry state"
               "invar_forest state"
@@ -1040,7 +1040,7 @@ qed simp
 
 lemma orlins_some_steps_card_decrease:
   assumes "state' = (orlins_one_step_check ^^ k) state"
-         "aux_invar state" "invar_gamma state" "invar_non_zero_b  state"
+         "underlying_invars state" "invar_gamma state" "invar_non_zero_b  state"
           "implementation_invar state"
           "orlins_entry state"
           "invar_forest state"
@@ -1049,10 +1049,10 @@ lemma orlins_some_steps_card_decrease:
    shows "card (comps \<V> (to_graph (\<FF> state'))) \<le> card (comps \<V> (to_graph (\<FF> state)))"
   using assms(2) 
   by(auto intro: number_of_comps_anti_mono[OF orlins_some_steps_forest_increase[OF assms]] 
-           elim: aux_invarE invar_aux5E)
+           elim: underlying_invarsE inv_finite_forestE)
 
-lemma orlins_compow_aux_invar_pres:
-  assumes "aux_invar state"
+lemma orlins_compow_underlying_invars_pres:
+  assumes "underlying_invars state"
           "invar_gamma state"
           "invar_non_zero_b state"
           "implementation_invar state"
@@ -1060,12 +1060,12 @@ lemma orlins_compow_aux_invar_pres:
           "invar_forest state"
           "invar_integral state"
           "invar_isOptflow state"
-    shows "aux_invar ((orlins_one_step_check ^^ k) state)"
+    shows "underlying_invars ((orlins_one_step_check ^^ k) state)"
   using assms
 proof(induction k arbitrary: state)
   case (Suc k)
   show ?case
-  proof(subst funpow_Suc_right, simp, subst orlins_one_step_check_def,
+  proof(subst funpow_Suc_right, subst o_apply, subst orlins_one_step_check_def,
          cases "return state", goal_cases)
     case 3
     then show ?case 
@@ -1087,7 +1087,7 @@ proof(induction k arbitrary: state)
 qed simp
 
 lemma orlins_compow_invar_gamma_pres:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "invar_non_zero_b state"
           "implementation_invar state"
@@ -1100,7 +1100,7 @@ lemma orlins_compow_invar_gamma_pres:
 proof(induction k arbitrary: state)
   case (Suc k)
   show ?case
-  proof(subst funpow_Suc_right, simp, subst orlins_one_step_check_def,
+  proof(subst funpow_Suc_right, subst o_apply, subst orlins_one_step_check_def,
          cases "return state", goal_cases)
     case 3
     then show ?case 
@@ -1122,7 +1122,7 @@ proof(induction k arbitrary: state)
 qed simp
 
 lemma orlins_compow_implementation_invar_pres:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "invar_non_zero_b state"
           "implementation_invar state"
@@ -1135,7 +1135,7 @@ lemma orlins_compow_implementation_invar_pres:
 proof(induction k arbitrary: state)
   case (Suc k)
   show ?case
-  proof(subst funpow_Suc_right, simp, subst orlins_one_step_check_def,
+  proof(subst funpow_Suc_right, subst o_apply, subst orlins_one_step_check_def,
          cases "return state", goal_cases)
     case 3
     then show ?case 
@@ -1157,7 +1157,7 @@ proof(induction k arbitrary: state)
 qed simp
 
 lemma orlins_compow_invar_integral_pres:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "invar_non_zero_b state"
           "implementation_invar state"
@@ -1170,7 +1170,7 @@ lemma orlins_compow_invar_integral_pres:
 proof(induction k arbitrary: state)
   case (Suc k)
   show ?case
-  proof(subst funpow_Suc_right, simp, subst orlins_one_step_check_def,
+  proof(subst funpow_Suc_right, subst o_apply, subst orlins_one_step_check_def,
          cases "return state", goal_cases)
     case 3
     then show ?case 
@@ -1192,7 +1192,7 @@ proof(induction k arbitrary: state)
 qed simp
 
 lemma orlins_compow_invar_isOptflow_pres:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "invar_non_zero_b state"
           "implementation_invar state"
@@ -1205,7 +1205,7 @@ lemma orlins_compow_invar_isOptflow_pres:
 proof(induction k arbitrary: state)
   case (Suc k)
   show ?case
-  proof(subst funpow_Suc_right, simp, subst orlins_one_step_check_def,
+  proof(subst funpow_Suc_right, subst o_apply, subst orlins_one_step_check_def,
          cases "return state", goal_cases)
     case 3
     then show ?case 
@@ -1227,7 +1227,7 @@ proof(induction k arbitrary: state)
 qed simp 
 
 lemma orlins_compow_invar_forest_pres:
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "invar_gamma state"
           "invar_non_zero_b state"
           "implementation_invar state"
@@ -1240,7 +1240,7 @@ lemma orlins_compow_invar_forest_pres:
 proof(induction k arbitrary: state)
   case (Suc k)
   show ?case
-  proof(subst funpow_Suc_right, simp, subst orlins_one_step_check_def,
+  proof(subst funpow_Suc_right, subst o_apply, subst orlins_one_step_check_def,
          cases "return state", goal_cases)
     case 3
     then show ?case 
@@ -1263,7 +1263,7 @@ qed simp
 
 lemma
   assumes "return ((compow k orlins_one_step_check) state) = notyetterm" 
-          "aux_invar state" "invar_gamma state"
+          "underlying_invars state" "invar_gamma state"
           "invar_non_zero_b state"
           "implementation_invar state"
           "orlins_entry state"
@@ -1298,7 +1298,7 @@ next
     case notyetterm
     show ?thesis 
       using Suc.prems(1)
-      by(auto intro!: invars_pres_orlins_one_step_check orlins_compow_aux_invar_pres
+      by(auto intro!: invars_pres_orlins_one_step_check orlins_compow_underlying_invars_pres
                       orlins_compow_invar_gamma_pres orlins_compow_implementation_invar_pres
                       conjunct1[OF Suc.IH] conjunct2[OF Suc.IH] orlins_compow_invar_integral_pres
                       orlins_compow_invar_isOptflow_pres orlins_compow_invar_forest_pres
@@ -1312,7 +1312,7 @@ qed
 
 lemma orlins_entry_after_compow:
   assumes 
-        "aux_invar state" "invar_gamma state" "invar_non_zero_b state"
+        "underlying_invars state" "invar_gamma state" "invar_non_zero_b state"
         "return ((compow k orlins_one_step_check) state) = notyetterm"
         "orlins_entry state"
          "implementation_invar state"
@@ -1324,7 +1324,7 @@ lemma orlins_entry_after_compow:
 
 lemma important_or_merge_or_termination:
   assumes "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "implementation_invar state"
@@ -1392,7 +1392,7 @@ proof-
  qed
   then obtain e where e_prop:"e \<in> to_set (actives state)" "a_current_flow state e > 0"
     using assms(4) assms(2) isuflow  
-    by(force elim: invar_aux1E isuflowE aux_invarE)
+    by(force elim: inv_actives_in_EE isuflowE underlying_invarsE)
   have e_flow_gamma:"a_current_flow state e \<ge>  current_\<gamma> state" 
     apply(rule exE[OF bspec[OF assms(4)[simplified invar_integral_def] e_prop(1)]])
     using e_prop(2)
@@ -1423,7 +1423,7 @@ proof-
      (actives state) =
     Some d"
     using e_gamma_k e_prop(1) 
-    by (auto intro: set_get(1) simp add: assms(2) from_aux_invar'(17))
+    by (auto intro: set_get(1) simp add: assms(2) from_underlying_invars'(17))
   then obtain d where "get_from_set
      (\<lambda>e. 8 * real N * new_\<gamma> ((orlins_one_step_check ^^ \<k>) state) < a_current_flow state e)
      (actives state) =
@@ -1440,8 +1440,8 @@ proof-
         \<lparr>current_\<gamma> := new_\<gamma> ((orlins_one_step_check ^^ \<k>) state)\<rparr>))"
     using assms return_state
       by(auto intro!: send_flow_termination maintain_forest_invar_gamma_pres
-                      aux_invar_gamma orlins_compow_aux_invar_pres
-                      gamma_upd_aux_invar_pres orlins_compow_invar_gamma_pres
+                      underlying_invars_gamma orlins_compow_underlying_invars_pres
+                      gamma_upd_underlying_invars_pres orlins_compow_invar_gamma_pres
                       some_balance_after_k_steps invars_after_maintain_forest
                       orlins_compow_implementation_invar_pres orlins_entry_after_compow
                       orlins_compow_invar_forest_pres orlins_compow_invar_integral_pres
@@ -1452,7 +1452,7 @@ proof-
     unfolding orlins_one_step_def Let_def send_flow_changes_\<FF>[OF send_flow_dom_now]  
     using assms(9) call_cond
     by(auto intro!: order.strict_trans2[OF card_strict_decrease] 
-                    termination_of_maintain_forest' aux_invar_gamma orlins_compow_aux_invar_pres
+                    termination_of_maintain_forest' underlying_invars_gamma orlins_compow_underlying_invars_pres
                     implementation_invar_gamm_upd orlins_compow_implementation_invar_pres
           simp add: assms )
   hence "card (comps \<V> (to_graph (\<FF> ((orlins_one_step_check ^^ (Suc \<k>)) state)))) < 
@@ -1467,7 +1467,7 @@ lemma no_merge_gamma:
   assumes "state' = (compow k orlins_one_step_check state)"
           "return state' =notyetterm"
           "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "implementation_invar state"
@@ -1516,7 +1516,7 @@ next
     hence gamma_halved:"current_\<gamma> ((orlins_one_step state)) \<le> (1/2) * current_\<gamma> state"
       by(auto simp add: invars_pres_orlins_one_step(13) Suc(2-))
     have invar_gamma: "invar_gamma (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-      using Suc.prems(3,4,5,7) gamma_upd_aux_invar_pres by blast
+      using Suc.prems(3,4,5,7) gamma_upd_underlying_invars_pres by blast
     show ?case 
         using   afterIH  gamma_halved 
         by (smt (verit, ccfv_SIG) One_nat_def ab_semigroup_mult_class.mult_ac(1) mult.commute 
@@ -1525,7 +1525,7 @@ next
   qed
 
 lemma invar_gamma_non_zero_balance_set:
-  assumes "aux_invar state" and
+  assumes "underlying_invars state" and
    bs_def: "bs = {v | v. v \<in> connected_component (to_graph (\<FF> state)) z \<and> a_balance state v \<noteq> 0}" and "z \<in> \<V>"
  shows "bs = {} \<or> (\<exists> x. {x} = bs)"
 proof-
@@ -1536,11 +1536,11 @@ proof-
           "y \<in> connected_component (to_graph (\<FF> state)) z" "a_balance state y \<noteq> 0" 
       by(auto simp add: bs_def)
     have in_V:"x \<in> \<V>" "y \<in> \<V>"
-      using 1 assms by(auto elim!: aux_invarE invar_aux10E)
+      using 1 assms by(auto elim!: underlying_invarsE inv_components_in_VE)
     hence "representative state x = x" "representative state y = y" 
-      using assms(1) prps by(auto elim!: aux_invarE invar_aux12E)
+      using assms(1) prps by(auto elim!: underlying_invarsE inv_pos_bal_repE)
     moreover have "representative state x = representative state y"
-      using prps  assms(1) unfolding aux_invar_def invar_aux7_def 
+      using prps  assms(1) unfolding underlying_invars_def inv_reachable_same_rep_def 
       by (metis in_connected_componentE)
     ultimately show ?case
       using 1 by simp
@@ -1556,7 +1556,7 @@ lemma M_gtr_zero: "M > 0"
 abbreviation  "cp \<equiv> connected_component"
 
 lemma one_step_current_gamma_new_gamma:
-  assumes "return state =notyetterm" "aux_invar state" "invar_gamma state" 
+  assumes "return state =notyetterm" "underlying_invars state" "invar_gamma state" 
           "invar_non_zero_b state" "implementation_invar state"
           "orlins_entry state" "invar_forest state" "invar_integral state"
           " invar_isOptflow state"
@@ -1566,13 +1566,13 @@ proof-
     using assms by(auto intro!: invars_after_maintain_forest(11))
   thus ?thesis
     using assms 
-    by(auto simp add: gamma_pres[OF  aux_invar_gamma implementation_invar_gamm_upd] 
+    by(auto simp add: gamma_pres[OF  underlying_invars_gamma implementation_invar_gamm_upd] 
                       send_flow_changes_current_\<gamma> orlins_one_step_check_def orlins_one_step_def)
 qed
 
 lemma if_important_then_comp_increase_or_termination:
   assumes "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "important state z"
@@ -1612,7 +1612,7 @@ proof-
                            (orlins_one_step_check ^^ \<l>) state" 
       using l_0  funpow_Suc_right[of "\<l>-1" orlins_one_step_check] 
       by(simp add: state1_def)
-    have props_after1: "invar_gamma state1" "aux_invar state1" "invar_non_zero_b state1"
+    have props_after1: "invar_gamma state1" "underlying_invars state1" "invar_non_zero_b state1"
                        "invar_integral state1" "implementation_invar state1"
                        "orlins_entry state1" "invar_forest state1" "invar_isOptflow state1"
       using 1(1)[of 1] l_0 
@@ -1634,11 +1634,11 @@ proof-
     have same_comp:"Z = connected_component (to_graph (\<FF> ((orlins_one_step_check ^^ \<l>) state))) z"
       using  same_forst by(simp add: Z_def)
     have outgoing_active:"e \<in> \<E> \<Longrightarrow> fst e \<in> Z \<Longrightarrow> snd e \<notin> Z \<Longrightarrow> e \<in> to_set (actives state)" for e
-      using assms(2) unfolding aux_invar_def Z_def invar_aux13_def 
+      using assms(2) unfolding underlying_invars_def Z_def inv_inactive_same_component_def 
       using connected_components_member_sym[of "fst e" "to_graph (\<FF> state)" z] 
             connected_components_member_sym[of z "to_graph (\<FF> state)" "snd e"] by auto
     have ingoing_active:"e \<in> \<E> \<Longrightarrow> snd e \<in> Z \<Longrightarrow> fst e \<notin> Z \<Longrightarrow> e \<in> to_set (actives state)" for e
-      using assms(2) unfolding aux_invar_def Z_def invar_aux13_def 
+      using assms(2) unfolding underlying_invars_def Z_def inv_inactive_same_component_def 
       using connected_components_member_sym[of "snd e" "to_graph (\<FF> state)" z] 
             connected_components_member_sym[of z "to_graph (\<FF> state)" "fst e"] by auto
     have new_gamma_less: "new_\<gamma> state \<le> current_\<gamma> state / 2"
@@ -1649,14 +1649,14 @@ proof-
       using assms(1, 5) new_gamma_0 \<epsilon>_axiom unfolding important_def 
       by (smt (verit, ccfv_threshold) divide_less_eq_1 mul_zero_cancel, simp)
     hence "representative state z = z"
-      using assms(2) z_in_V by(auto elim: aux_invarE invar_aux12E)
+      using assms(2) z_in_V by(auto elim: underlying_invarsE inv_pos_bal_repE)
     moreover hence "x \<in> Z \<Longrightarrow> representative state x = z" for x
-      using assms(2) z_in_V unfolding aux_invar_def Z_def invar_aux7_def 
+      using assms(2) z_in_V unfolding underlying_invars_def Z_def inv_reachable_same_rep_def 
       by (metis in_connected_componentE)
     moreover have Z_inV:"Z \<subseteq> \<V>"
-          using assms(2) z_in_V by(simp add: aux_invar_def Z_def invar_aux10_def)
+          using assms(2) z_in_V by(simp add: underlying_invars_def Z_def inv_components_in_V_def)
     ultimately have Z_balance:"x \<in> Z \<Longrightarrow> a_balance state x \<noteq> 0 \<Longrightarrow> x = z" for x
-      using assms(2) by(auto simp add: aux_invar_def invar_aux12_def)
+      using assms(2) by(auto simp add: underlying_invars_def inv_pos_bal_rep_def)
     have flow_value1: "sum (\<b> - a_balance state) Z = 
                        sum (a_current_flow state) (\<Delta>\<^sup>+ Z) - sum (a_current_flow state) (\<Delta>\<^sup>- Z)"
       by(intro flow_value[of "a_current_flow state" "\<b> - a_balance state" Z], auto
@@ -1725,13 +1725,13 @@ proof-
        ultimately show ?case by simp
      qed
      define state' where "state' = (orlins_one_step_check ^^ \<l>) state"
-     have aux_invar_state': "aux_invar state'" 
+     have underlying_invars_state': "underlying_invars state'" 
       and invar_gamma_state': "invar_gamma state'"
       and invar_integral_state': "invar_integral state'"
       and invar_isOptflow_state': "invar_isOptflow state'"
       and implementation_invar_state': "implementation_invar state'"
        using assms(1-4,7-)
-       by(auto intro!: orlins_compow_aux_invar_pres orlins_compow_invar_gamma_pres 
+       by(auto intro!: orlins_compow_underlying_invars_pres orlins_compow_invar_gamma_pres 
                        orlins_compow_invar_integral_pres orlins_compow_invar_isOptflow_pres
                        orlins_compow_implementation_invar_pres
              simp add:  state'_def)
@@ -1740,8 +1740,8 @@ proof-
      have remaining_balance_after: "invar_non_zero_b state'"
         by(auto intro!: some_balance_after_k_steps[OF 1(1)[of \<l>, OF order.refl]] simp add: state'_def  assms(1-4,7-) )
       have new_gamma_state'_0:"new_\<gamma> state' > 0"
-        using remaining_balance_after  gamma_upd_aux_invar_pres[OF invar_gamma_state' 
-            remaining_balance_after aux_invar_state' implementation_invar_state']
+        using remaining_balance_after  gamma_upd_underlying_invars_pres[OF invar_gamma_state' 
+            remaining_balance_after underlying_invars_state' implementation_invar_state']
        by(auto elim: invar_gammaE)
       have e_flow_gr_0:"\<And> e. e \<in> \<E> \<Longrightarrow> a_current_flow state' e \<ge> 0"
         using invar_isOptflow_state' 
@@ -1754,7 +1754,7 @@ proof-
       apply(subst diff_conv_add_uminus, subst sym[OF sum_negf])
       using sum.distrib[of \<b> "- a_balance state'" Z, simplified] by simp
     have sumZ_below:"\<bar>sum (a_balance state') Z \<bar>\<le> (1- \<epsilon>) * current_\<gamma> state'"
-    proof(cases rule: disjE[OF invar_gamma_non_zero_balance_set[OF aux_invar_state' refl z_in_V]])
+    proof(cases rule: disjE[OF invar_gamma_non_zero_balance_set[OF underlying_invars_state' refl z_in_V]])
       case 1
       hence "sum (a_balance state') Z = 0" using same_comp
         by(simp add: Z_def state'_def)
@@ -1806,7 +1806,6 @@ proof-
     moreover have "\<epsilon> * 2^(\<l>-1) * current_\<gamma> state' - (1 - \<epsilon>) * current_\<gamma> state' \<ge>
                    M * (8 * real N * current_\<gamma> state' / 2)" apply simp
       using invar_gamma_state'[simplified invar_gamma_def] 
-      apply(subst mult.commute[of "current_\<gamma> _"], simp)
       apply(subst real_mul_assoc[of 4], subst real_mul_assoc)
       apply(subst sym[OF left_diff_distrib], simp)
       apply(subst le_diff_eq)
@@ -1850,13 +1849,13 @@ proof-
       using e_prop(1) same_comp connected_components_member_sym
       by (simp add: Z_def state'_def Delta_plus_def Delta_minus_def  same_comp) fast
     hence e_active: "e \<in> to_set (actives state')"
-      using aux_invar_state' e_E by(auto elim: aux_invarE invar_aux13E)
+      using underlying_invars_state' e_E by(auto elim: underlying_invarsE inv_inactive_same_componentE)
     have "\<exists> d. get_from_set
      (\<lambda>e. 8 * real N * new_\<gamma> state' < a_current_flow state' e)
        (actives state') =
        Some d"
     using  e_prop(1,2)  e_active
-    by (auto intro!: set_get(1)[OF _ exI, of _ e] from_aux_invar'(17)[OF aux_invar_state']
+    by (auto intro!: set_get(1)[OF _ exI, of _ e] from_underlying_invars'(17)[OF underlying_invars_state']
            simp add: Delta_plus_def Delta_minus_def outgoing_active ) 
   then obtain d where d_prop:"get_from_set
      (\<lambda>e. 8 * real N * new_\<gamma> state' < a_current_flow state' e)
@@ -1867,9 +1866,9 @@ proof-
   have e_comps:"connected_component (to_graph (\<FF> (maintain_forest (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (fst e) =
                 connected_component (to_graph (\<FF> (maintain_forest (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) (snd e)"
     by(rule component_strict_increase)
-      (auto intro!: termination_of_maintain_forest aux_invar_gamma
+      (auto intro!: termination_of_maintain_forest underlying_invars_gamma
                     implementation_invar_gamm_upd
-          simp add: e_active e_prop(2) call_cond  aux_invar_state' implementation_invar_state')
+          simp add: e_active e_prop(2) call_cond  underlying_invars_state' implementation_invar_state')
   have fst_snd_e_comp_Z:"Z = connected_component (to_graph (\<FF> state')) (fst e) \<or>
                                 Z = connected_component (to_graph (\<FF> state')) (snd e)"
     using e_prop(1) same_comp[simplified sym[OF state'_def]]
@@ -1884,9 +1883,9 @@ proof-
      using same_comp[simplified sym[OF state'_def]]  1
      by(intro same_component_set_mono[OF  forest_increase,
                         of "state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>" z])
-       (auto intro!: termination_of_maintain_forest aux_invar_gamma 
+       (auto intro!: termination_of_maintain_forest underlying_invars_gamma 
                      implementation_invar_gamm_upd
-          simp add:  aux_invar_state' implementation_invar_state')
+          simp add:  underlying_invars_state' implementation_invar_state')
  next 
    case 2
    have "connected_component (to_graph (\<FF> (local.maintain_forest
@@ -1896,9 +1895,9 @@ proof-
      using same_comp[simplified sym[OF state'_def]]  2
      by(intro same_component_set_mono[OF  forest_increase,
                         of "state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>" z])
-       (auto intro!: termination_of_maintain_forest aux_invar_gamma 
+       (auto intro!: termination_of_maintain_forest underlying_invars_gamma 
                      implementation_invar_gamm_upd
-          simp add:  aux_invar_state' implementation_invar_state')
+          simp add:  underlying_invars_state' implementation_invar_state')
    thus ?thesis
      using e_comps by simp
  qed
@@ -1906,9 +1905,9 @@ proof-
     " connected_component (to_graph (\<FF> (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>))) u
     \<subseteq> connected_component (to_graph (\<FF> (maintain_forest (state'\<lparr>current_\<gamma> := new_\<gamma> state'\<rparr>)))) u" for u
     apply(rule con_comp_subset, rule forest_increase)
-    by(auto intro!: termination_of_maintain_forest aux_invar_gamma
+    by(auto intro!: termination_of_maintain_forest underlying_invars_gamma
                     implementation_invar_gamm_upd
-          simp add: aux_invar_state' implementation_invar_state')
+          simp add: underlying_invars_state' implementation_invar_state')
    have disjoint_F_comps: 
        "connected_component (to_graph (\<FF> state')) (fst e) \<inter> 
               connected_component (to_graph (\<FF> state')) (snd e) = {}"
@@ -1926,7 +1925,7 @@ proof-
    have dom_send_flow: "send_flow_dom (local.maintain_forest
        ((orlins_one_step_check ^^ \<l>) 
              state\<lparr>current_\<gamma> := new_\<gamma> ((orlins_one_step_check ^^ \<l>) state)\<rparr>))"   
-     using assms(1,10,2,3,4,7,8,9) aux_invar_state' implementation_invar_state' invar_gamma_state'
+     using assms(1,10,2,3,4,7,8,9) underlying_invars_state' implementation_invar_state' invar_gamma_state'
        invar_integral_state' invar_isOptflow_state' invars_after_maintain_forest(11)
        orlins_compow_invar_forest_pres orlins_entry_after remaining_balance_after 
      by (auto simp add: state'_def)
@@ -1946,7 +1945,7 @@ qed
 
 lemma if_important_then_merge_or_termination:
   assumes "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "important state z"
@@ -1963,8 +1962,8 @@ proof(rule exE[OF if_important_then_comp_increase_or_termination[OF assms]], goa
   thus ?case
     using orlins_some_steps_forest_increase[OF refl assms(2,1,3,10,8,7,4,9)] 
           assms(5)[simplified important_def] 
-          orlins_compow_aux_invar_pres[OF assms(2,1,3,10,8,7,4,9),
-             simplified aux_invar_def invar_aux15_def invar_aux5_def, of k] 
+          orlins_compow_underlying_invars_pres[OF assms(2,1,3,10,8,7,4,9),
+             simplified underlying_invars_def inv_forest_in_V_def inv_finite_forest_def, of k] 
           number_of_comps_anti_mono_strict[of _ _ z] 
     by meson
 qed
@@ -1973,7 +1972,7 @@ theorem finally_termination:
   assumes "\<l> =  nat (\<lceil> log 2 (4*M*N + (1 - \<epsilon>)) - log 2 \<epsilon>\<rceil>) + 1"
           "\<k> =  nat (\<lceil>log 2 N \<rceil> + 3)"
           "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "invar_forest state"
@@ -1999,13 +1998,13 @@ proof(induction I arbitrary: state rule: less_induct)
     using important_or_merge_or_termination[OF less(2,3,4,5,10,7,6,8) assms(2)] by auto 
   define state1 where "state1 = (orlins_one_step_check ^^ k) state"
   have invar_gamma_state1:"invar_gamma state1"
-   and aux_invar_state1: "aux_invar state1"
+   and underlying_invars_state1: "underlying_invars state1"
    and invar_integral_state1: "invar_integral state1"
    and invar_forest_state1: "invar_forest state1"
    and invar_isOptflow_state1: "invar_isOptflow state1"
    and implementation_invar_state1: "implementation_invar state1"
        using less(2-)
-       by(auto intro!: orlins_compow_aux_invar_pres orlins_compow_invar_gamma_pres 
+       by(auto intro!: orlins_compow_underlying_invars_pres orlins_compow_invar_gamma_pres 
                        orlins_compow_invar_integral_pres orlins_compow_invar_isOptflow_pres
                        orlins_compow_implementation_invar_pres orlins_compow_invar_forest_pres
              simp add:  state1_def)
@@ -2033,7 +2032,7 @@ proof(induction I arbitrary: state rule: less_induct)
          card (comps \<V> (to_graph (\<FF> ((orlins_one_step_check ^^ l) state1)))) 
                < card (comps \<V> (to_graph (\<FF> state1)))"
      using if_important_then_merge_or_termination[OF
-                 invar_gamma_state1 aux_invar_state1 remaining_balance invar_integral_state1 
+                 invar_gamma_state1 underlying_invars_state1 remaining_balance invar_integral_state1 
                  v_prop assms(1) invar_forest_state1 orlins_entry_after_k invar_isOptflow_state1 
                  implementation_invar_state1]
      by auto
@@ -2067,7 +2066,7 @@ proof(induction I arbitrary: state rule: less_induct)
        by(auto intro!: orlins_entry_after_k_steps some_balance_after_k_steps
              simp add:  state1_def)
      have invar_gamma_state2:"invar_gamma state2" 
-      and aux_invar_state2: "aux_invar state2"
+      and underlying_invars_state2: "underlying_invars state2"
       and invar_integral_state2: "invar_integral state2"
       and invar_forest_state2: "invar_forest state2"
       and invar_isOptflow_state2: "invar_isOptflow state2"
@@ -2075,15 +2074,15 @@ proof(induction I arbitrary: state rule: less_induct)
       and orlins_entry_after_l: "orlins_entry state2"
       and implementation_invar_state2: "implementation_invar state2"
        using 2(2)  
-        by(auto intro!: orlins_compow_aux_invar_pres orlins_compow_invar_gamma_pres 
+        by(auto intro!: orlins_compow_underlying_invars_pres orlins_compow_invar_gamma_pres 
                         orlins_compow_invar_integral_pres orlins_compow_invar_isOptflow_pres
                         orlins_compow_implementation_invar_pres orlins_compow_invar_forest_pres
                         orlins_entry_after_k_steps some_balance_after_k_steps
-              simp add: state2_def invar_gamma_state1  aux_invar_state1 
+              simp add: state2_def invar_gamma_state1  underlying_invars_state1 
                        remaining_balance implementation_invar_state1 orlins_entry_state1
                        invar_forest_state1  invar_integral_state1 invar_isOptflow_state1)
     have "return ((orlins_one_step_check ^^ (G * (\<l> + \<k> + 2))) state2) \<noteq> notyetterm"
-      using less(1)[OF G_less_F invar_gamma_state2 aux_invar_state2 remaining_balance_state2
+      using less(1)[OF G_less_F invar_gamma_state2 underlying_invars_state2 remaining_balance_state2
                    invar_integral_state2 invar_forest_state2 orlins_entry_after_l 
                    invar_isOptflow_state2 G_def implementation_invar_state2]
       by simp
@@ -2114,7 +2113,7 @@ proof(induction I arbitrary: state rule: less_induct)
     define G where "G = card (comps \<V> (to_graph (\<FF> state1)))"
     have G_less_F: "G < F" using 3 G_def less(9) by(simp add: state1_def)
     have "return ((orlins_one_step_check ^^ (G * (\<l> + \<k> + 2))) state1) \<noteq> notyetterm"
-      using less(1)[OF G_less_F invar_gamma_state1 aux_invar_state1 remaining_balance invar_integral_state1
+      using less(1)[OF G_less_F invar_gamma_state1 underlying_invars_state1 remaining_balance invar_integral_state1
                    invar_forest_state1 orlins_entry_after_k invar_isOptflow_state1 G_def implementation_invar_state1]
        by simp
     hence "return ((orlins_one_step_check ^^ (G * (\<l> + \<k> + 2) + k)) state) \<noteq> notyetterm"
@@ -2136,7 +2135,7 @@ qed
 
 theorem compow_correctness:
   assumes "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "invar_forest state"
@@ -2184,7 +2183,7 @@ next
       apply(subst funpow.simps(2), subst o_apply)
       apply(rule optimality_pres_orlins_one_step_check(2))
       using Suc(2) 
-      by(intro orlins_compow_invar_gamma_pres orlins_compow_aux_invar_pres Suc(2-) 
+      by(intro orlins_compow_invar_gamma_pres orlins_compow_underlying_invars_pres Suc(2-) 
                orlins_compow_invar_integral_pres orlins_compow_implementation_invar_pres
                some_balance_after_k_steps 3 orlins_entry_after_k_steps
                orlins_compow_invar_forest_pres orlins_compow_invar_isOptflow_pres | simp)+
@@ -2193,7 +2192,7 @@ qed
 
 corollary compow_correctness_gtr0:
   assumes "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "invar_forest state"
@@ -2216,7 +2215,7 @@ qed
 
 theorem compow_completeness:
   assumes "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "invar_forest state"
@@ -2260,7 +2259,7 @@ next
     show ?case
       using Suc(2) 
       by(intro  optimality_pres_orlins_one_step_check(3)[of " ((orlins_one_step_check ^^ (Suc k)) state)"]
-               orlins_compow_invar_gamma_pres orlins_compow_aux_invar_pres Suc(2-) 
+               orlins_compow_invar_gamma_pres orlins_compow_underlying_invars_pres Suc(2-) 
                orlins_compow_invar_integral_pres orlins_compow_implementation_invar_pres
                some_balance_after_k_steps 3 orlins_entry_after_k_steps
                orlins_compow_invar_forest_pres orlins_compow_invar_isOptflow_pres | simp)+
@@ -2269,7 +2268,7 @@ qed
 
 corollary compow_completeness_gtr0:
   assumes "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "invar_forest state"
@@ -2300,7 +2299,7 @@ lemma number_of_comps_0: "card (comps \<V> X) > 0"
 
 lemma orlins_dom_impl_same:
   assumes "orlins_dom state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_gamma state"
           "implementation_invar state"
           "invar_non_zero_b state"
@@ -2346,7 +2345,7 @@ qed
 theorem orlins_dom_and_results:
   assumes "return state = notyetterm"
           "invar_gamma state"
-          "aux_invar state"
+          "underlying_invars state"
           "invar_non_zero_b state"
           "invar_integral state"
           "invar_forest state"
@@ -2408,100 +2407,100 @@ lemma not_blocked_init:
                           not_blocket_update_all_abstract_not_blocked_map[OF init_not_blocked(1)])
   using abstract_not_blocked_map_def init_not_blocked(2) by auto
 
-lemma aux_invar_initial: "aux_invar initial" 
-proof(rule aux_invarI, goal_cases)
+lemma underlying_invars_initial: "underlying_invars initial" 
+proof(rule underlying_invarsI, goal_cases)
   case 1
   thus ?case
     using initial_def \<E>_impl_meaning set_filter(1)
           set_filter(1)[OF  \<E>_impl_meaning(2), simplified \<E>_impl_meaning(1)]
-    by (intro invar_aux1I)auto
+    by (intro inv_actives_in_EI)auto
 next
   case 2
   thus ?case
-    by(auto intro!: invar_aux2I simp add: initial_def empty_forest_empty)
+    by(auto intro!: inv_digraph_abs_F_in_EI simp add: initial_def empty_forest_empty)
 next
   case 3
   thus?case
-    by(auto intro!:  invar_aux3I simp add: \<F>_def initial_def empty_forest_empty)
+    by(auto intro!:  inv_forest_in_EI simp add: \<F>_def initial_def empty_forest_empty)
 next
   case 4
   thus ?case
-    by(auto intro!:  invar_aux4I simp add: \<F>_def initial_def empty_forest_empty)
+    by(auto intro!:  inv_forest_actives_disjointI simp add: \<F>_def initial_def empty_forest_empty)
 next
   case 5
   thus ?case
-    by(auto intro!: invar_aux6I simp add:  initial_def empty_forest_empty)
+    by(auto intro!: inv_conversion_consistentI simp add:  initial_def empty_forest_empty)
 next
   case 6
   thus ?case
-    by(auto intro!: invar_aux8I simp add: initial_def init_rep_comp) 
+    by(auto intro!: inv_rep_reachableI simp add: initial_def init_rep_comp) 
 next
   case 7
   thus ?case
     using not_reachable_empt
-    by(force intro!: invar_aux7I simp add: initial_def init_rep_comp empty_forest_empty)
+    by(force intro!: inv_reachable_same_repI simp add: initial_def init_rep_comp empty_forest_empty)
 next
   case 8
   thus ?case
-    by(auto intro!: invar_aux9I simp add: initial_def init_rep_comp empty_forest_empty)
+    by(auto intro!: inv_reps_in_VI simp add: initial_def init_rep_comp empty_forest_empty)
 next
   case 9
   thus ?case
-    by(auto intro!: invar_aux5I simp add: initial_def empty_forest_empty)
+    by(auto intro!: inv_finite_forestI simp add: initial_def empty_forest_empty)
 next
   case 10
   thus ?case
-    by(auto intro!: invar_aux10I simp add: initial_def empty_forest_empty  Vs_def
+    by(auto intro!: inv_components_in_VI simp add: initial_def empty_forest_empty  Vs_def
            dest!: in_connected_component_in_edges)
  next
   case 11
   thus ?case
-    by(auto intro!: invar_aux11I 
+    by(auto intro!: inv_active_different_compsI 
           simp add: initial_def empty_forest_empty actives_init 
                     connected_component_empty_edges_is_self)
 next
   case 12
   thus ?case
-    by(auto intro!: invar_aux12I simp add: initial_def init_rep_comp)
+    by(auto intro!: inv_pos_bal_repI simp add: initial_def init_rep_comp)
 next
   case 13
   thus ?case
-    by(auto intro!: invar_aux13I 
+    by(auto intro!: inv_inactive_same_componentI 
          simp add: initial_def empty_forest_empty 
                    connected_component_empty_edges_is_self actives_init)
 next
   case 14
   thus ?case
-    by(auto intro!: invar_aux14I validFI 
+    by(auto intro!: inv_dbltn_graph_forestI validFI 
              simp add: initial_def empty_forest_empty  dblton_graph_def Vs_def)
 next
   case 15
   thus ?case
-    by(auto intro!: invar_aux15I simp add: initial_def empty_forest_empty Vs_def)
+    by(auto intro!: inv_forest_in_VI simp add: initial_def empty_forest_empty Vs_def)
 next
   case 16
   thus ?case    
-    by(auto intro!: invar_aux16I 
+    by(auto intro!: inv_comp_card_correctI 
           simp add: initial_def init_rep_comp empty_forest_empty 
                     connected_component_empty_edges_is_self)
 next
   case 17
   thus ?case
     using invar_filter \<E>_impl_meaning
-    by(auto intro!: invar_aux17I simp add:  initial_def) 
+    by(auto intro!: inv_set_invar_activesI simp add:  initial_def) 
 next
   case 18
   thus ?case
-    by(auto intro!: invar_aux18I'' empty_forest_good_graph simp add: initial_def)
+    by(auto intro!: inv_forest_good_graphI'' empty_forest_good_graph simp add: initial_def)
 next
   case 19
   thus ?case
-    by(auto intro!: invar_aux20I symmetric_digraphI 
+    by(auto intro!: inv_digraph_abs_\<FF>_symI symmetric_digraphI 
           simp add: empty_forest_empty initial_def)
 next
   case 20   
   thus ?case
-    by(auto intro!: invar_aux22I 
+    by(auto intro!: inv_unbl_iff_forest_activeI 
              simp add: initial_def \<F>_def  empty_forest_empty not_blocked_init actives_init)
 qed
 
@@ -2656,9 +2655,9 @@ proof-
     case False
     thus ?thesis
       by(auto intro!: send_flow_termination invar_gamma_initial
-                      implementation_invar_initial  aux_invar_initial  invar_integral_initial
+                      implementation_invar_initial  underlying_invars_initial  invar_integral_initial
                       invar_isOptflow_initial invar_above_6Ngamma_initial
-            simp add: aux_invar_initial )
+            simp add: underlying_invars_initial )
   qed
   hence after_send_flow_same:"send_flow_impl initial = send_flow initial"
     using send_flow_dom_impl_cong by blast
@@ -2691,7 +2690,7 @@ proof(cases "return (send_flow initial)")
    ultimately show ?thesis
     by(auto intro!: send_flow_correctness
                       invar_gamma_initial send_flow_entry_initial
-                      implementation_invar_initial  aux_invar_initial  invar_integral_initial
+                      implementation_invar_initial  underlying_invars_initial  invar_integral_initial
                       invar_isOptflow_initial invar_above_6Ngamma_initial success 
          simp add: assms orlins.psimps[OF orlins_dom] success )
 qed
@@ -2728,7 +2727,7 @@ proof(cases "\<forall>v\<in>\<V>. \<b> v = 0")
    then show ?thesis
     by(intro send_flow_completeness)
       (auto intro!: invar_gamma_initial send_flow_entry_initial
-                      implementation_invar_initial  aux_invar_initial  invar_integral_initial
+                      implementation_invar_initial  underlying_invars_initial  invar_integral_initial
                       invar_isOptflow_initial invar_above_6Ngamma_initial infeasible phi_initial_leq_2N
          simp add: assms orlins.psimps[OF orlins_dom] infeasible)
 qed
@@ -2753,7 +2752,7 @@ next
             abstract_bal_map_init_is initial_def by fastforce
   have intermediate_invars:
        "invar_gamma (send_flow initial)"
-       "aux_invar (send_flow initial)"
+       "underlying_invars (send_flow initial)"
        "invar_non_zero_b (send_flow initial)"
        "invar_integral (send_flow initial)"
        "invar_forest (send_flow initial)"
@@ -2761,7 +2760,7 @@ next
        "invar_isOptflow (send_flow initial)"
        "implementation_invar (send_flow initial)"
     by(auto intro!: send_flow_invar_gamma_pres send_flow_dom invar_gamma_initial not_all_zero
-                    send_flow_invar_isOpt_pres aux_invar_initial send_flow_invar_integral_pres
+                    send_flow_invar_isOpt_pres underlying_invars_initial send_flow_invar_integral_pres
                     send_flow_implementation_invar_pres remaining_balance_after_send_flow
                     implementation_invar_initial invar_integral_initial invar_isOptflow_initial
                     invar_above_6Ngamma_initial send_flow_invar_aux_pres orlins_entry_after_send_flow
@@ -2908,7 +2907,7 @@ theorem initial_send_flow:
 
 lemma current_gamma_initial:
 "current_\<gamma> initial = Max {\<bar>a_balance initial v\<bar> |v. v \<in> \<V>}"
-  using new_gamma_is(3)[OF implementation_invar_initial aux_invar_initial]
+  using new_gamma_is(3)[OF implementation_invar_initial underlying_invars_initial]
   by(simp add: initial_def)
 
 lemma balance_initial:

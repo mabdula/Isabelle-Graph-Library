@@ -254,7 +254,7 @@ qed
 lemma time_boundB: 
   assumes "invar_gamma state"
           "\<phi> = nat (\<Phi> state)"
-          "aux_invar state"
+          "underlying_invars state"
           "implementation_invar state"
           "invar_integral state"
           "invar_isOptflow state"

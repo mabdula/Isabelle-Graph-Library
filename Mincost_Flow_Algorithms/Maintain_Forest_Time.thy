@@ -123,7 +123,7 @@ lemma maintain_forest_time_simps:
 
 lemma time_boundA:
   assumes "maintain_forest_time_dom state" 
-          "aux_invar state" "implementation_invar state"
+          "underlying_invars state" "implementation_invar state"
   shows "prod.fst (maintain_forest_time state) = 
      (card (comps \<V> (to_graph (\<FF> state))) 
    -  card (comps \<V> (to_graph (\<FF> (prod.snd (maintain_forest_time state))))))*
@@ -134,10 +134,10 @@ proof(induction rule: maintain_forest_induct[OF assms(1)[simplified sym[OF termi
   note IH=this
   hence maintain_forest_time_dom: "maintain_forest_time_dom state" 
     using terminationA_iff by auto
-  have axi: " aux_invar state" 
+  have axi: " underlying_invars state" 
     using IH by simp
   have upd_dom:"maintain_forest_call_cond state \<Longrightarrow> maintain_forest_dom (maintain_forest_upd state)"
-    and auxii: "maintain_forest_call_cond state \<Longrightarrow> aux_invar (maintain_forest_upd state)"
+    and auxii: "maintain_forest_call_cond state \<Longrightarrow> underlying_invars (maintain_forest_upd state)"
     and auxiii: "maintain_forest_call_cond state \<Longrightarrow> implementation_invar (maintain_forest_upd state)"
     by(auto intro!:  termination_of_maintain_forest' invar_aux_pres_one_step invars_pres_one_step(1)
           simp add: IH(3,4))

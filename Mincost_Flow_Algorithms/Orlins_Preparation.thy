@@ -1,210 +1,13 @@
 section \<open>Supplementary Theory for Orlin's Algorithm\<close>
 
-theory Intermediate_Summary
-  imports PathAugOpt Berge_Lemma.Berge  "HOL-Data_Structures.Set_Specs" 
-          Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor  Directed_Set_Graphs.Pair_Graph_Specs        
+theory Orlins_Preparation
+  imports Path_Aug_Opt Berge_Lemma.Berge  "HOL-Data_Structures.Set_Specs" 
+          Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor  Directed_Set_Graphs.Pair_Graph_Specs  
+          Undirected_Set_Graphs.Directed_Undirected
 begin
-(*TODO MOVE, mostly graph theory*)
-lemma connected_component_empty_edges_is_self:
-"connected_component {} v = {v}"
-  using not_reachable_empt[of v]
-  by(auto simp add: connected_component_def)
 
-lemma insert_edge_dVs: "dVs (insert (x, y) E) = {x, y} \<union> dVs E"
-  by(auto simp add: dVs_def)
-
-lemma  undirected_of_directed_of_undirected_idem: 
-       "graph_invar A \<Longrightarrow> {{v1, v2} |v1 v2. (v1,v2) \<in> {(u, v). {u, v} \<in> A}} = A" for A
-      by fast
-
-lemma vwalk_bet_reflexive_cong: "w \<in> dVs E \<Longrightarrow> a = w \<Longrightarrow> b = w \<Longrightarrow> vwalk_bet E a [w] b" for w a b E
-  by (meson vwalk_bet_reflexive)
-
-lemma  edges_are_vwalk_bet_cong: "(v,w)\<in> E \<Longrightarrow> a = v \<Longrightarrow> b = w \<Longrightarrow> vwalk_bet E a [v, w] b" for v E w a b
-  using edges_are_vwalk_bet by auto
-lemma walk_reflexive_cong: "w \<in> Vs E \<Longrightarrow> a = w \<Longrightarrow> b = w \<Longrightarrow>  walk_betw E a [w] b"
-  using walk_reflexive by simp
-
-lemma edges_are_walks_cong:
-  "{v, w} \<in> E \<Longrightarrow> a = v \<Longrightarrow> w = b \<Longrightarrow> walk_betw E a [v, w] b"
-  using edges_are_walks by fast
-
-lemma edge_not_in_edges_in_path:
-"a \<notin> set p \<or> b \<notin> set p \<Longrightarrow> {a, b} \<notin> set (edges_of_path p)"
-  by(induction p rule: edges_of_path.induct) auto
-
-lemma reachable_after_insert:
-  assumes "\<not> reachable E u v" "reachable (insert {a, b} E) u v"
-          "\<not> (reachable E u a)" "u \<noteq> v"
-   shows "reachable E u b \<or> u = a \<or> u = b"
-proof-
-  note asm = assms
-  then obtain p where p_prop:"walk_betw (insert {a, b} E) u p v" 
-    using asm  unfolding reachable_def by auto
-  hence "\<not> walk_betw E u p v" 
-    by (meson \<open>\<not> reachable E u v\<close> reachableI)
-  have "set (edges_of_path p) \<subseteq> (insert {a, b} E)"
-    using path_edges_subset p_prop unfolding walk_betw_def by auto
-  have length_p: "length p \<ge> 2"
-  proof(rule ccontr)
-    assume " \<not> 2 \<le> length p"
-    hence "length p \<le> 1" by simp
-    hence "length p = 1"
-      using   p_prop  unfolding walk_betw_def 
-      by (cases p) auto
-    hence "hd p = last p" 
-      by (cases p) auto
-    thus False
-      using p_prop asm unfolding walk_betw_def by simp
-  qed
-  have 12:"path (set (edges_of_path p)) p"
-    by(auto intro: path_edges_of_path_refl simp add: length_p)
-  have "\<not> set (edges_of_path p) \<subseteq> E"
-  proof
-    assume "set (edges_of_path p) \<subseteq> E"
-    hence "path E p" 
-      using "12" path_subset by blast
-    hence "reachable E u v"
-      unfolding reachable_def walk_betw_def 
-      by (metis p_prop walk_betw_def)
-    thus False using asm by simp
-  qed
-  hence "{a, b} \<in> set (edges_of_path p)" 
-    using \<open>set (edges_of_path p) \<subseteq> insert {a, b} E\<close> by blast
-  hence "a \<in> set p" "b \<in> set p"
-    by (meson insertCI v_in_edge_in_path_gen)+
-  then obtain p' x q where p'xq:"p = p'@[x]@q" "x = a \<or> x = b" "a \<notin> set p'" "b \<notin> set p'"
-    using extract_first_x[of a p "\<lambda> x. x = a \<or> x = b"]
-    by blast
-  have 13:"{a, b} \<notin> set (edges_of_path (p'@[x]))" 
-    apply(cases "a=b")
-    using p'xq  edges_of_path.simps(2)[of x] edges_of_path.simps(3)[of "last p'" x Nil]
-             edges_of_path_append_3[of p' "[x]"]   v_in_edge_in_path[of a b "p'@[x]"]
-             v_in_edge_in_path[of a b "p'"] edge_not_in_edges_in_path[of a "p'@[x]" b] 
-    by(cases p', force, auto)
-  show "reachable E u b \<or> u = a\<or> u = b"
-  proof(cases "x = b")
-    case True
-    have "path (insert {a,b} E) (p' @ [x])" 
-      using p'xq(1) p_prop walk_between_nonempty_pathD(1)[of "insert {a,b} E" u "p'@[x]" x]
-             walk_pref[of "insert {a,b} E" u p' x q v] by simp
-    show ?thesis 
-    proof(cases "u = b")
-      case False
-      hence p'_not_empt:"p' \<noteq> []" 
-        using True  p'xq(1) p_prop  walk_betw_def[of "insert {a,b} E" u p v] by force
-    have "path E (p' @ [x])" 
-      apply(rule path_subset, rule path_edges_of_path_refl)
-      using  p'_not_empt  "13" \<open>path (insert {a, b} E) (p' @ [x])\<close> path_edges_subset 
-      by (auto  simp add: Suc_leI)
-    hence "walk_betw E u (p'@[x]) b"
-      unfolding walk_betw_def
-      using True p'_not_empt p'xq(1) p_prop
-                walk_between_nonempty_pathD(3)[of "insert {a,b} E" u p v] by simp
-    then show ?thesis unfolding reachable_def by auto
-  qed simp
-next
-  case False
-  note false = this
-  show ?thesis
-  proof(cases "x = a")
-    case True
-    have "path (insert {a,b} E) (p' @ [x])"
-      using p'xq(1) p_prop walk_between_nonempty_pathD(1)[of "insert {a,b} E" u "p'@[x]" x]
-            walk_pref[of "insert {a,b} E" u p' x q v] by simp
-    show ?thesis 
-    proof(cases "u = a")
-      case False
-      hence p'_not_empt:"p' \<noteq> []" 
-        using True  p'xq(1) p_prop  walk_betw_def[of "insert {a,b} E" u p v] by force
-     have "path E (p' @ [x])" 
-      apply(rule path_subset, rule path_edges_of_path_refl)
-      using  p'_not_empt  "13" \<open>path (insert {a, b} E) (p' @ [x])\<close> path_edges_subset 
-      by (auto  simp add: Suc_leI)
-    hence "walk_betw E u (p'@[x]) a"
-      unfolding walk_betw_def 
-      using True  p'_not_empt p'xq(1) p_prop 
-             walk_between_nonempty_pathD(3)[of "insert {a,b} E" u p v] by simp
-    then show ?thesis using asm unfolding reachable_def by auto
-  qed simp
-next 
-  case False
-  then show ?thesis using false p'xq by simp
-qed
-qed
-qed
-
-fun itrev_aux :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
-"itrev_aux  [] ys = ys" |
-"itrev_aux  (x #xs) ys = itrev_aux  xs (x #ys)"
-definition "itrev xs = itrev_aux  xs Nil"
-
-lemma itrev_rev_gen:"itrev_aux xs ys = rev xs @ ys"
-  by(induction xs ys arbitrary: rule: itrev_aux.induct) auto
-
-lemma itrev_is_rev[simp]: "itrev = rev"
-  by(auto simp add: itrev_rev_gen[of _ Nil, simplified] itrev_def)
-
-definition "symmetric_digraph E = (\<forall> u v. (u, v) \<in> E \<longrightarrow> (v, u) \<in> E)"
-
-lemma symmetric_digraphI:
-"(\<And> u v. (u, v) \<in> E \<Longrightarrow> (v, u) \<in> E) \<Longrightarrow> symmetric_digraph E"
-and  symmetric_digraphE:
-"symmetric_digraph E \<Longrightarrow> ((\<And> u v. (u, v) \<in> E \<Longrightarrow> (v, u) \<in> E) \<Longrightarrow> P) \<Longrightarrow> P"
-and  symmetric_digraphD:
-"symmetric_digraph E \<Longrightarrow>  (u, v) \<in> E \<Longrightarrow> (v, u) \<in> E"
-  by(auto simp add: symmetric_digraph_def)
-
-definition "UD Forest = { {u, v} | u v. (u, v) \<in>  Forest}"
-
-lemma in_UDI: "(u, v) \<in> E \<Longrightarrow> {u, v} \<in> UD E"
-and in_UDE: "{u, v} \<in> UD E \<Longrightarrow> ((u, v) \<in> E \<Longrightarrow> P) \<Longrightarrow> ((v, u) \<in> E \<Longrightarrow> P) \<Longrightarrow> P"
-and in_UD_symE: "{u, v} \<in> UD E \<Longrightarrow> symmetric_digraph E \<Longrightarrow> ((u, v) \<in> E \<Longrightarrow> P) \<Longrightarrow> P"
-and in_UD_symD: "{u, v} \<in> UD E \<Longrightarrow> symmetric_digraph E \<Longrightarrow> (u, v) \<in> E"
-  by(auto simp add: UD_def doubleton_eq_iff symmetric_digraph_def)
-
-lemma symmetric_digraph_walk_betw_vwalk_bet:
-        assumes "symmetric_digraph E" "walk_betw (UD E) u p v"
-        shows "vwalk_bet E u p v"
-  using assms (2,1)
-  apply(induction rule: induct_walk_betw)
-  apply (simp add: UD_def dVs_def vs_member vwalk_bet_reflexive)
-  by (simp add: in_UD_symD)
-
-lemma symmetric_digraph_vwalk_betw_walk_betw:
-        assumes "symmetric_digraph E" "vwalk_bet E u p v"
-        shows "walk_betw (UD E) u p v"
-  using assms (2,1)
-  apply(induction rule: induct_vwalk_bet)
-   apply (simp add: UD_def dVs_def vs_member walk_reflexive)
-  by (meson edges_are_walks in_UDI walk_betw_cons)
-
-lemma symmetric_digraph_vwalk_bet_vwalk_bet:
-        assumes "symmetric_digraph E" "vwalk_bet E u p v"
-        shows "vwalk_bet E v (rev p) u"
-  using assms (2,1)
-  apply(induction rule: induct_vwalk_bet)
-  apply (simp add: UD_def dVs_def vs_member vwalk_bet_reflexive)
-  using symmetric_digraphD vwalk_append_intermediate_edge by fastforce
-
-lemma undirected_edges_subset_directed_edges_subset:
-       "set (edges_of_path Q) \<subseteq> UD E \<Longrightarrow>
-       symmetric_digraph E \<Longrightarrow>
-       set (edges_of_vwalk Q) \<subseteq> E"
-  by(induction Q rule: edges_of_path.induct)
-    (auto simp add: doubleton_eq_iff UD_def elim: symmetric_digraphE)
-
-lemma directed_edges_subset_undirected_edges_subset:
-      "set (edges_of_vwalk Q) \<subseteq> E \<Longrightarrow>
-       set (edges_of_path Q) \<subseteq> UD E"
-  by(induction Q rule: edges_of_path.induct)
-    (auto simp add: doubleton_eq_iff intro!: in_UDI)
-
-(*END TODO MOVE*)
-
-
-
-context flow_network
+context 
+  flow_network
 begin
 lemmas number_of_comps_anti_mono_strict=number_of_comps_anti_mono_strict[OF  _ _ _ _ _ \<V>_finite]
 lemmas number_of_comps_anti_mono = number_of_comps_anti_mono[OF _ _ \<V>_finite]
@@ -227,23 +30,21 @@ record ('f, 'b, '\<FF>, 'conv_to_rdg, 'actives, 'rep_comp_card, 'not_blocked)
                              rep_comp_card::'rep_comp_card
                              not_blocked::'not_blocked
 
-locale Set3 = 
+locale Set_with_predicate = 
 fixes get_from_set   :: "('a \<Rightarrow> bool) \<Rightarrow> 'actives  \<Rightarrow> 'a option"
 fixes filter:: "('a => bool) =>'actives  => 'actives "
 fixes are_all:: "('a \<Rightarrow> bool) \<Rightarrow> 'actives \<Rightarrow> bool"
 fixes set_invar
 fixes to_set
 
-assumes set_get:   "\<lbrakk> set_invar s1; \<exists> x. x \<in> to_set s1 \<and> P x \<rbrakk> \<Longrightarrow> \<exists> y. get_from_set P s1 = Some y"
+assumes set_get:   
+  "\<lbrakk> set_invar s1; \<exists> x. x \<in> to_set s1 \<and> P x \<rbrakk> \<Longrightarrow> \<exists> y. get_from_set P s1 = Some y"
   "\<lbrakk> set_invar s1; get_from_set P s1 = Some x\<rbrakk> \<Longrightarrow> x \<in> to_set s1"
-                   "\<lbrakk> set_invar s1; get_from_set P s1 = Some x\<rbrakk> \<Longrightarrow> P x"
-                  (* "\<lbrakk> set_invar s1; \<And> x. x \<in> to_set s1 \<Longrightarrow> P x = Q x\<rbrakk> 
-                     \<Longrightarrow> get_from_set P s1 = get_from_set Q s1"    *)               
-    assumes set_filter:   "\<lbrakk> set_invar s1 \<rbrakk> \<Longrightarrow> to_set(filter P s1) = to_set s1 - {x. x \<in> to_set s1 \<and> \<not> P x}"
-                         (* "\<lbrakk> set_invar s1; \<And> x. x \<in> to_set s1 \<Longrightarrow> P x =  Q x \<rbrakk> 
-                           \<Longrightarrow> filter P s1 = filter Q s1"*)
-   assumes invar_filter: "\<lbrakk> set_invar s1\<rbrakk> \<Longrightarrow> set_invar(filter P s1)"
- assumes are_all: "\<lbrakk> set_invar S\<rbrakk> \<Longrightarrow> are_all P S \<longleftrightarrow> (\<forall> x \<in> to_set S. P x)"
+  "\<lbrakk> set_invar s1; get_from_set P s1 = Some x\<rbrakk> \<Longrightarrow> P x"              
+assumes set_filter:   
+  "\<lbrakk> set_invar s1 \<rbrakk> \<Longrightarrow> to_set(filter P s1) = to_set s1 - {x. x \<in> to_set s1 \<and> \<not> P x}"
+assumes invar_filter: "\<lbrakk> set_invar s1\<rbrakk> \<Longrightarrow> set_invar(filter P s1)"
+assumes are_all: "\<lbrakk> set_invar S\<rbrakk> \<Longrightarrow> are_all P S \<longleftrightarrow> (\<forall> x \<in> to_set S. P x)"
 
 locale map_update_all = map:
  Map map_empty "update::'a \<Rightarrow> 'b \<Rightarrow> 'map \<Rightarrow> 'map" delete lookup map_invar
@@ -271,23 +72,23 @@ definition "consist E conv_to_rdg = ((\<forall> (x, y) \<in> E. \<exists> e. ((c
 
 lemma consistE:
   assumes "consist E to_rdg" 
-          "(\<And> x y. (x, y) \<in> E \<Longrightarrow> \<exists> e. ((to_rdg (x,y) = F e \<and> make_pair e = (x,y)) \<or>
-                                     to_rdg (x,y) = B e \<and> make_pair e = (y,x)) ) \<Longrightarrow>
-                (\<And> x y e. (x, y) \<in> E \<Longrightarrow> x \<noteq> y \<Longrightarrow> (to_rdg (x,y) = F e) = (to_rdg (y, x) = B e)) \<Longrightarrow> P"
+          "\<lbrakk>(\<And> x y. (x, y) \<in> E \<Longrightarrow> \<exists> e. ((to_rdg (x,y) = F e \<and> make_pair e = (x,y)) \<or>
+                                     to_rdg (x,y) = B e \<and> make_pair e = (y,x)) );
+           (\<And> x y e. (x, y) \<in> E \<Longrightarrow> x \<noteq> y \<Longrightarrow> (to_rdg (x,y) = F e) = (to_rdg (y, x) = B e))\<rbrakk> \<Longrightarrow> P"
         shows P
   using assms by(force simp add:  consist_def split: prod.split)
 
 lemma consistD:
   assumes "consist E to_rdg" 
-  shows  "((x, y) \<in> E \<Longrightarrow> \<exists> e. ((to_rdg (x,y) = F e \<and> make_pair e = (x,y)) \<or>
-                                     to_rdg (x,y) = B e \<and> make_pair e = (y,x)) )"
-         "((x, y) \<in> E \<Longrightarrow> x \<noteq> y \<Longrightarrow> (to_rdg (x,y) = F e) = (to_rdg (y, x) = B e))"
+  shows  "(x, y) \<in> E \<Longrightarrow> \<exists> e. ((to_rdg (x,y) = F e \<and> make_pair e = (x,y)) \<or>
+                                     to_rdg (x,y) = B e \<and> make_pair e = (y,x))"
+         "\<lbrakk>(x, y) \<in> E; x \<noteq> y\<rbrakk> \<Longrightarrow> (to_rdg (x,y) = F e) = (to_rdg (y, x) = B e)"
   by(meson assms consistE)+
 
 lemma consistI:
   assumes "(\<And> x y. (x, y) \<in> E \<Longrightarrow> \<exists> e. ((to_rdg (x,y) = F e \<and> make_pair e = (x,y)) \<or>
                                      to_rdg (x,y) = B e \<and> make_pair e = (y,x)) )" 
-         " (\<And> x y e. (x, y) \<in> E \<Longrightarrow> x \<noteq> y \<Longrightarrow> (to_rdg (x,y) = F e) = (to_rdg (y, x) = B e))"
+         "(\<And> x y e. \<lbrakk>(x, y) \<in> E; x \<noteq> y\<rbrakk> \<Longrightarrow> (to_rdg (x,y) = F e) = (to_rdg (y, x) = B e))"
    shows "consist E to_rdg"
   using assms by(force simp add:  consist_def split: prod.split) 
 
@@ -322,11 +123,15 @@ lemmas (in Map) map_specs' =
 
 locale Adj_Map_Specs2 = 
  adjmap: Map'  where update = update and invar = adjmap_inv +
- vset: Set_Choose where empty = vset_empty and delete = vset_delete and insert = vset_insert 
-        and invar = vset_inv and isin = isin
- for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and adjmap_inv :: "'adjmap \<Rightarrow> bool"  and
-     vset_empty :: "'vset"  ("\<emptyset>\<^sub>N") and vset_delete :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset" and
-     vset_insert and vset_inv and isin
+ vset: Set_Choose where empty = vset_empty and delete = vset_delete and insert = vset_insert  and 
+                        invar = vset_inv and isin = isin
+for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and 
+    adjmap_inv :: "'adjmap \<Rightarrow> bool"  and
+    vset_empty :: "'vset"  ("\<emptyset>\<^sub>N") and 
+    vset_delete :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset" and
+    vset_insert and 
+    vset_inv and 
+    isin
 begin
 notation vset_empty ("\<emptyset>\<^sub>N")
 
@@ -345,8 +150,8 @@ definition "to_graph Forest = UD (digraph_abs Forest)"
 lemma to_graph'_def:  "to_graph Forest = { {u, v} | u v. (u, v) \<in> digraph_abs Forest}"
   by(auto simp add: to_graph_def UD_def)
 
-lemma in_to_graphE: "{u, v} \<in> to_graph F \<Longrightarrow> 
- ((u, v) \<in> digraph_abs F \<Longrightarrow> P) \<Longrightarrow> ((v, u) \<in> digraph_abs F \<Longrightarrow> P) \<Longrightarrow> P" for F
+lemma in_to_graphE: 
+"\<lbrakk>{u, v} \<in> to_graph F; ((u, v) \<in> digraph_abs F \<Longrightarrow> P); ((v, u) \<in> digraph_abs F \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P" for F
   by(auto simp add: to_graph'_def doubleton_eq_iff)
 
 lemma dVs_Vs_same: "dVs (digraph_abs G) = Vs (to_graph G)"
@@ -357,17 +162,17 @@ definition "good_graph_invar G = ( (adjmap_inv G \<and>
                finite {v. (lookup G v) \<noteq> None} \<and>
                (\<forall> v N. (lookup G v) = Some N \<longrightarrow> finite (t_set N))))"
 
-lemma good_graph_invarE: "good_graph_invar G \<Longrightarrow>(adjmap_inv G \<Longrightarrow>
-               (\<And> v N. lookup G v = Some N \<Longrightarrow> vset_inv N) \<Longrightarrow>
-               finite {v. (lookup G v) \<noteq> None} \<Longrightarrow>
-               (\<And> v N. (lookup G v) = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> P) \<Longrightarrow> P"
+lemma good_graph_invarE: 
+ "\<lbrakk>good_graph_invar G;
+  (\<lbrakk>adjmap_inv G; (\<And> v N. lookup G v = Some N \<Longrightarrow> vset_inv N); finite {v. (lookup G v) \<noteq> None};
+    (\<And> v N. (lookup G v) = Some N \<Longrightarrow> finite (t_set N))\<rbrakk> \<Longrightarrow> P)\<rbrakk> 
+   \<Longrightarrow> P"
   by(auto simp add: good_graph_invar_def)
 
 lemma good_graph_invarI: 
-              "adjmap_inv G \<Longrightarrow>
-               (\<And> v N. lookup G v = Some N \<Longrightarrow> vset_inv N) \<Longrightarrow>
-               finite {v. (lookup G v) \<noteq> None} \<Longrightarrow>
-               (\<And> v N. (lookup G v) = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> good_graph_invar G"
+ "\<lbrakk>adjmap_inv G ; (\<And> v N. lookup G v = Some N \<Longrightarrow> vset_inv N);
+   finite {v. (lookup G v) \<noteq> None} ; (\<And> v N. (lookup G v) = Some N \<Longrightarrow> finite (t_set N))\<rbrakk>
+   \<Longrightarrow> good_graph_invar G"
   by(auto simp add: good_graph_invar_def)
 
 definition "insert_undirected_edge u v forst = (let vsets_u = neighbourhood forst u;
@@ -422,7 +227,7 @@ qed
 lemma insert_abstraction[simp]:
   assumes "adjmap_inv ff " 
           "(\<And> x N. lookup ff x = Some N \<longrightarrow> vset_inv N)"
-        shows "to_graph (insert_undirected_edge u v ff) = insert {u, v} (to_graph ff)"
+    shows "to_graph (insert_undirected_edge u v ff) = insert {u, v} (to_graph ff)"
   by(auto simp add: to_graph'_def insert_digraph_abstraction[OF assms])
 
 lemma insert_abstraction':
@@ -512,32 +317,73 @@ bundle automation' = map_empty[simp] map_update[simp] map_delete[simp]
                     invar_empty[simp] invar_update[simp] invar_delete[simp]
 end 
 
-locale algo_spec = alg where fst="fst::'edge_type \<Rightarrow> 'a" +  Set3
- where get_from_set = "get_from_set::('edge_type \<Rightarrow> bool) \<Rightarrow> 'e \<Rightarrow> 'edge_type option"
- +
-adj_map_specs: Adj_Map_Specs2 where  update =  "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd" +
-flow_map: map_update_all  flow_empty "flow_update::'edge_type \<Rightarrow> real \<Rightarrow> 'f_impl \<Rightarrow> 'f_impl"
-                flow_delete flow_lookup flow_invar flow_update_all+
-bal_map: Map  bal_empty "bal_update:: 'a \<Rightarrow> real \<Rightarrow> 'b_impl \<Rightarrow> 'b_impl" 
+locale 
+algo_spec = 
+ alg where fst="fst::'edge_type \<Rightarrow> 'a" +  
+
+ Set_with_predicate
+     where get_from_set = "get_from_set::('edge_type \<Rightarrow> bool) \<Rightarrow> 'e \<Rightarrow> 'edge_type option"  +
+
+ adj_map_specs: Adj_Map_Specs2 
+     where  update =  "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd" +
+
+ flow_map: map_update_all flow_empty "flow_update::'edge_type \<Rightarrow> real \<Rightarrow> 'f_impl \<Rightarrow> 'f_impl"
+                          flow_delete flow_lookup flow_invar flow_update_all+
+
+ bal_map: Map  bal_empty "bal_update:: 'a \<Rightarrow> real \<Rightarrow> 'b_impl \<Rightarrow> 'b_impl" 
                bal_delete bal_lookup bal_invar +
-rep_comp_map: map_update_all rep_comp_empty "rep_comp_update::'a \<Rightarrow> ('a \<times> nat) \<Rightarrow> 'r_comp_impl \<Rightarrow> 'r_comp_impl"
-              rep_comp_delete rep_comp_lookup rep_comp_invar rep_comp_upd_all +
-conv_map: Map  conv_empty "conv_update::('a \<times> 'a) \<Rightarrow> 'edge_type Redge \<Rightarrow> 'conv_impl \<Rightarrow> 'conv_impl"
-              conv_delete conv_lookup conv_invar +
-not_blocked_map: map_update_all  not_blocked_empty "not_blocked_update::'edge_type \<Rightarrow> bool \<Rightarrow> 'not_blocked_impl\<Rightarrow> 'not_blocked_impl"
-              not_blocked_delete not_blocked_lookup not_blocked_invar not_blocked_upd_all
-for flow_empty flow_update flow_delete flow_lookup flow_invar bal_empty bal_update bal_delete 
-    bal_lookup bal_invar rep_comp_empty rep_comp_update rep_comp_delete rep_comp_lookup 
-    rep_comp_invar conv_empty conv_update conv_delete conv_lookup conv_invar not_blocked_update 
-    not_blocked_empty not_blocked_delete not_blocked_lookup not_blocked_invar fst 
-   rep_comp_upd_all flow_update_all not_blocked_upd_all get_from_set
- +
-fixes \<b>::"'a \<Rightarrow> real" 
-and  get_max::"('a \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'b_impl \<Rightarrow> real"
-  and \<epsilon>::real
-  and \<E>_impl::'e
-  and empty_forest::"'d"
-  and N::nat
+
+ rep_comp_map: map_update_all rep_comp_empty "rep_comp_update::'a \<Rightarrow> ('a \<times> nat) \<Rightarrow> 'r_comp_impl \<Rightarrow> 'r_comp_impl"
+                              rep_comp_delete rep_comp_lookup rep_comp_invar rep_comp_upd_all +
+
+ conv_map: Map  conv_empty "conv_update::('a \<times> 'a) \<Rightarrow> 'edge_type Redge \<Rightarrow> 'conv_impl \<Rightarrow> 'conv_impl"
+                conv_delete conv_lookup conv_invar +
+
+ not_blocked_map: map_update_all  not_blocked_empty "not_blocked_update::'edge_type \<Rightarrow> bool \<Rightarrow> 'not_blocked_impl\<Rightarrow> 'not_blocked_impl"
+                                  not_blocked_delete not_blocked_lookup not_blocked_invar not_blocked_upd_all
+for flow_empty 
+    flow_update 
+    flow_delete 
+    flow_lookup 
+    flow_invar
+
+    bal_empty 
+    bal_update 
+    bal_delete 
+    bal_lookup 
+    bal_invar 
+
+    rep_comp_empty 
+    rep_comp_update 
+    rep_comp_delete 
+    rep_comp_lookup 
+    rep_comp_invar 
+
+    conv_empty 
+    conv_update 
+    conv_delete 
+    conv_lookup 
+    conv_invar 
+
+    not_blocked_update 
+    not_blocked_empty 
+    not_blocked_delete 
+    not_blocked_lookup 
+    not_blocked_invar 
+
+    fst 
+
+    rep_comp_upd_all 
+    flow_update_all 
+    not_blocked_upd_all 
+
+    get_from_set  +
+fixes \<b>::"'a \<Rightarrow> real" and  
+      get_max::"('a \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> 'b_impl \<Rightarrow> real" and 
+      \<epsilon>::real and 
+      \<E>_impl::'e and 
+      empty_forest::"'d" and 
+      N::nat
 begin
 
 abbreviation "digraph_abs \<equiv> adj_map_specs.digraph_abs"
@@ -635,8 +481,8 @@ lemmas F_def = \<F>_def
 lemmas F_redges_def = \<F>_redges_def
 
 lemma update_gamma_same_F:
-"\<F> (state \<lparr> current_\<gamma> := gamma \<rparr>) = \<F> state"
-"\<F>_redges (state \<lparr> current_\<gamma> := gamma \<rparr>) = \<F>_redges state"
+ "\<F> (state \<lparr> current_\<gamma> := gamma \<rparr>) = \<F> state"
+ "\<F>_redges (state \<lparr> current_\<gamma> := gamma \<rparr>) = \<F>_redges state"
   by(auto simp add: \<F>_def \<F>_redges_def)
 
 definition "implementation_invar (state_impl::
@@ -653,30 +499,31 @@ definition "implementation_invar (state_impl::
           \<and> \<E> = not_blocked_dom (not_blocked state_impl))"
 
 lemma implementation_invarI[simp]:
-     " \<E> = flow_domain (current_flow state_impl)
-          \<Longrightarrow> flow_invar (current_flow state_impl) 
-          \<Longrightarrow> \<V>  = bal_domain (balance state_impl)
-          \<Longrightarrow> bal_invar (balance state_impl)
-          \<Longrightarrow> digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl)
-          \<Longrightarrow> conv_invar (conv_to_rdg state_impl)
-          \<Longrightarrow> \<V>  = rep_comp_domain (rep_comp_card state_impl)
-          \<Longrightarrow> rep_comp_invar (rep_comp_card state_impl)
-          \<Longrightarrow> not_blocked_invar (not_blocked state_impl)
-          \<Longrightarrow> \<E>  = not_blocked_dom (not_blocked state_impl) \<Longrightarrow> implementation_invar state_impl"
+     "\<lbrakk>\<E> = flow_domain (current_flow state_impl);
+       flow_invar (current_flow state_impl); 
+       \<V>  = bal_domain (balance state_impl);
+       bal_invar (balance state_impl);
+       digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl);
+       conv_invar (conv_to_rdg state_impl);
+       \<V>  = rep_comp_domain (rep_comp_card state_impl);
+       rep_comp_invar (rep_comp_card state_impl);
+       not_blocked_invar (not_blocked state_impl);
+       \<E>  = not_blocked_dom (not_blocked state_impl)\<rbrakk>
+   \<Longrightarrow> implementation_invar state_impl"
   unfolding implementation_invar_def by simp
 
 lemma implementation_invarE[simp, elim]:
      "implementation_invar state_impl \<Longrightarrow>
-        (\<E>  = flow_domain (current_flow state_impl)
-          \<Longrightarrow> flow_invar (current_flow state_impl) 
-          \<Longrightarrow> \<V>  = bal_domain (balance state_impl)
-          \<Longrightarrow> bal_invar (balance state_impl)
-          \<Longrightarrow> digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl)
-          \<Longrightarrow> conv_invar (conv_to_rdg state_impl)
-          \<Longrightarrow> \<V>  = rep_comp_domain (rep_comp_card state_impl)
-          \<Longrightarrow> rep_comp_invar (rep_comp_card state_impl)
-          \<Longrightarrow> not_blocked_invar (not_blocked state_impl)
-          \<Longrightarrow> \<E>  = not_blocked_dom (not_blocked state_impl) \<Longrightarrow> P) \<Longrightarrow> P"
+        (\<lbrakk>\<E> = flow_domain (current_flow state_impl);
+       flow_invar (current_flow state_impl); 
+       \<V>  = bal_domain (balance state_impl);
+       bal_invar (balance state_impl);
+       digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl);
+       conv_invar (conv_to_rdg state_impl);
+       \<V>  = rep_comp_domain (rep_comp_card state_impl);
+       rep_comp_invar (rep_comp_card state_impl);
+       not_blocked_invar (not_blocked state_impl);
+       \<E>  = not_blocked_dom (not_blocked state_impl)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding implementation_invar_def by auto
 
 lemma implementation_invar_partialE:
@@ -708,8 +555,7 @@ lemma implementation_invar_partial_props:
   unfolding implementation_invar_def by auto
 
 lemma implementation_invar_gamm_upd:
-"implementation_invar state_impl 
-\<Longrightarrow> implementation_invar (state_impl\<lparr> current_\<gamma> := gamma \<rparr>)"
+  "implementation_invar state_impl  \<Longrightarrow> implementation_invar (state_impl\<lparr> current_\<gamma> := gamma \<rparr>)"
   by(unfold implementation_invar_def) auto
 
 definition "validF (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
@@ -722,457 +568,509 @@ lemma validFI: "graph_invar (to_graph (\<FF> state)) \<Longrightarrow> validF st
 lemma validFD: "validF state \<Longrightarrow> graph_invar (to_graph (\<FF> state))"
   by(auto simp add: validF_def)
 
-definition "invar_aux1 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
+definition "inv_actives_in_E (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
              = (to_set (actives state) \<subseteq> \<E>)"
 
-lemma invar_aux1I: "to_set (actives state) \<subseteq> \<E> \<Longrightarrow> invar_aux1 state"
-  unfolding invar_aux1_def by auto
+lemma inv_actives_in_EI: "to_set (actives state) \<subseteq> \<E> \<Longrightarrow> inv_actives_in_E state"
+  unfolding inv_actives_in_E_def by auto
 
-lemma invar_aux1E: "invar_aux1 state \<Longrightarrow> (to_set (actives state) \<subseteq> \<E> \<Longrightarrow> P) \<Longrightarrow> P"
-  unfolding invar_aux1_def by auto
+lemma inv_actives_in_EE: 
+  "\<lbrakk>inv_actives_in_E state; (to_set (actives state) \<subseteq> \<E> \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
+  unfolding inv_actives_in_E_def by auto
 
-definition "invar_aux2 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
-        = ( ((abstract_conv_map (conv_to_rdg state)) ` (digraph_abs (\<FF> state))) \<subseteq> \<EE>)"
+definition "inv_digraph_abs_F_in_E (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
+        = (((abstract_conv_map (conv_to_rdg state)) ` (digraph_abs (\<FF> state))) \<subseteq> \<EE>)"
 
-lemma invar_aux2I: "((abstract_conv_map (conv_to_rdg state)) ` (digraph_abs (\<FF> state))) \<subseteq> \<EE> \<Longrightarrow> invar_aux2 state"
-  unfolding invar_aux2_def by auto
+lemma inv_digraph_abs_F_in_EI: "((abstract_conv_map (conv_to_rdg state)) ` (digraph_abs (\<FF> state))) \<subseteq> \<EE> \<Longrightarrow> inv_digraph_abs_F_in_E state"
+  unfolding inv_digraph_abs_F_in_E_def by auto
 
-lemma invar_aux2E: "invar_aux2 state \<Longrightarrow>
- ((abstract_conv_map (conv_to_rdg state)) ` (digraph_abs (\<FF> state)) \<subseteq> \<EE>\<Longrightarrow> P) \<Longrightarrow> P"
-  unfolding invar_aux2_def by auto
+lemma inv_digraph_abs_F_in_EE: "inv_digraph_abs_F_in_E state \<Longrightarrow>
+  ((abstract_conv_map (conv_to_rdg state)) ` (digraph_abs (\<FF> state)) \<subseteq> \<EE>\<Longrightarrow> P) \<Longrightarrow> P"
+  unfolding inv_digraph_abs_F_in_E_def by auto
 
-definition "invar_aux3 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =( \<F> state \<subseteq> \<E>)"
+definition "inv_forest_in_E (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =( \<F> state \<subseteq> \<E>)"
 
-lemma invar_aux3I: "\<F> state \<subseteq> \<E>\<Longrightarrow> invar_aux3 state"
-  unfolding invar_aux3_def by auto
+lemma inv_forest_in_EI: "\<F> state \<subseteq> \<E>\<Longrightarrow> inv_forest_in_E state"
+  unfolding inv_forest_in_E_def by auto
 
-lemma invar_aux3E: "invar_aux3 state \<Longrightarrow> (\<F> state \<subseteq> \<E> \<Longrightarrow> P) \<Longrightarrow> P"
-  unfolding invar_aux3_def by auto
+lemma inv_forest_in_EE: "inv_forest_in_E state \<Longrightarrow> (\<F> state \<subseteq> \<E> \<Longrightarrow> P) \<Longrightarrow> P"
+  unfolding inv_forest_in_E_def by auto
 
-definition "invar_aux4 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
+definition "inv_forest_actives_disjoint (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
             =( \<F> state \<inter> to_set (actives state) = {})"
 
-lemma invar_aux4I: "\<F> state \<inter> to_set (actives state) = {} \<Longrightarrow> invar_aux4 state"
-  unfolding invar_aux4_def by auto
+lemma inv_forest_actives_disjointI: "\<F> state \<inter> to_set (actives state) = {} \<Longrightarrow> inv_forest_actives_disjoint state"
+  unfolding inv_forest_actives_disjoint_def by auto
 
-lemma invar_aux4E: "invar_aux4 state \<Longrightarrow> (\<F> state \<inter> to_set (actives state) = {} \<Longrightarrow> P) \<Longrightarrow> P"
-  unfolding invar_aux4_def by auto
+lemma inv_forest_actives_disjointE: 
+  "inv_forest_actives_disjoint state \<Longrightarrow> (\<F> state \<inter> to_set (actives state) = {} \<Longrightarrow> P) \<Longrightarrow> P"
+  unfolding inv_forest_actives_disjoint_def by auto
 
-definition "invar_aux5 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
+definition "inv_finite_forest (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
                  = finite (to_graph (\<FF> state))"
 
-lemma invar_aux5I: "finite (to_graph (\<FF> state)) \<Longrightarrow> invar_aux5 state"
-  unfolding invar_aux5_def by auto
+lemma inv_finite_forestI: "finite (to_graph (\<FF> state)) \<Longrightarrow> inv_finite_forest state"
+  unfolding inv_finite_forest_def by auto
 
-lemma invar_aux5E: "invar_aux5 state \<Longrightarrow> (finite (to_graph (\<FF> state)) \<Longrightarrow> P) \<Longrightarrow> P"
-  unfolding invar_aux5_def by auto
+lemma inv_finite_forestE: 
+  "\<lbrakk>inv_finite_forest state; (finite (to_graph (\<FF> state)) \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
+  unfolding inv_finite_forest_def by auto
 
 abbreviation "a_conv_to_rdg state \<equiv> (\<lambda> e. (abstract_conv_map (conv_to_rdg state)) e)"
 
-definition "invar_aux6 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
+definition "inv_conversion_consistent (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
                 = consist  (digraph_abs (\<FF> state)) (abstract_conv_map (conv_to_rdg state))"
 
-thm invar_aux6_def[simplified consist_def]
+thm inv_conversion_consistent_def[simplified consist_def]
 
-lemma invar_aux6I: 
+lemma inv_conversion_consistentI: 
   assumes "(\<And> x y. (x, y) \<in> (digraph_abs (\<FF> state)) \<Longrightarrow>
               \<exists>e. (abstract_conv_map (conv_to_rdg state)) (x, y) = F e 
            \<and> make_pair e = (x, y) \<or>
            (abstract_conv_map (conv_to_rdg state)) (x, y) = B e \<and> make_pair e = (y, x))"
-and  "(\<And> x y e. (x, y) \<in> (digraph_abs (\<FF> state)) \<Longrightarrow> x \<noteq> y  \<Longrightarrow>  
-     ((abstract_conv_map (conv_to_rdg state)) (x, y) = F e) =
-     ((abstract_conv_map (conv_to_rdg state)) (y, x) = B e))" 
-shows "invar_aux6 state"
-  using assms by(auto simp add: invar_aux6_def consist_def)
+  and  "(\<And> x y e. \<lbrakk>(x, y) \<in> (digraph_abs (\<FF> state)); x \<noteq> y\<rbrakk>  \<Longrightarrow>  
+          ((abstract_conv_map (conv_to_rdg state)) (x, y) = F e) =
+          ((abstract_conv_map (conv_to_rdg state)) (y, x) = B e))" 
+ shows "inv_conversion_consistent state"
+  using assms by(auto simp add: inv_conversion_consistent_def consist_def)
 
-lemma invar_aux6E: 
-"invar_aux6 state \<Longrightarrow> to_rdg = abstract_conv_map (conv_to_rdg state)
-  \<Longrightarrow>((\<And> x y. (x, y) \<in> (digraph_abs (\<FF> state)) \<Longrightarrow> \<exists> e. (to_rdg (x,y) = F e \<and> make_pair e = (x,y) \<or>
+lemma inv_conversion_consistentE: 
+ "\<lbrakk>inv_conversion_consistent state; to_rdg = abstract_conv_map (conv_to_rdg state);
+  ((\<And> x y. (x, y) \<in> (digraph_abs (\<FF> state)) \<Longrightarrow> \<exists> e. (to_rdg (x,y) = F e \<and> make_pair e = (x,y) \<or>
                                      to_rdg (x,y) = B e  \<and> make_pair e = (y,x)))  \<Longrightarrow>
-     (\<And> x y e. (x, y) \<in> (digraph_abs (\<FF> state)) \<Longrightarrow> x \<noteq> y \<Longrightarrow> (to_rdg (x,y) = F e \<longleftrightarrow>
-                                     to_rdg (y,x) = B e)) \<Longrightarrow> P) \<Longrightarrow> P"
-  by(force simp add: invar_aux6_def consist_def)
+     (\<And> x y e. \<lbrakk>(x, y) \<in> (digraph_abs (\<FF> state)); x \<noteq> y\<rbrakk> \<Longrightarrow> (to_rdg (x,y) = F e \<longleftrightarrow>
+                                     to_rdg (y,x) = B e)) \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
+  by(force simp add: inv_conversion_consistent_def consist_def)
 
-lemma invar_aux6I'': " consist  (digraph_abs (\<FF> state)) (abstract_conv_map (conv_to_rdg state))
-                    \<Longrightarrow> invar_aux6 state"
-  by(auto simp add: invar_aux6_def)
+lemma inv_conversion_consistentI'': 
+ " consist  (digraph_abs (\<FF> state)) (abstract_conv_map (conv_to_rdg state))
+                    \<Longrightarrow> inv_conversion_consistent state"
+  by(auto simp add: inv_conversion_consistent_def)
 
-lemma invar_aux6E'':
- " invar_aux6 state
-  \<Longrightarrow> (consist  (digraph_abs (\<FF> state)) (abstract_conv_map (conv_to_rdg state)) \<Longrightarrow> P)
+lemma inv_conversion_consistentE'':
+ "\<lbrakk>inv_conversion_consistent state;
+   (consist  (digraph_abs (\<FF> state)) (abstract_conv_map (conv_to_rdg state)) \<Longrightarrow> P)\<rbrakk>
   \<Longrightarrow> P"
-  by(auto simp add: invar_aux6_def)
+  by(auto simp add: inv_conversion_consistent_def)
 
 abbreviation "representative state ==
  (\<lambda> u.  (abstract_rep_map (rep_comp_card state) u))"
 
-definition "invar_aux7 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
+definition "inv_reachable_same_rep (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
                   = (\<forall> u v. reachable (to_graph (\<FF> state)) u v \<longrightarrow>
                       (representative state) u =
                                        (representative state) v)"
 
-lemma invar_aux7I: "(\<And>u v. reachable (to_graph (\<FF> state)) u v \<Longrightarrow>
-                                       (representative state) u =
-                                       (representative state) v) \<Longrightarrow> invar_aux7 state"
-  unfolding invar_aux7_def by simp
+lemma inv_reachable_same_repI: 
+"(\<And>u v. reachable (to_graph (\<FF> state)) u v \<Longrightarrow>(representative state) u = (representative state) v) 
+ \<Longrightarrow> inv_reachable_same_rep state"
+  unfolding inv_reachable_same_rep_def by simp
 
-lemma invar_aux7E: "invar_aux7 state \<Longrightarrow> ((\<And>u v. reachable (to_graph (\<FF> state)) u v \<Longrightarrow>
-                                       (representative state) u =
-                                       (representative state) v) \<Longrightarrow> P) \<Longrightarrow> P"
-  unfolding invar_aux7_def by simp
+lemma inv_reachable_same_repE: 
+ "\<lbrakk>inv_reachable_same_rep state;
+   ((\<And>u v. reachable (to_graph (\<FF> state)) u v \<Longrightarrow> 
+                     (representative state) u = (representative state) v) \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
+  unfolding inv_reachable_same_rep_def by simp
 
-lemma invar_aux7D: "invar_aux7 state \<Longrightarrow> reachable (to_graph (\<FF> state)) u v \<Longrightarrow>
-                                       (representative state) u = (representative state) v"
-  unfolding invar_aux7_def by simp
+lemma inv_reachable_same_repD: 
+ "\<lbrakk>inv_reachable_same_rep state; reachable (to_graph (\<FF> state)) u v\<rbrakk>
+   \<Longrightarrow> (representative state) u = (representative state) v"
+  unfolding inv_reachable_same_rep_def by simp
 
-definition "invar_aux8 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "inv_rep_reachable (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
                   (\<forall> v. reachable (to_graph (\<FF> state)) v ((representative state) v) \<or> 
                                                            v = (representative state) v)"
 
-lemma invar_aux8I: "(\<And> v. reachable (to_graph (\<FF> state)) v ((representative state) v) \<or> 
+lemma inv_rep_reachableI: 
+  "(\<And> v. reachable (to_graph (\<FF> state)) v ((representative state) v) \<or> 
                                                            v = (representative state) v)
-                    \<Longrightarrow> invar_aux8 state"
-  unfolding invar_aux8_def by auto
+  \<Longrightarrow> inv_rep_reachable state"
+  unfolding inv_rep_reachable_def by auto
 
-lemma invar_aux8E: "invar_aux8 state \<Longrightarrow> ((\<And> v. reachable (to_graph (\<FF> state)) v ((representative state) v) \<or> 
+lemma inv_rep_reachableE: 
+ "\<lbrakk>inv_rep_reachable state;
+   ((\<And> v. reachable (to_graph (\<FF> state)) v ((representative state) v) \<or> 
                                                            v = (representative state) v)
-                                         \<Longrightarrow> P)
-                    \<Longrightarrow>P"
-  unfolding invar_aux8_def by auto
+   \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow>P"
+  unfolding inv_rep_reachable_def by auto
 
-lemma invar_aux8D: "invar_aux8 state \<Longrightarrow> 
+lemma inv_rep_reachableD: "inv_rep_reachable state \<Longrightarrow> 
        reachable (to_graph (\<FF> state)) v ((representative state) v) \<or> 
        v = (representative state) v"
-  unfolding invar_aux8_def by auto
+  unfolding inv_rep_reachable_def by auto
 
-definition "invar_aux9 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "inv_reps_in_V (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
   (\<forall> v \<in> \<V>. representative state v \<in> \<V>)"
 
-lemma invar_aux9I: "(\<And>v. v \<in> \<V> \<Longrightarrow> representative state v \<in> \<V>) \<Longrightarrow> invar_aux9 state"
-  unfolding invar_aux9_def by auto
+lemma inv_reps_in_VI: 
+  "(\<And>v. v \<in> \<V> \<Longrightarrow> representative state v \<in> \<V>) \<Longrightarrow> inv_reps_in_V state"
+  unfolding inv_reps_in_V_def by auto
 
-lemma invar_aux9E: "invar_aux9 state \<Longrightarrow>
-                      ((\<And>v. v \<in> \<V> \<Longrightarrow> representative state v \<in> \<V> ) \<Longrightarrow> P) \<Longrightarrow> P"
-  unfolding invar_aux9_def by auto
+lemma inv_reps_in_VE: 
+ "\<lbrakk>inv_reps_in_V state; ((\<And>v. v \<in> \<V> \<Longrightarrow> representative state v \<in> \<V> ) \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
+  unfolding inv_reps_in_V_def by auto
 
-lemma invar_aux9D: "invar_aux9 state \<Longrightarrow> v \<in> \<V> \<Longrightarrow> representative state v \<in> \<V>"
-  unfolding invar_aux9_def by auto
+lemma inv_reps_in_VD: 
+  "\<lbrakk>inv_reps_in_V state; v \<in> \<V>\<rbrakk> \<Longrightarrow> representative state v \<in> \<V>"
+  unfolding inv_reps_in_V_def by auto
 
-definition "invar_aux10 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "inv_components_in_V (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
                     (\<forall> v \<in> \<V>. connected_component (to_graph (\<FF> state)) v \<subseteq> \<V>)"
 
-lemma invar_aux10I:
- "(\<And>v. v \<in> \<V> \<Longrightarrow> connected_component (to_graph (\<FF> state)) v \<subseteq> \<V>) \<Longrightarrow> invar_aux10 state"
-  unfolding invar_aux10_def by auto
+lemma inv_components_in_VI:
+ "(\<And>v. v \<in> \<V> \<Longrightarrow> connected_component (to_graph (\<FF> state)) v \<subseteq> \<V>) \<Longrightarrow> inv_components_in_V state"
+  unfolding inv_components_in_V_def by auto
 
-lemma invar_aux10E: "invar_aux10 state \<Longrightarrow>
-                      ((\<And>v. v \<in> \<V> \<Longrightarrow>  connected_component (to_graph (\<FF> state)) v \<subseteq> \<V>) ==> P) \<Longrightarrow> P"
-  unfolding invar_aux10_def by auto
+lemma inv_components_in_VE: 
+ "\<lbrakk>inv_components_in_V state;
+   ((\<And>v. v \<in> \<V> \<Longrightarrow>  connected_component (to_graph (\<FF> state)) v \<subseteq> \<V>) \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow> P"
+  unfolding inv_components_in_V_def by auto
 
-definition "invar_aux11 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "inv_active_different_comps (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
      (\<forall> e \<in> to_set (actives state). connected_component (to_graph (\<FF> state)) (fst e) \<noteq>
                                      connected_component (to_graph (\<FF> state)) (snd e))"
 
-lemma invar_aux11I: "(\<And> e. e \<in> to_set (actives state) \<Longrightarrow> connected_component (to_graph (\<FF> state)) (fst e) \<noteq>
-                                     connected_component (to_graph (\<FF> state)) (snd e)) \<Longrightarrow>
-                      invar_aux11 state"
-  unfolding invar_aux11_def by simp
+lemma inv_active_different_compsI: 
+ "(\<And> e. e \<in> to_set (actives state) \<Longrightarrow> connected_component (to_graph (\<FF> state)) (fst e) \<noteq>
+                                     connected_component (to_graph (\<FF> state)) (snd e)) 
+  \<Longrightarrow> inv_active_different_comps state"
+  unfolding inv_active_different_comps_def by simp
 
-lemma invar_aux11E: "invar_aux11 state \<Longrightarrow>
-      ((\<And> e. e \<in> to_set (actives state) \<Longrightarrow> connected_component (to_graph (\<FF> state)) (fst e) \<noteq>
-           connected_component (to_graph (\<FF> state)) (snd e)) \<Longrightarrow> P) \<Longrightarrow>
-                      P"
-  unfolding invar_aux11_def 
+lemma inv_active_different_compsE: 
+ "\<lbrakk>inv_active_different_comps state;
+   ((\<And> e. e \<in> to_set (actives state) \<Longrightarrow> connected_component (to_graph (\<FF> state)) (fst e) \<noteq>
+           connected_component (to_graph (\<FF> state)) (snd e)) \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
+  unfolding inv_active_different_comps_def 
   by blast
 
 
-definition "invar_aux12 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "inv_pos_bal_rep (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
           (\<forall> v \<in> \<V>. (abstract_real_map (bal_lookup (balance state)) v \<noteq> 0 
                \<longrightarrow> representative state v = v))"
 
-lemma invar_aux12E:"invar_aux12 state 
-\<Longrightarrow>((\<And> v.  v \<in> \<V> \<Longrightarrow> abstract_real_map (bal_lookup (balance state)) v \<noteq> 0 \<Longrightarrow> representative state v = v) \<Longrightarrow> P) \<Longrightarrow>P"
-  unfolding invar_aux12_def by simp
+lemma inv_pos_bal_repE:
+  "\<lbrakk>inv_pos_bal_rep state ;
+    ((\<And> v.  \<lbrakk>v \<in> \<V>; abstract_real_map (bal_lookup (balance state)) v \<noteq> 0\<rbrakk> 
+        \<Longrightarrow> representative state v = v) \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow>P"
+  unfolding inv_pos_bal_rep_def by simp
 
-lemma invar_aux12I:
-"(\<And> v.  v \<in> \<V> \<Longrightarrow> abstract_real_map (bal_lookup (balance state)) v \<noteq> 0 \<Longrightarrow> representative state v = v) \<Longrightarrow> invar_aux12 state"
-  unfolding invar_aux12_def by simp
+lemma inv_pos_bal_repI:
+"(\<And> v.  \<lbrakk>v \<in> \<V>; abstract_real_map (bal_lookup (balance state)) v \<noteq> 0\<rbrakk>\<Longrightarrow>
+       representative state v = v) 
+  \<Longrightarrow> inv_pos_bal_rep state"
+  unfolding inv_pos_bal_rep_def by simp
 
-definition "invar_aux13 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) = 
+definition "inv_inactive_same_component (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) = 
                (\<forall>  e \<in> \<E> - to_set (actives state). connected_component (to_graph (\<FF> state)) (fst e) =
                                           connected_component (to_graph (\<FF> state)) (snd e))"
 
-lemma invar_aux13I: "(\<And> e. e \<in> \<E> - to_set (actives state) \<Longrightarrow> connected_component (to_graph (\<FF> state)) (fst e) =
-                                     connected_component (to_graph (\<FF> state)) (snd e)) \<Longrightarrow>
-                      invar_aux13 state"
-  unfolding invar_aux13_def by simp
+lemma inv_inactive_same_componentI: 
+ "(\<And> e. e \<in> \<E> - to_set (actives state) \<Longrightarrow> connected_component (to_graph (\<FF> state)) (fst e) =
+                                     connected_component (to_graph (\<FF> state)) (snd e)) 
+ \<Longrightarrow> inv_inactive_same_component state"
+  unfolding inv_inactive_same_component_def by simp
 
-lemma invar_aux13E: "invar_aux13 state \<Longrightarrow>
+lemma inv_inactive_same_componentE: 
+ "\<lbrakk>inv_inactive_same_component state;
    ((\<And> e. e \<in> \<E> - to_set (actives state) \<Longrightarrow> connected_component (to_graph (\<FF> state)) (fst e) =
-             connected_component (to_graph (\<FF> state)) (snd e)) \<Longrightarrow> P) \<Longrightarrow>
-                      P"
-  unfolding invar_aux13_def by simp
+             connected_component (to_graph (\<FF> state)) (snd e)) \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow> P"
+  unfolding inv_inactive_same_component_def by simp
 
-definition "invar_aux14 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) = (validF state)"
+definition "inv_dbltn_graph_forest (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) = (validF state)"
 
-lemma invar_aux14E: "invar_aux14 state \<Longrightarrow> (validF state \<Longrightarrow> P) \<Longrightarrow> P"
-  using invar_aux14_def by auto
+lemma inv_dbltn_graph_forestE: 
+  "\<lbrakk>inv_dbltn_graph_forest state; (validF state \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
+  using inv_dbltn_graph_forest_def by auto
 
-lemma invar_aux14I: "validF state \<Longrightarrow> invar_aux14 state"
-  using invar_aux14_def by auto
+lemma inv_dbltn_graph_forestI: "validF state \<Longrightarrow> inv_dbltn_graph_forest state"
+  using inv_dbltn_graph_forest_def by auto
 
-definition "invar_aux15 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "inv_forest_in_V (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
                 ( Vs (to_graph (\<FF> state)) \<subseteq> \<V>)"
 
-lemma invar_aux15E: "invar_aux15 state \<Longrightarrow> (Vs (to_graph (\<FF> state)) \<subseteq> \<V>\<Longrightarrow> P) \<Longrightarrow> P"
-  using invar_aux15_def by auto
+lemma inv_forest_in_VE: 
+ "\<lbrakk>inv_forest_in_V state; (Vs (to_graph (\<FF> state)) \<subseteq> \<V>\<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
+  using inv_forest_in_V_def by auto
 
-lemma invar_aux15I: "Vs (to_graph (\<FF> state)) \<subseteq> \<V>\<Longrightarrow> invar_aux15 state"
-  using invar_aux15_def by auto
+lemma inv_forest_in_VI: 
+  "Vs (to_graph (\<FF> state)) \<subseteq> \<V>\<Longrightarrow> inv_forest_in_V state"
+  using inv_forest_in_V_def by auto
 
 abbreviation "comp_card state ==
  (\<lambda> u.  (abstract_comp_map (rep_comp_card state) u))"
 
-definition "invar_aux16 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "inv_comp_card_correct (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
         (\<forall> x \<in> \<V>. comp_card state x = 
                        card (connected_component (to_graph (\<FF> state)) x))"
 
-lemma invar_aux16E: "invar_aux16 state \<Longrightarrow> 
-                      ((\<And> x. x \<in> \<V> \<Longrightarrow> comp_card state x = 
-                       card (connected_component (to_graph (\<FF> state)) x)) \<Longrightarrow> P) \<Longrightarrow> P"
-  using invar_aux16_def by auto
+lemma inv_comp_card_correctE: 
+  "\<lbrakk>inv_comp_card_correct state;
+     ((\<And> x. x \<in> \<V> \<Longrightarrow> comp_card state x = 
+                       card (connected_component (to_graph (\<FF> state)) x)) \<Longrightarrow> P)\<rbrakk>
+    \<Longrightarrow> P"
+  using inv_comp_card_correct_def by auto
 
-lemma invar_aux16D: "invar_aux16 state \<Longrightarrow>  x \<in> \<V> \<Longrightarrow> comp_card state x = 
-                       card (connected_component (to_graph (\<FF> state)) x)"
-  using invar_aux16_def by auto
+lemma inv_comp_card_correctD: 
+  "\<lbrakk>inv_comp_card_correct state; x \<in> \<V>\<rbrakk> 
+   \<Longrightarrow> comp_card state x = card (connected_component (to_graph (\<FF> state)) x)"
+  using inv_comp_card_correct_def by auto
 
-lemma invar_aux16I: "(\<And> x. x \<in> \<V> \<Longrightarrow> comp_card state x = 
-                      card (connected_component (to_graph (\<FF> state)) x)) \<Longrightarrow> invar_aux16 state"
-  using invar_aux16_def by auto
+lemma inv_comp_card_correctI: 
+  "(\<And> x. x \<in> \<V> \<Longrightarrow> comp_card state x =  card (connected_component (to_graph (\<FF> state)) x)) 
+   \<Longrightarrow> inv_comp_card_correct state"
+  using inv_comp_card_correct_def by auto
 
-definition "invar_aux17 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
+definition "inv_set_invar_actives (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
            = set_invar (actives state)"
 
-lemma invar_aux17E: "invar_aux17 state \<Longrightarrow> (set_invar (actives state) \<Longrightarrow> P) \<Longrightarrow> P"
-  using invar_aux17_def by auto
+lemma inv_set_invar_activesE: 
+ "\<lbrakk>inv_set_invar_actives state; (set_invar (actives state) \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
+  using inv_set_invar_actives_def by auto
 
-lemma invar_aux17I: "(set_invar (actives state)) \<Longrightarrow> invar_aux17 state"
-  unfolding invar_aux17_def by simp
+lemma inv_set_invar_activesI: 
+  "(set_invar (actives state)) \<Longrightarrow> inv_set_invar_actives state"
+  unfolding inv_set_invar_actives_def by simp
 
-definition "invar_aux18 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "inv_forest_good_graph (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
                good_graph_invar (\<FF> state)"
 
-lemma invar_aux18E: "invar_aux18 state \<Longrightarrow>
- (adjmap_inv (\<FF> state) \<Longrightarrow>
-(\<And>v N. lookup (\<FF> state) v = Some N \<Longrightarrow> vset_inv N) \<Longrightarrow>
- finite {v. (lookup (\<FF> state) v) \<noteq> None} \<Longrightarrow> 
-(\<And> v N. (lookup (\<FF> state) v) = Some N \<longrightarrow> finite (t_set N)) \<Longrightarrow> P) \<Longrightarrow> P"
-  using invar_aux18_def by (force elim!: good_graph_invarE)
+lemma inv_forest_good_graphE: 
+"\<lbrakk>inv_forest_good_graph state;
+   (\<lbrakk>adjmap_inv (\<FF> state);
+     (\<And>v N. lookup (\<FF> state) v = Some N \<Longrightarrow> vset_inv N);
+      finite {v. (lookup (\<FF> state) v) \<noteq> None};
+     (\<And> v N. (lookup (\<FF> state) v) = Some N \<longrightarrow> finite (t_set N))\<rbrakk> 
+    \<Longrightarrow> P)\<rbrakk> 
+   \<Longrightarrow> P"
+  using inv_forest_good_graph_def by (force elim!: good_graph_invarE)
 
-lemma invar_aux18I: "adjmap_inv (\<FF> state) \<Longrightarrow>
-(\<And>v N. lookup (\<FF> state) v = Some N \<Longrightarrow> vset_inv N) \<Longrightarrow>
- finite {v. (lookup (\<FF> state) v) \<noteq> None} \<Longrightarrow> 
-(\<And> v N. (lookup (\<FF> state) v) = Some N \<longrightarrow> finite (t_set N)) \<Longrightarrow> invar_aux18 state "
-  by(auto simp add: invar_aux18_def  good_graph_invar_def)
-lemma invar_aux18E'': "invar_aux18  state \<Longrightarrow> (good_graph_invar (\<FF> state) \<Longrightarrow> P) ==> P"
-  by(auto simp add: invar_aux18_def)
-lemma invar_aux18I'': "good_graph_invar (\<FF> state) \<Longrightarrow> invar_aux18  state"
-  by(auto simp add: invar_aux18_def)
-lemma invar_aux18D'': "invar_aux18  state \<Longrightarrow> good_graph_invar (\<FF> state)"
-  by(auto simp add: invar_aux18_def)
+lemma inv_forest_good_graphI: 
+ "\<lbrakk>adjmap_inv (\<FF> state);
+  (\<And>v N. lookup (\<FF> state) v = Some N \<Longrightarrow> vset_inv N);
+   finite {v. (lookup (\<FF> state) v) \<noteq> None};
+  (\<And> v N. (lookup (\<FF> state) v) = Some N \<longrightarrow> finite (t_set N))\<rbrakk>
+  \<Longrightarrow> inv_forest_good_graph state "
+  by(auto simp add: inv_forest_good_graph_def  good_graph_invar_def)
 
-definition "invar_aux20 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
+lemma inv_forest_good_graphE'': 
+ "\<lbrakk>inv_forest_good_graph  state; (good_graph_invar (\<FF> state) \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
+  by(auto simp add: inv_forest_good_graph_def)
+lemma inv_forest_good_graphI'': 
+  "good_graph_invar (\<FF> state) \<Longrightarrow> inv_forest_good_graph  state"
+  by(auto simp add: inv_forest_good_graph_def)
+lemma inv_forest_good_graphD'': 
+  "inv_forest_good_graph  state \<Longrightarrow> good_graph_invar (\<FF> state)"
+  by(auto simp add: inv_forest_good_graph_def)
+
+definition "inv_digraph_abs_\<FF>_sym (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
              = symmetric_digraph (digraph_abs (\<FF> state))"
 
-lemma invar_aux20E: "invar_aux20 state \<Longrightarrow>
- (symmetric_digraph (digraph_abs (\<FF> state)) \<Longrightarrow> P) \<Longrightarrow> P"
-  using invar_aux20_def by auto
+lemma inv_digraph_abs_\<FF>_symE: 
+ "\<lbrakk>inv_digraph_abs_\<FF>_sym state; (symmetric_digraph (digraph_abs (\<FF> state)) \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
+  using inv_digraph_abs_\<FF>_sym_def by auto
 
-lemma invar_aux20I: 
-"symmetric_digraph (digraph_abs (\<FF> state)) \<Longrightarrow> invar_aux20 state"
-  using invar_aux20_def by auto
+lemma inv_digraph_abs_\<FF>_symI: 
+  "symmetric_digraph (digraph_abs (\<FF> state)) \<Longrightarrow> inv_digraph_abs_\<FF>_sym state"
+  using inv_digraph_abs_\<FF>_sym_def by auto
 
-lemma invar_aux20_applied: "invar_aux20 state \<Longrightarrow> symmetric_digraph (digraph_abs (\<FF> state))"
-  by(auto elim!: invar_aux20E in_to_graphE)
+lemma inv_digraph_abs_\<FF>_sym_applied: 
+  "inv_digraph_abs_\<FF>_sym state \<Longrightarrow> symmetric_digraph (digraph_abs (\<FF> state))"
+  by(auto elim!: inv_digraph_abs_\<FF>_symE in_to_graphE)
 
-lemma invar_aux20E': "invar_aux20 state \<Longrightarrow>
+lemma inv_digraph_abs_\<FF>_symE': "inv_digraph_abs_\<FF>_sym state \<Longrightarrow>
  ((\<And> u v. (u, v) \<in> digraph_abs (\<FF> state) \<Longrightarrow> (v, u) \<in> digraph_abs (\<FF> state)) \<Longrightarrow> P) \<Longrightarrow> P"
-  by(auto simp add: invar_aux20_def symmetric_digraph_def)
+  by(auto simp add: inv_digraph_abs_\<FF>_sym_def symmetric_digraph_def)
 
-lemma invar_aux20I': 
-"(\<And> u v. (u, v) \<in> digraph_abs (\<FF> state) \<Longrightarrow> (v, u) \<in> digraph_abs (\<FF> state)) 
-\<Longrightarrow> invar_aux20 state"
-  by(auto simp add: invar_aux20_def symmetric_digraph_def)
+lemma inv_digraph_abs_\<FF>_symI': 
+  "(\<And> u v. (u, v) \<in> digraph_abs (\<FF> state) \<Longrightarrow> (v, u) \<in> digraph_abs (\<FF> state)) 
+  \<Longrightarrow> inv_digraph_abs_\<FF>_sym state"
+  by(auto simp add: inv_digraph_abs_\<FF>_sym_def symmetric_digraph_def)
 
-lemma invar_aux20_applied': "invar_aux20 state 
-          \<Longrightarrow> {u, v} \<in> to_graph (\<FF> state) \<Longrightarrow> (u, v) \<in> digraph_abs (\<FF> state)"
-  by(auto simp add: invar_aux20_def to_graph_def intro!: in_UD_symD)
+lemma inv_digraph_abs_\<FF>_sym_applied': 
+  "\<lbrakk>inv_digraph_abs_\<FF>_sym state; {u, v} \<in> to_graph (\<FF> state)\<rbrakk> \<Longrightarrow> (u, v) \<in> digraph_abs (\<FF> state)"
+  by(auto simp add: inv_digraph_abs_\<FF>_sym_def to_graph_def intro!: in_UD_symD)
 
 abbreviation "a_not_blocked (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
                == (\<lambda> e. (abstract_not_blocked_map (not_blocked state) e))"
 
-definition "invar_aux22 (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "inv_unbl_iff_forest_active (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
       (\<forall> e. a_not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state))"
 
-lemma invar_aux22E: "invar_aux22 state \<Longrightarrow> 
-                         ((\<And> e. a_not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state)) \<Longrightarrow> P) \<Longrightarrow> P"
-  using invar_aux22_def by auto
+lemma inv_unbl_iff_forest_activeE: 
+  "\<lbrakk>inv_unbl_iff_forest_active state;
+     ((\<And> e. a_not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state)) \<Longrightarrow> P)\<rbrakk>
+    \<Longrightarrow> P"
+  using inv_unbl_iff_forest_active_def by auto
 
-lemma invar_aux22I: "(\<And> e. a_not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state))
-                     \<Longrightarrow> invar_aux22 state"
-  using invar_aux22_def by auto
+lemma inv_unbl_iff_forest_activeI: 
+  "(\<And> e. a_not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state))
+  \<Longrightarrow> inv_unbl_iff_forest_active state"
+  using inv_unbl_iff_forest_active_def by auto
 
-lemma invar_aux22D: " invar_aux22 state \<Longrightarrow>
-                     a_not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state)"
-  using invar_aux22_def by auto
+lemma inv_unbl_iff_forest_activeD: 
+  "inv_unbl_iff_forest_active state 
+   \<Longrightarrow> a_not_blocked state e \<longleftrightarrow> e \<in> \<F> state \<union> to_set (actives state)"
+  using inv_unbl_iff_forest_active_def by auto
 
-definition "aux_invar (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
-           (  invar_aux1 state
-                              \<and> invar_aux2 state \<and> invar_aux3 state \<and> invar_aux4 state
-                              \<and> invar_aux6 state \<and> invar_aux8 state \<and>
-                              invar_aux7 state \<and> invar_aux9 state \<and> invar_aux5 state
-                              \<and> invar_aux10 state \<and> invar_aux11 state \<and> invar_aux12 state \<and>
-                              invar_aux13 state \<and> invar_aux14 state \<and> invar_aux15 state \<and> invar_aux16 state
-                              \<and> invar_aux17 state \<and> invar_aux18 state \<and>  invar_aux20 state \<and>
-                               invar_aux22 state)"
+definition "underlying_invars (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+           (inv_actives_in_E state
+                              \<and> inv_digraph_abs_F_in_E state \<and> inv_forest_in_E state \<and> inv_forest_actives_disjoint state
+                              \<and> inv_conversion_consistent state \<and> inv_rep_reachable state \<and>
+                              inv_reachable_same_rep state \<and> inv_reps_in_V state \<and> inv_finite_forest state
+                              \<and> inv_components_in_V state \<and> inv_active_different_comps state \<and> inv_pos_bal_rep state \<and>
+                              inv_inactive_same_component state \<and> inv_dbltn_graph_forest state \<and> inv_forest_in_V state \<and> inv_comp_card_correct state
+                              \<and> inv_set_invar_actives state \<and> inv_forest_good_graph state \<and>  inv_digraph_abs_\<FF>_sym state \<and>
+                               inv_unbl_iff_forest_active state)"
 
-lemma aux_invarI: "invar_aux1 state \<Longrightarrow> invar_aux2 state \<Longrightarrow> invar_aux3 state 
-                  \<Longrightarrow> invar_aux4 state \<Longrightarrow> invar_aux6 state \<Longrightarrow> invar_aux8 state \<Longrightarrow> 
-                   invar_aux7 state \<Longrightarrow> invar_aux9 state \<Longrightarrow> invar_aux5 state\<Longrightarrow> invar_aux10 state
-                     \<Longrightarrow> invar_aux11 state \<Longrightarrow> invar_aux12 state \<Longrightarrow> invar_aux13 state \<Longrightarrow>  invar_aux14 state
-                  \<Longrightarrow>invar_aux15 state\<Longrightarrow> invar_aux16 state\<Longrightarrow> invar_aux17 state \<Longrightarrow>
-                     invar_aux18 state \<Longrightarrow> invar_aux20 state
-                  \<Longrightarrow> invar_aux22 state \<Longrightarrow> 
- aux_invar state"
-  unfolding aux_invar_def by simp
+lemma underlying_invarsI: 
+ "\<lbrakk>inv_actives_in_E state; inv_digraph_abs_F_in_E state; inv_forest_in_E state; 
+   inv_forest_actives_disjoint state; inv_conversion_consistent state; inv_rep_reachable state;
+   inv_reachable_same_rep state; inv_reps_in_V state; inv_finite_forest state; 
+   inv_components_in_V state; inv_active_different_comps state; inv_pos_bal_rep state;
+   inv_inactive_same_component state; inv_dbltn_graph_forest state; inv_forest_in_V state;
+   inv_comp_card_correct state; inv_set_invar_actives state; inv_forest_good_graph state;
+   inv_digraph_abs_\<FF>_sym state; inv_unbl_iff_forest_active state\<rbrakk>
+   \<Longrightarrow>  underlying_invars state"
+  unfolding underlying_invars_def by simp
 
-lemma aux_invarE: "aux_invar state \<Longrightarrow>
-                  ( invar_aux1 state \<Longrightarrow> invar_aux2 state \<Longrightarrow> invar_aux3 state 
-                  \<Longrightarrow> invar_aux4 state \<Longrightarrow> invar_aux6 state \<Longrightarrow> invar_aux8 state \<Longrightarrow>
-                    invar_aux7 state \<Longrightarrow> invar_aux9 state \<Longrightarrow> invar_aux5 state \<Longrightarrow> invar_aux10 state
-                  \<Longrightarrow> invar_aux11 state \<Longrightarrow> invar_aux12 state \<Longrightarrow> invar_aux13 state \<Longrightarrow>  invar_aux14 state
-                 \<Longrightarrow> invar_aux15 state \<Longrightarrow> invar_aux16 state \<Longrightarrow> invar_aux17 state \<Longrightarrow>
-                    invar_aux18 state  \<Longrightarrow> invar_aux20 state \<Longrightarrow> invar_aux22 state \<Longrightarrow> P)
-                  \<Longrightarrow> P"
-  unfolding aux_invar_def by simp
+lemma underlying_invarsE: 
+ "underlying_invars state \<Longrightarrow>
+ (\<lbrakk>inv_actives_in_E state; inv_digraph_abs_F_in_E state; inv_forest_in_E state;
+   inv_forest_actives_disjoint state; inv_conversion_consistent state; inv_rep_reachable state;
+   inv_reachable_same_rep state; inv_reps_in_V state; inv_finite_forest state; 
+   inv_components_in_V state; inv_active_different_comps state; inv_pos_bal_rep state;
+   inv_inactive_same_component state; inv_dbltn_graph_forest state; inv_forest_in_V state;
+   inv_comp_card_correct state; inv_set_invar_actives state; inv_forest_good_graph state;
+   inv_digraph_abs_\<FF>_sym state; inv_unbl_iff_forest_active state\<rbrakk>
+   \<Longrightarrow> P)
+  \<Longrightarrow> P"
+  unfolding underlying_invars_def by simp
 
-lemma not_in_E_blocked:"aux_invar state \<Longrightarrow> e \<notin> \<E> \<Longrightarrow> \<not> a_not_blocked state e"
-  unfolding  aux_invar_def invar_aux22_def invar_aux1_def invar_aux3_def by blast
+lemma not_in_E_blocked:
+  "\<lbrakk>underlying_invars state; e \<notin> \<E>\<rbrakk> \<Longrightarrow> \<not> a_not_blocked state e"
+  unfolding  underlying_invars_def inv_unbl_iff_forest_active_def inv_actives_in_E_def inv_forest_in_E_def by blast
 
-named_theorems from_aux_invar
+named_theorems from_underlying_invars
 
-lemma invar_aux1_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux1 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux2_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux2 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux3_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux3 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux4_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux4 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux5_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux5 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux6_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux6 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux7_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux7 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux8_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux8 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux9_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux9 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux10_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux10 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux11_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux11 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux12_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux12 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux13_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux13 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux14_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux14 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux15_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux15 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux16_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux16 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux17_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux17 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux18_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux18 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux20_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux20 state"
-  unfolding aux_invar_def by simp
-lemma invar_aux22_from_aux_invar[from_aux_invar]: 
-"aux_invar state \<Longrightarrow> invar_aux22 state"
-  unfolding aux_invar_def by simp
+lemma inv_actives_in_E_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_actives_in_E state"
+  unfolding underlying_invars_def by simp
+lemma inv_digraph_abs_F_in_E_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_digraph_abs_F_in_E state"
+  unfolding underlying_invars_def by simp
+lemma inv_forest_in_E_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_forest_in_E state"
+  unfolding underlying_invars_def by simp
+lemma inv_forest_actives_disjoint_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_forest_actives_disjoint state"
+  unfolding underlying_invars_def by simp
+lemma inv_finite_forest_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_finite_forest state"
+  unfolding underlying_invars_def by simp
+lemma inv_conversion_consistent_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_conversion_consistent state"
+  unfolding underlying_invars_def by simp
+lemma inv_reachable_same_rep_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_reachable_same_rep state"
+  unfolding underlying_invars_def by simp
+lemma inv_rep_reachable_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_rep_reachable state"
+  unfolding underlying_invars_def by simp
+lemma inv_reps_in_V_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_reps_in_V state"
+  unfolding underlying_invars_def by simp
+lemma inv_components_in_V_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_components_in_V state"
+  unfolding underlying_invars_def by simp
+lemma inv_active_different_comps_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_active_different_comps state"
+  unfolding underlying_invars_def by simp
+lemma inv_pos_bal_rep_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_pos_bal_rep state"
+  unfolding underlying_invars_def by simp
+lemma inv_inactive_same_component_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_inactive_same_component state"
+  unfolding underlying_invars_def by simp
+lemma inv_dbltn_graph_forest_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_dbltn_graph_forest state"
+  unfolding underlying_invars_def by simp
+lemma inv_forest_in_V_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_forest_in_V state"
+  unfolding underlying_invars_def by simp
+lemma inv_comp_card_correct_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_comp_card_correct state"
+  unfolding underlying_invars_def by simp
+lemma inv_set_invar_actives_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_set_invar_actives state"
+  unfolding underlying_invars_def by simp
+lemma inv_forest_good_graph_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_forest_good_graph state"
+  unfolding underlying_invars_def by simp
+lemma inv_digraph_abs_\<FF>_sym_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_digraph_abs_\<FF>_sym state"
+  unfolding underlying_invars_def by simp
+lemma inv_unbl_iff_forest_active_from_underlying_invars[from_underlying_invars]: 
+"underlying_invars state \<Longrightarrow> inv_unbl_iff_forest_active state"
+  unfolding underlying_invars_def by simp
 
-lemmas from_aux_invar'= from_aux_invar[simplified invar_aux1_def invar_aux2_def invar_aux3_def 
-                        invar_aux4_def invar_aux5_def invar_aux6_def invar_aux7_def invar_aux8_def
-                        invar_aux9_def invar_aux10_def invar_aux11_def invar_aux12_def invar_aux13_def
-                        invar_aux14_def invar_aux15_def invar_aux16_def invar_aux17_def invar_aux18_def
-                        invar_aux20_def invar_aux22_def]
+lemmas from_underlying_invars'= from_underlying_invars[simplified inv_actives_in_E_def inv_digraph_abs_F_in_E_def inv_forest_in_E_def 
+                        inv_forest_actives_disjoint_def inv_finite_forest_def inv_conversion_consistent_def inv_reachable_same_rep_def inv_rep_reachable_def
+                        inv_reps_in_V_def inv_components_in_V_def inv_active_different_comps_def inv_pos_bal_rep_def inv_inactive_same_component_def
+                        inv_dbltn_graph_forest_def inv_forest_in_V_def inv_comp_card_correct_def inv_set_invar_actives_def inv_forest_good_graph_def
+                        inv_digraph_abs_\<FF>_sym_def inv_unbl_iff_forest_active_def]
 
-lemmas invar_auxE = invar_aux1E invar_aux2E invar_aux3E invar_aux4E invar_aux5E
-                    invar_aux6E invar_aux7E invar_aux8E invar_aux9E invar_aux10E
-                    invar_aux11E invar_aux12E invar_aux13E invar_aux14E invar_aux15E
-                    invar_aux16E invar_aux17E invar_aux18E invar_aux20E
-                     invar_aux22E
-
-
-lemmas invar_aux1I' = invar_aux1E[OF _  invar_aux1I]
-lemmas invar_aux2I' = invar_aux2E[OF _  invar_aux2I]
-lemmas invar_aux3I' = invar_aux3E[OF _  invar_aux3I]
-lemmas invar_aux4I' = invar_aux4E[OF _  invar_aux4I]
-lemmas invar_aux5I' = invar_aux5E[OF _  invar_aux5I]
-lemmas invar_aux6I' = invar_aux6E[OF _  _ invar_aux6I]
-lemmas invar_aux7I' = invar_aux7E[OF _  invar_aux7I]
-lemmas invar_aux8I' = invar_aux8E[OF _  invar_aux8I]
-lemmas invar_aux9I' = invar_aux9E[OF _  invar_aux9I]
-lemmas invar_aux10I' = invar_aux10E[OF _  invar_aux10I]
-lemmas invar_aux11I' = invar_aux11E[OF _  invar_aux11I]
-lemmas invar_aux12I' = invar_aux12E[OF _  invar_aux12I]
-lemmas invar_aux13I' = invar_aux13E[OF _  invar_aux13I]
-lemmas invar_aux14I' = invar_aux14E[OF _  invar_aux14I]
-lemmas invar_aux15I' = invar_aux15E[OF _  invar_aux15I]
-lemmas invar_aux16I' = invar_aux16E[OF _  invar_aux16I]
-lemmas invar_aux17I' = invar_aux17E[OF _  invar_aux17I]
-lemmas invar_aux18I' = invar_aux18E[OF _  invar_aux18I]
-lemmas invar_aux22I' = invar_aux22E[OF _  invar_aux22I]
-
-lemmas aux_invar_pres = aux_invarE[OF _  aux_invarI[OF invar_aux1I' invar_aux2I' invar_aux3I' invar_aux4I' invar_aux6I' 
-                                   invar_aux8I' invar_aux7I' invar_aux9I' invar_aux5I' invar_aux10I'
-                                   invar_aux11I' invar_aux12I' invar_aux13I' invar_aux14I'
-                                   invar_aux15I' invar_aux16I' invar_aux17I' invar_aux18I'
-                                    invar_aux20I' invar_aux22I']]
+lemmas invar_auxE = inv_actives_in_EE inv_digraph_abs_F_in_EE inv_forest_in_EE inv_forest_actives_disjointE inv_finite_forestE
+                    inv_conversion_consistentE inv_reachable_same_repE inv_rep_reachableE inv_reps_in_VE inv_components_in_VE
+                    inv_active_different_compsE inv_pos_bal_repE inv_inactive_same_componentE inv_dbltn_graph_forestE inv_forest_in_VE
+                    inv_comp_card_correctE inv_set_invar_activesE inv_forest_good_graphE inv_digraph_abs_\<FF>_symE
+                     inv_unbl_iff_forest_activeE
 
 
-lemma aux_invar_gamma: "aux_invar state \<Longrightarrow> aux_invar (state\<lparr> current_\<gamma> := \<gamma>\<rparr>)"
-  unfolding aux_invar_def validF_def invar_aux1_def invar_aux2_def invar_aux3_def invar_aux4_def
-               invar_aux6_def invar_aux8_def invar_aux7_def invar_aux10_def invar_aux11_def 
-               invar_aux5_def invar_aux9_def invar_aux12_def invar_aux13_def  invar_aux14_def 
-               invar_aux15_def invar_aux16_def invar_aux17_def invar_aux18_def 
-               invar_aux20_def  invar_aux22_def consist_def
+lemmas inv_actives_in_EI' = inv_actives_in_EE[OF _  inv_actives_in_EI]
+lemmas inv_digraph_abs_F_in_EI' = inv_digraph_abs_F_in_EE[OF _  inv_digraph_abs_F_in_EI]
+lemmas inv_forest_in_EI' = inv_forest_in_EE[OF _  inv_forest_in_EI]
+lemmas inv_forest_actives_disjointI' = inv_forest_actives_disjointE[OF _  inv_forest_actives_disjointI]
+lemmas inv_finite_forestI' = inv_finite_forestE[OF _  inv_finite_forestI]
+lemmas inv_conversion_consistentI' = inv_conversion_consistentE[OF _  _ inv_conversion_consistentI]
+lemmas inv_reachable_same_repI' = inv_reachable_same_repE[OF _  inv_reachable_same_repI]
+lemmas inv_rep_reachableI' = inv_rep_reachableE[OF _  inv_rep_reachableI]
+lemmas inv_reps_in_VI' = inv_reps_in_VE[OF _  inv_reps_in_VI]
+lemmas inv_components_in_VI' = inv_components_in_VE[OF _  inv_components_in_VI]
+lemmas inv_active_different_compsI' = inv_active_different_compsE[OF _  inv_active_different_compsI]
+lemmas inv_pos_bal_repI' = inv_pos_bal_repE[OF _  inv_pos_bal_repI]
+lemmas inv_inactive_same_componentI' = inv_inactive_same_componentE[OF _  inv_inactive_same_componentI]
+lemmas inv_dbltn_graph_forestI' = inv_dbltn_graph_forestE[OF _  inv_dbltn_graph_forestI]
+lemmas inv_forest_in_VI' = inv_forest_in_VE[OF _  inv_forest_in_VI]
+lemmas inv_comp_card_correctI' = inv_comp_card_correctE[OF _  inv_comp_card_correctI]
+lemmas inv_set_invar_activesI' = inv_set_invar_activesE[OF _  inv_set_invar_activesI]
+lemmas inv_forest_good_graphI' = inv_forest_good_graphE[OF _  inv_forest_good_graphI]
+lemmas inv_unbl_iff_forest_activeI' = inv_unbl_iff_forest_activeE[OF _  inv_unbl_iff_forest_activeI]
+
+lemmas underlying_invars_pres = underlying_invarsE[OF _  underlying_invarsI[OF inv_actives_in_EI' inv_digraph_abs_F_in_EI' inv_forest_in_EI' inv_forest_actives_disjointI' inv_conversion_consistentI' 
+                                   inv_rep_reachableI' inv_reachable_same_repI' inv_reps_in_VI' inv_finite_forestI' inv_components_in_VI'
+                                   inv_active_different_compsI' inv_pos_bal_repI' inv_inactive_same_componentI' inv_dbltn_graph_forestI'
+                                   inv_forest_in_VI' inv_comp_card_correctI' inv_set_invar_activesI' inv_forest_good_graphI'
+                                    inv_digraph_abs_\<FF>_symI' inv_unbl_iff_forest_activeI']]
+
+
+lemma underlying_invars_gamma: "underlying_invars state \<Longrightarrow> underlying_invars (state\<lparr> current_\<gamma> := \<gamma>\<rparr>)"
+  unfolding underlying_invars_def validF_def inv_actives_in_E_def inv_digraph_abs_F_in_E_def inv_forest_in_E_def inv_forest_actives_disjoint_def
+               inv_conversion_consistent_def inv_rep_reachable_def inv_reachable_same_rep_def inv_components_in_V_def inv_active_different_comps_def 
+               inv_finite_forest_def inv_reps_in_V_def inv_pos_bal_rep_def inv_inactive_same_component_def  inv_dbltn_graph_forest_def 
+               inv_forest_in_V_def inv_comp_card_correct_def inv_set_invar_actives_def inv_forest_good_graph_def 
+               inv_digraph_abs_\<FF>_sym_def  inv_unbl_iff_forest_active_def consist_def
                F_def F_redges_def by auto
 
 definition "invar_gamma (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) = (current_\<gamma> state > 0)"
 
-lemma invar_gammaE: "invar_gamma state \<Longrightarrow> (current_\<gamma> state > 0 \<Longrightarrow> P) \<Longrightarrow> P"
+lemma invar_gammaE: "\<lbrakk>invar_gamma state; (current_\<gamma> state > 0 \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
 and invar_gammaI: "current_\<gamma> state > 0 \<Longrightarrow> invar_gamma state"
 and  invar_gammaD: "invar_gamma state \<Longrightarrow> current_\<gamma> state > 0"
   by(auto simp add: invar_gamma_def)
@@ -1186,48 +1084,53 @@ definition "invar_non_zero_b (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_c
 lemma invar_non_zero_bI:
 "\<not> (\<forall>v\<in>\<V>. a_balance state v = 0) \<Longrightarrow> invar_non_zero_b state"
 and invar_non_zero_bE:
-"invar_non_zero_b state \<Longrightarrow> (\<not> (\<forall>v\<in>\<V>. a_balance state v = 0) \<Longrightarrow> P) \<Longrightarrow> P"
+"\<lbrakk>invar_non_zero_b state; (\<not> (\<forall>v\<in>\<V>. a_balance state v = 0) \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
 and invar_non_zero_bE':
-"invar_non_zero_b state \<Longrightarrow> (\<And> v. v\<in>\<V> ==> a_balance state v \<noteq> 0 \<Longrightarrow> P) \<Longrightarrow> P"
+"\<lbrakk>invar_non_zero_b state; (\<And> v. v\<in>\<V> \<Longrightarrow> a_balance state v \<noteq> 0 \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
   by(auto simp add: invar_non_zero_b_def)
 
 definition "invar_forest (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
                 (\<forall> e \<in> \<F> state. (a_current_flow state) e > 4 * N * (current_\<gamma> state))"
 
 lemma invar_forestE:
-"invar_forest state \<Longrightarrow> 
-((\<And> e. e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > 4 * N * (current_\<gamma> state)) \<Longrightarrow> P) \<Longrightarrow> P"
+"\<lbrakk>invar_forest state;
+((\<And> e. e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > 4 * N * (current_\<gamma> state))\<Longrightarrow> P)\<rbrakk>
+ \<Longrightarrow> P"
 and invar_forestI: 
 "(\<And> e. e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > 4 * N * (current_\<gamma> state)) \<Longrightarrow> invar_forest state"
 and invar_forestD:
-"invar_forest state \<Longrightarrow>  e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > 4 * N * (current_\<gamma> state)"
+"\<lbrakk>invar_forest state; e \<in> \<F> state\<rbrakk> \<Longrightarrow> (a_current_flow state) e > 4 * N * (current_\<gamma> state)"
   by(auto simp add: invar_forest_def)
 
 definition "invar_integral (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) = 
                         (\<forall> e \<in> to_set (actives state).
                                \<exists> n::nat. (a_current_flow state) e = n * (current_\<gamma> state))"
 
-lemma invar_integralI: "(\<And> e. e \<in> to_set (actives state) \<Longrightarrow> \<exists> n::nat. (a_current_flow state) e = n * (current_\<gamma> state)) \<Longrightarrow>
-                invar_integral state"
+lemma invar_integralI: 
+  "(\<And> e. e \<in> to_set (actives state) \<Longrightarrow> \<exists> n::nat. (a_current_flow state) e = n * (current_\<gamma> state)) 
+  \<Longrightarrow> invar_integral state"
   unfolding invar_integral_def by simp
 
-lemma invar_integralE: " invar_integral state \<Longrightarrow>
-           ((\<And> e. e \<in> to_set (actives state) \<Longrightarrow> \<exists> n::nat. (a_current_flow state) e = n * (current_\<gamma> state)) \<Longrightarrow>
-                P ) \<Longrightarrow> P"
+lemma invar_integralE: 
+"\<lbrakk>invar_integral state;
+  ((\<And> e. e \<in> to_set (actives state) \<Longrightarrow> 
+           \<exists> n::nat. (a_current_flow state) e = n * (current_\<gamma> state))
+   \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow> P"
   unfolding invar_integral_def by blast
 
 lemma invar_integralD: 
-"invar_integral state \<Longrightarrow> e \<in> to_set (actives state) 
-\<Longrightarrow> \<exists> n::nat. (a_current_flow state) e = n * (current_\<gamma> state)"
+  "\<lbrakk>invar_integral state; e \<in> to_set (actives state)\<rbrakk>
+  \<Longrightarrow> \<exists> n::nat. (a_current_flow state) e = n * (current_\<gamma> state)"
   unfolding invar_integral_def by blast
 
 definition "invar_isOptflow (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
             is_Opt (\<b> - a_balance state) (a_current_flow state)"
 
 lemma invar_isOptflowE:
-"invar_isOptflow state \<Longrightarrow>
-(is_Opt (\<b> - a_balance state) (a_current_flow state) \<Longrightarrow> P)
-\<Longrightarrow> P"
+  "\<lbrakk>invar_isOptflow state;
+  (is_Opt (\<b> - a_balance state) (a_current_flow state) \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow> P"
 and invar_isOptflowI:
 "is_Opt (\<b> - a_balance state) (a_current_flow state) \<Longrightarrow> invar_isOptflow state"
 and invar_isOptflowD:
@@ -1241,47 +1144,48 @@ definition "maintain_forest_entry (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e,
               (\<forall> e \<in> \<F> state. a_current_flow state e > 8*N*current_\<gamma> state)"
 
 lemma maintain_forest_entryE:
-"maintain_forest_entry state \<Longrightarrow>
-((\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 8*N*current_\<gamma> state) \<Longrightarrow> P) \<Longrightarrow> P"
+  "\<lbrakk>maintain_forest_entry state;
+   ((\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 8*N*current_\<gamma> state) \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow> P"
   by(auto simp add: maintain_forest_entry_def)
 
 lemma maintain_forest_entryI:
-"(\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 8*N*current_\<gamma> state)
- \<Longrightarrow> maintain_forest_entry state"
+  "(\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 8*N*current_\<gamma> state)
+   \<Longrightarrow> maintain_forest_entry state"
   by(auto simp add: maintain_forest_entry_def)
 
 lemma maintain_forest_entryD:
-"maintain_forest_entry state \<Longrightarrow> e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 8*N*current_\<gamma> state"
+  "\<lbrakk>maintain_forest_entry state; e \<in> \<F> state\<rbrakk> \<Longrightarrow> a_current_flow state e > 8*N*current_\<gamma> state"
   by(auto simp add: maintain_forest_entry_def)
 
 definition "send_flow_entryF (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
             = (\<forall> e \<in> \<F> state. a_current_flow state e > 6*N*current_\<gamma> state)"
 
 lemma send_flow_entryFE:
-"send_flow_entryF state \<Longrightarrow> 
-((\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 6*N*current_\<gamma> state) \<Longrightarrow> P)
-\<Longrightarrow> P"
+  "\<lbrakk>send_flow_entryF state;
+  ((\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 6*N*current_\<gamma> state) \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow> P"
   by(auto simp add: send_flow_entryF_def)
 
 lemma send_flow_entryFI:
-"(\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 6*N*current_\<gamma> state) \<Longrightarrow> send_flow_entryF state"
+  "(\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 6*N*current_\<gamma> state) \<Longrightarrow> send_flow_entryF state"
   by(auto simp add: send_flow_entryF_def)
 
 lemma send_flow_entryFD:
-"send_flow_entryF state \<Longrightarrow>  e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 6*N*current_\<gamma> state"
+  "\<lbrakk>send_flow_entryF state; e \<in> \<F> state\<rbrakk> \<Longrightarrow> a_current_flow state e > 6*N*current_\<gamma> state"
   by(auto simp add: send_flow_entryF_def)
 
 definition "orlins_entry (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
                (\<forall> v \<in> \<V>. \<bar> a_balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state)"
 
 lemma orlins_entryI:
-"(\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state) \<Longrightarrow> orlins_entry state"
+  "(\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state) \<Longrightarrow> orlins_entry state"
  and  orlins_entryE:
-" orlins_entry state \<Longrightarrow>
- ((\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state) \<Longrightarrow>P)
-  \<Longrightarrow> P"
+  "\<lbrakk>orlins_entry state; 
+   ((\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state) \<Longrightarrow>P)\<rbrakk>
+   \<Longrightarrow> P"
 and  orlins_entryD:
-" orlins_entry state \<Longrightarrow>  v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state"
+  "\<lbrakk>orlins_entry state; v \<in> \<V>\<rbrakk> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state"
   by(auto simp add: orlins_entry_def)
 
 definition "invarA_1 (thr::real) (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
@@ -1289,20 +1193,21 @@ definition "invarA_1 (thr::real) (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 
                                   thr * card (connected_component (to_graph (\<FF> state)) v))"
 
 lemma invarA_1E:
-"invarA_1 (thr::real) state \<Longrightarrow> ( (\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> 
-                                  thr * card (connected_component (to_graph (\<FF> state)) v)) \<Longrightarrow> P)
-\<Longrightarrow> P"
+  "\<lbrakk>invarA_1 (thr::real) state;
+   ((\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> 
+                     thr * card (connected_component (to_graph (\<FF> state)) v)) \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow> P"
   by(auto simp add: invarA_1_def)
 
 lemma invarA_1I:
-"(\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> 
+  "(\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> 
      (thr::real) * card (connected_component (to_graph (\<FF> state)) v)) \<Longrightarrow>
-invarA_1 thr state"
+  invarA_1 thr state"
   by(auto simp add: invarA_1_def)
 
 lemma invarA_1D:
-"invarA_1 (thr::real) state \<Longrightarrow>  v \<in> \<V> \<Longrightarrow> 
-\<bar> a_balance state v \<bar> \<le> thr * card (connected_component (to_graph (\<FF> state)) v)"
+  "\<lbrakk>invarA_1 (thr::real) state; v \<in> \<V>\<rbrakk>
+   \<Longrightarrow> \<bar>a_balance state v\<bar> \<le> thr * card (connected_component (to_graph (\<FF> state)) v)"
   by(auto simp add: invarA_1_def)
 
 definition "invarA_2 (thr1::real) (thr2::real) state = 
@@ -1311,20 +1216,20 @@ definition "invarA_2 (thr1::real) (thr2::real) state =
                                 card (connected_component (to_graph (\<FF> state)) (fst e)))"
 
 lemma invarA_2E: 
-"invarA_2 (thr1::real) (thr2::real) state \<Longrightarrow>
-((\<And> e.  e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > thr1 - thr2 * 
-             card (connected_component (to_graph (\<FF> state)) (fst e))) \<Longrightarrow> P)
-\<Longrightarrow> P"
+  "\<lbrakk>invarA_2 (thr1::real) (thr2::real) state;
+   ((\<And> e.  e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > thr1 - thr2 * 
+             card (connected_component (to_graph (\<FF> state)) (fst e))) \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
   by(auto simp add: invarA_2_def)
 
 lemma invarA_2I: 
-"(\<And> e.  e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > (thr1::real) - (thr2::real) * 
+  "(\<And> e. e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > (thr1::real) - (thr2::real) * 
              card (connected_component (to_graph (\<FF> state)) (fst e)))
- \<Longrightarrow> invarA_2 (thr1::real) (thr2::real) state"
+  \<Longrightarrow> invarA_2 (thr1::real) (thr2::real) state"
   by(auto simp add: invarA_2_def) 
 
 lemma invarA_2D: 
-"invarA_2 (thr1::real) (thr2::real) state \<Longrightarrow>  e \<in> \<F> state 
+  "\<lbrakk>invarA_2 (thr1::real) (thr2::real) state; e \<in> \<F> state\<rbrakk> 
      \<Longrightarrow> (a_current_flow state) e > thr1 - thr2 * 
              card (connected_component (to_graph (\<FF> state)) (fst e))"
   by(auto simp add: invarA_2_def)
@@ -1338,8 +1243,10 @@ definition "pos_flow_F state  = (\<forall>e\<in>\<F> state. 0 < a_current_flow s
 lemma pos_flow_FI: "(\<And> e. e\<in>\<F> state \<Longrightarrow> 0 < a_current_flow state e) \<Longrightarrow> pos_flow_F state"
   by(auto simp add: pos_flow_F_def)
 
-lemma pos_flow_FE: "pos_flow_F state \<Longrightarrow>
-               ((\<And> e. e\<in>\<F> state \<Longrightarrow> 0 < a_current_flow state e) \<Longrightarrow> P) \<Longrightarrow> P"
+lemma pos_flow_FE: 
+  "\<lbrakk>pos_flow_F state;
+    ((\<And> e. e\<in>\<F> state \<Longrightarrow> 0 < a_current_flow state e) \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
   by(auto simp add: pos_flow_F_def)
 
 definition "invar_above_6Ngamma state =
@@ -1347,20 +1254,21 @@ definition "invar_above_6Ngamma state =
             6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state)"
 
 lemma invar_above_6NgammaI: 
-"(\<And> e. e \<in> \<F> state \<Longrightarrow>
- a_current_flow state e >  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state)
-\<Longrightarrow> invar_above_6Ngamma state"
+  "(\<And> e. e \<in> \<F> state \<Longrightarrow>
+   a_current_flow state e >  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state)
+  \<Longrightarrow> invar_above_6Ngamma state"
   by(auto simp add: invar_above_6Ngamma_def)
 
 lemma invar_above_6NgammaE: 
-"invar_above_6Ngamma state \<Longrightarrow> ((\<And> e. e \<in> \<F> state \<Longrightarrow>
- a_current_flow state e >  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state)
-  \<Longrightarrow> P) \<Longrightarrow> P"
+  "\<lbrakk>invar_above_6Ngamma state;
+     ((\<And> e. e \<in> \<F> state \<Longrightarrow> a_current_flow state e > 
+                6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state) \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
   by(auto simp add: invar_above_6Ngamma_def)
 
 lemma invar_above_6NgammaD: 
-"invar_above_6Ngamma state \<Longrightarrow>  e \<in> \<F> state \<Longrightarrow>
- a_current_flow state e >  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
+  "\<lbrakk>invar_above_6Ngamma state; e \<in> \<F> state\<rbrakk>
+   \<Longrightarrow> a_current_flow state e >  6*N*current_\<gamma> state - (2*N  - \<Phi> state)*current_\<gamma> state"
   by(auto simp add: invar_above_6Ngamma_def)
 
 lemmas [code] = abstract_conv_map_def
@@ -1376,25 +1284,27 @@ insert_undirected_edge_def
 neighbourhood'_def
 end
 
-locale algo =  cost_flow_network where fst = fst +
- algo_spec where fst=fst and edge_map_update = "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd"+  Set3 +
+locale 
+algo =  
+ cost_flow_network where fst = fst +
+
+ algo_spec where fst=fst and edge_map_update = "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd"+  
+
+ Set_with_predicate +
+
  Adj_Map_Specs2 where  update =  "edge_map_update::'a \<Rightarrow> 'c \<Rightarrow> 'd \<Rightarrow> 'd"
+
 for fst::"'edge_type \<Rightarrow> 'a" and edge_map_update +
-   assumes infinite_u:  "\<And> e. \<u> e = PInfty"
-       and \<epsilon>_axiom: "0 < \<epsilon>" "\<epsilon> \<le> 1 / 2" "\<epsilon> \<le> 1/ (real (card \<V>))" "\<epsilon> < 1/2"
-       and conservative_weights: "\<not> has_neg_cycle make_pair \<E> \<c>"
-       and \<E>_impl_meaning: "to_set \<E>_impl = \<E>" "set_invar \<E>_impl"   
-       and empty_forest_axioms:   "\<And> v. lookup empty_forest v = None"
-                             "adjmap_inv empty_forest"
-       and N_def: "N = card \<V>"
+assumes       infinite_u:  "\<And> e. \<u> e = PInfty" and 
+                 \<epsilon>_axiom: "0 < \<epsilon>" "\<epsilon> \<le> 1 / 2" "\<epsilon> \<le> 1/ (real (card \<V>))" "\<epsilon> < 1/2" and 
+    conservative_weights: "\<not> has_neg_cycle make_pair \<E> \<c>" and 
+          \<E>_impl_meaning: "to_set \<E>_impl = \<E>" "set_invar \<E>_impl" and 
+     empty_forest_axioms:   "\<And> v. lookup empty_forest v = None" "adjmap_inv empty_forest" and 
+                   N_def: "N = card \<V>"
 begin 
 
 lemma subset_V_card_leq_N: "X \<subseteq> \<V> \<Longrightarrow> card X \<le> N"
   using N_def \<V>_finite card_mono by blast
-
-lemma "oedge e \<in> \<E> \<Longrightarrow> f (oedge e ) \<ge> thr \<Longrightarrow> rcap f e \<ge> thr"
-  using infinite_u[of "oedge e"]   
-  by(cases rule: oedge.cases[of e], auto)
 
 lemma empty_forest_empty: "digraph_abs empty_forest = {}"
                           "to_graph empty_forest = {}"
@@ -1412,20 +1322,20 @@ lemma N_gtr_0: "N > 0"
   by (simp add: N_def )
 
 lemma forest_symmetic: 
-"invar_aux20 state \<Longrightarrow> (u, v) \<in> [\<FF> state]\<^sub>g \<Longrightarrow> (v, u) \<in> [\<FF> state]\<^sub>g"
-  by(auto elim: invar_aux20E')
+  "\<lbrakk>inv_digraph_abs_\<FF>_sym state; (u, v) \<in> [\<FF> state]\<^sub>g\<rbrakk> \<Longrightarrow> (v, u) \<in> [\<FF> state]\<^sub>g"
+  by(auto elim: inv_digraph_abs_\<FF>_symE')
 
-lemma invar_aux6_conv_to_rdg_fstv:
-  assumes "invar_aux6 state" "(x, y) \<in> (digraph_abs (\<FF> state))"
+lemma inv_conversion_consistent_conv_to_rdg_fstv:
+  assumes "inv_conversion_consistent state" "(x, y) \<in> (digraph_abs (\<FF> state))"
   shows "fstv ((a_conv_to_rdg state) (x,y) ) = x"
-  apply(rule invar_aux6E[OF assms(1) refl])
+  apply(rule inv_conversion_consistentE[OF assms(1) refl])
   using assms(2) vs_to_vertex_pair_pres(1) 
   by fastforce
 
-lemma invar_aux6_conv_to_rdg_sndv: 
-  assumes "invar_aux6 state" "(x, y) \<in> (digraph_abs (\<FF> state))"
+lemma inv_conversion_consistent_conv_to_rdg_sndv: 
+  assumes "inv_conversion_consistent state" "(x, y) \<in> (digraph_abs (\<FF> state))"
   shows "sndv ((a_conv_to_rdg state) (x,y) ) = y"
-  apply(rule invar_aux6E[OF assms(1) refl])
+  apply(rule inv_conversion_consistentE[OF assms(1) refl])
   using assms(2) vs_to_vertex_pair_pres(2) 
   by fastforce
 
@@ -1446,7 +1356,7 @@ lemma consist_sndv:
 lemma consist_edge_in_vertex_in:
   assumes "consist (digraph_abs (\<FF> state)) (a_conv_to_rdg state)" "u \<noteq> v" 
           "(u, v) \<in> digraph_abs (\<FF> state)"  "(v, u) \<in> digraph_abs (\<FF> state)"
-          "invar_aux20 state"
+          "inv_digraph_abs_\<FF>_sym state"
   shows   "u \<in> dVs (to_vertex_pair ` ((a_conv_to_rdg state) ` (digraph_abs (\<FF> state))))"
 proof-
   have "to_vertex_pair ((a_conv_to_rdg state) (u, v)) = (u, v)"
@@ -1455,15 +1365,17 @@ proof-
     using assms(3) by(auto intro!: dVsI(1)[of u v] image_eqI)
 qed
 
-lemma proper_path_some_redges:"length l \<ge> 2 \<Longrightarrow> (to_redge_path to_rdg' l) \<noteq> []" for l to_rdg' Q
+lemma proper_path_some_redges:
+  "length l \<ge> 2 \<Longrightarrow> (to_redge_path to_rdg' l) \<noteq> []" for l to_rdg' Q
    apply(induction to_rdg' l rule: to_redge_path.induct)
    apply (metis list.simps(3) to_redge_path.simps(1))
    apply (metis list.distinct(1) to_redge_path.simps(2))
    by auto
 
 lemma perpath_to_redgepath:
-"invar_aux6 state \<Longrightarrow> invar_aux20 state \<Longrightarrow> walk_betw (to_graph (\<FF> state)) u p v \<Longrightarrow> length p \<ge> 2 \<Longrightarrow>
-           prepath (to_redge_path (conv_to_rdg state) p)"
+  "\<lbrakk>inv_conversion_consistent state; inv_digraph_abs_\<FF>_sym state; 
+    walk_betw (to_graph (\<FF> state)) u p v; length p \<ge> 2\<rbrakk>
+    \<Longrightarrow>  prepath (to_redge_path (conv_to_rdg state) p)"
   unfolding walk_betw_def
 proof(induction p arbitrary: u)
   case (Cons a p u)
@@ -1471,15 +1383,15 @@ proof(induction p arbitrary: u)
         using path_pref[of "(to_graph (\<FF> state))" "[a]" p] 
         apply (cases rule: list_cases4[of p])
         apply(auto intro!: prepath_intros)
-        by(auto intro!: prepath_intros elim!: in_to_graphE invar_aux20E symmetric_digraphE
-             simp add: invar_aux6_conv_to_rdg_fstv[simplified o_apply]
-                        invar_aux6_conv_to_rdg_sndv[simplified o_apply])
+        by(auto intro!: prepath_intros elim!: in_to_graphE inv_digraph_abs_\<FF>_symE symmetric_digraphE
+             simp add: inv_conversion_consistent_conv_to_rdg_fstv[simplified o_apply]
+                        inv_conversion_consistent_conv_to_rdg_sndv[simplified o_apply])
 qed simp
 
 lemma concretize_walk:
-"validF state  \<Longrightarrow>walk_betw (to_graph (\<FF> state)) u p v \<Longrightarrow> length p \<ge> 2 \<Longrightarrow>
-invar_aux20 state \<Longrightarrow>
-       set (to_redge_path (conv_to_rdg state) p) \<subseteq> 
+  "\<lbrakk>validF state; walk_betw (to_graph (\<FF> state)) u p v; length p \<ge> 2;
+    inv_digraph_abs_\<FF>_sym state\<rbrakk>
+    \<Longrightarrow> set (to_redge_path (conv_to_rdg state) p) \<subseteq> 
         (a_conv_to_rdg state) ` (digraph_abs (\<FF> state))"
   unfolding walk_betw_def
 proof(induction "(conv_to_rdg state)" p arbitrary: u rule: to_redge_path.induct)
@@ -1490,9 +1402,9 @@ proof(induction "(conv_to_rdg state)" p arbitrary: u rule: to_redge_path.induct)
   moreover have "set (to_redge_path (conv_to_rdg state) [u, va])  =
         {(a_conv_to_rdg state) (u, va)}" by simp
   moreover have " {(a_conv_to_rdg state) (u, va)} \<subseteq>  a_conv_to_rdg state ` [\<FF> state]\<^sub>g"
-    by (simp add: "1.prems"(4) calculation(1) invar_aux20_applied')
+    by (simp add: "1.prems"(4) calculation(1) inv_digraph_abs_\<FF>_sym_applied')
   ultimately show ?case 
-    using "1.prems"(4) invar_aux20_applied' by auto
+    using "1.prems"(4) inv_digraph_abs_\<FF>_sym_applied' by auto
 next
   case (2 u v w vs ua)
   hence "{u, v} \<in> (to_graph (\<FF> state))" "u \<noteq> v"
@@ -1501,13 +1413,13 @@ next
   moreover have "set (to_redge_path (conv_to_rdg state) [u, v])  =
         {(a_conv_to_rdg state) (u, v)}" by simp
   moreover have " {(a_conv_to_rdg state) (u, v)} \<subseteq>  a_conv_to_rdg state ` [\<FF> state]\<^sub>g"
-    by (simp add: "2.prems"(4) calculation(1) invar_aux20_applied')
+    by (simp add: "2.prems"(4) calculation(1) inv_digraph_abs_\<FF>_sym_applied')
   moreover have "    set (to_redge_path (conv_to_rdg state) (v # w # vs))
                \<subseteq>  (a_conv_to_rdg state) ` (digraph_abs (\<FF> state))"
     using "2.prems" 
     by(intro 2(1)[of v]) auto
   ultimately show ?case 
-    using "2.prems"(4) invar_aux20_applied' by auto
+    using "2.prems"(4) inv_digraph_abs_\<FF>_sym_applied' by auto
 qed simp+
   
 lemma consist_to_rdg_costs_negation:
@@ -1522,9 +1434,10 @@ lemma foldr_last_append: "\<cc> d + foldr (\<lambda>e. (+) (\<cc> e)) xs 0 =
                            foldr (\<lambda>e. (+) (\<cc> e)) (xs@[d]) 0"
   by(induction xs) auto
 
-lemma to_redge_path_last_append: "length xs \<ge> 2 \<Longrightarrow> last xs = v \<Longrightarrow>
-                               to_redge_path to_rdg xs @[abstract_conv_map  to_rdg (v, u)] =
-                               to_redge_path to_rdg (xs@[u])"
+lemma to_redge_path_last_append: 
+  "\<lbrakk>length xs \<ge> 2; last xs = v\<rbrakk>
+    \<Longrightarrow> to_redge_path to_rdg xs @[abstract_conv_map  to_rdg (v, u)] =
+        to_redge_path to_rdg (xs@[u])"
   by(induction to_rdg xs rule: to_redge_path.induct) auto
 
 lemma to_redge_path_costs:
@@ -1729,9 +1642,9 @@ lemma dVs_single_edge:"dVs {(u, v)} = {u, v}"
   unfolding dVs_def by simp
 
 lemma conv_to_rdg_coincide:
-      "(\<And> x y. {x, y} \<in> set (edges_of_path Q) 
-        \<Longrightarrow> abstract_conv_map to_rdg (x, y) = abstract_conv_map to_rdg' (x, y)) \<Longrightarrow>
-         to_redge_path to_rdg Q = to_redge_path to_rdg' Q"
+  "(\<And> x y. {x, y} \<in> set (edges_of_path Q) 
+        \<Longrightarrow> abstract_conv_map to_rdg (x, y) = abstract_conv_map to_rdg' (x, y)) 
+    \<Longrightarrow> to_redge_path to_rdg Q = to_redge_path to_rdg' Q"
   apply(induction Q, simp)
   subgoal for a Q
     apply(cases Q, simp)
@@ -1740,13 +1653,13 @@ lemma conv_to_rdg_coincide:
     done
   done
 
-lemma consist_dVs_path:"consist E (abstract_conv_map to_rdg') \<Longrightarrow> distinct Q \<Longrightarrow>
-          set (edges_of_vwalk Q) \<subseteq> E \<Longrightarrow> 
-          dVs (to_vertex_pair ` (abstract_conv_map to_rdg') ` (set (edges_of_vwalk Q))) \<subseteq> set Q" for to_rdg' Q
+lemma consist_dVs_path:
+  "\<lbrakk>consist E (abstract_conv_map to_rdg'); distinct Q; set (edges_of_vwalk Q) \<subseteq> E\<rbrakk>
+    \<Longrightarrow> dVs (to_vertex_pair ` (abstract_conv_map to_rdg') ` (set (edges_of_vwalk Q))) \<subseteq> set Q" for to_rdg' Q
 proof(induction Q rule: edges_of_path.induct)
   case (3 v v' l)
   then show ?case 
-      apply(subst edges_of_vwalk.simps, subst set_simps(2))
+    apply(subst edges_of_vwalk.simps, subst set_simps(2))
     apply(subst image_insert)+
     apply(subst insert_is_Un)
       apply(subst dVs_union_distr)
@@ -1769,34 +1682,34 @@ definition add_fst ("_ +++ _") where
 lemma add_fst_snd_same: "prod.snd (c +++ ab) = prod.snd ab"
   unfolding add_fst_def by simp
 
-lemma "aux_invar state \<Longrightarrow> aux_invar (state \<lparr> current_\<gamma>:= new\<rparr>)"
-  using aux_invar_gamma by blast
+lemma "underlying_invars state \<Longrightarrow> underlying_invars (state \<lparr> current_\<gamma>:= new\<rparr>)"
+  using underlying_invars_gamma by blast
 
 lemma oedge_of_path_in_F: 
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "walk_betw (to_graph (\<FF> state)) x' Q y'" "distinct Q"
   shows "oedge ` (set (to_redge_path (conv_to_rdg state) Q)) \<subseteq> \<F> state" 
   apply(rule order.trans, rule image_mono[OF to_redgepath_subset[OF assms(3)]])
-   apply(rule  from_aux_invar'(6)[OF assms(1)])
+   apply(rule  from_underlying_invars'(6)[OF assms(1)])
   apply(unfold F_def F_redges_def)
   apply(rule image_mono)+
   apply(rule undirected_edges_subset_directed_edges_subset)
-  using  from_aux_invar'(19)[OF assms(1)] assms(2) 
+  using  from_underlying_invars'(19)[OF assms(1)] assms(2) 
   by (auto intro!: path_edges_subset[OF walk_between_nonempty_pathD(1)] 
            elim:  symmetric_digraphE
         simp add: to_graph_def)
 
 lemma oedge_of_rev_path_in_F: 
-  assumes "aux_invar state"
+  assumes "underlying_invars state"
           "walk_betw (to_graph (\<FF> state)) x' Q y'" "distinct Q"
   shows "oedge ` (set (to_redge_path (conv_to_rdg state) (rev Q))) \<subseteq> \<F> state" 
   apply(rule order.trans, rule image_mono[OF to_redgepath_subset])
   using assms(3) apply simp
-   apply(rule from_aux_invar'(6)[OF assms(1)])
+   apply(rule from_underlying_invars'(6)[OF assms(1)])
   apply(unfold F_def F_redges_def)
   apply(rule image_mono)+
   apply(rule undirected_edges_subset_directed_edges_subset)
-  using  from_aux_invar'(19)[OF assms(1)] assms(2)
+  using  from_underlying_invars'(19)[OF assms(1)] assms(2)
   by (auto intro!: path_edges_subset[OF walk_between_nonempty_pathD(1)] 
              elim:  symmetric_digraphE
         simp add: to_graph_def edges_of_path_rev[symmetric] )
@@ -1805,33 +1718,33 @@ lemma forest_paths_are_optimum:
   assumes "invar_isOptflow state"
           "\<forall> e \<in> \<F> state. a_current_flow state e > 0"
           "walk_betw (to_graph (\<FF> state)) x' Q y'"
-          "aux_invar state"
+          "underlying_invars state"
           "x' \<noteq> y'"
           "distinct Q"
     shows "is_min_path (a_current_flow state) x' y' (to_redge_path (conv_to_rdg state) Q)"
 proof-
-  have invar_aux20: "invar_aux20 state"
-    using assms(4) aux_invar_def by blast
-  note forest_symmetric1 = forest_symmetic[OF invar_aux20] 
+  have inv_digraph_abs_\<FF>_sym: "inv_digraph_abs_\<FF>_sym state"
+    using assms(4) underlying_invars_def by blast
+  note forest_symmetric1 = forest_symmetic[OF inv_digraph_abs_\<FF>_sym] 
   have lengthQ: "2 \<le> length Q"
     by (meson assms(3) assms(5) walk_betw_length)
   have prepath:"prepath (to_redge_path (conv_to_rdg state) Q)"
-    using assms(4) invar_aux6_from_aux_invar invar_aux20_from_aux_invar lengthQ assms(3)
+    using assms(4) inv_conversion_consistent_from_underlying_invars inv_digraph_abs_\<FF>_sym_from_underlying_invars lengthQ assms(3)
           perpath_to_redgepath[of state] by auto
   have prepath_rev:"prepath (to_redge_path (conv_to_rdg state) (rev Q))"
-    using assms(4) invar_aux6_from_aux_invar lengthQ walk_symmetric[OF assms(3)]
-          perpath_to_redgepath invar_aux20_from_aux_invar
+    using assms(4) inv_conversion_consistent_from_underlying_invars lengthQ walk_symmetric[OF assms(3)]
+          perpath_to_redgepath inv_digraph_abs_\<FF>_sym_from_underlying_invars
     by fastforce
   have Q_in_F:"set (edges_of_path Q) \<subseteq> to_graph (\<FF> state)"
     using path_edges_subset[OF walk_between_nonempty_pathD(1)[OF assms(3)]]
-         from_aux_invar(20)[OF assms(4), simplified invar_aux20_def[simplified]]
+         from_underlying_invars(20)[OF assms(4), simplified inv_digraph_abs_\<FF>_sym_def[simplified]]
     by simp
   have Q_in_F_rev:"set (edges_of_path (rev Q)) \<subseteq> to_graph (\<FF> state)"
     using path_edges_subset[OF walk_between_nonempty_pathD(1)[OF assms(3)], simplified  edges_of_path_rev]
-         from_aux_invar(20)[OF assms(4), simplified invar_aux20_def[simplified]]
+         from_underlying_invars(20)[OF assms(4), simplified inv_digraph_abs_\<FF>_sym_def[simplified]]
     using edges_of_path_rev[of Q] set_rev by fastforce
    have F_subs_E:"\<F> state  \<subseteq> \<E>"
-     using assms(4) from_aux_invar'(3) by presburger
+     using assms(4) from_underlying_invars'(3) by presburger
   have oedge_in_F:"oedge ` (set (to_redge_path (conv_to_rdg state) Q)) \<subseteq> \<F> state"
     by (meson assms(3,4,6) oedge_of_path_in_F)
   have oedge_in_F_rev:"oedge ` (set (to_redge_path (conv_to_rdg state) (rev Q))) \<subseteq> \<F> state" 
@@ -1861,39 +1774,39 @@ proof-
   have a1: "augpath (a_current_flow state) (to_redge_path (conv_to_rdg state) Q)"
     using Rcap prepath by (auto simp add: augpath_def )
   have a2: "set (to_redge_path (conv_to_rdg state) Q) \<subseteq> \<EE>"
-    using assms(4) assms(6) from_aux_invar'(2)[OF assms(4)] from_aux_invar'(6)[OF assms(4)]
+    using assms(4) assms(6) from_underlying_invars'(2)[OF assms(4)] from_underlying_invars'(6)[OF assms(4)]
           F_subs_E image_subset_iff o_edge_res[symmetric] oedge_in_F  
     by fastforce
   have a3:"fstv (hd (to_redge_path (conv_to_rdg state) Q)) = x'"
-    using   lengthQ to_rdg_hd[OF from_aux_invar'(6)[OF assms(4)] _ dir_edges_in_F]
+    using   lengthQ to_rdg_hd[OF from_underlying_invars'(6)[OF assms(4)] _ dir_edges_in_F]
              walk_between_nonempty_pathD(3)[OF assms(3)] 
     by simp
   have a4: " sndv (last (to_redge_path (conv_to_rdg state) Q)) = y'" 
-    using   lengthQ to_rdg_last[OF from_aux_invar'(6)[OF assms(4)]_ dir_edges_in_F]
+    using   lengthQ to_rdg_last[OF from_underlying_invars'(6)[OF assms(4)]_ dir_edges_in_F]
              walk_between_nonempty_pathD(4)[OF assms(3)] by simp
   have a5: "distinct (to_redge_path (conv_to_rdg state) Q)"
-    using assms(4,6) dir_edges_in_F from_aux_invar'(6) to_rdg_distinct by blast
+    using assms(4,6) dir_edges_in_F from_underlying_invars'(6) to_rdg_distinct by blast
   have C_Q_rev_Q:"\<CC> (to_redge_path (conv_to_rdg state) Q) = - \<CC> (to_redge_path (conv_to_rdg state) (rev Q))"
     using to_redge_path_costs[of "digraph_abs (\<FF> state)" "(conv_to_rdg state)" Q, OF _ lengthQ assms(6) _ dir_edges_in_F]
           to_rdg_distinct[of "digraph_abs (\<FF> state)" "(conv_to_rdg state)" Q, OF _  assms(6), OF _ dir_edges_in_F ]
           to_rdg_distinct[of "digraph_abs (\<FF> state)" "(conv_to_rdg state)""rev Q", OF _, 
                       simplified distinct_rev[of Q], OF _ assms(6)  rev_dir_edges_in_F] distinct_sum2[of _ \<cc>] 
-    by(auto simp add: \<CC>_def assms(4) from_aux_invar'(6) intro: forest_symmetric1)
+    by(auto simp add: \<CC>_def assms(4) from_underlying_invars'(6) intro: forest_symmetric1)
  have b1: "augpath (a_current_flow state) (to_redge_path (conv_to_rdg state) (rev Q))"
    using Rcap_rev prepath_rev
    by (auto simp add: augpath_def )
   have b2: "set (to_redge_path (conv_to_rdg state) (rev Q)) \<subseteq> \<EE>"
-    using assms(4) assms(6) from_aux_invar'(2)[OF assms(4)] from_aux_invar'(6)[OF assms(4)]
+    using assms(4) assms(6) from_underlying_invars'(2)[OF assms(4)] from_underlying_invars'(6)[OF assms(4)]
           F_subs_E image_subset_iff o_edge_res[symmetric] oedge_in_F_rev  
     by fastforce
   have b3:"fstv (hd (to_redge_path (conv_to_rdg state) (rev Q))) = y'"
-    using   lengthQ to_rdg_hd[OF from_aux_invar'(6)[OF assms(4)] _ ] 
+    using   lengthQ to_rdg_hd[OF from_underlying_invars'(6)[OF assms(4)] _ ] 
              walk_between_nonempty_pathD(3)[OF walk_symmetric[OF assms(3)]] rev_dir_edges_in_F by simp
   have b4: " sndv (last (to_redge_path (conv_to_rdg state) (rev Q))) = x'" 
-    using   lengthQ to_rdg_last[OF from_aux_invar'(6)[OF assms(4)]] rev_dir_edges_in_F
+    using   lengthQ to_rdg_last[OF from_underlying_invars'(6)[OF assms(4)]] rev_dir_edges_in_F
              walk_between_nonempty_pathD(4)[OF  walk_symmetric[OF assms(3)]] by simp
   have b5: "distinct (to_redge_path (conv_to_rdg state) (rev Q))"
-    by (simp add: assms(4) assms(6) from_aux_invar'(6) to_rdg_distinct[OF _ _ rev_dir_edges_in_F])
+    by (simp add: assms(4) assms(6) from_underlying_invars'(6) to_rdg_distinct[OF _ _ rev_dir_edges_in_F])
   have is_s_t_path_rev_Q: "is_s_t_path (a_current_flow state) y' x' (to_redge_path (conv_to_rdg state) (rev Q))"
     by (simp add: b1 b2 b3 b4 b5 is_s_t_path_def)
   have C_Q_rev_Q:"\<CC> (to_redge_path (conv_to_rdg state) Q) = - \<CC> (to_redge_path (conv_to_rdg state) (rev Q))"
@@ -1901,7 +1814,7 @@ proof-
           to_rdg_distinct[of "digraph_abs (\<FF> state)" "(conv_to_rdg state)" Q, OF _ assms(6)  dir_edges_in_F]
           to_rdg_distinct[of "digraph_abs (\<FF> state)" "(conv_to_rdg state)""rev Q", OF _ _ rev_dir_edges_in_F, 
                       simplified distinct_rev[of Q], OF _ assms(6)] distinct_sum2[of _ \<cc>] 
-    by(auto simp add: \<CC>_def assms(4) from_aux_invar'(6) intro: forest_symmetric1)
+    by(auto simp add: \<CC>_def assms(4) from_underlying_invars'(6) intro: forest_symmetric1)
   show ?thesis
         unfolding is_min_path_def
       proof(rule, goal_cases)
@@ -2026,76 +1939,76 @@ proof(rule ccontr, goal_cases)
   ultimately show False using assms(1) by simp
 qed
 
-lemma aux_invar_subs: 
-  assumes     "aux_invar state"
-               "\<FF>i = \<FF> state"
-               "E' = actives state"
+lemma underlying_invars_subs: 
+  assumes     "underlying_invars state"
+               "\<FF>_state = \<FF> state"
+               "actives_state = actives state"
                "to_rdg = conv_to_rdg state"
-               "FF =  \<F>_redges state"
-               "E'' = {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set E'}"
-               "EE = E'' \<union> FF"
-             shows "EE \<subseteq> \<EE>"
-    using  assms(1,2,5,7,6) from_aux_invar'(2)  by (auto simp add: F_def F_redges_def)
+               "\<F>_state =  \<F>_redges state"
+               "actives_state' = {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
+               "allowed = actives_state' \<union> \<F>_state"
+         shows "allowed \<subseteq> \<EE>"
+    using  assms(1,2,5,7,6) from_underlying_invars'(2)  by (auto simp add: F_def F_redges_def)
  
 lemma simulate_inactives:
-  assumes  "augpath f pp" "fstv (hd pp) = s" "sndv (last pp) = t" "set pp \<subseteq> \<EE>"
-               "aux_invar state"
-               "\<FF>i = \<FF> state"
-               "f = a_current_flow state"
-               "E' = actives state"
-               "to_rdg = conv_to_rdg state"
-               "FF = \<F>_redges state"
-               "E'' = {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set E'}"
-               "EE = E'' \<union> FF"
-               "ca = cnt_P pp (\<lambda> e. e \<notin> EE)"
-               "s \<noteq> t" "\<And> e . e \<in> \<F> state \<Longrightarrow> f e > 0"
-         shows "\<exists> qq.  augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> EE \<and> qq \<noteq> []"
+  assumes  "augpath f p" "fstv (hd p) = s" "sndv (last p) = t" "set p \<subseteq> \<EE>"
+           "underlying_invars state"
+           "\<FF>_state = \<FF> state"
+           "f = a_current_flow state"
+           "actives_state = actives state"
+           "to_rdg = conv_to_rdg state"
+           "\<F>_state = \<F>_redges state"
+           "actives_state' = {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
+           "allowed_edges = actives_state' \<union> \<F>_state"
+           "number_not_allowed = cnt_P p (\<lambda> e. e \<notin> allowed_edges)"
+           "s \<noteq> t" "\<And> e . e \<in> \<F> state \<Longrightarrow> f e > 0"
+     shows "\<exists> qq.  augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> allowed_edges \<and> qq \<noteq> []"
   using assms
-proof(induction ca arbitrary: pp s t rule: less_induct)
-  case (less ca)
-  have invar_aux20: "invar_aux20 state"
-    using less aux_invar_def by blast
-  note forest_symmetric1 = forest_symmetic[OF invar_aux20]
-  have EE_sub:"EE \<subseteq> \<EE>"
-    using aux_invar_subs less(6-13) by simp
-  hence EE_finite:"finite EE"
+proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
+  case (less number_not_allowed)
+  have inv_digraph_abs_\<FF>_sym: "inv_digraph_abs_\<FF>_sym state"
+    using less underlying_invars_def by blast
+  note forest_symmetric1 = forest_symmetic[OF inv_digraph_abs_\<FF>_sym]
+  have allowed_edges_sub:"allowed_edges \<subseteq> \<EE>"
+    using underlying_invars_subs less(6-13) by simp
+  hence allowed_edges_finite:"finite allowed_edges"
     by (simp add: finite_\<EE> finite_subset)
   then show ?case 
-  proof(cases "ca = 0")
+  proof(cases "number_not_allowed = 0")
     case True
-    hence pp_EE:"set pp \<subseteq> EE" 
+    hence p_allowed_edges:"set p \<subseteq> allowed_edges" 
       unfolding less
       by (metis Collect_mem_eq assms(10) cnt_P_0_set less.prems(6))
     show ?thesis 
-      apply(rule exI[of _ pp])
-      using less pp_EE 
+      apply(rule exI[of _ p])
+      using less p_allowed_edges 
       by (meson augpath_def prepath_def)
   next
     case False
-    then obtain e where e_prop:"e \<in> set pp" "e \<notin> \<F>_redges state"
-                                "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set E'}"
+    then obtain e where e_prop:"e \<in> set p" "e \<notin> \<F>_redges state"
+                                "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
       unfolding less 
       by (metis (mono_tags, lifting) Un_iff cnt_P_0)
     hence "oedge e \<in> \<E> - to_set (actives state)"
-      using EE_sub less(5) unfolding less 
+      using allowed_edges_sub less(5) unfolding less 
       using o_edge_res by auto
     hence "connected_component (to_graph (\<FF> state)) (fst (oedge e)) =
            connected_component (to_graph (\<FF> state)) (snd  (oedge e))"
-      using less(6) by(simp add: aux_invar_def invar_aux13_def less) 
+      using less(6) by(simp add: underlying_invars_def inv_inactive_same_component_def less) 
     hence "connected_component (to_graph (\<FF> state)) (fstv e) =
            connected_component (to_graph (\<FF> state)) (sndv e)"
       by(cases e, auto)
     hence or_reach:"fstv e = sndv e \<or> reachable  (to_graph (\<FF> state)) (fstv e) (sndv e)"
       by (metis in_connected_componentE in_connected_componentI2)
-    obtain p1 p2 where p1p2:"p1@[e]@p2 = pp"
-      by (metis \<open>e \<in> set pp\<close> in_set_conv_decomp_last single_in_append)
+    obtain p1 p2 where p1p2:"p1@[e]@p2 = p"
+      by (metis \<open>e \<in> set p\<close> in_set_conv_decomp_last single_in_append)
     show ?thesis 
     proof(cases rule: orE'[OF  Meson.disj_comm[OF or_reach]])
       case 2
-      have a1: "e # p2 = pp \<Longrightarrow> p1 = [] \<Longrightarrow> fstv e = sndv e \<Longrightarrow> augpath f pp \<Longrightarrow> augpath f p2"
+      have a1: "e # p2 = p \<Longrightarrow> p1 = [] \<Longrightarrow> fstv e = sndv e \<Longrightarrow> augpath f p \<Longrightarrow> augpath f p2"
           apply(rule augpath_split2[of f "p1@[e]"])
         using p1p2 less  by auto
-      have a2: "augpath f pp \<Longrightarrow> p1 \<noteq> [] \<Longrightarrow> p2 \<noteq> [] \<Longrightarrow> sndv (last p1) = fstv (hd p2)"
+      have a2: "augpath f p \<Longrightarrow> p1 \<noteq> [] \<Longrightarrow> p2 \<noteq> [] \<Longrightarrow> sndv (last p1) = fstv (hd p2)"
         using 2 p1p2  augpath_split3[of f p1 "[e]@p2"] augpath_split3[of f "p1@[e]" "p2"] 
         by simp
       have a3: "p1 \<noteq>[] \<Longrightarrow> p2 = [] \<Longrightarrow> augpath f p1"
@@ -2104,10 +2017,10 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
      have a:"augpath f (p1@p2)" 
         using p1p2 less(2) 2
         apply(cases p1, simp add: a1)
-        subgoal for p pp1
+        subgoal for pp pp1
            using a3 augpath_split1[of f "p1" "[e]@p2"]  augpath_split2[of f "p1@[e]" p2] a2 
-           by (cases p2) (simp,intro augpath_app, auto)
-            done
+           by (cases p2)(simp,intro augpath_app, auto)
+        done
       moreover have b:" fstv (hd (p1@p2)) = s"  
           using p1p2 less(3, 4, 2) 2  augpath_split3[of f "[e]" p2]  less.prems(1) less.prems(14) 
           by (cases p1) force+
@@ -2116,13 +2029,13 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
           by (cases p2) force+
       moreover have d:"set (p1@p2) \<subseteq> \<EE>"
         using less.prems(4) p1p2 by auto
-      moreover have e: "cnt_P (p1 @ p2) (\<lambda>e. e \<notin> EE) < ca"
+      moreover have e: "cnt_P (p1 @ p2) (\<lambda>e. e \<notin> allowed_edges) < number_not_allowed"
         apply(subst less(14), subst sym[OF p1p2(1)],
-              subst cnt_P_add[of p1 "[e]@p2" "(\<lambda>e. e \<notin> EE)"], subst cnt_P_add[of "[e]" "p2" "(\<lambda>e. e \<notin> EE)"])
+              subst cnt_P_add[of p1 "[e]@p2" "(\<lambda>e. e \<notin> allowed_edges)"], subst cnt_P_add[of "[e]" "p2" "(\<lambda>e. e \<notin> allowed_edges)"])
         apply(subst cnt_P_add, simp)
         using e_prop unfolding less by simp
-      have "\<exists>qq. augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> EE \<and> qq \<noteq> []"
-        using less(1)[of "cnt_P (p1@p2) (\<lambda> e. e \<notin> EE)" "p1@p2" s t, 
+      have "\<exists>qq. augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> allowed_edges \<and> qq \<noteq> []"
+        using less(1)[of "cnt_P (p1@p2) (\<lambda> e. e \<notin> allowed_edges)" "p1@p2" s t, 
                       OF e a b c d less(6) less(7-13) _ less(15) less(16)] by simp
       thus ?thesis by simp
     next
@@ -2131,7 +2044,7 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
         using 1 unfolding reachable_def by auto
       hence Qend:"hd Q = fstv e" "last Q = sndv e" unfolding walk_betw_def by auto
       have QQpre:"prepath (to_redge_path (conv_to_rdg state) Q)"
-        using less(6)[simplified aux_invar_def] 1(2) Qpr 
+        using less(6)[simplified underlying_invars_def] 1(2) Qpr 
         by (auto intro: perpath_to_redgepath[of state  "fstv e" Q "sndv e"]  
               simp add: walk_betw_length)
       define QQ where "QQ= to_redge_path (conv_to_rdg state) Q"
@@ -2144,13 +2057,13 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
         unfolding QQ_def 
         using Qpr  Qlength  less(6) 
         by(unfold F_redges_def, intro concretize_walk[of state "fstv e" Q "sndv e"])
-          (auto simp add:  aux_invar_def invar_aux14_def invar_aux2_def)         
-        hence QQcap: " e \<in> set QQ \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e" for e
+          (auto simp add:  underlying_invars_def inv_dbltn_graph_forest_def inv_digraph_abs_F_in_E_def)         
+        hence QQnumber_not_allowedp: " e \<in> set QQ \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e" for e
           using less(16) oedge.simps rcap.simps infinite_u 
           by(cases rule: \<cc>.cases[of e]) 
             (auto intro!: less.prems(15) rev_image_eqI[of "B _"] simp add: F_redges_def F_def) 
         have QQ_aug: "augpath f QQ"
-        using QQpre  Rcap_strictI[of "set QQ" 0 f]  Rcap_strictI[of "set QQ" 0 f] QQcap QQleng
+        using QQpre  Rcap_strictI[of "set QQ" 0 f]  Rcap_strictI[of "set QQ" 0 f] QQnumber_not_allowedp QQleng
         unfolding QQ_def augpath_def by simp
       have Q_in_F: "set (edges_of_path Q) \<subseteq> to_graph (\<FF> state)"
         using Qpr by(auto intro!: path_edges_subset simp add: walk_betw_def)
@@ -2165,10 +2078,10 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
       by (intro undirected_edges_subset_directed_edges_subset)
          (auto simp add:  to_graph_def intro: symmetric_digraphI)
       have Qfirst:"fstv (hd QQ) = hd Q"
-        using less(6)[simplified aux_invar_def invar_aux6_def] Qlength dir_edges_in_F
+        using less(6)[simplified underlying_invars_def inv_conversion_consistent_def] Qlength dir_edges_in_F
         by(auto intro!: to_rdg_hd simp add: QQ_def) 
       have Qlast:"sndv (last QQ) = last Q" 
-        using less(6)[simplified aux_invar_def invar_aux6_def] Qlength dir_edges_in_F
+        using less(6)[simplified underlying_invars_def inv_conversion_consistent_def] Qlength dir_edges_in_F
         by (auto intro: to_rdg_last simp add: QQ_def)    
       have p2fst: "p2 \<noteq> [] \<Longrightarrow> fstv (hd p2) = sndv e" 
         using less.prems(1)  p1p2 augpath_split2[of f p1 "[e]@p2"] augpath_split3[of f "[e]" p2] by simp
@@ -2200,20 +2113,20 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
           unfolding QQ_def
           apply(rule subset_trans, rule concretize_walk[of state "fstv e" Q "sndv e"])
           using Qpr  Qlength  less(6) 
-          by(auto simp add: aux_invar_def invar_aux14_def invar_aux2_def)
+          by(auto simp add: underlying_invars_def inv_dbltn_graph_forest_def inv_digraph_abs_F_in_E_def)
       have D:"set (p1@QQ@p2) \<subseteq> \<EE>"
         using p1p2 less(5) QQE  by auto
-      have cnt0:"cnt_P QQ (\<lambda>e. e \<notin> EE) = 0"
+      have cnt0:"cnt_P QQ (\<lambda>e. e \<notin> allowed_edges) = 0"
         apply(rule cnt_P_0)
         using concretize_walk[of state "fstv e" Q "sndv e"] Qpr  Qlength  less(6) 
-        by(auto simp add: aux_invar_def invar_aux14_def invar_aux2_def less QQ_def F_def F_redges_def)
-      have E: "cnt_P (p1 @ QQ@ p2) (\<lambda>e. e \<notin> EE) < ca"
+        by(auto simp add: underlying_invars_def inv_dbltn_graph_forest_def inv_digraph_abs_F_in_E_def less QQ_def F_def F_redges_def)
+      have E: "cnt_P (p1 @ QQ@ p2) (\<lambda>e. e \<notin> allowed_edges) < number_not_allowed"
         apply(subst less(14), subst sym[OF p1p2(1)],
-              subst cnt_P_add[of p1 "[e]@p2" "(\<lambda>e. e \<notin> EE)"], subst cnt_P_add[of "[e]" "p2" "(\<lambda>e. e \<notin> EE)"])       
+              subst cnt_P_add[of p1 "[e]@p2" "(\<lambda>e. e \<notin> allowed_edges)"], subst cnt_P_add[of "[e]" "p2" "(\<lambda>e. e \<notin> allowed_edges)"])       
         apply(subst cnt_P_add, subst cnt_P_add)
         using cnt0 e_prop by(simp add: less)
-      have "\<exists>qq. augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> EE \<and> qq \<noteq> []"
-        using less(1)[of "cnt_P (p1@QQ@p2) (\<lambda> e. e \<notin> EE)" "p1@QQ@p2" s t, 
+      have "\<exists>qq. augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> allowed_edges \<and> qq \<noteq> []"
+        using less(1)[of "cnt_P (p1@QQ@p2) (\<lambda> e. e \<notin> allowed_edges)" "p1@QQ@p2" s t, 
                       OF E A B C D less(6) less(7-13) _ less(15) less(16)] by simp
       then show ?thesis by simp
     qed
@@ -2221,56 +2134,56 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
 qed
 
 lemma simulate_inactives_costs:
-  assumes  "augpath f pp" "fstv (hd pp) = s" "sndv (last pp) = t" "set pp \<subseteq> \<EE>"
-               "aux_invar state"
-               "\<FF>i = \<FF> state"
-               "f = a_current_flow state"
-               "E' = actives state"
-               "to_rdg = conv_to_rdg state"
-               "FF = \<F>_redges state"
-               "E'' = {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set E'}"
-               "EE = E'' \<union> FF"
-               "ca = cnt_P pp (\<lambda> e. e \<notin> EE)"
-               "s \<noteq> t" "\<And> e. e \<in> \<F> state \<Longrightarrow> f e > 0" "\<nexists> C. augcycle f C"
-         shows "\<exists> qq.  augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> EE \<and>  
-                       (foldr (\<lambda>x. (+) (\<cc> x)) qq 0) \<le>  (foldr (\<lambda>x. (+) (\<cc> x)) pp 0) \<and> qq \<noteq> []"
+  assumes  "augpath f p" "fstv (hd p) = s" "sndv (last p) = t" "set p \<subseteq> \<EE>"
+           "underlying_invars state"
+           "\<FF>_state = \<FF> state"
+           "f = a_current_flow state"
+           "actives_state = actives state"
+           "to_rdg = conv_to_rdg state"
+           "\<F>_state = \<F>_redges state"
+           "actives_state' = {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
+           "allowed_edges = actives_state' \<union> \<F>_state"
+           "number_not_allowed = cnt_P p (\<lambda> e. e \<notin> allowed_edges)"
+           "s \<noteq> t" "\<And> e. e \<in> \<F> state \<Longrightarrow> f e > 0" "\<nexists> C. augcycle f C"
+     shows "\<exists> qq.  augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> allowed_edges \<and>  
+                       (foldr (\<lambda>x. (+) (\<cc> x)) qq 0) \<le>  (foldr (\<lambda>x. (+) (\<cc> x)) p 0) \<and> qq \<noteq> []"
   using assms
-proof(induction ca arbitrary: pp s t rule: less_induct)
-  case (less ca)
-  have invar_aux20: "invar_aux20 state"
-    using less aux_invar_def by blast
-  note forest_symmetric1 = forest_symmetic[OF invar_aux20]
-  have EE_sub:"EE \<subseteq> \<EE>"
-    using aux_invar_subs less(6-13) by simp
-  hence EE_finite:"finite EE"
+proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
+  case (less number_not_allowed)
+  have inv_digraph_abs_\<FF>_sym: "inv_digraph_abs_\<FF>_sym state"
+    using less underlying_invars_def by blast
+  note forest_symmetric1 = forest_symmetic[OF inv_digraph_abs_\<FF>_sym]
+  have allowed_edges_sub:"allowed_edges \<subseteq> \<EE>"
+    using underlying_invars_subs less(6-13) by simp
+  hence allowed_edges_finite:"finite allowed_edges"
     by (simp add: finite_\<EE> finite_subset)
   then show ?case 
-  proof(cases "ca = 0")
+  proof(cases "number_not_allowed = 0")
     case True
-    hence pp_EE:"set pp \<subseteq> EE" 
+    hence p_allowed_edges:"set p \<subseteq> allowed_edges" 
       unfolding less 
     proof -
-      assume "cnt_P pp (\<lambda>e. e \<notin> {e |e. e \<in> \<EE> \<and> oedge e \<in> to_set (actives state)} \<union> \<F>_redges state) = 0"
-      then have "set pp \<subseteq> {r. r \<in> {r |r. r \<in> \<EE> \<and> oedge r \<in> to_set (actives state)} \<union> \<F>_redges state}"
+      assume "cnt_P p (\<lambda>e. e \<notin> {e |e. e \<in> \<EE> \<and> oedge e \<in> to_set (actives state)} \<union> \<F>_redges state) = 0"
+      then have "set p \<subseteq> {r. r \<in> {r |r. r \<in> \<EE> \<and> oedge r \<in> to_set (actives state)} \<union> \<F>_redges state}"
         by (simp add: cnt_P_0_set)
-      then show "set pp \<subseteq> {r |r. r \<in> \<EE> \<and> oedge r \<in> to_set (actives state)} \<union> \<F>_redges state"
+      then show "set p \<subseteq> {r |r. r \<in> \<EE> \<and> oedge r \<in> to_set (actives state)} \<union> \<F>_redges state"
         by blast
     qed
     show ?thesis 
-      apply(rule exI[of _ pp])
-      using less pp_EE  augpath_cases by force
+      apply(rule exI[of _ p])
+      using less p_allowed_edges  augpath_cases by force
   next
     case False
-    then obtain e where e_prop:"e \<in> set pp" "e \<notin> \<F>_redges state"
-                                "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set E'}"
+    then obtain e where e_prop:"e \<in> set p" "e \<notin> \<F>_redges state"
+                                "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
       unfolding less 
       by (metis (mono_tags, lifting) Un_iff cnt_P_0)
     hence "oedge e \<in> \<E> - to_set (actives state)"
-      using EE_sub less(5) less  o_edge_res by auto
+      using allowed_edges_sub less(5) less  o_edge_res by auto
     hence "connected_component (to_graph (\<FF> state)) (fst (oedge e)) 
              = connected_component (to_graph (\<FF> state)) (snd  (oedge e))"
       using less(6) 
-      by (auto simp  add: aux_invar_def invar_aux13_def less)
+      by (auto simp  add: underlying_invars_def inv_inactive_same_component_def less)
     hence "connected_component (to_graph (\<FF> state)) (fstv e) 
           = connected_component (to_graph (\<FF> state)) (sndv e)"
       by(cases e, auto)
@@ -2278,9 +2191,9 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
       by (metis in_connected_componentE in_connected_componentI2)  
     have e_rcap: "rcap f e > 0" 
       using augpath_rcap_pos_strict e_prop(1) less.prems(1) by blast
-    obtain p1 p2 where p1p2:"p1@[e]@p2 = pp"
-      by (metis \<open>e \<in> set pp\<close> in_set_conv_decomp_last single_in_append)
-    hence costs_split: "foldr (\<lambda>x. (+) (\<cc> x)) pp 0 =
+    obtain p1 p2 where p1p2:"p1@[e]@p2 = p"
+      by (metis \<open>e \<in> set p\<close> in_set_conv_decomp_last single_in_append)
+    hence costs_split: "foldr (\<lambda>x. (+) (\<cc> x)) p 0 =
                       foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + \<cc> e + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
       by(induction p1, auto, metis foldr_append foldr_last_append map_sum_split)  
     have costs_split2: "foldr (\<lambda>x. (+) (\<cc> x)) (p1@p2) 0 =
@@ -2289,10 +2202,10 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
     show ?thesis 
     proof(cases rule: orE'[OF  Meson.disj_comm[OF or_reach]])
       case 2
-      have a1: "e # p2 = pp \<Longrightarrow> p1 = [] \<Longrightarrow> fstv e = sndv e \<Longrightarrow> augpath f pp \<Longrightarrow> augpath f p2"
+      have a1: "e # p2 = p \<Longrightarrow> p1 = [] \<Longrightarrow> fstv e = sndv e \<Longrightarrow> augpath f p \<Longrightarrow> augpath f p2"
           apply(rule augpath_split2[of f "p1@[e]"])
         using p1p2 less  by auto
-      have a2: "augpath f pp \<Longrightarrow> p1 \<noteq> [] \<Longrightarrow> p2 \<noteq> [] \<Longrightarrow> sndv (last p1) = fstv (hd p2)"
+      have a2: "augpath f p \<Longrightarrow> p1 \<noteq> [] \<Longrightarrow> p2 \<noteq> [] \<Longrightarrow> sndv (last p1) = fstv (hd p2)"
         using 2 p1p2  augpath_split3[of f p1 "[e]@p2"] augpath_split3[of f "p1@[e]" "p2"] 
         by simp
       have a3: "p1 \<noteq>[] \<Longrightarrow> p2 = [] \<Longrightarrow> augpath f p1"
@@ -2301,7 +2214,7 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
      have a:"augpath f (p1@p2)" 
         using p1p2 less(2) 2
         apply(cases p1, simp add: a1)
-        subgoal for p pp1
+        subgoal for pp pp1
            using a3 augpath_split1[of f "p1" "[e]@p2"]  augpath_split2[of f "p1@[e]" p2] a2 
            by (cases p2) (simp,intro augpath_app, auto)
             done
@@ -2313,21 +2226,21 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
           by (cases p2) force+
       moreover have d:"set (p1@p2) \<subseteq> \<EE>"
         using less.prems(4) p1p2 by auto
-      moreover have e: "cnt_P (p1 @ p2) (\<lambda>e. e \<notin> EE) < ca"
+      moreover have e: "cnt_P (p1 @ p2) (\<lambda>e. e \<notin> allowed_edges) < number_not_allowed"
         apply(subst less(14), subst sym[OF p1p2(1)],
-              subst cnt_P_add[of p1 "[e]@p2" "(\<lambda>e. e \<notin> EE)"], subst cnt_P_add[of "[e]" "p2" "(\<lambda>e. e \<notin> EE)"])
+              subst cnt_P_add[of p1 "[e]@p2" "(\<lambda>e. e \<notin> allowed_edges)"], subst cnt_P_add[of "[e]" "p2" "(\<lambda>e. e \<notin> allowed_edges)"])
         apply(subst cnt_P_add, simp)
         using e_prop  less by simp
       have ce:"\<cc> e \<ge> 0"
         apply(rule ccontr, rule sufficientE[of "augcycle f [e]"])
-        using less(17,2,5) e_prop(1) rcap_extr_strict[of e pp 0 f] prepath_intros(1)[of e] 
+        using less(17,2,5) e_prop(1) rcap_extr_strict[of e p 0 f] prepath_intros(1)[of e] 
               Rcap_strictI[of "set [e]" 0 f] 2 
         by(fastforce simp add: augpath_def augcycle_def \<CC>_def)+
-      have F: "foldr (\<lambda>x. (+) (\<cc> x)) (p1@p2) 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) pp 0"
+      have F: "foldr (\<lambda>x. (+) (\<cc> x)) (p1@p2) 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) p 0"
         using costs_split2 costs_split ce by simp
-     have "\<exists>qq. augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> EE \<and>
+     have "\<exists>qq. augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> allowed_edges \<and>
                 foldr (\<lambda>x. (+) (\<cc> x)) qq 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) (p1@p2) 0 \<and> qq \<noteq> []"
-        using less(1)[of "cnt_P (p1@p2) (\<lambda> e. e \<notin> EE)" "p1@p2" s t, 
+        using less(1)[of "cnt_P (p1@p2) (\<lambda> e. e \<notin> allowed_edges)" "p1@p2" s t, 
                       OF e a b c d less(6) less(7-13) _ less(15) less(16) less(17)] by simp       
       thus ?thesis using F by auto
     next
@@ -2336,7 +2249,7 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
         using 1  by (auto simp add: reachable_def)
       hence Qend:"hd Q = fstv e" "last Q = sndv e"  by (auto simp add: walk_betw_def)
       have QQpre:"prepath (to_redge_path (conv_to_rdg state) Q)"
-        using less(6)[simplified aux_invar_def] 1(2) Qpr 
+        using less(6)[simplified underlying_invars_def] 1(2) Qpr 
         by (auto intro: perpath_to_redgepath[of state  "fstv e" Q "sndv e"]  
               simp add: walk_betw_length)
       define QQ where "QQ= to_redge_path (conv_to_rdg state) Q"
@@ -2347,8 +2260,8 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
         by(cases rule: list_cases4[of Q], auto simp add: QQ_def) 
       have QQF: "set QQ \<subseteq> \<F>_redges state"
           using concretize_walk[of state "fstv e" Q "sndv e"]  Qpr  Qlength  less(6)
-          by(auto simp add: aux_invar_def invar_aux14_def invar_aux2_def  QQ_def F_def F_redges_def)
-        hence QQcap: " e \<in> set QQ \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e" for e
+          by(auto simp add: underlying_invars_def inv_dbltn_graph_forest_def inv_digraph_abs_F_in_E_def  QQ_def F_def F_redges_def)
+        hence QQnumber_not_allowedp: " e \<in> set QQ \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e" for e
           using less(16) oedge.simps rcap.simps infinite_u 
           by (cases rule: \<cc>.cases[of e]) (force simp add: F_def F_redges_def)+
       have Q_in_F: "set (edges_of_path Q) \<subseteq> to_graph (\<FF> state)"
@@ -2364,16 +2277,16 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
       by (intro undirected_edges_subset_directed_edges_subset)
          (auto simp add:  to_graph_def intro!: symmetric_digraphI)
       have Qfirst:"fstv (hd QQ) = hd Q"
-        using less(6)[simplified aux_invar_def invar_aux6_def] Qlength dir_edges_in_F
+        using less(6)[simplified underlying_invars_def inv_conversion_consistent_def] Qlength dir_edges_in_F
         by(auto intro!: to_rdg_hd simp add: QQ_def) 
       have Qlast:"sndv (last QQ) = last Q" 
-        using less(6)[simplified aux_invar_def invar_aux6_def] Qlength dir_edges_in_F
+        using less(6)[simplified underlying_invars_def inv_conversion_consistent_def] Qlength dir_edges_in_F
         by (auto intro: to_rdg_last simp add: QQ_def)
       obtain QQ' where QQ'_prop:"prepath QQ'" "distinct QQ'" "set QQ' \<subseteq> set QQ"
        "fstv (hd QQ) = fstv (hd QQ')" "sndv (last QQ) = sndv (last QQ')"  "QQ' \<noteq> []"
         using QQ_def QQpre QQleng prepath_drop_cycles[of QQ "set QQ"] by auto    
       have QQ_aug: "augpath f QQ'"
-        using QQpre  Rcap_strictI[of "set QQ'" 0 f]  QQcap QQleng QQ'_prop
+        using QQpre  Rcap_strictI[of "set QQ'" 0 f]  QQnumber_not_allowedp QQleng QQ'_prop
         unfolding QQ_def augpath_def by auto
       have p2fst: "p2 \<noteq> [] \<Longrightarrow> fstv (hd p2) = sndv e" 
         using less.prems(1)  p1p2 augpath_split2[of f p1 "[e]@p2"] augpath_split3[of f "[e]" p2] by simp
@@ -2405,25 +2318,25 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
           unfolding QQ_def
           apply(rule subset_trans, rule concretize_walk[of state "fstv e" Q "sndv e"])
           using Qpr  Qlength  less(6)
-          by(auto simp add: aux_invar_def invar_aux14_def invar_aux2_def )
+          by(auto simp add: underlying_invars_def inv_dbltn_graph_forest_def inv_digraph_abs_F_in_E_def )
       hence QQE:"set QQ' \<subseteq> \<EE>"
           using QQ'_prop by simp
       have D:"set (p1@QQ'@p2) \<subseteq> \<EE>"
         using p1p2 less(5) QQE  by auto
-      have cnt0:"cnt_P QQ (\<lambda>e. e \<notin> EE) = 0"
+      have cnt0:"cnt_P QQ (\<lambda>e. e \<notin> allowed_edges) = 0"
         using concretize_walk[of state "fstv e" Q "sndv e"] Qpr  Qlength  less(6)
-        by(force intro: cnt_P_0 elim!: aux_invarE invar_aux14E invar_aux2E
+        by(force intro: cnt_P_0 elim!: underlying_invarsE inv_dbltn_graph_forestE inv_digraph_abs_F_in_EE
          simp add:  less QQ_def F_def F_redges_def)
-      hence cnt0:"cnt_P QQ' (\<lambda>e. e \<notin> EE) = 0" 
+      hence cnt0:"cnt_P QQ' (\<lambda>e. e \<notin> allowed_edges) = 0" 
         using cnt_P_subset[of QQ' QQ] QQ'_prop by simp
-      have E: "cnt_P (p1 @ QQ'@ p2) (\<lambda>e. e \<notin> EE) < ca"
+      have E: "cnt_P (p1 @ QQ'@ p2) (\<lambda>e. e \<notin> allowed_edges) < number_not_allowed"
         apply(subst less(14), subst sym[OF p1p2(1)],
-              subst cnt_P_add[of p1 "[e]@p2" "(\<lambda>e. e \<notin> EE)"], subst cnt_P_add[of "[e]" "p2" "(\<lambda>e. e \<notin> EE)"])       
+              subst cnt_P_add[of p1 "[e]@p2" "(\<lambda>e. e \<notin> allowed_edges)"], subst cnt_P_add[of "[e]" "p2" "(\<lambda>e. e \<notin> allowed_edges)"])       
         apply(subst cnt_P_add, subst cnt_P_add)
         using cnt0 e_prop unfolding less by simp
-      have "\<exists>qq. augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> EE \<and>
-                 set qq \<subseteq> EE \<and> foldr (\<lambda>x. (+) (\<cc> x)) qq 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) (p1 @ QQ' @ p2) 0 \<and> qq \<noteq> []"
-        using less(1)[of "cnt_P (p1@QQ'@p2) (\<lambda> e. e \<notin> EE)" "p1@QQ'@p2" s t, 
+      have "\<exists>qq. augpath f qq \<and> fstv (hd qq) = s \<and> sndv (last qq) = t \<and> set qq \<subseteq> allowed_edges \<and>
+                 set qq \<subseteq> allowed_edges \<and> foldr (\<lambda>x. (+) (\<cc> x)) qq 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) (p1 @ QQ' @ p2) 0 \<and> qq \<noteq> []"
+        using less(1)[of "cnt_P (p1@QQ'@p2) (\<lambda> e. e \<notin> allowed_edges)" "p1@QQ'@p2" s t, 
                       OF E A B C D less(6) less(7-13) _ less(15) less(16) less(17)] by simp
       moreover have costs_split3: "foldr (\<lambda>x. (+) (\<cc> x)) (p1 @ QQ' @ p2) 0 =
              foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
@@ -2433,24 +2346,24 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
         case 1
         hence costeQQ':"foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 > \<cc> e" by simp
         define QQrev where "QQrev = rev (map erev QQ')"
-        define QQpp where "QQpp = map blue QQrev"
+        define QQp where "QQp = map blue QQrev"
         define ecc where "ecc = map red [e]"
-        have markers_removeQ: "QQrev = map to_redge QQpp"
-              unfolding QQpp_def 
+        have markers_removeQ: "QQrev = map to_redge QQp"
+              unfolding QQp_def 
               by(induction QQrev) auto
        have markers_removeP: "[e] = map to_redge ecc"
          unfolding ecc_def by simp
-       have markers_remove: "QQrev @ [e] = map to_redge (QQpp@ecc)"
-           unfolding QQpp_def 
+       have markers_remove: "QQrev @ [e] = map to_redge (QQp@ecc)"
+           unfolding QQp_def 
            using markers_removeP 
            by (induction QQrev) auto
-         have QQpp_last:"sndvv (last QQpp) = fstv (hd QQ')"
-           using QQ'_prop(6) unfolding QQpp_def QQrev_def 
+         have QQp_last:"sndvv (last QQp) = fstv (hd QQ')"
+           using QQ'_prop(6) unfolding QQp_def QQrev_def 
            by(induction QQ', auto simp add: vs_erev)
-         have QQpp_fst:"fstvv (hd QQpp) = sndv (last QQ')"
-           using QQ'_prop(6) unfolding QQpp_def QQrev_def 
+         have QQp_fst:"fstvv (hd QQp) = sndv (last QQ')"
+           using QQ'_prop(6) unfolding QQp_def QQrev_def 
            by(induction QQ', auto simp add: vs_erev)
-         have QQrev_cap: "e \<in> set QQrev \<Longrightarrow> rcap f e > 0" for e
+         have QQrev_number_not_allowedp: "e \<in> set QQrev \<Longrightarrow> rcap f e > 0" for e
          proof(goal_cases)
            case 1
            then obtain d where dpr:"e = erev d" "d \<in> set QQ'" by(auto simp add: QQrev_def)
@@ -2474,30 +2387,30 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
        have QQrev_leng: "length QQrev > 0" 
          by (metis QQrevpre length_greater_0_conv list.simps(3) prepath_simps)
        hence augpathQQrev: "augpath f QQrev"
-           using QQrevpre QQrev_cap Rcap_strictI[of "set QQrev" 0 f] 
+           using QQrevpre QQrev_number_not_allowedp Rcap_strictI[of "set QQrev" 0 f] 
            unfolding augpath_def by simp
-       have hpath: "hpath (QQpp @ ecc)"
-             using QQpp_last QQ'_prop(4) Qfirst Qend(1) augpathQQrev
-             unfolding ecc_def QQpp_def
+       have hpath: "hpath (QQp @ ecc)"
+             using QQp_last QQ'_prop(4) Qfirst Qend(1) augpathQQrev
+             unfolding ecc_def QQp_def
              by(auto intro: h_path_append augpath_to_hpath_blue[of f] hpath_intros(1))
        have distinctQQrev: "distinct QQrev"
          unfolding QQrev_def
          apply(subst distinct_rev, subst distinct_map)
          using QQ'_prop(2) inj_erev unfolding inj_on_def by auto
-      have distinct:"distinct (QQpp @ ecc)"
+      have distinct:"distinct (QQp @ ecc)"
            using distinct_map[of ] distinct_append distinctQQrev
-           unfolding QQpp_def  ecc_def is_s_t_path_def inj_on_def 
+           unfolding QQp_def  ecc_def is_s_t_path_def inj_on_def 
            by auto
          have to_redge_blue_id: "to_redge \<circ> blue = id"
            by auto
-         have b1: "QQrev @ [e] = map to_redge (QQpp @ ecc)"
-          unfolding QQrev_def ecc_def QQpp_def 
+         have b1: "QQrev @ [e] = map to_redge (QQp @ ecc)"
+          unfolding QQrev_def ecc_def QQp_def 
           by(simp, subst to_redge_blue_id, subst list.map_id0, simp)
         have b2: "e \<in> \<EE>" 
           using e_prop(1) less.prems(4) by blast
         have b2a:"set QQ \<subseteq> \<EE>"
           using QQF assms(5)  
-          by(auto elim!: aux_invarE invar_aux2E simp add: F_def F_redges_def)
+          by(auto elim!: underlying_invarsE inv_digraph_abs_F_in_EE simp add: F_def F_redges_def)
         have b3: "set QQrev \<subseteq> \<EE>"
           using subset_trans[OF QQ'_prop(3) b2a] unfolding QQrev_def
           by(induction QQ', auto simp add: erev_\<EE>)      
@@ -2505,21 +2418,21 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
                   Ball (set redC) precycle \<and>
                   prepath blue \<and>
                   distinct blue \<and>
-                  sum cc (set (QQpp@ecc)) = \<CC> blue + foldr (\<lambda>D. (+) (\<CC> D)) redC 0 \<and>
+                  sum cc (set (QQp@ecc)) = \<CC> blue + foldr (\<lambda>D. (+) (\<CC> D)) redC 0 \<and>
                   set (QQrev@[e]) = set blue \<union> \<Union> {set D |D. D \<in> set redC} \<and> 
                   fstv (hd blue) = sndv e \<and> sndv (last blue) = sndv e"   
-        using b1  hpath  distinct b3 b2 QQpp_fst QQ'_prop Qlast Qend(2) Qlast vs_erev(1)[of e]
-        unfolding QQpp_def QQrev_def ecc_def 
+        using b1  hpath  distinct b3 b2 QQp_fst QQ'_prop Qlast Qend(2) Qlast vs_erev(1)[of e]
+        unfolding QQp_def QQrev_def ecc_def 
         by (intro distinct_hpath_to_distinct_augpath_and_augcycles, auto)
        then obtain P'' redC where all_props:" Ball (set redC) precycle"
                   "prepath P''"
                   "distinct P''"
-                  "sum cc (set (QQpp@ecc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) redC 0"
+                  "sum cc (set (QQp@ecc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) redC 0"
                   "set (QQrev@[e]) = set P'' \<union> \<Union> {set D |D. D \<in> set redC}"
                   "fstv (hd P'') = sndv e" "sndv (last P'') = sndv e" by auto
-            have "sum cc (set (QQpp@ecc)) = \<CC> (QQrev) + \<cc> e"
+            have "sum cc (set (QQp@ecc)) = \<CC> (QQrev) + \<cc> e"
               unfolding \<CC>_def 
-              using distinct_red_sum distinct_blue_sum QQpp_def ecc_def
+              using distinct_red_sum distinct_blue_sum QQp_def ecc_def
                     1 distinctQQrev
               by (subst set_append, subst sum.union_disjoint, auto)
             have costs_negated: "foldr (\<lambda>x. (+) (\<cc> x)) QQrev 0 = 
@@ -2529,17 +2442,17 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
                     subst sym[OF foldr_last_append], simp add: erev_costs) 
             have below_zero:"foldr (\<lambda>x. (+) (\<cc> x)) QQrev 0 + \<cc> e < 0"
               using costeQQ' costs_negated by auto
-            have sum_flod:"sum cc (set (QQpp @ ecc)) = foldr (\<lambda>x. (+) (cc x))  (QQpp @ ecc) 0" 
+            have sum_flod:"sum cc (set (QQp @ ecc)) = foldr (\<lambda>x. (+) (cc x))  (QQp @ ecc) 0" 
               using distinct distinct_sum2 by blast
-            have "foldr (\<lambda>x. (+) (cc x))  (QQpp @ ecc) 0 = foldr (\<lambda>x. (+) (\<cc> x)) QQrev 0 + \<cc> e" 
-              unfolding QQpp_def ecc_def
+            have "foldr (\<lambda>x. (+) (cc x))  (QQp @ ecc) 0 = foldr (\<lambda>x. (+) (\<cc> x)) QQrev 0 + \<cc> e" 
+              unfolding QQp_def ecc_def
               by(induction QQrev, auto)
             then obtain C where C_prop:"(C = P'') \<or> C \<in> set redC" "\<CC> C < 0"
               using all_props(4) fold_sum_neg_neg_element[of \<CC> redC] below_zero sum_flod
               by(cases "\<CC> P''  < 0", auto)
             have Rcap_pos:"Rcap f (set C) > 0"
               using all_props(1,2) C_prop all_props(5) Rcap_union[of "set QQrev" "set [e]" 0 f]
-                    QQrev_leng QQrev_cap Rcap_strictI[of "set QQrev" 0 f] Rcap_strictI[of "{e}" 0 f] 
+                    QQrev_leng QQrev_number_not_allowedp Rcap_strictI[of "set QQrev" 0 f] Rcap_strictI[of "{e}" 0 f] 
                     e_rcap 
               by (intro Rcap_subset[of "set P'' \<union> \<Union> {set D |D. D \<in> set redC}" "set C"], auto simp add: precycle_def prepath_def)
             hence "augcycle f C"
@@ -2550,7 +2463,7 @@ proof(induction ca arbitrary: pp s t rule: less_induct)
           qed
       moreover hence "foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 
                                      + foldr (\<lambda>x. (+) (\<cc> x)) p2 0 \<le> 
-                         foldr (\<lambda>x. (+) (\<cc> x)) pp 0"
+                         foldr (\<lambda>x. (+) (\<cc> x)) p 0"
         using costs_split by auto
       ultimately show ?thesis by auto
     qed
@@ -2563,26 +2476,26 @@ context
 begin
 
 lemma augment_edge_impl_domain:
-      "e = oedge ee \<Longrightarrow> e \<in> flow_domain f \<Longrightarrow> flow_invar f \<Longrightarrow>
-      flow_domain (augment_edge_impl  f \<gamma> ee) = flow_domain f" 
+   "\<lbrakk>e = oedge ee; e \<in> flow_domain f; flow_invar f\<rbrakk>
+    \<Longrightarrow> flow_domain (augment_edge_impl  f \<gamma> ee) = flow_domain f" 
   by(auto split: Redge.split simp add: redge_case_flip)
   
 lemma augment_edge_impl_invar:
-      "e = oedge ee \<Longrightarrow> e \<in> flow_domain f \<Longrightarrow> flow_invar f \<Longrightarrow>
-      flow_invar (augment_edge_impl  f \<gamma> ee)"
+  "\<lbrakk>e = oedge ee; e \<in> flow_domain f; flow_invar f\<rbrakk>
+    \<Longrightarrow> flow_invar (augment_edge_impl  f \<gamma> ee)"
   by(auto split: Redge.split simp add: redge_case_flip)
 
 lemma augment_edge_abstract_homo:
-      "e = oedge ee \<Longrightarrow> e \<in> flow_domain f \<Longrightarrow> flow_invar f \<Longrightarrow>
-      augment_edge (abstract_flow_map f) \<gamma> ee = 
-      abstract_flow_map (augment_edge_impl  f \<gamma> ee)"
+  "\<lbrakk>e = oedge ee; e \<in> flow_domain f; flow_invar f\<rbrakk>
+   \<Longrightarrow> augment_edge (abstract_flow_map f) \<gamma> ee = 
+       abstract_flow_map (augment_edge_impl  f \<gamma> ee)"
   by(auto intro!: ext split: Redge.split 
      simp add: redge_case_flip  abstract_real_map_def)
 
 lemma augment_edges_impl_domain_invar[simp]:
-      "set(map oedge es) \<subseteq> flow_domain f \<Longrightarrow> flow_invar f \<Longrightarrow>
-      flow_domain (augment_edges_impl  f \<gamma> es) = flow_domain f \<and>
-      flow_invar (augment_edges_impl  f \<gamma> es)"
+   "\<lbrakk>set(map oedge es) \<subseteq> flow_domain f; flow_invar f\<rbrakk>
+     \<Longrightarrow>  flow_domain (augment_edges_impl  f \<gamma> es) = flow_domain f \<and>
+          flow_invar (augment_edges_impl  f \<gamma> es)"
   using augment_edge_impl_domain augment_edge_impl_invar
   by(induction es)
     (auto simp add:  augment_edge_impl_domain augment_edge_impl_invar)
@@ -2591,78 +2504,79 @@ lemmas  augment_edges_impl_domain[simp] = conjunct1[OF augment_edges_impl_domain
 lemmas  augment_edges_impl_invar[intro] = conjunct2[OF augment_edges_impl_domain_invar]
 
 lemma augment_edges_homo[simp]:
-      "set(map oedge es) \<subseteq> flow_domain f \<Longrightarrow> flow_invar f \<Longrightarrow>
-      abstract_flow_map (augment_edges_impl f \<gamma> es) = augment_edges (abstract_flow_map f) \<gamma> es"
-    apply(rule sym)
-    using augment_edges_impl_domain_invar augment_edge_abstract_homo
-    by(induction es) auto
+ "\<lbrakk>set(map oedge es) \<subseteq> flow_domain f; flow_invar f\<rbrakk>
+   \<Longrightarrow> abstract_flow_map (augment_edges_impl f \<gamma> es) = augment_edges (abstract_flow_map f) \<gamma> es"
+  apply(rule sym)
+  using augment_edges_impl_domain_invar augment_edge_abstract_homo
+  by(induction es) auto
 
-lemma flow_abstract[simp]: "e \<in> flow_domain f_impl
-              \<Longrightarrow> abstract_flow_map  f_impl e = (abstract_flow_map f_impl) e"
+lemma flow_abstract[simp]: 
+  "e \<in> flow_domain f_impl \<Longrightarrow> abstract_flow_map  f_impl e = (abstract_flow_map f_impl) e"
   by auto
 
 lemma abstract_bal_map_homo[simp, intro]: 
-"bal_invar b \<Longrightarrow>  abstract_bal_map b = b_abs \<Longrightarrow>
-               abstract_bal_map (move_balance b x y) = 
-               (\<lambda> v. if v= x then 0 
-                     else if v = y then b_abs y + b_abs x
-                     else b_abs v)"
+ "\<lbrakk>bal_invar b;  abstract_bal_map b = b_abs\<rbrakk>
+    \<Longrightarrow> abstract_bal_map (move_balance b x y) =  (\<lambda> v. if v= x then 0 
+                                                       else if v = y then b_abs y + b_abs x
+                                                       else b_abs v)"
   by(auto simp add: move_balance_def Let_def abstract_real_map_def)
 
-lemma abstract_bal_invar[simp, intro]: "bal_invar b \<Longrightarrow> abstract_bal_map b = b_abs \<Longrightarrow>
-              bal_invar (move_balance b x y)"
+lemma abstract_bal_invar[simp, intro]: 
+  "\<lbrakk>bal_invar b; abstract_bal_map b = b_abs\<rbrakk>
+    \<Longrightarrow> bal_invar (move_balance b x y)"
   by(auto simp add:  move_balance_def Let_def)
 
-lemma abstract_bal_map_domain_exact[simp]: "bal_invar b \<Longrightarrow> abstract_bal_map b = b_abs \<Longrightarrow>
-               bal_domain (move_balance b x y) = bal_domain b \<union> {x, y}"
+lemma abstract_bal_map_domain_exact[simp]: 
+ "\<lbrakk>bal_invar b; abstract_bal_map b = b_abs\<rbrakk>
+   \<Longrightarrow> bal_domain (move_balance b x y) = bal_domain b \<union> {x, y}"
   unfolding  move_balance_def Let_def
   by auto
 
-lemma abstract_bal_map_domain[simp]: "bal_invar b \<Longrightarrow> x \<in> bal_domain b \<Longrightarrow>
-                             y \<in> bal_domain b \<Longrightarrow> abstract_bal_map b = b_abs \<Longrightarrow>
-               bal_domain (move_balance b x y) = bal_domain b"
+lemma abstract_bal_map_domain[simp]: 
+  "\<lbrakk>bal_invar b; x \<in> bal_domain b; y \<in> bal_domain b; abstract_bal_map b = b_abs\<rbrakk>
+    \<Longrightarrow> bal_domain (move_balance b x y) = bal_domain b"
   unfolding  move_balance_def Let_def
   by auto
 
-lemma abstract_balance[simp, intro]:  "x \<in> bal_domain b_impl \<Longrightarrow> abstract_bal_map b_impl = b \<Longrightarrow>
-                                abstract_bal_map b_impl x = b x"
+lemma abstract_balance[simp, intro]:  
+  "\<lbrakk>x \<in> bal_domain b_impl; abstract_bal_map b_impl = b\<rbrakk>
+    \<Longrightarrow> abstract_bal_map b_impl x = b x"
    by auto
 
-lemma abstract_bal_map_homo_move_gamma[simp, intro]: "bal_invar b 
-                            \<Longrightarrow>abstract_bal_map b =  b_abs \<Longrightarrow>
-               abstract_bal_map (move b \<gamma> s t) = 
-               (\<lambda> v. if v = s then b_abs s - \<gamma> 
-                                  else if v = t then b_abs t + \<gamma>
-                                  else b_abs v)"
+lemma abstract_bal_map_homo_move_gamma[simp, intro]: 
+  "\<lbrakk>bal_invar b; abstract_bal_map b =  b_abs\<rbrakk>
+   \<Longrightarrow> abstract_bal_map (move b \<gamma> s t) =  (\<lambda> v. if v = s then b_abs s - \<gamma> 
+                                                else if v = t then b_abs t + \<gamma>
+                                                else b_abs v)"
   by(auto simp add:  move_def Let_def abstract_real_map_def)
 
-lemma abstract_bal_invar_move[intro]: "bal_invar b \<Longrightarrow> b_abs = abstract_bal_map b \<Longrightarrow>
-              bal_invar (move b \<gamma> x y)"
+lemma abstract_bal_invar_move[intro]: 
+  "\<lbrakk>bal_invar b; b_abs = abstract_bal_map b\<rbrakk>
+    \<Longrightarrow> bal_invar (move b \<gamma> x y)"
   by(auto simp add: move_def Let_def)
 
-lemma abstract_bal_map_domain_move[simp, intro]: "bal_invar b \<Longrightarrow> x \<in> bal_domain b \<Longrightarrow>
-                             y \<in> bal_domain b \<Longrightarrow>abstract_bal_map b =  b_abs  \<Longrightarrow>
-               bal_domain (move b \<gamma> x y) = bal_domain b"
+lemma abstract_bal_map_domain_move[simp, intro]: 
+  "\<lbrakk>bal_invar b; x \<in> bal_domain b; y \<in> bal_domain b; abstract_bal_map b = b_abs\<rbrakk>
+    \<Longrightarrow> bal_domain (move b \<gamma> x y) = bal_domain b"
   by(auto simp add: move_def Let_def)
 
-lemma abstract_conv_invar[simp]: "conv_invar to_rdg  \<Longrightarrow>
-              conv_invar (add_direction to_rdg  x y e)"
+lemma abstract_conv_invar[simp]: 
+  "conv_invar to_rdg  \<Longrightarrow> conv_invar (add_direction to_rdg  x y e)"
   unfolding  abstract_conv_map_def add_direction_def Let_def
   by auto
 
-lemma abstract_conv_map_domain[simp]: "conv_invar to_rdg \<Longrightarrow>
-               conv_domain (add_direction to_rdg  x y e) = 
-               conv_domain to_rdg \<union> {(x, y), (y, x)}"
+lemma abstract_conv_map_domain[simp]: 
+ "conv_invar to_rdg \<Longrightarrow> conv_domain (add_direction to_rdg  x y e) = 
+                        conv_domain to_rdg \<union> {(x, y), (y, x)}"
   unfolding abstract_conv_map_def add_direction_def Let_def
   by auto
 
 lemma add_direction_result: 
   assumes "conv_invar to_rdg"
-  shows
-"abstract_conv_map (add_direction to_rdg x y e) =
- (\<lambda> d. if d = (x, y) then F e
-       else if d = (y, x) then B e
-       else abstract_conv_map to_rdg d)"
+  shows   "abstract_conv_map (add_direction to_rdg x y e) =
+           (\<lambda> d. if d = (x, y) then F e
+                 else if d = (y, x) then B e
+                 else abstract_conv_map to_rdg d)"
 proof-
   have conv_invar_one_step: "conv_invar (conv_update (y, x) (B e) to_rdg)"
       by (simp add: assms(1))
@@ -2675,11 +2589,10 @@ qed
 
 lemma abstract_conv_map_change: 
   assumes "conv_invar to_rdg"
-  shows
-"abstract_conv_map (add_direction to_rdg x y e) =
- (\<lambda> d. if d = (x, y) then F e
-       else if d = (y, x) then B e
-       else abstract_conv_map to_rdg d)"
+  shows   "abstract_conv_map (add_direction to_rdg x y e) =
+            (\<lambda> d. if d = (x, y) then F e
+                  else if d = (y, x) then B e
+                  else abstract_conv_map to_rdg d)"
 proof-
   have conv_invar_one_step: "conv_invar (conv_update (y, x) (B e) to_rdg)"
       by (simp add: assms(1))
@@ -2692,8 +2605,7 @@ qed
 
 lemma abstract_conv_consist: 
   assumes "conv_invar to_rdg" "consist E (abstract_conv_map to_rdg)"
-          "to_rdg' =  add_direction to_rdg x y e" "make_pair e = (x,y)"
-          "x \<noteq> y"
+          "to_rdg' =  add_direction to_rdg x y e" "make_pair e = (x,y)" "x \<noteq> y"
     shows "consist (E \<union> {(x, y), (y, x)}) (abstract_conv_map to_rdg')"
   unfolding  add_direction_def Let_def
 proof(goal_cases)
@@ -2738,30 +2650,32 @@ proof(goal_cases)
   qed
 qed
 
-lemma abstract_conv_homo_complex: "conv_invar to_rdg \<Longrightarrow>  to_rdg_abs = abstract_conv_map to_rdg  
-                 \<Longrightarrow> to_rdg'_abs = abstract_conv_map (add_direction to_rdg x y e)\<Longrightarrow>
-                    make_pair e = (x, y) \<Longrightarrow> 
-                 to_rdg'_abs = (\<lambda> d. if d = make_pair e then F e
-                                     else if prod.swap d = make_pair e then B e
-                                     else to_rdg_abs d)"
+lemma abstract_conv_homo_complex: 
+  "\<lbrakk>conv_invar to_rdg; to_rdg_abs = abstract_conv_map to_rdg; 
+    to_rdg'_abs = abstract_conv_map (add_direction to_rdg x y e); make_pair e = (x, y)\<rbrakk>
+     \<Longrightarrow>  to_rdg'_abs = (\<lambda> d. if d = make_pair e then F e
+                              else if prod.swap d = make_pair e then B e
+                              else to_rdg_abs d)"
   unfolding  abstract_conv_map_def add_direction_def Let_def
   by fastforce
 
 lemmas abstract_conv_homo[simp] = abstract_conv_homo_complex[OF _ _ refl]
 
-lemma abstract_rep: "x \<in> rep_comp_domain rc_impl \<Longrightarrow> r = abstract_rep_map rc_impl \<Longrightarrow> 
-                    abstract_rep_map rc_impl x = r x"
+lemma abstract_rep: 
+  "\<lbrakk>x \<in> rep_comp_domain rc_impl; r = abstract_rep_map rc_impl\<rbrakk>
+    \<Longrightarrow> abstract_rep_map rc_impl x = r x"
   unfolding abstract_rep_map_def by auto
 
-lemma abstract_card: "x \<in> rep_comp_domain rc_impl \<Longrightarrow> r = abstract_comp_map rc_impl \<Longrightarrow> 
-                   abstract_comp_map rc_impl x = r x"
+lemma abstract_card: 
+  "\<lbrakk>x \<in> rep_comp_domain rc_impl; r = abstract_comp_map rc_impl\<rbrakk>
+    \<Longrightarrow> abstract_comp_map rc_impl x = r x"
   unfolding abstract_comp_map_def by auto
 
-lemma not_in_dom_id: "x \<notin> dom (rep_comp_lookup r_card_impl) \<Longrightarrow> abstract_rep_map r_card_impl x =  x"
-    for x r_card_impl 
+lemma not_in_dom_id: 
+  "x \<notin> dom (rep_comp_lookup r_card_impl) \<Longrightarrow> abstract_rep_map r_card_impl x =  x" for x r_card_impl 
     by (simp add: abstract_rep_map_def domIff)
-lemma not_in_dom_1:"x \<notin> dom (rep_comp_lookup r_card_impl) \<Longrightarrow> abstract_comp_map r_card_impl x = 1"
-    for x r_card_impl 
+lemma not_in_dom_1:
+  "x \<notin> dom (rep_comp_lookup r_card_impl) \<Longrightarrow> abstract_comp_map r_card_impl x = 1" for x r_card_impl 
   by (simp add: abstract_comp_map_def domIff)
 
 lemma

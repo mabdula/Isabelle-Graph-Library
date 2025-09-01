@@ -1,5 +1,5 @@
 theory SSP_Preps 
-  imports PathAugOpt
+  imports Path_Aug_Opt
 begin
 
 section \<open>Definitions used by SSP and Capacity Scaling\<close>
