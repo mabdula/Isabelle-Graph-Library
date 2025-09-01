@@ -73,7 +73,7 @@ lemma zero_flow_is_s_t_flow:
   "\<lbrakk>s \<in> \<V>; t \<in> \<V>; s \<noteq> t\<rbrakk> \<Longrightarrow> is_s_t_flow (\<lambda> e. 0) s t "
   using u_non_neg
   by(auto intro!: is_s_t_flowI isuflowI
-        simp add: zero_ereal_def ex_def)
+      simp add: zero_ereal_def ex_def)
 
 lemma ex_less_sum_cap:
   assumes "isuflow f" "x \<in> \<V>"
@@ -93,7 +93,7 @@ qed
 
 lemma augment_along_s_t_path:
   assumes "is_s_t_flow f s t" "0 \<le> \<gamma>" "ereal \<gamma> \<le> Rcap f (set p)" "set p \<subseteq> \<EE>" "distinct p"
-          "fstv (hd p) = s" "sndv (last p) = t" "augpath f p" "s \<in> \<V>" "t \<in> \<V>"
+    "fstv (hd p) = s" "sndv (last p) = t" "augpath f p" "s \<in> \<V>" "t \<in> \<V>"
   shows "is_s_t_flow (augment_edges  f \<gamma> p) s t"
   using s_t_flow_excess_s_t[OF assms(1)] assms 
     augment_path_validness_b_pres_source_target_distinct[OF
@@ -111,23 +111,23 @@ fun make_pair' where
   "make_pair' (new_edge e) = ( (fst e), (snd e))"
 
 fun fst' where
-"fst' (old_edge e) = fst e"|
-"fst' (new_edge e) = fst e"
+  "fst' (old_edge e) = fst e"|
+  "fst' (new_edge e) = fst e"
 
 fun snd' where
-"snd' (old_edge e) = snd e"|
-"snd' (new_edge e) = snd e"
+  "snd' (old_edge e) = snd e"|
+  "snd' (new_edge e) = snd e"
 
 lemma make_pair'_alt: "make_pair' = (\<lambda> e. case e of old_edge e \<Rightarrow> (fst e, snd e) |
                                            new_edge e \<Rightarrow> (fst e, snd e))"
   by(auto split: edge_wrapper.split)
 
 lemma fst'_def2: "fst' = case_edge_wrapper fst fst"
-                 "case_edge_wrapper fst fst = fst'"
+  "case_edge_wrapper fst fst = fst'"
   by(auto intro!: ext split: edge_wrapper.split)
 
 lemma snd'_def2: "snd' = case_edge_wrapper snd snd"
-                 "case_edge_wrapper snd snd =snd'"
+  "case_edge_wrapper snd snd =snd'"
   by(auto intro!: ext split: edge_wrapper.split)
 end
 
@@ -187,7 +187,7 @@ interpretation network_of_network: flow_network where
       split: edge_wrapper.split)
 
 lemma make_pair'_is: "network_of_network.make_pair = make_pair'"
-                     "make_pair' = network_of_network.make_pair"
+  "make_pair' = network_of_network.make_pair"
   using fst'_def network_of_network.fstv.simps(1) network_of_network.sndv.simps(1)
     network_of_network.to_vertex_pair.simps(1) network_of_network.to_vertex_pair_fst_snd snd'_def
   by auto
@@ -226,7 +226,7 @@ proof(cases "Abs f > 0", goal_cases)
     unfolding network_of_network.Abs_def f'_def
     by(subst comm_monoid_add_class.sum.union_disjoint)
       (auto intro: forw_subst[OF sum_inj_on, of old_edge \<E>, simplified ] 
-         simp add: Abs_def inj_on_def)
+        simp add: Abs_def inj_on_def)
   moreover have "network_of_network.is_circ t s f'"
   proof(rule network_of_network.is_circI , goal_cases)
     case (1 v)
@@ -269,8 +269,8 @@ proof(cases "Abs f > 0", goal_cases)
         using assms ex_def s_t_flow_excess_s_t
         by(unfold network_of_network.ex_def f'_def  ex_def)
           (auto intro: forw_subst[OF comm_monoid_add_class.sum.insert] 
-             simp add: sum_inj_on[of old_edge, simplified inj_on_def, simplified] 
-                          delta_minus_finite)  
+            simp add: sum_inj_on[of old_edge, simplified inj_on_def, simplified] 
+            delta_minus_finite)  
       then show ?case
         using ex_def by fastforce
     next
@@ -289,8 +289,8 @@ proof(cases "Abs f > 0", goal_cases)
                       sum f (delta_plus t) - sum f (delta_minus t) + ex f t"
         unfolding network_of_network.ex_def f'_def  ex_def
         by(auto intro: forw_subst[OF comm_monoid_add_class.sum.insert] 
-             simp add: sum_inj_on[of old_edge, simplified inj_on_def, simplified] 
-                          delta_plus_finite)
+            simp add: sum_inj_on[of old_edge, simplified inj_on_def, simplified] 
+            delta_plus_finite)
       then show ?case 
         using ex_def by fastforce
     qed
@@ -374,7 +374,7 @@ proof(cases "Abs f > 0", goal_cases)
      (prod.fst (make_pair' (hd cs)))"
       using cs_further_prop(1) fst'_def snd'_def  make_pair'_is(1)
       unfolding network_of_network.flowcycle_def network_of_network.flowpath_def 
-                network_of_network.multigraph_path_def     
+        network_of_network.multigraph_path_def     
       by auto
     hence "awalk (make_pair' ` set cs) (prod.fst (make_pair' (hd cs))) (map make_pair' cs)
                    (prod.fst (make_pair' (hd cs)))" 
@@ -478,7 +478,7 @@ proof(cases "Abs f > 0", goal_cases)
         using  C1C2_in_E dropWhile_nothing[of C2 "\<lambda>e. \<not> is_old e"]
         by(force simp add: dropWhile_append ) 
       ultimately show ?case
-       using cs'subset_E C1C2_in_E cs'_split by simp
+        using cs'subset_E C1C2_in_E cs'_split by simp
     next
       case 2
       hence "takeWhile is_old (C1 @ new_edge (create_edge t s) # C2) =takeWhile is_old C1"
@@ -486,8 +486,8 @@ proof(cases "Abs f > 0", goal_cases)
       moreover have "takeWhile is_old C1 = C1" 
         using C1C2_in_E by(auto intro!: takeWhile_everything)
       ultimately show ?case
-         using cs'subset_E C1C2_in_E cs'_split by simp
-     qed
+        using cs'subset_E C1C2_in_E cs'_split by simp
+    qed
     have flowpath':"network_of_network.flowcycle f' cs'"
       using cs_prop(1) css_ws(4) network_of_network.flowcycle_def by blast
     hence flowcycle_elt:"cs' \<noteq> []" "(fst' (hd cs')) = (snd' (last cs'))"
@@ -528,7 +528,7 @@ proof(cases "Abs f > 0", goal_cases)
     qed
     moreover have fstp:"(fst (hd ps)) = s"
       using  hd_map[of ps "make_pair", symmetric, simplified ]
-             awalk_hd[OF awalk_in_E[simplified ps_is[symmetric]]]  ps_is C2C1_Nil 
+        awalk_hd[OF awalk_in_E[simplified ps_is[symmetric]]]  ps_is C2C1_Nil 
       by (subst sym[OF make_pair''(1)])auto
     moreover have sndp:"(snd (last ps)) = t"
       using  last_map[of ps "make_pair", symmetric, simplified ]
@@ -546,11 +546,11 @@ proof(cases "Abs f > 0", goal_cases)
     next
       case 2
       thus ?case
-      apply (rule ballI, rule ballI)
-      subgoal for x y
-        using C1C2_in_E
-        by(cases x, all \<open>cases y\<close>) auto
-      done
+        apply (rule ballI, rule ballI)
+        subgoal for x y
+          using C1C2_in_E
+          by(cases x, all \<open>cases y\<close>) auto
+        done
     qed
     ultimately show ?case 
       using fstp sndp by auto
@@ -625,29 +625,29 @@ proof(cases "Abs f > 0", goal_cases)
             using  css_distinct
             by (simp add: ps_in_css)
         qed
-       have ps_is:"get_s_t_path ps = map get_old_edge (C2@C1)"
+        have ps_is:"get_s_t_path ps = map get_old_edge (C2@C1)"
           unfolding   get_s_t_path_def cs'_split Let_def
-      unfolding   Let_def map_append
-    proof(rule arg_cong2[where f = append], all \<open>rule arg_cong[where f= "map get_old_edge"]\<close>, goal_cases)
-      case 1
-      have "dropWhile is_old (C1 @ ([new_edge (create_edge t s)] @ C2)) = 
+          unfolding   Let_def map_append
+        proof(rule arg_cong2[where f = append], all \<open>rule arg_cong[where f= "map get_old_edge"]\<close>, goal_cases)
+          case 1
+          have "dropWhile is_old (C1 @ ([new_edge (create_edge t s)] @ C2)) = 
              [new_edge (create_edge t s)] @ C2" 
-        using C1C2_in_E
-        by(auto simp add: dropWhile_append)
-      moreover have "dropWhile (\<lambda>e. \<not> is_old e) ([new_edge (create_edge t s)] @ C2) = C2"
-        using  C1C2_in_E dropWhile_nothing[of C2 "\<lambda>e. \<not> is_old e"]
-        by(force simp add: dropWhile_append ) 
-      ultimately show ?case
-       using cs'subset_E C1C2_in_E cs'_split by simp
-    next
-      case 2
-      hence "takeWhile is_old (C1 @ new_edge (create_edge t s) # C2) =takeWhile is_old C1"
-        by(auto simp add: takeWhile_tail) 
-      moreover have "takeWhile is_old C1 = C1" 
-        using C1C2_in_E by(auto intro!: takeWhile_everything)
-      ultimately show ?case
-         using cs'subset_E C1C2_in_E cs'_split by simp
-       qed
+            using C1C2_in_E
+            by(auto simp add: dropWhile_append)
+          moreover have "dropWhile (\<lambda>e. \<not> is_old e) ([new_edge (create_edge t s)] @ C2) = C2"
+            using  C1C2_in_E dropWhile_nothing[of C2 "\<lambda>e. \<not> is_old e"]
+            by(force simp add: dropWhile_append ) 
+          ultimately show ?case
+            using cs'subset_E C1C2_in_E cs'_split by simp
+        next
+          case 2
+          hence "takeWhile is_old (C1 @ new_edge (create_edge t s) # C2) =takeWhile is_old C1"
+            by(auto simp add: takeWhile_tail) 
+          moreover have "takeWhile is_old C1 = C1" 
+            using C1C2_in_E by(auto intro!: takeWhile_everything)
+          ultimately show ?case
+            using cs'subset_E C1C2_in_E cs'_split by simp
+        qed
         have if_cond_same:"(old_edge e \<in> set ps) = (e \<in> set (get_s_t_path ps))"
           using C1C2_in_E
           by(subst ps_is)(force simp add: cs'_split)  
@@ -751,7 +751,7 @@ next
     by(force simp add: dVs_def) 
   then obtain e where "prod.fst (make_pair e) = x \<or> prod.snd (make_pair e) = x" "e \<in> \<E>" by auto
   hence  "prod.fst (make_pair' (old_edge e)) = x \<or> prod.snd (make_pair' (old_edge e)) = x" 
-         "old_edge e \<in> old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
+    "old_edge e \<in> old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
     by(auto simp add: make_pair)
   then show ?case
     by(force intro!: exI[of _ "{prod.fst (make_pair' (old_edge e)) , prod.snd (make_pair' (old_edge e))}"]
@@ -804,9 +804,9 @@ lemma ex_less_cut_cap:
   using  assms
   by(unfold stcut_ex[OF assms(2,1)])
     (force elim!: is_s_t_flowE is_s_t_cutE 
-          intro!: ordered_comm_monoid_add_class.sum_mono  s_t_flow_is_ex_bflow[OF assms(2)]
-                  order.trans[OF _ flow_less_cut, OF _ s_t_flow_is_ex_bflow[OF assms(2)]]
-        simp add: s_t_flow_excess_s_t[OF assms(2)]) 
+      intro!: ordered_comm_monoid_add_class.sum_mono  s_t_flow_is_ex_bflow[OF assms(2)]
+      order.trans[OF _ flow_less_cut, OF _ s_t_flow_is_ex_bflow[OF assms(2)]]
+      simp add: s_t_flow_excess_s_t[OF assms(2)]) 
 
 lemma max_flow_no_augpath:
   assumes   "is_max_flow s t f" 
@@ -957,18 +957,18 @@ lemma maxflow_to_mincost_flow_reduction:
          f' = (\<lambda> e. case e of old_edge e \<Rightarrow> f e |  _ \<Rightarrow> ex f t)\<rbrakk> \<Longrightarrow>
          cost_network_of_network.isbflow f' (\<lambda> e. 0) \<and> cost_network_of_network.\<C> f' = - ex f t" 
   (is "\<And> f f'. \<lbrakk>?a1 f f'; ?b1 f f'\<rbrakk> \<Longrightarrow> ?c1 f f'")
-"\<And> f f'. \<lbrakk> cost_network_of_network.isbflow f' (\<lambda> e. 0);
+  "\<And> f f'. \<lbrakk> cost_network_of_network.isbflow f' (\<lambda> e. 0);
          f = (\<lambda> e. f' (old_edge e))\<rbrakk> \<Longrightarrow>
          f is s--t flow \<and> cost_network_of_network.\<C> f' = - ex f t"
-(is "\<And> f f'. \<lbrakk>?a2 f f'; ?b2 f f'\<rbrakk> \<Longrightarrow> ?c2 f f'")
-"\<And> f f'.\<lbrakk> is_max_flow s t f ;
+  (is "\<And> f f'. \<lbrakk>?a2 f f'; ?b2 f f'\<rbrakk> \<Longrightarrow> ?c2 f f'")
+  "\<And> f f'.\<lbrakk> is_max_flow s t f ;
          f' = (\<lambda> e. case e of old_edge e \<Rightarrow> f e |  _ \<Rightarrow> ex f t)\<rbrakk> \<Longrightarrow>
          cost_network_of_network.is_Opt (\<lambda> e. 0) f'"
-(is "\<And> f f'. \<lbrakk>?a3 f f' ; ?b3 f f' \<rbrakk>\<Longrightarrow> ?c3 f f'")
-"\<And> f f'. \<lbrakk> cost_network_of_network.is_Opt (\<lambda> e. 0) f' ;
+  (is "\<And> f f'. \<lbrakk>?a3 f f' ; ?b3 f f' \<rbrakk>\<Longrightarrow> ?c3 f f'")
+  "\<And> f f'. \<lbrakk> cost_network_of_network.is_Opt (\<lambda> e. 0) f' ;
          f = (\<lambda> e. f' (old_edge e)) \<rbrakk>\<Longrightarrow>
          is_max_flow s t f"
-(is "\<And> f f'. \<lbrakk>?a4 f f'; ?b4 f f'\<rbrakk> \<Longrightarrow> ?c4 f f'")
+  (is "\<And> f f'. \<lbrakk>?a4 f f'; ?b4 f f'\<rbrakk> \<Longrightarrow> ?c4 f f'")
 proof-
   show goal1:"\<And> f f'. \<lbrakk>?a1 f f'; ?b1 f f'\<rbrakk> \<Longrightarrow> ?c1 f f'"
   proof(goal_cases)
@@ -1017,12 +1017,12 @@ proof-
           have "sum (case_edge_wrapper f (\<lambda>b. ex\<^bsub>f\<^esub> t)) (old_edge ` \<delta>\<^sup>- v) =
                 sum (case_edge_wrapper f (\<lambda>b. ex\<^bsub>f\<^esub> t)) (old_edge ` \<delta>\<^sup>+ v)"
             using  "1" f_def one
-          by (subst sum_inj_on)(auto intro: forw_subst[OF sum_inj_on] simp add: ex_def inj_on_def)
-        then show ?case 
-          using 1
-          by(auto simp add: delta_minus_same delta_plus_same  one f'_def  cost_network_of_network.ex_def)
+            by (subst sum_inj_on)(auto intro: forw_subst[OF sum_inj_on] simp add: ex_def inj_on_def)
+          then show ?case 
+            using 1
+            by(auto simp add: delta_minus_same delta_plus_same  one f'_def  cost_network_of_network.ex_def)
         qed
-       ultimately show ?case 
+        ultimately show ?case 
           by fastforce
       qed
       ultimately show ?case 
@@ -1056,7 +1056,7 @@ proof-
       proof(goal_cases)
         case 1
         hence "sum f' (cost_network_of_network.delta_minus v) = sum (f' \<circ> old_edge) (\<delta>\<^sup>- v)"
-              "sum f' (cost_network_of_network.delta_plus v) = sum (f' \<circ> old_edge) (\<delta>\<^sup>+ v)"
+          "sum f' (cost_network_of_network.delta_plus v) = sum (f' \<circ> old_edge) (\<delta>\<^sup>+ v)"
           by(auto simp add: delta_minus_same  delta_plus_same sum_inj_on inj_on_def)
         thus ?case
           using v_ex[of v] 1 
@@ -1073,7 +1073,7 @@ proof-
         ultimately show ?thesis
           using v_ex[OF s_in_V] 
           by(auto simp add: ex_def f_def s_delta_minus delta_minus_finite delta_plus_same 
-                            s_in_V s_neq_t)
+              s_in_V s_neq_t)
       qed
       moreover have "ex f t \<ge> 0"
       proof-
@@ -1092,20 +1092,20 @@ proof-
     next
       case 2
       have helper:"finite (old_edge ` \<delta>\<^sup>+ t)" "new_edge (create_edge t s) \<notin> old_edge ` \<delta>\<^sup>+ t"
-           "finite (old_edge ` \<E>)" "new_edge (create_edge t s) \<notin> old_edge ` \<E>"
+        "finite (old_edge ` \<E>)" "new_edge (create_edge t s) \<notin> old_edge ` \<E>"
         by(auto simp add: delta_plus_finite finite_E) 
       hence ex_t_is:"- cost_network_of_network.ex f' t =
        (\<Sum>e\<in>\<delta>\<^sup>+ t. f' (old_edge e)) + f' (new_edge (create_edge t s))
      - (\<Sum>e\<in>\<delta>\<^sup>- t. f' (old_edge e))" 
         by(auto simp add: cost_network_of_network.ex_def t_delta_plus
-                          delta_minus_same[OF not_sym[OF s_neq_t] t_in_V] 
-                          sum_inj_on inj_on_def delta_plus_finite) 
+            delta_minus_same[OF not_sym[OF s_neq_t] t_in_V] 
+            sum_inj_on inj_on_def delta_plus_finite) 
       show ?case
         unfolding cost_network_of_network.\<C>_def 
         apply(simp add: \<E>'_def)
         using ex_t_is helper 
         by(auto intro: forw_subst[OF sum_inj_on] 
-             simp add: ex_def f_def inj_on_def finite_E f'_def same_Vs t_in_V)
+            simp add: ex_def f_def inj_on_def finite_E f'_def same_Vs t_in_V)
     qed
   qed
   show  "\<And> f f'. \<lbrakk>?a3 f f'; ?b3 f f'\<rbrakk> \<Longrightarrow> ?c3 f f'"
@@ -1156,7 +1156,7 @@ proof-
     by auto
   thus ?thesis 
     using X_exists assms(1) 
-  by(auto intro!: sends_min_cut_then_maxflow)
+    by(auto intro!: sends_min_cut_then_maxflow)
 qed
 
 lemma no_maxflow_resreach:
@@ -1203,8 +1203,8 @@ proof-
         case 1
         note 1 = 1[simplified not_not]
         have helper: "finite (set C - {F (new_edge (create_edge t s))})" 
-             "B (new_edge (create_edge t s)) \<in> set C - {F (new_edge (create_edge t s))}"
-             "\<forall>x\<in>set C - {F (new_edge (create_edge t s))} - {B (new_edge (create_edge t s))}.
+          "B (new_edge (create_edge t s)) \<in> set C - {F (new_edge (create_edge t s))}"
+          "\<forall>x\<in>set C - {F (new_edge (create_edge t s))} - {B (new_edge (create_edge t s))}.
                    cost_network_of_network.\<cc> x = 0"
           using 1 C_unfolded(5) cost_network_of_network.\<EE>_def 
           by(auto split: edge_wrapper.split simp add:  \<E>'_def)
@@ -1212,9 +1212,9 @@ proof-
           using 1 C_unfolded(5)  
           by(auto split: edge_wrapper.split 
               simp add: cost_network_of_network.\<CC>_def cost_network_of_network.\<EE>_def
-                        comm_monoid_add_class.sum.remove[OF _ F_new_edge_in_C, simplified] 
-                        comm_monoid_add_class.sum.remove[OF helper(1,2)] \<E>'_def 
-                        comm_monoid_add_class.sum.neutral[OF  helper(3)])
+              comm_monoid_add_class.sum.remove[OF _ F_new_edge_in_C, simplified] 
+              comm_monoid_add_class.sum.remove[OF helper(1,2)] \<E>'_def 
+              comm_monoid_add_class.sum.neutral[OF  helper(3)])
         thus False 
           using C_unfolded(1) by linarith 
       qed
@@ -1222,9 +1222,9 @@ proof-
         using split_list F_new_edge_in_C by fastforce
       hence C_cases1:"C2 \<noteq> [] \<Longrightarrow> cost_network_of_network.augpath f' (C2)" 
         "C1 \<noteq> [] \<Longrightarrow> cost_network_of_network.augpath f' (C1)"  
-         using C_unfolded(2) cost_network_of_network.augpath_split2
+        using C_unfolded(2) cost_network_of_network.augpath_split2
           cost_network_of_network.augpath_split1 by blast+
-       from C_split have C_cases2:
+      from C_split have C_cases2:
         "C2 \<noteq> [] \<Longrightarrow> cost_network_of_network.fstv (hd C2) = s" 
         "C1 \<noteq> [] \<Longrightarrow> cost_network_of_network.sndv (last C1) = t"
         using cost_network_of_network.augpath_split3[of f' "C1@[F (new_edge (create_edge t s))]" C2, simplified]
@@ -1293,31 +1293,36 @@ proof-
         using C1_C2_in make_pair  
         by(auto split: edge_wrapper.split Redge.split
             simp add: cost_network_of_network.make_pair''  fst_of_wrapped_edges[symmetric]
-                      f'_def make_pair'_is(1))     
+            f'_def make_pair'_is(1))     
       have "prepath p"
         using C2C1_augphat_f'(1)[ simplified cost_network_of_network.augpath_def]
         unfolding prepath_def p_def cost_network_of_network.prepath_def map_map
-      proof((subst list.map_cong0[OF big_cong_C1C2(1)], force)+, goal_cases)
-        case 1
+      proof(subst list.map_cong0[OF big_cong_C1C2(1)], goal_cases)
+        case 2
         thus ?case
-        proof((subst list.map_sel(1) last_map, force)+, goal_cases)
-          case 1
+        proof(subst list.map_sel(1) last_map, goal_cases)
+          case 2
           note one = this
-          show?case
-          proof(subst big_cong_C1C2(2)[of "hd (C2@C1)", simplified o_apply], goal_cases)
+          thus ?case
+          proof(subst list.map_sel(1) last_map, goal_cases)
             case 2
-            thus ?case
-              using one
-              by (subst big_cong_C1C2(3)[of "last (C2@C1)", simplified o_apply])
-                 (force intro!: last_in_set)+
-          next
-            case 1
-            thus ?case
-              using one
-              by(intro hd_in_set )  auto
-          qed 
-        qed
-      qed
+            note one = this
+            show ?case
+            proof(subst big_cong_C1C2(2)[of "hd (C2@C1)", simplified o_apply], goal_cases)
+              case 2
+              thus ?case
+                using one 
+                by(subst big_cong_C1C2(3)[of "last (C2@C1)", simplified o_apply])
+                  (force intro!: last_in_set)+
+            next
+              case 1
+              thus ?case
+                using one
+                by(intro hd_in_set )  auto
+            qed 
+          qed force
+        qed force
+      qed force
       moreover have "0 < Rcap f (set p)"     
         using C2C1_augphat_f'(1) big_cong_C1C2(4) 
         by (auto simp add: Rcap_def cost_network_of_network.Rcap_def p_def cost_network_of_network.augpath_def)

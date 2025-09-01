@@ -3026,8 +3026,12 @@ lemma all_actives_zero_flow_same_state:
 proof(subst maintain_forest_simps(2)[OF maintain_forest_ret_condI, OF refl refl refl refl], goal_cases)
   case 1
   show ?case
-  proof(rule ccontr, clarsimp, goal_cases)
-    case (1 e)
+  proof(rule ccontr, goal_cases)
+    case 1
+    then obtain e where 
+        "get_from_set (\<lambda>e. 8 * real N * current_\<gamma> state < a_current_flow state e) (actives state) =
+         Some e" by auto
+    note 1 = this
     have set_invar:"set_invar (actives state)" 
       by (simp add: assms(2) from_underlying_invars'(17))
     have "8 * real N * current_\<gamma> state < a_current_flow state e" "e \<in> to_set (actives state)"
