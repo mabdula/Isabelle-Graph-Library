@@ -1021,7 +1021,9 @@ lemma invar_gamma_pres_call2:
   "invar_gamma state \<Longrightarrow> invar_gamma (send_flow_call2_upd state)"
   by(auto simp add: send_flow_call2_upd_def invar_gamma_def Let_def split: prod.split)
 
-theorem send_flow_invar_gamma_pres: 
+named_theorems send_flow_results
+
+theorem send_flow_invar_gamma_pres[send_flow_results]: 
   assumes "send_flow_dom state" "invar_gamma state"
   shows   "invar_gamma (send_flow state)"
   using assms(2) 
@@ -2430,7 +2432,7 @@ proof-
     by auto
 qed
 
-theorem send_flow_invar_aux_pres: 
+theorem send_flow_invar_aux_pres[send_flow_results]: 
   assumes "send_flow_dom state"
           "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
@@ -2483,7 +2485,7 @@ proof(induction \<phi> arbitrary: state rule: less_induct)
       send_flow_dom_fail2)+
 qed
 
-lemmas send_flow_termination = send_flow_term[OF _ _ _ _ _ _ refl]
+lemmas send_flow_termination[send_flow_results] = send_flow_term[OF _ _ _ _ _ _ refl]
 
 lemma all_bal_zero_send_flow_dom:
   "\<lbrakk>implementation_invar state; \<forall>v\<in>\<V>. a_balance state v = 0\<rbrakk> \<Longrightarrow> send_flow_dom state"
@@ -2498,8 +2500,10 @@ lemma
           "invar_isOptflow state"
           "invar_above_6Ngamma state"
           "return (send_flow state) = notyetterm"
-  shows orlins_entry_after_send_flow: "orlins_entry (send_flow state)"
-    and remaining_balance_after_send_flow:  "invar_non_zero_b (send_flow state)"
+  shows orlins_entry_after_send_flow[send_flow_results]: 
+          "orlins_entry (send_flow state)"
+    and remaining_balance_after_send_flow[send_flow_results]: 
+          "invar_non_zero_b (send_flow state)"
 proof-
   have dom:"send_flow_dom state"
     using assms(1,2,3,4,5,6) send_flow_termination by blast
@@ -2560,7 +2564,7 @@ proof-
     by auto
 qed
 
-theorem send_flow_flow_Phi:
+theorem send_flow_flow_Phi[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2572,7 +2576,7 @@ theorem send_flow_flow_Phi:
     send_flow_termination
   by auto
 
-lemma send_flow_flow_Phi_final:
+lemma send_flow_flow_Phi_final[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2586,7 +2590,7 @@ lemma send_flow_flow_Phi_final:
     send_flow_termination
   by(smt mult_less_cancel_right_disj of_int_le_iff)
 
-theorem send_flow_invar_integral_pres:
+theorem send_flow_invar_integral_pres[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2595,7 +2599,7 @@ theorem send_flow_invar_integral_pres:
   shows   "invar_integral (send_flow state)"
   using assms send_flow_termination send_flow_invars_pres(4) by blast
 
-theorem send_flow_implementation_invar_pres:
+theorem send_flow_implementation_invar_pres[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2604,7 +2608,7 @@ theorem send_flow_implementation_invar_pres:
   shows   "implementation_invar (send_flow state)"
   using assms send_flow_termination send_flow_invars_pres(3) by blast
 
-theorem outside_actives_and_F_no_change:
+theorem outside_actives_and_F_no_change[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2614,7 +2618,7 @@ theorem outside_actives_and_F_no_change:
   shows   "a_current_flow state e = a_current_flow (send_flow state) e"
   using assms send_flow_termination send_flow_invars_pres(8) by blast
 
-theorem send_flow_invar_isOpt_pres:
+theorem send_flow_invar_isOpt_pres[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2623,7 +2627,7 @@ theorem send_flow_invar_isOpt_pres:
   shows   "invar_isOptflow (send_flow state)"
   using assms send_flow_termination send_flow_invars_pres(5) by blast
 
-lemma  send_flow_succ_balance: 
+lemma  send_flow_succ_balance[send_flow_results]: 
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2686,7 +2690,7 @@ proof-
   qed
 qed
 
-lemma send_flow_entry_invar_above_6Ngamma:
+lemma send_flow_entry_invar_above_6Ngamma[send_flow_results]:
   assumes "invar_gamma state"  "send_flow_entryF state"  "\<Phi> state \<le> 2*N"
   shows   "invar_above_6Ngamma state"
 proof(rule invar_above_6NgammaI, rule send_flow_entryFE[OF assms(2)],
@@ -2705,7 +2709,7 @@ qed
 
 subsection \<open>Final Results\<close>
 
-theorem send_flow_correctness:
+theorem send_flow_correctness[send_flow_results]:
   assumes "underlying_invars state"
           "implementation_invar state"
           "invar_gamma state"
@@ -2727,7 +2731,7 @@ proof-
     by(simp add: is_Opt_def isbflow_def)
 qed
 
-lemma send_flow_fail_balance: 
+lemma send_flow_fail_balance[send_flow_results]: 
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2817,7 +2821,7 @@ proof-
   qed
 qed
 
-theorem send_flow_completeness:
+theorem send_flow_completeness[send_flow_results]:
   assumes "underlying_invars state"
           "implementation_invar state"
           "invar_gamma state"
@@ -2995,7 +2999,7 @@ proof-
   qed
 qed
 
-lemma send_flow_nothing_done: 
+lemma send_flow_nothing_done[send_flow_results]: 
   assumes "\<not> (\<forall> v \<in> \<V>. a_balance  state v = 0)"
           "\<not> (\<exists> v \<in> \<V>. \<bar> a_balance state v\<bar> > (1- \<epsilon>) * current_\<gamma> state)"
           "implementation_invar state"
@@ -3059,7 +3063,7 @@ next
   qed
 qed simp
 
-lemma send_flow_forest_no_change:
+lemma send_flow_forest_no_change[send_flow_results]:
   assumes "send_flow_dom state"
   shows   "(send_flow state) \<lparr>current_flow := current_flow state,
                               balance := balance state,
@@ -3070,7 +3074,7 @@ lemma send_flow_forest_no_change:
       send_flow_changes_rep_comp_card
       send_flow_changes_not_blocked)
 
-lemma send_flow_invar_forest:
+lemma send_flow_invar_forest[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"

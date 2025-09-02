@@ -239,4 +239,10 @@ lemma if_of_bools: "(if b then True else False) \<Longrightarrow> b"
 lemma f_of_double_if_cond_same:
  "f (if b then a1 else c1) (if b then a2 else c2) = (if b then f a1 a2 else f c1 c2)"
   by auto
+
+lemma if_PQ:"if P then False else if Q then False else True \<Longrightarrow> \<not> P \<and> \<not> Q" 
+  by argo
+
+lemma if_PQ_E: "if P then False else if Q then False else True \<Longrightarrow> (\<not> P \<and> \<not> Q \<Longrightarrow> R) \<Longrightarrow> R"
+  by metis
 end

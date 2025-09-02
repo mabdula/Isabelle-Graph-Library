@@ -360,7 +360,6 @@ proof-
     "inv_digraph_abs_\<FF>_sym state" "inv_dbltn_graph_forest state"
     "inv_unbl_iff_forest_active state"
     using assms by(auto simp add: underlying_invars_def)
-
   define  \<FF> where  "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
   define b where "b = balance state"
@@ -1075,7 +1074,7 @@ proof-
     show "inv_dbltn_graph_forest state'"
       using  x_not_y 
       by (intro inv_dbltn_graph_forestI, intro validFI)
-         (auto intro!:  graph_invar_insert 
+        (auto intro!:  graph_invar_insert 
           intro: inv_dbltn_graph_forestE[OF all_invars(18)] validFE 
           simp add: \<FF>_def  state'_def  F'_to_graph_is)
     show "inv_forest_in_V state'"
@@ -1102,7 +1101,7 @@ proof-
         using 1 all_invars(14) all_invars(10)  fste_V snde_V  all_invars(11)  e_in_E' 
           unequal_components_disjoint[of "to_graph (Algo_state.\<FF> state)" "fst e" "snd e" UNIV, simplified] 
         by (subst comp_is,subst card_Un_disjnt)
-           (auto intro!: finite_subset[of "connected_component _ _", OF _ \<V>_finite]
+          (auto intro!: finite_subset[of "connected_component _ _", OF _ \<V>_finite]
             elim!: inv_comp_card_correctE inv_active_different_compsE
             simp add:  E'_def disjnt_def r_card_def \<FF>_def inv_components_in_V_def x_def y_def )
     qed
@@ -1269,11 +1268,11 @@ lemma invars_pres_one_step:
          \<Longrightarrow> invar_isOptflow (maintain_forest_upd state)"
 proof-
   have all_invars: "inv_actives_in_E state" "inv_digraph_abs_F_in_E state" "inv_forest_in_E state" "inv_forest_actives_disjoint state"
-                   "inv_conversion_consistent state" "inv_rep_reachable state" "inv_reachable_same_rep state" "inv_reps_in_V state "
-                   "inv_finite_forest state" "inv_components_in_V state" "inv_active_different_comps state" "inv_pos_bal_rep state"
-                   "inv_inactive_same_component state" "inv_comp_card_correct state" "inv_set_invar_actives state" "inv_forest_good_graph state"
-                   "inv_digraph_abs_\<FF>_sym state" "inv_dbltn_graph_forest state"
-                   "inv_unbl_iff_forest_active state"
+    "inv_conversion_consistent state" "inv_rep_reachable state" "inv_reachable_same_rep state" "inv_reps_in_V state "
+    "inv_finite_forest state" "inv_components_in_V state" "inv_active_different_comps state" "inv_pos_bal_rep state"
+    "inv_inactive_same_component state" "inv_comp_card_correct state" "inv_set_invar_actives state" "inv_forest_good_graph state"
+    "inv_digraph_abs_\<FF>_sym state" "inv_dbltn_graph_forest state"
+    "inv_unbl_iff_forest_active state"
     using assms by(auto simp add: underlying_invars_def)
   define  \<FF> where  "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
@@ -1319,15 +1318,15 @@ proof-
                 not_blocked := nb'\<rparr>"
 
   note defs_impl = state'_def \<FF>'_def e_def \<gamma>_def E'_def
-              f_def \<FF>_def f'_def b_def x'_def r_card'_def r_card_def
-              xx_def xy_def  x_def y_def b'_def Q_def cardx_def cardy_def
-              to_rdg'_def y'_def to_rdg_def yy_def E''_def nb_def
-              nb'_def
+    f_def \<FF>_def f'_def b_def x'_def r_card'_def r_card_def
+    xx_def xy_def  x_def y_def b'_def Q_def cardx_def cardy_def
+    to_rdg'_def y'_def to_rdg_def yy_def E''_def nb_def
+    nb'_def
 
-   have state'_is: "state' = maintain_forest_upd state"
+  have state'_is: "state' = maintain_forest_upd state"
     apply(rule Algo_state.equality)
     by (auto intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_upd_all] ext 
-          simp add: maintain_forest_upd_def Let_def defs_impl)
+        simp add: maintain_forest_upd_def Let_def defs_impl)
 
   have set_invar_E'[simp]: "set_invar E'"
     using E'_def all_invars(15) inv_set_invar_actives_def by blast
@@ -1335,8 +1334,8 @@ proof-
   have E'_substE:"to_set E' \<subseteq> \<E>"
     using all_invars(1) by(simp add: E'_def inv_actives_in_E_def)
   have e_prop: "e \<in> to_set E'" "abstract_flow_map f e > 8 * real N *\<gamma>"
-                "get_from_set (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = Some e"
-    apply(all \<open>rule maintain_forest_call_condE[OF assms(1)]\<close>)
+    "get_from_set (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = Some e"
+      apply(all \<open>rule maintain_forest_call_condE[OF assms(1)]\<close>)
     using set_get(2,3)[OF set_invar_E'] 
     by(auto simp add: f_def e_def \<gamma>_def E'_def)
   have fste_V[simp]: "fst e \<in> \<V>" 
@@ -1374,10 +1373,10 @@ proof-
       (auto simp add: add_direction_result to_rdg_def)
   have forest_edges_neq_e:"{a, b} \<in> to_graph \<FF> \<Longrightarrow> {a, b} \<noteq> {x, y}" for a b
     using  assms(2) e_in_E' from_underlying_invars'(11)  mk_disjoint_insert
-        new_edge_disjoint_components[OF refl refl refl]
+      new_edge_disjoint_components[OF refl refl refl]
     by(fastforce simp add: x_def y_def local.\<FF>_def E'_def)
   hence dir_forest_edges_neq_e:"(a, b) \<in> digraph_abs \<FF> \<Longrightarrow> (a, b) \<noteq> (x, y)" 
-                               "(a, b) \<in> digraph_abs \<FF> \<Longrightarrow> (a, b) \<noteq> (y, x)" for a b
+    "(a, b) \<in> digraph_abs \<FF> \<Longrightarrow> (a, b) \<noteq> (y, x)" for a b
     by(auto simp add: to_graph'_def)
   have res_edges_new_forest_are:"abstract_conv_map to_rdg' ` [\<FF>']\<^sub>g  
          = {F e, B e} \<union> abstract_conv_map to_rdg ` [\<FF>]\<^sub>g"
@@ -1392,21 +1391,21 @@ proof-
     using reachable_in_forest_fst_in_V reachable_sym by fast
   have new_forest_Vs_in_V: "dVs (digraph_abs (Algo_state.\<FF> state')) \<subseteq> \<V>"
     by (auto intro:  inv_forest_in_VE underlying_invarsE[OF assms(2)] 
-             simp add: state'_def F'_digraph_abs_is insert_edge_dVs dVs_Vs_same \<FF>_def)
-    have x'_y'_in_V:"x' \<in> \<V>"  "y' \<in> \<V>" 
-      using  x'_y'_set_is from_underlying_invars'(9)[OF assms(2)] fste_V snde_V
-      by(auto simp add: r_card_def doubleton_eq_iff)
-    have new_balance_is: "a_balance state' = (\<lambda>v. if v = x' then 0
+        simp add: state'_def F'_digraph_abs_is insert_edge_dVs dVs_Vs_same \<FF>_def)
+  have x'_y'_in_V:"x' \<in> \<V>"  "y' \<in> \<V>" 
+    using  x'_y'_set_is from_underlying_invars'(9)[OF assms(2)] fste_V snde_V
+    by(auto simp add: r_card_def doubleton_eq_iff)
+  have new_balance_is: "a_balance state' = (\<lambda>v. if v = x' then 0
           else if v = y' then abstract_bal_map b y' + abstract_bal_map b x'
                else abstract_bal_map b v)"
-      using assms(3)
-      by(auto simp add:state'_def b'_def  abstract_bal_map_homo[OF  _  refl] b_def)
-    have new_redge_F_is:"oedge ` abstract_conv_map to_rdg' ` [\<FF>']\<^sub>g =
+    using assms(3)
+    by(auto simp add:state'_def b'_def  abstract_bal_map_homo[OF  _  refl] b_def)
+  have new_redge_F_is:"oedge ` abstract_conv_map to_rdg' ` [\<FF>']\<^sub>g =
               Set.insert e (oedge ` abstract_conv_map to_rdg ` [\<FF>]\<^sub>g)"
-      using dir_forest_edges_neq_e(1,2) 
-      by (auto simp add: to_rdg'_is F'_digraph_abs_is x_def y_def)
-    note state_state' = state'_is
-   have set_invar_E': "set_invar E'"
+    using dir_forest_edges_neq_e(1,2) 
+    by (auto simp add: to_rdg'_is F'_digraph_abs_is x_def y_def)
+  note state_state' = state'_is
+  have set_invar_E': "set_invar E'"
     using E'_def assms underlying_invars_def inv_set_invar_actives_def by blast
   have E'_substE:"to_set E' \<subseteq> \<E>"
     using assms by(simp add: E'_def underlying_invars_def inv_actives_in_E_def)
@@ -1421,93 +1420,93 @@ proof-
     using differen_components_e by auto
   hence x_not_y:"x \<noteq> y"
     using x_def y_def by simp
-    have asm': "inv_active_different_comps state" using assms  underlying_invars_def by auto
-    have cards_same_cond: "card (connected_component (to_graph \<FF>) x)
+  have asm': "inv_active_different_comps state" using assms  underlying_invars_def by auto
+  have cards_same_cond: "card (connected_component (to_graph \<FF>) x)
                            \<le> card (connected_component (to_graph \<FF>) y) \<longleftrightarrow>
                           abstract_comp_map r_card x \<le> abstract_comp_map r_card y" 
-      using reachable_F_xx_x' reachable_F_yy_y'  inv_comp_card_correctD[OF all_invars(14), of x]
-            inv_comp_card_correctD[OF all_invars(14), of y]
-            reachable_in_forest_fst_in_V x'_y'_in_V(1,2)
-      by(cases "cardx \<le> cardy") (auto simp add: xx_def xy_def yy_def  local.\<FF>_def r_card_def)
- 
-    have x'_not_y':"x' \<noteq> y'" 
-      proof
-        assume " x' = y'"
-        hence "connected_component (to_graph \<FF>) x = connected_component (to_graph \<FF>) y"
-          using reachable_F_xx_x' reachable_F_yy_y' cards_same_cond
-           connected_components_member_eq[of x' "(to_graph \<FF>)" xx] 
-           in_connected_componentI[of "(to_graph \<FF>)" xx x'] 
-           connected_components_member_eq[of y' "(to_graph \<FF>)" yy]
-           in_connected_componentI[of "(to_graph \<FF>)" yy y']
-          by(cases "cardx \<le> cardy") (auto simp add: xx_def yy_def xy_def)
-        thus False
-          by (simp add: differen_components_e x_def y_def)
-     qed
-     have comps_inter_empt:"connected_component (to_graph \<FF>) y' \<inter> connected_component (to_graph \<FF>) x' = {}" 
-       using reachable_F_xx_x' reachable_F_yy_y' differen_components_e x_def xx_def xy_def  y_def yy_def cards_same_cond
-             connected_components_member_eq[of y' "(to_graph \<FF>)" yy, 
-                                   OF in_connected_componentI[of "(to_graph \<FF>)" yy y']]  
-             connected_components_member_eq[of x' "(to_graph \<FF>)" xx,
-                    OF in_connected_componentI[of "(to_graph \<FF>)" xx x']]
-       apply(intro unequal_components_disjoint[where X=UNIV])
-       by(cases "cardx \<le> cardy") (auto simp add: xx_def yy_def xy_def)
-     have comp_y_y':"connected_component (insert {fst e, snd e} (to_graph \<FF>)) y' =
-          connected_component (insert {fst e, snd e} (to_graph \<FF>)) y"
-      apply(subst connected_components_member_eq[ of y' "(to_graph \<FF>')" yy, simplified F_rewrite])
-       using reachable_F_yy_y' in_connected_componentI[of "(to_graph \<FF>')" yy y']
-             reachable_subset[of "(to_graph \<FF>)" yy y' "(to_graph \<FF>')"]
-             in_connected_componentI2[of yy y' "(to_graph \<FF>')"] F_rewrite
-             new_edge_disjoint_components[of x y "(to_graph \<FF>)"]  x_def xy_def y_def yy_def 
-       by (fastforce, auto)
-     have reps_inxx_yy_comps: "x' \<in> connected_component (to_graph \<FF>) xx"
-                              "y' \<in> connected_component (to_graph \<FF>) yy"
-        using reachable_F_xx_x' in_connected_componentI[of "(to_graph \<FF>)" xx x']
-             in_own_connected_component[of x' "(to_graph \<FF>)"]
-             reachable_F_yy_y' in_connected_componentI[of "(to_graph \<FF>)" yy y']
-             in_own_connected_component[of y' "(to_graph \<FF>)"]
-        by auto
-     have comps_union:"connected_component (to_graph \<FF>') y' =
-                      connected_component (to_graph \<FF>) y' \<union> connected_component (to_graph \<FF>) x'"
-     proof(subst connected_components_member_eq[OF reps_inxx_yy_comps(1)],
-          subst connected_components_member_eq[OF reps_inxx_yy_comps(2)], 
-          rule trans[of _ "connected_component (insert {fst e, snd e} (to_graph \<FF>)) y"], goal_cases)
-       case 1
-      show ?case
-        using F_rewrite comp_y_y' by auto
-    next
-      case 2
-      show ?case
-      by(intro trans[OF sym[OF insert_edge_endpoints_same_component[of
-                                "(insert {fst e, snd e} (to_graph \<FF>))" _ x "(to_graph \<FF>)"]]])
-         (auto split: if_split simp add: insert_commute x_def y_def  xx_def xy_def yy_def  )
+    using reachable_F_xx_x' reachable_F_yy_y'  inv_comp_card_correctD[OF all_invars(14), of x]
+      inv_comp_card_correctD[OF all_invars(14), of y]
+      reachable_in_forest_fst_in_V x'_y'_in_V(1,2)
+    by(cases "cardx \<le> cardy") (auto simp add: xx_def xy_def yy_def  local.\<FF>_def r_card_def)
+
+  have x'_not_y':"x' \<noteq> y'" 
+  proof
+    assume " x' = y'"
+    hence "connected_component (to_graph \<FF>) x = connected_component (to_graph \<FF>) y"
+      using reachable_F_xx_x' reachable_F_yy_y' cards_same_cond
+        connected_components_member_eq[of x' "(to_graph \<FF>)" xx] 
+        in_connected_componentI[of "(to_graph \<FF>)" xx x'] 
+        connected_components_member_eq[of y' "(to_graph \<FF>)" yy]
+        in_connected_componentI[of "(to_graph \<FF>)" yy y']
+      by(cases "cardx \<le> cardy") (auto simp add: xx_def yy_def xy_def)
+    thus False
+      by (simp add: differen_components_e x_def y_def)
   qed
-     note concretization_of_F' = res_edges_new_forest_are
-     have consist_to_rdg':"consist (digraph_abs \<FF>') (abstract_conv_map to_rdg')"
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
-       by(auto elim!: inv_conversion_consistentE''  underlying_invarsE simp add: state'_def)
-    have axioms_conds1: "x' \<in> Vs (to_graph \<FF>')" 
-      using comps_union in_connected_component_in_edges[of x' "(to_graph \<FF>')" y']
-             x'_not_y' in_own_connected_component[of x' "(to_graph \<FF>)"]
-      by simp
-    have axioms_conds2: "Vs (to_graph \<FF>') \<subseteq> \<V> " 
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
-       by(auto elim!:  underlying_invarsE inv_forest_in_VE simp add: state'_def)
-     have axioms_conds3: "graph_invar (to_graph \<FF>')"
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-             validFD[of state'] 
-       by(auto elim!: underlying_invarsE inv_dbltn_graph_forestE simp add: state'_def)
-     have good_graphF': "good_graph_invar \<FF>'"
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-       by(auto elim!: underlying_invarsE inv_forest_good_graphE'' simp add: state'_def)
-     obtain qqq_u where qqq_prop_u:"walk_betw (to_graph  \<FF>') x' qqq_u y'"
+  have comps_inter_empt:"connected_component (to_graph \<FF>) y' \<inter> connected_component (to_graph \<FF>) x' = {}" 
+    using reachable_F_xx_x' reachable_F_yy_y' differen_components_e x_def xx_def xy_def  y_def yy_def cards_same_cond
+      connected_components_member_eq[of y' "(to_graph \<FF>)" yy, 
+        OF in_connected_componentI[of "(to_graph \<FF>)" yy y']]  
+      connected_components_member_eq[of x' "(to_graph \<FF>)" xx,
+        OF in_connected_componentI[of "(to_graph \<FF>)" xx x']]
+    apply(intro unequal_components_disjoint[where X=UNIV])
+    by(cases "cardx \<le> cardy") (auto simp add: xx_def yy_def xy_def)
+  have comp_y_y':"connected_component (insert {fst e, snd e} (to_graph \<FF>)) y' =
+          connected_component (insert {fst e, snd e} (to_graph \<FF>)) y"
+    apply(subst connected_components_member_eq[ of y' "(to_graph \<FF>')" yy, simplified F_rewrite])
+    using reachable_F_yy_y' in_connected_componentI[of "(to_graph \<FF>')" yy y']
+      reachable_subset[of "(to_graph \<FF>)" yy y' "(to_graph \<FF>')"]
+      in_connected_componentI2[of yy y' "(to_graph \<FF>')"] F_rewrite
+      new_edge_disjoint_components[of x y "(to_graph \<FF>)"]  x_def xy_def y_def yy_def 
+    by (fastforce, auto)
+  have reps_inxx_yy_comps: "x' \<in> connected_component (to_graph \<FF>) xx"
+    "y' \<in> connected_component (to_graph \<FF>) yy"
+    using reachable_F_xx_x' in_connected_componentI[of "(to_graph \<FF>)" xx x']
+      in_own_connected_component[of x' "(to_graph \<FF>)"]
+      reachable_F_yy_y' in_connected_componentI[of "(to_graph \<FF>)" yy y']
+      in_own_connected_component[of y' "(to_graph \<FF>)"]
+    by auto
+  have comps_union:"connected_component (to_graph \<FF>') y' =
+                      connected_component (to_graph \<FF>) y' \<union> connected_component (to_graph \<FF>) x'"
+  proof(subst connected_components_member_eq[OF reps_inxx_yy_comps(1)],
+      subst connected_components_member_eq[OF reps_inxx_yy_comps(2)], 
+      rule trans[of _ "connected_component (insert {fst e, snd e} (to_graph \<FF>)) y"], goal_cases)
+    case 1
+    show ?case
+      using F_rewrite comp_y_y' by auto
+  next
+    case 2
+    show ?case
+      by(intro trans[OF sym[OF insert_edge_endpoints_same_component[of
+                "(insert {fst e, snd e} (to_graph \<FF>))" _ x "(to_graph \<FF>)"]]])
+        (auto split: if_split simp add: insert_commute x_def y_def  xx_def xy_def yy_def  )
+  qed
+  note concretization_of_F' = res_edges_new_forest_are
+  have consist_to_rdg':"consist (digraph_abs \<FF>') (abstract_conv_map to_rdg')"
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
+    by(auto elim!: inv_conversion_consistentE''  underlying_invarsE simp add: state'_def)
+  have axioms_conds1: "x' \<in> Vs (to_graph \<FF>')" 
+    using comps_union in_connected_component_in_edges[of x' "(to_graph \<FF>')" y']
+      x'_not_y' in_own_connected_component[of x' "(to_graph \<FF>)"]
+    by simp
+  have axioms_conds2: "Vs (to_graph \<FF>') \<subseteq> \<V> " 
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
+    by(auto elim!:  underlying_invarsE inv_forest_in_VE simp add: state'_def)
+  have axioms_conds3: "graph_invar (to_graph \<FF>')"
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+      validFD[of state'] 
+    by(auto elim!: underlying_invarsE inv_dbltn_graph_forestE simp add: state'_def)
+  have good_graphF': "good_graph_invar \<FF>'"
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+    by(auto elim!: underlying_invarsE inv_forest_good_graphE'' simp add: state'_def)
+  obtain qqq_u where qqq_prop_u:"walk_betw (to_graph  \<FF>') x' qqq_u y'"
     using comps_union connected_components_member_sym[of x' "to_graph \<FF>'" y'] 
-          axioms_conds1 axioms_conds2 axioms_conds3
-           in_connected_componentE[of y' "to_graph  \<FF>'" x']
-            in_connected_componentI2[of x' x' "to_graph \<FF>"]  x'_not_y' 
+      axioms_conds1 axioms_conds2 axioms_conds3
+      in_connected_componentE[of y' "to_graph  \<FF>'" x']
+      in_connected_componentI2[of x' x' "to_graph \<FF>"]  x'_not_y' 
     by(auto intro: in_connected_component_has_walk)
   have symmetric_F': "symmetric_digraph (digraph_abs \<FF>')" 
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-       by(auto elim!: underlying_invarsE inv_digraph_abs_\<FF>_symE simp add: state'_def)
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+    by(auto elim!: underlying_invarsE inv_digraph_abs_\<FF>_symE simp add: state'_def)
   obtain qqq where qqq_prop:"vwalk_bet (digraph_abs  \<FF>') x' qqq y'"
     using symmetric_digraph_walk_betw_vwalk_bet symmetric_F' qqq_prop_u 
     by(force simp add: to_graph_def) 
@@ -1515,64 +1514,64 @@ proof-
     using \<FF>'_def axioms_conds3 graph_abs.finite_E graph_abs.intro by auto
   note x'_inVs = axioms_conds1
   have distinctQ: "distinct Q" and vwalk_bet_Q: "vwalk_bet [\<FF>']\<^sub>g x' Q y'"
-     using qqq_prop x'_inVs x'_not_y'  good_graphF'
-     by (auto intro!: get_path_axioms_unfolded[of \<FF>' x' qqq y']  Q_def )
-   hence vwalk_bet_rev_Q: "vwalk_bet [\<FF>']\<^sub>g y' (rev Q) x'"
-     by (simp add: symmetric_F' symmetric_digraph_vwalk_bet_vwalk_bet)
-   have oedge_of_Q:"oedge ` List.set (to_redge_path to_rdg' Q) = 
+    using qqq_prop x'_inVs x'_not_y'  good_graphF'
+    by (auto intro!: get_path_axioms_unfolded[of \<FF>' x' qqq y']  Q_def )
+  hence vwalk_bet_rev_Q: "vwalk_bet [\<FF>']\<^sub>g y' (rev Q) x'"
+    by (simp add: symmetric_F' symmetric_digraph_vwalk_bet_vwalk_bet)
+  have oedge_of_Q:"oedge ` List.set (to_redge_path to_rdg' Q) = 
           oedge ` abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk Q))"
-     using consist_to_rdg' distinctQ oedge_of_to_redgepath_subset by auto
-    have redge_of_Q:"List.set (to_redge_path to_rdg' Q) \<subseteq> 
+    using consist_to_rdg' distinctQ oedge_of_to_redgepath_subset by auto
+  have redge_of_Q:"List.set (to_redge_path to_rdg' Q) \<subseteq> 
           abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk Q))"
-      using consist_to_rdg' distinctQ to_redgepath_subset by blast
-    have redge_of_Q_rev:"List.set (to_redge_path to_rdg' (rev Q)) \<subseteq> 
+    using consist_to_rdg' distinctQ to_redgepath_subset by blast
+  have redge_of_Q_rev:"List.set (to_redge_path to_rdg' (rev Q)) \<subseteq> 
           abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk (rev Q)))"
-      using consist_to_rdg' distinctQ to_redgepath_subset by simp
-    have edges_of_Q_in_F': "set (edges_of_vwalk Q) \<subseteq> [\<FF>']\<^sub>g" and
-          edges_of_Q_rev_in_F': "set (edges_of_vwalk (rev Q)) \<subseteq> [\<FF>']\<^sub>g" 
-      using vwalk_bet_Q  vwalk_bet_rev_Q by(auto intro!: vwalk_bet_edges_in_edges)
-    hence swap_edges_of_Q_in_F': "prod.swap ` set (edges_of_vwalk Q) \<subseteq> [\<FF>']\<^sub>g"
-       and swap_edges_of_rev_Q_in_F': "prod.swap ` set (edges_of_vwalk (rev Q)) \<subseteq> [\<FF>']\<^sub>g"
-      using symmetric_digraphD[OF symmetric_F'] by auto
-    have oedge_of_Q_rev: "oedge ` List.set (to_redge_path to_rdg' (rev Q)) = 
+    using consist_to_rdg' distinctQ to_redgepath_subset by simp
+  have edges_of_Q_in_F': "set (edges_of_vwalk Q) \<subseteq> [\<FF>']\<^sub>g" and
+    edges_of_Q_rev_in_F': "set (edges_of_vwalk (rev Q)) \<subseteq> [\<FF>']\<^sub>g" 
+    using vwalk_bet_Q  vwalk_bet_rev_Q by(auto intro!: vwalk_bet_edges_in_edges)
+  hence swap_edges_of_Q_in_F': "prod.swap ` set (edges_of_vwalk Q) \<subseteq> [\<FF>']\<^sub>g"
+    and swap_edges_of_rev_Q_in_F': "prod.swap ` set (edges_of_vwalk (rev Q)) \<subseteq> [\<FF>']\<^sub>g"
+    using symmetric_digraphD[OF symmetric_F'] by auto
+  have oedge_of_Q_rev: "oedge ` List.set (to_redge_path to_rdg' (rev Q)) = 
           oedge ` abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk Q))"
-      using oedge_of_to_redgepath_subset[of Q "digraph_abs \<FF>'" to_rdg'] consist_to_rdg' distinctQ
-            oedge_of_to_redge_path_rev[of Q "digraph_abs \<FF>'" to_rdg'] edges_of_Q_in_F'
-            swap_edges_of_Q_in_F' 
-      by simp
-    have Q_redges_in_F:"set (to_redge_path to_rdg' Q) \<subseteq> \<F>_redges state'" 
-      using redge_of_Q  edges_of_Q_in_F' by(auto simp add: state'_def F_def F_redges_def)
-    hence  Q_oedges_in_E:"set (map oedge (to_redge_path to_rdg' Q)) \<subseteq> \<E>" 
-      using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-      by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
-           simp add: state'_def  image_subset_iff F_def F_redges_def)
-    have Q_rev_redges_in_F:"set (to_redge_path to_rdg' (rev Q)) \<subseteq> \<F>_redges state'" 
-      using redge_of_Q_rev  edges_of_Q_rev_in_F' by(auto simp add: state'_def F_def F_redges_def)
-    hence  Q_rev_oedges_in_E:"set (map oedge (to_redge_path to_rdg' (rev Q))) \<subseteq> \<E>" 
-      using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-      by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
-           simp add: state'_def  image_subset_iff F_def F_redges_def)
-    have f'_is:
-   "abstract_flow_map (augment_edges_impl f (abstract_bal_map b x') (to_redge_path to_rdg' Q)) =
+    using oedge_of_to_redgepath_subset[of Q "digraph_abs \<FF>'" to_rdg'] consist_to_rdg' distinctQ
+      oedge_of_to_redge_path_rev[of Q "digraph_abs \<FF>'" to_rdg'] edges_of_Q_in_F'
+      swap_edges_of_Q_in_F' 
+    by simp
+  have Q_redges_in_F:"set (to_redge_path to_rdg' Q) \<subseteq> \<F>_redges state'" 
+    using redge_of_Q  edges_of_Q_in_F' by(auto simp add: state'_def F_def F_redges_def)
+  hence  Q_oedges_in_E:"set (map oedge (to_redge_path to_rdg' Q)) \<subseteq> \<E>" 
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+    by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
+        simp add: state'_def  image_subset_iff F_def F_redges_def)
+  have Q_rev_redges_in_F:"set (to_redge_path to_rdg' (rev Q)) \<subseteq> \<F>_redges state'" 
+    using redge_of_Q_rev  edges_of_Q_rev_in_F' by(auto simp add: state'_def F_def F_redges_def)
+  hence  Q_rev_oedges_in_E:"set (map oedge (to_redge_path to_rdg' (rev Q))) \<subseteq> \<E>" 
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+    by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
+        simp add: state'_def  image_subset_iff F_def F_redges_def)
+  have f'_is:
+    "abstract_flow_map (augment_edges_impl f (abstract_bal_map b x') (to_redge_path to_rdg' Q)) =
     augment_edges (abstract_flow_map f) (abstract_bal_map b x') (to_redge_path to_rdg' Q)"
-   "abstract_flow_map (augment_edges_impl f (- abstract_bal_map b x') (to_redge_path to_rdg' (rev Q))) =
+    "abstract_flow_map (augment_edges_impl f (- abstract_bal_map b x') (to_redge_path to_rdg' (rev Q))) =
     augment_edges (abstract_flow_map f) (- abstract_bal_map b x') (to_redge_path to_rdg' (rev Q))"
-      using Q_oedges_in_E assms(3) Q_rev_oedges_in_E
-      by (auto intro:  augment_edges_homo simp add: f_def)
-    have flow_change_in_Q:"abstract_flow_map f' d \<noteq> abstract_flow_map f d \<Longrightarrow> d \<in> 
+    using Q_oedges_in_E assms(3) Q_rev_oedges_in_E
+    by (auto intro:  augment_edges_homo simp add: f_def)
+  have flow_change_in_Q:"abstract_flow_map f' d \<noteq> abstract_flow_map f d \<Longrightarrow> d \<in> 
              oedge ` abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk Q))" for d
-      unfolding f'_def
-      using e_not_in_es_flow_not_change[of "(to_redge_path to_rdg' Q)" d "abstract_flow_map f" "abstract_bal_map b x'"]
-            e_not_in_es_flow_not_change[of "(to_redge_path to_rdg' (rev Q))" d  "abstract_flow_map f" "- abstract_bal_map b x'"]
-            oedge_of_Q oedge_of_Q_rev  f'_is 
-      by(cases "0 < abstract_bal_map b x'") auto
-   
-    have Q_subset_F':"List.set Q \<subseteq> connected_component (to_graph \<FF>') y'"
-    proof(subst sym[OF connected_components_member_eq[of x' "to_graph \<FF>'" y']], goal_cases)
-      case 1
-      then show ?case 
+    unfolding f'_def
+    using e_not_in_es_flow_not_change[of "(to_redge_path to_rdg' Q)" d "abstract_flow_map f" "abstract_bal_map b x'"]
+      e_not_in_es_flow_not_change[of "(to_redge_path to_rdg' (rev Q))" d  "abstract_flow_map f" "- abstract_bal_map b x'"]
+      oedge_of_Q oedge_of_Q_rev  f'_is 
+    by(cases "0 < abstract_bal_map b x'") auto
+
+  have Q_subset_F':"List.set Q \<subseteq> connected_component (to_graph \<FF>') y'"
+  proof(subst sym[OF connected_components_member_eq[of x' "to_graph \<FF>'" y']], goal_cases)
+    case 1
+    then show ?case 
       using comps_union in_own_connected_component[of _ "to_graph \<FF>"] 
-            by simp
+      by simp
   next
     case 2
     show ?case
@@ -1582,62 +1581,62 @@ proof-
   have dVs_Q:"dVs (to_vertex_pair ` abstract_conv_map to_rdg' ` 
                (List.set (edges_of_vwalk Q))) \<subseteq> List.set Q"
     using consist_dVs_path consist_to_rdg' distinctQ edges_of_Q_in_F' by blast
-            
+
   hence f_change_comp_y':"abstract_flow_map f' d \<noteq> abstract_flow_map f d
                   \<Longrightarrow> fst d \<in> connected_component (to_graph \<FF>') y'" for d
   proof(goal_cases)
     case 1
     then obtain v1 v2 where v1v2: "d = oedge ( abstract_conv_map to_rdg' (v1, v2))"
-                            "(v1, v2) \<in> set (edges_of_vwalk Q)" 
+      "(v1, v2) \<in> set (edges_of_vwalk Q)" 
       using flow_change_in_Q[of d] by auto
     moreover hence "(v1, v2) \<in> [\<FF>']\<^sub>g"
       using edges_of_Q_in_F' by blast
     moreover have "F d = abstract_conv_map to_rdg' (v1, v2) \<or> 
                      B d = abstract_conv_map to_rdg' (v1, v2)"
       by(auto intro: oedge.elims[OF v1v2(1)[symmetric]])
-   ultimately have "{fst d, snd d} = {v1, v2}"
-     using  consist_to_rdg' make_pair' by(fastforce elim!: consistE ) 
-   moreover have "{v1, v2} \<in> set( edges_of_path Q)"
-     using graph_abs.not_in_edges_of_path_not_in_edges_of_vwalk[OF graph_abs.intro[OF axioms_conds3] , 
-            of v2]  v1v2(2)
-     by (auto simp add: insert_commute)
-   ultimately have "fst d \<in> set Q"
-    using  v_in_edge_in_path_gen[of  "{fst d, snd d}" Q "fst d"]
-    by auto
-      thus ?case 
-     using Q_subset_F' by auto
- qed     
-   have components_increase:"connected_component (to_graph \<FF>) v \<subseteq> connected_component (to_graph \<FF>') v" for v
-     by (simp add: F_rewrite con_comp_subset subset_insertI)
-    have new_components_in_V:"v \<in> \<V> \<Longrightarrow> connected_component (to_graph \<FF>') v \<subseteq> \<V>" for v
-      using axioms_conds2 in_connected_component_in_edges[of _ _ v]
+    ultimately have "{fst d, snd d} = {v1, v2}"
+      using  consist_to_rdg' make_pair' by(fastforce elim!: consistE ) 
+    moreover have "{v1, v2} \<in> set( edges_of_path Q)"
+      using graph_abs.not_in_edges_of_path_not_in_edges_of_vwalk[OF graph_abs.intro[OF axioms_conds3] , 
+          of v2]  v1v2(2)
+      by (auto simp add: insert_commute)
+    ultimately have "fst d \<in> set Q"
+      using  v_in_edge_in_path_gen[of  "{fst d, snd d}" Q "fst d"]
       by auto
-    have components_in_V:"v \<in> \<V> \<Longrightarrow> connected_component (to_graph \<FF>) v \<subseteq> \<V>" for v 
-      using components_increase new_components_in_V by blast
-    have new_comp_card_gtr: "card (connected_component (to_graph \<FF>) y') \<ge> card (connected_component (to_graph \<FF>) x')"
-      using cards_same_cond  connected_components_member_eq[of x' _ ]
-            connected_components_member_eq[of y'] reps_inxx_yy_comps(1,2) 
-      by(auto simp add: xx_def xy_def yy_def cardx_def cardy_def)
-    have Q_inF':"(List.set (edges_of_path Q)) \<subseteq>  (to_graph \<FF>')" 
-      using directed_edges_subset_undirected_edges_subset[OF edges_of_Q_rev_in_F']          
-      by(auto simp add: edges_of_path_rev[symmetric]  to_graph_def)    
-      have x'_y'_reachable:"reachable (to_graph \<FF>') x' y'"
-        by (meson qqq_prop_u reachableI)
-    have lengthQ:"length Q \<ge> 2" 
-      using vwalk_bet_Q x'_not_y' by(auto intro:  vwalk_bet_diff_verts_length_geq_2)  
-    have b'_is: "abstract_bal_map (move_balance b x' y') =
+    thus ?case 
+      using Q_subset_F' by auto
+  qed     
+  have components_increase:"connected_component (to_graph \<FF>) v \<subseteq> connected_component (to_graph \<FF>') v" for v
+    by (simp add: F_rewrite con_comp_subset subset_insertI)
+  have new_components_in_V:"v \<in> \<V> \<Longrightarrow> connected_component (to_graph \<FF>') v \<subseteq> \<V>" for v
+    using axioms_conds2 in_connected_component_in_edges[of _ _ v]
+    by auto
+  have components_in_V:"v \<in> \<V> \<Longrightarrow> connected_component (to_graph \<FF>) v \<subseteq> \<V>" for v 
+    using components_increase new_components_in_V by blast
+  have new_comp_card_gtr: "card (connected_component (to_graph \<FF>) y') \<ge> card (connected_component (to_graph \<FF>) x')"
+    using cards_same_cond  connected_components_member_eq[of x' _ ]
+      connected_components_member_eq[of y'] reps_inxx_yy_comps(1,2) 
+    by(auto simp add: xx_def xy_def yy_def cardx_def cardy_def)
+  have Q_inF':"(List.set (edges_of_path Q)) \<subseteq>  (to_graph \<FF>')" 
+    using directed_edges_subset_undirected_edges_subset[OF edges_of_Q_rev_in_F']          
+    by(auto simp add: edges_of_path_rev[symmetric]  to_graph_def)    
+  have x'_y'_reachable:"reachable (to_graph \<FF>') x' y'"
+    by (meson qqq_prop_u reachableI)
+  have lengthQ:"length Q \<ge> 2" 
+    using vwalk_bet_Q x'_not_y' by(auto intro:  vwalk_bet_diff_verts_length_geq_2)  
+  have b'_is: "abstract_bal_map (move_balance b x' y') =
                   (\<lambda>v. if v = x' then 0
                        else if v = y' then abstract_bal_map b y' + abstract_bal_map b x' 
                        else abstract_bal_map b v)"
-      using assms(3) 
-      by(auto simp add: b_def intro:  abstract_bal_map_homo[OF _ refl, of b x' y'])
-    have finite_old_comps:"finite (connected_component (to_graph \<FF>) y')"
-         "finite (connected_component (to_graph \<FF>) x')"
-      using components_in_V \<V>_finite x'_y'_in_V by (auto intro:  finite_subset)
-    have old_comps_disjnt:"disjnt (connected_component (to_graph \<FF>) y') (connected_component (to_graph \<FF>) x')"
-      by (simp add: comps_inter_empt disjnt_def)
-    note underlying_invars_state' = invar_aux_pres_one_step[of state, OF assms(2,1,3), 
-                           simplified sym[OF state_state']]
+    using assms(3) 
+    by(auto simp add: b_def intro:  abstract_bal_map_homo[OF _ refl, of b x' y'])
+  have finite_old_comps:"finite (connected_component (to_graph \<FF>) y')"
+    "finite (connected_component (to_graph \<FF>) x')"
+    using components_in_V \<V>_finite x'_y'_in_V by (auto intro:  finite_subset)
+  have old_comps_disjnt:"disjnt (connected_component (to_graph \<FF>) y') (connected_component (to_graph \<FF>) x')"
+    by (simp add: comps_inter_empt disjnt_def)
+  note underlying_invars_state' = invar_aux_pres_one_step[of state, OF assms(2,1,3), 
+      simplified sym[OF state_state']]
   show "\<lbrakk>thr \<ge> 0; invarA_1 thr state\<rbrakk> \<Longrightarrow> invarA_1 thr (maintain_forest_upd state)"
   proof-
     assume asm: "thr \<ge> 0"  "invarA_1 thr state"
@@ -1648,9 +1647,9 @@ proof-
     have y'_card:"\<bar>abstract_bal_map b' y'\<bar> \<le> thr * card (connected_component (to_graph \<FF>') y')"
       apply(subst comps_union, subst card_Un_disjnt)
       using comps_inter_empt x'_not_y' bx' by' comps_inter_empt assms(2)  \<V>_finite
-            finite_subset  x'_y'_in_V
+        finite_subset  x'_y'_in_V
       by(auto simp add: algebra_simps card_Un_disjnt disjnt_def  b'_def  \<FF>'_def \<FF>_def b'_is 
-                 elim!: underlying_invarsE inv_components_in_VE)
+          elim!: underlying_invarsE inv_components_in_VE)
     moreover have new_bal_bound:"\<lbrakk>v \<in> \<V>; v \<noteq> x'; v \<noteq> y'\<rbrakk> \<Longrightarrow>
                 \<bar>abstract_bal_map b' v \<bar>\<le> thr * card (connected_component (to_graph \<FF>') v)" for v
     proof(rule order.trans[of _ "thr * real (card (connected_component (to_graph \<FF>) v))"], goal_cases)
@@ -1662,154 +1661,154 @@ proof-
       case 2
       thus ?case
         using components_increase[of v] new_components_in_V[of v] asm(1) \<V>_finite 
-              card_mono[of "connected_component (to_graph \<FF>') v" "connected_component (to_graph \<FF>) v"] rev_finite_subset
+          card_mono[of "connected_component (to_graph \<FF>') v" "connected_component (to_graph \<FF>) v"] rev_finite_subset
         by (intro mult_left_mono, auto intro: mult_left_mono)
     qed
     ultimately show "invarA_1 thr (maintain_forest_upd state)"
       using  asm(1) b'_is[simplified b'_def [symmetric]]
       by(auto intro!: invarA_1I simp add: state'_is[symmetric] state'_def)
   qed
-     
+
   show "invarA_2 thr1 thr2 (maintain_forest_upd state)"    
     if "thr2 \<ge> 0" "invarA_1 thr2 state" "invarA_2 thr1 thr2 state" 
-       "thr2 \<le> 2 * current_\<gamma> state" "thr1 \<le> 8*real N * current_\<gamma> state"
-    proof-
-      note asm = that
+      "thr2 \<le> 2 * current_\<gamma> state" "thr1 \<le> 8*real N * current_\<gamma> state"
+  proof-
+    note asm = that
     show " invarA_2 thr1 thr2 (maintain_forest_upd state)"
     proof-
       have "d \<in> abstract_conv_map to_rdg' ` (digraph_abs \<FF>') \<Longrightarrow>
          thr1 - thr2 * real (card (connected_component (to_graph \<FF>') (fst (oedge d)))) <
             abstract_flow_map f' (oedge d)" for d
       proof-
-      assume asm2:"d \<in> abstract_conv_map to_rdg' ` (digraph_abs \<FF>')"
-      hence "d \<in> \<EE>" 
-        using  eeinfracE res_edges_new_forest_are
-        by (auto  intro: inv_digraph_abs_F_in_EE[OF all_invars(2)] simp add: to_rdg_def  local.\<FF>_def)
-      hence fstdV:"fst (oedge d) \<in> \<V>" 
-        using dVsI'(1)[of ] o_edge_res make_pair[OF refl refl]  fst_E_V by presburger
-      hence compd:"connected_component (to_graph \<FF>') (fst (oedge d)) \<subseteq> \<V>"
-        using new_components_in_V by blast
-      hence finite_compd:"finite (connected_component (to_graph \<FF>') (fst (oedge d)) )" 
-        using \<V>_finite finite_subset by blast
-       have d_prop:"d \<in>  abstract_conv_map to_rdg ` (digraph_abs \<FF>) \<or> oedge d = e"
-         using asm2 res_edges_new_forest_are by auto
-       show "thr1 - thr2 * real (card (connected_component (to_graph \<FF>') (fst (oedge d)))) 
+        assume asm2:"d \<in> abstract_conv_map to_rdg' ` (digraph_abs \<FF>')"
+        hence "d \<in> \<EE>" 
+          using  eeinfracE res_edges_new_forest_are
+          by (auto  intro: inv_digraph_abs_F_in_EE[OF all_invars(2)] simp add: to_rdg_def  local.\<FF>_def)
+        hence fstdV:"fst (oedge d) \<in> \<V>" 
+          using dVsI'(1)[of ] o_edge_res make_pair[OF refl refl]  fst_E_V by presburger
+        hence compd:"connected_component (to_graph \<FF>') (fst (oedge d)) \<subseteq> \<V>"
+          using new_components_in_V by blast
+        hence finite_compd:"finite (connected_component (to_graph \<FF>') (fst (oedge d)) )" 
+          using \<V>_finite finite_subset by blast
+        have d_prop:"d \<in>  abstract_conv_map to_rdg ` (digraph_abs \<FF>) \<or> oedge d = e"
+          using asm2 res_edges_new_forest_are by auto
+        show "thr1 - thr2 * real (card (connected_component (to_graph \<FF>') (fst (oedge d)))) 
                 < abstract_flow_map f' (oedge d)"
-      proof(cases "abstract_flow_map f (oedge d) = abstract_flow_map f' (oedge d)")
-        case True
-       have d_flow_bound:"d \<in>  abstract_conv_map to_rdg ` (digraph_abs \<FF>) \<Longrightarrow> 
+        proof(cases "abstract_flow_map f (oedge d) = abstract_flow_map f' (oedge d)")
+          case True
+          have d_flow_bound:"d \<in>  abstract_conv_map to_rdg ` (digraph_abs \<FF>) \<Longrightarrow> 
              thr1 - thr2 * real (card (connected_component (to_graph \<FF>) (fst (oedge d)))) <
                 abstract_flow_map f (oedge d)"
-         using asm(3)  
-         by (auto elim: invarA_2E simp add: f_def  local.\<FF>_def to_rdg_def F_def F_redges_def)
-        have f_e_geq_thr1:"oedge d = e \<Longrightarrow> abstract_flow_map f (oedge d) > thr1" 
-          using \<gamma>_def asm(5) e_prop by auto
-        have card_less:"card (connected_component (to_graph \<FF>) (fst (oedge d))) \<le> 
+            using asm(3)  
+            by (auto elim: invarA_2E simp add: f_def  local.\<FF>_def to_rdg_def F_def F_redges_def)
+          have f_e_geq_thr1:"oedge d = e \<Longrightarrow> abstract_flow_map f (oedge d) > thr1" 
+            using \<gamma>_def asm(5) e_prop by auto
+          have card_less:"card (connected_component (to_graph \<FF>) (fst (oedge d))) \<le> 
              card (connected_component (to_graph \<FF>') (fst (oedge d)))"
-          using  finite_compd con_comp_subset[of "to_graph \<FF>" "to_graph \<FF>'"]  
-          by(auto intro!: card_mono simp add: F_rewrite)
-        show ?thesis 
-        proof(cases rule: disjE[OF d_prop])
-          case 1
-          show ?thesis
-            using  finite_compd True  d_flow_bound[OF 1]
-                   ordered_comm_semiring_class.comm_mult_left_mono[OF real_mono[OF card_less] asm(1)] 
-          by(auto simp add: algebra_simps True)
-        next
-          case 2
+            using  finite_compd con_comp_subset[of "to_graph \<FF>" "to_graph \<FF>'"]  
+            by(auto intro!: card_mono simp add: F_rewrite)
           show ?thesis 
-            using  finite_compd f_e_geq_thr1[OF 2] mult_nonneg_nonneg[OF asm(1), 
+          proof(cases rule: disjE[OF d_prop])
+            case 1
+            show ?thesis
+              using  finite_compd True  d_flow_bound[OF 1]
+                ordered_comm_semiring_class.comm_mult_left_mono[OF real_mono[OF card_less] asm(1)] 
+              by(auto simp add: algebra_simps True)
+          next
+            case 2
+            show ?thesis 
+              using  finite_compd f_e_geq_thr1[OF 2] mult_nonneg_nonneg[OF asm(1), 
                   of "card (connected_component (to_graph \<FF>') (fst (oedge d)))"]
-            by(auto simp add: algebra_simps True[symmetric])
-        qed
-      next
-        case False
-        hence fst_d_in_F'_comp_y':"fst (oedge d) \<in> connected_component (to_graph \<FF>') y'" 
-           using f_change_comp_y' by simp
-        hence fst_d_in_F_comp_x'_or_y':"fst (oedge d) \<in> connected_component (to_graph \<FF>) y' \<or>
+              by(auto simp add: algebra_simps True[symmetric])
+          qed
+        next
+          case False
+          hence fst_d_in_F'_comp_y':"fst (oedge d) \<in> connected_component (to_graph \<FF>') y'" 
+            using f_change_comp_y' by simp
+          hence fst_d_in_F_comp_x'_or_y':"fst (oedge d) \<in> connected_component (to_graph \<FF>) y' \<or>
                fst (oedge d) \<in> connected_component (to_graph \<FF>) x'" 
-          by (simp add: comps_union)
-        hence fst_d_F'_comp_y'_F_'_comp: "connected_component (to_graph \<FF>') (fst (oedge d)) =
+            by (simp add: comps_union)
+          hence fst_d_F'_comp_y'_F_'_comp: "connected_component (to_graph \<FF>') (fst (oedge d)) =
                      connected_component (to_graph \<FF>') y'"
-          using fst_d_in_F'_comp_y' by (auto intro!: connected_components_member_eq)
-        have fst_d_F_comp_x'_or_y': "connected_component (to_graph \<FF>) (fst (oedge d)) =
+            using fst_d_in_F'_comp_y' by (auto intro!: connected_components_member_eq)
+          have fst_d_F_comp_x'_or_y': "connected_component (to_graph \<FF>) (fst (oedge d)) =
                                             connected_component (to_graph \<FF>) y'  \<or>
                    connected_component (to_graph \<FF>) (fst (oedge d)) = 
                                             connected_component (to_graph \<FF>) x'" 
-          using fst_d_in_F_comp_x'_or_y' by (auto intro!: connected_components_member_eq)
-        have bal_bound_x':"\<bar>abstract_bal_map b x'\<bar>  \<le>
+            using fst_d_in_F_comp_x'_or_y' by (auto intro!: connected_components_member_eq)
+          have bal_bound_x':"\<bar>abstract_bal_map b x'\<bar>  \<le>
                       thr2 * real (card (connected_component (to_graph \<FF>) x'))"
-          using  invarA_1D[OF asm(2)] x'_y'_in_V(1) 
-          by(auto simp add: local.\<FF>_def  b_def)
-        have f'_d_lower_bound:"abstract_flow_map f' (oedge d)  \<ge> abstract_flow_map f (oedge d) - \<bar>abstract_bal_map b x' \<bar>"
-          using distinct_path_augment[of "to_redge_path to_rdg' Q" " \<bar>abstract_bal_map b x' \<bar>"
-                                              "abstract_flow_map f" "oedge d"]
-                 distinct_path_augment[of "to_redge_path to_rdg' (rev Q)" " \<bar>abstract_bal_map b x' \<bar>"
-                                              "abstract_flow_map f" "oedge d"]
-                 distinctQ edges_of_Q_in_F'  edges_of_Q_rev_in_F'  to_rdg_distinct[OF consist_to_rdg']
-          by (auto split: if_split simp add: f'_is f'_def)
-        show ?thesis 
-        proof(unfold fst_d_F'_comp_y'_F_'_comp comps_union card_Un_disjnt[OF  finite_old_comps old_comps_disjnt],
+            using  invarA_1D[OF asm(2)] x'_y'_in_V(1) 
+            by(auto simp add: local.\<FF>_def  b_def)
+          have f'_d_lower_bound:"abstract_flow_map f' (oedge d)  \<ge> abstract_flow_map f (oedge d) - \<bar>abstract_bal_map b x' \<bar>"
+            using distinct_path_augment[of "to_redge_path to_rdg' Q" " \<bar>abstract_bal_map b x' \<bar>"
+                "abstract_flow_map f" "oedge d"]
+              distinct_path_augment[of "to_redge_path to_rdg' (rev Q)" " \<bar>abstract_bal_map b x' \<bar>"
+                "abstract_flow_map f" "oedge d"]
+              distinctQ edges_of_Q_in_F'  edges_of_Q_rev_in_F'  to_rdg_distinct[OF consist_to_rdg']
+            by (auto split: if_split simp add: f'_is f'_def)
+          show ?thesis 
+          proof(unfold fst_d_F'_comp_y'_F_'_comp comps_union card_Un_disjnt[OF  finite_old_comps old_comps_disjnt],
               rule orE'[OF d_prop], goal_cases)
-          case 1
-          hence f_d_lower_bound:"abstract_flow_map f (oedge d) > 
-                 thr1 - thr2 * real (card (connected_component (to_graph \<FF>) (fst (oedge d))))"
-            using  asm(3) 
-            by (auto simp add: f_def invarA_2D local.\<FF>_def to_rdg_def F_def F_redges_def)
-          show ?case 
-          proof(cases rule: orE[OF fst_d_F_comp_x'_or_y'], goal_cases)
             case 1
-            thus ?case
-              using bal_bound_x' f'_d_lower_bound f_d_lower_bound          
-              by(auto simp add: algebra_simps)
-          next
-            case 2
-            show ?case
-            proof(rule order.strict_trans2[of _ "abstract_flow_map f (oedge d) -
-                               \<bar>abstract_bal_map b x'\<bar>", OF  _ f'_d_lower_bound], goal_cases)
+            hence f_d_lower_bound:"abstract_flow_map f (oedge d) > 
+                 thr1 - thr2 * real (card (connected_component (to_graph \<FF>) (fst (oedge d))))"
+              using  asm(3) 
+              by (auto simp add: f_def invarA_2D local.\<FF>_def to_rdg_def F_def F_redges_def)
+            show ?case 
+            proof(cases rule: orE[OF fst_d_F_comp_x'_or_y'], goal_cases)
               case 1
-              show ?case
-              proof(rule order.strict_trans1[of _ "thr1 -
-                        thr2 * real (card (connected_component (to_graph \<FF>) (fst (oedge d)))) 
-                                 - \<bar>abstract_bal_map b x' \<bar>"], goal_cases)
-              case 1
-              then show ?case 
-                using bal_bound_x' f_d_lower_bound new_comp_card_gtr 2
-                      ordered_comm_semiring_class.comm_mult_left_mono[OF 
-                           real_mono[OF new_comp_card_gtr]  asm(1)]
+              thus ?case
+                using bal_bound_x' f'_d_lower_bound f_d_lower_bound          
                 by(auto simp add: algebra_simps)
             next
               case 2
-              then show ?case              
-                using f_d_lower_bound  by argo
+              show ?case
+              proof(rule order.strict_trans2[of _ "abstract_flow_map f (oedge d) -
+                               \<bar>abstract_bal_map b x'\<bar>", OF  _ f'_d_lower_bound], goal_cases)
+                case 1
+                show ?case
+                proof(rule order.strict_trans1[of _ "thr1 -
+                        thr2 * real (card (connected_component (to_graph \<FF>) (fst (oedge d)))) 
+                                 - \<bar>abstract_bal_map b x' \<bar>"], goal_cases)
+                  case 1
+                  then show ?case 
+                    using bal_bound_x' f_d_lower_bound new_comp_card_gtr 2
+                      ordered_comm_semiring_class.comm_mult_left_mono[OF 
+                        real_mono[OF new_comp_card_gtr]  asm(1)]
+                    by(auto simp add: algebra_simps)
+                next
+                  case 2
+                  then show ?case              
+                    using f_d_lower_bound  by argo
+                qed
+              qed
             qed
+          next
+            case 2
+            have strict_non_strict_mono: "\<lbrakk>(a::real) < b; c \<ge> d\<rbrakk> \<Longrightarrow> a -c < b -d" for a b c d by simp
+            show ?case 
+              using components_increase[of x'] components_increase[of y'] e_prop asm 2 bal_bound_x'
+                finite_subset[of "connected_component (to_graph \<FF>) _"] 
+                finite_subset[of "connected_component (to_graph \<FF>') _"] 
+              by (auto intro!: order.strict_trans2[OF _ f'_d_lower_bound]  strict_non_strict_mono 
+                  simp add: add_increasing distrib_left \<gamma>_def )
           qed
         qed
-        next
-          case 2
-          have strict_non_strict_mono: "\<lbrakk>(a::real) < b; c \<ge> d\<rbrakk> \<Longrightarrow> a -c < b -d" for a b c d by simp
-          show ?case 
-            using components_increase[of x'] components_increase[of y'] e_prop asm 2 bal_bound_x'
-                  finite_subset[of "connected_component (to_graph \<FF>) _"] 
-                  finite_subset[of "connected_component (to_graph \<FF>') _"] 
-              by (auto intro!: order.strict_trans2[OF _ f'_d_lower_bound]  strict_non_strict_mono 
-                     simp add: add_increasing distrib_left \<gamma>_def )
-        qed
       qed
+      thus ?thesis 
+        by(auto simp add: sym[OF state_state'] state'_def F_def F_redges_def intro!: invarA_2I)
     qed
-    thus ?thesis 
-      by(auto simp add: sym[OF state_state'] state'_def F_def F_redges_def intro!: invarA_2I)
-  qed
   qed
 
   have "is_Opt (\<b> - abstract_bal_map b') (abstract_flow_map f')"
     if asm: "invar_gamma state" "thr2 \<ge> 0" "invarA_1 thr2 state" "invarA_2 thr1 thr2 state"
-            "thr2 \<le> 2 * current_\<gamma> state" "thr1 = 8*real N * current_\<gamma> state" 
-            "is_Opt (\<b> - (abstract_bal_map b)) (abstract_flow_map f)"
+      "thr2 \<le> 2 * current_\<gamma> state" "thr1 = 8*real N * current_\<gamma> state" 
+      "is_Opt (\<b> - (abstract_bal_map b)) (abstract_flow_map f)"
   proof-
     from asm have \<gamma>_geq_0: "\<gamma> \<ge> 0" unfolding invar_gamma_def \<gamma>_def by auto
     have d_oedge_inE:
-     "d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF> - {(fst e, snd e), (fst e, snd e)}) \<Longrightarrow>
+      "d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF> - {(fst e, snd e), (fst e, snd e)}) \<Longrightarrow>
                  oedge d \<in> \<E>" for d 
       using all_invars(2) o_edge_res  by (auto elim!: inv_digraph_abs_F_in_EE simp add: local.\<FF>_def to_rdg_def)
     hence d_oedge_V:"d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF> - {(fst e, snd e), (fst e, snd e)}) \<Longrightarrow>
@@ -1819,8 +1818,8 @@ proof-
          card (connected_component (to_graph \<FF>) (fst (oedge d))) \<le> N"for d 
       using  d_oedge_V[of d]  \<V>_finite components_in_V card_mono 
       by (force simp add: N_def)
-     have d_oedge_inE':
-     "d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF>) \<Longrightarrow>
+    have d_oedge_inE':
+      "d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF>) \<Longrightarrow>
                  oedge d \<in> \<E>" for d 
       using all_invars(2) o_edge_res  by (auto elim!: inv_digraph_abs_F_in_EE simp add: local.\<FF>_def to_rdg_def)
     hence d_oedge_V':"d \<in> abstract_conv_map to_rdg ` (digraph_abs \<FF>) \<Longrightarrow>
@@ -1831,7 +1830,7 @@ proof-
       using  d_oedge_V'[of d]  \<V>_finite components_in_V card_mono 
       by (force simp add: N_def)
     have d_inF'_rcap:" rcap (abstract_flow_map f) d > 6 * N * \<gamma>" if
-                   asmy:"d \<in> abstract_conv_map to_rdg' ` (digraph_abs \<FF>')" for d
+      asmy:"d \<in> abstract_conv_map to_rdg' ` (digraph_abs \<FF>')" for d
     proof-
       have "d = F e \<Longrightarrow> ereal (6 * real N * \<gamma>) < \<uu>\<^bsub>abstract_flow_map f\<^esub>d"
         using asmy  infinite_u[of e] e_prop  assms(2) by auto
@@ -1843,12 +1842,12 @@ proof-
       next
         case 2
         show ?case
-          proof(subst less_ereal.simps(1), rule order.strict_trans[of _ "(8 * real N * \<gamma>)"], goal_cases)
+        proof(subst less_ereal.simps(1), rule order.strict_trans[of _ "(8 * real N * \<gamma>)"], goal_cases)
           case 1
           thus ?case
             using asm(1) V_non_empt \<V>_finite 1
             by(auto intro:  order.strict_trans[of _ "(8 * real N * \<gamma>)"] mult_less_le_imp_less 
-                 simp add: invar_gamma_def \<gamma>_def N_def)
+                simp add: invar_gamma_def \<gamma>_def N_def)
         qed(rule  e_prop)
       qed
       moreover have "ereal (6 * real N * \<gamma>) < \<uu>\<^bsub>abstract_flow_map f\<^esub>d"
@@ -1857,7 +1856,7 @@ proof-
       proof(cases rule: oedge.cases[of d])
         case (1 e)
         then show ?thesis 
-        using d_oedge_card[of d] infinite_u[of "oedge d"]  asm(4)  asm(5) by auto
+          using d_oedge_card[of d] infinite_u[of "oedge d"]  asm(4)  asm(5) by auto
       next
         case (2 e)
         have "ereal (6 * real N * \<gamma>) \<le> ereal (8 * real (card \<V>) * current_\<gamma> state -
@@ -1904,15 +1903,15 @@ proof-
                      \<le> ereal (real (6 * N) * current_\<gamma> state)"
         using  \<gamma>_geq_0 
         by(auto intro: mult_mono order_trans[of _ "2 * current_\<gamma> state * N"]
-             simp add: \<gamma>_def components_in_V N_def \<V>_finite card_mono mult_mono' that(2,5) x'_y'_in_V(1) )
+            simp add: \<gamma>_def components_in_V N_def \<V>_finite card_mono mult_mono' that(2,5) x'_y'_in_V(1) )
       moreover have "ereal (real (6 * N) * current_\<gamma> state) < \<uu>\<^bsub>abstract_flow_map f\<^esub>d"
-         using  d_inF'_rcap[of d] revQ_subs 3
-         by(auto simp add:   \<gamma>_def) 
-       ultimately show ?case by order
-     qed
+        using  d_inF'_rcap[of d] revQ_subs 3
+        by(auto simp add:   \<gamma>_def) 
+      ultimately show ?case by order
+    qed
     have to_rdg_Q_non_empt: "List.set (to_redge_path to_rdg' Q) \<noteq> {}"
-        using lengthQ
-        by (simp add: proper_path_some_redges)
+      using lengthQ
+      by (simp add: proper_path_some_redges)
 
     have Rcap_Q:"ereal \<bar>abstract_bal_map b x'\<bar> < Rcap (abstract_flow_map f) (List.set (to_redge_path to_rdg' Q))"
     proof(rule Rcap_strictI, goal_cases)
@@ -1930,102 +1929,102 @@ proof-
         by(auto elim!: invarA_1E simp add:  b_def  \<FF>_def)
       moreover have "ereal (thr2 * real (card (connected_component (to_graph \<FF>) x')))
                     \<le> ereal (real (6 * N) * current_\<gamma> state)"
-       using asm(5) components_in_V[of x'] x'_y'_in_V(1) \<gamma>_geq_0 N_def \<V>_finite card_mono[of  \<V>]
-       by(auto intro: order_trans[of _ "2 * current_\<gamma> state * N", OF mult_mono] 
+        using asm(5) components_in_V[of x'] x'_y'_in_V(1) \<gamma>_geq_0 N_def \<V>_finite card_mono[of  \<V>]
+        by(auto intro: order_trans[of _ "2 * current_\<gamma> state * N", OF mult_mono] 
             simp add: invarA_1_def b_def  \<FF>_def \<gamma>_def)
-     moreover have "ereal (real (6 * N) * current_\<gamma> state) < \<uu>\<^bsub>abstract_flow_map f\<^esub>d"
-       using  d_inF'_rcap[of d] Q_subs 3
-       by(auto simp add:\<gamma>_def)
-     ultimately show ?case by order
-   qed
-  have to_redg'_def': "to_rdg' = conv_to_rdg state'"
-    unfolding state'_def by simp
-  have walk_betwQ: "walk_betw (to_graph \<FF>') x' Q y'" 
-    by (simp add: symmetric_F' symmetric_digraph_vwalk_betw_walk_betw to_graph_def vwalk_bet_Q)
-  hence walk_betwQ_rev: "walk_betw (to_graph \<FF>') y' (rev Q) x'"
-    by (simp add: walk_symmetric)
-  have hd_rev_Q:"hd (rev Q) = y'"
-    by(auto intro!: walk_between_nonempty_pathD(3)[of "to_graph \<FF>'" y' "rev Q" x'] 
-                    walk_betwQ walk_symmetric)
-  have last_rev_Q:"last (rev Q) = x'"
-    by(auto intro!: walk_between_nonempty_pathD(4)[of "to_graph \<FF>'" y' "rev Q" x'] 
-                    walk_betwQ walk_symmetric)
-  have hd_Q:"hd Q = x'"
-    by(auto intro!: walk_between_nonempty_pathD(3)[of "to_graph \<FF>'" x' Q y']  walk_betwQ)
-  have last_Q:"last Q = y'"
-    by(auto intro!: walk_between_nonempty_pathD(4)[of "to_graph \<FF>'" x' Q  y']  walk_betwQ)
-  have C_Q_rev_Q:"\<CC> (to_redge_path to_rdg' Q) = - \<CC> (to_redge_path to_rdg' (rev Q))"
-    using to_redge_path_costs[of "digraph_abs \<FF>'" to_rdg' Q, OF consist_to_rdg' lengthQ distinctQ]
-          to_rdg_distinct[of  "digraph_abs \<FF>'" to_rdg' Q, OF consist_to_rdg' distinctQ]
-          to_rdg_distinct[of  "digraph_abs \<FF>'" to_rdg' "rev Q", OF consist_to_rdg', 
-                      simplified distinct_rev[of Q], OF distinctQ] distinct_sum2[of _ \<cc>] 
-    by (simp add: \<CC>_def  edges_of_Q_in_F' edges_of_Q_rev_in_F' symmetric_F' symmetric_digraphD)
-  hence b_bound_Rcap:"ereal (- abstract_bal_map b x') \<le>
+      moreover have "ereal (real (6 * N) * current_\<gamma> state) < \<uu>\<^bsub>abstract_flow_map f\<^esub>d"
+        using  d_inF'_rcap[of d] Q_subs 3
+        by(auto simp add:\<gamma>_def)
+      ultimately show ?case by order
+    qed
+    have to_redg'_def': "to_rdg' = conv_to_rdg state'"
+      unfolding state'_def by simp
+    have walk_betwQ: "walk_betw (to_graph \<FF>') x' Q y'" 
+      by (simp add: symmetric_F' symmetric_digraph_vwalk_betw_walk_betw to_graph_def vwalk_bet_Q)
+    hence walk_betwQ_rev: "walk_betw (to_graph \<FF>') y' (rev Q) x'"
+      by (simp add: walk_symmetric)
+    have hd_rev_Q:"hd (rev Q) = y'"
+      by(auto intro!: walk_between_nonempty_pathD(3)[of "to_graph \<FF>'" y' "rev Q" x'] 
+          walk_betwQ walk_symmetric)
+    have last_rev_Q:"last (rev Q) = x'"
+      by(auto intro!: walk_between_nonempty_pathD(4)[of "to_graph \<FF>'" y' "rev Q" x'] 
+          walk_betwQ walk_symmetric)
+    have hd_Q:"hd Q = x'"
+      by(auto intro!: walk_between_nonempty_pathD(3)[of "to_graph \<FF>'" x' Q y']  walk_betwQ)
+    have last_Q:"last Q = y'"
+      by(auto intro!: walk_between_nonempty_pathD(4)[of "to_graph \<FF>'" x' Q  y']  walk_betwQ)
+    have C_Q_rev_Q:"\<CC> (to_redge_path to_rdg' Q) = - \<CC> (to_redge_path to_rdg' (rev Q))"
+      using to_redge_path_costs[of "digraph_abs \<FF>'" to_rdg' Q, OF consist_to_rdg' lengthQ distinctQ]
+        to_rdg_distinct[of  "digraph_abs \<FF>'" to_rdg' Q, OF consist_to_rdg' distinctQ]
+        to_rdg_distinct[of  "digraph_abs \<FF>'" to_rdg' "rev Q", OF consist_to_rdg', 
+          simplified distinct_rev[of Q], OF distinctQ] distinct_sum2[of _ \<cc>] 
+      by (simp add: \<CC>_def  edges_of_Q_in_F' edges_of_Q_rev_in_F' symmetric_F' symmetric_digraphD)
+    hence b_bound_Rcap:"ereal (- abstract_bal_map b x') \<le>
                    Rcap (abstract_flow_map f) (List.set (to_redge_path to_rdg' (rev Q)))"
       using Rcap_rev_Q  ereal_less_le linorder_le_less_linear not_less_iff_gr_or_eq by fastforce
     have augpath_Q: "augpath (abstract_flow_map f) (to_redge_path to_rdg' (rev Q))"
     proof(rule augpathI, goal_cases)
       case 1
       then show ?case 
-         unfolding to_redg'_def'
-         using underlying_invars_state' walk_betwQ_rev lengthQ  
-         by(fastforce intro!:  perpath_to_redgepath simp add: state'_def inv_conversion_consistent_from_underlying_invars inv_digraph_abs_\<FF>_sym_from_underlying_invars)
-     next
-       case 2
-       show ?case  using Rcap_rev_Q abs_ereal_pos[of "abstract_bal_map b x'"]
-              order.strict_trans1[of 0 "\<bar>ereal (abstract_bal_map b x')\<bar>"]
-         by auto
-     qed
-      have rev_Q_in_E: "List.set (to_redge_path to_rdg' (rev Q)) \<subseteq> \<EE>"
-        using underlying_invars_state' Q_rev_redges_in_F assms(3) from_underlying_invars'(2)
-        by(auto simp add: F_def F_redges_def)
-      have distinct_redges_rev_Q: "distinct (to_redge_path to_rdg' (rev Q))"
-        using consist_to_rdg' distinctQ
-        by (simp add: edges_of_Q_rev_in_F' to_rdg_distinct)
-      have start_Q_y':"fstv (hd (to_redge_path to_rdg' (rev Q))) = y'"
-        using consist_to_rdg'  lengthQ hd_rev_Q
-        by (simp add: edges_of_Q_rev_in_F' to_rdg_hd)
-      have target_Q_x': "sndv (last (to_redge_path to_rdg' (rev Q))) = x'"
-        using consist_to_rdg'  lengthQ last_rev_Q
-        by (simp add: edges_of_Q_rev_in_F' to_rdg_last)
+        unfolding to_redg'_def'
+        using underlying_invars_state' walk_betwQ_rev lengthQ  
+        by(fastforce intro!:  perpath_to_redgepath simp add: state'_def inv_conversion_consistent_from_underlying_invars inv_digraph_abs_\<FF>_sym_from_underlying_invars)
+    next
+      case 2
+      show ?case  using Rcap_rev_Q abs_ereal_pos[of "abstract_bal_map b x'"]
+          order.strict_trans1[of 0 "\<bar>ereal (abstract_bal_map b x')\<bar>"]
+        by auto
+    qed
+    have rev_Q_in_E: "List.set (to_redge_path to_rdg' (rev Q)) \<subseteq> \<EE>"
+      using underlying_invars_state' Q_rev_redges_in_F assms(3) from_underlying_invars'(2)
+      by(auto simp add: F_def F_redges_def)
+    have distinct_redges_rev_Q: "distinct (to_redge_path to_rdg' (rev Q))"
+      using consist_to_rdg' distinctQ
+      by (simp add: edges_of_Q_rev_in_F' to_rdg_distinct)
+    have start_Q_y':"fstv (hd (to_redge_path to_rdg' (rev Q))) = y'"
+      using consist_to_rdg'  lengthQ hd_rev_Q
+      by (simp add: edges_of_Q_rev_in_F' to_rdg_hd)
+    have target_Q_x': "sndv (last (to_redge_path to_rdg' (rev Q))) = x'"
+      using consist_to_rdg'  lengthQ last_rev_Q
+      by (simp add: edges_of_Q_rev_in_F' to_rdg_last)
 
-      hence bal_x'_Rcap_bound:"ereal (abstract_bal_map b x') \<le>
+    hence bal_x'_Rcap_bound:"ereal (abstract_bal_map b x') \<le>
                 Rcap (abstract_flow_map f) (List.set (to_redge_path to_rdg' Q))"
-        using Rcap_Q by (simp add: ereal_less_le order_less_imp_le)
-      have aupath_Q: "augpath (abstract_flow_map f) (to_redge_path to_rdg' Q)"
+      using Rcap_Q by (simp add: ereal_less_le order_less_imp_le)
+    have aupath_Q: "augpath (abstract_flow_map f) (to_redge_path to_rdg' Q)"
     proof(rule augpathI, goal_cases)
       case 1
       then show ?case 
-         unfolding to_redg'_def'
-         using underlying_invars_state' walk_betwQ lengthQ  
-         by(fastforce intro!:  perpath_to_redgepath simp add: state'_def inv_conversion_consistent_from_underlying_invars inv_digraph_abs_\<FF>_sym_from_underlying_invars)
-     next
-       case 2
-       show ?case  using Rcap_Q abs_ereal_pos[of "abstract_bal_map b x'"]
-              order.strict_trans1[of 0 "\<bar>ereal (abstract_bal_map b x')\<bar>"]
-         by auto
-     qed
-     have Q_in_E: "List.set (to_redge_path to_rdg'  Q) \<subseteq> \<EE>"
-       using Q_oedges_in_E o_edge_res by auto
-     have distinct_redges_Q: "distinct (to_redge_path to_rdg' Q)"
-       using consist_to_rdg' distinctQ edges_of_Q_in_F' to_rdg_distinct by auto
-      have start_Q_x':"fstv (hd (to_redge_path to_rdg' Q)) = x'"
-        using consist_to_rdg'  lengthQ hd_Q
-        by (simp add: edges_of_Q_in_F' to_rdg_hd)
-      have target_Q_y': "sndv (last (to_redge_path to_rdg' Q)) = y'"
-        using consist_to_rdg'  lengthQ last_Q
-        by (simp add: edges_of_Q_in_F' to_rdg_last)
-      have is_s_t_path_rev_Q: "is_s_t_path (abstract_flow_map f) y' x' (to_redge_path to_rdg' (rev Q))"
-        using augpath_Q rev_Q_in_E distinct_redges_rev_Q start_Q_y' target_Q_x' 
-        by (auto intro: is_s_t_pathI)
-      have is_s_t_path_Q: "is_s_t_path (abstract_flow_map f) x' y' (to_redge_path to_rdg' Q)" 
-        using aupath_Q Q_in_E distinct_redges_Q start_Q_x' target_Q_y'
-        by (auto intro: is_s_t_pathI)
+        unfolding to_redg'_def'
+        using underlying_invars_state' walk_betwQ lengthQ  
+        by(fastforce intro!:  perpath_to_redgepath simp add: state'_def inv_conversion_consistent_from_underlying_invars inv_digraph_abs_\<FF>_sym_from_underlying_invars)
+    next
+      case 2
+      show ?case  using Rcap_Q abs_ereal_pos[of "abstract_bal_map b x'"]
+          order.strict_trans1[of 0 "\<bar>ereal (abstract_bal_map b x')\<bar>"]
+        by auto
+    qed
+    have Q_in_E: "List.set (to_redge_path to_rdg'  Q) \<subseteq> \<EE>"
+      using Q_oedges_in_E o_edge_res by auto
+    have distinct_redges_Q: "distinct (to_redge_path to_rdg' Q)"
+      using consist_to_rdg' distinctQ edges_of_Q_in_F' to_rdg_distinct by auto
+    have start_Q_x':"fstv (hd (to_redge_path to_rdg' Q)) = x'"
+      using consist_to_rdg'  lengthQ hd_Q
+      by (simp add: edges_of_Q_in_F' to_rdg_hd)
+    have target_Q_y': "sndv (last (to_redge_path to_rdg' Q)) = y'"
+      using consist_to_rdg'  lengthQ last_Q
+      by (simp add: edges_of_Q_in_F' to_rdg_last)
+    have is_s_t_path_rev_Q: "is_s_t_path (abstract_flow_map f) y' x' (to_redge_path to_rdg' (rev Q))"
+      using augpath_Q rev_Q_in_E distinct_redges_rev_Q start_Q_y' target_Q_x' 
+      by (auto intro: is_s_t_pathI)
+    have is_s_t_path_Q: "is_s_t_path (abstract_flow_map f) x' y' (to_redge_path to_rdg' Q)" 
+      using aupath_Q Q_in_E distinct_redges_Q start_Q_x' target_Q_y'
+      by (auto intro: is_s_t_pathI)
     show "is_Opt (\<b> - abstract_bal_map b') (abstract_flow_map f')" 
-    unfolding f'_def
+      unfolding f'_def
     proof(cases "0 < abstract_bal_map b x'", goal_cases)
-    case 2
-    note 1 = 2
+      case 2
+      note 1 = 2
       have min_path:"is_min_path (abstract_flow_map f) y' x' (to_redge_path to_rdg' (rev Q))"
       proof(rule is_min_pathI, goal_cases)
         case 1
@@ -2033,83 +2032,83 @@ proof-
           using is_s_t_path_rev_Q by force
       next
         case (2 P')
-          note P'_asm = this
-          show "\<CC> (to_redge_path to_rdg' (rev Q)) \<le> \<CC> P'"
-          proof(rule ccontr)
-            assume lesser_cost_asm:"\<not> \<CC> (to_redge_path to_rdg' (rev Q)) \<le> \<CC> P'"
-            hence costs:"\<CC> (to_redge_path to_rdg' Q) + \<CC> P' < 0" 
-              using C_Q_rev_Q by fastforce
-            define Q' where "Q' = to_redge_path to_rdg' Q"
-            define Qpp where "Qpp = map blue (to_redge_path to_rdg' Q)"
-            define P'cc where "P'cc = map red P'"
-            have markers_removeQ: "to_redge_path to_rdg' Q = map to_redge Qpp"
-              unfolding Qpp_def sym[OF Q'_def]
-              by(induction Q') auto
-            have markers_removeP: "P' = map to_redge P'cc"
-              unfolding P'cc_def
-               by(induction P') auto
-            have markers_remove: "to_redge_path to_rdg' Q @ P' = map to_redge (Qpp @ P'cc)"
-              unfolding Qpp_def sym[OF Q'_def]
-              using markers_removeP 
-              by (induction Q') auto
-            have hpath: "hpath (Qpp @ P'cc)"
-              using hpath_first_node[of P'cc] P'_asm markers_removeP hpath_last_node[of Qpp] 
-                    is_s_t_path_Q markers_removeQ augpath_to_hpath_red[of "(abstract_flow_map f)"]
-                     augpath_to_hpath_blue[of "(abstract_flow_map f)"]
-              unfolding is_s_t_path_def Qpp_def P'cc_def 
-              by (auto intro: h_path_append)
-            have distinct:"distinct (Qpp @ P'cc)"
-               using is_s_t_path_Q distinct_map[of ] P'_asm distinct_append
-               unfolding Qpp_def P'cc_def is_s_t_path_def inj_on_def 
-               by auto
-             have setE:"List.set (to_redge_path to_rdg' Q @ P') \<subseteq> \<EE>"
-               using P'_asm is_s_t_path_Q
-               unfolding is_s_t_path_def by simp
-             have fstvv_x':"fstvv (hd (Qpp @ P'cc)) = x'"
-               using start_Q_x' is_s_t_path_Q 
-               unfolding Qpp_def is_s_t_path_def augpath_def prepath_def
-               by (simp add: list.map_sel(1))
-             have sndvv_x':"sndvv (last (Qpp @ P'cc)) = x'"
-               using P'_asm  unfolding P'cc_def is_s_t_path_def augpath_def prepath_def
-               by (simp add: last_map)
-            have "\<exists>blue redC.
+        note P'_asm = this
+        show "\<CC> (to_redge_path to_rdg' (rev Q)) \<le> \<CC> P'"
+        proof(rule ccontr)
+          assume lesser_cost_asm:"\<not> \<CC> (to_redge_path to_rdg' (rev Q)) \<le> \<CC> P'"
+          hence costs:"\<CC> (to_redge_path to_rdg' Q) + \<CC> P' < 0" 
+            using C_Q_rev_Q by fastforce
+          define Q' where "Q' = to_redge_path to_rdg' Q"
+          define Qpp where "Qpp = map blue (to_redge_path to_rdg' Q)"
+          define P'cc where "P'cc = map red P'"
+          have markers_removeQ: "to_redge_path to_rdg' Q = map to_redge Qpp"
+            unfolding Qpp_def sym[OF Q'_def]
+            by(induction Q') auto
+          have markers_removeP: "P' = map to_redge P'cc"
+            unfolding P'cc_def
+            by(induction P') auto
+          have markers_remove: "to_redge_path to_rdg' Q @ P' = map to_redge (Qpp @ P'cc)"
+            unfolding Qpp_def sym[OF Q'_def]
+            using markers_removeP 
+            by (induction Q') auto
+          have hpath: "hpath (Qpp @ P'cc)"
+            using hpath_first_node[of P'cc] P'_asm markers_removeP hpath_last_node[of Qpp] 
+              is_s_t_path_Q markers_removeQ augpath_to_hpath_red[of "(abstract_flow_map f)"]
+              augpath_to_hpath_blue[of "(abstract_flow_map f)"]
+            unfolding is_s_t_path_def Qpp_def P'cc_def 
+            by (auto intro: h_path_append)
+          have distinct:"distinct (Qpp @ P'cc)"
+            using is_s_t_path_Q distinct_map[of ] P'_asm distinct_append
+            unfolding Qpp_def P'cc_def is_s_t_path_def inj_on_def 
+            by auto
+          have setE:"List.set (to_redge_path to_rdg' Q @ P') \<subseteq> \<EE>"
+            using P'_asm is_s_t_path_Q
+            unfolding is_s_t_path_def by simp
+          have fstvv_x':"fstvv (hd (Qpp @ P'cc)) = x'"
+            using start_Q_x' is_s_t_path_Q 
+            unfolding Qpp_def is_s_t_path_def augpath_def prepath_def
+            by (simp add: list.map_sel(1))
+          have sndvv_x':"sndvv (last (Qpp @ P'cc)) = x'"
+            using P'_asm  unfolding P'cc_def is_s_t_path_def augpath_def prepath_def
+            by (simp add: last_map)
+          have "\<exists>blue redC.
                   Ball (List.set redC) precycle \<and>
                   prepath blue \<and>
                   distinct blue \<and>
                   sum cc (List.set (Qpp@P'cc)) = \<CC> blue + foldr (\<lambda>D. (+) (\<CC> D)) redC 0 \<and>
                   List.set ((to_redge_path to_rdg' Q)@P') = List.set blue \<union> \<Union> {List.set D |D. D \<in> List.set redC} \<and> 
                   fstv (hd blue) = x' \<and> sndv (last blue) = x'"
-              using markers_remove  hpath  distinct  setE fstvv_x' sndvv_x' 
-              by (fastforce intro!: distinct_hpath_to_distinct_augpath_and_augcycles)
-            then obtain P'' redC where all_props:" Ball (List.set redC) precycle"
-                  "prepath P''"
-                  "distinct P''"
-                  "sum cc (List.set (Qpp@P'cc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) redC 0"
-                  "List.set ((to_redge_path to_rdg' Q)@P') = List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}"
-                  "fstv (hd P'') = x'" "sndv (last P'') = x'" by auto
-            have "sum cc (List.set (Qpp@P'cc)) = \<CC> (to_redge_path to_rdg' Q) + \<CC> P'"
-              using distinct_red_sum distinct_blue_sum Qpp_def P'cc_def
-                    P'_asm is_s_t_path_Q unfolding is_s_t_path_def augpath_def prepath_def  \<CC>_def 
-              by (subst set_append, subst sum.union_disjoint) auto
-            then obtain C where C_prop:"(C = P'') \<or> C \<in> List.set redC" "\<CC> C < 0"
-              using costs all_props(4) fold_sum_neg_neg_element[of \<CC> redC]
-              by force
-            have Rcap_pos:"Rcap (abstract_flow_map f) (List.set C) > 0"
-              using is_s_t_path_Q  C_prop  P'_asm is_s_t_path_Q sym[OF all_props(5)]
-              unfolding augcycle_def augpath_def precycle_def is_s_t_path_def prepath_def \<CC>_def
-              by (intro Rcap_subset[of "List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}" "List.set C"], 
+            using markers_remove  hpath  distinct  setE fstvv_x' sndvv_x' 
+            by (fastforce intro!: distinct_hpath_to_distinct_augpath_and_augcycles)
+          then obtain P'' redC where all_props:" Ball (List.set redC) precycle"
+            "prepath P''"
+            "distinct P''"
+            "sum cc (List.set (Qpp@P'cc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) redC 0"
+            "List.set ((to_redge_path to_rdg' Q)@P') = List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}"
+            "fstv (hd P'') = x'" "sndv (last P'') = x'" by auto
+          have "sum cc (List.set (Qpp@P'cc)) = \<CC> (to_redge_path to_rdg' Q) + \<CC> P'"
+            using distinct_red_sum distinct_blue_sum Qpp_def P'cc_def
+              P'_asm is_s_t_path_Q unfolding is_s_t_path_def augpath_def prepath_def  \<CC>_def 
+            by (subst set_append, subst sum.union_disjoint) auto
+          then obtain C where C_prop:"(C = P'') \<or> C \<in> List.set redC" "\<CC> C < 0"
+            using costs all_props(4) fold_sum_neg_neg_element[of \<CC> redC]
+            by force
+          have Rcap_pos:"Rcap (abstract_flow_map f) (List.set C) > 0"
+            using is_s_t_path_Q  C_prop  P'_asm is_s_t_path_Q sym[OF all_props(5)]
+            unfolding augcycle_def augpath_def precycle_def is_s_t_path_def prepath_def \<CC>_def
+            by (intro Rcap_subset[of "List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}" "List.set C"], 
                 auto intro: Rcap_union[of "List.set (to_redge_path to_rdg' Q)" "List.set P'"])
-            have "augcycle (abstract_flow_map f) C"
-              using C_prop all_props P'_asm is_s_t_path_Q Rcap_pos
-              by (auto simp add: augcycle_def augpath_def precycle_def is_s_t_path_def)
-            thus False using asm(7) min_cost_flow_no_augcycle by simp
-          qed
-        qed     
-        have "is_Opt (\<b> - abstract_bal_map b') (abstract_flow_map f')"
+          have "augcycle (abstract_flow_map f) C"
+            using C_prop all_props P'_asm is_s_t_path_Q Rcap_pos
+            by (auto simp add: augcycle_def augpath_def precycle_def is_s_t_path_def)
+          thus False using asm(7) min_cost_flow_no_augcycle by simp
+        qed
+      qed     
+      have "is_Opt (\<b> - abstract_bal_map b') (abstract_flow_map f')"
         using x'_not_y'  asm(7)  b_bound_Rcap  min_path start_Q_y' target_Q_x' 1 
         by (auto intro!: path_aug_opt_pres[of y' x' "\<b> - abstract_bal_map b"
-                          "(abstract_flow_map f)"  ] 
-               simp add: b'_def f'_def b'_is f'_is)
+              "(abstract_flow_map f)"  ] 
+            simp add: b'_def f'_def b'_is f'_is)
       thus ?case using 1 by(simp add: f'_def)
     next
       case 1
@@ -2121,87 +2120,87 @@ proof-
           by (simp add: is_s_t_path_Q)
       next
         case (2 P')
-          note P'_asm = this
-          show "\<CC> (to_redge_path to_rdg' Q) \<le> \<CC> P'"
-          proof(rule ccontr)
-            assume lesser_cost_asm:"\<not> \<CC> (to_redge_path to_rdg' Q) \<le> \<CC> P'"
-            hence costs:"\<CC> (to_redge_path to_rdg' (rev Q)) + \<CC> P' < 0" 
-              using C_Q_rev_Q by fastforce
-            define Q' where "Q' = to_redge_path to_rdg' (rev Q)"
-            define Qpp where "Qpp = map blue (to_redge_path to_rdg' (rev Q))"
-            define P'cc where "P'cc = map red P'"
-            have markers_removeQ: "to_redge_path to_rdg' (rev Q) = map to_redge Qpp"
-              unfolding Qpp_def sym[OF Q'_def]
-              by(induction Q') auto
-            have markers_removeP: "P' = map to_redge P'cc"
-              unfolding P'cc_def
-               by(induction P') auto
-            have markers_remove: "to_redge_path to_rdg' (rev Q) @ P' = map to_redge (Qpp @ P'cc)"
-              unfolding Qpp_def sym[OF Q'_def]
-              using markers_removeP 
-              by (induction Q') auto
-            have hpath: "hpath (Qpp @ P'cc)"
-              using hpath_first_node[of P'cc] P'_asm markers_removeP hpath_last_node[of Qpp] augpath_Q 
-                    target_Q_x'
-                    is_s_t_path_Q markers_removeQ augpath_to_hpath_red[of "(abstract_flow_map f)"]
-                    augpath_to_hpath_blue[of "(abstract_flow_map f)"]
-              unfolding is_s_t_path_def Qpp_def P'cc_def 
-              by (auto intro: h_path_append)
-            have distinct:"distinct (Qpp @ P'cc)"
-              using is_s_t_path_rev_Q distinct_map[of ] P'_asm distinct_append
-              by(auto simp add: Qpp_def P'cc_def is_s_t_path_def inj_on_def  )
-             have setE:"List.set (to_redge_path to_rdg' Q @ P') \<subseteq> \<EE>"
-               using P'_asm is_s_t_path_Q by (simp add: is_s_t_path_def)
-             have setE_rev:"List.set (to_redge_path to_rdg' (rev Q) @ P') \<subseteq> \<EE>"
-               using P'_asm is_s_t_path_rev_Q by(simp add: is_s_t_path_def)
-             have fstvv_x':"fstvv (hd (Qpp @ P'cc)) = y'"
-               using start_Q_y' is_s_t_path_rev_Q              
-               by (simp add: list.map_sel(1) Qpp_def is_s_t_path_def augpath_def prepath_def)
-             have sndvv_x':"sndvv (last (Qpp @ P'cc)) = y'"
-               using P'_asm
-               by (simp add: last_map P'cc_def is_s_t_path_def augpath_def prepath_def)
-            have "\<exists>blue redC.
+        note P'_asm = this
+        show "\<CC> (to_redge_path to_rdg' Q) \<le> \<CC> P'"
+        proof(rule ccontr)
+          assume lesser_cost_asm:"\<not> \<CC> (to_redge_path to_rdg' Q) \<le> \<CC> P'"
+          hence costs:"\<CC> (to_redge_path to_rdg' (rev Q)) + \<CC> P' < 0" 
+            using C_Q_rev_Q by fastforce
+          define Q' where "Q' = to_redge_path to_rdg' (rev Q)"
+          define Qpp where "Qpp = map blue (to_redge_path to_rdg' (rev Q))"
+          define P'cc where "P'cc = map red P'"
+          have markers_removeQ: "to_redge_path to_rdg' (rev Q) = map to_redge Qpp"
+            unfolding Qpp_def sym[OF Q'_def]
+            by(induction Q') auto
+          have markers_removeP: "P' = map to_redge P'cc"
+            unfolding P'cc_def
+            by(induction P') auto
+          have markers_remove: "to_redge_path to_rdg' (rev Q) @ P' = map to_redge (Qpp @ P'cc)"
+            unfolding Qpp_def sym[OF Q'_def]
+            using markers_removeP 
+            by (induction Q') auto
+          have hpath: "hpath (Qpp @ P'cc)"
+            using hpath_first_node[of P'cc] P'_asm markers_removeP hpath_last_node[of Qpp] augpath_Q 
+              target_Q_x'
+              is_s_t_path_Q markers_removeQ augpath_to_hpath_red[of "(abstract_flow_map f)"]
+              augpath_to_hpath_blue[of "(abstract_flow_map f)"]
+            unfolding is_s_t_path_def Qpp_def P'cc_def 
+            by (auto intro: h_path_append)
+          have distinct:"distinct (Qpp @ P'cc)"
+            using is_s_t_path_rev_Q distinct_map[of ] P'_asm distinct_append
+            by(auto simp add: Qpp_def P'cc_def is_s_t_path_def inj_on_def  )
+          have setE:"List.set (to_redge_path to_rdg' Q @ P') \<subseteq> \<EE>"
+            using P'_asm is_s_t_path_Q by (simp add: is_s_t_path_def)
+          have setE_rev:"List.set (to_redge_path to_rdg' (rev Q) @ P') \<subseteq> \<EE>"
+            using P'_asm is_s_t_path_rev_Q by(simp add: is_s_t_path_def)
+          have fstvv_x':"fstvv (hd (Qpp @ P'cc)) = y'"
+            using start_Q_y' is_s_t_path_rev_Q              
+            by (simp add: list.map_sel(1) Qpp_def is_s_t_path_def augpath_def prepath_def)
+          have sndvv_x':"sndvv (last (Qpp @ P'cc)) = y'"
+            using P'_asm
+            by (simp add: last_map P'cc_def is_s_t_path_def augpath_def prepath_def)
+          have "\<exists>blue redC.
                   Ball (List.set redC) precycle \<and>
                   prepath blue \<and>
                   distinct blue \<and>
                   sum cc (List.set (Qpp@P'cc)) = \<CC> blue + foldr (\<lambda>D. (+) (\<CC> D)) redC 0 \<and>
                   List.set ((to_redge_path to_rdg' (rev Q))@P') = List.set blue \<union> \<Union> {List.set D |D. D \<in> List.set redC} \<and> 
                   fstv (hd blue) = y' \<and> sndv (last blue) = y'"
-              using markers_remove  hpath  distinct  setE_rev fstvv_x' sndvv_x' 
-              by (fastforce intro!: distinct_hpath_to_distinct_augpath_and_augcycles)
-            then obtain P'' redC where all_props:" Ball (List.set redC) precycle"
-                  "prepath P''"
-                  "distinct P''"
-                  "sum cc (List.set (Qpp@P'cc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) redC 0"
-                  "List.set ((to_redge_path to_rdg' (rev Q))@P') = List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}"
-                  "fstv (hd P'') = y'" "sndv (last P'') = y'" by auto
-            have "sum cc (List.set (Qpp@P'cc)) = \<CC> (to_redge_path to_rdg' (rev Q)) + \<CC> P'"
-              unfolding \<CC>_def 
-              using distinct_red_sum distinct_blue_sum Qpp_def P'cc_def
-                    P'_asm is_s_t_path_rev_Q unfolding is_s_t_path_def augpath_def prepath_def
-              by (subst set_append, subst sum.union_disjoint) auto
-            then obtain C where C_prop:"(C = P'') \<or> C \<in> List.set redC" "\<CC> C < 0"
-              using costs all_props(4) fold_sum_neg_neg_element[of \<CC> redC]
-              by force
-            have Rcap_pos:"Rcap (abstract_flow_map f) (List.set C) > 0"
-              using is_s_t_path_rev_Q  C_prop  P'_asm is_s_t_path_Q sym[OF all_props(5)]
-              unfolding augcycle_def augpath_def precycle_def is_s_t_path_def prepath_def \<CC>_def
-              by (intro Rcap_subset[of "List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}" "List.set C"], 
-                    auto intro: Rcap_union[of "List.set (to_redge_path to_rdg' (rev Q))" "List.set P'"])
-            have "augcycle (abstract_flow_map f) C"
-              using C_prop all_props P'_asm is_s_t_path_rev_Q Rcap_pos
-              by (auto simp add:  augcycle_def augpath_def precycle_def is_s_t_path_def)
-            thus False using asm(7) min_cost_flow_no_augcycle by simp
-          qed
-        qed     
+            using markers_remove  hpath  distinct  setE_rev fstvv_x' sndvv_x' 
+            by (fastforce intro!: distinct_hpath_to_distinct_augpath_and_augcycles)
+          then obtain P'' redC where all_props:" Ball (List.set redC) precycle"
+            "prepath P''"
+            "distinct P''"
+            "sum cc (List.set (Qpp@P'cc)) = \<CC> P'' + foldr (\<lambda>D. (+) (\<CC> D)) redC 0"
+            "List.set ((to_redge_path to_rdg' (rev Q))@P') = List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}"
+            "fstv (hd P'') = y'" "sndv (last P'') = y'" by auto
+          have "sum cc (List.set (Qpp@P'cc)) = \<CC> (to_redge_path to_rdg' (rev Q)) + \<CC> P'"
+            unfolding \<CC>_def 
+            using distinct_red_sum distinct_blue_sum Qpp_def P'cc_def
+              P'_asm is_s_t_path_rev_Q unfolding is_s_t_path_def augpath_def prepath_def
+            by (subst set_append, subst sum.union_disjoint) auto
+          then obtain C where C_prop:"(C = P'') \<or> C \<in> List.set redC" "\<CC> C < 0"
+            using costs all_props(4) fold_sum_neg_neg_element[of \<CC> redC]
+            by force
+          have Rcap_pos:"Rcap (abstract_flow_map f) (List.set C) > 0"
+            using is_s_t_path_rev_Q  C_prop  P'_asm is_s_t_path_Q sym[OF all_props(5)]
+            unfolding augcycle_def augpath_def precycle_def is_s_t_path_def prepath_def \<CC>_def
+            by (intro Rcap_subset[of "List.set P'' \<union> \<Union> {List.set D |D. D \<in> List.set redC}" "List.set C"], 
+                auto intro: Rcap_union[of "List.set (to_redge_path to_rdg' (rev Q))" "List.set P'"])
+          have "augcycle (abstract_flow_map f) C"
+            using C_prop all_props P'_asm is_s_t_path_rev_Q Rcap_pos
+            by (auto simp add:  augcycle_def augpath_def precycle_def is_s_t_path_def)
+          thus False using asm(7) min_cost_flow_no_augcycle by simp
+        qed
+      qed     
       have "is_Opt (\<b> - abstract_bal_map b') (abstract_flow_map f')"
         using x'_not_y'  asm(7)  bal_x'_Rcap_bound  min_path  x'_not_y' start_Q_x' target_Q_y' 2
         by (auto intro!: path_aug_opt_pres[of x' y' "\<b> - abstract_bal_map b" "(abstract_flow_map f)" ]
-                    simp add: b'_def f'_def f'_is b'_is)     
+            simp add: b'_def f'_def f'_is b'_is)     
       thus ?case
         using 2 by (simp add: f'_def)
-   qed
- qed
+    qed
+  qed
   thus "\<lbrakk>invar_gamma state; thr2 \<ge> 0; invarA_1 thr2 state; invarA_2 thr1 thr2 state;
          thr2 \<le> 2 * current_\<gamma> state; thr1 = 8*real N * current_\<gamma> state; invar_isOptflow state\<rbrakk>
          \<Longrightarrow> invar_isOptflow (maintain_forest_upd state)"
@@ -2209,9 +2208,9 @@ proof-
     by(simp add: invar_isOptflow_def state'_def f_def b_def)
 
   have flow_domain: "set (map oedge (to_redge_path to_rdg' Q)) \<subseteq> flow_domain f"
-                    "set (map oedge (to_redge_path to_rdg' (rev Q))) \<subseteq> flow_domain f"
+    "set (map oedge (to_redge_path to_rdg' (rev Q))) \<subseteq> flow_domain f"
     using  Q_oedges_in_E   Q_rev_oedges_in_E implementation_invar_partialE(2)[OF assms(3)]
-        implementation_invar_partial_props(1)[OF assms(3)] f_def
+      implementation_invar_partial_props(1)[OF assms(3)] f_def
     by fastforce+
   have flow_invar_f: "flow_invar f"
     using assms(3) f_def by blast
@@ -2221,44 +2220,44 @@ proof-
     unfolding state'_is[symmetric]
   proof(rule implementation_invarI)
 
-  have "\<E> = flow_domain f'"
-    using   oedge_of_to_redge_path_rev[OF distinctQ consist_to_rdg'] 
-          Q_oedges_in_E Q_rev_oedges_in_E  
+    have "\<E> = flow_domain f'"
+      using   oedge_of_to_redge_path_rev[OF distinctQ consist_to_rdg'] 
+        Q_oedges_in_E Q_rev_oedges_in_E  
         augment_edges_impl_domain[OF flow_domain(1) flow_invar_f]
         augment_edges_impl_domain[OF flow_domain(2) flow_invar_f]
         implementation_invar_partialE(2)[OF assms(3) flow_invar_f]
         implementation_invar_partial_props(1)[OF assms(3)]
-    by (auto simp add:  f_def f'_def)
-  thus " \<E> = flow_domain (current_flow state')"
-    by(auto simp add: state'_def)
-  show "\<V> = bal_domain (balance state')"
-    using assms(3) x'_y'_in_V(1,2)  abstract_bal_map_domain_exact[OF bal_invar_b refl]
-    by (auto simp add: state'_def b'_def  b_def)
-  show "flow_invar  (current_flow state')"
-    using Q_oedges_in_E Q_rev_oedges_in_E assms(3) 
-    by (auto simp add: f'_def f_def state'_def)
-  show "bal_invar (balance state')" 
-    using abstract_bal_invar[OF bal_invar_b refl]
-    by(auto simp add:  state'_def b'_def)
-  show "[Algo_state.\<FF> state']\<^sub>g = conv_domain (conv_to_rdg state')"
-    using F'_digraph_abs_is assms(3) 
-    by (auto simp add: state'_def  implementation_invar_def local.\<FF>_def to_rdg'_def to_rdg_def x_def y_def)
-  show "conv_invar (conv_to_rdg state')"
-    using abstract_conv_invar assms(3) 
-    by (auto simp add: state'_def to_rdg'_def to_rdg_def)
-  note  rep_comp_upd_all(1,3,4)[simp]
-  show "\<V> = rep_comp_domain (rep_comp_card state')"
-    using assms(3)  rep_comp_invar_r_card 
-    by (force simp add: r_card'_def r_card_def state'_def)
-  show "rep_comp_invar (rep_comp_card state')"
-    by (simp add: state'_def r_card'_def rep_comp_invar_r_card)
-  note  not_blocked_upd_all(1,3,4)[simp]
-  show "not_blocked_invar (not_blocked state')"
-    by (simp add: state'_def nb'_def not_blocked_invar_nb)
-  show "\<E> = not_blocked_dom (not_blocked state')"
-    using assms(3)  
-    by (force simp add: state'_def implementation_invar_def nb'_def nb_def) 
- qed 
+      by (auto simp add:  f_def f'_def)
+    thus " \<E> = flow_domain (current_flow state')"
+      by(auto simp add: state'_def)
+    show "\<V> = bal_domain (balance state')"
+      using assms(3) x'_y'_in_V(1,2)  abstract_bal_map_domain_exact[OF bal_invar_b refl]
+      by (auto simp add: state'_def b'_def  b_def)
+    show "flow_invar  (current_flow state')"
+      using Q_oedges_in_E Q_rev_oedges_in_E assms(3) 
+      by (auto simp add: f'_def f_def state'_def)
+    show "bal_invar (balance state')" 
+      using abstract_bal_invar[OF bal_invar_b refl]
+      by(auto simp add:  state'_def b'_def)
+    show "[Algo_state.\<FF> state']\<^sub>g = conv_domain (conv_to_rdg state')"
+      using F'_digraph_abs_is assms(3) 
+      by (auto simp add: state'_def  implementation_invar_def local.\<FF>_def to_rdg'_def to_rdg_def x_def y_def)
+    show "conv_invar (conv_to_rdg state')"
+      using abstract_conv_invar assms(3) 
+      by (auto simp add: state'_def to_rdg'_def to_rdg_def)
+    note  rep_comp_upd_all(1,3,4)[simp]
+    show "\<V> = rep_comp_domain (rep_comp_card state')"
+      using assms(3)  rep_comp_invar_r_card 
+      by (force simp add: r_card'_def r_card_def state'_def)
+    show "rep_comp_invar (rep_comp_card state')"
+      by (simp add: state'_def r_card'_def rep_comp_invar_r_card)
+    note  not_blocked_upd_all(1,3,4)[simp]
+    show "not_blocked_invar (not_blocked state')"
+      by (simp add: state'_def nb'_def not_blocked_invar_nb)
+    show "\<E> = not_blocked_dom (not_blocked state')"
+      using assms(3)  
+      by (force simp add: state'_def implementation_invar_def nb'_def nb_def) 
+  qed 
 qed
  
 text \<open>The monotone properties\<close>
@@ -2295,11 +2294,11 @@ lemma mono_one_step:
               \<subset> connected_component (to_graph (\<FF> (maintain_forest_upd state))) (fst e)"
 proof-
   have all_invars: "inv_actives_in_E state" "inv_digraph_abs_F_in_E state" "inv_forest_in_E state" "inv_forest_actives_disjoint state"
-                   "inv_conversion_consistent state" "inv_rep_reachable state" "inv_reachable_same_rep state" "inv_reps_in_V state "
-                   "inv_finite_forest state" "inv_components_in_V state" "inv_active_different_comps state" "inv_pos_bal_rep state"
-                   "inv_inactive_same_component state" "inv_comp_card_correct state" "inv_set_invar_actives state" "inv_forest_good_graph state"
-                    "inv_digraph_abs_\<FF>_sym state" "inv_dbltn_graph_forest state"
-                   "inv_unbl_iff_forest_active state"
+    "inv_conversion_consistent state" "inv_rep_reachable state" "inv_reachable_same_rep state" "inv_reps_in_V state "
+    "inv_finite_forest state" "inv_components_in_V state" "inv_active_different_comps state" "inv_pos_bal_rep state"
+    "inv_inactive_same_component state" "inv_comp_card_correct state" "inv_set_invar_actives state" "inv_forest_good_graph state"
+    "inv_digraph_abs_\<FF>_sym state" "inv_dbltn_graph_forest state"
+    "inv_unbl_iff_forest_active state"
     using assms by(auto simp add: underlying_invars_def)
   define  \<FF> where  "\<FF> = Algo_state.\<FF> state"
   define f where "f = current_flow state"
@@ -2345,22 +2344,22 @@ proof-
                 not_blocked := nb'\<rparr>"
 
   note defs_impl = state'_def \<FF>'_def e_def \<gamma>_def E'_def
-              f_def \<FF>_def f'_def b_def x'_def r_card'_def r_card_def
-              xx_def xy_def  x_def y_def b'_def Q_def cardx_def cardy_def
-              to_rdg'_def y'_def to_rdg_def yy_def E''_def nb_def
-              nb'_def
+    f_def \<FF>_def f'_def b_def x'_def r_card'_def r_card_def
+    xx_def xy_def  x_def y_def b'_def Q_def cardx_def cardy_def
+    to_rdg'_def y'_def to_rdg_def yy_def E''_def nb_def
+    nb'_def
 
-   have state'_is: "state' = maintain_forest_upd state"
+  have state'_is: "state' = maintain_forest_upd state"
     apply(rule Algo_state.equality)
     by (auto intro!: cong[OF cong, OF refl, of _ _ _ _ rep_comp_upd_all] ext 
-          simp add: maintain_forest_upd_def Let_def defs_impl)
+        simp add: maintain_forest_upd_def Let_def defs_impl)
   have set_invar_E'[simp]: "set_invar E'"
     using E'_def all_invars(15) inv_set_invar_actives_def by blast
   have E'_substE:"to_set E' \<subseteq> \<E>"
     using all_invars(1) by(simp add: E'_def inv_actives_in_E_def)
   have e_prop: "e \<in> to_set E'" "abstract_flow_map f e > 8 * real N *\<gamma>"
-                "get_from_set (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = Some e"
-    apply(all \<open>rule maintain_forest_call_condE[OF assms(1)]\<close>)
+    "get_from_set (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E' = Some e"
+      apply(all \<open>rule maintain_forest_call_condE[OF assms(1)]\<close>)
     using set_get(2,3)[OF set_invar_E'] 
     by(auto simp add: f_def e_def \<gamma>_def E'_def)
   have fste_V[simp]: "fst e \<in> \<V>" 
@@ -2387,10 +2386,10 @@ proof-
       (auto simp add: add_direction_result to_rdg_def)
   have forest_edges_neq_e:"{a, b} \<in> to_graph \<FF> \<Longrightarrow> {a, b} \<noteq> {x, y}" for a b
     using  assms(2) e_in_E' from_underlying_invars'(11)  mk_disjoint_insert
-        new_edge_disjoint_components[OF refl refl refl]
+      new_edge_disjoint_components[OF refl refl refl]
     by(fastforce simp add: x_def y_def local.\<FF>_def E'_def)
   hence dir_forest_edges_neq_e:"(a, b) \<in> digraph_abs \<FF> \<Longrightarrow> (a, b) \<noteq> (x, y)" 
-                               "(a, b) \<in> digraph_abs \<FF> \<Longrightarrow> (a, b) \<noteq> (y, x)" for a b
+    "(a, b) \<in> digraph_abs \<FF> \<Longrightarrow> (a, b) \<noteq> (y, x)" for a b
     by(auto simp add: to_graph'_def)
   have res_edges_new_forest_are:"abstract_conv_map to_rdg' ` [\<FF>']\<^sub>g  
          = {F e, B e} \<union> abstract_conv_map to_rdg ` [\<FF>]\<^sub>g"
@@ -2401,15 +2400,15 @@ proof-
     by(auto simp add: x'_def y'_def xx_def yy_def xy_def x_def y_def)
   have reachable_in_forest_fst_in_V:"reachable (to_graph \<FF>) a b \<Longrightarrow> a \<in> \<V>" for a b 
     using assms(2) from_underlying_invars'(15) local.\<FF>_def reachable_to_Vs(1) by blast
-    have x'_y'_in_V:"x' \<in> \<V>"  "y' \<in> \<V>" 
-      using x'_y'_set_is from_underlying_invars'(9)[OF assms(2)] fste_V snde_V
-      by(auto simp add: r_card_def doubleton_eq_iff)
-    have new_balance_is: "a_balance state' = (\<lambda>v. if v = x' then 0
+  have x'_y'_in_V:"x' \<in> \<V>"  "y' \<in> \<V>" 
+    using x'_y'_set_is from_underlying_invars'(9)[OF assms(2)] fste_V snde_V
+    by(auto simp add: r_card_def doubleton_eq_iff)
+  have new_balance_is: "a_balance state' = (\<lambda>v. if v = x' then 0
           else if v = y' then abstract_bal_map b y' + abstract_bal_map b x'
                else abstract_bal_map b v)"
-      using assms(3)
-      by(auto simp add:state'_def b'_def  abstract_bal_map_homo[OF  _  refl] b_def)
-    note state_state' = state'_is
+    using assms(3)
+    by(auto simp add:state'_def b'_def  abstract_bal_map_homo[OF  _  refl] b_def)
+  note state_state' = state'_is
   have reachable_F'_xx_x':"reachable (to_graph \<FF>) xx x' \<or> xx = x'"
     by (simp add: assms(2) from_underlying_invars'(8) local.\<FF>_def r_card_def x'_def)
   have reachable_yy_y':"reachable (to_graph \<FF>) yy y' \<or> yy = y'"
@@ -2421,144 +2420,144 @@ proof-
     using components_e_different by auto
   have asm': "inv_active_different_comps state" 
     using assms by(auto elim!: underlying_invarsE)
-    have cards_same_cond: "card (connected_component (to_graph \<FF>) x)
+  have cards_same_cond: "card (connected_component (to_graph \<FF>) x)
                            \<le> card (connected_component (to_graph \<FF>) y) \<longleftrightarrow>
                           abstract_comp_map r_card x \<le> abstract_comp_map r_card y" 
-      using reachable_F'_xx_x' reachable_yy_y' inv_comp_card_correctD[OF all_invars(14), of x]
-            inv_comp_card_correctD[OF all_invars(14), of y]
-            reachable_in_forest_fst_in_V x'_y'_in_V(1,2)
-      by(cases "cardx \<le> cardy") (auto simp add: xx_def xy_def yy_def  local.\<FF>_def r_card_def)
-    have x'_not_y':"x' \<noteq> y'" 
-      proof
-        assume " x' = y'"
-        hence "connected_component (to_graph \<FF>) x = connected_component (to_graph \<FF>) y"
-          using reachable_F'_xx_x' reachable_yy_y' cards_same_cond
-           connected_components_member_eq[of x' "(to_graph \<FF>)" xx] 
-           in_connected_componentI[of "(to_graph \<FF>)" xx x'] 
-           connected_components_member_eq[of y' "(to_graph \<FF>)" yy]
-           in_connected_componentI[of "(to_graph \<FF>)" yy y']
-          by(cases "cardx \<le> cardy") (auto simp add: xx_def yy_def xy_def)
-        thus False
-          by (simp add: components_e_different x_def y_def)
-      qed
-     have comp_y_y':"connected_component (insert {fst e, snd e} (to_graph \<FF>)) y' =
-          connected_component (insert {fst e, snd e} (to_graph \<FF>)) y"
-      apply(subst connected_components_member_eq[ of y' "(to_graph \<FF>')" yy, simplified F_rewrite])
-       using reachable_yy_y' in_connected_componentI[of "(to_graph \<FF>')" yy y']
-             reachable_subset[of "(to_graph \<FF>)" yy y' "(to_graph \<FF>')"]
-             in_connected_componentI2[of yy y' "(to_graph \<FF>')"] F_rewrite
-             new_edge_disjoint_components[of x y "(to_graph \<FF>)"]  x_def xy_def y_def yy_def
-       by (fastforce, auto)
-     have reps_inxx_yy_comps: "x' \<in> connected_component (to_graph \<FF>) xx"
-                              "y' \<in> connected_component (to_graph \<FF>) yy"
-        using reachable_F'_xx_x' in_connected_componentI[of "(to_graph \<FF>)" xx x']
-             in_own_connected_component[of x' "(to_graph \<FF>)"]
-             in_connected_componentI[of "(to_graph \<FF>)" yy y']
-             in_own_connected_component[of y' "(to_graph \<FF>)"] reachable_yy_y'
-        by auto
-     have comps_union:"connected_component (to_graph \<FF>') y' =
-                      connected_component (to_graph \<FF>) y' \<union> connected_component (to_graph \<FF>) x'"
-     proof(subst connected_components_member_eq[OF reps_inxx_yy_comps(1)],
-          subst connected_components_member_eq[OF reps_inxx_yy_comps(2)], 
-          rule trans[of _ "connected_component (insert {fst e, snd e} (to_graph \<FF>)) y"], goal_cases)
-       case 1
-      show ?case
-        using F_rewrite comp_y_y' by auto
-    next
-      case 2
-      show ?case
-      by(intro trans[OF sym[OF insert_edge_endpoints_same_component[of
-                                "(insert {fst e, snd e} (to_graph \<FF>))" _ x "(to_graph \<FF>)"]]])
-         (auto split: if_split simp add: insert_commute x_def y_def  xx_def xy_def yy_def  )
+    using reachable_F'_xx_x' reachable_yy_y' inv_comp_card_correctD[OF all_invars(14), of x]
+      inv_comp_card_correctD[OF all_invars(14), of y]
+      reachable_in_forest_fst_in_V x'_y'_in_V(1,2)
+    by(cases "cardx \<le> cardy") (auto simp add: xx_def xy_def yy_def  local.\<FF>_def r_card_def)
+  have x'_not_y':"x' \<noteq> y'" 
+  proof
+    assume " x' = y'"
+    hence "connected_component (to_graph \<FF>) x = connected_component (to_graph \<FF>) y"
+      using reachable_F'_xx_x' reachable_yy_y' cards_same_cond
+        connected_components_member_eq[of x' "(to_graph \<FF>)" xx] 
+        in_connected_componentI[of "(to_graph \<FF>)" xx x'] 
+        connected_components_member_eq[of y' "(to_graph \<FF>)" yy]
+        in_connected_componentI[of "(to_graph \<FF>)" yy y']
+      by(cases "cardx \<le> cardy") (auto simp add: xx_def yy_def xy_def)
+    thus False
+      by (simp add: components_e_different x_def y_def)
   qed
-     note concretization_of_F' = res_edges_new_forest_are
-     have consist_to_rdg':"consist (digraph_abs \<FF>') (abstract_conv_map to_rdg')"
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
-       by(auto elim!: inv_conversion_consistentE''  underlying_invarsE simp add: state'_def)
-    have axioms_conds1: "x' \<in> Vs (to_graph \<FF>')" 
-      using comps_union in_connected_component_in_edges[of x' "(to_graph \<FF>')" y']
-             x'_not_y' in_own_connected_component[of x' "(to_graph \<FF>)"]
-      by simp
-    have axioms_conds2: "Vs (to_graph \<FF>') \<subseteq> \<V> " 
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
-       by(auto elim!:  underlying_invarsE inv_forest_in_VE simp add: state'_def)
-     have axioms_conds3: "graph_invar (to_graph \<FF>')"
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-             validFD[of state'] 
-       by(auto elim!: underlying_invarsE inv_dbltn_graph_forestE simp add: state'_def)
-     have good_graphF': "good_graph_invar \<FF>'"
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-       by(auto elim!: underlying_invarsE inv_forest_good_graphE'' simp add: state'_def)
-     obtain qqq_u where qqq_prop_u:"walk_betw (to_graph  \<FF>') x' qqq_u y'"
+  have comp_y_y':"connected_component (insert {fst e, snd e} (to_graph \<FF>)) y' =
+          connected_component (insert {fst e, snd e} (to_graph \<FF>)) y"
+    apply(subst connected_components_member_eq[ of y' "(to_graph \<FF>')" yy, simplified F_rewrite])
+    using reachable_yy_y' in_connected_componentI[of "(to_graph \<FF>')" yy y']
+      reachable_subset[of "(to_graph \<FF>)" yy y' "(to_graph \<FF>')"]
+      in_connected_componentI2[of yy y' "(to_graph \<FF>')"] F_rewrite
+      new_edge_disjoint_components[of x y "(to_graph \<FF>)"]  x_def xy_def y_def yy_def
+    by (fastforce, auto)
+  have reps_inxx_yy_comps: "x' \<in> connected_component (to_graph \<FF>) xx"
+    "y' \<in> connected_component (to_graph \<FF>) yy"
+    using reachable_F'_xx_x' in_connected_componentI[of "(to_graph \<FF>)" xx x']
+      in_own_connected_component[of x' "(to_graph \<FF>)"]
+      in_connected_componentI[of "(to_graph \<FF>)" yy y']
+      in_own_connected_component[of y' "(to_graph \<FF>)"] reachable_yy_y'
+    by auto
+  have comps_union:"connected_component (to_graph \<FF>') y' =
+                      connected_component (to_graph \<FF>) y' \<union> connected_component (to_graph \<FF>) x'"
+  proof(subst connected_components_member_eq[OF reps_inxx_yy_comps(1)],
+      subst connected_components_member_eq[OF reps_inxx_yy_comps(2)], 
+      rule trans[of _ "connected_component (insert {fst e, snd e} (to_graph \<FF>)) y"], goal_cases)
+    case 1
+    show ?case
+      using F_rewrite comp_y_y' by auto
+  next
+    case 2
+    show ?case
+      by(intro trans[OF sym[OF insert_edge_endpoints_same_component[of
+                "(insert {fst e, snd e} (to_graph \<FF>))" _ x "(to_graph \<FF>)"]]])
+        (auto split: if_split simp add: insert_commute x_def y_def  xx_def xy_def yy_def  )
+  qed
+  note concretization_of_F' = res_edges_new_forest_are
+  have consist_to_rdg':"consist (digraph_abs \<FF>') (abstract_conv_map to_rdg')"
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
+    by(auto elim!: inv_conversion_consistentE''  underlying_invarsE simp add: state'_def)
+  have axioms_conds1: "x' \<in> Vs (to_graph \<FF>')" 
+    using comps_union in_connected_component_in_edges[of x' "(to_graph \<FF>')" y']
+      x'_not_y' in_own_connected_component[of x' "(to_graph \<FF>)"]
+    by simp
+  have axioms_conds2: "Vs (to_graph \<FF>') \<subseteq> \<V> " 
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]]
+    by(auto elim!:  underlying_invarsE inv_forest_in_VE simp add: state'_def)
+  have axioms_conds3: "graph_invar (to_graph \<FF>')"
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+      validFD[of state'] 
+    by(auto elim!: underlying_invarsE inv_dbltn_graph_forestE simp add: state'_def)
+  have good_graphF': "good_graph_invar \<FF>'"
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+    by(auto elim!: underlying_invarsE inv_forest_good_graphE'' simp add: state'_def)
+  obtain qqq_u where qqq_prop_u:"walk_betw (to_graph  \<FF>') x' qqq_u y'"
     using comps_union connected_components_member_sym[of x' "to_graph \<FF>'" y'] 
-          axioms_conds1 axioms_conds2 axioms_conds3
-           in_connected_componentE[of y' "to_graph  \<FF>'" x']
-            in_connected_componentI2[of x' x' "to_graph \<FF>"]  x'_not_y' 
+      axioms_conds1 axioms_conds2 axioms_conds3
+      in_connected_componentE[of y' "to_graph  \<FF>'" x']
+      in_connected_componentI2[of x' x' "to_graph \<FF>"]  x'_not_y' 
     by(auto intro: in_connected_component_has_walk)
   have symmetric_F': "symmetric_digraph (digraph_abs \<FF>')" 
-       using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-       by(auto elim!: underlying_invarsE inv_digraph_abs_\<FF>_symE simp add: state'_def)
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+    by(auto elim!: underlying_invarsE inv_digraph_abs_\<FF>_symE simp add: state'_def)
   obtain qqq where qqq_prop:"vwalk_bet (digraph_abs  \<FF>') x' qqq y'"
     using symmetric_digraph_walk_betw_vwalk_bet symmetric_F' qqq_prop_u 
     by(force simp add: to_graph_def) 
   note x'_inVs = axioms_conds1
   have distinctQ: "distinct Q" and vwalk_bet_Q: "vwalk_bet [\<FF>']\<^sub>g x' Q y'"
-     using qqq_prop x'_inVs x'_not_y'  good_graphF'
-     by (auto intro!: get_path_axioms_unfolded[of \<FF>' x' qqq y']  Q_def )
-   hence vwalk_bet_rev_Q: "vwalk_bet [\<FF>']\<^sub>g y' (rev Q) x'"
-     by (simp add: symmetric_F' symmetric_digraph_vwalk_bet_vwalk_bet)
-   have oedge_of_Q:"oedge ` List.set (to_redge_path to_rdg' Q) = 
+    using qqq_prop x'_inVs x'_not_y'  good_graphF'
+    by (auto intro!: get_path_axioms_unfolded[of \<FF>' x' qqq y']  Q_def )
+  hence vwalk_bet_rev_Q: "vwalk_bet [\<FF>']\<^sub>g y' (rev Q) x'"
+    by (simp add: symmetric_F' symmetric_digraph_vwalk_bet_vwalk_bet)
+  have oedge_of_Q:"oedge ` List.set (to_redge_path to_rdg' Q) = 
           oedge ` abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk Q))"
-     using consist_to_rdg' distinctQ oedge_of_to_redgepath_subset by auto
-    have redge_of_Q:"List.set (to_redge_path to_rdg' Q) \<subseteq> 
+    using consist_to_rdg' distinctQ oedge_of_to_redgepath_subset by auto
+  have redge_of_Q:"List.set (to_redge_path to_rdg' Q) \<subseteq> 
           abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk Q))"
-      using consist_to_rdg' distinctQ to_redgepath_subset by blast
-    have redge_of_Q_rev:"List.set (to_redge_path to_rdg' (rev Q)) \<subseteq> 
+    using consist_to_rdg' distinctQ to_redgepath_subset by blast
+  have redge_of_Q_rev:"List.set (to_redge_path to_rdg' (rev Q)) \<subseteq> 
           abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk (rev Q)))"
-      using consist_to_rdg' distinctQ to_redgepath_subset by simp
-    have edges_of_Q_in_F': "set (edges_of_vwalk Q) \<subseteq> [\<FF>']\<^sub>g" and
-          edges_of_Q_rev_in_F': "set (edges_of_vwalk (rev Q)) \<subseteq> [\<FF>']\<^sub>g" 
-      using vwalk_bet_Q  vwalk_bet_rev_Q by(auto intro!: vwalk_bet_edges_in_edges)
-    hence swap_edges_of_Q_in_F': "prod.swap ` set (edges_of_vwalk Q) \<subseteq> [\<FF>']\<^sub>g"
-       and swap_edges_of_rev_Q_in_F': "prod.swap ` set (edges_of_vwalk (rev Q)) \<subseteq> [\<FF>']\<^sub>g"
-      using symmetric_digraphD[OF symmetric_F'] by auto
-    have oedge_of_Q_rev: "oedge ` List.set (to_redge_path to_rdg' (rev Q)) = 
+    using consist_to_rdg' distinctQ to_redgepath_subset by simp
+  have edges_of_Q_in_F': "set (edges_of_vwalk Q) \<subseteq> [\<FF>']\<^sub>g" and
+    edges_of_Q_rev_in_F': "set (edges_of_vwalk (rev Q)) \<subseteq> [\<FF>']\<^sub>g" 
+    using vwalk_bet_Q  vwalk_bet_rev_Q by(auto intro!: vwalk_bet_edges_in_edges)
+  hence swap_edges_of_Q_in_F': "prod.swap ` set (edges_of_vwalk Q) \<subseteq> [\<FF>']\<^sub>g"
+    and swap_edges_of_rev_Q_in_F': "prod.swap ` set (edges_of_vwalk (rev Q)) \<subseteq> [\<FF>']\<^sub>g"
+    using symmetric_digraphD[OF symmetric_F'] by auto
+  have oedge_of_Q_rev: "oedge ` List.set (to_redge_path to_rdg' (rev Q)) = 
           oedge ` abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk Q))"
-      using oedge_of_to_redgepath_subset[of Q "digraph_abs \<FF>'" to_rdg'] consist_to_rdg' distinctQ
-            oedge_of_to_redge_path_rev[of Q "digraph_abs \<FF>'" to_rdg'] edges_of_Q_in_F'
-            swap_edges_of_Q_in_F' 
-      by simp
-    have Q_redges_in_F:"set (to_redge_path to_rdg' Q) \<subseteq> \<F>_redges state'" 
-      using redge_of_Q  edges_of_Q_in_F' by(auto simp add: state'_def F_def F_redges_def)
-    hence  Q_oedges_in_E:"set (map oedge (to_redge_path to_rdg' Q)) \<subseteq> \<E>" 
-      using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-      by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
-           simp add: state'_def  image_subset_iff F_def F_redges_def)
-    have Q_rev_redges_in_F:"set (to_redge_path to_rdg' (rev Q)) \<subseteq> \<F>_redges state'" 
-      using redge_of_Q_rev  edges_of_Q_rev_in_F' by(auto simp add: state'_def F_def F_redges_def)
-    hence  Q_rev_oedges_in_E:"set (map oedge (to_redge_path to_rdg' (rev Q))) \<subseteq> \<E>" 
-      using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
-      by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
-           simp add: state'_def  image_subset_iff F_def F_redges_def)
-    have f'_is:
-   "abstract_flow_map (augment_edges_impl f (abstract_bal_map b x') (to_redge_path to_rdg' Q)) =
+    using oedge_of_to_redgepath_subset[of Q "digraph_abs \<FF>'" to_rdg'] consist_to_rdg' distinctQ
+      oedge_of_to_redge_path_rev[of Q "digraph_abs \<FF>'" to_rdg'] edges_of_Q_in_F'
+      swap_edges_of_Q_in_F' 
+    by simp
+  have Q_redges_in_F:"set (to_redge_path to_rdg' Q) \<subseteq> \<F>_redges state'" 
+    using redge_of_Q  edges_of_Q_in_F' by(auto simp add: state'_def F_def F_redges_def)
+  hence  Q_oedges_in_E:"set (map oedge (to_redge_path to_rdg' Q)) \<subseteq> \<E>" 
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+    by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
+        simp add: state'_def  image_subset_iff F_def F_redges_def)
+  have Q_rev_redges_in_F:"set (to_redge_path to_rdg' (rev Q)) \<subseteq> \<F>_redges state'" 
+    using redge_of_Q_rev  edges_of_Q_rev_in_F' by(auto simp add: state'_def F_def F_redges_def)
+  hence  Q_rev_oedges_in_E:"set (map oedge (to_redge_path to_rdg' (rev Q))) \<subseteq> \<E>" 
+    using invar_aux_pres_one_step[OF assms(2,1,3), simplified state'_is[symmetric]] 
+    by(auto elim!: inv_forest_in_EE[OF inv_forest_in_E_from_underlying_invars] 
+        simp add: state'_def  image_subset_iff F_def F_redges_def)
+  have f'_is:
+    "abstract_flow_map (augment_edges_impl f (abstract_bal_map b x') (to_redge_path to_rdg' Q)) =
     augment_edges (abstract_flow_map f) (abstract_bal_map b x') (to_redge_path to_rdg' Q)"
-   "abstract_flow_map (augment_edges_impl f (- abstract_bal_map b x') (to_redge_path to_rdg' (rev Q))) =
+    "abstract_flow_map (augment_edges_impl f (- abstract_bal_map b x') (to_redge_path to_rdg' (rev Q))) =
     augment_edges (abstract_flow_map f) (- abstract_bal_map b x') (to_redge_path to_rdg' (rev Q))"
-      using Q_oedges_in_E assms(3) Q_rev_oedges_in_E
-      by (auto intro:  augment_edges_homo simp add: f_def)
-    have flow_change_in_Q:"abstract_flow_map f' d \<noteq> abstract_flow_map f d \<Longrightarrow> d \<in> 
+    using Q_oedges_in_E assms(3) Q_rev_oedges_in_E
+    by (auto intro:  augment_edges_homo simp add: f_def)
+  have flow_change_in_Q:"abstract_flow_map f' d \<noteq> abstract_flow_map f d \<Longrightarrow> d \<in> 
              oedge ` abstract_conv_map to_rdg' ` (List.set (edges_of_vwalk Q))" for d
-      unfolding f'_def
-      using e_not_in_es_flow_not_change[of "(to_redge_path to_rdg' Q)" d "abstract_flow_map f" "abstract_bal_map b x'"]
-            e_not_in_es_flow_not_change[of "(to_redge_path to_rdg' (rev Q))" d  "abstract_flow_map f" "- abstract_bal_map b x'"]
-            oedge_of_Q oedge_of_Q_rev  f'_is 
-      by(cases "0 < abstract_bal_map b x'") auto
-    have Q_inF':"(List.set (edges_of_path Q)) \<subseteq>  (to_graph \<FF>')" 
-      using directed_edges_subset_undirected_edges_subset[OF edges_of_Q_rev_in_F']          
-      by(auto simp add: edges_of_path_rev[symmetric]  to_graph_def)    
-      have x'_y'_reachable:"reachable (to_graph \<FF>') x' y'"
-        by (meson qqq_prop_u reachableI)
+    unfolding f'_def
+    using e_not_in_es_flow_not_change[of "(to_redge_path to_rdg' Q)" d "abstract_flow_map f" "abstract_bal_map b x'"]
+      e_not_in_es_flow_not_change[of "(to_redge_path to_rdg' (rev Q))" d  "abstract_flow_map f" "- abstract_bal_map b x'"]
+      oedge_of_Q oedge_of_Q_rev  f'_is 
+    by(cases "0 < abstract_bal_map b x'") auto
+  have Q_inF':"(List.set (edges_of_path Q)) \<subseteq>  (to_graph \<FF>')" 
+    using directed_edges_subset_undirected_edges_subset[OF edges_of_Q_rev_in_F']          
+    by(auto simp add: edges_of_path_rev[symmetric]  to_graph_def)    
+  have x'_y'_reachable:"reachable (to_graph \<FF>') x' y'"
+    by (meson qqq_prop_u reachableI)
   show goal3:" invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state + 1"
   proof-
     assume invar_gamma_asm: "invar_gamma state "
@@ -2574,7 +2573,7 @@ proof-
           (\<Sum> v \<in>  \<V> - {x', y'}. \<lceil> \<bar> a_balance state' v\<bar> / (current_\<gamma> state') - (1 - \<epsilon>)\<rceil>)"
       using new_balance_is
       by(simp add: state'_def b'_def b_def new_balance_is)
-     have new_Phi_x'_y'_extracted:"\<Phi> state' = 
+    have new_Phi_x'_y'_extracted:"\<Phi> state' = 
           (\<Sum> v \<in>  \<V> - {x', y'}. \<lceil> \<bar> a_balance state' v\<bar> / (current_\<gamma> state') - (1 - \<epsilon>)\<rceil>) +
           \<lceil> \<bar> a_balance state' x'\<bar> / (current_\<gamma> state') - (1 - \<epsilon>)\<rceil> + 
           \<lceil> \<bar> a_balance state' y'\<bar> / (current_\<gamma> state') - (1 - \<epsilon>)\<rceil>"
@@ -2610,31 +2609,31 @@ proof-
       using sym[OF state_state'] ineq 
       by (auto simp add: Phi_x'_y'_extracted sum_new_old_bal_same new_Phi_x'_y'_extracted)
   qed
-   show goal4:"card (comps \<V> (to_graph (Algo_state.\<FF> (maintain_forest_upd state)))) +1 = 
+  show goal4:"card (comps \<V> (to_graph (Algo_state.\<FF> (maintain_forest_upd state)))) +1 = 
                                    card (comps \<V> (to_graph (Algo_state.\<FF> state))) "
-    proof-
-      have invar6_asm:"inv_active_different_comps state"
-        using assms(2) by (simp add: underlying_invars_def inv_active_different_comps_def)
-      show "card (comps \<V> (to_graph (Algo_state.\<FF> (maintain_forest_upd state)))) +1 = 
+  proof-
+    have invar6_asm:"inv_active_different_comps state"
+      using assms(2) by (simp add: underlying_invars_def inv_active_different_comps_def)
+    show "card (comps \<V> (to_graph (Algo_state.\<FF> (maintain_forest_upd state)))) +1 = 
                    card (comps \<V> (to_graph (Algo_state.\<FF> state)))"
-        using  sym[OF state_state'] components_e_different invar6_asm fste_V snde_V  \<V>_finite assms(2)  F_rewrite 
-       by (auto intro: card_decrease_component_join[simplified]
-             simp add: state'_def  \<FF>'_def \<FF>_def underlying_invars_def inv_finite_forest_def) 
-   qed
-    show "invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state +
+      using  sym[OF state_state'] components_e_different invar6_asm fste_V snde_V  \<V>_finite assms(2)  F_rewrite 
+      by (auto intro: card_decrease_component_join[simplified]
+          simp add: state'_def  \<FF>'_def \<FF>_def underlying_invars_def inv_finite_forest_def) 
+  qed
+  show "invar_gamma state \<Longrightarrow> \<Phi> (maintain_forest_upd state) \<le> \<Phi> state +
                  (card (comps \<V> (to_graph (Algo_state.\<FF> state)))) - 
                  (card (comps \<V> (to_graph (Algo_state.\<FF> (maintain_forest_upd state)))))"
-    proof-
-      assume invar6_asm: "invar_gamma state"   
-      have invar6_asm':"inv_active_different_comps state"
-        using assms(2) by (simp add:  underlying_invars_def inv_active_different_comps_def)   
-      moreover have "connected_component (to_graph \<FF>) (fst e) \<in> 
+  proof-
+    assume invar6_asm: "invar_gamma state"   
+    have invar6_asm':"inv_active_different_comps state"
+      using assms(2) by (simp add:  underlying_invars_def inv_active_different_comps_def)   
+    moreover have "connected_component (to_graph \<FF>) (fst e) \<in> 
                (comps \<V> (to_graph (Algo_state.\<FF> state)))"
-        using fste_V by (simp add: comps_def \<FF>_def)
-      moreover have "connected_component (to_graph \<FF>) (snd e) \<in> 
+      using fste_V by (simp add: comps_def \<FF>_def)
+    moreover have "connected_component (to_graph \<FF>) (snd e) \<in> 
                 (comps \<V> (to_graph (Algo_state.\<FF> state)))"
-        using snde_V by (simp add: comps_def \<FF>_def)
-      ultimately show " \<Phi> (maintain_forest_upd state) \<le> 
+      using snde_V by (simp add: comps_def \<FF>_def)
+    ultimately show " \<Phi> (maintain_forest_upd state) \<le> 
              \<Phi> state + card (comps \<V> (to_graph (Algo_state.\<FF> state))) 
                   - card (comps \<V> (to_graph (Algo_state.\<FF> (maintain_forest_upd state))))"       
       using goal4 goal3 invar6_asm
@@ -2665,7 +2664,7 @@ proof-
     apply(subst sym[OF state_state']|subst state'_def)+
     using components_e_different new_edge_disjoint_components[of "fst e" "snd e"]  
     by(auto simp add: concretization_of_F'[simplified sym[OF F_rewrite]] 
-                      to_rdg_def \<FF>_def F_rewrite F_def F_redges_def)
+        to_rdg_def \<FF>_def F_rewrite F_def F_redges_def)
   show "to_graph (Algo_state.\<FF> state) \<subset> to_graph (Algo_state.\<FF> (maintain_forest_upd state))"
     using components_e_different same_component_after_insert[OF fste_V snde_V refl, of "to_graph \<FF>"]
     by(auto simp add: F'_to_graph_is state'_is[symmetric] \<FF>_def[symmetric]  state'_def )
@@ -2675,13 +2674,15 @@ proof-
         connected_component (to_graph (Algo_state.\<FF>  state)) (fst e)
         \<subset> connected_component (to_graph (Algo_state.\<FF> (maintain_forest_upd state))) (fst e)"
     using E'_def  \<gamma>_def e_prop f_def F_rewrite sym[OF state_state'] components_e_different 
-          connected_components_member_eq[of "snd e"  "to_graph (Algo_state.\<FF> state)" "fst e"] 
-          insert_edge_endpoints_same_component[OF reflexive, of "to_graph (Algo_state.\<FF> state)" "fst e" "snd e"]
-          in_connected_componentI2[OF refl, of "snd e" "to_graph (Algo_state.\<FF> state)"] 
+      connected_components_member_eq[of "snd e"  "to_graph (Algo_state.\<FF> state)" "fst e"] 
+      insert_edge_endpoints_same_component[OF reflexive, of "to_graph (Algo_state.\<FF> state)" "fst e" "snd e"]
+      in_connected_componentI2[OF refl, of "snd e" "to_graph (Algo_state.\<FF> state)"] 
     by (intro  exI[of _ e]) (auto simp add: \<FF>_def \<FF>'_def state'_def)
 qed
 
-lemma maintain_forest_invar_aux_pres:
+named_theorems maintain_forest_results
+
+lemma maintain_forest_invar_aux_pres[maintain_forest_results]:
   assumes "maintain_forest_dom state"
           "underlying_invars state" "implementation_invar state"
   shows   "underlying_invars (maintain_forest state)"
@@ -2696,7 +2697,7 @@ qed
 
 subsection \<open>Inductions\<close>
 
-lemma maintain_forest_implementation_invar_pres:
+lemma maintain_forest_implementation_invar_pres[maintain_forest_results]:
   assumes "maintain_forest_dom state"
           "underlying_invars state" "implementation_invar state"
   shows   "implementation_invar (maintain_forest state)"
@@ -2733,13 +2734,13 @@ proof(induction n arbitrary: state rule: less_induct)
   qed
 qed
 
-lemma termination_of_maintain_forest':
+lemma termination_of_maintain_forest'[maintain_forest_results]:
   assumes "underlying_invars state" "implementation_invar state"
   shows "maintain_forest_dom state"
   using assms termination_of_maintain_forest 
   by(simp add: underlying_invars_def)
 
-lemma gamma_pres: 
+lemma gamma_pres[maintain_forest_results]: 
   assumes "underlying_invars state" "implementation_invar state"
   shows "current_\<gamma> (maintain_forest state) = current_\<gamma> state"
   using assms
@@ -2753,7 +2754,7 @@ proof(induction rule: maintain_forest_induct[OF
           simp add: maintain_forest_simps)
 qed
 
-theorem maintain_forest_invar_gamma_pres:
+theorem maintain_forest_invar_gamma_pres[maintain_forest_results]:
   assumes "underlying_invars state" "implementation_invar state"
   shows "invar_gamma state \<Longrightarrow> invar_gamma (maintain_forest state)"
   using assms 
@@ -2767,7 +2768,7 @@ proof(induction rule: maintain_forest_induct[OF
           simp add: maintain_forest_simps)
 qed
 
-lemma invarA2_pres: 
+lemma invarA2_pres[maintain_forest_results]: 
   assumes "underlying_invars state"
           "0 \<le> thr2"
           "invarA_1 thr2 state"
@@ -2802,7 +2803,7 @@ next
   qed 
 qed
 
-theorem send_flow_entryF: 
+theorem send_flow_entryF[maintain_forest_results]: 
   assumes "underlying_invars state" 
           "maintain_forest_entry state"
           "invar_gamma state"
@@ -2838,7 +2839,7 @@ theorem send_flow_entryF:
                  " 8*N*\<gamma> - 2 * \<gamma> * card (_ (_ (_ (_ state))) (fst e))"] simp add: invar_gamma_def )
   qed
 
-lemma Phi_increase: 
+lemma Phi_increase[maintain_forest_results]: 
   assumes "underlying_invars state" "invar_gamma state" "implementation_invar state"
     shows "\<Phi> (maintain_forest state) \<le> \<Phi> state + (card (comps \<V> (to_graph (\<FF> state)))) - 
                                     (card (comps \<V> (to_graph (\<FF>(maintain_forest state)))))"
@@ -2867,7 +2868,7 @@ next
   qed
 qed
 
-theorem Phi_increase_below_N:
+theorem Phi_increase_below_N[maintain_forest_results]:
  assumes "underlying_invars state" "invar_gamma state" "implementation_invar state"
    shows "\<Phi> (maintain_forest state) \<le> \<Phi> state + N"
   using  Phi_increase[of state, OF assms] maintain_forest_invar_aux_pres[of state] assms
@@ -2875,7 +2876,7 @@ theorem Phi_increase_below_N:
          termination_of_maintain_forest
   by(simp add:  underlying_invars_def inv_finite_forest_def N_def)
 
-lemma F_superset:
+lemma F_superset[maintain_forest_results]:
   assumes "underlying_invars state" "implementation_invar state"
   shows "\<F>_redges state \<subseteq> \<F>_redges (maintain_forest state)"
   using assms 
@@ -2903,7 +2904,7 @@ next
   qed
 qed
 
-lemma actives_superset:
+lemma actives_superset[maintain_forest_results]:
   assumes "underlying_invars state" "implementation_invar state"
   shows "to_set (actives (maintain_forest state)) \<subseteq> to_set (actives state)"
   using assms
@@ -2932,7 +2933,7 @@ next
   qed
 qed
 
-lemma outside_F_no_flow_change:
+lemma outside_F_no_flow_change[maintain_forest_results]:
   assumes "underlying_invars state" "implementation_invar state"
   shows   "\<And> d. d \<in> (UNIV -  \<F> (maintain_forest state)) \<Longrightarrow>
                a_current_flow (maintain_forest state) d =  a_current_flow state d"
@@ -2976,7 +2977,7 @@ proof(induction rule: maintain_forest_induct)
   qed    
 qed 
    
-theorem maintain_forest_invar_integral_pres:
+theorem maintain_forest_invar_integral_pres[maintain_forest_results]:
   assumes "underlying_invars state" "invar_integral state" "implementation_invar state"
   shows "invar_integral (maintain_forest state)"
   unfolding invar_integral_def
@@ -2999,7 +3000,7 @@ proof
     by simp
 qed
 
-lemma flow_optimatlity_pres: 
+lemma maintain_forest_flow_optimatlity_pres[maintain_forest_results]: 
   assumes "underlying_invars (state)"
           "0 \<le> thr2"
           "invarA_1 thr2 state"
@@ -3036,7 +3037,7 @@ next
   qed 
 qed
 
-lemma forest_increase: 
+lemma forest_increase[maintain_forest_results]: 
   assumes "maintain_forest_dom state" "underlying_invars state" 
           "implementation_invar state"
   shows   "to_graph (\<FF> (maintain_forest state)) \<supseteq> to_graph (\<FF> state)"
@@ -3051,7 +3052,7 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
     by auto
 qed
 
-lemma card_decrease: 
+lemma card_decrease[maintain_forest_results]: 
   assumes "maintain_forest_dom state" "underlying_invars state" "implementation_invar state"
   shows   "card (comps \<V> (to_graph (\<FF>(maintain_forest state))))
                    \<le> card (comps \<V> (to_graph (\<FF> state)))"
@@ -3066,7 +3067,7 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
     by auto
 qed
 
-lemma card_strict_decrease: 
+lemma card_strict_decrease[maintain_forest_results]: 
   assumes "maintain_forest_dom state" "underlying_invars state"
           "maintain_forest_call_cond state" "implementation_invar state"
   shows   "card (comps \<V>  (to_graph (\<FF> (maintain_forest state)))) 
@@ -3078,7 +3079,7 @@ lemma card_strict_decrease:
        invar_aux_pres_one_step[of state] invars_pres_one_step(1)[of state]
   by (simp add: assms(4))
 
-lemma component_strict_increase: 
+lemma component_strict_increase[maintain_forest_results]: 
   assumes "maintain_forest_dom state" "underlying_invars state"
           "maintain_forest_call_cond state"
           "e \<in> to_set (actives state)"
@@ -3138,7 +3139,7 @@ proof(induction rule: maintain_forest_induct[OF assms(1)])
   qed
 qed
 
-lemma same_number_comps_abort:
+lemma same_number_comps_abort[maintain_forest_results]:
   assumes "underlying_invars state" "maintain_forest_dom state" 
           "card (comps \<V> (to_graph (\<FF> (maintain_forest state)))) = 
               card (comps \<V> (to_graph (\<FF> state)))" "implementation_invar state"
@@ -3146,7 +3147,7 @@ lemma same_number_comps_abort:
   using assms apply(cases rule: maintain_forest_cases[of state], simp)
   using card_strict_decrease[of state] assms by simp
 
-lemma all_actives_zero_flow_same_state:
+lemma all_actives_zero_flow_same_state[maintain_forest_results]:
   assumes "\<forall>e\<in>to_set (actives state). a_current_flow state e = 0"
           "underlying_invars state" "invar_gamma state" 
   shows   "maintain_forest state = state"

@@ -538,6 +538,13 @@ lemma enat_less_plus_1_leq:"(x::enat) < (y::enat) + 1 \<Longrightarrow> x \<le> 
 lemma ereal_of_real_of_ereal_leq: "x \<ge> 0 \<Longrightarrow> ereal (real_of_ereal x) \<le> x"
   by (simp add: ereal_real)
 
+lemma is_multiple_multiple: 
+  "(\<exists> n::nat.  y = (real n) * x) \<Longrightarrow> (\<exists> n::nat. y*2 = (real n) * x )"
+  by (metis distrib_left mult.commute mult_2_right of_nat_add)
+
+lemma minE: "((a::real) \<le> b \<Longrightarrow> P a) \<Longrightarrow> (b \<le> a \<Longrightarrow> P b) \<Longrightarrow> P (min a b)"
+  by linarith
+
 definition "abstract_real_map mp x = (case mp x of None \<Rightarrow> 0 | Some y \<Rightarrow> y)"
 
 lemma abstract_real_map_empty: "abstract_real_map (\<lambda> _ . None) = (\<lambda> _ . 0)"
