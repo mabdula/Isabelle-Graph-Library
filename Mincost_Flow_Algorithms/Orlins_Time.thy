@@ -469,9 +469,6 @@ lemma same_as_without_time:
           "invar_isOptflow state"
  shows "prod.snd ((orlins_one_step_time_check ^^ i) (t, state)) = (orlins_one_step_check ^^ i) state"
   using iterated_orlins_one_step_time_check_is_orlins_one_step_check assms by auto
-(*TODO MOVE*)
-lemma ceil_is_int_iff_range:"(\<lceil> x::real \<rceil> = i) \<longleftrightarrow> (of_int i \<ge> x \<and> x > of_int i - 1)"
-  by (auto simp add: algebra_simps) linarith+ 
 
 lemma Phi_contribution_important:
   assumes "invar_non_zero_b state" "invar_gamma state" "orlins_entry state"
