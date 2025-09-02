@@ -95,6 +95,11 @@ lemma double_quadruple_orE:
  \<Longrightarrow> P" for A B C D A' B' C' D'
   by argo
 
+lemma quadruple_orE:
+ "\<lbrakk>(A \<or> B \<or> C \<or> D); (A  \<Longrightarrow> P); (B \<Longrightarrow> P); (C  \<Longrightarrow> P); (D  \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow> P" for A B C D
+  by argo
+
 lemma ex2E: "\<exists>x y. P x y \<Longrightarrow> (\<And>x y. P x y \<Longrightarrow> Q) \<Longrightarrow> Q" by auto
 
 lemma ex3E: "\<exists> x y z.  P x y z \<Longrightarrow> (\<And>x y z. P x y z \<Longrightarrow> Q) \<Longrightarrow> Q" by auto

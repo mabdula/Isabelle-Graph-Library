@@ -266,7 +266,7 @@ subsection \<open>Single Step Proofs\<close>
 
 locale orlins = 
 maintain_forest +
-send_flow_reasoning+
+send_flow+
 orlins_spec+
 assumes  get_max: "\<And> b f. \<lbrakk> bal_invar b; dom (bal_lookup b) \<noteq> {}\<rbrakk>
            \<Longrightarrow> get_max f b = Max {f y (the (bal_lookup b y)) | y. y \<in> dom (bal_lookup b)}"

@@ -4155,13 +4155,13 @@ lemma test_all_vertices_zero_balance:
   using vs_is_V 
   by(auto simp add: test_all_vertices_zero_balance_def test_all_vertices_zero_balance_aux)
 
-lemma send_flow_reasoning_axioms:
-"send_flow_reasoning_axioms snd local.\<u> local.\<E> local.\<c> \<emptyset>\<^sub>N vset_inv isin set_invar
+lemma send_flow_axioms:
+"send_flow_axioms snd local.\<u> local.\<E> local.\<c> \<emptyset>\<^sub>N vset_inv isin set_invar
      to_set lookup t_set adj_inv flow_lookup flow_invar bal_lookup bal_invar rep_comp_lookup
      rep_comp_invar conv_lookup conv_invar not_blocked_lookup not_blocked_invar local.\<b> local.\<epsilon> fst
      local.get_source_target_path_a local.get_source_target_path_b local.get_source local.get_target
      local.test_all_vertices_zero_balance"
-proof(rule send_flow_reasoning_axioms.intro, goal_cases)
+proof(rule send_flow_axioms.intro, goal_cases)
   case (1 state s t P b \<gamma> f)
   then show ?case 
     using get_source_target_path_a_ax by blast
@@ -4215,7 +4215,7 @@ next
     using test_all_vertices_zero_balance by (auto simp add: make_pairs_are)
 qed
 
-interpretation send_flow_reasoning: send_flow_reasoning snd  create_edge local.\<u> local.\<E> 
+interpretation send_flow: send_flow snd  create_edge local.\<u> local.\<E> 
       local.\<c> edge_map_update "\<emptyset>\<^sub>N"
      vset_delete vset_insert vset_inv isin filter are_all set_invar to_set lookup t_set sel adj_inv
      flow_update flow_delete flow_lookup flow_invar bal_update bal_delete bal_lookup bal_invar
@@ -4225,8 +4225,8 @@ interpretation send_flow_reasoning: send_flow_reasoning snd  create_edge local.\
      \<E>_impl "\<emptyset>\<^sub>G" local.N fst get_from_set flow_empty bal_empty rep_comp_empty conv_empty
      not_blocked_empty local.get_source_target_path_a local.get_source_target_path_b
      local.get_source local.get_target local.test_all_vertices_zero_balance
-  by(auto intro!: send_flow_reasoning.intro 
-        simp add: send_flow algo send_flow_reasoning_axioms)
+  by(auto intro!: send_flow.intro 
+        simp add: send_flow algo send_flow_axioms)
 
 interpretation rep_comp_map2: Map where empty = rep_comp_empty and update=rep_comp_update and lookup= rep_comp_lookup
 and delete= rep_comp_delete and invar = rep_comp_invar
@@ -4327,7 +4327,7 @@ interpretation orlins: Orlins.orlins snd  create_edge \<u> \<E> \<c> edge_map_up
      test_all_vertices_zero_balance init_flow init_bal init_rep_card init_not_blocked
   by(auto intro!: orlins.intro
         simp add: maintain_forest.maintain_forest_axioms
-                  send_flow_reasoning.send_flow_reasoning_axioms send_flow
+                  send_flow.send_flow_axioms send_flow
                   maintain_forest.maintain_forest_spec_axioms orlins_spec_def
                   orlins_axioms)
 

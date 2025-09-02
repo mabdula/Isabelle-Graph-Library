@@ -730,6 +730,10 @@ lemma inv_components_in_VE:
   \<Longrightarrow> P"
   unfolding inv_components_in_V_def by auto
 
+lemma inv_components_in_VD: 
+ "\<lbrakk>inv_components_in_V state; v \<in> \<V>\<rbrakk> \<Longrightarrow> connected_component (to_graph (\<FF> state)) v \<subseteq> \<V>"
+  unfolding inv_components_in_V_def by auto
+
 definition "inv_active_different_comps (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
      (\<forall> e \<in> to_set (actives state). connected_component (to_graph (\<FF> state)) (fst e) \<noteq>
                                      connected_component (to_graph (\<FF> state)) (snd e))"
