@@ -527,6 +527,9 @@ next
  qed 
 qed simp
 
+lemma ceil_is_int_iff_range:"(\<lceil> x::real \<rceil> = i) \<longleftrightarrow> (of_int i \<ge> x \<and> x > of_int i - 1)"
+  by (auto simp add: algebra_simps) linarith+
+
 lemma min_integral: "\<exists> n::nat. x = real n \<Longrightarrow> \<exists> n::nat. y = real n \<Longrightarrow>
                                     \<exists> n::nat. min x y = real n" for x y 
   by (simp add: min_def)

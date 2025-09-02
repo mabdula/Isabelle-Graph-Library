@@ -510,39 +510,41 @@ lemma invars_pres_orlins_one_step:
           "invar_forest state"
           "invar_integral state"
           "invar_isOptflow state"
-    shows "underlying_invars  (orlins_one_step state)"
-          "invar_gamma  (orlins_one_step state)"
-          "implementation_invar (orlins_one_step state)"
-          "return (orlins_one_step state) = notyetterm
-            \<Longrightarrow> orlins_entry (orlins_one_step state)"
-          "invar_forest (orlins_one_step state)"
-          "invar_integral (orlins_one_step state)"  
-          "invar_isOptflow (orlins_one_step state)"
+    shows "underlying_invars  (orlins_one_step state)"          (is ?thesis1)
+          "invar_gamma  (orlins_one_step state)"                (is ?thesis2)
+          "implementation_invar (orlins_one_step state)"        (is ?thesis3)
+          "return (orlins_one_step state) = notyetterm          
+            \<Longrightarrow> orlins_entry (orlins_one_step state)"           (is "?cond4 \<Longrightarrow> ?thesis4")
+          "invar_forest (orlins_one_step state)"                (is ?thesis5)
+          "invar_integral (orlins_one_step state)"              (is ?thesis6)
+          "invar_isOptflow (orlins_one_step state)"             (is ?thesis7)
           "return (orlins_one_step state) = success \<Longrightarrow>
-           is_Opt \<b> (a_current_flow (orlins_one_step state))"
+           is_Opt \<b> (a_current_flow (orlins_one_step state))"   (is "?cond8 \<Longrightarrow> ?thesis8")
           "return (orlins_one_step state) = infeasible \<Longrightarrow>
-           \<nexists> f. f is \<b> flow"
-          "\<And> x. x \<in> \<V> \<Longrightarrow> \<bar> a_balance state x \<bar>\<le> 2*new_\<gamma> state"
+           \<nexists> f. f is \<b> flow"                                    (is "?cond9 \<Longrightarrow> ?thesis9")
+          "\<And> x. x \<in> \<V> \<Longrightarrow> \<bar> a_balance state x \<bar>\<le> 2*new_\<gamma> state"(is " \<And> x. x \<in> \<V> \<Longrightarrow> ?thesis10 x")
           "return (orlins_one_step state) = notyetterm \<Longrightarrow>
-           invar_non_zero_b (orlins_one_step state)"
-           "orlins_dom state \<Longrightarrow> return state = notyetterm \<Longrightarrow>
-            orlins state = orlins (orlins_upd_impl state)"
-           "current_\<gamma> (orlins_one_step state) = new_\<gamma> state"
-           "send_flow_impl (maintain_forest_impl (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) =
-            send_flow (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+           invar_non_zero_b (orlins_one_step state)"            (is "?cond11 \<Longrightarrow> ?thesis11")
+          "orlins_dom state \<Longrightarrow> return state = notyetterm \<Longrightarrow>
+            orlins state = orlins (orlins_upd_impl state)"      (is "?cond1a \<Longrightarrow> ?cond1b \<Longrightarrow> ?thesis12")
+          "current_\<gamma> (orlins_one_step state) = new_\<gamma> state"     (is ?thesis13)
+          "send_flow_impl (maintain_forest_impl
+               (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)) =
+          send_flow (maintain_forest 
+               (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"               (is ?thesis14)
     and  invars_after_maintain_forest:
-          "underlying_invars  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "invar_gamma  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "implementation_invar  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "send_flow_entryF (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "invar_integral  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "invar_isOptflow  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+          "underlying_invars  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"    (is ?ths1)
+          "invar_gamma  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"          (is ?ths2)
+          "implementation_invar  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))" (is ?ths3)
+          "send_flow_entryF (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"      (is ?ths4)
+          "invar_integral  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"       (is ?ths5)
+          "invar_isOptflow  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"      (is ?ths6)
           "invarA_2 (8 * real N * new_\<gamma> state) (2 * new_\<gamma> state)
-               (local.maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "invar_above_6Ngamma (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "invarA_1 (2 * new_\<gamma> state) (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-          "(maintain_forest_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "send_flow_dom (local.maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+               (local.maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"             (is ?ths7)
+          "invar_above_6Ngamma (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"   (is ?ths8)
+          "invarA_1 (2 * new_\<gamma> state) (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"              (is ?ths9)
+          "(maintain_forest_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"                   (is ?ths10)
+          "send_flow_dom (local.maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"   (is ?ths11)
 proof-
   have underlying_invars_gamma_upd: "underlying_invars (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     by(auto intro: underlying_invars_gamma simp add: assms)
@@ -598,15 +600,7 @@ proof-
     by (simp add: assms(1,3,7) invar_integral_gamma_upd)
   have invar_isOptflow_upd:"invar_isOptflow (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
     by (simp add: assms(8) invar_isOpt_gamma_change)
-  show invars_after_maintain_forest:
-          "underlying_invars (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "invar_gamma  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "implementation_invar (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "send_flow_entryF (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "invar_integral (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "invar_isOptflow (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
-          "invarA_2 (8 * real N * new_\<gamma> state) (2 * new_\<gamma> state)
-               (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"
+  show invars_after_maintain_forest: ?ths1 ?ths2 ?ths3 ?ths4 ?ths5 ?ths6 ?ths7 
     using new_gamma_0
     by(auto intro!: maintain_forest_flow_optimatlity_pres[OF _ _  invar_A1 _ _ refl]
                     maintain_forest_results invar_A1 invarA_2
@@ -648,19 +642,9 @@ proof-
     using Phi_after_forest_leq_2N 
     by(auto intro!: send_flow_invar_forest
           simp add: invars_after_maintain_forest invar_above_6Ngamma )
-  show  "underlying_invars  (orlins_one_step state)"
-         "invar_gamma  (orlins_one_step state)"
-          "implementation_invar (orlins_one_step state)"
-          "return (orlins_one_step state) = notyetterm
-           \<Longrightarrow> orlins_entry (orlins_one_step state)"
-          "invar_forest (orlins_one_step state)"
-          "invar_integral (orlins_one_step state)"  
-          "invar_isOptflow (orlins_one_step state)"
-           "return (orlins_one_step state) = notyetterm 
-           \<Longrightarrow> invar_non_zero_b (orlins_one_step state)"
-           "return (orlins_one_step state) = success 
-                \<Longrightarrow> is_Opt \<b> (a_current_flow (orlins_one_step state))"
-            "current_\<gamma> (orlins_one_step state) = new_\<gamma> state"
+  show  ?thesis1 ?thesis2 ?thesis3  "?cond4  \<Longrightarrow> ?thesis4"
+        ?thesis5 ?thesis6 ?thesis7 "?cond8 \<Longrightarrow> ?thesis8"
+        "?cond11 \<Longrightarrow> ?thesis11" ?thesis13
         using Phi_increase_bound new_phi_less_N
         by(auto intro!: send_flow_results  invars_after_maintain_forest
               simp add: orlins_one_step_def send_flow_dom 

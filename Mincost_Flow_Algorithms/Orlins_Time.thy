@@ -5,9 +5,9 @@ theory Orlins_Time
 begin
 
 locale orlins_time =
-maintain_forest_time where fst = fst + 
-send_flow_time where fst = fst + 
-orlins where fst = fst 
+ maintain_forest_time where fst = fst + 
+ send_flow_time where fst = fst + 
+ orlins where fst = fst 
 for fst::"'edge_type \<Rightarrow> 'a"+
 fixes t\<^sub>O\<^sub>C::nat and  t\<^sub>O\<^sub>B::nat
 begin  
@@ -47,24 +47,28 @@ lemma terminated_mono_one_step: "return (prod.snd ((orlins_one_step_time_check  
 lemma terminated_mono: "return (prod.snd ((orlins_one_step_time_check  ^^ i) init)) \<noteq> notyetterm \<Longrightarrow>
                                  (orlins_one_step_time_check  ^^ (i + k )) init 
                                  = (orlins_one_step_time_check  ^^ i) init"
-  apply(induction k arbitrary: i init)
-  apply simp
+proof(induction k arbitrary: i init)
+  case (Suc k)
+  then show ?case
   apply(subst add.commute, subst add_Suc, subst add.commute)
   apply(subst funpow.simps(2), subst o_apply)
-  apply(subst (2) surjective_pairing, subst orlins_one_step_time_check.simps) 
+  apply(subst (2) surjective_pairing, subst orlins_one_step_time_check.simps)
   by (smt (z3) return.exhaust surjective_pairing)
+qed simp
 
-lemma succ_fail_not_changes_time: " return (prod.snd (t, state')) = success
-                                  \<or> return (prod.snd (t, state')) = infeasible  \<Longrightarrow>
-compow k orlins_one_step_time_check (t, state') = (t, state')"
-  apply(induction k, simp)
-  subgoal for k
-    by(subst funpow_Suc_right[of k orlins_one_step_time_check], fastforce simp add: return.simps(2))
-  done
+lemma succ_fail_not_changes_time:
+  "return (prod.snd (t, state')) = success \<or> return (prod.snd (t, state')) = infeasible  
+  \<Longrightarrow> compow k orlins_one_step_time_check (t, state') = (t, state')"
+proof(induction k)
+  case (Suc k)
+  then show ?case
+    by(subst funpow_Suc_right[of k orlins_one_step_time_check])
+      (fastforce simp add: return.simps(2))
+qed simp
 
-lemma succ_fail_not_changes_time': " return (prod.snd tstate) = success
-                                  \<or> return (prod.snd tstate) = infeasible  \<Longrightarrow>
-compow k orlins_one_step_time_check tstate = tstate"
+lemma succ_fail_not_changes_time': 
+ "return (prod.snd tstate) = success \<or> return (prod.snd tstate) = infeasible 
+   \<Longrightarrow> compow k orlins_one_step_time_check tstate = tstate"
   using succ_fail_not_changes_time by(cases tstate) auto
 
 
@@ -84,23 +88,29 @@ proof(induction  arbitrary: s rule: orlins_time.pinduct)
 qed
 
 lemma orlins_time_dom_base_extract: 
-"orlins_time_dom (t + s, state) \<Longrightarrow> 
-(orlins_time (t + s) state) = (t +++ (orlins_time s state))"
+ "orlins_time_dom (t + s, state) \<Longrightarrow> 
+ (orlins_time (t + s) state) = (t +++ (orlins_time s state))"
 proof(induction  arbitrary: s t rule: orlins_time.pinduct)
   case (1 t state)
   note IH = this
   show ?case
-    apply(subst orlins_time.psimps)
-    using orlins_time_dom_base_shift IH(1) apply simp
-    apply(subst (2) orlins_time.psimps)
+  proof(subst orlins_time.psimps, goal_cases)
+    case 1
+    thus ?case
+      using orlins_time_dom_base_shift IH(1) by simp
+  next
+    case 2
+    thus ?case
     using orlins_time_dom_base_shift IH(1) 
-    by(auto simp add: IH(2) add_fst_def Let_def)
+    by(subst (2) orlins_time.psimps)
+      (auto simp add: IH(2) add_fst_def Let_def)
+ qed
 qed
 
 lemma succ_fail_term_same_with_time_dom:
-"compow (Suc k) orlins_one_step_time_check (tt, state) = (tfin, state') \<Longrightarrow>
-       return state' = success \<or> return state' = infeasible \<Longrightarrow> 
-         orlins_time_dom (tt, state)"
+"\<lbrakk>compow (Suc k) orlins_one_step_time_check (tt, state) = (tfin, state');
+  return state' = success \<or> return state' = infeasible\<rbrakk>
+  \<Longrightarrow>  orlins_time_dom (tt, state)"
 proof(induction k arbitrary: state tt)
   case 0
   have A: "orlins_time_dom (tt, state)"
@@ -129,10 +139,9 @@ next
       note Success = this
       hence same_state:"(orlins_one_step_time_check ^^ Suc k) (orlins_one_step_time_check (tt, state)) = 
                        orlins_one_step_time_check (tt, state)"
-        apply(subst (2) sym[OF prod.collapse], subst (7) sym[OF prod.collapse])
         using succ_fail_not_changes_time[of"prod.fst (orlins_one_step_time_check (tt, state))" 
                                             "prod.snd (orlins_one_step_time_check (tt, state))" "Suc k"] 
-        by simp
+        by (subst (2) sym[OF prod.collapse], subst (7) sym[OF prod.collapse])simp
       have A:"orlins_time_dom (tt, state)"
       proof(rule orlins_time.domintros, goal_cases)
         case (1 a b aa ba)
@@ -146,10 +155,9 @@ next
       note Failure = this
      hence same_state:"(orlins_one_step_time_check ^^ Suc k) (orlins_one_step_time_check (tt, state)) = 
                        orlins_one_step_time_check (tt, state)"
-        apply(subst (2) sym[OF prod.collapse], subst (7) sym[OF prod.collapse])
         using succ_fail_not_changes_time[of"prod.fst (orlins_one_step_time_check (tt, state))" 
                                             "prod.snd (orlins_one_step_time_check (tt, state))" "Suc k"] 
-        by simp
+        by (subst (2) sym[OF prod.collapse], subst (7) sym[OF prod.collapse])simp
       have A:"orlins_time_dom (tt, state)"
       proof(rule orlins_time.domintros, goal_cases)
         case 1
@@ -163,23 +171,23 @@ next
       hence "return state = notyetterm" 
         unfolding orlins_one_step_time_check.simps[of tt  state] add_fst_def 
         by (smt (verit, ccfv_SIG) return.exhaust snd_conv)
-      hence 11:"(orlins_one_step_time_check ^^  k) 
+      hence last_step_swap:"(orlins_one_step_time_check ^^  k) 
                  (orlins_one_step_time_check (orlins_one_step_time_check (tt , state))) = 
              (orlins_one_step_time_check ^^  k) 
                  (orlins_one_step_time_check (tt + prod.fst (orlins_one_step_time  state),
                  prod.snd (orlins_one_step_time state)))"
         using orlins_one_step_time_check.simps[of tt  state]
         by(auto simp add: add_fst_def) 
-      have 12:"orlins_time_dom (tt + prod.fst (orlins_one_step_time  state) , prod.snd (orlins_one_step_time state))"                             
-        apply(rule  Suc(1))
-        apply(subst funpow_Suc_right)
-        using 11 Suc(2)[simplified funpow_Suc_right o_apply]  Suc(3) 
-        by auto
+      have dom_tt:"orlins_time_dom (tt + prod.fst (orlins_one_step_time  state) ,
+                      prod.snd (orlins_one_step_time state))"                             
+        apply(rule Suc(1)[OF _ Suc(3) ])
+        using last_step_swap Suc(2)[simplified funpow_Suc_right o_apply] 
+        by (subst funpow_Suc_right) auto
       have A:"orlins_time_dom (tt,state)"
       proof(rule orlins_time.domintros, goal_cases)
         case (1 aa ba ab bb)
         then show ?case 
-          using orlins_time_dom_base_shift[OF 12(1)] 
+          using orlins_time_dom_base_shift[OF  dom_tt(1)] 
           by(simp add: orlins_one_step_time_def Let_def)
        qed
       then show ?thesis by simp
@@ -225,8 +233,7 @@ next
         show ?case
         proof(insert 2,(subst (asm) let_swap[of "add_fst tt"])+, cases k, goal_cases)
         case 1
-        show ?case
-          apply(insert 1)
+        thus ?case
           by (smt (verit) add.commute add_fst_def fst_conv funpow_0 orlins_time.domintros orlins_time.psimps
               snd_conv)
         next
@@ -370,19 +377,58 @@ lemma orlins_compow_time_invars_pres':
           "\<lbrakk>return final = infeasible; k > 0; return state = notyetterm \<rbrakk> \<Longrightarrow>
            \<nexists> f. f is \<b> flow"
           "return final = notyetterm \<Longrightarrow>  invar_non_zero_b final"
-  using orlins_compow_underlying_invars_pres[OF assms(1,2,3,5,6,7,8,9)]
-        orlins_compow_invar_gamma_pres[OF assms(1,2,3,5,6,7,8,9)]
-        orlins_entry_after_compow[OF assms(1,2,3) _ assms(6,5,7,8,9)]
-        orlins_compow_implementation_invar_pres[OF assms(1,2,3,5,6,7,8,9)]
-        orlins_compow_invar_forest_pres[OF assms(1,2,3,5,6,7,8,9)]
-        orlins_compow_invar_integral_pres[OF assms(1,2,3,5,6,7,8,9)]
-        orlins_compow_invar_isOptflow_pres[OF assms(1,2,3,5,6,7,8,9)]
-        some_balance_after_k_steps[OF _ assms(1,2,3,5,6,7,8,9)]
-        compow_correctness_gtr0[OF assms(2,1,3,8,7,6,9) _ refl _ assms(5)]
-        compow_completeness_gtr0[OF assms(2,1,3,8,7,6,9,5)]
-  by(auto simp add: assms(4) 
-        iterated_orlins_one_step_time_check_is_orlins_one_step_check[OF
-              assms(1,2,5,3,6,7,8,9), of "(t, state)", simplified])
+proof(unfold assms(4)  iterated_orlins_one_step_time_check_is_orlins_one_step_check[OF
+      assms(1,2,5,3,6,7,8,9), of "(t, state)", simplified], goal_cases)
+  case 1
+  thus ?case
+    using orlins_compow_underlying_invars_pres[OF assms(1,2,3,5,6,7,8,9)]
+    by auto
+next
+  case 2
+  thus ?case
+    using orlins_compow_invar_gamma_pres[OF assms(1,2,3,5,6,7,8,9)]
+    by auto
+next
+  case 3
+  thus ?case
+    using orlins_compow_implementation_invar_pres[OF assms(1,2,3,5,6,7,8,9)]
+    by auto
+next
+  case 4
+  thus ?case
+    using orlins_entry_after_compow[OF assms(1,2,3) _ assms(6,5,7,8,9)]
+    by auto
+next
+  case 5
+  thus ?case 
+    using orlins_compow_invar_forest_pres[OF assms(1,2,3,5,6,7,8,9)]
+    by auto
+next
+  case 6
+  thus ?case
+    using  orlins_compow_invar_integral_pres[OF assms(1,2,3,5,6,7,8,9)] 
+    by auto
+next
+  case 7
+  thus ?case
+    using orlins_compow_invar_isOptflow_pres[OF assms(1,2,3,5,6,7,8,9)]
+    by auto
+next
+  case 8
+  thus ?case
+    using compow_correctness_gtr0[OF assms(2,1,3,8,7,6,9) _ refl _ assms(5)] 
+    by auto
+next
+  case 10
+  thus ?case
+    using  some_balance_after_k_steps[OF _ assms(1,2,3,5,6,7,8,9)]
+    by auto
+next
+  case 9
+  thus ?case
+    using compow_completeness_gtr0[OF assms(2,1,3,8,7,6,9,5)]
+    by auto
+qed
 
 lemma orlins_compow_time_invars_pres:
   assumes "underlying_invars state"
@@ -423,22 +469,66 @@ lemma same_as_without_time:
           "invar_isOptflow state"
  shows "prod.snd ((orlins_one_step_time_check ^^ i) (t, state)) = (orlins_one_step_check ^^ i) state"
   using iterated_orlins_one_step_time_check_is_orlins_one_step_check assms by auto
+(*TODO MOVE*)
+lemma ceil_is_int_iff_range:"(\<lceil> x::real \<rceil> = i) \<longleftrightarrow> (of_int i \<ge> x \<and> x > of_int i - 1)"
+  by (auto simp add: algebra_simps) linarith+ 
 
 lemma Phi_contribution_important:
   assumes "invar_non_zero_b state" "invar_gamma state" "orlins_entry state"
-  "v \<in> \<V>" "\<gamma>' = new_\<gamma> state" "implementation_invar state" "underlying_invars state"
+          "v \<in> \<V>" "\<gamma>' = new_\<gamma> state" "implementation_invar state" "underlying_invars state"
   shows "(\<lceil>\<bar> a_balance state v\<bar> / \<gamma>' - (1 - \<epsilon>)\<rceil> = 1 \<longleftrightarrow> important state v)
         \<and> (\<lceil>\<bar> a_balance state v\<bar> / \<gamma>' - (1 - \<epsilon>)\<rceil> = 0 \<longleftrightarrow> \<not> important state v)"
-  using balance_less_new_gamma[of state v] Phi_init(2,3)[of state v] assms
-  unfolding invar_gamma_def important_def
-  by (smt (verit, del_insts) \<epsilon>_axiom(4) ceiling_less_one less_divide_eq mult_le_cancel_right1)
+proof
+  show goal1:"(\<lceil>\<bar>a_balance state v\<bar> / \<gamma>' - (1 - \<epsilon>)\<rceil> = 1) = important state v"
+  proof(rule iffI, goal_cases)
+    case 1
+    then show ?case 
+    using balance_less_new_gamma[OF assms(7,2,6,1,3,4)] Phi_init(2,3)[OF assms(3,1,2,6,7,4)]
+         assms(2,4,5) \<epsilon>_axiom(4) zero_less_divide_iff[of "\<bar>a_balance state v\<bar>" "new_\<gamma> state"] 
+    by(force simp only: invar_gamma_def important_def ceil_is_int_iff_range
+                      linordered_field_class.pos_less_divide_eq[symmetric])
+next
+  case 2
+  moreover have "real_of_int 1 - 1 = 0" by simp
+  moreover have "0 < \<bar>a_balance state v\<bar>"
+    using balance_less_new_gamma[OF assms(7,2,6,1,3,4)] assms(2,4,5) \<epsilon>_axiom(4) 2
+    by(auto simp : invar_gamma_def important_def mult_less_0_iff) 
+  moreover hence "1 - \<epsilon> <  \<bar>a_balance state v\<bar> / new_\<gamma> state"
+    using balance_less_new_gamma[OF assms(7,2,6,1,3,4)] Phi_init(2,3)[OF assms(3,1,2,6,7,4)]
+         assms(2,4,5)  2  mult_less_0_iff[of 2 "new_\<gamma> state"] 
+    by(auto simp : invar_gamma_def important_def intro!: mult_imp_less_div_pos) 
+  ultimately show ?case 
+    using  Phi_init(2,3)[OF assms(3,1,2,6,7,4)] assms(2,4,5) \<epsilon>_axiom(4)
+    by(auto simp only: invar_gamma_def important_def ceil_is_int_iff_range ceiling_le_iff)
+qed
+  show "(\<lceil>\<bar>a_balance state v\<bar> / \<gamma>' - (1 - \<epsilon>)\<rceil> = 0) = (\<not> important state v)"
+  proof(rule iffI, goal_cases)
+    case 1
+    then show ?case  
+    using balance_less_new_gamma[OF assms(7,2,6,1,3,4)] Phi_init(2,3)[OF assms(3,1,2,6,7,4)]
+         assms(2,4,5) \<epsilon>_axiom(4) goal1
+    by(auto intro!: importantI)
+  next
+    case 2
+    moreover hence "\<bar>a_balance state v\<bar> / new_\<gamma> state \<le> 1 - \<epsilon>"
+     using balance_less_new_gamma[OF assms(7,2,6,1,3,4)] assms(2,4,5) \<epsilon>_axiom(4) 
+           less_divide_eq[of "1 - \<epsilon>" " \<bar>a_balance state v\<bar>" "new_\<gamma> state"]
+     by(unfold important_def ) argo
+    ultimately show ?case 
+      using Phi_init(2,3)[OF assms(3,1,2,6,7,4)] assms(2,4,5) 
+      by(auto simp add: important_def invar_gamma_def ceil_is_int_iff_range)
+  qed
+qed
 
-lemma runtime_add_constant:"(orlins_one_step_time_check  ^^ i) (t + s, state) = 
-       t +++ (orlins_one_step_time_check  ^^ i) (s, state)"
-  apply(induction i arbitrary: s t state)
-  unfolding add_fst_def apply simp
+lemma runtime_add_constant:
+  "(orlins_one_step_time_check  ^^ i) (t + s, state) = 
+    t +++ (orlins_one_step_time_check  ^^ i) (s, state)"
+proof(induction i arbitrary: s t state)
+  case (Suc i)
+  then show ?case 
   apply(subst funpow_Suc_right)+
   by (auto simp add: add_fst_def)
+qed (simp add: add_fst_def)
  
 theorem running_time_sum_general:
   assumes "final = (orlins_one_step_time_check  ^^ i) (0, state)"
@@ -621,29 +711,48 @@ next
    have forest_final:"to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))) 
                          = to_graph (\<FF> (prod.snd final))" 
      unfolding Suc(2)
-     apply(subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, subst orlins_one_step_time_check.simps)
-     using orlins_one_step_time_unfolded send_flow_dom_after_forest send_flow_is_same i_notyetterm
-     by (fastforce intro!: cong[OF refl, of  _ _ to_graph] simp add: add_fst_def already_done_def send_flow_changes_\<FF> state''time_def state'time_is)
-   have card_decrease_done:"(card (comps \<V> (to_graph (\<FF> state))) \<ge> 
+   proof(subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, 
+       subst orlins_one_step_time_check.simps, goal_cases)
+     case 1
+     thus ?case
+       using orlins_one_step_time_unfolded send_flow_dom_after_forest send_flow_is_same i_notyetterm
+       by (fastforce intro!: cong[OF refl, of  _ _ to_graph] simp add: add_fst_def already_done_def send_flow_changes_\<FF> state''time_def state'time_is)
+   qed
+   have card_decrease_done:"(card (comps \<V> (to_graph (\<FF> state))) \<ge>
                 card (comps \<V> (to_graph (\<FF> already_done))))"
      using orlins_some_steps_card_decrease[OF refl Suc(4,5,6,8,7,9,10,11)]
      by(auto simp add: already_done_def  same_as_without_time2)
-  show ?case 
-    apply(subst Suc(2), subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, 
-          subst orlins_one_step_time_check.simps)
-    apply(subst if_not_P, simp add: i_notyetterm)+
-    unfolding add_fst_def
-    apply(subst fst_conv, subst sym[OF already_done_def])
-    apply(rule order.trans)
-    apply(rule add_mono[OF bigsum_bound ineq_for_one_it])
-    apply(subst sym[OF forest_final])
-    unfolding bigsum_def 
-    apply(subst (4)already_done_def, subst same_as_without_time2)
-    apply(subst add_assoc2, subst add_assoc2)
-    apply(subst (16) semiring_normalization_rules(24), subst add_assoc3, subst semiring_normalization_rules(1))
-    using card_maintain_forest_reduce card_decrease_done 
-    by(auto simp add: algebra_simps)
-qed
+   show ?case 
+   proof(subst Suc(2), subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, 
+       subst orlins_one_step_time_check.simps, goal_cases)
+     case 1
+     show ?case
+     proof((subst if_not_P, subst i_notyetterm, rule return.simps(4,6))+, goal_cases)
+       case 1
+       show ?case
+         unfolding add_fst_def
+       proof(subst fst_conv, subst sym[OF already_done_def], goal_cases)
+         case 1
+         show ?case
+         proof(rule order.trans[OF  add_mono[OF bigsum_bound ineq_for_one_it]], goal_cases)
+           case 1
+           show ?case
+           proof(subst sym[OF forest_final], unfold bigsum_def, subst (4)already_done_def, 
+               subst same_as_without_time2, goal_cases)
+             case 1
+             show ?case
+               apply(subst add_assoc2, subst add_assoc2)
+               apply(subst (16) semiring_normalization_rules(24), subst add_assoc3, 
+                   subst semiring_normalization_rules(1))
+               using card_maintain_forest_reduce card_decrease_done 
+               by(auto simp add: algebra_simps)
+           qed
+         qed
+       qed
+     qed
+   qed
+ qed
+
  
 theorem running_time_sum:
   assumes "final = (orlins_one_step_time_check  ^^ (Suc i)) (0, state)"
@@ -775,7 +884,8 @@ proof-
     using equal_results_B send_flow_dom_after_forest by auto
   have to_graph_final_is:"to_graph (\<FF> (prod.snd final)) = to_graph (\<FF> (prod.snd state''time))"
     unfolding Suc 
-    apply(subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, subst orlins_one_step_time_check.simps)
+    apply(subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, 
+          subst orlins_one_step_time_check.simps)
     using i_notyetterm 
     by(simp add: add_fst_def  orlins_one_step_time_def state''time_def state'time_def already_done_def
                \<gamma>'_def E'_def f_def \<gamma>_def b_def Let_def)
@@ -838,7 +948,8 @@ proof-
    have forest_final:"to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))) 
                             = to_graph (\<FF> (prod.snd final))" 
      unfolding assms(1)
-     apply(subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, subst orlins_one_step_time_check.simps)
+     apply(subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, 
+           subst orlins_one_step_time_check.simps)
      using orlins_one_step_time_unfolded send_flow_dom_after_forest send_flow_is_same i_notyetterm
      by (fastforce intro!: cong[OF refl, of  _ _ to_graph] simp add: add_fst_def already_done_def send_flow_changes_\<FF> state''time_def state'time_is)
    have card_decrease_done:"(card (comps \<V> (to_graph (\<FF> state))) 
@@ -846,26 +957,42 @@ proof-
 
      using orlins_some_steps_card_decrease[OF refl assms(3,4,5,8,6,9,10,11)]
      by(auto simp add: already_done_def  same_as_without_time2)
-  show ?thesis
-    apply(subst Suc(1), subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, 
-          subst orlins_one_step_time_check.simps)
-    apply(subst if_not_P, simp add: i_notyetterm)+
-    unfolding add_fst_def
-    apply(subst fst_conv, subst sym[OF already_done_def])
-    apply(rule order.trans, rule add_mono[OF bigsum_bound ineq_for_one_it], subst sym[OF forest_final])
-    unfolding bigsum_def 
-    apply(subst (4)already_done_def, subst same_as_without_time2)
-    apply(subst add_assoc2, subst add_assoc2)
-    apply(subst (16) semiring_normalization_rules(24), subst add_assoc3, subst semiring_normalization_rules(1))
-    using card_maintain_forest_reduce card_decrease_done 
-    by(auto simp add: algebra_simps)
-qed
+   show ?thesis
+   proof(subst Suc(1), subst funpow.simps(2), subst o_apply, subst (2) surjective_pairing, 
+       subst orlins_one_step_time_check.simps, goal_cases)
+     case 1
+     show ?case
+     proof((subst if_not_P, subst i_notyetterm, rule return.simps(4,6))+, goal_cases)
+       case 1
+       show ?case
+         unfolding add_fst_def
+       proof(subst fst_conv, subst sym[OF already_done_def], goal_cases)
+         case 1
+         show ?case
+         proof(rule order.trans[OF  add_mono[OF bigsum_bound ineq_for_one_it]], goal_cases)
+           case 1
+           show ?case
+           proof(subst sym[OF forest_final], unfold bigsum_def, subst (4)already_done_def, 
+               subst same_as_without_time2, goal_cases)
+             case 1
+             show ?case
+               apply(subst add_assoc2, subst add_assoc2)
+               apply(subst (16) semiring_normalization_rules(24), subst add_assoc3, 
+                   subst semiring_normalization_rules(1))
+               using card_maintain_forest_reduce card_decrease_done 
+               by(auto simp add: algebra_simps)
+           qed
+         qed
+       qed
+     qed
+   qed
+ qed
 
 definition "important_initial state v = ( v\<in> \<V> \<and> ( \<bar>a_balance state v \<bar> > (1 - \<epsilon>)*current_\<gamma> state ))"
 
 lemmas invars_initial = invar_gamma_initial implementation_invar_initial
  invar_integral_initial invar_isOptflow_initial  invar_above_6Ngamma_initial
-invar_non_zero_b_initial underlying_invars_initial
+ invar_non_zero_b_initial underlying_invars_initial
 
 theorem running_time_sum_from_init:
   assumes "final = (orlins_one_step_time_check  ^^ i) (send_flow_time initial)"
@@ -885,40 +1012,73 @@ theorem running_time_sum_from_init:
 proof-
   have "prod.fst (send_flow_time initial) \<le>
        nat (\<Phi> initial) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)"
-  and  invar_non_zero_b_initial: " invar_non_zero_b initial"
+    and  invar_non_zero_b_initial: " invar_non_zero_b initial"
     by(auto intro!:  time_boundB simp add:  assms(4) invars_initial)
   have Max_gtr_0:"Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} > 0"
     using assms(4)  Max_lower_bound[OF \<V>_finite V_non_empt, of _ 0 "\<lambda> x. \<bar> \<b> x \<bar>"] by auto
   have b_lower:"x \<in> \<V> \<Longrightarrow> 0 \<le> \<lceil>\<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} - (1 - \<epsilon>)\<rceil>" for x
-    by (simp, smt (verit) Max_gtr_0 \<epsilon>_axiom(1) divide_less_0_iff)
+  proof(goal_cases)
+    case 1
+    hence "0 < \<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} + \<epsilon>"
+      using Max_gtr_0 \<epsilon>_axiom(1) divide_less_0_iff[of "\<bar>\<b> x\<bar>" "Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>}"] 
+      by simp
+    then show ?case 
+      by simp
+  qed
   have b_upper:"x \<in> \<V> \<Longrightarrow>  \<lceil>\<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} - (1 - \<epsilon>)\<rceil> \<le> 1" for x
-    apply simp
-    apply(rule order.trans[of _ "1+1"])
-     apply(rule add_mono_thms_linordered_semiring(1))
-    apply rule
-    using \<epsilon>_axiom(2) 
-    using Max.coboundedI[of "{\<bar>\<b> v\<bar> |v. v \<in> \<V>}"  "\<bar>\<b> x\<bar>"]  Max_gtr_0 \<V>_finite
-    apply (metis (mono_tags) Max_lower_bound all_not_in_conv divide_le_eq_1_pos linorder_le_less_linear order_less_irrefl)
-    using  \<epsilon>_axiom(2) by simp+
+  proof(goal_cases)
+    case 1
+    note one = this
+    have "\<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} + \<epsilon> \<le> 2"
+    proof(rule order.trans[of _ "1+1"], rule add_mono_thms_linordered_semiring(1), 
+        rule conjI, goal_cases)
+      case 1
+      have "\<bar>\<b> x\<bar> \<le> Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>}"
+        using \<epsilon>_axiom(2)  Max.coboundedI[of "{\<bar>\<b> v\<bar> |v. v \<in> \<V>}"  "\<bar>\<b> x\<bar>"]  Max_gtr_0 \<V>_finite one
+        by fastforce
+      thus ?case
+        using Max_gtr_0
+        by(auto simp add: algebra_simps intro!: linordered_field_class.mult_imp_div_pos_le)
+    qed (insert \<epsilon>_axiom(2), simp+) 
+    thus ?case by simp
+  qed
   have Phi_number_important:"(\<Phi> initial) = card {a. important_initial initial a}"
-    unfolding initial_def \<Phi>_def important_initial_def new_\<gamma>_def Let_def apply simp
-    unfolding  init_gamma abstract_bal_map_init_is
-    apply(rule trans)
-    apply(rule binary_sum[OF \<V>_finite])
-    using b_lower b_upper 
-    apply (smt (verit, best))
-    apply(rule arg_cong[of _ _ int] arg_cong[of _ _ card])+
-    apply(rule Collect_cong_set)
-    by (smt (verit, ccfv_SIG) Max_gtr_0 b_upper one_le_ceiling pos_less_divide_eq)
+  proof-
+    have "(\<Sum>v\<in>\<V>. \<lceil>\<bar>if v \<in> \<V> then \<b> v else 0\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} - (1 - \<epsilon>)\<rceil>) =
+    int (card {a \<in> \<V>. (1 - \<epsilon>) * Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} < \<bar>if a \<in> \<V> then \<b> a else 0\<bar>})"
+    proof(rule trans[OF  binary_sum[OF \<V>_finite]], goal_cases)
+      case (1 x)
+      thus ?case
+        using b_lower[OF 1] b_upper[OF 1] by presburger
+    next
+      case 2
+      show ?case
+      proof((rule arg_cong[of _ _ int] arg_cong[of _ _ card])+, rule Collect_cong_set, goal_cases)
+        case (1 x)
+        have "\<lceil>\<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} - (1 - \<epsilon>)\<rceil> = 1"
+          if "\<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} + \<epsilon> \<le> 2" "1 - \<epsilon> < \<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>}"
+          using 1 that by linarith
+        moreover have "1 - \<epsilon> < \<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>}"
+          if "\<lceil>\<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} - (1 - \<epsilon>)\<rceil> = 1 "
+          using 1 that by linarith
+        ultimately show ?case 
+          using  Max_gtr_0 b_upper[OF 1] 1 one_le_ceiling[of "\<bar>\<b> x\<bar> / Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} - (1 - \<epsilon>)"]
+          by (auto  simp add: pos_less_divide_eq[symmetric])
+      qed
+    qed        
+    thus ?thesis 
+      by(auto simp add: initial_def \<Phi>_def important_initial_def new_\<gamma>_def Let_def 
+          init_gamma abstract_bal_map_init_is) 
+  qed
   have same_state_after_init_send_flow:
-         "prod.snd (local.send_flow_time initial) = send_flow initial" 
+    "prod.snd (local.send_flow_time initial) = send_flow initial" 
     by(auto intro!: equal_results_B[symmetric,of initial] 
-             simp add: initial_state_orlins_dom_and_results(5))
+        simp add: initial_state_orlins_dom_and_results(5))
   have same_F_After_send_flow': "to_graph (\<FF> (send_flow initial)) = to_graph (\<FF> initial)"
-  and same_F_After_send_flow: "to_graph (\<FF> (prod.snd (send_flow_time initial)))
+    and same_F_After_send_flow: "to_graph (\<FF> (prod.snd (send_flow_time initial)))
                                  = to_graph (\<FF> initial)"
- by(auto intro!: cong[OF refl, OF send_flow_changes_\<FF>] 
-          simp add: initial_state_orlins_dom_and_results(5) same_state_after_init_send_flow)
+    by(auto intro!: cong[OF refl, OF send_flow_changes_\<FF>] 
+        simp add: initial_state_orlins_dom_and_results(5) same_state_after_init_send_flow)
   have take_first_time_out:"((prod.fst (send_flow_time initial)) +++ ((orlins_one_step_time_check ^^ i) (0, send_flow initial))) =
         (orlins_one_step_time_check ^^ i) (send_flow_time initial)" for i
     using runtime_add_constant[of i "prod.fst (send_flow_time initial)" 0 "send_flow initial"] 
@@ -927,31 +1087,31 @@ proof-
                  nat (\<Phi> initial) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)"
     using  time_boundB[OF invars_initial(1) refl invars_initial(7,2,3,4,5)] assms(4) by simp
   show ?thesis
-proof(cases i)
-  case 0
-  then show ?thesis
-    using assms 0 same_F_After_send_flow Phi_number_important send_flow_time_bound
-    by simp
-next
-  case (Suc nat)
-  have return_after_init_send_flow: "return (send_flow initial) = notyetterm"
-    using assms(3)[of 0, OF _ refl, simplified] Suc
-    by (simp add: same_state_after_init_send_flow)
-  have underlying_invars_send_flow:"underlying_invars (send_flow initial)"
-    and invar_gamma_send_flow:"invar_gamma (send_flow initial)"
-    and invar_non_zero_b_send_flow:"invar_non_zero_b (send_flow initial)"
-    and orlins_entry_send_flow:"orlins_entry (local.send_flow initial)"
-    and other_invars: "implementation_invar (send_flow initial)"
-                      "invar_forest (send_flow initial)"
-                      "invar_integral (send_flow initial)"
-                      "invar_isOptflow (send_flow initial)"
-    using send_flow_invars_pres[OF  initial_state_orlins_dom_and_results(5)[OF refl]
-                                      invars_initial(7,1,2,3,4,5), OF assms(4)]
-         phi_initial_leq_2N
-    by (auto intro!: remaining_balance_after_send_flow orlins_entry_after_send_flow
-                     send_flow_invar_forest 
+  proof(cases i)
+    case 0
+    then show ?thesis
+      using assms 0 same_F_After_send_flow Phi_number_important send_flow_time_bound
+      by simp
+  next
+    case (Suc nat)
+    have return_after_init_send_flow: "return (send_flow initial) = notyetterm"
+      using assms(3)[of 0, OF _ refl, simplified] Suc
+      by (simp add: same_state_after_init_send_flow)
+    have underlying_invars_send_flow:"underlying_invars (send_flow initial)"
+      and invar_gamma_send_flow:"invar_gamma (send_flow initial)"
+      and invar_non_zero_b_send_flow:"invar_non_zero_b (send_flow initial)"
+      and orlins_entry_send_flow:"orlins_entry (local.send_flow initial)"
+      and other_invars: "implementation_invar (send_flow initial)"
+      "invar_forest (send_flow initial)"
+      "invar_integral (send_flow initial)"
+      "invar_isOptflow (send_flow initial)"
+      using send_flow_invars_pres[OF  initial_state_orlins_dom_and_results(5)[OF refl]
+          invars_initial(7,1,2,3,4,5), OF assms(4)]
+        phi_initial_leq_2N
+      by (auto intro!: remaining_balance_after_send_flow orlins_entry_after_send_flow
+          send_flow_invar_forest 
           simp add: invars_initial assms(4) return_after_init_send_flow)
-  have sum_bound:"prod.fst ((orlins_one_step_time_check ^^ Suc nat) (0, local.send_flow initial))
+    have sum_bound:"prod.fst ((orlins_one_step_time_check ^^ Suc nat) (0, local.send_flow initial))
   \<le> (card (comps \<V> (to_graph (\<FF> (local.send_flow initial)))) -
       card (comps \<V> (to_graph (\<FF> (prod.snd ((orlins_one_step_time_check ^^ Suc nat) (0, local.send_flow initial))))))) *
      (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
@@ -960,28 +1120,35 @@ next
          let state' = (orlins_one_step_check ^^ (j - 1)) (local.send_flow initial) in card {v. important state' v}) *
      (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
      (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B)"
-  apply(rule running_time_sum[OF refl, of nat "send_flow initial", 
-      OF _  underlying_invars_send_flow invar_gamma_send_flow invar_non_zero_b_send_flow 
-         orlins_entry_send_flow _ other_invars])
-    using  arg_cong[OF take_first_time_out[of "Suc nat", simplified add_fst_def], of prod.snd]
-           assms(2)[simplified assms(1) Suc]  arg_cong[OF take_first_time_out[ simplified add_fst_def],
-            of prod.snd] Suc assms(3)  
-    by fastforce+
-  have take_out:"prod.fst ((orlins_one_step_time_check ^^ i) (send_flow_time initial)) = 
+      using  arg_cong[OF take_first_time_out[of "Suc nat", simplified add_fst_def], of prod.snd]
+        assms(2)[simplified assms(1) Suc]  arg_cong[OF take_first_time_out[ simplified add_fst_def],
+          of prod.snd] Suc assms(3)  
+      by (intro running_time_sum[OF refl, of nat "send_flow initial", 
+            OF _  underlying_invars_send_flow invar_gamma_send_flow invar_non_zero_b_send_flow 
+            orlins_entry_send_flow _ other_invars])
+        fastforce+
+    have take_out:"prod.fst ((orlins_one_step_time_check ^^ i) (send_flow_time initial)) = 
        prod.fst (send_flow_time initial) + prod.fst ((orlins_one_step_time_check ^^ i) (0, local.send_flow initial))"
-    using fst_conv take_first_time_out[of i, symmetric] by(auto simp add: add_fst_def) 
-  show ?thesis 
-    apply(subst assms(1))+ (*REWRITE*)
-    apply(subst take_out)  
-    apply(subst (5) surjective_pairing)
-    apply(subst equal_results_B[OF initial_send_flow(2), symmetric])
-    apply(subst runtime_add_constant[of i "prod.fst (send_flow_time initial)" 0, simplified add_fst_def, simplified])
-    apply(subst snd_conv) (*ALGEBRA*)
-    apply(rule order.trans)
-    apply(rule add_mono[OF  send_flow_time_bound sum_bound[simplified sym[OF Suc]]])
-    using  same_F_After_send_flow' Phi_number_important Suc
-    by (auto simp add: algebra_simps)
- qed
+      using fst_conv take_first_time_out[of i, symmetric] by(auto simp add: add_fst_def) 
+    show ?thesis 
+    proof((subst assms(1))+, subst take_out, subst (5) surjective_pairing, goal_cases)
+      case 1
+      show ?case
+      proof(subst equal_results_B[OF initial_send_flow(2), symmetric], goal_cases)
+        case 1
+        show ?case
+        proof(subst runtime_add_constant[of i "prod.fst (send_flow_time initial)" 0, 
+              simplified add_fst_def, simplified], goal_cases)
+          case 1
+          show ?case
+            using  same_F_After_send_flow' Phi_number_important Suc
+            by (intro order.trans[OF  add_mono[OF 
+                    send_flow_time_bound sum_bound[simplified sym[OF Suc]]]])
+              (auto simp add: algebra_simps)
+        qed
+      qed
+    qed
+  qed
 qed
 
 definition  "\<l> =  nat (\<lceil> log 2 (4*M*N + (1 - \<epsilon>)) - log 2 \<epsilon>\<rceil>) + 1"
@@ -992,11 +1159,11 @@ lemma invar_non_zero_b_gamma_upd_pres:
 
 lemma 
   assumes  "\<not> (\<forall> v \<in> \<V>. \<b> v = 0)"
-  shows underlying_invars_send_flow_initial:"underlying_invars (send_flow initial)"
-    and invar_gamma_send_flow_initial:"invar_gamma (send_flow initial)"
-    and invar_non_zero_b_send_flow_initial:"return (send_flow initial) = notyetterm \<Longrightarrow> invar_non_zero_b (send_flow initial)"
-    and orlins_entry_send_flow_initial:"return (send_flow initial) = notyetterm \<Longrightarrow> orlins_entry (local.send_flow initial)"
-    and other_invars_send_flow_initial: "implementation_invar (send_flow initial)"
+  shows underlying_invars_send_flow_initial[initial_invars]:"underlying_invars (send_flow initial)"
+    and invar_gamma_send_flow_initial[initial_invars]:"invar_gamma (send_flow initial)"
+    and invar_non_zero_b_send_flow_initial[initial_invars]:"return (send_flow initial) = notyetterm \<Longrightarrow> invar_non_zero_b (send_flow initial)"
+    and orlins_entry_send_flow_initial[initial_invars]:"return (send_flow initial) = notyetterm \<Longrightarrow> orlins_entry (local.send_flow initial)"
+    and other_invars_send_flow_initial[initial_invars]: "implementation_invar (send_flow initial)"
                       "invar_forest (send_flow initial)"
                       "invar_integral (send_flow initial)"
                       "invar_isOptflow (send_flow initial)"
@@ -1076,16 +1243,26 @@ proof-
     using invars_pseudo_initial
     by(auto intro: orlins_compow_invar_gamma_pres[of pseudo_initial j])
   have invar_non_zero_b_pres: "j \<le> i  \<Longrightarrow>invar_non_zero_b ((orlins_one_step_check ^^ j) pseudo_initial)" for j
-    apply(cases "j = 0")
-    using invar_non_zero_b_pseudo_initial apply simp
-    apply(rule some_balance_after_k_steps[OF _ invars_pseudo_initial(1,2,3,7,6,5,4,8)])
-    apply(rule trans) defer
-    apply(rule assms(3)[of "j-1", OF _ refl], simp)
-    apply(subst sym[OF send_flow_sim]) 
-    apply(subst sym[OF funpow_swap1])
-    apply(subst sym[OF o_apply[of orlins_one_step_check "orlins_one_step_check ^^ (_ - 1)"]])
-    apply(subst sym[OF funpow.simps(2)])
-    by auto
+  proof(cases "j = 0", goal_cases)
+    case 1
+    then show ?thesis 
+     using invar_non_zero_b_pseudo_initial by simp
+  next
+    case 2
+    show ?thesis 
+    proof(rule some_balance_after_k_steps[OF _ invars_pseudo_initial(1,2,3,7,6,5,4,8)], goal_cases)
+      case 1
+      show ?case
+      proof(rule trans[OF _ assms(3)[of "j-1", OF _ refl]], goal_cases)
+        case 1
+        show ?case
+          using 2
+          by(unfold sym[OF send_flow_sim] sym[OF funpow.simps(2)] sym[OF funpow_swap1]
+             sym[OF o_apply[of orlins_one_step_check "orlins_one_step_check ^^ (_ - 1)"]])
+             auto
+      qed (insert 2, auto)
+    qed
+  qed
   have invar_forest_after_one:"invar_forest (orlins_one_step_check pseudo_initial)"
     by (simp add: send_flow_sim F_initial_empty(1) initial_send_flow(2) invar_forest_def
         send_flow_changes_\<F>)
@@ -1099,36 +1276,77 @@ proof-
         invar_above_6Ngamma_initial invar_gamma_initial invar_integral_initial 
         invar_isOptflow_initial orlins_entry_after_send_flow send_flow_sim)
   have invar_forest_pres: "j \<le> i \<Longrightarrow> invar_forest ((orlins_one_step_check ^^ j) pseudo_initial)" for j
-    apply(cases j)
-    using invar_forest_pseudo_initial 
-    apply(simp, subst Suc_pred', simp, subst funpow_Suc_right) 
-    using assms(4)  send_flow_sim  invar_non_zero_b_pres[of 1, simplified] orlins_entry_one_step 
-    by(auto intro!: orlins_compow_invar_forest_pres underlying_invars_send_flow_initial
-             invar_gamma_send_flow_initial other_invars_send_flow_initial)
+  proof(cases j, goal_cases)
+    case 1
+    then show ?thesis 
+      using invar_forest_pseudo_initial by simp
+  next
+    case (2 nat)
+    hence "invar_forest ((orlins_one_step_check ^^ (j - 1) \<circ>
+                      orlins_one_step_check) pseudo_initial)"
+      using assms(4) invar_forest_pseudo_initial send_flow_sim  
+        invar_non_zero_b_pres[of 1, simplified] orlins_entry_one_step 
+      by(auto intro!: orlins_compow_invar_forest_pres underlying_invars_send_flow_initial
+          invar_gamma_send_flow_initial other_invars_send_flow_initial)
+    then show ?thesis 
+      using invar_forest_pseudo_initial 2
+      by(subst Suc_pred', simp, subst funpow_Suc_right) 
+  qed
   have implementation_invar_pres: "j \<le> i \<Longrightarrow> implementation_invar ((orlins_one_step_check ^^ j) pseudo_initial)" for j
-    apply(cases j)
-    using other_invars
-    apply(simp, subst Suc_pred', simp, subst funpow_Suc_right) 
-    using assms(4)  send_flow_sim  invar_non_zero_b_pres[of 1, simplified] orlins_entry_one_step 
-    by(auto intro!: orlins_compow_implementation_invar_pres underlying_invars_send_flow_initial
-             invar_gamma_send_flow_initial other_invars_send_flow_initial)
-  
+  proof(cases j, goal_cases)
+    case 1
+    then show ?thesis 
+      using other_invars by simp
+  next
+    case (2 nat)
+    hence "implementation_invar ((orlins_one_step_check ^^ (j - 1) \<circ>
+                      orlins_one_step_check) pseudo_initial)"
+      using assms(4) other_invars send_flow_sim  
+        invar_non_zero_b_pres[of 1, simplified] orlins_entry_one_step 
+      by(auto intro!: orlins_compow_implementation_invar_pres underlying_invars_send_flow_initial
+          invar_gamma_send_flow_initial other_invars_send_flow_initial)
+    then show ?thesis 
+      using other_invars 2
+      by(subst Suc_pred', simp, subst funpow_Suc_right) 
+  qed
   have invar_integral_pres: "j \<le> i \<Longrightarrow> invar_integral ((orlins_one_step_check ^^ j) pseudo_initial)" for j
-    apply (cases j)
-    using invar_integral_pseudo_initial
-     apply(simp, subst Suc_pred', simp, subst funpow_Suc_right)
-    using assms(4)  send_flow_sim  invar_non_zero_b_pres[of 1, simplified] orlins_entry_one_step 
-    by(auto intro!: orlins_compow_invar_integral_pres underlying_invars_send_flow_initial
-             invar_gamma_send_flow_initial other_invars_send_flow_initial)
+  proof (cases j, goal_cases)
+    case 1
+    thus ?case
+      using invar_integral_pseudo_initial by simp
+  next
+    case 2
+    have "invar_integral ((orlins_one_step_check ^^ (j - 1) \<circ>
+                orlins_one_step_check) pseudo_initial)"
+      using assms(4)  send_flow_sim  invar_non_zero_b_pres[of 1, simplified] orlins_entry_one_step 
+        invar_integral_pseudo_initial 2
+      by(auto intro!: orlins_compow_invar_integral_pres underlying_invars_send_flow_initial
+          invar_gamma_send_flow_initial other_invars_send_flow_initial)
+    thus ?case 
+      using 2
+      by(subst Suc_pred', simp, subst funpow_Suc_right)
+  qed
   have orlins_entry_pres: "j \<le> i \<Longrightarrow> orlins_entry ((orlins_one_step_check ^^ j) pseudo_initial)" for j
-    apply(cases j)
-    using orlins_entry_pseudo_initial apply simp
-    apply(rule orlins_entry_after_compow[OF underlying_invars_pseudo_initial invar_gamma_pseudo_initial 
-                 invar_non_zero_b_pseudo_initial])
-    apply(subst Suc_pred', simp, subst funpow_Suc_right)
-    using assms(3) send_flow_sim  orlins_entry_pseudo_initial other_invars
-          invar_forest_pseudo_initial  invar_integral_pseudo_initial
-    by fastforce+
+  proof(cases j, goal_cases)
+    case 1
+    thus ?case
+      using orlins_entry_pseudo_initial by simp
+  next
+    case (2 nat)
+    note two = 2
+    have "return ((orlins_one_step_check ^^ j) pseudo_initial) = notyetterm"
+    proof(subst 2, subst Suc_pred', goal_cases)
+      case 2
+      thus ?case
+        using two send_flow_sim 
+        by(subst funpow_Suc_right)(auto intro!: assms(3)[of nat])
+    qed (insert 2, simp)
+    thus ?case
+      using  assms(3)  other_invars invar_forest_pseudo_initial  invar_integral_pseudo_initial
+      by (auto intro!: orlins_entry_after_compow[OF underlying_invars_pseudo_initial 
+            invar_gamma_pseudo_initial 
+            invar_non_zero_b_pseudo_initial])
+  qed
   have invar_isOptflow_pseudo_initial: "invar_isOptflow pseudo_initial"
     using invar_isOptflow_initial 
     by(simp add: pseudo_initial_def invar_isOptflow_def)
@@ -1148,48 +1366,54 @@ proof-
     hence j_leq_i:"j \<le> i" by simp
     define state where "state = (orlins_one_step_check ^^ j) pseudo_initial"
     show ?thesis 
-      apply(rule bij_betw_same_card[of "\<lambda> v. connected_component (to_graph (\<FF> state)) v"])
-      unfolding bij_betw_def
-    proof(rule, goal_cases)
+    proof(rule bij_betw_same_card[of "\<lambda> v. connected_component (to_graph (\<FF> state)) v"], goal_cases)
       case 1
-      show ?case unfolding inj_on_def
-      proof(rule,rule, rule,  goal_cases)
-        case (1 x y)
-        have new_gamma_gtr_0:"new_\<gamma> ((orlins_one_step_check ^^ j) pseudo_initial) > 0"
-          apply(cases j)
-          subgoal 
-            by (simp add: assms(4) invar_gammaD invar_gamma_initial new_gamma_pseudo_initial
-                pseudo_initial_def)  
-          using invar_non_zero_b_pres[OF j_leq_i] underlying_invars_pres[of j]
+      show ?case
+        unfolding bij_betw_def
+      proof(rule conjI, goal_cases)
+        case 1
+        show ?case unfolding inj_on_def
+        proof(rule,rule, rule,  goal_cases)
+          case (1 x y)
+          have new_gamma_gtr_0:"new_\<gamma> ((orlins_one_step_check ^^ j) pseudo_initial) > 0"
+          proof(cases j, goal_cases)
+            case 1
+            thus ?case
+              by (simp add: assms(4) invar_gammaD invar_gamma_initial new_gamma_pseudo_initial
+                  pseudo_initial_def)  
+          next
+            case 2
+            thus ?case
+              using invar_non_zero_b_pres[OF j_leq_i] underlying_invars_pres[of j]
                 implementation_invar_pres[OF j_leq_i]  invar_gamma_pres[of j]
-          by(auto intro!: invar_gammaD[OF new_gamma_is(7), simplified])
-        have non_zero_balance_x:"\<bar>a_balance state x\<bar> > 0"
-          using 1(1) j_leq_i invar_gamma_pres[of j] new_gamma_gtr_0
-          unfolding state_def Imps_def Let_def invar_gamma_def important_def
-          by (auto , smt (verit) \<epsilon>_axiom(4) divide_le_eq_1_pos mul_zero_cancel)
-        have non_zero_balance_y:"\<bar>a_balance state y\<bar> > 0"
-          using 1(2) j_leq_i invar_gamma_pres[of j] new_gamma_gtr_0
-          unfolding state_def Imps_def Let_def invar_gamma_def important_def
-          by (auto , smt (verit) \<epsilon>_axiom(4) divide_le_eq_1_pos mul_zero_cancel)
-        have "representative state x = representative state y"
-          using underlying_invars_pres[of j, simplified underlying_invars_def inv_reachable_same_rep_def] 1(3)
-          by(fastforce simp add: state_def connected_component_def)
-        moreover have "representative state x = x"
-          using underlying_invars_pres[of j, simplified underlying_invars_def inv_pos_bal_rep_def] 1(3) 1(1)
-                non_zero_balance_x j_leq_i
-          by(fastforce simp add: Imps_def important_def Let_def state_def)
-        moreover have "representative state y = y"
-          using underlying_invars_pres[of j, simplified underlying_invars_def inv_pos_bal_rep_def] 1(3) 1(2)
-                non_zero_balance_y j_leq_i
-         by(simp add: Imps_def important_def Let_def state_def)
-        ultimately show ?case by simp
+              by(auto intro!: invar_gammaD[OF new_gamma_is(7), simplified])
+          qed
+          have non_zero_balance_x:"\<bar>a_balance state x\<bar> > 0"
+            using 1(1) j_leq_i invar_gamma_pres[of j] new_gamma_gtr_0 \<epsilon>_axiom(4)
+            by (auto simp add: algebra_simps state_def Imps_def Let_def invar_gamma_def important_def)
+          have non_zero_balance_y:"\<bar>a_balance state y\<bar> > 0"
+            using 1(2) j_leq_i invar_gamma_pres[of j] new_gamma_gtr_0 \<epsilon>_axiom(4)
+            by(auto simp add: algebra_simps state_def Imps_def Let_def invar_gamma_def important_def)
+          have "representative state x = representative state y"
+            using underlying_invars_pres[of j, simplified underlying_invars_def inv_reachable_same_rep_def] 1(3)
+            by(fastforce simp add: state_def connected_component_def)
+          moreover have "representative state x = x"
+            using underlying_invars_pres[of j, simplified underlying_invars_def inv_pos_bal_rep_def] 1(3) 1(1)
+              non_zero_balance_x j_leq_i
+            by(fastforce simp add: Imps_def important_def Let_def state_def)
+          moreover have "representative state y = y"
+            using underlying_invars_pres[of j, simplified underlying_invars_def inv_pos_bal_rep_def] 1(3) 1(2)
+              non_zero_balance_y j_leq_i
+            by(simp add: Imps_def important_def Let_def state_def)
+          ultimately show ?case by simp
+        qed
+      next
+        case 2
+        then show ?case 
+          unfolding comps_with_imp_def Imps_def Let_def state_def comps_def important_def
+          apply(subst if_P[OF j_leq_i ])+
+          by auto 
       qed
-    next
-      case 2
-      then show ?case 
-        unfolding comps_with_imp_def Imps_def Let_def state_def comps_def important_def
-        apply(subst if_P[OF j_leq_i ])+
-        by auto 
     qed
   qed
   define \<S> where "\<S> = (\<Union> j. (comps_with_imp j))"
@@ -1202,6 +1426,7 @@ proof-
   have component_lifetime:  "ii + \<l>  < j \<Longrightarrow> C \<in> comps_with_imp ii \<Longrightarrow> C \<notin> comps_with_imp j" for ii j C
   proof( goal_cases)
     case 1
+    note one = this
     have ii_leq_i:"ii \<le> i" 
       apply(rule ccontr)
       using  1(2)by(simp add: comps_with_imp_def Let_def)
@@ -1253,45 +1478,54 @@ proof-
       have "connected_component (to_graph (\<FF> state)) v 
            \<subset> connected_component (to_graph (\<FF> ((orlins_one_step_check ^^ k) state))) v"
         unfolding state_def
-        apply(rule make_pos_rule'[OF k_prop(2)[simplified state_def], simplified])
-        apply(subst sym[OF o_apply[of "orlins_one_step_check ^^ k" "orlins_one_step_check ^^ ii"]])
-        apply(subst sym[OF funpow_add])
-        apply(rule trans)
-        defer
-         apply(rule assms(3)[of "ii + k - 1", OF _  refl])
-        using  j_leq_i 1(1) k_prop(1) apply simp
-        using   1(1) k_prop(1) unfolding sym[OF send_flow_sim] 
-        apply(subst sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check"]])
-        apply(subst sym[OF funpow_Suc_right]) 
-        apply(rule arg_cong[of _ _ return])
-        apply(rule cong[of "_ ^^ _" "_ ^^ _"])
-        apply(subst sym[OF Suc_pred'[of "ii + k"]])
-        using k_not_0  add.commute[of k ii] by (auto, argo)
+      proof(rule make_pos_rule'[OF k_prop(2)[simplified state_def], simplified], goal_cases)
+        case 1
+        have "return ((orlins_one_step_check ^^ (k + ii)) pseudo_initial) = notyetterm"
+        proof(rule trans[OF _ assms(3)[of "ii + k - 1", OF _  refl]], goal_cases)
+          case 2
+          show ?case
+            using  j_leq_i one(1) k_prop(1) by simp
+        next
+          case 1
+          have "orlins_one_step_check ^^ (k + ii) = orlins_one_step_check ^^ Suc (ii + k - 1)"
+            using k_not_0 
+            by (subst sym[OF Suc_pred'[of "ii + k"]])
+              (auto  simp add: add.commute[of k ii])
+          thus ?case
+            by(auto simp add: sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check"]] 
+                sym[OF funpow_Suc_right]  sym[OF send_flow_sim] ) 
+        qed
+        thus ?case
+          by(simp add: sym[OF o_apply[of "orlins_one_step_check ^^ k" "orlins_one_step_check ^^ ii"]]
+              sym[OF funpow_add])
+      qed
       moreover have "connected_component (to_graph (\<FF> ((orlins_one_step_check ^^ k) state))) v
                 \<subseteq> connected_component (to_graph (\<FF> ((orlins_one_step_check ^^ ((j - ii) - k))
                                                 ((orlins_one_step_check ^^ k) state)))) v"
-        apply(rule con_comp_subset)
-        apply(rule orlins_some_steps_forest_increase[OF refl, of "(orlins_one_step_check ^^ k) state" "(j-ii) - k"])
-        unfolding state_def
-        apply(subst sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check ^^ _"]], 
-              subst sym[OF funpow_add], 
-              simp add: underlying_invars_pres[of "k + ii"] invar_gamma_pres[of "k + ii"]
-                        invar_non_zero_b_pres[of "k + ii"] )+
-        apply( all \<open>(subst sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check ^^ _"]], 
-              subst sym[OF funpow_add])\<close>)
-        using  j_leq_i k_prop(1) 1
-        by(auto intro!: invar_non_zero_b_pres[of "k + ii"] implementation_invar_pres[of "k + ii"]  orlins_entry_pres[of "k + ii"]
-                        invar_forest_pres[of "k + ii"]  invar_integral_pres[of "k + ii"]
-                        invar_isOptflow_pres[of "k + ii"])
+      proof(rule con_comp_subset, goal_cases)
+        case 1
+        have steps_are:"(orlins_one_step_check ^^ k) ((orlins_one_step_check ^^ ii) pseudo_initial) 
+              = (orlins_one_step_check ^^ (k + ii)) pseudo_initial"
+          by(simp add: sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check ^^ _"]]
+              subst sym[OF funpow_add] )
+        show ?case
+          using  j_leq_i k_prop(1) 1 one
+          by(intro orlins_some_steps_forest_increase[OF refl,
+                of "(orlins_one_step_check ^^ k) state" "(j-ii) - k"])
+            (auto intro!:  invar_non_zero_b_pres[of "k + ii"] implementation_invar_pres[of "k + ii"] 
+              orlins_entry_pres[of "k + ii"] invar_isOptflow_pres[of "k + ii"] 
+              invar_forest_pres[of "k + ii"]  invar_integral_pres[of "k + ii"]
+              underlying_invars_pres[of "k + ii"] invar_gamma_pres[of "k + ii"]
+              simp add: state_def steps_are )
+      qed
       moreover have "to_graph (\<FF> ((orlins_one_step_check ^^ ((j-ii) - k)) 
                          ((orlins_one_step_check ^^ k) state))) =
                      to_graph (\<FF> ((orlins_one_step_check ^^ j) (pseudo_initial)))"
-        unfolding state_def
-        apply(subst sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check ^^ _"]] 
-               sym[OF funpow_add])+
-        using  j_leq_i k_prop(1) 1 by simp
+        using  j_leq_i k_prop(1) 1 
+         by (simp add: sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check ^^ _"]] 
+                       sym[OF funpow_add] state_def)
       ultimately have component_increase: 
-      "connected_component (to_graph (\<FF> state)) v 
+        "connected_component (to_graph (\<FF> state)) v 
              \<subset> connected_component (to_graph (\<FF> (((orlins_one_step_check ^^ j)) pseudo_initial))) v"
         by simp
       have not_in_j:"connected_component (to_graph (\<FF> state)) v 
@@ -1303,7 +1537,9 @@ proof-
           by(auto simp add: comps_def)
         moreover hence "connected_component (to_graph (\<FF> ((orlins_one_step_check ^^ j) pseudo_initial))) w =
                        connected_component (to_graph (\<FF> ((orlins_one_step_check ^^ j) pseudo_initial))) v"
-          by (metis connected_components_member_eq in_connected_componentI2)
+          using connected_components_member_eq[of v _ w]
+                in_connected_componentI2[of v _ "to_graph (\<FF> state)"] 
+          by simp
         ultimately show ?case 
           using component_increase by simp
       qed
@@ -1370,10 +1606,9 @@ proof-
         proof(cases rule: comparison_cases[of k l])
           case 1
           have stateY_from_stateX:"stateY = (orlins_one_step_check ^^ (l - k)) stateX"
-            unfolding stateX_def stateY_def
-            apply(subst sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check ^^ _"]], 
-                  subst sym[OF funpow_add])
-            using 1 by simp
+            using 1
+            by(simp add: sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check ^^ _"]] 
+                         sym[OF funpow_add] stateX_def stateY_def)
           have forest_subs:"to_graph (\<FF> stateX) \<subseteq> to_graph (\<FF> stateY)"
             using stateY_from_stateX  underlying_invars_stateX invar_gamma_stateX
                   invar_non_zero_b_stateX implementation_invar_stateX orlins_entry_stateX
@@ -1385,8 +1620,8 @@ proof-
           have "X' \<inter> Y \<noteq> {}"
             using X_Y_props(3) X_subs_X' by blast
           hence "X' = Y"
-            using X'_def y_prop(2) 
-            by (metis connected_components_member_eq disjoint_iff)
+            using X'_def y_prop(2) connected_components_member_eq[of _ "to_graph (\<FF> stateY)"]
+            by(unfold disjoint_iff) blast
           moreover have "X' \<noteq> Y"
             using X_Y_props X_subs_X' by simp
           ultimately show ?thesis by simp
@@ -1403,10 +1638,9 @@ proof-
         next
           case 3
           have stateX_from_stateY:"stateX = (orlins_one_step_check ^^ (k - l)) stateY"
-            unfolding stateX_def stateY_def
-            apply(subst sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check ^^ _"]], 
-                  subst sym[OF funpow_add])
-            using 3 by simp
+            using 3
+            by(simp add: sym[OF o_apply[of "orlins_one_step_check ^^ _" "orlins_one_step_check ^^ _"]] 
+                         sym[OF funpow_add] stateX_def stateY_def)
           have forest_subs:"to_graph (\<FF> stateY) \<subseteq> to_graph (\<FF> stateX)"
             using stateX_from_stateY  underlying_invars_stateY invar_gamma_stateY invar_non_zero_b_stateY
                   implementation_invar_stateY orlins_entry_stateY invar_forest_stateY 
@@ -1452,29 +1686,35 @@ proof-
     thus ?thesis
       by(rule laminar_family_number_of_sets[OF N_def \<V>_finite])
   qed
-
   have "((\<Sum> j \<in> {1..i}. (let state' = ((orlins_one_step_check ^^ (j - 1))  (send_flow initial)) in 
                                                      card { v. important state' v} )) +
                                                      card { v. important_initial initial v}) =
        (\<Sum> j \<in> {1..i}. (card (Imps j))) + card { v. important_initial initial v}"
-    apply simp
-    unfolding Imps_def Let_def
-    apply(subst sym[OF send_flow_sim])
-    apply(rule sum_up_same_cong[OF _ _ refl, of "Suc 0" "Suc i", simplified sum_indes_less_suc_conv])
-    apply(subst sym[OF funpow_swap1])
-    apply(subst sym[OF o_apply[of orlins_one_step_check "orlins_one_step_check ^^ (_ - Suc 0)"]])
-    apply(subst sym[OF funpow.simps(2)])
-    by auto
+  proof-
+    have "(\<Sum>j = Suc 0..i.
+        card (Collect (important ((orlins_one_step_check ^^ (j - Suc 0)) (local.send_flow initial))))) =
+         (\<Sum>j = Suc 0..i. card (Imps j))"
+      unfolding Imps_def Let_def
+    proof(subst sym[OF send_flow_sim],
+        rule sum_up_same_cong[OF _ _ refl, of "Suc 0" "Suc i", simplified sum_indes_less_suc_conv],
+        goal_cases)
+      case 1
+      thus ?case
+        by(auto simp add: sym[OF funpow_swap1] sym[OF o_apply[of orlins_one_step_check 
+                "orlins_one_step_check ^^ (_ - Suc 0)"]] sym[OF funpow.simps(2)])
+    qed simp
+    thus ?thesis by simp
+  qed
   also have " ... = 
          (\<Sum> j \<in> {1..i}. (card (Imps j))) +  (card (Imps 0))"
     unfolding Imps_def
     using pseudo_initial_important by (simp, presburger)
   also have "... = (\<Sum> j \<in> {0..i}. (card (Imps j)))"
-    by (metis Suc_eq_plus1 add.commute less_eq_nat.simps(1) plus_nat.add_0 sum.atLeast_Suc_atMost)
+    by(auto intro!: sum.atLeast_Suc_atMost[symmetric] simp add:  add.commute[of "sum _ _" "card _"])
   also have "... = (\<Sum> j \<in> {0..i}. (card (comps_with_imp j)))"
     using card_Imps_card_compst_with_ip_same by simp
   also have "... = (\<Sum> j \<in> {0..<Suc i}. (card (comps_with_imp j)))"
-    by (metis sum_indes_less_suc_conv)
+    by(unfold sum_indes_less_suc_conv) simp 
   also have "... \<le> (\<l> + 1) * card \<S>"
     using finite_S  comps_with_imp_subs_S  component_lifetime  beyonf_i_empty 
     by (rule sum_cards_with_life_time[of \<S> comps_with_imp "\<l>" i])
@@ -1573,10 +1813,9 @@ have underlying_invars_pseudo_initial: "underlying_invars pseudo_initial"
           other_invars card_F_pseudo_initial 
     by (intro finally_termination)
   hence termy:"return ((orlins_one_step_check ^^ (N * (\<l> + \<k> + 2) - 1)) (send_flow initial)) \<noteq> notyetterm"
-    apply(subst sym[OF send_flow_sim])
-    apply(subst  sym[OF o_apply[of "_ ^^ _" "orlins_one_step_check"]])
-    apply(subst sym[OF funpow_Suc_right])
-    using N_gtr_0 by simp
+    using N_gtr_0 
+    by (simp add: sym[OF send_flow_sim] sym[OF o_apply[of "_ ^^ _" "orlins_one_step_check"]] 
+                  sym[OF funpow_Suc_right])
   obtain I where I_prop:"return ((orlins_one_step_check ^^ I) (send_flow initial)) \<noteq> notyetterm "
           "\<not> (\<exists> J < I. return ((orlins_one_step_check ^^ J) (send_flow initial)) \<noteq> notyetterm)"
     by(rule get_least, rule termy, simp) 
@@ -1585,19 +1824,21 @@ have underlying_invars_pseudo_initial: "underlying_invars pseudo_initial"
   proof(cases I)
     case 0
     then show ?thesis 
-      apply(subst notyetterm_no_change)
-      using I_prop(1) apply simp
-      apply(subst (2) sym[OF snd_conv[of t\<^sub>O\<^sub>C "send_flow _"]], subst succ_fail_not_changes_time)
-      using I_prop(1)  return.exhaust by auto
+    proof(subst notyetterm_no_change, goal_cases)
+      case 1
+      thus ?case
+        using I_prop(1) by simp
+    next
+      case 2
+      show ?case using I_prop(1)  return.exhaust 2
+        by (subst (2) sym[OF snd_conv[of t\<^sub>O\<^sub>C "send_flow _"]], subst succ_fail_not_changes_time) auto
+    qed
   next
     case (Suc n)
     thus ?thesis
     using False I_prop(2)
-    by(auto intro!: same_as_without_time remaining_balance_after_send_flow other_invars_send_flow_initial
-                     underlying_invars_send_flow_initial invar_gamma_send_flow_initial invar_gamma_initial
-                     implementation_invar_initial invar_integral_initial invar_isOptflow_initial
-                     invar_above_6Ngamma_initial orlins_entry_send_flow_initial
-           simp add: underlying_invars_initial)
+    by(auto intro!: same_as_without_time initial_invars
+          simp add: underlying_invars_initial)
   qed
   have I_bound: " I \<le> (N * (\<l> + \<k> + 2) - 1)"
       using I_prop termy  not_less by blast
@@ -1640,9 +1881,13 @@ have underlying_invars_pseudo_initial: "underlying_invars pseudo_initial"
   qed
   have time_swap:"prod.fst (send_flow_time initial) +++ (orlins_one_step_time_check ^^ I) (t\<^sub>O\<^sub>C, send_flow initial) =
        t\<^sub>O\<^sub>C +++  (orlins_one_step_time_check ^^ I) (send_flow_time initial)"
-    apply(subst sym[OF runtime_add_constant], subst (6)sym[OF prod.collapse], subst sym[OF runtime_add_constant])
-    apply(rule arg_cong[of "(_, _)"])
-    by(auto simp add: equal_results_B[OF initial_send_flow(2)])
+  proof(subst sym[OF runtime_add_constant], subst (6)sym[OF prod.collapse], 
+      subst sym[OF runtime_add_constant], goal_cases)
+    case 1
+    show ?case
+      by(rule arg_cong[of "(_, _)"])
+        (auto simp add: equal_results_B[OF initial_send_flow(2)])
+  qed
   have number_of_comps_diff: "card (comps \<V> (to_graph (\<FF> initial))) -
     card (comps \<V> (to_graph (\<FF> (prod.snd ((orlins_one_step_time_check ^^ I) (send_flow_time initial)))))) \<le> N - 1" 
     using \<V>_finite V_non_empt 
