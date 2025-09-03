@@ -2,20 +2,30 @@ theory Dinic
 imports Blocking_Flow
 begin
 
+section \<open>Dinic's Algorithm to Compute Maximum Flows\<close>
+
+text \<open>Dinic's Algorithm works like that:
+      Find a blocking flow in the residual level graph,
+      use this to augment, and repeat.
+      In each iteration the residual distance between source and target is increased,
+      implying termination.\<close>
+
+subsection \<open>Setup\<close>
+
 record 'f dinic_state = current_flow::'f
 
 locale dinic_spec = flow_network_spec
   where fst = "fst::'e \<Rightarrow> 'v" for fst + 
 fixes find_blocking_flow::"'flow_impl \<Rightarrow> 'resflow_impl option"
-and   flow_lookup::"'flow_impl \<Rightarrow> 'e \<Rightarrow> real option"
-and   flow_update::"'flow_impl \<Rightarrow> 'e \<Rightarrow> real \<Rightarrow> 'flow_impl"
-and   flow_empty::"'flow_impl"
-and   flow_invar::"'flow_impl \<Rightarrow> bool"
-and   resflow_iterate::"'resflow_impl \<Rightarrow> ('flow_impl \<Rightarrow> 'e Redge \<Rightarrow> real \<Rightarrow> 'flow_impl) 
+ and  flow_lookup::"'flow_impl \<Rightarrow> 'e \<Rightarrow> real option"
+ and  flow_update::"'flow_impl \<Rightarrow> 'e \<Rightarrow> real \<Rightarrow> 'flow_impl"
+ and  flow_empty::"'flow_impl"
+ and  flow_invar::"'flow_impl \<Rightarrow> bool"
+ and  resflow_iterate::"'resflow_impl \<Rightarrow> ('flow_impl \<Rightarrow> 'e Redge \<Rightarrow> real \<Rightarrow> 'flow_impl) 
                             \<Rightarrow> 'flow_impl \<Rightarrow> 'flow_impl"
-and   resflow_lookup::"'resflow_impl \<Rightarrow> 'e Redge \<Rightarrow> real option"
-and   resflow_invar::"'resflow_impl \<Rightarrow> bool"
-and   s t::'v
+ and  resflow_lookup::"'resflow_impl \<Rightarrow> 'e Redge \<Rightarrow> real option"
+ and  resflow_invar::"'resflow_impl \<Rightarrow> bool"
+ and  s t::'v
 begin
 
 definition "add_flow f e \<gamma> = (if \<gamma> = 0 then f
@@ -138,7 +148,7 @@ assumes flow_datastructure:
         "\<And> f. flow_invar f \<Longrightarrow> flow_lookup (flow_update f e x) = (flow_lookup f)(e:= Some x)"
         "\<And> e. flow_lookup flow_empty e = None"
 begin
-
+subsection \<open>Auxiliary Functions Correct\<close>
 lemma flow_lookup_empty_zero_flow: "abstract_real_map (flow_lookup flow_empty) = (\<lambda> e. 0)"
   by (auto simp add: abstract_real_map_none flow_datastructure(4))
 
@@ -220,6 +230,8 @@ proof-
    qed simp
  qed
 
+subsection \<open>Invariants Hold\<close>
+
 lemma invar_basic_holds_call:
   assumes "invar_basic state" "dinic_upd_cond state"
   shows   "invar_basic (dinic_upd state)"
@@ -272,6 +284,8 @@ proof(induction rule: dinic_induct[OF assms(1)])
       (auto intro: invar_basic_holds_call invar_flow_holds_call simp add: dinic_simps)
 qed
 
+subsection \<open>Partial Correctness\<close>
+
 lemma dinic_ret_cond_max_flow:
   assumes "dinic_ret_cond state" "invar_flow state" "invar_basic state"
   shows   "is_max_flow s t (abstract_real_map (flow_lookup (current_flow state)))"
@@ -295,6 +309,8 @@ proof(induction rule: dinic_induct[OF assms(1)])
                intro: dinic_ret_cond_max_flow IH(2)  invar_basic_holds_call
                       invar_flow_holds_call IH(3,4))
 qed
+
+subsection \<open>Termination\<close>
 
 lemma dist_increase_upd:
   assumes "dinic_upd_cond state" "invar_basic state" "invar_flow state"
@@ -402,8 +418,8 @@ lemma initial_state_invars: "invar_basic dinic_initial" "invar_flow dinic_initia
          simp add: dinic_initial_def flow_datastructure(1,4) flow_lookup_empty_zero_flow s_and_t)
 
 lemma dinic_total_correctness:
-"is_max_flow s t (abstract_real_map (flow_lookup (current_flow (dinic dinic_initial))))"
-"dinic_dom dinic_initial"
+  "is_max_flow s t (abstract_real_map (flow_lookup (current_flow (dinic dinic_initial))))"
+  "dinic_dom dinic_initial"
   using dinic_term_general[OF initial_state_invars]
         dinic_final_max_flow_general[OF _ initial_state_invars]
   by auto  

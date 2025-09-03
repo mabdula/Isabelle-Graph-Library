@@ -5,6 +5,14 @@ theory Compute_Blocking_Simple
 
 begin
 
+section \<open>Computation of Blocking Flows in Simple Directed Graphs\<close>
+
+text \<open>Assuming a function that returns (1) a path from a source to some target and (2) 
+some edges that cannot be part of any such path, 
+we compute a blocking flow.
+This is the oldest way of computing blocking flows.
+It only works when the graph is acyclic.\<close>
+
 record  ('flow, 'map) blocking_state = flow::'flow graph::'map
 
 locale blocking_simple =
@@ -84,7 +92,7 @@ definition "initial_state = \<lparr> flow=flow_empty, graph=G\<rparr>"
 abbreviation "delete_edge == Graph.delete_edge"
 
 lemmas [code] = compute_blocking_loop_impl.simps initial_state_def add_flow_def 
-                Graph.delete_edge_def
+  Graph.delete_edge_def
 
 lemma compute_blocking_loop_induct: 
   assumes "compute_blocking_loop_dom state"
@@ -99,13 +107,13 @@ lemma compute_blocking_loop_induct:
 lemma compute_blocking_loop_simps: 
   assumes "compute_blocking_loop_dom state"
   shows   "find_path (graph state) s t = None \<Longrightarrow> compute_blocking_loop state = state"
-          "find_path (graph state) s t \<noteq> None \<Longrightarrow>
+    "find_path (graph state) s t \<noteq> None \<Longrightarrow>
             compute_blocking_loop state =    compute_blocking_loop (compute_blocking_loop_upd state)"
   by(auto simp add: compute_blocking_loop.psimps[OF assms] Let_def compute_blocking_loop_upd_def)
 
 lemma compute_blocking_loop_domintros: 
   shows   "find_path (graph state) s t = None \<Longrightarrow> compute_blocking_loop_dom state"
-          "find_path (graph state) s t \<noteq> None \<Longrightarrow>
+    "find_path (graph state) s t \<noteq> None \<Longrightarrow>
            compute_blocking_loop_dom (compute_blocking_loop_upd state) \<Longrightarrow>
            compute_blocking_loop_dom state"
   by(auto intro: compute_blocking_loop.domintros simp add: compute_blocking_loop_upd_def Let_def)
@@ -115,7 +123,7 @@ lemma termination_same:
   shows   "compute_blocking_loop_impl state = compute_blocking_loop state"
   apply(induction rule: compute_blocking_loop.pinduct[OF assms(1)])
   apply(subst compute_blocking_loop.psimps)
-  apply simp
+   apply simp
   apply(subst compute_blocking_loop_impl.simps)
   by(auto simp add: Let_def split: option.split)
 end
@@ -156,55 +164,62 @@ definition "invar_positive_path state =
                          (abstract_real_map (flow_lookup (flow state))) s p t
              \<longrightarrow> vwalk_bet (Graph.digraph_abs (graph state)) s p t)"
 
-lemma basic_invarI: "\<lbrakk> flow_invar (flow state);
- dom (flow_lookup (flow state)) \<subseteq> Graph.digraph_abs G ;
-Graph.graph_inv (graph state); Graph.finite_graph (graph state) ;
- Graph.finite_vsets (graph state) ; Graph.digraph_abs (graph state) \<subseteq> Graph.digraph_abs G\<rbrakk>
-\<Longrightarrow> basic_invar state"
+lemma basic_invarI: 
+ "\<lbrakk> flow_invar (flow state);
+  dom (flow_lookup (flow state)) \<subseteq> Graph.digraph_abs G ;
+  Graph.graph_inv (graph state); Graph.finite_graph (graph state) ;
+  Graph.finite_vsets (graph state) ; Graph.digraph_abs (graph state) \<subseteq> Graph.digraph_abs G\<rbrakk>
+  \<Longrightarrow> basic_invar state"
   by(auto simp add: basic_invar_def)
 
-lemma basic_invarE: " basic_invar state \<Longrightarrow> (\<lbrakk> flow_invar (flow state);
- dom (flow_lookup (flow state)) \<subseteq> Graph.digraph_abs G ;
-Graph.graph_inv (graph state); Graph.finite_graph (graph state) ;
- Graph.finite_vsets (graph state) ; Graph.digraph_abs (graph state) \<subseteq> Graph.digraph_abs G\<rbrakk>
-\<Longrightarrow>P) \<Longrightarrow> P"
+lemma basic_invarE: 
+ "basic_invar state \<Longrightarrow> 
+ (\<lbrakk>flow_invar (flow state); dom (flow_lookup (flow state)) \<subseteq> Graph.digraph_abs G ;
+   Graph.graph_inv (graph state); Graph.finite_graph (graph state) ;
+   Graph.finite_vsets (graph state) ; Graph.digraph_abs (graph state) \<subseteq> Graph.digraph_abs G\<rbrakk>
+   \<Longrightarrow>P)
+  \<Longrightarrow> P"
   by(auto simp add: basic_invar_def)
 
 lemma invar_current_G_unsaturatedI:
   "(\<And> e. e \<in> Graph.digraph_abs (graph state) \<Longrightarrow> 
                     u e - abstract_real_map (flow_lookup (flow state)) e > 0) 
-\<Longrightarrow> invar_current_G_unsaturated state"
+  \<Longrightarrow> invar_current_G_unsaturated state"
   by(auto simp add: invar_current_G_unsaturated_def)
 
 lemma invar_current_G_unsaturatedE:
-  "invar_current_G_unsaturated state\<Longrightarrow> 
-((\<And> e. e \<in> Graph.digraph_abs (graph state) \<Longrightarrow> 
-                   u e -  abstract_real_map (flow_lookup (flow state)) e > 0) \<Longrightarrow> P) \<Longrightarrow> P"
+  "\<lbrakk>invar_current_G_unsaturated state;
+  ((\<And> e. e \<in> Graph.digraph_abs (graph state) \<Longrightarrow> 
+                   u e -  abstract_real_map (flow_lookup (flow state)) e > 0) \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
   by(auto simp add: invar_current_G_unsaturated_def)
 
 lemma invar_positive_pathI:
   "(\<And> p. unsaturated_path_simple (Graph.digraph_abs G) u 
                          (abstract_real_map (flow_lookup (flow state))) s p t
-             \<Longrightarrow> vwalk_bet (Graph.digraph_abs (graph state)) s p t) \<Longrightarrow>
-invar_positive_path state"
+             \<Longrightarrow> vwalk_bet (Graph.digraph_abs (graph state)) s p t) 
+ \<Longrightarrow> invar_positive_path state"
   by(auto simp add: invar_positive_path_def)
 
 lemma invar_positive_pathE:
-  "invar_positive_path state \<Longrightarrow>
- ((\<And> p. unsaturated_path_simple (Graph.digraph_abs G) u 
+  "\<lbrakk>invar_positive_path state;
+  ((\<And> p. unsaturated_path_simple (Graph.digraph_abs G) u 
                          (abstract_real_map (flow_lookup (flow state))) s p t
-             \<Longrightarrow> vwalk_bet (Graph.digraph_abs (graph state)) s p t) \<Longrightarrow> P) \<Longrightarrow>P"
+             \<Longrightarrow> vwalk_bet (Graph.digraph_abs (graph state)) s p t) \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow>P"
   by(auto simp add: invar_positive_path_def)
 
-lemma initial_invars: "basic_invar initial_state"
-                      "invar_current_G_unsaturated initial_state"
-                      "invar_positive_path initial_state"
-   by(auto intro!: basic_invarI invar_current_G_unsaturatedI invar_positive_pathI
-                       positive_capacities(1)
-         simp add: initial_state_def flow_map.invar_empty flow_map.map_empty  graph_invars
-                          abstract_real_map_empty unsaturated_path_simple_def)
- 
-context  assumes  non_empty_G: "[G]\<^sub>g \<noteq> {}"
+lemma initial_invars: 
+  "basic_invar initial_state"
+  "invar_current_G_unsaturated initial_state"
+  "invar_positive_path initial_state"
+  by(auto intro!: basic_invarI invar_current_G_unsaturatedI invar_positive_pathI
+      positive_capacities(1)
+      simp add: initial_state_def flow_map.invar_empty flow_map.map_empty  graph_invars
+      abstract_real_map_empty unsaturated_path_simple_def)
+
+context  
+  assumes non_empty_G: "[G]\<^sub>g \<noteq> {}"
 begin
 
 interpretation flow_network: flow_network fst snd  Pair u "Graph.digraph_abs G"
@@ -217,27 +232,31 @@ lemma flow_network_make_pair[simp]: "flow_network.make_pair = id"
 lemma zero_flow_valid: "s \<in> dVs [G]\<^sub>g \<Longrightarrow> t \<in> dVs [G]\<^sub>g \<Longrightarrow> flow_network.is_s_t_flow (\<lambda> e. 0) s t"
   using s_neq_t positive_capacities
   by(auto intro!: flow_network.is_s_t_flowI local.flow_network.isuflowI
-        simp add: local.flow_network.ex_def flow_network.delta_minus_def
-                  flow_network.delta_plus_def)
+      simp add: local.flow_network.ex_def flow_network.delta_minus_def
+      flow_network.delta_plus_def)
 
 definition "invar_flow state =
            (flow_network.is_s_t_flow (abstract_real_map (flow_lookup (flow state))) s t)"
 
-lemma invar_flowI: "s \<in> dVs [G]\<^sub>g \<Longrightarrow> t \<in> dVs [G]\<^sub>g \<Longrightarrow> (flow_network.is_s_t_flow (abstract_real_map (flow_lookup (flow state))) s t) \<Longrightarrow> invar_flow state"
+lemma invar_flowI:
+  "\<lbrakk>s \<in> dVs [G]\<^sub>g; t \<in> dVs [G]\<^sub>g;
+    (flow_network.is_s_t_flow (abstract_real_map (flow_lookup (flow state))) s t)\<rbrakk>
+   \<Longrightarrow> invar_flow state"
   by(auto simp add: invar_flow_def)
 
-lemma invar_flowE: "invar_flow state
-\<Longrightarrow>(flow_network.is_s_t_flow (abstract_real_map (flow_lookup (flow state))) s t \<Longrightarrow> P) \<Longrightarrow> P"
+lemma invar_flowE: 
+ "\<lbrakk>invar_flow state; (flow_network.is_s_t_flow (abstract_real_map (flow_lookup (flow state))) s t \<Longrightarrow> P)\<rbrakk> 
+  \<Longrightarrow> P"
   by(auto simp add: invar_flow_def)
 
-lemma initial_flow_invar: "s \<in> dVs [G]\<^sub>g \<Longrightarrow> t \<in> dVs [G]\<^sub>g \<Longrightarrow> 
-            invar_flow initial_state"
+lemma initial_flow_invar: 
+ "\<lbrakk>s \<in> dVs [G]\<^sub>g; t \<in> dVs [G]\<^sub>g\<rbrakk> \<Longrightarrow> invar_flow initial_state"
   by(auto intro!: invar_flowI  zero_flow_valid simp add: initial_state_def flow_map.map_empty
-         abstract_real_map_empty )
+      abstract_real_map_empty )
 
 lemma invars_preservation_upd:
   assumes "find_path (graph state) s t \<noteq> None" "basic_invar state"
-    "invar_current_G_unsaturated state" " invar_flow state"
+          "invar_current_G_unsaturated state" " invar_flow state"
   shows   "basic_invar (compute_blocking_loop_upd state)" (is ?goal1)
     and     "invar_current_G_unsaturated (compute_blocking_loop_upd state)" 
     (is "?goal2")
@@ -285,7 +304,7 @@ proof-
   have s_t_in_G:  "s \<in> dVs [G]\<^sub>g" "t \<in> dVs [G]\<^sub>g"
     using  p_props(1)  
     by(auto intro!: vwalk_bet_endpoints[of _ s _ t] 
-           intro!:  vwalk_bet_subset[OF _ basic_invs(6)])
+        intro!:  vwalk_bet_subset[OF _ basic_invs(6)])
   have p_non_empt: "p_edges \<noteq> []" 
     using p_props(1) s_neq_t
     by(cases p rule: list_cases3)(auto simp add: vwalk_bet_def  p_edges_def)
@@ -328,12 +347,12 @@ proof-
   have new_G_finite_graph: "Graph.finite_graph new_G"
     unfolding new_G_def
     apply(rule conjunct1[OF foldl_invar[of "\<lambda> x. _ x \<and> _ x"]])
-    apply(rule conjI[OF basic_invs(4,3)])
+     apply(rule conjI[OF basic_invs(4,3)])
     by(auto intro: Graph.finite_graph_delete_edge)
   have new_G_finite_vsets: "Graph.finite_vsets new_G"
     unfolding new_G_def
     apply(rule conjunct1[OF foldl_invar[of "\<lambda> x. _ x \<and> _ x"]])
-    apply(rule conjI[OF basic_invs(5,3)])
+     apply(rule conjI[OF basic_invs(5,3)])
     by(auto intro: Graph.finite_vsets_delete_edge)
   have new_G_is:"[new_G]\<^sub>g = [current_G]\<^sub>g - set zeroed_edges -  set del"
     using basic_invs(3) Graph.adjmap_inv_delete
@@ -423,7 +442,7 @@ proof-
       "unsaturated_path_simple [G]\<^sub>g u (abstract_real_map (flow_lookup (flow state))) s q t"
       using 1(2)gamma_pos unsaturated_path_simple_mono
       by(fastforce intro: unsaturated_path_simpleI
-                simp add: new_state_id current_flow_def[symmetric] new_flow_is )
+          simp add: new_state_id current_flow_def[symmetric] new_flow_is )
     hence vwalk_current:"vwalk_bet [current_G]\<^sub>g s q t"
       using invar_positive_pathE[OF 1(1)] 
       by(auto simp add: current_G_def)
@@ -460,33 +479,33 @@ qed
 
 lemma 
   assumes "compute_blocking_loop_dom state"
-          "basic_invar state" "invar_current_G_unsaturated state" "invar_flow state"
-    shows basic_invar_holds:  "basic_invar (compute_blocking_loop state)" (is ?thesis1)
+    "basic_invar state" "invar_current_G_unsaturated state" "invar_flow state"
+  shows basic_invar_holds:  "basic_invar (compute_blocking_loop state)" (is ?thesis1)
     and   invar_current_G_unsaturated_holds: "invar_current_G_unsaturated (compute_blocking_loop state)" (is ?thesis2)
     and   invar_flow_holds:  "invar_flow (compute_blocking_loop state)" (is?thesis3)
 proof-
   have "basic_invar (compute_blocking_loop state) \<and>
            invar_current_G_unsaturated (compute_blocking_loop state) \<and>
            invar_flow (compute_blocking_loop state)"
-  using assms(2-)
-proof(induction rule: compute_blocking_loop_induct[OF assms(1)])
-  case (1 state)
-  note IH = this
-  show ?case 
-    using invars_preservation_upd(1,2,3)[OF _ IH(3-)]  IH(2)
-    by (cases "find_path (graph state) s t")
-       (auto simp add: compute_blocking_loop_simps[OF IH(1)] IH(3-)Let_def 
-                split: option.split)
-qed
+    using assms(2-)
+  proof(induction rule: compute_blocking_loop_induct[OF assms(1)])
+    case (1 state)
+    note IH = this
+    show ?case 
+      using invars_preservation_upd(1,2,3)[OF _ IH(3-)]  IH(2)
+      by (cases "find_path (graph state) s t")
+        (auto simp add: compute_blocking_loop_simps[OF IH(1)] IH(3-)Let_def 
+          split: option.split)
+  qed
   thus ?thesis1 ?thesis2 ?thesis3
     by simp+
 qed
 
 lemma invar_positive_path_holds: 
-  assumes "compute_blocking_loop_dom state"
-          "basic_invar state" "invar_current_G_unsaturated state" "invar_flow state"
+  assumes "compute_blocking_loop_dom state" "basic_invar state" 
+          "invar_current_G_unsaturated state" "invar_flow state"
           "invar_positive_path state"
-    shows "invar_positive_path (compute_blocking_loop state)"
+  shows "invar_positive_path (compute_blocking_loop state)"
   using assms(2-)
 proof(induction rule: compute_blocking_loop_induct[OF assms(1)])
   case (1 state)
@@ -494,9 +513,9 @@ proof(induction rule: compute_blocking_loop_induct[OF assms(1)])
   show ?case 
     by(cases "find_path (graph state) s t")
       (auto intro!:  IH(2) invars_preservation_upd(1,2,3)[OF _ IH(3-5)] 
-                     invars_preservation_upd(4)[OF _ IH(3-)] 
-         simp add: compute_blocking_loop_simps[OF IH(1)] IH(3-)Let_def 
-            split: option.split)
+        invars_preservation_upd(4)[OF _ IH(3-)] 
+        simp add: compute_blocking_loop_simps[OF IH(1)] IH(3-)Let_def 
+        split: option.split)
 qed
 
 lemma final_path_search_unsuccessful:
@@ -507,7 +526,7 @@ proof(induction rule: compute_blocking_loop_induct[OF assms])
   then show ?case 
     using compute_blocking_loop_simps(1,2)[OF 1(1)]
     by(cases "find_path (graph (compute_blocking_loop (compute_blocking_loop_upd state))) s t")
-       fastforce+
+      fastforce+
 qed
 
 lemma flow_dom_non_empty: 
@@ -521,9 +540,9 @@ proof(induction rule: compute_blocking_loop_induct[OF assms(1)])
   note IH = this
   show ?case 
     using "1.hyps" compute_blocking_loop_simps(2) IH(3-7)  compute_blocking_loop_domintros(1)
-        compute_blocking_loop_simps(1,2) invars_preservation_upd(5)[OF _ IH(4-6)] 
+      compute_blocking_loop_simps(1,2) invars_preservation_upd(5)[OF _ IH(4-6)] 
     by (all \<open>cases "find_path (blocking_state.graph (compute_blocking_loop_upd state)) s t"\<close>)
-       (auto intro:  IH(2) simp add: invars_preservation_upd)
+      (auto intro:  IH(2) simp add: invars_preservation_upd)
 qed
 
 lemma computer_blocking_loop_terminates:
@@ -533,26 +552,26 @@ proof-
   define m where "m = card (Graph.digraph_abs (graph state))"
   show ?thesis
     using assms m_def
-proof(induction m arbitrary: state rule: less_induct)
-  case (less m)
-  show ?case
-  proof(cases "find_path (graph state) s t")
-    case None
-    then show ?thesis by(auto intro: compute_blocking_loop_domintros)
-  next
-    case (Some a)
-    have card_less: "card [blocking_state.graph (compute_blocking_loop_upd state)]\<^sub>g
+  proof(induction m arbitrary: state rule: less_induct)
+    case (less m)
+    show ?case
+    proof(cases "find_path (graph state) s t")
+      case None
+      then show ?thesis by(auto intro: compute_blocking_loop_domintros)
+    next
+      case (Some a)
+      have card_less: "card [blocking_state.graph (compute_blocking_loop_upd state)]\<^sub>g
         < card [blocking_state.graph state]\<^sub>g" 
-      by (intro psubset_card_mono)
-         (force intro: basic_invarE[OF less.prems(1)] 
-             simp add: Some invars_preservation_upd(6) less.prems(1,2,3))+
-    show ?thesis 
-      apply(rule compute_blocking_loop_domintros(2))
-      using Some  card_less 
-      by (auto intro!: less(1)[OF _ _ _ _ refl] Some invars_preservation_upd 
-             simp add: less.prems(1,2,3) less(5))
-  qed 
- qed
+        by (intro psubset_card_mono)
+          (force intro: basic_invarE[OF less.prems(1)] 
+            simp add: Some invars_preservation_upd(6) less.prems(1,2,3))+
+      show ?thesis 
+        apply(rule compute_blocking_loop_domintros(2))
+        using Some  card_less 
+        by (auto intro!: less(1)[OF _ _ _ _ refl] Some invars_preservation_upd 
+            simp add: less.prems(1,2,3) less(5))
+    qed 
+  qed
 qed
 end
 
@@ -560,16 +579,16 @@ lemma multigraph_spec_make_pair[simp]:  "multigraph_spec.make_pair fst snd = id"
   by(auto simp add: multigraph_spec.make_pair_def)
 
 lemma correctness:
-        "flow (compute_blocking_loop initial_state) = flow_empty
+  "flow (compute_blocking_loop initial_state) = flow_empty
          \<Longrightarrow> (\<nexists> p. vwalk_bet (Graph.digraph_abs G) s p t)"
-        "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty 
+  "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty 
          \<Longrightarrow> \<exists> p. vwalk_bet (Graph.digraph_abs G) s p t"
-        "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty 
+  "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty 
          \<Longrightarrow> flow_network_spec.is_blocking_flow fst snd (Graph.digraph_abs G) u s t 
                (abstract_real_map (flow_lookup (flow (compute_blocking_loop initial_state))))"
-        "compute_blocking_loop_dom initial_state"
-        "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty  \<Longrightarrow> dom (flow_lookup (flow (compute_blocking_loop initial_state))) \<subseteq> Graph.digraph_abs G"
-        "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty  \<Longrightarrow> flow_invar  (flow (compute_blocking_loop initial_state))"
+  "compute_blocking_loop_dom initial_state"
+  "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty  \<Longrightarrow> dom (flow_lookup (flow (compute_blocking_loop initial_state))) \<subseteq> Graph.digraph_abs G"
+  "flow  (compute_blocking_loop initial_state) \<noteq>flow_empty  \<Longrightarrow> flow_invar  (flow (compute_blocking_loop initial_state))"
 proof-
   show "compute_blocking_loop_dom initial_state"
   proof(cases "find_path (blocking_state.graph initial_state) s t")
@@ -580,14 +599,14 @@ proof-
     then obtain p del where a_split:"a = (p, del)" by(cases a) auto
     hence p_prop:"vwalk_bet [G]\<^sub>g s (fst a) t" 
       using find_path(2)[of "graph initial_state", OF  _ _ _ Some[simplified a_split] s_neq_t]
-         acyc graph_invars(1,2,3) 
+        acyc graph_invars(1,2,3) 
       by(auto simp add: initial_state_def)
-     hence G_props: "[G]\<^sub>g \<noteq> {}" "s \<in> dVs [G]\<^sub>g" "t \<in> dVs [G]\<^sub>g"
-          by (simp add: s_neq_t vwalk_bet_hd_neq_last_implies_edges_nonempty)+    
+    hence G_props: "[G]\<^sub>g \<noteq> {}" "s \<in> dVs [G]\<^sub>g" "t \<in> dVs [G]\<^sub>g"
+      by (simp add: s_neq_t vwalk_bet_hd_neq_last_implies_edges_nonempty)+    
     note invar_flow_intial = initial_flow_invar[OF G_props]
     thus ?thesis
-    using computer_blocking_loop_terminates
-                      [OF G_props(1) initial_invars(1,2) invar_flow_intial] by simp
+      using computer_blocking_loop_terminates
+        [OF G_props(1) initial_invars(1,2) invar_flow_intial] by simp
   qed
   show "flow (compute_blocking_loop initial_state) = flow_empty 
       \<Longrightarrow> \<nexists>p. vwalk_bet [G]\<^sub>g s p t"
@@ -595,21 +614,21 @@ proof-
     case 1
     note asm = this
     show ?case
-      proof(rule ccontr, goal_cases)
-        case 1
-        then obtain p where p_prop:"vwalk_bet [G]\<^sub>g s p t" by auto
-        hence G_props: "[G]\<^sub>g \<noteq> {}" "s \<in> dVs [G]\<^sub>g" "t \<in> dVs [G]\<^sub>g"
-          by (simp add: s_neq_t vwalk_bet_hd_neq_last_implies_edges_nonempty)+    
-        note invar_flow_intial = initial_flow_invar[OF G_props]
-        note dom_of_initial=computer_blocking_loop_terminates
-                      [OF G_props(1) initial_invars(1,2) invar_flow_intial]
-        note final_basic_invar = basic_invar_holds
-                      [OF G_props(1) dom_of_initial initial_invars(1,2) invar_flow_intial]
-        have "dom (flow_lookup (flow (compute_blocking_loop initial_state))) \<noteq> {}" 
-          using find_path(1)[OF graph_invars exI[of "\<lambda> p. vwalk_bet [G]\<^sub>g  s p t", OF p_prop] s_neq_t]
-              by(auto intro!: flow_dom_non_empty[OF G_props(1) dom_of_initial  initial_invars(1,2)
-                                   invar_flow_intial] 
-                    simp add: initial_state_def)
+    proof(rule ccontr, goal_cases)
+      case 1
+      then obtain p where p_prop:"vwalk_bet [G]\<^sub>g s p t" by auto
+      hence G_props: "[G]\<^sub>g \<noteq> {}" "s \<in> dVs [G]\<^sub>g" "t \<in> dVs [G]\<^sub>g"
+        by (simp add: s_neq_t vwalk_bet_hd_neq_last_implies_edges_nonempty)+    
+      note invar_flow_intial = initial_flow_invar[OF G_props]
+      note dom_of_initial=computer_blocking_loop_terminates
+        [OF G_props(1) initial_invars(1,2) invar_flow_intial]
+      note final_basic_invar = basic_invar_holds
+        [OF G_props(1) dom_of_initial initial_invars(1,2) invar_flow_intial]
+      have "dom (flow_lookup (flow (compute_blocking_loop initial_state))) \<noteq> {}" 
+        using find_path(1)[OF graph_invars exI[of "\<lambda> p. vwalk_bet [G]\<^sub>g  s p t", OF p_prop] s_neq_t]
+        by(auto intro!: flow_dom_non_empty[OF G_props(1) dom_of_initial  initial_invars(1,2)
+              invar_flow_intial] 
+            simp add: initial_state_def)
       then show ?case
         by (simp add: asm flow_map.map_empty)
     qed
@@ -620,21 +639,21 @@ proof-
     by(fastforce simp add: initial_state_def)
   hence p_vwalk:"vwalk_bet [G]\<^sub>g s p t" 
     using find_path(2)[OF graph_invars p_del_prop[simplified initial_state_def, simplified]
-                           s_neq_t acyc] by simp
+        s_neq_t acyc] by simp
   thus "\<exists>p. vwalk_bet [G]\<^sub>g s p t" by auto
   have G_props: "[G]\<^sub>g \<noteq> {}" "s \<in> dVs [G]\<^sub>g" "t \<in> dVs [G]\<^sub>g"
     using p_vwalk
     by (simp add: s_neq_t vwalk_bet_hd_neq_last_implies_edges_nonempty)+  
   note  initial_flow_invar =  initial_flow_invar[OF G_props]
   note initial_termination = computer_blocking_loop_terminates[OF G_props(1) 
-               initial_invars(1,2) initial_flow_invar]
+      initial_invars(1,2) initial_flow_invar]
   note final_invar_flow = invar_flow_holds[OF G_props(1) initial_termination 
-               initial_invars(1,2) initial_flow_invar]
+      initial_invars(1,2) initial_flow_invar]
   note final_basic_invar = basic_invar_holds[OF G_props(1) initial_termination 
-               initial_invars(1,2) initial_flow_invar]
+      initial_invars(1,2) initial_flow_invar]
   note invar_flowE = invar_flowE[OF G_props(1)]
   note final_invar_positive_path= invar_positive_path_holds[OF G_props(1) initial_termination
-                   initial_invars(1,2) initial_flow_invar initial_invars(3)]
+      initial_invars(1,2) initial_flow_invar initial_invars(3)]
   note final_no_path = final_path_search_unsuccessful[OF G_props(1) initial_termination]
   note multigraph_pathE = multigraph_spec.multigraph_pathE
   note is_blocking_flow_def = flow_network_spec.is_blocking_flow_def
@@ -652,9 +671,9 @@ proof-
     proof(rule ccontr, goal_cases)
       case 1
       then obtain q where q_prop: 
-          "multigraph_spec.multigraph_path fst snd q" "q \<noteq> []"
-          "fst (hd q) = s"  "snd (last q) = t" "set q \<subseteq> [G]\<^sub>g"
-          "\<And> e. e\<in>set q \<Longrightarrow>
+        "multigraph_spec.multigraph_path fst snd q" "q \<noteq> []"
+        "fst (hd q) = s"  "snd (last q) = t" "set q \<subseteq> [G]\<^sub>g"
+        "\<And> e. e\<in>set q \<Longrightarrow>
               ereal (abstract_real_map (flow_lookup (flow 
                        (compute_blocking_loop initial_state))) e)
               < ereal (u e)"
@@ -662,13 +681,13 @@ proof-
       have "vwalk_bet [G]\<^sub>g s (awalk_verts s q) t"
         using q_prop(1,2,5)
         by(auto intro!: awalk_imp_vwalk intro: subset_mono_awalk' 
-                 elim!: multigraph_pathE
-              simp add: q_prop(3,4))
+            elim!: multigraph_pathE
+            simp add: q_prop(3,4))
       moreover have "e\<in>set (edges_of_vwalk (awalk_verts s q)) \<Longrightarrow>
         abstract_real_map (flow_lookup (flow (compute_blocking_loop initial_state))) e < u e" for e
         using q_prop(6)[of e]  q_prop(1,2)
         by(auto simp add: vwalk_awalk_id[of s q t]  q_prop(3,4) 
-                    elim!: multigraph_pathE awalkE)
+            elim!: multigraph_pathE awalkE)
       ultimately have "unsaturated_path_simple [G]\<^sub>g u
            (abstract_real_map (flow_lookup (flow (compute_blocking_loop initial_state))))
             s (awalk_verts s q) t"

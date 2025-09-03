@@ -1,7 +1,12 @@
-(*MOVE to Graph_Algorithms_Dev?*)
 theory DFS_Collect_Backtrack
   imports  Graph_Algorithms_Dev.DFS
 begin 
+section \<open>A DFS with Collection of Dead-End Edges\<close>
+
+text \<open>When DFS backtracks from an edge without finding a path, we call this a dead-end edge.
+In this theory, we verify a version of DFS that collects these as well.\<close>
+
+subsection \<open>Setup\<close>
 
 record ('ver, 'vset) DFS_backtrack_state = stack:: "'ver list" seen:: "'vset"  return:: return 
   backtrack::"('ver \<times> 'ver) list"
@@ -9,7 +14,7 @@ record ('ver, 'vset) DFS_backtrack_state = stack:: "'ver list" seen:: "'vset"  r
 abbreviation "to_ordinary_DFS_state (state::('ver, 'vset) DFS_backtrack_state) ==
               \<lparr>DFS_state.stack = stack state, DFS_state.seen = seen state, DFS_state.return = return state \<rparr>"
 
-context DFS
+context  DFS
 begin
 
 function (domintros) DFS_collect_backtrack::"('v, 'vset) DFS_backtrack_state \<Rightarrow> ('v, 'vset) DFS_backtrack_state" where
@@ -89,43 +94,44 @@ definition "DFS_backtrack_upd2 dfs_state =
               | (x#xs) \<Rightarrow> (x, hd (stack dfs_state)) # backtrack dfs_state)\<rparr>))"
 
 lemma DFS_backtrack_upd2_cases:
-  "( (tl (stack dfs_state)) = Nil \<Longrightarrow> P ((dfs_state \<lparr>stack := tl (stack dfs_state)\<rparr>))) \<Longrightarrow>
+  "((tl (stack dfs_state)) = Nil \<Longrightarrow> P ((dfs_state \<lparr>stack := tl (stack dfs_state)\<rparr>))) \<Longrightarrow>
     (\<And> x xs. (tl (stack dfs_state)) = x#xs 
-              \<Longrightarrow> P(dfs_state \<lparr>stack := tl (stack dfs_state), backtrack :=  (x, hd (stack dfs_state)) # backtrack dfs_state\<rparr>))
+      \<Longrightarrow> P(dfs_state \<lparr>stack := tl (stack dfs_state), 
+                       backtrack :=  (x, hd (stack dfs_state)) # backtrack dfs_state\<rparr>))
   \<Longrightarrow> P (DFS_backtrack_upd2 dfs_state)"
   by(auto simp add: DFS_backtrack_upd2_def 
       intro: list.exhaust[of "tl (DFS_backtrack_state.stack dfs_state)"])
 
 lemma DFS_backtrack_upd2_homo:
   "to_ordinary_DFS_state (DFS_backtrack_upd2 dfs_state) = 
- DFS_upd2 (to_ordinary_DFS_state  dfs_state)"
+   DFS_upd2 (to_ordinary_DFS_state  dfs_state)"
   by(auto simp add: DFS_backtrack_upd2_def DFS_upd2_def Let_def)
 
 definition "DFS_backtrack_ret1 dfs_state = (dfs_state \<lparr>return := NotReachable\<rparr>)"
 
 lemma DFS_backtrack_ret1_homo:
   "to_ordinary_DFS_state (DFS_backtrack_ret1 dfs_state) = 
- DFS_ret1 (to_ordinary_DFS_state  dfs_state)"
+   DFS_ret1 (to_ordinary_DFS_state  dfs_state)"
   by(auto simp add: DFS_backtrack_ret1_def DFS_ret1_def Let_def)
 
 definition "DFS_backtrack_ret2 dfs_state = (dfs_state \<lparr>return := Reachable\<rparr>)"
 
 lemma DFS_backtrack_ret2_homo:
   "to_ordinary_DFS_state (DFS_backtrack_ret2 dfs_state) = 
- DFS_ret2 (to_ordinary_DFS_state  dfs_state)"
+   DFS_ret2 (to_ordinary_DFS_state  dfs_state)"
   by(auto simp add: DFS_backtrack_ret2_def DFS_ret2_def Let_def)
 
 lemmas DFS_backtrack_cases = DFS_cases[of "to_ordinary_DFS_state dfs_state" for dfs_state]
 
 lemma DFS_backtrack_simps:
   assumes "DFS_collect_backtrack_dom dfs_state" 
-  shows"DFS_call_1_conds (to_ordinary_DFS_state dfs_state)
+  shows   "DFS_call_1_conds (to_ordinary_DFS_state dfs_state)
             \<Longrightarrow> DFS_collect_backtrack dfs_state = DFS_collect_backtrack (DFS_backtrack_upd1 dfs_state)"
-    "DFS_call_2_conds (to_ordinary_DFS_state dfs_state) 
+          "DFS_call_2_conds (to_ordinary_DFS_state dfs_state) 
             \<Longrightarrow> DFS_collect_backtrack dfs_state = DFS_collect_backtrack (DFS_backtrack_upd2 dfs_state)"
-    "DFS_ret_1_conds (to_ordinary_DFS_state dfs_state) 
+          "DFS_ret_1_conds (to_ordinary_DFS_state dfs_state) 
             \<Longrightarrow> DFS_collect_backtrack dfs_state = DFS_backtrack_ret1 dfs_state"
-    "DFS_ret_2_conds  (to_ordinary_DFS_state dfs_state) 
+          "DFS_ret_2_conds  (to_ordinary_DFS_state dfs_state) 
            \<Longrightarrow> DFS_collect_backtrack dfs_state = DFS_backtrack_ret2 dfs_state"
   by (auto simp add: DFS_collect_backtrack.psimps[OF assms] Let_def
       DFS_call_1_conds_def DFS_backtrack_upd1_def DFS_call_2_conds_def 
@@ -232,6 +238,8 @@ proof(induction arbitrary: dfs_state rule: DFS_induct[OF assms(1)])
 qed
 
 end
+
+subsection \<open>Invariants Hold\<close>
 
 context DFS_thms
 begin
@@ -443,11 +451,13 @@ proof(insert assms(3-), rule DFS_call_2_conds[OF assms(1)], cases rule:  DFS_bac
 next
   case (2 u tail)
   note two = 2
-  show ?case
-  proof(rule invar_dfs_backtrack_5I, clarsimp simp add: 2, goal_cases)
-    case (1 a b p)
+  have False
+    if "a = u \<and> b = hd (DFS_backtrack_state.stack dfs_state) \<or> (a, b) \<in> set (backtrack dfs_state)"
+       "(a, b) \<in> set (edges_of_vwalk p)" "vwalk_bet [G]\<^sub>g s p t" for a b p
+  proof-
+    note 1 = that
     note one = this
-    show ?case 
+    show ?thesis 
     proof(cases rule: disjE[OF 1(1)])
       case 1
       hence 1: "a = u" "b = hd (DFS_backtrack_state.stack dfs_state)" by auto
@@ -508,15 +518,17 @@ next
             elim!: DFS_call_2_conds invar_dfs_backtrack_5E)
     qed
   qed
+  thus ?case
+    by(force intro!: invar_dfs_backtrack_5I simp add: 2) 
 qed
 
 lemma invar_dfs_backtrack_5_holds_3[invar_holds_intros]:
-  "\<lbrakk>invar_dfs_backtrack_5 dfs_state\<rbrakk> \<Longrightarrow> 
+  "invar_dfs_backtrack_5 dfs_state \<Longrightarrow> 
       invar_dfs_backtrack_5 (DFS_backtrack_ret1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_5I simp add: DFS_backtrack_ret1_def elim!: invar_dfs_backtrack_5E)
 
 lemma invar_dfs_backtrack_5_holds_4[invar_holds_intros]:
-  "\<lbrakk>invar_dfs_backtrack_5 dfs_state\<rbrakk> \<Longrightarrow> 
+  "invar_dfs_backtrack_5 dfs_state \<Longrightarrow> 
       invar_dfs_backtrack_5 (DFS_backtrack_ret2 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_5I simp add: DFS_backtrack_ret2_def elim!: invar_dfs_backtrack_5E)
 
@@ -540,6 +552,8 @@ proof(induction rule: DFS_backtrack_induct[OF assms(1)])
       (auto intro!: IH(2-) invar_holds_intros 
         simp: DFS_backtrack_simps[OF IH(1)] DFS_backtrack_upd1_homo DFS_backtrack_upd2_homo)
 qed
+
+subsection \<open>Correctness\<close>
 
 lemma dfs_backtrack_initial_state: 
   "invar_dfs_backtrack_1 dfs_backtrack_initial_state"
@@ -577,6 +591,8 @@ lemma same_as_old_dfs_on_initial:
   by blast
 end
 end
+
+subsection \<open>Running Time\<close>
 
 context DFS
 begin

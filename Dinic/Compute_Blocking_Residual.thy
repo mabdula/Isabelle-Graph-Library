@@ -1,8 +1,15 @@
 theory Compute_Blocking_Residual                 
-  imports Graph_Algorithms_Dev.DFS_Collect_Backtrack_Example Compute_Blocking_Simple
-          "HOL-Library.Product_Lexorder"
+  imports DFS_Collect_Backtrack_Example Compute_Blocking_Simple
+    "HOL-Library.Product_Lexorder"
     Graph_Algorithms_Dev.BFS_Example Graph_Algorithms_Dev.RBT_Map_Extension
 begin
+
+section \<open>Computation of Blocking Flows as Used by Dinic's Algorithm\<close>
+
+text \<open>We use the computation of blocking flows in simple graphs and
+the dead-end collecting DFS to compute a blocking flow in
+some residual graph, e.g. a level residual graph as needed for Dinic.
+The level graph is computed by BFS.\<close>
 
 lemma same_graph_consts: "G.graph_inv = dfs.Graph.graph_inv"
   "G.digraph_abs = dfs.Graph.digraph_abs"
@@ -13,26 +20,39 @@ lemma same_graph_consts: "G.graph_inv = dfs.Graph.graph_inv"
   by (auto simp add: adj_inv_def RBT_Set.empty_def
       BFS_Example.neighbourhood_def DFS_Collect_Backtrack_Example.neighbourhood_def)
 
-global_interpretation blocking_simple: blocking_simple where insert = vset_insert and
-  sel = sel and  vset_empty = vset_empty and  diff = vset_diff and
-  lookup = lookup and empty = map_empty and delete=delete and isin = isin and t_set=t_set
-  and update=update and adjmap_inv = adj_inv and vset_delete= vset_delete
-  and vset_inv = vset_inv and union=vset_union and inter=vset_inter 
-  and flow_lookup = lookup
-  and flow_empty = Leaf
-  and flow_update=update
-  and flow_delete=delete
-  and flow_invar=adj_inv
-  and G = G and
-  t = t and
-  s = s and
-  find_path = find_path and
-  u = u
+global_interpretation blocking_simple: blocking_simple 
+  where insert = vset_insert 
+    and sel = sel 
+    and vset_empty = vset_empty 
+    and diff = vset_diff 
+    and lookup = lookup 
+    and empty = map_empty 
+    and delete=delete 
+    and isin = isin 
+    and t_set=t_set
+    and update=update 
+    and adjmap_inv = adj_inv 
+    and vset_delete= vset_delete
+    and vset_inv = vset_inv 
+    and union=vset_union 
+    and inter=vset_inter 
+
+    and flow_lookup = lookup
+    and flow_empty = Leaf
+    and flow_update=update
+    and flow_delete=delete
+    and flow_invar=adj_inv
+
+    and G = G 
+    and t = t 
+    and s = s 
+    and find_path = find_path 
+    and u = u
 for G s t find_path u
 defines blocking_simple_loop=blocking_simple.compute_blocking_loop_impl
-  and     blocking_simple_initial=blocking_simple.initial_state
-  and add_flow_simple=blocking_simple.add_flow
-  and delete_edge=blocking_simple.delete_edge
+  and   blocking_simple_initial=blocking_simple.initial_state
+  and   add_flow_simple=blocking_simple.add_flow
+  and   delete_edge=blocking_simple.delete_edge
   by(auto intro!: blocking_simple.intro
       simp add: dfs.Graph.Pair_Graph_Specs_axioms  dfs.set_ops.Set2_axioms
       M.Map_axioms[simplified RBT_Set.empty_def adj_inv_def[symmetric]])
@@ -137,17 +157,20 @@ proof(all \<open>cases "DFS_Collect_Backtrack_Example.neighbourhood F s = vset_e
                   \<nexists>p. e \<in> set (edges_of_vwalk p) \<and> vwalk_bet (dfs.Graph.digraph_abs F) s p t" for e
       using  same_final_state  "1"(2) DFS_thms.dfs_backtrack_final(5)[OF dfs_thms, of t]       
       by(auto simp add: dfs_backtrack_initial_state_def  final_state_def dfs_backtrack_result(2,3)[symmetric] 
-                 elim!: dir_acycE dfs.invar_dfs_backtrack_5E)     
+          elim!: dir_acycE dfs.invar_dfs_backtrack_5E)     
     ultimately show ?case by auto
   qed
 qed
 
 
 locale blocking_level_residual_spec =
+
   flow_network_spec where fst = fst  +
+
   Map_realising: Map realising_edges_empty 
   "realising_edges_update::('v\<times> 'v) \<Rightarrow> ('e Redge) list \<Rightarrow> 'realising_type \<Rightarrow> 'realising_type"
-  realising_edges_delete realising_edges_lookup realising_edges_invar +
+   realising_edges_delete realising_edges_lookup realising_edges_invar +
+
   Map_residual_flow: Map residual_flow_empty
   "residual_flow_update::'e Redge \<Rightarrow> real \<Rightarrow> 'resflow_map \<Rightarrow> 'resflow_map"
   residual_flow_delete residual_flow_lookup residual_flow_invar
@@ -414,13 +437,12 @@ abbreviation "is_blocking_flow_simple ==
 flow_network_spec.is_blocking_flow prod.fst prod.snd  simple_level_graph_abstract u_simple"
 
 lemma blocking_flow_simple_correct:
-
-"blocking_flow_simple = None \<Longrightarrow> \<nexists> p. vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t" (is "?none \<Longrightarrow> ?nowalk")
-"blocking_flow_simple = Some f \<Longrightarrow>\<exists> p. vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t" (is "?some \<Longrightarrow> ?walk")
-"blocking_flow_simple = Some f \<Longrightarrow> is_blocking_flow_simple s t (abstract_real_map (lookup f))" (is "?some \<Longrightarrow> ?blocking_flow")
-"blocking_flow_simple = Some f \<Longrightarrow>\<exists>e\<in>\<EE>. 0 < \<uu>\<^bsub>\<f>\<^esub>e \<and> fstv e = s \<and> sndv e \<noteq> s" (is "?some \<Longrightarrow>?leaving_e")
-"blocking_flow_simple = Some f \<Longrightarrow> dom (lookup f) \<subseteq> simple_level_graph_abstract"
-"blocking_flow_simple = Some f \<Longrightarrow> adj_inv f"
+  "blocking_flow_simple = None \<Longrightarrow> \<nexists> p. vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t" (is "?none \<Longrightarrow> ?nowalk")
+  "blocking_flow_simple = Some f \<Longrightarrow> \<exists> p. vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t" (is "?some \<Longrightarrow> ?walk")
+  "blocking_flow_simple = Some f \<Longrightarrow> is_blocking_flow_simple s t (abstract_real_map (lookup f))" (is "?some \<Longrightarrow> ?blocking_flow")
+  "blocking_flow_simple = Some f \<Longrightarrow> \<exists>e\<in>\<EE>. 0 < \<uu>\<^bsub>\<f>\<^esub>e \<and> fstv e = s \<and> sndv e \<noteq> s" (is "?some \<Longrightarrow>?leaving_e")
+  "blocking_flow_simple = Some f \<Longrightarrow> dom (lookup f) \<subseteq> simple_level_graph_abstract"
+  "blocking_flow_simple = Some f \<Longrightarrow> adj_inv f"
 proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
   show "?none \<Longrightarrow> neighbourhood E_simple s = vset_empty \<Longrightarrow> ?nowalk"
     by (auto simp add: G.source_of_path_neighb_non_empty RBT_Set.empty_def s_neq_t
@@ -465,7 +487,7 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
     "dir_acyc (dfs.Graph.digraph_abs prnts)"
     using reachable_level_graph_acyclic
     by(force simp add: prnts_def bfs.BFS_level_graph[OF bfs_axiom,
-              simplified same_graph_consts] reachable_level_graph_def)
+          simplified same_graph_consts] reachable_level_graph_def)
 
   have blocking_simple_thms: "blocking_simple_thms map_empty RBT_Map.delete vset_insert isin t_set sel 
                    update adj_inv vset_empty vset_delete vset_inv vset_union vset_inter vset_diff
@@ -475,12 +497,12 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
     case 1
     then show ?case 
       by (auto intro: bfs.invar_1_props[OF bfs_axiom bfs_invar_1] 
-            simp add: adj_inv_def prnts_def)
+          simp add: adj_inv_def prnts_def)
   next
     case 2
     then show ?case 
       by (auto intro: bfs.invar_1_props[OF bfs_axiom bfs_invar_1] 
-            simp add: adj_inv_def prnts_def)
+          simp add: adj_inv_def prnts_def)
   next
     case 3
     then show ?case 
@@ -553,11 +575,9 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
     by(auto intro!:  vwalk_bet_subset simp add: RBT_Set.empty_def prnts_def)
   then obtain p where p_prop: "vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t" "distinct p"
     using  vwalk_bet_to_distinct_is_distinct_vwalk_bet 
-    by(force simp add: distinct_vwalk_bet_def)
-(*TODO: elim rule for distinct_vwalk_bet*)
+    by(force elim!: distinct_vwalk_betE)
   have srcs_are_s:"t_set (vset_insert s vset_empty) = {s}"
     using sources(1) by blast
-
   show residual_leaving_s:"\<exists>e\<in>\<EE>. 0 < \<uu>\<^bsub>\<f>\<^esub>e \<and> fstv e = s \<and> sndv e \<noteq> s" 
   proof-
     obtain x where x_prop:"hd (edges_of_vwalk p) = (s, x)" "(s, x) \<in> dfs.Graph.digraph_abs E_simple "
@@ -580,7 +600,7 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
   qed
   note flow_network_axioms_for_simple_graph = 
     flow_network_axioms_for_simple_graph[OF residual_leaving_s]
-   note bfs_level_graph_def=BFS_level_graph[simplified same_graph_consts(2) srcs_are_s 
+  note bfs_level_graph_def=BFS_level_graph[simplified same_graph_consts(2) srcs_are_s 
       distance_set_single_source, symmetric]
   have flow_non_empt: "blocking_state.flow (blocking_simple_loop s t find_path u_simple 
                  (blocking_simple_initial level_simple)) \<noteq> Leaf"
@@ -659,20 +679,20 @@ qed
 lemma residual_add_flow_correct:
   assumes "residual_flow_invar acc"
   shows   "residual_flow_invar (residual_add_flow acc e g)"
-          "dom (residual_flow_lookup (residual_add_flow acc e g))
+    "dom (residual_flow_lookup (residual_add_flow acc e g))
                = Set.insert e (dom (residual_flow_lookup acc))"
-          "abstract_real_map (residual_flow_lookup (residual_add_flow acc e g)) =
+    "abstract_real_map (residual_flow_lookup (residual_add_flow acc e g)) =
            (\<lambda> d. if e = d then abstract_real_map (residual_flow_lookup acc) d + g 
                           else abstract_real_map (residual_flow_lookup acc) d)"
-          "e \<noteq> d \<Longrightarrow> (residual_flow_lookup (residual_add_flow acc e g)) d =
+    "e \<noteq> d \<Longrightarrow> (residual_flow_lookup (residual_add_flow acc e g)) d =
                      residual_flow_lookup acc d"
   using assms
   by(auto intro!: ext 
-        simp add: residual_add_flow_def abstract_real_map_def 
-                  Map_residual_flow.map_update Map_residual_flow.invar_update 
-           split: option.split if_split)
+      simp add: residual_add_flow_def abstract_real_map_def 
+      Map_residual_flow.map_update Map_residual_flow.invar_update 
+      split: option.split if_split)
 
-  (*To be solved by split lemmas/ to be outsourced*)
+(*To be solved by split lemmas/ to be outsourced*)
 
 lemma split_flow_single_correct1:
   assumes "residual_flow_invar acc" " realising_edges_lookup realising_edges e = Some ds"
@@ -694,7 +714,7 @@ proof-
     using assms(1)
     by(simp add: split_flow_single_def)
   have no_change_outside_es: 
-       "residual_flow_invar acc \<Longrightarrow> e \<notin> set ds\<Longrightarrow> residual_flow_lookup
+    "residual_flow_invar acc \<Longrightarrow> e \<notin> set ds\<Longrightarrow> residual_flow_lookup
      (prod.fst (foldl ?iteration (acc, fl) ds)) e = 
        residual_flow_lookup acc e" for ds fl acc e
     using assms(1)  Map_residual_flow.map_update residual_add_flow_correct(1,4)
@@ -710,9 +730,9 @@ proof-
     case (Cons a ds)
     show ?case  
       using residual_add_flow_correct(2) Cons(1)[simplified case_prod_beta Let_def]
-     by (unfold set_simps(2) Un_insert_left 
-                foldl_Cons case_prod_beta )
-          (auto simp add:  Cons.prems residual_add_flow_correct(1))
+      by (unfold set_simps(2) Un_insert_left 
+          foldl_Cons case_prod_beta )
+        (auto simp add:  Cons.prems residual_add_flow_correct(1))
   qed auto
   thus "dom (residual_flow_lookup (split_flow_single e fl acc))
     \<subseteq> dom (residual_flow_lookup acc) \<union> set (the (realising_edges_lookup realising_edges e))"  
@@ -741,17 +761,17 @@ proof-
     by(induction ds arbitrary: acc fl)
       (auto intro: residual_add_flow_correct(1) split: prod.split)
   have no_change_outside_es: 
-       "residual_flow_invar acc \<Longrightarrow> e \<notin> set ds\<Longrightarrow> residual_flow_lookup
+    "residual_flow_invar acc \<Longrightarrow> e \<notin> set ds\<Longrightarrow> residual_flow_lookup
      (prod.fst (foldl ?iteration (acc, fl) ds)) e = 
        residual_flow_lookup acc e" for ds fl acc e
     using assms(1)  Map_residual_flow.map_update residual_add_flow_correct(1,4)
     by (induction ds arbitrary: acc fl)auto
   note  ds_positive = preorder_class.eq_refl[OF realising_edges_result(1)[OF assms(2),
-                simplified pos_es_props(1)]]
+        simplified pos_es_props(1)]]
   show "sum (abstract_real_map (residual_flow_lookup 
                 (split_flow_single e fl acc))) (set ds) = fl"
     using assms(4)[simplified u_simple_def assms(2), simplified] assms(5)
-          realising_edges_result(2)[OF assms(2)] ds_positive  assms(1,3)
+      realising_edges_result(2)[OF assms(2)] ds_positive  assms(1,3)
     unfolding split_flow_single_def assms(2) option.sel
   proof(induction ds arbitrary: fl acc)
     case Nil
@@ -762,17 +782,17 @@ proof-
     have sum_us_pos: "0 \<le> (\<Sum>e\<leftarrow>ds. real_of_ereal \<uu>\<^bsub>\<f>\<^esub>e)"
       using local.Cons(5) 
       by(auto intro!: ordered_comm_monoid_add_class.sum_nonneg  real_of_ereal_pos
-            simp add: comm_monoid_add_class.sum.distinct_set_conv_list[OF distinctds, symmetric])
+          simp add: comm_monoid_add_class.sum.distinct_set_conv_list[OF distinctds, symmetric])
     have new_fl_less: "fl - min (real_of_ereal \<uu>\<^bsub>\<f>\<^esub>a) fl \<le> (\<Sum>e\<leftarrow>ds. real_of_ereal \<uu>\<^bsub>\<f>\<^esub>e)"
       using Cons(2) sum_us_pos by auto
     show ?case 
       using Cons(4,5,6)  Cons(1)[ OF new_fl_less _ distinctds, simplified Let_def]   
-            residual_add_flow_correct
-            abstract_real_map_cong[of "residual_flow_lookup _ " _ "residual_flow_lookup _",
-                     OF no_change_outside_es[simplified Let_def , of _ a,
-                           OF residual_add_flow_correct(1)[OF Cons(6)]]]
+        residual_add_flow_correct
+        abstract_real_map_cong[of "residual_flow_lookup _ " _ "residual_flow_lookup _",
+          OF no_change_outside_es[simplified Let_def , of _ a,
+            OF residual_add_flow_correct(1)[OF Cons(6)]]]
       by (subst set_simps(2), subst comm_monoid_add_class.sum.insert)
-         (force simp add: Cons.prems(5,6) residual_add_flow_correct(3))+
+        (force simp add: Cons.prems(5,6) residual_add_flow_correct(3))+
   qed
   fix d
   assume asm: "d \<in> set ds"
@@ -782,15 +802,15 @@ proof-
   proof(induction ds arbitrary: acc fl)
     case Nil
     then show ?case by auto
-    next
+  next
     case (Cons dd ds)
     show ?case
     proof(cases "dd = d")
       case True
       show ?thesis 
-       using abstract_real_map_cong[of "residual_flow_lookup _ " _ "residual_flow_lookup _",
-                     OF no_change_outside_es[simplified Let_def , of _ d ds,
-                           OF residual_add_flow_correct(1)[OF Cons(4)]]]
+        using abstract_real_map_cong[of "residual_flow_lookup _ " _ "residual_flow_lookup _",
+            OF no_change_outside_es[simplified Let_def , of _ d ds,
+              OF residual_add_flow_correct(1)[OF Cons(4)]]]
           True  residual_add_flow_correct(3) Cons(2-6)
         by(auto intro!: linorder_class.min.coboundedI1 ereal_of_real_of_ereal_leq)
     next
@@ -806,7 +826,7 @@ proof-
   proof(induction ds arbitrary: acc fl)
     case Nil
     then show ?case by auto
-    next
+  next
     case (Cons dd ds)
     show ?case
     proof(cases "dd = d")
@@ -815,9 +835,9 @@ proof-
         using Cons.prems(2) True real_of_ereal_pos by force 
       then show ?thesis 
         using  abstract_real_map_cong[of "residual_flow_lookup _ " _ "residual_flow_lookup _",
-                     OF no_change_outside_es[simplified Let_def , of _ d ds,
-                           OF residual_add_flow_correct(1)[OF Cons(4)]]]
-               True residual_add_flow_correct(3) Cons(2-6)
+            OF no_change_outside_es[simplified Let_def , of _ d ds,
+              OF residual_add_flow_correct(1)[OF Cons(4)]]]
+          True residual_add_flow_correct(3) Cons(2-6)
         by auto
     next
       case False
@@ -827,14 +847,14 @@ proof-
     qed
   qed
 qed
-(*TODO: To be outsourced later*)
+  (*TODO: To be outsourced later*)
 lemma find_blocking_flow_properties:
   assumes "find_blocking_flow = Some rsfl"
-          "\<And> e. e \<in> dom (lookup (the blocking_flow_simple) ) \<Longrightarrow>
+    "\<And> e. e \<in> dom (lookup (the blocking_flow_simple) ) \<Longrightarrow>
                  abstract_real_map (lookup (the blocking_flow_simple) ) e \<le> u_simple e"
-          "\<And> e. e \<in> dom (lookup (the blocking_flow_simple) ) \<Longrightarrow>
+    "\<And> e. e \<in> dom (lookup (the blocking_flow_simple) ) \<Longrightarrow>
                  abstract_real_map (lookup (the blocking_flow_simple) ) e \<ge> 0"
-          "\<And> e. e \<in> dom (lookup (the blocking_flow_simple) )  \<Longrightarrow>
+    "\<And> e. e \<in> dom (lookup (the blocking_flow_simple) )  \<Longrightarrow>
            realising_edges_lookup realising_edges e \<noteq> None "
   shows   "residual_flow_invar rsfl"
     "dom (residual_flow_lookup rsfl) 
@@ -857,11 +877,11 @@ proof-
     using assms(1)
     by(cases blocking_flow_simple)(auto simp add: find_blocking_flow_def )
   obtain xs where iteration_order: "distinct xs"
-     "set xs = dom (lookup bfs)"
-     "rbt_map_fold bfs split_flow_single residual_flow_empty =
+    "set xs = dom (lookup bfs)"
+    "rbt_map_fold bfs split_flow_single residual_flow_empty =
      foldr (\<lambda>x. split_flow_single x (the (lookup bfs x))) xs residual_flow_empty"
     using   rbt_map_fold_correct[OF blocking_flow_simple_correct(6)
-             [OF bfs_prop , simplified  adj_inv_def], of split_flow_single residual_flow_empty]
+        [OF bfs_prop , simplified  adj_inv_def], of split_flow_single residual_flow_empty]
     by auto
   have in_xs_realising_no_none:"e \<in> set xs \<Longrightarrow>
            realising_edges_lookup realising_edges e \<noteq> None " for e
@@ -880,7 +900,7 @@ proof-
     show ?case 
       using Cons(2)[of a]
       by(auto intro!: split_flow_single_correct1(1)  Cons(1) Cons(2)[simplified]
-            intro: prod.exhaust[of a]) 
+          intro: prod.exhaust[of a]) 
   qed
   thus "residual_flow_invar rsfl"
     using bfs_prop in_xs_realising_no_none iteration_order(3) rsfl_is by auto
@@ -890,7 +910,7 @@ proof-
      \<subseteq>  \<Union>  {set (the (realising_edges_lookup realising_edges e)) |e.
           e \<in> set xs}" 
     if in_xs_realising_no_none: 
-       "\<And> e. e \<in> set xs \<Longrightarrow> realising_edges_lookup realising_edges e \<noteq> None" for xs
+      "\<And> e. e \<in> set xs \<Longrightarrow> realising_edges_lookup realising_edges e \<noteq> None" for xs
     using in_xs_realising_no_none
     unfolding iteration_order(2)[symmetric]
   proof(induction xs)
@@ -902,11 +922,11 @@ proof-
     obtain b where b_obtain:"realising_edges_lookup realising_edges a = Some b"
       using Cons(2)[of a] by auto
     show ?case 
-    unfolding foldr_Cons o_apply
-    using resflow_invar[OF Cons(2) ]  Cons(1)[OF Cons(2), simplified]
-    by (intro order.trans[OF split_flow_single_correct1(2), OF _ b_obtain],
-        all \<open>(subst  set_simps(2) image_Collect[symmetric])?\<close>)auto
-qed
+      unfolding foldr_Cons o_apply
+      using resflow_invar[OF Cons(2) ]  Cons(1)[OF Cons(2), simplified]
+      by (intro order.trans[OF split_flow_single_correct1(2), OF _ b_obtain],
+          all \<open>(subst  set_simps(2) image_Collect[symmetric])?\<close>)auto
+  qed
   show dom_subset_descr:"dom (residual_flow_lookup rsfl)
     \<subseteq> \<Union> {set (the (realising_edges_lookup realising_edges e)) |e.
           e \<in> dom (lookup (the blocking_flow_simple))}"
@@ -917,7 +937,7 @@ qed
            \<and> (abstract_real_map (residual_flow_lookup rsfl) e) \<ge> 0"
     for e
     using in_xs_realising_no_none iteration_order(1)
-          equalityD1[OF iteration_order(2)]
+      equalityD1[OF iteration_order(2)]
     unfolding rsfl_is bfs_prop option.sel iteration_order(3)
   proof (induction xs)
     case Nil
@@ -926,12 +946,12 @@ qed
   next
     case (Cons a xs)
     hence immediately_fom_IH_prems: 
-    "e \<in> set xs \<Longrightarrow> realising_edges_lookup realising_edges e \<noteq> None" 
-    "distinct xs" for e by auto
+      "e \<in> set xs \<Longrightarrow> realising_edges_lookup realising_edges e \<noteq> None" 
+      "distinct xs" for e by auto
     obtain ds where ds_obtain: "realising_edges_lookup realising_edges a = Some ds"
       using Cons(3)[of a] by auto
     have d_in_ds_outside_of_old_dom:
-             "d \<notin> \<Union> {set (the (realising_edges_lookup realising_edges e)) |e. e \<in> set xs}"
+      "d \<notin> \<Union> {set (the (realising_edges_lookup realising_edges e)) |e. e \<in> set xs}"
       if "d \<in> set ds" for d
     proof(rule ccontr, goal_cases)
       case 1
@@ -941,7 +961,7 @@ qed
         using Cons.prems(2)[of e] by(cases "realising_edges_lookup realising_edges e") auto
       have "e = a"
         using realising_edges_result(1)[OF ds'] realising_edges_result(1)[OF ds_obtain]
-              e(2) ds' that by auto
+          e(2) ds' that by auto
       thus False
         using Cons.prems(3) e(1) by auto
     qed
@@ -956,31 +976,32 @@ qed
     show ?case 
     proof(cases "e \<in> set ds")
       case True
-      show ?thesis 
-      using split_flow_single_correct2(2,3)[OF  _ ds_obtain]  lookup_less_u_gtr_0_simple True
+      thus ?thesis 
+        using  lookup_less_u_gtr_0_simple 
           contra_subsetD[OF dom_in[OF immediately_fom_IH_prems(1), of xs]
-                              d_in_ds_outside_of_old_dom] 
-       by(force intro!: Cons(3) resflow_invar[of xs] abstract_real_map_outside_dom)+
-  next
-    case False
-    note flow_no_change =  split_flow_single_correct1(3)[OF resflow_invar[OF immediately_fom_IH_prems(1)]
-           ds_obtain False, of xs, simplified]
-    note flow_no_change_abstract = abstract_real_map_cong[of "residual_flow_lookup _" e "residual_flow_lookup _", 
-            OF  flow_no_change]
-   show ?thesis
-      using Cons.prems(1) flow_no_change  immediately_fom_IH_prems  Cons.prems(4) 
-      by(auto intro!: conjunct1[OF Cons(1)] conjunct2[OF Cons(1)] simp add: flow_no_change_abstract) 
+            d_in_ds_outside_of_old_dom] 
+        by(force intro!:  split_flow_single_correct2(2,3)[OF  _ ds_obtain] 
+            Cons(3) resflow_invar[of xs] abstract_real_map_outside_dom)
+    next
+      case False
+      note flow_no_change =  split_flow_single_correct1(3)[OF resflow_invar[OF immediately_fom_IH_prems(1)]
+          ds_obtain False, of xs, simplified]
+      note flow_no_change_abstract = abstract_real_map_cong[of "residual_flow_lookup _" e "residual_flow_lookup _", 
+          OF  flow_no_change]
+      show ?thesis
+        using Cons.prems(1) flow_no_change  immediately_fom_IH_prems  Cons.prems(4) 
+        by(auto intro!: conjunct1[OF Cons(1)] conjunct2[OF Cons(1)] simp add: flow_no_change_abstract) 
     qed
   qed
   thus "ereal (abstract_real_map (residual_flow_lookup rsfl) e) \<le> \<uu>\<^bsub>\<f>\<^esub>e" 
-       "0 \<le> abstract_real_map (residual_flow_lookup rsfl) e"
-       if "e \<in> dom (residual_flow_lookup rsfl)" for e
+    "0 \<le> abstract_real_map (residual_flow_lookup rsfl) e"
+    if "e \<in> dom (residual_flow_lookup rsfl)" for e
     using that by auto
   have sum_split:"e \<in> set xs \<Longrightarrow> abstract_real_map (lookup (the blocking_flow_simple)) e =
          sum (abstract_real_map (residual_flow_lookup rsfl))
              (set (the (realising_edges_lookup realising_edges e)))" for e
-   using in_xs_realising_no_none iteration_order(1)
-          equalityD1[OF iteration_order(2)]
+    using in_xs_realising_no_none iteration_order(1)
+      equalityD1[OF iteration_order(2)]
     unfolding rsfl_is bfs_prop option.sel  iteration_order(3)
   proof (induction xs)
     case Nil
@@ -989,12 +1010,12 @@ qed
   next
     case (Cons a xs)
     hence immediately_fom_IH_prems: 
-    "e \<in> set xs \<Longrightarrow> realising_edges_lookup realising_edges e \<noteq> None" 
-    "distinct xs" for e by auto
+      "e \<in> set xs \<Longrightarrow> realising_edges_lookup realising_edges e \<noteq> None" 
+      "distinct xs" for e by auto
     obtain ds where ds_obtain: "realising_edges_lookup realising_edges a = Some ds"
       using Cons(3)[of a] by auto
     have d_in_ds_outside_of_old_dom:
-             "d \<notin> \<Union> {set (the (realising_edges_lookup realising_edges e)) |e. e \<in> set xs}"
+      "d \<notin> \<Union> {set (the (realising_edges_lookup realising_edges e)) |e. e \<in> set xs}"
       if "d \<in> set ds" for d
     proof(rule ccontr, goal_cases)
       case 1
@@ -1004,7 +1025,7 @@ qed
         using Cons.prems(2)[of e] by(cases "realising_edges_lookup realising_edges e") auto
       have "e = a"
         using realising_edges_result(1)[OF ds'] realising_edges_result(1)[OF ds_obtain]
-              e(2) ds' that by auto
+          e(2) ds' that by auto
       thus False
         using Cons.prems(3) e(1) by auto
     qed
@@ -1027,48 +1048,48 @@ qed
             (foldr (\<lambda>x. split_flow_single x (the (lookup bfs x))) xs residual_flow_empty))
           d = 0" for d
         using d_in_ds_outside_of_old_dom[of d]
-              dom_in[OF immediately_fom_IH_prems(1), of xs, simplified] 
+          dom_in[OF immediately_fom_IH_prems(1), of xs, simplified] 
         by(auto intro!: abstract_real_map_none simp add: ds_obtain) blast
       show ?thesis 
         using flow_zero_old lookup_less_u_gtr_0_simple
         by(auto intro!: split_flow_single_correct2(1)[symmetric]
-         simp add: True immediately_fom_IH_prems(1) resflow_invar ds_obtain the_lookup_abstract)
-  next
-    case False
-    show ?thesis
-    proof(subst foldr_Cons, subst o_apply, rule trans[OF Cons(1)], goal_cases)
-      case 1
-      then show ?case 
-        using Cons.prems(1) False by auto
+            simp add: True immediately_fom_IH_prems(1) resflow_invar ds_obtain the_lookup_abstract)
     next
-      case (2 e)
-      then show ?case 
-        using immediately_fom_IH_prems(1) by blast
-    next
-      case 3
-      then show ?case 
-        using immediately_fom_IH_prems(2) by auto
-    next
-      case 4
-      then show ?case
-        using Cons.prems(4) by auto
-    next
-      case 5
-      show ?case 
-      proof(rule sum_cong, goal_cases)
-        case (1 d)
-        hence d_not_in_ds:"d \<notin> set ds" 
-          using  Cons.prems(1) False d_in_ds_outside_of_old_dom[of d] 
-                 ds_obtain immediately_fom_IH_prems(1) realising_edges_result(1) 
-          by auto
-        note flow_no_change =  split_flow_single_correct1(3)[OF resflow_invar[OF immediately_fom_IH_prems(1)]
-           ds_obtain d_not_in_ds, of xs, simplified]
+      case False
+      show ?thesis
+      proof(subst foldr_Cons, subst o_apply, rule trans[OF Cons(1)], goal_cases)
+        case 1
         then show ?case 
-          by (auto intro!: abstract_real_map_cong)
+          using Cons.prems(1) False by auto
+      next
+        case (2 e)
+        then show ?case 
+          using immediately_fom_IH_prems(1) by blast
+      next
+        case 3
+        then show ?case 
+          using immediately_fom_IH_prems(2) by auto
+      next
+        case 4
+        then show ?case
+          using Cons.prems(4) by auto
+      next
+        case 5
+        show ?case 
+        proof(rule sum_cong, goal_cases)
+          case (1 d)
+          hence d_not_in_ds:"d \<notin> set ds" 
+            using  Cons.prems(1) False d_in_ds_outside_of_old_dom[of d] 
+              ds_obtain immediately_fom_IH_prems(1) realising_edges_result(1) 
+            by auto
+          note flow_no_change =  split_flow_single_correct1(3)[OF resflow_invar[OF immediately_fom_IH_prems(1)]
+              ds_obtain d_not_in_ds, of xs, simplified]
+          then show ?case 
+            by (auto intro!: abstract_real_map_cong)
+        qed
       qed
     qed
   qed
-qed
   show "abstract_real_map (lookup (the blocking_flow_simple)) e =
          sum (abstract_real_map (residual_flow_lookup rsfl))
           (set (case realising_edges_lookup realising_edges e of None \<Rightarrow> [] | Some ds \<Rightarrow> ds))" for e
@@ -1083,9 +1104,9 @@ qed
     moreover have "realising_edges_lookup realising_edges e = Some ds \<Longrightarrow>
            sum (abstract_real_map (residual_flow_lookup rsfl)) (set ds) = 0" for ds
     proof(rule comm_monoid_add_class.sum.neutral
-                        abstract_real_map_outside_dom, rule, 
-         rule abstract_real_map_outside_dom, rule ccontr,
-          goal_cases)
+        abstract_real_map_outside_dom, rule, 
+        rule abstract_real_map_outside_dom, rule ccontr,
+        goal_cases)
       case (1 e')
       then obtain ee where ee:
         "e' \<in> set (the (realising_edges_lookup realising_edges ee))" "ee \<in> dom (lookup bfs)" 
@@ -1093,8 +1114,8 @@ qed
         using dom_subset_descr by(force simp add: bfs_prop iteration_order(2)) 
       moreover have "ee = e" 
         using   in_xs_realising_no_none[of ee] 
-                realising_edges_result(1)[of ee]  "1"(1,2) calculation(1) ee(3)
-                realising_edges_result(1) by auto
+          realising_edges_result(1)[of ee]  "1"(1,2) calculation(1) ee(3)
+          realising_edges_result(1) by auto
       ultimately show False
         using False by blast
     qed
@@ -1127,26 +1148,26 @@ proof-
         intro: option.exhaust[of blocking_flow_simple])
   note simple_flow_in_lg = blocking_flow_simple_correct(5)[OF asm']
   have find_blocking_flow_properties_precond:
-       "abstract_real_map (lookup (the blocking_flow_simple)) e \<le> u_simple e"
-       "abstract_real_map (lookup (the blocking_flow_simple)) e \<ge> 0"
-       "realising_edges_lookup realising_edges e \<noteq> None" if
-          "e \<in> dom (lookup (the blocking_flow_simple))"
-        for e
+    "abstract_real_map (lookup (the blocking_flow_simple)) e \<le> u_simple e"
+    "abstract_real_map (lookup (the blocking_flow_simple)) e \<ge> 0"
+    "realising_edges_lookup realising_edges e \<noteq> None" if
+    "e \<in> dom (lookup (the blocking_flow_simple))"
+  for e
   proof-
     show "abstract_real_map (lookup (the blocking_flow_simple)) e \<le> u_simple e"
-         "abstract_real_map (lookup (the blocking_flow_simple)) e \<ge> 0"
-        apply(all \<open>rule flow_network_spec.is_blocking_flowE[OF 
+      "abstract_real_map (lookup (the blocking_flow_simple)) e \<ge> 0"
+       apply(all \<open>rule flow_network_spec.is_blocking_flowE[OF 
                              blocking_flow_simple_correct(3)[OF asm']]\<close>)
-        using set_mp[OF simple_flow_in_lg, of e] that asm'
-        by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.isuflowE 
-             simp add: abstract_real_map_in_dom_the[OF that, symmetric])
-      show "realising_edges_lookup realising_edges e \<noteq> None" 
-        using realising_edges_result(1,3)[of e] that  set_mp[OF simple_flow_in_lg, of e]  
-              level_graph_subset_graph[of "(dfs.Graph.digraph_abs E_simple)" "{s}"] 
-        by(fastforce simp add: E_simple_props(4) pos_es_props(1) asm')
-    qed  
-    note  find_blocking_flow_properties= 
-     find_blocking_flow_properties[OF _ find_blocking_flow_properties_precond, simplified]
+      using set_mp[OF simple_flow_in_lg, of e] that asm'
+      by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.isuflowE 
+          simp add: abstract_real_map_in_dom_the[OF that, symmetric])
+    show "realising_edges_lookup realising_edges e \<noteq> None" 
+      using realising_edges_result(1,3)[of e] that  set_mp[OF simple_flow_in_lg, of e]  
+        level_graph_subset_graph[of "(dfs.Graph.digraph_abs E_simple)" "{s}"] 
+      by(fastforce simp add: E_simple_props(4) pos_es_props(1) asm')
+  qed
+  note  find_blocking_flow_properties= 
+    find_blocking_flow_properties[OF _ find_blocking_flow_properties_precond, simplified]
   show "residual_flow_invar rf"
     by (simp add: asm find_blocking_flow_properties(1))
   have dom_goal:"dom (residual_flow_lookup rf) \<subseteq> residual_level_graph \<f> s 
@@ -1166,10 +1187,10 @@ proof-
     show ?case
       using e_in_lg 
       by(auto intro: in_level_graphI
-        elim: in_level_graphE 
-        simp add: X_props(1) ds_prop residual_level_graph_is
-              realising_edges_result(1)[OF ds_prop]  distance_set_single_source  
-               E_simple_props(4)  pos_es_props(1) to_vertex_pair_fst_snd) 
+          elim: in_level_graphE 
+          simp add: X_props(1) ds_prop residual_level_graph_alt_def
+          realising_edges_result(1)[OF ds_prop]  distance_set_single_source  
+          E_simple_props(4)  pos_es_props(1) to_vertex_pair_fst_snd) 
   qed
   thus "dom (residual_flow_lookup rf) \<subseteq> residual_level_graph \<f> s" by auto
   have valid_s_t_flow: "flow_network_spec.is_s_t_flow fstv sndv  (residual_level_graph \<f> s) (rcap \<f>)
@@ -1214,7 +1235,7 @@ proof-
               elim!: abstract_real_map_not_zeroE[of "residual_flow_lookup rf" ] in_level_graphE
               intro!: exI[of _ "fstv e"] in_level_graphI
               simp add: to_vertex_pair_fst_snd multigraph_spec.delta_minus_def
-                        residual_level_graph_is E_simple_props(4) pos_es_props(1) distance_set_single_source)
+              residual_level_graph_alt_def E_simple_props(4) pos_es_props(1) distance_set_single_source)
       have helper_plus: "e \<in> multigraph_spec.delta_plus (residual_level_graph \<f> s) fstv x \<Longrightarrow>
          abstract_real_map (residual_flow_lookup rf) e \<noteq> 0 \<Longrightarrow>
          \<exists>x\<in>multigraph_spec.delta_plus
@@ -1227,8 +1248,8 @@ proof-
                                        (make_pair_residual e)"]
               elim!: abstract_real_map_not_zeroE[of "residual_flow_lookup rf" ]
               intro!: exI[of _ "sndv e"]
-              simp add: to_vertex_pair_fst_snd multigraph_spec.delta_plus_def residual_level_graph_is
-                        level_graph_def E_simple_props(4) pos_es_props(1) distance_set_single_source)
+              simp add: to_vertex_pair_fst_snd multigraph_spec.delta_plus_def residual_level_graph_alt_def
+              level_graph_def E_simple_props(4) pos_es_props(1) distance_set_single_source)
       have same_big_sum_minus: "sum (abstract_real_map (residual_flow_lookup rf))
           (multigraph_spec.delta_minus (residual_level_graph \<f> s) sndv x) =
           sum (abstract_real_map (residual_flow_lookup rf))
@@ -1239,8 +1260,8 @@ proof-
          {xa. \<exists>uu. Some uu = realising_edges_lookup realising_edges x \<and> xa \<in> set uu})"
         using realising_edges_result(1) realising_edges_result(3) helper_minus
         by(auto intro: sum.mono_neutral_cong_right[OF _ _ _ refl]
-            simp add: multigraph_spec.delta_minus_def residual_level_graph_is
-             Collect_bex_eq[symmetric] to_vertex_pair_fst_snd
+            simp add: multigraph_spec.delta_minus_def residual_level_graph_alt_def
+            Collect_bex_eq[symmetric] to_vertex_pair_fst_snd
             level_graph_def E_simple_props(4) pos_es_props(1) distance_set_single_source
             finite_\<EE> multigraph_spec.delta_minus_def[of "residual_level_graph \<f> s" sndv x]
             residual_level_graph_in_E[of \<f> s] rev_finite_subset[of \<EE> "residual_level_graph \<f> s"])
@@ -1257,8 +1278,8 @@ proof-
          {xa. \<exists>uu. Some uu = realising_edges_lookup realising_edges x \<and> xa \<in> set uu})"
         using realising_edges_result(1) realising_edges_result(3) helper_plus
         by(auto intro: sum.mono_neutral_cong_right[OF _ _ _ refl]
-            simp add: multigraph_spec.delta_plus_def residual_level_graph_is  Collect_bex_eq[symmetric]
-             to_vertex_pair_fst_snd level_graph_def E_simple_props(4) pos_es_props(1)
+            simp add: multigraph_spec.delta_plus_def residual_level_graph_alt_def  Collect_bex_eq[symmetric]
+            to_vertex_pair_fst_snd level_graph_def E_simple_props(4) pos_es_props(1)
             distance_set_single_source
             finite_\<EE> multigraph_spec.delta_minus_def[of "residual_level_graph \<f> s" sndv x]
             residual_level_graph_in_E[of \<f> s] rev_finite_subset[of \<EE> "residual_level_graph \<f> s"])     
@@ -1280,7 +1301,7 @@ proof-
            \<subseteq> to_vertex_pair ` residual_level_graph \<f> s"
       by(auto elim: in_level_graphE intro: in_level_graphI 
           simp add: distance_set_single_source E_simple_props(4) pos_es_props(1)
-          residual_level_graph_is  to_vertex_pair_fst_snd)
+          residual_level_graph_alt_def  to_vertex_pair_fst_snd)
     show ?thesis
     proof(rule flow_network_spec.is_s_t_flowI, goal_cases)
       case 1
@@ -1296,13 +1317,13 @@ proof-
       then show ?case
         using  dVs_subset[OF level_graph_simple_subset]  blocking_flow_simple_correct(3)[OF asm']
         by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.is_blocking_flowE
-             simp add:  multigraph_spec.make_pair)
+            simp add:  multigraph_spec.make_pair)
     next
       case 4
       then show ?case 
         using  dVs_subset[OF level_graph_simple_subset]  blocking_flow_simple_correct(3)[OF asm']
         by(auto elim!: flow_network_spec.is_s_t_flowE  flow_network_spec.is_blocking_flowE
-             simp add: multigraph_spec.make_pair)
+            simp add: multigraph_spec.make_pair)
     next
       case 5
       then show ?case 
@@ -1318,7 +1339,7 @@ proof-
         then show ?thesis 
           using same_excess  6  blocking_flow_simple_correct(3)[OF asm']         
           by(auto elim!: flow_network_spec.is_s_t_flowE flow_network_spec.is_blocking_flowE
-               simp add: multigraph_spec.make_pair)
+              simp add: multigraph_spec.make_pair)
       next
         case False
         have deltas_0:"e \<in> multigraph_spec.delta_minus (residual_level_graph \<f> s) sndv x \<Longrightarrow>
@@ -1328,8 +1349,8 @@ proof-
           using set_mp[OF dom_goal, of e] False
           by(auto intro!: abstract_real_map_none in_level_graphI
               simp add: multigraph_spec.delta_minus_def  E_simple_props(4) pos_es_props(1)
-                        residual_level_graph_is distance_set_single_source
-                        dom_def to_vertex_pair_fst_snd multigraph_spec.delta_plus_def)
+              residual_level_graph_alt_def distance_set_single_source
+              dom_def to_vertex_pair_fst_snd multigraph_spec.delta_plus_def)
         then show ?thesis
           by(auto simp add: flow_network_spec.ex_def comm_monoid_add_class.sum.neutral)
       qed
@@ -1361,7 +1382,7 @@ proof-
         then show ?thesis 
           using ee p_prop(5)
           by(intro ord_class.ord_eq_less_trans[OF distance_0I, of _ _ _ \<infinity>])
-            (auto intro!: dVsI'(1) simp add: residual_level_graph_is)
+            (auto intro!: dVsI'(1) simp add: residual_level_graph_alt_def)
       next
         case (Cons a list)
         have awalk_help: "awalk UNIV s p1 (prod.fst e)"
@@ -1379,8 +1400,8 @@ proof-
       then show ?case 
         using set_mp[OF p_prop(5) ee(1)] 1 ee
         by(auto simp add: level_graph_def E_simple_props(4) pos_es_props(1)
-                          distance_set_single_source residual_level_graph_is image_iff
-                          split_pairs vs_to_vertex_pair_pres(1,2))
+            distance_set_single_source residual_level_graph_alt_def image_iff
+            split_pairs vs_to_vertex_pair_pres(1,2))
     qed
     moreover have pos_cap_old: "e\<in>set (map to_vertex_pair p) \<Longrightarrow>
          ereal (abstract_real_map (lookup rfs) e) < ereal (u_simple e)" for e
@@ -1416,7 +1437,7 @@ proof-
     moreover have "multigraph_spec.multigraph_path prod.fst prod.snd (map to_vertex_pair p)"
       using  p_prop(1,2)  awalk_fst_last[OF _  p_prop(1)]
       by(auto intro!: multigraph_spec.multigraph_pathI (2)
-            simp add: multigraph_spec.make_pair_function id_def[symmetric])
+          simp add: multigraph_spec.make_pair_function id_def[symmetric])
     moreover have "prod.fst (hd (map to_vertex_pair p)) = s"
       using awalk_hd[OF p_prop(1)] p_prop(2,3)
       by(cases p) auto
@@ -1428,7 +1449,6 @@ proof-
       by(unfold flow_network_spec.is_blocking_flow_def) blast
   qed
 qed
-
 
 end
 end

@@ -734,7 +734,18 @@ lemma vtrail_suffix_is_vtrail:
   by (auto simp: vwalk_bet_suffix_is_vwalk_bet edges_of_vwalk_append_2[OF \<open>q \<noteq> []\<close>])
 
 definition distinct_vwalk_bet :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "distinct_vwalk_bet E u p v = ( vwalk_bet E u p v \<and> distinct p)"
+  "distinct_vwalk_bet E u p v = (vwalk_bet E u p v \<and> distinct p)"
+
+lemma distinct_vwalk_betE:
+  "distinct_vwalk_bet E u p v \<Longrightarrow> 
+  (\<lbrakk>vwalk_bet E u p v;  distinct p\<rbrakk> \<Longrightarrow> P)
+  \<Longrightarrow> P"
+and distinct_vwalk_betI:
+  "(\<lbrakk>vwalk_bet E u p v;  distinct p\<rbrakk> \<Longrightarrow> distinct_vwalk_bet E u p v)"
+and distinct_vwalk_betD:
+  "distinct_vwalk_bet E u p v \<Longrightarrow> vwalk_bet E u p v"
+  "distinct_vwalk_bet E u p v \<Longrightarrow> distinct p"
+  by(auto simp add: distinct_vwalk_bet_def)
 
 lemma distinct_vwalk_bet_length_le_card_vertices:
   assumes "distinct_vwalk_bet E u p v"

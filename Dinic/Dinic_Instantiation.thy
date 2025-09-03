@@ -2,6 +2,10 @@ theory Dinic_Instantiation
   imports Dinic Compute_Blocking_Residual Graph_Algorithms_Dev.RBT_Map_Extension
 begin
 
+section \<open>Dinic's Algorithm Executable\<close>
+
+text \<open>We use the other theories to get an executable implementation of Dinic's Algorithm.\<close>
+
 instantiation   Redge:: (linorder) linorder
 begin
 

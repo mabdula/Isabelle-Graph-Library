@@ -7,8 +7,10 @@ sessions
 
 theories
 Blocking_Flow
-Compute_Blocking_Residual
+DFS_Collect_Backtrack
+DFS_Collect_Backtrack_Example
 Compute_Blocking_Simple
+Compute_Blocking_Residual
 Dinic
 Dinic_Instantiation
   

@@ -1,48 +1,64 @@
 theory Blocking_Flow 
   imports Flow_Theory.STFlow Directed_Set_Graphs.Dist
 begin
-named_theorems def_elims
-named_theorems def_intros
-definition "unsaturated_path_simple G (u::_ \<Rightarrow> 'a::order) f s p t = (vwalk_bet G s p t
-                                     \<and> (\<forall> e \<in> set (edges_of_vwalk p). f e < u e))"
 
-lemma unsaturated_path_simpleI[def_intros]: "vwalk_bet G s p t \<Longrightarrow> (\<And> e. e \<in> set (edges_of_vwalk p) ==> f e < u e) \<Longrightarrow>
-unsaturated_path_simple G (u::_ \<Rightarrow> 'a::order) f s p t"
+section \<open>Flow Theory for Dinic's Algorithm\<close>
+
+text \<open>Blocking flows are $s$-$t$-flows that do not allow for a
+      not fully saturated $s$-$t$-path.
+      In general, these are not maximum flows, 
+      but they can be used to compute a maximum flow.\<close>
+
+subsection \<open>Unsaturated Paths\<close>
+(*Maybe move later*)
+
+definition "unsaturated_path_simple G (u::_ \<Rightarrow> 'a::order) f s p t = 
+    (vwalk_bet G s p t \<and> (\<forall> e \<in> set (edges_of_vwalk p). f e < u e))"
+
+lemma unsaturated_path_simpleI: 
+ "\<lbrakk>vwalk_bet G s p t; (\<And> e. e \<in> set (edges_of_vwalk p) \<Longrightarrow> f e < u e)\<rbrakk>
+  \<Longrightarrow> unsaturated_path_simple G (u::_ \<Rightarrow> 'a::order) f s p t"
   by(auto simp add: unsaturated_path_simple_def)
 
-lemma unsaturated_path_simpleE[def_elims]: 
-"unsaturated_path_simple G (u::_ \<Rightarrow> 'a::order) f s p t \<Longrightarrow>
- (vwalk_bet G s p t \<Longrightarrow> (\<And> e. e \<in> set (edges_of_vwalk p) ==> f e < u e) \<Longrightarrow> P ) \<Longrightarrow> P"
+lemma unsaturated_path_simpleE: 
+ "unsaturated_path_simple G (u::_ \<Rightarrow> 'a::order) f s p t \<Longrightarrow>
+ (\<lbrakk>vwalk_bet G s p t; (\<And> e. e \<in> set (edges_of_vwalk p) \<Longrightarrow> f e < u e)\<rbrakk> \<Longrightarrow> P ) 
+ \<Longrightarrow> P"
   by(auto simp add: unsaturated_path_simple_def)
 
-lemma unsaturated_path_simple_mono: "unsaturated_path_simple G u f s p t  \<Longrightarrow>
-     (\<And> e. e \<in> set (edges_of_vwalk p) \<Longrightarrow> f' e \<le> f e) \<Longrightarrow> unsaturated_path_simple G u f' s p t "
+lemma unsaturated_path_simple_mono: 
+ "\<lbrakk>unsaturated_path_simple G u f s p t; (\<And> e. e \<in> set (edges_of_vwalk p) \<Longrightarrow> f' e \<le> f e)\<rbrakk>
+  \<Longrightarrow> unsaturated_path_simple G u f' s p t "
   by(auto intro: preorder_class.order.strict_trans1[of "f' _" "f _" "u _"] 
           intro!: unsaturated_path_simpleI
           elim!: unsaturated_path_simpleE)
 
-context multigraph_spec
+subsection \<open>Distances and Level Graphs for Multigraphs\<close>
+
+context 
+ multigraph_spec
 begin
 
 definition "multigraph_distance u v = distance (make_pair ` \<E>) u v"
 
-lemma multigraph_distance_lessI[def_intros]: "distance (make_pair ` \<E>) u v \<le> d \<Longrightarrow> multigraph_distance u v\<le> d"
+lemma multigraph_distance_lessI: 
+ "distance (make_pair ` \<E>) u v \<le> d \<Longrightarrow> multigraph_distance u v\<le> d"
   by(auto simp add: multigraph_distance_def)
 
-lemma multigraph_distance_gtrI[def_intros]: "distance (make_pair ` \<E>) u v \<ge> d
- \<Longrightarrow> multigraph_distance u v\<ge> d"
+lemma multigraph_distance_gtrI: 
+ "distance (make_pair ` \<E>) u v \<ge> d  \<Longrightarrow> multigraph_distance u v\<ge> d"
   by(auto simp add: multigraph_distance_def)
 
-lemma multigraph_distance_lessE[def_elims]: 
-"multigraph_distance u v\<le> d \<Longrightarrow> (distance (make_pair ` \<E>) u v \<le> d \<Longrightarrow> P) \<Longrightarrow> P"
+lemma multigraph_distance_lessE: 
+ "\<lbrakk>multigraph_distance u v\<le> d; (distance (make_pair ` \<E>) u v \<le> d \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
   by(auto simp add: multigraph_distance_def)
 
-lemma multigraph_distanceI[def_intros]:
+lemma multigraph_distanceI:
  "distance (make_pair ` \<E>) u v = d \<Longrightarrow> multigraph_distance u v= d"
   by(auto simp add: multigraph_distance_def)
 
-lemma multigraph_distanceE[def_elims]: 
-"multigraph_distance u v = d \<Longrightarrow> (distance (make_pair ` \<E>) u v = d \<Longrightarrow> P) \<Longrightarrow> P"
+lemma multigraph_distanceE: 
+ "\<lbrakk>multigraph_distance u v = d; (distance (make_pair ` \<E>) u v = d \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
   by(auto simp add: multigraph_distance_def)
 
 lemmas P_of_multigraph_distanceI = forw_subst[OF multigraph_distance_def] 
@@ -50,28 +66,29 @@ lemmas P_of_multigraph_distanceI = forw_subst[OF multigraph_distance_def]
 definition "multigraph_distance_set S v = distance_set (make_pair ` \<E>) S v"
 
 lemma multigraph_distance_set_singleton:
-"multigraph_distance_set {u} v = distance (make_pair ` \<E>) u v"
+ "multigraph_distance_set {u} v = distance (make_pair ` \<E>) u v"
   by(auto simp add: multigraph_distance_set_def distance_set_single_source)
 
-lemma multigraph_distance_set_lessI[def_intros]:
+lemma multigraph_distance_set_lessI:
  "distance_set (make_pair ` \<E>) S v \<le> d \<Longrightarrow> multigraph_distance_set S v\<le> d"
   by(auto simp add: multigraph_distance_set_def)
 
-lemma multigraph_distance_set_lessE[def_elims]: 
-"multigraph_distance_set S v\<le> d \<Longrightarrow> (distance_set (make_pair ` \<E>) S v \<le> d \<Longrightarrow> P) \<Longrightarrow> P"
+lemma multigraph_distance_set_lessE: 
+ "\<lbrakk>multigraph_distance_set S v\<le> d; (distance_set (make_pair ` \<E>) S v \<le> d \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
   by(auto simp add: multigraph_distance_set_def)
 
-lemma multigraph_distance_setI[def_intros]:
+lemma multigraph_distance_setI:
  "distance_set (make_pair ` \<E>) S v = d \<Longrightarrow> multigraph_distance_set S v = d"
   by(auto simp add: multigraph_distance_set_def)
 
-lemma multigraph_distance_setE[def_elims]: 
-"multigraph_distance_set S v = d \<Longrightarrow> (distance_set (make_pair ` \<E>) S v = d \<Longrightarrow> P) \<Longrightarrow> P"
+lemma multigraph_distance_setE: 
+ "\<lbrakk>multigraph_distance_set S v = d; (distance_set (make_pair ` \<E>) S v = d \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
   by(auto simp add: multigraph_distance_set_def)
 
 lemma multigraph_distance_set_singleton_is:
-"multigraph_distance_set {u} v =  distance (make_pair ` \<E>) u v"
-  by(auto simp add: distance_set_def multigraph_distance_set_def)
+ "multigraph_distance_set {u} v =  distance (make_pair ` \<E>) u v"
+ "multigraph_distance_set {u} v =  multigraph_distance u v"
+ by(auto simp add: distance_set_def multigraph_distance_set_def multigraph_distance_def)
 
 lemmas P_of_multigraph_distance_setI = forw_subst[OF multigraph_distance_set_def] 
 lemmas P_of_multigraph_distance_setD = forw_subst[OF multigraph_distance_set_def[symmetric]]
@@ -79,33 +96,39 @@ lemmas P_of_multigraph_distance_setD = forw_subst[OF multigraph_distance_set_def
 definition "multi_level_graph S = {e | e. e \<in> \<E> \<and> multigraph_distance_set S (fst e) + 1 =
                                                    multigraph_distance_set S (snd e)}"
 
-lemma in_multi_level_graphI[def_intros]:
-" e \<in> \<E> \<Longrightarrow> multigraph_distance_set S (fst e) + 1 =  multigraph_distance_set S (snd e)
-\<Longrightarrow> e \<in> multi_level_graph S"
+lemma in_multi_level_graphI:
+ "\<lbrakk>e \<in> \<E>; multigraph_distance_set S (fst e) + 1 =  multigraph_distance_set S (snd e)\<rbrakk>
+  \<Longrightarrow> e \<in> multi_level_graph S"
   by(auto simp add: multi_level_graph_def)
 
-lemma in_multi_level_graphE[def_elims]:
-"e \<in> multi_level_graph S \<Longrightarrow>
- ( e \<in> \<E> \<Longrightarrow> multigraph_distance_set S (fst e) + 1 =  multigraph_distance_set S (snd e) \<Longrightarrow> P)
-\<Longrightarrow> P"
+lemma in_multi_level_graphE:
+ "e \<in> multi_level_graph S \<Longrightarrow>
+ (\<lbrakk>e \<in> \<E>; multigraph_distance_set S (fst e) + 1 =  multigraph_distance_set S (snd e)\<rbrakk> \<Longrightarrow> P)
+ \<Longrightarrow> P"
   by(auto simp add: multi_level_graph_def)
 
 lemmas P_of_multi_level_graph = forw_subst[OF multi_level_graph_def] 
-lemmas [def_intros] = in_level_graphI' in_level_graphI
-lemmas [def_elims]  = in_level_graphE' in_level_graphE
+
+lemma multi_level_graph_alt_def: 
+ "multi_level_graph S = {e | e. e \<in> \<E> \<and> make_pair e \<in> level_graph  (make_pair ` \<E>) S}"
+  by(auto intro!: in_level_graphI in_multi_level_graphI
+           elim!: in_multi_level_graphE  in_level_graphE
+        simp add: multigraph_distance_setI make_pair)
+
+lemma projection_of_multi_level_graph_is:
+  "make_pair ` multi_level_graph S = level_graph (make_pair ` \<E>) S"
+  by(auto simp add: multi_level_graph_alt_def 
+             elim!: in_level_graphE' 
+            intro!: in_level_graphI')
 end
 
-context multigraph
+context 
+ multigraph
 begin
-thm def_intros
-lemma multi_level_graph_is: "multi_level_graph S = 
-  {e | e. e \<in> \<E> \<and> make_pair e \<in> level_graph  (make_pair ` \<E>) S}"
-  by(auto intro!:  def_intros elim!:  def_elims 
-        simp add: def_intros  make_pair'' make_pair')
 
 lemma multigraph_path_multigraph_distance:
   assumes  "multigraph_path p" "p \<noteq> []" "fst (hd p) = s" "snd (last p) = t" "set p \<subseteq> \<E>"
-  shows "multigraph_distance s t \<le> length p"
+  shows    "multigraph_distance s t \<le> length p"
 proof-
   have length_verts:"length p = length (awalk_verts s (map make_pair p)) - 1"
     using assms(1,2,3,4) 
@@ -113,12 +136,16 @@ proof-
   show ?thesis
     apply(unfold length_verts)
     using assms subset_mono_awalk'[of UNIV s "map make_pair p" t  "make_pair ` \<E>"]
-    by(force intro!:def_intros vwalk_bet_dist intro: awalk_imp_vwalk 
+    by(force intro!: vwalk_bet_dist multigraph_distance_lessI intro: awalk_imp_vwalk 
                elim: multigraph_pathE)
 qed  
 end
 
-context flow_network_spec
+
+subsection \<open>Blocking Flows\<close>
+
+context 
+  flow_network_spec
 begin
 
 definition "is_blocking_flow s t f = (is_s_t_flow f s t \<and> 
@@ -127,76 +154,87 @@ definition "is_blocking_flow s t f = (is_s_t_flow f s t \<and>
                                            (\<forall> e \<in> set p. f e < \<u> e)))"
 
 lemma is_blocking_flowI:
-"is_s_t_flow f s t \<Longrightarrow> (\<And> p.
- multigraph_path p \<Longrightarrow> p \<noteq> [] \<Longrightarrow> fst (hd p) = s \<Longrightarrow>snd (last p) = t
- \<Longrightarrow> set p \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set p \<Longrightarrow> f e < \<u> e) \<Longrightarrow> False) 
-\<Longrightarrow> is_blocking_flow s t f"
+ "\<lbrakk>is_s_t_flow f s t;
+   (\<And> p.\<lbrakk> multigraph_path p;  p \<noteq> []; fst (hd p) = s; snd (last p) = t; 
+          set p \<subseteq> \<E>; (\<And> e. e \<in> set p \<Longrightarrow> f e < \<u> e)\<rbrakk> \<Longrightarrow> False)\<rbrakk> 
+  \<Longrightarrow> is_blocking_flow s t f"
   by(auto simp add: is_blocking_flow_def)
 
 lemma is_blocking_flowE:
-"is_blocking_flow s t f \<Longrightarrow>
-(is_s_t_flow f s t \<Longrightarrow> (\<And> p.
- multigraph_path p \<Longrightarrow> p \<noteq> [] \<Longrightarrow> fst (hd p) = s \<Longrightarrow>snd (last p) = t
- \<Longrightarrow> set p \<subseteq> \<E> \<Longrightarrow> (\<And> e. e \<in> set p \<Longrightarrow> f e < \<u> e) \<Longrightarrow> False) 
-\<Longrightarrow> P) \<Longrightarrow> P"
+  "is_blocking_flow s t f \<Longrightarrow>
+  (\<lbrakk>is_s_t_flow f s t; 
+   (\<And> p. \<lbrakk>multigraph_path p; p \<noteq> []; fst (hd p) = s; snd (last p) = t;
+           set p \<subseteq> \<E>; (\<And> e. e \<in> set p \<Longrightarrow> f e < \<u> e)\<rbrakk> \<Longrightarrow> False)\<rbrakk> \<Longrightarrow> P) 
+  \<Longrightarrow> P"
   by(auto simp add: is_blocking_flow_def)
 
+subsection \<open>The Level Graph for the Residual Graph\<close>
+
 interpretation residual_multigraph_spec: 
-  multigraph_spec  "{e | e. e \<in> \<EE> \<and> rcap f e > 0}"  fstv sndv
-  "\<lambda> u v. F (create_edge u v)" for f
+  multigraph_spec  "{e | e. e \<in> \<EE> \<and> rcap f e > 0}"  fstv sndv "\<lambda> u v. F (create_edge u v)" for f
   done
 
-definition "residual_distance f u v =
-            residual_multigraph_spec.multigraph_distance f u v"
+definition "residual_distance f u v = residual_multigraph_spec.multigraph_distance f u v"
 
 lemma residual_make_pair_is[simp]: "residual_multigraph_spec.make_pair = to_vertex_pair"
   apply(rule ext)
   subgoal for e
     by(cases e)
-       (auto simp add: residual_multigraph_spec.make_pair_def make_pair)
+      (auto simp add: residual_multigraph_spec.make_pair_def make_pair)
   done
 
-lemma residual_distance_is:
-"residual_distance f u v = distance (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) u v"
-  by(auto simp add: residual_distance_def residual_multigraph_spec.multigraph_distance_def
-                           multigraph_spec.multigraph_distance_def)
-
-lemmas [def_intros] = forw_subst[OF residual_distance_def]
-lemmas [def_elims] = forw_subst[OF residual_distance_def[symmetric]]
-
-lemma resdidual_distance_lessI[def_intros]:
+lemma residual_distance_alt_def:
+  "residual_distance f u v = distance (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) u v"
+  by(auto simp add: residual_distance_def multigraph_spec.multigraph_distanceI)
+  
+lemma resdidual_distance_lessI:
  "residual_multigraph_spec.multigraph_distance f u v \<le> d \<Longrightarrow> residual_distance f u v \<le> d"
-  by(auto intro: def_intros)
+  by (simp add: residual_distance_def)
 
-lemma resdidual_distance_gtrI[def_intros]:
+lemma resdidual_distance_gtrI:
  "residual_multigraph_spec.multigraph_distance f u v \<ge> d \<Longrightarrow> residual_distance f u v \<ge> d"
-  by(auto intro: def_intros)
+  by (simp add: residual_distance_def)
 
-lemma resdidual_distance_lessE[def_intros]:
- "residual_distance f u v \<le> d \<Longrightarrow>
- (residual_multigraph_spec.multigraph_distance f u v \<le> d \<Longrightarrow> P) \<Longrightarrow> P"
+lemma resdidual_distance_lessE:
+ "\<lbrakk>residual_distance f u v \<le> d;
+   (residual_multigraph_spec.multigraph_distance f u v \<le> d \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
   by(auto simp add: residual_distance_def)
 
 definition "residual_level_graph f s = residual_multigraph_spec.multi_level_graph f {s}"
-lemmas [def_intros] = forw_subst[OF residual_level_graph_def]
-lemmas [def_elims] = forw_subst[OF residual_level_graph_def[symmetric]]
-lemmas [def_intros] = forw_subst[OF level_graph_def]
-lemmas [def_elims] = forw_subst[OF level_graph_def[symmetric]]
+
+lemma residual_level_graph_alt_def:
+  "residual_level_graph f s = {e |  e. e \<in> \<EE> \<and> rcap f e > 0 \<and>
+                residual_multigraph_spec.multigraph_distance f s (fstv e) + 1 = 
+                residual_multigraph_spec.multigraph_distance f s (sndv e)}"
+ by(auto simp add: residual_level_graph_def multigraph_spec.multigraph_distance_set_singleton_is(2)
+            elim!: multigraph_spec.in_multi_level_graphE
+           intro!: multigraph_spec.in_multi_level_graphI)
 
 lemma in_residual_level_graphI: 
-"e \<in> residual_multigraph_spec.multi_level_graph f {s} \<Longrightarrow> 
-e \<in> residual_level_graph f s"
+  "e \<in> residual_multigraph_spec.multi_level_graph f {s} \<Longrightarrow> e \<in> residual_level_graph f s"
   by(auto simp add: residual_level_graph_def)
 
 lemma in_residual_level_graphE: 
-"e \<in> residual_level_graph f s \<Longrightarrow>
-(e \<in> residual_multigraph_spec.multi_level_graph f {s} \<Longrightarrow>  P) \<Longrightarrow> P"
+  "\<lbrakk>e \<in> residual_level_graph f s;
+   (e \<in> residual_multigraph_spec.multi_level_graph f {s} \<Longrightarrow>  P)\<rbrakk> 
+   \<Longrightarrow> P"
   by(auto simp add: residual_level_graph_def)
 
-interpretation residual_level_flow: flow_network_spec fstv sndv 
-  "\<lambda> u v. F (create_edge u v)" "residual_level_graph f s" 
-  "rcap f" 
-  for f s
+lemma residual_level_graph_in_E: "residual_level_graph f s \<subseteq> \<EE>"
+  by(auto elim: in_residual_level_graphE multigraph_spec.in_multi_level_graphE)
+
+lemma residual_level_graph_in_E_pos: "residual_level_graph f s \<subseteq> {e| e. e \<in> \<EE> \<and> rcap f e > 0}"
+  by(auto elim: in_residual_level_graphE multigraph_spec.in_multi_level_graphE)
+
+lemma in_E_level_craph_cases: 
+  "\<lbrakk> e \<in> \<EE>;
+    \<lbrakk>e \<in> residual_level_graph f s; e \<in> \<EE>\<rbrakk> \<Longrightarrow> P e;
+    \<lbrakk>e \<notin> residual_level_graph f s; e \<in> \<EE>\<rbrakk> \<Longrightarrow> P e\<rbrakk>
+   \<Longrightarrow> P e"
+  by auto
+
+interpretation residual_level_flow: 
+  flow_network_spec fstv sndv "\<lambda> u v. F (create_edge u v)" "residual_level_graph f s" "rcap f" for f s
   done
 
 lemma residual_level_flow_make_pair_is[simp]: "residual_level_flow.make_pair = to_vertex_pair"
@@ -210,28 +248,26 @@ definition "residual_level_blocking_flow f s t g=
        residual_level_flow.is_blocking_flow f s s t g"
 
 lemma residual_level_blocking_flowI: 
-" residual_level_flow.is_blocking_flow f s s t g ==> residual_level_blocking_flow f s t g "
+" residual_level_flow.is_blocking_flow f s s t g \<Longrightarrow> residual_level_blocking_flow f s t g "
   by(auto simp add: residual_level_blocking_flow_def)
 
 lemma not_residual_level_blocking_flowI: 
-"residual_level_flow.multigraph_path p \<Longrightarrow> p \<noteq> [] \<Longrightarrow>
- fstv (hd p) = s  \<Longrightarrow> sndv (last p) = t \<Longrightarrow> set p \<subseteq> residual_level_graph f s \<Longrightarrow>
- (\<And> e. e\<in>set p \<Longrightarrow> ereal (g e) < \<uu>\<^bsub>f\<^esub>e) \<Longrightarrow>
-\<not> residual_level_blocking_flow f s t g"
+  "\<lbrakk>residual_level_flow.multigraph_path p; p \<noteq> []; fstv (hd p) = s; sndv (last p) = t;
+    set p \<subseteq> residual_level_graph f s; (\<And> e. e\<in>set p \<Longrightarrow> ereal (g e) < \<uu>\<^bsub>f\<^esub>e)\<rbrakk>
+    \<Longrightarrow> \<not> residual_level_blocking_flow f s t g"
   by(auto simp add: residual_level_flow.is_blocking_flow_def residual_level_blocking_flow_def)
 
 lemma residual_level_blocking_flowE: 
-"residual_level_blocking_flow f s t g \<Longrightarrow>
-( residual_level_flow.is_blocking_flow f s s t g ==> P) \<Longrightarrow> P "
+ "\<lbrakk>residual_level_blocking_flow f s t g; (residual_level_flow.is_blocking_flow f s s t g \<Longrightarrow> P)\<rbrakk>
+    \<Longrightarrow> P "
   by(auto simp add: residual_level_blocking_flow_def)
 
-text \<open>Augmentation by flow in residual graph\<close>
-
 definition "augment_residual_flow f rf = (\<lambda> e. f e + rf (F e) - rf (B e))"
-lemmas P_of_augment_residual_flowI[def_intros] = forw_subst[OF augment_residual_flow_def]
-lemmas P_of_augment_residual_flowE[def_elims] = forw_subst[OF augment_residual_flow_def[symmetric]]
+lemmas P_of_augment_residual_flowI = forw_subst[OF augment_residual_flow_def]
+lemmas P_of_augment_residual_flowE = forw_subst[OF augment_residual_flow_def[symmetric]]
 end
-context flow_network
+context 
+ flow_network
 begin
 interpretation residual_network_spec: 
   flow_network_spec fstv sndv 
@@ -250,120 +286,23 @@ lemma same_V: "residual_network_spec.\<V> = \<V>"
   by(auto simp add: \<EE>_def dVs_def image_Un Setcompr_eq_image image_comp)
 
 lemma projection_of_residual_level_graph_is:
- "to_vertex_pair ` residual_level_graph f s = level_graph (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) {s}"
- by(auto simp add:  multigraph_spec.multigraph_distance_set_singleton_is distance_set_single_source
-                        vs_to_vertex_pair_pres(1,2)
-     intro!: in_level_graphI'  multigraph_spec.in_multi_level_graphI in_residual_level_graphI
-      elim!: in_level_graphE'  multigraph_spec.in_multi_level_graphE in_residual_level_graphE)
+  "to_vertex_pair ` residual_level_graph f s =
+    level_graph (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) {s}"
+  using multigraph_spec.projection_of_multi_level_graph_is[of fstv sndv]
+  by(simp add:  residual_level_graph_def)
 
-lemma residual_level_graph_is:
- "residual_level_graph f s = 
-{e | e. e \<in> \<EE> \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and>
+lemma residual_level_graph_alt_def:
+ "residual_level_graph f s =  {e | e. e \<in> \<EE> \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and>
     distance (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s (sndv e) =
-    distance  (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s (fstv e) + 1 }"
- by(auto simp add:  multigraph_spec.multigraph_distance_set_singleton_is distance_set_single_source
-                        vs_to_vertex_pair_pres(1,2)
-     intro!: in_level_graphI'  multigraph_spec.in_multi_level_graphI in_residual_level_graphI
-      elim!: in_level_graphE'  multigraph_spec.in_multi_level_graphE in_residual_level_graphE)
+    distance (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s (fstv e) + 1 }"
+ by(auto simp add: residual_level_graph_alt_def multigraph_spec.multigraph_distance_def)
 
 lemma in_residual_level_graphI':
-"e \<in> \<EE> \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow>
-    distance (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s (sndv e) =
-    distance  (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s (fstv e) + 1
-\<Longrightarrow> e \<in> residual_level_graph f s"
- by(auto simp add:  multigraph_spec.multigraph_distance_set_singleton_is distance_set_single_source
-                        vs_to_vertex_pair_pres(1,2)
-     intro!: in_level_graphI'  multigraph_spec.in_multi_level_graphI in_residual_level_graphI)
-
-lemma augment_s_t_flow_by_residual_s_t_flow:
-  assumes "is_s_t_flow f s t"  "residual_network_spec.is_s_t_flow f rf s t "
-  shows   "is_s_t_flow (augment_residual_flow f rf) s t"
-proof(rule P_of_augment_residual_flowI, rule is_s_t_flowI)
-  show "s \<in> \<V>"  "t \<in> \<V>"  "s \<noteq> t"
-    using assms(1) by(auto elim: is_s_t_flowE)
-  show "isuflow (\<lambda>e. f e + rf (F e) - rf (B e))"
-  proof(rule isuflowI)
-    fix e
-    assume asm: "e \<in> \<E>"
-    have e_props:"ereal (f e) \<le> \<u> e" "0 \<le> f e"
-      "ereal (rf (F e)) \<le> \<u> e - f e" "0 \<le>  (rf (F e))"
-      "(rf (B e)) \<le> f e" "0 \<le> (rf (B e))"
-           apply(all \<open>rule isuflowE[of f, OF is_s_t_flowE[OF assms(1)], simplified]\<close>)
-           apply(all \<open>rule  residual_network_spec.isuflowE[of f rf, OF 
-                  residual_network_spec.is_s_t_flowE[OF assms(2)], simplified]\<close>)
-      using asm
-      by(force simp add: \<EE>_def)+
-    show "ereal (f e + rf (F e) - rf (B e)) \<le> \<u> e" "0 \<le> f e + rf (F e) - rf (B e)"
-      using e_props 
-      by (auto simp add: ereal_le_le ereal_umst zero_ereal_def)
-  qed
-  have many_finites:
-    "finite {e. (\<exists>d. e = fa d \<and> d \<in> \<E>) \<and> fb e = (x::'v)}" for fa fb x
-    by (simp add: finite_E)
-  have some_disjoint:
-    "{e. (\<exists>d. e = F d \<and> d \<in> \<E>) \<and> fa e = x} \<inter>
-     {e. (\<exists>d. e = B d \<and> d \<in> \<E>) \<and> fb e = y} =
-      {}" for fa fb x y by blast
-  have sum_set_simps:
-    "{e. (\<exists>d. e = F d \<and> d \<in> \<E>) \<and> sndv e = s} = F` {e. e \<in> \<E> \<and> snd e = s}" 
-    "{e. (\<exists>d. e = B d \<and> d \<in> \<E>) \<and> fstv e = s} = B` {e. e \<in> \<E> \<and> snd e = s}" 
-    "{e. (\<exists>d. e = F d \<and> d \<in> \<E>) \<and> fstv e = s} = F` {e. e \<in> \<E> \<and> fst e = s}" 
-    "{e. (\<exists>d. e = B d \<and> d \<in> \<E>) \<and> sndv e = s} = B` {e. e \<in> \<E> \<and> fst e = s}"  for s      
-    by auto
-  note help1 = comm_monoid_add_class.sum.union_disjoint[OF
-                                       many_finites  many_finites some_disjoint]
-  show "ex\<^bsub>\<lambda>e. f e + rf (F e) - rf (B e)\<^esub> s \<le> 0"
-  proof-
-    have "ex\<^bsub>f\<^esub> s \<le> 0" "residual_network_spec.ex rf s \<le> 0" 
-      by(auto intro:  assms(1) is_s_t_flowE residual_network_spec.is_s_t_flowE assms(2))
-    then show ?thesis
-      using help1[of rf fstv s fstv ]  help1[of rf  sndv s sndv]
-      by(auto intro: ordered_ab_semigroup_add_class.add_mono
-          simp add: conj_disj_distribR Collect_disj_eq
-          comm_monoid_add_class.sum.distrib[of "\<lambda> e. f e" "\<lambda> e.  rf (F e) - rf (B e)", simplified]
-          comm_monoid_add_class.sum.distrib[of "\<lambda> e. rf (F e)" "\<lambda> e. - rf (B e)", simplified]
-          sum_set_simps sum_negf sum_inj_on[OF F_and_B_inj_on(1)] 
-          sum_inj_on[OF F_and_B_inj_on(2)] finite_E
-          ex_def residual_network_spec.ex_def
-          residual_network_spec.delta_minus_def residual_network_spec.delta_plus_def
-          delta_plus_def delta_minus_def \<EE>_def flow_network_spec.ex_def 
-          multigraph_spec.delta_minus_def multigraph_spec.delta_plus_def
-          semigroup_add_class.add.assoc[of "_::real" _ "- _", simplified minus_real_def[symmetric]])
-  qed
-  note helper3=comm_monoid_add_class.sum.union_disjoint
-                              [OF many_finites many_finites some_disjoint]
-  show "ex\<^bsub>\<lambda>e. f e + rf (F e) - rf (B e)\<^esub> x = 0" 
-    if asm: "x \<in> \<V>" "x \<noteq> s" "x \<noteq> t" for x
-  proof(goal_cases)
-    case 1
-    have "ex\<^bsub>f\<^esub> x = 0" "residual_network_spec.ex rf x = 0"
-      using asm  
-      by(auto intro: is_s_t_flowE assms(1) residual_network_spec.is_s_t_flowE[OF assms(2)]
-          simp add: same_V[symmetric])
-    then show ?case 
-      by(auto simp add: ex_def delta_plus_def residual_network_spec.ex_def delta_minus_def \<EE>_def
-          residual_network_spec.delta_minus_def residual_network_spec.delta_plus_def 
-          flow_network_spec.ex_def multigraph_spec.delta_minus_def conj_disj_distribR 
-          Collect_disj_eq multigraph_spec.delta_plus_def 
-          comm_monoid_add_class.sum.distrib[of "\<lambda> e. f e" "\<lambda> e.  rf (F e) - rf (B e)", simplified]
-          comm_monoid_add_class.sum.distrib[of "\<lambda> e. rf (F e)" "\<lambda> e. - rf (B e)", simplified]
-          semigroup_add_class.add.assoc[of "_::real" _ "- _", simplified minus_real_def[symmetric]]
-          sum_set_simps[of x]  sum_inj_on[OF F_and_B_inj_on(1)] sum_inj_on[OF F_and_B_inj_on(2)] 
-          sum_negf helper3[of rf sndv x sndv x, simplified sum_set_simps]
-          helper3[of rf fstv x fstv x, simplified sum_set_simps])
-  qed
-qed
-
-lemma residual_level_graph_in_E: "residual_level_graph f s \<subseteq> \<EE>"
-  by(auto elim: in_residual_level_graphE multigraph_spec.in_multi_level_graphE)
-
-lemma residual_level_graph_in_E_pos: "residual_level_graph f s \<subseteq> {e| e. e \<in> \<EE> \<and> rcap f e > 0}"
-  by(auto elim: in_residual_level_graphE multigraph_spec.in_multi_level_graphE)
-
-lemma in_E_level_craph_cases: 
-  "e \<in> \<EE> \<Longrightarrow> (e \<in> residual_level_graph f s \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> P e) \<Longrightarrow>
-  (e \<notin> residual_level_graph f s\<Longrightarrow> e \<in> \<EE>  \<Longrightarrow> P e) \<Longrightarrow> P e"
-  by auto
+ "\<lbrakk>e \<in> \<EE>; 0 < \<uu>\<^bsub>f\<^esub>e;
+   distance (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s (sndv e) =
+   distance  (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s (fstv e) + 1\<rbrakk>
+  \<Longrightarrow> e \<in> residual_level_graph f s"
+  by (simp add: residual_level_graph_alt_def)
 
 lemma augpath_length_less_res_distance:
   assumes "augpath f p" "p \<noteq> []" "fstv (hd p) = s" "sndv (last p) = x" "set p \<subseteq> \<EE>"
@@ -410,7 +349,7 @@ proof-
       simp add:  projection_of_residual_level_graph_is)
   thus ?thesis 
    by(simp add:  awalk_verts_length[OF p_props(1)] 
-           residual_distance_is distance_set_single_source plus_1_eSuc(2))
+           residual_distance_alt_def distance_set_single_source plus_1_eSuc(2))
 qed
 
 lemma resreach_residual_dist_less_infty:
@@ -441,7 +380,7 @@ proof(goal_cases)
   obtain vp where vp:"residual_distance f s x =
                    length vp -1" "vwalk_bet (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s vp x"
     using assms(1) dist_set_less_infty_get_path[of _ "{s}" x]
-    by(force simp add: residual_distance_is  distance_set_single_source) 
+    by(force simp add: residual_distance_alt_def  distance_set_single_source) 
   hence awalk:"awalk (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s (edges_of_vwalk vp) x"
     by(auto intro: vwalk_imp_awalk)
   moreover then obtain p where p_prop:" map to_vertex_pair p = edges_of_vwalk vp"
@@ -466,7 +405,7 @@ proof(goal_cases)
     have path_in_lg:"vwalk_bet (level_graph (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) {s}) s vp x"
       using  vp(1)  p_prop(1) edges_of_vwalk_length[of vp] p_vp(4) not_less_eq_eq 
       by (force intro: dist_walk_in_level_graph[OF vp(2), of "{s}", simplified] 
-          simp add: residual_distance_is distance_set_single_source)
+          simp add: residual_distance_alt_def distance_set_single_source)
     show ?thesis
       using walk_in_level_graph_distance(2)[OF path_in_lg, simplified] p_prop(2) 
           to_vertex_pair_fst_snd[symmetric] 
@@ -480,15 +419,14 @@ qed
 
 lemma resdist_triangle_single_edge:
   assumes "rcap f e >0 " "e \<in> \<EE>" "fstv e = x" "sndv e = y"
-  shows "residual_distance f s y \<le> residual_distance f s x + 1"
+  shows   "residual_distance f s y \<le> residual_distance f s x + 1"
   using assms
   by(auto intro!: neighbourhoodD distance_neighbourhood' 
-      simp add:  residual_distance_is  to_vertex_pair_fst_snd)
+      simp add:  residual_distance_alt_def  to_vertex_pair_fst_snd)
 
 lemma not_both_directions_in_level_graph:
-  assumes "(F e) \<in> residual_level_graph f s" 
-    "(B e) \<in> residual_level_graph f s" 
-    "resreach f s (fst e) \<or> resreach f s (snd e) \<or> fst e = s \<or> snd e = s"
+  assumes "(F e) \<in> residual_level_graph f s" "(B e) \<in> residual_level_graph f s" 
+          "resreach f s (fst e) \<or> resreach f s (snd e) \<or> fst e = s \<or> snd e = s"
   shows False
 proof-
   have dist_less_pinfty:"residual_distance f s (snd e) < \<infinity>"
@@ -499,10 +437,10 @@ proof-
     then obtain i where "enat i + 1 =
          distance (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s (snd e)"
       using assms(1) 
-      by(auto simp add: residual_distance_is residual_level_graph_is distance_set_def) 
+      by(auto simp add: residual_distance_alt_def residual_level_graph_alt_def distance_set_def) 
     thus ?thesis 
       using assms(1) 
-      by(auto simp add: plus_1_eSuc(2) residual_distance_is
+      by(auto simp add: plus_1_eSuc(2) residual_distance_alt_def
           intro!: exI[of _ "i+1"])
   next
     case 2
@@ -522,19 +460,17 @@ proof-
         using assms(1,2) make_pair 
         by(auto intro!: distance_neighbourhood exI[of _ "F e"] resdidual_distance_lessI
                     multigraph_spec.multigraph_distance_lessI neighbourhoodD
-            simp add:  residual_level_graph_is image_Collect)
-      moreover hence  "fst e = s \<Longrightarrow>
-                      residual_distance f (snd e) (fst e) \<le> 1" 
+            simp add:  residual_level_graph_alt_def image_Collect)
+      moreover hence  "fst e = s \<Longrightarrow> residual_distance f (snd e) (fst e) \<le> 1" 
         using assms(1,2) make_pair 
-        by(auto simp add: residual_distance_is distance_set_single_source
+        by(auto simp add: residual_distance_alt_def distance_set_single_source
                multigraph_spec.multigraph_distance_set_singleton image_iff 
             dest: sym[of "distance _ _ _ + 1" "distance _ _ _ "] 
             intro!:  resdidual_distance_lessI distance_neighbourhood neighbourhoodD exI[of _ "B e"]
              elim!: in_residual_level_graphE multigraph_spec.in_multi_level_graphE) 
-      moreover have "snd e = s \<Longrightarrow>
-                      residual_distance f (snd e) (snd e) = 0" 
+      moreover have "snd e = s \<Longrightarrow> residual_distance f (snd e) (snd e) = 0" 
         using s_in_lg assms(1,2) make_pair fst_snd_e_less_1
-        by(auto simp add: image_Collect residual_distance_is
+        by(auto simp add: image_Collect residual_distance_alt_def
             intro!: distance_0I elim: in_residual_level_graphE )
       ultimately show ?thesis
         using 2 enat_ile enat_0 by fastforce
@@ -543,17 +479,115 @@ proof-
   have dist_plus:"residual_distance f s (snd e) = residual_distance f s (fst e) + 1"
                  "residual_distance f s (fst e) = residual_distance f s (snd e) + 1"   
     using assms
-    by(auto simp add: residual_level_graph_is residual_distance_is )
+    by(auto simp add: residual_level_graph_alt_def residual_distance_alt_def )
   hence "residual_distance f s (snd e) = residual_distance f s (snd e) + 2" by simp
   then show ?thesis 
     using dist_less_pinfty by simp
 qed
 
+lemma resreach_dist_number_of_verts_bound:
+  assumes  "resreach f s t"
+  shows    "residual_distance f s t < card \<V>"
+proof-
+  note dist_s_t_le_infty = resreach_residual_dist_less_infty[OF assms(1)]
+  hence "distance (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s t
+             < enat (card (dVs (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu})))"
+    by(auto intro!: distance_less_vert_card
+             simp add: finite_\<EE> residual_distance_alt_def)
+  moreover have "card (dVs (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu})) \<le> card \<V>"
+    using \<V>_finite
+    by(auto intro!: card_mono simp add: dVs_def \<EE>_def make_pair')+
+  ultimately show ?thesis
+    using less_enatE
+    by(fastforce simp add: residual_distance_alt_def)
+qed
+
+subsection \<open>Augmentation by Blocking Flows in the Residual Level Graph\<close>
+
+lemma augment_s_t_flow_by_residual_s_t_flow:
+  assumes "is_s_t_flow f s t"  "residual_network_spec.is_s_t_flow f rf s t "
+  shows   "is_s_t_flow (augment_residual_flow f rf) s t"
+proof(rule P_of_augment_residual_flowI, rule is_s_t_flowI)
+  show "s \<in> \<V>"  "t \<in> \<V>"  "s \<noteq> t"
+    using assms(1) by(auto elim: is_s_t_flowE)
+  show "isuflow (\<lambda>e. f e + rf (F e) - rf (B e))"
+  proof(rule isuflowI)
+    fix e
+    assume asm: "e \<in> \<E>"
+    have e_props:"ereal (f e) \<le> \<u> e" "0 \<le> f e"
+      "ereal (rf (F e)) \<le> \<u> e - f e" "0 \<le>  (rf (F e))"
+      "(rf (B e)) \<le> f e" "0 \<le> (rf (B e))"
+           apply(all \<open>rule isuflowE[of f, OF is_s_t_flowE[OF assms(1)], simplified]\<close>)
+           apply(all \<open>rule  residual_network_spec.isuflowE[of f rf, OF 
+                  residual_network_spec.is_s_t_flowE[OF assms(2)], simplified]\<close>)
+      using asm
+      by(force simp add: \<EE>_def)+
+    show "ereal (f e + rf (F e) - rf (B e)) \<le> \<u> e" "0 \<le> f e + rf (F e) - rf (B e)"
+      using e_props 
+      by (auto simp add: ereal_le_le ereal_umst zero_ereal_def)
+  qed
+  have many_finites: "finite {e. (\<exists>d. e = fa d \<and> d \<in> \<E>) \<and> fb e = (x::'v)}" for fa fb x
+    by (simp add: finite_E)
+  have some_disjoint: "{e. (\<exists>d. e = F d \<and> d \<in> \<E>) \<and> fa e = x} \<inter> {e. (\<exists>d. e = B d \<and> d \<in> \<E>) \<and> fb e = y} 
+                    = {}" for fa fb x y by blast
+  have sum_set_simps: "{e. (\<exists>d. e = F d \<and> d \<in> \<E>) \<and> sndv e = s} = F` {e. e \<in> \<E> \<and> snd e = s}" 
+    "{e. (\<exists>d. e = B d \<and> d \<in> \<E>) \<and> fstv e = s} = B` {e. e \<in> \<E> \<and> snd e = s}" 
+    "{e. (\<exists>d. e = F d \<and> d \<in> \<E>) \<and> fstv e = s} = F` {e. e \<in> \<E> \<and> fst e = s}" 
+    "{e. (\<exists>d. e = B d \<and> d \<in> \<E>) \<and> sndv e = s} = B` {e. e \<in> \<E> \<and> fst e = s}"  for s      
+    by auto
+  note help1 = comm_monoid_add_class.sum.union_disjoint[OF
+      many_finites  many_finites some_disjoint]
+  have new_flow_delta_minus_split:"(\<Sum>e\<in>\<delta>\<^sup>- x. f e + rf (F e) - rf (B e)) =
+                   (\<Sum>e\<in>\<delta>\<^sup>- x. f e) + (\<Sum>e\<in>\<delta>\<^sup>- x. rf (F e)) - (\<Sum>e\<in>\<delta>\<^sup>- x. rf (B e))" for x
+    by (simp add: sum.distrib sum_subtractf)
+  have new_flow_delta_plus_split:"(\<Sum>e\<in>\<delta>\<^sup>+ x. f e + rf (F e) - rf (B e)) = 
+                   (\<Sum>e\<in>\<delta>\<^sup>+ x. f e) + (\<Sum>e\<in>\<delta>\<^sup>+ x. rf (F e)) - (\<Sum>e\<in>\<delta>\<^sup>+ x. rf (B e))" for x
+    by (simp add: sum.distrib sum_subtractf)
+  have residual_flow_delta_minus_split:
+    "sum rf (residual_network_spec.delta_minus x) = 
+                  (\<Sum>e\<in>\<delta>\<^sup>- x. rf (F e)) + (\<Sum>e\<in>\<delta>\<^sup>+ x. rf (B e))" for x
+    using help1[of rf  sndv x sndv]
+    by(auto simp add: conj_disj_distribR Collect_disj_eq sum_set_simps 
+        sum_inj_on[OF F_and_B_inj_on(1)] sum_inj_on[OF F_and_B_inj_on(2)] \<EE>_def
+        multigraph_spec.delta_minus_def multigraph_spec.delta_plus_def)
+  have residual_flow_delta_plus_split:
+    "sum rf (residual_network_spec.delta_plus x) = 
+                   (\<Sum>e\<in>\<delta>\<^sup>- x. rf (B e)) + (\<Sum>e\<in>\<delta>\<^sup>+ x. rf (F e))" for x
+    using help1[of rf fstv x fstv ]
+    by(auto simp add: conj_disj_distribR Collect_disj_eq sum_set_simps 
+        sum_inj_on[OF F_and_B_inj_on(1)] sum_inj_on[OF F_and_B_inj_on(2)] \<EE>_def 
+        multigraph_spec.delta_minus_def multigraph_spec.delta_plus_def) 
+  show "ex\<^bsub>\<lambda>e. f e + rf (F e) - rf (B e)\<^esub> s \<le> 0"
+  proof-
+    have excess_knwoledge:"ex\<^bsub>f\<^esub> s \<le> 0" "residual_network_spec.ex rf s \<le> 0" 
+      by(auto intro:  assms(1) is_s_t_flowE residual_network_spec.is_s_t_flowE assms(2))
+    thus ?thesis
+      by(simp add: ex_def residual_network_spec.ex_def residual_flow_delta_plus_split
+          residual_flow_delta_minus_split new_flow_delta_minus_split
+          new_flow_delta_plus_split)
+  qed
+  note helper3=comm_monoid_add_class.sum.union_disjoint
+    [OF many_finites many_finites some_disjoint]
+  show "ex\<^bsub>\<lambda>e. f e + rf (F e) - rf (B e)\<^esub> x = 0" 
+    if asm: "x \<in> \<V>" "x \<noteq> s" "x \<noteq> t" for x
+  proof(goal_cases)
+    case 1
+    have "ex\<^bsub>f\<^esub> x = 0" "residual_network_spec.ex rf x = 0"
+      using asm  
+      by(auto intro: is_s_t_flowE assms(1) residual_network_spec.is_s_t_flowE[OF assms(2)]
+          simp add: same_V[symmetric])
+    then show ?case 
+      by(simp add: ex_def residual_network_spec.ex_def residual_flow_delta_plus_split
+          residual_flow_delta_minus_split new_flow_delta_minus_split
+          new_flow_delta_plus_split)
+  qed
+qed
+
 lemma residual_level_blocking_flow_to_residual_flow:
   assumes "residual_level_blocking_flow f s t rf"
-    "\<And> e. e \<notin> residual_level_graph f s \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> rf e = 0"
-    "isuflow f"
-  shows "residual_network_spec.is_s_t_flow f rf s t"
+          "\<And> e. e \<notin> residual_level_graph f s \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> rf e = 0"
+          "isuflow f"
+    shows "residual_network_spec.is_s_t_flow f rf s t"
 proof-
   have rf_s_t_flow: "flow_network_spec.is_s_t_flow fstv sndv 
                       (residual_level_graph f s) (rcap f) rf s t"
@@ -566,7 +600,7 @@ proof-
       using rf_s_t_flow 
       by(auto intro: set_mp[OF dVs_subset, of ?lg]
               elim!: flow_network_spec.is_s_t_flowE
-           simp add: residual_level_graph_is)
+           simp add: residual_level_graph_alt_def)
     show "residual_network_spec.isuflow f rf" 
     proof(rule residual_network_spec.isuflowI)
       fix e
@@ -576,7 +610,7 @@ proof-
       show "ereal (rf e) \<le> \<uu>\<^bsub>f\<^esub>e" "0 \<le> rf e"
         using uflow assms(2)[of e] is_flow_rcap_non_neg[OF assms(3) asm]
         by(all \<open>cases "e \<in> residual_level_graph f s"\<close>)
-          (auto simp add: residual_level_graph_is asm zero_ereal_def
+          (auto simp add: residual_level_graph_alt_def asm zero_ereal_def
            intro: isuflowI elim: flow_network_spec.isuflowE) 
     qed
     have same_excess:
@@ -608,7 +642,7 @@ proof-
     show "residual_network_spec.ex rf s \<le> 0"
       using same_excess rf_s_t_flow
       by(auto elim: flow_network_spec.is_s_t_flowE)
-    show "x \<in> residual_network_spec.\<V> \<Longrightarrow> x \<noteq> s \<Longrightarrow> x \<noteq> t
+    show "\<lbrakk>x \<in> residual_network_spec.\<V>; x \<noteq> s; x \<noteq> t\<rbrakk>
             \<Longrightarrow> residual_network_spec.ex rf x = 0" for x
     proof(goal_cases)
       case 1
@@ -643,7 +677,7 @@ lemma blocking_flow_augment_dist_increase:
 proof-
   have is_s_t_flow_unfolded:
     "isuflow f" "s \<in> \<V>"  "t \<in> \<V>"  "s \<noteq> t" "ex\<^bsub>f\<^esub> s \<le> 0"
-    "\<And> x. x\<in>\<V> \<Longrightarrow> x \<noteq> s \<Longrightarrow> x \<noteq> t \<Longrightarrow> ex\<^bsub>f\<^esub> x = 0"
+    "\<And> x. \<lbrakk>x\<in>\<V>; x \<noteq> s; x \<noteq> t\<rbrakk> \<Longrightarrow> ex\<^bsub>f\<^esub> x = 0"
     using assms(2)  by(auto elim: is_s_t_flowE)
   hence is_s_t_flow_f':"is_s_t_flow f' s t "
     by(auto intro!: augment_s_t_flow_by_residual_s_t_flow assms
@@ -653,8 +687,8 @@ proof-
     by(auto intro!: residual_level_blocking_flow_to_residual_flow[OF
           assms(1,3) is_s_t_flow_unfolded(1)])
   have new_augpath_in_pos_res_edges_or_level_graph:
-    "augpath f' p \<Longrightarrow> set p \<subseteq> \<EE> \<Longrightarrow> set p \<subseteq> { e | e . e \<in> \<EE> \<and> rcap f e > 0} 
-        \<union> erev ` (residual_level_graph f s)" for p
+    "\<lbrakk>augpath f' p; set p \<subseteq> \<EE>\<rbrakk>
+      \<Longrightarrow> set p \<subseteq> { e | e . e \<in> \<EE> \<and> rcap f e > 0} \<union> erev ` (residual_level_graph f s)" for p
   proof(rule, goal_cases)
     case (1 e)
     note one = this
@@ -663,7 +697,7 @@ proof-
     have rcapfegeq0:"rcap f e \<ge> 0" "e \<in> \<EE>"
       using assms(2)  one(2,3)
       by(auto intro: is_flow_rcap_non_neg elim:  is_s_t_flowE)
-    have "rcap f e = 0 \<Longrightarrow> rcap f' e > 0 \<Longrightarrow> e \<in> erev ` (residual_level_graph f s)"
+    have "\<lbrakk>rcap f e = 0; rcap f' e > 0\<rbrakk> \<Longrightarrow> e \<in> erev ` (residual_level_graph f s)"
     proof(cases e, goal_cases)
       case (1 ee)
       have a1:"f' ee < \<u> ee" 
@@ -702,10 +736,9 @@ proof-
     thus ?case 
       using rcapef' rcapfegeq0(1,2) by force
   qed
-  have reach_before_pos_after_in_lg_unsatured_before:
-    "rf e < rcap f e"
+  have reach_before_pos_after_in_lg_unsatured_before: "rf e < rcap f e"
     if asms: "rcap f' e > 0" "e \<in> residual_level_graph f s" 
-      "resreach f s (fstv e) \<or> fstv e = s"for e
+             "resreach f s (fstv e) \<or> fstv e = s"for e
   proof(cases e)
     case (F ee)
     hence "f' ee < \<u> ee" 
@@ -733,15 +766,14 @@ proof-
       using  u_non_neg
       by(cases "\<u> ee") (auto simp add: B)
   qed
-  have augpath_f'_has_edge_not_in_level:
-    "\<exists> e \<in> set p. e \<notin> residual_level_graph f s"
+  have augpath_f'_has_edge_not_in_level: "\<exists> e \<in> set p. e \<notin> residual_level_graph f s"
     if asms: "augpath f' p" "set p \<subseteq> \<EE>" "fstv (hd p) = s"  "sndv (last p) = t" for p
   proof(rule ccontr, goal_cases)
     case 1
     hence p_in_lg:"set p \<subseteq> residual_level_graph f s" 
       by auto
     hence pos_ufe:"e \<in> set p \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e" for e
-      by(auto simp add: residual_level_graph_is)
+      by(auto simp add: residual_level_graph_alt_def)
     hence augpathpf:"augpath f p" 
       using asms(1) by(fastforce intro!: augpath_from_prepath  elim: augpathE)
     have pos_uf'e:"e \<in> set p \<Longrightarrow> 0 < \<uu>\<^bsub>f'\<^esub>e" for e
@@ -826,7 +858,7 @@ proof-
           ultimately have snd_strict_closer:
             "residual_distance f s (sndv e) < residual_distance f s (fstv e) + 1"
             using p_split(3) True
-            by(auto simp add: residual_level_graph_is residual_distance_is)
+            by(auto simp add: residual_level_graph_alt_def residual_distance_alt_def)
           have fstv_e_sndv_e_in_pos_dVs:
             "fstv e \<in> dVs (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu})"
             "sndv e \<in> dVs (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu})"
@@ -836,7 +868,7 @@ proof-
             case Nil
             then show ?thesis 
               using augpath_prefix(2) distance_0[of s ] fstv_e_sndv_e_in_pos_dVs(1)
-              by (auto simp add:  zero_enat_def residual_distance_is)
+              by (auto simp add:  zero_enat_def residual_distance_alt_def)
           next
             case (Cons a list)
             show ?thesis 
@@ -897,7 +929,7 @@ proof-
               using less.prems(2) p_split(1) by auto
             ultimately show ?thesis 
               using distance_0[of s] fstv_e_sndv_e_in_pos_dVs(1)
-              by (auto simp add: zero_enat_def residual_distance_is)
+              by (auto simp add: zero_enat_def residual_distance_alt_def)
           next
             case (Cons a list)
             show ?thesis 
@@ -909,7 +941,7 @@ proof-
           have dist_second_one_less:
             "residual_distance f s (fstv e) = residual_distance f s (sndv e) + 1"
             using e_in_reverse_lg(2)
-            by(auto simp add:  residual_level_graph_is vs_erev(1,2) residual_distance_is)
+            by(auto simp add:  residual_level_graph_alt_def vs_erev(1,2) residual_distance_alt_def)
           hence dist_s_fstv_e_less_pinfty:  "residual_distance f s (sndv e) < \<infinity>"
             using enat_ord_simps(4) lengthp1e_geq_dist by fastforce
           obtain p1' where p1':
@@ -991,23 +1023,5 @@ proof-
       using p_prop(4)[symmetric] by auto
   qed
 qed
-
-lemma resreach_dist_number_of_verts_bound:
-  assumes  "resreach f s t"
-  shows "residual_distance f s t < card \<V>"
-proof-
-  note dist_s_t_le_infty = resreach_residual_dist_less_infty[OF assms(1)]
-  hence "distance (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu}) s t
-             < enat (card (dVs (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu})))"
-    by(auto intro!: distance_less_vert_card
-             simp add: finite_\<EE> residual_distance_is)
-  moreover have "card (dVs (to_vertex_pair ` {uu \<in> \<EE>. 0 < \<uu>\<^bsub>f\<^esub>uu})) \<le> card \<V>"
-    using \<V>_finite
-    by(auto intro!: card_mono simp add: dVs_def \<EE>_def make_pair')+
-  ultimately show ?thesis
-    using less_enatE
-    by(fastforce simp add: residual_distance_is)
-qed
-
 end
 end
