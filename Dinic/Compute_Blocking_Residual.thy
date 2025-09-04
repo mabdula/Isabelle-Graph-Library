@@ -109,7 +109,7 @@ proof(all \<open>cases "DFS_Collect_Backtrack_Example.neighbourhood F s = vset_e
                     dfs.DFS F t ( dfs.initial_state s)"
     using DFS_thms.same_as_old_dfs_on_initial[OF dfs_thms]
     by(simp add: dfs_backtrack_initial_state_def)
-  note DFS_correct_1 = DFS_thms.DFS_correct_1_weak[OF dfs_thms]
+  note DFS_correct_1 = DFS_thms.DFS_correct_1_strong[OF dfs_thms]
   note DFS_correct_2 = DFS_thms.DFS_correct_2[OF dfs_thms]
   show  "?asm1 \<Longrightarrow> ?thesis1"
   proof(goal_cases)

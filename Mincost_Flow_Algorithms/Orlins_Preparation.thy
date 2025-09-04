@@ -481,8 +481,8 @@ lemmas F_def = \<F>_def
 lemmas F_redges_def = \<F>_redges_def
 
 lemma update_gamma_same_F:
- "\<F> (state \<lparr> current_\<gamma> := gamma \<rparr>) = \<F> state"
- "\<F>_redges (state \<lparr> current_\<gamma> := gamma \<rparr>) = \<F>_redges state"
+  "\<F> (state \<lparr> current_\<gamma> := gamma \<rparr>) = \<F> state"
+  "\<F>_redges (state \<lparr> current_\<gamma> := gamma \<rparr>) = \<F>_redges state"
   by(auto simp add: \<F>_def \<F>_redges_def)
 
 definition "implementation_invar (state_impl::
@@ -499,24 +499,24 @@ definition "implementation_invar (state_impl::
           \<and> \<E> = not_blocked_dom (not_blocked state_impl))"
 
 lemma implementation_invarI[simp]:
-     "\<lbrakk>\<E> = flow_domain (current_flow state_impl);
-       flow_invar (current_flow state_impl); 
-       \<V>  = bal_domain (balance state_impl);
-       bal_invar (balance state_impl);
-       digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl);
-       conv_invar (conv_to_rdg state_impl);
-       \<V>  = rep_comp_domain (rep_comp_card state_impl);
-       rep_comp_invar (rep_comp_card state_impl);
-       not_blocked_invar (not_blocked state_impl);
-       \<E>  = not_blocked_dom (not_blocked state_impl)\<rbrakk>
+  "\<lbrakk>\<E> = flow_domain (current_flow state_impl);
+    flow_invar (current_flow state_impl); 
+    \<V> = bal_domain (balance state_impl);
+    bal_invar (balance state_impl);
+    digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl);
+    conv_invar (conv_to_rdg state_impl);
+    \<V> = rep_comp_domain (rep_comp_card state_impl);
+    rep_comp_invar (rep_comp_card state_impl);
+    not_blocked_invar (not_blocked state_impl);
+    \<E>  = not_blocked_dom (not_blocked state_impl)\<rbrakk>
    \<Longrightarrow> implementation_invar state_impl"
   unfolding implementation_invar_def by simp
 
 lemma implementation_invarE[simp, elim]:
-     "implementation_invar state_impl \<Longrightarrow>
-        (\<lbrakk>\<E> = flow_domain (current_flow state_impl);
+  "implementation_invar state_impl \<Longrightarrow>
+     (\<lbrakk>\<E> = flow_domain (current_flow state_impl);
        flow_invar (current_flow state_impl); 
-       \<V>  = bal_domain (balance state_impl);
+       \<V> = bal_domain (balance state_impl);
        bal_invar (balance state_impl);
        digraph_abs (\<FF> state_impl) = conv_domain (conv_to_rdg state_impl);
        conv_invar (conv_to_rdg state_impl);
@@ -527,31 +527,31 @@ lemma implementation_invarE[simp, elim]:
   unfolding implementation_invar_def by auto
 
 lemma implementation_invar_partialE:
-      "implementation_invar state_impl \<Longrightarrow>(\<E>  = flow_domain (current_flow state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow>(flow_invar (current_flow state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow>(\<V>  = bal_domain (balance state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow>(bal_invar (balance state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow>(digraph_abs (\<FF> state_impl) =
+  "implementation_invar state_impl \<Longrightarrow>(\<E>  = flow_domain (current_flow state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+  "implementation_invar state_impl \<Longrightarrow>(flow_invar (current_flow state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+  "implementation_invar state_impl \<Longrightarrow>(\<V>  = bal_domain (balance state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+  "implementation_invar state_impl \<Longrightarrow>(bal_invar (balance state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+  "implementation_invar state_impl \<Longrightarrow>(digraph_abs (\<FF> state_impl) =
                      conv_domain (conv_to_rdg state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow> (conv_invar (conv_to_rdg state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow> (\<V>  = rep_comp_domain (rep_comp_card state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow> (rep_comp_invar (rep_comp_card state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow> (not_blocked_invar (not_blocked state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
-      "implementation_invar state_impl \<Longrightarrow> (\<E>  = not_blocked_dom (not_blocked state_impl) \<Longrightarrow> P) \<Longrightarrow> P"
+  "implementation_invar state_impl \<Longrightarrow> (conv_invar (conv_to_rdg state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+  "implementation_invar state_impl \<Longrightarrow> (\<V>  = rep_comp_domain (rep_comp_card state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+  "implementation_invar state_impl \<Longrightarrow> (rep_comp_invar (rep_comp_card state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+  "implementation_invar state_impl \<Longrightarrow> (not_blocked_invar (not_blocked state_impl)\<Longrightarrow> P ) \<Longrightarrow> P"
+  "implementation_invar state_impl \<Longrightarrow> (\<E>  = not_blocked_dom (not_blocked state_impl) \<Longrightarrow> P) \<Longrightarrow> P"
   unfolding implementation_invar_def by auto
 
 lemma implementation_invar_partial_props:
-      "implementation_invar state_impl \<Longrightarrow>\<E> = flow_domain (current_flow state_impl)"
-      "implementation_invar state_impl \<Longrightarrow>flow_invar (current_flow state_impl)"
-      "implementation_invar state_impl \<Longrightarrow>\<V> =bal_domain (balance state_impl)"
-      "implementation_invar state_impl \<Longrightarrow>bal_invar (balance state_impl)"
-      "implementation_invar state_impl \<Longrightarrow>digraph_abs (\<FF> state_impl) =
+  "implementation_invar state_impl \<Longrightarrow>\<E> = flow_domain (current_flow state_impl)"
+  "implementation_invar state_impl \<Longrightarrow>flow_invar (current_flow state_impl)"
+  "implementation_invar state_impl \<Longrightarrow>\<V> =bal_domain (balance state_impl)"
+  "implementation_invar state_impl \<Longrightarrow>bal_invar (balance state_impl)"
+  "implementation_invar state_impl \<Longrightarrow>digraph_abs (\<FF> state_impl) =
                      conv_domain (conv_to_rdg state_impl)"
-      "implementation_invar state_impl \<Longrightarrow> conv_invar (conv_to_rdg state_impl)"
-      "implementation_invar state_impl \<Longrightarrow> \<V>  = rep_comp_domain (rep_comp_card state_impl)"
-      "implementation_invar state_impl \<Longrightarrow> rep_comp_invar (rep_comp_card state_impl)"
-      "implementation_invar state_impl \<Longrightarrow> not_blocked_invar (not_blocked state_impl)"
-      "implementation_invar state_impl \<Longrightarrow> \<E>  = not_blocked_dom (not_blocked state_impl)"
+  "implementation_invar state_impl \<Longrightarrow> conv_invar (conv_to_rdg state_impl)"
+  "implementation_invar state_impl \<Longrightarrow> \<V>  = rep_comp_domain (rep_comp_card state_impl)"
+  "implementation_invar state_impl \<Longrightarrow> rep_comp_invar (rep_comp_card state_impl)"
+  "implementation_invar state_impl \<Longrightarrow> not_blocked_invar (not_blocked state_impl)"
+  "implementation_invar state_impl \<Longrightarrow> \<E>  = not_blocked_dom (not_blocked state_impl)"
   unfolding implementation_invar_def by auto
 
 lemma implementation_invar_gamm_upd:

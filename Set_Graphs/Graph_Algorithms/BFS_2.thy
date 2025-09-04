@@ -1511,30 +1511,26 @@ lemma parent_path_cheaper:
 lemma source_in_bfs_tree: 
   assumes "(s, x) \<in> (Graph.digraph_abs G)" "s \<in> t_set srcs" "x \<notin> t_set srcs"
   shows "\<exists> s'. s' \<in> t_set srcs 
-     \<and> s' \<in> dVs ((Graph.digraph_abs (parents (BFS initial_state))))" 
+             \<and> s' \<in> dVs ((Graph.digraph_abs (parents (BFS initial_state))))" 
   using BFS_graph_path_implies_parent_path[OF assms(2) edges_are_vwalk_bet assms(3)] 
         assms(1) vwalk_bet_endpoints(1)[OF ] by auto
 
-(*TODO: move this section?*)
-subsection \<open>Level Graph\<close>
+subsection \<open>BFS and the Level Graph\<close>
 
 lemma invar_parents_in_level_graphI: 
-"(Graph.digraph_abs (parents state)) \<subseteq>  level_graph (Graph.digraph_abs G) (t_set srcs) 
-\<Longrightarrow> invar_parents_in_level_graph state"
+  "(Graph.digraph_abs (parents state)) \<subseteq>  level_graph (Graph.digraph_abs G) (t_set srcs) 
+  \<Longrightarrow> invar_parents_in_level_graph state"
   by(auto simp add: invar_parents_in_level_graph_def)
 
-lemma invar_parents_in_level_graphE: "invar_parents_in_level_graph state \<Longrightarrow>
-((Graph.digraph_abs (parents state)) \<subseteq>  level_graph (Graph.digraph_abs G) (t_set srcs) \<Longrightarrow> P)
- \<Longrightarrow> P"
+lemma invar_parents_in_level_graphE: 
+  "\<lbrakk>invar_parents_in_level_graph state;
+    ((Graph.digraph_abs (parents state)) \<subseteq>  level_graph (Graph.digraph_abs G) (t_set srcs) \<Longrightarrow> P)\<rbrakk>
+    \<Longrightarrow> P"
   by(auto simp add: invar_parents_in_level_graph_def)
 
 lemma invar_parents_in_level_graph_holds_ret1[invar_holds_intros]:
- "invar_parents_in_level_graph state \<Longrightarrow> invar_parents_in_level_graph (BFS_ret1 state)"
+  "invar_parents_in_level_graph state \<Longrightarrow> invar_parents_in_level_graph (BFS_ret1 state)"
   by(auto intro!: invar_parents_in_level_graphI)
-(*TODO MOVE*)
-lemma eqI_strict_less_contradiction_cases:
- "((x::'a::linorder) < y \<Longrightarrow> False) \<Longrightarrow> (y < x \<Longrightarrow> False) \<Longrightarrow> x = y"
-  using linorder_less_linear by blast
 
 lemma invar_parents_in_level_graph_holds_upd1[invar_holds_intros]:
   assumes  "BFS_call_1_conds state" "invar_parents_in_level_graph state"
@@ -1542,9 +1538,8 @@ lemma invar_parents_in_level_graph_holds_upd1[invar_holds_intros]:
            "invar_current_reachable state" 
    shows   "invar_parents_in_level_graph (BFS_upd1 state)"
 proof-
-  have "(x, y)
-           \<in> [expand_tree (parents state) (current state) (visited state \<union>\<^sub>G current state)]\<^sub>g \<Longrightarrow>
-           (x, y) \<in> level_graph [G]\<^sub>g [srcs]\<^sub>s" for x y
+  have "(x, y) \<in> [expand_tree (parents state) (current state) (visited state \<union>\<^sub>G current state)]\<^sub>g 
+         \<Longrightarrow> (x, y) \<in> level_graph [G]\<^sub>g [srcs]\<^sub>s" for x y
   proof(subst (asm) expand_tree(2), goal_cases)
     case 5
     show ?thesis
@@ -1563,7 +1558,6 @@ proof-
       by(auto simp add: invar_2_def invar_current_reachable_def)
     have y_in_next_frontier: "y\<in> [next_frontier (current state) (visited state \<union>\<^sub>G current state)]\<^sub>s"
       using x_y_props by(subst  next_frontier(2))(auto intro: invar_1_props[OF assms(3)])
-
     have "distance_set [G]\<^sub>g [srcs]\<^sub>s y = distance_set [G]\<^sub>g [srcs]\<^sub>s x + 1"
     proof(rule eqI_strict_less_contradiction_cases, goal_cases)
       case 1
@@ -1607,40 +1601,41 @@ proof(induction rule: BFS_induct[OF assms(1)])
 qed
 
 lemma invar_parents_in_level_graph_initial:
-"invar_parents_in_level_graph initial_state"
+  "invar_parents_in_level_graph initial_state"
   by (simp add: Graph.digraph_abs_empty initial_state_def invar_parents_in_level_graph_def)
 
 lemma invar_parents_in_level_graph_final:
-"invar_parents_in_level_graph (BFS initial_state)"
+  "invar_parents_in_level_graph (BFS initial_state)"
   by (simp add: invar_parents_in_level_graph_holds invar_parents_in_level_graph_initial)
 
 definition "invar_level_so_far_in_parents state =
-(\<forall> u v. u \<in> (t_set (visited state) \<union> t_set (current state)) \<and> 
-       v \<in>  (t_set (visited state) \<union> t_set (current state)) \<and>
-       (u, v) \<in> Graph.digraph_abs G \<and>
-       distance_set (Graph.digraph_abs G) (t_set srcs) v 
-                   =  distance_set (Graph.digraph_abs G) (t_set srcs) u + 1
-   \<longrightarrow> (u, v) \<in> Graph.digraph_abs (parents state))"
+  (\<forall> u v. u \<in> (t_set (visited state) \<union> t_set (current state)) \<and> 
+         v \<in>  (t_set (visited state) \<union> t_set (current state)) \<and>
+         (u, v) \<in> Graph.digraph_abs G \<and>
+         distance_set (Graph.digraph_abs G) (t_set srcs) v 
+         =  distance_set (Graph.digraph_abs G) (t_set srcs) u + 1
+          \<longrightarrow> (u, v) \<in> Graph.digraph_abs (parents state))"
 
 lemma invar_level_so_far_in_parentsI:
-      "( \<And> u v. u \<in> (t_set (visited state) \<union> t_set (current state)) \<Longrightarrow>
-       v \<in>  (t_set (visited state) \<union> t_set (current state)) \<Longrightarrow>
-       (u, v) \<in> Graph.digraph_abs G \<Longrightarrow>
-       distance_set (Graph.digraph_abs G) (t_set srcs) v 
-                   =  distance_set (Graph.digraph_abs G) (t_set srcs) u + 1 \<Longrightarrow>
-       (u, v) \<in> Graph.digraph_abs (parents state)) \<Longrightarrow>
-       invar_level_so_far_in_parents state"
+  "(\<And> u v. \<lbrakk>u \<in> (t_set (visited state) \<union> t_set (current state));
+            v \<in> (t_set (visited state) \<union> t_set (current state));
+            (u, v) \<in> Graph.digraph_abs G;
+            distance_set (Graph.digraph_abs G) (t_set srcs) v 
+            = distance_set (Graph.digraph_abs G) (t_set srcs) u + 1\<rbrakk>
+             \<Longrightarrow> (u, v) \<in> Graph.digraph_abs (parents state))
+   \<Longrightarrow> invar_level_so_far_in_parents state"
   by(auto simp add: invar_level_so_far_in_parents_def)
 
 lemma invar_level_so_far_in_parentsE:
-      "invar_level_so_far_in_parents state \<Longrightarrow>
-      (( \<And> u v. u \<in> (t_set (visited state) \<union> t_set (current state)) \<Longrightarrow>
-       v \<in>  (t_set (visited state) \<union> t_set (current state)) \<Longrightarrow>
-       (u, v) \<in> Graph.digraph_abs G \<Longrightarrow>
-       distance_set (Graph.digraph_abs G) (t_set srcs) v 
-                   =  distance_set (Graph.digraph_abs G) (t_set srcs) u + 1 \<Longrightarrow>
-       (u, v) \<in> Graph.digraph_abs (parents state)) \<Longrightarrow>
-       P) \<Longrightarrow> P"
+  "invar_level_so_far_in_parents state \<Longrightarrow>
+    ((\<And> u v. \<lbrakk>u \<in> (t_set (visited state) \<union> t_set (current state));
+              v \<in> (t_set (visited state) \<union> t_set (current state));
+              (u, v) \<in> Graph.digraph_abs G;
+              distance_set (Graph.digraph_abs G) (t_set srcs) v 
+              = distance_set (Graph.digraph_abs G) (t_set srcs) u + 1\<rbrakk>
+             \<Longrightarrow> (u, v) \<in> Graph.digraph_abs (parents state))
+        \<Longrightarrow> P) 
+     \<Longrightarrow> P"
   by(auto simp add: invar_level_so_far_in_parents_def)
 
 lemma invar_level_so_far_in_parents_ret1_holds[invar_holds_intros]:
@@ -1715,7 +1710,7 @@ proof-
     show ?case 
       using one(1,2,3,4)
     by(auto intro: invar_level_so_far_in_parentsE[OF assms(2)] case1 case2 case3 case4 case5 case6
-            simp add:  BFS_upd1_def Let_def next_frontier_is new_parents_are new_visited_are)
+            simp add: BFS_upd1_def Let_def next_frontier_is new_parents_are new_visited_are)
  qed
 qed
 
@@ -1733,7 +1728,8 @@ proof(induction rule: BFS_induct[OF assms(1)])
       (auto intro!: IH(2-)  intro: invar_holds_intros  simp: BFS_simps[OF IH(1)])
 qed
 
-lemma invar_level_so_far_in_parents_initial: "invar_level_so_far_in_parents initial_state" 
+lemma invar_level_so_far_in_parents_initial: 
+  "invar_level_so_far_in_parents initial_state" 
 proof(rule invar_level_so_far_in_parentsI, goal_cases)
   case (1 u v)
   moreover hence v_in_G:"v \<in> dVs [G]\<^sub>g" 
@@ -1743,15 +1739,15 @@ proof(rule invar_level_so_far_in_parentsI, goal_cases)
 qed
 
 lemma invar_level_so_far_in_parents_final:
-"invar_level_so_far_in_parents (BFS initial_state)"
+  "invar_level_so_far_in_parents (BFS initial_state)"
   by (simp add: invar_level_so_far_in_parents_holds invar_level_so_far_in_parents_initial)
 
 lemma no_parent_edges_unreachable:
-"(Graph.digraph_abs (parents (BFS initial_state))) \<inter>
- { (u, v) | u v. distance_set (Graph.digraph_abs G) (t_set srcs) u = \<infinity>} = {}"
+  "(Graph.digraph_abs (parents (BFS initial_state))) \<inter>
+   { (u, v) | u v. distance_set (Graph.digraph_abs G) (t_set srcs) u = \<infinity>} = {}"
 proof-
-  have "(u, v) \<in> [parents (local.BFS initial_state)]\<^sub>g \<Longrightarrow>
-           distance_set [G]\<^sub>g [srcs]\<^sub>s u = \<infinity> \<Longrightarrow> False" for u v
+  have "\<lbrakk>(u, v) \<in> [parents (local.BFS initial_state)]\<^sub>g ; distance_set [G]\<^sub>g [srcs]\<^sub>s u = \<infinity>\<rbrakk>
+         \<Longrightarrow> False" for u v
   proof(goal_cases)
     case 1
     have u_seen: "u \<in>
@@ -1768,8 +1764,8 @@ proof-
 qed
 
 lemma BFS_level_graph:
-      "(Graph.digraph_abs (parents (BFS initial_state)))
-       = level_graph (Graph.digraph_abs G) (t_set srcs)
+  "(Graph.digraph_abs (parents (BFS initial_state)))
+   = level_graph (Graph.digraph_abs G) (t_set srcs)
           - {(u, v) | u v. distance_set (Graph.digraph_abs G) (t_set srcs) u = \<infinity>}"
 proof(rule, goal_cases)
   case 1

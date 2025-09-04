@@ -736,7 +736,7 @@ proof-
       (auto intro!: invar_holds_intros ret_holds_intros state_rel_holds_intros)
 qed
 
-lemma DFS_correct_1_weak:
+lemma DFS_correct_1_strong:
   assumes "return (DFS initial_state) = NotReachable"
   shows   "\<nexists>p. vwalk_bet (Graph.digraph_abs G) s p t" 
   using DFS_correct_1[OF assms] vwalk_bet_to_distinct_is_distinct_vwalk_bet
@@ -745,8 +745,7 @@ lemma DFS_correct_1_weak:
 lemma DFS_correct_2:
   assumes  "return (DFS initial_state) = Reachable"
   shows "vwalk_bet (Graph.digraph_abs G) s (rev (stack (DFS initial_state))) t" (is ?thesis1)
-  and DFS_correct_2_distinct:
-      "distinct (rev (stack (DFS initial_state))) " (is ?thesis2)
+        "distinct (rev (stack (DFS initial_state))) " (is ?thesis2)
 proof-
   have "vwalk_bet
               (Graph.digraph_abs G)

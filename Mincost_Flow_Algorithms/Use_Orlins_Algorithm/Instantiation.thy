@@ -1047,7 +1047,7 @@ proof(insert maintain_forest_spec.maintain_forest_get_path_cond_unfold_meta[OF
     using  rectified_map_subset vwalk_bet_subset assms(2)
     by (simp add:  local.get_path_def)
   show "distinct p" 
-    using DFS_thms.DFS_correct_2_distinct[OF dfs_thms]
+    using DFS_thms.DFS_correct_2(2)[OF dfs_thms]
     using  DFS_thms.initial_state_props(1,3)[OF dfs_thms]
            dfs_dom DFS_thms.DFS_to_DFS_impl[OF dfs_thms] reachable
     by(auto simp add:  assms(2) get_path_def same_neighbourhoods same_digraph_abses

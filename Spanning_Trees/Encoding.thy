@@ -56,17 +56,16 @@ proof-
        (simp add: pair_graph_u.pair_graph_specs.adjmap.map_empty pair_graph_u.neighbourhood_def 
         pair_graph_u.pair_graph_specs.vset.set.invar_empty pair_graph_u.pair_graph_specs.vset.set.set_empty 
         pair_graph_u.pair_graph_specs.vset.set.set_isin pair_graph_u.pair_graph_specs.finite_vsets_empty)
-  qed
-
-lemma P_of_ifE: "P (if b then x else y) \<Longrightarrow> (b \<Longrightarrow> P x \<Longrightarrow> Q) \<Longrightarrow> (\<not>b \<Longrightarrow> P y \<Longrightarrow> Q) \<Longrightarrow> Q"
-  by(cases b) auto
+qed
 
 lemma edges_invar_imp_graph_invar:
   assumes "set_inv E" "\<And> e. e \<in> to_set E \<Longrightarrow> v1_of e \<noteq> v2_of e"
   shows "pair_graph_u.pair_graph_u_invar (edges_to_graph E)" (is ?thesis1)
-    and "\<forall> v y. lookup (edges_to_graph E) v = Some y \<longrightarrow> y \<noteq> vset_empty" (is ?thesis2)
-    and "\<forall> e \<in> pair_graph_u.digraph_abs (edges_to_graph E).
- lookup (edges_to_graph E) (fst e) \<noteq> None \<longleftrightarrow>  lookup (edges_to_graph E) (snd e) \<noteq> None" (is ?thesis3)
+    and "\<And> v y. lookup (edges_to_graph E) v = Some y \<Longrightarrow> y \<noteq> vset_empty" 
+        (is "\<And> v y. ?asm1 v y \<Longrightarrow>?thesis2 y")
+    and "\<And> e. e \<in> pair_graph_u.digraph_abs (edges_to_graph E) \<Longrightarrow>
+          lookup (edges_to_graph E) (fst e) \<noteq> None \<longleftrightarrow>  lookup (edges_to_graph E) (snd e) \<noteq> None" 
+        (is "\<And> e. ?asm2 e \<Longrightarrow> ?thesis3 e")
 proof-
   define f where "f = (\<lambda>e G.(pair_graph_u.add_u_edge G (v1_of e) (v2_of e)))"
   obtain xs where xs_prop:"distinct xs" "set xs = to_set E" "set_fold_adjmap E f \<emptyset>\<^sub>G = foldr f xs \<emptyset>\<^sub>G"
@@ -80,16 +79,18 @@ proof-
              pair_graph_u.pair_graph_u_invar_add_u_edge(1) )   
   then show ?thesis1
     using assms(2) f_def[symmetric]  xs_prop(2,3) by auto
-  show ?thesis2
+  show "?asm1 v y \<Longrightarrow>?thesis2 y" for v y
     using assms(2)
     unfolding edges_to_graph.simps f_def[symmetric]  xs_prop(3) xs_prop(2)[symmetric]
-    apply(induction xs)
-    apply (simp add: pair_graph_u.pair_graph_specs.adjmap.map_empty)
-    apply(subst foldr.simps, subst o_apply, subst f_def)
-    apply(rule pair_graph_u.pair_graph_u_invar_add_u_edge(2))
-    using inv_after_list
-    by (auto intro:  pair_graph_u.pair_graph_u_invar_add_edge_both(2))
-  show ?thesis3
+  proof(induction xs arbitrary: y v)
+    case (Cons a xs)
+     show ?case 
+       apply(rule pair_graph_u.pair_graph_u_invar_add_edge_both(2)[OF inv_after_list, 
+              of xs "v1_of a" "v2_of a" v])
+       using Cons(1,2)
+       by(auto simp add: f_def pair_graph_u.add_u_edge_def Cons(3))
+  qed  (simp add: pair_graph_u.pair_graph_specs.adjmap.map_empty)
+  show "?asm2 e \<Longrightarrow> ?thesis3 e" for e
     using assms(2)
     unfolding edges_to_graph.simps f_def[symmetric]  xs_prop(3) xs_prop(2)[symmetric]
   proof(induction xs)
@@ -99,28 +100,27 @@ proof-
   next
     case (Cons a xs)
     show ?case 
-      apply(subst (1) foldr.simps, subst o_apply, subst (1) f_def)
-      apply(subst (1) foldr.simps, subst o_apply, subst (2) f_def)
-      apply(subst (1) foldr.simps, subst o_apply, subst (3) f_def)
-    proof( rule ballI, goal_cases)
-      case (1 e)
+    proof((subst (1) foldr.simps, subst o_apply, subst (1) f_def)+, goal_cases)
+      case 1
       have a1: "pair_graph_u.graph_inv (foldr f xs \<emptyset>\<^sub>G)"
-        using Cons(2) by (simp add: inv_after_list)
+        using Cons(3) by (simp add: inv_after_list)
       have "(lookup (foldr f xs \<emptyset>\<^sub>G) x \<noteq> None) = (lookup (foldr f xs \<emptyset>\<^sub>G) y \<noteq> None)" 
         if assms1: "(x, y)\<in>[foldr f xs \<emptyset>\<^sub>G]\<^sub>g" for x y       
         using pair_graph_u.pair_graph_specs.are_connected_absI[OF assms1 a1]  pair_graph_u.graph_abs_symmetric[OF inv_after_list assms1]
           pair_graph_u.pair_graph_specs.vset.emptyD(3) pair_graph_u.pair_graph_specs.adjmap.map_empty pair_graph_u.graph_irreflexive[OF  pair_graph_u_invar_empty]
-         Cons (2)
+           Cons(3)
        by (cases "lookup (foldr f xs \<emptyset>\<^sub>G) x", all \<open>cases "lookup (foldr f xs \<emptyset>\<^sub>G) y"\<close>)
           (auto split: option.split simp add:  pair_graph_u.digraph_abs_def pair_graph_u.neighbourhood_def)
       hence ih_prem1: "\<forall>x\<in>[foldr f xs \<emptyset>\<^sub>G]\<^sub>g.
        (lookup (foldr f xs \<emptyset>\<^sub>G) (fst x) \<noteq> None) = (lookup (foldr f xs \<emptyset>\<^sub>G) (snd x) \<noteq> None)" 
         by auto
       show ?case
-        using ih_prem1 Cons(2)
-        by(intro bspec[OF pair_graph_u.pair_graph_u_invar_add_u_edge(3)
-              [simplified pair_graph_u.none_symmetry_def], of _ _ _ "(fst e, snd e)", simplified fst_conv snd_conv]
-            ) (auto simp add: inv_after_list "1")
+        unfolding f_def
+        using ih_prem1 Cons(2,3)  inv_after_list  
+        by (intro  bspec[OF pair_graph_u.pair_graph_u_invar_add_u_edge(3)
+              [simplified pair_graph_u.none_symmetry_def],
+           of _ _ _ "(fst e, snd e)", simplified fst_conv snd_conv])
+           (auto simp add: f_def)
     qed
   qed
 qed 
@@ -128,7 +128,8 @@ qed
 lemma digraph_abs_of_edges_of_to_graph:
   assumes ys_prop: "set ys = to_set E" "set_fold_adjmap E g \<emptyset>\<^sub>G = foldr g ys \<emptyset>\<^sub>G" and
     g_def: "g = (\<lambda>e G. pair_graph_u.add_u_edge G (v1_of e) (v2_of e))" 
-  shows  "[edges_to_graph E]\<^sub>g = (\<lambda> e. (v1_of e, v2_of e)) ` (to_set E) \<union> (\<lambda> e. (v2_of e, v1_of e)) ` (to_set E)"
+  shows  "[edges_to_graph E]\<^sub>g = (\<lambda> e. (v1_of e, v2_of e)) ` (to_set E) \<union> 
+                                (\<lambda> e. (v2_of e, v1_of e)) ` (to_set E)"
 proof-
   have graph_inv_fold_g:"pair_graph_u.graph_inv (foldr g ys \<emptyset>\<^sub>G)" for ys
    by(induction ys) 
@@ -165,8 +166,6 @@ proof-
   show ?thesis
     by(rule digraph_abs_of_edges_of_to_graph[OF xs_prop(2,3) g_def])
 qed 
-
-find_theorems edges_to_graph
 
 abbreviation "to_doubltn_set X \<equiv> (\<lambda>e. {v1_of e, v2_of e}) ` to_set X"
 

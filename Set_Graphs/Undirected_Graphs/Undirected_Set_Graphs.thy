@@ -3634,8 +3634,8 @@ qed
 lemma walk_betw_imp_epath:
   assumes "dblton_graph G" 
   shows "walk_betw G u p v \<Longrightarrow> epath G u (edges_of_path p) v" 
-  by (induction p  arbitrary: u v rule: edges_of_path.induct)
-     (auto elim!:  dblton_graphE[OF assms] simp add: doubleton_eq_iff walk_betw_def)
+  by (induction p arbitrary: u v rule: edges_of_path.induct)
+     (auto elim!: dblton_graphE[OF assms] simp add: doubleton_eq_iff walk_betw_def)
 
 lemma epath_imp_walk_betw:
   "epath G u p v \<Longrightarrow>length p \<ge> 1  \<Longrightarrow>\<exists> q. walk_betw G u q v \<and> p = edges_of_path q"
