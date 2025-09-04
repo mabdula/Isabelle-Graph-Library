@@ -355,8 +355,6 @@ proof (intro dominance_order[where j = j], goal_cases)
     apply(elim graph_invar_vertex_edgeE')
     by auto
 
-  find_theorems "finite (Vs _) = _" 
-
   then have the_i': "(THE i'. {i',j} \<in> ?M') = i'"
     apply (intro the_match matching_ranking finite_remove_vertices)
     by (force dest!: remove_vertices_subgraph' simp add: finite_vs_subgraph remove_vertices_subgraph)+

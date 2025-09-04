@@ -621,8 +621,6 @@ abbreviation "a_conv_to_rdg state \<equiv> (\<lambda> e. (abstract_conv_map (con
 definition "inv_conversion_consistent (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state)
                 = consist  (digraph_abs (\<FF> state)) (abstract_conv_map (conv_to_rdg state))"
 
-thm inv_conversion_consistent_def[simplified consist_def]
-
 lemma inv_conversion_consistentI: 
   assumes "(\<And> x y. (x, y) \<in> (digraph_abs (\<FF> state)) \<Longrightarrow>
               \<exists>e. (abstract_conv_map (conv_to_rdg state)) (x, y) = F e 

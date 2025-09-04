@@ -471,8 +471,6 @@ proof(induction "length p" arbitrary: v p)
   qed auto
 qed simp
 
-find_theorems edges_of_path "(@)"
-
 lemma edges_of_path_append_subset:
   "set (edges_of_path p') \<subseteq> set (edges_of_path (p @ p'))"
 proof(cases p')
@@ -1956,8 +1954,6 @@ lemma in_con_comp_has_walk: assumes "v \<in> connected_component G u" "v \<noteq
   obtains p where "walk_betw G u p v"
   using assms
   by(auto simp: connected_component_def elim!: reachableE)
-
-find_theorems "(\<subseteq>)" reachable
 
 lemma con_comp_subset: "G1 \<subseteq> G2 \<Longrightarrow> connected_component G1 u \<subseteq> connected_component G2 u"
   by (auto dest: reachable_subset simp: connected_component_def)

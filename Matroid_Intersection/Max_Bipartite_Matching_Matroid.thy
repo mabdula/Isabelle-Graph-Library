@@ -204,8 +204,6 @@ lemma matroid_axioms2: "matroid_axioms indep2"
 interpretation double_matroid_concrete: double_matroid Edges indep1 indep2
   by(auto intro!: double_matroid.intro matroid.intro indep_system1 indep_system2 matroid_axioms1 matroid_axioms2)
 
-thm double_matroid_concrete.A1_def
-
 term double_matroid_concrete.matroid1.the_circuit
 
 lemma double_matroid_concrete: "double_matroid Edges indep1 indep2"
@@ -370,8 +368,6 @@ proof-
   ultimately show?thesis 
     by(auto simp add: matching_def)
 qed
-
-thm double_matroid.maximum_characterisation[OF double_matroid_concrete]
 end
 
 datatype ('e, 'v) matching_set = MATCH 

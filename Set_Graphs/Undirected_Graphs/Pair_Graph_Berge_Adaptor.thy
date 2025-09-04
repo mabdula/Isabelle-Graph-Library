@@ -456,8 +456,6 @@ next
     with \<open>distinct (butlast (awalk_verts u (e # p)))\<close> e
       have "distinct (butlast (awalk_verts y p))" by auto
   
-    thm awalk_verts_conv
-  
     have "tl (awalk_verts u ([(x, y)] @ p)) = awalk_verts y p" by auto
 
   
@@ -575,9 +573,6 @@ next
   then have v_unique: "(\<exists>!v. v \<in> e - {u})" by blast
   with \<open>{u, w} = e\<close> have "(THE v. v \<in> e - {u}) = w" by auto
   from \<open>{u, w} = e\<close> \<open>e \<in> G\<close> have "w \<in> Vs G" by auto
-
-  thm awalk_Cons_iff
-  thm Cons.IH[OF \<open>epath G w p v\<close> \<open>w \<in> Vs G\<close>]
 
   have "(let v' = (THE v. v \<in> e - {u}) in (u, v')) \<in> D"
     using \<open>e \<in> G\<close> \<open>{u, w} = e\<close> \<open>u \<noteq> w\<close> D_def

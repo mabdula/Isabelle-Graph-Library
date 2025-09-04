@@ -496,7 +496,6 @@ proof-
     using assms 
     by(auto intro: finite_graph_add_edge finite_vsets_add_edge
          simp add: pair_graph_u_invar_def not_Refl_after sym_after)
-  find_theorems finite_vsets add_edge
   show "(\<And> x y. ?assm1 x y \<Longrightarrow> ?assm2 x y) \<Longrightarrow> ?assms2 \<Longrightarrow> ?thesis2" 
   proof(goal_cases)
     case 1

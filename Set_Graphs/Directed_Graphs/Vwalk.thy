@@ -1015,8 +1015,6 @@ lemma vwalk_bet_insertE[case_names nil sing1 sing2 in_e in_E]:
   apply(erule vwalk_insertE)
   by (simp | force)+
 
-find_theorems name: induct vwalk_bet
-
 lemma vwalk_bet2[simp]:
   "vwalk_bet G u (u # v # vs) b \<longleftrightarrow> ((u,v) \<in> G \<and> vwalk_bet G v (v # vs) b)"
   by(auto simp: vwalk_bet_def)
@@ -1067,8 +1065,6 @@ next
   qed
 qed
 
-  
-  find_theorems name: split vwalk_bet
 *)
 
 lemma butlast_vwalk_is_vwalk: "vwalk E p \<Longrightarrow> vwalk E (butlast p)"

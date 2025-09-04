@@ -459,7 +459,6 @@ proof(rule strong_exchange_propertyI, goal_cases)
     by force
   then obtain p where p_prop:"distinct p" "walk_betw B x p y" "set p \<subseteq> set pp"
     using walk_betw_different_verts_to_ditinct[OF pp_prop(1) xy(2) refl] by auto
-  find_theorems x y
   hence lenghtp: "length p \<ge> 2"
     using xy one(5) by(auto simp add: walk_betw_def intro: vwalk_arcs.cases[of p])
   have either_x_or_y_in_A: "(x \<in> insert r (Vs A) \<and> y \<notin> insert r (Vs A)) 

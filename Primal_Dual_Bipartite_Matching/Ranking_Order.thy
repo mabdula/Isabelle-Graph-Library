@@ -927,12 +927,6 @@ proof -
     by (auto intro!: matching_partner_eqI[OF _ i''j] matching_ranking
              dest!: linorder_on_imp_preorder_on remove_vertices_subgraph'
              simp: graph graph_invar_remove_vertices)
-
-
-  find_theorems "preorder_on'" "(\<subseteq>)"
-
-  find_theorems min_on_rel "(\<in>)"
-
   (*have "Vs (ranking' r G M pre) \<subseteq> Vs (ranking' r (G \<setminus> {i}) M' pre)"
     sorry*)
   have "?ns' \<subseteq> ?ns"
