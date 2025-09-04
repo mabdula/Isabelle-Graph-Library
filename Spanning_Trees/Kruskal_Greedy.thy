@@ -179,27 +179,8 @@ lemma pair_graph_u_invar:
 
 lemma same_dgraphabs:"dfs.Graph.digraph_abs = G.digraph_abs"
   by (simp add: RBT_Set.empty_def)
-(*
-abbreviation "to_dbltn == (\<lambda>x. {fst x, snd x})"
-*)
+
 lemmas set_of_pair_def'[simp] =  set_of_pair_def[unfolded case_prod_beta]
-find_theorems "case _ of (_, _) \<Rightarrow> _"
-
-lemma to_dbltn_sym: "{fst x, snd x} = set_of_pair x" by auto
-
-(*TODO MOVE: this is a general lemma about to_dbltn*)
-lemma get_urlist_to_dbltn: "set X \<subseteq> set_of_pair ` Y \<Longrightarrow> \<exists> urX. map set_of_pair urX = X \<and> set urX \<subseteq> Y" 
-proof(induction X)
-  case Nil
-  then show ?case by auto
-next
-  case (Cons a X)
-  then obtain ura where "ura \<in> Y" "set_of_pair ura = a" by auto
-  moreover obtain urX where "map set_of_pair urX = X" "set urX \<subseteq> Y"
-    using Cons by auto
-  ultimately show ?case
-    by(auto intro!: exI[of _ "ura#urX"])
-qed
 
 lemma graph_abs_input_G:   
   assumes  G_good: "vset_inv input_G"
@@ -218,7 +199,7 @@ qed
 
 lemma local_indep_oracle_correct:
   assumes "vset_inv S" "indep'  input_G (id S)" 
-    "Card_Set2_RBT.subseteq (id S) input_G"  "e \<notin> t_set (id S)"
+          "Card_Set2_RBT.subseteq (id S) input_G"  "e \<notin> t_set (id S)"
   and   G_good: "vset_inv input_G"
   shows "local_indep_oracle e S = indep' input_G (vset_insert e (id S))"
   apply(insert assms)
@@ -855,9 +836,9 @@ next
     by (simp add: valid_order)
 qed
 
-lemma indep_finite: "graph_abs.has_no_cycle (to_dbltn ` (t_set input_G)) (to_dbltn ` X)
-                     \<Longrightarrow> X \<subseteq> t_set input_G 
-                     \<Longrightarrow> finite X"
+lemma indep_finite: 
+  "\<lbrakk>graph_abs.has_no_cycle (to_dbltn ` (t_set input_G)) (to_dbltn ` X);  X \<subseteq> t_set input_G \<rbrakk>
+    \<Longrightarrow> finite X"
   using finite_subset graph_abs.has_no_cycle_def graph_abs_input_G 
   by fastforce
 
@@ -1044,6 +1025,4 @@ definition "costs  e =  (case (lookup c_impl e) of Some c \<Rightarrow> c | None
 value "kruskal_init' costs edges"
 value  "kruskal' G (kruskal_init' costs edges)"
 value "inorder (result (kruskal'  G (kruskal_init' costs edges)))"
-
-thm  kruskal_correct.kruskal_computes_max_spanning_forest[of G]
 end

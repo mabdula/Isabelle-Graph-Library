@@ -766,7 +766,7 @@ proof (induction G M rule: make_perfect_matching.induct)
     by blast
 next
   case (1 G M)
-  then interpret graph_abs G
+  then interpret graph_abs1: graph_abs G
       apply unfold_locales
       by auto
 
@@ -774,15 +774,15 @@ next
   proof (cases "\<exists>x. x \<in> Vs G \<and> x \<notin> Vs M")
     case True
 
-    interpret graph_abs "G \<setminus> {SOME x. x \<in> Vs G \<and> x \<notin> Vs M}"
-      apply unfold_locales
-      by (simp add: graph graph_invar_remove_vertices)
+    interpret graph_abs2: graph_abs "G \<setminus> {SOME x. x \<in> Vs G \<and> x \<notin> Vs M}"
+      apply unfold_locales 
+      by (simp add: graph_abs1.graph  graph_invar_remove_vertices)
 
     from True \<open>M \<subseteq> G\<close> have "M \<subseteq> G \<setminus> {SOME x. x \<in> Vs G \<and> x \<notin> Vs M}"
       by (intro subgraph_remove_some_ex)
 
 
-    from "1.IH"[OF True \<open>matching M\<close> this graph] True \<open>finite G\<close>
+    from "1.IH"[OF True \<open>matching M\<close> this graph_abs2.graph] True \<open>finite G\<close>
     show ?thesis
       by simp
   next
@@ -792,7 +792,7 @@ next
       by (auto intro!: perfect_matchingI subgraph_vs_subset_eq)
     
     with 1 False show ?thesis
-      using perfect_matching_is_max_card_matching
+      using graph_abs1.perfect_matching_is_max_card_matching
       by auto
   qed
 qed
