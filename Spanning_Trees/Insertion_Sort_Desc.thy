@@ -75,6 +75,4 @@ next
   qed
 qed
 
-
-
 end

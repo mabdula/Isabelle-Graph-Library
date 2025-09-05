@@ -38,7 +38,7 @@ i.e. there is no premature termination.
 \<close>
 
 lemma find_cycle_no_premature_termination:
- "is_circ g \<Longrightarrow> flow_out g v > 0 \<Longrightarrow> g \<ge>\<^sub>F 0\<Longrightarrow> length (find_cycle g n v) = Suc n"
+ "\<lbrakk>is_circ g; flow_out g v > 0; g \<ge>\<^sub>F 0\<rbrakk> \<Longrightarrow> length (find_cycle g n v) = Suc n"
 proof(induction g n v rule: find_cycle.induct)
   case (2 g n v)
   have all_e_pos:"\<And> e. e \<in> \<E> \<Longrightarrow> g e \<ge> 0"
@@ -72,7 +72,8 @@ qed simp
 
 text \<open>When searching for a cycle, no vertex outside $\mathcal{V}$ is collected.\<close>
 
-lemma find_cycle_subset_V: "v \<in> \<V> \<Longrightarrow> set (find_cycle g n v) \<subseteq> \<V>"
+lemma find_cycle_subset_V: 
+  "v \<in> \<V> \<Longrightarrow> set (find_cycle g n v) \<subseteq> \<V>"
 proof(induction g n v rule: find_cycle.induct)
   case (2 g n v)
   then show ?case 
@@ -181,11 +182,14 @@ text \<open>Analogously to augmenting paths and cycles, we define the concept of
 
 definition "flowcycle g es = (flowpath g es \<and> es \<noteq> [] \<and> fst (hd es) = snd(last es))"
 end
-context flow_network
+
+context 
+  flow_network
 begin
+
 lemma flow_path_mono: 
-assumes "flowpath g' es " 
-shows   "(\<And> e. e \<in> (set es) \<Longrightarrow> g e \<ge> g' e)  \<Longrightarrow> flowpath g es"
+  assumes "flowpath g' es " 
+  shows   "(\<And> e. e \<in> (set es) \<Longrightarrow> g e \<ge> g' e)  \<Longrightarrow> flowpath g es"
   by(induction  rule: flowpath_induct[OF assms])
     (fastforce simp add: flowpath_intros)+
 
@@ -195,7 +199,7 @@ lemma flow_cyc_mono:  "flowcycle g' es \<Longrightarrow> (\<And> e. e \<in> (set
 
 lemma flowpath_es_non_neg:
   assumes "flowpath g es"
-  shows"(\<forall> e \<in> set es. g e > 0)"
+  shows   "(\<forall> e \<in> set es. g e > 0)"
   by(induction g es rule: flowpath_induct, simp add: assms) simp+
 
 text \<open>For any non-trivial circulation we obtain a cycle based on edges,
@@ -465,13 +469,9 @@ Then we subtract the minimum flow in the cycle from the remaining circulation an
 \<close>
 
 theorem flowcycle_decomposition:
-  assumes
-   "g \<ge>\<^sub>F 0"
-   "0 < Abs g"
-   "is_circ g"
-   "support g \<noteq> {}"
-   "card (support g) = n"
- shows "\<exists> css ws.
+  assumes "g \<ge>\<^sub>F 0" "0 < Abs g" "is_circ g"
+          "support g \<noteq> {}" "card (support g) = n"
+  shows "\<exists> css ws.
    length css = length ws \<and>
    set css \<noteq> {} \<and> 
    (\<forall> w \<in> set ws. w > 0)\<and>

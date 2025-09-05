@@ -159,7 +159,7 @@ definition  isuflow::"('edge_type \<Rightarrow> real) \<Rightarrow> bool" where
 "isuflow f \<longleftrightarrow> (\<forall> e \<in> \<E>. f e \<le> \<u> e \<and> f e \<ge> 0)"
 
 lemma isuflowI: 
-  "(\<And> e. e \<in> \<E> \<Longrightarrow> f e \<le> \<u> e) \<Longrightarrow>(\<And> e. e \<in> \<E> \<Longrightarrow> f e \<ge> 0) \<Longrightarrow> isuflow f"
+  "\<lbrakk>(\<And> e. e \<in> \<E> \<Longrightarrow> f e \<le> \<u> e); (\<And> e. e \<in> \<E> \<Longrightarrow> f e \<ge> 0)\<rbrakk> \<Longrightarrow> isuflow f"
   by(auto simp add:isuflow_def)
 
 lemma isuflowE: 
@@ -383,10 +383,7 @@ text \<open>We can refer to the original edge where the residual arc emerges fro
 fun oedge::"'edge_type Redge \<Rightarrow> 'edge_type" where
  "oedge (F e) = e"|
  "oedge (B e) = e"
-(*
-lemma oedge_simps'[simp]: "oedge (F e) = e" "oedge (B e) =  e"
-  by auto
-*)
+
 lemma oedge_both_redges_image: "oedge ` {F e, B e} = {e}"
   by  auto
 
@@ -457,11 +454,6 @@ lemma inj_erev: "inj_on erev A" for A
      using  erve_erve_id inj_on_def by metis 
 
 lemmas redge_case_flip = Redge.case_distrib
-
-(*lemma redge_case_flip: 
- "f (case e of F a \<Rightarrow> x a  |  B a \<Rightarrow> y a) =
-  (case e of F a \<Rightarrow> f (x a) | B a \<Rightarrow> f (y a)) " 
-  by (simp add: Redge.case_eq_if split_beta)*)
 end
 
 context 
@@ -602,7 +594,8 @@ lemma rcap_extr_non_zero:
   "\<lbrakk>e \<in> set es;  set es = ES; 0 < Rcap f ES\<rbrakk> \<Longrightarrow> 0 < rcap f e"
   by (metis dual_order.refl leD order_less_le rcap_extr)
 
-lemma rcap_exract_single: "es \<noteq>[] \<Longrightarrow> Rcap f (set (e#es)) = min (rcap f e) (Rcap f (set es))"
+lemma rcap_exract_single: 
+  "es \<noteq>[] \<Longrightarrow> Rcap f (set (e#es)) = min (rcap f e) (Rcap f (set es))"
   apply(subst  Rcap_same, force, simp add: finite_subset)+
   apply(rule trans[of _ " min (Min {\<uu>\<^bsub>f\<^esub>e}) (Rcap_old f (set es))"])
   unfolding Rcap_old_def
@@ -766,8 +759,8 @@ proof-
         using  fstve_is_u IH rcap_extr_non_zero[of e "e#p1" "set (e#p1)" f] \<open>e \<in> \<EE>\<close> bb  aa 
         by (auto intro: IH(7)[of f e "sndv e"   v])
     qed
-    qed
   qed
+qed
 
 text\<open>Simplification.\<close>
 
@@ -812,6 +805,7 @@ text \<open>The \textit{residual cut} w.r.t. $f$ and $v$ is anything that is rea
 
 definition "Rescut f v = insert v {u. resreach f v u}"
 end
+
 context 
   flow_network
 begin
@@ -950,6 +944,7 @@ text \<open>From this we know that the sum of balances within $X$ is bounded by 
 
 lemma flow_cross_cut_less_cap:"isuflow f \<Longrightarrow>  sum f (\<Delta>\<^sup>+ X) \<le> Cap X"
   unfolding Delta_plus_def Cap_def isuflow_def 
+  using CollectD sum_mono
   by (metis (no_types, lifting) CollectD sum_mono)
 
 lemma sum_crossing_out_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>+ X) \<ge> 0 "
@@ -1000,8 +995,7 @@ theorem rescut_ingoing_zero:
  qed
 
 corollary rescut_all_edges_sat:
-  assumes "f is b flow"
-          "Rescut f v \<subseteq> \<V>"
+  assumes "f is b flow" "Rescut f v \<subseteq> \<V>"
   shows "sum b (Rescut f v) = sum f (\<Delta>\<^sup>+ (Rescut f v))"
   using flow_value[of f b "(Rescut f v)"]  assms
   by (simp add: rescut_ingoing_zero)
@@ -1009,8 +1003,7 @@ corollary rescut_all_edges_sat:
 text \<open> We also obtain that the sum of outgoing flow equals the capacity for any rescut.\<close>
 
 theorem rescut_outgoing_cap:
-  assumes "f is b flow"
-          "(Rescut f v) \<subseteq> \<V>"
+  assumes "f is b flow" "(Rescut f v) \<subseteq> \<V>"
   shows   "sum f (\<Delta>\<^sup>+ (Rescut f v)) = Cap (Rescut f v)"
 proof(rule ccontr)
     assume "(\<Sum>x\<in>\<Delta>\<^sup>+ (Rescut f v). ereal (f x)) \<noteq> Cap (Rescut f v) "
@@ -1052,8 +1045,7 @@ text \<open>Our analysis finally implies that for any valid flow
         the sum of balances amounts exactly to the rescut capacity.\<close>
 
 theorem flow_saturates_res_cut:
-  assumes "f is b flow"
-          "(Rescut f v) \<subseteq> \<V>"
+  assumes "f is b flow" "(Rescut f v) \<subseteq> \<V>"
   shows   "sum b (Rescut f v)= Cap (Rescut f v)"
   using assms(1) assms(2) rescut_all_edges_sat rescut_outgoing_cap by auto
 end
@@ -1127,7 +1119,8 @@ lemma flow_cross_acut_less_acap:"isuflow f \<Longrightarrow>  sum f (\<Delta>\<^
   by (metis (no_types, lifting) CollectD case_prodE sum_mono)
 
 corollary flow_less_acut: 
-  assumes "f is b flow" shows "X \<subseteq> \<V> \<Longrightarrow> sum b X \<ge> - ACap X"
+  assumes "f is b flow" 
+  shows "X \<subseteq> \<V> \<Longrightarrow> sum b X \<ge> - ACap X"
   using  assms flow_cross_acut_less_acap [of f X]
          flow_value[of f  b X] sum_crossing_out_pos[of f X] 
   by (simp add: dual_order.trans minus_leq_flip isbflow_def)
@@ -1166,8 +1159,7 @@ theorem arescut_outgoing_zero:
   qed
 
 corollary arescut_all_edges_sat:
-  assumes "f is b flow"
-          "ARescut f v \<subseteq> \<V>"
+  assumes "f is b flow" "ARescut f v \<subseteq> \<V>"
   shows "sum b (ARescut f v) = - sum f (\<Delta>\<^sup>- (ARescut f v))"
     using flow_value[of f b "(ARescut f v)"]  assms
     by (simp add: arescut_outgoing_zero)
@@ -1175,8 +1167,7 @@ corollary arescut_all_edges_sat:
 text \<open> We also obtain that the sum of outgoing flow equals the capacity for any rescut.\<close>
 
 theorem arescut_ingoing_cap:
-  assumes "f is b flow"
-          "(ARescut f v) \<subseteq> \<V>"
+  assumes "f is b flow" "(ARescut f v) \<subseteq> \<V>"
   shows   "sum f (\<Delta>\<^sup>- (ARescut f v)) =  ACap (ARescut f v)"
 proof(rule ccontr)
     assume asm:"(\<Sum>x\<in>\<Delta>\<^sup>- (ARescut f v). ereal (f x)) \<noteq>  ACap (ARescut f v) "
@@ -1212,8 +1203,7 @@ proof(rule ccontr)
         the sum of balances amounts exactly to the rescut capacity.\<close>
 
 theorem flow_saturates_ares_cut:
-  assumes "f is b flow"
-          "(ARescut f v) \<subseteq> \<V>"
+  assumes "f is b flow" "(ARescut f v) \<subseteq> \<V>"
   shows   " - sum b (ARescut f v)= ACap (ARescut f v)"
   using assms arescut_all_edges_sat arescut_ingoing_cap by auto
 

@@ -32,6 +32,7 @@ lemma prepathE:"prepath p \<Longrightarrow>(awalk UNIV (fstv (hd p)) (map to_ver
   by(auto simp add: prepath_def)
 
 end
+
 context
  flow_network
 begin
@@ -338,7 +339,8 @@ lemma augpath_rcap_pos_strict':
   shows "e \<in> set es \<Longrightarrow> rcap f e > 0"
     by(induction rule: augpath_induct[OF assms]) auto
 
-lemma augpath_app_single: assumes "augpath f es" 
+lemma augpath_app_single: 
+  assumes "augpath f es" 
   shows "fstv e \<noteq> sndv e \<Longrightarrow> rcap f e > 0 \<Longrightarrow> sndv (last es) = fstv e \<Longrightarrow>
        augpath f (es @ [e])"
   by(induction rule: augpath_induct[OF assms]) 
@@ -372,7 +374,7 @@ lemma augpath_split2:
   by simp
 
 lemma augpath_split3: 
-  assumes"augpath f (xs@ys)" "xs \<noteq> []"  "ys \<noteq> []"
+  assumes "augpath f (xs@ys)" "xs \<noteq> []"  "ys \<noteq> []"
   shows "sndv (last xs) = fstv (hd ys) "
   using assms prepath_split3[of xs ys] 
   unfolding augpath_def
@@ -505,7 +507,7 @@ next
 qed 
 
 lemma e_ot_first_unfold: 
-  "e \<noteq> d \<Longrightarrow> e \<noteq> erev d \<Longrightarrow>rcap (augment_edges f \<gamma> (d#es)) e = rcap (augment_edges f \<gamma> es) e"
+  "\<lbrakk>e \<noteq> d; e \<noteq> erev d\<rbrakk> \<Longrightarrow>rcap (augment_edges f \<gamma> (d#es)) e = rcap (augment_edges f \<gamma> es) e"
   using augment_edges.simps(1)[of f \<gamma> ]  augment_edges.simps(2)[of f \<gamma> d es]  
         e_not_in_p_aug[ of e "[d]" "augment_edges f \<gamma> es" \<gamma>] erve_erve_id[of e] 
   by force 
@@ -513,7 +515,7 @@ lemma e_ot_first_unfold:
 text \<open>If the reverse of an edge $e$ is augmented, then $e$'s residual capacity increases.\<close>
 
 lemma rev_e_in_p_aug:
-  "e \<notin> set es \<Longrightarrow> erev e \<in> set es \<Longrightarrow>distinct es \<Longrightarrow> rcap (augment_edges f \<gamma> es) e = rcap f e + \<gamma>"
+  "\<lbrakk>e \<notin> set es; erev e \<in> set es; distinct es\<rbrakk> \<Longrightarrow> rcap (augment_edges f \<gamma> es) e = rcap f e + \<gamma>"
 proof(induction f \<gamma> es rule: augment_edges.induct)
   case (2 f \<gamma> d es)
   then show ?case 
@@ -1048,7 +1050,7 @@ corollary  augment_path_validness_b_pres_source_target_distinct:
   assumes "f is b flow" "0 \<le> \<gamma>"  "augpath f es"
           "\<gamma> \<le> Rcap f (set es)" "set es \<subseteq> \<EE>" "distinct es"
           "fstv (hd es) \<noteq> sndv (last es)"
- shows    "(augment_edges f \<gamma> es) is 
+   shows  "(augment_edges f \<gamma> es) is 
                                     (\<lambda> v. if v = fstv (hd es) then b v + \<gamma>
                                           else if v = sndv (last es) then b v - \<gamma>
                                           else b v) flow"
@@ -1073,7 +1075,7 @@ lemma e_not_in_es_flow_not_change:
 text \<open>If a forward edge gets augmented, then the flow through  the original edge increases accordingly.\<close>
 
 lemma e_rev_in_es_flow_change: 
- "F d \<in> set es \<Longrightarrow> B d \<notin> set es \<Longrightarrow>distinct es\<Longrightarrow> augment_edges f \<gamma> es d = f d + \<gamma>"
+ "\<lbrakk>F d \<in> set es; B d \<notin> set es; distinct es\<rbrakk>\<Longrightarrow> augment_edges f \<gamma> es d = f d + \<gamma>"
 proof(induction f \<gamma> es rule: augment_edges.induct)
   case (2 f \<gamma> e es)
   then show ?case 
@@ -1090,8 +1092,9 @@ qed simp
 
 text \<open>When augmenting a backward edge, the flow assigned to the original edge is lowered.\<close>
 
-lemma rev_e_in_es_flow_change: "B d \<in> set es \<Longrightarrow> F d \<notin> set es \<Longrightarrow>distinct es \<Longrightarrow>
-       augment_edges f \<gamma> es  d = f  d - \<gamma>"
+lemma rev_e_in_es_flow_change: 
+  "\<lbrakk>B d \<in> set es; F d \<notin> set es; distinct es\<rbrakk>
+    \<Longrightarrow> augment_edges f \<gamma> es  d = f  d - \<gamma>"
 proof(induction f \<gamma> es rule: augment_edges.induct)
   case (2 f \<gamma> e es)  
   then show ?case 
@@ -1118,7 +1121,7 @@ text \<open>If as well a forward as the corresponding backward edge get augmente
        then there are no changes regarding the flow through the original arc.\<close>
 
 lemma there_and_back_flow_not_change: 
-"F d \<in> set es \<Longrightarrow> B d \<in> set es \<Longrightarrow>distinct es \<Longrightarrow>  augment_edges f \<gamma> es  d = f d"
+  "\<lbrakk>F d \<in> set es; B d \<in> set es; distinct es\<rbrakk> \<Longrightarrow> augment_edges f \<gamma> es  d = f d"
 proof(induction f \<gamma> es rule: augment_edges.induct)
   case (2 f \<gamma> e es)  
   then show ?case 
@@ -1151,24 +1154,26 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
 qed simp
 
 lemma distinct_path_augment:
-    "distinct es \<Longrightarrow> \<gamma> \<ge> 0 \<Longrightarrow> (augment_edges f \<gamma> es) e \<ge> f e - \<gamma>" for es f \<gamma> e
-    apply(cases "\<exists> ee \<in> set es. oedge ee = e")
-    subgoal
-      apply(rule exE[where P="\<lambda> ee. ee\<in>set es \<and> oedge ee = e"], blast) 
-      subgoal for ee
-        apply(cases rule: oedge.elims[of ee e], simp)
-          using there_and_back_flow_not_change e_rev_in_es_flow_change
-                rev_e_in_es_flow_change 
-          by (cases "erev ee \<in> set es", auto)+
-        done
-      subgoal
-        using e_not_in_es_flow_not_change by simp
-      done
+ "\<lbrakk>distinct es; \<gamma> \<ge> 0\<rbrakk> \<Longrightarrow> (augment_edges f \<gamma> es) e \<ge> f e - \<gamma>" for es f \<gamma> e
+proof(cases "\<exists> ee \<in> set es. oedge ee = e", goal_cases)
+  case 1
+  then obtain ee where ee:"ee\<in>set es" "oedge ee = e" by auto
+  show ?thesis
+    apply(cases rule: oedge.elims[OF ee(2)])
+    using there_and_back_flow_not_change e_rev_in_es_flow_change
+          rev_e_in_es_flow_change ee(1) 1(1,2)
+    by (cases "erev ee \<in> set es", auto)+
+next
+  case 2
+  thus ?case
+    using e_not_in_es_flow_not_change by simp
+qed
 
-lemma isbflow_cong: "f = f'  \<Longrightarrow> b = b' \<Longrightarrow> f is b flow \<Longrightarrow> f' is b' flow" 
+lemma isbflow_cong: "\<lbrakk>f = f'; b = b'; f is b flow\<rbrakk> \<Longrightarrow> f' is b' flow" 
   for f f' b b' by auto
 
-lemma rcap_extr_strict: "e \<in> set es \<Longrightarrow>  \<gamma> < Rcap f (set es)  \<Longrightarrow> \<gamma> < rcap f e"
+lemma rcap_extr_strict: 
+ "\<lbrakk>e \<in> set es; \<gamma> < Rcap f (set es)\<rbrakk> \<Longrightarrow> \<gamma> < rcap f e"
   using rcap_extr  dual_order.strict_trans1 by blast
 
 end
@@ -1212,8 +1217,7 @@ text \<open>After augmenting by $\gamma$ along $es$,
      with the accumulated residual costs.\<close>
 
 lemma cost_change_aug:
-  assumes "set es \<subseteq> \<EE>"
-          "distinct es"
+  assumes "set es \<subseteq> \<EE>"  "distinct es"
     shows "\<C> (augment_edges f \<gamma> es) = (\<C> f + \<gamma> * (\<Sum> e \<in> set es. \<cc> e))"
   using assms
   unfolding \<C>_def
@@ -1240,9 +1244,10 @@ text \<open>Regarding the zero flow, costs along a path in the original graph an
 
 lemma augpath_to_awalk_zero_flow:
   assumes "augpath f P" 
-    shows "set P \<subseteq> \<EE> \<Longrightarrow> f = (\<lambda> e. 0)   \<Longrightarrow> awalk (make_pair ` \<E>) (fstv (hd P)) (map to_vertex_pair P) (sndv (last P)) \<and> 
-           foldr (\<lambda> e acc. acc + \<cc> e) P bas = 
-           foldr (\<lambda> e acc. acc + \<c> e) (map oedge P) bas"
+  shows "\<lbrakk>set P \<subseteq> \<EE>; f = (\<lambda> e. 0)\<rbrakk>\<Longrightarrow>
+          awalk (make_pair ` \<E>) (fstv (hd P)) (map to_vertex_pair P) (sndv (last P)) \<and> 
+          foldr (\<lambda> e acc. acc + \<cc> e) P bas = 
+          foldr (\<lambda> e acc. acc + \<c> e) (map oedge P) bas"
 proof(induction arbitrary: bas rule: augpath_induct[OF assms])
   case (1 f e)
   have "awalk (make_pair ` \<E>) (fstv e) ([to_vertex_pair e]) (sndv e)"

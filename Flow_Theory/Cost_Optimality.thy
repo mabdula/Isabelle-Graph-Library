@@ -215,7 +215,7 @@ If there was an augmenting cycle, let's simply augment which results in a decrea
 
 lemma min_cost_flow_no_augcycle:
   assumes "is_Opt b f"
-  shows "\<nexists> cs. augcycle f cs"
+  shows   "\<nexists> cs. augcycle f cs"
 proof(rule ccontr)
   assume "\<not> (\<nexists>cs. augcycle f cs) "
   then obtain cs where cs_def: "augcycle f cs" by auto
@@ -485,8 +485,7 @@ However, that is impossible due to the premises.
 \<close>
 
 theorem no_augcycle_min_cost_flow:
-assumes "f is b flow"
-        "\<nexists> cs. augcycle f cs"
+assumes "f is b flow" "\<nexists> cs. augcycle f cs"
   shows "is_Opt b f"
 proof(rule ccontr)
   assume "\<not> is_Opt b f"
