@@ -352,8 +352,10 @@ proof-
       have "\<nexists>p. vwalk_bet (G.digraph_abs G') s p t"
       proof(insert no_parent_path, unfold bfs_tree_def bfs_impl_def,
           subst (asm) BFS.BFS_impl_same[OF bfs.BFS_axioms bfs_dom[OF one(2)]],
-          rule ccontr, rule exE, simp, thin_tac \<open>\<not> (\<nexists>p. vwalk_bet (G.digraph_abs G') s p t)\<close>, goal_cases)
-        case (1 p)
+          rule ccontr, goal_cases) 
+        case 1
+        then obtain p where "vwalk_bet (G.digraph_abs G') s p t" by auto
+        note 1 = 1(1) this
         have "s \<in> t_set srcs"
           using one(2)
           by (auto simp add: dfs.Graph.vset.set.invar_empty)
