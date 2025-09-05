@@ -3,6 +3,11 @@ theory Arborescense
           Directed_Set_Graphs.More_Lists 
 begin
 
+section \<open>Arborescences\<close>
+
+text \<open>Arborescences are trees around a certain vertex, the so-called root. 
+For a fixed root, the arborescences form a greedoid, which satisfies the strong exchange property.\<close>
+
 context graph_abs
 begin
 

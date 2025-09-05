@@ -3,10 +3,14 @@ theory Jarnik_Prim
     Directed_Set_Graphs.Pair_Graph_RBT
 begin
 hide_const RBT_Set.insert
-(*abbreviation "to_dbltn == (\<lambda>x. case x of (x, y) \<Rightarrow> {x, y})"
-*)
 
 lemmas [simp] = set_of_pair_def
+
+section \<open>The Jarnik-Prim Algorithm for Maximum Spanning Tree\<close>
+
+text \<open>Since Arborescences are strong exchange greedoids,
+ we can use the greedy algorithm for greedoids to find a maximum weight solution.
+This is also known as the Jarnik-Prim Algorithm.\<close>
 
 locale jarnik_prim_functions_spec = 
   fixes t_set::"'T \<Rightarrow> ('a::linorder \<times> 'a) set"

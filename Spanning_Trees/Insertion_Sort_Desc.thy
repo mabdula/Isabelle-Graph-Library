@@ -2,6 +2,11 @@ theory Insertion_Sort_Desc
   imports "HOL-Library.Multiset"
 begin
 
+section \<open>Insertion Sort\<close>
+
+text \<open>The Best-In.Greedy Algorithm uses sorting as a preprocessing step.
+Nota bene: The quadratic running time of insertion sort is asymptotically irrelevant.\<close>
+
 
 fun insort1_key_desc :: "('a \<Rightarrow> 'k::linorder) \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "insort1_key_desc f x [] = [x]" |

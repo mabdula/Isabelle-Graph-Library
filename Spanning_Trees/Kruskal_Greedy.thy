@@ -4,6 +4,12 @@ theory Kruskal_Greedy
     Graph_Algorithms_Dev.RBT_Map_Extension 
 begin
 
+section \<open>Kruskal's Algorithm for Maximum Spanning Forest\<close>
+
+text \<open>Since the set of spanning trees is a matroid,
+we can use the Best-In-Greedy Algorithm to find a maximum weight solution.
+This is also known as Kruskal's Algorithm.\<close>
+
 (*TODO?
 move lemmas on rbtsto RBT_Map_Extension?
 *)

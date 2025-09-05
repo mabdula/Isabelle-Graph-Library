@@ -2,6 +2,10 @@ theory Encoding
   imports Undirected_Set_Graphs.Pair_Graph_U_Specs Matroids_Greedy.Indep_System_Matroids_Specs
 begin
 
+section \<open>Transformations between Matroid and Graph ADTs\<close>
+
+text \<open>We use different abstract data types for graphs and matroids implying the need for a translation.\<close>
+
 locale Encoding =
   pair_graph_u: Pair_Graph_U_Specs where lookup = lookup +
   set2: Set2 where insert = set_insert  and isin = set_isin 
