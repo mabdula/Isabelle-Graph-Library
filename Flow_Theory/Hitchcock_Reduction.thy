@@ -3,6 +3,8 @@ theory Hitchcock_Reduction
   imports Cost_Optimality
 begin
 
+section \<open>Reduction: Eliminating Capacities from a Flow Network\<close>
+
 subsection \<open>Mixed-Capacity Graphs\<close>
 
 datatype ('a, 'edge_type) hitchcock_wrapper = edge 'edge_type | vertex 'a

@@ -1,4 +1,4 @@
-section \<open>Residual Graphs\<close>
+section \<open>Flow Networks and Residual Graphs\<close>
 
 text \<open>In this file we build a theory related to residual graphs and some of their properties.\<close>
 
@@ -22,6 +22,8 @@ text \<open>When conducting pen-and-paper proofs on graphs, almost no attention 
      In an informal setting, vertices are usually considered as the foundation of walks and paths. 
      But regarding flow augmentation on paths, reasoning on walks defined by edges is required.
     \<close>
+
+subsection \<open>Flow Networks\<close>
 
 text \<open>We fix a finite and non-empty set of directed edges.
       Those arcs get assigned some real-valued costs $c$ and non-negative capacities $u$.\<close>
@@ -1216,6 +1218,8 @@ theorem flow_saturates_ares_cut:
   using assms arescut_all_edges_sat arescut_ingoing_cap by auto
 
 end
+
+subsection \<open>Costs\<close>
 
 context 
   cost_flow_spec

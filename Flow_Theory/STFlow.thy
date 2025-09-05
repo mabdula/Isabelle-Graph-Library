@@ -689,6 +689,7 @@ next
     by (force intro!: 2(1)[of Nil Nil Nil Nil] simp add:  Abs_def isuflow_def )
 qed
 end
+
 subsection \<open>Maximum Flow and Minimum Cut\<close>
 
 text \<open>As we have a notion of $s$-$t$-flows, we should also formalise the Maxflow-Mincut Theorem\<close>
@@ -895,6 +896,85 @@ lemma sends_min_cut_then_maxflow:
   shows "is_max_flow s t f"
   using assms  ereal_less_eq(3) ex_less_cut_cap 
   by (fastforce intro!: is_max_flowI elim!:  is_min_cutE)
+
+lemma no_maxflow_resreach_standard_proof:
+  assumes "is_s_t_flow f s t " "\<not> resreach f s t"
+  shows   "is_max_flow s t f"
+proof-
+  have props:"isuflow f"  "s \<in> \<V>" "t \<in> \<V>" 
+    using assms(1)
+    by (auto simp add: is_s_t_flow_def is_max_flow_def)
+  hence bflow: "isbflow f (\<lambda> v. -ex f v)"
+    by(auto simp add: isbflow_def)
+  have t_not_in_Rescut:"t \<notin> Rescut f s" 
+    using assms(2) s_neq_t by(auto simp add: Rescut_def)
+  have rescut_s_t_cut: "is_s_t_cut s t (Rescut f s)"  
+    using Rescut_around_in_V[OF props(2), of f] t_not_in_Rescut props(3)
+    by(auto simp add: Rescut_def is_s_t_cut_def)
+  obtain X where X_exists: "is_min_cut s t X"
+    using mincut_exists by auto
+  from rescut_s_t_cut have a1:"ex f t = (\<Sum>x\<in>Rescut f s. ereal (- ex\<^bsub>f\<^esub> x))"
+    using assms(1) by(fastforce intro!: stcut_ex simp add: is_max_flow_def)
+  also have a4:"... = Cap (Rescut f s)"
+    using Rescut_around_in_V[OF props(2), of f]
+    by(force intro!: flow_saturates_res_cut[OF bflow])
+  also have a5:"Cap (Rescut f s) \<ge> Cap X"
+    using X_exists Rescut_around_in_V Rescut_def s_in_V t_not_in_Rescut 
+    by (auto simp add: is_min_cut_def is_s_t_cut_def Rescut_def)
+  also have a6:"Cap X \<ge> ex\<^bsub>f\<^esub> t" 
+    using assms X_exists
+    by(subst stcut_ex[of _ X])
+      (force intro!: flow_less_cut[OF bflow] simp add: is_max_flow_def is_min_cut_def is_s_t_cut_def)+
+  finally have "Cap X = ereal ex\<^bsub>f\<^esub> t"
+    by auto
+  thus ?thesis 
+    using X_exists assms(1) 
+    by(auto intro!: sends_min_cut_then_maxflow)
+qed
+
+lemma maxflow_iff_not_resreach:
+  assumes "is_s_t_flow f s t " 
+  shows   "is_max_flow s t f \<longleftrightarrow> \<not> resreach f s t"
+  using assms max_flow_no_augpath no_maxflow_resreach_standard_proof by blast
+
+lemma Rescut_mincut_maxflow:
+  assumes "is_s_t_flow f s t"
+    "is_min_cut s t (Rescut f s)"
+  shows "is_max_flow s t f" 
+  using assms(2) maxflow_iff_not_resreach[OF assms(1)]
+  by(auto simp add: is_min_cut_def is_s_t_cut_def Rescut_def)
+
+lemma Rescut_of_maxflow_is_mincut:
+  assumes "is_max_flow s t f"
+  shows "is_min_cut s t (Rescut f s)"
+proof-
+  have stflow: "is_s_t_flow f s t" 
+    using assms by(auto elim: is_max_flowE)
+  obtain X where mincutX:"is_min_cut s t X"
+    using mincut_exists by auto
+  have s_in_Rescut_f_s: "s \<in> Rescut f s"
+    using assms is_s_t_cutE max_flow_Rescut_s_t_cut by blast
+  have "(\<Sum>x\<in>Rescut f s. ereal (if x = s then ex\<^bsub>f\<^esub> t else if x = t then - ex\<^bsub>f\<^esub> t else 0)) =
+    ereal (ex\<^bsub>f\<^esub> t + 0)"
+    using max_flow_Rescut_s_t_cut[OF assms] 
+    by(subst insert_Diff[symmetric, OF s_in_Rescut_f_s])
+      (auto intro: is_min_cutE[OF mincutX]
+        elim!:  is_s_t_cutE[of s t "(Rescut f s)"] 
+        simp add:  comm_monoid_add_class.sum.neutral 
+        comm_monoid_add_class.sum.insert_remove[OF finite_Rescut[OF s_in_V]])
+  hence "Cap (Rescut f s) = ereal (ex\<^bsub>f\<^esub> t + 0)"
+    using max_flow_Rescut_s_t_cut[OF assms]    
+    by(subst flow_saturates_res_cut[symmetric, OF _ Rescut_around_in_V[OF s_in_V]])
+      (auto intro: s_t_flow_is_ex_bflow[OF stflow])
+  then show ?thesis 
+    using max_flow_Rescut_s_t_cut[OF assms]  max_flow_min_cut(1)[OF assms mincutX]
+    by(auto intro: is_min_cutE[OF mincutX] simp add:  is_min_cut_def)
+qed
+
+theorem maxflow_iff_Rescut_is_mincut:
+  assumes "is_s_t_flow f s t" 
+  shows   "is_max_flow s t f \<longleftrightarrow> is_min_cut s t (Rescut f s)"
+  using Rescut_mincut_maxflow Rescut_of_maxflow_is_mincut assms by blast
 
 subsection \<open>Reduction of Maximum Flow to Minimum Cost Flow\<close>
 
@@ -1124,41 +1204,6 @@ proof-
   qed
 qed
 
-lemma no_maxflow_resreach_standard_proof:
-  assumes "is_s_t_flow f s t " "\<not> resreach f s t"
-  shows   "is_max_flow s t f"
-proof-
-  have props:"isuflow f"  "s \<in> \<V>" "t \<in> \<V>" 
-    using assms(1)
-    by (auto simp add: is_s_t_flow_def is_max_flow_def)
-  hence bflow: "isbflow f (\<lambda> v. -ex f v)"
-    by(auto simp add: isbflow_def)
-  have t_not_in_Rescut:"t \<notin> Rescut f s" 
-    using assms(2) s_neq_t by(auto simp add: Rescut_def)
-  have rescut_s_t_cut: "is_s_t_cut s t (Rescut f s)"  
-    using Rescut_around_in_V[OF props(2), of f] t_not_in_Rescut props(3)
-    by(auto simp add: Rescut_def is_s_t_cut_def)
-  obtain X where X_exists: "is_min_cut s t X"
-    using mincut_exists by auto
-  from rescut_s_t_cut have a1:"ex f t = (\<Sum>x\<in>Rescut f s. ereal (- ex\<^bsub>f\<^esub> x))"
-    using assms(1) by(fastforce intro!: stcut_ex simp add: is_max_flow_def)
-  also have a4:"... = Cap (Rescut f s)"
-    using Rescut_around_in_V[OF props(2), of f]
-    by(force intro!: flow_saturates_res_cut[OF bflow])
-  also have a5:"Cap (Rescut f s) \<ge> Cap X"
-    using X_exists Rescut_around_in_V Rescut_def s_in_V t_not_in_Rescut 
-    by (auto simp add: is_min_cut_def is_s_t_cut_def Rescut_def)
-  also have a6:"Cap X \<ge> ex\<^bsub>f\<^esub> t" 
-    using assms X_exists
-    by(subst stcut_ex[of _ X])
-      (force intro!: flow_less_cut[OF bflow] simp add: is_max_flow_def is_min_cut_def is_s_t_cut_def)+
-  finally have "Cap X = ereal ex\<^bsub>f\<^esub> t"
-    by auto
-  thus ?thesis 
-    using X_exists assms(1) 
-    by(auto intro!: sends_min_cut_then_maxflow)
-qed
-
 lemma no_maxflow_resreach:
   assumes "is_s_t_flow f s t " "\<not> resreach f s t"
   shows   "is_max_flow s t f"
@@ -1344,50 +1389,6 @@ proof-
     qed
   qed
 qed
-
-lemma maxflow_iff_not_resreach:
-  assumes "is_s_t_flow f s t " 
-  shows   "is_max_flow s t f \<longleftrightarrow> \<not> resreach f s t"
-  using assms max_flow_no_augpath no_maxflow_resreach by blast
-
-lemma Rescut_mincut_maxflow:
-  assumes "is_s_t_flow f s t"
-    "is_min_cut s t (Rescut f s)"
-  shows "is_max_flow s t f" 
-  using assms(2) maxflow_iff_not_resreach[OF assms(1)]
-  by(auto simp add: is_min_cut_def is_s_t_cut_def Rescut_def)
-
-lemma Rescut_of_maxflow_is_mincut:
-  assumes "is_max_flow s t f"
-  shows "is_min_cut s t (Rescut f s)"
-proof-
-  have stflow: "is_s_t_flow f s t" 
-    using assms by(auto elim: is_max_flowE)
-  obtain X where mincutX:"is_min_cut s t X"
-    using mincut_exists by auto
-  have s_in_Rescut_f_s: "s \<in> Rescut f s"
-    using assms is_s_t_cutE max_flow_Rescut_s_t_cut by blast
-  have "(\<Sum>x\<in>Rescut f s. ereal (if x = s then ex\<^bsub>f\<^esub> t else if x = t then - ex\<^bsub>f\<^esub> t else 0)) =
-    ereal (ex\<^bsub>f\<^esub> t + 0)"
-    using max_flow_Rescut_s_t_cut[OF assms] 
-    by(subst insert_Diff[symmetric, OF s_in_Rescut_f_s])
-      (auto intro: is_min_cutE[OF mincutX]
-        elim!:  is_s_t_cutE[of s t "(Rescut f s)"] 
-        simp add:  comm_monoid_add_class.sum.neutral 
-        comm_monoid_add_class.sum.insert_remove[OF finite_Rescut[OF s_in_V]])
-  hence "Cap (Rescut f s) = ereal (ex\<^bsub>f\<^esub> t + 0)"
-    using max_flow_Rescut_s_t_cut[OF assms]    
-    by(subst flow_saturates_res_cut[symmetric, OF _ Rescut_around_in_V[OF s_in_V]])
-      (auto intro: s_t_flow_is_ex_bflow[OF stflow])
-  then show ?thesis 
-    using max_flow_Rescut_s_t_cut[OF assms]  max_flow_min_cut(1)[OF assms mincutX]
-    by(auto intro: is_min_cutE[OF mincutX] simp add:  is_min_cut_def)
-qed
-
-theorem maxflow_iff_Rescut_is_mincut:
-  assumes "is_s_t_flow f s t" 
-  shows   "is_max_flow s t f \<longleftrightarrow> is_min_cut s t (Rescut f s)"
-  using Rescut_mincut_maxflow Rescut_of_maxflow_is_mincut assms by blast
 
 end
 end
