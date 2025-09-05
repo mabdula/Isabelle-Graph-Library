@@ -4,6 +4,10 @@ begin
 
 (*Authored by Shriya Meenakshisundaram and Thomas Ammer*)
 
+section \<open>A Greedy Algorithm for Greedoid Optimisation\<close>
+
+subsection \<open>Setup\<close>
+
 locale greedoid_algorithm = greedoid +
   fixes orcl::"'a \<Rightarrow> 'a set \<Rightarrow> bool"
   assumes orcl_correct: "\<And> X x. x \<in> E - X \<Longrightarrow> X \<in> F \<Longrightarrow> orcl x X \<longleftrightarrow> insert x X \<in> F"
@@ -174,6 +178,8 @@ lemma greedoid_greedy_pinduct:
     P es c xs) \<Longrightarrow>
 P es c xs"
   by(induction rule: greedoid_greedy.pinduct[OF assms]) auto
+
+subsection \<open>Invariant Preservation\<close>
 
 definition "invar_find_best_cand es c xs = (\<forall> i < length xs. 
                         Some (xs ! i) = find_best_candidate es c (set (drop (i+1) xs)))"
@@ -549,6 +555,8 @@ lemmas result_props =
   loop_props(5)[OF loop_props(3)[OF initial_props(1-3)] initial_props(1,3), of ]
   loop_props(6)[OF loop_props(3)[OF initial_props(1-3)] initial_props(1,5), of ]
 
+subsection \<open>Correctness\<close>
+
 lemma algorithm_computes_basis:
   assumes set_assum: "set es = E" "distinct es" 
   shows   "basis F (set (greedoid_greedy es c Nil))"
@@ -754,13 +762,9 @@ proof-
   thus ?thesis
     using B_prop(1) by auto
 qed
-(*
-context
-  assumes no_strong_exchange: "\<not> strong_exchange_property E F"
-begin
 
-thm no_strong_exchange[simplified strong_exchange_property_def]
-*)
+subsection \<open>Algorithmic Characterisation of Strong-Exchange Greedoids\<close>
+
 lemma no_strong_exchange_applied: 
 assumes no_strong_exchange: "\<not> strong_exchange_property E F"
   obtains A B x where
@@ -1360,6 +1364,8 @@ theorem greedoid_characterisation:
   by fast
 
 end
+
+subsection \<open>Executability\<close>
 
 locale greedoid_greedy_impl_spec =
   fixes orcl_impl::"'a \<Rightarrow> 'sol_set \<Rightarrow> bool"
