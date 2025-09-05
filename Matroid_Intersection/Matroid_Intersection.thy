@@ -3,6 +3,11 @@ theory Matroid_Intersection
     "Directed_Set_Graphs.Pair_Graph_Specs" Berge_Lemma.Alternating_Lists
 begin
 
+section \<open>Theory for Matroid Intersection\<close>
+
+text \<open>This file contains theory for matroid intersection, including Edmonds' Max-Min Equality,
+the auxiliary graph, augmentation lemmas and a characterisation of optimality.\<close>
+
 lemma exists_smallest_witness: 
   assumes "P x" "fx = f x"
   shows "\<exists> y. P y \<and> (\<nexists> z. P z \<and> ((f z)::nat) < f y)"
@@ -79,7 +84,6 @@ next
   then show ?thesis 
     using assms(1) by simp
 qed
-
 
 lemma the_circuit_is_circuit:
   assumes "indep X" "\<not> indep (insert x X)" "insert x X \<subseteq> carrier" 

@@ -3,6 +3,12 @@ theory Compute_Path
     "Graph_Algorithms_Dev.RBT_Map_Extension"
 begin  
 
+section \<open>Shortest Paths between Sources and Targets\<close>
+
+text \<open>This file uses the BFS and DFS to find a shortest path between a set of sources and a set of targets.
+      We add a super-source and a super-target followed by BFS and DFS.
+      The super-source and super-target are finally removed to obtain a desired path.\<close>
+
 lemma G_and_dfs_graph: "G.digraph_abs = dfs.Graph.digraph_abs"
   "G.graph_inv = dfs.Graph.graph_inv"
   by(auto simp add: RBT_Set.empty_def G.digraph_abs_def dfs.Graph.digraph_abs_def 

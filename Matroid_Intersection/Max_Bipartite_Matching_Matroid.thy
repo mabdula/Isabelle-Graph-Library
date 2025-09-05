@@ -3,6 +3,11 @@ theory Max_Bipartite_Matching_Matroid
  Compute_Path "HOL-Library.Product_Lexorder"
 begin
 
+section \<open>Maximum Cardinality Bipartite Matching\<close>
+
+text \<open>This file uses the matroid intersection algorithm to obtain an algorithm for maximum
+cardinality bipartite matching, which is an instance of matroid intersection.\<close>
+
 locale max_bimatch_by_matroid_spec=
   fixes Edges :: "'b set"
     and to_dbltn :: "'b \<Rightarrow> 'a set"
