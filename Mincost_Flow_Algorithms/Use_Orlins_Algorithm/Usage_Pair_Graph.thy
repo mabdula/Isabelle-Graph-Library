@@ -1,6 +1,4 @@
-section \<open>Using Orlins Algorithms to solve Flow Problems\<close>
-
-subsection \<open>Flows in uncapacitated, simple Graphs\<close>
+section \<open>Using Orlins Algorithms for Flows in Uncapacitated Simple Graphs\<close>
 
 theory Usage_Pair_Graph
   imports Instantiation

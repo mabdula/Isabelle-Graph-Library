@@ -342,7 +342,8 @@ proof-
   qed
 qed
 
-(*Invariants: solution in E, solution independent, solution distinct, solution elements are best candidates*)
+text \<open>Invariants: solution in E, solution independent, solution distinct, 
+ solution elements are best candidates\<close>
 
 named_theorems loop_props
 
