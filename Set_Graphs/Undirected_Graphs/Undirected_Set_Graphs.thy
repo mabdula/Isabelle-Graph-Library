@@ -3287,8 +3287,9 @@ qed simp
 lemma walk_betw_imp_epath:
   assumes "dblton_graph G" 
   shows "walk_betw G u p v \<Longrightarrow> epath G u (edges_of_path p) v" 
+  using assms
   by (induction p arbitrary: u v rule: edges_of_path.induct)
-     (auto elim!: dblton_graphE[OF assms] simp add: doubleton_eq_iff walk_betw_def)
+     (force simp add: doubleton_eq_iff walk_betw_def)+
 
 lemma epath_imp_walk_betw:
   "epath G u p v \<Longrightarrow>length p \<ge> 1  \<Longrightarrow>\<exists> q. walk_betw G u q v \<and> p = edges_of_path q"
@@ -4141,30 +4142,33 @@ end
 
 subsection \<open>Connected Graphs\<close>
 
-definition "Uconnected G = (\<forall> u\<in> Vs G. \<forall> v \<in> Vs G. reachable G u v)"
+text \<open>Remove connectedness from topological spaces.\<close>
+hide_const connected
 
-lemma UconnectedI: "(\<And> u v. \<lbrakk>u \<in> Vs G; v \<in> Vs G\<rbrakk> \<Longrightarrow> reachable G u v) \<Longrightarrow>Uconnected G"
-  by(auto simp add: Uconnected_def)
+definition "connected G = (\<forall> u\<in> Vs G. \<forall> v \<in> Vs G. reachable G u v)"
 
-lemma UconnectedE: "Uconnected G \<Longrightarrow> 
+lemma connectedI: "(\<And> u v. \<lbrakk>u \<in> Vs G; v \<in> Vs G\<rbrakk> \<Longrightarrow> reachable G u v) \<Longrightarrow>connected G"
+  by(auto simp add: connected_def)
+
+lemma connectedE: "connected G \<Longrightarrow> 
            ((\<And> u v. \<lbrakk>u \<in> Vs G; v \<in> Vs G\<rbrakk> \<Longrightarrow> reachable G u v) \<Longrightarrow>P) \<Longrightarrow> P"
-  by(auto simp add: Uconnected_def)
+  by(auto simp add: connected_def)
 
-lemma same_comp_Uconnected: 
+lemma same_comp_connected: 
   "(\<And> u v. \<lbrakk>u \<in> Vs G; v \<in> Vs G\<rbrakk> \<Longrightarrow> connected_component G u = connected_component G v)
-    \<Longrightarrow> Uconnected G"
-  apply(rule UconnectedI) 
+    \<Longrightarrow> connected G"
+  apply(rule connectedI) 
   subgoal for u v
     apply(rule in_connected_componentE[of v G u])
       apply((insert in_own_connected_component[of v G])[1], blast) 
     by (auto intro: Undirected_Set_Graphs.reachable_refl[of v G])
   done  
 
-lemma Uconnected_same_comp: 
-  "\<lbrakk>Uconnected G; u \<in> Vs G ; v \<in> Vs G\<rbrakk>
+lemma connected_same_comp: 
+  "\<lbrakk>connected G; u \<in> Vs G ; v \<in> Vs G\<rbrakk>
     \<Longrightarrow> connected_component G u = connected_component G v"
   using connected_components_member_eq in_connected_componentI
-  by(unfold Uconnected_def) fast
+  by(unfold connected_def) fast
 
 lemma connected_component_one_edge:
   assumes "r \<in> e"  "\<exists> u v. {u,v} = e \<and> u \<noteq> v" 
@@ -4181,20 +4185,20 @@ proof-
   ultimately show ?thesis by auto
 qed
 
-lemma Uconnected_def_via_components:
-  "Uconnected G = ((\<forall> v \<in> Vs G. connected_component G v = Vs G))" 
+lemma connected_def_via_components:
+  "connected G = ((\<forall> v \<in> Vs G. connected_component G v = Vs G))" 
 proof(cases "G = {}")
   case True
   then show ?thesis 
-    by (auto intro: UconnectedI vs_member_elim)
+    by (auto intro: connectedI vs_member_elim)
 next
   case False
   note false = this
   show ?thesis
   proof(cases "G = {{}}")
     case True
-    hence "Uconnected G"
-      by(auto intro:  UconnectedI simp add: Vs_def )
+    hence "connected G"
+      by(auto intro:  connectedI simp add: Vs_def )
     moreover have "Vs G = {}"
       using True by(auto simp add: Vs_def)
     ultimately show ?thesis by auto
@@ -4208,12 +4212,12 @@ next
     proof(rule, goal_cases)
       case 1
       then show ?case using  in_connected_component_in_edges  
-        by(fastforce elim!: UconnectedE intro: in_connected_componentI)
+        by(fastforce elim!: connectedE intro: in_connected_componentI)
     next
       case 2
       then show ?case 
-        using UconnectedE[OF same_comp_Uconnected, of G] 
-        by(auto intro!: UconnectedI)
+        using connectedE[OF same_comp_connected, of G] 
+        by(auto intro!: connectedI)
     qed
   qed
 qed

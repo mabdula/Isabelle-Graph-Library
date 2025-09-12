@@ -115,7 +115,8 @@ definition "abstract_E = set_of_pair ` E"
 definition "cc = sum c_impl"
 
 interpretation jp_graph: graph_abs where G = abstract_E 
-  using es(2) by(fastforce intro!: graph_abs.intro simp add: dblton_graph_def abstract_E_def E_def Vs_def)
+  using es(2) 
+  by(fastforce intro!: graph_abs.intro simp add: dblton_graph_def abstract_E_def E_def Vs_def)
 
 definition "jp_arborescence X = ((X \<subseteq> E) \<and> jp_graph.arborescence seed (set_of_pair `X))"
 definition "F = {X | X. jp_arborescence X}"
@@ -264,8 +265,9 @@ qed
 lemma cc_single: "c_impl x = cc {x}" 
   by(auto simp add: cc_def)
 
-lemma basis_equiv: "(basis {T | T . jp_graph.arborescence seed T}  (set_of_pair `T)  \<and> T \<subseteq> E)
-= basis F T" 
+lemma basis_equiv: 
+  "(basis {T | T . jp_graph.arborescence seed T}  (set_of_pair `T)  \<and> T \<subseteq> E)
+   \<longleftrightarrow> basis F T" 
 proof(rule sym, rule, goal_cases)
   case 1
   hence one: "T \<subseteq> E" "jp_graph.arborescence seed ((\<lambda>(x, y). {x, y}) ` T)"
@@ -459,8 +461,8 @@ lemmas jarnik_prim_gives_opt =
 lemma modular_weight: "valid_modular_weight_func E cc"
   by (simp add: cc_def jarnik_prim.sum_is_modular)
 
-lemma final_arborescene_is: "final_arborescence = 
-set (jarnik_prim.greedoid_greedy es cc [])"
+lemma final_arborescene_is: 
+  "final_arborescence = set (jarnik_prim.greedoid_greedy es cc [])"
   by (simp add: E_def JP_initial_compl es(1) final_arborescence_def jarnik_prim.same_result)
 
 theorem jp_correctness:
@@ -476,7 +478,7 @@ qed
 definition "stree_around_seed T = 
    (  connected_component abstract_E seed = connected_component (set_of_pair ` T) seed 
     \<and> jp_graph.has_no_cycle (set_of_pair ` T)
-    \<and> Uconnected (set_of_pair ` T) 
+    \<and> connected (set_of_pair ` T) 
     \<and> T \<subseteq> E
    )"
 

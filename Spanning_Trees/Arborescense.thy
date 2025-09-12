@@ -274,11 +274,11 @@ qed
 
 lemma basis_is: 
   assumes r_in_G: "r \<in> Vs G"
-  shows "connected_component G r = connected_component T r \<and> has_no_cycle T \<and> Uconnected T
+  shows "connected_component G r = connected_component T r \<and> has_no_cycle T \<and> connected T
                   \<longleftrightarrow> basis {T | T. arborescence r T} T"
 proof(rule, goal_cases)
   case 1
-  hence one: "connected_component G r = connected_component T r" "has_no_cycle T" "Uconnected T" by auto
+  hence one: "connected_component G r = connected_component T r" "has_no_cycle T" "connected T" by auto
   hence T_in_G:"T \<subseteq> G" 
     by (simp add: has_no_cycle_indep_subset_carrier)
   obtain s where rs:"{r, s} \<in> G" "s \<noteq> r" 
@@ -288,7 +288,7 @@ proof(rule, goal_cases)
       in_connected_componentE[of s T r] one(1) by auto
   hence T_is_r_comp:"Vs T = connected_component T r" 
     using "1" \<open>r \<in> Vs T\<close> connected_component_set[of r T "Vs T"] reachable_in_Vs(2)[of T r]
-    by(unfold Uconnected_def) blast
+    by(unfold connected_def) blast
   hence "arborescence r T"
     using  r_in_G  one(2) by (auto simp add: arborescence_def vs_member'[of r])
   moreover have "T \<subset> S \<Longrightarrow>  arborescence r S \<Longrightarrow> False" for S 
@@ -431,16 +431,16 @@ next
     qed
     ultimately show ?thesis by auto
   qed
-  moreover have "Uconnected T"
+  moreover have "connected T"
     using   arbor_unfold(2)[OF T_non_empt] connected_components_member_eq [of _ T r]
-    by(auto intro: same_comp_Uconnected) 
+    by(auto intro: same_comp_connected) 
   ultimately show ?case
     by (simp add: arbor_unfold(1))
 qed
 
-lemma arborescense_connected: "arborescence  r T \<Longrightarrow> Uconnected T "
+lemma arborescense_connected: "arborescence  r T \<Longrightarrow> connected T "
   using  Undirected_Set_Graphs.reachable_refl[of _ T ] connected_components_member_eq not_reachable_empt 
-  by(intro same_comp_Uconnected)(force simp add: arborescence_def)
+  by(intro same_comp_connected)(force simp add: arborescence_def)
 
 lemma strong_exchange: assumes r_in_G: "r \<in> Vs G" 
   shows "strong_exchange_property G {T |T. arborescence r T}"
