@@ -1,5 +1,5 @@
-theory Arith_Lemmas
-  imports Main Complex_Main "HOL-Library.Extended_Real" Logic_Lemmas
+theory More_Arith
+  imports Main Complex_Main "HOL-Library.Extended_Real" More_Logic
 begin
 
 lemma sum_cong_extensive: "A = B \<Longrightarrow> (\<And> x. x \<in> A \<Longrightarrow> x \<in> B \<Longrightarrow> f x = g x) \<Longrightarrow> sum f A = sum g B" for B
@@ -41,6 +41,12 @@ lemma minus_leq_flip:"- (a::ereal) \<le> b \<Longrightarrow> - b \<le> a"
   by (simp add: ereal_uminus_le_reorder)
 
 definition "is_integral (x::real) = (\<exists> n::int. x = n)"
+
+lemma is_integralI:
+"(x::real) = (n::int) \<Longrightarrow> is_integral x"
+and is_integralE:
+"is_integral x \<Longrightarrow> (\<And> n. (x::real) = (n::int) \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: is_integral_def)
 
 lemma integral_min: "is_integral x \<Longrightarrow> is_integral y \<Longrightarrow> is_integral (min x y)"
   unfolding is_integral_def
@@ -93,6 +99,18 @@ lemma sum_if_P: "(\<And> x. x \<in> X \<Longrightarrow> P x) \<Longrightarrow> s
 lemma sum_if_not_P: "(\<And> x. x \<in> X \<Longrightarrow> \<not> P x) \<Longrightarrow> sum (\<lambda> x. i x (if P x then g x else h x)) X = sum (\<lambda> x. i x (h x)) X" for h g X P 
   by simp
 
+lemma sum_if_not_P_not_Q_but_R:
+  "\<lbrakk>(\<And> x. x \<in> X \<Longrightarrow> \<not> P x); (\<And> x. x \<in> X \<Longrightarrow> \<not> Q x);(\<And> x. x \<in> X \<Longrightarrow> R x)\<rbrakk> \<Longrightarrow> 
+   sum (\<lambda> x. i x (if P x then g x else if Q x then h x else if R x then h1 x else h2 x)) X 
+   = sum (\<lambda> x. i x (h1 x)) X" 
+  by simp
+
+lemma sum_if_not_P_not_Q_not_R:
+  "\<lbrakk>(\<And> x. x \<in> X \<Longrightarrow> \<not> P x); (\<And> x. x \<in> X \<Longrightarrow> \<not> Q x);(\<And> x. x \<in> X \<Longrightarrow> R x)\<rbrakk> \<Longrightarrow> 
+   sum (\<lambda> x. i x (if P x then g x else if Q x then h x else if R x then h1 x else h2 x)) X 
+   = sum (\<lambda> x. i x (h1 x)) X" 
+  by simp
+
 lemma two_sum_remove:"(\<Sum>e'\<in>{x, y}. g e') = (if x \<noteq> y then g x + g y else g x)" for x y g 
        by simp
 
@@ -137,6 +155,11 @@ lemma diff_eq_split: "a  = b \<Longrightarrow> c = d \<Longrightarrow> a - c = b
 
 lemma sum_singleton: "(\<Sum> i \<in> {x}. f i) = f x"
   by(rule  trans[OF sum.insert_remove[of "{}" f x]], simp+)
+
+lemma union_disjoint_triple: 
+  "\<lbrakk>finite A; finite B; finite C; A \<inter> B = {}; A \<inter> C = {}; B \<inter> C = {} \<rbrakk> \<Longrightarrow>
+     sum f (A \<union> B \<union> C) = sum f A + sum f B + sum f C" for A B C
+  by (simp add: boolean_algebra.conj_disj_distrib2 sum_Un_eq)
 
 lemma sum_index_shift: "finite X \<Longrightarrow> sum f {x+(k::nat)|x. x \<in> X} = sum (\<lambda>x. f (x+k)) X"
   proof(induction rule: finite.induct)
@@ -188,6 +211,9 @@ lemma sum_except_two: "finite X \<Longrightarrow> a \<noteq> b \<Longrightarrow>
       for a b X f
   by (metis DiffI Diff_insert add.commute finite_Diff insert_absorb singletonD 
                sum.insert_remove)
+
+lemma sum_split_off: "A \<subseteq> B \<Longrightarrow> finite B \<Longrightarrow> (\<And> x. x \<in> B - A \<Longrightarrow> f x = 0) \<Longrightarrow> sum f A = sum f B" for f A B
+  by (simp add: sum.mono_neutral_cong_right)
 
 lemma sum_integer_multiple:
 "finite E \<Longrightarrow>(\<And> e. e\<in> E \<Longrightarrow> \<exists> (n::int). n * (\<gamma>::real) = f e) \<Longrightarrow> \<exists> (n::int). n *\<gamma> = sum f E"
@@ -501,7 +527,57 @@ next
  qed 
 qed simp
 
+lemma ceil_is_int_iff_range:"(\<lceil> x::real \<rceil> = i) \<longleftrightarrow> (of_int i \<ge> x \<and> x > of_int i - 1)"
+  by (auto simp add: algebra_simps) linarith+
+
 lemma min_integral: "\<exists> n::nat. x = real n \<Longrightarrow> \<exists> n::nat. y = real n \<Longrightarrow>
                                     \<exists> n::nat. min x y = real n" for x y 
   by (simp add: min_def)
+
+lemma enat_less_plus_1_leq:"(x::enat) < (y::enat) + 1 \<Longrightarrow> x \<le> y" 
+  by(cases y, all \<open>cases x\<close>)
+    (auto simp add: plus_1_eSuc(2))
+
+lemma ereal_of_real_of_ereal_leq: "x \<ge> 0 \<Longrightarrow> ereal (real_of_ereal x) \<le> x"
+  by (simp add: ereal_real)
+
+lemma is_multiple_multiple: 
+  "(\<exists> n::nat.  y = (real n) * x) \<Longrightarrow> (\<exists> n::nat. y*2 = (real n) * x )"
+  by (metis distrib_left mult.commute mult_2_right of_nat_add)
+
+lemma minE: "((a::real) \<le> b \<Longrightarrow> P a) \<Longrightarrow> (b \<le> a \<Longrightarrow> P b) \<Longrightarrow> P (min a b)"
+  by linarith
+
+definition "abstract_real_map mp x = (case mp x of None \<Rightarrow> 0 | Some y \<Rightarrow> y)"
+
+lemma abstract_real_map_empty: "abstract_real_map (\<lambda> _ . None) = (\<lambda> _ . 0)"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_some: "mp x = Some y \<Longrightarrow> abstract_real_map mp x = y"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_cong: "mp x = mp' x \<Longrightarrow> abstract_real_map mp x = abstract_real_map mp' x"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_none: "mp x = None \<Longrightarrow> abstract_real_map mp x = 0"
+  by(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_not_zeroE: 
+"abstract_real_map mp x \<noteq> 0 \<Longrightarrow> (\<And> y. mp x = Some y \<Longrightarrow> y \<noteq> 0 \<Longrightarrow> P) \<Longrightarrow> P"
+  by(cases "mp x")(auto simp add: abstract_real_map_def)
+
+lemma abstract_real_map_outside_dom: "x \<notin> dom mp \<Longrightarrow> abstract_real_map mp x = 0"
+  by(cases "mp x")(auto simp add: abstract_real_map_def dom_if)
+
+lemma abstract_real_map_in_dom_the: "x \<in> dom mp \<Longrightarrow> abstract_real_map mp x = the (mp x)"
+  by(cases "mp x")(auto simp add: abstract_real_map_def dom_if)
+
+definition "abstract_bool_map mp = (\<lambda> opt. (case mp opt of None \<Rightarrow> False
+                                | Some x \<Rightarrow> x))"
+
+lemma abstract_bool_map_None: "mp x = None \<Longrightarrow> abstract_bool_map mp x = False"
+and abstract_bool_map_Some: "mp x = Some b \<Longrightarrow> abstract_bool_map mp x = b"
+and abstract_bool_map_upd: "abstract_bool_map (mp(x:=Some bb)) = 
+                        (\<lambda> y. if x = y then bb else abstract_bool_map mp y)" 
+  by(auto simp add: abstract_bool_map_def)
 end

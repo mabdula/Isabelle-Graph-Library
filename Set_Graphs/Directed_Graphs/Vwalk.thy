@@ -215,6 +215,8 @@ lemma edges_of_vwalk_append_3:
   using assms
   by (auto simp flip: append_butlast_last_cancel simp: edges_of_vwalk_append_2)
 
+lemmas edges_of_vwalk_append_two_vertices = edges_of_vwalk_append_3[of "_ @[_]" "[_]", simplified]
+
 lemma vwalk_vertex_has_edge:
   assumes "length p \<ge> 2" "v \<in> set p"
   obtains e u where "e \<in> set (edges_of_vwalk p)" "e = (u, v) \<or> e = (v, u)"
@@ -310,6 +312,10 @@ lemma vwalk_bet_reflexive[intro]:
   using assms 
   unfolding vwalk_bet_def by simp
 
+lemma vwalk_bet_reflexive_cong: 
+"\<lbrakk>w \<in> dVs E;  a = w; b = w\<rbrakk> \<Longrightarrow> vwalk_bet E a [w] b" 
+  by (meson vwalk_bet_reflexive)
+
 lemma singleton_hd_last: "q \<noteq> [] \<Longrightarrow> tl q = [] \<Longrightarrow> hd q = last q"
   by (cases q) simp_all
 
@@ -355,6 +361,10 @@ lemma edges_are_vwalk_bet:
   unfolding vwalk_bet_def
   using assms
   by (simp add: dVsI)
+
+lemma  edges_are_vwalk_bet_cong: 
+ "\<lbrakk>(v,w)\<in> E; a = v;  b = w\<rbrakk> \<Longrightarrow> vwalk_bet E a [v, w] b" for v E w a b
+  using edges_are_vwalk_bet by auto
 
 lemma induct_vwalk_bet[case_names path1 path2, consumes 1, induct set: vwalk_bet]:
   assumes "vwalk_bet E a p b"
@@ -724,7 +734,18 @@ lemma vtrail_suffix_is_vtrail:
   by (auto simp: vwalk_bet_suffix_is_vwalk_bet edges_of_vwalk_append_2[OF \<open>q \<noteq> []\<close>])
 
 definition distinct_vwalk_bet :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "distinct_vwalk_bet E u p v = ( vwalk_bet E u p v \<and> distinct p)"
+  "distinct_vwalk_bet E u p v = (vwalk_bet E u p v \<and> distinct p)"
+
+lemma distinct_vwalk_betE:
+  "distinct_vwalk_bet E u p v \<Longrightarrow> 
+  (\<lbrakk>vwalk_bet E u p v;  distinct p\<rbrakk> \<Longrightarrow> P)
+  \<Longrightarrow> P"
+and distinct_vwalk_betI:
+  "(\<lbrakk>vwalk_bet E u p v;  distinct p\<rbrakk> \<Longrightarrow> distinct_vwalk_bet E u p v)"
+and distinct_vwalk_betD:
+  "distinct_vwalk_bet E u p v \<Longrightarrow> vwalk_bet E u p v"
+  "distinct_vwalk_bet E u p v \<Longrightarrow> distinct p"
+  by(auto simp add: distinct_vwalk_bet_def)
 
 lemma distinct_vwalk_bet_length_le_card_vertices:
   assumes "distinct_vwalk_bet E u p v"
@@ -994,8 +1015,6 @@ lemma vwalk_bet_insertE[case_names nil sing1 sing2 in_e in_E]:
   apply(erule vwalk_insertE)
   by (simp | force)+
 
-find_theorems name: induct vwalk_bet
-
 lemma vwalk_bet2[simp]:
   "vwalk_bet G u (u # v # vs) b \<longleftrightarrow> ((u,v) \<in> G \<and> vwalk_bet G v (v # vs) b)"
   by(auto simp: vwalk_bet_def)
@@ -1046,8 +1065,6 @@ next
   qed
 qed
 
-  
-  find_theorems name: split vwalk_bet
 *)
 
 lemma butlast_vwalk_is_vwalk: "vwalk E p \<Longrightarrow> vwalk E (butlast p)"
@@ -1183,4 +1200,16 @@ qed
 
 lemma vwalk_append_intermediate_edge:"vwalk_bet A x p y \<Longrightarrow> (y, x') \<in> A \<Longrightarrow> vwalk_bet A x' p' y' \<Longrightarrow> vwalk_bet A x (p@p') y'"
   by (simp add: append_vwalk vwalk_bet_def)
+
+lemma vwalk_bet_diff_verts_length_geq_2:"vwalk_bet E s  p t\<Longrightarrow> s \<noteq> t \<Longrightarrow> length p \<ge> 2"
+  by(cases p rule: edges_of_vwalk.cases) (auto simp add: vwalk_bet_def)
+
+definition "dir_acyc G = (\<nexists> p u. vwalk_bet G u p u \<and> length p \<ge> 2)"
+
+lemma dir_acycI: "(\<And> u p. vwalk_bet G u p u \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> False) \<Longrightarrow> dir_acyc G"
+  by(auto simp add: dir_acyc_def)
+
+lemma dir_acycE: "dir_acyc G \<Longrightarrow>
+((\<And> u p. vwalk_bet G u p u \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> False) \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add: dir_acyc_def)
 end

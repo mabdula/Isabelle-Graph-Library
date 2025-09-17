@@ -2,6 +2,11 @@ theory Matroid_Intersection_Algorithm
   imports Matroid_Intersection
 begin
 
+section \<open>Maximum Cardinality Matroid Intersection Algorithm\<close>
+
+text \<open>This file contains a formalisation of the maximum cardinality matroid intersection algorithm
+given by Korte&Vygen.\<close>
+
 record 'sol intersec_state = sol::'sol
 
 lemma sol_remove: "sol (state \<lparr> sol:= new_sol \<rparr>) = new_sol"

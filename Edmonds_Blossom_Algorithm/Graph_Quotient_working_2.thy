@@ -812,8 +812,6 @@ proof(rule ccontr; simp)
       using cycle(1)[unfolded odd_cycle_def]
       by (auto simp: Suc_le_length_iff numeral_3_eq_3)
     ultimately have "e = last (edges_of_path p) \<or> e = hd (edges_of_path p)" if "last p \<in> e" "e \<in> set (edges_of_path p)" for e
-      find_theorems hd set edges_of_path
-
       using in_edges_of_path_hd_or_tl[OF that(2)] that
       by (metis edges_of_path.elims empty_iff empty_set last_ConsR list.sel(3))
     moreover case True
@@ -1478,7 +1476,6 @@ proof-
       using \<open>p2 \<noteq> []\<close> by auto
     assume quot_aug_path: "alt_path (quotG M) (u # p2)" "distinct (u # p2)" "path (quotG E) (u # p2)"
     assume p2_subset_s: "set p2 \<subseteq> s"
-    find_theorems "Suc _ \<le> length _"
     assume cycle: "odd_cycle C" "alt_path M C" "distinct (tl C)"
     have "C \<noteq> []"
       using odd_cycle_nempty(1)[OF cycle(1)] .
@@ -1665,7 +1662,6 @@ proof-
       have p1_nempty: "p1 \<noteq> []" using len_ge_2 by auto
       show ?thesis
       proof-
-        find_theorems append alt_list
         have inM: "{last p1, u} \<in> quotG M"
           using alt_list_append_1'''[OF matching_augmenting_path_feats(2)[OF quot_aug_path, unfolded rw4[OF p1_nempty p2_nempty]] _ up2_nin_M]
           by auto

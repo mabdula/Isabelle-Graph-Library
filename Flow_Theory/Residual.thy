@@ -1,4 +1,4 @@
-section \<open>Residual Graphs\<close>
+section \<open>Flow Networks and Residual Graphs\<close>
 
 text \<open>In this file we build a theory related to residual graphs and some of their properties.\<close>
 
@@ -23,12 +23,14 @@ text \<open>When conducting pen-and-paper proofs on graphs, almost no attention 
      But regarding flow augmentation on paths, reasoning on walks defined by edges is required.
     \<close>
 
+subsection \<open>Flow Networks\<close>
+
 text \<open>We fix a finite and non-empty set of directed edges.
       Those arcs get assigned some real-valued costs $c$ and non-negative capacities $u$.\<close>
 
 locale flow_network_spec =
-multigraph_spec where \<E> = "\<E>::'edge_type set" for \<E> +
-fixes \<u>::"'edge_type \<Rightarrow> ereal"
+ multigraph_spec where \<E> = "\<E>::'edge_type set" for \<E> +
+ fixes \<u>::"'edge_type \<Rightarrow> ereal"
 
 locale flow_network =
  multigraph where \<E> = "\<E>::'edge_type set" +
@@ -38,7 +40,8 @@ locale flow_network =
 locale cost_flow_spec = flow_network_spec where \<E> = "\<E>::'edge_type set" for \<E>  + 
   fixes \<c>::"'edge_type \<Rightarrow> real"
 
-context flow_network
+context 
+  flow_network_spec
 begin
 
 definition delta_plus_infty::"'a \<Rightarrow> 'edge_type set" ("\<delta>\<^sup>+\<^sub>\<infinity>") where
@@ -49,30 +52,42 @@ definition delta_minus_infty::"'a \<Rightarrow> 'edge_type set" ("\<delta>\<^sup
 
 definition infty_edges ("\<E>\<^sub>\<infinity>") where
  "infty_edges = {e. e \<in> \<E> \<and> \<u> e = PInfty}"
+end
 
-lemma finite_infty_edges:"finite (infty_edges)" 
+context 
+  flow_network
+begin
+
+lemma finite_infty_edges:
+  "finite (infty_edges)" 
   by(auto intro: finite_E finite_subset[OF _ finite_E] simp add:  infty_edges_def)
 
-lemma infty_edges_in_E: "infty_edges \<subseteq> \<E>"
+lemma infty_edges_in_E: 
+  "infty_edges \<subseteq> \<E>"
   using infty_edges_def by force
 
 lemma infty_edges_del: 
- "delta_plus x - delta_plus_infty x = delta_plus x - infty_edges"
- "delta_minus x - delta_minus_infty x = delta_minus x - infty_edges"
- "delta_minus_infty x \<subseteq> infty_edges"
- "delta_plus_infty x \<subseteq> infty_edges"
- "delta_minus_infty x \<subseteq> delta_minus x"
- "delta_plus_infty x \<subseteq> delta_plus x"
+  "delta_plus x - delta_plus_infty x = delta_plus x - infty_edges"
+  "delta_minus x - delta_minus_infty x = delta_minus x - infty_edges"
+  "delta_minus_infty x \<subseteq> infty_edges"
+  "delta_plus_infty x \<subseteq> infty_edges"
+  "delta_minus_infty x \<subseteq> delta_minus x"
+  "delta_plus_infty x \<subseteq> delta_plus x"
   unfolding infty_edges_def delta_plus_def delta_plus_infty_def 
             delta_minus_def delta_minus_infty_def
   by auto
 
-lemma finite_infinite_deltas: "finite (delta_plus_infty x)" "finite (delta_minus_infty x)"
- by (auto simp add:  delta_minus_infty_def  delta_plus_infty_def finite_E)
+lemma finite_infinite_deltas:
+  "finite (delta_plus_infty x)" "finite (delta_minus_infty x)"
+  by (auto simp add:  delta_minus_infty_def  delta_plus_infty_def finite_E)
+end
 
+context 
+  flow_network_spec
+begin
 
 definition flow_non_neg::"('edge_type \<Rightarrow> real) \<Rightarrow> bool" ("_ \<ge>\<^sub>F 0") where
-"g \<ge>\<^sub>F 0 \<longleftrightarrow> (\<forall> e \<in> \<E>. g e \<ge> 0)"
+           "g \<ge>\<^sub>F 0 \<longleftrightarrow> (\<forall> e \<in> \<E>. g e \<ge> 0)"
 
 text \<open>Outgoing flow for a node.\<close>
 
@@ -90,8 +105,13 @@ definition "Abs g = (\<Sum> e \<in> \<E>. g e)"
 
 text \<open>If a circulation is non-trivial, 
       then there has to be a vertex with strictly positive excess.\<close>
+end
 
-lemma Abs_pos_some_node_pos: "Abs g > 0 \<Longrightarrow> g \<ge>\<^sub>F 0 \<Longrightarrow>\<exists> v. flow_out g v > 0 \<and> v \<in> \<V>"
+context 
+  flow_network
+begin
+
+lemma Abs_pos_some_node_pos: "\<lbrakk>Abs g > 0; g \<ge>\<^sub>F 0\<rbrakk> \<Longrightarrow>\<exists> v. flow_out g v > 0 \<and> v \<in> \<V>"
 proof(rule ccontr)
   assume c: " 0 < Abs g"  " g \<ge>\<^sub>F 0"
          "\<nexists>v. 0 < flow_out g v \<and> v \<in> \<V>"
@@ -101,14 +121,19 @@ proof(rule ccontr)
     by (meson less_le_not_le sum_nonpos)
   hence "flow_out g (fst e) > 0" 
      using b 
-    by(auto intro!: ordered_comm_monoid_add_class.sum_pos2 simp add: finite_E flow_out_def delta_plus_def)
+     by(auto intro!: ordered_comm_monoid_add_class.sum_pos2 
+           simp add: finite_E flow_out_def delta_plus_def)
   moreover have "(fst e) \<in> \<V>" using e_Def 
     using dVsI(1) dVsI(2) mem_Collect_eq 
      fst_E_V snd_E_V by fastforce
   ultimately show False 
     using c(3) by blast
 qed
+end
 
+context 
+  flow_network_spec
+begin
 text \<open>The support is the set of all edges with non-zero flow.\<close>
 
 definition "support g = {(e::'edge_type)| e. g e > (0::real) \<and> e \<in> \<E>}"
@@ -124,13 +149,22 @@ text \<open>A circulation is a flow with zero excess everywhere.\<close>
 definition is_circ::"('edge_type \<Rightarrow> real) \<Rightarrow> bool" where
 "is_circ g = (\<forall> v \<in> \<V>. ex g v = 0)"
 
-lemma is_circI: "(\<And> v. v \<in> \<V> \<Longrightarrow> ex g v = 0) \<Longrightarrow> is_circ g"
+lemma is_circI: 
+  "(\<And> v. v \<in> \<V> \<Longrightarrow> ex g v = 0) \<Longrightarrow> is_circ g"
   by (auto simp add: is_circ_def)
 
 text \<open>$f$ is a valid $u$-flow iff all flow values assigned by $f$ are below edge capacities $u$.\<close>
 
 definition  isuflow::"('edge_type \<Rightarrow> real) \<Rightarrow> bool" where
 "isuflow f \<longleftrightarrow> (\<forall> e \<in> \<E>. f e \<le> \<u> e \<and> f e \<ge> 0)"
+
+lemma isuflowI: 
+  "\<lbrakk>(\<And> e. e \<in> \<E> \<Longrightarrow> f e \<le> \<u> e); (\<And> e. e \<in> \<E> \<Longrightarrow> f e \<ge> 0)\<rbrakk> \<Longrightarrow> isuflow f"
+  by(auto simp add:isuflow_def)
+
+lemma isuflowE: 
+  "isuflow f\<Longrightarrow> (\<lbrakk>(\<And> e. e \<in> \<E> \<Longrightarrow> f e \<le> \<u> e);(\<And> e. e \<in> \<E> \<Longrightarrow> f e \<ge> 0)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+  by(auto simp add:isuflow_def)
 
 text \<open>Of course, we can also impose some constraints on the excesses. 
      A function $b$ returning the desired excess flow for any node is a \textit{balance}.
@@ -146,6 +180,13 @@ text \<open> Now, we call $f$ a $b$-flow for some balance $b$ iff
 definition isbflow::"('edge_type \<Rightarrow> real) \<Rightarrow> ('a \<Rightarrow> real)  \<Rightarrow> bool"  ("_ is _ flow")where
 "f is b flow \<longleftrightarrow> (isuflow f \<and> (\<forall> v \<in> \<V> . (- ex f v) = b v))"
 
+lemma isbflowE:
+  "f is b flow \<Longrightarrow> (\<lbrakk>isuflow f; (\<And> v.  v \<in> \<V>  \<Longrightarrow> (- ex f v) = b v)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>P"
+and isbflowI:
+  "\<lbrakk>isuflow f; \<And> v.  v \<in> \<V>  \<Longrightarrow> (- ex f v) = b v\<rbrakk> \<Longrightarrow> f is b flow"
+  by(auto simp add: isbflow_def)
+
+
 text \<open>Unsurprisingly, a balance has somehow to be balanced. 
       This means, that the overall sum of demands and supplies is zero.
       In fact, for invalid balances with non-zero sum no proper flow assignment to edges exists.\<close>
@@ -153,7 +194,7 @@ text \<open>Unsurprisingly, a balance has somehow to be balanced.
 definition "is_balance b = ((\<Sum> v \<in> \<V>. b v) = 0)" 
 
 definition zero_balance::"('a \<Rightarrow> real) \<Rightarrow> bool" where
-"zero_balance b = (\<forall> v \<in> \<V>. b v = 0)"
+  "zero_balance b = (\<forall> v \<in> \<V>. b v = 0)"
 
 text \<open>We need to talk about paths in the graph alongside which a flow is
  non-negative.\<close>
@@ -163,27 +204,36 @@ definition "flowpath (g::'edge_type \<Rightarrow> real) (es::('edge_type list)) 
 
 text \<open>Similarly to other settings we have seen so far, we prove some technical lemmas.\<close>
 
-lemma flowpathI: "es = [] \<Longrightarrow> flowpath g es"
-                "awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) \<Longrightarrow>
-                          (\<forall> e \<in> set es. g e > 0) \<Longrightarrow> es \<noteq> [] \<Longrightarrow> flowpath g es"
-  unfolding flowpath_def multigraph_path_def by auto
+lemma flowpathI: 
+  "es = [] \<Longrightarrow> flowpath g es"
+  "\<lbrakk>awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)); (\<forall> e \<in> set es. g e > 0); es \<noteq> [] \<rbrakk>
+    \<Longrightarrow> flowpath g es"
+  by(auto simp add: flowpath_def multigraph_path_def)
 
-lemma flowpathE: "flowpath g es \<Longrightarrow> (es = [] \<Longrightarrow> P) \<Longrightarrow>
-                                  (es \<noteq> [] \<Longrightarrow>
-                      awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) \<Longrightarrow>
-                          (\<forall> e \<in> set es. g e > 0) \<Longrightarrow> P) \<Longrightarrow>P"
-  unfolding flowpath_def multigraph_path_def by auto
+lemma flowpathE: 
+ "\<lbrakk>flowpath g es; 
+  (es = [] \<Longrightarrow> P);
+  (\<lbrakk>es \<noteq> [];  awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es));
+    (\<forall> e \<in> set es. g e > 0)\<rbrakk> \<Longrightarrow> P)\<rbrakk> 
+  \<Longrightarrow>P"
+  by(auto simp add: flowpath_def multigraph_path_def)
 
-lemma flowpathE': "flowpath g es \<Longrightarrow> (es = [] \<Longrightarrow> P) \<Longrightarrow>
-                                  (\<And> d ds. es = d#ds \<Longrightarrow>
-                      awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) \<Longrightarrow>
-                          (\<forall> e \<in> set es. g e > 0) \<Longrightarrow> P) \<Longrightarrow>P"
+lemma flowpathE': 
+ "\<lbrakk>flowpath g es; (es = [] \<Longrightarrow> P);
+   (\<And> d ds. \<lbrakk> es = d#ds; awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es));
+                          (\<forall> e \<in> set es. g e > 0)\<rbrakk> \<Longrightarrow> P)\<rbrakk> 
+  \<Longrightarrow>P"
   unfolding flowpath_def multigraph_path_def by (cases es) auto
+end
+
+context
+  flow_network
+begin
 
 lemma flowpath_intros:
   "flowpath g []"
   "0 < g e \<Longrightarrow> flowpath g [e]"
-  "0 < g e \<Longrightarrow> snd e = fst (hd es) \<Longrightarrow> flowpath g es \<Longrightarrow> flowpath g (e # es)"
+  "\<lbrakk>0 < g e; snd e = fst (hd es); flowpath g es\<rbrakk> \<Longrightarrow> flowpath g (e # es)"
   subgoal
     unfolding flowpath_def multigraph_path_def by simp
   subgoal 2
@@ -194,11 +244,11 @@ lemma flowpath_intros:
   done
 
 lemma flowpath_induct: 
-assumes "flowpath x1 x2"
-        "(\<And>g. P g [])"
-        "(\<And>g e. 0 < g e \<Longrightarrow> P g [e])"
-        "(\<And>g e es.0 < g e \<Longrightarrow> snd e = fst (hd es) \<Longrightarrow> flowpath g es \<Longrightarrow> P g es \<Longrightarrow> P g (e # es))"
-      shows   "P x1 x2"
+  assumes "flowpath x1 x2"
+          "(\<And>g. P g [])"
+          "(\<And>g e. 0 < g e \<Longrightarrow> P g [e])"
+          "(\<And>g e es. \<lbrakk>0 < g e; snd e = fst (hd es); flowpath g es; P g es\<rbrakk> \<Longrightarrow> P g (e # es))"
+  shows   "P x1 x2"
 proof(rule flowpathE[OF assms(1)], goal_cases)
   case 2
   then show ?case 
@@ -219,18 +269,19 @@ proof(rule flowpathE[OF assms(1)], goal_cases)
 qed (simp add: assms(2))
 
 lemma flowpath_simps:
-"flowpath a1 a2 =
-((\<exists>g. a1 = g \<and> a2 = []) \<or>
- (\<exists>g e. a1 = g \<and> a2 = [e] \<and> 0 < g e) \<or>
- (\<exists>g e es. a1 = g \<and> a2 = e # es \<and> 0 < g e \<and> snd e = fst (hd es) \<and> flowpath g es))"
-  by(rule, rule flowpath_induct[of a1 a2], auto intro: flowpathI(1) flowpath_intros(2) flowpath_intros(3))
+  "flowpath a1 a2 =
+   ((\<exists>g. a1 = g \<and> a2 = []) \<or>
+   (\<exists>g e. a1 = g \<and> a2 = [e] \<and> 0 < g e) \<or>
+   (\<exists>g e es. a1 = g \<and> a2 = e # es \<and> 0 < g e \<and> snd e = fst (hd es) \<and> flowpath g es))"
+  by(rule iffI, rule flowpath_induct[of a1 a2]) 
+    (auto intro: flowpathI(1) flowpath_intros(2) flowpath_intros(3))
  
 lemma flowpath_cases: 
-"flowpath a1 a2 \<Longrightarrow>
-(\<And>g. a1 = g \<Longrightarrow> a2 = [] \<Longrightarrow> P) \<Longrightarrow>
-(\<And>g e. a1 = g \<Longrightarrow> a2 = [e] \<Longrightarrow> 0 < g e \<Longrightarrow> P) \<Longrightarrow>
-(\<And>g e es. a1 = g \<Longrightarrow> a2 = e # es \<Longrightarrow> 0 < g e \<Longrightarrow> snd e = fst (hd es) \<Longrightarrow> flowpath g es \<Longrightarrow> P) \<Longrightarrow>
-P"
+  "\<lbrakk>flowpath a1 a2;
+   (\<And>g. \<lbrakk>a1 = g; a2 = []\<rbrakk> \<Longrightarrow> P);
+   (\<And>g e. \<lbrakk> a1 = g; a2 = [e]; 0 < g e \<rbrakk> \<Longrightarrow> P);
+   (\<And>g e es. \<lbrakk> a1 = g; a2 = e # es; 0 < g e; snd e = fst (hd es); flowpath g es\<rbrakk> \<Longrightarrow> P)\<rbrakk>
+    \<Longrightarrow> P"
   using flowpath_simps by metis
 
 text \<open>Let us now take a look at the properties of flowpaths.
@@ -249,7 +300,8 @@ next
     by (smt (verit, ccfv_SIG) Cons_eq_append_conv hd_append2 flowpath_simps)
 qed (auto simp add: assms flowpath_intros)
 
-lemma flow_path_split_right: "flowpath g (es@fs) \<Longrightarrow> flowpath g fs"
+lemma flow_path_split_right: 
+  "flowpath g (es@fs) \<Longrightarrow> flowpath g fs"
 proof(induction es)
   case (Cons e es)
   hence a: "flowpath g (e # (es @ fs))" by simp
@@ -259,8 +311,9 @@ proof(induction es)
 qed simp
 
 lemma flow_path_append:
-  assumes "flowpath g es" 
-  shows   "es \<noteq>[] \<Longrightarrow>flowpath g fs \<Longrightarrow> snd(last es) = fst (hd fs) \<Longrightarrow>flowpath g (es@fs)"
+  assumes "flowpath g es" "es \<noteq>[]" "flowpath g fs" "snd(last es) = fst (hd fs)"
+  shows   "flowpath g (es@fs)"
+  using assms(2-)
 proof(induction es rule: flowpath_induct, goal_cases)
   case (4 g e es)
   then show ?case 
@@ -268,10 +321,6 @@ proof(induction es rule: flowpath_induct, goal_cases)
     by(cases es) auto
 qed (auto simp add: flowpath_intros assms)
 end
-
-context flow_network_spec
-begin
-
 
 subsection \<open>Residual Arcs\<close>
 
@@ -291,13 +340,18 @@ text \<open>For any original edge we have two residual edges:
 
 datatype 'type Redge = is_forward: F 'type | is_backward: B 'type
 
+lemma F_and_B_inj_on: "inj_on F X"  "inj_on B X" 
+  by(auto intro: inj_onI)
+
 text \<open>Between vertices $u$ and $v$ there might be up to four residual arcs.
      In fact, this makes the residual graph a multigraph. 
      Note the difference between $(u,v)$ (original edge), $F (u,v)$ 
      (forward-pointing residual edge from $u$ to $v$) and $B (u, v)$ (a backward residual arc).
 In common literature the residual graph w.r.t. to some flow $f$ is usually denoted by $G_f.$
 \<close>
-
+context 
+  flow_network_spec
+begin
 text \<open>We can obtain heads and tails of arcs.\<close>
 
 fun fstv::"'edge_type Redge \<Rightarrow> 'a" where 
@@ -314,20 +368,14 @@ text \<open>Similarly, we introduce the notion of residual capacities.
      For backward arcs this is the amount of flow that can be cancelled by
      abrogating the assignment due to $f$.\<close>
 
-end
-
-context flow_network
-begin
-
 fun rcap::"('edge_type \<Rightarrow> real) \<Rightarrow> 'edge_type Redge \<Rightarrow> ereal" ("\<uu>\<^bsub>_\<^esub>_") where 
 "\<uu>\<^bsub>f\<^esub> (F e) = \<u> e - f e"|
 "\<uu>\<^bsub>f\<^esub> (B e) = f e"
 
 text \<open>Two cases regarding residual edges.\<close>
 
-lemma redge_pair_cases: "(\<And> ee. e = F ee \<Longrightarrow> P e) \<Longrightarrow>
-                        (\<And> ee. e = B ee  \<Longrightarrow> P e)
-                         \<Longrightarrow> P e" 
+lemma redge_pair_cases: 
+"\<lbrakk>(\<And> ee. e = F ee \<Longrightarrow> P e);(\<And> ee. e = B ee  \<Longrightarrow> P e)\<rbrakk> \<Longrightarrow> P e" 
   by(cases e, auto)
 
 text \<open>We can refer to the original edge where the residual arc emerges from.\<close>
@@ -335,9 +383,6 @@ text \<open>We can refer to the original edge where the residual arc emerges fro
 fun oedge::"'edge_type Redge \<Rightarrow> 'edge_type" where
  "oedge (F e) = e"|
  "oedge (B e) = e"
-
-lemma oedge_simps'[simp]: "oedge (F e) = e" "oedge (B e) =  e"
-  by auto
 
 lemma oedge_both_redges_image: "oedge ` {F e, B e} = {e}"
   by  auto
@@ -348,24 +393,39 @@ text \<open>We can also generate regular arcs just by omitting the constructors.
 fun to_vertex_pair::"'edge_type Redge \<Rightarrow> 'a \<times> 'a" where
  "to_vertex_pair (F e) = make_pair e"|     
  "to_vertex_pair (B e) = prod.swap (make_pair e)"
+end
 
-lemma to_vertex_pair_fst_snd: "to_vertex_pair e = (fstv e, sndv e)"
-  by(cases e) (auto simp add: make_pair')
+context 
+ flow_network
+begin
 
-lemma to_vertex_pair_same_vertex:"{prod.fst (to_vertex_pair e), prod.snd (to_vertex_pair e)} = {fstv e, sndv e}"
+lemma to_vertex_pair_fst_snd: "to_vertex_pair  = (\<lambda> e. (fstv e, sndv e))"
+  apply(rule ext)
+  subgoal for e
+    by(cases e, auto simp add: make_pair')
+  done
+
+lemma to_vertex_pair_same_vertex:
+  "{prod.fst (to_vertex_pair e), prod.snd (to_vertex_pair e)} = {fstv e, sndv e}"
   using fst_conv fstv.simps snd_conv sndv.simps to_vertex_pair.elims 
   by (cases e) (auto simp add: make_pair')
 
-lemma fstv_in_verts: "e \<in>  E \<Longrightarrow> fstv e \<in> dVs (to_vertex_pair ` E)"
+lemma fstv_in_verts: 
+  "e \<in>  E \<Longrightarrow> fstv e \<in> dVs (to_vertex_pair ` E)"
   unfolding dVs_def
   apply(rule UnionI[of "{prod.fst (to_vertex_pair e), prod.snd (to_vertex_pair e)}"])
   by fastforce (simp add: to_vertex_pair_same_vertex)
 
-lemma sndv_in_verts: "e \<in>  E \<Longrightarrow> sndv e \<in> dVs (to_vertex_pair ` E)"
+lemma sndv_in_verts: 
+  "e \<in>  E \<Longrightarrow> sndv e \<in> dVs (to_vertex_pair ` E)"
   unfolding dVs_def
   apply(rule UnionI[of "{prod.fst (to_vertex_pair e), prod.snd (to_vertex_pair e)}"])
   by fastforce (simp add: to_vertex_pair_same_vertex)
+end
 
+context 
+  flow_network_spec
+begin
 
 text \<open>For any residual edge, there is a counterpart in the opposite direction.
       A residual arc and its reverse both emerge from the same original edge.\<close>
@@ -380,50 +440,59 @@ lemma erve_erve_id: "erev (erev e) = e"
 lemma oedge_and_reversed: "oedge (erev e) = oedge e"
   by (metis erev.elims oedge.simps(1) oedge.simps(2))
 
-lemma redge_erve_cases: "d = erev e \<Longrightarrow> (\<And> a. e = F a \<Longrightarrow> d = B a \<Longrightarrow>P) \<Longrightarrow>
-                             (\<And> a. e = B a \<Longrightarrow> d = F a \<Longrightarrow>P) \<Longrightarrow> P" for e d P
+lemma redge_erve_cases: 
+ "\<lbrakk>d = erev e; (\<And> a. \<lbrakk>e = F a; d = B a\<rbrakk> \<Longrightarrow>P); (\<And> a. \<lbrakk>e = B a; d = F a \<rbrakk> \<Longrightarrow>P)\<rbrakk> \<Longrightarrow> P" for e d P
   by(cases e, auto)
 
-lemma redge_erve_cases_with_e: "d = erev e \<Longrightarrow> (\<And> a. e = F a \<Longrightarrow> d = B a \<Longrightarrow>P e d) \<Longrightarrow>
-                             (\<And> a. e = B a \<Longrightarrow> d = F a \<Longrightarrow>P e d) \<Longrightarrow> P e d" for e d P
+lemma redge_erve_cases_with_e: 
+  "\<lbrakk>d = erev e; (\<And> a. \<lbrakk>e = F a; d = B a\<rbrakk> \<Longrightarrow>P e d);
+   (\<And> a. \<lbrakk>e = B a; d = F a\<rbrakk> \<Longrightarrow>P e d)\<rbrakk>
+   \<Longrightarrow> P e d" for e d P
   by(cases e, auto)
 
 lemma inj_erev: "inj_on erev A" for A 
      using  erve_erve_id inj_on_def by metis 
 
-lemma redge_case_flip: "f (case e of F a \<Rightarrow> x a  |
-                                     B a \<Rightarrow> y a) =
-                        (case e of F a \<Rightarrow> f (x a) |
-                                   B a \<Rightarrow> f (y a)) " 
-  by (simp add: Redge.case_eq_if split_beta)
+lemmas redge_case_flip = Redge.case_distrib
+end
 
+context 
+  flow_network
+begin
 lemma to_vertex_pair_erev_swap:"to_vertex_pair \<circ> erev = prod.swap  \<circ> to_vertex_pair"
   by(auto intro!: ext intro: redge_erve_cases_with_e[OF refl ] simp del: make_pair')
 
 lemma to_vertex_pair_erev_swap_arg:"to_vertex_pair (erev e)= prod.swap  (to_vertex_pair e)"
   by( auto intro!: ext intro: erev.induct simp del: make_pair') 
 
-lemma rev_erev_swap:"(map prod.swap (rev (map to_vertex_pair pp)))
-       = (map to_vertex_pair (rev (map erev pp)))"
+lemma rev_erev_swap:
+  "(map prod.swap (rev (map to_vertex_pair pp)))
+  = (map to_vertex_pair (rev (map erev pp)))"
   by(simp add: rev_map to_vertex_pair_erev_swap)
 
-lemma rev_prepath_fst_to_lst:"pp \<noteq> [] \<Longrightarrow> fstv (hd (map erev (rev pp))) = sndv (last pp)"
+lemma rev_prepath_fst_to_lst:
+  "pp \<noteq> [] \<Longrightarrow> fstv (hd (map erev (rev pp))) = sndv (last pp)"
   by(auto intro: erev.induct[of  _ "(last pp)"]simp add: sym[OF rev_map] hd_rev last_map)
 
-lemma rev_prepath_lst_to_fst:"pp \<noteq> [] \<Longrightarrow> sndv (last (map erev (rev pp))) = fstv (hd pp)"
+lemma rev_prepath_lst_to_fst:
+  "pp \<noteq> [] \<Longrightarrow> sndv (last (map erev (rev pp))) = fstv (hd pp)"
   by(auto intro: erev.induct[of  _ "(hd pp)"] simp add:  sym[OF rev_map] last_rev hd_map)
+end
 
+context 
+  flow_network_spec
+begin
 text \<open>The set of residual arcs for the fixed set of edges $\mathcal{E}$.\<close>
 
 definition "\<EE> = {e. \<exists> d. e = F d \<and> d \<in> \<E>} \<union>
                 {e. \<exists> d. e = B d \<and> d \<in> \<E>}"
 
-lemma Residuals_project_erev_sym:"e \<in> {e |e. e \<in> \<EE> \<and> P( oedge e )}
-      \<longleftrightarrow> erev e \<in> {e |e. e \<in> \<EE> \<and> P( oedge e )}"
+lemma Residuals_project_erev_sym:
+  "e \<in> {e |e. e \<in> \<EE> \<and> P( oedge e )} \<longleftrightarrow> erev e \<in> {e |e. e \<in> \<EE> \<and> P( oedge e )}"
   by(induction e rule: erev.induct) (auto simp add: \<EE>_def)
 
 lemma oedge_on_\<EE>: "oedge ` \<EE> = \<E>"
-proof(rule, all \<open>rule\<close>, goal_cases)
+proof(rule set_eqI, all \<open>rule\<close>, goal_cases)
   case (1 e)
   then obtain d where "e = oedge d" "d \<in> \<EE>" by auto
   moreover then obtain a where "d = F a \<and> a \<in> \<E> \<or>
@@ -439,7 +508,11 @@ next
     by blast+
   ultimately show ?case by simp
 qed
+end 
 
+context 
+  flow_network
+begin
 lemma finite_\<EE>: "finite \<EE>" 
   unfolding \<EE>_def 
   using finite_img[of \<E> "\<lambda> x. F x"] finite_E  finite_img[of \<E> "\<lambda> x. B ((snd x), (fst x))"] finite_E 
@@ -451,41 +524,52 @@ text \<open>For valid flows, residual capacities cannot be negative.\<close>
 lemma is_flow_rcap_non_neg: 
   assumes "isuflow f"
           "e \<in> \<EE>" 
-    shows "rcap f e \<ge> 0"
+  shows   "rcap f e \<ge> 0"
   using assms  rcap.simps ereal_diff_positive
   unfolding isuflow_def \<EE>_def 
   by (cases e)  auto
 
 lemma o_edge_res: "oedge e \<in> \<E> \<longleftrightarrow> e \<in> \<EE>"
   by(auto intro: redge_pair_cases  oedge.elims[OF refl, of e] simp add: \<EE>_def )
+end
 
+context 
+  flow_network_spec
+begin
 text \<open>We define the residual capacity of a path, i.e. formally a list of residual edges.\<close>
 
 definition "Rcap f es = Min (insert PInfty {rc. (\<exists> e.  rc = (rcap f e) \<and> e \<in> es)})"
 definition "Rcap_old f es = Min  {rc. (\<exists> e.  rc = (rcap f e) \<and> e \<in> es)}"
 
-lemma Rcap_same: "es \<noteq> {} \<Longrightarrow> finite es \<Longrightarrow> Rcap f es = Rcap_old f es"
+lemma Rcap_same: 
+  "\<lbrakk>es \<noteq> {}; finite es\<rbrakk> \<Longrightarrow> Rcap f es = Rcap_old f es"
   unfolding Rcap_def Rcap_old_def by simp
 
-lemma RcapI: "finite ES \<Longrightarrow> ES \<noteq> {} \<Longrightarrow>
-                (\<And> e. e \<in> ES \<Longrightarrow> rcap f e \<ge> th) \<Longrightarrow> Rcap f ES \<ge> th"
-    for ES f th unfolding Rcap_def 
-    using Min_gr_iff by auto
+lemma RcapI: 
+  "\<lbrakk>finite ES; ES \<noteq> {}; (\<And> e. e \<in> ES \<Longrightarrow> rcap f e \<ge> th)\<rbrakk> \<Longrightarrow> Rcap f ES \<ge> th" for ES f th 
+  using Min_gr_iff by (auto simp add: Rcap_def)
 
-lemma  Rcap_strictI: "finite ES \<Longrightarrow> ES \<noteq> {} \<Longrightarrow>
-                (\<And> e. e \<in> ES \<Longrightarrow> rcap f e > th) \<Longrightarrow> Rcap f ES > th"
-    for ES f th unfolding Rcap_def 
-  using Min_gr_iff by auto
+lemma RcapI0: 
+  "\<lbrakk>finite ES; (\<And> e. e \<in> ES \<Longrightarrow> rcap f e \<ge> 0)\<rbrakk> \<Longrightarrow> Rcap f ES \<ge> 0" for ES f th 
+  using Min_gr_iff by (auto simp add: Rcap_def)
 
-lemma Rcap_union: "finite A \<Longrightarrow> finite B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {} \<Longrightarrow>
-                             Rcap f A > x \<Longrightarrow> Rcap f B > x \<Longrightarrow> Rcap f (A \<union> B) > x" for f A B x
+lemma  Rcap_strictI: 
+  "\<lbrakk>finite ES; ES \<noteq> {}; (\<And> e. e \<in> ES \<Longrightarrow> rcap f e > th)\<rbrakk> \<Longrightarrow> Rcap f ES > th" for ES f th 
+  using Min_gr_iff by (auto simp add: Rcap_def)
+
+lemma  Rcap_strictI': 
+  "\<lbrakk>finite ES; (\<And> e. e \<in> ES \<Longrightarrow> rcap f e > th); th < PInfty\<rbrakk> \<Longrightarrow> Rcap f ES > th"  for ES f th 
+  using Min_gr_iff by (auto simp add: Rcap_def)
+
+lemma Rcap_union: 
+  "\<lbrakk>finite A; finite B; A \<noteq> {}; B \<noteq> {}; Rcap f A > x; Rcap f B > x\<rbrakk> \<Longrightarrow> Rcap f (A \<union> B) > x" for f A B x
   apply(subst Rcap_same, simp, simp)
   apply(subst (asm) Rcap_same, simp, simp)+
   unfolding Rcap_old_def 
   by(subst function_union, subst linorder_class.Min_Un, auto)
 
-lemma Rcap_subset: "finite B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A \<subseteq> B \<Longrightarrow>
-                                Rcap f B > x \<Longrightarrow> Rcap f A > x" for f A B x
+lemma Rcap_subset: 
+  "\<lbrakk>finite B; A \<noteq> {}; A \<subseteq> B;  Rcap f B > x\<rbrakk> \<Longrightarrow> Rcap f A > x" for f A B x
   apply(subst Rcap_same, simp, simp add: finite_subset)
   apply(subst (asm) Rcap_same, force, simp add: finite_subset) 
   unfolding Rcap_old_def 
@@ -493,21 +577,25 @@ lemma Rcap_subset: "finite B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A
            
 text \<open>Set lemmas for working with this definition.\<close>
 
-lemma rcap_extr_head: " \<gamma> \<le> Rcap f (set (e # es))  \<Longrightarrow> \<gamma> \<le> rcap f e"
+lemma rcap_extr_head: 
+  "\<gamma> \<le> Rcap f (set (e # es))  \<Longrightarrow> \<gamma> \<le> rcap f e"
   apply(subst (asm) Rcap_same, force, simp add: finite_subset) 
   apply(subst  miny(2)[of \<gamma> "rcap f e"], 
         subst Min.in_idem[of "{\<uu>\<^bsub>f\<^esub>ea |ea. ea \<in> set (e # es)}" "rcap f e"])
   using finite_img[of "set (e#es)" "\<lambda> e. rcap f e"]
-  unfolding Rcap_old_def by auto
+  by(auto simp add: Rcap_old_def)
 
-lemma rcap_extr: "e \<in> set es \<Longrightarrow>  \<gamma> \<le> Rcap f (set es)  \<Longrightarrow> \<gamma> \<le> rcap f e"
+lemma rcap_extr: 
+  "\<lbrakk>e \<in> set es;  \<gamma> \<le> Rcap f (set es)\<rbrakk>  \<Longrightarrow> \<gamma> \<le> rcap f e"
   by(induction es, simp)
     (metis order_antisym_conv rcap_extr_head set_ConsD set_subset_Cons subsetI)
 
-lemma rcap_extr_non_zero: "e \<in> set es \<Longrightarrow>  set es = ES \<Longrightarrow> 0 < Rcap f ES \<Longrightarrow> 0 < rcap f e"
+lemma rcap_extr_non_zero: 
+  "\<lbrakk>e \<in> set es;  set es = ES; 0 < Rcap f ES\<rbrakk> \<Longrightarrow> 0 < rcap f e"
   by (metis dual_order.refl leD order_less_le rcap_extr)
 
-lemma rcap_exract_single: "es \<noteq>[] \<Longrightarrow> Rcap f (set (e#es)) = min (rcap f e) (Rcap f (set es))"
+lemma rcap_exract_single: 
+  "es \<noteq>[] \<Longrightarrow> Rcap f (set (e#es)) = min (rcap f e) (Rcap f (set es))"
   apply(subst  Rcap_same, force, simp add: finite_subset)+
   apply(rule trans[of _ " min (Min {\<uu>\<^bsub>f\<^esub>e}) (Rcap_old f (set es))"])
   unfolding Rcap_old_def
@@ -517,11 +605,11 @@ lemma rcap_exract_single: "es \<noteq>[] \<Longrightarrow> Rcap f (set (e#es)) =
     by (fastforce intro!: cong[of Min Min])+
   by simp
    
-lemma rcap_single: "Rcap f {e} = rcap f e" unfolding Rcap_def by simp
+lemma rcap_single: "Rcap f {e} = rcap f e" by(simp add: Rcap_def)
 
 lemma rcap_extr_tail: 
-assumes "es \<noteq> []"  "\<gamma> \<le> Rcap f (set (e # es))" 
-shows   "\<gamma> \<le> Rcap f (set es)"
+  assumes "es \<noteq> []"  "\<gamma> \<le> Rcap f (set (e # es))" 
+  shows   "\<gamma> \<le> Rcap f (set es)"
 proof- 
   have 0: "finite {\<uu>\<^bsub>f\<^esub>e |e. e \<in> set es}" 
     using finite_imageI[of "set es" "rcap f"] by simp
@@ -548,12 +636,11 @@ lemma vs_erev: "sndv (erev a) = fstv a" "fstv (erev a) = sndv a" for a
 
 lemma inj_erev_general: "inj erev"
   unfolding inj_def
-  apply(rule)+
+  apply(rule allI)+
   subgoal for x y
     by(cases rule: erev.cases[of x]) 
                     (cases rule: erev.cases[of y], simp, simp) +
   done
-
 
 subsection \<open>Residual Reachability\<close>
 
@@ -567,12 +654,28 @@ definition resreach::"('edge_type \<Rightarrow> real)   \<Rightarrow>'a \<Righta
        "resreach f u v = (\<exists> p. awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v 
                             \<and> Rcap f (set p) > 0 \<and> p \<noteq> [] \<and> set p \<subseteq> \<EE>)"
 
+lemma resreachI: 
+  "\<lbrakk>awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v;  Rcap f (set p) > 0; p \<noteq> []; set p \<subseteq> \<EE>\<rbrakk>
+    \<Longrightarrow> resreach f u v"
+  by(auto simp add: resreach_def)
+
+lemma resreachE: 
+ "\<lbrakk>resreach f u v; 
+  (\<And> p. \<lbrakk>awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v;  
+          Rcap f (set p) > 0;  p \<noteq> []; set p \<subseteq> \<EE>\<rbrakk> \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
+  by(auto simp add: resreach_def)
+end
+
+context 
+  flow_network
+begin
 text \<open>We will use this similarly to an inductive predicate which 
       raises the need for some introduction rules.\<close>
 
 lemma intros_helper: 
-"0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> sndv e = u \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> resreach f u v \<Longrightarrow> resreach f (fstv e) v"
- proof-
+  "\<lbrakk>0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u; e \<in> \<EE>; resreach f u v\<rbrakk> \<Longrightarrow> resreach f (fstv e) v"
+proof-
     assume assm: "0 < \<uu>\<^bsub>f\<^esub>e" "sndv e = u" "e \<in> \<EE>" "resreach f  u v"
     then obtain p where p_prop:"awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v" 
                         "Rcap f (set p) > 0" "p \<noteq> []" "set p \<subseteq> \<EE>"
@@ -590,25 +693,24 @@ lemma intros_helper:
 qed
 
 lemma resreach_intros:
-  "0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> e \<in> \<EE> \<Longrightarrow>  resreach f  (fstv e) (sndv e)" 
-  "0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> sndv e = u \<Longrightarrow>  e \<in> \<EE> \<Longrightarrow> resreach f u v \<Longrightarrow> resreach f (fstv e) v" 
+  "\<lbrakk>0 < \<uu>\<^bsub>f\<^esub>e; e \<in> \<EE>\<rbrakk> \<Longrightarrow>  resreach f  (fstv e) (sndv e)" 
+  "\<lbrakk>0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u;  e \<in> \<EE>; resreach f u v\<rbrakk> \<Longrightarrow> resreach f (fstv e) v" 
   using intros_helper 
   unfolding resreach_def  awalk_def
   using fstv_in_verts 
   by (intro exI[of _ "[e]"], auto simp add: to_vertex_pair_fst_snd  rcap_single)
 
-lemma vs_to_vertex_pair_pres: "fstv (e) = prod.fst (to_vertex_pair e)"
-                       "sndv  e  = prod.snd (to_vertex_pair e)" 
+lemma vs_to_vertex_pair_pres: 
+  "fstv (e) = prod.fst (to_vertex_pair e)" "sndv  e  = prod.snd (to_vertex_pair e)" 
   by (simp add: to_vertex_pair_fst_snd)+
 
 text \<open>An induction rule.\<close>
 
 lemma resreach_induct:
-assumes "resreach f  u v"
-        "(\<And>f e . 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> P f  (fstv e) (sndv e))"
-        "(\<And>f e u v.  0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow>
-                       sndv e = u \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> resreach f  u v \<Longrightarrow> P f  u v \<Longrightarrow> P f  (fstv e) v)"
-  shows "P f  u v"
+  assumes "resreach f  u v"
+          "(\<And>f e . \<lbrakk> 0 < \<uu>\<^bsub>f\<^esub>e; e \<in> \<EE>\<rbrakk> \<Longrightarrow> P f  (fstv e) (sndv e))"
+          "(\<And>f e u v. \<lbrakk>0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u; e \<in> \<EE>; resreach f  u v; P f  u v\<rbrakk> \<Longrightarrow> P f  (fstv e) v)"
+    shows "P f  u v"
 proof-
   obtain p where p_props: "awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v "
                            "Rcap f (set p) > 0"  "p \<noteq> []" "set p \<subseteq> \<EE>"
@@ -657,17 +759,18 @@ proof-
         using  fstve_is_u IH rcap_extr_non_zero[of e "e#p1" "set (e#p1)" f] \<open>e \<in> \<EE>\<close> bb  aa 
         by (auto intro: IH(7)[of f e "sndv e"   v])
     qed
-    qed
   qed
+qed
 
 text\<open>Simplification.\<close>
 
-lemma resreach_simps: "resreach a1 a2 a3 =
-((\<exists>f e. a1 = f \<and> a2 = fstv e \<and> a3 = sndv e \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> e \<in> \<EE>) \<or>
- (\<exists>f e u v.
+lemma resreach_simps: 
+  "resreach a1 a2 a3 =
+  ((\<exists>f e. a1 = f \<and> a2 = fstv e \<and> a3 = sndv e \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> e \<in> \<EE>) \<or>
+   (\<exists>f e u v.
      a1 = f \<and>
      a2 = fstv e \<and> a3 = v \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = u \<and> e \<in> \<EE> \<and> resreach f u v))"
-  apply rule
+  apply (rule iffI)
   subgoal
    apply(rule resreach_induct[of a1 a2 a3]) 
     by blast+
@@ -675,23 +778,24 @@ lemma resreach_simps: "resreach a1 a2 a3 =
     using resreach_intros by auto
   done
 
-lemma 
-resreach_cases: "resreach a1 a2 a3 \<Longrightarrow>
-(\<And>f e. a1 = f \<Longrightarrow> a2 = fstv e \<Longrightarrow> a3 = sndv e \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> P) \<Longrightarrow>
-(\<And>f e u v.
-    a1 = f \<Longrightarrow>
-    a2 = fstv e \<Longrightarrow>
-    a3 = v \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> sndv e = u \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> resreach f u v \<Longrightarrow> P) \<Longrightarrow>
-P"
+lemma resreach_cases: 
+  "\<lbrakk>resreach a1 a2 a3;
+  (\<And>f e. \<lbrakk>a1 = f; a2 = fstv e; a3 = sndv e; 0 < \<uu>\<^bsub>f\<^esub>e; e \<in> \<EE> \<rbrakk> \<Longrightarrow> P);
+  (\<And>f e u v. \<lbrakk>a1 = f; a2 = fstv e; a3 = v; 0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u; e \<in> \<EE>; resreach f u v\<rbrakk> \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
   using  resreach_induct[of a1 a2 a3 ]
   by (metis resreach_simps)
 
 lemma resreach_app_single': 
   assumes "resreach f u v"
-  shows   "rcap f e > 0 \<Longrightarrow> v = fstv e \<Longrightarrow> e \<in> \<EE> \<Longrightarrow> resreach  f u (sndv e)"
+  shows   "\<lbrakk>rcap f e > 0; v = fstv e; e \<in> \<EE>\<rbrakk> \<Longrightarrow> resreach  f u (sndv e)"
   by(induction rule: resreach_induct[OF assms])
     (auto simp add: resreach_intros(1) resreach_intros(2))
+end
 
+context 
+  flow_network_spec
+begin
 subsection \<open>Cuts\<close>
 
 text \<open>In general a \textit{cut} $(A, \mathcal{V} \setminus A)$ is a partition of $\mathcal{V}$.\<close>
@@ -700,7 +804,11 @@ text \<open>The \textit{residual cut} w.r.t. $f$ and $v$ is anything that is rea
            in the residual graph defined by $f$\<close>
 
 definition "Rescut f v = insert v {u. resreach f v u}"
+end
 
+context 
+  flow_network
+begin
 text \<open>After that, let's look a some properties of the rescut.\<close>
 
 lemma Rescut_around_in_V:
@@ -724,11 +832,19 @@ proof
       using False assms by blast
   qed 
 qed
+end
 
+context 
+  flow_network_spec
+begin
 text \<open>The capacity of a cut $(X, \mathcal{E} \setminus X)$ is the accumulated capacity of all leaving edges.\<close>
 
 definition "Cap X = (\<Sum> e \<in> \<Delta>\<^sup>+ X. \<u> e)"
+end
 
+context 
+  flow_network
+begin
 text \<open>A variant of the flow value lemma:
      The sum of balances within a set of vertices equals the difference of outgoing and incoming flow.
 We prove this by expanding the definition of excess flow and subsequent rearranging of summations.
@@ -828,15 +944,16 @@ text \<open>From this we know that the sum of balances within $X$ is bounded by 
 
 lemma flow_cross_cut_less_cap:"isuflow f \<Longrightarrow>  sum f (\<Delta>\<^sup>+ X) \<le> Cap X"
   unfolding Delta_plus_def Cap_def isuflow_def 
-  by (metis (no_types, lifting) CollectD case_prodE sum_mono)
+  using CollectD sum_mono
+  by (metis (no_types, lifting) CollectD sum_mono)
 
 lemma sum_crossing_out_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>+ X) \<ge> 0 "
   unfolding Delta_plus_def isuflow_def 
-  by (metis (no_types, lifting) case_prodE mem_Collect_eq sum_nonneg)
+  by (metis (no_types, lifting) mem_Collect_eq sum_nonneg)
 
 lemma sum_crossing_in_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>- X) \<ge> 0 "
   unfolding Delta_minus_def isuflow_def 
-  by (metis (no_types, lifting) case_prodE mem_Collect_eq sum_nonneg)
+  by (metis (no_types, lifting) mem_Collect_eq sum_nonneg)
 
 corollary flow_less_cut: "f is b flow \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> sum b X \<le> Cap X"
   using  isbflow_def[of f b] flow_cross_cut_less_cap [of f X]
@@ -875,20 +992,18 @@ theorem rescut_ingoing_zero:
       by (simp add: Rescut_def)
     thus False 
       by (simp add: \<open>fst e \<notin> Rescut f v \<and> snd e \<in> Rescut f v \<and> 0 < f e\<close>)
-  qed
+ qed
 
 corollary rescut_all_edges_sat:
-  assumes "f is b flow"
-          "  Rescut f v \<subseteq> \<V>"
+  assumes "f is b flow" "Rescut f v \<subseteq> \<V>"
   shows "sum b (Rescut f v) = sum f (\<Delta>\<^sup>+ (Rescut f v))"
-    using flow_value[of f b "(Rescut f v)"]  assms
-    by (simp add: rescut_ingoing_zero)
+  using flow_value[of f b "(Rescut f v)"]  assms
+  by (simp add: rescut_ingoing_zero)
 
 text \<open> We also obtain that the sum of outgoing flow equals the capacity for any rescut.\<close>
 
 theorem rescut_outgoing_cap:
-  assumes "f is b flow"
-          "(Rescut f v) \<subseteq> \<V>"
+  assumes "f is b flow" "(Rescut f v) \<subseteq> \<V>"
   shows   "sum f (\<Delta>\<^sup>+ (Rescut f v)) = Cap (Rescut f v)"
 proof(rule ccontr)
     assume "(\<Sum>x\<in>\<Delta>\<^sup>+ (Rescut f v). ereal (f x)) \<noteq> Cap (Rescut f v) "
@@ -926,19 +1041,26 @@ proof(rule ccontr)
       by (simp add: \<open>fst e \<in> Rescut f v \<and> snd e \<notin> Rescut f v \<and> f e < \<u> e\<close>)
   qed
 
-  text \<open>Our analysis finally implies that for any valid flow
+text \<open>Our analysis finally implies that for any valid flow
         the sum of balances amounts exactly to the rescut capacity.\<close>
 
 theorem flow_saturates_res_cut:
-  assumes "f is b flow"
-          "(Rescut f v) \<subseteq> \<V>"
+  assumes "f is b flow" "(Rescut f v) \<subseteq> \<V>"
   shows   "sum b (Rescut f v)= Cap (Rescut f v)"
   using assms(1) assms(2) rescut_all_edges_sat rescut_outgoing_cap by auto
+end
 
+context 
+  flow_network_spec
+begin
 text \<open>Similarly, we define the Anti-Rescut which is formed out of the residually reaching vertices.\<close>
 
 definition "ARescut f v = insert v {u. resreach f u v}"
+end
 
+context 
+  flow_network
+begin
 text \<open>After that, let's look a some properties of the rescut.\<close>
 
 lemma ARescut_around_in_V:
@@ -980,15 +1102,25 @@ lemma finite_ARescut: "x \<in> \<V> \<Longrightarrow> finite (ARescut f x)"
 
 lemma cardV_0:"card \<V> > 0" 
   by (simp add: E_not_empty \<V>_finite card_gt_0_iff)
+end
 
+context 
+  flow_network_spec
+begin
 definition "ACap X = (\<Sum> e \<in> \<Delta>\<^sup>- X. \<u> e)"
+end
+
+context 
+  flow_network
+begin
 
 lemma flow_cross_acut_less_acap:"isuflow f \<Longrightarrow>  sum f (\<Delta>\<^sup>- X) \<le> ACap X"
   unfolding Delta_minus_def ACap_def isuflow_def 
   by (metis (no_types, lifting) CollectD case_prodE sum_mono)
 
 corollary flow_less_acut: 
-  assumes "f is b flow" shows "X \<subseteq> \<V> \<Longrightarrow> sum b X \<ge> - ACap X"
+  assumes "f is b flow" 
+  shows "X \<subseteq> \<V> \<Longrightarrow> sum b X \<ge> - ACap X"
   using  assms flow_cross_acut_less_acap [of f X]
          flow_value[of f  b X] sum_crossing_out_pos[of f X] 
   by (simp add: dual_order.trans minus_leq_flip isbflow_def)
@@ -1027,8 +1159,7 @@ theorem arescut_outgoing_zero:
   qed
 
 corollary arescut_all_edges_sat:
-  assumes "f is b flow"
-          "ARescut f v \<subseteq> \<V>"
+  assumes "f is b flow" "ARescut f v \<subseteq> \<V>"
   shows "sum b (ARescut f v) = - sum f (\<Delta>\<^sup>- (ARescut f v))"
     using flow_value[of f b "(ARescut f v)"]  assms
     by (simp add: arescut_outgoing_zero)
@@ -1036,8 +1167,7 @@ corollary arescut_all_edges_sat:
 text \<open> We also obtain that the sum of outgoing flow equals the capacity for any rescut.\<close>
 
 theorem arescut_ingoing_cap:
-  assumes "f is b flow"
-          "(ARescut f v) \<subseteq> \<V>"
+  assumes "f is b flow" "(ARescut f v) \<subseteq> \<V>"
   shows   "sum f (\<Delta>\<^sup>- (ARescut f v)) =  ACap (ARescut f v)"
 proof(rule ccontr)
     assume asm:"(\<Sum>x\<in>\<Delta>\<^sup>- (ARescut f v). ereal (f x)) \<noteq>  ACap (ARescut f v) "
@@ -1067,20 +1197,22 @@ proof(rule ccontr)
                    prod.collapse sndv.simps(1))
     thus False 
       using a0 by blast
-  qed
+ qed
 
   text \<open>Our analysis finally implies that for any valid flow
         the sum of balances amounts exactly to the rescut capacity.\<close>
 
 theorem flow_saturates_ares_cut:
-  assumes "f is b flow"
-          "(ARescut f v) \<subseteq> \<V>"
+  assumes "f is b flow" "(ARescut f v) \<subseteq> \<V>"
   shows   " - sum b (ARescut f v)= ACap (ARescut f v)"
   using assms arescut_all_edges_sat arescut_ingoing_cap by auto
 
 end
 
-context cost_flow_spec
+subsection \<open>Costs\<close>
+
+context 
+  cost_flow_spec
 begin
 text \<open>Recall that we introduced costs for the edges by the locale assumptions, 
      and we will now lift this notion to costs of flows.
@@ -1091,19 +1223,13 @@ text \<open>Recall that we introduced costs for the edges by the locale assumpti
 
 definition "\<C> f = (\<Sum> e \<in> \<E>. (f e) * (\<c> e))"
 
-
 text \<open>Since graph arcs from $\mathcal{E}$ get some costs assigned, we lift that to residual edges.
      The costs of a residual arc should precisely mirror the effect of using that arc:
      In the \textit{forward} case we push flow through the original edge, so we incur the costs given by $c$.
      On the contrary, using a \textit{backward} edge means cancelling some flow 
      and thus, the costs are reduced according to $c$.
 \<close>
-end
 
-
-locale cost_flow_network= flow_network where \<E> = "\<E>::'edge_type set" +
-cost_flow_spec where \<E> = "\<E>::'edge_type set" for \<E>
-begin
 fun \<cc>::"'edge_type Redge \<Rightarrow> real" where
 "\<cc> (F e) = \<c> e"|
 "\<cc> (B e) = - \<c> e"
@@ -1112,4 +1238,7 @@ lemma erev_costs: " \<cc> (erev e) = - \<cc> e" for e
   by(cases rule: erev.cases[of e], auto)
 end
 
+locale cost_flow_network= 
+flow_network where \<E> = "\<E>::'edge_type set" +
+cost_flow_spec where \<E> = "\<E>::'edge_type set" for \<E>
 end

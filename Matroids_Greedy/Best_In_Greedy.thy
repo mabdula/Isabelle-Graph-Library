@@ -2,6 +2,8 @@ theory Best_In_Greedy
   imports Main Indep_System_Matroids_Specs
 begin
 
+section \<open>The Best-In-Greedy Algorithm for Matroids\<close>
+
 record ('a, 's) best_in_greedy_state = carrier_list :: "'a list" result :: 's
 
 named_theorems call_cond_elims

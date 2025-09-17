@@ -3,6 +3,12 @@ theory Compute_Path
     "Graph_Algorithms_Dev.RBT_Map_Extension"
 begin  
 
+section \<open>Shortest Paths between Sources and Targets\<close>
+
+text \<open>This file uses the BFS and DFS to find a shortest path between a set of sources and a set of targets.
+      We add a super-source and a super-target followed by BFS and DFS.
+      The super-source and super-target are finally removed to obtain a desired path.\<close>
+
 lemma G_and_dfs_graph: "G.digraph_abs = dfs.Graph.digraph_abs"
   "G.graph_inv = dfs.Graph.graph_inv"
   by(auto simp add: RBT_Set.empty_def G.digraph_abs_def dfs.Graph.digraph_abs_def 
@@ -352,8 +358,10 @@ proof-
       have "\<nexists>p. vwalk_bet (G.digraph_abs G') s p t"
       proof(insert no_parent_path, unfold bfs_tree_def bfs_impl_def,
           subst (asm) BFS.BFS_impl_same[OF bfs.BFS_axioms bfs_dom[OF one(2)]],
-          rule ccontr, rule exE, simp, thin_tac \<open>\<not> (\<nexists>p. vwalk_bet (G.digraph_abs G') s p t)\<close>, goal_cases)
-        case (1 p)
+          rule ccontr, goal_cases) 
+        case 1
+        then obtain p where "vwalk_bet (G.digraph_abs G') s p t" by auto
+        note 1 = 1(1) this
         have "s \<in> t_set srcs"
           using one(2)
           by (auto simp add: dfs.Graph.vset.set.invar_empty)

@@ -2568,8 +2568,6 @@ definition if1 where (*I am using this because when the RHS is in the function t
   "if1 flabel ex v1 v2 v3 r = ({v1, v2} \<in> G - ex \<and>
              flabel v1 = Some (r, Even) \<and> flabel v2 = None \<and> {v2, v3} \<in> M)"
 
-find_theorems dblton_graph "(\<subseteq>)"
-
 interpretation matching_graph: graph_abs M
   apply(unfold_locales)
   using graph_invar_subset[OF graph matching(2)] .

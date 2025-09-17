@@ -264,7 +264,7 @@ definition "SSP_upd3' state = (let b = balance state; f = current_flow state;
                                         if v = t then b t + \<gamma> else b v)  \<rparr>))"
 
 lemma SSP_upd4_same: "SSP_upd3' state = SSP_upd3 state"
-  unfolding SSP_upd3_def SSP_upd3'_def by metis
+  by(auto simp add: SSP_upd3_def SSP_upd3'_def)
 
 declare[[simp_trace_depth_limit=1000]]
 
@@ -599,39 +599,33 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
     by(rule integral_min) 
 
   moreover have "is_integral (real_of_ereal (Rcap f (set P)))"
-    using f_def  get_source_target_path_axioms(6)[of f b s t P] stp_prop 
-          is_min_path_def[of f s t P] is_s_t_path_def[of f s t P] augpath_cases[of f P] 
-    by (metis Rcap_integral algo.invar2_def algo_axioms less.prems list.discI)
-       
+    using less.prems get_source_target_path_axioms(6)[of f b s t P]  stp_prop 
+    by(auto intro!: Rcap_integral intro:  augpath_cases[of f P] 
+             elim!: invar2E is_min_pathE is_s_t_pathE  simp add: f_def)
+    
   ultimately have integral_gamma: "is_integral \<gamma>"
-    unfolding \<gamma>_def using integral_min
-    by (simp add: min_def)
+    using integral_min
+    by (simp add: min_def \<gamma>_def)
 
   have P_augpath:"augpath f P"
-    using get_source_target_path_axioms(6)[of f b s t P]
-          stp_prop
-    unfolding is_min_path_def is_s_t_path_def
-    by (metis get_source_target_path_axioms resreach_f_s_t)
+    using get_source_target_path_axioms(6)[of f b s t P] stp_prop 
+    by (auto elim: is_min_pathE is_s_t_pathE)
 
   have Rcap_pos: "(Rcap f (set P)) > L"
-    using stp_prop get_source_target_path_axioms[of f ] resreach_f_s_t[of ]
-    by metis
+    using stp_prop get_source_target_path_axioms(7)[of f b s t P ] resreach_f_s_t 
+    by auto
 
   have gamma_pos: "\<gamma> > L"
-    unfolding \<gamma>_def
-    using Rcap_pos t_is_neg b_s_pos 
-    by (smt (verit, ccfv_threshold) P_augpath augpath_rcap ereal_infty_less(1) ereal_less_real_iff
-       min.absorb3 min_def real_of_ereal.simps(1) zero_less_real_of_ereal)
-    
+    using Rcap_pos t_is_neg b_s_pos  P_augpath augpath_rcap 
+    by(auto simp add: min_def ereal_less_real_iff \<gamma>_def)
+
   have s_red: "abs (b' s) < abs (b s)"
-    using b'_def  gamma_pos b_s_pos  \<gamma>_def 
-    by (smt (verit) ereal_less_real_iff min.absorb3 min_def of_nat_0 of_nat_le_0_iff
-        real_of_ereal.simps(1))
+    using gamma_pos b_s_pos 
+    by(auto simp add: b'_def  min_def ereal_less_real_iff \<gamma>_def)
 
   have t_red: "abs (b' t) < abs (b t)"
-    using  b'_def  gamma_pos t_is_neg \<gamma>_def 
-    by (smt (verit, best) ereal_less_real_iff less_le_not_le min_def
-               of_nat_0_eq_iff of_nat_le_0_iff)
+    using gamma_pos t_is_neg 
+    by(auto simp add: b'_def  min_def ereal_less_real_iff \<gamma>_def)
    
   show ?thesis 
     proof(cases rule: SSP_call_3_cond_SSP_dom[OF 3])
@@ -739,14 +733,12 @@ proof-
    using stp_prop by (auto intro: get_source_target_path_axioms(5)[of f b s t P])
 
   have P_augpath:"augpath f P"
-    using get_source_target_path_axioms(6)[of f b s t P]
-          stp_prop
-    unfolding is_min_path_def is_s_t_path_def
-    by (metis get_source_target_path_axioms resreach_f_s_t)
+    using get_source_target_path_axioms(6)[of f b s t P] stp_prop
+    by(auto elim: is_min_pathE is_s_t_pathE)
 
   have Rcap_pos: "(Rcap f (set P)) > L"
-    using stp_prop get_source_target_path_axioms resreach_f_s_t
-    by metis
+    using stp_prop get_source_target_path_axioms(7)[of f b s t P]  resreach_f_s_t 
+    by simp
 
   have b_s_pos: "b s > L "
     by(rule get_source_target_path_axioms(2)[of f b s t P], rule SSP_call_3_condE[OF assms(1)])
@@ -757,41 +749,34 @@ proof-
       (simp add: stp_prop)
 
   have gamma_pos: "\<gamma> > L"
-    unfolding \<gamma>_def
-    using Rcap_pos t_is_neg b_s_pos 
-    by (smt (verit, ccfv_SIG) P_augpath augpath_rcap ereal_infty_less(1) ereal_less_real_iff 
-        less_eq_ereal_def min_def real_of_ereal.simps(1) zero_less_real_of_ereal)
-
-  have s_hd_P: "s = fstv (hd P)"
+    using Rcap_pos t_is_neg b_s_pos  P_augpath augpath_rcap
+    by(auto simp add: \<gamma>_def  min_def ereal_less_real_iff )
+ 
+  have t_last_P: "t = sndv (last P)" and s_hd_P: "s = fstv (hd P)"
     using get_source_target_path_axioms(6)[OF sym[OF stp_prop]] 
-    unfolding is_min_path_def is_s_t_path_def by simp
+    by(auto elim: is_min_pathE is_s_t_pathE)
 
-  have t_last_P: "t = sndv (last P)"
-    using get_source_target_path_axioms(6)[OF sym[OF stp_prop]] 
-    unfolding is_min_path_def is_s_t_path_def by simp
-
-  have 00: "s \<noteq> t"
+  have s_neq_t: "s \<noteq> t"
     using stp_prop get_source_target_path_axioms(1-6)[OF sym[OF stp_prop]]
     by (auto elim!: SSP_call_3_condE[OF assms(1)])
 
-  have 01: "is_Opt (\<lambda>v. \<b> v - b v) f"
-    using assms(2) unfolding invar3_def b_def f_def by simp
+  have opt_flow: "is_Opt (\<lambda>v. \<b> v - b v) f"
+    using assms(2) by(simp add: invar3_def b_def f_def)
 
-  have 02: "is_min_path (current_flow state) s t P"
+  have min_path: "is_min_path (current_flow state) s t P"
     using stp_prop get_source_target_path_axioms(1-6)[OF sym[OF stp_prop]] f_def by auto
 
-  have 03: "current_flow (SSP_upd3 state) = augment_edges (current_flow state) \<gamma> P"
-    unfolding SSP_upd3_def  \<gamma>_def  f_def b_def Let_def
+  have flow_is: "current_flow (SSP_upd3 state) = augment_edges (current_flow state) \<gamma> P"
     using  sym[OF stp_def[simplified f_def b_def]]
-    by auto
+    by (auto simp add: SSP_upd3_def  \<gamma>_def  f_def b_def Let_def)
 
   show ?thesis
     unfolding invar3_def
     apply(rule path_aug_opt_pres[of s t "\<lambda> v. \<b> v  - b v" f \<gamma> P])
-    using \<gamma>_def  P_augpath augpath_def[of f P] ereal_real  00 01 f_def gamma_pos 02 03 s_hd_P 
-          t_last_P sym[OF stp_prop[simplified b_def f_def]] b_def  
-       unfolding SSP_upd3_def \<gamma>_def Let_def 
-       by(auto  split: if_split)
+    using P_augpath  s_neq_t opt_flow  gamma_pos
+          min_path flow_is sym[OF stp_prop[simplified b_def f_def]]   
+    by(auto intro: path_aug_opt_pres[of s t "\<lambda> v. \<b> v  - b v" f \<gamma> P] split: if_split 
+          simp add: ereal_real  SSP_upd3_def \<gamma>_def Let_def b_def s_hd_P t_last_P f_def)
    qed
 
 text \<open>Let's summarize those three lemmas.\<close>
@@ -1014,20 +999,18 @@ proof-
       proof(cases "0 = sum b (Rescut \<f> s)")
         case True
         have "s \<in> (Rescut \<f> s)" "b s > 0"
-          using flow_network.Rescut_def flow_network_axioms
-           by (fastforce simp add: s_prop(2))+
+           by (fastforce simp add: s_prop(2) Rescut_def)+
          then obtain t where t_prop:"t \<in> (Rescut \<f> s)" "b t < 0"
-           using True           
-           by (smt (verit) Int_absorb1 Rescut_around_in_V \<V>_finite finite_Int s_prop(1) sum_pos2)
-         hence rsf:"resreach \<f>  s t" unfolding Rescut_def  
-           using s_prop(2) by fastforce
+           using sum_pos2[of "Rescut \<f> s" s b] finite_Rescut[OF  s_prop(1)]
+           by(force simp add:  True)
+         hence rsf:"resreach \<f>  s t"  
+           using s_prop(2) by (fastforce simp add: Rescut_def)
          have tV: "t \<in> \<V>" 
            using Rescut_around_in_V s_prop(1) t_prop(1) by blast
          then obtain p where p_prop: "augpath \<f> p" "set p \<subseteq> \<EE>"
                                    "fstv (hd p) = s" "sndv (last p) = t" 
-          unfolding augpath_def prepath_def
-          using subset_mono_awalk' augpath_def prepath_def resreach_imp_augpath[of \<f> s t] rsf
-           by auto
+          using subset_mono_awalk' resreach_imp_augpath[of \<f> s t] rsf
+           by (auto intro: augpathI )
          then obtain p' where p'_prop: "prepath  p'" "set p' \<subseteq> set p"
                                    "fstv (hd p') = s" "sndv (last p') = t" "distinct p'" "p' \<noteq> []"
            by (metis dual_order.refl prepath_drop_cycles augpath_def prepath_def)
@@ -1140,12 +1123,12 @@ and conservative_weights: "\<nexists> C. closed_w (make_pair ` \<E>) (map make_p
 
 begin
 
-lemma Scaling_from_this[simp]: "Scaling snd make_pair create_edge \<u> \<c> \<E> \<b> fst get_source_target_path" 
+lemma Scaling_from_this[simp]: "Scaling snd  create_edge \<u> \<c> \<E> \<b> fst get_source_target_path" 
   by (simp add: Scaling_axioms)
 
 text \<open>For all $L$.\<close>
 
-lemma SSP_from_this[simp]: "\<And> L . SSP snd make_pair create_edge  \<u> \<c> \<E>  \<b> fst L (get_source_target_path L)"
+lemma SSP_from_this[simp]: "\<And> L . SSP snd create_edge  \<u> \<c> \<E>  \<b> fst L (get_source_target_path L)"
   using Scaling_axioms unfolding Scaling_def Scaling_axioms_def SSP_axioms_def SSP_def
   by(auto simp add: get_source_target_path_axioms)
 
@@ -1153,9 +1136,9 @@ subsubsection \<open>Function Setup\<close>
 
 text \<open>The inner loop is parametrized by some threshold $L$.\<close>
 
-definition "ssp (L::nat) = SSP.SSP  make_pair \<u> \<E> (get_source_target_path L)"
+definition "ssp (L::nat) = SSP.SSP snd \<u> \<E> fst (get_source_target_path L)"
 
-definition "ssp_dom L  state = SSP.SSP_dom make_pair \<u> \<E> (get_source_target_path L) state"
+definition "ssp_dom L  state = SSP.SSP_dom snd \<u> \<E> fst (get_source_target_path L) state"
 
 text \<open>The outer loop is realized by recursion on $l$. The threshold value $L$ is then $2^l$.
 If the inner loop  already successful, then a minimum cost flow was found.
@@ -1194,8 +1177,8 @@ lemma Scaling_ret_1_condI:
 lemma Scaling_ret_1_condE: "Scaling_ret_1_cond k state \<Longrightarrow>
                           (\<And> state'. state' = ssp (2^k-1) state \<Longrightarrow> return state' = success \<Longrightarrow> P)
                             \<Longrightarrow> P"
-  unfolding Scaling_ret_1_cond_def Let_def 
-  by (metis return.exhaust return.simps(8) return.simps(9))
+  by(cases "return (ssp (2 ^ k - 1) state)")
+    (auto simp add: Scaling_ret_1_cond_def Let_def) 
   
 text \<open>Failure.\<close>
 
@@ -1212,11 +1195,12 @@ lemma Scaling_ret_2_condI:
     "state' = ssp (2^k-1) state \<Longrightarrow> return state' = failure \<Longrightarrow> Scaling_ret_2_cond k state"
   unfolding Scaling_ret_2_cond_def by simp
 
-lemma Scaling_ret_2_condE:"Scaling_ret_2_cond k state \<Longrightarrow>
-                           (\<And> state'. state' = ssp (2^k-1) state \<Longrightarrow> return state' = failure \<Longrightarrow> P)
-                           \<Longrightarrow> P"
-  unfolding Scaling_ret_2_cond_def Let_def 
-  by (metis return.exhaust return.simps(7) return.simps(9))
+lemma Scaling_ret_2_condE:
+ "\<lbrakk>Scaling_ret_2_cond k state;
+      (\<And> state'. \<lbrakk>state' = ssp (2^k-1) state; return state' = failure\<rbrakk> \<Longrightarrow> P)\<rbrakk>
+   \<Longrightarrow> P"
+  by(cases "return (ssp (2 ^ k - 1) state)")
+    (auto simp add: Scaling_ret_2_cond_def Let_def) 
 
 definition "Scaling_ret_3_cond k state =
              (let state' = ssp (2^k-1) state in 
@@ -1227,16 +1211,17 @@ definition "Scaling_ret_3_cond k state =
                       if k = 0 then True
                                else False)))"
 
-lemma Scaling_ret_3_condI: "state' = ssp (2^k-1) state \<Longrightarrow> return state' = notyetterm \<Longrightarrow> k = 0
-                             \<Longrightarrow> Scaling_ret_3_cond k state"
-  unfolding Scaling_ret_3_cond_def by simp
+lemma Scaling_ret_3_condI: 
+ "\<lbrakk>state' = ssp (2^k-1) state; return state' = notyetterm; k = 0\<rbrakk>
+    \<Longrightarrow> Scaling_ret_3_cond k state"
+  by(simp add: Scaling_ret_3_cond_def)
 
 lemma Scaling_ret_3_condE:
    "Scaling_ret_3_cond k state \<Longrightarrow>
-   (\<And> state'. state' = ssp (2^k-1) state \<Longrightarrow> return state' = notyetterm \<Longrightarrow>  k = 0 \<Longrightarrow> P) \<Longrightarrow>
+   (\<And> state'. \<lbrakk>state' = ssp (2^k-1) state; return state' = notyetterm;  k = 0\<rbrakk> \<Longrightarrow> P) \<Longrightarrow>
    P"
-  unfolding Scaling_ret_3_cond_def Let_def 
-  by (smt (verit) return.exhaust return.simps)
+  by(cases "return (ssp (2 ^ k - Suc 0) state)", all \<open>cases "k = 0"\<close>)
+    (auto simp add: Scaling_ret_3_cond_def Let_def) 
 
 definition "Scaling_call_4_cond k state =
              (let state' = ssp (2^k-1) state in 
@@ -1253,10 +1238,10 @@ lemma Scaling_call_4_condI: "state' = ssp (2^k-1) state \<Longrightarrow> return
 
 lemma Scaling_call_4_condE:
    "Scaling_call_4_cond k state \<Longrightarrow>
-    (\<And> state'. state' = ssp (2^k-1) state \<Longrightarrow> return state' = notyetterm \<Longrightarrow>  k > 0 \<Longrightarrow> P) \<Longrightarrow> 
-P"
-  unfolding Scaling_call_4_cond_def Let_def 
-  by (smt (verit, del_insts) bot_nat_0.not_eq_extremum return.exhaust return.simps)
+    (\<And> state'. \<lbrakk>state' = ssp (2^k-1) state; return state' = notyetterm;  k > 0\<rbrakk> \<Longrightarrow> P) 
+   \<Longrightarrow> P"
+  by(cases "return (ssp (2 ^ k - Suc 0) state)", all \<open>cases "k = 0"\<close>)
+    (auto simp add: Scaling_call_4_cond_def Let_def) 
 
 text \<open>Again, we can introduce a predicate by analyzing the taken execution path.\<close>
 
@@ -1345,17 +1330,17 @@ lemma invar_combI: "invar1 state \<Longrightarrow> invar2 state \<Longrightarrow
 named_theorems invar_holds_intros
 
 text \<open>Preservation during recursion.\<close>
-thm  SSP.invar_1_holds[of   _ _ _ _ _ _ _ _ "2^k -1", OF SSP_from_this]
+thm  SSP.invar_1_holds[of   _ _ _ _ _ _ _  "2^k -1", OF SSP_from_this]
 
 lemma invar_comb_holds_4[invar_holds_intros]: 
       "\<lbrakk>Scaling_call_4_cond k state; invar_comb  state \<rbrakk>  \<Longrightarrow> invar_comb(Scaling_upd4 k state)"
   unfolding Scaling_upd4_def Let_def
   apply(rule Scaling_call_4_condE, simp, rule invar_combI)
   apply(all \<open>rule invar_combE[of state]\<close>)
-  using  SSP.invar_1_holds[of   _ _ _ _ _ _ _ _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_2_holds[of   _ _ _ _ _ _ _ _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_3_holds[of   _ _ _ _ _ _ _ _ "2^k -1", OF SSP_from_this, of state]
-           SSP.integral_balance_termination[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+  using  SSP.invar_1_holds[of   _ _ _ _ _ _ _  "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_2_holds[of   _ _ _ _ _ _ _  "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_3_holds[of   _ _ _ _ _ _ _  "2^k -1", OF SSP_from_this, of state]
+           SSP.integral_balance_termination[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
   by(auto  simp add:  ssp_def)
 
      
@@ -1363,10 +1348,10 @@ lemma invar_comb_holds_1[invar_holds_intros]:
        "\<lbrakk>Scaling_ret_1_cond k state; invar_comb  state \<rbrakk>  \<Longrightarrow> invar_comb(Scaling_ret1 k state)"
   apply(rule invar_combI)
   apply(all \<open>rule invar_combE[of state]\<close>)
-  using  SSP.invar_1_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_2_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_3_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.integral_balance_termination[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+  using  SSP.invar_1_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_2_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_3_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.integral_balance_termination[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
   by(auto simp add:  ssp_def  Scaling_ret1_def)
 
 lemma invar_comb_holds_2[invar_holds_intros]: 
@@ -1374,10 +1359,10 @@ lemma invar_comb_holds_2[invar_holds_intros]:
             \<Longrightarrow> invar_comb(Scaling_ret2 k state)"
   apply(rule invar_combI)
   apply(all \<open>rule invar_combE[of state]\<close>)
-  using  SSP.invar_1_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_2_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_3_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.integral_balance_termination[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+  using  SSP.invar_1_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_2_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_3_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.integral_balance_termination[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
   by(auto simp add:  ssp_def  Scaling_ret2_def)
 
 lemma reset_return_invar1_pres: "invar1 state \<Longrightarrow> invar1 (state \<lparr> return:= val \<rparr>)"
@@ -1393,10 +1378,10 @@ lemma invar_comb_holds_3[invar_holds_intros]:
        "\<lbrakk>Scaling_ret_3_cond k state; invar_comb  state \<rbrakk>  \<Longrightarrow> invar_comb(Scaling_ret3 k state)"
    apply(rule invar_combI)
   apply(all \<open>rule invar_combE[of state]\<close>)
-  using  SSP.invar_1_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_2_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.invar_3_holds[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
-           SSP.integral_balance_termination[of   _ _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+  using  SSP.invar_1_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_2_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.invar_3_holds[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
+           SSP.integral_balance_termination[of   _ _ _ _ _ \<b> _ "2^k -1", OF SSP_from_this, of state]
            reset_return_invar1_pres[of state failure] reset_return_invar2_pres[of state failure]
            reset_return_invar3_pres[of state failure]
   by(auto simp add:  ssp_def  Scaling_ret3_def invar1_def invar2_def invar3_def) 
@@ -1547,7 +1532,7 @@ lemma invar3_initial_state:
 text \<open>Finally, we obtain total correctness and completeness for the initial state and threshold value $L$.\<close>
 
 theorem total_correctness:
-  assumes "L = \<lceil> log 2 (max 1 (0.5 * (\<Sum> v \<in> \<V>. abs (\<b> v))))\<rceil>"
+  assumes "L = \<lceil> log 2 (max 1 ((\<Sum> v \<in> \<V>. abs (\<b> v))/2))\<rceil>"
           "final = Scaling L \<lparr>current_flow = (\<lambda> e. 0), balance = \<b>,  return = notyetterm\<rparr>"
   shows   "return final = success \<Longrightarrow> is_Opt \<b> (current_flow final)" (is "?succ \<Longrightarrow> ?opt")
           "return final = failure \<Longrightarrow> \<nexists> f. f is \<b> flow" (is "?fail \<Longrightarrow> ?noopt")

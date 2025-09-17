@@ -802,4 +802,38 @@ qed
 
 lemma inter_Big_union_distr_empt_list:
                "(\<And> C. C \<in> B \<Longrightarrow> A \<inter> set C = {}) \<Longrightarrow> (A \<inter> \<Union> { set C| C. C \<in> B}) = {}" for A B by auto
+
+lemma foldl_invar: "inv x \<Longrightarrow> (\<And> y z. inv y \<Longrightarrow> inv (f y z)) \<Longrightarrow>
+                    inv (foldl f x xs)" for inv
+  by(induction xs arbitrary: x) auto
+
+lemma foldr_invar: "inv x \<Longrightarrow> (\<And> y z. inv y \<Longrightarrow> inv (f z y)) \<Longrightarrow>
+                    inv (foldr f xs x)" for inv
+  by(induction xs arbitrary: x) auto
+
+lemma list_in_image_map: "set ys \<subseteq> f ` X \<Longrightarrow> \<exists> xs. map f xs = ys \<and> set xs \<subseteq> X"
+proof(induction ys)
+  case (Cons y ys)
+  then obtain x where "x \<in> X" "f x = y"  by auto
+  moreover obtain xs where "map f xs = ys" "set xs \<subseteq> X"
+    using Cons by auto
+  ultimately show ?case 
+    by(auto intro!: exI[of _ "x#xs"])
+qed simp
+
+lemma rev_cases3: "(xs = Nil \<Longrightarrow> P) \<Longrightarrow> (\<And> x. xs = [x] \<Longrightarrow> P) \<Longrightarrow>
+                   (\<And> ys y x. xs=ys@[y,x] \<Longrightarrow> P) \<Longrightarrow> P" 
+  by (metis More_Lists.append_butlast_last_cancel append_Nil neq_Nil_conv_snoc)
+
+fun itrev_aux :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
+"itrev_aux  [] ys = ys" |
+"itrev_aux  (x #xs) ys = itrev_aux  xs (x #ys)"
+definition "itrev xs = itrev_aux  xs Nil"
+
+lemma itrev_rev_gen:"itrev_aux xs ys = rev xs @ ys"
+  by(induction xs ys arbitrary: rule: itrev_aux.induct) auto
+
+lemma itrev_is_rev[simp]: "itrev = rev"
+  by(auto simp add: itrev_rev_gen[of _ Nil, simplified] itrev_def)
+
 end

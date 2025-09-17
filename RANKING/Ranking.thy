@@ -120,7 +120,6 @@ text \<open>
   The following two elimination rules are useful to obtain the required vertices for the
   induction hypothesis of
 \<close>
-thm index_less_induct
 
 lemma ranking_matching_earlier_match_onlineE:
   assumes "ranking_matching G M \<pi> \<sigma>"

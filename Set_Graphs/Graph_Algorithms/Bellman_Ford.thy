@@ -1418,8 +1418,6 @@ moreover have "p1 = [] \<Longrightarrow> p2= b#pp2 \<Longrightarrow> vwalk_bet (
   for b pp1
     proof(subst vwalk_bet_def, rule, goal_cases)
       case 1
-      thm a_p_prop(1)[simplified 1 p1p2_prop, simplified] 
-           vwalk_rotate[of _ b pp1 u Nil]
       have b_is:"b = v" 
         using "1"(1) "1"(2) a_p_prop(1) p1p2_prop vwalk_bet_props by fastforce
       have" Vwalk.vwalk (pred_graph (relax connections u v)) (u # [] @ b # pp1 @ [u])"

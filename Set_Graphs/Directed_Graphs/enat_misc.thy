@@ -18,4 +18,8 @@ lemma eval_enat_numeral:
 
 declare eSuc_enat[symmetric, simp]
 
+lemma eqI_strict_less_contradiction_cases:
+  "\<lbrakk>((x::enat) < y \<Longrightarrow> False); (y < x \<Longrightarrow> False)\<rbrakk> \<Longrightarrow> x = y"
+ using linorder_less_linear by blast
+
 end
