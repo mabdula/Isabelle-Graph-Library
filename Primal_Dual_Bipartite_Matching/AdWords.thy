@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory AdWords
   imports 
     Bipartite_Matching_LP

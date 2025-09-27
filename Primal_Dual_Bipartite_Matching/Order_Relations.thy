@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory Order_Relations
   imports Comparison_Sort_Lower_Bound.Linorder_Relations
 begin

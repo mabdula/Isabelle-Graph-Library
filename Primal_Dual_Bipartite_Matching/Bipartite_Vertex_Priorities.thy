@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory Bipartite_Vertex_Priorities
   imports 
     Bipartite_Matching_LP

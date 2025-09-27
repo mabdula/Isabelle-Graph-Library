@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory Order_Relations_From_Priorities
   imports 
     Order_Relations
