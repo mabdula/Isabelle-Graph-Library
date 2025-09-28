@@ -569,7 +569,7 @@ proof-
   have "length (butlast cyc) = length cyc - 1"
     using length_butlast by blast
   then have "length (butlast cyc) \<ge> 2"
-    using odd_cycle_feats(1)[OF match_blossomD(3)[OF \<open>match_blossom M stem cyc\<close>]] 
+    using odd_cycleD(1)[OF match_blossomD(3)[OF \<open>match_blossom M stem cyc\<close>]] 
     by auto
   then have "card (set (butlast cyc)) \<ge> 2"
     using \<open>length (butlast cyc) = card (set (butlast cyc))\<close>
@@ -780,7 +780,7 @@ lemma match_blossom_distinct_tl:
   shows "distinct (tl cyc)"
 proof-
   have "distinct (butlast cyc)" "hd cyc = last cyc"
-    using match_blossomD[OF assms] odd_cycle_feats
+    using match_blossomD[OF assms] odd_cycleD
     unfolding distinct_append[symmetric] 
     by auto
   then have "distinct (tl (butlast cyc))" "hd cyc \<notin> set (tl (butlast cyc))"
@@ -800,7 +800,7 @@ proof-
       by auto
   qed
   moreover have "length cyc \<ge> 3"
-    using odd_cycle_feats(1)[OF match_blossomD(3)[OF assms]]
+    using odd_cycleD(1)[OF match_blossomD(3)[OF assms]]
     by auto
   ultimately show ?thesis
     by auto
@@ -809,7 +809,7 @@ qed
 lemma cycle_set_tl_eq_butlast:
   assumes "match_blossom M stem cyc"
   shows "set (tl cyc) = set (butlast cyc)"
-  by (metis append_butlast_last_id assms match_blossomD(3) butlast.simps(2) last_tl list.exhaust_sel odd_cycle_feats(3) odd_cycle_nempty rotate1.simps(2) set_rotate1)
+  by (metis append_butlast_last_id assms match_blossomD(3) butlast.simps(2) last_tl list.exhaust_sel odd_cycleD(3) odd_cycle_nempty rotate1.simps(2) set_rotate1)
 
 context find_aug_path
 begin
@@ -1851,7 +1851,7 @@ qed
 lemma odd_cycle_length_edges_ge_3:
   assumes "odd_cycle p"
   shows "length (edges_of_path p) \<ge> 3"
-  using odd_cycle_feats[OF assms]
+  using odd_cycleD[OF assms]
   by (metis One_nat_def Suc_le_eq Suc_pred assms edges_of_path_length gt_zero linorder_neqE_nat
             linorder_not_le odd_cycle_even_verts odd_numeral)
 
@@ -1865,7 +1865,7 @@ lemma odd_cycle_length_verts_ge_4:
 lemma odd_cycle_set_butlast_tl:
   assumes "odd_cycle C"
   shows "set (butlast C) = set (tl C)"
-  using odd_cycle_feats[OF assms] odd_cycle_nempty[OF assms]
+  using odd_cycleD[OF assms] odd_cycle_nempty[OF assms]
   by (simp add: set_butlast_tl)
 
 locale match = graph_abs G for G+ 
@@ -2075,7 +2075,7 @@ lemma match_blossom_path_rev_stem:
     subgoal using path_suff[OF path] .
     subgoal using rev_path_is_path[OF path_pref[OF path]] .
     subgoal by (smt match_blossom match_blossomD(3) edge_between_pref_suff hd_rev insert_commute
-                    list.simps(3) odd_cycle_feats(3) odd_cycle_nempty path)
+                    list.simps(3) odd_cycleD(3) odd_cycle_nempty path)
     done
   done
 
