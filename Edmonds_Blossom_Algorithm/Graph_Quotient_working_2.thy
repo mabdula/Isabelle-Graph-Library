@@ -229,7 +229,7 @@ lemma odd_cycle_nempty:
   unfolding odd_cycle_def
   by (metis One_nat_def assms list.size(3) not_less_eq_eq one_le_numeral odd_cycle_def)
 
-lemma odd_cycle_feats:
+lemma odd_cycleD:
   assumes "odd_cycle p"
   shows "(length p \<ge> 3)" "odd (length (edges_of_path p))" "hd p = last p"
   using assms
@@ -237,7 +237,7 @@ lemma odd_cycle_feats:
   by simp+
 
 lemma odd_cycle_even_verts: assumes "odd_cycle C" shows "even (length C)"
-  using odd_cycle_feats[OF assms(1)]
+  using odd_cycleD[OF assms(1)]
   by (auto simp: Suc_le_length_iff numeral_3_eq_3 edges_of_path_length split: if_splits)
 
 subsection \<open>Blossoms\<close>
@@ -249,7 +249,7 @@ definition match_blossom where
                       odd_cycle C \<and> hd (stem @ C) \<notin> Vs M \<and>
                       even (length (edges_of_path (stem @ [hd C]))))"
 
-lemma match_blossom_feats:
+lemma match_blossomD:
   assumes "match_blossom M stem C"
   shows "alt_path M (stem @ C)"
     "distinct (stem @ (butlast C))" "odd_cycle C" "hd (stem @ C) \<notin> Vs M"
@@ -258,7 +258,7 @@ lemma match_blossom_feats:
   unfolding match_blossom_def
   by auto
 
-lemma match_blossom_feats':
+lemma match_blossom_alt_cycle:
   assumes "match_blossom M stem C"
   shows "alt_path M C"
 proof(cases "(edges_of_path (stem @ [hd C])) = []")
@@ -266,27 +266,27 @@ proof(cases "(edges_of_path (stem @ [hd C])) = []")
   then have "stem = []"
     using edges_of_path_snoc snoc_eq_iff_butlast by fastforce
   then show ?thesis
-    using match_blossom_feats(1)[OF assms]
+    using match_blossomD(1)[OF assms]
     by auto
 next
   have "C \<noteq> []"
-    using assms match_blossom_feats(3) odd_cycle_nempty by auto
+    using assms match_blossomD(3) odd_cycle_nempty by auto
   then have "edges_of_path (stem @ [hd C]) @ edges_of_path C  = edges_of_path (stem @ C)"
     using edges_of_path_append_2 by force
   then have "alt_path M (stem @ [hd C])"
-    by (metis alt_list_append_1 match_blossom_feats(1)[OF assms])
+    by (metis alt_list_append_1 match_blossomD(1)[OF assms])
   moreover case False
   ultimately have "last (edges_of_path (stem @ [hd C])) \<in> M"
-    using match_blossom_feats(5)[OF assms]
+    using match_blossomD(5)[OF assms]
     using alternating_eq_iff_even alternating_list_even_last by blast
   then show ?thesis
-    using alt_list_append_1' match_blossom_feats(1)[OF assms]
+    using alt_list_append_1' match_blossomD(1)[OF assms]
     by (metis False \<open>edges_of_path (stem @ [hd C]) @ edges_of_path C = edges_of_path (stem @ C)\<close>)
 qed
 
 abbreviation "blossom G M stem C \<equiv> path G (stem @ C) \<and> match_blossom M stem C"
 
-lemma blossom_props: assumes "blossom G M stem C"
+lemma blossomD: assumes "blossom G M stem C"
   shows "path G (stem @ C)" "match_blossom M stem C"
   using assms
   by auto
@@ -735,7 +735,7 @@ proof(rule ccontr)
     unfolding odd_cycle_def
     subgoal by (metis One_nat_def Suc_1 hd_v_in_hd_e linear not_less_eq_eq numeral_3_eq_3)
     subgoal
-      using alternating_list_odd_last cycle(1) cycle(2) inM odd_cycle_feats(2) by blast
+      using alternating_list_odd_last cycle(1) cycle(2) inM odd_cycleD(2) by blast
     done
   moreover have "last p \<in> Vs M"
     using inM
@@ -829,14 +829,14 @@ proof(rule ccontr; simp)
       using dblton_E e
       by (fastforce simp: dblton_graph_def)
     have "{hd (tl p), hd (tl (tl p))} \<in> M"
-      using odd_cycle_feats[OF cycle(1)] cycle(2)
+      using odd_cycleD[OF cycle(1)] cycle(2)
       by(auto simp add: Suc_le_length_iff numeral_3_eq_3 alt_list_step)
     show ?thesis
     proof(cases "v \<in> set p")
       case T1: True
       moreover have "\<exists>e' \<in> set (edges_of_path p). v \<in> e' \<and> e' \<in> M" 
-        apply(intro alt_path_vert_is_matched v T1 odd_cycle_feats[OF cycle(1)])
-        using odd_cycle_feats[OF cycle(1)] cycle(2) v
+        apply(intro alt_path_vert_is_matched v T1 odd_cycleD[OF cycle(1)])
+        using odd_cycleD[OF cycle(1)] cycle(2) v
         by auto
       ultimately show ?thesis
         using match[unfolded matching_def2]
@@ -999,13 +999,13 @@ proof-
     by (metis alt_list_append_1 cycle(2))
   moreover have eofp_pfx: "(edges_of_path (find_pfx ((=) v) p)) = (find_pfx ((\<in>) v) (edges_of_path p))"
     apply(intro edges_of_path_find_pfx cycle)
-    using odd_cycle_feats(1)[OF cycle(1)] by simp
+    using odd_cycleD(1)[OF cycle(1)] by simp
   ultimately show ?g1
     by simp
   have rev_eofp_pfx: "(edges_of_path (find_pfx ((=) v) (rev p))) = (find_pfx ((\<in>) v) (edges_of_path (rev p)))"
     apply(intro edges_of_path_find_pfx cycle)
-    subgoal using odd_cycle_feats(1,3)[OF cycle(1)] cycle(5) by simp
-    subgoal using odd_cycle_feats(1,3)[OF cycle(1)] cycle(5)
+    subgoal using odd_cycleD(1,3)[OF cycle(1)] cycle(5) by simp
+    subgoal using odd_cycleD(1,3)[OF cycle(1)] cycle(5)
       by (metis hd_rev rev.simps(1))
     done
   have rev_eop: "(edges_of_path (rev p)) = rev (edges_of_path p)"
@@ -1035,7 +1035,7 @@ proof-
     qed
     subgoal unfolding p'p''
       using edges_of_path_append_2 edges_of_path_snoc
-      by (smt append.assoc append_Cons cycle(1) cycle(5) edges_of_path.simps(3) last.simps last_appendR list.distinct(1) list.sel(1) odd_cycle_feats(3) p'p'' self_append_conv2)
+      by (smt append.assoc append_Cons cycle(1) cycle(5) edges_of_path.simps(3) last.simps last_appendR list.distinct(1) list.sel(1) odd_cycleD(3) p'p'' self_append_conv2)
     done
 qed
 
@@ -1316,7 +1316,7 @@ lemma odd_cycle_rev:
 lemma odd_cycle_rev_alt_list:
   assumes "odd_cycle C" "alt_path M C"
   shows "alt_path M (rev C)"
-  using odd_cycle_feats(1)[OF assms(1)]
+  using odd_cycleD(1)[OF assms(1)]
                  
         even_alt_path_rev[OF odd_cycle_even_verts[OF assms(1)] _ assms(2)]
   by (simp add: even_alt_path_rev assms(2))
@@ -1359,7 +1359,7 @@ proof-
     proof(rule ccontr)
       assume ass: "vC \<noteq> last C"
       then have "vC \<noteq> hd C"
-        using odd_cycle_feats(3)[OF cycle(1)] by auto
+        using odd_cycleD(3)[OF cycle(1)] by auto
       have "C \<noteq> []"
         using vCinC
         by auto
@@ -1375,7 +1375,7 @@ proof-
         by (metis insert_commute insert_iff)
     qed
     moreover have "hd (stem2vert_path C  M (hd p2)) = last C"
-      using hd_stem2vert_path[OF odd_cycle_nempty[OF cycle(1)]] odd_cycle_feats[OF cycle(1)]
+      using hd_stem2vert_path[OF odd_cycle_nempty[OF cycle(1)]] odd_cycleD[OF cycle(1)]
       by auto
     ultimately show ?thesis using vC
       by auto
@@ -1453,7 +1453,7 @@ next
     using assms(1)
     apply (cases "C = []")
     by (auto split: if_splits simp: neq_Nil_conv stem2vert_path_def
-        odd_cycle_feats(3)[OF \<open>odd_cycle C\<close>, symmetric])
+        odd_cycleD(3)[OF \<open>odd_cycle C\<close>, symmetric])
 qed
 
 lemma find_pfx_sing: "find_pfx Q l = [x] \<Longrightarrow> x = hd l"
@@ -1483,7 +1483,7 @@ proof-
     have "C \<noteq> []"
       using odd_cycle_nempty(1)[OF cycle(1)] .
     then have "hd C = hd (rev C)"
-      using odd_cycle_feats(3)[OF cycle(1)] 
+      using odd_cycleD(3)[OF cycle(1)] 
       by (simp add: hd_rev)
     assume quot: "s = (Vs E) - set C"
     have hd_stem2vert_path_nin_append: "hd (stem2vert_path C M a2' @ a2' # p2') = hd (stem2vert_path C M a2' @ [a2'])"
@@ -1596,7 +1596,7 @@ proof-
       moreover have "set (chp @ [chv]) \<subseteq> set C"
         by (metis chp stem2vert_path_subset) 
       ultimately have "alt_path M (chv # a2' # p2')"
-        using alt_list_p2[where ?chpa7 = chp] odd_cycle_feats(3)[OF cycle(1)]
+        using alt_list_p2[where ?chpa7 = chp] odd_cycleD(3)[OF cycle(1)]
         by simp
       moreover have "alt_path M (chp @ [chv])"
         using alt_list_chp_chv .
@@ -1762,13 +1762,13 @@ proof-
           using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path  p2_nempty
           by blast
         moreover have "chv \<noteq> hd C"
-          using odd_cycle_feats(3)[OF cycle(1)] F2
+          using odd_cycleD(3)[OF cycle(1)] F2
           by auto
         ultimately have i: "last (edges_of_path (find_pfx ((=) chv) (rev C))) \<in> M"
           using F1 find_pfx_edges_of_path_alt_list(2)[OF cycle]
           using chv_def by blast
         have ii: "distinct (tl (rev C))"
-          using cycle(3) odd_cycle_feats(3)[OF cycle(1)] tl_distinct_rev
+          using cycle(3) odd_cycleD(3)[OF cycle(1)] tl_distinct_rev
           by auto
         have iii: "s = Vs E - set (rev C)"
           using quot by auto
@@ -1835,14 +1835,14 @@ proof-
           using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path p1_nempty rev_p1_nempty
           by (metis (no_types, lifting) append_self_conv2 hd_rev)
         moreover have "chv \<noteq> hd C"
-          using odd_cycle_feats(3)[OF cycle(1)] False
+          using odd_cycleD(3)[OF cycle(1)] False
           by auto
         ultimately have i: "last (edges_of_path (find_pfx ((=) chv) (rev C))) \<in> M"
           using F1 find_pfx_edges_of_path_alt_list(2)[OF cycle]
           using chv_def hd_rev p1_nempty
           by metis
         have ii: "distinct (tl (rev C))"
-          using cycle(3) odd_cycle_feats(3)[OF cycle(1)] tl_distinct_rev
+          using cycle(3) odd_cycleD(3)[OF cycle(1)] tl_distinct_rev
           by auto
         have iii: "s = Vs E - set (rev C)"
           using quot by auto
@@ -2215,13 +2215,13 @@ proof-
           using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path  p2_nempty
           by blast
         moreover have "chv \<noteq> hd C"
-          using odd_cycle_feats(3)[OF cycle(1)] F2
+          using odd_cycleD(3)[OF cycle(1)] F2
           by auto
         ultimately have i: "last (edges_of_path (find_pfx ((=) chv) (rev C))) \<in> M"
           using F1 find_pfx_edges_of_path_alt_list(2)[OF cycle(1,2,3)]
           using chv_def by blast
         have ii: "distinct (tl (rev C))"
-          using cycle(3) odd_cycle_feats(3)[OF cycle(1)] tl_distinct_rev
+          using cycle(3) odd_cycleD(3)[OF cycle(1)] tl_distinct_rev
           by auto
         have iii: "s = Vs E - set (rev C)"
           using quot by auto
@@ -2291,13 +2291,13 @@ proof-
           using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path p1_nempty rev_p1_nempty
           by (metis (no_types,lifting) append_Nil hd_rev)
         moreover have "chv \<noteq> hd C"
-          using odd_cycle_feats(3)[OF cycle(1)] False
+          using odd_cycleD(3)[OF cycle(1)] False
           by auto
         ultimately have i: "last (edges_of_path (find_pfx ((=) chv) (rev C))) \<in> M"
           using F1 find_pfx_edges_of_path_alt_list(2)[OF cycle(1,2,3)]
           using chv_def hd_rev p1_nempty by metis
         have ii: "distinct (tl (rev C))"
-          using cycle(3) odd_cycle_feats(3)[OF cycle(1)] tl_distinct_rev
+          using cycle(3) odd_cycleD(3)[OF cycle(1)] tl_distinct_rev
           by auto
         have iii: "s = Vs E - set (rev C)"
           using quot by auto
@@ -2574,11 +2574,11 @@ lemma stem2vert_path_pref_or_suc:
   shows "(\<exists>pref. pref @ (rev (stem2vert_path C M v)) = tl C) \<or> (\<exists>suf. ((stem2vert_path C M v)) @ suf = butlast C)"
   unfolding stem2vert_path_def
   apply(simp split: if_splits; intro conjI impI)
-  subgoal using odd_cycle_feats(3)[OF assms(1)] find_pfx_butlast[where Q = "((=) w)", OF assms(3,4)] assms(5)
+  subgoal using odd_cycleD(3)[OF assms(1)] find_pfx_butlast[where Q = "((=) w)", OF assms(3,4)] assms(5)
     by blast
   subgoal proof-
     have i: "w \<noteq> last (rev C)"
-      using odd_cycle_nempty[OF assms(1)] odd_cycle_feats(3)[OF assms(1)] assms(3)
+      using odd_cycle_nempty[OF assms(1)] odd_cycleD(3)[OF assms(1)] assms(3)
       by (simp add: last_rev)
     moreover have ii: "w \<in> set (rev C)"
       using assms(4) by auto
@@ -2592,7 +2592,7 @@ lemma stem2vert_path_distinct_neq_lastC:
   assumes "odd_cycle C" "alt_path M C" "w \<noteq> last C" "w \<in> set C" "w = choose_con_vert (set C) v" "distinct (tl C)"
   shows "distinct (stem2vert_path C M v)"
   using stem2vert_path_pref_or_suc[OF assms(1-4)] 
-  using distinct_tl_then_butlast[OF assms(6)  odd_cycle_feats(3)[OF assms(1)] odd_cycle_nempty[OF assms(1)]]
+  using distinct_tl_then_butlast[OF assms(6)  odd_cycleD(3)[OF assms(1)] odd_cycle_nempty[OF assms(1)]]
   by (metis assms(5) assms(6) distinct_append distinct_rev)
 
 lemma stem2vert_path_distinct:
@@ -2603,7 +2603,7 @@ proof(cases "w = last C")
   then show ?thesis
     using assms
     unfolding stem2vert_path_def
-    by (smt distinct.simps(1) distinct.simps(2) empty_iff empty_set find_pfx.simps(2) hd_rev list.exhaust_sel odd_cycle_feats(3) set_rev)
+    by (smt distinct.simps(1) distinct.simps(2) empty_iff empty_set find_pfx.simps(2) hd_rev list.exhaust_sel odd_cycleD(3) set_rev)
 next
   case False
   then show ?thesis
@@ -2713,7 +2713,7 @@ proof-
           using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path  p2_nempty
           by (metis (no_types,lifting) append_Nil)
         moreover have "chv \<noteq> hd C"
-          using odd_cycle_feats(3)[OF cycle(1)] F2
+          using odd_cycleD(3)[OF cycle(1)] F2
           by auto
         ultimately have i: "last (edges_of_path (find_pfx ((=) chv) (rev C))) \<in> M"
           using F1 find_pfx_edges_of_path_alt_list(2)[OF cycle(1-3)]
@@ -2769,14 +2769,14 @@ proof-
           using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path p1_nempty rev_p1_nempty
           by (metis (no_types,lifting) append_Nil hd_rev)
         moreover have "chv \<noteq> hd C"
-          using odd_cycle_feats(3)[OF cycle(1)] False
+          using odd_cycleD(3)[OF cycle(1)] False
           by auto
         ultimately have i: "last (edges_of_path (find_pfx ((=) chv) (rev C))) \<in> M"
           using F1 find_pfx_edges_of_path_alt_list(2)[OF cycle(1-3)]
           using chv_def hd_rev p1_nempty
           by metis
         have ii: "distinct (tl (rev C))"
-          using cycle(3) odd_cycle_feats(3)[OF cycle(1)] tl_distinct_rev
+          using cycle(3) odd_cycleD(3)[OF cycle(1)] tl_distinct_rev
           by auto
         have iii: "s = Vs E - set (rev C)"
           using quot by auto
@@ -3017,11 +3017,11 @@ proof-
       apply(intro conjI)
       subgoal proof-
         have "hd (stem2vert_path C M (hd p2) @ p2) = hd C"
-          by (metis cycle(1) hd_append2 hd_stem2vert_nempty hd_stem2vert_path odd_cycle_feats(3) odd_cycle_nempty)
+          by (metis cycle(1) hd_append2 hd_stem2vert_nempty hd_stem2vert_path odd_cycleD(3) odd_cycle_nempty)
         then show ?thesis
           using matching_augmenting_path_feats(3)[OF quot_aug_path(1)]
                 quot
-          using cycle(1-3) graph matching(1) matching(2) odd_cycle_feats(3) not_in_quot_matching_not_in_matching by fastforce
+          using cycle(1-3) graph matching(1) matching(2) odd_cycleD(3) not_in_quot_matching_not_in_matching by fastforce
       qed
       subgoal proof-
         have "last (stem2vert_path C M (hd p2) @ p2) = last p2"
@@ -3267,6 +3267,41 @@ next
     by (metis (no_types,lifting) False refine_def)
 qed
 
+theorem refine_works:
+  assumes cycle: "blossom E M stem C" and
+    quot_aug_path: "graph_augmenting_path (quotG E) (quotG M) p'" and 
+    matching: "matching M" "M \<subseteq> E" and
+    quot: "s = (Vs E) - set C"
+  shows "graph_augmenting_path E M (refine C M p')"
+proof-
+
+  have *: "tl C = butlast (tl C) @ [last C]"
+    using odd_cycleD[OF match_blossomD(3)[OF blossomD(2)[OF cycle]]]
+    by (fastforce simp add: eval_nat_numeral Suc_le_length_iff dest!:)
+
+  have butlast_nempty_conv: "butlast xs = x # xs' \<longleftrightarrow> (\<exists>x'. xs = x # xs' @ [x'])" for x xs xs'
+    by(cases xs) (auto simp add: snoc_eq_iff_butlast')
+
+  have "distinct (tl (butlast C))"
+    using match_blossomD[OF blossomD(2)[OF cycle]] match_blossom_alt_cycle[OF blossomD(2)[OF cycle]]
+    by (auto simp add: \<open>alt_path M C\<close> distinct_tl dest!: blossomD odd_cycleD)
+  moreover have "hd C \<notin> set (tl (butlast C))"
+    using match_blossomD[OF blossomD(2)[OF cycle]]
+    by(cases "(butlast C)") (auto simp add: butlast_nempty_conv)
+  ultimately have "distinct (tl C)"
+    using odd_cycleD(3)[OF match_blossomD(3)[OF blossomD(2)[OF cycle]]]
+    apply(subst *)
+    by (simp add: butlast_tl)
+  moreover have "path E C"
+    using cycle path_suff'
+    by auto
+  ultimately show ?thesis
+    apply -
+    apply(rule refine[OF _ _ _ _ assms(2-)])
+    using match_blossomD[OF blossomD(2)[OF cycle]] match_blossom_alt_cycle[OF blossomD(2)[OF cycle]]
+    by auto
+qed
+
 end
 
 subsection\<open>Quotienting/conracting an augmenting path\<close>
@@ -3278,7 +3313,7 @@ lemma in_odd_cycle_in_M:
   assumes "v \<in> set C" "odd_cycle C" "alt_path M C" "v \<noteq> last C"
   shows "v \<in>  Vs M"
   using assms(1,4)
-  using alt_path_vert_is_matched' odd_cycle_feats(2,3)[OF assms(2)] assms(3) by fastforce
+  using alt_path_vert_is_matched' odd_cycleD(2,3)[OF assms(2)] assms(3) by fastforce
 
 lemma matching_edge_incident_on_cycle:
   assumes "odd_cycle C" "alt_path M C" "e \<in> M" "v1 \<in> set C" "v2 \<notin> set C" "{v1, v2} \<subseteq> e" "matching M"
@@ -3286,7 +3321,7 @@ lemma matching_edge_incident_on_cycle:
 proof(rule ccontr)
   assume "v1 \<noteq> last C"
   then obtain p1 p2 where p1p2: "C = p1 @ v1 # p2" "p1 \<noteq> []" "p2 \<noteq> []"
-    using odd_cycle_feats(3)[OF assms(1)] assms(4) split_list_last
+    using odd_cycleD(3)[OF assms(1)] assms(4) split_list_last
     by fastforce
   have "(edges_of_path p1) @ [{last p1, v1}] = edges_of_path (p1 @ [v1])"
     using edges_of_path_snoc[OF p1p2(2)]
@@ -3301,7 +3336,7 @@ proof(rule ccontr)
     using p1p2(1)
     by auto
   then have i: "{last p1, v1} \<in> M \<or> {v1, hd p2} \<in> M"
-    using odd_cycle_feats(2)[OF assms(1)] assms(2)
+    using odd_cycleD(2)[OF assms(1)] assms(2)
     by (metis alt_list_append_1'')
   have "last p1 \<in> set C" "hd p2 \<in> set C"
     using p1p2 by auto
@@ -4473,14 +4508,14 @@ theorem aug_path_works_in_contraction:
 proof(cases "(set p) \<inter> (set C) \<noteq> {}")
   case has_s_verts: True
   have "match_blossom M stem C" 
-    using blossom_props(2)[OF match_blossom] .
+    using blossomD(2)[OF match_blossom] .
   show ?thesis
   proof(cases "last C \<notin> Vs M")
     case True
     then show ?thesis
       using aug_path_works_in_contraction_unmatched_base' assms(2-) match_blossom(1)
-            match_blossom_feats[OF \<open>match_blossom M stem C\<close>]
-            match_blossom_feats'[OF \<open>match_blossom M stem C\<close>]
+            match_blossomD[OF \<open>match_blossom M stem C\<close>]
+            match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>]
             dblton_E finite_E
       by fastforce
   next
@@ -4491,12 +4526,12 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
     proof(cases "stem = []")
       case stem_empty: True
       then have "last C \<notin> Vs M"
-        using match_blossom_feats(4)[OF \<open>match_blossom M stem C\<close>] odd_cycle_feats(3)[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]]
+        using match_blossomD(4)[OF \<open>match_blossom M stem C\<close>] odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
         by simp
       then show ?thesis
         using aug_path_works_in_contraction_unmatched_base' assms(2-)
-              match_blossom_feats[OF \<open>match_blossom M stem C\<close>]
-              match_blossom_feats'[OF \<open>match_blossom M stem C\<close>]
+              match_blossomD[OF \<open>match_blossom M stem C\<close>]
+              match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>]
         by blast
     next
       case stem_nempty: False
@@ -4505,32 +4540,32 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         using matching(3)
         by (simp add: finite_symm_diff)
       have alt_list_stem_hdC: "alt_path M (stem @ [hd C])"
-        by (metis alt_list_append_1 match_blossom_feats(1,3)[OF \<open>match_blossom M stem C\<close>] edges_of_path_append_2 odd_cycle_nempty)
+        by (metis alt_list_append_1 match_blossomD(1,3)[OF \<open>match_blossom M stem C\<close>] edges_of_path_append_2 odd_cycle_nempty)
       have distinct_stem_hdC: "distinct (stem @ [hd C])"
       proof-
         have "butlast C = hd C # tl (butlast C)"
-          using odd_cycle_feats(1)
-          by (metis One_nat_def append_butlast_last_id match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>] hd_append2
+          using odd_cycleD(1)
+          by (metis One_nat_def append_butlast_last_id match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] hd_append2
                     length_append_singleton list.exhaust_sel list.size(3) numeral_le_one_iff
                     odd_cycle_nempty semiring_norm(70))
         then show ?thesis
-          using match_blossom_feats(2)[OF \<open>match_blossom M stem C\<close>]
+          using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>]
           by (metis append_Nil2 disjoint_insert(1) distinct_append distinct_singleton list.simps(15))
       qed
       have path_stem_hdC: "path E (stem @ [hd C])"
-        using match_blossom(1) odd_cycle_nempty[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]]
+        using match_blossom(1) odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
         by (metis append_Cons append_Nil append_assoc list.collapse path_pref)
       have stem_hdC_nempty: "edges_of_path (stem @ [hd C]) \<noteq> []"
         using stem_nempty
         by (metis edges_of_path_snoc snoc_eq_iff_butlast)
       have "(edges_of_path (stem @ C)) = (edges_of_path (stem @ [hd C])) @ (edges_of_path (C))"
-        using odd_cycle_nempty[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]]
+        using odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
         using edges_of_path_append_2 by blast
       then have "alt_path M (stem @ [hd C])"
-        using match_blossom_feats(1)[OF \<open>match_blossom M stem C\<close>] alt_list_append_1
+        using match_blossomD(1)[OF \<open>match_blossom M stem C\<close>] alt_list_append_1
         by auto
       then have last_stem_hdC: "last (edges_of_path (stem @ [hd C])) \<in> M"
-        using match_blossom_feats(5)[OF \<open>match_blossom M stem C\<close>] stem_hdC_nempty
+        using match_blossomD(5)[OF \<open>match_blossom M stem C\<close>] stem_hdC_nempty
               alternating_list_even_last
         by auto
       have M'_matching: "matching M'"
@@ -4538,19 +4573,19 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         apply(intro symm_diff_is_matching' distinct_stem_hdC)
         subgoal using alt_list_stem_hdC by auto
         subgoal using matching(1) by auto
-        subgoal using match_blossom_feats(4)[OF \<open>match_blossom M stem C\<close>] by (simp add: stem_nempty)
+        subgoal using match_blossomD(4)[OF \<open>match_blossom M stem C\<close>] by (simp add: stem_nempty)
         subgoal proof-
           have "last (edges_of_path (stem @ [hd C])) \<in> M"
             apply(rule alternating_list_even_last[where ?P1.0 = "(\<lambda>e. e \<notin> M)", OF _ _ stem_hdC_nempty])
             subgoal using alt_list_stem_hdC .
-            subgoal using match_blossom_feats(5)[OF \<open>match_blossom M stem C\<close>] .
+            subgoal using match_blossomD(5)[OF \<open>match_blossom M stem C\<close>] .
             done
           then show ?thesis by auto
         qed
         done
       moreover have cardM'_eq_cardM: "card M' = card M"
         unfolding M'_def
-        by(intro card_symm_diff_matching matching(3) match_blossom_feats[OF \<open>match_blossom M stem C\<close>] alt_list_stem_hdC distinct_stem_hdC)
+        by(intro card_symm_diff_matching matching(3) match_blossomD[OF \<open>match_blossom M stem C\<close>] alt_list_stem_hdC distinct_stem_hdC)
       moreover obtain M_large where "matching M_large" "card M_large > card M" "M_large \<subseteq> E"
         using Berge_2[OF graph_augmenting_path_feats(1)[OF aug_path] matching(2) graph_augmenting_path_feats(3,2)[OF aug_path] matching(3,1)]
         by auto
@@ -4567,7 +4602,7 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
       proof-
         have "last (edges_of_path (stem @ [hd C])) \<notin> M'"
           unfolding M'_def symmetric_diff_def
-          using match_blossom_feats(5)[OF \<open>match_blossom M stem C\<close>] alternating_list_even_last
+          using match_blossomD(5)[OF \<open>match_blossom M stem C\<close>] alternating_list_even_last
                 last_in_set last_stem_hdC \<open>edges_of_path (stem @ [hd C]) \<noteq> []\<close>
           by blast
         text\<open>The rest of the proof depends on the fact that hd C should be in any matched edge in M,
@@ -4582,31 +4617,31 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
             by (metis edges_of_path_snoc insert_iff last_snoc)
           then show ?thesis
             using matching(1)
-            by (metis \<open>last (edges_of_path (stem @ [hd C])) \<in> M\<close> \<open>last C \<in> Vs M\<close> match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>] match_blossom_feats'[OF \<open>match_blossom M stem C\<close>] matching_def2 odd_cycle_feats(3))
+            by (metis \<open>last (edges_of_path (stem @ [hd C])) \<in> M\<close> \<open>last C \<in> Vs M\<close> match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] matching_def2 odd_cycleD(3))
         qed
         ultimately have "\<forall>e\<in>M'. hd C \<notin> e"
           unfolding M'_def
           by (metis in_symm_diff_eq_2)
         then show ?thesis
           unfolding Vs_def
-          using odd_cycle_feats(3)[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]]
+          using odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
           by auto
       qed
       moreover have "alt_path M' C"
         unfolding M'_def
         apply(rule alt_path_in_symm_diff)
-        subgoal using match_blossom_feats'[OF \<open>match_blossom M stem C\<close>] .
+        subgoal using match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] .
         subgoal proof-
           have *: "(edges_of_path (stem @ [hd C])) = (edges_of_path (stem)) @ [{last stem, hd C}]"
             using stem_nempty
             by (simp add: edges_of_path_snoc)
           have "last stem \<notin> set C"
-            using match_blossom_feats(2)[OF \<open>match_blossom M stem C\<close>] stem_nempty
-            by (smt Un_iff append_butlast_last_id match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>] disjoint_insert(1) distinct_append distinct_stem_hdC insert_Diff last_in_set odd_cycle_feats(3) odd_cycle_nempty set_append)
+            using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] stem_nempty
+            by (smt Un_iff append_butlast_last_id match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] disjoint_insert(1) distinct_append distinct_stem_hdC insert_Diff last_in_set odd_cycleD(3) odd_cycle_nempty set_append)
           then have "{last stem, hd C} \<notin> set (edges_of_path C)"
             by (meson v_in_edge_in_path)
           moreover have "set C \<inter> set stem = {}"
-            using match_blossom_feats(2)[OF \<open>match_blossom M stem C\<close>] odd_cycle_feats(3)[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]]
+            using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
             by (smt Un_iff append_butlast_last_id disjoint_iff_not_equal distinct_append distinct_stem_hdC empty_iff empty_set set_append)
           ultimately show ?thesis
             unfolding *
@@ -4620,7 +4655,7 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         "hd p'_quotM' \<notin> Vs (quotG M')"
         "last p'_quotM' \<notin> Vs (quotG M')"
         "length p'_quotM' \<ge> 2"
-        using match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>] M'_subset_G M'_matching graph has_s_verts aug_path_works_in_contraction_unmatched_base'[OF _ _ _ _ _ _ _ _ quot(1,2)]
+        using match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] M'_subset_G M'_matching graph has_s_verts aug_path_works_in_contraction_unmatched_base'[OF _ _ _ _ _ _ _ _ quot(1,2)]
         apply (simp add: matching_augmenting_path_def)
         by meson
                
@@ -4655,14 +4690,14 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
           proof(cases "v = hd C \<or> v = last C")
             case True
             then show ?thesis
-              using lastC_nin_M' odd_cycle_feats(3)[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]] v_inM'
+              using lastC_nin_M' odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] v_inM'
               by auto
           next
             case False
             then show ?thesis
               using M'_matching 
                     \<open>v \<in> set C\<close>
-                    matching_edge_incident_on_cycle[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]
+                    matching_edge_incident_on_cycle[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]
                                               \<open>alt_path M' C\<close>]
               using quot(1) that(1) that(2) that(3) that(4)
               by fastforce
@@ -4709,10 +4744,10 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
             using that quot(1)
             by blast+
           then show ?p1
-            using matching_edge_incident_on_cycle[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>] match_blossom_feats'[OF \<open>match_blossom M stem C\<close>] that(1) _ _ _ matching(1)] that(2,4)
+            using matching_edge_incident_on_cycle[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] that(1) _ _ _ matching(1)] that(2,4)
             by simp
           moreover have "{last stem, last C} \<in> M"
-            using last_stem_hdC stem_nempty odd_cycle_feats(3)[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]]
+            using last_stem_hdC stem_nempty odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
             by (metis edges_of_path_snoc last_snoc)
           ultimately show ?p2
             using that(1,2,4) matching(1)
@@ -4751,13 +4786,13 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
           proof(cases "v = hd C \<or> v = last C")
             case True
             then show ?thesis
-              using lastC_nin_M' odd_cycle_feats(3)[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]] v_inM'
+              using lastC_nin_M' odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] v_inM'
               by auto
           next
             case False
             then show ?thesis
               using M'_matching  \<open>v \<in> set C\<close>
-              using matching_edge_incident_on_cycle[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]
+              using matching_edge_incident_on_cycle[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]
                                               \<open>alt_path M' C\<close>]
               using quot(1) that(1) that(2) that(3) that(4)
               by fastforce
@@ -4792,10 +4827,10 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
             using that quot(1)
             by blast+
           then show ?p1
-            using matching_edge_incident_on_cycle[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>] match_blossom_feats'[OF \<open>match_blossom M stem C\<close>] that(1) _ _ _ matching(1)] that(2,4)
+            using matching_edge_incident_on_cycle[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] that(1) _ _ _ matching(1)] that(2,4)
             by simp
           moreover have "{last stem, last C} \<in> M"
-            using last_stem_hdC stem_nempty odd_cycle_feats(3)[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]]
+            using last_stem_hdC stem_nempty odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
             by (metis edges_of_path_snoc last_snoc)
           ultimately show ?p2
             using that(1,2,4) matching(1)
@@ -4821,7 +4856,7 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
               have "path E stem"
                 using match_blossom(1) path_pref by blast
               moreover have "set C \<inter> set stem = {}"
-                using match_blossom_feats(2)[OF \<open>match_blossom M stem C\<close>] odd_cycle_feats(3)[OF match_blossom_feats(3)[OF \<open>match_blossom M stem C\<close>]]
+                using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
                 by (smt Un_iff append_butlast_last_id disjoint_iff_not_equal distinct_append distinct_stem_hdC empty_iff empty_set set_append)
               ultimately show ?thesis
                 using quot (1) mem_path_Vs 
@@ -4891,7 +4926,7 @@ lemma matching_quotM:
 proof(cases "stem = []")
   case True
   then have lastC_nin_M: "hd C \<notin> Vs M"
-    using match_blossom_feats[OF match_blossom]
+    using match_blossomD[OF match_blossom]
     by auto
   show ?thesis
   proof-
@@ -4915,12 +4950,12 @@ proof(cases "stem = []")
       proof(cases "v = hd C \<or> v = last C")
         case True
         then show ?thesis
-          using lastC_nin_M odd_cycle_feats(3)[OF match_blossom_feats(3)[OF match_blossom]] v_inM
+          using lastC_nin_M odd_cycleD(3)[OF match_blossomD(3)[OF match_blossom]] v_inM
           by auto
       next
         case False
         then show ?thesis
-          using matching(1) match_blossom_feats'[OF match_blossom] match_blossom_feats[OF match_blossom] \<open>v \<in> set C\<close> matching_edge_incident_on_cycle quot(1) that(1) that(2) that(3) that(4) by fastforce
+          using matching(1) match_blossom_alt_cycle[OF match_blossom] match_blossomD[OF match_blossom] \<open>v \<in> set C\<close> matching_edge_incident_on_cycle quot(1) that(1) that(2) that(3) that(4) by fastforce
       qed
     qed
     then show ?thesis
@@ -4934,13 +4969,13 @@ next
     have stem_hdC_nempty: "edges_of_path (stem @ [hd C]) \<noteq> []"
       by (metis edges_of_path_snoc snoc_eq_iff_butlast stem_nempty)
     have "(edges_of_path (stem @ C)) = (edges_of_path (stem @ [hd C])) @ (edges_of_path (C))"
-      using odd_cycle_nempty[OF match_blossom_feats(3)[OF match_blossom]]
+      using odd_cycle_nempty[OF match_blossomD(3)[OF match_blossom]]
       using edges_of_path_append_2 by blast
     then have "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path (stem @ [hd C]))"
-      using match_blossom_feats(1)[OF match_blossom] alt_list_append_1
+      using match_blossomD(1)[OF match_blossom] alt_list_append_1
       by auto
     then have last_stem_hdC: "last (edges_of_path (stem @ [hd C])) \<in> M"
-      using match_blossom_feats(5)[OF match_blossom] stem_hdC_nempty
+      using match_blossomD(5)[OF match_blossom] stem_hdC_nempty
             alternating_list_even_last
       by blast
     have v_inM: "v \<in> Vs M"
@@ -4964,10 +4999,10 @@ next
       using that quot(1)
       by blast+
     then show ?p1
-      using matching_edge_incident_on_cycle[OF match_blossom_feats(3)[OF match_blossom] match_blossom_feats'[OF match_blossom] that(1) _ _ _ matching(1)] that(2,4)
+      using matching_edge_incident_on_cycle[OF match_blossomD(3)[OF match_blossom] match_blossom_alt_cycle[OF match_blossom] that(1) _ _ _ matching(1)] that(2,4)
       by simp
     moreover have "{last stem, last C} \<in> M"
-      using last_stem_hdC stem_nempty odd_cycle_feats(3)[OF match_blossom_feats(3)[OF match_blossom]]
+      using last_stem_hdC stem_nempty odd_cycleD(3)[OF match_blossomD(3)[OF match_blossom]]
       by (metis edges_of_path_snoc last_snoc)
     ultimately show ?p2
       using that(1,2,4) matching(1)
