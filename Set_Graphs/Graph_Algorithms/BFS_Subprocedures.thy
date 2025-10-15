@@ -1,5 +1,5 @@
 theory BFS_Subprocedures
-  imports BFS_2 "HOL-Data_Structures.RBT_Map" Directed_Set_Graphs.Set_Addons 
+  imports BFS_2 "HOL-Data_Structures.RBT_Map" Data_Structures.Set_Addons 
 begin
 
 locale Pair_Graph_Sepcs_Set2 =

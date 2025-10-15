@@ -1,6 +1,6 @@
 theory BFS_2
   imports Directed_Set_Graphs.Pair_Graph_Specs "HOL-Eisbach.Eisbach_Tools" Directed_Set_Graphs.Dist
-          Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.More_Lists
+          Data_Structures.Set2_Addons Directed_Set_Graphs.More_Lists
 begin
 
 record ('parents, 'vset) BFS_state = parents:: "'parents" current:: "'vset" visited:: "'vset"

@@ -1,5 +1,7 @@
 theory DFS
-  imports Directed_Set_Graphs.Pair_Graph_Specs Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.Set_Addons  
+  imports Directed_Set_Graphs.Pair_Graph_Specs 
+    Data_Structures.Set2_Addons 
+      
 begin
 
 section\<open>Depth-Frist Search\<close>
@@ -267,7 +269,7 @@ assumes DFS_axioms: DFS_axioms
 begin
 
 context
-includes set_ops.automation and Graph.adjmap.automation and Graph.vset.set.automation 
+includes set_ops.automation2 and Graph.adjmap.automation and Graph.vset.set.automation 
 begin
 
 lemma graph_inv[simp,intro]:
@@ -755,6 +757,8 @@ proof-
 qed
 end
 
+
+(* @M: this lemma is vacuous! *) thm s_in_G
 lemma s_not_in_dVs_not_reachable:"s \<notin> dVs (Graph.digraph_abs G) \<Longrightarrow> return (DFS initial_state) = NotReachable"
   apply(subst initial_state_def)
   apply(subst DFS.psimps)
