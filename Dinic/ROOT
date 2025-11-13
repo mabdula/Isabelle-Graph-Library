@@ -1,0 +1,20 @@
+session "Dinic" = "HOL-Library" +
+  options [document = pdf, document_output = "output"]
+
+sessions
+  Flow_Theory
+  Graph_Algorithms_Dev
+
+theories
+Blocking_Flow
+DFS_Collect_Backtrack
+DFS_Collect_Backtrack_Example
+Compute_Blocking_Simple
+Compute_Blocking_Residual
+Dinic
+Dinic_Instantiation
+  
+
+document_files
+  "root.tex"
+

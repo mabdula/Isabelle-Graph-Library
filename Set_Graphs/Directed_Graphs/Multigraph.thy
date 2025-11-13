@@ -6,43 +6,25 @@ locale multigraph_spec =
   fixes \<E>::"'edge_type set"
 and fst::"'edge_type \<Rightarrow> 'a"
 and snd::"'edge_type \<Rightarrow> 'a"
-and make_pair::"'edge_type \<Rightarrow> 'a \<times> 'a"
 and create_edge:: "'a \<Rightarrow> 'a \<Rightarrow> 'edge_type"
-
-locale multigraph = multigraph_spec where \<E> = "\<E>::'edge_type set" for \<E> +
-assumes make_pair:"\<And> e x y. fst e = x \<Longrightarrow> snd e = y \<Longrightarrow> make_pair e = (x,y)"
-assumes create_edge: "\<And> x y. make_pair (create_edge x y) = (x, y)"
-assumes finite_E: "finite \<E>" 
-assumes E_not_empty: "\<E> \<noteq> {}"
 begin
 
-lemmas make_pair' = make_pair[OF refl refl]
+definition "make_pair e = (fst e, snd e)"
 
-lemma create_edge': "fst (create_edge u v) = u"  "snd (create_edge u v) = v" 
-  using create_edge make_pair by force+
+lemmas [code] = make_pair_def
 
-lemma make_pair'': "prod.fst (make_pair e) = fst e"  "prod.snd (make_pair e) = snd e" 
-  using create_edge make_pair by force+
+lemma make_pair:"\<And> e x y. fst e = x \<Longrightarrow> snd e = y \<Longrightarrow> make_pair e = (x,y)"
+  by(auto simp add: make_pair_def)
 
-text \<open>As mentioned, vertices $\mathcal{V}$ are defined by the elements involved in the ordered pairs.\<close>
+lemma make_pair_function:
+"make_pair = (\<lambda> e. (fst e, snd e))"
+  by(auto simp add: make_pair_def)
 
 abbreviation "\<V> \<equiv> dVs (make_pair ` \<E>)"
-
-lemma V_non_empt: "\<V> \<noteq> {}" 
-  by (simp add: E_not_empty)
-
-lemma fst_E_V:"e \<in> \<E> \<Longrightarrow> fst e \<in> \<V>" 
-  by (auto simp add: make_pair')
-lemma snd_E_V:"e \<in> \<E> \<Longrightarrow> snd e \<in> \<V>" 
-  by (auto simp add: make_pair')
-
 subsection \<open>Basic Definitions\<close>
 
 definition E_sym::"('a \<times> 'a) set \<Rightarrow> ('a \<times> 'a) set" ("_\<^sup>\<leftrightarrow>") where
   "E_sym E = E \<union> {(u,v) | v u. (v,u) \<in> E}"
-
-lemma \<V>_finite: "finite \<V>"
-  by (simp add: finite_E finite_vertices_iff)
 
 text \<open>We define operators for denoting incoming and outgoing arcs of a vertex.\<close>
 
@@ -62,6 +44,89 @@ definition Delta_minus::"'a set \<Rightarrow>  'edge_type set" ("\<Delta>\<^sup>
 
 definition In_edges::"'a set \<Rightarrow> 'edge_type set" where
   "In_edges X = {e. e \<in> \<E> \<and> fst e \<in> X \<and> snd e \<in> X}"
+
+definition "multigraph_path  (es::('edge_type list)) \<longleftrightarrow> (es = [] \<or> (es \<noteq> [] \<and>
+                      awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))))"
+
+lemma multigraph_pathI: "es = [] \<Longrightarrow> multigraph_path  es"
+                "awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) 
+                           \<Longrightarrow> es \<noteq> [] \<Longrightarrow> multigraph_path  es"
+  unfolding multigraph_path_def by auto
+
+lemma multigraph_pathE: "multigraph_path es \<Longrightarrow> (es = [] \<Longrightarrow> P) \<Longrightarrow>
+                                  (es \<noteq> [] \<Longrightarrow>
+                      awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) \<Longrightarrow> P) \<Longrightarrow>P"
+  unfolding multigraph_path_def by auto
+
+lemma multigraph_pathE': "multigraph_path es \<Longrightarrow> (es = [] \<Longrightarrow> P) \<Longrightarrow>
+                                  (\<And> d ds. es = d#ds \<Longrightarrow>
+                      awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) 
+                          \<Longrightarrow> P) \<Longrightarrow>P"
+  unfolding multigraph_path_def by (cases es) auto
+
+lemma deltas_in_E: "delta_plus x \<subseteq> \<E>" "delta_minus x \<subseteq> \<E>"
+  by(auto simp add: delta_plus_def delta_minus_def)
+
+end
+
+lemma delta_plus_mono:
+ "E \<subseteq> F \<Longrightarrow> multigraph_spec.delta_plus E fst x \<subseteq> multigraph_spec.delta_plus F fst x" for fst
+  by(auto simp add: multigraph_spec.delta_plus_def)
+
+lemma delta_minus_mono:
+ "E \<subseteq> F \<Longrightarrow> multigraph_spec.delta_minus E fst x \<subseteq> multigraph_spec.delta_minus F fst x" for fst
+  by(auto simp add: multigraph_spec.delta_minus_def)
+
+lemma in_delta_plusI: 
+"e \<in> E \<Longrightarrow> fst e = x \<Longrightarrow> e \<in> multigraph_spec.delta_plus E fst x" for fst
+  by(auto simp add: multigraph_spec.delta_plus_def)
+
+lemma in_delta_plusD: 
+"e \<in> multigraph_spec.delta_plus E fst x \<Longrightarrow> e \<in> E"
+"e \<in> multigraph_spec.delta_plus E fst x \<Longrightarrow> fst e = x"for fst
+  by(auto simp add: multigraph_spec.delta_plus_def)
+
+lemma in_delta_minusI: 
+"e \<in> E \<Longrightarrow> fst e = x \<Longrightarrow> e \<in> multigraph_spec.delta_minus E fst x" for fst
+  by(auto simp add: multigraph_spec.delta_minus_def)
+
+lemma in_delta_minusD: 
+"e \<in> multigraph_spec.delta_minus E fst x \<Longrightarrow> e \<in> E"
+"e \<in> multigraph_spec.delta_minus E fst x \<Longrightarrow> fst e = x"for fst
+  by(auto simp add: multigraph_spec.delta_minus_def)
+
+locale multigraph = multigraph_spec where \<E> = "\<E>::'edge_type set" for \<E> +
+assumes fst_create_edge:"\<And> x y. fst (create_edge x y) = x"
+assumes snd_create_edge:"\<And> x y. snd (create_edge x y) = y"
+assumes finite_E: "finite \<E>" 
+assumes E_not_empty: "\<E> \<noteq> {}"
+begin
+
+lemma  create_edge: "\<And> x y. make_pair (create_edge x y) = (x, y)"
+  by(auto simp add: make_pair_def fst_create_edge snd_create_edge)
+
+lemmas make_pair' = make_pair[OF refl refl]
+
+lemma create_edge': "fst (create_edge u v) = u"  "snd (create_edge u v) = v" 
+  using create_edge make_pair by force+
+
+lemma make_pair'': "prod.fst (make_pair e) = fst e"  "prod.snd (make_pair e) = snd e" 
+                   "prod.fst o make_pair = fst"  "prod.snd o make_pair = snd" 
+  using create_edge make_pair by force+
+
+text \<open>As mentioned, vertices $\mathcal{V}$ are defined by the elements involved in the ordered pairs.\<close>
+
+lemma V_non_empt: "\<V> \<noteq> {}" 
+  by (simp add: E_not_empty)
+
+lemma fst_E_V:"e \<in> \<E> \<Longrightarrow> fst e \<in> \<V>" 
+  by (auto simp add: make_pair')
+lemma snd_E_V:"e \<in> \<E> \<Longrightarrow> snd e \<in> \<V>" 
+  by (auto simp add: make_pair')
+
+
+lemma \<V>_finite: "finite \<V>"
+  by (simp add: finite_E finite_vertices_iff)
 
 lemma finite_deltas: "finite (delta_plus x)" "finite (delta_minus x)"
  by (auto simp add: delta_plus_def delta_minus_def  finite_E)
@@ -85,26 +150,6 @@ lemma delta_plus_finite: "finite (\<delta>\<^sup>+ x)"
 
 lemma delta_minus_finite: "finite (\<delta>\<^sup>- x)"
   by (simp add: delta_minus_def finite_E)
-
-
-definition "multigraph_path  (es::('edge_type list)) \<longleftrightarrow> (es = [] \<or> (es \<noteq> [] \<and>
-                      awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))))"
-
-lemma multigraph_pathI: "es = [] \<Longrightarrow> multigraph_path  es"
-                "awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) 
-                           \<Longrightarrow> es \<noteq> [] \<Longrightarrow> multigraph_path  es"
-  unfolding multigraph_path_def by auto
-
-lemma multigraph_pathE: "multigraph_path es \<Longrightarrow> (es = [] \<Longrightarrow> P) \<Longrightarrow>
-                                  (es \<noteq> [] \<Longrightarrow>
-                      awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) \<Longrightarrow> P) \<Longrightarrow>P"
-  unfolding multigraph_path_def by auto
-
-lemma multigraph_pathE': "multigraph_path es \<Longrightarrow> (es = [] \<Longrightarrow> P) \<Longrightarrow>
-                                  (\<And> d ds. es = d#ds \<Longrightarrow>
-                      awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)) 
-                          \<Longrightarrow> P) \<Longrightarrow>P"
-  unfolding multigraph_path_def by (cases es) auto
 
 lemma multigraph_path_intros:
   "multigraph_path  []"

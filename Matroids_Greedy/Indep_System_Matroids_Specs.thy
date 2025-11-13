@@ -2,6 +2,8 @@ theory Indep_System_Matroids_Specs
   imports Matroids_Theory "HOL-Data_Structures.Set_Specs" "HOL-Data_Structures.Map_Specs"
 begin
 
+section \<open>Independence Systems as Abstract Data Types\<close>
+
 
 locale Card_Set2 = Set2 
   where empty = empty for empty :: "'s" +

@@ -361,6 +361,21 @@ qed
 
 end \<comment> \<open>Properties context\<close>  
 
+lemma source_of_path_neighb_non_empty:
+  assumes "vwalk_bet (digraph_abs G) a p b" "length p \<ge> 2"
+shows "neighbourhood G a\<noteq> vset_empty" 
+proof-
+  obtain x y es where "p = x#y#es"using assms(2)
+    by(cases p rule: edges_of_vwalk.cases) auto
+  hence "x = a" "(x, y) \<in> digraph_abs G" 
+    using assms(1) hd_of_vwalk_bet vwalk_bet_nonempty_vwalk(1) by fastforce+
+  thus ?thesis
+    by (auto intro: option.exhaust[of "lookup G a"]
+          simp add: vset.set.invar_empty vset.set.set_empty vset.set.set_isin
+                    neighbourhood_def digraph_abs_def)
+qed
+
+
 end text \<open>@{const Pair_Graph_Specs}\<close>
 
 end

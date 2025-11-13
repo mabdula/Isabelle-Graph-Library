@@ -18,7 +18,6 @@ session "Directed_Set_Graphs" = "HOL-Eisbach" +
     Pair_Graph_AVL
     Dist
     Pair_Graph_Specs
-    Pair_Graph_U_Specs
     Tree_Defs
     Vwalk
     Component

@@ -1,7 +1,6 @@
-theory Logic_Lemmas
+theory More_Logic
   imports Complex_Main  "HOL-Eisbach.Eisbach"
 begin
-
 
 lemma inj_onI: "(\<And> x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> f x = f y \<Longrightarrow> x = y) \<Longrightarrow> inj_on f A" for f A
            by(auto simp add: inj_on_def)
@@ -94,6 +93,11 @@ lemma double_quadruple_orE:
  (A \<and> C' \<Longrightarrow> P) \<Longrightarrow> (B \<and> C' \<Longrightarrow> P) \<Longrightarrow> (C \<and> C' \<Longrightarrow> P) \<Longrightarrow> (D \<and> C' \<Longrightarrow> P) \<Longrightarrow>
  (A \<and> D' \<Longrightarrow> P) \<Longrightarrow> (B \<and> D' \<Longrightarrow> P) \<Longrightarrow> (C \<and> D' \<Longrightarrow> P) \<Longrightarrow> (D \<and> D'\<Longrightarrow> P) 
  \<Longrightarrow> P" for A B C D A' B' C' D'
+  by argo
+
+lemma quadruple_orE:
+ "\<lbrakk>(A \<or> B \<or> C \<or> D); (A  \<Longrightarrow> P); (B \<Longrightarrow> P); (C  \<Longrightarrow> P); (D  \<Longrightarrow> P)\<rbrakk>
+  \<Longrightarrow> P" for A B C D
   by argo
 
 lemma ex2E: "\<exists>x y. P x y \<Longrightarrow> (\<And>x y. P x y \<Longrightarrow> Q) \<Longrightarrow> Q" by auto
@@ -196,6 +200,12 @@ lemma piar_setE: "X \<subseteq> {x, y} \<Longrightarrow>
 
 lemma set_union_subset_cong: "A \<subseteq> B \<Longrightarrow> C \<subseteq> D \<Longrightarrow> A \<union> C \<subseteq> B \<union> D" for A B C D by auto
 
+lemma disjoint_subs_commute: "B \<inter> C = {} \<Longrightarrow> (A - B) -C = (A - C) - B" for A B C
+  by blast
+
+lemma set_diff_eq_cong: "A = B \<Longrightarrow> C = D \<Longrightarrow> A - C = B - D" for A B C D
+  by simp
+
 lemma image_sigleton: "f ` {x} = {f x}" for f x by simp
 
 lemma non_emptyE:"X \<noteq> {} \<Longrightarrow> (\<And> x. x \<in> X \<Longrightarrow> P) \<Longrightarrow>P" by auto
@@ -219,4 +229,20 @@ lemma insert_with_P: "P x \<Longrightarrow> insert x {y \<in> S. P y} = { y \<in
 
 lemma Collect_cong_set: "(\<And>x. x \<in> S \<Longrightarrow> P x = Q x) \<Longrightarrow> {x \<in> S. P x} = {x \<in> S. Q x}"
   by auto
+
+lemma if_non_empty_finite_finite: " (A \<noteq> {} \<Longrightarrow> finite A) \<Longrightarrow> finite A" by auto
+
+lemma if_of_bools: "(if b then True else False) \<Longrightarrow> b"
+                   "(if b then False else True) \<Longrightarrow> \<not> b"
+  by argo+
+
+lemma f_of_double_if_cond_same:
+ "f (if b then a1 else c1) (if b then a2 else c2) = (if b then f a1 a2 else f c1 c2)"
+  by auto
+
+lemma if_PQ:"if P then False else if Q then False else True \<Longrightarrow> \<not> P \<and> \<not> Q" 
+  by argo
+
+lemma if_PQ_E: "if P then False else if Q then False else True \<Longrightarrow> (\<not> P \<and> \<not> Q \<Longrightarrow> R) \<Longrightarrow> R"
+  by metis
 end

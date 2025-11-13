@@ -8,10 +8,11 @@ Primal_Dual_Bipartite_Matching
 Tutte_Theorem
 Berge_Formula
 Matching_LPs
-Mincost_Flow_Theory
+Flow_Theory
 Mincost_Flow_Algorithms
 Mincost_Flow_Algorithms/Use_Orlins_Algorithm
 Matroids_Greedy
 Spanning_Trees
 Greedoids
 Matroid_Intersection
+Dinic

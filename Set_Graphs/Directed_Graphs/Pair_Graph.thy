@@ -75,8 +75,6 @@ lemma reachableE[elim?]:
 lemma reachable_refl[intro!, Pure.intro!, simp]: "v \<in> dVs E \<Longrightarrow> v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
   unfolding reachable_def by auto
 
-
-
 lemma reachable_trans[trans,intro]:
   assumes "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v" "v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w" shows "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
   using assms unfolding reachable_def by (rule rtrancl_on_trans)
@@ -109,7 +107,6 @@ lemma reachable1_in_dVs:
   shows "u \<in> dVs E" "v \<in> dVs E"
   using assms by (induct) (simp_all add: dVsI)
 
-
 lemma reachable1_reachable[intro]:
   "v \<rightarrow>\<^sup>+\<^bsub>E\<^esub> w \<Longrightarrow> v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
   unfolding reachable_def
@@ -128,6 +125,7 @@ lemma reachable_neq_reachable1[intro]:
 lemmas reachable_neq_reachable1E[elim] = reachable_neq_reachable1[elim_format]
 
 lemma arc_implies_dominates: "e \<in> E \<Longrightarrow> (fst e, snd e) \<in> E" by auto
+
 (*>*)
 
 definition "neighbourhood G u = {v. (u,v) \<in> G}"
@@ -136,7 +134,6 @@ lemma
   neighbourhoodI[intro]: "v \<in> (neighbourhood G u) \<Longrightarrow> (u,v) \<in> G" and
   neighbourhoodD[dest]: "(u,v) \<in> G \<Longrightarrow> v \<in> (neighbourhood G u)"
   by (auto simp: neighbourhood_def)
-
 
 definition "sources G = {u | u v . (u,v) \<in> G}"
 
@@ -164,10 +161,13 @@ lemma in_dVsE: "v \<in> dVs G \<Longrightarrow> \<lbrakk>(\<And>u. (u, v) \<in> 
 lemma neighoubrhood_union[simp]: "neighbourhood (G \<union> G') u = neighbourhood G u \<union> neighbourhood G' u"
   by (auto simp: neighbourhood_def)
 
-lemma vs_are_gen: "dVs (set E_impl) = set (map prod.fst E_impl) \<union> set (map prod.snd E_impl)"
-  by(induction E_impl) auto
+lemma vs_are_gen: "dVs (set G) = set (map prod.fst G) \<union> set (map prod.snd G)" 
+  by(induction G) auto
 
 lemma dVs_swap: "dVs (prod.swap ` E) = dVs E"
+  by(auto simp add: dVs_def)
+
+lemma insert_edge_dVs: "dVs (insert (x, y) E) = {x, y} \<union> dVs E"
   by(auto simp add: dVs_def)
 
 end

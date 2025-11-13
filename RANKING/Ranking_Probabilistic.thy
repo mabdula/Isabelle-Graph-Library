@@ -93,7 +93,7 @@ proof (rule iffI)
   from w card_1 assms have "(THE v. index \<sigma> v = t) = w"
   proof (intro the_equality, goal_cases)
     case 1
-    then show ?case thm move_to_index_v
+    then show ?case
       by (auto intro: move_to_index_v dest: permutations_of_setD simp: length_finite_permutations_of_set)
   next
     case (2 v)
@@ -2215,12 +2215,6 @@ proof -
   then show ?thesis
     by (auto simp add: card_matching_instance_nat field_simps)
 qed
-
-find_theorems Cauchy
-
-find_theorems "convergent"
-find_theorems "lim _"
-find_theorems "_ \<longlonglongrightarrow> _" "THE X. _"
 
 theorem\<^marker>\<open>tag important\<close> comp_ratio_limit:
   assumes "comp_ratio_nat \<longlonglongrightarrow> cr"

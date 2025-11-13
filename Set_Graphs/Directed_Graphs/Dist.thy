@@ -89,7 +89,8 @@ lemma distance_split:
             reachable G w' v \<and> distance G w' v = distance G w' v"
   by (metis dist_reachable enat_ord_simps(4) plus_eq_infty_iff_enat)
 
-lemma dist_inf: "v \<notin> dVs G \<Longrightarrow> distance G u v = \<infinity>"
+lemma dist_inf: 
+  "v \<notin> dVs G \<Longrightarrow> distance G u v = \<infinity>"
 proof(rule ccontr, goal_cases)
   case 1
   hence "reachable G u v"
@@ -101,7 +102,8 @@ proof(rule ccontr, goal_cases)
     by auto
 qed
 
-lemma dist_inf_2: "v \<notin> dVs G \<Longrightarrow> distance G v u = \<infinity>"
+lemma dist_inf_2: 
+  "v \<notin> dVs G \<Longrightarrow> distance G v u = \<infinity>"
 proof(rule ccontr, goal_cases)
   case 1
   hence "reachable G v u"
@@ -113,15 +115,16 @@ proof(rule ccontr, goal_cases)
     by auto
 qed
 
-lemma dist_eq: "\<lbrakk>\<And>p. Vwalk.vwalk_bet G' u p v \<Longrightarrow> Vwalk.vwalk_bet G u (map f p) v\<rbrakk> \<Longrightarrow>
+lemma dist_eq: 
+  "\<lbrakk>\<And>p. Vwalk.vwalk_bet G' u p v \<Longrightarrow> Vwalk.vwalk_bet G u (map f p) v\<rbrakk> \<Longrightarrow>
                    distance G u v \<le> distance G' u v"
   apply(auto simp: distance_def image_def intro!: Inf_lower)
   apply (smt (verit, ccfv_threshold) Un_iff length_map mem_Collect_eq wellorder_InfI)
   by (meson vwalk_bet_nonempty')
 
-lemma distance_subset: "G \<subseteq> G' \<Longrightarrow> distance G' u v \<le> distance G u v"
+lemma distance_subset: 
+  "G \<subseteq> G' \<Longrightarrow> distance G' u v \<le> distance G u v"
   by (metis enat_ord_simps(3) reachable_dist_2 unreachable_dist vwalk_bet_dist vwalk_bet_subset)
-
 
 lemma distance_neighbourhood:
   "\<lbrakk>v \<in> neighbourhood G u\<rbrakk> \<Longrightarrow> distance G u v \<le> 1"
@@ -147,10 +150,12 @@ lemma shortest_path_intro:
   "\<lbrakk>distance G u v = length p -1; vwalk_bet G u p v\<rbrakk> \<Longrightarrow> shortest_path G u p v"
   by (auto simp: shortest_path_def)
 
-lemma shortest_path_vwalk: "shortest_path G u p v \<Longrightarrow> vwalk_bet G u p v"
+lemma shortest_path_vwalk: 
+  "shortest_path G u p v \<Longrightarrow> vwalk_bet G u p v"
   by(auto simp: shortest_path_def)
 
-lemma shortest_path_dist: "shortest_path G u p v \<Longrightarrow> distance G u v = length p - 1"
+lemma shortest_path_dist: 
+  "shortest_path G u p v \<Longrightarrow> distance G u v = length p - 1"
   by(auto simp: shortest_path_def)
 
 lemma shortest_path_split_1:
@@ -295,7 +300,8 @@ proof(goal_cases)
     by auto
 qed
 
-lemma diet_eq': "\<lbrakk>\<And>p. shortest_path G' u p v \<Longrightarrow> shortest_path G u (map f p) v\<rbrakk> \<Longrightarrow>
+lemma diet_eq': 
+  "\<lbrakk>\<And>p. shortest_path G' u p v \<Longrightarrow> shortest_path G u (map f p) v\<rbrakk> \<Longrightarrow>
                    distance G u v \<le> distance G' u v"
   apply(auto simp: shortest_path_def)
   by (metis One_nat_def Orderings.order_eq_iff order.strict_implies_order reachable_dist
@@ -331,12 +337,26 @@ next
     by auto
 qed
 
+lemma distance_0I: "u = v \<Longrightarrow> v \<in> dVs G \<Longrightarrow>  distance G u v = 0"
+  using distance_0 by fast
+
+lemma distance_1I: 
+  assumes "u \<noteq> v" "(u, v) \<in> G" 
+  shows "distance G u v = 1"
+proof-
+  have "distance G u v \<le> 1"
+    by (simp add: assms(2) distance_neighbourhood neighbourhoodD)
+  moreover have "distance G u v = 0 \<Longrightarrow> False"
+    using  assms(1) distance_0 by fast
+  ultimately show ?thesis
+    using  nless_le 
+    by (fastforce simp add:  one_eSuc) 
+qed
+
 lemma distance_neighbourhood':
   "\<lbrakk>v \<in> neighbourhood G u\<rbrakk> \<Longrightarrow> distance G x v \<le> distance G x u + 1"
   using triangle_ineq distance_neighbourhood
   by (metis add.commute add_mono_thms_linordered_semiring(3) order_trans)
-
-
 
 lemma Suc_le_length_iff_2:
   "(Suc n \<le> length xs) = (\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys)"
@@ -384,8 +404,9 @@ lemma dist_set_inf: "v \<notin> dVs G \<Longrightarrow> distance_set G U v = \<i
 lemma dist_set_mem[intro]: "u \<in> U \<Longrightarrow> distance_set G U v \<le> distance G u v"
   by (auto simp: distance_set_def wellorder_Inf_le1)
 
-lemma dist_not_inf'': "\<lbrakk>distance_set G U v \<noteq> \<infinity>; u\<in>U; distance G u v = distance_set G U v\<rbrakk>
-                       \<Longrightarrow> \<exists>p. vwalk_bet G u (u#p) v \<and> length p = distance G u v \<and>
+lemma dist_not_inf'': 
+  "\<lbrakk>distance_set G U v \<noteq> \<infinity>; u\<in>U; distance G u v = distance_set G U v\<rbrakk> \<Longrightarrow> 
+   \<exists>p. vwalk_bet G u (u#p) v \<and> length p = distance G u v \<and>
                                set p \<inter> U = {}"
 proof(goal_cases)
   case main: 1
@@ -460,19 +481,34 @@ lemma distance_set_wit:
   using assms wellorder_InfI[of "distance G v x" "(%v. distance G v x) ` V"]
   by (auto simp: distance_set_def image_def dest!: )
 
+lemma distance_set_single_source:
+  "distance_set G {s} x = distance G s x" 
+  by (metis distance_set_wit singleton_iff)
+
 lemma distance_set_wit':
   assumes "distance_set G V v \<noteq> \<infinity>"
   obtains v' where "v' \<in> V" "distance_set G V x = distance G v' x"
   using finite_dist_nempty[OF assms]
   by (auto elim: distance_set_wit)
 
-lemma dist_set_not_inf: "distance_set G U v \<noteq> \<infinity> \<Longrightarrow> \<exists>u\<in>U. distance G u v = distance_set G U v"
+lemma dist_set_not_inf: 
+"distance_set G U v \<noteq> \<infinity> \<Longrightarrow> \<exists>u\<in>U. distance G u v = distance_set G U v"
   using distance_set_wit'
   by metis
 
-lemma dist_not_inf': "distance_set G U v \<noteq> \<infinity> \<Longrightarrow>
-                        \<exists>u\<in>U. distance G u v = distance_set G U v \<and> reachable G u v"
+lemma dist_not_inf': 
+  "distance_set G U v \<noteq> \<infinity> \<Longrightarrow>\<exists>u\<in>U. distance G u v = distance_set G U v \<and> reachable G u v"
   by (metis dist_reachable dist_set_not_inf enat_ord_simps(4))
+
+lemma infty_dist_is_unreachable:
+  "distance_set G S u = \<infinity> \<longleftrightarrow> \<not> (\<exists> s \<in> S. reachable G s u)"
+  using  dist_not_inf'[of G S u] dist_set_mem[of _ S G u]  reachable_dist[of G _ u] 
+  by force
+
+lemma infty_dist_is_unreachables:
+" {(u, v) | u v. distance_set G S u = \<infinity>} = 
+  {(u, v) | u v. \<not> (\<exists> s \<in> S. reachable G s u)}" 
+  by(simp add: infty_dist_is_unreachable)
 
 lemma distance_on_vwalk:
   "\<lbrakk>distance_set G U v = distance G u v; u \<in> U; shortest_path G u p v; x \<in> set p\<rbrakk>
@@ -721,16 +757,16 @@ lemma vwalk_bet_dist_set:
   by (metis (mono_tags, lifting) Inf_lower One_nat_def dual_order.trans mem_Collect_eq vwalk_bet_dist)
 
 lemma shorter_path_in_level_compliant_graph:
-      assumes "\<And> u p v. u \<in> S \<Longrightarrow> vwalk_bet F u p v \<Longrightarrow> length p - 1 = distance_set G S v"
-              "u \<in> S" "v \<notin> S" "vwalk_bet G u p v" " vwalk_bet F s' p' v" "s' \<in> S"
-        shows "length p' \<le> length p"
+  assumes "\<And> u p v. u \<in> S \<Longrightarrow> vwalk_bet F u p v \<Longrightarrow> length p - 1 = distance_set G S v"
+          "u \<in> S" "v \<notin> S" "vwalk_bet G u p v" " vwalk_bet F s' p' v" "s' \<in> S"
+  shows   "length p' \<le> length p"
 proof-
   have "length p' -1 = distance_set G S v"
     using assms(1,5,6) by blast
   hence "length p' = distance_set G S v + 1" 
     using  Suc_pred'[of "length p'"] assms(3) dist_set_inf[of v G S] distance_set_0[of v G S]
-         eSuc_enat[of "length p' - 1"] enat.distinct(2)[of "length p' - 1"]
-        length_greater_0_conv[of p']
+           eSuc_enat[of "length p' - 1"] enat.distinct(2)[of "length p' - 1"]
+           length_greater_0_conv[of p']
     by(fastforce simp add: zero_enat_def plus_1_eSuc(2))
   moreover have "distance_set G S v + 1 \<le> length p"
     using  Suc_pred[of "length p"] 
@@ -741,10 +777,10 @@ proof-
 qed
 
 lemma exists_shorter_path_in_level_compliant_graph:
-      assumes "distance_set G S v = distance_set F S v"
-              "\<And> u p v. u \<in> S \<Longrightarrow> vwalk_bet F u p v \<Longrightarrow> length p - 1 = distance_set G S v"
-              "u \<in> S" "v \<notin> S" "vwalk_bet G u p v"
-        shows "\<exists> p' s'. vwalk_bet F s' p' v  \<and> s' \<in> S \<and> length p' \<le> length p"
+  assumes "distance_set G S v = distance_set F S v"
+          "\<And> u p v. u \<in> S \<Longrightarrow> vwalk_bet F u p v \<Longrightarrow> length p - 1 = distance_set G S v"
+          "u \<in> S" "v \<notin> S" "vwalk_bet G u p v"
+  shows "\<exists> p' s'. vwalk_bet F s' p' v  \<and> s' \<in> S \<and> length p' \<le> length p"
 proof-
   have "distance_set G S v < \<infinity>"
     using  enat_ord_simps(4) infinity_ileE vwalk_bet_dist_set[OF assms(5,3)] by fastforce
@@ -754,6 +790,77 @@ proof-
     by(auto simp add:  reachable_vwalk_bet_iff)
   thus ?thesis 
     by (auto intro!: assms(1,2,3,4,5) shorter_path_in_level_compliant_graph)
+qed
+
+lemma dist_set_less_infty_get_path:
+  assumes "distance_set G S x \<noteq> \<infinity>"
+  shows "\<exists> q s. vwalk_bet G s q x \<and> s \<in> S \<and> length q - 1 = distance_set G S x"
+proof(rule bexE[OF dist_not_inf'[of G S x]], goal_cases)
+  case 1
+  then show ?case 
+    using assms lt_lt_infnty by auto
+next
+  case (2 aa)
+  show ?thesis
+  proof(rule bexE[OF dist_not_inf'[OF assms]], goal_cases)
+    case (1 a)
+    show ?case 
+      apply(rule  reachable_dist_2[of G a x])
+      using 1 2 by auto
+  qed
+qed
+
+lemma distance_path_prefices_and_suffices:
+  assumes "vwalk_bet G s (p1@[x]@p2) t" "length  (p1@[x]@p2) - 1 = distance_set G S t" "s \<in> S"
+  shows   "length (p1@[x]) - 1 = distance_set G S x"
+          "length (x#p2) - 1 = distance G x t"
+proof-
+  have "vwalk_bet G s (p1@[x]) x"
+    by (meson assms(1) vwalk_bet_pref)
+  hence  "length (p1@[x]) - 1 \<ge> distance_set G S x"
+    using assms(3) vwalk_bet_dist_set by fastforce
+  moreover have  "length (p1@[x]) - 1 > distance_set G S x \<Longrightarrow> False"
+proof( goal_cases)
+  case 1
+  obtain s' q where s'q:" vwalk_bet G s' q x" "s' \<in> S" "length q - 1 = distance_set G S x"
+    using 1 dist_set_less_infty_get_path[of G S x]  by force
+  hence "vwalk_bet G s' (q@p2) t" 
+    using assms(1) 
+    by(auto intro!: vwalk_bet_transitive[of _ "s'" q x "x#p2", simplified] vwalk_bet_suff[of _ s p1])
+  moreover have "length (q@p2) < length (p1@[x]@p2)" 
+    using 1 by (auto simp add:  s'q(3)[symmetric])
+  ultimately show False
+    using assms(1) edges_of_vwalk_length'[of "q@p2"] s'q(2) vwalk_bet_dist_set[of G s' "q@p2" t S]
+    by(fastforce simp add: edges_of_vwalk_length assms(2)[symmetric])
+qed
+  ultimately show "length (p1@[x]) - 1 = distance_set G S x" by force
+  show "(length (x # p2) - 1) = distance G x t"
+    using  assms(1,2) dist_set_mem[OF assms(3)] order_antisym_conv 
+           shortest_path_split_1[of G s p1 x p2 t] vwalk_bet_dist[OF assms(1)]
+    by(fastforce simp add: shortest_path_def)
+qed
+
+lemma distance_less_vert_card:
+  assumes "distance G u v < \<infinity>" "finite G"
+   shows  "distance G u v < card (dVs G)"
+proof-
+  obtain p where p_prop:
+    "vwalk_bet G u p v" "distance G u v = length p - 1"
+    using dist_reachable[OF assms(1)] 
+    by(auto intro: reachable_dist_2)
+  hence "shortest_path G u p v" 
+    by(auto intro: shortest_path_intro)
+  hence dist_p:"distinct p"
+    by(auto intro: shortest_path_distinct)
+  have "set p \<subseteq> dVs G" 
+    using p_prop(1)  vwalk_bet_in_dVs by force
+  hence "length p \<le> card (dVs G)" 
+    using assms(2) finite_vertices_iff[of G] 
+    by(auto intro!: card_mono[of "dVs G" "set p", simplified distinct_card[OF dist_p]])
+  moreover have "length p > 0"
+    using p_prop(1) by auto
+  ultimately show ?thesis
+    by(auto simp add: p_prop(2) dual_order.strict_trans1)
 qed
 (*
 section \<open>Forests\<close>
@@ -818,6 +925,173 @@ proof(goal_cases)
     by (metis (no_types, lifting) "1"(1) "1"(2) "1"(3) \<open>vwalk_bet G u p v\<close> distance_set_0 distance_set_shortest_path reachable_in_dVs(1) vwalk_bet_endpoints(2) vwalk_bet_subset)
 qed*)
 
+subsection \<open>Level Graphs\<close>
 
+definition "level_graph G S = {(u, v) | u v. (u, v) \<in> G 
+                              \<and> distance_set G S v = distance_set G S u +1}"
 
+lemma in_level_graphI: 
+  "\<lbrakk>(u, v) \<in> G ; distance_set G S v = distance_set G S u +1\<rbrakk> \<Longrightarrow> (u, v) \<in> level_graph G S"
+  by(auto simp add: level_graph_def)
+
+lemma in_level_graphE: 
+  "(u, v) \<in> level_graph G S \<Longrightarrow>
+   \<lbrakk>(u, v) \<in> G \<Longrightarrow> distance_set G S v = distance_set G S u +1 \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by(auto simp add: level_graph_def)
+
+lemma in_level_graphI': 
+  "\<lbrakk>e \<in> G; distance_set G S (snd e) = distance_set G S (fst e) +1\<rbrakk> \<Longrightarrow> e \<in> level_graph G S"
+  by(auto simp add: level_graph_def)
+
+lemma in_level_graphE': 
+  "e \<in> level_graph G S \<Longrightarrow>
+   \<lbrakk>e \<in> G \<Longrightarrow> distance_set G S (snd e) = distance_set G S (fst e) +1 \<Longrightarrow> P\<rbrakk>\<Longrightarrow> P"
+  by(auto simp add: level_graph_def)
+
+lemma in_level_graphD: 
+  "e \<in> level_graph G S \<Longrightarrow> e \<in> G"
+  "e \<in> level_graph G S \<Longrightarrow> distance_set G S (snd e) = distance_set G S (fst e) +1"
+  by(auto simp add: level_graph_def)
+
+lemma level_graph_subset_graph: "level_graph G S \<subseteq>  G"
+  by (meson in_level_graphE subrelI)
+
+lemma walk_in_level_graph_distance_rev:
+  assumes "vwalk_bet (level_graph G S) s (rev p) t" "s \<in> S"
+  shows   "enat (length p) = distance_set G S t + 1 
+            \<and> (set (edges_of_vwalk (rev p)) \<subseteq> level_graph G S)"
+  using assms(1)
+proof(induction p arbitrary: t rule: edges_of_vwalk.induct)
+  case 1
+  then show ?case
+    by simp
+next
+  case (2 v)
+  hence all_verts_same: "s = t" "s= v" 
+    by (auto intro: vwalk_bet_props)
+  obtain x where x_prop:"(t, x) \<in> level_graph G S \<or> (x, t) \<in> level_graph G S"
+    by(auto elim: in_dVsE(1) intro: in_dVsE(1)[OF vwalk_bet_endpoints(2)[OF "2.prems"(1)]])
+  have t_in_G: "t \<in> dVs G" 
+   by(auto intro:  disjE[OF x_prop] elim!:  in_level_graphE)
+  have dist_0:"distance G s t = 0"
+    using t_in_G
+    by(auto simp add: distance_0[symmetric] all_verts_same)
+  hence "distance_set G S t = 0"
+    using all_verts_same(1) assms(2) t_in_G by auto
+  then show ?case 
+    using one_eSuc by (auto simp add:  zero_enat_def)
+next
+  case (3 v v' l)
+  hence t_is_v:"t = v" 
+    by(auto simp add: vwalk_bet_def)
+  have vwalk_to_v':"vwalk_bet (level_graph G S) s (rev (v' # l)) v'" 
+    using 3(2) 
+    by(auto intro!: vwalk_bet_prefix_is_vwalk_bet[of "rev (v' # l)" _ s "[v]" v, simplified]
+          simp add: t_is_v)
+  hence IH_applied: "enat (length (v' # l)) = distance_set G S v' + 1"
+    by(fastforce intro!: conjunct1[OF 3(1)])
+  have v'v_inlevel_graph:"(v', v) \<in> level_graph G S" 
+    using 3(2) by (auto intro!:  vwalk_snoc_edge_2)
+  hence dist_increase: "distance_set G S v = distance_set G S v' + 1" 
+    by (auto elim: in_level_graphE)
+  moreover have "set (edges_of_vwalk (rev l @ [v', v])) \<subseteq> level_graph G S"
+     using 3(1)[OF vwalk_to_v'] by(auto simp add: edges_of_vwalk_append_two_vertices v'v_inlevel_graph)
+  ultimately show ?case 
+    using IH_applied t_is_v 
+    by(auto simp add: eSuc_plus_1) 
+qed
+
+lemma walk_in_level_graph_distance:
+  assumes "vwalk_bet (level_graph G S) s p t" "s \<in> S"
+  shows   "length p = distance_set G S t + 1"
+          "(set (edges_of_vwalk p) \<subseteq> level_graph G S)"
+  using assms  walk_in_level_graph_distance_rev[where p = "(rev p)", simplified, OF assms]
+  by auto
+
+lemma edges_between_infty_verts_in_level_graph:
+  "\<lbrakk>distance_set G S u = \<infinity>; distance_set G S v = \<infinity>; (u, v) \<in> G\<rbrakk> \<Longrightarrow> (u, v) \<in> level_graph G S"
+  by (simp add: in_level_graphI)
+
+lemma dist_walk_in_level_graph:
+  assumes "vwalk_bet G s p t" " s \<in> S" "length p - 1 = distance_set G S t" "length p \<ge> 2"
+  shows   "vwalk_bet (level_graph G S) s p t"
+proof(rule ccontr, goal_cases)
+  case 1
+  note one = this
+  note lengthp = assms(4)
+  have "\<exists> e \<in> set (edges_of_vwalk p). e \<notin> level_graph G S"
+  proof(rule ccontr, goal_cases)
+    case 1
+    have "vwalk_bet (level_graph G S) s p t"
+      using 1 
+      by(auto intro!: vwalk_bet_subset[of "set (edges_of_vwalk p)"] 
+                      vwalk_bet_in_its_own_edges[OF assms(1) lengthp])
+    then show ?case 
+      using one(1) by simp
+  qed
+  then obtain x y where xy_props: "(x, y)\<in>set (edges_of_vwalk p)" "(x, y) \<notin> level_graph G S" by auto
+  then obtain p1 p2 where p1p2_prop:"p=p1@[x, y]@p2"
+    using edges_in_vwalk_split[of x y p] by auto
+  have  "distance_set G S y \<noteq> distance_set G S x +1"
+    using in_level_graphI[of x y G S] vwalk_bet_edges_in_edges[OF assms(1)]  xy_props(1,2)
+    by auto
+  moreover have "distance_set G S y \<le> distance_set G S x + 1"
+    using assms(1,2) distance_set_neighbourhood[OF neighbourhoodD, of x y G S] empty_iff  subsetD
+          vwalk_bet_edges_in_edges[OF assms(1)]
+          xy_props(1) 
+    by fastforce
+  ultimately have dist_strict_less: "distance_set G S y < distance_set G S x + 1"
+    by simp
+  moreover have "distance_set G S x = length (p1@[x]) - 1"
+    using distance_path_prefices_and_suffices[OF _ _ assms(2)] assms(1) assms(3)
+    by(simp add: p1p2_prop)
+  moreover  have "distance_set G S y = length (p1@[x,y]) - 1"
+    using distance_path_prefices_and_suffices[of G s "p1@[x]" y p2 t S, simplified] assms
+    by(simp add: p1p2_prop)
+  ultimately show False 
+    by (simp add: eSuc_plus_1)
+qed
+
+definition "reachable_level_graph G S = level_graph G S - {(u, v) | u v. distance_set G S u = \<infinity>}"
+
+lemma reachable_level_graph_acyclic:
+  "dir_acyc (reachable_level_graph G S)"
+proof(rule dir_acycI, goal_cases)
+  case (1 u p)
+  note assms=1
+  obtain x y es where p_split: "p = x#y#es"using assms(2)
+    by(cases p rule: edges_of_vwalk.cases) auto
+  hence x_props: "x = u" "(x, y) \<in>  (reachable_level_graph G S)"  
+    using assms(1) hd_of_vwalk_bet  level_graph_subset_graph by fastforce+
+  hence dist_plus_1:"distance_set G S y = distance_set G S x + 1" "(x, y) \<in> G"
+    by(auto elim!: in_level_graphE simp add: reachable_level_graph_def)
+  have a1: "vwalk_bet (reachable_level_graph G S) y (y#es) x"
+    using assms(1) p_split x_props(1) by force
+  hence walk_y_x_simple:"vwalk_bet (level_graph G S) y (y#es) x"
+    using vwalk_bet_subset by (fastforce simp add: reachable_level_graph_def)
+  have "vwalk_bet (reachable_level_graph G S) y (y#es@(y#es)) x" 
+    using a1 vwalk_append_intermediate_edge x_props(2)
+    by fastforce
+  hence walk_y_x_loop: "vwalk_bet (level_graph G S) y  (y#es@(y#es)) x"
+    using vwalk_bet_subset by (fastforce  simp add: reachable_level_graph_def) 
+  have dist_x_less_pinfty: "distance_set G S x < \<infinity>" 
+    using x_props(2) by (auto simp add: reachable_level_graph_def)
+  hence dist_y_less_pinfty: "distance_set G S y < \<infinity>"
+    by (simp add: dist_plus_1(1) plus_eq_infty_iff_enat)
+  then obtain s q where sq: "vwalk_bet G s q y" "length q -1 = distance_set G S y" "s \<in> S"
+    using dist_set_less_infty_get_path by force
+  have lengthq:"length q \<ge> 1"
+    using linorder_not_less sq(1) by fastforce
+  have vwalk_s_q_y: "vwalk_bet (level_graph G S) s q y" 
+    using dist_walk_in_level_graph[OF sq(1,3,2)] dist_plus_1(1) enat_0 sq(2) by force
+  have vwalks_to_x: "vwalk_bet (level_graph G S) s  (q@es@(y#es)) x" 
+                    "vwalk_bet (level_graph G S) s  (q@es) x"
+    using vwalk_bet_transitive vwalk_s_q_y walk_y_x_loop walk_y_x_simple by force+
+  have  "length (q@es@(y#es)) = distance_set G S x + 1"
+    using walk_in_level_graph_distance(1)[OF vwalks_to_x(1) sq(3)] by simp
+  moreover have "distance_set G S x + 1 = length (q@es)"
+    using walk_in_level_graph_distance(1)[OF vwalks_to_x(2) sq(3)] by simp
+  ultimately show False 
+    using lengthq  dist_plus_1(1) sq(2) by auto
+qed
 end
