@@ -32,6 +32,8 @@ Results include:
 For the more practically usable algorithms, we include an implementation. For others, we only focus on the mathematical analysis.
 
 # Publications
+ - M. Abdulaziz. 'Graph Algorithms'. In Functional Data Structures and Algorithms: A Proof Assistant Approach. Editor: Tobias Nipkow. ACM Books, 2025. [url](https://fdsa-book.net/functional_data_structures_algorithms.pdf#chapter.24)
+
 
  - M. Abdulaziz, T. Ammer, S. Meenakshisundaram, and A. Rimpapa. 'A Formal Analysis of Algorithms for Matroids and Greedoids', Accepted in The 16th International Conference on Interactive Theorem Proving (ITP), 2025. doi: [10.48550/arXiv.2505.19816](https://doi.org/10.48550/arXiv.2505.19816).
 

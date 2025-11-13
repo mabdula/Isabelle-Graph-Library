@@ -562,14 +562,14 @@ lemma blossom_cycle_longer_2:
   shows "card (set cyc) \<ge> 2"
 proof-
   have "distinct (butlast cyc)"
-    using match_blossom_feats(2)[OF \<open>match_blossom M stem cyc\<close>] distinct_append
+    using match_blossomD(2)[OF \<open>match_blossom M stem cyc\<close>] distinct_append
     by blast
   then have "length (butlast cyc) = card (set (butlast cyc))"
     by (simp add: distinct_card)
   have "length (butlast cyc) = length cyc - 1"
     using length_butlast by blast
   then have "length (butlast cyc) \<ge> 2"
-    using odd_cycle_feats(1)[OF match_blossom_feats(3)[OF \<open>match_blossom M stem cyc\<close>]] 
+    using odd_cycleD(1)[OF match_blossomD(3)[OF \<open>match_blossom M stem cyc\<close>]] 
     by auto
   then have "card (set (butlast cyc)) \<ge> 2"
     using \<open>length (butlast cyc) = card (set (butlast cyc))\<close>
@@ -733,7 +733,7 @@ proof-
           unfolding s_def
           by auto
         have "((Vs G) - set cyc) \<subset> (Vs G)"
-          using blossom_diff[OF \<open>graph_invar G\<close> blossom_props(2,1)[OF blos]] .
+          using blossom_diff[OF \<open>graph_invar G\<close> blossomD(2,1)[OF blos]] .
         moreover have "graph_invar G"
           using \<open>graph_invar G\<close> .
         moreover have "?u \<notin> Vs G"
@@ -759,7 +759,7 @@ proof-
           using graph_subset_quot_subset[OF \<open>M \<subseteq> G\<close>]
           by auto
         moreover have "matching (quot.quotG s ?u M)"
-          using matching_quotM[OF \<open>((Vs G) - set cyc) \<subset> (Vs G)\<close> \<open>graph_invar G\<close> blossom_props(2)[OF blos]] 
+          using matching_quotM[OF \<open>((Vs G) - set cyc) \<subset> (Vs G)\<close> \<open>graph_invar G\<close> blossomD(2)[OF blos]] 
                 1 s_def
           by blast
         ultimately obtain p'' where "find_aug_path (quot.quotG s ?u G) (quot.quotG s ?u M) = Some p''"
@@ -780,12 +780,12 @@ lemma match_blossom_distinct_tl:
   shows "distinct (tl cyc)"
 proof-
   have "distinct (butlast cyc)" "hd cyc = last cyc"
-    using match_blossom_feats[OF assms] odd_cycle_feats
+    using match_blossomD[OF assms] odd_cycleD
     unfolding distinct_append[symmetric] 
     by auto
   then have "distinct (tl (butlast cyc))" "hd cyc \<notin> set (tl (butlast cyc))"
     using distinct_tl
-    by (metis \<open>distinct (butlast cyc)\<close> append_butlast_last_id assms distinct.simps(2) empty_iff hd_append2 list.collapse list.sel(2) list.set(1) match_blossom_feats(3) odd_cycle_nempty)+
+    by (metis \<open>distinct (butlast cyc)\<close> append_butlast_last_id assms distinct.simps(2) empty_iff hd_append2 list.collapse list.sel(2) list.set(1) match_blossomD(3) odd_cycle_nempty)+
   then have "distinct ((tl (butlast cyc)) @ [last cyc])"
     using \<open>hd cyc = last cyc\<close>
     by auto
@@ -800,7 +800,7 @@ proof-
       by auto
   qed
   moreover have "length cyc \<ge> 3"
-    using odd_cycle_feats(1)[OF match_blossom_feats(3)[OF assms]]
+    using odd_cycleD(1)[OF match_blossomD(3)[OF assms]]
     by auto
   ultimately show ?thesis
     by auto
@@ -809,7 +809,7 @@ qed
 lemma cycle_set_tl_eq_butlast:
   assumes "match_blossom M stem cyc"
   shows "set (tl cyc) = set (butlast cyc)"
-  by (metis append_butlast_last_id assms match_blossom_feats(3) butlast.simps(2) last_tl list.exhaust_sel odd_cycle_feats(3) odd_cycle_nempty rotate1.simps(2) set_rotate1)
+  by (metis append_butlast_last_id assms match_blossomD(3) butlast.simps(2) last_tl list.exhaust_sel odd_cycleD(3) odd_cycle_nempty rotate1.simps(2) set_rotate1)
 
 context find_aug_path
 begin
@@ -905,8 +905,8 @@ proof-
         then have "matching_augmenting_path M (quot.refine sel G ?s ?u cyc M p') \<and>
                    path G (quot.refine sel G ?s ?u cyc M p') \<and>
                    distinct (quot.refine sel G ?s ?u cyc M p')"
-          using refine[OF \<open>?s \<subset> Vs G\<close>] match_blossom_feats[OF blos(2)]
-            match_blossom_feats'[OF blos(2)] match_blossom_distinct_tl[OF blos(2)]
+          using refine[OF \<open>?s \<subset> Vs G\<close>] match_blossomD[OF blos(2)]
+            match_blossom_alt_cycle[OF blos(2)] match_blossom_distinct_tl[OF blos(2)]
             path_suff[OF blos(1)] 1
           by(auto simp add: )
         then show ?thesis
@@ -1851,7 +1851,7 @@ qed
 lemma odd_cycle_length_edges_ge_3:
   assumes "odd_cycle p"
   shows "length (edges_of_path p) \<ge> 3"
-  using odd_cycle_feats[OF assms]
+  using odd_cycleD[OF assms]
   by (metis One_nat_def Suc_le_eq Suc_pred assms edges_of_path_length gt_zero linorder_neqE_nat
             linorder_not_le odd_cycle_even_verts odd_numeral)
 
@@ -1865,7 +1865,7 @@ lemma odd_cycle_length_verts_ge_4:
 lemma odd_cycle_set_butlast_tl:
   assumes "odd_cycle C"
   shows "set (butlast C) = set (tl C)"
-  using odd_cycle_feats[OF assms] odd_cycle_nempty[OF assms]
+  using odd_cycleD[OF assms] odd_cycle_nempty[OF assms]
   by (simp add: set_butlast_tl)
 
 locale match = graph_abs G for G+ 
@@ -2074,8 +2074,8 @@ lemma match_blossom_path_rev_stem:
   subgoal apply(rule path_append)
     subgoal using path_suff[OF path] .
     subgoal using rev_path_is_path[OF path_pref[OF path]] .
-    subgoal by (smt match_blossom match_blossom_feats(3) edge_between_pref_suff hd_rev insert_commute
-                    list.simps(3) odd_cycle_feats(3) odd_cycle_nempty path)
+    subgoal by (smt match_blossom match_blossomD(3) edge_between_pref_suff hd_rev insert_commute
+                    list.simps(3) odd_cycleD(3) odd_cycle_nempty path)
     done
   done
 

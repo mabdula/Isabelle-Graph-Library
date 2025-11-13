@@ -1,3 +1,6 @@
+(*
+  Author: Christoph Madlener
+*)
 subsection\<open>Miscellaneous Preliminaries\label{sec:misc}\<close>
 theory Misc
   imports

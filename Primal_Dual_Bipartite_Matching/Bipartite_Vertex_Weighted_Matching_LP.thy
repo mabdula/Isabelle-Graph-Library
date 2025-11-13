@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory Bipartite_Vertex_Weighted_Matching_LP
   imports Bipartite_Matching_LP
 begin

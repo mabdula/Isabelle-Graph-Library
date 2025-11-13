@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory Measure_Misc
   imports "HOL-Probability.Probability"
 begin

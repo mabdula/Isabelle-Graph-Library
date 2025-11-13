@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 section \<open>RANKING as Randomized Algorithm\label{sec:prob}\<close>
 theory Ranking_Probabilistic
   imports

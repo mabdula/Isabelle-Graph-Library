@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 theory Ranking_Order
   imports
     Bipartite_Matching_LP

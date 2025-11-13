@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 subsection \<open>More on Lists\label{sec:more-list}\<close>
 theory More_List
   imports

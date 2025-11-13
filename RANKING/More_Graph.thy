@@ -1,3 +1,7 @@
+(*
+  Author: Christoph Madlener
+*)
+
 subsection \<open>More on Graphs\label{sec:more-graph}\<close>
 theory More_Graph
   imports
