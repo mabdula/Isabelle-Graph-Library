@@ -27,7 +27,9 @@ Results include:
  
  - An $O(n·m·(log n + log m))$ algorithm for bi-partite maximum cardinality matching based on the matroid intersection algorithm.
  
- - Some fundamental theory for minimum cost flows and related algorithms, including Orlin's Algorithm, which is one of the most efficient methods for this class of problems.
+ - Fundamental theory for maximum flows and and related algorithms, including Dinic's Algorithm, which is one of the most efficient methods for max-flow.
+ 
+ - Some fundamental theory for minimum cost flows and related algorithms, including Orlin's Algorithm, which is one of the most efficient methods for min-cost-flow.
 
 For the more practically usable algorithms, we include an implementation. For others, we only focus on the mathematical analysis.
 
