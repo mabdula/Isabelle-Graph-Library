@@ -1452,8 +1452,8 @@ proof-
 
   show ?g5 "invar_3_3 initial_state" "invar_parents_shortest_paths initial_state"
        "invar_current_no_out initial_state"
-    by (auto simp add: initial_state_def  intro!: invar_props_intros)
-
+    using not_vwalk_bet_empty
+    by(auto simp add: initial_state_def  intro!: invar_props_intros)
   have *: "distance_set (Graph.digraph_abs G) (t_set srcs) v = 0" if "v \<in> t_set srcs" for v
     using that srcs_in_G
     by (fastforce intro: iffD2[OF distance_set_0[ where G = "(Graph.digraph_abs G)"]])

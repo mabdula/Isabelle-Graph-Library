@@ -58,7 +58,7 @@ begin
     lemma add_edge_impl_rule[sep_heap_rules]: 
       "<graph_assn lg lgi> add_edge_impl lgi u v <\<lambda>r. graph_assn (add_edge lg u v) r>"
       unfolding add_edge_impl_def graph_assn_def
-      apply (sep_auto simp: adjmap_inv_insert) (* TODO: @M invar-preservation lemmas are always good simp-lemmas! It's only declared intro for some reason. *)
+      apply (sep_auto) 
       unfolding add_edge_def
       apply (sep_auto split: option.split)
       done

@@ -101,7 +101,7 @@ definition "finite_vsets G = (\<forall>v N. (lookup G v) = Some N \<longrightarr
 lemma finite_vsets_empty: "finite_vsets  \<emptyset>\<^sub>G"
   by (simp add: adjmap.map_empty finite_vsets_def)
 
-lemma graph_inv_empty: "graph_inv \<emptyset>\<^sub>G"
+lemma graph_inv_empty[simp,intro!]: "graph_inv \<emptyset>\<^sub>G"
   by (simp add: adjmap.invar_empty adjmap.map_empty graph_inv_def)
 
 definition neighbourhood::"'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset" where
@@ -111,7 +111,7 @@ notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
 definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
 
-lemma digraph_abs_empty: "digraph_abs empty = {}" 
+lemma digraph_abs_empty[simp]: "digraph_abs empty = {}" 
   by (simp add: adjmap.map_empty digraph_abs_def local.neighbourhood_def vset.set.invar_empty vset.set.set_empty vset.set.set_isin)
 
 definition "add_edge G u v =
@@ -246,7 +246,7 @@ lemma neighbourhood_abs[simp]:
   by(auto simp: digraph_abs_def neighbourhood_def Pair_Graph.neighbourhood_def option.discI graph_inv_def
           split: option.split)
 
-lemma adjmap_inv_insert[intro]: "graph_inv G \<Longrightarrow> graph_inv (add_edge G u v)"
+lemma adjmap_inv_insert[intro, simp]: "graph_inv G \<Longrightarrow> graph_inv (add_edge G u v)"
   by (auto simp: add_edge_def graph_inv_def split: option.splits)
 
 lemma digraph_abs_insert[simp]: "graph_inv G \<Longrightarrow> digraph_abs (add_edge G u v) = Set.insert (u,v) (digraph_abs G)"
@@ -330,9 +330,8 @@ proof -
   have "graph_inv (fold (\<lambda>(u,v) G. add_edge G u v) xs G)" if "graph_inv G" for G
     using that by (induction xs arbitrary: G) (auto)
 
-  from this[where G="\<emptyset>\<^sub>G"] show ?thesis unfolding from_list_def 
-    (* TODO: @M graph_inv_empty should be [simp] or [simp,intro!] *)
-    using graph_inv_empty by argo
+  from this[where G="\<emptyset>\<^sub>G"] show ?thesis 
+    by(simp add: from_list_def)
 qed
 
   
@@ -343,9 +342,8 @@ proof -
     using that 
     apply (induction xs arbitrary: G) 
     by (auto simp: adjmap_inv_insert)
-  thus ?thesis unfolding from_list_def 
-    by (simp add: graph_inv_empty digraph_abs_empty) (* @M should both be in default simpset! *)
-    
+  thus ?thesis 
+    by(simp add: from_list_def)
 qed
 
 lemma s_non_in_dVs_neighb_empty:
