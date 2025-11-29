@@ -1,6 +1,6 @@
 theory Pair_Graph_U_Specs
-  imports Directed_Set_Graphs.Awalk Directed_Set_Graphs.Map_Addons 
-          Directed_Set_Graphs.Set_Addons Directed_Set_Graphs.Pair_Graph_Specs 
+  imports Directed_Set_Graphs.Awalk Data_Structures.Map_Addons 
+          Data_Structures.Set_Addons Directed_Set_Graphs.Pair_Graph_Specs 
           Undirected_Set_Graphs Pair_Graph_Berge_Adaptor
           "HOL-Eisbach.Eisbach"
 begin

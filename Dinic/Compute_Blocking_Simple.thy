@@ -1,6 +1,6 @@
 theory Compute_Blocking_Simple
   imports Directed_Set_Graphs.Pair_Graph_Specs
-    Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.Set_Addons
+    Data_Structures.Set2_Addons Data_Structures.Set_Addons
     Blocking_Flow
 
 begin

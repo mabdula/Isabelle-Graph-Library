@@ -1,5 +1,5 @@
 theory Pair_Graph_Specs
-  imports Awalk "Map_Addons" "Set_Addons" "HOL-Eisbach.Eisbach"
+  imports Awalk "Data_Structures.Map_Addons" "Data_Structures.Set_Addons" "Data_Structures.Set_Choose" "HOL-Eisbach.Eisbach"
  begin
 
 section \<open>Locale for Executable Functions on Directed Graphs\<close>
@@ -38,45 +38,6 @@ fixes t_map ::"('a \<Rightarrow> 'a) \<Rightarrow> 'm \<Rightarrow> 'm"
 assumes map: "bij_betw f (t_set s) t  \<Longrightarrow> t_set (t_map f s) = t"
 *)
 
-locale Set_Choose = set: Set 
-  where set = t_set for t_set ("[_]\<^sub>s") +
-fixes sel ::"'s \<Rightarrow> 'a"
-
-assumes choose [simp]: "s \<noteq> empty \<Longrightarrow> isin s (sel s)"
-
-
-begin
-context
-  includes set.automation
-begin
-
-(*
-declare set_empty[simp] set_isin[simp] set_insert[simp] set_delete[simp]
-        invar_empty[simp] invar_insert[simp] invar_delete[simp] choose[simp]
-*)
-
-subsection \<open>Abstraction lemmas\<close>
-
-text \<open>These are lemmas for automation. Their purpose is to remove any mention of the locale set ADT
-      constructs and replace it with Isabelle's native sets.\<close>
-
-lemma choose'[simp, intro,dest]:
-  "s \<noteq> empty \<Longrightarrow> invar s \<Longrightarrow> sel s \<in> t_set s"
-  by(auto simp flip: set.set_isin)
-
-lemma choose''[intro]:
-  "invar s \<Longrightarrow> s \<noteq> empty \<Longrightarrow> t_set s \<subseteq> s' \<Longrightarrow> sel s \<in> s'"
-  by(auto simp flip: set.set_isin)
-
-lemma emptyD[dest]:
-           "s = empty \<Longrightarrow> t_set s = {}"
-           "s \<noteq> empty \<Longrightarrow> invar s \<Longrightarrow> t_set s \<noteq> {}"
-           "empty = s \<Longrightarrow> t_set s = {}"
-           "empty \<noteq> s \<Longrightarrow> invar s \<Longrightarrow> t_set s \<noteq> {}"
- using set.set_empty
- by auto
-end
-end
 (*
 locale Adjmap_Map_Specs = 
  adjmap: Map 
@@ -128,7 +89,7 @@ begin
 notation vset_empty ("\<emptyset>\<^sub>N")
 notation empty ("\<emptyset>\<^sub>G")
 
-abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" 
+abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" (* TODO @M strange parameter names. swap G and v? *)
 abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equiv> \<not> isin' G v"
 
 definition "set_of_map (m::'adjmap) = {(u,v). case (lookup m u) of Some vs \<Rightarrow> v \<in>\<^sub>G vs}"
@@ -182,7 +143,11 @@ definition "delete_edge G u v =
   | _ \<Rightarrow> G 
 )"
 
-lemmas [code] = neighbourhood_def add_edge_def delete_edge_def
+
+definition "from_list xs \<equiv> fold (\<lambda>(u,v) G. add_edge G u v) xs \<emptyset>\<^sub>G"
+
+
+lemmas [code] = neighbourhood_def add_edge_def delete_edge_def from_list_def
 
 context \<comment>\<open>Locale properties\<close>
   includes vset.set.automation and  adjmap.automation
@@ -358,6 +323,36 @@ proof(rule finite_vsetsI, goal_cases)
       (force intro: option.exhaust[of  "lookup G u"] 
           simp add: delete_edge_def adjmap.map_update[OF adj_inv]  graph_inv_def)+
 qed
+
+
+lemma from_list_inv[simp]: "graph_inv (from_list xs)"
+proof -
+  have "graph_inv (fold (\<lambda>(u,v) G. add_edge G u v) xs G)" if "graph_inv G" for G
+    using that by (induction xs arbitrary: G) (auto)
+
+  from this[where G="\<emptyset>\<^sub>G"] show ?thesis unfolding from_list_def 
+    (* TODO: @M graph_inv_empty should be [simp] or [simp,intro!] *)
+    using graph_inv_empty by argo
+qed
+
+  
+lemma from_list_abs[simp]: "digraph_abs (from_list xs) = set xs"
+proof -
+  have "digraph_abs (fold (\<lambda>(u,v) G. add_edge G u v) xs G) = digraph_abs G \<union> set xs" 
+    if "graph_inv G" for G
+    using that 
+    apply (induction xs arbitrary: G) 
+    by (auto simp: adjmap_inv_insert)
+  thus ?thesis unfolding from_list_def 
+    by (simp add: graph_inv_empty digraph_abs_empty) (* @M should both be in default simpset! *)
+    
+qed
+
+lemma s_non_in_dVs_neighb_empty:
+  "s \<notin> dVs (digraph_abs G) \<Longrightarrow> \<N>\<^sub>G G s =  \<emptyset>\<^sub>N"
+  using vset.choose[of "\<N>\<^sub>G G s"] 
+  unfolding digraph_abs_def dVs_def
+  by blast
 
 end \<comment> \<open>Properties context\<close>  
 
