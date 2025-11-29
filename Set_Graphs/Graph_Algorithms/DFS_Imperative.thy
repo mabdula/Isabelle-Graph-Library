@@ -173,14 +173,14 @@ begin
     
       While 'user-interface' lemmas for the functional implementation might just so work, 
       it gets ughly when not having a single constant to talk about at the monad level.
-      
-      @M: I strongly recommend to also define a constant for DFS+initial-state on the abstract level
     *)
 
     definition "DFS_imperative' G s t \<equiv> do { state\<leftarrow>DFS_initial_state_impl s; DFS_imperative G t state }"
     
-    lemma DFS_imperative'_rule[sep_heap_rules]: "<graph_assn G Gi> DFS_imperative' Gi s t <\<lambda>ri. graph_assn G Gi * DFS_state_assn (DFS_impl G t (initial_state s)) ri>"
-      unfolding DFS_imperative'_def by sep_auto
+lemma DFS_imperative'_rule[sep_heap_rules]: 
+        "<graph_assn G Gi> DFS_imperative' Gi s t
+           <\<lambda>ri. graph_assn G Gi * DFS_state_assn (DFS_run_impl G s t) ri>"
+      unfolding DFS_imperative'_def DFS_run_def DFS_run_impl_def by sep_auto
               
 
   end  
@@ -212,7 +212,8 @@ begin
     *)  
     thm DFS_correct_1 DFS_correct_2
   
-    lemma DFS_imperative'_absrl: "<graph_assn G Gi> DFS_imperative' Gi s t <\<lambda>ri. graph_assn G Gi * \<up>(
+lemma DFS_imperative'_absrl: 
+      "<graph_assn G Gi> DFS_imperative' Gi s t <\<lambda>ri. graph_assn G Gi * \<up>(
       case DFS_state.return ri of
         NotReachable \<Rightarrow> \<nexists>p. distinct p \<and> vwalk_bet (digraph_abs G) s p t
       | Reachable \<Rightarrow> vwalk_bet (digraph_abs G) s (rev (stack (local.DFS G t (initial_state s)))) t
@@ -222,7 +223,7 @@ begin
       using DFS_correct_1 DFS_correct_2
       apply (sep_auto 
         split: return.splits 
-        simp: DFS_to_DFS_impl[symmetric] (* @M: refinement lemmas should always rewrite from concrete \<rightarrow> abstract. *)
+        simp: DFS_impl_to_DFS DFS_run_impl_def
       )
       done
   

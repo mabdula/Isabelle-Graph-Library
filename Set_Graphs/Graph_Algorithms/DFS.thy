@@ -840,13 +840,19 @@ partial_function (tailrec) DFS_impl::"('v, 'vset) DFS_state \<Rightarrow> ('v, '
      | _ \<Rightarrow> (dfs_state \<lparr>return := NotReachable\<rparr>)
     )"
 
+definition "DFS_run = DFS initial_state"
+
+definition "DFS_run_impl = DFS_impl initial_state"
+
+lemmas [code] = DFS_impl.simps  initial_state_def DFS_run_def
+
 lemmas [code] = DFS_impl.simps  initial_state_def 
 end
 
 context DFS_thms
 begin
 
-lemma DFS_to_DFS_impl: "DFS initial_state = DFS_impl initial_state"
+lemma DFS_impl_to_DFS: "DFS_impl initial_state = DFS initial_state"
 proof-
   have DFS_to_DFS_impl: " DFS state = DFS_impl state" if  "DFS_dom state" for state
   apply(induction rule: DFS.pinduct[OF that])
