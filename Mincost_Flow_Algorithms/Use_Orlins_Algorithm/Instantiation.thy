@@ -1028,7 +1028,7 @@ proof(insert maintain_forest_spec.maintain_forest_get_path_cond_unfold_meta[OF
   proof(rule ccontr,rule DFS.return.exhaust[of "DFS_state.return (dfs E v (dfs_initial u))"],goal_cases)
     case 2
     hence "\<nexists>p. distinct p \<and> vwalk_bet (dfs.Graph.digraph_abs E) u p v"
-      using  DFS_thms.DFS_correct_1[OF dfs_thms, of v]  DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of v] 
+      using  DFS_thms.DFS_correct_1[OF dfs_thms, of v]  DFS_thms.DFS_impl_to_DFS[OF dfs_thms, of v] 
       by (auto simp add:  dfs_def dfs_initial_def dfs_initial_state_def simp add: dfs_impl_def)
     moreover obtain q' where "vwalk_bet (Adj_Map_Specs2.digraph_abs  E ) u q' v" "distinct q'"
       using vwalk_bet_to_distinct_is_distinct_vwalk_bet[OF assms(1)]
@@ -1040,7 +1040,7 @@ proof(insert maintain_forest_spec.maintain_forest_get_path_cond_unfold_meta[OF
   qed simp
   have "vwalk_bet  (dfs.Graph.digraph_abs E)
             u (rev (stack (dfs E v (dfs_initial u)))) v"
-    using reachable sym[OF DFS_thms.DFS_to_DFS_impl[OF dfs_thms, of v]]  
+    using reachable DFS_thms.DFS_impl_to_DFS[OF dfs_thms, of v]
     by(auto intro!: DFS_thms.DFS_correct_2[OF dfs_thms, of v]
          simp add: dfs_initial_def  dfs_def dfs_axioms dfs_impl_def dfs_initial_state_def) 
   thus "vwalk_bet (Adj_Map_Specs2.digraph_abs E ) u p v"
@@ -1049,7 +1049,7 @@ proof(insert maintain_forest_spec.maintain_forest_get_path_cond_unfold_meta[OF
   show "distinct p" 
     using DFS_thms.DFS_correct_2(2)[OF dfs_thms]
     using  DFS_thms.initial_state_props(1,3)[OF dfs_thms]
-           dfs_dom DFS_thms.DFS_to_DFS_impl[OF dfs_thms] reachable
+           dfs_dom DFS_thms.DFS_impl_to_DFS[OF dfs_thms] reachable
     by(auto simp add:  assms(2) get_path_def same_neighbourhoods same_digraph_abses
                        dfs_def dfs_impl_def dfs_initial_def dfs_initial_state_def) 
 qed

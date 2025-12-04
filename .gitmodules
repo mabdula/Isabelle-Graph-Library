@@ -1,0 +1,3 @@
+[submodule "Separation_Logic_Imperative_HOL_Partial"]
+	path = Imperative/Separation_Logic_Imperative_HOL_Partial
+	url = git@github.com:lammich/Separation_Logic_Imperative_HOL_Partial.git

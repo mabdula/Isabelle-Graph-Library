@@ -1,6 +1,6 @@
 theory DFS_Cycles_Aux              
   imports Directed_Set_Graphs.Pair_Graph_Specs
-    Directed_Set_Graphs.Set_Addons Directed_Set_Graphs.Component_Defs Directed_Set_Graphs.Awalk
+    Data_Structures.Set_Addons Directed_Set_Graphs.Component_Defs Directed_Set_Graphs.Awalk
 begin
 
 context Set2

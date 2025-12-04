@@ -1,4 +1,6 @@
 *.thy~
+ROOT~
+ROOTS~
 Berge_Formula/output
 Berge_Lemma/output
 Edmonds_Blossom_Algorithm/output

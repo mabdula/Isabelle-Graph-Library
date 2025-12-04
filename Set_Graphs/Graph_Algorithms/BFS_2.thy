@@ -1,7 +1,6 @@
 theory BFS_2
-  imports Directed_Set_Graphs.Pair_Graph_Specs "HOL-Eisbach.Eisbach_Tools" 
-          Directed_Set_Graphs.Dist
-          Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.More_Lists
+  imports Directed_Set_Graphs.Pair_Graph_Specs "HOL-Eisbach.Eisbach_Tools" Directed_Set_Graphs.Dist
+          Data_Structures.Set2_Addons Directed_Set_Graphs.More_Lists
 begin
 
 record ('parents, 'vset) BFS_state = parents:: "'parents" current:: "'vset" visited:: "'vset"
@@ -168,7 +167,7 @@ definition "initial_state = \<lparr>parents =  empty, current = srcs, visited = 
 lemmas[code] = BFS_impl.simps initial_state_def
 
 context
-  includes Graph.adjmap.automation and Graph.vset.set.automation and set_ops.automation
+  includes Graph.adjmap.automation and Graph.vset.set.automation and set_ops.automation2
   assumes BFS_axiom  
 begin
 
@@ -1453,8 +1452,8 @@ proof-
 
   show ?g5 "invar_3_3 initial_state" "invar_parents_shortest_paths initial_state"
        "invar_current_no_out initial_state"
-    by (auto simp add: initial_state_def  intro!: invar_props_intros)
-
+    using not_vwalk_bet_empty
+    by(auto simp add: initial_state_def  intro!: invar_props_intros)
   have *: "distance_set (Graph.digraph_abs G) (t_set srcs) v = 0" if "v \<in> t_set srcs" for v
     using that srcs_in_G
     by (fastforce intro: iffD2[OF distance_set_0[ where G = "(Graph.digraph_abs G)"]])

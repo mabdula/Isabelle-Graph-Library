@@ -1,0 +1,7 @@
+session "Data_Structures" = "HOL-Data_Structures" +
+
+  theories
+    Set_Addons
+    Map_Addons
+    Set2_Addons             
+    Set_Choose

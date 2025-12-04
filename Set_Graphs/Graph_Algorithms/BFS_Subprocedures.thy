@@ -1,5 +1,5 @@
 theory BFS_Subprocedures
-  imports BFS_2 "HOL-Data_Structures.RBT_Map" Directed_Set_Graphs.Set_Addons 
+  imports BFS_2 "HOL-Data_Structures.RBT_Map" Data_Structures.Set_Addons 
 begin
 
 locale Pair_Graph_Sepcs_Set2 =
@@ -98,7 +98,7 @@ declare Graph.vset.set.set_empty[simp] Graph.vset.set.set_isin[simp] Graph.vset.
         Graph.vset.set.set_delete[simp] Graph.vset.set.invar_empty[simp] 
         Graph.vset.set.invar_insert[simp] Graph.vset.set.invar_delete[simp]
 context
-  includes Graph.vset.set.automation and set_ops.automation
+  includes Graph.vset.set.automation and set_ops.automation2
 begin
 
 lemma next_frontier:

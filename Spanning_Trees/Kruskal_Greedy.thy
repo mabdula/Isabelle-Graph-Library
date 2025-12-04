@@ -277,7 +277,7 @@ proof(goal_cases)
         "lookup (local.Kruskal_E_to_G S) (snd e) \<noteq> None" by auto
       note one = this
       show ?case
-      proof(subst DFS_thms.DFS_to_DFS_impl[OF DFS_thms, symmetric, OF 1(1)],
+      proof(subst DFS_thms.DFS_impl_to_DFS[OF DFS_thms, OF 1(1)],
           rule, all \<open>rule ccontr\<close>, goal_cases)
         case 1
         then obtain u C where uC_prop:"decycle 

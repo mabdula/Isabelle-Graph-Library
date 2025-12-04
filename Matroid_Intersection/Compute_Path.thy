@@ -321,7 +321,7 @@ interpretation dfs_lemmas: DFS_thms  where insert = vset_insert and
       simp add: dfs.DFS_axioms DFS.DFS_axioms_def[OF  dfs.DFS_axioms] G'_properties finite_vs
       graph_inv_bfs_tree[OF S_non_empt] finite_graph_bfs_tree[OF S_non_empt]  dfs.Graph.finite_vsetsI)
 
-lemmas dfs_lemmas_DFS_to_DFS_impl = dfs_lemmas.DFS_to_DFS_impl
+lemmas dfs_lemmas_DFS_to_DFS_impl = dfs_lemmas.DFS_impl_to_DFS[symmetric]
 lemmas dfs_lemmas_DFS_thms_axioms = dfs_lemmas.DFS_thms_axioms
 lemmas dfs_lemmas_DFS_correct_1 = dfs_lemmas.DFS_correct_1
 lemmas dfs_lemmas_DFS_correct_2 = dfs_lemmas.DFS_correct_2
@@ -347,7 +347,7 @@ proof-
      (DFS.initial_state vset_insert vset_empty s)) \<noteq> Reachable" using one
         by (simp add: dfs_final_def dfs_impl_def dfs_initial_state_def 
                 dfs_lemmas_DFS_to_DFS_impl[OF one(2) ]
-            DFS_thms.DFS_to_DFS_impl[OF dfs_lemmas_DFS_thms_axioms] )
+            DFS_thms.DFS_impl_to_DFS[OF dfs_lemmas_DFS_thms_axioms, symmetric] )
 
       hence "\<nexists>p. distinct p \<and> vwalk_bet (dfs.Graph.digraph_abs bfs_tree) s p t"
         using dfs_lemmas_DFS_correct_1[OF one(2) ] by(auto intro: return.exhaust)
