@@ -114,8 +114,8 @@ begin
         DFS_state_assn and DFS_state_without_seen_assn.  
       
         The only realistic choices are:
-          \<^item> unfold DFS_state_assn for the whole proof
-          \<^item> define specialized operations on state, e.g., \<open>filter_out_seen ls dfs_state\<close>, such that
+          * unfold DFS_state_assn for the whole proof
+          * define specialized operations on state, e.g., \<open>filter_out_seen ls dfs_state\<close>, such that
             these operations do not extract heap-based components. 
             For the proofs of the specialized operations, the state assertion is unfolded.
   
@@ -138,7 +138,7 @@ begin
         apply (cases dfs_state; cases dfs_statei; simp)
         subgoal for stack seen return stacki seeni returni
           (* Abstract algorithm controls splitting! We split everything at once. *)
-          apply (rewrite in "<_> _ <\<hole>>" DFS_impl.simps)
+          (*<*)apply (rewrite in "<_> _ <\<hole>>" DFS_impl.simps)(*>*)
           apply (clarsimp split!: list.split if_split simp: Let_def) (* This process can be done more manually, using explicit split, cases, etc. *)
           
           (* Now let concrete algorithm follow. Note that we unfold per subgoal, and label the subgoals with comments, for better readability and maintainability *)
