@@ -1,5 +1,7 @@
 theory DFS
-  imports Directed_Set_Graphs.Pair_Graph_Specs Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.Set_Addons  
+  imports Directed_Set_Graphs.Pair_Graph_Specs 
+    Data_Structures.Set2_Addons 
+      
 begin
 
 section\<open>Depth-Frist Search\<close>
@@ -39,6 +41,12 @@ and T_sel::"'vset \<Rightarrow> nat" and T_insert::"'v \<Rightarrow> 'vset \<Rig
 and T_lookup::"'adjmapmap\<Rightarrow> 'v \<Rightarrow> nat" and T_G::nat and T_vset_empty::nat*)
 
 begin
+
+lemma subtract_from_empty:
+"vset_inv A \<Longrightarrow> \<emptyset>\<^sub>N -\<^sub>G A = \<emptyset>\<^sub>N" 
+  using Graph.vset.emptyD(4) Graph.vset.set.invar_empty Graph.vset.set.set_empty empty_Diff
+      set_ops.invar_diff set_ops.set_diff 
+  by force
 
 definition "DFS_axioms = ( Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets G
                          \<and> s \<in> dVs (Graph.digraph_abs G))"
@@ -267,7 +275,7 @@ assumes DFS_axioms: DFS_axioms
 begin
 
 context
-includes set_ops.automation and Graph.adjmap.automation and Graph.vset.set.automation 
+includes set_ops.automation2 and Graph.adjmap.automation and Graph.vset.set.automation 
 begin
 
 lemma graph_inv[simp,intro]:
@@ -765,15 +773,52 @@ proof-
 qed
 end
 
-lemma s_not_in_dVs_not_reachable:"s \<notin> dVs (Graph.digraph_abs G) \<Longrightarrow> return (DFS initial_state) = NotReachable"
-  apply(subst initial_state_def)
-  apply(subst DFS.psimps)
-  by(auto intro!: DFS.domintros)
+end
+
+locale DFS_immediate_termination =
+  DFS +
+assumes graph_invar_G:"Graph.graph_inv G"
+begin
+
+lemma s_not_in_dVs_not_reachable:
+  "\<lbrakk>s \<notin> dVs (Graph.digraph_abs G); s \<noteq> t\<rbrakk> \<Longrightarrow> return (DFS initial_state) = NotReachable"
+proof(subst initial_state_def, subst DFS.psimps, goal_cases)
+  case 1
+  show ?case
+    apply(rule DFS.domintros)
+    using 1  Graph.s_non_in_dVs_neighb_empty  Graph.vset.set.invar_empty Graph.vset.set.invar_insert
+          subtract_from_empty 
+    by (auto intro: DFS.domintros)
+next
+  case 2
+  have "return (local.DFS \<lparr>stack = [], seen = insert s \<emptyset>\<^sub>N, return = NotReachable\<rparr>) = NotReachable"
+    by(subst DFS.psimps[OF  DFS.domintros]) auto
+  thus ?case
+    by (auto simp add: Let_def "2"(2,1) Graph.vset.set.invar_empty Graph.vset.set.invar_insert
+                       Graph.s_non_in_dVs_neighb_empty subtract_from_empty )
+qed
+
+lemma s_not_in_dVs_but_same_as_t_reachable:
+  "\<lbrakk>s \<notin> dVs (Graph.digraph_abs G); s = t\<rbrakk> \<Longrightarrow> return (DFS initial_state) = Reachable"
+proof(subst initial_state_def, subst DFS.psimps, goal_cases)
+  case 1
+  show ?case
+    using 1  Graph.s_non_in_dVs_neighb_empty  Graph.vset.set.invar_empty Graph.vset.set.invar_insert
+          subtract_from_empty 
+    by (auto intro: DFS.domintros)
+next
+  case 2
+  thus ?case
+    by (auto simp add: Let_def "2"(2,1) Graph.vset.set.invar_empty Graph.vset.set.invar_insert
+                       Graph.s_non_in_dVs_neighb_empty subtract_from_empty )
+qed
 
 end
 
 context DFS
 begin
+
+
 
 partial_function (tailrec) DFS_impl::"('v, 'vset) DFS_state \<Rightarrow> ('v, 'vset) DFS_state" where
   "DFS_impl dfs_state = 
@@ -795,13 +840,19 @@ partial_function (tailrec) DFS_impl::"('v, 'vset) DFS_state \<Rightarrow> ('v, '
      | _ \<Rightarrow> (dfs_state \<lparr>return := NotReachable\<rparr>)
     )"
 
+definition "DFS_run = DFS initial_state"
+
+definition "DFS_run_impl = DFS_impl initial_state"
+
+lemmas [code] = DFS_impl.simps  initial_state_def DFS_run_def
+
 lemmas [code] = DFS_impl.simps  initial_state_def 
 end
 
 context DFS_thms
 begin
 
-lemma DFS_to_DFS_impl: "DFS initial_state = DFS_impl initial_state"
+lemma DFS_impl_to_DFS: "DFS_impl initial_state = DFS initial_state"
 proof-
   have DFS_to_DFS_impl: " DFS state = DFS_impl state" if  "DFS_dom state" for state
   apply(induction rule: DFS.pinduct[OF that])

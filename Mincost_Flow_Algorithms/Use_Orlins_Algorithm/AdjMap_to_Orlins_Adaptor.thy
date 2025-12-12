@@ -1,6 +1,6 @@
 theory AdjMap_to_Orlins_Adaptor
   imports  Directed_Set_Graphs.Pair_Graph_Specs 
-           Directed_Set_Graphs.Set2_Addons Directed_Set_Graphs.Set_Addons
+           Data_Structures.Set2_Addons Data_Structures.Set_Addons
 begin
 
 locale adjmap_map_to_orlins =

@@ -244,7 +244,7 @@ subsection \<open>Invariants Hold\<close>
 context DFS_thms
 begin
 context
-  includes set_ops.automation and Graph.adjmap.automation and Graph.vset.set.automation 
+  includes set_ops.automation2 and Graph.adjmap.automation and Graph.vset.set.automation 
 begin
 
 lemma invar_dfs_backtrack_1_holds_1[invar_holds_intros]:

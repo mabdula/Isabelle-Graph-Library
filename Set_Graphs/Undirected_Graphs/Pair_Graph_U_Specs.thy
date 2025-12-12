@@ -1,6 +1,6 @@
 theory Pair_Graph_U_Specs
-  imports Directed_Set_Graphs.Awalk Directed_Set_Graphs.Map_Addons 
-          Directed_Set_Graphs.Set_Addons Directed_Set_Graphs.Pair_Graph_Specs 
+  imports Directed_Set_Graphs.Awalk Data_Structures.Map_Addons 
+          Data_Structures.Set_Addons Directed_Set_Graphs.Pair_Graph_Specs 
           Undirected_Set_Graphs Pair_Graph_Berge_Adaptor
           "HOL-Eisbach.Eisbach"
 begin
@@ -490,12 +490,13 @@ proof-
     hence"(va, ua) \<in> digraph_abs (add_edge (add_edge G u v) v u)"
       by(auto simp add: adjmap_inv_insert)  
     then show ?case 
-      by (simp add: digraph_abs_def)
+      by (simp add: neighbourhoodD)
   qed
   show thesis1:?thesis1
     using assms 
-    by(auto intro: finite_graph_add_edge finite_vsets_add_edge
-         simp add: pair_graph_u_invar_def not_Refl_after sym_after)
+    by(auto intro: finite_graph_add_edge finite_vsets_add_edge neighbourhoodD
+         simp add: pair_graph_u_invar_def not_Refl_after sym_after
+             dest: neighbourhoodI graph_abs_symmetric)
   show "(\<And> x y. ?assm1 x y \<Longrightarrow> ?assm2 x y) \<Longrightarrow> ?assms2 \<Longrightarrow> ?thesis2" 
   proof(goal_cases)
     case 1
