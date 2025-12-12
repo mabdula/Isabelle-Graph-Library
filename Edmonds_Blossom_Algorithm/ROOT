@@ -7,8 +7,12 @@ session "Blossom" = "Berge_Lemma" +
 
   theories
     "choose"
-    "Graph_Quotient_working_2"
-    "Blossom_Algo_working"
+    "Graph_Quotient"
+    "Blossom_Algo_Main_Loop"
+    "Blossom_Algo_Contraction"
+    "Blossom_Algo_Compute_Aug_Path"
+    "Blossom_Algo_Forest_Struct"
+    "Blossom_Algo_Search"
 
   document_files
     "root.tex"

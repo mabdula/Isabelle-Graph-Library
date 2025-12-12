@@ -1,4 +1,4 @@
-theory Graph_Quotient_working_2
+theory Graph_Quotient
 imports choose "Berge_Lemma.Berge"
          
 begin

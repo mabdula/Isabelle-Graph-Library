@@ -1,6 +1,5 @@
 theory choose
-  imports Main 
-          Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor
+  imports Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor
           Undirected_Set_Graphs.Undirected_Set_Graphs 
 begin
 
