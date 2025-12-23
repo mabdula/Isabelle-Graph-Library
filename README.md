@@ -55,3 +55,4 @@ For the more practically usable algorithms, we include an implementation. For ot
 p/thys'
  - Same for this directory: 'isabelle components -u [path to this directory]'
  - All theories in this formalisation should be available now!
+ - You also need to add https://github.com/lammich/Separation_Logic_Imperative_HOL_Partial/tree/7f24270bd9a37f2a61a5727f4e5a501a460dc896 as submodule, which should replace the empty directory Separation_Logic_Imperative_HOL_Partial in Imperative.
