@@ -1257,13 +1257,13 @@ lemma invars_pres_one_step:
   assumes "maintain_forest_call_cond state"
           "underlying_invars state" "implementation_invar state"
     shows "implementation_invar (maintain_forest_upd state)"
-        "\<lbrakk>thr \<ge> 0; invarA_1 thr state\<rbrakk> \<Longrightarrow> invarA_1 thr (maintain_forest_upd state)"
+        "\<lbrakk>thr \<ge> 0; invar_F1 thr state\<rbrakk> \<Longrightarrow> invar_F1 thr (maintain_forest_upd state)"
 
-        "\<lbrakk>thr2 \<ge> 0; invarA_1 thr2 state; invarA_2 thr1 thr2 state; 
+        "\<lbrakk>thr2 \<ge> 0; invar_F1 thr2 state; invar_F2 thr1 thr2 state; 
           thr2 \<le> 2 * current_\<gamma> state; thr1 \<le> 8*real N * current_\<gamma> state\<rbrakk> 
-         \<Longrightarrow> invarA_2 thr1 thr2 (maintain_forest_upd state)"
+         \<Longrightarrow> invar_F2 thr1 thr2 (maintain_forest_upd state)"
 
-        "\<lbrakk>invar_gamma state; thr2 \<ge> 0; invarA_1 thr2 state; invarA_2 thr1 thr2 state;
+        "\<lbrakk>invar_gamma state; thr2 \<ge> 0; invar_F1 thr2 state; invar_F2 thr1 thr2 state;
          thr2 \<le> 2 * current_\<gamma> state; thr1 = 8*real N * current_\<gamma> state; invar_isOptflow state\<rbrakk>
          \<Longrightarrow> invar_isOptflow (maintain_forest_upd state)"
 proof-
@@ -1637,13 +1637,13 @@ proof-
     by (simp add: comps_inter_empt disjnt_def)
   note underlying_invars_state' = invar_aux_pres_one_step[of state, OF assms(2,1,3), 
       simplified sym[OF state_state']]
-  show "\<lbrakk>thr \<ge> 0; invarA_1 thr state\<rbrakk> \<Longrightarrow> invarA_1 thr (maintain_forest_upd state)"
+  show "\<lbrakk>thr \<ge> 0; invar_F1 thr state\<rbrakk> \<Longrightarrow> invar_F1 thr (maintain_forest_upd state)"
   proof-
-    assume asm: "thr \<ge> 0"  "invarA_1 thr state"
+    assume asm: "thr \<ge> 0"  "invar_F1 thr state"
     have bx':"\<bar>abstract_bal_map b x' \<bar> \<le> thr*card (connected_component (to_graph \<FF>) x')"
-      using asm(2) b_def invarA_1_def local.\<FF>_def x'_y'_in_V(1) by blast
+      using asm(2) b_def invar_F1_def local.\<FF>_def x'_y'_in_V(1) by blast
     have by':"\<bar>abstract_bal_map b y' \<bar> \<le> thr*card (connected_component (to_graph \<FF>) y')"
-      using asm(2) b_def invarA_1_def local.\<FF>_def x'_y'_in_V(2) by blast
+      using asm(2) b_def invar_F1_def local.\<FF>_def x'_y'_in_V(2) by blast
     have y'_card:"\<bar>abstract_bal_map b' y'\<bar> \<le> thr * card (connected_component (to_graph \<FF>') y')"
       apply(subst comps_union, subst card_Un_disjnt)
       using comps_inter_empt x'_not_y' bx' by' comps_inter_empt assms(2)  \<V>_finite
@@ -1655,7 +1655,7 @@ proof-
     proof(rule order.trans[of _ "thr * real (card (connected_component (to_graph \<FF>) v))"], goal_cases)
       case 1
       then show ?case 
-        using invarA_1D[OF asm(2), of v] \<V>_finite b'_is
+        using invar_F1D[OF asm(2), of v] \<V>_finite b'_is
         by(auto simp add: b_def local.\<FF>_def b'_def) 
     next
       case 2
@@ -1664,17 +1664,17 @@ proof-
           card_mono[of "connected_component (to_graph \<FF>') v" "connected_component (to_graph \<FF>) v"] rev_finite_subset
         by (intro mult_left_mono, auto intro: mult_left_mono)
     qed
-    ultimately show "invarA_1 thr (maintain_forest_upd state)"
+    ultimately show "invar_F1 thr (maintain_forest_upd state)"
       using  asm(1) b'_is[simplified b'_def [symmetric]]
-      by(auto intro!: invarA_1I simp add: state'_is[symmetric] state'_def)
+      by(auto intro!: invar_F1I simp add: state'_is[symmetric] state'_def)
   qed
 
-  show "invarA_2 thr1 thr2 (maintain_forest_upd state)"    
-    if "thr2 \<ge> 0" "invarA_1 thr2 state" "invarA_2 thr1 thr2 state" 
+  show "invar_F2 thr1 thr2 (maintain_forest_upd state)"    
+    if "thr2 \<ge> 0" "invar_F1 thr2 state" "invar_F2 thr1 thr2 state" 
       "thr2 \<le> 2 * current_\<gamma> state" "thr1 \<le> 8*real N * current_\<gamma> state"
   proof-
     note asm = that
-    show " invarA_2 thr1 thr2 (maintain_forest_upd state)"
+    show " invar_F2 thr1 thr2 (maintain_forest_upd state)"
     proof-
       have "d \<in> abstract_conv_map to_rdg' ` (digraph_abs \<FF>') \<Longrightarrow>
          thr1 - thr2 * real (card (connected_component (to_graph \<FF>') (fst (oedge d)))) <
@@ -1700,7 +1700,7 @@ proof-
              thr1 - thr2 * real (card (connected_component (to_graph \<FF>) (fst (oedge d)))) <
                 abstract_flow_map f (oedge d)"
             using asm(3)  
-            by (auto elim: invarA_2E simp add: f_def  local.\<FF>_def to_rdg_def F_def F_redges_def)
+            by (auto elim: invar_F2E simp add: f_def  local.\<FF>_def to_rdg_def F_def F_redges_def)
           have f_e_geq_thr1:"oedge d = e \<Longrightarrow> abstract_flow_map f (oedge d) > thr1" 
             using \<gamma>_def asm(5) e_prop by auto
           have card_less:"card (connected_component (to_graph \<FF>) (fst (oedge d))) \<le> 
@@ -1738,7 +1738,7 @@ proof-
             using fst_d_in_F_comp_x'_or_y' by (auto intro!: connected_components_member_eq)
           have bal_bound_x':"\<bar>abstract_bal_map b x'\<bar>  \<le>
                       thr2 * real (card (connected_component (to_graph \<FF>) x'))"
-            using  invarA_1D[OF asm(2)] x'_y'_in_V(1) 
+            using  invar_F1D[OF asm(2)] x'_y'_in_V(1) 
             by(auto simp add: local.\<FF>_def  b_def)
           have f'_d_lower_bound:"abstract_flow_map f' (oedge d)  \<ge> abstract_flow_map f (oedge d) - \<bar>abstract_bal_map b x' \<bar>"
             using distinct_path_augment[of "to_redge_path to_rdg' Q" " \<bar>abstract_bal_map b x' \<bar>"
@@ -1754,7 +1754,7 @@ proof-
             hence f_d_lower_bound:"abstract_flow_map f (oedge d) > 
                  thr1 - thr2 * real (card (connected_component (to_graph \<FF>) (fst (oedge d))))"
               using  asm(3) 
-              by (auto simp add: f_def invarA_2D local.\<FF>_def to_rdg_def F_def F_redges_def)
+              by (auto simp add: f_def invar_F2D local.\<FF>_def to_rdg_def F_def F_redges_def)
             show ?case 
             proof(cases rule: orE[OF fst_d_F_comp_x'_or_y'], goal_cases)
               case 1
@@ -1797,12 +1797,12 @@ proof-
         qed
       qed
       thus ?thesis 
-        by(auto simp add: sym[OF state_state'] state'_def F_def F_redges_def intro!: invarA_2I)
+        by(auto simp add: sym[OF state_state'] state'_def F_def F_redges_def intro!: invar_F2I)
     qed
   qed
 
   have "is_Opt (\<b> - abstract_bal_map b') (abstract_flow_map f')"
-    if asm: "invar_gamma state" "thr2 \<ge> 0" "invarA_1 thr2 state" "invarA_2 thr1 thr2 state"
+    if asm: "invar_gamma state" "thr2 \<ge> 0" "invar_F1 thr2 state" "invar_F2 thr1 thr2 state"
       "thr2 \<le> 2 * current_\<gamma> state" "thr1 = 8*real N * current_\<gamma> state" 
       "is_Opt (\<b> - (abstract_bal_map b)) (abstract_flow_map f)"
   proof-
@@ -1867,7 +1867,7 @@ proof-
             thr2 * real (card (connected_component (to_graph \<FF>) (fst (oedge d)))))
              < ereal (abstract_flow_map f (oedge d))"
           using   asm1  asm(4) 
-          by (force simp add: invarA_2_def  f_def asm(6) N_def  to_rdg_def  \<FF>_def F_def F_redges_def)
+          by (force simp add: invar_F2_def  f_def asm(6) N_def  to_rdg_def  \<FF>_def F_def F_redges_def)
         moreover have "ereal (abstract_flow_map f (oedge d)) \<le> \<uu>\<^bsub>abstract_flow_map f\<^esub>d"
           using 2 by simp
         ultimately show ?thesis 
@@ -1898,7 +1898,7 @@ proof-
     next
       case (3 d)
       have "ereal \<bar>abstract_bal_map b x'\<bar> \<le> ereal (thr2 * real (card (connected_component (to_graph \<FF>) x')))"
-        using b_def ereal_less_eq(3) invarA_1D local.\<FF>_def that(3) x'_y'_in_V(1) by blast
+        using b_def ereal_less_eq(3) invar_F1D local.\<FF>_def that(3) x'_y'_in_V(1) by blast
       moreover have " ereal (thr2 * real (card (connected_component (to_graph \<FF>) x')))
                      \<le> ereal (real (6 * N) * current_\<gamma> state)"
         using  \<gamma>_geq_0 
@@ -1926,12 +1926,12 @@ proof-
       have "ereal \<bar>abstract_bal_map b x'\<bar> \<le>
                 ereal (thr2 * real (card (connected_component (to_graph \<FF>) x')))"
         using asm(3) x'_y'_in_V(1)
-        by(auto elim!: invarA_1E simp add:  b_def  \<FF>_def)
+        by(auto elim!: invar_F1E simp add:  b_def  \<FF>_def)
       moreover have "ereal (thr2 * real (card (connected_component (to_graph \<FF>) x')))
                     \<le> ereal (real (6 * N) * current_\<gamma> state)"
         using asm(5) components_in_V[of x'] x'_y'_in_V(1) \<gamma>_geq_0 N_def \<V>_finite card_mono[of  \<V>]
         by(auto intro: order_trans[of _ "2 * current_\<gamma> state * N", OF mult_mono] 
-            simp add: invarA_1_def b_def  \<FF>_def \<gamma>_def)
+            simp add: invar_F1_def b_def  \<FF>_def \<gamma>_def)
       moreover have "ereal (real (6 * N) * current_\<gamma> state) < \<uu>\<^bsub>abstract_flow_map f\<^esub>d"
         using  d_inF'_rcap[of d] Q_subs 3
         by(auto simp add:\<gamma>_def)
@@ -2201,7 +2201,7 @@ proof-
         using 2 by (simp add: f'_def)
     qed
   qed
-  thus "\<lbrakk>invar_gamma state; thr2 \<ge> 0; invarA_1 thr2 state; invarA_2 thr1 thr2 state;
+  thus "\<lbrakk>invar_gamma state; thr2 \<ge> 0; invar_F1 thr2 state; invar_F2 thr1 thr2 state;
          thr2 \<le> 2 * current_\<gamma> state; thr1 = 8*real N * current_\<gamma> state; invar_isOptflow state\<rbrakk>
          \<Longrightarrow> invar_isOptflow (maintain_forest_upd state)"
     using sym[OF state_state']
@@ -2680,6 +2680,14 @@ proof-
     by (intro  exI[of _ e]) (auto simp add: \<FF>_def \<FF>'_def state'_def)
 qed
 
+(*only for presentation in lmcs paper*)
+
+lemma mono_one_step_phi:
+  assumes "maintain_forest_call_cond state" "underlying_invars state"
+          "invar_gamma state" "implementation_invar state"
+    shows "\<Phi> (maintain_forest_upd state) \<le> \<Phi> state + 1" 
+  using assms mono_one_step(1) by simp
+
 named_theorems maintain_forest_results
 
 lemma maintain_forest_invar_aux_pres[maintain_forest_results]:
@@ -2768,15 +2776,15 @@ proof(induction rule: maintain_forest_induct[OF
           simp add: maintain_forest_simps)
 qed
 
-lemma invarA2_pres[maintain_forest_results]: 
+lemma invar_F2_pres[maintain_forest_results]: 
   assumes "underlying_invars state"
           "0 \<le> thr2"
-          "invarA_1 thr2 state"
-          "invarA_2 thr1 thr2 state"
+          "invar_F1 thr2 state"
+          "invar_F2 thr1 thr2 state"
           "thr2 \<le> 2 * current_\<gamma> state"
           "thr1 \<le> 8 * real N * current_\<gamma> state"
           "implementation_invar state"
-   shows  "invarA_2 thr1 thr2 (maintain_forest state)"
+   shows  "invar_F2 thr1 thr2 (maintain_forest state)"
   using assms 
 proof(induction rule: maintain_forest_induct[where state=state])
   case 1
@@ -2808,8 +2816,8 @@ theorem send_flow_entryF[maintain_forest_results]:
           "maintain_forest_entry state"
           "invar_gamma state"
           "(\<gamma>::real) = current_\<gamma> state"
-          "invarA_1 (2 * (\<gamma>::real)) state"
-          "invarA_2 (8 * N * (\<gamma>::real))  (2 * (\<gamma>::real)) state"
+          "invar_F1 (2 * (\<gamma>::real)) state"
+          "invar_F2 (8 * N * (\<gamma>::real))  (2 * (\<gamma>::real)) state"
           "implementation_invar state"
   shows "send_flow_entryF (maintain_forest state)"
   proof(rule send_flow_entryFI, goal_cases)
@@ -2819,12 +2827,12 @@ theorem send_flow_entryF[maintain_forest_results]:
       by(auto elim!: underlying_invarsE inv_forest_in_EE)     
     have gamma_same_after_maintain_forest: "current_\<gamma> (maintain_forest state) = \<gamma>"
       using assms gamma_pres[OF assms(1)] by simp
-    have " invarA_2 (real (8 * N) * \<gamma>) (2 * \<gamma>) (local.maintain_forest state)"
+    have " invar_F2 (real (8 * N) * \<gamma>) (2 * \<gamma>) (local.maintain_forest state)"
       using assms
-      by(intro invarA2_pres[OF assms(1), of "2*\<gamma> " "8*N*\<gamma> "], auto simp add: invar_gamma_def)
+      by(intro invar_F2_pres[OF assms(1), of "2*\<gamma> " "8*N*\<gamma> "], auto simp add: invar_gamma_def)
     hence e_flow_bound:"(a_current_flow (local.maintain_forest state)) e > 
              8*N*\<gamma> - 2 * \<gamma> * card (connected_component (to_graph (\<FF> (local.maintain_forest state))) (fst e))"
-      using 1 by(auto simp add: invarA_2_def)
+      using 1 by(auto simp add: invar_F2_def)
     have "connected_component (to_graph (\<FF> (local.maintain_forest state))) (fst e) \<subseteq> \<V>"
       using  e_in_E fst_E_V
       by (intro inv_components_in_VD)
@@ -3003,11 +3011,11 @@ qed
 lemma maintain_forest_flow_optimatlity_pres[maintain_forest_results]: 
   assumes "underlying_invars (state)"
           "0 \<le> thr2"
-          "invarA_1 thr2 state"
+          "invar_F1 thr2 state"
           "invar_isOptflow state"
           "thr2 \<le> 2 * current_\<gamma> state"
           "thr1 = 8 * real N * current_\<gamma> state"
-          "invarA_2 thr1 thr2 state"
+          "invar_F2 thr1 thr2 state"
           "invar_gamma state"
           "implementation_invar state"
  shows "invar_isOptflow (maintain_forest state)"

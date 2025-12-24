@@ -62,29 +62,29 @@ qed
 text \<open>The first invariant is rather basic. It requires a total sum of $0$ for balances,
 which is the absolute modicum for having a well-defined and sound problem.\<close>
 
-definition "invar1 state = is_balance (balance state)"
+definition "invar_balance state = is_balance (balance state)"
 
-lemma invar_1_props[dest!]: "invar1 state \<Longrightarrow> is_balance (balance state)"
-  by (auto simp: invar1_def)
+lemma invar_balance_props[dest!]: "invar_balance state \<Longrightarrow> is_balance (balance state)"
+  by (auto simp: invar_balance_def)
 
-lemma invar_1_intro: " is_balance (balance state) \<Longrightarrow> invar1 state"
-  by (auto simp: invar1_def)
+lemma invar_balance_intro: " is_balance (balance state) \<Longrightarrow> invar_balance state"
+  by (auto simp: invar_balance_def)
 
 text \<open>The second invariant talks about integrality.\<close>
 
-definition "invar2 state = (is_integral_flow (current_flow state) \<and>
+definition "invar_integral state = (is_integral_flow (current_flow state) \<and>
                             is_integral_balance (balance state))"
 
 text \<open>We provide corresponding introduction and elimination rules.\<close>
 
-lemma invar2I: 
-"\<lbrakk>is_integral_flow (current_flow state); is_integral_balance (balance state)\<rbrakk> \<Longrightarrow> invar2 state"
-  by(auto simp add: invar2_def)
+lemma invar_integralI: 
+"\<lbrakk>is_integral_flow (current_flow state); is_integral_balance (balance state)\<rbrakk> \<Longrightarrow> invar_integral state"
+  by(auto simp add: invar_integral_def)
 
-lemma invar2E: 
-  "invar2 state \<Longrightarrow> 
+lemma invar_integralE: 
+  "invar_integral state \<Longrightarrow> 
   (\<lbrakk>is_integral_flow (current_flow state); is_integral_balance (balance state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
-  by(auto simp add: invar2_def)
+  by(auto simp add: invar_integral_def)
 
 lemma is_integral_flowI: 
  "(\<And> e. e \<in> \<E> \<Longrightarrow> \<exists> n::int. (f::_\<Rightarrow> real) e =  n) \<Longrightarrow> is_integral_flow f"
@@ -116,7 +116,7 @@ It states that the current flow is optimum for the
 We will always prove preservation by using the hard-earned Theorem 9.11 from the previous theory.
 \<close>
 
-definition "invar3 state = (is_Opt (\<lambda> v. \<b> v - balance state v) (current_flow state))"
+definition "invar_opt state = (is_Opt (\<lambda> v. \<b> v - balance state v) (current_flow state))"
 
 text \<open>By augmenting an integral flow along a single edge by an integer, integrality is preserved.\<close>
 

@@ -6,32 +6,32 @@ begin
 
 locale send_flow_time =
 send_flow where fst = fst for fst::"'edge_type \<Rightarrow> 'a"+
-fixes t\<^sub>B\<^sub>C::nat and t\<^sub>B\<^sub>B::nat and t\<^sub>B\<^sub>u\<^sub>f::nat and t\<^sub>B\<^sub>F::nat
+fixes t\<^sub>S\<^sub>C::nat and t\<^sub>S\<^sub>B::nat and t\<^sub>S\<^sub>u\<^sub>f::nat and t\<^sub>S\<^sub>F::nat
 begin
 
 function (domintros) send_flow_time::
 "('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state 
 \<Rightarrow> nat \<times> ('e, 'f, 'c, 'h, 'd, 'g, 'i) Algo_state" where
-  "send_flow_time state = t\<^sub>B\<^sub>u\<^sub>f +++ 
+  "send_flow_time state = t\<^sub>S\<^sub>u\<^sub>f +++ 
    (let f = current_flow state;  b = balance state; \<gamma> = current_\<gamma> state
  in (if test_all_vertices_zero_balance state 
-     then (t\<^sub>B\<^sub>C +  t\<^sub>B\<^sub>F, state \<lparr> return:=success\<rparr>) 
+     then (t\<^sub>S\<^sub>C +  t\<^sub>S\<^sub>F, state \<lparr> return:=success\<rparr>) 
      else (case get_source state of Some s \<Rightarrow> 
             (case get_source_target_path_a state s of Some (t, P) \<Rightarrow>
                    (let f' = augment_edges_impl f \<gamma> P;
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in   
-                           ((t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B) +++ (send_flow_time state')))          
-                  | None \<Rightarrow>  ((t\<^sub>B\<^sub>C +  t\<^sub>B\<^sub>F), state \<lparr> return := infeasible\<rparr>)) 
+                           ((t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B) +++ (send_flow_time state')))          
+                  | None \<Rightarrow>  ((t\<^sub>S\<^sub>C +  t\<^sub>S\<^sub>F), state \<lparr> return := infeasible\<rparr>)) 
      | None \<Rightarrow> 
           (case get_target state of Some t \<Rightarrow> 
             (case get_source_target_path_b state t of Some (s, P) \<Rightarrow>
                    (let f' = augment_edges_impl f \<gamma> P;
                        b' = move b \<gamma> s t;
                        state' = state \<lparr> current_flow := f', balance := b'\<rparr> in
-                         ((t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B) +++ (send_flow_time state')))                    
-                | None \<Rightarrow> ((t\<^sub>B\<^sub>C +  t\<^sub>B\<^sub>F) , state \<lparr> return := infeasible\<rparr>))
-          | None \<Rightarrow> ((t\<^sub>B\<^sub>C +  t\<^sub>B\<^sub>F), state \<lparr> return := notyetterm\<rparr>)))))"
+                         ((t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B) +++ (send_flow_time state')))                    
+                | None \<Rightarrow> ((t\<^sub>S\<^sub>C +  t\<^sub>S\<^sub>F) , state \<lparr> return := infeasible\<rparr>))
+          | None \<Rightarrow> ((t\<^sub>S\<^sub>C +  t\<^sub>S\<^sub>F), state \<lparr> return := notyetterm\<rparr>)))))"
   by auto
 
 lemma terminationB_iff:"send_flow_dom state \<longleftrightarrow> send_flow_time_dom state"
@@ -93,7 +93,7 @@ definition "send_flow_time_succ_upd state = (let
                     f = current_flow state;
                     b = balance state;
                     \<gamma> = current_\<gamma> state
- in  (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f +  t\<^sub>B\<^sub>F, state \<lparr> return:=success\<rparr>))"
+ in  (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f +  t\<^sub>S\<^sub>F, state \<lparr> return:=success\<rparr>))"
 
 lemma send_flow_time_succ_upd_changes: 
 "\<FF> (prod.snd (send_flow_time_succ_upd state)) = \<FF> state"
@@ -112,9 +112,9 @@ definition "send_flow_time_call1_upd state =
      (t, P ) = the (get_source_target_path_a state s);
      f' = augment_edges_impl f \<gamma> P;
      b' = move b \<gamma> s t 
- in  (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f , state \<lparr> current_flow := f', balance := b'\<rparr>))"
+ in  (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f , state \<lparr> current_flow := f', balance := b'\<rparr>))"
 
-value "t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f +  t\<^sub>B\<^sub>F"
+value "t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f +  t\<^sub>S\<^sub>F"
 
 lemma send_flow_call1_upd_changes: 
 "\<FF> (send_flow_call1_upd state) = \<FF> state"
@@ -125,7 +125,7 @@ lemma send_flow_call1_upd_changes:
 "\<F> (send_flow_call1_upd state) = \<F> state"
   by (auto simp add: send_flow_call1_upd_def Let_def \<F>_def split: prod.split)
 
-definition "send_flow_time_fail_upd state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f +  t\<^sub>B\<^sub>F, state \<lparr> return :=infeasible \<rparr>)"
+definition "send_flow_time_fail_upd state = (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f +  t\<^sub>S\<^sub>F, state \<lparr> return :=infeasible \<rparr>)"
 
 lemma send_flow_time_fail_upd_changes: 
 "\<FF> (prod.snd (send_flow_time_fail_upd state)) = \<FF> state"
@@ -144,7 +144,7 @@ definition "send_flow_time_call2_upd state= (let
                     (s, P) =  the (get_source_target_path_b state t);
                     f' = augment_edges_impl f \<gamma> P;
                     b' = move b \<gamma> s t 
-in (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f, state \<lparr> current_flow := f', balance := b'\<rparr>))"
+in (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f, state \<lparr> current_flow := f', balance := b'\<rparr>))"
 
 lemma send_flow_time_call2_upd_changes: 
 "\<FF> (prod.snd (send_flow_time_call2_upd state)) = \<FF> state"
@@ -155,7 +155,7 @@ lemma send_flow_time_call2_upd_changes:
 "\<F> (prod.snd (send_flow_time_call2_upd state)) = \<F> state"
   by (auto simp add: send_flow_time_call2_upd_def Let_def \<F>_def split: prod.splits)
 
-definition "send_flow_time_cont_upd state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f +  t\<^sub>B\<^sub>F, state \<lparr> return := notyetterm\<rparr>)"
+definition "send_flow_time_cont_upd state = (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f +  t\<^sub>S\<^sub>F, state \<lparr> return := notyetterm\<rparr>)"
 
 lemma send_flow_time_cont_upd_changes: 
 "\<FF> (prod.snd (send_flow_time_cont_upd state)) = \<FF> state"
@@ -172,8 +172,8 @@ lemma send_flow_time_simps:
           "send_flow_cont_cond state \<Longrightarrow> send_flow_time state = (send_flow_time_cont_upd state)"
           "send_flow_fail1_cond state \<Longrightarrow> send_flow_time state = (send_flow_time_fail_upd state)"
           "send_flow_fail2_cond state \<Longrightarrow> send_flow_time state = (send_flow_time_fail_upd state)"
-          "send_flow_call1_cond state \<Longrightarrow> send_flow_time state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call1_upd state)"
-          "send_flow_call2_cond state \<Longrightarrow> send_flow_time state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call2_upd state)"
+          "send_flow_call1_cond state \<Longrightarrow> send_flow_time state = (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call1_upd state)"
+          "send_flow_call2_cond state \<Longrightarrow> send_flow_time state = (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call2_upd state)"
 proof-
   show "send_flow_succ_cond state \<Longrightarrow> send_flow_time state = send_flow_time_succ_upd state"
     using  send_flow_time.psimps[OF assms]
@@ -191,10 +191,10 @@ proof-
     apply(subst send_flow_time.psimps, simp add: assms)
     apply(rule send_flow_fail2_condE, simp)
     unfolding send_flow_time_fail_upd_def  Let_def add_fst_def by auto
-  show " send_flow_call1_cond state \<Longrightarrow> send_flow_time state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call1_upd state)"
+  show " send_flow_call1_cond state \<Longrightarrow> send_flow_time state = (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call1_upd state)"
   proof- (*Problem with automation*)
     assume asm:"send_flow_call1_cond state"
-    show "send_flow_time state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call1_upd state)"
+    show "send_flow_time state = (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call1_upd state)"
     proof(rule send_flow_call1_condE[OF asm], goal_cases)
       case (1 f b \<gamma> s t P f' b' state')
       thus ?case  
@@ -203,10 +203,10 @@ proof-
         by auto
      qed
    qed
-   show " send_flow_call2_cond state \<Longrightarrow> send_flow_time state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call2_upd state)"
+   show " send_flow_call2_cond state \<Longrightarrow> send_flow_time state = (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call2_upd state)"
    proof- (*Problem with automation*)
     assume asm:"send_flow_call2_cond state"
-    show "send_flow_time state = (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call2_upd state)"
+    show "send_flow_time state = (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +++ send_flow_time (send_flow_call2_upd state)"
     proof(rule send_flow_call2_condE[OF asm], goal_cases)
       case (1 f b \<gamma> s t P f' b' state')
       thus ?case  
@@ -260,7 +260,7 @@ lemma time_boundB:
           "invar_isOptflow state"
           "invar_above_6Ngamma state"
   shows   "prod.fst (send_flow_time state) \<le> 
-             \<phi> * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)"
+             \<phi> * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f)"
   using assms
 proof(induction \<phi> arbitrary: state rule: less_induct)
   case (less \<phi>)
@@ -280,7 +280,7 @@ proof(induction \<phi> arbitrary: state rule: less_induct)
     thus?thesis
       apply(subst send_flow_time_simps(5)[OF send_flow_time_dom], simp)
       unfolding add_fst_def 
-      proof(rule order.trans[of _ "t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f + nat (\<Phi> ( (send_flow_call1_upd state))) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)"],
+      proof(rule order.trans[of _ "t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f + nat (\<Phi> ( (send_flow_call1_upd state))) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f)"],
           goal_cases)
        case 1
        thus ?case       
@@ -294,7 +294,7 @@ proof(induction \<phi> arbitrary: state rule: less_induct)
       case 2
       thus ?case
       apply simp
-      apply(rule order.trans[of _ "t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f + nat (\<Phi> state - 1) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)"])
+      apply(rule order.trans[of _ "t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f + nat (\<Phi> state - 1) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)"])
         using  send_flow_call1_cond_Phi_decr[OF 3 less(2,4,5)
                 invar_above_6Ngamma_pos_flow_F[OF less(2,8)] less(7)] less(2) 
                 send_flow_call1_cond_Phi[OF 3 less(2,5)] 
@@ -305,7 +305,7 @@ next
   thus?thesis
       apply(subst send_flow_time_simps(6)[OF send_flow_time_dom], simp)
       unfolding add_fst_def 
-      proof(rule order.trans[of _ "t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f + nat (\<Phi> ( (send_flow_call2_upd state))) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)"],
+      proof(rule order.trans[of _ "t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f + nat (\<Phi> ( (send_flow_call2_upd state))) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f)"],
           goal_cases)
        case 1
        thus ?case        
@@ -319,7 +319,7 @@ next
       case 2
       thus ?case
       apply simp
-      apply(rule order.trans[of _ "t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f + nat (\<Phi> state - 1) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)"])
+      apply(rule order.trans[of _ "t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f + nat (\<Phi> state - 1) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)"])
         using  send_flow_call2_cond_Phi_decr[OF 2 less(2,4,5)
                 invar_above_6Ngamma_pos_flow_F[OF less(2,8)] less(7)] less(2) 
                 send_flow_call2_cond_Phi[OF 2 less(2,5)] 

@@ -6,7 +6,7 @@ begin
 
 locale maintain_forest_time =
 maintain_forest where fst = fst for fst::"'edge_type \<Rightarrow> 'a"+ 
-fixes t\<^sub>A\<^sub>C::nat and t\<^sub>A\<^sub>B::nat and t\<^sub>A\<^sub>u\<^sub>f::nat 
+fixes t\<^sub>F\<^sub>C::nat and t\<^sub>F\<^sub>B::nat and t\<^sub>F\<^sub>u\<^sub>f::nat 
 begin
 function (domintros) maintain_forest_time::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state 
              \<Rightarrow> nat \<times> ('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_state " where
@@ -18,7 +18,7 @@ function (domintros) maintain_forest_time::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_sta
                     to_rdg = conv_to_rdg state;
                     \<gamma> = current_\<gamma> state
                 in 
-     (t\<^sub>A\<^sub>u\<^sub>f +++ 
+     (t\<^sub>F\<^sub>u\<^sub>f +++ 
         (case get_from_set  (\<lambda> e. abstract_flow_map f e > 8 * real N *\<gamma>) E'  of (Some e) \<Rightarrow>
                             ( let x = fst e; y = snd e;
                              to_rdg' = add_direction to_rdg x y e;
@@ -52,8 +52,8 @@ function (domintros) maintain_forest_time::"('e, 'f, 'c,'h, 'd, 'g, 'i) Algo_sta
                                     actives := E'', conv_to_rdg := to_rdg',
                                     rep_comp_card:= r_card',
                                     not_blocked := nb'\<rparr>
-                            in  ((t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B) +++ (maintain_forest_time state')))
-                    | None \<Rightarrow> ( t\<^sub>A\<^sub>C, state))))"
+                            in  ((t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B) +++ (maintain_forest_time state')))
+                    | None \<Rightarrow> ( t\<^sub>F\<^sub>C, state))))"
   by auto
 
 lemma terminationA_iff:
@@ -111,8 +111,8 @@ qed
 
 lemma maintain_forest_time_simps:
   assumes "maintain_forest_time_dom state" 
-  shows"maintain_forest_call_cond state \<Longrightarrow> maintain_forest_time state = (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B) +++ maintain_forest_time (maintain_forest_upd state)"
-       "maintain_forest_ret_cond state \<Longrightarrow> maintain_forest_time state =  (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C, state)"
+  shows"maintain_forest_call_cond state \<Longrightarrow> maintain_forest_time state = (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B) +++ maintain_forest_time (maintain_forest_upd state)"
+       "maintain_forest_ret_cond state \<Longrightarrow> maintain_forest_time state =  (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C, state)"
   subgoal  
     apply(subst maintain_forest_time.psimps[OF assms])
     unfolding maintain_forest_upd_def Let_def add_fst_def
@@ -127,7 +127,7 @@ lemma time_boundA:
   shows "prod.fst (maintain_forest_time state) = 
      (card (comps \<V> (to_graph (\<FF> state))) 
    -  card (comps \<V> (to_graph (\<FF> (prod.snd (maintain_forest_time state))))))*
-                                  (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B) + (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C)"
+                                  (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B) + (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C)"
   using assms(2-)
 proof(induction rule: maintain_forest_induct[OF assms(1)[simplified sym[OF terminationA_iff]]])
   case (1 state)
@@ -151,8 +151,8 @@ proof(induction rule: maintain_forest_induct[OF assms(1)[simplified sym[OF termi
       apply(simp, subst IH(2)[OF _ auxii auxiii], simp)
       apply(rule trans[of _ "((card (comps \<V> (to_graph (\<FF> (maintain_forest_upd state)))) 
                                      - card (comps \<V> (to_graph (\<FF> (prod.snd (maintain_forest_time (maintain_forest_upd state))))))) *
-                                 (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B) + ( t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B)) "], simp)
-      apply(subst semiring_normalization_rules(2), rule arg_cong[of _ _ "\<lambda> x. (*) x (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B)"])
+                                 (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B) + ( t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B)) "], simp)
+      apply(subst semiring_normalization_rules(2), rule arg_cong[of _ _ "\<lambda> x. (*) x (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B)"])
       using  mono_one_step(3)[of state, OF _ axi]
              card_decrease[OF upd_dom auxii auxiii] equal_results_A[OF upd_dom] 
              invar_aux_pres_one_step[OF auxii] IH(4) 

@@ -1207,6 +1207,18 @@ theorem flow_saturates_ares_cut:
   shows   " - sum b (ARescut f v)= ACap (ARescut f v)"
   using assms arescut_all_edges_sat arescut_ingoing_cap by auto
 
+(*cumulative lemmas, used for presentation in lmcs paper only*)
+corollary flow_less_cut_capacities: 
+  assumes "f is b flow" and "X \<subseteq> \<V>"   
+  shows "sum b X \<le> Cap X" and "sum b X \<ge> - ACap X"
+  using flow_less_cut flow_less_acut assms by auto
+
+theorem rescut_ingoing_zero_ingoing_saturated:
+ assumes "f is b flow" and "(Rescut f v) \<subseteq> \<V>"
+ shows   "sum f (\<Delta>\<^sup>+ (Rescut f v)) = Cap (Rescut f v)" 
+   and   "sum f (\<Delta>\<^sup>- (Rescut f v)) = 0"
+  using rescut_outgoing_cap rescut_ingoing_zero assms by auto
+
 end
 
 subsection \<open>Costs\<close>

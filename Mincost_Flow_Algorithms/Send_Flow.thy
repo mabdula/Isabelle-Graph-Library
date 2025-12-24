@@ -2564,7 +2564,7 @@ proof-
     by auto
 qed
 
-theorem send_flow_flow_Phi[send_flow_results]:
+theorem send_flow_Phi[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2576,7 +2576,7 @@ theorem send_flow_flow_Phi[send_flow_results]:
     send_flow_termination
   by auto
 
-lemma send_flow_flow_Phi_final[send_flow_results]:
+lemma send_flow_Phi_final[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
           "implementation_invar state"
           "invar_integral state"
@@ -2584,9 +2584,9 @@ lemma send_flow_flow_Phi_final[send_flow_results]:
           "invar_above_6Ngamma state"
           "state' = send_flow state"
   shows   "a_current_flow  state' e \<ge> a_current_flow state e - \<Phi> state*current_\<gamma> state'"
-  using send_flow_flow_Phi[of state state' e] Phi_nonneg[of state] assms
+  using send_flow_Phi[of state state' e] Phi_nonneg[of state] assms
     invar_gammaE send_flow_invar_gamma_pres Phi_nonneg  
-    send_flow_flow_Phi[of state state' e] 
+    send_flow_Phi[of state state' e] 
     send_flow_termination
   by(smt mult_less_cancel_right_disj of_int_le_iff)
 

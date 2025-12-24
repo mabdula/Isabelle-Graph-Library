@@ -539,10 +539,10 @@ lemma invars_pres_orlins_one_step:
           "send_flow_entryF (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"      (is ?ths4)
           "invar_integral  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"       (is ?ths5)
           "invar_isOptflow  (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"      (is ?ths6)
-          "invarA_2 (8 * real N * new_\<gamma> state) (2 * new_\<gamma> state)
+          "invar_F2 (8 * real N * new_\<gamma> state) (2 * new_\<gamma> state)
                (local.maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"             (is ?ths7)
           "invar_above_6Ngamma (maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"   (is ?ths8)
-          "invarA_1 (2 * new_\<gamma> state) (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"              (is ?ths9)
+          "invar_F1 (2 * new_\<gamma> state) (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"              (is ?ths9)
           "(maintain_forest_dom (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"                   (is ?ths10)
           "send_flow_dom (local.maintain_forest (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>))"   (is ?ths11)
 proof-
@@ -567,8 +567,8 @@ proof-
    and  component_card_geq_0: "v \<in> \<V> \<Longrightarrow> (card (connected_component (to_graph (\<FF> state)) v)) \<ge> 1"for v
     using finite_subset[OF _ \<V>_finite] from_underlying_invars'(10)[OF assms(1)]
     by(auto simp add: card_gt_0_iff connected_component_non_empt leI)
-  show invar_A1: "invarA_1 (2 * new_\<gamma> state) (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-  proof(rule invarA_1I, goal_cases)
+  show invar_F1: "invar_F1 (2 * new_\<gamma> state) (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+  proof(rule invar_F1I, goal_cases)
     case (1 v)
     have "\<bar>a_balance state v\<bar> \<le> 2 * new_\<gamma> state"
       using new_gamma_is(5)[OF assms(3,1)]  orlins_entryD[OF assms(5) 1] new_gamma_is(6)[OF assms(3,1) 1] new_gamma_0
@@ -578,9 +578,9 @@ proof-
       by auto
     finally show ?case  by auto
   qed
-  have invarA_2: "invarA_2 (8 * real N * new_\<gamma> state) 
+  have invar_F2: "invar_F2 (8 * real N * new_\<gamma> state) 
                (2 * new_\<gamma> state) (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
-  proof(rule invarA_2I, goal_cases)
+  proof(rule invar_F2I, goal_cases)
     case (1 e)
     hence fst_in_V:"fst e \<in> \<V>"
       using underlying_invars_gamma_upd from_underlying_invars'(3) fst_E_V by blast
@@ -602,8 +602,8 @@ proof-
     by (simp add: assms(8) invar_isOpt_gamma_change)
   show invars_after_maintain_forest: ?ths1 ?ths2 ?ths3 ?ths4 ?ths5 ?ths6 ?ths7 
     using new_gamma_0
-    by(auto intro!: maintain_forest_flow_optimatlity_pres[OF _ _  invar_A1 _ _ refl]
-                    maintain_forest_results invar_A1 invarA_2
+    by(auto intro!: maintain_forest_flow_optimatlity_pres[OF _ _  invar_F1 _ _ refl]
+                    maintain_forest_results invar_F1 invar_F2
           simp add: maintain_forest_results 
                     underlying_invars_gamma_upd implementation_invar_gamma_upd 
                     invar_gamma_gamma_upd maintain_forest_entry invar_integral_upd

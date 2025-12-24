@@ -370,7 +370,7 @@ lemma costs_last: "weight  (xs @ [u]) +
     by(cases xs)  (auto simp add: add.commute add.left_commute)
   done
 (*Adapted from Lammich and Wimmer*)
-lemma Bellman_Ford_Equation:
+lemma Bellman_Equation:
   assumes "s \<in> set vs"
   shows "OPT  (Suc l) s v = min (OPT  l s v) (Min {OPT  l s u + edge_costs u v | u. u \<in> set vs})"
 proof-
@@ -544,7 +544,7 @@ qed
     using finite_new_best_ways outside_es_inf 
     by auto
   ultimately show ?thesis
-    using Bellman_Ford_Equation[OF assms(3)] by simp
+    using Bellman_Equation[OF assms(3)] by simp
 qed
 
 lemma bellman_ford_step_connection_invar:
@@ -1973,7 +1973,7 @@ proof(induction i arbitrary: s connections v)
     by (auto intro: search_rev_path.domintros Suc(1))
 qed (auto intro: search_rev_path.domintros) 
 
-lemma term_s_compow_reachble:
+lemma term_s_compow_reachable:
   assumes"search_rev_path_dom (s, connections,v)"
   shows "\<exists> i. ((\<lambda>w. the (fst (the (connection_lookup connections w)))) ^^ i) v = s"
 proof(induction rule: search_rev_path.pinduct[OF assms])
@@ -2081,7 +2081,7 @@ proof(rule, goal_cases)
     using edge_costs_outside_es by force
 qed
 
-lemma s_reachbale_bellman_ford:
+lemma s_reachable_in_some_steps:
   assumes "v \<in> set vs" 
           "fst (the (connection_lookup (local.bellman_ford l (bellman_ford_init s)) v)) \<noteq> None"
      shows" \<exists> i. compow i (\<lambda> w. the (fst (the (connection_lookup (bellman_ford l (bellman_ford_init s)) w)))) v = s"
@@ -2094,7 +2094,7 @@ theorem search_rev_path_dom_bellman_ford:
   assumes "v \<in> set vs" 
           "fst (the (connection_lookup (local.bellman_ford l (bellman_ford_init s)) v)) \<noteq> None"
     shows "search_rev_path_dom (s, (bellman_ford l (bellman_ford_init s)), v)"
-  using assms(1) assms(2) s_compow_reachble_term s_reachbale_bellman_ford by blast
+  using assms(1) assms(2) s_compow_reachble_term s_reachable_in_some_steps by blast
 
 lemma search_rev_path_is_pred_graph:
   assumes "connections = bellman_ford (length vs - 1) (bellman_ford_init s)"
@@ -2375,5 +2375,7 @@ proof(induction l arbitrary: s t xs rule: less_induct)
   qed
 qed
 lemmas code_lemmas[code] = search_rev_path_exec.simps
+
+find_theorems compow connection_lookup
 end
 end

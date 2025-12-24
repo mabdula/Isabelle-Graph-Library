@@ -1190,51 +1190,51 @@ and  orlins_entryD:
   "\<lbrakk>orlins_entry state; v \<in> \<V>\<rbrakk> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> (1 - \<epsilon>) * current_\<gamma> state"
   by(auto simp add: orlins_entry_def)
 
-definition "invarA_1 (thr::real) (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
+definition "invar_F1 (thr::real) (state::('f_impl, 'b_impl, 'd, 'conv_impl, 'e, 'r_comp_impl, 'not_blocked_impl) Algo_state) =
              (\<forall> v \<in> \<V>. \<bar> a_balance state v \<bar> \<le> 
                                   thr * card (connected_component (to_graph (\<FF> state)) v))"
 
-lemma invarA_1E:
-  "\<lbrakk>invarA_1 (thr::real) state;
+lemma invar_F1E:
+  "\<lbrakk>invar_F1 (thr::real) state;
    ((\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> 
                      thr * card (connected_component (to_graph (\<FF> state)) v)) \<Longrightarrow> P)\<rbrakk>
   \<Longrightarrow> P"
-  by(auto simp add: invarA_1_def)
+  by(auto simp add: invar_F1_def)
 
-lemma invarA_1I:
+lemma invar_F1I:
   "(\<And> v. v \<in> \<V> \<Longrightarrow> \<bar> a_balance state v \<bar> \<le> 
      (thr::real) * card (connected_component (to_graph (\<FF> state)) v)) \<Longrightarrow>
-  invarA_1 thr state"
-  by(auto simp add: invarA_1_def)
+  invar_F1 thr state"
+  by(auto simp add: invar_F1_def)
 
-lemma invarA_1D:
-  "\<lbrakk>invarA_1 (thr::real) state; v \<in> \<V>\<rbrakk>
+lemma invar_F1D:
+  "\<lbrakk>invar_F1 (thr::real) state; v \<in> \<V>\<rbrakk>
    \<Longrightarrow> \<bar>a_balance state v\<bar> \<le> thr * card (connected_component (to_graph (\<FF> state)) v)"
-  by(auto simp add: invarA_1_def)
+  by(auto simp add: invar_F1_def)
 
-definition "invarA_2 (thr1::real) (thr2::real) state = 
+definition "invar_F2 (thr1::real) (thr2::real) state = 
                    (\<forall> e \<in> \<F> state.
                                (a_current_flow state) e > thr1 - thr2 * 
                                 card (connected_component (to_graph (\<FF> state)) (fst e)))"
 
-lemma invarA_2E: 
-  "\<lbrakk>invarA_2 (thr1::real) (thr2::real) state;
+lemma invar_F2E: 
+  "\<lbrakk>invar_F2 (thr1::real) (thr2::real) state;
    ((\<And> e.  e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > thr1 - thr2 * 
              card (connected_component (to_graph (\<FF> state)) (fst e))) \<Longrightarrow> P)\<rbrakk>
    \<Longrightarrow> P"
-  by(auto simp add: invarA_2_def)
+  by(auto simp add: invar_F2_def)
 
-lemma invarA_2I: 
+lemma invar_F2I: 
   "(\<And> e. e \<in> \<F> state \<Longrightarrow> (a_current_flow state) e > (thr1::real) - (thr2::real) * 
              card (connected_component (to_graph (\<FF> state)) (fst e)))
-  \<Longrightarrow> invarA_2 (thr1::real) (thr2::real) state"
-  by(auto simp add: invarA_2_def) 
+  \<Longrightarrow> invar_F2 (thr1::real) (thr2::real) state"
+  by(auto simp add: invar_F2_def) 
 
-lemma invarA_2D: 
-  "\<lbrakk>invarA_2 (thr1::real) (thr2::real) state; e \<in> \<F> state\<rbrakk> 
+lemma invar_F2D: 
+  "\<lbrakk>invar_F2 (thr1::real) (thr2::real) state; e \<in> \<F> state\<rbrakk> 
      \<Longrightarrow> (a_current_flow state) e > thr1 - thr2 * 
              card (connected_component (to_graph (\<FF> state)) (fst e))"
-  by(auto simp add: invarA_2_def)
+  by(auto simp add: invar_F2_def)
 
 lemma invar_isOpt_gamma_change:
 "invar_isOptflow state \<Longrightarrow> invar_isOptflow (state \<lparr>current_\<gamma> :=gamma \<rparr>)"

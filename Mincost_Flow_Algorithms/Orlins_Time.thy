@@ -540,11 +540,11 @@ theorem running_time_sum_general:
           "invar_isOptflow state"
     shows "prod.fst final \<le> (card (comps \<V> (to_graph (\<FF> state))) 
                                     - card (comps \<V> (to_graph (\<FF> (prod.snd final)))))
-                                   * (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) 
-                   +  i * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B ) +
+                                   * (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) 
+                   +  i * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B ) +
                      (\<Sum> j \<in> {1..i}. (let state' = ((orlins_one_step_check ^^ (j - 1)) state) in 
                                                      card { v. important state' v} )) 
-                           *(t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)"
+                           *(t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)"
   using assms
 proof(induction i arbitrary: final state)
   case 0
@@ -569,10 +569,10 @@ next
   have orlins_one_step_time_unfolded:"orlins_one_step_time already_done = (t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B + prod.fst state'time + prod.fst state''time, prod.snd state''time)"
     by(simp add: orlins_one_step_time_def state''time_def state'time_def \<gamma>'_def E'_def \<gamma>_def b_def f_def Let_def)
   define bigsum where "bigsum = (card (comps \<V> (to_graph (\<FF> state))) - card (comps \<V> (to_graph (\<FF> already_done)))) *
-         (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + i * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
+         (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + i * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
          (\<Sum>j = 1..i.
             let state' = (orlins_one_step_check ^^ (j - 1)) state
-            in card {a. important state' a}) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)" 
+            in card {a. important state' a}) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)" 
   have bigsum_bound:"prod.fst ((orlins_one_step_time_check ^^ i) (0, state))
        \<le> bigsum"
     using Suc(1)[OF refl i_notyetterm Suc(4-11)] already_done_def  Suc.prems(5) Suc.prems(6) 
@@ -583,8 +583,8 @@ next
   define timeA where "timeA = (card (comps \<V> (to_graph (\<FF> already_done))) - 
       card (comps \<V> (to_graph (\<FF> (prod.snd (maintain_forest_time 
                        (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))))))) *
-  (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B) +
-  (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C)"
+  (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B) +
+  (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C)"
   have return_already_done: "return already_done = notyetterm" 
     using already_done_def i_notyetterm by blast
   have invars_already_done:  "underlying_invars already_done"
@@ -629,7 +629,7 @@ next
     using invar_and_other_properties_after_forest other_invars_after_gamma(2) 
     by(auto simp add: state'time_is \<gamma>'_def)
   have send_flow_time_phi:"prod.fst (send_flow_time (prod.snd state'time))
-       \<le> nat (\<Phi> (prod.snd state'time)) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)"
+       \<le> nat (\<Phi> (prod.snd state'time)) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f)"
     using  time_boundB[OF invar_gamma_state'time refl]  underlying_invars_state'time
            others_in_state'(1,2,3,4) by fastforce
   have Phi_mod_A:"\<Phi>  (prod.snd state'time)
@@ -675,36 +675,36 @@ next
    have "prod.fst (orlins_one_step_time already_done)
          = prod.fst state'time + prod.fst state''time + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
      by(simp add: orlins_one_step_time_def state'time_def state''time_def \<gamma>'_def \<gamma>_def E'_def f_def b_def Let_def)
-   also have "... \<le> timeA + nat (\<Phi> (prod.snd state'time)) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f) +
+   also have "... \<le> timeA + nat (\<Phi> (prod.snd state'time)) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f) +
                       t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
      using timeA send_flow_time_phi unfolding state''time_def by simp
    also have "... \<le> timeA + ( nat(\<Phi> (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)) +
                                     (card (comps \<V> (to_graph (\<FF> already_done)))) -
                                card (comps \<V> (to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)))))) * 
-                            (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f) +
+                            (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f) +
                       t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
      using Phi_mod_A card_maintain_forest_reduce by auto
    also have "... \<le> (card (comps \<V> (to_graph (\<FF> already_done))) 
                              - card (comps \<V> (to_graph (\<FF> (maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)))))) *
-       (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       (nat (\<Phi> (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C) + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
+       (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       (nat (\<Phi> (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C) + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
      using state'time_is[simplified state'time_def]  add_mult_distrib2 less_or_eq_imp_le 
      by(auto simp add: add_mult_distrib diff_add_assoc[OF card_maintain_forest_reduce]  timeA_def)
    also have "... \<le> (card (comps \<V> (to_graph (\<FF> already_done))) 
                            - card (comps \<V> (to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)))))) *
-       (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       card {v . important already_done v } * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B)"
+       (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       card {v . important already_done v } * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B)"
      using Phi_number_important[OF refl, simplified sym[OF already_done_def]]   
            same_as_without_time2[ simplified sym[OF already_done_def]] 
      by simp
    finally have ineq_for_one_it:"prod.fst (orlins_one_step_time already_done)
      \<le> (card (comps \<V> (to_graph (\<FF> already_done))) 
                - card (comps \<V> (to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)))))) *
-        (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       card {v. important already_done v} * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-        (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) " by simp
+        (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       card {v. important already_done v} * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+        (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) " by simp
    have forest_final:"to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))) 
                          = to_graph (\<FF> (prod.snd final))" 
      unfolding Suc(2)
@@ -766,12 +766,12 @@ theorem running_time_sum:
           "invar_isOptflow state"
     shows "prod.fst final \<le> (card (comps \<V> (to_graph (\<FF> state))) 
                                   - card (comps \<V> (to_graph (\<FF> (prod.snd final)))))
-                                  * (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) 
-                   +  i * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B ) +
+                                  * (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) 
+                   +  i * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B ) +
                      (\<Sum> j \<in> {1.. Suc i}. (let state' = ((orlins_one_step_check ^^ (j - 1)) state) in 
                                                      card { v. important state' v} )) 
-                           *(t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)+
-                       (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B)"
+                           *(t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)+
+                       (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B)"
 proof-
   note Suc = assms
   have i_notyetterm:"return (prod.snd ((orlins_one_step_time_check ^^ i) (0, state)))
@@ -798,10 +798,10 @@ proof-
     by(simp add: orlins_one_step_time_def state''time_def state'time_def \<gamma>'_def E'_def \<gamma>_def b_def f_def Let_def)
   define bigsum where "bigsum = (card (comps \<V> (to_graph (\<FF> state))) -
                                  card (comps \<V> (to_graph (\<FF> already_done)))) *
-         (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + i * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
+         (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + i * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
          (\<Sum>j = 1..i.
             let state' = (orlins_one_step_check ^^ (j - 1)) state
-            in card {a. important state' a}) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)" 
+            in card {a. important state' a}) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)" 
   have bigsum_bound:"prod.fst ((orlins_one_step_time_check ^^ i) (0, state))
        \<le> bigsum"
     unfolding bigsum_def already_done_def
@@ -849,8 +849,8 @@ proof-
     by(auto simp add: state'time_is \<gamma>'_def)
   define timeA where "timeA = (card (comps \<V> (to_graph (\<FF> already_done)))
                    - card (comps \<V> (to_graph (\<FF> (prod.snd (maintain_forest_time (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))))))) *
-  (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B) +
-  (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C)"
+  (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B) +
+  (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C)"
  have timeA:"prod.fst state'time  = timeA"
     by(auto intro!: time_boundA[of "already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>", simplified]
                         maintain_forest_dom_underlying_invars underlying_invars_after_gamma
@@ -864,7 +864,7 @@ proof-
     using invar_and_other_properties_after_forest other_invars_after_gamma(2) 
     by(auto simp add: state'time_is \<gamma>'_def) 
   have send_flow_time_phi:"prod.fst (send_flow_time (prod.snd state'time))
-       \<le> nat (\<Phi> (prod.snd state'time)) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)"
+       \<le> nat (\<Phi> (prod.snd state'time)) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f)"
     using  time_boundB[OF invar_gamma_state'time refl]  underlying_invars_state'time
            others_in_state'(1,2,3,4) by fastforce
   have Phi_mod_A:"\<Phi>  (prod.snd state'time)
@@ -912,36 +912,36 @@ proof-
          = prod.fst state'time + prod.fst state''time + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
      by(simp add: orlins_one_step_time_def state'time_def state''time_def
                \<gamma>'_def \<gamma>_def E'_def f_def b_def Let_def)
-   also have "... \<le> timeA + nat (\<Phi> (prod.snd state'time)) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)
-                     + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f) +  t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
+   also have "... \<le> timeA + nat (\<Phi> (prod.snd state'time)) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)
+                     + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f) +  t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
      using timeA send_flow_time_phi by(simp add: state''time_def)
    also have "... \<le> timeA + ( nat(\<Phi> (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)) + 
                              (card (comps \<V> (to_graph (\<FF> already_done)))) -
                                card (comps \<V> (to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)))))) * 
-                            (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f) +
+                            (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f) +
                       t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
      using Phi_mod_A card_maintain_forest_reduce by auto
    also have "... \<le> (card (comps \<V> (to_graph (\<FF> already_done))) 
                               - card (comps \<V> (to_graph (\<FF> (maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)))))) *
-       (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       (nat (\<Phi> (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C) + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
+       (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       (nat (\<Phi> (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C) + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B"
     using state'time_is[simplified state'time_def]  add_mult_distrib2 less_or_eq_imp_le 
      by(auto simp add: add_mult_distrib diff_add_assoc[OF card_maintain_forest_reduce]  timeA_def)
    also have "... \<le> (card (comps \<V> (to_graph (\<FF> already_done))) -
                           card (comps \<V> (to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)))))) *
-       (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       card {v . important already_done v } * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B)"    
+       (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       card {v . important already_done v } * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B)"    
      using Phi_number_important[OF refl, simplified sym[OF already_done_def]]   
            same_as_without_time2[simplified sym[OF already_done_def]] 
      by simp
    finally have ineq_for_one_it:"prod.fst (orlins_one_step_time already_done)
      \<le> (card (comps \<V> (to_graph (\<FF> already_done))) 
                - card (comps \<V> (to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>)))))) *
-        (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-       card {v. important already_done v} * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-        (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) " by simp
+        (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+       card {v. important already_done v} * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+        (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) " by simp
    have forest_final:"to_graph (\<FF> (local.maintain_forest (already_done\<lparr>current_\<gamma> := \<gamma>'\<rparr>))) 
                             = to_graph (\<FF> (prod.snd final))" 
      unfolding assms(1)
@@ -999,16 +999,16 @@ theorem running_time_sum_from_init:
           "\<not> (\<forall> v \<in> \<V>. \<b> v = 0)"
     shows "prod.fst final \<le> (card (comps \<V> (to_graph (\<FF> initial))) 
                              - card (comps \<V> (to_graph (\<FF> (prod.snd final))))) * 
-                            (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)
-                   +  i * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B ) +
+                            (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)
+                   +  i * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B ) +
                      ((\<Sum> j \<in> {1..i}. (let state' = ((orlins_one_step_check ^^ (j - 1))  (send_flow initial)) in 
                                                      card { v. important state' v} )) +
                                                      card { v. important_initial initial v})
-                           *(t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)+
-                       (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f )"
+                           *(t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)+
+                       (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f )"
 proof-
   have "prod.fst (send_flow_time initial) \<le>
-       nat (\<Phi> initial) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)"
+       nat (\<Phi> initial) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f)"
     and  invar_non_zero_b_initial: " invar_non_zero_b initial"
     by(auto intro!:  time_boundB simp add:  assms(4) invars_initial)
   have Max_gtr_0:"Max {\<bar>\<b> v\<bar> |v. v \<in> \<V>} > 0"
@@ -1081,7 +1081,7 @@ proof-
     using runtime_add_constant[of i "prod.fst (send_flow_time initial)" 0 "send_flow initial"] 
     by(auto simp add: add_fst_def same_state_after_init_send_flow[symmetric] )
   have send_flow_time_bound:"prod.fst (send_flow_time initial) \<le>
-                 nat (\<Phi> initial) * (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) + (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)"
+                 nat (\<Phi> initial) * (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) + (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f)"
     using  time_boundB[OF invars_initial(1) refl invars_initial(7,2,3,4,5)] assms(4) by simp
   show ?thesis
   proof(cases i)
@@ -1111,12 +1111,12 @@ proof-
     have sum_bound:"prod.fst ((orlins_one_step_time_check ^^ Suc nat) (0, local.send_flow initial))
   \<le> (card (comps \<V> (to_graph (\<FF> (local.send_flow initial)))) -
       card (comps \<V> (to_graph (\<FF> (prod.snd ((orlins_one_step_time_check ^^ Suc nat) (0, local.send_flow initial))))))) *
-     (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-     nat * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
+     (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+     nat * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
      (\<Sum>j = 1..Suc nat.
          let state' = (orlins_one_step_check ^^ (j - 1)) (local.send_flow initial) in card {v. important state' v}) *
-     (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-     (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B)"
+     (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+     (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B)"
       using  arg_cong[OF take_first_time_out[of "Suc nat", simplified add_fst_def], of prod.snd]
         assms(2)[simplified assms(1) Suc]  arg_cong[OF take_first_time_out[ simplified add_fst_def],
           of prod.snd] Suc assms(3)  
@@ -1725,11 +1725,11 @@ definition "\<k> =  nat (\<lceil>log 2 N \<rceil> + 3)"
 theorem running_time_initial:
   assumes "final = orlins_time t\<^sub>O\<^sub>C (send_flow initial)"
   shows "prod.fst final + prod.fst (send_flow_time initial) \<le> 
-              (N - 1) * (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) 
-          +   (N * (\<l> + \<k> + 2) - 1)* (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f +
-                                    t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B )
-          +   ((\<l> + 1) * (2 * N - 1)) *(t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f)
-          +   (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f ) + t\<^sub>O\<^sub>C 
+              (N - 1) * (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) 
+          +   (N * (\<l> + \<k> + 2) - 1)* (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f +
+                                    t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B )
+          +   ((\<l> + 1) * (2 * N - 1)) *(t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f)
+          +   (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f ) + t\<^sub>O\<^sub>C 
 
                          \<and> prod.snd final = orlins (send_flow initial)"
 proof(cases "\<forall> v \<in> \<V>. \<b> v = 0")
@@ -1737,7 +1737,7 @@ proof(cases "\<forall> v \<in> \<V>. \<b> v = 0")
   hence send_flow_succ_cond:"send_flow_succ_cond initial" 
     by(auto intro!: all_bal_zero_send_flow_dom(2)
              simp add: implementation_invar_initial balance_initial)
-  have a:"prod.fst (send_flow_time initial) = (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f )"
+  have a:"prod.fst (send_flow_time initial) = (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f )"
       and bb:"return (send_flow initial) = success"
     using  initial_send_flow(2) 
     by(all \<open>subst send_flow_time_simps(1)[OF _ send_flow_succ_cond] |
@@ -1898,36 +1898,36 @@ have underlying_invars_pseudo_initial: "underlying_invars pseudo_initial"
       by (simp add:  add_fst_def assms sym[OF to_time])
     also have "... \<le>  t\<^sub>O\<^sub>C + ((card (comps \<V> (to_graph (\<FF> initial))) -
     card (comps \<V> (to_graph (\<FF> (prod.snd ((orlins_one_step_time_check ^^ I) (send_flow_time initial))))))) *
-   (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-   I * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
+   (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+   I * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
    ((\<Sum>j = 1..I.
         let state' = (orlins_one_step_check ^^ (j - 1)) (local.send_flow initial) in card {v. important state' v}) +
     card {v. important_initial initial v}) *
-   (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-   (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f))"
+   (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+   (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f))"
       using I_prop'' False 
       by (fastforce intro!: add_mono running_time_sum_from_init[OF refl, of I])
     also have "... \<le> t\<^sub>O\<^sub>C + ((card (comps \<V> (to_graph (\<FF> initial))) -
     card (comps \<V> (to_graph (\<FF> (prod.snd ((orlins_one_step_time_check ^^ I) (send_flow_time initial))))))) *
-   (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-   I * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
+   (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+   I * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
    ((\<l> + 1) * (2 * N - 1) *
-   (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-   (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)))"
+   (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+   (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f)))"
       using  number_of_important[OF refl] I_prop False by simp
     also have "... \<le> t\<^sub>O\<^sub>C + ((N - 1) *
-   (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-   I * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
+   (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+   I * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
    ((\<l> + 1) * (2 * N - 1) *
-   (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-   (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f)))"
+   (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+   (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f)))"
       using number_of_comps_diff by simp
     also have "... \<le> t\<^sub>O\<^sub>C + (N - 1) *
-   (t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>A\<^sub>B + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-   ( N * (\<l> + \<k> + 2) - 1) * (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f + t\<^sub>A\<^sub>u\<^sub>f + t\<^sub>A\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
+   (t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>F\<^sub>B + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+   ( N * (\<l> + \<k> + 2) - 1) * (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f + t\<^sub>F\<^sub>u\<^sub>f + t\<^sub>F\<^sub>C + t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B) +
    ((\<l> + 1) * (2 * N - 1) *
-   (t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>B + t\<^sub>B\<^sub>u\<^sub>f) +
-   (t\<^sub>B\<^sub>F + t\<^sub>B\<^sub>C + t\<^sub>B\<^sub>u\<^sub>f))"
+   (t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>B + t\<^sub>S\<^sub>u\<^sub>f) +
+   (t\<^sub>S\<^sub>F + t\<^sub>S\<^sub>C + t\<^sub>S\<^sub>u\<^sub>f))"
       using I_bound by simp
     finally show ?case by simp
   next

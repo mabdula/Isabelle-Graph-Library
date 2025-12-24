@@ -268,10 +268,11 @@ lemma SSP_induct:
 
 named_theorems invar_holds_intros
 
-lemma invar_1_holds_4[invar_holds_intros]: "\<lbrakk>SSP_call_4_cond state; invar1 state\<rbrakk> 
-            \<Longrightarrow> invar1 (SSP_upd4 state)"
+lemma invar_balance_holds_4[invar_holds_intros]: 
+"\<lbrakk>SSP_call_4_cond state; invar_balance state\<rbrakk> 
+            \<Longrightarrow> invar_balance (SSP_upd4 state)"
   apply(rule SSP_call_4_condE, simp, thin_tac "SSP_call_4_cond state")
-  unfolding invar1_def SSP_upd4_def is_balance_def
+  unfolding invar_balance_def SSP_upd4_def is_balance_def
   subgoal for b f s t
     apply(rule trans[of _ "sum (balance state) \<V>"], subst Groups_Big.comm_monoid_add_class.sum.remove[of _ s])
     using \<V>_finite  get_source_axioms(2)[of "(balance state)" s]
@@ -284,18 +285,18 @@ lemma invar_1_holds_4[invar_holds_intros]: "\<lbrakk>SSP_call_4_cond state; inva
     by(auto simp add: Groups_Big.comm_monoid_add_class.sum.remove)
   done
 
-lemma invar_1_holds_1[invar_holds_intros]: "\<lbrakk>SSP_ret_1_cond state; invar1 state\<rbrakk> \<Longrightarrow> invar1 (SSP_ret1 state)"
-  by (auto simp:SSP_ret1_def intro: invar_1_intro)
+lemma invar_balance_holds_1[invar_holds_intros]: "\<lbrakk>SSP_ret_1_cond state; invar_balance state\<rbrakk> \<Longrightarrow> invar_balance (SSP_ret1 state)"
+  by (auto simp:SSP_ret1_def intro: invar_balance_intro)
 
-lemma invar_1_holds_2[invar_holds_intros]: "\<lbrakk>SSP_ret_2_cond state; invar1 state\<rbrakk> \<Longrightarrow> invar1 (SSP_ret2 state)"
-  by (auto simp:SSP_ret2_def intro: invar_1_intro)
+lemma invar_balance_holds_2[invar_holds_intros]: "\<lbrakk>SSP_ret_2_cond state; invar_balance state\<rbrakk> \<Longrightarrow> invar_balance (SSP_ret2 state)"
+  by (auto simp:SSP_ret2_def intro: invar_balance_intro)
 
-lemma invar_1_holds_3[invar_holds_intros]: "\<lbrakk>SSP_ret_3_cond state; invar1 state\<rbrakk> \<Longrightarrow> invar1 (SSP_ret3 state)"
-  by (auto simp:SSP_ret3_def intro: invar_1_intro)
+lemma invar_balance_holds_3[invar_holds_intros]: "\<lbrakk>SSP_ret_3_cond state; invar_balance state\<rbrakk> \<Longrightarrow> invar_balance (SSP_ret3 state)"
+  by (auto simp:SSP_ret3_def intro: invar_balance_intro)
 
-lemma invar_1_holds: 
-   assumes "SSP_dom state" "invar1 state"
-   shows "invar1 (SSP state)"
+lemma invar_balance_holds: 
+   assumes "SSP_dom state" "invar_balance state"
+   shows "invar_balance (SSP state)"
   using assms(2)
 proof(induction rule: SSP_induct[OF assms(1)])
   case IH: (1 state)
@@ -305,7 +306,7 @@ proof(induction rule: SSP_induct[OF assms(1)])
 qed
 
 lemma failure_SSP_ret3_cond:
-  assumes "SSP_dom state" "invar1 state" "return (SSP state) = failure"
+  assumes "SSP_dom state" "invar_balance state" "return (SSP state) = failure"
   shows "SSP_ret_3_cond (SSP state)" using assms(2-3)
 proof(induction rule: SSP_induct[OF assms(1)])
   case IH: (1 state)
@@ -320,7 +321,7 @@ proof(induction rule: SSP_induct[OF assms(1)])
     then show ?case 
         using IH(3)  get_source_axioms(3)[of _] sum_zero_not_all_zero[of \<V> "balance state", OF \<V>_finite]
         by (fastforce intro: SSP_ret_2_condE 
-                   simp add: zero_balance_def invar1_def is_balance_def)
+                   simp add: zero_balance_def invar_balance_def is_balance_def)
   next
     case 3
     then show ?case
@@ -332,7 +333,7 @@ proof(induction rule: SSP_induct[OF assms(1)])
     then show ?case 
       using IH(4)
       by(auto intro: IH(2) 
-              simp add: invar_1_holds_4  IH(3) IH(1) SSP_simps(1)  IH(4))
+              simp add: invar_balance_holds_4  IH(3) IH(1) SSP_simps(1)  IH(4))
   qed
 qed
 
@@ -350,14 +351,14 @@ lemma is_integral_balanceE: "is_integral_balance b \<Longrightarrow>
                              P"
   unfolding is_integral_balance_def by simp
 
-lemma "invar2 \<lparr>current_flow = (\<lambda> e. 0), balance = \<b>,  return = notyetterm\<rparr>"
-  by(force intro: invar2I is_integral_flowI is_integral_balanceI
+lemma "invar_integral \<lparr>current_flow = (\<lambda> e. 0), balance = \<b>,  return = notyetterm\<rparr>"
+  by(force intro: invar_integralI is_integral_flowI is_integral_balanceI
             simp: integral_b)
 
-lemma invar_2_holds_4[invar_holds_intros]: 
-  assumes "SSP_call_4_cond state"  "invar2 state"
-  shows "invar2 (SSP_upd4 state)"
-proof(rule invar2I)
+lemma invar_integral_holds_4[invar_holds_intros]: 
+  assumes "SSP_call_4_cond state"  "invar_integral state"
+  shows "invar_integral (SSP_upd4 state)"
+proof(rule invar_integralI)
   define b where "b = balance state"
   define f where " f = current_flow state"
   define s where " s = the ( get_source b)"
@@ -383,12 +384,12 @@ proof(rule invar2I)
   have "is_integral (b s)"
       using assms(2)  s_in_V is_integral_neg 
       by (auto intro: is_integral_balanceE[of "balance state"] 
-            simp add:  invar2_def  is_integral_def b_def)
+            simp add:  invar_integral_def  is_integral_def b_def)
 
   moreover have "is_integral (- b t)"
       using assms(2)  t_in_V is_integral_neg  
       by (auto intro: is_integral_balanceE[of "balance state"] 
-            simp add: invar2_def  is_integral_def b_def )
+            simp add: invar_integral_def  is_integral_def b_def )
 
   ultimately have "is_integral (min (b s) (- b t))"
     by(rule integral_min) 
@@ -402,7 +403,7 @@ proof(rule invar2I)
     using get_min_augpath_axioms(2)[OF resreach_f_s_t refl] s_neq_t
     using assms(2)  augpath_cases[of f P] 
     unfolding is_min_path_def is_s_t_path_def  augpath_def prepath_def 
-              invar2_def f_def  P_def 
+              invar_integral_def f_def  P_def 
     by (auto intro: Rcap_integral)
       
   ultimately have integral_gamma: "is_integral \<gamma>"
@@ -413,7 +414,7 @@ proof(rule invar2I)
   proof-
     have f'_integral: "is_integral_flow f'"
       using assms(2) integral_gamma 
-      unfolding invar2_def is_integral_def f_def  f'_def
+      unfolding invar_integral_def is_integral_def f_def  f'_def
       by (auto intro: integral_flow_pres)
     show ?thesis
       using f'_integral
@@ -425,7 +426,7 @@ proof(rule invar2I)
       have b'_integral: "is_integral_balance b'"
         unfolding b'_def
         apply(rule is_integral_balanceI)
-            using  assms(2) b_def integral_gamma invar2_def[of state]
+            using  assms(2) b_def integral_gamma invar_integral_def[of state]
                    is_integral_balanceE[of b] 
              by (metis integral_add is_integral_def is_integral_def of_int_diff)
       show ?thesis 
@@ -435,21 +436,21 @@ proof(rule invar2I)
   qed
 qed
 
-lemma invar_2_holds_1[invar_holds_intros]:
- "\<lbrakk>SSP_ret_1_cond state; invar2 state\<rbrakk> \<Longrightarrow> invar2 (SSP_ret1 state)"
-  by (auto simp:SSP_ret1_def invar2_def intro: invar2I)
+lemma invar_integral_holds_1[invar_holds_intros]:
+ "\<lbrakk>SSP_ret_1_cond state; invar_integral state\<rbrakk> \<Longrightarrow> invar_integral (SSP_ret1 state)"
+  by (auto simp:SSP_ret1_def invar_integral_def intro: invar_integralI)
 
-lemma invar_2_holds_2[invar_holds_intros]: 
-"\<lbrakk>SSP_ret_2_cond state; invar2 state\<rbrakk> \<Longrightarrow> invar2 (SSP_ret2 state)"
-  by (auto simp:SSP_ret2_def invar2_def intro: invar2I)
+lemma invar_integral_holds_2[invar_holds_intros]: 
+"\<lbrakk>SSP_ret_2_cond state; invar_integral state\<rbrakk> \<Longrightarrow> invar_integral (SSP_ret2 state)"
+  by (auto simp:SSP_ret2_def invar_integral_def intro: invar_integralI)
 
-lemma invar_2_holds_3[invar_holds_intros]: 
-"\<lbrakk>SSP_ret_3_cond state; invar2 state\<rbrakk> \<Longrightarrow> invar2 (SSP_ret3 state)"
-  by (auto simp:SSP_ret3_def invar2_def intro: invar2I)
+lemma invar_integral_holds_3[invar_holds_intros]: 
+"\<lbrakk>SSP_ret_3_cond state; invar_integral state\<rbrakk> \<Longrightarrow> invar_integral (SSP_ret3 state)"
+  by (auto simp:SSP_ret3_def invar_integral_def intro: invar_integralI)
 
-lemma invar_2_holds: 
-   assumes "SSP_dom state" "invar2 state"
-   shows "invar2 (SSP state)"
+lemma invar_integral_holds: 
+   assumes "SSP_dom state" "invar_integral state"
+   shows "invar_integral (SSP state)"
   using assms(2)
 proof(induction rule: SSP_induct[OF assms(1)])
   case IH: (1 state)
@@ -484,7 +485,7 @@ lemma SSP_ret_3_cond_SSP_dom:
   by(force intro: SSP.domintros elim: SSP_ret_3_condE)
 
 theorem integral_balance_termination:
-  assumes "invar2 state"
+  assumes "invar_integral state"
   shows "SSP_dom state"
   using assms
 proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
@@ -520,7 +521,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
 
   have int_b_s: "is_integral (b s)"
     apply(rule is_integral_balanceE[of b])
-    using b_def invar2_def less.prems s_in_V 
+    using b_def invar_integral_def less.prems s_in_V 
     by(auto simp add:is_integral_def )
 
   have "abs (b s) \<ge> 1" 
@@ -536,7 +537,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
 
   have int_b_s: "is_integral (b t)"
     apply(rule is_integral_balanceE[of b])
-    using b_def invar2_def less.prems t_in_V
+    using b_def invar_integral_def less.prems t_in_V
     unfolding is_integral_def by auto
 
   have "abs (b t) \<ge> 1" 
@@ -551,12 +552,12 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
   have "is_integral (b s)"
       using less.prems  s_in_V is_integral_neg 
       by (auto intro: is_integral_balanceE[of "balance state"] 
-            simp add:  invar2_def  is_integral_def b_def)
+            simp add:  invar_integral_def  is_integral_def b_def)
 
   moreover have "is_integral (- b t)"
       using less.prems  t_in_V is_integral_neg  
       by (auto intro: is_integral_balanceE[of "balance state"] 
-            simp add: invar2_def  is_integral_def b_def )
+            simp add: invar_integral_def  is_integral_def b_def )
 
   ultimately have "is_integral (min (b s) (- b t))"
     by(rule integral_min) 
@@ -570,7 +571,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
     using get_min_augpath_axioms(2)[OF resreach_f_s_t refl] s_neq_t
     using less.prems augpath_cases[of f P] 
     unfolding is_min_path_def is_s_t_path_def  augpath_def prepath_def 
-              invar2_def f_def  P_def 
+              invar_integral_def f_def  P_def 
     by (auto intro: Rcap_integral)
       
   ultimately have integral_gamma: "is_integral \<gamma>"
@@ -606,18 +607,18 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
     show ?thesis 
     proof(cases rule: SSP_call_4_cond_SSP_dom[OF 4])
       case 1
-      have invar2:"invar2 (SSP_upd4 state)"
-        using less 4 by ( auto intro: invar_2_holds_4)
+      have invar_integral:"invar_integral (SSP_upd4 state)"
+        using less 4 by ( auto intro: invar_integral_holds_4)
       hence int_b: "is_integral_balance (balance (SSP_upd4 state))"
-        unfolding invar2_def by simp
+        unfolding invar_integral_def by simp
         
       have abs_less:"bABSnat (balance (SSP_upd4 state)) < bABSnat (balance state)"
-        apply(rule bABSnat_mono[of _ _ s, OF int_b conjunct2[OF less(2)[simplified invar2_def]]
+        apply(rule bABSnat_mono[of _ _ s, OF int_b conjunct2[OF less(2)[simplified invar_integral_def]]
                                              _ s_in_V])
           using t_red s_red
           by(unfold  b'_def  SSP_upd4_def Let_def  \<gamma>_def s_def t_def b_def f_def P_def) auto        
       show ?case 
-        by(rule less(1)[OF abs_less invar2])
+        by(rule less(1)[OF abs_less invar_integral])
     qed
   qed 
 qed
@@ -625,24 +626,24 @@ qed
 lemma termination_initial_state:
 " SSP_dom \<lparr>current_flow = (\<lambda> e. 0), balance = \<b>,  return = notyetterm\<rparr>"
  by(force intro: integral_balance_termination
-                 invar2I  is_integral_flowI is_integral_balanceI 
+                 invar_integralI  is_integral_flowI is_integral_balanceI 
        simp add: integral_b)
 
-lemma invar_3_holds_1[invar_holds_intros]:
- "\<lbrakk>SSP_ret_1_cond state; invar3 state\<rbrakk> \<Longrightarrow> invar3 (SSP_ret1 state)"
-  by (auto simp:SSP_ret1_def invar3_def )
+lemma invar_opt_holds_1[invar_holds_intros]:
+ "\<lbrakk>SSP_ret_1_cond state; invar_opt state\<rbrakk> \<Longrightarrow> invar_opt (SSP_ret1 state)"
+  by (auto simp:SSP_ret1_def invar_opt_def )
 
-lemma invar_3_holds_2[invar_holds_intros]: 
-"\<lbrakk>SSP_ret_2_cond state; invar3 state\<rbrakk> \<Longrightarrow> invar3 (SSP_ret2 state)"
-  by (auto simp:SSP_ret2_def invar3_def)
+lemma invar_opt_holds_2[invar_holds_intros]: 
+"\<lbrakk>SSP_ret_2_cond state; invar_opt state\<rbrakk> \<Longrightarrow> invar_opt (SSP_ret2 state)"
+  by (auto simp:SSP_ret2_def invar_opt_def)
 
-lemma invar_3_holds_3[invar_holds_intros]: 
-"\<lbrakk>SSP_ret_3_cond state; invar3 state\<rbrakk> \<Longrightarrow> invar3 (SSP_ret3 state)"
-  by (auto simp:SSP_ret3_def invar3_def)
+lemma invar_opt_holds_3[invar_holds_intros]: 
+"\<lbrakk>SSP_ret_3_cond state; invar_opt state\<rbrakk> \<Longrightarrow> invar_opt (SSP_ret3 state)"
+  by (auto simp:SSP_ret3_def invar_opt_def)
 
-lemma invar_3_holds_4[invar_holds_intros]: 
-  assumes "SSP_call_4_cond state"  "invar3 state"
-  shows "invar3 (SSP_upd4 state)"
+lemma invar_opt_holds_4[invar_holds_intros]: 
+  assumes "SSP_call_4_cond state"  "invar_opt state"
+  shows "invar_opt (SSP_upd4 state)"
 proof-
   define b where "b = balance state"
   define f where " f = current_flow state"
@@ -697,7 +698,7 @@ proof-
   unfolding is_min_path_def is_s_t_path_def P_def by auto
 
   have no_augcycle:"\<nexists>C. augcycle f C"
-    using assms  invar3_def  f_def min_cost_flow_no_augcycle 
+    using assms  invar_opt_def  f_def min_cost_flow_no_augcycle 
     by blast
 
   have good_cap: "ereal \<gamma> \<le> Rcap (current_flow state) (set P)"
@@ -713,17 +714,17 @@ proof-
       by (force intro:  SSP_call_4_condE[OF assms(1)])
 
   show ?thesis
-    unfolding invar3_def
+    unfolding invar_opt_def
     apply(rule path_aug_opt_pres[of s t "\<lambda> v. \<b> v  - b v" f \<gamma> P])  
     using assms(2) gamma_pos  get_min_augpath_axioms(3)[OF resreach_f_s_t no_augcycle] 
           s_hd_P t_last_P good_cap s_neq_t
     by(auto  split: if_split
-          simp add: SSP_upd4_def P_def invar3_def  \<gamma>_def t_def s_def f_def b_def  Let_def)  
+          simp add: SSP_upd4_def P_def invar_opt_def  \<gamma>_def t_def s_def f_def b_def  Let_def)  
 qed
 
-lemma invar_3_holds: 
-   assumes "SSP_dom state" "invar3 state"
-   shows "invar3 (SSP state)"
+lemma invar_opt_holds: 
+   assumes "SSP_dom state" "invar_opt state"
+   shows "invar_opt (SSP state)"
   using assms(2)
 proof(induction rule: SSP_induct[OF assms(1)])
   case IH: (1 state)
@@ -766,9 +767,9 @@ qed
 
 text \<open>By this, we can already prove correctness.\<close>
 
-lemma invar3_initial_state:
-"invar3 \<lparr>current_flow = (\<lambda> e. 0), balance = \<b>,  return = notyetterm\<rparr>"
-  unfolding invar3_def
+lemma invar_opt_initial_state:
+"invar_opt \<lparr>current_flow = (\<lambda> e. 0), balance = \<b>,  return = notyetterm\<rparr>"
+  unfolding invar_opt_def
   apply(rule no_augcycle_min_cost_flow)
   subgoal
     unfolding isbflow_def isuflow_def ex_def
@@ -828,13 +829,13 @@ proof-
     have ret_1:"SSP_ret_1_cond final" 
       using asm  assms
       by(auto intro: success termination_initial_state)
-    have invar3:"invar3 final" 
+    have invar_opt:"invar_opt final" 
       using assms
-      by(auto intro: invar_3_holds termination_initial_state invar3_initial_state)
+      by(auto intro: invar_opt_holds termination_initial_state invar_opt_initial_state)
     show "is_Opt \<b> (current_flow final)"
       apply(rule SSP_ret_1_condE[of final, OF ret_1])
-      using invar3
-      unfolding invar3_def zero_balance_def  is_Opt_def isbflow_def ex_def
+      using invar_opt
+      unfolding invar_opt_def zero_balance_def  is_Opt_def isbflow_def ex_def
       by simp
   qed
   show "return final = failure \<Longrightarrow> \<nexists> f. is_Opt \<b> f"
@@ -842,11 +843,11 @@ proof-
      assume asm:"return final = failure"
     have ret_1:"SSP_ret_3_cond final" unfolding assms(1)
       apply(rule failure_SSP_ret3_cond, rule termination_initial_state)
-      using asm is_balance_b unfolding assms(1) invar1_def is_balance_def by simp+
+      using asm is_balance_b unfolding assms(1) invar_balance_def is_balance_def by simp+
 
-    have invar3:"invar3 final" unfolding assms(1)
-      by(rule invar_3_holds, rule termination_initial_state,
-           rule  invar3_initial_state)
+    have invar_opt:"invar_opt final" unfolding assms(1)
+      by(rule invar_opt_holds, rule termination_initial_state,
+           rule  invar_opt_initial_state)
 
     obtain  b  s \<f> where bsf_prop:" b = balance final" "\<not> zero_balance b"
               "\<f> = current_flow final" "get_source b = Some s"
@@ -857,7 +858,7 @@ proof-
       using get_source_axioms by auto
 
     have is_Opt_term:"is_Opt (\<lambda> v. \<b> v -  b v) \<f>" 
-      using invar3 unfolding invar3_def
+      using invar_opt unfolding invar_opt_def
       using bsf_prop by simp
 
     have rescutsat:"sum (\<lambda> v. \<b> v -  b v) (Rescut \<f> s) = Cap (Rescut \<f> s)"
