@@ -8,7 +8,7 @@ theory Ranking
      Basic_Matching.Berge
     "HOL-Library.FuncSet"
     "HOL-Library.LaTeXsugar"
-    More_List
+    More_List_Ranking
 begin
 text \<open>
   We start off by formulating the algorithm in a deterministic fashion. Both the arrival order

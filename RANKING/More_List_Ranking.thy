@@ -3,7 +3,7 @@
 *)
 
 subsection \<open>More on Lists\label{sec:more-list}\<close>
-theory More_List
+theory More_List_Ranking
   imports
     "List-Index.List_Index"
     "HOL-Library.Sublist"
@@ -200,6 +200,9 @@ lemma move_to_distinct:
 
 lemma count_list_append: "count_list (xs@ys) x = count_list xs x + count_list ys x"
   by (induction xs) auto
+
+lemma member_filter: "(x \<in> Set.filter P A) = (x \<in> A \<and> P x)"
+  by simp
 
 lemma move_to_set: "set xs[x \<mapsto> i] = set xs \<union> {x}"
   unfolding move_to_def

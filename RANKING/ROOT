@@ -9,7 +9,7 @@ session "RANKING" = "HOL" +
     "Basic_Matching"
 
   theories
-    "More_List"
+    "More_List_Ranking"
     "Ranking_Misc"
     "Ranking"
     "Ranking_Probabilistic"

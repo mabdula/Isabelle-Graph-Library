@@ -48,7 +48,7 @@ proof -
   fix r assume "r \<in> preorders_on A"
   then have "linorder_from_keys A -` {r} \<inter> space ?M =
     {f \<in> space ?M. \<forall>x\<in>A. \<forall>y\<in>A. (x,y) \<in> r \<longleftrightarrow> f x \<le> f y}"
-    by (auto simp: linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD refl_on_domain)
+  by (force simp: linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD )
 
   also have "\<dots> \<in> sets ?M"
     by measurable
@@ -77,17 +77,22 @@ proof -
     case 2
     with linorder \<open>a \<notin> A\<close> \<open>y \<notin> f ` A\<close> show ?case
       by (subst linorder_from_insert)
-         (auto simp: linorder_on_def antisym_def dest: refl_on_domain)
+         (auto simp: linorder_on_def antisym_def intro!: refl_onI dest: refl_onD) 
   next
     case 3
     with linorder \<open>a \<notin> A\<close> \<open>y \<notin> f ` A\<close> show ?case
-      by (subst linorder_from_insert, unfold trans_def)
-         (auto simp: linorder_from_keys_def linorder_on_def)
+      by (subst linorder_from_insert)
+         (auto simp: linorder_from_keys_def linorder_on_def intro!: antisymI
+               dest: refl_onD antisymD transD)    
   next
     case 4
-    with linorder show ?case
-      by (subst linorder_from_insert, unfold linorder_on_def total_on_def)
-         auto
+    with linorder show ?case 
+      using preorder_on_def by blast
+  next
+    case 5
+    show ?case
+      using assms(1)
+      by (auto intro!: total_onI simp add: linorder_from_insert nle_le dest: linorder_on_cases)
   qed
 qed
 
@@ -285,8 +290,8 @@ proof -
   fix r assume "r \<in> preorders_on A"
   then have "weighted_linorder_from_keys A v g -` {r} \<inter> space ?M =
     {f \<in> space ?M. \<forall>x\<in>A. \<forall>y\<in>A. (x,y) \<in> r \<longleftrightarrow> v x * (1 - g(f x)) \<ge> v y * (1 - g(f y))}"
-    by (auto simp: weighted_linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD refl_on_domain)
-
+   by(force simp: weighted_linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD)
+    
   also from assms have "\<dots> \<in> sets ?M"
     by measurable
 
@@ -346,18 +351,23 @@ proof -
   next
     case 2
     with linorder no_collision \<open>a \<notin> A\<close> show ?case
-      by (subst linorder_from_insert)
-         (auto simp: linorder_on_def antisym_def dest: refl_on_domain)
+      by(subst linorder_from_insert)
+        (auto simp: linorder_on_def antisym_def intro!: refl_onI simp add: refl_onD)
   next
     case 3
     with linorder no_collision \<open>a \<notin> A\<close> show ?case
-      by (subst linorder_from_insert, unfold trans_def)
-         (auto simp: weighted_linorder_from_keys_def linorder_on_def)
+      by (subst linorder_from_insert)
+         (auto simp: linorder_from_keys_def linorder_on_def intro!: antisymI
+               dest: refl_onD antisymD transD) 
   next
     case 4
     with linorder show ?case
-      by (subst linorder_from_insert, unfold linorder_on_def total_on_def)
-         auto
+      using preorder_on_def by blast
+  next
+    case 5
+    show ?case
+      using assms(1)
+      by (auto intro!: total_onI simp add: linorder_from_insert nle_le dest: linorder_on_cases)
   qed
 qed
 

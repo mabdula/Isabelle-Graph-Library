@@ -438,7 +438,7 @@ definition flabel_par_invar where "flabel_par_invar par flabel = (\<forall>v. (f
 lemma 
   assumes "(\<forall>v. par v = None)"
   shows "wf {(x,y). par y = Some x}"
-  using assms wf_empty
+  using assms 
   by simp
 
 lemma flabel_invar_2_props:

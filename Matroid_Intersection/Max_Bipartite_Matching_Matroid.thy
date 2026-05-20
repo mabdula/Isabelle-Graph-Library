@@ -40,7 +40,7 @@ lemma indep1I:
   \<Longrightarrow> indep1 E"
   by(auto simp add: indep1_def finite_edges finite_subset 
             intro!: one_sided_matchingI iffD2[OF card_le_Suc0_iff_eq] 
-                    subset_inj_on[OF to_dbltn_inj])+
+                    inj_on_subset[OF to_dbltn_inj])+
 
 lemma indep1E: 
   assumes "indep1 E"
@@ -76,7 +76,7 @@ lemma indep2I:
    \<Longrightarrow> indep2 E"
   by(auto simp add: indep2_def finite_edges finite_subset 
             intro!: one_sided_matchingI iffD2[OF card_le_Suc0_iff_eq] 
-                    subset_inj_on[OF to_dbltn_inj])+
+                    inj_on_subset[OF to_dbltn_inj])+
 
 lemma indep2E: 
   assumes "indep2 E"

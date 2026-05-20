@@ -47,9 +47,9 @@ lemma preorders_onI[intro]: "preorder_on S r \<Longrightarrow> r \<in> preorders
 
 lemma preorder_on_subset_Times: "preorder_on S r \<Longrightarrow> r \<subseteq> S \<times> S"
   unfolding preorder_on_def
-  by (auto dest: refl_onD1 refl_onD2)
+  by simp
 
-lemma preorders_on_subset_Pow: "preorders_on S \<subseteq> Pow (S \<times> S)"
+lemma preorders_on_subset_Pow: "preorders_on S \<subseteq> Pow (S \<times> S)" 
   by (auto dest: preorders_onD preorder_on_subset_Times)
 
 lemma finite_preorders_on[intro]:
