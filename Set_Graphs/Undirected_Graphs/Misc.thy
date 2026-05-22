@@ -460,4 +460,7 @@ lemma union_of_set_finite:
   assumes "\<forall>a \<in> A. finite a"
   shows "finite (\<Union>A)" 
   using assms(1) assms(2) by blast
+
+lemma singleton_not_emptyD:"X = {x} \<Longrightarrow> X \<noteq> {}"
+  by auto
 end

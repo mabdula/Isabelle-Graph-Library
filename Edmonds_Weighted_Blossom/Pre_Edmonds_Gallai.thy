@@ -1,11 +1,16 @@
 theory Pre_Edmonds_Gallai
-  imports Blossom.Blossom_Algo_Search Edmonds_Gallai_Decomposition.Edmonds_Gallai_Preps
+  imports Blossom.Blossom_Algo_Search Edmonds_Gallai_Decomposition.Edmonds_Gallai_Blossoms
 begin
 
 section \<open>A Reduced Version of the Edmonds-Gallai Decomposition\<close>
 
 text \<open>This is specifically tailored to the weighted matching algorithm 
-accoriding to Korte's and Vygen's outline.\<close>
+  accoriding to Korte's and Vygen's outline.
+  We give a variant of the blossom algorithm that either returns a perfect matching if there is one,
+  of it returns sets of vertices by which can make dual updates.
+  These sets happend to form the decomposition.
+  Only a minority of the properties of the decomposition are relevant here, however.
+  Factor-criticalitly of the sets in $\mathcal{D}$ is the most important.\<close>
 
 subsection \<open>Blossoms and the Reduced Decomposition\<close>
 
@@ -98,9 +103,12 @@ proof-
   qed simp
 
   have u_not_in_D:"u \<notin> \<Union> \<D>" 
-    by (metis good_quot_map(1) local.pre_edmonds_gallaiD(2) subsetD)
+    using good_quot_map(1) pre_edmonds_gallaiD(2)
+    by auto
   have finite_D: "finite \<D>" 
-    by (metis finite_UnionD finite_insert goal2 graph infinite_super)
+    using graph goal2 finite_UnionD[of "insert (set C) \<D>"]
+      infinite_super[of "\<Union> (insert (set C) \<D>)" "Vs E"]
+    by auto
 
   have goal5: "card (Neighbourhood E (\<Union> (insert (set C) \<D>))) < card (insert (set C) \<D>)"
   proof-
@@ -110,12 +118,13 @@ proof-
       using good_quot_map(1) quot_Vs_are 
       by (intro Neighbourhood_of_one_more_same_if_nin_Vs[symmetric]) blast
     have rw2: "... = Neighbourhood E (\<Union> (insert (set C) \<D>))"
-      apply(subst u_in_X_Neighbourhood_expanded)
       using u_not_in_D assms(5) p_in_E 
-      by (intro insertI1  arg_cong[where f = "Neighbourhood E"])+ auto
+      by (subst u_in_X_Neighbourhood_expanded,                    
+          (intro insertI1  arg_cong[where f = "Neighbourhood E"])+) auto
    show ?thesis
      using pre_edmonds_gallaiD(5) finite_D  card_insert_le[of \<D> "set C"]
-     unfolding rw1 rw2 by auto
+     unfolding rw1 rw2 
+     by auto
  qed
 
   have Vs_E_on_p_are_p:"Vs (E \<lbrakk>set C\<rbrakk>) = set C"
@@ -327,150 +336,10 @@ proof-
     hence x_in:"x \<in> D - {u} \<union> set C"
       using 2 by auto
     then show ?case 
+      using assumptions(3,6,10) more_C_props(1) path_C dblton_E pre_edmonds_gallaiD(2)
+            assms(9) distinct_C pre_edmonds_gallaiD(6)[OF assumptions(9)]
       unfolding X_is
-    proof(elim UnE, goal_cases)
-      case 1
-      obtain Md where M: "graph_matching ((quotG E) \<lbrakk>D\<rbrakk>) Md" "Vs Md = D - {x}"
-        using "1" assumptions(9) local.pre_edmonds_gallaiD(6) by force
-      have Md_matches_u: "u \<in> Vs Md"
-        using "1" M(2) assumptions(10) by blast
-      have dblton_Md: "dblton_graph Md" 
-        using M(1) dblton_quotE dblton_graph_Vs_inter by blast
-      obtain up where up: "{u, up} \<in> Md" "u \<noteq> up"
-        using dblton_Md Md_matches_u 
-        by(auto elim!: Undirected_Set_Graphs.dblton_graphE 
-             simp add: vs_member insert_commute)+
-      have Md_without_u_edge_Vs_inter: "Md - {{u, up}} \<subseteq> (quotG E) \<lbrakk>D - {u}\<rbrakk>"
-        using M(1) graph_inter_Vs_subset(1)  M(1,2) up(1)
-              remove_matching_edge_Vs[of Md "{u, up}"]
-        by (intro is_part_of_graph_inter_Vs) force+
-      have quotG_D_without_u:"(quotG E) \<lbrakk>D - {u}\<rbrakk> = E \<lbrakk>D - {u}\<rbrakk>"
-        using assumptions(9) local.pre_edmonds_gallaiD(2) 
-        by(intro u_not_in_subgraph_same_subgraph) auto
-      have Md_without_matching: "graph_matching (E \<lbrakk>D - {u}\<rbrakk>) (Md - {{u, up}})"
-        using M(1) Md_without_u_edge_Vs_inter matching_delete quotG_D_without_u by blast
-      have u_up_in_quot:"{u, up} \<in> quotG E"
-        using M(1) in_graph_inter_VsE subset_eq up(1) by blast
-      moreover have up_in_s:"up \<in> s" 
-        using Vs_quotG_is edges_are_Vs_2 u_up_in_quot by blast
-      ultimately obtain uc where uc: "{uc, up} \<in> E" "uc \<in> set C" 
-        using edge_in_quotG_2'_doubleton[of up E] assumptions(3)
-        by (auto  simp add: insert_commute)
-      have "\<exists>M. graph_matching ( E \<lbrakk>set C\<rbrakk>) M \<and> Vs M = Vs ( E \<lbrakk>set C\<rbrakk>) - {uc}"
-        using more_C_props distinct_C uc(2) 
-        by (intro odd_cycle_graph_factor_critical[of "E \<lbrakk>set C\<rbrakk>" "C" uc])
-           (auto simp add: dblton_E dblton_graph_Vs_inter)
-      then obtain Mc where Mc: "graph_matching ( E \<lbrakk>set C\<rbrakk>) Mc" "Vs Mc = set C - {uc}"
-        using more_C_props(2) by auto
-      have Vs_Md_witht_up_is:"Vs (Md - {{u, up}}) = Vs Md - {u, up}"
-        by (simp add: M(1) remove_matching_edge_Vs up(1))
-      have C_inter_D_empty:"set C \<inter> D = {}"
-        using C_inter_quot_empty assumptions(9) local.pre_edmonds_gallaiD(2) by auto
-      have "matching (Md - {{u, up}} \<union> {{uc, up}} \<union> Mc)"
-      proof(rule matching_vertex_disj_union, goal_cases)
-        case 1
-        then show ?case 
-      proof(rule matching_vertex_disj_union, goal_cases)
-        case 1
-        then show ?case 
-          using Md_without_matching by blast
-      next
-        case 2
-        then show ?case 
-          by (simp add: matching_singleton)
-      next
-        case 3
-        then show ?case 
-          using C_inter_D_empty uc(2)
-          by(auto simp add: Vs_Md_witht_up_is Vs_of_edge M(2))
-      qed
-      next
-        case 2
-        then show ?case
-          by (simp add: Mc(1))
-      next
-        case 3
-        then show ?case
-          using Vs_without_s_is_C up_in_s C_inter_D_empty 
-          by(auto simp add: Vs_Md_witht_up_is M(2) vs_union vs_insert Mc(2))
-      qed
-      moreover have "Md - {{u, up}} \<union> {{uc, up}} \<union> Mc \<subseteq> E \<lbrakk>D - {u} \<union> set C\<rbrakk>"
-      proof(rule is_part_of_graph_inter_Vs, goal_cases)
-        case 1
-        then show ?case 
-          using Mc(1) Md_without_matching graph_inter_Vs_subset(1) uc(1) by fastforce
-      next
-        case 2
-        thus ?case
-        unfolding vs_union Mc(2) Vs_of_edge Vs_Md_witht_up_is M(2)
-        using M(2) edges_are_Vs_2 up(1,2)  uc(2) 
-        by fastforce
-    qed
-    ultimately have "graph_matching ( E \<lbrakk>D - {u} \<union> set C\<rbrakk>) (Md - {{u, up}} \<union> {{uc, up}} \<union> Mc)"
-      by simp
-    moreover have "Vs (Md - {{u, up}} \<union> {{uc, up}} \<union> Mc) = 
-                   D - {u} \<union> set C - {x}"
-      unfolding vs_union Mc(2) Vs_of_edge Vs_Md_witht_up_is M(2)
-      using  uc(2) up(1,2) M(2) edges_are_Vs_2 "1" C_inter_D_empty 
-      by fastforce
-    ultimately show ?case 
-      by auto
-    next
-      case 2
-      obtain Md where M: "graph_matching ((quotG E) \<lbrakk>D\<rbrakk>) Md" "Vs Md = D - {u}"
-        using assumptions(10,9) local.pre_edmonds_gallaiD(6) by blast
-      have dblton_Md: "dblton_graph Md" 
-        using M(1) dblton_quotE dblton_graph_Vs_inter by blast
-      have Md_without_u_edge_Vs_inter: "Md \<subseteq> (quotG E) \<lbrakk>D - {u}\<rbrakk>"
-        using M(1) graph_inter_Vs_subset(1)  M(1,2)
-        by (intro is_part_of_graph_inter_Vs) force+
-      have quotG_D_without_u:"(quotG E) \<lbrakk>D - {u}\<rbrakk> = E \<lbrakk>D - {u}\<rbrakk>"
-        using assumptions(9) local.pre_edmonds_gallaiD(2) 
-        by(intro u_not_in_subgraph_same_subgraph) auto
-      have Md_without_matching: "graph_matching (E \<lbrakk>D - {u}\<rbrakk>) Md"
-        using M(1) Md_without_u_edge_Vs_inter matching_delete quotG_D_without_u by blast
-      have "\<exists>M. graph_matching ( E \<lbrakk>set C\<rbrakk>) M \<and> Vs M = Vs ( E \<lbrakk>set C\<rbrakk>) - {x}"
-        using more_C_props distinct_C 2 
-        by (intro odd_cycle_graph_factor_critical[of "E \<lbrakk>set C\<rbrakk>" "C" x])
-           (auto simp add: dblton_E dblton_graph_Vs_inter)
-      then obtain Mc where Mc: "graph_matching ( E \<lbrakk>set C\<rbrakk>) Mc" "Vs Mc = set C - {x}"
-        using more_C_props(2) by auto
-      have "matching (Md \<union> Mc)"
-      proof(rule matching_vertex_disj_union, goal_cases)
-        case 1
-        then show ?case 
-          by (simp add: M(1))
-      next
-        case 2
-        then show ?case
-          by (simp add: Mc(1))
-      next
-        case 3
-        then show ?case
-          using C_inter_quot_empty assumptions(9) local.pre_edmonds_gallaiD(2) 
-          by (auto simp add: M(2) Mc(2))
-      qed
-      moreover have "Md \<union> Mc \<subseteq> E \<lbrakk>D - {u} \<union> set C\<rbrakk>"
-      proof(rule is_part_of_graph_inter_Vs, goal_cases)
-        case 1
-        then show ?case
-          using Mc(1) Md_without_matching graph_inter_Vs_subset(1) by blast
-      next
-        case 2
-        thus ?case
-        unfolding vs_union Mc(2) Vs_of_edge  M(2)
-        using M(2) edges_are_Vs_2
-        by fastforce
-    qed
-    ultimately have "graph_matching ( E \<lbrakk>D - {u} \<union> set C\<rbrakk>) (Md \<union> Mc)"
-      by simp
-    moreover have "Vs (Md  \<union> Mc) = 
-                   D - {u} \<union> set C - {x}"
-      using "2" C_inter_quot_empty assumptions(9) pre_edmonds_gallaiD(2)
-      by (auto simp add: vs_union Mc(2) Vs_of_edge  M(2))
-    ultimately show ?case 
-      by auto
-    qed
+      by(intro expand_odd_cycle_still_factor_critical) auto
   qed
 
   have goal7: "\<lbrakk>v \<in> Vs E; even_vert E M v\<rbrakk> \<Longrightarrow> v \<in> \<Union> (\<D> - {D} \<union> {D - {u} \<union> set C})" for v
@@ -762,7 +631,7 @@ next
   proof(cases "if1_cond F")
     case True
     obtain v1 v2 v3 where sel: "(v1,v2,v3) = sel_if1 F" "if1 F v1 v2 v3"
-      using if1_cond_props''''[OF True] by metis
+      using if1_cond_props''''[OF True] by auto
     hence  v1v2: "{v1, v2} \<in> G - \<lbrace>F\<rbrace>" "{v2, v3} \<in> M"  "v1 \<in> aevens F" "v2 \<notin> FVs F"
         using if1_props by auto
       then have v1_v2_P:"{v1, v2} \<in> G" "{v1, v2} \<notin> \<lbrace>F\<rbrace>"
@@ -876,7 +745,7 @@ proof-
             "aroots F' = aroots F" "\<D> = {{v} |v. v \<in> aevens F'}" "aevens F' \<subseteq> Vs G" "\<lbrace> F' \<rbrace> \<subseteq> G"
     using what_if_search_fails_pedg[OF assms(2,3,4,1,5)] by auto
   have Vs_with_M_in_aevens:"Vs G - Vs M \<subseteq> aevens F'"
-    by (metis F'(3,4) roots(2) subset_trans unmatcheds_even)
+    using  F'(3,4) unmatcheds_even(1) roots(2)[of M F'] by auto
   have aroots_F': "aroots F' \<noteq> {}"
     using F'(4) unmatcheds_even(1,2) by force
   show ?thesis2           
@@ -959,8 +828,7 @@ proof(induction "find_aug_path_meas E" arbitrary: E M rule: less_induct)
         "path E (stem @ cyc)"
         using bloss_algo_sound(2) 1 less.prems(1,2,3) by auto
       then have "set cyc \<subseteq> Vs E"
-        using path_suff subset_path_Vs
-        by metis
+        using path_suff subset_path_Vs by force
       then have "Vs E - ?s = set cyc"
         by auto
       moreover have "?s \<subseteq> Vs E"
@@ -977,18 +845,12 @@ proof(induction "find_aug_path_meas E" arbitrary: E M rule: less_induct)
       moreover have "((Vs E) - set cyc) \<subset> (Vs E)"
         using blossom_diff[OF \<open>graph_invar E\<close> \<open>match_blossom M stem cyc\<close> \<open>path E (stem@cyc)\<close>].  
       hence dblton_new: "dblton_graph (quot.quotG ?s ?u E)"
-        apply(intro doublton_quot[where E = E])
-        using \<open>graph_invar E\<close> create_vert_works
-        by auto
+        using \<open>graph_invar E\<close> create_vert_works 
+        by(intro doublton_quot[where E = E]) auto
       moreover have "matching (quot.quotG ?s ?u M)"
-        apply (intro matching_quotM[where s = ?s and stem = stem and C=cyc and E=E])
-        subgoal using \<open>((Vs E) - set cyc) \<subset> (Vs E)\<close> .
-        subgoal using \<open>graph_invar E\<close> .
-        subgoal using \<open>match_blossom M stem cyc\<close> .
-        subgoal using less(2) .
-        subgoal using less.prems(2) by auto
-        subgoal ..
-        done
+        using \<open>((Vs E) - set cyc) \<subset> (Vs E)\<close> \<open>graph_invar E\<close> \<open>match_blossom M stem cyc\<close> 
+              less(2) less.prems(2)
+        by (intro matching_quotM[where s = ?s and stem = stem and C=cyc and E=E]) auto
       moreover have "(quot.quotG ?s ?u M) \<subseteq> quot.quotG ?s ?u E"
         by (simp add: less.prems(2) Diff_mono graph_subset_quot_subset)
       moreover have "graph_invar (quot.quotG ?s ?u E)"
@@ -1003,20 +865,18 @@ proof(induction "find_aug_path_meas E" arbitrary: E M rule: less_induct)
 
 context 
   fixes s::"'a set" and E::"'a set set"
-  assumes quot_assms: "s\<subset>Vs E" "graph_invar E"
+  assumes quot_assms: "s \<subset> Vs E" "graph_invar E"
 begin
 interpretation quot: quot sel E s "(create_vert (Vs E))"
-  apply(unfold_locales)
   using quot_assms create_vert_works 
-  by auto
+  by unfold_locales auto
 
 lemma card_Vs_lt:
   assumes "1 < card (Vs E - s)"
   shows "find_aug_path_meas (quot.quotG E) < find_aug_path_meas E"
   unfolding find_aug_path_meas_def
-  apply (rule quot.card_Vs_quotG)
   using quot_assms assms
-  by auto
+  by (intro quot.card_Vs_quotG) auto
 
 lemmas matching_quotM=quot.matching_quotM
 

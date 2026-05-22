@@ -4,6 +4,14 @@ begin
 
 section \<open>Quotienting Graphs by a Partition\<close>
 
+text \<open>We can partition a graph's vertices into equivalence classes.
+      From that we can define a graph whose vertices are sets.
+      This is similar to quotienting for the unweighted blossom algorithm, but:
+      1. several vertices might be contracted at once 
+      2. the vertices in the contracted graph have a new type.
+      Since we here formalise the outline in Korte's and Vygen's book,
+      we take a more abstract perspective.\<close>
+
 subsection \<open>More about Partitions\<close>
 
 definition "prepartition_on A P \<longleftrightarrow> \<Union>P \<supseteq> A \<and> disjoint P \<and> {} \<notin> P"

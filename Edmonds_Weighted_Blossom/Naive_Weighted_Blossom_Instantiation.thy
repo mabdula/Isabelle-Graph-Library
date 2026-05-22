@@ -2,16 +2,19 @@ theory Naive_Weighted_Blossom_Instantiation
   imports Naive_Weighted_Blossom Pre_Edmonds_Gallai
 begin
 
+section \<open>Instantiation of the Abstract Algorithm\<close>
+
+text \<open>We use the reduced Edmonds-Gallai Decomposition to instantiate our abstract 
+      weighted matching algorithm.\<close>
+
 locale find_aug_path_pedg_use = find_aug_path_use where sel = sel and E = E + 
-   find_aug_path_pedg where sel = sel 
-   for sel::"'a set \<Rightarrow> 'a" and E::"'a set set"
+  find_aug_path_pedg where sel = sel 
+for sel::"'a set \<Rightarrow> 'a" and E::"'a set set"
 begin
 
 interpretation find_max_match_intrp: find_max_match E find_aug_path
-  apply unfold_locales
-  subgoal using find_aug_path_complete[OF _ _ _ graph] by force
-  subgoal using find_aug_path_sound[OF _ _ _ graph] by force
-  done
+  using find_aug_path_complete[OF _ _ _ graph] find_aug_path_sound[OF _ _ _ graph]
+  by unfold_locales auto
 
 definition "find_matching_or_decomposition=
   (let M = find_max_matching {}
@@ -34,10 +37,10 @@ proof(goal_cases)
     using "1"(1) max_card_matchings_same_size by blast
   ultimately show ?case
     using "1"(1,3) graph_abs.matching_card_vs[of M] graph_abs.matching_card_vs[of M'] 
-     card_subset_eq[of "Vs G" "Vs M"] Vs_subset[of M G] graph_abs.intro[of M] 
-     graph_abs.intro[of M'] graph_invar_subset[of G M] graph_invar_subset[of G M']
+      card_subset_eq[of "Vs G" "Vs M"] Vs_subset[of M G] graph_abs.intro[of M] 
+      graph_abs.intro[of M'] graph_invar_subset[of G M] graph_invar_subset[of G M']
     by (intro perfect_matching_max_card_matchingI)
-       (auto elim!: perfect_matchingE simp add:  max_card_matching_def)
+      (auto elim!: perfect_matchingE simp add:  max_card_matching_def)
 qed
 
 lemma find_max_matching_perfect:
@@ -45,9 +48,9 @@ lemma find_max_matching_perfect:
   "(\<exists> M. perfect_matching E M) \<longleftrightarrow> Vs (find_max_matching {}) = Vs E"
   using find_matching_has_max_card Vs_subset[OF find_max_matching_works(1)] graph 
   by (auto intro: perfect_matching_max_card_matchingI 
-                  max_card_matching_is_perfect_matching[of E "find_max_matching {}"]
-                  perfect_matchingE[of E "find_max_matching {}"]
-        simp add: graph max_card_matching_is_perfect_matching)+
+      max_card_matching_is_perfect_matching[of E "find_max_matching {}"]
+      perfect_matchingE[of E "find_max_matching {}"]
+      simp add: graph max_card_matching_is_perfect_matching)+
 
 lemmas compute_pedg_spec = pedg_search_sound
 
@@ -93,8 +96,8 @@ next
       (auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
   moreover have "D = find_pedg E (find_max_matching {})"
     using 4 
-     by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
- ultimately show ?case 
+    by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
+  ultimately show ?case 
     by(auto dest!: pre_edmonds_gallaiD(1))
 next
   case (5 D)
@@ -104,9 +107,9 @@ next
       (auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
   moreover have "D = find_pedg E (find_max_matching {})"
     using 5
-     by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
- ultimately show ?case 
-   by(auto dest!: pre_edmonds_gallaiD(2))
+    by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
+  ultimately show ?case 
+    by(auto dest!: pre_edmonds_gallaiD(2))
 next
   case (6 D X Y)
   hence pedg: "pre_edmonds_gallai E (find_max_matching {}) (find_pedg E (find_max_matching {}))"
@@ -115,10 +118,10 @@ next
       (auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
   have D_def: "D = find_pedg E (find_max_matching {})"
     using 6 
-     by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
-   show ?case 
-     using pre_edmonds_gallaiD(4)[OF pedg, folded D_def, OF 6(2-)]
-     by(auto simp add: connected_set_of_vertices_def)
+    by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
+  show ?case 
+    using pre_edmonds_gallaiD(4)[OF pedg, folded D_def, OF 6(2-)]
+    by(auto simp add: connected_set_of_vertices_def)
 next
   case (7 D)
   hence pedg: "pre_edmonds_gallai E (find_max_matching {}) (find_pedg E (find_max_matching {}))"
@@ -127,10 +130,10 @@ next
       (auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
   have D_def: "D = find_pedg E (find_max_matching {})"
     using 7 
-     by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
-   show ?case 
-     using pre_edmonds_gallaiD(5)[OF pedg, folded D_def]
-     by simp
+    by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
+  show ?case 
+    using pre_edmonds_gallaiD(5)[OF pedg, folded D_def]
+    by simp
 next
   case (8 D X x)
   hence pedg: "pre_edmonds_gallai E (find_max_matching {}) (find_pedg E (find_max_matching {}))"
@@ -139,10 +142,10 @@ next
       (auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
   have D_def: "D = find_pedg E (find_max_matching {})"
     using 8
-     by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
-   show ?case 
-     using pre_edmonds_gallaiD(6)[OF pedg, folded D_def, OF 8(2-)]
-     by simp
+    by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
+  show ?case 
+    using pre_edmonds_gallaiD(6)[OF pedg, folded D_def, OF 8(2-)]
+    by simp
 next
   case (9 D X)
   hence pedg: "pre_edmonds_gallai E (find_max_matching {}) (find_pedg E (find_max_matching {}))"
@@ -151,18 +154,18 @@ next
       (auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
   have D_def: "D = find_pedg E (find_max_matching {})"
     using 9
-     by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
-   show ?case 
-     using pre_edmonds_gallaiD(3)[OF pedg, folded D_def, OF 9(2-)]
-     by simp
- qed
+    by(auto simp add: find_matching_or_decomposition_def Let_def if_split[of "\<lambda> x. x = _"])
+  show ?case 
+    using pre_edmonds_gallaiD(3)[OF pedg, folded D_def, OF 9(2-)]
+    by simp
+qed
 end
 
 locale compute_match_blossom'_pedg_use =
-compute_match_blossom'_use where E = E
+  compute_match_blossom'_use where E = E
 for E::"'a set set"+
 fixes compute_pedg::"'a set set \<Rightarrow>'a set set \<Rightarrow> 'a set set" 
-and sel_from_sets::"('a set \<Rightarrow> bool) \<Rightarrow> 'a set set \<Rightarrow> 'a set"
+  and sel_from_sets::"('a set \<Rightarrow> bool) \<Rightarrow> 'a set set \<Rightarrow> 'a set"
 assumes compute_pedg: 
   "\<And> E M.  \<lbrakk>graph_invar E; matching M; M \<subseteq> E; compute_alt_path E M = None; Vs E - Vs M \<noteq> {}\<rbrakk>
             \<Longrightarrow> pre_edmonds_gallai E M (compute_pedg E M)"
@@ -172,8 +175,8 @@ assumes sel_from_sets:
 begin
 
 interpretation find_aug_path_pedg_use_intrp: find_aug_path_pedg_use create_vert
-               "\<lambda>G M. compute_match_blossom'.compute_match_blossom sel G M (compute_alt_path G M)"
-               compute_pedg sel_from_sets sel E
+  "\<lambda>G M. compute_match_blossom'.compute_match_blossom sel G M (compute_alt_path G M)"
+  compute_pedg sel_from_sets sel E
 proof(rule find_aug_path_pedg_use.intro, goal_cases)
   case 2
   then show ?case
@@ -186,10 +189,9 @@ proof(rule find_aug_path_pedg_use.intro, goal_cases)
     then show ?case
     proof(rule find_aug_path_pedg_axioms.intro, goal_cases)
       case (1 G M)
-       then interpret compute_match_blossom' sel G M "compute_alt_path G M"
+      then interpret compute_match_blossom' sel G M "compute_alt_path G M"
         using compute_alt_path_spec compute_alt_path_complete
-        apply unfold_locales
-        by (auto simp: compute_alt_path_spec_def)
+        by unfold_locales
       from 1 show ?case
         by(auto intro!: compute_pedg blossom_None_alt_path_None)
     qed (auto simp add: sel_from_sets)
@@ -200,15 +202,15 @@ abbreviation "find_matching_or_decomposition \<equiv>
   find_aug_path_pedg_use_intrp.find_matching_or_decomposition"
 
 lemmas find_matching_or_decomposition_correct =
- find_aug_path_pedg_use_intrp.find_matching_or_decomposition_correct
+  find_aug_path_pedg_use_intrp.find_matching_or_decomposition_correct
 end
 
 locale compute_alt_path_and_pedg_use = 
-compute_alt_path_use +
-fixes sel_from_sets::"('a set \<Rightarrow> bool) \<Rightarrow> 'a set set \<Rightarrow> 'a set"
-assumes sel_from_sets:
-  "\<And> \<D> P. \<lbrakk>finite \<D>; \<exists> D \<in> \<D>. P D\<rbrakk> \<Longrightarrow> sel_from_sets P \<D> \<in> \<D>"
-  "\<And> \<D> P. \<lbrakk>finite \<D>; \<exists> D \<in> \<D>. P D\<rbrakk> \<Longrightarrow> P (sel_from_sets P \<D>)"
+  compute_alt_path_use +
+  fixes sel_from_sets::"('a set \<Rightarrow> bool) \<Rightarrow> 'a set set \<Rightarrow> 'a set"
+  assumes sel_from_sets:
+    "\<And> \<D> P. \<lbrakk>finite \<D>; \<exists> D \<in> \<D>. P D\<rbrakk> \<Longrightarrow> sel_from_sets P \<D> \<in> \<D>"
+    "\<And> \<D> P. \<lbrakk>finite \<D>; \<exists> D \<in> \<D>. P D\<rbrakk> \<Longrightarrow> P (sel_from_sets P \<D>)"
 begin
 
 definition "compute_pedg G M = 
@@ -237,11 +239,11 @@ interpretation path_compute: compute_alt_path
     and M = M
     and sel = sel
     and unmatcheds = "Vs G - Vs M"
-     using forest_satisfied[OF \<open>graph_invar G\<close>  \<open>matching M\<close> \<open>M \<subseteq> G\<close>]
-   by(auto intro!: compute_alt_path.intro choose_axioms compute_alt_path_axioms.intro
-         simp add: graph_abs.intro match_axioms.intro match_def g.graph_abs_axioms 
-                   \<open>M \<subseteq> G\<close> \<open>matching M\<close> match_axioms_def  \<open>graph_invar G\<close> graph_abs_def)
- find_theorems path_compute.compute_pedg
+  using forest_satisfied[OF \<open>graph_invar G\<close>  \<open>matching M\<close> \<open>M \<subseteq> G\<close>]
+  by(auto intro!: compute_alt_path.intro choose_axioms compute_alt_path_axioms.intro
+      simp add: graph_abs.intro match_axioms.intro match_def g.graph_abs_axioms 
+      \<open>M \<subseteq> G\<close> \<open>matching M\<close> match_axioms_def  \<open>graph_invar G\<close> graph_abs_def)
+find_theorems path_compute.compute_pedg
 lemmas compute_alt_path_props = 
   path_compute.compute_alt_path_from_tree_sound'
   path_compute.compute_alt_path_from_tree_complete
@@ -251,7 +253,7 @@ end
 
 
 interpretation usage:
- compute_match_blossom'_pedg_use sel create_vert compute_paths E compute_pedg sel_from_sets
+  compute_match_blossom'_pedg_use sel create_vert compute_paths E compute_pedg sel_from_sets
 proof(unfold_locales,goal_cases)  
   case (2 G M)
   thus  ?case
@@ -272,8 +274,8 @@ qed (auto simp add: sel_from_sets)
 abbreviation "find_matching_or_decomposition \<equiv> usage.find_matching_or_decomposition"
 
 lemmas find_matching_or_decomposition_correct =
- usage.find_matching_or_decomposition_correct
- 
+  usage.find_matching_or_decomposition_correct
+
 end
 
 locale naive_weighted_blossom_instantiation =
@@ -282,9 +284,9 @@ locale naive_weighted_blossom_instantiation =
   create_vert create_vert 
 for G::"'v set set" and Bsel::"'v set set \<Rightarrow> 'v set" and create_vert::"'v set set \<Rightarrow> 'v set"+
 fixes w::"'v set \<Rightarrow> real"
-and sel_with_P::"('v set \<Rightarrow> bool) \<Rightarrow> 'v set set \<Rightarrow> 'v set"
-and sel_from_sets::"('v set set \<Rightarrow> bool) \<Rightarrow> 'v set set set \<Rightarrow> 'v set set"
-and remove_set::"'v set \<Rightarrow> 'v"
+  and sel_with_P::"('v set \<Rightarrow> bool) \<Rightarrow> 'v set set \<Rightarrow> 'v set"
+  and sel_from_sets::"('v set set \<Rightarrow> bool) \<Rightarrow> 'v set set set \<Rightarrow> 'v set set"
+  and remove_set::"'v set \<Rightarrow> 'v"
 assumes remove_set: "\<And> x. remove_set {x} = x"
 assumes sel_from_sets:
   "\<And> \<D> P. \<lbrakk>finite \<D>; \<exists> D \<in> \<D>. P D\<rbrakk> \<Longrightarrow> sel_from_sets P \<D> \<in> \<D>"
@@ -300,18 +302,16 @@ begin
 
 interpretation pedg: compute_alt_path_and_pedg_use Bsel create_vert E sel_from_sets
   using graph_invar sel_from_sets
-  apply unfold_locales
-  by (force, simp, fastforce)
+  by unfold_locales
 
 abbreviation "find_matching_or_decomposition \<equiv> pedg.find_matching_or_decomposition"
 lemmas find_matching_or_decomposition_correct=pedg.find_matching_or_decomposition_correct
 end
 
 interpretation  naive_weighted_blossom: naive_weighted_blossom_with_cleanup
- find_matching_or_decomposition w sel_with_P G remove_set
-  apply unfold_locales
+  find_matching_or_decomposition w sel_with_P G remove_set
   using find_matching_or_decomposition_correct
-  by (auto simp add: sel_with_P_correct remove_set)
+  by unfold_locales (auto simp add: sel_with_P_correct remove_set)
 
 abbreviation "\<pi>\<^sub>0 \<equiv> naive_weighted_blossom.\<pi>\<^sub>0"
 abbreviation "\<OO>\<^sub>0 \<equiv> naive_weighted_blossom.\<OO>\<^sub>0"

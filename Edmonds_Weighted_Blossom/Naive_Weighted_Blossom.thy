@@ -1,7 +1,9 @@
 theory Naive_Weighted_Blossom
   imports Laminar_Family.Laminar_Family Matching_LPs.Edmonds_Matching_LP
-   "HOL-Library.Disjoint_Sets" Directed_Set_Graphs.More_Arith Partition_Quotient_Graph
+    "HOL-Library.Disjoint_Sets" Directed_Set_Graphs.More_Arith Partition_Quotient_Graph
 begin
+
+section \<open>Outline of the Weighted Matching Algorithm (see KV)\<close>
 
 lemma near_perfect_matching_odd:
   assumes "dblton_graph M" "matching M" "Vs M = X - {x}" "x \<in> X" "finite X"
@@ -42,36 +44,38 @@ proof-
   qed
 qed
 
+subsection \<open>Definition of Main Loop, Setup\<close>
+
 datatype 'a MOD = match "'a set set" | decomp "'a set set"
 
 locale find_matching_or_decomposition_spec =
-fixes find_matching_or_decomposition::"'v set set \<Rightarrow> 'v MOD"
-assumes find_matching_or_decomposition_correct:
-  "\<And> E. \<lbrakk>graph_invar E; \<exists> M. perfect_matching E M\<rbrakk> 
+  fixes find_matching_or_decomposition::"'v set set \<Rightarrow> 'v MOD"
+  assumes find_matching_or_decomposition_correct:
+    "\<And> E. \<lbrakk>graph_invar E; \<exists> M. perfect_matching E M\<rbrakk> 
          \<Longrightarrow> \<exists> M. find_matching_or_decomposition E = match M"
-  "\<And> E. \<lbrakk>graph_invar E; \<nexists> M. perfect_matching E M\<rbrakk> 
+    "\<And> E. \<lbrakk>graph_invar E; \<nexists> M. perfect_matching E M\<rbrakk> 
          \<Longrightarrow> \<exists> D. find_matching_or_decomposition E = decomp D"
-  "\<And> E M. \<lbrakk>graph_invar E; find_matching_or_decomposition E = match M\<rbrakk> \<Longrightarrow>
+    "\<And> E M. \<lbrakk>graph_invar E; find_matching_or_decomposition E = match M\<rbrakk> \<Longrightarrow>
            perfect_matching E M"  
-  "\<And> E D.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D\<rbrakk> \<Longrightarrow>
+    "\<And> E D.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D\<rbrakk> \<Longrightarrow>
           disjoint D"
-  "\<And> E D.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D\<rbrakk> \<Longrightarrow>
+    "\<And> E D.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D\<rbrakk> \<Longrightarrow>
           \<Union> D \<subseteq> Vs E"
-  "\<And> E D X Y.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D; X \<in> D; Y \<in> D; X \<noteq> Y\<rbrakk> \<Longrightarrow>
+    "\<And> E D X Y.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D; X \<in> D; Y \<in> D; X \<noteq> Y\<rbrakk> \<Longrightarrow>
           \<nexists> u v. {u, v} \<in> E \<and> u \<in> X \<and> v \<in> Y"
-  "\<And> E D.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D\<rbrakk> \<Longrightarrow>
+    "\<And> E D.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D\<rbrakk> \<Longrightarrow>
           card D > card (Neighbourhood E (\<Union> D))"  
-  "\<And> E D X x.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D; X \<in> D; x \<in> X\<rbrakk> \<Longrightarrow>
+    "\<And> E D X x.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D; X \<in> D; x \<in> X\<rbrakk> \<Longrightarrow>
           \<exists> M. graph_matching (E\<lbrakk>X\<rbrakk>) M \<and> Vs M = X - {x}"   
-  "\<And> E D X.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D; X \<in> D\<rbrakk> \<Longrightarrow> X\<noteq>{}" 
+    "\<And> E D X.  \<lbrakk>graph_invar E; find_matching_or_decomposition E = decomp D; X \<in> D\<rbrakk> \<Longrightarrow> X\<noteq>{}" 
 
 locale naive_weighted_blossom_main_loop =
   graph_abs where G = G +
-find_matching_or_decomposition_spec where 
-find_matching_or_decomposition = find_matching_or_decomposition
+  find_matching_or_decomposition_spec where 
+  find_matching_or_decomposition = find_matching_or_decomposition
 for G::"'v set set" and find_matching_or_decomposition::"'v set set set \<Rightarrow> 'v set MOD" + 
 fixes w::"'v set \<Rightarrow> real"
-and sel::"('v set \<Rightarrow> bool) \<Rightarrow> 'v set set \<Rightarrow> 'v set"
+  and sel::"('v set \<Rightarrow> bool) \<Rightarrow> 'v set set \<Rightarrow> 'v set"
 assumes sel_correct: "\<And> P X. \<lbrakk>\<exists> x \<in> X. P x;finite X\<rbrakk> \<Longrightarrow> sel P X \<in> X"
   "\<And> P X. \<lbrakk>\<exists> x \<in> X. P x;finite X\<rbrakk> \<Longrightarrow> P (sel P X)"
 begin
@@ -81,7 +85,7 @@ definition "\<w> \<pi> = (\<lambda> e. w e - sum \<pi> (end_sets G e))"
 function (domintros) top_loop::"(('v set \<Rightarrow> real) \<times> 'v set set) 
            \<Rightarrow> (('v set \<Rightarrow> real) \<times> 'v set set set \<times> 'v set set) option"
   where 
- "top_loop (\<pi>, \<OO>) = 
+    "top_loop (\<pi>, \<OO>) = 
     (let Gt = odd_tight_subgraph G w \<pi>;
          maxes = maximal_sets \<OO> in 
          (if (\<exists> Blos. Blos \<in> maxes \<and> \<not> (\<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos))
@@ -111,24 +115,24 @@ function (domintros) top_loop::"(('v set \<Rightarrow> real) \<times> 'v set set
   by pat_completeness auto
 
 definition top_loop_ret_None_1_cond :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set \<Rightarrow> bool" where
-"top_loop_ret_None_1_cond \<pi> \<OO> \<equiv> 
+  "top_loop_ret_None_1_cond \<pi> \<OO> \<equiv> 
   let Gt = odd_tight_subgraph G w \<pi>;
       maxes = maximal_sets \<OO>
   in (\<exists> Blos. Blos \<in> maxes \<and> \<not> (\<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos)) \<and> 
      Delta G (sel (\<lambda> Blos. \<not> (\<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos)) maxes) = {}"
 
 definition top_loop_ret_None :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set \<Rightarrow> (('v set \<Rightarrow> real) \<times> 'v set set set\<times> 'v set set) option" where
-"top_loop_ret_None \<pi> \<OO> \<equiv> None"
+  "top_loop_ret_None \<pi> \<OO> \<equiv> None"
 
 definition top_loop_call1_cond :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set \<Rightarrow> bool" where
-"top_loop_call1_cond \<pi> \<OO> \<equiv> 
+  "top_loop_call1_cond \<pi> \<OO> \<equiv> 
   let Gt = odd_tight_subgraph G w \<pi>;
       maxes = maximal_sets \<OO>
   in (\<exists> Blos. Blos \<in> maxes \<and> \<not> (\<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos)) \<and> 
      Delta G (sel (\<lambda> Blos. \<not> (\<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos)) maxes) \<noteq> {}"
 
 definition top_loop_call1 :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set \<Rightarrow> (('v set \<Rightarrow> real) \<times> 'v set set)" where
-"top_loop_call1 \<pi> \<OO> \<equiv> 
+  "top_loop_call1 \<pi> \<OO> \<equiv> 
   let Gt = odd_tight_subgraph G w \<pi>;
       maxes = maximal_sets \<OO>;
       Blos = sel (\<lambda> Blos. \<not> (\<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos)) maxes;
@@ -136,8 +140,8 @@ definition top_loop_call1 :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set s
       \<pi>' = (\<lambda> X. if X = Blos then \<pi> Blos + \<epsilon> else \<pi> X)
   in (\<pi>', \<OO>)"
 
- definition top_loop_ret_Some_cond :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set \<Rightarrow> bool" where
-"top_loop_ret_Some_cond \<pi> \<OO> \<equiv> 
+definition top_loop_ret_Some_cond :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set \<Rightarrow> bool" where
+  "top_loop_ret_Some_cond \<pi> \<OO> \<equiv> 
   let Gt = odd_tight_subgraph G w \<pi>;
       maxes = maximal_sets \<OO>
   in \<not> (\<exists> Blos. Blos \<in> maxes \<and> \<not> (\<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos)) \<and> 
@@ -145,14 +149,14 @@ definition top_loop_call1 :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set s
 
 definition to_loop_ret_Some :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set
  \<Rightarrow> (('v set \<Rightarrow> real) \<times> 'v set set set \<times> 'v set set)" where
-"to_loop_ret_Some \<pi> \<OO> \<equiv> 
+  "to_loop_ret_Some \<pi> \<OO> \<equiv> 
   let Gt = odd_tight_subgraph G w \<pi>;
       maxes = maximal_sets \<OO>
   in case find_matching_or_decomposition (Gt \<sslash> maxes) of 
        match M \<Rightarrow> (\<pi>, M, \<OO>)"
 
 definition top_loop_ret_None_2_cond :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set \<Rightarrow> bool" where
-"top_loop_ret_None_2_cond \<pi> \<OO> \<equiv> 
+  "top_loop_ret_None_2_cond \<pi> \<OO> \<equiv> 
   let Gt = odd_tight_subgraph G w \<pi>;
       maxes = maximal_sets \<OO>
   in \<not> (\<exists> Blos. Blos \<in> maxes \<and> \<not> (\<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos)) \<and> 
@@ -161,7 +165,7 @@ definition top_loop_ret_None_2_cond :: "('v set \<Rightarrow> real) \<Rightarrow
        \<and> \<not> (\<exists> X \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D). 1 < card X))"
 
 definition top_loop_call2_cond :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set \<Rightarrow> bool" where
-"top_loop_call2_cond \<pi> \<OO> \<equiv> 
+  "top_loop_call2_cond \<pi> \<OO> \<equiv> 
   let Gt = odd_tight_subgraph G w \<pi>;
       maxes = maximal_sets \<OO>
   in \<not> (\<exists> Blos. Blos \<in> maxes \<and> \<not> (\<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos)) \<and> 
@@ -170,7 +174,7 @@ definition top_loop_call2_cond :: "('v set \<Rightarrow> real) \<Rightarrow> 'v 
         \<or> (\<exists> X \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D). 1 < card X)))"
 
 definition top_loop_call2 :: "('v set \<Rightarrow> real) \<Rightarrow> 'v set set \<Rightarrow> (('v set \<Rightarrow> real) \<times> 'v set set)" where
-"top_loop_call2 \<pi> \<OO> \<equiv> 
+  "top_loop_call2 \<pi> \<OO> \<equiv> 
   let Gt = odd_tight_subgraph G w \<pi>;
       maxes = maximal_sets \<OO>;
       D = (case find_matching_or_decomposition (Gt \<sslash> maxes) of decomp D \<Rightarrow> D);
@@ -206,44 +210,53 @@ proof(goal_cases)
   obtain D where D_def: "find_matching_or_decomposition (Gt \<sslash> maxes) = decomp D"
     using 5 by(force simp add: Gt_def maxes_def top_loop_call2_cond_def Let_def)
   show ?case 
-      unfolding top_loop.psimps[OF assms] Gt_def[symmetric] maxes_def[symmetric]
-      apply(subst Let_def, subst Let_def)
-      apply(cases "\<exists>Blos. Blos \<in> maxes \<and> (\<nexists>e. e \<in> Gt \<and> e \<in> Delta G Blos)")
-      subgoal
-        using 5 by(auto simp add: Gt_def maxes_def top_loop_call2_cond_def Let_def)
-      subgoal
-        apply(subst (4) if_not_P)
-        subgoal
-          by simp
+    unfolding top_loop.psimps[OF assms] Gt_def[symmetric] maxes_def[symmetric]
+  proof(subst Let_def, subst Let_def,
+      cases "\<exists>Blos. Blos \<in> maxes \<and> (\<nexists>e. e \<in> Gt \<and> e \<in> Delta G Blos)", goal_cases)
+    case 1
+    thus ?case
+      using 5 by(auto simp add: Gt_def maxes_def top_loop_call2_cond_def Let_def)
+  next
+    case 2
+    thus ?case
+    proof(subst (4) if_not_P, goal_cases)
+      case 2
+      thus ?case
         unfolding D_def MOD.case
-        apply(cases "\<forall>X\<in>D. Neighbourhood G (\<Union> X) \<subseteq> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) \<and>
-                     \<not> (\<exists>X\<in>Neighbourhood (Gt \<sslash> maxes) (\<Union> D). 1 < card X)")
-        subgoal
+      proof(cases "\<forall>X\<in>D. Neighbourhood G (\<Union> X) \<subseteq> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) \<and>
+                     \<not> (\<exists>X\<in>Neighbourhood (Gt \<sslash> maxes) (\<Union> D). 1 < card X)", goal_cases)
+        case 1
+        thus ?case
           using 5 D_def in_NeighbourhoodE 
           by(fastforce simp add: Gt_def maxes_def top_loop_call2_cond_def Let_def)
-        subgoal
-          apply(subst if_not_P)
-          subgoal 
-            by auto
-          unfolding Let_def
-          apply(rule arg_cong[of _ _ top_loop])
-          unfolding top_loop_call2_def Let_def
-          apply(rule arg_cong2[where f = Pair])
-          subgoal
-            apply(rule ext)
-            using D_def
-            by (auto split: if_split simp add: maxes_def Gt_def)
-          subgoal
-            using D_def
-            by (auto split: if_split simp add: maxes_def Gt_def)
-          done
-        done
-      done
+      next
+        case 2
+        thus ?case
+        proof(subst if_not_P, goal_cases)
+          case 2
+          thus ?case
+            unfolding Let_def
+          proof(intro arg_cong[of _ _ top_loop], unfold top_loop_call2_def Let_def, 
+              intro arg_cong2[where f = Pair], goal_cases)
+            case 1 
+            thus ?case
+              using D_def
+              by (intro ext)(auto split: if_split simp add: maxes_def Gt_def)
+          next
+            case 2
+            thus ?case
+              using D_def
+              by (auto split: if_split simp add: maxes_def Gt_def)
+          qed
+        qed auto
+      qed
+    qed
+  qed
 qed (auto simp add: top_loop.psimps[OF assms] top_loop_ret_None_def top_loop_call1_def
-         to_loop_ret_Some_def top_loop_call2_def Let_def
-         top_loop_ret_None_1_cond_def top_loop_ret_None_2_cond_def top_loop_call1_cond_def
-         top_loop_ret_Some_cond_def top_loop_call2_cond_def
-         split!: if_split MOD.split)
+    to_loop_ret_Some_def top_loop_call2_def Let_def
+    top_loop_ret_None_1_cond_def top_loop_ret_None_2_cond_def top_loop_call1_cond_def
+    top_loop_ret_Some_cond_def top_loop_call2_cond_def
+    split!: if_split MOD.split)
 
 lemma top_loop_induct_fst_snd:
   assumes dom: "top_loop_dom (\<pi>, \<OO>)"
@@ -291,30 +304,30 @@ proof (induction "(\<pi>, \<OO>)" arbitrary: \<pi> \<OO> rule: top_loop.pinduct)
             by (simp add: IH(1) ret_None_2)
         next
           case False
-        note not_Some = this
-        
-        have cond:"top_loop_call2_cond \<pi> \<OO>"
-          using not_None not_call1 not_Some not_ret_Some_cond
-          unfolding top_loop_ret_None_1_cond_def top_loop_call1_cond_def 
-                    top_loop_ret_Some_cond_def top_loop_call2_cond_def Let_def
-                    top_loop_ret_None_2_cond_def
-          by (cases "find_matching_or_decomposition (odd_tight_subgraph G w \<pi> \<sslash> maximal_sets \<OO>)") auto
+          note not_Some = this
 
-        have forw_subst2: "\<lbrakk>a = b ; c = d; P a c\<rbrakk> \<Longrightarrow> P b d" for a b c d by auto
+          have cond:"top_loop_call2_cond \<pi> \<OO>"
+            using not_None not_call1 not_Some not_ret_Some_cond
+            unfolding top_loop_ret_None_1_cond_def top_loop_call1_cond_def 
+              top_loop_ret_Some_cond_def top_loop_call2_cond_def Let_def
+              top_loop_ret_None_2_cond_def
+            by (cases "find_matching_or_decomposition (odd_tight_subgraph G w \<pi> \<sslash> maximal_sets \<OO>)") auto
 
-        obtain D where D: "find_matching_or_decomposition (odd_tight_subgraph G w \<pi> \<sslash> maximal_sets \<OO>) = decomp D"
-          using cond by(auto simp add: top_loop_call2_cond_def Let_def)
+          have forw_subst2: "\<lbrakk>a = b ; c = d; P a c\<rbrakk> \<Longrightarrow> P b d" for a b c d by auto
 
-        show ?thesis
+          obtain D where D: "find_matching_or_decomposition (odd_tight_subgraph G w \<pi> \<sslash> maximal_sets \<OO>) = decomp D"
+            using cond by(auto simp add: top_loop_call2_cond_def Let_def)
+
+          show ?thesis
             using cond
           proof(intro call2[OF  IH(1) cond],  intro IH(3)[OF refl refl _ D _ refl], goal_cases)
             case 3
             then show ?case 
-           by(intro ext)
-             (auto simp add: top_loop_call2_cond_def top_loop_call2_def Let_def D 
-                     split: if_split)
+              by(intro ext)
+                (auto simp add: top_loop_call2_cond_def top_loop_call2_def Let_def D 
+                  split: if_split)
           qed (auto intro!: ext simp add: top_loop_call2_cond_def top_loop_call2_def Let_def D 
-                     split: if_split)
+              split: if_split)
         qed
       qed
     qed
@@ -338,15 +351,15 @@ definition "odds_invar = (\<lambda> (\<pi>, \<OO>).
 laminar (Vs G) \<OO> \<and> (\<forall> Bls \<in> \<OO>. odd (card Bls)) \<and> composed_family \<OO> \<and> \<Union>\<OO> = Vs G)"
 
 lemma  odds_invarI: 
-"\<lbrakk>laminar (Vs G) \<OO>; \<forall>Bls \<in> \<OO>. odd (card Bls); composed_family \<OO>; \<Union>\<OO> = Vs G\<rbrakk> \<Longrightarrow> odds_invar (\<pi>, \<OO>)"
- and odds_invarE: 
- "\<lbrakk>odds_invar (\<pi>, \<OO>); 
+  "\<lbrakk>laminar (Vs G) \<OO>; \<forall>Bls \<in> \<OO>. odd (card Bls); composed_family \<OO>; \<Union>\<OO> = Vs G\<rbrakk> \<Longrightarrow> odds_invar (\<pi>, \<OO>)"
+  and odds_invarE: 
+  "\<lbrakk>odds_invar (\<pi>, \<OO>); 
       \<lbrakk>laminar (Vs G) \<OO>; \<forall>Bls \<in> \<OO>. odd (card Bls); composed_family \<OO>; \<Union>\<OO> = Vs G\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
- and odds_invarD: 
-    "odds_invar (\<pi>, \<OO>) \<Longrightarrow> laminar (Vs G) \<OO>"
-    "\<lbrakk>odds_invar (\<pi>, \<OO>); Bls \<in> \<OO>\<rbrakk> \<Longrightarrow> odd (card Bls)"
-    "odds_invar (\<pi>, \<OO>) \<Longrightarrow> composed_family \<OO>"
-    "odds_invar (\<pi>, \<OO>) \<Longrightarrow> \<Union>\<OO> = Vs G"
+  and odds_invarD: 
+  "odds_invar (\<pi>, \<OO>) \<Longrightarrow> laminar (Vs G) \<OO>"
+  "\<lbrakk>odds_invar (\<pi>, \<OO>); Bls \<in> \<OO>\<rbrakk> \<Longrightarrow> odd (card Bls)"
+  "odds_invar (\<pi>, \<OO>) \<Longrightarrow> composed_family \<OO>"
+  "odds_invar (\<pi>, \<OO>) \<Longrightarrow> \<Union>\<OO> = Vs G"
   unfolding odds_invar_def by auto
 
 definition "odd_factor_critical_invar = (\<lambda> (\<pi>, \<OO>).
@@ -376,44 +389,34 @@ definition "invar_strict_odd_pos = (\<lambda> (\<pi>, \<OO>).
 
 lemma 
   invar_strict_odd_posI: 
-    "(\<And>Bls. \<lbrakk>Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0) \<Longrightarrow> invar_strict_odd_pos (\<pi>, \<OO>)"
+  "(\<And>Bls. \<lbrakk>Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0) \<Longrightarrow> invar_strict_odd_pos (\<pi>, \<OO>)"
   and invar_strict_odd_posE: 
-    "\<lbrakk>invar_strict_odd_pos (\<pi>, \<OO>); (\<And> Bls. \<lbrakk>Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  "\<lbrakk>invar_strict_odd_pos (\<pi>, \<OO>); (\<And> Bls. \<lbrakk>Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   and invar_strict_odd_posD: 
-    "\<lbrakk>invar_strict_odd_pos (\<pi>, \<OO>); Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0"
+  "\<lbrakk>invar_strict_odd_pos (\<pi>, \<OO>); Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0"
   unfolding invar_strict_odd_pos_def by auto
 
 definition "invar_non_zero_pi_in_odd = (\<lambda> (\<pi>, \<OO>). \<forall> X. \<pi> X \<noteq> 0 \<longrightarrow> X \<in> \<OO>)"
 
 lemma 
   invar_non_zero_pi_in_oddI: 
-    "(\<And>X. \<pi> X \<noteq> 0 \<Longrightarrow> X \<in> \<OO>) \<Longrightarrow> invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
+  "(\<And>X. \<pi> X \<noteq> 0 \<Longrightarrow> X \<in> \<OO>) \<Longrightarrow> invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
   and invar_non_zero_pi_in_oddE: 
-    "\<lbrakk>invar_non_zero_pi_in_odd (\<pi>, \<OO>); (\<And> X. \<pi> X \<noteq> 0 \<Longrightarrow> X \<in> \<OO>) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  "\<lbrakk>invar_non_zero_pi_in_odd (\<pi>, \<OO>); (\<And> X. \<pi> X \<noteq> 0 \<Longrightarrow> X \<in> \<OO>) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   and invar_non_zero_pi_in_oddD: 
-    "\<lbrakk>invar_non_zero_pi_in_odd (\<pi>, \<OO>); \<pi> X \<noteq> 0\<rbrakk> \<Longrightarrow> X \<in> \<OO>"
+  "\<lbrakk>invar_non_zero_pi_in_odd (\<pi>, \<OO>); \<pi> X \<noteq> 0\<rbrakk> \<Longrightarrow> X \<in> \<OO>"
   unfolding invar_non_zero_pi_in_odd_def by auto
 
 definition "invar_feasible_pi = (\<lambda> (\<pi>, \<OO>). feasible_min_perfect_dual_edmonds G w \<pi>)"
 
 lemma 
   invar_feasible_piI: 
-    "feasible_min_perfect_dual_edmonds G w \<pi> \<Longrightarrow> invar_feasible_pi (\<pi>, \<OO>)"
+  "feasible_min_perfect_dual_edmonds G w \<pi> \<Longrightarrow> invar_feasible_pi (\<pi>, \<OO>)"
   and invar_feasible_piE: 
-    "\<lbrakk>invar_feasible_pi (\<pi>, \<OO>); feasible_min_perfect_dual_edmonds G w \<pi> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  "\<lbrakk>invar_feasible_pi (\<pi>, \<OO>); feasible_min_perfect_dual_edmonds G w \<pi> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   and invar_feasible_piD: 
-    "invar_feasible_pi (\<pi>, \<OO>) \<Longrightarrow> feasible_min_perfect_dual_edmonds G w \<pi>"
+  "invar_feasible_pi (\<pi>, \<OO>) \<Longrightarrow> feasible_min_perfect_dual_edmonds G w \<pi>"
   unfolding invar_feasible_pi_def by auto
-
-definition "pi_multiples \<alpha> = (\<lambda> (\<pi>, \<OO>). \<forall> X \<in> \<OO>. multiples_of \<alpha> \<pi> {X})"
-
-lemma pi_multiplesI: 
-    "(\<And>X. X \<in> \<OO> \<Longrightarrow> multiples_of \<alpha> \<pi> {X}) \<Longrightarrow> pi_multiples \<alpha> (\<pi>, \<OO>)"
-and pi_multiplesE: 
-    "\<lbrakk>pi_multiples \<alpha> (\<pi>, \<OO>); (\<forall>X \<in> \<OO>. multiples_of \<alpha> \<pi> {X}) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-and pi_multiplesD: 
-    "\<lbrakk>pi_multiples \<alpha> (\<pi>, \<OO>); X \<in> \<OO>\<rbrakk> \<Longrightarrow> multiples_of \<alpha> \<pi> {X}"
-  unfolding pi_multiples_def by auto
 
 lemma odd_invar_omega:
   assumes "odds_invar (\<pi>, \<OO>)" "X \<in> \<OO>"
@@ -421,18 +424,20 @@ lemma odd_invar_omega:
   using assms
   by (auto intro!: in_odd_subsetsI elim!: odds_invarE)
 
+subsection \<open>Invariant Preservation\<close>
+
 lemma top_loop_call1_pres:
   assumes "top_loop_call1_cond \<pi> \<OO>"
-   "odds_invar (\<pi>, \<OO>)"
-   "odd_factor_critical_invar (\<pi>, \<OO>)"
-   "invar_strict_odd_pos (\<pi>, \<OO>)"
-   "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
-   "invar_feasible_pi (\<pi>, \<OO>)"
- shows  "odds_invar (top_loop_call1 \<pi> \<OO>)" (is ?th1)
-   "odd_factor_critical_invar (top_loop_call1 \<pi> \<OO>)" (is ?th2)
-   "invar_strict_odd_pos (top_loop_call1 \<pi> \<OO>)" (is ?th3)
-   "invar_non_zero_pi_in_odd (top_loop_call1 \<pi> \<OO>)" (is ?th4)
-   "invar_feasible_pi (top_loop_call1 \<pi> \<OO>)" (is ?th5)
+    "odds_invar (\<pi>, \<OO>)"
+    "odd_factor_critical_invar (\<pi>, \<OO>)"
+    "invar_strict_odd_pos (\<pi>, \<OO>)"
+    "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
+    "invar_feasible_pi (\<pi>, \<OO>)"
+  shows  "odds_invar (top_loop_call1 \<pi> \<OO>)" (is ?th1)
+    "odd_factor_critical_invar (top_loop_call1 \<pi> \<OO>)" (is ?th2)
+    "invar_strict_odd_pos (top_loop_call1 \<pi> \<OO>)" (is ?th3)
+    "invar_non_zero_pi_in_odd (top_loop_call1 \<pi> \<OO>)" (is ?th4)
+    "invar_feasible_pi (top_loop_call1 \<pi> \<OO>)" (is ?th5)
 proof-
 
   define Gt where "Gt = odd_tight_subgraph G w \<pi>"
@@ -457,7 +462,7 @@ proof-
     unfolding Blos_def
     by(intro sel_correct(2))
       (auto simp add:  top_loop_call1_cond_def Gt_def maxes_def Let_def)
- 
+
   have more_blos_props: "Blos \<in> maximal_sets \<OO>" "Blos \<in> \<OO>"
     using Blos_in_maxes maxes_def in_maximal_setsE by auto
 
@@ -477,36 +482,36 @@ proof-
     then obtain u v where pc2: "e = {u, v}" "u \<noteq> v"
       by auto
     show ?case 
-proof(cases rule: edmonds_primal_dual_cases[OF pc1, of "{Blos}" _ "{}", simplified])
-  case (1 XX u v)
-  hence "sum \<pi>' (end_sets G e) = sum \<pi> (end_sets G e)"
-    using more_blos_props(2) one(3)  finite_Vs
-    by(intro edmonds_primal_dual_adjustment_result(1)[of "{Blos}" "{}", simplified, of \<pi>' \<pi> \<epsilon> G _ _ _ XX,
-                  OF _ _ pc2 _ _ _ _ pc2])
-      (auto intro!: odd_invar_omega[OF assms(2)] simp add: \<pi>'_def)
-  then show ?thesis 
-    by(auto  simp add: \<w>_def)
-next
-  case (2 u v)
-  hence "sum \<pi>' (end_sets G e) = sum \<pi> (end_sets G e)"
-    using more_blos_props(2) one(3)  finite_Vs
-    by(intro edmonds_primal_dual_adjustment_result(6)[of "{Blos}" "{}", simplified, of \<pi>' \<pi> \<epsilon> G e u v u v])
-      (auto intro!: odd_invar_omega[OF assms(2)] simp add: \<pi>'_def)
-  then show ?thesis 
-    by(auto simp add: \<w>_def)
-next
-  case (3 u v)
-  hence "X \<inter> Blos \<noteq> {}" 
-    using one by auto
-  hence "Blos \<subseteq> X \<or> X \<subseteq> Blos" 
-    using more_blos_props(2) odds_invar_here(1) one(1) by(auto elim!: laminarE)
-  hence "Blos \<subset> X"
-    using "3"(2,3) one(2) by auto
-  hence False 
-    using Blos_in_maxes in_maximal_setsE maxes_def one(1) by auto
-  then show ?thesis
-    by simp
-qed
+    proof(cases rule: edmonds_primal_dual_cases[OF pc1, of "{Blos}" _ "{}", simplified])
+      case (1 XX u v)
+      hence "sum \<pi>' (end_sets G e) = sum \<pi> (end_sets G e)"
+        using more_blos_props(2) one(3)  finite_Vs
+        by(intro edmonds_primal_dual_adjustment_result(1)[of "{Blos}" "{}", simplified, of \<pi>' \<pi> \<epsilon> G _ _ _ XX,
+              OF _ _ pc2 _ _ _ _ pc2])
+          (auto intro!: odd_invar_omega[OF assms(2)] simp add: \<pi>'_def)
+      then show ?thesis 
+        by(auto  simp add: \<w>_def)
+    next
+      case (2 u v)
+      hence "sum \<pi>' (end_sets G e) = sum \<pi> (end_sets G e)"
+        using more_blos_props(2) one(3)  finite_Vs
+        by(intro edmonds_primal_dual_adjustment_result(6)[of "{Blos}" "{}", simplified, of \<pi>' \<pi> \<epsilon> G e u v u v])
+          (auto intro!: odd_invar_omega[OF assms(2)] simp add: \<pi>'_def)
+      then show ?thesis 
+        by(auto simp add: \<w>_def)
+    next
+      case (3 u v)
+      hence "X \<inter> Blos \<noteq> {}" 
+        using one by auto
+      hence "Blos \<subseteq> X \<or> X \<subseteq> Blos" 
+        using more_blos_props(2) odds_invar_here(1) one(1) by(auto elim!: laminarE)
+      hence "Blos \<subset> X"
+        using "3"(2,3) one(2) by auto
+      hence False 
+        using Blos_in_maxes in_maximal_setsE maxes_def one(1) by auto
+      then show ?thesis
+        by simp
+    qed
   qed
 
   show ?th2
@@ -534,10 +539,10 @@ qed
 
   have Delta_nempty: "Delta G Blos \<noteq> {}"
     using assms(1) by(auto simp add: top_loop_call1_cond_def Blos_def maxes_def Let_def Gt_def)
-    
+
   have epsilon_props: "1 < card Blos \<Longrightarrow> \<epsilon> \<le> \<pi> Blos" (is "?as1 \<Longrightarrow> ?t1")
-                    "\<And> e. e \<in> Delta G Blos \<Longrightarrow> \<epsilon> \<le> \<w> \<pi> e" (is "\<And> e. ?as2 e \<Longrightarrow> ?th2 e")
-                    "\<epsilon> \<ge> 0" (is ?t3)
+    "\<And> e. e \<in> Delta G Blos \<Longrightarrow> \<epsilon> \<le> \<w> \<pi> e" (is "\<And> e. ?as2 e \<Longrightarrow> ?th2 e")
+    "\<epsilon> \<ge> 0" (is ?t3)
   proof-
 
     have finite_min: "finite ((if 1 < card Blos then {\<pi> Blos} else {}) \<union> {\<w> \<pi> e |e. e \<in> Delta G Blos})"
@@ -562,8 +567,8 @@ qed
       then show ?case 
         using  assms(4) more_blos_props(2) invar_feasible_piD[OF assms(6)]
         by (auto intro!: feasible_min_perfect_dual_edmondsD(1)
-               simp add: if_split \<w>_def 
-                   dest: invar_strict_odd_posD in_DeltaD(2))
+            simp add: if_split \<w>_def 
+            dest: invar_strict_odd_posD in_DeltaD(2))
     qed
   qed
 
@@ -589,14 +594,14 @@ qed
     unfolding top_loop_call1_def
     using assms(5)  more_blos_props(2)
     by(auto intro!: invar_non_zero_pi_in_oddI 
-             elim!: invar_non_zero_pi_in_oddE 
-          simp add: \<pi>'_def if_split[of "\<lambda> x. x \<noteq> 0"])
+        elim!: invar_non_zero_pi_in_oddE 
+        simp add: \<pi>'_def if_split[of "\<lambda> x. x \<noteq> 0"])
 
   show ?th5
     unfolding top_loop_call1_def
   proof(rule invar_feasible_piI,
-        rule edmonds_primal_dual_adjustment_feasibility[of G w \<pi> "{Blos}" "{}", simplified, of \<pi>' \<epsilon>],
-        goal_cases)
+      rule edmonds_primal_dual_adjustment_feasibility[of G w \<pi> "{Blos}" "{}", simplified, of \<pi>' \<epsilon>],
+      goal_cases)
     case 1
     then show ?case 
       using assms(6) by(auto dest: invar_feasible_piD)
@@ -626,7 +631,7 @@ qed
 
 lemma top_loop_ret_None_1_dual_unbounded:
   assumes "top_loop_ret_None_1_cond \<pi> \<OO>" "odds_invar (\<pi>, \<OO>)" "invar_feasible_pi (\<pi>, \<OO>)"
- shows "\<exists> \<pi>'. feasible_min_perfect_dual_edmonds G w \<pi>' \<and> sum \<pi>' (\<Omega> Vs G) > B"
+  shows "\<exists> \<pi>'. feasible_min_perfect_dual_edmonds G w \<pi>' \<and> sum \<pi>' (\<Omega> Vs G) > B"
 proof-
 
   define Gt where "Gt = odd_tight_subgraph G w \<pi>"
@@ -641,14 +646,14 @@ proof-
     unfolding Blos_def
     by(intro sel_correct(1))
       (auto simp add:  top_loop_ret_None_1_cond_def Gt_def maxes_def Let_def)
- 
+
   have  Blos_props:"\<nexists>e. e \<in> Delta G Blos" 
     using assms(1,2) finite_Vs union_split_with_maximal_sets[of \<OO>] finite_UnionD[of "maximal_sets \<OO>"]
       finite_UnionD[of \<OO>] odds_invarD(4)[of \<pi> \<OO>]
     unfolding Blos_def
     by(intro sel_correct(2))
       (auto simp add:  top_loop_ret_None_1_cond_def Gt_def maxes_def Let_def)
- 
+
   have more_blos_props: "Blos \<in> maximal_sets \<OO>" "Blos \<in> \<OO>"
     using Blos_in_maxes maxes_def in_maximal_setsE by auto
 
@@ -656,8 +661,8 @@ proof-
     by (auto simp add: \<epsilon>_def)
 
   have "feasible_min_perfect_dual_edmonds G w \<pi>'"
-proof(rule edmonds_primal_dual_adjustment_feasibility[of G w \<pi> "{Blos}" "{}", simplified, of \<pi>' \<epsilon>],
-        goal_cases)
+  proof(rule edmonds_primal_dual_adjustment_feasibility[of G w \<pi> "{Blos}" "{}", simplified, of \<pi>' \<epsilon>],
+      goal_cases)
     case 1
     then show ?case 
       using assms(3) by(auto dest: invar_feasible_piD)
@@ -694,7 +699,7 @@ proof(rule edmonds_primal_dual_adjustment_feasibility[of G w \<pi> "{Blos}" "{}"
     have "sum \<pi>' (\<Omega> Vs G) =  \<pi>' Blos + sum \<pi>' ((\<Omega> Vs G) - {Blos})"
       using assms(2) more_blos_props(2)
       by (auto intro: arg_cong[where f = "sum \<pi>'"] odd_invar_omega
-            simp add: finite_Vs odd_subsets_finite comm_monoid_add_class.sum.insert_remove[symmetric])
+          simp add: finite_Vs odd_subsets_finite comm_monoid_add_class.sum.insert_remove[symmetric])
     moreover have " \<pi>' Blos  > \<pi> Blos + B + \<bar> sum \<pi> (\<Omega> Vs G) \<bar>"
       by(auto simp add: \<pi>'_def \<epsilon>_def)
     moreover have "sum \<pi>' ((\<Omega> Vs G) - {Blos}) = sum \<pi> ((\<Omega> Vs G) - {Blos})"
@@ -702,7 +707,7 @@ proof(rule edmonds_primal_dual_adjustment_feasibility[of G w \<pi> "{Blos}" "{}"
     moreover have "sum \<pi> (\<Omega> Vs G) =  \<pi> Blos + sum \<pi> ((\<Omega> Vs G) - {Blos})"
       using assms(2) more_blos_props(2)
       by (auto intro: arg_cong[where f = "sum \<pi>"] odd_invar_omega
-            simp add: finite_Vs odd_subsets_finite comm_monoid_add_class.sum.insert_remove[symmetric])
+          simp add: finite_Vs odd_subsets_finite comm_monoid_add_class.sum.insert_remove[symmetric])
     ultimately show ?thesis
       by auto
   qed
@@ -716,14 +721,14 @@ lemma two_Unions_disjoint:
 
 lemma union_with_Union_disjoint:
   "(\<And> X. X \<in> \<X> \<Longrightarrow> X \<inter> Y = {}) \<Longrightarrow> \<Union> \<X> \<inter> Y = {}"
-   "(\<And> Y. Y \<in> \<Y> \<Longrightarrow> X \<inter> Y = {}) \<Longrightarrow> X \<inter> \<Union> \<Y> = {}"
+  "(\<And> Y. Y \<in> \<Y> \<Longrightarrow> X \<inter> Y = {}) \<Longrightarrow> X \<inter> \<Union> \<Y> = {}"
   by auto
 
 lemma top_loop_ret_None_2_dual_unbounded:
   assumes "top_loop_ret_None_2_cond \<pi> \<OO>"
-   "odds_invar (\<pi>, \<OO>)"
-   "invar_feasible_pi (\<pi>, \<OO>)"
- shows "\<exists> \<pi>'. feasible_min_perfect_dual_edmonds G w \<pi>' \<and> sum \<pi>' (\<Omega> Vs G) > B"
+    "odds_invar (\<pi>, \<OO>)"
+    "invar_feasible_pi (\<pi>, \<OO>)"
+  shows "\<exists> \<pi>'. feasible_min_perfect_dual_edmonds G w \<pi>' \<and> sum \<pi>' (\<Omega> Vs G) > B"
 proof-
 
   define Gt where "Gt = odd_tight_subgraph G w \<pi>"
@@ -737,8 +742,8 @@ proof-
 
   have maxes_have_crossings:
     "\<And> Blos. Blos \<in> maxes \<Longrightarrow> \<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos"
-   and unbounded:"\<And> X. X \<in> D \<Longrightarrow> Neighbourhood G (\<Union> X) \<subseteq> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D))"
-          "\<And> X. X \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D) \<Longrightarrow> 1 \<ge> card X"
+    and unbounded:"\<And> X. X \<in> D \<Longrightarrow> Neighbourhood G (\<Union> X) \<subseteq> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D))"
+    "\<And> X. X \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D) \<Longrightarrow> 1 \<ge> card X"
     using assms(1) D_def by(auto simp add: top_loop_ret_None_2_cond_def Gt_def maxes_def Let_def)
 
   note odds_invar_hereD = odds_invarD[OF assms(2)]
@@ -746,11 +751,11 @@ proof-
   have part:"partition_on (Vs G) maxes"
     using maximal_sets_in_laminar_family_are_global_partition[OF odds_invar_hereD(1)]
     by (simp add: finite_Vs odds_invar_hereD(4) maxes_def)
-   
+
   have graph_invar_quot: "graph_invar (Gt \<sslash> maxes)"
     using part finite_Vs
     by(auto intro!: partition_quotient_graph_graph_invar[of "Vs G"])
-  
+
   note D_props = find_matching_or_decomposition_correct(4-)[OF graph_invar_quot D_def]
 
   hence card_neighb_D_leq_card_D: "card (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) \<le> card D"
@@ -868,12 +873,12 @@ proof-
     obtain XX where "XX \<in> X'" 
       using D_props(6) X'(1) by auto
     moreover hence "XX \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D)"
-     using X'(1,2) X part inf.order_iff[of X' maxes] inf.order_iff[of XX X]
+      using X'(1,2) X part inf.order_iff[of X' maxes] inf.order_iff[of XX X]
         nbhd_in_maxes_tight[of "\<Union> D"] D_in_maxes[of X'] maxes_disjoint[of XX X] Union_upper[of XX X']
-     by (auto simp add: partition_on_def)
-   ultimately show ?case 
-     using X'(1) by(auto elim: in_NeighbourhoodE)
- qed
+      by (auto simp add: partition_on_def)
+    ultimately show ?case 
+      using X'(1) by(auto elim: in_NeighbourhoodE)
+  qed
 
   have \<pi>'_def': "\<pi>' =
   (\<lambda>X. if \<exists>Xa. X = \<Union> Xa \<and> Xa \<in> D then \<pi> X + \<epsilon>
@@ -900,24 +905,24 @@ proof-
   qed
 
   have odd_Union_in_D: "odd (card (\<Union> X'))"  if X': "X' \<in> D" for X'
-   proof(rule odd_disjoint_Union, goal_cases)
-        case 1
-        then show ?case
-          by (simp add: that odds_in_D)
-      next
-        case (2 XX)
-        hence "XX \<in> maxes"
-          using D_in_maxes that  by blast
-        then show ?case
-          using maximal_sets_subset odds_invar_hereD(2) 
-          by (auto simp add: maxes_def)
-      next
-        case (3 X Y)
-        then show ?case 
-          using D_in_maxes that 
-          by(intro maxes_disjoint) auto
-    qed
-   
+  proof(rule odd_disjoint_Union, goal_cases)
+    case 1
+    then show ?case
+      by (simp add: that odds_in_D)
+  next
+    case (2 XX)
+    hence "XX \<in> maxes"
+      using D_in_maxes that  by blast
+    then show ?case
+      using maximal_sets_subset odds_invar_hereD(2) 
+      by (auto simp add: maxes_def)
+  next
+    case (3 X Y)
+    then show ?case 
+      using D_in_maxes that 
+      by(intro maxes_disjoint) auto
+  qed
+
 
   have adjustment_pc4: "{\<Union> X |X. X \<in> D} \<subseteq> \<Omega> Vs G \<and> Neighbourhood (Gt \<sslash> maxes) (\<Union> D) \<subseteq> \<Omega> Vs G"
   proof(rule, all \<open>rule\<close>, goal_cases)
@@ -946,13 +951,13 @@ proof-
   qed
 
   note edmonds_primal_dual_adjustment_result_here = 
-     edmonds_primal_dual_adjustment_result[of "{\<Union> X | X. X \<in> D}" "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" \<pi>' \<pi> \<epsilon>, 
-            OF adjustment_pc1  adjustment_pc2, simplified, OF \<pi>'_def' adjustment_pc4 _ _ _ finite_Vs]
+    edmonds_primal_dual_adjustment_result[of "{\<Union> X | X. X \<in> D}" "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" \<pi>' \<pi> \<epsilon>, 
+      OF adjustment_pc1  adjustment_pc2, simplified, OF \<pi>'_def' adjustment_pc4 _ _ _ finite_Vs]
 
   note feasible_dual = invar_feasible_piD[OF assms(3)]
 
   have edges_between_Ds_not_tight:
-     "\<lbrakk>u\<in> \<Union> X; X \<in> D; v\<in> \<Union> Y; Y \<in> D; {u, v} \<in> G; X \<noteq> Y\<rbrakk> \<Longrightarrow> sum \<pi> (end_sets G {u, v}) \<noteq> w {u, v}" for X Y u v
+    "\<lbrakk>u\<in> \<Union> X; X \<in> D; v\<in> \<Union> Y; Y \<in> D; {u, v} \<in> G; X \<noteq> Y\<rbrakk> \<Longrightarrow> sum \<pi> (end_sets G {u, v}) \<noteq> w {u, v}" for X Y u v
   proof(rule ccontr, goal_cases)
     case 1
     note one = this
@@ -973,7 +978,7 @@ proof-
     have "{XX, YY} \<in> (Gt \<sslash> maxes)"
       using "1"(2,4) D_in_maxes XX_YY one(5,7) XX_neq_YY
       by(auto  intro!: exI[of _ XX, OF exI[of _ YY]] bexI[of _ "{u, v}"]  in_odd_tight_subgraphI
-                 simp add: partition_quotient_graph_def Gt_def)
+          simp add: partition_quotient_graph_def Gt_def)
     thus False 
       using D_props(3) XX_YY(1,3) one(2,4,6) by blast
   qed
@@ -983,19 +988,19 @@ proof-
   hence eps_geq_0: "\<epsilon> \<ge> 0"
     by auto
 
-  (*all three epsilon cases hold because the assumptions are contradictory. The assumed edges don't exist.*)
+(*all three epsilon cases hold because the assumptions are contradictory. The assumed edges don't exist.*)
 
   have eps_cond1:
-   "\<epsilon> * 2 \<le> w {u, v} - sum \<pi> (end_sets G {u, v})"
-   if asm: "{u, v} \<in> G" "u \<in> X" "\<exists>Xa. X = \<Union> Xa \<and> Xa \<in> D"
-    "v \<in> Y" "\<exists>X. Y = \<Union> X \<and> X \<in> D" "X \<noteq> Y"
+    "\<epsilon> * 2 \<le> w {u, v} - sum \<pi> (end_sets G {u, v})"
+    if asm: "{u, v} \<in> G" "u \<in> X" "\<exists>Xa. X = \<Union> Xa \<and> Xa \<in> D"
+      "v \<in> Y" "\<exists>X. Y = \<Union> X \<and> X \<in> D" "X \<noteq> Y"
     for u v X Y 
   proof-
     have "X \<inter> Y = {}" 
     proof(rule ccontr, goal_cases)
       case 1
       then obtain X' Xa Y' Ya x where props:"X' \<in> Xa" "\<Union> Xa = X" "Xa \<in> D"
-              "Y' \<in> Ya" "\<Union> Ya = Y" "Ya \<in> D" "x \<in> X'" "x \<in> Y'"
+        "Y' \<in> Ya" "\<Union> Ya = Y" "Ya \<in> D" "x \<in> X'" "x \<in> Y'"
         using asm(3,5) by blast
       hence "Y' = X'" 
         using D_in_maxes D_props(1) that(3,5,6)
@@ -1003,7 +1008,7 @@ proof-
       thus False
         using D_props(1) props(1,2,3,4,5,6) that(6)
         by(auto simp add: disjoint_def)
-   qed
+    qed
     hence "v \<in> Neighbourhood G X"
       using asm by(auto intro!:  in_NeighbourhoodI)
     hence "v \<in> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D))"
@@ -1012,7 +1017,7 @@ proof-
       by(auto simp add: Neighbourhood_def)
     hence V_in_max:"V \<in> maxes"
       using Vs_partition_quotient_graph[of Gt maxes]
-            edges_are_Vs_2[of U' V "Gt \<sslash> maxes"] 
+        edges_are_Vs_2[of U' V "Gt \<sslash> maxes"] 
       by auto
     obtain YY V' where YYV':"V' \<in> YY" "v \<in> V'" "Y = \<Union> YY" "YY \<in> D"
       using asm(4,5) by auto
@@ -1028,9 +1033,9 @@ proof-
   qed
 
   have eps_cond2:
-   "\<epsilon> \<le> w {u, v} - sum \<pi> (end_sets G {u, v})"
-   if asms: "{u, v} \<in> G" "u \<in> X" "\<exists>XD. X = \<Union> XD \<and> XD \<in> D" 
-    "\<forall>Y. (\<forall>Xa. Y = \<Union> Xa \<longrightarrow> Xa \<notin> D) \<and> Y \<notin> Neighbourhood (Gt \<sslash> maxes) (\<Union> D) \<or> v \<notin> Y" for u v X
+    "\<epsilon> \<le> w {u, v} - sum \<pi> (end_sets G {u, v})"
+    if asms: "{u, v} \<in> G" "u \<in> X" "\<exists>XD. X = \<Union> XD \<and> XD \<in> D" 
+      "\<forall>Y. (\<forall>Xa. Y = \<Union> Xa \<longrightarrow> Xa \<notin> D) \<and> Y \<notin> Neighbourhood (Gt \<sslash> maxes) (\<Union> D) \<or> v \<notin> Y" for u v X
   proof-
     have"v \<in> Neighbourhood G X"
       using  that(1,2,3,4)
@@ -1050,86 +1055,88 @@ proof-
     by linarith
 
   note fsbl_after= edmonds_primal_dual_adjustment_feasibility[OF feasible_dual,
-           of "{\<Union> X | X. X \<in> D}" "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" \<pi>' \<epsilon>,
-           OF adjustment_pc1 adjustment_pc2, simplified, OF \<pi>'_def' adjustment_pc4 graph  eps_geq_0]
+      of "{\<Union> X | X. X \<in> D}" "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" \<pi>' \<epsilon>,
+      OF adjustment_pc1 adjustment_pc2, simplified, OF \<pi>'_def' adjustment_pc4 graph  eps_geq_0]
 
   have "feasible_min_perfect_dual_edmonds G w
    (\<lambda>X. if \<exists>Xa. X = \<Union> Xa \<and> Xa \<in> D then \<pi> X + \<epsilon>
          else if X \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D) then \<pi> X - \<epsilon> else \<pi> X)"
-    apply(rule fsbl_after)
-    subgoal
-      apply(rule eps_cond1)
-      by auto
-    subgoal
-        apply(rule eps_cond2)
-        by auto
-      subgoal
-        apply(rule eps_cond3)
-        by auto
-      done
+  proof(rule fsbl_after, goal_cases)
+    case 1
+    thus ?case
+      by(rule eps_cond1)
+  next
+    case 2
+    thus ?case
+      by(rule eps_cond2)
+  next
+    case 3
+    thus ?case
+      by(rule eps_cond3)
+  qed
 
-    hence "feasible_min_perfect_dual_edmonds G w \<pi>'"
-      by (simp add: \<pi>'_def')
-   (*take dual change out as lemma*)
-    moreover have "B < sum \<pi>' \<Omega> Vs G"
-    proof-
-      have rw1: "sum \<pi> \<Omega> Vs G = sum \<pi> (Union ` D) + sum \<pi> (\<Omega> Vs G - (Union ` D))" for \<pi>
-      proof(subst comm_monoid_add_class.sum.union_disjoint[symmetric], goal_cases)
-        case 4
-        then show ?case
-          using adjustment_pc4
-          by(auto intro!:  arg_cong[of _ _ "sum _"])
-      qed  (auto intro!: finite_imageI simp add: finiteD graph odd_subsets_finite)
-     have rw2: "sum \<pi> (\<Omega> Vs G - (Union ` D)) =
+  hence "feasible_min_perfect_dual_edmonds G w \<pi>'"
+    by (simp add: \<pi>'_def')
+      (*take dual change out as lemma*)
+  moreover have "B < sum \<pi>' \<Omega> Vs G"
+  proof-
+    have rw1: "sum \<pi> \<Omega> Vs G = sum \<pi> (Union ` D) + sum \<pi> (\<Omega> Vs G - (Union ` D))" for \<pi>
+    proof(subst comm_monoid_add_class.sum.union_disjoint[symmetric], goal_cases)
+      case 4
+      then show ?case
+        using adjustment_pc4
+        by(auto intro!:  arg_cong[of _ _ "sum _"])
+    qed  (auto intro!: finite_imageI simp add: finiteD graph odd_subsets_finite)
+    have rw2: "sum \<pi> (\<Omega> Vs G - (Union ` D)) =
             sum \<pi> (\<Omega> Vs G - (Union ` D) - Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) +
             sum \<pi> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D))" for \<pi>
-     proof(subst comm_monoid_add_class.sum.union_disjoint[symmetric], goal_cases)
-        case 4
-        then show ?case
-          using adjustment_pc4 adjustment_pc2
-          by(auto intro!:  arg_cong[of _ _ "sum _"])
-      next
-        case 2
-        show ?case 
-          using Neighbourhood_in_G finite_subset graph_invar_quot by fast
-      qed  (auto intro!: finite_imageI simp add: finiteD graph odd_subsets_finite)
-      have rw3:  "sum \<pi>' (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) = 
+    proof(subst comm_monoid_add_class.sum.union_disjoint[symmetric], goal_cases)
+      case 4
+      then show ?case
+        using adjustment_pc4 adjustment_pc2
+        by(auto intro!:  arg_cong[of _ _ "sum _"])
+    next
+      case 2
+      show ?case 
+        using Neighbourhood_in_G finite_subset graph_invar_quot by fast
+    qed  (auto intro!: finite_imageI simp add: finiteD graph odd_subsets_finite)
+    have rw3:  "sum \<pi>' (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) = 
                     sum \<pi> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D))
                        - \<epsilon> * card (Neighbourhood (Gt \<sslash> maxes) (\<Union> D))"
-        unfolding \<pi>'_def
-      proof(subst sum_if_not_P, goal_cases)
-        case (1 x)
-        then show ?case
-          using adjustment_pc2 by blast
-      next
-        case 2
-        then show ?case 
-          by (simp add: sum_subtractf[of _ "\<lambda> x. \<epsilon>"])
-      qed
-      have rw4: "sum \<pi>' (Union ` D) = sum \<pi> (Union ` D) + \<epsilon> * card D"
-        unfolding \<pi>'_def 
-        by(subst sum_if_P)
-          (auto simp add: sum_inj_on[OF  inj_union_D] card_image[OF  inj_union_D]
-                       comm_monoid_add_class.sum.distrib[where h = "\<lambda> x. \<epsilon>"])
-      have rw5: "sum \<pi>' (\<Omega> Vs G - \<Union> ` D - Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) =
+      unfolding \<pi>'_def
+    proof(subst sum_if_not_P, goal_cases)
+      case (1 x)
+      then show ?case
+        using adjustment_pc2 by blast
+    next
+      case 2
+      then show ?case 
+        by (simp add: sum_subtractf[of _ "\<lambda> x. \<epsilon>"])
+    qed
+    have rw4: "sum \<pi>' (Union ` D) = sum \<pi> (Union ` D) + \<epsilon> * card D"
+      unfolding \<pi>'_def 
+      by(subst sum_if_P)
+        (auto simp add: sum_inj_on[OF  inj_union_D] card_image[OF  inj_union_D]
+          comm_monoid_add_class.sum.distrib[where h = "\<lambda> x. \<epsilon>"])
+    have rw5: "sum \<pi>' (\<Omega> Vs G - \<Union> ` D - Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) =
                  sum \<pi> (\<Omega> Vs G - \<Union> ` D - Neighbourhood (Gt \<sslash> maxes) (\<Union> D))"
-        unfolding \<pi>'_def 
-        by(subst sum_if_not_P) auto
+      unfolding \<pi>'_def 
+      by(subst sum_if_not_P) auto
 
-     have "sum \<pi>' \<Omega> Vs G = sum \<pi> \<Omega> Vs G +
+    have "sum \<pi>' \<Omega> Vs G = sum \<pi> \<Omega> Vs G +
                    \<epsilon> * ( card D - card (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)))"
-       unfolding rw1 rw2 rw3 rw4 rw5
-       by (auto simp add: real_of_minus_distrib[OF  card_neighb_D_leq_card_D]  algebra_simps)
-     moreover have "... \<ge> sum \<pi> \<Omega> Vs G + \<epsilon>"
-       using D_props(4) eps_gtr_0 by auto
-     moreover have "sum \<pi> \<Omega> Vs G + \<epsilon> > B"
-       by(auto simp add: \<epsilon>_def)
-     ultimately show ?thesis 
-       by simp
-   qed
-   ultimately show ?thesis
-     by auto
- qed
+      unfolding rw1 rw2 rw3 rw4 rw5
+      by (auto simp add: real_of_minus_distrib[OF  card_neighb_D_leq_card_D]  algebra_simps)
+    moreover have "... \<ge> sum \<pi> \<Omega> Vs G + \<epsilon>"
+      using D_props(4) eps_gtr_0 by auto
+    moreover have "sum \<pi> \<Omega> Vs G + \<epsilon> > B"
+      by(auto simp add: \<epsilon>_def)
+    ultimately show ?thesis 
+      by simp
+  qed
+  ultimately show ?thesis
+    by auto
+qed
 
 lemma card_gtr_1_two_elems:
   assumes "card X > Suc 0"
@@ -1145,16 +1152,16 @@ proof(cases "finite X")
   next
     case (insert x F)
     then show ?case 
-  proof(induction F rule: finite_induct, goal_cases)
-    case 1
-    then show ?case
-      by auto
-  next
-    case (2 x F)
-    then show ?case
-      by auto
+    proof(induction F rule: finite_induct, goal_cases)
+      case 1
+      then show ?case
+        by auto
+    next
+      case (2 x F)
+      then show ?case
+        by auto
+    qed
   qed
-qed
 next
   case False
   show ?thesis
@@ -1174,16 +1181,16 @@ lemma UnE_second_strict:"\<lbrakk>x \<in> A \<union> B; x \<in> A \<Longrightarr
 
 lemma top_loop_call2_pres:
   assumes "top_loop_call2_cond \<pi> \<OO>"
-   "odds_invar (\<pi>, \<OO>)"
-   "odd_factor_critical_invar (\<pi>, \<OO>)"
-   "invar_strict_odd_pos (\<pi>, \<OO>)"
-   "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
-   "invar_feasible_pi (\<pi>, \<OO>)"
- shows  "odds_invar (top_loop_call2 \<pi> \<OO>)" (is ?th1)
-   "odd_factor_critical_invar (top_loop_call2 \<pi> \<OO>)" (is ?th2)
-   "invar_strict_odd_pos (top_loop_call2 \<pi> \<OO>)" (is ?th3)
-   "invar_non_zero_pi_in_odd (top_loop_call2 \<pi> \<OO>)" (is ?th4)
-   "invar_feasible_pi (top_loop_call2 \<pi> \<OO>)" (is ?th5)
+    "odds_invar (\<pi>, \<OO>)"
+    "odd_factor_critical_invar (\<pi>, \<OO>)"
+    "invar_strict_odd_pos (\<pi>, \<OO>)"
+    "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
+    "invar_feasible_pi (\<pi>, \<OO>)"
+  shows  "odds_invar (top_loop_call2 \<pi> \<OO>)" (is ?th1)
+    "odd_factor_critical_invar (top_loop_call2 \<pi> \<OO>)" (is ?th2)
+    "invar_strict_odd_pos (top_loop_call2 \<pi> \<OO>)" (is ?th3)
+    "invar_non_zero_pi_in_odd (top_loop_call2 \<pi> \<OO>)" (is ?th4)
+    "invar_feasible_pi (top_loop_call2 \<pi> \<OO>)" (is ?th5)
 proof-
 
   define Gt where "Gt = odd_tight_subgraph G w \<pi>"
@@ -1197,20 +1204,20 @@ proof-
 
   have maxes_have_crossings:
     "\<And> Blos. Blos \<in> maxes \<Longrightarrow> \<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos"
-   and not_unbounded:"\<not> (\<forall> X \<in> D. Neighbourhood G (\<Union> X) \<subseteq> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)))
+    and not_unbounded:"\<not> (\<forall> X \<in> D. Neighbourhood G (\<Union> X) \<subseteq> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)))
           \<or> (\<exists> X \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D). 1 < card X)"
     using assms(1) D_def by(auto simp add: top_loop_call2_cond_def Gt_def maxes_def Let_def)
-   
+
   note odds_invar_hereD = odds_invarD[OF assms(2)]
 
   have part:"partition_on (Vs G) maxes"
     using maximal_sets_in_laminar_family_are_global_partition[OF odds_invar_hereD(1)]
     by (simp add: finite_Vs odds_invar_hereD(4) maxes_def)
-   
+
   have graph_invar_quot: "graph_invar (Gt \<sslash> maxes)"
     using part finite_Vs
     by(auto intro!: partition_quotient_graph_graph_invar[of "Vs G"])
-  
+
   note D_props = find_matching_or_decomposition_correct(4-)[OF graph_invar_quot D_def]
 
   have D_nempty:"D \<noteq> {}"
@@ -1312,12 +1319,12 @@ proof-
     obtain XX where "XX \<in> X'" 
       using D_props(6) X'(1) by auto
     moreover hence "XX \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D)"
-     using X'(1,2) X part inf.order_iff[of X' maxes] inf.order_iff[of XX X]
+      using X'(1,2) X part inf.order_iff[of X' maxes] inf.order_iff[of XX X]
         nbhd_in_maxes_tight[of "\<Union> D"] D_in_maxes[of X'] maxes_disjoint[of XX X] Union_upper[of XX X']
-     by (auto simp add: partition_on_def)
-   ultimately show ?case 
-     using X'(1) by(auto elim: in_NeighbourhoodE)
- qed
+      by (auto simp add: partition_on_def)
+    ultimately show ?case 
+      using X'(1) by(auto elim: in_NeighbourhoodE)
+  qed
 
   have \<pi>'_def': "\<pi>' =
   (\<lambda>X. if \<exists>Xa. X = \<Union> Xa \<and> Xa \<in> D then \<pi> X + \<epsilon>
@@ -1344,22 +1351,22 @@ proof-
   qed
 
   have odd_Union_in_D: "odd (card (\<Union> X'))"  if X': "X' \<in> D" for X'
-   proof(rule odd_disjoint_Union, goal_cases)
-        case 1
-        then show ?case
-          by (simp add: that odds_in_D)
-      next
-        case (2 XX)
-        hence "XX \<in> maxes"
-          using D_in_maxes that  by blast
-        then show ?case
-          using maxes_def maximal_sets_subset odds_invar_hereD(2) by auto
-      next
-        case (3 X Y)
-        then show ?case 
-          using D_in_maxes that 
-          by(intro maxes_disjoint) auto
-      qed
+  proof(rule odd_disjoint_Union, goal_cases)
+    case 1
+    then show ?case
+      by (simp add: that odds_in_D)
+  next
+    case (2 XX)
+    hence "XX \<in> maxes"
+      using D_in_maxes that  by blast
+    then show ?case
+      using maxes_def maximal_sets_subset odds_invar_hereD(2) by auto
+  next
+    case (3 X Y)
+    then show ?case 
+      using D_in_maxes that 
+      by(intro maxes_disjoint) auto
+  qed
 
   have adjustment_pc4: "{\<Union> X |X. X \<in> D} \<subseteq> \<Omega> Vs G \<and> Neighbourhood (Gt \<sslash> maxes) (\<Union> D) \<subseteq> \<Omega> Vs G"
   proof(rule, all \<open>rule\<close>, goal_cases)
@@ -1388,8 +1395,8 @@ proof-
   qed
 
   note edmonds_primal_dual_adjustment_result_here = 
-     edmonds_primal_dual_adjustment_result[of "{\<Union> X | X. X \<in> D}" "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" \<pi>' \<pi> \<epsilon>, 
-            OF adjustment_pc1  adjustment_pc2, simplified, OF \<pi>'_def' adjustment_pc4 _ _ _ finite_Vs]
+    edmonds_primal_dual_adjustment_result[of "{\<Union> X | X. X \<in> D}" "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" \<pi>' \<pi> \<epsilon>, 
+      OF adjustment_pc1  adjustment_pc2, simplified, OF \<pi>'_def' adjustment_pc4 _ _ _ finite_Vs]
 
   note feasible_dual = invar_feasible_piD[OF assms(6)]
 
@@ -1434,13 +1441,13 @@ proof-
       case 2
       then show ?case 
         by(auto intro!: finite_imageI intro: finite_subset[of _ G] 
-                  dest: in_DeltaD(2) 
-              simp add: finite_E)
+            dest: in_DeltaD(2) 
+            simp add: finite_E)
     qed
   qed
 
   have edges_between_Ds_not_tight:
-     "\<lbrakk>u\<in> \<Union> X; X \<in> D; v\<in> \<Union> Y; Y \<in> D; {u, v} \<in> G; X \<noteq> Y\<rbrakk> \<Longrightarrow> sum \<pi> (end_sets G {u, v}) \<noteq> w {u, v}" for X Y u v
+    "\<lbrakk>u\<in> \<Union> X; X \<in> D; v\<in> \<Union> Y; Y \<in> D; {u, v} \<in> G; X \<noteq> Y\<rbrakk> \<Longrightarrow> sum \<pi> (end_sets G {u, v}) \<noteq> w {u, v}" for X Y u v
   proof(rule ccontr, goal_cases)
     case 1
     note one = this
@@ -1461,7 +1468,7 @@ proof-
     have "{XX, YY} \<in> (Gt \<sslash> maxes)"
       using "1"(2,4) D_in_maxes XX_YY one(5,7) XX_neq_YY
       by(auto  intro!: exI[of _ XX, OF exI[of _ YY]] bexI[of _ "{u, v}"]  in_odd_tight_subgraphI
-                 simp add: partition_quotient_graph_def Gt_def)
+          simp add: partition_quotient_graph_def Gt_def)
     thus False 
       using D_props(3) XX_YY(1,3) one(2,4,6) by blast
   qed
@@ -1487,8 +1494,8 @@ proof-
       hence "\<w> \<pi> {u, v} \<in> ?min3"
         using feasible_min_perfect_dual_edmondsD(1)[OF feasible_dual, of "{u, v}"] X u(1,2)  v'(2)
         by (auto intro!: exI[of _ "{u, v}"] exI[of _ u, OF exI[of _ v]] 
-               feasible_min_perfect_dual_edmondsD(1)
-               simp add: Delta_def \<w>_def) 
+            feasible_min_perfect_dual_edmondsD(1)
+            simp add: Delta_def \<w>_def) 
       thus ?thesis
         unfolding Un_empty de_Morgan_conj
         by (intro disjI2) auto
@@ -1498,17 +1505,17 @@ proof-
   have eps_gtr_0:"0 < \<epsilon>"
     unfolding \<epsilon>_def
   proof(subst linorder_class.Min_gr_iff[OF finite_Min_contributors min_contributors_nempty], 
-        rule ballI, elim UnE, goal_cases)
+      rule ballI, elim UnE, goal_cases)
     case (1 pi)
     then show ?case 
       using  nbhd_in_maxes_tight[of "\<Union> D"]
       by (auto elim: in_maximal_setsE[OF set_mp] 
-             intro!: invar_strict_odd_posD[OF assms(4)]
-           simp add: maxes_def)
+          intro!: invar_strict_odd_posD[OF assms(4)]
+          simp add: maxes_def)
   next
     case (2 pi)
     then obtain X Y u v XX YY where pi: "X \<in> D" "Y \<in> D" "X \<noteq> Y" "u \<in> \<Union> X" "v \<in> \<Union> Y" "{u, v} \<in> G"
-         "pi = 1 / 2 * \<w> \<pi> {u, v}" "XX \<in> X" "u \<in> XX" "YY \<in> Y" "v \<in> YY"
+      "pi = 1 / 2 * \<w> \<pi> {u, v}" "XX \<in> X" "u \<in> XX" "YY \<in> Y" "v \<in> YY"
       by blast
     moreover hence "\<w> \<pi> {u, v} \<ge> 0" 
       by (simp add: \<w>_def feasible_dual feasible_min_perfect_dual_edmondsD(1))
@@ -1520,7 +1527,7 @@ proof-
       hence "{XX, YY} \<in> Gt \<sslash> maxes" 
         using D_in_maxes pi(1,2,8,9,10,11) pi(3) D_props(1)
         by(force intro!: exI[of _ XX, OF exI[of _ YY]] bexI[of _ "{u, v}" ] 
-               simp add: partition_quotient_graph_def disjoint_def)
+            simp add: partition_quotient_graph_def disjoint_def)
       then show ?case 
         using D_props(3)[of X Y]
         using pi(1,10,2,3,8) by blast
@@ -1530,8 +1537,8 @@ proof-
   next
     case (3 pi)
     then obtain u v U UU where pi: "pi = \<w> \<pi> {u, v}"
-               "v \<notin> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) \<union> \<Union> (\<Union> D)" "{u, v} \<in> G"
-               "u \<in> U" "U \<in> UU" "UU \<in> D"
+      "v \<notin> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) \<union> \<Union> (\<Union> D)" "{u, v} \<in> G"
+      "u \<in> U" "U \<in> UU" "UU \<in> D"
       by blast
     moreover hence "\<w> \<pi> {u, v} \<ge> 0" 
       by (simp add: \<w>_def feasible_dual feasible_min_perfect_dual_edmondsD(1))
@@ -1546,7 +1553,7 @@ proof-
       ultimately have "{U, V} \<in> Gt \<sslash> maxes" 
         using D_in_maxes pi(2,4,5,6)
         by(auto intro!: exI[of _ U, OF exI[of _ V]] bexI[of _ "{u, v}" ] 
-              simp add: partition_quotient_graph_def)
+            simp add: partition_quotient_graph_def)
       hence "V \<in> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) \<or> V \<in> (\<Union> D)"
         using  pi(5,6) by(auto intro!: in_NeighbourhoodI)
       hence "v \<in> \<Union> (Neighbourhood (Gt \<sslash> maxes) (\<Union> D)) \<union> \<Union> (\<Union> D)"
@@ -1560,20 +1567,20 @@ proof-
 
   hence  eps_geq_0:"0 \<le> \<epsilon>"
     by auto
-  
+
   have Union_of_D_part_not_in_maxes:
-     "\<lbrakk>X \<in> D; card X > 1\<rbrakk> \<Longrightarrow>  (\<Union> X) \<notin> maxes" for X
-    proof(goal_cases)
-      case 1
-      then obtain A B where AB: "A \<in> X" "B \<in> X" "A \<noteq> B"
-        using card_gtr_1_two_elems[of X]
-        by auto
-      hence "A \<in> maxes" "B \<in> maxes"
-        using "1" D_in_maxes by auto
-      thus ?case
-        using AB
-        by (auto elim!: in_maximal_setsE simp add: maxes_def)
-    qed
+    "\<lbrakk>X \<in> D; card X > 1\<rbrakk> \<Longrightarrow>  (\<Union> X) \<notin> maxes" for X
+  proof(goal_cases)
+    case 1
+    then obtain A B where AB: "A \<in> X" "B \<in> X" "A \<noteq> B"
+      using card_gtr_1_two_elems[of X]
+      by auto
+    hence "A \<in> maxes" "B \<in> maxes"
+      using "1" D_in_maxes by auto
+    thus ?case
+      using AB
+      by (auto elim!: in_maximal_setsE simp add: maxes_def)
+  qed
 
   have pi_of_D_part_geq_0: "\<lbrakk>X \<in> D; card (\<Union> X) > 1\<rbrakk> \<Longrightarrow> \<pi> (\<Union> X) \<ge> 0" for X
   proof(goal_cases)
@@ -1581,9 +1588,9 @@ proof-
     thus ?case
       using 1 odd_Union_in_D[OF 1(1)] D_in_maxes[OF 1(1)] D_props(6)[OF 1(1)]
       by(auto intro!: feasible_min_perfect_dual_edmondsD(2)[OF feasible_dual]
-                      in_odd_subsets_strictI
-               intro: nat_geq_3I
-            simp add:  partition_onD1[OF part])+
+          in_odd_subsets_strictI
+          intro: nat_geq_3I
+          simp add:  partition_onD1[OF part])+
   qed
 
   have \<pi>'_of_those_in_D:"\<lbrakk>X \<in> D; card (\<Union> X) > 1\<rbrakk> \<Longrightarrow> \<pi>' (\<Union> X) > 0" for X
@@ -1685,8 +1692,8 @@ proof-
           then show ?thesis 
             using Y(1,2) X(1) Ycal(1)   nbhd_in_maxes_tight[of "\<Union> D"]
             by (auto intro: bexI[of _ Y] 
-                     elim!: in_maximal_setsE in_maximal_setsE[of Y \<OO>, OF set_mp] 
-                  simp add:  maxes_def)
+                elim!: in_maximal_setsE in_maximal_setsE[of Y \<OO>, OF set_mp] 
+                simp add:  maxes_def)
         next
           case False
           then show ?thesis
@@ -1702,13 +1709,13 @@ proof-
     then show ?case
       using odds_invar_hereD(4)
       by (auto intro!: helper 
-                elim!: in_maximal_setsE[of _ \<OO>, OF set_mp, OF D_in_maxes[simplified maxes_def]]
-             simp add: \<OO>'_def)
+          elim!: in_maximal_setsE[of _ \<OO>, OF set_mp, OF D_in_maxes[simplified maxes_def]]
+          simp add: \<OO>'_def)
   qed
 
   have eps_cond_1:"\<epsilon> * 2 \<le> w {u, v} - sum \<pi> (end_sets G {u, v})"
     if asm: "{u, v} \<in> G" "u \<in> X" "\<exists>Xa. X = \<Union> Xa \<and> Xa \<in> D"
-       "v \<in> Y" "\<exists>X. Y = \<Union> X \<and> X \<in> D" "X \<noteq> Y" for u v X Y
+      "v \<in> Y" "\<exists>X. Y = \<Union> X \<and> X \<in> D" "X \<noteq> Y" for u v X Y
   proof-
     have "\<epsilon>  \<le> 1/2 * (w {u, v} - sum \<pi> (end_sets G {u, v}))"
       unfolding \<epsilon>_def
@@ -1730,33 +1737,33 @@ proof-
     if asm: "{u, v} \<in> G" "u \<in> X" "\<exists>Xa. X = \<Union> Xa \<and> Xa \<in> D"
       "\<forall>Y. (\<forall>X. Y = \<Union> X \<longrightarrow> X \<notin> D) \<and> Y \<notin> Neighbourhood (Gt \<sslash> maxes) (\<Union> D) \<or> v \<notin> Y" for u v X
     unfolding \<epsilon>_def
-    proof(rule linorder_class.Min.coboundedI[OF finite_Min_contributors], goal_cases)
+  proof(rule linorder_class.Min.coboundedI[OF finite_Min_contributors], goal_cases)
+    case 1
+    then show ?case
+    proof(rule UnI2, goal_cases)
       case 1
-      then show ?case
-      proof(rule UnI2, goal_cases)
-        case 1
-        then show ?case 
-          using asm
-          by (auto intro!: exI[of _ u, OF exI[of _ v]] simp add: \<w>_def)
-      qed
+      then show ?case 
+        using asm
+        by (auto intro!: exI[of _ u, OF exI[of _ v]] simp add: \<w>_def)
     qed
+  qed
 
-    have eps_cond_3: "\<epsilon> \<le> \<pi> X" if asm: "X \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" "Suc 0 < card X"for X
+  have eps_cond_3: "\<epsilon> \<le> \<pi> X" if asm: "X \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" "Suc 0 < card X"for X
     unfolding \<epsilon>_def
-    proof(rule linorder_class.Min.coboundedI[OF finite_Min_contributors], goal_cases)
+  proof(rule linorder_class.Min.coboundedI[OF finite_Min_contributors], goal_cases)
+    case 1
+    then show ?case
+    proof(rule UnI1, goal_cases)
       case 1
-      then show ?case
-      proof(rule UnI1, goal_cases)
-        case 1
-        then show ?case 
-          using asm
-          by (auto simp add: \<w>_def)
-      qed
-    qed      
+      then show ?case 
+        using asm
+        by (auto simp add: \<w>_def)
+    qed
+  qed      
 
   note feasible_after = edmonds_primal_dual_adjustment_feasibility[OF feasible_dual,
-           of "{\<Union> X | X. X \<in> D}" "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" \<pi>' \<epsilon>,
-           OF adjustment_pc1 adjustment_pc2, simplified, OF \<pi>'_def' adjustment_pc4 graph eps_geq_0]
+      of "{\<Union> X | X. X \<in> D}" "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)" \<pi>' \<epsilon>,
+      OF adjustment_pc1 adjustment_pc2, simplified, OF \<pi>'_def' adjustment_pc4 graph eps_geq_0]
 
   have "feasible_min_perfect_dual_edmonds G w
    (\<lambda>X. if \<exists>Xa. X = \<Union> Xa \<and> Xa \<in> D then \<pi> X + \<epsilon>
@@ -1802,9 +1809,9 @@ proof-
         thus ?case
           using  one(3)
           by (intro immediate_subsets_remove)
-             (auto elim: in_maximal_setsE 
-                  dest!: set_mp[OF nbhd_in_maxes_tight, simplified maxes_def] 
-               simp add: maxes_def)
+            (auto elim: in_maximal_setsE 
+              dest!: set_mp[OF nbhd_in_maxes_tight, simplified maxes_def] 
+              simp add: maxes_def)
       qed
 
       obtain M where M: "graph_matching (odd_tight_subgraph G w \<pi> \<lbrakk>X\<rbrakk> \<sslash> immediate_subsets \<OO> X) M"
@@ -1819,44 +1826,44 @@ proof-
           using asm M(1) by auto
         then obtain U V ee where UVee:"U \<in> immediate_subsets \<OO> X"
           "V \<in> immediate_subsets \<OO> X" "U \<noteq> V" "ee\<in> odd_tight_subgraph G w \<pi> \<lbrakk>X\<rbrakk>"
-           "U \<inter> ee \<noteq> {}" "V \<inter> ee \<noteq> {}" "e = {U, V}"
+          "U \<inter> ee \<noteq> {}" "V \<inter> ee \<noteq> {}" "e = {U, V}"
           by(auto simp add: partition_quotient_graph_def)
         obtain u v where uv: "ee = {u, v}" "u \<noteq> v" 
           using Gt_def UVee(4) graph_invar_tight by(auto simp add: graph_inter_Vs_def)
         hence case_rule_pc: "\<exists>u v. ee = {u, v} \<and> u \<noteq> v" by auto
         have uv_in_X: "u \<in> X" "v \<in> X" 
           using uv UVee(3,4,5,6) immediate_subsets_subset(2)[OF UVee(1)]
-                  immediate_subsets_subset(2)[OF UVee(2)]
-                immediate_subsets_laminar_disjoint[OF odds_invar_hereD(1) UVee(1,2)]
+            immediate_subsets_subset(2)[OF UVee(2)]
+            immediate_subsets_laminar_disjoint[OF odds_invar_hereD(1) UVee(1,2)]
           by auto
-       
+
 
         have "sum \<pi>' (end_sets G ee) = sum \<pi> (end_sets G ee)"
         proof(cases rule: edmonds_primal_dual_cases[OF case_rule_pc, 
-                    of "{\<Union> X |X. X \<in> D}" _ "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)"], goal_cases)
+              of "{\<Union> X |X. X \<in> D}" _ "Neighbourhood (Gt \<sslash> maxes) (\<Union> D)"], goal_cases)
           case (1 X u v)
           then show ?case 
             using UVee(4) 
             by(intro edmonds_primal_dual_adjustment_result(1)[OF adjustment_pc1 adjustment_pc2, simplified, OF \<pi>'_def',
-                 OF adjustment_pc4 uv _ _ _ _ uv, where X = X])
+                  OF adjustment_pc4 uv _ _ _ _ uv, where X = X])
               (auto simp add: odd_tight_subgraph_def graph_inter_Vs_def finite_Vs)
         next
           case (2 X u v)
           then show ?case 
             using UVee(4) 
             by(intro edmonds_primal_dual_adjustment_result(2)[OF adjustment_pc1 adjustment_pc2, simplified, OF \<pi>'_def',
-                 OF adjustment_pc4 uv _ _ _ _ uv, where X = X])
+                  OF adjustment_pc4 uv _ _ _ _ uv, where X = X])
               (auto simp add: odd_tight_subgraph_def graph_inter_Vs_def finite_Vs)
         next
           case (3 u v X Y)
           then show ?case
             using UVee(4)
             by(intro edmonds_primal_dual_adjustment_result(3)[OF adjustment_pc1 adjustment_pc2,
-                simplified, OF \<pi>'_def', OF adjustment_pc4 3(6,7) _ _ _ _ _ _ _ 3(6,7), where X = X and Y = Y])
+                  simplified, OF \<pi>'_def', OF adjustment_pc4 3(6,7) _ _ _ _ _ _ _ 3(6,7), where X = X and Y = Y])
               (auto simp add: odd_tight_subgraph_def graph_inter_Vs_def finite_Vs)
         next
           case (4 u v X Y)
-          (*impossible case*)
+            (*impossible case*)
           then obtain XX YY where "X = \<Union> XX" "XX \<in> D" "Y = \<Union> YY" "YY \<in> D"
             by auto
           hence False
@@ -1866,7 +1873,7 @@ proof-
             by simp
         next
           case (5 u v Xa Ya)
-          (*impossible case*)
+            (*impossible case*)
           hence in_max: "Xa \<in> maxes" "Ya \<in> maxes"
             using nbhd_in_maxes_tight by blast+
           have "Xa \<supseteq> X"
@@ -1889,11 +1896,11 @@ proof-
           then show ?case 
             using UVee(4) 
             by(intro edmonds_primal_dual_adjustment_result(6)[OF adjustment_pc1 adjustment_pc2,
-                simplified, OF \<pi>'_def', OF adjustment_pc4, OF 6(3,4)])
+                  simplified, OF \<pi>'_def', OF adjustment_pc4, OF 6(3,4)])
               (auto simp add: odd_tight_subgraph_def graph_inter_Vs_def finite_Vs)
         next
           case (7 u v X')
-          (*impossible case*)
+            (*impossible case*)
           then obtain XX Xa where XX_Xa: "XX \<in> D" "Xa \<in> XX" "u \<in> Xa"
             by auto
           hence "Xa \<in> maxes"
@@ -1904,14 +1911,14 @@ proof-
               (auto simp add: doubleton_eq_iff maxes_def)
           hence "u \<in> X'" "v \<in> X'"
             using uv(1) uv_in_X XX_Xa  "7"(3)
-             by (auto simp add: "7"(2,4) doubleton_eq_iff)
-           hence False
-             using "7"(1,3) by blast
-           thus ?case
-             by auto
+            by (auto simp add: "7"(2,4) doubleton_eq_iff)
+          hence False
+            using "7"(1,3) by blast
+          thus ?case
+            by auto
         next
           case (8 u v Y')
-          (*impossible case*)
+            (*impossible case*)
           hence "Y' \<in> maxes"
             using nbhd_in_maxes_tight by blast
           hence "Y' \<supseteq> X" 
@@ -1952,8 +1959,8 @@ proof-
       hence XD_composed: "XD \<noteq> {X}"
         by auto
 
-       have immediate_subsets_D:
-           "immediate_subsets
+      have immediate_subsets_D:
+        "immediate_subsets
           (\<OO> - {X |X. X \<in> Neighbourhood (Gt \<sslash> maxes) (\<Union> D) \<and> \<pi> X = \<epsilon> \<and> 1 < card X} \<union> {\<Union> X |X. X \<in> D}) X
            = immediate_subsets {Y | Y. Y \<in> \<OO> \<and> Y \<subseteq> X} X" 
       proof-
@@ -1980,136 +1987,136 @@ proof-
         qed
         show ?thesis
           unfolding rw1
-      proof(subst immediate_subsets_same_add_more', goal_cases)
-        case (1 X')
-        hence "X' \<in> \<OO>"
-          by auto
-        then obtain x where x: "x \<in> X'"
-          using empty_nin_laminar[OF odds_invar_hereD(1)] by force
-        have False if asm: "X' \<inter> \<Union> (\<Union> D) = {}" "X' \<subseteq> X"
-        proof-
-          have "x \<in> X"
-            using that(2) x by fastforce
-          hence "x \<in> \<Union> (\<Union> D)"
-            using XD(1,2) by auto
-          thus False
-            using asm(1) x
+        proof(subst immediate_subsets_same_add_more', goal_cases)
+          case (1 X')
+          hence "X' \<in> \<OO>"
             by auto
-        qed
-        thus ?case 
-          using 1 by auto
-      next
-        case 2
-        have rw2:"{Z |Z. Z \<in> \<OO> \<and> Z \<inter> \<Union> (\<Union> D) \<noteq> {}} = {Z |Z. Z \<in> \<OO> \<and> Z \<subseteq> \<Union> (\<Union> D)}"
-        proof-
-          have helper:"\<lbrakk>x \<in> \<OO>; xa \<in> x; xa \<in> X; X \<in> Xa; Xa \<in> D; xb \<in> x\<rbrakk> \<Longrightarrow> \<exists>y\<in>D. \<exists>x\<in>y. xb \<in> x"
-            for x xa X Xa xb
-          proof(goal_cases)
-            case 1
-            moreover hence XO: "X \<in> \<OO>"
-              using in_D_maximalE by blast
-            moreover hence "xb \<in> X"
-              using 1 XO odds_invar_hereD(1)
-              by(elim laminarE)(rule in_D_maximalE[OF 1(5,4)], fastforce)
-            ultimately show ?case 
-              by(auto intro!: bexI[of _ Xa] bexI[of _ X])
+          then obtain x where x: "x \<in> X'"
+            using empty_nin_laminar[OF odds_invar_hereD(1)] by force
+          have False if asm: "X' \<inter> \<Union> (\<Union> D) = {}" "X' \<subseteq> X"
+          proof-
+            have "x \<in> X"
+              using that(2) x by fastforce
+            hence "x \<in> \<Union> (\<Union> D)"
+              using XD(1,2) by auto
+            thus False
+              using asm(1) x
+              by auto
           qed
-          show ?thesis
-          using odds_invar_hereD(1)
-          by(auto intro: helper)(force elim!: laminarE in_D_maximalE) 
-      qed
-        have rw3:"{\<Union> X |X. X \<in> D} \<union> {Z |Z. Z \<in> \<OO> \<and> Z  \<subseteq> \<Union> (\<Union> D)} = 
+          thus ?case 
+            using 1 by auto
+        next
+          case 2
+          have rw2:"{Z |Z. Z \<in> \<OO> \<and> Z \<inter> \<Union> (\<Union> D) \<noteq> {}} = {Z |Z. Z \<in> \<OO> \<and> Z \<subseteq> \<Union> (\<Union> D)}"
+          proof-
+            have helper:"\<lbrakk>x \<in> \<OO>; xa \<in> x; xa \<in> X; X \<in> Xa; Xa \<in> D; xb \<in> x\<rbrakk> \<Longrightarrow> \<exists>y\<in>D. \<exists>x\<in>y. xb \<in> x"
+              for x xa X Xa xb
+            proof(goal_cases)
+              case 1
+              moreover hence XO: "X \<in> \<OO>"
+                using in_D_maximalE by blast
+              moreover hence "xb \<in> X"
+                using 1 XO odds_invar_hereD(1)
+                by(elim laminarE)(rule in_D_maximalE[OF 1(5,4)], fastforce)
+              ultimately show ?case 
+                by(auto intro!: bexI[of _ Xa] bexI[of _ X])
+            qed
+            show ?thesis
+              using odds_invar_hereD(1)
+              by(auto intro: helper)(force elim!: laminarE in_D_maximalE) 
+          qed
+          have rw3:"{\<Union> X |X. X \<in> D} \<union> {Z |Z. Z \<in> \<OO> \<and> Z  \<subseteq> \<Union> (\<Union> D)} = 
              {\<Union> X |X. X \<in> D} \<union> {Z |Z. Z \<in> \<OO> \<and> Z \<subseteq> \<Union> (\<Union> D) \<and> {Z} \<notin> D}"
-          by auto
-        show ?case
-          unfolding rw2
-          unfolding rw3 
-        proof(rule immediate_subsets_remove_lowers_2, goal_cases)
-          case (1 Y)
-          thus ?case
-          proof(elim UnE, goal_cases)
-            case 1
-            moreover hence "Y \<inter> X = {}"
-               using XD(1,2)
-               by(intro adjustment_pc1[OF UnI1 UnI1]) auto
-             moreover have "Y \<noteq> {}" 
-               using  "1"(3)  D_props(6) Ds_are_partition 
-               by (force simp add: partition_on_def)
-             ultimately have False
-               by auto
-             thus ?case
-               by simp
+            by auto
+          show ?case
+            unfolding rw2
+            unfolding rw3 
+          proof(rule immediate_subsets_remove_lowers_2, goal_cases)
+            case (1 Y)
+            thus ?case
+            proof(elim UnE, goal_cases)
+              case 1
+              moreover hence "Y \<inter> X = {}"
+                using XD(1,2)
+                by(intro adjustment_pc1[OF UnI1 UnI1]) auto
+              moreover have "Y \<noteq> {}" 
+                using  "1"(3)  D_props(6) Ds_are_partition 
+                by (force simp add: partition_on_def)
+              ultimately have False
+                by auto
+              thus ?case
+                by simp
+            next
+              case 2
+              thus ?case
+                by blast
+            qed
           next
             case 2
-            thus ?case
-              by blast
+            thus ?case 
+              using XD(1,2) by auto blast
+          qed
         qed
+      qed
+
+      have maximal_sets_helper: "maximal_sets {Y |Y. Y \<in> {XX | XX. XX \<subset> X \<and> XX \<in> \<OO> \<and> XX \<subseteq> X} \<and> Y \<subset> X} \<subseteq> XD"
+      proof(rule, goal_cases)
+        case (1 Y)
+        hence Y: "Y \<subset> X" "Y \<in> \<OO>" "Y \<subseteq> X" "Y \<subset> X"
+          by(auto simp add: maximal_sets_def)
+        obtain X' where X': "X' \<in> XD" "X' \<inter> Y \<noteq> {}"
+          using XD(2) Y(2,3) empty_nin_laminar[OF odds_invar_hereD(1)]
+            inf_commute[of Y] union_with_Union_disjoint(2)[of XD Y] Int_absorb1[of Y X]
+          by auto
+        hence X': "X' \<in> XD" "X' \<supseteq> Y" 
+          using  odds_invar_hereD(1) laminar_inter_maximal_set[OF odds_invar_hereD(1)]
+            D_props(2) XD(1,2) Y(2,3) Vs_partition_quotient_graph[of Gt maxes]
+          by(auto elim!: laminarE simp add:  maxes_def)blast
+        have "X' \<in> {Y |Y. Y \<in> {XX |XX. XX \<subset> X \<and> XX \<in> \<OO> \<and> XX \<subseteq> X} \<and> Y \<subset> X}"
+          using  X'(1) XD(1,2) X_not_singleton
+          by(auto elim: in_D_maximalE)
+        hence "X' \<supset> Y \<Longrightarrow> ?case"
+          using 1 by(auto elim!: in_maximal_setsE)
+        moreover have "X' = Y \<Longrightarrow> ?case" 
+          using \<open>X' \<in> XD\<close> by fastforce
+        ultimately show ?case 
+          using X'(2) by auto
+      qed
+
+
+      have immediate_subsets_XD: "immediate_subsets {Y | Y. Y \<in> \<OO> \<and> Y \<subseteq> X} X = XD"
+      proof(subst immediate_subsets_restrict_to_set, rule, goal_cases)
+        case 1
+        thus ?case
+          using maximal_sets_helper
+          by(auto simp add: immediate_subsets_are_maximals)
       next
         case 2
-        thus ?case 
-          using XD(1,2) by auto blast
+        thus ?case
+          using XD(2,1)  X_not_singleton 
+          by (auto elim: in_D_maximalE simp add: immediate_subsets_def)
       qed
-    qed
-  qed
 
-  have maximal_sets_helper: "maximal_sets {Y |Y. Y \<in> {XX | XX. XX \<subset> X \<and> XX \<in> \<OO> \<and> XX \<subseteq> X} \<and> Y \<subset> X} \<subseteq> XD"
-  proof(rule, goal_cases)
-    case (1 Y)
-    hence Y: "Y \<subset> X" "Y \<in> \<OO>" "Y \<subseteq> X" "Y \<subset> X"
-      by(auto simp add: maximal_sets_def)
-    obtain X' where X': "X' \<in> XD" "X' \<inter> Y \<noteq> {}"
-      using XD(2) Y(2,3) empty_nin_laminar[OF odds_invar_hereD(1)]
-            inf_commute[of Y] union_with_Union_disjoint(2)[of XD Y] Int_absorb1[of Y X]
-      by auto
-    hence X': "X' \<in> XD" "X' \<supseteq> Y" 
-      using  odds_invar_hereD(1) laminar_inter_maximal_set[OF odds_invar_hereD(1)]
-       D_props(2) XD(1,2) Y(2,3) Vs_partition_quotient_graph[of Gt maxes]
-      by(auto elim!: laminarE simp add:  maxes_def)blast
-    have "X' \<in> {Y |Y. Y \<in> {XX |XX. XX \<subset> X \<and> XX \<in> \<OO> \<and> XX \<subseteq> X} \<and> Y \<subset> X}"
-      using  X'(1) XD(1,2) X_not_singleton
-      by(auto elim: in_D_maximalE)
-    hence "X' \<supset> Y \<Longrightarrow> ?case"
-      using 1 by(auto elim!: in_maximal_setsE)
-    moreover have "X' = Y \<Longrightarrow> ?case" 
-      using \<open>X' \<in> XD\<close> by fastforce
-    ultimately show ?case 
-      using X'(2) by auto
-  qed
+      have Y_in_XD: "Y \<in> XD"
+        using "2"(2) immediate_subsets_D immediate_subsets_XD by blast
 
+      have commute_pcs: "XD \<subseteq> maxes" "dblton_graph (odd_tight_subgraph G w \<pi>)"
+        "disjoint maxes"
+        using D_in_maxes XD(1) graph_invar_tight
+        by (auto simp add: Gt_def disjoint_def maxes_disjoint)
 
-  have immediate_subsets_XD: "immediate_subsets {Y | Y. Y \<in> \<OO> \<and> Y \<subseteq> X} X = XD"
-  proof(subst immediate_subsets_restrict_to_set, rule, goal_cases)
-    case 1
-    thus ?case
-      using maximal_sets_helper
-      by(auto simp add: immediate_subsets_are_maximals)
-  next
-    case 2
-    thus ?case
-      using XD(2,1)  X_not_singleton 
-      by (auto elim: in_D_maximalE simp add: immediate_subsets_def)
-  qed
+      obtain M where M: "graph_matching ( odd_tight_subgraph G w \<pi> \<lbrakk>X\<rbrakk> \<sslash> XD) M" "Vs M = XD - {Y}"
+        using D_props(5)[OF XD(1) Y_in_XD] XD(2) unfolding Gt_def
+          partition_quotient_graph_inter_Vs_commute[OF commute_pcs]
+        by auto
 
-  have Y_in_XD: "Y \<in> XD"
-    using "2"(2) immediate_subsets_D immediate_subsets_XD by blast
-
-  have commute_pcs: "XD \<subseteq> maxes" "dblton_graph (odd_tight_subgraph G w \<pi>)"
-         "disjoint maxes"
-    using D_in_maxes XD(1) graph_invar_tight
-    by (auto simp add: Gt_def disjoint_def maxes_disjoint)
-   
-  obtain M where M: "graph_matching ( odd_tight_subgraph G w \<pi> \<lbrakk>X\<rbrakk> \<sslash> XD) M" "Vs M = XD - {Y}"
-    using D_props(5)[OF XD(1) Y_in_XD] XD(2) unfolding Gt_def
-     partition_quotient_graph_inter_Vs_commute[OF commute_pcs]
-    by auto
-
-  moreover have "e \<in> odd_tight_subgraph G w \<pi>' \<lbrakk>X\<rbrakk> \<sslash> XD" if asm: "e \<in> M" for e
-  proof-
-       have "e \<in> odd_tight_subgraph G w \<pi> \<lbrakk>X\<rbrakk> \<sslash> XD"
+      moreover have "e \<in> odd_tight_subgraph G w \<pi>' \<lbrakk>X\<rbrakk> \<sslash> XD" if asm: "e \<in> M" for e
+      proof-
+        have "e \<in> odd_tight_subgraph G w \<pi> \<lbrakk>X\<rbrakk> \<sslash> XD"
           using asm M(1) by auto
         then obtain U V ee where UVee:"U \<in> XD"
           "V \<in> XD" "U \<noteq> V" "ee\<in> odd_tight_subgraph G w \<pi> \<lbrakk>X\<rbrakk>"
-           "U \<inter> ee \<noteq> {}" "V \<inter> ee \<noteq> {}" "e = {U, V}"
+          "U \<inter> ee \<noteq> {}" "V \<inter> ee \<noteq> {}" "e = {U, V}"
           by(auto simp add: partition_quotient_graph_def)
         obtain u v where uv: "ee = {u, v}" "u \<noteq> v" 
           using Gt_def UVee(4) graph_invar_tight by(auto simp add: graph_inter_Vs_def)
@@ -2117,12 +2124,12 @@ proof-
         have uv_in_X: "u \<in> X" "v \<in> X" 
           using UVee(1,2,3,5,6)commute_pcs(1) XD(2) uv(1) 
           by(auto dest: maxes_disjoint)
-         
+
         have "sum \<pi>' (end_sets G ee) = sum \<pi> (end_sets G ee)"
-         using UVee(4) XD(1,2)
-         by(intro edmonds_primal_dual_adjustment_result(1)[OF adjustment_pc1 adjustment_pc2, simplified, OF \<pi>'_def',
-                 OF adjustment_pc4 uv _ _ _ _ uv, where X = X])
-           (auto simp add: odd_tight_subgraph_def graph_inter_Vs_def finite_Vs)
+          using UVee(4) XD(1,2)
+          by(intro edmonds_primal_dual_adjustment_result(1)[OF adjustment_pc1 adjustment_pc2, simplified, OF \<pi>'_def',
+                OF adjustment_pc4 uv _ _ _ _ uv, where X = X])
+            (auto simp add: odd_tight_subgraph_def graph_inter_Vs_def finite_Vs)
         hence "ee \<in>  odd_tight_subgraph G w \<pi>' \<lbrakk>X\<rbrakk>"
           using UVee(4)
           by(auto simp add: graph_inter_Vs_def odd_tight_subgraph_def)
@@ -2205,23 +2212,25 @@ proof-
   qed
 qed
 
+subsection \<open>Properties upon Termination\<close>
+
 definition "odds_invar_cleanup = (\<lambda> (\<pi>, M, \<OO>).
 laminar (Vs G) \<OO> \<and> (\<forall> Bls \<in> \<OO>. odd (card Bls)) \<and> composed_family \<OO> \<and> \<Union>\<OO> = Vs G \<and>
   laminar (Vs G) ({U | U. U \<in> (\<Omega>\<^sub>\<ge>\<^sub>3 Vs G) \<and> \<pi> U > 0} \<union> \<OO>))"
 
 lemma odds_invar_cleanupI: 
-"\<lbrakk>laminar (Vs G) \<OO>; \<forall>Bls \<in> \<OO>. odd (card Bls); composed_family \<OO>; \<Union>\<OO> = Vs G;
+  "\<lbrakk>laminar (Vs G) \<OO>; \<forall>Bls \<in> \<OO>. odd (card Bls); composed_family \<OO>; \<Union>\<OO> = Vs G;
  laminar (Vs G) ({U | U. U \<in> (\<Omega>\<^sub>\<ge>\<^sub>3 Vs G) \<and> \<pi> U > 0} \<union> \<OO>)\<rbrakk> \<Longrightarrow> odds_invar_cleanup (\<pi>,M, \<OO>)"
- and odds_invar_cleanupE: 
- "\<lbrakk>odds_invar_cleanup (\<pi>, M, \<OO>); 
+  and odds_invar_cleanupE: 
+  "\<lbrakk>odds_invar_cleanup (\<pi>, M, \<OO>); 
       \<lbrakk>laminar (Vs G) \<OO>; \<forall>Bls \<in> \<OO>. odd (card Bls); composed_family \<OO>; \<Union>\<OO> = Vs G;
        laminar (Vs G) ({U | U. U \<in> (\<Omega>\<^sub>\<ge>\<^sub>3 Vs G) \<and> \<pi> U > 0} \<union> \<OO>)\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
- and odds_invar_cleanupD: 
-    "odds_invar_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> laminar (Vs G) \<OO>"
-    "\<lbrakk>odds_invar_cleanup (\<pi>, M, \<OO>); Bls \<in> \<OO>\<rbrakk> \<Longrightarrow> odd (card Bls)"
-    "odds_invar_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> composed_family \<OO>"
-    "odds_invar_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> \<Union>\<OO> = Vs G"
-    "odds_invar_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> laminar (Vs G) ({U | U. U \<in> (\<Omega>\<^sub>\<ge>\<^sub>3 Vs G) \<and> \<pi> U > 0} \<union> \<OO>)"
+  and odds_invar_cleanupD: 
+  "odds_invar_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> laminar (Vs G) \<OO>"
+  "\<lbrakk>odds_invar_cleanup (\<pi>, M, \<OO>); Bls \<in> \<OO>\<rbrakk> \<Longrightarrow> odd (card Bls)"
+  "odds_invar_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> composed_family \<OO>"
+  "odds_invar_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> \<Union>\<OO> = Vs G"
+  "odds_invar_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> laminar (Vs G) ({U | U. U \<in> (\<Omega>\<^sub>\<ge>\<^sub>3 Vs G) \<and> \<pi> U > 0} \<union> \<OO>)"
   unfolding odds_invar_cleanup_def by auto
 
 definition "odd_factor_critical_invar_cleanup = (\<lambda> (\<pi>, M, \<OO>).
@@ -2255,11 +2264,11 @@ lemma invar_matching_delta_of_non_zero_sets_cleanupI:
        \<Longrightarrow> card {{U, V} | U V. {U, V} \<in> M \<and> U \<subseteq> Bls \<and> \<not> V \<subseteq> Bls} = 1) 
      \<Longrightarrow> invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>)"
   and invar_matching_delta_of_non_zero_sets_cleanupE:
-    "\<lbrakk> invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>);
+  "\<lbrakk> invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>);
            (\<And>Bls. \<lbrakk> Bls \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G - \<OO>; \<pi> Bls \<noteq> 0 \<rbrakk>
             \<Longrightarrow> card {{U, V} | U V. {U, V} \<in> M \<and> U \<subseteq> Bls \<and> \<not> V \<subseteq> Bls} = 1) \<Longrightarrow> P \<rbrakk> \<Longrightarrow> P"
   and invar_matching_delta_of_non_zero_sets_cleanupD:
-    "\<lbrakk>invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>); Bls \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G - \<OO>; \<pi> Bls \<noteq> 0\<rbrakk>
+  "\<lbrakk>invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>); Bls \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G - \<OO>; \<pi> Bls \<noteq> 0\<rbrakk>
        \<Longrightarrow> card {{U, V} | U V. {U, V} \<in> M \<and> U \<subseteq> Bls \<and> \<not> V \<subseteq> Bls} = 1"
   unfolding invar_matching_delta_of_non_zero_sets_cleanup_def by auto
 
@@ -2268,22 +2277,22 @@ definition "invar_strict_odd_pos_cleanup = (\<lambda> (\<pi>, M, \<OO>).
 
 lemma 
   invar_strict_odd_pos_cleanupI: 
-    "(\<And>Bls. \<lbrakk>Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0) \<Longrightarrow> invar_strict_odd_pos_cleanup (\<pi>,M, \<OO>)"
+  "(\<And>Bls. \<lbrakk>Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0) \<Longrightarrow> invar_strict_odd_pos_cleanup (\<pi>,M, \<OO>)"
   and invar_strict_odd_pos_cleanupE: 
-    "\<lbrakk>invar_strict_odd_pos_cleanup (\<pi>,M, \<OO>); (\<And> Bls. \<lbrakk>Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  "\<lbrakk>invar_strict_odd_pos_cleanup (\<pi>,M, \<OO>); (\<And> Bls. \<lbrakk>Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   and invar_strict_odd_pos_cleanupD: 
-    "\<lbrakk>invar_strict_odd_pos_cleanup (\<pi>,M, \<OO>); Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0"
+  "\<lbrakk>invar_strict_odd_pos_cleanup (\<pi>,M, \<OO>); Bls \<in> \<OO>; card Bls > 1\<rbrakk> \<Longrightarrow> \<pi> Bls > 0"
   unfolding invar_strict_odd_pos_cleanup_def by auto
 
 definition "invar_feasible_pi_cleanup = (\<lambda> (\<pi>, M, \<OO>). feasible_min_perfect_dual_edmonds G w \<pi>)"
 
 lemma 
   invar_feasible_pi_cleanupI: 
-    "feasible_min_perfect_dual_edmonds G w \<pi> \<Longrightarrow> invar_feasible_pi_cleanup (\<pi>,M, \<OO>)"
+  "feasible_min_perfect_dual_edmonds G w \<pi> \<Longrightarrow> invar_feasible_pi_cleanup (\<pi>,M, \<OO>)"
   and invar_feasible_pi_cleanupE: 
-    "\<lbrakk>invar_feasible_pi_cleanup (\<pi>,M, \<OO>); feasible_min_perfect_dual_edmonds G w \<pi> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  "\<lbrakk>invar_feasible_pi_cleanup (\<pi>,M, \<OO>); feasible_min_perfect_dual_edmonds G w \<pi> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   and invar_feasible_pi_cleanupD: 
-    "invar_feasible_pi_cleanup (\<pi>,M, \<OO>) \<Longrightarrow> feasible_min_perfect_dual_edmonds G w \<pi>"
+  "invar_feasible_pi_cleanup (\<pi>,M, \<OO>) \<Longrightarrow> feasible_min_perfect_dual_edmonds G w \<pi>"
   unfolding invar_feasible_pi_cleanup_def by auto
 
 definition "invar_tight_matching_cleanup =
@@ -2294,13 +2303,13 @@ lemma invar_tight_matching_cleanupI:
   "\<lbrakk> perfect_matching (odd_tight_subgraph G w \<pi> \<sslash> maximal_sets \<OO>) M; Vs M = maximal_sets \<OO> \<rbrakk> 
     \<Longrightarrow> invar_tight_matching_cleanup (\<pi>, M, \<OO>)"
   and invar_tight_matching_cleanupE:
-   "\<lbrakk> invar_tight_matching_cleanup (\<pi>, M, \<OO>); 
+  "\<lbrakk> invar_tight_matching_cleanup (\<pi>, M, \<OO>); 
         \<lbrakk> perfect_matching (odd_tight_subgraph G w \<pi> \<sslash> maximal_sets \<OO>) M; Vs M = maximal_sets \<OO> \<rbrakk> \<Longrightarrow> P \<rbrakk> 
       \<Longrightarrow> P"
   and invar_tight_matching_cleanupD:
-    "invar_tight_matching_cleanup (\<pi>, M, \<OO>)
+  "invar_tight_matching_cleanup (\<pi>, M, \<OO>)
      \<Longrightarrow> perfect_matching (odd_tight_subgraph G w \<pi> \<sslash> maximal_sets \<OO>) M"
-    "invar_tight_matching_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> Vs M = maximal_sets \<OO>"
+  "invar_tight_matching_cleanup (\<pi>, M, \<OO>) \<Longrightarrow> Vs M = maximal_sets \<OO>"
   unfolding invar_tight_matching_cleanup_def by auto
 
 lemma odd_invar_omega_cleanup:
@@ -2311,17 +2320,17 @@ lemma odd_invar_omega_cleanup:
 
 lemma top_loop_return_Some:
   assumes "top_loop_ret_Some_cond \<pi> \<OO>"
-   "odds_invar (\<pi>, \<OO>)"
-   "odd_factor_critical_invar (\<pi>, \<OO>)"
-   "invar_strict_odd_pos (\<pi>, \<OO>)"
-   "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
-   "invar_feasible_pi (\<pi>, \<OO>)"
- shows  "odds_invar_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th1)
-        "odd_factor_critical_invar_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th2)
-        "invar_matching_delta_of_non_zero_sets_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th3)
-        "invar_strict_odd_pos_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th4)
-        "invar_feasible_pi_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th5)
-        "invar_tight_matching_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th6)
+    "odds_invar (\<pi>, \<OO>)"
+    "odd_factor_critical_invar (\<pi>, \<OO>)"
+    "invar_strict_odd_pos (\<pi>, \<OO>)"
+    "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
+    "invar_feasible_pi (\<pi>, \<OO>)"
+  shows  "odds_invar_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th1)
+    "odd_factor_critical_invar_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th2)
+    "invar_matching_delta_of_non_zero_sets_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th3)
+    "invar_strict_odd_pos_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th4)
+    "invar_feasible_pi_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th5)
+    "invar_tight_matching_cleanup (to_loop_ret_Some \<pi> \<OO>)" (is ?th6)
 proof-
   define Gt where "Gt = odd_tight_subgraph G w \<pi>"
   define maxes where "maxes = maximal_sets \<OO>"
@@ -2335,17 +2344,17 @@ proof-
   have maxes_have_crossings:
     "\<And> Blos. Blos \<in> maxes \<Longrightarrow> \<exists> e. e \<in> Gt \<and> e \<in> Delta G Blos"
     using assms(1) by(auto simp add: top_loop_ret_Some_cond_def Gt_def maxes_def Let_def)
-   
+
   note odds_invar_hereD = odds_invarD[OF assms(2)]
 
   have part:"partition_on (Vs G) maxes"
     using maximal_sets_in_laminar_family_are_global_partition[OF odds_invar_hereD(1)]
     by (simp add: finite_Vs odds_invar_hereD(4) maxes_def)
-   
+
   have graph_invar_quot: "graph_invar (Gt \<sslash> maxes)"
     using part finite_Vs
     by(auto intro!: partition_quotient_graph_graph_invar[of "Vs G"])
-  
+
   note M_perfect = find_matching_or_decomposition_correct(3)[OF graph_invar_quot M_def]
 
   have to_loop_ret_Some_def: "to_loop_ret_Some \<pi> \<OO> = (\<pi>, M, \<OO>)"
@@ -2358,15 +2367,15 @@ proof-
   show ?th1
     using assms(2) helper
     by(auto elim!: odds_invarE 
-           intro!: odds_invar_cleanupI 
-         simp add: to_loop_ret_Some_def laminar_subset)
+        intro!: odds_invar_cleanupI 
+        simp add: to_loop_ret_Some_def laminar_subset)
 
 
   show ?th3
     unfolding to_loop_ret_Some_def
   proof(rule invar_matching_delta_of_non_zero_sets_cleanupI, goal_cases)
     case (1 Bls)
-    (*yet, there is no such Bls*)
+      (*yet, there is no such Bls*)
     hence False 
       using assms(5) invar_non_zero_pi_in_oddE by auto
     then show ?case 
@@ -2392,8 +2401,8 @@ proof-
   show ?th5
     using assms(6)
     by(auto elim!: invar_feasible_piE 
-           intro!: invar_feasible_pi_cleanupI 
-         simp add: to_loop_ret_Some_def)
+        intro!: invar_feasible_pi_cleanupI 
+        simp add: to_loop_ret_Some_def)
 
   have max_set_in_quot_Vs: 
     "Bls \<in> Vs (Gt \<sslash> maxes)" if asm: "Bls \<in> maxes" for Bls
@@ -2410,32 +2419,32 @@ proof-
     have "{Bls, V} \<in> Gt \<sslash> maxes"
       using V asm uv e(1)
       by(auto intro!: exI[of _ Bls, OF exI[of _ V]] bexI[of _ e] 
-            simp add: partition_quotient_graph_def)
+          simp add: partition_quotient_graph_def)
     thus ?thesis
       by auto
   qed
-     
+
   show ?th6
     using  M_perfect Vs_partition_quotient_graph[of Gt maxes] max_set_in_quot_Vs
     by(auto elim!: perfect_matchingE 
-           intro!: invar_tight_matching_cleanupI perfect_matchingI 
-         simp add: Gt_def maxes_def to_loop_ret_Some_def)
+        intro!: invar_tight_matching_cleanupI perfect_matchingI 
+        simp add: Gt_def maxes_def to_loop_ret_Some_def)
 qed
 
 lemma top_loop_None_dual_unbounded:
   assumes "top_loop_dom (\<pi>, \<OO>)"
-   "odds_invar (\<pi>, \<OO>)"
-   "odd_factor_critical_invar (\<pi>, \<OO>)"
-   "invar_strict_odd_pos (\<pi>, \<OO>)"
-   "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
-   "invar_feasible_pi (\<pi>, \<OO>)"
-   "top_loop (\<pi>, \<OO>) = None"
- shows "\<exists> \<pi>'. feasible_min_perfect_dual_edmonds G w \<pi>' \<and> sum \<pi>' (\<Omega> Vs G) > B"
+    "odds_invar (\<pi>, \<OO>)"
+    "odd_factor_critical_invar (\<pi>, \<OO>)"
+    "invar_strict_odd_pos (\<pi>, \<OO>)"
+    "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
+    "invar_feasible_pi (\<pi>, \<OO>)"
+    "top_loop (\<pi>, \<OO>) = None"
+  shows "\<exists> \<pi>'. feasible_min_perfect_dual_edmonds G w \<pi>' \<and> sum \<pi>' (\<Omega> Vs G) > B"
   using assms(2-)
   by(induction rule: top_loop_induct[OF assms(1)])
     (auto intro: top_loop_call1_pres top_loop_call2_pres top_loop_ret_None_1_dual_unbounded 
-                 top_loop_ret_None_2_dual_unbounded
-       simp add: top_loop_simps)
+      top_loop_ret_None_2_dual_unbounded
+      simp add: top_loop_simps)
 
 definition "invars_for_second_loop state =
         (odds_invar_cleanup state \<and>
@@ -2460,39 +2469,46 @@ lemma invars_for_second_loopI:
            invar_feasible_pi_cleanup state; 
            invar_tight_matching_cleanup state \<rbrakk> \<Longrightarrow> P \<rbrakk> \<Longrightarrow> P"
   and invars_for_second_loopD:
-      "invars_for_second_loop state \<Longrightarrow> odds_invar_cleanup state"
-      "invars_for_second_loop state \<Longrightarrow> odd_factor_critical_invar_cleanup state"
-      "invars_for_second_loop state \<Longrightarrow> invar_matching_delta_of_non_zero_sets_cleanup state"
-      "invars_for_second_loop state \<Longrightarrow> invar_strict_odd_pos_cleanup state"
-      "invars_for_second_loop state \<Longrightarrow> invar_feasible_pi_cleanup state"
-      "invars_for_second_loop state \<Longrightarrow> invar_tight_matching_cleanup state"
+  "invars_for_second_loop state \<Longrightarrow> odds_invar_cleanup state"
+  "invars_for_second_loop state \<Longrightarrow> odd_factor_critical_invar_cleanup state"
+  "invars_for_second_loop state \<Longrightarrow> invar_matching_delta_of_non_zero_sets_cleanup state"
+  "invars_for_second_loop state \<Longrightarrow> invar_strict_odd_pos_cleanup state"
+  "invars_for_second_loop state \<Longrightarrow> invar_feasible_pi_cleanup state"
+  "invars_for_second_loop state \<Longrightarrow> invar_tight_matching_cleanup state"
   unfolding invars_for_second_loop_def by auto
 
 lemma top_loop_ret_None_neq_Some: "top_loop_ret_None \<pi> \<OO> = Some result \<Longrightarrow> False"
   by(auto simp add: top_loop_ret_None_def)
 
+subsection \<open>Correctness of First Loop\<close>
+
 lemma top_loop_Some_result:
   assumes "top_loop_dom (\<pi>, \<OO>)"
-   "odds_invar (\<pi>, \<OO>)"
-   "odd_factor_critical_invar (\<pi>, \<OO>)"
-   "invar_strict_odd_pos (\<pi>, \<OO>)"
-   "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
-   "invar_feasible_pi (\<pi>, \<OO>)"
-   "top_loop (\<pi>, \<OO>) = Some result"
- shows "invars_for_second_loop result"
+    "odds_invar (\<pi>, \<OO>)"
+    "odd_factor_critical_invar (\<pi>, \<OO>)"
+    "invar_strict_odd_pos (\<pi>, \<OO>)"
+    "invar_non_zero_pi_in_odd (\<pi>, \<OO>)"
+    "invar_feasible_pi (\<pi>, \<OO>)"
+    "top_loop (\<pi>, \<OO>) = Some result"
+  shows "invars_for_second_loop result"
   using assms(2-) 
   by(induction rule: top_loop_induct[OF assms(1)])
     (auto intro: top_loop_return_Some
-          intro: invars_for_second_loopI
-                 top_loop_call1_pres top_loop_call2_pres top_loop_ret_None_1_dual_unbounded 
-                 top_loop_ret_None_2_dual_unbounded
-        dest: top_loop_ret_None_neq_Some
-       simp add: top_loop_simps)
+      intro: invars_for_second_loopI
+      top_loop_call1_pres top_loop_call2_pres top_loop_ret_None_1_dual_unbounded 
+      top_loop_ret_None_2_dual_unbounded
+      dest: top_loop_ret_None_neq_Some
+      simp add: top_loop_simps)
 
 end
 
+subsection \<open>The Final Expansion Loop: Setup\<close>
+
+text \<open>After the primal-dual adjustments, there might still be a few contracted sets left.
+      These need to be expanded for a matching in the actual graph.\<close>
+
 locale naive_weighted_blossom_with_cleanup =
- naive_weighted_blossom_main_loop where G = G 
+  naive_weighted_blossom_main_loop where G = G 
 for G :: "'v set set"+
 fixes remove_set::"'v set \<Rightarrow> 'v"
 assumes remove_set: "\<And> x. remove_set {x} = x"
@@ -2510,9 +2526,13 @@ lemma "(image remove_set) ` {{{u}, {v}}} = {{u, v}}"
 
 lemma image_sel_true_simp:
   "(image remove_set) ` {{{u}, {v}} | u v. P u v} = {{u, v} | u v. P u v}"
-  apply(auto intro: simp add: remove_set doubleton_eq_iff image_def)+
-  apply(rule exI[of _ "{_, _}"])
-  by (auto  simp add: remove_set)+
+proof-
+  have "P u v \<Longrightarrow> 
+        \<exists>x. (\<exists>u v. x = {{u}, {v}} \<and> P u v) \<and> {u, v} = {y. \<exists>x\<in>x. y = remove_set x}" for u v
+    by(rule exI[of _ "{_, _}"]) (auto  simp add: remove_set)+
+  thus ?thesis
+    by(auto simp add: remove_set doubleton_eq_iff image_def)+
+qed
 
 lemma image_sel_true_dblton_simp:
   "dblton_graph E \<Longrightarrow> (image remove_set) ` {{{u}, {v}} | u v. {u, v} \<in> E} = E"
@@ -2524,7 +2544,7 @@ lemma remove_set_of_singletons:"remove_set ` {{v} |v. v \<in> X} = X"
 function (domintros) cleanup_loop::"(('v set \<Rightarrow> real) \<times> 'v set set set \<times> 'v set set) \<Rightarrow>
           (('v set \<Rightarrow> real) \<times> 'v set set)"
   where
-   "cleanup_loop (\<pi>, M, \<OO>) =
+    "cleanup_loop (\<pi>, M, \<OO>) =
       (if \<exists> Bls \<in> \<OO>. card Bls > 1 then
           let Gt = odd_tight_subgraph G w \<pi>;
               maxes = maximal_sets \<OO>;
@@ -2541,17 +2561,17 @@ function (domintros) cleanup_loop::"(('v set \<Rightarrow> real) \<times> 'v set
   by pat_completeness auto
 
 definition cleanup_loop_call_cond :: "(('v set \<Rightarrow> real) \<times> 'v set set set \<times> 'v set set) \<Rightarrow> bool" 
-where
-  "cleanup_loop_call_cond \<equiv> \<lambda>(\<pi>, M, \<OO>). \<exists> Bls \<in> \<OO>. card Bls > 1"
+  where
+    "cleanup_loop_call_cond \<equiv> \<lambda>(\<pi>, M, \<OO>). \<exists> Bls \<in> \<OO>. card Bls > 1"
 
 definition cleanup_loop_ret_cond :: "(('v set \<Rightarrow> real) \<times> 'v set set set \<times> 'v set set) \<Rightarrow> bool" 
-where
-  "cleanup_loop_ret_cond \<equiv> \<lambda>(\<pi>, M, \<OO>). \<not> (\<exists> Bls \<in> \<OO>. card Bls > 1)"
+  where
+    "cleanup_loop_ret_cond \<equiv> \<lambda>(\<pi>, M, \<OO>). \<not> (\<exists> Bls \<in> \<OO>. card Bls > 1)"
 
 definition cleanup_loop_upd:: "(('v set \<Rightarrow> real) \<times> 'v set set set \<times> 'v set set) \<Rightarrow> 
                                  (('v set \<Rightarrow> real) \<times> 'v set set set \<times> 'v set set)" 
-where
-  "cleanup_loop_upd \<equiv> \<lambda>(\<pi>, M, \<OO>).
+  where
+    "cleanup_loop_upd \<equiv> \<lambda>(\<pi>, M, \<OO>).
       let Gt = odd_tight_subgraph G w \<pi>;
           maxes = maximal_sets \<OO>;
           Bls = sel (\<lambda> Bls. card Bls > 1) maxes;
@@ -2566,16 +2586,16 @@ where
 
 definition cleanup_loop_ret :: "(('v set \<Rightarrow> real) \<times> 'v set set set \<times> 'v set set) \<Rightarrow> 
                                  (('v set \<Rightarrow> real) \<times> 'v set set)" 
-where
-  "cleanup_loop_ret \<equiv> \<lambda>(\<pi>, M, \<OO>). (\<pi>, (image remove_set) ` M)"
+  where
+    "cleanup_loop_ret \<equiv> \<lambda>(\<pi>, M, \<OO>). (\<pi>, (image remove_set) ` M)"
 
 lemma cleanup_loop_simps:
   assumes "cleanup_loop_dom (\<pi>, M, \<OO>)"
   shows "cleanup_loop_call_cond (\<pi>, M, \<OO>) \<Longrightarrow>
            cleanup_loop (\<pi>, M, \<OO>) = cleanup_loop (cleanup_loop_upd (\<pi>, M, \<OO>))"
     and "cleanup_loop_ret_cond (\<pi>, M, \<OO>) \<Longrightarrow> cleanup_loop (\<pi>, M, \<OO>) = cleanup_loop_ret (\<pi>, M, \<OO>)"
- by (auto simp add: cleanup_loop_call_cond_def  cleanup_loop.psimps[OF assms]
-                    cleanup_loop_upd_def cleanup_loop_ret_cond_def cleanup_loop_ret_def Let_def)
+  by (auto simp add: cleanup_loop_call_cond_def  cleanup_loop.psimps[OF assms]
+      cleanup_loop_upd_def cleanup_loop_ret_cond_def cleanup_loop_ret_def Let_def)
 
 lemma cleanup_loop_induct:
   assumes dom: "cleanup_loop_dom (\<pi>, M, \<OO>)"
@@ -2592,18 +2612,18 @@ proof (induction rule: cleanup_loop.pinduct[OF dom])
     case True
     then have "\<exists>Bls\<in>\<OO>. 1 < card Bls" 
       unfolding cleanup_loop_call_cond_def by simp
-    
-    \<comment> \<open>Extract the induction hypothesis by unfolding your custom state update\<close>
+
+\<comment> \<open>Extract the induction hypothesis by unfolding your custom state update\<close>
     with 1 True have "P (cleanup_loop_upd (\<pi>, M, \<OO>))"
       unfolding cleanup_loop_upd_def Let_def by auto
-      
+
     with True 1 step show ?thesis 
       by blast
   next
     case False
     then have "cleanup_loop_ret_cond (\<pi>, M, \<OO>)"
       unfolding cleanup_loop_call_cond_def cleanup_loop_ret_cond_def by simp
-      
+
     with False 1 base show ?thesis 
       by blast
   qed
@@ -2611,19 +2631,19 @@ qed
 
 lemma cleanup_loop_upd_pres:
   assumes "cleanup_loop_call_cond (\<pi>, M, \<OO>)"
-        "odds_invar_cleanup (\<pi>, M, \<OO>)"
-        "odd_factor_critical_invar_cleanup (\<pi>, M, \<OO>)" 
-        "invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>)"
-        "invar_strict_odd_pos_cleanup (\<pi>, M, \<OO>)"
-        "invar_feasible_pi_cleanup (\<pi>, M, \<OO>)" 
-        "invar_tight_matching_cleanup (\<pi>, M, \<OO>)"
-      shows  "odds_invar_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th1)
-        "odd_factor_critical_invar_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th2)
-        "invar_matching_delta_of_non_zero_sets_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th3)
-        "invar_strict_odd_pos_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th4)
-        "invar_feasible_pi_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th5)
-        "invar_tight_matching_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th6)
-        "card (snd (snd (\<pi>, M, \<OO>))) > card (snd (snd (cleanup_loop_upd (\<pi>, M, \<OO>))))" (is ?th7)
+    "odds_invar_cleanup (\<pi>, M, \<OO>)"
+    "odd_factor_critical_invar_cleanup (\<pi>, M, \<OO>)" 
+    "invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>)"
+    "invar_strict_odd_pos_cleanup (\<pi>, M, \<OO>)"
+    "invar_feasible_pi_cleanup (\<pi>, M, \<OO>)" 
+    "invar_tight_matching_cleanup (\<pi>, M, \<OO>)"
+  shows  "odds_invar_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th1)
+    "odd_factor_critical_invar_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th2)
+    "invar_matching_delta_of_non_zero_sets_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th3)
+    "invar_strict_odd_pos_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th4)
+    "invar_feasible_pi_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th5)
+    "invar_tight_matching_cleanup (cleanup_loop_upd (\<pi>, M, \<OO>))" (is ?th6)
+    "card (snd (snd (\<pi>, M, \<OO>))) > card (snd (snd (cleanup_loop_upd (\<pi>, M, \<OO>))))" (is ?th7)
 proof-
 
   define Gt where "Gt = odd_tight_subgraph G w \<pi>"
@@ -2633,7 +2653,7 @@ proof-
   note odds_invar_cleanupD = odds_invar_cleanupD[OF assms(2)]
   note odd_factor_critical_invar_cleanupD = odd_factor_critical_invar_cleanupD[OF assms(3)]
   note invar_matching_delta_of_non_zero_sets_cleanupD =
-        invar_matching_delta_of_non_zero_sets_cleanupD[OF assms(4)]
+    invar_matching_delta_of_non_zero_sets_cleanupD[OF assms(4)]
   note invar_strict_odd_pos_cleanupD = invar_strict_odd_pos_cleanupD[OF assms(5)]
   note invar_feasible_pi_cleanupD=invar_feasible_pi_cleanupD[OF assms(6)]
   note invar_tight_matching_cleanupD=invar_tight_matching_cleanupD[OF assms(7)]
@@ -2652,7 +2672,7 @@ proof-
       using not_all_singletons by auto
     moreover then obtain Blss where "Blss \<in> maxes" "Blss \<supseteq> Bls" 
       using finite_Vs
-            finite_there_is_maximal_set[OF finite_U_finite_family, OF _ odds_invar_cleanupD(1)]
+        finite_there_is_maximal_set[OF finite_U_finite_family, OF _ odds_invar_cleanupD(1)]
       by(auto simp add: maxes_def)
     moreover hence "card Blss \<ge> card Bls"
       using finite_Vs finite_subset set_in_maxes_in_G
@@ -2678,15 +2698,15 @@ proof-
   have Bls_partner:"\<exists> Bls' \<in> maxes. {Bls, Bls'} \<in> M"
   proof-
     obtain e where "e \<in> M" "Bls \<in> e"
-    using invar_tight_matching_cleanupD(2)[symmetric] Bls_prop(1) 
-    by(auto simp add: maxes_def vs_member Gt_def)
-  moreover then obtain Bls' where "e = {Bls, Bls'}" "Bls \<noteq> Bls'" 
-    using dblton_graph_M
-    by(auto elim: Undirected_Set_Graphs.dblton_graphE)
-  ultimately show ?thesis
-    by(auto intro: bexI[of _ Bls'] 
-         simp add: edges_are_Vs_2 maxes_def invar_tight_matching_cleanupD(2)[symmetric])
-qed
+      using invar_tight_matching_cleanupD(2)[symmetric] Bls_prop(1) 
+      by(auto simp add: maxes_def vs_member Gt_def)
+    moreover then obtain Bls' where "e = {Bls, Bls'}" "Bls \<noteq> Bls'" 
+      using dblton_graph_M
+      by(auto elim: Undirected_Set_Graphs.dblton_graphE)
+    ultimately show ?thesis
+      by(auto intro: bexI[of _ Bls'] 
+          simp add: edges_are_Vs_2 maxes_def invar_tight_matching_cleanupD(2)[symmetric])
+  qed
   have Bls'_props: "Bls' \<in> maxes" "{Bls, Bls'} \<in> M"
     using sel_correct[OF Bls_partner] finite_maxes by(auto simp add: Bls'_def)
   hence Bls_Bls'_in_Gt_quot:"{Bls, Bls'} \<in> (Gt \<sslash> maximal_sets \<OO>)"
@@ -2702,7 +2722,7 @@ qed
         simp add: odds_invar_cleanupD(3,4) maxes_def finite_UnionD finite_Vs)
 
   have maximal_sets_after_are:
-     "maximal_sets \<OO>' = maxes - {Bls} \<union> (immediate_subsets \<OO> Bls)"
+    "maximal_sets \<OO>' = maxes - {Bls} \<union> (immediate_subsets \<OO> Bls)"
     using Bls_prop(1)
     unfolding \<OO>'_def maxes_def
     by(intro remove_maximal_set_from_laminar_family[OF odds_invar_cleanupD(1)]) simp
@@ -2710,7 +2730,7 @@ qed
   have bls_in_Gt:"\<exists> bls \<in> Blses. {bls, Bls'} \<in> Gt \<sslash> maximal_sets \<OO>'"
   proof-
     obtain e where e:"e \<in> Gt" "Bls \<in> maximal_sets \<OO>" "Bls' \<in> maximal_sets \<OO>"
-                   "e \<inter> Bls \<noteq> {}" "e \<inter> Bls' \<noteq> {}" "Bls \<noteq> Bls'"
+      "e \<inter> Bls \<noteq> {}" "e \<inter> Bls' \<noteq> {}" "Bls \<noteq> Bls'"
       using Bls_Bls'_in_Gt_quot
       by (auto simp add: partition_quotient_graph_def doubleton_eq_iff)
     then obtain bls where bls: "bls \<in> immediate_subsets \<OO> Bls" "e \<inter> bls \<noteq> {}"
@@ -2726,7 +2746,7 @@ qed
     ultimately have "{bls, Bls'} \<in> Gt \<sslash> maximal_sets \<OO>'"
       using bls(2) e(1,5)
       by(auto intro!: exI[of _ bls, OF exI[of _ Bls']] bexI[of _ e]
-           simp add: partition_quotient_graph_def doubleton_eq_iff)
+          simp add: partition_quotient_graph_def doubleton_eq_iff)
     thus ?thesis
       using Blses_def bls(1) by auto
   qed
@@ -2743,11 +2763,6 @@ qed
   define M' where "M' = (case find_matching_or_decomposition ((Gt \<sslash> maximal_sets \<OO>') \<lbrakk>Blses - {bls}\<rbrakk>)
                  of match M \<Rightarrow> M)"
 
-  have graph_invar_Gt: "graph_invar (Gt \<sslash> maximal_sets \<OO>')"
-    by (metis Vs_def Vs_partition_quotient_graph \<OO>'_def finite_Diff finite_Vs finite_Vs_then_finite finite_subset
-        maximal_sets_subset odds_invar_cleanupD(4) partition_quotient_graph_is_dblton)
-  hence graph_invar_Gt_on_Bls: "graph_invar ((Gt \<sslash> maximal_sets \<OO>') \<lbrakk>Blses - {bls}\<rbrakk>)"
-    by (simp add: graph_invar_graph_inter_Vs)
   have Bls_is_Union_Blses:"Bls = \<Union> Blses"
     using Bls_Union_of_immediate_subsets Blses_def by fastforce
   have laminar_maxes_after: "laminar (Vs G) \<OO>'"
@@ -2756,28 +2771,35 @@ qed
     by (simp add: Gt_def graph graph_invar_odd_tight_subgraph)
   have disjoint_Blses: "disjoint Blses"
     using finite_Vs disjoint_unionD2
-        maximal_sets_in_laminar_family_are_global_partition[of "Vs G" \<OO>']
+      maximal_sets_in_laminar_family_are_global_partition[of "Vs G" \<OO>']
     by(auto simp add: partition_on_def Blses_def laminar_maxes_after maximal_sets_after_are)
+  have graph_invar_Gt: "graph_invar (Gt \<sslash> maximal_sets \<OO>')"
+    using finite_Vs laminar_Union_finite
+    by(intro partition_quotient_graph_graph_invar[OF _
+          maximal_sets_in_laminar_family_are_global_partition[OF laminar_maxes_after]])
+      (auto intro!: laminar_Union_finite [OF  _ laminar_maxes_after] simp add: finite_Vs)
+  hence graph_invar_Gt_on_Bls: "graph_invar ((Gt \<sslash> maximal_sets \<OO>') \<lbrakk>Blses - {bls}\<rbrakk>)"
+    by (simp add: graph_invar_graph_inter_Vs)
 
-have hlper: "\<lbrakk>M \<subseteq> (Gt \<lbrakk>\<Union> Blses\<rbrakk> \<sslash> Blses); Vs M = Blses - {bls}\<rbrakk>
+  have hlper: "\<lbrakk>M \<subseteq> (Gt \<lbrakk>\<Union> Blses\<rbrakk> \<sslash> Blses); Vs M = Blses - {bls}\<rbrakk>
               \<Longrightarrow> M \<subseteq>  Gt \<sslash> Blses - {bls} \<lbrakk>Blses - {bls}\<rbrakk>" for M
-       proof(subst (asm) partition_quotient_graph_inter_Vs_commute[symmetric, where \<P> = "Blses"], goal_cases)
-            case 4
-            show ?case 
-            proof(rule, rule in_graph_inter_VsI, goal_cases)
-              case (1 e)
-              then show ?case 
-                using 4
-                by(subst edge_in_quot_remove_irrelevant_areas)(auto elim: in_graph_inter_VsE[OF set_mp])
-            next
-              case 2
-              thus ?case
-                using 4 by auto
-            qed
-          qed (auto simp add: dlbton_Gt disjoint_Blses)
+  proof(subst (asm) partition_quotient_graph_inter_Vs_commute[symmetric, where \<P> = "Blses"], goal_cases)
+    case 4
+    show ?case 
+    proof(rule, rule in_graph_inter_VsI, goal_cases)
+      case (1 e)
+      then show ?case 
+        using 4
+        by(subst edge_in_quot_remove_irrelevant_areas)(auto elim: in_graph_inter_VsE[OF set_mp])
+    next
+      case 2
+      thus ?case
+        using 4 by auto
+    qed
+  qed (auto simp add: dlbton_Gt disjoint_Blses)
   have matching_inter_Blses:
-     "\<exists>M. perfect_matching ( Gt \<sslash> maximal_sets \<OO>' \<lbrakk>Blses - {bls}\<rbrakk>) M" (is ?thesis1)
-     and Vs_Blses_minus_bls:"Vs ((Gt \<sslash> maximal_sets \<OO>') \<lbrakk>Blses - {bls}\<rbrakk>) = Blses - {bls}" (is ?thesis2)
+    "\<exists>M. perfect_matching ( Gt \<sslash> maximal_sets \<OO>' \<lbrakk>Blses - {bls}\<rbrakk>) M" (is ?thesis1)
+    and Vs_Blses_minus_bls:"Vs ((Gt \<sslash> maximal_sets \<OO>') \<lbrakk>Blses - {bls}\<rbrakk>) = Blses - {bls}" (is ?thesis2)
   proof-
     have "\<exists>M. graph_matching ( odd_tight_subgraph G w \<pi> \<lbrakk>Bls\<rbrakk> \<sslash> immediate_subsets \<OO> Bls) M \<and>
       Vs M = immediate_subsets \<OO> Bls - {bls}"
@@ -2785,9 +2807,9 @@ have hlper: "\<lbrakk>M \<subseteq> (Gt \<lbrakk>\<Union> Blses\<rbrakk> \<sslas
       by(intro odd_factor_critical_invar_cleanupD)
         (auto elim: in_maximal_setsE simp add: maxes_def  Blses_def)
     then obtain M where M: "graph_matching ( odd_tight_subgraph G w \<pi> \<lbrakk>Bls\<rbrakk> \<sslash> immediate_subsets \<OO> Bls) M"
-    "Vs M = immediate_subsets \<OO> Bls - {bls}"
+      "Vs M = immediate_subsets \<OO> Bls - {bls}"
       by auto
-          from M have th1: "perfect_matching ( Gt \<sslash> maximal_sets \<OO>' \<lbrakk>Blses - {bls}\<rbrakk>) M"
+    from M have th1: "perfect_matching ( Gt \<sslash> maximal_sets \<OO>' \<lbrakk>Blses - {bls}\<rbrakk>) M"
     proof(subst partition_quotient_graph_inter_Vs_commute, goal_cases)
       case 1
       then show ?case 
@@ -2847,7 +2869,7 @@ have hlper: "\<lbrakk>M \<subseteq> (Gt \<lbrakk>\<Union> Blses\<rbrakk> \<sslas
   have cleanup_loop_upd_def: "cleanup_loop_upd (\<pi>, M, \<OO>) = (\<pi>, M'', \<OO>')"
     using M'_def
     by(auto simp add: cleanup_loop_upd_def M''_def \<OO>'_def M'_def Bls_def Bls'_def maxes_def
-                      bls_def Blses_def Gt_def Let_def)
+        bls_def Blses_def Gt_def Let_def)
 
   show ?th1
     unfolding cleanup_loop_upd_def
@@ -2870,7 +2892,7 @@ have hlper: "\<lbrakk>M \<subseteq> (Gt \<lbrakk>\<Union> Blses\<rbrakk> \<sslas
       unfolding \<OO>'_def
       using Bls_prop 
       by (subst composed_family_expand_maximal_same_universe)
-         (auto simp add: odds_invar_cleanupD(3,4)  maxes_def)
+        (auto simp add: odds_invar_cleanupD(3,4)  maxes_def)
   next
     case 5
     thus ?case
@@ -2886,12 +2908,12 @@ have hlper: "\<lbrakk>M \<subseteq> (Gt \<lbrakk>\<Union> Blses\<rbrakk> \<sslas
 
   show ?th2
     unfolding cleanup_loop_upd_def
-proof(rule odd_factor_critical_invar_cleanupI, goal_cases)
-  case (1 X Y)
-  then show ?case 
-    using same_immediate_subsets odd_factor_critical_invar_cleanupD 
-    by (auto simp add: \<OO>'_def same_immediate_subsets)
-qed
+  proof(rule odd_factor_critical_invar_cleanupI, goal_cases)
+    case (1 X Y)
+    then show ?case 
+      using same_immediate_subsets odd_factor_critical_invar_cleanupD 
+      by (auto simp add: \<OO>'_def same_immediate_subsets)
+  qed
 
   have VsM_in_maxes:"Vs M \<subseteq> maxes"
     by (simp add: invar_tight_matching_cleanupD(2) maxes_def)
@@ -2927,8 +2949,8 @@ qed
       using dblton_graph_M e(1) by blast
     ultimately show False 
       using Bls_prop(1) immediate_subsets_subset(1)[of x \<OO> Bls]  in_maximal_setsE[of x \<OO>] 
-           subsetD[of e "maximal_sets \<OO>" x] subsetD[of e "immediate_subsets \<OO> Bls" x]
-           in_maximal_setsE[of Bls \<OO>] in_maximal_setsE[of x \<OO>]
+        subsetD[of e "maximal_sets \<OO>" x] subsetD[of e "immediate_subsets \<OO> Bls" x]
+        in_maximal_setsE[of Bls \<OO>] in_maximal_setsE[of x \<OO>]
       by(auto simp add:  maxes_def) 
   qed
 
@@ -2951,9 +2973,8 @@ qed
           proof(rule, goal_cases)
             case (1 e)
             then obtain U V where UV:
-            "{U, V} \<in> M - {{Bls, Bls'}} \<union> {{bls, Bls'}} \<union> M'" "U \<subseteq> Bls_here" "\<not> V \<subseteq> Bls_here"
-            "e = {U, V}"
-              by (smt (verit) mem_Collect_eq)
+              "{U, V} \<in> M - {{Bls, Bls'}} \<union> {{bls, Bls'}} \<union> M'" "U \<subseteq> Bls_here" "\<not> V \<subseteq> Bls_here"
+              "e = {U, V}" by (auto simp add: doubleton_eq_iff)
             then show ?case 
             proof(elim UnE, goal_cases)
               case 1
@@ -2993,8 +3014,8 @@ qed
           then show ?case 
             using Bls_is_Union_Blses bls_prop(2) one(3) Bls'_neq_Bls Bls'_props(1) Bls_prop(1) 
             by(auto intro!: exI[of _ bls, OF exI[of _ Bls']] 
-                     elim!: in_maximal_setsE 
-                  simp add: maxes_def)
+                elim!: in_maximal_setsE 
+                simp add: maxes_def)
         qed
       next
         case 2
@@ -3010,9 +3031,8 @@ qed
         using assms(6) invar_feasible_pi_cleanupD 2(2)
         by(auto dest!: feasible_min_perfect_dual_edmondsD(2)[where U = Bls_here])
       obtain U' V' where U'V': "{U', V'} \<in> M" "U' \<subseteq> Bls_here" "\<not> V' \<subseteq> Bls_here"
-        using invar_matching_delta_of_non_zero_sets_cleanupD[OF Bls_here_before 2(2)]
-        by(auto elim!: card_1_singletonE[simplified])
-          (smt (verit) Collect_empty_eq insert_not_empty)
+        using invar_matching_delta_of_non_zero_sets_cleanupD[OF Bls_here_before 2(2)] 
+        by(auto elim!: card_1_singletonE[simplified] dest!: singleton_not_emptyD)
       hence U'_V'_maxes:"U' \<in> maxes" "V' \<in> maxes"
         using invar_tight_matching_cleanupD(2)
         by(auto simp add: maxes_def edges_are_Vs edges_are_Vs_2)
@@ -3030,7 +3050,7 @@ qed
           by (auto simp add:  Blses_def)
         hence "Bls_here \<supseteq> Bls \<or> Bls_here \<subset> Bls"
           using odds_invar_cleanupD(5) Bls_here_before pi_Bls_here  Bls_prop(1)
-                maximal_sets_subset[of \<OO>]
+            maximal_sets_subset[of \<OO>]
           by(auto elim!: laminarE simp add:  maxes_def)
         then show ?case 
         proof(elim disjE, goal_cases)
@@ -3054,13 +3074,13 @@ qed
                          \<and> U \<subseteq> Bls_here \<and> \<not> V \<subseteq> Bls_here} = 
             card {{U, V} |U V. {U, V} \<in> M \<and> U \<subseteq> Bls_here \<and> \<not> V \<subseteq> Bls_here}"
       proof(rule bij_betw_same_card[where f = f],
-              unfold bij_betw_def, rule, goal_cases)
+          unfold bij_betw_def, rule, goal_cases)
         case 1
         then show ?case
         proof(rule inj_onI, goal_cases)
           case (1 e1 e2)
           obtain U V  where UV:
-           "{U, V} \<in> M - {{Bls, Bls'}} \<union> {{bls, Bls'}}" "U \<subseteq> Bls_here" "\<not> V \<subseteq> Bls_here" "e1 = {U, V}"
+            "{U, V} \<in> M - {{Bls, Bls'}} \<union> {{bls, Bls'}}" "U \<subseteq> Bls_here" "\<not> V \<subseteq> Bls_here" "e1 = {U, V}"
             using 1(1) by (auto simp add: doubleton_eq_iff)
           obtain U' V' where U'V':
             "{U', V'} \<in> M - {{Bls, Bls'}} \<union> {{bls, Bls'}}" "U' \<subseteq> Bls_here" "\<not> V' \<subseteq> Bls_here" "e2 = {U', V'}"
@@ -3075,8 +3095,8 @@ qed
         proof(rule, all \<open>rule\<close>, goal_cases)
           case (1 e)
           then obtain U V where UV:
-             "{U, V} \<in> M - {{Bls, Bls'}} \<union> {{bls, Bls'}}" "U \<subseteq> Bls_here" "\<not> V \<subseteq> Bls_here"
-             "e = f {U, V}"
+            "{U, V} \<in> M - {{Bls, Bls'}} \<union> {{bls, Bls'}}" "U \<subseteq> Bls_here" "\<not> V \<subseteq> Bls_here"
+            "e = f {U, V}"
             by (auto simp add: doubleton_eq_iff)
           show ?case 
             using UV(4) unfolding f_def
@@ -3089,103 +3109,103 @@ qed
               case 1
               moreover hence "Bls \<inter> Bls_here \<noteq> {}"
                 using bls_prop(2) UV(2) Bls_is_Union_Blses Blses_def odds_invar_cleanupD(1)
-                       empty_nin_laminar[of "Vs G" \<OO>]
-                   inter_nemptyI[of U Bls Bls_here] in_immediate_subsetsD(1)[of "{}" \<OO> Bls]
+                  empty_nin_laminar[of "Vs G" \<OO>]
+                  inter_nemptyI[of U Bls Bls_here] in_immediate_subsetsD(1)[of "{}" \<OO> Bls]
                 by force
               moreover hence "Bls \<subseteq> Bls_here \<or> Bls_here \<subset> Bls"
-               using odds_invar_cleanupD(5) Bls_here_before pi_Bls_here  Bls_prop(1)
-                maximal_sets_subset[of \<OO>]
-                 by(auto elim!: laminarE simp add:  maxes_def)
+                using odds_invar_cleanupD(5) Bls_here_before pi_Bls_here  Bls_prop(1)
+                  maximal_sets_subset[of \<OO>]
+                by(auto elim!: laminarE simp add:  maxes_def)
               ultimately show ?case 
                 using Bls'_props(2) U'_V'_maxes(1) Bls_prop(1) U'V'(2) UV(3)
                 by(auto intro!: exI[of _ Bls, OF exI[of _ Bls']] 
-                          elim: in_maximal_setsE 
-                      simp add: maxes_def)
-          next
-            case 2
-             moreover hence "Bls' \<inter> Bls_here \<noteq> {}"
-                 using Bls'_props(1) UV(2)  odds_invar_cleanupD(1)
-                inter_nemptyI[of Bls' Bls' Bls_here] laminar_maximal_sets_nempty[of "Vs G" \<OO> "{}"]
+                    elim: in_maximal_setsE 
+                    simp add: maxes_def)
+            next
+              case 2
+              moreover hence "Bls' \<inter> Bls_here \<noteq> {}"
+                using Bls'_props(1) UV(2)  odds_invar_cleanupD(1)
+                  inter_nemptyI[of Bls' Bls' Bls_here] laminar_maximal_sets_nempty[of "Vs G" \<OO> "{}"]
                 by (auto simp add: maxes_def)
               moreover hence "Bls' \<subseteq> Bls_here \<or> Bls_here \<subset> Bls'"
-               using odds_invar_cleanupD(5) Bls_here_before pi_Bls_here 
-                maximal_sets_subset[of \<OO>] UV(2) calculation(2)
-               by(auto elim!: laminarE simp add:  maxes_def)
-             ultimately show ?case 
-               using Bls_is_Union_Blses UV(2,3) bls_prop(2)  Bls'_props(2)
-               by (auto intro!: exI[of _ Bls', OF exI[of _ Bls]] 
-                      simp add: insert_commute)
-          qed
-        next
-          case 2
-          hence e_is_UV: "e = {U, V}"
-            by auto
-          moreover hence "e \<noteq> {bls, Bls'}"
-            using "2"(2) by auto
-          ultimately show ?case
-            using UV(1-3)
-            by (simp, intro exI[of _ U, OF exI[of _ V]]) auto
-        qed
-      next
-        case (2 e)
-        then obtain U V where UV: "{U, V} \<in> M" "U \<subseteq> Bls_here" "\<not> V \<subseteq> Bls_here" "e = {U, V}"
-          by auto
-        hence UV_in_maxes: "U \<in> maxes" "V \<in> maxes"
-          using VsM_in_maxes in_mono by blast+
-        show ?case
-        proof(cases "e = {Bls, Bls'}")
-          case True
-          hence e_is:"e = f {bls, Bls'}"
-            by (auto simp add: f_def)
-          have "{Bls, Bls'} = {U, V}"
-            using True UV(4) by auto
-          then show ?thesis 
-            unfolding doubleton_eq_iff
-          proof(elim disjE, goal_cases)
-            case 1
-            then show ?case 
-              using Bls_is_Union_Blses  bls_prop(2)  UV(2,3) 
-              by (auto intro!: imageI exI[of _ bls, OF exI[of _ V]] simp add: e_is)
+                using odds_invar_cleanupD(5) Bls_here_before pi_Bls_here 
+                  maximal_sets_subset[of \<OO>] UV(2) calculation(2)
+                by(auto elim!: laminarE simp add:  maxes_def)
+              ultimately show ?case 
+                using Bls_is_Union_Blses UV(2,3) bls_prop(2)  Bls'_props(2)
+                by (auto intro!: exI[of _ Bls', OF exI[of _ Bls]] 
+                    simp add: insert_commute)
+            qed
           next
             case 2
-            have "\<not> bls \<subseteq> Bls_here"
-            proof(rule ccontr, goal_cases)
-              case 1
-              hence "bls \<inter> Bls_here \<noteq> {}"
-                using bls_prop(2)  odds_invar_cleanupD(1) inter_nemptyI[of bls bls Bls_here] 
-                      immediate_subsets_laminar_disjoint[of "Vs G" \<OO> "{}" Bls "{}"]
-                by(auto simp add:  Blses_def)
-              hence "Bls \<inter> Bls_here \<noteq> {}"
-                using Bls_is_Union_Blses bls_prop(2) by blast
-              hence "Bls \<subseteq> Bls_here \<or> Bls_here \<subset> Bls"
-                using pi_Bls_here Bls_here_before odds_invar_cleanupD(5) Bls_prop(1)
-                      maximal_sets_subset[of \<OO>]
-                by(auto elim!: laminarE simp add:  maxes_def)
-              thus False
-                using "2" Bls'_props(1) Bls_prop(1) UV(2,3) 
-              by(auto elim: in_maximal_setsE simp add: maxes_def)
-          qed
-          then show ?case
-            using 2
-              using UV(2) 
-              by (auto intro!: imageI exI[of _ U, OF exI[of _ bls]] simp add: e_is)
+            hence e_is_UV: "e = {U, V}"
+              by auto
+            moreover hence "e \<noteq> {bls, Bls'}"
+              using "2"(2) by auto
+            ultimately show ?case
+              using UV(1-3)
+              by (simp, intro exI[of _ U, OF exI[of _ V]]) auto
           qed
         next
-          case False
-          hence "e \<noteq> {bls, Bls'}"
-            using Bls_is_Union_Blses bls_prop(2)  Bls_prop(1) UV_in_maxes(1,2)
-                  immediate_subsets_subset(1)[of \<OO>]
-            by(auto elim!: in_maximal_setsE simp add: UV(4) doubleton_eq_iff maxes_def)
-          hence e_is: "e = f e"
-            by(auto simp add: f_def)
-          show ?thesis
-            using False UV(1,2,3,4) 
-            by (intro rev_image_eqI[of e _ e f, OF _ e_is])
-               (force intro!: exI[of _ U, OF exI[of _ V]])
+          case (2 e)
+          then obtain U V where UV: "{U, V} \<in> M" "U \<subseteq> Bls_here" "\<not> V \<subseteq> Bls_here" "e = {U, V}"
+            by auto
+          hence UV_in_maxes: "U \<in> maxes" "V \<in> maxes"
+            using VsM_in_maxes in_mono by blast+
+          show ?case
+          proof(cases "e = {Bls, Bls'}")
+            case True
+            hence e_is:"e = f {bls, Bls'}"
+              by (auto simp add: f_def)
+            have "{Bls, Bls'} = {U, V}"
+              using True UV(4) by auto
+            then show ?thesis 
+              unfolding doubleton_eq_iff
+            proof(elim disjE, goal_cases)
+              case 1
+              then show ?case 
+                using Bls_is_Union_Blses  bls_prop(2)  UV(2,3) 
+                by (auto intro!: imageI exI[of _ bls, OF exI[of _ V]] simp add: e_is)
+            next
+              case 2
+              have "\<not> bls \<subseteq> Bls_here"
+              proof(rule ccontr, goal_cases)
+                case 1
+                hence "bls \<inter> Bls_here \<noteq> {}"
+                  using bls_prop(2)  odds_invar_cleanupD(1) inter_nemptyI[of bls bls Bls_here] 
+                    immediate_subsets_laminar_disjoint[of "Vs G" \<OO> "{}" Bls "{}"]
+                  by(auto simp add:  Blses_def)
+                hence "Bls \<inter> Bls_here \<noteq> {}"
+                  using Bls_is_Union_Blses bls_prop(2) by blast
+                hence "Bls \<subseteq> Bls_here \<or> Bls_here \<subset> Bls"
+                  using pi_Bls_here Bls_here_before odds_invar_cleanupD(5) Bls_prop(1)
+                    maximal_sets_subset[of \<OO>]
+                  by(auto elim!: laminarE simp add:  maxes_def)
+                thus False
+                  using "2" Bls'_props(1) Bls_prop(1) UV(2,3) 
+                  by(auto elim: in_maximal_setsE simp add: maxes_def)
+              qed
+              then show ?case
+                using 2
+                using UV(2) 
+                by (auto intro!: imageI exI[of _ U, OF exI[of _ bls]] simp add: e_is)
+            qed
+          next
+            case False
+            hence "e \<noteq> {bls, Bls'}"
+              using Bls_is_Union_Blses bls_prop(2)  Bls_prop(1) UV_in_maxes(1,2)
+                immediate_subsets_subset(1)[of \<OO>]
+              by(auto elim!: in_maximal_setsE simp add: UV(4) doubleton_eq_iff maxes_def)
+            hence e_is: "e = f e"
+              by(auto simp add: f_def)
+            show ?thesis
+              using False UV(1,2,3,4) 
+              by (intro rev_image_eqI[of e _ e f, OF _ e_is])
+                (force intro!: exI[of _ U, OF exI[of _ V]])
+          qed
         qed
-       qed
       qed
-     
+
       show ?case
         using Bls_here_before two(2)
         unfolding M''_delta_is same_card
@@ -3195,11 +3215,11 @@ qed
 
   show ?th4
     by(auto intro!: invar_strict_odd_pos_cleanupI
-          simp add: \<OO>'_def invar_strict_odd_pos_cleanupD cleanup_loop_upd_def)
+        simp add: \<OO>'_def invar_strict_odd_pos_cleanupD cleanup_loop_upd_def)
 
   show ?th5
     by(auto intro!: invar_feasible_pi_cleanupI 
-          simp add: cleanup_loop_upd_def invar_feasible_pi_cleanupD)
+        simp add: cleanup_loop_upd_def invar_feasible_pi_cleanupD)
   obtain e where e: "e \<in>  odd_tight_subgraph G w \<pi>" "e \<inter> bls \<noteq> {}" "e \<inter> Bls' \<noteq> {}"
     using bls_prop(1) 
     by(auto simp add: partition_quotient_graph_def Gt_def doubleton_eq_iff)
@@ -3208,7 +3228,7 @@ qed
   moreover obtain x y where "e = {x, y}" "x \<noteq> y"
     using e(1) by(auto elim!: in_odd_tight_subgraphE local.dblton_graphE)
   ultimately obtain x y where xy: "{x, y} \<in> odd_tight_subgraph G w \<pi>" "x \<in> bls" "y \<in> Bls'" "x \<noteq> y"
-    by (metis disjoint_iff insert_commute insert_disjoint(2) singleton_iff)
+    using  insert_commute[of x y "{}"] by force
 
   have Vs_M_without_Bls_Bls': "Vs (M - {{Bls, Bls'}}) = maxes - {Bls, Bls'}"
     using  Bls'_props(2) invar_tight_matching_cleanupD(1,2)
@@ -3218,10 +3238,10 @@ qed
     by (simp add: Blses_def Vs_M'_is)
   have Vs_M''_maximal_O': "Vs M'' = maximal_sets \<OO>'"
     unfolding \<OO>'_def M''_def vs_union  Vs_M_without_Bls_Bls' Vs_of_edge
-     Vs_M'_immediate_Bls
+      Vs_M'_immediate_Bls
     using Bls_prop(1) Bls'_neq_Bls Bls'_props(1) bls_prop(2)
     by (subst remove_maximal_set_from_laminar_family[of "Vs G"])
-       (fastforce simp add: maxes_def Blses_def odds_invar_cleanupD(1))+
+      (fastforce simp add: maxes_def Blses_def odds_invar_cleanupD(1))+
 
   show ?th6
     unfolding cleanup_loop_upd_def
@@ -3229,7 +3249,7 @@ qed
     case 1
     then show ?case 
       unfolding M''_def maximal_sets_after_are insert_commute[of Bls Bls' Set.empty]
-           insert_commute[of bls Bls' Set.empty]
+        insert_commute[of bls Bls' Set.empty]
     proof(rule partition_quotient_matching_refine_factor_critical[where x = x and y = y], goal_cases)
       case 1
       then show ?case
@@ -3262,9 +3282,8 @@ qed
         by (auto elim!: in_immediate_subsetsE)
       show ?case 
         unfolding Bls_is_Union_Blses
-        apply(subst Bls_helper)
-        unfolding immediate_subsets_are_maximals
-      proof(rule maximal_sets_in_laminar_family_are_global_partition[of Bls], goal_cases)
+      proof(subst Bls_helper, unfold immediate_subsets_are_maximals,
+          rule maximal_sets_in_laminar_family_are_global_partition[of Bls], goal_cases)
         case 1
         then show ?case 
         proof(rule laminar_subset'[OF odds_invar_cleanupD(1)], goal_cases)
@@ -3313,9 +3332,9 @@ qed
         using M_perfect
         unfolding Gt_def 
       proof(subst  Bls_is_Union_Blses, unfold graph_inter_vert_minus,
-            subst Blses_def,
-            subst partition_quotient_graph_inter_Vs_commute[symmetric, of _ "immediate_subsets \<OO> Bls"],
-             goal_cases)
+          subst Blses_def,
+          subst partition_quotient_graph_inter_Vs_commute[symmetric, of _ "immediate_subsets \<OO> Bls"],
+          goal_cases)
         case 2
         then show ?case 
           using Gt_def dlbton_Gt by blast
@@ -3326,10 +3345,10 @@ qed
       next
         case 4
         then show ?case 
-        unfolding Blses_def[symmetric]
+          unfolding Blses_def[symmetric]
             partition_quotient_graph_Vs_inter_intersection rw1
-        by(auto elim!: perfect_matchingE)
-    qed simp
+          by(auto elim!: perfect_matchingE)
+      qed simp
     next
       case 11
       then show ?case 
@@ -3343,24 +3362,26 @@ qed
   show ?th7
     using Bls_prop(1)
     by(auto elim!: in_maximal_setsE 
-         simp add: cleanup_loop_upd_def \<OO>'_def card_Diff1_less_iff
-                   finite_UnionD finite_Vs odds_invar_cleanupD(4) maxes_def)
+        simp add: cleanup_loop_upd_def \<OO>'_def card_Diff1_less_iff
+        finite_UnionD finite_Vs odds_invar_cleanupD(4) maxes_def)
 qed
 
 lemma Vs_image: "Vs (image f ` E) = f ` Vs E"
   by(auto simp add: Vs_def)
 
+subsection \<open>Invariant Preservation\<close>
+
 lemma cleanup_loop_upd_return:
   assumes "cleanup_loop_ret_cond (\<pi>, M, \<OO>)"
-        "odds_invar_cleanup (\<pi>, M, \<OO>)" 
-        "invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>)"
-        "invar_feasible_pi_cleanup (\<pi>, M, \<OO>)" 
-        "invar_tight_matching_cleanup (\<pi>, M, \<OO>)"
-        "cleanup_loop_ret (\<pi>, M, \<OO>) = (\<pi>', M')"
+    "odds_invar_cleanup (\<pi>, M, \<OO>)" 
+    "invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>)"
+    "invar_feasible_pi_cleanup (\<pi>, M, \<OO>)" 
+    "invar_tight_matching_cleanup (\<pi>, M, \<OO>)"
+    "cleanup_loop_ret (\<pi>, M, \<OO>) = (\<pi>', M')"
   shows "perfect_matching G M'" (is ?th1)
-   "feasible_min_perfect_dual_edmonds G w \<pi>'" (is ?th2)
-   "\<And>U. \<lbrakk>U \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G; \<pi>' U \<noteq> 0\<rbrakk> \<Longrightarrow> card (Delta M' U) = 1" 
-   "M' \<subseteq> odd_tight_subgraph G w \<pi>'" (is ?th4)
+    "feasible_min_perfect_dual_edmonds G w \<pi>'" (is ?th2)
+    "\<And>U. \<lbrakk>U \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G; \<pi>' U \<noteq> 0\<rbrakk> \<Longrightarrow> card (Delta M' U) = 1" 
+    "M' \<subseteq> odd_tight_subgraph G w \<pi>'" (is ?th4)
 proof-
   have pi'_is:"\<pi>' = \<pi>" and M'_def: "M' = (image remove_set) ` M"
     using assms(6)
@@ -3368,15 +3389,15 @@ proof-
 
   note odds_invar_cleanupD = odds_invar_cleanupD[OF assms(2)]
   note invar_matching_delta_of_non_zero_sets_cleanupD =
-        invar_matching_delta_of_non_zero_sets_cleanupD[OF assms(3)]
+    invar_matching_delta_of_non_zero_sets_cleanupD[OF assms(3)]
   note invar_feasible_pi_cleanupD=invar_feasible_pi_cleanupD[OF assms(4)]
   note invar_tight_matching_cleanupD=invar_tight_matching_cleanupD[OF assms(5)]
 
   have odds_singletons:"X \<in> \<OO> \<Longrightarrow> \<exists> x. X = {x}" for X
     using assms(1) odds_invar_cleanupD(1,2) 
-           card_1_singleton_iff[of X] odd_pos[of "card X"] 
+      card_1_singleton_iff[of X] odd_pos[of "card X"] 
     by(auto elim!: laminarE simp add: cleanup_loop_ret_cond_def)
-   
+
   have O_is:"\<OO> = {{v} | v. v \<in> Vs G}"
     using odds_invar_cleanupD(4) insert_subset[of _ "{}" "Vs G"] odds_singletons Union_upper[of "{_}" \<OO>]
     by (auto dest: odds_singletons) force 
@@ -3386,7 +3407,7 @@ proof-
     by(auto simp add: O_is)
 
   have e_in_ME:
-   "\<lbrakk>e \<in> M; \<And> u v. \<lbrakk>{u, v} \<in> odd_tight_subgraph G w \<pi>; u \<noteq> v; e ={{u}, {v}}; 
+    "\<lbrakk>e \<in> M; \<And> u v. \<lbrakk>{u, v} \<in> odd_tight_subgraph G w \<pi>; u \<noteq> v; e ={{u}, {v}}; 
            {u} \<in> \<OO>; {v} \<in> \<OO>\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P" for e P
   proof(goal_cases)
     case 1
@@ -3399,7 +3420,7 @@ proof-
       then obtain u v where "ee = {u, v}" "u \<noteq> v"
         using local.dblton_graphE odd_tight_subgraph_in_graph by blast
       then obtain  u v where "ee = {u, v}" "u \<noteq> v" "u \<in> U" "v \<in> V" "U = {u}" "V ={v}" "U \<in> \<OO>"
-           "V \<in> \<OO>"
+        "V \<in> \<OO>"
         using 1 odds_singletons
         by(auto elim!: in_maximal_setsE simp add: doubleton_eq_iff)
       then show ?case
@@ -3415,15 +3436,15 @@ proof-
     case 1
     then show ?case
       by(auto elim!: e_in_ME  in_odd_tight_subgraphE 
-           simp add: M'_def remove_set)
+          simp add: M'_def remove_set)
   next
     case 2
     then show ?case
       using invar_tight_matching_cleanupD(1,2)
       by(auto intro!: matching_image inj_on_subset[OF inj_on_O] 
-               dest!: perfect_matchingD(2)
-                elim: in_maximal_setsE 
-            simp add: M'_def)
+          dest!: perfect_matchingD(2)
+          elim: in_maximal_setsE 
+          simp add: M'_def)
   next
     case 3
     then show ?case
@@ -3435,7 +3456,7 @@ proof-
     by (simp add: invar_feasible_pi_cleanupD pi'_is)
 
   have edge_in_remove_set_rw:
-   "{ua, va} \<in> (`) remove_set ` M \<longleftrightarrow> {{ua}, {va}} \<in> M" for ua va
+    "{ua, va} \<in> (`) remove_set ` M \<longleftrightarrow> {{ua}, {va}} \<in> M" for ua va
   proof(rule, goal_cases)
     case 1
     then obtain e where e: "e \<in> M" "{ua, va} = remove_set ` e"
@@ -3451,9 +3472,9 @@ proof-
     case 2
     then show ?case
       by(auto intro!: rev_image_eqI[of "{{ua}, {va}}"] 
-            simp add: remove_set)
+          simp add: remove_set)
   qed
-  
+
   show "\<lbrakk>X \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G; \<pi>' X \<noteq> 0\<rbrakk> \<Longrightarrow> card (Delta M' X) = 1" for X
   proof(goal_cases)
     case 1
@@ -3466,8 +3487,8 @@ proof-
       case 1
       then show ?case 
         by(auto elim!: e_in_ME 
-               intro!: inj_onI 
-             simp add: doubleton_eq_iff remove_set)
+            intro!: inj_onI 
+            simp add: doubleton_eq_iff remove_set)
     next
       case 2
       then show ?case
@@ -3495,8 +3516,8 @@ proof-
             case (1 ua va)
             then show ?case 
               by (auto simp add: remove_set doubleton_eq_iff, insert one(6,5))
-                 (auto intro!: exI[of _ u, OF exI[of _ v]] rev_image_eqI[where x = "{{u}, {v}}"]
-                     simp add: remove_set insert_commute)
+                (auto intro!: exI[of _ u, OF exI[of _ v]] rev_image_eqI[where x = "{{u}, {v}}"]
+                  simp add: remove_set insert_commute)
           qed
         qed
       qed
@@ -3511,12 +3532,12 @@ qed
 
 lemma cleanup_loop_upd_termination:
   assumes "odds_invar_cleanup (\<pi>, M, \<OO>)"
-        "odd_factor_critical_invar_cleanup (\<pi>, M, \<OO>)" 
-        "invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>)"
-        "invar_strict_odd_pos_cleanup (\<pi>, M, \<OO>)"
-        "invar_feasible_pi_cleanup (\<pi>, M, \<OO>)" 
-        "invar_tight_matching_cleanup (\<pi>, M, \<OO>)"
-   shows "cleanup_loop_dom (\<pi>, M, \<OO>)"
+    "odd_factor_critical_invar_cleanup (\<pi>, M, \<OO>)" 
+    "invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>)"
+    "invar_strict_odd_pos_cleanup (\<pi>, M, \<OO>)"
+    "invar_feasible_pi_cleanup (\<pi>, M, \<OO>)" 
+    "invar_tight_matching_cleanup (\<pi>, M, \<OO>)"
+  shows "cleanup_loop_dom (\<pi>, M, \<OO>)"
 proof-
   define n where "n = card \<OO>"
   thus ?thesis
@@ -3528,7 +3549,7 @@ proof-
       case True
       then show ?thesis
         by(auto intro: cleanup_loop.domintros 
-             simp add: cleanup_loop_ret_cond_def)
+            simp add: cleanup_loop_ret_cond_def)
     next
       case False
       hence call_cond:"cleanup_loop_call_cond (\<pi>, M, \<OO>)"
@@ -3546,49 +3567,49 @@ proof-
           moreover note cleanup_loop_upd_pres = cleanup_loop_upd_pres[OF call_cond less(3-)]
           ultimately show ?thesis 
             by(auto intro!: less(1)[of "card \<OO>'", OF _ refl] 
-                  simp add: less(2))
+                simp add: less(2))
+        qed
       qed
     qed
   qed
 qed
-qed
 
 lemma cleanup_loop_upd_correct:
   assumes "odds_invar_cleanup (\<pi>, M, \<OO>)"
-        "odd_factor_critical_invar_cleanup (\<pi>, M, \<OO>)" 
-        "invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>)"
-        "invar_strict_odd_pos_cleanup (\<pi>, M, \<OO>)"
-        "invar_feasible_pi_cleanup (\<pi>, M, \<OO>)" 
-        "invar_tight_matching_cleanup (\<pi>, M, \<OO>)"
-        "cleanup_loop (\<pi>, M, \<OO>) = (\<pi>', M')"
+    "odd_factor_critical_invar_cleanup (\<pi>, M, \<OO>)" 
+    "invar_matching_delta_of_non_zero_sets_cleanup (\<pi>, M, \<OO>)"
+    "invar_strict_odd_pos_cleanup (\<pi>, M, \<OO>)"
+    "invar_feasible_pi_cleanup (\<pi>, M, \<OO>)" 
+    "invar_tight_matching_cleanup (\<pi>, M, \<OO>)"
+    "cleanup_loop (\<pi>, M, \<OO>) = (\<pi>', M')"
   shows "perfect_matching G M'" (is ?th1)
-   "feasible_min_perfect_dual_edmonds G w \<pi>'" (is ?th2)
-   "\<And>U. \<lbrakk>U \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G; \<pi>' U \<noteq> 0\<rbrakk> \<Longrightarrow> card (Delta M' U) = 1" 
-   "M' \<subseteq> odd_tight_subgraph G w \<pi>'" (is ?th4)
+    "feasible_min_perfect_dual_edmonds G w \<pi>'" (is ?th2)
+    "\<And>U. \<lbrakk>U \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G; \<pi>' U \<noteq> 0\<rbrakk> \<Longrightarrow> card (Delta M' U) = 1" 
+    "M' \<subseteq> odd_tight_subgraph G w \<pi>'" (is ?th4)
 proof-
   have "perfect_matching G M' \<and> feasible_min_perfect_dual_edmonds G w \<pi>'
       \<and> (\<forall> U. (U \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G \<and> \<pi>' U \<noteq> 0) \<longrightarrow> card (Delta M' U) = 1) \<and>
           M' \<subseteq> odd_tight_subgraph G w \<pi>'"
-  using assms
-proof(induction arbitrary: 
+    using assms
+  proof(induction arbitrary: 
       rule: cleanup_loop_induct[OF cleanup_loop_upd_termination, OF assms(1-6)], goal_cases)
-  case (1 \<pi> M \<OO>)
-  note IH = this
-  show ?case 
-    using  cleanup_loop_upd_pres[OF IH(2,4-9)] IH(1,10,2) 
-    by(intro IH(3)) 
-      (auto simp add: cleanup_loop_simps(1))
-next
-  case (2 \<pi> M \<OO>)
-  note base = this
-  hence ret_is: "cleanup_loop_ret (\<pi>, M, \<OO>) = (\<pi>', M')"
-    by(auto simp add: cleanup_loop_simps(2))
-  show ?case
-    using cleanup_loop_upd_return[OF base(2,3,5,7,8) ret_is]
-    by auto
-qed
+    case (1 \<pi> M \<OO>)
+    note IH = this
+    show ?case 
+      using  cleanup_loop_upd_pres[OF IH(2,4-9)] IH(1,10,2) 
+      by(intro IH(3)) 
+        (auto simp add: cleanup_loop_simps(1))
+  next
+    case (2 \<pi> M \<OO>)
+    note base = this
+    hence ret_is: "cleanup_loop_ret (\<pi>, M, \<OO>) = (\<pi>', M')"
+      by(auto simp add: cleanup_loop_simps(2))
+    show ?case
+      using cleanup_loop_upd_return[OF base(2,3,5,7,8) ret_is]
+      by auto
+  qed
   thus ?th1 ?th2 ?th4
-       "\<And>U. \<lbrakk>U \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G; \<pi>' U \<noteq> 0\<rbrakk> \<Longrightarrow> card (Delta M' U) = 1" 
+    "\<And>U. \<lbrakk>U \<in> \<Omega>\<^sub>\<ge>\<^sub>3 Vs G; \<pi>' U \<noteq> 0\<rbrakk> \<Longrightarrow> card (Delta M' U) = 1" 
     by auto
 qed
 
@@ -3609,7 +3630,7 @@ proof-
   show ?thesis
     using assms finite_E uv_in_Delta
     by(auto intro!:  exI[of _ "{u, v}"] linorder_class.Min.coboundedI finite_img Delta_finite 
-          simp add: \<pi>\<^sub>0_def  SOME_is)
+        simp add: \<pi>\<^sub>0_def  SOME_is)
 qed
 
 lemma initial_pi_feasible:
@@ -3638,12 +3659,14 @@ qed
 
 definition "\<OO>\<^sub>0 = {{v}| v. v \<in> Vs G}"
 
+subsection \<open>Initial State\<close>
+
 lemma initial_invars:
-   "odds_invar (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th1)
-   "odd_factor_critical_invar (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th2)
-   "invar_strict_odd_pos (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th3)
-   "invar_non_zero_pi_in_odd (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th4)
-   "invar_feasible_pi (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th5)
+  "odds_invar (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th1)
+  "odd_factor_critical_invar (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th2)
+  "invar_strict_odd_pos (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th3)
+  "invar_non_zero_pi_in_odd (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th4)
+  "invar_feasible_pi (\<pi>\<^sub>0, \<OO>\<^sub>0)" (is ?th5)
 proof-
   show ?th1
     by(auto intro!: odds_invarI laminarI simp add: \<OO>\<^sub>0_def)
@@ -3653,10 +3676,21 @@ proof-
     by(auto intro!: invar_strict_odd_posI simp add: \<OO>\<^sub>0_def)
   show ?th4
     by(auto intro!: invar_non_zero_pi_in_oddI 
-          simp add: \<pi>\<^sub>0_def if_split[of "\<lambda> x. x \<noteq> _"] \<OO>\<^sub>0_def)
+        simp add: \<pi>\<^sub>0_def if_split[of "\<lambda> x. x \<noteq> _"] \<OO>\<^sub>0_def)
   show ?th5
     by(auto intro!: invar_feasible_piI initial_pi_feasible)
 qed
+
+subsection \<open>Correctness\<close>
+
+text \<open>Unfortunately, we can give a partial correctness statement only.
+     We took an abstract perspective at the algorithm,
+     but this comes at the cost of losing nice termination proofs.
+     We experienced something similar but less severe for weighted bipartite matching:
+     for the abstract algorithm we could guarantee termination only if all weights are multiples 
+     of the same real constant,
+     whereas for the implementation, a.k.a. the Hungarian Method, we had strongly polynomial time.
+  \<close>
 
 definition "naive_min_weight_perfect_matching =
   (let intermed = top_loop (\<pi>\<^sub>0, \<OO>\<^sub>0)
@@ -3669,7 +3703,7 @@ theorem naive_min_weight_perfect_matching_partial_correctness:
   assumes "top_loop_dom (\<pi>\<^sub>0, \<OO>\<^sub>0)"
   shows "naive_min_weight_perfect_matching = None 
           \<Longrightarrow> \<nexists> M. perfect_matching G M"
-        "naive_min_weight_perfect_matching = Some M 
+    "naive_min_weight_perfect_matching = Some M 
           \<Longrightarrow> min_weight_perfect_matching G w M"
 proof(goal_cases)
   case 1
@@ -3688,26 +3722,26 @@ proof(goal_cases)
       by auto
     moreover have "sum \<pi> \<Omega> Vs G \<le> B"
       by(auto intro!: edmonds_weak_duality 
-            simp add: B_def pi(1) M dblton_E finite_Vs)
+          simp add: B_def pi(1) M dblton_E finite_Vs)
     ultimately show False
       by simp
   qed
 next
   case 2
   then obtain \<pi> M' \<OO> \<pi>'' where results: "top_loop (\<pi>\<^sub>0, \<OO>\<^sub>0) = Some (\<pi>, M', \<OO>)"
-         "cleanup_loop (\<pi>, M', \<OO>) = (\<pi>'', M)"
+    "cleanup_loop (\<pi>, M', \<OO>) = (\<pi>'', M)"
     by(cases "top_loop (\<pi>\<^sub>0, \<OO>\<^sub>0)")
       (auto simp add: naive_min_weight_perfect_matching_def case_prod_beta' split_pairs2)
 
   note invars_for_second_loop = invars_for_second_loopD[OF 
-         top_loop_Some_result[OF assms(1) initial_invars results(1)]]
+      top_loop_Some_result[OF assms(1) initial_invars results(1)]]
 
   note final_correctness_conditions = 
-         cleanup_loop_upd_correct[OF invars_for_second_loop results(2)]
+    cleanup_loop_upd_correct[OF invars_for_second_loop results(2)]
 
   show ?case
     by(auto intro!: edmonds_min_weight_perfect_matching_criterion[where \<pi> = \<pi>'']
-                    final_correctness_conditions graph)
+        final_correctness_conditions graph)
 qed
 
 end
