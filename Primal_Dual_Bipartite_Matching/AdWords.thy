@@ -613,7 +613,7 @@ proof (intro mult_imp_le_div_pos add_pos_pos)
        (auto intro: R_max_ge budgets_pos)
 
   with assms R_max_pos show "B i \<ge> (1 - R_max) * (B i + b {i,j})"
-    using linordered_semiring_strict_class.mult_pos_pos
+    using mult_pos_pos
     by (fastforce simp: distrib_left left_diff_distrib dest!: bids_pos)
 qed (use assms in \<open>auto intro: budgets_pos bids_pos\<close>)
 
@@ -1244,7 +1244,7 @@ proof (cases "total_bid_of (allocation (adwords js)) i > B i")
 
   also from True assms have "\<dots> \<le> B i"
     apply (auto dest!: max_over_budget_adwords)
-    by (smt (verit, ccfv_SIG) assms(1) budgets_pos frac_less2 linordered_semiring_strict_class.mult_pos_pos nonzero_mult_div_cancel_left)
+    by (smt (verit, ccfv_SIG) assms(1) budgets_pos frac_less2 mult_pos_pos nonzero_mult_div_cancel_left)
 
   also from True have "\<dots> = charge_of (allocation (adwords js)) i"
     by simp

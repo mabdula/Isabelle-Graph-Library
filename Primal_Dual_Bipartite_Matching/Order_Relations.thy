@@ -38,19 +38,27 @@ lemma linorder_on'_antisymD: "linorder_on' S r \<Longrightarrow> antisym r"
   by blast
 
 lemma preorders_onD: "r \<in> preorders_on S \<Longrightarrow> preorder_on S r"
-  unfolding preorders_on_def
-  by blast
+  unfolding preorders_on_def by auto
 
-lemma preorders_onI[intro]: "preorder_on S r \<Longrightarrow> r \<in> preorders_on S"
-  unfolding preorders_on_def
-  by blast
+lemma preorders_onI: "preorder_on S r \<Longrightarrow> r \<in> preorders_on S"
+  unfolding preorders_on_def by simp
+
+lemma preorders_on_refl_on: "r \<in> preorders_on S \<Longrightarrow> refl_on S r"
+  unfolding preorders_on_def preorder_on_def refl_on_def by auto
+
+lemma preorders_on_trans: "r \<in> preorders_on S \<Longrightarrow> trans r"
+  unfolding preorders_on_def preorder_on_def by auto
+
+lemma preorders_on_domain: "r \<in> preorders_on S \<Longrightarrow> (x, y) \<in> r \<Longrightarrow> x \<in> S \<and> y \<in> S"
+  unfolding preorders_on_def preorder_on_def refl_on_def by auto
 
 lemma preorder_on_subset_Times: "preorder_on S r \<Longrightarrow> r \<subseteq> S \<times> S"
-  unfolding preorder_on_def
-  by (auto dest: refl_onD1 refl_onD2)
+  unfolding preorder_on_def refl_on_def by auto
 
 lemma preorders_on_subset_Pow: "preorders_on S \<subseteq> Pow (S \<times> S)"
   by (auto dest: preorders_onD preorder_on_subset_Times)
+
+
 
 lemma finite_preorders_on[intro]:
   assumes "finite S"

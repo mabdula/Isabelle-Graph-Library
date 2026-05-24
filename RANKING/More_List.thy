@@ -202,9 +202,24 @@ lemma count_list_append: "count_list (xs@ys) x = count_list xs x + count_list ys
   by (induction xs) auto
 
 lemma move_to_set: "set xs[x \<mapsto> i] = set xs \<union> {x}"
-  unfolding move_to_def
-  by (auto dest: in_set_takeD in_set_dropD)
-     (metis (mono_tags, lifting) append_take_drop_id filter_set last_index_append last_index_size_conv length_append member_filter)
+proof -
+  define xs' where "xs' = [y \<leftarrow> xs. y \<noteq> x]"
+  have "set xs[x \<mapsto> i] = set (take i xs' @ x # drop i xs')"
+    unfolding move_to_def xs'_def by simp
+  also have "... = set (take i xs') \<union> {x} \<union> set (drop i xs')"
+    by simp
+  also have "... = {x} \<union> (set (take i xs') \<union> set (drop i xs'))"
+    by auto
+  also have "... = {x} \<union> set (take i xs' @ drop i xs')"
+    by (auto simp add: set_append[symmetric])
+  also have "... = {x} \<union> set xs'"
+    by simp
+  also have "... = {x} \<union> (set xs - {x})"
+    unfolding xs'_def by auto
+  also have "... = set xs \<union> {x}"
+    by auto
+  finally show ?thesis .
+qed
 
 lemma move_to_set_eq: "x \<in> set xs \<Longrightarrow> set xs[x \<mapsto> i] = set xs"
   by (auto simp: move_to_set)
@@ -684,7 +699,7 @@ lemma list_eq_same_order:
   by blast
 
 lemma move_to_filter_eq: "[x <- xs. x \<noteq> v][v \<mapsto> t] = xs[v \<mapsto> t]"
-  by (metis filter_id_conv filter_set member_filter move_to_def)
+  by (simp add: move_to_def)
 
 lemma distinct_order_filter_eq:
   assumes "distinct xs" "distinct xs'"

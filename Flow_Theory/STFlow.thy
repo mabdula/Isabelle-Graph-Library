@@ -476,7 +476,7 @@ proof(cases "Abs f > 0", goal_cases)
         by(auto simp add: dropWhile_append)
       moreover have "dropWhile (\<lambda>e. \<not> is_old e) ([new_edge (create_edge t s)] @ C2) = C2"
         using  C1C2_in_E dropWhile_nothing[of C2 "\<lambda>e. \<not> is_old e"]
-        by(force simp add: dropWhile_append ) 
+        by fastforce
       ultimately show ?case
         using cs'subset_E C1C2_in_E cs'_split by simp
     next
@@ -636,7 +636,7 @@ proof(cases "Abs f > 0", goal_cases)
             by(auto simp add: dropWhile_append)
           moreover have "dropWhile (\<lambda>e. \<not> is_old e) ([new_edge (create_edge t s)] @ C2) = C2"
             using  C1C2_in_E dropWhile_nothing[of C2 "\<lambda>e. \<not> is_old e"]
-            by(force simp add: dropWhile_append ) 
+            by fastforce
           ultimately show ?case
             using cs'subset_E C1C2_in_E cs'_split by simp
         next

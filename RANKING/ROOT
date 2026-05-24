@@ -9,7 +9,7 @@ session "RANKING" = "HOL" +
     "Berge_Lemma"
 
   theories
-    "More_List"
+    "More_List_Ranking"
     "More_Graph"
     "Misc"
     "Ranking"

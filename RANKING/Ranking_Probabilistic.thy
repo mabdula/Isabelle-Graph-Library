@@ -11,6 +11,7 @@ theory Ranking_Probabilistic
     "HOL-Probability.Product_PMF"
     "HOL-Real_Asymp.Real_Asymp"
 begin
+section \<open>RANKING as Randomized Algorithm\label{sec:prob}\<close>
 text \<open>
   In this final section we formulate RANKING as a randomized algorithm, and employ the previously
   proven facts to analyze the expected size of the matching produced by it.

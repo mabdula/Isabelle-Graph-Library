@@ -6,7 +6,7 @@ section \<open>RANKING (in a deterministic setting)\label{sec:ranking}\<close>
 theory Ranking
   imports
     More_Graph
-    More_List
+    More_List_Ranking
 begin
 text \<open>
   We start off by formulating the algorithm in a deterministic fashion. Both the arrival order

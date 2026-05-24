@@ -14,7 +14,7 @@ lemma preorder_on_linorder_from_keys[intro]: "preorder_on A (linorder_from_keys 
   by (auto simp: refl_on_def trans_def total_on_def) 
 
 lemma linorder_from_keys_in_preorders_on[intro]: "linorder_from_keys A f \<in> preorders_on A"
-  by auto
+  by (simp add: preorders_on_def preorder_on_linorder_from_keys)
 
 lemma linorder_from_keys_lessI:
   assumes "f i < f j"
@@ -48,7 +48,7 @@ proof -
   fix r assume "r \<in> preorders_on A"
   then have "linorder_from_keys A -` {r} \<inter> space ?M =
     {f \<in> space ?M. \<forall>x\<in>A. \<forall>y\<in>A. (x,y) \<in> r \<longleftrightarrow> f x \<le> f y}"
-    by (auto simp: linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD refl_on_domain)
+    by (auto simp: linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD preorder_on_subset_Times)
 
   also have "\<dots> \<in> sets ?M"
     by measurable
@@ -75,19 +75,21 @@ proof -
          (auto simp: linorder_on_def refl_on_def)
   next
     case 2
-    with linorder \<open>a \<notin> A\<close> \<open>y \<notin> f ` A\<close> show ?case
+    with linorder show ?case
       by (subst linorder_from_insert)
-         (auto simp: linorder_on_def antisym_def dest: refl_on_domain)
+         (auto simp: linorder_on_def refl_on_def)
   next
     case 3
     with linorder \<open>a \<notin> A\<close> \<open>y \<notin> f ` A\<close> show ?case
-      by (subst linorder_from_insert, unfold trans_def)
-         (auto simp: linorder_from_keys_def linorder_on_def)
+      by (subst linorder_from_insert) (auto simp: linorder_on_def antisym_def refl_on_def)
   next
     case 4
     with linorder show ?case
-      by (subst linorder_from_insert, unfold linorder_on_def total_on_def)
-         auto
+      using preorders_on_trans by blast
+  next
+    case 5
+    with linorder show ?case
+      by (auto simp: linorder_on_def total_on_def linorder_from_keys_def)
   qed
 qed
 
@@ -186,7 +188,7 @@ proof -
     finally have M_eq': "distr M (count_space (preorders_on A)) (map_relation A \<pi>) = M" ..
 
     from that have preorder: "R \<in> preorders_on A" "R' \<in> preorders_on A"
-      by (auto dest: linorder_on_imp_preorder_on)
+      by (auto simp: preorders_on_def dest: linorder_on_imp_preorder_on)
     hence "emeasure M {R} \<le> emeasure M (map_relation A \<pi> -` {R'} \<inter> space M)"
       using preorder by (intro emeasure_mono) (auto simp: M_def \<pi> )
     also have "\<dots> = emeasure (distr M (count_space (preorders_on A)) (map_relation A \<pi>)) {R'} "
@@ -271,7 +273,7 @@ lemma preorder_on_weighted_linorder_from_keys[intro]: "preorder_on A (weighted_l
   by (auto simp: refl_on_def trans_def total_on_def) 
 
 lemma weighted_linorder_from_keys_in_preorders_on[intro]: "weighted_linorder_from_keys A v g f \<in> preorders_on A"
-  by auto
+  using preorders_onI by blast
 
 lemma measurable_weighted_linorder_from_keys[measurable]:
   assumes fin: "finite A"
@@ -285,7 +287,7 @@ proof -
   fix r assume "r \<in> preorders_on A"
   then have "weighted_linorder_from_keys A v g -` {r} \<inter> space ?M =
     {f \<in> space ?M. \<forall>x\<in>A. \<forall>y\<in>A. (x,y) \<in> r \<longleftrightarrow> v x * (1 - g(f x)) \<ge> v y * (1 - g(f y))}"
-    by (auto simp: weighted_linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD refl_on_domain)
+    by (auto simp: weighted_linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD preorder_on_subset_Times)
 
   also from assms have "\<dots> \<in> sets ?M"
     by measurable
@@ -340,24 +342,23 @@ proof -
     unfolding linorder_on_def
   proof (intro conjI, goal_cases)
     case 1
-    with linorder show ?case
-      by (subst linorder_from_insert)
-         (auto simp: linorder_on_def refl_on_def)
+    show ?case by (auto simp: weighted_linorder_from_keys_def)
   next
     case 2
-    with linorder no_collision \<open>a \<notin> A\<close> show ?case
-      by (subst linorder_from_insert)
-         (auto simp: linorder_on_def antisym_def dest: refl_on_domain)
+    with linorder show ?case
+      by (subst linorder_from_insert) (auto simp: weighted_linorder_from_keys_def linorder_on_def refl_on_def)
   next
     case 3
-    with linorder no_collision \<open>a \<notin> A\<close> show ?case
-      by (subst linorder_from_insert, unfold trans_def)
-         (auto simp: weighted_linorder_from_keys_def linorder_on_def)
+    from linorder no_collision \<open>a \<notin> A\<close> show ?case
+      by (subst linorder_from_insert) (auto simp: weighted_linorder_from_keys_def linorder_on_def antisym_def)
   next
     case 4
-    with linorder show ?case
-      by (subst linorder_from_insert, unfold linorder_on_def total_on_def)
-         auto
+    from linorder no_collision \<open>a \<notin> A\<close> show ?case
+      by (subst linorder_from_insert) (auto simp: weighted_linorder_from_keys_def linorder_on_def trans_def)
+  next
+    case 5
+    from linorder no_collision \<open>a \<notin> A\<close> show ?case
+      by (subst linorder_from_insert) (auto simp: weighted_linorder_from_keys_def linorder_on_def total_on_def)
   qed
 qed
 

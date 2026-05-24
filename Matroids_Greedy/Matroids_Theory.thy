@@ -3201,8 +3201,11 @@ lemma sorted_aux3:
   by (smt (verit, best) IntI UnCI distinct_append filter_append filter_empty_conv filter_id_conv list.set(1)
       self_append_conv set_append)
 
+lemma member_filter: "(x \<in> Set.filter P A) = (x \<in> A \<and> P x)"
+  by simp
+
 lemma sorted_aux4:
-  "distinct xs \<Longrightarrow> xs = (filter P xs) @ ys \<Longrightarrow> ys = (filter (\<lambda>x. \<not> P x) xs)"
+  "\<lbrakk>distinct xs; xs = (filter P xs) @ ys\<rbrakk> \<Longrightarrow> ys = (filter (\<lambda>x. \<not> P x) xs)"
   by (metis (no_types, lifting) filter_append filter_empty_conv filter_id_conv filter_set
       member_filter self_append_conv self_append_conv2)
 

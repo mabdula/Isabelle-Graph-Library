@@ -88,7 +88,7 @@ proof -
   then obtain x where "x \<in> ?set_diff" by auto
   have "finite ?set_diff" by simp
   have "\<forall>y. y \<in> ?set_diff \<longrightarrow> y \<in> set l" by simp
-  then have "\<forall>y. y \<in> ?set_diff \<longrightarrow> List.member l y" using in_set_member \<open>length l > 0\<close> by fast
+  then have "\<forall>y. y \<in> ?set_diff \<longrightarrow> List.member l y" by fastforce
   then have "List.member l x" using \<open>x \<in> ?set_diff\<close> by simp
   then obtain i where "(nth l i) = x" "i < length l" 
     by (metis \<open>\<forall>y. y \<in> set l - set k \<longrightarrow> y \<in> set l\<close> \<open>x \<in> set l - set k\<close> in_set_conv_nth)
@@ -111,8 +111,7 @@ proof -
     have "set (take y l) \<noteq> {}" using z_prop by force
     then have "(take y l) \<noteq> []" by simp
     then have "length (take y l) > 0" by simp
-    then have "List.member (take y l) z" using in_set_member z_prop2
-      by metis
+    then have "List.member (take y l) z" using z_prop2 by fastforce
     then have "\<exists>j. (nth (take y l) j) = z \<and> j < length (take y l)" 
       by (meson in_set_conv_nth z_prop2)
     then obtain j where j_prop: "(nth (take y l) j) = z \<and> j < length (take y l)" by auto
@@ -352,8 +351,8 @@ proof
             proof
               assume assum2: "l ! (length l - 1) \<in> set (take (length l - 1) l)"
               then have "(take (length l - 1)  l) \<noteq> []" by auto
-              then have assum3: "List.member (take (length l - 1) l) (nth l (length l - 1))" using in_set_member \<open>l \<noteq> []\<close>
-                  assum2 by fast
+              then have assum3: "List.member (take (length l - 1) l) (nth l (length l - 1))" 
+                using  \<open>l \<noteq> []\<close> assum2 by fastforce
               have "l = (take (length l - 1) l) @ [nth l (length l - 1)]" using \<open>l \<noteq> []\<close> 
                 by (metis Suc_diff_1 \<open>0 < length l\<close> \<open>length l - 1 < length l\<close> order_refl take_Suc_conv_app_nth take_all_iff)
               then have "\<not> (distinct l)"
@@ -364,7 +363,7 @@ proof
             then have  "((set (take (length l) l)) - {nth l (length l - 1)}) \<in> F" using factone facttwo 
               by (metis Diff_insert_absorb Un_empty_right Un_insert_right)
             then have "X - {x} \<in> F" using l_prop \<open>nth l (length l - 1) = x\<close> by simp
-            have "x \<in> X" using l_prop \<open>nth l (length l - 1) = x\<close> in_set_member \<open>l \<noteq> []\<close> by auto
+            have "x \<in> X" using l_prop \<open>nth l (length l - 1) = x\<close> \<open>l \<noteq> []\<close> by auto
             then show "\<exists>x\<in>X. X - {x} \<in> F" using \<open>X - {x} \<in> F\<close> by auto
           qed
         qed
@@ -504,9 +503,8 @@ proof (unfold_locales)
           next
             case False
             have "l \<noteq> []" using \<open>X \<noteq> {}\<close> \<open>set l = X\<close> by auto
-            have "List.member l (nth l 0)" using \<open>set l = X\<close>
-              by (metis \<open>X \<noteq> {}\<close> in_set_member length_pos_if_in_set nth_mem subsetI subset_empty)
-            then have "nth l 0 \<in> X" using \<open>set l = X\<close> in_set_member by fast
+            have "List.member l (nth l 0)" using \<open>set l = X\<close> \<open>l \<noteq> []\<close> by fastforce
+            then have "nth l 0 \<in> X" using \<open>set l = X\<close> by fastforce
             then have "(nth l 0) \<in> X \<inter> Y" using X_element_prop False by simp
             have "finite (X \<inter> Y)" using \<open>finite X\<close> \<open>finite Y\<close> by simp
             then have "\<exists>k. set k = X \<inter> Y \<and> (nth k 0) = (nth l 0) \<and> distinct k" using exists_list_with_first_element \<open>(nth l 0) \<in> X \<inter> Y\<close> by fast

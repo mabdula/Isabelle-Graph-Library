@@ -1144,7 +1144,8 @@ proof -
     fix x
     assume "x \<in> ?A" 
     have "(inv p) x \<in> ?A" 
-      using \<open>x \<in> ?A\<close> assms inv_in_support p_is_permutation by fastforce
+      using \<open>x \<in> ?A\<close> assms inv_in_support p_is_permutation
+      by fast
     have "(on_odd p) ((inv p) x) = x" 
       by (metis \<open>inv p x \<in> ?A\<close> assms  on_odd_def permutes_inverses(1))
     then show "x \<in> (on_odd p) ` ?A" 
@@ -1200,7 +1201,7 @@ proof -
     fix x
     assume asmx: "x \<in>  not_on_odd p ` ?A"  "x \<in>  set (support p (least_odd p)) " 
     have "(inv p x) \<in> set (support p (least_odd p))" 
-      using asmx assms inv_in_support p_is_permutation by fastforce
+      using asmx assms inv_in_support p_is_permutation by fast
     then have "x \<in> ?A" 
       using asmx unfolding not_on_odd_def 
       by (smt (z3) DiffD2 UNIV_I assms image_iff inv_into_f_f permutes_inj )
@@ -1748,13 +1749,13 @@ proof(rule ccontr)
   then have "p x \<in> set (support p i)" 
     by auto
   then have "p x \<in> set (support (inv p) i)" 
-    using assms(1) inv_support_same p_is_permutation by fastforce
+    using assms(1) inv_support_same p_is_permutation by fast
   then have "(inv p) (p x) \<in> set (support (inv p) i)" 
-    using assms(1) inv_in_support inv_support_same p_is_permutation by fastforce
+    using assms(1) inv_in_support inv_support_same p_is_permutation by fast
   then have "x \<in> set (support (inv p) i)" 
     by (metis assms(1) permutes_inv_eq)
   then show False 
-    using assms inv_support_same p_is_permutation by fastforce
+    using assms inv_support_same p_is_permutation by fast
 qed
 
 lemma rev_rev_same:
