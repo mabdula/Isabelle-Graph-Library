@@ -1,5 +1,5 @@
 theory Blossom_Algo_Main_Loop
-  imports "Berge_Lemma.Berge" Misc
+  imports "Basic_Matching.Berge" Blossom_Misc
 begin
 
 subsection\<open>The main loop of a maximum matching algorithm that is based on Berge's lemma\<close>

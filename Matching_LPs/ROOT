@@ -6,10 +6,15 @@ sessions
   Jordan_Normal_Form
   LP_Duality
   Linear_Inequalities
-  Primal_Dual_Bipartite_Matching
+  Directed_Set_Graphs
+  Undirected_Set_Graphs
+  Basic_Matching
 
 theories
   Even_More_Graph_2
+  Matching_LP
+  Bipartite_Matching_LP
+  Bipartite_Vertex_Weighted_Matching_LP
   Matrix_Invertable
   Faces
   Integer_Polyhedron

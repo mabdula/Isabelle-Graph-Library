@@ -5,7 +5,9 @@
 section \<open>RANKING (in a deterministic setting)\label{sec:ranking}\<close>
 theory Ranking
   imports
-    More_Graph
+     Basic_Matching.Berge
+    "HOL-Library.FuncSet"
+    "HOL-Library.LaTeXsugar"
     More_List_Ranking
 begin
 text \<open>

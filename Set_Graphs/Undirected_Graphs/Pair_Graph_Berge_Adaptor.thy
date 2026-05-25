@@ -5,6 +5,7 @@ theory Pair_Graph_Berge_Adaptor
     Directed_Set_Graphs.Vwalk
     Directed_Set_Graphs.Component
     Undirected_Set_Graphs.Undirected_Set_Graphs
+    Paths Cycles
 begin
 
 subsection \<open>Directed-Undirected Graph Adaptor\<close>
@@ -728,8 +729,8 @@ lemma edges_of_path_Vs': "Vs edge_set \<subseteq> set p"
   by (simp add: path_induced.subgraph.Vs_edges_of_path edges_of_vwalk_dVs)
 end
 
-lemma vwalk_arcs_to_edges_of_path: "e \<in> set (vwalk_arcs Q) \<Longrightarrow>
-                                        {fst e, snd e} \<in> set (edges_of_path Q)" for e Q
+lemma vwalk_arcs_to_edges_of_path: 
+  "e \<in> set (vwalk_arcs Q) \<Longrightarrow> {fst e, snd e} \<in> set (edges_of_path Q)" for e Q
  apply(induction Q, simp)
   subgoal for a Q
    by(cases Q, auto)

@@ -126,7 +126,7 @@ proof(rule ccontr)
 qed
 
 lemma tutte1:
-  assumes "\<exists>M. perfect_matching G M"
+  assumes "\<exists>M. perfect_matching G M" "graph_invar G"
   shows "tutte_condition G"
 proof(rule ccontr)
   obtain M where "perfect_matching G M" using assms by auto
@@ -134,7 +134,7 @@ proof(rule ccontr)
   then obtain X where "X \<subseteq> Vs G \<and> card (odd_comps_in_diff G X) > card X"
     by (meson le_less_linear tutte_condition_def)
   then have "X \<subseteq> Vs M" "graph_invar G" "matching M" "M\<subseteq>G" "Vs M = Vs G"
-    using \<open>perfect_matching G M\<close> perfect_matchingE 
+    using \<open>perfect_matching G M\<close> perfect_matchingE assms(2)
     by metis+ 
   then have "finite (Vs M)" by simp
   have "finite M" 
@@ -363,7 +363,7 @@ proof(rule ccontr)
  odd_comps_in_diff G X - {C} \<union> odd_comps_in_diff (component_edges (graph_diff G X) C) {x}"
     using add_subset_change_odd_components[of G X C "{x}"] assms by auto
   have "graph_invar (component_edges (graph_diff G X) C)" 
-    by (smt (verit) Berge.component_edges_subset assms(1) graph_diff_subset graph_invar_subset)
+    by (smt (verit) Connected_Components.component_edges_subset assms(1) graph_diff_subset graph_invar_subset)
   have "finite ?docX" 
     using diff_components_finite[of "(component_edges (graph_diff G X) C)"]
     using \<open>graph_invar (component_edges (graph_diff G X) C)\<close> by blast
@@ -1076,7 +1076,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
                   unfolding component_edges_def
                   by blast
                 then have "e \<in> graph_diff G X" 
-                  using asme Berge.component_edges_subset by blast
+                  using asme Connected_Components.component_edges_subset by blast
                 have "v \<notin> e" 
                   by (metis \<open>e \<subseteq> C'\<close> \<open>x \<notin> C\<close> comp_C connected_components_member_sym odd_x subsetD)
                 then have "e \<inter> (X \<union> {v}) = {}" 
@@ -1094,7 +1094,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
               then have "e \<subseteq> C'" unfolding component_edges_def
                 by blast
               then have "e \<in> (graph_diff G (X\<union>{v}))" 
-                using asme Berge.component_edges_subset by blast
+                using asme Connected_Components.component_edges_subset by blast
               then have "e \<inter> X = {}" 
                 unfolding graph_diff_def by blast
               then have "e \<in> (graph_diff G X)"
@@ -1106,7 +1106,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
             qed
             then show "path (graph_diff G (X \<union> {v})) p"
               using `path (component_edges (graph_diff G X) C')  p` 
-              by (metis Berge.component_edges_subset path_subset)
+              by (metis Connected_Components.component_edges_subset path_subset)
           qed
           then show "z \<in> connected_component (graph_diff G (X \<union> {v})) x" 
             by (simp add: has_path_in_connected_component)
@@ -1528,42 +1528,42 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
     have "\<exists>M. perfect_matching ?G' M"
     proof(rule ccontr)
       assume "\<nexists>M. perfect_matching ?G' M" 
-      then have "\<not> (\<forall>A \<subseteq>  (odd_comps_in_diff G X). card (reachable ?G' A) \<ge> card A \<and>
+      then have "\<not> (\<forall>A \<subseteq>  (odd_comps_in_diff G X). card (neighbours_of_Vs ?G' A) \<ge> card A \<and>
                    (card  (odd_comps_in_diff G X) = card (Vs ?G' - (odd_comps_in_diff G X))))"
-        using frobeneus_matching[of ?G' "(odd_comps_in_diff G X)" ] 
-          `partitioned_bipartite ?G' (odd_comps_in_diff G X)` 
-        by blast
-      then have "\<exists> A \<subseteq> (odd_comps_in_diff G X). card (reachable ?G' A) < card A \<or>
+        using frobenius_matching[of ?G' "(odd_comps_in_diff G X)" ] 
+          `partitioned_bipartite ?G' (odd_comps_in_diff G X)` \<open>graph_invar ?G'\<close>
+        by auto
+      then have "\<exists> A \<subseteq> (odd_comps_in_diff G X). card (neighbours_of_Vs ?G' A) < card A \<or>
                    ((card  (odd_comps_in_diff G X)) \<noteq> card (Vs ?G' - (odd_comps_in_diff G X)))"
         using le_less_linear by blast
-      then obtain A where A:"A \<subseteq> (odd_comps_in_diff G X) \<and> card (reachable ?G' A) < card A" 
+      then obtain A where A:"A \<subseteq> (odd_comps_in_diff G X) \<and> card (neighbours_of_Vs ?G' A) < card A" 
         using 29 by blast
-      have 30:"reachable ?G' (odd_comps_in_diff G X) = Vs ?G' - (odd_comps_in_diff G X)"
-        using reachble_bipartite[of ?G' "(odd_comps_in_diff G X)"]
+      have 30:"neighbours_of_Vs ?G' (odd_comps_in_diff G X) = Vs ?G' - (odd_comps_in_diff G X)"
+        using neighbours_of_Vs_bipartite[of ?G' "(odd_comps_in_diff G X)"]
           `partitioned_bipartite ?G' (odd_comps_in_diff G X)` 
         by fastforce
-      have "(reachable ?G' A) \<subseteq> (reachable ?G' (odd_comps_in_diff G X))"
-        using reachable_subset[of A "(odd_comps_in_diff G X)"] A by blast
-      then have "(reachable ?G' A) \<subseteq> Vs ?G' - (odd_comps_in_diff G X)" 
+      have "(neighbours_of_Vs ?G' A) \<subseteq> (neighbours_of_Vs ?G' (odd_comps_in_diff G X))"
+        using neighbours_of_Vs_subset[of A "(odd_comps_in_diff G X)"] A by blast
+      then have "(neighbours_of_Vs ?G' A) \<subseteq> Vs ?G' - (odd_comps_in_diff G X)" 
         by (simp add: 30)
-      then have 31:"(reachable ?G' A) \<subseteq> (\<Union>x\<in>X. ?f x)" 
+      then have 31:"(neighbours_of_Vs ?G' A) \<subseteq> (\<Union>x\<in>X. ?f x)" 
         by (simp add: 28)
       have "(\<Union>x\<in>X. ?f x) = {{x} |x. x \<in> X}" using  singleton_set_is_union_singletons[of X]
         by (meson X_barr less.prems(1) rev_finite_subset)
-      then have 32:"(reachable ?G' A) \<subseteq> {{x} |x. x \<in> X}" 
+      then have 32:"(neighbours_of_Vs ?G' A) \<subseteq> {{x} |x. x \<in> X}" 
         using 31 by presburger
-      let ?ReachA = "(\<lambda> A. {x. {x}\<in>(reachable ?G' A)})"
+      let ?ReachA = "(\<lambda> A. {x. {x}\<in>(neighbours_of_Vs ?G' A)})"
       have "finite A" 
         using A diff_components_finite finite_subset less.prems(1) by auto
       have "finite X" 
         using X_barr \<open>finite (Vs G)\<close> rev_finite_subset by blast
-      then have 38:"card (?ReachA A) = card (reachable ?G' A)" 
-        using card_singleton_set_same[of X "(reachable ?G' A)"] 32 by presburger
+      then have 38:"card (?ReachA A) = card (neighbours_of_Vs ?G' A)" 
+        using card_singleton_set_same[of X "(neighbours_of_Vs ?G' A)"] 32 by presburger
       have "?ReachA A \<subseteq> X" 
-        using `reachable ?G' A \<subseteq> {{x} |x. x \<in> X}` by auto
+        using `neighbours_of_Vs ?G' A \<subseteq> {{x} |x. x \<in> X}` by auto
       have "?ReachA A = {y'. \<exists>x'. {x', y'} \<in> G \<and>
                                    connected_component (graph_diff G X) x' \<in> A \<and> y' \<in> X}"
-        unfolding reachable_def 
+        unfolding neighbours_of_Vs_def 
         apply safe 
            apply blast+
         apply (metis IntI A odd_comps_in_diff_not_in_X empty_iff insertCI subsetD)
@@ -1574,11 +1574,11 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
           by (smt (verit, del_insts) IntI A odd_comps_in_diff_not_in_X empty_iff
               in_own_connected_component mem_Collect_eq subsetD)
         then   have "x \<in> ?ReachA A"  
-          unfolding reachable_def 
+          unfolding neighbours_of_Vs_def 
           by (smt (verit, best) A asms(2-3) odd_comps_in_diff_not_in_X disjoint_insert(2) 
               insertCI insert_Diff mem_Collect_eq subset_iff)
         then  show " \<exists>u\<in>A. \<exists>e\<in>?G'. {x} \<noteq> u \<and> u \<in> e \<and> {x} \<in> e" 
-          unfolding reachable_def by blast
+          unfolding neighbours_of_Vs_def by blast
       qed 
       have "A \<subseteq> odd_comps_in_diff G (?ReachA A)"
       proof
@@ -1631,10 +1631,10 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
                 using path2.hyps(1) by blast
               then have "{v, v'} \<inter> (?ReachA A) = {}" 
                 by (metis (mono_tags, lifting) graph_diff_def mem_Collect_eq)
-              then have "{v} \<notin> reachable ?G' A" 
+              then have "{v} \<notin> neighbours_of_Vs ?G' A" 
                 by blast
               then have "\<nexists>C. C\<in>A \<and> {C, {v}} \<in> ?G'"
-                unfolding reachable_def
+                unfolding neighbours_of_Vs_def
                 by (smt (verit, best) A doubleton_eq_iff in_mono insert_disjoint(2) insert_iff 
                                       mem_Collect_eq odd_comps_in_diff_not_in_X)  
               then have "{C, {v}} \<notin> ?G'" 
@@ -2155,7 +2155,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       then show "x \<in> Vs {{x, y} |x y. x \<in> Z' \<and> {connected_component (graph_diff G X) x, {y}} \<in> M'}"
         using z by auto
     qed   
-    have "?M2 \<subseteq> G" 
+    have M2_in_G:"?M2 \<subseteq> G" 
     proof
       fix e
       assume "e \<in> ?M2"
@@ -2199,10 +2199,6 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
     have "perfect_matching ?M2 ?M2" 
       unfolding perfect_matching_def
     proof
-      show "graph_invar ?M2"
-        using \<open>_Collect {x, y} (x \<in> Z' \<and> {connected_component (graph_diff G X) x, {y}} \<in> M') \<subseteq> G\<close>
-              graph_invar_subset less.prems(1)
-        by force
       have "matching ?M2" 
         unfolding matching_def
       proof
@@ -2343,8 +2339,8 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       qed
       have "?M2 \<subseteq> ?M2" by auto
       have "Vs ?M2 = Vs ?M2" by auto
-      then show "matching ?M2 \<and> ?M2 \<subseteq> ?M2 \<and> Vs ?M2 = Vs ?M2"
-        using \<open>matching ?M2\<close> by blast
+      show "?M2 \<subseteq> ?M2" "matching ?M2 \<and> Vs ?M2 = Vs ?M2"
+        using \<open>matching ?M2\<close> by blast+
     qed
     let ?ce = "(\<lambda> C. {(graph_diff (component_edges G C) Z')})"
     let ?CES = " {(graph_diff (component_edges G C) Z')| C. C \<in> (odd_comps_in_diff G X)}"
@@ -2432,13 +2428,31 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
     qed
     then have "\<forall>CE1 \<in> ?E'. \<forall>CE2 \<in> ?E'. CE1 \<noteq> CE2 \<longrightarrow> Vs CE1 \<inter> Vs CE2 = {}" 
       by (simp add: Int_commute disj)
-    then have "\<exists>M. perfect_matching (\<Union>?E') M" 
-      using perfect_matching_union[of ?E'] 
-      using 83 \<open>finite ?E'\<close> by blast
+    moreover have "\<forall> a \<in> ?E'. {} \<notin> a" 
+      by (auto simp add: component_edges_def graph_diff_def)
+    moreover have "\<forall>a \<in> ?E'. finite (Vs a)"
+    proof-
+      have help1: 
+        "C \<in> odd_comps_in_diff G X \<Longrightarrow> finite (Vs (graph_diff (component_edges G C) Z'))" for C
+        using  Vs_subset[OF Connected_Components.component_edges_subset[of G]] 
+               Vs_subset[OF graph_diff_subset[of "component_edges G _" Z']]
+        by (force intro: finite_subset[of _ "Vs G"] 
+               simp add: Vs_subset M2_in_G less.prems(1))+
+      have  "Vs ({{x, y} | x y. (x \<in> Z' \<and> 
+                   {connected_component (graph_diff G X) x, {y}} \<in> M')}) \<subseteq> Vs G"
+        by (auto intro: simp add: Vs_subset M2_in_G less.prems(1))
+      hence "finite (Vs ({{x, y} | x y. (x \<in> Z' \<and> 
+                   {connected_component (graph_diff G X) x, {y}} \<in> M')}))"
+        using finite_subset  \<open>finite (Vs G)\<close> by fastforce
+      thus ?thesis
+        by (auto intro: help1)
+    qed
+    ultimately have "\<exists>M. perfect_matching (\<Union>?E') M" 
+      using perfect_matching_union[of ?E'] 83 \<open>finite ?E'\<close> by blast
     then obtain M where M:"perfect_matching (\<Union>?E') M" by auto
     have "\<Union>?E' \<subseteq> G" 
       apply safe
-      using graph_diff_subset Berge.component_edges_subset \<open>?M2 \<subseteq> G\<close> by blast+
+      using graph_diff_subset Connected_Components.component_edges_subset \<open>?M2 \<subseteq> G\<close> by blast+
     have 89:"Vs (odd_comps_in_diff G X) = Vs G - X" 
     proof(safe)
       {  fix x
@@ -2586,8 +2600,6 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
     have "perfect_matching G M" 
       unfolding perfect_matching_def
     proof
-      show "graph_invar G" 
-        using less.prems(1) by auto
       have "matching M" 
         using M perfect_matching_def by blast
       have "M \<subseteq> (\<Union>?E')" 
@@ -2596,11 +2608,10 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       then have "M \<subseteq> G"  using \<open>(\<Union>?E') \<subseteq> G\<close> 
         by (meson order_trans)
       have "Vs M = Vs (\<Union>?E')" 
-        using M unfolding perfect_matching_def
-        by fast
+        using M by(simp add: perfect_matching_def)
       then have "Vs M = Vs G" 
         using `Vs (\<Union>?E') = Vs G` by auto
-      then show "matching M \<and> M \<subseteq> G \<and> Vs M = Vs G" 
+      then show "M \<subseteq> G " "matching M \<and> Vs G = Vs M" 
         using \<open>matching M\<close> \<open>M \<subseteq> G\<close> by auto
     qed
     then show " \<exists>M. perfect_matching G M" by auto

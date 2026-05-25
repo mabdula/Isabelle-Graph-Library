@@ -55,7 +55,7 @@ lemma preorders_on_domain: "r \<in> preorders_on S \<Longrightarrow> (x, y) \<in
 lemma preorder_on_subset_Times: "preorder_on S r \<Longrightarrow> r \<subseteq> S \<times> S"
   unfolding preorder_on_def refl_on_def by auto
 
-lemma preorders_on_subset_Pow: "preorders_on S \<subseteq> Pow (S \<times> S)"
+lemma preorders_on_subset_Pow: "preorders_on S \<subseteq> Pow (S \<times> S)" 
   by (auto dest: preorders_onD preorder_on_subset_Times)
 
 

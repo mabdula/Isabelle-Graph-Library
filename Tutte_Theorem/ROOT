@@ -2,14 +2,13 @@ session "Tutte_Theorem" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
-  "Berge_Lemma"
-  "RANKING"
+  "Basic_Matching"
   "Transition_Systems_and_Automata"
   "Kruskal"
 
 
 theories
-	"Bipartite"
+	"Bipartite_Matchings_Existence"
 	"Cardinality_Sums"
 	"Odd_Components"
 	"Tutte_Theorem"

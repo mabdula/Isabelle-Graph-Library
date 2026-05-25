@@ -152,7 +152,7 @@ proof (rule ccontr, goal_cases)
   also have "... = card X + card (connected_components' ?V X)"
     using card_connected_components' \<open>X \<subseteq> G\<close> \<open>finite X\<close>
           \<open>finite ?V\<close> 
-    using \<open>\<And>e. e \<in> X \<Longrightarrow> \<exists>u v. e = {u, v} \<and> u \<noteq> v\<close> by presburger
+    using \<open>\<And>e. e \<in> X \<Longrightarrow> \<exists>u v. e = {u, v} \<and> u \<noteq> v\<close> by fastforce
   finally have card_V_1: "card ?V = card X + card (connected_components' ?V X)" .
   have "card ?V = card (Vs Y) + card (?V - Vs Y)"
     by (metis Diff_disjoint Diff_partition \<open>Vs Y \<subseteq> Vs G\<close> card_Un_disjoint finite_Diff2 graph infinite_super)
@@ -198,7 +198,7 @@ proof(unfold is_spanning_forest_def, rule iffI, goal_cases)
     moreover hence "reachable X u v" 
       by (simp add: reachable_sym)
     ultimately show ?case 
-      by (simp add: Undirected_Set_Graphs.reachable_refl reachable_in_Vs(2))
+      by (simp add: reachable_refl reachable_in_Vs(2))
   next
     case (path2 v v' vs b)
     have "reachable X v' b"

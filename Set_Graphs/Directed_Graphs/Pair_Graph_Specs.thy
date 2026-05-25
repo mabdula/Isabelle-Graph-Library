@@ -69,7 +69,8 @@ no_notation digraph ("digraph")
 named_theorems Graph_Spec_Elims
 named_theorems Graph_Spec_Intros
 named_theorems Graph_Spec_Simps
-
+(*TODO: List parameters in desired order, othw. ordering is broken,
+bad for instantiation!*)
 locale Pair_Graph_Specs = 
  adjmap: Map 
  where update = update and invar = adjmap_inv +
@@ -144,8 +145,12 @@ definition "delete_edge G u v =
 )"
 
 
-definition "from_list xs \<equiv> fold (\<lambda>(u,v) G. add_edge G u v) xs \<emptyset>\<^sub>G"
+definition "from_list xs \<equiv> foldl (\<lambda> G (u,v). add_edge G u v) \<emptyset>\<^sub>G xs"
 
+lemma from_list_def': "from_list xs = fold (\<lambda> (u,v) G. add_edge G u v) xs \<emptyset>\<^sub>G"
+  unfolding foldl_conv_fold from_list_def
+  by(rule fun_cong[of _ _ "\<emptyset>\<^sub>G"], rule fun_cong[of _ _ xs], rule arg_cong[of _ _ fold], rule ext)
+     auto
 
 lemmas [code] = neighbourhood_def add_edge_def delete_edge_def from_list_def
 
@@ -177,11 +182,9 @@ lemma finite_vsetsI[intro]:
   "(\<And> v N. lookup G v = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> finite_vsets G"
   by (auto simp: finite_vsets_def)
 
-
 lemma neighbourhood_invars'[simp,dest]:
    "graph_inv G \<Longrightarrow> vset_inv (\<N>\<^sub>G G v)"
   by (auto simp add: graph_inv_def neighbourhood_def split: option.splits)
-
 
 lemma finite_graph[intro!]:
   assumes "graph_inv G" "finite_graph G" "finite_vsets G"
@@ -212,6 +215,9 @@ corollary finite_vertices[intro!]:
   shows "finite (dVs (digraph_abs G))"
   using finite_graph[OF assms]
   by (simp add: finite_vertices_iff)
+
+lemma finite_neighbourhoods: "finite_vsets G \<Longrightarrow> finite (t_set (neighbourhood G v))"
+  by(auto simp add: neighbourhood_def vset.emptyD(3) split: option.split)
 
 subsection \<open>Abstraction lemmas\<close>
 
@@ -324,33 +330,74 @@ proof(rule finite_vsetsI, goal_cases)
           simp add: delete_edge_def adjmap.map_update[OF adj_inv]  graph_inv_def)+
 qed
 
-
-lemma from_list_inv[simp]: "graph_inv (from_list xs)"
-proof -
-  have "graph_inv (fold (\<lambda>(u,v) G. add_edge G u v) xs G)" if "graph_inv G" for G
-    using that by (induction xs arbitrary: G) (auto)
-
-  from this[where G="\<emptyset>\<^sub>G"] show ?thesis 
-    by(simp add: from_list_def)
-qed
-
-  
-lemma from_list_abs[simp]: "digraph_abs (from_list xs) = set xs"
-proof -
-  have "digraph_abs (fold (\<lambda>(u,v) G. add_edge G u v) xs G) = digraph_abs G \<union> set xs" 
-    if "graph_inv G" for G
-    using that 
-    apply (induction xs arbitrary: G) 
-    by (auto simp: adjmap_inv_insert)
-  thus ?thesis 
-    by(simp add: from_list_def)
-qed
-
 lemma s_non_in_dVs_neighb_empty:
   "s \<notin> dVs (digraph_abs G) \<Longrightarrow> \<N>\<^sub>G G s =  \<emptyset>\<^sub>N"
   using vset.choose[of "\<N>\<^sub>G G s"] 
   unfolding digraph_abs_def dVs_def
   by blast
+
+lemmas [code] = from_list_def
+
+lemma finite_graph_empty: "finite_graph \<emptyset>\<^sub>G"
+  by (simp add: finite_graph_def)
+
+definition "has_neighb_set G u = (\<exists> N. lookup G u = Some N)"
+
+lemma add_edge_neighb_set:
+  "adjmap_inv G \<Longrightarrow> \<exists> N. lookup (add_edge G u v) u = Some N"
+  "adjmap_inv G \<Longrightarrow> has_neighb_set (add_edge G u v) u"
+  "\<lbrakk>adjmap_inv G; has_neighb_set G x\<rbrakk> \<Longrightarrow> has_neighb_set (add_edge G u v) x"
+  by(auto simp add: add_edge_def has_neighb_set_def  split: option.split)
+
+lemma add_edge_no_change:
+ "\<lbrakk>adjmap_inv G; u \<noteq> v\<rbrakk> \<Longrightarrow> lookup (add_edge G u u') v = lookup G v"
+  by (simp add: add_edge_def option.case_eq_if)
+
+lemma from_list_correct:
+ "graph_inv (from_list es)" "finite_graph (from_list es)"
+ "finite_vsets (from_list es)" "digraph_abs (from_list es) = set es"
+ "\<And> v. v \<in> fst ` set es \<Longrightarrow> has_neighb_set (from_list es) v"
+proof-
+  define rev_es where "rev_es = rev es"
+  have same_set: "set es = set rev_es"
+    by(auto simp add: rev_es_def)
+  have  "graph_inv (from_list es) \<and>finite_graph (from_list es) \<and>
+    finite_vsets (from_list es) \<and>digraph_abs (from_list es) = set es
+    \<and>  (\<forall> v \<in> fst ` set es. has_neighb_set (from_list es) v)"
+    unfolding from_list_def foldl_conv_foldr same_set rev_es_def[symmetric]
+    by(induction rev_es)
+      (auto split: prod.split 
+            intro: finite_graph_add_edge finite_vsets_add_edge add_edge_neighb_set
+         simp add: graph_inv_empty finite_graph_empty finite_vsets_empty digraph_abs_empty)
+  thus  "graph_inv (from_list es)" "finite_graph (from_list es)"
+        "finite_vsets (from_list es)" "digraph_abs (from_list es) = set es"
+        "\<And> v. v \<in> fst ` set es \<Longrightarrow> has_neighb_set (from_list es) v"
+    by auto
+qed
+
+lemmas from_list_inv[simp] = from_list_correct(1)
+
+lemmas from_list_abs[simp] = from_list_correct(4)
+
+lemma vset_list_fold:
+  assumes "vset_inv V"
+  shows   "vset_inv (foldl (\<lambda> L x. insert x L) V vs)"
+          "t_set (foldl (\<lambda> L x. insert x L) V vs) = set vs \<union> t_set V"
+           "vset_inv (foldr (\<lambda> x L. insert x L) vs V)"
+          "t_set (foldr (\<lambda> x L. insert x L) vs V) = set vs \<union> t_set V"
+proof-
+  define rev_vs where "rev_vs = rev vs"
+  have set_vs: "set vs = set rev_vs"
+    by(auto simp add: rev_vs_def)
+  have "vset_inv (foldr insert vs V) \<and>
+         [foldr insert vs V]\<^sub>s = set vs \<union> [V]\<^sub>s" for vs
+    by(induction vs)(auto simp add: assms)
+  thus  "vset_inv (foldl (\<lambda> L x. insert x L) V vs)"
+          "t_set (foldl (\<lambda> L x. insert x L) V vs) = set vs \<union> t_set V"
+           "vset_inv (foldr (\<lambda> x L. insert x L) vs V)"
+          "t_set (foldr (\<lambda> x L. insert x L) vs V) = set vs \<union> t_set V"
+    by(auto simp add: foldl_conv_foldr)
+qed
 
 end \<comment> \<open>Properties context\<close>  
 

@@ -6,7 +6,7 @@ section \<open>RANKING as Randomized Algorithm\label{sec:prob}\<close>
 theory Ranking_Probabilistic
   imports
     Ranking
-    Misc
+    Ranking_Misc
     "HOL-Probability.Random_Permutations"
     "HOL-Probability.Product_PMF"
     "HOL-Real_Asymp.Real_Asymp"

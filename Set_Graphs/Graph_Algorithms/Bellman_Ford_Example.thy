@@ -73,7 +73,8 @@ for nb f edge_costs es vs
 defines search_rev_path_exec = bellford.search_rev_path_exec 
 and bellman_ford_init_algo = bellford.bellman_ford_init
 and  bellman_ford_algo = bellford.bellman_ford
-and relax=bellford.relax              
+and relax=bellford.relax        
+and follow_map = bellford.follow_map
  using Map_connection.Map_axioms by(auto intro!: bellman_ford_spec.intro)
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
@@ -102,11 +103,11 @@ definition "final = bellman_ford_algo costs edges (length vertices - 1) init"
 value "inorder final"
 
 text \<open>Recover cheapest path from $0$ to $1$ etc.\<close>
-value "(search_rev_path_exec 0 final 1 Nil)"
+value "(search_rev_path_exec 0 final 1)"
 
-value "(search_rev_path_exec 0 final 10 Nil)"
+value "(search_rev_path_exec 0 final 10)"
 
-value "(search_rev_path_exec 0 final 4 Nil)"
+value "(search_rev_path_exec 0 final 4)"
 
 hide_const c_list c_impl edges vertices costs init final
 

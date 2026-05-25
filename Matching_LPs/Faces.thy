@@ -6,6 +6,7 @@ theory Faces
     Jordan_Normal_Form.Matrix
     Jordan_Normal_Form.DL_Rank_Submatrix
     Subsystems
+    Matching_LP
 begin 
 (*
 
@@ -29,11 +30,11 @@ lemma cong_mk_mat: assumes "\<And> i j. i < nr \<Longrightarrow> j < nc \<Longri
 
 typedef 'a mat = "{(nr, nc, mk_mat nr nc f) | nr nc f :: nat \<times> nat \<Rightarrow> 'a. True}"
   by auto
-*)
+*)(*
 definition
   one_vec :: "nat \<Rightarrow> 'a :: one vec" ("1\<^sub>v")
   where "1\<^sub>v n = vec n (\<lambda> i. 1)"
-
+*)
 lemma one_carrier_vec[simp]: "1\<^sub>v n \<in> carrier_vec n"
   unfolding one_vec_def carrier_vec_def by auto
 

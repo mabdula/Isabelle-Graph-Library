@@ -1,71 +1,12 @@
 section \<open>Bellman-Ford Algorithms with Abstract Datatypes\<close>
 theory Bellman_Ford
   imports  "HOL-Library.Extended_Real" 
-           Directed_Set_Graphs.Pair_Graph_Specs Directed_Set_Graphs.Awalk  "HOL-Eisbach.Eisbach"
-begin 
+           Directed_Set_Graphs.Pair_Graph_Specs Directed_Set_Graphs.Awalk "HOL-Eisbach.Eisbach"
+           Parent_Map Directed_Set_Graphs.More_Lists Directed_Set_Graphs.More_Logic
+           Directed_Set_Graphs.More_Arith
+begin                                 
 
 subsection \<open>Auxiliary Lemmas\<close>
-
-lemma single_diff_remove: "x \<notin> A \<Longrightarrow> A - {x} = A" by simp
-lemma cases_distr: "f (case e of (x, y) \<Rightarrow> g x y) = f (g (fst e) (snd e))" for f g e
-  by(auto split: prod.splits)
-lemma single_in_append: "([a]@xs) = a#xs" by simp
-
-lemma bulast_subset: "set (butlast xs) \<subseteq> set xs" 
-  using in_set_butlastD by fastforce
-
-lemma list_cases_both_sides: 
-"(xs = [] \<Longrightarrow> P ) \<Longrightarrow> (\<And> x. xs =[x] \<Longrightarrow> P ) \<Longrightarrow> (\<And> x y ys. xs =[x]@ys@[y] \<Longrightarrow> P ) \<Longrightarrow> P "
-  by (metis neq_Nil_conv snoc_eq_iff_butlast single_in_append)
-
-lemma induct_list_length2: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. P [x,y]) 
-\<Longrightarrow> (\<And> xs x y z. P (xs@[x,y]) \<Longrightarrow> P(xs@[x,y,z])) \<Longrightarrow> P xs"
-proof(induction xs rule: rev_induct)
-  case (snoc z xs)
-  note IH = this
-  show ?case 
-  proof(cases xs)
-    case (Cons b list)
-    note cons = this
-    show ?thesis 
-    proof(cases list)
-      case (Cons b llist)
-      then obtain ys x y where axs_subst:"xs = ys@[x,y]"
-        by (metis append_Cons append_butlast_last_cancel cons list.distinct(1) snoc_eq_iff_butlast)
-      show ?thesis
-        using axs_subst IH(3,4) snoc.IH 
-        by (fastforce intro: IH(4))
-    next
-      case Nil
-      then show ?thesis
-        using cons snoc.prems(2) by fastforce
-    qed
-    next
-      case Nil
-      then show ?thesis 
-        using snoc.prems(1) by force
-    qed
-  qed simp
-
-lemma get_longest_common_tail:
-assumes "length p \<ge> 1" "length q \<ge> 1" "last p = last q"
-obtains ys p' q' where "p = p'@ys" "q =q'@ys" 
-                        "\<And> ys' p'' q''. p=p''@ys' \<Longrightarrow> q = q''@ys' \<Longrightarrow> length ys' \<le> length ys"
-proof(goal_cases)
-  case 1
-  have "{length ys |  ys. \<exists> p' q'. p = p'@ys \<and> q =q'@ys} \<noteq> {}"
-    using assms by auto
-  moreover have finiteset:"finite { length ys |  ys. \<exists> p' q'. p = p'@ys \<and> q =q'@ys}"
-    by(fastforce intro: finite_subset[of _ "{length ys |ys. length ys \<le> (length p) }"] 
-              simp add: finite_nat_set_iff_bounded_le) 
-  ultimately have " Max {length ys |  ys. \<exists> p' q'. p = p'@ys \<and> q =q'@ys} \<in> {length ys |  ys. \<exists> p' q'. p = p'@ys \<and> q =q'@ys}"
-    using linorder_class.Max_in by fast
-  then obtain ys p' q' where ys_prop: "length ys = Max {length ys |  ys. \<exists> p' q'. p = p'@ys \<and> q =q'@ys}"
-                       "p = p'@ys" "q =q'@ys" by fastforce
-  show ?case
-    using ys_prop(2) ys_prop(3) 
-    by (auto intro!: 1[of p' ys q'] Max_ge[OF finiteset, simplified ys_prop(1)[symmetric]] )
-qed
 
 definition "backward_determ E = (\<forall> u v w. ((u, v) \<in> E \<and> (w, v) \<in> E) \<longrightarrow> u = w)"
 
@@ -90,9 +31,10 @@ proof(rule ccontr, goal_cases)
     using props(3)[of "butlast p" "[v]" "butlast q"] assms(2) assms(3) last_of_vwalk_bet' by fastforce
   have "p' \<noteq> q'" 
     using "1" props(1) props(2) by auto 
-  hence p'_q'_cases:"(p' =[] \<Longrightarrow> q' \<noteq> [] \<Longrightarrow> P) \<Longrightarrow>
-         (p' \<noteq>[] \<Longrightarrow> q' = [] \<Longrightarrow> P) \<Longrightarrow>
-         (p' \<noteq> [] \<Longrightarrow> q' \<noteq> [] \<Longrightarrow> P) \<Longrightarrow> P" for P by auto
+  hence p'_q'_cases:
+        "\<lbrakk>\<lbrakk>p' =[]; q' \<noteq> []\<rbrakk> \<Longrightarrow> P;
+         \<lbrakk>p' \<noteq>[]; q' = []\<rbrakk> \<Longrightarrow> P;
+         \<lbrakk>p' \<noteq> []; q' \<noteq> []\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P" for P by auto
   show ?case
   proof(cases rule: p'_q'_cases)
     case 1
@@ -153,7 +95,8 @@ proof(rule ccontr, goal_cases)
     by force
 qed
 
-lemma backward_determ_pres: "backward_determ E \<Longrightarrow> (u, v) \<in> E \<Longrightarrow> backward_determ (insert (w, v) (E - {(u, v)}))"
+lemma backward_determ_pres: 
+  "\<lbrakk>backward_determ E; (u, v) \<in> E\<rbrakk> \<Longrightarrow> backward_determ (insert (w, v) (E - {(u, v)}))"
   by(auto simp add: backward_determ_def)
 
 lemma backward_determ_pred: "backward_determ {(pred x, x) | x. x \<in> A}"
@@ -185,14 +128,17 @@ fun bellman_ford::" nat \<Rightarrow> 'con_impl \<Rightarrow> 'con_impl" where
 "bellman_ford (Suc n) connections = foldr (\<lambda> (x, y) done. relax done x y) es 
                                          (bellman_ford n connections)"
 
-partial_function (tailrec) search_rev_path_exec where
-"search_rev_path_exec s connections v acc=
-(if s = v then v#acc
-else (let u = the (fst (the (connection_lookup connections v)))
-      in search_rev_path_exec s connections u (v#acc)))"
+definition "follow_map s connections = 
+     (\<lambda> v. if s = v then None
+           else Some (the (fst (the (connection_lookup connections v)))))"
 
-lemmas [code] = search_rev_path_exec.simps bellman_ford.simps relax_def bellman_ford_init_def
+definition "search_rev_path_exec s connections v = 
+            follow_impl (follow_map s connections) v"
 
+lemmas [code] = search_rev_path_exec_def bellman_ford.simps relax_def 
+                bellman_ford_init_def follow_map_def
+
+text \<open>For the proofs: a nicer way of writing \<^term>\<open>search_rev_path_exec\<close>.\<close>
 
 function (domintros) search_rev_path where
 "search_rev_path s connections v =
@@ -201,31 +147,41 @@ else (let u = the (fst (the (connection_lookup connections v)))
       in v#search_rev_path s connections u))"
   by auto
 
-lemma function_to_partial_function_general:
-  assumes "search_rev_path_dom (s, connections, v)"
-  shows "rev acc @ search_rev_path s connections v= rev (search_rev_path_exec s connections v acc)"
-proof(induction arbitrary: acc  rule: search_rev_path.pinduct[OF assms])
+lemma search_rev_path_dom_follow_dom:
+      assumes "search_rev_path_dom (s, connections, v)"
+      shows   "parent_spec_i.follow_dom (follow_map s connections) v"
+proof(induction arbitrary:  rule: search_rev_path.pinduct[OF assms])
   case (1 s connections v)
-  note IH = this
   show ?case 
-    apply(subst search_rev_path.psimps)
-     apply (simp add: IH(1))
-    apply(subst search_rev_path_exec.simps)
-    apply(subst if_distrib[of rev])
-    apply(subst (8) if_distrib)
-    apply(rule if_cong)
-      apply simp
-     apply simp
-    unfolding Let_def
-    apply(subst sym[OF IH(2)[OF _ refl]])
-     apply simp
-    by auto
+    by(rule parent_spec_i.follow.domintros, rule 1(2))
+      (auto simp add: follow_map_def if_split[of "\<lambda> x. x = Some _" "s = v"] 
+                      option.split[of "\<lambda> x. x = Some _" _ _ "connection_lookup connections v"])
 qed
 
 lemma function_to_partial_function:
   assumes "search_rev_path_dom (s, connections, v)"
-  shows "search_rev_path s connections v= rev (search_rev_path_exec s connections v Nil)"
-  using function_to_partial_function_general[OF assms, of Nil] by auto
+  shows "search_rev_path s connections v= search_rev_path_exec s connections v"
+  unfolding search_rev_path_exec_def
+    unfolding follow_impl_def 
+  proof(subst parent_spec.follow_dom_impl_same, goal_cases)
+    case 1
+    show ?case
+      by(auto intro!: search_rev_path_dom_follow_dom assms)
+  next
+    case 2
+    show ?case
+   proof(induction arbitrary:  rule: search_rev_path.pinduct[OF assms])
+  case (1 s connections v)
+  note IH = this
+  show ?case 
+    apply(subst search_rev_path.psimps)
+    apply(simp add: IH(1))
+    apply(subst parent_spec.follow.psimps)
+    apply(simp add: "1.hyps" search_rev_path_dom_follow_dom)
+    apply(subst (2) follow_map_def)
+    by(auto intro!: IH split: if_split option.split)
+ qed
+qed
 
 end
 
@@ -240,25 +196,29 @@ assumes distinct_vs: "distinct vs"
 assumes distinct_es: "distinct es"
 begin
 lemma connection_axioms: "connection_lookup connection_empty = (\<lambda>_. None)"
-"\<And> m a b. connection_invar m \<Longrightarrow> connection_lookup (connection_update a b m) = (connection_lookup m)(a \<mapsto> b)" 
-"\<And> m a. connection_invar m \<Longrightarrow> connection_lookup (connection_delete a m) = (connection_lookup m)(a := None)"
+"\<And> m a b. connection_invar m 
+       \<Longrightarrow> connection_lookup (connection_update a b m) = (connection_lookup m)(a \<mapsto> b)" 
+"\<And> m a. connection_invar m 
+     \<Longrightarrow> connection_lookup (connection_delete a m) = (connection_lookup m)(a := None)"
  "connection_invar connection_empty "
  "\<And> m a b. connection_invar m \<Longrightarrow> connection_invar (connection_update a b m)"
  "(\<And>m a. connection_invar m \<Longrightarrow> connection_invar (connection_delete a m))"
     using connection_map[simplified Map_def] by auto
 
-lemma bellman_ford_init_is: "connection_lookup (bellman_ford_init s) v =
-                             (if v = s then Some (None, 0) else (if v \<in> set vs then  Some (None, PInfty)
-                               else None))" (is ?th1)
-                            "connection_invar (bellman_ford_init s)" (is ?th2)
+lemma bellman_ford_init_is: 
+  "connection_lookup (bellman_ford_init s) v =
+  (if v = s then Some (None, 0) else (if v \<in> set vs then  Some (None, PInfty) else None))" (is ?th1)
+  "connection_invar (bellman_ford_init s)" (is ?th2)
 proof-
-  define intermed where "intermed = foldr (\<lambda> x done. connection_update x (None, PInfty) done) vs connection_empty"
+  define intermed where 
+     "intermed = foldr (\<lambda> x done. connection_update x (None, PInfty) done) vs connection_empty"
   have "connection_lookup intermed v = (if v \<in> set vs then Some (None, PInfty) else None) \<and>
         connection_invar intermed"
     apply((subst intermed_def)+)
     using connection_axioms
     by (induction vs) auto
-  hence intermed_is: "connection_lookup intermed v = (if v \<in> set vs then Some (None, PInfty) else None)"
+  hence intermed_is: 
+      "connection_lookup intermed v = (if v \<in> set vs then Some (None, PInfty) else None)"
     and invar_intermed: "connection_invar intermed"
     by auto
   show ?th1
@@ -276,24 +236,27 @@ fun weight where
 "weight  [s] = 0"|
 "weight (x#y#xs) = edge_costs x y + weight  (y#xs)"
 
-lemma weight_le_PInfty_in_vs:"length P \<ge> 2 \<Longrightarrow> weight P < PInfty \<Longrightarrow> set P \<subseteq> set vs"
+lemma weight_le_PInfty_in_vs: 
+  "\<lbrakk>length P \<ge> 2; weight P < PInfty\<rbrakk> \<Longrightarrow> set P \<subseteq> set vs"
   apply(induction P rule: weight.induct, simp, simp)
   subgoal for x y xs
     using edge_costs_outside_es vs_and_es by (cases xs) auto
   done
 
 lemma edge_and_Costs_none_pinfty_weight:
-"edge_costs u v = PInfty \<Longrightarrow> xs = xs1@[u, v]@x2 ==> weight xs = PInfty"
+  "\<lbrakk>edge_costs u v = PInfty; xs = xs1@[u, v]@x2\<rbrakk> \<Longrightarrow> weight xs = PInfty"
   apply(induction xs1 arbitrary: xs)
    apply simp 
   subgoal for a x1
     by(cases x1) auto
   done
 
-lemma real_path: "length xs \<ge> 2 \<Longrightarrow> weight xs < PInfty \<Longrightarrow> awalk (set es) (hd xs) (edges_of_vwalk xs) (last xs)"
+lemma real_path: 
+  "\<lbrakk>length xs \<ge> 2; weight xs < PInfty\<rbrakk> \<Longrightarrow> awalk (set es) (hd xs) (edges_of_vwalk xs) (last xs)"
 proof(induction xs rule: weight.induct)
   case (3 x y xs)
-  have a: "weight (y # xs) < PInfty \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> awalk (set es) y (edges_of_vwalk (y # xs)) (last (y # xs))"
+  have a: "\<lbrakk>weight (y # xs) < PInfty; xs \<noteq> []\<rbrakk>
+              \<Longrightarrow> awalk (set es) y (edges_of_vwalk (y # xs)) (last (y # xs))"
     using 3(1)
     by (simp add: Suc_leI)
   have b: "edge_costs x y < PInfty" 
@@ -319,8 +282,8 @@ definition "OPT  l s t = Min ({weight (s # xs @ [t]) | xs. length xs + 1 \<le> l
 definition "bellman_ford_one_step state = foldr (\<lambda> (x, y) done. relax done x y) es 
                                          state"
 
-lemma bellman_ford_upd_one: "bellman_ford (Suc n) connections = 
-                             bellman_ford_one_step (bellman_ford n connections)"
+lemma bellman_ford_upd_one: 
+ "bellman_ford (Suc n) connections = bellman_ford_one_step (bellman_ford n connections)"
   by(simp add: bellman_ford_one_step_def)
 
 lemma finite_of_V: "finite {f xs | xs. P xs \<and> length xs \<le> l \<and> set xs \<subseteq> set vs}"
@@ -330,12 +293,13 @@ proof-
   thus ?thesis by simp
 qed
 
-lemma finite_weight_set: "finite {weight  (s # xs @ [v]) |xs. length xs + 1 \<le> l \<and> set xs \<subseteq> set vs}"
+lemma finite_weight_set: 
+  "finite {weight  (s # xs @ [v]) |xs. length xs + 1 \<le> l \<and> set xs \<subseteq> set vs}"
   by(rule rev_finite_subset)
-(auto intro!: finite_of_V[of "\<lambda> xs. weight  (s # xs @ [v])" "\<lambda> x. True" l, simplified])
+    (auto intro!: finite_of_V[of "\<lambda> xs. weight  (s # xs @ [v])" "\<lambda> x. True" l, simplified])
 
 lemma finite_lists_length_le1: "finite {xs. length xs \<le> i \<and> set xs \<subseteq> set vs}" for i
-  using  finite_lists_length_le[ of _ i] 
+  using finite_lists_length_le[ of _ i] 
   by (metis (no_types, lifting) Collect_cong List.finite_set)
 
 lemma finite_lists_length_le2: "finite {xs. length xs + 1 \<le> i \<and> set xs \<subseteq> set vs }" for i
@@ -395,11 +359,11 @@ proof-
   moreover have "OPT  (Suc l) s v \<le> OPT  l s v"
     using v_non_empt finite_weight_set[of  s v "Suc l"]
     by(auto intro!: Min_antimono simp add: OPT_def )
-  ultimately have "OPT  (Suc l) s v \<le> min (OPT l s v) (Min {OPT l s u + edge_costs u v | u. u \<in> set vs})" by simp
-
-  moreover have " OPT  (Suc l) s v \<ge>
-    min (OPT  l s v)
-     (Min {OPT l s u + edge_costs u v |u. u \<in> set vs})"
+  ultimately have "OPT  (Suc l) s v \<le> min (OPT l s v) 
+                                          (Min {OPT l s u + edge_costs u v | u. u \<in> set vs})" 
+    by simp
+  moreover have "OPT  (Suc l) s v \<ge>
+                 min (OPT  l s v) (Min {OPT l s u + edge_costs u v |u. u \<in> set vs})"
   proof(cases rule: OPT_cases[of "Suc l" s v])
     case (path xs)
     show ?thesis 
@@ -457,29 +421,34 @@ lemma effect_of_relax:
   using assms
   by (auto simp add: relax_def Let_def connection_axioms(2))
 
-lemma connection_invar_relax_pres: "connection_invar connections \<Longrightarrow>
-connection_invar (relax connections x y)"
+lemma connection_invar_relax_pres: 
+  "connection_invar connections \<Longrightarrow> connection_invar (relax connections x y)"
   by (simp add:  relax_def Let_def connection_axioms(5))
 
-lemma connection_inver_fold_pres: "connection_invar connections \<Longrightarrow>
- connection_invar (foldr (\<lambda>(x, y) done. relax done x y) ds connections)" 
+lemma connection_inver_fold_pres: 
+ "connection_invar connections \<Longrightarrow>
+  connection_invar (foldr (\<lambda>(x, y) done. relax done x y) ds connections)" 
   by(induction ds)(auto intro: connection_invar_relax_pres)
 
-lemma finite_new_best_ways:"finite {OPT l s u + edge_costs u z |u. (u, z) \<in> set ds}" for z
+lemma finite_new_best_ways: "finite {OPT l s u + edge_costs u z |u. (u, z) \<in> set ds}" 
       apply(rule finite_subset[rotated])
       apply(rule finite_imageI[of "set ds" "\<lambda> d. OPT l s (fst d) + edge_costs (fst d) z"], simp)
   by force
 
-lemma vs_OPT_set_split:"{OPT l s u + edge_costs u v |u. u \<in> set vs} = 
-        {OPT l s u + edge_costs u v |u. (u, v) \<in> set es} \<union>
-        {OPT l s u + edge_costs u v |u. (u, v) \<notin> set es \<and> u \<in> set vs}"
-    using vs_and_es  dVs_def by blast
-lemma outside_es_inf:"\<And> w . w \<in>  {OPT l s u + edge_costs u v |u. (u, v) \<notin> set es \<and> u \<in> set vs} \<Longrightarrow> w = PInfty"
+lemma vs_OPT_set_split:
+ "{OPT l s u + edge_costs u v |u. u \<in> set vs} = 
+  {OPT l s u + edge_costs u v |u. (u, v) \<in> set es} \<union>
+  {OPT l s u + edge_costs u v |u. (u, v) \<notin> set es \<and> u \<in> set vs}"
+  using vs_and_es  dVs_def by blast
+
+lemma outside_es_inf:
+  "w \<in>  {OPT l s u + edge_costs u v |u. (u, v) \<notin> set es \<and> u \<in> set vs} \<Longrightarrow> w = PInfty"
   using edge_costs_outside_es by auto
 
 (*MOVE elsewhere?*)
-lemma min_PInfty_cong: "x = PInfty \<Longrightarrow> y = z \<Longrightarrow> min z x = y"  by simp
-lemma  add_inifinites: "finite A \<Longrightarrow> A \<noteq> {} \<Longrightarrow>finite B \<Longrightarrow> (\<And> x. x \<in> B \<Longrightarrow> x = PInfty) \<Longrightarrow> Min (A \<union> B) = Min A" for A B
+lemma min_PInfty_cong: "\<lbrakk>x = PInfty; y = z\<rbrakk> \<Longrightarrow> min z x = y"  by simp
+lemma  add_inifinites: 
+  "\<lbrakk>finite A; A \<noteq> {}; finite B; \<And> x. x \<in> B \<Longrightarrow> x = PInfty\<rbrakk> \<Longrightarrow> Min (A \<union> B) = Min A" for A B
   by (cases "B = {}")(auto simp add: linorder_class.Min_Un min_PInfty_cong)
 
 lemma bellman_ford_step_shortest:
@@ -511,10 +480,12 @@ next
       by (smt (z3) Collect_cong snd_conv)
   next
     case 1 
-    have Cons_applied: "(snd (the (connection_lookup (foldr (\<lambda>(x, y) done. relax done x y) es connections) v)))
-                        \<le> Min (insert (OPT l s v) {OPT l s u + edge_costs u v |u. (u, v) \<in> set es})" 
+    have Cons_applied: 
+    "(snd (the (connection_lookup (foldr (\<lambda>(x, y) done. relax done x y) es connections) v)))
+      \<le> Min (insert (OPT l s v) {OPT l s u + edge_costs u v |u. (u, v) \<in> set es})" 
       using Cons by fast
-    have fst_e_dist_holds:"snd (the (connection_lookup (foldr (\<lambda>(x, y) done. relax done x y) es connections) (fst e)))
+    have fst_e_dist_holds:
+      "snd (the (connection_lookup (foldr (\<lambda>(x, y) done. relax done x y) es connections) (fst e)))
           \<le> OPT l s (fst e)"
       apply(rule order.trans)
       using finite_new_best_ways 
@@ -581,20 +552,22 @@ definition "dom_invar s connections = (dom (connection_lookup connections) = ins
 lemma dom_invar_init[invar_lemmas]: "dom_invar s (bellman_ford_init s)"
   by(auto simp add: dom_invar_def dom_def bellman_ford_init_is(1)) 
 
-lemma change_in_dom_no_change_dom[invar_lemmas]: "connection_invar connections \<Longrightarrow> v \<in> dom (connection_lookup connections) \<Longrightarrow>
-                                   dom (connection_lookup (connection_update v val  connections))
-                                   = dom (connection_lookup connections)"
+lemma change_in_dom_no_change_dom[invar_lemmas]: 
+ "\<lbrakk>connection_invar connections; v \<in> dom (connection_lookup connections)\<rbrakk>
+   \<Longrightarrow>  dom (connection_lookup (connection_update v val  connections))
+      = dom (connection_lookup connections)"
   using connection_axioms(2) by (auto simp add: dom_def )
 
-lemma relax_in_dom_no_change_dom[invar_lemmas]: "connection_invar connections \<Longrightarrow> v \<in> dom (connection_lookup connections) \<Longrightarrow>
-                                   dom (connection_lookup (relax connections u v)) = dom (connection_lookup connections)"
+lemma relax_in_dom_no_change_dom[invar_lemmas]: 
+  "\<lbrakk>connection_invar connections; v \<in> dom (connection_lookup connections)\<rbrakk> \<Longrightarrow>
+    dom (connection_lookup (relax connections u v)) = dom (connection_lookup connections)"
   using change_in_dom_no_change_dom 
   by (auto simp add: relax_def Let_def)
 
-lemma fold_in_dom_no_change_dom[invar_lemmas]: "connection_invar connections 
-  \<Longrightarrow> set (map snd ds) \<subseteq> dom (connection_lookup  connections) \<Longrightarrow>
- dom (connection_lookup (foldr (\<lambda>(x, y) done. relax done x y) ds connections))
- = dom (connection_lookup  connections)" 
+lemma fold_in_dom_no_change_dom[invar_lemmas]: 
+ "\<lbrakk>connection_invar connections; set (map snd ds) \<subseteq> dom (connection_lookup  connections)\<rbrakk> 
+  \<Longrightarrow> dom (connection_lookup (foldr (\<lambda>(x, y) done. relax done x y) ds connections))
+    = dom (connection_lookup  connections)" 
 proof(induction ds)
   case (Cons a ds)
   show ?case 
@@ -603,8 +576,10 @@ proof(induction ds)
     by (auto intro: connection_invar_relax_pres connection_inver_fold_pres)
 qed simp
 
-lemma dom_invar_connection_realx[invar_lemmas]:"connection_invar connections \<Longrightarrow> dom_invar s connections \<Longrightarrow> u \<in> dom (connection_lookup connections) \<Longrightarrow> 
-         v \<in> dom (connection_lookup connections) \<Longrightarrow> (dom_invar s (relax connections u v))"
+lemma dom_invar_connection_realx[invar_lemmas]:
+ "\<lbrakk>connection_invar connections; dom_invar s connections; 
+   u \<in> dom (connection_lookup connections); v \<in> dom (connection_lookup connections)\<rbrakk>
+   \<Longrightarrow> (dom_invar s (relax connections u v))"
   using  change_in_dom_no_change_dom
   by (auto simp add: relax_def Let_def dom_invar_def)
 
@@ -632,10 +607,13 @@ lemma one_step_same_dom[invar_lemmas]:
   unfolding bellman_ford_one_step_def 
   using assms by(rule fold_in_dom_no_change_dom)
 
-lemma  invar_after_Folds[invar_lemmas]:"connection_invar (foldr (\<lambda>x. connection_update x (f x)) ( us) connection_empty)"
+lemma  invar_after_Folds[invar_lemmas]:
+    "connection_invar (foldr (\<lambda>x. connection_update x (f x)) ( us) connection_empty)"
     by(induction us) (auto simp add: connection_axioms(4) connection_axioms(5))
 
-lemma vs_is_dom: "set vs = dom (connection_lookup (foldr (\<lambda>x. connection_update x (None, PInfty)) vs connection_empty))"
+lemma vs_is_dom: 
+  "set vs = dom (connection_lookup (foldr (\<lambda>x. connection_update x (None, PInfty))
+                       vs connection_empty))"
   proof(induction vs arbitrary: es)
    case (Cons a vs)
    show ?case 
@@ -644,8 +622,8 @@ lemma vs_is_dom: "set vs = dom (connection_lookup (foldr (\<lambda>x. connection
 qed (auto simp add: connection_axioms(1) dom_def)
 
 lemma same_domain_bellman_ford[invar_lemmas]:
-"dom (connection_lookup (bellman_ford l (bellman_ford_init s))) =
-dom (connection_lookup (bellman_ford_init s))"
+  "dom (connection_lookup (bellman_ford l (bellman_ford_init s))) =
+   dom (connection_lookup (bellman_ford_init s))"
 proof(induction l)
   case (Suc l)
  have "set (map snd es) \<subseteq> set vs" 
@@ -659,7 +637,8 @@ proof(induction l)
     by (auto intro:  bellman_ford_connection_invar)
 qed simp
 
-lemma bellman_ford_init_dom_is[invar_lemmas]: "dom (connection_lookup (bellman_ford_init s)) = insert s (set vs)"
+lemma bellman_ford_init_dom_is[invar_lemmas]: 
+  "dom (connection_lookup (bellman_ford_init s)) = insert s (set vs)"
   using dom_invar_def dom_invar_init by auto
 
 definition "invar_pred_non_infty s connections = 
@@ -681,7 +660,7 @@ proof(subst relax_in_dom_no_change_dom[OF assms(2,3)], rule, goal_cases)
     then show ?thesis 
       apply(simp, subst effect_of_relax(1))
       using assms(1,3,4)
-      by (auto simp add: assms(2) connection_axioms(2) invar_pred_non_infty_def relax_def Let_def )
+      by (auto simp add: assms(2) connection_axioms(2) invar_pred_non_infty_def relax_def Let_def)
   next
     case False
     then show ?thesis 
@@ -778,11 +757,11 @@ lemma one_step_invar_pred_in_dom_pres[invar_lemmas]:
   by (intro foldr_invar_pred_in_dom_pres) auto
 
 lemma bellman_ford_init_invar_pred_in_dom[invar_lemmas]:
-" invar_pred_in_dom s (bellman_ford_init s)"
+  "invar_pred_in_dom s (bellman_ford_init s)"
   by (auto simp add: invar_pred_in_dom_def bellman_ford_init_is(1) bellman_ford_init_dom_is)
 
 lemma bellman_ford_pred_in_dom_pres[invar_lemmas]:
-"invar_pred_in_dom s (bellman_ford l (bellman_ford_init s))"
+  "invar_pred_in_dom s (bellman_ford l (bellman_ford_init s))"
 proof(induction l)
   case (Suc l)
   show ?case 
@@ -792,7 +771,8 @@ proof(induction l)
 qed (simp add: bellman_ford_init_invar_pred_in_dom)
 
 definition "invar_s_pred_remains_zero s connections = 
-(snd (the (connection_lookup connections s)) \<noteq> 0 \<longrightarrow> fst (the (connection_lookup connections s)) \<noteq> None)"
+             (snd (the (connection_lookup connections s)) \<noteq> 0 
+                   \<longrightarrow> fst (the (connection_lookup connections s)) \<noteq> None)"
 
 lemma relax_invar_s_pred_remains_zero_pres[invar_lemmas]:
   assumes "invar_s_pred_remains_zero s connections" "connection_invar connections"     
@@ -816,17 +796,17 @@ qed (auto simp add: assms(1))
 lemma one_step_invar_s_pred_remains_zero_pres[invar_lemmas]:
   assumes "invar_s_pred_remains_zero s connections" "connection_invar connections"
           "set vs \<subseteq> dom (connection_lookup connections)"
-  shows "invar_s_pred_remains_zero s (bellman_ford_one_step connections)"
+    shows "invar_s_pred_remains_zero s (bellman_ford_one_step connections)"
   unfolding bellman_ford_one_step_def
   using assms vs_and_es 
   by (intro foldr_invar_s_pred_remains_zero_pres) auto
 
 lemma bellman_ford_init_invar_s_pred_remains_zero[invar_lemmas]:
-" invar_s_pred_remains_zero s (bellman_ford_init s)"
+  "invar_s_pred_remains_zero s (bellman_ford_init s)"
   by (auto simp add: invar_s_pred_remains_zero_def bellman_ford_init_is(1) bellman_ford_init_dom_is)
 
 lemma bellman_ford_s_pred_remains_zero_pres[invar_lemmas]:
-"invar_s_pred_remains_zero s (bellman_ford l (bellman_ford_init s))"
+  "invar_s_pred_remains_zero s (bellman_ford l (bellman_ford_init s))"
 proof(induction l)
   case (Suc l)
   show ?case 
@@ -849,7 +829,7 @@ lemma relax_invar_pred_path_pres[invar_lemmas]:
           "u \<in> dom (connection_lookup connections)"
           "invar_pred_non_infty s connections"
           "invar_s_pred_remains_zero s connections"
-  shows "invar_pred_path s (relax connections u v)"
+    shows "invar_pred_path s (relax connections u v)"
   unfolding invar_pred_path_def 
 proof(subst relax_in_dom_no_change_dom[OF assms(2,3)], rule, goal_cases)
   case (1 w)
@@ -875,7 +855,7 @@ proof(subst relax_in_dom_no_change_dom[OF assms(2,3)], rule, goal_cases)
       hence pred_or_is_s:"fst (the (connection_lookup connections u)) \<noteq> None \<or> u = s"
         using assms(5,4) by(auto simp add:invar_pred_non_infty_def)
       hence u_has_pred_implies_path:"fst (the (connection_lookup connections u)) \<noteq> None 
- \<Longrightarrow> \<exists>p. weight (p @ [u]) = snd (the (connection_lookup connections u)) \<and>
+             \<Longrightarrow> \<exists>p. weight (p @ [u]) = snd (the (connection_lookup connections u)) \<and>
             last p = the (fst (the (connection_lookup connections u))) \<and> hd p = s \<and> 1 \<le> length p
             \<and> set (p@[u]) \<subseteq> insert s (set vs)"
         using assms(1,4) unfolding invar_pred_path_def by simp     
@@ -886,18 +866,21 @@ proof(subst relax_in_dom_no_change_dom[OF assms(2,3)], rule, goal_cases)
         proof(cases " snd (the (connection_lookup connections u)) = 0")
           case True
           hence "weight ([u] @ [v]) = snd (the (connection_lookup connections u)) + edge_costs u v"
-                "last [u] = the (Some u)" "hd [u] = s" "length [u] \<ge> 1" "set ([u]@[v]) \<subseteq> insert s(set vs)"
+                "last [u] = the (Some u)" "hd [u] = s" "length [u] \<ge> 1" 
+                "set ([u]@[v]) \<subseteq> insert s(set vs)"
             using 1  v_in_vs by auto
           then show ?thesis by fast
         next
           case False
           hence "fst (the (connection_lookup connections u)) \<noteq> None" 
             using "1" assms(6) invar_s_pred_remains_zero_def by blast
-          then obtain p where  p_prop:"weight (p @ [u]) = snd (the (connection_lookup connections u))"
+          then obtain p where  p_prop:
+            "weight (p @ [u]) = snd (the (connection_lookup connections u))"
             "last p = the (fst (the (connection_lookup connections u)))" "hd p = s" "length p \<ge> 1"
              "set (p@[u]) \<subseteq> insert s(set vs)"
             using u_has_pred_implies_path by blast
-          moreover hence  aa:"weight (p @ [u]@[v]) = snd (the (connection_lookup connections u)) + edge_costs u v "
+          moreover hence  aa:"weight (p @ [u]@[v]) =
+                     snd (the (connection_lookup connections u)) + edge_costs u v "
             using sym[OF costs_last] by simp
           show ?thesis
             apply(rule exI[of _ "p@[u]"])  
@@ -906,11 +889,13 @@ proof(subst relax_in_dom_no_change_dom[OF assms(2,3)], rule, goal_cases)
         qed
       next
         case 2
-           then obtain p where  p_prop: "weight (p @ [u]) = snd (the (connection_lookup connections u))"
+        then obtain p where  p_prop: 
+            "weight (p @ [u]) = snd (the (connection_lookup connections u))"
             "last p = the (fst (the (connection_lookup connections u)))" "hd p = s" "length p \<ge> 1"
              "set (p@[u]) \<subseteq> insert s(set vs)"
              using pred_or_is_s u_has_pred_implies_path by blast
-          moreover hence  aa:"weight (p @ [u]@[v]) = snd (the (connection_lookup connections u)) + edge_costs u v "
+           moreover hence  aa:
+            "weight (p @ [u]@[v]) = snd (the (connection_lookup connections u)) + edge_costs u v "
             using sym[OF costs_last] by simp
           show ?case
             apply(rule exI[of _ "p@[u]"])  
@@ -947,7 +932,7 @@ lemma foldr_invar_pred_path_pres[invar_lemmas]:
           "set (map fst ds) \<subseteq> dom (connection_lookup connections)"
           "invar_s_pred_remains_zero s connections"
           "invar_pred_non_infty s connections"
-  shows "invar_pred_path s (foldr (\<lambda>(x, y) done. relax done x y) ds connections)"
+    shows "invar_pred_path s (foldr (\<lambda>(x, y) done. relax done x y) ds connections)"
   using assms
 proof(induction ds)
   case (Cons a ds)
@@ -966,17 +951,17 @@ lemma one_step_invar_pred_path_pres[invar_lemmas]:
           "set vs \<subseteq> dom (connection_lookup connections)"
           "invar_s_pred_remains_zero s connections"
           "invar_pred_non_infty s connections"
-  shows "invar_pred_path s (bellman_ford_one_step connections)"
+    shows "invar_pred_path s (bellman_ford_one_step connections)"
   unfolding bellman_ford_one_step_def
   using assms vs_and_es 
   by (intro foldr_invar_pred_path_pres) auto
 
 lemma bellman_ford_init_invar_pred_path[invar_lemmas]:
-" invar_pred_path s (bellman_ford_init s)"
+  "invar_pred_path s (bellman_ford_init s)"
   by (auto simp add: invar_pred_path_def bellman_ford_init_is(1) bellman_ford_init_dom_is)
 
 lemma bellman_ford_invar_pred_path_pres[invar_lemmas]:
-"invar_pred_path s (bellman_ford l (bellman_ford_init s))"
+  "invar_pred_path s (bellman_ford l (bellman_ford_init s))"
 proof(induction l)
   case (Suc l)
   show ?case 
@@ -992,9 +977,9 @@ definition "invar_pred_has_pred s connections =
           (let pred =
            fst  (the (connection_lookup connections v))
            in (pred \<noteq> None  
-               \<longrightarrow>  (fst  (the (connection_lookup connections (the pred))) \<noteq> None \<or> the pred = s))))"
+            \<longrightarrow>  (fst  (the (connection_lookup connections (the pred))) \<noteq> None \<or> the pred = s))))"
 
-lemma invar_pred_has_pred_init[invar_lemmas]:"invar_pred_has_pred s (bellman_ford_init s)"
+lemma invar_pred_has_pred_init[invar_lemmas]: "invar_pred_has_pred s (bellman_ford_init s)"
   by(auto simp add: bellman_ford_init_is(1) invar_pred_has_pred_def dom_def)
 
 lemma relax_invar_pred_has_pred_pres[invar_lemmas]:
@@ -1002,7 +987,7 @@ lemma relax_invar_pred_has_pred_pres[invar_lemmas]:
           "v \<in> dom (connection_lookup connections)"
           "u \<in> dom (connection_lookup connections)"
           "invar_pred_non_infty s connections"
-  shows "invar_pred_has_pred s (relax connections u v)"
+    shows "invar_pred_has_pred s (relax connections u v)"
   unfolding invar_pred_has_pred_def Let_def
 proof(subst relax_in_dom_no_change_dom[OF assms(2,3)], rule, rule, goal_cases)
   case (1 w)
@@ -1045,7 +1030,8 @@ proof(subst relax_in_dom_no_change_dom[OF assms(2,3)], rule, rule, goal_cases)
         case True
         then show ?thesis 
         using connection_of_w  assms 1 False
-        by(force simp add:  effect_of_relax(4) relax_def connection_axioms(2) invar_pred_has_pred_def Let_def) 
+        by(force simp add: effect_of_relax(4) relax_def connection_axioms(2)
+                           invar_pred_has_pred_def Let_def) 
       next
         case False
         then show ?thesis 
@@ -1060,7 +1046,7 @@ lemma foldr_invar_pred_has_pred_pres[invar_lemmas]:
           "set (map snd ds) \<subseteq> dom (connection_lookup connections)"
           "set (map fst ds) \<subseteq> dom (connection_lookup connections)"
           "invar_pred_non_infty s connections"
-  shows "invar_pred_has_pred s (foldr (\<lambda>(x, y) done. relax done x y) ds connections)"
+    shows "invar_pred_has_pred s (foldr (\<lambda>(x, y) done. relax done x y) ds connections)"
   using assms
 proof(induction ds)
   case (Cons a ds)
@@ -1078,17 +1064,17 @@ lemma one_step_invar_pred_has_pred_pres[invar_lemmas]:
   assumes "invar_pred_has_pred s connections" "connection_invar connections"
           "set vs \<subseteq> dom (connection_lookup connections)"
           "invar_pred_non_infty s connections"
-  shows "invar_pred_has_pred s (bellman_ford_one_step connections)"
+    shows "invar_pred_has_pred s (bellman_ford_one_step connections)"
   unfolding bellman_ford_one_step_def
   using assms vs_and_es 
   by (intro foldr_invar_pred_has_pred_pres) auto
 
 lemma bellman_ford_init_invar_pred_has_pred[invar_lemmas]:
-" invar_pred_has_pred s (bellman_ford_init s)"
+  "invar_pred_has_pred s (bellman_ford_init s)"
   by (auto simp add: invar_pred_has_pred_def bellman_ford_init_is(1) bellman_ford_init_dom_is)
 
 lemma bellman_ford_invar_pred_has_pred_pres[invar_lemmas]:
-"invar_pred_has_pred s (bellman_ford l (bellman_ford_init s))"
+  "invar_pred_has_pred s (bellman_ford l (bellman_ford_init s))"
 proof(induction l)
   case (Suc l)
   show ?case 
@@ -1112,9 +1098,9 @@ lemma invar_pred_pred_mono_init[invar_lemmas]:"invar_pred_mono (bellman_ford_ini
   by(auto simp add: bellman_ford_init_is(1) invar_pred_mono_def dom_def)
 
 lemma relax_mono[invar_lemmas]:
-"connection_invar connections \<Longrightarrow> w = v \<or> w \<in> (dom (connection_lookup connections)) \<Longrightarrow> 
-snd (the (connection_lookup (relax connections u v) w)) \<le>
-snd (the (connection_lookup connections w))"
+  "\<lbrakk>connection_invar connections; w = v \<or> w \<in> (dom (connection_lookup connections))\<rbrakk>
+   \<Longrightarrow>  snd (the (connection_lookup (relax connections u v) w)) \<le>
+        snd (the (connection_lookup connections w))"
   using connection_axioms(2)
   by (auto simp add: relax_def Let_def)
 
@@ -1123,7 +1109,7 @@ lemma relax_invar_pred_mono_pres[invar_lemmas]:
           "v \<in> dom (connection_lookup connections)"
           "u \<in> dom (connection_lookup connections)"
           "invar_pred_in_dom s connections"
-  shows "invar_pred_mono (relax connections u v)"
+    shows "invar_pred_mono (relax connections u v)"
   unfolding invar_pred_mono_def Let_def
 proof(subst relax_in_dom_no_change_dom[OF assms(2,3)], rule, rule, goal_cases)
   case (1 w)
@@ -1155,7 +1141,8 @@ proof(subst relax_in_dom_no_change_dom[OF assms(2,3)], rule, rule, goal_cases)
             dom (connection_lookup connections)"  
         using assms(5) 1 False assms(2) effect_of_relax(4)
         by (simp add: invar_pred_in_dom_def)
-      have before: "snd (the (connection_lookup connections (the (fst (the (connection_lookup connections w)))))) +
+      have before: "snd (the (connection_lookup connections (the (fst 
+                                (the (connection_lookup connections w)))))) +
        edge_costs (the (fst (the (connection_lookup connections w)))) w
        \<le> snd (the (connection_lookup connections w))" 
         using 1 False assms(1) assms(2) effect_of_relax(3) 
@@ -1171,7 +1158,7 @@ lemma foldr_invar_pred_mono_pres[invar_lemmas]:
           "set (map snd ds) \<subseteq> dom (connection_lookup connections)"
           "set (map fst ds) \<subseteq> dom (connection_lookup connections)"
           "invar_pred_in_dom s connections"
-  shows "invar_pred_mono (foldr (\<lambda>(x, y) done. relax done x y) ds connections)"
+    shows "invar_pred_mono (foldr (\<lambda>(x, y) done. relax done x y) ds connections)"
   using assms
 proof(induction ds)
   case (Cons a ds)
@@ -1190,13 +1177,13 @@ lemma one_step_invar_pred_mono_pres[invar_lemmas]:
   assumes "invar_pred_mono connections" "connection_invar connections"
           "set vs \<subseteq> dom (connection_lookup connections)"
           "invar_pred_in_dom s connections"
-  shows "invar_pred_mono (bellman_ford_one_step connections)"
+    shows "invar_pred_mono (bellman_ford_one_step connections)"
   unfolding bellman_ford_one_step_def
   using assms vs_and_es 
   by (intro foldr_invar_pred_mono_pres) auto
 
 lemma bellman_ford_invar_pred_mono_pres:
-"invar_pred_mono (bellman_ford l (bellman_ford_init s))"
+  "invar_pred_mono (bellman_ford l (bellman_ford_init s))"
 proof(induction l)
   case (Suc l)
   show ?case 
@@ -1216,13 +1203,18 @@ definition "invar_pred_acyc connections =
 
 definition "vs_path s t xs = (length xs \<ge> 2 \<and> hd xs = s \<and> last xs = t \<and> set xs \<subseteq> set vs)"
 
-lemma vsp_pathI: "length xs \<ge> 2 \<Longrightarrow> hd xs = s \<Longrightarrow> last xs = t \<Longrightarrow> set xs \<subseteq> set vs \<Longrightarrow> vs_path s t xs"
+lemma vs_pathI: "\<lbrakk>length xs \<ge> 2; hd xs = s; last xs = t; set xs \<subseteq> set vs\<rbrakk> \<Longrightarrow> vs_path s t xs"
   by(auto simp add: vs_path_def)
 
-definition "opt_vs_path s t xs = (vs_path s t xs \<and> (\<forall> ys. vs_path s t ys \<longrightarrow> weight ys \<ge> weight xs))"
+lemma vs_pathE: 
+  "\<lbrakk>vs_path s t xs; \<lbrakk>length xs \<ge> 2; hd xs = s; last xs = t; set xs \<subseteq> set vs\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by(auto simp add: vs_path_def)
 
-lemma weight_sum_edge_costs:"distinct xs \<Longrightarrow> weight xs = 
-sum (\<lambda> (u, v). edge_costs u v) (set (edges_of_vwalk xs))"
+definition "opt_vs_path s t xs = 
+                          (vs_path s t xs \<and> (\<forall> ys. vs_path s t ys \<longrightarrow> weight ys \<ge> weight xs))"
+
+lemma weight_sum_edge_costs:
+ "distinct xs \<Longrightarrow> weight xs = sum (\<lambda> (u, v). edge_costs u v) (set (edges_of_vwalk xs))"
   apply(induction xs rule: weight.induct, simp, simp)
   apply(subst edges_of_vwalk.simps)
   apply(subst  List.set_simps(2))
@@ -1232,37 +1224,20 @@ sum (\<lambda> (u, v). edge_costs u v) (set (edges_of_vwalk xs))"
   apply (meson distinct.simps(2) v_in_edge_in_vwalk(1))
   by(auto split: prod.splits simp add: algebra_simps)
 
-lemma finite_sum_less_PInfty:"finite A \<Longrightarrow> (\<And> x. x \<in> A \<Longrightarrow> f x < PInfty) \<Longrightarrow> sum f A < PInfty "
-  apply(induction A rule: finite_induct, simp)
-  apply(subst comm_monoid_add_class.sum.insert_remove) 
-  by auto
-
-lemma weight_list_split:"weight (xs@[u, v]@ys) =weight (xs@[u]) + edge_costs u v + weight ([v]@ys)"
+lemma weight_list_split:
+  "weight (xs@[u, v]@ys) = weight (xs@[u]) + edge_costs u v + weight ([v]@ys)"
   apply(induction xs, simp)
   subgoal for a xs
     by(cases xs)
       (auto simp add: group_cancel.add1 ab_semigroup_add_class.add_ac(1))
   done
 
-lemma weight_list_split':"weight (xs@[u]@ys) =weight (xs@[u])+  weight ([u]@ys)"
+lemma weight_list_split': "weight (xs@[u]@ys) =weight (xs@[u])+  weight ([u]@ys)"
   apply(induction xs, simp)
   subgoal for a xs
     by(cases xs)
       (auto simp add: group_cancel.add1 ab_semigroup_add_class.add_ac(1))
   done
-
-lemma  search_rev_path_exec_acc_assoc:
-  assumes "search_rev_path_dom (s, connections, z)"
-shows
-    "rev acc @ rev (search_rev_path_exec s connections z bcc) =
-    rev (search_rev_path_exec s connections z (bcc@acc))"
-proof(induction arbitrary:  acc bcc rule: search_rev_path.pinduct[OF assms])
-  case (1 s connections v)
-  then show ?case 
-    apply(subst search_rev_path_exec.simps)
-    apply(subst (2) search_rev_path_exec.simps)
-    by auto
-qed
 
 lemma weight_append_last: "weight (xs@[u,v]) = weight (xs@[u]) +edge_costs u v"
   apply(induction xs, simp)
@@ -1282,7 +1257,8 @@ proof(induction arbitrary: v rule: induct_list_length2[OF assms(1)])
   hence uv:"(u, v) = (x,y)" "(u, v) \<in> pred_graph connections" 
     using hd_of_vwalk_bet' last_of_vwalk_bet "1.prems"(2) vwalk_bet_nonempty_vwalk(3,4)
     by fastforce+
-  hence "v\<in>dom (connection_lookup connections)" "(fst (the (connection_lookup connections v))) = Some u"
+  hence "v\<in>dom (connection_lookup connections)" 
+        "(fst (the (connection_lookup connections v))) = Some u"
     by (auto simp add: pred_graph_def)
   hence "snd (the (connection_lookup connections u)) +  edge_costs u v
       \<le> snd (the (connection_lookup connections v))"
@@ -1294,7 +1270,8 @@ next
     hence uv:"v = z" "(y, v) \<in> pred_graph connections"
       using "2.prems"(2) last_of_vwalk_bet split_vwalk 
       by (simp add: vwalk_bet_def, fastforce)
-  hence vy:"v\<in>dom (connection_lookup connections)" "(fst (the (connection_lookup connections v))) = Some y"
+    hence vy: "v\<in>dom (connection_lookup connections)" 
+              "(fst (the (connection_lookup connections v))) = Some y"
     by (auto simp add: pred_graph_def)
   hence "snd (the (connection_lookup connections y)) +  edge_costs y v
       \<le> snd (the (connection_lookup connections v))"
@@ -1314,22 +1291,13 @@ next
     using uv(1) by simp
 qed
 
-lemma unused_edge_vwalk: "Vwalk.vwalk E p  \<Longrightarrow>e \<notin> set (edges_of_vwalk p) \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk(E-{e}) p" 
-  apply(induction rule: Vwalk.vwalk.induct[of E p], simp, simp) 
-  subgoal for v v' vs
-    by(cases vs) auto
-  done
-
-lemma unused_edge_vwalk_bet: "Vwalk.vwalk_bet E u p v  \<Longrightarrow>e \<notin> set (edges_of_vwalk p) 
-\<Longrightarrow> length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk_bet(E-{e}) u p v"
-  by (metis unused_edge_vwalk vwalk_bet_def)
-
 context 
   assumes nexistence_of_negative_cycles:"\<nexists> c. weight c < 0 \<and> hd c = last c"
 begin
 
 lemma pred_acyc_init:"invar_pred_acyc (bellman_ford_init s)"
-  by(auto simp add: bellman_ford_init_is(1) invar_pred_acyc_def dom_def pred_graph_def not_vwalk_bet_empty)
+  by(auto simp add: bellman_ford_init_is(1) invar_pred_acyc_def dom_def
+                    pred_graph_def not_vwalk_bet_empty)
 
 lemma relax_invar_pred_acyc_pres:
   assumes "invar_pred_acyc connections" "connection_invar connections"
@@ -1337,14 +1305,16 @@ lemma relax_invar_pred_acyc_pres:
           "u \<in> dom (connection_lookup connections)"
           "invar_pred_mono connections"
           "invar_pred_in_dom s connections"
-  shows "invar_pred_acyc (relax connections u v)"
+    shows "invar_pred_acyc (relax connections u v)"
   unfolding invar_pred_acyc_def Let_def
 proof(rule, goal_cases)
   case 1
-  then obtain a p where a_p_prop:"vwalk_bet (pred_graph (relax connections u v)) a p a" "2 \<le> length p" 
+  then obtain a p where a_p_prop: "vwalk_bet (pred_graph (relax connections u v)) a p a"
+                                  "2 \<le> length p" 
     by auto 
   show False
-  proof(cases "snd (the (connection_lookup connections u)) + edge_costs u v < snd (the (connection_lookup connections v))")
+  proof(cases "snd (the (connection_lookup connections u)) + edge_costs u v
+                  < snd (the (connection_lookup connections v))")
     case False
     hence "pred_graph (relax connections u v) = pred_graph connections"
       by(simp add: relax_def Let_def)
@@ -1386,12 +1356,13 @@ proof(rule, goal_cases)
     qed
     then obtain p1 p2 where p1p2_prop:"p = p1@[u, v]@ p2" 
       using edges_in_vwalk_split by fastforce
-    moreover have "p1 = c#pp1 \<Longrightarrow> p2= b#pp2 \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v 
-                      ([v]@((butlast p2)@p1)@[u]) u"
+    moreover have "\<lbrakk>p1 = c#pp1; p2= b#pp2\<rbrakk>
+         \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v ([v]@((butlast p2)@p1)@[u]) u"
       for c b pp1 pp2
     proof(subst vwalk_bet_def, rule, goal_cases)
       case 1
-      have " Vwalk.vwalk (pred_graph (relax connections u v)) (u # ([v] @ butlast p2) @ a # pp1 @ [u])"
+      have " Vwalk.vwalk (pred_graph (relax connections u v))
+                     (u # ([v] @ butlast p2) @ a # pp1 @ [u])"
         using 1 a_p_prop(1) p1p2_prop vwalk_bet_props 
         by (intro vwalk_rotate[of _ a pp1 u "[v] @ butlast p2"]) fastforce
       hence " Vwalk.vwalk (pred_graph (relax connections u v)) (u # [v] @ butlast p2 @p1 @ [u])"
@@ -1399,8 +1370,9 @@ proof(rule, goal_cases)
       thus ?case 
         by force
     qed simp
-moreover have "p1 = [] \<Longrightarrow> p2= b#pp2 \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v ([v]@(butlast p2)@[u]) u"
-  for b pp2
+    moreover have "\<lbrakk>p1 = []; p2= b#pp2\<rbrakk>
+       \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v ([v]@(butlast p2)@[u]) u"
+      for b pp2
     proof(subst vwalk_bet_def, rule, goal_cases)
       case 1
       have "butlast p2 @ [u] = p2"
@@ -1413,9 +1385,9 @@ moreover have "p1 = [] \<Longrightarrow> p2= b#pp2 \<Longrightarrow> vwalk_bet (
         using 1 
         by (metis append.assoc append_vwalk_pref single_in_append)
     qed simp
-    moreover
-  have "p1 =  b#pp1\<Longrightarrow> p2= [] \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v  ([v]@tl p1@[u]) u"
-  for b pp1
+    moreover have "\<lbrakk>p1 = b#pp1; p2= []\<rbrakk> 
+         \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v  ([v]@tl p1@[u]) u"
+    for b pp1
     proof(subst vwalk_bet_def, rule, goal_cases)
       case 1
       have b_is:"b = v" 
@@ -1427,7 +1399,8 @@ moreover have "p1 = [] \<Longrightarrow> p2= b#pp2 \<Longrightarrow> vwalk_bet (
         using 1 b_is 
         by simp
     qed simp
-    moreover have "p1 =[] \<Longrightarrow> p2=[] \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v ([v]@[u]) u"
+    moreover have "\<lbrakk>p1 =[]; p2=[]\<rbrakk>
+           \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v ([v]@[u]) u"
       using  vwalk_bet_props[OF a_p_prop(1)[simplified  p1p2_prop]] 
       by auto
     ultimately obtain q where  "vwalk_bet (pred_graph (relax connections u v)) v ([v]@q@[u]) u" 
@@ -1493,7 +1466,7 @@ lemma foldr_invar_pred_acyc_pres:
           "set (map fst ds) \<subseteq> dom (connection_lookup connections)"
           "invar_pred_mono  connections"
           "invar_pred_in_dom s connections"
-  shows "invar_pred_acyc (foldr (\<lambda>(x, y) done. relax done x y) ds connections)"
+    shows "invar_pred_acyc (foldr (\<lambda>(x, y) done. relax done x y) ds connections)"
   using assms
 proof(induction ds)
   case (Cons a ds)
@@ -1512,13 +1485,13 @@ lemma one_step_invar_pred_acyc_pres:
           "set vs \<subseteq> dom (connection_lookup connections)"
           "invar_pred_mono connections"
           "invar_pred_in_dom s connections"
-  shows "invar_pred_acyc (bellman_ford_one_step connections)"
+    shows "invar_pred_acyc (bellman_ford_one_step connections)"
   unfolding bellman_ford_one_step_def
   using assms vs_and_es 
   by (intro foldr_invar_pred_acyc_pres) auto
 
 lemma bellman_ford_invar_pred_acyc_pres:
-"invar_pred_acyc (bellman_ford l (bellman_ford_init s))"
+  "invar_pred_acyc (bellman_ford l (bellman_ford_init s))"
 proof(induction l)
   case (Suc l)
   show ?case 
@@ -1532,7 +1505,7 @@ proof(induction l)
     by auto
 qed (simp add: pred_acyc_init)
 
-lemma no_cycle_is_cheaper:"weight (xs@[v]@ys@[v]@zs) \<ge> weight (xs@[v]@zs)" 
+lemma no_cycle_is_cheaper: "weight (xs@[v]@ys@[v]@zs) \<ge> weight (xs@[v]@zs)" 
 proof(cases ys)
   case Nil
   hence "weight (xs@[v]@ys@[v]@zs) = weight (xs@[v]) + edge_costs v v + weight ([v]@zs)" 
@@ -1564,7 +1537,7 @@ next
     using weight_list_split'[of "[v]@ys" v zs]
     by (simp add: ab_semigroup_add_class.add_ac(1))
   moreover have "weight (xs @ [v]) +   weight ([v]@ys @ [v]) +  weight ([v] @ zs) \<ge>
-                weight (xs @ [v]) + weight ([v] @ zs)"
+                 weight (xs @ [v]) + weight ([v] @ zs)"
   proof(rule ccontr, goal_cases)
     case 1
     hence "  weight ([v]@ys @ [v]) < 0"
@@ -1572,15 +1545,15 @@ next
     then show ?case 
       using nexistence_of_negative_cycles by auto
   qed
-  moreover have "weight (xs @ [v]) + weight ([v] @ zs) =
-                weight (xs @ [v] @ zs)"
+  moreover have "weight (xs @ [v]) + weight ([v] @ zs) = weight (xs @ [v] @ zs)"
     using weight_list_split' by presburger
   ultimately show ?thesis by simp
 qed
 
 lemma distinct_path_is_cheaper:
-  "length xs \<ge> 2 \<Longrightarrow> hd xs \<noteq> last xs \<Longrightarrow>
-\<exists> ys. weight xs \<ge> weight ys \<and> distinct ys \<and> set ys \<subseteq> set xs \<and> hd xs = hd ys \<and> last xs = last ys \<and> length ys \<ge> 2"
+  "\<lbrakk>length xs \<ge> 2; hd xs \<noteq> last xs\<rbrakk> \<Longrightarrow>
+   \<exists> ys. weight xs \<ge> weight ys \<and> distinct ys \<and> set ys \<subseteq> set xs 
+        \<and> hd xs = hd ys \<and> last xs = last ys \<and> length ys \<ge> 2"
 proof(induction "length xs" arbitrary:  xs rule: less_induct)
   case less
   show ?case 
@@ -1599,16 +1572,18 @@ proof(induction "length xs" arbitrary:  xs rule: less_induct)
     have uneq_ends:"hd (p1 @ [u] @ p3) \<noteq> last (p1 @ [u] @ p3)"
       using less.prems(2) path_is by (cases p1) auto
     have "\<exists>ys. weight ys \<le> weight (p1 @ [u] @ p3) \<and>
-     distinct ys \<and> set ys \<subseteq> set (p1 @ [u] @ p3) \<and> hd (p1 @ [u] @ p3) = hd ys \<and> last (p1 @ [u] @ p3) = last ys
-            \<and> length ys \<ge> 2"
+     distinct ys \<and> set ys \<subseteq> set (p1 @ [u] @ p3) \<and> hd (p1 @ [u] @ p3) = hd ys 
+            \<and> last (p1 @ [u] @ p3) = last ys \<and> length ys \<ge> 2"
       using not_both_empt  not_less_eq_eq path_is uneq_ends 
       by (intro less(1)[of "p1@[u]@p3"]) auto
-    then obtain ys where ysprop:"weight ys \<le> weight (p1 @ [u] @ p3)" "distinct ys" "set ys \<subseteq> set (p1 @ [u] @ p3)"
-     "hd (p1 @ [u] @ p3) = hd ys" "last (p1 @ [u] @ p3) = last ys" "length ys \<ge> 2"
+    then obtain ys where ysprop: "weight ys \<le> weight (p1 @ [u] @ p3)" "distinct ys"
+       "set ys \<subseteq> set (p1 @ [u] @ p3)" "hd (p1 @ [u] @ p3) = hd ys" "last (p1 @ [u] @ p3) = last ys" 
+       "length ys \<ge> 2"
       by auto
     hence  "weight ys \<le> weight xs" "distinct ys" "set ys \<subseteq> set xs"
      "hd xs = hd ys" "last xs = last ys" "length ys \<ge>2"
-      using first_imprv dual_order.trans  ysprop path_is  hd_append[of "p1@[u]" "p2@[u]@p3", simplified] 
+      using first_imprv dual_order.trans  ysprop path_is 
+            hd_append[of "p1@[u]" "p2@[u]@p3", simplified] 
             hd_append[of "p1@[u]" p3, simplified] 
       by auto
     then show ?thesis by auto
@@ -1639,15 +1614,20 @@ proof(cases "OPT (length vs - 1) s v")
   show ?thesis
   proof(rule ccontr, goal_cases)
     case 1
-    hence less_Pinfty:"snd (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v)) < PInfty"
+    hence less_Pinfty:"snd (the (connection_lookup (bellman_ford (length vs - 1)
+                           (bellman_ford_init s)) v)) < PInfty"
       using PInf by auto
     moreover have "v\<in>dom (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)))"
       by (simp add: assms(3) bellman_ford_init_dom_is same_domain_bellman_ford)
-    moreover have " fst (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v)) \<noteq> None"
-      using assms(2) bellman_ford_pred_non_infty_pres calculation(1) calculation(2) invar_pred_non_infty_def by auto
+    moreover have " fst (the (connection_lookup (bellman_ford (length vs - 1) 
+                        (bellman_ford_init s)) v)) \<noteq> None"
+      using assms(2) bellman_ford_pred_non_infty_pres calculation(1) calculation(2) 
+            invar_pred_non_infty_def 
+      by auto
     ultimately obtain p where p_prop:"weight (p @ [v]) =
             snd (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v))"
-            "last p = the (fst (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v)))"
+            "last p = the (fst (the (connection_lookup (bellman_ford (length vs - 1)
+                                 (bellman_ford_init s)) v)))"
             "hd p = s" "1 \<le> length p" "set (p@[v]) \<subseteq> insert s (set vs)"
         using bellman_ford_invar_pred_path_pres[of s "length vs -1"] 
     by(auto simp add:invar_pred_path_def)
@@ -1681,24 +1661,27 @@ next
     using  OPT_not_MInfty[of "length vs -1" s v] by simp
 next
   case (real r)
-  hence all_above_opt:"\<And> xs. length ([s]@xs@[v]) \<le> length vs \<Longrightarrow> set xs \<subseteq> set vs \<Longrightarrow>  weight ([s]@xs@[v]) \<ge>
-                          OPT (length vs - 1) s v"
-  proof(goal_cases)
-    case (1 xs)
+  hence all_above_opt:"weight ([s]@xs@[v]) \<ge>  OPT (length vs - 1) s v"
+    if "length ([s]@xs@[v]) \<le> length vs" "set xs \<subseteq> set vs" for xs
+  proof-
     have "OPT (length vs - 1) s v \<le> weight ([s]@xs@[v]) "
-      using finite_weight_set  1 
+      using finite_weight_set  that
       by (auto intro!:  linorder_class.Min.coboundedI simp add:  OPT_def)
-    then show ?case by fast
+    then show ?thesis by fast
   qed
-    hence less_Pinfty:"snd (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v)) < PInfty"
+  hence less_Pinfty:"snd (the (connection_lookup (bellman_ford (length vs - 1) 
+         (bellman_ford_init s)) v)) < PInfty"
       using  bellman_ford_shortest[OF assms(1), of "length vs - 1" v] real by fastforce
     moreover have "v\<in>dom (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)))"
       by (simp add: assms(3) bellman_ford_init_dom_is same_domain_bellman_ford)
-    moreover have " fst (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v)) \<noteq> None"
-      using assms(2) bellman_ford_pred_non_infty_pres calculation(1) calculation(2) invar_pred_non_infty_def by auto
+    moreover have " fst (the (connection_lookup (bellman_ford (length vs - 1) 
+                        (bellman_ford_init s)) v)) \<noteq> None"
+      using assms(2) bellman_ford_pred_non_infty_pres calculation(1)
+             calculation(2) invar_pred_non_infty_def by auto
     ultimately obtain p where p_prop:"weight (p @ [v]) =
             snd (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v))"
-            "last p = the (fst (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v)))"
+            "last p = the (fst (the (connection_lookup (bellman_ford (length vs - 1)
+                       (bellman_ford_init s)) v)))"
             "hd p = s" "1 \<le> length p" "set (p@[v]) \<subseteq> insert s (set vs)"
         using bellman_ford_invar_pred_path_pres[of s "length vs -1"] 
     by(auto simp add:invar_pred_path_def)
@@ -1727,11 +1710,11 @@ next
     using pp_is  bellman_ford_shortest[OF assms(1), of "length vs -1" v] by simp
 qed
 
-lemma better_opt_path_is_opt_path: "opt_vs_path s t P \<Longrightarrow> vs_path s t Q \<Longrightarrow> weight Q \<le> weight P 
-                                     \<Longrightarrow> opt_vs_path s t Q"
+lemma better_opt_path_is_opt_path:
+   "\<lbrakk>opt_vs_path s t P; vs_path s t Q; weight Q \<le> weight P\<rbrakk>  \<Longrightarrow> opt_vs_path s t Q"
   using opt_vs_path_def by force
 
-lemma opt_path_same_weight: "opt_vs_path s t P  \<Longrightarrow> opt_vs_path s t Q \<Longrightarrow> weight P = weight Q"
+lemma opt_path_same_weight: "\<lbrakk>opt_vs_path s t P; opt_vs_path s t Q\<rbrakk> \<Longrightarrow> weight P = weight Q"
   using opt_vs_path_def by force
 
 lemma optpath_distinct:                            
@@ -1739,7 +1722,7 @@ lemma optpath_distinct:
   obtains Q where "opt_vs_path s t Q" "distinct Q"
 proof-
   have P_prop: "2 \<le> length P" "hd P = s" "last P = t" "set P \<subseteq> set vs" "s \<noteq> t"
-   "\<And> ys. 2 \<le> length ys \<Longrightarrow> hd ys = s \<Longrightarrow> last ys = t \<Longrightarrow> set ys \<subseteq> set vs \<Longrightarrow> weight P \<le> weight ys"
+   "\<And> ys. \<lbrakk>2 \<le> length ys; hd ys = s; last ys = t; set ys \<subseteq> set vs\<rbrakk> \<Longrightarrow> weight P \<le> weight ys"
     using assms by(auto simp add: opt_vs_path_def vs_path_def)
   then obtain ys where ys_prop:"weight ys \<le> weight P" "distinct ys" "set ys \<subseteq> set P" "hd P = hd ys" "last P = last ys" 
                        "length ys \<ge> 2"
@@ -1752,10 +1735,9 @@ proof-
     by (simp add: that ys_prop(2))
 qed
 
-
 lemma optpath_bellman_ford:                            
   assumes "opt_vs_path s t P" "s \<noteq> t"
-  shows "weight P = OPT (length vs - 1) s t"
+    shows "weight P = OPT (length vs - 1) s t"
 proof-
   obtain  Q where Q_prop:"opt_vs_path s t Q" "distinct Q"
     using assms(1) assms(2) optpath_distinct by blast
@@ -1770,7 +1752,8 @@ proof-
   ultimately have OPT_less_Q:"OPT (length vs - 1) s t \<le> weight Q"
     using finite_weight_set
     by (auto intro: linorder_class.Min.coboundedI simp add: OPT_def)
-  have "length ys + 1 \<le> length vs - 1  \<Longrightarrow> set ys \<subseteq> set vs \<Longrightarrow> weight P \<le> weight (s # ys @ [t])" for ys
+  have "\<lbrakk>length ys + 1 \<le> length vs - 1; set ys \<subseteq> set vs\<rbrakk> \<Longrightarrow> weight P \<le> weight (s # ys @ [t])"
+     for ys
   proof(goal_cases)
     case 1
     have "2 \<le> length (s # ys @ [t])" by simp
@@ -1790,12 +1773,9 @@ proof-
     using OPT_less_Q opt_path_same_weight[OF Q_prop(1) assms(1)] by simp
 qed
 
-lemma vs_path_append: "vs_path s u P \<Longrightarrow> vs_path u t Q \<Longrightarrow> vs_path s t (P@tl Q)"
-  unfolding vs_path_def 
-  by (smt (verit) Nat.le_diff_conv2 Suc_1 Un_subset_iff dual_order.trans hd_append2 last_appendR 
-last_tl leD le_add1 length_append 
-length_tl less_numeral_extra(1) list.collapse list.size(3) plus_1_eq_Suc set_append set_subset_Cons)
-
+lemma vs_path_append: "\<lbrakk>vs_path s u P; vs_path u t Q\<rbrakk> \<Longrightarrow> vs_path s t (P@tl Q)"
+  by(cases P rule: list_cases3, all \<open>cases Q rule: list_cases3\<close>)
+    (auto intro!: vs_pathI elim!: vs_pathE)
 
 lemma OPT_path_exists:
   assumes "s \<noteq> t" "s \<in> set vs" "t\<in> set vs" "l > 0"
@@ -1803,12 +1783,14 @@ lemma OPT_path_exists:
 proof(goal_cases)
   case 1
   note rl = this
-  have "OPT l s t \<in> ({weight (s # xs @ [t]) |xs. length xs + 1 \<le> l \<and> set xs \<subseteq> set vs} \<union> {if t = s then 0 else \<infinity>})"
+  have "OPT l s t \<in> ({weight (s # xs @ [t]) |xs. length xs + 1 \<le> l \<and> set xs \<subseteq> set vs} 
+                      \<union> {if t = s then 0 else \<infinity>})"
     unfolding OPT_def 
     using finite_weight_set 
     by(intro linorder_class.Min_in) auto
-  then obtain xs where xs_prop: "(weight (s # xs @ [t]) = OPT l s t \<and> length xs + 1 \<le> l \<and> set xs \<subseteq> set vs)
-                        \<or>  OPT l s t  = PInfty" 
+  then obtain xs where xs_prop:
+    "(weight (s # xs @ [t]) = OPT l s t \<and> length xs + 1 \<le> l \<and> set xs \<subseteq> set vs)
+      \<or> OPT l s t  = PInfty" 
     using assms by force
   show ?case
   proof(rule disjE[OF xs_prop], goal_cases)
@@ -1833,8 +1815,9 @@ proof(goal_cases)
   qed
 qed
 
-lemma path_weight_in: assumes "vs_path s t Q'" "length Q' \<le> l + 1"
-  shows "weight Q' \<in> {weight (s # xs @ [t]) |xs. length xs + 1 \<le> l \<and> set xs \<subseteq> set vs}"
+lemma path_weight_in: 
+  assumes "vs_path s t Q'" "length Q' \<le> l + 1"
+    shows "weight Q' \<in> {weight (s # xs @ [t]) |xs. length xs + 1 \<le> l \<and> set xs \<subseteq> set vs}"
 proof-
   obtain xs where "Q' = ([s]@xs@[t])"
     using assms by(cases Q' rule: list_cases_both_sides) (auto simp add: vs_path_def)
@@ -1857,7 +1840,8 @@ proof(rule ccontr, goal_cases)
   obtain Q' where Q'_prop: "vs_path s t Q'" "weight Q' \<le> weight Q" "distinct Q'"
     using assms  Q_prop(1) by (auto intro: vs_path_find_distinct_cheaper)
   have lengthQ':"length Q' \<le> length vs"
-    using sym[OF distinct_card[OF Q'_prop(3)]] sym[OF distinct_card[OF distinct_vs]] Q'_prop(1) card_mono
+    using sym[OF distinct_card[OF Q'_prop(3)]] sym[OF distinct_card[OF distinct_vs]] 
+          Q'_prop(1) card_mono
     by(auto simp add: vs_path_def)
   have "weight Q' \<ge> OPT (length vs - 1) s t"
     using finite_weight_set  Q'_prop(1) lengthQ' path_weight_in  
@@ -1869,7 +1853,8 @@ qed
 theorem bellman_ford_computes_length_of_optpath:
   assumes "s \<noteq> t" "s \<in> set vs" "t\<in> set vs"
   obtains P where "opt_vs_path s t P" 
-         "weight P = snd (the (connection_lookup (local.bellman_ford (length vs - 1) (bellman_ford_init s)) t))"
+    "weight P = snd (the (connection_lookup (local.bellman_ford (length vs - 1)
+                         (bellman_ford_init s)) t))"
   using bellamn_ford_equality[OF assms(2,1,3)] optpath_bellman_ford[OF _ assms(1)] 
         optpath_exists[OF assms] 
   by auto
@@ -1883,7 +1868,7 @@ lemma s_reachbale_in_some_steps:
           "invar_pred_acyc connections"
           "invar_pred_in_dom s connections"
           "invar_pred_has_pred s connections"
-        shows" \<exists> i. compow i (\<lambda> w. the (fst (the (connection_lookup connections w)))) v = s"
+    shows "\<exists> i. compow i (\<lambda> w. the (fst (the (connection_lookup connections w)))) v = s"
   using assms(1-3)
 proof(induction n arbitrary: v rule: less_induct)
   case (less n)
@@ -1940,7 +1925,8 @@ proof(induction n arbitrary: v rule: less_induct)
           hence "x \<in> dVs (pred_graph connections)" by force
           moreover have "dVs (pred_graph connections) \<subseteq> dom (connection_lookup connections)"
           using assms(6,7)
-          by(force simp add: pred_graph_def dom_def invar_pred_in_dom_def invar_pred_has_pred_def Let_def dVs_def)
+          by(force simp add: pred_graph_def dom_def invar_pred_in_dom_def 
+                             invar_pred_has_pred_def Let_def dVs_def)
         ultimately show ?case by auto
         qed
         thus ?thesis 
@@ -1964,8 +1950,9 @@ proof(induction n arbitrary: v rule: less_induct)
  qed (auto intro: exI[of _ 0])
 qed
 
-lemma s_compow_reachble_term:"((\<lambda>w. the (fst (the (connection_lookup connections w)))) ^^ i) v = s
-        \<Longrightarrow> search_rev_path_dom (s, connections,v)"
+lemma s_compow_reachble_term:
+  "((\<lambda>w. the (fst (the (connection_lookup connections w)))) ^^ i) v = s
+  \<Longrightarrow> search_rev_path_dom (s, connections,v)"
 proof(induction i arbitrary: s connections v)
   case (Suc i)
   show ?case 
@@ -1974,8 +1961,8 @@ proof(induction i arbitrary: s connections v)
 qed (auto intro: search_rev_path.domintros) 
 
 lemma term_s_compow_reachable:
-  assumes"search_rev_path_dom (s, connections,v)"
-  shows "\<exists> i. ((\<lambda>w. the (fst (the (connection_lookup connections w)))) ^^ i) v = s"
+  assumes "search_rev_path_dom (s, connections,v)"
+    shows "\<exists> i. ((\<lambda>w. the (fst (the (connection_lookup connections w)))) ^^ i) v = s"
 proof(induction rule: search_rev_path.pinduct[OF assms])
   case (1 s connections v)
   note IH = this
@@ -2006,7 +1993,8 @@ proof(induction  rule: search_rev_path.pinduct[OF assms(1)])
   define pred where "pred = the (fst (the (connection_lookup connections v)))"
   have edge_in_pred_Graph: "(pred, v) \<in> pred_graph connections"
     using  IH(3,6,5,7) 
-    by(auto simp add: pred_def invar_pred_in_dom_def invar_pred_has_pred_def Let_def pred_graph_def dom_def)
+    by(auto simp add: pred_def invar_pred_in_dom_def invar_pred_has_pred_def
+                      Let_def pred_graph_def dom_def)
   show ?case 
   proof(cases "pred = s")
     case True
@@ -2022,7 +2010,8 @@ proof(induction  rule: search_rev_path.pinduct[OF assms(1)])
     case False
     have "vwalk_bet (pred_graph connections) s (rev (search_rev_path s connections pred)) pred"
       using  False IH(3-)
-      by(auto intro!: IH(2) simp add: invar_pred_has_pred_def pred_def Let_def invar_pred_in_dom_def)
+      by(auto intro!: IH(2) 
+            simp add: invar_pred_has_pred_def pred_def Let_def invar_pred_in_dom_def)
     hence  "vwalk_bet (pred_graph connections) s (rev (search_rev_path s connections pred)@[v]) v"
       using edge_in_pred_Graph
       by (fastforce intro: vwalk_bet_transitive[where q="[pred, v]" , simplified])
@@ -2032,8 +2021,7 @@ proof(induction  rule: search_rev_path.pinduct[OF assms(1)])
 qed
 
 lemma pred_graph_subs_es:
-  assumes "connections = bellman_ford (length vs - 1) (bellman_ford_init s)"
-          "s \<in> set vs"
+  assumes "connections = bellman_ford (length vs - 1) (bellman_ford_init s)" "s \<in> set vs"
   shows "pred_graph connections \<subseteq> set es"
 proof(rule, goal_cases)
   case (1 e)
@@ -2048,8 +2036,7 @@ proof(rule, goal_cases)
             bellman_ford_init_dom_is same_domain_bellman_ford 
     by (fastforce simp add: pred_graph_def  assms(1) invar_pred_non_infty_def invar_pred_in_dom_def)
   moreover hence "fst e \<in> set vs" 
-    using   assms(2) 
-            bellman_ford_init_dom_is[of s] same_domain_bellman_ford[of "length vs -1" s] assms(1)
+    using assms(1,2) bellman_ford_init_dom_is[of s] same_domain_bellman_ford[of "length vs -1" s] 
     by auto
   moreover have fst_e_snd_e_Some:"fst (the (connection_lookup connections (snd e))) = Some (fst e)"
     using "1" by (auto simp add: pred_graph_def)
@@ -2060,13 +2047,14 @@ proof(rule, goal_cases)
   moreover obtain p where p_prop: "weight (p @ [snd e]) =
           snd (the (connection_lookup connections (snd e)))"
           "last p = (fst e)" "length p \<ge> 1"
-    apply(rule ballE[OF bellman_ford_invar_pred_path_pres[of s "length vs - 1",
-                   simplified invar_pred_path_def], of "fst e"])
-    subgoal
+  proof(rule ballE[OF bellman_ford_invar_pred_path_pres[of s "length vs - 1",
+                   simplified invar_pred_path_def], of "fst e"], goal_cases)
+    case 1
+    thus ?case
       using fst_e_snd_e_Some fst_e_has_pred  bellman_ford_invar_pred_path_pres[of s "length vs -1"] 
             snd_e_in_dom 
       by(auto simp add:  assms(1) invar_pred_path_def) 
-    using  fst_e_in_dom by(auto simp add: assms(1))
+  qed(insert fst_e_in_dom, auto simp add: assms(1))
   moreover have "snd (the (connection_lookup connections (snd e))) < PInfty"
     using bellman_ford_pred_non_infty_pres[of s "length vs -1"] fst_e_snd_e_Some snd_e_in_dom
     by (auto simp add: assms(1) invar_pred_non_infty_def)
@@ -2084,7 +2072,8 @@ qed
 lemma s_reachable_in_some_steps:
   assumes "v \<in> set vs" 
           "fst (the (connection_lookup (local.bellman_ford l (bellman_ford_init s)) v)) \<noteq> None"
-     shows" \<exists> i. compow i (\<lambda> w. the (fst (the (connection_lookup (bellman_ford l (bellman_ford_init s)) w)))) v = s"
+        shows "\<exists> i. compow i (\<lambda> w. the (fst (the (connection_lookup 
+                          (bellman_ford l (bellman_ford_init s)) w)))) v = s"
   using  assms bellman_ford_init_dom_is same_domain_bellman_ford  bellman_ford_init_dom_is 
          bellman_ford_invar_pred_acyc_pres  bellman_ford_pred_in_dom_pres
          bellman_ford_invar_pred_has_pred_pres 
@@ -2121,7 +2110,7 @@ theorem search_rev_path_distinct:
   assumes "connections = bellman_ford (length vs - 1) (bellman_ford_init s)"
           "v \<in> set vs" "v \<noteq> s" "s \<in> set vs"
           "fst (the (connection_lookup connections v)) \<noteq> None"
-        shows "distinct (rev (search_rev_path s connections v))"
+    shows "distinct (rev (search_rev_path s connections v))"
 proof-
   have "vwalk_bet (pred_graph connections) s (rev (search_rev_path s connections v)) v"
     using search_rev_path_is_pred_graph[OF assms]
@@ -2138,43 +2127,52 @@ proof-
 qed
 
 lemma bellman_ford_s_costs_remain_zero:
-  shows "snd (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) s)) = 0"
+   "snd (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) s)) = 0"
 proof(rule ccontr, goal_cases)
   case 1
-  define spred where "spred = the (fst (the (connection_lookup (local.bellman_ford (length vs -1) (bellman_ford_init s)) s)))"
-  have edge_in_pred_Graph: "(spred, s) \<in> pred_graph (bellman_ford (length vs -1) (bellman_ford_init s))"
-    using "1"  bellman_ford_init_dom_is bellman_ford_s_pred_remains_zero_pres  same_domain_bellman_ford 
+  define spred where "spred = the (fst (the (connection_lookup (local.bellman_ford (length vs -1)
+                              (bellman_ford_init s)) s)))"
+  have edge_in_pred_Graph: "(spred, s) \<in> pred_graph (bellman_ford (length vs -1)
+                                             (bellman_ford_init s))"
+    using 1 bellman_ford_init_dom_is bellman_ford_s_pred_remains_zero_pres 
+          same_domain_bellman_ford 
     by (auto simp add: invar_s_pred_remains_zero_def pred_graph_def spred_def)
   note top = 1
-  hence "fst (the (connection_lookup (local.bellman_ford (length vs -1) (bellman_ford_init s)) s)) \<noteq> None"
+  hence "fst (the (connection_lookup (local.bellman_ford (length vs -1) (bellman_ford_init s)) s))
+         \<noteq> None"
     using bellman_ford_s_pred_remains_zero_pres
     by(auto simp add:  invar_s_pred_remains_zero_def)
-  moreover have "spred \<in> dom (connection_lookup (bellman_ford (length vs -1) (bellman_ford_init s)))" 
-    using bellman_ford_init_dom_is bellman_ford_pred_in_dom_pres[of s ]  same_domain_bellman_ford[of _ s]
-          calculation(1)
+  moreover have "spred \<in> dom (connection_lookup (bellman_ford (length vs -1)
+                                (bellman_ford_init s)))" 
+    using bellman_ford_init_dom_is bellman_ford_pred_in_dom_pres[of s ]
+          same_domain_bellman_ford[of _ s] calculation(1)
     by(auto simp add: spred_def invar_pred_in_dom_def)
   moreover have s_not_pred:"s \<noteq> spred"
   proof(rule ccontr, goal_cases)
     case 1
-    hence " vwalk_bet (pred_graph (local.bellman_ford (length vs - 1) (bellman_ford_init s))) s [s,s] s"
-      using  edge_in_pred_Graph by auto
+    hence "vwalk_bet (pred_graph (bellman_ford (length vs - 1) (bellman_ford_init s))) s [s,s] s"
+      using edge_in_pred_Graph by auto
     then show ?case 
       using bellman_ford_invar_pred_acyc_pres[of "length vs -1" s]
       unfolding invar_pred_acyc_def by fastforce
   qed
-  moreover have "search_rev_path_dom (s, local.bellman_ford (length vs - 1) (bellman_ford_init s), spred)"
+  moreover have "search_rev_path_dom (s, local.bellman_ford (length vs - 1) 
+                       (bellman_ford_init s), spred)"
     using bellman_ford_init_dom_is[of s]  bellman_ford_invar_pred_has_pred_pres[of s "length vs -1"] 
           calculation(1) calculation(2)
           s_not_pred same_domain_bellman_ford search_rev_path_dom_bellman_ford 
         by(auto simp add: spred_def  invar_pred_has_pred_def Let_def)
-  ultimately have vwalk_s_spred:"vwalk_bet (pred_graph (local.bellman_ford (length vs - 1) (bellman_ford_init s))) s
+  ultimately have vwalk_s_spred:
+    "vwalk_bet (pred_graph (local.bellman_ford (length vs - 1) (bellman_ford_init s))) s
    (rev (search_rev_path s (local.bellman_ford (length vs - 1) (bellman_ford_init s)) spred)) spred"
     using bellman_ford_pred_in_dom_pres[of s "length vs -1"]
           bellman_ford_init_dom_is bellman_ford_invar_pred_has_pred_pres[of s "length vs -1"]
           same_domain_bellman_ford search_rev_path_dom_bellman_ford[of s "length vs - 1" s]
-    by(intro search_rev_path_is_in_pred_graph)(auto simp add: spred_def Let_def  invar_pred_has_pred_def )
+    by(intro search_rev_path_is_in_pred_graph)
+      (auto simp add: spred_def Let_def  invar_pred_has_pred_def )
   hence "vwalk_bet (pred_graph (local.bellman_ford (length vs - 1) (bellman_ford_init s))) s
-   (rev (search_rev_path s (local.bellman_ford (length vs - 1) (bellman_ford_init s)) spred) @ [s]) s"
+     (rev (search_rev_path s (local.bellman_ford (length vs - 1)
+          (bellman_ford_init s)) spred) @ [s]) s"
     using edge_in_pred_Graph 
     by(auto intro:  vwalk_bet_transitive[of _ s _ spred "[spred, s]" s, simplified])
   then show ?case 
@@ -2217,30 +2215,35 @@ proof-
       using True calculation costs_mono by fastforce
   next
     case False
-    have vwalk_s_pred:"vwalk_bet (pred_graph connections) s (rev (search_rev_path s connections pred)) pred"
+    have vwalk_s_pred:"vwalk_bet (pred_graph connections) s
+                                                  (rev (search_rev_path s connections pred)) pred"
       apply(rule search_rev_path_is_in_pred_graph[of s _ pred])
-      apply(rule search_rev_path_dom_bellman_ford[of pred "length vs -1" s, simplified sym[OF IH(3)]])
+      apply(rule search_rev_path_dom_bellman_ford[of pred "length vs -1" s,
+             simplified sym[OF IH(3)]])
       using False IH(3-) bellman_ford_init_dom_is[of s] same_domain_bellman_ford[of "length vs -1" s]
             bellman_ford_invar_pred_has_pred_pres[of s "length vs -1" ]
             bellman_ford_pred_in_dom_pres[of s "length vs -1" ]
-      by(auto simp add: invar_pred_has_pred_def  vwalk_bet_def pred_def invar_pred_in_dom_def Let_def)
+      by(auto simp add: invar_pred_has_pred_def  vwalk_bet_def pred_def
+                        invar_pred_in_dom_def Let_def)
     hence non_empt_path:" (rev (search_rev_path s connections pred)) \<noteq> []"
       by fastforce
     have IHapplied: 
      "weight (rev (search_rev_path s connections pred))
-    \<le> snd (the (connection_lookup connections pred))" 
-     using  False IH(3-) bellman_ford_init_dom_is[of s ] same_domain_bellman_ford[of "length vs -1" s]
-           bellman_ford_invar_pred_has_pred_pres[of s "length vs -1"]
-           bellman_ford_pred_in_dom_pres [of s "length vs -1"]
+     \<le> snd (the (connection_lookup connections pred))" 
+      using False IH(3-) bellman_ford_init_dom_is[of s ] 
+            same_domain_bellman_ford[of "length vs -1" s]
+            bellman_ford_invar_pred_has_pred_pres[of s "length vs -1"]
+            bellman_ford_pred_in_dom_pres [of s "length vs -1"]
      by(intro IH(2))(auto simp add: pred_def invar_pred_has_pred_def invar_pred_in_dom_def)
    have weight_one_step: "weight (rev (search_rev_path s connections pred)@[v]) =
-   weight (rev (search_rev_path s connections pred)) +  edge_costs pred v"
+                          weight (rev (search_rev_path s connections pred)) +  edge_costs pred v"
    proof-
      have "weight (rev (search_rev_path s connections pred)@[v])
           = weight (butlast (rev (search_rev_path s connections pred))@[pred, v])"
        apply(rule  vwalk_bet_props[OF vwalk_s_pred])
        by(metis append_butlast_last_cancel)
-     also have "... = weight (butlast (rev (search_rev_path s connections pred))@[pred]) +  edge_costs pred v"
+     also have "... = weight (butlast (rev (search_rev_path s connections pred))@[pred]) 
+                           +  edge_costs pred v"
        using  weight_append_last[of _ pred v, simplified] by simp
      also have "... = weight (rev (search_rev_path s connections pred)) +  edge_costs pred v"
        apply(rule  vwalk_bet_props[OF vwalk_s_pred])
@@ -2272,7 +2275,7 @@ proof-
                  \<le> snd (the (connection_lookup connections v))"
     using assms search_rev_path_bellman_ford_less_costs by simp
   moreover have "vs_path s v (rev (search_rev_path s connections v))"
-  proof(rule vsp_pathI, goal_cases)
+  proof(rule vs_pathI, goal_cases)
     case 1
     then show ?case 
       apply(rule vwalk_bet_props[OF search_rev_path_is_pred_graph[OF assms]])
@@ -2301,15 +2304,17 @@ proof-
 qed
 
 lemma bellamn_ford_path_exists_result_le_PInfty:
-  assumes "s \<in> set vs" "s \<noteq> v" "v \<in> set vs" "weight P < PInfty" "hd P = s" "last P = v" "length P \<ge> 2"
-  shows      "snd (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v)) 
+  assumes "s \<in> set vs" "s \<noteq> v" "v \<in> set vs" "weight P < PInfty" "hd P = s" "last P = v" 
+          "length P \<ge> 2"
+    shows "snd (the (connection_lookup (bellman_ford (length vs - 1) (bellman_ford_init s)) v)) 
               < PInfty"
 proof-
   obtain OP where OP_prop:"opt_vs_path s v OP" 
     using assms(1) assms(2) assms(3) optpath_exists by auto
   moreover have "weight OP = OPT (length vs - 1) s v"
     using  optpath_bellman_ford[OF OP_prop] assms by simp
-  moreover have "snd (the (connection_lookup (local.bellman_ford (length vs - 1) (bellman_ford_init s)) v)) =
+  moreover have 
+    "snd (the (connection_lookup (local.bellman_ford (length vs - 1) (bellman_ford_init s)) v)) =
           OPT (length vs - 1) s v"
     using  bellamn_ford_equality[of s v] 
     by (simp add: assms(1) assms(2) assms(3))
@@ -2327,8 +2332,8 @@ theorem bellman_ford_search_rev_path_weight:
   assumes "connections = bellman_ford (length vs - 1) (bellman_ford_init s)"
           "v \<in> set vs" "v \<noteq> s" "s \<in> set vs"
           "fst (the (connection_lookup connections v)) \<noteq> None"
-        shows "weight (rev (search_rev_path s connections v)) =
-               snd (the (connection_lookup connections v))"
+    shows "weight (rev (search_rev_path s connections v)) =
+           snd (the (connection_lookup connections v))"
   using assms(1) assms(2) assms(3) assms(4) assms(5) bellamn_ford_equality 
         computation_of_optimum_path optpath_bellman_ford by presburger
 
@@ -2336,7 +2341,7 @@ end
 
 lemma weight_le_PInfty_OPTle_PInfty:
   assumes "weight (s#xs@[t]) < PInfty"  "s \<noteq> t" "l = length xs"
-  shows "OPT (length vs -1) s t < PInfty"
+    shows "OPT (length vs -1) s t < PInfty"
 using assms
 proof(induction l arbitrary: s t xs rule: less_induct)
   case (less l)
@@ -2374,8 +2379,6 @@ proof(induction l arbitrary: s t xs rule: less_induct)
       using less by auto
   qed
 qed
-lemmas code_lemmas[code] = search_rev_path_exec.simps
 
-find_theorems compow connection_lookup
 end
 end

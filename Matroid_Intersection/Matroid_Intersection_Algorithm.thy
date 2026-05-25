@@ -285,51 +285,54 @@ locale unweighted_intersection =
   for insert lookup set_insert find_path carrier vset complement+
   fixes to_set_red::"'mset_red \<Rightarrow> 'a set"
     and   set_invar_red::"'mset_red \<Rightarrow> bool"
-  assumes set_insert: "\<And> S x. set_invar S \<Longrightarrow> x \<in> carrier \<Longrightarrow>  set_invar (set_insert x S)"
-    "\<And> S x. set_invar S \<Longrightarrow> x \<in> carrier \<Longrightarrow> to_set (set_insert x S) = Set.insert x (to_set S)"
-  assumes set_delete: "\<And> S x. set_invar S \<Longrightarrow> x \<in> carrier \<Longrightarrow> set_invar (set_delete x S)"
-    "\<And> S x. set_invar S \<Longrightarrow> x \<in> carrier \<Longrightarrow> to_set (set_delete x S) = (to_set S) - {x}"
+  assumes set_insert: "\<And> S x. \<lbrakk>set_invar S; x \<in> carrier\<rbrakk> \<Longrightarrow> set_invar (set_insert x S)"
+    "\<And> S x. \<lbrakk>set_invar S; x \<in> carrier\<rbrakk> \<Longrightarrow> to_set (set_insert x S) = Set.insert x (to_set S)"
+  assumes set_delete: "\<And> S x. \<lbrakk>set_invar S; x \<in> carrier\<rbrakk> \<Longrightarrow> set_invar (set_delete x S)"
+    "\<And> S x. \<lbrakk>set_invar S; x \<in> carrier\<rbrakk> \<Longrightarrow> to_set (set_delete x S) = (to_set S) - {x}"
   assumes set_empty: "set_invar set_empty" "to_set set_empty = {}"
-  assumes weak_orcl1: "\<And> X x. set_invar X \<Longrightarrow> to_set X \<subseteq> carrier \<Longrightarrow> x \<in> carrier \<Longrightarrow> x \<notin> to_set X \<Longrightarrow>
-                            indep1 (to_set X) \<Longrightarrow> weak_orcl1 x X \<longleftrightarrow> indep1 (Set.insert x (to_set X))"
-  assumes weak_orcl2: "\<And> X x. set_invar X \<Longrightarrow> to_set X \<subseteq> carrier \<Longrightarrow> x \<in> carrier \<Longrightarrow> x \<notin> to_set X \<Longrightarrow>
-                            indep2 (to_set X) \<Longrightarrow> weak_orcl2 x X \<longleftrightarrow> indep2 (Set.insert x (to_set X))"
-  assumes inner_fold: "\<And> X f G. set_invar X \<Longrightarrow> \<exists> xs. set xs = to_set X
-                                           \<and> inner_fold X f G = foldr f xs G"
-  assumes inner_fold_circuit: "\<And> X f G. set_invar_red X \<Longrightarrow> \<exists> xs. set xs = to_set_red X
-                                           \<and> inner_fold_circuit X f G = foldr f xs G"
-  assumes outer_fold: "\<And> X f trip. set_invar_red X \<Longrightarrow> \<exists> xs. set xs = to_set_red X
+  assumes weak_orcl1: 
+    "\<And> X x. \<lbrakk>set_invar X; to_set X \<subseteq> carrier; x \<in> carrier; x \<notin> to_set X; indep1 (to_set X)\<rbrakk>
+       \<Longrightarrow> weak_orcl1 x X \<longleftrightarrow> indep1 (Set.insert x (to_set X))"
+  assumes weak_orcl2: 
+    "\<And> X x. \<lbrakk>set_invar X; to_set X \<subseteq> carrier; x \<in> carrier; x \<notin> to_set X; indep2 (to_set X)\<rbrakk> 
+       \<Longrightarrow> weak_orcl2 x X \<longleftrightarrow> indep2 (Set.insert x (to_set X))"
+  assumes inner_fold: 
+     "\<And> X f G. set_invar X \<Longrightarrow> \<exists> xs. set xs = to_set X \<and> inner_fold X f G = foldr f xs G"
+  assumes inner_fold_circuit: 
+     "\<And> X f G. set_invar_red X 
+      \<Longrightarrow> \<exists> xs. set xs = to_set_red X \<and> inner_fold_circuit X f G = foldr f xs G"
+  assumes outer_fold: 
+     "\<And> X f trip. set_invar_red X \<Longrightarrow> \<exists> xs. set xs = to_set_red X
                                            \<and> outer_fold X f trip = foldr f xs trip"
-  assumes find_path: "\<And> G S T. graph.graph_inv G \<Longrightarrow> graph.finite_graph G \<Longrightarrow> graph.finite_vsets G  \<Longrightarrow>
-                             vset_inv S \<Longrightarrow> vset_inv T \<Longrightarrow> vset S \<subseteq> carrier \<Longrightarrow>
-                             vset T \<subseteq> carrier \<Longrightarrow> dVs (graph.digraph_abs G) \<subseteq> carrier \<Longrightarrow>
-                             find_path S T G = None \<longleftrightarrow> 
-                             (\<nexists> p u v. (vwalk_bet (graph.digraph_abs G) u p v \<or> (p = [u] \<and> u = v)) \<and>
-                                       u \<in> vset S \<and> v \<in> vset T)"
-    "\<And> G S T p. graph.graph_inv G \<Longrightarrow> graph.finite_graph G \<Longrightarrow> graph.finite_vsets G \<Longrightarrow>
-                             vset_inv S \<Longrightarrow> vset_inv T \<Longrightarrow> vset S \<subseteq> carrier \<Longrightarrow>
-                             vset T \<subseteq> carrier \<Longrightarrow> dVs (graph.digraph_abs G) \<subseteq> carrier \<Longrightarrow>
-                             find_path S T G = Some p \<Longrightarrow>
-                             \<exists> u v. (vwalk_bet (graph.digraph_abs G) u p v \<or> (p = [u] \<and> u = v)) \<and> u \<in> vset S \<and> v \<in> vset T \<and>
-                             (\<nexists> p'. (vwalk_bet (graph.digraph_abs G) u p' v \<or> (p' = [u] \<and> u = v)) \<and> length p' < length p)"
-  assumes complement: "\<And> S. set_invar S \<Longrightarrow> to_set S  \<subseteq> carrier \<Longrightarrow> set_invar_red (complement S)"
-    "\<And> S. set_invar S \<Longrightarrow> to_set S  \<subseteq> carrier \<Longrightarrow> to_set_red (complement S) = carrier - to_set S"
-  assumes circuit1: "\<And> X y. set_invar X \<Longrightarrow> indep1 (to_set X) \<Longrightarrow> to_set X \<subseteq> carrier \<Longrightarrow>
-                             y \<in> carrier \<Longrightarrow>
-                             \<not> indep1 (Set.insert y (to_set X)) \<Longrightarrow>
-                             to_set_red (circuit1 y X) = matroid1.the_circuit (Set.insert y (to_set X)) - {y}"
-    "\<And> X y. set_invar X \<Longrightarrow> indep1 (to_set X) \<Longrightarrow> to_set X \<subseteq> carrier \<Longrightarrow>
-                             y \<in> carrier \<Longrightarrow>
-                             \<not> indep1 (Set.insert y (to_set X)) \<Longrightarrow>
-                             set_invar_red (circuit1 y X)"
-  assumes circuit2: "\<And> X y. set_invar X \<Longrightarrow> indep2 (to_set X) \<Longrightarrow> to_set X \<subseteq> carrier \<Longrightarrow>
-                             y \<in> carrier \<Longrightarrow>
-                             \<not> indep2 (Set.insert y (to_set X)) \<Longrightarrow>
-                             to_set_red (circuit2 y X) = matroid2.the_circuit (Set.insert y (to_set X)) - {y}"
-    "\<And> X y. set_invar X \<Longrightarrow> indep2 (to_set X) \<Longrightarrow> to_set X \<subseteq> carrier \<Longrightarrow>
-                             y \<in> carrier \<Longrightarrow>
-                             \<not> indep2 (Set.insert y (to_set X)) \<Longrightarrow>
-                             set_invar_red (circuit2 y X)"
+  assumes find_path: 
+    "\<And> G S T. \<lbrakk>graph.graph_inv G; graph.finite_graph G; graph.finite_vsets G; vset_inv S;
+               vset_inv T; vset S \<subseteq> carrier; vset T \<subseteq> carrier; dVs (graph.digraph_abs G) \<subseteq> carrier\<rbrakk>
+      \<Longrightarrow> find_path S T G = None \<longleftrightarrow> 
+           (\<nexists> p u v. (vwalk_bet (graph.digraph_abs G) u p v \<or> (p = [u] \<and> u = v)) \<and>
+                       u \<in> vset S \<and> v \<in> vset T)"
+    "\<And> G S T p. \<lbrakk>graph.graph_inv G; graph.finite_graph G; graph.finite_vsets G; vset_inv S; 
+                 vset_inv T; vset S \<subseteq> carrier; vset T \<subseteq> carrier;
+                 dVs (graph.digraph_abs G) \<subseteq> carrier; find_path S T G = Some p\<rbrakk>
+      \<Longrightarrow> \<exists> u v. (vwalk_bet (graph.digraph_abs G) u p v \<or> (p = [u] \<and> u = v))
+                         \<and> u \<in> vset S \<and> v \<in> vset T \<and>
+             (\<nexists> p'. (vwalk_bet (graph.digraph_abs G) u p' v \<or> (p' = [u] \<and> u = v))
+                         \<and> length p' < length p)"
+  assumes complement: "\<And> S. \<lbrakk>set_invar S; to_set S  \<subseteq> carrier\<rbrakk> \<Longrightarrow> set_invar_red (complement S)"
+    "\<And> S. \<lbrakk>set_invar S; to_set S  \<subseteq> carrier\<rbrakk> \<Longrightarrow> to_set_red (complement S) = carrier - to_set S"
+  assumes circuit1: 
+    "\<And> X y. \<lbrakk>set_invar X; indep1 (to_set X); to_set X \<subseteq> carrier; y \<in> carrier;
+             \<not> indep1 (Set.insert y (to_set X))\<rbrakk>
+        \<Longrightarrow> to_set_red (circuit1 y X) = matroid1.the_circuit (Set.insert y (to_set X)) - {y}"
+    "\<And> X y. \<lbrakk>set_invar X; indep1 (to_set X); to_set X \<subseteq> carrier; y \<in> carrier;
+              \<not> indep1 (Set.insert y (to_set X))\<rbrakk>
+        \<Longrightarrow> set_invar_red (circuit1 y X)"
+  assumes circuit2: 
+    "\<And> X y. \<lbrakk>set_invar X; indep2 (to_set X); to_set X \<subseteq> carrier; y \<in> carrier;
+              \<not> indep2 (Set.insert y (to_set X))\<rbrakk>
+        \<Longrightarrow> to_set_red (circuit2 y X) = matroid2.the_circuit (Set.insert y (to_set X)) - {y}"
+    "\<And> X y. \<lbrakk>set_invar X; indep2 (to_set X); to_set X \<subseteq> carrier; y \<in> carrier;
+              \<not> indep2 (Set.insert y (to_set X))\<rbrakk> 
+        \<Longrightarrow> set_invar_red (circuit2 y X)"
 begin
 
 lemma treat1_correct:

@@ -4,7 +4,7 @@
 
 theory Ranking_Order
   imports
-    Bipartite_Matching_LP
+    Matching_LPs.Bipartite_Matching_LP
     Order_Relations
 begin
 

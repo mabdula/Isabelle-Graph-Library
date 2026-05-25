@@ -1,5 +1,5 @@
-theory Misc
-  imports "Undirected_Set_Graphs.Undirected_Set_Graphs"
+theory Blossom_Misc
+  imports Undirected_Set_Graphs.Paths
 begin
 
 subsection \<open>Misc\<close>

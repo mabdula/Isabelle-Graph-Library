@@ -3,6 +3,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
 
   sessions
     Verified_SAT_Based_AI_Planning
+    Undirected_Set_Graphs
   theories
     RBT_Map_Extension
     DFS
@@ -13,6 +14,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     DFS_Cycles_Aux
     DFS_Cycles
     DFS_Cycles_Example
+    Parent_Map
     Bellman_Ford
     Bellman_Ford_Example
 

@@ -1,0 +1,29 @@
+session "Hungarian_Method" = "HOL-Library" +
+  options [document = pdf, document_output = "output"]
+
+sessions
+  Graph_Algorithms_Dev
+  Alternating_Lists
+  Basic_Matching
+  Priority_Search_Trees
+  Flow_Theory
+  Primal_Dual_Bipartite_Matching
+  Verified_SAT_Based_AI_Planning
+  Tutte_Theorem
+
+
+theories
+	Key_Value_Queue_Spec
+	Ordered_Map_Heap
+	Egervary
+	Naive_Primal_Dual
+	Primal_Dual_Path_Search
+	Hungarian_Method_Top_Loop
+	Hungarian_Method_Instantiation
+	WBP_Matching_Exec
+	Hungarian_Example	
+
+document_files
+  "root.tex"
+
+

@@ -3,7 +3,7 @@
 *)
 
 subsection \<open>More on Lists\label{sec:more-list}\<close>
-theory More_List
+theory More_List_Ranking
   imports
     "List-Index.List_Index"
     "HOL-Library.Sublist"
@@ -201,6 +201,9 @@ lemma move_to_distinct:
 lemma count_list_append: "count_list (xs@ys) x = count_list xs x + count_list ys x"
   by (induction xs) auto
 
+lemma member_filter: "(x \<in> Set.filter P A) = (x \<in> A \<and> P x)"
+  by simp
+
 lemma move_to_set: "set xs[x \<mapsto> i] = set xs \<union> {x}"
 proof -
   define xs' where "xs' = [y \<leftarrow> xs. y \<noteq> x]"
@@ -210,10 +213,8 @@ proof -
     by simp
   also have "... = {x} \<union> (set (take i xs') \<union> set (drop i xs'))"
     by auto
-  also have "... = {x} \<union> set (take i xs' @ drop i xs')"
-    by (auto simp add: set_append[symmetric])
   also have "... = {x} \<union> set xs'"
-    by simp
+    by (auto simp add: set_append[symmetric])
   also have "... = {x} \<union> (set xs - {x})"
     unfolding xs'_def by auto
   also have "... = set xs \<union> {x}"
@@ -699,7 +700,7 @@ lemma list_eq_same_order:
   by blast
 
 lemma move_to_filter_eq: "[x <- xs. x \<noteq> v][v \<mapsto> t] = xs[v \<mapsto> t]"
-  by (simp add: move_to_def)
+  by(simp add: move_to_def)
 
 lemma distinct_order_filter_eq:
   assumes "distinct xs" "distinct xs'"

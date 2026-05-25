@@ -35,8 +35,8 @@ definition ranking_prob :: "'a graph measure" where
     return (count_space {M. M \<subseteq> G}) (ranking r G \<pi>)
   })"
 
-definition dual_sol :: "('a \<Rightarrow> real) \<Rightarrow> 'a graph \<Rightarrow> real vec" where
-  "dual_sol Y M = (vec n (\<lambda>k.
+definition rop_dual_sol :: "('a \<Rightarrow> real) \<Rightarrow> 'a graph \<Rightarrow> real vec" where
+  "rop_dual_sol Y M = (vec n (\<lambda>k.
     if Vs_enum_inv k \<in> Vs M
     then
       if k < card L 
@@ -67,18 +67,18 @@ lemma div_F_less_eq_cancel[simp]: "x / F \<le> y / F \<longleftrightarrow> x \<l
   using F_gt_0
   by (simp add: divide_le_cancel)
 
-lemma dim_dual_sol[simp]: "dim_vec (dual_sol Y M) = n"
-  by (simp add: dual_sol_def)
+lemma dim_rop_dual_sol[simp]: "dim_vec (rop_dual_sol Y M) = n"
+  by (simp add: rop_dual_sol_def)
 
 lemma dual_dot_One_card:
   assumes "M \<subseteq> G"
   assumes "matching M"
-  shows "1\<^sub>v n \<bullet> dual_sol Y M = card M / F"
+  shows "1\<^sub>v n \<bullet> rop_dual_sol Y M = card M / F"
 proof -
-  from graph have "1\<^sub>v n \<bullet> dual_sol Y M = 
+  from graph have "1\<^sub>v n \<bullet> rop_dual_sol Y M = 
     (\<Sum>i\<in>{0..<n} \<inter> {i. Vs_enum_inv i \<in> Vs M} \<inter> {i. i < card L}. g (Y (Vs_enum_inv i)) / F) +
     (\<Sum>i\<in>{0..<n} \<inter> {i. Vs_enum_inv i \<in> Vs M} \<inter> - {i. i < card L}. (1 - g (Y (THE l. {l, Vs_enum_inv i} \<in> M))) / F)"
-    by (simp add: dual_sol_def scalar_prod_def sum.If_cases)
+    by (simp add: rop_dual_sol_def scalar_prod_def sum.If_cases)
 
   have L_sum_matching: "(\<Sum>i\<in>{0..<n} \<inter> {i. Vs_enum_inv i \<in> Vs M} \<inter> {i. i < card L}. g (Y (Vs_enum_inv i)) / F) =
     (\<Sum>e\<in>M. g (Y (THE l. l \<in> L \<and> l \<in> e)) / F)"
@@ -198,13 +198,13 @@ proof -
   qed
 
   with graph L_sum_matching show ?thesis
-    by (auto simp: scalar_prod_def dual_sol_def n_def sum.If_cases simp flip: sum.distrib add_divide_distrib)
+    by (auto simp: scalar_prod_def rop_dual_sol_def n_def sum.If_cases simp flip: sum.distrib add_divide_distrib)
 qed
 
 lemma primal_is_dual_times_F:
   assumes "M \<subseteq> G"
   assumes "matching M"
-  shows "1\<^sub>v m \<bullet> primal_sol M = 1\<^sub>v n \<bullet> dual_sol Y M * F"
+  shows "1\<^sub>v m \<bullet> primal_sol M = 1\<^sub>v n \<bullet> rop_dual_sol Y M * F"
   using assms F_gt_0
   by (auto simp: primal_dot_One_card dual_dot_One_card)
 
@@ -324,8 +324,8 @@ lemma monotonicity:
   assumes "i \<in> L" and "j \<in> R"
   assumes "{i, j} \<in> G"
 
-  shows "dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ Vs_enum j \<ge> (1 - g (y\<^sub>c Y \<pi> i j)) / F"
-    (is "dual_sol Y ?M $ ?j \<ge> ?\<beta>")
+  shows "rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ Vs_enum j \<ge> (1 - g (y\<^sub>c Y \<pi> i j)) / F"
+    (is "rop_dual_sol Y ?M $ ?j \<ge> ?\<beta>")
 proof (cases "j \<in> Vs (ranking (linorder_from_keys L Y) (G \<setminus> {i}) \<pi>)")
   case True
   let ?M' = "ranking (linorder_from_keys L Y) (G \<setminus> {i}) \<pi>"
@@ -360,7 +360,7 @@ proof (cases "j \<in> Vs (ranking (linorder_from_keys L Y) (G \<setminus> {i}) \
     by simp
   
   with True j_matched index_j i_left g_mono \<open>{i,j} \<in> G\<close> \<open>Y \<in> L \<rightarrow> {0..1}\<close> \<open>j \<in> R\<close> show ?thesis
-    unfolding y\<^sub>c_def dual_sol_def
+    unfolding y\<^sub>c_def rop_dual_sol_def
     by (auto simp: the_i' the_i'' dest: mono_onD)
 next
   case False
@@ -376,14 +376,14 @@ next
       by (intro the_ranking_match_left) auto
 
     with True j_unmatched' index_j F_gt_0 \<open>{i,j} \<in> G\<close> \<open>Y \<in> L \<rightarrow> {0..1}\<close> show ?thesis
-      unfolding y\<^sub>c_def dual_sol_def
+      unfolding y\<^sub>c_def rop_dual_sol_def
       by (auto simp: g_One simp del: finite_vs_subgraph dest!: edges_are_Vs_2 
                    intro: divide_nonneg_pos intro!: g_less_eq_OneI)
   next
     case False
     
     with j_unmatched' index_j F_gt_0 \<open>{i,j} \<in> G\<close> show ?thesis
-      unfolding y\<^sub>c_def dual_sol_def
+      unfolding y\<^sub>c_def rop_dual_sol_def
       by (auto simp: g_One dest: edges_are_Vs_2 intro: divide_nonneg_pos)
   qed
 qed
@@ -671,8 +671,8 @@ qed simp
 lemma measurable_dual_component_remove_vertices[measurable]:
   assumes "k < n"
   assumes "k < card L \<Longrightarrow> from_nat_into L k \<notin> X"
-  shows "(\<lambda>Y. dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>) $ k) \<in> borel_measurable (\<Pi>\<^sub>M i \<in> L - X. \<U>)"
-  unfolding dual_sol_def
+  shows "(\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>) $ k) \<in> borel_measurable (\<Pi>\<^sub>M i \<in> L - X. \<U>)"
+  unfolding rop_dual_sol_def
 proof (subst index_vec[OF \<open>k < n\<close>], subst measurable_If_restrict_space_iff, goal_cases)
   case 2
   then show ?case
@@ -698,7 +698,7 @@ lemmas measurable_dual_component = measurable_dual_component_remove_vertices[whe
 lemma measurable_dual_component_split_dim:
   assumes "i \<in> L"
   assumes "j < n"
-  shows "(\<lambda>(y,Y). dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ j) \<in> borel_measurable (\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>))"
+  shows "(\<lambda>(y,Y). rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ j) \<in> borel_measurable (\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>))"
   using measurable_compose[OF measurable_add_dim' measurable_dual_component] assms
   by (auto simp: case_prod_beta)
 
@@ -706,7 +706,7 @@ lemma measurable_dual_component_fun_upd:
   assumes "i \<in> L"
   assumes "Y \<in> space (\<Pi>\<^sub>M i \<in> L - {i}.  \<U>)"
   assumes "k < n"
-  shows "(\<lambda>y. dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ k) \<in> borel_measurable \<U>"
+  shows "(\<lambda>y. rop_dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ k) \<in> borel_measurable \<U>"
   by (rule measurable_compose[OF _ measurable_dual_component])
      (use assms in measurable)
 
@@ -735,10 +735,10 @@ next
        (simp_all add: \<open>j \<in> R\<close>)
 qed auto
 
-lemma dual_sol_funcset:
+lemma rop_dual_sol_funcset:
   assumes Y_nonneg: "\<And>i. i \<in> L - X \<Longrightarrow> 0 \<le> Y i"
   assumes Y_less_eq_One: "\<And>i. i \<in> L - X \<Longrightarrow> Y i \<le> 1"
-  shows "($) (dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
+  shows "($) (rop_dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
 proof (intro funcsetI)
   fix i
   assume "i \<in> {..<n}"
@@ -753,11 +753,11 @@ proof (intro funcsetI)
   then have matched_not_X: "j \<in> Vs ?ranking \<Longrightarrow> j \<notin> X" for j
     by (auto dest!: Vs_subset dest: remove_vertices_not_vs')
 
-  from \<open>i < n\<close> show "dual_sol Y ?ranking $ i \<in> {0..1 / F}"
+  from \<open>i < n\<close> show "rop_dual_sol Y ?ranking $ i \<in> {0..1 / F}"
   proof (cases rule: i_cases)
     case 1
     with \<open>i < n\<close> show ?thesis
-      unfolding dual_sol_def
+      unfolding rop_dual_sol_def
       by (auto intro: g_nonnegI g_less_eq_OneI assms dest: matched_not_X elim: Vs_enum_inv_leftE)
   next
     case 2
@@ -766,32 +766,32 @@ proof (intro funcsetI)
       by (auto intro!: the_ranking_match_left dest: remove_vertices_subgraph' elim: Vs_enum_inv_rightE)
       
     with 2 \<open>i < n\<close> show ?thesis
-      unfolding dual_sol_def
+      unfolding rop_dual_sol_def
       by (auto intro: g_nonnegI g_less_eq_OneI assms dest: matched_not_X remove_vertices_subgraph' edges_are_Vs)
   qed
 qed
 
-lemma dual_sol_funcset_if_funcset:
-  shows "Y \<in> (L - X) \<rightarrow> {0..1} \<Longrightarrow> ($) (dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
-  by (intro dual_sol_funcset) auto
+lemma rop_dual_sol_funcset_if_funcset:
+  shows "Y \<in> (L - X) \<rightarrow> {0..1} \<Longrightarrow> ($) (rop_dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
+  by (intro rop_dual_sol_funcset) auto
 
-lemma AE_dual_sol_funcset:
-  shows "AE Y in \<Pi>\<^sub>M i \<in> L - X. \<U>. ($) (dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}" 
+lemma AE_rop_dual_sol_funcset:
+  shows "AE Y in \<Pi>\<^sub>M i \<in> L - X. \<U>. ($) (rop_dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}" 
   using AE_PiM_subset_L_\<U>_funcset[OF Diff_subset]
   by eventually_elim
-     (auto dest: dual_sol_funcset_if_funcset)
+     (auto dest: rop_dual_sol_funcset_if_funcset)
 
-lemma AE_dual_sol_split_dim_funcset:
-  shows "AE (y, Y) in \<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>). ($) (dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
+lemma AE_rop_dual_sol_split_dim_funcset:
+  shows "AE (y, Y) in \<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>). ($) (rop_dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
   using AE_split_dim_funcset
   by eventually_elim
-     (auto dest: dual_sol_funcset_if_funcset[where X = "{}", simplified])
+     (auto dest: rop_dual_sol_funcset_if_funcset[where X = "{}", simplified])
 
-lemma AE_dual_sol_\<U>_funcset:
+lemma AE_rop_dual_sol_\<U>_funcset:
   assumes "Y \<in> L - {i} \<rightarrow> {0..1}"
-  shows "AE y in \<U>. ($) (dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
+  shows "AE y in \<U>. ($) (rop_dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
   using assms
-  by (intro eventually_mono[OF AE_\<U>_in_range] dual_sol_funcset_if_funcset[where X = "{}", simplified] funcset_update)
+  by (intro eventually_mono[OF AE_\<U>_in_range] rop_dual_sol_funcset_if_funcset[where X = "{}", simplified] funcset_update)
 
 lemma integrable_g[simp]: "integrable \<U> g"
 proof (intro integrableI_nonneg, goal_cases)
@@ -810,16 +810,16 @@ qed simp
 lemma integrable_dual_component_remove_vertices:
   assumes "i < n"
   assumes "i < card L \<Longrightarrow> from_nat_into L i \<notin> X"
-  shows "integrable (\<Pi>\<^sub>M i \<in> L - X. \<U>) (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>) $ i)"
+  shows "integrable (\<Pi>\<^sub>M i \<in> L - X. \<U>) (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>) $ i)"
   using assms
 proof (intro integrableI_nonneg measurable_dual_component, goal_cases)
   case 2
   show ?case
-    by (rule eventually_mono[OF AE_dual_sol_funcset], use 2 in auto)
+    by (rule eventually_mono[OF AE_rop_dual_sol_funcset], use 2 in auto)
 next
   case 3
-  have "\<integral>\<^sup>+ Y. ennreal (dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>) $ i) \<partial>\<Pi>\<^sub>M i \<in> L - X. \<U> \<le> 1/F"
-    by (intro subprob_space.nn_integral_le_const prob_space_imp_subprob_space prob_space_PiM_\<U> eventually_mono[OF AE_dual_sol_funcset])
+  have "\<integral>\<^sup>+ Y. ennreal (rop_dual_sol Y (ranking (linorder_from_keys (L - X) Y) (G \<setminus> X) \<pi>) $ i) \<partial>\<Pi>\<^sub>M i \<in> L - X. \<U> \<le> 1/F"
+    by (intro subprob_space.nn_integral_le_const prob_space_imp_subprob_space prob_space_PiM_\<U> eventually_mono[OF AE_rop_dual_sol_funcset])
        (use 3 in auto)
 
   then show ?case
@@ -831,19 +831,19 @@ lemmas integrable_dual_component = integrable_dual_component_remove_vertices[whe
 lemma integrable_dual_component_split_dim:
   assumes "i \<in> L"
   assumes "j < n"
-  shows "integrable (\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>)) (\<lambda>(y,Y). dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ j)"
+  shows "integrable (\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>)) (\<lambda>(y,Y). rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ j)"
   using assms
 proof (intro integrableI_nonneg measurable_dual_component_split_dim, goal_cases)
   case 3
   show ?case
-    by (rule eventually_mono[OF AE_dual_sol_split_dim_funcset], use 3 in auto)
+    by (rule eventually_mono[OF AE_rop_dual_sol_split_dim_funcset], use 3 in auto)
 next
   case 4
   interpret split_dim_prob_space: prob_space "(\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>))"
     by (intro prob_space_pair prob_space_PiM) blast+
 
-  have "\<integral>\<^sup>+ (y,Y). ennreal (dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ j) \<partial>(\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>)) \<le> 1/F"
-    by (intro split_dim_prob_space.nn_integral_le_const eventually_mono[OF AE_dual_sol_split_dim_funcset])
+  have "\<integral>\<^sup>+ (y,Y). ennreal (rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ j) \<partial>(\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>)) \<le> 1/F"
+    by (intro split_dim_prob_space.nn_integral_le_const eventually_mono[OF AE_rop_dual_sol_split_dim_funcset])
        (use 4 in auto)
 
   then show ?case
@@ -856,15 +856,15 @@ lemma integrable_dual_component_\<U>:
   assumes Y_funcset: "Y \<in> L - {i} \<rightarrow> {0..1}"
   assumes "i \<in> L"
   assumes "k < n"
-  shows "integrable \<U> (\<lambda>y. dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ k)"
+  shows "integrable \<U> (\<lambda>y. rop_dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ k)"
 proof (intro integrableI_nonneg measurable_dual_component_fun_upd, goal_cases)
   case 4
   from Y_funcset \<open>k < n\<close> show ?case
-    by (auto intro!: eventually_mono[OF AE_dual_sol_\<U>_funcset])
+    by (auto intro!: eventually_mono[OF AE_rop_dual_sol_\<U>_funcset])
 next
   case 5
-  from Y_funcset \<open>k < n\<close> have "\<integral>\<^sup>+y. dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ k \<partial>\<U> \<le> 1/F"
-    by (auto intro!: subprob_space.nn_integral_le_const prob_space_imp_subprob_space eventually_mono[OF AE_dual_sol_\<U>_funcset])
+  from Y_funcset \<open>k < n\<close> have "\<integral>\<^sup>+y. rop_dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ k \<partial>\<U> \<le> 1/F"
+    by (auto intro!: subprob_space.nn_integral_le_const prob_space_imp_subprob_space eventually_mono[OF AE_rop_dual_sol_\<U>_funcset])
 
   then show ?case
     by (simp add: order_le_less_trans)
@@ -941,15 +941,15 @@ lemma dual_expectation_feasible_edge:
   assumes "j \<in> R"
   assumes "{i,j} \<in> G"
 
-  shows "expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ (Vs_enum i)) +
-    expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ (Vs_enum j)) \<ge> 1"
+  shows "expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ (Vs_enum i)) +
+    expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ (Vs_enum j)) \<ge> 1"
   (is "?Ei_plus_Ej \<ge> 1")
 proof -
   from assms have [intro]: "Vs_enum i < n" "Vs_enum j < n"
     by (auto simp: Vs_enum_L Vs_enum_R intro: L_enum_less_n R_enum_less_n)
 
-  from \<open>{i,j} \<in> G\<close> have "?Ei_plus_Ej = expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ (Vs_enum i) +
-    dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ (Vs_enum j))" (is "_ = expectation ?i_plus_j")
+  from \<open>{i,j} \<in> G\<close> have "?Ei_plus_Ej = expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ (Vs_enum i) +
+    rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ (Vs_enum j))" (is "_ = expectation ?i_plus_j")
     by (intro Bochner_Integration.integral_add[symmetric] integrable_dual_component)
        (auto dest: edges_are_Vs intro: Vs_enum_less_n)
 
@@ -1005,23 +1005,23 @@ proof -
       case 2
       from \<open>Vs_enum i < n\<close> \<open>Vs_enum j < n\<close> show ?case
         by (intro eventually_mono[OF AE_PiM_subset_L_\<U>_funcset[OF Diff_subset]] integral_nonneg_AE eventually_mono[OF AE_\<U>_in_range])
-           (auto dest!: funcset_update dual_sol_funcset_if_funcset[where X = "{}", simplified] intro!: add_nonneg_nonneg)
+           (auto dest!: funcset_update rop_dual_sol_funcset_if_funcset[where X = "{}", simplified] intro!: add_nonneg_nonneg)
     next
       case 3
       interpret L'_prob_space: prob_space "\<Pi>\<^sub>M i \<in> L - {i}. \<U>"
         by (intro prob_space_PiM) blast
 
-      have "\<integral>\<^sup>+Y. \<integral>y. dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i +
-                     dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum j \<partial>\<U> 
+      have "\<integral>\<^sup>+Y. \<integral>y. rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i +
+                     rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum j \<partial>\<U> 
             \<partial>\<Pi>\<^sub>M i \<in> L - {i}. \<U> \<le> \<integral>\<^sup>+_. 2/F \<partial>\<Pi>\<^sub>M i \<in> L - {i}. \<U>"
       proof (intro nn_integral_mono_AE eventually_mono[OF AE_PiM_subset_L_\<U>_funcset[OF Diff_subset]], simp, 
              intro integral_real_bounded component_prob_space.nn_integral_le_const eventually_mono[OF AE_\<U>_in_range], goal_cases)
         case (3 Y y)
-        then have "($) (dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
-          by (auto dest!: funcset_update dual_sol_funcset_if_funcset[where X = "{}", simplified])
+        then have "($) (rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
+          by (auto dest!: funcset_update rop_dual_sol_funcset_if_funcset[where X = "{}", simplified])
 
-        with \<open>Vs_enum i < n\<close> \<open>Vs_enum j < n\<close> have "dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i \<le> 1/F"
-          "dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum j \<le> 1/F"
+        with \<open>Vs_enum i < n\<close> \<open>Vs_enum j < n\<close> have "rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i \<le> 1/F"
+          "rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum j \<le> 1/F"
           by auto
 
         then show ?case
@@ -1058,8 +1058,8 @@ proof -
       \<integral>y. g y / F * indicator {..<y\<^sub>c Y \<pi> i j} y + (1 - g (y\<^sub>c Y \<pi> i j)) / F \<partial>\<U>"
         by (subst *, intro Bochner_Integration.integral_add[symmetric] integrable_offline_bound, auto)
 
-      also have "\<dots> \<le> \<integral>y. dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i +
-                          dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum j \<partial>\<U>"
+      also have "\<dots> \<le> \<integral>y. rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i +
+                          rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum j \<partial>\<U>"
       proof (intro integral_mono_AE Bochner_Integration.integrable_add integrable_offline_bound, goal_cases)
         case 2
         with \<open>i \<in> L\<close> \<open>Vs_enum i < n\<close> Y show ?case
@@ -1080,11 +1080,11 @@ proof -
           then show ?case
           proof (intro add_mono, goal_cases)
             case 1
-            then have *: "($) (dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
-              by (intro dual_sol_funcset[where X = "{}", simplified])
+            then have *: "($) (rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..1/F}"
+              by (intro rop_dual_sol_funcset[where X = "{}", simplified])
                  (auto simp: Pi_iff)
 
-            have "y < y\<^sub>c Y \<pi> i j \<Longrightarrow> g y / F \<le> dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i"
+            have "y < y\<^sub>c Y \<pi> i j \<Longrightarrow> g y / F \<le> rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i"
             proof -
               assume "y < y\<^sub>c Y \<pi> i j"
               with \<open>j \<in> R\<close> have "y < y\<^sub>c (Y(i:=y)) \<pi> i j"
@@ -1093,8 +1093,8 @@ proof -
               with y_props \<open>i \<in> L\<close> \<open>j \<in> R\<close> \<open>{i,j} \<in> G\<close> have "i \<in> Vs (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>)"
                 by (auto intro: dominance)
 
-              with \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close> have "dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ Vs_enum i = g y / F"
-                by (auto simp: dual_sol_def)
+              with \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close> have "rop_dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ Vs_enum i = g y / F"
+                by (auto simp: rop_dual_sol_def)
                    (metis L_enum_less_card Vs_enum_L)+
 
               then show ?thesis
@@ -1112,8 +1112,8 @@ proof -
       qed simp
 
       finally show "\<integral>y. g y / F * indicat_real {..<y\<^sub>c Y \<pi> i j} y \<partial>\<U> + (1 - g (y\<^sub>c Y \<pi> i j)) / F
-         \<le> \<integral>y. dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i +
-               dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum j \<partial>\<U>"
+         \<le> \<integral>y. rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum i +
+               rop_dual_sol (Y(i := y)) (ranking (linorder_from_keys L (Y(i := y))) G \<pi>) $ Vs_enum j \<partial>\<U>"
         .
     qed
   qed
@@ -1148,7 +1148,7 @@ proof -
 qed
 
 
-abbreviation "expected_dual \<equiv> vec n (\<lambda>i. expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i))"
+abbreviation "expected_dual \<equiv> vec n (\<lambda>i. expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i))"
 
 lemma expected_dual_feasible: "incidence_matrix\<^sup>T *\<^sub>v expected_dual \<ge> 1\<^sub>v m"
   unfolding Matrix.less_eq_vec_def
@@ -1169,18 +1169,18 @@ proof (intro conjI allI impI, simp_all add: incidence_matrix_def)
       by auto
   } note the_lr = this
 
-  from ij have "1 \<le> expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ Vs_enum i) +
-            expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ Vs_enum j)"
+  from ij have "1 \<le> expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ Vs_enum i) +
+            expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ Vs_enum j)"
     by (intro dual_expectation_feasible_edge)
 
-  also from index_neq have "\<dots> = (\<Sum>k\<in>{Vs_enum i, Vs_enum j}. expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ k))"
+  also from index_neq have "\<dots> = (\<Sum>k\<in>{Vs_enum i, Vs_enum j}. expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ k))"
     by simp
 
-  also from the_lr \<open>{i,j} \<in> G\<close> \<open>k < m\<close> have "\<dots> = vec n (\<lambda>i. of_bool (Vs_enum_inv i \<in> from_nat_into G k)) \<bullet> vec n (\<lambda>i. expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i))"
+  also from the_lr \<open>{i,j} \<in> G\<close> \<open>k < m\<close> have "\<dots> = vec n (\<lambda>i. of_bool (Vs_enum_inv i \<in> from_nat_into G k)) \<bullet> vec n (\<lambda>i. expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i))"
     unfolding incidence_matrix_def
     by (auto simp: scalar_prod_def sum.cong[OF index_set_Int_is_doubleton] elim!: from_nat_into_G_E)
 
-  finally show "1 \<le> vec n (\<lambda>i. of_bool (Vs_enum_inv i \<in> from_nat_into G k)) \<bullet> vec n (\<lambda>i. expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i))"
+  finally show "1 \<le> vec n (\<lambda>i. of_bool (Vs_enum_inv i \<in> from_nat_into G k)) \<bullet> vec n (\<lambda>i. expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i))"
     .
 qed
 
@@ -1193,8 +1193,8 @@ proof (intro conjI allI impI, simp_all, intro integral_ge_const integrable_dual_
   have "j \<in> Vs (ranking (linorder_from_keys L Y) G \<pi>) \<Longrightarrow> j \<in> R \<Longrightarrow> (THE l. {l, j} \<in> ranking (linorder_from_keys L Y) G \<pi>) \<in> L" for j Y
     by (auto intro!: the_ranking_match_left)
 
-  with \<open>k < n\<close> show "AE Y in \<Y>. 0 \<le> dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ k"
-    unfolding dual_sol_def
+  with \<open>k < n\<close> show "AE Y in \<Y>. 0 \<le> rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ k"
+    unfolding rop_dual_sol_def
     by (intro eventually_mono[OF AE_\<Y>_funcset])
        (auto intro!: g_nonnegI g_less_eq_OneI simp: Pi_iff elim: Vs_enum_inv_leftE Vs_enum_inv_rightE)
 qed blast
@@ -1218,16 +1218,16 @@ proof -
     by (subst primal_dot_One_card, rule ranking_subgraph)
         auto
 
-  also have "\<dots> = expectation (\<lambda>Y. 1\<^sub>v n \<bullet> dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) * F)"
+  also have "\<dots> = expectation (\<lambda>Y. 1\<^sub>v n \<bullet> rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) * F)"
     by (intro Bochner_Integration.integral_cong refl primal_is_dual_times_F ranking_subgraph matching_ranking)
         auto
 
   also have "\<dots> = 1\<^sub>v n \<bullet> expected_dual * F" (is "?E = ?Edot1F")
   proof -
-    from F_gt_0 have "?E = expectation (\<lambda>Y. \<Sum>i\<in>{0..<n}. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i) * F"
+    from F_gt_0 have "?E = expectation (\<lambda>Y. \<Sum>i\<in>{0..<n}. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i) * F"
       by (auto simp: scalar_prod_def)
 
-    also have "\<dots> = (\<Sum>i\<in>{0..<n}. expectation (\<lambda>Y. dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i)) * F"
+    also have "\<dots> = (\<Sum>i\<in>{0..<n}. expectation (\<lambda>Y. rop_dual_sol Y (ranking (linorder_from_keys L Y) G \<pi>) $ i)) * F"
       by (auto intro!: Bochner_Integration.integral_sum intro: integrable_dual_component)
 
     also have "\<dots> = ?Edot1F"

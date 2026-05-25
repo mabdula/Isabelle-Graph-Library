@@ -1,72 +1,139 @@
 theory Tot_Unimod_graph
-  imports Totally_Unimodular Even_More_Graph_2 
+  imports Totally_Unimodular Even_More_Graph_2 Matching_LP
 begin
+(*
+no_notation Matching_LP.one_vec ("1\<^sub>v")
+hide_const Matching_LP.one_vec
+hide_fact one_carrier_vec*)
 
 context gram_schmidt_floor
 begin
 
-definition incidence_mat :: "'b set set  \<Rightarrow> 'a mat" where 
-  "incidence_mat E = mat (card (Vs E)) (card E) 
-          (\<lambda>(i,j). if (vertices_list E) ! i \<in> (edges_list E) ! j then 1 else 0)"
+context fixes E
+  assumes finite_Vs:"finite (Vs E)"
+begin
+
+interpretation matching_LP_standard "Vs E" "E" 
+ by(auto intro!:  matching_LP_standard.intro finite_Vs)
+
+abbreviation "incidence_mat \<equiv> incidence_matrix"
+
+lemma incidence_mat_def: "incidence_mat = mat (card (Vs E)) (card E) 
+          (\<lambda>(i,j). if Vs_enum_inv i \<in> G_enum_inv j then 1 else 0)"
+  by (simp add: of_bool_def  incidence_matrix_def n_def )
 
 lemma dim_col_incidence_mat:
-  shows "dim_col (incidence_mat E) = card E" 
+  shows "dim_col (incidence_mat) = card E" 
   unfolding incidence_mat_def by auto
 
 lemma dim_row_incidence_mat:
-  shows "dim_row (incidence_mat E) = (card (Vs E))" 
+  shows "dim_row (incidence_mat) = (card (Vs E))" 
   unfolding incidence_mat_def by auto
 
 lemma one_then_in_edge:
   assumes "i < card (Vs E)"
   assumes "j < card E"
-  assumes "(incidence_mat E) $$ (i,j) = 1"
-  shows "(vertices_list E) ! i \<in> (edges_list E) ! j"
+  assumes "(incidence_mat) $$ (i,j) = 1"
+  shows "Vs_enum_inv i \<in> G_enum_inv j"
   using assms 
 proof -
-  have "(incidence_mat E) $$ (i,j) = (if (vertices_list E) ! i \<in> (edges_list E) ! j then 1 else 0)"
+  have "(incidence_mat) $$ (i,j) = (if Vs_enum_inv i \<in> G_enum_inv j then 1 else 0)"
     unfolding incidence_mat_def using assms(1-2) 
     by fastforce
   then show ?thesis
-    using assms(3) field.one_not_zero by presburger
+    using assms(3) field.one_not_zero by argo
 qed
 
 lemma zeo_then_notin_edge:
   assumes "i < card (Vs E)"
   assumes "j < card E"
-  assumes "(incidence_mat E) $$ (i,j) = 0"
-  shows "(vertices_list E) ! i \<notin> (edges_list E) ! j"
+  assumes "(incidence_mat) $$ (i,j) = 0"
+  shows "Vs_enum_inv i \<notin> G_enum_inv j"
   using assms 
 proof -
-  have "(incidence_mat E) $$ (i,j) = (if (vertices_list E) ! i \<in> (edges_list E) ! j then 1 else 0)"
+  have "(incidence_mat) $$ (i,j) = (if Vs_enum_inv i \<in> G_enum_inv j then 1 else 0)"
     unfolding incidence_mat_def using assms(1-2) 
     by fastforce
   then show ?thesis
-    using assms(3) field.one_not_zero 
-    by presburger
+    using assms(3) field.one_not_zero by auto
 qed  
 
 lemma elems_incidence_one_zero:
   assumes "i < card (Vs E)"
   assumes "j < card E"
-  shows "(incidence_mat E) $$ (i,j) = 0 \<or> (incidence_mat E) $$ (i,j) = 1" 
+  shows "(incidence_mat) $$ (i,j) = 0 \<or> (incidence_mat) $$ (i,j) = 1" 
   unfolding incidence_mat_def 
   by (simp add: assms(1) assms(2))
 
 lemma at_most_two_ones:
   assumes "graph_invar E"
-  assumes "k < card E"
+  assumes "k < card E" 
   shows "\<exists> i < (card (Vs E)). \<exists> j < card (Vs E). i \<noteq> j \<and> 
-              (incidence_mat E) $$ (i, k) = 1 \<and> (incidence_mat E) $$ (j, k) = 1 \<and>
-              (\<forall> t < card (Vs E). (t\<noteq>i \<and> t \<noteq> j) \<longrightarrow> B $$ (t,k) = 0)"
-  oops
+              (incidence_mat ) $$ (i, k) = 1 \<and> (incidence_mat ) $$ (j, k) = 1 \<and>
+              (\<forall> t < card (Vs E). (t\<noteq>i \<and> t \<noteq> j) \<longrightarrow> incidence_mat $$ (t,k) = 0)"
+proof-
+  obtain e where e:"e \<in> E" "G_enum e= k"
+    using assms(2) matching_lp_theorems(20,27) by blast
+  then obtain u v where e_uv: "e = {u, v}" "u \<noteq> v" 
+    using assms(1) by auto
+  have uv_indices_less:"Vs_enum u < card (Vs E)" "Vs_enum v < card (Vs E)"
+    using e_uv  e(1)
+    by(auto intro!: matching_lp_theorems(21))
+  moreover have "Vs_enum u \<noteq> Vs_enum v"
+    using matching_lp_theorems(17)[of u] matching_lp_theorems(17)[of v]
+          e(1) e_uv(1,2) edges_are_Vs[of u v] edges_are_Vs_2[of u v] 
+    by force
+  moreover have "incidence_mat $$ (Vs_enum u, k) = 1" 
+    using V_and_G(1) assms(2) e(1,2) e_uv(1) edges_are_Vs elems_incidence_one_zero
+        zeo_then_notin_edge insertCI inversions(1,2) uv_indices_less(1)
+    by fast
+  moreover have "incidence_mat $$ (Vs_enum v, k) = 1" 
+    using V_and_G(1) assms(2) e(1,2) e_uv(1) edges_are_Vs_2 elems_incidence_one_zero
+        zeo_then_notin_edge insertCI inversions(1,2) uv_indices_less(2)
+    by fast
+  moreover have "\<And> t. t<card (Vs E) \<Longrightarrow> t \<noteq> Vs_enum u \<Longrightarrow> t \<noteq> Vs_enum v 
+                 \<Longrightarrow> incidence_mat $$ (t, k) = 0"
+  proof(rule ccontr, goal_cases)
+    case (1 t)
+    then obtain  w where "w \<in> Vs E" "Vs_enum_inv t = v" 
+      using  assms(2) e(1,2) e_uv(1) elems_incidence_one_zero[of t k] matching_lp_theorems(18,19)
+          one_then_in_edge 
+      by fastforce
+    hence "{u, v, w} \<subseteq> e" 
+      using "1"(1,3) matching_lp_theorems(19) by auto
+    then show ?case
+      using "1"(1,3) \<open>Vs_enum_inv t = v\<close> matching_lp_theorems(19) by force
+  qed
+  ultimately show ?thesis
+    by blast
+qed
 
-lemma at_most_two_ones2:
+lemma vec_of_functions_add:"vec k f + vec k g = vec k (\<lambda> x. f x  +  g x)"
+  by(auto simp add: plus_vec_def)
+
+lemma vec_cong: "(\<And> i. i < k \<Longrightarrow> f i = g i) \<Longrightarrow> vec k f = vec k g" 
+  by auto
+
+lemma at_most_two_ones3:
   assumes "graph_invar E"
   assumes "k < card E"
   shows "\<exists> i < (card (Vs E)). \<exists> j < card (Vs E). i \<noteq> j \<and> 
-              col (incidence_mat E) k = unit_vec (card (Vs E)) i + unit_vec (card (Vs E)) j"
-  oops
+              col (incidence_mat) k = unit_vec (card (Vs E)) i + unit_vec (card (Vs E)) j"
+proof-
+  obtain i j where ij: "i <card (Vs E)" "j<card (Vs E)" "i \<noteq> j"
+      " incidence_mat $$ (i, k) = 1" "incidence_mat $$ (j, k) = 1"
+      "\<And> t. t<card (Vs E) \<Longrightarrow> t \<noteq> i  \<Longrightarrow> t \<noteq> j \<Longrightarrow> incidence_mat $$ (t, k) = 0"
+    using at_most_two_ones[OF assms] by auto
+  hence "Vs_enum_inv i \<in> G_enum_inv k" "Vs_enum_inv j \<in> G_enum_inv k"
+    using assms(2) one_then_in_edge by presburger+
+  hence "col (incidence_mat) k = unit_vec (card (Vs E)) i + unit_vec (card (Vs E)) j"
+    unfolding incidence_mat_def col_mat[OF assms(2)] unit_vec_def prod.case
+    vec_of_functions_add
+    using assms(2) ij(3,6) zeo_then_notin_edge 
+    by(auto intro!: vec_cong)
+  thus ?thesis
+    using ij(1,2,3) by blast
+qed
 
 lemma at_most_two_ones2:
   assumes "graph_invar E"
@@ -74,40 +141,41 @@ lemma at_most_two_ones2:
   assumes "i < (card (Vs E))"
   assumes "j < (card (Vs E))"
   assumes "i \<noteq> j"
-  assumes " (incidence_mat E) $$ (i, k) = 1 \<and> (incidence_mat E) $$ (j, k) = 1"
-  shows "(\<forall> t < card (Vs E). (t\<noteq>i \<and> t \<noteq> j) \<longrightarrow> (incidence_mat E) $$ (t,k) = 0)"
+  assumes " (incidence_mat ) $$ (i, k) = 1 \<and> (incidence_mat ) $$ (j, k) = 1"
+  shows "(\<forall> t < card (Vs E). (t\<noteq>i \<and> t \<noteq> j) \<longrightarrow> (incidence_mat ) $$ (t,k) = 0)"
 proof safe
   fix t
   assume asm: "t < card (Vs E)" "t \<noteq> i" "t \<noteq> j"
-  show "(incidence_mat E) $$ (t,k) = 0"
+  show "(incidence_mat ) $$ (t,k) = 0"
   proof(rule ccontr)
-    assume "(incidence_mat E) $$ (t, k) \<noteq> 0" 
-    then have "(incidence_mat E) $$ (t, k) = 1" 
-      using asm(1) assms(2) gram_schmidt_floor.elems_incidence_one_zero by blast
-    then have 1: "(vertices_list E) ! t \<in> (edges_list E) ! k" 
-      using asm(1) assms(2) gram_schmidt_floor.one_then_in_edge by blast
-    have 2: "(vertices_list E) ! i \<in> (edges_list E) ! k" 
-      using assms(2) assms(3) assms(6) gram_schmidt_floor.one_then_in_edge by blast
-    have 3: "(vertices_list E) ! j \<in> (edges_list E) ! k" 
-      using assms(2) assms(4) assms(6) gram_schmidt_floor.one_then_in_edge by blast
-    have "card ((edges_list E) ! k) \<noteq> 2"
-    proof(cases "infinite ((edges_list E) ! k)")
+    assume "(incidence_mat ) $$ (t, k) \<noteq> 0" 
+    then have "(incidence_mat ) $$ (t, k) = 1" 
+      using asm(1) assms(2) gram_schmidt_floor.elems_incidence_one_zero by force
+    then have 1: "Vs_enum_inv t \<in> G_enum_inv k" 
+      using asm(1) assms(2) gram_schmidt_floor.one_then_in_edge by force
+    have 2: "Vs_enum_inv i \<in> G_enum_inv k" 
+      using assms(2) assms(3) assms(6) gram_schmidt_floor.one_then_in_edge by force
+    have 3: "Vs_enum_inv j \<in> G_enum_inv k" 
+      using assms(2) assms(4) assms(6) gram_schmidt_floor.one_then_in_edge by force
+    have "card (G_enum_inv k) \<noteq> 2"
+    proof(cases "infinite (G_enum_inv k)")
       case True
       then show ?thesis 
         by simp
     next
       case False
-      have "{(vertices_list E) ! i, (vertices_list E) ! j, (vertices_list E) ! t} \<subseteq> 
-            (edges_list E) ! k"
+      have "{Vs_enum_inv i, Vs_enum_inv j, Vs_enum_inv t} \<subseteq>  G_enum_inv k"
         by (simp add: 1 2 3)
       then show ?thesis
-        using diff_verts 
-        by (metis 1 2 3 asm assms(3-5) card_2_iff')
+        using  "1" "2" "3" asm(1,2,3) assms(3,4,5)  matching_lp_theorems(19)[OF assms(3)]
+              matching_lp_theorems(19)[OF assms(4)]  matching_lp_theorems(19)[OF asm(1)] 
+        unfolding card_2_iff' atomize_ball[symmetric]
+        by metis
     qed
-    have "(edges_list E) ! k \<in> E" using edges_list_el_in_E 
-      using assms(2) by blast 
+    have "G_enum_inv k \<in> E"
+      by (simp add: assms(2) matching_lp_theorems(27)) 
     then show False 
-      using card_edge[of E] \<open>card (edges_list E ! k) \<noteq> 2\<close> assms(1) by fastforce
+      using card_edge[of E] \<open>card (G_enum_inv k) \<noteq> 2\<close> assms(1) by fastforce
   qed
 qed
 
@@ -144,35 +212,35 @@ lemma submatrix_not_more_than_two:
   assumes "i < dim_row B"
   assumes "j < dim_row B"
   assumes "i \<noteq> j"
-  assumes "B = submatrix (incidence_mat E) I J"
+  assumes "B = submatrix (incidence_mat ) I J"
   assumes "B $$ (i, k) = 1 \<and> B $$ (j, k) = 1"
   shows "(\<forall> t < dim_row B. (t\<noteq>i \<and> t \<noteq> j) \<longrightarrow> B $$ (t,k) = 0)"
 proof safe
   fix t
   assume asm: "t < dim_row B" "t \<noteq> i" "t \<noteq> j"
-  obtain i1 where i1: "row (incidence_mat E) i1 = 
-        row (submatrix (incidence_mat E) I UNIV) i \<and>
-        i1 < dim_row (incidence_mat E) \<and> 
+  obtain i1 where i1: "row (incidence_mat ) i1 = 
+        row (submatrix (incidence_mat ) I UNIV) i \<and>
+        i1 < dim_row (incidence_mat ) \<and> 
         i1 = pick I i"
     using exist_index_in_submat 
     by (metis (no_types, lifting) assms(3,6) dim_submatrix(1) exist_index_in_submat) 
-  obtain j1 where j1: "row (incidence_mat E) j1 = 
-        row (submatrix (incidence_mat E) I UNIV) j \<and> 
-        j1 < dim_row (incidence_mat E) \<and> 
+  obtain j1 where j1: "row (incidence_mat ) j1 = 
+        row (submatrix (incidence_mat ) I UNIV) j \<and> 
+        j1 < dim_row (incidence_mat ) \<and> 
         j1 = pick I j"
     using exist_index_in_submat 
     by (metis (no_types, lifting) assms(4,6) dim_submatrix(1) exist_index_in_submat) 
-  obtain t1 where t1: "row (incidence_mat E) t1 = 
-        row (submatrix (incidence_mat E) I UNIV) t \<and> 
-        t1 < dim_row (incidence_mat E) \<and> 
+  obtain t1 where t1: "row (incidence_mat ) t1 = 
+        row (submatrix (incidence_mat ) I UNIV) t \<and> 
+        t1 < dim_row (incidence_mat ) \<and> 
         t1 = pick I t"
     using exist_index_in_submat 
     by (metis (no_types, lifting) asm(1) assms(6) dim_submatrix(1) exist_index_in_submat) 
-  have "dim_col B = card {i. i < dim_col (incidence_mat E) \<and> i \<in> J}" 
+  have "dim_col B = card {i. i < dim_col (incidence_mat ) \<and> i \<in> J}" 
     using assms(6) dim_submatrix(2) by blast
-  then obtain k1 where k1: "col (incidence_mat E) k1 = 
-         col (submatrix (incidence_mat E) UNIV J) k \<and>
-         k1 < dim_col (incidence_mat E) \<and> 
+  then obtain k1 where k1: "col (incidence_mat ) k1 = 
+         col (submatrix (incidence_mat ) UNIV J) k \<and>
+         k1 < dim_col (incidence_mat ) \<and> 
          k1 = pick J k" 
     using pick_le col_submatrix_UNIV 
     by (metis (no_types, lifting) Collect_cong \<open>k < dim_col B\<close>)
@@ -187,16 +255,16 @@ proof safe
         not_less_iff_gr_or_eq not_less_zero pick_mono_inf pick_mono_le)
   then have "i1 \<noteq> j1" 
     using i1 j1 by blast
-  have "(incidence_mat E) $$ (pick I i, pick J k) = B  $$ (i,k)" 
+  have "(incidence_mat ) $$ (pick I i, pick J k) = B  $$ (i,k)" 
     by (metis (no_types, lifting) assms(2,3,6) dim_submatrix(1-2) submatrix_index)
-  then have "(incidence_mat E) $$ (i1, k1) = 1" 
+  then have "(incidence_mat ) $$ (i1, k1) = 1" 
     using assms(7) i1 k1 by presburger
-  have "(incidence_mat E) $$ (pick I j, pick J k) = B  $$ (j,k)" 
+  have "(incidence_mat ) $$ (pick I j, pick J k) = B  $$ (j,k)" 
     by (metis (no_types, lifting) assms(2,4,6) dim_submatrix(1-2) submatrix_index)
-  then have "(incidence_mat E) $$ (j1, k1) = 1" 
+  then have "(incidence_mat ) $$ (j1, k1) = 1" 
     using assms(7) j1 k1 by presburger
-  then have 1: "(\<forall> t < card (Vs E). (t\<noteq>i1 \<and> t \<noteq> j1) \<longrightarrow> (incidence_mat E) $$ (t,k1) = 0)"
-    by (meson \<open>i1 < card (Vs E)\<close> \<open>i1 \<noteq> j1\<close> \<open>incidence_mat E $$ (i1, k1) = 1\<close> \<open>j1 < card (Vs E)\<close>
+  then have 1: "(\<forall> t < card (Vs E). (t\<noteq>i1 \<and> t \<noteq> j1) \<longrightarrow> (incidence_mat ) $$ (t,k1) = 0)"
+    by (meson \<open>i1 < card (Vs E)\<close> \<open>i1 \<noteq> j1\<close> \<open>incidence_mat  $$ (i1, k1) = 1\<close> \<open>j1 < card (Vs E)\<close>
         \<open>k1 < card E\<close> assms(1) gram_schmidt_floor.at_most_two_ones2)
   have "pick I t \<noteq> pick I i"
     by (metis asm(1,2) assms(3,6) diff_is_0_eq diff_less_mono dim_row_mat_less_card_I less_irrefl
@@ -204,10 +272,10 @@ proof safe
   have "pick I t \<noteq> pick I j"
     by (metis asm(1,3) assms(4,6) diff_is_0_eq diff_less_mono dim_row_mat_less_card_I less_irrefl 
         not_less not_less_iff_gr_or_eq not_less_zero pick_mono_inf pick_mono_le)
-  then have "(incidence_mat E) $$ (t1, k1) = 0" 
+  then have "(incidence_mat) $$ (t1, k1) = 0" 
     by (metis 1 \<open>pick I t \<noteq> pick I i\<close> dim_row_incidence_mat i1 j1 t1)
   show "B $$ (t,k) = 0"
-    by (metis (no_types, lifting) \<open>incidence_mat E $$ (t1, k1) = 0\<close> asm(1) assms(2,6) 
+    by (metis (no_types, lifting) \<open>incidence_mat $$ (t1, k1) = 0\<close> asm(1) assms(2,6) 
         dim_submatrix(1-2) k1 submatrix_index t1)
 qed
 
@@ -215,25 +283,24 @@ lemma submatrix_incidence_zero_or_one:
   assumes "graph_invar E"
   assumes "k < dim_col B"
   assumes "i < dim_row B"
-  assumes "B = submatrix (incidence_mat E) I J"
+  assumes "B = submatrix (incidence_mat) I J"
   shows "B $$ (i, k) = 1 \<or> B $$ (i, k) = 0"
 proof -
-  have 1: "B $$ (i, k) = (incidence_mat E) $$ (pick I i, pick J k)" 
+  have 1: "B $$ (i, k) = (incidence_mat) $$ (pick I i, pick J k)" 
     by (metis (no_types, lifting) assms(2-4) dim_submatrix(1-2) submatrix_index)
   have "pick I i < card (Vs E)" 
-    by (metis (no_types, lifting) assms(3,4) dim_submatrix(1) exist_index_in_submat 
-        gram_schmidt_floor.dim_row_incidence_mat)
+    by (metis assms(3,4) dim_row_incidence_mat dim_submatrix(1) pick_le)
   have "pick J k < card E" 
     by (metis assms(2,4) dim_col_incidence_mat dim_submatrix(2) pick_le)
-  have "(incidence_mat E) $$ (pick I i, pick J k) = 1 \<or> 
-        (incidence_mat E) $$ (pick I i, pick J k) = 0"
+  have "(incidence_mat ) $$ (pick I i, pick J k) = 1 \<or> 
+        (incidence_mat ) $$ (pick I i, pick J k) = 0"
     using \<open>pick I i < card (Vs E)\<close> \<open>pick J k < card E\<close> elems_incidence_one_zero by blast
   then show ?thesis 
     using 1 by presburger
 qed
 
 lemma is_bipartite_submatrix_det_unimod:
-  assumes "is_bipartite E" "B = submatrix (incidence_mat E) I J" "graph_invar E"
+  assumes "is_bipartite E" "B = submatrix (incidence_mat ) I J" "graph_invar E"
   shows "det B \<in> {-1, 0, 1}" using assms(2)
 proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
   case less
@@ -251,8 +318,8 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
       case True
       have "carrier class_ring = {\<zero>\<^bsub>class_ring\<^esub> ::'a}" 
         using True by fast
-      then have "det B = 0" 
-        by auto
+      then have "det B = 0"
+        by (simp add: carrier_one_zero)
       then show ?thesis 
         by blast
     next
@@ -266,15 +333,13 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
           by (metis "1" carrier_matI)
         have "0\<^sub>v (dim_row B) \<in> (set (cols B))" 
           by (metis True cols_length cols_nth in_set_conv_nth)
-        have 3:"\<zero>\<^bsub>module_vec TYPE('a) (dim_row B)\<^esub>\<in> set (cols B)" 
+        have 3:"\<zero>\<^bsub>module_vec TYPE(real) (dim_row B)\<^esub>\<in> set (cols B)" 
           by (metis \<open>0\<^sub>v (dim_row B) \<in> set (cols B)\<close> module_vec_simps(2))
-        have 4:"Module.module class_ring (module_vec TYPE('a) (dim_row B))" 
+        have 4:"Module.module class_ring (module_vec TYPE(real) (dim_row B))" 
           using vec_module by blast
-        have 5:" carrier class_ring \<noteq> {\<zero>\<^bsub>class_ring\<^esub> ::'a}" using False
-          by simp
-        have "module.lin_dep class_ring
-     (module_vec TYPE('a) (dim_row B))
-     (set (cols B))" 
+        have 5:" carrier class_ring \<noteq> {\<zero>\<^bsub>class_ring\<^esub> ::real}" using False 
+          by auto
+        have "module.lin_dep class_ring (module_vec TYPE(real) (dim_row B)) (set (cols B))" 
           using module.zero_lin_dep[OF 4 3 5]
           by fastforce
         then have "det B = 0" 
@@ -316,19 +381,20 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
             by (metis 10 atLeast0LessThan)
           have 8:"cofactor B i j = (-1)^(i+j) * det (mat_delete B i j)" 
             using Determinant.cofactor_def by blast
-          have 9:"mat_delete B i j = submatrix (incidence_mat E) (I - {pick I i}) (J - {pick J j})"
-            using mat_delete_is_submatrix i_j less by blast
-          have 11: "dim_row ( submatrix (incidence_mat E) (I - {pick I i}) (J - {pick J j})) < 
+          have 9:"mat_delete B i j = submatrix (incidence_mat ) (I - {pick I i}) (J - {pick J j})"
+            using mat_delete_is_submatrix i_j less
+                  gram_schmidt_floor.mat_delete_is_submatrix[OF matching_lp_theorems(8)] 
+            by simp        
+          have 11: "dim_row ( submatrix (incidence_mat ) (I - {pick I i}) (J - {pick J j})) < 
                     dim_row B" 
             by (metis "9" bot_nat_0.not_eq_extremum diff_less i_j less_nat_zero_code 
                 less_one mat_delete_dim(1))
-          have "det (submatrix (incidence_mat E) (I - {pick I i}) (J - {pick J j})) \<in> {-1, 0, 1}" 
+          have "det (submatrix (incidence_mat ) (I - {pick I i}) (J - {pick J j})) \<in> {-1, 0, 1}" 
             using 11 less(1) by presburger
           then have "det (mat_delete B i j) \<in> {-1, 0, 1}" 
             using "9" by presburger
-          then have 12: "cofactor B i j \<in> {-1, 0, 1}" 
-            by (smt (verit, ccfv_SIG) 8 insert_iff mult_cancel_right2 mult_minus1 nat_pow_distrib
-                singletonD square_eq_1_iff vector_space_over_itself.scale_eq_0_iff)
+          then have 12: "cofactor B i j \<in> {-1, 0, 1}"
+            by(cases "even (i + j)") (auto simp add: 8)
           have "B $$ (i,j) = col B j $ i" 
             by (metis i_j index_col)
           have "unit_vec (dim_row B) i $ i = 1" 
@@ -365,7 +431,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
               proof(rule ccontr)
                 assume "\<not> (\<exists>i<dim_row B. B $$ (i, k) = 1)"
                 then have "\<forall>i<dim_row B. B $$ (i, k) = 0" 
-                  by (metis \<open>k < dim_col B\<close> assms(1) is_bipartite_def \<open>graph_invar E\<close>
+                  by (metis \<open>k < dim_col B\<close>  \<open>graph_invar E\<close>
                       gram_schmidt_floor.submatrix_incidence_zero_or_one less.prems)
                 then have "\<forall>i<dim_row B. col B k $ i = 0"
                   by (metis \<open>k < dim_col B\<close> index_col)
@@ -385,7 +451,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
                   assume "B $$ (j, k) \<noteq> 0"
                   then have "B $$ (j, k) = 1" 
                     using submatrix_incidence_zero_or_one \<open>graph_invar E\<close>
-                    by (metis \<open>k < dim_col B\<close> asm(1) assms(1) is_bipartite_def less.prems)
+                    by (metis \<open>k < dim_col B\<close> asm(1)  less.prems)
                   then show False 
                     using asm_not i asm(1) asm(2) by blast
                 qed
@@ -406,7 +472,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
                                X \<subseteq> Vs E \<and> (\<forall> e \<in> E. \<exists> u v.  e = {u, v} \<and> (u \<in> X \<and> v \<in> Vs E - X))"
               using assms(1,3) unfolding is_bipartite_def by auto
             let ?u = "vec (dim_row B) 
-                      (\<lambda> i. if (vertices_list E) ! pick I i \<in> X then (1::'a)  else -1)"
+                      (\<lambda> i. if Vs_enum_inv (pick I i) \<in> X then (1::real)  else -1)"
             define u where "u =?u" 
             have "\<forall> i < dim_row B. ?u $ i = 1 \<or> ?u $ i = -1" 
               by simp
@@ -443,50 +509,57 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
                   by (metis Diff_iff 15 atLeastLessThan_iff insertCI 
                       vector_space_over_itself.scale_eq_0_iff)
                 have 18: "sum (\<lambda> k. (col B t $ k) * (?u $ k)) ({0..<dim_row B} - {i,j}) = 0" 
-                  by (metis (no_types, lifting) R.add.finprod_all1 16)
+                  by (metis (no_types, lifting) "16" sum.neutral)
                 have "sum (\<lambda> k. (col B t $ k) * (?u $ k)) {i,j} = 
                       (col B t $ i) * (?u $ i) + (col B t $ j) * (?u $ j)"
                   by (meson i_j(5) sum_two_elements)
                 then show ?thesis 
-                  using R.show_l_zero 17 18 by presburger
+                  using R.show_l_zero 17 18 by linarith
               qed
               have 20: "(col B t $ i) = 1 \<and> (col B t $ j) = 1" 
                 by (metis i_j(1) i_j(2) i_j(3) i_j(4) index_col t)
               have 30: "col B t \<bullet> ?u = (?u $ i) + (?u $ j)" 
-                using 19 20 21 cring_simprules(12) by presburger
-              have "pick J t < card E" 
-                by (metis dim_submatrix(2) gram_schmidt_floor.dim_col_incidence_mat 
-                    less(2) pick_le t)
-              have "incidence_mat E $$ (pick I i, pick J t) = 1" 
+                using 19 20 21 cring_simprules(12)
+                by (metis (lifting) more_arith_simps(5))
+              have "pick J t < card E"
+                by (metis dim_col_incidence_mat dim_submatrix(2) less(2) pick_le t)
+              have "incidence_mat  $$ (pick I i, pick J t) = 1" 
                 by (metis (no_types, lifting) dim_submatrix(1) dim_submatrix(2) i_j(1) i_j(3) 
                     less(2) submatrix_index t)
-              then have 23: "vertices_list E ! pick I i \<in> edges_list E! pick J t" 
-                by (metis (no_types, lifting) \<open>pick J t < card E\<close> dim_submatrix(1) i_j(3) less(2)
-                    exist_index_in_submat gram_schmidt_floor.dim_row_incidence_mat one_then_in_edge)
-              have "incidence_mat E $$ (pick I j, pick J t) = 1"
+              then have 23: "Vs_enum_inv (pick I i) \<in> G_enum_inv (pick J t)" 
+                by (metis (full_types) \<open>pick J t < m\<close> dim_row_incidence_mat dim_submatrix(1) i_j(3) less(2)
+                    one_then_in_edge pick_le)
+              have "incidence_mat  $$ (pick I j, pick J t) = 1"
                 by (metis (no_types, lifting) dim_submatrix(1) dim_submatrix(2) i_j(2) i_j(4) 
                     less(2) submatrix_index t)
-              then have 24: "vertices_list E ! pick I j \<in> edges_list E! pick J t" 
-                by (metis (no_types, lifting) \<open>pick J t < card E\<close> dim_submatrix(1) 
-                    exist_index_in_submat gram_schmidt_floor.dim_row_incidence_mat
-                    gram_schmidt_floor.one_then_in_edge i_j(4) less(2))
-              have 22: "(edges_list E! pick J t) \<in> E"
-                using edges_list_el_in_E
-                using \<open>pick J t < card E\<close> by blast
-              have 27: "vertices_list E ! pick I i \<noteq> vertices_list E ! pick I j"             
-                by (smt (verit, ccfv_SIG) diff_verts dim_row_mat_less_card_I dim_submatrix(1) 
-                    exist_index_in_submat gram_schmidt_floor.dim_row_incidence_mat i_j(3-5)
-                    le_neq_implies_less less(2) less_or_eq_imp_le not_less order_trans_rules(23)
-                    pick_eq_iff_inf pick_mono_le)
-              then have 25: "edges_list E! pick J t = 
-                         {vertices_list E ! pick I i, vertices_list E ! pick I j}"
+              then have 24: "Vs_enum_inv (pick I j) \<in> G_enum_inv (pick J t)" 
+                by (metis (full_types) \<open>pick J t < m\<close> dim_row_incidence_mat dim_submatrix(1) i_j(4) less(2)
+                    one_then_in_edge pick_le)
+              have 22: "(G_enum_inv (pick J t)) \<in> E"
+                using \<open>pick J t < m\<close> matching_lp_theorems(27) by presburger
+              have 27: "Vs_enum_inv (pick I i) \<noteq> Vs_enum_inv (pick I j)"   
+              proof(rule ccontr, goal_cases)
+                case 1
+                hence "pick I j = pick I i" 
+                  using dim_row_incidence_mat  i_j(3,4,5) less(2) matching_lp_theorems(7)
+                       pick_le dim_submatrix(1)[of incidence_mat I J] 
+                  by(auto intro!: matching_lp_theorems(29) pick_mono_le)
+                hence "i = j" 
+                  using basic_trans_rules(22) dim_row_mat_less_card_I[of I] i_j(3,4) less(2) not_less_iff_gr_or_eq
+                      pick_eq_iff_inf[of I] pick_mono_le[of i I j] pick_mono_le[of j I i] 
+                  by metis
+                thus ?case 
+                  using i_j(5) by simp
+              qed
+              then have 25: "G_enum_inv (pick J t) = 
+                         {Vs_enum_inv (pick I i), Vs_enum_inv (pick I j)}"
                 using 6 22 23 24 by fastforce
               have 29: "(?u $ i) + (?u $ j) = 0"
-              proof(cases "vertices_list E ! pick I i \<in> X")
+              proof(cases "Vs_enum_inv (pick I i) \<in> X")
                 case True
                 have 26: "(?u $ i) = 1" 
                   by (simp add: True i_j(3))
-                have "vertices_list E ! pick I j \<notin> X" 
+                have "Vs_enum_inv (pick I j) \<notin> X" 
                   using True 25 22 X insert_absorb by fastforce
                 then have "?u $ j = -1" 
                   by (simp add: i_j(4))
@@ -496,7 +569,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
                 case False
                 have 28: "(?u $ i) = - 1" 
                   by (simp add: False i_j(3))
-                have "vertices_list E ! pick I j \<in> X" 
+                have "Vs_enum_inv (pick I j) \<in> X" 
                   using False 22 X 23 27 24 by force
                 then have "?u $ j = 1" 
                   by (simp add: i_j(4))
@@ -532,9 +605,9 @@ qed
 
 lemma is_bipartite_tot_unimod:
   assumes "is_bipartite E" "graph_invar E"
-  shows "tot_unimodular (incidence_mat E)" 
+  shows "tot_unimodular (incidence_mat)" 
 proof -
-  have "(\<forall> B. (\<exists> I J. submatrix (incidence_mat E) I J = B) \<longrightarrow> det B \<in> {-1, 0, 1})"
+  have "(\<forall> B. (\<exists> I J. submatrix (incidence_mat) I J = B) \<longrightarrow> det B \<in> {-1, 0, 1})"
     by (meson assms is_bipartite_submatrix_det_unimod)
   then show ?thesis
     using tot_unimodular_def by blast
@@ -543,16 +616,16 @@ qed
 lemma matching_polyh_int:
   assumes "is_bipartite E" "graph_invar E"
   shows "gram_schmidt_floor.int_polyh (card E) 
-            (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E))))"
+            (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat) (1\<^sub>v (card (Vs E))))"
 proof -
-  have 4:"tot_unimodular (incidence_mat E)" 
+  have 4:"tot_unimodular (incidence_mat )" 
     using is_bipartite_tot_unimod assms by auto
   have 1:"1\<^sub>v (card (Vs E)) \<in> \<int>\<^sub>v" 
     using gram_schmidt.one_vec_int by blast
-  have 2:"(incidence_mat E) \<in> carrier_mat (card (Vs E)) (card E)" 
+  have 2:"(incidence_mat ) \<in> carrier_mat (card (Vs E)) (card E)" 
     using dim_col_incidence_mat dim_row_incidence_mat by blast
   then show "gram_schmidt_floor.int_polyh (card E) 
-            (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E))))"
+            (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat ) (1\<^sub>v (card (Vs E))))"
     using gram_schmidt_floor.tot_unimod_then_int_polyhedron[OF 2 4] 
     using "1" one_carrier_vec by blast
 qed
@@ -745,22 +818,24 @@ lemma perfect_matching_polyhedron_integral:
   assumes "is_bipartite E" "graph_invar E"
   shows "gram_schmidt_floor.int_polyh (card E) 
             (gram_schmidt_floor.perfect_matching_polyhedron (card E) 
-        (incidence_mat E) (1\<^sub>v (card (Vs E))))" 
+        (incidence_mat ) (1\<^sub>v (card (Vs E))))" 
 proof -
   have "gram_schmidt_floor.int_polyh (card E) 
-            (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E))))"
+            (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat ) (1\<^sub>v (card (Vs E))))"
     using assms gram_schmidt_floor.matching_polyh_int by blast
-  have "\<forall> F. gram_schmidt.face (card E) (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E)))) F
+  have fact_of_incidence_polyh_integral_poly_integral:
+      "\<forall> F. gram_schmidt.face (card E) (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat ) (1\<^sub>v (card (Vs E)))) F
            \<longrightarrow> gram_schmidt_floor.int_polyh (card E) F"
   proof safe
     fix F
-    assume asm: "gram_schmidt.face (card E) (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E)))) F" 
-    have "gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E))) = 
-                  gram_schmidt.polyhedron (card E) ((incidence_mat E) @\<^sub>r - 1\<^sub>m (card E))
+    assume asm: "gram_schmidt.face (card E) (gram_schmidt_floor.pos_polyhedron (card E) 
+(incidence_mat ) (1\<^sub>v (card (Vs E)))) F" 
+    have "gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat ) (1\<^sub>v (card (Vs E))) = 
+                  gram_schmidt.polyhedron (card E) ((incidence_mat ) @\<^sub>r - 1\<^sub>m (card E))
            ((1\<^sub>v (card (Vs E))) @\<^sub>v 0\<^sub>v (card E))" 
-      using gram_schmidt_floor.pos_polyh_is_polyh 
-      by (metis gram_schmidt_floor.incidence_mat_def mat_carrier one_carrier_vec)
-    have 1:"(incidence_mat E) @\<^sub>r - 1\<^sub>m (card E) \<in> \<int>\<^sub>m" 
+      by(auto intro!: gram_schmidt_floor.pos_polyh_is_polyh  one_carrier_vec mat_carrier
+            simp add: incidence_mat_def)
+    have 1:"(incidence_mat ) @\<^sub>r - 1\<^sub>m (card E) \<in> \<int>\<^sub>m" 
       using assms(1) is_bipartite_tot_unimod dim_col_incidence_mat
             gram_schmidt_floor.tot_unimod_append_minus_one 
             totally_unimod_mat_int 
@@ -769,23 +844,34 @@ proof -
     have 2: "(1\<^sub>v (card (Vs E))) @\<^sub>v 0\<^sub>v (card E) \<in> \<int>\<^sub>v" 
       by (simp add: append_int_vec_is_int carrier_dim_vec gram_schmidt.one_vec_int gram_schmidt.zero_vec_is_int)
     have 3: "gram_schmidt_floor.int_polyh (card E) (gram_schmidt.polyhedron (card E)
-       ((incidence_mat E) @\<^sub>r - 1\<^sub>m (card E)) ((1\<^sub>v (card (Vs E))) @\<^sub>v 0\<^sub>v (card E)))" 
-      using \<open>gram_schmidt_floor.int_polyh (card E) (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E))))\<close> \<open>gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E))) = gram_schmidt.polyhedron (card E) (incidence_mat E @\<^sub>r - 1\<^sub>m (card E)) (1\<^sub>v (card (Vs E)) @\<^sub>v 0\<^sub>v (card E))\<close> by force
-    have 4: "gram_schmidt.face (card E) (gram_schmidt.polyhedron (card E) ((incidence_mat E) @\<^sub>r - 1\<^sub>m (card E))
+       ((incidence_mat ) @\<^sub>r - 1\<^sub>m (card E)) ((1\<^sub>v (card (Vs E))) @\<^sub>v 0\<^sub>v (card E)))" 
+      using \<open>gram_schmidt_floor.int_polyh (card E) (gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat) (1\<^sub>v (card (Vs E))))\<close> \<open>gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat ) (1\<^sub>v (card (Vs E))) = gram_schmidt.polyhedron (card E) (incidence_mat  @\<^sub>r - 1\<^sub>m (card E)) (1\<^sub>v (card (Vs E)) @\<^sub>v 0\<^sub>v (card E))\<close> by force
+    have 4: "gram_schmidt.face (card E) (gram_schmidt.polyhedron (card E) ((incidence_mat ) @\<^sub>r - 1\<^sub>m (card E))
            ((1\<^sub>v (card (Vs E))) @\<^sub>v 0\<^sub>v (card E))) F" 
-      using asm \<open>gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat E) (1\<^sub>v (card (Vs E))) = gram_schmidt.polyhedron (card E) (incidence_mat E @\<^sub>r - 1\<^sub>m (card E)) (1\<^sub>v (card (Vs E)) @\<^sub>v 0\<^sub>v (card E))\<close> by force
-    have 5: "(incidence_mat E) @\<^sub>r - 1\<^sub>m (card E) \<in> carrier_mat ((card (Vs E)) + (card E)) (card E)" 
+      using asm \<open>gram_schmidt_floor.pos_polyhedron (card E) (incidence_mat ) (1\<^sub>v (card (Vs E))) = gram_schmidt.polyhedron (card E) (incidence_mat  @\<^sub>r - 1\<^sub>m (card E)) (1\<^sub>v (card (Vs E)) @\<^sub>v 0\<^sub>v (card E))\<close> by force
+    have 5: "(incidence_mat ) @\<^sub>r - 1\<^sub>m (card E) \<in> carrier_mat ((card (Vs E)) + (card E)) (card E)" 
       by (simp add: incidence_mat_def)
     have 6: "((1\<^sub>v (card (Vs E))) @\<^sub>v 0\<^sub>v (card E)) \<in> carrier_vec ((card (Vs E)) + (card E))" 
       by simp
     show "gram_schmidt_floor.int_polyh (card E) F"
-      using gram_schmidt_floor.int_poly_face_int[OF 5 6 3 4 1 2] by auto
+      using gram_schmidt_floor.int_poly_face_int[OF finite_Vs 5 6 3 4 1 2] by simp
   qed
-  then show ?thesis using gram_schmidt_floor.perfect_matching_polyhedron_face 
-    by (metis Union_disjoint Union_empty carrier_matI dim_col_incidence_mat dim_row_incidence_mat 
-              gram_schmidt.convex_hull_empty(1) gram_schmidt.integer_hull_def 
-              gram_schmidt_floor.int_polyh_def mem_simps(2) one_carrier_vec)
+  show ?thesis 
+  proof(cases "gram_schmidt_floor.perfect_matching_polyhedron
+                m incidence_mat (1\<^sub>v (card (Vs E))) = {}")
+    case True
+    then show ?thesis 
+      by(auto simp add: gram_schmidt.integer_hull_def 
+              gram_schmidt_floor.int_polyh_def  gram_schmidt.convex_hull_empty(1))
+   next
+    case False
+    then show ?thesis 
+    by(auto intro!: mp[OF spec[OF fact_of_incidence_polyh_integral_poly_integral]]
+                    gram_schmidt_floor.perfect_matching_polyhedron_face finite_Vs
+                    matching_lp_theorems(8) one_carrier_vec 
+          simp add: n_def)
+ qed
 qed
-  
+end
 end
 end

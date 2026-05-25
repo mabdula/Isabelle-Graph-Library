@@ -88,11 +88,9 @@ lemma matching_value_bound_by_feasible_dual:
 proof -
   from \<open>M \<subseteq> G\<close> have "matching_value M = vertex_weighted_coeffs \<bullet> primal_sol M"
     by (auto simp: primal_dot_coeffs_eq_value)
-
   also from assms have "\<dots> \<le> 1\<^sub>v n \<bullet> y"
-    by (auto intro: weak_duality_theorem_nonneg_primal[where A = incidence_matrix] matching_feasible)
-
-  finally show ?thesis .
+    by (auto intro!: weak_duality_theorem_nonneg_primal[where A = incidence_matrix] matching_feasible)
+ finally show ?thesis .
 qed
 
 lemma max_value_matching_bound_by_feasible_dual:

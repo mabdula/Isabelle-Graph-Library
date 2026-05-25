@@ -69,7 +69,7 @@ begin
       shows "<emp> from_list_impl xs <graph_assn (from_list xs)>"
       supply R = foldM_refine[where I="\<lambda>_ _ G Gi. (graph_assn G Gi)"] \<comment> \<open>Coupling relation is straightforward\<close>
       supply R[sep_heap_rules] = R[where f="\<lambda>(u, v) G. add_edge G u v"] \<comment> \<open>The pair causes unification problems, so we need explicit instantiation\<close>
-      unfolding from_list_impl_def from_list_def
+      unfolding from_list_impl_def from_list_def'
       apply sep_auto
       done
     

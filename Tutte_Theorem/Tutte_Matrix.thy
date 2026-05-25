@@ -1000,7 +1000,7 @@ proof -
     using vs_connected_component[of "u_edges p" C] assms(2)
     by (meson assms(1) u_edges_is_graph)
   then have "graph_invar (component_edges (u_edges p) C)"
-    using Undirected_Set_Graphs.component_edges_subset assms(1) u_edges_is_graph
+    using Connected_Components.component_edges_subset assms(1) u_edges_is_graph
     by force
   then  have " perfect_matching (component_edges (u_edges p) C) ?m_edges"
     unfolding perfect_matching_def 
@@ -2365,7 +2365,7 @@ proof -
 qed
 
 lemma perfect_matching_nonzero_det:
-  assumes "\<exists> M. perfect_matching G M"
+  assumes "\<exists> M. perfect_matching G M" "graph_invar G"
   shows "det (tutte_matrix) \<noteq> 0"
 proof -
   obtain M where M:"perfect_matching G M" 
@@ -2375,7 +2375,7 @@ proof -
   have "Vs M = UNIV" 
     by (metis \<open>perfect_matching G M\<close> perfect_matching_member univ)
   have "graph_invar M" 
-    by (meson M graph_invar_subset perfect_matchingE)
+    by (meson M graph_invar_subset perfect_matchingE assms(2))
   let ?singletons = "(\<lambda> i. {e - {i}| e. e \<in> M \<and> i \<in> e})" 
   have "\<forall> i \<in> Vs M. is_singleton (?singletons i)"
   proof
@@ -2511,7 +2511,8 @@ proof -
       using \<open>graph_invar M\<close>
       by blast
     then have 7: "{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}" 
-      using \<open>graph_invar M\<close> asme doubleton_eq_iff by fastforce
+      using \<open>graph_invar M\<close> asme 
+      by(auto simp add: doubleton_eq_iff intro!: exI[of _ "{a, b}"])
     have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}" 
       using 2 by auto
     then have "\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e} = {b}" 
@@ -2568,8 +2569,10 @@ proof -
 qed
 
 theorem perfect_matching_iff_nonzero_det:
+  assumes "graph_invar G"
   shows "(\<exists> M. perfect_matching G M) \<longleftrightarrow> det (tutte_matrix) \<noteq> 0"
-  using no_perfect_matching_zero_det tutte_matrix.perfect_matching_nonzero_det 
-    tutte_matrix_axioms by blast
+  using no_perfect_matching_zero_det tutte_matrix.perfect_matching_nonzero_det[OF _ _ assms] 
+        tutte_matrix_axioms 
+  by blast
 end
 end

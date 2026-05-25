@@ -6,12 +6,11 @@ session "RANKING" = "HOL" +
     "HOL-Real_Asymp"
     "Monad_Normalisation"
     "List-Index"
-    "Berge_Lemma"
+    "Basic_Matching"
 
   theories
     "More_List_Ranking"
-    "More_Graph"
-    "Misc"
+    "Ranking_Misc"
     "Ranking"
     "Ranking_Probabilistic"
 

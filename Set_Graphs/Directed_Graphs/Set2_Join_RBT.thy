@@ -1,4 +1,5 @@
-(*TODO: REDUNDANT!!! Remove with Isabelle 2025*)
+(*TODO: REDUNDANT!!! Remove with Isabelle 2025,
+ keep because of filter*)
 
 (*
   Author: Tobias Nipkow 
@@ -7,6 +8,7 @@
 (*
   Author: Mohammad Abdulaziz, copied it from src/HOL/Data_Structures to extend the global interpretation
 *)
+(*Thomas added join-based filter*)
 (*<*)
 section "Join-Based Implementation of Sets via RBTs"
 
@@ -14,6 +16,7 @@ theory Set2_Join_RBT
 imports
   "HOL-Data_Structures.Set2_Join"
   "HOL-Data_Structures.RBT_Set"
+  Tree_Filter
 begin
 
 subsection "Code"
@@ -222,7 +225,7 @@ global_interpretation RBT: Set2_Join
 where join = join and inv = "\<lambda>t. invc t \<and> invh t"
 defines insert_rbt = RBT.insert and delete_rbt = RBT.delete and split_rbt = RBT.split
 and join2_rbt = RBT.join2 and split_min_rbt = RBT.split_min and inter_rbt = RBT.inter
-and union_rbt = RBT.union and diff_rbt = RBT.diff
+and union_rbt = RBT.union and diff_rbt = RBT.diff and filter_rbt = RBT.filter
 proof (standard, goal_cases)
   case 1 show ?case by (rule set_join)
 next

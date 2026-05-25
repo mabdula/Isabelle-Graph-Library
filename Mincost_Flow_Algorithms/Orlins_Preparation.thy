@@ -1,8 +1,9 @@
 section \<open>Supplementary Theory for Orlin's Algorithm\<close>
 
 theory Orlins_Preparation
-  imports Path_Aug_Opt Berge_Lemma.Berge  "HOL-Data_Structures.Set_Specs" 
-          Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor  Directed_Set_Graphs.Pair_Graph_Specs  
+  imports Path_Aug_Opt "HOL-Data_Structures.Set_Specs" 
+          Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor Directed_Set_Graphs.Pair_Graph_Specs  
+          Undirected_Set_Graphs.Connected_Components
           Undirected_Set_Graphs.Directed_Undirected
 begin
 
@@ -1627,7 +1628,7 @@ proof(insert assms, rule sym, induction "length Q" arbitrary: Q)
           proof(cases Q')
             case (Cons a list)
             then show ?thesis      
-            apply(subst sym[OF  image_sigleton[of oedge]], subst sym[OF image_Un])
+            apply(subst sym[OF  image_singleton[of oedge]], subst sym[OF image_Un])
             apply(subst sym[OF set_singleton_list[of "abstract_conv_map to_rdg' (v, u)"]],
                 subst sym[OF set_append])
             using 2 3 Suc to_redge_path_last_append[of "rev Q' @ [v]"  v to_rdg'] 

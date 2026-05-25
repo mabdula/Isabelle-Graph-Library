@@ -140,7 +140,7 @@ fun edges_of_vwalk where
   "edges_of_vwalk [v] = []" |
   "edges_of_vwalk (v#v'#l) = (v, v') # edges_of_vwalk (v'#l)"
 
-lemma vwalk_ball_edges: "vwalk E p \<Longrightarrow> b \<in> set (edges_of_vwalk p) \<Longrightarrow> b \<in> E"
+lemma vwalk_ball_edges: "\<lbrakk>vwalk E p; b \<in> set (edges_of_vwalk p)\<rbrakk> \<Longrightarrow> b \<in> E"
   by (induction p rule: edges_of_vwalk.induct, auto)
 
 lemma edges_of_vwalk_index:
@@ -181,10 +181,25 @@ lemma v_in_edge_in_vwalk:
   using assms
   by (induction p rule: edges_of_vwalk.induct) auto
 
+lemma unused_edge_vwalk: 
+  "\<lbrakk>Vwalk.vwalk E p; e \<notin> set (edges_of_vwalk p); length p \<ge> 2\<rbrakk> \<Longrightarrow> Vwalk.vwalk(E-{e}) p" 
+  apply(induction rule: Vwalk.vwalk.induct[of E p], simp, simp) 
+  subgoal for v v' vs
+    by(cases vs) auto
+  done
+
+lemma unused_edge_vwalk_bet:
+  "\<lbrakk>Vwalk.vwalk_bet E u p v; e \<notin> set (edges_of_vwalk p); length p \<ge> 2\<rbrakk>
+   \<Longrightarrow> Vwalk.vwalk_bet(E-{e}) u p v"
+   by (metis unused_edge_vwalk vwalk_bet_def)
 
 lemma distinct_edges_of_vwalk:
   "distinct p \<Longrightarrow> distinct (edges_of_vwalk p)"
   by (induction p rule: edges_of_vwalk.induct) (auto dest: v_in_edge_in_vwalk)
+
+lemma distinct_no_self_loop_in_edges_of_vwalk:
+"distinct p \<Longrightarrow> \<nexists> x. (x,x) \<in> set (edges_of_vwalk p)"
+  by(induction p rule: edges_of_vwalk.induct) auto
 
 lemma distinct_edges_of_vwalk_cons:
   "distinct (edges_of_vwalk (v # p)) \<Longrightarrow> distinct (edges_of_vwalk p)"
