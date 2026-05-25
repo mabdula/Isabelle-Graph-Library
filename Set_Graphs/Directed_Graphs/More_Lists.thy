@@ -8,28 +8,21 @@ lemma list_2_preds_aux:
      \<exists> xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> P2 x \<and> (\<forall>y\<in>set xs2. \<not> P1 y)"
 proof(goal_cases)
   case assms: 1
-
   define property 
        where "property xs =
                 (\<forall>xs2 xs1 x. (xs = xs1 @ [x] @ xs2 \<and> P1 x) \<longrightarrow>
                    (\<exists>ys1 y ys2. x#xs2 = ys1 @ [y] @ ys2 \<and> P2 y))"
        for xs
-
   have propE: "\<lbrakk>property xs;
                (\<And>xs1 x xs2. \<lbrakk>xs = xs1 @ [x] @ xs2; P1 x\<rbrakk> \<Longrightarrow>
                   \<exists>ys1 y ys2. x#xs2 = ys1 @ [y] @ ys2 \<and> P2 y) \<Longrightarrow> P\<rbrakk>
               \<Longrightarrow> P" for xs P
     by(auto simp add: property_def)
-
   have property_append: "property (xs @ ys) \<Longrightarrow> property ys" for xs ys
     by(auto simp: property_def)
-
   have "property xs"
     using assms(3)
     by (force simp: property_def)
-
-
-
   thus  ?thesis
     using assms(1,2)
   proof(induction xs arbitrary: x')
@@ -40,16 +33,13 @@ proof(goal_cases)
     case (Cons a xs)
     hence "property xs" 
       by(auto intro: property_append[where xs = "[a]"])
-
     show ?case
     proof(cases "x' = a")
       case x_eq_a: True
-
       then obtain ys1 y ys2 where "x'#xs = ys1 @ [y] @ ys2" "P2 y"
         using \<open>property (a # xs)\<close> \<open>P1 x'\<close>
         apply(elim propE)
         by (auto 10 10)
-
       show ?thesis
       proof(cases "ys1 = []")
         case ys1_empty: True
@@ -122,8 +112,9 @@ proof(goal_cases)
 qed
 
 lemma list_2_preds:
-  "\<lbrakk> x\<in>set xs; P1 x; \<And>xs1 x xs2. \<lbrakk>xs = xs1 @ [x] @ xs2; P1 x\<rbrakk> \<Longrightarrow> \<exists>ys1 y ys2. x#xs2 = ys1 @ [y] @ ys2 \<and> P2 y\<rbrakk> \<Longrightarrow> 
-     \<exists> xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> P2 x \<and> (\<forall>y\<in>set xs2. \<not> P1 y \<and> \<not> P2 y)"
+  "\<lbrakk> x\<in>set xs; P1 x; 
+     \<And>xs1 x xs2. \<lbrakk>xs = xs1 @ [x] @ xs2; P1 x\<rbrakk> \<Longrightarrow> \<exists>ys1 y ys2. x#xs2 = ys1 @ [y] @ ys2 \<and> P2 y\<rbrakk> 
+   \<Longrightarrow>  \<exists> xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> P2 x \<and> (\<forall>y\<in>set xs2. \<not> P1 y \<and> \<not> P2 y)"
 proof(goal_cases)
   case assms: 1
   hence "\<exists>xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> P2 x \<and> (\<forall>y\<in>set xs2. \<not> P1 y)"
@@ -148,8 +139,9 @@ qed
 lemma list_inter_mem_iff: "set xs \<inter> s \<noteq> {} \<longleftrightarrow> (\<exists>xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> x \<in> s)"
   by (metis append.left_neutral append_Cons disjoint_iff in_set_conv_decomp)
 
-lemma list_P_switch: "x \<in> set xs \<Longrightarrow> P x \<Longrightarrow> y \<in> set xs \<Longrightarrow> \<not> P y
-     \<Longrightarrow> \<exists> p1 p2 x' y'. xs =p1@[x',y']@p2 \<and> ((P x' \<and> \<not> P y') \<or> (P y' \<and> \<not> P x'))"
+lemma list_P_switch: 
+  "\<lbrakk>x \<in> set xs; P x; y \<in> set xs; \<not> P y\<rbrakk>
+   \<Longrightarrow> \<exists> p1 p2 x' y'. xs =p1@[x',y']@p2 \<and> ((P x' \<and> \<not> P y') \<or> (P y' \<and> \<not> P x'))"
 proof(induction xs arbitrary: x y)
   case Nil
   then show ?case by simp
@@ -181,7 +173,8 @@ next
   qed
 qed
 
-lemma sum_list_map_filter_split: "sum_list (map (f::'s\<Rightarrow> real) xs) = sum_list (map f (filter P xs)) +
+lemma sum_list_map_filter_split: 
+"sum_list (map (f::'s\<Rightarrow> real) xs) = sum_list (map f (filter P xs)) +
  sum_list (map f (filter (\<lambda> x. \<not> P x) xs))"
   by(induction xs)(auto simp add: algebra_simps)
 
@@ -192,15 +185,14 @@ lemma dropWhile_nothing: "(\<And> x. x \<in> set xs \<Longrightarrow> \<not> P x
   by(induction xs) auto
 
 lemma foldr_plus_add_right:
- " (c::real)+ foldr (\<lambda>e. (+) (f e)) xs b =
-    foldr (\<lambda>e. (+) (f e)) (xs) (c + b)"
+  "(c::real)+ foldr (\<lambda>e. (+) (f e)) xs b = foldr (\<lambda>e. (+) (f e)) (xs) (c + b)"
   by(induction xs arbitrary: c b)
   (auto simp add: algebra_simps)
 
 lemma bulast_subset: "set (butlast xs) \<subseteq> set xs" for xs 
   using in_set_butlastD by fastforce
 
-lemma singleton_hd_last: "q \<noteq> [] \<Longrightarrow> tl q = [] \<Longrightarrow> hd q = last q"
+lemma singleton_hd_last: "\<lbrakk>q \<noteq> []; tl q = []\<rbrakk> \<Longrightarrow> hd q = last q"
   by (cases q) auto
 
 lemma hd_last_same: "length xs = 1 \<Longrightarrow> hd xs = last xs" for xs 
@@ -210,8 +202,8 @@ lemma hd_last_same: "length xs = 1 \<Longrightarrow> hd xs = last xs" for xs
 lemma last_simp : "last (a#b#cs) = last (b#cs)" by simp
 
 lemma list_triple_split_mid_distinct:
-"length xs = n \<and> \<not> distinct xs
-                 \<Longrightarrow> (\<exists> as bs cs x. xs = as@[x]@bs@[x]@cs \<and> distinct bs \<and> x \<notin> set bs)"
+  "\<lbrakk>length xs = n; \<not> distinct xs\<rbrakk>
+   \<Longrightarrow> (\<exists> as bs cs x. xs = as@[x]@bs@[x]@cs \<and> distinct bs \<and> x \<notin> set bs)"
 proof(induction arbitrary: xs rule: less_induct)
   case (less n)  
   then show ?case 
@@ -254,14 +246,14 @@ proof(induction arbitrary: xs rule: less_induct)
   qed
 qed
 
-lemma double_occur_non_dist: "set (xs) \<subseteq> X \<Longrightarrow> card X < length xs 
-                                       \<Longrightarrow> finite X\<Longrightarrow> xs \<noteq> [] \<Longrightarrow> \<not> distinct xs"
+lemma double_occur_non_dist: 
+  "\<lbrakk>set (xs) \<subseteq> X; card X < length xs; finite X; xs \<noteq> []\<rbrakk> \<Longrightarrow> \<not> distinct xs"
   by(induction "card X" arbitrary: X xs, auto)
     (metis card_mono distinct_card linorder_not_less)
 
 lemma subset_big_union_diff:
 assumes "set C = (set D) - A " "A = set D - set C" "D \<in> CCC" "C \<notin> CCC" "C \<noteq> D"
-        "(\<And> B E. B \<in> CCC \<Longrightarrow> E \<in> CCC \<Longrightarrow>B \<noteq> E \<Longrightarrow> set E \<inter> set B = {})"
+        "(\<And> B E. \<lbrakk>B \<in> CCC; E \<in> CCC; B \<noteq> E\<rbrakk> \<Longrightarrow> set E \<inter> set B = {})"
   shows "(\<Union> {set B| B. B \<in> CCC}) - A = \<Union> {set B| B. B \<in> ((CCC - {D}) \<union> {C})}"
 proof
   show "\<Union> {set B |B. B \<in> CCC} - A \<subseteq> \<Union> {set B |B. B \<in> CCC - {D} \<union> {C}}"
@@ -277,14 +269,13 @@ proof
     fix x
     assume " x \<in> \<Union> {set B |B. B \<in> CCC - {D} \<union> {C}}"
     then obtain E where E_def: "x \<in> set E \<and> E \<in> CCC - {D} \<union> {C}" by auto
-    have "x \<in> set E \<Longrightarrow>x \<in> A \<Longrightarrow> set E \<inter> set D \<noteq> {}"
+    have "\<lbrakk>x \<in> set E; x \<in> A\<rbrakk> \<Longrightarrow> set E \<inter> set D \<noteq> {}"
     using assms
     by blast 
     from E_def show "x \<in> \<Union> {set B |B. B \<in> CCC} - A"
-      apply(cases "E = C")
-      using \<open>x \<in> set E \<and> E \<in> CCC - {D} \<union> {C}\<close> assms(1) assms(3) apply auto[1]
-      by (auto, metis Diff_iff Un_insert_right \<open>\<lbrakk>x \<in> set E; x \<in> A\<rbrakk> \<Longrightarrow> set E \<inter> set D \<noteq> {}\<close> 
-                assms(3) assms(6) insert_iff sup_bot.right_neutral)
+      using \<open>x \<in> set E \<and> E \<in> CCC - {D} \<union> {C}\<close> assms(1,3,6)
+            \<open>x \<in> set E \<Longrightarrow> x \<in> A \<Longrightarrow> set E \<inter> set D \<noteq> {}\<close> 
+      by (cases "E = C")force+
   qed
 qed
 
@@ -348,13 +339,13 @@ lemma distinct_swap: "distinct (xs@ys@zs) \<Longrightarrow> distinct (xs@zs@ys)"
   by auto
 
 lemma disjoint_lists_sublists:
-  assumes "\<And> X Y. X \<in> XX \<Longrightarrow> Y \<in> XX \<Longrightarrow> X \<noteq> Y \<Longrightarrow> set X \<inter> set Y = {}"
+  assumes "\<And> X Y. \<lbrakk>X \<in> XX; Y \<in> XX; X \<noteq> Y\<rbrakk> \<Longrightarrow> set X \<inter> set Y = {}"
           "A \<in> XX"
           "setA \<supseteq> set E \<union> set G"
           "setA = set A"
           "set E \<inter> set G = {}"
           "distinct A"
-    shows "\<And> X Y. X \<in> XX-{A} \<union>{E,G} \<Longrightarrow> Y \<in> XX-{A} \<union>{E,G} \<Longrightarrow> X \<noteq> Y \<Longrightarrow> set X \<inter> set Y = {}"
+    shows "\<And> X Y. \<lbrakk>X \<in> XX-{A} \<union>{E,G}; Y \<in> XX-{A} \<union>{E,G}; X \<noteq> Y\<rbrakk> \<Longrightarrow> set X \<inter> set Y = {}"
 proof-
   fix X Y
   assume "X \<in> XX - {A} \<union> {E, G} " " Y \<in> XX - {A} \<union> {E, G} " "X \<noteq> Y "
@@ -404,26 +395,31 @@ proof-
       moreover have b: "X \<noteq> A" 
         using False \<open>X \<in> XX - {A} \<union> {E, G}\<close> \<open>X \<noteq> E\<close> by fastforce
       ultimately  show ?thesis 
-        apply(cases "Y = E")
-        using  assms(1)[of X A] a b assms(2) assms apply fast
-        apply(cases "Y = G")
-        using  assms(1)[of X A] a b assms(2) assms  \<open>Y \<in> XX - {A} \<union> {E, G}\<close>
+      proof(cases "Y = E", goal_cases)
+        case 1
+        thus ?case
+          using  assms(1)[of X A] a b assms(2) assms by fast
+      next
+        case 2
+        thus ?case
+        using  assms(1)[of X A] a b  assms  \<open>Y \<in> XX - {A} \<union> {E, G}\<close>
                \<open>X \<noteq> Y\<close> \<open>Y \<in> XX - {A} \<union> {E, G}\<close> \<open>\<lbrakk>X \<in> XX; A \<in> XX; X \<noteq> A\<rbrakk> \<Longrightarrow> set X \<inter> set A = {}\<close> 
-              assms(1)[of X Y ] assms(2) assms(3) assms(4) 
-        by fastforce+
+              assms(1)[of X Y ] 
+        by (cases "Y = G") fastforce+
+     qed
     qed
   qed
 qed
 
 lemma disjoint_lists_sublists':
-  assumes "\<And> X Y. X \<in> XX \<Longrightarrow> Y \<in> XX \<Longrightarrow> X \<noteq> Y \<Longrightarrow> set X \<inter> set Y = {}"
+  assumes "\<And> X Y. \<lbrakk>X \<in> XX; Y \<in> XX; X \<noteq> Y\<rbrakk> \<Longrightarrow> set X \<inter> set Y = {}"
           "A \<subseteq> XX"
           "setA \<supseteq> set E \<union> set G"
           "setA = (\<Union> {set H| H. H \<in> A})"
           "set E \<inter> set G = {}"
           "\<And> H. H \<in> A \<Longrightarrow> distinct H"
   shows   "\<And> X Y. 
-           X \<in> XX-A \<union>{E,G} \<Longrightarrow> Y \<in> XX-A \<union>{E,G} \<Longrightarrow> X \<noteq> Y \<Longrightarrow> set X \<inter> set Y = {}"
+           \<lbrakk>X \<in> XX-A \<union>{E,G}; Y \<in> XX-A \<union>{E,G}; X \<noteq> Y\<rbrakk> \<Longrightarrow> set X \<inter> set Y = {}"
 proof-
   fix X Y
   assume "X \<in> XX - A \<union> {E, G} " " Y \<in> XX - A \<union> {E, G} " "X \<noteq> Y "
@@ -473,10 +469,9 @@ proof-
       moreover have b: "X \<notin> A" 
         using False \<open>X \<in> XX - A \<union> {E, G}\<close> \<open>X \<noteq> E\<close> by fastforce
       ultimately  show ?thesis 
-        apply(cases "Y = E")
-        subgoal 
-      proof-
-        assume yassm:"X \<in> XX" "X \<notin> A" "Y = E"
+      proof(cases "Y = E", goal_cases)
+        case 1
+        note yassm = this
         hence "set Y \<subseteq> setA" 
           using assms(3) by auto
         show "set X \<inter> set Y = {}"        
@@ -493,11 +488,12 @@ proof-
           ultimately show False 
             using \<open>Z \<in> A \<and> y \<in> set Z\<close> \<open>y \<in> set X \<inter> set Y\<close> assms(1) by auto
         qed 
-      qed
-      apply(cases "Y = G")
-        subgoal 
-      proof-
-        assume yassm:"X \<in> XX" "X \<notin> A" "Y = G"
+      next 
+        case 2
+        thus ?case
+        proof(cases "Y = G", goal_cases)
+          case 1
+          note yassm = this
         hence "set Y \<subseteq> setA" 
           using assms(3) by auto
         show "set X \<inter> set Y = {}"        
@@ -514,10 +510,14 @@ proof-
           ultimately show False 
             using \<open>Z \<in> A \<and> y \<in> set Z\<close> \<open>y \<in> set X \<inter> set Y\<close> assms(1) by auto
         qed 
+      next
+        case 2
+        thus ?case
+          using \<open>X \<noteq> Y\<close> \<open>Y \<in> XX - A \<union> {E, G}\<close> assms(1) by force
       qed
-      using \<open>X \<noteq> Y\<close> \<open>Y \<in> XX - A \<union> {E, G}\<close> assms(1) by force
     qed
-  qed
+   qed
+ qed
 qed
 
 lemma distinct_single_extract:
@@ -546,12 +546,12 @@ qed
 
 lemma set_append_swap: "set (xs@ys) = set (ys@xs)" by auto
 
-lemma in_union_of_sets_append:"\<Union> {set xs| xs. xs \<in> xss \<union> {ys,zs}} = 
-                                 \<Union> {set xs| xs. xs \<in> xss \<union> {ys@zs}}"
+lemma in_union_of_sets_append:
+ "\<Union> {set xs| xs. xs \<in> xss \<union> {ys,zs}} = \<Union> {set xs| xs. xs \<in> xss \<union> {ys@zs}}"
   by fastforce
 
 lemma extract_first_x:
-"x \<in> set xs \<Longrightarrow> P x \<Longrightarrow> \<exists> y ys zs. xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set ys \<and>  P z)"
+  "\<lbrakk>x \<in> set xs; P x\<rbrakk> \<Longrightarrow> \<exists> y ys zs. xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set ys \<and>  P z)"
   apply(induction xs, simp)
   subgoal for a xs
     apply(cases "P a") 
@@ -560,7 +560,7 @@ lemma extract_first_x:
   done
 
 lemma extract_last_x:
-       "x \<in> set xs \<Longrightarrow> P x \<Longrightarrow> \<exists> y ys zs. xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set zs \<and>  P z)"
+  "\<lbrakk>x \<in> set xs; P x\<rbrakk> \<Longrightarrow> \<exists> y ys zs. xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set zs \<and>  P z)"
 proof(induction xs arbitrary: x)
   case (Cons xx xs)
   then show ?case 
@@ -582,9 +582,17 @@ proof(induction xs arbitrary: x)
       hence "P a \<or> P x"
         using Cons.prems(2) by blast 
       then show ?thesis 
-        apply (cases "P a")
-        apply (metis False append.left_neutral append_Cons local.Cons)
-        by    (metis Cons.prems(1) False append.left_neutral append_Cons local.Cons set_ConsD)
+      proof(cases "P a", goal_cases)
+        case 1
+        thus ?case
+          using False Cons
+          by (auto intro!: exI[of _ a] intro: exI[of _ "[xx]"])
+      next
+        case 2
+        thus ?case
+          using Cons.prems(1) False local.Cons
+          by(auto intro!: exI[of _ xx] intro: exI[of _  Nil])
+      qed
     qed
   qed
 qed simp
@@ -594,11 +602,7 @@ then there are also a first and a last element satisfying that condition.
 Quite intuitive, but requires a formal proof.\<close>
 
 lemma extract_first_and_last:
-  assumes "x \<in> set xs"
-          "y \<in> set xs"
-          "P x"
-          "P y"
-          "x \<noteq> y"
+  assumes "x \<in> set xs" "y \<in> set xs" "P x" "P y" "x \<noteq> y"
     shows "\<exists> a b as bs cs. 
              xs = as @[a]@bs@[b]@cs \<and> P a \<and> P b 
              \<and> (\<nexists> z. z \<in> set as \<and> P z)
@@ -616,7 +620,7 @@ qed
 lemma map_hd: "xs \<noteq> [] \<Longrightarrow> hd (map f xs) = f (hd (xs))" 
   using list.map_sel(1) by auto
 
-lemma map_last': "xs \<noteq> [] \<Longrightarrow>(\<And> x. g (f x) = h x) \<Longrightarrow>g (last (map f xs)) = h (last xs)"
+lemma map_last': "\<lbrakk>xs \<noteq> []; \<And> x. g (f x) = h x\<rbrakk> \<Longrightarrow>g (last (map f xs)) = h (last xs)"
   by (metis last_map)
 
 lemma in_set_map: "y \<in> set (map f xs) \<Longrightarrow> \<exists> x. y = f x \<and> x \<in> set xs" by auto
@@ -624,79 +628,88 @@ lemma in_set_map: "y \<in> set (map f xs) \<Longrightarrow> \<exists> x. y = f x
 lemma map_in_set: "x\<in> set xs \<Longrightarrow> f x \<in> set (map f xs)"
   by(induction xs) (auto simp add: list.set_intros(2) set_ConsD)
 
-lemma single_in_append: "([a]@xs) = a#xs" by simp
+lemma single_in_append: "([a]@xs) = a#xs"
+  by simp
 
-lemma map_split_exists:"map f xs = ys@zs \<Longrightarrow> 
-                           \<exists> ys' zs'. ys'@zs' = xs \<and> map f ys' = ys \<and> map f zs' = zs"
+lemma map_split_exists:
+  "map f xs = ys@zs \<Longrightarrow> \<exists> ys' zs'. ys'@zs' = xs \<and> map f ys' = ys \<and> map f zs' = zs"
   by (metis append_eq_map_conv)
 
-lemma map_sum_split: "foldr (\<lambda> x acc. f x + acc) (xs@ys) (0::real) = 
-                      foldr (\<lambda> x acc. f x + acc) xs 0 +
-                      foldr (\<lambda> x acc. f x + acc) ys 0"
+lemma map_sum_split: 
+  "foldr (\<lambda> x acc. f x + acc) (xs@ys) (0::real) = 
+   foldr (\<lambda> x acc. f x + acc) xs 0 + foldr (\<lambda> x acc. f x + acc) ys 0"
   by(induction xs) simp+
 
-lemma fold_sum_neg_neg_element:"foldr (\<lambda> x acc. f x + acc) xs (0::real) < 0 \<Longrightarrow> \<exists> x \<in> set xs. f x < 0"
+lemma fold_sum_neg_neg_element:
+  "foldr (\<lambda> x acc. f x + acc) xs (0::real) < 0 \<Longrightarrow> \<exists> x \<in> set xs. f x < 0"
   by(induction xs) force+
 
-lemma butlast_tail: "xs \<noteq> [] \<Longrightarrow> butlast (x#xs) = x#butlast xs" for x xs by simp
+lemma butlast_tail: 
+  "xs \<noteq> [] \<Longrightarrow> butlast (x#xs) = x#butlast xs"
+  by simp
 
-lemma inter_distr_append: "(set (xs@ys) \<inter> set zs= {}) = 
-                              (set (xs) \<inter> set zs= {} \<and> set (ys) \<inter> set zs= {})"for xs ys zs by auto
+lemma inter_distr_append: 
+  "(set (xs@ys) \<inter> set zs= {}) = 
+   (set (xs) \<inter> set zs= {} \<and> set (ys) \<inter> set zs= {})"
+  by auto
 
-lemma in_append_split: "(z \<in> set (xs @ ys)) = (z \<in> set xs \<or> z \<in> set ys)" for z ys xs by simp  
+lemma in_append_split: "(z \<in> set (xs @ ys)) = (z \<in> set xs \<or> z \<in> set ys)" 
+  by simp  
 
-lemma non_empt_elim:"xs \<noteq> [] \<Longrightarrow> (\<And> a list. xs = a#list \<Longrightarrow> P xs) \<Longrightarrow> P xs"
+lemma non_empt_elim:
+  "\<lbrakk>xs \<noteq> []; \<And> a list. xs = a#list \<Longrightarrow> P xs\<rbrakk> \<Longrightarrow> P xs"
   by(cases xs, auto)
 
 lemma non_empt_elim_triple:
- " (\<And> x. xs = [x] \<Longrightarrow> P xs) \<Longrightarrow> (\<And> x y ys. x#y#ys = xs \<Longrightarrow> P xs) \<Longrightarrow>xs \<noteq> [] \<Longrightarrow> P xs"
+ "\<lbrakk>\<And> x. xs = [x] \<Longrightarrow> P xs; \<And> x y ys. x#y#ys = xs \<Longrightarrow> P xs; xs \<noteq> []\<rbrakk> \<Longrightarrow> P xs"
   apply(cases xs, force)
   subgoal for a list
     by(cases list, auto)
   done
 
-lemma nth_append':"(xs@ys) ! i = (xs@ys) ! j \<Longrightarrow> i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> xs ! i =xs ! j"for xs ys j i
+lemma nth_append':
+  "\<lbrakk>(xs@ys) ! i = (xs@ys) ! j; i < length xs; j < length xs\<rbrakk> \<Longrightarrow> xs ! i =xs ! j"
   by (metis nth_append)
 
-lemma list_cases4:"(xs = [] \<Longrightarrow> P) \<Longrightarrow>
-       (\<And> x. xs = [x] \<Longrightarrow> P) \<Longrightarrow>
-       (\<And> x y. xs = x#y#[] \<Longrightarrow> P) \<Longrightarrow>
-       (\<And> x y z zs. xs = x#y#z#zs \<Longrightarrow> P) \<Longrightarrow> P"
+lemma list_cases4:
+  "\<lbrakk>xs = [] \<Longrightarrow> P; \<And> x. xs = [x] \<Longrightarrow> P ;
+    \<And> x y. xs = x#y#[] \<Longrightarrow> P; \<And> x y z zs. xs = x#y#z#zs \<Longrightarrow> P\<rbrakk>
+    \<Longrightarrow> P"
   by(cases xs, force, metis neq_Nil_conv)
 
 lemma  set_singleton_list: "set [ x] = {x}" for x by simp
 
 lemmas list_cases3 = remdups_adj.cases
 
-lemma append_two: "[a]@[b] = [a,b]" for a b by simp
+lemma append_two: "[a]@[b] = [a,b]" 
+  by simp
 
-lemma list_induct3: "P Nil \<Longrightarrow> (\<And> x. P [x]) \<Longrightarrow> (\<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)) \<Longrightarrow> P xs" for xs P
-    by (metis list_nonempty_induct neq_Nil_conv)
+lemma list_induct3: "\<lbrakk>P Nil; \<And> x. P [x]; \<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)\<rbrakk> \<Longrightarrow> P xs"
+  by (metis list_nonempty_induct neq_Nil_conv)
 
 lemma list_induct3_len_geq_2: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. P [x,y]) \<Longrightarrow> (\<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)) \<Longrightarrow> P xs" for xs P
   apply(induction rule: list_induct3)
   using not_less_eq_eq by fastforce+
 
-lemma list_induct2_len_geq_1: "length xs \<ge> 1 \<Longrightarrow>
- (\<And> x. P [x]) \<Longrightarrow> (\<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)) \<Longrightarrow> P xs" for xs P
+lemma list_induct2_len_geq_1: 
+  "\<lbrakk>length xs \<ge> 1; \<And> x. P [x]; \<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)\<rbrakk> \<Longrightarrow> P xs" 
   by (metis One_nat_def length_greater_0_conv less_eq_Suc_le list.exhaust_sel list_nonempty_induct)
 
-lemma snoc_eq_iff_butlast':
-  "ys = xs @ [x] \<longleftrightarrow> (ys \<noteq> [] \<and> butlast ys = xs \<and> last ys = x)"
+lemma snoc_eq_iff_butlast': "ys = xs @ [x] \<longleftrightarrow> (ys \<noteq> [] \<and> butlast ys = xs \<and> last ys = x)"
   by fastforce
 
 lemma neq_Nil_conv_snoc: "xs \<noteq> [] \<longleftrightarrow> (\<exists>x ys. xs = ys @ [x])"
   by (meson snoc_eq_iff_butlast')
 
 lemma list_cases_both_sides: 
-"(xs = [] \<Longrightarrow> P ) \<Longrightarrow> (\<And> x. xs =[x] \<Longrightarrow> P ) \<Longrightarrow> (\<And> x y ys. xs =[x]@ys@[y] \<Longrightarrow> P ) \<Longrightarrow> P "
+"\<lbrakk>xs = [] \<Longrightarrow> P; \<And> x. xs =[x] \<Longrightarrow> P; \<And> x y ys. xs =[x]@ys@[y] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P "
   by (metis neq_Nil_conv neq_Nil_conv_snoc single_in_append)
 
 lemma append_butlast_last_cancel: "p \<noteq> [] \<Longrightarrow> butlast p @ last p # p' = p @ p'"
   by simp
 
-lemma induct_list_length2: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. P [x,y]) 
-\<Longrightarrow> (\<And> xs x y z. P (xs@[x,y]) \<Longrightarrow> P(xs@[x,y,z])) \<Longrightarrow> P xs"
+lemma induct_list_length2: 
+"\<lbrakk>length xs \<ge> 2; \<And> x y. P [x,y]; \<And> xs x y z. P (xs@[x,y]) \<Longrightarrow> P(xs@[x,y,z])\<rbrakk> \<Longrightarrow> P xs"
 proof(induction xs rule: rev_induct)
   case (snoc z xs)
   note IH = this
@@ -724,14 +737,14 @@ proof(induction xs rule: rev_induct)
     qed
   qed simp
 
-lemma list_cases_betw: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. xs = [x,y] \<Longrightarrow> P ) 
-\<Longrightarrow> (\<And> ys x y. xs = [x]@ys@[y] ==> P) \<Longrightarrow> P"
+lemma list_cases_betw: 
+"\<lbrakk>length xs \<ge> 2; \<And> x y. xs = [x,y] \<Longrightarrow> P; \<And> ys x y. xs = [x]@ys@[y] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   by(auto intro: list_cases_both_sides[of xs]) 
 
 lemma get_longest_common_tail:
 assumes "length p \<ge> 1" "length q \<ge> 1" "last p = last q"
 obtains ys p' q' where "p = p'@ys" "q =q'@ys" 
-                        "\<And> ys' p'' q''. p=p''@ys' \<Longrightarrow> q = q''@ys' \<Longrightarrow> length ys' \<le> length ys"
+                        "\<And> ys' p'' q''. \<lbrakk>p=p''@ys'; q = q''@ys'\<rbrakk> \<Longrightarrow> length ys' \<le> length ys"
   using assms 
 proof(induction "length p" arbitrary: p q thesis rule: less_induct)
   case less
@@ -758,12 +771,11 @@ proof(induction "length p" arbitrary: p q thesis rule: less_induct)
   proof(cases qb)
     case Nil
       then have "p = pa@[a]" "q =[]@[a]" 
-                        "\<And> ys' p'' q''. p=p''@ys' \<Longrightarrow> q= q''@ys' \<Longrightarrow> length ys' \<le> length [a]"
-        using less.prems(4) local.Nil p_last q_last apply(fastforce, fastforce)
-        subgoal for ys' p'' q''
-          using  local.Nil q_last by(cases ys') (auto simp add: Cons_eq_append_conv)
-        done
-      thus ?thesis     
+        using less.prems(4) local.Nil p_last q_last by fastforce+
+      moreover from this Nil
+      have  "\<lbrakk>p=p''@ys'; q= q''@ys'\<rbrakk> \<Longrightarrow> length ys' \<le> length [a]" for ys' p'' q''
+        using  local.Nil q_last by(cases ys') (auto simp add: Cons_eq_append_conv)
+      ultimately show ?thesis     
         using less.prems(1) by force 
     next
       case (Cons y kist)
@@ -771,29 +783,26 @@ proof(induction "length p" arbitrary: p q thesis rule: less_induct)
       proof(cases "last pa = last qb")
         case True
       obtain  p' q' ys  where IH_applied:"pa = p'@ys" "qb =q'@ys" 
-                        "\<And> ys' p'' q''. pa=p''@ys' \<Longrightarrow> qb = q''@ys' \<Longrightarrow> length ys' \<le> length ys"
+                        "\<And> ys' p'' q''. \<lbrakk>pa=p''@ys'; qb = q''@ys'\<rbrakk> \<Longrightarrow> length ys' \<le> length ys"
         using butlasts p_last cons Cons True 
         by (auto intro: less(1)[of "butlast p" qb, simplified butlasts(1)])
       hence "p = p'@ys@[a]" "q=q'@ys@[a]" 
-                        "\<And> ys' p'' q''. p=p''@ys' \<Longrightarrow> q = q''@ys' \<Longrightarrow> length ys' \<le> length (ys@[a])"
-        using IH_applied(2) last_q q_last apply(auto simp add: p_last)[2]
-        subgoal for ys' p'' q''
-          using last_q  p_last IH_applied(3)[of p'' "butlast ys'" q''] butlasts(2)
+        using IH_applied(2) last_q q_last by(auto simp add: p_last)
+      moreover have  "\<lbrakk>p=p''@ys'; q = q''@ys'\<rbrakk> \<Longrightarrow> length ys' \<le> length (ys@[a])" for ys' p'' q''
+          using last_q q_last  p_last IH_applied(3)[of p'' "butlast ys'" q''] butlasts(2)
           by(cases ys' rule: rev_cases) (auto simp add: butlast_append)
-        done
-      then show ?thesis 
+      ultimately show ?thesis 
         using less.prems(1) by force
     next
       case False
       hence "p = pa@[a]" "q =qb@[a]" 
-                        "\<And> ys' p'' q''. p=p''@ys' \<Longrightarrow> q = q''@ys' \<Longrightarrow> length ys' \<le> length [a]"
-        using last_q q_last p_last apply auto[2]
-        subgoal for ys' p'' q''
-          apply(cases ys' rule: rev_cases, simp)
-          using False  butlasts last_q p_last
-          by (auto, metis append.assoc butlast_snoc last_appendR)
-        done
-      thus ?thesis
+        using last_q q_last p_last by auto
+      moreover have  "\<lbrakk>p=p''@ys'; q = q''@ys'\<rbrakk> \<Longrightarrow> length ys' \<le> length [a]" for ys' p'' q''
+          using False butlasts last_q p_last
+          by(cases ys' rule: rev_cases, simp)
+            (auto simp add: butlast_snoc[of "_ @ _", simplified] 
+                            last_append if_split[of _ "_ = Nil"])
+      ultimately show ?thesis
         using less.prems(1) by force
     qed
   qed
@@ -801,14 +810,14 @@ qed
 qed
 
 lemma inter_Big_union_distr_empt_list:
-               "(\<And> C. C \<in> B \<Longrightarrow> A \<inter> set C = {}) \<Longrightarrow> (A \<inter> \<Union> { set C| C. C \<in> B}) = {}" for A B by auto
+  "(\<And> C. C \<in> B \<Longrightarrow> A \<inter> set C = {}) \<Longrightarrow> (A \<inter> \<Union> { set C| C. C \<in> B}) = {}" for A B by auto
 
-lemma foldl_invar: "inv x \<Longrightarrow> (\<And> y z. inv y \<Longrightarrow> inv (f y z)) \<Longrightarrow>
-                    inv (foldl f x xs)" for inv
+lemma foldl_invar: 
+ "\<lbrakk>inv x; \<And> y z. inv y \<Longrightarrow> inv (f y z)\<rbrakk> \<Longrightarrow> inv (foldl f x xs)" for inv
   by(induction xs arbitrary: x) auto
 
-lemma foldr_invar: "inv x \<Longrightarrow> (\<And> y z. inv y \<Longrightarrow> inv (f z y)) \<Longrightarrow>
-                    inv (foldr f xs x)" for inv
+lemma foldr_invar: 
+  "\<lbrakk>inv x; \<And> y z. inv y \<Longrightarrow> inv (f z y)\<rbrakk> \<Longrightarrow> inv (foldr f xs x)" for inv
   by(induction xs arbitrary: x) auto
 
 lemma list_in_image_map: "set ys \<subseteq> f ` X \<Longrightarrow> \<exists> xs. map f xs = ys \<and> set xs \<subseteq> X"
@@ -821,8 +830,8 @@ proof(induction ys)
     by(auto intro!: exI[of _ "x#xs"])
 qed simp
 
-lemma rev_cases3: "(xs = Nil \<Longrightarrow> P) \<Longrightarrow> (\<And> x. xs = [x] \<Longrightarrow> P) \<Longrightarrow>
-                   (\<And> ys y x. xs=ys@[y,x] \<Longrightarrow> P) \<Longrightarrow> P" 
+lemma rev_cases3: 
+  "\<lbrakk>xs = Nil \<Longrightarrow> P; \<And> x. xs = [x] \<Longrightarrow> P; \<And> ys y x. xs=ys@[y,x] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P" 
   by (metis More_Lists.append_butlast_last_cancel append_Nil neq_Nil_conv_snoc)
 
 fun itrev_aux :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where

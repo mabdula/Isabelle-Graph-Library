@@ -5,7 +5,7 @@
 theory Ranking_Order_Probabilistic_Vertex_Weighted
   imports
     Ranking_Order
-    Bipartite_Vertex_Weighted_Matching_LP
+    Matching_LPs.Bipartite_Vertex_Weighted_Matching_LP
     Order_Relations_From_Priorities
     Bipartite_Vertex_Priorities
 begin
@@ -39,8 +39,8 @@ definition ranking_prob :: "'a graph measure" where
 
 definition "max_weight = ( if L = {} then 0 else Max (v ` L))"
 
-definition dual_sol :: "('a \<Rightarrow> real) \<Rightarrow> 'a graph \<Rightarrow> real vec" where
-  "dual_sol Y M = (vec n (\<lambda>k.
+definition ropvw_dual_sol :: "('a \<Rightarrow> real) \<Rightarrow> 'a graph \<Rightarrow> real vec" where
+  "ropvw_dual_sol Y M = (vec n (\<lambda>k.
     if Vs_enum_inv k \<in> Vs M
     then
       if k < card L
@@ -86,19 +86,19 @@ lemma div_F_nonneg[simp]: "0 \<le> x / F \<longleftrightarrow> 0 \<le> x"
 lemma div_F_less_eq_cancel[simp]: "x / F \<le> y / F \<longleftrightarrow> x \<le> y"
   by (simp add: divide_le_cancel)
 
-lemma dim_dual_sol[simp]: "dim_vec (dual_sol Y M) = n"
-  by (simp add: dual_sol_def)
+lemma dim_ropvw_dual_sol[simp]: "dim_vec (ropvw_dual_sol Y M) = n"
+  by (simp add: ropvw_dual_sol_def)
 
 lemma dual_dot_One_value:
   assumes "M \<subseteq> G"
   assumes "matching M"
-  shows "1\<^sub>v n \<bullet> dual_sol Y M = matching_value M / F"
+  shows "1\<^sub>v n \<bullet> ropvw_dual_sol Y M = matching_value M / F"
 proof -
-  have "1\<^sub>v n \<bullet> dual_sol Y M = 
+  have "1\<^sub>v n \<bullet> ropvw_dual_sol Y M = 
     (\<Sum>i\<in>{0..<n} \<inter> {i. Vs_enum_inv i \<in> Vs M} \<inter> {i. i < card L}. v (Vs_enum_inv i) * g (Y (Vs_enum_inv i)) / F) +
     (\<Sum>i\<in>{0..<n} \<inter> {i. Vs_enum_inv i \<in> Vs M} \<inter> - {i. i < card L}. v (THE l. {l, Vs_enum_inv i} \<in> M) * (1 - g (Y (THE l. {l, Vs_enum_inv i} \<in> M))) / F)"
       (is "_ = ?sum_L + ?sum_R")
-    by (simp add: dual_sol_def scalar_prod_def sum.If_cases)
+    by (simp add: ropvw_dual_sol_def scalar_prod_def sum.If_cases)
 
   have L_sum_matching: "?sum_L = (\<Sum>e\<in>M. v (THE l. l \<in> L \<and> l \<in> e) * g (Y (THE l. l \<in> L \<and> l \<in> e)) / F)"
   proof (rule sum.reindex_bij_witness[where j = "\<lambda>i. (THE e. e \<in> M \<and> Vs_enum_inv i \<in> e)" and
@@ -217,13 +217,13 @@ proof -
   qed
 
   with graph L_sum_matching show ?thesis
-    by (auto simp: scalar_prod_def dual_sol_def n_def sum.If_cases algebra_simps sum_divide_distrib simp flip: sum.distrib add_divide_distrib)
+    by (auto simp: scalar_prod_def ropvw_dual_sol_def n_def sum.If_cases algebra_simps sum_divide_distrib simp flip: sum.distrib add_divide_distrib)
 qed
 
 lemma primal_is_dual_times_F:
   assumes "M \<subseteq> G"
   assumes "matching M"
-  shows "vertex_weighted_coeffs \<bullet> primal_sol M = 1\<^sub>v n \<bullet> dual_sol Y M * F"
+  shows "vertex_weighted_coeffs \<bullet> primal_sol M = 1\<^sub>v n \<bullet> ropvw_dual_sol Y M * F"
   using assms
   by (auto simp: primal_dot_coeffs_eq_value dual_dot_One_value)
 
@@ -397,8 +397,8 @@ lemma monotonicity:
   assumes "i \<in> L" and "j \<in> R"
   assumes "{i, j} \<in> G"
 
-  shows "dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ Vs_enum j \<ge> v i * (1 - g (y\<^sub>c Y \<pi> i j)) / F"
-    (is "dual_sol Y ?M $ ?j \<ge> ?\<beta>")
+  shows "ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ Vs_enum j \<ge> v i * (1 - g (y\<^sub>c Y \<pi> i j)) / F"
+    (is "ropvw_dual_sol Y ?M $ ?j \<ge> ?\<beta>")
 proof (cases "j \<in> Vs (ranking (weighted_linorder_from_keys L v g Y) (G \<setminus> {i}) \<pi>)")
   case True
   note j_matched' = this
@@ -440,12 +440,12 @@ proof (cases "j \<in> Vs (ranking (weighted_linorder_from_keys L v g Y) (G \<set
       using order_less_trans by blast
 
     with * True j_matched j_matched' index_j \<open>j \<in> R\<close> \<open>i \<in> L\<close> show ?thesis
-      unfolding y\<^sub>c_def dual_sol_def
+      unfolding y\<^sub>c_def ropvw_dual_sol_def
       by (auto simp: the_i' the_i'' dest: weights_pos)
   next
     case False
     with * j_matched j_matched' index_j \<open>j \<in> R\<close> \<open>i \<in> L\<close> show ?thesis
-      unfolding y\<^sub>c_def dual_sol_def
+      unfolding y\<^sub>c_def ropvw_dual_sol_def
       apply (auto simp: Let_def the_i' the_i'' dest!: leI weights_pos)
       by (smt (z3) assms(3) divide_nonpos_nonneg divide_pos_pos exp_less_one_iff ln_div ln_less_cancel_iff weight_nonnegI)
   qed
@@ -464,13 +464,13 @@ next
       by (intro the_ranking_match_left) auto
 
     with True j_unmatched' index_j \<open>{i,j} \<in> G\<close> \<open>Y \<in> L \<rightarrow> {0..1}\<close> \<open>i \<in> L\<close> \<open>j \<in> R\<close> show ?thesis
-      unfolding y\<^sub>c_def dual_sol_def
+      unfolding y\<^sub>c_def ropvw_dual_sol_def
       by (auto intro!: mult_nonneg_nonneg)
   next
     case False
     
     with j_unmatched' index_j \<open>{i,j} \<in> G\<close> show ?thesis
-      unfolding y\<^sub>c_def dual_sol_def
+      unfolding y\<^sub>c_def ropvw_dual_sol_def
       by (simp add: assms(4))
   qed
 qed
@@ -763,8 +763,8 @@ qed simp
 lemma measurable_dual_component_remove_vertices[measurable]:
   assumes "k < n"
   assumes "k < card L \<Longrightarrow> from_nat_into L k \<notin> X"
-  shows "(\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>) $ k) \<in> borel_measurable (\<Pi>\<^sub>M i \<in> L - X. \<U>)"
-  unfolding dual_sol_def
+  shows "(\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>) $ k) \<in> borel_measurable (\<Pi>\<^sub>M i \<in> L - X. \<U>)"
+  unfolding ropvw_dual_sol_def
 proof (subst index_vec[OF \<open>k < n\<close>], subst measurable_If_restrict_space_iff, goal_cases)
   case 2
   then show ?case
@@ -789,7 +789,7 @@ lemmas measurable_dual_component = measurable_dual_component_remove_vertices[whe
 lemma measurable_dual_component_split_dim:
   assumes "i \<in> L"
   assumes "k < n"
-  shows "(\<lambda>(y,Y). dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ k) \<in> borel_measurable (\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>))"
+  shows "(\<lambda>(y,Y). ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ k) \<in> borel_measurable (\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>))"
   using measurable_compose[OF measurable_add_dim'[OF assms(1)] measurable_dual_component[OF assms(2)]]
   by (auto simp: case_prod_beta remove_vertices_empty)
 
@@ -798,7 +798,7 @@ lemma measurable_dual_component_fun_upd:
   assumes "i \<in> L"
   assumes "Y \<in> space (\<Pi>\<^sub>M i \<in> L - {i}. \<U>)"
   assumes "k < n"
-  shows "(\<lambda>y. dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>) $ k) \<in> borel_measurable \<U>"
+  shows "(\<lambda>y. ropvw_dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>) $ k) \<in> borel_measurable \<U>"
   apply (rule measurable_compose[OF _ measurable_dual_component, simplified])
   by (use assms in measurable)
 
@@ -836,10 +836,10 @@ next
   qed
 qed auto
 
-lemma dual_sol_funcset:
+lemma ropvw_dual_sol_funcset:
   assumes Y_nonneg: "\<And>i. i \<in> L - X \<Longrightarrow> 0 \<le> Y i"
   assumes Y_less_eq_One: "\<And>i. i \<in> L - X \<Longrightarrow> Y i \<le> 1"
-  shows "($) (dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
+  shows "($) (ropvw_dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
 proof (intro funcsetI)
   fix i
   assume "i \<in> {..<n}"
@@ -855,11 +855,11 @@ proof (intro funcsetI)
   then have matched_not_X: "j \<in> Vs ?ranking \<Longrightarrow> j \<notin> X" for j
     by (auto dest!: Vs_subset dest: remove_vertices_not_vs')
 
-  from \<open>i < n\<close> show "dual_sol Y ?ranking $ i \<in> {0..max_weight / F}"
+  from \<open>i < n\<close> show "ropvw_dual_sol Y ?ranking $ i \<in> {0..max_weight / F}"
   proof (cases rule: i_cases)
     case 1
     with \<open>i < n\<close> weights_pos show ?thesis
-      unfolding dual_sol_def
+      unfolding ropvw_dual_sol_def
       by (auto intro: g_less_eq_OneI assms intro!: mult_nonneg_nonneg scaled_weight_le_max_weight
                dest: matched_not_X elim: Vs_enum_inv_leftE)
   next
@@ -869,34 +869,34 @@ proof (intro funcsetI)
       by (auto intro!: the_ranking_match_left dest: remove_vertices_subgraph' elim: Vs_enum_inv_rightE)
       
     with 2 \<open>i < n\<close> show ?thesis
-      unfolding dual_sol_def
+      unfolding ropvw_dual_sol_def
       by (auto intro!: mult_nonneg_nonneg scaled_weight_le_max_weight 
                simp: Y_less_eq_One matched_not_X edges_are_Vs)
   qed
 qed
 
-lemma dual_sol_funcset_if_funcset:
-  shows "Y \<in> (L - X) \<rightarrow> {0..1} \<Longrightarrow> ($) (dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
-  by (intro dual_sol_funcset) auto
+lemma ropvw_dual_sol_funcset_if_funcset:
+  shows "Y \<in> (L - X) \<rightarrow> {0..1} \<Longrightarrow> ($) (ropvw_dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
+  by (intro ropvw_dual_sol_funcset) auto
 
-lemma AE_dual_sol_funcset:
-  shows "AE Y in \<Pi>\<^sub>M i \<in> L - X. \<U>. ($) (dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}" 
+lemma AE_ropvw_dual_sol_funcset:
+  shows "AE Y in \<Pi>\<^sub>M i \<in> L - X. \<U>. ($) (ropvw_dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}" 
   using AE_PiM_subset_L_\<U>_funcset[OF Diff_subset]
   by eventually_elim
-     (auto dest: dual_sol_funcset_if_funcset)
+     (auto dest: ropvw_dual_sol_funcset_if_funcset)
 
-lemma AE_dual_sol_split_dim_funcset:
-  shows "AE (y, Y) in \<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>). ($) (dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
+lemma AE_ropvw_dual_sol_split_dim_funcset:
+  shows "AE (y, Y) in \<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>). ($) (ropvw_dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
   using AE_split_dim_funcset
   by eventually_elim
-     (auto dest: dual_sol_funcset_if_funcset[where X = "{}", simplified])
+     (auto dest: ropvw_dual_sol_funcset_if_funcset[where X = "{}", simplified])
 
-lemma AE_dual_sol_\<U>_funcset:
+lemma AE_ropvw_dual_sol_\<U>_funcset:
   assumes "Y \<in> L - {i} \<rightarrow> {0..1}"
-  shows "AE y in \<U>. ($) (dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
+  shows "AE y in \<U>. ($) (ropvw_dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
   using AE_\<U>_in_range
   by eventually_elim
-     (use assms in \<open>intro dual_sol_funcset_if_funcset[where X = "{}", simplified] funcset_update\<close>)
+     (use assms in \<open>intro ropvw_dual_sol_funcset_if_funcset[where X = "{}", simplified] funcset_update\<close>)
 
 lemma integrable_g[simp]: "integrable \<U> g"
 proof (intro integrableI_nonneg)
@@ -911,18 +911,18 @@ qed auto
 lemma integrable_dual_component_remove_vertices:
   assumes "i < n"
   assumes "i < card L \<Longrightarrow> from_nat_into L i \<notin> X"
-  shows "integrable (\<Pi>\<^sub>M i \<in> L - X. \<U>) (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>) $ i)"
+  shows "integrable (\<Pi>\<^sub>M i \<in> L - X. \<U>) (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>) $ i)"
   using assms
 proof (intro integrableI_nonneg measurable_dual_component, goal_cases)
   case 2
   show ?case
-    using AE_dual_sol_funcset
+    using AE_ropvw_dual_sol_funcset
     by eventually_elim
        (use 2 in auto)
 next
   case 3
-  have "\<integral>\<^sup>+ Y. ennreal (dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>) $ i) \<partial>\<Pi>\<^sub>M i \<in> L - X. \<U> \<le> max_weight/F"
-    by (intro subprob_space.nn_integral_le_const prob_space_imp_subprob_space prob_space_PiM_\<U> eventually_mono[OF AE_dual_sol_funcset])
+  have "\<integral>\<^sup>+ Y. ennreal (ropvw_dual_sol Y (ranking (weighted_linorder_from_keys (L - X) v g Y) (G \<setminus> X) \<pi>) $ i) \<partial>\<Pi>\<^sub>M i \<in> L - X. \<U> \<le> max_weight/F"
+    by (intro subprob_space.nn_integral_le_const prob_space_imp_subprob_space prob_space_PiM_\<U> eventually_mono[OF AE_ropvw_dual_sol_funcset])
        (use 3 in auto)
 
   then show ?case
@@ -934,20 +934,20 @@ lemmas integrable_dual_component = integrable_dual_component_remove_vertices[whe
 lemma integrable_dual_component_split_dim:
   assumes "i \<in> L"
   assumes "j < n"
-  shows "integrable (\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>)) (\<lambda>(y,Y). dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ j)"
+  shows "integrable (\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>)) (\<lambda>(y,Y). ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ j)"
   using assms
 proof (intro integrableI_nonneg measurable_dual_component_split_dim, goal_cases)
   case 3
   show ?case
-    using AE_dual_sol_split_dim_funcset
+    using AE_ropvw_dual_sol_split_dim_funcset
     by (eventually_elim, use 3 in auto)
 next
   case 4
   interpret split_dim_prob_space: prob_space "(\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>))"
     by (intro prob_space_pair prob_space_PiM) blast+
 
-  have "\<integral>\<^sup>+ (y,Y). ennreal (dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ j) \<partial>(\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>)) \<le> max_weight/F"
-    by (intro split_dim_prob_space.nn_integral_le_const eventually_mono[OF AE_dual_sol_split_dim_funcset])
+  have "\<integral>\<^sup>+ (y,Y). ennreal (ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ j) \<partial>(\<U> \<Otimes>\<^sub>M (\<Pi>\<^sub>M i \<in> L - {i}. \<U>)) \<le> max_weight/F"
+    by (intro split_dim_prob_space.nn_integral_le_const eventually_mono[OF AE_ropvw_dual_sol_split_dim_funcset])
        (use 4 in auto)
 
   then show ?case
@@ -960,16 +960,16 @@ lemma integrable_dual_component_\<U>:
   assumes Y_funcset: "Y \<in> L - {i} \<rightarrow> {0..1}"
   assumes "i \<in> L"
   assumes "k < n"
-  shows "integrable \<U> (\<lambda>y. dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g(Y(i:=y))) G \<pi>) $ k)"
+  shows "integrable \<U> (\<lambda>y. ropvw_dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g(Y(i:=y))) G \<pi>) $ k)"
 proof (intro integrableI_nonneg measurable_dual_component_fun_upd, goal_cases)
   case 4
   show ?case
-    using AE_dual_sol_\<U>_funcset[OF Y_funcset]
+    using AE_ropvw_dual_sol_\<U>_funcset[OF Y_funcset]
     by (eventually_elim) (use \<open>k < n\<close> in auto)
 next
   case 5
-  from Y_funcset \<open>k < n\<close> have "\<integral>\<^sup>+y. dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>) $ k \<partial>\<U> \<le> max_weight/F"
-    by (auto intro!: subprob_space.nn_integral_le_const prob_space_imp_subprob_space eventually_mono[OF AE_dual_sol_\<U>_funcset])
+  from Y_funcset \<open>k < n\<close> have "\<integral>\<^sup>+y. ropvw_dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>) $ k \<partial>\<U> \<le> max_weight/F"
+    by (auto intro!: subprob_space.nn_integral_le_const prob_space_imp_subprob_space eventually_mono[OF AE_ropvw_dual_sol_\<U>_funcset])
 
   then show ?case
     by (simp add: order_le_less_trans)
@@ -1212,15 +1212,15 @@ lemma dual_expectation_feasible_edge:
   assumes "j \<in> R"
   assumes "{i,j} \<in> G"
 
-  shows "expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ (Vs_enum i)) +
-    expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ (Vs_enum j)) \<ge> v i"
+  shows "expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ (Vs_enum i)) +
+    expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ (Vs_enum j)) \<ge> v i"
   (is "?Ei_plus_Ej \<ge> v i")
 proof -
   from assms have [intro]: "Vs_enum i < n" "Vs_enum j < n"
     by (auto simp: Vs_enum_L Vs_enum_R intro: L_enum_less_n R_enum_less_n)
 
-  from \<open>{i,j} \<in> G\<close> have "?Ei_plus_Ej = expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ (Vs_enum i) +
-    dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ (Vs_enum j))" (is "_ = expectation ?i_plus_j")
+  from \<open>{i,j} \<in> G\<close> have "?Ei_plus_Ej = expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ (Vs_enum i) +
+    ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ (Vs_enum j))" (is "_ = expectation ?i_plus_j")
     by (intro Bochner_Integration.integral_add[symmetric] integrable_dual_component)
        (auto dest: edges_are_Vs intro: Vs_enum_less_n)
 
@@ -1277,23 +1277,23 @@ proof -
       case 2
       from \<open>Vs_enum i < n\<close> \<open>Vs_enum j < n\<close> show ?case
         by (intro eventually_mono[OF AE_PiM_subset_L_\<U>_funcset[OF Diff_subset]] integral_nonneg_AE eventually_mono[OF AE_\<U>_in_range])
-           (auto dest!: funcset_update dual_sol_funcset_if_funcset[where X = "{}", simplified] intro!: add_nonneg_nonneg)
+           (auto dest!: funcset_update ropvw_dual_sol_funcset_if_funcset[where X = "{}", simplified] intro!: add_nonneg_nonneg)
     next
       case 3
       interpret L'_prob_space: prob_space "\<Pi>\<^sub>M i \<in> L - {i}. \<U>"
         by (intro prob_space_PiM) blast
 
-      have "\<integral>\<^sup>+Y. (component_prob_space.expectation (\<lambda>y. dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i +
-                                              dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum j)) 
+      have "\<integral>\<^sup>+Y. (component_prob_space.expectation (\<lambda>y. ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i +
+                                              ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum j)) 
             \<partial>(\<Pi>\<^sub>M i \<in> L - {i}. \<U>) \<le> \<integral>\<^sup>+_. 2 * max_weight/F \<partial>(\<Pi>\<^sub>M i \<in> L - {i}. \<U>)"
       proof (intro nn_integral_mono_AE eventually_mono[OF AE_PiM_subset_L_\<U>_funcset[OF Diff_subset]], simp, 
              intro integral_real_bounded component_prob_space.nn_integral_le_const eventually_mono[OF AE_\<U>_in_range], goal_cases)
         case (3 Y y)
-        then have "($) (dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
-          by (auto dest!: funcset_update dual_sol_funcset_if_funcset[where X = "{}", simplified])
+        then have "($) (ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
+          by (auto dest!: funcset_update ropvw_dual_sol_funcset_if_funcset[where X = "{}", simplified])
 
-        with \<open>Vs_enum i < n\<close> \<open>Vs_enum j < n\<close> have "dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i \<le> max_weight/F"
-          "dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum j \<le> max_weight/F"
+        with \<open>Vs_enum i < n\<close> \<open>Vs_enum j < n\<close> have "ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i \<le> max_weight/F"
+          "ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum j \<le> max_weight/F"
           by auto
 
         then show ?case
@@ -1329,8 +1329,8 @@ proof -
         \<integral>y. v i * g y / F * indicat_real {..<y\<^sub>c Y \<pi> i j} y + v i * (1 - g (y\<^sub>c Y \<pi> i j)) / F \<partial>\<U>"
         by (subst *, intro Bochner_Integration.integral_add[symmetric] integrable_offline_bound, auto)
 
-      also have "\<dots> \<le> component_prob_space.expectation (\<lambda>y. dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i +
-                         dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum j)"
+      also have "\<dots> \<le> component_prob_space.expectation (\<lambda>y. ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i +
+                         ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum j)"
       proof (intro integral_mono_AE Bochner_Integration.integrable_add integrable_offline_bound, goal_cases)
         case 2
         with \<open>i \<in> L\<close> \<open>Vs_enum i < n\<close> Y show ?case
@@ -1351,11 +1351,11 @@ proof -
           then show ?case
           proof (intro add_mono, goal_cases)
             case 1
-            then have *: "($) (dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
-              by (intro dual_sol_funcset[where X = "{}", simplified])
+            then have *: "($) (ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>)) \<in> {..<n} \<rightarrow> {0..max_weight/F}"
+              by (intro ropvw_dual_sol_funcset[where X = "{}", simplified])
                  (auto simp: Pi_iff)
 
-            have "y < y\<^sub>c Y \<pi> i j \<Longrightarrow> v i * g y / F \<le> dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i"
+            have "y < y\<^sub>c Y \<pi> i j \<Longrightarrow> v i * g y / F \<le> ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i"
             proof -
               assume "y < y\<^sub>c Y \<pi> i j"
               with \<open>j \<in> R\<close> have "y < y\<^sub>c (Y(i:=y)) \<pi> i j"
@@ -1364,8 +1364,8 @@ proof -
               with y_props \<open>i \<in> L\<close> \<open>j \<in> R\<close> \<open>{i,j} \<in> G\<close> have "i \<in> Vs (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>)"
                 by (auto intro: dominance)
 
-              with \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close> have "dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>) $ Vs_enum i = v i * g y / F"
-                by (auto simp: dual_sol_def)
+              with \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close> have "ropvw_dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>) $ Vs_enum i = v i * g y / F"
+                by (auto simp: ropvw_dual_sol_def)
                    (metis L_enum_less_card Vs_enum_L)+
 
               then show ?thesis
@@ -1383,8 +1383,8 @@ proof -
       qed simp
 
       finally show "component_prob_space.expectation (\<lambda>y. v i * g y / F * indicat_real {..<y\<^sub>c Y \<pi> i j} y) + v i * (1 - g (y\<^sub>c Y \<pi> i j)) / F
-         \<le> component_prob_space.expectation (\<lambda>y. dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i 
-                                  + dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum j)"
+         \<le> component_prob_space.expectation (\<lambda>y. ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum i 
+                                  + ropvw_dual_sol (Y(i := y)) (ranking (weighted_linorder_from_keys L v g (Y(i := y))) G \<pi>) $ Vs_enum j)"
         .
     qed
   qed
@@ -1428,7 +1428,7 @@ proof -
     by linarith
 qed
 
-abbreviation "expected_dual \<equiv> vec n (\<lambda>i. expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i))"
+abbreviation "expected_dual \<equiv> vec n (\<lambda>i. expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i))"
 
 lemma expected_dual_feasible: "incidence_matrix\<^sup>T *\<^sub>v expected_dual \<ge> vertex_weighted_coeffs"
   unfolding Matrix.less_eq_vec_def
@@ -1452,18 +1452,18 @@ proof (intro conjI allI impI, simp_all add: incidence_matrix_def)
   from ij have the_l: "(THE l. l \<in> L \<and> l \<in> from_nat_into G k) = i"
     by auto
 
-  from ij have "v i \<le> expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ Vs_enum i) +
-            expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ Vs_enum j)"
+  from ij have "v i \<le> expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ Vs_enum i) +
+            expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ Vs_enum j)"
     by (intro dual_expectation_feasible_edge)
 
-  also from index_neq have "\<dots> = (\<Sum>k\<in>{Vs_enum i, Vs_enum j}. expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ k))"
+  also from index_neq have "\<dots> = (\<Sum>k\<in>{Vs_enum i, Vs_enum j}. expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ k))"
     by simp
 
-  also from the_lr \<open>{i,j} \<in> G\<close> \<open>k < m\<close> have "\<dots> = vec n (\<lambda>i. of_bool (Vs_enum_inv i \<in> from_nat_into G k)) \<bullet> vec n (\<lambda>i. expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i))"
+  also from the_lr \<open>{i,j} \<in> G\<close> \<open>k < m\<close> have "\<dots> = vec n (\<lambda>i. of_bool (Vs_enum_inv i \<in> from_nat_into G k)) \<bullet> vec n (\<lambda>i. expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i))"
     unfolding incidence_matrix_def
     by (auto simp: scalar_prod_def sum.cong[OF index_set_Int_is_doubleton] elim!: from_nat_into_G_E)
 
-  finally show "v (THE l. l \<in> L \<and> l \<in> from_nat_into G k) \<le> vec n (\<lambda>i. of_bool (Vs_enum_inv i \<in> from_nat_into G k)) \<bullet> vec n (\<lambda>i. expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i))"
+  finally show "v (THE l. l \<in> L \<and> l \<in> from_nat_into G k) \<le> vec n (\<lambda>i. of_bool (Vs_enum_inv i \<in> from_nat_into G k)) \<bullet> vec n (\<lambda>i. expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i))"
     by (simp add: the_l)
 qed
 
@@ -1476,8 +1476,8 @@ proof (intro conjI allI impI, simp_all, intro integral_ge_const integrable_dual_
   have "j \<in> Vs (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) \<Longrightarrow> j \<in> R \<Longrightarrow> (THE l. {l, j} \<in> ranking (weighted_linorder_from_keys L v g Y) G \<pi>) \<in> L" for j Y
     by (auto intro!: the_ranking_match_left)
 
-  with \<open>k < n\<close> show "AE Y in \<Y>. 0 \<le> dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ k"
-    unfolding dual_sol_def
+  with \<open>k < n\<close> show "AE Y in \<Y>. 0 \<le> ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ k"
+    unfolding ropvw_dual_sol_def
     by (intro eventually_mono[OF AE_\<Y>_funcset])
        (auto intro!: g_less_eq_OneI mult_nonneg_nonneg simp: Pi_iff elim: Vs_enum_inv_leftE Vs_enum_inv_rightE)
 qed blast
@@ -1501,16 +1501,16 @@ proof -
     by (subst primal_dot_coeffs_eq_value, rule ranking_subgraph)
         auto
 
-  also have "\<dots> = expectation (\<lambda>Y. 1\<^sub>v n \<bullet> dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) * F)"
+  also have "\<dots> = expectation (\<lambda>Y. 1\<^sub>v n \<bullet> ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) * F)"
     by (intro Bochner_Integration.integral_cong refl primal_is_dual_times_F ranking_subgraph matching_ranking)
         auto
 
   also have "\<dots> = 1\<^sub>v n \<bullet> expected_dual * F" (is "?E = ?Edot1F")
   proof -
-    have "?E = expectation (\<lambda>Y. \<Sum>i\<in>{0..<n}. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i) * F"
+    have "?E = expectation (\<lambda>Y. \<Sum>i\<in>{0..<n}. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i) * F"
       by (auto simp: scalar_prod_def)
 
-    also have "\<dots> = (\<Sum>i\<in>{0..<n}. expectation (\<lambda>Y. dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i)) * F"
+    also have "\<dots> = (\<Sum>i\<in>{0..<n}. expectation (\<lambda>Y. ropvw_dual_sol Y (ranking (weighted_linorder_from_keys L v g Y) G \<pi>) $ i)) * F"
       by (auto intro!: Bochner_Integration.integral_sum intro: integrable_dual_component)
 
     also have "\<dots> = ?Edot1F"

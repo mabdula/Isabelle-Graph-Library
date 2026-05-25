@@ -1,7 +1,8 @@
 theory Kruskal_Greedy
   imports Matroids_Greedy.Best_In_Greedy Spanning_Trees Encoding
     Graph_Algorithms_Dev.DFS_Example Insertion_Sort_Desc "HOL-Library.Product_Lexorder"
-    Graph_Algorithms_Dev.RBT_Map_Extension 
+    Graph_Algorithms_Dev.RBT_Map_Extension
+    Undirected_Set_Graphs.Directed_Undirected
 begin
 
 section \<open>Kruskal's Algorithm for Maximum Spanning Forest\<close>

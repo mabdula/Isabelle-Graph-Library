@@ -1,6 +1,8 @@
 theory Odd_Components
-  imports RANKING.More_Graph Bipartite Cardinality_Sums
+  imports Bipartite_Matchings_Existence Cardinality_Sums
 begin
+
+section \<open>Odd and Even Connected Components\<close>
 
 definition odd_component where
   "odd_component G C = (\<exists> v \<in> Vs G. connected_component G v = C \<and> odd (card C))"
@@ -102,13 +104,11 @@ lemma even_component_member[iff?]:
    (\<exists>v \<in> Vs G. connected_component G v = C \<and> even (card C))"
   unfolding even_components_def by simp
 
-
 lemma even_componentsE:
   assumes "C \<in> even_components G" 
   obtains v where "v \<in> Vs G" "connected_component G v = C" "even (card C)"
   using assms 
   by(auto simp: even_component_member)
-
 
 lemma even_componentsI:
   assumes "even (card C)"
@@ -586,20 +586,27 @@ lemma perfect_matching_union:
   assumes "finite A"
   assumes "\<forall>a1 \<in>A.\<forall>a2\<in>A. a1 \<noteq> a2 \<longrightarrow> Vs a1 \<inter> Vs a2 = {}"
   assumes "\<forall>a \<in> A. \<exists>M. perfect_matching a M"
+  assumes "\<forall> a \<in> A. {} \<notin> a" "\<forall>a \<in> A. finite (Vs a)"
   shows "\<exists>M. perfect_matching (\<Union>A) M"
 proof -
   let ?Ms = "{Ms. \<exists>a \<in> A. Ms = {M. perfect_matching a M}}"
-  have "\<forall>a \<in> A.  graph_invar a"
+  (*have "\<forall>a \<in> A.  graph_invar a"
     using assms(3) perfect_matching_member
-    by blast
+ 
   then have "graph_invar (\<Union>A)" using graph_invar_union 
-    by (simp add: graph_invar_union \<open>\<forall>a\<in>A. graph_invar a\<close> assms(1))
-  have "\<forall>a \<in> A. finite (Vs a)" 
-    by (simp add: \<open>\<forall>a\<in>A. graph_invar a\<close>)
+    by (simp add: graph_invar_union \<open>\<forall>a\<in>A. graph_invar a\<close> assms(1))*)
+  (*have "\<forall>a \<in> A. finite (Vs a)" 
+    by (simp add: \<open>\<forall>a\<in>A. graph_invar a\<close>)*)
   have disjoint_edges:"\<forall>a1 \<in>A.\<forall>a2\<in>A. a1 \<noteq> a2 \<longrightarrow> a1 \<inter> a2 = {}"
-    by (metis \<open>\<forall>a\<in>A. graph_invar a\<close> assms(2) dblton_graphE disjoint_iff edges_are_Vs) 
-    (*by (metis \<open>\<forall>a\<in>A. graph_invar a\<close> assms(2) disjoint_iff_not_equal edges_are_Vs)*)
-
+  proof(rule, rule, rule, rule ccontr, goal_cases)
+    case (1 a1 a2)
+    then obtain e where e: "e \<in> a1" "e \<in> a2" "e \<noteq> {}" 
+      using assms(4) by auto
+    hence "e \<subseteq> Vs a1" "e \<subseteq> Vs a2" "Vs a1 \<inter> Vs a2 \<noteq> {}"
+      by auto
+    thus False 
+      by (simp add: "1"(1,2,3) assms(2))
+  qed
   let ?f = "(\<lambda>a. {{M. perfect_matching a M}})"
   have "?Ms = (\<Union>a\<in>A. ?f a)" by blast
 
@@ -610,11 +617,13 @@ proof -
   then have "\<forall>a \<in> A. finite {M. perfect_matching a M}"
     by (metis Vs_def \<open>\<forall>a\<in>A. finite (Vs a)\<close> finite_Collect_subsets finite_UnionD finite_subset)
   then have "finite (Vs ?Ms)"
+    using assms(5)
     by (smt (verit) Vs_def \<open>finite ?Ms\<close> finite_Union mem_Collect_eq)
   have "\<forall>a1 \<in> A.\<forall>a2\<in>A. a1 \<noteq> a2 \<longrightarrow>
      {M. perfect_matching a1 M} \<inter> {M. perfect_matching a2 M} = {}" 
-    apply (safe)
-    by (metis assms(2) dblton_graph_def edges_are_Vs ex_in_conv inf.idem perfect_matching_member)+
+    apply (safe) 
+    by (metis Int_absorb assms(2,4) ex_in_conv perfect_matching_def vs_member_intro)+
+    (*by (met is assms(2) dblton_graph_def edges_are_Vs ex_in_conv inf.idem perfect_matching_member)+*)
     (*; metis Vs_subset assms(2) edges_are_Vs empty_iff le_iff_inf perfect_matchingE)+*)
   then have matchings_are_diff: "\<forall>a1 \<in> ?Ms.\<forall>a2\<in>?Ms. a1 \<noteq> a2 \<longrightarrow> a1 \<inter> a2 = {}" 
     by force
@@ -698,9 +707,8 @@ proof -
     then show "x \<in> Vs (\<Union> C)" 
       by (metis Vs_def \<open>c \<in> C \<and> perfect_matching a c\<close> vs_member)
   qed (meson Vs_subset \<open>\<Union> C \<subseteq> \<Union> A\<close> subsetD)
-
   then have "perfect_matching (\<Union> A) (\<Union> C)" 
-    by (simp add: \<open>\<Union> C \<subseteq> \<Union> A\<close> \<open>graph_invar (\<Union> A)\<close> \<open>matching (\<Union> C)\<close> perfect_matchingI)
+    by (simp add: \<open>\<Union> C \<subseteq> \<Union> A\<close>  \<open>matching (\<Union> C)\<close> perfect_matchingI)
   then show ?thesis by auto
 qed
 
@@ -796,10 +804,15 @@ proof -
         by force
     qed
   qed
-  have "A = \<Union>?E" using assms(1) components_edges_all by blast  
-  then show "\<exists>M. perfect_matching A M" using perfect_matching_union[of ?E] 
-    using `finite ?E` ` \<forall>a1\<in>?E. \<forall>a2\<in>?E. a1 \<noteq> a2 \<longrightarrow> Vs a1 \<inter> Vs a2 = {}` 
-      `\<forall>a \<in> ?E. \<exists>M. perfect_matching a M` by auto
+  have A_is_component_edges_Union_A: "A = \<Union>?E" 
+    using assms(1) components_edges_all by blast  
+  then show "\<exists>M. perfect_matching A M"
+    using perfect_matching_union[of ?E]
+          `finite ?E` ` \<forall>a1\<in>?E. \<forall>a2\<in>?E. a1 \<noteq> a2 \<longrightarrow> Vs a1 \<inter> Vs a2 = {}` 
+          `\<forall>a \<in> ?E. \<exists>M. perfect_matching a M`  assms(1)
+         components_edges_image_Vs[of A] finite_UN[of "components_edges A" Vs] 
+    by(subst A_is_component_edges_Union_A)
+      (fastforce intro!:  perfect_matching_union[of ?E] simp add: graph_component_partition)
 qed
 
 lemma graph_diff_empty:
@@ -1040,8 +1053,9 @@ next
               have "{v, v'} \<in>  (component_edges (graph_diff G X) C)" 
                 using graph_diff_subset path2.hyps(1) by blast
               then have "{v, v'} \<in> (graph_diff G X)" 
-                using component_edges_subset 
-                using Berge.component_edges_subset insert_Diff insert_subset by blast
+                using component_edges_subset  Connected_Components.component_edges_subset 
+                      insert_Diff insert_subset
+                by blast
               then have "{v, v'} \<inter> X = {}"
                 unfolding graph_diff_def  
                 by fastforce
@@ -1515,7 +1529,7 @@ next
           using asmC'odd by blast
         let ?C = "(component_edges (graph_diff G X) C)"
         have "graph_invar ?C"
-          by (meson Undirected_Set_Graphs.component_edges_subset assms(1) graph_invar_diff graph_invar_subset)
+          by (meson Connected_Components.component_edges_subset assms(1) graph_invar_diff graph_invar_subset)
         have "C' \<subseteq> Vs ?C" 
           by (meson C'diffY component_in_E)
         have "Vs ?C \<subseteq> C"
@@ -1659,7 +1673,7 @@ next
               have "{v, v'} \<in> (component_edges (graph_diff G X) C)" 
                 using graph_diff_subset path2.hyps(1) by blast
               then have "{v, v'} \<in> (graph_diff G X)" 
-                using Berge.component_edges_subset by blast
+                using Connected_Components.component_edges_subset by fastforce
               then have "{v, v'} \<inter> X = {}"
                 unfolding graph_diff_def by fastforce
               then have "{v, v'} \<in> (graph_diff G (X \<union> Y))" 
@@ -1731,7 +1745,8 @@ next
             by (smt (z3) Int_Un_distrib Int_Un_eq(4) Un_Int_assoc_eq Un_absorb Un_commute \<open>C' \<subseteq> C\<close>
                 \<open>c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}\<close> assms(3) odd_comps_in_diff_not_in_X subset_trans)
           have "e \<in> G" 
-            using `c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}` Berge.component_edges_subset graph_diff_member 
+            using `c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}` Connected_Components.component_edges_subset 
+                  graph_diff_member 
             by blast
           then have "e \<in> (graph_diff G (X \<union> Y))" 
             by (simp add: \<open>e \<inter> (X \<union> Y) = {}\<close> graph_diff_def)

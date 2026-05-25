@@ -4,10 +4,6 @@ session "Flow_Theory" = "HOL-Library" +
 sessions
   Directed_Set_Graphs
 
-theories [document=false]
-  More_Arith
-  More_Logic
-
 theories
   Augmentation
   Decomposition

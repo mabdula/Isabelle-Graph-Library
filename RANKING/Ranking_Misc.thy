@@ -2,7 +2,7 @@
   Author: Christoph Madlener
 *)
 subsection\<open>Miscellaneous Preliminaries\label{sec:misc}\<close>
-theory Misc
+theory Ranking_Misc
   imports
     Complex_Main
     "HOL-Library.FuncSet"

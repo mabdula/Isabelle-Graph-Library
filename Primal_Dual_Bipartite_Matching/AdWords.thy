@@ -4,7 +4,7 @@
 
 theory AdWords
   imports 
-    Bipartite_Matching_LP
+    Matching_LPs.Bipartite_Matching_LP
     More_Lattices_Big
     "HOL-Combinatorics.Multiset_Permutations"
 begin
@@ -145,8 +145,8 @@ definition offline_dual :: "'a adwords_state \<Rightarrow> real vec" where
 definition online_dual :: "'a adwords_state \<Rightarrow> real vec" where
   "online_dual s = vec (card R) (\<lambda>i. z s (from_nat_into R i))"
 
-definition dual_sol :: "'a adwords_state \<Rightarrow> real vec" where
-  "dual_sol s = offline_dual s @\<^sub>v online_dual s"
+definition addwords_dual_sol :: "'a adwords_state \<Rightarrow> real vec" where
+  "addwords_dual_sol s = offline_dual s @\<^sub>v online_dual s"
 
 lemma total_bid_of_nonneg[intro]:
   assumes "M \<subseteq> G"
@@ -284,14 +284,14 @@ lemma
   unfolding online_dual_def by simp_all
 
 lemma
-  shows dim_dual_sol[simp]: "dim_vec (dual_sol s) = n"
-    and dual_sol_carrier_vec[intro]: "dual_sol s \<in> carrier_vec n"
-  unfolding dual_sol_def
+  shows dim_addwords_dual_sol[simp]: "dim_vec (addwords_dual_sol s) = n"
+    and addwords_dual_sol_carrier_vec[intro]: "addwords_dual_sol s \<in> carrier_vec n"
+  unfolding addwords_dual_sol_def
   by (auto simp: n_sum)
 
-lemma dual_sol_init[simp]:
-  "dual_sol \<lparr> allocation = M, x = \<lambda>_. 0, z = \<lambda>_. 0 \<rparr> = 0\<^sub>v n"
-  unfolding dual_sol_def offline_dual_def online_dual_def append_vec_def
+lemma addwords_dual_sol_init[simp]:
+  "addwords_dual_sol \<lparr> allocation = M, x = \<lambda>_. 0, z = \<lambda>_. 0 \<rparr> = 0\<^sub>v n"
+  unfolding addwords_dual_sol_def offline_dual_def online_dual_def append_vec_def
   by (auto simp: Let_def n_sum)
 
 lemma subgraph_UNION_decomp:
@@ -852,7 +852,7 @@ next
 qed
 
 lemma dual_feasible:
-  shows "constraint_matrix\<^sup>T *\<^sub>v dual_sol (adwords \<pi>) \<ge> bids_vec"
+  shows "constraint_matrix\<^sup>T *\<^sub>v addwords_dual_sol (adwords \<pi>) \<ge> bids_vec"
   unfolding less_eq_vec_def
 proof (intro conjI allI impI, simp_all)
   fix k assume "k < m"
@@ -887,24 +887,24 @@ proof (intro conjI allI impI, simp_all)
   from ij have "b (from_nat_into G k) \<le> b {i,j} * x (adwords \<pi>) i + z (adwords \<pi>) j"
     by (auto intro: dual_feasible_edge)
 
-  also from \<open>k < m\<close> have "\<dots> = col constraint_matrix k \<bullet> dual_sol (adwords \<pi>)"
-    unfolding dual_sol_def
+  also from \<open>k < m\<close> have "\<dots> = col constraint_matrix k \<bullet> addwords_dual_sol (adwords \<pi>)"
+    unfolding addwords_dual_sol_def
     by (subst col_k, subst scalar_prod_append) auto
 
-  finally show "b (from_nat_into G k) \<le> col constraint_matrix k \<bullet> dual_sol (adwords \<pi>)" .
+  finally show "b (from_nat_into G k) \<le> col constraint_matrix k \<bullet> addwords_dual_sol (adwords \<pi>)" .
 qed
 
 lemma dual_nonneg:
-  "dual_sol (adwords \<pi>) \<ge> 0\<^sub>v n"
-  unfolding less_eq_vec_def dual_sol_def online_dual_def offline_dual_def
+  "addwords_dual_sol (adwords \<pi>) \<ge> 0\<^sub>v n"
+  unfolding less_eq_vec_def addwords_dual_sol_def online_dual_def offline_dual_def
   using perm
   by (auto simp: n_sum intro: adwords_x_nonneg adwords_z_nonneg dest: permutations_of_setD)
 
 lemma dual_primal_times_adwords_step:
   assumes "j \<in> R"
   assumes "z s j = 0"
-  assumes "constraint_vec \<bullet> dual_sol s * (1 - 1 / c) = bids_vec \<bullet> primal_sol (allocation s)"
-  shows "constraint_vec \<bullet> dual_sol (adwords_step s j) * (1 - 1 / c) = bids_vec \<bullet> primal_sol (allocation (adwords_step s j))"
+  assumes "constraint_vec \<bullet> addwords_dual_sol s * (1 - 1 / c) = bids_vec \<bullet> primal_sol (allocation s)"
+  shows "constraint_vec \<bullet> addwords_dual_sol (adwords_step s j) * (1 - 1 / c) = bids_vec \<bullet> primal_sol (allocation (adwords_step s j))"
   using \<open>j \<in> R\<close>
 proof (cases j rule: adwords_step_casesR[where s = s])
   case new_match
@@ -971,20 +971,20 @@ proof (cases j rule: adwords_step_casesR[where s = s])
     unfolding scalar_prod_def online_dual_def
     by (auto simp add: z_upd sum.If_cases * ** sum.remove)
 
-  have "constraint_vec \<bullet> dual_sol (adwords_step s j) = budget_constraint_vec \<bullet> offline_dual (adwords_step s j) +
+  have "constraint_vec \<bullet> addwords_dual_sol (adwords_step s j) = budget_constraint_vec \<bullet> offline_dual (adwords_step s j) +
     1\<^sub>v (card R) \<bullet> online_dual (adwords_step s j)"
-    unfolding constraint_vec_def dual_sol_def
+    unfolding constraint_vec_def addwords_dual_sol_def
     by (auto intro!: scalar_prod_append)
 
   also have "\<dots> = ?\<Delta> + ?B + b {?i,j} * (1 - x s ?i) + 1\<^sub>v (card R) \<bullet> online_dual s"
     by (simp add: \<Delta>_offline \<Delta>_online)
 
-  also have "\<dots> = ?\<Delta> + b {?i,j} * (1 - x s ?i) + constraint_vec \<bullet> dual_sol s"
-    unfolding constraint_vec_def dual_sol_def
+  also have "\<dots> = ?\<Delta> + b {?i,j} * (1 - x s ?i) + constraint_vec \<bullet> addwords_dual_sol s"
+    unfolding constraint_vec_def addwords_dual_sol_def
     by (auto intro!: scalar_prod_append[symmetric])
 
-  finally have \<Delta>_dual: "constraint_vec \<bullet> dual_sol (adwords_step s j) = 
-    ?\<Delta> + b {?i,j} * (1 - x s ?i) + constraint_vec \<bullet> dual_sol s" .
+  finally have \<Delta>_dual: "constraint_vec \<bullet> addwords_dual_sol (adwords_step s j) = 
+    ?\<Delta> + b {?i,j} * (1 - x s ?i) + constraint_vec \<bullet> addwords_dual_sol s" .
 
   have "\<dots> * (1 - 1/c) = (?\<Delta> + b {?i,j} * (1 - x s ?i)) * (1 - 1/c) + bids_vec \<bullet> primal_sol (allocation s)"
     by (auto simp: field_simps assms)
@@ -997,16 +997,16 @@ proof (cases j rule: adwords_step_casesR[where s = s])
 qed (use assms in \<open>auto simp: adwords_step_def\<close>)
 
 lemma dual_primal_times_adwords':
-  assumes "constraint_vec \<bullet> dual_sol s * (1 - 1 / c) = bids_vec \<bullet> primal_sol (allocation s)"
+  assumes "constraint_vec \<bullet> addwords_dual_sol s * (1 - 1 / c) = bids_vec \<bullet> primal_sol (allocation s)"
   assumes "distinct js"
   assumes "set js \<subseteq> R"
   assumes "\<forall>j \<in> set js. z s j = 0"
-  shows "constraint_vec \<bullet> dual_sol (adwords' s js) * (1 - 1 / c) = bids_vec \<bullet> primal_sol (allocation (adwords' s js))"
+  shows "constraint_vec \<bullet> addwords_dual_sol (adwords' s js) * (1 - 1 / c) = bids_vec \<bullet> primal_sol (allocation (adwords' s js))"
   using assms
 proof (induction js arbitrary: s)
   case (Cons j js)
 
-  then have step: "constraint_vec \<bullet> dual_sol (adwords_step s j) * (1 - 1/c) = bids_vec \<bullet> primal_sol (allocation (adwords_step s j))"
+  then have step: "constraint_vec \<bullet> addwords_dual_sol (adwords_step s j) * (1 - 1/c) = bids_vec \<bullet> primal_sol (allocation (adwords_step s j))"
     by (auto intro: dual_primal_times_adwords_step)
 
   from Cons.prems have "\<forall>j' \<in> set js. z (adwords_step s j) j' = z s j'"
@@ -1020,7 +1020,7 @@ proof (induction js arbitrary: s)
 qed simp
 
 lemma dual_primal_times_adwords:
-  shows "constraint_vec \<bullet> dual_sol (adwords \<pi>) * (1 - 1/c) = bids_vec \<bullet> primal_sol (allocation (adwords \<pi>))"
+  shows "constraint_vec \<bullet> addwords_dual_sol (adwords \<pi>) * (1 - 1/c) = bids_vec \<bullet> primal_sol (allocation (adwords \<pi>))"
   using perm c_gt_1
   by (auto intro!: dual_primal_times_adwords' scalar_prod_right_zero dest: permutations_of_setD)
 
@@ -1286,7 +1286,7 @@ theorem adwords_competitive_ratio:
   shows "allocation_value (allocation (adwords \<pi>)) / allocation_value M \<ge> (1 - 1/c) * (1 - R_max)"
   using assms
 proof (intro mult_imp_le_div_pos max_value_allocation_pos_value)
-  from assms c_gt_1 R_max_le_1 have "(1 - 1 / c) * (1 - R_max) * allocation_value M \<le> (1 - 1/c) * (1 - R_max) * (constraint_vec \<bullet> (dual_sol (adwords \<pi>)))"
+  from assms c_gt_1 R_max_le_1 have "(1 - 1 / c) * (1 - R_max) * allocation_value M \<le> (1 - 1/c) * (1 - R_max) * (constraint_vec \<bullet> (addwords_dual_sol (adwords \<pi>)))"
     by (auto intro!: mult_left_mono max_value_allocation_bound_by_feasible_dual dual_feasible dual_nonneg)
 
   also have "\<dots> = (1 - R_max) * (bids_vec \<bullet> primal_sol (allocation (adwords \<pi>)))"

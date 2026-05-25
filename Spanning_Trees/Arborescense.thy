@@ -13,6 +13,15 @@ begin
 
 definition "arborescence r T = (has_no_cycle T \<and> (T \<noteq> {} \<longrightarrow> Vs T = connected_component T r))"
 
+lemma arborescenceI:
+ "\<lbrakk>has_no_cycle T; T \<noteq> {} \<Longrightarrow> Vs T = connected_component T r\<rbrakk> \<Longrightarrow> arborescence r T"
+and arborescenceE:
+ "\<lbrakk> arborescence r T; \<lbrakk>has_no_cycle T; T \<noteq> {} \<Longrightarrow> Vs T = connected_component T r\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+and arborescenceD:
+ "arborescence r T \<Longrightarrow> has_no_cycle T"
+ "\<lbrakk>arborescence r T; T \<noteq> {}\<rbrakk> \<Longrightarrow> Vs T = connected_component T r"
+  by(auto simp add: arborescence_def)
+
 lemma contains_empty: "arborescence r {}"
   using has_no_cycle_indep_ex has_no_cycle_indep_subset 
   by (fastforce simp add: arborescence_def)
@@ -439,8 +448,9 @@ next
 qed
 
 lemma arborescense_connected: "arborescence  r T \<Longrightarrow> connected T "
-  using  Undirected_Set_Graphs.reachable_refl[of _ T ] connected_components_member_eq not_reachable_empt 
-  by(intro same_comp_connected)(force simp add: arborescence_def)
+  using connected_components_closed 
+  by (fastforce intro!: same_comp_connected connected_components_member_eq 
+                 elim!: arborescenceE)
 
 lemma strong_exchange: assumes r_in_G: "r \<in> Vs G" 
   shows "strong_exchange_property G {T |T. arborescence r T}"
@@ -518,7 +528,7 @@ proof(rule strong_exchange_propertyI, goal_cases)
     proof(cases "A = {}")
       case True
       then show ?thesis 
-        using  Undirected_Set_Graphs.reachable_refl[of u' A]  u'v'(1) u'v'(2)
+        using  reachable_refl[of u' A]  u'v'(1) u'v'(2)
           connected_component_one_edge[of u' "{u', v'}"]  not_reachable_empt[of u' ]
         by auto
     next

@@ -6,10 +6,17 @@ session "Undirected_Set_Graphs" = "HOL-Eisbach" +
     "Directed_Set_Graphs"
 
   (*directories*)
+  
+  theories [document=false]
+    Misc
 
   theories
-    "Undirected_Set_Graphs"
-    "Pair_Graph_Berge_Adaptor"
+    Undirected_Set_Graphs
+    Paths
+    Connected_Components
+    Cycles
+    Bipartite
+    Pair_Graph_Berge_Adaptor
     Pair_Graph_U_Specs
     Directed_Undirected
 

@@ -5,8 +5,7 @@ session "Matroid_Intersection" = "HOL-Data_Structures" +
     Directed_Set_Graphs
     Graph_Algorithms_Dev
     Undirected_Set_Graphs
-    RANKING
-    Berge_Lemma
+    Basic_Matching
 
   theories
     Matroid_Intersection

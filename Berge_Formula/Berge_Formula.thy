@@ -11,33 +11,16 @@ lemma matching_vertices_double_size:
   assumes "graph_invar M"
   assumes "matching M"
   shows "2 * (card M) = card (Vs M)"
-proof -
-  have "finite (Vs M)" 
-    using assms(1)  by simp
-  have "card (Vs M) =  sum (\<lambda> e. card e) M"
-    using \<open>finite (Vs M)\<close> \<open>matching M\<close> matching_card_is_sum by fastforce
-  also have "\<dots> = card M * 2" using sum_card_edges2 assms(1)  by simp  
-  ultimately show ?thesis 
-    by presburger
-qed
+  by (simp add: assms(1,2) graph_abs.intro graph_abs.matching_card_vs)
 
 lemma edge_same_comp:
   assumes "graph_invar G"
   assumes "e \<in> G"
   assumes "x \<in> e"
   assumes "y \<in> e"
-  shows "x \<in> connected_component G y"
-proof(cases "x = y")
-  case True
-  then show ?thesis 
-    by (simp add: in_own_connected_component)
-next
-  case False
-  then have "e = {x, y}" using assms 
-    by fastforce
-  show ?thesis  
-    by (metis \<open>e = {x, y}\<close> assms(2) doubleton_eq_iff vertices_edges_in_same_component)
-qed
+  shows "x \<in> connected_component G y" 
+  using assms(1,2,3,4) edge_subset_component in_mono 
+  by force
 
 lemma left_uncoverred_matching:
   assumes "graph_invar G"
@@ -630,11 +613,14 @@ next
       by (meson perfect_matchingE perfect_matchingE)
     then have "card M' \<le> card M" 
       by (simp add: assms(5))
-    then have "card (Vs M') \<le> card (Vs M)" 
-      using M'
-      apply(simp add: perfect_matching_def) 
-      by (smt (verit) Vs_subset assms(2) card_mono graph_invar_subgraph matching_subgraph
-              matching_vertices_double_size obtain_subset_with_card_n)
+    moreover have "graph_invar M'"
+      using \<open>graph_matching G M'\<close> assms(1) graph_invar_subset by auto
+    moreover have "graph_invar M"
+      using assms(1,2) graph_invar_subset by auto
+    ultimately have "card (Vs M') \<le> card (Vs M)" 
+      using M' assms(1,2)
+      by(auto elim!: perfect_matchingE 
+           simp add: matching_vertices_double_size[symmetric]) 
     then have "card (Vs M) \<ge> card (Vs G)" 
       by (metis M' perfect_matchingE)
     have "Vs M \<subseteq> Vs G" 
@@ -703,7 +689,7 @@ next
       using assms(7) by presburger
     have "finite (Vs ?H)" using `Vs ?H = Vs G \<union> A` 
       by (simp add: assms(1) assms(6))
-    have "graph_invar ?H" 
+    have graph_invar_H:"graph_invar ?H" 
       using `finite (Vs ?H)` assms(1) assms(8)
       by (smt (verit) Un_iff dblton_graph_def disjoint_iff_not_equal mem_Collect_eq)
     obtain Mh where Mh:"perfect_matching ?H Mh" 
@@ -805,8 +791,8 @@ next
     then have "2* card M + ?k \<ge> 2*card Mh - card A" 
       by (metis assms(7))
     also have "2*card Mh - card A = card (Vs Mh) - card A" 
-      using Mh dblton_graph_subset matching_vertices_double_size
-      by (fastforce simp add: perfect_matching_def matching_vertices_double_size subset_eq)
+      using Mh dblton_graph_subset matching_vertices_double_size graph_invar_H
+      by(force elim!: perfect_matchingE simp add: matching_vertices_double_size[symmetric])
     also have "card (Vs Mh) - card A = card (Vs ?H) - card A" 
       using 6 by presburger
     also  have "card (Vs ?H) - card A = card(Vs G)" 
@@ -892,5 +878,17 @@ lemma  berge_formula:
   using berge_formula2'[of M X] 
   by (simp add: assms graph le_antisym left_uncoverred_matching)
 
+lemma  berge_formula':
+  assumes "X \<subseteq> Vs G"
+  assumes "\<forall>Y \<subseteq> Vs G. int (card (odd_comps_in_diff G X)) - int (card X) \<ge> 
+          int (card (odd_comps_in_diff G Y)) - int (card Y)" 
+  shows " 2 * \<nu> G + card (odd_comps_in_diff G X) - card X = card (Vs G)"
+proof(rule obtain_max_card_matching_\<nu>[of G], goal_cases)
+  case (2 M)
+  thus ?case
+    using assms berge_formula[OF 2(1) assms]
+    by(auto elim: max_card_matchingE)
+qed (simp add: dblton_graph_finite_Vs graph)
+ 
 end
 end

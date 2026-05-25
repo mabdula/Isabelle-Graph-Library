@@ -1,5 +1,5 @@
 theory Even_More_Graph_2
-  imports Primal_Dual_Bipartite_Matching.Even_More_Graph
+  imports Undirected_Set_Graphs.Undirected_Set_Graphs
 begin
 
 (*definition Vs where "Vs E \<equiv> \<Union> E"*)

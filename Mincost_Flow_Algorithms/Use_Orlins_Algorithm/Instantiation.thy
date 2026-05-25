@@ -352,7 +352,7 @@ definition "get_source_target_path_a state s =
       in case (get_target_for_source_aux_aux bf 
                      (\<lambda> v. abstract_real_map (bal_lookup (balance state)) v)
                                            (current_\<gamma> state) vs) of 
-            Some t \<Rightarrow> (let Pbf = search_rev_path_exec s bf t Nil;
+            Some t \<Rightarrow> (let Pbf = itrev (search_rev_path_exec s bf t);
                              P = (map (pair_to_realising_redge_forward state)
                                       (edges_of_vwalk Pbf)) 
                        in Some (t, P))|
@@ -369,7 +369,7 @@ definition "get_source_target_path_b state t =
        in case ( get_source_for_target_aux_aux bf 
                        (\<lambda> v. abstract_real_map (bal_lookup (balance state)) v)
                                            (current_\<gamma> state) vs) of
-          Some s \<Rightarrow> let Pbf =itrev (search_rev_path_exec t bf s Nil);
+          Some s \<Rightarrow> let Pbf = search_rev_path_exec t bf s;
                          P = (map (pair_to_realising_redge_backward state)
                                         (edges_of_vwalk Pbf)) 
                     in Some (s, P) |
@@ -2340,7 +2340,7 @@ proof( goal_cases)
   next
     case (Some a)
   define tt where "tt = the tt_opt"
-  define Pbf where "Pbf = search_rev_path_exec s bf tt Nil"
+  define Pbf where "Pbf = itrev (search_rev_path_exec s bf tt)"
   define PP where "PP = map (\<lambda>e. prod.fst (get_edge_and_costs_forward (a_not_blocked state) (a_current_flow state)
                                   (prod.fst e) (prod.snd e)))
                    (edges_of_vwalk Pbf)"
@@ -2640,7 +2640,7 @@ proof-
   next
     case (Some a)
   define tt where "tt = the tt_opt"
-  define Pbf where "Pbf = search_rev_path_exec s bf tt Nil"
+  define Pbf where "Pbf = itrev (search_rev_path_exec s bf tt)"
   define PP where "PP = map (\<lambda>e. prod.fst (get_edge_and_costs_forward (a_not_blocked state) (a_current_flow state)
                                   (prod.fst e) (prod.snd e)))
                    (edges_of_vwalk Pbf)"
@@ -2785,7 +2785,7 @@ proof-
     using   knowledge(4,16,2,3)   vs_is_V weight_le_PInfty  is_a_walk 
             bellman_ford.bellman_ford_computes_length_of_optpath[OF bellman_ford no_neg_cycle_in_bf, of s t]
             bellman_ford.opt_vs_path_def[OF bellman_ford, of s t]
-            bellman_ford.vsp_pathI[OF bellman_ford long_enough, of s t]
+            bellman_ford.vs_pathI[OF bellman_ford long_enough, of s t]
             bellman_ford.weight_le_PInfty_in_vs[OF bellman_ford long_enough, of]
             calculation
     by (auto simp add: vwalk_bet_def bf_def bellman_ford_forward_def bellman_ford_init_algo_def bellman_ford_algo_def)
@@ -3200,7 +3200,7 @@ lemma get_source_for_target_ax:
   next
     case (Some a)
   define ss where "ss = the ss_opt"
-  define Pbf where "Pbf = rev (search_rev_path_exec t bf ss Nil)"
+  define Pbf where "Pbf = search_rev_path_exec t bf ss"
   define PP where "PP = map (\<lambda>e. prod.fst (get_edge_and_costs_backward (a_not_blocked state) (a_current_flow state)
                                   (prod.snd e) (prod.fst e)))
                    (edges_of_vwalk Pbf)"
@@ -3564,7 +3564,7 @@ proof-
   next
     case (Some a)
   define ss where "ss = the ss_opt"
-  define Pbf where "Pbf = rev (search_rev_path_exec t bf ss Nil)"
+  define Pbf where "Pbf = search_rev_path_exec t bf ss"
   define PP where "PP = map (\<lambda>e. prod.fst (get_edge_and_costs_backward (a_not_blocked state) (a_current_flow state)
                                   (prod.snd e) (prod.fst e)))
                    (edges_of_vwalk Pbf)"
@@ -3735,7 +3735,7 @@ proof-
     using   knowledge(4,16,2,3)   vs_is_V weight_le_PInfty  is_a_walk 
             bellman_ford.bellman_ford_computes_length_of_optpath[OF bellman_ford no_neg_cycle_in_bf, of t s]
             bellman_ford.opt_vs_path_def[OF bellman_ford, of t s]
-            bellman_ford.vsp_pathI[OF bellman_ford long_enough, of t s]
+            bellman_ford.vs_pathI[OF bellman_ford long_enough, of t s]
             bellman_ford.weight_le_PInfty_in_vs[OF bellman_ford long_enough, of]
             calculation
     by (auto simp add: vwalk_bet_def bf_def bellman_ford_backward_def bellman_ford_algo_def bellman_ford_init_algo_def)

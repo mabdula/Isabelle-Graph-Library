@@ -5,6 +5,7 @@ session "Spanning_Trees" = "HOL-Data_Structures" +
     "Undirected_Set_Graphs"
     "Graph_Algorithms_Dev"
     Greedoids
+    Directed_Set_Graphs
 
   theories
     "Spanning_Trees"

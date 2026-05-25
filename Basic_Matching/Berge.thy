@@ -3,211 +3,12 @@
 *)
 
 theory Berge
-imports Undirected_Set_Graphs.Undirected_Set_Graphs Alternating_Lists
+imports Matching Undirected_Set_Graphs.Connected_Components
 begin
 
-subsection \<open>Misc\<close>
-
-lemma distinct_singleton_set: "distinct xs \<Longrightarrow> set xs = {x} \<longleftrightarrow> xs = [x]"
-  by (induction xs arbitrary:) (fastforce simp add: neq_Nil_conv intro: ccontr[where P = "_ = []"])+
-
-lemma empty_iff_card_0: "finite s \<Longrightarrow> s = {} \<longleftrightarrow> card s = 0"
-  by auto
-
-lemma degree_insert_leq: "degree G e \<le> degree (insert e' G) e"
-  by (simp add: subset_edges_less_degree subset_insertI)
-
-lemma in_singleton: "\<lbrakk>s = {x}; y \<in> s\<rbrakk> \<Longrightarrow> x = y"
-  by auto
-
-subsection \<open>Symmetric Difference\<close>
-
-definition symmetric_diff (infixl "\<oplus>" 65) where
-  "symmetric_diff s t = (s - t) \<union> (t - s)"
-
-lemma sym_diff_subset:
-  "s \<oplus> s' \<subseteq> s \<union> s'"
-  by (auto simp: symmetric_diff_def)
-
-lemma card_Int_Diff:
-  assumes "finite s" "finite t" 
-  shows "card (s - t) + card (s \<inter> t) = card s"
-  using assms
-  by (metis add.commute Int_Diff_Un Int_Diff_disjoint card_Un_disjoint finite_Diff finite_Int)
-
-lemma card_symm_diff:
-  assumes "finite s" "finite t" "card (t - s) = card (s \<inter> t)"
-  shows "card (s \<oplus> t) = card s"
-  using assms 
-  by(auto simp: symmetric_diff_def disjnt_Diff1 card_Un_disjnt card_Int_Diff)
-
-lemma in_symm_diff_eq_1:
-  assumes "e \<in> G'"
-  shows "e \<in> G \<longleftrightarrow> e \<notin> (G \<oplus> G')"
-  using assms
-  unfolding symmetric_diff_def
-  by auto
-
-lemma in_symm_diff_eq_2:
-  assumes "e \<notin> G'"
-  shows "e \<in> G \<longleftrightarrow> e \<in> (G \<oplus> G')"
-  using assms
-  unfolding symmetric_diff_def
-  by auto
-
-lemma symmetric_diff_id:
-  shows "(s \<oplus> t) \<oplus> t = s"
-  unfolding symmetric_diff_def
-  by auto
-
-lemma finite_symm_diff:
-  "\<lbrakk>finite s; finite t\<rbrakk> \<Longrightarrow> finite (s \<oplus> t)"
-  by (auto simp: symmetric_diff_def)
-
-lemma symm_diff_mutex:
-  "\<lbrakk>x \<in> (s \<oplus> t); x \<in> s\<rbrakk> \<Longrightarrow> x \<notin> t"
-  by (auto simp: symmetric_diff_def)
-
-
-subsection \<open>Matchings\<close>
-
-definition matching where
-  "matching M \<longleftrightarrow> 
-     (\<forall>e1 \<in> M. \<forall>e2 \<in> M. e1 \<noteq> e2 \<longrightarrow> e1 \<inter> e2 = {})"
-
-lemma matchingE:
-  "matching M \<Longrightarrow> 
-    ((\<And>e1 e2. \<lbrakk>e1 \<in> M; e2 \<in> M; e1 \<noteq> e2\<rbrakk> \<Longrightarrow> e1 \<inter> e2 = {}) \<Longrightarrow> P) \<Longrightarrow> P"
-  by (auto simp: matching_def)
-
-lemma matching_def2:
-  "matching M \<longleftrightarrow> (\<forall>v \<in> Vs M. \<exists>!e\<in>M. v \<in> e)"
-  unfolding matching_def Vs_def by blast
-
-lemma matching_unique_match:
-  "\<lbrakk>matching M; v \<in> e; v \<in> f; e \<in> M; f \<in> M\<rbrakk> \<Longrightarrow> e = f"
-  by (auto simp: matching_def)
-
-lemma doubleton_in_matching:
-  assumes "matching M"
-  shows "{v1 ,v2} \<in> M \<Longrightarrow> {v1, v3} \<in> M \<Longrightarrow> v2 = v3"
-    "{v2 ,v1} \<in> M \<Longrightarrow> {v3, v1} \<in> M \<Longrightarrow> v2 = v3"
-  using assms
-  by (fastforce simp: doubleton_eq_iff matching_def2 Vs_def)+
-
-lemma degree_matching_in_M:
-  assumes "matching M" "v \<in> Vs M"
-  shows "degree M v = 1"
-proof-
-  obtain e where edef: "v \<in> e" "e \<in> M"
-    using assms
-    by (fastforce simp: matching_def2)
-  hence "{e} = {e. v \<in> e} \<inter> M"
-    using assms edef
-    by (auto simp: matching_def2)
-  moreover have "card' {e} = 1" 
-    by (simp add: card'_def one_eSuc enat_0)
-  ultimately show ?thesis
-    by (simp add: degree_def)
-qed
-
-lemma degree_matching:
-  assumes "matching M"
-  shows "degree M v \<le> 1"
-proof(cases "v \<in> Vs M")
-  case True thus ?thesis
-    by (simp add: assms degree_matching_in_M)
-next
-  case False thus ?thesis
-    by (simp add: degree_not_Vs)
-qed
-
-lemma degree_symm_diff:
-  assumes "matching M" "matching M'"
-  shows "degree (M \<oplus> M') v \<le> 2"
-proof-
-  have "{e. v \<in> e} \<inter> ((M - M') \<union> (M' - M)) \<subseteq> ({e. v \<in> e} \<inter> M) \<union> ({e. v \<in> e} \<inter> M')"
-    by blast
-  hence "degree (M \<oplus> M') v \<le> degree (M \<union> M') v"
-    by (simp add: card'_mono Int_Un_distrib degree_def symmetric_diff_def)
-  also have "... \<le> degree M v + degree M' v"
-    by (simp add: Int_Un_distrib card'_def card_Un_le degree_def)
-  also have "... \<le> degree M v + 1"
-    using degree_matching[OF \<open>matching M'\<close>]
-    by auto
-  also have "... \<le> 2"
-    using degree_matching[OF \<open>matching M\<close>]
-    by (subst one_add_one[symmetric]) (fastforce intro!:  add_right_mono)
-  finally show ?thesis .
-qed
-
-
-subsection \<open>Augmenting Paths\<close>
-
-definition matching_augmenting_path where
-  "matching_augmenting_path M p = ( 
-    (length p \<ge> 2) \<and>
-     alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path p) \<and> 
-     hd p \<notin> Vs M \<and> last p \<notin> Vs M)"
-
-abbreviation "graph_augmenting_path G M p \<equiv>
-  path G p \<and> distinct p \<and> matching_augmenting_path M p"
-
-lemma matching_augmenting_path_feats:
-  assumes "matching_augmenting_path M p"
-  shows "(length p \<ge> 2)" "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path p)" "hd p \<notin> Vs M" "last p \<notin> Vs M"
-  using assms
-  by (auto simp: matching_augmenting_path_def)
-
-lemma graph_augmenting_path_feats:
-  assumes "graph_augmenting_path G M p"
-  shows "matching_augmenting_path M p" "distinct p" "path G p"
-  using assms
-  by auto
-
-lemma matching_augmenting_pathE:
-  "\<lbrakk>matching_augmenting_path M p; \<lbrakk>(length p \<ge> 2); alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path p); hd p \<notin> Vs M; last p \<notin> Vs M\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  by (auto simp: matching_augmenting_path_def)
-
-lemma matching_augmenting_path_last_edge_nin:
-  assumes "matching_augmenting_path M p"
-  shows "last (edges_of_path p) \<notin> M"
-proof- 
-  have "last p \<in> last (edges_of_path p)"
-    using assms
-    by (simp add: matching_augmenting_path_def last_v_in_last_e)
-  then show ?thesis
-    using matching_augmenting_path_feats(4)[OF assms]
-    by (fastforce simp: Vs_def)
-qed
-
-lemma matching_augmenting_path_odd_length:
-  assumes "matching_augmenting_path M p"
-  shows "odd (length (edges_of_path p))"
-  using matching_augmenting_path_last_edge_nin[OF assms] assms
-  by (fastforce
-            simp add: eval_nat_numeral Suc_le_length_iff edges_of_path_length'[where p = p]
-                      matching_augmenting_path_last_edge_nin
-            dest!: alternating_list_even_last
-            elim!: matching_augmenting_pathE)
 
 subsection\<open>Direction 1 of Berge\<close>
 text\<open>If there is a bigger matching, then there is an augmenting path\<close>
-
-lemma smaller_matching_less_members:
-  assumes "finite G" "card G < card G'"
-  shows "card ((G \<oplus> G') \<inter> G) < card ((G \<oplus> G') \<inter> G')"
-proof-
-  have "card ((G \<oplus> G') \<inter> G) = card (G - G')"
-    by (auto intro: HOL.arg_cong[where f = card] simp: symmetric_diff_def)
-  moreover have "card ((G \<oplus> G') \<inter> G') = card (G' - G)"
-    by (auto intro: HOL.arg_cong[where f = card] simp: symmetric_diff_def)
-  moreover have "card (G - G') < card (G' - G)"
-    using assms card.infinite
-    by (fastforce intro!: card_less_sym_Diff)
-  ultimately show "card ((G \<oplus> G') \<inter> G) < card ((G \<oplus> G') \<inter> G')"
-    by simp
-qed
 
 lemma one_unbalanced_comp_edges:
   assumes finite: "finite G" and
@@ -294,7 +95,7 @@ next
 qed (simp_all add: alt_list_empty)
 
 (*
-  Gvery edge in the set of edges belonging to the connected component with more edges from M'
+  Every edge in the set of edges belonging to the connected component with more edges from M'
   belongs to the edge path representing that connected component.
 *)
 
@@ -321,65 +122,6 @@ lemma (in graph_abs) rev_component_path'_works:
         "distinct (rev (component_path' G C))"
   using component_path'_works[OF assms]
   by (auto intro: rev_path_is_path)
-
-lemma component_edges_subset:
-  shows "component_edges G C \<subseteq> G"
-  by (auto simp: component_edges_def)
-
-lemma edges_path_subset_edges:
-  assumes "path G p" "set p \<subseteq> C"
-  shows "set (edges_of_path p) \<subseteq> component_edges G C"
-  using assms
-  by (induction) (auto simp add: component_edges_def)
-
-lemma degree_edges_of_path_ge_2_all:
-  assumes "distinct p" "length p \<ge> 3" "v\<in>set p"
-  shows "degree (set (edges_of_path (last p # p))) v \<ge> 2"
-proof(cases "v = hd p \<or> v = last p")
-  case True
-  moreover obtain a a' a'' p' where p: "p = a # a' # a'' # p'"
-    using assms(2)
-    by(auto simp add: Suc_le_length_iff eval_nat_numeral)
-  ultimately have "v = a \<or> v = last (a'' # p')"
-    by auto
-  moreover have "2 \<le> degree (set (edges_of_path (last p # p))) a"
-  proof-
-    have "last p \<noteq> a'" using assms(1) p by auto
-    hence "{last p, a} \<noteq> {a, a'}" by (auto simp: doubleton_eq_iff)
-    hence "2 \<le> degree {{last p, a}, {a, a'}} a"
-      by (simp add: degree_insert eval_enat_numeral one_eSuc)
-    moreover have "{{last p, a}, {a, a'}} \<subseteq> set (edges_of_path (last p # p))"
-      by (simp add: p)
-    ultimately show ?thesis
-      using order.trans 
-      by (force dest!: subset_edges_less_degree[where v = a])
-  qed
-  moreover have "2 \<le> degree (set (edges_of_path (last p # p))) (last (a'' # p'))"
-  proof-
-    obtain u where u: "{u, last (a'' # p')} \<in> set (edges_of_path (a' # a'' # p'))" "u \<in> set (a' # a'' # p')"
-      by (elim exists_conj_elims, rule exE[OF last_in_edge]) force
-    hence "{u, last (a'' # p')} \<noteq> {a, last (a'' # p')}"
-      using assms(1) u
-      by (auto simp add: p doubleton_eq_iff)
-    hence "2 \<le> degree {{u, last (a'' # p')}, {a, last (a'' # p')}} (last (a'' # p'))"
-      by (simp add: degree_insert eval_enat_numeral one_eSuc)
-    moreover have "{{u, last (a'' # p')}, {a, last (a'' # p')}} \<subseteq> set (edges_of_path (last p # p))"
-      using p u(1) by fastforce
-    ultimately show ?thesis
-      using order.trans
-      by (fastforce dest!: subset_edges_less_degree[where v = "(last (a'' # p'))"])
-  qed
-  ultimately show ?thesis
-    by fastforce
-next
-  case False
-  hence "2 = degree (set (edges_of_path p)) v"
-    by (simp add: assms(1) assms(3) degree_edges_of_path_ge_2)
-  moreover have "set (edges_of_path p) \<subseteq> set (edges_of_path (last p # p))"
-    by (cases p) fastforce+
-  then show ?thesis
-    by (simp add: \<open>2 = degree (set (edges_of_path p)) v\<close> subset_edges_less_degree)
-qed
 
 lemma all_edges_covered:
   assumes matchings: "matching M" "matching M'" and
@@ -479,7 +221,7 @@ next
           qed
           moreover have horrid_eq_expr: "\<forall>x\<in>set (edges_of_path vs'). (x \<in> M') = (x \<notin> M)"
             using sym_diff_subset symm_diff_mutex component_edges_subset[where G = "M \<oplus> M'"]
-            by (fastforce simp: *)
+            by (fastforce simp: * simp del: symm_diff_empty)
           moreover have "alt_list (\<lambda>e. e \<in> M') (\<lambda>e. e \<in> M) (edges_of_path vs')"
           proof-
             have "path (M \<oplus> M') (last vs # vs)"
@@ -699,24 +441,6 @@ proof-
         subgoal by (simp add: degree_symm_diff matchings(1) matchings(2))
         done
   done
-qed
-
-lemma con_comp_card_2:
-  assumes con_comp: "C \<in> connected_components G"
-  assumes finite_comp: "finite C"
-  assumes doubleton_edges: "\<And>e. e\<in>G \<Longrightarrow> \<exists>u v. e = {u, v} \<and> u \<noteq> v"
-  shows "card C \<ge> 2"
-proof-
-  obtain X where "X \<in> C" "X \<in> Vs G"
-    using con_comp connected_comp_nempty connected_component_subs_Vs by blast
-  then obtain F where "F \<in> G" "X \<in> F" unfolding Vs_def by blast
-  then obtain Y where "X \<noteq> Y" "F = {X, Y}" using doubleton_edges by force
-  hence "Y \<in> C"
-    using \<open>F \<in> G\<close> \<open>X \<in> C\<close> con_comp 
-    by (fastforce intro: in_connected_componentI4 dest: edges_are_walks)
-  show "card C \<ge> 2"
-    using finite_comp \<open>X \<in> C\<close> \<open>X \<noteq> Y\<close> \<open>Y \<in> C\<close>
-    by(auto simp: eval_nat_numeral not_less_eq_eq[symmetric] dest: card_le_Suc0_iff_eq)
 qed
 
 lemma matching_augmenting_path_exists_1_1_1:
@@ -961,10 +685,6 @@ proof(intro conjI)
     by (auto intro!: component_path'_works[OF assms(3) degree_symm_diff])
 qed
 
-lemma finite_con_comps:
-  "finite (Vs G) \<Longrightarrow> finite (connected_components G)"
-  by (auto simp: connected_components_def)
-
 lemma Berge_1:
   assumes finite: "finite M" "finite M'" and
     matchings: "matching M" "matching M'" and
@@ -1001,188 +721,6 @@ proof-
 qed
 
 subsection\<open>Direction 2 of Berge\<close>
-
-text\<open>An augmenting path can be used to construct a larger matching.\<close>
-
-lemma matching_delete:
-  assumes "matching M"
-  shows "matching (M - N)"
-  using assms
-  unfolding matching_def by blast
-
-lemma matching_insert:
-  assumes "e \<inter> (Vs M) = {}" "matching M"
-  shows "matching (insert e M)"
-  using assms
-  unfolding Vs_def matching_def by blast
-
-lemma symmetric_difference_assoc: "A \<oplus> (B \<oplus> C) = (A \<oplus> B) \<oplus> C"
-  unfolding symmetric_diff_def by blast
-
-lemma symm_diff_is_matching:
-  assumes 
-    "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path p)"
-    "matching M"
-    "hd p \<notin> Vs M"
-    "length p \<ge> 2 \<and> even (length p) \<Longrightarrow> last p \<notin> Vs M"
-    "distinct p"
-  shows "matching (M \<oplus> set (edges_of_path p))"
-  using assms
-proof(induction p arbitrary: M rule: induct_list0123)
-  case nil
-  then show ?case by (simp add: symmetric_diff_def)
-next
-  case list1
-  then show ?case by (simp add: symmetric_diff_def)
-next
-  case (list2 x y)
-  have "\<nexists>e. e \<in> M \<and> x \<in> e"
-    using Vs_def list2.prems(3)
-    by fastforce
-  moreover have "\<nexists>e. e \<in> M \<and> y \<in> e"
-    using Vs_def list2.prems(4)
-    by fastforce
-  moreover have "z \<in> Vs (insert {x, y} M) \<Longrightarrow> z = x \<or> z = y \<or> z \<in> Vs M"
-    for z
-    by(auto simp: Vs_def)
-  ultimately have "matching (insert {x, y} M)"
-    using list2.prems(2)
-    by (simp add: matching_def)
-  moreover have "{x, y} \<notin> M" using \<open>\<nexists>e. e \<in> M \<and> x \<in> e\<close>
-    by blast
-  ultimately show ?case 
-    by (simp add: symmetric_diff_def)
-next
-  case (list3 x y z ps)
-  from list3.prems(1)
-  have "{x, y} \<notin> M" "{y, z} \<in> M"
-    by (simp_all add: alt_list_step)
-
-  define M' where "M' = insert {x, y} (M - {{y, z}})"
-  have M'symmdiff: "M' = M \<oplus> {{x, y}, {y, z}}" unfolding symmetric_diff_def M'_def
-    using \<open>{x, y} \<notin> M\<close> \<open>{y, z} \<in> M\<close>
-    by fastforce
-
-  have xysymmdiff: "set (edges_of_path (x#y#z#ps)) = {{x, y}, {y, z}} \<oplus> set (edges_of_path (z # ps))"
-    using list3.prems(5) v_in_edge_in_path
-    by (fastforce simp: symmetric_diff_def)
-
-  have "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path (z # ps))"
-    using list3.prems(1)
-    by (simp add: alt_list_step)
-
-  hence altlistM': "alt_list (\<lambda>e. e \<notin> M') (\<lambda>e. e \<in> M') (edges_of_path (z # ps))"
-    apply (rule alt_list_cong)
-    using list3.prems(5) v_in_edge_in_path
-    by (force simp: M'_def)+
-
-  have "x \<notin> Vs (M - {{y, z}})"
-    using \<open>{y, z} \<in> M\<close> list3.prems(3)
-    by (simp add: Vs_def)
-  moreover have "y \<notin> Vs (M - {{y, z}})"
-    using \<open>{y, z} \<in> M\<close> list3.prems(2)
-    by (force simp: Vs_def matching_def)
-  ultimately have "matching M'"
-    by (simp add: matching_delete matching_insert list3.prems(2) M'_def)
-
-  have "z \<notin> Vs M'"
-  proof(rule ccontr, subst (asm) not_not)
-    assume "z \<in> Vs M'"
-    hence "z \<in> Vs (M - {{y, z}})"
-      using list3.prems(5)
-      by (fastforce simp: M'_def Vs_def)
-    then obtain e where "z \<in> e" "e \<in> M" "e \<noteq> {y, z}"
-      by (auto simp: Vs_def)
-    thus False
-      using \<open>{y, z} \<in> M\<close> list3.prems(2)
-      by (force simp: matching_def)
-  qed
-  moreover have "last (z # ps) \<notin> Vs M'"
-    if "2 \<le> length (z # ps)" "even (length (z # ps))"
-  proof(rule ccontr, subst (asm) not_not)
-    assume "last (z # ps) \<in> Vs M'"
-    hence "last (z # ps) \<in> Vs M \<or> last (z # ps) \<in> {x, y}"
-      by (force simp: M'_def Vs_def)
-    then have "last (z # ps) \<in> {x, y}"
-      using list3.prems(4) that
-      by force
-    thus False
-      using list3.prems(5) last_in_set
-      by (auto simp: distinct_length_2_or_more split: if_splits)
-  qed
-  moreover note \<open>matching M'\<close> altlistM' list3.prems(5)
-  ultimately have "matching (M' \<oplus> set (edges_of_path (z # ps)))"
-    using list3.IH(2)
-    by fastforce
-  then show ?case
-    by(simp only: M'symmdiff xysymmdiff symmetric_difference_assoc)
-qed
-
-lemma condition_for_greatness:
-  assumes "card (s \<inter> t) < card (s - t)" "finite t"
-  shows "card t < card (t \<oplus> s)"
-proof-
-  have tsstinter: "(t - s) \<inter> (s - t) = {}" by blast
-
-  have "card t = card ((t - s) \<union> (t \<inter> s))"
-    by (simp add: Un_Diff_Int)
-  also have "... = card (t - s) + card (t \<inter> s)"
-    using assms(2)
-    by (auto intro!: card_Un_disjoint)
-  also have "... < card (t - s) + card (s - t)"
-    by (simp add: assms(1) inf.commute)
-  also have "... = card ((t - s) \<union> (s - t))"
-    using assms order_less_trans
-    by (fastforce intro!: card_Un_disjoint[symmetric])
-  also have "... = card (t \<oplus> s)"
-    by (simp add: symmetric_diff_def)
-  finally show ?thesis .
-qed
-
-lemma last_edge_in_last_vert_in:
-  assumes "length p \<ge> 2" "last (edges_of_path p) \<in> G"
-  shows "last p \<in> Vs G"
-  using Vs_def assms last_v_in_last_e by fastforce
-
-lemma hd_edge_in_hd_vert_in:
-  "\<lbrakk>length p \<ge> 2; hd (edges_of_path p) \<in> G\<rbrakk> \<Longrightarrow> hd p \<in> Vs G"
-  using Vs_def hd_v_in_hd_e
-  by fastforce
-
-lemma distinct_length_filter_neg: 
-  assumes "distinct xs"
- shows "card (set xs - M) = length (filter (\<lambda>e. e \<notin> M) xs)" (is "?lhs = ?rhs")
-proof-
-  have "?lhs = card (set (filter  (\<lambda>e. e \<notin> M) xs))"
-    by (auto intro!: arg_cong[where f = card])
-  also have "... = length (remdups (filter (\<lambda>e. e \<notin> M) xs))"
-    by (auto simp: length_remdups_card_conv)
-  also have "... = ?rhs"
-    using \<open>distinct xs\<close>
-    by auto
-  finally show ?thesis
-    by simp
-qed
-
-lemma new_matching_bigger:
-  assumes "matching_augmenting_path M p"
-  assumes "distinct p"
-  assumes "finite M"
-  shows "card M < card (M \<oplus> set (edges_of_path p))"
-proof-
-  have dist: "distinct (edges_of_path p)"
-    using assms(2)
-    by (simp add: distinct_edges_of_vpath)
-  have "length (filter (\<lambda>e. e \<notin> M) (edges_of_path p)) = length (filter (\<lambda>e. e \<in> M) (edges_of_path p)) + 1"
-    using alternating_eq_iff_odd assms(1) matching_augmenting_path_feats(2) matching_augmenting_path_odd_length
-    by blast
-  then have "card (set (edges_of_path p) - M) = card (set (edges_of_path p) \<inter> M) + 1"
-    using distinct_length_filter_neg[OF dist] distinct_length_filter[OF dist]
-    by (simp add: inf_commute)
-  then show ?thesis
-    using condition_for_greatness[OF _ assms(3)]
-    by simp
-qed
 
 lemma Berge_2:         
   assumes aug_path: "matching_augmenting_path M p" "M \<subseteq> G" "path G p" "distinct p" and
@@ -1239,8 +777,6 @@ next
     by auto
 qed
 
-abbreviation "graph_matching G M \<equiv> matching M \<and> M \<subseteq> G"
-
 lemma laterally_transfer_aug_path':
   assumes "card M = card M'"
   assumes matching: "graph_matching G M'" "finite M'"
@@ -1274,62 +810,12 @@ locale graph_matching_defs =
   graph_defs +
   fixes M :: "'a set set"
 
-abbreviation "alt_path M p \<equiv> alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path p)"
-abbreviation "rev_alt_path M p \<equiv> alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) (edges_of_path p)"
-
-lemma matching_augmenting_path_rev:
-  assumes "matching_augmenting_path M p"
-  shows "matching_augmenting_path M (rev p)"
+lemma Berge_2':         
+  assumes aug_path: "matching_augmenting_path M p" "M \<subseteq> G" "path G p" "distinct p" and
+    finite: "finite M" and
+    matchings: "graph_matching G M"
+  shows "graph_matching G (M \<oplus> set (edges_of_path p))" 
   using assms
-proof-
-  have "hd p = last (rev p)" "last p = hd (rev p)"
-    using matching_augmenting_path_feats[OF assms]
-    by (auto simp: Suc_le_length_iff hd_rev last_rev numeral_2_eq_2 split: if_splits)
-  moreover have "alt_path M (rev p)"
-    using alt_list_rev[OF matching_augmenting_path_feats(2)[OF assms] matching_augmenting_path_odd_length[OF assms]]
-    by (auto simp: edges_of_path_rev[symmetric])
-  ultimately show ?thesis
-    using length_rev matching_augmenting_path_feats[OF assms] 
-    by(auto simp: matching_augmenting_path_def split: if_splits)
-qed
-
-lemma aug_paths_are_even:
-  assumes "matching_augmenting_path M p"
-  shows "even (length p)"
-  using assms
-  unfolding matching_augmenting_path_def
-  by (metis assms edges_of_path_length' even_add length_greater_0_conv
-            matching_augmenting_path_odd_length odd_one odd_pos)
-
-lemma odd_alt_path_rev:
-  assumes odd_lens: "odd (length p1)" "length p1 \<ge> 2" and alt_paths: "alt_path (-M) p1"
-  shows "alt_path M (rev p1)"
-    unfolding edges_of_path_rev[symmetric]
-    apply (intro alt_list_rev_even)
-    subgoal using alt_paths by simp
-    subgoal using odd_lens
-      by (simp add: edges_of_path_length)
-    done
-
-lemma even_alt_path_rev:
-  assumes even_lens: "even (length p1)" "length p1 \<ge> 2" and alt_paths: "alt_path M p1"
-  shows "alt_path M (rev p1)"
-  using  assms
-    unfolding edges_of_path_rev[symmetric]
-    apply (intro alt_list_rev)
-    subgoal using alt_paths by simp
-    subgoal using even_lens
-      by (auto simp add: edges_of_path_length)
-    done
-
-lemma alt_path_cons_odd:
-  assumes "odd (length p)" "alt_path M (v # p)"
-  shows "alt_path (-M) p" "{v, hd p} \<notin> M"
-  using assms
-  by(cases p; auto simp add: alt_list_step alt_list_empty)+
-
-lemma nin_M_alt_path:
-  "{v, hd vs} \<notin> M \<Longrightarrow> alt_path (-M) vs \<Longrightarrow> alt_path M (v # vs)"
-  by(cases vs; simp add: alt_list_step alt_list_empty)
+  by (auto intro!: Berge_2[of _ _ G] dest: Berge_2(3))
 
 end

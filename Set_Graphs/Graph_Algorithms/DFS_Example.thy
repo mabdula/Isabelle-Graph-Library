@@ -12,7 +12,8 @@ defines  dfs_initial_state = dfs.initial_state and
 neighbourhood=dfs.Graph.neighbourhood and
 dfs_impl = dfs.DFS_impl  and
 add_edge = dfs.Graph.add_edge and
-delete_edge = dfs.Graph.delete_edge
+delete_edge = dfs.Graph.delete_edge and
+from_list = dfs.Graph.from_list
   using G.Pair_Graph_Specs_axioms RBT.Set2_axioms
   by(auto intro!: DFS.intro  simp add: edge_map_update_def RBT_Set.empty_def adj_inv_def map_empty_def
                                            vset_inv_def)

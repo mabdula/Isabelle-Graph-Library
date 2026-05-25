@@ -3197,7 +3197,7 @@ proof (rule ccontr, goal_cases)
 qed
 
 lemma sorted_aux3:
-  "distinct xs \<Longrightarrow> xs = ys @ zs \<Longrightarrow> (\<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set ys \<longleftrightarrow> P x)) \<Longrightarrow> ys = filter P xs"
+  "\<lbrakk>distinct xs; xs = ys @ zs; \<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set ys \<longleftrightarrow> P x)\<rbrakk> \<Longrightarrow> ys = filter P xs"
   by (smt (verit, best) IntI UnCI distinct_append filter_append filter_empty_conv filter_id_conv list.set(1)
       self_append_conv set_append)
 
@@ -3208,6 +3208,7 @@ lemma sorted_aux4:
   "\<lbrakk>distinct xs; xs = (filter P xs) @ ys\<rbrakk> \<Longrightarrow> ys = (filter (\<lambda>x. \<not> P x) xs)"
   by (metis (no_types, lifting) filter_append filter_empty_conv filter_id_conv filter_set
       member_filter self_append_conv self_append_conv2)
+
 
 lemma sorted_aux5:
   assumes "distinct xs" "sorted_wrt (\<lambda>x1 x2. c x1 \<ge> c x2) xs" "(\<forall>x. c x = 1 \<or> c x = 0)"

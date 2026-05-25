@@ -1,7 +1,8 @@
 theory DFS_Imperative
-imports DFS Directed_Set_Graphs.Pair_Graph_Imperative
+imports DFS Directed_Set_Graphs.Pair_Graph_Imperative DFS_Example
 begin
-    
+
+  
     
   section \<open>Imperative DFS Locale\<close>
   
@@ -56,7 +57,7 @@ begin
     definition "DFS_initial_state_impl s = do {
       seen \<leftarrow> sempty_impl;
       seen \<leftarrow> sins_impl s seen;
-      return \<lparr> stack = [s], seen = seen, return = NotReachable \<rparr>
+      Heap_Monad.return \<lparr> stack = [s], seen = seen, return = NotReachable \<rparr>
     }"
 
     subsection \<open>Main Algorithm\<close>
@@ -66,7 +67,7 @@ begin
       "DFS_imperative G t dfs_state = do {
          (case stack dfs_state of (v # stack_tl) \<Rightarrow>
            (if v = t then 
-              return (dfs_state\<lparr>return:=Reachable\<rparr>)
+              Heap_Monad.return (dfs_state\<lparr>return:=Reachable\<rparr>)
             else do {
               ns \<leftarrow> neighbourhood_impl G v;
               ns \<leftarrow> s.dls_diff_imp ns (seen dfs_state);
@@ -82,11 +83,11 @@ begin
               }
             }
           )
-         | _ \<Rightarrow> return (dfs_state \<lparr>return := NotReachable\<rparr>)
+         | _ \<Rightarrow> Heap_Monad.return (dfs_state \<lparr>return := NotReachable\<rparr>)
         )}"
     
   
-    lemmas [code] = DFS_imperative.simps
+    lemmas [code] = DFS_imperative.simps DFS_impl.simps initial_state_def
         
     
     lemma DFS_initial_state_rule[sep_heap_rules]: "<emp> DFS_initial_state_impl s <DFS_state_assn (initial_state s)>"
@@ -266,7 +267,6 @@ lemma DFS_imperative'_absrl:
   definition hm_dfs_initial_state :: "hnode_t \<Rightarrow> _" where "hm_dfs_initial_state = hm_dfs.DFS_initial_state_impl"
   definition  hm_graph_from_list :: "(hnode_t \<times> hnode_t) list \<Rightarrow> _" where "hm_graph_from_list \<equiv> hm_graph.from_list_impl"
   
-  
   export_code hm_dfs_imp hm_dfs_initial_state hm_graph_from_list  checking SML_imp
 
   ML_val \<open>@{code hm_dfs_imp}\<close>
@@ -287,13 +287,49 @@ lemma DFS_imperative'_absrl:
   
   
   
-  
+                                     
   definition "iam_dfs_imp = iam_dfs.DFS_imperative"
   definition "iam_dfs_initial_state = iam_dfs.DFS_initial_state_impl"
   definition "iam_graph_from_list \<equiv> iam_graph.from_list_impl"
-  
-  
-  export_code iam_dfs_imp iam_dfs_initial_state iam_graph_from_list  checking SML_imp
+  definition "sstack \<equiv> DFS_state.stack"
+  definition "sseen \<equiv> DFS_state.stack"
+  definition "rreturn \<equiv> DFS_state.return"
+  definition "rreachable \<equiv> return.Reachable"
+  definition "not_reachable \<equiv> return.NotReachable"
+
+  definition "iam_dfs_fun = iam_dfs.DFS_impl"
+  definition "iam_dfs_initial_state_fun = iam_dfs.initial_state"
+
+  type_synonym hinode_t = nat
+  definition him_dfs_imp :: "(hinode_t, _) hashtable \<Rightarrow> _" where "him_dfs_imp = hm_dfs.DFS_imperative"
+  definition him_dfs_initial_state :: "hinode_t \<Rightarrow> _" where "him_dfs_initial_state = hm_dfs.DFS_initial_state_impl"
+  definition  him_graph_from_list :: "(hinode_t \<times> hinode_t) list \<Rightarrow> _" where "him_graph_from_list \<equiv> hm_graph.from_list_impl"
+
+definition "rbt_dfs_initial_state = (dfs_initial_state::nat \<Rightarrow> (nat, (nat \<times> color) tree) DFS_state)"
+definition "rbt_add_edge = (add_edge::((nat \<times> (nat \<times> color) tree) \<times> color) tree
+     \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> ((nat \<times> (nat \<times> color) tree) \<times> color) tree)"
+definition "rbt_dfs_impl = (dfs_impl::((nat \<times> (nat \<times> color) tree) \<times> color) tree
+     \<Rightarrow> nat \<Rightarrow> (nat, (nat \<times> color) tree) DFS_state \<Rightarrow> (nat, (nat \<times> color) tree) DFS_state)"
+definition "rbt_neighbourhood =(neighbourhood::((nat \<times> (nat \<times> color) tree) \<times> color) tree \<Rightarrow> nat \<Rightarrow> (nat \<times> color) tree)"
+definition "rbt_from_list = (from_list::(nat \<times> nat) list \<Rightarrow> ((nat \<times> (nat \<times> color) tree) \<times> color) tree)"
+
+  find_theorems iam_dfs.DFS_impl
+
+export_code iam_dfs_imp iam_dfs_initial_state iam_graph_from_list 
+
+hm_dfs_imp hm_dfs_initial_state hm_graph_from_list 
+
+him_dfs_imp him_dfs_initial_state him_graph_from_list 
+
+sstack sseen rreturn rreachable not_reachable
+
+nat_of_integer integer_of_nat
+
+rbt_dfs_initial_state rbt_neighbourhood rbt_dfs_impl rbt_add_edge
+rbt_from_list
+
+in SML_imp module_name exported file_prefix DFS_imperative
+(* checking SML_imp*)
 
   ML_val \<open>
     val noi = @{code nat_of_integer}
@@ -304,6 +340,12 @@ lemma DFS_imperative'_absrl:
     val g = graph_from_list [(0,1),(1,2),(2,3),(3,1),(4,1)] ()
     val s = dfs_init (noi 0) ()
     val r = dfs g (noi 3) s ()
+
+    val rbt_from_list = @{code rbt_from_list}o map (apply2 noi)
+    val g' = rbt_from_list [(0,1),(1,2),(2,3),(3,1),(4,1)]
+
+    val higraph_from_list = @{code him_graph_from_list} o map (apply2 noi)
+    val g'' =  higraph_from_list [(0,1),(1,2),(2,3),(3,1),(4,1)]
   \<close>
   
 end

@@ -4,7 +4,7 @@
 
 theory Bipartite_Vertex_Priorities
   imports 
-    Bipartite_Matching_LP
+    Matching_LPs.Bipartite_Matching_LP
     Measure_Misc
 begin
 

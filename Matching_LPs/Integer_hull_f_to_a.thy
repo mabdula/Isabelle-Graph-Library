@@ -1789,7 +1789,7 @@ proof(rule ccontr)
     using \<open>0 < Max (abs ` set\<^sub>v y')\<close> zero_less_divide_1_iff by blast
   then have "?c \<bullet> ?y' > 0" using y' 
     by (metis "4" 9 comm_scalar_prod gram_schmidt.support_hyp_def 
-        linordered_semiring_strict_class.mult_pos_pos)
+        ordered_semiring_strict_class.mult_pos_pos)
   have "\<beta> \<ge> ?c \<bullet> ?y'" using `?y' \<in> ?P'` unfolding polyhedron_def
     using beta 
     using "4" \<open>?y' \<in> ?P'\<close> gram_schmidt.support_hyp_is_valid(1) by blast

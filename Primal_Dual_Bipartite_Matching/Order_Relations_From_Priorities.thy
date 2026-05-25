@@ -48,7 +48,7 @@ proof -
   fix r assume "r \<in> preorders_on A"
   then have "linorder_from_keys A -` {r} \<inter> space ?M =
     {f \<in> space ?M. \<forall>x\<in>A. \<forall>y\<in>A. (x,y) \<in> r \<longleftrightarrow> f x \<le> f y}"
-    by (auto simp: linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD preorder_on_subset_Times)
+  by (force simp: linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD )
 
   also have "\<dots> \<in> sets ?M"
     by measurable
@@ -287,8 +287,7 @@ proof -
   fix r assume "r \<in> preorders_on A"
   then have "weighted_linorder_from_keys A v g -` {r} \<inter> space ?M =
     {f \<in> space ?M. \<forall>x\<in>A. \<forall>y\<in>A. (x,y) \<in> r \<longleftrightarrow> v x * (1 - g(f x)) \<ge> v y * (1 - g(f y))}"
-    by (auto simp: weighted_linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD preorder_on_subset_Times)
-
+   by(force simp: weighted_linorder_from_keys_def preorder_on_def set_eq_iff dest!: preorders_onD)
   also from assms have "\<dots> \<in> sets ?M"
     by measurable
 

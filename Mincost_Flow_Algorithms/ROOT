@@ -2,7 +2,7 @@ session "Mincost_Flow_Algorithms" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
-  Berge_Lemma
+  Undirected_Set_Graphs
   Flow_Theory
 
 theories

@@ -3,9 +3,8 @@ text \<open>In this theory we set up some preliminary mathematics to be used lat
 
 theory Preliminaries                                         
   imports Complex_Main "HOL-Library.Extended_Real"  "HOL-Eisbach.Eisbach"
-         Directed_Set_Graphs.More_Lists More_Logic  More_Arith
-Directed_Set_Graphs.Awalk Directed_Set_Graphs.Summary
- Directed_Set_Graphs.Multigraph
+          Directed_Set_Graphs.More_Lists Directed_Set_Graphs.More_Logic
+          Directed_Set_Graphs.More_Arith Directed_Set_Graphs.Awalk Directed_Set_Graphs.Summary
+          Directed_Set_Graphs.Multigraph
 begin
-
 end

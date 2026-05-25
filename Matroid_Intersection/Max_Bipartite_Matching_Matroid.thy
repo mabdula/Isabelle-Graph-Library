@@ -1,7 +1,10 @@
 theory Max_Bipartite_Matching_Matroid
-  imports RANKING.More_Graph  Matroid_Intersection_Algorithm
- Compute_Path "HOL-Library.Product_Lexorder"
+  imports Basic_Matching.Matching  Matroid_Intersection_Algorithm
+          Compute_Path "HOL-Library.Product_Lexorder"
 begin
+
+lemma card_geq_2I: "\<lbrakk>finite X; x \<in> X; y \<in> X; x\<noteq> y\<rbrakk> \<Longrightarrow> card X \<ge> 2"
+  by (metis card_le_Suc0_iff_eq not_less_eq_eq numeral_2_eq_2)
 
 section \<open>Maximum Cardinality Bipartite Matching\<close>
 
@@ -28,31 +31,82 @@ locale max_bimatch_by_matroid =
     and finite_edges: "finite Edges"
 begin
 
-definition "indep1 E = (E \<subseteq> Edges \<and> (\<forall> x \<in> X. (\<forall> e \<in> E. \<forall> d \<in> E. x \<in> to_dbltn d \<longrightarrow> x \<in> to_dbltn e \<longrightarrow> e = d)))"
+definition "indep1 E = 
+  (E \<subseteq> Edges \<and> (one_sided_matching (to_dbltn ` Edges) (to_dbltn ` E) X) \<and> inj_on to_dbltn E)"
 
-lemma indep1I: "E \<subseteq> Edges  \<Longrightarrow>
-                   (\<And> x e d.  x \<in> X \<Longrightarrow> e \<in> E \<Longrightarrow> d \<in> E \<Longrightarrow> x \<in> to_dbltn d \<Longrightarrow> x \<in> to_dbltn e \<Longrightarrow> e = d) \<Longrightarrow> indep1 E"
-  by(auto simp add: indep1_def)
+lemma indep1I: 
+ "\<lbrakk>E \<subseteq> Edges; 
+   \<And> x e d. \<lbrakk>x \<in> X; e \<in> E; d \<in> E; x \<in> to_dbltn d; x \<in> to_dbltn e\<rbrakk> \<Longrightarrow> e = d\<rbrakk>
+  \<Longrightarrow> indep1 E"
+  by(auto simp add: indep1_def finite_edges finite_subset 
+            intro!: one_sided_matchingI iffD2[OF card_le_Suc0_iff_eq] 
+                    inj_on_subset[OF to_dbltn_inj])+
 
-lemma indep1E: "indep1 E \<Longrightarrow> 
-                    (E \<subseteq> Edges  \<Longrightarrow>
-                   (\<And> x e d.  x \<in> X \<Longrightarrow> e \<in> E \<Longrightarrow> d \<in> E \<Longrightarrow> x \<in> to_dbltn d \<Longrightarrow> x \<in> to_dbltn e \<Longrightarrow> e = d) \<Longrightarrow> P) \<Longrightarrow> P"
-  by(auto simp add: indep1_def)
+lemma indep1E: 
+  assumes "indep1 E"
+          "\<lbrakk>E \<subseteq> Edges; 
+            \<And> x e d. \<lbrakk> x \<in> X; e \<in> E; d \<in> E; x \<in> to_dbltn d; x \<in> to_dbltn e\<rbrakk> \<Longrightarrow> e = d\<rbrakk> \<Longrightarrow> P"
+    shows P
+proof-
+  have E_in_Edges:"E \<subseteq> Edges"
+    using assms(1) indep1_def by blast
+  show ?thesis
+  proof(rule assms(2)[OF E_in_Edges, rotated], rule ccontr,  goal_cases)
+    case (1 x e d)
+    hence "to_dbltn d \<noteq> to_dbltn e" 
+      using  assms(1) by(auto simp add: indep1_def dest: inj_onD)
+    hence "card {e | e. e \<in> to_dbltn ` E \<and> x \<in> e} \<ge> 2"
+      using E_in_Edges finite_edges rev_finite_subset 1
+      by(auto intro!: card_geq_2I[of _ "to_dbltn d" "to_dbltn e"])
+    thus False 
+      using assms(1) 1
+      by(auto simp add: indep1_def elim!: one_sided_matchingE) 
+  qed
+qed
 
-definition "indep2 E = (E \<subseteq> Edges \<and> (\<forall> x \<in> Y. (\<forall> e \<in> E. \<forall> d \<in> E. x \<in> to_dbltn d \<longrightarrow> x \<in> to_dbltn e \<longrightarrow> e = d)))"
+lemma indep1_def': "indep1 E = 
+     (E \<subseteq> Edges \<and> (\<forall> x \<in> X. (\<forall> e \<in> E. \<forall> d \<in> E. x \<in> to_dbltn d \<longrightarrow> x \<in> to_dbltn e \<longrightarrow> e = d)))"
+  by(auto elim!: indep1E intro: indep1I)
 
-lemma indep2I: "E \<subseteq> Edges  \<Longrightarrow>
-                   (\<And> x e d.  x \<in> Y \<Longrightarrow> e \<in> E \<Longrightarrow> d \<in> E \<Longrightarrow> x \<in> to_dbltn d \<Longrightarrow> x \<in> to_dbltn e \<Longrightarrow> e = d) \<Longrightarrow> indep2 E"
-  by(auto simp add: indep2_def)
+definition "indep2 E = 
+   (E \<subseteq> Edges \<and> (one_sided_matching (to_dbltn ` Edges) (to_dbltn ` E) Y) \<and> inj_on to_dbltn E)"
 
-lemma indep2E: "indep2 E \<Longrightarrow> 
-                    (E \<subseteq> Edges  \<Longrightarrow>
-                   (\<And> x e d.  x \<in> Y \<Longrightarrow> e \<in> E \<Longrightarrow> d \<in> E \<Longrightarrow> x \<in> to_dbltn d \<Longrightarrow> x \<in> to_dbltn e \<Longrightarrow> e = d) \<Longrightarrow> P) \<Longrightarrow> P"
-  by(auto simp add: indep2_def)
+lemma indep2I: 
+  "\<lbrakk>E \<subseteq> Edges; \<And> x e d.  \<lbrakk>x \<in> Y; e \<in> E; d \<in> E; x \<in> to_dbltn d; x \<in> to_dbltn e\<rbrakk> \<Longrightarrow> e = d\<rbrakk>
+   \<Longrightarrow> indep2 E"
+  by(auto simp add: indep2_def finite_edges finite_subset 
+            intro!: one_sided_matchingI iffD2[OF card_le_Suc0_iff_eq] 
+                    inj_on_subset[OF to_dbltn_inj])+
 
-lemma indep1_dbltn: "indep1 E \<Longrightarrow> e \<in> E \<Longrightarrow> d \<in> E \<Longrightarrow> e \<noteq> d \<Longrightarrow> to_dbltn e  \<noteq> to_dbltn d"
+lemma indep2E: 
+  assumes "indep2 E"
+          "\<lbrakk>E \<subseteq> Edges; \<And> x e d. 
+           \<lbrakk>x \<in> Y; e \<in> E; d \<in> E; x \<in> to_dbltn d; x \<in> to_dbltn e\<rbrakk> \<Longrightarrow> e = d\<rbrakk> \<Longrightarrow> P"
+     shows P
+proof-
+  have E_in_Edges:"E \<subseteq> Edges"
+    using assms(1) indep2_def by blast
+  show ?thesis
+  proof(rule assms(2)[OF E_in_Edges, rotated], rule ccontr,  goal_cases)
+    case (1 x e d)
+    hence "to_dbltn d \<noteq> to_dbltn e" 
+      using  assms(1) by(auto simp add: indep2_def dest: inj_onD)
+    hence "card {e | e. e \<in> to_dbltn ` E \<and> x \<in> e} \<ge> 2"
+      using E_in_Edges finite_edges rev_finite_subset 1
+      by(auto intro!: card_geq_2I[of _ "to_dbltn d" "to_dbltn e"])
+    thus False 
+      using assms(1) 1
+      by(auto simp add: indep2_def elim!: one_sided_matchingE) 
+  qed
+qed
+
+lemma indep2_def': "indep2 E = 
+  (E \<subseteq> Edges \<and> (\<forall> x \<in> Y. (\<forall> e \<in> E. \<forall> d \<in> E. x \<in> to_dbltn d \<longrightarrow> x \<in> to_dbltn e \<longrightarrow> e = d)))"
+  by(auto elim: indep2E intro: indep2I)
+
+lemma indep1_dbltn: "\<lbrakk>indep1 E; e \<in> E; d \<in> E; e \<noteq> d\<rbrakk> \<Longrightarrow> to_dbltn e  \<noteq> to_dbltn d"
   using  left_vertex[of e] left_vertex[of d] to_dbltn_vertex[of e] to_dbltn_vertex[of d]
-  by (auto simp add: indep1_def)
+  by (auto simp add: indep1_def')
 
 lemma indep_system1:"indep_system Edges indep1"
 proof(rule indep_system.intro, goal_cases)
@@ -117,11 +171,12 @@ proof(rule inj_onI, goal_cases)
     using 1 assms by(auto elim!: indep1E)
 qed
 
-lemma x_is_left:"x \<in> to_dbltn e \<Longrightarrow> e \<in> E \<Longrightarrow> E \<subseteq> Edges \<Longrightarrow> x \<in> X \<Longrightarrow> left_vertex e = x" 
-  by (meson bipartite_G bipartite_commute bipartite_eqI imageI in_mono max_bimatch_by_matroid.left_prop(1)
-      max_bimatch_by_matroid.left_prop(2) max_bimatch_by_matroid_axioms)
+lemma x_is_left: "\<lbrakk>x \<in> to_dbltn e; e \<in> E; E \<subseteq> Edges; x \<in> X\<rbrakk> \<Longrightarrow> left_vertex e = x" 
+  by (meson bipartite_G bipartite_commute bipartite_eqI imageI in_mono
+            max_bimatch_by_matroid.left_prop(1)
+            max_bimatch_by_matroid.left_prop(2) max_bimatch_by_matroid_axioms)
 
-lemma x_is_right:"x \<in> to_dbltn e \<Longrightarrow> e \<in> E \<Longrightarrow> E \<subseteq> Edges \<Longrightarrow> x \<in> Y \<Longrightarrow> right_vertex e = x" 
+lemma x_is_right: "\<lbrakk>x \<in> to_dbltn e; e \<in> E; E \<subseteq> Edges; x \<in> Y\<rbrakk> \<Longrightarrow> right_vertex e = x" 
   by (meson bipartite_G bipartite_commute bipartite_eqI
       inj_on_image_mem_iff right_prop(1) right_vertex subset_iff to_dbltn_inj)
 
@@ -188,7 +243,7 @@ proof(rule matroid_axioms.intro, goal_cases)
       next
         case False
         thus ?thesis
-          using 2 false indep1_def one(2) by force
+          using 2 false indep1_def' one(2) by force
       qed
     qed
   qed
@@ -196,11 +251,11 @@ proof(rule matroid_axioms.intro, goal_cases)
     by(auto intro: bexI[of _ x])
 qed
 
-lemma  max_bimatch_by_matroid_commuted:"max_bimatch_by_matroid Edges to_dbltn Y X right_vertex left_vertex" 
+lemma  max_bimatch_by_matroid_commuted:
+  "max_bimatch_by_matroid Edges to_dbltn Y X right_vertex left_vertex" 
   using bipartite_G bipartite_commute  left_not_right 
   by(force intro!: max_bimatch_by_matroid.intro  right_vertex left_vertex
       simp add:  finite_edges to_dbltn_inj  to_dbltn_vertex)  
-
 
 lemma matroid_axioms2: "matroid_axioms indep2"
   using max_bimatch_by_matroid.matroid_axioms1[OF max_bimatch_by_matroid_commuted]
@@ -214,13 +269,14 @@ term double_matroid_concrete.matroid1.the_circuit
 lemma double_matroid_concrete: "double_matroid Edges indep1 indep2"
   by (simp add: double_matroid_concrete.double_matroid_axioms)
 
-lemma in_dependent1_is: assumes "\<not> indep1 E"  "E \<subseteq> Edges"
-  shows "\<exists> e d x. e \<in> E \<and> d \<in> E \<and> e \<noteq> d \<and> to_dbltn e \<inter> to_dbltn d \<inter> X = {x}"
+lemma in_dependent1_is: 
+  assumes "\<not> indep1 E"  "E \<subseteq> Edges"
+    shows "\<exists> e d x. e \<in> E \<and> d \<in> E \<and> e \<noteq> d \<and> to_dbltn e \<inter> to_dbltn d \<inter> X = {x}"
 proof(cases "inj_on left_vertex E")
   case True
   hence False
     using assms(1) x_is_left[OF _ _ assms(2)]
-    by (simp add: assms(2) indep1_def inj_on_def )
+    by (simp add: assms(2) indep1_def' inj_on_def)
   then show ?thesis by simp
 next
   case False
@@ -260,14 +316,16 @@ next
     using ed(1) ed(2) ed(4) by blast
 qed
 
-lemma in_dependent2_is: assumes "\<not> indep2 E"  "E \<subseteq> Edges"
+lemma in_dependent2_is: 
+  assumes "\<not> indep2 E"  "E \<subseteq> Edges"
   shows "\<exists> e d x. e \<in> E \<and> d \<in> E \<and> e \<noteq> d \<and> to_dbltn e \<inter> to_dbltn d \<inter> Y = {x}"
   using assms(1) assms(2) max_bimatch_by_matroid.in_dependent1_is[OF max_bimatch_by_matroid_commuted]
   by(simp add: indep2_def  max_bimatch_by_matroid.indep1_def[OF max_bimatch_by_matroid_commuted])
 
 lemma circuit1_is:
   assumes "double_matroid_concrete.matroid1.circuit E" 
-  obtains x e d where "E = {e, d}"  "e \<noteq> d" "e \<in> Edges" "d \<in> Edges" "to_dbltn d \<inter> to_dbltn e \<inter> X = {x}" 
+  obtains x e d where "E = {e, d}"  "e \<noteq> d" "e \<in> Edges" "d \<in> Edges" 
+                      "to_dbltn d \<inter> to_dbltn e \<inter> X = {x}" 
 proof(goal_cases)
   case 1
   have a1: "\<not> indep1 E" "E \<subseteq> Edges"
@@ -284,7 +342,7 @@ proof(goal_cases)
     ultimately have "{e, d} \<subseteq> E - {f}" by auto
     moreover have "\<not> indep1 {e, d}"
       using edx(3) edx(4) 
-      by(auto simp add: indep1_def)
+      by(auto simp add: indep1_def')
     ultimately have "\<not> indep1 (E - {f})"
       using double_matroid_concrete.matroid1.indep_subset by blast
     moreover have "indep1 (E - {f})" 
@@ -299,7 +357,8 @@ qed
 
 lemma circuit2_is:
   assumes "double_matroid_concrete.matroid2.circuit E" 
-  obtains x e d where "E = {e, d}"  "e \<noteq> d" "e \<in> Edges" "d \<in> Edges" "to_dbltn d \<inter> to_dbltn e \<inter> Y = {x}" 
+  obtains x e d where "E = {e, d}"  "e \<noteq> d" "e \<in> Edges" "d \<in> Edges" 
+                      "to_dbltn d \<inter> to_dbltn e \<inter> Y = {x}" 
   using max_bimatch_by_matroid.circuit1_is[OF max_bimatch_by_matroid_commuted, of E thesis] assms
   by(unfold double_matroid_concrete.matroid2.circuit_def
       indep_system.circuit_def[OF max_bimatch_by_matroid.indep_system1[OF max_bimatch_by_matroid_commuted]]
@@ -349,7 +408,7 @@ proof-
   hence "to_dbltn ` M \<subseteq> to_dbltn ` Edges" 
     using assms
     by(auto simp add: indep1_def indep2_def)
-  moreover have "e1\<in>to_dbltn ` M \<Longrightarrow> e2\<in>to_dbltn ` M \<Longrightarrow> e1 \<noteq> e2 \<Longrightarrow> e1 \<inter> e2 = {}" for e1 e2
+  moreover have "\<lbrakk>e1\<in>to_dbltn ` M; e2\<in>to_dbltn ` M; e1 \<noteq> e2\<rbrakk> \<Longrightarrow> e1 \<inter> e2 = {}" for e1 e2
   proof(goal_cases)
     case 1
     then obtain e1_impl e2_impl where eds_impl:  "e1_impl \<in> M" "to_dbltn e1_impl = e1"
@@ -440,7 +499,8 @@ lemma invar_matching_alt_def:
 \<and>  t_set eds = {e | e. \<exists> x. lookup lft x \<noteq> None \<and> e \<in> t_set (the (lookup lft x))})"
   by auto
 
-lemma on_left_left_vertex: "invar_matching M \<Longrightarrow> e \<in> t_set (the_edges (on_left M) x) \<Longrightarrow> left_vertex e = x"
+lemma on_left_left_vertex: 
+  "\<lbrakk>invar_matching M; e \<in> t_set (the_edges (on_left M) x)\<rbrakk> \<Longrightarrow> left_vertex e = x"
 proof(induction M)
   case (MATCH x1a x2a x3a)
   then show ?case 
@@ -448,7 +508,8 @@ proof(induction M)
       (auto simp add:  emap_lft_inv_def the_edges_def dfs.Graph.vset.set.set_empty)
 qed
 
-lemma on_right_right_vertex: "invar_matching M \<Longrightarrow> e \<in> t_set (the_edges (on_right M) x) \<Longrightarrow> right_vertex e = x"
+lemma on_right_right_vertex: 
+  "\<lbrakk>invar_matching M; e \<in> t_set (the_edges (on_right M) x)\<rbrakk> \<Longrightarrow> right_vertex e = x"
 proof(induction M)
   case (MATCH x1a x2a x3a)
   then show ?case 
@@ -456,7 +517,8 @@ proof(induction M)
       (auto simp add:  emap_rht_inv_def the_edges_def dfs.Graph.vset.set.set_empty)
 qed
 
-lemma on_left_in_M: "invar_matching M \<Longrightarrow> e \<in> t_set (the_edges (on_left M) x) \<Longrightarrow> e \<in> set_matching M"
+lemma on_left_in_M: 
+  "\<lbrakk>invar_matching M; e \<in> t_set (the_edges (on_left M) x)\<rbrakk> \<Longrightarrow> e \<in> set_matching M"
 proof(induction M)
   case (MATCH x1a x2a x3a)
   then show ?case 
@@ -464,7 +526,8 @@ proof(induction M)
       (auto simp add:  emap_lft_inv_def the_edges_def dfs.Graph.vset.set.set_empty set_matching_def)
 qed
 
-lemma on_right_in_M: "invar_matching M \<Longrightarrow> e \<in> t_set (the_edges (on_right M) x) \<Longrightarrow> e \<in> set_matching M"
+lemma on_right_in_M: 
+  "\<lbrakk>invar_matching M; e \<in> t_set (the_edges (on_right M) x)\<rbrakk> \<Longrightarrow> e \<in> set_matching M"
 proof(induction M)
   case (MATCH x1a x2a x3a)
   then show ?case 
@@ -474,15 +537,17 @@ proof(induction M)
 
 qed
 
-lemma set_matching_empty: "invar_matching empty_matching"
+lemma set_matching_empty: 
+  "invar_matching empty_matching"
   "set_matching empty_matching = {}"
   using M.map_specs(4) 
   by(auto simp add: empty_matching_def map_empty'_def emap_lft_inv_def emap_rht_inv_def
       RBT_Set.empty_def adj_inv_def set.invar_empty set_matching_def)
 
-lemma set_matching_insert: assumes "invar_matching  M"
-  shows "invar_matching (insert_matching x M)" (is ?thesis)
-    and  "set_matching (insert_matching x M) = set_matching M \<union> {x}" (is ?thesis2)
+lemma set_matching_insert: 
+  assumes "invar_matching  M"
+    shows "invar_matching (insert_matching x M)" (is ?thesis)
+      and "set_matching (insert_matching x M) = set_matching M \<union> {x}" (is ?thesis2)
   using assms
 proof(induction M, unfold insert_matching_def matching_set.case invar_matching.simps, goal_cases)
   case (1 eds lft rht)
@@ -584,9 +649,10 @@ proof(induction M, unfold insert_matching_def matching_set.case invar_matching.s
     using goal4 goal5 by (fastforce intro: goal3 goal2 goal1)
 qed (simp add: set_matching_def)
 
-lemma set_matching_delete: assumes "invar_matching  M"
-  shows "invar_matching (delete_matching x M)" (is ?thesis)
-    and  "set_matching (delete_matching x M) = set_matching M - {x}" (is ?thesis2)
+lemma set_matching_delete: 
+  assumes "invar_matching  M"
+    shows "invar_matching (delete_matching x M)" (is ?thesis)
+     and  "set_matching (delete_matching x M) = set_matching M - {x}" (is ?thesis2)
   using assms
 proof(induction M, unfold delete_matching_def matching_set.case invar_matching.simps, goal_cases)
   case (1 eds lft rht)
@@ -795,13 +861,13 @@ qed (simp add: set_matching_def)
 
 fun weak_orcl1 where
   "weak_orcl1 e (MATCH eds lft rht) = 
-(case (lookup lft (left_vertex e)) of Some es \<Rightarrow> (if es = vset_empty then True else False) |
-                                      None \<Rightarrow> True)"
+   (case (lookup lft (left_vertex e)) of Some es \<Rightarrow> (if es = vset_empty then True else False) |
+                                         None \<Rightarrow> True)"
 
 fun weak_orcl2 where
   "weak_orcl2 e (MATCH eds lft rht) = 
-(case (lookup rht (right_vertex e)) of Some es \<Rightarrow> (if es = vset_empty then True else False) |
-                                      None \<Rightarrow> True)"
+   (case (lookup rht (right_vertex e)) of Some es \<Rightarrow> (if es = vset_empty then True else False) |
+                                          None \<Rightarrow> True)"
 
 fun circuit1 where
   "circuit1 e (MATCH eds lft rht) = (the_edges lft (left_vertex e))"
@@ -824,17 +890,16 @@ locale compute_max_bimatch_by_matroid =
   compute_max_bimatch_by_matroid_spec +
   max_bimatch_by_matroid+
   assumes Edges_impl_inv: "vset_inv Edges_impl"
-    and    Edges_impl_are:  "t_set Edges_impl = Edges"
+      and Edges_impl_are:  "t_set Edges_impl = Edges"
 begin
 
-lemma weak_orcl1_correct:"invar_matching M \<Longrightarrow>
-           set_matching M \<subseteq> Edges \<Longrightarrow>
-           x \<in> Edges \<Longrightarrow>
-           x \<notin> set_matching M \<Longrightarrow>
-           indep1 (set_matching M) \<Longrightarrow> weak_orcl1 x M = indep1 ({x} \<union> set_matching M)"
+lemma weak_orcl1_correct:
+  "\<lbrakk>invar_matching M; set_matching M \<subseteq> Edges; 
+    x \<in> Edges; x \<notin> set_matching M; indep1 (set_matching M)\<rbrakk>
+    \<Longrightarrow> weak_orcl1 x M = indep1 ({x} \<union> set_matching M)"
 proof(induction M)
   case (MATCH eds lft rht)
-  have P_of_ifI: "(b \<Longrightarrow> P left) \<Longrightarrow> (\<not> b \<Longrightarrow> P right) \<Longrightarrow> P (if b then left else right)"
+  have P_of_ifI: "\<lbrakk>b \<Longrightarrow> P left; \<not> b \<Longrightarrow> P right\<rbrakk> \<Longrightarrow> P (if b then left else right)"
     for b P left right by auto
   from MATCH show ?case 
   proof(cases "lookup lft (left_vertex x)")
@@ -843,7 +908,7 @@ proof(induction M)
       using MATCH(1,4)
       by(fastforce simp add: set_matching_def emap_lft_inv_def )
     hence " indep1 ({x} \<union> set_matching (MATCH eds lft rht))"
-      using MATCH(2,3,5) x_is_left by (auto simp add: indep1_def)
+      using MATCH(2,3,5) x_is_left by (auto simp add: indep1_def')
     moreover have  "weak_orcl1 x (MATCH eds lft rht)" using None by simp
     ultimately show ?thesis by simp
   next
@@ -855,7 +920,8 @@ proof(induction M)
       hence no_e: "\<not> (\<exists> e. e \<in> t_set (the (lookup lft (left_vertex x))))"
         using MATCH(1,4) Some dfs.Graph.vset.emptyD(1)[of es]
         by(auto simp add: set_matching_def emap_lft_inv_def )
-      have e_contr:" e \<in> set_matching (MATCH eds lft rht) \<Longrightarrow> left_vertex e = left_vertex x \<Longrightarrow> False" for e
+      have e_contr:
+       "\<lbrakk>e \<in> set_matching (MATCH eds lft rht); left_vertex e = left_vertex x\<rbrakk> \<Longrightarrow> False" for e
       proof(goal_cases)
         case 1
         then obtain y xa where "e \<in> t_set y" "lookup lft xa = Some y"
@@ -868,13 +934,14 @@ proof(induction M)
       qed
       have "{x} \<union> set_matching (MATCH eds lft rht) \<subseteq> Edges"
         using MATCH.prems(2) MATCH.prems(3) by auto
-      moreover have "(\<forall>xa\<in>X.
-         \<forall>e\<in>{x} \<union> set_matching (MATCH eds lft rht).
-            \<forall>d\<in>{x} \<union> set_matching (MATCH eds lft rht). xa \<in> to_dbltn d \<longrightarrow> xa \<in> to_dbltn e \<longrightarrow> e = d)"
+      moreover have 
+      "(\<forall>xa\<in>X.
+        \<forall>e\<in>{x} \<union> set_matching (MATCH eds lft rht).
+        \<forall>d\<in>{x} \<union> set_matching (MATCH eds lft rht). xa \<in> to_dbltn d \<longrightarrow> xa \<in> to_dbltn e \<longrightarrow> e = d)"
         using e_contr  MATCH.prems(2) MATCH.prems(3)  x_is_left  calculation x_is_left MATCH.prems(5)
-        by(fastforce simp add: indep1_def)
+        by(fastforce simp add: indep1_def')
       ultimately show ?case
-        by (auto simp add: indep1_def)
+        by (auto simp add: indep1_def')
     next
       case 2
       then obtain e where  "e \<in> t_set (the (lookup lft (left_vertex x)))"
@@ -885,21 +952,20 @@ proof(induction M)
         by(fastforce simp add: emap_lft_inv_def)+
       hence "\<not> indep1 ({x} \<union> set_matching (MATCH eds lft rht))"
         using left_prop MATCH(4)
-        by(simp add: indep1_def set_matching_def)
+        by(simp add: indep1_def' set_matching_def)
           (fastforce intro!: bexI[of _ "left_vertex x"] bexI[of _ e])
       thus ?case by simp
     qed
   qed
 qed
 
-lemma weak_orcl2_correct:"invar_matching M \<Longrightarrow>
-           set_matching M \<subseteq> Edges \<Longrightarrow>
-           x \<in> Edges \<Longrightarrow>
-           x \<notin> set_matching M \<Longrightarrow>
-           indep2 (set_matching M) \<Longrightarrow> weak_orcl2 x M = indep2 ({x} \<union> set_matching M)"
+lemma weak_orcl2_correct:
+  "\<lbrakk>invar_matching M; set_matching M \<subseteq> Edges; x \<in> Edges;
+    x \<notin> set_matching M; indep2 (set_matching M)\<rbrakk>
+    \<Longrightarrow> weak_orcl2 x M = indep2 ({x} \<union> set_matching M)"
 proof(induction M)
   case (MATCH eds lft rht)
-  have P_of_ifI: "(b \<Longrightarrow> P left) \<Longrightarrow> (\<not> b \<Longrightarrow> P right) \<Longrightarrow> P (if b then left else right)"
+  have P_of_ifI: "\<lbrakk>b \<Longrightarrow> P left; \<not> b \<Longrightarrow> P right\<rbrakk> \<Longrightarrow> P (if b then left else right)"
     for b P left right by auto
   from MATCH show ?case 
   proof(cases "lookup rht (right_vertex x)")
@@ -909,7 +975,7 @@ proof(induction M)
       by(fastforce simp add: set_matching_def emap_rht_inv_def  invar_matching_alt_def 
           simp del: invar_matching.simps)     
     hence " indep2 ({x} \<union> set_matching (MATCH eds lft rht))"
-      using MATCH(2,3,5) x_is_right by (auto simp add: indep2_def)
+      using MATCH(2,3,5) x_is_right by (auto simp add: indep2_def')
     moreover have  "weak_orcl2 x (MATCH eds lft rht)" using None by simp
     ultimately show ?thesis by simp
   next
@@ -921,7 +987,8 @@ proof(induction M)
       hence no_e: "\<not> (\<exists> e. e \<in> t_set (the (lookup rht (right_vertex x))))"
         using MATCH(1,4) Some dfs.Graph.vset.emptyD(1)[of es]
         by(auto simp add: set_matching_def emap_lft_inv_def )
-      have e_contr:" e \<in> set_matching (MATCH eds lft rht) \<Longrightarrow> right_vertex e = right_vertex x \<Longrightarrow> False" for e
+      have e_contr:
+        "\<lbrakk>e \<in> set_matching (MATCH eds lft rht); right_vertex e = right_vertex x\<rbrakk> \<Longrightarrow> False" for e
       proof(goal_cases)
         case 1
         then obtain y xa where "e \<in> t_set y" "lookup rht xa = Some y"
@@ -935,13 +1002,14 @@ proof(induction M)
       qed
       have "{x} \<union> set_matching (MATCH eds lft rht) \<subseteq> Edges"
         using MATCH.prems(2) MATCH.prems(3) by auto
-      moreover have "(\<forall>xa\<in>Y.
-         \<forall>e\<in>{x} \<union> set_matching (MATCH eds lft rht).
-            \<forall>d\<in>{x} \<union> set_matching (MATCH eds lft rht). xa \<in> to_dbltn d \<longrightarrow> xa \<in> to_dbltn e \<longrightarrow> e = d)"
+      moreover have 
+      "(\<forall>xa\<in>Y.
+        \<forall>e\<in>{x} \<union> set_matching (MATCH eds lft rht).
+        \<forall>d\<in>{x} \<union> set_matching (MATCH eds lft rht). xa \<in> to_dbltn d \<longrightarrow> xa \<in> to_dbltn e \<longrightarrow> e = d)"
         using e_contr  MATCH.prems(2) MATCH.prems(3)  x_is_right  calculation MATCH.prems(5)
-        by(fastforce simp add: indep2_def invar_matching_alt_def simp del: invar_matching.simps)
+        by(fastforce simp add: indep2_def' invar_matching_alt_def simp del: invar_matching.simps)
       ultimately show ?case
-        by (auto simp add: indep2_def)
+        by (auto simp add: indep2_def')
     next
       case 2
       then obtain e where  "e \<in> t_set (the (lookup rht (right_vertex x)))"
@@ -952,15 +1020,16 @@ proof(induction M)
         by(fastforce simp add: emap_rht_inv_def invar_matching_alt_def simp del: invar_matching.simps)+
       hence "\<not> indep2 ({x} \<union> set_matching (MATCH eds lft rht))"
         using right_prop MATCH(4)
-        by(simp add: indep2_def set_matching_def)
+        by(simp add: indep2_def' set_matching_def)
           (fastforce intro!: bexI[of _ "right_vertex x"] bexI[of _ e])
       thus ?case by simp
     qed
   qed
 qed
 
-lemma  inner_fold_spec:"invar_matching M \<Longrightarrow> 
-\<exists>xs. set xs = set_matching M \<and> inner_fold M f init = foldr f xs init"
+lemma  inner_fold_spec:
+  "invar_matching M \<Longrightarrow> 
+  \<exists>xs. set xs = set_matching M \<and> inner_fold M f init = foldr f xs init"
 proof(induction M)
   case (MATCH eds lft rht)
   show ?case 
@@ -968,8 +1037,9 @@ proof(induction M)
     by(auto intro!: exI[of _ "map fst (preorder eds)"] simp add: set_matching_def)
 qed
 
-lemma outer_fold_spec: "set_invar_red M \<Longrightarrow>
- \<exists>xs. set xs = to_set_red M \<and> outer_fold M f acc = foldr f xs acc"
+lemma outer_fold_spec: 
+  "set_invar_red M \<Longrightarrow>
+   \<exists>xs. set xs = to_set_red M \<and> outer_fold M f acc = foldr f xs acc"
   using preorder_witness[of M f]
   by(auto intro!: exI[of _ "map fst (preorder M)"] 
       simp add: set_invar_red_def to_set_red_def outer_fold_def)
@@ -977,27 +1047,31 @@ lemma outer_fold_spec: "set_invar_red M \<Longrightarrow>
 lemma set_invar_red_of_complement:"invar_matching  S  \<Longrightarrow> set_invar_red (complement_matching  S)"
   by(induction S)(auto simp add: set_invar_red_def intro!: dfs.set_ops.invar_diff Edges_impl_inv)
 
-lemma complement_is:"invar_matching  S  \<Longrightarrow> to_set_red (complement_matching  S) = Edges - set_matching S"
+lemma complement_is:
+  "invar_matching  S  \<Longrightarrow> to_set_red (complement_matching  S) = Edges - set_matching S"
   by(induction S)
-    (auto simp add:Edges_impl_are  to_set_red_def Edges_impl_inv dfs.set_ops.set_diff set_matching_def)
+    (auto simp add: Edges_impl_are  to_set_red_def Edges_impl_inv dfs.set_ops.set_diff 
+                    set_matching_def)
 
 interpretation double_matroid_concrete: double_matroid Edges indep1 indep2
-  by(auto intro!: double_matroid.intro matroid.intro indep_system1 indep_system2 matroid_axioms1 matroid_axioms2)
+  by(auto intro!: double_matroid.intro matroid.intro indep_system1 indep_system2
+                  matroid_axioms1 matroid_axioms2)
 
 lemma circuit1_correct:
-  assumes "invar_matching M"
-    "indep1 (set_matching M)"
-    "set_matching M \<subseteq> Edges"
-    "y \<in> Edges"
-    "\<not> indep1 ({y} \<union> set_matching M)"
-  shows " to_set_red (circuit1 y M) =
+  assumes "invar_matching M" "indep1 (set_matching M)"
+          "set_matching M \<subseteq> Edges" "y \<in> Edges"
+          "\<not> indep1 ({y} \<union> set_matching M)"
+    shows "to_set_red (circuit1 y M) =
            double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M) - {y}"
 proof-
   have a_circuit:"double_matroid_concrete.matroid1.circuit
- (double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M))"
-    using assms(2) assms(3) assms(4) assms(5) double_matroid_concrete.matroid1.the_circuit_is_circuit(1) by auto
-  then obtain e d x where edx:" double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M) = {e, d}"
-    "e \<noteq> d" "e \<in> Edges" "d \<in> Edges" "to_dbltn d \<inter> to_dbltn e \<inter> X = {x}"
+   (double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M))"
+    using assms(2) assms(3) assms(4) assms(5)
+           double_matroid_concrete.matroid1.the_circuit_is_circuit(1) 
+     by auto
+   then obtain e d x where edx:
+     "double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M) = {e, d}"
+     "e \<noteq> d" "e \<in> Edges" "d \<in> Edges" "to_dbltn d \<inter> to_dbltn e \<inter> X = {x}"
     by(auto intro:
         circuit1_is[of "double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M)"] )
   hence e_disj:"e = y \<or> d = y" 
@@ -1012,7 +1086,8 @@ proof-
   proof(cases rule: disjE[OF e_disj])
     case 1
     note e_is_y=this
-    hence circuit_is_d:"double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M) - {y} = {d}"
+    hence circuit_is_d:
+      "double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M) - {y} = {d}"
       using edx(1) edx(2) by auto
     have x_is_left:"left_vertex d = x"
       using edx(4) edx(5) x_is_left by fastforce
@@ -1023,7 +1098,7 @@ proof-
       using assms(2,3,1)
       by(induction M)
         (fastforce simp add: the_edges_def set_matching_def indep1_def emap_lft_inv_def)
-    moreover have "f \<in> t_set (the_edges (on_left M) x) \<Longrightarrow> f \<noteq> d \<Longrightarrow> False" for f
+    moreover have "\<lbrakk>f \<in> t_set (the_edges (on_left M) x); f \<noteq> d\<rbrakk> \<Longrightarrow> False" for f
     proof(goal_cases)
       case 1
       hence "left_vertex f = left_vertex d"
@@ -1044,7 +1119,8 @@ proof-
   next
     case 2
     note e_is_y=this
-    hence circuit_is_d:"double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M) - {y} = {e}"
+    hence circuit_is_d:
+      "double_matroid_concrete.matroid1.the_circuit ({y} \<union> set_matching M) - {y} = {e}"
       using edx(1) edx(2) by auto
     have x_is_left:"left_vertex e = x"
       using edx(4) edx(5) x_is_left by fastforce
@@ -1055,7 +1131,7 @@ proof-
       using assms(2,3,1)
       by(induction M)
         (fastforce simp add: the_edges_def set_matching_def indep1_def emap_lft_inv_def)
-    moreover have "f \<in> t_set (the_edges (on_left M) x) \<Longrightarrow> f \<noteq> e \<Longrightarrow> False" for f
+    moreover have "\<lbrakk>f \<in> t_set (the_edges (on_left M) x); f \<noteq> e\<rbrakk> \<Longrightarrow> False" for f
     proof(goal_cases)
       case 1
       hence "left_vertex f = left_vertex e"
@@ -1082,19 +1158,19 @@ lemma circuit1_invar: "invar_matching M \<Longrightarrow> set_invar_red (circuit
       split: option.split)
 
 lemma circuit2_correct:
-  assumes "invar_matching M"
-    "indep2 (set_matching M)"
-    "set_matching M \<subseteq> Edges"
-    "y \<in> Edges"
-    "\<not> indep2 ({y} \<union> set_matching M)"
-  shows " to_set_red (circuit2 y M) =
+  assumes "invar_matching M" "indep2 (set_matching M)" "set_matching M \<subseteq> Edges"
+          "y \<in> Edges" "\<not> indep2 ({y} \<union> set_matching M)"
+    shows "to_set_red (circuit2 y M) =
            double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M) - {y}"
 proof-
   have a_circuit:"double_matroid_concrete.matroid2.circuit
- (double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M))"
-    using assms(2) assms(3) assms(4) assms(5) double_matroid_concrete.matroid2.the_circuit_is_circuit(1) by auto
-  then obtain e d x where edx:" double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M) = {e, d}"
-    "e \<noteq> d" "e \<in> Edges" "d \<in> Edges" "to_dbltn d \<inter> to_dbltn e \<inter> Y = {x}"
+     (double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M))"
+    using assms(2) assms(3) assms(4) assms(5) 
+          double_matroid_concrete.matroid2.the_circuit_is_circuit(1) 
+    by auto
+  then obtain e d x where edx:
+     "double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M) = {e, d}"
+     "e \<noteq> d" "e \<in> Edges" "d \<in> Edges" "to_dbltn d \<inter> to_dbltn e \<inter> Y = {x}"
     by(auto intro:
         circuit2_is[of "double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M)"] )
   hence e_disj:"e = y \<or> d = y" 
@@ -1109,7 +1185,8 @@ proof-
   proof(cases rule: disjE[OF e_disj])
     case 1
     note e_is_y=this
-    hence circuit_is_d:"double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M) - {y} = {d}"
+    hence circuit_is_d:
+      "double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M) - {y} = {d}"
       using edx(1) edx(2) by auto
     have x_is_right:"right_vertex d = x"
       using edx(4) edx(5) x_is_right by fastforce
@@ -1119,9 +1196,10 @@ proof-
     ultimately have "d \<in> t_set (the_edges (on_right M) x)"
       using assms(2,3,1)
       by(induction M)
-        (fastforce simp add: the_edges_def set_matching_def indep2_def emap_rht_inv_def invar_matching_alt_def
-          simp del: invar_matching.simps)
-    moreover have "f \<in> t_set (the_edges (on_right M) x) \<Longrightarrow> f \<noteq> d \<Longrightarrow> False" for f
+        (fastforce simp add: the_edges_def set_matching_def indep2_def emap_rht_inv_def
+                             invar_matching_alt_def
+                   simp del: invar_matching.simps)
+    moreover have "\<lbrakk>f \<in> t_set (the_edges (on_right M) x); f \<noteq> d\<rbrakk> \<Longrightarrow> False" for f
     proof(goal_cases)
       case 1
       hence "right_vertex f = right_vertex d"
@@ -1142,7 +1220,8 @@ proof-
   next
     case 2
     note e_is_y=this
-    hence circuit_is_d:"double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M) - {y} = {e}"
+    hence circuit_is_d:
+      "double_matroid_concrete.matroid2.the_circuit ({y} \<union> set_matching M) - {y} = {e}"
       using edx(1) edx(2) by auto
     have x_is_left:"right_vertex e = x"
       using edx(4) edx(5) x_is_right by fastforce
@@ -1152,9 +1231,10 @@ proof-
     ultimately have "e \<in> t_set (the_edges (on_right M) x)"
       using assms(2,3,1)
       by(induction M)
-        (fastforce simp add: the_edges_def set_matching_def indep2_def emap_rht_inv_def invar_matching_alt_def
-          simp del: invar_matching.simps)
-    moreover have "f \<in> t_set (the_edges (on_right M) x) \<Longrightarrow> f \<noteq> e \<Longrightarrow> False" for f
+        (fastforce simp add: the_edges_def set_matching_def indep2_def 
+                             emap_rht_inv_def invar_matching_alt_def
+                   simp del: invar_matching.simps)
+    moreover have "\<lbrakk>f \<in> t_set (the_edges (on_right M) x); f \<noteq> e\<rbrakk> \<Longrightarrow> False" for f
     proof(goal_cases)
       case 1
       hence "right_vertex f = right_vertex e"
@@ -1178,7 +1258,7 @@ qed
 lemma circuit2_invar: "invar_matching M \<Longrightarrow> set_invar_red (circuit2 y M)"
   by(induction M)
     (auto simp add: set_invar_red_def the_edges_def dfs.Graph.vset.set.invar_empty emap_rht_inv_def
-      split: option.split)
+             split: option.split)
 
 end
 
@@ -1265,8 +1345,10 @@ context
     and s_t: "s \<notin> t_set Edges_impl" "t \<notin> t_set Edges_impl" "s \<noteq> t"
     and Edges_impl_inv: "vset_inv Edges_impl"
     and left_not_right: "\<And> e. e \<in> Edges \<Longrightarrow> left_vertex e \<noteq> right_vertex e "
-    and injectivity: "\<And> e e'. e \<in> Edges \<Longrightarrow> e' \<in> Edges \<Longrightarrow> left_vertex e = left_vertex e' \<Longrightarrow>
-                                   right_vertex e= right_vertex e' \<Longrightarrow>e = e'"
+    and injectivity:
+         "\<And> e e'. \<lbrakk>e \<in> Edges; e' \<in> Edges; left_vertex e = left_vertex e';
+                   right_vertex e= right_vertex e'\<rbrakk>
+                   \<Longrightarrow>e = e'"
 begin
 
 definition "to_dbltn e = {left_vertex e, right_vertex e}"
@@ -1497,6 +1579,5 @@ proof-
       using M_prop(2) by linarith
   qed
 qed
-
 end
 end

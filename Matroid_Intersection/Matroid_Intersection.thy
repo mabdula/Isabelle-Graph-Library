@@ -1,6 +1,6 @@
 theory Matroid_Intersection
   imports Matroids.Matroid Directed_Set_Graphs.Awalk "HOL-Eisbach.Eisbach" 
-    "Directed_Set_Graphs.Pair_Graph_Specs" Berge_Lemma.Alternating_Lists
+         "Directed_Set_Graphs.Pair_Graph_Specs" Alternating_Lists.Alternating_Lists
 begin
 
 section \<open>Theory for Matroid Intersection\<close>

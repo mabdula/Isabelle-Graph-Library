@@ -1,0 +1,23 @@
+session Basic_Matching = "Undirected_Set_Graphs" +
+  options [document = pdf, document_output = "output"]
+
+  sessions
+    Undirected_Set_Graphs
+    Graph_Algorithms_Dev
+    Alternating_Lists
+  (*directories*)
+
+  theories
+    Matching
+    Berge
+    Weighted_Matchings_Reductions
+    
+    Alternating_Forest_Spec
+    Alternating_Forest_Executable
+    Matching_Augmentation_Executable
+    WBP_Matching_Reductions_Exec
+		
+    
+
+  document_files
+    "root.tex"
