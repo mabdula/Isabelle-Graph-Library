@@ -49,10 +49,9 @@ For the more practically usable algorithms, we include an implementation. For ot
 
 # How to use
 
- - Go to https://isabelle.in.tum.de/, pick and download the version of Isabelle2025 which is right for your OS
- - Go to https://www.isa-afp.org/download/ and download the 2025 version of the AFP
+ - Go to https://isabelle.in.tum.de/, pick and download the version of Isabelle2025-2 specific to your OS
+ - Go to https://www.isa-afp.org/download/ and download the 2025-2 version of the AFP
  - Add the AFP as a collection of components to your local Isabelle: 'isabelle components -u [path to afp]/af\
 p/thys'
  - Same for this directory: 'isabelle components -u [path to this directory]'
  - All theories in this formalisation should be available now!
- - You also need to add https://github.com/lammich/Separation_Logic_Imperative_HOL_Partial/tree/7f24270bd9a37f2a61a5727f4e5a501a460dc896 as submodule, which should replace the empty directory Separation_Logic_Imperative_HOL_Partial in Imperative.
