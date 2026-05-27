@@ -51,7 +51,6 @@ For the more practically usable algorithms, we include an implementation. For ot
 
  - Go to https://isabelle.in.tum.de/, pick and download the version of Isabelle2025-2 specific to your OS
  - Go to https://www.isa-afp.org/download/ and download the 2025-2 version of the AFP
- - Add the AFP as a collection of components to your local Isabelle: 'isabelle components -u [path to afp]/af\
-p/thys'
+ - Add the AFP as a collection of components to your local Isabelle: 'isabelle components -u [path to afp]/afp/thys'
  - Same for this directory: 'isabelle components -u [path to this directory]'
  - All theories in this formalisation should be available now!
