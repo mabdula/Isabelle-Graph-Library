@@ -369,12 +369,102 @@ proof (rule set_eqI)
   qed
 qed
 
-lemma remove_vertex_matching': "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> M \<setminus> {v} = M - {{u,v}}"
+lemma remove_vertex_matching':
+  assumes "matching M" and "{u,v} \<in> M"
+  shows "M \<setminus> {v} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
-  by auto (metis empty_iff insert_iff matching_unique_match)+
+proof (intro set_eqI iffI)
+  fix e
+  assume lhs: "e \<in> {e \<in> M. e \<inter> {v} = {}}"
+  then have eM: "e \<in> M" and ev: "v \<notin> e"
+    by auto
+  show "e \<in> M - {{u,v}}"
+  proof -
+    have "e \<noteq> {u,v}"
+    proof
+      assume "e = {u,v}"
+      then have "v \<in> e" by simp
+      with ev show False by simp
+    qed
+    then show ?thesis
+      using eM by simp
+  qed
+next
+  fix e
+  assume rhs: "e \<in> M - {{u,v}}"
+  then have eM: "e \<in> M" and ene: "e \<noteq> {u,v}"
+    by simp_all
+  have vnotine: "v \<notin> e"
+  proof (rule ccontr)
+    assume "\<not> v \<notin> e"
+    then have ve: "v \<in> e" by simp
+    then have "e = {u,v}"
+    proof -
+      have "v \<in> {u,v}" by simp
+      then show ?thesis
+        using matching_unique_match[OF assms(1) ve _ eM assms(2)]
+        by blast
+    qed
+    then show False using ene by simp
+  qed
+  show "e \<in> {e \<in> M. e \<inter> {v} = {}}"
+    using eM vnotine by simp
+qed
 
 lemma remove_edge_matching_vs: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> Vs (M \<setminus> {u,v}) = Vs M - {u,v}"
-  by (auto simp add: remove_edge_matching Vs_def) (metis empty_iff insert_iff matching_unique_match)+
+proof -
+  assume matching: "matching M" and edge_in: "{u,v} \<in> M"
+  show "Vs (M \<setminus> {u,v}) = Vs M - {u,v}"
+  proof (rule equalityI)
+    show "Vs (M \<setminus> {u,v}) \<subseteq> Vs M - {u,v}"
+    proof (rule subsetI)
+      fix x
+      assume "x \<in> Vs (M \<setminus> {u,v})"
+      then have "x \<in> \<Union>(M \<setminus> {u,v})" by (simp add: Vs_def)
+      then have "\<exists>e. e \<in> M \<setminus> {u,v} \<and> x \<in> e" by blast
+      then obtain e where e_rem: "e \<in> M \<setminus> {u,v}" and x_in_e: "x \<in> e" by blast
+      from e_rem have e_mem: "e \<in> M"
+        unfolding remove_vertices_graph_def by simp
+      have x_in_Vs: "x \<in> Vs M"
+        using e_mem x_in_e by (auto simp: Vs_def)
+      have x_not_uv: "x \<notin> {u,v}"
+      proof
+        assume "x \<in> {u,v}"
+        with x_in_e have "x \<in> e \<inter> {u,v}" by auto
+        then have "e \<inter> {u,v} \<noteq> {}"
+        by blast
+        moreover from e_rem have "e \<inter> {u,v} = {}"
+          unfolding remove_vertices_graph_def by simp
+        ultimately show False by simp
+      qed
+      with x_in_Vs show "x \<in> Vs M - {u,v}" by simp
+    qed
+    show "Vs M - {u,v} \<subseteq> Vs (M \<setminus> {u,v})"
+    proof (rule subsetI)
+      fix x
+      assume "x \<in> Vs M - {u,v}"
+      then have x_in_Vs: "x \<in> Vs M" and x_not_uv: "x \<notin> {u,v}" by simp_all
+      from x_in_Vs have "x \<in> \<Union> M" by (simp add: Vs_def)
+      then have "\<exists>e. e \<in> M \<and> x \<in> e" by blast
+      then obtain e where e_mem: "e \<in> M" and x_in_e: "x \<in> e" by blast
+      have e_ne: "e \<noteq> {u,v}"
+        using x_in_e x_not_uv by blast
+      have e_disjoint: "e \<inter> {u,v} = {}"
+      proof (rule ccontr)
+        assume "e \<inter> {u,v} \<noteq> {}"
+        then obtain z where z_in_e: "z \<in> e" and z_in_uv: "z \<in> {u,v}" by blast
+        have "e = {u,v}"
+          by (rule matching_unique_match[OF matching z_in_e z_in_uv e_mem edge_in])
+        with e_ne show False by simp
+      qed
+      have e_rem: "e \<in> M \<setminus> {u,v}"
+        unfolding remove_vertices_graph_def
+        using e_mem e_disjoint by simp
+      show "x \<in> Vs (M \<setminus> {u,v})"
+        using e_rem x_in_e by (auto simp: Vs_def)
+    qed
+  qed
+qed
 
 lemma remove_vertex_matching_vs: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> Vs (M \<setminus> {u}) = Vs M - {u,v}"
   by (metis remove_edge_matching remove_edge_matching_vs remove_vertex_matching)
