@@ -479,7 +479,16 @@ proof -
 qed
 
 lemma remove_vertex_matching_vs': "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> Vs (M \<setminus> {v}) = Vs M - {u,v}"
-  by (metis remove_edge_matching remove_edge_matching_vs remove_vertex_matching')
+proof -
+  assume matching: "matching M" and edge_in: "{u,v} \<in> M"
+  have vertex_eq: "M \<setminus> {v} = M - {{u,v}}"
+    using matching edge_in by (rule remove_vertex_matching')
+  have vs_eq: "Vs (M - {{u,v}}) = Vs M - {u,v}"
+    using matching edge_in
+    by (simp only: remove_edge_matching[OF matching edge_in, symmetric] remove_edge_matching_vs[OF matching edge_in])
+  show ?thesis
+    by (simp only: vertex_eq vs_eq)
+qed
 
 definition one_sided_matching :: "'a graph \<Rightarrow> 'a graph \<Rightarrow> 'a set \<Rightarrow> bool" where
   "one_sided_matching G M A = ( M \<subseteq> G \<and> (\<forall>a\<in>A. card {e\<in>M. a \<in> e} \<le> 1))"
