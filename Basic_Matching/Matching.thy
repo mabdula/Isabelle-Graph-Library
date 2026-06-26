@@ -1821,8 +1821,23 @@ next
     proof (intro in_remove_verticesI, goal_cases)
       case 2
       then show ?case
-        by (auto simp: vs_member)
-           (metis matching_unique_match maximal_matchingD subsetD)
+      proof (auto simp: vs_member)
+        fix v e'
+        assume v_in_e: "v \<in> e"
+        assume e'_in_E: "e' \<in> E"
+        assume v_in_e': "v \<in> e'"
+        have e'_in_M: "e' \<in> M"
+          using \<open>E \<subseteq> M\<close> e'_in_E by blast
+        have match: "matching M"
+          using \<open>maximal_matching G M\<close> by (rule maximal_matchingD)
+        have eq: "e = e'"
+          using match v_in_e v_in_e' \<open>e \<in> M\<close> e'_in_M
+          by (rule matching_unique_match)
+        have "u \<in> Vs E"
+          using \<open>u \<in> e\<close> e'_in_E eq by (auto simp: vs_member)
+        with \<open>X = Vs E\<close> show False
+          using \<open>u \<notin> X\<close> by simp
+      qed
     qed blast
 
     with \<open>u \<in> e\<close> show ?thesis
