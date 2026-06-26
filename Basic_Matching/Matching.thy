@@ -689,7 +689,16 @@ proof -
       by (simp add: v)
     then have card_sum_u: "card (neighbours_of_Vs M {x}) + card( neighbours_of_Vs M F) = 
                   card (neighbours_of_Vs M {x} \<union> neighbours_of_Vs M F)"
-      by (metis finite_neighbours_of_Vs assms(1) assms(3) card_Un_disjoint)
+    proof -
+      have fin1: "finite (neighbours_of_Vs M {x})"
+        using finite_neighbours_of_Vs assms(1) assms(3) by blast
+      have fin2: "finite (neighbours_of_Vs M F)"
+        using finite_neighbours_of_Vs assms(1) assms(3) by blast
+      show ?thesis
+        using card_Un_disjoint[OF fin1 fin2
+                \<open>neighbours_of_Vs M {x} \<inter> neighbours_of_Vs M F = {}\<close>]
+        by linarith
+    qed
     have " neighbours_of_Vs M (insert x F) = neighbours_of_Vs M F \<union> neighbours_of_Vs M {x}"
       by (meson neighbours_of_Vs_insert)
     then have 3: "card (neighbours_of_Vs M (insert x F)) = card (neighbours_of_Vs M F) + 1"
