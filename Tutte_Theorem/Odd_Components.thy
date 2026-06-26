@@ -59,7 +59,14 @@ lemma graph_diff_subset: "graph_diff G X \<subseteq> G"
 lemma connected_component_subset:
   assumes "v \<in> Vs G"
   shows "connected_component G v \<subseteq> Vs G"
-  using assms by (metis in_connected_component_in_edges subsetI)
+proof
+  fix u
+  assume "u \<in> connected_component G v"
+  then have "u \<in> Vs G \<or> v = u"
+    by (rule in_connected_component_in_edges)
+  with assms show "u \<in> Vs G"
+    by fast
+qed
 
 lemma diff_connected_component_subset:
   assumes "v \<in> Vs G"
