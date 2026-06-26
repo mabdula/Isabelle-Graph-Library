@@ -565,12 +565,43 @@ lemma neighbours_of_Vs_in_matching_singl:
   assumes "graph_invar G"
   shows "\<exists> v. (neighbours_of_Vs M {x}) = {v}"
 proof -
-  have "\<exists>!e. e \<in> M \<and> x \<in> e"  using matching_def2 assms(2) assms(1)  by metis
+  have "\<exists>!e. e \<in> M \<and> x \<in> e"
+    using assms(1) assms(2) by (fastforce simp: matching_def2)
   then obtain e where e: " e \<in> M \<and> x \<in> e" by auto
   then have x_one_edge:"\<forall> e' \<in> M. e' \<noteq> e \<longrightarrow> x \<notin> e'" 
     using \<open>\<exists>!e. e \<in> M \<and> x \<in> e\<close> by blast
   have "\<exists>v. (\<exists> e\<in>M. x \<in> e \<and> v\<in>e \<and> x \<noteq> v)"
-    by (metis assms(3) assms(4) dblton_graphE dblton_graph_subset e insertCI)
+  proof -
+    have eG: "e \<in> G"
+      using e assms(3) by blast
+    have dblton_G: "dblton_graph G"
+      using assms(4) graph_invar_dblton by blast
+    have "\<exists>u w. e = {u, w} \<and> u \<noteq> w"
+      using dblton_G eG by (blast elim: dblton_graphE)
+    then obtain u w where uw: "e = {u, w}" "u \<noteq> w" by blast
+    have "x = u \<or> x = w"
+      using e uw(1) by fastforce
+    then show ?thesis
+    proof
+      assume xu: "x = u"
+      show ?thesis
+      proof (intro exI[of _ w] bexI[of _ e])
+        show "x \<in> e \<and> w \<in> e \<and> x \<noteq> w"
+          using e uw xu by auto
+        show "e \<in> M"
+          using e by blast
+      qed
+    next
+      assume xw: "x = w"
+      show ?thesis
+      proof (intro exI[of _ u] bexI[of _ e])
+        show "x \<in> e \<and> u \<in> e \<and> x \<noteq> u"
+          using e uw xw by auto
+        show "e \<in> M"
+          using e by blast
+      qed
+    qed
+  qed
   then obtain v where "(\<exists> e\<in>M. x\<in> e \<and> v \<in> e \<and> x \<noteq> v)" by auto
   have "\<forall>v'. (\<exists> e\<in>M. x\<in> e \<and> v'\<in>e \<and> x \<noteq> v') \<longrightarrow> v = v'"
     by (metis \<open>\<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v\<close> assms(3) assms(4) dblton_graphE dblton_graph_subset
