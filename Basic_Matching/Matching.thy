@@ -982,8 +982,17 @@ lemma aug_paths_are_even:
   shows "even (length p)"
   using assms
   unfolding matching_augmenting_path_def
-  by (metis assms edges_of_path_length' even_add length_greater_0_conv
-            matching_augmenting_path_odd_length odd_one odd_pos)
+proof -
+  have len_ge_2: "length p \<ge> 2" using assms unfolding matching_augmenting_path_def by auto
+  hence ne: "p \<noteq> []" by auto
+  have odd_edges: "odd (length (edges_of_path p))"
+    using assms matching_augmenting_path_odd_length by blast
+  have len_eq: "length p = length (edges_of_path p) + 1"
+    using ne edges_of_path_length' by simp
+  show ?thesis
+    using len_eq odd_edges
+    by (simp add: even_add)
+qed
 
 lemma odd_alt_path_rev:
   assumes odd_lens: "odd (length p1)" "length p1 \<ge> 2" and alt_paths: "alt_path (-M) p1"
