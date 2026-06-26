@@ -2777,8 +2777,27 @@ proof -
     using assms(2) unfolding cover_matching_def by auto
   have "\<forall> e \<in> G. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs G - A)"
     using assms(1) unfolding partitioned_bipartite_def by auto
-  then have "\<forall>e \<in> M. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs M - A)" 
-    by (metis M_subs Diff_iff edges_are_Vs insert_commute subsetD)
+  then have "\<forall>e \<in> M. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs M - A)"
+    proof -
+      assume forG: "\<forall>e\<in>G. \<exists>u v. e = {u, v} \<and> u \<in> A \<and> v \<in> Vs G - A"
+      show "\<forall>e \<in> M. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs M - A)"
+      proof
+        fix e
+        assume eM: "e \<in> M"
+        then have eG: "e \<in> G"
+          using M_subs by blast
+        obtain u v where uv: "e = {u, v}" "u \<in> A" "v \<in> Vs G - A"
+          using forG eG by auto
+        have vnotA: "v \<notin> A"
+          using uv(3) by (simp add: Diff_iff)
+        have "{v, u} \<in> M"
+          using eM uv(1) by (simp add: insert_commute)
+        then have vVsM: "v \<in> Vs M"
+          using edges_are_Vs by blast
+        show "\<exists>u v. e = {u, v} \<and> u \<in> A \<and> v \<in> Vs M - A"
+          using uv(1) uv(2) vVsM vnotA by blast
+      qed
+    qed
   then show ?thesis 
     unfolding partitioned_bipartite_def
     using \<open>A \<subseteq> Vs M\<close> \<open>graph_invar M\<close>  by auto
