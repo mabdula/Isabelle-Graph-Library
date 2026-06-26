@@ -706,7 +706,14 @@ proof -
     have "card (insert x F) = card F + 1"
       by (simp add: insert.hyps(1) insert.hyps(2)) 
     then show  "card (insert x F) = card (neighbours_of_Vs M (insert x F))" using 3
-      by (metis insert.hyps(3) insert.prems insert_subset)
+    proof -
+      have hF: "F \<subseteq> Vs M"
+        using insert.prems insert_subset by blast
+      have hcardF: "card F = card (neighbours_of_Vs M F)"
+        using insert.hyps(3) hF by blast
+      show ?thesis
+        using \<open>card (insert x F) = card F + 1\<close> hcardF 3 by linarith
+    qed
   qed
 qed
 
