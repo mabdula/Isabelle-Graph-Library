@@ -223,7 +223,18 @@ lemma the_vertex_inj:
 
 lemma the_vertex_image_inj:
   "\<lbrakk>\<nexists> i. new_vertex i \<in> x; \<nexists> i. new_vertex i \<in> y; the_vertex ` x = the_vertex ` y\<rbrakk> \<Longrightarrow> x = y"
-  by (metis no_new_vertex_old_vertex_new_vertex_image_inverse)
+proof -
+  assume hx_asm: "\<nexists> i. new_vertex i \<in> x"
+    and hy_asm: "\<nexists> i. new_vertex i \<in> y"
+    and himg_asm: "the_vertex ` x = the_vertex ` y"
+  have "x = old_vertex ` (the_vertex ` x)"
+    using no_new_vertex_old_vertex_new_vertex_image_inverse hx_asm by blast
+  also have "\<dots> = old_vertex ` (the_vertex ` y)"
+    using himg_asm by simp
+  also have "\<dots> = y"
+    using no_new_vertex_old_vertex_new_vertex_image_inverse hy_asm by blast
+  finally show ?thesis .
+qed
 
 definition "penalty G w = (card (Vs G) / 2) * Max (insert 0 { \<bar>w e \<bar> | e. e \<in> G}) + 1"
 
