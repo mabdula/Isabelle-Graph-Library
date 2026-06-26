@@ -316,9 +316,30 @@ lemma matching_remove_vertices:
   using remove_vertices_subgraph
   by (auto intro: matching_subgraph)
 
-lemma remove_edge_matching: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> M \<setminus> {u,v} = M - {{u,v}}"
+lemma remove_edge_matching:
+  assumes "matching M" and "{u,v} \<in> M"
+  shows "M \<setminus> {u,v} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
-  by auto (metis empty_iff insert_iff matching_unique_match)+
+proof (rule set_eqI)
+  fix e
+  show "e \<in> {e \<in> M. e \<inter> {u, v} = {}} \<longleftrightarrow> e \<in> M - {{u, v}}"
+  proof
+    assume "e \<in> {e \<in> M. e \<inter> {u, v} = {}}"
+    then show "e \<in> M - {{u, v}}" by auto
+  next
+    assume "e \<in> M - {{u, v}}"
+    then have eM: "e \<in> M" and ne: "e \<noteq> {u, v}" by auto
+    have "e \<inter> {u, v} = {}"
+    proof (rule ccontr)
+      assume "e \<inter> {u, v} \<noteq> {}"
+      then obtain x where xe: "x \<in> e" and xuv: "x \<in> {u, v}" by blast
+      have "e = {u, v}"
+        by (rule matching_unique_match[OF assms(1) xe xuv eM assms(2)])
+      with ne show False by simp
+    qed
+    with eM show "e \<in> {e \<in> M. e \<inter> {u, v} = {}}" by simp
+  qed
+qed
 
 lemma remove_vertex_matching: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> M \<setminus> {u} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
