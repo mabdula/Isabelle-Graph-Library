@@ -49,7 +49,15 @@ next
   case (Cons a l)
   then show ?case
     apply auto
-    subgoal by (metis distinct_butlast not_distinct_conv_prefix snoc_eq_iff_butlast)
+    subgoal
+    proof -
+      assume "distinct (tl l) \<Longrightarrow> hd l = last l \<Longrightarrow> distinct (butlast l)"
+      assume "distinct l" "a = last l" "l \<noteq> []" "last l \<in> set (butlast l)"
+      from \<open>l \<noteq> []\<close> have eq: "butlast l @ [last l] = l" by (simp add: append_butlast_last_id)
+      from \<open>last l \<in> set (butlast l)\<close> have "\<not> distinct (butlast l @ [last l])"
+        by (simp add: distinct_append)
+      with eq \<open>distinct l\<close> show False by simp
+    qed
     subgoal by (simp add: distinct_butlast)
     done
 qed
