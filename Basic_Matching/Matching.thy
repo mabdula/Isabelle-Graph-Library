@@ -651,7 +651,18 @@ proof(rule ccontr)
   assume "\<not> y \<notin> neighbours_of_Vs M X"
   then show False 
     unfolding neighbours_of_Vs_def 
-    by (smt (verit) assms insert_iff matching_unique_match mem_Collect_eq singleton_iff)
+  proof -
+    from \<open>\<not> y \<notin> neighbours_of_Vs M X\<close>[unfolded neighbours_of_Vs_def]
+    obtain u e where hu_X: "u \<in> X" and he_M: "e \<in> M"
+      and hu_ne_y: "u \<noteq> y" and hu_e: "u \<in> e" and hy_e: "y \<in> e"
+      by blast
+    have edge_eq: "e = {x, y}"
+      using matching_unique_match[where v=y, OF assms(1) hy_e _ he_M assms(2)] by simp
+    then have "u \<in> {x, y}" using hu_e by simp
+    then have "u = x \<or> u = y" by (simp add: doubleton_eq_iff)
+    with hu_ne_y have "u = x" by blast
+    then show False using hu_X assms(3) by simp
+  qed
 qed
 
 lemma card_ther_vertex:
