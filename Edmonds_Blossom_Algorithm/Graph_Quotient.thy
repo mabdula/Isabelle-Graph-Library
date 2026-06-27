@@ -7,7 +7,7 @@ subsection \<open>List Auxiliary Lemmas\<close>
 
 lemma neq_Nil_conv_2:
   "l \<noteq> [] \<longleftrightarrow> (\<exists>l' x. l = l' @ [x])"
-  by (metis snoc_eq_iff_butlast)
+  by (auto intro: append_butlast_last_id[symmetric])
 
 lemma tl_distinct_rev:
   assumes "hd l = last l" "distinct (tl l)"
