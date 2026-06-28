@@ -964,8 +964,48 @@ proof -
   qed
   have "\<forall>a1 \<in> A.\<forall>a2\<in>A. a1 \<noteq> a2 \<longrightarrow>
      {M. perfect_matching a1 M} \<inter> {M. perfect_matching a2 M} = {}" 
-    apply (safe) 
-    by (metis Int_absorb assms(2,4) ex_in_conv perfect_matching_def vs_member_intro)+
+  proof (intro ballI impI)
+    fix a1 a2
+    assume ha1: "a1 \<in> A" and ha2: "a2 \<in> A" and hne: "a1 \<noteq> a2"
+    show "{M. perfect_matching a1 M} \<inter> {M. perfect_matching a2 M} = {}"
+    proof (rule equals0I)
+      fix x
+      assume hx: "x \<in> {M. perfect_matching a1 M} \<inter> {M. perfect_matching a2 M}"
+      then have hpm1: "perfect_matching a1 x" and hpm2: "perfect_matching a2 x"
+        by auto
+      have hVs1: "Vs x = Vs a1"
+        using hpm1 unfolding perfect_matching_def by auto
+      have hVs2: "Vs x = Vs a2"
+        using hpm2 unfolding perfect_matching_def by auto
+      have hVs_eq: "Vs a1 = Vs a2"
+        using hVs1 hVs2 by auto
+      have hVs_disj: "Vs a1 \<inter> Vs a2 = {}"
+        using assms(2) ha1 ha2 hne by auto
+      have hVs_empty: "Vs a1 = {}"
+        using hVs_eq hVs_disj by auto
+      have ha1_empty: "a1 = {}"
+      proof (rule ccontr)
+        assume "a1 \<noteq> {}"
+        then obtain e where he: "e \<in> a1" by blast
+        have "e \<noteq> {}" using assms(4) ha1 he by auto
+        then obtain v where hv: "v \<in> e" by blast
+        have "v \<in> Vs a1" using vs_member_intro he hv by auto
+        then show False using hVs_empty by auto
+      qed
+      have hVs2_empty: "Vs a2 = {}"
+        using hVs_eq hVs_empty by auto
+      have ha2_empty: "a2 = {}"
+      proof (rule ccontr)
+        assume "a2 \<noteq> {}"
+        then obtain e where he: "e \<in> a2" by blast
+        have "e \<noteq> {}" using assms(4) ha2 he by auto
+        then obtain v where hv: "v \<in> e" by blast
+        have "v \<in> Vs a2" using vs_member_intro he hv by auto
+        then show False using hVs2_empty by auto
+      qed
+      show False using ha1_empty ha2_empty hne by auto
+    qed
+  qed
     (*by (met is assms(2) dblton_graph_def edges_are_Vs ex_in_conv inf.idem perfect_matching_member)+*)
     (*; metis Vs_subset assms(2) edges_are_Vs empty_iff le_iff_inf perfect_matchingE)+*)
   then have matchings_are_diff: "\<forall>a1 \<in> ?Ms.\<forall>a2\<in>?Ms. a1 \<noteq> a2 \<longrightarrow> a1 \<inter> a2 = {}" 
