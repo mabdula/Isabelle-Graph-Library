@@ -707,8 +707,23 @@ lemma finite_odd_comps_in_diff:
   assumes "X \<subseteq> Vs G" 
   shows "finite (odd_comps_in_diff G X)" 
   unfolding odd_comps_in_diff_def
-  by (metis Vs_def assms diff_is_union_elements finite_Un 
-      finite_UnionD finite_odd_components)
+proof -
+  have fin_odd: "finite (odd_components (graph_diff G X))"
+    using assms(1) by (rule finite_odd_components)
+  have fin_singl: "finite (singl_in_diff G X)"
+  proof -
+    have fin_Vs: "finite (Vs G)"
+      using assms(1) by (rule graph_invar_finite_Vs)
+    have Vs_singl_subset: "Vs (singl_in_diff G X) \<subseteq> Vs G"
+      using assms diff_is_union_elements by blast
+    have fin_Vs_singl: "finite (Vs (singl_in_diff G X))"
+      using Vs_singl_subset fin_Vs by (rule finite_subset)
+    show ?thesis
+      using fin_Vs_singl unfolding Vs_def by (rule finite_UnionD)
+  qed
+  show "finite ((odd_components (graph_diff G X)) \<union> (singl_in_diff G X))"
+    using fin_odd fin_singl by (simp add: finite_Un)
+qed
 
 lemma graph_invar_diff:
   assumes "graph_invar G"
