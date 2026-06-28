@@ -284,8 +284,8 @@ next
         using Cons        
         by auto
       then obtain w p1 p2 where "p = p1 @ w # p2 \<and> Q w \<and> (\<forall>x\<in>set p2. \<not> Q x)"
-        using one_mem_pure_suff Cons
-        by metis
+        using one_mem_pure_suff[where v=v2 and p=p and Q=Q, OF \<open>v2 \<in> set p\<close> Cons.prems(4)]
+        by fast
       then have "a # p = [] @ v1 # p1 @ w # p2 \<and> Q v1 \<and> Q w \<and> v1 \<noteq> w \<and> (\<forall>x\<in>set []. \<not> Q x) \<and> (\<forall>x\<in>set p2. \<not> Q x)"
         using v1_eq_a Cons.prems by auto
       then show ?thesis
