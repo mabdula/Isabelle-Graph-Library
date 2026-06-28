@@ -864,8 +864,7 @@ next
   case (path2 v v' vs)
   then show ?case
     using good_quot_map edge_in_graph_in_quot[OF path2.hyps(1)]
-    apply (auto simp: image_def)
-    by (smt (verit, ccfv_threshold) \<open>\<And>P. P ` {v, v'} \<in> quot_graph P E\<close> image_empty image_insert)
+    by (auto simp: image_insert image_empty dest: meta_spec[where x="P"])
 
 qed
 
