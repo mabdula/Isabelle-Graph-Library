@@ -280,7 +280,13 @@ proof -
     by (simp add: edge_subset_component assms(1) \<open>v\<in> Vs G\<close>)
   then have "card (connected_component G v) \<ge> 2"
     using edge_in_E_card[of G e] component_is_finite[of G v]  assms(1)
-    by (metis \<open>e \<in> G\<close> card_mono)
+  proof -
+    have "card e \<le> card (connected_component G v)"
+      using component_is_finite[OF assms(1)] \<open>e \<subseteq> connected_component G v\<close>
+      by (rule card_mono)
+    with edge_in_E_card[of G e] assms(1) \<open>e \<in> G\<close> show ?thesis
+      by linarith
+  qed
   then show ?thesis  by linarith
 qed
 
