@@ -247,7 +247,16 @@ next
       show ?thesis
         using False hyps by (intro exI[where x=v] exI[where x="a' # p1"] exI[where x=p2] conjI; simp)
     qed
-    subgoal by (metis Cons_eq_append_conv all_not_in_conv append_Cons list.set(1) set_ConsD)
+    subgoal premises hyps for w p2 p1
+    proof (cases "Q a'")
+      case True
+      show ?thesis
+        using True hyps by (intro exI[where x=a'] exI[where x="[]"] exI[where x="p2 @ w # p1"] conjI; simp)
+    next
+      case False
+      show ?thesis
+        using False hyps by (intro exI[where x=w] exI[where x="a' # p2"] exI[where x=p1] conjI; simp)
+    qed
     done
 qed
 
