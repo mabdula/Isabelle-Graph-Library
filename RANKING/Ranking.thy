@@ -1540,9 +1540,12 @@ proof (cases "v \<in> set \<sigma>")
     from this(1)[symmetric] show ?case
       by simp
   next
-    case (sucsuc v u vus v')
-    then have "{u,v} \<in> M" "v' = v"
-      by (metis zig_ConsE zig_matching_edge)+
+    case (sucsuc v u vus v')    have edge_uv': "{u, v'} ∈ M"
+      using sucsuc(3)[symmetric] by (rule zig_matching_edge)
+    have v'_eq: "v' = v"
+      using sucsuc(3)[symmetric] by (elim zig_ConsE) simp_all
+    have "{u,v} ∈ M" "v' = v"
+      using edge_uv' v'_eq by simp_all
   
     with sucsuc have "u \<notin> set \<sigma>"
       by (auto dest: bipartite_edgeD)
