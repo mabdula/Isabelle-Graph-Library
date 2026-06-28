@@ -988,9 +988,17 @@ proof(rule ccontr)
     using cycle(3)
     by (simp add: distinct_edges_of_vpath)
   then have "distinct (edges_of_path p)"
-    using cycle[unfolded odd_cycle_def] 
-    apply (cases p; simp add: distinct_edges_of_vpath split: if_splits)
-    by (metis alt_list.cases inM length_greater_0_conv list.sel(1) odd_pos)
+  proof (cases p)
+    case Nil
+    with cycle[unfolded odd_cycle_def] show ?thesis by simp
+  next
+    case (Cons x xs)
+    have "xs \<noteq> []"
+      using cycle[unfolded odd_cycle_def] Cons by auto
+    with cycle[unfolded odd_cycle_def] Cons \<open>distinct (edges_of_path (tl p))\<close> inM
+    show ?thesis
+      by (auto simp: distinct_edges_of_vpath intro: alt_list.cases)
+  qed
   moreover have "length (edges_of_path p) \<ge> 2"
     using cycle(1)
     unfolding odd_cycle_def
