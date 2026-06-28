@@ -618,8 +618,41 @@ lemma diff_card_is_sum_elements:
   assumes "graph_invar G"
   assumes "X \<subseteq> Vs G"
   shows "card (Vs (graph_diff G X)) + card (Vs (singl_in_diff G X)) + card X = card (Vs G)"
-  using diff_is_union_elements[OF assms] diff_disjoint_elements[OF assms]
-  by (metis Int_Un_distrib2 assms(1) card_Un_disjoint finite_Un sup_bot_right)
+proof -
+  (* Step 1: Name the two driver lemmas *)
+  have union_eq: "Vs (graph_diff G X) \<union> Vs (singl_in_diff G X) \<union> X = Vs G"
+    by (rule diff_is_union_elements[OF assms])
+  (* Step 2: Obtain the pairwise disjointness facts *)
+  have disj12: "Vs (graph_diff G X) \<inter> Vs (singl_in_diff G X) = {}"
+    by (rule diff_disjoint_elements(1)[OF assms])
+  have disj1X: "Vs (graph_diff G X) \<inter> X = {}"
+    by (rule diff_disjoint_elements(2)[OF assms])
+  have disj2X: "Vs (singl_in_diff G X) \<inter> X = {}"
+    by (rule diff_disjoint_elements(3)[OF assms])
+  (* Step 3: Finiteness — derive from graph_invar via graph_invar_finite_Vs *)
+  have fin_G: "finite (Vs G)"
+    by (rule graph_invar_finite_Vs[OF assms(1)])
+  have fin1: "finite (Vs (graph_diff G X))"
+    by (rule finite_subset[of _ "Vs G"]) (use union_eq fin_G in auto)
+  have fin2: "finite (Vs (singl_in_diff G X))"
+    by (rule finite_subset[of _ "Vs G"]) (use union_eq fin_G in auto)
+  have fin3: "finite X"
+    by (rule finite_subset[OF assms(2) fin_G])
+  (* Step 4: Derive combined disjointness for the outer card_Un_disjoint call *)
+  have disj_union_X: "(Vs (graph_diff G X) \<union> Vs (singl_in_diff G X)) \<inter> X = {}"
+    by (simp add: Int_Un_distrib2 disj1X disj2X)
+  (* Step 5: Inner card_Un_disjoint *)
+  have card12: "card (Vs (graph_diff G X) \<union> Vs (singl_in_diff G X)) =
+                card (Vs (graph_diff G X)) + card (Vs (singl_in_diff G X))"
+    by (rule card_Un_disjoint[OF fin1 fin2 disj12])
+  (* Step 6: Outer card_Un_disjoint *)
+  have card_all: "card (Vs (graph_diff G X) \<union> Vs (singl_in_diff G X) \<union> X) =
+                  card (Vs (graph_diff G X) \<union> Vs (singl_in_diff G X)) + card X"
+    by (rule card_Un_disjoint[OF finite_UnI[OF fin1 fin2] fin3 disj_union_X])
+  (* Step 7: Conclude by rewriting the union and arithmetic *)
+  show ?thesis
+    using union_eq card12 card_all by auto
+qed
 
 lemma singleton_set_card_eq_vertices:
   assumes "graph_invar G"
