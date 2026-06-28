@@ -1006,8 +1006,7 @@ proof -
       show False using ha1_empty ha2_empty hne by auto
     qed
   qed
-    (*by (met is assms(2) dblton_graph_def edges_are_Vs ex_in_conv inf.idem perfect_matching_member)+*)
-    (*; metis Vs_subset assms(2) edges_are_Vs empty_iff le_iff_inf perfect_matchingE)+*)
+
   then have matchings_are_diff: "\<forall>a1 \<in> ?Ms.\<forall>a2\<in>?Ms. a1 \<noteq> a2 \<longrightarrow> a1 \<inter> a2 = {}" 
     by force
   have "\<forall>a\<in> ?Ms. \<exists>b\<in> Vs ?Ms. b \<in> a" 
