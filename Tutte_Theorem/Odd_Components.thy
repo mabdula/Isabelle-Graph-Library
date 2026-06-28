@@ -437,8 +437,27 @@ lemma odd_comps_in_diff_are_components:
   apply safe
     apply(elim odd_componentsE odd_componentE )
     apply (meson subsetD vs_graph_diff) 
-   apply (metis DiffI card_singl_in_diff_is_one odd_one singl_in_diffE 
-      singl_in_diff_is_component singletonI)
+  subgoal for x
+  proof (elim singl_in_diffE)
+    fix v
+    assume h_vG: "v \<in> Vs G" and h_xv: "x = {v}" and h_vX: "v \<notin> X" and h_vVs: "v \<notin> Vs (graph_diff G X)"
+    have h_singl: "x \<in> singl_in_diff G X"
+      using singl_in_diffI[OF h_vG h_xv h_vX h_vVs] .
+    show "\<exists>v\<in>Vs G - X. connected_component (graph_diff G X) v = x \<and> odd (card x)"
+    proof (intro bexI[of _ v])
+      show "connected_component (graph_diff G X) v = x \<and> odd (card x)"
+      proof (intro conjI)
+        show "connected_component (graph_diff G X) v = x"
+          by (rule singl_in_diff_is_component[OF h_singl]) (simp add: h_xv)
+      next
+        show "odd (card x)"
+          by (simp add: card_singl_in_diff_is_one[OF h_singl] odd_one)
+      qed
+    next
+      show "v \<in> Vs G - X"
+        by (intro DiffI h_vG h_vX)
+    qed
+  qed
 proof -
   fix x v
   assume h1: "connected_component (graph_diff G X) v \<notin> singl_in_diff G X"
