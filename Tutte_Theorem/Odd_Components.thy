@@ -274,7 +274,8 @@ lemma connected_component_not_singleton:
   assumes "v\<in> Vs G"
   shows "card (connected_component G v) > 1"
 proof -
-  obtain e where "e \<in> G" "v \<in> e" using assms(2) vs_member_elim by metis
+  obtain e where "e \<in> G" "v \<in> e"
+    using assms(2) by (rule vs_member_elim)
   then have "e \<subseteq> (connected_component G v)"
     by (simp add: edge_subset_component assms(1) \<open>v\<in> Vs G\<close>)
   then have "card (connected_component G v) \<ge> 2"
