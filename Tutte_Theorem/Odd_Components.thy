@@ -568,7 +568,16 @@ lemma diff_is_union_elements:
 lemma el_vs_singleton_is_in_singleton:
   assumes "x \<in> Vs (singl_in_diff G X)"
   shows "{x} \<in> (singl_in_diff G X)"
-  by (smt (verit, ccfv_SIG) CollectI assms singl_in_diff_member singletonD vs_member_elim)
+proof -
+  obtain e where he: "e \<in> singl_in_diff G X" "x \<in> e"
+    using assms by (auto elim: vs_member_elim)
+  from he(1) obtain v where hv: "e = {v}"
+    using singl_in_diffE by blast
+  have "x = v"
+    using he(2) hv singletonD by blast
+  then show "{x} \<in> singl_in_diff G X"
+    using he(1) hv by simp
+qed
 
 lemma diff_disjoint_elements:
   assumes "graph_invar G"
