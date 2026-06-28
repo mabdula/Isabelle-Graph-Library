@@ -783,9 +783,26 @@ lemma path_in_comp:
   assumes "path G p"
   assumes "C \<in> connected_components G"
   assumes "last p \<in> C"
-  shows "\<forall>x \<in> set p. x \<in> C" using assms(1) assms(3)
-  by (metis assms(2) connected_components_closed' connected_components_member_eq empty_iff empty_set
-      has_path_in_connected_component nonempty_path_walk_between path_subset_conn_comp subset_eq)
+  shows "\<forall>x \<in> set p. x \<in> C"
+proof (cases "p = []")
+  case True
+  then show ?thesis by simp
+next
+  case False
+  have set_subset: "set p \<subseteq> connected_component G (hd p)"
+    using assms(1) by (simp add: path_subset_conn_comp)
+  have last_in: "last p \<in> set p"
+    using False by (simp add: last_in_set)
+  have last_in_comp: "last p \<in> connected_component G (hd p)"
+    using set_subset last_in by blast
+  have comp_eq: "connected_component G (last p) = connected_component G (hd p)"
+    using last_in_comp by (simp add: connected_components_member_eq)
+  have C_eq: "C = connected_component G (last p)"
+    using assms(2) assms(3) by (simp add: connected_components_closed')
+  have "set p \<subseteq> C"
+    using set_subset comp_eq C_eq by auto
+  then show ?thesis by auto
+qed
 
 lemma exist_edge_in_component:
   assumes "graph_invar G"
