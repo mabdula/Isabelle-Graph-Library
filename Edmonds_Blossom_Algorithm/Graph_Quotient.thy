@@ -221,7 +221,7 @@ next
         using split_eq split_Qw split_tail by blast
     qed
     subgoal by (meson Cons_eq_appendI)
-    subgoal by (metis append_Cons)
+    subgoal by (blast intro: Cons_eq_appendI)
     done
 qed
 
