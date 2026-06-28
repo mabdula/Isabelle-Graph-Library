@@ -389,8 +389,19 @@ proof(rule ccontr)
     case True
     have "C \<subseteq> Vs (graph_diff G X)"
       using True odd_components_elem_in_E by auto
-    then show ?thesis 
-      by (metis \<open>C \<inter> X \<noteq> {}\<close> disjoint_iff_not_equal graph_diffE subsetD vs_member_elim)
+    then show ?thesis
+    proof -
+      note Csub = \<open>C \<subseteq> Vs (graph_diff G X)\<close>
+      obtain v where vC: "v \<in> C" and vX: "v \<in> X"
+        using \<open>C \<inter> X \<noteq> {}\<close> by blast
+      have vVs: "v \<in> Vs (graph_diff G X)"
+        using Csub vC by (rule subsetD)
+      obtain e where eD: "e \<in> graph_diff G X" and ve: "v \<in> e"
+        using vVs by (auto elim: vs_member_elim)
+      have "v \<notin> X"
+        using eD ve by (auto elim: graph_diffE)
+      with vX show False by contradiction
+    qed
   next
     case False
     then have "C \<in> singl_in_diff G X" 
