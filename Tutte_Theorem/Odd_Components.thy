@@ -946,9 +946,22 @@ proof -
         using pm_sub_bound ha hpow finite_subset by blast
     qed
   qed
-  then have "finite (Vs ?Ms)"
-    using assms(5)
-    by (smt (verit) Vs_def \<open>finite ?Ms\<close> finite_Union mem_Collect_eq)
+  then have hfin_pm: "\<forall>a \<in> A. finite {M. perfect_matching a M}" .
+  have "finite (Vs ?Ms)"
+  proof -
+    have hfin_elems: "\<forall>x \<in> ?Ms. finite x"
+    proof (rule ballI)
+      fix x assume hx: "x \<in> ?Ms"
+      then obtain a where ha: "a \<in> A" and hxa: "x = {M. perfect_matching a M}"
+        by auto
+      show "finite x"
+        using hfin_pm ha hxa by simp
+    qed
+    have hfin_union: "finite (\<Union> ?Ms)"
+      using \<open>finite ?Ms\<close> hfin_elems by (meson finite_Union)
+    show "finite (Vs ?Ms)"
+      unfolding Vs_def using hfin_union by simp
+  qed
   have "\<forall>a1 \<in> A.\<forall>a2\<in>A. a1 \<noteq> a2 \<longrightarrow>
      {M. perfect_matching a1 M} \<inter> {M. perfect_matching a2 M} = {}" 
     apply (safe) 
