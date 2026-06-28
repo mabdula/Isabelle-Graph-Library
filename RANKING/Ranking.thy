@@ -1172,11 +1172,24 @@ next
       case True
       then obtain v' where shifts_to: "shifts_to G M u v v' \<pi> \<sigma>" by blast
       then have "(THE v'. shifts_to G M u v v' \<pi> \<sigma>) = v'"
-        by (simp add: the_shifts_to)
-
-      with "3.IH"[OF \<open>\<exists>v. {u,v} \<in> M\<close> the_v[symmetric] True, simplified this]
-      assms(4)[OF \<open>matching M\<close>] show ?thesis
-        by (metis "3.hyps" \<open>{u, v} \<in> M\<close> the_match' the_shifts_to)
+        by (simp add: the_shifts_to)      show ?thesis
+      proof -
+        have "⋀v0 v0'. {u, v0} ∈ M ⟹ shifts_to G M u v0 v0' π σ ⟹ P G M v0' π σ"
+        proof -
+          fix v0 v0'
+          assume h1: "{u, v0} ∈ M" and h2: "shifts_to G M u v0 v0' π σ"
+          have eq1: "(THE v. {u, v} ∈ M) = v0"
+            by (rule the_match'[OF "3.hyps" h1])
+          have eq2: "(THE v'. shifts_to G M u v0 v' π σ) = v0'"
+            by (rule the_shifts_to[OF h2])
+          have ex_h2: "∃v'. shifts_to G M u v0 v' π σ"
+            by (rule exI[of _ v0']) (rule h2)
+          show "P G M v0' π σ"
+            using "3.IH"[OF ‹∃v. {u,v} ∈ M› eq1[symmetric] ex_h2]
+            by (simp add: eq2)
+        qed
+        with assms(4)[OF "3.hyps"] show ?thesis by blast
+      qed
     next
       case False
       with assms \<open>{u,v} \<in> M\<close> show ?thesis
