@@ -380,7 +380,7 @@ proof-
     by auto
   then show ?thesis
     using p1p2
-    by metis
+    by (intro exI[of _ p1] exI[of _ p2] conjI)
 qed
 
 lemma card2_subset:
