@@ -1334,11 +1334,31 @@ proof -
     by (fastforce simp: zag.simps the_shifts_to the_match')
 
   with zig_zag assms have "{u',v'} \<in> M"
-    by (meson zag_then_zig zig_Cons_zagE)
-    
-  with shifts_to show ?thesis
-    unfolding shifts_to_def
-    by (metis \<open>matching M\<close> \<open>{u, v} \<in> M\<close> index_eq_index_conv linorder_neqE the_match')
+    by (meson zag_then_zig zig_Cons_zagE)  with shifts_to show ?thesis
+  proof -
+    from shifts_to have u_in_pi: "u ∈ set π"
+      and v_lt_v': "index σ v < index σ v'"
+      and no_prior: "¬ (∃u''. index π u'' < index π u ∧ {u'', v'} ∈ M)"
+      unfolding shifts_to_def by auto
+    have "v ≠ v'"
+      using v_lt_v' by auto
+    have "u ≠ u'"
+    proof
+      assume "u = u'"
+      with ‹matching M› ‹{u, v} ∈ M› ‹{u', v'} ∈ M›
+      have "(THE x. {u, x} ∈ M) = v" "(THE x. {u, x} ∈ M) = v'"
+        by (auto intro: the_match')
+      with ‹v ≠ v'› show False by simp
+    qed
+    have "¬ (index π u' < index π u)"
+      using no_prior ‹{u', v'} ∈ M› by blast
+    hence "index π u ≤ index π u'"
+      by simp
+    moreover have "index π u ≠ index π u'"
+      using u_in_pi ‹u ≠ u'› by (meson index_eq_index_conv)
+    ultimately show "index π u < index π u'"
+      by simp
+  qed
 qed
 
 text \<open>
