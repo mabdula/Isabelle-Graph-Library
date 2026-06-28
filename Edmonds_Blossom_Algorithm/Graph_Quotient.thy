@@ -397,7 +397,11 @@ lemma odd_cycle_nempty:
   assumes "odd_cycle p"
   shows "p \<noteq> []"
   unfolding odd_cycle_def
-  by (metis One_nat_def assms list.size(3) not_less_eq_eq one_le_numeral odd_cycle_def)
+proof
+  assume "p = []"
+  with assms show False
+    unfolding odd_cycle_def by simp
+qed
 
 lemma odd_cycleD:
   assumes "odd_cycle p"
