@@ -463,8 +463,17 @@ next
     using match_blossomD(5)[OF assms]
     using alternating_eq_iff_even alternating_list_even_last by blast
   then show ?thesis
-    using alt_list_append_1' match_blossomD(1)[OF assms]
-    by (metis False \<open>edges_of_path (stem @ [hd C]) @ edges_of_path C = edges_of_path (stem @ C)\<close>)
+  proof -
+    have h_concat: "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M)
+          (edges_of_path (stem @ [hd C]) @ edges_of_path C)"
+      using match_blossomD(1)[OF assms]
+            \<open>edges_of_path (stem @ [hd C]) @ edges_of_path C = edges_of_path (stem @ C)\<close>
+      by auto
+    note alt_conj = alt_list_append_1'[OF h_concat False]
+    with \<open>last (edges_of_path (stem @ [hd C])) \<in> M\<close>
+    show ?thesis
+      by blast
+  qed
 qed
 
 abbreviation "blossom G M stem C \<equiv> path G (stem @ C) \<and> match_blossom M stem C"
