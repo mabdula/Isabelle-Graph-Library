@@ -207,7 +207,19 @@ next
   case (Cons a' p')
   then show ?case
     apply auto 
-    subgoal by (metis (no_types, lifting) Cons.prems(1) split_list_last_prop)
+    subgoal
+    proof -
+      have mem: "\<exists>x\<in>set (a' # p'). Q x"
+        using Cons.prems(1) Cons.prems(2) by blast
+      from split_list_last_prop[OF mem]
+      obtain w p1 p2
+        where split_eq:   "a' # p' = p1 @ w # p2"
+          and split_Qw:   "Q w"
+          and split_tail: "\<not> (\<exists>z\<in>set p2. Q z)"
+        by blast
+      then show ?thesis
+        using split_eq split_Qw split_tail by blast
+    qed
     subgoal by (meson Cons_eq_appendI)
     subgoal by (metis append_Cons)
     done
