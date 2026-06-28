@@ -1300,8 +1300,17 @@ proof -
   with \<open>{u,v} \<in> M\<close> assms have "zig G M v \<pi> \<sigma> = v # zag G M u \<pi> \<sigma>"
     by (auto elim!: zig_ConsE intro: the_match)
 
-  with assms \<open>{u,v} \<in> M\<close> have "shifts_to G M u v v' \<pi> \<sigma>"
-    by (metis zag_shift_edge zig_hdE zig_then_zag)
+  with assms ‹{u,v} ∈ M› have "shifts_to G M u v v' π σ"
+  proof -
+    have zag_eq: "zag G M u π σ = u # zig G M v' π σ"
+      by (rule zig_then_zag[OF assms])
+    obtain rest where "zig G M v' π σ = v' # rest"
+      by (rule zig_hdE)
+    with zag_eq have "zag G M u π σ = u # v' # rest"
+      by simp
+    with ‹{u,v} ∈ M› show "shifts_to G M u v v' π σ"
+      by (rule zag_shift_edge)
+  qed
 
   then show ?thesis unfolding shifts_to_def by blast
 qed
