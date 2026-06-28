@@ -237,7 +237,16 @@ next
   then show ?case
     apply auto 
     subgoal by fastforce
-    subgoal by (metis Cons_eq_append_conv all_not_in_conv append_Cons assms(2) list.set(1) set_ConsD)
+    subgoal premises hyps for p1 p2
+    proof (cases "Q a'")
+      case True
+      show ?thesis
+        using True by (intro exI[where x=a'] exI[where x="[]"] exI[where x="p1 @ v # p2"] conjI; simp)
+    next
+      case False
+      show ?thesis
+        using False hyps by (intro exI[where x=v] exI[where x="a' # p1"] exI[where x=p2] conjI; simp)
+    qed
     subgoal by (metis Cons_eq_append_conv all_not_in_conv append_Cons list.set(1) set_ConsD)
     done
 qed
