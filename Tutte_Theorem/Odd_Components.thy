@@ -296,7 +296,7 @@ lemma odd_component_is_component:
   shows "connected_component G x = C"
   using assms
   apply(elim odd_componentsE odd_componentE)
-  by (metis connected_components_member_eq)
+  by (auto simp: connected_components_member_eq)
 
 lemma singl_in_diff_is_component:
   assumes "C \<in> singl_in_diff G X"
