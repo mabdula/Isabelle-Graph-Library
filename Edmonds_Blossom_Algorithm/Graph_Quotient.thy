@@ -619,8 +619,36 @@ lemma edge_in_quot_in_graph_1':
   shows "e \<in> M"
   using assms good_quot_map
   unfolding quot_graph_def Vs_def image_def
-  apply simp
-  by (smt dual_order.antisym mem_Collect_eq subset_eq)
+  proof -
+    have e_in: "e \<in> quot_graph P M" and e_sub_s: "e \<subseteq> s" and M_sub: "M \<subseteq> E"
+      using assms by auto
+    obtain ea where ea: "ea \<in> M" "e = {y. \<exists>x\<in>ea. y = P x}"
+      using e_in unfolding quot_graph_def image_def by auto
+    have all_in_s: "\<forall>xa\<in>ea. xa \<in> s"
+    proof
+      fix xa assume "xa \<in> ea"
+      have "P xa \<in> e" using ea(2) \<open>xa \<in> ea\<close> by auto
+      then have "P xa \<in> s" using e_sub_s by auto
+      then show "xa \<in> s" using good_quot_map(1) by (auto split: if_splits)
+    qed
+    have "e = ea"
+    proof (rule set_eqI)
+      fix x
+      show "(x \<in> e) = (x \<in> ea)"
+      proof
+        assume "x \<in> e"
+        then obtain xa where "xa \<in> ea" "x = P xa" using ea(2) by auto
+        then have "xa \<in> s" using all_in_s by auto
+        then show "x \<in> ea" using \<open>x = P xa\<close> \<open>xa \<in> ea\<close> by simp
+      next
+        assume "x \<in> ea"
+        then have "x \<in> s" using all_in_s by auto
+        then have "P x = x" by simp
+        then show "x \<in> e" using ea(2) \<open>x \<in> ea\<close> by auto
+      qed
+    qed
+    then show "e \<in> M" using ea(1) by simp
+  qed
 
 (*lemma edge_in_quot_in_graph_2:
   assumes edge: "(P ` e) \<in> (quot_graph P E)" "u \<in> P ` e"
