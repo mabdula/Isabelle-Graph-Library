@@ -289,7 +289,10 @@ next
       then have "a # p = [] @ v1 # p1 @ w # p2 \<and> Q v1 \<and> Q w \<and> v1 \<noteq> w \<and> (\<forall>x\<in>set []. \<not> Q x) \<and> (\<forall>x\<in>set p2. \<not> Q x)"
         using v1_eq_a Cons.prems by auto
       then show ?thesis
-        by metis
+        by (intro exI[where x = "[]"] exI[where x = p1]
+                  exI[where x = p2] exI[where x = v1]
+                  exI[where x = w])
+           simp
     qed
   next
     case v1_neq_a: False
