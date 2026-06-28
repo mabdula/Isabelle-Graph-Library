@@ -1565,10 +1565,17 @@ proof (cases "v \<in> set \<sigma>")
         then have "zig G M v'' π σ = v'' # uvs"
           by (rule zag_then_zig)
         with Cons show ?thesis by simp
+      qed      have "v'' ∈ set σ"
+      proof -
+        have zag_eq: "zag G M u π σ = u # vus"
+          using sucsuc(3)[symmetric] by (rule zig_then_zag)
+        then have "zag G M u π σ = u # zig G M v'' π σ"
+          using vus_zig by simp
+        then obtain v_old where "shifts_to G M u v_old v'' π σ"
+          by (elim zag_Cons_zigE)
+        then show "v'' ∈ set σ"
+          by (rule shifts_to_only_from_input(2))
       qed
-  
-      with sucsuc have "v'' \<in> set \<sigma>"
-        by (metis shifts_to_only_from_input(2) zag_Cons_zigE zig_then_zag)
   
       from \<open>v # u # vus = zig G M v' \<pi> \<sigma>\<close>[symmetric] vus_zig \<open>v' = v\<close> \<open>u \<notin> set \<sigma>\<close> \<open>v' \<in> set \<sigma>\<close>
       have "[x <- zig G M v' \<pi> \<sigma>. x \<in> set \<sigma>] = v # [x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>]"
