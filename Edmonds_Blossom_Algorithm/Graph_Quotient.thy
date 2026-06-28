@@ -448,7 +448,16 @@ next
   then have "edges_of_path (stem @ [hd C]) @ edges_of_path C  = edges_of_path (stem @ C)"
     using edges_of_path_append_2 by force
   then have "alt_path M (stem @ [hd C])"
-    by (metis alt_list_append_1 match_blossomD(1)[OF assms])
+  proof -
+    have h_full: "alt_path M (stem @ C)"
+      by (rule match_blossomD(1)[OF assms])
+    show "alt_path M (stem @ [hd C])"
+      using alt_list_append_1[THEN conjunct1, of "\<lambda>e. e \<notin> M" "\<lambda>e. e \<in> M"
+            "edges_of_path (stem @ [hd C])" "edges_of_path C"]
+            h_full
+            \<open>edges_of_path (stem @ [hd C]) @ edges_of_path C = edges_of_path (stem @ C)\<close>
+      by auto
+  qed
   moreover case False
   ultimately have "last (edges_of_path (stem @ [hd C])) \<in> M"
     using match_blossomD(5)[OF assms]
