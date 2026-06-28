@@ -873,7 +873,7 @@ lemma qug_path_iff_case_1_ii:
   shows "path E p = path (quotG E) p"
   using path path_is_quot_path'[OF _ path] path_is_quot_path_diff_u[OF _ path] good_quot_map
   apply auto
-  by (smt (verit, del_insts) map_idI path(1) subset_eq)
+  by (simp add: list.map_ident_strong subset_eq)
 
 
 lemma path_with_cycle_at_beginning:
