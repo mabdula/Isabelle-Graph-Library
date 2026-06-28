@@ -500,15 +500,32 @@ lemma odd_comps_in_diff_are_componentsI2:
   assumes "odd (card C)"
   assumes "C \<in> connected_components (graph_diff G X)"
   shows "C \<in> odd_comps_in_diff G X"
-  by (metis assms(1) assms(2) connected_comp_has_vert odd_componentI
-      odd_component_member odd_comps_in_diff_member)
+proof -
+  from assms(2) obtain w where w_in_Vs: "w \<in> Vs (graph_diff G X)" and C_eq: "C = connected_component (graph_diff G X) w"
+    by (rule connected_comp_has_vert)
+  have w_in_diff: "w \<in> Vs G - X"
+    using w_in_Vs vs_graph_diff[of G X] by auto
+  show ?thesis
+    using odd_comps_in_diff_are_componentsI assms(1) w_in_diff C_eq by fastforce
+qed
 
 lemma diff_component_disjoint:
   assumes "C1 \<in> (odd_comps_in_diff G X)"
   assumes "C2 \<in> (odd_comps_in_diff G X)"
   assumes "C1 \<noteq> C2"
   shows "C1 \<inter> C2 = {}"
-  by (metis assms odd_comps_in_diff_is_component disjoint_iff_not_equal)
+proof (rule equals0I)
+  fix x
+  assume hx: "x \<in> C1 \<inter> C2"
+  hence xC1: "x \<in> C1" and xC2: "x \<in> C2" by auto
+  have comp_eq_C1: "connected_component (graph_diff G X) x = C1"
+    using assms(1) xC1 by (rule odd_comps_in_diff_is_component)
+  have comp_eq_C2: "connected_component (graph_diff G X) x = C2"
+    using assms(2) xC2 by (rule odd_comps_in_diff_is_component)
+  have "C1 = C2"
+    using comp_eq_C1 comp_eq_C2 by auto
+  with assms(3) show False by contradiction
+qed
 
 
 lemma components_is_union_even_and_odd:
@@ -542,7 +559,8 @@ lemma diff_is_union_elements:
   shows "Vs (graph_diff G X) \<union> Vs (singl_in_diff G X) \<union> X = Vs G"
   apply safe
      apply (meson graph_diff_subset subset_iff vs_member)
-    apply (metis insert_Diff insert_subset singl_in_diff_in_E vs_member)
+   subgoal for v
+    by (blast dest: singl_in_diffE vs_member[THEN iffD1])
   using assms(2) 
    apply blast
   by (meson singl_in_diffI singletonI vs_member_intro)
