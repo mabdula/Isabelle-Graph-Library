@@ -660,8 +660,17 @@ lemma singleton_set_card_eq_vertices:
   shows "card (Vs (singl_in_diff G X)) = card (singl_in_diff G X)"
 proof -
   let ?A = "(singl_in_diff G X)"
-  have "finite ?A" 
-    by (metis Vs_def assms diff_is_union_elements finite_Un finite_UnionD)
+  have "finite ?A"
+  proof -
+    have fin_Vs: "finite (Vs G)"
+      using assms(1) by (rule graph_invar_finite_Vs)
+    have Vs_singl_subset: "Vs (singl_in_diff G X) \<subseteq> Vs G"
+      using assms diff_is_union_elements by blast
+    have fin_Vs_singl: "finite (Vs (singl_in_diff G X))"
+      using Vs_singl_subset fin_Vs by (rule finite_subset)
+    show "finite ?A"
+      using fin_Vs_singl unfolding Vs_def by (rule finite_UnionD)
+  qed
   moreover have "\<forall>C \<in> ?A. finite C" 
     by(auto elim: singl_in_diffE)
   moreover have "\<forall> C1 \<in> ?A. \<forall> C2 \<in> ?A. C1 \<noteq> C2 \<longrightarrow> C1 \<inter> C2 = {}"   
