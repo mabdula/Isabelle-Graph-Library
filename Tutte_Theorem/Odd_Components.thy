@@ -339,11 +339,14 @@ lemma odd_components_nonempty:
   unfolding odd_component_def
    apply (simp add: odd_card_imp_not_empty)
   by blast
-
 lemma odd_component_in_E:
   assumes "odd_component G C"
   shows "C \<subseteq> Vs G" 
-  by (metis assms connected_component_subset odd_component_def)
+  proof -
+  obtain v where "v \<in> Vs G" and "connected_component G v = C"
+    using assms unfolding odd_component_def by blast
+  with connected_component_subset[OF `v \<in> Vs G`] show ?thesis by simp
+qed
 
 lemma odd_components_elem_in_E:
   assumes "C \<in> odd_components G"
