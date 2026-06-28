@@ -1464,8 +1464,15 @@ proof (cases "2 \<le> length (zig G M x \<pi> \<sigma>)")
     using length_at_least_two_Cons_Cons by blast
 
   with aug hd_zig show ?thesis
-    unfolding matching_augmenting_path_def
-    by (metis edge_commute insertI1 vs_member zig_matching_edge)
+  proof -
+    have "{u, x} ∈ M"
+      using ‹zig G M x π σ = v # u # vus› by (rule zig_matching_edge)
+    hence "x ∈ Vs M"
+      by (auto dest: edges_are_Vs)
+    with aug show False
+      unfolding matching_augmenting_path_def
+      using hd_zig by (simp add: hd_zig)
+  qed
 
 next
   case False
