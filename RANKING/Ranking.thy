@@ -1579,11 +1579,42 @@ proof (cases "v \<in> set \<sigma>")
   
       from \<open>v # u # vus = zig G M v' \<pi> \<sigma>\<close>[symmetric] vus_zig \<open>v' = v\<close> \<open>u \<notin> set \<sigma>\<close> \<open>v' \<in> set \<sigma>\<close>
       have "[x <- zig G M v' \<pi> \<sigma>. x \<in> set \<sigma>] = v # [x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>]"
-        by auto
-  
-      with sucsuc vus_zig \<open>v' = v\<close> \<open>v'' \<in> set \<sigma>\<close> show ?thesis
-        by (simp flip: successively_conv_sorted_wrt[OF transp_index_less])
-           (metis (mono_tags, lifting) filter.simps(2) list.sel(1) local.Cons successively_Cons zig_increasing_ranks)
+        by auto      with sucsuc vus_zig ‹v' = v› ‹v'' ∈ set σ› show ?thesis
+      proof -
+        have zig_eq: "zig G M v π σ = v # u # zig G M v'' π σ"
+          using sucsuc(3)[symmetric] ‹v' = v› vus_zig by simp
+        have rank_lt: "index σ v < index σ v''"
+          by (rule zig_increasing_ranks[OF zig_eq])
+        have zig_eq': "zig G M v'' π σ = v'' # uvs"
+          using vus_zig local.Cons by simp
+        have hd_eq: "hd [x <- zig G M v'' π σ. x ∈ set σ] = v''"
+        proof -
+          from zig_eq' ‹v'' ∈ set σ›
+          have "filter (λx. x ∈ set σ) (zig G M v'' π σ) = v'' # filter (λx. x ∈ set σ) uvs"
+            by (simp add: filter.simps(2))
+          then show ?thesis by (simp add: list.sel(1))
+        qed
+        have nonempty: "[x <- zig G M v'' π σ. x ∈ set σ] ≠ []"
+        proof -
+          from zig_eq' ‹v'' ∈ set σ›
+          show "[x <- zig G M v'' π σ. x ∈ set σ] ≠ []"
+            by (simp add: filter.simps(2))
+        qed
+        have sorted_tail: "sorted_wrt (λa b. index σ a < index σ b)
+                             [x <- zig G M v'' π σ. x ∈ set σ]"
+          using sucsuc(1)[OF vus_zig sucsuc(4) ‹v'' ∈ set σ›] by simp
+        have filter_eq: "[x <- zig G M v' π σ. x ∈ set σ] = v # [x <- zig G M v'' π σ. x ∈ set σ]"
+          using sucsuc(3)[symmetric] vus_zig ‹v' = v› ‹u ∉ set σ› sucsuc(5) by auto
+        have successively_tail: "successively (λa b. index σ a < index σ b) [x <- zig G M v'' π σ. x ∈ set σ]"
+          using sorted_tail
+          by (simp add: successively_conv_sorted_wrt[OF transp_index_less])
+        have "successively (λa b. index σ a < index σ b) (v # [x <- zig G M v'' π σ. x ∈ set σ])"
+          using nonempty rank_lt hd_eq successively_tail
+          by (simp add: successively_Cons)
+        then show ?thesis
+          using filter_eq
+          by (simp flip: successively_conv_sorted_wrt[OF transp_index_less])
+      qed
     qed
   qed simp
 next
