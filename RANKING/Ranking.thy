@@ -1192,8 +1192,15 @@ next
       qed
     next
       case False
-      with assms \<open>{u,v} \<in> M\<close> show ?thesis
-        by (metis the_match')
+      have "⋀v0 v0'. {u, v0} ∈ M ⟹ shifts_to G M u v0 v0' π σ ⟹ P G M v0' π σ"
+      proof -
+        fix v0 v0'
+        assume h1: "{u, v0} ∈ M" and h2: "shifts_to G M u v0 v0' π σ"
+        have "v0 = v"
+          using the_match'[OF ‹matching M› h1] the_v by simp
+        with h2 False show "P G M v0' π σ" by simp
+      qed
+      with assms(4)[OF ‹matching M›] show ?thesis by blast
     qed
   next
     case False
