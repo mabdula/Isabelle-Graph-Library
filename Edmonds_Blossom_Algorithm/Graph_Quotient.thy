@@ -71,8 +71,60 @@ proof(induction p)
   then show ?case by simp
 next
   case (Cons a' p')
-  then show ?case
-    by (auto; metis append_Nil in_set_conv_decomp_first append_Cons) 
+  show ?case
+  proof (cases "Q a'")
+    case True
+    note Qa' = True
+    \<comment> \<open>Since v1 \<noteq> v2, at least one of them lies in set p'\<close>
+    have "\<exists>y \<in> set p'. Q y"
+    proof -
+      have mem1: "v1 = a' \<or> v1 \<in> set p'" using Cons.prems(1) by simp
+      have mem2: "v2 = a' \<or> v2 \<in> set p'" using Cons.prems(2) by simp
+      show ?thesis
+      proof (cases "v1 = a'")
+        assume "v1 = a'"
+        then have "v2 \<noteq> a'" using Cons.prems(5) by simp
+        then have "v2 \<in> set p'" using mem2 by simp
+        with Cons.prems(4) show ?thesis by blast
+      next
+        assume "v1 \<noteq> a'"
+        then have "v1 \<in> set p'" using mem1 by simp
+        with Cons.prems(3) show ?thesis by blast
+      qed
+    qed
+    then obtain y where Qy: "Q y" and y_mem: "y \<in> set p'" by blast
+    from y_mem obtain ys zs where decomp: "p' = ys @ y # zs"
+      by (meson split_list)
+    \<comment> \<open>a' # p' = [] @ a' # ys @ y # zs\<close>
+    show ?thesis
+      using Qa' Qy decomp
+      by (intro exI[of _ a'] exI[of _ y] exI[of _ "[]"] exI[of _ ys] exI[of _ zs]) simp
+  next
+    case False
+    \<comment> \<open>\<not>Q a' forces v1 \<noteq> a' and v2 \<noteq> a', so both land in p'\<close>
+    have v1_ne: "v1 \<noteq> a'"
+    proof
+      assume "v1 = a'"
+      with Cons.prems(3) have "Q a'" by simp
+      with False show False by simp
+    qed
+    have v2_ne: "v2 \<noteq> a'"
+    proof
+      assume "v2 = a'"
+      with Cons.prems(4) have "Q a'" by simp
+      with False show False by simp
+    qed
+    have v1_p': "v1 \<in> set p'" using Cons.prems(1) v1_ne by simp
+    have v2_p': "v2 \<in> set p'" using Cons.prems(2) v2_ne by simp
+    \<comment> \<open>Apply the induction hypothesis to p'\<close>
+    obtain w x qs rs ss where
+      decomp: "p' = qs @ w # rs @ x # ss" and Qw: "Q w" and Qx: "Q x"
+      using Cons.IH[OF v1_p' v2_p' Cons.prems(3) Cons.prems(4) Cons.prems(5)] by blast
+    \<comment> \<open>a' # p' = (a' # qs) @ w # rs @ x # ss\<close>
+    show ?thesis
+      using decomp Qw Qx
+      by (intro exI[of _ w] exI[of _ x] exI[of _ "a' # qs"] exI[of _ rs] exI[of _ ss]) simp
+  qed
 qed
 
 lemma two_mem_list_split':
