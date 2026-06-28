@@ -1438,11 +1438,19 @@ next
         by simp
     qed
 
-    with zig_v Cons have "vus = zig G M v'' \<pi> \<sigma>"
-      by (auto elim!: zig_then_zagE zag_then_zigE)
+    with zig_v Cons have "vus = zig G M v'' \<pi> \<sigma>"      by (auto elim!: zig_then_zagE zag_then_zigE)
 
-    with sucsuc Cons \<open>v'' \<noteq> v\<close> \<open>v' = v\<close> \<open>{u,v} \<in> M\<close> \<open>matching M\<close> show ?thesis
-      by (metis (mono_tags, lifting) alt_list.intros(2) edge_commute edges_of_path.simps(3) the_match)
+    with sucsuc Cons ‹v'' ≠ v› ‹v' = v› ‹{u,v} ∈ M› ‹matching M› show ?thesis
+    proof -
+      have not_in_M: "{u, v''} ∉ M"
+        using ‹matching M› ‹{u, v} ∈ M› ‹v'' ≠ v›
+        by (auto dest: doubleton_in_matching)
+      have ih: "rev_alt_path M vus"
+        using sucsuc(1) ‹vus = zig G M v'' π σ› by blast
+      show ?thesis
+        using zig_v ‹v' = v› Cons ‹{u, v} ∈ M› not_in_M ih
+        by (simp add: alt_list_step edges_of_path.simps insert_commute)
+    qed
   qed
 qed (simp add: alt_list_empty)
 
