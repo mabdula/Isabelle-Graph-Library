@@ -1204,8 +1204,8 @@ next
     qed
   next
     case False
-    with assms show ?thesis
-      by metis
+    show ?thesis
+      using assms(4)[OF "3.hyps"] False by blast
   qed
 qed (use assms in auto)
 
