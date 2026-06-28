@@ -853,9 +853,10 @@ case path0
    by simp
 next
   case (path1 v)
+  have hv: "v \<in> Vs E"
+    using path1.prems by auto
   then have "P v \<in> Vs (quot_graph P E)"
-    using Vs_quot_graph
-    by (smt (verit, ccfv_SIG))
+    by (rule Vs_quot_graph)
   then show ?case
     using v_in_quot_iff_minus_u path1
     by (simp add: good_quot_map(1))
