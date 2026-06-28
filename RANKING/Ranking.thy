@@ -1556,9 +1556,16 @@ proof (cases "v \<in> set \<sigma>")
       with \<open>v # u # vus = zig G M v' \<pi> \<sigma>\<close>[symmetric] \<open>u \<notin> set \<sigma>\<close> show ?thesis
         by simp
     next
-      case (Cons v'' uvs)
-      with sucsuc have vus_zig: "vus = zig G M v'' \<pi> \<sigma>"
-        by (metis zag_then_zig zig_then_zag)
+      case (Cons v'' uvs)      with sucsuc Cons have vus_zig: "vus = zig G M v'' π σ"
+      proof -
+        have "zag G M u π σ = u # vus"
+          using sucsuc(3)[symmetric] by (rule zig_then_zag)
+        then have "zag G M u π σ = u # v'' # uvs"
+          using Cons by simp
+        then have "zig G M v'' π σ = v'' # uvs"
+          by (rule zag_then_zig)
+        with Cons show ?thesis by simp
+      qed
   
       with sucsuc have "v'' \<in> set \<sigma>"
         by (metis shifts_to_only_from_input(2) zag_Cons_zigE zig_then_zag)
@@ -1604,9 +1611,16 @@ proof (cases "u \<in> set \<pi>")
       with sucsuc show ?thesis
         by (metis alt_list_step alt_list_zag assms bipartite_disjointD disjoint_iff filter.simps(1) filter.simps(2) sorted_wrt1)
     next
-      case (Cons u'' vus)
-      with sucsuc have uvs_zag: "uvs = zag G M u'' \<pi> \<sigma>"
-        by (metis zag_then_zig zig_then_zag)
+      case (Cons u'' vus)      with sucsuc have uvs_zag: "uvs = zag G M u'' π σ"
+      proof -
+        have "zig G M v π σ = v # uvs"
+          using sucsuc(3)[symmetric] by (rule zag_then_zig)
+        then have "zig G M v π σ = v # u'' # vus"
+          using Cons by simp
+        then have "zag G M u'' π σ = u'' # vus"
+          by (rule zig_then_zag)
+        with Cons show ?thesis by simp
+      qed
 
       with sucsuc assms have "u'' \<in> set \<pi>"
         by (metis alt_list_step alt_list_zag zag_hdE)
