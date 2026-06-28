@@ -1002,8 +1002,13 @@ proof(rule ccontr)
   moreover have "length (edges_of_path p) \<ge> 2"
     using cycle(1)
     unfolding odd_cycle_def
-    using edges_of_path_length
-    by (smt One_nat_def Suc_1 Suc_leI antisym_conv diff_Suc_Suc diff_zero eq_diff_iff le_trans less_le numeral_3_eq_3 odd_pos one_le_numeral)
+  proof -
+    have len_bound: "3 \<le> length p"
+      using cycle(1) unfolding odd_cycle_def by linarith
+    have edges_len: "length (edges_of_path p) = length p - 1"
+      by (rule edges_of_path_length)
+    show ?thesis using len_bound edges_len by linarith
+  qed
   ultimately have "hd (edges_of_path p) \<noteq> last (edges_of_path p)"
     by (metis One_nat_def Suc_1 Suc_le_length_iff distinct.simps(2) last.simps last_in_set le_zero_eq length_0_conv list.sel(1) nat.simps(3))
   moreover have "last p \<in> (hd (edges_of_path p))" "last p \<in> (last (edges_of_path p))"
