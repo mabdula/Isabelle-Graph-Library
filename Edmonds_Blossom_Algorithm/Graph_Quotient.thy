@@ -562,9 +562,57 @@ qed
 lemma edge_in_quot_in_graph_1:
   assumes edge: "(P ` e) \<in> (quot_graph P E)" "e \<subseteq> s"
   shows "e \<in> E"
-  using assms good_quot_map
-  unfolding quot_graph_def image_def
-  by (smt dual_order.antisym mem_Collect_eq subset_eq)
+proof -
+  have "P ` e \<in> {e'. \<exists>e\<in>E. e' = P ` e}"
+    using edge(1) unfolding quot_graph_def by simp
+  then obtain f where f: "f \<in> E" "P ` e = P ` f"
+    by auto
+  have eq: "e = f"
+  proof (rule antisym)
+    show "e \<subseteq> f"
+    proof (rule subsetI)
+      fix x assume "x \<in> e"
+      then have "x \<in> s" using edge(2) by auto
+      then have Px: "P x = x" by simp
+      have "P x \<in> P ` e" using \<open>x \<in> e\<close> by auto
+      then have "P x \<in> P ` f" using f(2) by auto
+      then obtain y where y: "y \<in> f" "P y = P x" by auto
+      have "y \<in> s"
+      proof (rule ccontr)
+        assume "y \<notin> s"
+        then have "P y = u" by simp
+        with y(2) Px have "x = u" by simp
+        with \<open>x \<in> s\<close> have "u \<in> s" by simp
+        with good_quot_map(1) show False by simp
+      qed
+      then have "P y = y" by simp
+      with y(2) Px have "y = x" by simp
+      then show "x \<in> f" using y(1) by simp
+    qed
+  next
+    show "f \<subseteq> e"
+    proof (rule subsetI)
+      fix x assume "x \<in> f"
+      then have "P x \<in> P ` f" by auto
+      then have "P x \<in> P ` e" using f(2) by auto
+      then obtain y where y: "y \<in> e" "P y = P x" by auto
+      have "y \<in> s" using y(1) edge(2) by auto
+      then have Py: "P y = y" by simp
+      have "x \<in> s"
+      proof (rule ccontr)
+        assume "x \<notin> s"
+        then have "P x = u" by simp
+        with y(2) Py have "y = u" by simp
+        with \<open>y \<in> s\<close> have "u \<in> s" by simp
+        with good_quot_map(1) show False by simp
+      qed
+      then have "P x = x" by simp
+      with y(2) Py have "x = y" by simp
+      then show "x \<in> e" using y(1) by simp
+    qed
+  qed
+  then show ?thesis using f(1) by auto
+qed
 
 lemma edge_in_quot_in_graph_1':
   assumes edge: "e \<in> (quot_graph P M)" "e \<subseteq> s" "M \<subseteq> E"
