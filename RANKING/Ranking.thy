@@ -1425,8 +1425,18 @@ next
       by (auto simp: alt_list_step alt_list_empty dest: edge_commute)
   next
     case (Cons v'' uvs)
-    with zig_v \<open>v' = v\<close> have "v'' \<noteq> v"
-      by (metis "sucsuc.hyps"(1) \<open>{u, v} \<in> M\<close> alt_list_step edges_of_path.simps(3) zag_then_zig zig_then_zag)
+    have "v'' ≠ v"
+    proof
+      assume "v'' = v"
+      with zig_v ‹v' = v› Cons have zig_eq: "zig G M v π σ = v # u # v # uvs"
+        by simp
+      have zag_eq: "zag G M u π σ = u # v # uvs"
+        by (rule zig_then_zag[OF zig_eq])
+      have "zig G M v π σ = v # uvs"
+        by (rule zag_then_zig[OF zag_eq])
+      with zig_eq show False
+        by simp
+    qed
 
     with zig_v Cons have "vus = zig G M v'' \<pi> \<sigma>"
       by (auto elim!: zig_then_zagE zag_then_zigE)
