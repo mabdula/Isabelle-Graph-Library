@@ -322,8 +322,9 @@ next
           using Cons v1_neq_a
           by auto
         then obtain w p1 p2 where "p = p1 @ w # p2 \<and> Q w \<and> (\<forall>x\<in>set p2. \<not> Q x)"
-          using one_mem_pure_suff Cons
-          by metis
+          using one_mem_pure_suff[where v = v1 and p = p and Q = Q,
+                                   OF \<open>v1 \<in> set p\<close> Cons.prems(3)]
+          by fast
         then have "a # p = [] @ a # p1 @ w # p2 \<and> Q a \<and> Q w \<and> a \<noteq> w \<and> (\<forall>x\<in>set []. \<not> Q x) \<and> (\<forall>x\<in>set p2. \<not> Q x)"
           using Cons.prems Qa by auto
         then show ?thesis
@@ -342,7 +343,23 @@ next
           by auto
         moreover case False
         ultimately show ?thesis
-          by (metis set_ConsD)
+        proof -
+          from wxp1p2p3
+          have eq:  "a # p = (a # p1) @ w # p2 @ x # p3"
+            and Qw: "Q w"
+            and Qx: "Q x"
+            and neq: "w \<noteq> x"
+            and hp1: "\<forall>y\<in>set p1. \<not> Q y"
+            and hp3: "\<forall>y\<in>set p3. \<not> Q y"
+            by auto
+          have hall: "\<forall>y\<in>set (a # p1). \<not> Q y"
+            using hp1 \<open>\<not> Q a\<close> by auto
+          show ?thesis
+            by (intro exI[where x = "a # p1"] exI[where x = p2]
+                      exI[where x = p3] exI[where x = w]
+                      exI[where x = x])
+               (simp add: eq Qw Qx neq hall hp3)
+        qed
       qed
     qed
   qed
