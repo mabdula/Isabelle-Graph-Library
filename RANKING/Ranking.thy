@@ -343,7 +343,17 @@ proof (induction G u \<sigma> M rule: step.induct)
       then obtain w where w: "e = {u,w}" "w \<in> set vs - Vs M" "{u,w} \<in> G"
         "\<forall>v'\<in> set vs \<inter> {v''. {u,v''} \<in> G} - Vs M - {w}. index vs w < index vs v'" by blast
       have "v \<noteq> w"
-        by (metis "2.prems" DiffD2 \<open>e = {u, w}\<close> \<open>w \<in> set vs - Vs M\<close> \<open>{u, w} \<in> G\<close> ind insert_subset step_already_matched subsetI vs_member_intro)
+      proof
+        assume eq: "v = w"
+        have not_vs: "w \<notin> Vs M" using \<open>w \<in> set vs - Vs M\<close> by blast
+        have "v \<notin> Vs M" using eq not_vs by simp
+        have "{u,v} \<in> G" using eq \<open>{u,w} \<in> G\<close> by simp
+        have "u \<in> Vs M" using ind \<open>v \<notin> Vs M\<close> \<open>{u,v} \<in> G\<close> by blast
+        have "step G u (v#vs) M = M" using \<open>u \<in> Vs M\<close> step_already_matched by simp
+        have "e \<in> M" using "2.prems" \<open>step G u (v#vs) M = M\<close> by simp
+        have "w \<in> Vs M" using \<open>e = {u,w}\<close> \<open>e \<in> M\<close> by (auto intro: vs_member_intro)
+        with not_vs show False by simp
+      qed
 
       with w have "\<forall>v'\<in> set (v#vs) \<inter> {v''. {u,v''} \<in> G} - Vs M - {w}. index (v#vs) w < index (v#vs) v'"
         apply simp
