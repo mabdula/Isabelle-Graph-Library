@@ -735,12 +735,14 @@ next
         by (auto dest: permutations_of_setD simp: \<sigma>_tl)
     next
       case (3 x)
-      then have "x \<in> V" and "x \<noteq> v'" by simp_all
-      moreover from \<open>\<sigma> \<in> permutations_of_set V\<close> have "set \<sigma> = V"
-        by (auto dest: permutations_of_setD)
-      ultimately have "x \<in> set \<sigma>" by simp
-      with \<sigma>_tl have "x \<in> set (v' # tl \<sigma>)" by simp
-      then show ?case using \<open>x \<noteq> v'\<close> by simp
+      with \<open>\<sigma> \<in> permutations_of_set V\<close> \<sigma>_tl show ?case
+      proof -
+        from \<open>\<sigma> \<in> permutations_of_set V\<close> have "set \<sigma> = V"
+          by (auto dest: permutations_of_setD)
+        with \<open>x \<in> V - {v'}\<close> have "x \<in> set \<sigma>" by simp
+        with \<sigma>_tl have "x \<in> set (v' # tl \<sigma>)" by simp
+        with \<open>x \<in> V - {v'}\<close> show ?thesis by simp
+      qed
     next
       case 4
       with \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
@@ -780,8 +782,25 @@ next
   then have "x \<notin> X"
     by (auto dest: Cons_eq_filterD)
 
-  from 3 have \<sigma>_tl: "\<sigma> = x # tl \<sigma>"
-    by (smt (verit, ccfv_SIG) Cons_eq_map_D filter.simps(1) filter.simps(2) index_Cons list.collapse list.inject nat.simps(3))
+  have \<sigma>_tl: "\<sigma> = x # tl \<sigma>"
+  proof -
+    from 3 have "\<sigma> \<noteq> []" by auto
+    then obtain y ys where \<sigma>_eq: "\<sigma> = y # ys" by (cases \<sigma>) auto
+    have "y \<notin> X"
+    proof
+      assume "y \<in> X"
+      with \<sigma>_eq 3 have "hd \<sigma>' = y" by (auto simp: More_List_Ranking.filter_Cons_hd)
+      with 3 have "hd (map (index \<sigma>) \<sigma>') = index \<sigma> y" by auto
+      with \<sigma>_eq have "hd (map (index \<sigma>) \<sigma>') = 0" by (simp add: index_Cons)
+      moreover from 3 have "hd (map (index \<sigma>) \<sigma>') = Suc n" by auto
+      ultimately show False by simp
+    qed
+    then have "hd (filter (\<lambda>v. v \<notin> X) \<sigma>) = y"
+      using \<sigma>_eq by simp
+    with 3 have "y = x" by (metis list.sel(1))
+    with \<sigma>_eq show ?thesis by simp
+  qed
+
 
   then have \<sigma>_nonempty: "\<sigma> \<noteq> []" by blast
 
