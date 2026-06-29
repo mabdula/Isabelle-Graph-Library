@@ -1055,8 +1055,19 @@ proof -
       show " xa \<in> {}"
       proof(cases "Xa = X")
         case True
-        then show ?thesis using assums
-          by (metis \<open>\<forall>c\<in>C. matching c\<close> matching_unique_match)
+        then show ?thesis
+        proof -
+          have he2X: "e2 \<in> X"
+            using assums(3) True by simp
+          have hmatX: "matching X"
+            using \<open>\<forall>c\<in>C. matching c\<close> assums(2) by blast
+          from matching_unique_match[OF hmatX, of xa e1 e2] 
+          have "e1 = e2"
+            using assums(1) he2X assums(7) assums(8)
+            by auto
+          then show ?thesis
+            using assums(5) assums(6) by simp
+        qed
       next
         case False
         have "Xa \<in> Vs ?Ms" 
