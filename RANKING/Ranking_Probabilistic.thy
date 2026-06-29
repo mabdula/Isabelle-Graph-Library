@@ -1535,7 +1535,14 @@ proof -
         by (auto dest: matching_unique_match)
 
       with e v show "(THE e. e \<in> online_match G \<pi> \<sigma> \<and> \<sigma> ! t \<in> e) \<in> online_match G \<pi> \<sigma>"
-        by (metis (no_types, lifting) nth_index theI')
+      proof -
+        have \<sigma>t_eq: "\<sigma> ! t = v"
+          using v(2) by (simp add: v(1)[symmetric])
+        have uniq: "\<exists>!e'. e' \<in> online_match G \<pi> \<sigma> \<and> v \<in> e'"
+          using e the_e by blast
+        show ?thesis
+          by (simp only: \<sigma>t_eq, rule theI'[THEN conjunct1], rule uniq)
+      qed
     qed
   next
     show "\<And>e. e \<in> online_match G \<pi> \<sigma> \<Longrightarrow> (THE e'. e' \<in> online_match G \<pi> \<sigma> \<and> \<sigma> ! (THE t. \<exists>v \<in> set \<sigma>. index \<sigma> v = t \<and> v \<in> e) \<in> e') = e"
