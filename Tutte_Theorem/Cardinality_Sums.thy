@@ -8,8 +8,8 @@ lemma matching_int_card_is_sum:
   assumes "C \<subseteq> M "
   shows "card ((Vs C) \<inter> X) = sum (\<lambda> e. card (e \<inter> X)) C" 
 proof -
-  have "finite M" using assms(1) 
-    by (metis Vs_def finite_UnionD)
+  have "finite M" using assms(1)
+    unfolding Vs_def by (rule finite_UnionD)
   then have "finite C"  
     using assms(3) finite_subset by auto
   show ?thesis using `finite C` assms(3)
