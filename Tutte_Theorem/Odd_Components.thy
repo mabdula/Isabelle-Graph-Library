@@ -1209,7 +1209,17 @@ proof(safe)
   then obtain y where "e = {x, y}" 
     using assms(1) by fastforce
   then have "y \<in> C"
-    by (metis \<open>x \<in> C\<close> \<open>x \<in> e \<and> e \<in> A\<close> assms(2) connected_components_closed' in_con_comp_insert insert_Diff)
+  proof -
+    have xy_A: "{x, y} \<in> A"
+      using \<open>e = {x, y}\<close> \<open>x \<in> e \<and> e \<in> A\<close> by simp
+    have eq: "A = insert {x, y} (A - {{x, y}})"
+      using xy_A insert_Diff by blast
+    have "y \<in> connected_component A x"
+      by (subst eq) (rule in_con_comp_insert)
+    moreover have "C = connected_component A x"
+      using assms(2) \<open>x \<in> C\<close> by (simp add: connected_components_closed')
+    ultimately show "y \<in> C" by simp
+  qed
   then have "e \<subseteq> C" 
     by (simp add: \<open>e = {x, y}\<close> \<open>x \<in> C\<close>)
   then have "e \<in> (component_edges A C)" 
