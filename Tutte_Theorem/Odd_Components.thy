@@ -172,9 +172,13 @@ qed
 
 lemma odd_components_sum_singletions_is_component:
   shows "(odd_components (graph_diff G X)) \<oplus> (singl_in_diff G X) = odd_comps_in_diff G X"
-  using odd_components_inter_singl_empty 
-  by (metis (no_types, lifting) Int_Un_eq(4) Un_Diff_Int Un_left_commute odd_comps_in_diff_def
-      sup_bot_right symmetric_diff_def)
+proof -
+  have h_disj: "odd_components (graph_diff G X) \<inter> singl_in_diff G X = {}"
+    using odd_components_inter_singl_empty .
+  show ?thesis
+    unfolding odd_comps_in_diff_def symmetric_diff_def
+    using h_disj by blast
+qed
 
 
 lemma odd_comps_in_diff_member[iff?]:
@@ -204,9 +208,41 @@ lemma edge_subset_component:
   assumes "e \<in> G"
   assumes "v \<in> e"
   shows "e \<subseteq> connected_component G v"
-  using assms connected_components_member_sym
-  by (smt (verit, best) dblton_graphE in_con_comp_insert in_own_connected_component insert_Diff
-          insert_iff singletonD subsetI)
+proof -
+  obtain u w where uw: "e = {u, w}" and neq: "u \<noteq> w"
+    using assms(1) assms(2) dblton_graphE by blast
+  from assms(3) uw have disj: "v = u \<or> v = w"
+    by simp
+  show ?thesis
+  proof (cases "v = u")
+    case True
+    have mem_u: "u \<in> connected_component G u"
+      by (rule in_own_connected_component)
+    have "{u, w} \<in> G" 
+      using assms(2) uw by simp
+    have "reachable G u w"
+      by (rule Paths.edges_reachable) fact
+    have mem_w: "w \<in> connected_component G u"
+      using \<open>reachable G u w\<close> by (simp add: Connected_Components.in_connected_componentI)
+    with mem_u show ?thesis
+      by (simp add: uw True)
+  next
+    case False
+    then have veqw: "v = w" using disj by simp
+    have mem_w: "w \<in> connected_component G w"
+      by (rule in_own_connected_component)
+    have "{u, w} \<in> G" 
+      using assms(2) uw by simp
+    have "reachable G u w"
+      by (rule Paths.edges_reachable) fact
+    have "reachable G w u"
+      using \<open>reachable G u w\<close> by (simp add: Paths.reachable_sym)
+    have mem_u: "u \<in> connected_component G w"
+      using \<open>reachable G w u\<close> by (simp add: Connected_Components.in_connected_componentI)
+    with mem_w show ?thesis
+      by (simp add: uw veqw)
+  qed
+qed
 
 lemma edge_in_E_card:
   assumes "graph_invar G"
