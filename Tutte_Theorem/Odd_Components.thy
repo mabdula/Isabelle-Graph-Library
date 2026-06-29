@@ -2160,8 +2160,14 @@ proof -
                   by fastforce
                 then have "{v, v'} \<inter> (X \<union> Y) = {}" 
                   by (simp add: Int_Un_distrib \<open>{v, v'} \<inter> Y = {}\<close>)
-                then have "{v, v'} \<in> (graph_diff G (X \<union> Y))" 
-                  by (metis (mono_tags, lifting) graph_diff_def mem_Collect_eq path2.hyps(1))
+                then have "{v, v'} \<in> (graph_diff G (X \<union> Y))"
+                proof -
+                  have in_G: "{v, v'} \<in> G"
+                    using path2.hyps(1) graph_diff_subset by blast
+                  show ?thesis
+                    using in_G \<open>{v, v'} \<inter> (X \<union> Y) = {}\<close>
+                    unfolding graph_diff_def by blast
+                qed
                 then show ?case 
                   by (metis \<open>v \<in> connected_component (graph_diff G X) v'\<close> \<open>v \<notin> C\<close> conn_C' 
                       connected_components_member_eq connected_components_member_sym 
