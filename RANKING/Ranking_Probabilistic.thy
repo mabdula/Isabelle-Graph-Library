@@ -792,8 +792,17 @@ next
     by blast
 next
   case ("4_5" n ns v \<sigma>')
-  then show ?case
-    by (metis append.right_neutral filter_True filter_empty_conv rebuild.simps(4))
+  have "v # \<sigma>' = \<sigma>"
+  proof -
+    from \<open>[] = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> have "filter (\<lambda>v. v \<notin> X) \<sigma> = []" by simp
+    then have "\<forall>v\<in>set \<sigma>. v \<in> X" by (simp add: filter_empty_conv)
+    then have "filter (\<lambda>v. v \<in> X) \<sigma> = \<sigma>" by (simp add: filter_True)
+    with \<open>v # \<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> show ?thesis by simp
+  qed
+  moreover have "map (index \<sigma>) (v # \<sigma>') = Suc n # ns"
+    using "4_5" by simp
+  ultimately show ?case
+    by (simp add: rebuild.simps(4) append.right_neutral)
 qed
 
 lemma rebuild_indices:
