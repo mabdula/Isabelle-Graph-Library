@@ -852,7 +852,19 @@ next
   have "v \<in> C" 
     using path2.prems by auto
   have "v' \<in> C"
-    by (metis \<open>v \<in> C\<close> assms(3) connected_components_eq' edge_in_component insert_subset path2.hyps(1))
+  proof -
+    have edge_exists: "\<exists>C'. C' \<in> connected_components G \<and> {v, v'} \<subseteq> C'"
+      using path2.hyps(1) by (rule edge_in_component)
+    obtain C' where C'_comp: "C' \<in> connected_components G" and subset: "{v, v'} \<subseteq> C'"
+      using edge_exists by blast
+    have "v \<in> C'" using subset by auto
+    with assms(3) C'_comp \<open>v \<in> C\<close> have "C = C'"
+      using connected_components_eq' by fastforce
+    then have "{v, v'} \<subseteq> C"
+      using subset by auto
+    then show "v' \<in> C"
+      by auto
+  qed
   then have "{v, v'} \<subseteq> C" 
     by (simp add: \<open>v \<in> C\<close>)
   then have "{v, v'} \<in> (component_edges G C)"
