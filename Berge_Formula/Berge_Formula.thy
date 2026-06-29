@@ -355,8 +355,15 @@ qed
     from `?not_in_M C \<subseteq> C` `finite C` show "finite (?not_in_M C)"
       by (rule finite_subset)
   qed
-  then have "\<forall>C \<in> ?comp_out_empty. card (?not_in_M C) \<ge> 1" 
-    by (metis (no_types, lifting) One_nat_def Suc_leI 14 card_gt_0_iff)
+  then have "\<forall>C \<in> ?comp_out_empty. card (?not_in_M C) \<ge> 1"
+  proof (intro ballI)
+    fix C assume "C \<in> ?comp_out_empty"
+    with 14 15 have "finite (?not_in_M C)" "?not_in_M C \<noteq> {}" by blast+
+    then have "0 < card (?not_in_M C)"
+      by (simp add: card_gt_0_iff)
+    then show "1 \<le> card (?not_in_M C)"
+      by simp
+  qed
   then have 20:"sum (\<lambda> C. card (?not_in_M C)) ?comp_out_empty \<ge> card ?comp_out_empty"
   proof -
     have "card ?comp_out_empty = sum (\<lambda>_. 1 :: nat) ?comp_out_empty"
