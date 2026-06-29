@@ -73,9 +73,37 @@ lemma move_to_eq_unique_vertex:
   assumes "\<sigma> \<in> permutations_of_set V"
   assumes "index \<sigma> v = t" "v \<in> V"
   assumes "\<sigma> = \<sigma>'[w \<mapsto> t]"
-  shows "v = w"
-  using assms
-  by (metis distinct_card index_eq_index_conv index_less_size_conv move_to_index_v permutations_of_setD)
+  shows "v = w" 
+proof -
+  from assms(2) have dist_\<sigma>: "distinct \<sigma>" and set_\<sigma>: "set \<sigma> = V"
+    by (auto dest: permutations_of_setD)
+  from assms(1) have dist_\<sigma>': "distinct \<sigma>'" and set_\<sigma>': "set \<sigma>' = V"
+    by (auto dest: permutations_of_setD)
+
+  from dist_\<sigma> set_\<sigma> have len_\<sigma>: "length \<sigma> = card V"
+    by (auto simp add: distinct_card set_\<sigma>' dist_\<sigma>')
+  from dist_\<sigma>' set_\<sigma>' have len_\<sigma>': "length \<sigma>' = card V"
+    by (auto simp add: distinct_card set_\<sigma> dist_\<sigma>)
+  from len_\<sigma> len_\<sigma>' have "length \<sigma> = length \<sigma>'" 
+    by simp
+
+  from assms(4) set_\<sigma> have "v \<in> set \<sigma>" 
+    by simp
+  with assms(3) have "t < length \<sigma>"
+    by (auto simp: index_less_size_conv)
+  with \<open>length \<sigma> = length \<sigma>'\<close> have "t < length \<sigma>'" 
+    by simp
+
+  from dist_\<sigma>' \<open>t < length \<sigma>'\<close> have "index (\<sigma>'[w \<mapsto> t]) w = t"
+    by (rule move_to_index_v)
+  with assms(5) have "index \<sigma> w = t"
+    by simp
+  
+  with assms(3) have "index \<sigma> v = index \<sigma> w"
+    by simp
+  with \<open>v \<in> set \<sigma>\<close> show "v = w"
+    by (simp add: index_eq_index_conv)
+qed
 
 lemma permutations_move_to_eq_iff:
   assumes "\<sigma> \<in> permutations_of_set V"
@@ -84,8 +112,8 @@ lemma permutations_move_to_eq_iff:
   shows "card (V \<inter> {v. \<sigma> = \<sigma>'[v \<mapsto> t]}) = 1 \<longleftrightarrow> [x <- \<sigma>'. x \<noteq> (THE v. index \<sigma> v = t)] = [x <- \<sigma>. x \<noteq> (THE v. index \<sigma> v = t)]"
 proof (rule iffI)
   assume card_1: "card (V \<inter> {v. \<sigma> = \<sigma>'[v \<mapsto> t]}) = 1"
-  with assms  obtain w where w: "w \<in> V" "\<sigma> = \<sigma>'[w \<mapsto> t]"
-    by (smt (verit) card.empty disjoint_iff_not_equal mem_Collect_eq zero_neq_one)
+  obtain w where w: "w \<in> V" "\<sigma> = \<sigma>'[w \<mapsto> t]"
+    using card_1 by (rule card_1_singletonE) auto
 
   with card_1 assms have filter_eq: "[x <- \<sigma>'. x \<noteq> w] = [x <- \<sigma>. x \<noteq> w]"
     by (auto intro!: distinct_order_filter_eq dest: permutations_of_setD permutation_move_to
@@ -99,7 +127,7 @@ proof (rule iffI)
   next
     case (2 v)
     then have "v \<in> V"
-      by (metis index_less_size_conv permutations_of_setD(1))
+      using assms(2) permutations_of_setD(1)[OF assms(1)] by auto
     with 2 show ?case
       by (auto intro: move_to_eq_unique_vertex)
   qed
@@ -109,20 +137,33 @@ proof (rule iffI)
 next
   assume filter_eq: "[x <- \<sigma>'. x \<noteq> (THE v. index \<sigma> v = t)] = [x <- \<sigma>. x \<noteq> (THE v. index \<sigma> v = t)]"
 
-  from assms obtain v where v: "index \<sigma> v = t" "v \<in> V"
-    by (metis index_nth_id nth_mem permutations_of_setD(1) permutations_of_setD(2))
+  obtain v where v: "index \<sigma> v = t" "v \<in> V"
+  proof (rule that)
+    show "index \<sigma> (\<sigma> ! t) = t"
+      using assms(1,2) by (auto simp: index_nth_id dest: permutations_of_setD)
+    show "\<sigma> ! t \<in> V"
+      using assms(1,2) by (auto dest: permutations_of_setD)
+  qed
 
   with \<open>t < length \<sigma>\<close> have "(THE v. index \<sigma> v = t) = v"
     by (auto simp: index_less_size_conv)
 
-  with assms filter_eq v have "\<sigma> = \<sigma>'[v \<mapsto> t]"
-    by (metis distinct_count_in_set index_less_size_conv move_to_def move_to_id permutations_of_setD(2))
+  with assms filter_eq v have "\<sigma>'[v \<mapsto> t] = move_to \<sigma> v t"
+    unfolding move_to_def by simp
+  also have "\<dots> = \<sigma>"
+    using assms(1) v
+    by (simp add: move_to_id v(1)[symmetric] distinct_count_in_set permutations_of_setD)
+  finally have "\<sigma> = \<sigma>'[v \<mapsto> t]" by simp
 
   have "\<And>v'. \<sigma> = \<sigma>'[v' \<mapsto> t] \<Longrightarrow> v' = v"
   proof (rule move_to_eq_unique_vertex[symmetric, OF assms(3) assms(1) \<open>index \<sigma> v = t\<close>], goal_cases)
     case (1 v')
-    with \<open>index \<sigma> v = t\<close> assms(1) assms(2) show ?case
-     by (metis  index_less_size_conv permutations_of_setD(1))
+    have "index \<sigma> v < length \<sigma>"
+      using \<open>index \<sigma> v = t\<close> assms(2) by simp
+    then have "v \<in> set \<sigma>"
+      by (simp add: index_less_size_conv)
+    then show ?case
+      using assms(1) permutations_of_setD(1) by blast
   next
     case (2 v')
     then show ?case by blast
@@ -157,20 +198,48 @@ lemma permutations_but_v_bij_betw:
   unfolding bij_betw_def
 proof
   show "inj_on ?f ?L"
-    apply (auto intro!: inj_onI)
-    apply (smt (verit, del_insts) assms(2) distinct_count_in_set filter_cong mem_Collect_eq move_to_def move_to_id permutations_of_setD(1) permutations_of_setD(2))
-    done
+  proof (rule inj_onI)
+    fix \<sigma>1 \<sigma>2 assume "\<sigma>1 \<in> ?L" and "\<sigma>2 \<in> ?L" and "?f \<sigma>1 = ?f \<sigma>2"
+    hence filter: "[x <- \<sigma>1. x \<noteq> v] = [x <- \<sigma>2. x \<noteq> v]"
+      and index: "index \<sigma>1 v = index \<sigma>2 v"
+      and perm: "\<sigma>1 \<in> permutations_of_set V" "\<sigma>2 \<in> permutations_of_set V" by auto
+    have "\<sigma>1 = move_to \<sigma>1 v (index \<sigma>1 v)"
+      using perm assms(2) by (intro move_to_id[symmetric]) (auto simp: permutations_of_set_def distinct_count_in_set)
+    also have "\<dots> = (take (index \<sigma>1 v) [x <- \<sigma>1. x \<noteq> v]) @ v # (drop (index \<sigma>1 v) [x <- \<sigma>1. x \<noteq> v])"
+      unfolding move_to_def by simp
+    also have "\<dots> = (take (index \<sigma>2 v) [x <- \<sigma>2. x \<noteq> v]) @ v # (drop (index \<sigma>2 v) [x <- \<sigma>2. x \<noteq> v])"
+      using filter index by simp
+    also have "\<dots> = move_to \<sigma>2 v (index \<sigma>2 v)"
+      unfolding move_to_def by simp
+    also have "\<dots> = \<sigma>2"
+      using perm assms(2) by (intro move_to_id) (auto simp: permutations_of_set_def distinct_count_in_set)
+    finally show "\<sigma>1 = \<sigma>2" .
+  qed
 next
-  from assms show "?f ` ?L = ?R"
-    apply (auto)
-     apply (metis index_less_size_conv length_finite_permutations_of_set permutations_of_setD(1))
-  proof -
+  show "?f ` ?L = ?R"
+  proof (intro equalityI subsetI)
     fix x
-    assume "x < length \<sigma>"
+    assume "x \<in> ?f ` ?L"
+    then obtain \<sigma>' where \<sigma>': "\<sigma>' \<in> ?L" "x = index \<sigma>' v"
+      by blast
+    from \<sigma>' have "\<sigma>' \<in> permutations_of_set V"
+      by simp
+    with assms(2) have "v \<in> set \<sigma>'"
+      using permutations_of_setD(1) by blast
+    moreover from \<open>\<sigma>' \<in> permutations_of_set V\<close> assms(1) have "length \<sigma>' = length \<sigma>"
+      by (simp add: length_finite_permutations_of_set)
+    ultimately have "index \<sigma>' v < length \<sigma>"
+      by (simp add: index_less_size_conv)
+    with \<sigma>' show "x \<in> ?R"
+      by simp
+  next
+    fix x
+    assume "x \<in> ?R"
+    then have "x < length \<sigma>"
+      by simp
     with assms obtain \<sigma>' where "\<sigma>' \<in> permutations_of_set V" "index \<sigma>' v = x" "[x <- \<sigma>'. x \<noteq> v] = [x <- \<sigma>. x \<noteq> v]"
       by (auto elim: permutation_vertex_at_tE)
-
-    then show "x \<in> (\<lambda>\<sigma>'. index \<sigma>' v) ` {\<sigma>' \<in> permutations_of_set V. filter (\<lambda>x. x \<noteq> v) \<sigma>' = filter (\<lambda>x. x \<noteq> v) \<sigma>}"
+    then show "x \<in> ?f ` ?L"
       by blast
   qed
 qed
@@ -569,7 +638,7 @@ proof -
             qed
 
             with x \<open>v#\<sigma>' \<in> permutations_of_set X\<close> have after_v: "x \<in> set (drop (Suc (index \<sigma> x)) \<sigma>)"
-              by (metis permutations_of_setD(1) subseq_order.dual_order.trans subseq_singleton_left)
+              by (auto dest: permutations_of_setD elim!: list_emb_set)
 
             from x \<open>distinct \<sigma>\<close> have "x \<notin> set (drop (Suc (index \<sigma> x)) \<sigma>)"
               by (intro set_drop_if_index) blast+
@@ -611,8 +680,19 @@ next
   from 2 have v'_hd: "index \<sigma> v' = 0"
     by force
 
-  with \<open>v' # \<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> have \<sigma>_tl: "\<sigma> = v' # tl \<sigma>"
-    by (metis filter.simps(1) index_Cons index_eq_index_conv list.exhaust_sel list.set_intros(1) list.simps(3))
+  have \<sigma>_tl: "\<sigma> = v' # tl \<sigma>"
+  proof -
+    from \<open>v' # \<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> have "\<sigma> \<noteq> []"
+      by auto
+    then obtain x xs where \<sigma>_eq: "\<sigma> = x # xs"
+      by (cases \<sigma>) auto
+    with v'_hd \<sigma>_eq have "x = v'"
+      by (metis index_Cons index_eq_index_conv list.set_intros(1))
+    with \<sigma>_eq show ?thesis
+      by simp
+  qed
+
+
 
   then have \<sigma>_nonempty: "\<sigma> \<noteq> []" by blast
 
