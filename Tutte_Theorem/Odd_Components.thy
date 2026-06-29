@@ -370,8 +370,14 @@ lemma component_in_E:
 lemma component_of_el_in_E:
   assumes "connected_component G x \<in> (odd_comps_in_diff G X)"
   shows "x \<in> Vs G"
-  using component_in_E 
-  by (metis assms in_mono in_own_connected_component)
+proof -
+  have hx: "x \<in> connected_component G x"
+    by (rule in_own_connected_component)
+  have hsub: "connected_component G x \<subseteq> Vs G"
+    using assms component_in_E by blast
+  show "x \<in> Vs G"
+    using hsub hx by blast
+qed
 
 lemma odd_comps_in_diff_not_in_X:
   assumes "C \<in> odd_comps_in_diff G X"
