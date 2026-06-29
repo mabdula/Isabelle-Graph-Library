@@ -585,12 +585,34 @@ lemma diff_disjoint_elements:
   shows "Vs (graph_diff G X) \<inter> Vs (singl_in_diff G X) = {}" 
     "Vs (graph_diff G X) \<inter> X = {}"
     "Vs (singl_in_diff G X) \<inter> X = {}"
-    apply safe
-    apply (metis connected_component_subset el_vs_singleton_is_in_singleton insert_subset 
-      singl_in_diffE singl_in_diff_is_component singletonI)
-   apply (metis IntI graph_diffE vs_member)
-  using el_vs_singleton_is_in_singleton 
-  by (metis Diff_eq_empty_iff Diff_subset assms(2) insert_subset singl_in_diffE)
+  proof safe
+    fix x
+    assume h1: "x \<in> Vs (graph_diff G X)" and h2: "x \<in> Vs (singl_in_diff G X)"
+    have "{x} \<in> singl_in_diff G X"
+      using h2 by (simp add: el_vs_singleton_is_in_singleton)
+    then obtain v where hv: "v \<in> Vs G" "{x} = {v}" "v \<notin> X" "v \<notin> Vs (graph_diff G X)"
+      using singl_in_diffE by blast
+    have "x = v"
+      using hv(2) singletonD by blast
+    show "x \<in> {}"
+      using h1 hv(4) \<open>x = v\<close> by simp
+  next
+    fix x
+    assume "x \<in> Vs (graph_diff G X)" "x \<in> X"
+    then show "x \<in> {}"
+      unfolding Vs_def graph_diff_def by blast
+  next
+    fix x
+    assume h1: "x \<in> Vs (singl_in_diff G X)" and h2: "x \<in> X"
+    have "{x} \<in> singl_in_diff G X"
+      using h1 by (simp add: el_vs_singleton_is_in_singleton)
+    then obtain v where hv: "v \<in> Vs G" "{x} = {v}" "v \<notin> X" "v \<notin> Vs (graph_diff G X)"
+      using singl_in_diffE by blast
+    have "x = v"
+      using hv(2) singletonD by blast
+    then show "x \<in> {}"
+      using h2 hv(3) by simp
+  qed
 
 lemma diff_card_is_sum_elements:
   assumes "graph_invar G"
