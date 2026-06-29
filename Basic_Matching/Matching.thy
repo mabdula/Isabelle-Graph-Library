@@ -202,8 +202,22 @@ lemma matching_graph_mono: "\<lbrakk>graph_matching G M; G \<subseteq> G'\<rbrak
   by(auto simp add: matching_def)
 
 lemma the_match: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> (THE u. {u,v} \<in> M) = u"
-  by (auto intro!: the_equality)
-     (metis doubleton_eq_iff insertI1 matching_unique_match)
+proof -
+  assume match: "matching M" and edge: "{u,v} \<in> M"
+  show "(THE u. {u,v} \<in> M) = u"
+  proof (rule the_equality)
+    show "{u,v} \<in> M" using edge .
+  next
+    fix u'
+    assume h: "{u',v} \<in> M"
+    have v1: "v \<in> {u',v}" by simp
+    have v2: "v \<in> {u,v}" by simp
+    have eq: "{u',v} = {u,v}"
+      by (rule matching_unique_match[OF match v1 v2 h edge])
+    from eq show "u' = u"
+      by (auto simp: doubleton_eq_iff)
+  qed
+qed
 
 lemma the_match': "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> (THE v. {u,v} \<in> M) = v"
   by (auto dest: the_match edge_commute)
