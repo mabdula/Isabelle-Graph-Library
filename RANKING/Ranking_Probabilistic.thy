@@ -1112,8 +1112,12 @@ lemma graph_abs_M[simp]: "graph_invar M"
   by (auto intro!: graph_invar_subgraph[OF graph_invar_G] dest: max_card_matchingD)
 
 lemma finite[simp]: "finite V"
-  using finite_graph vertices
-  by (metis finite_Un graph_invar_G graph_abs_def)
+proof -
+  have "finite (Vs G)"
+    using graph_invar_G by (simp add: graph_abs_def)
+  thus ?thesis
+    using vertices by (simp add: finite_Un)
+qed
 
 lemma online_match_edgeE:
   assumes "e \<in> online_match G \<pi> \<sigma>"
