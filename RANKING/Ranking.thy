@@ -889,12 +889,61 @@ lemma shifts_to_only_from_input:
   by (auto intro: index_less_in_set)
 
 lemma shifts_to_inj:
-  assumes "shifts_to G M u v v' \<pi> \<sigma>"
-  assumes "shifts_to G M u v v'' \<pi> \<sigma>"
+  assumes "shifts_to G M u v v' π σ"
+  assumes "shifts_to G M u v v'' π σ"
   shows "v' = v''"
-  using assms
-  unfolding shifts_to_def
-  by (metis index_eq_index_conv not_less_iff_gr_or_eq)
+proof -
+  from assms(1) have v'_set: "v' ∈ set σ"
+    unfolding shifts_to_def by blast
+  from assms(1) have idx_v': "index σ v < index σ v'"
+    unfolding shifts_to_def by blast
+  from assms(1) have edge_v': "{u,v'} ∈ G"
+    unfolding shifts_to_def by blast
+  from assms(1) have no_match_v': "∄u'. index π u' < index π u ∧ {u',v'} ∈ M"
+    unfolding shifts_to_def by blast
+  from assms(1) have cover_v':
+    "∀v'''. index σ v < index σ v''' ∧ index σ v''' < index σ v' ⟶
+      {u,v'''} ∉ G ∨ (∃u'. index π u' < index π u ∧ {u',v'''} ∈ M)"
+    unfolding shifts_to_def by blast
+  from assms(2) have idx_v'': "index σ v < index σ v''"
+    unfolding shifts_to_def by blast
+  from assms(2) have edge_v'': "{u,v''} ∈ G"
+    unfolding shifts_to_def by blast
+  from assms(2) have no_match_v'': "∄u'. index π u' < index π u ∧ {u',v''} ∈ M"
+    unfolding shifts_to_def by blast
+  from assms(2) have cover_v'':
+    "∀v'''. index σ v < index σ v''' ∧ index σ v''' < index σ v'' ⟶
+      {u,v'''} ∉ G ∨ (∃u'. index π u' < index π u ∧ {u',v'''} ∈ M)"
+    unfolding shifts_to_def by blast
+  have eq: "index σ v' = index σ v''"
+  proof (rule antisym)
+    show "index σ v' ≤ index σ v''"
+    proof (rule ccontr)
+      assume "¬ index σ v' ≤ index σ v''"
+      then have lt: "index σ v'' < index σ v'" by simp
+      have "index σ v < index σ v'' ∧ index σ v'' < index σ v'"
+        using idx_v'' lt by blast
+      then have "{u,v''} ∉ G ∨ (∃u'. index π u' < index π u ∧ {u',v''} ∈ M)"
+        using cover_v' by blast
+      then obtain u' where "index π u' < index π u" "{u',v''} ∈ M"
+        using edge_v'' by blast
+      then show False using no_match_v'' by blast
+    qed
+    show "index σ v'' ≤ index σ v'"
+    proof (rule ccontr)
+      assume "¬ index σ v'' ≤ index σ v'"
+      then have lt: "index σ v' < index σ v''" by simp
+      have "index σ v < index σ v' ∧ index σ v' < index σ v''"
+        using idx_v' lt by blast
+      then have "{u,v'} ∉ G ∨ (∃u'. index π u' < index π u ∧ {u',v'} ∈ M)"
+        using cover_v'' by blast
+      then obtain u' where "index π u' < index π u" "{u',v'} ∈ M"
+        using edge_v' by blast
+      then show False using no_match_v' by blast
+    qed
+  qed
+  with v'_set show "v' = v''" by (simp add: index_eq_index_conv)
+qed
 
 lemma shifts_to_graph_edge:
   assumes "shifts_to G M u v v' \<pi> \<sigma>"
