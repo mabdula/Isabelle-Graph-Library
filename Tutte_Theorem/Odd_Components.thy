@@ -2133,9 +2133,21 @@ proof -
                 then have "v \<in> connected_component (graph_diff G X) v'"
                   by (meson connected_components_member_sym path2.hyps(1) 
                       vertices_edges_in_same_component)
-                then have "v \<notin> C" 
-                  by (metis \<open>C' \<inter> C = {}\<close> conn_C' 
-                      connected_components_member_eq disjoint_iff_not_equal v'_conn)
+                then have "v \<notin> C"
+                proof -
+                  have v_in_comp_v': "v \<in> connected_component (graph_diff G X) v'"
+                    by fact
+                  have v'_in_C': "v' \<in> C'"
+                    using zhyp by simp
+                  have v'_in_comp_c: "v' \<in> connected_component (graph_diff G X) c"
+                    using conn_C' v'_in_C' by simp
+                  have comp_v'_eq_C': "connected_component (graph_diff G X) v' = C'"
+                    using connected_components_member_eq[OF v'_in_comp_c] conn_C' by simp
+                  have v_in_C': "v \<in> C'"
+                    using v_in_comp_v' comp_v'_eq_C' by simp
+                  show ?thesis
+                    using v_in_C' \<open>C' \<inter> C = {}\<close> by blast
+                qed
                 then have "v \<notin> Y" 
                   using assms(4) by blast
                 have "v' \<notin> Y" 
