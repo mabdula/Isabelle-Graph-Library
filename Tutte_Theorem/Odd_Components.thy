@@ -1986,8 +1986,13 @@ proof -
             by simp
         next
           case False
-          then have "C' \<in> odd_components (graph_diff G (X\<union>Y))" 
-            by (metis UnE asmC' odd_comps_in_diff_def)
+          have "C' \<in> odd_components (graph_diff G (X \<union> Y))" 
+          proof -
+            have "C' \<in> odd_components (graph_diff G (X \<union> Y)) \<union> singl_in_diff G (X \<union> Y)"
+              using asmC' unfolding odd_comps_in_diff_def .
+            then show ?thesis
+              using False by blast
+          qed
           then have "odd (card C')" 
             by (simp add: odd_components_def odd_component_def)
           have "c\<in>Vs (graph_diff G X)"
