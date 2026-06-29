@@ -689,9 +689,15 @@ proof (rule ccontr)
 
     with \<open>{u,v''} \<in> step G u \<sigma> (online_match G us \<sigma>)\<close> have "{u,v''} \<in> online_match G \<pi> \<sigma>"
       by (auto intro: online_match_mono)
-
-    with bipartite False \<open>{u,v} \<in> online_match G \<pi> \<sigma>\<close> the_match' show ?thesis
-      by (metis bipartite_disjointD matching_online_match)
+    have disj: "set π ∩ set σ = {}"
+      using bipartite by (rule bipartite_disjointD)
+    then have match: "matching (online_match G π σ)"
+      by (rule matching_online_match)
+    from match ‹{u,v} ∈ online_match G π σ› have v_eq: "(THE w. {u, w} ∈ online_match G π σ) = v"
+      by (rule the_match')
+    from match ‹{u,v''} ∈ online_match G π σ› have v''_eq: "(THE w. {u, w} ∈ online_match G π σ) = v''"
+      by (rule the_match')
+    from v_eq v''_eq False show ?thesis by simp
   qed
 qed
 
