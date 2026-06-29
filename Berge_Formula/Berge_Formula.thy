@@ -694,8 +694,16 @@ next
         proof
           fix C
           assume asmC:"C \<in> connected_components ?H"
-          obtain c where "c \<in> C" 
-            by (metis (no_types, lifting) asmC connected_comp_has_vert in_own_connected_component)
+          obtain c where "c \<in> C"
+          proof -
+            assume pre: "\<And>c. c \<in> C \<Longrightarrow> thesis"
+            obtain w where "w \<in> Vs ?H" and w_eq: "C = connected_component ?H w"
+              using connected_comp_has_vert[OF asmC] by blast
+            then have "w \<in> C"
+              using in_own_connected_component w_eq by simp
+            then show thesis
+              by (rule pre)
+          qed
           then have "c \<in> Vs ?H" 
             by (metis (no_types, lifting) asmC connected_comp_verts_in_verts)
           then have "C = Vs ?H" 
