@@ -678,8 +678,16 @@ proof -
   ultimately  have "sum card ?A = card (Vs ?A)" 
     using assms Vs_def card_Union_disjoint disjnt_def pairwise_def
     by (simp add: Vs_def card_Union_disjoint disjnt_def pairwise_def)
-  also have "sum card ?A = card ?A" 
-    by (metis card_eq_sum card_singl_in_diff_is_one sum.cong)
+  also have "sum card ?A = card ?A"
+  proof -
+    have each_one: "\<forall>C \<in> ?A. card C = 1"
+      using card_singl_in_diff_is_one by blast
+    have "sum card ?A = sum (\<lambda>_. 1) ?A"
+      by (rule sum.cong) (auto simp: each_one)
+    also have "\<dots> = card ?A"
+      by (simp add: card_eq_sum[symmetric])
+    finally show ?thesis .
+  qed
   finally show ?thesis 
     by presburger
 qed
