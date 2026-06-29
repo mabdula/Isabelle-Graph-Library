@@ -1270,8 +1270,17 @@ lemma perfect_matching_union_components:
   assumes "\<forall>a \<in> connected_components A. \<exists>M. perfect_matching (component_edges A a) M"
   shows "\<exists>M. perfect_matching A M"
 proof -
-  have "finite (components_edges A)" 
-    by (metis Vs_def assms(1) finite_UnionD graph_component_edges_partition)
+  have "finite (components_edges A)"
+  proof -
+    have fin_A: "finite A"
+      using assms(1) graph_invar_finite by blast
+    have part: "\<Union>(components_edges A) = A"
+      using graph_component_edges_partition assms(1) by blast
+    have "finite (\<Union>(components_edges A))"
+      using fin_A part by simp
+    then show ?thesis
+      by (rule finite_UnionD)
+  qed
   let ?E = "(components_edges A)" 
   have "\<forall>a \<in> ?E. \<exists>M. perfect_matching a M" using assms(2) unfolding components_edges_def
     by blast
