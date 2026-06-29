@@ -1146,8 +1146,17 @@ proof -
     then obtain e where "e \<in> (\<Union> A) \<and> x \<in> e"
       by (meson vs_member_elim)
     then obtain a where "a \<in> A \<and> e \<in> a" by auto
-    then obtain c where "c \<in> C \<and> perfect_matching a c" 
-      by (metis (mono_tags, lifting) C_sub_Ms mem_Collect_eq)
+    then obtain c where "c \<in> C \<and> perfect_matching a c"
+    proof -
+      have ha_Ms: "{M. perfect_matching a M} \<in> ?Ms"
+        using \<open>a \<in> A \<and> e \<in> a\<close> by blast
+      then have hex: "\<exists>!c \<in> C. c \<in> {M. perfect_matching a M}"
+        using C_sub_Ms by blast
+      then obtain c where "c \<in> C \<and> c \<in> {M. perfect_matching a M}"
+        by blast
+      then show thesis
+        using that by blast
+    qed
     then have "x \<in> Vs c" 
       using \<open>a \<in> A \<and> e \<in> a\<close> \<open>e \<in> \<Union> A \<and> x \<in> e\<close> 
       by (metis perfect_matchingE vs_member_intro)
