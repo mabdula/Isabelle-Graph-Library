@@ -2195,7 +2195,7 @@ proof -
                 qed
               qed
               then show "x \<in> connected_component (graph_diff G (X \<union> Y)) c" 
-                by (metis list.set_sel(1) p_walk walk_betw_def)
+                using p_walk walk_between_nonempty_pathD(3) by fastforce
             qed
           }
           fix x
