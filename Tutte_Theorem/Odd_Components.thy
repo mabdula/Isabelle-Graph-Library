@@ -1031,8 +1031,16 @@ proof -
     fix c
     assume "c \<in> C"
     then have "c \<in> Vs ?Ms" using C_sub_Ms by blast
-    then have "\<exists>a\<in>A. perfect_matching a c" 
-      by (smt (verit, best) mem_Collect_eq vs_member)
+    then have "\<exists>a\<in>A. perfect_matching a c"
+    proof -
+      assume hcVs: "c \<in> Vs ?Ms"
+      obtain Ms where hMs: "Ms \<in> ?Ms" and hcMs: "c \<in> Ms"
+        using hcVs by (auto simp: vs_member)
+      obtain a where ha: "a \<in> A" and hMs_eq: "Ms = {M. perfect_matching a M}"
+        using hMs by auto
+      show "\<exists>a\<in>A. perfect_matching a c"
+        using ha hcMs hMs_eq by auto
+    qed
     then show "matching c"
       using perfect_matching_def by blast
   qed
