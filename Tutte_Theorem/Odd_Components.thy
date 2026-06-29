@@ -1832,9 +1832,23 @@ proof -
                 then have "{v, v'} \<in> (graph_diff G (X \<union> Y))" 
                   using path2.hyps(1)
                   unfolding graph_diff_def by blast
-                then have "v \<in> C'" 
-                  by (metis conn_compC' connected_components_member_trans insert_commute
-                      list.set_intros(1) vertices_edges_in_same_component zhyps)
+                then have "v \<in> C'"
+                proof -
+                  have v'_in_C': "v' \<in> C'"
+                    using zhyps by simp
+                  have v'_in_comp: "v' \<in> connected_component (graph_diff G (X \<union> Y)) c"
+                    using v'_in_C' conn_compC' by simp
+                  have edge_comm: "{v', v} \<in> graph_diff G (X \<union> Y)"
+                    using \<open>{v, v'} \<in> graph_diff G (X \<union> Y)\<close>
+                    by (simp add: insert_commute)
+                  have v_in_comp_v': "v \<in> connected_component (graph_diff G (X \<union> Y)) v'"
+                    by (rule vertices_edges_in_same_component[OF edge_comm])
+                  have comp_eq: "connected_component (graph_diff G (X \<union> Y)) v' =
+                                 connected_component (graph_diff G (X \<union> Y)) c"
+                    by (rule connected_components_member_eq[OF v'_in_comp])
+                  show ?thesis
+                    using v_in_comp_v' comp_eq conn_compC' by simp
+                qed
                 then show ?case 
                   using \<open>v \<in> connected_component (graph_diff G X) c\<close> \<open>v \<notin> C\<close> zhyps by auto
               qed
