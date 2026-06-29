@@ -604,8 +604,38 @@ proof -
   qed
   then obtain v where "(\<exists> e\<in>M. x\<in> e \<and> v \<in> e \<and> x \<noteq> v)" by auto
   have "\<forall>v'. (\<exists> e\<in>M. x\<in> e \<and> v'\<in>e \<and> x \<noteq> v') \<longrightarrow> v = v'"
-    by (metis \<open>\<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v\<close> assms(3) assms(4) dblton_graphE dblton_graph_subset
-              insertE singletonD x_one_edge) 
+  proof (rule allI, rule impI)
+    fix v'
+    assume "\<exists> e'\<in>M. x\<in> e' \<and> v'\<in>e' \<and> x \<noteq> v'"
+    then obtain e' where e'_props: "e' \<in> M" "x \<in> e'" "v' \<in> e'" "x \<noteq> v'"
+      by auto
+    have e'_eq: "e' = e"
+      using e'_props(1) e'_props(2) x_one_edge e by blast
+    hence v'_in_e: "v' \<in> e"
+      using e'_props(3) by simp
+    have e_in_G: "e \<in> G"
+      using e assms(3) by blast
+    have dbl: "dblton_graph G"
+      using assms(4) graph_invar_dblton by blast
+    obtain a b where ab: "e = {a, b}" "a \<noteq> b"
+      using e_in_G dbl by (blast elim: dblton_graphE)
+    have x_in: "x \<in> {a, b}"
+      using e ab(1) by simp
+    have v_in_e: "v \<in> e"
+    proof -
+      from \<open>\<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v\<close> obtain e0 where "e0 \<in> M" "x \<in> e0" "v \<in> e0" by blast
+      with x_one_edge e have "e0 = e" by blast
+      then show ?thesis using \<open>v \<in> e0\<close> by simp
+    qed
+    then have v_in: "v \<in> {a, b}"
+      using ab(1) by simp
+    have v'_in: "v' \<in> {a, b}"
+      using v'_in_e ab(1) by simp
+    have xv: "x \<noteq> v"
+      using \<open>\<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v\<close> by blast
+    show "v = v'"
+      using x_in v_in v'_in ab(2) xv e'_props(4) by auto
+  qed
   then have "\<exists>!v. \<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v" 
     using \<open>\<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v\<close> by blast
   then show ?thesis unfolding neighbours_of_Vs_def 
