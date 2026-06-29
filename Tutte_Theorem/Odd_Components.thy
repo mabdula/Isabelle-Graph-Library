@@ -1157,9 +1157,21 @@ proof -
       then show thesis
         using that by blast
     qed
-    then have "x \<in> Vs c" 
-      using \<open>a \<in> A \<and> e \<in> a\<close> \<open>e \<in> \<Union> A \<and> x \<in> e\<close> 
-      by (metis perfect_matchingE vs_member_intro)
+    then have "x \<in> Vs c"
+    proof -
+      have hpm: "perfect_matching a c"
+        using \<open>c \<in> C \<and> perfect_matching a c\<close> by blast
+      have he_a: "e \<in> a"
+        using \<open>a \<in> A \<and> e \<in> a\<close> by blast
+      have hx_e: "x \<in> e"
+        using \<open>e \<in> \<Union> A \<and> x \<in> e\<close> by blast
+      have hVs: "Vs c = Vs a"
+        using hpm unfolding perfect_matching_def by blast
+      have hx_Vs_a: "x \<in> Vs a"
+        using vs_member_intro he_a hx_e by blast
+      show "x \<in> Vs c"
+        using hx_Vs_a hVs by blast
+    qed
     then show "x \<in> Vs (\<Union> C)" 
       by (metis Vs_def \<open>c \<in> C \<and> perfect_matching a c\<close> vs_member)
   qed (meson Vs_subset \<open>\<Union> C \<subseteq> \<Union> A\<close> subsetD)
