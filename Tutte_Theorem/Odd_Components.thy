@@ -1089,7 +1089,7 @@ proof -
         have "X \<in> Vs ?Ms" 
           using C_sub_Ms \<open>X \<in> C\<close> by blast
         then obtain a2 where a2_match:"a2 \<in> A \<and> perfect_matching a2 X"
-          by (smt (verit) mem_Collect_eq vs_member)
+          by (auto simp: vs_member)
         have "a1 \<noteq> a2" 
           using C_sub_Ms False \<open>X \<in> C\<close> \<open>Xa \<in> C\<close> a1_match a2_match by auto
         then have "a1 \<inter> a2 = {}" 
