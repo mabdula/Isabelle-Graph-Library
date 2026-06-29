@@ -1196,7 +1196,7 @@ proof(safe)
     then obtain e where "x \<in> e \<and> e \<in> (component_edges A C)" 
       by (meson vs_member_elim)
     then have "e \<subseteq> C" 
-      by (smt (verit, best) component_edges_def mem_Collect_eq)
+      by (auto simp: component_edges_def)
     then show "x \<in> C"
       by (meson \<open>x \<in> e \<and> e \<in> component_edges A C\<close> subsetD)
   }
