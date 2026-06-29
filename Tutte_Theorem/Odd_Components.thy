@@ -2484,8 +2484,18 @@ proof -
                 then have "v' \<in> connected_component (graph_diff ?C Y) c" 
                   using \<open>v' \<in> C'\<close> conn_diffY by blast
                 then have "v \<in> connected_component (graph_diff ?C Y) c" 
-                  by (metis vv' connected_components_member_eq insert_commute
-                    vertices_edges_in_same_component)
+                proof -
+                  have vv'_comm: "{v', v} \<in> graph_diff ?C Y"
+                    using vv' by (simp add: insert_commute)
+                  have v_in_comp_v': "v \<in> connected_component (graph_diff ?C Y) v'"
+                    by (rule vertices_edges_in_same_component[OF vv'_comm])
+                  have comp_eq: "connected_component (graph_diff ?C Y) v' =
+                                 connected_component (graph_diff ?C Y) c"
+                    by (rule connected_components_member_eq[OF
+                          \<open>v' \<in> connected_component (graph_diff ?C Y) c\<close>])
+                  show ?thesis
+                    using v_in_comp_v' comp_eq by simp
+                qed
                 then have "v \<in> C'" 
                   using conn_diffY by auto
                 then show ?case 
