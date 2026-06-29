@@ -1008,7 +1008,12 @@ next
       by(auto elim!: perfect_matchingE 
            simp add: matching_vertices_double_size[symmetric]) 
     then have "card (Vs M) \<ge> card (Vs G)" 
-      by (metis M' perfect_matchingE)
+      proof -
+        have vs_eq: "Vs M' = Vs G"
+          using M' by (auto elim: perfect_matchingE)
+        show ?thesis
+          using \<open>card (Vs M') \<le> card (Vs M)\<close> vs_eq by simp
+      qed
     have "Vs M \<subseteq> Vs G" 
       by (simp add: Vs_subset assms(2))
     then have "Vs M =  Vs G" 
