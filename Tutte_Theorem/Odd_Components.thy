@@ -2501,9 +2501,21 @@ proof -
                 then show ?case 
                   using \<open>\<forall>z\<in>set (v' # vs). z \<in> C'\<close> by fastforce
               qed
-              then show "x \<in> connected_component (graph_diff 
+              then show "x \<in> connected_component (graph_diff
                                                   (component_edges (graph_diff G X) C) Y) c"
-                by (metis conn_diffY list.set_sel(1) p_walk walk_betw_def)
+              proof -
+                have all_z: "\<forall>z \<in> set p. z \<in> C'" by fact
+                have p_nonempty: "p \<noteq> []"
+                  using p_walk unfolding walk_betw_def by simp
+                have hd_x: "hd p = x"
+                  using p_walk unfolding walk_betw_def by simp
+                have x_in_p: "x \<in> set p"
+                  using hd_in_set[OF p_nonempty] hd_x by simp
+                have x_in_C': "x \<in> C'"
+                  using all_z x_in_p by blast
+                show ?thesis
+                  using x_in_C' conn_diffY by simp
+              qed
             qed
           }
           fix x
@@ -2517,8 +2529,13 @@ proof -
           next
             case False
             then have "\<exists>p. walk_betw  (graph_diff (component_edges (graph_diff G X) C) Y) x p c"
-              unfolding connected_component_def 
-              by (metis asm connected_components_member_sym in_con_comp_has_walk)
+              proof -
+                have sym: "c \<in> connected_component
+                     (graph_diff (component_edges (graph_diff G X) C) Y) x"
+                  using asm by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
             then obtain p where p_walk:
                 "walk_betw  (graph_diff (component_edges (graph_diff G X) C) Y) x p c" 
               by auto
