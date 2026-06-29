@@ -1206,7 +1206,17 @@ proof(rule ccontr; simp)
       ultimately show ?thesis
         using match[unfolded matching_def2]
               e v F1
-        by (metis edges_are_Vs insertI1)
+      proof -
+        obtain e' where e': "e' \<in> set (edges_of_path p)" "v \<in> e'" "e' \<in> M"
+          using \<open>\<exists>e'\<in>set (edges_of_path p). v \<in> e' \<and> e' \<in> M\<close> by auto
+        have ve: "v \<in> e"
+          using v(1) by simp
+        have neq: "e \<noteq> e'"
+          using F1 e'(1) by blast
+        show False
+          using match[unfolded matching_def2] e(1) e'(3) ve e'(2) neq
+          by blast
+      qed
     next
       case F2: False
       moreover have *: "last p \<notin> s"
