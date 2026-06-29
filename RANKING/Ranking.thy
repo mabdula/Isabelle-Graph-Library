@@ -381,6 +381,7 @@ proof (induction G u \<sigma> M rule: step.induct)
         hence "index vs w < index vs v'" using \<open>v \<noteq> w\<close> w(4) by blast
         with \<open>v' \<noteq> v\<close> \<open>v \<noteq> w\<close> show "index (v # vs) w < index (v # vs) v'" by simp
       qed
+
       then show ?thesis
       proof (intro disjI2 exI[of _ w] conjI)
         show "e = {u, w}" using w(1) .
@@ -556,8 +557,8 @@ proof (rule ccontr)
   obtain u v where unmatched: "{u,v} \<in> G" "u \<notin> Vs (online_match G \<pi> \<sigma>)" "v \<notin> Vs (online_match G \<pi> \<sigma>)"
     by (auto elim: not_maximal_matchingE)
 
-  with bipartite consider "u \<in> set \<pi>" "v \<in> set \<sigma>" | "u \<in> set \<sigma>" "v \<in> set \<pi>"
-    by (metis bipartite_edgeE doubleton_eq_iff)
+with bipartite consider "u \<in> set \<pi>" "v \<in> set \<sigma>" | "u \<in> set \<sigma>" "v \<in> set \<pi>"
+    by (elim bipartite_edgeE) (auto simp: doubleton_eq_iff)
 
   then show False
     by cases 
