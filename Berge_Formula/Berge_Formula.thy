@@ -301,13 +301,33 @@ qed
     proof(rule ccontr)
       assume "\<not> (\<exists>v\<in>C. v \<notin> Vs M)" 
       then have "\<forall>v \<in> C. v \<in> Vs M" by blast
-      then have " ((Vs M) \<inter> C) = C" by auto
-      have "card ((Vs M) \<inter> C) = sum (\<lambda> e. card (e \<inter> C)) M"
-        using matching_int_card_is_sum[of M M C]  `matching M`  \<open>finite (Vs M)\<close> by blast
-      then have "even (card C)" 
-        using \<open>Vs M \<inter> C = C\<close>
-        by (smt (verit, ccfv_threshold) \<open>M \<subseteq> G\<close> assms(1) card_edge dvd_sum e_in_C even_numeral 
-            odd_card_imp_not_empty subset_eq)
+      then have C_eq_VsM_inter_C: "Vs M \<inter> C = C" by auto
+      have sum_eq: "card (Vs M \<inter> C) = sum (\<lambda> e. card (e \<inter> C)) M"
+        using matching_int_card_is_sum[of M M C] `matching M` \<open>finite (Vs M)\<close> by blast
+      then have card_C_eq_sum: "card C = sum (\<lambda> e. card (e \<inter> C)) M"
+        using C_eq_VsM_inter_C by simp
+      have "even (card C)"
+      proof -
+        have "2 dvd sum (\<lambda> e. card (e \<inter> C)) M"
+        proof (rule dvd_sum)
+          fix e
+          assume "e \<in> M"
+          from e_in_C this have "e \<inter> C = {} \<or> e \<inter> C = e" by blast
+          thus "2 dvd card (e \<inter> C)"
+          proof
+            assume "e \<inter> C = {}"
+            then show "2 dvd card (e \<inter> C)" by simp
+          next
+            assume "e \<inter> C = e"
+            then have "card (e \<inter> C) = card e" by simp
+            also have "card e = 2"
+              using \<open>M \<subseteq> G\<close> assms(1) card_edge \<open>e \<in> M\<close> by auto
+            finally show "2 dvd card (e \<inter> C)" by simp
+          qed
+        qed
+        then show ?thesis
+          using card_C_eq_sum by auto
+      qed
       then show False 
         using diff_odd_compoenent_has_odd_card[of C G X] \<open>C \<in> ?QX\<close> by auto
     qed
