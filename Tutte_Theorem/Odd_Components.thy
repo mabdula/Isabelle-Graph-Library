@@ -1515,27 +1515,59 @@ next
                   by (simp add: True in_own_connected_component)
               next
                 case (path2 v v' vs)
-                have "v' \<in> C" 
-                  by (metis last_ConsR list.set_intros(1) 
-                      list.simps(3) path2.hyps(3) path2.prems)
+                have "v' \<in> C"
+                proof -
+                  have last_eq: "last (v' # vs) = c"
+                    using \<open>last (v # v' # vs) = c\<close> by (simp add: last_ConsR)
+                  then have "\<forall>z \<in> set (v' # vs). z \<in> C \<and>
+                        z \<in> connected_component
+                              (graph_diff (component_edges (graph_diff G X) C) Y) c"
+                    using path2(3) by auto
+                  moreover have "v' \<in> set (v' # vs)"
+                    by simp
+                  ultimately show ?thesis
+                    by auto
+                qed
                 have "{v, v'} \<inter> (X\<union>Y) = {}" 
                   by (meson graph_diffE path2.hyps(1))
                 then have "{v, v'} \<inter> X = {}" 
                   by (simp add: Int_Un_distrib)
                 then have "{v, v'} \<in> (graph_diff G (X))"   
                   by (meson graph_diffE graph_diffI path2.hyps(1))
-                then have "v \<in> C" 
-                  by (metis \<open>v' \<in> C\<close> conn_compC connected_components_member_eq insert_commute 
-                      vertices_edges_in_same_component)
+                then have "v \<in> C"
+                proof -
+                  have invar_diff_X: "graph_invar (graph_diff G X)"
+                    by (rule graph_invar_diff[OF assms(1)])
+                  have v'_in_comp: "v' \<in> connected_component (graph_diff G X) c"
+                    using \<open>v' \<in> C\<close> conn_compC by simp
+                  have comp_v'_eq: "connected_component (graph_diff G X) v' = C"
+                    using connected_components_member_eq[OF v'_in_comp] conn_compC by simp
+                  have edge_sub: "{v, v'} \<subseteq> connected_component (graph_diff G X) v'"
+                    using edge_subset_component[OF invar_diff_X \<open>{v, v'} \<in> graph_diff G X\<close>]
+                    by simp
+                  then have "v \<in> connected_component (graph_diff G X) v'"
+                    by blast
+                  then show ?thesis
+                    using comp_v'_eq by simp
+                qed
                 then have "{v, v'} \<in> (component_edges (graph_diff G X) C)"
                   using \<open>v' \<in> C\<close> \<open>{v, v'} \<in> graph_diff G X\<close> component_edges_def by blast     
                 then have "{v, v'} \<in> (graph_diff (component_edges (graph_diff G X) C) Y)"
                   using \<open>{v, v'} \<inter> (X \<union> Y) = {}\<close> 
                   by (simp add: graph_diffI)       
                 then have "v' \<in> connected_component 
-                                (graph_diff (component_edges (graph_diff G X) C) Y) c" 
-                  by (metis last_ConsR list.set_intros(1) list.simps(3) path2.hyps(3) 
-                      path2.prems)
+                                (graph_diff (component_edges (graph_diff G X) C) Y) c"
+                proof -
+                  have "last (v' # vs) = c"
+                    using path2.prems by (simp add: last_ConsR)
+                  then have "\<forall>z \<in> set (v' # vs). z \<in> C \<and> 
+                      z \<in> connected_component (graph_diff (component_edges (graph_diff G X) C) Y) c"
+                    using path2.hyps(3) by blast
+                  moreover have "v' \<in> set (v' # vs)"
+                    by simp
+                  ultimately show ?thesis
+                    by blast
+                qed
                 then have "v \<in> connected_component 
                                 (graph_diff (component_edges (graph_diff G X) C) Y) c"
                   by (metis \<open>{v, v'} \<in> graph_diff (component_edges (graph_diff G X) C) Y\<close> 
