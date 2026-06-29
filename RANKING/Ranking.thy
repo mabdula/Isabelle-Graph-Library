@@ -744,10 +744,17 @@ proof (rule ccontr)
     from u'_before_u have "u \<noteq> u'" by blast
 
     from v' split_pi have "{u',v'} \<in> online_match G \<pi> \<sigma>"
-      by (auto simp: online_match_append dest: online_match_mono)
-
-    with True bipartite \<open>{u,v} \<in> online_match G \<pi> \<sigma>\<close> \<open>u \<noteq> u'\<close> show ?thesis
-      by (metis bipartite_disjointD matching_online_match the_match)
+      by (auto simp: online_match_append dest: online_match_mono)    with True bipartite ‹{u,v} ∈ online_match G π σ› ‹u ≠ u'› show ?thesis
+    proof -
+      have disj: "set π ∩ set σ = {}"
+        using bipartite by (rule bipartite_disjointD)
+      then have match: "matching (online_match G π σ)"
+        by (rule matching_online_match)
+      from match ‹{u', v'} ∈ online_match G π σ› ‹v' = v›
+        ‹{u, v} ∈ online_match G π σ› ‹u ≠ u'›
+      show False
+        by (auto dest: doubleton_in_matching)
+    qed
   next
     case False
 
