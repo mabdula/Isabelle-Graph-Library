@@ -2674,8 +2674,18 @@ proof -
             using conn_diffY by simp
         qed
           then have "e \<inter> (X \<union> Y) = {}" 
-            by (smt (z3) Int_Un_distrib Int_Un_eq(4) Un_Int_assoc_eq Un_absorb Un_commute \<open>C' \<subseteq> C\<close>
-                \<open>c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}\<close> assms(3) odd_comps_in_diff_not_in_X subset_trans)
+          proof -
+            have e_in_CE: "e \<in> component_edges (graph_diff G X) C"
+              using \<open>c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}\<close> by blast
+            have e_in_diffX: "e \<in> graph_diff G X"
+              using Connected_Components.component_edges_subset e_in_CE by blast
+            have e_inter_X: "e \<inter> X = {}"
+              using e_in_diffX unfolding graph_diff_def by fastforce
+            have e_inter_Y: "e \<inter> Y = {}"
+              using \<open>c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}\<close> by blast
+            show ?thesis
+              using e_inter_X e_inter_Y by blast
+          qed
           have "e \<in> G" 
             using `c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}` Connected_Components.component_edges_subset 
                   graph_diff_member 
