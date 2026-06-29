@@ -647,8 +647,27 @@ proof (rule ccontr)
         by (auto elim: vs_member_elim)
 
       with \<open>v' \<in> set \<sigma>\<close> bipartite obtain u' where "e = {u',v'}" "u' \<in> set us"
-        by (auto elim!: bipartite_edgeE dest!: subgraph_online_match dest: bipartite_disjointD)
-           (metis \<open>e \<in> online_match G us \<sigma>\<close> bipartite_vertex(2) edges_are_Vs(1) online_match_Vs_subset subgraph_online_match)
+      proof -
+        from \<open>e \<in> online_match G us \<sigma>\<close> have e_in_G: "e \<in> G"
+          by (rule subgraph_online_match)
+        with bipartite obtain x y
+          where xy: "x \<in> set \<pi>" "y \<in> set \<sigma>" "e = {x, y}" "x \<noteq> y"
+          by (elim bipartite_edgeE)
+        from bipartite have disj: "set \<pi> \<inter> set \<sigma> = {}"
+          by (rule bipartite_disjointD)
+        with xy \<open>v' \<in> e\<close> \<open>v' \<in> set \<sigma>\<close> have vy: "y = v'"
+          by blast
+        with xy have e_eq: "e = {x, v'}"
+          by simp
+        from \<open>e \<in> online_match G us \<sigma>\<close> e_eq have x_Vs: "x \<in> Vs (online_match G us \<sigma>)"
+          by (auto intro: edges_are_Vs)
+        then have "x \<in> set us \<or> x \<in> set \<sigma>"
+          by (rule online_match_Vs_subset)
+        with disj \<open>x \<in> set \<pi>\<close> have x_us: "x \<in> set us"
+          by blast
+        from e_eq x_us show ?thesis
+          by (rule that)
+      qed
 
       with split_pi have "index \<pi> u' < index \<pi> u"
         by (auto simp: index_append)
