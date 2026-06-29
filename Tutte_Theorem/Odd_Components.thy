@@ -1389,9 +1389,7 @@ proof(cases "C \<in> singl_in_diff G X")
   have "(singl_in_diff G X) - {{x}} = singl_in_diff G (X \<union> {x})"
     unfolding singl_in_diff_def
     using \<open>graph_diff G X = graph_diff G (X \<union> {x})\<close>         
-    apply safe 
-     apply (metis Un_iff singletonD)
-    by metis
+    by auto
   have "{x} \<notin> (odd_components (graph_diff G X))" 
     using odd_components_elem_in_E singl_x(4) by blast
   then have "odd_comps_in_diff G (X\<union>{x}) = ((odd_comps_in_diff G X) - {{x}})"
