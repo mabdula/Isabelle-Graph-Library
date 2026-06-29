@@ -1802,8 +1802,21 @@ next
                   by (meson \<open>v' \<in> connected_component (graph_diff G X) c\<close> 
                       connected_components_member_trans)
                 then have "v \<notin> C" 
-                  by (metis assms(3) connected_components_member_eq list.set_intros(1)
-                      odd_comps_in_diff_is_component zhyps)
+proof -
+                    show ?thesis
+                    proof (rule notI)
+                      assume v_in_C: "v \<in> C"
+                      have v'_not_C: "v' \<notin> C"
+                        using zhyps list.set_intros(1) by auto
+                      have comp_eq: "connected_component (graph_diff G X) v = C"
+                        by (rule odd_comps_in_diff_is_component[OF assms(3) v_in_C])
+                      have "v' \<in> connected_component (graph_diff G X) v"
+                        by (rule vertices_edges_in_same_component[OF \<open>{v, v'} \<in> graph_diff G X\<close>])
+                      then have "v' \<in> C"
+                        using comp_eq by simp
+                      with v'_not_C show False by contradiction
+                    qed
+                  qed
                 then have "v \<notin> Y" 
                   using assms(4) by blast
                 have "v' \<notin> Y" 
