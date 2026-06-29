@@ -938,8 +938,6 @@ next
         thus ?thesis
           using \<open>Y = (Y \<inter> Vs G) \<union> A\<close> by simp
       qed
-      qed
-      qed
       then have "card Y = card (Y \<inter> Vs G) + ?k" 
         using assms(5) by presburger
       then have "card (odd_comps_in_diff G (Y \<inter> Vs G)) > card (Y \<inter> Vs G) + ?k" 
