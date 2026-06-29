@@ -480,8 +480,16 @@ proof -
     hence "0 < card C" by (rule odd_pos)
     thus "1 \<le> card C" by linarith
   qed
-  moreover then have "(\<Sum>C \<in> (odd_comps_in_diff G X). card C) \<ge> card (odd_comps_in_diff G X)"
-    by (metis card_eq_sum sum_mono)
+  moreover have "(\<Sum>C \<in> (odd_comps_in_diff G X). card C) \<ge> card (odd_comps_in_diff G X)"
+  proof -
+    have hge: "\<forall>C \<in> (odd_comps_in_diff G X). card C \<ge> 1"
+      using calculation by simp
+    have "card (odd_comps_in_diff G X) = (\<Sum>C \<in> (odd_comps_in_diff G X). 1)"
+      by (rule card_eq_sum)
+    also have "\<dots> \<le> (\<Sum>C \<in> (odd_comps_in_diff G X). card C)"
+      by (rule sum_mono) (use hge in force)
+    finally show ?thesis by linarith
+  qed
   ultimately show "card (odd_comps_in_diff G X) \<le> card (Vs G - X)" 
     by linarith
 qed
