@@ -1116,8 +1116,8 @@ next
     then show "matching M" by blast
   next
     case 3
-    then show "{u, x} \<in> M"
-      by (smt (verit, del_insts) theI' the_match''')
+    then show "{u, x} ∈ M"
+      by (auto simp: the_match')
   next
     case 4
     then obtain v' where v': "shifts_to G M u x v' \<pi> \<sigma>" "(THE v'. shifts_to G M u x v' \<pi> \<sigma>) = v'"
