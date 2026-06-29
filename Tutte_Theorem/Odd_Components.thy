@@ -2448,10 +2448,9 @@ proof -
               case path0
               then show ?case 
                 by auto
-            next
-              case (path1 v)
-              then show ?case 
-                by (metis empty_iff empty_set in_own_connected_component last_ConsL set_ConsD)
+            next case (path1 v)
+              then have v_eq_c: "v = c" by simp
+              then show ?case by (simp add: in_own_connected_component)
             next
               case (path2 v v' vs)
               have "last (v' # vs) = c" 
