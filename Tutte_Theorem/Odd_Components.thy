@@ -1297,7 +1297,7 @@ proof -
       fix a2
       assume "a2 \<in> ?E"
       then obtain C2 where "C2 \<in> connected_components A \<and> a2 = component_edges A C2"
-        by (smt (verit) components_edges_def mem_Collect_eq)
+        unfolding components_edges_def by blast
       then have "Vs a2 = C2" 
         by (simp add: assms(1) vs_connected_component)
       have "C1 \<noteq> C2 \<longrightarrow> C1 \<inter> C2 = {}" 
