@@ -382,7 +382,15 @@ proof (induction G u \<sigma> M rule: step.induct)
         with \<open>v' \<noteq> v\<close> \<open>v \<noteq> w\<close> show "index (v # vs) w < index (v # vs) v'" by simp
       qed
       then show ?thesis
-        by (metis Diff_iff Diff_insert \<open>e = {u, w}\<close> \<open>w \<in> set vs - Vs M\<close> \<open>{u, w} \<in> G\<close> list.simps(15))
+      proof (intro disjI2 exI[of _ w] conjI)
+        show "e = {u, w}" using w(1) .
+        show "w \<in> set (v # vs) - Vs M"
+          using w(2) by (auto simp: Diff_iff)
+        show "{u, w} \<in> G" using w(3) .
+        show "\<forall>v'\<in> set (v # vs) \<inter> {v''. {u, v''} \<in> G} - Vs M - {w}.
+                index (v # vs) w < index (v # vs) v'"
+          by fact
+      qed
     qed simp
   qed
 qed simp
