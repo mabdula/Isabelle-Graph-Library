@@ -1016,9 +1016,17 @@ next
       qed
     have "Vs M \<subseteq> Vs G" 
       by (simp add: Vs_subset assms(2))
-    then have "Vs M =  Vs G" 
-      by (metis Diff_eq_empty_iff \<open>card (Vs G) \<le> card (Vs M)\<close> assms(1) card.empty card_Diff_subset 
-          card_gt_0_iff diff_is_0_eq finite_Diff finite_subset subset_antisym)
+    then have "Vs M =  Vs G"
+    proof -
+      have fin_G: "finite (Vs G)"
+        using assms(1) graph_invar_finite_Vs by blast
+      have card_le: "card (Vs M) \<le> card (Vs G)"
+        using card_mono[OF fin_G \<open>Vs M \<subseteq> Vs G\<close>] by blast
+      have card_eq: "card (Vs G) = card (Vs M)"
+        using card_le \<open>card (Vs G) \<le> card (Vs M)\<close> by linarith
+      show "Vs M = Vs G"
+        using card_subset_eq[OF fin_G \<open>Vs M \<subseteq> Vs G\<close> card_eq[symmetric]] by blast
+    qed
     then have "perfect_matching G M" 
       by (simp add: assms(1-2) perfect_matchingI)
     have 2:"2 * card M = card (Vs G)"
