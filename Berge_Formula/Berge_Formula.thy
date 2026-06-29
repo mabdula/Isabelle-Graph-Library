@@ -747,11 +747,32 @@ next
           by (meson Y_subs 1 card_mono finite_subset)
         then have "card (odd_comps_in_diff ?H Y) > card (Vs G)" 
           using Y_subs by linarith 
-        then show False 
-          by (smt (verit, del_insts) Diff_disjoint Int_commute Nat.le_diff_conv2 Un_Diff_Int
-              Un_Int_eq(1) Y_subs 5 1 \<open>card (Vs G) \<le> card Y\<close> \<open>?k \<le> card (Vs G)\<close>
-              add_le_mono assms(1,4-6) card_Un_Int diff_add_inverse2 diff_le_self 
-              diff_odd_comps_card finite_Diff finite_subset le_trans not_less subset_Un_eq)
+        then show False
+        proof -
+          have h: "card (odd_comps_in_diff ?H Y) > card (Vs G)"
+            using Y_subs \<open>card (Vs G) \<le> card Y\<close> by linarith
+          have vsH_diff: "Vs ?H - Y = A - Y"
+          proof -
+            have "Vs ?H - Y = (Vs G \<union> A) - Y"
+              by (simp add: 5)
+            also have "\<dots> = A - Y"
+              using \<open>Vs G \<subseteq> Y\<close> by blast
+            finally show ?thesis .
+          qed
+          have odd_comps_bound: "card (odd_comps_in_diff ?H Y) \<le> card (Vs ?H - Y)"
+            by (rule diff_odd_comps_card[OF 1])
+          have card_vsH_bound: "card (Vs ?H - Y) \<le> card A"
+          proof -
+            have "Vs ?H - Y \<subseteq> A"
+              using vsH_diff Diff_subset[of A Y] by simp
+            then show ?thesis
+              by (rule card_mono[OF assms(4)])
+          qed
+          have k_le: "card A \<le> card (Vs G)"
+            using assms(5) \<open>?k \<le> card (Vs G)\<close> by linarith
+          from h odd_comps_bound card_vsH_bound k_le show False
+            by linarith
+        qed
       qed
       then obtain y where y:"y \<in> Vs G \<and> y \<notin> Y" 
         using `\<exists>y \<in> Vs G. y \<notin> Y` by auto
