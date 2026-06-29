@@ -873,7 +873,8 @@ and zag :: "'a graph \<Rightarrow> 'a graph \<Rightarrow> 'a \<Rightarrow> 'a li
                       else []
                     )" if "matching M"
 | no_matching_zag: "zag _ M v _ _ = [v]" if "\<not>matching M"
-  by auto (metis prod_cases5 sumE)
+  subgoal for P x by (cases x rule: sumE; (cases rule: prod_cases5); fastforce+)
+  by auto
 
 definition zig_zag_relation where
   "zig_zag_relation =
