@@ -2243,9 +2243,22 @@ proof -
                 by blast
               then have "v' \<in> connected_component (graph_diff G X) c" 
                 by (simp add: zhyp)
-              then show ?case 
-                by (metis zhyp \<open>{v, v'} \<in> graph_diff G X\<close> connected_components_member_eq 
-                    insert_commute set_ConsD vertices_edges_in_same_component)
+              then show ?case
+              proof -
+                have v'_in_comp_c: "v' \<in> connected_component (graph_diff G X) c"
+                  by fact
+                have v'_in_comp_v: "v' \<in> connected_component (graph_diff G X) v"
+                  by (rule vertices_edges_in_same_component[OF \<open>{v, v'} \<in> graph_diff G X\<close>])
+                have v_in_comp_v': "v \<in> connected_component (graph_diff G X) v'"
+                  by (rule connected_components_member_sym[OF v'_in_comp_v])
+                have comp_eq:
+                  "connected_component (graph_diff G X) v' = connected_component (graph_diff G X) c"
+                  by (rule connected_components_member_eq[OF v'_in_comp_c])
+                have v_in_comp_c: "v \<in> connected_component (graph_diff G X) c"
+                  using v_in_comp_v' comp_eq by simp
+                show "\<forall>z\<in>set (v # v' # vs). z \<in> connected_component (graph_diff G X) c"
+                  using v_in_comp_c zhyp by auto
+              qed
             qed
             then show "x \<in> connected_component (graph_diff G (X)) c" 
               by (metis list.set_sel(1) p_walk walk_betw_def)
