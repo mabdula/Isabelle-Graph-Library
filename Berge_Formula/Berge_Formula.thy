@@ -922,9 +922,24 @@ next
       then have "card (odd_comps_in_diff G (Y \<inter> Vs G)) > card Y" 
         using Y_subs 15 by auto
       have "Y = (Y \<inter> Vs G) \<union> A" 
-        by (metis Un_Int_assoc_eq Y_subs \<open>A \<subseteq> Y\<close> 5 le_iff_inf)
-      then have "card Y = card (Y \<inter> Vs G) + card A" 
-        by (metis Int_commute Un_Int_eq(2) assms(1,4,6) card_Un_disjoint finite_Int inf_assoc)
+      proof -
+        have hY_H: "Y \<subseteq> Vs ?H" using Y_subs by blast
+        have hY_GA: "Y \<subseteq> Vs G \<union> A" using hY_H 5 by blast
+        with \<open>A \<subseteq> Y\<close> show ?thesis by blast
+      qed
+      then have "card Y = card (Y \<inter> Vs G) + card A"
+      proof -
+        have disj: "(Y \<inter> Vs G) \<inter> A = {}"
+          using assms(6) by blast
+        have fin_inter: "finite (Y \<inter> Vs G)"
+          using graph_invar_finite_Vs[OF assms(1)] by (simp add: finite_Int)
+        have "card ((Y \<inter> Vs G) \<union> A) = card (Y \<inter> Vs G) + card A"
+          using card_Un_disjoint[OF fin_inter assms(4) disj] by simp
+        thus ?thesis
+          using \<open>Y = (Y \<inter> Vs G) \<union> A\<close> by simp
+      qed
+      qed
+      qed
       then have "card Y = card (Y \<inter> Vs G) + ?k" 
         using assms(5) by presburger
       then have "card (odd_comps_in_diff G (Y \<inter> Vs G)) > card (Y \<inter> Vs G) + ?k" 
