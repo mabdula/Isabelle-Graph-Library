@@ -456,7 +456,7 @@ lemma diff_odd_comps_card:
   shows "card (odd_comps_in_diff G X) \<le> card (Vs G - X)"
 proof -
   have "(\<Union>C \<in> (odd_comps_in_diff G X). C) \<subseteq> (Vs G - X)" 
-    by (metis vertices_sum_in_components)
+    by (rule vertices_sum_in_components)
   then have "card (\<Union>C \<in> (odd_comps_in_diff G X). C) \<le> card (Vs G - X)" 
     by (simp add: assms card_mono)
   moreover have "card (\<Union>C \<in> (odd_comps_in_diff G X). C) = (\<Sum>C \<in> (odd_comps_in_diff G X). card C)" 
