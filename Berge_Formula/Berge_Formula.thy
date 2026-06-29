@@ -254,11 +254,33 @@ qed
       fix e x y
       assume assms_edge: "e \<in> M" "x \<in> e" "x \<notin> C" "y \<in> e" "y \<in> C" 
       then have "e \<inter> X = {}" 
-        using Diff_disjoint \<open>C \<in> ?QX\<close> \<open>M \<subseteq> G\<close> \<open>graph_invar G\<close> \<open>?comp_out C = {}\<close>
-        by (smt (verit, del_insts) "1" "10" "3" Int_insert_left_if1 asmC card_0_eq dblton_graphE
-                dblton_graph_subset disjoint_insert(1) doubleton_eq_iff empty_iff inf_aci(1) insertE
-                matching_unique_match mem_Collect_eq mk_disjoint_insert odd_comps_in_diff_not_in_X
-                vs_empty)
+      proof -
+        have e_in_G: "e \<in> G"
+          using assms_edge(1) \<open>M \<subseteq> G\<close> by blast
+        have x_neq_y: "x \<noteq> y"
+          using assms_edge(3) assms_edge(5) by blast
+        obtain a b where e_form: "e = {a, b}" and ab_neq: "a \<noteq> b"
+          using dblton_graphE e_in_G \<open>graph_invar G\<close> by blast
+        have e_eq: "e = {x, y}"
+        proof -
+          from e_form assms_edge(2) have x_cases: "x = a \<or> x = b" by simp
+          from e_form assms_edge(4) have y_cases: "y = a \<or> y = b" by simp
+          with e_form ab_neq x_neq_y x_cases show "e = {x, y}"
+            by (auto simp: insert_commute doubleton_eq_iff)
+        qed
+        have y_not_X: "y \<notin> X"
+          using odd_comps_in_diff_not_in_X \<open>C \<in> odd_comps_in_diff G X\<close> assms_edge(5) by blast
+        have x_not_X: "x \<notin> X"
+        proof (rule ccontr)
+          assume "\<not> x \<notin> X"
+          then have x_in_X: "x \<in> X" by simp
+          have "e \<in> {e. e \<in> M \<and> (\<exists> x y. e = {x,y} \<and> y \<in> C \<and> x \<in> X)}"
+            using assms_edge(1) assms_edge(5) x_in_X unfolding e_eq by auto
+          with \<open>{e \<in> M. \<exists>x y. e = {x, y} \<and> y \<in> C \<and> x \<in> X} = {}\<close> show False by blast
+        qed
+        show "e \<inter> X = {}"
+          by (simp add: e_eq x_not_X y_not_X)
+      qed
 
       then have "e \<in> (graph_diff G X)" 
         using \<open>M \<subseteq> G\<close> \<open>e \<in> M\<close> 
