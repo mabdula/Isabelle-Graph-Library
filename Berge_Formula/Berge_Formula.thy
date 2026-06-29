@@ -704,8 +704,8 @@ next
             then show thesis
               by (rule pre)
           qed
-          then have "c \<in> Vs ?H" 
-            by (metis (no_types, lifting) asmC connected_comp_verts_in_verts)
+          then have "c \<in> Vs ?H"
+            using asmC connected_comp_verts_in_verts by meson
           then have "C = Vs ?H" 
             by (metis (no_types, lifting) 7 IntI \<open>c \<in> C\<close> asmC connected_components_disj empty_iff)
           then show "C \<in> {Vs ?H}"
