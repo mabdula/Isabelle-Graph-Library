@@ -1560,7 +1560,14 @@ proof -
         by (auto dest: bipartite_disjointD permutations_of_setD)
 
       from \<sigma> uv matching \<open>e \<in> online_match G \<pi> \<sigma>\<close> have the_e: "\<And>e'. e' \<in> online_match G \<pi> \<sigma> \<and> v \<in> e' \<Longrightarrow> e' = e"
-        by (metis insertCI matching_unique_match)
+      proof -
+        fix e'
+        assume assm: "e' \<in> online_match G \<pi> \<sigma> \<and> v \<in> e'"
+        have v_in_e: "v \<in> e"
+          using uv(3) by simp
+        with assm matching \<open>e \<in> online_match G \<pi> \<sigma>\<close> show "e' = e"
+          by (auto dest: matching_unique_match)
+      qed
 
       with e t \<open>v \<in> set \<sigma>\<close> show "(THE e'. e' \<in> online_match G \<pi> \<sigma> \<and> \<sigma> ! (THE t. \<exists>v \<in> set \<sigma>. index \<sigma> v = t \<and> v \<in> e) \<in> e') = e" 
         by (auto simp: the_t intro!: the_equality)
