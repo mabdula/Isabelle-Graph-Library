@@ -218,8 +218,28 @@ proof (rule ccontr)
     with rm_M' obtain u' where "{u',v} \<in> M'"
       by (meson graph_invar_vertex_edgeE' ranking_matchingE)
 
-    with assms \<open>{u,v} \<notin> M'\<close> show ?thesis
-      by (metis index_eq_index_conv nat_neq_iff ranking_matching_unique_match')    
+    show False
+    proof -
+      from assms \<open>{u,v} \<notin> M'\<close> have "u' \<noteq> u"
+        using \<open>{u',v} \<in> M'\<close> by blast
+      have "u' \<in> set \<pi>"
+        by (rule ranking_matching_bipartite_edges'[OF rm_M' \<open>{u',v} \<in> M'\<close> \<open>v \<in> set \<sigma>\<close>])
+      then have "index \<pi> u' \<noteq> index \<pi> u"
+        using \<open>u' \<in> set \<pi>\<close> \<open>u \<in> set \<pi>\<close> \<open>u' \<noteq> u\<close>
+        by (meson index_eq_index_conv)
+      then have "index \<pi> u' < index \<pi> u \<or> index \<pi> u < index \<pi> u'"
+        by (simp add: nat_neq_iff)
+      then show ?thesis
+      proof
+        assume "index \<pi> u' < index \<pi> u"
+        with rm_M rm_M' \<open>{u,v} \<in> M\<close> \<open>{u',v} \<in> M'\<close>
+        show ?thesis by (rule ranking_matching_unique_match')
+      next
+        assume "index \<pi> u < index \<pi> u'"
+        with rm_M' rm_M \<open>{u',v} \<in> M'\<close> \<open>{u,v} \<in> M\<close>
+        show ?thesis by (rule ranking_matching_unique_match')
+      qed
+    qed
   qed
 qed
 
