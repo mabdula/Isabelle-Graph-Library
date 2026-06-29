@@ -977,8 +977,20 @@ next
   show ?thesis
   proof(cases "card (odd_comps_in_diff G X) \<le> card X")
     case True
-    then have 1:"\<forall>Y \<subseteq> Vs G. card (odd_comps_in_diff G Y) \<le> card Y" 
-      by (smt (verit, ccfv_threshold) assms(4) of_nat_le_iff)
+    then have 1:"\<forall>Y \<subseteq> Vs G. card (odd_comps_in_diff G Y) \<le> card Y"
+    proof (intro allI impI)
+      fix Y
+      assume "Y \<subseteq> Vs G"
+      have hmax: "int (card (odd_comps_in_diff G X)) - int (card X) \<ge>
+                  int (card (odd_comps_in_diff G Y)) - int (card Y)"
+        using assms(4) \<open>Y \<subseteq> Vs G\<close> by blast
+      have hX_le: "int (card (odd_comps_in_diff G X)) \<le> int (card X)"
+        using True by (simp add: of_nat_le_iff)
+      have hY_le: "int (card (odd_comps_in_diff G Y)) \<le> int (card Y)"
+        using hmax hX_le by linarith
+      then show "card (odd_comps_in_diff G Y) \<le> card Y"
+        by (simp add: of_nat_le_iff)
+    qed
     then have "tutte_condition G" 
       unfolding tutte_condition_def  by auto
     then obtain M' where M':"perfect_matching G M'" 
