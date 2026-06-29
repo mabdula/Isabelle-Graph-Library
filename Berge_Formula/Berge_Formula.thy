@@ -594,9 +594,16 @@ next
       qed
       then show ?thesis using `finite (Vs ?H)` by simp
     qed
-    have "?k \<le> card (Vs G)" 
-      by (metis (no_types, lifting) assms(1-2) card_Diff_subset diff_le_self 
-          diff_odd_comps_card dual_order.trans finite_subset)
+    have "?k \<le> card (Vs G)"
+    proof -
+      have "?k \<le> card (odd_comps_in_diff G X)"
+        by (rule diff_le_self)
+      also have "... \<le> card (Vs G - X)"
+        by (rule diff_odd_comps_card[OF assms(1)])
+      also have "... \<le> card (Vs G)"
+        by (rule card_mono[OF graph_invar_finite_Vs[OF assms(1)] Diff_subset])
+      finally show ?thesis .
+    qed
     show "\<exists>M. perfect_matching ?H M"
     proof(rule ccontr)
       assume "\<nexists>M. perfect_matching ?H M" 
