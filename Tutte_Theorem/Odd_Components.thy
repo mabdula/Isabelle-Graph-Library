@@ -1121,8 +1121,20 @@ proof -
     then obtain c where "c\<in>C \<and> x \<in> c" by auto
     then have "c \<in> Vs ?Ms" 
       using C_sub_Ms by blast
-    then obtain a where "a\<in>A \<and> perfect_matching a c" 
-      by (smt (verit, best) mem_Collect_eq vs_member)
+    then obtain a where a_match: "a \<in> A \<and> perfect_matching a c"
+    proof -
+      assume hcVs: "c \<in> Vs ?Ms"
+      obtain Ms' where hMs'_in: "Ms' \<in> ?Ms" and hc_in: "c \<in> Ms'"
+        using hcVs by (auto simp: vs_member)
+      obtain a where ha_A: "a \<in> A" and hMs'_eq: "Ms' = {M. perfect_matching a M}"
+        using hMs'_in by auto
+      have hpm: "perfect_matching a c"
+        using hc_in hMs'_eq by simp
+      from ha_A hpm have "a \<in> A \<and> perfect_matching a c"
+        by blast
+      then show ?thesis
+        by (rule that)
+    qed
     then show "x \<in> \<Union>A" 
       using \<open>a \<in> A \<and> perfect_matching a c\<close> \<open>c \<in> C \<and> x \<in> c\<close>
       by (meson UnionI perfect_matchingE subsetD)
