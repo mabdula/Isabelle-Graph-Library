@@ -356,8 +356,31 @@ proof (induction G u \<sigma> M rule: step.induct)
       qed
 
       with w have "\<forall>v'\<in> set (v#vs) \<inter> {v''. {u,v''} \<in> G} - Vs M - {w}. index (v#vs) w < index (v#vs) v'"
-        apply simp
-        by (smt (z3) "2.prems" Diff_iff IntE Int_commute Int_insert_right_if0 Int_insert_right_if1 edges_are_Vs ind insert_commute insert_iff mem_Collect_eq step_already_matched)
+      proof (intro ballI)
+        fix v'
+        assume mem: "v' \<in> set (v # vs) \<inter> {v''. {u,v''} \<in> G} - Vs M - {w}"
+        hence v'_in_G: "{u, v'} \<in> G"
+          and v'_not_M: "v' \<notin> Vs M"
+          and v'_neq_w: "v' \<noteq> w"
+          and v'_in_set: "v' \<in> {v} \<union> set vs"
+          by auto
+        have "v' \<noteq> v"
+        proof
+          assume eq: "v' = v"
+          have "{u, v} \<in> G" using v'_in_G eq by simp
+          have "v \<notin> Vs M" using v'_not_M eq by simp
+          have "u \<in> Vs M" using ind \<open>v \<notin> Vs M\<close> \<open>{u, v} \<in> G\<close> by blast
+          have "step G u (v # vs) M = M" using \<open>u \<in> Vs M\<close> step_already_matched by simp
+          hence "e \<in> M" using "2.prems" by simp
+          hence "w \<in> Vs M" using \<open>e = {u, w}\<close> by (auto intro: vs_member_intro)
+          with \<open>w \<in> set vs - Vs M\<close> show False by blast
+        qed
+        hence "v' \<in> set vs" using v'_in_set by blast
+        hence "v' \<in> set vs \<inter> {v''. {u, v''} \<in> G} - Vs M - {w}"
+          using v'_in_G v'_not_M v'_neq_w by blast
+        hence "index vs w < index vs v'" using \<open>v \<noteq> w\<close> w(4) by blast
+        with \<open>v' \<noteq> v\<close> \<open>v \<noteq> w\<close> show "index (v # vs) w < index (v # vs) v'" by simp
+      qed
       then show ?thesis
         by (metis Diff_iff Diff_insert \<open>e = {u, w}\<close> \<open>w \<in> set vs - Vs M\<close> \<open>{u, w} \<in> G\<close> list.simps(15))
     qed simp
