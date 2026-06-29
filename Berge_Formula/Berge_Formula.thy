@@ -286,8 +286,14 @@ qed
         using \<open>M \<subseteq> G\<close> \<open>e \<in> M\<close> 
         by (simp add: graph_diffI subsetD)
       then have "x \<in> C"
-        by (smt (verit, ccfv_SIG) \<open>C \<in> odd_comps_in_diff G X\<close> assms(1) assms_edge(2) assms_edge(4)
-                 assms_edge(5) edge_same_comp graph_invar_diff odd_comps_in_diff_is_component)
+      proof -
+        have inv: "graph_invar (graph_diff G X)"
+          by (rule graph_invar_diff[OF assms(1)])
+        have "x \<in> connected_component (graph_diff G X) y"
+          by (rule edge_same_comp[OF inv \<open>e \<in> graph_diff G X\<close> assms_edge(2) assms_edge(4)])
+        with odd_comps_in_diff_is_component[OF \<open>C \<in> odd_comps_in_diff G X\<close> assms_edge(5)] show "x \<in> C"
+          by auto
+      qed
       then show "y \<in> {}"
         using \<open>x \<notin> C\<close> by auto
     qed
