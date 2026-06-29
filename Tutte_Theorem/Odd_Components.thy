@@ -1073,7 +1073,19 @@ proof -
         have "Xa \<in> Vs ?Ms" 
           using C_sub_Ms \<open>Xa \<in> C\<close> by blast
         then obtain a1 where a1_match:"a1 \<in> A \<and> perfect_matching a1 Xa"
-          by (smt (verit) mem_Collect_eq vs_member)
+          proof -
+            assume hXaVs: "Xa \<in> Vs ?Ms"
+            obtain Ms' where hMs'_in: "Ms' \<in> ?Ms" and hXa_in: "Xa \<in> Ms'"
+              using hXaVs by (auto simp: vs_member)
+            obtain a1 where ha1_A: "a1 \<in> A" and hMs'_eq: "Ms' = {M. perfect_matching a1 M}"
+              using hMs'_in by auto
+            have hpm: "perfect_matching a1 Xa"
+              using hXa_in hMs'_eq by simp
+            from ha1_A hpm have "a1 \<in> A \<and> perfect_matching a1 Xa"
+              by blast
+            then show ?thesis 
+              by (rule that)
+          qed
         have "X \<in> Vs ?Ms" 
           using C_sub_Ms \<open>X \<in> C\<close> by blast
         then obtain a2 where a2_match:"a2 \<in> A \<and> perfect_matching a2 X"
