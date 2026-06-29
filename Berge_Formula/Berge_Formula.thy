@@ -5,7 +5,13 @@ begin
 lemma sum_card_edges2:
   assumes "graph_invar G"
   shows "sum card G = (\<Sum>e\<in>G. 2)"
-  by (smt (verit, del_insts) assms card_edge mem_Collect_eq subset_eq sum.cong)
+proof (rule sum.cong)
+  show "G = G" by simp
+next
+  fix e assume "e \<in> G"
+  thus "card e = 2"
+    using assms card_edge by blast
+qed
 
 lemma matching_vertices_double_size:
   assumes "graph_invar M"
@@ -47,7 +53,13 @@ proof -
     have "card (Vs (?comp_out C)) =  sum (\<lambda> e. card e) (?comp_out C)"
       using \<open>finite (Vs M)\<close> \<open>matching M\<close> matching_card_is_sum by fastforce
     also have "\<dots> =  sum (\<lambda> e. 2) (?comp_out C)" 
-      by (smt (verit, ccfv_threshold) "2" \<open>M \<subseteq> G\<close> mem_Collect_eq subset_eq sum.cong)
+    proof (rule sum.cong[OF refl])
+      fix e
+      assume "e \<in> ?comp_out C"
+      hence "e \<in> M" by simp
+      hence "e \<in> G" using \<open>M \<subseteq> G\<close> by blast
+      thus "card e = 2" using "2" by blast
+    qed
     also have "\<dots> = card (?comp_out C) * 2" by simp  
     ultimately show "\<dots> = card (Vs (?comp_out C))" 
       by presburger
