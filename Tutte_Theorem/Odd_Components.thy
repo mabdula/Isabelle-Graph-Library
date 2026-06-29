@@ -1570,9 +1570,19 @@ next
                 qed
                 then have "v \<in> connected_component 
                                 (graph_diff (component_edges (graph_diff G X) C) Y) c"
-                  by (metis \<open>{v, v'} \<in> graph_diff (component_edges (graph_diff G X) C) Y\<close> 
-                      connected_components_member_eq insert_commute 
-                      vertices_edges_in_same_component)
+                proof -
+                  let ?H = "graph_diff (component_edges (graph_diff G X) C) Y"
+                  note v'_in_comp = \<open>v' \<in> connected_component ?H c\<close>
+                  note edge_in_H  = \<open>{v, v'} \<in> graph_diff (component_edges (graph_diff G X) C) Y\<close>
+                  have comp_eq: "connected_component ?H v' = connected_component ?H c"
+                    by (rule connected_components_member_eq[OF v'_in_comp])
+                  have "v \<in> connected_component ?H v'"
+                    using vertices_edges_in_same_component[OF edge_in_H] 
+                          connected_components_member_sym 
+                    by blast
+                  then show ?thesis
+                    using comp_eq by simp
+                qed
                 then show ?case 
                   by (metis \<open>v \<in> C\<close> last_ConsR list.simps(3) path2.hyps(3) path2.prems set_ConsD)
               qed
