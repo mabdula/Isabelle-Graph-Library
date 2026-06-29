@@ -183,8 +183,7 @@ proof -
       by blast
     have 5:"?comp_out_non \<inter> ?comp_out_empty = {}" 
       by blast
-    have 7:"sum (\<lambda> C. card (?comp_out C)) ?comp_out_empty = 0" 
-      by (smt (verit, del_insts) card.empty mem_Collect_eq sum.infinite sum_eq_0_iff)
+    have 7:"sum (\<lambda> C. card (?comp_out C)) ?comp_out_empty = 0"      by (rule sum.neutral, safe, erule ssubst, simp)
     then have "sum (\<lambda> C. card (?comp_out C)) ?QX =
                sum (\<lambda> C. card (?comp_out C)) (?comp_out_non \<union> ?comp_out_empty)" 
       using 6 by auto
