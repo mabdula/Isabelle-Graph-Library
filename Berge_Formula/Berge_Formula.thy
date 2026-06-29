@@ -574,9 +574,26 @@ next
     have "finite (Vs ?H)" 
       using `Vs ?H = Vs G \<union> A`
       by (simp add: assms(1) assms(4))
-    have 1: "graph_invar ?H"  
-      using `finite (Vs ?H)`  assms(1) assms(6)
-      by (smt (verit) Un_iff dblton_graph_def disjoint_iff_not_equal mem_Collect_eq)
+    have 1: "graph_invar ?H"
+    proof -
+      have "dblton_graph ?H"
+        unfolding dblton_graph_def
+      proof
+        fix e assume he: "e \<in> ?H"
+        then have "e \<in> G \<or> e \<in> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}"
+          by simp
+        then show "\<exists>u v. e = {u, v} \<and> u \<noteq> v"
+        proof (elim disjE)
+          assume "e \<in> G"
+          then show ?thesis using assms(1) dblton_graph_def by blast
+        next
+          assume "e \<in> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}"
+          then obtain x y where "e = {x, y}" "x \<in> Vs G" "y \<in> A" by blast
+          then show ?thesis using assms(6) by blast
+        qed
+      qed
+      then show ?thesis using `finite (Vs ?H)` by simp
+    qed
     have "?k \<le> card (Vs G)" 
       by (metis (no_types, lifting) assms(1-2) card_Diff_subset diff_le_self 
           diff_odd_comps_card dual_order.trans finite_subset)
