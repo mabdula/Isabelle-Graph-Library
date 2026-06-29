@@ -459,9 +459,20 @@ proof -
     by (rule vertices_sum_in_components)
   then have "card (\<Union>C \<in> (odd_comps_in_diff G X). C) \<le> card (Vs G - X)" 
     by (simp add: assms card_mono)
-  moreover have "card (\<Union>C \<in> (odd_comps_in_diff G X). C) = (\<Sum>C \<in> (odd_comps_in_diff G X). card C)" 
-    by (smt (verit) assms card_eq_0_iff diff_component_disjoint diff_components_finite 
-        diff_odd_compoenent_has_odd_card odd_card_imp_not_empty sum.cong union_card_is_sum)
+  moreover have "card (\<Union>C \<in> (odd_comps_in_diff G X). C) = (\<Sum>C \<in> (odd_comps_in_diff G X). card C)"
+  proof -
+    let ?I = "odd_comps_in_diff G X"
+    have fin_I: "finite ?I"
+      by (rule diff_components_finite[OF assms])
+    have fin_comps: "\<forall>C \<in> ?I. finite C"
+      by (meson component_in_E finite_subset graph_invar_finite_Vs assms)
+    have disj: "\<forall>C1 \<in> ?I. \<forall>C2 \<in> ?I. C1 \<noteq> C2 \<longrightarrow> C1 \<inter> C2 = {}"
+      by (simp add: diff_component_disjoint)
+    have "card (\<Union> ?I) = sum card ?I"
+      using disj fin_comps fin_I
+      by (simp add: Groups_Big.card_Union_disjoint disjoint_def)
+    then show ?thesis by simp
+  qed
   moreover have "\<forall>C \<in> (odd_comps_in_diff G X). card C \<ge> 1" 
     by (metis One_nat_def Suc_leI card_eq_0_iff card_gt_0_iff diff_odd_compoenent_has_odd_card 
         odd_card_imp_not_empty odd_components_nonempty)
