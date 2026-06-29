@@ -856,9 +856,13 @@ next
               by auto
           qed
           then show "{connected_component (graph_diff ?H Y) a} \<subseteq> 
-                connected_components (graph_diff ?H Y)" 
-            by (metis (no_types, lifting) 10 empty_iff 
-                own_connected_component_unique subset_singleton_iff)
+                connected_components (graph_diff ?H Y)"
+          proof -
+            have "connected_component (graph_diff ?H Y) a 
+                    \<in> connected_components (graph_diff ?H Y)"
+              by (rule Connected_Components.connected_component_in_components[OF 10])
+            then show ?thesis by simp
+          qed
         qed
         have 12:"(odd_components (graph_diff ?H Y)) \<subseteq> connected_components (graph_diff ?H Y)" 
           by (simp add: components_is_union_even_and_odd)
