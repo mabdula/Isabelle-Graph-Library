@@ -627,8 +627,13 @@ next
           using False \<open>Vs (G \<union> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}) = Vs G \<union> A\<close> assms(5) by force
         then obtain v where "v \<in> Vs G" 
           by fastforce
-        have "A \<noteq> {}" 
-          by (metis False assms(5) card.empty order_refl)
+        have "A \<noteq> {}"
+        proof -
+          have "0 < card A"
+            using assms(5) False by simp
+          then show ?thesis
+            using assms(4) by (simp add: card_gt_0_iff)
+        qed
         then obtain a where "a \<in> A" by auto
         then have "{v, a} \<in> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}" 
           using \<open>v \<in> Vs G\<close> by blast
