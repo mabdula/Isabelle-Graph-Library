@@ -2063,7 +2063,13 @@ proof -
         then have "C' \<noteq> C" 
           by blast
         then have "C' \<inter> C = {}"
-          by (metis Diff_iff True assms(3) diff_component_disjoint)
+        proof -
+          have C'_in: "C' \<in> odd_comps_in_diff G X"
+            using True by blast
+          show "C' \<inter> C = {}"
+            using diff_component_disjoint[OF C'_in assms(3)] \<open>C' \<noteq> C\<close>
+            by (simp add: Int_commute)
+        qed
         have C'_odd: "C' \<in> odd_comps_in_diff G X" 
           using True by auto
         have "C' \<noteq> {}" 
