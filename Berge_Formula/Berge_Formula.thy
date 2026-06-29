@@ -823,10 +823,19 @@ next
               using y by blast
             then have "{x, y} \<in> graph_diff ?H Y" 
               using  asmx y  by (simp add: graph_diffI)
-            then show ?thesis 
-              by (metis (no_types, lifting) \<open>{y, a} \<in> graph_diff ?H Y\<close> 
-                  connected_components_member_sym connected_components_member_trans 
-                  vertices_edges_in_same_component)
+            then show ?thesis
+            proof -
+              have hxy: "{y, x} \<in> graph_diff ?H Y"
+                using \<open>{x, y} \<in> graph_diff ?H Y\<close> by (simp add: insert_commute)
+              have hay: "{a, y} \<in> graph_diff ?H Y"
+                using \<open>{y, a} \<in> graph_diff ?H Y\<close> by (simp add: insert_commute)
+              have hx_in: "x \<in> connected_component (graph_diff ?H Y) y"
+                by (rule vertices_edges_in_same_component[OF hxy])
+              moreover have hy_in: "y \<in> connected_component (graph_diff ?H Y) a"
+                by (rule vertices_edges_in_same_component[OF hay])
+              ultimately show ?thesis
+                by (rule connected_components_member_trans)
+            qed
           qed
         qed
         have 11:"connected_components (graph_diff ?H Y) = {connected_component (graph_diff ?H Y) a}"
