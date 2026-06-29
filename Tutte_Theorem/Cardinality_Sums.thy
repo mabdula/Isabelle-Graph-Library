@@ -20,8 +20,15 @@ proof -
     case (insert x F)
       then have "finite (Vs F)" 
       by (meson Vs_subset assms(1) finite_subset insert.prems insert_subset)
-    have "finite (Vs {x})" 
-      by (metis Vs_subset assms(1) insert.prems insert_is_Un le_supE rev_finite_subset)
+    have "finite (Vs {x})"
+    proof -
+      have "{x} \<subseteq> M"
+        using insert.prems by auto
+      hence "Vs {x} \<subseteq> Vs M"
+        by (rule Vs_subset)
+      with assms(1) show ?thesis
+        by (rule rev_finite_subset)
+    qed
     have "matching (insert x F)" 
       by (meson assms(2) insert.prems matching_def subset_eq)
     then have card_sum_hyp: "card (Vs F \<inter> X) = (\<Sum>e\<in>F. card (e \<inter> X))" 
