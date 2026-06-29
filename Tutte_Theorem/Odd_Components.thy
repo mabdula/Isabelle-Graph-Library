@@ -1398,8 +1398,15 @@ proof(cases "C \<in> singl_in_diff G X")
         \<open>singl_in_diff G X - {{x}} = singl_in_diff G (X \<union> {x})\<close>)
 
 
-  have "(component_edges (graph_diff G X) C) = {}" 
-    by (smt (verit, best) assms(1) component_edges_singleton_is_empty graph_invar_diff singl_x(1))
+  have "(component_edges (graph_diff G X) C) = {}"
+  proof -
+    have invar_diff: "graph_invar (graph_diff G X)"
+      by (rule graph_invar_diff[OF assms(1)])
+    have "component_edges (graph_diff G X) {x} = {}"
+      by (rule component_edges_singleton_is_empty[OF invar_diff])
+    then show ?thesis
+      using singl_x(1) by simp
+  qed
   then have "odd_comps_in_diff (component_edges (graph_diff G X) C) Y = {}" 
     by (simp add: empty_graph_odd_components)
 
