@@ -882,8 +882,7 @@ next
 
   finally show ?case
     using \<open>sorted_wrt (<) (Suc n # ns)\<close>
-    by (auto simp: decr_Suc)
-       (metis Suc_lessE decr.simps(2) image_iff)
+    by (auto simp: decr_Suc) (use decr.elims in blast)
 next
   case ("4_1" n ns \<sigma>')
 
