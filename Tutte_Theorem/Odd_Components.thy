@@ -2169,9 +2169,30 @@ proof -
                     unfolding graph_diff_def by blast
                 qed
                 then show ?case 
-                  by (metis \<open>v \<in> connected_component (graph_diff G X) v'\<close> \<open>v \<notin> C\<close> conn_C' 
-                      connected_components_member_eq connected_components_member_sym 
-                      list.set_intros(1) set_ConsD vertices_edges_in_same_component zhyp)
+                proof -
+                  have edge_XY: "{v, v'} \<in> graph_diff G (X \<union> Y)" by fact
+                  have v'_in_C': "v' \<in> C'"
+                    using zhyp by simp
+                  have v'_in_comp_c: "v' \<in> connected_component (graph_diff G X) c"
+                    using v'_in_C' conn_C' by simp
+                  have comp_v'_eq_C': "connected_component (graph_diff G X) v' = C'"
+                    using connected_components_member_eq[OF v'_in_comp_c] conn_C' by simp
+                  have v_in_C': "v \<in> C'"
+                    using \<open>v \<in> connected_component (graph_diff G X) v'\<close> comp_v'_eq_C' by simp
+                  have v'_in_comp_XY: "v' \<in> connected_component (graph_diff G (X \<union> Y)) c"
+                    using zhyp by simp
+                  have v'_in_comp_v: "v' \<in> connected_component (graph_diff G (X \<union> Y)) v"
+                    by (rule vertices_edges_in_same_component[OF edge_XY])
+                  have v_in_comp_v': "v \<in> connected_component (graph_diff G (X \<union> Y)) v'"
+                    by (rule connected_components_member_sym[OF v'_in_comp_v])
+                  have comp_v'_eq_c: "connected_component (graph_diff G (X \<union> Y)) v' =
+                                      connected_component (graph_diff G (X \<union> Y)) c"
+                    by (rule connected_components_member_eq[OF v'_in_comp_XY])
+                  have v_in_comp_c: "v \<in> connected_component (graph_diff G (X \<union> Y)) c"
+                    using v_in_comp_v' comp_v'_eq_c by simp
+                  show ?thesis
+                    using v_in_C' \<open>v \<notin> C\<close> v_in_comp_c zhyp by auto
+                qed
               qed
               then show "x \<in> connected_component (graph_diff G (X \<union> Y)) c" 
                 by (metis list.set_sel(1) p_walk walk_betw_def)
