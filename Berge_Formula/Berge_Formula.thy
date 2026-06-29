@@ -208,7 +208,14 @@ qed
       by (simp add: 10 card_gt_0_iff Suc_leI)  
     then have "sum (\<lambda> C. card (?comp_out C)) ?comp_out_non \<ge> card ?comp_out_non"
       using sum_mono 
-      by (metis (no_types, lifting) card_eq_sum)
+    proof -
+      have "card ?comp_out_non = sum (\<lambda>_. 1 :: nat) ?comp_out_non"
+        by (rule card_eq_sum)
+      also have "\<dots> \<le> sum (\<lambda>C. card (?comp_out C)) ?comp_out_non"
+        by (rule sum_mono)
+           (use \<open>\<forall> C \<in> ?comp_out_non. card(?comp_out C) \<ge> 1\<close> in force)
+      finally show ?thesis .
+    qed
     then have 12: "card X \<ge> card ?comp_out_non" 
       using 9 order_trans by blast
     have "card ?QX = card ?comp_out_empty + card ?comp_out_non"
