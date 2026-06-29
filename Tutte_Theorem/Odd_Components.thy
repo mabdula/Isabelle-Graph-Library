@@ -1410,8 +1410,27 @@ proof(cases "C \<in> singl_in_diff G X")
   then have "odd_comps_in_diff (component_edges (graph_diff G X) C) Y = {}" 
     by (simp add: empty_graph_odd_components)
 
-  then show ?thesis unfolding odd_comps_in_diff_def  
-    by (metis \<open>C = Y\<close> \<open>odd_comps_in_diff G (X \<union> {x}) = odd_comps_in_diff G X - {{x}}\<close> odd_comps_in_diff_def singl_x(1) sup_bot_right)
+  then show ?thesis
+  proof -
+    have empty_comp: "odd_comps_in_diff (component_edges (graph_diff G X) C) Y = {}"
+      by fact
+    have Y_eq: "Y = {x}"
+      using \<open>C = Y\<close> singl_x(1) by simp
+    have XY_eq: "X \<union> Y = X \<union> {x}"
+      using Y_eq by simp
+    have lhs_eq: "odd_comps_in_diff G (X \<union> Y) = odd_comps_in_diff G X - {C}"
+    proof -
+      have "odd_comps_in_diff G (X \<union> Y) = odd_comps_in_diff G (X \<union> {x})"
+        using XY_eq by simp
+      also have "\<dots> = odd_comps_in_diff G X - {{x}}"
+        by (rule \<open>odd_comps_in_diff G (X \<union> {x}) = odd_comps_in_diff G X - {{x}}\<close>)
+      also have "\<dots> = odd_comps_in_diff G X - {C}"
+        using singl_x(1) by simp
+      finally show ?thesis .
+    qed
+    then show ?thesis
+      using empty_comp by simp
+  qed
 next
   case False
   then have "C \<in> odd_components (graph_diff G X)" 
@@ -1430,8 +1449,7 @@ next
         using odd_components_nonempty by blast
       then obtain c where "c \<in> C'" by auto
       then have conn_compC':"connected_component (graph_diff G (X \<union> Y)) c = C'"
-        using odd_comps_in_diff_is_component 
-        by (metis asmC')
+        by (rule odd_comps_in_diff_is_component[OF asmC'])
 
       show "C' \<in> odd_comps_in_diff G X - {C} \<union>
               odd_comps_in_diff (component_edges (graph_diff G X) C) Y"
