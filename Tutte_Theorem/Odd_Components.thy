@@ -1236,8 +1236,21 @@ proof(safe)
     fix e
     assume "e \<in> A"
     obtain C where "C \<in> connected_components A \<and> e \<subseteq> C"
-      using edge_in_component
-      by (metis \<open>e \<in> A\<close> assms dblton_graphE)
+    proof -
+      obtain u v where huv: "e = {u, v}" and "u \<noteq> v"
+        using dblton_graphE assms \<open>e \<in> A\<close> by blast
+      have "{u, v} \<in> A"
+        using huv \<open>e \<in> A\<close> by auto
+      from edge_in_component[OF this] obtain C' where 
+        "C' \<in> connected_components A" and "{u, v} \<subseteq> C'"
+        by blast
+      have "e \<subseteq> C'"
+        using huv \<open>{u, v} \<subseteq> C'\<close> by auto
+      with \<open>C' \<in> connected_components A\<close> have "C' \<in> connected_components A \<and> e \<subseteq> C'"
+        by auto
+      then show ?thesis
+        by (rule that)
+    qed
     then have "e \<in> component_edges A C" unfolding component_edges_def 
       using \<open>e \<in> A\<close> assms
       by blast
