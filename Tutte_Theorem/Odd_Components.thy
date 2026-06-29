@@ -2453,7 +2453,12 @@ proof -
                 then have "v' \<in> C"
                   using \<open>C' \<subseteq> C\<close> by blast
                 then have "C = connected_component (graph_diff G X) c" 
-                  by (metis \<open>C' \<subseteq> C\<close> \<open>c \<in> C'\<close> assms(3) in_mono odd_comps_in_diff_is_component)
+                proof -
+                  have c_in_C: "c \<in> C"
+                    using \<open>c \<in> C'\<close> \<open>C' \<subseteq> C\<close> by blast
+                  show ?thesis
+                    using odd_comps_in_diff_is_component[OF assms(3) c_in_C] by simp
+                qed
                 then have "v' \<in> connected_component (graph_diff G X) c"
                   using \<open>v' \<in> C\<close> by blast
                 then have "v \<in> C" 
