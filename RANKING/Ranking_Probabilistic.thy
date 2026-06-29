@@ -1797,8 +1797,16 @@ next
       by (auto elim: vs_member_elim)
 
     with v bipartite obtain u where u: "{u,v} \<in> online_match G \<pi> \<sigma>" "u \<in> set \<pi>"
-      by (metis bipartite_vertex(2) doubleton_eq_iff graph_invar_G graph_invar_no_edge_no_vertex 
-                graph_abs_online_match offline_subset_vs online_match_edgeE)
+    proof -
+      from e obtain u' v' where uv': "e = {u', v'}" "u' \<in> set \<pi>" "v' \<in> V"
+        by (elim online_match_edgeE)
+      have "u' \<notin> V"
+        using uv'(2) bipartite by (auto dest: bipartite_disjointD)
+      with uv'(1) e(2) v(1) have "v = v'"
+        by auto
+      show ?thesis
+        by (rule that[of u']) (insert uv'(1,2) e(1) `v = v'`, auto)
+    qed
 
     with 2 have "(THE u. {u,v} \<in> online_match G \<pi> \<sigma>) = u" "(THE v. {u,v} \<in> online_match G \<pi> \<sigma>) = v"
       by (auto intro: the_match the_match' dest: matching_if_perm)
