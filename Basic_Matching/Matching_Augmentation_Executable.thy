@@ -258,7 +258,21 @@ proof-
         case 1
         have edges_of_p_split:
             "edges_of_path p = edges_of_path (p1@[a]) @[{a, u},{u, b}]@(edges_of_path (b#p2))"
-          by (metis "1" append_Cons append_Nil edges_of_path.simps(3) edges_of_path_symmetric_split)
+        proof -
+          have list_eq: "p = p1 @ [a,u,b] @ p2"
+            using "1" by simp
+          have split_eq:
+            "edges_of_path (p1 @ [a,u,b] @ p2) =
+             edges_of_path (p1 @ [a]) @ [{a,u}] @ edges_of_path (u # b # p2)"
+            using edges_of_path_symmetric_split[of p1 a u "b#p2"]
+            by simp
+          have expand_eq:
+            "edges_of_path (u # b # p2) = {u, b} # edges_of_path (b # p2)"
+            by (simp add: edges_of_path.simps)
+          show ?thesis
+            using list_eq split_eq expand_eq
+            by (simp add: append_assoc)
+        qed
         hence "({a, u} \<in> \<M> M \<and> {u, b} \<notin> \<M> M) 
                \<or> ({a, u} \<notin> \<M> M \<and> {u, b} \<in> \<M> M) " 
           using assms(2)[simplified edges_of_p_split]
