@@ -1010,11 +1010,41 @@ proof(rule ccontr)
     show ?thesis using len_bound edges_len by linarith
   qed
   ultimately have "hd (edges_of_path p) \<noteq> last (edges_of_path p)"
-    by (metis One_nat_def Suc_1 Suc_le_length_iff distinct.simps(2) last.simps last_in_set le_zero_eq length_0_conv list.sel(1) nat.simps(3))
+  proof -
+    show "hd (edges_of_path p) \<noteq> last (edges_of_path p)"
+    proof (rule notI)
+      assume eq: "hd (edges_of_path p) = last (edges_of_path p)"
+      obtain e es where es_def: "edges_of_path p = e # es"
+        using \<open>2 \<le> length (edges_of_path p)\<close>
+        by (cases "edges_of_path p") simp_all
+      have es_ne: "es \<noteq> []"
+      proof
+        assume "es = []"
+        with es_def have "length (edges_of_path p) = 1" by simp
+        with \<open>2 \<le> length (edges_of_path p)\<close> show False by simp
+      qed
+      have hd_e: "hd (edges_of_path p) = e"
+        by (simp add: es_def)
+      have last_in_es: "last (edges_of_path p) \<in> set es"
+        using es_ne es_def by (simp add: last_ConsR last_in_set)
+      have e_not_in_es: "e \<notin> set es"
+        using \<open>distinct (edges_of_path p)\<close> es_def by simp
+      show False
+        using eq hd_e last_in_es e_not_in_es by simp
+    qed
+  qed
   moreover have "last p \<in> (hd (edges_of_path p))" "last p \<in> (last (edges_of_path p))"
     using cycle
     unfolding odd_cycle_def
-    subgoal by (metis One_nat_def Suc_1 hd_v_in_hd_e linear not_less_eq_eq numeral_3_eq_3)
+    subgoal
+    proof -
+      have cyc: "hd p = last p" using cycle(1) by (rule odd_cycleD)
+      from cycle(1) have "3 \<le> length p" by (simp add: odd_cycleD)
+      then have len2: "2 \<le> length p" by linarith
+      have "hd p \<in> hd (edges_of_path p)"
+        using hd_v_in_hd_e[OF len2] .
+      with cyc show ?thesis by simp
+    qed
     subgoal
       using alternating_list_odd_last cycle(1) cycle(2) inM odd_cycleD(2) by blast
     done
