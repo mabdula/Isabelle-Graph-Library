@@ -520,7 +520,7 @@ next
   proof(cases "card (odd_comps_in_diff G X) - card X \<le> 0")
     case True
     then have "\<forall>Y \<subseteq> Vs G. card (odd_comps_in_diff G Y) - card Y \<le> 0" 
-      by (metis assms(3) bot_nat_0.extremum_uniqueI) 
+      using assms(3) by simp
     then have "\<forall>Y \<subseteq> Vs G. card (odd_comps_in_diff G Y) \<le> card Y" 
       by auto
     then have "tutte_condition G" 
