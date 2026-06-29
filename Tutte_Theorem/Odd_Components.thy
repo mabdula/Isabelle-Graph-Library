@@ -1097,8 +1097,17 @@ proof -
 
         then show ?thesis 
           using assums a1_match a2_match
-          unfolding perfect_matching_def
-          by (smt (verit, ccfv_threshold) IntI \<open>a1 \<noteq> a2\<close> assms(2) vs_member_intro)
+        proof -
+          have hX_sub: "X \<subseteq> a2"       using a2_match by (auto simp: perfect_matching_def)
+          have hXa_sub: "Xa \<subseteq> a1"     using a1_match by (auto simp: perfect_matching_def)
+          have he1_a2: "e1 \<in> a2"      using assums(1) hX_sub by blast
+          have he2_a1: "e2 \<in> a1"      using assums(3) hXa_sub by blast
+          have hxa_Vs_a2: "xa \<in> Vs a2" using vs_member_intro he1_a2 assums(7) by blast
+          have hxa_Vs_a1: "xa \<in> Vs a1" using vs_member_intro he2_a1 assums(8) by blast
+          have hVs_disj: "Vs a1 \<inter> Vs a2 = {}"
+            using assms(2) a1_match a2_match \<open>a1 \<noteq> a2\<close> by blast
+          show ?thesis using hxa_Vs_a1 hxa_Vs_a2 hVs_disj by blast
+        qed
       qed
     }
     then show "e1 \<in> X \<Longrightarrow> X \<in> C \<Longrightarrow> e2 \<in> Xa \<Longrightarrow> Xa \<in> C \<Longrightarrow> x \<in> e2 \<Longrightarrow>
