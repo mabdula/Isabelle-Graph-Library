@@ -1010,7 +1010,20 @@ proof -
   then have matchings_are_diff: "\<forall>a1 \<in> ?Ms.\<forall>a2\<in>?Ms. a1 \<noteq> a2 \<longrightarrow> a1 \<inter> a2 = {}" 
     by force
   have "\<forall>a\<in> ?Ms. \<exists>b\<in> Vs ?Ms. b \<in> a" 
-    by (smt (z3) assms(3) mem_Collect_eq vs_member_intro)
+  proof (rule ballI)
+    fix a
+    assume ha: "a \<in> ?Ms"
+    then obtain g where hg: "g \<in> A" and ha_eq: "a = {M. perfect_matching g M}"
+      by auto
+    obtain M where hM: "perfect_matching g M"
+      using assms(3) hg by blast
+    have hMa: "M \<in> a"
+      using ha_eq hM by simp
+    have hMVs: "M \<in> Vs ?Ms"
+      using vs_member_intro ha hMa by blast
+    show "\<exists>b\<in> Vs ?Ms. b \<in> a"
+      using hMVs hMa by blast
+  qed
   then obtain C where C_sub_Ms:"C\<subseteq> Vs ?Ms \<and> (\<forall>Ms\<in> ?Ms. \<exists>!M\<in>C. M \<in> Ms)"
     using ex_subset_same_elem_card[of ?Ms] matchings_are_diff \<open>finite (Vs ?Ms)\<close> \<open>finite ?Ms\<close> by presburger
   have "\<forall>c \<in> C. matching c"
