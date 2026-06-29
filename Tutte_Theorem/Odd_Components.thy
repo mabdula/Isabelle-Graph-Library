@@ -1336,11 +1336,12 @@ lemma graph_diff_of_empty:
 lemma empty_graph_odd_components:
   shows "odd_comps_in_diff {} X = {}" 
   unfolding odd_comps_in_diff_def
-  apply safe
-   apply(elim odd_componentsE odd_componentE )
-   apply (metis empty_iff graph_diff_of_empty vs_member_elim)
-  apply(elim singl_in_diffE)
-  by (simp add: graph_diff_of_empty)
+proof (rule equals0I)
+  fix C
+  assume "C \<in> odd_components (graph_diff {} X) \<union> singl_in_diff {} X"
+  then show False
+    by (simp add: graph_diff_of_empty vs_member_elim odd_components_def odd_component_def singl_in_diff_def)
+qed
 
 lemma component_edges_singleton_is_empty:
   assumes "graph_invar G" 
@@ -1352,7 +1353,7 @@ lemma component_edges_subset:
   assumes "Y \<subseteq> C"
   shows "component_edges G Y \<subseteq> component_edges G C"
   unfolding component_edges_def
-  by (smt (verit, ccfv_SIG) Collect_mono_iff assms(1) subset_trans)
+  by (auto dest: subsetD[OF assms(1)])
 
 lemma graph_diff_is_contained_in_set:
   assumes "Y \<subseteq> X"
@@ -1374,7 +1375,7 @@ proof(cases "C \<in> singl_in_diff G X")
     using assms(5) assms(4) by blast
 
   then obtain x where singl_x:"C = {x}" "x \<in> Vs G" "x \<notin> X" "x \<notin> Vs (graph_diff G X)"
-    by (metis True singl_in_diffE)
+    using True unfolding singl_in_diff_def by blast
   then have "Y = {x}" 
     by (simp add: \<open>C = Y\<close>)
 
