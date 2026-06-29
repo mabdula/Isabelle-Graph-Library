@@ -25,8 +25,15 @@ lemma sym_diff_subset:
 lemma card_Int_Diff:
   assumes "finite s" "finite t" 
   shows "card (s - t) + card (s \<inter> t) = card s"
-  using assms
-  by (metis add.commute Int_Diff_Un Int_Diff_disjoint card_Un_disjoint finite_Diff finite_Int)
+proof -
+    have fin1: "finite (s - t)" using assms(1) by simp
+    have fin2: "finite (s \<inter> t)" using assms(1) by simp
+    have disj: "(s - t) \<inter> (s \<inter> t) = {}" by auto
+    have union_eq: "(s - t) \<union> (s \<inter> t) = s" by auto
+    have "card ((s - t) \<union> (s \<inter> t)) = card (s - t) + card (s \<inter> t)"
+      by (rule card_Un_disjoint[OF fin1 fin2 disj])
+    with union_eq show ?thesis by simp
+  qed
 
 lemma card_symm_diff:
   assumes "finite s" "finite t" "card (t - s) = card (s \<inter> t)"
