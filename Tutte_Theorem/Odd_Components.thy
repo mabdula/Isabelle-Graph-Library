@@ -2461,10 +2461,20 @@ proof -
                 qed
                 then have "v' \<in> connected_component (graph_diff G X) c"
                   using \<open>v' \<in> C\<close> by blast
-                then have "v \<in> C" 
-                  by (metis \<open>v' \<in> C\<close> \<open>{v, v'} \<in> graph_diff G X\<close> assms(3) 
-                      connected_components_member_sym odd_comps_in_diff_is_component
-                      vertices_edges_in_same_component)
+                then have "v \<in> C"
+                proof -
+                  have v'_in_comp_v: "v' \<in> connected_component (graph_diff G X) v"
+                    by (rule vertices_edges_in_same_component[OF \<open>{v, v'} \<in> graph_diff G X\<close>])
+                  have v_in_comp_v': "v \<in> connected_component (graph_diff G X) v'"
+                    by (rule connected_components_member_sym[OF v'_in_comp_v])
+                  have comp_eq: "connected_component (graph_diff G X) v' =
+                                 connected_component (graph_diff G X) c"
+                    by (rule connected_components_member_eq[OF
+                          \<open>v' \<in> connected_component (graph_diff G X) c\<close>])
+                  show ?thesis
+                    using v_in_comp_v' comp_eq \<open>C = connected_component (graph_diff G X) c\<close>
+                    by simp
+                qed
                 then have "{v, v'} \<subseteq> C" 
                   by (simp add: \<open>v' \<in> C\<close>)
                 then have "{v, v'} \<in> ?C" 
