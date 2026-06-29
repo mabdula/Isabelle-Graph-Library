@@ -1390,7 +1390,19 @@ proof (intro equalityI subsetI IntI CollectI)
       by (auto dest: permutations_of_setD)
   next
     show "\<sigma> ! 0 \<in> Vs G"
-      by (metis card_gt_0_iff length_finite_permutations_of_set finite non_empty nth_mem offline_subset_vs perm permutations_of_setD(1))
+    proof -
+      have len: "length \<sigma> = card V"
+        using perm by (simp add: length_finite_permutations_of_set)
+      hence "0 < length \<sigma>"
+        using finite non_empty by (simp add: card_gt_0_iff)
+      hence mem: "\<sigma> ! 0 \<in> set \<sigma>"
+        by (rule nth_mem)
+      have "set \<sigma> = V"
+        using perm by (simp add: permutations_of_setD(1))
+      with mem have "\<sigma> ! 0 \<in> V" by simp
+      thus "\<sigma> ! 0 \<in> Vs G"
+        by (rule offline_subset_vs)
+    qed
   qed
 qed blast
 
