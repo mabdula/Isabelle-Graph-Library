@@ -273,10 +273,14 @@ proof-
             using list_eq split_eq expand_eq
             by (simp add: append_assoc)
         qed
-        hence "({a, u} \<in> \<M> M \<and> {u, b} \<notin> \<M> M) 
-               \<or> ({a, u} \<notin> \<M> M \<and> {u, b} \<in> \<M> M) " 
-          using assms(2)[simplified edges_of_p_split]
-          by (metis alt_list_adjacent)
+        have "({a, u} \<in> \<M> M \<and> {u, b} \<notin> \<M> M) 
+               \<or> ({a, u} \<notin> \<M> M \<and> {u, b} \<in> \<M> M)"
+        proof -
+          have h: "alt_list (\<lambda>e. e \<notin> \<M> M) (\<lambda>e. e \<in> \<M> M)
+                    (edges_of_path (p1 @ [a]) @ [{a, u}, {u, b}] @ edges_of_path (b # p2))"
+            using assms(2)[simplified edges_of_p_split] by simp
+          show ?thesis using alt_list_adjacent[OF h] by auto
+        qed
         hence "v=a \<or>  v = b" 
           using  symmetric_buddies_unique[OF assms(4) uv_in_M]  
            by (auto simp add: insert_commute)
