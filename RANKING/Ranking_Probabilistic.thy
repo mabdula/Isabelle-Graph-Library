@@ -1969,9 +1969,14 @@ proof -
     by (simp only: sum_gp_strict_Suc)
 
   also have "\<dots> = (\<Sum>s\<le>card V - 1. (1 - 1/(real (card V) + 1))^(s+1)) / card V"
-    using non_empty
-    by (auto simp: ac_simps simp del: finite)
-       (metis (mono_tags, lifting) Suc_pred lessThan_Suc_atMost)
+  proof -
+    have hpos: "0 < card V"
+      using non_empty finite by (simp add: card_gt_0_iff)
+    have hset: "{..<card V} = {..card V - 1}"
+      using hpos by (simp add: lessThan_Suc_atMost[symmetric] Suc_pred)
+    show ?thesis
+      by (auto simp: ac_simps hset simp del: finite)
+  qed
 
   also have "\<dots> \<le> (\<Sum>s\<le>card V - 1. measure_pmf.prob (rank_matched s) {True}) / card V"
     using non_empty finite
