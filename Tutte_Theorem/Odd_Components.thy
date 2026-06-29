@@ -1173,7 +1173,12 @@ proof -
         using hx_Vs_a hVs by blast
     qed
     then show "x \<in> Vs (\<Union> C)" 
-      by (metis Vs_def \<open>c \<in> C \<and> perfect_matching a c\<close> vs_member)
+      proof -
+        have hc: "c \<in> C"
+          using \<open>c \<in> C \<and> perfect_matching a c\<close> by blast
+        show "x \<in> Vs (\<Union> C)"
+          using \<open>x \<in> Vs c\<close> hc unfolding Vs_def by blast
+      qed
   qed (meson Vs_subset \<open>\<Union> C \<subseteq> \<Union> A\<close> subsetD)
   then have "perfect_matching (\<Union> A) (\<Union> C)" 
     by (simp add: \<open>\<Union> C \<subseteq> \<Union> A\<close>  \<open>matching (\<Union> C)\<close> perfect_matchingI)
