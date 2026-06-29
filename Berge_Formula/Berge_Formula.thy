@@ -1075,9 +1075,25 @@ next
      ultimately show "even (card {x} - card (odd_comps_in_diff G {x}))"
        by simp
    qed
-    then have "\<forall>x \<in> (Vs G).card (odd_comps_in_diff G {x}) = 1"
-      by (metis One_nat_def Suc_leI 3 antisym_conv card.empty card.insert dvd_diffD empty_iff
-          finite.emptyI not_less odd_card_imp_not_empty odd_one zero_order(2))
+    have "\<forall>x \<in> (Vs G).card (odd_comps_in_diff G {x}) = 1"
+    proof
+      fix x assume hx: "x \<in> Vs G"
+      have hle: "card (odd_comps_in_diff G {x}) \<le> 1"
+        using 3 hx by simp
+      have heven: "even (1 - card (odd_comps_in_diff G {x}))"
+        using \<open>\<forall>x \<in> Vs G. even (card {x} - card (odd_comps_in_diff G {x}))\<close> hx
+        by simp
+      have hne0: "card (odd_comps_in_diff G {x}) \<noteq> 0"
+      proof
+        assume h0: "card (odd_comps_in_diff G {x}) = 0"
+        have "odd (1 - (0::nat))" by simp
+        moreover from heven h0 have "even (1 - (0::nat))" by simp
+        ultimately show False by simp
+      qed
+      show "card (odd_comps_in_diff G {x}) = 1"
+        using hle hne0 by linarith
+    qed
+
     then have "\<forall>x \<in> (Vs G). barrier G {x}"
       by (metis barrier_def insert_not_empty is_singleton_altdef is_singleton_def)
     then have "\<exists> X \<subseteq> Vs G. barrier G X"
