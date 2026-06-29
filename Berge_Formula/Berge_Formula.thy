@@ -84,8 +84,56 @@ proof -
   have "finite ?QX" 
     by (simp add: assms(1) diff_components_finite)
   have "\<forall> C1 \<in>?QX. \<forall> C2 \<in> ?QX.  C1 \<noteq> C2 \<longrightarrow> ((Vs (?comp_out C1))) \<inter> ((Vs (?comp_out C2))) = {}"
-    by (smt (verit, del_insts) \<open>matching M\<close> diff_component_disjoint odd_comps_in_diff_not_in_X 
-        disjoint_iff_not_equal doubleton_eq_iff matching_unique_match mem_Collect_eq vs_member)
+  proof (intro ballI impI)
+    fix C1 C2
+    assume C1_in: "C1 \<in> ?QX" and C2_in: "C2 \<in> ?QX" and neq: "C1 \<noteq> C2"
+    have disj: "C1 \<inter> C2 = {}"
+      using diff_component_disjoint C1_in C2_in neq by blast
+    show "Vs (?comp_out C1) \<inter> Vs (?comp_out C2) = {}"
+    proof (rule ccontr)
+      assume nonempty: "Vs (?comp_out C1) \<inter> Vs (?comp_out C2) \<noteq> {}"
+      then obtain v where v1: "v \<in> Vs (?comp_out C1)" and v2: "v \<in> Vs (?comp_out C2)"
+        by blast
+      obtain e1 where e1_in: "e1 \<in> ?comp_out C1" and v_e1: "v \<in> e1"
+        using v1 unfolding Vs_def by blast
+      obtain e2 where e2_in: "e2 \<in> ?comp_out C2" and v_e2: "v \<in> e2"
+        using v2 unfolding Vs_def by blast
+      have e1_M: "e1 \<in> M" using e1_in by simp
+      have e2_M: "e2 \<in> M" using e2_in by simp
+      have e1_eq_e2: "e1 = e2"
+      proof (rule ccontr)
+        assume "e1 \<noteq> e2"
+        hence "e1 \<inter> e2 = {}"
+          using \<open>matching M\<close> e1_M e2_M by (auto elim: Matching.matchingE)
+        thus False using v_e1 v_e2 by blast
+      qed
+      obtain x1 y1 where e1_form: "e1 = {x1, y1}" and y1_C1: "y1 \<in> C1" and x1_X: "x1 \<in> X"
+        using e1_in by blast
+      obtain x2 y2 where e2_form: "e2 = {x2, y2}" and y2_C2: "y2 \<in> C2" and x2_X: "x2 \<in> X"
+        using e2_in by blast
+      have y1_nX: "y1 \<notin> X"
+        using odd_comps_in_diff_not_in_X C1_in y1_C1 by blast
+      have y2_nX: "y2 \<notin> X"
+        using odd_comps_in_diff_not_in_X C2_in y2_C2 by blast
+      have sets_eq: "{x1, y1} = {x2, y2}"
+        using e1_form e2_form e1_eq_e2 by simp
+      have "y1 = y2"
+      proof -
+        have "(x1 = x2 \<and> y1 = y2) \<or> (x1 = y2 \<and> y1 = x2)"
+          using sets_eq by (auto simp: doubleton_eq_iff)
+        thus ?thesis
+        proof
+          assume "x1 = x2 \<and> y1 = y2" thus ?thesis by simp
+        next
+          assume cross: "x1 = y2 \<and> y1 = x2"
+          hence "y2 \<in> X" using x1_X by simp
+          thus ?thesis using y2_nX by blast
+        qed
+      qed
+      hence "y1 \<in> C1 \<inter> C2" using y1_C1 y2_C2 by simp
+      thus False using disj by blast
+    qed
+  qed
   then have "\<forall> C1 \<in>?QX. \<forall> C2 \<in> ?QX. 
     C1 \<noteq> C2 \<longrightarrow> ((Vs (?comp_out C1)) \<inter> X) \<inter> ((Vs (?comp_out C2)) \<inter> X) = {}"   
     by blast
