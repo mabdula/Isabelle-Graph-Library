@@ -1722,9 +1722,13 @@ next
           using conn_compC' by presburger
         have "odd (card C')" 
           using asmC' diff_odd_compoenent_has_odd_card by auto
-        have c_in_C: "c \<in> Vs (component_edges (graph_diff G X) C)" 
-          by (smt (verit, ccfv_SIG) \<open>e \<subseteq> C\<close> assms(1) e edge_in_component_edges 
-              graph_invar_diff vs_member)
+        have c_in_C: "c \<in> Vs (component_edges (graph_diff G X) C)"
+        proof -
+          from edge_in_component_edges[OF graph_invar_diff[OF assms(1)] e(1) \<open>e \<subseteq> C\<close>] 
+          have e_in_comp: "e \<in> component_edges (graph_diff G X) C" .
+          show ?thesis
+            using e(2) e_in_comp vs_member_intro by blast
+        qed
         have "c \<notin> Y"
           by (meson \<open>c \<in> C'\<close> asmC' disjoint_iff_not_equal 
               odd_comps_in_diff_not_in_X subsetD sup_ge2)
