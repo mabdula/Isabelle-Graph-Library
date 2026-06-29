@@ -1985,7 +1985,7 @@ proof -
 
   also have "\<dots> = ?L"
     by (subst expected_size_is_sum_of_matched_ranks)
-       (metis (no_types, lifting) One_nat_def Suc_pred card_gt_0_iff lessThan_Suc_atMost local.finite non_empty)
+       (simp add: lessThan_Suc_atMost[symmetric] Suc_pred card_gt_0_iff non_empty local.finite)
 
   finally show ?thesis .
 qed
