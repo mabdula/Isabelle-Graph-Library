@@ -715,10 +715,29 @@ next
         show "{Vs ?H} \<subseteq> connected_components ?H" 
           using 7 by blast
       qed
-      have 13:"odd_comps_in_diff ?H {} = {}" 
-        by (smt (verit) Collect_empty_eq Diff_disjoint Diff_eq_empty_iff graph_diff_empty
-            odd_comps_in_diff_are_components Un_Diff_Int Y_subs 7 \<open>even (card (Vs ?H))\<close>
-            boolean_algebra_cancel.sup0 connected_comp_has_vert connected_components_member_eq)
+      have 13:"odd_comps_in_diff ?H {} = {}"
+      proof -
+        from odd_comps_in_diff_are_components[of ?H "{}"]
+        have "odd_comps_in_diff ?H {} = {C. \<exists>v\<in>Vs ?H - {}. connected_component (graph_diff ?H {}) v = C \<and> odd (card C)}"
+          by simp
+        also have "... = {C. \<exists>v\<in>Vs ?H. connected_component ?H v = C \<and> odd (card C)}"
+          by (simp add: graph_diff_empty [symmetric])
+        also have "... = {}"
+        proof (intro equals0I)
+          fix C
+          assume "C \<in> {C. \<exists>v\<in>Vs ?H. connected_component ?H v = C \<and> odd (card C)}"
+          then obtain v where "v \<in> Vs ?H" and C_eq: "connected_component ?H v = C" and "odd (card C)"
+            by auto
+          moreover have "connected_component ?H v \<in> connected_components ?H"
+            by (rule Connected_Components.connected_component_in_components) fact
+          ultimately have "C \<in> connected_components ?H" by simp
+          then have "C \<in> {Vs ?H}"
+            using \<open>connected_components ?H = {Vs ?H}\<close> by simp
+          then have "C = Vs ?H" by simp
+          with \<open>odd (card C)\<close> \<open>even (card (Vs ?H))\<close> show False by simp
+        qed
+        finally show ?thesis .
+      qed
       have "\<exists>y \<in> Vs G. y \<notin> Y"
       proof(rule ccontr)
         assume "\<not> (\<exists>y\<in>Vs G. y \<notin> Y)" 
