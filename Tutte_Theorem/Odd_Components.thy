@@ -318,9 +318,18 @@ lemma odd_comps_in_diff_is_component:
   assumes "C \<in> (odd_comps_in_diff G X)"
   assumes "x \<in> C"
   shows "connected_component (graph_diff G X) x = C"
-  using singl_in_diff_is_component
-    odd_component_is_component 
-  by (metis assms odd_comps_in_diff_member)
+proof -
+  from assms(1) have "C \<in> odd_components (graph_diff G X) \<or> C \<in> singl_in_diff G X"
+    by (simp add: odd_comps_in_diff_member)
+  then show ?thesis
+  proof
+    assume "C \<in> odd_components (graph_diff G X)"
+    then show ?thesis using assms(2) by (rule odd_component_is_component)
+  next
+    assume "C \<in> singl_in_diff G X"
+    then show ?thesis using assms(2) by (rule singl_in_diff_is_component)
+  qed
+qed
 
 lemma odd_components_nonempty:
   assumes "C \<in> odd_comps_in_diff G X"
