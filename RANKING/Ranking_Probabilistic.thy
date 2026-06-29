@@ -890,7 +890,14 @@ next
     by (intro sorted_strict_last_geq_length) auto
 
   with "4_1" show ?case
-    by (metis add.right_neutral last_in_set leD list.distinct(1) list.size(3))
+  proof -
+    have "last (Suc n # ns) \<in> set (Suc n # ns)"
+      by (simp add: last_in_set)
+    with "4_1" have "last (Suc n # ns) < length (Suc n # ns)"
+      by (simp add: add.right_neutral)
+    with \<open>length (Suc n # ns) \<le> last (Suc n # ns)\<close> show ?thesis
+      by linarith
+  qed
 next
   case ("4_2" ns xs)
   then show ?case
