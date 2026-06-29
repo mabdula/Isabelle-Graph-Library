@@ -2296,12 +2296,23 @@ proof -
               by (simp add: assms(1) edge_subset_component graph_invar_diff)
             then show False
               using assms(1) comp_singl e graph_invar_diff
-              by fastforce 
+              by fastforce          qed
+        have "c \<notin> X \<union> Y"
+        proof (rule notI)
+          assume h: "c \<in> X \<union> Y"
+          have c_notin_X: "c \<notin> X"
+          proof -
+            have "C' \<inter> X = {}"
+              using C'_odd odd_comps_in_diff_not_in_X by blast
+            then show ?thesis
+              using \<open>c \<in> C'\<close> by blast
           qed
-          have "c \<notin> X \<union> Y" 
-            by (metis C'_odd IntI Un_iff \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> assms(4) empty_iff 
-                odd_comps_in_diff_not_in_X subsetD)
-          then have "{c} \<in> singl_in_diff G (X \<union> Y)" 
+          have c_notin_Y: "c \<notin> Y"
+            using \<open>c \<notin> C\<close> assms(4) by blast
+          show False
+            using h c_notin_X c_notin_Y by blast
+        qed
+        then have "{c} \<in> singl_in_diff G (X \<union> Y)" 
             by (meson C'_odd \<open>c \<in> C'\<close> c_notin_diff component_in_E singl_in_diffI subsetD)
           then have "C' \<in> singl_in_diff G (X\<union>Y)" 
             by (simp add: \<open>C' = {c}\<close>)
