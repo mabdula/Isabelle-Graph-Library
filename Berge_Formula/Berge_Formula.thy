@@ -805,8 +805,16 @@ next
             have "{x, a} \<inter> Y = {}" 
               using a asmx by blast
             then show ?thesis
-              by (metis (no_types, lifting) \<open>{x, a} \<in> ?H\<close> graph_diffI insert_commute 
-                  vertices_edges_in_same_component)
+            proof -
+              have hcap: "{x, a} \<inter> Y = {}" 
+                using a asmx by blast
+              have "{x, a} \<in> graph_diff ?H Y"
+                by (rule graph_diffI[OF \<open>{x, a} \<in> ?H\<close> hcap])
+              then have "{a, x} \<in> graph_diff ?H Y"
+                by (simp add: insert_commute)
+              then show ?thesis
+                by (rule vertices_edges_in_same_component)
+            qed
           next
             case False
             then have "x \<in> A" 
