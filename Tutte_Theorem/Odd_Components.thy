@@ -302,7 +302,17 @@ lemma singl_in_diff_is_component:
   assumes "C \<in> singl_in_diff G X"
   assumes "x \<in> C"
   shows "connected_component (graph_diff G X) x = C"
-  by (metis assms connected_components_notE_singletons singletonD singl_in_diff_member)
+proof -
+  from assms(1) obtain v where hv_eq: "C = {v}"
+    and hv_notin_Vs: "v \<notin> Vs (graph_diff G X)"
+    using singl_in_diffE by blast
+  have hx_eq: "x = v"
+    using assms(2) hv_eq singletonD by blast
+  have "connected_component (graph_diff G X) v = {v}"
+    using hv_notin_Vs by (rule connected_components_notE_singletons)
+  then show ?thesis
+    using hx_eq hv_eq by simp
+qed
 
 lemma odd_comps_in_diff_is_component:
   assumes "C \<in> (odd_comps_in_diff G X)"
