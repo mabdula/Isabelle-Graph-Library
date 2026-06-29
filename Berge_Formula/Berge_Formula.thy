@@ -899,8 +899,14 @@ next
         next
           case False
           then show ?thesis
-            by (smt (z3) One_nat_def Y_subs 14 card.empty card.insert finite.emptyI insert_absorb
-                le0 not_less subset_singleton_iff)
+          proof -
+            have h_card_gt: "card Y < card (odd_comps_in_diff ?H Y)"
+              using Y_subs by blast
+            have h_zero: "card (odd_comps_in_diff ?H Y) = 0"
+              using \<open>card (odd_comps_in_diff ?H Y) \<le> 1\<close> False by linarith
+            show ?thesis
+              using h_zero h_card_gt by linarith
+          qed
         qed
       qed
       then have 14:"graph_diff ?H Y = graph_diff G Y" 
