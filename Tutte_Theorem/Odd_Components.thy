@@ -814,8 +814,15 @@ proof -
     by (simp add: assms(2) connected_component_subs_Vs)
   then obtain e where e: "e \<in> G" "x \<in> e" 
     by (meson assms(3) subsetD vs_member_elim)
-  have "e \<subseteq> C" 
-    by (metis assms connected_components_closed' e edge_subset_component)
+  have "e \<subseteq> C"
+  proof -
+    have "e \<subseteq> connected_component G x"
+      by (rule edge_subset_component[OF assms(1) e(1) e(2)])
+    moreover have "connected_component G x = C"
+      using assms(2) assms(3) by (simp add: connected_components_closed'[symmetric])
+    ultimately show ?thesis
+      by simp
+  qed
   then show ?thesis 
     by (meson e that) 
 qed  
