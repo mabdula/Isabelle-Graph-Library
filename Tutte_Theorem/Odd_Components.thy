@@ -147,8 +147,27 @@ lemma singl_in_diffI:
 
 lemma odd_components_inter_singl_empty:
   shows "odd_components (graph_diff G X) \<inter> singl_in_diff G X = {}"
-  apply(auto, elim odd_componentsE singl_in_diffE) 
-  by (metis in_connected_component_in_edges odd_component_def singletonI)
+proof (intro equals0I)
+  fix C
+  assume hboth: "C \<in> odd_components (graph_diff G X) \<inter> singl_in_diff G X"
+  then have hOdd: "C \<in> odd_components (graph_diff G X)"
+       and  hSingl: "C \<in> singl_in_diff G X"
+    by auto
+  from hSingl obtain v where
+    hCv: "C = {v}" and hVs: "v \<notin> Vs (graph_diff G X)"
+    by (auto simp: singl_in_diff_member)
+  from hOdd have hOC: "odd_component (graph_diff G X) C"
+    by (simp add: odd_component_member)
+  obtain w where
+    hw_Vs:   "w \<in> Vs (graph_diff G X)" and
+    hw_comp: "connected_component (graph_diff G X) w = C"
+    using odd_componentOb[OF hOC] by blast
+  have "w \<in> connected_component (graph_diff G X) w"
+    by (rule in_own_connected_component)
+  with hw_comp hCv have "w \<in> {v}" by simp
+  hence "w = v" by simp
+  with hw_Vs hVs show False by simp
+qed
 
 
 lemma odd_components_sum_singletions_is_component:
