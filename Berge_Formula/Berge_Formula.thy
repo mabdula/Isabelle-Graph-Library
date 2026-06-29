@@ -419,7 +419,7 @@ proof (rule SUP_least)
   then have 22:"card (?not_in_M (\<Union>C \<in> ?comp_out_empty. C)) \<le> card (?not_in_M (Vs G))"
     using 17 card_mono by blast
   have 21:"card (?not_in_M (Vs G)) = card (Vs G - Vs M)" 
-    by (metis set_diff_eq) 
+    by (simp add: set_diff_eq) 
   have "card (Vs G - Vs M) = card (Vs G) - card (Vs M)" 
     by (meson Vs_subset \<open>M \<subseteq> G\<close> \<open>finite (Vs M)\<close> card_Diff_subset)
   then have "card ?comp_out_empty + card (Vs M) \<le> card (Vs G)" 
