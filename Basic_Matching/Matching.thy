@@ -678,8 +678,13 @@ proof -
       unfolding neighbours_of_Vs_def by auto
     then have "e = {x, v}" 
       using assms(1) assms(3) by fastforce
-    then have "v \<notin> neighbours_of_Vs M F" 
-      by (metis assms(2) e insert.hyps(2) vertex_not_in_source_then_not_neighbours_of_Vs)
+    then have "v \<notin> neighbours_of_Vs M F"
+    proof -
+      have "{x, v} \<in> M" using e \<open>e = {x, v}\<close> by simp
+      then show ?thesis
+        using assms(2) insert.hyps(2)
+        by (meson vertex_not_in_source_then_not_neighbours_of_Vs)
+    qed
     then have  "neighbours_of_Vs M {x} \<inter> neighbours_of_Vs M F = {}" 
       by (simp add: v)
     then have card_sum_u: "card (neighbours_of_Vs M {x}) + card( neighbours_of_Vs M F) = 
