@@ -753,7 +753,13 @@ next
   next
     case 5
     from \<sigma>_tl \<open>x \<notin> X\<close> \<open>x # xs = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> show ?case
-      by (metis filter.simps(2) list.inject)
+    proof -
+      from \<sigma>_tl have "filter (\<lambda>v. v \<notin> X) \<sigma> = filter (\<lambda>v. v \<notin> X) (x # tl \<sigma>)" by simp
+      also have "... = x # filter (\<lambda>v. v \<notin> X) (tl \<sigma>)" using \<open>x \<notin> X\<close> by auto
+      finally have "x # xs = x # filter (\<lambda>v. v \<notin> X) (tl \<sigma>)"
+        using \<open>x # xs = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> by simp
+      then show ?thesis by simp
+    qed
   qed
 
   note list.map[simp del]
