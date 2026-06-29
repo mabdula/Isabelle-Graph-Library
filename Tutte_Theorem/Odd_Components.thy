@@ -2382,7 +2382,7 @@ proof -
           by (meson C'diffY component_in_E)
         have "Vs ?C \<subseteq> C"
           unfolding component_edges_def 
-          by (smt (verit, ccfv_SIG) mem_Collect_eq subset_eq vs_member)
+          by (auto simp: subset_iff vs_member)
         then have "C' \<subseteq> C" 
           using \<open>C' \<subseteq> Vs ?C\<close> by auto
         have "C' \<inter> Y = {}" 
