@@ -1095,7 +1095,7 @@ next
     qed
 
     then have "\<forall>x \<in> (Vs G). barrier G {x}"
-      by (metis barrier_def insert_not_empty is_singleton_altdef is_singleton_def)
+      by (force simp: barrier_def insert_not_empty)
     then have "\<exists> X \<subseteq> Vs G. barrier G X"
       by (metis False assms(1) dblton_graphE empty_subsetI equals0I insert_subset vs_member_intro) 
     then obtain X' where X':"X' \<subseteq> Vs G \<and> card (odd_comps_in_diff G X') = card X'"
@@ -1104,8 +1104,8 @@ next
       using True diff_is_0_eq' by blast 
     then show ?thesis 
       using \<open>2 * card M = card (Vs G)\<close> assms(4) by force
-  next
-    case False
+    next
+      case False
     have 5:"card (odd_comps_in_diff G X) \<ge> card X" 
       by (meson False le_cases)
     have 4:"Vs ?H = Vs G \<union> A"
