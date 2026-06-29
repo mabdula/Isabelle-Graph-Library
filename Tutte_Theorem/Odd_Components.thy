@@ -1463,8 +1463,15 @@ next
         then obtain e where e: "e \<in> (graph_diff G X)" "c \<in> e"  
           by (meson vs_member_elim)
         then have "e \<subseteq> C"
-          using edge_subset_component[of "(graph_diff G X)" e c]
-          by (metis conn_compC assms(1) graph_invar_diff)
+        proof -
+          have invar_diff: "graph_invar (graph_diff G X)"
+            by (rule graph_invar_diff[OF assms(1)])
+          have "e \<subseteq> connected_component (graph_diff G X) c"
+            using edge_subset_component[of "graph_diff G X" e c] invar_diff e(1) e(2)
+            by blast
+          then show ?thesis
+            using conn_compC by simp
+        qed
         have "C' = connected_component (graph_diff G (X\<union> Y)) c" 
           by (simp add: conn_compC')
 
