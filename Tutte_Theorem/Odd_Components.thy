@@ -923,7 +923,29 @@ proof -
   have "\<forall>a \<in> A. {M. perfect_matching a M} \<subseteq> {a1. a1 \<subseteq> a}" 
     by (simp add: Collect_mono perfect_matching_def)
   then have "\<forall>a \<in> A. finite {M. perfect_matching a M}"
-    by (metis Vs_def \<open>\<forall>a\<in>A. finite (Vs a)\<close> finite_Collect_subsets finite_UnionD finite_subset)
+  proof -
+    note pm_sub_bound = \<open>\<forall>a \<in> A. {M. perfect_matching a M} \<subseteq> {a1. a1 \<subseteq> a}\<close>
+    show ?thesis
+    proof (rule ballI)
+      fix a
+      assume ha: "a \<in> A"
+      have hvsf: "finite (Vs a)"
+        using \<open>\<forall>a \<in> A. finite (Vs a)\<close> ha by blast
+      have ha_pow: "a \<subseteq> Pow (Vs a)"
+      proof (rule subsetI)
+        fix e
+        assume "e \<in> a"
+        then show "e \<in> Pow (Vs a)"
+          unfolding Vs_def by blast
+      qed
+      have haf: "finite a"
+        using ha_pow finite_subset hvsf finite_Pow_iff by blast
+      have hpow: "finite {a1. a1 \<subseteq> a}"
+        using haf finite_Collect_subsets by blast
+      show "finite {M. perfect_matching a M}"
+        using pm_sub_bound ha hpow finite_subset by blast
+    qed
+  qed
   then have "finite (Vs ?Ms)"
     using assms(5)
     by (smt (verit) Vs_def \<open>finite ?Ms\<close> finite_Union mem_Collect_eq)
