@@ -2324,9 +2324,19 @@ proof -
             using C'_odd odd_comps_in_diffE by blast
           then have "odd (card C')" 
             by (simp add: odd_components_def odd_component_def)
-          have "c \<notin> X \<union> Y" 
-            by (metis C'_odd IntI Un_iff \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> assms(4) empty_iff 
-                odd_comps_in_diff_not_in_X subsetD)
+          have "c \<notin> X \<union> Y"
+          proof -
+            have "c \<notin> X"
+            proof -
+              have "C' \<inter> X = {}"
+                using C'_odd odd_comps_in_diff_not_in_X by blast
+              then show ?thesis
+                using \<open>c \<in> C'\<close> by blast
+            qed
+            moreover have "c \<notin> Y"
+              using \<open>c \<notin> C\<close> assms(4) by blast
+            ultimately show ?thesis by blast
+          qed
           have "c \<in> Vs (graph_diff G X)"
             using \<open>C' \<in> odd_components (graph_diff G X)\<close> \<open>c \<in> C'\<close> odd_components_elem_in_E by auto
           then obtain e where e:"c \<in> e \<and> e \<in> graph_diff G X" 
