@@ -767,8 +767,17 @@ next
     by (simp flip: \<open>Suc n # ns = map (index \<sigma>) \<sigma>'\<close> add: map_decr_nns_map_index_tl, subst \<sigma>_tl, simp add: rebuild_tl)
 next
   case ("4_1" n ns \<sigma>')
-  then show ?case
-    by (metis append.right_neutral filter_True filter_empty_conv rebuild.simps(4))
+  have "\<sigma>' = \<sigma>"
+  proof -
+    from \<open>[] = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> have "filter (\<lambda>v. v \<notin> X) \<sigma> = []" by simp
+    then have "\<forall>v\<in>set \<sigma>. v \<in> X" by (simp add: filter_empty_conv)
+    then have "filter (\<lambda>v. v \<in> X) \<sigma> = \<sigma>" by (simp add: filter_True)
+    with \<open>\<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> show ?thesis by simp
+  qed
+  moreover have "map (index \<sigma>) \<sigma> = Suc n # ns"
+    using "4_1" calculation by simp
+  ultimately show ?case
+    by (simp add: rebuild.simps(4) append.right_neutral)
 next
   case ("4_2" ns xs)
   then show ?case
