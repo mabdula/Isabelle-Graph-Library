@@ -1997,8 +1997,21 @@ lemma sum_split:
   assumes "\<Union>(g ` A) = B"
   assumes "\<And>x x'. x \<in> A \<Longrightarrow> x' \<in> A \<Longrightarrow> x \<noteq> x' \<Longrightarrow> g x \<inter> g x' = {}"
   shows "(\<Sum>x\<in>A. (\<Sum>y\<in>g x. f y)) = (\<Sum>y\<in>B. f y)"
-  using assms
-  by (smt (verit, ccfv_SIG) finite_UN sum.UNION_disjoint sum.cong)
+proof -
+  have fin_gx: "\<forall>x\<in>A. finite (g x)"
+  proof
+    fix x assume "x \<in> A"
+    then have "g x \<subseteq> \<Union>(g ` A)" by auto
+    also from assms(3) have "\<Union>(g ` A) = B" by assumption
+    finally have "g x \<subseteq> B" .
+    with assms(2) show "finite (g x)" using finite_subset by blast
+  qed
+  have disj: "\<forall>x\<in>A. \<forall>x'\<in>A. x \<noteq> x' \<longrightarrow> g x \<inter> g x' = {}"
+    using assms(4) by blast
+  have key: "(\<Sum>y\<in>\<Union>(g ` A). f y) = (\<Sum>x\<in>A. \<Sum>y\<in>g x. f y)"
+    using assms(1) fin_gx disj by (rule sum.UNION_disjoint)
+  show ?thesis using key assms(3) by simp
+qed
 
 context wf_ranking
 begin
