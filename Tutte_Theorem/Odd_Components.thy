@@ -439,8 +439,26 @@ lemma odd_comps_in_diff_are_components:
     apply (meson subsetD vs_graph_diff) 
    apply (metis DiffI card_singl_in_diff_is_one odd_one singl_in_diffE 
       singl_in_diff_is_component singletonI)
-  by (metis connected_components_notE_singletons odd_componentI 
-      odd_componentsI singl_in_diffI)
+proof -
+  fix x v
+  assume h1: "connected_component (graph_diff G X) v \<notin> singl_in_diff G X"
+  assume h2: "v \<in> Vs G"
+  assume h3: "v \<notin> X"
+  assume h4: "odd (card (connected_component (graph_diff G X) v))"
+  have v_in_Vs_diff: "v \<in> Vs (graph_diff G X)"
+  proof (rule ccontr)
+    assume v_notin: "v \<notin> Vs (graph_diff G X)"
+    then have cc_is_singl: "connected_component (graph_diff G X) v = {v}"
+      by (rule connected_components_notE_singletons)
+    have "{v} \<in> singl_in_diff G X"
+      using h2 h3 v_notin by (simp add: singl_in_diffI)
+    with h1 show False using cc_is_singl by simp
+  qed
+  have odd_comp: "odd_component (graph_diff G X) (connected_component (graph_diff G X) v)"
+    using h4 v_in_Vs_diff by (rule odd_componentI) simp
+  from odd_comp show "connected_component (graph_diff G X) v \<in> odd_components (graph_diff G X)"
+    by (simp add: odd_components_def)
+qed
 
 
 lemma odd_comps_in_diff_are_componentsOb:
