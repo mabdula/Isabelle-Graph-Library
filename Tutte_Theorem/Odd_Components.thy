@@ -1930,8 +1930,20 @@ proof -
                   using v_in_comp_c zhyps by auto
               qed
             qed
-            then show " x \<in> connected_component (graph_diff G (X)) c" 
-              by (metis list.set_sel(1) p_walk walk_betw_def)
+            show " x \<in> connected_component (graph_diff G (X)) c" 
+            proof -
+              have all_in_p: "\<forall>z\<in>set p. z \<in> connected_component (graph_diff G X) c"
+                using \<open>\<forall>z\<in>set p. z \<in> connected_component (graph_diff G X) c\<close> .
+              have p_nonempty: "p \<noteq> []"
+                using p_walk unfolding walk_betw_def by simp
+              have hd_x: "hd p = x"
+                using p_walk unfolding walk_betw_def by simp
+              have x_in_p: "x \<in> set p"
+                using hd_in_set[OF p_nonempty] hd_x by simp
+              show ?thesis
+                using all_in_p x_in_p by blast
+            qed
+
           qed
         qed
         then have conn_compC: "connected_component (graph_diff G X) c = C'" 
@@ -1952,7 +1964,16 @@ proof -
             then obtain e where e: "c \<in> e \<and> e \<in> (graph_diff G X)" 
               by auto
             then have "e \<subseteq> connected_component (graph_diff G X) c" 
-              by (metis assms(1) edge_subset_component graph_invar_diff)
+            proof -
+              have invar_diff: "graph_invar (graph_diff G X)"
+                by (rule graph_invar_diff[OF assms(1)])
+              have c_in_e: "c \<in> e" using e by simp
+              have e_in_diff: "e \<in> graph_diff G X" using e by simp
+              show "e \<subseteq> connected_component (graph_diff G X) c"
+                using edge_subset_component[of "graph_diff G X" e c]
+                      invar_diff e_in_diff c_in_e
+                by blast
+            qed
             then show False
               using \<open>connected_component (graph_diff G X) c = {c}\<close> assms(1) e graph_invar_diff
               by fastforce
@@ -2141,11 +2162,9 @@ proof -
               case path0
               then show ?case 
                 by auto
-            next
-              case (path1 v)
-              then show ?case 
-                using \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> 
-                by (metis empty_iff empty_set in_own_connected_component last_ConsL set_ConsD)
+            next  case (path1 v)
+  then have "v = c" by simp
+  then show ?case by (simp add: in_own_connected_component)
             next
               case (path2 v v' vs)
               have "last (v' # vs) = c" 
