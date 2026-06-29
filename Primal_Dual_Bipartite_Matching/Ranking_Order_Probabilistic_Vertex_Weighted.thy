@@ -16,8 +16,12 @@ hide_const Finite_Cartesian_Product.vec Finite_Cartesian_Product.vec.vec_nth
 lemma gt_exp_minus_One_ln_gt_minus_One:
   fixes x :: real
   shows "exp(-1) < x \<Longrightarrow> -1 < ln x"
-  by (smt (verit) exp_gt_zero exp_ln ln_ge_iff)
-
+proof -
+  assume "exp (- 1) < x"
+  hence "ln (exp (- 1)) < ln x"
+    using exp_gt_zero[of "- 1"] by (rule ln_strict_mono)
+  thus ?thesis by simp
+qed
 locale wf_vertex_weighted_online_bipartite_matching =
   bipartite_vertex_weighted_matching_lp + bipartite_vertex_priorities +
   fixes \<pi> :: "'a list"
@@ -444,10 +448,17 @@ proof (cases "j \<in> Vs (ranking (weighted_linorder_from_keys L v g Y) (G \<set
       by (auto simp: the_i' the_i'' dest: weights_pos)
   next
     case False
-    with * j_matched j_matched' index_j \<open>j \<in> R\<close> \<open>i \<in> L\<close> show ?thesis
+    then have "1 - exp (- 1) \<le> v i'' * (1 - g (Y i'')) / v i"
+      by simp
+    with weights_pos[OF \<open>i \<in> L\<close>] have "v i * (1 - exp (- 1)) \<le> v i'' * (1 - g (Y i''))"
+      by (auto simp: field_simps)
+    also note *
+    finally have "v i * (1 - exp (- 1)) \<le> v i' * (1 - g (Y i'))" .
+    hence "v i \<le> v i' * (1 - g (Y i')) / (1 - exp (- 1))"
+      using exp_less_one_iff[of "- 1"] by (auto simp: field_simps)
+    with False * j_matched j_matched' index_j \<open>j \<in> R\<close> \<open>i \<in> L\<close> show ?thesis
       unfolding y\<^sub>c_def ropvw_dual_sol_def
-      apply (auto simp: Let_def the_i' the_i'' dest!: leI weights_pos)
-      by (smt (z3) assms(3) divide_nonpos_nonneg divide_pos_pos exp_less_one_iff ln_div ln_less_cancel_iff weight_nonnegI)
+      by (auto simp: Let_def the_i' the_i'' field_simps exp_less_one_iff dest!: weights_pos)
   qed
 next
   case False
@@ -1365,8 +1376,16 @@ proof -
                 by (auto intro: dominance)
 
               with \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close> have "ropvw_dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>) $ Vs_enum i = v i * g y / F"
-                by (auto simp: ropvw_dual_sol_def)
-                   (metis L_enum_less_card Vs_enum_L)+
+              proof -
+                let ?M = "ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>"
+                have "Vs_enum i < card L"
+                  using \<open>i \<in> L\<close> by (simp add: Vs_enum_L L_enum_less_card)
+                moreover have "Vs_enum_inv (Vs_enum i) = i"
+                  using \<open>i \<in> L\<close> by (simp add: Vs_inv_enum_L)
+                ultimately show ?thesis
+                  using \<open>i \<in> Vs ?M\<close> \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close>
+                  by (auto simp: ropvw_dual_sol_def)
+              qed
 
               then show ?thesis
                 by auto
