@@ -441,7 +441,8 @@ proof (rule SUP_least)
   then have "card (Vs M) + card ?QX - card X \<le> card (Vs G)" 
     using 23 by linarith
   then show " 2 * (card M) + card (odd_comps_in_diff G X) - card X \<le> card (Vs G)"
-    by (metis \<open>finite (Vs M)\<close> assms(1) assms(2) dblton_graph_subset matching_vertices_double_size)
+   using matching_vertices_double_size[OF graph_invar_subset[OF assms(1) \<open>M \<subseteq> G\<close>] \<open>matching M\<close>]
+   by linarith
 qed
 
 lemma vertices_sum_in_components:
