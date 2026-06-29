@@ -1060,8 +1060,21 @@ next
         thus ?thesis by simp
       qed
     qed
-    then  have "\<forall>x \<in> (Vs G). even (card {x} - card (odd_comps_in_diff G {x}))"
-      by (metis Int_lower2 2 assms(1,8) diff_odd_component_parity dvd_triv_left insert_subset)
+   have "\<forall>x \<in> (Vs G). even (card {x} - card (odd_comps_in_diff G {x}))"
+   proof (rule ballI)
+     fix x
+     assume hx: "x \<in> Vs G"
+     have hx_sub: "{x} \<subseteq> Vs G"
+       using hx by simp
+     have hle: "card {x} \<ge> card (odd_comps_in_diff G {x})"
+       using 3 hx by simp
+     have "even (card {x} - card (odd_comps_in_diff G {x})) = even (card (Vs G))"
+       by (rule diff_odd_component_parity[OF assms(1) hx_sub hle])
+     moreover have "even (card (Vs G))"
+       using 2 by presburger
+     ultimately show "even (card {x} - card (odd_comps_in_diff G {x}))"
+       by simp
+   qed
     then have "\<forall>x \<in> (Vs G).card (odd_comps_in_diff G {x}) = 1"
       by (metis One_nat_def Suc_leI 3 antisym_conv card.empty card.insert dvd_diffD empty_iff
           finite.emptyI not_less odd_card_imp_not_empty odd_one zero_order(2))
