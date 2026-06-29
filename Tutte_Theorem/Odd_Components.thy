@@ -1830,7 +1830,8 @@ proof -
                 then have "{v, v'} \<inter> (X\<union>Y) = {}" 
                   by (simp add: Int_Un_distrib \<open>{v, v'} \<inter> Y = {}\<close>)
                 then have "{v, v'} \<in> (graph_diff G (X \<union> Y))" 
-                  by (metis (mono_tags, lifting) graph_diff_def mem_Collect_eq path2.hyps(1))
+                  using path2.hyps(1)
+                  unfolding graph_diff_def by blast
                 then have "v \<in> C'" 
                   by (metis conn_compC' connected_components_member_trans insert_commute
                       list.set_intros(1) vertices_edges_in_same_component zhyps)
