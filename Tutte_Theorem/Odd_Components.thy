@@ -2019,7 +2019,13 @@ proof -
                 using \<open>c \<notin> Vs (graph_diff G X)\<close> by blast
             qed
             have "c \<notin> X \<union> Y" 
-              by (metis IntI \<open>c \<in> C'\<close> asmC' empty_iff odd_comps_in_diff_not_in_X)
+            proof
+              assume c_in_XY: "c \<in> X \<union> Y"
+              have disj: "C' \<inter> (X \<union> Y) = {}"
+                using odd_comps_in_diff_not_in_X asmC' by blast
+              then show False
+                using \<open>c \<in> C'\<close> c_in_XY by blast
+            qed
             then have "{c} \<in> singl_in_diff G (X \<union> Y)" 
               unfolding singl_in_diff_def 
               using \<open>c \<in> C'\<close> c_notin_U asmC' component_in_E by fastforce
