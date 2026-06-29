@@ -1122,9 +1122,20 @@ qed
 lemma online_match_edgeE:
   assumes "e \<in> online_match G \<pi> \<sigma>"
   obtains u v where "e = {u,v}" "u \<in> set \<pi>" "v \<in> V" "v \<in> set \<sigma>"
-  using assms bipartite
-  by (smt (verit, best) bipartite_disjointD bipartite_edgeE disjoint_iff_not_equal edges_are_Vs_2
-          online_match_Vs_subset subgraph_online_match)
+proof -
+  have e_in_G: "e \<in> G"
+    using assms by (rule subgraph_online_match)
+  from e_in_G bipartite obtain u v where uv: "u \<in> set \<pi>" "v \<in> V" "e = {u, v}"
+    by (elim bipartite_edgeE) blast
+  have v_in_Vs: "v \<in> Vs (online_match G \<pi> \<sigma>)"
+    using assms uv(3) by (auto intro: edges_are_Vs_2)
+  have "v \<in> set \<pi> \<or> v \<in> set \<sigma>"
+    using v_in_Vs by (rule online_match_Vs_subset)
+  moreover have "v \<notin> set \<pi>"
+    using uv(2) bipartite by (auto dest: bipartite_disjointD)
+  ultimately have v_sigma: "v \<in> set \<sigma>" by blast
+  with uv that show thesis by blast
+qed
 
 lemma bipartite_matching:
   "bipartite M (set \<pi>) V"
