@@ -379,7 +379,24 @@ qed
     using 15 by blast
   have "\<forall> C1 \<in> ?comp_out_empty. \<forall> C2 \<in> ?comp_out_empty. C1 \<noteq> C2 \<longrightarrow> 
         ?not_in_M C1 \<inter> ?not_in_M C2 = {}"
-    by (metis (no_types, lifting) diff_component_disjoint disjoint_iff_not_equal mem_Collect_eq)
+  proof (intro ballI impI)
+    fix C1 C2
+    assume C1_in: "C1 \<in> ?comp_out_empty"
+    assume C2_in: "C2 \<in> ?comp_out_empty"
+    assume neq: "C1 \<noteq> C2"
+    have C1_QX: "C1 \<in> odd_comps_in_diff G X"
+      using C1_in by blast
+    have C2_QX: "C2 \<in> odd_comps_in_diff G X"
+      using C2_in by blast
+    have disj: "C1 \<inter> C2 = {}"
+      using diff_component_disjoint C1_QX C2_QX neq by blast
+    have sub1: "?not_in_M C1 \<subseteq> C1"
+      by blast
+    have sub2: "?not_in_M C2 \<subseteq> C2"
+      by blast
+    show "?not_in_M C1 \<inter> ?not_in_M C2 = {}"
+      using disj sub1 sub2 by blast
+  qed
   then have 18:"sum (\<lambda> C. card (?not_in_M C)) ?comp_out_empty = 
       card  (\<Union>C \<in> ?comp_out_empty. (?not_in_M C))"
     using union_card_is_sum[of ?comp_out_empty ?not_in_M] 
