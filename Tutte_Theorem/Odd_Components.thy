@@ -2126,8 +2126,8 @@ proof -
                   using \<open>last (v' # vs) = c\<close> path2.hyps(3) by blast
                 have "{v, v'} \<in> (graph_diff G X)" 
                   by (simp add: path2.hyps(1))
-                then have "{v, v'} \<inter> X = {}" 
-                  by (metis (mono_tags, lifting) graph_diff_def mem_Collect_eq)
+                then have "{v, v'} \<inter> X = {}"
+                  unfolding graph_diff_def by blast
                 then have v'_conn:"v' \<in> connected_component (graph_diff G X) c" 
                   by (simp add: conn_C' zhyp)
                 then have "v \<in> connected_component (graph_diff G X) v'"
