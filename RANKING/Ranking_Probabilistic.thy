@@ -838,8 +838,13 @@ next
         by (metis distinct.simps(2) permutations_of_setD(2) singletonD)
     next
       case (3 y)
-      with \<sigma>_tl \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
-        by (metis DiffD1 DiffD2 insertI1 permutations_of_setD(1) set_ConsD)
+      from \<open>y \<in> V - {x}\<close> \<open>\<sigma> \<in> permutations_of_set V\<close> \<sigma>_tl show ?case
+        by (simp add: permutations_of_setD(1) \<sigma>_tl)
+
+
+
+    next
+
     next
       case 4
       from \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
