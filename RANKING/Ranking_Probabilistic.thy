@@ -831,7 +831,7 @@ next
     proof (intro permutations_of_setI equalityI subsetI DiffI, goal_cases)
       case (1 y)
       with \<sigma>_nonempty \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
-        by (auto dest: permutations_of_setD list.set_sel)
+        by (auto dest: list.set_sel permutations_of_setD)
     next
       case (2 y)
       with \<sigma>_tl \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
