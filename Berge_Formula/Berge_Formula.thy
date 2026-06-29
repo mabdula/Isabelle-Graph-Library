@@ -660,9 +660,15 @@ next
               using \<open>x \<in> Vs G\<close> `a \<in> A` by blast
             then have "{a, x} \<in> ?H" 
               by blast
-            then show ?thesis 
-              by (metis (no_types, lifting) \<open>{v, a} \<in> ?H\<close> connected_components_member_trans 
-                  vertices_edges_in_same_component)
+            then show ?thesis
+            proof -
+              have "a \<in> connected_component ?H v"
+                by (rule vertices_edges_in_same_component[OF \<open>{v, a} \<in> ?H\<close>])
+              then show ?thesis
+                using connected_components_member_trans[OF
+                  vertices_edges_in_same_component[OF \<open>{a, x} \<in> ?H\<close>]
+                  \<open>a \<in> connected_component ?H v\<close>] by simp
+            qed
           qed
         qed
         have "Vs ?H = connected_component ?H v"
