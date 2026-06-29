@@ -473,9 +473,13 @@ proof -
       by (simp add: Groups_Big.card_Union_disjoint disjoint_def)
     then show ?thesis by simp
   qed
-  moreover have "\<forall>C \<in> (odd_comps_in_diff G X). card C \<ge> 1" 
-    by (metis One_nat_def Suc_leI card_eq_0_iff card_gt_0_iff diff_odd_compoenent_has_odd_card 
-        odd_card_imp_not_empty odd_components_nonempty)
+  moreover have "\<forall>C \<in> (odd_comps_in_diff G X). card C \<ge> 1"
+  proof
+    fix C assume hC: "C \<in> odd_comps_in_diff G X"
+    have "odd (card C)" using hC by (rule diff_odd_compoenent_has_odd_card)
+    hence "0 < card C" by (rule odd_pos)
+    thus "1 \<le> card C" by linarith
+  qed
   moreover then have "(\<Sum>C \<in> (odd_comps_in_diff G X). card C) \<ge> card (odd_comps_in_diff G X)"
     by (metis card_eq_sum sum_mono)
   ultimately show "card (odd_comps_in_diff G X) \<le> card (Vs G - X)" 
