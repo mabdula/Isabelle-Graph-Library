@@ -1689,8 +1689,17 @@ next
               then have "v' \<in> connected_component (graph_diff G (X\<union>Y)) c" 
                 by (simp add: in_c)
               then have "v \<in> connected_component (graph_diff G (X\<union>Y)) c"
-                by (metis \<open>{v, v'} \<in> graph_diff G (X \<union> Y)\<close> connected_components_member_eq 
-                    connected_components_member_sym vertices_edges_in_same_component)
+              proof -
+                have step1: "v' \<in> connected_component (graph_diff G (X \<union> Y)) v"
+                  by (rule vertices_edges_in_same_component[OF \<open>{v, v'} \<in> graph_diff G (X \<union> Y)\<close>])
+                have step2: "v \<in> connected_component (graph_diff G (X \<union> Y)) v'"
+                  by (rule connected_components_member_sym[OF step1])
+                have step3: "connected_component (graph_diff G (X \<union> Y)) v' =
+                             connected_component (graph_diff G (X \<union> Y)) c"
+                  by (rule connected_components_member_eq[OF \<open>v' \<in> connected_component (graph_diff G (X\<union>Y)) c\<close>])
+                show ?thesis
+                  using step2 step3 by simp
+              qed
               then show ?case 
                 using in_c by fastforce
             qed 
