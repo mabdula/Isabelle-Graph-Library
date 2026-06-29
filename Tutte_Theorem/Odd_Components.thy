@@ -1612,7 +1612,19 @@ next
               qed
               then show "x \<in> connected_component 
                           (graph_diff (component_edges (graph_diff G X) C) Y) c"
-                by (metis list.set_sel(1) p_walk walk_betw_def)
+              proof -
+                note all_z =
+                  \<open>\<forall>z\<in>set p. z \<in> C \<and>
+                       z \<in> connected_component
+                             (graph_diff (component_edges (graph_diff G X) C) Y) c\<close>
+                have p_nonempty: "p \<noteq> []"
+                  using p_walk unfolding walk_betw_def by simp
+                have hd_x: "hd p = x"
+                  using p_walk unfolding walk_betw_def by simp
+                have "x \<in> set p"
+                  using hd_in_set[OF p_nonempty] hd_x by simp
+                with all_z show ?thesis by blast
+              qed
             qed
           }
           fix x
