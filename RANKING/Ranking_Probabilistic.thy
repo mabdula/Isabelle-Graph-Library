@@ -704,7 +704,7 @@ next
   next
     case 2
     then show ?case
-      by (metis subseq_filter_left)
+      using subseq_filter_left by simp
   next
     case 3
     then show ?case
@@ -732,11 +732,15 @@ next
     next
       case (2 x)
       with \<sigma>_tl \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
-        by (metis distinct.simps(2) permutations_of_setD(2) singletonD)
+        by (auto dest: permutations_of_setD simp: \<sigma>_tl)
     next
       case (3 x)
-      with \<open>\<sigma> \<in> permutations_of_set V\<close> \<sigma>_tl show ?case
-        by (metis Diff_iff insertI1 permutations_of_setD(1) set_ConsD)
+      then have "x \<in> V" and "x \<noteq> v'" by simp_all
+      moreover from \<open>\<sigma> \<in> permutations_of_set V\<close> have "set \<sigma> = V"
+        by (auto dest: permutations_of_setD)
+      ultimately have "x \<in> set \<sigma>" by simp
+      with \<sigma>_tl have "x \<in> set (v' # tl \<sigma>)" by simp
+      then show ?case using \<open>x \<noteq> v'\<close> by simp
     next
       case 4
       with \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
