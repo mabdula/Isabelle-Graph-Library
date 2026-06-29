@@ -192,7 +192,27 @@ proof (rule ccontr)
       by (meson graph_invar_vertex_edgeE ranking_matchingE)
 
     with assms \<open>{u,v} \<notin> M'\<close> show False
-      by (metis index_eq_index_conv nat_neq_iff ranking_matching_unique_match)    
+    proof -
+      have "v' \<noteq> v"
+        using \<open>{u,v'} \<in> M'\<close> \<open>{u,v} \<notin> M'\<close> by blast
+      have "v' \<in> set \<sigma>"
+        by (rule ranking_matching_bipartite_edges[OF rm_M' \<open>{u,v'} \<in> M'\<close> \<open>u \<in> set \<pi>\<close>])
+      then have "index \<sigma> v' \<noteq> index \<sigma> v"
+        using \<open>v' \<in> set \<sigma>\<close> \<open>v \<in> set \<sigma>\<close> \<open>v' \<noteq> v\<close>
+        by (meson index_eq_index_conv)
+      then have "index \<sigma> v' < index \<sigma> v \<or> index \<sigma> v < index \<sigma> v'"
+        by (simp add: nat_neq_iff)
+      then show False
+      proof
+        assume "index \<sigma> v' < index \<sigma> v"
+        with rm_M rm_M' \<open>{u,v} \<in> M\<close> \<open>{u,v'} \<in> M'\<close>
+        show False by (rule ranking_matching_unique_match)
+      next
+        assume "index \<sigma> v < index \<sigma> v'"
+        with rm_M' rm_M \<open>{u,v'} \<in> M'\<close> \<open>{u,v} \<in> M\<close>
+        show False by (rule ranking_matching_unique_match)
+      qed
+    qed
   next
     case v_matched
     with rm_M' obtain u' where "{u',v} \<in> M'"
