@@ -219,7 +219,21 @@ qed
     then have 12: "card X \<ge> card ?comp_out_non" 
       using 9 order_trans by blast
     have "card ?QX = card ?comp_out_empty + card ?comp_out_non"
-      by (metis (no_types, lifting) \<open>finite ?QX\<close> 5 6 add.commute card_Un_disjoint finite_Un)
+      proof -
+        have sub_non: "?comp_out_non \<subseteq> ?QX" by blast
+        have fin_non: "finite ?comp_out_non"
+          using finite_subset[OF sub_non \<open>finite ?QX\<close>] .
+        have sub_empty: "?comp_out_empty \<subseteq> ?QX" by blast
+        have fin_empty: "finite ?comp_out_empty"
+          using finite_subset[OF sub_empty \<open>finite ?QX\<close>] .
+        have "card ?QX = card (?comp_out_non \<union> ?comp_out_empty)"
+          using 6 by simp
+        also have "\<dots> = card ?comp_out_non + card ?comp_out_empty"
+          using card_Un_disjoint[OF fin_non fin_empty 5] .
+        also have "\<dots> = card ?comp_out_empty + card ?comp_out_non"
+          by (simp add: add.commute)
+        finally show ?thesis .
+      qed
     then have "card ?comp_out_empty < card ?comp_out_empty + card ?comp_out_non - card X"
       using 11 by presburger
     then have "card ?comp_out_non > card X" 
