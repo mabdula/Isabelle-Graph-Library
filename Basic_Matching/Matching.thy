@@ -341,9 +341,33 @@ proof (rule set_eqI)
   qed
 qed
 
-lemma remove_vertex_matching: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> M \<setminus> {u} = M - {{u,v}}"
+lemma remove_vertex_matching:
+  assumes "matching M" and "{u,v} \<in> M"
+  shows "M \<setminus> {u} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
-  by auto (metis empty_iff insert_iff matching_unique_match)+
+proof (rule set_eqI)
+  fix e
+  show "e \<in> {e \<in> M. e \<inter> {u} = {}} \<longleftrightarrow> e \<in> M - {{u, v}}"
+  proof
+    assume "e \<in> {e \<in> M. e \<inter> {u} = {}}"
+    then show "e \<in> M - {{u, v}}"
+      by auto
+  next
+    assume "e \<in> M - {{u, v}}"
+    then have eM: "e \<in> M" and ene: "e \<noteq> {u, v}"
+      by blast+
+    have not_u: "u \<notin> e"
+    proof
+      assume ue: "u \<in> e"
+      have "u \<in> {u, v}" by simp
+      then have "e = {u, v}"
+        using matching_unique_match[OF assms(1) ue _ eM assms(2)] by blast
+      with ene show False by simp
+    qed
+    show "e \<in> {e \<in> M. e \<inter> {u} = {}}"
+      using eM not_u by simp
+  qed
+qed
 
 lemma remove_vertex_matching': "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> M \<setminus> {v} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
