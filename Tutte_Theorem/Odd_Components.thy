@@ -1638,7 +1638,12 @@ next
             case False
             then have "(\<exists>p. walk_betw  (graph_diff (component_edges (graph_diff G X) C) Y) x p c)"
               unfolding connected_component_def 
-              by (metis asm connected_components_member_sym in_con_comp_has_walk)
+              proof -
+                have "c \<in> connected_component (graph_diff (component_edges (graph_diff G X) C) Y) x"
+                  using asm by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
             then obtain p where p_walk:
               "walk_betw  (graph_diff (component_edges (graph_diff G X) C) Y) x p c" 
               by auto
