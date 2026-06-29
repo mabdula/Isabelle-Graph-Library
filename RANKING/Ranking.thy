@@ -1647,7 +1647,35 @@ proof (cases "u \<in> set \<pi>")
     proof (cases uvs)
       case Nil
       with sucsuc show ?thesis
-        by (metis alt_list_step alt_list_zag assms bipartite_disjointD disjoint_iff filter.simps(1) filter.simps(2) sorted_wrt1)
+      proof -
+        have zag_eq: "zag G M u π σ = [u', v]"
+          using sucsuc(3) ‹uvs = []› by simp
+
+        have alt_zag: "alt_list (λx. x ∈ set π) (λx. x ∈ set σ) (zag G M u π σ)"
+          using assms ‹u ∈ set π› by (rule alt_list_zag)
+
+        have alt: "alt_list (λx. x ∈ set π) (λx. x ∈ set σ) [u', v]"
+          using alt_zag zag_eq by simp
+
+        have u'_pi: "u' ∈ set π"
+          using alt by (simp add: alt_list_step)
+
+        have v_sigma: "v ∈ set σ"
+          using alt by (simp add: alt_list_step)
+
+        have disj: "set π ∩ set σ = {}"
+          using bipartite_disjointD assms by blast
+
+        have v_not_pi: "v ∉ set π"
+          using disj v_sigma by auto
+
+        have filter_eq: "[x ← zag G M u π σ. x ∈ set π] = [u']"
+          using zag_eq u'_pi v_not_pi
+          by (simp add: filter.simps)
+
+        show ?thesis
+          unfolding filter_eq by (simp add: sorted_wrt1)
+      qed
     next
       case (Cons u'' vus)      with sucsuc have uvs_zag: "uvs = zag G M u'' π σ"
       proof -
