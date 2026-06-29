@@ -1576,15 +1576,39 @@ next
                   note edge_in_H  = \<open>{v, v'} \<in> graph_diff (component_edges (graph_diff G X) C) Y\<close>
                   have comp_eq: "connected_component ?H v' = connected_component ?H c"
                     by (rule connected_components_member_eq[OF v'_in_comp])
-                  have "v \<in> connected_component ?H v'"
-                    using vertices_edges_in_same_component[OF edge_in_H] 
-                          connected_components_member_sym 
-                    by blast
+                  have "v' \<in> connected_component ?H v"
+                    by (rule vertices_edges_in_same_component[OF edge_in_H])
+                  then have "v \<in> connected_component ?H v'"
+                    by (rule connected_components_member_sym)
                   then show ?thesis
                     using comp_eq by simp
                 qed
-                then show ?case 
-                  by (metis \<open>v \<in> C\<close> last_ConsR list.simps(3) path2.hyps(3) path2.prems set_ConsD)
+                note v_in_comp = this
+                show ?case
+                proof -
+                  have last_vs: "last (v' # vs) = c"
+                    using path2.prems by (simp add: last_ConsR)
+                  with path2.hyps(3) have ih: "\<forall>z \<in> set (v' # vs). z \<in> C \<and>
+                        z \<in> connected_component
+                              (graph_diff (component_edges (graph_diff G X) C) Y) c"
+                    by blast
+                  show ?case
+                  proof (rule ballI)
+                    fix z
+                    assume "z \<in> set (v # v' # vs)"
+                    then consider (head) "z = v" | (tail) "z \<in> set (v' # vs)"
+                      by auto
+                    then show "z \<in> C \<and> z \<in> connected_component
+                                          (graph_diff (component_edges (graph_diff G X) C) Y) c"
+                    proof cases
+                      case head
+                      then show ?thesis using \<open>v \<in> C\<close> v_in_comp by simp
+                    next
+                      case tail
+                      then show ?thesis using ih by blast
+                    qed
+                  qed
+                qed
               qed
               then show "x \<in> connected_component 
                           (graph_diff (component_edges (graph_diff G X) C) Y) c"
