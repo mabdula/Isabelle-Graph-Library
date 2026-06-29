@@ -337,12 +337,35 @@ qed
     using 13 by auto
   have "\<forall>C \<in> ?comp_out_empty.  (?not_in_M C) \<subseteq> C"
     by blast
-  then have 15:"\<forall>C \<in> ?comp_out_empty. finite (?not_in_M C)" 
-    by (metis (no_types, lifting) assms(1) component_in_E finite_subset mem_Collect_eq)
+  then have 15:"\<forall>C \<in> ?comp_out_empty. finite (?not_in_M C)"
+  proof (intro ballI)
+    fix C
+    assume subset_hyp: "\<forall>C \<in> ?comp_out_empty. ?not_in_M C \<subseteq> C"
+    assume C_in: "C \<in> ?comp_out_empty"
+    hence C_in_QX: "C \<in> ?QX"
+      by blast
+    hence "C \<subseteq> Vs G"
+      by (rule component_in_E)
+    moreover have "finite (Vs G)"
+      using assms(1) by (simp add: graph_invar_finite_Vs)
+    ultimately have "finite C"
+      by (rule finite_subset)
+    moreover have "?not_in_M C \<subseteq> C"
+      using subset_hyp C_in by blast
+    from `?not_in_M C \<subseteq> C` `finite C` show "finite (?not_in_M C)"
+      by (rule finite_subset)
+  qed
   then have "\<forall>C \<in> ?comp_out_empty. card (?not_in_M C) \<ge> 1" 
     by (metis (no_types, lifting) One_nat_def Suc_leI 14 card_gt_0_iff)
   then have 20:"sum (\<lambda> C. card (?not_in_M C)) ?comp_out_empty \<ge> card ?comp_out_empty"
-    by (metis (no_types, lifting) card_eq_sum sum_mono)
+  proof -
+    have "card ?comp_out_empty = sum (\<lambda>_. 1 :: nat) ?comp_out_empty"
+      by (rule card_eq_sum)
+    also have "\<dots> \<le> sum (\<lambda> C. card (?not_in_M C)) ?comp_out_empty"
+      by (rule sum_mono)
+         (use \<open>\<forall>C \<in> ?comp_out_empty. card (?not_in_M C) \<ge> 1\<close> in force)
+    finally show ?thesis .
+  qed
   have "finite ?comp_out_empty" 
     using \<open>finite (odd_comps_in_diff G X)\<close> by auto
   have 16:"\<forall>C \<in> ?comp_out_empty. finite (?not_in_M C)" 
