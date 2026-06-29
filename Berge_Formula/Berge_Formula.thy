@@ -422,9 +422,22 @@ proof (rule SUP_least)
     by (simp add: set_diff_eq) 
   have "card (Vs G - Vs M) = card (Vs G) - card (Vs M)" 
     by (meson Vs_subset \<open>M \<subseteq> G\<close> \<open>finite (Vs M)\<close> card_Diff_subset)
-  then have "card ?comp_out_empty + card (Vs M) \<le> card (Vs G)" 
-    by (smt (verit) "18" "19" "20" "21" "22" Vs_subset \<open>M \<subseteq> G\<close> add_diff_cancel_right' assms(1) 
-        card_mono dual_order.trans le_add2 le_diff_iff)
+  then have "card ?comp_out_empty + card (Vs M) \<le> card (Vs G)"
+  proof -
+    assume anon: "card (Vs G - Vs M) = card (Vs G) - card (Vs M)"
+    have h1: "card ?comp_out_empty \<le> sum (\<lambda> C. card (?not_in_M C)) ?comp_out_empty"
+      using "20" by linarith
+    have h2: "sum (\<lambda> C. card (?not_in_M C)) ?comp_out_empty =
+              card (?not_in_M (\<Union>C \<in> ?comp_out_empty. C))"
+      using "18" "19" by simp
+    have h3: "card (?not_in_M (\<Union>C \<in> ?comp_out_empty. C)) \<le> card (Vs G - Vs M)"
+      using "21" "22" by linarith
+    have chain: "card ?comp_out_empty \<le> card (Vs G) - card (Vs M)"
+      using h1 h2 h3 anon by linarith
+    have vsm_bound: "card (Vs M) \<le> card (Vs G)"
+      by (meson Vs_subset \<open>M \<subseteq> G\<close> assms(1) card_mono graph_invar_finite_Vs)
+    show ?thesis using chain vsm_bound by linarith
+  qed
   then have "card (Vs M) + card ?QX - card X \<le> card (Vs G)" 
     using 23 by linarith
   then show " 2 * (card M) + card (odd_comps_in_diff G X) - card X \<le> card (Vs G)"
