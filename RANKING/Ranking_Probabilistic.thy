@@ -1764,7 +1764,18 @@ proof (rule bij_betw_same_card[where f = "\<lambda>u. (THE v. {u,v} \<in> online
       by (auto elim: vs_member_elim)
 
     with u bipartite obtain v where v: "{u,v} \<in> online_match G \<pi> \<sigma>" "v \<in> V"
-      by (metis bipartite_vertex(2) empty_iff insert_iff online_subset_vs online_match_edgeE)
+    proof -
+      from e obtain u' v' where uv': "e = {u', v'}" "u' \<in> set \<pi>" "v' \<in> V"
+        by (elim online_match_edgeE)
+      have "v' \<in> Vs G"
+        using uv'(1) e(1) by (auto intro: edges_are_Vs dest: subgraph_online_match)
+      hence "v' \<notin> set \<pi>"
+        using uv'(3) bipartite by (intro bipartite_vertex(2))
+      with uv'(1) e(2) u(1) have "u = u'"
+        by auto
+      show ?thesis
+        by (rule that[of v']) (insert uv'(1,3) e(1) `u = u'`, auto)
+    qed
 
     with 1 have "(THE v. {u,v} \<in> online_match G \<pi> \<sigma>) = v"
       by (auto intro: the_match' dest: matching_if_perm)
