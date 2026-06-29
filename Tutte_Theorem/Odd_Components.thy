@@ -1289,7 +1289,7 @@ proof -
     fix a1
     assume "a1 \<in> ?E"
     then obtain C1 where "C1 \<in> connected_components A \<and> a1 = component_edges A C1"
-      by (smt (verit) components_edges_def mem_Collect_eq)
+      unfolding components_edges_def by blast
     then have "Vs a1 = C1" 
       by (simp add: assms(1) vs_connected_component)
     show "\<forall>a2\<in>?E. a1 \<noteq> a2 \<longrightarrow> Vs a1 \<inter> Vs a2 = {}" 
