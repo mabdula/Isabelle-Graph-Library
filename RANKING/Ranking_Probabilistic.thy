@@ -1665,9 +1665,18 @@ proof (rule pmf_eqI)
         by (auto intro: the_match_online)
     next
       case (4 x)
+      then have x_set_\<pi>: "x \<in> set \<pi>" and x_cond: "x \<in> {u. i = (u \<in> Vs (online_match G \<pi> \<sigma>) \<and> index \<sigma> (THE v. {u, v} \<in> online_match G \<pi> \<sigma>) \<le> t)}"
+        by auto
+      then have h_cond: "i = (x \<in> Vs (online_match G \<pi> \<sigma>) \<and> index \<sigma> (THE v. {x, v} \<in> online_match G \<pi> \<sigma>) \<le> t)"
+        by auto
+      have hM: "matching M"
+        using perfect_matching by (rule perfect_matchingD(2))
+      have hEdge: "{x, (THE v. {x,v} \<in> M)} \<in> M"
+        using x_set_\<pi> by (rule the_match_online(1))
+      have hKey: "(THE u. {u, (THE v. {x,v} \<in> M)} \<in> M) = x"
+        using hM hEdge by (rule the_match)
       with perfect_matching show ?case
-        by (intro iffI; simp)
-           (metis perfect_matchingD(2) the_match the_match_online(1))+
+        using h_cond by (simp add: hKey)
     next
       case (5 x)
       with perfect_matching show ?case
