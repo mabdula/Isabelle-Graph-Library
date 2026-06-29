@@ -1030,7 +1030,24 @@ next
     then have "perfect_matching G M" 
       by (simp add: assms(1-2) perfect_matchingI)
     have 2:"2 * card M = card (Vs G)"
-      by (metis \<open>Vs M = Vs G\<close> assms(1) assms(2) dblton_graph_subset matching_vertices_double_size)
+    proof -
+      have hM_sub: "M \<subseteq> G"
+        using assms(2) by simp
+      have hM_match: "matching M"
+        using assms(2) by simp
+      have hM_dbl: "dblton_graph M"
+        using dblton_graph_subset assms(1) hM_sub by blast
+      have fin_Vs_G: "finite (Vs G)"
+        using assms(1) by auto
+      have hM_fin: "finite (Vs M)"
+        using fin_Vs_G Vs_subset[OF hM_sub] finite_subset by blast
+      have hM_invar: "graph_invar M"
+        using hM_dbl hM_fin by auto
+      have h_vs: "2 * card M = card (Vs M)"
+        using matching_vertices_double_size hM_invar hM_match by blast
+      show ?thesis
+        using h_vs \<open>Vs M = Vs G\<close> by simp
+    qed
     have 3:"\<forall>x \<in> (Vs G). card {x} \<ge> card (odd_comps_in_diff G {x})"
       by (metis Int_lower2 1 assms(8) insert_subset)
     then  have "\<forall>x \<in> (Vs G). even (card {x} - card (odd_comps_in_diff G {x}))"
