@@ -416,7 +416,7 @@ lemma card_singl_in_diff_is_one:
   assumes "C \<in> singl_in_diff G X"
   shows "card C = 1" 
   using singl_in_diffE[OF assms]
-  by (metis is_singleton_altdef is_singleton_def)
+  by (rule, simp)
 
 lemma diff_odd_compoenent_has_odd_card:
   assumes "C \<in> odd_comps_in_diff G X"
