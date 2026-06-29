@@ -404,7 +404,12 @@ qed
   have 19:"(\<Union>C \<in> ?comp_out_empty. (?not_in_M C)) = (?not_in_M (\<Union>C \<in> ?comp_out_empty. C))"
     by (safe;blast+)
   have "(\<Union>C \<in> ?comp_out_empty. C) \<subseteq> Vs G" 
-    by (metis (mono_tags, lifting) SUP_least mem_Collect_eq component_in_E)
+proof (rule SUP_least)
+    fix C
+    assume "C \<in> ?comp_out_empty"
+    then have "C \<in> ?QX" by blast
+    thus "C \<subseteq> Vs G" by (rule component_in_E)
+  qed
   then have 17:"?not_in_M (\<Union>C \<in> ?comp_out_empty. C) \<subseteq> ?not_in_M (Vs G)" 
     by auto
   have "?not_in_M (Vs G)\<subseteq> Vs G" 
