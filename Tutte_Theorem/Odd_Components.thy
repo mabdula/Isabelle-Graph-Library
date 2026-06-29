@@ -253,8 +253,21 @@ lemma edge_in_E_card:
 lemma component_is_finite:
   assumes "graph_invar G"
   shows "finite (connected_component G v)"
-  by (metis assms connected_component_subset 
-      connected_components_notE_singletons finite.simps finite_subset)
+proof (cases "v \<in> Vs G")
+  case True
+  have sub: "connected_component G v \<subseteq> Vs G"
+    by (rule connected_component_subset[OF True])
+  moreover have "finite (Vs G)"
+    using assms graph_invar_finite_Vs by blast
+  ultimately show ?thesis
+    by (rule finite_subset)
+next
+  case False
+  then have "connected_component G v = {v}"
+    by (rule connected_components_notE_singletons)
+  then show ?thesis
+    by simp
+qed
 
 lemma connected_component_not_singleton:
   assumes "graph_invar G"
