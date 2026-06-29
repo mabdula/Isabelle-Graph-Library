@@ -1048,8 +1048,18 @@ next
       show ?thesis
         using h_vs \<open>Vs M = Vs G\<close> by simp
     qed
-    have 3:"\<forall>x \<in> (Vs G). card {x} \<ge> card (odd_comps_in_diff G {x})"
-      by (metis Int_lower2 1 assms(8) insert_subset)
+    have 3: "\<forall>x \<in> Vs G. card {x} \<ge> card (odd_comps_in_diff G {x})"
+    proof (rule ballI)
+      fix x assume hx: "x \<in> Vs G"
+      have hsub: "{x} \<subseteq> Vs G"
+        using hx by simp
+      show "card {x} \<ge> card (odd_comps_in_diff G {x})"
+      proof -
+        have "card (odd_comps_in_diff G {x}) \<le> card {x}"
+          using 1 hsub by blast
+        thus ?thesis by simp
+      qed
+    qed
     then  have "\<forall>x \<in> (Vs G). even (card {x} - card (odd_comps_in_diff G {x}))"
       by (metis Int_lower2 2 assms(1,8) diff_odd_component_parity dvd_triv_left insert_subset)
     then have "\<forall>x \<in> (Vs G).card (odd_comps_in_diff G {x}) = 1"
