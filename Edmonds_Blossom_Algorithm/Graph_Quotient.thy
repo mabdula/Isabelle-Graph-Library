@@ -1084,65 +1084,9 @@ proof(induction "length p" arbitrary: p rule: nat_less_induct)
       case cons2: (Cons a'' p'')
       then show ?thesis
         using ass cons1
-      proof (cases "p'' = []")
-        case True
-        with cons1 cons2 have "p = [a', a'']"
-          by simp
-        then show ?thesis
-          using assms(2) assms(3) assms(4)
-          by auto
-      next
-        case False
-        then obtain a''' p''' where p''_eq: "p'' = a''' # p'''"
-          by (meson neq_Nil_conv)
-        have p_full: "p = a' # a'' # a''' # p'''"
-          using cons1 cons2 p''_eq by simp
-        from assms(1) p_full
-        have alt_expanded: "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path (a' # a'' # a''' # p'''))"
-          by simp
-        from alt_expanded
-        have "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) ({a', a''} # edges_of_path (a'' # a''' # p'''))"
-          by simp
-        then have edge_first: "{a', a''} \<notin> M"
-            and edge_mid_list: "alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) (edges_of_path (a'' # a''' # p'''))"
-          by (simp_all add: alt_list_step)
-        from edge_mid_list
-        have "alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) ({a'', a'''} # edges_of_path (a''' # p'''))"
-          by simp
-        then have edge_mid_M: "{a'', a'''} \<in> M"
-            and alt_tail: "alt_path M (a''' # p''')"
-          by (simp_all add: alt_list_step)
-        show ?thesis
-        proof (cases "v = a'' \<or> v = a'''")
-          case True
-          moreover have "{a'', a'''} \<in> set (edges_of_path p)"
-            using p_full by auto
-          ultimately show ?thesis
-            using edge_mid_M by auto
-        next
-          case False
-          then have v_ne_a'': "v \<noteq> a''" and v_ne_a''': "v \<noteq> a'''"
-            by simp_all
-          have v_in_tail: "v \<in> set (a''' # p''')"
-            using assms(2) p_full False by auto
-          have v_ne_hd_tail: "v \<noteq> hd (a''' # p''')"
-            by (simp add: v_ne_a''')
-          have v_ne_last_tail: "v \<noteq> last (a''' # p''')"
-            using assms(4) p_full v_ne_a'''
-            by (cases p'''; auto)
-          have len_lt: "length (a''' # p''') < length p"
-            using p_full by simp
-          from ass.hyps[rule_format, OF len_lt refl alt_tail
-                v_in_tail v_ne_hd_tail v_ne_last_tail, simplified]
-          obtain e where "e \<in> set (edges_of_path (a''' # p'''))"
-            and "v \<in> e" and "e \<in> M"
-            by blast
-          moreover have "set (edges_of_path (a''' # p''')) \<subseteq> set (edges_of_path p)"
-            using p_full by auto
-          ultimately show ?thesis
-            by auto
-        qed
-      qed
+        apply (simp add: neq_Nil_conv split: if_splits)
+        apply clarify
+        by (metis Suc_lessD alt_list_step edges_of_path.simps(3) insert_iff lessI list.sel(1) list.simps(15))
     qed
   qed
 qed
