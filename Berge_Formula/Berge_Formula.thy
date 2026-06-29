@@ -153,9 +153,24 @@ proof -
   qed
   then have 8:"sum (\<lambda> C. card (?comp_out C)) ?QX \<le> card X" 
     using 3 by auto
-  then have 10: "\<forall> C \<in> ?QX. finite (?comp_out C)" 
-    unfolding Vs_def 
-    by (metis (no_types, lifting) "4" Vs_def \<open>M \<subseteq> G\<close> assms(1) finite_UnionD finite_subset)
+  then have 10: "\<forall> C \<in> ?QX. finite (?comp_out C)"
+  proof (intro ballI)
+    fix C
+    assume "C \<in> ?QX"
+    have fin_M: "finite M"
+    proof -
+      have "finite (\<Union> M)"
+        using \<open>finite (Vs M)\<close> by (simp add: Vs_def)
+      thus "finite M"
+        by (rule finite_UnionD)
+    qed
+    show "finite (?comp_out C)"
+    proof (rule finite_subset)
+      show "?comp_out C \<subseteq> M" using "4" \<open>C \<in> ?QX\<close> by blast
+    next
+      show "finite M" using fin_M .
+    qed
+  qed
 
   let ?comp_out_empty = "{C. C \<in> ?QX \<and> ?comp_out C = {}}"
   let ?comp_out_non = "{C. C \<in> ?QX \<and> ?comp_out C \<noteq> {}}"
