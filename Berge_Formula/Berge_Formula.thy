@@ -190,7 +190,16 @@ proof -
     have "sum (\<lambda> C. card (?comp_out C)) (?comp_out_non \<union> ?comp_out_empty) = 
           sum (\<lambda> C. card (?comp_out C)) (?comp_out_non) + 
           sum (\<lambda> C. card (?comp_out C)) (?comp_out_empty)"
-      by (metis (no_types, lifting) \<open>finite ?QX\<close> 5 6 finite_Un sum.union_disjoint)
+proof -
+  have sub_non: "?comp_out_non \<subseteq> ?QX" by blast
+  have fin_non: "finite ?comp_out_non"
+    using finite_subset[OF sub_non \<open>finite ?QX\<close>] .
+  have sub_empty: "?comp_out_empty \<subseteq> ?QX" by blast
+  have fin_empty: "finite ?comp_out_empty"
+    using finite_subset[OF sub_empty \<open>finite ?QX\<close>] .
+  show ?thesis
+    using sum.union_disjoint[OF fin_non fin_empty 5] .
+qed
     then have "sum (\<lambda> C. card (?comp_out C)) ?comp_out_non = sum (\<lambda> C. card (?comp_out C)) ?QX"    
       using 7 6 by auto
     then have 9: "sum (\<lambda> C. card (?comp_out C)) ?comp_out_non \<le> card X" 
