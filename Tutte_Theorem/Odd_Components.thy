@@ -2606,9 +2606,26 @@ proof -
               using \<open>connected_component (graph_diff G (X \<union> Y)) c = {c}\<close> 
                 assms(1) e graph_invar_diff by fastforce
           qed
-          have "c \<notin> X \<union> Y" 
-          by (metis Un_iff \<open>C' \<inter> Y = {}\<close> \<open>C' \<subseteq> C\<close> \<open>c \<in> C'\<close> assms(3) 
-              odd_comps_in_diff_not_in_X disjoint_iff_not_equal subset_eq)
+          have "c \<notin> X \<union> Y"
+          proof (rule notI)
+            assume "c \<in> X \<union> Y"
+            then consider (inX) "c \<in> X" | (inY) "c \<in> Y"
+              by blast
+            then show False
+            proof cases
+              case inX
+              have c_in_C: "c \<in> C"
+                using \<open>c \<in> C'\<close> \<open>C' \<subseteq> C\<close> by blast
+              have "C \<inter> X = {}"
+                using odd_comps_in_diff_not_in_X[OF assms(3)] .
+              then show False
+                using c_in_C inX by blast
+            next
+              case inY
+              show False
+                using \<open>c \<in> C'\<close> \<open>C' \<inter> Y = {}\<close> inY by blast
+            qed
+          qed
         then have "{c} \<in> singl_in_diff G (X \<union> Y)" 
           by (meson \<open>C' \<subseteq> C\<close> \<open>c \<in> C'\<close> \<open>c \<notin> Vs (graph_diff G (X \<union> Y))\<close> assms(3) 
               component_in_E singl_in_diffI subsetD)
@@ -2622,9 +2639,20 @@ proof -
             using C'diffY by (simp add: odd_comps_in_diff_def)
           then have "odd (card C')" 
             by (simp add: odd_components_def odd_component_def)
-          have "c \<notin> X \<union> Y" 
-            by (metis UnE \<open>C' \<inter> Y = {}\<close> \<open>C' \<subseteq> C\<close> \<open>c \<in> C'\<close> assms(3) disjoint_iff_not_equal
-                odd_comps_in_diff_not_in_X subset_eq)
+          have "c \<notin> X \<union> Y"
+          proof -
+            have c_notin_Y: "c \<notin> Y"
+              using \<open>C' \<inter> Y = {}\<close> \<open>c \<in> C'\<close> by blast
+            have c_notin_X: "c \<notin> X"
+            proof -
+              have "C \<inter> X = {}"
+                using odd_comps_in_diff_not_in_X assms(3) by blast
+              then show ?thesis
+                using \<open>c \<in> C'\<close> \<open>C' \<subseteq> C\<close> by blast
+            qed
+            show ?thesis
+              using c_notin_X c_notin_Y by blast
+          qed
           have "c \<in> Vs (graph_diff ?C Y)" 
             using False \<open>C' \<subseteq> Vs ?C\<close> \<open>c \<notin> X \<union> Y\<close> conn_diffY 
               connected_components_notE_singletons singl_in_diffI by fastforce
@@ -2632,8 +2660,19 @@ proof -
               by (meson vs_member_elim)
           then have "c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}" 
             by (simp add: graph_diff_def)
-          then have "e \<subseteq> C'"
-            by (metis \<open>graph_invar (component_edges (graph_diff G X) C)\<close> conn_diffY e edge_subset_component graph_invar_diff)
+        then have "e \<subseteq> C'"
+        proof -
+          have invar_diff_CY: "graph_invar (graph_diff (component_edges (graph_diff G X) C) Y)"
+            by (rule graph_invar_diff[OF \<open>graph_invar (component_edges (graph_diff G X) C)\<close>])
+          have e_in_CY: "e \<in> graph_diff (component_edges (graph_diff G X) C) Y"
+            using e by blast
+          have c_in_e: "c \<in> e"
+            using e by blast
+          have "e \<subseteq> connected_component (graph_diff (component_edges (graph_diff G X) C) Y) c"
+            using edge_subset_component[OF invar_diff_CY e_in_CY c_in_e] by blast
+          then show ?thesis
+            using conn_diffY by simp
+        qed
           then have "e \<inter> (X \<union> Y) = {}" 
             by (smt (z3) Int_Un_distrib Int_Un_eq(4) Un_Int_assoc_eq Un_absorb Un_commute \<open>C' \<subseteq> C\<close>
                 \<open>c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}\<close> assms(3) odd_comps_in_diff_not_in_X subset_trans)
