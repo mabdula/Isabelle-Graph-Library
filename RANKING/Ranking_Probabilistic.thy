@@ -745,7 +745,11 @@ next
   next
     case 4
     from \<sigma>_tl \<open>x \<notin> X\<close> \<open>\<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> show ?case
-      by (metis filter.simps(2))
+    proof -
+      from \<sigma>_tl have "filter (\<lambda>v. v \<in> X) \<sigma> = filter (\<lambda>v. v \<in> X) (x # tl \<sigma>)" by simp
+      also have "... = filter (\<lambda>v. v \<in> X) (tl \<sigma>)" using \<open>x \<notin> X\<close> by auto
+      finally show ?thesis using \<open>\<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> by simp
+    qed
   next
     case 5
     from \<sigma>_tl \<open>x \<notin> X\<close> \<open>x # xs = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> show ?case
