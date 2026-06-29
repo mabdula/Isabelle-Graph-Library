@@ -2343,8 +2343,20 @@ proof -
             by (meson vs_member_elim)
           then have e_unfold:"c \<in> e \<and> e \<in> G \<and> e \<inter> X = {}" 
             by (simp add: graph_diff_def)
-          have "e \<subseteq> C'" 
-            by (metis assms(1) conn_C' e edge_subset_component graph_invar_diff)
+          have "e \<subseteq> C'"
+          proof -
+            have invar_diff: "graph_invar (graph_diff G X)"
+              by (rule graph_invar_diff[OF assms(1)])
+            have c_in_e: "c \<in> e"
+              using e by blast
+            have e_in_diff: "e \<in> graph_diff G X"
+              using e by blast
+            have e_sub_comp: "e \<subseteq> connected_component (graph_diff G X) c"
+              using edge_subset_component[of "graph_diff G X" e c] invar_diff e_in_diff c_in_e
+              by blast
+            then show ?thesis
+              using conn_C' by simp
+          qed
           then have "e \<inter> Y = {}" 
             using \<open>C' \<inter> C = {}\<close> assms(4) by blast
           then have "e \<inter> (X \<union> Y) = {}" 
