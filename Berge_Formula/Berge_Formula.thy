@@ -140,8 +140,17 @@ proof -
   then have "card (\<Union>C \<in>?QX. ((Vs (?comp_out C) \<inter> X))) = 
     sum (\<lambda> C. card (Vs (?comp_out C) \<inter> X)) ?QX"
     using union_card_is_sum[of "?QX" ?f] 1 `finite ?QX` by presburger
-  then  have "sum (\<lambda> C. card ((Vs (?comp_out C)) \<inter> X)) ?QX \<le> card X" 
-    by (metis (no_types, lifting) 2 assms(1) assms(3) card_mono finite_subset)
+  then  have "sum (\<lambda> C. card ((Vs (?comp_out C)) \<inter> X)) ?QX \<le> card X"
+  proof -
+    assume eq: "card (\<Union>C \<in> ?QX. Vs (?comp_out C) \<inter> X) =
+      sum (\<lambda> C. card (Vs (?comp_out C) \<inter> X)) ?QX"
+    have finVsG: "finite (Vs G)"
+      using assms(1) by (simp add: graph_invar_finite_Vs)
+    have finX: "finite X"
+      using assms(3) finVsG by (rule finite_subset)
+    show "sum (\<lambda> C. card (Vs (?comp_out C) \<inter> X)) ?QX \<le> card X"
+      using eq card_mono[OF finX 2] by linarith
+  qed
   then have 8:"sum (\<lambda> C. card (?comp_out C)) ?QX \<le> card X" 
     using 3 by auto
   then have 10: "\<forall> C \<in> ?QX. finite (?comp_out C)" 
