@@ -1328,7 +1328,24 @@ next
   case (Cons a' l')
   then show ?case
     apply simp
-    by (metis empty_iff empty_set find_pfx.elims list.distinct(1))
+    proof (intro conjI impI)
+      assume h_empty: "find_pfx Q l' = []"
+      have "l' = []"
+      proof (rule ccontr)
+        assume "l' \<noteq> []"
+        then obtain h l'' where "l' = h # l''" by (cases l') auto
+        with h_empty have "[] = (if Q h then [h] else h # find_pfx Q l'')"
+          by (simp add: find_pfx.simps)
+        then show False by (cases "Q h") auto
+      qed
+      with Cons.prems(1) have "y = a'" by auto
+      with Cons.prems(2) show "Q a'" by auto
+    next
+      assume h_nempty: "find_pfx Q l' \<noteq> []" and h_nQ: "\<not> Q a'"
+      from h_nQ Cons.prems(2) have "y \<noteq> a'" by blast
+      with Cons.prems(1) have "y \<in> set l'" by auto
+      with Cons.prems(2) Cons.IH show "Q (last (find_pfx Q l'))" by blast
+    qed
 qed
 
 lemma find_pfx_works_2:
