@@ -1234,9 +1234,22 @@ proof(induction l1)
 next
   case (Cons a' l1')
   then show ?case
-    apply simp
-    using find_pfx_nempty in_set_conv_decomp
-    by metis
+  proof -
+    have not_a': "\<not> Q a'"
+      using Cons.prems(1) by simp
+    have all_l1': "\<forall>x \<in> set l1'. \<not> Q x"
+      using Cons.prems(1) by simp
+    have IH_inst: "last (find_pfx Q (l1' @ [y])) = y"
+      using Cons.IH all_l1' Cons.prems(2) by blast
+    have mem: "y \<in> set (l1' @ [y])"
+      by simp
+    have nempty: "find_pfx Q (l1' @ [y]) \<noteq> []"
+      using find_pfx_nempty[where l="l1'@[y]"] Cons.prems(2) by auto
+    have expand: "find_pfx Q ((a' # l1') @ [y]) = a' # find_pfx Q (l1' @ [y])"
+      using not_a' by simp
+    show ?case
+      using expand nempty IH_inst by (simp add: last_ConsR)
+  qed
 qed
 
 lemma find_pfx_append:
