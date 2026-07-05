@@ -1,0 +1,8 @@
+session Micali_Vazirani = Graph_Algorithms_Dev +
+  options [timeout = 3600]
+  theories
+    DDFS
+    DFS_Avoid
+    IDFS
+    DDFS_Interpretation
+
