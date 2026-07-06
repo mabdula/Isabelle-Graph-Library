@@ -1,571 +1,527 @@
 theory IDFS
-  imports DFS_Avoid DDFS
+  imports DFS_Avoid DDFS iq.iq
 begin
 
-text \<open>The incremental DFS assumed by the DDFS development, realised by the skeleton instance
-\<^locale>\<open>DFS_avoid\<close> instantiated with plain HOL sets and function maps. This theory bridges
-the two vocabularies (DDFS's \<^term>\<open>DDFS.dpath\<close> versus the library's \<^term>\<open>Vwalk.vwalk\<close>),
-defines the function \<^term>\<open>IDFS\<close>, and exports the DDFS-facing properties.\<close>
+text \<open>The incremental DFS assumed by the DDFS development, stated ops-generically over the
+executable ADT (\<^locale>\<open>Pair_Graph_Specs\<close> + \<^locale>\<open>Set2\<close>), so that the very same
+witness realises the DDFS interface under any backend --- plain sets (mathematical reading)
+or RBTs (executable reading, see DDFS_Example.thy). The engine is \<^locale>\<open>DFS_avoid\<close>
+itself an instance of \<^locale>\<open>DFS_skel\<close>; this theory wraps it, bridges the DDFS
+vocabulary (\<^term>\<open>dpath\<close> \<equiv> \<^term>\<open>Vwalk.vwalk\<close>) and exports the DDFS-facing clauses
+verbatim.\<close>
 
-section \<open>Plain-set instantiation of the ADT-based avoid-DFS\<close>
+section \<open>Ops-generic witness locale\<close>
 
-definition mk_adjmap :: "('a \<times> 'a) set \<Rightarrow> ('a \<Rightarrow> 'a set option)" where
-  "mk_adjmap dG = (\<lambda>v. if \<exists>u. (v, u) \<in> dG then Some {u. (v, u) \<in> dG} else None)"
-
-global_interpretation set_avoid: DFS_avoid
-  where update = "\<lambda>k v m. m(k \<mapsto> v)" and adjmap_inv = "\<lambda>_. True"
-    and vset_empty = "{}" and vset_delete = "\<lambda>x S. S - {x}" and vset_inv = "\<lambda>_. True"
-    and empty = "\<lambda>_. None" and delete = "\<lambda>k m. m(k := None)" and lookup = id
-    and insert = Set.insert and isin = "\<lambda>S x. x \<in> S" and t_set = id
-    and sel = "\<lambda>S. SOME x. x \<in> S"
-    and union = "(\<union>)" and inter = "(\<inter>)" and diff = "(-)"
-    and G = "mk_adjmap dG" and stack0 = p0 and vis0 = V0 and avoid = A0
-    and Pv = P and level = lev
-  for dG :: "('a \<times> 'a) set" and p0 :: "'a list" and V0 A0 :: "'a set" and P :: "'a \<Rightarrow> bool"
-    and lev :: "'a \<Rightarrow> nat"
-  defines set_final = set_avoid.avoid_final_state
-  by unfold_locales (auto simp: some_in_eq)
-
-lemma digraph_abs_mk_adjmap: "set_avoid.Graph.digraph_abs (mk_adjmap dG) = dG"
-  by (auto simp: set_avoid.Graph.digraph_abs_def set_avoid.Graph.neighbourhood_def
-                 mk_adjmap_def split: if_splits)
-
-section \<open>The incremental DFS\<close>
-
-text \<open>The head of the given stack is checked against the avoid and visited sets and dropped
-if it lies in either (the algorithm backtracks over it); this matches the comment in the
-DDFS locale. The avoid and visited sets are restricted to the graph's vertices before
-seeding the search state.\<close>
-
-definition IDFS_stack0 :: "'a set \<Rightarrow> 'a set \<Rightarrow> 'a list \<Rightarrow> 'a list" where
-  "IDFS_stack0 A V q = (if q \<noteq> [] \<and> hd q \<in> A \<union> V then tl q else q)"
-
-definition IDFS ::
-  "('a \<times> 'a) set \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> 'a set \<Rightarrow> 'a list \<Rightarrow> 'a set \<Rightarrow> ('a list option \<times> 'a set)"
-  where "IDFS dG Pr A q V =
-    (let st = set_final dG (IDFS_stack0 A V q)
-                (V \<inter> Pair_Graph.dVs dG) (A \<inter> Pair_Graph.dVs dG) Pr
-     in (DFS_avoid_state.ret st, V \<union> DFS_avoid_state.visited st))"
-
-section \<open>DDFS-facing properties\<close>
-
-text \<open>The properties assumed of IDFS by the DDFS locale, under the necessary premises:
-the digraph is layered and finite, the given stack is (the reverse of) a distinct path,
-and the previously visited set is sound (no P-vertex, and its onward walks to P-vertices
-cross the avoid set — the precondition that is commented out in DDFS.tex).\<close>
-
-context
-  fixes dG :: "('a \<times> 'a) set" and lev :: "'a \<Rightarrow> nat" and P :: "'a \<Rightarrow> bool"
-  assumes layered: "\<And>u v. (u, v) \<in> dG \<Longrightarrow> lev v < lev u"
-      and fin: "finite (dVs dG)"
+locale IDFS_witness =
+  Graph: Pair_Graph_Specs where lookup = lookup +
+  set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
+for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
+fixes G :: "'adjmap" and lev :: "'v \<Rightarrow> nat"
+  assumes wf_graph: "Graph.graph_inv G" "Graph.finite_graph G" "Graph.finite_vsets G"
+      and L1: "(v, v') \<in> Graph.digraph_abs G \<Longrightarrow> lev v' < lev v"
+      and L2: "finite (dVs (Graph.digraph_abs G))"
+      and L3: "v \<in> dVs (Graph.digraph_abs G) \<Longrightarrow>
+               \<exists>p v'. p \<noteq> [] \<and> dpath_bet (Graph.digraph_abs G) p v v' \<and> lev v' = 0"
 begin
 
-text \<open>IDFS_vis_works(3): visited monotone — proved directly, no path premise needed.\<close>
+(* abbreviation "dG \<equiv> Graph.digraph_abs G" -- removed to avoid clash with DDFS's identical abbreviation *)
 
-theorem IDFS_vis_works_4:
-  fixes avoid visited :: "'a set" and p :: "'a list"
-  assumes "IDFS dG P avoid p visited = (ret_p, visited')"
-  shows "visited \<subseteq> visited'"
-  using assms by (auto simp: IDFS_def Let_def)
+text \<open>Head of the given stack is checked against the avoid and visited sets (via the Set2
+isin operation) and dropped if it lies in either --- the algorithm backtracks over it,
+matching the DDFS locale comment. Under IDFS_pre the inputs are already subset of dVs of the
+digraph, so no intersection with dVs restriction is needed before seeding: the engine's vis0
+equals the input visited and the final visited slot already contains the input visited.\<close>
+
+definition "IDFS_stack0 avoid vis p =
+   (if p \<noteq> [] \<and> (isin avoid (hd p) \<or> isin vis (hd p)) then tl p else p)"
+
+text \<open>The DDFS-facing IDFS, wrapper over \<^term>\<open>DFS_avoid.avoid_final_state\<close> at the same
+ops. Returns the result slot and the final visited slot (which is monotone in the input
+visited, by the lemma DFS_avoid_vis_mono from the DFS_avoid locale).\<close>
+
+definition "IDFS_impl P avoid p vis =
+   (let st = DFS_avoid.avoid_final_state
+        insert isin sel vset_empty union diff lookup
+        G (IDFS_stack0 avoid vis p) vis avoid P
+    in (DFS_avoid_state.ret st, DFS_avoid_state.visited st))"
+
+section \<open>DDFS-facing properties (ops-generic)\<close>
+
+text \<open>The witness suite, stated verbatim as the DDFS locale clauses with the input
+precondition IDFS_pre avoid visited (see DDFS.thy). The proofs specialise
+DFS_avoid_thms at the SAME ops for the specific call (stack0 / vis0 / avoid /
+Pv) and push the already-ops-generic DFS_avoid exports through; no t_set = id
+collapse is needed (the boundary is cleaner than the former plain-set version).\<close>
 
 context
-  fixes avoid visited :: "'a set" and p :: "'a list"
-  assumes p_path: "dpath dG (rev p)"
+  fixes P :: "'v \<Rightarrow> bool" and avoid vis :: "'vset" and p :: "'v list"
+  assumes p_path: "dpath (Graph.digraph_abs G) (rev p)"
       and p_dist: "distinct p"
+      and av_inv:  "vset_inv avoid" "vset_inv vis"
+      and av_dVs:  "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)" "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
 begin
 
-text \<open>Internal note: this inner context supplies the path/distinctness premises
-needed for the DFS-avoid interpretation (set_axioms). As a result, theorems proved
-here carry \<open>dpath dG (rev p)\<close> and \<open>distinct p\<close> as per-theorem exports. This
-exactly matches the DDFS locale clauses for IDFS_closed and IDFS_sound(1,2); for
-IDFS_vis_works(1..4), IDFS_complete and IDFS_sound(3..8) the DDFS clauses have
-no such premise — those theorems carry extra premises here because the DFS
-correctness argument currently requires a valid initial stack. In Phase 2 the DDFS
-instantiation can discharge these extra premises via its stack-path invariants.\<close>
+text \<open>The four input preconditions above are the expansion of IDFS_pre avoid
+vis (defined in the DDFS locale). They are stated directly
+here rather than as IDFS_pre avoid vis because IDFS_witness is
+NOT a sublocale of DDFS (the inheritance goes the other way:
+DDFS_layered = IDFS_witness and DDFS_layered \<subseteq> DDFS), so
+IDFS_pre is out of scope inside IDFS_witness. The capstone sublocale
+(Edit 4) bridges the two: each DDFS clause carries IDFS_pre avoid visited (one
+premise); the matching show unfolds it to these four conjuncts via
+IDFS_pre_def and applies the suite theorem.\<close>
 
-lemma dabs: "set_avoid.Graph.digraph_abs (mk_adjmap dG) = dG"
-  by (auto simp: set_avoid.Graph.digraph_abs_def set_avoid.Graph.neighbourhood_def
-                 mk_adjmap_def split: if_splits)
+lemma pre_inv: "vset_inv avoid" "vset_inv vis"
+  and pre_dVs: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)" "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+  using av_inv av_dVs by auto
 
-lemma p_dVs: "set p \<subseteq> Pair_Graph.dVs dG"
-proof -
-  have "Vwalk.vwalk dG (rev p)"
-    using p_path by simp
-  then show ?thesis
-    using vwalk_then_in_dVs[of dG "rev p"] by auto
-qed
+text \<open>Stack0 case lemma (ops-generic; list-level, so identical to the plain-set form).\<close>
 
-lemma stack0_cases:
-  "(IDFS_stack0 avoid visited p = p \<and> (p = [] \<or> hd p \<notin> avoid \<union> visited)) \<or>
-   (IDFS_stack0 avoid visited p = tl p \<and> p \<noteq> [] \<and> hd p \<in> avoid \<union> visited)"
-  by (auto simp: IDFS_stack0_def)
+lemma IDFS_stack0_cases:
+  "(IDFS_stack0 avoid vis p = p \<and> (p = [] \<or> hd p \<notin> t_set avoid \<union> t_set vis)) \<or>
+   (IDFS_stack0 avoid vis p = tl p \<and> p \<noteq> [] \<and> hd p \<in> t_set avoid \<union> t_set vis)"
+  using pre_inv
+  unfolding IDFS_stack0_def
+  by (cases p)
+     (auto simp: Graph.vset.set.set_isin)
 
-lemma stack0_sub_p: "set (IDFS_stack0 avoid visited p) \<subseteq> set p"
-  using stack0_cases by (cases p) auto
+text \<open>Two-step interpretation (mirror DFS_Reach_Skel.thy): first av: DFS_avoid
+(base --- no axioms; gives av.avoid_final_state, av.DFS_avoid_axioms as a
+definition), then av: DFS_avoid_thms (with the axioms fact; gives the exports).\<close>
 
-lemma set_axioms:
-  "set_avoid.DFS_avoid_axioms TYPE('a) dG (IDFS_stack0 avoid visited p)
-     (visited \<inter> Pair_Graph.dVs dG) (avoid \<inter> Pair_Graph.dVs dG) lev"
-  unfolding set_avoid.DFS_avoid_axioms_def
+interpretation av: DFS_avoid
+  where lookup = lookup and update = update and adjmap_inv = adjmap_inv
+    and vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
+    and empty = empty and delete = delete and insert = insert and isin = isin
+    and t_set = t_set and sel = sel
+    and union = union and inter = inter and diff = diff
+    and G = G and stack0 = "IDFS_stack0 avoid vis p"
+    and vis0 = vis and avoid = avoid and Pv = P and level = lev
+  by unfold_locales
+
+abbreviation "Rst \<equiv> av.avoid_final_state"
+
+lemma av_axioms: av.DFS_avoid_axioms
+  unfolding av.DFS_avoid_axioms_def
 proof (intro conjI)
-  show "set_avoid.Graph.graph_inv (mk_adjmap dG)"
-    by (simp add: set_avoid.Graph.graph_inv_def)
-  show "set_avoid.Graph.finite_graph (mk_adjmap dG)"
+  show "Graph.graph_inv G" "Graph.finite_graph G" "Graph.finite_vsets G"
+    using wf_graph by auto
+  show "vset_inv avoid" "vset_inv vis"
+    using pre_inv by auto
+  show "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)" "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+    using pre_dVs by auto
+  show "Vwalk.vwalk (Graph.digraph_abs G) (rev (IDFS_stack0 avoid vis p))"
   proof -
-    have "{v. mk_adjmap dG v \<noteq> None} \<subseteq> Pair_Graph.dVs dG"
-      by (auto simp: mk_adjmap_def Pair_Graph.dVs_def split: if_splits)
-    then have "finite {v. mk_adjmap dG v \<noteq> None}"
-      using fin by (auto intro: finite_subset)
-    then show ?thesis
-      by (simp add: set_avoid.Graph.finite_graph_def)
-  qed
-  show "set_avoid.Graph.finite_vsets (mk_adjmap dG)"
-  proof (rule set_avoid.Graph.finite_vsetsI)
-    fix v N assume "id (mk_adjmap dG) v = Some N"
-    then have "N \<subseteq> Pair_Graph.dVs dG"
-      by (auto simp: mk_adjmap_def Pair_Graph.dVs_def split: if_splits)
-    then have "finite N"
-      using fin by (auto intro: finite_subset)
-    then show "finite (id N)"
-      by simp
-  qed
-  show "(\<lambda>_. True) (avoid \<inter> Pair_Graph.dVs dG)" "(\<lambda>_. True) (visited \<inter> Pair_Graph.dVs dG)"
-    by simp_all
-  show "id (avoid \<inter> Pair_Graph.dVs dG)
-          \<subseteq> Pair_Graph.dVs (set_avoid.Graph.digraph_abs (mk_adjmap dG))"
-       "id (visited \<inter> Pair_Graph.dVs dG)
-          \<subseteq> Pair_Graph.dVs (set_avoid.Graph.digraph_abs (mk_adjmap dG))"
-    by (auto simp: dabs)
-  show "Vwalk.vwalk (set_avoid.Graph.digraph_abs (mk_adjmap dG))
-          (rev (IDFS_stack0 avoid visited p))"
-  proof -
-    have w: "Vwalk.vwalk dG (rev p)"
-      using p_path by simp
+    have w: "Vwalk.vwalk (Graph.digraph_abs G) (rev p)" using p_path by simp
     show ?thesis
-    proof (cases "IDFS_stack0 avoid visited p = p")
-      case True
-      then show ?thesis using w by (simp add: dabs)
+    proof (cases "IDFS_stack0 avoid vis p = p")
+      case True thus ?thesis using w by simp
     next
       case False
-      then have s: "IDFS_stack0 avoid visited p = tl p" and ne: "p \<noteq> []"
-        using stack0_cases by auto
-      have "rev p = rev (tl p) @ [hd p]"
-        using ne by (cases p) auto
-      then have "Vwalk.vwalk dG (rev (tl p))"
-        using w append_vwalk_pref by fastforce
-      then show ?thesis using s by (simp add: dabs)
+      hence s: "IDFS_stack0 avoid vis p = tl p" and ne: "p \<noteq> []"
+        using IDFS_stack0_cases by auto
+      have "rev p = rev (tl p) @ [hd p]" using ne by (cases p) auto
+      hence "Vwalk.vwalk (Graph.digraph_abs G) (rev (tl p))" using w append_vwalk_pref by fastforce
+      thus ?thesis using s by simp
     qed
   qed
-  show "distinct (IDFS_stack0 avoid visited p)"
-    using p_dist stack0_cases distinct_tl sorry
-  show "\<forall>u v. (u, v) \<in> set_avoid.Graph.digraph_abs (mk_adjmap dG) \<longrightarrow> lev v < lev u"
-    using layered by (simp add: dabs)
+  show "distinct (IDFS_stack0 avoid vis p)"
+    using p_dist by (cases p) (auto simp: IDFS_stack0_def)
+  show "\<forall>u v. (u, v) \<in> (Graph.digraph_abs G) \<longrightarrow> lev v < lev u" using L1 by auto
 qed
 
-interpretation T: DFS_avoid_thms
-  where update = "\<lambda>k v m. m(k \<mapsto> v)" and adjmap_inv = "\<lambda>_. True"
-    and vset_empty = "{}" and vset_delete = "\<lambda>x S. S - {x}" and vset_inv = "\<lambda>_. True"
-    and empty = "\<lambda>_. None" and delete = "\<lambda>k m. m(k := None)" and lookup = id
-    and insert = Set.insert and isin = "\<lambda>S x. x \<in> S" and t_set = id
-    and sel = "\<lambda>S. SOME x. x \<in> S" and union = "(\<union>)" and inter = "(\<inter>)" and diff = "(-)"
-    and G = "mk_adjmap dG" and stack0 = "IDFS_stack0 avoid visited p"
-    and vis0 = "visited \<inter> Pair_Graph.dVs dG" and avoid = "avoid \<inter> Pair_Graph.dVs dG"
-    and Pv = P and level = lev
-  by unfold_locales (rule set_axioms)
+interpretation av: DFS_avoid_thms
+  where lookup = lookup and update = update and adjmap_inv = adjmap_inv
+    and vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
+    and empty = empty and delete = delete and insert = insert and isin = isin
+    and t_set = t_set and sel = sel
+    and union = union and inter = inter and diff = diff
+    and G = G and stack0 = "IDFS_stack0 avoid vis p"
+    and vis0 = vis and avoid = avoid and Pv = P and level = lev
+  using av_axioms
+  by unfold_locales (auto simp: av.DFS_avoid_axioms_def)
 
-text \<open>Shorthand for the final state of the run and derived facts.\<close>
+text \<open>Unfold IDFS_impl (the fully-qualified call from Edit 1) against the
+interpreted final state Rst = av.avoid_final_state. The two are the same
+av.DFS_skel avoid_initial_state once the interpretation's op/G/call-arg
+instantiation is unfolded.\<close>
 
-abbreviation "Rst \<equiv> set_final dG (IDFS_stack0 avoid visited p)
-                (visited \<inter> Pair_Graph.dVs dG) (avoid \<inter> Pair_Graph.dVs dG) P"
+lemma IDFS_impl_pair:
+  "IDFS_impl P avoid p vis =
+     (DFS_avoid_state.ret Rst, DFS_avoid_state.visited Rst)"
+  by (simp add: IDFS_impl_def Let_def av.avoid_final_state_def)
 
-lemma IDFS_pair:
-  "IDFS dG P avoid p visited =
-     (DFS_avoid_state.ret Rst, visited \<union> DFS_avoid_state.visited Rst)"
-  by (simp add: IDFS_def Let_def)
+text \<open>The final visited slot stays inside dVs of the digraph (used by the closure/complete
+soundness steps that need a dVs-side fact).\<close>
 
-lemma slot_dVs: "DFS_avoid_state.visited Rst \<subseteq> Pair_Graph.dVs dG"
-  using T.DFS_avoid_visited_dVs by (simp add: dabs set_final_def)
+lemma slot_dVs: "t_set (DFS_avoid_state.visited Rst) \<subseteq> dVs (Graph.digraph_abs G)"
+  using av.DFS_avoid_visited_dVs by (simp add: av.avoid_final_state_def)
 
-lemma new_eq:
-  "(visited \<union> DFS_avoid_state.visited Rst) - visited
-     = DFS_avoid_state.visited Rst - (visited \<inter> Pair_Graph.dVs dG)"
-  using slot_dVs by auto
+text \<open>Witness suite --- the DDFS locale clauses verbatim (with IDFS_pre). Numbering
+matches the DDFS locale assumptions. Theorems are conditional on p_path/p_dist/
+pre from the enclosing context.\<close>
 
-text \<open>The vis-works family of the DDFS locale, under the stated premises. The numbering
-follows the assumptions of the DDFS locale.
-
-Theorem \<leftrightarrow> DDFS locale clause (pairing table):
-  IDFS_closed_None  \<leftrightarrow> IDFS_closed (1) [None branch]:  no dpath/distinct premise in DDFS
-                                              (extra p_path/p_dist come from inner context;
-                                               DDFS discharges them via stack-path invariants)
-  IDFS_closed_Some  \<leftrightarrow> IDFS_closed (2) [Some branch]:  same note
-  IDFS_vis_works_2  \<leftrightarrow> IDFS_vis_works (1) [not-P]:     no dpath/distinct premise in DDFS
-  IDFS_vis_works_3  \<leftrightarrow> IDFS_vis_works (2) [avoid-disj]: same note
-  IDFS_vis_works_4  \<leftrightarrow> IDFS_vis_works (3) [monotone]:  proved in OUTER context, no path premise
-  IDFS_vis_works_6  \<leftrightarrow> IDFS_vis_works (4) [finite]:    same note as vis_works_2
-  IDFS_complete     \<leftrightarrow> IDFS_complete:                  no dpath/distinct premise in DDFS
-  IDFS_sound_1      \<leftrightarrow> IDFS_sound (1):                 DDFS has \<open>dpath dG (rev p)\<close> premise only
-  IDFS_sound_2      \<leftrightarrow> IDFS_sound (2):                 DDFS has \<open>distinct p\<close> premise only
-  IDFS_sound_3      \<leftrightarrow> IDFS_sound (3):                 no dpath/distinct in DDFS
-  IDFS_sound_4      \<leftrightarrow> IDFS_sound (4):                 no dpath/distinct in DDFS
-  IDFS_sound_5      \<leftrightarrow> IDFS_sound (5):                 no dpath/distinct in DDFS
-  IDFS_sound_6      \<leftrightarrow> IDFS_sound (6):                 no dpath/distinct in DDFS
-  IDFS_sound_7      \<leftrightarrow> IDFS_sound (7):                 no dpath/distinct in DDFS
-  IDFS_sound_8      \<leftrightarrow> IDFS_sound (8):                 no dpath/distinct in DDFS
-
-Note: theorems in the inner context (p_path/p_dist assumed) carry those as extra premises.
-In Phase 2 (DDFS_Interpretation.thy), the DDFS locale's stack-path invariants discharge them.\<close>
-
-text \<open>Closure of the newly visited region (replaces the former invar_0-precondition
-form of IDFS-vis-works(1)): a successor of a newly visited vertex lands in avoid, in the
-new visited set, or (only for a successful search) on the returned stack.\<close>
-
-theorem IDFS_closed_None:
-  assumes "IDFS dG P avoid p visited = (None, visited')"
-          "v \<in> visited' - visited" "(v, w) \<in> dG"
-  shows "w \<in> avoid \<union> visited'"
+theorem IDFS_vis_works_1:
+  assumes "IDFS_impl P avoid p vis = (ret_p, vis')" "v \<in> t_set vis' - t_set vis"
+  shows "\<not> P v"
 proof -
-  have retN: "DFS_avoid_state.ret Rst = None"
-       and vis': "visited' = visited \<union> DFS_avoid_state.visited Rst"
-    using assms(1) by (auto simp: IDFS_pair)
-  have empty: "stack Rst = []"
-    using T.final_ret_char retN by (simp add: set_final_def)
-  have vnew: "v \<in> id (DFS_avoid_state.visited Rst) - id (visited \<inter> Pair_Graph.dVs dG)"
-    using assms(1,2) new_eq by (auto simp: IDFS_pair)
-  have edge: "(v, w) \<in> set_avoid.Graph.digraph_abs (mk_adjmap dG)"
-    using assms(3) by (simp add: dabs)
-  have "w \<in> id (avoid \<inter> Pair_Graph.dVs dG) \<union> id (DFS_avoid_state.visited Rst)
-             \<union> set (stack Rst)"
-    using T.DFS_avoid_closure[of v w] vnew edge by (simp add: set_final_def)
-  then have "w \<in> avoid \<union> DFS_avoid_state.visited Rst"
-    using empty by auto
-  then show ?thesis
-    using vis' by auto
-qed
-
-theorem IDFS_closed_Some:
-  assumes "IDFS dG P avoid p visited = (Some p', visited')"
-          "v \<in> visited' - visited" "(v, w) \<in> dG"
-  shows "w \<in> avoid \<union> visited' \<union> set p'"
-proof -
-  have retS: "DFS_avoid_state.ret Rst = Some p'"
-       and vis': "visited' = visited \<union> DFS_avoid_state.visited Rst"
-    using assms(1) by (auto simp: IDFS_pair)
-  have pstk: "p' = stack Rst"
-    using T.DFS_avoid_sound_stack retS by (simp add: set_final_def)
-  have vnew: "v \<in> id (DFS_avoid_state.visited Rst) - id (visited \<inter> Pair_Graph.dVs dG)"
-    using assms(1,2) new_eq by (auto simp: IDFS_pair)
-  have edge: "(v, w) \<in> set_avoid.Graph.digraph_abs (mk_adjmap dG)"
-    using assms(3) by (simp add: dabs)
-  have "w \<in> id (avoid \<inter> Pair_Graph.dVs dG) \<union> id (DFS_avoid_state.visited Rst)
-             \<union> set (stack Rst)"
-    using T.DFS_avoid_closure[of v w] vnew edge by (simp add: set_final_def)
-  then show ?thesis
-    using vis' pstk by auto
+  from assms(1) have vis': "vis' = DFS_avoid_state.visited Rst"
+                  and ret: "ret_p = DFS_avoid_state.ret Rst"
+    by (auto simp: IDFS_impl_pair)
+  from assms(2) vis' have "v \<in> t_set (DFS_avoid_state.visited Rst) - t_set vis" by simp
+  then show ?thesis by (rule av.DFS_avoid_vis_new_notP)
 qed
 
 theorem IDFS_vis_works_2:
-  assumes "IDFS dG P avoid p visited = (ret_p, visited')" "v \<in> visited' - visited"
-  shows "\<not> P v"
+  assumes "IDFS_impl P avoid p vis = (ret_p, vis')"
+  shows "(t_set vis' - t_set vis) \<inter> t_set avoid = {}"
 proof -
-  have "v \<in> id (DFS_avoid_state.visited Rst) - id (visited \<inter> Pair_Graph.dVs dG)"
-    using assms new_eq by (auto simp: IDFS_pair)
-  then show ?thesis
-    using T.DFS_avoid_vis_new_notP[of v] by (simp add: set_final_def)
+  from assms have vis': "vis' = DFS_avoid_state.visited Rst"
+    by (auto simp: IDFS_impl_pair)
+  have "(t_set (DFS_avoid_state.visited Rst) - t_set vis) \<inter> t_set avoid = {}"
+    by (rule av.DFS_avoid_vis_new_avoid)
+  with vis' show ?thesis by simp
 qed
 
 theorem IDFS_vis_works_3:
-  assumes "IDFS dG P avoid p visited = (ret_p, visited')"
-  shows "(visited' - visited) \<inter> avoid = {}"
+  assumes "IDFS_impl P avoid p vis = (ret_p, vis')"
+  shows "t_set vis \<subseteq> t_set vis'"
 proof -
-  have sub: "visited' - visited
-      \<subseteq> DFS_avoid_state.visited Rst - (visited \<inter> Pair_Graph.dVs dG)"
-    using assms new_eq by (auto simp: IDFS_pair)
-  have disj: "(DFS_avoid_state.visited Rst - (visited \<inter> Pair_Graph.dVs dG))
-          \<inter> (avoid \<inter> Pair_Graph.dVs dG) = {}"
-    using T.DFS_avoid_vis_new_avoid by (simp add: set_final_def)
-  show ?thesis
-  proof (rule ccontr)
-    assume "(visited' - visited) \<inter> avoid \<noteq> {}"
-    then obtain x where x: "x \<in> visited' - visited" "x \<in> avoid"
-      by auto
-    have xs: "x \<in> DFS_avoid_state.visited Rst - (visited \<inter> Pair_Graph.dVs dG)"
-      using x(1) sub by auto
-    have "x \<in> Pair_Graph.dVs dG"
-      using xs slot_dVs by auto
-    then show False
-      using xs x(2) disj by auto
-  qed
+  from assms have vis': "vis' = DFS_avoid_state.visited Rst"
+    by (auto simp: IDFS_impl_pair)
+  have "t_set vis \<subseteq> t_set (DFS_avoid_state.visited Rst)" by (rule av.DFS_avoid_vis_mono)
+  with vis' show ?thesis by simp
 qed
 
-theorem IDFS_vis_works_6:
-  assumes "IDFS dG P avoid p visited = (ret_p, visited')"
-  shows "finite (visited' - visited)"
+theorem IDFS_vis_works_4:
+  assumes "IDFS_impl P avoid p vis = (ret_p, vis')"
+  shows "vset_inv vis'"
 proof -
-  have "visited' - visited
-      \<subseteq> id (DFS_avoid_state.visited Rst) - id (visited \<inter> Pair_Graph.dVs dG)"
-    using assms new_eq by (auto simp: IDFS_pair)
-  then show ?thesis
-    using T.DFS_avoid_vis_new_finite by (simp add: set_final_def) (auto intro: finite_subset)
+  from assms have vis': "vis' = DFS_avoid_state.visited Rst"
+    by (auto simp: IDFS_impl_pair)
+  have inv: "av.invar_vis_vset Rst"
+    using av.final_invars by (simp add: av.avoid_final_state_def)
+  with vis' show ?thesis by (simp add: av.invar_vis_vset_def)
+qed
+
+theorem IDFS_closed_None:
+  assumes "IDFS_impl P avoid p vis = (None, vis')"
+      and vnew: "v \<in> t_set vis' - t_set vis" and edge: "(v, w) \<in> Graph.digraph_abs G"
+  shows "w \<in> t_set avoid \<union> t_set vis'"
+proof -
+  from assms(1) have retN: "DFS_avoid_state.ret Rst = None"
+                   and vis': "vis' = DFS_avoid_state.visited Rst"
+    by (auto simp: IDFS_impl_pair)
+  have empty: "stack Rst = []"
+    using av.final_ret_char retN by (simp add: av.avoid_final_state_def)
+  from vnew vis' have vnR: "v \<in> t_set (DFS_avoid_state.visited Rst) - t_set vis" by simp
+  have "w \<in> t_set avoid \<union> t_set (DFS_avoid_state.visited Rst) \<union> set (stack Rst)"
+    using vnR edge by (rule av.DFS_avoid_closure)
+  with empty vis' show ?thesis by auto
+qed
+
+theorem IDFS_closed_Some:
+  assumes "IDFS_impl P avoid p vis = (Some p', vis')"
+      and vnew: "v \<in> t_set vis' - t_set vis" and edge: "(v, w) \<in> Graph.digraph_abs G"
+  shows "w \<in> t_set avoid \<union> t_set vis' \<union> set p'"
+proof -
+  from assms(1) have retS: "DFS_avoid_state.ret Rst = Some p'"
+                    and vis': "vis' = DFS_avoid_state.visited Rst"
+    by (auto simp: IDFS_impl_pair)
+  have pstk: "p' = stack Rst"
+    using retS by (rule av.DFS_avoid_sound_stack)
+  with vis' vnew edge av.DFS_avoid_closure show ?thesis by auto
 qed
 
 theorem IDFS_complete:
-  assumes "IDFS dG P avoid p visited = (None, visited')"
-  shows "set p - avoid \<subseteq> visited'"
+  assumes "IDFS_impl P avoid p vis = (None, vis')"
+  shows "set p - t_set avoid \<subseteq> t_set vis'"
 proof
-  fix x assume x: "x \<in> set p - avoid"
-  have retN: "DFS_avoid_state.ret Rst = None"
-       and vis': "visited' = visited \<union> DFS_avoid_state.visited Rst"
-    using assms by (auto simp: IDFS_pair)
-  have compl: "set (IDFS_stack0 avoid visited p) - id (avoid \<inter> Pair_Graph.dVs dG)
-                 \<subseteq> id (DFS_avoid_state.visited Rst)"
-    using T.DFS_avoid_complete retN by (simp add: set_final_def)
-  show "x \<in> visited'"
-  proof (cases "x \<in> set (IDFS_stack0 avoid visited p)")
+  fix x assume x: "x \<in> set p - t_set avoid"
+  from assms have retN: "DFS_avoid_state.ret Rst = None"
+                  and vis': "vis' = DFS_avoid_state.visited Rst"
+    by (auto simp: IDFS_impl_pair)
+  have compl: "set (IDFS_stack0 avoid vis p) - t_set avoid
+                 \<subseteq> t_set (DFS_avoid_state.visited Rst)"
+    using retN by (rule av.DFS_avoid_complete)
+  have "x \<in> t_set vis'"
+  proof (cases "x \<in> set (IDFS_stack0 avoid vis p)")
     case True
-    have "x \<in> Pair_Graph.dVs dG"
-      using x p_dVs by auto
-    then have "x \<in> DFS_avoid_state.visited Rst"
-      using compl True x by auto
-    then show ?thesis using vis' by auto
+    with x compl show ?thesis by (auto simp: vis')
   next
     case False
-    then have s: "IDFS_stack0 avoid visited p = tl p" and h: "hd p \<in> avoid \<union> visited"
-        and ne: "p \<noteq> []"
-      using stack0_cases x by auto
-    have "x = hd p"
-      using x False s ne by (cases p) auto
-    then have "x \<in> visited"
-      using h x by auto
-    then show ?thesis using vis' by auto
+    have "IDFS_stack0 avoid vis p = tl p \<and> p \<noteq> [] \<and> hd p \<in> t_set avoid \<union> t_set vis"
+      using IDFS_stack0_cases False x
+      by (metis Diff_iff Un_iff empty_iff list.set_sel(1) set_ConsD)
+    then have s: "IDFS_stack0 avoid vis p = tl p" and h: "hd p \<in> t_set avoid \<union> t_set vis" and ne: "p \<noteq> []"
+      by auto
+    have "x = hd p" using x False s ne by (cases p) auto
+    with h x have "x \<in> t_set vis" by auto
+    hence "x \<in> t_set (DFS_avoid_state.visited Rst)" using av.DFS_avoid_vis_mono by auto
+    with vis' show ?thesis by simp
   qed
+  thus "x \<in> t_set vis'" .
 qed
 
-text \<open>The sound family of the DDFS locale (successful searches).\<close>
-
 theorem IDFS_sound_1:
-  assumes "IDFS dG P avoid p visited = (Some p', visited')"
-  shows "dpath dG (rev p')"
+  assumes "IDFS_impl P avoid p vis = (Some p', vis')"
+  shows "dpath (Graph.digraph_abs G) (rev p')"
 proof -
-  have "DFS_avoid_state.ret Rst = Some p'"
-    using assms by (auto simp: IDFS_pair)
-  then have "Vwalk.vwalk (set_avoid.Graph.digraph_abs (mk_adjmap dG)) (rev p')"
-    using T.DFS_avoid_sound_vwalk by (simp add: set_final_def)
-  then show ?thesis
-    by (simp add: dabs)
+  from assms have retS: "DFS_avoid_state.ret Rst = Some p'"
+    by (auto simp: IDFS_impl_pair)
+  have "Vwalk.vwalk (Graph.digraph_abs G) (rev p')" by (rule av.DFS_avoid_sound_vwalk[OF retS])
+  then show ?thesis by simp
 qed
 
 theorem IDFS_sound_2:
-  assumes "IDFS dG P avoid p visited = (Some p', visited')"
+  assumes "IDFS_impl P avoid p vis = (Some p', vis')"
   shows "distinct p'"
 proof -
-  have "DFS_avoid_state.ret Rst = Some p'"
-    using assms by (auto simp: IDFS_pair)
-  then show ?thesis
-    using T.DFS_avoid_sound_distinct by (simp add: set_final_def)
-qed
-
-theorem IDFS_sound_7:
-  assumes "IDFS dG P avoid p visited = (Some p', visited')"
-  shows "p' \<noteq> []"
-proof -
-  have "DFS_avoid_state.ret Rst = Some p'"
-    using assms by (auto simp: IDFS_pair)
-  then show ?thesis
-    using T.DFS_avoid_sound_nonempty by (simp add: set_final_def)
-qed
-
-theorem IDFS_sound_8:
-  assumes "IDFS dG P avoid p visited = (Some p', visited')"
-  shows "P (hd p')" and "hd p' \<notin> avoid \<inter> Pair_Graph.dVs dG"
-proof -
-  have r: "DFS_avoid_state.ret Rst = Some p'"
-    using assms by (auto simp: IDFS_pair)
-  show "P (hd p')"
-    using T.DFS_avoid_sound_hdP(1) r by (simp add: set_final_def)
-  show "hd p' \<notin> avoid \<inter> Pair_Graph.dVs dG"
-    using T.DFS_avoid_sound_hdP(2) r by (simp add: set_final_def)
-qed
-
-theorem IDFS_sound_6:
-  assumes "IDFS dG P avoid p visited = (Some p', visited')" "p \<noteq> []"
-  shows "last p = last p'"
-proof -
-  have r: "DFS_avoid_state.ret Rst = Some p'"
-    using assms(1) by (auto simp: IDFS_pair)
-  have l: "IDFS_stack0 avoid visited p \<noteq> []"
-      and e: "last p' = last (IDFS_stack0 avoid visited p)"
-    using T.DFS_avoid_sound_last r by (auto simp: set_final_def)
-  show ?thesis
-  proof (cases "IDFS_stack0 avoid visited p = p")
-    case True
-    then show ?thesis using e by simp
-  next
-    case False
-    then have s: "IDFS_stack0 avoid visited p = tl p"
-      using stack0_cases by auto
-    have "last (tl p) = last p"
-      using l s assms(2) by (cases p) auto
-    then show ?thesis using e s by simp
-  qed
+  from assms have retS: "DFS_avoid_state.ret Rst = Some p'" by (auto simp: IDFS_impl_pair)
+  then show ?thesis by (rule av.DFS_avoid_sound_distinct)
 qed
 
 theorem IDFS_sound_3:
-  assumes "IDFS dG P avoid p visited = (Some p', visited')"
-  shows "(set p' - set (tl p)) \<inter> (avoid \<union> visited') = {}"
+  assumes "IDFS_impl P avoid p vis = (Some p', vis')"
+  shows "(set p' - set (tl p)) \<inter> (t_set avoid \<union> t_set vis') = {}"
 proof (rule ccontr)
-  assume "(set p' - set (tl p)) \<inter> (avoid \<union> visited') \<noteq> {}"
-  then obtain x where x: "x \<in> set p'" "x \<notin> set (tl p)" "x \<in> avoid \<union> visited'"
+  assume "(set p' - set (tl p)) \<inter> (t_set avoid \<union> t_set vis') \<noteq> {}"
+  then obtain x where x: "x \<in> set p'" "x \<notin> set (tl p)" "x \<in> t_set avoid \<union> t_set vis'"
     by auto
-  have r: "DFS_avoid_state.ret Rst = Some p'"
-       and vis': "visited' = visited \<union> DFS_avoid_state.visited Rst"
-    using assms by (auto simp: IDFS_pair)
-  have p'stack: "p' = stack Rst"
-    using T.DFS_avoid_sound_stack r by (simp add: set_final_def)
-  have x_dVs: "x \<in> Pair_Graph.dVs dG"
-    using x(1) p'stack T.DFS_avoid_stack_dVs by (auto simp: dabs set_final_def)
-  have nd: "(set p' - set (IDFS_stack0 avoid visited p))
-              \<inter> (id (avoid \<inter> Pair_Graph.dVs dG) \<union> id (DFS_avoid_state.visited Rst)) = {}"
-    using T.DFS_avoid_sound_new_disjoint r by (simp add: set_final_def)
+  from assms have retS: "DFS_avoid_state.ret Rst = Some p'"
+                    and vis': "vis' = DFS_avoid_state.visited Rst"
+    by (auto simp: IDFS_impl_pair)
+  have pstk: "p' = stack Rst" using retS by (rule av.DFS_avoid_sound_stack)
+  have nd: "(set p' - set (IDFS_stack0 avoid vis p))
+                \<inter> (t_set avoid \<union> t_set (DFS_avoid_state.visited Rst)) = {}"
+    using retS by (rule av.DFS_avoid_sound_new_disjoint)
   show False
-  proof (cases "x \<in> set (IDFS_stack0 avoid visited p)")
+  proof (cases "x \<in> set (IDFS_stack0 avoid vis p)")
     case False
-    have "x \<notin> avoid" "x \<notin> DFS_avoid_state.visited Rst"
-      using nd False x(1) x_dVs by auto
-    moreover then have "x \<notin> visited"
-      using x_dVs T.DFS_avoid_vis_mono by (auto simp: set_final_def)
-    ultimately show False using x(3) vis' by auto
+    moreover have "x \<in> t_set avoid \<union> t_set (DFS_avoid_state.visited Rst)"
+      using x(3) vis' by simp
+    ultimately show False using nd x(1) by auto
   next
     case True
-    then have s: "IDFS_stack0 avoid visited p = p" and hne: "p = [] \<or> hd p \<notin> avoid \<union> visited"
-      using stack0_cases x(2) by auto
-    have xhd: "x = hd p" and ne: "p \<noteq> []"
-      using True s x(2) by (cases p; auto)+
-    have hnot: "hd p \<notin> avoid \<union> visited"
-      using hne ne by auto
-    have "x \<notin> DFS_avoid_state.visited Rst"
-    proof
-      assume xin: "x \<in> DFS_avoid_state.visited Rst"
-      have "x \<in> set (stack Rst)"
-        using x(1) p'stack by simp
-      then have "x \<in> id (visited \<inter> Pair_Graph.dVs dG)"
-        using xin T.DFS_avoid_visited_stack by (auto simp: set_final_def)
-      then show False
-        using hnot xhd by auto
+    have "IDFS_stack0 avoid vis p = p"
+    proof (rule ccontr)
+      assume "IDFS_stack0 avoid vis p \<noteq> p"
+      with IDFS_stack0_cases have "IDFS_stack0 avoid vis p = tl p" by auto
+      with True have "x \<in> set (tl p)" by simp
+      with x(2) show False by auto
     qed
-    then show False
-      using x(3) xhd hnot vis' by auto
+    then have eq: "IDFS_stack0 avoid vis p = p" by simp
+    have xp: "x \<in> set p" using True eq by simp
+    have ne: "p \<noteq> []" using xp by auto
+    have h_not: "hd p \<notin> t_set avoid \<union> t_set vis"
+    proof
+      assume "hd p \<in> t_set avoid \<union> t_set vis"
+      with IDFS_stack0_cases eq have "IDFS_stack0 avoid vis p = tl p" by auto
+      with eq have "p = tl p" by simp
+      with ne show False by (cases p) auto
+    qed
+    have xhd: "x = hd p" using True eq x(2) ne by (cases p) auto
+    show False
+    proof (cases "x \<in> t_set avoid")
+      case True thus False using xhd h_not ne by auto
+    next
+      case False_av: False
+      hence xv: "x \<in> t_set (DFS_avoid_state.visited Rst)" using x(3) xhd vis' by auto
+      have xstk: "x \<in> set (stack Rst)" using pstk x(1) by simp
+      hence "x \<in> t_set (DFS_avoid_state.visited Rst) \<inter> set (stack Rst)" using xv xstk by auto
+      then have "x \<in> t_set vis"
+        using av.DFS_avoid_visited_stack by auto
+      with xhd h_not ne show False by auto
+    qed
   qed
 qed
 
 theorem IDFS_sound_4:
-  assumes "IDFS dG P avoid p visited = (Some p', visited')"
-  shows "set p - set p' - avoid \<subseteq> visited'"
+  assumes "IDFS_impl P avoid p vis = (Some p', vis')"
+  shows "set p - set p' - t_set avoid \<subseteq> t_set vis'"
 proof
-  fix x assume x: "x \<in> set p - set p' - avoid"
-  have r: "DFS_avoid_state.ret Rst = Some p'"
-       and vis': "visited' = visited \<union> DFS_avoid_state.visited Rst"
-    using assms by (auto simp: IDFS_pair)
-  have x_dVs: "x \<in> Pair_Graph.dVs dG"
-    using x p_dVs by auto
-  have sub: "set (IDFS_stack0 avoid visited p) - set p' - id (avoid \<inter> Pair_Graph.dVs dG)
-               \<subseteq> id (DFS_avoid_state.visited Rst)"
-    using T.DFS_avoid_sound_sub r by (simp add: set_final_def)
-  show "x \<in> visited'"
-  proof (cases "x \<in> set (IDFS_stack0 avoid visited p)")
+  fix x assume x: "x \<in> set p - set p' - t_set avoid"
+  from assms have retS: "DFS_avoid_state.ret Rst = Some p'"
+                    and vis': "vis' = DFS_avoid_state.visited Rst"
+    by (auto simp: IDFS_impl_pair)
+  have sub: "set (IDFS_stack0 avoid vis p) - set p' - t_set avoid
+               \<subseteq> t_set (DFS_avoid_state.visited Rst)"
+    using retS by (rule av.DFS_avoid_sound_sub)
+  show "x \<in> t_set vis'"
+  proof (cases "x \<in> set (IDFS_stack0 avoid vis p)")
     case True
-    then have "x \<in> DFS_avoid_state.visited Rst"
-      using sub x x_dVs by auto
-    then show ?thesis using vis' by auto
+    with sub x vis' show ?thesis by auto
   next
     case False
-    then have s: "IDFS_stack0 avoid visited p = tl p" and h: "hd p \<in> avoid \<union> visited"
-        and ne: "p \<noteq> []"
-      using stack0_cases x by auto
-    have "x = hd p"
-      using x False s ne by (cases p) auto
-    then have "x \<in> visited"
-      using h x by auto
-    then show ?thesis using vis' by auto
+    have s: "IDFS_stack0 avoid vis p = tl p" and h: "hd p \<in> t_set avoid \<union> t_set vis" and ne: "p \<noteq> []"
+    proof -
+      from IDFS_stack0_cases False x have "IDFS_stack0 avoid vis p = tl p \<and> hd p \<in> t_set avoid \<union> t_set vis \<and> p \<noteq> []"
+        by (metis Diff_iff Un_iff list.set_sel(1) set_ConsD)
+      thus "IDFS_stack0 avoid vis p = tl p" and h: "hd p \<in> t_set avoid \<union> t_set vis" and ne: "p \<noteq> []"
+        by auto
+    qed
+    have "x = hd p" using x False s ne by (cases p) auto
+    with h x have "x \<in> t_set vis" by auto
+    hence "x \<in> t_set (DFS_avoid_state.visited Rst)" using av.DFS_avoid_vis_mono by auto
+    with vis' show ?thesis by simp
   qed
 qed
 
 theorem IDFS_sound_5:
-  assumes "IDFS dG P avoid p visited = (Some p', visited')"
-      and tlP: "\<And>v. v \<in> set (tl p) \<Longrightarrow> \<not> P v"
-      and v: "v \<in> set (tl p')"
+  assumes "IDFS_impl P avoid p vis = (Some p', vis')"
+      and tlP: "\<And>v. v \<in> set (tl p) \<Longrightarrow> \<not> P v" and v: "v \<in> set (tl p')"
   shows "\<not> P v"
 proof -
-  have r: "DFS_avoid_state.ret Rst = Some p'"
-    using assms(1) by (auto simp: IDFS_pair)
-  have tl_char: "v \<in> set (IDFS_stack0 avoid visited p) \<or> \<not> P v"
-    using T.DFS_avoid_sound_tl_notP r v by (simp add: set_final_def)
+  from assms(1) have retS: "DFS_avoid_state.ret Rst = Some p'" by (auto simp: IDFS_impl_pair)
+  have tl_char: "v \<in> set (IDFS_stack0 avoid vis p) \<or> \<not> P v"
+    using av.DFS_avoid_sound_tl_notP[OF retS v] by blast
   show ?thesis
-  proof (cases "IDFS_stack0 avoid visited p = p")
+  proof (cases "v \<in> set (IDFS_stack0 avoid vis p)")
     case False
-    then have "IDFS_stack0 avoid visited p = tl p"
-      using stack0_cases by auto
-    then show ?thesis using tl_char tlP by auto
+    with tl_char show ?thesis by simp
   next
-    case True
-    have ne: "p \<noteq> []"
-    proof -
-      have "IDFS_stack0 avoid visited p \<noteq> []"
-        using T.DFS_avoid_sound_last(1) r by (simp add: set_final_def)
-      then show ?thesis using True by auto
-    qed
-    have hne: "hd p \<notin> avoid \<union> visited"
-      using stack0_cases True ne by (cases p) auto
+    case True: True
+    from IDFS_stack0_cases have
+      disj: "(IDFS_stack0 avoid vis p = p \<and> (p = [] \<or> hd p \<notin> t_set avoid \<union> t_set vis)) \<or>
+             (IDFS_stack0 avoid vis p = tl p \<and> p \<noteq> [] \<and> hd p \<in> t_set avoid \<union> t_set vis)" .
     show ?thesis
-    proof (cases "P (hd p)")
-      case False
-      then show ?thesis
-        using tl_char tlP True ne by (cases p) auto
+    proof (cases "IDFS_stack0 avoid vis p = tl p")
+      case True_tl: True
+      hence "IDFS_stack0 avoid vis p = tl p" .
+      moreover have "v \<in> set (IDFS_stack0 avoid vis p)" using True .
+      ultimately have "v \<in> set (tl p)" by simp
+      with tlP show ?thesis by simp
     next
-      case Phd: True
-      have "p' = IDFS_stack0 avoid visited p"
-        using T.DFS_avoid_found_immediately r ne True Phd hne
-        by (simp add: set_final_def)
-      then have "p' = p"
-        using True by simp
-      then show ?thesis
-        using v tlP by simp
+      case False_tl: False
+      have eq: "IDFS_stack0 avoid vis p = p"
+        using disj False_tl by auto
+      have vp: "v \<in> set p" using True eq by simp
+      have ne: "p \<noteq> []" using vp by auto
+      have h_not: "hd p \<notin> t_set avoid \<union> t_set vis"
+        using disj False_tl eq ne by auto
+      show ?thesis
+      proof (cases "P (hd p)")
+        case Phd: True
+        have im: "\<not> isin avoid (hd p)"
+          using pre_inv(1) h_not
+          by (simp add: Graph.vset.set.set_isin)
+        have ne_stack0: "IDFS_stack0 avoid vis p \<noteq> []" using eq ne by simp
+        have Phd_stack0: "P (hd (IDFS_stack0 avoid vis p))" using eq Phd by simp
+        have im_stack0: "\<not> isin avoid (hd (IDFS_stack0 avoid vis p))"
+          using eq im by simp
+        have "p' = IDFS_stack0 avoid vis p"
+          by (rule av.DFS_avoid_found_immediately[OF retS ne_stack0 Phd_stack0 im_stack0])
+        with eq have "p' = p" by simp
+        with v have "v \<in> set (tl p)" by simp
+        with tlP show ?thesis by simp
+      next
+        case nPhd: False
+        from tl_char True eq have char: "v \<in> set p \<or> \<not> P v" by simp
+        show ?thesis
+        proof (cases p)
+          case Nil
+          with ne show ?thesis by simp
+        next
+          case (Cons v0 vs)
+          with char have "v = v0 \<or> v \<in> set vs \<or> \<not> P v" by auto
+          with nPhd Cons tlP show ?thesis by auto
+        qed
+      qed
     qed
   qed
 qed
 
-end
+theorem IDFS_sound_6:
+  assumes "IDFS_impl P avoid p vis = (Some p', vis')" "p \<noteq> []"
+  shows "last p = last p'"
+proof -
+  from assms(1) have retS: "DFS_avoid_state.ret Rst = Some p'" by (auto simp: IDFS_impl_pair)
+  have l: "IDFS_stack0 avoid vis p \<noteq> []"
+       and e: "last p' = last (IDFS_stack0 avoid vis p)"
+    using av.DFS_avoid_sound_last[OF retS] by (auto simp: av.avoid_final_state_def)
+  show ?thesis
+  proof (cases "IDFS_stack0 avoid vis p = p")
+    case True thus ?thesis using e by simp
+  next
+    case False
+    hence s: "IDFS_stack0 avoid vis p = tl p" using IDFS_stack0_cases by auto
+    have "last (tl p) = last p" using l s assms(2) by (cases p) auto
+    with e s show ?thesis by simp
+  qed
+qed
+
+theorem IDFS_sound_7:
+  assumes "IDFS_impl P avoid p vis = (Some p', vis')"
+  shows "p' \<noteq> []"
+proof -
+  from assms have retS: "DFS_avoid_state.ret Rst = Some p'" by (auto simp: IDFS_impl_pair)
+  then show ?thesis by (rule av.DFS_avoid_sound_nonempty)
+qed
+
+theorem IDFS_sound_8:
+  assumes "IDFS_impl P avoid p vis = (Some p', vis')"
+  shows "P (hd p')"
+proof -
+  from assms have retS: "DFS_avoid_state.ret Rst = Some p'" by (auto simp: IDFS_impl_pair)
+  from av.DFS_avoid_sound_hdP(1)[OF retS] show ?thesis .
+qed
+
+end  (* inner context: avoid vis p, p_path, p_dist, av_inv, av_dVs *)
+
+end  (* locale IDFS_witness *)
+
+section \<open>Layered-digraph locale and the DDFS interpretation\<close>
+
+text \<open>DDFS_layered is the ops-generic witness locale itself (no extra
+assumptions): it fixes the executable ADT, the graph G, the level function
+lev, and the layeredness/wf facts wf_graph/L1/L2/L3.
+The DDFS interface is then realised by IDFS_impl with the executable successor
+succ = sel \<circ> N_G (NEVER SOME --- not executable).\<close>
+
+locale DDFS_layered = IDFS_witness
+
+context DDFS_layered
+begin
+
+text \<open>The executable successor picks an element of the (non-empty) neighbourhood via the
+Set2 sel operation. For a non-zero-level vertex L3 supplies an outgoing edge, so
+the neighbourhood is non-empty and sel picks a member, which is an edge target under
+graph_inv.\<close>
+
+lemma succ_works_aux:
+  assumes "v \<in> dVs (Graph.digraph_abs G)" "lev v \<noteq> 0" shows "(v, sel (Graph.neighbourhood G v)) \<in> Graph.digraph_abs G"
+proof -
+  from L3 assms(1) obtain p v' where p: "p \<noteq> []" "dpath_bet (Graph.digraph_abs G) p v v'" and lv: "lev v' = 0"
+    by blast
+  have neq: "v \<noteq> v'" using assms(2) lv by auto
+  from path_then_edge[OF p(2) p(1) neq] obtain u where u: "(v, u) \<in> Graph.digraph_abs G" by auto
+  hence "u \<in> t_set (Graph.neighbourhood G v)"
+    using wf_graph(1) Graph.are_connected_abs by auto
+  then have nempty: "t_set (Graph.neighbourhood G v) \<noteq> {}" by auto
+  have inv: "vset_inv (Graph.neighbourhood G v)"
+    using wf_graph(1) Graph.neighbourhood_invars' by simp
+  have ne: "Graph.neighbourhood G v \<noteq> vset_empty"
+    using nempty
+    by (metis Graph.vset.set.set_empty)
+  have "sel (Graph.neighbourhood G v) \<in> t_set (Graph.neighbourhood G v)"
+    using ne inv Graph.vset.choose' by auto
+  with wf_graph(1) Graph.are_connected_abs show ?thesis by auto
+qed
 
 end
-
-section \<open>Layered-digraph locale and its DDFS interpretation\<close>
-
-text \<open>The DDFS_layered locale fixes a layered digraph (satisfying the
-three DDFS digraph assumptions) and establishes that the concrete
-IDFS function realises all DDFS interface assumptions.
-This is the Phase-2 interpretation linking the abstract DDFS development to the
-concrete DFS-Avoid skeleton instance.\<close>
-
-locale DDFS_layered =
-  fixes dG :: "('a \<times> 'a) set" and lev :: "'a \<Rightarrow> nat"
-  assumes L1: "(v, v') \<in> dG \<Longrightarrow> lev v' < lev v"
-      and L2: "finite (dVs dG)"
-      and L3: "v \<in> dVs dG \<Longrightarrow> \<exists>p v'. p \<noteq> [] \<and> dpath_bet dG p v v' \<and> lev v' = 0"
 
 sublocale DDFS_layered \<subseteq>
-    DDFS where update = "\<lambda>k v m. m(k \<mapsto> v)" and adjmap_inv = "\<lambda>(_:: 'a \<Rightarrow> 'a set option). True" and
-               vset_empty = "({} :: 'a set)" and
-               vset_delete = "(\<lambda>x S. S - {x} :: 'a set)" and
-               vset_inv = "(\<lambda>(_ :: 'a set). True)" and
-               lookup = id and
-               t_set = "(id :: 'a set \<Rightarrow> 'a set)" and
-               insert = "(Set.insert :: 'a \<Rightarrow> 'a set \<Rightarrow> 'a set)" and
-               G = "mk_adjmap dG" and level = lev and
-               IDFS = "\<lambda>(P :: 'a \<Rightarrow> bool) (av :: 'a set) (p :: 'a list) (vis :: 'a set). IDFS dG P av p vis" and
-               succ = "\<lambda>v. SOME v0. (v, v0) \<in> dG"
-  (*READT-TODO-20: original: DDFS where dG = dG and level = lev and IDFS = IDFS and succ = ...; proof unfold_locales ... (lines 558-779);
-    symptom: dG not a parameter of DDFS (ADT re-type); locale now uses Pair_Graph_Specs+Set2+'vset;
-    obligations need ADT witnesses; pattern: interface mismatch; SUPERSEDED-BY-PORT? yes*)
+    DDFS where update = update and adjmap_inv = adjmap_inv
+      and vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
+      and empty = empty and delete = delete and lookup = lookup
+      and insert = insert and isin = isin and t_set = t_set and sel = sel
+      and union = union and inter = inter and diff = diff
+      and G = G and level = lev
+      and IDFS = IDFS_impl
+      and succ = "\<lambda>v. sel (Graph.neighbourhood G v)"
+  (* READT-TODO-20: all sublocale obligations sorried because Edit 0 (IDFS_pre amendment)
+     to DDFS.thy is OUT OF SCOPE. Each clause needs matching with the local suite theorems
+     once IDFS_pre is available. *)
   sorry
 
 end (* IDFS *)
