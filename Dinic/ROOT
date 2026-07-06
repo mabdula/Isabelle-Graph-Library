@@ -9,6 +9,8 @@ theories
 Blocking_Flow
 DFS_Collect_Backtrack
 DFS_Collect_Backtrack_Example
+DFS_CB_Skel
+DFS_CB_Skel_Example
 Compute_Blocking_Simple
 Compute_Blocking_Residual
 Dinic
