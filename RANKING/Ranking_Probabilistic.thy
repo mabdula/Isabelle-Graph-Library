@@ -745,11 +745,21 @@ next
   next
     case 4
     from \<sigma>_tl \<open>x \<notin> X\<close> \<open>\<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> show ?case
-      by (metis filter.simps(2))
+    proof -
+      from \<sigma>_tl have "filter (\<lambda>v. v \<in> X) \<sigma> = filter (\<lambda>v. v \<in> X) (x # tl \<sigma>)" by simp
+      also have "... = filter (\<lambda>v. v \<in> X) (tl \<sigma>)" using \<open>x \<notin> X\<close> by auto
+      finally show ?thesis using \<open>\<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> by simp
+    qed
   next
     case 5
     from \<sigma>_tl \<open>x \<notin> X\<close> \<open>x # xs = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> show ?case
-      by (metis filter.simps(2) list.inject)
+    proof -
+      from \<sigma>_tl have "filter (\<lambda>v. v \<notin> X) \<sigma> = filter (\<lambda>v. v \<notin> X) (x # tl \<sigma>)" by simp
+      also have "... = x # filter (\<lambda>v. v \<notin> X) (tl \<sigma>)" using \<open>x \<notin> X\<close> by auto
+      finally have "x # xs = x # filter (\<lambda>v. v \<notin> X) (tl \<sigma>)"
+        using \<open>x # xs = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> by simp
+      then show ?thesis by simp
+    qed
   qed
 
   note list.map[simp del]
@@ -757,8 +767,17 @@ next
     by (simp flip: \<open>Suc n # ns = map (index \<sigma>) \<sigma>'\<close> add: map_decr_nns_map_index_tl, subst \<sigma>_tl, simp add: rebuild_tl)
 next
   case ("4_1" n ns \<sigma>')
-  then show ?case
-    by (metis append.right_neutral filter_True filter_empty_conv rebuild.simps(4))
+  have "\<sigma>' = \<sigma>"
+  proof -
+    from \<open>[] = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> have "filter (\<lambda>v. v \<notin> X) \<sigma> = []" by simp
+    then have "\<forall>v\<in>set \<sigma>. v \<in> X" by (simp add: filter_empty_conv)
+    then have "filter (\<lambda>v. v \<in> X) \<sigma> = \<sigma>" by (simp add: filter_True)
+    with \<open>\<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> show ?thesis by simp
+  qed
+  moreover have "map (index \<sigma>) \<sigma> = Suc n # ns"
+    using "4_1" calculation by simp
+  ultimately show ?case
+    by (simp add: rebuild.simps(4) append.right_neutral)
 next
   case ("4_2" ns xs)
   then show ?case
@@ -773,8 +792,17 @@ next
     by blast
 next
   case ("4_5" n ns v \<sigma>')
-  then show ?case
-    by (metis append.right_neutral filter_True filter_empty_conv rebuild.simps(4))
+  have "v # \<sigma>' = \<sigma>"
+  proof -
+    from \<open>[] = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> have "filter (\<lambda>v. v \<notin> X) \<sigma> = []" by simp
+    then have "\<forall>v\<in>set \<sigma>. v \<in> X" by (simp add: filter_empty_conv)
+    then have "filter (\<lambda>v. v \<in> X) \<sigma> = \<sigma>" by (simp add: filter_True)
+    with \<open>v # \<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> show ?thesis by simp
+  qed
+  moreover have "map (index \<sigma>) (v # \<sigma>') = Suc n # ns"
+    using "4_5" by simp
+  ultimately show ?case
+    by (simp add: rebuild.simps(4) append.right_neutral)
 qed
 
 lemma rebuild_indices:
@@ -854,8 +882,7 @@ next
 
   finally show ?case
     using \<open>sorted_wrt (<) (Suc n # ns)\<close>
-    by (auto simp: decr_Suc)
-       (metis Suc_lessE decr.simps(2) image_iff)
+    by (auto simp: decr_Suc) (use decr.elims in blast)
 next
   case ("4_1" n ns \<sigma>')
 
@@ -863,7 +890,14 @@ next
     by (intro sorted_strict_last_geq_length) auto
 
   with "4_1" show ?case
-    by (metis add.right_neutral last_in_set leD list.distinct(1) list.size(3))
+  proof -
+    have "last (Suc n # ns) \<in> set (Suc n # ns)"
+      by (simp add: last_in_set)
+    with "4_1" have "last (Suc n # ns) < length (Suc n # ns)"
+      by (simp add: add.right_neutral)
+    with \<open>length (Suc n # ns) \<le> last (Suc n # ns)\<close> show ?thesis
+      by linarith
+  qed
 next
   case ("4_2" ns xs)
   then show ?case
@@ -883,7 +917,14 @@ next
     by (intro sorted_strict_last_geq_length) auto
 
   with "4_5" show ?case
-    by (metis add.right_neutral last_in_set leD list.distinct(1) list.size(3))
+  proof -
+    have "last (Suc n # ns) \<in> set (Suc n # ns)"
+      by (simp add: last_in_set)
+    with "4_5" have "last (Suc n # ns) < length (Suc n # ns)"
+      by (simp add: add.right_neutral)
+    with \<open>length (Suc n # ns) \<le> last (Suc n # ns)\<close> show ?thesis
+      by linarith
+  qed
 qed
 
 lemma card_restrict_permutation_eq_choose:
@@ -1071,15 +1112,30 @@ lemma graph_abs_M[simp]: "graph_invar M"
   by (auto intro!: graph_invar_subgraph[OF graph_invar_G] dest: max_card_matchingD)
 
 lemma finite[simp]: "finite V"
-  using finite_graph vertices
-  by (metis finite_Un graph_invar_G graph_abs_def)
+proof -
+  have "finite (Vs G)"
+    using graph_invar_G by (simp add: graph_abs_def)
+  thus ?thesis
+    using vertices by (simp add: finite_Un)
+qed
 
 lemma online_match_edgeE:
   assumes "e \<in> online_match G \<pi> \<sigma>"
   obtains u v where "e = {u,v}" "u \<in> set \<pi>" "v \<in> V" "v \<in> set \<sigma>"
-  using assms bipartite
-  by (smt (verit, best) bipartite_disjointD bipartite_edgeE disjoint_iff_not_equal edges_are_Vs_2
-          online_match_Vs_subset subgraph_online_match)
+proof -
+  have e_in_G: "e \<in> G"
+    using assms by (rule subgraph_online_match)
+  from e_in_G bipartite obtain u v where uv: "u \<in> set \<pi>" "v \<in> V" "e = {u, v}"
+    by (elim bipartite_edgeE) blast
+  have v_in_Vs: "v \<in> Vs (online_match G \<pi> \<sigma>)"
+    using assms uv(3) by (auto intro: edges_are_Vs_2)
+  have "v \<in> set \<pi> \<or> v \<in> set \<sigma>"
+    using v_in_Vs by (rule online_match_Vs_subset)
+  moreover have "v \<notin> set \<pi>"
+    using uv(2) bipartite by (auto dest: bipartite_disjointD)
+  ultimately have v_sigma: "v \<in> set \<sigma>" by blast
+  with uv that show thesis by blast
+qed
 
 lemma bipartite_matching:
   "bipartite M (set \<pi>) V"
@@ -1334,7 +1390,19 @@ proof (intro equalityI subsetI IntI CollectI)
       by (auto dest: permutations_of_setD)
   next
     show "\<sigma> ! 0 \<in> Vs G"
-      by (metis card_gt_0_iff length_finite_permutations_of_set finite non_empty nth_mem offline_subset_vs perm permutations_of_setD(1))
+    proof -
+      have len: "length \<sigma> = card V"
+        using perm by (simp add: length_finite_permutations_of_set)
+      hence "0 < length \<sigma>"
+        using finite non_empty by (simp add: card_gt_0_iff)
+      hence mem: "\<sigma> ! 0 \<in> set \<sigma>"
+        by (rule nth_mem)
+      have "set \<sigma> = V"
+        using perm by (simp add: permutations_of_setD(1))
+      with mem have "\<sigma> ! 0 \<in> V" by simp
+      thus "\<sigma> ! 0 \<in> Vs G"
+        by (rule offline_subset_vs)
+    qed
   qed
 qed blast
 
@@ -1467,7 +1535,14 @@ proof -
         by (auto dest: matching_unique_match)
 
       with e v show "(THE e. e \<in> online_match G \<pi> \<sigma> \<and> \<sigma> ! t \<in> e) \<in> online_match G \<pi> \<sigma>"
-        by (metis (no_types, lifting) nth_index theI')
+      proof -
+        have \<sigma>t_eq: "\<sigma> ! t = v"
+          using v(2) by (simp add: v(1)[symmetric])
+        have uniq: "\<exists>!e'. e' \<in> online_match G \<pi> \<sigma> \<and> v \<in> e'"
+          using e the_e by blast
+        show ?thesis
+          by (simp only: \<sigma>t_eq, rule theI'[THEN conjunct1], rule uniq)
+      qed
     qed
   next
     show "\<And>e. e \<in> online_match G \<pi> \<sigma> \<Longrightarrow> (THE e'. e' \<in> online_match G \<pi> \<sigma> \<and> \<sigma> ! (THE t. \<exists>v \<in> set \<sigma>. index \<sigma> v = t \<and> v \<in> e) \<in> e') = e"
@@ -1485,7 +1560,14 @@ proof -
         by (auto dest: bipartite_disjointD permutations_of_setD)
 
       from \<sigma> uv matching \<open>e \<in> online_match G \<pi> \<sigma>\<close> have the_e: "\<And>e'. e' \<in> online_match G \<pi> \<sigma> \<and> v \<in> e' \<Longrightarrow> e' = e"
-        by (metis insertCI matching_unique_match)
+      proof -
+        fix e'
+        assume assm: "e' \<in> online_match G \<pi> \<sigma> \<and> v \<in> e'"
+        have v_in_e: "v \<in> e"
+          using uv(3) by simp
+        with assm matching \<open>e \<in> online_match G \<pi> \<sigma>\<close> show "e' = e"
+          by (auto dest: matching_unique_match)
+      qed
 
       with e t \<open>v \<in> set \<sigma>\<close> show "(THE e'. e' \<in> online_match G \<pi> \<sigma> \<and> \<sigma> ! (THE t. \<exists>v \<in> set \<sigma>. index \<sigma> v = t \<and> v \<in> e) \<in> e') = e" 
         by (auto simp: the_t intro!: the_equality)
@@ -1583,9 +1665,18 @@ proof (rule pmf_eqI)
         by (auto intro: the_match_online)
     next
       case (4 x)
+      then have x_set_\<pi>: "x \<in> set \<pi>" and x_cond: "x \<in> {u. i = (u \<in> Vs (online_match G \<pi> \<sigma>) \<and> index \<sigma> (THE v. {u, v} \<in> online_match G \<pi> \<sigma>) \<le> t)}"
+        by auto
+      then have h_cond: "i = (x \<in> Vs (online_match G \<pi> \<sigma>) \<and> index \<sigma> (THE v. {x, v} \<in> online_match G \<pi> \<sigma>) \<le> t)"
+        by auto
+      have hM: "matching M"
+        using perfect_matching by (rule perfect_matchingD(2))
+      have hEdge: "{x, (THE v. {x,v} \<in> M)} \<in> M"
+        using x_set_\<pi> by (rule the_match_online(1))
+      have hKey: "(THE u. {u, (THE v. {x,v} \<in> M)} \<in> M) = x"
+        using hM hEdge by (rule the_match)
       with perfect_matching show ?case
-        by (intro iffI; simp)
-           (metis perfect_matchingD(2) the_match the_match_online(1))+
+        using h_cond by (simp add: hKey)
     next
       case (5 x)
       with perfect_matching show ?case
@@ -1673,7 +1764,18 @@ proof (rule bij_betw_same_card[where f = "\<lambda>u. (THE v. {u,v} \<in> online
       by (auto elim: vs_member_elim)
 
     with u bipartite obtain v where v: "{u,v} \<in> online_match G \<pi> \<sigma>" "v \<in> V"
-      by (metis bipartite_vertex(2) empty_iff insert_iff online_subset_vs online_match_edgeE)
+    proof -
+      from e obtain u' v' where uv': "e = {u', v'}" "u' \<in> set \<pi>" "v' \<in> V"
+        by (elim online_match_edgeE)
+      have "v' \<in> Vs G"
+        using uv'(1) e(1) by (auto intro: edges_are_Vs dest: subgraph_online_match)
+      hence "v' \<notin> set \<pi>"
+        using uv'(3) bipartite by (intro bipartite_vertex(2))
+      with uv'(1) e(2) u(1) have "u = u'"
+        by auto
+      show ?thesis
+        by (rule that[of v']) (insert uv'(1,3) e(1) `u = u'`, auto)
+    qed
 
     with 1 have "(THE v. {u,v} \<in> online_match G \<pi> \<sigma>) = v"
       by (auto intro: the_match' dest: matching_if_perm)
@@ -1695,8 +1797,16 @@ next
       by (auto elim: vs_member_elim)
 
     with v bipartite obtain u where u: "{u,v} \<in> online_match G \<pi> \<sigma>" "u \<in> set \<pi>"
-      by (metis bipartite_vertex(2) doubleton_eq_iff graph_invar_G graph_invar_no_edge_no_vertex 
-                graph_abs_online_match offline_subset_vs online_match_edgeE)
+    proof -
+      from e obtain u' v' where uv': "e = {u', v'}" "u' \<in> set \<pi>" "v' \<in> V"
+        by (elim online_match_edgeE)
+      have "u' \<notin> V"
+        using uv'(2) bipartite by (auto dest: bipartite_disjointD)
+      with uv'(1) e(2) v(1) have "v = v'"
+        by auto
+      show ?thesis
+        by (rule that[of u']) (insert uv'(1,2) e(1) `v = v'`, auto)
+    qed
 
     with 2 have "(THE u. {u,v} \<in> online_match G \<pi> \<sigma>) = u" "(THE v. {u,v} \<in> online_match G \<pi> \<sigma>) = v"
       by (auto intro: the_match the_match' dest: matching_if_perm)
@@ -1878,9 +1988,14 @@ proof -
     by (simp only: sum_gp_strict_Suc)
 
   also have "\<dots> = (\<Sum>s\<le>card V - 1. (1 - 1/(real (card V) + 1))^(s+1)) / card V"
-    using non_empty
-    by (auto simp: ac_simps simp del: finite)
-       (metis (mono_tags, lifting) Suc_pred lessThan_Suc_atMost)
+  proof -
+    have hpos: "0 < card V"
+      using non_empty finite by (simp add: card_gt_0_iff)
+    have hset: "{..<card V} = {..card V - 1}"
+      using hpos by (simp add: lessThan_Suc_atMost[symmetric] Suc_pred)
+    show ?thesis
+      by (auto simp: ac_simps hset simp del: finite)
+  qed
 
   also have "\<dots> \<le> (\<Sum>s\<le>card V - 1. measure_pmf.prob (rank_matched s) {True}) / card V"
     using non_empty finite
@@ -1889,7 +2004,7 @@ proof -
 
   also have "\<dots> = ?L"
     by (subst expected_size_is_sum_of_matched_ranks)
-       (metis (no_types, lifting) One_nat_def Suc_pred card_gt_0_iff lessThan_Suc_atMost local.finite non_empty)
+       (simp add: lessThan_Suc_atMost[symmetric] Suc_pred card_gt_0_iff non_empty local.finite)
 
   finally show ?thesis .
 qed
@@ -1901,8 +2016,21 @@ lemma sum_split:
   assumes "\<Union>(g ` A) = B"
   assumes "\<And>x x'. x \<in> A \<Longrightarrow> x' \<in> A \<Longrightarrow> x \<noteq> x' \<Longrightarrow> g x \<inter> g x' = {}"
   shows "(\<Sum>x\<in>A. (\<Sum>y\<in>g x. f y)) = (\<Sum>y\<in>B. f y)"
-  using assms
-  by (smt (verit, ccfv_SIG) finite_UN sum.UNION_disjoint sum.cong)
+proof -
+  have fin_gx: "\<forall>x\<in>A. finite (g x)"
+  proof
+    fix x assume "x \<in> A"
+    then have "g x \<subseteq> \<Union>(g ` A)" by auto
+    also from assms(3) have "\<Union>(g ` A) = B" by assumption
+    finally have "g x \<subseteq> B" .
+    with assms(2) show "finite (g x)" using finite_subset by blast
+  qed
+  have disj: "\<forall>x\<in>A. \<forall>x'\<in>A. x \<noteq> x' \<longrightarrow> g x \<inter> g x' = {}"
+    using assms(4) by blast
+  have key: "(\<Sum>y\<in>\<Union>(g ` A). f y) = (\<Sum>x\<in>A. \<Sum>y\<in>g x. f y)"
+    using assms(1) fin_gx disj by (rule sum.UNION_disjoint)
+  show ?thesis using key assms(3) by simp
+qed
 
 context wf_ranking
 begin
