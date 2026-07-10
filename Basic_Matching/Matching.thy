@@ -25,8 +25,15 @@ lemma sym_diff_subset:
 lemma card_Int_Diff:
   assumes "finite s" "finite t" 
   shows "card (s - t) + card (s \<inter> t) = card s"
-  using assms
-  by (metis add.commute Int_Diff_Un Int_Diff_disjoint card_Un_disjoint finite_Diff finite_Int)
+proof -
+    have fin1: "finite (s - t)" using assms(1) by simp
+    have fin2: "finite (s \<inter> t)" using assms(1) by simp
+    have disj: "(s - t) \<inter> (s \<inter> t) = {}" by auto
+    have union_eq: "(s - t) \<union> (s \<inter> t) = s" by auto
+    have "card ((s - t) \<union> (s \<inter> t)) = card (s - t) + card (s \<inter> t)"
+      by (rule card_Un_disjoint[OF fin1 fin2 disj])
+    with union_eq show ?thesis by simp
+  qed
 
 lemma card_symm_diff:
   assumes "finite s" "finite t" "card (t - s) = card (s \<inter> t)"
@@ -195,8 +202,22 @@ lemma matching_graph_mono: "\<lbrakk>graph_matching G M; G \<subseteq> G'\<rbrak
   by(auto simp add: matching_def)
 
 lemma the_match: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> (THE u. {u,v} \<in> M) = u"
-  by (auto intro!: the_equality)
-     (metis doubleton_eq_iff insertI1 matching_unique_match)
+proof -
+  assume match: "matching M" and edge: "{u,v} \<in> M"
+  show "(THE u. {u,v} \<in> M) = u"
+  proof (rule the_equality)
+    show "{u,v} \<in> M" using edge .
+  next
+    fix u'
+    assume h: "{u',v} \<in> M"
+    have v1: "v \<in> {u',v}" by simp
+    have v2: "v \<in> {u,v}" by simp
+    have eq: "{u',v} = {u,v}"
+      by (rule matching_unique_match[OF match v1 v2 h edge])
+    from eq show "u' = u"
+      by (auto simp: doubleton_eq_iff)
+  qed
+qed
 
 lemma the_match': "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> (THE v. {u,v} \<in> M) = v"
   by (auto dest: the_match edge_commute)
@@ -295,26 +316,179 @@ lemma matching_remove_vertices:
   using remove_vertices_subgraph
   by (auto intro: matching_subgraph)
 
-lemma remove_edge_matching: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> M \<setminus> {u,v} = M - {{u,v}}"
+lemma remove_edge_matching:
+  assumes "matching M" and "{u,v} \<in> M"
+  shows "M \<setminus> {u,v} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
-  by auto (metis empty_iff insert_iff matching_unique_match)+
+proof (rule set_eqI)
+  fix e
+  show "e \<in> {e \<in> M. e \<inter> {u, v} = {}} \<longleftrightarrow> e \<in> M - {{u, v}}"
+  proof
+    assume "e \<in> {e \<in> M. e \<inter> {u, v} = {}}"
+    then show "e \<in> M - {{u, v}}" by auto
+  next
+    assume "e \<in> M - {{u, v}}"
+    then have eM: "e \<in> M" and ne: "e \<noteq> {u, v}" by auto
+    have "e \<inter> {u, v} = {}"
+    proof (rule ccontr)
+      assume "e \<inter> {u, v} \<noteq> {}"
+      then obtain x where xe: "x \<in> e" and xuv: "x \<in> {u, v}" by blast
+      have "e = {u, v}"
+        by (rule matching_unique_match[OF assms(1) xe xuv eM assms(2)])
+      with ne show False by simp
+    qed
+    with eM show "e \<in> {e \<in> M. e \<inter> {u, v} = {}}" by simp
+  qed
+qed
 
-lemma remove_vertex_matching: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> M \<setminus> {u} = M - {{u,v}}"
+lemma remove_vertex_matching:
+  assumes "matching M" and "{u,v} \<in> M"
+  shows "M \<setminus> {u} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
-  by auto (metis empty_iff insert_iff matching_unique_match)+
+proof (rule set_eqI)
+  fix e
+  show "e \<in> {e \<in> M. e \<inter> {u} = {}} \<longleftrightarrow> e \<in> M - {{u, v}}"
+  proof
+    assume "e \<in> {e \<in> M. e \<inter> {u} = {}}"
+    then show "e \<in> M - {{u, v}}"
+      by auto
+  next
+    assume "e \<in> M - {{u, v}}"
+    then have eM: "e \<in> M" and ene: "e \<noteq> {u, v}"
+      by blast+
+    have not_u: "u \<notin> e"
+    proof
+      assume ue: "u \<in> e"
+      have "u \<in> {u, v}" by simp
+      then have "e = {u, v}"
+        using matching_unique_match[OF assms(1) ue _ eM assms(2)] by blast
+      with ene show False by simp
+    qed
+    show "e \<in> {e \<in> M. e \<inter> {u} = {}}"
+      using eM not_u by simp
+  qed
+qed
 
-lemma remove_vertex_matching': "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> M \<setminus> {v} = M - {{u,v}}"
+lemma remove_vertex_matching':
+  assumes "matching M" and "{u,v} \<in> M"
+  shows "M \<setminus> {v} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
-  by auto (metis empty_iff insert_iff matching_unique_match)+
+proof (intro set_eqI iffI)
+  fix e
+  assume lhs: "e \<in> {e \<in> M. e \<inter> {v} = {}}"
+  then have eM: "e \<in> M" and ev: "v \<notin> e"
+    by auto
+  show "e \<in> M - {{u,v}}"
+  proof -
+    have "e \<noteq> {u,v}"
+    proof
+      assume "e = {u,v}"
+      then have "v \<in> e" by simp
+      with ev show False by simp
+    qed
+    then show ?thesis
+      using eM by simp
+  qed
+next
+  fix e
+  assume rhs: "e \<in> M - {{u,v}}"
+  then have eM: "e \<in> M" and ene: "e \<noteq> {u,v}"
+    by simp_all
+  have vnotine: "v \<notin> e"
+  proof (rule ccontr)
+    assume "\<not> v \<notin> e"
+    then have ve: "v \<in> e" by simp
+    then have "e = {u,v}"
+    proof -
+      have "v \<in> {u,v}" by simp
+      then show ?thesis
+        using matching_unique_match[OF assms(1) ve _ eM assms(2)]
+        by blast
+    qed
+    then show False using ene by simp
+  qed
+  show "e \<in> {e \<in> M. e \<inter> {v} = {}}"
+    using eM vnotine by simp
+qed
 
 lemma remove_edge_matching_vs: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> Vs (M \<setminus> {u,v}) = Vs M - {u,v}"
-  by (auto simp add: remove_edge_matching Vs_def) (metis empty_iff insert_iff matching_unique_match)+
+proof -
+  assume matching: "matching M" and edge_in: "{u,v} \<in> M"
+  show "Vs (M \<setminus> {u,v}) = Vs M - {u,v}"
+  proof (rule equalityI)
+    show "Vs (M \<setminus> {u,v}) \<subseteq> Vs M - {u,v}"
+    proof (rule subsetI)
+      fix x
+      assume "x \<in> Vs (M \<setminus> {u,v})"
+      then have "x \<in> \<Union>(M \<setminus> {u,v})" by (simp add: Vs_def)
+      then have "\<exists>e. e \<in> M \<setminus> {u,v} \<and> x \<in> e" by blast
+      then obtain e where e_rem: "e \<in> M \<setminus> {u,v}" and x_in_e: "x \<in> e" by blast
+      from e_rem have e_mem: "e \<in> M"
+        unfolding remove_vertices_graph_def by simp
+      have x_in_Vs: "x \<in> Vs M"
+        using e_mem x_in_e by (auto simp: Vs_def)
+      have x_not_uv: "x \<notin> {u,v}"
+      proof
+        assume "x \<in> {u,v}"
+        with x_in_e have "x \<in> e \<inter> {u,v}" by auto
+        then have "e \<inter> {u,v} \<noteq> {}"
+        by blast
+        moreover from e_rem have "e \<inter> {u,v} = {}"
+          unfolding remove_vertices_graph_def by simp
+        ultimately show False by simp
+      qed
+      with x_in_Vs show "x \<in> Vs M - {u,v}" by simp
+    qed
+    show "Vs M - {u,v} \<subseteq> Vs (M \<setminus> {u,v})"
+    proof (rule subsetI)
+      fix x
+      assume "x \<in> Vs M - {u,v}"
+      then have x_in_Vs: "x \<in> Vs M" and x_not_uv: "x \<notin> {u,v}" by simp_all
+      from x_in_Vs have "x \<in> \<Union> M" by (simp add: Vs_def)
+      then have "\<exists>e. e \<in> M \<and> x \<in> e" by blast
+      then obtain e where e_mem: "e \<in> M" and x_in_e: "x \<in> e" by blast
+      have e_ne: "e \<noteq> {u,v}"
+        using x_in_e x_not_uv by blast
+      have e_disjoint: "e \<inter> {u,v} = {}"
+      proof (rule ccontr)
+        assume "e \<inter> {u,v} \<noteq> {}"
+        then obtain z where z_in_e: "z \<in> e" and z_in_uv: "z \<in> {u,v}" by blast
+        have "e = {u,v}"
+          by (rule matching_unique_match[OF matching z_in_e z_in_uv e_mem edge_in])
+        with e_ne show False by simp
+      qed
+      have e_rem: "e \<in> M \<setminus> {u,v}"
+        unfolding remove_vertices_graph_def
+        using e_mem e_disjoint by simp
+      show "x \<in> Vs (M \<setminus> {u,v})"
+        using e_rem x_in_e by (auto simp: Vs_def)
+    qed
+  qed
+qed
 
 lemma remove_vertex_matching_vs: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> Vs (M \<setminus> {u}) = Vs M - {u,v}"
-  by (metis remove_edge_matching remove_edge_matching_vs remove_vertex_matching)
+proof -
+  assume matching: "matching M" and edge_in: "{u,v} \<in> M"
+  have vertex_eq: "M \<setminus> {u} = M - {{u,v}}"
+    using matching edge_in by (rule remove_vertex_matching)
+  have vs_eq: "Vs (M - {{u,v}}) = Vs M - {u,v}"
+    using matching edge_in
+    by (simp only: remove_edge_matching[OF matching edge_in, symmetric] remove_edge_matching_vs[OF matching edge_in])
+  show ?thesis
+    by (simp only: vertex_eq vs_eq)
+qed
 
 lemma remove_vertex_matching_vs': "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> Vs (M \<setminus> {v}) = Vs M - {u,v}"
-  by (metis remove_edge_matching remove_edge_matching_vs remove_vertex_matching')
+proof -
+  assume matching: "matching M" and edge_in: "{u,v} \<in> M"
+  have vertex_eq: "M \<setminus> {v} = M - {{u,v}}"
+    using matching edge_in by (rule remove_vertex_matching')
+  have vs_eq: "Vs (M - {{u,v}}) = Vs M - {u,v}"
+    using matching edge_in
+    by (simp only: remove_edge_matching[OF matching edge_in, symmetric] remove_edge_matching_vs[OF matching edge_in])
+  show ?thesis
+    by (simp only: vertex_eq vs_eq)
+qed
 
 definition one_sided_matching :: "'a graph \<Rightarrow> 'a graph \<Rightarrow> 'a set \<Rightarrow> bool" where
   "one_sided_matching G M A = ( M \<subseteq> G \<and> (\<forall>a\<in>A. card {e\<in>M. a \<in> e} \<le> 1))"
@@ -391,16 +565,77 @@ lemma neighbours_of_Vs_in_matching_singl:
   assumes "graph_invar G"
   shows "\<exists> v. (neighbours_of_Vs M {x}) = {v}"
 proof -
-  have "\<exists>!e. e \<in> M \<and> x \<in> e"  using matching_def2 assms(2) assms(1)  by metis
+  have "\<exists>!e. e \<in> M \<and> x \<in> e"
+    using assms(1) assms(2) by (fastforce simp: matching_def2)
   then obtain e where e: " e \<in> M \<and> x \<in> e" by auto
   then have x_one_edge:"\<forall> e' \<in> M. e' \<noteq> e \<longrightarrow> x \<notin> e'" 
     using \<open>\<exists>!e. e \<in> M \<and> x \<in> e\<close> by blast
   have "\<exists>v. (\<exists> e\<in>M. x \<in> e \<and> v\<in>e \<and> x \<noteq> v)"
-    by (metis assms(3) assms(4) dblton_graphE dblton_graph_subset e insertCI)
+  proof -
+    have eG: "e \<in> G"
+      using e assms(3) by blast
+    have dblton_G: "dblton_graph G"
+      using assms(4) graph_invar_dblton by blast
+    have "\<exists>u w. e = {u, w} \<and> u \<noteq> w"
+      using dblton_G eG by (blast elim: dblton_graphE)
+    then obtain u w where uw: "e = {u, w}" "u \<noteq> w" by blast
+    have "x = u \<or> x = w"
+      using e uw(1) by fastforce
+    then show ?thesis
+    proof
+      assume xu: "x = u"
+      show ?thesis
+      proof (intro exI[of _ w] bexI[of _ e])
+        show "x \<in> e \<and> w \<in> e \<and> x \<noteq> w"
+          using e uw xu by auto
+        show "e \<in> M"
+          using e by blast
+      qed
+    next
+      assume xw: "x = w"
+      show ?thesis
+      proof (intro exI[of _ u] bexI[of _ e])
+        show "x \<in> e \<and> u \<in> e \<and> x \<noteq> u"
+          using e uw xw by auto
+        show "e \<in> M"
+          using e by blast
+      qed
+    qed
+  qed
   then obtain v where "(\<exists> e\<in>M. x\<in> e \<and> v \<in> e \<and> x \<noteq> v)" by auto
   have "\<forall>v'. (\<exists> e\<in>M. x\<in> e \<and> v'\<in>e \<and> x \<noteq> v') \<longrightarrow> v = v'"
-    by (metis \<open>\<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v\<close> assms(3) assms(4) dblton_graphE dblton_graph_subset
-              insertE singletonD x_one_edge) 
+  proof (rule allI, rule impI)
+    fix v'
+    assume "\<exists> e'\<in>M. x\<in> e' \<and> v'\<in>e' \<and> x \<noteq> v'"
+    then obtain e' where e'_props: "e' \<in> M" "x \<in> e'" "v' \<in> e'" "x \<noteq> v'"
+      by auto
+    have e'_eq: "e' = e"
+      using e'_props(1) e'_props(2) x_one_edge e by blast
+    hence v'_in_e: "v' \<in> e"
+      using e'_props(3) by simp
+    have e_in_G: "e \<in> G"
+      using e assms(3) by blast
+    have dbl: "dblton_graph G"
+      using assms(4) graph_invar_dblton by blast
+    obtain a b where ab: "e = {a, b}" "a \<noteq> b"
+      using e_in_G dbl by (blast elim: dblton_graphE)
+    have x_in: "x \<in> {a, b}"
+      using e ab(1) by simp
+    have v_in_e: "v \<in> e"
+    proof -
+      from \<open>\<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v\<close> obtain e0 where "e0 \<in> M" "x \<in> e0" "v \<in> e0" by blast
+      with x_one_edge e have "e0 = e" by blast
+      then show ?thesis using \<open>v \<in> e0\<close> by simp
+    qed
+    then have v_in: "v \<in> {a, b}"
+      using ab(1) by simp
+    have v'_in: "v' \<in> {a, b}"
+      using v'_in_e ab(1) by simp
+    have xv: "x \<noteq> v"
+      using \<open>\<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v\<close> by blast
+    show "v = v'"
+      using x_in v_in v'_in ab(2) xv e'_props(4) by auto
+  qed
   then have "\<exists>!v. \<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v" 
     using \<open>\<exists>e\<in>M. x \<in> e \<and> v \<in> e \<and> x \<noteq> v\<close> by blast
   then show ?thesis unfolding neighbours_of_Vs_def 
@@ -416,7 +651,18 @@ proof(rule ccontr)
   assume "\<not> y \<notin> neighbours_of_Vs M X"
   then show False 
     unfolding neighbours_of_Vs_def 
-    by (smt (verit) assms insert_iff matching_unique_match mem_Collect_eq singleton_iff)
+  proof -
+    from \<open>\<not> y \<notin> neighbours_of_Vs M X\<close>[unfolded neighbours_of_Vs_def]
+    obtain u e where hu_X: "u \<in> X" and he_M: "e \<in> M"
+      and hu_ne_y: "u \<noteq> y" and hu_e: "u \<in> e" and hy_e: "y \<in> e"
+      by blast
+    have edge_eq: "e = {x, y}"
+      using matching_unique_match[where v=y, OF assms(1) hy_e _ he_M assms(2)] by simp
+    then have "u \<in> {x, y}" using hu_e by simp
+    then have "u = x \<or> u = y" by (simp add: doubleton_eq_iff)
+    with hu_ne_y have "u = x" by blast
+    then show False using hu_X assms(3) by simp
+  qed
 qed
 
 lemma card_ther_vertex:
@@ -443,13 +689,27 @@ proof -
       unfolding neighbours_of_Vs_def by auto
     then have "e = {x, v}" 
       using assms(1) assms(3) by fastforce
-    then have "v \<notin> neighbours_of_Vs M F" 
-      by (metis assms(2) e insert.hyps(2) vertex_not_in_source_then_not_neighbours_of_Vs)
+    then have "v \<notin> neighbours_of_Vs M F"
+    proof -
+      have "{x, v} \<in> M" using e \<open>e = {x, v}\<close> by simp
+      then show ?thesis
+        using assms(2) insert.hyps(2)
+        by (meson vertex_not_in_source_then_not_neighbours_of_Vs)
+    qed
     then have  "neighbours_of_Vs M {x} \<inter> neighbours_of_Vs M F = {}" 
       by (simp add: v)
     then have card_sum_u: "card (neighbours_of_Vs M {x}) + card( neighbours_of_Vs M F) = 
                   card (neighbours_of_Vs M {x} \<union> neighbours_of_Vs M F)"
-      by (metis finite_neighbours_of_Vs assms(1) assms(3) card_Un_disjoint)
+    proof -
+      have fin1: "finite (neighbours_of_Vs M {x})"
+        using finite_neighbours_of_Vs assms(1) assms(3) by blast
+      have fin2: "finite (neighbours_of_Vs M F)"
+        using finite_neighbours_of_Vs assms(1) assms(3) by blast
+      show ?thesis
+        using card_Un_disjoint[OF fin1 fin2
+                \<open>neighbours_of_Vs M {x} \<inter> neighbours_of_Vs M F = {}\<close>]
+        by linarith
+    qed
     have " neighbours_of_Vs M (insert x F) = neighbours_of_Vs M F \<union> neighbours_of_Vs M {x}"
       by (meson neighbours_of_Vs_insert)
     then have 3: "card (neighbours_of_Vs M (insert x F)) = card (neighbours_of_Vs M F) + 1"
@@ -457,7 +717,14 @@ proof -
     have "card (insert x F) = card F + 1"
       by (simp add: insert.hyps(1) insert.hyps(2)) 
     then show  "card (insert x F) = card (neighbours_of_Vs M (insert x F))" using 3
-      by (metis insert.hyps(3) insert.prems insert_subset)
+    proof -
+      have hF: "F \<subseteq> Vs M"
+        using insert.prems insert_subset by blast
+      have hcardF: "card F = card (neighbours_of_Vs M F)"
+        using insert.hyps(3) hF by blast
+      show ?thesis
+        using \<open>card (insert x F) = card F + 1\<close> hcardF 3 by linarith
+    qed
   qed
 qed
 
@@ -726,8 +993,17 @@ lemma aug_paths_are_even:
   shows "even (length p)"
   using assms
   unfolding matching_augmenting_path_def
-  by (metis assms edges_of_path_length' even_add length_greater_0_conv
-            matching_augmenting_path_odd_length odd_one odd_pos)
+proof -
+  have len_ge_2: "length p \<ge> 2" using assms unfolding matching_augmenting_path_def by auto
+  hence ne: "p \<noteq> []" by auto
+  have odd_edges: "odd (length (edges_of_path p))"
+    using assms matching_augmenting_path_odd_length by blast
+  have len_eq: "length p = length (edges_of_path p) + 1"
+    using ne edges_of_path_length' by simp
+  show ?thesis
+    using len_eq odd_edges
+    by (simp add: even_add)
+qed
 
 lemma odd_alt_path_rev:
   assumes odd_lens: "odd (length p1)" "length p1 \<ge> 2" and alt_paths: "alt_path (-M) p1"
@@ -1556,8 +1832,23 @@ next
     proof (intro in_remove_verticesI, goal_cases)
       case 2
       then show ?case
-        by (auto simp: vs_member)
-           (metis matching_unique_match maximal_matchingD subsetD)
+      proof (auto simp: vs_member)
+        fix v e'
+        assume v_in_e: "v \<in> e"
+        assume e'_in_E: "e' \<in> E"
+        assume v_in_e': "v \<in> e'"
+        have e'_in_M: "e' \<in> M"
+          using \<open>E \<subseteq> M\<close> e'_in_E by blast
+        have match: "matching M"
+          using \<open>maximal_matching G M\<close> by (rule maximal_matchingD)
+        have eq: "e = e'"
+          using match v_in_e v_in_e' \<open>e \<in> M\<close> e'_in_M
+          by (rule matching_unique_match)
+        have "u \<in> Vs E"
+          using \<open>u \<in> e\<close> e'_in_E eq by (auto simp: vs_member)
+        with \<open>X = Vs E\<close> show False
+          using \<open>u \<notin> X\<close> by simp
+      qed
     qed blast
 
     with \<open>u \<in> e\<close> show ?thesis
@@ -1571,8 +1862,23 @@ next
     proof (intro in_remove_verticesI, goal_cases)
       case 2
       then show ?case
-        by (auto simp: vs_member)
-           (metis matching_unique_match maximal_matchingD subsetD)
+        proof (auto simp: vs_member)
+          fix w e'
+          assume w_in_e: "w \<in> e"
+          assume e'_in_E: "e' \<in> E"
+          assume w_in_e': "w \<in> e'"
+          have e'_in_M: "e' \<in> M"
+            using \<open>E \<subseteq> M\<close> e'_in_E by blast
+          have match: "matching M"
+            using \<open>maximal_matching G M\<close> by (rule maximal_matchingD)
+          have eq: "e = e'"
+            using match w_in_e w_in_e' \<open>e \<in> M\<close> e'_in_M
+            by (rule matching_unique_match)
+          have "v \<in> Vs E"
+            using \<open>v \<in> e\<close> e'_in_E eq by (auto simp: vs_member)
+          with \<open>X = Vs E\<close> show False
+            using \<open>v \<notin> X\<close> by simp
+        qed
     qed blast
 
     with \<open>v \<in> e\<close> show ?thesis
@@ -2482,8 +2788,27 @@ proof -
     using assms(2) unfolding cover_matching_def by auto
   have "\<forall> e \<in> G. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs G - A)"
     using assms(1) unfolding partitioned_bipartite_def by auto
-  then have "\<forall>e \<in> M. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs M - A)" 
-    by (metis M_subs Diff_iff edges_are_Vs insert_commute subsetD)
+  then have "\<forall>e \<in> M. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs M - A)"
+    proof -
+      assume forG: "\<forall>e\<in>G. \<exists>u v. e = {u, v} \<and> u \<in> A \<and> v \<in> Vs G - A"
+      show "\<forall>e \<in> M. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs M - A)"
+      proof
+        fix e
+        assume eM: "e \<in> M"
+        then have eG: "e \<in> G"
+          using M_subs by blast
+        obtain u v where uv: "e = {u, v}" "u \<in> A" "v \<in> Vs G - A"
+          using forG eG by auto
+        have vnotA: "v \<notin> A"
+          using uv(3) by (simp add: Diff_iff)
+        have "{v, u} \<in> M"
+          using eM uv(1) by (simp add: insert_commute)
+        then have vVsM: "v \<in> Vs M"
+          using edges_are_Vs by blast
+        show "\<exists>u v. e = {u, v} \<and> u \<in> A \<and> v \<in> Vs M - A"
+          using uv(1) uv(2) vVsM vnotA by blast
+      qed
+    qed
   then show ?thesis 
     unfolding partitioned_bipartite_def
     using \<open>A \<subseteq> Vs M\<close> \<open>graph_invar M\<close>  by auto
