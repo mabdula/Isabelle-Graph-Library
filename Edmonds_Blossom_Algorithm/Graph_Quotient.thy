@@ -7,7 +7,7 @@ subsection \<open>List Auxiliary Lemmas\<close>
 
 lemma neq_Nil_conv_2:
   "l \<noteq> [] \<longleftrightarrow> (\<exists>l' x. l = l' @ [x])"
-  by (metis snoc_eq_iff_butlast)
+  by (auto intro: append_butlast_last_id[symmetric])
 
 lemma tl_distinct_rev:
   assumes "hd l = last l" "distinct (tl l)"
@@ -49,7 +49,15 @@ next
   case (Cons a l)
   then show ?case
     apply auto
-    subgoal by (metis distinct_butlast not_distinct_conv_prefix snoc_eq_iff_butlast)
+    subgoal
+    proof -
+      assume "distinct (tl l) \<Longrightarrow> hd l = last l \<Longrightarrow> distinct (butlast l)"
+      assume "distinct l" "a = last l" "l \<noteq> []" "last l \<in> set (butlast l)"
+      from \<open>l \<noteq> []\<close> have eq: "butlast l @ [last l] = l" by (simp add: append_butlast_last_id)
+      from \<open>last l \<in> set (butlast l)\<close> have "\<not> distinct (butlast l @ [last l])"
+        by (simp add: distinct_append)
+      with eq \<open>distinct l\<close> show False by simp
+    qed
     subgoal by (simp add: distinct_butlast)
     done
 qed
@@ -63,8 +71,60 @@ proof(induction p)
   then show ?case by simp
 next
   case (Cons a' p')
-  then show ?case
-    by (auto; metis append_Nil in_set_conv_decomp_first append_Cons) 
+  show ?case
+  proof (cases "Q a'")
+    case True
+    note Qa' = True
+    \<comment> \<open>Since v1 \<noteq> v2, at least one of them lies in set p'\<close>
+    have "\<exists>y \<in> set p'. Q y"
+    proof -
+      have mem1: "v1 = a' \<or> v1 \<in> set p'" using Cons.prems(1) by simp
+      have mem2: "v2 = a' \<or> v2 \<in> set p'" using Cons.prems(2) by simp
+      show ?thesis
+      proof (cases "v1 = a'")
+        assume "v1 = a'"
+        then have "v2 \<noteq> a'" using Cons.prems(5) by simp
+        then have "v2 \<in> set p'" using mem2 by simp
+        with Cons.prems(4) show ?thesis by blast
+      next
+        assume "v1 \<noteq> a'"
+        then have "v1 \<in> set p'" using mem1 by simp
+        with Cons.prems(3) show ?thesis by blast
+      qed
+    qed
+    then obtain y where Qy: "Q y" and y_mem: "y \<in> set p'" by blast
+    from y_mem obtain ys zs where decomp: "p' = ys @ y # zs"
+      by (meson split_list)
+    \<comment> \<open>a' # p' = [] @ a' # ys @ y # zs\<close>
+    show ?thesis
+      using Qa' Qy decomp
+      by (intro exI[of _ a'] exI[of _ y] exI[of _ "[]"] exI[of _ ys] exI[of _ zs]) simp
+  next
+    case False
+    \<comment> \<open>\<not>Q a' forces v1 \<noteq> a' and v2 \<noteq> a', so both land in p'\<close>
+    have v1_ne: "v1 \<noteq> a'"
+    proof
+      assume "v1 = a'"
+      with Cons.prems(3) have "Q a'" by simp
+      with False show False by simp
+    qed
+    have v2_ne: "v2 \<noteq> a'"
+    proof
+      assume "v2 = a'"
+      with Cons.prems(4) have "Q a'" by simp
+      with False show False by simp
+    qed
+    have v1_p': "v1 \<in> set p'" using Cons.prems(1) v1_ne by simp
+    have v2_p': "v2 \<in> set p'" using Cons.prems(2) v2_ne by simp
+    \<comment> \<open>Apply the induction hypothesis to p'\<close>
+    obtain w x qs rs ss where
+      decomp: "p' = qs @ w # rs @ x # ss" and Qw: "Q w" and Qx: "Q x"
+      using Cons.IH[OF v1_p' v2_p' Cons.prems(3) Cons.prems(4) Cons.prems(5)] by blast
+    \<comment> \<open>a' # p' = (a' # qs) @ w # rs @ x # ss\<close>
+    show ?thesis
+      using decomp Qw Qx
+      by (intro exI[of _ w] exI[of _ x] exI[of _ "a' # qs"] exI[of _ rs] exI[of _ ss]) simp
+  qed
 qed
 
 lemma two_mem_list_split':
@@ -76,11 +136,64 @@ proof(induction p)
   then show ?case by simp
 next
   case (Cons a' p')
-  then show ?case
-    apply auto 
-    subgoal using split_list by fastforce
-    subgoal using assms(4) set_empty split_list by fastforce
-    by(metis Cons_eq_appendI all_not_in_conv append.left_neutral append_Cons assms(3) assms(4) empty_set set_ConsD)+
+  note IH = Cons.IH
+  show ?case
+  proof (cases "Q a'")
+    case True
+    note Qa' = True
+    \<comment> \<open>Since v1 \<noteq> v2, at least one of them lies in set p'\<close>
+    have "\<exists>y \<in> set p'. Q y"
+    proof -
+      have mem1: "v1 = a' \<or> v1 \<in> set p'" using Cons.prems(1) by simp
+      have mem2: "v2 = a' \<or> v2 \<in> set p'" using Cons.prems(2) by simp
+      show ?thesis
+      proof (cases "v1 = a'")
+        assume "v1 = a'"
+        then have "v2 \<noteq> a'" using Cons.prems(5) by simp
+        then have "v2 \<in> set p'" using mem2 by simp
+        with Cons.prems(4) show ?thesis by blast
+      next
+        assume "v1 \<noteq> a'"
+        then have "v1 \<in> set p'" using mem1 by simp
+        with Cons.prems(3) show ?thesis by blast
+      qed
+    qed
+    then obtain y where Qy: "Q y" and y_mem: "y \<in> set p'"
+      by blast
+    from y_mem obtain ys zs where decomp: "p' = ys @ y # zs"
+      by (meson split_list)
+    \<comment> \<open>a' # p' = [] @ a' # ys @ y # zs\<close>
+    show ?thesis
+      using Qa' Qy decomp
+      by (intro exI[of _ a'] exI[of _ y] exI[of _ "[]"] exI[of _ ys] exI[of _ zs]) simp
+  next
+    case False
+    \<comment> \<open>\<not> Q a' forces v1 \<noteq> a' and v2 \<noteq> a', so both land in p'\<close>
+    have v1_ne: "v1 \<noteq> a'"
+    proof
+      assume "v1 = a'"
+      with Cons.prems(3) have "Q a'" by simp
+      with False show False by simp
+    qed
+    have v2_ne: "v2 \<noteq> a'"
+    proof
+      assume "v2 = a'"
+      with Cons.prems(4) have "Q a'" by simp
+      with False show False by simp
+    qed
+    have v1_p': "v1 \<in> set p'" using Cons.prems(1) v1_ne by simp
+    have v2_p': "v2 \<in> set p'" using Cons.prems(2) v2_ne by simp
+    \<comment> \<open>Apply the induction hypothesis to p'\<close>
+    obtain w x qs rs ss where
+      decomp: "p' = qs @ w # rs @ x # ss" and Qw: "Q w" and Qx: "Q x"
+      and noQ_qs: "\<forall>x\<in>set qs. \<not> Q x"
+      using IH[OF v1_p' v2_p' Cons.prems(3) Cons.prems(4) Cons.prems(5)]
+      by blast
+    \<comment> \<open>a' # p' = (a' # qs) @ w # rs @ x # ss\<close>
+    show ?thesis
+      using decomp Qw Qx noQ_qs False
+      by (intro exI[of _ w] exI[of _ x] exI[of _ "a' # qs"] exI[of _ rs] exI[of _ ss]) auto
+  qed
 qed
 
 lemma one_mem_pure_suff:
@@ -94,9 +207,21 @@ next
   case (Cons a' p')
   then show ?case
     apply auto 
-    subgoal by (metis (no_types, lifting) Cons.prems(1) split_list_last_prop)
+    subgoal
+    proof -
+      have mem: "\<exists>x\<in>set (a' # p'). Q x"
+        using Cons.prems(1) Cons.prems(2) by blast
+      from split_list_last_prop[OF mem]
+      obtain w p1 p2
+        where split_eq:   "a' # p' = p1 @ w # p2"
+          and split_Qw:   "Q w"
+          and split_tail: "\<not> (\<exists>z\<in>set p2. Q z)"
+        by blast
+      then show ?thesis
+        using split_eq split_Qw split_tail by blast
+    qed
     subgoal by (meson Cons_eq_appendI)
-    subgoal by (metis append_Cons)
+    subgoal by (blast intro: Cons_eq_appendI)
     done
 qed
 
@@ -112,8 +237,26 @@ next
   then show ?case
     apply auto 
     subgoal by fastforce
-    subgoal by (metis Cons_eq_append_conv all_not_in_conv append_Cons assms(2) list.set(1) set_ConsD)
-    subgoal by (metis Cons_eq_append_conv all_not_in_conv append_Cons list.set(1) set_ConsD)
+    subgoal premises hyps for p1 p2
+    proof (cases "Q a'")
+      case True
+      show ?thesis
+        using True by (intro exI[where x=a'] exI[where x="[]"] exI[where x="p1 @ v # p2"] conjI; simp)
+    next
+      case False
+      show ?thesis
+        using False hyps by (intro exI[where x=v] exI[where x="a' # p1"] exI[where x=p2] conjI; simp)
+    qed
+    subgoal premises hyps for w p2 p1
+    proof (cases "Q a'")
+      case True
+      show ?thesis
+        using True hyps by (intro exI[where x=a'] exI[where x="[]"] exI[where x="p2 @ w # p1"] conjI; simp)
+    next
+      case False
+      show ?thesis
+        using False hyps by (intro exI[where x=w] exI[where x="a' # p2"] exI[where x=p1] conjI; simp)
+    qed
     done
 qed
 
@@ -141,12 +284,15 @@ next
         using Cons        
         by auto
       then obtain w p1 p2 where "p = p1 @ w # p2 \<and> Q w \<and> (\<forall>x\<in>set p2. \<not> Q x)"
-        using one_mem_pure_suff Cons
-        by metis
+        using one_mem_pure_suff[where v=v2 and p=p and Q=Q, OF \<open>v2 \<in> set p\<close> Cons.prems(4)]
+        by fast
       then have "a # p = [] @ v1 # p1 @ w # p2 \<and> Q v1 \<and> Q w \<and> v1 \<noteq> w \<and> (\<forall>x\<in>set []. \<not> Q x) \<and> (\<forall>x\<in>set p2. \<not> Q x)"
         using v1_eq_a Cons.prems by auto
       then show ?thesis
-        by metis
+        by (intro exI[where x = "[]"] exI[where x = p1]
+                  exI[where x = p2] exI[where x = v1]
+                  exI[where x = w])
+           simp
     qed
   next
     case v1_neq_a: False
@@ -157,12 +303,16 @@ next
         using Cons        
         by auto
       then obtain w p1 p2 where "p = p1 @ w # p2 \<and> Q w \<and> (\<forall>x\<in>set p2. \<not> Q x)"
-        using one_mem_pure_suff Cons
-        by metis
+        using one_mem_pure_suff[where v=v1 and p=p and Q=Q,
+                                 OF \<open>v1 \<in> set p\<close> Cons.prems(3)]
+        by fast
       then have "a # p = [] @ v2 # p1 @ w # p2 \<and> Q v2 \<and> Q w \<and> v2 \<noteq> w \<and> (\<forall>x\<in>set []. \<not> Q x) \<and> (\<forall>x\<in>set p2. \<not> Q x)"
         using v2_eq_a Cons.prems by auto
       then show ?thesis
-        by metis
+       by (intro exI[where x = "[]"] exI[where x = p1]
+                 exI[where x = p2] exI[where x = v2]
+                 exI[where x = w])
+          simp
     next
       case v2_neq_a: False
       show ?thesis
@@ -172,12 +322,16 @@ next
           using Cons v1_neq_a
           by auto
         then obtain w p1 p2 where "p = p1 @ w # p2 \<and> Q w \<and> (\<forall>x\<in>set p2. \<not> Q x)"
-          using one_mem_pure_suff Cons
-          by metis
+          using one_mem_pure_suff[where v = v1 and p = p and Q = Q,
+                                   OF \<open>v1 \<in> set p\<close> Cons.prems(3)]
+          by fast
         then have "a # p = [] @ a # p1 @ w # p2 \<and> Q a \<and> Q w \<and> a \<noteq> w \<and> (\<forall>x\<in>set []. \<not> Q x) \<and> (\<forall>x\<in>set p2. \<not> Q x)"
           using Cons.prems Qa by auto
         then show ?thesis
-          by metis
+          by (intro exI[where x = "[]"] exI[where x = p1]
+                    exI[where x = p2] exI[where x = a]
+                    exI[where x = w])
+             simp
       next
         have "v2 \<in> set p"
           using Cons v2_neq_a
@@ -192,7 +346,23 @@ next
           by auto
         moreover case False
         ultimately show ?thesis
-          by (metis set_ConsD)
+        proof -
+          from wxp1p2p3
+          have eq:  "a # p = (a # p1) @ w # p2 @ x # p3"
+            and Qw: "Q w"
+            and Qx: "Q x"
+            and neq: "w \<noteq> x"
+            and hp1: "\<forall>y\<in>set p1. \<not> Q y"
+            and hp3: "\<forall>y\<in>set p3. \<not> Q y"
+            by auto
+          have hall: "\<forall>y\<in>set (a # p1). \<not> Q y"
+            using hp1 \<open>\<not> Q a\<close> by auto
+          show ?thesis
+            by (intro exI[where x = "a # p1"] exI[where x = p2]
+                      exI[where x = p3] exI[where x = w]
+                      exI[where x = x])
+               (simp add: eq Qw Qx neq hall hp3)
+        qed
       qed
     qed
   qed
@@ -210,7 +380,7 @@ proof-
     by auto
   then show ?thesis
     using p1p2
-    by metis
+    by (intro exI[of _ p1] exI[of _ p2] conjI)
 qed
 
 lemma card2_subset:
@@ -227,7 +397,11 @@ lemma odd_cycle_nempty:
   assumes "odd_cycle p"
   shows "p \<noteq> []"
   unfolding odd_cycle_def
-  by (metis One_nat_def assms list.size(3) not_less_eq_eq one_le_numeral odd_cycle_def)
+proof
+  assume "p = []"
+  with assms show False
+    unfolding odd_cycle_def by simp
+qed
 
 lemma odd_cycleD:
   assumes "odd_cycle p"
@@ -274,14 +448,32 @@ next
   then have "edges_of_path (stem @ [hd C]) @ edges_of_path C  = edges_of_path (stem @ C)"
     using edges_of_path_append_2 by force
   then have "alt_path M (stem @ [hd C])"
-    by (metis alt_list_append_1 match_blossomD(1)[OF assms])
+  proof -
+    have h_full: "alt_path M (stem @ C)"
+      by (rule match_blossomD(1)[OF assms])
+    show "alt_path M (stem @ [hd C])"
+      using alt_list_append_1[THEN conjunct1, of "\<lambda>e. e \<notin> M" "\<lambda>e. e \<in> M"
+            "edges_of_path (stem @ [hd C])" "edges_of_path C"]
+            h_full
+            \<open>edges_of_path (stem @ [hd C]) @ edges_of_path C = edges_of_path (stem @ C)\<close>
+      by auto
+  qed
   moreover case False
   ultimately have "last (edges_of_path (stem @ [hd C])) \<in> M"
     using match_blossomD(5)[OF assms]
     using alternating_eq_iff_even alternating_list_even_last by blast
   then show ?thesis
-    using alt_list_append_1' match_blossomD(1)[OF assms]
-    by (metis False \<open>edges_of_path (stem @ [hd C]) @ edges_of_path C = edges_of_path (stem @ C)\<close>)
+  proof -
+    have h_concat: "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M)
+          (edges_of_path (stem @ [hd C]) @ edges_of_path C)"
+      using match_blossomD(1)[OF assms]
+            \<open>edges_of_path (stem @ [hd C]) @ edges_of_path C = edges_of_path (stem @ C)\<close>
+      by auto
+    note alt_conj = alt_list_append_1'[OF h_concat False]
+    with \<open>last (edges_of_path (stem @ [hd C])) \<in> M\<close>
+    show ?thesis
+      by blast
+  qed
 qed
 
 abbreviation "blossom G M stem C \<equiv> path G (stem @ C) \<and> match_blossom M stem C"
@@ -370,17 +562,93 @@ qed
 lemma edge_in_quot_in_graph_1:
   assumes edge: "(P ` e) \<in> (quot_graph P E)" "e \<subseteq> s"
   shows "e \<in> E"
-  using assms good_quot_map
-  unfolding quot_graph_def image_def
-  by (smt dual_order.antisym mem_Collect_eq subset_eq)
+proof -
+  have "P ` e \<in> {e'. \<exists>e\<in>E. e' = P ` e}"
+    using edge(1) unfolding quot_graph_def by simp
+  then obtain f where f: "f \<in> E" "P ` e = P ` f"
+    by auto
+  have eq: "e = f"
+  proof (rule antisym)
+    show "e \<subseteq> f"
+    proof (rule subsetI)
+      fix x assume "x \<in> e"
+      then have "x \<in> s" using edge(2) by auto
+      then have Px: "P x = x" by simp
+      have "P x \<in> P ` e" using \<open>x \<in> e\<close> by auto
+      then have "P x \<in> P ` f" using f(2) by auto
+      then obtain y where y: "y \<in> f" "P y = P x" by auto
+      have "y \<in> s"
+      proof (rule ccontr)
+        assume "y \<notin> s"
+        then have "P y = u" by simp
+        with y(2) Px have "x = u" by simp
+        with \<open>x \<in> s\<close> have "u \<in> s" by simp
+        with good_quot_map(1) show False by simp
+      qed
+      then have "P y = y" by simp
+      with y(2) Px have "y = x" by simp
+      then show "x \<in> f" using y(1) by simp
+    qed
+  next
+    show "f \<subseteq> e"
+    proof (rule subsetI)
+      fix x assume "x \<in> f"
+      then have "P x \<in> P ` f" by auto
+      then have "P x \<in> P ` e" using f(2) by auto
+      then obtain y where y: "y \<in> e" "P y = P x" by auto
+      have "y \<in> s" using y(1) edge(2) by auto
+      then have Py: "P y = y" by simp
+      have "x \<in> s"
+      proof (rule ccontr)
+        assume "x \<notin> s"
+        then have "P x = u" by simp
+        with y(2) Py have "y = u" by simp
+        with \<open>y \<in> s\<close> have "u \<in> s" by simp
+        with good_quot_map(1) show False by simp
+      qed
+      then have "P x = x" by simp
+      with y(2) Py have "x = y" by simp
+      then show "x \<in> e" using y(1) by simp
+    qed
+  qed
+  then show ?thesis using f(1) by auto
+qed
 
 lemma edge_in_quot_in_graph_1':
   assumes edge: "e \<in> (quot_graph P M)" "e \<subseteq> s" "M \<subseteq> E"
   shows "e \<in> M"
   using assms good_quot_map
   unfolding quot_graph_def Vs_def image_def
-  apply simp
-  by (smt dual_order.antisym mem_Collect_eq subset_eq)
+  proof -
+    have e_in: "e \<in> quot_graph P M" and e_sub_s: "e \<subseteq> s" and M_sub: "M \<subseteq> E"
+      using assms by auto
+    obtain ea where ea: "ea \<in> M" "e = {y. \<exists>x\<in>ea. y = P x}"
+      using e_in unfolding quot_graph_def image_def by auto
+    have all_in_s: "\<forall>xa\<in>ea. xa \<in> s"
+    proof
+      fix xa assume "xa \<in> ea"
+      have "P xa \<in> e" using ea(2) \<open>xa \<in> ea\<close> by auto
+      then have "P xa \<in> s" using e_sub_s by auto
+      then show "xa \<in> s" using good_quot_map(1) by (auto split: if_splits)
+    qed
+    have "e = ea"
+    proof (rule set_eqI)
+      fix x
+      show "(x \<in> e) = (x \<in> ea)"
+      proof
+        assume "x \<in> e"
+        then obtain xa where "xa \<in> ea" "x = P xa" using ea(2) by auto
+        then have "xa \<in> s" using all_in_s by auto
+        then show "x \<in> ea" using \<open>x = P xa\<close> \<open>xa \<in> ea\<close> by simp
+      next
+        assume "x \<in> ea"
+        then have "x \<in> s" using all_in_s by auto
+        then have "P x = x" by simp
+        then show "x \<in> e" using ea(2) \<open>x \<in> ea\<close> by auto
+      qed
+    qed
+    then show "e \<in> M" using ea(1) by simp
+  qed
 
 (*lemma edge_in_quot_in_graph_2:
   assumes edge: "(P ` e) \<in> (quot_graph P E)" "u \<in> P ` e"
@@ -585,9 +853,10 @@ case path0
    by simp
 next
   case (path1 v)
+  have hv: "v \<in> Vs E"
+    using path1.prems by auto
   then have "P v \<in> Vs (quot_graph P E)"
-    using Vs_quot_graph
-    by (smt (verit, ccfv_SIG))
+    by (rule Vs_quot_graph)
   then show ?case
     using v_in_quot_iff_minus_u path1
     by (simp add: good_quot_map(1))
@@ -595,8 +864,7 @@ next
   case (path2 v v' vs)
   then show ?case
     using good_quot_map edge_in_graph_in_quot[OF path2.hyps(1)]
-    apply (auto simp: image_def)
-    by (smt (verit, ccfv_threshold) \<open>\<And>P. P ` {v, v'} \<in> quot_graph P E\<close> image_empty image_insert)
+    by (auto simp: image_insert image_empty dest: meta_spec[where x="P"])
 
 qed
 
@@ -605,7 +873,7 @@ lemma qug_path_iff_case_1_ii:
   shows "path E p = path (quotG E) p"
   using path path_is_quot_path'[OF _ path] path_is_quot_path_diff_u[OF _ path] good_quot_map
   apply auto
-  by (smt (verit, del_insts) map_idI path(1) subset_eq)
+  by (simp add: list.map_ident_strong subset_eq)
 
 
 lemma path_with_cycle_at_beginning:
@@ -720,20 +988,63 @@ proof(rule ccontr)
     using cycle(3)
     by (simp add: distinct_edges_of_vpath)
   then have "distinct (edges_of_path p)"
-    using cycle[unfolded odd_cycle_def] 
-    apply (cases p; simp add: distinct_edges_of_vpath split: if_splits)
-    by (metis alt_list.cases inM length_greater_0_conv list.sel(1) odd_pos)
+  proof (cases p)
+    case Nil
+    with cycle[unfolded odd_cycle_def] show ?thesis by simp
+  next
+    case (Cons x xs)
+    have "xs \<noteq> []"
+      using cycle[unfolded odd_cycle_def] Cons by auto
+    with cycle[unfolded odd_cycle_def] Cons \<open>distinct (edges_of_path (tl p))\<close> inM
+    show ?thesis
+      by (auto simp: distinct_edges_of_vpath intro: alt_list.cases)
+  qed
   moreover have "length (edges_of_path p) \<ge> 2"
     using cycle(1)
     unfolding odd_cycle_def
-    using edges_of_path_length
-    by (smt One_nat_def Suc_1 Suc_leI antisym_conv diff_Suc_Suc diff_zero eq_diff_iff le_trans less_le numeral_3_eq_3 odd_pos one_le_numeral)
+  proof -
+    have len_bound: "3 \<le> length p"
+      using cycle(1) unfolding odd_cycle_def by linarith
+    have edges_len: "length (edges_of_path p) = length p - 1"
+      by (rule edges_of_path_length)
+    show ?thesis using len_bound edges_len by linarith
+  qed
   ultimately have "hd (edges_of_path p) \<noteq> last (edges_of_path p)"
-    by (metis One_nat_def Suc_1 Suc_le_length_iff distinct.simps(2) last.simps last_in_set le_zero_eq length_0_conv list.sel(1) nat.simps(3))
+  proof -
+    show "hd (edges_of_path p) \<noteq> last (edges_of_path p)"
+    proof (rule notI)
+      assume eq: "hd (edges_of_path p) = last (edges_of_path p)"
+      obtain e es where es_def: "edges_of_path p = e # es"
+        using \<open>2 \<le> length (edges_of_path p)\<close>
+        by (cases "edges_of_path p") simp_all
+      have es_ne: "es \<noteq> []"
+      proof
+        assume "es = []"
+        with es_def have "length (edges_of_path p) = 1" by simp
+        with \<open>2 \<le> length (edges_of_path p)\<close> show False by simp
+      qed
+      have hd_e: "hd (edges_of_path p) = e"
+        by (simp add: es_def)
+      have last_in_es: "last (edges_of_path p) \<in> set es"
+        using es_ne es_def by (simp add: last_ConsR last_in_set)
+      have e_not_in_es: "e \<notin> set es"
+        using \<open>distinct (edges_of_path p)\<close> es_def by simp
+      show False
+        using eq hd_e last_in_es e_not_in_es by simp
+    qed
+  qed
   moreover have "last p \<in> (hd (edges_of_path p))" "last p \<in> (last (edges_of_path p))"
     using cycle
     unfolding odd_cycle_def
-    subgoal by (metis One_nat_def Suc_1 hd_v_in_hd_e linear not_less_eq_eq numeral_3_eq_3)
+    subgoal
+    proof -
+      have cyc: "hd p = last p" using cycle(1) by (rule odd_cycleD)
+      from cycle(1) have "3 \<le> length p" by (simp add: odd_cycleD)
+      then have len2: "2 \<le> length p" by linarith
+      have "hd p \<in> hd (edges_of_path p)"
+        using hd_v_in_hd_e[OF len2] .
+      with cyc show ?thesis by simp
+    qed
     subgoal
       using alternating_list_odd_last cycle(1) cycle(2) inM odd_cycleD(2) by blast
     done
@@ -839,7 +1150,17 @@ proof(rule ccontr; simp)
       ultimately show ?thesis
         using match[unfolded matching_def2]
               e v F1
-        by (metis edges_are_Vs insertI1)
+      proof -
+        obtain e' where e': "e' \<in> set (edges_of_path p)" "v \<in> e'" "e' \<in> M"
+          using \<open>\<exists>e'\<in>set (edges_of_path p). v \<in> e' \<and> e' \<in> M\<close> by auto
+        have ve: "v \<in> e"
+          using v(1) by simp
+        have neq: "e \<noteq> e'"
+          using F1 e'(1) by blast
+        show False
+          using match[unfolded matching_def2] e(1) e'(3) ve e'(2) neq
+          by blast
+      qed
     next
       case F2: False
       moreover have *: "last p \<notin> s"

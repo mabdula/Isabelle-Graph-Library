@@ -132,8 +132,20 @@ lemma expectation_sum_pmf_of_set:
 
 lemma bool_pmf_is_bernoulli_pmf:
   "\<exists>p. bool_pmf = bernoulli_pmf p \<and> 0 \<le> p \<and> p \<le> 1"
-  by (auto simp: pmf_eq_iff)
-     (metis (full_types) pmf_False_conv_True pmf_bernoulli_True pmf_le_1 pmf_nonneg)
+proof -
+  let ?p = "pmf bool_pmf True"
+  show ?thesis
+  proof (intro exI[of _ ?p] conjI)
+    show "0 \<le> ?p" by (rule pmf_nonneg)
+    show "?p \<le> 1" by (rule pmf_le_1)
+    show "bool_pmf = bernoulli_pmf ?p"
+    proof (rule pmf_eq_iff[THEN iffD2], clarify)
+      fix b show "pmf bool_pmf b = pmf (bernoulli_pmf ?p) b"
+        using \<open>0 \<le> ?p\<close> \<open>?p \<le> 1\<close>
+        by (cases b) (simp_all add: pmf_False_conv_True pmf_bernoulli_True pmf_bernoulli_False)
+    qed
+  qed
+qed
 
 lemma bool_pmf_is_bernoulli_pmfE:
   obtains p where "bool_pmf = bernoulli_pmf p" "0 \<le> p" "p \<le> 1"
@@ -171,7 +183,7 @@ proof -
 
   also have "\<dots> = sum f {a \<in> A. f a = 1}"
     using \<open>\<forall>x. f x \<noteq> 0 \<longrightarrow> f x = 1\<close>
-    by (metis zero_neq_one)
+    by (intro sum.cong) auto
 
   also have "\<dots> = n"
     using assms
