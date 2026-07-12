@@ -1,5 +1,5 @@
 theory IDFS
-  imports DFS_Avoid DDFS iq.iq
+  imports DFS_Avoid DDFS
 begin
 
 text \<open>The incremental DFS assumed by the DDFS development, stated ops-generically over the
@@ -40,7 +40,7 @@ ops. Returns the result slot and the final visited slot (which is monotone in th
 visited, by the lemma DFS_avoid_vis_mono from the DFS_avoid locale).\<close>
 
 definition "IDFS_impl P avoid p vis =
-   (let st = DFS_avoid.avoid_final_state
+   (let st = DFS_avoid.avoid_final_state_impl
         insert isin sel vset_empty union diff lookup
         G (IDFS_stack0 avoid vis p) vis avoid P
     in (DFS_avoid_state.ret st, DFS_avoid_state.visited st))"
@@ -149,7 +149,7 @@ instantiation is unfolded.\<close>
 lemma IDFS_impl_pair:
   "IDFS_impl P avoid p vis =
      (DFS_avoid_state.ret Rst, DFS_avoid_state.visited Rst)"
-  by (simp add: IDFS_impl_def Let_def av.avoid_final_state_def)
+  by (simp add: IDFS_impl_def Let_def av.avoid_final_state_impl_same)
 
 text \<open>The final visited slot stays inside dVs of the digraph (used by the closure/complete
 soundness steps that need a dVs-side fact).\<close>
@@ -233,7 +233,7 @@ proof -
   with vis' vnew edge av.DFS_avoid_closure show ?thesis by auto
 qed
 
-theorem IDFS_complete:
+theorem IDFS_complete_w:
   assumes "IDFS_impl P avoid p vis = (None, vis')"
   shows "set p - t_set avoid \<subseteq> t_set vis'"
 proof
@@ -251,8 +251,15 @@ proof
   next
     case False
     have "IDFS_stack0 avoid vis p = tl p \<and> p \<noteq> [] \<and> hd p \<in> t_set avoid \<union> t_set vis"
-      using IDFS_stack0_cases False x
-      by (metis Diff_iff Un_iff empty_iff list.set_sel(1) set_ConsD)
+      using IDFS_stack0_cases
+    proof (elim disjE)
+      assume a: "IDFS_stack0 avoid vis p = p \<and> (p = [] \<or> hd p \<notin> t_set avoid \<union> t_set vis)"
+      have "x \<in> set p" using x by auto
+      with a False show ?thesis by auto
+    next
+      assume "IDFS_stack0 avoid vis p = tl p \<and> p \<noteq> [] \<and> hd p \<in> t_set avoid \<union> t_set vis"
+      then show ?thesis by auto
+    qed
     then have s: "IDFS_stack0 avoid vis p = tl p" and h: "hd p \<in> t_set avoid \<union> t_set vis" and ne: "p \<noteq> []"
       by auto
     have "x = hd p" using x False s ne by (cases p) auto
@@ -355,8 +362,16 @@ proof
     case False
     have s: "IDFS_stack0 avoid vis p = tl p" and h: "hd p \<in> t_set avoid \<union> t_set vis" and ne: "p \<noteq> []"
     proof -
-      from IDFS_stack0_cases False x have "IDFS_stack0 avoid vis p = tl p \<and> hd p \<in> t_set avoid \<union> t_set vis \<and> p \<noteq> []"
-        by (metis Diff_iff Un_iff list.set_sel(1) set_ConsD)
+      have "IDFS_stack0 avoid vis p = tl p \<and> hd p \<in> t_set avoid \<union> t_set vis \<and> p \<noteq> []"
+        using IDFS_stack0_cases
+      proof (elim disjE)
+        assume a: "IDFS_stack0 avoid vis p = p \<and> (p = [] \<or> hd p \<notin> t_set avoid \<union> t_set vis)"
+        have "x \<in> set p" using x by auto
+        with a False show ?thesis by auto
+      next
+        assume "IDFS_stack0 avoid vis p = tl p \<and> p \<noteq> [] \<and> hd p \<in> t_set avoid \<union> t_set vis"
+        then show ?thesis by auto
+      qed
       thus "IDFS_stack0 avoid vis p = tl p" and h: "hd p \<in> t_set avoid \<union> t_set vis" and ne: "p \<noteq> []"
         by auto
     qed
@@ -466,6 +481,11 @@ proof -
   from av.DFS_avoid_sound_hdP(1)[OF retS] show ?thesis .
 qed
 
+theorem IDFS_dVs_bound:
+  assumes "IDFS_impl P avoid p vis = (ret_p, vis')"
+  shows "t_set vis' \<subseteq> dVs (Graph.digraph_abs G)"
+  using assms slot_dVs by (auto simp: IDFS_impl_pair)
+
 end  (* inner context: avoid vis p, p_path, p_dist, av_inv, av_dVs *)
 
 end  (* locale IDFS_witness *)
@@ -501,8 +521,12 @@ proof -
   have inv: "vset_inv (Graph.neighbourhood G v)"
     using wf_graph(1) Graph.neighbourhood_invars' by simp
   have ne: "Graph.neighbourhood G v \<noteq> vset_empty"
-    using nempty
-    by (metis Graph.vset.set.set_empty)
+  proof
+    assume "Graph.neighbourhood G v = vset_empty"
+    hence "t_set (Graph.neighbourhood G v) = {}"
+      by (simp add: Graph.vset.set.set_empty)
+    with nempty show False by simp
+  qed
   have "sel (Graph.neighbourhood G v) \<in> t_set (Graph.neighbourhood G v)"
     using ne inv Graph.vset.choose' by auto
   with wf_graph(1) Graph.are_connected_abs show ?thesis by auto
@@ -519,9 +543,201 @@ sublocale DDFS_layered \<subseteq>
       and G = G and level = lev
       and IDFS = IDFS_impl
       and succ = "\<lambda>v. sel (Graph.neighbourhood G v)"
-  (* READT-TODO-20: all sublocale obligations sorried because Edit 0 (IDFS_pre amendment)
-     to DDFS.thy is OUT OF SCOPE. Each clause needs matching with the local suite theorems
-     once IDFS_pre is available. *)
-  sorry
+proof (unfold_locales)
+  show "finite (dVs (Graph.digraph_abs G))" using L2 .
+  show "Graph.graph_inv G" "Graph.finite_graph G" using wf_graph by auto
+next
+  fix v v' assume "(v, v') \<in> Graph.digraph_abs G"
+  then show "lev v' < lev v" using L1 by auto
+next
+  fix v assume "v \<in> dVs (Graph.digraph_abs G)"
+  then show "\<exists>p v'. p \<noteq> [] \<and> dpath_bet (Graph.digraph_abs G) p v v' \<and> lev v' = 0"
+    using L3 by auto
+next
+  fix v assume hv: "v \<in> dVs (Graph.digraph_abs G)" "lev v \<noteq> 0"
+  show "(v, (\<lambda>v. sel (Graph.neighbourhood G v)) v) \<in> Graph.digraph_abs G"
+    using succ_works_aux[OF hv] by simp
+next
+  fix P avoid vis p ret_p vis' v
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (ret_p, vis')"
+     and vin: "v \<in> t_set vis' - t_set vis"
+  show "\<not> P v" using IDFS_vis_works_1[OF pw dst ivA ivV dA dV eq vin] .
+next
+  fix P avoid vis p ret_p vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (ret_p, vis')"
+  show "(t_set vis' - t_set vis) \<inter> t_set avoid = {}"
+    using IDFS_vis_works_2[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p ret_p vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (ret_p, vis')"
+  show "t_set vis \<subseteq> t_set vis'"
+    using IDFS_vis_works_3[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p ret_p vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (ret_p, vis')"
+  show "vset_inv vis'"
+    using IDFS_vis_works_4[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p vis' v w
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (None, vis')"
+     and vnew: "v \<in> t_set vis' - t_set vis"
+     and edge: "(v, w) \<in> Graph.digraph_abs G"
+  show "w \<in> t_set avoid \<union> t_set vis'"
+    using IDFS_closed_None[OF pw dst ivA ivV dA dV eq vnew edge] .
+next
+  fix P avoid vis p p' vis' v w
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (Some p', vis')"
+     and vnew: "v \<in> t_set vis' - t_set vis"
+     and edge: "(v, w) \<in> Graph.digraph_abs G"
+  show "w \<in> t_set avoid \<union> t_set vis' \<union> set p'"
+    using IDFS_closed_Some[OF pw dst ivA ivV dA dV eq vnew edge] .
+next
+  fix P avoid vis p vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (None, vis')"
+  show "set p - t_set avoid \<subseteq> t_set vis'"
+    using IDFS_complete_w[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p p' vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and eq: "IDFS_impl P avoid p vis = (Some p', vis')"
+  have dst: "distinct p"
+  proof (rule ccontr)
+    assume nd: "\<not> distinct p"
+    from not_distinct_decomp[OF nd]
+    obtain xs ys zs y where split: "p = xs @ [y] @ ys @ [y] @ zs" by auto
+    have revp: "rev p = (rev zs) @ [y] @ (rev ys) @ [y] @ (rev xs)"
+      using split by simp
+    have suf: "dpath (Graph.digraph_abs G) (y # (rev ys @ [y] @ rev xs))"
+      using pw revp by (auto intro: append_dpath_suff)
+    have yin: "y \<in> set (rev ys @ [y] @ rev xs)" by simp
+    have "lev y < lev y"
+      using dpath_transitive_rel[where R = "\<lambda>a b. lev b < lev a", OF _ _ suf yin]
+      by (auto intro: L1)
+    thus False by simp
+  qed
+  show "dpath (Graph.digraph_abs G) (rev p')"
+    using IDFS_sound_1[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p p' vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (Some p', vis')"
+  show "distinct p'"
+    using IDFS_sound_2[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p p' vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (Some p', vis')"
+  show "(set p' - set (tl p)) \<inter> (t_set avoid \<union> t_set vis') = {}"
+    using IDFS_sound_3[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p p' vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (Some p', vis')"
+  show "set p - set p' - t_set avoid \<subseteq> t_set vis'"
+    using IDFS_sound_4[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p p' vis' v
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (Some p', vis')"
+     and tlP: "\<And>v. v \<in> set (tl p) \<Longrightarrow> \<not> P v"
+     and vin: "v \<in> set (tl p')"
+  show "\<not> P v"
+    using IDFS_sound_5[OF pw dst ivA ivV dA dV eq tlP vin] .
+next
+  fix P avoid vis p p' vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (Some p', vis')"
+     and pne: "p \<noteq> []"
+  show "last p = last p'"
+    using IDFS_sound_6[OF pw dst ivA ivV dA dV eq pne] .
+next
+  fix P avoid vis p p' vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (Some p', vis')"
+  show "p' \<noteq> []"
+    using IDFS_sound_7[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p p' vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (Some p', vis')"
+  show "P (hd p')"
+    using IDFS_sound_8[OF pw dst ivA ivV dA dV eq] .
+next
+  fix P avoid vis p ret_p vis'
+  assume ivA: "vset_inv avoid" and ivV: "vset_inv vis"
+     and dA: "t_set avoid \<subseteq> dVs (Graph.digraph_abs G)"
+     and dV: "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+     and pw: "dpath (Graph.digraph_abs G) (rev p)"
+     and dst: "distinct p"
+     and eq: "IDFS_impl P avoid p vis = (ret_p, vis')"
+  show "t_set vis' \<subseteq> dVs (Graph.digraph_abs G)"
+    using IDFS_dVs_bound[OF pw dst ivA ivV dA dV eq] .
+qed
 
 end (* IDFS *)

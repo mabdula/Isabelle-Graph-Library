@@ -5,4 +5,5 @@ session Micali_Vazirani = Graph_Algorithms_Dev +
     DFS_Avoid
     IDFS
     DDFS_Interpretation
+    DDFS_Example
 
