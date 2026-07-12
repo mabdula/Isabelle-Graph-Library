@@ -1086,7 +1086,95 @@ proof(induction "length p" arbitrary: p rule: nat_less_induct)
         using ass cons1
         apply (simp add: neq_Nil_conv split: if_splits)
         apply clarify
-        by (metis Suc_lessD alt_list_step edges_of_path.simps(3) insert_iff lessI list.sel(1) list.simps(15))
+        proof -
+          fix y ys
+          assume p_eq: "p = a' # a'' # y # ys"
+          assume p'_eq: "p' = a'' # y # ys"
+          assume IH: "\<forall>m<Suc (Suc (length (y # ys))). \<forall>x. m = length x \<longrightarrow> alt_path M x \<longrightarrow> v \<in> set x \<longrightarrow> v \<noteq> hd x \<longrightarrow> v \<noteq> last x \<longrightarrow> (\<exists>y ys. x = y # ys) \<longrightarrow> (\<exists>e\<in>set (edges_of_path x). v \<in> e \<and> e \<in> M)"
+          assume alt: "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) ({a', a''} # edges_of_path (a'' # y # ys))"
+          assume v_cases: "v = a'' \<or> v \<in> set (y # ys)"
+          assume v_ne_a': "v \<noteq> a'"
+          assume v_ne_last: "v \<noteq> last (y # ys)"
+          assume p''_eq: "p'' = y # ys"
+          assume no_edge: "\<not> (\<exists>e\<in>set (edges_of_path (a'' # y # ys)). v \<in> e \<and> e \<in> M)"
+          have edge1_not_M: "{a', a''} \<notin> M"
+            using alt by (simp add: alt_list_step)
+          have rev_alt_tail: "alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) (edges_of_path (a'' # y # ys))"
+            using alt by (simp add: alt_list_step)
+          have "False"
+            using v_cases
+            proof
+              assume v_eq_a'': "v = a''"
+              have "\<exists>e\<in>set (edges_of_path (a'' # y # ys)). a'' \<in> e \<and> e \<in> M"
+              proof (cases ys)
+                case Nil
+                then have "edges_of_path (a'' # y # ys) = [{a'', y}]"
+                  by (simp add: edges_of_path.simps)
+                moreover have "{a'', y} \<in> M"
+                  using rev_alt_tail Nil by (simp add: alt_list_step edges_of_path.simps)
+                ultimately show ?thesis by auto
+              next
+                case (Cons z zs)
+                then have "edges_of_path (a'' # y # ys) = {a'', y} # edges_of_path (y # z # zs)"
+                  by (simp add: edges_of_path.simps)
+                moreover have "{a'', y} \<in> M"
+                  using rev_alt_tail Cons by (simp add: alt_list_step edges_of_path.simps)
+                ultimately show ?thesis by auto
+              qed
+              with no_edge[simplified v_eq_a''] show False by blast
+            next
+              assume v_in_tail: "v \<in> set (y # ys)"
+              show False
+              proof (cases "v = y")
+                case True
+                have "\<exists>e\<in>set (edges_of_path (a'' # y # ys)). y \<in> e \<and> e \<in> M"
+                proof (cases ys)
+                  case Nil
+                  then have "edges_of_path (a'' # y # ys) = [{a'', y}]"
+                    by (simp add: edges_of_path.simps)
+                  moreover have "{a'', y} \<in> M"
+                    using rev_alt_tail Nil by (simp add: alt_list_step edges_of_path.simps)
+                  ultimately show ?thesis by auto
+                next
+                  case (Cons z zs)
+                  then have "edges_of_path (a'' # y # ys) = {a'', y} # edges_of_path (y # z # zs)"
+                    by (simp add: edges_of_path.simps)
+                  moreover have "{a'', y} \<in> M"
+                    using rev_alt_tail Cons by (simp add: alt_list_step edges_of_path.simps)
+                  ultimately show ?thesis by auto
+                qed
+                with no_edge[simplified True] show False by blast
+              next
+                case False
+                then have v_ne_y: "v \<noteq> y" .
+                have v_in_ys: "v \<in> set ys"
+                  using v_in_tail v_ne_y by auto
+                then obtain z zs where ys: "ys = z # zs"
+                  by (cases ys) auto
+                have alt_tail: "alt_path M (y # z # zs)"
+                  using rev_alt_tail ys by (simp add: alt_list_step edges_of_path.simps)
+                have len_lt: "length (y # z # zs) < Suc (Suc (length (y # ys)))"
+                  using ys by simp
+                have v_in_tail2: "v \<in> set (y # z # zs)"
+                  using v_in_ys ys by auto
+                have v_ne_hd_tail: "v \<noteq> hd (y # z # zs)"
+                  using v_ne_y by simp
+                have v_ne_last_tail: "v \<noteq> last (y # z # zs)"
+                  using v_ne_last ys by (simp add: last_ConsR)
+                have nonempty: "\<exists>ya ys'. y # z # zs = ya # ys'"
+                  by simp
+                have "\<exists>e\<in>set (edges_of_path (y # z # zs)). v \<in> e \<and> e \<in> M"
+                  using IH[rule_format, OF len_lt _ alt_tail v_in_tail2 v_ne_hd_tail v_ne_last_tail nonempty]
+                  by force
+                moreover have "set (edges_of_path (y # z # zs)) \<subseteq> set (edges_of_path (a'' # y # z # zs))"
+                  by (auto simp: edges_of_path.simps)
+                ultimately have "\<exists>e\<in>set (edges_of_path (a'' # y # z # zs)). v \<in> e \<and> e \<in> M"
+                  by blast
+                with no_edge[simplified ys] show False by blast
+              qed
+            qed
+          then show "v = a'' \<and> {a', a''} \<in> M" by blast
+        qed
     qed
   qed
 qed
@@ -1124,7 +1212,47 @@ proof(rule ccontr; simp)
       by (auto simp: Suc_le_length_iff numeral_3_eq_3)
     ultimately have "e = last (edges_of_path p) \<or> e = hd (edges_of_path p)" if "last p \<in> e" "e \<in> set (edges_of_path p)" for e
       using in_edges_of_path_hd_or_tl[OF that(2)] that
-      by (metis edges_of_path.elims empty_iff empty_set last_ConsR list.sel(3))
+      proof (cases "e \<in> set (edges_of_path (tl p))")
+        case False
+        with in_edges_of_path_hd_or_tl[OF that(2)] have "e = hd (edges_of_path p)" by blast
+        thus ?thesis by simp
+      next
+        case True
+        note D = True
+        have last_tl: "last (tl p) \<in> e"
+          using that(1) \<open>last p = last (tl p)\<close> by simp
+        have e_eq: "e = last (edges_of_path (tl p))"
+          using last_tl D
+                \<open>\<And>e'. last (tl p) \<in> e' \<Longrightarrow> e' \<in> set (edges_of_path (tl p))
+                     \<Longrightarrow> e' = last (edges_of_path (tl p))\<close>
+          by blast
+        have last_eq: "last (edges_of_path (tl p)) = last (edges_of_path p)"
+        proof (cases p rule: list.exhaust)
+          case Nil
+          then have "edges_of_path (tl p) = []" by simp
+          with D show ?thesis by simp
+        next
+          case (Cons v rest)
+          show ?thesis
+          proof (cases rest rule: list.exhaust)
+            case Nil
+            with \<open>p = v # rest\<close> have "tl p = []" by simp
+            then have "edges_of_path (tl p) = []" by simp
+            with D show ?thesis by simp
+          next
+            case (Cons u vs)
+            with \<open>p = v # rest\<close> have p_eq: "p = v # u # vs" by simp
+            then have eop: "edges_of_path p = {v, u} # edges_of_path (u # vs)"
+              and tl_eq: "tl p = u # vs"
+              by simp_all
+            from tl_eq D have ne: "edges_of_path (u # vs) \<noteq> []" by auto
+            from eop have "last (edges_of_path p) = last (edges_of_path (u # vs))"
+              using last_ConsR[OF ne] by simp
+            with tl_eq show ?thesis by simp
+          qed
+        qed
+        with e_eq show ?thesis by simp
+      qed
     moreover case True
     ultimately show ?thesis
       using e matching_odd_cycle_hd_last_unmatched[OF cycle match(1)]
@@ -1200,7 +1328,24 @@ next
   case (Cons a' l')
   then show ?case
     apply simp
-    by (metis empty_iff empty_set find_pfx.elims list.distinct(1))
+    proof (intro conjI impI)
+      assume h_empty: "find_pfx Q l' = []"
+      have "l' = []"
+      proof (rule ccontr)
+        assume "l' \<noteq> []"
+        then obtain h l'' where "l' = h # l''" by (cases l') auto
+        with h_empty have "[] = (if Q h then [h] else h # find_pfx Q l'')"
+          by (simp add: find_pfx.simps)
+        then show False by (cases "Q h") auto
+      qed
+      with Cons.prems(1) have "y = a'" by auto
+      with Cons.prems(2) show "Q a'" by auto
+    next
+      assume h_nempty: "find_pfx Q l' \<noteq> []" and h_nQ: "\<not> Q a'"
+      from h_nQ Cons.prems(2) have "y \<noteq> a'" by blast
+      with Cons.prems(1) have "y \<in> set l'" by auto
+      with Cons.prems(2) Cons.IH show "Q (last (find_pfx Q l'))" by blast
+    qed
 qed
 
 lemma find_pfx_works_2:
@@ -1234,9 +1379,22 @@ proof(induction l1)
 next
   case (Cons a' l1')
   then show ?case
-    apply simp
-    using find_pfx_nempty in_set_conv_decomp
-    by metis
+  proof -
+    have not_a': "\<not> Q a'"
+      using Cons.prems(1) by simp
+    have all_l1': "\<forall>x \<in> set l1'. \<not> Q x"
+      using Cons.prems(1) by simp
+    have IH_inst: "last (find_pfx Q (l1' @ [y])) = y"
+      using Cons.IH all_l1' Cons.prems(2) by blast
+    have mem: "y \<in> set (l1' @ [y])"
+      by simp
+    have nempty: "find_pfx Q (l1' @ [y]) \<noteq> []"
+      using find_pfx_nempty[where l="l1'@[y]"] Cons.prems(2) by auto
+    have expand: "find_pfx Q ((a' # l1') @ [y]) = a' # find_pfx Q (l1' @ [y])"
+      using not_a' by simp
+    show ?case
+      using expand nempty IH_inst by (simp add: last_ConsR)
+  qed
 qed
 
 lemma find_pfx_append:
