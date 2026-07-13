@@ -71,6 +71,7 @@ abbreviation "DFS_avoid_impl \<equiv> av.DFS_skel_impl"
 
 text \<open>The final state of the search.\<close>
 definition "avoid_final_state = av.DFS_skel avoid_initial_state"
+definition "avoid_final_state_impl = DFS_avoid_impl avoid_initial_state"
 
 end
 
@@ -150,6 +151,10 @@ lemma initial_invars[simp,intro]:
 
 lemma avoid_initial_dom: "av.DFS_skel_dom avoid_initial_state"
   by (intro av.DFS_skel_terminates initial_invars)
+
+lemma avoid_final_state_impl_same: "avoid_final_state_impl = avoid_final_state"
+  unfolding avoid_final_state_impl_def avoid_final_state_def
+  by (rule av.DFS_skel_impl_same[OF avoid_initial_dom])
 
 text \<open>The two update steps and the two return steps, explicitly.\<close>
 lemma upd1_unfold:

@@ -1,6 +1,6 @@
 theory Alt_Dist
-  imports "Directed_Set_Graphs.enat_misc" Berge_Lemma.Alternating_Lists Directed_Set_Graphs.Dist
-          "HOL-Library.Multiset"                                                        
+  imports "Directed_Set_Graphs.enat_misc" Alternating_Lists.Alternating_Lists Directed_Set_Graphs.Dist
+          "HOL-Library.Multiset" 
 begin
 
 section \<open>Alternating Distances\<close>
@@ -43,11 +43,14 @@ definition
           then length p - 1
           else \<infinity>)"
 
-lemma dist_le_odd_dist: "distance G u v \<le> alt_distance parity G u v "
-  apply (auto simp: distance_def alt_distance_def image_def alt_vwalk_bet_def
-              intro!: complete_lattice_class.Inf_lower enat_ile split: parity.splits)
-  apply (smt (verit, del_insts) Collect_disj_eq mem_Collect_eq wellorder_InfI)
-  by (meson vwalk_bet_def)
+lemma dist_le_odd_dist: "distance G u v \<le> alt_distance parity G u v"
+  unfolding distance_def alt_distance_def
+proof(rule INF_mono')
+  fix p
+  show "(if Vwalk.vwalk_bet G u p v then length p - 1 else \<infinity>)
+          \<le> (if alt_vwalk_bet parity G u p v then length p - 1 else \<infinity>)"
+    by (auto simp: alt_vwalk_bet_def)
+qed
 
 lemma alt_vwalk_bet_alt_dist:
   "\<lbrakk>alt_vwalk_bet parity G u p v\<rbrakk> \<Longrightarrow> 
@@ -83,22 +86,50 @@ lemma alt_reachable_dist:
 
 lemma alt_unreachable_dist:
   "\<not>alt_reachable parity G u v \<Longrightarrow> alt_distance parity G u v = \<infinity>"
-  apply(clarsimp simp add: alt_reachable_vwalk_bet_iff)
-  apply (auto simp: alt_distance_def image_def alt_vwalk_bet_def intro!: complete_lattice_class.Inf_lower enat_ile)
-  by (smt (verit, del_insts) Inf_top_conv(1) inf.order_iff mem_Collect_eq top_greatest)
+proof-
+  assume "\<not>alt_reachable parity G u v"
+  hence "\<And>p. \<not> alt_vwalk_bet parity G u p v"
+    by(auto simp: alt_reachable_def)
+  thus "alt_distance parity G u v = \<infinity>"
+    by(simp add: alt_distance_def)
+qed
 
 lemma alt_dist_reachable:
   "alt_distance parity G u v < \<infinity> \<Longrightarrow> alt_reachable parity G u v"
-  using wellorder_InfI       
-  apply(auto simp: alt_distance_def image_def alt_reachable_vwalk_bet_iff alt_vwalk_bet_def)
-  by (smt (verit, ccfv_threshold) Collect_disj_eq Inf_top_conv(1) enat.distinct(2) mem_Collect_eq top_enat_def)    
+proof(rule ccontr)
+  assume h: "alt_distance parity G u v < \<infinity>" "\<not> alt_reachable parity G u v"
+  hence "alt_distance parity G u v = \<infinity>"
+    by(intro alt_unreachable_dist)
+  thus False
+    using h(1) by simp
+qed
 
 lemma alt_reachable_dist_2:
   assumes "alt_reachable parity G u v"
   obtains p where "alt_vwalk_bet parity G u p v""alt_distance parity G u v = length p - 1"
-  using assms
-  apply(clarsimp simp add: alt_reachable_vwalk_bet_iff alt_distance_def image_def alt_vwalk_bet_def)
-  by (smt (verit, del_insts) Collect_disj_eq Inf_lower enat_ile mem_Collect_eq not_infinity_eq wellorder_InfI)
+proof-
+  let ?f = "\<lambda>p. if alt_vwalk_bet parity G u p v then length p - 1 else (\<infinity>::enat)"
+  obtain p0 where p0: "alt_vwalk_bet parity G u p0 v"
+    using assms by(auto simp: alt_reachable_def)
+  have dist_eq: "alt_distance parity G u v = Inf (range ?f)"
+    by(simp add: alt_distance_def)
+  have "Inf (range ?f) \<in> range ?f"
+    by(rule wellorder_InfI[of "?f p0"]) auto
+  then obtain p1 where p1: "Inf (range ?f) = ?f p1"
+    by(fastforce simp: image_def)
+  have "Inf (range ?f) \<le> ?f p0"
+    by(rule wellorder_Inf_le1) auto
+  also have "... < \<infinity>"
+    using p0 by simp
+  finally have "?f p1 < \<infinity>"
+    using p1 by simp
+  hence bet: "alt_vwalk_bet parity G u p1 v"
+    by(auto split: if_splits)
+  hence "alt_distance parity G u v = length p1 - 1"
+    using dist_eq p1 by simp
+  with bet show ?thesis
+    using that by blast
+qed
 
 lemma alt_reachable_reachable_in_dVs:
   assumes "alt_reachable parity G u v"
@@ -109,8 +140,8 @@ lemma alt_reachable_reachable_in_dVs:
 lemma alt_reachable_in_dVs:
   assumes "alt_reachable parity G u v"
   shows "u \<in> dVs G" "v \<in> dVs G"
-  using assms alt_reachable_reachable_in_dVs reachable_in_dVs
-  by metis+
+  using reachable_in_dVs[OF alt_reachable_reachable_in_dVs[OF assms]]
+  by auto
 
 lemma alt_vwalk_bet_nonempty'[simp]: "\<not> alt_vwalk_bet parity E u [] v" 
   unfolding alt_vwalk_bet_def by simp
@@ -137,26 +168,72 @@ lemma last_of_alt_vwalk_bet':
 
 end
 
+find_theorems name: edges_of_vwalk length
+
 lemma alt_vwalk_bet_append_1:
   assumes "alt_dist.alt_vwalk_bet P1 P2 Even G u (p1 @ p2) v" "p1 \<noteq> []"
   shows                (*"alt_dist.alt_vwalk_bet P1 P2 parity' G u p1 (last p1)"*)
   "\<exists>parity'.
     alt_dist.alt_vwalk_bet P1 P2 parity' G u p1 (last p1) \<and>
     next_alt_list_parity parity' alt_dist.alt_vwalk_bet P1 P2 parity' G (last p1) (last p1 # p2) v"
-  using assms
-  apply(auto simp add: alt_list_append_1 edges_of_vwalk_append_3
-                       vwalk_bet_prefix_is_vwalk_bet alt_dist.alt_vwalk_bet_def parity_simps
-             split: parity.splits)
-  apply(rule exI[where x = Odd])
-  apply(auto simp add: alt_list_append_1 edges_of_vwalk_append_3 vwalk_bet_suffix_is_vwalk_bet'
-                       vwalk_bet_prefix_is_vwalk_bet alt_dist.alt_vwalk_bet_def parity_simps
-             split: parity.splits)
-  apply (metis alt_list_split_2 edges_of_path_length edges_of_path_length' edges_of_vwalk_length even_plus_one_iff)
-  apply(rule exI[where x = Even])
-  apply(auto simp add: alt_list_append_1 edges_of_vwalk_append_3 vwalk_bet_suffix_is_vwalk_bet'
-                       vwalk_bet_prefix_is_vwalk_bet alt_dist.alt_vwalk_bet_def parity_simps
-             split: parity.splits)
-  by (metis alt_list_split_1 edges_of_path_length edges_of_path_length' edges_of_vwalk_length even_plus_one_iff)
+proof-
+  have walk: "Vwalk.vwalk_bet G u (p1 @ p2) v"
+    and alt: "alt_list P1 P2 (edges_of_vwalk (p1 @ p2))"
+    and len: "odd (length p1 + length p2)"
+    using assms(1)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: parity_simps)
+  have walk_pre: "Vwalk.vwalk_bet G u p1 (last p1)"
+    using assms(2) walk
+    by(rule vwalk_bet_prefix_is_vwalk_bet)
+  have walk_suf: "Vwalk.vwalk_bet G (last p1) (last p1 # p2) v"
+  proof-
+    have "Vwalk.vwalk_bet G u (butlast p1 @ (last p1 # p2)) v"
+      using walk assms(2) by(simp add: append_butlast_last_cancel)
+    from vwalk_bet_suffix_is_vwalk_bet[OF _ this]
+    show ?thesis by simp
+  qed
+  have edges_split: "edges_of_vwalk (p1 @ p2) = edges_of_vwalk p1 @ edges_of_vwalk (last p1 # p2)"
+    using assms(2)
+    by(rule edges_of_vwalk_append_3)
+  have alt_pre: "alt_list P1 P2 (edges_of_vwalk p1)"
+    using alt_list_append_1[of P1 P2 "edges_of_vwalk p1" "edges_of_vwalk (last p1 # p2)"] alt
+    by(simp add: edges_split)
+  have len_pre: "length (edges_of_vwalk p1) + 1 = length p1"
+    using assms(2)
+    by(rule edges_of_vwalk_length')
+  show ?thesis
+  proof(cases "even (length p1)")
+    case False
+    hence even_edges_pre: "even (length (edges_of_vwalk p1))"
+      using len_pre by presburger
+    have alt_suf: "alt_list P1 P2 (edges_of_vwalk (last p1 # p2))"
+      using alt[unfolded edges_split] even_edges_pre
+      by(rule alt_list_split_1)
+    have "alt_dist.alt_vwalk_bet P1 P2 Even G u p1 (last p1)"
+      using walk_pre alt_pre False
+      by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+    moreover have "alt_dist.alt_vwalk_bet P1 P2 Even G (last p1) (last p1 # p2) v"
+      using walk_suf alt_suf len False
+      by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+    ultimately show ?thesis
+      by(auto simp: parity_simps intro!: exI[where x = Even])
+  next
+    case True
+    hence odd_edges_pre: "odd (length (edges_of_vwalk p1))"
+      using len_pre by presburger
+    have alt_suf: "alt_list P2 P1 (edges_of_vwalk (last p1 # p2))"
+      using alt[unfolded edges_split] odd_edges_pre
+      by(rule alt_list_split_2)
+    have "alt_dist.alt_vwalk_bet P1 P2 Odd G u p1 (last p1)"
+      using walk_pre alt_pre True
+      by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+    moreover have "alt_dist.alt_vwalk_bet P2 P1 Odd G (last p1) (last p1 # p2) v"
+      using walk_suf alt_suf len True
+      by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+    ultimately show ?thesis
+      by(auto simp: parity_simps intro!: exI[where x = Odd])
+  qed
+qed
 
 lemma alt_vwalk_bet_appendE_1:
   assumes "alt_dist.alt_vwalk_bet P1 P2 Even G u (p1 @ p2) v" "p1 \<noteq> []"
@@ -172,20 +249,64 @@ lemma alt_vwalk_bet_append_1':
   "\<exists>parity'.
     alt_dist.alt_vwalk_bet P1 P2 parity' G u p1 (last p1) \<and>
     next_alt_list_parity parity' alt_dist.alt_vwalk_bet P1 P2 (other_parity parity') G (last p1) (last p1 # p2) v"
-  using assms
-  apply(auto simp add: alt_list_append_1 edges_of_vwalk_append_3
-                       vwalk_bet_prefix_is_vwalk_bet alt_dist.alt_vwalk_bet_def parity_simps
-             split: parity.splits)
-  apply(rule exI[where x = Odd])
-  apply(auto simp add: alt_list_append_1 edges_of_vwalk_append_3 vwalk_bet_suffix_is_vwalk_bet'
-                       vwalk_bet_prefix_is_vwalk_bet alt_dist.alt_vwalk_bet_def parity_simps
-             split: parity.splits)
-  apply (metis alt_list_split_2 edges_of_path_length edges_of_path_length' edges_of_vwalk_length even_plus_one_iff)
-  apply(rule exI[where x = Even])
-  apply(auto simp add: alt_list_append_1 edges_of_vwalk_append_3 vwalk_bet_suffix_is_vwalk_bet'
-                       vwalk_bet_prefix_is_vwalk_bet alt_dist.alt_vwalk_bet_def parity_simps
-             split: parity.splits)
-  by (metis alt_list_split_1 edges_of_path_length edges_of_path_length' edges_of_vwalk_length even_plus_one_iff)
+proof-
+  have walk: "Vwalk.vwalk_bet G u (p1 @ p2) v"
+    and alt: "alt_list P1 P2 (edges_of_vwalk (p1 @ p2))"
+    and len: "even (length p1 + length p2)"
+    using assms(1)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: parity_simps)
+  have walk_pre: "Vwalk.vwalk_bet G u p1 (last p1)"
+    using assms(2) walk
+    by(rule vwalk_bet_prefix_is_vwalk_bet)
+  have walk_suf: "Vwalk.vwalk_bet G (last p1) (last p1 # p2) v"
+  proof-
+    have "Vwalk.vwalk_bet G u (butlast p1 @ (last p1 # p2)) v"
+      using walk assms(2) by(simp add: append_butlast_last_cancel)
+    from vwalk_bet_suffix_is_vwalk_bet[OF _ this]
+    show ?thesis by simp
+  qed
+  have edges_split: "edges_of_vwalk (p1 @ p2) = edges_of_vwalk p1 @ edges_of_vwalk (last p1 # p2)"
+    using assms(2)
+    by(rule edges_of_vwalk_append_3)
+  have alt_pre: "alt_list P1 P2 (edges_of_vwalk p1)"
+    using alt_list_append_1[of P1 P2 "edges_of_vwalk p1" "edges_of_vwalk (last p1 # p2)"] alt
+    by(simp add: edges_split)
+  have len_pre: "length (edges_of_vwalk p1) + 1 = length p1"
+    using assms(2)
+    by(rule edges_of_vwalk_length')
+  show ?thesis
+  proof(cases "even (length p1)")
+    case False
+    hence even_edges_pre: "even (length (edges_of_vwalk p1))"
+      using len_pre by presburger
+    have alt_suf: "alt_list P1 P2 (edges_of_vwalk (last p1 # p2))"
+      using alt[unfolded edges_split] even_edges_pre
+      by(rule alt_list_split_1)
+    have "alt_dist.alt_vwalk_bet P1 P2 Even G u p1 (last p1)"
+      using walk_pre alt_pre False
+      by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+    moreover have "alt_dist.alt_vwalk_bet P1 P2 Odd G (last p1) (last p1 # p2) v"
+      using walk_suf alt_suf len False
+      by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+    ultimately show ?thesis
+      by(auto simp: parity_simps intro!: exI[where x = Even])
+  next
+    case True
+    hence odd_edges_pre: "odd (length (edges_of_vwalk p1))"
+      using len_pre by presburger
+    have alt_suf: "alt_list P2 P1 (edges_of_vwalk (last p1 # p2))"
+      using alt[unfolded edges_split] odd_edges_pre
+      by(rule alt_list_split_2)
+    have "alt_dist.alt_vwalk_bet P1 P2 Odd G u p1 (last p1)"
+      using walk_pre alt_pre True
+      by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+    moreover have "alt_dist.alt_vwalk_bet P2 P1 Even G (last p1) (last p1 # p2) v"
+      using walk_suf alt_suf len True
+      by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+    ultimately show ?thesis
+      by(auto simp: parity_simps intro!: exI[where x = Odd])
+  qed
+qed
 
 lemma alt_vwalk_bet_appendE_1':
   assumes "alt_dist.alt_vwalk_bet P1 P2 Odd G u (p1 @ p2) v" "p1 \<noteq> []"
@@ -201,14 +322,69 @@ lemma alt_vwalk_bet_append_2:
     "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G (last p1) (last p1 # p2) v"
     "p1 \<noteq> []"
   shows "alt_dist.alt_vwalk_bet P1 P2 Even G u (p1 @ p2) v"
-  using assms
-  apply(auto simp add: alt_list_append_1 edges_of_vwalk_append_3 vwalk_bet_suffix_is_vwalk_bet'
-                       vwalk_bet_prefix_is_vwalk_bet alt_dist.alt_vwalk_bet_def parity_simps
-             split: parity.splits)
-  using vwalk_bet_transitive apply fastforce
-  apply (metis alt_list_append_2 assms(3) edges_of_path_length edges_of_path_length' edges_of_vwalk_length even_plus_one_iff)
-  apply (metis list.sel(3) vwalk_bet_transitive)
-  by (simp add: alt_list_append_3 edges_of_vwalk_length)
+proof(cases parity)
+  case Even
+  have walk_pre: "Vwalk.vwalk_bet G u p1 (last p1)"
+    and alt_pre: "alt_list P1 P2 (edges_of_vwalk p1)"
+    and len_pre: "odd (length p1)"
+    using assms(1)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: Even parity_simps)
+  have walk_suf: "Vwalk.vwalk_bet G (last p1) (last p1 # p2) v"
+    and alt_suf: "alt_list P1 P2 (edges_of_vwalk (last p1 # p2))"
+    and len_suf: "even (length p2)"
+    using assms(2)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: Even parity_simps)
+  have walk_all: "Vwalk.vwalk_bet G u (p1 @ p2) v"
+    using vwalk_bet_transitive[OF walk_pre walk_suf]
+    by simp
+  have edges_split: "edges_of_vwalk (p1 @ p2) = edges_of_vwalk p1 @ edges_of_vwalk (last p1 # p2)"
+    using assms(3)
+    by(rule edges_of_vwalk_append_3)
+  have len_pre_edges: "length (edges_of_vwalk p1) + 1 = length p1"
+    using assms(3)
+    by(rule edges_of_vwalk_length')
+  have even_edges_pre: "even (length (edges_of_vwalk p1))"
+    using len_pre len_pre_edges by presburger
+  have alt_all: "alt_list P1 P2 (edges_of_vwalk (p1 @ p2))"
+    unfolding edges_split
+    by(rule alt_list_append_3[OF alt_pre alt_suf even_edges_pre])
+  have len_all: "odd (length (p1 @ p2))"
+    using len_pre len_suf by simp
+  show ?thesis
+    using walk_all alt_all len_all
+    by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+next
+  case Odd
+  have walk_pre: "Vwalk.vwalk_bet G u p1 (last p1)"
+    and alt_pre: "alt_list P1 P2 (edges_of_vwalk p1)"
+    and len_pre: "even (length p1)"
+    using assms(1)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: Odd parity_simps)
+  have walk_suf: "Vwalk.vwalk_bet G (last p1) (last p1 # p2) v"
+    and alt_suf: "alt_list P2 P1 (edges_of_vwalk (last p1 # p2))"
+    and len_suf: "odd (length p2)"
+    using assms(2)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: Odd parity_simps)
+  have walk_all: "Vwalk.vwalk_bet G u (p1 @ p2) v"
+    using vwalk_bet_transitive[OF walk_pre walk_suf]
+    by simp
+  have edges_split: "edges_of_vwalk (p1 @ p2) = edges_of_vwalk p1 @ edges_of_vwalk (last p1 # p2)"
+    using assms(3)
+    by(rule edges_of_vwalk_append_3)
+  have len_pre_edges: "length (edges_of_vwalk p1) + 1 = length p1"
+    using assms(3)
+    by(rule edges_of_vwalk_length')
+  have odd_edges_pre: "odd (length (edges_of_vwalk p1))"
+    using len_pre len_pre_edges by presburger
+  have alt_all: "alt_list P1 P2 (edges_of_vwalk (p1 @ p2))"
+    unfolding edges_split
+    by(rule alt_list_append_2[OF alt_pre alt_suf odd_edges_pre])
+  have len_all: "odd (length (p1 @ p2))"
+    using len_pre len_suf by simp
+  show ?thesis
+    using walk_all alt_all len_all
+    by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+qed
 
 lemma alt_vwalk_bet_append_3:
   assumes 
@@ -216,14 +392,69 @@ lemma alt_vwalk_bet_append_3:
     "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G (last p1) (last p1 # p2) v"
     "p1 \<noteq> []"
   shows "alt_dist.alt_vwalk_bet P1 P2 Odd G u (p1 @ p2) v"
-  using assms
-  apply(auto simp add: alt_list_append_1 edges_of_vwalk_append_3 vwalk_bet_suffix_is_vwalk_bet'
-                       vwalk_bet_prefix_is_vwalk_bet alt_dist.alt_vwalk_bet_def parity_simps
-             split: parity.splits)
-  using vwalk_bet_transitive apply fastforce
-  subgoal sorry
-  apply (metis list.sel(3) vwalk_bet_transitive)
-  by (simp add: alt_list_append_3 edges_of_vwalk_length)
+proof(cases parity)
+  case Even
+  have walk_pre: "Vwalk.vwalk_bet G u p1 (last p1)"
+    and alt_pre: "alt_list P1 P2 (edges_of_vwalk p1)"
+    and len_pre: "odd (length p1)"
+    using assms(1)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: Even parity_simps)
+  have walk_suf: "Vwalk.vwalk_bet G (last p1) (last p1 # p2) v"
+    and alt_suf: "alt_list P1 P2 (edges_of_vwalk (last p1 # p2))"
+    and len_suf: "odd (length p2)"
+    using assms(2)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: Even parity_simps)
+  have walk_all: "Vwalk.vwalk_bet G u (p1 @ p2) v"
+    using vwalk_bet_transitive[OF walk_pre walk_suf]
+    by simp
+  have edges_split: "edges_of_vwalk (p1 @ p2) = edges_of_vwalk p1 @ edges_of_vwalk (last p1 # p2)"
+    using assms(3)
+    by(rule edges_of_vwalk_append_3)
+  have len_pre_edges: "length (edges_of_vwalk p1) + 1 = length p1"
+    using assms(3)
+    by(rule edges_of_vwalk_length')
+  have even_edges_pre: "even (length (edges_of_vwalk p1))"
+    using len_pre len_pre_edges by presburger
+  have alt_all: "alt_list P1 P2 (edges_of_vwalk (p1 @ p2))"
+    unfolding edges_split
+    by(rule alt_list_append_3[OF alt_pre alt_suf even_edges_pre])
+  have len_all: "even (length (p1 @ p2))"
+    using len_pre len_suf by simp
+  show ?thesis
+    using walk_all alt_all len_all
+    by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+next
+  case Odd
+  have walk_pre: "Vwalk.vwalk_bet G u p1 (last p1)"
+    and alt_pre: "alt_list P1 P2 (edges_of_vwalk p1)"
+    and len_pre: "even (length p1)"
+    using assms(1)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: Odd parity_simps)
+  have walk_suf: "Vwalk.vwalk_bet G (last p1) (last p1 # p2) v"
+    and alt_suf: "alt_list P2 P1 (edges_of_vwalk (last p1 # p2))"
+    and len_suf: "even (length p2)"
+    using assms(2)
+    by(auto elim!: alt_dist.alt_vwalk_betE simp: Odd parity_simps)
+  have walk_all: "Vwalk.vwalk_bet G u (p1 @ p2) v"
+    using vwalk_bet_transitive[OF walk_pre walk_suf]
+    by simp
+  have edges_split: "edges_of_vwalk (p1 @ p2) = edges_of_vwalk p1 @ edges_of_vwalk (last p1 # p2)"
+    using assms(3)
+    by(rule edges_of_vwalk_append_3)
+  have len_pre_edges: "length (edges_of_vwalk p1) + 1 = length p1"
+    using assms(3)
+    by(rule edges_of_vwalk_length')
+  have odd_edges_pre: "odd (length (edges_of_vwalk p1))"
+    using len_pre len_pre_edges by presburger
+  have alt_all: "alt_list P1 P2 (edges_of_vwalk (p1 @ p2))"
+    unfolding edges_split
+    by(rule alt_list_append_2[OF alt_pre alt_suf odd_edges_pre])
+  have len_all: "even (length (p1 @ p2))"
+    using len_pre len_suf by simp
+  show ?thesis
+    using walk_all alt_all len_all
+    by(auto simp: alt_dist.alt_vwalk_bet_def parity_simps)
+qed
 
 lemma alternating_list_even_last:
   assumes "alt_dist.alt_vwalk_bet P1 P2 Even G u p v" "length p \<ge> 2"
@@ -252,14 +483,36 @@ proof-
           "(next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2) (other_parity parity) G v q w"
           "next_alt_list_parity parity alt_dist.alt_distance P1 P2 (other_parity parity) G v w = length q - 1"
     using assms
-    apply (cases parity)
-    by (auto elim!: alt_dist.alt_reachable_dist_2 simp: parity_simps)
-  hence "alt_dist.alt_vwalk_bet P1 P2 Odd G u (p @ tl q) w"
-    by (smt (verit) alt_dist.alt_vwalk_betE alt_vwalk_bet_append_3 list.collapse next_alt_list_parity 
-                    parity.exhaust parity.simps(3) parity.simps(4) vwalk_bet_def)
+    by (cases parity) (auto elim!: alt_dist.alt_reachable_dist_2 simp: parity_simps)
+  have "alt_dist.alt_vwalk_bet P1 P2 Odd G u (p @ tl q) w"
+  proof-
+    have q_ne: "q \<noteq> []"
+      using p_q(3)
+      by(cases parity)
+        (auto elim!: alt_dist.alt_vwalk_betE simp: parity_simps vwalk_bet_def)
+    have q_hd: "hd q = v"
+      using p_q(3)
+      by(cases parity)
+        (auto dest: alt_dist.hd_of_alt_vwalk_bet' simp: parity_simps)
+    have q_shape: "q = v # tl q"
+      using q_ne q_hd
+      by(cases q) auto
+    have p_last: "v = last p"
+      by(rule alt_dist.last_of_alt_vwalk_bet[OF p_q(1)])
+    have p_ne: "p \<noteq> []"
+      using p_q(1)
+      by(auto elim!: alt_dist.alt_vwalk_betE simp: vwalk_bet_def)
+    have p_bet: "alt_dist.alt_vwalk_bet P1 P2 parity G u p (last p)"
+      using p_q(1)
+      by(simp add: p_last[symmetric])
+    have suf_bet: "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G (last p) (last p # tl q) w"
+      using p_q(3)
+      by(simp add: p_last[symmetric] q_shape[symmetric])
+    show ?thesis
+      by(rule alt_vwalk_bet_append_3[OF p_bet suf_bet p_ne])
+  qed
   hence "alt_dist.alt_distance P1 P2 Odd G u w \<le> length (p @ tl q) - 1"
-    apply(intro alt_dist.alt_vwalk_bet_alt_dist)
-    by auto
+    by(intro alt_dist.alt_vwalk_bet_alt_dist) auto
   moreover have "length (p @ tl q) = length p + (length q - 1)"
     using p_q(2)
     by (cases q; auto)
@@ -281,14 +534,36 @@ proof-
           "(next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2) parity G v q w"
           "next_alt_list_parity parity alt_dist.alt_distance P1 P2 parity G v w = length q - 1"
     using assms
-    apply (cases parity)
-    by (auto elim!: alt_dist.alt_reachable_dist_2 simp: parity_simps)
-  hence "alt_dist.alt_vwalk_bet P1 P2 Even G u (p @ tl q) w"
-    by (smt (verit) alt_dist.alt_vwalk_betE alt_vwalk_bet_append_2 list.collapse next_alt_list_parity 
-                    parity.exhaust parity.simps(3) parity.simps(4) vwalk_bet_def)
+    by (cases parity) (auto elim!: alt_dist.alt_reachable_dist_2 simp: parity_simps)
+  have "alt_dist.alt_vwalk_bet P1 P2 Even G u (p @ tl q) w"
+  proof-
+    have q_ne: "q \<noteq> []"
+      using p_q(3)
+      by(cases parity)
+        (auto elim!: alt_dist.alt_vwalk_betE simp: parity_simps vwalk_bet_def)+
+    have q_hd: "hd q = v"
+      using p_q(3)
+      by(cases parity)
+        (auto dest: alt_dist.hd_of_alt_vwalk_bet' simp: parity_simps)
+    have q_shape: "q = v # tl q"
+      using q_ne q_hd
+      by(cases q) auto
+    have p_last: "v = last p"
+      by(rule alt_dist.last_of_alt_vwalk_bet[OF p_q(1)])
+    have p_ne: "p \<noteq> []"
+      using p_q(1)
+      by(auto elim!: alt_dist.alt_vwalk_betE simp: vwalk_bet_def)
+    have p_bet: "alt_dist.alt_vwalk_bet P1 P2 parity G u p (last p)"
+      using p_q(1)
+      by(simp add: p_last[symmetric])
+    have suf_bet: "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G (last p) (last p # tl q) w"
+      using p_q(3)
+      by(simp add: p_last[symmetric] q_shape[symmetric])
+    show ?thesis
+      by(rule alt_vwalk_bet_append_2[OF p_bet suf_bet p_ne])
+  qed
   hence "alt_dist.alt_distance P1 P2 Even G u w \<le> length (p @ tl q) - 1"
-    apply(intro alt_dist.alt_vwalk_bet_alt_dist)
-    by auto
+    by(intro alt_dist.alt_vwalk_bet_alt_dist) auto
   moreover have "length (p @ tl q) = length p + (length q - 1)"
     using p_q(2)
     by (cases q; auto)
@@ -366,9 +641,21 @@ lemma distance_split_1:
             next_alt_list_parity parity alt_dist.alt_reachable P1 P2 parity G w' v \<and>
             next_alt_list_parity parity alt_dist.alt_distance P1 P2 parity G w' v = 
             next_alt_list_parity parity alt_dist.alt_distance P1 P2 parity G w v "
-  apply(auto simp only: parity_simps split: parity.splits)
-  apply (metis alt_dist.alt_unreachable_dist enat.distinct(2) plus_eq_infty_iff_enat)
-  by (metis alt_dist.alt_unreachable_dist enat.distinct(2) plus_eq_infty_iff_enat)
+proof(goal_cases)
+  case 1
+  have both_fin: "alt_dist.alt_distance P1 P2 parity G u w \<noteq> \<infinity>"
+    "next_alt_list_parity parity alt_dist.alt_distance P1 P2 parity G w v \<noteq> \<infinity>"
+    using 1 by(auto simp: plus_eq_infty_iff_enat)
+  have r1: "alt_dist.alt_reachable P1 P2 parity G u w"
+    using both_fin(1) alt_dist.alt_unreachable_dist
+    by force
+  have r2: "next_alt_list_parity parity alt_dist.alt_reachable P1 P2 parity G w v"
+    using both_fin(2) alt_dist.alt_unreachable_dist
+    by(cases parity) (force simp: parity_simps)+
+  show ?case
+    using r1 r2
+    by(intro exI[where x = w]) auto
+qed
 
 lemma alt_dist_inf: "v \<notin> dVs G \<Longrightarrow> alt_dist.alt_distance P1 P2 parity G u v = \<infinity>"
 proof(rule ccontr, goal_cases)
@@ -396,12 +683,48 @@ qed
 
 lemma alt_dist_eq: "\<lbrakk>\<And>p. alt_dist.alt_vwalk_bet P1 P2 parity G' u p v \<Longrightarrow> alt_dist.alt_vwalk_bet P1 P2 parity G u (map f p) v\<rbrakk> \<Longrightarrow>
                    alt_dist.alt_distance P1 P2 parity G u v \<le> alt_dist.alt_distance P1 P2 parity G' u v"
-  apply(auto simp: alt_dist.alt_distance_def image_def intro!: Inf_lower)
-  apply (smt (verit, ccfv_threshold) Un_iff length_map mem_Collect_eq wellorder_InfI)
-  by (meson alt_dist.alt_vwalk_bet_nonempty')
+proof(goal_cases)
+  case 1
+  have "alt_dist.alt_distance P1 P2 parity G u v
+          \<le> (if alt_dist.alt_vwalk_bet P1 P2 parity G' u p v then length p - 1 else \<infinity>)" for p
+  proof(cases "alt_dist.alt_vwalk_bet P1 P2 parity G' u p v")
+    case True
+    have "alt_dist.alt_distance P1 P2 parity G u v \<le> length (map f p) - 1"
+      by(rule alt_dist.alt_vwalk_bet_alt_dist[OF 1[OF True]])
+    thus ?thesis
+      using True by simp
+  next
+    case False
+    thus ?thesis by simp
+  qed
+  hence "alt_dist.alt_distance P1 P2 parity G u v
+          \<le> (INF p. if alt_dist.alt_vwalk_bet P1 P2 parity G' u p v then length p - 1 else \<infinity>)"
+    by(intro INF_greatest) blast
+  thus ?case
+    by(simp add: alt_dist.alt_distance_def)
+qed
 
 lemma alt_distance_subset: "G \<subseteq> G' \<Longrightarrow> alt_dist.alt_distance P1 P2 parity G' u v \<le> alt_dist.alt_distance P1 P2 parity G u v"
-  by (metis enat_ord_simps(3) alt_dist.alt_reachable_dist_2 alt_dist.alt_unreachable_dist alt_dist.alt_vwalk_bet_alt_dist alt_dist.alt_vwalk_bet_subset)
+proof(goal_cases)
+  case 1
+  show ?case
+  proof(cases "alt_dist.alt_reachable P1 P2 parity G u v")
+    case True
+    obtain p where p: "alt_dist.alt_vwalk_bet P1 P2 parity G u p v"
+      "alt_dist.alt_distance P1 P2 parity G u v = length p - 1"
+      using True by(rule alt_dist.alt_reachable_dist_2)
+    have "alt_dist.alt_vwalk_bet P1 P2 parity G' u p v"
+      by(rule alt_dist.alt_vwalk_bet_subset[OF p(1) 1])
+    hence "alt_dist.alt_distance P1 P2 parity G' u v \<le> length p - 1"
+      by(rule alt_dist.alt_vwalk_bet_alt_dist)
+    thus ?thesis
+      by(simp add: p(2))
+  next
+    case False
+    thus ?thesis
+      by(simp add: alt_dist.alt_unreachable_dist)
+  qed
+qed
 
 lemma odd_alt_distance_neighbourhood:
   "\<lbrakk>v \<in> neighbourhood G u; P1 (u,v)\<rbrakk> \<Longrightarrow> alt_dist.alt_distance P1 P2 Odd G u v \<le> 1"
@@ -486,26 +809,30 @@ proof(goal_cases)
       by (auto intro: alt_dist.alt_reachable_dist_2 simp: parity_simps split: parity.splits)
     ultimately have "length p - 1 < length (p1 @ [x]) - 1"
       by auto 
-    hence "length (p @ p2) - 1 < length (p1 @ x # p2) - 1"      by auto
-
-    have "alt_dist.alt_vwalk_bet P1 P2 Even G u ((butlast p @ [x]) @ p2) v"
-      using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G x (x # p2) v\<close> 
-            \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u p x\<close>
-      apply(intro alt_vwalk_bet_append_2)
-      apply(auto )
-      apply(cases p)
-      apply (auto simp: parity_simps split: parity.splits)
-      by (metis alt_dist.alt_vwalk_bet_def append_butlast_last_id last.simps vwalk_bet_props)+
-    moreover have "p = (butlast p) @ [x]"
+    hence "length (p @ p2) - 1 < length (p1 @ x # p2) - 1"
+      by auto
+    have p_ne: "p \<noteq> []"
       using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u p x\<close>
-      apply (cases p)
-      by (auto dest!: alt_dist.last_of_alt_vwalk_bet
-               simp: parity_simps  alt_dist.alt_vwalk_bet_nonempty' 
-                     append_butlast_last_id 
-                 split: parity.splits )
-    ultimately have "alt_dist.alt_distance P1 P2 Even G u v \<le> length (p @ p2) -1"
-      apply(intro alt_dist.alt_vwalk_bet_alt_dist)
-      by auto[1]
+      by(auto elim!: alt_dist.alt_vwalk_betE simp: vwalk_bet_def)
+    have p_last: "x = last p"
+      by(rule alt_dist.last_of_alt_vwalk_bet[OF \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u p x\<close>])
+    have p_snoc: "p = butlast p @ [x]"
+      using p_ne by(simp add: p_last)
+    have "alt_dist.alt_vwalk_bet P1 P2 Even G u ((butlast p @ [x]) @ p2) v"
+    proof(rule alt_vwalk_bet_append_2)
+      show "alt_dist.alt_vwalk_bet P1 P2 parity G u (butlast p @ [x]) (last (butlast p @ [x]))"
+        using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u p x\<close>
+        by(simp add: p_snoc[symmetric] p_last[symmetric])
+      show "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G (last (butlast p @ [x])) (last (butlast p @ [x]) # p2) v"
+        using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G x (x # p2) v\<close>
+        by simp
+      show "butlast p @ [x] \<noteq> []"
+        by simp
+    qed
+    hence "alt_dist.alt_distance P1 P2 Even G u v \<le> length ((butlast p @ [x]) @ p2) - 1"
+      by(rule alt_dist.alt_vwalk_bet_alt_dist)
+    hence "alt_dist.alt_distance P1 P2 Even G u v \<le> length (p @ p2) - 1"
+      by(simp add: p_snoc[symmetric])
     moreover have "alt_dist.alt_distance P1 P2 Even G u v = length (p1 @ x # p2) - 1"
       using \<open>alt_dist.alt_shortest_path P1 P2 Even G u (p1 @ x # p2) v\<close>
       by (rule alt_dist.alt_shortest_path_dist)
@@ -529,25 +856,24 @@ proof(goal_cases)
       by auto 
     hence "length (p1 @ p) - 1 < length (p1 @ x # p2) - 1"
       by auto
-
-    have "alt_dist.alt_vwalk_bet P1 P2 Even G u ((p1 @ [x]) @ (tl p)) v"
-      using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (p1 @ [x]) x\<close> 
-            \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G x p v\<close>
-      apply(intro alt_vwalk_bet_append_2)
-      apply(auto )
-      apply(cases p)
-      apply (auto simp: parity_simps split: parity.splits)
-      apply (meson alt_dist.alt_vwalk_bet_nonempty')
-      apply (meson alt_dist.alt_vwalk_bet_nonempty')
-      apply (metis alt_dist.alt_vwalk_betE list.sel(1) vwalk_bet_def)
-      by (metis alt_dist.alt_vwalk_betE list.sel(1) vwalk_bet_def)
-
-    moreover have "p = x # (tl p)"
+    have p_cons: "p = x # (tl p)"
       using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G x p v\<close> 
       by (fastforce dest!: alt_dist.hd_of_alt_vwalk_bet simp: parity_simps split: parity.splits)
-    ultimately have "alt_dist.alt_distance P1 P2 Even G u v \<le> length (p1 @ p) -1"
-      apply(intro alt_dist.alt_vwalk_bet_alt_dist)
-      by auto[1]
+    have "alt_dist.alt_vwalk_bet P1 P2 Even G u ((p1 @ [x]) @ (tl p)) v"
+    proof(rule alt_vwalk_bet_append_2)
+      show "alt_dist.alt_vwalk_bet P1 P2 parity G u (p1 @ [x]) (last (p1 @ [x]))"
+        using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (p1 @ [x]) x\<close>
+        by simp
+      show "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G (last (p1 @ [x])) (last (p1 @ [x]) # tl p) v"
+        using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G x p v\<close>
+        by(simp add: p_cons[symmetric])
+      show "p1 @ [x] \<noteq> []"
+        by simp
+    qed
+    hence "alt_dist.alt_distance P1 P2 Even G u v \<le> length ((p1 @ [x]) @ tl p) - 1"
+      by(rule alt_dist.alt_vwalk_bet_alt_dist)
+    hence "alt_dist.alt_distance P1 P2 Even G u v \<le> length (p1 @ p) - 1"
+      using p_cons by simp
     moreover have "alt_dist.alt_distance P1 P2 Even G u v = length (p1 @ x # p2) - 1"
       using \<open>alt_dist.alt_shortest_path P1 P2 Even G u (p1 @ x # p2) v\<close>
       by (rule alt_dist.alt_shortest_path_dist)
@@ -559,10 +885,9 @@ proof(goal_cases)
     using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G x (x # p2) v\<close>
     by (auto intro!: alt_dist.alt_vwalk_bet_alt_dist simp only: parity_simps split: parity.splits)
   ultimately show ?case
-    apply (intro exI[where x = parity])
     using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (p1 @ [x]) x\<close>
-    using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G x (x # p2) v\<close>
-    by (auto simp add: alt_dist.alt_shortest_path_def parity_simps split: parity.splits)
+          \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G x (x # p2) v\<close>
+    by (auto simp add: alt_dist.alt_shortest_path_def parity_simps intro!: exI[where x = parity] split: parity.splits)
 qed
 
 
@@ -593,26 +918,30 @@ proof(goal_cases)
       by (auto intro: alt_dist.alt_reachable_dist_2 simp: parity_simps split: parity.splits)
     ultimately have "length p - 1 < length (p1 @ [x]) - 1"
       by auto 
-    hence "length (p @ p2) - 1 < length (p1 @ x # p2) - 1"      by auto
-
-    have "alt_dist.alt_vwalk_bet P1 P2 Odd G u ((butlast p @ [x]) @ p2) v"
-      using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G x (x # p2) v\<close> 
-            \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u p x\<close>
-      apply(intro alt_vwalk_bet_append_3)
-      apply(auto )
-      apply(cases p)
-      apply (auto simp: alt_dist.alt_vwalk_bet_nonempty' parity_simps split: parity.splits)
-      by (metis alt_dist.alt_vwalk_bet_def append_butlast_last_id last.simps vwalk_bet_props)+
-    moreover have "p = (butlast p) @ [x]"
+    hence "length (p @ p2) - 1 < length (p1 @ x # p2) - 1"
+      by auto
+    have p_ne: "p \<noteq> []"
       using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u p x\<close>
-      apply (cases p)
-      by (auto dest!: alt_dist.last_of_alt_vwalk_bet
-               simp: parity_simps  alt_dist.alt_vwalk_bet_nonempty' 
-                     append_butlast_last_id 
-                 split: parity.splits )
-    ultimately have "alt_dist.alt_distance P1 P2 Odd G u v \<le> length (p @ p2) -1"
-      apply(intro alt_dist.alt_vwalk_bet_alt_dist)
-      by auto[1]
+      by(auto elim!: alt_dist.alt_vwalk_betE simp: vwalk_bet_def)
+    have p_last: "x = last p"
+      by(rule alt_dist.last_of_alt_vwalk_bet[OF \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u p x\<close>])
+    have p_snoc: "p = butlast p @ [x]"
+      using p_ne by(simp add: p_last)
+    have "alt_dist.alt_vwalk_bet P1 P2 Odd G u ((butlast p @ [x]) @ p2) v"
+    proof(rule alt_vwalk_bet_append_3)
+      show "alt_dist.alt_vwalk_bet P1 P2 parity G u (butlast p @ [x]) (last (butlast p @ [x]))"
+        using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u p x\<close>
+        by(simp add: p_snoc[symmetric] p_last[symmetric])
+      show "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G (last (butlast p @ [x])) (last (butlast p @ [x]) # p2) v"
+        using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G x (x # p2) v\<close>
+        by simp
+      show "butlast p @ [x] \<noteq> []"
+        by simp
+    qed
+    hence "alt_dist.alt_distance P1 P2 Odd G u v \<le> length ((butlast p @ [x]) @ p2) - 1"
+      by(rule alt_dist.alt_vwalk_bet_alt_dist)
+    hence "alt_dist.alt_distance P1 P2 Odd G u v \<le> length (p @ p2) - 1"
+      by(simp add: p_snoc[symmetric])
     moreover have "alt_dist.alt_distance P1 P2 Odd G u v = length (p1 @ x # p2) - 1"
       using \<open>alt_dist.alt_shortest_path P1 P2 Odd G u (p1 @ x # p2) v\<close>
       by (rule alt_dist.alt_shortest_path_dist)
@@ -636,25 +965,24 @@ proof(goal_cases)
       by auto 
     hence "length (p1 @ p) - 1 < length (p1 @ x # p2) - 1"
       by auto
-
-    have "alt_dist.alt_vwalk_bet P1 P2 Odd G u ((p1 @ [x]) @ (tl p)) v"
-      using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (p1 @ [x]) x\<close> 
-            \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G x p v\<close>
-      apply(intro alt_vwalk_bet_append_3)
-      apply(auto )
-      apply(cases p)
-      apply (auto simp: parity_simps split: parity.splits)
-      apply (meson alt_dist.alt_vwalk_bet_nonempty')
-      apply (meson alt_dist.alt_vwalk_bet_nonempty')
-      apply (metis alt_dist.alt_vwalk_betE list.sel(1) vwalk_bet_def)
-      by (metis alt_dist.alt_vwalk_betE list.sel(1) vwalk_bet_def)
-
-    moreover have "p = x # (tl p)"
+    have p_cons: "p = x # (tl p)"
       using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G x p v\<close> 
       by (fastforce dest!: alt_dist.hd_of_alt_vwalk_bet simp: parity_simps split: parity.splits)
-    ultimately have "alt_dist.alt_distance P1 P2 Odd G u v \<le> length (p1 @ p) -1"
-      apply(intro alt_dist.alt_vwalk_bet_alt_dist)
-      by auto[1]
+    have "alt_dist.alt_vwalk_bet P1 P2 Odd G u ((p1 @ [x]) @ (tl p)) v"
+    proof(rule alt_vwalk_bet_append_3)
+      show "alt_dist.alt_vwalk_bet P1 P2 parity G u (p1 @ [x]) (last (p1 @ [x]))"
+        using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (p1 @ [x]) x\<close>
+        by simp
+      show "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G (last (p1 @ [x])) (last (p1 @ [x]) # tl p) v"
+        using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G x p v\<close>
+        by(simp add: p_cons[symmetric])
+      show "p1 @ [x] \<noteq> []"
+        by simp
+    qed
+    hence "alt_dist.alt_distance P1 P2 Odd G u v \<le> length ((p1 @ [x]) @ tl p) - 1"
+      by(rule alt_dist.alt_vwalk_bet_alt_dist)
+    hence "alt_dist.alt_distance P1 P2 Odd G u v \<le> length (p1 @ p) - 1"
+      using p_cons by simp
     moreover have "alt_dist.alt_distance P1 P2 Odd G u v = length (p1 @ x # p2) - 1"
       using \<open>alt_dist.alt_shortest_path P1 P2 Odd G u (p1 @ x # p2) v\<close>
       by (rule alt_dist.alt_shortest_path_dist)
@@ -666,10 +994,9 @@ proof(goal_cases)
     using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G x (x # p2) v\<close>
     by (auto intro!: alt_dist.alt_vwalk_bet_alt_dist simp only: parity_simps split: parity.splits)
   ultimately show ?case
-    apply (intro exI[where x = parity])
     using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (p1 @ [x]) x\<close>
-    using \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G x (x # p2) v\<close>
-    by (auto simp add: alt_dist.alt_shortest_path_def parity_simps split: parity.splits)
+          \<open>next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G x (x # p2) v\<close>
+    by (auto simp add: alt_dist.alt_shortest_path_def parity_simps intro!: exI[where x = parity] split: parity.splits)
 qed
 
 lemma alt_shortest_path_split_alt_distance:
@@ -680,16 +1007,24 @@ proof(goal_cases)
   then show ?case
   proof(cases parity)
     case Even
-    then show ?thesis
+    obtain parity' where sp: "alt_dist.alt_shortest_path P1 P2 parity' G u (p1 @ [x]) x"
       using alt_shortest_path_split_1[OF 1[simplified Even]]
-      apply (auto dest!: alt_dist.alt_shortest_path_dist)
-      by (metis "1" Nat.add_diff_assoc alt_dist.alt_shortest_path_dist enat_ord_simps(1) le_add1 length_Cons length_append plus_1_eq_Suc)
+      by auto
+    have "alt_dist.alt_distance P1 P2 parity' G u x \<le> alt_dist.alt_distance P1 P2 parity G u v"
+      using alt_dist.alt_shortest_path_dist[OF sp] alt_dist.alt_shortest_path_dist[OF 1]
+      by simp
+    then show ?thesis
+      by blast
   next
     case Odd
-    then show ?thesis
+    obtain parity' where sp: "alt_dist.alt_shortest_path P1 P2 parity' G u (p1 @ [x]) x"
       using alt_shortest_path_split_2[OF 1[simplified Odd]]
-      apply (auto dest!: alt_dist.alt_shortest_path_dist)
-      by (metis "1" Nat.add_diff_assoc alt_dist.alt_shortest_path_dist enat_ord_simps(1) le_add1 length_Cons length_append plus_1_eq_Suc)
+      by auto
+    have "alt_dist.alt_distance P1 P2 parity' G u x \<le> alt_dist.alt_distance P1 P2 parity G u v"
+      using alt_dist.alt_shortest_path_dist[OF sp] alt_dist.alt_shortest_path_dist[OF 1]
+      by simp
+    then show ?thesis
+      by blast
   qed
 qed
 
@@ -726,8 +1061,15 @@ lemma alt_vwalk_bet_vertex_decompE_1:
     "r = y # ys"
     "alt_dist.alt_vwalk_bet P1 P2 parity G u q y"
     "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G y r v"
-  using assms
-  by (smt (verit, best) alt_vwalk_bet_append_1 append_butlast_last_cancel list.sel(3) snoc_eq_iff_butlast')
+proof-
+  obtain par where
+    "alt_dist.alt_vwalk_bet P1 P2 par G u (xs @ [y]) y"
+    "next_alt_list_parity par alt_dist.alt_vwalk_bet P1 P2 par G y (y # ys) v"
+    using p_vwalk
+    by(auto elim!: alt_vwalk_bet_appendE_1[where ?p1.0 = "xs @ [y]", simplified])
+  thus ?thesis
+    by(intro that[of "xs @ [y]" "y # ys" par]) auto
+qed
 
 lemma alt_vwalk_bet_vertex_decompE_1_test:
   assumes p_vwalk: "alt_dist.alt_vwalk_bet P1 P2 parity' G u (xs @ y # ys) v" "parity' = Even"
@@ -737,8 +1079,11 @@ lemma alt_vwalk_bet_vertex_decompE_1_test:
     "r = y # ys"
     "alt_dist.alt_vwalk_bet P1 P2 parity G u q y"
     "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G y r v"
-  using assms
-  by (smt (verit, best) alt_vwalk_bet_append_1 append_butlast_last_cancel list.sel(3) snoc_eq_iff_butlast')
+proof-
+  from p_vwalk have "alt_dist.alt_vwalk_bet P1 P2 Even G u (xs @ y # ys) v"
+    by simp
+  from alt_vwalk_bet_vertex_decompE_1[OF this that] show ?thesis .
+qed
 
 lemma alt_vwalk_bet_vertex_decompE_2:
   assumes p_vwalk: "alt_dist.alt_vwalk_bet P1 P2 Odd G u (xs @ y # ys) v"
@@ -748,8 +1093,15 @@ lemma alt_vwalk_bet_vertex_decompE_2:
     "r = y # ys"
     "alt_dist.alt_vwalk_bet P1 P2 parity G u q y"
     "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G y r v"
-  using assms
-  by (smt (verit, del_insts) alt_vwalk_bet_appendE_1' append_butlast_last_cancel list.sel(3) snoc_eq_iff_butlast')
+proof-
+  obtain par where
+    "alt_dist.alt_vwalk_bet P1 P2 par G u (xs @ [y]) y"
+    "next_alt_list_parity par alt_dist.alt_vwalk_bet P1 P2 (other_parity par) G y (y # ys) v"
+    using p_vwalk
+    by(auto elim!: alt_vwalk_bet_appendE_1'[where ?p1.0 = "xs @ [y]", simplified])
+  thus ?thesis
+    by(intro that[of "xs @ [y]" "y # ys" par]) auto
+qed
 
 lemma True_imp: "P \<Longrightarrow> (x = x \<longrightarrow> P)"
   by auto
@@ -772,49 +1124,89 @@ lemma closed_alt_vwalk_bet_decomp_1:
     next_alt_list_parity parity' (next_alt_list_parity parity alt_dist.alt_vwalk_bet) P1 P2 parity'' G y (y # zs) v \<and>
     (({# parity,parity',parity'' #} = {# Odd, Odd, Even #}) \<or> 
      ({# parity,parity',parity'' #} = {# Even, Even, Even #}))"
-  using assms
-  apply -
-  apply(erule alt_vwalk_bet_vertex_decompE_1)
-  subgoal for parity q r
-    apply(cases parity)
-    subgoal apply(rule exI[where x = Even])
-      apply (simp only: )
-      apply(simp only: parity_simps split: parity.splits)
-      subgoal
-        apply(rule conjI)
-        subgoal apply(rule True_imp_2)
-          apply(erule alt_vwalk_bet_vertex_decompE_1[where xs = "y # ys", simplified])
-            by(((rule conjI)+)?; (simp_all only: parity_simps)?; (split parity.splits)?; metis add_mset_commute parity.simps)+
-        subgoal by force
-        done
-      subgoal by force
-      done
-    subgoal apply(rule exI[where x = Odd])
-      apply (simp only: )
-      apply(simp only: parity_simps split: parity.splits)
-      subgoal by force
-      subgoal
-        apply(rule conjI)
-        subgoal apply(rule False_imp_2) by force
-        subgoal apply(rule True_imp_2)
-          apply(rule conjI)
-          subgoal apply(rule False_imp_2) by metis
-          subgoal
-            apply (rule True_imp_2)
-            apply(erule alt_vwalk_bet_vertex_decompE_2[where xs = "y # ys", simplified])
-            subgoal for parity' q' r'
-              apply(cases parity')
-              subgoal apply(rule exI[where x = Even])
-                by((simp_all only: parity_simps)?; split parity.splits; metis add_mset_commute parity.simps)+
-              subgoal apply(rule exI[where x = Odd])
-                by((simp_all only: parity_simps)?; split parity.splits; metis add_mset_commute parity.simps)+
-              done
-            done
-          done
-        done
-      done
-    done
-  done
+proof-
+  obtain parity q r where dec1:
+    "xs @ y # ys @ y # zs = q @ tl r"
+    "q = xs @ [y]"
+    "r = y # ys @ y # zs"
+    "alt_dist.alt_vwalk_bet P1 P2 parity G u q y"
+    "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity G y r v"
+    by(rule alt_vwalk_bet_vertex_decompE_1[OF p_vwalk])
+  have c1: "alt_dist.alt_vwalk_bet P1 P2 parity G u (xs @ [y]) y"
+    using dec1(4) by(simp add: dec1(2))
+  show ?thesis
+  proof(cases parity)
+    case Even
+    have B: "alt_dist.alt_vwalk_bet P1 P2 Even G y ((y # ys) @ y # zs) v"
+      using dec1(5) by(simp add: dec1(3) Even parity_simps)
+    obtain parity2 q2 r2 where dec2:
+      "(y # ys) @ y # zs = q2 @ tl r2"
+      "q2 = (y # ys) @ [y]"
+      "r2 = y # zs"
+      "alt_dist.alt_vwalk_bet P1 P2 parity2 G y q2 y"
+      "next_alt_list_parity parity2 alt_dist.alt_vwalk_bet P1 P2 parity2 G y r2 v"
+      by(rule alt_vwalk_bet_vertex_decompE_1[OF B])
+    have c2: "next_alt_list_parity Even alt_dist.alt_vwalk_bet P1 P2 parity2 G y (y # ys @ [y]) y"
+      using dec2(4) by(simp add: dec2(2) parity_simps)
+    show ?thesis
+    proof(cases parity2)
+      case Even2: Even
+      have c3: "next_alt_list_parity Even (next_alt_list_parity Even alt_dist.alt_vwalk_bet) P1 P2 Even G y (y # zs) v"
+        using dec2(5) by(simp add: dec2(3) Even2 parity_simps)
+      have "alt_dist.alt_vwalk_bet P1 P2 Even G u (xs @ [y]) y \<and>
+            next_alt_list_parity Even alt_dist.alt_vwalk_bet P1 P2 Even G y (y # ys @ [y]) y \<and>
+            next_alt_list_parity Even (next_alt_list_parity Even alt_dist.alt_vwalk_bet) P1 P2 Even G y (y # zs) v \<and>
+            ({# Even, Even, Even #} = {# Odd, Odd, Even #} \<or> {# Even, Even, Even #} = {# Even, Even, Even #})"
+        using c1 c2 c3 by(simp add: Even Even2)
+      thus ?thesis by blast
+    next
+      case Odd2: Odd
+      have c3: "next_alt_list_parity Odd (next_alt_list_parity Even alt_dist.alt_vwalk_bet) P1 P2 Odd G y (y # zs) v"
+        using dec2(5) by(simp add: dec2(3) Odd2 parity_simps)
+      have "alt_dist.alt_vwalk_bet P1 P2 Even G u (xs @ [y]) y \<and>
+            next_alt_list_parity Even alt_dist.alt_vwalk_bet P1 P2 Odd G y (y # ys @ [y]) y \<and>
+            next_alt_list_parity Odd (next_alt_list_parity Even alt_dist.alt_vwalk_bet) P1 P2 Odd G y (y # zs) v \<and>
+            ({# Even, Odd, Odd #} = {# Odd, Odd, Even #} \<or> {# Even, Odd, Odd #} = {# Even, Even, Even #})"
+        using c1 c2 c3 by(simp add: Even Odd2 add_mset_commute)
+      thus ?thesis by blast
+    qed
+  next
+    case Odd
+    have B: "alt_dist.alt_vwalk_bet P2 P1 Odd G y ((y # ys) @ y # zs) v"
+      using dec1(5) by(simp add: dec1(3) Odd parity_simps)
+    obtain parity2 q2 r2 where dec2:
+      "(y # ys) @ y # zs = q2 @ tl r2"
+      "q2 = (y # ys) @ [y]"
+      "r2 = y # zs"
+      "alt_dist.alt_vwalk_bet P2 P1 parity2 G y q2 y"
+      "next_alt_list_parity parity2 alt_dist.alt_vwalk_bet P2 P1 (other_parity parity2) G y r2 v"
+      by(rule alt_vwalk_bet_vertex_decompE_2[OF B])
+    have c2: "next_alt_list_parity Odd alt_dist.alt_vwalk_bet P1 P2 parity2 G y (y # ys @ [y]) y"
+      using dec2(4) by(simp add: dec2(2) parity_simps)
+    show ?thesis
+    proof(cases parity2)
+      case Even2: Even
+      have c3: "next_alt_list_parity Even (next_alt_list_parity Odd alt_dist.alt_vwalk_bet) P1 P2 Odd G y (y # zs) v"
+        using dec2(5) by(simp add: dec2(3) Even2 parity_simps)
+      have "alt_dist.alt_vwalk_bet P1 P2 Odd G u (xs @ [y]) y \<and>
+            next_alt_list_parity Odd alt_dist.alt_vwalk_bet P1 P2 Even G y (y # ys @ [y]) y \<and>
+            next_alt_list_parity Even (next_alt_list_parity Odd alt_dist.alt_vwalk_bet) P1 P2 Odd G y (y # zs) v \<and>
+            ({# Odd, Even, Odd #} = {# Odd, Odd, Even #} \<or> {# Odd, Even, Odd #} = {# Even, Even, Even #})"
+        using c1 c2 c3 by(simp add: Odd Even2 add_mset_commute)
+      thus ?thesis by blast
+    next
+      case Odd2: Odd
+      have c3: "next_alt_list_parity Odd (next_alt_list_parity Odd alt_dist.alt_vwalk_bet) P1 P2 Even G y (y # zs) v"
+        using dec2(5) by(simp add: dec2(3) Odd2 parity_simps)
+      have "alt_dist.alt_vwalk_bet P1 P2 Odd G u (xs @ [y]) y \<and>
+            next_alt_list_parity Odd alt_dist.alt_vwalk_bet P1 P2 Odd G y (y # ys @ [y]) y \<and>
+            next_alt_list_parity Odd (next_alt_list_parity Odd alt_dist.alt_vwalk_bet) P1 P2 Even G y (y # zs) v \<and>
+            ({# Odd, Odd, Even #} = {# Odd, Odd, Even #} \<or> {# Odd, Odd, Even #} = {# Even, Even, Even #})"
+        using c1 c2 c3 by(simp add: Odd Odd2)
+      thus ?thesis by blast
+    qed
+  qed
+qed
 
 lemma closed_alt_vwalk_bet_decompE_1:
   assumes p_vwalk: "alt_dist.alt_vwalk_bet P1 P2 Even G u (xs @ y # ys @ y # zs) v"
@@ -835,8 +1227,7 @@ lemma closed_alt_vwalk_bet_decompE_1':
       next_alt_list_parity parity' (next_alt_list_parity parity alt_dist.alt_vwalk_bet) P1 P2 parity'' G y (y # zs) v;
       (({# parity,parity',parity'' #} = {# Odd, Odd, Even #}) \<or> 
        ({# parity,parity',parity'' #} = {# Even, Even, Even #}))\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  using closed_alt_vwalk_bet_decompE_1
-  by metis
+  by(rule closed_alt_vwalk_bet_decompE_1)
 
 lemma three_parity_crunch_1[case_names EEE OOE OEO EOO]:
   "({# parity,parity',parity'' #} = {# Odd, Odd, Even #}) \<or> 
@@ -845,9 +1236,8 @@ lemma three_parity_crunch_1[case_names EEE OOE OEO EOO]:
         \<lbrakk>parity = Odd; parity' = Odd; parity'' = Even\<rbrakk> \<Longrightarrow> P;
         \<lbrakk>parity = Odd; parity' = Even; parity'' = Odd\<rbrakk> \<Longrightarrow> P;
         \<lbrakk>parity = Even; parity' = Odd; parity'' = Odd\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  apply (auto simp: add_mset_commute)
-  apply (smt (verit, del_insts) add_eq_conv_diff add_mset_remove_trivial parity.exhaust single_eq_single)
-  by (metis add_mset_eq_single add_mset_remove_trivial diff_union_swap)
+  by(cases parity; cases parity'; cases parity'')
+    (auto simp: add_mset_commute add_mset_add_mset_same_iff add_eq_conv_ex)
 
 lemma closed_alt_vwalk_bet_decomp_2:
   assumes p_vwalk: "alt_dist.alt_vwalk_bet P1 P2 Odd G u (xs @ y # ys @ y # zs) v"
@@ -858,45 +1248,89 @@ lemma closed_alt_vwalk_bet_decomp_2:
     next_alt_list_parity parity' (next_alt_list_parity parity alt_dist.alt_vwalk_bet) P1 P2 parity'' G y (y # zs) v \<and>
     (({# parity,parity',parity'' #} = {# Odd, Odd, Odd #}) \<or> 
      ({# parity,parity',parity'' #} = {# Even, Odd, Even #}))"
-  using assms
-  apply -
-  apply(erule alt_vwalk_bet_vertex_decompE_2)
-  subgoal for parity q r
-    apply(cases parity)
-    subgoal apply(rule exI[where x = Even])
-      apply (simp only: parity_simps)
-      apply(split parity.splits)
-      apply(rule conjI)
-      subgoal apply(rule True_imp)
-        apply(split parity.splits)
-        apply(rule conjI)
-        subgoal apply (rule True_imp)
-          apply (simp split: parity.splits)
-          apply(erule alt_vwalk_bet_vertex_decompE_2[where xs = "y # ys", simplified])
-          by((simp_all only: parity_simps)?; split parity.splits; metis add_mset_commute parity.simps)+
-        subgoal by blast
-        done
-      subgoal by blast
-      done
-    subgoal apply(rule exI[where x = Odd])
-      apply (simp only: parity_simps)
-      apply(split parity.splits)
-      apply(rule conjI)
-      subgoal 
-        by((simp_all only: parity_simps)?; split parity.splits; metis add_mset_commute parity.simps)+
-      apply(rule True_imp)
-      apply(simp)
-      apply(erule alt_vwalk_bet_vertex_decompE_1[where xs = "y # ys", simplified])
-      subgoal for parity' q' r'
-        apply(cases parity')
-        subgoal apply(rule exI[where x = Even])
-          by((simp_all only: parity_simps)?; split parity.splits; metis add_mset_commute parity.simps)+
-        subgoal apply(rule exI[where x = Odd])
-          by((simp_all only: parity_simps)?; split parity.splits; metis add_mset_commute parity.simps)+
-        done
-      done
-    done
-  done
+proof-
+  obtain parity q r where dec1:
+    "xs @ y # ys @ y # zs = q @ tl r"
+    "q = xs @ [y]"
+    "r = y # ys @ y # zs"
+    "alt_dist.alt_vwalk_bet P1 P2 parity G u q y"
+    "next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 (other_parity parity) G y r v"
+    by(rule alt_vwalk_bet_vertex_decompE_2[OF p_vwalk])
+  have c1: "alt_dist.alt_vwalk_bet P1 P2 parity G u (xs @ [y]) y"
+    using dec1(4) by(simp add: dec1(2))
+  show ?thesis
+  proof(cases parity)
+    case Even
+    have B: "alt_dist.alt_vwalk_bet P1 P2 Odd G y ((y # ys) @ y # zs) v"
+      using dec1(5) by(simp add: dec1(3) Even parity_simps)
+    obtain parity2 q2 r2 where dec2:
+      "(y # ys) @ y # zs = q2 @ tl r2"
+      "q2 = (y # ys) @ [y]"
+      "r2 = y # zs"
+      "alt_dist.alt_vwalk_bet P1 P2 parity2 G y q2 y"
+      "next_alt_list_parity parity2 alt_dist.alt_vwalk_bet P1 P2 (other_parity parity2) G y r2 v"
+      by(rule alt_vwalk_bet_vertex_decompE_2[OF B])
+    have c2: "next_alt_list_parity Even alt_dist.alt_vwalk_bet P1 P2 parity2 G y (y # ys @ [y]) y"
+      using dec2(4) by(simp add: dec2(2) parity_simps)
+    show ?thesis
+    proof(cases parity2)
+      case Even2: Even
+      have c3: "next_alt_list_parity Even (next_alt_list_parity Even alt_dist.alt_vwalk_bet) P1 P2 Odd G y (y # zs) v"
+        using dec2(5) by(simp add: dec2(3) Even2 parity_simps)
+      have "alt_dist.alt_vwalk_bet P1 P2 Even G u (xs @ [y]) y \<and>
+            next_alt_list_parity Even alt_dist.alt_vwalk_bet P1 P2 Even G y (y # ys @ [y]) y \<and>
+            next_alt_list_parity Even (next_alt_list_parity Even alt_dist.alt_vwalk_bet) P1 P2 Odd G y (y # zs) v \<and>
+            ({# Even, Even, Odd #} = {# Odd, Odd, Odd #} \<or> {# Even, Even, Odd #} = {# Even, Odd, Even #})"
+        using c1 c2 c3 by(simp add: Even Even2 add_mset_commute)
+      thus ?thesis by blast
+    next
+      case Odd2: Odd
+      have c3: "next_alt_list_parity Odd (next_alt_list_parity Even alt_dist.alt_vwalk_bet) P1 P2 Even G y (y # zs) v"
+        using dec2(5) by(simp add: dec2(3) Odd2 parity_simps)
+      have "alt_dist.alt_vwalk_bet P1 P2 Even G u (xs @ [y]) y \<and>
+            next_alt_list_parity Even alt_dist.alt_vwalk_bet P1 P2 Odd G y (y # ys @ [y]) y \<and>
+            next_alt_list_parity Odd (next_alt_list_parity Even alt_dist.alt_vwalk_bet) P1 P2 Even G y (y # zs) v \<and>
+            ({# Even, Odd, Even #} = {# Odd, Odd, Odd #} \<or> {# Even, Odd, Even #} = {# Even, Odd, Even #})"
+        using c1 c2 c3 by(simp add: Even Odd2)
+      thus ?thesis by blast
+    qed
+  next
+    case Odd
+    have B: "alt_dist.alt_vwalk_bet P2 P1 Even G y ((y # ys) @ y # zs) v"
+      using dec1(5) by(simp add: dec1(3) Odd parity_simps)
+    obtain parity2 q2 r2 where dec2:
+      "(y # ys) @ y # zs = q2 @ tl r2"
+      "q2 = (y # ys) @ [y]"
+      "r2 = y # zs"
+      "alt_dist.alt_vwalk_bet P2 P1 parity2 G y q2 y"
+      "next_alt_list_parity parity2 alt_dist.alt_vwalk_bet P2 P1 parity2 G y r2 v"
+      by(rule alt_vwalk_bet_vertex_decompE_1[OF B])
+    have c2: "next_alt_list_parity Odd alt_dist.alt_vwalk_bet P1 P2 parity2 G y (y # ys @ [y]) y"
+      using dec2(4) by(simp add: dec2(2) parity_simps)
+    show ?thesis
+    proof(cases parity2)
+      case Even2: Even
+      have c3: "next_alt_list_parity Even (next_alt_list_parity Odd alt_dist.alt_vwalk_bet) P1 P2 Even G y (y # zs) v"
+        using dec2(5) by(simp add: dec2(3) Even2 parity_simps)
+      have "alt_dist.alt_vwalk_bet P1 P2 Odd G u (xs @ [y]) y \<and>
+            next_alt_list_parity Odd alt_dist.alt_vwalk_bet P1 P2 Even G y (y # ys @ [y]) y \<and>
+            next_alt_list_parity Even (next_alt_list_parity Odd alt_dist.alt_vwalk_bet) P1 P2 Even G y (y # zs) v \<and>
+            ({# Odd, Even, Even #} = {# Odd, Odd, Odd #} \<or> {# Odd, Even, Even #} = {# Even, Odd, Even #})"
+        using c1 c2 c3 by(simp add: Odd Even2 add_mset_commute)
+      thus ?thesis by blast
+    next
+      case Odd2: Odd
+      have c3: "next_alt_list_parity Odd (next_alt_list_parity Odd alt_dist.alt_vwalk_bet) P1 P2 Odd G y (y # zs) v"
+        using dec2(5) by(simp add: dec2(3) Odd2 parity_simps)
+      have "alt_dist.alt_vwalk_bet P1 P2 Odd G u (xs @ [y]) y \<and>
+            next_alt_list_parity Odd alt_dist.alt_vwalk_bet P1 P2 Odd G y (y # ys @ [y]) y \<and>
+            next_alt_list_parity Odd (next_alt_list_parity Odd alt_dist.alt_vwalk_bet) P1 P2 Odd G y (y # zs) v \<and>
+            ({# Odd, Odd, Odd #} = {# Odd, Odd, Odd #} \<or> {# Odd, Odd, Odd #} = {# Even, Odd, Even #})"
+        using c1 c2 c3 by(simp add: Odd Odd2)
+      thus ?thesis by blast
+    qed
+  qed
+qed
 
 lemma closed_alt_vwalk_bet_decompE_2:
   assumes p_vwalk: "alt_dist.alt_vwalk_bet P1 P2 Odd G u (xs @ y # ys @ y # zs) v"
@@ -916,9 +1350,8 @@ lemma three_parity_crunch_2[case_names OOO EEO EOE OEE]:
         \<lbrakk>parity = Even; parity' = Even; parity'' = Odd\<rbrakk> \<Longrightarrow> P;
         \<lbrakk>parity = Even; parity' = Odd; parity'' = Even\<rbrakk> \<Longrightarrow> P;
         \<lbrakk>parity = Odd; parity' = Even; parity'' = Even\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  apply (auto simp: add_mset_commute)
-  apply (smt (verit, best) add_eq_conv_ex add_mset_eq_singleton_iff parity.exhaust parity.simps(2))
-  by (smt (verit, del_insts) add_eq_conv_diff add_mset_remove_trivial parity.exhaust single_eq_single)
+  by(cases parity; cases parity'; cases parity'')
+    (auto simp: add_mset_commute add_mset_add_mset_same_iff add_eq_conv_ex)
 
 locale labelled_alt_dist = alt_dist P1 P2 for P1 P2::"'a labelled_vtx \<times> 'a labelled_vtx \<Rightarrow> bool"
 begin
@@ -1051,179 +1484,90 @@ end
 
 lemma alt_shortest_path_distinct:
   "\<lbrakk>labelled_alt_dist.op_on P1 P2 (edges_of_vwalk p); labelled_alt_dist.labelled P1 P2 p;
-    alt_dist.alt_shortest_path P1 P2 parity G u p v\<rbrakk>
+    alt_dist.alt_shortest_path P1 P2 parity G u p v; \<forall>x. (x, x) \<notin> G\<rbrakk>
     \<Longrightarrow> distinct p"
-  apply(erule alt_dist.alt_shortest_path_props)
-  apply(rule ccontr)
-  apply(erule not_distinct_props)
-proof(goal_cases)
-  case (1 x1 x2 xs1 xs2 xs3)
-  note alt_vwalk_bet_append_2_simps=last_append list.simps if_False last.simps if_True HOL.refl
-
-  hence "alt_dist.alt_vwalk_bet P1 P2 parity G u (xs1 @ x2 # xs3) v"
-  proof(cases parity)
-    case Even
-    thus ?thesis
-      using 1
-    proof(simp_all only: parity.simps, elim closed_alt_vwalk_bet_decompE_1 three_parity_crunch_1, goal_cases)
-      case EEE: (1 parity parity' parity'')
-      then show ?case
-        by (fastforce simp: parity_simps parity.simps 
-              dest!:
-                   alt_vwalk_bet_append_2[where ?p1.0 = "xs1 @ [x2]", simplified alt_vwalk_bet_append_2_simps])
+proof(rule ccontr, goal_cases)
+  case 1
+  have walk: "Vwalk.vwalk_bet G u p v"
+    and alt: "alt_list P1 P2 (edges_of_vwalk p)"
+    using 1(3)
+    by(auto simp: alt_dist.alt_shortest_path_def elim!: alt_dist.alt_vwalk_betE)
+  obtain x1 x2 xs1 xs2 xs3 where decomp: "p = xs1 @ x1 # xs2 @ x2 # xs3" "x1 = x2"
+    using 1(5)
+    by(rule not_distinct_props)
+  show False
+  proof(cases "3 \<le> length p")
+    case True
+    hence "2 \<le> length (edges_of_vwalk p)"
+      by(simp add: edges_of_vwalk_length)
+    then obtain e1 e2 es where edges: "edges_of_vwalk p = e1 # e2 # es"
+      by(auto simp: numeral_2_eq_2 Suc_le_length_iff)
+    have P1e1: "P1 e1" and P2e2: "P2 e2"
+      using alt by(auto simp: edges alt_list_step)
+    have e1_in: "e1 \<in> set (edges_of_vwalk p)" and e2_in: "e2 \<in> set (edges_of_vwalk p)"
+      by(auto simp: edges)
+    obtain label name where x2_lab: "x2 = Vtx label name"
+      by(cases x2) auto
+    have x2_in: "x2 \<in> set p"
+      by(auto simp: decomp(1))
+    show False
+    proof(cases label)
+      case Odd
+      have "P1 e2"
+        using 1(2) x2_in x2_lab e2_in
+        by(cases e2) (auto simp: labelled_alt_dist.labelled_def Odd)
+      thus False
+        using 1(1) e2_in P2e2
+        by(auto simp: labelled_alt_dist.op_on_def)
     next
-      case OOE: (2 parity parity' parity'')
-      hence "P1 (last (xs1), x2)"
-        using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (xs1 @ [x2]) x2\<close> \<open>parity = Odd\<close>
-        apply(elim alt_dist.alt_vwalk_betE)
-        apply(auto simp: parity_simps split: parity.splits)
-        by (metis alt_list_split_1 alt_list_step dvd_triv_left edges_of_vwalk.simps(3)
-                  edges_of_vwalk_append_3 edges_of_vwalk_length length_greater_0_conv odd_pos
-                  odd_two_times_div_two_nat)+
-      moreover have "(last (xs1), x1) \<in> set (edges_of_vwalk p)"
-        using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (xs1 @ [x2]) x2\<close> \<open>parity = Odd\<close>
-        apply(elim alt_dist.alt_vwalk_betE)
-        apply(auto simp: parity_simps split: parity.splits)
-        by (metis OOE(12) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 in_set_conv_decomp length_greater_0_conv odd_pos)
-      moreover have "P2 (last (x2 # xs2), x2)" (is ?g1)
-                     "(last (xs2), x1) \<in> set (edges_of_vwalk p)" (is ?g2)
-      proof-
-        have *:"last (edges_of_vwalk (x2 # xs2 @ [x2])) = (last xs2, x2)" if "xs2 \<noteq> []"
-          using that
-          apply(auto simp only: neq_Nil_conv)
-          by (metis Cons_eq_appendI edges_of_vwalk.simps(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 last_snoc that)
-        thus ?g1
-          using \<open> next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity' G x2 (x2 # xs2 @ [x2]) x2\<close>
-            \<open>parity = Odd\<close>  \<open>parity' = Odd\<close> \<open>x1 = x2\<close>
-          apply(auto simp: parity_simps split: parity.splits elim!: )
-           apply (metis alt_dist.alt_vwalk_betE alt_list_step edges_of_vwalk.simps(3))
-          using Alt_Dist.alternating_list_odd_last by fastforce
-        have **: "p = (xs1 @ [x2]) @ xs2 @ x2 # xs3"
-          using \<open>p = xs1 @ x2 # xs2 @ x2 # xs3\<close> 
-          by auto
-        have ***: "x2 # xs2 @ x2 # xs3 = (x2 # xs2 @ [x2]) @ xs3"
-          by auto
-        show ?g2
-          apply(cases xs1)
-          subgoal using * \<open>x1 = x2\<close> apply (auto simp: **)
-            by (metis Cons_eq_appendI OOE(12) append_Nil calculation(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 in_set_conv_decomp last.simps) 
-          subgoal
-            using * \<open>x1 = x2\<close> 
-            apply(subst **)+
-            apply (subst edges_of_vwalk_append_3)
-             apply simp +
-            apply(subst ***)
-            apply (subst edges_of_vwalk_append_3)
-             apply auto
-            (*by (smt (verit) "**" Cons_eq_appendI OOE(2) OOE(3) \<open>P2 (last (x2 # xs2), x2)\<close> 
-                            append_eq_Cons_conv append_eq_append_conv2 append_self_conv calculation(1)
-                            calculation(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 
-                            in_set_conv_decomp labelled_alt_dist.labelled_op_works last_ConsL
-                            last_in_set last_snoc list.discI)*)
-            sorry
-          done
-      qed
-      moreover obtain label vtx_name where "x1 = Vtx label vtx_name"
-        by (cases x1)
-      ultimately show ?case
-        apply (cases label)
-        using labelled_alt_dist.labelled_op_works[OF OOE(3,2)] OOE(12,13)
-        apply (metis OOE(3) labelled_alt_dist.labelledE v_in_edge_in_vwalk(2))+
-        by (smt (verit) Cons_eq_appendI OOE(12) OOE(3) OOE(6) OOE(8) append.assoc append_Nil 
-                edges_of_vwalk.simps(3) edges_of_vwalk_append_3 in_set_conv_decomp 
-                labelled_alt_dist.labelledE labelled_alt_dist.op_on_def list.discI v_in_edge_in_vwalk(2))
-    next
-      case OEO: (3 parity parity' parity'')
-      then show ?case
-        by (fastforce simp: parity_simps parity.simps 
-              dest!:
-                   alt_vwalk_bet_append_2[where ?p1.0 = "xs1 @ [x2]", simplified alt_vwalk_bet_append_2_simps])
-    next
-      case EOO: (4 parity parity' parity'')
-      hence "P2 (last (xs1), x2)"
-        using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (xs1 @ [x2]) x2\<close> \<open>parity = Even\<close>
-        apply(elim alt_dist.alt_vwalk_betE)
-        apply(auto simp: parity_simps split: parity.splits)
-        sorry
-      moreover have "(last (xs1), x1) \<in> set (edges_of_vwalk p)"
-        using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u (xs1 @ [x2]) x2\<close> \<open>parity = Even\<close>
-        apply(elim alt_dist.alt_vwalk_betE)
-        apply(auto simp: parity_simps split: parity.splits)
-        sorry
-      moreover have "P1 (last (x2 # xs2), x2)" (is ?g1)
-                     "(last (xs2), x1) \<in> set (edges_of_vwalk p)" (is ?g2)
-      proof-
-        have *:"last (edges_of_vwalk (x2 # xs2 @ [x2])) = (last xs2, x2)" if "xs2 \<noteq> []"
-          using that
-          apply(auto simp only: neq_Nil_conv)
-          by (metis Cons_eq_appendI edges_of_vwalk.simps(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 last_snoc that)
-        thus ?g1
-          using \<open> next_alt_list_parity parity alt_dist.alt_vwalk_bet P1 P2 parity' G x2 (x2 # xs2 @ [x2]) x2\<close>
-            \<open>parity = Even\<close>  \<open>parity' = Odd\<close> \<open>x1 = x2\<close>
-          apply(auto simp: parity_simps split: parity.splits elim!: )
-           apply (metis alt_dist.alt_vwalk_betE alt_list_step edges_of_vwalk.simps(3))
-          using Alt_Dist.alternating_list_odd_last by fastforce
-        have **: "p = (xs1 @ [x2]) @ xs2 @ x2 # xs3"
-          using \<open>p = xs1 @ x2 # xs2 @ x2 # xs3\<close> 
-          by auto
-        have ***: "x2 # xs2 @ x2 # xs3 = (x2 # xs2 @ [x2]) @ xs3"
-          by auto
-        show ?g2
-          apply(cases xs1)
-          subgoal using * \<open>x1 = x2\<close> apply (auto simp: **)
-            by (metis Cons_eq_appendI EOO(12) append_Nil calculation(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 in_set_conv_decomp last.simps) 
-          subgoal
-            using * \<open>x1 = x2\<close> 
-            apply(subst **)+
-            apply (subst edges_of_vwalk_append_3)
-             apply simp +
-            apply(subst ***)
-            apply (subst edges_of_vwalk_append_3)
-             apply auto
-            by (smt (verit) "**" "***" Cons_eq_appendI EOO(2) EOO(3) \<open>P1 (last (x2 # xs2), x2)\<close> 
-                            append.assoc append_eq_Cons_conv append_eq_append_conv calculation(1) 
-                            calculation(2) diff_Suc_1 edges_of_vwalk.simps(3) edges_of_vwalk_append_3 
-                            edges_of_vwalk_length in_set_conv_decomp labelled_alt_dist.labelled_op_works 
-                            last_ConsL last_in_set last_snoc length_Cons list.inject list.size(3))
-            (*by (smt (verit) "**" Cons_eq_appendI OOE(2) OOE(3) \<open>P2 (last (x2 # xs2), x2)\<close> 
-                            append_eq_Cons_conv append_eq_append_conv2 append_self_conv calculation(1)
-                            calculation(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 
-                            in_set_conv_decomp labelled_alt_dist.labelled_op_works last_ConsL
-                            last_in_set last_snoc list.discI)*)
-          done
-      qed
-      moreover obtain label vtx_name where "x1 = Vtx label vtx_name"
-        by (cases x1)
-      ultimately show ?case
-        apply (cases label)
-        using labelled_alt_dist.labelled_op_works[OF EOO(3,2)] EOO(12,13)
-        apply (metis edges_of_vwalk.simps(3) edges_of_vwalk_append_subset last_ConsL last_ConsR list.set_intros(1) self_append_conv2 subsetD)
-        by (metis EOO(12) EOO(6) EOO(9) labelled_alt_dist.labelledE v_in_edge_in_vwalk_gen(2)
-                   \<open>\<And>w v u. \<lbrakk>(u, v) \<in> set (edges_of_vwalk (xs1 @ x2 # xs2 @ x2 # xs3));
-                              (w, v) \<in> set (edges_of_vwalk (xs1 @ x2 # xs2 @ x2 # xs3)); P1 (u, v)\<rbrakk>
-                         \<Longrightarrow> \<not> P2 (w, v)\<close>)
+      case Even
+      have "P2 e1"
+        using 1(2) x2_in x2_lab e1_in
+        by(cases e1) (auto simp: labelled_alt_dist.labelled_def Even)
+      thus False
+        using 1(1) e1_in P1e1
+        by(auto simp: labelled_alt_dist.op_on_def)
     qed
   next
-    case Odd
-    then show ?thesis sorry
+    case False
+    have len_p: "length p \<le> 2" using False by simp
+    have empties: "xs1 = []" "xs2 = []" "xs3 = []"
+      using len_p decomp(1) by(simp add: length_append; linarith)+
+    hence "p = [x2, x2]"
+      by(simp add: decomp)
+    hence "(x2, x2) \<in> G"
+      using vwalk_bet_edges_in_edges[OF walk]
+      by(auto simp: \<open>p = [x2, x2]\<close>)
+    thus False
+      using 1(4) by blast
   qed
-
-  hence "alt_dist.alt_distance P1 P2 parity G u v \<le> length (xs1 @ x2 # xs3) - 1"
-    using alt_dist.alt_vwalk_bet_alt_dist 
-    by force
-  moreover have "length (xs1 @ x2 # xs3) < length p"
-    by(auto simp: \<open> p = xs1 @ x1 # xs2 @ x2 # xs3\<close>)
-  ultimately show ?case
-    using \<open>alt_dist.alt_distance P1 P2 parity G u v = enat (length p - 1)\<close>
-    by auto
 qed
 
 lemma diet_eq': "\<lbrakk>\<And>p. \<lbrakk>alt_dist.alt_shortest_path P1 P2 parity G' u p v\<rbrakk>
                    \<Longrightarrow> alt_dist.alt_shortest_path P1 P2 parity G u (map f p) v\<rbrakk> \<Longrightarrow>
                    alt_dist.alt_distance P1 P2 parity G u v \<le> alt_dist.alt_distance P1 P2 parity G' u v"
-  apply(auto simp: alt_dist.alt_shortest_path_def)
-  by (metis One_nat_def Orderings.order_eq_iff order.strict_implies_order alt_dist.alt_reachable_dist
-            alt_dist.alt_reachable_dist_2 alt_dist.alt_unreachable_dist)
+proof(goal_cases)
+  case 1
+  show ?case
+  proof(cases "alt_dist.alt_reachable P1 P2 parity G' u v")
+    case True
+    obtain p where p: "alt_dist.alt_vwalk_bet P1 P2 parity G' u p v"
+      "alt_dist.alt_distance P1 P2 parity G' u v = length p - 1"
+      using True by(rule alt_dist.alt_reachable_dist_2)
+    hence sp: "alt_dist.alt_shortest_path P1 P2 parity G' u p v"
+      by(simp add: alt_dist.alt_shortest_path_def)
+    have "alt_dist.alt_shortest_path P1 P2 parity G u (map f p) v"
+      by(rule 1[OF sp])
+    hence "alt_dist.alt_distance P1 P2 parity G u v = length (map f p) - 1"
+      by(auto simp: alt_dist.alt_shortest_path_def)
+    thus ?thesis
+      by(simp add: p(2))
+  next
+    case False
+    thus ?thesis
+      by(simp add: alt_dist.alt_unreachable_dist)
+  qed
+qed
 
 context alt_dist
 begin
@@ -1251,11 +1595,21 @@ next
     by auto
   then obtain p where "alt_dist.alt_shortest_path P1 P2 Even G u p v"
     by(erule alt_shortest_path_exists_2)
-  hence "length p = 1" "vwalk_bet G u p v"
-    using \<open>alt_dist.alt_distance P1 P2 Even G u v = 0\<close>
-    apply (auto simp: alt_dist.alt_shortest_path_def)
-    apply (metis diff_Suc_Suc diff_zero enat_0_iff(2) alt_dist.hd_of_alt_vwalk_bet length_Cons)
-    by(auto elim!: elim!: alt_dist.alt_vwalk_betE)
+  hence walk: "vwalk_bet G u p v"
+    by(auto simp: alt_dist.alt_shortest_path_def elim!: alt_dist.alt_vwalk_betE)
+  have "length p = 1"
+  proof-
+    have "alt_dist.alt_distance P1 P2 Even G u v = length p - 1"
+      using \<open>alt_dist.alt_shortest_path P1 P2 Even G u p v\<close>
+      by(rule alt_dist.alt_shortest_path_dist)
+    hence "length p - 1 = 0"
+      using \<open>alt_dist.alt_distance P1 P2 Even G u v = 0\<close>
+      by(simp add: zero_enat_def)
+    moreover have "p \<noteq> []"
+      using walk by(auto simp: vwalk_bet_def)
+    ultimately show ?thesis
+      by(cases p) auto
+  qed
   then obtain x where "p = [x]"
     by (auto simp: length_Suc_conv)
   then have "x = u" "x = v" "x \<in> dVs G"
@@ -1305,7 +1659,19 @@ qed
 
 lemma Suc_le_length_iff_2:
   "(Suc n \<le> length xs) = (\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys)"
-  by (metis Suc_le_D Suc_le_mono length_Suc_conv_rev)
+proof
+  assume "Suc n \<le> length xs"
+  then obtain m where "length xs = Suc m" "n \<le> m"
+    by(cases "length xs") auto
+  then obtain x ys where "xs = ys @ [x]" "length ys = m"
+    by(auto simp: length_Suc_conv_rev)
+  thus "\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys"
+    using \<open>n \<le> m\<close> by auto
+next
+  assume "\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys"
+  thus "Suc n \<le> length xs"
+    by auto
+qed
 
 context alt_dist
 begin
@@ -1372,21 +1738,48 @@ proof(goal_cases)
   qed
 
   hence "alt_dist.alt_distance P1 P2 (other_parity parity) G u v = alt_dist.alt_distance P1 P2 parity G u w + 1"
-    using \<open>alt_dist.alt_shortest_path P1 P2 Even G u p v\<close> \<open>p = p' @ [w,v]\<close>
-    apply (auto dest!: alt_dist.alt_shortest_path_dist simp: eSuc_plus_1 parity_simps)
-    by (metis alt_dist.alt_shortest_path_dist calculation diff_Suc_1 length_append_singleton)
+  proof -
+    have eq1: "alt_dist.alt_distance P1 P2 Even G u v = enat (length p' + 1)"
+      using alt_dist.alt_shortest_path_dist[OF \<open>alt_dist.alt_shortest_path P1 P2 Even G u p v\<close>]
+            \<open>p = p' @ [w,v]\<close>
+      by simp
+    have eq2: "alt_dist.alt_distance P1 P2 Odd G u w = enat (length p')"
+      using alt_dist.alt_shortest_path_dist[OF \<open>alt_dist.alt_shortest_path P1 P2 parity G u (p' @ [w]) w\<close>]
+            \<open>parity = Odd\<close>
+      by simp
+    show ?thesis
+      using eq1 eq2
+      by(simp add: \<open>parity = Odd\<close> parity_simps eSuc_plus_1 eSuc_enat)
+  qed
   moreover have "v \<in> neighbourhood G w"
     using \<open>alt_dist.alt_shortest_path P1 P2 Even G u p v\<close> \<open>p = p' @ [w,v]\<close> vwalk_bet_suffix_is_vwalk_bet
     by(fastforce elim: alt_dist.alt_vwalk_betE
                  simp: \<open>p = p' @ [w,v]\<close> 
                  dest!: alt_dist.alt_shortest_path_vwalk)
   moreover have "P2 (w, v)"
-    using \<open>alt_dist.alt_shortest_path P1 P2 Even G u p v\<close> \<open>p = p' @ [w,v]\<close> vwalk_bet_suffix_is_vwalk_bet
-    apply(auto elim!: alt_dist.alt_vwalk_betE  alt_dist.alt_shortest_path_props
-                 simp: \<open>p = p' @ [w,v]\<close> parity_simps) 
-    by (smt (verit, best) alt_list_split_1 alt_list_step dvd_triv_left edges_of_vwalk.simps(3)
-                          edges_of_vwalk_append_3 edges_of_vwalk_length length_greater_0_conv odd_pos
-                          odd_two_times_div_two_nat) 
+  proof-
+    have bet: "alt_dist.alt_vwalk_bet P1 P2 Even G u p v"
+      using \<open>alt_dist.alt_shortest_path P1 P2 Even G u p v\<close>
+      by(rule alt_dist.alt_shortest_path_vwalk)
+    have "P2 (last (edges_of_vwalk p))"
+      using bet \<open>2 \<le> length p\<close>
+      by(rule alternating_list_even_last)
+    moreover have "last (edges_of_vwalk p) = (w, v)"
+    proof -
+      have "last (edges_of_vwalk (p' @ [w, v])) = (w, v)"
+      proof(induction p' rule: rev_induct)
+        case Nil
+        show ?case by simp
+      next
+        case (snoc x xs)
+        show ?case
+          using edges_of_vwalk_append_two_vertices[of "xs @ [x]" w v]
+          by simp
+      qed
+      thus ?thesis using \<open>p = p' @ [w, v]\<close> by simp
+    qed
+    ultimately show ?thesis by simp
+  qed
   ultimately show ?thesis
     by (auto simp: \<open>parity = Odd\<close> parity_simps)
 qed
@@ -1431,20 +1824,48 @@ proof(goal_cases)
   qed
 
   hence "alt_dist.alt_distance P1 P2 (other_parity parity) G u v = alt_dist.alt_distance P1 P2 parity G u w + 1"
-    using \<open>alt_dist.alt_shortest_path P1 P2 Odd G u p v\<close> \<open>p = p' @ [w,v]\<close>
-    apply (auto dest!: alt_dist.alt_shortest_path_dist simp: eSuc_plus_1 parity_simps)
-    by (metis alt_dist.alt_shortest_path_dist calculation diff_Suc_1 length_append_singleton)
+  proof -
+    have eq1: "alt_dist.alt_distance P1 P2 Odd G u v = enat (length p' + 1)"
+      using alt_dist.alt_shortest_path_dist[OF \<open>alt_dist.alt_shortest_path P1 P2 Odd G u p v\<close>]
+            \<open>p = p' @ [w,v]\<close>
+      by simp
+    have eq2: "alt_dist.alt_distance P1 P2 Even G u w = enat (length p')"
+      using alt_dist.alt_shortest_path_dist[OF \<open>alt_dist.alt_shortest_path P1 P2 parity G u (p' @ [w]) w\<close>]
+            \<open>parity = Even\<close>
+      by simp
+    show ?thesis
+      using eq1 eq2
+      by(simp add: \<open>parity = Even\<close> parity_simps eSuc_plus_1 eSuc_enat)
+  qed
   moreover have "v \<in> neighbourhood G w"
     using \<open>alt_dist.alt_shortest_path P1 P2 Odd G u p v\<close> \<open>p = p' @ [w,v]\<close> vwalk_bet_suffix_is_vwalk_bet
     by(fastforce elim: alt_dist.alt_vwalk_betE
                  simp: \<open>p = p' @ [w,v]\<close> 
                  dest!: alt_dist.alt_shortest_path_vwalk)
   moreover have "P1 (w, v)"
-    using \<open>alt_dist.alt_shortest_path P1 P2 Odd G u p v\<close> \<open>p = p' @ [w,v]\<close> vwalk_bet_suffix_is_vwalk_bet
-    apply(auto elim!: alt_dist.alt_vwalk_betE  alt_dist.alt_shortest_path_props
-                 simp: \<open>p = p' @ [w,v]\<close> parity_simps) 
-    by (smt (verit) alt_list_split_1 alt_list_step diff_Suc_1 edges_of_vwalk.simps(3) 
-                    edges_of_vwalk_append_2 edges_of_vwalk_length length_append_singleton list.discI)
+  proof-
+    have bet: "alt_dist.alt_vwalk_bet P1 P2 Odd G u p v"
+      using \<open>alt_dist.alt_shortest_path P1 P2 Odd G u p v\<close>
+      by(rule alt_dist.alt_shortest_path_vwalk)
+    have "P1 (last (edges_of_vwalk p))"
+      using bet \<open>2 \<le> length p\<close>
+      by(rule alternating_list_odd_last)
+    moreover have "last (edges_of_vwalk p) = (w, v)"
+    proof -
+      have "last (edges_of_vwalk (p' @ [w, v])) = (w, v)"
+      proof(induction p' rule: rev_induct)
+        case Nil
+        show ?case by simp
+      next
+        case (snoc x xs)
+        show ?case
+          using edges_of_vwalk_append_two_vertices[of "xs @ [x]" w v]
+          by simp
+      qed
+      thus ?thesis using \<open>p = p' @ [w, v]\<close> by simp
+    qed
+    ultimately show ?thesis by simp
+  qed
   ultimately show ?thesis
     by (auto simp: \<open>parity = Even\<close> parity_simps)
 qed
@@ -1477,9 +1898,27 @@ proof(goal_cases)
   case main: 1
   then obtain p where "alt_dist.alt_vwalk_bet P1 P2 Even G u (u#p) v"
                       "length p = alt_dist.alt_distance P1 P2 Even G u v"
-    by (metis alt_dist.alt_shortest_path_hd alt_dist.alt_reachable_dist alt_dist.alt_shortest_path_dist 
-              alt_shortest_path_exists_2 alt_dist.alt_shortest_path_vwalk alt_dist.alt_unreachable_dist 
-              append_is_Nil_conv alt_dist.last_of_alt_vwalk_bet' length_tl list.collapse list.discI)
+  proof(goal_cases)
+    case 1
+    have "alt_dist.alt_distance P1 P2 Even G u v < \<infinity>"
+      using main(1) main(3) by (simp add: less_le)
+    then obtain q where q_sp: "alt_dist.alt_shortest_path P1 P2 Even G u q v"
+      by(rule alt_shortest_path_exists_2)
+    have q_ne: "q \<noteq> []"
+      using q_sp
+      by(auto simp: alt_dist.alt_shortest_path_def vwalk_bet_def elim!: alt_dist.alt_vwalk_betE)
+    have q_hd: "hd q = u"
+      using alt_dist.alt_shortest_path_hd[OF q_sp] by simp
+    have q_cons: "q = u # tl q"
+      using q_ne q_hd by(cases q) auto
+    have bet: "alt_dist.alt_vwalk_bet P1 P2 Even G u (u # tl q) v"
+      by(subst q_cons[symmetric]) (rule alt_dist.alt_shortest_path_vwalk[OF q_sp])
+    have len: "length (tl q) = alt_dist.alt_distance P1 P2 Even G u v"
+      using alt_dist.alt_shortest_path_dist[OF q_sp] q_ne
+      by(simp add: length_tl)
+    show ?case
+      by(rule 1[OF bet len])
+  qed
 
   moreover have "w \<notin> U" if "p = p1 @ w # p2" "alt_dist.alt_vwalk_bet P1 P2 Even G w (w # p2) v" for p1 w p2
   proof(rule ccontr, goal_cases)
@@ -1499,13 +1938,12 @@ proof(goal_cases)
       by (simp add: \<open>enat (length p) = alt_dist.alt_distance P1 P2 Even G u v\<close> main(3))
     moreover have " enat (length p2) < eSuc (enat (length p1 + length p2))"
       by auto
-    ultimately have False
-      using leD
-      apply -
-      apply(drule dual_order.trans[where c = "enat (length p)"])
-      by (fastforce simp: \<open>p = p1 @ w # p2\<close> dest: )+
-    then show ?case
-      by auto
+    ultimately have le: "enat (length p) \<le> enat (length p2)"
+      by(blast intro: order.trans)
+    moreover have "length p = length p1 + Suc (length p2)"
+      using \<open>p = p1 @ w # p2\<close> by simp
+    ultimately show ?case
+      by (simp add: not_less[symmetric])
   qed
   ultimately show ?thesis
     by auto
@@ -1517,8 +1955,17 @@ lemma even_dist_not_inf''':
       \<Longrightarrow> \<exists>p. alt_dist.alt_shortest_path P1 P2 Even G u (u#p) v \<and> 
               (\<forall>p1 w p2. p = p1 @ w # p2 \<and> alt_dist.alt_vwalk_bet P1 P2 Even G w (w # p2) v
                            \<longrightarrow> w \<notin> U)"
-  apply (simp add: alt_dist.alt_shortest_path_def)
-  by (metis even_dist_not_inf'' enat.distinct(1))
+proof(goal_cases)
+  case 1
+  obtain p where p: "alt_dist.alt_vwalk_bet P1 P2 Even G u (u#p) v"
+    "length p = alt_dist.alt_distance P1 P2 Even G u v"
+    "\<forall>p1 w p2. p = p1 @ w # p2 \<and> alt_dist.alt_vwalk_bet P1 P2 Even G w (w # p2) v \<longrightarrow> w \<notin> U"
+    using even_dist_not_inf''[OF 1] by blast
+  have "alt_dist.alt_shortest_path P1 P2 Even G u (u#p) v"
+    using p(1) p(2) by(auto simp: alt_dist.alt_shortest_path_def)
+  thus ?case
+    using p(3) by blast
+qed
 
 lemma odd_dist_not_inf'':
   "\<lbrakk>alt_dist.alt_distance_set P1 P2 Odd G U v \<noteq> \<infinity>; u\<in>U; 
@@ -1531,9 +1978,27 @@ proof(goal_cases)
   case main: 1
   then obtain p where "alt_dist.alt_vwalk_bet P1 P2 Odd G u (u#p) v"
                       "length p = alt_dist.alt_distance P1 P2 Odd G u v"
-    by (metis alt_dist.alt_shortest_path_hd alt_dist.alt_reachable_dist alt_dist.alt_shortest_path_dist 
-              alt_shortest_path_exists_2 alt_dist.alt_shortest_path_vwalk alt_dist.alt_unreachable_dist 
-              append_is_Nil_conv alt_dist.last_of_alt_vwalk_bet' length_tl list.collapse list.discI)
+  proof(goal_cases)
+    case 1
+    have "alt_dist.alt_distance P1 P2 Odd G u v < \<infinity>"
+      using main(1) main(3) by (simp add: less_le)
+    then obtain q where q_sp: "alt_dist.alt_shortest_path P1 P2 Odd G u q v"
+      by(rule alt_shortest_path_exists_2)
+    have q_ne: "q \<noteq> []"
+      using q_sp
+      by(auto simp: alt_dist.alt_shortest_path_def vwalk_bet_def elim!: alt_dist.alt_vwalk_betE)
+    have q_hd: "hd q = u"
+      using alt_dist.alt_shortest_path_hd[OF q_sp] by simp
+    have q_cons: "q = u # tl q"
+      using q_ne q_hd by(cases q) auto
+    have bet: "alt_dist.alt_vwalk_bet P1 P2 Odd G u (u # tl q) v"
+      by(subst q_cons[symmetric]) (rule alt_dist.alt_shortest_path_vwalk[OF q_sp])
+    have len: "length (tl q) = alt_dist.alt_distance P1 P2 Odd G u v"
+      using alt_dist.alt_shortest_path_dist[OF q_sp] q_ne
+      by(simp add: length_tl)
+    show ?case
+      by(rule 1[OF bet len])
+  qed
 
   moreover have "w \<notin> U" if "p = p1 @ w # p2" "alt_dist.alt_vwalk_bet P1 P2 Odd G w (w # p2) v" for p1 w p2
   proof(rule ccontr, goal_cases)
@@ -1553,13 +2018,12 @@ proof(goal_cases)
       by (simp add: \<open>enat (length p) = alt_dist.alt_distance P1 P2 Odd G u v\<close> main(3))
     moreover have " enat (length p2) < eSuc (enat (length p1 + length p2))"
       by auto
-    ultimately have False
-      using leD
-      apply -
-      apply(drule dual_order.trans[where c = "enat (length p)"])
-      by (fastforce simp: \<open>p = p1 @ w # p2\<close> dest: )+
-    then show ?case
-      by auto
+    ultimately have le: "enat (length p) \<le> enat (length p2)"
+      by(blast intro: order.trans)
+    moreover have "length p = length p1 + Suc (length p2)"
+      using \<open>p = p1 @ w # p2\<close> by simp
+    ultimately show ?case
+      by (simp add: not_less[symmetric])
   qed
   ultimately show ?thesis
     by auto
@@ -1571,8 +2035,17 @@ lemma odd_dist_not_inf''':
       \<Longrightarrow> \<exists>p. alt_dist.alt_shortest_path P1 P2 Odd G u (u#p) v \<and> 
               (\<forall>p1 w p2. p = p1 @ w # p2 \<and> alt_dist.alt_vwalk_bet P1 P2 Odd G w (w # p2) v
                            \<longrightarrow> w \<notin> U)"
-  apply (simp add: alt_dist.alt_shortest_path_def)
-  by (metis odd_dist_not_inf'' enat.distinct(1))
+proof(goal_cases)
+  case 1
+  obtain p where p: "alt_dist.alt_vwalk_bet P1 P2 Odd G u (u#p) v"
+    "length p = alt_dist.alt_distance P1 P2 Odd G u v"
+    "\<forall>p1 w p2. p = p1 @ w # p2 \<and> alt_dist.alt_vwalk_bet P1 P2 Odd G w (w # p2) v \<longrightarrow> w \<notin> U"
+    using odd_dist_not_inf''[OF 1] by blast
+  have "alt_dist.alt_shortest_path P1 P2 Odd G u (u#p) v"
+    using p(1) p(2) by(auto simp: alt_dist.alt_shortest_path_def)
+  thus ?case
+    using p(3) by blast
+qed
 
 (*lemma distance_set_split:
   "\<lbrakk>distance_set G U v \<noteq> \<infinity>; distance_set G U v = distance_set G U w + distance_set G U' v; w \<in> U' \<rbrakk> \<Longrightarrow>
@@ -1614,13 +2087,30 @@ lemma alt_distance_set_wit':
 lemma alt_dist_set_not_inf: 
   "alt_dist.alt_distance_set P1 P2 parity G U v \<noteq> \<infinity> 
    \<Longrightarrow> \<exists>u\<in>U. alt_dist.alt_distance P1 P2 parity G u v = alt_dist.alt_distance_set P1 P2 parity G U v"
-  using alt_distance_set_wit'
-  by metis
+proof(goal_cases)
+  case 1
+  then obtain u where "u \<in> U"
+    "alt_dist.alt_distance_set P1 P2 parity G U v = alt_dist.alt_distance P1 P2 parity G u v"
+    by(rule alt_distance_set_wit')
+  thus ?case
+    by force
+qed
 
 lemma alt_dist_not_inf':
   "alt_dist.alt_distance_set P1 P2 parity G U v \<noteq> \<infinity> \<Longrightarrow>
      \<exists>u\<in>U. alt_dist.alt_distance P1 P2 parity G u v = alt_dist.alt_distance_set P1 P2 parity G U v \<and> alt_dist.alt_reachable P1 P2 parity G u v"
-  by (metis alt_dist.alt_dist_reachable alt_dist_set_not_inf enat_ord_simps(4))
+proof(goal_cases)
+  case 1
+  from alt_dist_set_not_inf[OF 1] obtain u where u: "u \<in> U"
+    "alt_dist.alt_distance P1 P2 parity G u v = alt_dist.alt_distance_set P1 P2 parity G U v"
+    by(auto)
+  have "alt_dist.alt_distance P1 P2 parity G u v < \<infinity>"
+    using u(2) 1 by (simp add: less_le)
+  hence "alt_dist.alt_reachable P1 P2 parity G u v"
+    by(rule alt_dist.alt_dist_reachable)
+  thus ?case
+    using u by auto
+qed
 
 lemma alt_shortest_path_Parity: 
   "alt_dist.alt_shortest_path P1 P2 parity G u (p1 @[x]) x \<Longrightarrow> of_parity (other_parity parity) (length (p1 @ [x]))"
@@ -1639,16 +2129,45 @@ proof(goal_cases)
   proof(rule ccontr, goal_cases)
     case alt_dist_gt: 1
 
-    hence "\<exists>parity'. alt_dist.alt_distance_set P1 P2 parity' G U x \<noteq> \<infinity> \<and>
+    have "\<exists>parity'. alt_dist.alt_distance_set P1 P2 parity' G U x \<noteq> \<infinity> \<and>
                      of_parity (other_parity parity') (length (p1 @ [x]))"
-      by (metis enat_ord_code(3) of_parity other_parity parity.simps(3) parity.simps(4))
+    proof-
+      obtain parityw where pw: "of_parity (other_parity parityw) (length (p1 @ [x]))"
+      proof(cases "even (length (p1 @ [x]))")
+        case True
+        thus ?thesis by(intro that[of Odd]) (simp add: parity_simps)
+      next
+        case False
+        thus ?thesis by(intro that[of Even]) (simp add: parity_simps)
+      qed
+      have "\<not> alt_dist.alt_distance P1 P2 parityw G u x \<le> alt_dist.alt_distance_set P1 P2 parityw G U x"
+        using alt_dist_gt pw by blast
+      hence "alt_dist.alt_distance_set P1 P2 parityw G U x \<noteq> \<infinity>"
+        by(force simp: linorder_not_le dest: lt_lt_infnty)
+      thus ?thesis
+        using pw by blast
+    qed
 
     then obtain u' parity' where 
           "u' \<in> U"
           "alt_dist.alt_distance P1 P2 parity' G u' x < alt_dist.alt_distance P1 P2 parity' G u x"
           "of_parity (other_parity parity') (length (p1 @ [x]))"
-      using alt_dist_gt
-      by (metis alt_dist_set_not_inf leI) 
+    proof(goal_cases)
+      case 1
+      from \<open>\<exists>parity'. alt_dist.alt_distance_set P1 P2 parity' G U x \<noteq> \<infinity> \<and>
+                     of_parity (other_parity parity') (length (p1 @ [x]))\<close>
+      obtain parity' where par: "alt_dist.alt_distance_set P1 P2 parity' G U x \<noteq> \<infinity>"
+        "of_parity (other_parity parity') (length (p1 @ [x]))"
+        by blast
+      obtain u' where u': "u' \<in> U"
+        "alt_dist.alt_distance P1 P2 parity' G u' x = alt_dist.alt_distance_set P1 P2 parity' G U x"
+        using alt_dist_set_not_inf[OF par(1)] by blast
+      have "\<not> alt_dist.alt_distance P1 P2 parity' G u x \<le> alt_dist.alt_distance_set P1 P2 parity' G U x"
+        using alt_dist_gt par(2) by blast
+      hence "alt_dist.alt_distance P1 P2 parity' G u' x < alt_dist.alt_distance P1 P2 parity' G u x"
+        using u'(2) by(simp add: linorder_not_le)
+      from 1[OF u'(1) this par(2)] show ?case .
+    qed
     moreover then obtain p' where p': "alt_dist.alt_shortest_path P1 P2 parity' G u' p' x"
       by (fastforce dest: lt_lt_infnty elim!: alt_shortest_path_exists_2)
 
@@ -1667,8 +2186,7 @@ proof(goal_cases)
         "parity = Odd \<Longrightarrow> next_alt_list_parity parity'' alt_dist.alt_shortest_path P1 P2 (other_parity parity'') G x (x # p2) v"
         "parity = Even \<Longrightarrow> next_alt_list_parity parity'' alt_dist.alt_shortest_path P1 P2 parity'' G x (x # p2) v"
         using \<open>alt_dist.alt_shortest_path P1 P2 parity G u (p1 @ x # p2) v\<close>
-        apply (cases parity)
-        by (auto dest!: alt_shortest_path_split_1 alt_shortest_path_split_2)
+        by (cases parity) (auto dest!: alt_shortest_path_split_1 alt_shortest_path_split_2)
       moreover hence "parity'' = parity'"
         using \<open>of_parity (other_parity parity') (length (p1 @ [x]))\<close>
         by (auto dest!: alt_shortest_path_Parity simp: parity_simps split: parity.splits)
@@ -1682,28 +2200,30 @@ proof(goal_cases)
         using p' by auto
     
       have "alt_dist.alt_vwalk_bet P1 P2 Odd G u' (p' @ tl ([x] @ p2)) v" if "parity = Odd"
-        apply(rule alt_vwalk_bet_append_3[where parity = parity'])
-        subgoal 
+      proof(rule alt_vwalk_bet_append_3[where parity = parity'])
+        show "alt_dist.alt_vwalk_bet P1 P2 parity' G u' p' (last p')"
           using p' that
           by(auto elim!: alt_dist.alt_shortest_path_props simp add: \<open>last p' = x\<close>)
-        subgoal 
+        show "next_alt_list_parity parity' alt_dist.alt_vwalk_bet P1 P2 (other_parity parity') G (last p') (last p' # tl ([x] @ p2)) v"
           using p' that alt_vwalks(2,3)
           by(auto elim!: alt_dist.alt_shortest_path_props simp add: parity_simps \<open>last p' = x\<close> split: parity.splits)
-        subgoal
-          by (metis \<open>alt_dist.alt_vwalk_bet P1 P2 parity' G u' p' (last p')\<close> alt_dist.alt_vwalk_bet_nonempty')
-        done
+        show "p' \<noteq> []"
+          using p'
+          by(auto simp: alt_dist.alt_shortest_path_def vwalk_bet_def elim!: alt_dist.alt_vwalk_betE)
+      qed
 
       moreover have "alt_dist.alt_vwalk_bet P1 P2 Even G u' (p' @ tl ([x] @ p2)) v" if "parity = Even"
-        apply(rule alt_vwalk_bet_append_2[where parity = parity'])
-        subgoal 
+      proof(rule alt_vwalk_bet_append_2[where parity = parity'])
+        show "alt_dist.alt_vwalk_bet P1 P2 parity' G u' p' (last p')"
           using p' that
           by(auto elim!: alt_dist.alt_shortest_path_props simp add: \<open>last p' = x\<close>)
-        subgoal 
+        show "next_alt_list_parity parity' alt_dist.alt_vwalk_bet P1 P2 parity' G (last p') (last p' # tl ([x] @ p2)) v"
           using p' that alt_vwalks(2,3)
           by(auto elim!: alt_dist.alt_shortest_path_props simp add: parity_simps \<open>last p' = x\<close> split: parity.splits)
-        subgoal
-          by (metis \<open>alt_dist.alt_vwalk_bet P1 P2 parity' G u' p' (last p')\<close> alt_dist.alt_vwalk_bet_nonempty')
-        done
+        show "p' \<noteq> []"
+          using p'
+          by(auto simp: alt_dist.alt_shortest_path_def vwalk_bet_def elim!: alt_dist.alt_vwalk_betE)
+      qed
       ultimately show ?thesis
         by (cases parity, auto)
     qed
@@ -1711,8 +2231,7 @@ proof(goal_cases)
 
     obtain parity'' where *: "alt_dist.alt_shortest_path P1 P2 parity'' G u (p1 @[x]) x"
       using \<open>alt_dist.alt_shortest_path P1 P2 parity G u (p1 @ x # p2) v\<close>
-      apply (cases parity)
-      by (auto dest!: alt_shortest_path_split_1 alt_shortest_path_split_2)
+      by (cases parity) (auto dest!: alt_shortest_path_split_1 alt_shortest_path_split_2)
     moreover hence "parity'' = parity'"
       using \<open>of_parity (other_parity parity') (length (p1 @ [x]))\<close>
       by (auto dest!: alt_shortest_path_Parity simp: parity_simps split: parity.splits)
@@ -1724,15 +2243,27 @@ proof(goal_cases)
     hence "length (p' @ tl ([x] @ p2)) - 1 < alt_dist.alt_distance_set P1 P2 parity G U v"
       using assms(1,3) alt_dist.alt_shortest_path_dist
       by force
-    with \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u' (p' @ tl ([x] @ p2)) v\<close> show False
-      using alt_dist.alt_dist_set_mem [OF \<open>u' \<in> U\<close>]
-      apply -
-      apply(drule alt_dist.alt_vwalk_bet_alt_dist)
-      by (meson leD order_le_less_trans)
+    moreover have "alt_dist.alt_distance P1 P2 parity G u' v \<le> length (p' @ tl ([x] @ p2)) - 1"
+      using \<open>alt_dist.alt_vwalk_bet P1 P2 parity G u' (p' @ tl ([x] @ p2)) v\<close>
+      by(rule alt_dist.alt_vwalk_bet_alt_dist)
+    moreover have "alt_dist.alt_distance_set P1 P2 parity G U v \<le> alt_dist.alt_distance P1 P2 parity G u' v"
+      by(rule alt_dist.alt_dist_set_mem[OF \<open>u' \<in> U\<close>])
+    ultimately show False
+      by(auto simp: leD dest: order.trans)
   qed
   ultimately show ?thesis
-    using antisym 
-    by (metis alt_dist.alt_dist_set_mem assms(2))
+  proof-
+    from \<open>\<exists>parity'. alt_dist.alt_distance P1 P2 parity' G u x \<le> alt_dist.alt_distance_set P1 P2 parity' G U x \<and>
+               of_parity (other_parity parity') (length (p1 @ [x]))\<close>
+    obtain parity' where le: "alt_dist.alt_distance P1 P2 parity' G u x \<le> alt_dist.alt_distance_set P1 P2 parity' G U x"
+      and par: "of_parity (other_parity parity') (length (p1 @ [x]))"
+      by blast
+    have "alt_dist.alt_distance_set P1 P2 parity' G U x = alt_dist.alt_distance P1 P2 parity' G u x"
+      using alt_dist.alt_dist_set_mem[OF assms(2)] le
+      by(rule antisym)
+    thus ?thesis
+      using par by blast
+  qed
 qed
 
 lemma even_alt_distance_set_neighbourhood:
@@ -1773,13 +2304,23 @@ proof(goal_cases)
   ultimately obtain u where \<open>u \<in> vs\<close> \<open>alt_dist.alt_distance_set P1 P2 Even G vs v = alt_dist.alt_distance P1 P2 Even G u v \<close> \<open>u \<noteq> v\<close>
     by(fastforce elim!: alt_distance_set_wit')
   moreover then obtain w where "alt_dist.alt_distance P1 P2 Odd G u w + 1 = alt_dist.alt_distance P1 P2 Even G u v" "v \<in> neighbourhood G w" "P2 (w, v)"
-    find_theorems alt_dist.alt_distance name: parent
     using 1 even_alt_distance_parent
     by fastforce
+  moreover have "alt_dist.alt_distance_set P1 P2 Odd G vs w + 1 = alt_dist.alt_distance_set P1 P2 Even G vs v"
+  proof(rule antisym)
+    have "alt_dist.alt_distance_set P1 P2 Odd G vs w \<le> alt_dist.alt_distance P1 P2 Odd G u w"
+      using \<open>u \<in> vs\<close> by(rule alt_dist.alt_dist_set_mem)
+    hence "alt_dist.alt_distance_set P1 P2 Odd G vs w + 1 \<le> alt_dist.alt_distance P1 P2 Odd G u w + 1"
+      by(simp add: add_right_mono)
+    thus "alt_dist.alt_distance_set P1 P2 Odd G vs w + 1 \<le> alt_dist.alt_distance_set P1 P2 Even G vs v"
+      by(simp add: \<open>alt_dist.alt_distance P1 P2 Odd G u w + 1 = alt_dist.alt_distance P1 P2 Even G u v\<close>
+                   \<open>alt_dist.alt_distance_set P1 P2 Even G vs v = alt_dist.alt_distance P1 P2 Even G u v \<close>)
+    show "alt_dist.alt_distance_set P1 P2 Even G vs v \<le> alt_dist.alt_distance_set P1 P2 Odd G vs w + 1"
+      using \<open>v \<in> neighbourhood G w\<close> 1(2) \<open>P2 (w, v)\<close>
+      by(intro even_alt_distance_set_neighbourhood)
+  qed
   ultimately show ?thesis
-    using \<open>u \<in> vs\<close> even_alt_distance_set_neighbourhood
-          alt_dist.alt_dist_set_mem
-    by (metis (full_types) "1"(2) add_mono_thms_linordered_semiring(3) antisym)
+    by blast
 qed
 
 lemma odd_alt_distance_set_parent:
@@ -1794,30 +2335,73 @@ proof(goal_cases)
   moreover then obtain w where "alt_dist.alt_distance P1 P2 Even G u w + 1 = alt_dist.alt_distance P1 P2 Odd G u v" "v \<in> neighbourhood G w" "P1 (w, v)"
     using 1 odd_alt_distance_parent
     by fastforce
+  moreover have "alt_dist.alt_distance_set P1 P2 Even G vs w + 1 = alt_dist.alt_distance_set P1 P2 Odd G vs v"
+  proof(rule antisym)
+    have "alt_dist.alt_distance_set P1 P2 Even G vs w \<le> alt_dist.alt_distance P1 P2 Even G u w"
+      using \<open>u \<in> vs\<close> by(rule alt_dist.alt_dist_set_mem)
+    hence "alt_dist.alt_distance_set P1 P2 Even G vs w + 1 \<le> alt_dist.alt_distance P1 P2 Even G u w + 1"
+      by(simp add: add_right_mono)
+    thus "alt_dist.alt_distance_set P1 P2 Even G vs w + 1 \<le> alt_dist.alt_distance_set P1 P2 Odd G vs v"
+      by(simp add: \<open>alt_dist.alt_distance P1 P2 Even G u w + 1 = alt_dist.alt_distance P1 P2 Odd G u v\<close>
+                   \<open>alt_dist.alt_distance_set P1 P2 Odd G vs v = alt_dist.alt_distance P1 P2 Odd G u v \<close>)
+    show "alt_dist.alt_distance_set P1 P2 Odd G vs v \<le> alt_dist.alt_distance_set P1 P2 Even G vs w + 1"
+      using \<open>v \<in> neighbourhood G w\<close> 1(2) \<open>P1 (w, v)\<close>
+      by(intro odd_alt_distance_set_neighbourhood)
+  qed
   ultimately show ?thesis
-    using \<open>u \<in> vs\<close> odd_alt_distance_set_neighbourhood
-          alt_dist.alt_dist_set_mem
-    by (metis (full_types) "1"(2) add_mono_thms_linordered_semiring(3) antisym)
+    by blast
 qed
 
 lemma even_alt_distance_set_parent':
   "\<lbrakk>0 < alt_dist.alt_distance_set P1 P2 Even G vs v; alt_dist.alt_distance_set P1 P2 Even G vs v < \<infinity>; vs \<noteq> {}\<rbrakk> \<Longrightarrow> 
      \<exists>w. alt_dist.alt_distance_set P1 P2 Odd G vs w + 1 = alt_dist.alt_distance_set P1 P2 Even G vs v \<and> v \<in> neighbourhood G w \<and> P2 (w,v)"
-  using even_alt_distance_set_parent
-  by (metis antisym_conv2 alt_dist.alt_dist_set_inf even_alt_distance_0 
-            alt_dist.alt_distance_set_def less_INF_D order.strict_implies_order)
+proof(goal_cases)
+  case 1
+  have "v \<notin> vs"
+  proof
+    assume "v \<in> vs"
+    show False
+    proof(cases "v \<in> dVs G")
+      case True
+      hence eq0: "alt_dist.alt_distance P1 P2 Even G v v = 0"
+        using even_alt_distance_0[where u=v] by simp
+      have leq0: "alt_dist.alt_distance_set P1 P2 Even G vs v \<le> alt_dist.alt_distance P1 P2 Even G v v"
+        using \<open>v \<in> vs\<close> by(rule alt_dist.alt_dist_set_mem)
+      thus False
+        using 1(1) eq0 by (simp add: leq0)
+    next
+      case False
+      hence "alt_dist.alt_distance_set P1 P2 Even G vs v = \<infinity>"
+        by(rule alt_dist.alt_dist_set_inf)
+      thus False
+        using 1(2) by simp
+    qed
+  qed
+  from even_alt_distance_set_parent[OF 1(2) 1(3) this] show ?case .
+qed
 
 lemma distance_set_0[simp]: "\<lbrakk>v \<in> dVs G\<rbrakk> \<Longrightarrow> alt_dist.alt_distance_set P1 P2 Even G vs v = 0 \<longleftrightarrow> v \<in> vs"
 proof(safe, goal_cases)
   case 2
-  moreover have "alt_dist.alt_distance P1 P2 Even G v v = 0"
-    by (meson calculation(1) even_alt_distance_0)
-  ultimately show ?case
-    by (metis alt_dist.alt_dist_set_mem le_zero_eq)
+  have eq0: "alt_dist.alt_distance P1 P2 Even G v v = 0"
+    using 2(1) even_alt_distance_0[where u=v] by simp
+  have leq: "alt_dist.alt_distance_set P1 P2 Even G vs v \<le> alt_dist.alt_distance P1 P2 Even G v v"
+    using 2(2) by(rule alt_dist.alt_dist_set_mem)
+  thus ?case
+    by (simp add: leq eq0)
 next
   case 1
+  have "alt_dist.alt_distance_set P1 P2 Even G vs v \<noteq> \<infinity>"
+    by(simp add: 1(2))
+  from alt_dist_set_not_inf[OF this] obtain u where u: "u \<in> vs"
+    "alt_dist.alt_distance P1 P2 Even G u v = alt_dist.alt_distance_set P1 P2 Even G vs v"
+    by auto
+  hence eq0u: "alt_dist.alt_distance P1 P2 Even G u v = 0"
+    by(simp add: 1(2))
+  hence "u = v"
+    using even_alt_distance_0[where u=u] 1(1) by simp
   thus ?case
-    by (metis alt_dist_set_not_inf even_alt_distance_0 infinity_ne_i0)
+    using u(1) by simp
 qed
 
 lemma alt_dist_set_leq: 
@@ -1826,14 +2410,27 @@ lemma alt_dist_set_leq:
 
 lemma alt_dist_set_eq: 
   "\<lbrakk>\<And>u. u \<in> vs \<Longrightarrow> alt_dist.alt_distance P1 P2 parity G u v = alt_dist.alt_distance P1 P2 parity G' u v\<rbrakk> \<Longrightarrow> alt_dist.alt_distance_set P1 P2 parity G vs v = alt_dist.alt_distance_set P1 P2 parity G' vs v"
-  using alt_dist_set_leq
-  by (metis nle_le)
+proof(goal_cases)
+  case 1
+  have "alt_dist.alt_distance_set P1 P2 parity G vs v \<le> alt_dist.alt_distance_set P1 P2 parity G' vs v"
+    by(intro alt_dist_set_leq) (auto simp: 1)
+  moreover have "alt_dist.alt_distance_set P1 P2 parity G' vs v \<le> alt_dist.alt_distance_set P1 P2 parity G vs v"
+    by(intro alt_dist_set_leq) (auto simp: 1)
+  ultimately show ?case
+    by(rule antisym)
+qed
 
 lemma alt_distance_set_subset: "G \<subseteq> G' \<Longrightarrow> alt_dist.alt_distance_set P1 P2 parity G' vs v \<le> alt_dist.alt_distance_set P1 P2 parity G vs v"
   by (simp add: alt_dist_set_leq alt_distance_subset)
 
 lemma alt_vwalk_bet_alt_dist_set:
   "\<lbrakk>alt_dist.alt_vwalk_bet P1 P2 parity G u p v; u \<in> U\<rbrakk> \<Longrightarrow> alt_dist.alt_distance_set P1 P2 parity G U v \<le> length p - 1"
-  apply (auto simp: alt_dist.alt_distance_set_def image_def intro!:)
-  by (smt (verit, best) Inf_lower2 One_nat_def alt_dist.alt_vwalk_bet_alt_dist mem_Collect_eq)
+proof(goal_cases)
+  case 1
+  have "alt_dist.alt_distance_set P1 P2 parity G U v \<le> alt_dist.alt_distance P1 P2 parity G u v"
+    using 1(2) by(rule alt_dist.alt_dist_set_mem)
+  also have "... \<le> length p - 1"
+    using 1(1) by(rule alt_dist.alt_vwalk_bet_alt_dist)
+  finally show ?case .
+qed
 end

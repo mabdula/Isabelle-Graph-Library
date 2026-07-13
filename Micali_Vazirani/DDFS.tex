@@ -139,6 +139,9 @@ $\invariant_0$ preconditions, invariants \ref{invar:10}~and~\ref{invar:11} give
 $\neg P$ on the visited sets, and invariants \ref{invar:4}~and~\ref{invar:5} give that
 the stacks are paths; simplicity of the stacks is maintained by
 clause~\ref{property:dfs:3} itself together with the level structure.
+(In the completed formalisation two further invariants, maintained for the same
+purpose, state that the visited sets stay inside the vertices of $\DAG$; they supply
+the well-formedness premises discussed at the end of this subsection.)
 
 \paragraph{Final form of the amendment to clause~\ref{property:dfs:1}.}
 In the completed formalisation the history-style precondition of item~2 was replaced by
@@ -154,13 +157,40 @@ $(\level(\vertexa)+\level(\vertexb),\;[\vertexa=\vertexb])$: the searches never
 increase the level sum, and every search launched from a state with equal tips returns a
 new tip outside its avoid set, hence unequal to the other tip.
 
+\paragraph{Well-formedness preconditions (final interface).}
+A further round of amendments turned out to be unavoidable when the interface was
+discharged against an \emph{executable} witness.  Contrary to an earlier working
+hypothesis, the clauses that remained unconditional are \emph{not} jointly realisable
+by any executable procedure: on ill-formed inputs (e.g.\ an $\avoid$ or $\vis$
+argument that is not a well-formed finite set structure, or one containing vertices
+outside $\DAG$) the monotonicity clause~\ref{property:dfs:8} and the well-formedness
+of $\vis'$ (clause~\ref{property:dfs:13} in its formalised guise) conflict.
+Consequently, in the final formalisation \emph{every} clause of
+Property~\ref{property:dfs} carries a common input precondition: $\avoid$ and $\vis$
+are well-formed set structures whose elements are vertices of $\DAG$, and $\path$ is
+a simple path w.r.t.\ $\DAG$.  One new clause is added so that callers can
+re-establish this precondition across successive calls: $\vis'$ is again contained in
+the vertices of $\DAG$.  Two further remarks on the final form: the disjointness
+clause~\ref{property:dfs:10} is to be read as
+$(\vis'\setminus\vis)\cap\avoid=\emptyset$ (the formalisation originally reflected
+the other reading of the unparenthesised formula, which is unrealisable and was never
+used); and the path-preservation part of clause~\ref{property:dfs:3} does \emph{not}
+need the simplicity premise --- on a layered digraph every path is automatically
+simple, since levels strictly decrease along edges, and the formal proof derives
+simplicity from this observation where the premise is unavailable.
+
 A $\dfs$ procedure satisfying the amended property has been formally derived from a
 generic DFS-skeleton locale: theory \textsf{DFS\_Avoid} proves the properties for the
 skeleton instance, and theory \textsf{IDFS} transfers them to the exact vocabulary of
-the DDFS development.  Under the amended interface the remaining unconditional clauses
-are jointly realisable (degenerate inputs can always be answered by a $\none$ return, or
-by a $\some$ return whose head is a $P$-vertex outside $\avoid\cup\vis$ when completeness
-would otherwise force a $P$-vertex into the visited set).
+the DDFS development and proves that the witness realises the full DDFS interface (a
+\textsf{sublocale} between the layered-digraph locale and the DDFS locale, discharging
+all clauses of Property~\ref{property:dfs} plus the digraph assumptions).  The
+development is executable end to end: theory \textsf{DDFS\_Example} instantiates the
+locale stack with red-black-tree set and adjacency-map structures, runs the resulting
+$\ddfs$ on concrete layered digraphs (e.g.\ two searchers started on a diamond return
+two vertex-disjoint level-decreasing paths to level $0$; started on the same vertex or
+on a chain they return the overlapping stacks, signalling the bottleneck case of
+Theorem~\ref{thm:ddfsvalid}), and exports SML code.
 
 \subsection{DDFS}
 
