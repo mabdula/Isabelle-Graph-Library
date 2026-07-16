@@ -1,9 +1,13 @@
 session Micali_Vazirani = Graph_Algorithms_Dev +
   options [timeout = 3600]
+  sessions
+    Alternating_Lists
+    Basic_Matching
   theories
+    Alt_Dist
+    Alt_BFS
     DDFS
     DFS_Avoid
     IDFS
     DDFS_Interpretation
     DDFS_Example
-
