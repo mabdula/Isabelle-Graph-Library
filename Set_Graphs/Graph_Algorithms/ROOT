@@ -1,9 +1,9 @@
 session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
-  options [document = pdf, document_output = "output"]
 
   sessions
     Verified_SAT_Based_AI_Planning
     Undirected_Set_Graphs
+    Data_Structures
   theories
     RBT_Map_Extension
     DFS
@@ -14,9 +14,12 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     DFS_Cycles_Aux
     DFS_Cycles
     DFS_Cycles_Example
+    DFS_Skeleton
+    DFS_DirCycle
+    DFS_DirCycle_Example
     Parent_Map
     Bellman_Ford
     Bellman_Ford_Example
 
-  document_files
-    "root.tex"
+
+
