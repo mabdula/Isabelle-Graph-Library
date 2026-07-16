@@ -6,6 +6,12 @@ section \<open>Distances\<close>
 
 subsection \<open>Distance from a vertex\<close>
 
+named_theorems enat_simps
+declare numeral_eq_enat[enat_simps] zero_enat_def[enat_simps] one_enat_def [enat_simps] 
+plus_enat_simps[enat_simps] enat_ord_simps[enat_simps] plus_eq_infty_iff_enat[enat_simps]
+enat_add_left_cancel[enat_simps] enat_add_left_cancel_le[enat_simps] enat_add_left_cancel_less[enat_simps]
+enat.inject[enat_simps] eSuc_enat[enat_simps] enat.simps[enat_simps]
+
 definition "distance G u v = ( INF p. if Vwalk.vwalk_bet G u p v then length p - 1 else \<infinity>)"
 
 lemma vwalk_bet_dist:
