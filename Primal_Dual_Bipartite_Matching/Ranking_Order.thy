@@ -794,8 +794,24 @@ next
     proof -
       from new_match have "?min' \<notin> Vs M'" and "{?min', j} \<in> G \<setminus> {i}"
         by auto
-      then have "{?min', j} \<in> G" and "?min' \<noteq> i"
-        using remove_vertices_subgraph' remove_vertices_not_vs' edges_are_Vs by blast
+      then have "{?min', j} \<in> G" (is ?g1) and "?min' \<noteq> i" (is ?g2)
+      proof -
+        from new_match have "?min' \<notin> Vs M'" and min'_edge: "{?min', j} \<in> G \<setminus> {i}"
+          by auto
+        from min'_edge have "{?min', j} \<in> G" and "?min' \<noteq> i"
+          unfolding remove_vertices_graph_def by auto
+        from \<open>{?min', j} \<in> G\<close> \<open>j \<in> R\<close> bipartite_graph have "?min' \<in> L"
+          by (auto dest: bipartite_edgeD(4))
+        with \<open>?min' \<noteq> i\<close> \<open>?min' \<notin> Vs M'\<close> have "?min' \<in> L - {i} - Vs M'"
+          by blast
+        with subset_before have "?min' \<in> L - Vs M"
+          by blast
+        then have "?min' \<notin> Vs M"
+          by blast
+        with \<open>{?min', j} \<in> G\<close> show ?g1 ?g2
+          using \<open>min_on_rel {i'. i' \<notin> Vs M' \<and> {i', j} \<in> G \<setminus> {i}} r \<noteq> i\<close>
+          by fastforce+
+      qed
       from \<open>{?min', j} \<in> G\<close> \<open>j \<in> R\<close> bipartite_graph have "?min' \<in> L"
         by (auto dest: bipartite_edgeD(4))
       with \<open>?min' \<noteq> i\<close> \<open>?min' \<notin> Vs M'\<close> have "?min' \<in> L - {i} - Vs M'"

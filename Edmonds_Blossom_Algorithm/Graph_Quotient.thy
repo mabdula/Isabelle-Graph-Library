@@ -75,7 +75,7 @@ next
   proof (cases "Q a'")
     case True
     note Qa' = True
-    \<comment> \<open>Since v1 \<noteq> v2, at least one of them lies in set p'\<close>
+    (*Since v1 $\<noteq>$ v2, at least one of them lies in set p'*)
     have "\<exists>y \<in> set p'. Q y"
     proof -
       have mem1: "v1 = a' \<or> v1 \<in> set p'" using Cons.prems(1) by simp
@@ -95,13 +95,13 @@ next
     then obtain y where Qy: "Q y" and y_mem: "y \<in> set p'" by blast
     from y_mem obtain ys zs where decomp: "p' = ys @ y # zs"
       by (meson split_list)
-    \<comment> \<open>a' # p' = [] @ a' # ys @ y # zs\<close>
+    (*a' # p' = [] @ a' # ys @ y # zs*)
     show ?thesis
       using Qa' Qy decomp
       by (intro exI[of _ a'] exI[of _ y] exI[of _ "[]"] exI[of _ ys] exI[of _ zs]) simp
   next
     case False
-    \<comment> \<open>\<not>Q a' forces v1 \<noteq> a' and v2 \<noteq> a', so both land in p'\<close>
+    (*\<not>Q a' forces v1 \<noteq> a' and v2 \<noteq> a', so both land in p'*)
     have v1_ne: "v1 \<noteq> a'"
     proof
       assume "v1 = a'"
@@ -116,11 +116,11 @@ next
     qed
     have v1_p': "v1 \<in> set p'" using Cons.prems(1) v1_ne by simp
     have v2_p': "v2 \<in> set p'" using Cons.prems(2) v2_ne by simp
-    \<comment> \<open>Apply the induction hypothesis to p'\<close>
+    (*Apply the induction hypothesis to p'*)
     obtain w x qs rs ss where
       decomp: "p' = qs @ w # rs @ x # ss" and Qw: "Q w" and Qx: "Q x"
       using Cons.IH[OF v1_p' v2_p' Cons.prems(3) Cons.prems(4) Cons.prems(5)] by blast
-    \<comment> \<open>a' # p' = (a' # qs) @ w # rs @ x # ss\<close>
+    (*a' # p' = (a' # qs) @ w # rs @ x # ss*)
     show ?thesis
       using decomp Qw Qx
       by (intro exI[of _ w] exI[of _ x] exI[of _ "a' # qs"] exI[of _ rs] exI[of _ ss]) simp
@@ -141,7 +141,7 @@ next
   proof (cases "Q a'")
     case True
     note Qa' = True
-    \<comment> \<open>Since v1 \<noteq> v2, at least one of them lies in set p'\<close>
+    (*Since v1 \<noteq> v2, at least one of them lies in set p'*)
     have "\<exists>y \<in> set p'. Q y"
     proof -
       have mem1: "v1 = a' \<or> v1 \<in> set p'" using Cons.prems(1) by simp
@@ -162,13 +162,13 @@ next
       by blast
     from y_mem obtain ys zs where decomp: "p' = ys @ y # zs"
       by (meson split_list)
-    \<comment> \<open>a' # p' = [] @ a' # ys @ y # zs\<close>
+    (*a' # p' = [] @ a' # ys @ y # zs*)
     show ?thesis
       using Qa' Qy decomp
       by (intro exI[of _ a'] exI[of _ y] exI[of _ "[]"] exI[of _ ys] exI[of _ zs]) simp
   next
     case False
-    \<comment> \<open>\<not> Q a' forces v1 \<noteq> a' and v2 \<noteq> a', so both land in p'\<close>
+    (*\<not> Q a' forces v1 \<noteq> a' and v2 \<noteq> a', so both land in p'*)
     have v1_ne: "v1 \<noteq> a'"
     proof
       assume "v1 = a'"
@@ -183,13 +183,13 @@ next
     qed
     have v1_p': "v1 \<in> set p'" using Cons.prems(1) v1_ne by simp
     have v2_p': "v2 \<in> set p'" using Cons.prems(2) v2_ne by simp
-    \<comment> \<open>Apply the induction hypothesis to p'\<close>
+    (*Apply the induction hypothesis to p'*)
     obtain w x qs rs ss where
       decomp: "p' = qs @ w # rs @ x # ss" and Qw: "Q w" and Qx: "Q x"
       and noQ_qs: "\<forall>x\<in>set qs. \<not> Q x"
       using IH[OF v1_p' v2_p' Cons.prems(3) Cons.prems(4) Cons.prems(5)]
       by blast
-    \<comment> \<open>a' # p' = (a' # qs) @ w # rs @ x # ss\<close>
+    (*a' # p' = (a' # qs) @ w # rs @ x # ss*)
     show ?thesis
       using decomp Qw Qx noQ_qs False
       by (intro exI[of _ w] exI[of _ x] exI[of _ "a' # qs"] exI[of _ rs] exI[of _ ss]) auto
