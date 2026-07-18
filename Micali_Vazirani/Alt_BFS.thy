@@ -31,7 +31,6 @@ for lookup_neighb :: "'adjmap ⇒ 'ver ⇒ 'vset option" and
 fixes
   srcs::"'vset" and
   matching::"'adjmap" and
-  matched_vtxs::"'vset" and
   unmatching::"'adjmap" and
   expand_tree::"'adjmap ⇒ 'adjmap ⇒ 'vset ⇒ 'vset ⇒ 'adjmap" and
   next_frontier_impl::"'adjmap ⇒ 'vset ⇒ 'vset ⇒ 'vset" and
@@ -58,15 +57,14 @@ assumes
      "⟦invar_dist dist_map; vset_inv frontier; vset_inv vis; Graph.graph_inv G⟧ ⟹
        invar_dist (upd_dists parity G dist_map frontier vis)"
      "⟦invar_dist dist_map; vset_inv frontier; vset_inv vis; Graph.graph_inv G;
-       u ∈ t_set frontier;
-       v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs G) u - t_set vis⟧ ⟹
-        the (lookup_dist (upd_dists parity G dist_map frontier vis) (Vtx parity v)) =
-          the (lookup_dist dist_map (Vtx (other_parity parity) u)) + 1"
+       v ∈ next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis)⟧ ⟹
+        ∃u ∈ t_set frontier.
+          v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs G) u - t_set vis ∧
+          the (lookup_dist (upd_dists parity G dist_map frontier vis) (Vtx parity v)) =
+            the (lookup_dist dist_map (Vtx (other_parity parity) u)) + 1"
      "⟦invar_dist dist_map; vset_inv frontier; vset_inv vis; Graph.graph_inv G;
        w ∉ Vtx parity ` next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis)⟧ ⟹
-        lookup_dist (upd_dists parity G dist_map frontier vis) w = lookup_dist dist_map w" and
-   matching[simp]:
-     "t_set matched_vtxs = dVs (Graph.digraph_abs matching)"
+        lookup_dist (upd_dists parity G dist_map frontier vis) w = lookup_dist dist_map w"
 begin
 
 definition "BFS_axiom ⟷
@@ -76,7 +74,8 @@ definition "BFS_axiom ⟷
   t_set srcs ⊆ dVs (Graph.digraph_abs unmatching) ∧
   (∀u. finite (Pair_Graph.neighbourhood (Graph.digraph_abs matching) u)) ∧
   (∀u. finite (Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) u)) ∧
-  t_set srcs ≠ {} ∧ vset_inv srcs ∧ vset_inv matched_vtxs"
+  t_set srcs ≠ {} ∧ vset_inv srcs ∧
+  Graph.digraph_abs matching ∩ Graph.digraph_abs unmatching = {}"
 
 abbreviation "matching_neighbourhood' ≡ Graph.neighbourhood matching" 
 abbreviation "unmatching_neighbourhood' ≡ Graph.neighbourhood unmatching" 
@@ -105,6 +104,31 @@ function (domintros) BFS::"('adjmap, 'vset, 'dmap) BFS_state ⇒ ('adjmap, 'vset
   by pat_completeness auto
 
 definition "BFS_call_1_conds bfs_state = ( (current bfs_state) ≠ ∅⇩N)"
+
+partial_function (tailrec) BFS_impl::"('adjmap, 'vset, 'dmap) BFS_state ⇒ ('adjmap, 'vset, 'dmap) BFS_state" where
+  "BFS_impl BFS_state =
+     (
+        if current BFS_state ≠ ∅⇩N then
+          let
+            visited_even' = visited_even BFS_state ∪⇩G current BFS_state;
+            parents' = expand_tree unmatching (parents BFS_state) (current BFS_state) (visited_odd BFS_state);
+            current' = next_frontier_impl unmatching (current BFS_state) (visited_odd BFS_state);
+            distances' = upd_dists Odd unmatching (distances BFS_state) (current BFS_state) (visited_odd BFS_state);
+            visited_odd' = visited_odd BFS_state ∪⇩G current';
+            parents'' = expand_tree matching parents' current' visited_even';
+            current'' = next_frontier_impl matching current' visited_even';
+            distances'' = upd_dists Even matching distances' current' visited_even'
+          in
+            BFS_impl (BFS_state ⦇parents:= parents'', visited_even := visited_even',
+                            visited_odd := visited_odd', current := current'',
+                            distances:= distances''⦈)
+         else
+          BFS_state)"
+
+lemma BFS_impl_same:
+  assumes "BFS_dom state"
+  shows "BFS_impl state = BFS state"
+  by(induction rule: BFS.pinduct[OF assms])(auto simp add: BFS_impl.simps BFS.psimps)
 
 definition "BFS_upd1 BFS_state =
 (       let
@@ -200,6 +224,8 @@ definition "initial_state =
   ⦇parents = empty, current = srcs, visited_even = ∅⇩N,
    visited_odd = ∅⇩N, distances = init_dists⦈"
 
+lemmas [code] = BFS_impl.simps initial_state_def
+
 (*
 definition "invar_parents_shortest_paths bfs_state =
   (∀u∈t_set srcs.
@@ -250,8 +276,9 @@ lemma graph_inv[simp,intro]:
      "finite (Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) u)" and
   srcs_invar[simp]:
      "t_set srcs ≠ {}" 
-     "vset_inv srcs"
-     "vset_inv matched_vtxs"
+     "vset_inv srcs" and
+  matching_unmatching_disjoint[simp]:
+     "Graph.digraph_abs matching ∩ Graph.digraph_abs unmatching = {}"
   using ‹BFS_axiom›
   by (auto simp: BFS_axiom_def)
 
@@ -1988,6 +2015,1170 @@ proof(induction rule: BFS_induct[OF assms(1)])
        (auto intro!: IH(2-) intro: invar_holds_intros simp: BFS_simps[OF IH(1)])
 qed
 
+
+lemma invar_distances_eq_holds_upd1[invar_holds_intros]:
+  assumes "BFS_call_1_conds bfs_state" "invar_well_formed bfs_state" "invar_subsets bfs_state"
+          "invar_level_bounded bfs_state" "invar_discovered_downclosed bfs_state"
+          "invar_discovered_reachable bfs_state" "invar_current_level bfs_state"
+          "invar_distances_eq bfs_state"
+  shows "invar_distances_eq (BFS_upd1 bfs_state)"
+proof-
+  have wf[simp]:
+    "vset_inv (visited_even bfs_state)" "vset_inv (visited_odd bfs_state)"
+    "vset_inv (current bfs_state)" "Graph.graph_inv (parents bfs_state)"
+    using assms(2) by (auto simp: invar_well_formed_def)
+
+  define VE' where "VE' = visited_even bfs_state ∪⇩G current bfs_state"
+  define P' where "P' = expand_tree unmatching (parents bfs_state) (current bfs_state) (visited_odd bfs_state)"
+  define C' where "C' = next_frontier_impl unmatching (current bfs_state) (visited_odd bfs_state)"
+  define VO' where "VO' = visited_odd bfs_state ∪⇩G C'"
+  define P'' where "P'' = expand_tree matching P' C' VE'"
+  define C'' where "C'' = next_frontier_impl matching C' VE'"
+
+  have upd1: "BFS_upd1 bfs_state =
+    bfs_state ⦇parents := P'', visited_even := VE', visited_odd := VO', current := C'',
+               distances := upd_dists Even matching
+                              (upd_dists Odd unmatching (distances bfs_state) (current bfs_state)
+                                 (visited_odd bfs_state)) C' VE'⦈"
+    by (simp add: BFS_upd1_def Let_def VE'_def P'_def C'_def VO'_def P''_def C''_def)
+
+  have inv_VE'[simp]: "vset_inv VE'" by (auto simp: VE'_def)
+  have inv_P'[simp]: "Graph.graph_inv P'" by (auto simp: P'_def)
+  have inv_C'[simp]: "vset_inv C'" by (auto simp: C'_def)
+  have inv_VO'[simp]: "vset_inv VO'" by (auto simp: VO'_def)
+
+  have abs_VE': "t_set VE' = t_set (visited_even bfs_state) ∪ t_set (current bfs_state)"
+    by (auto simp: VE'_def)
+  have abs_C': "t_set C' = next_frontier (Graph.digraph_abs unmatching)
+                             (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+    by (auto simp: C'_def)
+  have abs_VO': "t_set VO' = t_set (visited_odd bfs_state) ∪ t_set C'"
+    by (auto simp: VO'_def)
+  have abs_C'': "t_set C'' = next_frontier (Graph.digraph_abs matching) (t_set C') (t_set VE')"
+    by (auto simp: C''_def)
+  have abs_P'': "Graph.digraph_abs P'' =
+                   Graph.digraph_abs (parents bfs_state)
+                   ∪ new_edges (Graph.digraph_abs unmatching) (t_set (current bfs_state))
+                       (t_set (visited_odd bfs_state))
+                   ∪ new_edges (Graph.digraph_abs matching) (t_set C') (t_set VE')"
+    by (auto simp: P''_def P'_def)
+
+  have T'_sub_G: "Graph.digraph_abs P'' ⊆ G"
+    using invar_subsets_holds_upd1[OF assms(1,2,3)]
+    by (auto simp: upd1 invar_subsets_def)
+  have T_sub_T': "Graph.digraph_abs (parents bfs_state) ⊆ Graph.digraph_abs P''"
+    by (auto simp: abs_P'')
+
+  have mono1: "alt_distance_set (Graph.digraph_abs P'') parity v ≤ altd_T bfs_state parity v"
+    for parity v
+    using T_sub_T'
+    by (auto simp: alt_distance_set_def intro!: alt_distance_set_subset)
+  have mono2: "altd_G parity v ≤ alt_distance_set (Graph.digraph_abs P'') parity v"
+    for parity v
+    using T'_sub_G
+    by (auto simp: alt_distance_set_def intro!: alt_distance_set_subset)
+  have sandwich: "alt_distance_set (Graph.digraph_abs P'') parity v = altd_G parity v"
+    if "altd_G parity v = altd_T bfs_state parity v" for parity v
+    using mono1[of parity v] mono2[of parity v] that by simp
+
+  have odd_eq: "altd_G Odd v = alt_distance_set (Graph.digraph_abs P'') Odd v"
+    if "v ∈ t_set VO'" for v
+  proof(cases "v ∈ t_set (visited_odd bfs_state)")
+    case True
+    then show ?thesis
+      using assms(8) by (intro sandwich[symmetric]) (auto simp: invar_distances_eq_def)
+  next
+    case fresh: False
+    hence vC': "v ∈ t_set C'" using that by (auto simp: abs_VO')
+    then obtain v' where v': "v' ∈ t_set (current bfs_state)"
+      "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) v'"
+      by (auto simp: abs_C' next_frontier_def)
+    have step: "altd_G Odd v = altd_G Even v' + 1"
+      using assms(4,5,6) v' fresh by (intro alt_dist_odd_step)
+    have edge_T': "(v', v) ∈ Graph.digraph_abs P''" "(v', v) ∈ Graph.digraph_abs unmatching"
+      using v' fresh by (auto simp: abs_P'' new_edges_def)
+    have v'_eq: "alt_distance_set (Graph.digraph_abs P'') Even v' = altd_G Even v'"
+    proof(cases "v' ∈ t_set srcs")
+      case True
+      have v'_dVs_G: "v' ∈ dVs G"
+        using v'(1) assms(3) by (auto simp: invar_subsets_def)
+      have v'_dVs_T': "v' ∈ dVs (Graph.digraph_abs P'')"
+        using edge_T'(1) by (auto intro: dVsI(1))
+      have z1: "altd_G Even v' = 0"
+        using True v'_dVs_G by (auto simp: alt_distance_set_def)
+      have z2: "alt_distance_set (Graph.digraph_abs P'') Even v' = 0"
+        using True v'_dVs_T' by (auto simp: alt_distance_set_def)
+      show ?thesis by (simp add: z1 z2)
+    next
+      case False
+      then show ?thesis
+        using assms(8) v'(1)
+        by (intro sandwich) (auto simp: invar_distances_eq_def)
+    qed
+    have srcs_ne: "t_set srcs ≠ {}" using srcs_invar(1) .
+    have v_nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs P'') v'"
+      using edge_T'(1) by (rule neighbourhoodD)
+    have unm: "unmatched_edge (v', v)"
+      using edge_T'(2) by (simp add: unmatched_edge_def)
+    have le1: "alt_distance_set (Graph.digraph_abs P'') Odd v
+                 ≤ alt_distance_set (Graph.digraph_abs P'') Even v' + 1"
+      unfolding alt_distance_set_def
+      by (intro odd_alt_distance_set_neighbourhood) (fact v_nb, fact srcs_ne, fact unm)
+    show ?thesis
+      using le1 mono2[of Odd v] by (simp add: v'_eq step[symmetric] order_antisym)
+  qed
+
+  have even_eq: "altd_G Even v = alt_distance_set (Graph.digraph_abs P'') Even v"
+    if "v ∈ t_set VE' ∪ t_set C''" "v ∉ t_set srcs" for v
+  proof(cases "v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state)")
+    case True
+    then show ?thesis
+      using assms(8) that(2) by (intro sandwich[symmetric]) (auto simp: invar_distances_eq_def)
+  next
+    case fresh: False
+    hence vC'': "v ∈ t_set C''" using that(1) by (auto simp: abs_VE')
+    then obtain v' where v': "v' ∈ t_set C'"
+      "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs matching) v'"
+      by (auto simp: abs_C'' next_frontier_def)
+    from v'(1) obtain w where w: "w ∈ t_set (current bfs_state)"
+      "v' ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) w" "v' ∉ t_set (visited_odd bfs_state)"
+      by (auto simp: abs_C' next_frontier_def)
+    have stepO: "altd_G Odd v' = altd_G Even w + 1"
+      using assms(4,5,6) w by (intro alt_dist_odd_step)
+    have stepE: "altd_G Even v = altd_G Odd v' + 1"
+      using assms(4,5,6) w(1) stepO v'(2) fresh by (intro alt_dist_even_step)
+    have edge_T': "(v', v) ∈ Graph.digraph_abs P''" "(v', v) ∈ Graph.digraph_abs matching"
+      using v' fresh by (auto simp: abs_P'' new_edges_def abs_VE')
+    have v'_eq: "alt_distance_set (Graph.digraph_abs P'') Odd v' = altd_G Odd v'"
+      using odd_eq[of v'] v'(1) by (auto simp: abs_VO')
+    have srcs_ne: "t_set srcs ≠ {}" using srcs_invar(1) .
+    have v_nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs P'') v'"
+      using edge_T'(1) by (rule neighbourhoodD)
+    have mat: "matched_edge (v', v)"
+      using edge_T'(2) by (simp add: matched_edge_def)
+    have le1: "alt_distance_set (Graph.digraph_abs P'') Even v
+                 ≤ alt_distance_set (Graph.digraph_abs P'') Odd v' + 1"
+      unfolding alt_distance_set_def
+      by (intro even_alt_distance_set_neighbourhood) (fact v_nb, fact srcs_ne, fact mat)
+    show ?thesis
+      using le1 mono2[of Even v] by (simp add: v'_eq stepE[symmetric] order_antisym)
+  qed
+
+  show ?thesis
+    using odd_eq even_eq
+    by (auto simp: upd1 invar_distances_eq_def abs_VE' abs_VO')
+qed
+
+lemma invar_distances_eq_holds_ret_1[invar_holds_intros]:
+  "⟦BFS_ret_1_conds bfs_state; invar_distances_eq bfs_state⟧ ⟹
+     invar_distances_eq (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+lemma invar_distances_eq_holds[invar_holds_intros]:
+  assumes "BFS_dom bfs_state" "invar_well_formed bfs_state" "invar_subsets bfs_state"
+          "invar_level_bounded bfs_state" "invar_discovered_downclosed bfs_state"
+          "invar_current_level bfs_state" "invar_discovered_reachable bfs_state"
+          "invar_distances_eq bfs_state"
+  shows "invar_distances_eq (BFS bfs_state)"
+  using assms(2-)
+proof(induction rule: BFS_induct[OF assms(1)])
+  case IH: (1 bfs_state)
+  show ?case
+    by (rule BFS_cases[where bfs_state = bfs_state])
+       (auto intro!: IH(2-) intro: invar_holds_intros simp: BFS_simps[OF IH(1)])
+qed
+
+lemma BFS_correct_dists_ret_1:
+  assumes "invar_distances_eq bfs_state" "BFS_ret_1_conds bfs_state"
+  shows "v ∈ t_set (visited_odd bfs_state) ⟹ altd_G Odd v = altd_T bfs_state Odd v"
+    and "⟦v ∈ t_set (visited_even bfs_state); v ∉ t_set srcs⟧
+           ⟹ altd_G Even v = altd_T bfs_state Even v"
+  using assms by (auto simp: invar_distances_eq_def)
+
+
+― ‹I-4b: invar_distances_correct — the labelled distance map holds the true levels.›
+definition "invar_distances_correct bfs_state =
+  ((∀v ∈ t_set (visited_odd bfs_state).
+      the (lookup_dist (distances bfs_state) (Vtx Odd v)) = altd_G Odd v) ∧
+   (∀v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state).
+      the (lookup_dist (distances bfs_state) (Vtx Even v)) = altd_G Even v))"
+
+lemma invar_distances_correct_props[invar_props_elims]:
+  "invar_distances_correct bfs_state ⟹
+   (⟦∀v ∈ t_set (visited_odd bfs_state).
+        the (lookup_dist (distances bfs_state) (Vtx Odd v)) = altd_G Odd v;
+      ∀v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state).
+        the (lookup_dist (distances bfs_state) (Vtx Even v)) = altd_G Even v⟧ ⟹ P) ⟹ P"
+  by (auto simp: invar_distances_correct_def)
+
+lemma invar_distances_correct_intro[invar_props_intros]:
+  "⟦∀v ∈ t_set (visited_odd bfs_state).
+      the (lookup_dist (distances bfs_state) (Vtx Odd v)) = altd_G Odd v;
+    ∀v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state).
+      the (lookup_dist (distances bfs_state) (Vtx Even v)) = altd_G Even v⟧
+   ⟹ invar_distances_correct bfs_state"
+  by (auto simp: invar_distances_correct_def)
+
+lemma invar_distances_correct_holds_upd1[invar_holds_intros]:
+  assumes "BFS_call_1_conds bfs_state" "invar_well_formed bfs_state" "invar_subsets bfs_state"
+          "invar_level_bounded bfs_state" "invar_discovered_downclosed bfs_state"
+          "invar_current_level bfs_state" "invar_discovered_reachable bfs_state"
+          "invar_distances_correct bfs_state"
+  shows "invar_distances_correct (BFS_upd1 bfs_state)"
+proof-
+  have wf[simp]:
+    "vset_inv (visited_even bfs_state)" "vset_inv (visited_odd bfs_state)"
+    "vset_inv (current bfs_state)" "Graph.graph_inv (parents bfs_state)"
+    "invar_dist (distances bfs_state)"
+    using assms(2) by (auto simp: invar_well_formed_def)
+
+  define VE' where "VE' = visited_even bfs_state ∪⇩G current bfs_state"
+  define P' where "P' = expand_tree unmatching (parents bfs_state) (current bfs_state) (visited_odd bfs_state)"
+  define C' where "C' = next_frontier_impl unmatching (current bfs_state) (visited_odd bfs_state)"
+  define VO' where "VO' = visited_odd bfs_state ∪⇩G C'"
+  define P'' where "P'' = expand_tree matching P' C' VE'"
+  define C'' where "C'' = next_frontier_impl matching C' VE'"
+  define DM' where "DM' = upd_dists Odd unmatching (distances bfs_state) (current bfs_state) (visited_odd bfs_state)"
+
+  have upd1: "BFS_upd1 bfs_state =
+    bfs_state ⦇parents := P'', visited_even := VE', visited_odd := VO', current := C'',
+               distances := upd_dists Even matching DM' C' VE'⦈"
+    by (simp add: BFS_upd1_def Let_def VE'_def P'_def C'_def VO'_def P''_def C''_def DM'_def)
+
+  have inv_VE'[simp]: "vset_inv VE'" by (auto simp: VE'_def)
+  have inv_P'[simp]: "Graph.graph_inv P'" by (auto simp: P'_def)
+  have inv_C'[simp]: "vset_inv C'" by (auto simp: C'_def)
+  have inv_VO'[simp]: "vset_inv VO'" by (auto simp: VO'_def)
+  have inv_DM'[simp]: "invar_dist DM'" by (auto simp: DM'_def)
+
+  have abs_VE': "t_set VE' = t_set (visited_even bfs_state) ∪ t_set (current bfs_state)"
+    by (auto simp: VE'_def)
+  have abs_C': "t_set C' = next_frontier (Graph.digraph_abs unmatching)
+                             (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+    by (auto simp: C'_def)
+  have abs_VO': "t_set VO' = t_set (visited_odd bfs_state) ∪ t_set C'"
+    by (auto simp: VO'_def)
+  have abs_C'': "t_set C'' = next_frontier (Graph.digraph_abs matching) (t_set C') (t_set VE')"
+    by (auto simp: C''_def)
+
+  ― ‹Step A: fresh odd copies v ∈ t_set C' get the correct value via the inner (Odd) write.›
+  have fresh_odd: "the (lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Odd v)) = altd_G Odd v"
+    if vC': "v ∈ t_set C'" for v
+  proof-
+    have v_nf: "v ∈ next_frontier (Graph.digraph_abs unmatching)
+                    (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+      using vC' by (simp add: abs_C')
+    have ex: "∃u ∈ t_set (current bfs_state).
+        v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) u - t_set (visited_odd bfs_state) ∧
+        the (lookup_dist DM' (Vtx Odd v)) =
+          the (lookup_dist (distances bfs_state) (Vtx (other_parity Odd) u)) + 1"
+      unfolding DM'_def by (intro upd_dists(2)) (auto simp: v_nf)
+    then obtain u where u_cur: "u ∈ t_set (current bfs_state)"
+      and u_nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) u"
+      and v_not_vo: "v ∉ t_set (visited_odd bfs_state)"
+      and inner_val: "the (lookup_dist DM' (Vtx Odd v)) =
+                        the (lookup_dist (distances bfs_state) (Vtx Even u)) + 1"
+      by (auto simp: parity_simps)
+    have ih_u: "the (lookup_dist (distances bfs_state) (Vtx Even u)) = altd_G Even u"
+      using assms(8) u_cur by (auto simp: invar_distances_correct_def)
+    have step: "altd_G Odd v = altd_G Even u + 1"
+      using assms(4,5,7) u_cur u_nb v_not_vo by (intro alt_dist_odd_step)
+    have outer_miss: "Vtx Odd v ∉ Vtx Even ` next_frontier (Graph.digraph_abs matching)
+                                               (t_set C') (t_set VE')"
+      by (auto simp: labelled_vtx.inject)
+    have outer_notouch: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Odd v) =
+                           lookup_dist DM' (Vtx Odd v)"
+      by (intro upd_dists(3)) (auto simp: abs_C'' outer_miss)
+    show ?thesis
+      using outer_notouch inner_val ih_u step by (auto simp only: enat_simps)
+  qed
+
+  have post_odd: "the (lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Odd v)) = altd_G Odd v"
+    if vVO': "v ∈ t_set VO'" for v
+  proof(cases "v ∈ t_set (visited_odd bfs_state)")
+    case True
+    have v_not_nf_odd: "Vtx Odd v ∉ Vtx Odd ` next_frontier (Graph.digraph_abs unmatching)
+                                                (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+      by (auto simp: next_frontier_def True)
+    have inner_notouch: "lookup_dist DM' (Vtx Odd v) = lookup_dist (distances bfs_state) (Vtx Odd v)"
+      unfolding DM'_def
+      by (intro upd_dists(3)) (auto simp: abs_C' v_not_nf_odd)
+    have outer_miss: "Vtx Odd v ∉ Vtx Even ` next_frontier (Graph.digraph_abs matching)
+                                               (t_set C') (t_set VE')"
+      by (auto simp: labelled_vtx.inject)
+    have outer_notouch: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Odd v) =
+                           lookup_dist DM' (Vtx Odd v)"
+      by (intro upd_dists(3)) (auto simp: abs_C'' outer_miss)
+    have ih: "the (lookup_dist (distances bfs_state) (Vtx Odd v)) = altd_G Odd v"
+      using assms(8) True by (auto simp: invar_distances_correct_def)
+    show ?thesis using outer_notouch inner_notouch ih by simp
+  next
+    case False
+    hence "v ∈ t_set C'" using vVO' by (auto simp: abs_VO')
+    then show ?thesis using fresh_odd by simp
+  qed
+
+  have old_even: "the (lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v)) = altd_G Even v"
+    if vVE': "v ∈ t_set VE'" for v
+  proof-
+    have inner_miss: "Vtx Even v ∉ Vtx Odd ` next_frontier (Graph.digraph_abs unmatching)
+                                              (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+      by (auto simp: labelled_vtx.inject)
+    have inner_notouch: "lookup_dist DM' (Vtx Even v) = lookup_dist (distances bfs_state) (Vtx Even v)"
+      unfolding DM'_def
+      by (intro upd_dists(3)) (auto simp: abs_C' inner_miss)
+    have v_not_nf_even: "Vtx Even v ∉ Vtx Even ` next_frontier (Graph.digraph_abs matching)
+                                                  (t_set C') (t_set VE')"
+      by (auto simp: next_frontier_def vVE')
+    have outer_notouch: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v) =
+                           lookup_dist DM' (Vtx Even v)"
+      by (intro upd_dists(3)) (auto simp: abs_C'' v_not_nf_even)
+    have ih: "the (lookup_dist (distances bfs_state) (Vtx Even v)) = altd_G Even v"
+      using assms(8) vVE' by (auto simp: invar_distances_correct_def abs_VE')
+    show ?thesis using outer_notouch inner_notouch ih by simp
+  qed
+
+  have fresh_even: "the (lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v)) = altd_G Even v"
+    if vC'': "v ∈ t_set C''" for v
+  proof-
+    have v_nf: "v ∈ next_frontier (Graph.digraph_abs matching) (t_set C') (t_set VE')"
+      using vC'' by (simp add: abs_C'')
+    have ex_outer: "∃u ∈ t_set C'.
+        v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs matching) u - t_set VE' ∧
+        the (lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v)) =
+          the (lookup_dist DM' (Vtx (other_parity Even) u)) + 1"
+      by (intro upd_dists(2)) (auto simp: v_nf)
+    then obtain v' where v'_C': "v' ∈ t_set C'"
+      and v'_nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs matching) v'"
+      and v_not_VE': "v ∉ t_set VE'"
+      and outer_val: "the (lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v)) =
+                        the (lookup_dist DM' (Vtx Odd v')) + 1"
+      by (auto simp: parity_simps)
+    have v'_nf: "v' ∈ next_frontier (Graph.digraph_abs unmatching)
+                     (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+      using v'_C' by (simp add: abs_C')
+    have ex_inner: "∃u ∈ t_set (current bfs_state).
+        v' ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) u - t_set (visited_odd bfs_state) ∧
+        the (lookup_dist DM' (Vtx Odd v')) =
+          the (lookup_dist (distances bfs_state) (Vtx (other_parity Odd) u)) + 1"
+      unfolding DM'_def by (intro upd_dists(2)) (auto simp: v'_nf)
+    then obtain w where w_cur: "w ∈ t_set (current bfs_state)"
+      and w_nb: "v' ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) w"
+      and v'_not_vo: "v' ∉ t_set (visited_odd bfs_state)"
+      and inner_val: "the (lookup_dist DM' (Vtx Odd v')) =
+                        the (lookup_dist (distances bfs_state) (Vtx Even w)) + 1"
+      by (auto simp: parity_simps)
+    have v_not_ve: "v ∉ t_set (visited_even bfs_state) ∪ t_set (current bfs_state)"
+      using v_not_VE' by (auto simp: abs_VE')
+    have stepO: "altd_G Odd v' = altd_G Even w + 1"
+      using assms(4,5,7) w_cur w_nb v'_not_vo by (intro alt_dist_odd_step)
+    have stepE: "altd_G Even v = altd_G Odd v' + 1"
+      using assms(4,5,7) w_cur stepO v'_nb v_not_ve by (intro alt_dist_even_step)
+    have ih_w: "the (lookup_dist (distances bfs_state) (Vtx Even w)) = altd_G Even w"
+      using assms(8) w_cur by (auto simp: invar_distances_correct_def)
+    show ?thesis
+      using outer_val inner_val ih_w stepO stepE by (auto simp only: enat_simps)
+  qed
+
+  show ?thesis
+    using post_odd old_even fresh_even
+    by (intro invar_distances_correct_intro)
+       (auto simp: upd1 abs_VO' abs_C'' abs_VE')
+qed
+
+lemma invar_distances_correct_holds_ret_1[invar_holds_intros]:
+  "⟦BFS_ret_1_conds bfs_state; invar_distances_correct bfs_state⟧ ⟹
+     invar_distances_correct (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+lemma invar_distances_correct_holds[invar_holds_intros]:
+  assumes "BFS_dom bfs_state" "invar_well_formed bfs_state" "invar_subsets bfs_state"
+          "invar_level_bounded bfs_state" "invar_discovered_downclosed bfs_state"
+          "invar_current_level bfs_state" "invar_discovered_reachable bfs_state"
+          "invar_distances_correct bfs_state"
+  shows "invar_distances_correct (BFS bfs_state)"
+  using assms(2-)
+proof(induction rule: BFS_induct[OF assms(1)])
+  case IH: (1 bfs_state)
+  show ?case
+    by (rule BFS_cases[where bfs_state = bfs_state])
+       (auto intro!: IH(2-) intro: invar_holds_intros simp: BFS_simps[OF IH(1)])
+qed
+
+lemma BFS_correct_distances_ret_1:
+  assumes "invar_distances_correct bfs_state" "BFS_ret_1_conds bfs_state"
+  shows "v ∈ t_set (visited_odd bfs_state) ⟹
+           the (lookup_dist (distances bfs_state) (Vtx Odd v)) = altd_G Odd v"
+    and "v ∈ t_set (visited_even bfs_state) ⟹
+           the (lookup_dist (distances bfs_state) (Vtx Even v)) = altd_G Even v"
+  using assms by (auto simp: invar_distances_correct_def)
+
+― ‹Batch 5: P4/P5 — completeness of the visited sets at ret.
+   ROUTE: ret-time induction over the closure invariant invar_visited_closed;
+   this replaces BFS_2's invar_goes_through_current route (§II.5).›
+
+lemma alt_walk_snocE:
+  assumes "alt_walk parity H u p v" "1 < length p"
+  obtains q w where
+    "p = q @ [v]" "q ≠ []" "w = last q"
+    "alt_walk (other_parity parity) H u q w" "(w, v) ∈ H"
+    "case parity of Odd ⇒ unmatched_edge (w, v) | Even ⇒ matched_edge (w, v)"
+proof -
+  from assms(1) have walk: "vwalk_bet H u p v"
+    and alt: "alt_list unmatched_edge matched_edge (edges_of_vwalk p)"
+    and len_par: "of_parity (other_parity parity) (length p)"
+    by (auto elim: alt_dist.alt_vwalk_betE)
+  obtain q⇩0 where p_eq: "p = q⇩0 @ [v]"
+    using last_of_vwalk_bet'[OF walk] by blast
+  have q_ne: "q⇩0 ≠ []" using p_eq assms(2) by auto
+  have p_split: "edges_of_vwalk p = edges_of_vwalk q⇩0 @ [(last q⇩0, v)]"
+    using q_ne p_eq by (simp add: edges_of_vwalk_append_3)
+  have alt_pre: "alt_list unmatched_edge matched_edge (edges_of_vwalk q⇩0)"
+    using alt[unfolded p_split] by (auto dest: alt_list_append_1)
+  have len_q: "of_parity parity (length q⇩0)"
+    using len_par p_eq by (cases parity; auto simp: parity_simps)
+  have prefix_walk: "vwalk_bet H u q⇩0 (last q⇩0)"
+    using q_ne walk[unfolded p_eq]
+    by (intro vwalk_bet_prefix_is_vwalk_bet; simp)
+  have q_walk: "alt_walk (other_parity parity) H u q⇩0 (last q⇩0)"
+  proof (intro alt_dist.alt_vwalk_betI[OF prefix_walk alt_pre])
+    show "of_parity (other_parity (other_parity parity)) (length q⇩0)"
+      using len_q by (cases parity; simp add: parity_simps)
+  qed
+  have edge_H: "(last q⇩0, v) ∈ H"
+    using vwalk_bet_edges_in_edges[OF walk] p_split by auto
+  have elen: "length (edges_of_vwalk q⇩0) + 1 = length q⇩0"
+    by (rule edges_of_vwalk_length'[OF q_ne])
+  have typed_edge: "case parity of Odd ⇒ unmatched_edge (last q⇩0, v)
+                                 | Even ⇒ matched_edge (last q⇩0, v)"
+  proof (cases parity)
+    case Odd
+    hence ev: "even (length (edges_of_vwalk q⇩0))"
+    proof -
+      have "odd (length q⇩0)" using len_q Odd by (simp add: parity_simps)
+      thus ?thesis using elen 
+        by presburger
+    qed
+    have "alt_list unmatched_edge matched_edge [(last q⇩0, v)]"
+      using alt[unfolded p_split] ev by (rule alt_list_split_1)
+    thus ?thesis using Odd by (auto simp: alt_list_step)
+  next
+    case Even
+    hence od: "odd (length (edges_of_vwalk q⇩0))"
+    proof -
+      have "even (length q⇩0)" using len_q Even by (simp add: parity_simps)
+      thus ?thesis using elen by presburger
+    qed
+    have "alt_list matched_edge unmatched_edge [(last q⇩0, v)]"
+      using alt[unfolded p_split] od by (rule alt_list_split_2)
+    thus ?thesis using Even by (auto simp: alt_list_step)
+  qed
+  show ?thesis
+    using p_eq q_ne q_walk edge_H typed_edge
+    by (fastforce intro!: that[of q⇩0 "last q⇩0"])
+qed
+
+lemma alt_walk_confined:
+  assumes "invar_visited_closed bfs_state" "invar_srcs_even bfs_state"
+          "BFS_ret_1_conds bfs_state"
+          "alt_walk parity G u p v" "u ∈ t_set srcs"
+  shows "v ∈ (case parity of Even ⇒ t_set (visited_even bfs_state)
+                            | Odd  ⇒ t_set (visited_odd  bfs_state))"
+  using assms(4)
+proof (induction "length p" arbitrary: p v parity rule: less_induct)
+  case less
+  show ?case
+  proof (cases "1 < length p")
+    case False
+    ― ‹length p = 1: of_parity (other_parity parity) 1 forces parity = Even;
+        then v = u ∈ srcs ⊆ visited_even (current = ∅ at ret).›
+    have len_p_one: "length p = 1"
+    proof -
+      from less.prems have "p ≠ []"
+        by (auto elim: alt_dist.alt_vwalk_betE simp: vwalk_bet_def)
+      hence "length p ≥ 1" 
+        by (simp add: Suc_leI)
+      thus ?thesis using False by presburger
+    qed
+    have parity_even: "parity = Even"
+    proof -
+      from less.prems have "of_parity (other_parity parity) (length p)"
+        by (auto elim: alt_dist.alt_vwalk_betE)
+      thus ?thesis using len_p_one by (cases parity; simp add: parity_simps)
+    qed
+    have vu: "v = u"
+    proof -
+      from less.prems have wb: "vwalk_bet G u p v"
+        by (auto elim: alt_dist.alt_vwalk_betE)
+      from wb have hu: "hd p = u" and lv: "last p = v"
+        by (auto simp: vwalk_bet_def)
+      from len_p_one have "hd p = last p"
+        by (cases p; simp)
+      thus ?thesis using hu lv by simp
+    qed
+    have "u ∈ t_set (visited_even bfs_state)"
+      using assms(2,3,5)
+      by (auto simp: invar_srcs_even_def BFS_ret_1_conds_def)
+    thus ?thesis using parity_even vu by simp
+  next
+    case True
+    from alt_walk_snocE[OF less.prems True] obtain q w where qw:
+      "p = q @ [v]" "q ≠ []" "w = last q"
+      "alt_walk (other_parity parity) G u q w" "(w, v) ∈ G"
+      "case parity of Odd ⇒ unmatched_edge (w, v) | Even ⇒ matched_edge (w, v)"
+      by blast
+    have len_lt: "length q < length p" using qw(1) by auto
+    have IH: "w ∈ (case other_parity parity of
+                       Even ⇒ t_set (visited_even bfs_state)
+                     | Odd  ⇒ t_set (visited_odd  bfs_state))"
+      using less.hyps[OF len_lt] qw(4) by blast
+    show ?thesis
+    proof (cases parity)
+      case Odd
+      ― ‹other_parity Odd = Even; w ∈ visited_even; (w,v) unmatched ⇒ v ∈ visited_odd.›
+      have wve: "w ∈ t_set (visited_even bfs_state)"
+        using IH Odd by (simp add: parity_simps)
+      have uedge: "unmatched_edge (w, v)"
+        using qw(6) Odd by simp
+      have nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) w"
+        using uedge qw(5) by (auto simp: unmatched_edge_def dest: neighbourhoodD)
+      thus ?thesis
+        using assms(1) wve Odd
+        by (auto simp: invar_visited_closed_def)
+    next
+      case Even
+      ― ‹other_parity Even = Odd; w ∈ visited_odd; (w,v) matched ⇒ v ∈ visited_even ∪ current = visited_even.›
+      have wvo: "w ∈ t_set (visited_odd bfs_state)"
+        using IH Even by (simp add: parity_simps)
+      have medge: "matched_edge (w, v)"
+        using qw(6) Even by simp
+      have nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs matching) w"
+        using medge qw(5) by (auto simp: matched_edge_def dest: neighbourhoodD)
+      hence "v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state)"
+        using assms(1) wvo by (auto simp: invar_visited_closed_def)
+      thus ?thesis
+        using assms(3) Even by (auto simp: BFS_ret_1_conds_def)
+    qed
+  qed
+qed
+
+lemma BFS_correct_no_odd_walk_ret_1:   ― ‹P4›
+  assumes "invar_visited_closed bfs_state" "invar_srcs_even bfs_state"
+          "BFS_ret_1_conds bfs_state"
+          "u ∈ t_set srcs" "v ∉ t_set (visited_odd bfs_state)"
+  shows "¬(∃p. alt_walk Odd G u p v)"
+  using alt_walk_confined[OF assms(1,2,3) _ assms(4)] assms(5) by fastforce
+
+lemma BFS_correct_no_even_walk_ret_1:  ― ‹P5›
+  assumes "invar_visited_closed bfs_state" "invar_srcs_even bfs_state"
+          "BFS_ret_1_conds bfs_state"
+          "u ∈ t_set srcs" "v ∉ t_set (visited_even bfs_state)"
+  shows "¬(∃p. alt_walk Even G u p v)"
+  using alt_walk_confined[OF assms(1,2,3) _ assms(4)] assms(5) by fastforce
+
+― ‹Batch 7: ret1_holds, termination, initial_state_props, final assembly.›
+
+― ‹ret1_holds: BFS terminates in a ret-1 state (boilerplate, mirror BFS_2 line 1261).›
+lemma ret1_holds[ret_holds_intros]:
+  assumes "BFS_dom bfs_state"
+  shows "BFS_ret_1_conds (BFS bfs_state)"
+proof(induction rule: BFS_induct[OF assms(1)])
+  case IH: (1 bfs_state)
+  show ?case
+    apply(rule BFS_cases[where bfs_state = bfs_state])
+    by (auto intro: ret_holds_intros intro!: IH(2-)
+             simp: BFS_simps[OF IH(1)])
+qed
+
+subsection ‹Termination›
+
+named_theorems termination_intros
+
+declare termination_intros[intro!]
+
+― ‹Single measure: card (dVs G - visited_even) strictly decreases each call (D6).›
+definition "call_1_measure BFS_state = card (dVs G - t_set (visited_even BFS_state))"
+definition "BFS_term_rel' = call_1_measure <*mlex*> {}"
+
+lemma finite_dVs_G: "finite (dVs G)"
+proof -
+  have "finite (dVs (Graph.digraph_abs unmatching))"
+    by (intro Graph.finite_vertices; simp)
+  moreover have "finite (dVs (Graph.digraph_abs matching))"
+    by (intro Graph.finite_vertices; simp)
+  ultimately show ?thesis
+    by (simp add: G_def dVs_union_distr)
+qed
+
+lemma call_1_measure_decr:
+  assumes "BFS_call_1_conds bfs_state" "invar_well_formed bfs_state" "invar_subsets bfs_state"
+          "invar_current_unvisited bfs_state"
+  shows "call_1_measure (BFS_upd1 bfs_state) < call_1_measure bfs_state"
+proof -
+  have wf[simp]: "vset_inv (visited_even bfs_state)" "vset_inv (visited_odd bfs_state)"
+                 "vset_inv (current bfs_state)"
+    using assms(2) by (auto simp: invar_well_formed_def)
+  have cur_ne: "t_set (current bfs_state) ≠ {}"
+    using assms(1) by (auto simp: BFS_call_1_conds_def)
+  have cur_sub: "t_set (current bfs_state) ⊆ dVs G"
+    using assms(3) by (auto simp: invar_subsets_def)
+  have cur_disj: "t_set (current bfs_state) ∩ t_set (visited_even bfs_state) = {}"
+    using assms(4) by (auto simp: invar_current_unvisited_def)
+  define VE' where "VE' = visited_even bfs_state ∪⇩G current bfs_state"
+  have abs_VE': "t_set VE' = t_set (visited_even bfs_state) ∪ t_set (current bfs_state)"
+    by (auto simp: VE'_def)
+  have upd1_VE': "t_set (visited_even (BFS_upd1 bfs_state)) = t_set VE'"
+    by (auto simp: BFS_upd1_def Let_def abs_VE')
+  have psubset: "dVs G - t_set VE' ⊂ dVs G - t_set (visited_even bfs_state)"
+    using cur_ne cur_sub cur_disj
+    using abs_VE' by auto
+  show ?thesis
+    unfolding call_1_measure_def upd1_VE'
+    using psubset finite_dVs_G
+    by (simp add: psubset_card_mono)
+qed
+
+lemma wf_term_rel: "wf BFS_term_rel'"
+  by (auto simp: wf_mlex BFS_term_rel'_def)
+
+lemma in_BFS_term_rel'[termination_intros]:
+  "⟦BFS_call_1_conds bfs_state; invar_well_formed bfs_state; invar_subsets bfs_state;
+    invar_current_unvisited bfs_state⟧ ⟹
+    (BFS_upd1 bfs_state, bfs_state) ∈ BFS_term_rel'"
+  by (simp add: BFS_term_rel'_def call_1_measure_decr mlex_less)
+
+lemma BFS_terminates[termination_intros]:
+  assumes "invar_well_formed bfs_state" "invar_subsets bfs_state"
+          "invar_current_unvisited bfs_state"
+  shows "BFS_dom bfs_state"
+  using wf_term_rel assms
+proof(induction rule: wf_induct_rule)
+  case (less x)
+  show ?case
+    apply(rule BFS_domintros)
+    by (auto intro: invar_holds_intros intro!: termination_intros less)
+qed
+
+subsection ‹Initial state — all invariants hold›
+
+lemma not_alt_walk_in_empty[simp]:
+  "¬ alt_walk parity {} u p v"
+  by (auto simp only: alt_dist.alt_vwalk_bet_def not_vwalk_bet_empty)
+
+lemma initial_state_props[invar_holds_intros, termination_intros, simp]:
+  "invar_well_formed initial_state"
+  "invar_subsets initial_state"
+  "invar_srcs_even initial_state"
+  "invar_current_unvisited initial_state"
+  "invar_parents_edges initial_state"
+  "invar_visited_closed initial_state"
+  "invar_discovered_reachable initial_state"
+  "invar_level_bounded initial_state"
+  "invar_discovered_downclosed initial_state"
+  "invar_current_level initial_state"
+  "invar_distances_eq initial_state"
+  "invar_distances_correct initial_state"
+  "BFS_dom initial_state"
+proof -
+  ― ‹1. invar_well_formed›
+  show wf: "invar_well_formed initial_state"
+    using srcs_in_G finite_subset
+    by (auto simp: initial_state_def invar_well_formed_def
+             intro: finite_subset[OF _ Graph.finite_vertices[where G = unmatching]])
+
+  ― ‹2. invar_subsets›
+  show sub: "invar_subsets initial_state"
+    apply (simp add: initial_state_def invar_subsets_def G_def)
+    using srcs_in_G
+    by blast
+     
+  ― ‹3. invar_srcs_even›
+  show "invar_srcs_even initial_state"
+    by (auto simp: initial_state_def invar_srcs_even_def)
+
+  ― ‹4. invar_current_unvisited›
+  show "invar_current_unvisited initial_state"
+    by (auto simp: initial_state_def invar_current_unvisited_def)
+
+  ― ‹5. invar_parents_edges: parents = empty, so digraph_abs empty = {}, premise set empty›
+  show "invar_parents_edges initial_state"
+    by (auto simp: initial_state_def invar_parents_edges_def)
+
+  ― ‹6. invar_visited_closed: visited sets empty›
+  show "invar_visited_closed initial_state"
+    by (auto simp: initial_state_def invar_visited_closed_def)
+
+  ― ‹7. invar_discovered_reachable: srcs have altd_G Even = 0 < ∞›
+  show dr: "invar_discovered_reachable initial_state"
+  proof -
+    have "∀v ∈ t_set srcs. altd_G Even v < ∞"
+    proof
+      fix v assume v: "v ∈ t_set srcs"
+      have vG: "v ∈ dVs G"
+        using v srcs_in_G by (fastforce simp: G_def intro: dVs_subset)
+      have "altd_G Even v = 0"
+        using v vG by (auto simp: alt_distance_set_def)
+      thus "altd_G Even v < ∞" by (auto simp only: enat_simps)
+    qed
+    thus ?thesis
+      by (auto simp: initial_state_def invar_discovered_reachable_def)
+  qed
+
+  ― ‹8. invar_level_bounded: current = srcs all have altd_G Even = 0; discovered Odd = {} (initial)›
+  show lb: "invar_level_bounded initial_state"
+  proof -
+    have "∀v ∈ t_set srcs. ∀parity. ∀u ∈ discovered initial_state parity.
+        altd_G parity u ≤ altd_G Even v"
+    proof (intro ballI allI)
+      fix v parity u
+      assume v: "v ∈ t_set srcs" and u: "u ∈ discovered initial_state parity"
+      have vG: "v ∈ dVs G"
+        using v srcs_in_G by (fastforce simp: G_def intro: dVs_subset)
+      have v0: "altd_G Even v = 0"
+        using v vG by (auto simp: alt_distance_set_def)
+      have u_srcs: "u ∈ t_set srcs"
+        using u by (cases parity) (auto simp: initial_state_def discovered_def)
+      have uG: "u ∈ dVs G"
+        using u_srcs srcs_in_G by (fastforce simp: G_def intro: dVs_subset)
+      have u0: "altd_G Even u = 0"
+        using u_srcs uG by (auto simp: alt_distance_set_def)
+      have up: "parity = Even"
+      proof (rule ccontr)
+        assume "parity ≠ Even"
+        hence "parity = Odd" by (cases parity) auto
+        have odd0: "altd_G Odd u = 0"
+          using u ‹parity = Odd› by (simp add: initial_state_def discovered_def)
+        obtain n where hn: "altd_G Odd u = enat n"
+          by (cases "altd_G Odd u") (auto simp only: enat_simps odd0)
+        hence "odd n" using altd_G_parity[of Odd u n] by (simp add: parity_simps)
+        moreover have "n = 0"
+          using hn odd0 by (auto simp only: enat_simps)
+        ultimately show False by simp
+      qed
+      show "altd_G parity u ≤ altd_G Even v"
+        using up u0 v0 by simp
+    qed
+    thus ?thesis
+      by (auto simp: invar_level_bounded_def initial_state_def)
+  qed
+
+  ― ‹9. invar_discovered_downclosed›
+  show dc: "invar_discovered_downclosed initial_state"
+  proof -
+    have main: "∀parity parity' v u. v ∈ discovered initial_state parity ⟶
+        altd_G parity' u ≤ altd_G parity v ⟶ u ∈ discovered initial_state parity'"
+    proof (intro allI impI)
+      fix parity parity' v u
+      assume v: "v ∈ discovered initial_state parity"
+         and le: "altd_G parity' u ≤ altd_G parity v"
+      have v_srcs: "v ∈ t_set srcs"
+        using v by (cases parity) (auto simp: initial_state_def discovered_def)
+      have vG: "v ∈ dVs G"
+        using v_srcs srcs_in_G by (fastforce simp: G_def intro: dVs_subset)
+      have vp: "parity = Even"
+      proof (rule ccontr)
+        assume "parity ≠ Even"
+        hence "parity = Odd" by (cases parity) auto
+        have odd0: "altd_G Odd v = 0"
+          using v ‹parity = Odd› by (simp add: initial_state_def discovered_def)
+        obtain n where hn: "altd_G Odd v = enat n"
+          by (cases "altd_G Odd v") (auto simp only: enat_simps odd0)
+        hence "odd n" using altd_G_parity[of Odd v n] by (simp add: parity_simps)
+        moreover have "n = 0" using hn odd0 by (auto simp only: enat_simps)
+        ultimately show False by simp
+      qed
+      have v0: "altd_G Even v = 0"
+        using v_srcs vG vp by (auto simp: alt_distance_set_def)
+      have u0: "altd_G parity' u = 0"
+        using le v0 vp by (simp add: v0)
+      have up: "parity' = Even"
+      proof (rule ccontr)
+        assume "parity' ≠ Even"
+        hence "parity' = Odd" by (cases parity') auto
+        obtain n where hn: "altd_G Odd u = enat n"
+          using u0 ‹parity' = Odd› by (cases "altd_G Odd u") (auto simp only: enat_simps)
+        hence "odd n" using altd_G_parity[of Odd u n] by (simp add: parity_simps)
+        moreover have "n = 0" using hn u0 ‹parity' = Odd› by (auto simp only: enat_simps)
+        ultimately show False by simp
+      qed
+      have uG: "u ∈ dVs G"
+      proof (rule ccontr)
+        assume "u ∉ dVs G"
+        hence "altd_G parity' u = ∞" by (simp add: alt_distance_set_def alt_dist.alt_dist_set_inf)
+        thus False using u0 by (auto simp only: enat_simps)
+      qed
+      have u_srcs: "u ∈ t_set srcs"
+        using u0 up uG by (auto simp: alt_distance_set_def)
+      show "u ∈ discovered initial_state parity'"
+        using u_srcs up by (auto simp: initial_state_def discovered_def)
+    qed
+    thus ?thesis
+      by (auto simp: invar_discovered_downclosed_def main)
+  qed
+
+  ― ‹10. invar_current_level›
+  show "invar_current_level initial_state"
+  proof -
+    have main: "∀v ∈ t_set srcs. ∀u. (u ∈ t_set srcs) = (altd_G Even u = altd_G Even v)"
+    proof (intro ballI allI)
+      fix v u
+      assume v: "v ∈ t_set srcs"
+      have vG: "v ∈ dVs G"
+        using v srcs_in_G
+        by (fastforce simp: G_def intro: dVs_subset)
+      have v0: "altd_G Even v = 0"
+        using v vG by (auto simp: alt_distance_set_def)
+      show "(u ∈ t_set srcs) = (altd_G Even u = altd_G Even v)"
+      proof
+        assume u: "u ∈ t_set srcs"
+        have uG: "u ∈ dVs G"
+          using u srcs_in_G
+          by (fastforce simp: G_def intro: dVs_subset)
+        show "altd_G Even u = altd_G Even v"
+          using u uG alt_distance_set_def v0
+          by auto
+      next
+        assume eq: "altd_G Even u = altd_G Even v"
+        hence u0: "altd_G Even u = 0" using v0 by simp
+        have uG: "u ∈ dVs G"
+        proof (rule ccontr)
+          assume "u ∉ dVs G"
+          hence "altd_G Even u = ∞" by (simp add: alt_distance_set_def alt_dist.alt_dist_set_inf)
+          thus False using u0 by (auto simp only: enat_simps)
+        qed
+        show "u ∈ t_set srcs"
+          using u0 uG by (auto simp: alt_distance_set_def)
+      qed
+    qed
+    thus ?thesis
+      by (auto simp: initial_state_def invar_current_level_def main)
+  qed
+
+  ― ‹11. invar_distances_eq: visited sets empty; current = srcs excluded from even clause›
+  show "invar_distances_eq initial_state"
+    by (auto simp: initial_state_def invar_distances_eq_def)
+
+  ― ‹12. invar_distances_correct: visited sets empty; even clause on srcs from init_dists axiom›
+  show dc2: "invar_distances_correct initial_state"
+  proof -
+    have even_clause: "∀v ∈ t_set (visited_even initial_state) ∪ t_set (current initial_state).
+            the (lookup_dist (distances initial_state) (Vtx Even v)) = altd_G Even v"
+    proof
+      fix v assume v: "v ∈ t_set (visited_even initial_state) ∪ t_set (current initial_state)"
+      have v_srcs: "v ∈ t_set srcs"
+        using v by (auto simp: initial_state_def)
+      have vG: "v ∈ dVs G"
+        using v_srcs srcs_in_G by (fastforce simp: G_def intro: dVs_subset)
+      have v0: "altd_G Even v = 0"
+        using v_srcs vG by (auto simp: alt_distance_set_def)
+      have dist0: "the (lookup_dist (distances initial_state) (Vtx Even v)) = 0"
+        using v_srcs by (auto simp: initial_state_def)
+      show "the (lookup_dist (distances initial_state) (Vtx Even v)) = altd_G Even v"
+        by (simp add: dist0 v0)
+    qed
+    thus ?thesis
+      by (auto simp: initial_state_def invar_distances_correct_def)
+  qed
+
+  ― ‹13. BFS_dom from BFS_terminates›
+  show "BFS_dom initial_state"
+    using wf sub
+    by (auto intro!: termination_intros simp: initial_state_def invar_current_unvisited_def)
+qed
+
+― ‹Batch 6: P6/P7 — all DAG walks are shortest (tightness route).›
+
+definition "invar_parents_tight bfs_state =
+  (∀w v. (w, v) ∈ Graph.digraph_abs (parents bfs_state) ⟶
+     ((w, v) ∈ Graph.digraph_abs unmatching ⟶ altd_G Odd v = altd_G Even w + 1) ∧
+     ((w, v) ∈ Graph.digraph_abs matching ⟶ altd_G Even v = altd_G Odd w + 1))"
+
+lemma invar_parents_tight_props[invar_props_elims]:
+  "invar_parents_tight bfs_state ⟹
+   (⟦⋀w v. ⟦(w, v) ∈ Graph.digraph_abs (parents bfs_state);
+            (w, v) ∈ Graph.digraph_abs unmatching⟧ ⟹ altd_G Odd v = altd_G Even w + 1;
+     ⋀w v. ⟦(w, v) ∈ Graph.digraph_abs (parents bfs_state);
+            (w, v) ∈ Graph.digraph_abs matching⟧ ⟹ altd_G Even v = altd_G Odd w + 1⟧ ⟹ P)
+   ⟹ P"
+  by (auto simp: invar_parents_tight_def)
+
+lemma invar_parents_tight_intro[invar_props_intros]:
+  "⟦⋀w v. ⟦(w, v) ∈ Graph.digraph_abs (parents bfs_state);
+           (w, v) ∈ Graph.digraph_abs unmatching⟧ ⟹ altd_G Odd v = altd_G Even w + 1;
+    ⋀w v. ⟦(w, v) ∈ Graph.digraph_abs (parents bfs_state);
+           (w, v) ∈ Graph.digraph_abs matching⟧ ⟹ altd_G Even v = altd_G Odd w + 1⟧
+   ⟹ invar_parents_tight bfs_state"
+  by (auto simp: invar_parents_tight_def)
+
+lemma invar_parents_tight_holds_upd1[invar_holds_intros]:
+  assumes "BFS_call_1_conds bfs_state" "invar_well_formed bfs_state"
+          "invar_level_bounded bfs_state" "invar_discovered_downclosed bfs_state"
+          "invar_discovered_reachable bfs_state"
+          "invar_parents_tight bfs_state"
+  shows "invar_parents_tight (BFS_upd1 bfs_state)"
+proof-
+  have wf[simp]:
+    "vset_inv (visited_even bfs_state)" "vset_inv (visited_odd bfs_state)"
+    "vset_inv (current bfs_state)" "Graph.graph_inv (parents bfs_state)"
+    using assms(2) by (auto simp: invar_well_formed_def)
+
+  define VE' where "VE' = visited_even bfs_state ∪⇩G current bfs_state"
+  define P' where "P' = expand_tree unmatching (parents bfs_state) (current bfs_state) (visited_odd bfs_state)"
+  define C' where "C' = next_frontier_impl unmatching (current bfs_state) (visited_odd bfs_state)"
+  define VO' where "VO' = visited_odd bfs_state ∪⇩G C'"
+  define P'' where "P'' = expand_tree matching P' C' VE'"
+  define C'' where "C'' = next_frontier_impl matching C' VE'"
+
+  have upd1: "BFS_upd1 bfs_state =
+    bfs_state ⦇parents := P'', visited_even := VE', visited_odd := VO', current := C'',
+               distances := upd_dists Even matching
+                              (upd_dists Odd unmatching (distances bfs_state) (current bfs_state)
+                                 (visited_odd bfs_state)) C' VE'⦈"
+    by (simp add: BFS_upd1_def Let_def VE'_def P'_def C'_def VO'_def P''_def C''_def)
+
+  have inv_VE'[simp]: "vset_inv VE'" by (auto simp: VE'_def)
+  have inv_P'[simp]: "Graph.graph_inv P'" by (auto simp: P'_def)
+  have inv_C'[simp]: "vset_inv C'" by (auto simp: C'_def)
+
+  have abs_VE': "t_set VE' = t_set (visited_even bfs_state) ∪ t_set (current bfs_state)"
+    by (auto simp: VE'_def)
+  have abs_C': "t_set C' = next_frontier (Graph.digraph_abs unmatching)
+                             (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+    by (auto simp: C'_def)
+  have abs_P'': "Graph.digraph_abs P'' =
+                   Graph.digraph_abs (parents bfs_state)
+                   ∪ new_edges (Graph.digraph_abs unmatching) (t_set (current bfs_state))
+                       (t_set (visited_odd bfs_state))
+                   ∪ new_edges (Graph.digraph_abs matching) (t_set C') (t_set VE')"
+    by (auto simp: P''_def P'_def)
+
+  have tight1: "altd_G Odd v = altd_G Even w + 1"
+    if "(w, v) ∈ new_edges (Graph.digraph_abs unmatching)
+                   (t_set (current bfs_state)) (t_set (visited_odd bfs_state))" for w v
+  proof-
+    have w_cur: "w ∈ t_set (current bfs_state)"
+     and v_nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) w"
+     and v_fresh: "v ∉ t_set (visited_odd bfs_state)"
+      using that by (auto simp: new_edges_def)
+    show ?thesis
+      by (intro alt_dist_odd_step)
+         (fact assms(3), fact assms(4), fact assms(5), fact w_cur, fact v_nb, fact v_fresh)
+  qed
+
+  have tight2: "altd_G Even v = altd_G Odd w + 1"
+    if "(w, v) ∈ new_edges (Graph.digraph_abs matching) (t_set C') (t_set VE')" for w v
+  proof-
+    have w_C': "w ∈ t_set C'"
+     and v_nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs matching) w"
+     and v_fresh': "v ∉ t_set VE'"
+      using that by (auto simp: new_edges_def)
+    from w_C' obtain w0 where w0: "w0 ∈ t_set (current bfs_state)"
+      "w ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) w0"
+      "w ∉ t_set (visited_odd bfs_state)"
+      by (auto simp: abs_C' next_frontier_def)
+    have stepO: "altd_G Odd w = altd_G Even w0 + 1"
+      by (intro alt_dist_odd_step)
+         (fact assms(3), fact assms(4), fact assms(5), fact w0(1), fact w0(2), fact w0(3))
+    have v_fresh: "v ∉ t_set (visited_even bfs_state) ∪ t_set (current bfs_state)"
+      using v_fresh' by (simp add: abs_VE')
+    show ?thesis
+      by (intro alt_dist_even_step)
+         (fact assms(3), fact assms(4), fact assms(5), fact w0(1), fact stepO,
+          fact v_nb, fact v_fresh)
+  qed
+
+  have not_matched1: "(w, v) ∉ Graph.digraph_abs matching"
+    if "(w, v) ∈ new_edges (Graph.digraph_abs unmatching)
+                   (t_set (current bfs_state)) (t_set (visited_odd bfs_state))" for w v
+  proof-
+    have "(w, v) ∈ Graph.digraph_abs unmatching"
+      using that by (auto simp: new_edges_def Pair_Graph.neighbourhood_def)
+    thus ?thesis using matching_unmatching_disjoint by blast
+  qed
+  have not_unmatched2: "(w, v) ∉ Graph.digraph_abs unmatching"
+    if "(w, v) ∈ new_edges (Graph.digraph_abs matching) (t_set C') (t_set VE')" for w v
+  proof-
+    have "(w, v) ∈ Graph.digraph_abs matching"
+      using that by (auto simp: new_edges_def Pair_Graph.neighbourhood_def)
+    thus ?thesis using matching_unmatching_disjoint by blast
+  qed
+
+  show ?thesis
+  proof(intro invar_parents_tight_intro, goal_cases)
+    case (1 w v)
+    then show ?case
+      using assms(6) tight1 not_unmatched2
+      by (auto simp: upd1 abs_P'' invar_parents_tight_def)
+  next
+    case (2 w v)
+    then show ?case
+      using assms(6) tight2 not_matched1
+      by (auto simp: upd1 abs_P'' invar_parents_tight_def)
+  qed
+qed
+
+lemma invar_parents_tight_holds_ret_1[invar_holds_intros]:
+  "⟦BFS_ret_1_conds bfs_state; invar_parents_tight bfs_state⟧
+     ⟹ invar_parents_tight (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+lemma invar_parents_tight_holds[invar_holds_intros]:
+   assumes "BFS_dom bfs_state" "invar_well_formed bfs_state" "invar_subsets bfs_state"
+           "invar_level_bounded bfs_state" "invar_discovered_downclosed bfs_state"
+           "invar_current_level bfs_state" "invar_discovered_reachable bfs_state"
+           "invar_parents_tight bfs_state"
+   shows "invar_parents_tight (BFS bfs_state)"
+  using assms(2-)
+proof(induction rule: BFS_induct[OF assms(1)])
+  case IH: (1 bfs_state)
+  show ?case
+    apply(rule BFS_cases[where bfs_state = bfs_state])
+    by (auto intro!: IH(2-) intro: invar_holds_intros  simp: BFS_simps[OF IH(1)])
+qed
+
+lemma tight_walks_shortest:
+  assumes "invar_parents_tight bfs_state" "u ∈ t_set srcs"
+          "alt_walk parity (Graph.digraph_abs (parents bfs_state)) u p v"
+  shows "enat (length p - 1) = altd_G parity v"
+  using assms(3)
+proof(induction "length p" arbitrary: p v parity rule: less_induct)
+  case less
+  show ?case
+  proof(cases "1 < length p")
+    case False
+    have p_ne: "p ≠ []" and hd_p: "hd p = u" and last_p: "last p = v"
+      using less.prems by (auto elim!: alt_dist.alt_vwalk_betE
+                                 dest: hd_of_vwalk_bet' last_of_vwalk_bet)
+    hence p_u: "p = [u]" and v_u: "v = u"
+      using False by (cases p; auto)+
+    have par: "parity = Even"
+      using less.prems p_u
+      by (cases parity) (auto simp: parity_simps elim!: alt_dist.alt_vwalk_betE)
+    have u_dVs: "u ∈ dVs G"
+      using srcs_in_G assms(2) by (fastforce simp: G_def dVs_union_distr)
+    have "altd_G Even u = 0"
+      using u_dVs assms(2)
+      unfolding alt_distance_set_def
+      by (simp add: distance_set_0)
+    thus ?thesis
+      using p_u v_u par by (auto simp: enat_simps)
+  next
+    case True
+    from alt_walk_snocE[OF less.prems True] obtain q w where qw:
+      "p = q @ [v]" "q ≠ []" "w = last q"
+      "alt_walk (other_parity parity) (Graph.digraph_abs (parents bfs_state)) u q w"
+      "(w, v) ∈ Graph.digraph_abs (parents bfs_state)"
+      "case parity of Odd ⇒ unmatched_edge (w, v) | Even ⇒ matched_edge (w, v)"
+      by blast
+    have IH: "enat (length q - 1) = altd_G (other_parity parity) w"
+      using less.hyps qw(1,4) by auto
+    have len_p: "length p - 1 = length q" and len_q: "1 ≤ length q"
+      using qw(1,2) by (auto simp: Suc_le_eq)
+    show ?thesis
+    proof(cases parity)
+      case Odd
+      hence e_unm: "(w, v) ∈ Graph.digraph_abs unmatching"
+        using qw(6) by (auto simp: unmatched_edge_def)
+      have tight: "altd_G Odd v = altd_G Even w + 1"
+        using assms(1) qw(5) e_unm by (auto simp: invar_parents_tight_def)
+      have IH': "enat (length q - 1) = altd_G Even w"
+        using IH Odd by (simp add: parity_simps)
+      have "enat (length q) = enat (length q - 1) + 1"
+        using len_q by (auto simp only: enat_simps)
+      also have "… = altd_G Even w + 1"
+        using IH' by simp
+      also have "… = altd_G Odd v"
+        using tight by simp
+      finally show ?thesis
+        using Odd len_p by simp
+    next
+      case Even
+      hence e_mat: "(w, v) ∈ Graph.digraph_abs matching"
+        using qw(6) by (auto simp: matched_edge_def)
+      have tight: "altd_G Even v = altd_G Odd w + 1"
+        using assms(1) qw(5) e_mat by (auto simp: invar_parents_tight_def)
+      have IH': "enat (length q - 1) = altd_G Odd w"
+        using IH Even by (simp add: parity_simps)
+      have "enat (length q) = enat (length q - 1) + 1"
+        using len_q by (auto simp only: enat_simps)
+      also have "… = altd_G Odd w + 1"
+        using IH' by simp
+      also have "… = altd_G Even v"
+        using tight by simp
+      finally show ?thesis
+        using Even len_p by simp
+    qed
+  qed
+qed
+
+definition "invar_parents_shortest_alt bfs_state =
+  (∀u p v parity. u ∈ t_set srcs ⟶
+     alt_walk parity (Graph.digraph_abs (parents bfs_state)) u p v ⟶
+     enat (length p - 1) = altd_G parity v)"
+
+lemma invar_parents_tight_shortest_alt:
+  "invar_parents_tight bfs_state ⟹ invar_parents_shortest_alt bfs_state"
+  using tight_walks_shortest by (force simp: invar_parents_shortest_alt_def)
+
+lemma invar_parents_tight_initial[invar_holds_intros, simp]:
+  "invar_parents_tight initial_state"
+  by (auto simp: invar_parents_tight_def initial_state_def invar_parents_edges_def)
+
+lemma BFS_correct_parents_shortest:   ― ‹P6 (parity = Odd) and P7 (parity = Even)›
+  assumes "u ∈ t_set srcs"
+          "alt_walk parity (Graph.digraph_abs (parents (BFS initial_state))) u p v"
+  shows "enat (length p - 1) = altd_G parity v"
+proof-
+  have "invar_parents_tight (BFS initial_state)"
+    by (intro invar_parents_tight_holds initial_state_props invar_parents_tight_initial)
+  from tight_walks_shortest[OF this assms(1,2)] show ?thesis .
+qed
+
+subsection ‹Final assembly: BFS correctness at BFS initial_state›
+
+lemma BFS_correct_subsets:
+  "invar_subsets (BFS initial_state)"
+  by (intro invar_subsets_holds initial_state_props)
+
+lemma BFS_correct_parents_in_G:
+  "Graph.digraph_abs (parents (BFS initial_state)) ⊆ G"
+  using BFS_correct_subsets by (auto simp: invar_subsets_def)
+
+lemma BFS_correct_odd_dist:
+  "v ∈ t_set (visited_odd (BFS initial_state)) ⟹
+   altd_G Odd v = altd_T (BFS initial_state) Odd v"
+  by (intro BFS_correct_dists_ret_1(1)[where bfs_state = "BFS initial_state"])
+     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+
+lemma BFS_correct_even_dist:
+  "⟦v ∈ t_set (visited_even (BFS initial_state)); v ∉ t_set srcs⟧ ⟹
+   altd_G Even v = altd_T (BFS initial_state) Even v"
+  by (intro BFS_correct_dists_ret_1(2)[where bfs_state = "BFS initial_state"])
+     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+
+lemma BFS_correct_distances_odd:
+  "v ∈ t_set (visited_odd (BFS initial_state)) ⟹
+   the (lookup_dist (distances (BFS initial_state)) (Vtx Odd v)) = altd_G Odd v"
+  by (intro BFS_correct_distances_ret_1(1)[where bfs_state = "BFS initial_state"])
+     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+
+lemma BFS_correct_distances_even:
+  "v ∈ t_set (visited_even (BFS initial_state)) ⟹
+   the (lookup_dist (distances (BFS initial_state)) (Vtx Even v)) = altd_G Even v"
+  by (intro BFS_correct_distances_ret_1(2)[where bfs_state = "BFS initial_state"])
+     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+
+lemma BFS_correct_P4:
+  "⟦u ∈ t_set srcs; v ∉ t_set (visited_odd (BFS initial_state))⟧ ⟹
+   ¬(∃p. alt_walk Odd G u p v)"
+  by (intro BFS_correct_no_odd_walk_ret_1[where bfs_state = "BFS initial_state"])
+     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+
+lemma BFS_correct_P5:
+  "⟦u ∈ t_set srcs; v ∉ t_set (visited_even (BFS initial_state))⟧ ⟹
+   ¬(∃p. alt_walk Even G u p v)"
+  by (intro BFS_correct_no_even_walk_ret_1[where bfs_state = "BFS initial_state"])
+     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
 
 
 end text ‹context›
