@@ -17,6 +17,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     DFS_Skeleton
     DFS_DirCycle
     DFS_DirCycle_Example
+    DFS_Time
     Parent_Map
     Bellman_Ford
     Bellman_Ford_Example
