@@ -51,7 +51,7 @@ assumes
        t_set (next_frontier_impl G frontier vis) =
          next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis)" and
    init_dists[simp,intro!]:
-     "u ∈ t_set srcs ⟹ the (lookup_dist init_dists (Vtx Even u)) = 0"
+     "u ∈ t_set srcs ⟹ lookup_dist init_dists (Vtx Even u) = Some 0"
      "invar_dist init_dists" and
    upd_dists[simp,intro!]:
      "⟦invar_dist dist_map; vset_inv frontier; vset_inv vis; Graph.graph_inv G⟧ ⟹
@@ -60,12 +60,16 @@ assumes
        v ∈ next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis)⟧ ⟹
         ∃u ∈ t_set frontier.
           v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs G) u - t_set vis ∧
-          the (lookup_dist (upd_dists parity G dist_map frontier vis) (Vtx parity v)) =
-            the (lookup_dist dist_map (Vtx (other_parity parity) u)) + 1"
+          lookup_dist (upd_dists parity G dist_map frontier vis) (Vtx parity v) =
+            Some (the (lookup_dist dist_map (Vtx (other_parity parity) u)) + 1)"
      "⟦invar_dist dist_map; vset_inv frontier; vset_inv vis; Graph.graph_inv G;
        w ∉ Vtx parity ` next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis)⟧ ⟹
         lookup_dist (upd_dists parity G dist_map frontier vis) w = lookup_dist dist_map w"
 begin
+
+lemma init_dists_the[simp]:
+  "u ∈ t_set srcs ⟹ the (lookup_dist init_dists (Vtx Even u)) = 0"
+  by simp
 
 definition "BFS_axiom ⟷
   Graph.graph_inv matching ∧ Graph.finite_graph matching ∧
@@ -2270,14 +2274,14 @@ proof-
       using vC' by (simp add: abs_C')
     have ex: "∃u ∈ t_set (current bfs_state).
         v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) u - t_set (visited_odd bfs_state) ∧
-        the (lookup_dist DM' (Vtx Odd v)) =
-          the (lookup_dist (distances bfs_state) (Vtx (other_parity Odd) u)) + 1"
+        lookup_dist DM' (Vtx Odd v) =
+          Some (the (lookup_dist (distances bfs_state) (Vtx (other_parity Odd) u)) + 1)"
       unfolding DM'_def by (intro upd_dists(2)) (auto simp: v_nf)
     then obtain u where u_cur: "u ∈ t_set (current bfs_state)"
       and u_nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) u"
       and v_not_vo: "v ∉ t_set (visited_odd bfs_state)"
-      and inner_val: "the (lookup_dist DM' (Vtx Odd v)) =
-                        the (lookup_dist (distances bfs_state) (Vtx Even u)) + 1"
+      and inner_val: "lookup_dist DM' (Vtx Odd v) =
+                        Some (the (lookup_dist (distances bfs_state) (Vtx Even u)) + 1)"
       by (auto simp: parity_simps)
     have ih_u: "the (lookup_dist (distances bfs_state) (Vtx Even u)) = altd_G Even u"
       using assms(8) u_cur by (auto simp: invar_distances_correct_def)
@@ -2290,7 +2294,7 @@ proof-
                            lookup_dist DM' (Vtx Odd v)"
       by (intro upd_dists(3)) (auto simp: abs_C'' outer_miss)
     show ?thesis
-      using outer_notouch inner_val ih_u step by (auto simp only: enat_simps)
+      using outer_notouch inner_val ih_u step by (auto simp only: enat_simps option.sel)
   qed
 
   have post_odd: "the (lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Odd v)) = altd_G Odd v"
@@ -2345,28 +2349,28 @@ proof-
       using vC'' by (simp add: abs_C'')
     have ex_outer: "∃u ∈ t_set C'.
         v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs matching) u - t_set VE' ∧
-        the (lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v)) =
-          the (lookup_dist DM' (Vtx (other_parity Even) u)) + 1"
+        lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v) =
+          Some (the (lookup_dist DM' (Vtx (other_parity Even) u)) + 1)"
       by (intro upd_dists(2)) (auto simp: v_nf)
     then obtain v' where v'_C': "v' ∈ t_set C'"
       and v'_nb: "v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs matching) v'"
       and v_not_VE': "v ∉ t_set VE'"
-      and outer_val: "the (lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v)) =
-                        the (lookup_dist DM' (Vtx Odd v')) + 1"
+      and outer_val: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v) =
+                        Some (the (lookup_dist DM' (Vtx Odd v')) + 1)"
       by (auto simp: parity_simps)
     have v'_nf: "v' ∈ next_frontier (Graph.digraph_abs unmatching)
                      (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
       using v'_C' by (simp add: abs_C')
     have ex_inner: "∃u ∈ t_set (current bfs_state).
         v' ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) u - t_set (visited_odd bfs_state) ∧
-        the (lookup_dist DM' (Vtx Odd v')) =
-          the (lookup_dist (distances bfs_state) (Vtx (other_parity Odd) u)) + 1"
+        lookup_dist DM' (Vtx Odd v') =
+          Some (the (lookup_dist (distances bfs_state) (Vtx (other_parity Odd) u)) + 1)"
       unfolding DM'_def by (intro upd_dists(2)) (auto simp: v'_nf)
     then obtain w where w_cur: "w ∈ t_set (current bfs_state)"
       and w_nb: "v' ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) w"
       and v'_not_vo: "v' ∉ t_set (visited_odd bfs_state)"
-      and inner_val: "the (lookup_dist DM' (Vtx Odd v')) =
-                        the (lookup_dist (distances bfs_state) (Vtx Even w)) + 1"
+      and inner_val: "lookup_dist DM' (Vtx Odd v') =
+                        Some (the (lookup_dist (distances bfs_state) (Vtx Even w)) + 1)"
       by (auto simp: parity_simps)
     have v_not_ve: "v ∉ t_set (visited_even bfs_state) ∪ t_set (current bfs_state)"
       using v_not_VE' by (auto simp: abs_VE')
@@ -2377,7 +2381,7 @@ proof-
     have ih_w: "the (lookup_dist (distances bfs_state) (Vtx Even w)) = altd_G Even w"
       using assms(8) w_cur by (auto simp: invar_distances_correct_def)
     show ?thesis
-      using outer_val inner_val ih_w stepO stepE by (auto simp only: enat_simps)
+      using outer_val inner_val ih_w stepO stepE by (auto simp only: enat_simps option.sel)
   qed
 
   show ?thesis
@@ -2413,6 +2417,197 @@ lemma BFS_correct_distances_ret_1:
            the (lookup_dist (distances bfs_state) (Vtx Even v)) = altd_G Even v"
   using assms by (auto simp: invar_distances_correct_def)
 
+― ‹Domain coverage of the distance map: every discovered copy has an entry.›
+definition "invar_dists_defined bfs_state =
+  ((∀v ∈ t_set (visited_odd bfs_state).
+      lookup_dist (distances bfs_state) (Vtx Odd v) ≠ None) ∧
+   (∀v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state).
+      lookup_dist (distances bfs_state) (Vtx Even v) ≠ None))"
+
+lemma invar_dists_defined_props[invar_props_elims]:
+  "invar_dists_defined bfs_state ⟹
+   (⟦∀v ∈ t_set (visited_odd bfs_state).
+       lookup_dist (distances bfs_state) (Vtx Odd v) ≠ None;
+     ∀v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state).
+       lookup_dist (distances bfs_state) (Vtx Even v) ≠ None⟧ ⟹ P) ⟹ P"
+  by (auto simp: invar_dists_defined_def)
+
+lemma invar_dists_defined_intro[invar_props_intros]:
+  "⟦∀v ∈ t_set (visited_odd bfs_state).
+      lookup_dist (distances bfs_state) (Vtx Odd v) ≠ None;
+    ∀v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state).
+      lookup_dist (distances bfs_state) (Vtx Even v) ≠ None⟧
+   ⟹ invar_dists_defined bfs_state"
+  by (auto simp: invar_dists_defined_def)
+
+
+lemma invar_dists_defined_holds_upd1[invar_holds_intros]:
+  assumes "BFS_call_1_conds bfs_state" "invar_well_formed bfs_state"
+          "invar_dists_defined bfs_state"
+  shows "invar_dists_defined (BFS_upd1 bfs_state)"
+proof-
+  have wf[simp]:
+    "vset_inv (visited_even bfs_state)" "vset_inv (visited_odd bfs_state)"
+    "vset_inv (current bfs_state)" "Graph.graph_inv (parents bfs_state)"
+    "invar_dist (distances bfs_state)"
+    using assms(2) by (auto simp: invar_well_formed_def)
+
+  define VE' where "VE' = visited_even bfs_state ∪⇩G current bfs_state"
+  define P' where "P' = expand_tree unmatching (parents bfs_state) (current bfs_state) (visited_odd bfs_state)"
+  define C' where "C' = next_frontier_impl unmatching (current bfs_state) (visited_odd bfs_state)"
+  define VO' where "VO' = visited_odd bfs_state ∪⇩G C'"
+  define P'' where "P'' = expand_tree matching P' C' VE'"
+  define C'' where "C'' = next_frontier_impl matching C' VE'"
+  define DM' where "DM' = upd_dists Odd unmatching (distances bfs_state) (current bfs_state) (visited_odd bfs_state)"
+
+  have upd1: "BFS_upd1 bfs_state =
+    bfs_state ⦇parents := P'', visited_even := VE', visited_odd := VO', current := C'',
+               distances := upd_dists Even matching DM' C' VE'⦈"
+    by (simp add: BFS_upd1_def Let_def VE'_def P'_def C'_def VO'_def P''_def C''_def DM'_def)
+
+  have inv_VE'[simp]: "vset_inv VE'" by (auto simp: VE'_def)
+  have inv_C'[simp]: "vset_inv C'" by (auto simp: C'_def)
+  have inv_VO'[simp]: "vset_inv VO'" by (auto simp: VO'_def)
+  have inv_DM'[simp]: "invar_dist DM'" by (auto simp: DM'_def)
+
+  have abs_VE': "t_set VE' = t_set (visited_even bfs_state) ∪ t_set (current bfs_state)"
+    by (auto simp: VE'_def)
+  have abs_C': "t_set C' = next_frontier (Graph.digraph_abs unmatching)
+                             (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+    by (auto simp: C'_def)
+  have abs_VO': "t_set VO' = t_set (visited_odd bfs_state) ∪ t_set C'"
+    by (auto simp: VO'_def)
+  have abs_C'': "t_set C'' = next_frontier (Graph.digraph_abs matching) (t_set C') (t_set VE')"
+    by (auto simp: C''_def)
+
+  have old_odd_def: "v ∈ t_set (visited_odd bfs_state) ⟹ lookup_dist (distances bfs_state) (Vtx Odd v) ≠ None"
+    for v using assms(3) by (auto simp: invar_dists_defined_def)
+  have old_even_def: "v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state) ⟹
+                        lookup_dist (distances bfs_state) (Vtx Even v) ≠ None"
+    for v using assms(3) by (auto simp: invar_dists_defined_def)
+
+  have post_odd_def: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Odd v) ≠ None"
+    if vVO': "v ∈ t_set VO'" for v
+  proof(cases "v ∈ t_set (visited_odd bfs_state)")
+    case True
+    have v_not_nf_odd: "Vtx Odd v ∉ Vtx Odd ` next_frontier (Graph.digraph_abs unmatching)
+                                                (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+      by (auto simp: next_frontier_def True)
+    have inner_notouch: "lookup_dist DM' (Vtx Odd v) = lookup_dist (distances bfs_state) (Vtx Odd v)"
+      unfolding DM'_def
+      by (intro upd_dists(3)) (auto simp: abs_C' v_not_nf_odd)
+    have outer_miss: "Vtx Odd v ∉ Vtx Even ` next_frontier (Graph.digraph_abs matching)
+                                               (t_set C') (t_set VE')"
+      by (auto simp: labelled_vtx.inject)
+    have outer_notouch: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Odd v) =
+                           lookup_dist DM' (Vtx Odd v)"
+      by (intro upd_dists(3)) (auto simp: abs_C'' outer_miss)
+    show ?thesis using outer_notouch inner_notouch old_odd_def[OF True] by simp
+  next
+    case False
+    have vC': "v ∈ t_set C'" using vVO' False by (auto simp: abs_VO')
+    have v_nf: "v ∈ next_frontier (Graph.digraph_abs unmatching)
+                    (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+      using vC' by (simp add: abs_C')
+    have ex: "∃u ∈ t_set (current bfs_state).
+        v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs unmatching) u - t_set (visited_odd bfs_state) ∧
+        lookup_dist DM' (Vtx Odd v) =
+          Some (the (lookup_dist (distances bfs_state) (Vtx (other_parity Odd) u)) + 1)"
+      unfolding DM'_def by (intro upd_dists(2)) (auto simp: v_nf)
+    then obtain u where inner_val: "lookup_dist DM' (Vtx Odd v) =
+                        Some (the (lookup_dist (distances bfs_state) (Vtx Even u)) + 1)"
+      by (auto simp: parity_simps)
+    have outer_miss: "Vtx Odd v ∉ Vtx Even ` next_frontier (Graph.digraph_abs matching)
+                                               (t_set C') (t_set VE')"
+      by (auto simp: labelled_vtx.inject)
+    have outer_notouch: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Odd v) =
+                           lookup_dist DM' (Vtx Odd v)"
+      by (intro upd_dists(3)) (auto simp: abs_C'' outer_miss)
+    show ?thesis using outer_notouch inner_val by simp
+  qed
+
+  have old_even_def': "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v) ≠ None"
+    if vVE': "v ∈ t_set VE'" for v
+  proof-
+    have inner_miss: "Vtx Even v ∉ Vtx Odd ` next_frontier (Graph.digraph_abs unmatching)
+                                              (t_set (current bfs_state)) (t_set (visited_odd bfs_state))"
+      by (auto simp: labelled_vtx.inject)
+    have inner_notouch: "lookup_dist DM' (Vtx Even v) = lookup_dist (distances bfs_state) (Vtx Even v)"
+      unfolding DM'_def
+      by (intro upd_dists(3)) (auto simp: abs_C' inner_miss)
+    have v_not_nf_even: "Vtx Even v ∉ Vtx Even ` next_frontier (Graph.digraph_abs matching)
+                                                  (t_set C') (t_set VE')"
+      by (auto simp: next_frontier_def vVE')
+    have outer_notouch: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v) =
+                           lookup_dist DM' (Vtx Even v)"
+      by (intro upd_dists(3)) (auto simp: abs_C'' v_not_nf_even)
+    show ?thesis using outer_notouch inner_notouch old_even_def[OF vVE'[unfolded abs_VE']] by simp
+  qed
+
+  have fresh_even_def: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v) ≠ None"
+    if vC'': "v ∈ t_set C''" for v
+  proof-
+    have v_nf: "v ∈ next_frontier (Graph.digraph_abs matching) (t_set C') (t_set VE')"
+      using vC'' by (simp add: abs_C'')
+    have ex_outer: "∃u ∈ t_set C'.
+        v ∈ Pair_Graph.neighbourhood (Graph.digraph_abs matching) u - t_set VE' ∧
+        lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v) =
+          Some (the (lookup_dist DM' (Vtx (other_parity Even) u)) + 1)"
+      by (intro upd_dists(2)) (auto simp: v_nf)
+    then obtain u where outer_val: "lookup_dist (upd_dists Even matching DM' C' VE') (Vtx Even v) =
+                        Some (the (lookup_dist DM' (Vtx Odd u)) + 1)"
+      by (auto simp: parity_simps)
+    show ?thesis using outer_val by simp
+  qed
+
+  show ?thesis
+    using post_odd_def old_even_def' fresh_even_def
+    by (intro invar_dists_defined_intro)
+       (auto simp: upd1 abs_VO' abs_C'' abs_VE')
+qed
+
+lemma invar_dists_defined_holds_ret_1[invar_holds_intros]:
+  "⟦BFS_ret_1_conds bfs_state; invar_dists_defined bfs_state⟧
+     ⟹ invar_dists_defined (BFS_ret1 bfs_state)"
+  by simp
+
+lemma invar_dists_defined_holds[invar_holds_intros]:
+  assumes "BFS_dom bfs_state" "invar_well_formed bfs_state"
+          "invar_dists_defined bfs_state"
+  shows "invar_dists_defined (BFS bfs_state)"
+  using assms(2-)
+proof(induction rule: BFS_induct[OF assms(1)])
+  case IH: (1 bfs_state)
+  show ?case
+    by (rule BFS_cases[where bfs_state = bfs_state])
+       (auto intro!: IH(2-) intro: invar_holds_intros simp: BFS_simps[OF IH(1)])
+qed
+
+lemma invar_dists_defined_initial[invar_holds_intros, simp]:
+  "invar_dists_defined initial_state"
+  by (auto simp: invar_dists_defined_def initial_state_def)
+
+lemma invar_distances_correct_Some:
+  assumes "invar_distances_correct bfs_state" "invar_dists_defined bfs_state"
+  shows "v ∈ t_set (visited_odd bfs_state) ⟹
+           lookup_dist (distances bfs_state) (Vtx Odd v) = Some (altd_G Odd v)"
+    and "v ∈ t_set (visited_even bfs_state) ∪ t_set (current bfs_state) ⟹
+           lookup_dist (distances bfs_state) (Vtx Even v) = Some (altd_G Even v)"
+proof(goal_cases)
+  case 1
+  hence "lookup_dist (distances bfs_state) (Vtx Odd v) ≠ None"
+        "the (lookup_dist (distances bfs_state) (Vtx Odd v)) = altd_G Odd v"
+    using assms by (auto simp: invar_dists_defined_def invar_distances_correct_def)
+  then show ?case
+    by (cases "lookup_dist (distances bfs_state) (Vtx Odd v)") auto
+next
+  case 2
+  hence "lookup_dist (distances bfs_state) (Vtx Even v) ≠ None"
+        "the (lookup_dist (distances bfs_state) (Vtx Even v)) = altd_G Even v"
+    using assms by (auto simp: invar_dists_defined_def invar_distances_correct_def)
+  then show ?case
+    by (cases "lookup_dist (distances bfs_state) (Vtx Even v)") auto
+qed
 ― ‹Batch 5: P4/P5 — completeness of the visited sets at ret.
    ROUTE: ret-time induction over the closure invariant invar_visited_closed;
    this replaces BFS_2's invar_goes_through_current route (§II.5).›
@@ -3124,62 +3319,289 @@ lemma invar_parents_tight_initial[invar_holds_intros, simp]:
   "invar_parents_tight initial_state"
   by (auto simp: invar_parents_tight_def initial_state_def invar_parents_edges_def)
 
-lemma BFS_correct_parents_shortest:   ― ‹P6 (parity = Odd) and P7 (parity = Even)›
-  assumes "u ∈ t_set srcs"
-          "alt_walk parity (Graph.digraph_abs (parents (BFS initial_state))) u p v"
-  shows "enat (length p - 1) = altd_G parity v"
-proof-
-  have "invar_parents_tight (BFS initial_state)"
-    by (intro invar_parents_tight_holds initial_state_props invar_parents_tight_initial)
-  from tight_walks_shortest[OF this assms(1,2)] show ?thesis .
-qed
-
 subsection ‹Final assembly: BFS correctness at BFS initial_state›
 
 lemma BFS_correct_subsets:
   "invar_subsets (BFS initial_state)"
   by (intro invar_subsets_holds initial_state_props)
 
+lemma BFS_correct_reachable_ret_1:
+  assumes "invar_discovered_reachable bfs_state"
+  shows "v ∈ t_set (visited_odd bfs_state) ⟹ altd_G Odd v < ∞"
+    and "v ∈ t_set (visited_even bfs_state) ⟹ altd_G Even v < ∞"
+  using assms by (auto simp: invar_discovered_reachable_def)
+
+lemma BFS_final_ret_conds: "BFS_ret_1_conds (BFS initial_state)"
+  by (auto intro: ret_holds_intros termination_intros initial_state_props)
+
+lemma BFS_final_current_empty: "t_set (current (BFS initial_state)) = {}"
+  using BFS_final_ret_conds by (auto simp: BFS_ret_1_conds_def)
+
+lemma BFS_correct_well_formed: "invar_well_formed (BFS initial_state)"
+  by (intro invar_well_formed_holds initial_state_props)
+
+subsection ‹A single validity predicate for the output DAG›
+
+definition "valid_alt_BFS_DAG T dists VisE VisO =
+  (― ‹A: structural soundness›
+   Graph.digraph_abs T ⊆ G ∧
+   dVs (Graph.digraph_abs T) ⊆ t_set VisE ∪ t_set VisO ∧
+   (∀u v. (u, v) ∈ Graph.digraph_abs T ⟶
+      ((u, v) ∈ Graph.digraph_abs unmatching ∧ u ∈ t_set VisE ∧ v ∈ t_set VisO) ∨
+      ((u, v) ∈ Graph.digraph_abs matching   ∧ u ∈ t_set VisO ∧ v ∈ t_set VisE)) ∧
+   ― ‹B: the visited sets are exactly the alt-reachable sets›
+   (∀v ∈ t_set VisO. altd_G Odd v ≠ ∞) ∧
+   (∀v ∈ t_set VisE. altd_G Even v ≠ ∞) ∧
+   (∀u ∈ t_set srcs. ∀v p. alt_walk Odd  G u p v ⟶ v ∈ t_set VisO) ∧
+   (∀u ∈ t_set srcs. ∀v p. alt_walk Even G u p v ⟶ v ∈ t_set VisE) ∧
+   ― ‹C1: the distance map holds the true levels (and is defined)›
+   (∀v ∈ t_set VisO. lookup_dist dists (Vtx Odd v)  = Some (altd_G Odd v)) ∧
+   (∀v ∈ t_set VisE. lookup_dist dists (Vtx Even v) = Some (altd_G Even v)) ∧
+   ― ‹C2: the DAG-induced levels agree (Even: away from srcs, cf. P2/P3)›
+   (∀v ∈ t_set VisO. alt_distance_set (Graph.digraph_abs T) Odd v = altd_G Odd v) ∧
+   (∀v ∈ t_set VisE. v ∉ t_set srcs ⟶
+        alt_distance_set (Graph.digraph_abs T) Even v = altd_G Even v) ∧
+   ― ‹D: tightness — every alternating DAG-walk from a source is shortest›
+   (∀u ∈ t_set srcs. ∀p v parity.
+        alt_walk parity (Graph.digraph_abs T) u p v ⟶
+        enat (length p - 1) = altd_G parity v))"
+
+definition "valid_alt_BFS_DAG_impl T dists VisE VisO =
+  (Graph.graph_inv T ∧ vset_inv VisE ∧ vset_inv VisO ∧ invar_dist dists ∧
+   finite (t_set VisE) ∧ finite (t_set VisO) ∧
+   valid_alt_BFS_DAG T dists VisE VisO)"
+
+lemma valid_alt_BFS_DAG_props:
+  assumes "valid_alt_BFS_DAG T dists VisE VisO"
+  shows "Graph.digraph_abs T ⊆ G"
+    and "dVs (Graph.digraph_abs T) ⊆ t_set VisE ∪ t_set VisO"
+    and "⋀u v. (u, v) ∈ Graph.digraph_abs T ⟹
+           ((u, v) ∈ Graph.digraph_abs unmatching ∧ u ∈ t_set VisE ∧ v ∈ t_set VisO) ∨
+           ((u, v) ∈ Graph.digraph_abs matching   ∧ u ∈ t_set VisO ∧ v ∈ t_set VisE)"
+    and "⋀v. v ∈ t_set VisO ⟹ altd_G Odd v ≠ ∞"
+    and "⋀v. v ∈ t_set VisE ⟹ altd_G Even v ≠ ∞"
+    and "⋀u v p. u ∈ t_set srcs ⟹ alt_walk Odd  G u p v ⟹ v ∈ t_set VisO"
+    and "⋀u v p. u ∈ t_set srcs ⟹ alt_walk Even G u p v ⟹ v ∈ t_set VisE"
+    and "⋀v. v ∈ t_set VisO ⟹ lookup_dist dists (Vtx Odd v)  = Some (altd_G Odd v)"
+    and "⋀v. v ∈ t_set VisE ⟹ lookup_dist dists (Vtx Even v) = Some (altd_G Even v)"
+    and "⋀v. v ∈ t_set VisO ⟹ alt_distance_set (Graph.digraph_abs T) Odd v = altd_G Odd v"
+    and "⋀v. v ∈ t_set VisE ⟹ v ∉ t_set srcs ⟹
+           alt_distance_set (Graph.digraph_abs T) Even v = altd_G Even v"
+    and "⋀u p v parity. u ∈ t_set srcs ⟹ alt_walk parity (Graph.digraph_abs T) u p v ⟹
+           enat (length p - 1) = altd_G parity v"
+  using assms by (fastforce simp: valid_alt_BFS_DAG_def)+
+
+lemma valid_alt_BFS_DAG_intro:
+  assumes "Graph.digraph_abs T ⊆ G"
+      and "dVs (Graph.digraph_abs T) ⊆ t_set VisE ∪ t_set VisO"
+      and "⋀u v. (u, v) ∈ Graph.digraph_abs T ⟹
+             ((u, v) ∈ Graph.digraph_abs unmatching ∧ u ∈ t_set VisE ∧ v ∈ t_set VisO) ∨
+             ((u, v) ∈ Graph.digraph_abs matching   ∧ u ∈ t_set VisO ∧ v ∈ t_set VisE)"
+      and "⋀v. v ∈ t_set VisO ⟹ altd_G Odd v ≠ ∞"
+      and "⋀v. v ∈ t_set VisE ⟹ altd_G Even v ≠ ∞"
+      and "⋀u v p. u ∈ t_set srcs ⟹ alt_walk Odd  G u p v ⟹ v ∈ t_set VisO"
+      and "⋀u v p. u ∈ t_set srcs ⟹ alt_walk Even G u p v ⟹ v ∈ t_set VisE"
+      and "⋀v. v ∈ t_set VisO ⟹ lookup_dist dists (Vtx Odd v)  = Some (altd_G Odd v)"
+      and "⋀v. v ∈ t_set VisE ⟹ lookup_dist dists (Vtx Even v) = Some (altd_G Even v)"
+      and "⋀v. v ∈ t_set VisO ⟹ alt_distance_set (Graph.digraph_abs T) Odd v = altd_G Odd v"
+      and "⋀v. v ∈ t_set VisE ⟹ v ∉ t_set srcs ⟹
+             alt_distance_set (Graph.digraph_abs T) Even v = altd_G Even v"
+      and "⋀u p v parity. u ∈ t_set srcs ⟹ alt_walk parity (Graph.digraph_abs T) u p v ⟹
+             enat (length p - 1) = altd_G parity v"
+  shows "valid_alt_BFS_DAG T dists VisE VisO"
+  unfolding valid_alt_BFS_DAG_def
+  by (intro conjI ballI allI impI assms(1,2))
+     (use assms(3-) in blast)+
+
+lemma valid_alt_BFS_DAG_E:
+  assumes "valid_alt_BFS_DAG T dists VisE VisO"
+    and "⟦Graph.digraph_abs T ⊆ G;
+          dVs (Graph.digraph_abs T) ⊆ t_set VisE ∪ t_set VisO;
+          ⋀u v. (u, v) ∈ Graph.digraph_abs T ⟹
+            ((u, v) ∈ Graph.digraph_abs unmatching ∧ u ∈ t_set VisE ∧ v ∈ t_set VisO) ∨
+            ((u, v) ∈ Graph.digraph_abs matching   ∧ u ∈ t_set VisO ∧ v ∈ t_set VisE);
+          ⋀v. v ∈ t_set VisO ⟹ altd_G Odd v ≠ ∞;
+          ⋀v. v ∈ t_set VisE ⟹ altd_G Even v ≠ ∞;
+          ⋀u v p. u ∈ t_set srcs ⟹ alt_walk Odd  G u p v ⟹ v ∈ t_set VisO;
+          ⋀u v p. u ∈ t_set srcs ⟹ alt_walk Even G u p v ⟹ v ∈ t_set VisE;
+          ⋀v. v ∈ t_set VisO ⟹ lookup_dist dists (Vtx Odd v)  = Some (altd_G Odd v);
+          ⋀v. v ∈ t_set VisE ⟹ lookup_dist dists (Vtx Even v) = Some (altd_G Even v);
+          ⋀v. v ∈ t_set VisO ⟹
+            alt_distance_set (Graph.digraph_abs T) Odd v = altd_G Odd v;
+          ⋀v. v ∈ t_set VisE ⟹ v ∉ t_set srcs ⟹
+            alt_distance_set (Graph.digraph_abs T) Even v = altd_G Even v;
+          ⋀u p v parity. u ∈ t_set srcs ⟹
+            alt_walk parity (Graph.digraph_abs T) u p v ⟹
+            enat (length p - 1) = altd_G parity v⟧ ⟹ P"
+  shows P
+  by (rule assms(2)) (fact valid_alt_BFS_DAG_props[OF assms(1)])+
+
+lemma valid_alt_BFS_DAG_impl_props:
+  assumes "valid_alt_BFS_DAG_impl T dists VisE VisO"
+  shows "Graph.graph_inv T" and "vset_inv VisE" and "vset_inv VisO"
+    and "invar_dist dists"
+    and "finite (t_set VisE)" and "finite (t_set VisO)"
+    and "valid_alt_BFS_DAG T dists VisE VisO"
+  using assms by (auto simp: valid_alt_BFS_DAG_impl_def)
+
+lemma valid_alt_BFS_DAG_impl_intro:
+  "⟦Graph.graph_inv T; vset_inv VisE; vset_inv VisO; invar_dist dists;
+    finite (t_set VisE); finite (t_set VisO);
+    valid_alt_BFS_DAG T dists VisE VisO⟧
+   ⟹ valid_alt_BFS_DAG_impl T dists VisE VisO"
+  by (auto simp: valid_alt_BFS_DAG_impl_def)
+
+lemma valid_alt_BFS_DAG_impl_E:
+  assumes "valid_alt_BFS_DAG_impl T dists VisE VisO"
+    and "⟦Graph.graph_inv T; vset_inv VisE; vset_inv VisO; invar_dist dists;
+          finite (t_set VisE); finite (t_set VisO);
+          valid_alt_BFS_DAG T dists VisE VisO⟧ ⟹ P"
+  shows P
+  by (rule assms(2)) (rule valid_alt_BFS_DAG_impl_props[OF assms(1)])+
+
+lemmas valid_DAG_intros = valid_alt_BFS_DAG_intro valid_alt_BFS_DAG_impl_intro
+lemmas valid_DAG_elims  = valid_alt_BFS_DAG_E valid_alt_BFS_DAG_impl_E
+lemmas valid_DAG_dests  = valid_alt_BFS_DAG_props valid_alt_BFS_DAG_impl_props
+
+theorem BFS_valid_DAG:
+  "valid_alt_BFS_DAG (parents (BFS initial_state)) (distances (BFS initial_state))
+                     (visited_even (BFS initial_state)) (visited_odd (BFS initial_state))"
+proof -
+  note RC = BFS_final_ret_conds and CE = BFS_final_current_empty
+  have I_subs: "invar_subsets (BFS initial_state)"
+    by (intro invar_subsets_holds initial_state_props)
+  have I_pe: "invar_parents_edges (BFS initial_state)"
+    by (intro invar_parents_edges_holds initial_state_props)
+  have I_dr: "invar_discovered_reachable (BFS initial_state)"
+    by (intro invar_discovered_reachable_holds initial_state_props)
+  have I_vc: "invar_visited_closed (BFS initial_state)"
+    by (intro invar_visited_closed_holds initial_state_props)
+  have I_se: "invar_srcs_even (BFS initial_state)"
+    by (intro invar_srcs_even_holds initial_state_props)
+  have I_de: "invar_distances_eq (BFS initial_state)"
+    by (intro invar_distances_eq_holds initial_state_props)
+  have I_dc: "invar_distances_correct (BFS initial_state)"
+    by (intro invar_distances_correct_holds initial_state_props)
+  have I_pt: "invar_parents_tight (BFS initial_state)"
+    by (intro invar_parents_tight_holds initial_state_props invar_parents_tight_initial)
+  have I_dd: "invar_dists_defined (BFS initial_state)"
+    by (intro invar_dists_defined_holds initial_state_props invar_dists_defined_initial)
+  show ?thesis
+  proof (intro valid_alt_BFS_DAG_intro, goal_cases)
+    case 1 show ?case using I_subs by (auto simp: invar_subsets_def)
+  next
+    case 2 show ?case using I_subs CE by (auto simp: invar_subsets_def)
+  next
+    case (3 u v)
+    show ?case
+      using 3 I_pe CE by (fastforce simp: invar_parents_edges_def)
+  next
+    case (4 v) show ?case using 4 I_dr
+      by (auto simp: invar_discovered_reachable_def)
+  next
+    case (5 v) show ?case using 5 I_dr
+      by (auto simp: invar_discovered_reachable_def)
+  next
+    case (6 u v p)
+    show ?case using 6 BFS_correct_no_odd_walk_ret_1[OF I_vc I_se RC] by blast
+  next
+    case (7 u v p)
+    show ?case using 7 BFS_correct_no_even_walk_ret_1[OF I_vc I_se RC] by blast
+  next
+    case (8 v) show ?case using 8 invar_distances_correct_Some(1)[OF I_dc I_dd] by blast
+  next
+    case (9 v) show ?case using 9 invar_distances_correct_Some(2)[OF I_dc I_dd] by blast
+  next
+    case (10 v)
+    show ?case using 10 BFS_correct_dists_ret_1(1)[OF I_de RC, symmetric] by blast
+  next
+    case (11 v)
+    show ?case using 11 BFS_correct_dists_ret_1(2)[OF I_de RC, symmetric] by blast
+  next
+    case (12 u p v parity)
+    have "invar_parents_shortest_alt (BFS initial_state)"
+      using invar_parents_tight_shortest_alt[OF I_pt] .
+    then show ?case using 12 by (auto simp: invar_parents_shortest_alt_def)
+  qed
+qed
+
+theorem BFS_valid_DAG_impl:
+  "valid_alt_BFS_DAG_impl (parents (BFS initial_state)) (distances (BFS initial_state))
+                          (visited_even (BFS initial_state)) (visited_odd (BFS initial_state))"
+  unfolding valid_alt_BFS_DAG_impl_def
+  using BFS_correct_well_formed[unfolded invar_well_formed_def] BFS_valid_DAG
+  by auto
+
+subsection ‹Corollaries: the classic exports, as projections of the predicate›
+
 lemma BFS_correct_parents_in_G:
   "Graph.digraph_abs (parents (BFS initial_state)) ⊆ G"
-  using BFS_correct_subsets by (auto simp: invar_subsets_def)
+  by (rule valid_alt_BFS_DAG_props(1)[OF BFS_valid_DAG])
 
-lemma BFS_correct_odd_dist:
-  "v ∈ t_set (visited_odd (BFS initial_state)) ⟹
-   altd_G Odd v = altd_T (BFS initial_state) Odd v"
-  by (intro BFS_correct_dists_ret_1(1)[where bfs_state = "BFS initial_state"])
-     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+lemma BFS_correct_parents_edges_final:
+  "(u, v) ∈ Graph.digraph_abs (parents (BFS initial_state)) ⟹
+     ((u, v) ∈ Graph.digraph_abs unmatching ∧
+      u ∈ t_set (visited_even (BFS initial_state)) ∧
+      v ∈ t_set (visited_odd  (BFS initial_state))) ∨
+     ((u, v) ∈ Graph.digraph_abs matching ∧
+      u ∈ t_set (visited_odd  (BFS initial_state)) ∧
+      v ∈ t_set (visited_even (BFS initial_state)))"
+  by (rule valid_alt_BFS_DAG_props(3)[OF BFS_valid_DAG])
 
-lemma BFS_correct_even_dist:
-  "⟦v ∈ t_set (visited_even (BFS initial_state)); v ∉ t_set srcs⟧ ⟹
-   altd_G Even v = altd_T (BFS initial_state) Even v"
-  by (intro BFS_correct_dists_ret_1(2)[where bfs_state = "BFS initial_state"])
-     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+lemma BFS_correct_odd_reachable:
+  "v ∈ t_set (visited_odd (BFS initial_state)) ⟹ altd_G Odd v < ∞"
+  using valid_alt_BFS_DAG_props(4)[OF BFS_valid_DAG] by (auto simp only: enat_simps)
 
-lemma BFS_correct_distances_odd:
-  "v ∈ t_set (visited_odd (BFS initial_state)) ⟹
-   the (lookup_dist (distances (BFS initial_state)) (Vtx Odd v)) = altd_G Odd v"
-  by (intro BFS_correct_distances_ret_1(1)[where bfs_state = "BFS initial_state"])
-     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
-
-lemma BFS_correct_distances_even:
-  "v ∈ t_set (visited_even (BFS initial_state)) ⟹
-   the (lookup_dist (distances (BFS initial_state)) (Vtx Even v)) = altd_G Even v"
-  by (intro BFS_correct_distances_ret_1(2)[where bfs_state = "BFS initial_state"])
-     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+lemma BFS_correct_even_reachable:
+  "v ∈ t_set (visited_even (BFS initial_state)) ⟹ altd_G Even v < ∞"
+  using valid_alt_BFS_DAG_props(5)[OF BFS_valid_DAG] by (auto simp only: enat_simps)
 
 lemma BFS_correct_P4:
   "⟦u ∈ t_set srcs; v ∉ t_set (visited_odd (BFS initial_state))⟧ ⟹
    ¬(∃p. alt_walk Odd G u p v)"
-  by (intro BFS_correct_no_odd_walk_ret_1[where bfs_state = "BFS initial_state"])
-     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+  using valid_alt_BFS_DAG_props(6)[OF BFS_valid_DAG] by blast
 
 lemma BFS_correct_P5:
   "⟦u ∈ t_set srcs; v ∉ t_set (visited_even (BFS initial_state))⟧ ⟹
    ¬(∃p. alt_walk Even G u p v)"
-  by (intro BFS_correct_no_even_walk_ret_1[where bfs_state = "BFS initial_state"])
-     (auto intro: invar_holds_intros ret_holds_intros initial_state_props)
+  using valid_alt_BFS_DAG_props(7)[OF BFS_valid_DAG] by blast
 
+lemma BFS_correct_distances_Some:
+  "v ∈ t_set (visited_odd (BFS initial_state)) ⟹
+     lookup_dist (distances (BFS initial_state)) (Vtx Odd v) = Some (altd_G Odd v)"
+  "v ∈ t_set (visited_even (BFS initial_state)) ⟹
+     lookup_dist (distances (BFS initial_state)) (Vtx Even v) = Some (altd_G Even v)"
+proof goal_cases
+  case 1 then show ?case by (rule valid_alt_BFS_DAG_props(8)[OF BFS_valid_DAG])
+next
+  case 2 then show ?case by (rule valid_alt_BFS_DAG_props(9)[OF BFS_valid_DAG])
+qed
+
+lemma BFS_correct_distances_odd:
+  "v ∈ t_set (visited_odd (BFS initial_state)) ⟹
+   the (lookup_dist (distances (BFS initial_state)) (Vtx Odd v)) = altd_G Odd v"
+  by (simp add: BFS_correct_distances_Some(1))
+
+lemma BFS_correct_distances_even:
+  "v ∈ t_set (visited_even (BFS initial_state)) ⟹
+   the (lookup_dist (distances (BFS initial_state)) (Vtx Even v)) = altd_G Even v"
+  by (simp add: BFS_correct_distances_Some(2))
+
+lemma BFS_correct_odd_dist:
+  "v ∈ t_set (visited_odd (BFS initial_state)) ⟹
+   altd_G Odd v = altd_T (BFS initial_state) Odd v"
+  by (rule valid_alt_BFS_DAG_props(10)[OF BFS_valid_DAG, symmetric])
+
+lemma BFS_correct_even_dist:
+  "⟦v ∈ t_set (visited_even (BFS initial_state)); v ∉ t_set srcs⟧ ⟹
+   altd_G Even v = altd_T (BFS initial_state) Even v"
+  by (rule valid_alt_BFS_DAG_props(11)[OF BFS_valid_DAG, symmetric])
+
+lemma BFS_correct_parents_shortest:   ― ‹P6 (parity = Odd) and P7 (parity = Even)›
+  assumes "u ∈ t_set srcs"
+          "alt_walk parity (Graph.digraph_abs (parents (BFS initial_state))) u p v"
+  shows "enat (length p - 1) = altd_G parity v"
+  by (rule valid_alt_BFS_DAG_props(12)[OF BFS_valid_DAG assms])
 
 end text ‹context›
 

@@ -57,6 +57,17 @@ proof -
   qed
 qed
 
+lemma dG_diamond_layered: "layered_dgraph dG_diamond lev_id"
+proof (rule layered_dgraphI)
+  show "finite (dVs dG_diamond)" using dG_diamond_L2 by simp
+next
+  fix v v' assume "(v, v') \<in> dG_diamond"
+  then show "lev_id v' < lev_id v" using dG_diamond_L1 by simp
+next
+  fix v assume "v \<in> dVs dG_diamond"
+  then show "\<exists>p v'. dpath_bet dG_diamond p v v' \<and> lev_id v' = 0"
+    using dG_diamond_L3 by fastforce
+qed
 subsection \<open>Chain graph\<close>
 
 definition dG_chain :: "(nat \<times> nat) set" where
@@ -101,6 +112,17 @@ proof -
   qed
 qed
 
+lemma dG_chain_layered: "layered_dgraph dG_chain lev_id"
+proof (rule layered_dgraphI)
+  show "finite (dVs dG_chain)" using dG_chain_L2 by simp
+next
+  fix v v' assume "(v, v') \<in> dG_chain"
+  then show "lev_id v' < lev_id v" using dG_chain_L1 by simp
+next
+  fix v assume "v \<in> dVs dG_chain"
+  then show "\<exists>p v'. dpath_bet dG_chain p v v' \<and> lev_id v' = 0"
+    using dG_chain_L3 by fastforce
+qed
 section \<open>RBT graph definitions\<close>
 
 definition "G_diamond_rbt = a_graph [(3::nat,2::nat),(3,1),(2,0),(1,0)]"
@@ -196,51 +218,37 @@ global_interpretation ddfs_diamond: DDFS_layered
       and delete_edge_diamond = ddfs_diamond.Graph.delete_edge
       and from_list_diamond   = ddfs_diamond.Graph.from_list
       and IDFS_stack0_diamond = ddfs_diamond.IDFS_stack0
-  proof (intro IDFS.DDFS_layered.intro IDFS.IDFS_witness.intro IDFS.IDFS_witness_axioms.intro)
-    show "Pair_Graph_Specs map_empty RBT_Map.delete lookup vset_insert isin t_set sel update adj_inv
-                           vset_empty vset_delete vset_inv"
+  proof (intro IDFS.DDFS_layered.intro IDFS.IDFS_witness.intro
+               IDFS.IDFS_witness_axioms.intro, goal_cases)
+    case 1
+    show ?case
       using G.Pair_Graph_Specs_axioms
       by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-    show "Set2 vset_empty vset_delete isin t_set vset_inv vset_insert vset_union vset_inter vset_diff"
+  next
+    case 2
+    show ?case
       using RBT.Set2_axioms
       by (simp add: vset_inv_def RBT_Set.empty_def)
-    show "Pair_Graph_Specs.graph_inv lookup adj_inv vset_inv G_diamond_rbt"
+  next
+    case 3
+    have PGS: "Pair_Graph_Specs map_empty RBT_Map.delete lookup vset_insert isin
+                                 t_set sel update adj_inv vset_empty vset_delete vset_inv"
+      using G.Pair_Graph_Specs_axioms
+      by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
+    have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt
+              = dG_diamond"
+      using dabs_diamond
+      by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
+    have gi: "Pair_Graph_Specs.graph_inv lookup adj_inv vset_inv G_diamond_rbt"
       using graph_inv_diamond
       unfolding G.graph_inv_def Pair_Graph_Specs.graph_inv_def adj_inv_def by blast
-    show "G.finite_graph G_diamond_rbt"
+    have fg: "G.finite_graph G_diamond_rbt"
       by (rule finite_graph_diamond)
-    show "G.finite_vsets G_diamond_rbt"
+    have fv: "G.finite_vsets G_diamond_rbt"
       by (rule finite_vsets_diamond)
-    show "(v, v') \<in> Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt
-          \<Longrightarrow> lev_id v' < lev_id v" for v v'
-    proof -
-      have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt = dG_diamond"
-        using dabs_diamond
-        by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-      assume hin: "(v, v') \<in> Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt"
-      with eq have "(v, v') \<in> dG_diamond" by simp
-      then show "lev_id v' < lev_id v" using dG_diamond_L1 by simp
-    qed
-    show "finite (dVs (Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt))"
-    proof -
-      have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt = dG_diamond"
-        using dabs_diamond
-        by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-      with dG_diamond_L2 show ?thesis by simp
-    qed
-    show "v \<in> dVs (Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt)
-          \<Longrightarrow> \<exists>p v'. p \<noteq> [] \<and> dpath_bet (Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt) p v v' \<and> lev_id v' = 0" for v
-    proof -
-      have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt = dG_diamond"
-        using dabs_diamond
-        by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-      assume hin: "v \<in> dVs (Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt)"
-      with eq have "v \<in> dVs dG_diamond" by simp
-      from dG_diamond_L3[OF this] obtain p v'
-        where "p \<noteq> []" "dpath_bet dG_diamond p v v'" "id v' = 0" by blast
-      with eq show ?thesis
-        by (intro exI[of _ p] exI[of _ v']) auto
-    qed
+    show ?case
+      unfolding Pair_Graph_Specs.layered_graph_input_def[OF PGS] eq
+      by (intro conjI gi fg fv dG_diamond_layered)
   qed
 
 global_interpretation ddfs_chain: DDFS_layered
@@ -254,51 +262,37 @@ global_interpretation ddfs_chain: DDFS_layered
   defines ddfs_chain_run = ddfs_chain.DDFS_impl
       and vol_chain = ddfs_chain.vset_of_list
       and idfs_chain_run  = ddfs_chain.IDFS_impl
-  proof (intro IDFS.DDFS_layered.intro IDFS.IDFS_witness.intro IDFS.IDFS_witness_axioms.intro)
-    show "Pair_Graph_Specs map_empty RBT_Map.delete lookup vset_insert isin t_set sel update adj_inv
-                           vset_empty vset_delete vset_inv"
+  proof (intro IDFS.DDFS_layered.intro IDFS.IDFS_witness.intro
+               IDFS.IDFS_witness_axioms.intro, goal_cases)
+    case 1
+    show ?case
       using G.Pair_Graph_Specs_axioms
       by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-    show "Set2 vset_empty vset_delete isin t_set vset_inv vset_insert vset_union vset_inter vset_diff"
+  next
+    case 2
+    show ?case
       using RBT.Set2_axioms
       by (simp add: vset_inv_def RBT_Set.empty_def)
-    show "Pair_Graph_Specs.graph_inv lookup adj_inv vset_inv G_chain_rbt"
+  next
+    case 3
+    have PGS: "Pair_Graph_Specs map_empty RBT_Map.delete lookup vset_insert isin
+                                 t_set sel update adj_inv vset_empty vset_delete vset_inv"
+      using G.Pair_Graph_Specs_axioms
+      by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
+    have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt
+              = dG_chain"
+      using dabs_chain
+      by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
+    have gi: "Pair_Graph_Specs.graph_inv lookup adj_inv vset_inv G_chain_rbt"
       using graph_inv_chain
       unfolding G.graph_inv_def Pair_Graph_Specs.graph_inv_def adj_inv_def by blast
-    show "G.finite_graph G_chain_rbt"
+    have fg: "G.finite_graph G_chain_rbt"
       by (rule finite_graph_chain)
-    show "G.finite_vsets G_chain_rbt"
+    have fv: "G.finite_vsets G_chain_rbt"
       by (rule finite_vsets_chain)
-    show "(v, v') \<in> Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt
-          \<Longrightarrow> lev_id v' < lev_id v" for v v'
-    proof -
-      have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt = dG_chain"
-        using dabs_chain
-        by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-      assume hin: "(v, v') \<in> Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt"
-      with eq have "(v, v') \<in> dG_chain" by simp
-      then show "lev_id v' < lev_id v" using dG_chain_L1 by simp
-    qed
-    show "finite (dVs (Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt))"
-    proof -
-      have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt = dG_chain"
-        using dabs_chain
-        by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-      with dG_chain_L2 show ?thesis by simp
-    qed
-    show "v \<in> dVs (Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt)
-          \<Longrightarrow> \<exists>p v'. p \<noteq> [] \<and> dpath_bet (Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt) p v v' \<and> lev_id v' = 0" for v
-    proof -
-      have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt = dG_chain"
-        using dabs_chain
-        by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-      assume hin: "v \<in> dVs (Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt)"
-      with eq have "v \<in> dVs dG_chain" by simp
-      from dG_chain_L3[OF this] obtain p v'
-        where "p \<noteq> []" "dpath_bet dG_chain p v v'" "id v' = 0" by blast
-      with eq show ?thesis
-        by (intro exI[of _ p] exI[of _ v']) auto
-    qed
+    show ?case
+      unfolding Pair_Graph_Specs.layered_graph_input_def[OF PGS] eq
+      by (intro conjI gi fg fv dG_chain_layered)
   qed
 
 section \<open>Generic DFS\_avoid interpretation (axioms-free skeleton pattern)\<close>

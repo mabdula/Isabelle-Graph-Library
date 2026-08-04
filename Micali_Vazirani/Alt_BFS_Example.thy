@@ -216,8 +216,8 @@ lemma upd_dists_impl_axioms:
     and "v \<in> Alt_BFS.next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis) \<Longrightarrow>
          \<exists>u \<in> t_set frontier.
            v \<in> Pair_Graph.neighbourhood (Graph.digraph_abs G) u - t_set vis \<and>
-           the (lookup_dist (upd_dists_impl parity G dm frontier vis) (Vtx parity v)) =
-             the (lookup_dist dm (Vtx (other_parity parity) u)) + 1"
+           lookup_dist (upd_dists_impl parity G dm frontier vis) (Vtx parity v) =
+             Some (the (lookup_dist dm (Vtx (other_parity parity) u)) + 1)"
     and "w \<notin> Vtx parity ` Alt_BFS.next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis) \<Longrightarrow>
          lookup_dist (upd_dists_impl parity G dm frontier vis) w = lookup_dist dm w"
 proof-
@@ -246,8 +246,8 @@ proof-
   show "v \<in> Alt_BFS.next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis) \<Longrightarrow>
          \<exists>u \<in> t_set frontier.
            v \<in> Pair_Graph.neighbourhood (Graph.digraph_abs G) u - t_set vis \<and>
-           the (lookup_dist (upd_dists_impl parity G dm frontier vis) (Vtx parity v)) =
-             the (lookup_dist dm (Vtx (other_parity parity) u)) + 1"
+           lookup_dist (upd_dists_impl parity G dm frontier vis) (Vtx parity v) =
+             Some (the (lookup_dist dm (Vtx (other_parity parity) u)) + 1)"
   proof-
     assume v_in: "v \<in> Alt_BFS.next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis)"
     hence v_in': "v \<in> (\<Union>u \<in> set xs. Pair_Graph.neighbourhood (Graph.digraph_abs G) u - t_set vis)"
@@ -262,8 +262,8 @@ proof-
       by blast
     thus "\<exists>u \<in> t_set frontier.
            v \<in> Pair_Graph.neighbourhood (Graph.digraph_abs G) u - t_set vis \<and>
-           the (lookup_dist (upd_dists_impl parity G dm frontier vis) (Vtx parity v)) =
-             the (lookup_dist dm (Vtx (other_parity parity) u)) + 1"
+           lookup_dist (upd_dists_impl parity G dm frontier vis) (Vtx parity v) =
+             Some (the (lookup_dist dm (Vtx (other_parity parity) u)) + 1)"
       using xs by auto
   qed
   show "w \<notin> Vtx parity ` Alt_BFS.next_frontier (Graph.digraph_abs G) (t_set frontier) (t_set vis) \<Longrightarrow>
@@ -279,7 +279,7 @@ proof-
 qed
 
 lemma init_dists_impl_axioms:
-  shows "u \<in> t_set srcs \<Longrightarrow> the (lookup_dist (init_dists_impl srcs) (Vtx Even u)) = 0"
+  shows "u \<in> t_set srcs \<Longrightarrow> lookup_dist (init_dists_impl srcs) (Vtx Even u) = Some 0"
     and "invar_dist (init_dists_impl srcs)"
 proof-
   show "invar_dist (init_dists_impl srcs)"
@@ -298,7 +298,7 @@ proof-
   qed
 next
   assume u_in: "u \<in> t_set srcs"
-  show "the (lookup_dist (init_dists_impl srcs) (Vtx Even u)) = 0"
+  show "lookup_dist (init_dists_impl srcs) (Vtx Even u) = Some 0"
   proof -
     have aux: "\<exists>xs. set xs = t_set srcs \<and>
       fold_dmap (\<lambda>u acc. update_dist (Vtx Even u) 0 acc) srcs empty_dist =
@@ -309,7 +309,7 @@ next
                   foldr (\<lambda>u acc. update_dist (Vtx Even u) 0 acc) xs empty_dist"
       by blast
     have lup_xs: "u \<in> set xs \<Longrightarrow>
-      the (lookup_dist (foldr (\<lambda>v. update_dist (Vtx Even v) 0) xs empty_dist) (Vtx Even u)) = 0"
+      lookup_dist (foldr (\<lambda>v. update_dist (Vtx Even v) 0) xs empty_dist) (Vtx Even u) = Some 0"
       using foldr_const_writes(2)[OF dist_map.invar_empty, of Even 0 xs] by simp
     show ?thesis using lup_xs u_in unfolding init_dists_impl_def xs_eq xs_set by simp
   qed

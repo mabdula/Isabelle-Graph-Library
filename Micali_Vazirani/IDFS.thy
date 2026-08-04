@@ -17,13 +17,25 @@ locale IDFS_witness =
   set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
 fixes G :: "'adjmap" and lev :: "'v \<Rightarrow> nat"
-  assumes wf_graph: "Graph.graph_inv G" "Graph.finite_graph G" "Graph.finite_vsets G"
-      and L1: "(v, v') \<in> Graph.digraph_abs G \<Longrightarrow> lev v' < lev v"
-      and L2: "finite (dVs (Graph.digraph_abs G))"
-      and L3: "v \<in> dVs (Graph.digraph_abs G) \<Longrightarrow>
-               \<exists>p v'. p \<noteq> [] \<and> dpath_bet (Graph.digraph_abs G) p v v' \<and> lev v' = 0"
+  assumes layered_input: "Graph.layered_graph_input G lev"
 begin
 
+text \<open>Recovery of the historical fact names and shapes from the single
+summarising assumption; every existing citation of wf_graph/L1/L2/L3 below is
+unaffected.\<close>
+
+lemma wf_graph: "Graph.graph_inv G" "Graph.finite_graph G" "Graph.finite_vsets G"
+  using layered_input by (elim Graph.layered_graph_inputE; blast)+
+
+lemma L1: "(v, v') \<in> Graph.digraph_abs G \<Longrightarrow> lev v' < lev v"
+  using layered_input by (elim Graph.layered_graph_inputE layered_dgraphE) blast
+
+lemma L2: "finite (dVs (Graph.digraph_abs G))"
+  using layered_input by (elim Graph.layered_graph_inputE layered_dgraphE) blast
+
+lemma L3: "v \<in> dVs (Graph.digraph_abs G) \<Longrightarrow>
+           \<exists>p v'. p \<noteq> [] \<and> dpath_bet (Graph.digraph_abs G) p v v' \<and> lev v' = 0"
+  using layered_input by (elim Graph.layered_graph_inputE layered_dgraphE) blast
 (* abbreviation "dG \<equiv> Graph.digraph_abs G" -- removed to avoid clash with DDFS's identical abbreviation *)
 
 text \<open>Head of the given stack is checked against the avoid and visited sets (via the Set2
@@ -544,15 +556,8 @@ sublocale DDFS_layered \<subseteq>
       and IDFS = IDFS_impl
       and succ = "\<lambda>v. sel (Graph.neighbourhood G v)"
 proof (unfold_locales)
-  show "finite (dVs (Graph.digraph_abs G))" using L2 .
-  show "Graph.graph_inv G" "Graph.finite_graph G" using wf_graph by auto
-next
-  fix v v' assume "(v, v') \<in> Graph.digraph_abs G"
-  then show "lev v' < lev v" using L1 by auto
-next
-  fix v assume "v \<in> dVs (Graph.digraph_abs G)"
-  then show "\<exists>p v'. p \<noteq> [] \<and> dpath_bet (Graph.digraph_abs G) p v v' \<and> lev v' = 0"
-    using L3 by auto
+  show "Graph.layered_graph_input G lev"
+    using layered_input .
 next
   fix v assume hv: "v \<in> dVs (Graph.digraph_abs G)" "lev v \<noteq> 0"
   show "(v, (\<lambda>v. sel (Graph.neighbourhood G v)) v) \<in> Graph.digraph_abs G"
