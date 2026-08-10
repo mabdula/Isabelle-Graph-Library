@@ -1,5 +1,5 @@
 theory DFS_Aux_Skel
-  imports DFS_DirCycle
+  imports Directed_Cycle_DFS.DFS_DirCycle
 begin
 
 text ‹Undirected-graph cycle detection (skeleton instance) as an instance of the DFS skeleton. This is a self-contained

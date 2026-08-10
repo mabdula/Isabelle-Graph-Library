@@ -1,0 +1,8 @@
+session "Directed_Cycle_DFS" = "Directed_Set_Graphs" +
+  description \<open>Minimal, light session exposing the generic DFS skeleton (DFS_Skeleton) and the
+    directed-cycle detector (DFS_DirCycle) for reuse by external developments -- e.g. a datalog
+    foundedness check -- without the heavy Graph_Algorithms_Dev dependencies
+    (Verified_SAT_Based_AI_Planning, BFS, Bellman-Ford, ...).\<close>
+  theories
+    DFS_Skeleton
+    DFS_DirCycle

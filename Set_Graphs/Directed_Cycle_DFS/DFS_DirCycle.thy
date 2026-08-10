@@ -2,11 +2,11 @@ theory DFS_DirCycle
   imports DFS_Skeleton Directed_Set_Graphs.Component_Defs
 begin
 
-text ‹Directed-graph cycle detection as an instance of the DFS skeleton. The state extends the
+text \<open>Directed-graph cycle detection as an instance of the DFS skeleton. The state extends the
 skeleton spine (stack/seen) with a finished set and a cycle flag. A directed cycle is detected
 when the current vertex has an out-neighbour that is currently on the stack, i.e. seen but not
 yet finished (a back edge). Unlike the undirected case there is no parent exclusion, so self-loops
-and 2-cycles are reported. No symmetry / no-self-loop axiom is needed.›
+and 2-cycles are reported. No symmetry / no-self-loop axiom is needed.\<close>
 
 record ('ver, 'vset) DFS_dircycle_state = "('ver, 'vset) DFS_skel_state" +
   finished :: "'vset"
@@ -15,28 +15,28 @@ record ('ver, 'vset) DFS_dircycle_state = "('ver, 'vset) DFS_skel_state" +
 locale DFS_dircycle =
   Graph: Pair_Graph_Specs where lookup = lookup +
  set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
-for lookup :: "'adjmap ⇒ 'v ⇒ 'vset option" +
+for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
 fixes G::"'adjmap" and s::"'v"
 begin
 
-abbreviation "neighbourhood' ≡ Graph.neighbourhood G"
-notation "neighbourhood'" ("𝒩⇩G _" 100)
+abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G"
+notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
 definition "cyc_found (dfs_state::('v,'vset) DFS_dircycle_state) =
-   (case stack dfs_state of [] ⇒ False
-    | (v # stack_tl) ⇒ (((𝒩⇩G v) ∩⇩G (seen dfs_state -⇩G finished dfs_state)) ≠ ∅⇩N))"
+   (case stack dfs_state of [] \<Rightarrow> False
+    | (v # stack_tl) \<Rightarrow> (((\<N>\<^sub>G v) \<inter>\<^sub>G (seen dfs_state -\<^sub>G finished dfs_state)) \<noteq> \<emptyset>\<^sub>N))"
 
-definition "cyc_on_found (dfs_state::('v,'vset) DFS_dircycle_state) = (dfs_state ⦇cycle := True⦈)"
+definition "cyc_on_found (dfs_state::('v,'vset) DFS_dircycle_state) = (dfs_state \<lparr>cycle := True\<rparr>)"
 
 definition "cyc_on_empty (dfs_state::('v,'vset) DFS_dircycle_state) = dfs_state"
 
-definition "cyc_on_backtrack v (dfs_state::('v,'vset) DFS_dircycle_state) = (dfs_state ⦇finished := insert v (finished dfs_state)⦈)"
+definition "cyc_on_backtrack v (dfs_state::('v,'vset) DFS_dircycle_state) = (dfs_state \<lparr>finished := insert v (finished dfs_state)\<rparr>)"
 
 definition "dircycle_initial_state =
-  ⦇stack = [s], seen = insert s ∅⇩N, finished = ∅⇩N, cycle = False⦈"
+  \<lparr>stack = [s], seen = insert s \<emptyset>\<^sub>N, finished = \<emptyset>\<^sub>N, cycle = False\<rparr>"
 
 definition "DFS_dircycle_axioms =
-  (Graph.graph_inv G ∧ Graph.finite_graph G ∧ Graph.finite_vsets G ∧ s ∈ dVs (Graph.digraph_abs G))"
+  (Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets G \<and> s \<in> dVs (Graph.digraph_abs G))"
 
 sublocale dc: DFS_skel
   where lookup = lookup and G = G and s = s
@@ -44,7 +44,7 @@ sublocale dc: DFS_skel
     and on_empty = cyc_on_empty and on_backtrack = cyc_on_backtrack
   by unfold_locales
 
-abbreviation "find_dircycle ≡ dc.DFS_skel_impl"
+abbreviation "find_dircycle \<equiv> dc.DFS_skel_impl"
 
 end
 
@@ -69,23 +69,23 @@ sublocale dc: DFS_skel_thms
 
 definition "invar_2 dfs_state = Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state))"
 
-definition "invar_ssf dfs_state ⟷
+definition "invar_ssf dfs_state \<longleftrightarrow>
     distinct (stack dfs_state)
-    ∧ set (stack dfs_state) ⊆ t_set (seen dfs_state)
-    ∧ t_set (finished dfs_state) ⊆ t_set (seen dfs_state)
-    ∧ t_set (finished dfs_state) = t_set (seen dfs_state) - set (stack dfs_state)
-    ∧ t_set (seen dfs_state) ⊆ dVs (Graph.digraph_abs G)"
+    \<and> set (stack dfs_state) \<subseteq> t_set (seen dfs_state)
+    \<and> t_set (finished dfs_state) \<subseteq> t_set (seen dfs_state)
+    \<and> t_set (finished dfs_state) = t_set (seen dfs_state) - set (stack dfs_state)
+    \<and> t_set (seen dfs_state) \<subseteq> dVs (Graph.digraph_abs G)"
 
 definition "invar_fin dfs_state = vset_inv (finished dfs_state)"
 
 definition "invar_cycle_true dfs_state =
-    (cycle dfs_state ⟶ (∃c. Awalk_Defs.cycle (Graph.digraph_abs G) c))"
+    (cycle dfs_state \<longrightarrow> (\<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c))"
 
 definition "invar_finished_closed dfs_state =
-  (∀u w. u ∈ t_set (finished dfs_state) ⟶ (u, w) ∈ Graph.digraph_abs G ⟶ w ∈ t_set (finished dfs_state))"
+  (\<forall>u w. u \<in> t_set (finished dfs_state) \<longrightarrow> (u, w) \<in> Graph.digraph_abs G \<longrightarrow> w \<in> t_set (finished dfs_state))"
 
 definition "invar_cycle_false dfs_state =
-  (¬ cycle dfs_state ⟶ (∄c. Awalk_Defs.cycle (Graph.digraph_abs G ⇂ t_set (finished dfs_state)) c))"
+  (\<not> cycle dfs_state \<longrightarrow> (\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (finished dfs_state)) c))"
 
 context
 includes set_ops.automation2 and Graph.adjmap.automation and Graph.vset.set.automation
@@ -101,7 +101,7 @@ lemma initial_invars[simp,intro]:
 lemma dircycle_initial_dom: "dc.DFS_skel_dom dircycle_initial_state"
   by (intro dc.DFS_skel_terminates initial_invars)
 
-text ‹upd2 explicitly: pop the head and mark it finished.›
+text \<open>upd2 explicitly: pop the head and mark it finished.\<close>
 lemma upd2_unfold:
   "stack (dc.DFS_skel_upd2 st) = tl (stack st)"
   "seen (dc.DFS_skel_upd2 st) = seen st"
@@ -110,34 +110,34 @@ lemma upd2_unfold:
   by (auto simp: dc.DFS_skel_upd2_def cyc_on_backtrack_def)
 
 lemma upd1_unfold:
-  "stack (dc.DFS_skel_upd1 st) = sel ((𝒩⇩G (hd (stack st))) -⇩G seen st) # stack st"
-  "seen (dc.DFS_skel_upd1 st) = insert (sel ((𝒩⇩G (hd (stack st))) -⇩G seen st)) (seen st)"
+  "stack (dc.DFS_skel_upd1 st) = sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st) # stack st"
+  "seen (dc.DFS_skel_upd1 st) = insert (sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st)) (seen st)"
   "finished (dc.DFS_skel_upd1 st) = finished st"
   "cycle (dc.DFS_skel_upd1 st) = cycle st"
   by (auto simp: dc.DFS_skel_upd1_def Let_def)
 
 lemma invar_fin_props[invar_props_elims]:
-  "invar_fin dfs_state ⟹ (vset_inv (finished dfs_state) ⟹ P) ⟹ P"
+  "invar_fin dfs_state \<Longrightarrow> (vset_inv (finished dfs_state) \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: invar_fin_def)
 
 lemma invar_fin_intro[invar_props_intros]:
-  "vset_inv (finished dfs_state) ⟹ invar_fin dfs_state"
+  "vset_inv (finished dfs_state) \<Longrightarrow> invar_fin dfs_state"
   by (auto simp: invar_fin_def)
 
 lemma invar_fin_holds_upd1[invar_holds_intros]:
-  "⟦dc.DFS_skel_call_1_conds dfs_state; invar_fin dfs_state⟧ ⟹ invar_fin (dc.DFS_skel_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_call_1_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skel_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_holds_upd2[invar_holds_intros]:
-  "⟦dc.DFS_skel_call_2_conds dfs_state; invar_fin dfs_state⟧ ⟹ invar_fin (dc.DFS_skel_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_call_2_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skel_upd2 dfs_state)"
   by (auto simp: upd2_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_holds_ret_1[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_1_conds dfs_state; invar_fin dfs_state⟧ ⟹ invar_fin (dc.DFS_skel_ret1 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_ret_1_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skel_ret1 dfs_state)"
   by (auto simp: dc.DFS_skel_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_holds_ret_2[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_2_conds dfs_state; invar_fin dfs_state⟧ ⟹ invar_fin (dc.DFS_skel_ret2 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_ret_2_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skel_ret2 dfs_state)"
   by (auto simp: dc.DFS_skel_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_holds[invar_holds_intros]:
@@ -152,11 +152,11 @@ proof(induction rule: dc.DFS_skel_induct[OF assms(1)])
 qed
 
 lemma invar_2_props[invar_props_elims]:
-  "invar_2 dfs_state ⟹ (Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)) ⟹ P) ⟹ P"
+  "invar_2 dfs_state \<Longrightarrow> (Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)) \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: invar_2_def)
 
 lemma invar_2_intro[invar_props_intros]:
-  "Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)) ⟹ invar_2 dfs_state"
+  "Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)) \<Longrightarrow> invar_2 dfs_state"
   by (auto simp: invar_2_def)
 
 lemma invar_2_holds_upd1[invar_holds_intros]:
@@ -167,16 +167,16 @@ lemma invar_2_holds_upd1[invar_holds_intros]:
             elim!: invar_props_elims intro!: Vwalk.vwalk_append2 invar_props_intros)
 
 lemma invar_2_holds_upd2[invar_holds_intros]:
-  "⟦dc.DFS_skel_call_2_conds dfs_state; invar_2 dfs_state⟧ ⟹ invar_2 (dc.DFS_skel_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_call_2_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (dc.DFS_skel_upd2 dfs_state)"
   by (auto simp: upd2_unfold dest!: append_vwalk_pref elim!: invar_props_elims
            intro!: invar_props_intros elim: call_cond_elims)
 
 lemma invar_2_holds_ret_1[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_1_conds dfs_state; invar_2 dfs_state⟧ ⟹ invar_2 (dc.DFS_skel_ret1 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_ret_1_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (dc.DFS_skel_ret1 dfs_state)"
   by (auto simp: dc.DFS_skel_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_2_holds_ret_2[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_2_conds dfs_state; invar_2 dfs_state⟧ ⟹ invar_2 (dc.DFS_skel_ret2 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_ret_2_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (dc.DFS_skel_ret2 dfs_state)"
   by (auto simp: dc.DFS_skel_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_2_holds[invar_holds_intros]:
@@ -191,37 +191,37 @@ proof(induction rule: dc.DFS_skel_induct[OF assms(1)])
 qed
 
 lemma invar_ssf_props[invar_props_elims]:
-  "invar_ssf dfs_state ⟹
-     (⟦distinct (stack dfs_state); set (stack dfs_state) ⊆ t_set (seen dfs_state);
-       t_set (finished dfs_state) ⊆ t_set (seen dfs_state);
+  "invar_ssf dfs_state \<Longrightarrow>
+     (\<lbrakk>distinct (stack dfs_state); set (stack dfs_state) \<subseteq> t_set (seen dfs_state);
+       t_set (finished dfs_state) \<subseteq> t_set (seen dfs_state);
        t_set (finished dfs_state) = t_set (seen dfs_state) - set (stack dfs_state);
-       t_set (seen dfs_state) ⊆ dVs (Graph.digraph_abs G)⟧ ⟹ P) ⟹ P"
+       t_set (seen dfs_state) \<subseteq> dVs (Graph.digraph_abs G)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: invar_ssf_def)
 
 lemma invar_ssf_intro[invar_props_intros]:
-  "⟦distinct (stack dfs_state); set (stack dfs_state) ⊆ t_set (seen dfs_state);
-    t_set (finished dfs_state) ⊆ t_set (seen dfs_state);
+  "\<lbrakk>distinct (stack dfs_state); set (stack dfs_state) \<subseteq> t_set (seen dfs_state);
+    t_set (finished dfs_state) \<subseteq> t_set (seen dfs_state);
     t_set (finished dfs_state) = t_set (seen dfs_state) - set (stack dfs_state);
-    t_set (seen dfs_state) ⊆ dVs (Graph.digraph_abs G)⟧ ⟹ invar_ssf dfs_state"
+    t_set (seen dfs_state) \<subseteq> dVs (Graph.digraph_abs G)\<rbrakk> \<Longrightarrow> invar_ssf dfs_state"
   by (auto simp: invar_ssf_def)
 
 lemma invar_ssf_holds_upd1[invar_holds_intros]:
-  "⟦dc.DFS_skel_call_1_conds dfs_state; dc.invar_1 dfs_state; invar_ssf dfs_state⟧ ⟹
+  "\<lbrakk>dc.DFS_skel_call_1_conds dfs_state; dc.invar_1 dfs_state; invar_ssf dfs_state\<rbrakk> \<Longrightarrow>
     invar_ssf (dc.DFS_skel_upd1 dfs_state)"
 proof (intro invar_props_intros, goal_cases)
   case 1
   let ?v = "hd (stack dfs_state)"
-  let ?w = "sel ((𝒩⇩G ?v) -⇩G (seen dfs_state))"
-  have w: "?w ∈ t_set (𝒩⇩G ?v) - t_set (seen dfs_state)"
-    using ‹dc.DFS_skel_call_1_conds dfs_state› ‹dc.invar_1 dfs_state›
+  let ?w = "sel ((\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state))"
+  have w: "?w \<in> t_set (\<N>\<^sub>G ?v) - t_set (seen dfs_state)"
+    using \<open>dc.DFS_skel_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
     by (auto elim!: invar_props_elims call_cond_elims)
   from 1 w show ?case by (auto simp: upd1_unfold elim!: invar_props_elims)
 next
   case 2
   let ?v = "hd (stack dfs_state)"
-  let ?w = "sel ((𝒩⇩G ?v) -⇩G (seen dfs_state))"
-  have w: "?w ∈ t_set (𝒩⇩G ?v) - t_set (seen dfs_state)"
-    using ‹dc.DFS_skel_call_1_conds dfs_state› ‹dc.invar_1 dfs_state›
+  let ?w = "sel ((\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state))"
+  have w: "?w \<in> t_set (\<N>\<^sub>G ?v) - t_set (seen dfs_state)"
+    using \<open>dc.DFS_skel_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
     by (auto elim!: invar_props_elims call_cond_elims)
   from 2 w show ?case by (auto simp: upd1_unfold elim!: invar_props_elims)
 next
@@ -230,17 +230,17 @@ next
 next
   case 4
   let ?v = "hd (stack dfs_state)"
-  let ?w = "sel ((𝒩⇩G ?v) -⇩G (seen dfs_state))"
-  have w: "?w ∈ t_set (𝒩⇩G ?v) - t_set (seen dfs_state)"
-    using ‹dc.DFS_skel_call_1_conds dfs_state› ‹dc.invar_1 dfs_state›
+  let ?w = "sel ((\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state))"
+  have w: "?w \<in> t_set (\<N>\<^sub>G ?v) - t_set (seen dfs_state)"
+    using \<open>dc.DFS_skel_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
     by (auto elim!: invar_props_elims call_cond_elims)
   from 4 w show ?case by (auto simp: upd1_unfold elim!: invar_props_elims)
 next
   case 5
   let ?v = "hd (stack dfs_state)"
-  let ?w = "sel ((𝒩⇩G ?v) -⇩G (seen dfs_state))"
-  have w: "?w ∈ t_set (𝒩⇩G ?v) - t_set (seen dfs_state)"
-    using ‹dc.DFS_skel_call_1_conds dfs_state› ‹dc.invar_1 dfs_state›
+  let ?w = "sel ((\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state))"
+  have w: "?w \<in> t_set (\<N>\<^sub>G ?v) - t_set (seen dfs_state)"
+    using \<open>dc.DFS_skel_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
     by (auto elim!: invar_props_elims call_cond_elims)
   from 5 w show ?case by (auto simp: upd1_unfold elim!: invar_props_elims)
 qed
@@ -253,10 +253,10 @@ proof -
   obtain v stack_tl where stk: "stack dfs_state = v # stack_tl"
     using assms(1) by (auto elim!: call_cond_elims)
   have finv: "vset_inv (finished dfs_state)" using assms(3) by (auto simp: invar_fin_def)
-  have props: "distinct (stack dfs_state)" "set (stack dfs_state) ⊆ t_set (seen dfs_state)"
-       "t_set (finished dfs_state) ⊆ t_set (seen dfs_state)"
+  have props: "distinct (stack dfs_state)" "set (stack dfs_state) \<subseteq> t_set (seen dfs_state)"
+       "t_set (finished dfs_state) \<subseteq> t_set (seen dfs_state)"
        "t_set (finished dfs_state) = t_set (seen dfs_state) - set (stack dfs_state)"
-       "t_set (seen dfs_state) ⊆ dVs (Graph.digraph_abs G)"
+       "t_set (seen dfs_state) \<subseteq> dVs (Graph.digraph_abs G)"
     using assms(4) by (auto simp: invar_ssf_def)
   have fin2: "t_set (finished (dc.DFS_skel_upd2 dfs_state)) = Set.insert v (t_set (finished dfs_state))"
     using finv stk by (auto simp: upd2_unfold)
@@ -270,11 +270,11 @@ proof -
 qed
 
 lemma invar_ssf_holds_ret_1[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_1_conds dfs_state; invar_ssf dfs_state⟧ ⟹ invar_ssf (dc.DFS_skel_ret1 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_ret_1_conds dfs_state; invar_ssf dfs_state\<rbrakk> \<Longrightarrow> invar_ssf (dc.DFS_skel_ret1 dfs_state)"
   by (force simp: dc.DFS_skel_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_ssf_holds_ret_2[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_2_conds dfs_state; invar_ssf dfs_state⟧ ⟹ invar_ssf (dc.DFS_skel_ret2 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_ret_2_conds dfs_state; invar_ssf dfs_state\<rbrakk> \<Longrightarrow> invar_ssf (dc.DFS_skel_ret2 dfs_state)"
   by (force simp: dc.DFS_skel_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_ssf_holds[invar_holds_intros]:
@@ -294,27 +294,27 @@ lemma initial_struct[simp,intro]:
   using dircycle_axioms
   by (auto simp: invar_2_def invar_ssf_def dircycle_initial_state_def DFS_dircycle_axioms_def)
 
-subsection ‹Soundness: a reported cycle is a real directed cycle›
+subsection \<open>Soundness: a reported cycle is a real directed cycle\<close>
 
 lemma invar_cycle_true_props[invar_props_elims]:
-  "invar_cycle_true dfs_state ⟹
-     ((cycle dfs_state ⟹ ∃c. Awalk_Defs.cycle (Graph.digraph_abs G) c) ⟹ P) ⟹ P"
+  "invar_cycle_true dfs_state \<Longrightarrow>
+     ((cycle dfs_state \<Longrightarrow> \<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c) \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: invar_cycle_true_def)
 
 lemma invar_cycle_true_intro[invar_props_intros]:
-  "(cycle dfs_state ⟹ ∃c. Awalk_Defs.cycle (Graph.digraph_abs G) c) ⟹ invar_cycle_true dfs_state"
+  "(cycle dfs_state \<Longrightarrow> \<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c) \<Longrightarrow> invar_cycle_true dfs_state"
   by (auto simp: invar_cycle_true_def)
 
 lemma invar_cycle_true_holds_upd1[invar_holds_intros]:
-  "⟦dc.DFS_skel_call_1_conds dfs_state; invar_cycle_true dfs_state⟧ ⟹ invar_cycle_true (dc.DFS_skel_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_call_1_conds dfs_state; invar_cycle_true dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_true (dc.DFS_skel_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_cycle_true_holds_upd2[invar_holds_intros]:
-  "⟦dc.DFS_skel_call_2_conds dfs_state; invar_cycle_true dfs_state⟧ ⟹ invar_cycle_true (dc.DFS_skel_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_call_2_conds dfs_state; invar_cycle_true dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_true (dc.DFS_skel_upd2 dfs_state)"
   by (auto simp: upd2_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_cycle_true_holds_ret_1[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_1_conds dfs_state; invar_cycle_true dfs_state⟧ ⟹ invar_cycle_true (dc.DFS_skel_ret1 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_ret_1_conds dfs_state; invar_cycle_true dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_true (dc.DFS_skel_ret1 dfs_state)"
   by (auto simp: dc.DFS_skel_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_cycle_true_holds_ret_2[invar_holds_intros]:
@@ -323,24 +323,24 @@ lemma invar_cycle_true_holds_ret_2[invar_holds_intros]:
   shows "invar_cycle_true (dc.DFS_skel_ret2 dfs_state)"
 proof (intro invar_props_intros)
   let ?v = "hd (stack dfs_state)"
-  have ne: "(𝒩⇩G ?v) ∩⇩G (seen dfs_state -⇩G finished dfs_state) ≠ ∅⇩N"
-       and stk: "stack dfs_state ≠ []"
+  have ne: "(\<N>\<^sub>G ?v) \<inter>\<^sub>G (seen dfs_state -\<^sub>G finished dfs_state) \<noteq> \<emptyset>\<^sub>N"
+       and stk: "stack dfs_state \<noteq> []"
     using assms(1) by (auto simp: dc.DFS_skel_ret_2_conds_def cyc_found_def split: list.splits)
-  obtain x where x_mem: "x ∈ t_set ((𝒩⇩G ?v) ∩⇩G (seen dfs_state -⇩G finished dfs_state))"
+  obtain x where x_mem: "x \<in> t_set ((\<N>\<^sub>G ?v) \<inter>\<^sub>G (seen dfs_state -\<^sub>G finished dfs_state))"
     using ne assms(2,3) by (force elim!: invar_props_elims dest!: Graph.vset.choose')
-  then have xN: "x ∈ t_set (𝒩⇩G ?v)" and xsf: "x ∈ t_set (seen dfs_state -⇩G finished dfs_state)"
+  then have xN: "x \<in> t_set (\<N>\<^sub>G ?v)" and xsf: "x \<in> t_set (seen dfs_state -\<^sub>G finished dfs_state)"
     using assms(2,3) by (auto elim!: invar_props_elims)
-  have xstack: "x ∈ set (stack dfs_state)"
+  have xstack: "x \<in> set (stack dfs_state)"
     using xsf assms(2,3,5) by (force elim!: invar_props_elims)
-  have edge: "(?v, x) ∈ Graph.digraph_abs G"
+  have edge: "(?v, x) \<in> Graph.digraph_abs G"
     using xN by auto
-  have vverts: "?v ∈ dVs (Graph.digraph_abs G)" and xverts: "x ∈ dVs (Graph.digraph_abs G)"
+  have vverts: "?v \<in> dVs (Graph.digraph_abs G)" and xverts: "x \<in> dVs (Graph.digraph_abs G)"
     using edge by (auto simp: dVs_def)
-  have "x ∈ set (rev (stack dfs_state))" using xstack by simp
+  have "x \<in> set (rev (stack dfs_state))" using xstack by simp
   then obtain xs zs where xz: "rev (stack dfs_state) = xs @ x # zs"
     using split_list by fastforce
   define p where "p = x # zs"
-  have rs: "rev (stack dfs_state) = xs @ p" and pne: "p ≠ []" and hdp: "hd p = x"
+  have rs: "rev (stack dfs_state) = xs @ p" and pne: "p \<noteq> []" and hdp: "hd p = x"
     by (simp_all add: p_def xz)
   have vwp: "Vwalk.vwalk (Graph.digraph_abs G) p"
     using rs assms(4) append_vwalk_suff by (force elim!: invar_props_elims)
@@ -374,13 +374,13 @@ proof (intro invar_props_intros)
   proof -
     obtain p' where pcons: "p = x # p'" using pne hdp by (cases p) auto
     have "distinct (x # p')" using dp pcons by simp
-    then have "distinct p'" "x ∉ set p'" by auto
+    then have "distinct p'" "x \<notin> set p'" by auto
     then have "distinct (p' @ [x])" by simp
     then show ?thesis using pcons by simp
   qed
   have "Awalk_Defs.cycle (Graph.digraph_abs G) ((edges_of_vwalk p) @ [(?v, x)])"
     unfolding Awalk_Defs.cycle_def using closed dtl verts by auto
-  then show "cycle (dc.DFS_skel_ret2 dfs_state) ⟹ ∃c. Awalk_Defs.cycle (Graph.digraph_abs G) c" by blast
+  then show "cycle (dc.DFS_skel_ret2 dfs_state) \<Longrightarrow> \<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c" by blast
 qed
 
 lemma invar_cycle_true_holds[invar_holds_intros]:
@@ -400,7 +400,7 @@ lemma initial_fin[simp,intro]: "invar_fin dircycle_initial_state"
 
 theorem DFS_dircycle_sound:
   assumes "cycle (dc.DFS_skel dircycle_initial_state)"
-  shows "∃c. Awalk_Defs.cycle (Graph.digraph_abs G) c"
+  shows "\<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c"
 proof -
   have "invar_cycle_true (dc.DFS_skel dircycle_initial_state)"
     by (intro invar_cycle_true_holds dircycle_initial_dom initial_invars initial_fin initial_struct)
@@ -408,52 +408,52 @@ proof -
   thus ?thesis using assms by (auto elim!: invar_props_elims)
 qed
 
-subsection ‹Completeness: no report means the explored subgraph is acyclic›
+subsection \<open>Completeness: no report means the explored subgraph is acyclic\<close>
 
 lemma invar_finished_closed_props[invar_props_elims]:
-  "invar_finished_closed dfs_state ⟹
-    ((⋀u w. u ∈ t_set (finished dfs_state) ⟹ (u, w) ∈ Graph.digraph_abs G ⟹ w ∈ t_set (finished dfs_state)) ⟹ P) ⟹ P"
+  "invar_finished_closed dfs_state \<Longrightarrow>
+    ((\<And>u w. u \<in> t_set (finished dfs_state) \<Longrightarrow> (u, w) \<in> Graph.digraph_abs G \<Longrightarrow> w \<in> t_set (finished dfs_state)) \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: invar_finished_closed_def)
 
 lemma invar_finished_closed_intro[invar_props_intros]:
-  "(⋀u w. u ∈ t_set (finished dfs_state) ⟹ (u, w) ∈ Graph.digraph_abs G ⟹ w ∈ t_set (finished dfs_state))
-    ⟹ invar_finished_closed dfs_state"
+  "(\<And>u w. u \<in> t_set (finished dfs_state) \<Longrightarrow> (u, w) \<in> Graph.digraph_abs G \<Longrightarrow> w \<in> t_set (finished dfs_state))
+    \<Longrightarrow> invar_finished_closed dfs_state"
   by (auto simp: invar_finished_closed_def)
 
-text ‹Out-neighbours of the popped vertex are all already finished (no unseen, no gray neighbour).›
+text \<open>Out-neighbours of the popped vertex are all already finished (no unseen, no gray neighbour).\<close>
 lemma upd2_vout:
   assumes "dc.DFS_skel_call_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
-    and "(hd (stack dfs_state), w) ∈ Graph.digraph_abs G"
-  shows "w ∈ t_set (finished dfs_state)"
+    and "(hd (stack dfs_state), w) \<in> Graph.digraph_abs G"
+  shows "w \<in> t_set (finished dfs_state)"
 proof -
   let ?v = "hd (stack dfs_state)"
   have sinv: "vset_inv (seen dfs_state)" using assms(2) by (auto simp: dc.invar_1_def)
   have finv: "vset_inv (finished dfs_state)" using assms(3) by (auto simp: invar_fin_def)
-  have ninv: "vset_inv (𝒩⇩G ?v)" using dc.graph_inv by auto
-  have wN: "w ∈ t_set (𝒩⇩G ?v)"
+  have ninv: "vset_inv (\<N>\<^sub>G ?v)" using dc.graph_inv by auto
+  have wN: "w \<in> t_set (\<N>\<^sub>G ?v)"
     using assms(4) dc.graph_inv by (auto intro!: Graph.are_connected_absI)
-  have d_empty: "(𝒩⇩G ?v) -⇩G (seen dfs_state) = ∅⇩N"
+  have d_empty: "(\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state) = \<emptyset>\<^sub>N"
     using assms(1) by (auto elim!: call_cond_elims)
-  have i_empty: "(𝒩⇩G ?v) ∩⇩G (seen dfs_state -⇩G finished dfs_state) = ∅⇩N"
+  have i_empty: "(\<N>\<^sub>G ?v) \<inter>\<^sub>G (seen dfs_state -\<^sub>G finished dfs_state) = \<emptyset>\<^sub>N"
   proof -
     obtain v stack_tl where stk: "stack dfs_state = v # stack_tl"
       using assms(1) by (auto elim!: call_cond_elims)
-    have "¬ cyc_found dfs_state" using assms(1) by (auto elim!: call_cond_elims)
+    have "\<not> cyc_found dfs_state" using assms(1) by (auto elim!: call_cond_elims)
     thus ?thesis using stk by (simp add: cyc_found_def)
   qed
-  have nsub: "t_set (𝒩⇩G ?v) ⊆ t_set (seen dfs_state)"
+  have nsub: "t_set (\<N>\<^sub>G ?v) \<subseteq> t_set (seen dfs_state)"
   proof -
-    have "t_set (𝒩⇩G ?v) - t_set (seen dfs_state) = t_set ((𝒩⇩G ?v) -⇩G (seen dfs_state))"
+    have "t_set (\<N>\<^sub>G ?v) - t_set (seen dfs_state) = t_set ((\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state))"
       by (simp add: set_ops.set_diff[OF ninv sinv])
     also have "... = {}" by (simp add: d_empty)
     finally show ?thesis by blast
   qed
-  have dinv: "vset_inv (seen dfs_state -⇩G finished dfs_state)"
+  have dinv: "vset_inv (seen dfs_state -\<^sub>G finished dfs_state)"
     by (simp add: set_ops.invar_diff[OF sinv finv])
-  have nint: "t_set (𝒩⇩G ?v) ∩ (t_set (seen dfs_state) - t_set (finished dfs_state)) = {}"
+  have nint: "t_set (\<N>\<^sub>G ?v) \<inter> (t_set (seen dfs_state) - t_set (finished dfs_state)) = {}"
   proof -
-    have "t_set (𝒩⇩G ?v) ∩ (t_set (seen dfs_state) - t_set (finished dfs_state))
-          = t_set ((𝒩⇩G ?v) ∩⇩G (seen dfs_state -⇩G finished dfs_state))"
+    have "t_set (\<N>\<^sub>G ?v) \<inter> (t_set (seen dfs_state) - t_set (finished dfs_state))
+          = t_set ((\<N>\<^sub>G ?v) \<inter>\<^sub>G (seen dfs_state -\<^sub>G finished dfs_state))"
       by (simp add: set_ops.set_inter[OF ninv dinv] set_ops.set_diff[OF sinv finv])
     also have "... = {}" by (simp add: i_empty)
     finally show ?thesis .
@@ -462,7 +462,7 @@ proof -
 qed
 
 lemma invar_finished_closed_holds_upd1[invar_holds_intros]:
-  "⟦dc.DFS_skel_call_1_conds dfs_state; invar_finished_closed dfs_state⟧ ⟹
+  "\<lbrakk>dc.DFS_skel_call_1_conds dfs_state; invar_finished_closed dfs_state\<rbrakk> \<Longrightarrow>
     invar_finished_closed (dc.DFS_skel_upd1 dfs_state)"
   by (auto simp: invar_finished_closed_def upd1_unfold)
 
@@ -472,26 +472,26 @@ lemma invar_finished_closed_holds_upd2[invar_holds_intros]:
   shows "invar_finished_closed (dc.DFS_skel_upd2 dfs_state)"
 proof (intro invar_props_intros)
   fix u w
-  assume uin: "u ∈ t_set (finished (dc.DFS_skel_upd2 dfs_state))" and edge: "(u, w) ∈ Graph.digraph_abs G"
+  assume uin: "u \<in> t_set (finished (dc.DFS_skel_upd2 dfs_state))" and edge: "(u, w) \<in> Graph.digraph_abs G"
   have fin2: "t_set (finished (dc.DFS_skel_upd2 dfs_state)) = Set.insert (hd (stack dfs_state)) (t_set (finished dfs_state))"
     using assms(3) by (auto simp: upd2_unfold elim!: invar_props_elims)
-  from uin fin2 consider "u = hd (stack dfs_state)" | "u ∈ t_set (finished dfs_state)" by auto
-  then have "w ∈ t_set (finished dfs_state)"
+  from uin fin2 consider "u = hd (stack dfs_state)" | "u \<in> t_set (finished dfs_state)" by auto
+  then have "w \<in> t_set (finished dfs_state)"
   proof cases
     case 1 thus ?thesis using upd2_vout[OF assms(1,2,3)] edge by auto
   next
     case 2 thus ?thesis using assms(4) edge by (auto elim!: invar_props_elims)
   qed
-  thus "w ∈ t_set (finished (dc.DFS_skel_upd2 dfs_state))" using fin2 by simp
+  thus "w \<in> t_set (finished (dc.DFS_skel_upd2 dfs_state))" using fin2 by simp
 qed
 
 lemma invar_finished_closed_holds_ret_1[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_1_conds dfs_state; invar_finished_closed dfs_state⟧ ⟹
+  "\<lbrakk>dc.DFS_skel_ret_1_conds dfs_state; invar_finished_closed dfs_state\<rbrakk> \<Longrightarrow>
     invar_finished_closed (dc.DFS_skel_ret1 dfs_state)"
   by (auto simp: invar_finished_closed_def dc.DFS_skel_ret1_def cyc_on_empty_def)
 
 lemma invar_finished_closed_holds_ret_2[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_2_conds dfs_state; invar_finished_closed dfs_state⟧ ⟹
+  "\<lbrakk>dc.DFS_skel_ret_2_conds dfs_state; invar_finished_closed dfs_state\<rbrakk> \<Longrightarrow>
     invar_finished_closed (dc.DFS_skel_ret2 dfs_state)"
   by (auto simp: invar_finished_closed_def dc.DFS_skel_ret2_def cyc_on_found_def)
 
@@ -506,33 +506,33 @@ proof(induction rule: dc.DFS_skel_induct[OF assms(1)])
     by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skel_simps[OF IH(1)])
 qed
 
-text ‹A vertex on a closed walk is the target of one of its edges.›
+text \<open>A vertex on a closed walk is the target of one of its edges.\<close>
 lemma closed_walk_has_in_edge:
-  assumes "awalk E u c u" "c ≠ []" "x ∈ set (awalk_verts u c)"
-  shows "∃e ∈ set c. snd e = x"
+  assumes "awalk E u c u" "c \<noteq> []" "x \<in> set (awalk_verts u c)"
+  shows "\<exists>e \<in> set c. snd e = x"
 proof -
   have cas: "cas u c u" using assms(1) by (simp add: awalk_def)
   hence "fst (hd c) = u" using assms(2) by (cases c) auto
   hence av: "awalk_verts u c = u # map snd c" using cas by (simp add: awalk_verts_conv')
   have sndlast: "snd (last c) = u" using awalk_last[OF assms(1) assms(2)] .
-  have "map snd c ≠ []" using assms(2) by simp
+  have "map snd c \<noteq> []" using assms(2) by simp
   moreover have "last (map snd c) = u" using sndlast assms(2) by (simp add: last_map)
-  ultimately have "u ∈ set (map snd c)" using last_in_set by blast
+  ultimately have "u \<in> set (map snd c)" using last_in_set by blast
   with av assms(3) show ?thesis by auto
 qed
 
 lemma invar_cycle_false_props[invar_props_elims]:
-  "invar_cycle_false dfs_state ⟹
-    ((¬ cycle dfs_state ⟹ ∄c. Awalk_Defs.cycle (Graph.digraph_abs G ⇂ t_set (finished dfs_state)) c) ⟹ P) ⟹ P"
+  "invar_cycle_false dfs_state \<Longrightarrow>
+    ((\<not> cycle dfs_state \<Longrightarrow> \<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (finished dfs_state)) c) \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: invar_cycle_false_def)
 
 lemma invar_cycle_false_intro[invar_props_intros]:
-  "(¬ cycle dfs_state ⟹ ∄c. Awalk_Defs.cycle (Graph.digraph_abs G ⇂ t_set (finished dfs_state)) c) ⟹
+  "(\<not> cycle dfs_state \<Longrightarrow> \<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (finished dfs_state)) c) \<Longrightarrow>
     invar_cycle_false dfs_state"
   by (auto simp: invar_cycle_false_def)
 
 lemma invar_cycle_false_holds_upd1[invar_holds_intros]:
-  "⟦dc.DFS_skel_call_1_conds dfs_state; invar_cycle_false dfs_state⟧ ⟹ invar_cycle_false (dc.DFS_skel_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_call_1_conds dfs_state; invar_cycle_false dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_false (dc.DFS_skel_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_cycle_false_holds_upd2[invar_holds_intros]:
@@ -540,79 +540,79 @@ lemma invar_cycle_false_holds_upd2[invar_holds_intros]:
           "invar_ssf dfs_state" "invar_finished_closed dfs_state" "invar_cycle_false dfs_state"
   shows "invar_cycle_false (dc.DFS_skel_upd2 dfs_state)"
 proof (intro invar_props_intros)
-  assume notcyc': "¬ cycle (dc.DFS_skel_upd2 dfs_state)"
+  assume notcyc': "\<not> cycle (dc.DFS_skel_upd2 dfs_state)"
   let ?v = "hd (stack dfs_state)"
   let ?F = "t_set (finished dfs_state)"
   let ?DG = "Graph.digraph_abs G"
-  have notcyc: "¬ cycle dfs_state" using notcyc' by (simp add: upd2_unfold)
+  have notcyc: "\<not> cycle dfs_state" using notcyc' by (simp add: upd2_unfold)
   have finup: "t_set (finished (dc.DFS_skel_upd2 dfs_state)) = Set.insert ?v ?F"
     using assms(3) by (auto simp: upd2_unfold invar_fin_def)
-  have acycF: "∄c. Awalk_Defs.cycle (?DG ⇂ ?F) c" using assms(6) notcyc by (auto simp: invar_cycle_false_def)
-  have vstack: "?v ∈ set (stack dfs_state)" using assms(1) by (auto elim!: call_cond_elims)
-  have vnotF: "?v ∉ ?F" using vstack assms(4) by (auto simp: invar_ssf_def)
-  have closedF: "⋀u w. u ∈ ?F ⟹ (u, w) ∈ ?DG ⟹ w ∈ ?F"
+  have acycF: "\<nexists>c. Awalk_Defs.cycle (?DG \<downharpoonright> ?F) c" using assms(6) notcyc by (auto simp: invar_cycle_false_def)
+  have vstack: "?v \<in> set (stack dfs_state)" using assms(1) by (auto elim!: call_cond_elims)
+  have vnotF: "?v \<notin> ?F" using vstack assms(4) by (auto simp: invar_ssf_def)
+  have closedF: "\<And>u w. u \<in> ?F \<Longrightarrow> (u, w) \<in> ?DG \<Longrightarrow> w \<in> ?F"
     using assms(5) unfolding invar_finished_closed_def by blast
-  have no_in: "(u, ?v) ∉ (?DG ⇂ Set.insert ?v ?F)" for u
+  have no_in: "(u, ?v) \<notin> (?DG \<downharpoonright> Set.insert ?v ?F)" for u
   proof
-    assume e: "(u, ?v) ∈ (?DG ⇂ Set.insert ?v ?F)"
-    from e have uin: "u ∈ Set.insert ?v ?F" and edge: "(u, ?v) ∈ ?DG"
+    assume e: "(u, ?v) \<in> (?DG \<downharpoonright> Set.insert ?v ?F)"
+    from e have uin: "u \<in> Set.insert ?v ?F" and edge: "(u, ?v) \<in> ?DG"
       by (auto simp: induce_subgraph_def)
     show False
     proof (cases "u = ?v")
       case True
-      then have "?v ∈ t_set (finished dfs_state)"
+      then have "?v \<in> t_set (finished dfs_state)"
         using upd2_vout[OF assms(1,2,3)] edge by blast
       then show False using vnotF by blast
     next
       case False
-      then have "u ∈ ?F" using uin by blast
+      then have "u \<in> ?F" using uin by blast
       then show False using closedF edge vnotF by blast
     qed
   qed
-  show "∄c. Awalk_Defs.cycle (?DG ⇂ t_set (finished (dc.DFS_skel_upd2 dfs_state))) c"
+  show "\<nexists>c. Awalk_Defs.cycle (?DG \<downharpoonright> t_set (finished (dc.DFS_skel_upd2 dfs_state))) c"
     unfolding finup
   proof (rule notI, erule exE)
-    fix c assume cyc: "Awalk_Defs.cycle (?DG ⇂ Set.insert ?v ?F) c"
-    then obtain u where aw: "awalk (?DG ⇂ Set.insert ?v ?F) u c u" and cne: "c ≠ []"
+    fix c assume cyc: "Awalk_Defs.cycle (?DG \<downharpoonright> Set.insert ?v ?F) c"
+    then obtain u where aw: "awalk (?DG \<downharpoonright> Set.insert ?v ?F) u c u" and cne: "c \<noteq> []"
       and dtl: "distinct (tl (awalk_verts u c))" by (auto simp: Awalk_Defs.cycle_def)
-    have edges_sub: "set c ⊆ (?DG ⇂ Set.insert ?v ?F)" using aw by (auto simp: awalk_def)
+    have edges_sub: "set c \<subseteq> (?DG \<downharpoonright> Set.insert ?v ?F)" using aw by (auto simp: awalk_def)
     have ucas: "cas u c u" using aw by (simp add: awalk_def)
-    have vnotverts: "?v ∉ set (awalk_verts u c)"
+    have vnotverts: "?v \<notin> set (awalk_verts u c)"
     proof
-      assume "?v ∈ set (awalk_verts u c)"
+      assume "?v \<in> set (awalk_verts u c)"
       from closed_walk_has_in_edge[OF aw cne this] obtain e
-        where emem: "e ∈ set c" and esnd: "snd e = ?v" by blast
-      have "e ∈ (?DG ⇂ Set.insert ?v ?F)" using emem edges_sub by blast
-      then have "(fst e, snd e) ∈ (?DG ⇂ Set.insert ?v ?F)" by simp
-      then have "(fst e, ?v) ∈ (?DG ⇂ Set.insert ?v ?F)" using esnd by simp
+        where emem: "e \<in> set c" and esnd: "snd e = ?v" by blast
+      have "e \<in> (?DG \<downharpoonright> Set.insert ?v ?F)" using emem edges_sub by blast
+      then have "(fst e, snd e) \<in> (?DG \<downharpoonright> Set.insert ?v ?F)" by simp
+      then have "(fst e, ?v) \<in> (?DG \<downharpoonright> Set.insert ?v ?F)" using esnd by simp
       then show False using no_in by blast
     qed
-    have verts_eq: "set (awalk_verts u c) = set (map fst c) ∪ set (map snd c)"
+    have verts_eq: "set (awalk_verts u c) = set (map fst c) \<union> set (map snd c)"
       using set_awalk_verts_not_Nil_cas[OF ucas cne] by simp
-    have subF: "set c ⊆ (?DG ⇂ ?F)"
+    have subF: "set c \<subseteq> (?DG \<downharpoonright> ?F)"
     proof
-      fix e assume ec: "e ∈ set c"
-      then have ein: "e ∈ (?DG ⇂ Set.insert ?v ?F)" using edges_sub by auto
-      have fv: "fst e ∈ set (awalk_verts u c)" using ec by (auto simp: verts_eq)
-      have sv: "snd e ∈ set (awalk_verts u c)" using ec by (auto simp: verts_eq)
-      from fv sv vnotverts ein show "e ∈ (?DG ⇂ ?F)" by (cases e) (auto simp: induce_subgraph_def)
+      fix e assume ec: "e \<in> set c"
+      then have ein: "e \<in> (?DG \<downharpoonright> Set.insert ?v ?F)" using edges_sub by auto
+      have fv: "fst e \<in> set (awalk_verts u c)" using ec by (auto simp: verts_eq)
+      have sv: "snd e \<in> set (awalk_verts u c)" using ec by (auto simp: verts_eq)
+      from fv sv vnotverts ein show "e \<in> (?DG \<downharpoonright> ?F)" by (cases e) (auto simp: induce_subgraph_def)
     qed
     have "fst (hd c) = u" using ucas cne by (cases c) auto
     then obtain w cs where c_eq: "c = (u, w) # cs" using cne by (cases c) auto
-    have uinF: "u ∈ dVs (?DG ⇂ ?F)"
+    have uinF: "u \<in> dVs (?DG \<downharpoonright> ?F)"
       using subF c_eq by (auto simp: dVs_def)
-    have "awalk (?DG ⇂ ?F) u c u" using subF uinF ucas by (simp add: awalk_def)
-    then have "Awalk_Defs.cycle (?DG ⇂ ?F) c" using cne dtl by (auto simp: Awalk_Defs.cycle_def)
+    have "awalk (?DG \<downharpoonright> ?F) u c u" using subF uinF ucas by (simp add: awalk_def)
+    then have "Awalk_Defs.cycle (?DG \<downharpoonright> ?F) c" using cne dtl by (auto simp: Awalk_Defs.cycle_def)
     then show False using acycF by blast
   qed
 qed
 
 lemma invar_cycle_false_holds_ret_1[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_1_conds dfs_state; invar_cycle_false dfs_state⟧ ⟹ invar_cycle_false (dc.DFS_skel_ret1 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_ret_1_conds dfs_state; invar_cycle_false dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_false (dc.DFS_skel_ret1 dfs_state)"
   by (auto simp: dc.DFS_skel_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_cycle_false_holds_ret_2[invar_holds_intros]:
-  "⟦dc.DFS_skel_ret_2_conds dfs_state; invar_cycle_false dfs_state⟧ ⟹ invar_cycle_false (dc.DFS_skel_ret2 dfs_state)"
+  "\<lbrakk>dc.DFS_skel_ret_2_conds dfs_state; invar_cycle_false dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_false (dc.DFS_skel_ret2 dfs_state)"
   by (auto simp: dc.DFS_skel_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_cycle_false_holds[invar_holds_intros]:
@@ -632,9 +632,9 @@ lemma initial_fc[simp,intro]:
   by (auto simp: invar_finished_closed_def invar_cycle_false_def dircycle_initial_state_def
                  Awalk_Defs.cycle_def awalk_def induce_subgraph_def dVs_def)
 
-text ‹When the run reports no cycle it ended at the empty-stack return.›
+text \<open>When the run reports no cycle it ended at the empty-stack return.\<close>
 lemma no_cycle_ret_1:
-  assumes "dc.DFS_skel_dom dfs_state" "¬ cycle (dc.DFS_skel dfs_state)"
+  assumes "dc.DFS_skel_dom dfs_state" "\<not> cycle (dc.DFS_skel dfs_state)"
   shows "dc.DFS_skel_ret_1_conds (dc.DFS_skel dfs_state)"
   using assms(2)
 proof(induction rule: dc.DFS_skel_induct[OF assms(1)])
@@ -643,7 +643,7 @@ proof(induction rule: dc.DFS_skel_induct[OF assms(1)])
   show ?case
   proof (rule dc.DFS_skel_cases[where dfs_state = dfs_state])
     assume c: "dc.DFS_skel_call_1_conds dfs_state"
-    have ncyc: "¬ cycle (dc.DFS_skel (dc.DFS_skel_upd1 dfs_state))"
+    have ncyc: "\<not> cycle (dc.DFS_skel (dc.DFS_skel_upd1 dfs_state))"
       using IH(4) c by (simp add: simps(1))
     have "dc.DFS_skel_ret_1_conds (dc.DFS_skel (dc.DFS_skel_upd1 dfs_state))"
       using IH(2)[OF c] ncyc by blast
@@ -651,7 +651,7 @@ proof(induction rule: dc.DFS_skel_induct[OF assms(1)])
       using c by (simp add: simps(1))
   next
     assume c: "dc.DFS_skel_call_2_conds dfs_state"
-    have ncyc: "¬ cycle (dc.DFS_skel (dc.DFS_skel_upd2 dfs_state))"
+    have ncyc: "\<not> cycle (dc.DFS_skel (dc.DFS_skel_upd2 dfs_state))"
       using IH(4) c by (simp add: simps(2))
     have "dc.DFS_skel_ret_1_conds (dc.DFS_skel (dc.DFS_skel_upd2 dfs_state))"
       using IH(3)[OF c] ncyc by blast
@@ -671,8 +671,8 @@ proof(induction rule: dc.DFS_skel_induct[OF assms(1)])
 qed
 
 theorem DFS_dircycle_complete:
-  assumes "¬ cycle (dc.DFS_skel dircycle_initial_state)"
-  shows "∄c. Awalk_Defs.cycle (Graph.digraph_abs G ⇂ t_set (seen (dc.DFS_skel dircycle_initial_state))) c"
+  assumes "\<not> cycle (dc.DFS_skel dircycle_initial_state)"
+  shows "\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (seen (dc.DFS_skel dircycle_initial_state))) c"
 proof -
   let ?r = "dc.DFS_skel dircycle_initial_state"
   have dom: "dc.DFS_skel_dom dircycle_initial_state" by (rule dircycle_initial_dom)
@@ -684,7 +684,7 @@ proof -
     using no_cycle_ret_1[OF dom assms] by (auto simp: dc.DFS_skel_ret_1_conds_def split: list.splits)
   have "t_set (finished ?r) = t_set (seen ?r)"
     using ssf empty by (auto elim!: invar_props_elims)
-  moreover have "∄c. Awalk_Defs.cycle (Graph.digraph_abs G ⇂ t_set (finished ?r)) c"
+  moreover have "\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (finished ?r)) c"
     using cf assms by (auto elim!: invar_props_elims)
   ultimately show ?thesis by simp
 qed

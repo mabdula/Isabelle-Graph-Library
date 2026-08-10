@@ -1,5 +1,5 @@
 theory DFS_DirCycle_Example
-  imports DFS_DirCycle Directed_Set_Graphs.Pair_Graph_RBT
+  imports Directed_Cycle_DFS.DFS_DirCycle Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
 global_interpretation dircycle: DFS_dircycle where insert = vset_insert and
