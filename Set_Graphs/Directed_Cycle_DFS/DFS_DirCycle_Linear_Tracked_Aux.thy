@@ -3,7 +3,7 @@ theory DFS_DirCycle_Linear_Tracked_Aux
 begin
 
 
-text \<open>The pre-seeded directed-cycle DFS of \<open>DFS_DirCycle_Linear_Aux\<close>,
+text \<open>The pre-seeded directed-cycle DFS of \<open>DFS_dircycle_linear_Aux\<close>,
   rebuilt on \<^locale>\<open>DFS_skel_more\<close> so that the gray (on-stack) set and the complement of the
   finished region are carried \<^emph>\<open>explicitly\<close> and maintained \<^emph>\<open>incrementally\<close>:
 
@@ -27,13 +27,13 @@ text \<open>The pre-seeded directed-cycle DFS of \<open>DFS_DirCycle_Linear_Aux\
   successor-closed and acyclic. The exports at the end are the aux's seven --- what one run must
   hand the outer loop --- plus the two for \<open>unfinished\<close>.\<close>
 
-record ('ver, 'vset) DFS_dircycle_tracked_state = "('ver, 'vset) DFS_skel_state" +
+record ('ver, 'vset) DFS_dircycle_linear_tracked_aux_state = "('ver, 'vset) DFS_skel_state" +
   finished   :: "'vset"
   gray       :: "'vset"
   unfinished :: "'vset"
   cycle      :: bool
 
-locale DFS_dircycle_tracked =
+locale DFS_dircycle_linear_tracked_aux =
   Graph: Pair_Graph_Specs where lookup = lookup +
  set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
@@ -45,18 +45,18 @@ notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
 text \<open>The point of the exercise: the back-edge test reads the incrementally maintained gray set,
   no set difference.\<close>
-definition "cyc_found (dfs_state::('v,'vset) DFS_dircycle_tracked_state) =
+definition "cyc_found (dfs_state::('v,'vset) DFS_dircycle_linear_tracked_aux_state) =
    (case stack dfs_state of [] \<Rightarrow> False
     | (v # stack_tl) \<Rightarrow> (((\<N>\<^sub>G v) \<inter>\<^sub>G (gray dfs_state)) \<noteq> \<emptyset>\<^sub>N))"
 
-definition "cyc_on_found (dfs_state::('v,'vset) DFS_dircycle_tracked_state) = (dfs_state \<lparr>cycle := True\<rparr>)"
+definition "cyc_on_found (dfs_state::('v,'vset) DFS_dircycle_linear_tracked_aux_state) = (dfs_state \<lparr>cycle := True\<rparr>)"
 
-definition "cyc_on_empty (dfs_state::('v,'vset) DFS_dircycle_tracked_state) = dfs_state"
+definition "cyc_on_empty (dfs_state::('v,'vset) DFS_dircycle_linear_tracked_aux_state) = dfs_state"
 
-definition "cyc_on_push u (dfs_state::('v,'vset) DFS_dircycle_tracked_state) =
+definition "cyc_on_push u (dfs_state::('v,'vset) DFS_dircycle_linear_tracked_aux_state) =
   (dfs_state \<lparr>gray := insert u (gray dfs_state)\<rparr>)"
 
-definition "cyc_on_backtrack v (dfs_state::('v,'vset) DFS_dircycle_tracked_state) =
+definition "cyc_on_backtrack v (dfs_state::('v,'vset) DFS_dircycle_linear_tracked_aux_state) =
   (dfs_state \<lparr>finished := insert v (finished dfs_state),
               gray := vset_delete v (gray dfs_state),
               unfinished := vset_delete v (unfinished dfs_state)\<rparr>)"
@@ -77,7 +77,7 @@ text \<open>The library's graph/root conditions, the \<open>_Linear_Aux\<close> 
   is \<^emph>\<open>exactly\<close> the complement of \<open>f\<close> in the vertex set. The run maintains that partition
   between \<open>unfinished\<close> and \<open>finished\<close> (see \<open>invar_fin_unfin\<close>); the outer loop consumes it to
   pick fresh roots without ever computing a set difference.\<close>
-definition "DFS_dircycle_tracked_axioms =
+definition "DFS_dircycle_linear_tracked_aux_axioms =
   (Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets G
   \<and> s \<in> dVs (Graph.digraph_abs G)
   \<and> s \<notin> t_set f
@@ -100,8 +100,8 @@ abbreviation "find_dircycle_tracked \<equiv> dc.DFS_skel_more_impl"
 
 end
 
-locale DFS_dircycle_tracked_thms = DFS_dircycle_tracked +
-  assumes dircycle_tracked_axioms: DFS_dircycle_tracked_axioms
+locale DFS_dircycle_linear_tracked_aux_thms = DFS_dircycle_linear_tracked_aux +
+  assumes dircycle_tracked_axioms: DFS_dircycle_linear_tracked_aux_axioms
 begin
 
 lemma spine_preservation:
@@ -118,7 +118,7 @@ sublocale dc: DFS_skel_more_thms
     and on_push = cyc_on_push
   using dircycle_tracked_axioms
   by (unfold_locales)
-     (auto simp: dc.DFS_skel_more_axioms_def DFS_dircycle_tracked_axioms_def
+     (auto simp: dc.DFS_skel_more_axioms_def DFS_dircycle_linear_tracked_aux_axioms_def
                  cyc_on_found_def cyc_on_empty_def cyc_on_backtrack_def cyc_on_push_def)
 
 definition "invar_2 dfs_state = Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state))"
@@ -171,7 +171,7 @@ lemma initial_invars[simp,intro]:
   "dc.invar_seen_stack dircycle_tracked_initial_state"
   using dircycle_tracked_axioms
   by (auto simp: dc.invar_1_def dc.invar_seen_stack_def dircycle_tracked_initial_state_def
-                 DFS_dircycle_tracked_axioms_def)
+                 DFS_dircycle_linear_tracked_aux_axioms_def)
 
 lemma dircycle_tracked_initial_dom: "dc.DFS_skel_more_dom dircycle_tracked_initial_state"
   by (intro dc.DFS_skel_more_terminates initial_invars)
@@ -181,10 +181,10 @@ lemma initial_struct[simp,intro]:
   "invar_ssf dircycle_tracked_initial_state"
   using dircycle_tracked_axioms
   by (auto simp: invar_2_def invar_ssf_def dircycle_tracked_initial_state_def
-                 DFS_dircycle_tracked_axioms_def)
+                 DFS_dircycle_linear_tracked_aux_axioms_def)
 
 lemma initial_fin[simp,intro]: "invar_fin dircycle_tracked_initial_state"
-  using dircycle_tracked_axioms[unfolded DFS_dircycle_tracked_axioms_def]
+  using dircycle_tracked_axioms[unfolded DFS_dircycle_linear_tracked_aux_axioms_def]
   by (simp add: invar_fin_def dircycle_tracked_initial_state_def)
 
 lemma initial_gray[simp,intro]: "invar_gray dircycle_tracked_initial_state"
@@ -194,22 +194,22 @@ lemma initial_gray_stack[simp,intro]: "invar_gray_stack dircycle_tracked_initial
   by (auto simp: invar_gray_stack_def dircycle_tracked_initial_state_def)
 
 lemma initial_unfin[simp,intro]: "invar_unfin dircycle_tracked_initial_state"
-  using dircycle_tracked_axioms[unfolded DFS_dircycle_tracked_axioms_def]
+  using dircycle_tracked_axioms[unfolded DFS_dircycle_linear_tracked_aux_axioms_def]
   by (auto simp: invar_unfin_def dircycle_tracked_initial_state_def)
 
 lemma initial_fin_unfin[simp,intro]: "invar_fin_unfin dircycle_tracked_initial_state"
-  using dircycle_tracked_axioms[unfolded DFS_dircycle_tracked_axioms_def]
+  using dircycle_tracked_axioms[unfolded DFS_dircycle_linear_tracked_aux_axioms_def]
   by (auto simp: invar_fin_unfin_def dircycle_tracked_initial_state_def)
 
 lemma initial_seed[simp,intro]: "invar_seed dircycle_tracked_initial_state"
   using dircycle_tracked_axioms
   by (auto simp: invar_seed_def dircycle_tracked_initial_state_def
-                 DFS_dircycle_tracked_axioms_def)
+                 DFS_dircycle_linear_tracked_aux_axioms_def)
 
 lemma initial_fc[simp,intro]:
   "invar_finished_closed dircycle_tracked_initial_state"
   "invar_cycle_false dircycle_tracked_initial_state"
-  using dircycle_tracked_axioms[unfolded DFS_dircycle_tracked_axioms_def]
+  using dircycle_tracked_axioms[unfolded DFS_dircycle_linear_tracked_aux_axioms_def]
   by (auto simp: invar_finished_closed_def invar_cycle_false_def
                  dircycle_tracked_initial_state_def)
 
@@ -902,7 +902,7 @@ proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
   qed
 qed
 
-theorem DFS_dircycle_tracked_sound:
+theorem DFS_dircycle_linear_tracked_aux_sound:
   assumes "cycle (dc.DFS_skel_more dircycle_tracked_initial_state)"
   shows "\<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c"
 proof -
@@ -1258,7 +1258,7 @@ qed
 
 text \<open>Completeness reports on \<open>finished\<close> rather than \<open>seen\<close>: the outer loop consumes exactly the
   finished region.\<close>
-theorem DFS_dircycle_tracked_complete:
+theorem DFS_dircycle_linear_tracked_aux_complete:
   assumes "\<not> cycle (dc.DFS_skel_more dircycle_tracked_initial_state)"
   shows "\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (finished (dc.DFS_skel_more dircycle_tracked_initial_state))) c"
 proof -
@@ -1272,7 +1272,7 @@ qed
 
 subsection \<open>What one run exports to the outer (linear) loop\<close>
 
-text \<open>The seven exports of \<open>DFS_DirCycle_Linear_Aux\<close> --- the enlarged finished region again
+text \<open>The seven exports of \<open>DFS_dircycle_linear_Aux\<close> --- the enlarged finished region again
   satisfies the seed contract, the seed and the root are absorbed, and the run is sound and
   complete --- plus the two \<open>unfinished\<close> exports the tracked outer loop consumes \<^emph>\<open>instead of\<close>
   computing \<open>V -\<^sub>G fin\<close>: the result's unfinished set is a well-formed vset, and it is

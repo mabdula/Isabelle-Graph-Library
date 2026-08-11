@@ -35,9 +35,9 @@ text \<open>A \<^emph>\<open>duplicate\<close> of the graph library's generic DF
     equal \<open>stack\<close>/\<open>seen\<close>). That hypothesis is not dischargeable in general: \<open>found\<close> may read
     the \<open>'more\<close> slot, which \<open>DFS_skel\<close> --- never applying \<open>on_push\<close> --- does not maintain,
     so without it the runs can branch apart. Caveat: our instantiation
-    \<open>DFS_dircycle_tracked\<close> does \<^emph>\<open>not\<close> satisfy it as a raw property of \<open>cyc_found\<close> (which
+    \<open>DFS_dircycle_linear_tracked_aux\<close> does \<^emph>\<open>not\<close> satisfy it as a raw property of \<open>cyc_found\<close> (which
     reads \<open>gray\<close>); it holds only along reachable states via the invariant
-    \<open>t_set (gray st) = set (stack st)\<close> (\<open>invar_gray_stack\<close> in \<open>DFS_DirCycle_Tracked\<close>), so
+    \<open>t_set (gray st) = set (stack st)\<close> (\<open>invar_gray_stack\<close> in \<open>DFS_dircycle_linear_tracked\<close>), so
     the agreement theorems do not apply to the tracked DFS off the shelf.
 
   The spine is exactly what the library skeleton's own machinery reads --- its \<open>invar_1\<close> is

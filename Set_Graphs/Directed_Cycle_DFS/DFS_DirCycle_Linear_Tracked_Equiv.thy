@@ -3,9 +3,9 @@ theory DFS_DirCycle_Linear_Tracked_Equiv
 begin
 
 text \<open>Level 1 of the refinement chain --- the \<^emph>\<open>tracked\<close> directed-cycle search of
-  \<^theory>\<open>Directed_Cycle_DFS.DFS_DirCycle_Linear_Tracked_Aux\<close> / \<open>DFS_DirCycle_Tracked\<close> --- against level 0,
+  \<^theory>\<open>Directed_Cycle_DFS.DFS_DirCycle_Linear_Tracked_Aux\<close> / \<open>DFS_dircycle_linear_tracked\<close> --- against level 0,
   the reference implementation of \<^theory>\<open>Directed_Cycle_DFS.DFS_DirCycle_Linear_Aux\<close> /
-  \<open>DFS_DirCycle_Linear\<close> on the library's skeleton. Inner DFS first, then the outer sweeps; the
+  \<open>DFS_dircycle_linear\<close> on the library's skeleton. Inner DFS first, then the outer sweeps; the
   two levels agree in quite different senses, and the section headings say which.\<close>
 
 section \<open>The inner (pre-seeded) DFS: step-for-step equality\<close>
@@ -14,15 +14,15 @@ text \<open>The tracked locale's assumptions subsume the reference locale's, so 
   \<^emph>\<open>is\<close> a reference setup at the same graph, root and seed: no separate combined locale is
   needed, only a \<^theory_text>\<open>sublocale\<close> making the reference run available as \<open>lin.\<close>.\<close>
 
-sublocale DFS_dircycle_tracked \<subseteq> lin: DFS_dircycle_linear_aux
+sublocale DFS_dircycle_linear_tracked_aux \<subseteq> lin: DFS_dircycle_linear_aux
   by unfold_locales
 
-sublocale DFS_dircycle_tracked_thms \<subseteq>
+sublocale DFS_dircycle_linear_tracked_aux_thms \<subseteq>
   lin: DFS_dircycle_linear_aux_thms
   using dircycle_tracked_axioms
   by unfold_locales
      (auto simp: lin.DFS_dircycle_linear_aux_axioms_def lin.DFS_dircycle_axioms_def
-                 DFS_dircycle_tracked_axioms_def)
+                 DFS_dircycle_linear_tracked_aux_axioms_def)
 
 text \<open>The two inner runs live in different state types --- the tracked one carries \<open>gray\<close> and
   \<open>unfinished\<close> as well --- so they cannot be compared by equality. \<open>dircycle_agree\<close> is the
@@ -30,37 +30,37 @@ text \<open>The two inner runs live in different state types --- the tracked one
   region and the cycle flag. Note this is equality of the \<open>finished\<close> \<^emph>\<open>vsets\<close>, not merely of the
   sets they denote --- both runs build that vset by the same chain of \<open>insert\<close>s.\<close>
 definition dircycle_agree ::
-  "('v, 'vset) DFS_dircycle_tracked_state \<Rightarrow> ('v, 'vset) DFS_dircycle_state \<Rightarrow> bool" where
+  "('v, 'vset) DFS_dircycle_linear_tracked_aux_state \<Rightarrow> ('v, 'vset) DFS_dircycle_state \<Rightarrow> bool" where
   "dircycle_agree st st' \<longleftrightarrow>
      stack st = stack st'
    \<and> seen st = seen st'
-   \<and> DFS_dircycle_tracked_state.finished st = DFS_dircycle_state.finished st'
-   \<and> DFS_dircycle_tracked_state.cycle st = DFS_dircycle_state.cycle st'"
+   \<and> DFS_dircycle_linear_tracked_aux_state.finished st = DFS_dircycle_state.finished st'
+   \<and> DFS_dircycle_linear_tracked_aux_state.cycle st = DFS_dircycle_state.cycle st'"
 
 lemma dircycle_agree_intro[intro]:
   assumes "stack st = stack st'"
       and "seen st = seen st'"
-      and "DFS_dircycle_tracked_state.finished st = DFS_dircycle_state.finished st'"
-      and "DFS_dircycle_tracked_state.cycle st = DFS_dircycle_state.cycle st'"
+      and "DFS_dircycle_linear_tracked_aux_state.finished st = DFS_dircycle_state.finished st'"
+      and "DFS_dircycle_linear_tracked_aux_state.cycle st = DFS_dircycle_state.cycle st'"
   shows "dircycle_agree st st'"
   using assms by (simp add: dircycle_agree_def)
 
 lemma dircycle_agree_props[elim]:
   "dircycle_agree st st' \<Longrightarrow>
      (\<lbrakk>stack st = stack st'; seen st = seen st';
-       DFS_dircycle_tracked_state.finished st = DFS_dircycle_state.finished st';
-       DFS_dircycle_tracked_state.cycle st = DFS_dircycle_state.cycle st'\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+       DFS_dircycle_linear_tracked_aux_state.finished st = DFS_dircycle_state.finished st';
+       DFS_dircycle_linear_tracked_aux_state.cycle st = DFS_dircycle_state.cycle st'\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by (simp add: dircycle_agree_def)
 
 lemma dircycle_agreeD:
   assumes "dircycle_agree st st'"
   shows "stack st = stack st'"
     and "seen st = seen st'"
-    and "DFS_dircycle_tracked_state.finished st = DFS_dircycle_state.finished st'"
-    and "DFS_dircycle_tracked_state.cycle st = DFS_dircycle_state.cycle st'"
+    and "DFS_dircycle_linear_tracked_aux_state.finished st = DFS_dircycle_state.finished st'"
+    and "DFS_dircycle_linear_tracked_aux_state.cycle st = DFS_dircycle_state.cycle st'"
   using assms by (simp_all add: dircycle_agree_def)
 
-context DFS_dircycle_tracked_thms
+context DFS_dircycle_linear_tracked_aux_thms
 begin
 
 subsection \<open>The five invariants the agreement argument runs on\<close>
@@ -262,12 +262,12 @@ corollary dircycle_tracked_seen_eq:
   by (rule dircycle_agreeD(2)[OF dircycle_tracked_agrees_linear])
 
 corollary dircycle_tracked_finished_eq:
-  "DFS_dircycle_tracked_state.finished dircycle_tracked_result
+  "DFS_dircycle_linear_tracked_aux_state.finished dircycle_tracked_result
      = DFS_dircycle_state.finished lin.dircycle_linear_result"
   by (rule dircycle_agreeD(3)[OF dircycle_tracked_agrees_linear])
 
 corollary dircycle_tracked_cycle_eq:
-  "DFS_dircycle_tracked_state.cycle dircycle_tracked_result
+  "DFS_dircycle_linear_tracked_aux_state.cycle dircycle_tracked_result
      = DFS_dircycle_state.cycle lin.dircycle_linear_result"
   by (rule dircycle_agreeD(4)[OF dircycle_tracked_agrees_linear])
 
@@ -296,10 +296,10 @@ text \<open>The inner runs above agree \<^emph>\<open>step for step\<close> beca
   root order. That is the one place the \<open>sel\<close> gap is visible in the results, and it is a
   difference in reported bookkeeping only, not in the verdict.\<close>
 
-locale DFS_DirCycle_sweeps_agree =
-  lin: DFS_DirCycle_Linear_thms
+locale DFS_dircycle_sweeps_agree =
+  lin: DFS_dircycle_linear_thms
         where dfs_aux = dfs_aux\<^sub>L and fin_aux = fin_aux\<^sub>L and cycle_aux = cycle_aux\<^sub>L +
-  trk: DFS_DirCycle_Tracked_thms
+  trk: DFS_dircycle_linear_tracked_thms
         where dfs_aux = dfs_aux\<^sub>T and fin_aux = fin_aux\<^sub>T and unfin_aux = unfin_aux\<^sub>T
           and cycle_aux = cycle_aux\<^sub>T
   for dfs_aux\<^sub>L :: "'v \<Rightarrow> 'vset \<Rightarrow> 'stateL"
@@ -317,8 +317,8 @@ text \<open>Both sweeps run on the \<^emph>\<open>same\<close> graph \<open>G\<c
   \<open>lin.Graph.digraph_abs G\<close> below \<^emph>\<open>is\<close> the graph both sweeps talk about; \<open>trk.Graph.\<dots>\<close> is
   simply not a second name for it.\<close>
 
-abbreviation "lin_run \<equiv> lin.DFS_DirCycle_Linear lin.initial_state"
-abbreviation "trk_run \<equiv> trk.DFS_DirCycle_Tracked trk.initial_state"
+abbreviation "lin_run \<equiv> lin.DFS_dircycle_linear lin.initial_state"
+abbreviation "trk_run \<equiv> trk.DFS_dircycle_linear_tracked trk.initial_state"
 
 context
 includes lin.Graph.adjmap.automation and lin.Graph.vset.set.automation
@@ -328,11 +328,11 @@ subsection \<open>Both flags decide the same question\<close>
 
 lemma lin_cyc_iff:
   "cyc lin_run \<longleftrightarrow> (\<exists>c. Awalk_Defs.cycle (lin.Graph.digraph_abs G) c)"
-  using lin.DFS_DirCycle_Linear_sound lin.DFS_DirCycle_Linear_complete by blast
+  using lin.DFS_dircycle_linear_sound lin.DFS_dircycle_linear_complete by blast
 
 lemma trk_cyc_iff:
   "sweep_cyc trk_run \<longleftrightarrow> (\<exists>c. Awalk_Defs.cycle (lin.Graph.digraph_abs G) c)"
-  using trk.DFS_DirCycle_Tracked_sound trk.DFS_DirCycle_Tracked_complete by blast
+  using trk.DFS_dircycle_linear_tracked_sound trk.DFS_dircycle_linear_tracked_complete by blast
 
 theorem sweeps_cyc_agree: "cyc lin_run = sweep_cyc trk_run"
   by (simp add: lin_cyc_iff trk_cyc_iff)
@@ -344,10 +344,10 @@ lemma lin_fin_eq_dVs:
   shows "t_set (fin lin_run) = dVs (lin.Graph.digraph_abs G)"
 proof -
   note ini = lin.initial_state_props
-  have dom: "lin.DFS_DirCycle_Linear_dom lin.initial_state" by (rule ini(4))
+  have dom: "lin.DFS_dircycle_linear_dom lin.initial_state" by (rule ini(4))
   have i1: "lin.invar_1 lin_run" by (intro lin.invar_1_holds dom ini)
   have isd: "lin.invar_seed lin_run" by (intro lin.invar_seed_holds dom ini)
-  have "lin.DFS_DirCycle_Linear_ret_2_conds lin_run"
+  have "lin.DFS_dircycle_linear_ret_2_conds lin_run"
     by (intro lin.ret_2_holds dom ini ncyc)
   hence empty: "V -\<^sub>G (fin lin_run) = \<emptyset>\<^sub>N" by (auto elim!: call_cond_elims)
   have inv: "vset_inv (fin lin_run)" using i1 by (auto elim!: invar_props_elims)
@@ -364,10 +364,10 @@ lemma trk_fin_eq_dVs:
   shows "t_set (sweep_fin trk_run) = dVs (lin.Graph.digraph_abs G)"
 proof -
   note ini = trk.initial_state_props
-  have dom: "trk.DFS_DirCycle_Tracked_dom trk.initial_state" by (rule ini(5))
+  have dom: "trk.DFS_dircycle_linear_tracked_dom trk.initial_state" by (rule ini(5))
   have ip: "trk.invar_part trk_run" by (intro trk.invar_part_holds dom ini)
   have isd: "trk.invar_seed trk_run" by (intro trk.invar_seed_holds dom ini)
-  have "trk.DFS_DirCycle_Tracked_ret_2_conds trk_run"
+  have "trk.DFS_dircycle_linear_tracked_ret_2_conds trk_run"
     by (intro trk.ret_2_holds dom ini ncyc)
   hence empty: "sweep_unfin trk_run = \<emptyset>\<^sub>N" by (auto elim!: call_cond_elims)
   have covers: "dVs (lin.Graph.digraph_abs G) \<subseteq> t_set (sweep_fin trk_run)"
