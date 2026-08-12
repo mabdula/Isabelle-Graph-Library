@@ -1,5 +1,5 @@
 theory DFS_Time
-  imports DFS "HOL-Data_Structures.Define_Time_Function"
+  imports DFS "HOL-Library.Time_Functions"
 begin
 locale DFS_time = DFS where lookup = lookup 
 for lookup :: "'adjmapmap\<Rightarrow> 'v \<Rightarrow> 'vset option" +
