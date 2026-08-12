@@ -40,7 +40,9 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
         every iteration.
       * Level 1 -- DFS_DirCycle_Linear_Tracked{_Aux}, the first level to use on_push. The gray
         (on-stack) and unfinished sets become state components maintained incrementally, so both of
-        level 0's differences disappear. DFS_DirCycle_Linear_Tracked_Equiv relates the two levels.
+        level 0's differences disappear. DFS_DirCycle_Linear_Tracked_Aux_Equiv relates the two inner searches,
+        step for step; DFS_DirCycle_Linear_Tracked_Equiv relates the two outer sweeps, which agree
+        on the verdict but need not visit in the same order.
       * Level 2 -- DFS_DirCycle_Linear_Tracked_Aux_Refine and DFS_DirCycle_Linear_Tracked_Refine,
         on DFS_Skeleton_Refine, where the adjacency map itself moves into the state and on_push
         deletes the pushed vertex's in-edges (via a static reverse adjacency map fixed by the
@@ -59,6 +61,7 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
     DFS_DirCycle_Linear_Aux
     DFS_DirCycle_Linear
     DFS_DirCycle_Linear_Tracked_Aux
+    DFS_DirCycle_Linear_Tracked_Aux_Equiv
     DFS_DirCycle_Linear_Tracked
     DFS_DirCycle_Linear_Tracked_Equiv
     DFS_DirCycle_Linear_Tracked_Aux_Refine
