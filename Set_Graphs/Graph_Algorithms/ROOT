@@ -1,22 +1,98 @@
+session "DFS_Skeletons" in DFS = "Directed_Set_Graphs" +
+  description \<open>Generic depth-first search skeletons.
+
+    DFS_Skeleton is the skeleton itself: a stack-based search over a Pair_Graph_Specs adjacency
+    map, parameterized by callbacks -- among them on_push, applied to the freshly-pushed state in
+    the descend step, so that an instance can maintain data that changes when a vertex enters the
+    stack -- with its termination argument and the invariants (seen/finished, the stack shape)
+    proved once and for all. DFS_Skeleton_Refine moves the adjacency map into the state so a callback
+    may prune it, proving the loop equivalent to the one that reads a fixed map.
+
+    Kept as a light session of its own so that consumers needing only a DFS skeleton -- e.g. the
+    directed-cycle detection in Directed_Cycle_DFS, or an external development such as a datalog
+    foundedness check -- need not depend on Graph_Algorithms_Dev, which pulls in
+    Verified_SAT_Based_AI_Planning, BFS and Bellman-Ford.\<close>
+  theories
+    DFS_Skeleton
+    DFS_Skeleton_Refine
+
+session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
+  description \<open>Directed-cycle detection by depth-first search.
+
+    DFS_DirCycle is the single-root directed-cycle detector on the DFS_Skeletons skeleton: a cycle
+    exists below the root iff the search meets a back edge, i.e. an edge into a seen but unfinished
+    vertex. Graph_Topological_Order gives the certificate view -- a finite directed graph has a
+    topological numbering iff it has no directed cycle, which is the usual way to certify
+    acyclicity, checkable in one pass over the edges.
+
+    On top of that sits a whole-graph (linear) directed-cycle search, the directed counterpart of
+    DFS_Cycles: an outer sweep over the vertices calling the detector once per remaining root, each
+    call pre-seeded with the region earlier calls already finished, so the whole run is linear
+    rather than one fresh DFS per vertex. It is developed as a chain of refinements, each level
+    removing one set operation from a hot loop and each justified by an equivalence back to the
+    level below it, so that the correctness argument is stated once against the simplest version and
+    inherited by the fastest one. Every level ships an inner pre-seeded DFS (..._Aux) and an outer
+    sweep that calls it once per remaining root.
+
+      * Level 0 -- DFS_DirCycle_Linear{_Aux}, on DFS_Skeleton and DFS_DirCycle unchanged, i.e. with
+        the identity on_push. The reference implementation: the back-edge test recomputes
+        "seen - finished" at every skeleton step, and the outer loop recomputes "V - finished" at
+        every iteration.
+      * Level 1 -- DFS_DirCycle_Linear_Tracked{_Aux}, the first level to use on_push. The gray
+        (on-stack) and unfinished sets become state components maintained incrementally, so both of
+        level 0's differences disappear. DFS_DirCycle_Linear_Tracked_Aux_Equiv relates the two inner searches,
+        step for step; DFS_DirCycle_Linear_Tracked_Equiv relates the two outer sweeps, which agree
+        on the verdict but need not visit in the same order.
+      * Level 2 -- DFS_DirCycle_Linear_Tracked_Aux_Refine and DFS_DirCycle_Linear_Tracked_Refine,
+        on DFS_Skeleton_Refine, where the adjacency map itself moves into the state and on_push
+        deletes the pushed vertex's in-edges (via a static reverse adjacency map fixed by the
+        instance, so the deletions cost one pass over the edges in total). The remaining difference,
+        "neighbourhood - seen" (evaluated twice per step), goes too: the loop reads a plain
+        neighbourhood. The outer sweep threads that pruned map from one inner call to the next, so
+        the pruning is done once over the whole run rather than once per root; its state record
+        extends level 1's, and the equivalence back to level 1 is a plain equation under the record
+        package's truncate, from which soundness and completeness transport. The inner search needs
+        one assumption the vset ADT does not supply, sel_cong -- that sel is determined by the
+        element set -- because the two levels hand sel vsets built by different operations; the
+        outer sweep does not, since it selects from the very vset level 1 selects from.\<close>
+  theories
+    DFS_DirCycle
+    Graph_Topological_Order
+    DFS_DirCycle_Linear_Aux
+    DFS_DirCycle_Linear
+    DFS_DirCycle_Linear_Tracked_Aux
+    DFS_DirCycle_Linear_Tracked_Aux_Equiv
+    DFS_DirCycle_Linear_Tracked
+    DFS_DirCycle_Linear_Tracked_Equiv
+    DFS_DirCycle_Linear_Tracked_Aux_Refine
+    DFS_DirCycle_Linear_Tracked_Refine
+
 session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
   options [document = pdf, document_output = "output"]
 
   sessions
     Verified_SAT_Based_AI_Planning
     Undirected_Set_Graphs
+    DFS_Skeletons
+    Directed_Cycle_DFS
   theories
     RBT_Map_Extension
     DFS
     DFS_Example
+    DFS_Reach_Skel
     BFS_2
     BFS_Subprocedures
     BFS_Example
     DFS_Cycles_Aux
     DFS_Cycles
     DFS_Cycles_Example
+    DFS_Time
     Parent_Map
     Bellman_Ford
     Bellman_Ford_Example
+
+  theories [document = false]
+    DFS_Aux_Skel
 
   document_files
     "root.tex"

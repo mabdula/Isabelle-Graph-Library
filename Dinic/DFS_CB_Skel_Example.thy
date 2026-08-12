@@ -26,7 +26,7 @@ global_interpretation dfs: DFS_CB
   defines  dfs_backtrack_initial_state = dfs.initial_state
     and    neighbourhood = dfs.Graph.neighbourhood
     and    cb_found = dfs.cb_found
-    and    dfs_del_dead_impl = dfs.cb.DFS_skel_impl
+    and    dfs_del_dead_impl = dfs.cb.DFS_skeleton_impl
     and    add_edge = dfs.Graph.add_edge
     and    delete_edge = dfs.Graph.delete_edge
   using G.Pair_Graph_Specs_axioms RBT.Set2_axioms
@@ -38,7 +38,7 @@ text ‹The partial-function unfolding equation cannot serve as a code equation 
 carries the instantiated callbacks as compound arguments), so we restate it once at the concrete
 instance, with the callbacks inlined.›
 lemmas dfs_del_dead_impl_code[code] =
-  dfs.cb.DFS_skel_impl.simps[folded dfs_del_dead_impl_def[folded cb_found_def],
+  dfs.cb.DFS_skeleton_impl.simps[folded dfs_del_dead_impl_def[folded cb_found_def],
     unfolded dfs.cb_on_found_def dfs.cb_on_empty_def dfs.cb_on_backtrack_def]
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (1,5), (5,8), (8,7),
