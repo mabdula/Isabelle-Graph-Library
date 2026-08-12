@@ -79,6 +79,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     RBT_Map_Extension
     DFS
     DFS_Example
+    DFS_Reach_Skel
     BFS_2
     BFS_Subprocedures
     BFS_Example
@@ -89,6 +90,9 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     Parent_Map
     Bellman_Ford
     Bellman_Ford_Example
+
+  theories [document = false]
+    DFS_Aux_Skel
 
   document_files
     "root.tex"
