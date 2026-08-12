@@ -1,5 +1,5 @@
 theory DFS_DirCycle_Linear_Tracked_Aux_Refine
-  imports DFS_Skel_More_Refine DFS_DirCycle_Linear_Tracked_Aux
+  imports DFS_Skeletons.DFS_Skel_More_Refine DFS_DirCycle_Linear_Tracked_Aux
 begin
 
 text \<open>Level 2 of the refinement chain at the \<^emph>\<open>inner\<close> (pre-seeded) directed-cycle DFS: the
@@ -367,7 +367,7 @@ lemma dircycle_refine_initial_dom: "rdc.DFS_skel_more_refine_dom dircycle_refine
 
 abbreviation "dircycle_refine_result \<equiv> rdc.DFS_skel_more_refine dircycle_refine_initial_state"
 
-text \<open>Level 2's own equivalence, from \<^theory>\<open>Directed_Cycle_DFS.DFS_Skel_More_Refine\<close>: the loop
+text \<open>Level 2's own equivalence, from \<^theory>\<open>DFS_Skeletons.DFS_Skel_More_Refine\<close>: the loop
   that reads the state's pruned map is the loop that recomputes the difference.\<close>
 
 theorem dircycle_refine_eq_more:

@@ -37,7 +37,7 @@ text \<open>A refinement of \<^locale>\<open>DFS_skel_more\<close> that removes 
   \<open>sel_cong\<close> in \<open>DFS_skel_more_refine_thms\<close>: a \<open>sel\<close> determined by the element set (for a
   search tree, the leftmost element rather than the root). Without it the refined search is still a
   perfectly good DFS, but it is a \<^emph>\<open>different\<close> one, and none of the invariant machinery above
-  \<^theory>\<open>Directed_Cycle_DFS.DFS_Skel_More\<close> transfers.
+  \<^theory>\<open>DFS_Skeletons.DFS_Skel_More\<close> transfers.
 
   \<^bold>\<open>What the equivalence buys.\<close> Both locales share the same \<open>on_push\<close> --- the refinement changes
   only which map the loop \<^emph>\<open>reads\<close>, not how the state evolves --- so the two runs produce

@@ -1,5 +1,5 @@
 theory DFS_DirCycle_Linear_Tracked_Aux
-  imports DFS_Skel_More Directed_Set_Graphs.Component_Defs
+  imports DFS_Skeletons.DFS_Skel_More Directed_Set_Graphs.Component_Defs
 begin
 
 
