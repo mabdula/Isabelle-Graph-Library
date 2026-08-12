@@ -35,8 +35,8 @@ text \<open>The whole-graph (linear) directed-cycle search of
   (\<open>DFS_dircycle_linear\<close> is a sibling, not an ancestor --- the two sweeps share no theory ---
   so it is named in prose here rather than as a \<open>\<^theory>\<close> reference.)\<close>
 
-text \<open>\<^theory>\<open>DFS_Skeletons.DFS_Skel_More\<close> declares \<open>termination_intros\<close> \<^emph>\<open>inside\<close>
-  \<^locale>\<open>DFS_skel_more_thms\<close> (as \<open>DFS_Cycles\<close> does in the library), which scopes the attribute to
+text \<open>\<^theory>\<open>DFS_Skeletons.DFS_Skeleton\<close> declares \<open>termination_intros\<close> \<^emph>\<open>inside\<close>
+  \<^locale>\<open>DFS_skeleton_thms\<close> (as \<open>DFS_Cycles\<close> does in the library), which scopes the attribute to
   that locale; at theory level it is undeclared. So, exactly as in \<open>DFS_dircycle_linear\<close>, the outer
   loop --- which is where termination is argued --- has to introduce it.\<close>
 named_theorems termination_intros

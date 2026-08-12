@@ -1,10 +1,10 @@
 theory DFS_DirCycle_Linear_Tracked_Aux
-  imports DFS_Skeletons.DFS_Skel_More Directed_Set_Graphs.Component_Defs
+  imports DFS_Skeletons.DFS_Skeleton Directed_Set_Graphs.Component_Defs
 begin
 
 
 text \<open>The pre-seeded directed-cycle DFS of \<open>DFS_dircycle_linear_Aux\<close>,
-  rebuilt on \<^locale>\<open>DFS_skel_more\<close> so that the gray (on-stack) set and the complement of the
+  rebuilt on \<^locale>\<open>DFS_skeleton\<close> so that the gray (on-stack) set and the complement of the
   finished region are carried \<^emph>\<open>explicitly\<close> and maintained \<^emph>\<open>incrementally\<close>:
 
   \<^item> The library's \<open>DFS_dircycle\<close> tests for a back edge with
@@ -27,7 +27,7 @@ text \<open>The pre-seeded directed-cycle DFS of \<open>DFS_dircycle_linear_Aux\
   successor-closed and acyclic. The exports at the end are the aux's seven --- what one run must
   hand the outer loop --- plus the two for \<open>unfinished\<close>.\<close>
 
-record ('ver, 'vset) DFS_dircycle_linear_tracked_aux_state = "('ver, 'vset) DFS_skel_state" +
+record ('ver, 'vset) DFS_dircycle_linear_tracked_aux_state = "('ver, 'vset) DFS_skeleton_state" +
   finished   :: "'vset"
   gray       :: "'vset"
   unfinished :: "'vset"
@@ -89,14 +89,14 @@ definition "DFS_dircycle_linear_tracked_aux_axioms =
   \<and> t_set uf \<union> t_set f = dVs (Graph.digraph_abs G)
   \<and> t_set uf \<inter> t_set f = {})"
 
-sublocale dc: DFS_skel_more
+sublocale dc: DFS_skeleton
   where lookup = lookup and G = G and s = s
     and found = cyc_found and on_found = cyc_on_found
     and on_empty = cyc_on_empty and on_backtrack = cyc_on_backtrack
     and on_push = cyc_on_push
   by unfold_locales
 
-abbreviation "find_dircycle_tracked \<equiv> dc.DFS_skel_more_impl"
+abbreviation "find_dircycle_tracked \<equiv> dc.DFS_skeleton_impl"
 
 end
 
@@ -111,14 +111,14 @@ lemma spine_preservation:
   "stack (cyc_on_push u st) = stack st" "seen (cyc_on_push u st) = seen st"
   by (auto simp: cyc_on_found_def cyc_on_empty_def cyc_on_backtrack_def cyc_on_push_def)
 
-sublocale dc: DFS_skel_more_thms
+sublocale dc: DFS_skeleton_thms
   where lookup = lookup and G = G and s = s
     and found = cyc_found and on_found = cyc_on_found
     and on_empty = cyc_on_empty and on_backtrack = cyc_on_backtrack
     and on_push = cyc_on_push
   using dircycle_tracked_axioms
   by (unfold_locales)
-     (auto simp: dc.DFS_skel_more_axioms_def DFS_dircycle_linear_tracked_aux_axioms_def
+     (auto simp: dc.DFS_skeleton_axioms_def DFS_dircycle_linear_tracked_aux_axioms_def
                  cyc_on_found_def cyc_on_empty_def cyc_on_backtrack_def cyc_on_push_def)
 
 definition "invar_2 dfs_state = Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state))"
@@ -173,8 +173,8 @@ lemma initial_invars[simp,intro]:
   by (auto simp: dc.invar_1_def dc.invar_seen_stack_def dircycle_tracked_initial_state_def
                  DFS_dircycle_linear_tracked_aux_axioms_def)
 
-lemma dircycle_tracked_initial_dom: "dc.DFS_skel_more_dom dircycle_tracked_initial_state"
-  by (intro dc.DFS_skel_more_terminates initial_invars)
+lemma dircycle_tracked_initial_dom: "dc.DFS_skeleton_dom dircycle_tracked_initial_state"
+  by (intro dc.DFS_skeleton_terminates initial_invars)
 
 lemma initial_struct[simp,intro]:
   "invar_2 dircycle_tracked_initial_state"
@@ -216,22 +216,22 @@ lemma initial_fc[simp,intro]:
 subsection \<open>The step functions, explicitly\<close>
 
 lemma upd1_unfold:
-  "stack (dc.DFS_skel_more_upd1 st) = sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st) # stack st"
-  "seen (dc.DFS_skel_more_upd1 st) = insert (sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st)) (seen st)"
-  "finished (dc.DFS_skel_more_upd1 st) = finished st"
-  "gray (dc.DFS_skel_more_upd1 st) = insert (sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st)) (gray st)"
-  "unfinished (dc.DFS_skel_more_upd1 st) = unfinished st"
-  "cycle (dc.DFS_skel_more_upd1 st) = cycle st"
-  by (auto simp: dc.DFS_skel_more_upd1_def cyc_on_push_def Let_def)
+  "stack (dc.DFS_skeleton_upd1 st) = sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st) # stack st"
+  "seen (dc.DFS_skeleton_upd1 st) = insert (sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st)) (seen st)"
+  "finished (dc.DFS_skeleton_upd1 st) = finished st"
+  "gray (dc.DFS_skeleton_upd1 st) = insert (sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st)) (gray st)"
+  "unfinished (dc.DFS_skeleton_upd1 st) = unfinished st"
+  "cycle (dc.DFS_skeleton_upd1 st) = cycle st"
+  by (auto simp: dc.DFS_skeleton_upd1_def cyc_on_push_def Let_def)
 
 lemma upd2_unfold:
-  "stack (dc.DFS_skel_more_upd2 st) = tl (stack st)"
-  "seen (dc.DFS_skel_more_upd2 st) = seen st"
-  "finished (dc.DFS_skel_more_upd2 st) = insert (hd (stack st)) (finished st)"
-  "gray (dc.DFS_skel_more_upd2 st) = vset_delete (hd (stack st)) (gray st)"
-  "unfinished (dc.DFS_skel_more_upd2 st) = vset_delete (hd (stack st)) (unfinished st)"
-  "cycle (dc.DFS_skel_more_upd2 st) = cycle st"
-  by (auto simp: dc.DFS_skel_more_upd2_def cyc_on_backtrack_def)
+  "stack (dc.DFS_skeleton_upd2 st) = tl (stack st)"
+  "seen (dc.DFS_skeleton_upd2 st) = seen st"
+  "finished (dc.DFS_skeleton_upd2 st) = insert (hd (stack st)) (finished st)"
+  "gray (dc.DFS_skeleton_upd2 st) = vset_delete (hd (stack st)) (gray st)"
+  "unfinished (dc.DFS_skeleton_upd2 st) = vset_delete (hd (stack st)) (unfinished st)"
+  "cycle (dc.DFS_skeleton_upd2 st) = cycle st"
+  by (auto simp: dc.DFS_skeleton_upd2_def cyc_on_backtrack_def)
 
 subsection \<open>Structural invariants\<close>
 
@@ -244,30 +244,30 @@ lemma invar_fin_intro[invar_props_intros]:
   by (auto simp: invar_fin_def)
 
 lemma invar_fin_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_holds_upd2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_2_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skel_more_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_2_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skeleton_upd2 dfs_state)"
   by (auto simp: upd2_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skel_more_ret1 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skel_more_ret2 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_fin dfs_state\<rbrakk> \<Longrightarrow> invar_fin (dc.DFS_skeleton_ret2 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "invar_fin dfs_state"
-  shows "invar_fin (dc.DFS_skel_more dfs_state)"
+  assumes "dc.DFS_skeleton_dom dfs_state" "invar_fin dfs_state"
+  shows "invar_fin (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skel_more_simps[OF IH(1)])
+    apply(rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skeleton_simps[OF IH(1)])
 qed
 
 lemma invar_2_props[invar_props_elims]:
@@ -279,34 +279,34 @@ lemma invar_2_intro[invar_props_intros]:
   by (auto simp: invar_2_def)
 
 lemma invar_2_holds_upd1[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_call_1_conds dfs_state" "dc.invar_1 dfs_state" "invar_2 dfs_state"
-  shows "invar_2 (dc.DFS_skel_more_upd1 dfs_state)"
+  assumes "dc.DFS_skeleton_call_1_conds dfs_state" "dc.invar_1 dfs_state" "invar_2 dfs_state"
+  shows "invar_2 (dc.DFS_skeleton_upd1 dfs_state)"
   using assms dc.graph_inv
   by (force simp: upd1_unfold elim!: call_cond_elims
             elim!: invar_props_elims intro!: Vwalk.vwalk_append2 invar_props_intros)
 
 lemma invar_2_holds_upd2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_2_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (dc.DFS_skel_more_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_2_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (dc.DFS_skeleton_upd2 dfs_state)"
   by (auto simp: upd2_unfold dest!: append_vwalk_pref elim!: invar_props_elims
            intro!: invar_props_intros elim: call_cond_elims)
 
 lemma invar_2_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (dc.DFS_skel_more_ret1 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_2_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (dc.DFS_skel_more_ret2 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (dc.DFS_skeleton_ret2 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_2_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "dc.invar_1 dfs_state" "invar_2 dfs_state"
-  shows "invar_2 (dc.DFS_skel_more dfs_state)"
+  assumes "dc.DFS_skeleton_dom dfs_state" "dc.invar_1 dfs_state" "invar_2 dfs_state"
+  shows "invar_2 (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skel_more_simps[OF IH(1)])
+    apply(rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skeleton_simps[OF IH(1)])
 qed
 
 lemma invar_ssf_props[invar_props_elims]:
@@ -325,14 +325,14 @@ lemma invar_ssf_intro[invar_props_intros]:
   by (auto simp: invar_ssf_def)
 
 lemma invar_ssf_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; dc.invar_1 dfs_state; invar_ssf dfs_state\<rbrakk> \<Longrightarrow>
-    invar_ssf (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; dc.invar_1 dfs_state; invar_ssf dfs_state\<rbrakk> \<Longrightarrow>
+    invar_ssf (dc.DFS_skeleton_upd1 dfs_state)"
 proof (intro invar_props_intros, goal_cases)
   case 1
   let ?v = "hd (stack dfs_state)"
   let ?w = "sel ((\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state))"
   have w: "?w \<in> t_set (\<N>\<^sub>G ?v) - t_set (seen dfs_state)"
-    using \<open>dc.DFS_skel_more_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
+    using \<open>dc.DFS_skeleton_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
     by (auto elim!: invar_props_elims call_cond_elims)
   show ?case using 1 w by (auto simp: upd1_unfold elim!: invar_props_elims)
 next
@@ -340,7 +340,7 @@ next
   let ?v = "hd (stack dfs_state)"
   let ?w = "sel ((\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state))"
   have w: "?w \<in> t_set (\<N>\<^sub>G ?v) - t_set (seen dfs_state)"
-    using \<open>dc.DFS_skel_more_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
+    using \<open>dc.DFS_skeleton_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
     by (auto elim!: invar_props_elims call_cond_elims)
   show ?case using 2 w by (auto simp: upd1_unfold elim!: invar_props_elims)
 next
@@ -351,7 +351,7 @@ next
   let ?v = "hd (stack dfs_state)"
   let ?w = "sel ((\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state))"
   have w: "?w \<in> t_set (\<N>\<^sub>G ?v) - t_set (seen dfs_state)"
-    using \<open>dc.DFS_skel_more_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
+    using \<open>dc.DFS_skeleton_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
     by (auto elim!: invar_props_elims call_cond_elims)
   show ?case using 4 w by (auto simp: upd1_unfold elim!: invar_props_elims)
 next
@@ -359,15 +359,15 @@ next
   let ?v = "hd (stack dfs_state)"
   let ?w = "sel ((\<N>\<^sub>G ?v) -\<^sub>G (seen dfs_state))"
   have w: "?w \<in> t_set (\<N>\<^sub>G ?v) - t_set (seen dfs_state)"
-    using \<open>dc.DFS_skel_more_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
+    using \<open>dc.DFS_skeleton_call_1_conds dfs_state\<close> \<open>dc.invar_1 dfs_state\<close>
     by (auto elim!: invar_props_elims call_cond_elims)
   show ?case using 5 w by (auto simp: upd1_unfold elim!: invar_props_elims)
 qed
 
 lemma invar_ssf_holds_upd2[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_call_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_call_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_ssf dfs_state"
-  shows "invar_ssf (dc.DFS_skel_more_upd2 dfs_state)"
+  shows "invar_ssf (dc.DFS_skeleton_upd2 dfs_state)"
 proof -
   obtain v stack_tl where stk: "stack dfs_state = v # stack_tl"
     using assms(1) by (auto elim!: call_cond_elims)
@@ -377,11 +377,11 @@ proof -
        "t_set (finished dfs_state) = t_set (seen dfs_state) - set (stack dfs_state)"
        "t_set (seen dfs_state) \<subseteq> dVs (Graph.digraph_abs G)"
     using assms(4) by (auto simp: invar_ssf_def)
-  have fin2: "t_set (finished (dc.DFS_skel_more_upd2 dfs_state)) = Set.insert v (t_set (finished dfs_state))"
+  have fin2: "t_set (finished (dc.DFS_skeleton_upd2 dfs_state)) = Set.insert v (t_set (finished dfs_state))"
     using finv stk by (auto simp: upd2_unfold)
-  have st2: "stack (dc.DFS_skel_more_upd2 dfs_state) = stack_tl"
+  have st2: "stack (dc.DFS_skeleton_upd2 dfs_state) = stack_tl"
     by (simp add: upd2_unfold stk)
-  have se2: "seen (dc.DFS_skel_more_upd2 dfs_state) = seen dfs_state"
+  have se2: "seen (dc.DFS_skeleton_upd2 dfs_state) = seen dfs_state"
     by (simp add: upd2_unfold)
   show ?thesis
     unfolding invar_ssf_def st2 se2 fin2
@@ -389,22 +389,22 @@ proof -
 qed
 
 lemma invar_ssf_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_ssf dfs_state\<rbrakk> \<Longrightarrow> invar_ssf (dc.DFS_skel_more_ret1 dfs_state)"
-  by (force simp: dc.DFS_skel_more_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_ssf dfs_state\<rbrakk> \<Longrightarrow> invar_ssf (dc.DFS_skeleton_ret1 dfs_state)"
+  by (force simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_ssf_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_ssf dfs_state\<rbrakk> \<Longrightarrow> invar_ssf (dc.DFS_skel_more_ret2 dfs_state)"
-  by (force simp: dc.DFS_skel_more_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_ssf dfs_state\<rbrakk> \<Longrightarrow> invar_ssf (dc.DFS_skeleton_ret2 dfs_state)"
+  by (force simp: dc.DFS_skeleton_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_ssf_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state" "invar_ssf dfs_state"
-  shows "invar_ssf (dc.DFS_skel_more dfs_state)"
+  assumes "dc.DFS_skeleton_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state" "invar_ssf dfs_state"
+  shows "invar_ssf (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skel_more_simps[OF IH(1)])
+    apply(rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsection \<open>The gray set is the stack\<close>
@@ -427,43 +427,43 @@ lemma invar_gray_stack_intro[invar_props_intros]:
   by (auto simp: invar_gray_stack_def)
 
 lemma invar_gray_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; invar_gray dfs_state\<rbrakk> \<Longrightarrow>
-    invar_gray (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; invar_gray dfs_state\<rbrakk> \<Longrightarrow>
+    invar_gray (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_gray_holds_upd2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_2_conds dfs_state; invar_gray dfs_state\<rbrakk> \<Longrightarrow>
-    invar_gray (dc.DFS_skel_more_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_2_conds dfs_state; invar_gray dfs_state\<rbrakk> \<Longrightarrow>
+    invar_gray (dc.DFS_skeleton_upd2 dfs_state)"
   by (auto simp: upd2_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_gray_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_gray dfs_state\<rbrakk> \<Longrightarrow> invar_gray (dc.DFS_skel_more_ret1 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_gray dfs_state\<rbrakk> \<Longrightarrow> invar_gray (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_gray_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_gray dfs_state\<rbrakk> \<Longrightarrow> invar_gray (dc.DFS_skel_more_ret2 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_gray dfs_state\<rbrakk> \<Longrightarrow> invar_gray (dc.DFS_skeleton_ret2 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_gray_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "invar_gray dfs_state"
-  shows "invar_gray (dc.DFS_skel_more dfs_state)"
+  assumes "dc.DFS_skeleton_dom dfs_state" "invar_gray dfs_state"
+  shows "invar_gray (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skel_more_simps[OF IH(1)])
+    apply(rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skeleton_simps[OF IH(1)])
 qed
 
 lemma invar_gray_stack_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; invar_gray dfs_state; invar_gray_stack dfs_state\<rbrakk> \<Longrightarrow>
-    invar_gray_stack (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; invar_gray dfs_state; invar_gray_stack dfs_state\<rbrakk> \<Longrightarrow>
+    invar_gray_stack (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_gray_stack_holds_upd2[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_call_2_conds dfs_state" "invar_ssf dfs_state" "invar_gray dfs_state"
+  assumes "dc.DFS_skeleton_call_2_conds dfs_state" "invar_ssf dfs_state" "invar_gray dfs_state"
           "invar_gray_stack dfs_state"
-  shows "invar_gray_stack (dc.DFS_skel_more_upd2 dfs_state)"
+  shows "invar_gray_stack (dc.DFS_skeleton_upd2 dfs_state)"
 proof -
   obtain v stack_tl where stk: "stack dfs_state = v # stack_tl"
     using assms(1) by (auto elim!: call_cond_elims)
@@ -471,60 +471,60 @@ proof -
   have ginv: "vset_inv (gray dfs_state)" using assms(3) by (auto simp: invar_gray_def)
   have geq: "t_set (gray dfs_state) = set (stack dfs_state)"
     using assms(4) by (auto simp: invar_gray_stack_def)
-  have "t_set (gray (dc.DFS_skel_more_upd2 dfs_state)) = t_set (gray dfs_state) - {v}"
+  have "t_set (gray (dc.DFS_skeleton_upd2 dfs_state)) = t_set (gray dfs_state) - {v}"
     using ginv stk by (auto simp: upd2_unfold)
   also have "\<dots> = set stack_tl"
     using geq dis stk by auto
-  finally have "t_set (gray (dc.DFS_skel_more_upd2 dfs_state))
-      = set (stack (dc.DFS_skel_more_upd2 dfs_state))"
+  finally have "t_set (gray (dc.DFS_skeleton_upd2 dfs_state))
+      = set (stack (dc.DFS_skeleton_upd2 dfs_state))"
     by (simp add: upd2_unfold(1) stk)
   thus ?thesis by (rule invar_gray_stack_intro)
 qed
 
 lemma invar_gray_stack_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_gray_stack dfs_state\<rbrakk> \<Longrightarrow> invar_gray_stack (dc.DFS_skel_more_ret1 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_gray_stack dfs_state\<rbrakk> \<Longrightarrow> invar_gray_stack (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_gray_stack_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_gray_stack dfs_state\<rbrakk> \<Longrightarrow> invar_gray_stack (dc.DFS_skel_more_ret2 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_gray_stack dfs_state\<rbrakk> \<Longrightarrow> invar_gray_stack (dc.DFS_skeleton_ret2 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_gray_stack_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_ssf dfs_state" "invar_gray dfs_state" "invar_gray_stack dfs_state"
-  shows "invar_gray_stack (dc.DFS_skel_more dfs_state)"
+  shows "invar_gray_stack (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
-  note simps = dc.DFS_skel_more_simps[OF IH(1)]
+  note simps = dc.DFS_skeleton_simps[OF IH(1)]
   show ?case
-  proof (rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    assume c: "dc.DFS_skel_more_call_1_conds dfs_state"
-    have "invar_gray_stack (dc.DFS_skel_more (dc.DFS_skel_more_upd1 dfs_state))"
+  proof (rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    assume c: "dc.DFS_skeleton_call_1_conds dfs_state"
+    have "invar_gray_stack (dc.DFS_skeleton (dc.DFS_skeleton_upd1 dfs_state))"
       by (rule IH(2)[OF c dc.invar_1_holds_1[OF c IH(4)] invar_fin_holds_upd1[OF c IH(5)]
                      invar_ssf_holds_upd1[OF c IH(4) IH(6)] invar_gray_holds_upd1[OF c IH(7)]
                      invar_gray_stack_holds_upd1[OF c IH(7) IH(8)]])
-    thus "invar_gray_stack (dc.DFS_skel_more dfs_state)"
+    thus "invar_gray_stack (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(1)[OF c])
   next
-    assume c: "dc.DFS_skel_more_call_2_conds dfs_state"
-    have "invar_gray_stack (dc.DFS_skel_more (dc.DFS_skel_more_upd2 dfs_state))"
+    assume c: "dc.DFS_skeleton_call_2_conds dfs_state"
+    have "invar_gray_stack (dc.DFS_skeleton (dc.DFS_skeleton_upd2 dfs_state))"
       by (rule IH(3)[OF c dc.invar_1_holds_2[OF c IH(4)] invar_fin_holds_upd2[OF c IH(5)]
                      invar_ssf_holds_upd2[OF c IH(4) IH(5) IH(6)] invar_gray_holds_upd2[OF c IH(7)]
                      invar_gray_stack_holds_upd2[OF c IH(6) IH(7) IH(8)]])
-    thus "invar_gray_stack (dc.DFS_skel_more dfs_state)"
+    thus "invar_gray_stack (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(2)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_1_conds dfs_state"
-    have "invar_gray_stack (dc.DFS_skel_more_ret1 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_1_conds dfs_state"
+    have "invar_gray_stack (dc.DFS_skeleton_ret1 dfs_state)"
       by (rule invar_gray_stack_holds_ret_1[OF c IH(8)])
-    thus "invar_gray_stack (dc.DFS_skel_more dfs_state)"
+    thus "invar_gray_stack (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(3)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_2_conds dfs_state"
-    have "invar_gray_stack (dc.DFS_skel_more_ret2 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_2_conds dfs_state"
+    have "invar_gray_stack (dc.DFS_skeleton_ret2 dfs_state)"
       by (rule invar_gray_stack_holds_ret_2[OF c IH(8)])
-    thus "invar_gray_stack (dc.DFS_skel_more dfs_state)"
+    thus "invar_gray_stack (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(4)[OF c])
   qed
 qed
@@ -606,76 +606,76 @@ lemma invar_seed_intro[invar_props_intros]:
   by (auto simp: invar_seed_def)
 
 lemma invar_unfin_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; invar_unfin dfs_state\<rbrakk> \<Longrightarrow>
-    invar_unfin (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; invar_unfin dfs_state\<rbrakk> \<Longrightarrow>
+    invar_unfin (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_unfin_holds_upd2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_2_conds dfs_state; invar_unfin dfs_state\<rbrakk> \<Longrightarrow>
-    invar_unfin (dc.DFS_skel_more_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_2_conds dfs_state; invar_unfin dfs_state\<rbrakk> \<Longrightarrow>
+    invar_unfin (dc.DFS_skeleton_upd2 dfs_state)"
   by (auto simp: upd2_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_unfin_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_unfin dfs_state\<rbrakk> \<Longrightarrow> invar_unfin (dc.DFS_skel_more_ret1 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_unfin dfs_state\<rbrakk> \<Longrightarrow> invar_unfin (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_unfin_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_unfin dfs_state\<rbrakk> \<Longrightarrow> invar_unfin (dc.DFS_skel_more_ret2 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_unfin dfs_state\<rbrakk> \<Longrightarrow> invar_unfin (dc.DFS_skeleton_ret2 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 subsection \<open>The seed is never lost\<close>
 
 lemma invar_seed_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; dc.invar_1 dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow>
-    invar_seed (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; dc.invar_1 dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow>
+    invar_seed (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_seed_holds_upd2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_2_conds dfs_state; invar_fin dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow>
-    invar_seed (dc.DFS_skel_more_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_2_conds dfs_state; invar_fin dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow>
+    invar_seed (dc.DFS_skeleton_upd2 dfs_state)"
   by (auto simp: upd2_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_seed_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow> invar_seed (dc.DFS_skel_more_ret1 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow> invar_seed (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_seed_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow> invar_seed (dc.DFS_skel_more_ret2 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow> invar_seed (dc.DFS_skeleton_ret2 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_seed_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state" "invar_seed dfs_state"
-  shows "invar_seed (dc.DFS_skel_more dfs_state)"
+  assumes "dc.DFS_skeleton_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state" "invar_seed dfs_state"
+  shows "invar_seed (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skel_more_simps[OF IH(1)])
+    apply(rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skeleton_simps[OF IH(1)])
 qed
 
 lemma invar_unfin_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "invar_unfin dfs_state"
-  shows "invar_unfin (dc.DFS_skel_more dfs_state)"
+  assumes "dc.DFS_skeleton_dom dfs_state" "invar_unfin dfs_state"
+  shows "invar_unfin (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skel_more_simps[OF IH(1)])
+    apply(rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsection \<open>The unfinished set stays the complement of the finished region\<close>
 
 lemma invar_fin_unfin_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; invar_fin_unfin dfs_state\<rbrakk> \<Longrightarrow>
-    invar_fin_unfin (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; invar_fin_unfin dfs_state\<rbrakk> \<Longrightarrow>
+    invar_fin_unfin (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_unfin_holds_upd2[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_call_2_conds dfs_state" "invar_fin dfs_state" "invar_ssf dfs_state"
+  assumes "dc.DFS_skeleton_call_2_conds dfs_state" "invar_fin dfs_state" "invar_ssf dfs_state"
           "invar_unfin dfs_state" "invar_fin_unfin dfs_state"
-  shows "invar_fin_unfin (dc.DFS_skel_more_upd2 dfs_state)"
+  shows "invar_fin_unfin (dc.DFS_skeleton_upd2 dfs_state)"
 proof -
   let ?v = "hd (stack dfs_state)"
   have vstack: "?v \<in> set (stack dfs_state)"
@@ -688,69 +688,69 @@ proof -
   have un: "t_set (unfinished dfs_state) \<union> t_set (finished dfs_state) = dVs (Graph.digraph_abs G)"
    and dis: "t_set (unfinished dfs_state) \<inter> t_set (finished dfs_state) = {}"
     using assms(5) by (auto simp: invar_fin_unfin_def)
-  have fin': "t_set (finished (dc.DFS_skel_more_upd2 dfs_state))
+  have fin': "t_set (finished (dc.DFS_skeleton_upd2 dfs_state))
                 = Set.insert ?v (t_set (finished dfs_state))"
     using finv by (auto simp: upd2_unfold)
-  have unf': "t_set (unfinished (dc.DFS_skel_more_upd2 dfs_state))
+  have unf': "t_set (unfinished (dc.DFS_skeleton_upd2 dfs_state))
                 = t_set (unfinished dfs_state) - {?v}"
     using uinv by (auto simp: upd2_unfold)
   have vunf: "?v \<in> t_set (unfinished dfs_state)"
     using un vdVs vnotfin by auto
   show ?thesis
   proof (rule invar_fin_unfin_intro)
-    show "t_set (unfinished (dc.DFS_skel_more_upd2 dfs_state))
-            \<union> t_set (finished (dc.DFS_skel_more_upd2 dfs_state)) = dVs (Graph.digraph_abs G)"
+    show "t_set (unfinished (dc.DFS_skeleton_upd2 dfs_state))
+            \<union> t_set (finished (dc.DFS_skeleton_upd2 dfs_state)) = dVs (Graph.digraph_abs G)"
       unfolding unf' fin' using un vunf by auto
-    show "t_set (unfinished (dc.DFS_skel_more_upd2 dfs_state))
-            \<inter> t_set (finished (dc.DFS_skel_more_upd2 dfs_state)) = {}"
+    show "t_set (unfinished (dc.DFS_skeleton_upd2 dfs_state))
+            \<inter> t_set (finished (dc.DFS_skeleton_upd2 dfs_state)) = {}"
       unfolding unf' fin' using dis by auto
   qed
 qed
 
 lemma invar_fin_unfin_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_fin_unfin dfs_state\<rbrakk> \<Longrightarrow> invar_fin_unfin (dc.DFS_skel_more_ret1 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_fin_unfin dfs_state\<rbrakk> \<Longrightarrow> invar_fin_unfin (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_unfin_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_fin_unfin dfs_state\<rbrakk> \<Longrightarrow> invar_fin_unfin (dc.DFS_skel_more_ret2 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_fin_unfin dfs_state\<rbrakk> \<Longrightarrow> invar_fin_unfin (dc.DFS_skeleton_ret2 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_fin_unfin_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_ssf dfs_state" "invar_unfin dfs_state" "invar_fin_unfin dfs_state"
-  shows "invar_fin_unfin (dc.DFS_skel_more dfs_state)"
+  shows "invar_fin_unfin (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
-  note simps = dc.DFS_skel_more_simps[OF IH(1)]
+  note simps = dc.DFS_skeleton_simps[OF IH(1)]
   show ?case
-  proof (rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    assume c: "dc.DFS_skel_more_call_1_conds dfs_state"
-    have "invar_fin_unfin (dc.DFS_skel_more (dc.DFS_skel_more_upd1 dfs_state))"
+  proof (rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    assume c: "dc.DFS_skeleton_call_1_conds dfs_state"
+    have "invar_fin_unfin (dc.DFS_skeleton (dc.DFS_skeleton_upd1 dfs_state))"
       by (rule IH(2)[OF c dc.invar_1_holds_1[OF c IH(4)] invar_fin_holds_upd1[OF c IH(5)]
                      invar_ssf_holds_upd1[OF c IH(4) IH(6)] invar_unfin_holds_upd1[OF c IH(7)]
                      invar_fin_unfin_holds_upd1[OF c IH(8)]])
-    thus "invar_fin_unfin (dc.DFS_skel_more dfs_state)"
+    thus "invar_fin_unfin (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(1)[OF c])
   next
-    assume c: "dc.DFS_skel_more_call_2_conds dfs_state"
-    have "invar_fin_unfin (dc.DFS_skel_more (dc.DFS_skel_more_upd2 dfs_state))"
+    assume c: "dc.DFS_skeleton_call_2_conds dfs_state"
+    have "invar_fin_unfin (dc.DFS_skeleton (dc.DFS_skeleton_upd2 dfs_state))"
       by (rule IH(3)[OF c dc.invar_1_holds_2[OF c IH(4)] invar_fin_holds_upd2[OF c IH(5)]
                      invar_ssf_holds_upd2[OF c IH(4) IH(5) IH(6)] invar_unfin_holds_upd2[OF c IH(7)]
                      invar_fin_unfin_holds_upd2[OF c IH(5) IH(6) IH(7) IH(8)]])
-    thus "invar_fin_unfin (dc.DFS_skel_more dfs_state)"
+    thus "invar_fin_unfin (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(2)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_1_conds dfs_state"
-    have "invar_fin_unfin (dc.DFS_skel_more_ret1 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_1_conds dfs_state"
+    have "invar_fin_unfin (dc.DFS_skeleton_ret1 dfs_state)"
       by (rule invar_fin_unfin_holds_ret_1[OF c IH(8)])
-    thus "invar_fin_unfin (dc.DFS_skel_more dfs_state)"
+    thus "invar_fin_unfin (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(3)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_2_conds dfs_state"
-    have "invar_fin_unfin (dc.DFS_skel_more_ret2 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_2_conds dfs_state"
+    have "invar_fin_unfin (dc.DFS_skeleton_ret2 dfs_state)"
       by (rule invar_fin_unfin_holds_ret_2[OF c IH(8)])
-    thus "invar_fin_unfin (dc.DFS_skel_more dfs_state)"
+    thus "invar_fin_unfin (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(4)[OF c])
   qed
 qed
@@ -767,30 +767,30 @@ lemma invar_cycle_true_intro[invar_props_intros]:
   by (auto simp: invar_cycle_true_def)
 
 lemma invar_cycle_true_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; invar_cycle_true dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_true (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; invar_cycle_true dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_true (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_cycle_true_holds_upd2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_2_conds dfs_state; invar_cycle_true dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_true (dc.DFS_skel_more_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_2_conds dfs_state; invar_cycle_true dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_true (dc.DFS_skeleton_upd2 dfs_state)"
   by (auto simp: upd2_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_cycle_true_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_cycle_true dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_true (dc.DFS_skel_more_ret1 dfs_state)"
-  by (auto simp: dc.DFS_skel_more_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_cycle_true dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_true (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 text \<open>The found-hook fires on a nonempty \<open>(\<N>\<^sub>G v) \<inter>\<^sub>G gray\<close>; via \<open>invar_gray_stack\<close> the witness
   is a neighbour \<^emph>\<open>on the stack\<close>, and the stack prefix up to it closes into a cycle exactly as in
   the library's proof.\<close>
 lemma invar_cycle_true_holds_ret_2[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_ret_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_ret_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_2 dfs_state" "invar_ssf dfs_state" "invar_gray dfs_state"
           "invar_gray_stack dfs_state" "invar_cycle_true dfs_state"
-  shows "invar_cycle_true (dc.DFS_skel_more_ret2 dfs_state)"
+  shows "invar_cycle_true (dc.DFS_skeleton_ret2 dfs_state)"
 proof (intro invar_props_intros)
   let ?v = "hd (stack dfs_state)"
   have ne: "(\<N>\<^sub>G ?v) \<inter>\<^sub>G (gray dfs_state) \<noteq> \<emptyset>\<^sub>N"
    and stk: "stack dfs_state \<noteq> []"
-    using assms(1) by (auto simp: dc.DFS_skel_more_ret_2_conds_def cyc_found_def split: list.splits)
+    using assms(1) by (auto simp: dc.DFS_skeleton_ret_2_conds_def cyc_found_def split: list.splits)
   have ginv: "vset_inv (gray dfs_state)"
     using assms(6) by (auto simp: invar_gray_def)
   have geq: "t_set (gray dfs_state) = set (stack dfs_state)"
@@ -854,59 +854,59 @@ proof (intro invar_props_intros)
   qed
   have "Awalk_Defs.cycle (Graph.digraph_abs G) ((edges_of_vwalk p) @ [(?v, x)])"
     unfolding Awalk_Defs.cycle_def using closed dtl verts by auto
-  thus "cycle (dc.DFS_skel_more_ret2 dfs_state) \<Longrightarrow> \<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c" by blast
+  thus "cycle (dc.DFS_skeleton_ret2 dfs_state) \<Longrightarrow> \<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c" by blast
 qed
 
 lemma invar_cycle_true_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_2 dfs_state" "invar_ssf dfs_state" "invar_gray dfs_state"
           "invar_gray_stack dfs_state" "invar_cycle_true dfs_state"
-  shows "invar_cycle_true (dc.DFS_skel_more dfs_state)"
+  shows "invar_cycle_true (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
-  note simps = dc.DFS_skel_more_simps[OF IH(1)]
+  note simps = dc.DFS_skeleton_simps[OF IH(1)]
   show ?case
-  proof (rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    assume c: "dc.DFS_skel_more_call_1_conds dfs_state"
-    have "invar_cycle_true (dc.DFS_skel_more (dc.DFS_skel_more_upd1 dfs_state))"
+  proof (rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    assume c: "dc.DFS_skeleton_call_1_conds dfs_state"
+    have "invar_cycle_true (dc.DFS_skeleton (dc.DFS_skeleton_upd1 dfs_state))"
       by (rule IH(2)[OF c dc.invar_1_holds_1[OF c IH(4)] invar_fin_holds_upd1[OF c IH(5)]
                      invar_2_holds_upd1[OF c IH(4) IH(6)] invar_ssf_holds_upd1[OF c IH(4) IH(7)]
                      invar_gray_holds_upd1[OF c IH(8)]
                      invar_gray_stack_holds_upd1[OF c IH(8) IH(9)]
                      invar_cycle_true_holds_upd1[OF c IH(10)]])
-    thus "invar_cycle_true (dc.DFS_skel_more dfs_state)"
+    thus "invar_cycle_true (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(1)[OF c])
   next
-    assume c: "dc.DFS_skel_more_call_2_conds dfs_state"
-    have "invar_cycle_true (dc.DFS_skel_more (dc.DFS_skel_more_upd2 dfs_state))"
+    assume c: "dc.DFS_skeleton_call_2_conds dfs_state"
+    have "invar_cycle_true (dc.DFS_skeleton (dc.DFS_skeleton_upd2 dfs_state))"
       by (rule IH(3)[OF c dc.invar_1_holds_2[OF c IH(4)] invar_fin_holds_upd2[OF c IH(5)]
                      invar_2_holds_upd2[OF c IH(6)] invar_ssf_holds_upd2[OF c IH(4) IH(5) IH(7)]
                      invar_gray_holds_upd2[OF c IH(8)]
                      invar_gray_stack_holds_upd2[OF c IH(7) IH(8) IH(9)]
                      invar_cycle_true_holds_upd2[OF c IH(10)]])
-    thus "invar_cycle_true (dc.DFS_skel_more dfs_state)"
+    thus "invar_cycle_true (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(2)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_1_conds dfs_state"
-    have "invar_cycle_true (dc.DFS_skel_more_ret1 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_1_conds dfs_state"
+    have "invar_cycle_true (dc.DFS_skeleton_ret1 dfs_state)"
       by (rule invar_cycle_true_holds_ret_1[OF c IH(10)])
-    thus "invar_cycle_true (dc.DFS_skel_more dfs_state)"
+    thus "invar_cycle_true (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(3)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_2_conds dfs_state"
-    have "invar_cycle_true (dc.DFS_skel_more_ret2 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_2_conds dfs_state"
+    have "invar_cycle_true (dc.DFS_skeleton_ret2 dfs_state)"
       by (rule invar_cycle_true_holds_ret_2[OF c IH(4) IH(5) IH(6) IH(7) IH(8) IH(9) IH(10)])
-    thus "invar_cycle_true (dc.DFS_skel_more dfs_state)"
+    thus "invar_cycle_true (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(4)[OF c])
   qed
 qed
 
 theorem DFS_dircycle_linear_tracked_aux_sound:
-  assumes "cycle (dc.DFS_skel_more dircycle_tracked_initial_state)"
+  assumes "cycle (dc.DFS_skeleton dircycle_tracked_initial_state)"
   shows "\<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c"
 proof -
-  have "invar_cycle_true (dc.DFS_skel_more dircycle_tracked_initial_state)"
+  have "invar_cycle_true (dc.DFS_skeleton dircycle_tracked_initial_state)"
     by (intro invar_cycle_true_holds dircycle_tracked_initial_dom initial_invars
               initial_fin initial_struct initial_gray initial_gray_stack)
        (auto simp: invar_cycle_true_def dircycle_tracked_initial_state_def)
@@ -929,7 +929,7 @@ text \<open>Out-neighbours of the popped vertex are all already finished: none i
   \<open>call_1\<close> would fire), none is gray (else \<open>cyc_found\<close> would fire), and via \<open>invar_gray_stack\<close> +
   \<open>invar_ssf\<close> non-gray seen vertices are finished.\<close>
 lemma upd2_vout:
-  assumes "dc.DFS_skel_more_call_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_call_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_ssf dfs_state" "invar_gray dfs_state" "invar_gray_stack dfs_state"
     and "(hd (stack dfs_state), w) \<in> Graph.digraph_abs G"
   shows "w \<in> t_set (finished dfs_state)"
@@ -971,20 +971,20 @@ proof -
 qed
 
 lemma invar_finished_closed_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; invar_finished_closed dfs_state\<rbrakk> \<Longrightarrow>
-    invar_finished_closed (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; invar_finished_closed dfs_state\<rbrakk> \<Longrightarrow>
+    invar_finished_closed (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: invar_finished_closed_def upd1_unfold)
 
 lemma invar_finished_closed_holds_upd2[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_call_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_call_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_ssf dfs_state" "invar_gray dfs_state" "invar_gray_stack dfs_state"
           "invar_finished_closed dfs_state"
-  shows "invar_finished_closed (dc.DFS_skel_more_upd2 dfs_state)"
+  shows "invar_finished_closed (dc.DFS_skeleton_upd2 dfs_state)"
 proof (intro invar_props_intros)
   fix u w
-  assume uin: "u \<in> t_set (finished (dc.DFS_skel_more_upd2 dfs_state))"
+  assume uin: "u \<in> t_set (finished (dc.DFS_skeleton_upd2 dfs_state))"
      and edge: "(u, w) \<in> Graph.digraph_abs G"
-  have fin2: "t_set (finished (dc.DFS_skel_more_upd2 dfs_state)) = Set.insert (hd (stack dfs_state)) (t_set (finished dfs_state))"
+  have fin2: "t_set (finished (dc.DFS_skeleton_upd2 dfs_state)) = Set.insert (hd (stack dfs_state)) (t_set (finished dfs_state))"
     using assms(3) by (auto simp: upd2_unfold elim!: invar_props_elims)
   consider "u = hd (stack dfs_state)" | "u \<in> t_set (finished dfs_state)"
     using uin fin2 by auto
@@ -994,58 +994,58 @@ proof (intro invar_props_intros)
   next
     case 2 thus ?thesis using assms(7) edge by (auto elim!: invar_props_elims)
   qed
-  thus "w \<in> t_set (finished (dc.DFS_skel_more_upd2 dfs_state))" using fin2 by simp
+  thus "w \<in> t_set (finished (dc.DFS_skeleton_upd2 dfs_state))" using fin2 by simp
 qed
 
 lemma invar_finished_closed_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_finished_closed dfs_state\<rbrakk> \<Longrightarrow>
-    invar_finished_closed (dc.DFS_skel_more_ret1 dfs_state)"
-  by (auto simp: invar_finished_closed_def dc.DFS_skel_more_ret1_def cyc_on_empty_def)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_finished_closed dfs_state\<rbrakk> \<Longrightarrow>
+    invar_finished_closed (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: invar_finished_closed_def dc.DFS_skeleton_ret1_def cyc_on_empty_def)
 
 lemma invar_finished_closed_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_finished_closed dfs_state\<rbrakk> \<Longrightarrow>
-    invar_finished_closed (dc.DFS_skel_more_ret2 dfs_state)"
-  by (auto simp: invar_finished_closed_def dc.DFS_skel_more_ret2_def cyc_on_found_def)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_finished_closed dfs_state\<rbrakk> \<Longrightarrow>
+    invar_finished_closed (dc.DFS_skeleton_ret2 dfs_state)"
+  by (auto simp: invar_finished_closed_def dc.DFS_skeleton_ret2_def cyc_on_found_def)
 
 lemma invar_finished_closed_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_ssf dfs_state" "invar_gray dfs_state" "invar_gray_stack dfs_state"
           "invar_finished_closed dfs_state"
-  shows "invar_finished_closed (dc.DFS_skel_more dfs_state)"
+  shows "invar_finished_closed (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
-  note simps = dc.DFS_skel_more_simps[OF IH(1)]
+  note simps = dc.DFS_skeleton_simps[OF IH(1)]
   show ?case
-  proof (rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    assume c: "dc.DFS_skel_more_call_1_conds dfs_state"
-    have "invar_finished_closed (dc.DFS_skel_more (dc.DFS_skel_more_upd1 dfs_state))"
+  proof (rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    assume c: "dc.DFS_skeleton_call_1_conds dfs_state"
+    have "invar_finished_closed (dc.DFS_skeleton (dc.DFS_skeleton_upd1 dfs_state))"
       by (rule IH(2)[OF c dc.invar_1_holds_1[OF c IH(4)] invar_fin_holds_upd1[OF c IH(5)]
                      invar_ssf_holds_upd1[OF c IH(4) IH(6)] invar_gray_holds_upd1[OF c IH(7)]
                      invar_gray_stack_holds_upd1[OF c IH(7) IH(8)]
                      invar_finished_closed_holds_upd1[OF c IH(9)]])
-    thus "invar_finished_closed (dc.DFS_skel_more dfs_state)"
+    thus "invar_finished_closed (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(1)[OF c])
   next
-    assume c: "dc.DFS_skel_more_call_2_conds dfs_state"
-    have "invar_finished_closed (dc.DFS_skel_more (dc.DFS_skel_more_upd2 dfs_state))"
+    assume c: "dc.DFS_skeleton_call_2_conds dfs_state"
+    have "invar_finished_closed (dc.DFS_skeleton (dc.DFS_skeleton_upd2 dfs_state))"
       by (rule IH(3)[OF c dc.invar_1_holds_2[OF c IH(4)] invar_fin_holds_upd2[OF c IH(5)]
                      invar_ssf_holds_upd2[OF c IH(4) IH(5) IH(6)] invar_gray_holds_upd2[OF c IH(7)]
                      invar_gray_stack_holds_upd2[OF c IH(6) IH(7) IH(8)]
                      invar_finished_closed_holds_upd2[OF c IH(4) IH(5) IH(6) IH(7) IH(8) IH(9)]])
-    thus "invar_finished_closed (dc.DFS_skel_more dfs_state)"
+    thus "invar_finished_closed (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(2)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_1_conds dfs_state"
-    have "invar_finished_closed (dc.DFS_skel_more_ret1 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_1_conds dfs_state"
+    have "invar_finished_closed (dc.DFS_skeleton_ret1 dfs_state)"
       by (rule invar_finished_closed_holds_ret_1[OF c IH(9)])
-    thus "invar_finished_closed (dc.DFS_skel_more dfs_state)"
+    thus "invar_finished_closed (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(3)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_2_conds dfs_state"
-    have "invar_finished_closed (dc.DFS_skel_more_ret2 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_2_conds dfs_state"
+    have "invar_finished_closed (dc.DFS_skeleton_ret2 dfs_state)"
       by (rule invar_finished_closed_holds_ret_2[OF c IH(9)])
-    thus "invar_finished_closed (dc.DFS_skel_more dfs_state)"
+    thus "invar_finished_closed (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(4)[OF c])
   qed
 qed
@@ -1078,22 +1078,22 @@ lemma invar_cycle_false_intro[invar_props_intros]:
   by (auto simp: invar_cycle_false_def)
 
 lemma invar_cycle_false_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_call_1_conds dfs_state; invar_cycle_false dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_false (dc.DFS_skel_more_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; invar_cycle_false dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_false (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 
 lemma invar_cycle_false_holds_upd2[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_call_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_call_2_conds dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_ssf dfs_state" "invar_gray dfs_state" "invar_gray_stack dfs_state"
           "invar_finished_closed dfs_state" "invar_cycle_false dfs_state"
-  shows "invar_cycle_false (dc.DFS_skel_more_upd2 dfs_state)"
+  shows "invar_cycle_false (dc.DFS_skeleton_upd2 dfs_state)"
 proof (intro invar_props_intros)
-  assume notcyc': "\<not> cycle (dc.DFS_skel_more_upd2 dfs_state)"
+  assume notcyc': "\<not> cycle (dc.DFS_skeleton_upd2 dfs_state)"
   let ?v = "hd (stack dfs_state)"
   let ?F = "t_set (finished dfs_state)"
   let ?DG = "Graph.digraph_abs G"
   have notcyc: "\<not> cycle dfs_state" using notcyc' by (simp add: upd2_unfold)
-  have finup: "t_set (finished (dc.DFS_skel_more_upd2 dfs_state)) = Set.insert ?v ?F"
+  have finup: "t_set (finished (dc.DFS_skeleton_upd2 dfs_state)) = Set.insert ?v ?F"
     using assms(3) by (auto simp: upd2_unfold invar_fin_def)
   have acycF: "\<nexists>c. Awalk_Defs.cycle (?DG \<downharpoonright> ?F) c"
     using assms(8) notcyc by (auto simp: invar_cycle_false_def)
@@ -1118,7 +1118,7 @@ proof (intro invar_props_intros)
       thus False using closedF edge vnotF by blast
     qed
   qed
-  show "\<nexists>c. Awalk_Defs.cycle (?DG \<downharpoonright> t_set (finished (dc.DFS_skel_more_upd2 dfs_state))) c"
+  show "\<nexists>c. Awalk_Defs.cycle (?DG \<downharpoonright> t_set (finished (dc.DFS_skeleton_upd2 dfs_state))) c"
     unfolding finup
   proof (rule notI, erule exE)
     fix c assume cyc: "Awalk_Defs.cycle (?DG \<downharpoonright> Set.insert ?v ?F) c"
@@ -1161,97 +1161,97 @@ proof (intro invar_props_intros)
 qed
 
 lemma invar_cycle_false_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_1_conds dfs_state; invar_cycle_false dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_false (dc.DFS_skel_more_ret1 dfs_state)"
-  by (simp add: dc.DFS_skel_more_ret1_def cyc_on_empty_def)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_cycle_false dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_false (dc.DFS_skeleton_ret1 dfs_state)"
+  by (simp add: dc.DFS_skeleton_ret1_def cyc_on_empty_def)
 
 lemma invar_cycle_false_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_more_ret_2_conds dfs_state; invar_cycle_false dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_false (dc.DFS_skel_more_ret2 dfs_state)"
-  by (simp add: dc.DFS_skel_more_ret2_def cyc_on_found_def invar_cycle_false_def)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_cycle_false dfs_state\<rbrakk> \<Longrightarrow> invar_cycle_false (dc.DFS_skeleton_ret2 dfs_state)"
+  by (simp add: dc.DFS_skeleton_ret2_def cyc_on_found_def invar_cycle_false_def)
 
 text \<open>Unlike the sibling invariants, the generic
   \<open>by (auto intro!: IH(2-) invar_holds_intros simp: \<dots>)\<close> script diverges here (the accumulated
   \<open>invar_holds_intros\<close>/\<open>invar_props_intros\<close> sets are much larger than the library's by this
   point), so the four skeleton cases are discharged by explicit rule application instead.\<close>
 lemma invar_cycle_false_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_more_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
+  assumes "dc.DFS_skeleton_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state"
           "invar_ssf dfs_state" "invar_gray dfs_state" "invar_gray_stack dfs_state"
           "invar_finished_closed dfs_state" "invar_cycle_false dfs_state"
-  shows "invar_cycle_false (dc.DFS_skel_more dfs_state)"
+  shows "invar_cycle_false (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
-  note simps = dc.DFS_skel_more_simps[OF IH(1)]
+  note simps = dc.DFS_skeleton_simps[OF IH(1)]
   show ?case
-  proof (rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    assume c: "dc.DFS_skel_more_call_1_conds dfs_state"
-    have "invar_cycle_false (dc.DFS_skel_more (dc.DFS_skel_more_upd1 dfs_state))"
+  proof (rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    assume c: "dc.DFS_skeleton_call_1_conds dfs_state"
+    have "invar_cycle_false (dc.DFS_skeleton (dc.DFS_skeleton_upd1 dfs_state))"
       by (rule IH(2)[OF c dc.invar_1_holds_1[OF c IH(4)] invar_fin_holds_upd1[OF c IH(5)]
                      invar_ssf_holds_upd1[OF c IH(4) IH(6)] invar_gray_holds_upd1[OF c IH(7)]
                      invar_gray_stack_holds_upd1[OF c IH(7) IH(8)]
                      invar_finished_closed_holds_upd1[OF c IH(9)]
                      invar_cycle_false_holds_upd1[OF c IH(10)]])
-    thus "invar_cycle_false (dc.DFS_skel_more dfs_state)"
+    thus "invar_cycle_false (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(1)[OF c])
   next
-    assume c: "dc.DFS_skel_more_call_2_conds dfs_state"
-    have "invar_cycle_false (dc.DFS_skel_more (dc.DFS_skel_more_upd2 dfs_state))"
+    assume c: "dc.DFS_skeleton_call_2_conds dfs_state"
+    have "invar_cycle_false (dc.DFS_skeleton (dc.DFS_skeleton_upd2 dfs_state))"
       by (rule IH(3)[OF c dc.invar_1_holds_2[OF c IH(4)] invar_fin_holds_upd2[OF c IH(5)]
                      invar_ssf_holds_upd2[OF c IH(4) IH(5) IH(6)]
                      invar_gray_holds_upd2[OF c IH(7)]
                      invar_gray_stack_holds_upd2[OF c IH(6) IH(7) IH(8)]
                      invar_finished_closed_holds_upd2[OF c IH(4) IH(5) IH(6) IH(7) IH(8) IH(9)]
                      invar_cycle_false_holds_upd2[OF c IH(4) IH(5) IH(6) IH(7) IH(8) IH(9) IH(10)]])
-    thus "invar_cycle_false (dc.DFS_skel_more dfs_state)"
+    thus "invar_cycle_false (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(2)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_1_conds dfs_state"
-    have "invar_cycle_false (dc.DFS_skel_more_ret1 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_1_conds dfs_state"
+    have "invar_cycle_false (dc.DFS_skeleton_ret1 dfs_state)"
       by (rule invar_cycle_false_holds_ret_1[OF c IH(10)])
-    thus "invar_cycle_false (dc.DFS_skel_more dfs_state)"
+    thus "invar_cycle_false (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(3)[OF c])
   next
-    assume c: "dc.DFS_skel_more_ret_2_conds dfs_state"
-    have "invar_cycle_false (dc.DFS_skel_more_ret2 dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_2_conds dfs_state"
+    have "invar_cycle_false (dc.DFS_skeleton_ret2 dfs_state)"
       by (rule invar_cycle_false_holds_ret_2[OF c IH(10)])
-    thus "invar_cycle_false (dc.DFS_skel_more dfs_state)"
+    thus "invar_cycle_false (dc.DFS_skeleton dfs_state)"
       by (simp add: simps(4)[OF c])
   qed
 qed
 
 text \<open>When the run reports no cycle it ended at the empty-stack return.\<close>
 lemma no_cycle_ret_1:
-  assumes "dc.DFS_skel_more_dom dfs_state" "\<not> cycle (dc.DFS_skel_more dfs_state)"
-  shows "dc.DFS_skel_more_ret_1_conds (dc.DFS_skel_more dfs_state)"
+  assumes "dc.DFS_skeleton_dom dfs_state" "\<not> cycle (dc.DFS_skeleton dfs_state)"
+  shows "dc.DFS_skeleton_ret_1_conds (dc.DFS_skeleton dfs_state)"
   using assms(2)
-proof(induction rule: dc.DFS_skel_more_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
-  note simps = dc.DFS_skel_more_simps[OF IH(1)]
+  note simps = dc.DFS_skeleton_simps[OF IH(1)]
   show ?case
-  proof (rule dc.DFS_skel_more_cases[where dfs_state = dfs_state])
-    assume c: "dc.DFS_skel_more_call_1_conds dfs_state"
-    have ncyc: "\<not> cycle (dc.DFS_skel_more (dc.DFS_skel_more_upd1 dfs_state))"
+  proof (rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    assume c: "dc.DFS_skeleton_call_1_conds dfs_state"
+    have ncyc: "\<not> cycle (dc.DFS_skeleton (dc.DFS_skeleton_upd1 dfs_state))"
       using IH(4) c by (simp add: simps(1))
-    have "dc.DFS_skel_more_ret_1_conds (dc.DFS_skel_more (dc.DFS_skel_more_upd1 dfs_state))"
+    have "dc.DFS_skeleton_ret_1_conds (dc.DFS_skeleton (dc.DFS_skeleton_upd1 dfs_state))"
       using IH(2)[OF c] ncyc by blast
-    thus "dc.DFS_skel_more_ret_1_conds (dc.DFS_skel_more dfs_state)"
+    thus "dc.DFS_skeleton_ret_1_conds (dc.DFS_skeleton dfs_state)"
       using c by (simp add: simps(1))
   next
-    assume c: "dc.DFS_skel_more_call_2_conds dfs_state"
-    have ncyc: "\<not> cycle (dc.DFS_skel_more (dc.DFS_skel_more_upd2 dfs_state))"
+    assume c: "dc.DFS_skeleton_call_2_conds dfs_state"
+    have ncyc: "\<not> cycle (dc.DFS_skeleton (dc.DFS_skeleton_upd2 dfs_state))"
       using IH(4) c by (simp add: simps(2))
-    have "dc.DFS_skel_more_ret_1_conds (dc.DFS_skel_more (dc.DFS_skel_more_upd2 dfs_state))"
+    have "dc.DFS_skeleton_ret_1_conds (dc.DFS_skeleton (dc.DFS_skeleton_upd2 dfs_state))"
       using IH(3)[OF c] ncyc by blast
-    thus "dc.DFS_skel_more_ret_1_conds (dc.DFS_skel_more dfs_state)"
+    thus "dc.DFS_skeleton_ret_1_conds (dc.DFS_skeleton dfs_state)"
       using c by (simp add: simps(2))
   next
-    assume c: "dc.DFS_skel_more_ret_1_conds dfs_state"
-    thus "dc.DFS_skel_more_ret_1_conds (dc.DFS_skel_more dfs_state)"
-      by (simp add: simps(3) dc.DFS_skel_more_ret1_def cyc_on_empty_def)
+    assume c: "dc.DFS_skeleton_ret_1_conds dfs_state"
+    thus "dc.DFS_skeleton_ret_1_conds (dc.DFS_skeleton dfs_state)"
+      by (simp add: simps(3) dc.DFS_skeleton_ret1_def cyc_on_empty_def)
   next
-    assume c: "dc.DFS_skel_more_ret_2_conds dfs_state"
-    have "cycle (dc.DFS_skel_more dfs_state)"
-      using c by (simp add: simps(4) dc.DFS_skel_more_ret2_def cyc_on_found_def)
-    thus "dc.DFS_skel_more_ret_1_conds (dc.DFS_skel_more dfs_state)"
+    assume c: "dc.DFS_skeleton_ret_2_conds dfs_state"
+    have "cycle (dc.DFS_skeleton dfs_state)"
+      using c by (simp add: simps(4) dc.DFS_skeleton_ret2_def cyc_on_found_def)
+    thus "dc.DFS_skeleton_ret_1_conds (dc.DFS_skeleton dfs_state)"
       using IH(4) by blast
   qed
 qed
@@ -1259,12 +1259,12 @@ qed
 text \<open>Completeness reports on \<open>finished\<close> rather than \<open>seen\<close>: the outer loop consumes exactly the
   finished region.\<close>
 theorem DFS_dircycle_linear_tracked_aux_complete:
-  assumes "\<not> cycle (dc.DFS_skel_more dircycle_tracked_initial_state)"
-  shows "\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (finished (dc.DFS_skel_more dircycle_tracked_initial_state))) c"
+  assumes "\<not> cycle (dc.DFS_skeleton dircycle_tracked_initial_state)"
+  shows "\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (finished (dc.DFS_skeleton dircycle_tracked_initial_state))) c"
 proof -
-  have dom: "dc.DFS_skel_more_dom dircycle_tracked_initial_state"
+  have dom: "dc.DFS_skeleton_dom dircycle_tracked_initial_state"
     by (rule dircycle_tracked_initial_dom)
-  have cf: "invar_cycle_false (dc.DFS_skel_more dircycle_tracked_initial_state)"
+  have cf: "invar_cycle_false (dc.DFS_skeleton dircycle_tracked_initial_state)"
     by (rule invar_cycle_false_holds[OF dom initial_invars(1) initial_fin initial_struct(2)
              initial_gray initial_gray_stack initial_fc(1) initial_fc(2)])
   thus ?thesis using assms by (simp add: invar_cycle_false_def)
@@ -1280,7 +1280,7 @@ text \<open>The seven exports of \<open>DFS_dircycle_linear_Aux\<close> --- the 
   (\<open>invar_fin_unfin\<close> re-established).\<close>
 
 
-abbreviation "dircycle_tracked_result \<equiv> dc.DFS_skel_more dircycle_tracked_initial_state"
+abbreviation "dircycle_tracked_result \<equiv> dc.DFS_skeleton dircycle_tracked_initial_state"
 
 lemma dircycle_tracked_invars:
   shows "dc.invar_1 dircycle_tracked_result"
@@ -1348,7 +1348,7 @@ lemma dircycle_tracked_root_finished:
 proof -
   have empty: "stack dircycle_tracked_result = []"
     using no_cycle_ret_1[OF dircycle_tracked_initial_dom assms]
-    by (auto simp: dc.DFS_skel_more_ret_1_conds_def split: list.splits)
+    by (auto simp: dc.DFS_skeleton_ret_1_conds_def split: list.splits)
   have "t_set (finished dircycle_tracked_result) = t_set (seen dircycle_tracked_result)"
     using dircycle_tracked_invars(3) empty by (auto simp: invar_ssf_def)
   thus ?thesis using dircycle_tracked_invars(5) by (auto simp: invar_seed_def)

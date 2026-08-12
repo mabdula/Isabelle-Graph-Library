@@ -92,9 +92,9 @@ lemma tracked_spine_invar_initial: "tracked_spine_invar dircycle_tracked_initial
   by (simp add: tracked_spine_invar_def)
 
 lemma tracked_spine_invar_upd1:
-  assumes c: "dc.DFS_skel_more_call_1_conds st"
+  assumes c: "dc.DFS_skeleton_call_1_conds st"
       and i: "tracked_spine_invar st"
-  shows "tracked_spine_invar (dc.DFS_skel_more_upd1 st)"
+  shows "tracked_spine_invar (dc.DFS_skeleton_upd1 st)"
   using dc.invar_1_holds_1[OF c tracked_spine_invarD(1)[OF i]]
   using invar_fin_holds_upd1[OF c tracked_spine_invarD(2)[OF i]]
   using invar_ssf_holds_upd1[OF c tracked_spine_invarD(1)[OF i] tracked_spine_invarD(3)[OF i]]
@@ -104,9 +104,9 @@ lemma tracked_spine_invar_upd1:
   by (rule tracked_spine_invar_intro)
 
 lemma tracked_spine_invar_upd2:
-  assumes c: "dc.DFS_skel_more_call_2_conds st"
+  assumes c: "dc.DFS_skeleton_call_2_conds st"
       and i: "tracked_spine_invar st"
-  shows "tracked_spine_invar (dc.DFS_skel_more_upd2 st)"
+  shows "tracked_spine_invar (dc.DFS_skeleton_upd2 st)"
   using dc.invar_1_holds_2[OF c tracked_spine_invarD(1)[OF i]]
   using invar_fin_holds_upd2[OF c tracked_spine_invarD(2)[OF i]]
   using invar_ssf_holds_upd2[OF c tracked_spine_invarD(1)[OF i] tracked_spine_invarD(2)[OF i]
@@ -150,50 +150,50 @@ text \<open>With the back-edge tests identified, both loops branch on the same d
 lemma dircycle_conds_agree:
   assumes ag: "dircycle_agree st st'"
       and fnd: "cyc_found st = lin.cyc_found st'"
-  shows "dc.DFS_skel_more_call_1_conds st = lin.dc.DFS_skel_call_1_conds st'"
-    and "dc.DFS_skel_more_call_2_conds st = lin.dc.DFS_skel_call_2_conds st'"
-    and "dc.DFS_skel_more_ret_1_conds st = lin.dc.DFS_skel_ret_1_conds st'"
-    and "dc.DFS_skel_more_ret_2_conds st = lin.dc.DFS_skel_ret_2_conds st'"
+  shows "dc.DFS_skeleton_call_1_conds st = lin.dc.DFS_skeleton_call_1_conds st'"
+    and "dc.DFS_skeleton_call_2_conds st = lin.dc.DFS_skeleton_call_2_conds st'"
+    and "dc.DFS_skeleton_ret_1_conds st = lin.dc.DFS_skeleton_ret_1_conds st'"
+    and "dc.DFS_skeleton_ret_2_conds st = lin.dc.DFS_skeleton_ret_2_conds st'"
   by (simp_all add: dircycle_agreeD(1)[OF ag] dircycle_agreeD(2)[OF ag] fnd
-                    dc.DFS_skel_more_call_1_conds_def lin.dc.DFS_skel_call_1_conds_def
-                    dc.DFS_skel_more_call_2_conds_def lin.dc.DFS_skel_call_2_conds_def
-                    dc.DFS_skel_more_ret_1_conds_def lin.dc.DFS_skel_ret_1_conds_def
-                    dc.DFS_skel_more_ret_2_conds_def lin.dc.DFS_skel_ret_2_conds_def
+                    dc.DFS_skeleton_call_1_conds_def lin.dc.DFS_skeleton_call_1_conds_def
+                    dc.DFS_skeleton_call_2_conds_def lin.dc.DFS_skeleton_call_2_conds_def
+                    dc.DFS_skeleton_ret_1_conds_def lin.dc.DFS_skeleton_ret_1_conds_def
+                    dc.DFS_skeleton_ret_2_conds_def lin.dc.DFS_skeleton_ret_2_conds_def
               split: list.splits)
 
 text \<open>And the four step functions move the shared components identically: \<open>on_push\<close> and the
   tracked backtrack touch only \<open>gray\<close> and \<open>unfinished\<close>.\<close>
 lemma dircycle_upd1_agree:
   assumes "dircycle_agree st st'"
-  shows "dircycle_agree (dc.DFS_skel_more_upd1 st) (lin.dc.DFS_skel_upd1 st')"
+  shows "dircycle_agree (dc.DFS_skeleton_upd1 st) (lin.dc.DFS_skeleton_upd1 st')"
   using assms by (auto simp: dircycle_agree_def upd1_unfold lin.upd1_unfold)
 
 lemma dircycle_upd2_agree:
   assumes "dircycle_agree st st'"
-  shows "dircycle_agree (dc.DFS_skel_more_upd2 st) (lin.dc.DFS_skel_upd2 st')"
+  shows "dircycle_agree (dc.DFS_skeleton_upd2 st) (lin.dc.DFS_skeleton_upd2 st')"
   using assms by (auto simp: dircycle_agree_def upd2_unfold lin.upd2_unfold)
 
 lemma dircycle_ret1_agree:
   assumes "dircycle_agree st st'"
-  shows "dircycle_agree (dc.DFS_skel_more_ret1 st) (lin.dc.DFS_skel_ret1 st')"
+  shows "dircycle_agree (dc.DFS_skeleton_ret1 st) (lin.dc.DFS_skeleton_ret1 st')"
   using assms
-  by (simp add: dc.DFS_skel_more_ret1_def cyc_on_empty_def
-                lin.dc.DFS_skel_ret1_def lin.cyc_on_empty_def)
+  by (simp add: dc.DFS_skeleton_ret1_def cyc_on_empty_def
+                lin.dc.DFS_skeleton_ret1_def lin.cyc_on_empty_def)
 
 lemma dircycle_ret2_agree:
   assumes "dircycle_agree st st'"
-  shows "dircycle_agree (dc.DFS_skel_more_ret2 st) (lin.dc.DFS_skel_ret2 st')"
+  shows "dircycle_agree (dc.DFS_skeleton_ret2 st) (lin.dc.DFS_skeleton_ret2 st')"
   using assms
-  by (simp add: dircycle_agree_def dc.DFS_skel_more_ret2_def cyc_on_found_def
-                lin.dc.DFS_skel_ret2_def lin.cyc_on_found_def)
+  by (simp add: dircycle_agree_def dc.DFS_skeleton_ret2_def cyc_on_found_def
+                lin.dc.DFS_skeleton_ret2_def lin.cyc_on_found_def)
 
 text \<open>The reference run's domain comes for free from the tracked invariants: the skeleton's own
   termination argument reads only the spine.\<close>
 lemma lin_dom_of_agree:
   assumes i: "tracked_spine_invar st"
       and ag: "dircycle_agree st st'"
-  shows "lin.dc.DFS_skel_dom st'"
-proof (rule lin.dc.DFS_skel_terminates)
+  shows "lin.dc.DFS_skeleton_dom st'"
+proof (rule lin.dc.DFS_skeleton_terminates)
   show "lin.dc.invar_1 st'"
     using tracked_spine_invarD(1)[OF i] dircycle_agreeD(2)[OF ag]
     by (simp add: dc.invar_1_def lin.dc.invar_1_def)
@@ -203,39 +203,39 @@ proof (rule lin.dc.DFS_skel_terminates)
 qed
 
 theorem dircycle_run_agree:
-  assumes dom: "dc.DFS_skel_more_dom st"
+  assumes dom: "dc.DFS_skeleton_dom st"
       and "tracked_spine_invar st"
       and "dircycle_agree st st'"
-  shows "dircycle_agree (dc.DFS_skel_more st) (lin.dc.DFS_skel st')"
+  shows "dircycle_agree (dc.DFS_skeleton st) (lin.dc.DFS_skeleton st')"
   using assms(2-)
-proof (induction arbitrary: st' rule: dc.DFS_skel_more_induct[OF dom])
+proof (induction arbitrary: st' rule: dc.DFS_skeleton_induct[OF dom])
   case IH: (1 st)
-  note simps = dc.DFS_skel_more_simps[OF IH(1)]
-  note lsimps = lin.dc.DFS_skel_simps[OF lin_dom_of_agree[OF IH(4) IH(5)]]
+  note simps = dc.DFS_skeleton_simps[OF IH(1)]
+  note lsimps = lin.dc.DFS_skeleton_simps[OF lin_dom_of_agree[OF IH(4) IH(5)]]
   note conds = dircycle_conds_agree[OF IH(5) cyc_found_agree[OF IH(4) IH(5)]]
   show ?case
-  proof (rule dc.DFS_skel_more_cases[where dfs_state = st])
-    assume c: "dc.DFS_skel_more_call_1_conds st"
-    have "dircycle_agree (dc.DFS_skel_more (dc.DFS_skel_more_upd1 st))
-                         (lin.dc.DFS_skel (lin.dc.DFS_skel_upd1 st'))"
+  proof (rule dc.DFS_skeleton_cases[where dfs_state = st])
+    assume c: "dc.DFS_skeleton_call_1_conds st"
+    have "dircycle_agree (dc.DFS_skeleton (dc.DFS_skeleton_upd1 st))
+                         (lin.dc.DFS_skeleton (lin.dc.DFS_skeleton_upd1 st'))"
       by (rule IH(2)[OF c tracked_spine_invar_upd1[OF c IH(4)] dircycle_upd1_agree[OF IH(5)]])
-    thus "dircycle_agree (dc.DFS_skel_more st) (lin.dc.DFS_skel st')"
+    thus "dircycle_agree (dc.DFS_skeleton st) (lin.dc.DFS_skeleton st')"
       by (simp add: simps(1)[OF c] lsimps(1)[OF conds(1)[THEN iffD1, OF c]])
   next
-    assume c: "dc.DFS_skel_more_call_2_conds st"
-    have "dircycle_agree (dc.DFS_skel_more (dc.DFS_skel_more_upd2 st))
-                         (lin.dc.DFS_skel (lin.dc.DFS_skel_upd2 st'))"
+    assume c: "dc.DFS_skeleton_call_2_conds st"
+    have "dircycle_agree (dc.DFS_skeleton (dc.DFS_skeleton_upd2 st))
+                         (lin.dc.DFS_skeleton (lin.dc.DFS_skeleton_upd2 st'))"
       by (rule IH(3)[OF c tracked_spine_invar_upd2[OF c IH(4)] dircycle_upd2_agree[OF IH(5)]])
-    thus "dircycle_agree (dc.DFS_skel_more st) (lin.dc.DFS_skel st')"
+    thus "dircycle_agree (dc.DFS_skeleton st) (lin.dc.DFS_skeleton st')"
       by (simp add: simps(2)[OF c] lsimps(2)[OF conds(2)[THEN iffD1, OF c]])
   next
-    assume c: "dc.DFS_skel_more_ret_1_conds st"
-    show "dircycle_agree (dc.DFS_skel_more st) (lin.dc.DFS_skel st')"
+    assume c: "dc.DFS_skeleton_ret_1_conds st"
+    show "dircycle_agree (dc.DFS_skeleton st) (lin.dc.DFS_skeleton st')"
       using dircycle_ret1_agree[OF IH(5)]
       by (simp add: simps(3)[OF c] lsimps(3)[OF conds(3)[THEN iffD1, OF c]])
   next
-    assume c: "dc.DFS_skel_more_ret_2_conds st"
-    show "dircycle_agree (dc.DFS_skel_more st) (lin.dc.DFS_skel st')"
+    assume c: "dc.DFS_skeleton_ret_2_conds st"
+    show "dircycle_agree (dc.DFS_skeleton st) (lin.dc.DFS_skeleton st')"
       using dircycle_ret2_agree[OF IH(5)]
       by (simp add: simps(4)[OF c] lsimps(4)[OF conds(4)[THEN iffD1, OF c]])
   qed

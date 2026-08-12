@@ -1,9 +1,9 @@
 theory DFS_DirCycle_Linear_Tracked_Aux_Refine
-  imports DFS_Skeletons.DFS_Skel_More_Refine DFS_DirCycle_Linear_Tracked_Aux
+  imports DFS_Skeletons.DFS_Skeleton_Refine DFS_DirCycle_Linear_Tracked_Aux
 begin
 
 text \<open>Level 2 of the refinement chain at the \<^emph>\<open>inner\<close> (pre-seeded) directed-cycle DFS: the
-  instance of \<^locale>\<open>DFS_skel_more_refine\<close> that the tracked search of
+  instance of \<^locale>\<open>DFS_skeleton_refine\<close> that the tracked search of
   \<^theory>\<open>Directed_Cycle_DFS.DFS_DirCycle_Linear_Tracked_Aux\<close> becomes once the adjacency map moves into the
   state.
 
@@ -204,14 +204,14 @@ definition "dircycle_refine_initial_state =
 
 lemmas [code] = dircycle_refine_initial_state_def
 
-sublocale rdc: DFS_skel_more_refine
+sublocale rdc: DFS_skeleton_refine
   where lookup = lookup and G = G and s = s
     and found = rcyc_found and on_found = rcyc_on_found
     and on_empty = rcyc_on_empty and on_backtrack = rcyc_on_backtrack
     and on_push = rcyc_on_push and adjmap = adj
   by unfold_locales
 
-abbreviation "find_dircycle_refine \<equiv> rdc.DFS_skel_more_refine_impl"
+abbreviation "find_dircycle_refine \<equiv> rdc.DFS_skeleton_refine_impl"
 
 lemma rcyc_spine[simp]:
   "stack (rcyc_on_found st) = stack st"
@@ -236,7 +236,7 @@ end
 text \<open>The reasoning layer, on top of level 1's \<^locale>\<open>DFS_dircycle_linear_tracked_aux_thms\<close>. Three further
   assumptions, and no others:
   \<^item> \<open>sel_cong\<close> --- \<open>sel\<close> is determined by the element set. It comes straight from
-    \<^locale>\<open>DFS_skel_more_refine_thms\<close> and is \<^emph>\<open>not\<close> dischargeable here: the refined loop hands
+    \<^locale>\<open>DFS_skeleton_refine_thms\<close> and is \<^emph>\<open>not\<close> dischargeable here: the refined loop hands
     \<open>sel\<close> a vset built by repeated deletion where level 1 hands it one built by \<open>-\<^sub>G\<close>, and
     \<^locale>\<open>Set_Choose\<close> does not make \<open>sel\<close> a function of the underlying set (at the
     red-black-tree instantiation it is the root label). It has to be passed on to whoever
@@ -298,15 +298,15 @@ qed
 
 subsection \<open>The instance of the refined skeleton\<close>
 
-sublocale rdc: DFS_skel_more_refine_thms
+sublocale rdc: DFS_skeleton_refine_thms
   where lookup = lookup and G = G and s = s
     and found = rcyc_found and on_found = rcyc_on_found
     and on_empty = rcyc_on_empty and on_backtrack = rcyc_on_backtrack
     and on_push = rcyc_on_push and adjmap = adj
 proof unfold_locales
-  show "rdc.DFS_skel_more_axioms"
+  show "rdc.DFS_skeleton_axioms"
     using dircycle_tracked_axioms
-    by (simp add: rdc.DFS_skel_more_axioms_def DFS_dircycle_linear_tracked_aux_axioms_def)
+    by (simp add: rdc.DFS_skeleton_axioms_def DFS_dircycle_linear_tracked_aux_axioms_def)
   show "stack (rcyc_on_found st) = stack st" for st by simp
   show "seen (rcyc_on_found st) = seen st" for st by simp
   show "stack (rcyc_on_empty st) = stack st" for st by simp
@@ -360,26 +360,26 @@ proof -
     using gi by (simp add: rdc.invar_adj_def dircycle_refine_initial_state_def)
 qed
 
-lemma dircycle_refine_initial_dom: "rdc.DFS_skel_more_refine_dom dircycle_refine_initial_state"
-  using rdc.DFS_skel_more_terminates[OF initial_refine_invars]
-  by (simp add: rdc.DFS_skel_more_refine_dom_iff[OF initial_refine_invar_adj
+lemma dircycle_refine_initial_dom: "rdc.DFS_skeleton_refine_dom dircycle_refine_initial_state"
+  using rdc.DFS_skeleton_terminates[OF initial_refine_invars]
+  by (simp add: rdc.DFS_skeleton_refine_dom_iff[OF initial_refine_invar_adj
                                                initial_refine_invars(1)])
 
-abbreviation "dircycle_refine_result \<equiv> rdc.DFS_skel_more_refine dircycle_refine_initial_state"
+abbreviation "dircycle_refine_result \<equiv> rdc.DFS_skeleton_refine dircycle_refine_initial_state"
 
-text \<open>Level 2's own equivalence, from \<^theory>\<open>DFS_Skeletons.DFS_Skel_More_Refine\<close>: the loop
+text \<open>Level 2's own equivalence, from \<^theory>\<open>DFS_Skeletons.DFS_Skeleton_Refine\<close>: the loop
   that reads the state's pruned map is the loop that recomputes the difference.\<close>
 
 theorem dircycle_refine_eq_more:
-  "dircycle_refine_result = rdc.DFS_skel_more dircycle_refine_initial_state"
-  by (rule rdc.DFS_skel_more_refine_eq_DFS_skel_more
+  "dircycle_refine_result = rdc.DFS_skeleton dircycle_refine_initial_state"
+  by (rule rdc.DFS_skeleton_refine_eq_DFS_skeleton
              [OF dircycle_refine_initial_dom initial_refine_invar_adj
                  initial_refine_invars(1)])
 
 corollary dircycle_refine_impl_eq_more:
-  "rdc.DFS_skel_more_refine_impl dircycle_refine_initial_state
-     = rdc.DFS_skel_more dircycle_refine_initial_state"
-  by (rule rdc.DFS_skel_more_refine_impl_eq_DFS_skel_more
+  "rdc.DFS_skeleton_refine_impl dircycle_refine_initial_state
+     = rdc.DFS_skeleton dircycle_refine_initial_state"
+  by (rule rdc.DFS_skeleton_refine_impl_eq_DFS_skeleton
              [OF dircycle_refine_initial_dom initial_refine_invar_adj
                  initial_refine_invars(1)])
 
@@ -410,33 +410,33 @@ lemma truncate_invars[simp]:
   by (simp_all add: rdc.invar_1_def rdc.invar_seen_stack_def)
 
 lemma truncate_conds[simp]:
-  "dc.DFS_skel_more_call_1_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)
-     = rdc.DFS_skel_more_call_1_conds st"
-  "dc.DFS_skel_more_call_2_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)
-     = rdc.DFS_skel_more_call_2_conds st"
-  "dc.DFS_skel_more_ret_1_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)
-     = rdc.DFS_skel_more_ret_1_conds st"
-  "dc.DFS_skel_more_ret_2_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)
-     = rdc.DFS_skel_more_ret_2_conds st"
-  by (simp_all add: dc.DFS_skel_more_call_1_conds_def rdc.DFS_skel_more_call_1_conds_def
-                    dc.DFS_skel_more_call_2_conds_def rdc.DFS_skel_more_call_2_conds_def
-                    rdc.DFS_skel_more_ret_1_conds_def
-                    dc.DFS_skel_more_ret_2_conds_def rdc.DFS_skel_more_ret_2_conds_def
+  "dc.DFS_skeleton_call_1_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)
+     = rdc.DFS_skeleton_call_1_conds st"
+  "dc.DFS_skeleton_call_2_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)
+     = rdc.DFS_skeleton_call_2_conds st"
+  "dc.DFS_skeleton_ret_1_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)
+     = rdc.DFS_skeleton_ret_1_conds st"
+  "dc.DFS_skeleton_ret_2_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)
+     = rdc.DFS_skeleton_ret_2_conds st"
+  by (simp_all add: dc.DFS_skeleton_call_1_conds_def rdc.DFS_skeleton_call_1_conds_def
+                    dc.DFS_skeleton_call_2_conds_def rdc.DFS_skeleton_call_2_conds_def
+                    rdc.DFS_skeleton_ret_1_conds_def
+                    dc.DFS_skeleton_ret_2_conds_def rdc.DFS_skeleton_ret_2_conds_def
               split: list.splits)
 
 lemma truncate_steps[simp]:
-  "dc.DFS_skel_more_upd1 (DFS_dircycle_linear_tracked_aux_state.truncate st)
-     = DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more_upd1 st)"
-  "dc.DFS_skel_more_upd2 (DFS_dircycle_linear_tracked_aux_state.truncate st)
-     = DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more_upd2 st)"
-  "dc.DFS_skel_more_ret1 (DFS_dircycle_linear_tracked_aux_state.truncate st)
-     = DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more_ret1 st)"
-  "dc.DFS_skel_more_ret2 (DFS_dircycle_linear_tracked_aux_state.truncate st)
-     = DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more_ret2 st)"
-  by (simp_all add: dc.DFS_skel_more_upd1_def rdc.DFS_skel_more_upd1_def
-                    dc.DFS_skel_more_upd2_def rdc.DFS_skel_more_upd2_def
-                    dc.DFS_skel_more_ret1_def rdc.DFS_skel_more_ret1_def
-                    dc.DFS_skel_more_ret2_def rdc.DFS_skel_more_ret2_def
+  "dc.DFS_skeleton_upd1 (DFS_dircycle_linear_tracked_aux_state.truncate st)
+     = DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton_upd1 st)"
+  "dc.DFS_skeleton_upd2 (DFS_dircycle_linear_tracked_aux_state.truncate st)
+     = DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton_upd2 st)"
+  "dc.DFS_skeleton_ret1 (DFS_dircycle_linear_tracked_aux_state.truncate st)
+     = DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton_ret1 st)"
+  "dc.DFS_skeleton_ret2 (DFS_dircycle_linear_tracked_aux_state.truncate st)
+     = DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton_ret2 st)"
+  by (simp_all add: dc.DFS_skeleton_upd1_def rdc.DFS_skeleton_upd1_def
+                    dc.DFS_skeleton_upd2_def rdc.DFS_skeleton_upd2_def
+                    dc.DFS_skeleton_ret1_def rdc.DFS_skeleton_ret1_def
+                    dc.DFS_skeleton_ret2_def rdc.DFS_skeleton_ret2_def
                     cyc_on_push_def rcyc_on_push_def
                     cyc_on_backtrack_def rcyc_on_backtrack_def
                     cyc_on_empty_def rcyc_on_empty_def
@@ -446,49 +446,49 @@ lemma truncate_steps[simp]:
 subsection \<open>The projection commutes with the whole run\<close>
 
 theorem refine_run_agree:
-  assumes dom: "rdc.DFS_skel_more_dom st"
+  assumes dom: "rdc.DFS_skeleton_dom st"
       and "rdc.invar_1 st"
       and "rdc.invar_seen_stack st"
-  shows "DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more st)
-           = dc.DFS_skel_more (DFS_dircycle_linear_tracked_aux_state.truncate st)"
+  shows "DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton st)
+           = dc.DFS_skeleton (DFS_dircycle_linear_tracked_aux_state.truncate st)"
   using assms(2-)
-proof (induction rule: rdc.DFS_skel_more_induct[OF dom])
+proof (induction rule: rdc.DFS_skeleton_induct[OF dom])
   case IH: (1 st)
   have t1: "dc.invar_1 (DFS_dircycle_linear_tracked_aux_state.truncate st)"
     using IH(4) by simp
   have t2: "dc.invar_seen_stack (DFS_dircycle_linear_tracked_aux_state.truncate st)"
     using IH(5) by simp
-  note simps = rdc.DFS_skel_more_simps[OF IH(1)]
-  note tsimps = dc.DFS_skel_more_simps[OF dc.DFS_skel_more_terminates[OF t1 t2]]
+  note simps = rdc.DFS_skeleton_simps[OF IH(1)]
+  note tsimps = dc.DFS_skeleton_simps[OF dc.DFS_skeleton_terminates[OF t1 t2]]
   show ?case
-  proof (rule rdc.DFS_skel_more_cases[where dfs_state = st])
-    assume c: "rdc.DFS_skel_more_call_1_conds st"
-    have tc: "dc.DFS_skel_more_call_1_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)"
+  proof (rule rdc.DFS_skeleton_cases[where dfs_state = st])
+    assume c: "rdc.DFS_skeleton_call_1_conds st"
+    have tc: "dc.DFS_skeleton_call_1_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)"
       using c by simp
-    have "DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more (rdc.DFS_skel_more_upd1 st))
-            = dc.DFS_skel_more
-                (DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more_upd1 st))"
+    have "DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton (rdc.DFS_skeleton_upd1 st))
+            = dc.DFS_skeleton
+                (DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton_upd1 st))"
       by (rule IH(2)[OF c rdc.invar_1_holds_1[OF c IH(4)]
                           rdc.invar_seen_stack_holds_1[OF c IH(4) IH(5)]])
     thus ?thesis by (simp add: simps(1)[OF c] tsimps(1)[OF tc])
   next
-    assume c: "rdc.DFS_skel_more_call_2_conds st"
-    have tc: "dc.DFS_skel_more_call_2_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)"
+    assume c: "rdc.DFS_skeleton_call_2_conds st"
+    have tc: "dc.DFS_skeleton_call_2_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)"
       using c by simp
-    have "DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more (rdc.DFS_skel_more_upd2 st))
-            = dc.DFS_skel_more
-                (DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more_upd2 st))"
+    have "DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton (rdc.DFS_skeleton_upd2 st))
+            = dc.DFS_skeleton
+                (DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton_upd2 st))"
       by (rule IH(3)[OF c rdc.invar_1_holds_2[OF c IH(4)]
                           rdc.invar_seen_stack_holds_2[OF c IH(4) IH(5)]])
     thus ?thesis by (simp add: simps(2)[OF c] tsimps(2)[OF tc])
   next
-    assume c: "rdc.DFS_skel_more_ret_1_conds st"
-    have tc: "dc.DFS_skel_more_ret_1_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)"
+    assume c: "rdc.DFS_skeleton_ret_1_conds st"
+    have tc: "dc.DFS_skeleton_ret_1_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)"
       using c by simp
     show ?thesis by (simp add: simps(3)[OF c] tsimps(3)[OF tc])
   next
-    assume c: "rdc.DFS_skel_more_ret_2_conds st"
-    have tc: "dc.DFS_skel_more_ret_2_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)"
+    assume c: "rdc.DFS_skeleton_ret_2_conds st"
+    have tc: "dc.DFS_skeleton_ret_2_conds (DFS_dircycle_linear_tracked_aux_state.truncate st)"
       using c by simp
     show ?thesis by (simp add: simps(4)[OF c] tsimps(4)[OF tc])
   qed
@@ -508,10 +508,10 @@ text \<open>The capstone of this theory: forgetting the carried graph, the refin
 theorem dircycle_refine_agrees_tracked:
   "DFS_dircycle_linear_tracked_aux_state.truncate dircycle_refine_result = dircycle_tracked_result"
 proof -
-  have "DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skel_more dircycle_refine_initial_state)
-          = dc.DFS_skel_more
+  have "DFS_dircycle_linear_tracked_aux_state.truncate (rdc.DFS_skeleton dircycle_refine_initial_state)
+          = dc.DFS_skeleton
               (DFS_dircycle_linear_tracked_aux_state.truncate dircycle_refine_initial_state)"
-    by (rule refine_run_agree[OF rdc.DFS_skel_more_terminates[OF initial_refine_invars]
+    by (rule refine_run_agree[OF rdc.DFS_skeleton_terminates[OF initial_refine_invars]
                                  initial_refine_invars])
   thus ?thesis by (simp add: dircycle_refine_eq_more truncate_initial)
 qed
@@ -542,7 +542,7 @@ text \<open>Everything level 1 exports transfers along \<open>dircycle_refine_ag
   re-prunes.\<close>
 
 lemma dircycle_refine_invar_adj: "rdc.invar_adj dircycle_refine_result"
-  using rdc.invar_adj_holds[OF rdc.DFS_skel_more_terminates[OF initial_refine_invars]
+  using rdc.invar_adj_holds[OF rdc.DFS_skeleton_terminates[OF initial_refine_invars]
                                initial_refine_invar_adj initial_refine_invars(1)]
   by (simp add: dircycle_refine_eq_more)
 
@@ -563,7 +563,7 @@ proof -
     using assms dircycle_refine_components(6) by simp
   have empty: "stack dircycle_tracked_result = []"
     using no_cycle_ret_1[OF dircycle_tracked_initial_dom ncyc]
-    by (auto simp: dc.DFS_skel_more_ret_1_conds_def split: list.splits)
+    by (auto simp: dc.DFS_skeleton_ret_1_conds_def split: list.splits)
   have "t_set (finished dircycle_tracked_result) = t_set (seen dircycle_tracked_result)"
     using dircycle_tracked_invars(3) empty by (auto simp: invar_ssf_def)
   thus ?thesis

@@ -1,11 +1,11 @@
-theory DFS_Skel_More_Refine
-  imports DFS_Skel_More
+theory DFS_Skeleton_Refine
+  imports DFS_Skeleton
 begin
 
-text \<open>A refinement of \<^locale>\<open>DFS_skel_more\<close> that removes the set difference from the search's
+text \<open>A refinement of \<^locale>\<open>DFS_skeleton\<close> that removes the set difference from the search's
   inner loop.
 
-  \<^bold>\<open>The cost being removed.\<close> Both the library skeleton and \<^locale>\<open>DFS_skel_more\<close> pick the next
+  \<^bold>\<open>The cost being removed.\<close> Both the library skeleton and \<^locale>\<open>DFS_skeleton\<close> pick the next
   vertex with \<open>(\<N>\<^sub>G v) -\<^sub>G (seen dfs_state)\<close>, and they evaluate that expression \<^emph>\<open>twice\<close> per
   step --- once for the emptiness test, once inside the \<open>sel\<close>. It is recomputed from scratch on
   every iteration, so a vertex of out-degree \<open>d\<close> performs \<open>d+1\<close> differences over its own
@@ -34,93 +34,93 @@ text \<open>A refinement of \<^locale>\<open>DFS_skel_more\<close> that removes 
   \<^emph>\<open>root label\<close>, so two trees holding the same elements in different shapes select differently.
   Since \<open>\<N> (adjmap st) v\<close> is built by repeated deletion and \<open>(\<N>\<^sub>G v) -\<^sub>G (seen st)\<close> by
   \<open>RBT.diff\<close>, they agree on elements but not on shape. Hence the assumption
-  \<open>sel_cong\<close> in \<open>DFS_skel_more_refine_thms\<close>: a \<open>sel\<close> determined by the element set (for a
+  \<open>sel_cong\<close> in \<open>DFS_skeleton_refine_thms\<close>: a \<open>sel\<close> determined by the element set (for a
   search tree, the leftmost element rather than the root). Without it the refined search is still a
   perfectly good DFS, but it is a \<^emph>\<open>different\<close> one, and none of the invariant machinery above
-  \<^theory>\<open>DFS_Skeletons.DFS_Skel_More\<close> transfers.
+  \<^theory>\<open>DFS_Skeletons.DFS_Skeleton\<close> transfers.
 
   \<^bold>\<open>What the equivalence buys.\<close> Both locales share the same \<open>on_push\<close> --- the refinement changes
   only which map the loop \<^emph>\<open>reads\<close>, not how the state evolves --- so the two runs produce
   literally identical states, \<open>'more\<close> slot included. Everything proved about
-  \<open>DFS_skel_more\<close> therefore applies verbatim to \<open>DFS_skel_more_refine\<close>, with no invariant
+  \<open>DFS_skeleton\<close> therefore applies verbatim to \<open>DFS_skeleton_refine\<close>, with no invariant
   re-proved.\<close>
 
 text \<open>The inherited parameters are re-declared in the \<open>for\<close> clause purely to \<^emph>\<open>name\<close> the type
   variables, so that \<open>adjmap\<close>'s type can be tied to the same \<open>'adjmap\<close> as \<open>lookup\<close>'s and the same
-  state scheme as the callbacks'. Written as a bare \<open>DFS_skel_more + fixes adjmap :: \<dots>\<close> the type
+  state scheme as the callbacks'. Written as a bare \<open>DFS_skeleton + fixes adjmap :: \<dots>\<close> the type
   variables in the new \<open>fixes\<close> would be fresh, and nothing would connect them to the inherited
   ones.\<close>
 
-locale DFS_skel_more_refine =
-  DFS_skel_more where lookup = lookup and on_push = on_push
+locale DFS_skeleton_refine =
+  DFS_skeleton where lookup = lookup and on_push = on_push
   for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option"
-  and on_push :: "'v \<Rightarrow> ('v,'vset,'more) DFS_skel_state_scheme
-                     \<Rightarrow> ('v,'vset,'more) DFS_skel_state_scheme" +
-  fixes adjmap :: "('v,'vset,'more) DFS_skel_state_scheme \<Rightarrow> 'adjmap"
+  and on_push :: "'v \<Rightarrow> ('v,'vset,'more) DFS_skeleton_state_scheme
+                     \<Rightarrow> ('v,'vset,'more) DFS_skeleton_state_scheme" +
+  fixes adjmap :: "('v,'vset,'more) DFS_skeleton_state_scheme \<Rightarrow> 'adjmap"
 begin
 
-abbreviation adj_nbr :: "('v,'vset,'more) DFS_skel_state_scheme \<Rightarrow> 'v \<Rightarrow> 'vset" where
+abbreviation adj_nbr :: "('v,'vset,'more) DFS_skeleton_state_scheme \<Rightarrow> 'v \<Rightarrow> 'vset" where
   "adj_nbr st v \<equiv> Graph.neighbourhood (adjmap st) v"
 
 subsection \<open>The refined search\<close>
 
-text \<open>Identical to \<open>DFS_skel_more\<close> except that the unexplored neighbours are read off the
+text \<open>Identical to \<open>DFS_skeleton\<close> except that the unexplored neighbours are read off the
   state's own adjacency map instead of being recomputed as a difference.\<close>
 
-function (domintros) DFS_skel_more_refine::
-  "('v,'vset,'more) DFS_skel_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skel_state_scheme" where
-  "DFS_skel_more_refine dfs_state =
+function (domintros) DFS_skeleton_refine::
+  "('v,'vset,'more) DFS_skeleton_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skeleton_state_scheme" where
+  "DFS_skeleton_refine dfs_state =
      (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if found dfs_state then on_found dfs_state
         else (if adj_nbr dfs_state v \<noteq> \<emptyset>\<^sub>N then
                 let u = sel (adj_nbr dfs_state v);
                     stack' = u # (stack dfs_state);
                     seen' = insert u (seen dfs_state)
-                in DFS_skel_more_refine (on_push u (dfs_state \<lparr>stack := stack', seen := seen'\<rparr>))
+                in DFS_skeleton_refine (on_push u (dfs_state \<lparr>stack := stack', seen := seen'\<rparr>))
               else
-                DFS_skel_more_refine (on_backtrack v (dfs_state \<lparr>stack := stack_tl\<rparr>))))
+                DFS_skeleton_refine (on_backtrack v (dfs_state \<lparr>stack := stack_tl\<rparr>))))
      | _ \<Rightarrow> on_empty dfs_state)"
   by pat_completeness auto
 
-partial_function (tailrec) DFS_skel_more_refine_impl::
-  "('v,'vset,'more) DFS_skel_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skel_state_scheme" where
-  "DFS_skel_more_refine_impl dfs_state =
+partial_function (tailrec) DFS_skeleton_refine_impl::
+  "('v,'vset,'more) DFS_skeleton_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skeleton_state_scheme" where
+  "DFS_skeleton_refine_impl dfs_state =
      (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if found dfs_state then on_found dfs_state
         else (if adj_nbr dfs_state v \<noteq> \<emptyset>\<^sub>N then
                 let u = sel (adj_nbr dfs_state v);
                     stack' = u # (stack dfs_state);
                     seen' = insert u (seen dfs_state)
-                in DFS_skel_more_refine_impl (on_push u (dfs_state \<lparr>stack := stack', seen := seen'\<rparr>))
+                in DFS_skeleton_refine_impl (on_push u (dfs_state \<lparr>stack := stack', seen := seen'\<rparr>))
               else
-                DFS_skel_more_refine_impl (on_backtrack v (dfs_state \<lparr>stack := stack_tl\<rparr>))))
+                DFS_skeleton_refine_impl (on_backtrack v (dfs_state \<lparr>stack := stack_tl\<rparr>))))
      | _ \<Rightarrow> on_empty dfs_state)"
 
-lemmas [code] = DFS_skel_more_refine_impl.simps
+lemmas [code] = DFS_skeleton_refine_impl.simps
 
-lemma DFS_skel_more_refine_impl_same:
-  assumes "DFS_skel_more_refine_dom state"
-  shows   "DFS_skel_more_refine_impl state = DFS_skel_more_refine state"
-  by(induction rule: DFS_skel_more_refine.pinduct[OF assms])
-    (subst DFS_skel_more_refine.psimps, simp, subst DFS_skel_more_refine_impl.simps,
+lemma DFS_skeleton_refine_impl_same:
+  assumes "DFS_skeleton_refine_dom state"
+  shows   "DFS_skeleton_refine_impl state = DFS_skeleton_refine state"
+  by(induction rule: DFS_skeleton_refine.pinduct[OF assms])
+    (subst DFS_skeleton_refine.psimps, simp, subst DFS_skeleton_refine_impl.simps,
      auto split: list.split if_split simp add: Let_def)
 
 subsection \<open>Call conditions\<close>
 
-definition "DFS_skel_more_refine_call_1_conds dfs_state =
+definition "DFS_skeleton_refine_call_1_conds dfs_state =
     (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if found dfs_state then False
         else (if adj_nbr dfs_state v \<noteq> \<emptyset>\<^sub>N then True else False))
      | _ \<Rightarrow> False)"
 
-lemma DFS_skel_more_refine_call_1_conds[call_cond_elims]:
-  "DFS_skel_more_refine_call_1_conds dfs_state \<Longrightarrow>
+lemma DFS_skeleton_refine_call_1_conds[call_cond_elims]:
+  "DFS_skeleton_refine_call_1_conds dfs_state \<Longrightarrow>
    \<lbrakk>\<lbrakk>\<exists>v stack_tl. stack dfs_state = v # stack_tl;
     \<not> found dfs_state;
     adj_nbr dfs_state (hd (stack dfs_state)) \<noteq> \<emptyset>\<^sub>N\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  by(auto simp: DFS_skel_more_refine_call_1_conds_def split: list.splits option.splits if_splits)
+  by(auto simp: DFS_skeleton_refine_call_1_conds_def split: list.splits option.splits if_splits)
 
-definition "DFS_skel_more_refine_upd1 dfs_state = (
+definition "DFS_skeleton_refine_upd1 dfs_state = (
     let
       u = sel (adj_nbr dfs_state (hd (stack dfs_state)));
       stack' = u # (stack dfs_state);
@@ -128,111 +128,111 @@ definition "DFS_skel_more_refine_upd1 dfs_state = (
     in
       on_push u (dfs_state \<lparr>stack := stack', seen := seen'\<rparr>))"
 
-definition "DFS_skel_more_refine_call_2_conds dfs_state =
+definition "DFS_skeleton_refine_call_2_conds dfs_state =
     (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if found dfs_state then False
         else (if adj_nbr dfs_state v \<noteq> \<emptyset>\<^sub>N then False else True))
      | _ \<Rightarrow> False)"
 
-lemma DFS_skel_more_refine_call_2_conds[call_cond_elims]:
-  "DFS_skel_more_refine_call_2_conds dfs_state \<Longrightarrow>
+lemma DFS_skeleton_refine_call_2_conds[call_cond_elims]:
+  "DFS_skeleton_refine_call_2_conds dfs_state \<Longrightarrow>
    \<lbrakk>\<lbrakk>\<exists>v stack_tl. stack dfs_state = v # stack_tl;
     \<not> found dfs_state;
     adj_nbr dfs_state (hd (stack dfs_state)) = \<emptyset>\<^sub>N\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  by(auto simp: DFS_skel_more_refine_call_2_conds_def split: list.splits option.splits if_splits)
+  by(auto simp: DFS_skeleton_refine_call_2_conds_def split: list.splits option.splits if_splits)
 
-definition "DFS_skel_more_refine_upd2 dfs_state =
+definition "DFS_skeleton_refine_upd2 dfs_state =
   on_backtrack (hd (stack dfs_state)) (dfs_state \<lparr>stack := tl (stack dfs_state)\<rparr>)"
 
-definition "DFS_skel_more_refine_ret_1_conds dfs_state =
+definition "DFS_skeleton_refine_ret_1_conds dfs_state =
     (case (stack dfs_state) of (v # stack_tl) \<Rightarrow> False | _ \<Rightarrow> True)"
 
-lemma DFS_skel_more_refine_ret_1_conds[call_cond_elims]:
-  "DFS_skel_more_refine_ret_1_conds dfs_state \<Longrightarrow> \<lbrakk>\<lbrakk>stack dfs_state = []\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  by(auto simp: DFS_skel_more_refine_ret_1_conds_def split: list.splits if_splits)
+lemma DFS_skeleton_refine_ret_1_conds[call_cond_elims]:
+  "DFS_skeleton_refine_ret_1_conds dfs_state \<Longrightarrow> \<lbrakk>\<lbrakk>stack dfs_state = []\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by(auto simp: DFS_skeleton_refine_ret_1_conds_def split: list.splits if_splits)
 
-lemma DFS_skel_more_refine_ret_1_condsI[call_cond_intros]:
-  "\<lbrakk>stack dfs_state = []\<rbrakk> \<Longrightarrow> DFS_skel_more_refine_ret_1_conds dfs_state"
-  by(auto simp: DFS_skel_more_refine_ret_1_conds_def split: list.splits if_splits)
+lemma DFS_skeleton_refine_ret_1_condsI[call_cond_intros]:
+  "\<lbrakk>stack dfs_state = []\<rbrakk> \<Longrightarrow> DFS_skeleton_refine_ret_1_conds dfs_state"
+  by(auto simp: DFS_skeleton_refine_ret_1_conds_def split: list.splits if_splits)
 
-definition "DFS_skel_more_refine_ret1 dfs_state = on_empty dfs_state"
+definition "DFS_skeleton_refine_ret1 dfs_state = on_empty dfs_state"
 
-definition "DFS_skel_more_refine_ret_2_conds dfs_state =
+definition "DFS_skeleton_refine_ret_2_conds dfs_state =
     (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if found dfs_state then True else False)
      | _ \<Rightarrow> False)"
 
-lemma DFS_skel_more_refine_ret_2_conds[call_cond_elims]:
-  "DFS_skel_more_refine_ret_2_conds dfs_state \<Longrightarrow>
+lemma DFS_skeleton_refine_ret_2_conds[call_cond_elims]:
+  "DFS_skeleton_refine_ret_2_conds dfs_state \<Longrightarrow>
    \<lbrakk>\<lbrakk>\<exists>v stack_tl. stack dfs_state = v # stack_tl; found dfs_state\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  by(auto simp: DFS_skel_more_refine_ret_2_conds_def split: list.splits option.splits if_splits)
+  by(auto simp: DFS_skeleton_refine_ret_2_conds_def split: list.splits option.splits if_splits)
 
-lemma DFS_skel_more_refine_ret_2_condsI[call_cond_intros]:
-  "\<lbrakk>stack dfs_state = v # stack_tl; found dfs_state\<rbrakk> \<Longrightarrow> DFS_skel_more_refine_ret_2_conds dfs_state"
-  by(auto simp: DFS_skel_more_refine_ret_2_conds_def split: list.splits option.splits if_splits)
+lemma DFS_skeleton_refine_ret_2_condsI[call_cond_intros]:
+  "\<lbrakk>stack dfs_state = v # stack_tl; found dfs_state\<rbrakk> \<Longrightarrow> DFS_skeleton_refine_ret_2_conds dfs_state"
+  by(auto simp: DFS_skeleton_refine_ret_2_conds_def split: list.splits option.splits if_splits)
 
-definition "DFS_skel_more_refine_ret2 dfs_state = on_found dfs_state"
+definition "DFS_skeleton_refine_ret2 dfs_state = on_found dfs_state"
 
-lemma DFS_skel_more_refine_cases:
-  assumes "DFS_skel_more_refine_call_1_conds dfs_state \<Longrightarrow> P"
-      "DFS_skel_more_refine_call_2_conds dfs_state \<Longrightarrow> P"
-      "DFS_skel_more_refine_ret_1_conds dfs_state \<Longrightarrow> P"
-      "DFS_skel_more_refine_ret_2_conds dfs_state \<Longrightarrow> P"
+lemma DFS_skeleton_refine_cases:
+  assumes "DFS_skeleton_refine_call_1_conds dfs_state \<Longrightarrow> P"
+      "DFS_skeleton_refine_call_2_conds dfs_state \<Longrightarrow> P"
+      "DFS_skeleton_refine_ret_1_conds dfs_state \<Longrightarrow> P"
+      "DFS_skeleton_refine_ret_2_conds dfs_state \<Longrightarrow> P"
   shows "P"
 proof-
-  have "DFS_skel_more_refine_call_1_conds dfs_state \<or> DFS_skel_more_refine_call_2_conds dfs_state \<or>
-        DFS_skel_more_refine_ret_1_conds dfs_state \<or> DFS_skel_more_refine_ret_2_conds dfs_state"
-    by (auto simp add: DFS_skel_more_refine_call_1_conds_def DFS_skel_more_refine_call_2_conds_def
-                       DFS_skel_more_refine_ret_1_conds_def DFS_skel_more_refine_ret_2_conds_def
+  have "DFS_skeleton_refine_call_1_conds dfs_state \<or> DFS_skeleton_refine_call_2_conds dfs_state \<or>
+        DFS_skeleton_refine_ret_1_conds dfs_state \<or> DFS_skeleton_refine_ret_2_conds dfs_state"
+    by (auto simp add: DFS_skeleton_refine_call_1_conds_def DFS_skeleton_refine_call_2_conds_def
+                       DFS_skeleton_refine_ret_1_conds_def DFS_skeleton_refine_ret_2_conds_def
            split: list.split_asm option.split_asm if_splits)
   then show ?thesis
     using assms by auto
 qed
 
-lemma DFS_skel_more_refine_simps:
-  assumes "DFS_skel_more_refine_dom dfs_state"
-  shows"DFS_skel_more_refine_call_1_conds dfs_state \<Longrightarrow>
-          DFS_skel_more_refine dfs_state = DFS_skel_more_refine (DFS_skel_more_refine_upd1 dfs_state)"
-      "DFS_skel_more_refine_call_2_conds dfs_state \<Longrightarrow>
-          DFS_skel_more_refine dfs_state = DFS_skel_more_refine (DFS_skel_more_refine_upd2 dfs_state)"
-      "DFS_skel_more_refine_ret_1_conds dfs_state \<Longrightarrow>
-          DFS_skel_more_refine dfs_state = DFS_skel_more_refine_ret1 dfs_state"
-      "DFS_skel_more_refine_ret_2_conds dfs_state \<Longrightarrow>
-          DFS_skel_more_refine dfs_state = DFS_skel_more_refine_ret2 dfs_state"
-  by (auto simp add: DFS_skel_more_refine.psimps[OF assms] Let_def
-                     DFS_skel_more_refine_call_1_conds_def DFS_skel_more_refine_upd1_def
-                     DFS_skel_more_refine_call_2_conds_def DFS_skel_more_refine_upd2_def
-                     DFS_skel_more_refine_ret_1_conds_def DFS_skel_more_refine_ret1_def
-                     DFS_skel_more_refine_ret_2_conds_def DFS_skel_more_refine_ret2_def
+lemma DFS_skeleton_refine_simps:
+  assumes "DFS_skeleton_refine_dom dfs_state"
+  shows"DFS_skeleton_refine_call_1_conds dfs_state \<Longrightarrow>
+          DFS_skeleton_refine dfs_state = DFS_skeleton_refine (DFS_skeleton_refine_upd1 dfs_state)"
+      "DFS_skeleton_refine_call_2_conds dfs_state \<Longrightarrow>
+          DFS_skeleton_refine dfs_state = DFS_skeleton_refine (DFS_skeleton_refine_upd2 dfs_state)"
+      "DFS_skeleton_refine_ret_1_conds dfs_state \<Longrightarrow>
+          DFS_skeleton_refine dfs_state = DFS_skeleton_refine_ret1 dfs_state"
+      "DFS_skeleton_refine_ret_2_conds dfs_state \<Longrightarrow>
+          DFS_skeleton_refine dfs_state = DFS_skeleton_refine_ret2 dfs_state"
+  by (auto simp add: DFS_skeleton_refine.psimps[OF assms] Let_def
+                     DFS_skeleton_refine_call_1_conds_def DFS_skeleton_refine_upd1_def
+                     DFS_skeleton_refine_call_2_conds_def DFS_skeleton_refine_upd2_def
+                     DFS_skeleton_refine_ret_1_conds_def DFS_skeleton_refine_ret1_def
+                     DFS_skeleton_refine_ret_2_conds_def DFS_skeleton_refine_ret2_def
             split: list.splits option.splits if_splits)
 
-lemma DFS_skel_more_refine_induct:
-  assumes "DFS_skel_more_refine_dom dfs_state"
-  assumes "\<And>dfs_state. \<lbrakk>DFS_skel_more_refine_dom dfs_state;
-            DFS_skel_more_refine_call_1_conds dfs_state \<Longrightarrow> P (DFS_skel_more_refine_upd1 dfs_state);
-            DFS_skel_more_refine_call_2_conds dfs_state \<Longrightarrow> P (DFS_skel_more_refine_upd2 dfs_state)\<rbrakk>
+lemma DFS_skeleton_refine_induct:
+  assumes "DFS_skeleton_refine_dom dfs_state"
+  assumes "\<And>dfs_state. \<lbrakk>DFS_skeleton_refine_dom dfs_state;
+            DFS_skeleton_refine_call_1_conds dfs_state \<Longrightarrow> P (DFS_skeleton_refine_upd1 dfs_state);
+            DFS_skeleton_refine_call_2_conds dfs_state \<Longrightarrow> P (DFS_skeleton_refine_upd2 dfs_state)\<rbrakk>
               \<Longrightarrow> P dfs_state"
   shows "P dfs_state"
-  apply(rule DFS_skel_more_refine.pinduct[OF assms(1)])
-  apply(rule assms(2)[simplified DFS_skel_more_refine_call_1_conds_def DFS_skel_more_refine_upd1_def
-                                 DFS_skel_more_refine_call_2_conds_def DFS_skel_more_refine_upd2_def])
+  apply(rule DFS_skeleton_refine.pinduct[OF assms(1)])
+  apply(rule assms(2)[simplified DFS_skeleton_refine_call_1_conds_def DFS_skeleton_refine_upd1_def
+                                 DFS_skeleton_refine_call_2_conds_def DFS_skeleton_refine_upd2_def])
   by (auto simp: Let_def split: list.splits option.splits if_splits)
 
-lemma DFS_skel_more_refine_domintros:
-  assumes "DFS_skel_more_refine_call_1_conds dfs_state \<Longrightarrow>
-             DFS_skel_more_refine_dom (DFS_skel_more_refine_upd1 dfs_state)"
-      and "DFS_skel_more_refine_call_2_conds dfs_state \<Longrightarrow>
-             DFS_skel_more_refine_dom (DFS_skel_more_refine_upd2 dfs_state)"
-  shows "DFS_skel_more_refine_dom dfs_state"
-proof(rule DFS_skel_more_refine.domintros, goal_cases)
+lemma DFS_skeleton_refine_domintros:
+  assumes "DFS_skeleton_refine_call_1_conds dfs_state \<Longrightarrow>
+             DFS_skeleton_refine_dom (DFS_skeleton_refine_upd1 dfs_state)"
+      and "DFS_skeleton_refine_call_2_conds dfs_state \<Longrightarrow>
+             DFS_skeleton_refine_dom (DFS_skeleton_refine_upd2 dfs_state)"
+  shows "DFS_skeleton_refine_dom dfs_state"
+proof(rule DFS_skeleton_refine.domintros, goal_cases)
   case (1 x)
   then show ?case
-    using assms(1)[simplified DFS_skel_more_refine_call_1_conds_def DFS_skel_more_refine_upd1_def]
+    using assms(1)[simplified DFS_skeleton_refine_call_1_conds_def DFS_skeleton_refine_upd1_def]
     by (force simp: Let_def split: list.splits option.splits if_splits)
 next
   case (2 x)
   then show ?case
-    using assms(2)[simplified DFS_skel_more_refine_call_2_conds_def DFS_skel_more_refine_upd2_def]
+    using assms(2)[simplified DFS_skeleton_refine_call_2_conds_def DFS_skeleton_refine_upd2_def]
     by (force simp: Let_def split: list.splits option.splits if_splits)
 qed
 
@@ -249,7 +249,7 @@ definition "invar_adj dfs_state \<longleftrightarrow>
 
 end
 
-text \<open>The reasoning layer. On top of \<^locale>\<open>DFS_skel_more_thms\<close> --- whose spine-preservation
+text \<open>The reasoning layer. On top of \<^locale>\<open>DFS_skeleton_thms\<close> --- whose spine-preservation
   assumptions we inherit --- three groups: \<open>sel\<close> must be determined by the element set (see the
   header);  \<open>adjmap\<close> must be blind to the spine, which is automatic when it selects a \<open>'more\<close>
   field; and the callbacks must treat the carried graph correctly --- \<open>on_push u\<close> deletes exactly
@@ -261,7 +261,7 @@ text \<open>The reasoning layer. On top of \<^locale>\<open>DFS_skel_more_thms\<
   adjacency map of \<open>G\<close> removes \<open>preds\<^sub>G u \<times> {u}\<close>, which coincides with \<open>UNIV \<times> {u}\<close> only on
   sub-maps of \<open>G\<close>.\<close>
 
-locale DFS_skel_more_refine_thms = DFS_skel_more_refine + DFS_skel_more_thms +
+locale DFS_skeleton_refine_thms = DFS_skeleton_refine + DFS_skeleton_thms +
   assumes sel_cong: "vset_inv X \<Longrightarrow> vset_inv Y \<Longrightarrow> t_set X = t_set Y \<Longrightarrow> sel X = sel Y"
       and adjmap_stack[simp]: "adjmap (st \<lparr>stack := xs\<rparr>) = adjmap st"
       and adjmap_seen[simp]:  "adjmap (st \<lparr>seen := S\<rparr>) = adjmap st"
@@ -341,30 +341,30 @@ subsection \<open>Hence the call conditions and the updates coincide\<close>
 
 lemma refine_conds_eq:
   assumes "invar_adj st" and "invar_1 st"
-  shows "DFS_skel_more_refine_call_1_conds st = DFS_skel_more_call_1_conds st"
-    and "DFS_skel_more_refine_call_2_conds st = DFS_skel_more_call_2_conds st"
-    and "DFS_skel_more_refine_ret_1_conds st = DFS_skel_more_ret_1_conds st"
-    and "DFS_skel_more_refine_ret_2_conds st = DFS_skel_more_ret_2_conds st"
+  shows "DFS_skeleton_refine_call_1_conds st = DFS_skeleton_call_1_conds st"
+    and "DFS_skeleton_refine_call_2_conds st = DFS_skeleton_call_2_conds st"
+    and "DFS_skeleton_refine_ret_1_conds st = DFS_skeleton_ret_1_conds st"
+    and "DFS_skeleton_refine_ret_2_conds st = DFS_skeleton_ret_2_conds st"
   using adj_nbr_empty_iff[OF assms]
-  by (auto simp: DFS_skel_more_refine_call_1_conds_def DFS_skel_more_call_1_conds_def
-                 DFS_skel_more_refine_call_2_conds_def DFS_skel_more_call_2_conds_def
-                 DFS_skel_more_refine_ret_1_conds_def DFS_skel_more_ret_1_conds_def
-                 DFS_skel_more_refine_ret_2_conds_def DFS_skel_more_ret_2_conds_def
+  by (auto simp: DFS_skeleton_refine_call_1_conds_def DFS_skeleton_call_1_conds_def
+                 DFS_skeleton_refine_call_2_conds_def DFS_skeleton_call_2_conds_def
+                 DFS_skeleton_refine_ret_1_conds_def DFS_skeleton_ret_1_conds_def
+                 DFS_skeleton_refine_ret_2_conds_def DFS_skeleton_ret_2_conds_def
            split: list.splits if_splits)
 
 lemma refine_upd1_eq:
   assumes "invar_adj st" and "invar_1 st"
-  shows "DFS_skel_more_refine_upd1 st = DFS_skel_more_upd1 st"
+  shows "DFS_skeleton_refine_upd1 st = DFS_skeleton_upd1 st"
   using adj_nbr_sel[OF assms]
-  by (simp add: DFS_skel_more_refine_upd1_def DFS_skel_more_upd1_def Let_def)
+  by (simp add: DFS_skeleton_refine_upd1_def DFS_skeleton_upd1_def Let_def)
 
 lemma refine_upd2_ret_eq:
-  "DFS_skel_more_refine_upd2 st = DFS_skel_more_upd2 st"
-  "DFS_skel_more_refine_ret1 st = DFS_skel_more_ret1 st"
-  "DFS_skel_more_refine_ret2 st = DFS_skel_more_ret2 st"
-  by (simp_all add: DFS_skel_more_refine_upd2_def DFS_skel_more_upd2_def
-                    DFS_skel_more_refine_ret1_def DFS_skel_more_ret1_def
-                    DFS_skel_more_refine_ret2_def DFS_skel_more_ret2_def)
+  "DFS_skeleton_refine_upd2 st = DFS_skeleton_upd2 st"
+  "DFS_skeleton_refine_ret1 st = DFS_skeleton_ret1 st"
+  "DFS_skeleton_refine_ret2 st = DFS_skeleton_ret2 st"
+  by (simp_all add: DFS_skeleton_refine_upd2_def DFS_skeleton_upd2_def
+                    DFS_skeleton_refine_ret1_def DFS_skeleton_ret1_def
+                    DFS_skeleton_refine_ret2_def DFS_skeleton_ret2_def)
 
 subsection \<open>The invariant is preserved\<close>
 
@@ -373,13 +373,13 @@ text \<open>The push is the interesting case, and it is exactly the design: \<op
   backtrack changes neither.\<close>
 
 lemma invar_adj_holds_upd1[invar_holds_intros]:
-  assumes "DFS_skel_more_call_1_conds st" and "invar_adj st" and "invar_1 st"
-  shows "invar_adj (DFS_skel_more_upd1 st)"
+  assumes "DFS_skeleton_call_1_conds st" and "invar_adj st" and "invar_1 st"
+  shows "invar_adj (DFS_skeleton_upd1 st)"
 proof -
   let ?u = "sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G (seen st))"
   let ?st' = "st \<lparr>stack := ?u # stack st, seen := insert ?u (seen st)\<rparr>"
-  have upd: "DFS_skel_more_upd1 st = on_push ?u ?st'"
-    by (simp add: DFS_skel_more_upd1_def Let_def)
+  have upd: "DFS_skeleton_upd1 st = on_push ?u ?st'"
+    by (simp add: DFS_skeleton_upd1_def Let_def)
   have gi: "Graph.graph_inv (adjmap st)"
     and abs: "Graph.digraph_abs (adjmap st)
                 = Graph.digraph_abs G - (UNIV \<times> t_set (seen st))"
@@ -400,53 +400,53 @@ qed
 
 lemma invar_adj_holds_upd2[invar_holds_intros]:
   assumes "invar_adj st"
-  shows "invar_adj (DFS_skel_more_upd2 st)"
-  using assms by (simp add: invar_adj_def DFS_skel_more_upd2_def)
+  shows "invar_adj (DFS_skeleton_upd2 st)"
+  using assms by (simp add: invar_adj_def DFS_skeleton_upd2_def)
 
 text \<open>Hence it survives a whole run --- what an instance needs in order to read the carried graph
   off the result and hand it on.\<close>
 
 lemma invar_adj_holds[invar_holds_intros]:
-  assumes dom: "DFS_skel_more_dom st" and "invar_adj st" and "invar_1 st"
-  shows "invar_adj (DFS_skel_more st)"
+  assumes dom: "DFS_skeleton_dom st" and "invar_adj st" and "invar_1 st"
+  shows "invar_adj (DFS_skeleton st)"
   using assms(2-)
-proof (induction rule: DFS_skel_more_induct[OF dom])
+proof (induction rule: DFS_skeleton_induct[OF dom])
   case (1 dfs_state)
   show ?case
-  proof (rule DFS_skel_more_cases[where dfs_state = dfs_state])
-    show ?case if c: "DFS_skel_more_call_1_conds dfs_state"
+  proof (rule DFS_skeleton_cases[where dfs_state = dfs_state])
+    show ?case if c: "DFS_skeleton_call_1_conds dfs_state"
       using 1(2)[OF c invar_adj_holds_upd1[OF c 1(4,5)] invar_1_holds_1[OF c 1(5)]]
-      by (simp add: DFS_skel_more_simps(1)[OF 1(1) c])
-    show ?case if c: "DFS_skel_more_call_2_conds dfs_state"
+      by (simp add: DFS_skeleton_simps(1)[OF 1(1) c])
+    show ?case if c: "DFS_skeleton_call_2_conds dfs_state"
       using 1(3)[OF c invar_adj_holds_upd2[OF 1(4)] invar_1_holds_2[OF c 1(5)]]
-      by (simp add: DFS_skel_more_simps(2)[OF 1(1) c])
-    show ?case if c: "DFS_skel_more_ret_1_conds dfs_state"
+      by (simp add: DFS_skeleton_simps(2)[OF 1(1) c])
+    show ?case if c: "DFS_skeleton_ret_1_conds dfs_state"
       using 1(4)
-      by (simp add: DFS_skel_more_simps(3)[OF 1(1) c] DFS_skel_more_ret1_def invar_adj_def)
-    show ?case if c: "DFS_skel_more_ret_2_conds dfs_state"
+      by (simp add: DFS_skeleton_simps(3)[OF 1(1) c] DFS_skeleton_ret1_def invar_adj_def)
+    show ?case if c: "DFS_skeleton_ret_2_conds dfs_state"
       using 1(4)
-      by (simp add: DFS_skel_more_simps(4)[OF 1(1) c] DFS_skel_more_ret2_def invar_adj_def)
+      by (simp add: DFS_skeleton_simps(4)[OF 1(1) c] DFS_skeleton_ret2_def invar_adj_def)
   qed
 qed
 
 subsection \<open>Termination transfers both ways\<close>
 
 lemma refine_dom_imp_more_dom:
-  assumes "DFS_skel_more_refine_dom st" and "invar_adj st" and "invar_1 st"
-  shows "DFS_skel_more_dom st"
+  assumes "DFS_skeleton_refine_dom st" and "invar_adj st" and "invar_1 st"
+  shows "DFS_skeleton_dom st"
   using assms(2-)
-proof (induction rule: DFS_skel_more_refine_induct[OF assms(1)])
+proof (induction rule: DFS_skeleton_refine_induct[OF assms(1)])
   case (1 dfs_state)
   show ?case
-  proof (rule DFS_skel_more_domintros)
-    show "DFS_skel_more_dom (DFS_skel_more_upd1 dfs_state)"
-      if c: "DFS_skel_more_call_1_conds dfs_state"
+  proof (rule DFS_skeleton_domintros)
+    show "DFS_skeleton_dom (DFS_skeleton_upd1 dfs_state)"
+      if c: "DFS_skeleton_call_1_conds dfs_state"
       using 1(2)[OF refine_conds_eq(1)[OF 1(4,5), THEN iffD2, OF c]]
       using invar_adj_holds_upd1[OF c 1(4,5)] invar_1_holds_1[OF c 1(5)]
       by (simp add: refine_upd1_eq[OF 1(4,5)])
   next
-    show "DFS_skel_more_dom (DFS_skel_more_upd2 dfs_state)"
-      if c: "DFS_skel_more_call_2_conds dfs_state"
+    show "DFS_skeleton_dom (DFS_skeleton_upd2 dfs_state)"
+      if c: "DFS_skeleton_call_2_conds dfs_state"
       using 1(3)[OF refine_conds_eq(2)[OF 1(4,5), THEN iffD2, OF c]]
       using invar_adj_holds_upd2[OF 1(4)] invar_1_holds_2[OF c 1(5)]
       by (simp add: refine_upd2_ret_eq(1))
@@ -454,27 +454,27 @@ proof (induction rule: DFS_skel_more_refine_induct[OF assms(1)])
 qed
 
 lemma more_dom_imp_refine_dom:
-  assumes "DFS_skel_more_dom st" and "invar_adj st" and "invar_1 st"
-  shows "DFS_skel_more_refine_dom st"
+  assumes "DFS_skeleton_dom st" and "invar_adj st" and "invar_1 st"
+  shows "DFS_skeleton_refine_dom st"
   using assms(2-)
-proof (induction rule: DFS_skel_more_induct[OF assms(1)])
+proof (induction rule: DFS_skeleton_induct[OF assms(1)])
   case (1 dfs_state)
   show ?case
-  proof (rule DFS_skel_more_refine_domintros)
-    show "DFS_skel_more_refine_dom (DFS_skel_more_refine_upd1 dfs_state)"
-      if c: "DFS_skel_more_refine_call_1_conds dfs_state"
+  proof (rule DFS_skeleton_refine_domintros)
+    show "DFS_skeleton_refine_dom (DFS_skeleton_refine_upd1 dfs_state)"
+      if c: "DFS_skeleton_refine_call_1_conds dfs_state"
     proof -
-      have c': "DFS_skel_more_call_1_conds dfs_state"
+      have c': "DFS_skeleton_call_1_conds dfs_state"
         using c refine_conds_eq(1)[OF 1(4,5)] by simp
       show ?thesis
         using 1(2)[OF c'] invar_adj_holds_upd1[OF c' 1(4,5)] invar_1_holds_1[OF c' 1(5)]
         by (simp add: refine_upd1_eq[OF 1(4,5)])
     qed
   next
-    show "DFS_skel_more_refine_dom (DFS_skel_more_refine_upd2 dfs_state)"
-      if c: "DFS_skel_more_refine_call_2_conds dfs_state"
+    show "DFS_skeleton_refine_dom (DFS_skeleton_refine_upd2 dfs_state)"
+      if c: "DFS_skeleton_refine_call_2_conds dfs_state"
     proof -
-      have c': "DFS_skel_more_call_2_conds dfs_state"
+      have c': "DFS_skeleton_call_2_conds dfs_state"
         using c refine_conds_eq(2)[OF 1(4,5)] by simp
       show ?thesis
         using 1(3)[OF c'] invar_adj_holds_upd2[OF 1(4)] invar_1_holds_2[OF c' 1(5)]
@@ -483,9 +483,9 @@ proof (induction rule: DFS_skel_more_induct[OF assms(1)])
   qed
 qed
 
-theorem DFS_skel_more_refine_dom_iff:
+theorem DFS_skeleton_refine_dom_iff:
   assumes "invar_adj st" and "invar_1 st"
-  shows "DFS_skel_more_refine_dom st \<longleftrightarrow> DFS_skel_more_dom st"
+  shows "DFS_skeleton_refine_dom st \<longleftrightarrow> DFS_skeleton_dom st"
   using refine_dom_imp_more_dom[OF _ assms] more_dom_imp_refine_dom[OF _ assms] by blast
 
 subsection \<open>The equivalence\<close>
@@ -493,55 +493,55 @@ subsection \<open>The equivalence\<close>
 text \<open>The two searches agree \<^emph>\<open>as runs\<close>: at every step they take the same branch and push the
   same vertex, and since they share \<open>on_push\<close> the states they build are literally equal --- the
   \<open>'more\<close> slot, carried graph included, evolves identically. So every fact proved of
-  \<open>DFS_skel_more\<close> holds of \<open>DFS_skel_more_refine\<close> unchanged.\<close>
+  \<open>DFS_skeleton\<close> holds of \<open>DFS_skeleton_refine\<close> unchanged.\<close>
 
-theorem DFS_skel_more_refine_eq_DFS_skel_more:
-  assumes dom: "DFS_skel_more_refine_dom st" and "invar_adj st" and "invar_1 st"
-  shows "DFS_skel_more_refine st = DFS_skel_more st"
+theorem DFS_skeleton_refine_eq_DFS_skeleton:
+  assumes dom: "DFS_skeleton_refine_dom st" and "invar_adj st" and "invar_1 st"
+  shows "DFS_skeleton_refine st = DFS_skeleton st"
   using assms(2-)
-proof (induction rule: DFS_skel_more_refine_induct[OF dom])
+proof (induction rule: DFS_skeleton_refine_induct[OF dom])
   case (1 dfs_state)
-  have mdom: "DFS_skel_more_dom dfs_state"
+  have mdom: "DFS_skeleton_dom dfs_state"
     using refine_dom_imp_more_dom[OF 1(1) 1(4,5)] .
   show ?case
-  proof (rule DFS_skel_more_refine_cases[where dfs_state = dfs_state])
-    show ?case if c: "DFS_skel_more_refine_call_1_conds dfs_state"
+  proof (rule DFS_skeleton_refine_cases[where dfs_state = dfs_state])
+    show ?case if c: "DFS_skeleton_refine_call_1_conds dfs_state"
     proof -
-      have c': "DFS_skel_more_call_1_conds dfs_state"
+      have c': "DFS_skeleton_call_1_conds dfs_state"
         using c refine_conds_eq(1)[OF 1(4,5)] by simp
-      have "DFS_skel_more_refine dfs_state = DFS_skel_more_refine (DFS_skel_more_refine_upd1 dfs_state)"
-        using DFS_skel_more_refine_simps(1)[OF 1(1) c] .
-      also have "\<dots> = DFS_skel_more (DFS_skel_more_refine_upd1 dfs_state)"
+      have "DFS_skeleton_refine dfs_state = DFS_skeleton_refine (DFS_skeleton_refine_upd1 dfs_state)"
+        using DFS_skeleton_refine_simps(1)[OF 1(1) c] .
+      also have "\<dots> = DFS_skeleton (DFS_skeleton_refine_upd1 dfs_state)"
         using 1(2)[OF c] invar_adj_holds_upd1[OF c' 1(4,5)] invar_1_holds_1[OF c' 1(5)]
         by (simp add: refine_upd1_eq[OF 1(4,5)])
-      also have "\<dots> = DFS_skel_more (DFS_skel_more_upd1 dfs_state)"
+      also have "\<dots> = DFS_skeleton (DFS_skeleton_upd1 dfs_state)"
         by (simp add: refine_upd1_eq[OF 1(4,5)])
-      also have "\<dots> = DFS_skel_more dfs_state"
-        using DFS_skel_more_simps(1)[OF mdom c'] by simp
+      also have "\<dots> = DFS_skeleton dfs_state"
+        using DFS_skeleton_simps(1)[OF mdom c'] by simp
       finally show ?thesis .
     qed
-    show ?case if c: "DFS_skel_more_refine_call_2_conds dfs_state"
+    show ?case if c: "DFS_skeleton_refine_call_2_conds dfs_state"
     proof -
-      have c': "DFS_skel_more_call_2_conds dfs_state"
+      have c': "DFS_skeleton_call_2_conds dfs_state"
         using c refine_conds_eq(2)[OF 1(4,5)] by simp
-      have "DFS_skel_more_refine dfs_state = DFS_skel_more_refine (DFS_skel_more_refine_upd2 dfs_state)"
-        using DFS_skel_more_refine_simps(2)[OF 1(1) c] .
-      also have "\<dots> = DFS_skel_more (DFS_skel_more_refine_upd2 dfs_state)"
+      have "DFS_skeleton_refine dfs_state = DFS_skeleton_refine (DFS_skeleton_refine_upd2 dfs_state)"
+        using DFS_skeleton_refine_simps(2)[OF 1(1) c] .
+      also have "\<dots> = DFS_skeleton (DFS_skeleton_refine_upd2 dfs_state)"
         using 1(3)[OF c] invar_adj_holds_upd2[OF 1(4)] invar_1_holds_2[OF c' 1(5)]
         by (simp add: refine_upd2_ret_eq(1))
-      also have "\<dots> = DFS_skel_more (DFS_skel_more_upd2 dfs_state)"
+      also have "\<dots> = DFS_skeleton (DFS_skeleton_upd2 dfs_state)"
         by (simp add: refine_upd2_ret_eq(1))
-      also have "\<dots> = DFS_skel_more dfs_state"
-        using DFS_skel_more_simps(2)[OF mdom c'] by simp
+      also have "\<dots> = DFS_skeleton dfs_state"
+        using DFS_skeleton_simps(2)[OF mdom c'] by simp
       finally show ?thesis .
     qed
-    show ?case if c: "DFS_skel_more_refine_ret_1_conds dfs_state"
-      using DFS_skel_more_refine_simps(3)[OF 1(1) c]
-      using DFS_skel_more_simps(3)[OF mdom refine_conds_eq(3)[OF 1(4,5), THEN iffD1, OF c]]
+    show ?case if c: "DFS_skeleton_refine_ret_1_conds dfs_state"
+      using DFS_skeleton_refine_simps(3)[OF 1(1) c]
+      using DFS_skeleton_simps(3)[OF mdom refine_conds_eq(3)[OF 1(4,5), THEN iffD1, OF c]]
       by (simp add: refine_upd2_ret_eq)
-    show ?case if c: "DFS_skel_more_refine_ret_2_conds dfs_state"
-      using DFS_skel_more_refine_simps(4)[OF 1(1) c]
-      using DFS_skel_more_simps(4)[OF mdom refine_conds_eq(4)[OF 1(4,5), THEN iffD1, OF c]]
+    show ?case if c: "DFS_skeleton_refine_ret_2_conds dfs_state"
+      using DFS_skeleton_refine_simps(4)[OF 1(1) c]
+      using DFS_skeleton_simps(4)[OF mdom refine_conds_eq(4)[OF 1(4,5), THEN iffD1, OF c]]
       by (simp add: refine_upd2_ret_eq)
   qed
 qed
@@ -549,10 +549,10 @@ qed
 text \<open>The executable form, for the code generator: it is the refined loop that runs, and it agrees
   with the original's specification.\<close>
 
-corollary DFS_skel_more_refine_impl_eq_DFS_skel_more:
-  assumes "DFS_skel_more_refine_dom st" and "invar_adj st" and "invar_1 st"
-  shows "DFS_skel_more_refine_impl st = DFS_skel_more st"
-  using DFS_skel_more_refine_impl_same[OF assms(1)] DFS_skel_more_refine_eq_DFS_skel_more[OF assms] by simp
+corollary DFS_skeleton_refine_impl_eq_DFS_skeleton:
+  assumes "DFS_skeleton_refine_dom st" and "invar_adj st" and "invar_1 st"
+  shows "DFS_skeleton_refine_impl st = DFS_skeleton st"
+  using DFS_skeleton_refine_impl_same[OF assms(1)] DFS_skeleton_refine_eq_DFS_skeleton[OF assms] by simp
 
 end
 

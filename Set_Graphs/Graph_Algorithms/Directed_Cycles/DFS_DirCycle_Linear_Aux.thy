@@ -47,7 +47,7 @@ definition "DFS_dircycle_linear_aux_axioms =
   \<and> (\<forall>u w. u \<in> t_set f \<longrightarrow> (u, w) \<in> Graph.digraph_abs G \<longrightarrow> w \<in> t_set f)
   \<and> (\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set f) c))"
 
-abbreviation "find_dircycle_linear \<equiv> dc.DFS_skel_impl"
+abbreviation "find_dircycle_linear \<equiv> dc.DFS_skeleton_impl"
 
 end
 
@@ -78,8 +78,8 @@ lemma linear_initial_invars[simp,intro]:
   by (auto simp: dc.invar_1_def dc.invar_seen_stack_def dircycle_linear_initial_state_def
                  DFS_dircycle_linear_aux_axioms_def DFS_dircycle_axioms_def)
 
-lemma dircycle_linear_initial_dom: "dc.DFS_skel_dom dircycle_linear_initial_state"
-  by (intro dc.DFS_skel_terminates linear_initial_invars)
+lemma dircycle_linear_initial_dom: "dc.DFS_skeleton_dom dircycle_linear_initial_state"
+  by (intro dc.DFS_skeleton_terminates linear_initial_invars)
 
 lemma linear_initial_struct[simp,intro]:
   "invar_2 dircycle_linear_initial_state"
@@ -102,10 +102,10 @@ lemma linear_initial_fc[simp,intro]:
 subsection \<open>Soundness and completeness of the seeded run\<close>
 
 theorem DFS_dircycle_linear_sound:
-  assumes "cycle (dc.DFS_skel dircycle_linear_initial_state)"
+  assumes "cycle (dc.DFS_skeleton dircycle_linear_initial_state)"
   shows "\<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c"
 proof -
-  have "invar_cycle_true (dc.DFS_skel dircycle_linear_initial_state)"
+  have "invar_cycle_true (dc.DFS_skeleton dircycle_linear_initial_state)"
     by (intro invar_cycle_true_holds dircycle_linear_initial_dom linear_initial_invars
               linear_initial_fin linear_initial_struct)
        (auto simp: invar_cycle_true_def dircycle_linear_initial_state_def)
@@ -115,11 +115,11 @@ qed
 text \<open>Completeness reports on \<open>finished\<close> rather than \<open>seen\<close> (contrast the library's
   \<open>DFS_dircycle_complete\<close>): the outer loop consumes exactly the finished region.\<close>
 theorem DFS_dircycle_linear_complete:
-  assumes "\<not> cycle (dc.DFS_skel dircycle_linear_initial_state)"
-  shows "\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (finished (dc.DFS_skel dircycle_linear_initial_state))) c"
+  assumes "\<not> cycle (dc.DFS_skeleton dircycle_linear_initial_state)"
+  shows "\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (finished (dc.DFS_skeleton dircycle_linear_initial_state))) c"
 proof -
-  let ?r = "dc.DFS_skel dircycle_linear_initial_state"
-  have dom: "dc.DFS_skel_dom dircycle_linear_initial_state" by (rule dircycle_linear_initial_dom)
+  let ?r = "dc.DFS_skeleton dircycle_linear_initial_state"
+  have dom: "dc.DFS_skeleton_dom dircycle_linear_initial_state" by (rule dircycle_linear_initial_dom)
   have cf: "invar_cycle_false ?r"
     by (intro invar_cycle_false_holds dom linear_initial_invars linear_initial_fin
               linear_initial_struct linear_initial_fc)
@@ -156,32 +156,32 @@ lemma invar_seed_intro[invar_props_intros]:
   by (auto simp: invar_seed_def)
 
 lemma invar_seed_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_call_1_conds dfs_state; dc.invar_1 dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow>
-    invar_seed (dc.DFS_skel_upd1 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_1_conds dfs_state; dc.invar_1 dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow>
+    invar_seed (dc.DFS_skeleton_upd1 dfs_state)"
   by (auto simp: upd1_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_seed_holds_upd2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_call_2_conds dfs_state; invar_fin dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow>
-    invar_seed (dc.DFS_skel_upd2 dfs_state)"
+  "\<lbrakk>dc.DFS_skeleton_call_2_conds dfs_state; invar_fin dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow>
+    invar_seed (dc.DFS_skeleton_upd2 dfs_state)"
   by (auto simp: upd2_unfold elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_seed_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_ret_1_conds dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow> invar_seed (dc.DFS_skel_ret1 dfs_state)"
-  by (auto simp: dc.DFS_skel_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_1_conds dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow> invar_seed (dc.DFS_skeleton_ret1 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret1_def cyc_on_empty_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_seed_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>dc.DFS_skel_ret_2_conds dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow> invar_seed (dc.DFS_skel_ret2 dfs_state)"
-  by (auto simp: dc.DFS_skel_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
+  "\<lbrakk>dc.DFS_skeleton_ret_2_conds dfs_state; invar_seed dfs_state\<rbrakk> \<Longrightarrow> invar_seed (dc.DFS_skeleton_ret2 dfs_state)"
+  by (auto simp: dc.DFS_skeleton_ret2_def cyc_on_found_def elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_seed_holds[invar_holds_intros]:
-  assumes "dc.DFS_skel_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state" "invar_seed dfs_state"
-  shows "invar_seed (dc.DFS_skel dfs_state)"
+  assumes "dc.DFS_skeleton_dom dfs_state" "dc.invar_1 dfs_state" "invar_fin dfs_state" "invar_seed dfs_state"
+  shows "invar_seed (dc.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: dc.DFS_skel_induct[OF assms(1)])
+proof(induction rule: dc.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule dc.DFS_skel_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skel_simps[OF IH(1)])
+    apply(rule dc.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: dc.DFS_skeleton_simps[OF IH(1)])
 qed
 
 lemma initial_seed[simp,intro]: "invar_seed dircycle_linear_initial_state"
@@ -189,7 +189,7 @@ lemma initial_seed[simp,intro]: "invar_seed dircycle_linear_initial_state"
   by (auto simp: invar_seed_def dircycle_linear_initial_state_def
                  DFS_dircycle_linear_aux_axioms_def)
 
-abbreviation "dircycle_linear_result \<equiv> dc.DFS_skel dircycle_linear_initial_state"
+abbreviation "dircycle_linear_result \<equiv> dc.DFS_skeleton dircycle_linear_initial_state"
 
 lemma dircycle_linear_invars:
   "dc.invar_1 dircycle_linear_result"
@@ -232,7 +232,7 @@ lemma dircycle_linear_root_finished:
 proof -
   have empty: "stack dircycle_linear_result = []"
     using no_cycle_ret_1[OF dircycle_linear_initial_dom assms]
-    by (auto simp: dc.DFS_skel_ret_1_conds_def split: list.splits)
+    by (auto simp: dc.DFS_skeleton_ret_1_conds_def split: list.splits)
   have "t_set (finished dircycle_linear_result) = t_set (seen dircycle_linear_result)"
     using dircycle_linear_invars(3) empty by (auto elim!: invar_props_elims)
   thus ?thesis using dircycle_linear_invars(5) by (auto elim!: invar_props_elims)
