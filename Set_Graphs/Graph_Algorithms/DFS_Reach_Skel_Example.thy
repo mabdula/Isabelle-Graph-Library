@@ -11,7 +11,7 @@ t = t and s = s  for F t s
 defines  dfs_initial_state = dfs.initial_state and
 neighbourhood=dfs.Graph.neighbourhood and
 reach_found = dfs.reach_found and
-dfs_impl = dfs.reach.DFS_skel_impl  and
+dfs_impl = dfs.reach.DFS_skeleton_impl  and
 add_edge = dfs.Graph.add_edge and
 delete_edge = dfs.Graph.delete_edge and
 from_list = dfs.Graph.from_list
@@ -23,7 +23,7 @@ text ‹The partial-function unfolding equation cannot serve as a code equation 
 carries the instantiated callbacks as compound arguments), so we restate it once at the concrete
 instance, with the callbacks inlined.›
 lemmas dfs_impl_code[code] =
-  dfs.reach.DFS_skel_impl.simps[folded dfs_impl_def[folded reach_found_def],
+  dfs.reach.DFS_skeleton_impl.simps[folded dfs_impl_def[folded reach_found_def],
     unfolded dfs.reach_on_found_def dfs.reach_on_empty_def dfs.reach_on_backtrack_def]
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
