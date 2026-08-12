@@ -1,5 +1,5 @@
 theory DFS_DirCycle
-  imports DFS_Skeleton Directed_Set_Graphs.Component_Defs
+  imports DFS_Skeletons.DFS_Skeleton Directed_Set_Graphs.Component_Defs
 begin
 
 text \<open>Directed-graph cycle detection as an instance of the DFS skeleton. The state extends the
