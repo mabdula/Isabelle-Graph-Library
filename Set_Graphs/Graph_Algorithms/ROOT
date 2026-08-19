@@ -5,8 +5,14 @@ session "DFS_Skeletons" in DFS = "Directed_Set_Graphs" +
     map, parameterized by callbacks -- among them on_push, applied to the freshly-pushed state in
     the descend step, so that an instance can maintain data that changes when a vertex enters the
     stack -- with its termination argument and the invariants (seen/finished, the stack shape)
-    proved once and for all. DFS_Skeleton_Refine moves the adjacency map into the state so a callback
-    may prune it, proving the loop equivalent to the one that reads a fixed map.
+    proved once and for all. Two sibling refinements move the adjacency map into the state so a
+    callback may prune it. DFS_Skeleton_Refine prunes at push, so the neighbourhoods hold the
+    unseen out-neighbours and the loop is proved equivalent to the one that reads a fixed map.
+    DFS_Skeleton_Refine_Unfin prunes at backtrack, so the neighbourhoods hold the unfinished
+    out-neighbours -- what a back-edge-hunting instance needs; since the offered set may then
+    contain on-stack vertices, the instance's found must police the selection (the sel_unseen
+    obligation), and the reasoning layer proves the structural invariants and termination
+    directly against the refined loop rather than by equivalence to the fixed-map one.
 
     Kept as a light session of its own so that consumers needing only a DFS skeleton -- e.g. the
     directed-cycle detection in Directed_Cycle_DFS, or an external development such as a datalog
@@ -15,6 +21,7 @@ session "DFS_Skeletons" in DFS = "Directed_Set_Graphs" +
   theories
     DFS_Skeleton
     DFS_Skeleton_Refine
+    DFS_Skeleton_Refine_Unfin
 
 session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
   description \<open>Directed-cycle detection by depth-first search.
