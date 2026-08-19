@@ -52,8 +52,9 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
         on the verdict but need not visit in the same order.
       * Level 2 -- DFS_DirCycle_Linear_Tracked_Aux_Refine and DFS_DirCycle_Linear_Tracked_Refine,
         on DFS_Skeleton_Refine_Unfin, where the adjacency map itself moves into the state and
-        on_backtrack deletes the finished vertex's in-edges (via a static reverse adjacency map
-        fixed by the instance, so the deletions cost one pass over the edges in total). The carried
+        on_backtrack deletes the finished vertex's in-edges (read off a state-carried inverse
+        map, kept the exact inverse of the carried one by dropping the finished vertex's row
+        alongside, so the deletions cost one pass over the edges in total). The carried
         neighbourhoods then hold exactly the unfinished out-neighbours, so both remaining
         per-step set operations go at once: the descend step reads a plain neighbourhood instead
         of "neighbourhood - seen" (evaluated twice per step), and the back-edge test becomes one
@@ -95,6 +96,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     DFS
     DFS_Example
     DFS_Reach_Skel
+    DFS_Reach_Skel_Refine
     BFS_2
     BFS_Subprocedures
     BFS_Example
