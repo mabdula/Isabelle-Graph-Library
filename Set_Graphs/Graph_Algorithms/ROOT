@@ -5,8 +5,14 @@ session "DFS_Skeletons" in DFS = "Directed_Set_Graphs" +
     map, parameterized by callbacks -- among them on_push, applied to the freshly-pushed state in
     the descend step, so that an instance can maintain data that changes when a vertex enters the
     stack -- with its termination argument and the invariants (seen/finished, the stack shape)
-    proved once and for all. DFS_Skeleton_Refine moves the adjacency map into the state so a callback
-    may prune it, proving the loop equivalent to the one that reads a fixed map.
+    proved once and for all. Two sibling refinements move the adjacency map into the state so a
+    callback may prune it. DFS_Skeleton_Refine prunes at push, so the neighbourhoods hold the
+    unseen out-neighbours and the loop is proved equivalent to the one that reads a fixed map.
+    DFS_Skeleton_Refine_Unfin prunes at backtrack, so the neighbourhoods hold the unfinished
+    out-neighbours -- what a back-edge-hunting instance needs; since the offered set may then
+    contain on-stack vertices, the instance's found must police the selection (the sel_unseen
+    obligation), and the reasoning layer proves the structural invariants and termination
+    directly against the refined loop rather than by equivalence to the fixed-map one.
 
     Kept as a light session of its own so that consumers needing only a DFS skeleton -- e.g. the
     directed-cycle detection in Directed_Cycle_DFS, or an external development such as a datalog
@@ -15,6 +21,7 @@ session "DFS_Skeletons" in DFS = "Directed_Set_Graphs" +
   theories
     DFS_Skeleton
     DFS_Skeleton_Refine
+    DFS_Skeleton_Refine_Unfin
 
 session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
   description \<open>Directed-cycle detection by depth-first search.
@@ -44,17 +51,25 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
         step for step; DFS_DirCycle_Linear_Tracked_Equiv relates the two outer sweeps, which agree
         on the verdict but need not visit in the same order.
       * Level 2 -- DFS_DirCycle_Linear_Tracked_Aux_Refine and DFS_DirCycle_Linear_Tracked_Refine,
-        on DFS_Skeleton_Refine, where the adjacency map itself moves into the state and on_push
-        deletes the pushed vertex's in-edges (via a static reverse adjacency map fixed by the
-        instance, so the deletions cost one pass over the edges in total). The remaining difference,
-        "neighbourhood - seen" (evaluated twice per step), goes too: the loop reads a plain
-        neighbourhood. The outer sweep threads that pruned map from one inner call to the next, so
-        the pruning is done once over the whole run rather than once per root; its state record
-        extends level 1's, and the equivalence back to level 1 is a plain equation under the record
-        package's truncate, from which soundness and completeness transport. The inner search needs
-        one assumption the vset ADT does not supply, sel_cong -- that sel is determined by the
-        element set -- because the two levels hand sel vsets built by different operations; the
-        outer sweep does not, since it selects from the very vset level 1 selects from.\<close>
+        on DFS_Skeleton_Refine_Unfin, where the adjacency map itself moves into the state and
+        on_backtrack deletes the finished vertex's in-edges (via a static reverse adjacency map
+        fixed by the instance, so the deletions cost one pass over the edges in total). The carried
+        neighbourhoods then hold exactly the unfinished out-neighbours, so both remaining
+        per-step set operations go at once: the descend step reads a plain neighbourhood instead
+        of "neighbourhood - seen" (evaluated twice per step), and the back-edge test becomes one
+        membership -- is the selected vertex gray? -- instead of level 1's "neighbourhood
+        intersect gray" scan. With that the whole search is O(V + E). The outer sweep threads the
+        pruned map from one inner call to the next, so the pruning is done once over the whole run
+        rather than once per root; its state record extends level 1's. The equivalence back to
+        level 1 is weaker than at the lower levels: the two inner searches are lockstep-equal
+        (a plain equation under the record package's truncate) exactly on clean runs, and on
+        cyclic runs only the verdicts agree -- this search detects the back edge when sel hands
+        it over rather than at the first opportunity, but a back edge adjacent to the stack can
+        never be backtracked past, so it always forces a report. Soundness and completeness
+        transport across the verdict. The inner search needs one assumption the vset ADT does not
+        supply, sel_cong -- that sel is determined by the element set -- because its clean-run
+        lockstep hands sel vsets built by different operations; the outer sweep does not, since
+        it selects from the very vset level 1 selects from.\<close>
   theories
     DFS_DirCycle
     Graph_Topological_Order
