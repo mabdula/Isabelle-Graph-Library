@@ -386,7 +386,20 @@ next
                                "(sndv (last es)) = v" "set es \<subseteq> \<EE>"
    by blast
   hence "augpath f (e#es)"
-      by (metis "2.hyps"(1) "2.hyps"(2) augpath_simps list.collapse)
+    proof -
+    have es_ne: "es \<noteq> []"
+      using es_Def(1) by (auto simp add: augpath_def prepath_def)
+    then obtain d ds where es_split: "es = d # ds"
+      by (cases es) auto
+    have "sndv e = fstv d"
+      using "2.hyps" es_Def(2) es_split by simp
+    moreover have "augpath f (d # ds)"
+      using es_Def(1) es_split by simp
+    ultimately have "augpath f (e # d # ds)"
+      using "2.hyps" by (auto intro: augpath_intros(2))
+    thus ?thesis
+      by (simp add: es_split)
+  qed
   moreover have "set (e#es) \<subseteq> \<EE>" 
       by (simp add: "2.hyps"(3) es_Def)
   ultimately show ?case 
