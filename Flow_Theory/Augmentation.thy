@@ -112,8 +112,41 @@ lemma prepath_split1:
 lemma prepath_split2: 
   assumes "prepath (xs@ys)"
   shows   "ys \<noteq> []  \<Longrightarrow> prepath ys"
-  apply(induction "xs@ys" arbitrary:  xs ys rule: prepath_induct, simp add: assms)
-  by (simp add: Cons_eq_append_conv prepath_intros(1)) (metis append_eq_Cons_conv prepath_intros(2))
+proof(induction "xs@ys" arbitrary: xs ys rule: prepath_induct)
+  show "prepath (xs @ ys)"
+    using assms by simp
+next
+  case (2 e as bs)
+  have "bs = [e]"
+  proof(cases as)
+    case Nil
+    then show ?thesis
+      using 2 by simp
+  next
+    case (Cons a as')
+    then show ?thesis
+      using 2 by auto
+  qed
+  then show ?case
+    by (simp add: prepath_intros(1))
+next
+  case (3 e d es as bs)
+  show ?case
+  proof(cases as)
+    case Nil
+    then have "bs = e # d # es"
+      using 3 by simp
+    moreover have "prepath (e # d # es)"
+      using "3.hyps"(1,2) by (simp add: prepath_intros(2))
+    ultimately show ?thesis by simp
+  next
+    case (Cons a as')
+    then have "d # es = as' @ bs"
+      using 3 by simp
+    then show ?thesis
+      using 3 by blast
+  qed
+qed
 
 lemma prepath_split3:
   assumes "prepath (xs@ys)" 
