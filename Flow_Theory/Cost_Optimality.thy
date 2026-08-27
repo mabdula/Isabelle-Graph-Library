@@ -460,7 +460,15 @@ proof-
       by fastforce 
   also have " ... = (\<Sum>e\<in>\<E>. difference f' f (F e) *\<c> e) +
                     (\<Sum>e\<in>\<E>. - difference f' f (B e) * \<c> e) "
-    by (smt (verit) \<cc>.simps(1) \<cc>.simps(2) minus_mult_minus prod.collapse sum.cong)
+  proof-
+    have F_sum: "(\<Sum>e\<in>\<E>. difference f' f (F e) * \<cc> (F e)) =
+                 (\<Sum>e\<in>\<E>. difference f' f (F e) * \<c> e)"
+      by(intro sum.cong[OF refl]) simp
+    have B_sum: "(\<Sum>e\<in>\<E>. difference f' f (B e) * \<cc> (B e)) =
+                 (\<Sum>e\<in>\<E>. - difference f' f (B e) * \<c> e)"
+      by(intro sum.cong[OF refl]) simp
+    from F_sum B_sum show ?thesis by linarith
+  qed
   also have "... = (\<Sum>e\<in>\<E>.     difference f' f (F e) *\<c> e
                              - difference f' f (B e) * \<c> e) " 
     using sym[OF sum.distrib[of "\<lambda> e. difference f' f (F e) * \<c> e"_ \<E>]] by simp
