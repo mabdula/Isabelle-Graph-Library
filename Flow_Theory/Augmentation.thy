@@ -88,7 +88,25 @@ lemma prepath_cases: "prepath a2 \<Longrightarrow>
                      (\<And>e. a2 = [e]  \<Longrightarrow> P) \<Longrightarrow>
                      (\<And> e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P) \<Longrightarrow>
                      P"
-  using  prepath_induct[of a2 ] by (metis prepath_simps)
+proof -
+  assume pre: "prepath a2"
+    and case1: "\<And>e. a2 = [e] \<Longrightarrow> P"
+    and case2: "\<And>e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P"
+  have disj: "(\<exists>e. a2 = [e]) \<or>
+              (\<exists>e d es. a2 = e # d # es \<and> sndv e = fstv d \<and> prepath (d # es))"
+    using pre by (rule prepath_simps[THEN iffD1])
+  show P
+  proof(rule disjE[OF disj])
+    assume "\<exists>e. a2 = [e]"
+    then obtain e where "a2 = [e]" by blast
+    thus P by (rule case1)
+  next
+    assume "\<exists>e d es. a2 = e # d # es \<and> sndv e = fstv d \<and> prepath (d # es)"
+    then obtain e d es where "a2 = e # d # es" "sndv e = fstv d" "prepath (d # es)"
+      by blast
+    thus P by (rule case2)
+  qed
+qed
 
 text \<open>Now we can reason about some properties of $prepath$.\<close>
 
