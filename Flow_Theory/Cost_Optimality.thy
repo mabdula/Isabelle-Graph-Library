@@ -661,7 +661,7 @@ proof(rule ccontr)
   proof-
     have "(\<Sum>e\<in>  set (css ! i). (ws ! i) * \<cc> e) = 
            (ws ! i) * (\<Sum>e\<in>  set (css ! i). \<cc> e)" 
-      by (metis sum.cong sum_distrib_left)
+      by (simp add: sum_distrib_left)
     also have 000:"... = (ws ! i)*(\<CC> (css ! i))" unfolding \<CC>_def by simp
     show "(\<CC> (css ! i)) < 0" 
      using calculation css_ws_def(1) css_ws_def(3) i_Def  sum_weigt_c unfolding \<CC>_def 
