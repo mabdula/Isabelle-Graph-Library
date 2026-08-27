@@ -151,11 +151,55 @@ qed
 lemma prepath_split3:
   assumes "prepath (xs@ys)" 
     shows "xs \<noteq> [] \<Longrightarrow> ys \<noteq> []  \<Longrightarrow> sndv (last xs) = fstv (hd ys)"
-  apply(induction "xs@ys" arbitrary:  xs ys rule: prepath_induct, simp add: assms)
-  apply(simp add: Cons_eq_append_conv) 
-  apply(metis (no_types, opaque_lifting) append_Cons append_self_conv2 last_ConsL
-          last_ConsR list.inject list.sel(1) neq_Nil_conv)
-  done
+proof -
+  have gen: "\<forall>as bs. zs = as @ bs \<longrightarrow> as \<noteq> [] \<longrightarrow> bs \<noteq> [] \<longrightarrow>
+                     sndv (last as) = fstv (hd bs)"
+    if "prepath zs" for zs
+  proof(induction rule: prepath_induct[OF that])
+    case (1 e)
+    show ?case
+    proof(intro allI impI)
+      fix as bs
+      assume split: "[e] = as @ bs" and as_ne: "as \<noteq> []" and bs_ne: "bs \<noteq> []"
+      have False
+        using split as_ne bs_ne by(cases as) auto
+      thus "sndv (last as) = fstv (hd bs)" by simp
+    qed
+  next
+    case (2 e d es)
+    note case2 = this
+    show ?case
+    proof(intro allI impI)
+      fix as bs
+      assume split: "e # d # es = as @ bs" and as_ne: "as \<noteq> []" and bs_ne: "bs \<noteq> []"
+      obtain a as' where as_split: "as = a # as'"
+        using as_ne by (cases as) auto
+      have "e # d # es = a # (as' @ bs)"
+        using split as_split by simp
+      hence a_is_e: "a = e" and rest: "d # es = as' @ bs"
+        by auto
+      show "sndv (last as) = fstv (hd bs)"
+      proof(cases "as' = []")
+        case True
+        have "last as = e"
+          using as_split a_is_e True by simp
+        moreover have "bs = d # es"
+          using rest True by simp
+        ultimately show ?thesis
+          using case2(1) by simp
+      next
+        case False
+        have "sndv (last as') = fstv (hd bs)"
+          using case2(3) rest False bs_ne by blast
+        moreover have "last as = last as'"
+          using as_split False by simp
+        ultimately show ?thesis by simp
+      qed
+    qed
+  qed
+  show "xs \<noteq> [] \<Longrightarrow> ys \<noteq> []  \<Longrightarrow> sndv (last xs) = fstv (hd ys)"
+    using gen[OF assms] by blast
+qed
 
 lemma prepath_drop_cycles:
   assumes "prepath es" "set es \<subseteq> D" "\<not> distinct es"
