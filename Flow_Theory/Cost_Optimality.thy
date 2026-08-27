@@ -221,7 +221,25 @@ proof(rule ccontr)
   then obtain cs where cs_def: "augcycle f cs" by auto
   then obtain \<gamma> where gamma_def: "\<gamma> > 0 \<and> ereal \<gamma> \<le> Rcap f (set cs)"
     using augcycle_def augpath_rcap
-    by (metis (no_types, lifting) ereal_dense2 less_ereal.simps(1) order_less_imp_le zero_ereal_def)
+    proof-
+      have augpath_cs: "augpath f cs"
+        using cs_def by(simp add: augcycle_def)
+      hence rcap_pos: "0 < Rcap f (set cs)"
+        by(rule augpath_rcap)
+      have "\<exists> z. (0::ereal) < ereal z \<and> ereal z < Rcap f (set cs)"
+        using rcap_pos by(rule ereal_dense2)
+      then obtain z where z_prop: "(0::ereal) < ereal z" "ereal z < Rcap f (set cs)"
+        by auto
+      have z_pos: "0 < z"
+        using z_prop(1) by(simp add: zero_ereal_def)
+      have z_le: "ereal z \<le> Rcap f (set cs)"
+        using z_prop(2) by(rule order_less_imp_le)
+      show thesis
+      proof(rule that[of z])
+        show "z > 0 \<and> ereal z \<le> Rcap f (set cs)"
+          using z_pos z_le by simp
+      qed
+    qed
   have lst:"\<C> (augment_edges f \<gamma> cs) = \<C> f + \<gamma> * \<CC> cs"
     unfolding \<CC>_def
     using augcycle_def cs_def 
