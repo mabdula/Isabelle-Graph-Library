@@ -136,7 +136,15 @@ proof(induction g n v rule: find_cycle.induct)
     then obtain e where x_def: "e = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>)"
       by simp
     hence aaa:"0 < g e" "fst e = v" "e \<in> \<E>" 
-      by (metis (mono_tags, lifting) True someI_ex)+
+      proof -
+        have ex_e: "\<exists>e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>"
+          using True by blast
+        have all_three: "0 < g e \<and> fst e = v \<and> e \<in> \<E>"
+          unfolding x_def by (rule someI_ex[OF ex_e])
+        show "0 < g e" using all_three by blast
+        show "fst e = v" using all_three by blast
+        show "e \<in> \<E>" using all_three by blast
+      qed
     hence find_cycle_prop: "find_cycle g (Suc n) v = v#(find_cycle g n (snd e))" 
       using True x_def by simp
     obtain es where es_def: "length es = length (find_cycle g n (snd e)) - 1 \<and>
