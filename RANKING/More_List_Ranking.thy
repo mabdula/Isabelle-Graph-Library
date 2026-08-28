@@ -1006,8 +1006,40 @@ lemma list_emb_drop_before_first:
   assumes "\<forall>y \<in> set ys. \<not>P (hd xs) y"
   shows "list_emb P xs zs"
   using assms
-  by (induction ys; simp)
-     (metis list.exhaust_sel list_emb_Cons_iff2 list_emb_Nil)
+proof (induction ys)
+  case Nil
+  then show ?case
+    by simp
+next
+  case (Cons a ys)
+  note IH = Cons.IH
+  from Cons.prems have emb: "list_emb P xs (a # (ys @ zs))"
+    by simp
+  from Cons.prems have hd_a: "\<not> P (hd xs) a"
+    by simp
+  from Cons.prems have set_ys: "\<forall>y \<in> set ys. \<not> P (hd xs) y"
+    by simp
+  have "list_emb P xs (ys @ zs)"
+  proof (cases xs)
+    case Nil
+    then show ?thesis
+      by (simp add: list_emb_Nil)
+  next
+    case (Cons b bs)
+    then have "hd xs = b"
+      by simp
+    with hd_a have not_P: "\<not> P b a"
+      by simp
+    from emb Cons have "list_emb P (b # bs) (a # (ys @ zs))"
+      by simp
+    with not_P have "list_emb P (b # bs) (ys @ zs)"
+      by (simp add: list_emb_Cons_iff2)
+    with Cons show ?thesis
+      by simp
+  qed
+  then show ?case
+    by (rule IH[OF _ set_ys])
+qed
 
 lemma sorted_strict_last_geq_length_offset:
   assumes "ns \<noteq> []"
