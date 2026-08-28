@@ -508,7 +508,13 @@ next
 qed
 
 lemma oedge_and_reversed: "oedge (erev e) = oedge e"
-  by (metis erev.elims oedge.simps(1) oedge.simps(2))
+proof(cases e)
+  case (F x)
+  then show ?thesis by simp
+next
+  case (B x)
+  then show ?thesis by simp
+qed
 
 lemma redge_erve_cases: 
  "\<lbrakk>d = erev e; (\<And> a. \<lbrakk>e = F a; d = B a\<rbrakk> \<Longrightarrow>P); (\<And> a. \<lbrakk>e = B a; d = F a \<rbrakk> \<Longrightarrow>P)\<rbrakk> \<Longrightarrow> P" for e d P
