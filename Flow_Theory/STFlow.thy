@@ -710,7 +710,7 @@ proof(cases "Abs f > 0", goal_cases)
           using css_ws(4) unfolding network_of_network.support_def
           by auto
         then obtain C1 C2 where cs'_split:"ps = C1@[new_edge (create_edge t s)]@C2" 
-          by (metis in_set_conv_decomp_first single_in_append)
+          by (auto dest!: split_list)
         have C1C2_in_E:"set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
         proof(rule ccontr)
           assume "\<not> set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
