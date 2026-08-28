@@ -1004,11 +1004,26 @@ proof(induction n arbitrary: g rule: less_induct)
       also have "... =  (\<Sum>i\<in>{x |x. x > 0 \<and> x <length (es# css)}. if e \<in> set ((es # css) ! (i)) 
                                               then (\<gamma> # ws) ! (i) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
-        apply(rule sum_eq_split, rule sum.cong)
-        defer
-        by (simp, rule, rule, force, rule,
-             smt (verit) Suc_eq_plus1 Suc_length_conv Suc_pred lessThan_atLeast0 lessThan_iff 
-            less_Suc_eq less_imp_diff_less mem_Collect_eq)  
+        proof -
+          have set_eq: "{x + 1 |x. x \<in> {0..<length css}}
+                        = {x |x. 0 < x \<and> x < length (es # css)}"
+          proof (rule equalityI)
+            show "{x + 1 |x. x \<in> {0..<length css}}
+                  \<subseteq> {x |x. 0 < x \<and> x < length (es # css)}"
+              by auto
+          next
+            show "{x |x. 0 < x \<and> x < length (es # css)}
+                  \<subseteq> {x + 1 |x. x \<in> {0..<length css}}"
+            proof (rule subsetI)
+              fix y
+              assume "y \<in> {x |x. 0 < x \<and> x < length (es # css)}"
+              hence y_props: "0 < y" "y < Suc (length css)" by auto
+              hence "y = (y - 1) + 1" and "y - 1 \<in> {0..<length css}" by auto
+              thus "y \<in> {x + 1 |x. x \<in> {0..<length css}}" by blast
+            qed
+          qed
+          show ?thesis by (simp only: set_eq)
+        qed
       also have "... = (\<Sum>i\<in>{i| i. i> 0 \<and> i <length (es#css)}. if e \<in> set ((es # css) ! (i))
                                               then (\<gamma> # ws) ! (i) else 0) +
                        (\<Sum>i\<in>{0}. if e \<in> set ((es # css) ! (i))
