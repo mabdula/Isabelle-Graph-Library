@@ -481,8 +481,22 @@ proof(cases "Abs f > 0", goal_cases)
     hence "awalk UNIV (fst (hd cs')) (map make_pair cs') (fst (hd cs'))"
       by (meson subset_UNIV subset_mono_awalk)
     moreover hence "(fst (hd cs')) = (snd (last cs'))"
-      using awalk_fst_last cs_non_empty(2) 
-      by (metis Nil_is_map_conv last_map make_pair' snd_conv)
+      proof -
+        assume prev_awalk: "awalk UNIV (fst (hd cs')) (map make_pair cs') (fst (hd cs'))"
+        have cs'_not_Nil: "cs' \<noteq> []"
+          using cs_non_empty(2) by simp
+        have map_not_Nil: "map make_pair cs' \<noteq> []"
+          using cs'_not_Nil by simp
+        have snd_last: "prod.snd (last (map make_pair cs')) = fst (hd cs')"
+          using awalk_last[OF prev_awalk map_not_Nil] .
+        have "fst (hd cs') = prod.snd (last (map make_pair cs'))"
+          by(rule snd_last[symmetric])
+        also have "... = prod.snd (make_pair (last cs'))"
+          using cs'_not_Nil by(simp add: last_map)
+        also have "... = snd (last cs')"
+          by(simp add: make_pair''(2))
+        finally show ?thesis by simp
+      qed
     moreover have e_E:"e \<in> set cs' \<Longrightarrow> e \<in>\<E>" for e
     proof(goal_cases)
       case 1
