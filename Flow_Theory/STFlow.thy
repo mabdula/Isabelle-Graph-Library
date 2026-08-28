@@ -432,7 +432,17 @@ proof(cases "Abs f > 0", goal_cases)
     case (1 cs')
     then obtain cs where cs_prop: "cs \<in> set css" " set cs \<subseteq> old_edge ` \<E>"
       "cs' = map network_of_network.get_old_edge cs"
-      by auto (metis set_zip_leftD)
+      proof -
+        from 1 obtain cs0 w0
+          where cs0_w0: "(cs0, w0) \<in> set (zip css ws)"
+            and cs0_sub: "set cs0 \<subseteq> old_edge ` \<E>"
+            and cs'_is: "cs' = map network_of_network.get_old_edge cs0"
+          by auto
+        have cs0_in: "cs0 \<in> set css"
+          using cs0_w0 by (rule set_zip_leftD)
+        show thesis
+          by (rule that[OF cs0_in cs0_sub cs'_is])
+      qed
     hence cs_further_prop:"network_of_network.flowcycle f' cs"
       "set cs \<subseteq> network_of_network.support t s f'"  "distinct cs"
       using css_ws(4) by auto
