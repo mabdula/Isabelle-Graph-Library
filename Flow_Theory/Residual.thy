@@ -1135,7 +1135,8 @@ begin
 
 lemma flow_cross_acut_less_acap:"isuflow f \<Longrightarrow>  sum f (\<Delta>\<^sup>- X) \<le> ACap X"
   unfolding Delta_minus_def ACap_def isuflow_def 
-  by (metis (no_types, lifting) CollectD case_prodE sum_mono)
+  unfolding sum_ereal[symmetric]
+  by (rule sum_mono; auto)
 
 corollary flow_less_acut: 
   assumes "f is b flow" 
