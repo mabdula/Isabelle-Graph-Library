@@ -585,7 +585,7 @@ proof-
           using \<open>\<delta>\<^sup>+ u \<inter> set ES \<noteq> {} \<or> \<delta>\<^sup>- u \<inter> set ES \<noteq> {}\<close> by auto
         then obtain ie where ie_def: "ie \<in> \<delta>\<^sup>- u \<and> ie \<in> set ES" by auto 
         then obtain i where "i < b_len \<and> ES ! i = ie" 
-          by (metis Es_len_b_len in_set_conv_nth)
+          using ie_def by (auto simp add: in_set_conv_nth Es_len_b_len)
         have "snd ie = u" using ie_def unfolding delta_minus_def by simp
         have "b_len > 0" 
           using Es_len_b_len \<open>ES \<noteq> []\<close> by blast
