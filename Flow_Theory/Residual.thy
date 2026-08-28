@@ -1229,10 +1229,17 @@ proof(rule ccontr)
       using Delta_minus_def \<open>e \<in> \<Delta>\<^sup>- (ARescut f v) \<and> f e < \<u> e\<close> 
       by(auto simp add: ereal_diff_gr0)
     hence "snd e \<noteq> v \<Longrightarrow> resreach f (fst e) v "
-      using resreach_intros(2)[of f "F e" "snd e" v] a0 unfolding ARescut_def \<EE>_def 
-      by (metis (no_types, lifting) CollectD \<open>\<lbrakk>0 < \<uu>\<^bsub>f\<^esub>F e; sndv (F e) = snd e; F e \<in> \<EE>; 
-            resreach f (snd e) v\<rbrakk> \<Longrightarrow> resreach f (fstv (F e)) v\<close> fstv.simps(1) insertE o_edge_res 
-               oedge.simps(1) prod.collapse sndv.simps(1))
+    proof -
+      assume snd_e_not_v: "snd e \<noteq> v"
+      have Fe_in_EE: "F e \<in> \<EE>"
+        using a(2) by (auto simp add: \<EE>_def)
+      have snd_e_in: "snd e \<in> ARescut f v"
+        using a0 by blast
+      have resr: "resreach f (snd e) v"
+        using snd_e_in snd_e_not_v by (auto simp add: ARescut_def)
+      show "resreach f (fst e) v"
+        using resreach_intros(2)[OF a(1) _ Fe_in_EE resr] by simp
+    qed
     hence "fst e \<in> ARescut f v" 
       using resreach_intros(1)[of f "F e"] a 
       unfolding ARescut_def \<EE>_def
