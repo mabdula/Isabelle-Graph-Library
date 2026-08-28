@@ -962,7 +962,25 @@ lemma distinct_move_to_eq_if:
   assumes "\<forall>x y. x \<noteq> v \<and> y \<noteq> v \<longrightarrow> (index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y)"
   shows "xs'[v \<mapsto> t] = xs"
   using assms
-  by (smt (verit, ccfv_SIG) distinct_count_in_set distinct_order_filter_eq move_to_def move_to_id)
+proof -
+  have count_v: "count_list xs v = 1"
+    using assms(1) assms(4) by (rule distinct_count_in_set)
+
+  have filter_eq: "[x <- xs. x \<noteq> v] = [x <- xs'. x \<noteq> v]"
+    using assms(1) assms(2) assms(3) assms(6) by (rule distinct_order_filter_eq)
+
+  have "xs'[v \<mapsto> t] = take t [x <- xs'. x \<noteq> v] @ v # drop t [x <- xs'. x \<noteq> v]"
+    by (simp only: move_to_def)
+  also have "\<dots> = take t [x <- xs. x \<noteq> v] @ v # drop t [x <- xs. x \<noteq> v]"
+    by (simp add: filter_eq)
+  also have "\<dots> = xs[v \<mapsto> t]"
+    by (simp only: move_to_def)
+  also have "\<dots> = xs[v \<mapsto> index xs v]"
+    using assms(5) by simp
+  also have "\<dots> = xs"
+    using count_v by (rule move_to_id)
+  finally show ?thesis .
+qed
 
 lemma distinct_move_to_indices_if_eq:
   assumes "xs'[v \<mapsto> t] = xs"
