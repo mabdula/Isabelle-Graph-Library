@@ -912,8 +912,21 @@ lemma resreach_cases:
   (\<And>f e. \<lbrakk>a1 = f; a2 = fstv e; a3 = sndv e; 0 < \<uu>\<^bsub>f\<^esub>e; e \<in> \<EE> \<rbrakk> \<Longrightarrow> P);
   (\<And>f e u v. \<lbrakk>a1 = f; a2 = fstv e; a3 = v; 0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u; e \<in> \<EE>; resreach f u v\<rbrakk> \<Longrightarrow> P)\<rbrakk>
    \<Longrightarrow> P"
-  using  resreach_induct[of a1 a2 a3 ]
-  by (metis resreach_simps)
+proof -
+  assume asm: "resreach a1 a2 a3"
+    and hyp1: "\<And>f e. \<lbrakk>a1 = f; a2 = fstv e; a3 = sndv e; 0 < \<uu>\<^bsub>f\<^esub>e; e \<in> \<EE>\<rbrakk> \<Longrightarrow> P"
+    and hyp2: "\<And>f e u v. \<lbrakk>a1 = f; a2 = fstv e; a3 = v; 0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u; e \<in> \<EE>;
+                           resreach f u v\<rbrakk> \<Longrightarrow> P"
+  note disj = iffD1[OF resreach_simps asm]
+  from disj show P
+  proof(elim disjE exE conjE, goal_cases)
+    case (1 f e)
+    then show ?case by(rule hyp1)
+  next
+    case (2 f e u v)
+    then show ?case by(rule hyp2)
+  qed
+qed
 
 lemma resreach_app_single': 
   assumes "resreach f u v"
