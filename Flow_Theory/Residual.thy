@@ -1198,7 +1198,31 @@ proof(rule ccontr)
       by force     
     then obtain e where "e \<in> \<Delta>\<^sup>- (ARescut f v)\<and> f e < \<u> e"
       unfolding ACap_def 
-      by (metis linorder_not_le sum_ereal sum_mono)
+      proof -
+        assume less: "ereal (sum f (\<Delta>\<^sup>- (ARescut f v))) < sum \<u> (\<Delta>\<^sup>- (ARescut f v))"
+        have not_all_le: "\<not> (\<forall> e \<in> \<Delta>\<^sup>- (ARescut f v). \<u> e \<le> ereal (f e))"
+        proof(rule notI)
+          assume all_le: "\<forall> e \<in> \<Delta>\<^sup>- (ARescut f v). \<u> e \<le> ereal (f e)"
+          have le_sum: "sum \<u> (\<Delta>\<^sup>- (ARescut f v)) \<le> ereal (sum f (\<Delta>\<^sup>- (ARescut f v)))"
+          proof -
+            have "sum \<u> (\<Delta>\<^sup>- (ARescut f v)) \<le> (\<Sum> e \<in> \<Delta>\<^sup>- (ARescut f v). ereal (f e))"
+            proof(rule sum_mono)
+              fix i assume "i \<in> \<Delta>\<^sup>- (ARescut f v)"
+              thus "\<u> i \<le> ereal (f i)"
+                using all_le by blast
+            qed
+            thus ?thesis by (simp add: sum_ereal)
+          qed
+          show False
+            using less_le_trans[OF less le_sum] by simp
+        qed
+        obtain e where e_prop: "e \<in> \<Delta>\<^sup>- (ARescut f v)" "\<not> \<u> e \<le> ereal (f e)"
+          using not_all_le by blast
+        have "e \<in> \<Delta>\<^sup>- (ARescut f v) \<and> ereal (f e) < \<u> e"
+          using e_prop by(simp add: linorder_not_le)
+        thus thesis
+          using that by blast
+      qed
     hence a0:"fst e \<notin> (ARescut f v) \<and> snd e \<in> (ARescut f v) \<and> f e < \<u> e" 
       using Delta_minus_def by force
     hence a:"rcap f (F e) > 0" "e \<in> \<E>"
