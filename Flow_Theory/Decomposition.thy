@@ -498,9 +498,81 @@ proof-
           by (cases "j +1 = length ES")  auto       
         ultimately have  "\<not> distinct ([x] @ bs)" 
           using hij j_def 
-          by (smt (verit, best) Es_len_b_len \<open>0 < b_len\<close> add.commute b_len_def eiv_def i_def
-                length_append mod_less mod_less_divisor nth_eq_iff_index_eq w_prop)
-        then show False 
+          proof -
+          let ?k = "nat ((int i - 1) mod int b_len)"
+          have blen_eq: "length ([x] @ bs) = b_len"
+            using b_len_def by simp
+          have i_less: "i < b_len"
+            using i_def Es_len_b_len by simp
+          have j_less: "j < b_len"
+            using j_def(1) Es_len_b_len by simp
+          have mod_suc: "(a + 1) mod b_len = (if a + 1 = b_len then 0 else a + 1)"
+            if "a < b_len" for a
+          proof(cases "a + 1 = b_len")
+            case True
+            thus ?thesis by simp
+          next
+            case False
+            have "a + 1 \<le> b_len" using that by simp
+            hence "a + 1 < b_len" using False by (simp add: less_le)
+            thus ?thesis using False by simp
+          qed
+          have snd_j: "snd (ES ! j) = ([x] @ bs) ! ((j + 1) mod b_len)"
+            using ES_prop'[OF j_def(1)] by blast
+          have snd_eiv: "snd eiv = ([x] @ bs) ! i"
+            using w_prop eiv_def by simp
+          have snd_eq: "snd eiv' = snd eiv"
+            using subassm(1) \<open>eiv \<in> \<delta>\<^sup>- u\<close> by (auto simp add: delta_minus_def)
+          have nth_eq: "([x] @ bs) ! ((j + 1) mod b_len) = ([x] @ bs) ! i"
+          proof-
+            have "([x] @ bs) ! ((j + 1) mod b_len) = snd (ES ! j)" using snd_j by simp
+            also have "... = snd eiv'" using j_def(2) by simp
+            also have "... = snd eiv" using snd_eq by simp
+            also have "... = ([x] @ bs) ! i" using snd_eiv by simp
+            finally show ?thesis by simp
+          qed
+          show ?thesis
+          proof
+            assume dist: "distinct ([x] @ bs)"
+            have idx1: "(j + 1) mod b_len < length ([x] @ bs)"
+              using \<open>0 < b_len\<close> blen_eq by simp
+            have idx2: "i < length ([x] @ bs)"
+              using i_less blen_eq by simp
+            have j1: "(j + 1) mod b_len = i"
+              using nth_eq_iff_index_eq[OF dist idx1 idx2] nth_eq by simp
+            have "j = ?k"
+            proof(cases "j + 1 = b_len")
+              case True
+              hence i0: "i = 0" using j1 by simp
+              have "?k + 1 = b_len"
+              proof(rule ccontr)
+                assume "?k + 1 \<noteq> b_len"
+                hence "(?k + 1) mod b_len = ?k + 1" using mod_suc[OF hij] by simp
+                hence "?k + 1 = i" using nat_i_int by simp
+                thus False using i0 by simp
+              qed
+              hence "j + 1 = ?k + 1" using True by simp
+              thus ?thesis by simp
+            next
+              case False
+              have "i = (j + 1) mod b_len" using j1 by simp
+              also have "... = j + 1" using mod_suc[OF j_less] False by simp
+              finally have jv: "i = j + 1" by simp
+              have k_ne: "?k + 1 \<noteq> b_len"
+              proof
+                assume "?k + 1 = b_len"
+                hence "(?k + 1) mod b_len = 0" by simp
+                hence "i = 0" using nat_i_int by simp
+                thus False using jv by simp
+              qed
+              have "?k + 1 = (?k + 1) mod b_len" using mod_suc[OF hij] k_ne by simp
+              also have "... = i" using nat_i_int by simp
+              finally have "?k + 1 = j + 1" using jv by simp
+              thus ?thesis by simp
+            qed
+            thus False using j_def(3) by simp
+          qed
+        qed        then show False 
             using xbs_distinct by blast
         qed
         hence "\<delta>\<^sup>- u \<inter> set ES = {eiv}" 
