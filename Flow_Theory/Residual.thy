@@ -317,7 +317,41 @@ proof(induction "es@fs" arbitrary: es fs rule: flowpath_induct, goal_cases)
 next
   case (4 g e es esa fs)
   then show ?case 
-    by (smt (verit, ccfv_SIG) Cons_eq_append_conv hd_append2 flowpath_simps)
+  proof(cases esa)
+    case Nil
+    then show ?thesis
+      by(simp add: flowpath_intros(1))
+  next
+    case (Cons d ds)
+    note esa_eq = Cons
+    have d_is_e: "d = e" and es_split: "es = ds @ fs"
+      using 4(5) esa_eq by auto
+    have ds_path: "flowpath g ds"
+      using 4(4) es_split by blast
+    show ?thesis
+    proof(cases ds)
+      case Nil
+      have "esa = [e]"
+        using esa_eq d_is_e Nil by simp
+      then show ?thesis
+        using 4(1) flowpath_intros(2) by simp
+    next
+      case (Cons c cs)
+      have snd_d: "snd d = fst (hd ds)"
+        using 4(2) d_is_e es_split Cons by simp
+      have "flowpath g (d # ds)"
+      proof(rule flowpath_intros(3))
+        show "0 < g d"
+          using 4(1) d_is_e by simp
+        show "snd d = fst (hd ds)"
+          using snd_d by simp
+        show "flowpath g ds"
+          using ds_path by simp
+      qed
+      then show ?thesis
+        using esa_eq by simp
+    qed
+  qed
 qed (auto simp add: assms flowpath_intros)
 
 lemma flow_path_split_right: 
