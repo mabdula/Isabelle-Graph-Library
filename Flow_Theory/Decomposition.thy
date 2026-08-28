@@ -844,7 +844,8 @@ proof(induction n arbitrary: g rule: less_induct)
           unfolding g'_def  
           by (auto simp add: delta_minus_def disjoint_iff)
         ultimately show "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = 0" 
-          by (metis is_circ_def less.prems(3) ex_def v_Assm)
+          using less.prems(3) v_Assm
+          by (simp add: is_circ_def ex_def)
       next
         case False
         then obtain eov eiv where eov_def:"\<delta>\<^sup>+ v \<inter> set es = {eov}"  
