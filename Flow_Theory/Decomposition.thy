@@ -176,11 +176,31 @@ proof(induction g n v rule: find_cycle.induct)
     moreover have "i<length (e#es) \<Longrightarrow>
                     fst ((e#es) ! i) = find_cycle g (Suc n) v ! i \<and>
                     snd ((e#es) ! i) = find_cycle g (Suc n) v ! (i + 1)" for i
-        using es_def 
-        apply(cases i)
-        apply (metis (no_types, lifting) One_nat_def aaa add_is_1 find_cycle.elims find_cycle_prop
-                       nth_Cons_0 nth_Cons_Suc)
-        using find_cycle_prop by auto
+    proof -
+      assume ilen: "i < length (e # es)"
+      show "fst ((e # es) ! i) = find_cycle g (Suc n) v ! i \<and>
+            snd ((e # es) ! i) = find_cycle g (Suc n) v ! (i + 1)"
+      proof(cases i)
+        case 0
+        have hd_fc: "find_cycle g n (snd e) ! 0 = snd e"
+          by (cases n) auto
+        have fst0: "fst ((e # es) ! i) = find_cycle g (Suc n) v ! i"
+          using 0 aaa unfolding find_cycle_prop by simp
+        have snd0: "snd ((e # es) ! i) = find_cycle g (Suc n) v ! (i + 1)"
+          using 0 hd_fc unfolding find_cycle_prop by simp
+        show ?thesis
+          using fst0 snd0 by blast
+      next
+        case (Suc j)
+        have jlen: "j < length es"
+          using ilen Suc by simp
+        have esj: "fst (es ! j) = find_cycle g n (snd e) ! j \<and>
+                   snd (es ! j) = find_cycle g n (snd e) ! (j + 1)"
+          using es_def jlen by blast
+        show ?thesis
+          using esj Suc unfolding find_cycle_prop by simp
+      qed
+    qed
     moreover have " flowpath g (e#es)" 
         using  calculation(2)[of 1] calculation(2)[of 0] es_def find_cycle_prop aaa
         by (cases es) (auto intro: flowpath_intros)
