@@ -717,9 +717,32 @@ proof(induction n arbitrary: g rule: less_induct)
     using e_gamma_eq es_Def(2) support_def by fastforce 
 
   have integral_g: "is_integral_flow g \<Longrightarrow>is_integral_flow g'"
-    using integral_gamma 
-    unfolding g'_def is_integral_flow_def
-    by (metis of_int_diff of_int_of_nat_eq)
+  proof -
+    assume asm: "is_integral_flow g"
+    then obtain m :: nat where m: "\<gamma> = real m"
+      using integral_gamma by blast
+    show "is_integral_flow g'"
+      unfolding is_integral_flow_def
+    proof
+      fix e
+      assume "e \<in> \<E>"
+      then obtain k :: int where k: "g e = real_of_int k"
+        using asm by (auto simp add: is_integral_flow_def)
+      show "\<exists> n::int. g' e = n"
+      proof(cases "e \<in> set es")
+        case True
+        have "g' e = real_of_int k - real m"
+          using True k m by (simp add: g'_def)
+        also have "\<dots> = real_of_int (k - int m)" by simp
+        finally show ?thesis by blast
+      next
+        case False
+        hence "g' e = real_of_int k"
+          using k by (simp add: g'_def)
+        thus ?thesis by blast
+      qed
+    qed
+  qed
 
   have g_greater_g': "e \<in> set es \<Longrightarrow>g e\<ge> g' e " for e
     unfolding g'_def 
