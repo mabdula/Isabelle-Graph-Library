@@ -88,7 +88,25 @@ lemma prepath_cases: "prepath a2 \<Longrightarrow>
                      (\<And>e. a2 = [e]  \<Longrightarrow> P) \<Longrightarrow>
                      (\<And> e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P) \<Longrightarrow>
                      P"
-  using  prepath_induct[of a2 ] by (metis prepath_simps)
+proof -
+  assume pre: "prepath a2"
+    and case1: "\<And>e. a2 = [e] \<Longrightarrow> P"
+    and case2: "\<And>e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P"
+  have disj: "(\<exists>e. a2 = [e]) \<or>
+              (\<exists>e d es. a2 = e # d # es \<and> sndv e = fstv d \<and> prepath (d # es))"
+    using pre by (rule prepath_simps[THEN iffD1])
+  show P
+  proof(rule disjE[OF disj])
+    assume "\<exists>e. a2 = [e]"
+    then obtain e where "a2 = [e]" by blast
+    thus P by (rule case1)
+  next
+    assume "\<exists>e d es. a2 = e # d # es \<and> sndv e = fstv d \<and> prepath (d # es)"
+    then obtain e d es where "a2 = e # d # es" "sndv e = fstv d" "prepath (d # es)"
+      by blast
+    thus P by (rule case2)
+  qed
+qed
 
 text \<open>Now we can reason about some properties of $prepath$.\<close>
 
@@ -112,17 +130,94 @@ lemma prepath_split1:
 lemma prepath_split2: 
   assumes "prepath (xs@ys)"
   shows   "ys \<noteq> []  \<Longrightarrow> prepath ys"
-  apply(induction "xs@ys" arbitrary:  xs ys rule: prepath_induct, simp add: assms)
-  by (simp add: Cons_eq_append_conv prepath_intros(1)) (metis append_eq_Cons_conv prepath_intros(2))
+proof(induction "xs@ys" arbitrary: xs ys rule: prepath_induct)
+  show "prepath (xs @ ys)"
+    using assms by simp
+next
+  case (2 e as bs)
+  have "bs = [e]"
+  proof(cases as)
+    case Nil
+    then show ?thesis
+      using 2 by simp
+  next
+    case (Cons a as')
+    then show ?thesis
+      using 2 by auto
+  qed
+  then show ?case
+    by (simp add: prepath_intros(1))
+next
+  case (3 e d es as bs)
+  show ?case
+  proof(cases as)
+    case Nil
+    then have "bs = e # d # es"
+      using 3 by simp
+    moreover have "prepath (e # d # es)"
+      using "3.hyps"(1,2) by (simp add: prepath_intros(2))
+    ultimately show ?thesis by simp
+  next
+    case (Cons a as')
+    then have "d # es = as' @ bs"
+      using 3 by simp
+    then show ?thesis
+      using 3 by blast
+  qed
+qed
 
 lemma prepath_split3:
   assumes "prepath (xs@ys)" 
     shows "xs \<noteq> [] \<Longrightarrow> ys \<noteq> []  \<Longrightarrow> sndv (last xs) = fstv (hd ys)"
-  apply(induction "xs@ys" arbitrary:  xs ys rule: prepath_induct, simp add: assms)
-  apply(simp add: Cons_eq_append_conv) 
-  apply(metis (no_types, opaque_lifting) append_Cons append_self_conv2 last_ConsL
-          last_ConsR list.inject list.sel(1) neq_Nil_conv)
-  done
+proof -
+  have gen: "\<forall>as bs. zs = as @ bs \<longrightarrow> as \<noteq> [] \<longrightarrow> bs \<noteq> [] \<longrightarrow>
+                     sndv (last as) = fstv (hd bs)"
+    if "prepath zs" for zs
+  proof(induction rule: prepath_induct[OF that])
+    case (1 e)
+    show ?case
+    proof(intro allI impI)
+      fix as bs
+      assume split: "[e] = as @ bs" and as_ne: "as \<noteq> []" and bs_ne: "bs \<noteq> []"
+      have False
+        using split as_ne bs_ne by(cases as) auto
+      thus "sndv (last as) = fstv (hd bs)" by simp
+    qed
+  next
+    case (2 e d es)
+    note case2 = this
+    show ?case
+    proof(intro allI impI)
+      fix as bs
+      assume split: "e # d # es = as @ bs" and as_ne: "as \<noteq> []" and bs_ne: "bs \<noteq> []"
+      obtain a as' where as_split: "as = a # as'"
+        using as_ne by (cases as) auto
+      have "e # d # es = a # (as' @ bs)"
+        using split as_split by simp
+      hence a_is_e: "a = e" and rest: "d # es = as' @ bs"
+        by auto
+      show "sndv (last as) = fstv (hd bs)"
+      proof(cases "as' = []")
+        case True
+        have "last as = e"
+          using as_split a_is_e True by simp
+        moreover have "bs = d # es"
+          using rest True by simp
+        ultimately show ?thesis
+          using case2(1) by simp
+      next
+        case False
+        have "sndv (last as') = fstv (hd bs)"
+          using case2(3) rest False bs_ne by blast
+        moreover have "last as = last as'"
+          using as_split False by simp
+        ultimately show ?thesis by simp
+      qed
+    qed
+  qed
+  show "xs \<noteq> [] \<Longrightarrow> ys \<noteq> []  \<Longrightarrow> sndv (last xs) = fstv (hd ys)"
+    using gen[OF assms] by blast
+qed
 
 lemma prepath_drop_cycles:
   assumes "prepath es" "set es \<subseteq> D" "\<not> distinct es"
@@ -309,7 +404,20 @@ next
                                "(sndv (last es)) = v" "set es \<subseteq> \<EE>"
    by blast
   hence "augpath f (e#es)"
-      by (metis "2.hyps"(1) "2.hyps"(2) augpath_simps list.collapse)
+    proof -
+    have es_ne: "es \<noteq> []"
+      using es_Def(1) by (auto simp add: augpath_def prepath_def)
+    then obtain d ds where es_split: "es = d # ds"
+      by (cases es) auto
+    have "sndv e = fstv d"
+      using "2.hyps" es_Def(2) es_split by simp
+    moreover have "augpath f (d # ds)"
+      using es_Def(1) es_split by simp
+    ultimately have "augpath f (e # d # ds)"
+      using "2.hyps" by (auto intro: augpath_intros(2))
+    thus ?thesis
+      by (simp add: es_split)
+  qed
   moreover have "set (e#es) \<subseteq> \<EE>" 
       by (simp add: "2.hyps"(3) es_Def)
   ultimately show ?case 

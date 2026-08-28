@@ -55,7 +55,15 @@ proof (induction "length xs - index xs x" arbitrary: x rule: less_induct)
 qed
 
 lemma index_less_in_set: "index xs x < index xs x' \<Longrightarrow> x \<in> set xs"
-  by (metis index_conv_size_if_notin index_le_size leD)
+proof -
+  assume less: "index xs x < index xs x'"
+  have "index xs x' \<le> length xs"
+    by (rule index_le_size)
+  with less have "index xs x < length xs"
+    by simp
+  then show "x \<in> set xs"
+    by (simp add: index_less_size_conv)
+qed
 
 lemma transp_index_less: "transp (\<lambda>a b. index xs a < index xs b)"
   by (auto intro: transpI)
@@ -68,7 +76,19 @@ lemma index_filter_neq: "a \<noteq> v \<Longrightarrow> b \<noteq> v \<Longright
   by (induction xs) auto
 
 lemma length_at_least_two_Cons_Cons: "2 \<le> length xs \<Longrightarrow> \<exists>x x' xs'. xs = x # x' # xs'"
-  by (metis Suc_le_length_iff numeral_2_eq_2)
+proof -
+  assume len: "2 \<le> length xs"
+  then have "xs \<noteq> []"
+    by auto
+  then obtain a ys where xs_eq: "xs = a # ys"
+    by (cases xs) auto
+  from len xs_eq have "ys \<noteq> []"
+    by auto
+  then obtain b zs where ys_eq: "ys = b # zs"
+    by (cases ys) auto
+  from xs_eq ys_eq show "\<exists>x x' xs'. xs = x # x' # xs'"
+    by blast
+qed
 
 lemma filter_take_filter: "filter P (take i (filter P xs)) = take i (filter P xs)"
   by (auto intro!: filter_True dest: in_set_takeD)
@@ -254,7 +274,24 @@ lemma in_set_distinct_filter_length_eq: "v \<in> set xs \<Longrightarrow> distin
   by (induction xs) (auto simp: not_in_set_filter_length_eq intro!: Suc_pred)
 
 lemma distinct_filter_length: "distinct xs \<Longrightarrow> (length [x <- xs. x \<noteq> v] = length xs \<and> v \<notin> set xs) \<or> (length [x <- xs. x \<noteq> v] = length xs - 1 \<and> v \<in> set xs)"
-  by (metis in_set_distinct_filter_length_eq not_in_set_filter_length_eq)
+proof -
+  assume dist: "distinct xs"
+  show ?thesis
+  proof (cases "v \<in> set xs")
+    case True
+    have "length [x <- xs. x \<noteq> v] = length xs - 1"
+      using True dist
+      by (rule in_set_distinct_filter_length_eq)
+    with True show ?thesis
+      by blast
+  next
+    case False
+    then have "length [x <- xs. x \<noteq> v] = length xs"
+      by (rule not_in_set_filter_length_eq)
+    with False show ?thesis
+      by blast
+  qed
+qed
 
 lemma filter_removeAll: "[x <- xs. x \<noteq> v] = removeAll v xs"
   by (induction xs) auto
@@ -376,8 +413,16 @@ lemma move_to_index_nth:
   assumes "distinct \<sigma>"
   assumes "i < length \<sigma>"
   shows "\<sigma>[v \<mapsto> i] ! i = v"
-  using assms
-  by (metis count_notin move_to_count_list move_to_index_v nth_index one_neq_zero)
+proof -
+  have "v \<in> set \<sigma>[v \<mapsto> i]"
+    by (simp add: move_to_set)
+  then have "\<sigma>[v \<mapsto> i] ! index \<sigma>[v \<mapsto> i] v = v"
+    by (rule nth_index)
+  moreover have "index \<sigma>[v \<mapsto> i] v = i"
+    using assms by (rule move_to_index_v)
+  ultimately show ?thesis
+    by simp
+qed
 
 lemma move_to_index_less:
   assumes "distinct \<sigma>"
@@ -433,7 +478,21 @@ next
       by blast
 
     with cons_suc show ?thesis
-      by (metis \<open>ps = a # tl_ps\<close> append_Cons move_to_Cons_Suc neq)
+    proof -
+      have hd_move: "(a # xs)[x \<mapsto> Suc n] = a # xs[x \<mapsto> n]"
+        by (rule move_to_Cons_Suc[OF neq refl])
+
+      have decomp: "(a # xs)[x \<mapsto> Suc n] = (a # pps) @ x # pss @ ss"
+        using hd_move \<open>xs[x \<mapsto> n] = pps @ x # pss @ ss\<close>
+        by simp
+
+      have parts: "(a # pps) @ pss = ps"
+        using \<open>pps @ pss = tl_ps\<close> \<open>ps = a # tl_ps\<close>
+        by simp
+
+      show ?thesis
+        by (rule cons_suc.prems(1)[OF decomp parts])
+    qed
   qed
 qed auto
 
@@ -466,8 +525,17 @@ qed (simp add: move_to_Nil)
 lemma move_to_others_leq:
   assumes "v \<noteq> w" "v \<noteq> w'"
   shows "index xs w \<le> index xs w' \<longleftrightarrow> index xs[v \<mapsto> i] w \<le> index xs[v \<mapsto> i] w'"
-  using assms
-  by (metis linorder_not_le move_to_others_less)
+proof -
+  have swap: "(index xs w' < index xs w) = (index xs[v \<mapsto> i] w' < index xs[v \<mapsto> i] w)"
+    by (rule move_to_others_less[OF assms(2) assms(1)])
+  have "(index xs w \<le> index xs w') = (\<not> index xs w' < index xs w)"
+    by (simp add: not_less)
+  also have "\<dots> = (\<not> index xs[v \<mapsto> i] w' < index xs[v \<mapsto> i] w)"
+    by (simp only: swap)
+  also have "\<dots> = (index xs[v \<mapsto> i] w \<le> index xs[v \<mapsto> i] w')"
+    by (simp add: not_less)
+  finally show ?thesis .
+qed
 
 lemma index_less_index_leq_move_to:
   "index \<sigma> w < index \<sigma> v \<Longrightarrow> index \<sigma>[v \<mapsto> i] w \<le> index \<sigma> v"
@@ -686,8 +754,114 @@ proof (induction xs xs' rule: list_induct2')
     by simp_all
 
   from 4 have "\<forall>x y. (index xs x \<le> index xs y) = (index xs' x \<le> index xs' y)"
-    by (auto split: if_splits)
-       (metis index_conv_size_if_notin index_le_size index_less_size_conv insert_eq_iff linorder_not_le)+
+  proof -
+    from 4 have dist_x: "distinct (x # xs)" and dist_x': "distinct (x' # xs')"
+      and set_cons: "set (x # xs) = set (x' # xs')"
+      and idx_cons: "\<forall>a b. (index (x # xs) a \<le> index (x # xs) b) =
+                            (index (x' # xs') a \<le> index (x' # xs') b)"
+      by blast+
+
+    from dist_x have x_notin: "x \<notin> set xs"
+      by simp
+
+    from dist_x' have x'_notin: "x' \<notin> set xs'"
+      by simp
+
+    have index_x: "index xs x = length xs"
+      using x_notin by (simp add: index_conv_size_if_notin)
+
+    have index_x': "index xs' x' = length xs'"
+      using x'_notin by (simp add: index_conv_size_if_notin)
+
+    have set_eq: "set xs = set xs'"
+    proof -
+      have "set xs = set (x # xs) - {x}"
+        using x_notin by auto
+      also have "\<dots> = set (x' # xs') - {x'}"
+        using set_cons \<open>x = x'\<close> by simp
+      also have "\<dots> = set xs'"
+        using x'_notin by auto
+      finally show ?thesis .
+    qed
+
+    have le_x: "(index xs x \<le> index xs c) = (c \<notin> set xs)" for c
+    proof
+      assume le: "index xs x \<le> index xs c"
+      show "c \<notin> set xs"
+      proof
+        assume "c \<in> set xs"
+        then have "index xs c < length xs"
+          by (simp add: index_less_size_conv)
+        with le index_x show False
+          by linarith
+      qed
+    next
+      assume "c \<notin> set xs"
+      then have "index xs c = length xs"
+        by (simp add: index_conv_size_if_notin)
+      with index_x show "index xs x \<le> index xs c"
+        by simp
+    qed
+
+    have le_x': "(index xs' x' \<le> index xs' c) = (c \<notin> set xs')" for c
+    proof
+      assume le: "index xs' x' \<le> index xs' c"
+      show "c \<notin> set xs'"
+      proof
+        assume "c \<in> set xs'"
+        then have "index xs' c < length xs'"
+          by (simp add: index_less_size_conv)
+        with le index_x' show False
+          by linarith
+      qed
+    next
+      assume "c \<notin> set xs'"
+      then have "index xs' c = length xs'"
+        by (simp add: index_conv_size_if_notin)
+      with index_x' show "index xs' x' \<le> index xs' c"
+        by simp
+    qed
+
+    show ?thesis
+    proof (intro allI)
+      fix a b
+      show "(index xs a \<le> index xs b) = (index xs' a \<le> index xs' b)"
+      proof (cases "a = x")
+        case True
+        have "(index xs a \<le> index xs b) = (index xs x \<le> index xs b)"
+          using True by simp
+        also have "\<dots> = (b \<notin> set xs)"
+          by (rule le_x)
+        also have "\<dots> = (b \<notin> set xs')"
+          using set_eq by simp
+        also have "\<dots> = (index xs' x' \<le> index xs' b)"
+          by (rule le_x'[symmetric])
+        also have "\<dots> = (index xs' a \<le> index xs' b)"
+          using True \<open>x = x'\<close> by simp
+        finally show ?thesis .
+      next
+        case False
+        show ?thesis
+        proof (cases "b = x")
+          case True
+          have "index xs a \<le> index xs x"
+            by (simp add: index_x index_le_size)
+          moreover have "index xs' a \<le> index xs' x'"
+            by (simp add: index_x' index_le_size)
+          ultimately show ?thesis
+            using True \<open>x = x'\<close> by simp
+        next
+          case False
+          from idx_cons have
+            "(index (x # xs) a \<le> index (x # xs) b) =
+             (index (x' # xs') a \<le> index (x' # xs') b)"
+            by blast
+          with \<open>a \<noteq> x\<close> \<open>b \<noteq> x\<close> \<open>x = x'\<close> show ?thesis
+            by simp
+        qed
+      qed
+    qed
+  qed
 
   with 4 distinct \<open>x = x'\<close> show ?case
     by fastforce
@@ -718,9 +892,37 @@ proof (intro distinct_same_order_list_eq, goal_cases)
     then show "index [x <- xs. x \<noteq> v] x \<le> index [x <- xs. x \<noteq> v] y \<longleftrightarrow> index [x <- xs'. x \<noteq> v] x \<le> index [x <- xs'. x \<noteq> v] y"
     proof cases
       case 2
-      with assms(3) show ?thesis
-        by auto
-           (metis filter_set index_less_size_conv leD leI)+
+      have key: "\<And>zs. v \<notin> set zs \<Longrightarrow> (index zs v \<le> index zs y) = (y \<notin> set zs)"
+      proof -
+        fix zs
+        assume "v \<notin> set zs"
+        then have idx_v: "index zs v = size zs"
+          by (rule index_conv_size_if_notin)
+        show "(index zs v \<le> index zs y) = (y \<notin> set zs)"
+        proof
+          assume "index zs v \<le> index zs y"
+          with idx_v have "\<not> index zs y < size zs"
+            by linarith
+          then show "y \<notin> set zs"
+            by (simp add: index_less_size_conv)
+        next
+          assume "y \<notin> set zs"
+          then have "index zs y = size zs"
+            by (rule index_conv_size_if_notin)
+          with idx_v show "index zs v \<le> index zs y"
+            by simp
+        qed
+      qed
+      have A: "(index [z <- xs. z \<noteq> v] v \<le> index [z <- xs. z \<noteq> v] y) = (y \<notin> set [z <- xs. z \<noteq> v])"
+        by (rule key) simp
+      have B: "(index [z <- xs'. z \<noteq> v] v \<le> index [z <- xs'. z \<noteq> v] y) = (y \<notin> set [z <- xs'. z \<noteq> v])"
+        by (rule key) simp
+      have C: "set [z <- xs. z \<noteq> v] = set [z <- xs'. z \<noteq> v]"
+        using assms(3) by auto
+      from 2 have "x = v"
+        by blast
+      with A B C show ?thesis
+        by blast
     next
       case 3
       with assms(3) show ?thesis
@@ -738,8 +940,20 @@ lemma distinct_filter_eq_order:
   assumes "set xs = set xs'"
   assumes "[x <- xs. x \<noteq> v] = [x <- xs'. x \<noteq> v]"
   shows "\<forall>x y. x \<noteq> v \<and> y \<noteq> v \<longrightarrow> (index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y)"
-  using assms
-  by auto (metis index_filter_neq)+
+proof (intro allI impI)
+  fix x y
+  assume "x \<noteq> v \<and> y \<noteq> v"
+  then have x: "x \<noteq> v" and y: "y \<noteq> v"
+    by simp_all
+  have "index xs x \<le> index xs y \<longleftrightarrow>
+        index [z <- xs. z \<noteq> v] x \<le> index [z <- xs. z \<noteq> v] y"
+    using x y by (rule index_filter_neq)
+  also have "\<dots> \<longleftrightarrow> index [z <- xs'. z \<noteq> v] x \<le> index [z <- xs'. z \<noteq> v] y"
+    by (simp only: assms(4))
+  also have "\<dots> \<longleftrightarrow> index xs' x \<le> index xs' y"
+    using x y by (rule index_filter_neq[symmetric])
+  finally show "index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y" .
+qed
 
 lemma distinct_move_to_eq_if:
   assumes "distinct xs" "distinct xs'"
@@ -748,12 +962,40 @@ lemma distinct_move_to_eq_if:
   assumes "\<forall>x y. x \<noteq> v \<and> y \<noteq> v \<longrightarrow> (index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y)"
   shows "xs'[v \<mapsto> t] = xs"
   using assms
-  by (smt (verit, ccfv_SIG) distinct_count_in_set distinct_order_filter_eq move_to_def move_to_id)
+proof -
+  have count_v: "count_list xs v = 1"
+    using assms(1) assms(4) by (rule distinct_count_in_set)
+
+  have filter_eq: "[x <- xs. x \<noteq> v] = [x <- xs'. x \<noteq> v]"
+    using assms(1) assms(2) assms(3) assms(6) by (rule distinct_order_filter_eq)
+
+  have "xs'[v \<mapsto> t] = take t [x <- xs'. x \<noteq> v] @ v # drop t [x <- xs'. x \<noteq> v]"
+    by (simp only: move_to_def)
+  also have "\<dots> = take t [x <- xs. x \<noteq> v] @ v # drop t [x <- xs. x \<noteq> v]"
+    by (simp add: filter_eq)
+  also have "\<dots> = xs[v \<mapsto> t]"
+    by (simp only: move_to_def)
+  also have "\<dots> = xs[v \<mapsto> index xs v]"
+    using assms(5) by simp
+  also have "\<dots> = xs"
+    using count_v by (rule move_to_id)
+  finally show ?thesis .
+qed
 
 lemma distinct_move_to_indices_if_eq:
   assumes "xs'[v \<mapsto> t] = xs"
   shows "\<forall>x y. x \<noteq> v \<and> y \<noteq> v \<longrightarrow> (index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y)"
-  by (metis assms move_to_others_leq)
+proof (intro allI impI)
+  fix x y
+  assume "x \<noteq> v \<and> y \<noteq> v"
+  then have neq: "v \<noteq> x" "v \<noteq> y"
+    by auto
+  have "(index xs x \<le> index xs y) = (index (xs'[v \<mapsto> t]) x \<le> index (xs'[v \<mapsto> t]) y)"
+    by (simp add: assms)
+  also have "\<dots> = (index xs' x \<le> index xs' y)"
+    by (rule move_to_others_leq[OF neq, symmetric])
+  finally show "index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y" .
+qed
 
 lemma set_take_insert_drop: "set ((take n xs) @ x # (drop n xs)) = {x} \<union> set xs"
   by (induction xs n rule: induct_list_nat)
@@ -764,8 +1006,40 @@ lemma list_emb_drop_before_first:
   assumes "\<forall>y \<in> set ys. \<not>P (hd xs) y"
   shows "list_emb P xs zs"
   using assms
-  by (induction ys; simp)
-     (metis list.exhaust_sel list_emb_Cons_iff2 list_emb_Nil)
+proof (induction ys)
+  case Nil
+  then show ?case
+    by simp
+next
+  case (Cons a ys)
+  note IH = Cons.IH
+  from Cons.prems have emb: "list_emb P xs (a # (ys @ zs))"
+    by simp
+  from Cons.prems have hd_a: "\<not> P (hd xs) a"
+    by simp
+  from Cons.prems have set_ys: "\<forall>y \<in> set ys. \<not> P (hd xs) y"
+    by simp
+  have "list_emb P xs (ys @ zs)"
+  proof (cases xs)
+    case Nil
+    then show ?thesis
+      by (simp add: list_emb_Nil)
+  next
+    case (Cons b bs)
+    then have "hd xs = b"
+      by simp
+    with hd_a have not_P: "\<not> P b a"
+      by simp
+    from emb Cons have "list_emb P (b # bs) (a # (ys @ zs))"
+      by simp
+    with not_P have "list_emb P (b # bs) (ys @ zs)"
+      by (simp add: list_emb_Cons_iff2)
+    with Cons show ?thesis
+      by simp
+  qed
+  then show ?case
+    by (rule IH[OF _ set_ys])
+qed
 
 lemma sorted_strict_last_geq_length_offset:
   assumes "ns \<noteq> []"

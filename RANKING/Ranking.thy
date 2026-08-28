@@ -192,14 +192,54 @@ proof (rule ccontr)
       by (meson graph_invar_vertex_edgeE ranking_matchingE)
 
     with assms \<open>{u,v} \<notin> M'\<close> show False
-      by (metis index_eq_index_conv nat_neq_iff ranking_matching_unique_match)    
+    proof -
+      have "v' \<noteq> v"
+        using \<open>{u,v'} \<in> M'\<close> \<open>{u,v} \<notin> M'\<close> by blast
+      have "v' \<in> set \<sigma>"
+        by (rule ranking_matching_bipartite_edges[OF rm_M' \<open>{u,v'} \<in> M'\<close> \<open>u \<in> set \<pi>\<close>])
+      then have "index \<sigma> v' \<noteq> index \<sigma> v"
+        using \<open>v' \<in> set \<sigma>\<close> \<open>v \<in> set \<sigma>\<close> \<open>v' \<noteq> v\<close>
+        by (meson index_eq_index_conv)
+      then have "index \<sigma> v' < index \<sigma> v \<or> index \<sigma> v < index \<sigma> v'"
+        by (simp add: nat_neq_iff)
+      then show False
+      proof
+        assume "index \<sigma> v' < index \<sigma> v"
+        with rm_M rm_M' \<open>{u,v} \<in> M\<close> \<open>{u,v'} \<in> M'\<close>
+        show False by (rule ranking_matching_unique_match)
+      next
+        assume "index \<sigma> v < index \<sigma> v'"
+        with rm_M' rm_M \<open>{u,v'} \<in> M'\<close> \<open>{u,v} \<in> M\<close>
+        show False by (rule ranking_matching_unique_match)
+      qed
+    qed
   next
     case v_matched
     with rm_M' obtain u' where "{u',v} \<in> M'"
       by (meson graph_invar_vertex_edgeE' ranking_matchingE)
 
-    with assms \<open>{u,v} \<notin> M'\<close> show ?thesis
-      by (metis index_eq_index_conv nat_neq_iff ranking_matching_unique_match')    
+    show False
+    proof -
+      from assms \<open>{u,v} \<notin> M'\<close> have "u' \<noteq> u"
+        using \<open>{u',v} \<in> M'\<close> by blast
+      have "u' \<in> set \<pi>"
+        by (rule ranking_matching_bipartite_edges'[OF rm_M' \<open>{u',v} \<in> M'\<close> \<open>v \<in> set \<sigma>\<close>])
+      then have "index \<pi> u' \<noteq> index \<pi> u"
+        using \<open>u' \<in> set \<pi>\<close> \<open>u \<in> set \<pi>\<close> \<open>u' \<noteq> u\<close>
+        by (meson index_eq_index_conv)
+      then have "index \<pi> u' < index \<pi> u \<or> index \<pi> u < index \<pi> u'"
+        by (simp add: nat_neq_iff)
+      then show ?thesis
+      proof
+        assume "index \<pi> u' < index \<pi> u"
+        with rm_M rm_M' \<open>{u,v} \<in> M\<close> \<open>{u',v} \<in> M'\<close>
+        show ?thesis by (rule ranking_matching_unique_match')
+      next
+        assume "index \<pi> u < index \<pi> u'"
+        with rm_M' rm_M \<open>{u',v} \<in> M'\<close> \<open>{u,v} \<in> M\<close>
+        show ?thesis by (rule ranking_matching_unique_match')
+      qed
+    qed
   qed
 qed
 
@@ -303,13 +343,55 @@ proof (induction G u \<sigma> M rule: step.induct)
       then obtain w where w: "e = {u,w}" "w \<in> set vs - Vs M" "{u,w} \<in> G"
         "\<forall>v'\<in> set vs \<inter> {v''. {u,v''} \<in> G} - Vs M - {w}. index vs w < index vs v'" by blast
       have "v \<noteq> w"
-        by (metis "2.prems" DiffD2 \<open>e = {u, w}\<close> \<open>w \<in> set vs - Vs M\<close> \<open>{u, w} \<in> G\<close> ind insert_subset step_already_matched subsetI vs_member_intro)
+      proof
+        assume eq: "v = w"
+        have not_vs: "w \<notin> Vs M" using \<open>w \<in> set vs - Vs M\<close> by blast
+        have "v \<notin> Vs M" using eq not_vs by simp
+        have "{u,v} \<in> G" using eq \<open>{u,w} \<in> G\<close> by simp
+        have "u \<in> Vs M" using ind \<open>v \<notin> Vs M\<close> \<open>{u,v} \<in> G\<close> by blast
+        have "step G u (v#vs) M = M" using \<open>u \<in> Vs M\<close> step_already_matched by simp
+        have "e \<in> M" using "2.prems" \<open>step G u (v#vs) M = M\<close> by simp
+        have "w \<in> Vs M" using \<open>e = {u,w}\<close> \<open>e \<in> M\<close> by (auto intro: vs_member_intro)
+        with not_vs show False by simp
+      qed
 
       with w have "\<forall>v'\<in> set (v#vs) \<inter> {v''. {u,v''} \<in> G} - Vs M - {w}. index (v#vs) w < index (v#vs) v'"
-        apply simp
-        by (smt (z3) "2.prems" Diff_iff IntE Int_commute Int_insert_right_if0 Int_insert_right_if1 edges_are_Vs ind insert_commute insert_iff mem_Collect_eq step_already_matched)
+      proof (intro ballI)
+        fix v'
+        assume mem: "v' \<in> set (v # vs) \<inter> {v''. {u,v''} \<in> G} - Vs M - {w}"
+        hence v'_in_G: "{u, v'} \<in> G"
+          and v'_not_M: "v' \<notin> Vs M"
+          and v'_neq_w: "v' \<noteq> w"
+          and v'_in_set: "v' \<in> {v} \<union> set vs"
+          by auto
+        have "v' \<noteq> v"
+        proof
+          assume eq: "v' = v"
+          have "{u, v} \<in> G" using v'_in_G eq by simp
+          have "v \<notin> Vs M" using v'_not_M eq by simp
+          have "u \<in> Vs M" using ind \<open>v \<notin> Vs M\<close> \<open>{u, v} \<in> G\<close> by blast
+          have "step G u (v # vs) M = M" using \<open>u \<in> Vs M\<close> step_already_matched by simp
+          hence "e \<in> M" using "2.prems" by simp
+          hence "w \<in> Vs M" using \<open>e = {u, w}\<close> by (auto intro: vs_member_intro)
+          with \<open>w \<in> set vs - Vs M\<close> show False by blast
+        qed
+        hence "v' \<in> set vs" using v'_in_set by blast
+        hence "v' \<in> set vs \<inter> {v''. {u, v''} \<in> G} - Vs M - {w}"
+          using v'_in_G v'_not_M v'_neq_w by blast
+        hence "index vs w < index vs v'" using \<open>v \<noteq> w\<close> w(4) by blast
+        with \<open>v' \<noteq> v\<close> \<open>v \<noteq> w\<close> show "index (v # vs) w < index (v # vs) v'" by simp
+      qed
+
       then show ?thesis
-        by (metis Diff_iff Diff_insert \<open>e = {u, w}\<close> \<open>w \<in> set vs - Vs M\<close> \<open>{u, w} \<in> G\<close> list.simps(15))
+      proof (intro disjI2 exI[of _ w] conjI)
+        show "e = {u, w}" using w(1) .
+        show "w \<in> set (v # vs) - Vs M"
+          using w(2) by (auto simp: Diff_iff)
+        show "{u, w} \<in> G" using w(3) .
+        show "\<forall>v'\<in> set (v # vs) \<inter> {v''. {u, v''} \<in> G} - Vs M - {w}.
+                index (v # vs) w < index (v # vs) v'"
+          by fact
+      qed
     qed simp
   qed
 qed simp
@@ -475,8 +557,8 @@ proof (rule ccontr)
   obtain u v where unmatched: "{u,v} \<in> G" "u \<notin> Vs (online_match G \<pi> \<sigma>)" "v \<notin> Vs (online_match G \<pi> \<sigma>)"
     by (auto elim: not_maximal_matchingE)
 
-  with bipartite consider "u \<in> set \<pi>" "v \<in> set \<sigma>" | "u \<in> set \<sigma>" "v \<in> set \<pi>"
-    by (metis bipartite_edgeE doubleton_eq_iff)
+with bipartite consider "u \<in> set \<pi>" "v \<in> set \<sigma>" | "u \<in> set \<sigma>" "v \<in> set \<pi>"
+    by (elim bipartite_edgeE) (auto simp: doubleton_eq_iff)
 
   then show False
     by cases 
@@ -565,8 +647,27 @@ proof (rule ccontr)
         by (auto elim: vs_member_elim)
 
       with \<open>v' \<in> set \<sigma>\<close> bipartite obtain u' where "e = {u',v'}" "u' \<in> set us"
-        by (auto elim!: bipartite_edgeE dest!: subgraph_online_match dest: bipartite_disjointD)
-           (metis \<open>e \<in> online_match G us \<sigma>\<close> bipartite_vertex(2) edges_are_Vs(1) online_match_Vs_subset subgraph_online_match)
+      proof -
+        from \<open>e \<in> online_match G us \<sigma>\<close> have e_in_G: "e \<in> G"
+          by (rule subgraph_online_match)
+        with bipartite obtain x y
+          where xy: "x \<in> set \<pi>" "y \<in> set \<sigma>" "e = {x, y}" "x \<noteq> y"
+          by (elim bipartite_edgeE)
+        from bipartite have disj: "set \<pi> \<inter> set \<sigma> = {}"
+          by (rule bipartite_disjointD)
+        with xy \<open>v' \<in> e\<close> \<open>v' \<in> set \<sigma>\<close> have vy: "y = v'"
+          by blast
+        with xy have e_eq: "e = {x, v'}"
+          by simp
+        from \<open>e \<in> online_match G us \<sigma>\<close> e_eq have x_Vs: "x \<in> Vs (online_match G us \<sigma>)"
+          by (auto intro: edges_are_Vs)
+        then have "x \<in> set us \<or> x \<in> set \<sigma>"
+          by (rule online_match_Vs_subset)
+        with disj \<open>x \<in> set \<pi>\<close> have x_us: "x \<in> set us"
+          by blast
+        from e_eq x_us show ?thesis
+          by (rule that)
+      qed
 
       with split_pi have "index \<pi> u' < index \<pi> u"
         by (auto simp: index_append)
@@ -588,9 +689,15 @@ proof (rule ccontr)
 
     with \<open>{u,v''} \<in> step G u \<sigma> (online_match G us \<sigma>)\<close> have "{u,v''} \<in> online_match G \<pi> \<sigma>"
       by (auto intro: online_match_mono)
-
-    with bipartite False \<open>{u,v} \<in> online_match G \<pi> \<sigma>\<close> the_match' show ?thesis
-      by (metis bipartite_disjointD matching_online_match)
+    have disj: "set π ∩ set σ = {}"
+      using bipartite by (rule bipartite_disjointD)
+    then have match: "matching (online_match G π σ)"
+      by (rule matching_online_match)
+    from match ‹{u,v} ∈ online_match G π σ› have v_eq: "(THE w. {u, w} ∈ online_match G π σ) = v"
+      by (rule the_match')
+    from match ‹{u,v''} ∈ online_match G π σ› have v''_eq: "(THE w. {u, w} ∈ online_match G π σ) = v''"
+      by (rule the_match')
+    from v_eq v''_eq False show ?thesis by simp
   qed
 qed
 
@@ -637,10 +744,17 @@ proof (rule ccontr)
     from u'_before_u have "u \<noteq> u'" by blast
 
     from v' split_pi have "{u',v'} \<in> online_match G \<pi> \<sigma>"
-      by (auto simp: online_match_append dest: online_match_mono)
-
-    with True bipartite \<open>{u,v} \<in> online_match G \<pi> \<sigma>\<close> \<open>u \<noteq> u'\<close> show ?thesis
-      by (metis bipartite_disjointD matching_online_match the_match)
+      by (auto simp: online_match_append dest: online_match_mono)    with True bipartite ‹{u,v} ∈ online_match G π σ› ‹u ≠ u'› show ?thesis
+    proof -
+      have disj: "set π ∩ set σ = {}"
+        using bipartite by (rule bipartite_disjointD)
+      then have match: "matching (online_match G π σ)"
+        by (rule matching_online_match)
+      from match ‹{u', v'} ∈ online_match G π σ› ‹v' = v›
+        ‹{u, v} ∈ online_match G π σ› ‹u ≠ u'›
+      show False
+        by (auto dest: doubleton_in_matching)
+    qed
   next
     case False
 
@@ -759,7 +873,8 @@ and zag :: "'a graph \<Rightarrow> 'a graph \<Rightarrow> 'a \<Rightarrow> 'a li
                       else []
                     )" if "matching M"
 | no_matching_zag: "zag _ M v _ _ = [v]" if "\<not>matching M"
-  by auto (metis prod_cases5 sumE)
+  subgoal for P x by (cases x rule: sumE; (cases rule: prod_cases5); fastforce+)
+  by auto
 
 definition zig_zag_relation where
   "zig_zag_relation =
@@ -774,12 +889,61 @@ lemma shifts_to_only_from_input:
   by (auto intro: index_less_in_set)
 
 lemma shifts_to_inj:
-  assumes "shifts_to G M u v v' \<pi> \<sigma>"
-  assumes "shifts_to G M u v v'' \<pi> \<sigma>"
+  assumes "shifts_to G M u v v' π σ"
+  assumes "shifts_to G M u v v'' π σ"
   shows "v' = v''"
-  using assms
-  unfolding shifts_to_def
-  by (metis index_eq_index_conv not_less_iff_gr_or_eq)
+proof -
+  from assms(1) have v'_set: "v' ∈ set σ"
+    unfolding shifts_to_def by blast
+  from assms(1) have idx_v': "index σ v < index σ v'"
+    unfolding shifts_to_def by blast
+  from assms(1) have edge_v': "{u,v'} ∈ G"
+    unfolding shifts_to_def by blast
+  from assms(1) have no_match_v': "∄u'. index π u' < index π u ∧ {u',v'} ∈ M"
+    unfolding shifts_to_def by blast
+  from assms(1) have cover_v':
+    "∀v'''. index σ v < index σ v''' ∧ index σ v''' < index σ v' ⟶
+      {u,v'''} ∉ G ∨ (∃u'. index π u' < index π u ∧ {u',v'''} ∈ M)"
+    unfolding shifts_to_def by blast
+  from assms(2) have idx_v'': "index σ v < index σ v''"
+    unfolding shifts_to_def by blast
+  from assms(2) have edge_v'': "{u,v''} ∈ G"
+    unfolding shifts_to_def by blast
+  from assms(2) have no_match_v'': "∄u'. index π u' < index π u ∧ {u',v''} ∈ M"
+    unfolding shifts_to_def by blast
+  from assms(2) have cover_v'':
+    "∀v'''. index σ v < index σ v''' ∧ index σ v''' < index σ v'' ⟶
+      {u,v'''} ∉ G ∨ (∃u'. index π u' < index π u ∧ {u',v'''} ∈ M)"
+    unfolding shifts_to_def by blast
+  have eq: "index σ v' = index σ v''"
+  proof (rule antisym)
+    show "index σ v' ≤ index σ v''"
+    proof (rule ccontr)
+      assume "¬ index σ v' ≤ index σ v''"
+      then have lt: "index σ v'' < index σ v'" by simp
+      have "index σ v < index σ v'' ∧ index σ v'' < index σ v'"
+        using idx_v'' lt by blast
+      then have "{u,v''} ∉ G ∨ (∃u'. index π u' < index π u ∧ {u',v''} ∈ M)"
+        using cover_v' by blast
+      then obtain u' where "index π u' < index π u" "{u',v''} ∈ M"
+        using edge_v'' by blast
+      then show False using no_match_v'' by blast
+    qed
+    show "index σ v'' ≤ index σ v'"
+    proof (rule ccontr)
+      assume "¬ index σ v'' ≤ index σ v'"
+      then have lt: "index σ v' < index σ v''" by simp
+      have "index σ v < index σ v' ∧ index σ v' < index σ v''"
+        using idx_v' lt by blast
+      then have "{u,v'} ∉ G ∨ (∃u'. index π u' < index π u ∧ {u',v'} ∈ M)"
+        using cover_v'' by blast
+      then obtain u' where "index π u' < index π u" "{u',v'} ∈ M"
+        using edge_v' by blast
+      then show False using no_match_v' by blast
+    qed
+  qed
+  with v'_set show "v' = v''" by (simp add: index_eq_index_conv)
+qed
 
 lemma shifts_to_graph_edge:
   assumes "shifts_to G M u v v' \<pi> \<sigma>"
@@ -952,8 +1116,8 @@ next
     then show "matching M" by blast
   next
     case 3
-    then show "{u, x} \<in> M"
-      by (smt (verit, del_insts) theI' the_match''')
+    then show "{u, x} ∈ M"
+      by (auto simp: the_match')
   next
     case 4
     then obtain v' where v': "shifts_to G M u x v' \<pi> \<sigma>" "(THE v'. shifts_to G M u x v' \<pi> \<sigma>) = v'"
@@ -1008,20 +1172,40 @@ next
       case True
       then obtain v' where shifts_to: "shifts_to G M u v v' \<pi> \<sigma>" by blast
       then have "(THE v'. shifts_to G M u v v' \<pi> \<sigma>) = v'"
-        by (simp add: the_shifts_to)
-
-      with "3.IH"[OF \<open>\<exists>v. {u,v} \<in> M\<close> the_v[symmetric] True, simplified this]
-      assms(4)[OF \<open>matching M\<close>] show ?thesis
-        by (metis "3.hyps" \<open>{u, v} \<in> M\<close> the_match' the_shifts_to)
+        by (simp add: the_shifts_to)      show ?thesis
+      proof -
+        have "⋀v0 v0'. {u, v0} ∈ M ⟹ shifts_to G M u v0 v0' π σ ⟹ P G M v0' π σ"
+        proof -
+          fix v0 v0'
+          assume h1: "{u, v0} ∈ M" and h2: "shifts_to G M u v0 v0' π σ"
+          have eq1: "(THE v. {u, v} ∈ M) = v0"
+            by (rule the_match'[OF "3.hyps" h1])
+          have eq2: "(THE v'. shifts_to G M u v0 v' π σ) = v0'"
+            by (rule the_shifts_to[OF h2])
+          have ex_h2: "∃v'. shifts_to G M u v0 v' π σ"
+            by (rule exI[of _ v0']) (rule h2)
+          show "P G M v0' π σ"
+            using "3.IH"[OF ‹∃v. {u,v} ∈ M› eq1[symmetric] ex_h2]
+            by (simp add: eq2)
+        qed
+        with assms(4)[OF "3.hyps"] show ?thesis by blast
+      qed
     next
       case False
-      with assms \<open>{u,v} \<in> M\<close> show ?thesis
-        by (metis the_match')
+      have "⋀v0 v0'. {u, v0} ∈ M ⟹ shifts_to G M u v0 v0' π σ ⟹ P G M v0' π σ"
+      proof -
+        fix v0 v0'
+        assume h1: "{u, v0} ∈ M" and h2: "shifts_to G M u v0 v0' π σ"
+        have "v0 = v"
+          using the_match'[OF ‹matching M› h1] the_v by simp
+        with h2 False show "P G M v0' π σ" by simp
+      qed
+      with assms(4)[OF ‹matching M›] show ?thesis by blast
     qed
   next
     case False
-    with assms show ?thesis
-      by metis
+    show ?thesis
+      using assms(4)[OF "3.hyps"] False by blast
   qed
 qed (use assms in auto)
 
@@ -1116,8 +1300,17 @@ proof -
   with \<open>{u,v} \<in> M\<close> assms have "zig G M v \<pi> \<sigma> = v # zag G M u \<pi> \<sigma>"
     by (auto elim!: zig_ConsE intro: the_match)
 
-  with assms \<open>{u,v} \<in> M\<close> have "shifts_to G M u v v' \<pi> \<sigma>"
-    by (metis zag_shift_edge zig_hdE zig_then_zag)
+  with assms ‹{u,v} ∈ M› have "shifts_to G M u v v' π σ"
+  proof -
+    have zag_eq: "zag G M u π σ = u # zig G M v' π σ"
+      by (rule zig_then_zag[OF assms])
+    obtain rest where "zig G M v' π σ = v' # rest"
+      by (rule zig_hdE)
+    with zag_eq have "zag G M u π σ = u # v' # rest"
+      by simp
+    with ‹{u,v} ∈ M› show "shifts_to G M u v v' π σ"
+      by (rule zag_shift_edge)
+  qed
 
   then show ?thesis unfolding shifts_to_def by blast
 qed
@@ -1141,11 +1334,31 @@ proof -
     by (fastforce simp: zag.simps the_shifts_to the_match')
 
   with zig_zag assms have "{u',v'} \<in> M"
-    by (meson zag_then_zig zig_Cons_zagE)
-    
-  with shifts_to show ?thesis
-    unfolding shifts_to_def
-    by (metis \<open>matching M\<close> \<open>{u, v} \<in> M\<close> index_eq_index_conv linorder_neqE the_match')
+    by (meson zag_then_zig zig_Cons_zagE)  with shifts_to show ?thesis
+  proof -
+    from shifts_to have u_in_pi: "u ∈ set π"
+      and v_lt_v': "index σ v < index σ v'"
+      and no_prior: "¬ (∃u''. index π u'' < index π u ∧ {u'', v'} ∈ M)"
+      unfolding shifts_to_def by auto
+    have "v ≠ v'"
+      using v_lt_v' by auto
+    have "u ≠ u'"
+    proof
+      assume "u = u'"
+      with ‹matching M› ‹{u, v} ∈ M› ‹{u', v'} ∈ M›
+      have "(THE x. {u, x} ∈ M) = v" "(THE x. {u, x} ∈ M) = v'"
+        by (auto intro: the_match')
+      with ‹v ≠ v'› show False by simp
+    qed
+    have "¬ (index π u' < index π u)"
+      using no_prior ‹{u', v'} ∈ M› by blast
+    hence "index π u ≤ index π u'"
+      by simp
+    moreover have "index π u ≠ index π u'"
+      using u_in_pi ‹u ≠ u'› by (meson index_eq_index_conv)
+    ultimately show "index π u < index π u'"
+      by simp
+  qed
 qed
 
 text \<open>
@@ -1212,14 +1425,32 @@ next
       by (auto simp: alt_list_step alt_list_empty dest: edge_commute)
   next
     case (Cons v'' uvs)
-    with zig_v \<open>v' = v\<close> have "v'' \<noteq> v"
-      by (metis "sucsuc.hyps"(1) \<open>{u, v} \<in> M\<close> alt_list_step edges_of_path.simps(3) zag_then_zig zig_then_zag)
+    have "v'' ≠ v"
+    proof
+      assume "v'' = v"
+      with zig_v ‹v' = v› Cons have zig_eq: "zig G M v π σ = v # u # v # uvs"
+        by simp
+      have zag_eq: "zag G M u π σ = u # v # uvs"
+        by (rule zig_then_zag[OF zig_eq])
+      have "zig G M v π σ = v # uvs"
+        by (rule zag_then_zig[OF zag_eq])
+      with zig_eq show False
+        by simp
+    qed
 
-    with zig_v Cons have "vus = zig G M v'' \<pi> \<sigma>"
-      by (auto elim!: zig_then_zagE zag_then_zigE)
+    with zig_v Cons have "vus = zig G M v'' \<pi> \<sigma>"      by (auto elim!: zig_then_zagE zag_then_zigE)
 
-    with sucsuc Cons \<open>v'' \<noteq> v\<close> \<open>v' = v\<close> \<open>{u,v} \<in> M\<close> \<open>matching M\<close> show ?thesis
-      by (metis (mono_tags, lifting) alt_list.intros(2) edge_commute edges_of_path.simps(3) the_match)
+    with sucsuc Cons ‹v'' ≠ v› ‹v' = v› ‹{u,v} ∈ M› ‹matching M› show ?thesis
+    proof -
+      have not_in_M: "{u, v''} ∉ M"
+        using ‹matching M› ‹{u, v} ∈ M› ‹v'' ≠ v›
+        by (auto dest: doubleton_in_matching)
+      have ih: "rev_alt_path M vus"
+        using sucsuc(1) ‹vus = zig G M v'' π σ› by blast
+      show ?thesis
+        using zig_v ‹v' = v› Cons ‹{u, v} ∈ M› not_in_M ih
+        by (simp add: alt_list_step edges_of_path.simps insert_commute)
+    qed
   qed
 qed (simp add: alt_list_empty)
 
@@ -1233,8 +1464,15 @@ proof (cases "2 \<le> length (zig G M x \<pi> \<sigma>)")
     using length_at_least_two_Cons_Cons by blast
 
   with aug hd_zig show ?thesis
-    unfolding matching_augmenting_path_def
-    by (metis edge_commute insertI1 vs_member zig_matching_edge)
+  proof -
+    have "{u, x} ∈ M"
+      using ‹zig G M x π σ = v # u # vus› by (rule zig_matching_edge)
+    hence "x ∈ Vs M"
+      by (auto dest: edges_are_Vs)
+    with aug show False
+      unfolding matching_augmenting_path_def
+      using hd_zig by (simp add: hd_zig)
+  qed
 
 next
   case False
@@ -1302,9 +1540,12 @@ proof (cases "v \<in> set \<sigma>")
     from this(1)[symmetric] show ?case
       by simp
   next
-    case (sucsuc v u vus v')
-    then have "{u,v} \<in> M" "v' = v"
-      by (metis zig_ConsE zig_matching_edge)+
+    case (sucsuc v u vus v')    have edge_uv': "{u, v'} ∈ M"
+      using sucsuc(3)[symmetric] by (rule zig_matching_edge)
+    have v'_eq: "v' = v"
+      using sucsuc(3)[symmetric] by (elim zig_ConsE) simp_all
+    have "{u,v} ∈ M" "v' = v"
+      using edge_uv' v'_eq by simp_all
   
     with sucsuc have "u \<notin> set \<sigma>"
       by (auto dest: bipartite_edgeD)
@@ -1315,20 +1556,65 @@ proof (cases "v \<in> set \<sigma>")
       with \<open>v # u # vus = zig G M v' \<pi> \<sigma>\<close>[symmetric] \<open>u \<notin> set \<sigma>\<close> show ?thesis
         by simp
     next
-      case (Cons v'' uvs)
-      with sucsuc have vus_zig: "vus = zig G M v'' \<pi> \<sigma>"
-        by (metis zag_then_zig zig_then_zag)
-  
-      with sucsuc have "v'' \<in> set \<sigma>"
-        by (metis shifts_to_only_from_input(2) zag_Cons_zigE zig_then_zag)
+      case (Cons v'' uvs)      with sucsuc Cons have vus_zig: "vus = zig G M v'' π σ"
+      proof -
+        have "zag G M u π σ = u # vus"
+          using sucsuc(3)[symmetric] by (rule zig_then_zag)
+        then have "zag G M u π σ = u # v'' # uvs"
+          using Cons by simp
+        then have "zig G M v'' π σ = v'' # uvs"
+          by (rule zag_then_zig)
+        with Cons show ?thesis by simp
+      qed      have "v'' ∈ set σ"
+      proof -
+        have zag_eq: "zag G M u π σ = u # vus"
+          using sucsuc(3)[symmetric] by (rule zig_then_zag)
+        then have "zag G M u π σ = u # zig G M v'' π σ"
+          using vus_zig by simp
+        then obtain v_old where "shifts_to G M u v_old v'' π σ"
+          by (elim zag_Cons_zigE)
+        then show "v'' ∈ set σ"
+          by (rule shifts_to_only_from_input(2))
+      qed
   
       from \<open>v # u # vus = zig G M v' \<pi> \<sigma>\<close>[symmetric] vus_zig \<open>v' = v\<close> \<open>u \<notin> set \<sigma>\<close> \<open>v' \<in> set \<sigma>\<close>
       have "[x <- zig G M v' \<pi> \<sigma>. x \<in> set \<sigma>] = v # [x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>]"
-        by auto
-  
-      with sucsuc vus_zig \<open>v' = v\<close> \<open>v'' \<in> set \<sigma>\<close> show ?thesis
-        by (simp flip: successively_conv_sorted_wrt[OF transp_index_less])
-           (metis (mono_tags, lifting) filter.simps(2) list.sel(1) local.Cons successively_Cons zig_increasing_ranks)
+        by auto      with sucsuc vus_zig ‹v' = v› ‹v'' ∈ set σ› show ?thesis
+      proof -
+        have zig_eq: "zig G M v π σ = v # u # zig G M v'' π σ"
+          using sucsuc(3)[symmetric] ‹v' = v› vus_zig by simp
+        have rank_lt: "index σ v < index σ v''"
+          by (rule zig_increasing_ranks[OF zig_eq])
+        have zig_eq': "zig G M v'' π σ = v'' # uvs"
+          using vus_zig local.Cons by simp
+        have hd_eq: "hd [x <- zig G M v'' π σ. x ∈ set σ] = v''"
+        proof -
+          from zig_eq' ‹v'' ∈ set σ›
+          have "filter (λx. x ∈ set σ) (zig G M v'' π σ) = v'' # filter (λx. x ∈ set σ) uvs"
+            by (simp add: filter.simps(2))
+          then show ?thesis by (simp add: list.sel(1))
+        qed
+        have nonempty: "[x <- zig G M v'' π σ. x ∈ set σ] ≠ []"
+        proof -
+          from zig_eq' ‹v'' ∈ set σ›
+          show "[x <- zig G M v'' π σ. x ∈ set σ] ≠ []"
+            by (simp add: filter.simps(2))
+        qed
+        have sorted_tail: "sorted_wrt (λa b. index σ a < index σ b)
+                             [x <- zig G M v'' π σ. x ∈ set σ]"
+          using sucsuc(1)[OF vus_zig sucsuc(4) ‹v'' ∈ set σ›] by simp
+        have filter_eq: "[x <- zig G M v' π σ. x ∈ set σ] = v # [x <- zig G M v'' π σ. x ∈ set σ]"
+          using sucsuc(3)[symmetric] vus_zig ‹v' = v› ‹u ∉ set σ› sucsuc(5) by auto
+        have successively_tail: "successively (λa b. index σ a < index σ b) [x <- zig G M v'' π σ. x ∈ set σ]"
+          using sorted_tail
+          by (simp add: successively_conv_sorted_wrt[OF transp_index_less])
+        have "successively (λa b. index σ a < index σ b) (v # [x <- zig G M v'' π σ. x ∈ set σ])"
+          using nonempty rank_lt hd_eq successively_tail
+          by (simp add: successively_Cons)
+        then show ?thesis
+          using filter_eq
+          by (simp flip: successively_conv_sorted_wrt[OF transp_index_less])
+      qed
     qed
   qed simp
 next
@@ -1361,11 +1647,46 @@ proof (cases "u \<in> set \<pi>")
     proof (cases uvs)
       case Nil
       with sucsuc show ?thesis
-        by (metis alt_list_step alt_list_zag assms bipartite_disjointD disjoint_iff filter.simps(1) filter.simps(2) sorted_wrt1)
+      proof -
+        have zag_eq: "zag G M u π σ = [u', v]"
+          using sucsuc(3) ‹uvs = []› by simp
+
+        have alt_zag: "alt_list (λx. x ∈ set π) (λx. x ∈ set σ) (zag G M u π σ)"
+          using assms ‹u ∈ set π› by (rule alt_list_zag)
+
+        have alt: "alt_list (λx. x ∈ set π) (λx. x ∈ set σ) [u', v]"
+          using alt_zag zag_eq by simp
+
+        have u'_pi: "u' ∈ set π"
+          using alt by (simp add: alt_list_step)
+
+        have v_sigma: "v ∈ set σ"
+          using alt by (simp add: alt_list_step)
+
+        have disj: "set π ∩ set σ = {}"
+          using bipartite_disjointD assms by blast
+
+        have v_not_pi: "v ∉ set π"
+          using disj v_sigma by auto
+
+        have filter_eq: "[x ← zag G M u π σ. x ∈ set π] = [u']"
+          using zag_eq u'_pi v_not_pi
+          by (simp add: filter.simps)
+
+        show ?thesis
+          unfolding filter_eq by (simp add: sorted_wrt1)
+      qed
     next
-      case (Cons u'' vus)
-      with sucsuc have uvs_zag: "uvs = zag G M u'' \<pi> \<sigma>"
-        by (metis zag_then_zig zig_then_zag)
+      case (Cons u'' vus)      with sucsuc have uvs_zag: "uvs = zag G M u'' π σ"
+      proof -
+        have "zig G M v π σ = v # uvs"
+          using sucsuc(3)[symmetric] by (rule zag_then_zig)
+        then have "zig G M v π σ = v # u'' # vus"
+          using Cons by simp
+        then have "zag G M u'' π σ = u'' # vus"
+          by (rule zig_then_zag)
+        with Cons show ?thesis by simp
+      qed
 
       with sucsuc assms have "u'' \<in> set \<pi>"
         by (metis alt_list_step alt_list_zag zag_hdE)

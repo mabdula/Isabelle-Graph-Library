@@ -153,8 +153,16 @@ lemma min_if_finite':
   assumes "preorder_on' S r"
   assumes "finite S" "S \<noteq> {}"
   shows "min_on_rel S r \<in> S" and "\<not>(\<exists>x\<in>S. (x, min_on_rel S r) \<in> Restr r S \<and> (min_on_rel S r, x) \<notin> Restr r S)"
-  using assms
-  by (metis ex_is_min_if_finite is_min_rel_def min_on_rel_def min_rel_def some_eq_ex)+
+proof -
+  let ?P = "\<lambda>x. x \<in> S"
+  let ?r = "Restr r S"
+  have "\<exists>x. is_min_rel ?P ?r x"
+    using assms by (rule ex_is_min_if_finite)
+  hence "is_min_rel ?P ?r (min_on_rel S r)"
+    unfolding min_on_rel_def min_rel_def by (rule someI_ex)
+  thus "min_on_rel S r \<in> S" and "\<not>(\<exists>x\<in>S. (x, min_on_rel S r) \<in> Restr r S \<and> (min_on_rel S r, x) \<notin> Restr r S)"
+    unfolding is_min_rel_def by auto
+qed
 
 lemma min_if_finite:
   assumes "preorder_on' S r"

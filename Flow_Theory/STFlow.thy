@@ -161,10 +161,15 @@ lemma make_pair'_is_make_pair_of_get_old_edge:
 proof-
   obtain Yr where Yr: "X = old_edge ` Yr" 
     using assms by blast
-  show ?thesis
-    unfolding Yr
-    by (metis (no_types, lifting) case_edge_wrapper_make_pair edge_wrapper.simps(5)
-        flow_network.get_old_edge.simps flow_network_axioms image_cong image_image)
+  have same_on_old: "make_pair' (old_edge e) = make_pair (get_old_edge (old_edge e))" for e
+    by (simp add: make_pair)
+  have "make_pair' ` X = (\<lambda>e. make_pair' (old_edge e)) ` Yr"
+    by (simp add: Yr image_image)
+  also have "\<dots> = (\<lambda>e. make_pair (get_old_edge (old_edge e))) ` Yr"
+    by (rule image_cong[OF refl]) (rule same_on_old)
+  also have "\<dots> = make_pair ` get_old_edge ` X"
+    by (simp add: Yr image_image)
+  finally show ?thesis .
 qed
 
 lemma map_make_pair'_is_make_pair_of_get_old_edge:
@@ -255,10 +260,39 @@ proof(cases "Abs f > 0", goal_cases)
     next
       case 2
       have "network_of_network.delta_plus t s v = old_edge ` (delta_plus s)"
-        using 2  props(5) create_edge make_pair
-        unfolding network_of_network.delta_plus_def 
-        by(auto simp add: fst'_def snd'_def delta_plus_def)
-          (metis eq_fst_iff make_pair'.simps(2))
+        proof-
+          have v_is_s: "v = s"
+            using 2 by simp
+          have fst_new_edge: "fst' (new_edge (create_edge t s)) = t"
+            by(simp add: create_edge'(1))
+          show ?thesis
+          proof(rule set_eqI, rule iffI, goal_cases fwd bwd)
+            case (fwd e)
+            hence e_in: "e \<in> old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
+              and fst_e: "fst' e = v"
+              unfolding network_of_network.delta_plus_def by auto
+            have e_not_new: "e \<noteq> new_edge (create_edge t s)"
+            proof(rule notI, goal_cases)
+              case 1
+              hence "fst' e = t"
+                using fst_new_edge by simp
+              thus False
+                using fst_e v_is_s props(5) by simp
+            qed
+            obtain d where d_prop: "d \<in> \<E>" "e = old_edge d"
+              using e_in e_not_new by auto
+            hence "fst d = s"
+              using fst_e v_is_s by simp
+            thus ?case
+              using d_prop by(auto simp add: delta_plus_def)
+          next
+            case (bwd e)
+            then obtain d where d_prop: "d \<in> \<E>" "fst d = s" "e = old_edge d"
+              by(auto simp add: delta_plus_def)
+            thus ?case
+              using v_is_s unfolding network_of_network.delta_plus_def by auto
+          qed
+        qed
       moreover have "network_of_network.delta_minus t s v = 
                      insert (new_edge (create_edge t s)) (old_edge ` (delta_minus s))"
         using 2 create_edge make_pair'
@@ -276,10 +310,45 @@ proof(cases "Abs f > 0", goal_cases)
     next
       case 3
       have "network_of_network.delta_minus t s v = old_edge ` (delta_minus t)"
-        using 3  props(5)  create_edge make_pair'
-        unfolding network_of_network.delta_minus_def 
-        by(auto simp add: fst'_def snd'_def delta_minus_def)
-          (metis make_pair'.simps(2) snd_conv)
+        unfolding network_of_network.delta_minus_def
+        proof(rule set_eqI, rule iffI, goal_cases)
+          case (1 e)
+          have snd_create: "snd (create_edge t s) = s"
+            using snd_create_edge by simp
+          have snd_new: "snd' (new_edge (create_edge t s)) = s"
+            by (simp add: snd_create)
+          from 1 have e_mem: "e \<in> old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
+            and e_snd: "snd' e = v"
+            by (auto simp add: network_of_network.delta_minus_def)
+          have "e \<noteq> new_edge (create_edge t s)"
+          proof(rule notI)
+            assume "e = new_edge (create_edge t s)"
+            hence "v = s"
+              using e_snd snd_new by simp
+            thus False
+              using 3 props(5) by simp
+          qed
+          hence "e \<in> old_edge ` \<E>"
+            using e_mem by auto
+          then obtain d where d: "e = old_edge d" "d \<in> \<E>" by auto
+          have "snd d = t"
+            using e_snd 3 d(1) by simp
+          hence "d \<in> delta_minus t"
+            using d(2) by (simp add: delta_minus_def)
+          thus ?case
+            using d(1) by simp
+        next
+          case (2 e)
+          then obtain d where d: "e = old_edge d" "d \<in> delta_minus t" by auto
+          have dE: "d \<in> \<E>" and dsnd: "snd d = t"
+            using d(2) by (auto simp add: delta_minus_def)
+          have "e \<in> old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
+            using dE d(1) by simp
+          moreover have "snd' e = v"
+            using d(1) dsnd 3 by simp
+          ultimately show ?case
+            by (auto simp add: network_of_network.delta_minus_def)
+        qed
       moreover have "network_of_network.delta_plus t s v = 
                      insert (new_edge (create_edge t s)) (old_edge ` (delta_plus t))"
         using 3 create_edge make_pair
@@ -363,7 +432,17 @@ proof(cases "Abs f > 0", goal_cases)
     case (1 cs')
     then obtain cs where cs_prop: "cs \<in> set css" " set cs \<subseteq> old_edge ` \<E>"
       "cs' = map network_of_network.get_old_edge cs"
-      by auto (metis set_zip_leftD)
+      proof -
+        from 1 obtain cs0 w0
+          where cs0_w0: "(cs0, w0) \<in> set (zip css ws)"
+            and cs0_sub: "set cs0 \<subseteq> old_edge ` \<E>"
+            and cs'_is: "cs' = map network_of_network.get_old_edge cs0"
+          by auto
+        have cs0_in: "cs0 \<in> set css"
+          using cs0_w0 by (rule set_zip_leftD)
+        show thesis
+          by (rule that[OF cs0_in cs0_sub cs'_is])
+      qed
     hence cs_further_prop:"network_of_network.flowcycle f' cs"
       "set cs \<subseteq> network_of_network.support t s f'"  "distinct cs"
       using css_ws(4) by auto
@@ -388,7 +467,13 @@ proof(cases "Abs f > 0", goal_cases)
       using cs_prop(3)  cs_prop(2)  make_pair by auto
     moreover hence "make_pair ` set cs' = (id o make_pair') ` set cs " 
       using cs_prop(3)  cs_prop(2)  make_pair 
-      by (metis id_comp list.set_map)
+      proof -
+        have "make_pair ` set cs' = make_pair' ` set cs"
+          using cs_prop(3) make_pair'_is_make_pair_of_get_old_edge[OF cs_prop(2)]
+          by simp
+        thus ?thesis
+          by (simp add: id_comp)
+      qed
     ultimately have "awalk (make_pair ` set cs') (fst (hd cs')) (map make_pair cs') (fst (hd cs'))"
       by(simp only:)
         (fastforce intro!: awalk_image[OF _ _ refl, of "make_pair' ` set cs" "prod.fst (make_pair' (hd cs))"
@@ -396,8 +481,22 @@ proof(cases "Abs f > 0", goal_cases)
     hence "awalk UNIV (fst (hd cs')) (map make_pair cs') (fst (hd cs'))"
       by (meson subset_UNIV subset_mono_awalk)
     moreover hence "(fst (hd cs')) = (snd (last cs'))"
-      using awalk_fst_last cs_non_empty(2) 
-      by (metis Nil_is_map_conv last_map make_pair' snd_conv)
+      proof -
+        assume prev_awalk: "awalk UNIV (fst (hd cs')) (map make_pair cs') (fst (hd cs'))"
+        have cs'_not_Nil: "cs' \<noteq> []"
+          using cs_non_empty(2) by simp
+        have map_not_Nil: "map make_pair cs' \<noteq> []"
+          using cs'_not_Nil by simp
+        have snd_last: "prod.snd (last (map make_pair cs')) = fst (hd cs')"
+          using awalk_last[OF prev_awalk map_not_Nil] .
+        have "fst (hd cs') = prod.snd (last (map make_pair cs'))"
+          by(rule snd_last[symmetric])
+        also have "... = prod.snd (make_pair (last cs'))"
+          using cs'_not_Nil by(simp add: last_map)
+        also have "... = snd (last cs')"
+          by(simp add: make_pair''(2))
+        finally show ?thesis by simp
+      qed
     moreover have e_E:"e \<in> set cs' \<Longrightarrow> e \<in>\<E>" for e
     proof(goal_cases)
       case 1
@@ -451,7 +550,7 @@ proof(cases "Abs f > 0", goal_cases)
       using css_ws(4) unfolding network_of_network.support_def
       by auto
     then obtain C1 C2 where cs'_split:"cs' = C1@[new_edge (create_edge t s)]@C2" 
-      by (metis in_set_conv_decomp_first single_in_append)
+      by (fastforce dest!: split_list)
     have C1C2_in_E:"set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
     proof(rule ccontr)
       assume "\<not> set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
@@ -499,16 +598,18 @@ proof(cases "Abs f > 0", goal_cases)
       using flowcycle_elt(2) flowcycle_elt(3)  props(5) 
       by(auto simp add:awalk_Cons_iff snd'_def  fst'_def  create_edge' cs'_split )   
     moreover hence C2C1_Nil:"C2@C1 \<noteq> []" 
-      by (metis awalk_ends list.simps(8) props(5))
+      using props(5) by (auto simp add: awalk_Nil_iff)
     ultimately have awalk_C2C1:"awalk (make_pair' ` set (C2@C1)) s (map make_pair' (C2@C1)) t"      
       by(fastforce intro!: subset_mono_awalk'[of UNIV s "(map make_pair' (C2 @ C1))" t])
-    moreover have "(make_pair' ` set (C2@C1)) \<subseteq> make_pair ` \<E>"
+    moreover have sub: "(make_pair' ` set (C2@C1)) \<subseteq> make_pair ` \<E>"
       using C1C2_in_E  make_pair' by auto
-    moreover have "(map make_pair' (C2@C1)) = map make_pair (map get_old_edge (C2@C1))"
+    moreover have maps: "(map make_pair' (C2@C1)) = map make_pair (map get_old_edge (C2@C1))"
       using C1C2_in_E  make_pair'  by auto
     ultimately have awalk_in_E: "awalk (make_pair ` \<E> ) s (map make_pair (map get_old_edge (C2@C1))) t"
-      using subset_mono_awalk[of "(make_pair' ` set (C2 @ C1))" s
-          "(map make_pair' (C2 @ C1))" t "make_pair ` \<E>"] by metis
+    proof -
+      show ?thesis
+        by (rule subset_mono_awalk[OF awalk_C2C1 sub, simplified maps])
+    qed
     have "awalk UNIV s (map make_pair ps) t"
       using awalk_in_E ps_is  C2C1_Nil 
       by (fastforce intro!: subset_mono_awalk'[where C=UNIV,simplified])
@@ -609,7 +710,7 @@ proof(cases "Abs f > 0", goal_cases)
           using css_ws(4) unfolding network_of_network.support_def
           by auto
         then obtain C1 C2 where cs'_split:"ps = C1@[new_edge (create_edge t s)]@C2" 
-          by (metis in_set_conv_decomp_first single_in_append)
+          by (auto dest!: split_list)
         have C1C2_in_E:"set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
         proof(rule ccontr)
           assume "\<not> set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
@@ -1004,7 +1105,16 @@ proof(rule set_eqI, all \<open>rule\<close>, goal_cases)
 next
   case (2 x)
   then obtain e where "(e \<in> \<E> \<and> (prod.fst (make_pair e) = x \<or> prod.snd (make_pair e) = x))"
-    by (auto simp add: dVs_def) (metis fst_eqD snd_conv)+
+    proof -
+      from 2 obtain u v where uv: "(u, v) \<in> make_pair ` \<E>" "x = u \<or> x = v"
+        by (auto simp add: dVs_def)
+      from uv(1) obtain e_old where e_prop: "e_old \<in> \<E>" "make_pair e_old = (u, v)"
+        by auto
+      have "e_old \<in> \<E> \<and> (prod.fst (make_pair e_old) = x \<or> prod.snd (make_pair e_old) = x)"
+        using e_prop(1) uv(2) by (auto simp add: e_prop(2))
+      thus thesis
+        by (rule that)
+    qed
   hence "(old_edge e \<in> old_edge ` \<E> \<and> (prod.fst (make_pair' (old_edge e)) = x \<or> prod.snd (make_pair' (old_edge e)) = x))"
     using make_pair by auto
   then show ?case 

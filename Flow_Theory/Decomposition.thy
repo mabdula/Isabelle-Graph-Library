@@ -45,11 +45,36 @@ proof(induction g n v rule: find_cycle.induct)
     using "2.prems"(3) flow_non_neg_def by blast
   obtain e where a: "fst e = v \<and> g e > 0 \<and> e \<in> \<E>"  using 2(3) 
     unfolding flow_out_def delta_plus_def 
-     by (smt (verit, del_insts) mem_Collect_eq sum_nonpos)
+     proof-
+    have "\<exists> e \<in> \<delta>\<^sup>+ v. 0 < g e"
+    proof(rule ccontr)
+      assume ass: "\<not> (\<exists> e \<in> \<delta>\<^sup>+ v. 0 < g e)"
+      have "sum g (\<delta>\<^sup>+ v) \<le> 0"
+      proof(rule sum_nonpos)
+        fix e assume "e \<in> \<delta>\<^sup>+ v"
+        thus "g e \<le> 0"
+          using ass by auto
+      qed
+      moreover have "0 < sum g (\<delta>\<^sup>+ v)"
+        using "2.prems"(2) by(simp add: flow_out_def)
+      ultimately show False by simp
+    qed
+    then obtain d where d_prop: "d \<in> \<delta>\<^sup>+ v" "0 < g d" by auto
+    show ?thesis
+      using that[of d] d_prop by(auto simp add: delta_plus_def)
+  qed
    hence b:"(\<exists>e\<in>\<E>. 0 < g e \<and> fst e = v) = True" by auto
    then obtain d where d_def: "d = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in>\<E>)" by simp
    hence b1:"fst d = v" "g d > 0" "d \<in> \<E>" 
-     by (smt (verit, best) a someI)+
+     proof -
+  have ex_e: "\<exists>x. 0 < g x \<and> fst x = v \<and> x \<in> \<E>"
+    using a by blast
+  have some_prop: "0 < g d \<and> fst d = v \<and> d \<in> \<E>"
+    unfolding d_def by (rule someI_ex[OF ex_e])
+  show "fst d = v" using some_prop by simp
+  show "g d > 0" using some_prop by simp
+  show "d \<in> \<E>" using some_prop by simp
+qed
    have c: "find_cycle g (Suc n) v = v#find_cycle g n (snd d)"
       using b d_def by auto
    have d: "(snd d) \<in> \<V>"
@@ -81,7 +106,17 @@ proof(induction g n v rule: find_cycle.induct)
     case True
     then obtain e where e_Def:"e = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>)" by auto
     hence a:"0 < g e" "fst e = v" "e \<in> \<E>" 
-      by (metis (mono_tags, lifting) True someI_ex)+
+      proof -
+        from True obtain e' where e'_prop: "0 < g e' \<and> fst e' = v \<and> e' \<in> \<E>"
+          by blast
+        have sel: "0 < g (SOME e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>) \<and>
+                   fst (SOME e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>) = v \<and>
+                   (SOME e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>) \<in> \<E>"
+          by (rule someI[where P = "\<lambda>e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>", OF e'_prop])
+        show "0 < g e" using sel e_Def by simp
+        show "fst e = v" using sel e_Def by simp
+        show "e \<in> \<E>" using sel e_Def by simp
+      qed
     hence b:"snd e \<in> \<V>" 
       using  a dVsI(1) dVsI(2) 
       by(auto simp add: snd_E_V fst_E_V )
@@ -136,7 +171,15 @@ proof(induction g n v rule: find_cycle.induct)
     then obtain e where x_def: "e = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>)"
       by simp
     hence aaa:"0 < g e" "fst e = v" "e \<in> \<E>" 
-      by (metis (mono_tags, lifting) True someI_ex)+
+      proof -
+        have ex_e: "\<exists>e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>"
+          using True by blast
+        have all_three: "0 < g e \<and> fst e = v \<and> e \<in> \<E>"
+          unfolding x_def by (rule someI_ex[OF ex_e])
+        show "0 < g e" using all_three by blast
+        show "fst e = v" using all_three by blast
+        show "e \<in> \<E>" using all_three by blast
+      qed
     hence find_cycle_prop: "find_cycle g (Suc n) v = v#(find_cycle g n (snd e))" 
       using True x_def by simp
     obtain es where es_def: "length es = length (find_cycle g n (snd e)) - 1 \<and>
@@ -147,15 +190,52 @@ proof(induction g n v rule: find_cycle.induct)
       using "2" True x_def by presburger
     have "length (e#es) = length (find_cycle g (Suc n) v) - 1" 
       using find_cycle_prop es_def 
-      by (metis (no_types, lifting) es_def find_cycle.elims length_Cons length_tl list.sel(3))
+      proof -
+        have ne: "find_cycle g n (snd e) \<noteq> []"
+          by (cases n) auto
+        then obtain u us where cons: "find_cycle g n (snd e) = u # us"
+          by (auto simp add: neq_Nil_conv)
+        have es_len: "length es = length (find_cycle g n (snd e)) - 1"
+          using es_def by simp
+        have len_suc: "length (find_cycle g (Suc n) v) = Suc (length (find_cycle g n (snd e)))"
+          by (simp only: find_cycle_prop length_Cons)
+        have "length (e # es) = Suc (length es)" by simp
+        also have "\<dots> = Suc (length us)"
+          using es_len cons by simp
+        also have "\<dots> = length (find_cycle g n (snd e))"
+          using cons by simp
+        also have "\<dots> = length (find_cycle g (Suc n) v) - 1"
+          by (simp only: len_suc diff_Suc_1)
+        finally show ?thesis .
+      qed
     moreover have "i<length (e#es) \<Longrightarrow>
                     fst ((e#es) ! i) = find_cycle g (Suc n) v ! i \<and>
                     snd ((e#es) ! i) = find_cycle g (Suc n) v ! (i + 1)" for i
-        using es_def 
-        apply(cases i)
-        apply (metis (no_types, lifting) One_nat_def aaa add_is_1 find_cycle.elims find_cycle_prop
-                       nth_Cons_0 nth_Cons_Suc)
-        using find_cycle_prop by auto
+    proof -
+      assume ilen: "i < length (e # es)"
+      show "fst ((e # es) ! i) = find_cycle g (Suc n) v ! i \<and>
+            snd ((e # es) ! i) = find_cycle g (Suc n) v ! (i + 1)"
+      proof(cases i)
+        case 0
+        have hd_fc: "find_cycle g n (snd e) ! 0 = snd e"
+          by (cases n) auto
+        have fst0: "fst ((e # es) ! i) = find_cycle g (Suc n) v ! i"
+          using 0 aaa unfolding find_cycle_prop by simp
+        have snd0: "snd ((e # es) ! i) = find_cycle g (Suc n) v ! (i + 1)"
+          using 0 hd_fc unfolding find_cycle_prop by simp
+        show ?thesis
+          using fst0 snd0 by blast
+      next
+        case (Suc j)
+        have jlen: "j < length es"
+          using ilen Suc by simp
+        have esj: "fst (es ! j) = find_cycle g n (snd e) ! j \<and>
+                   snd (es ! j) = find_cycle g n (snd e) ! (j + 1)"
+          using es_def jlen by blast
+        show ?thesis
+          using esj Suc unfolding find_cycle_prop by simp
+      qed
+    qed
     moreover have " flowpath g (e#es)" 
         using  calculation(2)[of 1] calculation(2)[of 0] es_def find_cycle_prop aaa
         by (cases es) (auto intro: flowpath_intros)
@@ -275,7 +355,8 @@ proof-
     then obtain i j where ij_def: "i < length ES \<and> j < length ES \<and> j \<noteq> i \<and> ES ! i = ES ! j" 
       using distinct_conv_nth by blast
     hence "find_cycle g (card \<V>) v ! (a_len + i) =
-             find_cycle g (card \<V>) v ! (a_len + j)"using ES_prop by metis
+             find_cycle g (card \<V>) v ! (a_len + j)"
+      by (simp add: ij_def ES_prop[rule_format, THEN conjunct1, symmetric])
     hence "(as @ [x] @ bs @ [x] @ cs) ! (a_len + i) =
            (as @ [x] @ bs @ [x] @ cs)  ! (a_len + j) " using v_Def by simp
     hence "([x]@bs@[x]@cs) !  i =  ([x]@bs@[x]@cs) ! j" unfolding a_len_def by simp
@@ -352,7 +433,18 @@ proof-
         proof-
           assume subassm: "eov' \<in> \<delta>\<^sup>+ u \<and> eov' \<in> set ES " "eov' \<noteq> eov"
           then obtain j where j_def: "j < length ES \<and> ES ! j = eov' \<and> j \<noteq> i" 
-            by (metis i_def in_set_conv_nth)
+            proof -
+              have "eov' \<in> set ES" using subassm(1) by simp
+              then obtain j where j_lt: "j < length ES" and j_nth: "ES ! j = eov'"
+                unfolding in_set_conv_nth by blast
+              have "j \<noteq> i"
+              proof
+                assume "j = i"
+                hence "eov' = eov" using i_def j_nth by simp
+                thus False using subassm(2) by simp
+              qed
+              thus thesis using that j_lt j_nth by blast
+            qed
           hence "fst (ES ! j) = ([x] @ bs) ! j" 
             using ES_prop' by blast 
           moreover have "fst eov' = fst eov" 
@@ -379,8 +471,14 @@ proof-
         by presburger
       also have fgh: "... = nat (((int i)  mod int b_len) )" by simp
       finally have nat_i_int:"(nat ((int i - 1) mod int b_len) + 1) mod b_len  = i" 
-        by (metis Es_len_b_len 001 add.commute add_diff_cancel_left' add_diff_eq i_def 
-                  mod_add_left_eq mod_less nat_int zmod_int)
+      proof -
+        have i_less: "i < b_len"
+          using i_def Es_len_b_len by simp
+        hence "nat (int i mod int b_len) = i"
+          by (simp flip: zmod_int)
+        thus ?thesis
+          using 001 002 fgh by simp
+      qed
       hence "snd (ES ! (nat (((int i)-1) mod b_len))) =
                       (([x] @ bs) ! nat ((((int i)-1)+1) mod b_len) )" using
         ES_prop'[of "nat ((int i-1) mod b_len)"]  
@@ -409,7 +507,20 @@ proof-
         assume subassm: "eiv' \<in> \<delta>\<^sup>- u \<and> eiv' \<in>  set ES" "eiv' \<noteq> eiv"
         then obtain j where j_def: "j < length ES" "ES ! j = eiv'" 
                                    "j \<noteq> nat ((int i - 1) mod int b_len)"
-          by (metis eiv_def in_set_conv_nth)
+        proof -
+          obtain k where k_less: "k < length ES" and k_nth: "ES ! k = eiv'"
+            using subassm(1) by (auto simp add: in_set_conv_nth)
+          have k_neq: "k \<noteq> nat ((int i - 1) mod int b_len)"
+          proof(rule notI)
+            assume "k = nat ((int i - 1) mod int b_len)"
+            hence "eiv' = eiv"
+              using k_nth eiv_def by simp
+            thus False
+              using subassm(2) by simp
+          qed
+          show thesis
+            by(rule that[OF k_less k_nth k_neq])
+        qed
         hence "snd (ES ! j) = ([x] @ bs) ! ((j+1) mod b_len)" 
           using ES_prop' by blast 
         moreover have "snd (ES ! i) =  ([x] @ bs) ! ((i+1)  mod b_len)"
@@ -422,9 +533,81 @@ proof-
           by (cases "j +1 = length ES")  auto       
         ultimately have  "\<not> distinct ([x] @ bs)" 
           using hij j_def 
-          by (smt (verit, best) Es_len_b_len \<open>0 < b_len\<close> add.commute b_len_def eiv_def i_def
-                length_append mod_less mod_less_divisor nth_eq_iff_index_eq w_prop)
-        then show False 
+          proof -
+          let ?k = "nat ((int i - 1) mod int b_len)"
+          have blen_eq: "length ([x] @ bs) = b_len"
+            using b_len_def by simp
+          have i_less: "i < b_len"
+            using i_def Es_len_b_len by simp
+          have j_less: "j < b_len"
+            using j_def(1) Es_len_b_len by simp
+          have mod_suc: "(a + 1) mod b_len = (if a + 1 = b_len then 0 else a + 1)"
+            if "a < b_len" for a
+          proof(cases "a + 1 = b_len")
+            case True
+            thus ?thesis by simp
+          next
+            case False
+            have "a + 1 \<le> b_len" using that by simp
+            hence "a + 1 < b_len" using False by (simp add: less_le)
+            thus ?thesis using False by simp
+          qed
+          have snd_j: "snd (ES ! j) = ([x] @ bs) ! ((j + 1) mod b_len)"
+            using ES_prop'[OF j_def(1)] by blast
+          have snd_eiv: "snd eiv = ([x] @ bs) ! i"
+            using w_prop eiv_def by simp
+          have snd_eq: "snd eiv' = snd eiv"
+            using subassm(1) \<open>eiv \<in> \<delta>\<^sup>- u\<close> by (auto simp add: delta_minus_def)
+          have nth_eq: "([x] @ bs) ! ((j + 1) mod b_len) = ([x] @ bs) ! i"
+          proof-
+            have "([x] @ bs) ! ((j + 1) mod b_len) = snd (ES ! j)" using snd_j by simp
+            also have "... = snd eiv'" using j_def(2) by simp
+            also have "... = snd eiv" using snd_eq by simp
+            also have "... = ([x] @ bs) ! i" using snd_eiv by simp
+            finally show ?thesis by simp
+          qed
+          show ?thesis
+          proof
+            assume dist: "distinct ([x] @ bs)"
+            have idx1: "(j + 1) mod b_len < length ([x] @ bs)"
+              using \<open>0 < b_len\<close> blen_eq by simp
+            have idx2: "i < length ([x] @ bs)"
+              using i_less blen_eq by simp
+            have j1: "(j + 1) mod b_len = i"
+              using nth_eq_iff_index_eq[OF dist idx1 idx2] nth_eq by simp
+            have "j = ?k"
+            proof(cases "j + 1 = b_len")
+              case True
+              hence i0: "i = 0" using j1 by simp
+              have "?k + 1 = b_len"
+              proof(rule ccontr)
+                assume "?k + 1 \<noteq> b_len"
+                hence "(?k + 1) mod b_len = ?k + 1" using mod_suc[OF hij] by simp
+                hence "?k + 1 = i" using nat_i_int by simp
+                thus False using i0 by simp
+              qed
+              hence "j + 1 = ?k + 1" using True by simp
+              thus ?thesis by simp
+            next
+              case False
+              have "i = (j + 1) mod b_len" using j1 by simp
+              also have "... = j + 1" using mod_suc[OF j_less] False by simp
+              finally have jv: "i = j + 1" by simp
+              have k_ne: "?k + 1 \<noteq> b_len"
+              proof
+                assume "?k + 1 = b_len"
+                hence "(?k + 1) mod b_len = 0" by simp
+                hence "i = 0" using nat_i_int by simp
+                thus False using jv by simp
+              qed
+              have "?k + 1 = (?k + 1) mod b_len" using mod_suc[OF hij] k_ne by simp
+              also have "... = i" using nat_i_int by simp
+              finally have "?k + 1 = j + 1" using jv by simp
+              thus ?thesis by simp
+            qed
+            thus False using j_def(3) by simp
+          qed
+        qed        then show False 
             using xbs_distinct by blast
         qed
         hence "\<delta>\<^sup>- u \<inter> set ES = {eiv}" 
@@ -437,7 +620,7 @@ proof-
           using \<open>\<delta>\<^sup>+ u \<inter> set ES \<noteq> {} \<or> \<delta>\<^sup>- u \<inter> set ES \<noteq> {}\<close> by auto
         then obtain ie where ie_def: "ie \<in> \<delta>\<^sup>- u \<and> ie \<in> set ES" by auto 
         then obtain i where "i < b_len \<and> ES ! i = ie" 
-          by (metis Es_len_b_len in_set_conv_nth)
+          using ie_def by (auto simp add: in_set_conv_nth Es_len_b_len)
         have "snd ie = u" using ie_def unfolding delta_minus_def by simp
         have "b_len > 0" 
           using Es_len_b_len \<open>ES \<noteq> []\<close> by blast
@@ -544,9 +727,32 @@ proof(induction n arbitrary: g rule: less_induct)
     using e_gamma_eq es_Def(2) support_def by fastforce 
 
   have integral_g: "is_integral_flow g \<Longrightarrow>is_integral_flow g'"
-    using integral_gamma 
-    unfolding g'_def is_integral_flow_def
-    by (metis of_int_diff of_int_of_nat_eq)
+  proof -
+    assume asm: "is_integral_flow g"
+    then obtain m :: nat where m: "\<gamma> = real m"
+      using integral_gamma by blast
+    show "is_integral_flow g'"
+      unfolding is_integral_flow_def
+    proof
+      fix e
+      assume "e \<in> \<E>"
+      then obtain k :: int where k: "g e = real_of_int k"
+        using asm by (auto simp add: is_integral_flow_def)
+      show "\<exists> n::int. g' e = n"
+      proof(cases "e \<in> set es")
+        case True
+        have "g' e = real_of_int k - real m"
+          using True k m by (simp add: g'_def)
+        also have "\<dots> = real_of_int (k - int m)" by simp
+        finally show ?thesis by blast
+      next
+        case False
+        hence "g' e = real_of_int k"
+          using k by (simp add: g'_def)
+        thus ?thesis by blast
+      qed
+    qed
+  qed
 
   have g_greater_g': "e \<in> set es \<Longrightarrow>g e\<ge> g' e " for e
     unfolding g'_def 
@@ -648,7 +854,8 @@ proof(induction n arbitrary: g rule: less_induct)
           unfolding g'_def  
           by (auto simp add: delta_minus_def disjoint_iff)
         ultimately show "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = 0" 
-          by (metis is_circ_def less.prems(3) ex_def v_Assm)
+          using less.prems(3) v_Assm
+          by (simp add: is_circ_def ex_def)
       next
         case False
         then obtain eov eiv where eov_def:"\<delta>\<^sup>+ v \<inter> set es = {eov}"  
@@ -700,7 +907,18 @@ proof(induction n arbitrary: g rule: less_induct)
         hence "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = sum g (\<delta>\<^sup>- v) - sum g (\<delta>\<^sup>+ v)" 
           using 005 by simp
         then show "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = 0" 
-          by (metis is_circ_def less.prems(3) ex_def v_Assm)
+        proof -
+          have exg: "ex g v = 0"
+            using less.prems(3) v_Assm by (auto simp add: is_circ_def)
+          have g_bal: "sum g (\<delta>\<^sup>- v) - sum g (\<delta>\<^sup>+ v) = 0"
+            using exg by (simp add: ex_def)
+          have g'_in: "sum g' (\<delta>\<^sup>- v) = sum g (\<delta>\<^sup>- v) - \<gamma>"
+            using 007 by simp
+          have g'_out: "sum g' (\<delta>\<^sup>+ v) = sum g (\<delta>\<^sup>+ v) - \<gamma>"
+            using 005 by simp
+          show ?thesis
+            using g_bal g'_in g'_out by linarith
+        qed
       qed
     qed
 
@@ -727,8 +945,25 @@ proof(induction n arbitrary: g rule: less_induct)
     proof(rule ccontr)
       assume set_assm: "\<not> {e |e. 0 < g' e \<and> e \<in> \<E>} \<noteq> {}"
       obtain e where "g' e > 0 \<and> e \<in> \<E>"  
-        using  res_abs_pos
-        by (metis Abs_def less.prems(2) linorder_not_less sum_nonpos)
+        proof -
+          have "\<exists> d \<in> \<E>. 0 < g' d"
+          proof(rule ccontr)
+            assume no_pos: "\<not> (\<exists> d \<in> \<E>. 0 < g' d)"
+            have sum_le: "(\<Sum> d \<in> \<E>. g' d) \<le> 0"
+            proof(rule sum_nonpos)
+              fix d assume dE: "d \<in> \<E>"
+              have "\<not> (0 < g' d)"
+                using no_pos dE by blast
+              thus "g' d \<le> 0" by linarith
+            qed
+            have "0 < (\<Sum> d \<in> \<E>. g' d)"
+              using res_abs_pos by (simp add: Abs_def)
+            thus False using sum_le by linarith
+          qed
+          then obtain d where d_prop: "d \<in> \<E>" "0 < g' d" by blast
+          show thesis
+            using that[of d] d_prop by blast
+        qed
       then show False using set_assm by auto
     qed
 
@@ -770,8 +1005,8 @@ proof(induction n arbitrary: g rule: less_induct)
                                               then (\<gamma> # ws) ! (i+1) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
         by(rule sum_eq_split,
-           smt (verit, del_insts) add_diff_cancel_right' add_is_0 gr_zeroI lessThan_atLeast0 
-               nth_Cons_pos sum.cong zero_neq_one) simp
+           rule sum.cong[OF lessThan_atLeast0])
+           (simp_all add: nth_Cons')
       also have ae:"... =  (\<Sum>i\<in>{x + 1 |x. x \<in> {0..<length css}}. if e \<in> set ((es # css) ! (i)) 
                                               then (\<gamma> # ws) ! (i) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
@@ -779,11 +1014,26 @@ proof(induction n arbitrary: g rule: less_induct)
       also have "... =  (\<Sum>i\<in>{x |x. x > 0 \<and> x <length (es# css)}. if e \<in> set ((es # css) ! (i)) 
                                               then (\<gamma> # ws) ! (i) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
-        apply(rule sum_eq_split, rule sum.cong)
-        defer
-        by (simp, rule, rule, force, rule,
-             smt (verit) Suc_eq_plus1 Suc_length_conv Suc_pred lessThan_atLeast0 lessThan_iff 
-            less_Suc_eq less_imp_diff_less mem_Collect_eq)  
+        proof -
+          have set_eq: "{x + 1 |x. x \<in> {0..<length css}}
+                        = {x |x. 0 < x \<and> x < length (es # css)}"
+          proof (rule equalityI)
+            show "{x + 1 |x. x \<in> {0..<length css}}
+                  \<subseteq> {x |x. 0 < x \<and> x < length (es # css)}"
+              by auto
+          next
+            show "{x |x. 0 < x \<and> x < length (es # css)}
+                  \<subseteq> {x + 1 |x. x \<in> {0..<length css}}"
+            proof (rule subsetI)
+              fix y
+              assume "y \<in> {x |x. 0 < x \<and> x < length (es # css)}"
+              hence y_props: "0 < y" "y < Suc (length css)" by auto
+              hence "y = (y - 1) + 1" and "y - 1 \<in> {0..<length css}" by auto
+              thus "y \<in> {x + 1 |x. x \<in> {0..<length css}}" by blast
+            qed
+          qed
+          show ?thesis by (simp only: set_eq)
+        qed
       also have "... = (\<Sum>i\<in>{i| i. i> 0 \<and> i <length (es#css)}. if e \<in> set ((es # css) ! (i))
                                               then (\<gamma> # ws) ! (i) else 0) +
                        (\<Sum>i\<in>{0}. if e \<in> set ((es # css) ! (i))

@@ -1094,8 +1094,16 @@ proof -
                 by (auto intro: dominance)
 
               with \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close> have "rop_dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ Vs_enum i = g y / F"
-                by (auto simp: rop_dual_sol_def)
-                   (metis L_enum_less_card Vs_enum_L)+
+              proof -
+                let ?M = "ranking (linorder_from_keys L (Y(i:=y))) G \<pi>"
+                have "Vs_enum i < card L"
+                  using \<open>i \<in> L\<close> by (simp add: Vs_enum_L L_enum_less_card)
+                moreover have "Vs_enum_inv (Vs_enum i) = i"
+                  using \<open>i \<in> L\<close> by (simp add: Vs_inv_enum_L)
+                ultimately show ?thesis
+                  using \<open>i \<in> Vs ?M\<close> \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close>
+                  by (auto simp: rop_dual_sol_def)
+              qed
 
               then show ?thesis
                 by auto

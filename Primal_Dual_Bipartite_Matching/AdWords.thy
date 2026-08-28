@@ -31,8 +31,7 @@ lemma ln_one_plus_x_over_x_deriv':
   assumes "0 < x"
   shows "((\<lambda>x. ln (1 + x) / x) has_real_derivative (((1/(1+x) * (0 + 1)) * x - ln (1+x) * 1) / (x * x))) (at x)"
   using assms
-  by (intro derivative_intros)
-     auto
+  by (intro derivative_intros) auto
   
 lemmas ln_one_plus_x_over_x_deriv = ln_one_plus_x_over_x_deriv'[simplified]
 
@@ -41,7 +40,8 @@ lemma ln_1_plus_x_ge:
   assumes "0 < x"
   shows "x / (1 + x) \<le> ln (1 + x)"
   using assms
-  by (smt (verit) divide_minus_left ln_diff_le ln_one)
+  using ln_diff_le[of 1 "1 + x"] assms
+  by (auto simp: divide_minus_left)
 
 lemma ln_1_plus_x_over_x_mono:
   fixes x y :: real
@@ -237,7 +237,19 @@ proof -
 qed
 
 lemma max_value_allocation_pos_value: "max_value_allocation M \<Longrightarrow> allocation_value M > 0"
-  by (metis allocation_value_gt_0 max_value_allocation_def max_value_allocation_non_empty one_sided_matching_subgraphD)
+proof -
+  assume "max_value_allocation M"
+  then have "one_sided_matching G M R"
+    unfolding max_value_allocation_def by blast
+  then have "M \<subseteq> G"
+    by (rule one_sided_matching_subgraphD)
+  moreover have "M \<noteq> {}"
+    using \<open>max_value_allocation M\<close> max_value_allocation_non_empty by blast
+  ultimately show "allocation_value M > 0"
+    by (rule allocation_value_gt_0)
+qed
+
+
 
 lemma 
   shows dim_row_budget_constraint_mat[simp]: "dim_row budget_constraint_mat = card L"
@@ -337,14 +349,27 @@ proof -
              intro: to_nat_on_from_nat_into_less simp: countable_finite to_nat_on_less_card)
 
   also from bipartite_graph \<open>M \<subseteq> G\<close> have "\<dots> = (\<Sum>i\<in>L. (\<Sum>e\<in>{e\<in>M. i \<in> e}. b e * (if total_bid_of M i \<le> B i then 1 else B i / total_bid_of M i)))"
-    apply (auto simp: sum_edges_eq_sum_vs Let_def intro!: sum.cong)
-     apply (smt (verit, ccfv_threshold) Collect_cong bipartite_commute bipartite_eqI in_mono the_equality)+
-    done
-
+  proof -
+    let ?f = "\<lambda>e. b e * (let i = THE i. i \<in> L \<and> i \<in> e in if total_bid_of M i \<le> B i then 1 else B i / total_bid_of M i)"
+    have "(\<Sum>e\<in>M. ?f e) = (\<Sum>i\<in>L. \<Sum>e\<in>{e \<in> M. i \<in> e}. ?f e)"
+      using sum_edges_eq_sum_vs[OF \<open>M \<subseteq> G\<close>] by auto
+    also have "\<dots> = (\<Sum>i\<in>L. \<Sum>e\<in>{e \<in> M. i \<in> e}. b e * (if total_bid_of M i \<le> B i then 1 else B i / total_bid_of M i))"
+      proof (intro sum.cong refl)
+        fix i e
+        assume "i \<in> L" and "e \<in> {e \<in> M. i \<in> e}"
+        hence "i \<in> e" and "e \<in> M" by auto
+        with bipartite_subgraph[OF bipartite_graph \<open>M \<subseteq> G\<close>] \<open>i \<in> L\<close>
+        have "(THE i. i \<in> L \<and> i \<in> e) = i"
+          by (auto elim: bipartite_edgeE)
+        thus "?f e = b e * (if total_bid_of M i \<le> B i then 1 else B i / total_bid_of M i)"
+          unfolding Let_def by simp
+      qed
+    finally show ?thesis .
+  qed
   also have "\<dots> = allocation_value M"
     unfolding allocation_value_def
     by (auto intro!: sum.cong simp flip: sum_distrib_right sum_divide_distrib dest: budgets_pos)
-
+  
   finally show ?thesis .
 qed
 
@@ -401,7 +426,12 @@ proof (intro conjI allI impI, simp_all)
   from assms have "M \<subseteq> G" by (auto dest: one_sided_matching_subgraphD)
 
   have online: "?j \<in> R"
-    by (metis \<open>k < card R\<close> bot_nat_0.extremum_strict card.empty from_nat_into)
+  proof -
+    have "R \<noteq> {}"
+      using \<open>k < card R\<close> by auto
+    then show "?j \<in> R"
+      by (rule from_nat_into)
+  qed
 
   from online \<open>M \<subseteq> G\<close> have "row allocation_constraint_mat k \<bullet> adwords_primal_sol M = 
     (\<Sum>e\<in>{e\<in>M. ?j \<in> e}. let i = THE i. i \<in> L \<and> i \<in> e in if total_bid_of M i \<le> B i then 1 else B i / total_bid_of M i)"
@@ -550,8 +580,14 @@ lemma max_bid_pos: "i \<in> L \<Longrightarrow> Max {b {i, j} |j. {i, j} \<in> G
      (force intro: finite_bids elim: left_neighborE dest: bids_pos)+
 
 lemma bid_ratios_non_empty: "{b {i, j} / B i |i j. {i, j} \<in> G \<and> i \<in> L \<and> j \<in> R} \<noteq> {}"
-  using graph_non_empty bipartite_graph
-  by auto (metis bipartite_edgeE)
+proof -
+  from graph_non_empty obtain e where "e \<in> G"
+    by blast
+  then obtain i j where "i \<in> L" "j \<in> R" "e = {i, j}"
+    using bipartite_graph by (rule bipartite_edgeE)
+  with \<open>e \<in> G\<close> show ?thesis
+    by blast
+qed
 
 lemma bid_ratio_pos: "i \<in> L \<Longrightarrow> {i,j} \<in> G \<Longrightarrow> b {i,j} / B i > 0"
   by (auto intro: divide_pos_pos budgets_pos bids_pos)
@@ -772,8 +808,10 @@ proof (cases "x (adwords \<pi>) i \<ge> 1")
 next
   case False
 
-  from perm \<open>j \<in> R\<close> obtain pre suff where \<pi>_decomp: "\<pi> = pre @ j # suff"
-    by (metis permutations_of_setD(1) split_list)
+  have "j \<in> set \<pi>"
+    using perm \<open>j \<in> R\<close> by (auto dest: permutations_of_setD)
+  then obtain pre suff where \<pi>_decomp: "\<pi> = pre @ j # suff"
+    by (auto dest: split_list)
 
   with perm have set_pre: "set pre \<subseteq> R" and set_suff: "set suff \<subseteq> R"
     by (auto dest: permutations_of_setD)
@@ -1087,8 +1125,25 @@ proof (cases j rule: adwords_step_casesR[where s = s])
   let ?i' = "arg_max_on (\<lambda>i. b {i, j} * (1 - x s i)) {i. {i, j} \<in> G}"
   
   from \<open>?i' \<in> L\<close> \<open>x s ?i' < 1\<close> have "total_bid_of (allocation s) ?i' < B ?i'"
-    apply (auto dest!: total_bid_dual_bound)
-    by (smt (verit) budgets_pos c_gt_1 le_divide_eq_1_pos new_match(5) powr_mono powr_one)
+  proof -
+    have "1 / (c - 1) * (c powr (total_bid_of (allocation s) ?i' / B ?i') - 1) \<le> x s ?i'"
+      using total_bid_dual_bound[OF \<open>?i' \<in> L\<close>]
+      by auto
+    moreover have "x s ?i' * (c - 1) < c - 1"
+      using \<open>x s ?i' < 1\<close> c_gt_1 by auto
+      
+    ultimately have "c powr (total_bid_of (allocation s) ?i' / B ?i') - 1 < c - 1"
+      using c_gt_1 by (auto simp: field_simps)
+      
+    hence "c powr (total_bid_of (allocation s) ?i' / B ?i') < c powr 1"
+      by auto
+      
+    hence "total_bid_of (allocation s) ?i' / B ?i' < 1"
+      using c_gt_1 by (subst (asm) powr_less_cancel_iff) auto
+      
+    thus ?thesis
+      using budgets_pos[OF \<open>?i' \<in> L\<close>] by (simp add: pos_divide_less_eq)
+  qed
 
   with \<open>total_bid_of (allocation s) i > B i\<close> have "i \<noteq> ?i'"
     by auto
@@ -1242,9 +1297,20 @@ proof (cases "total_bid_of (allocation (adwords js)) i > B i")
     by (intro mult_left_mono)
        (auto intro: budget_over_budget_plus_bid_ge)
 
-  also from True assms have "\<dots> \<le> B i"
-    apply (auto dest!: max_over_budget_adwords)
-    by (smt (verit, ccfv_SIG) assms(1) budgets_pos frac_less2 mult_pos_pos nonzero_mult_div_cancel_left)
+  also have "\<dots> \<le> (B i + Max {b {i,j} |j. {i,j} \<in> G}) * (B i / (B i + Max {b {i,j} |j. {i,j} \<in> G}))"
+  proof (intro mult_right_mono)
+    show "total_bid_of (allocation (adwords js)) i \<le> B i + Max {b {i,j} |j. {i,j} \<in> G}"
+      using assms by (rule max_over_budget_adwords)
+    show "0 \<le> B i / (B i + Max {b {i,j} |j. {i,j} \<in> G})"
+      using assms(1) budgets_pos[of i] max_bid_pos[of i] by auto
+  qed
+  also have "\<dots> = B i"
+  proof -
+    have "B i + Max {b {i,j} |j. {i,j} \<in> G} > 0"
+      using assms(1) budgets_pos[of i] max_bid_pos[of i] by auto
+    then show ?thesis
+      by auto
+  qed
 
   also from True have "\<dots> = charge_of (allocation (adwords js)) i"
     by simp

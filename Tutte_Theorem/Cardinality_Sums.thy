@@ -8,8 +8,8 @@ lemma matching_int_card_is_sum:
   assumes "C \<subseteq> M "
   shows "card ((Vs C) \<inter> X) = sum (\<lambda> e. card (e \<inter> X)) C" 
 proof -
-  have "finite M" using assms(1) 
-    by (metis Vs_def finite_UnionD)
+  have "finite M" using assms(1)
+    unfolding Vs_def by (rule finite_UnionD)
   then have "finite C"  
     using assms(3) finite_subset by auto
   show ?thesis using `finite C` assms(3)
@@ -20,16 +20,33 @@ proof -
     case (insert x F)
       then have "finite (Vs F)" 
       by (meson Vs_subset assms(1) finite_subset insert.prems insert_subset)
-    have "finite (Vs {x})" 
-      by (metis Vs_subset assms(1) insert.prems insert_is_Un le_supE rev_finite_subset)
+    have "finite (Vs {x})"
+    proof -
+      have "{x} \<subseteq> M"
+        using insert.prems by auto
+      hence "Vs {x} \<subseteq> Vs M"
+        by (rule Vs_subset)
+      with assms(1) show ?thesis
+        by (rule rev_finite_subset)
+    qed
     have "matching (insert x F)" 
       by (meson assms(2) insert.prems matching_def subset_eq)
     then have card_sum_hyp: "card (Vs F \<inter> X) = (\<Sum>e\<in>F. card (e \<inter> X))" 
       using insert.hyps(3) insert.prems by blast
     then have "\<forall>y \<in> F. x \<inter> y = {}"
-      using `matching (insert x F)`
-      unfolding matching_def 
-      by (metis insert.hyps(2) insertCI)
+    proof -
+      have matching_prop: "\<forall>e1\<in>insert x F. \<forall>e2\<in>insert x F. e1 \<noteq> e2 \<longrightarrow> e1 \<inter> e2 = {}"
+        using `matching (insert x F)` unfolding matching_def by simp
+      show ?thesis
+      proof (intro ballI)
+        fix y assume hy: "y \<in> F"
+        have hne: "x \<noteq> y"
+          using insert.hyps(2) hy by blast
+        from matching_prop have "x \<inter> y = {}"
+          using hy hne by blast
+        thus "x \<inter> y = {}" .
+      qed
+    qed
     then have "Vs F \<inter> Vs {x} = {}" 
       by (auto, simp add: disjoint_iff vs_member)   
     then have "card ((Vs F \<inter> X) \<union> (Vs {x} \<inter> X)) = card (Vs F \<inter> X) + card (Vs {x} \<inter> X)"

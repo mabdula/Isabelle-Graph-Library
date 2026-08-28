@@ -737,8 +737,27 @@ lemma monotonicity_order_step:
 proof (cases rule: step_cases[where M = M])
   case no_neighbor
   with bipartite_graph subset_before \<open>i \<in> L\<close> \<open>j \<in> R\<close> have "{i'. i' \<notin> Vs M' \<and> {i',j} \<in> G \<setminus> {i}} = {}"
-    apply auto
-    by (smt (verit, best) Diff_iff bipartite_edgeD(4) edges_are_Vs(1) remove_vertices_not_vs remove_vertices_subgraph' subset_iff)
+  proof -
+    show ?thesis
+    proof (rule ccontr)
+      assume "{i'. i' \<notin> Vs M' \<and> {i',j} \<in> G \<setminus> {i}} \<noteq> {}"
+      then obtain i' where i': "i' \<notin> Vs M'" "{i',j} \<in> G \<setminus> {i}"
+        by blast
+      from i'(2) have "{i',j} \<in> G" "i \<noteq> i'"
+        unfolding remove_vertices_graph_def by auto
+      from \<open>{i',j} \<in> G\<close> bipartite_graph \<open>j \<in> R\<close> have "i' \<in> L"
+        by(fastforce dest: bipartite_edgeD(4))
+      with \<open>i' \<notin> Vs M'\<close> \<open>i \<noteq> i'\<close> have "i' \<in> L - {i} - Vs M'"
+        by blast
+      with subset_before have "i' \<in> L - Vs M"
+        by blast
+      then have "i' \<notin> Vs M" by blast
+      with \<open>i' \<in> L\<close> \<open>{i',j} \<in> G\<close> have "i' \<in> {i. i \<notin> Vs M \<and> {i,j} \<in> G}"
+        by blast
+      with no_neighbor show False
+        by blast
+    qed
+  qed
 
   with no_neighbor subset_before show ?thesis
     by (simp add: step_def)
@@ -771,10 +790,39 @@ next
 
     let ?min' = "min_on_rel {i'. i' \<notin> Vs M' \<and> {i',j} \<in> G \<setminus> {i}} r"
 
-    from new_match have "?min' \<in> {i. i \<notin> Vs M \<and> {i,j} \<in> G}"
-      using remove_vertices_subgraph'
-      by (smt (verit, ccfv_threshold) Diff_iff assms(2) bipartite_edgeD(4) bipartite_graph
-              edges_are_Vs mem_Collect_eq remove_vertices_not_vs' subset_before subset_eq)
+    have "?min' \<in> {i. i \<notin> Vs M \<and> {i,j} \<in> G}"
+    proof -
+      from new_match have "?min' \<notin> Vs M'" and "{?min', j} \<in> G \<setminus> {i}"
+        by auto
+      then have "{?min', j} \<in> G" (is ?g1) and "?min' \<noteq> i" (is ?g2)
+      proof -
+        from new_match have "?min' \<notin> Vs M'" and min'_edge: "{?min', j} \<in> G \<setminus> {i}"
+          by auto
+        from min'_edge have "{?min', j} \<in> G" and "?min' \<noteq> i"
+          unfolding remove_vertices_graph_def by auto
+        from \<open>{?min', j} \<in> G\<close> \<open>j \<in> R\<close> bipartite_graph have "?min' \<in> L"
+          by (auto dest: bipartite_edgeD(4))
+        with \<open>?min' \<noteq> i\<close> \<open>?min' \<notin> Vs M'\<close> have "?min' \<in> L - {i} - Vs M'"
+          by blast
+        with subset_before have "?min' \<in> L - Vs M"
+          by blast
+        then have "?min' \<notin> Vs M"
+          by blast
+        with \<open>{?min', j} \<in> G\<close> show ?g1 ?g2
+          using \<open>min_on_rel {i'. i' \<notin> Vs M' \<and> {i', j} \<in> G \<setminus> {i}} r \<noteq> i\<close>
+          by fastforce+
+      qed
+      from \<open>{?min', j} \<in> G\<close> \<open>j \<in> R\<close> bipartite_graph have "?min' \<in> L"
+        by (auto dest: bipartite_edgeD(4))
+      with \<open>?min' \<noteq> i\<close> \<open>?min' \<notin> Vs M'\<close> have "?min' \<in> L - {i} - Vs M'"
+        by blast
+      with subset_before have "?min' \<in> L - Vs M"
+        by blast
+      then have "?min' \<notin> Vs M"
+        by blast
+      with \<open>{?min', j} \<in> G\<close> show ?thesis
+        by blast
+    qed
 
     have "?min \<in> {i'. i' \<notin> Vs M' \<and> {i',j} \<in> G \<setminus> {i}} \<Longrightarrow> ?min = ?min'"
     proof -
@@ -945,8 +993,14 @@ proof -
         using \<open>G \<setminus> {i} \<subseteq> G\<close> that \<open>j \<in> R\<close> neighbors_right_subset_left
         by fastforce
       moreover have "x \<noteq> i"
-        using \<open>{x, j} \<in> G \<setminus> {i}\<close> edges_are_Vs remove_vertices_not_vs
-        by (metis insertI1) 
+      proof
+        assume "x = i"
+        with \<open>{x, j} \<in> G \<setminus> {i}\<close> have "i \<in> Vs (G \<setminus> {i})"
+          by (auto dest: edges_are_Vs)
+        moreover have "i \<notin> Vs (G \<setminus> {i})"
+          by (rule remove_vertices_not_vs) simp
+        ultimately show False by blast
+      qed
       ultimately show ?thesis
         using \<open>x \<in> Vs (ranking' r G M pre)\<close>
               \<open>L - {i} - Vs (ranking' r (G \<setminus> {i}) M' pre) \<subseteq> L - Vs (ranking' r G M pre)\<close>
@@ -976,8 +1030,10 @@ lemma online_matched_mono:
 proof -
   let ?M' = "ranking r (G \<setminus> {i}) \<pi>"
 
-  from perm \<open>j \<in> R\<close> obtain pre suff where \<pi>_decomp: "\<pi> = pre @ j # suff"
-    by (metis permutations_of_setD(1) split_list)
+  have "j \<in> set \<pi>"
+    using perm \<open>j \<in> R\<close> by (auto dest: permutations_of_setD)
+  then obtain pre suff where \<pi>_decomp: "\<pi> = pre @ j # suff"
+    by (auto dest: split_list)
 
   let ?ranking_pre = "ranking r G pre"
   let ?ranking_pre' = "ranking r (G \<setminus> {i}) pre"
