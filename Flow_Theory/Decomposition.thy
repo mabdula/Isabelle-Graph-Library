@@ -398,7 +398,18 @@ proof-
         proof-
           assume subassm: "eov' \<in> \<delta>\<^sup>+ u \<and> eov' \<in> set ES " "eov' \<noteq> eov"
           then obtain j where j_def: "j < length ES \<and> ES ! j = eov' \<and> j \<noteq> i" 
-            by (metis i_def in_set_conv_nth)
+            proof -
+              have "eov' \<in> set ES" using subassm(1) by simp
+              then obtain j where j_lt: "j < length ES" and j_nth: "ES ! j = eov'"
+                unfolding in_set_conv_nth by blast
+              have "j \<noteq> i"
+              proof
+                assume "j = i"
+                hence "eov' = eov" using i_def j_nth by simp
+                thus False using subassm(2) by simp
+              qed
+              thus thesis using that j_lt j_nth by blast
+            qed
           hence "fst (ES ! j) = ([x] @ bs) ! j" 
             using ES_prop' by blast 
           moreover have "fst eov' = fst eov" 
