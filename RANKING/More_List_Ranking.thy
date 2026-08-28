@@ -55,7 +55,15 @@ proof (induction "length xs - index xs x" arbitrary: x rule: less_induct)
 qed
 
 lemma index_less_in_set: "index xs x < index xs x' \<Longrightarrow> x \<in> set xs"
-  by (metis index_conv_size_if_notin index_le_size leD)
+proof -
+  assume less: "index xs x < index xs x'"
+  have "index xs x' \<le> length xs"
+    by (rule index_le_size)
+  with less have "index xs x < length xs"
+    by simp
+  then show "x \<in> set xs"
+    by (simp add: index_less_size_conv)
+qed
 
 lemma transp_index_less: "transp (\<lambda>a b. index xs a < index xs b)"
   by (auto intro: transpI)
