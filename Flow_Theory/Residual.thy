@@ -680,7 +680,16 @@ qed
 
 lemma rcap_extr_non_zero: 
   "\<lbrakk>e \<in> set es;  set es = ES; 0 < Rcap f ES\<rbrakk> \<Longrightarrow> 0 < rcap f e"
-  by (metis dual_order.refl leD order_less_le rcap_extr)
+proof(goal_cases)
+  case 1
+  have le: "Rcap f ES \<le> rcap f e"
+  proof(rule rcap_extr)
+    show "e \<in> set es" using 1(1) by simp
+    show "Rcap f ES \<le> Rcap f (set es)" using 1(2) by simp
+  qed
+  show ?case
+    using 1(3) le by (rule less_le_trans)
+qed
 
 lemma rcap_exract_single: 
   "es \<noteq>[] \<Longrightarrow> Rcap f (set (e#es)) = min (rcap f e) (Rcap f (set es))"
