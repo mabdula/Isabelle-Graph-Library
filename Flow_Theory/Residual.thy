@@ -499,7 +499,13 @@ fun erev::"'edge Redge \<Rightarrow> 'edge Redge" where
 "erev (B e) = (F e)"
 
 lemma erve_erve_id: "erev (erev e) = e"
-  by (metis erev.elims erev.simps(1) erev.simps(2))
+proof (cases e)
+  case (F x)
+  then show ?thesis by simp
+next
+  case (B x)
+  then show ?thesis by simp
+qed
 
 lemma oedge_and_reversed: "oedge (erev e) = oedge e"
   by (metis erev.elims oedge.simps(1) oedge.simps(2))
