@@ -436,8 +436,14 @@ proof-
         by presburger
       also have fgh: "... = nat (((int i)  mod int b_len) )" by simp
       finally have nat_i_int:"(nat ((int i - 1) mod int b_len) + 1) mod b_len  = i" 
-        by (metis Es_len_b_len 001 add.commute add_diff_cancel_left' add_diff_eq i_def 
-                  mod_add_left_eq mod_less nat_int zmod_int)
+      proof -
+        have i_less: "i < b_len"
+          using i_def Es_len_b_len by simp
+        hence "nat (int i mod int b_len) = i"
+          by (simp flip: zmod_int)
+        thus ?thesis
+          using 001 002 fgh by simp
+      qed
       hence "snd (ES ! (nat (((int i)-1) mod b_len))) =
                       (([x] @ bs) ! nat ((((int i)-1)+1) mod b_len) )" using
         ES_prop'[of "nat ((int i-1) mod b_len)"]  
