@@ -360,7 +360,17 @@ proof(induction es)
   case (Cons e es)
   hence a: "flowpath g (e # (es @ fs))" by simp
   from this have  "flowpath g (es @ fs)"
-    by (metis list.distinct(1) list.sel(3) flowpath_simps)
+  proof(cases rule: flowpath_cases[consumes 1])
+    case 1
+    thus ?thesis by simp
+  next
+    case 2
+    hence "es @ fs = []" by simp
+    thus ?thesis by (simp add: flowpath_intros(1))
+  next
+    case 3
+    thus ?thesis by simp
+  qed
   then show ?case using Cons by simp
 qed simp
 
