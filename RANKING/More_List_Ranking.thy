@@ -505,8 +505,17 @@ qed (simp add: move_to_Nil)
 lemma move_to_others_leq:
   assumes "v \<noteq> w" "v \<noteq> w'"
   shows "index xs w \<le> index xs w' \<longleftrightarrow> index xs[v \<mapsto> i] w \<le> index xs[v \<mapsto> i] w'"
-  using assms
-  by (metis linorder_not_le move_to_others_less)
+proof -
+  have swap: "(index xs w' < index xs w) = (index xs[v \<mapsto> i] w' < index xs[v \<mapsto> i] w)"
+    by (rule move_to_others_less[OF assms(2) assms(1)])
+  have "(index xs w \<le> index xs w') = (\<not> index xs w' < index xs w)"
+    by (simp add: not_less)
+  also have "\<dots> = (\<not> index xs[v \<mapsto> i] w' < index xs[v \<mapsto> i] w)"
+    by (simp only: swap)
+  also have "\<dots> = (index xs[v \<mapsto> i] w \<le> index xs[v \<mapsto> i] w')"
+    by (simp add: not_less)
+  finally show ?thesis .
+qed
 
 lemma index_less_index_leq_move_to:
   "index \<sigma> w < index \<sigma> v \<Longrightarrow> index \<sigma>[v \<mapsto> i] w \<le> index \<sigma> v"
