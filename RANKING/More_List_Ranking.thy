@@ -254,7 +254,24 @@ lemma in_set_distinct_filter_length_eq: "v \<in> set xs \<Longrightarrow> distin
   by (induction xs) (auto simp: not_in_set_filter_length_eq intro!: Suc_pred)
 
 lemma distinct_filter_length: "distinct xs \<Longrightarrow> (length [x <- xs. x \<noteq> v] = length xs \<and> v \<notin> set xs) \<or> (length [x <- xs. x \<noteq> v] = length xs - 1 \<and> v \<in> set xs)"
-  by (metis in_set_distinct_filter_length_eq not_in_set_filter_length_eq)
+proof -
+  assume dist: "distinct xs"
+  show ?thesis
+  proof (cases "v \<in> set xs")
+    case True
+    have "length [x <- xs. x \<noteq> v] = length xs - 1"
+      using True dist
+      by (rule in_set_distinct_filter_length_eq)
+    with True show ?thesis
+      by blast
+  next
+    case False
+    then have "length [x <- xs. x \<noteq> v] = length xs"
+      by (rule not_in_set_filter_length_eq)
+    with False show ?thesis
+      by blast
+  qed
+qed
 
 lemma filter_removeAll: "[x <- xs. x \<noteq> v] = removeAll v xs"
   by (induction xs) auto
