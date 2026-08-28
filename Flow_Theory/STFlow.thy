@@ -598,7 +598,7 @@ proof(cases "Abs f > 0", goal_cases)
       using flowcycle_elt(2) flowcycle_elt(3)  props(5) 
       by(auto simp add:awalk_Cons_iff snd'_def  fst'_def  create_edge' cs'_split )   
     moreover hence C2C1_Nil:"C2@C1 \<noteq> []" 
-      by (metis awalk_ends list.simps(8) props(5))
+      using props(5) by (auto simp add: awalk_Nil_iff)
     ultimately have awalk_C2C1:"awalk (make_pair' ` set (C2@C1)) s (map make_pair' (C2@C1)) t"      
       by(fastforce intro!: subset_mono_awalk'[of UNIV s "(map make_pair' (C2 @ C1))" t])
     moreover have "(make_pair' ` set (C2@C1)) \<subseteq> make_pair ` \<E>"
