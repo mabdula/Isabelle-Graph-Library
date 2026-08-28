@@ -897,7 +897,18 @@ proof(induction n arbitrary: g rule: less_induct)
         hence "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = sum g (\<delta>\<^sup>- v) - sum g (\<delta>\<^sup>+ v)" 
           using 005 by simp
         then show "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = 0" 
-          by (metis is_circ_def less.prems(3) ex_def v_Assm)
+        proof -
+          have exg: "ex g v = 0"
+            using less.prems(3) v_Assm by (auto simp add: is_circ_def)
+          have g_bal: "sum g (\<delta>\<^sup>- v) - sum g (\<delta>\<^sup>+ v) = 0"
+            using exg by (simp add: ex_def)
+          have g'_in: "sum g' (\<delta>\<^sup>- v) = sum g (\<delta>\<^sup>- v) - \<gamma>"
+            using 007 by simp
+          have g'_out: "sum g' (\<delta>\<^sup>+ v) = sum g (\<delta>\<^sup>+ v) - \<gamma>"
+            using 005 by simp
+          show ?thesis
+            using g_bal g'_in g'_out by linarith
+        qed
       qed
     qed
 
