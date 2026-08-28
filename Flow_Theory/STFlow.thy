@@ -260,10 +260,39 @@ proof(cases "Abs f > 0", goal_cases)
     next
       case 2
       have "network_of_network.delta_plus t s v = old_edge ` (delta_plus s)"
-        using 2  props(5) create_edge make_pair
-        unfolding network_of_network.delta_plus_def 
-        by(auto simp add: fst'_def snd'_def delta_plus_def)
-          (metis eq_fst_iff make_pair'.simps(2))
+        proof-
+          have v_is_s: "v = s"
+            using 2 by simp
+          have fst_new_edge: "fst' (new_edge (create_edge t s)) = t"
+            by(simp add: create_edge'(1))
+          show ?thesis
+          proof(rule set_eqI, rule iffI, goal_cases fwd bwd)
+            case (fwd e)
+            hence e_in: "e \<in> old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
+              and fst_e: "fst' e = v"
+              unfolding network_of_network.delta_plus_def by auto
+            have e_not_new: "e \<noteq> new_edge (create_edge t s)"
+            proof(rule notI, goal_cases)
+              case 1
+              hence "fst' e = t"
+                using fst_new_edge by simp
+              thus False
+                using fst_e v_is_s props(5) by simp
+            qed
+            obtain d where d_prop: "d \<in> \<E>" "e = old_edge d"
+              using e_in e_not_new by auto
+            hence "fst d = s"
+              using fst_e v_is_s by simp
+            thus ?case
+              using d_prop by(auto simp add: delta_plus_def)
+          next
+            case (bwd e)
+            then obtain d where d_prop: "d \<in> \<E>" "fst d = s" "e = old_edge d"
+              by(auto simp add: delta_plus_def)
+            thus ?case
+              using v_is_s unfolding network_of_network.delta_plus_def by auto
+          qed
+        qed
       moreover have "network_of_network.delta_minus t s v = 
                      insert (new_edge (create_edge t s)) (old_edge ` (delta_minus s))"
         using 2 create_edge make_pair'
