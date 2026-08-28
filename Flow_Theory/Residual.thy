@@ -713,12 +713,22 @@ proof-
   have 1:"{\<uu>\<^bsub>f\<^esub>e |e. e \<in> set es} \<noteq> {}"
     by (simp add: assms(1))
   hence " Rcap f (set (e#es)) = min (Min {\<uu>\<^bsub>f\<^esub>e |e. e \<in> set es}) (Min {\<uu>\<^bsub>f\<^esub>e})"
-    using assms apply(subst  Rcap_same, force, simp add: finite_subset)+ 
-    using assms apply(subst  (asm) Rcap_same, force, simp add: finite_subset)
-    using Min_Un[of "{\<uu>\<^bsub>f\<^esub>e |e. e \<in> set es}" "{\<uu>\<^bsub>f\<^esub>e}"] 0 1
-    unfolding Rcap_old_def 
-    using set_img_extract[of es "rcap f" e]
-    by (smt (verit, del_insts) Collect_cong empty_iff finite.emptyI finite_insert singletonI)
+    proof -
+      have finA: "finite {\<uu>\<^bsub>f\<^esub>d |d. d \<in> set es}"
+        using finite_imageI[of "set es" "rcap f"] by simp
+      have neA: "{\<uu>\<^bsub>f\<^esub>d |d. d \<in> set es} \<noteq> {}"
+        by (simp add: assms(1))
+      have union_eq: "{rc. \<exists>d. rc = \<uu>\<^bsub>f\<^esub>d \<and> d \<in> set (e # es)}
+                      = {\<uu>\<^bsub>f\<^esub>d |d. d \<in> set es} \<union> {\<uu>\<^bsub>f\<^esub>e}"
+        by auto
+      have "Rcap f (set (e # es)) = Rcap_old f (set (e # es))"
+        by (simp add: Rcap_same)
+      also have "\<dots> = Min ({\<uu>\<^bsub>f\<^esub>d |d. d \<in> set es} \<union> {\<uu>\<^bsub>f\<^esub>e})"
+        by (simp only: Rcap_old_def union_eq)
+      also have "\<dots> = min (Min {\<uu>\<^bsub>f\<^esub>d |d. d \<in> set es}) (Min {\<uu>\<^bsub>f\<^esub>e})"
+        by (rule Min_Un[OF finA neA]) auto
+      finally show ?thesis .
+    qed
   hence " Rcap f (set (e#es)) = min (Min {\<uu>\<^bsub>f\<^esub>e |e. e \<in> set es}) \<uu>\<^bsub>f\<^esub>e" by auto
   then show ?thesis 
     using assms apply(subst  Rcap_same, force, simp add: finite_subset)+ 
