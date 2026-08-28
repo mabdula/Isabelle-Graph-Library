@@ -1241,11 +1241,32 @@ proof(rule ccontr)
         using resreach_intros(2)[OF a(1) _ Fe_in_EE resr] by simp
     qed
     hence "fst e \<in> ARescut f v" 
-      using resreach_intros(1)[of f "F e"] a 
-      unfolding ARescut_def \<EE>_def
-      by (metis (mono_tags, lifting) \<open>\<lbrakk>0 < \<uu>\<^bsub>f\<^esub>F e; F e \<in> \<EE>\<rbrakk> \<Longrightarrow> resreach f (fstv (F e)) 
-                 (sndv (F e))\<close> fstv.simps(1) insertCI mem_Collect_eq o_edge_res oedge.simps(1)
-                   prod.collapse sndv.simps(1))
+    proof -
+      have inEE: "F e \<in> \<EE>"
+        using a(2) by (auto simp add: \<EE>_def)
+      have sndFe: "sndv (F e) = snd e" and fstFe: "fstv (F e) = fst e"
+        by simp_all
+      have "resreach f (fst e) v"
+      proof(cases "snd e = v")
+        case True
+        have "resreach f (fstv (F e)) (sndv (F e))"
+          by (rule resreach_intros(1)[OF a(1) inEE])
+        thus ?thesis
+          using True fstFe sndFe by simp
+      next
+        case False
+        have "snd e \<in> ARescut f v"
+          using a0 by simp
+        hence "resreach f (snd e) v"
+          using False by (auto simp add: ARescut_def)
+        hence "resreach f (fstv (F e)) v"
+          by (rule resreach_intros(2)[OF a(1) sndFe inEE])
+        thus ?thesis
+          using fstFe by simp
+      qed
+      thus ?thesis
+        by (simp add: ARescut_def)
+    qed
     thus False 
       using a0 by blast
  qed
