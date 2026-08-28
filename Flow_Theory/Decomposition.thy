@@ -45,7 +45,24 @@ proof(induction g n v rule: find_cycle.induct)
     using "2.prems"(3) flow_non_neg_def by blast
   obtain e where a: "fst e = v \<and> g e > 0 \<and> e \<in> \<E>"  using 2(3) 
     unfolding flow_out_def delta_plus_def 
-     by (smt (verit, del_insts) mem_Collect_eq sum_nonpos)
+     proof-
+    have "\<exists> e \<in> \<delta>\<^sup>+ v. 0 < g e"
+    proof(rule ccontr)
+      assume ass: "\<not> (\<exists> e \<in> \<delta>\<^sup>+ v. 0 < g e)"
+      have "sum g (\<delta>\<^sup>+ v) \<le> 0"
+      proof(rule sum_nonpos)
+        fix e assume "e \<in> \<delta>\<^sup>+ v"
+        thus "g e \<le> 0"
+          using ass by auto
+      qed
+      moreover have "0 < sum g (\<delta>\<^sup>+ v)"
+        using "2.prems"(2) by(simp add: flow_out_def)
+      ultimately show False by simp
+    qed
+    then obtain d where d_prop: "d \<in> \<delta>\<^sup>+ v" "0 < g d" by auto
+    show ?thesis
+      using that[of d] d_prop by(auto simp add: delta_plus_def)
+  qed
    hence b:"(\<exists>e\<in>\<E>. 0 < g e \<and> fst e = v) = True" by auto
    then obtain d where d_def: "d = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in>\<E>)" by simp
    hence b1:"fst d = v" "g d > 0" "d \<in> \<E>" 
