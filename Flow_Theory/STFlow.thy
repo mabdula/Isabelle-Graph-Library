@@ -601,13 +601,15 @@ proof(cases "Abs f > 0", goal_cases)
       using props(5) by (auto simp add: awalk_Nil_iff)
     ultimately have awalk_C2C1:"awalk (make_pair' ` set (C2@C1)) s (map make_pair' (C2@C1)) t"      
       by(fastforce intro!: subset_mono_awalk'[of UNIV s "(map make_pair' (C2 @ C1))" t])
-    moreover have "(make_pair' ` set (C2@C1)) \<subseteq> make_pair ` \<E>"
+    moreover have sub: "(make_pair' ` set (C2@C1)) \<subseteq> make_pair ` \<E>"
       using C1C2_in_E  make_pair' by auto
-    moreover have "(map make_pair' (C2@C1)) = map make_pair (map get_old_edge (C2@C1))"
+    moreover have maps: "(map make_pair' (C2@C1)) = map make_pair (map get_old_edge (C2@C1))"
       using C1C2_in_E  make_pair'  by auto
     ultimately have awalk_in_E: "awalk (make_pair ` \<E> ) s (map make_pair (map get_old_edge (C2@C1))) t"
-      using subset_mono_awalk[of "(make_pair' ` set (C2 @ C1))" s
-          "(map make_pair' (C2 @ C1))" t "make_pair ` \<E>"] by metis
+    proof -
+      show ?thesis
+        by (rule subset_mono_awalk[OF awalk_C2C1 sub, simplified maps])
+    qed
     have "awalk UNIV s (map make_pair ps) t"
       using awalk_in_E ps_is  C2C1_Nil 
       by (fastforce intro!: subset_mono_awalk'[where C=UNIV,simplified])
