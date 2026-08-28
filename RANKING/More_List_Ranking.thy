@@ -892,9 +892,37 @@ proof (intro distinct_same_order_list_eq, goal_cases)
     then show "index [x <- xs. x \<noteq> v] x \<le> index [x <- xs. x \<noteq> v] y \<longleftrightarrow> index [x <- xs'. x \<noteq> v] x \<le> index [x <- xs'. x \<noteq> v] y"
     proof cases
       case 2
-      with assms(3) show ?thesis
-        by auto
-           (metis filter_set index_less_size_conv leD leI)+
+      have key: "\<And>zs. v \<notin> set zs \<Longrightarrow> (index zs v \<le> index zs y) = (y \<notin> set zs)"
+      proof -
+        fix zs
+        assume "v \<notin> set zs"
+        then have idx_v: "index zs v = size zs"
+          by (rule index_conv_size_if_notin)
+        show "(index zs v \<le> index zs y) = (y \<notin> set zs)"
+        proof
+          assume "index zs v \<le> index zs y"
+          with idx_v have "\<not> index zs y < size zs"
+            by linarith
+          then show "y \<notin> set zs"
+            by (simp add: index_less_size_conv)
+        next
+          assume "y \<notin> set zs"
+          then have "index zs y = size zs"
+            by (rule index_conv_size_if_notin)
+          with idx_v show "index zs v \<le> index zs y"
+            by simp
+        qed
+      qed
+      have A: "(index [z <- xs. z \<noteq> v] v \<le> index [z <- xs. z \<noteq> v] y) = (y \<notin> set [z <- xs. z \<noteq> v])"
+        by (rule key) simp
+      have B: "(index [z <- xs'. z \<noteq> v] v \<le> index [z <- xs'. z \<noteq> v] y) = (y \<notin> set [z <- xs'. z \<noteq> v])"
+        by (rule key) simp
+      have C: "set [z <- xs. z \<noteq> v] = set [z <- xs'. z \<noteq> v]"
+        using assms(3) by auto
+      from 2 have "x = v"
+        by blast
+      with A B C show ?thesis
+        by blast
     next
       case 3
       with assms(3) show ?thesis
