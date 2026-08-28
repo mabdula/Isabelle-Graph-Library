@@ -472,7 +472,20 @@ proof-
         assume subassm: "eiv' \<in> \<delta>\<^sup>- u \<and> eiv' \<in>  set ES" "eiv' \<noteq> eiv"
         then obtain j where j_def: "j < length ES" "ES ! j = eiv'" 
                                    "j \<noteq> nat ((int i - 1) mod int b_len)"
-          by (metis eiv_def in_set_conv_nth)
+        proof -
+          obtain k where k_less: "k < length ES" and k_nth: "ES ! k = eiv'"
+            using subassm(1) by (auto simp add: in_set_conv_nth)
+          have k_neq: "k \<noteq> nat ((int i - 1) mod int b_len)"
+          proof(rule notI)
+            assume "k = nat ((int i - 1) mod int b_len)"
+            hence "eiv' = eiv"
+              using k_nth eiv_def by simp
+            thus False
+              using subassm(2) by simp
+          qed
+          show thesis
+            by(rule that[OF k_less k_nth k_neq])
+        qed
         hence "snd (ES ! j) = ([x] @ bs) ! ((j+1) mod b_len)" 
           using ES_prop' by blast 
         moreover have "snd (ES ! i) =  ([x] @ bs) ! ((i+1)  mod b_len)"
