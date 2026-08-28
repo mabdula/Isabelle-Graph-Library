@@ -1085,9 +1085,14 @@ text \<open>From this we know that the sum of balances within $X$ is bounded by 
      of $(X, \mathcal{E} \setminus X)$.\<close>
 
 lemma flow_cross_cut_less_cap:"isuflow f \<Longrightarrow>  sum f (\<Delta>\<^sup>+ X) \<le> Cap X"
-  unfolding Delta_plus_def Cap_def isuflow_def 
-  using CollectD sum_mono
-  by (metis (no_types, lifting) CollectD sum_mono)
+proof(goal_cases)
+  case 1
+  have le: "ereal (f e) \<le> \<u> e" if "e \<in> \<Delta>\<^sup>+ X" for e
+    using 1 that by(auto simp add: isuflow_def Delta_plus_def)
+  show ?case
+    unfolding Cap_def
+    by(rule sum_mono[OF le])
+qed
 
 lemma sum_crossing_out_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>+ X) \<ge> 0 "
   unfolding Delta_plus_def isuflow_def 
