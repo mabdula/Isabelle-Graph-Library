@@ -742,8 +742,114 @@ proof (induction xs xs' rule: list_induct2')
     by simp_all
 
   from 4 have "\<forall>x y. (index xs x \<le> index xs y) = (index xs' x \<le> index xs' y)"
-    by (auto split: if_splits)
-       (metis index_conv_size_if_notin index_le_size index_less_size_conv insert_eq_iff linorder_not_le)+
+  proof -
+    from 4 have dist_x: "distinct (x # xs)" and dist_x': "distinct (x' # xs')"
+      and set_cons: "set (x # xs) = set (x' # xs')"
+      and idx_cons: "\<forall>a b. (index (x # xs) a \<le> index (x # xs) b) =
+                            (index (x' # xs') a \<le> index (x' # xs') b)"
+      by blast+
+
+    from dist_x have x_notin: "x \<notin> set xs"
+      by simp
+
+    from dist_x' have x'_notin: "x' \<notin> set xs'"
+      by simp
+
+    have index_x: "index xs x = length xs"
+      using x_notin by (simp add: index_conv_size_if_notin)
+
+    have index_x': "index xs' x' = length xs'"
+      using x'_notin by (simp add: index_conv_size_if_notin)
+
+    have set_eq: "set xs = set xs'"
+    proof -
+      have "set xs = set (x # xs) - {x}"
+        using x_notin by auto
+      also have "\<dots> = set (x' # xs') - {x'}"
+        using set_cons \<open>x = x'\<close> by simp
+      also have "\<dots> = set xs'"
+        using x'_notin by auto
+      finally show ?thesis .
+    qed
+
+    have le_x: "(index xs x \<le> index xs c) = (c \<notin> set xs)" for c
+    proof
+      assume le: "index xs x \<le> index xs c"
+      show "c \<notin> set xs"
+      proof
+        assume "c \<in> set xs"
+        then have "index xs c < length xs"
+          by (simp add: index_less_size_conv)
+        with le index_x show False
+          by linarith
+      qed
+    next
+      assume "c \<notin> set xs"
+      then have "index xs c = length xs"
+        by (simp add: index_conv_size_if_notin)
+      with index_x show "index xs x \<le> index xs c"
+        by simp
+    qed
+
+    have le_x': "(index xs' x' \<le> index xs' c) = (c \<notin> set xs')" for c
+    proof
+      assume le: "index xs' x' \<le> index xs' c"
+      show "c \<notin> set xs'"
+      proof
+        assume "c \<in> set xs'"
+        then have "index xs' c < length xs'"
+          by (simp add: index_less_size_conv)
+        with le index_x' show False
+          by linarith
+      qed
+    next
+      assume "c \<notin> set xs'"
+      then have "index xs' c = length xs'"
+        by (simp add: index_conv_size_if_notin)
+      with index_x' show "index xs' x' \<le> index xs' c"
+        by simp
+    qed
+
+    show ?thesis
+    proof (intro allI)
+      fix a b
+      show "(index xs a \<le> index xs b) = (index xs' a \<le> index xs' b)"
+      proof (cases "a = x")
+        case True
+        have "(index xs a \<le> index xs b) = (index xs x \<le> index xs b)"
+          using True by simp
+        also have "\<dots> = (b \<notin> set xs)"
+          by (rule le_x)
+        also have "\<dots> = (b \<notin> set xs')"
+          using set_eq by simp
+        also have "\<dots> = (index xs' x' \<le> index xs' b)"
+          by (rule le_x'[symmetric])
+        also have "\<dots> = (index xs' a \<le> index xs' b)"
+          using True \<open>x = x'\<close> by simp
+        finally show ?thesis .
+      next
+        case False
+        show ?thesis
+        proof (cases "b = x")
+          case True
+          have "index xs a \<le> index xs x"
+            by (simp add: index_x index_le_size)
+          moreover have "index xs' a \<le> index xs' x'"
+            by (simp add: index_x' index_le_size)
+          ultimately show ?thesis
+            using True \<open>x = x'\<close> by simp
+        next
+          case False
+          from idx_cons have
+            "(index (x # xs) a \<le> index (x # xs) b) =
+             (index (x' # xs') a \<le> index (x' # xs') b)"
+            by blast
+          with \<open>a \<noteq> x\<close> \<open>b \<noteq> x\<close> \<open>x = x'\<close> show ?thesis
+            by simp
+        qed
+      qed
+    qed
+  qed
 
   with 4 distinct \<open>x = x'\<close> show ?case
     by fastforce
