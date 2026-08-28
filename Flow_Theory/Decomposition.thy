@@ -995,8 +995,8 @@ proof(induction n arbitrary: g rule: less_induct)
                                               then (\<gamma> # ws) ! (i+1) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
         by(rule sum_eq_split,
-           smt (verit, del_insts) add_diff_cancel_right' add_is_0 gr_zeroI lessThan_atLeast0 
-               nth_Cons_pos sum.cong zero_neq_one) simp
+           rule sum.cong[OF lessThan_atLeast0])
+           (simp_all add: nth_Cons')
       also have ae:"... =  (\<Sum>i\<in>{x + 1 |x. x \<in> {0..<length css}}. if e \<in> set ((es # css) ! (i)) 
                                               then (\<gamma> # ws) ! (i) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
