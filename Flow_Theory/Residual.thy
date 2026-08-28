@@ -282,7 +282,27 @@ lemma flowpath_cases:
    (\<And>g e. \<lbrakk> a1 = g; a2 = [e]; 0 < g e \<rbrakk> \<Longrightarrow> P);
    (\<And>g e es. \<lbrakk> a1 = g; a2 = e # es; 0 < g e; snd e = fst (hd es); flowpath g es\<rbrakk> \<Longrightarrow> P)\<rbrakk>
     \<Longrightarrow> P"
-  using flowpath_simps by metis
+  proof -
+  assume asms:
+    "flowpath a1 a2"
+    "\<And>g. \<lbrakk>a1 = g; a2 = []\<rbrakk> \<Longrightarrow> P"
+    "\<And>g e. \<lbrakk>a1 = g; a2 = [e]; 0 < g e\<rbrakk> \<Longrightarrow> P"
+    "\<And>g e es. \<lbrakk>a1 = g; a2 = e # es; 0 < g e; snd e = fst (hd es); flowpath g es\<rbrakk> \<Longrightarrow> P"
+  from iffD1[OF flowpath_simps asms(1)] show P
+  proof (elim disjE exE conjE)
+    fix g
+    assume "a1 = g" "a2 = []"
+    then show P by (rule asms(2))
+  next
+    fix g e
+    assume "a1 = g" "a2 = [e]" "0 < g e"
+    then show P by (rule asms(3))
+  next
+    fix g e es
+    assume "a1 = g" "a2 = e # es" "0 < g e" "snd e = fst (hd es)" "flowpath g es"
+    then show P by (rule asms(4))
+  qed
+qed
 
 text \<open>Let us now take a look at the properties of flowpaths.
 We observe a relationship to augmenting paths and some topological statements on connectivity.
