@@ -940,8 +940,20 @@ lemma distinct_filter_eq_order:
   assumes "set xs = set xs'"
   assumes "[x <- xs. x \<noteq> v] = [x <- xs'. x \<noteq> v]"
   shows "\<forall>x y. x \<noteq> v \<and> y \<noteq> v \<longrightarrow> (index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y)"
-  using assms
-  by auto (metis index_filter_neq)+
+proof (intro allI impI)
+  fix x y
+  assume "x \<noteq> v \<and> y \<noteq> v"
+  then have x: "x \<noteq> v" and y: "y \<noteq> v"
+    by simp_all
+  have "index xs x \<le> index xs y \<longleftrightarrow>
+        index [z <- xs. z \<noteq> v] x \<le> index [z <- xs. z \<noteq> v] y"
+    using x y by (rule index_filter_neq)
+  also have "\<dots> \<longleftrightarrow> index [z <- xs'. z \<noteq> v] x \<le> index [z <- xs'. z \<noteq> v] y"
+    by (simp only: assms(4))
+  also have "\<dots> \<longleftrightarrow> index xs' x \<le> index xs' y"
+    using x y by (rule index_filter_neq[symmetric])
+  finally show "index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y" .
+qed
 
 lemma distinct_move_to_eq_if:
   assumes "distinct xs" "distinct xs'"
