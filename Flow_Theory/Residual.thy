@@ -847,8 +847,20 @@ proof-
     next
       case (Cons a list)
       have fstve_is_u: "fstv e = u" 
-        using IH(2) unfolding awalk_def using cas.simps(2)
-        by (metis list.simps(9) prod.exhaust_sel vs_to_vertex_pair_pres(1))
+      proof -
+        have cas1: "cas u (map to_vertex_pair (e # p1)) v"
+          using IH(2) by (simp add: awalk_def)
+        have "prod.fst (to_vertex_pair e) = u"
+        proof -
+          obtain x y where xy: "to_vertex_pair e = (x, y)"
+            by (cases "to_vertex_pair e") auto
+          have "cas u ((x, y) # map to_vertex_pair p1) v"
+            using cas1 xy by simp
+          hence "x = u" by simp
+          thus ?thesis by (simp add: xy)
+        qed
+        thus ?thesis by (simp add: vs_to_vertex_pair_pres(1))
+      qed
       have 001:"fstv a = sndv e" 
         using IH(2)[simplified list.simps(9)] awalk_Cons_iff[of "(to_vertex_pair ` \<EE>)" u "to_vertex_pair e" "map to_vertex_pair p1" v]  local.Cons
               vs_to_vertex_pair_pres(1)[of a] vs_to_vertex_pair_pres(2)[of e]
