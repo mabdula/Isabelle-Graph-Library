@@ -320,7 +320,8 @@ proof-
     then obtain i j where ij_def: "i < length ES \<and> j < length ES \<and> j \<noteq> i \<and> ES ! i = ES ! j" 
       using distinct_conv_nth by blast
     hence "find_cycle g (card \<V>) v ! (a_len + i) =
-             find_cycle g (card \<V>) v ! (a_len + j)"using ES_prop by metis
+             find_cycle g (card \<V>) v ! (a_len + j)"
+      by (simp add: ij_def ES_prop[rule_format, THEN conjunct1, symmetric])
     hence "(as @ [x] @ bs @ [x] @ cs) ! (a_len + i) =
            (as @ [x] @ bs @ [x] @ cs)  ! (a_len + j) " using v_Def by simp
     hence "([x]@bs@[x]@cs) !  i =  ([x]@bs@[x]@cs) ! j" unfolding a_len_def by simp
