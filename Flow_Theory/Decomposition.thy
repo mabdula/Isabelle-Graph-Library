@@ -66,7 +66,15 @@ proof(induction g n v rule: find_cycle.induct)
    hence b:"(\<exists>e\<in>\<E>. 0 < g e \<and> fst e = v) = True" by auto
    then obtain d where d_def: "d = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in>\<E>)" by simp
    hence b1:"fst d = v" "g d > 0" "d \<in> \<E>" 
-     by (smt (verit, best) a someI)+
+     proof -
+  have ex_e: "\<exists>x. 0 < g x \<and> fst x = v \<and> x \<in> \<E>"
+    using a by blast
+  have some_prop: "0 < g d \<and> fst d = v \<and> d \<in> \<E>"
+    unfolding d_def by (rule someI_ex[OF ex_e])
+  show "fst d = v" using some_prop by simp
+  show "g d > 0" using some_prop by simp
+  show "d \<in> \<E>" using some_prop by simp
+qed
    have c: "find_cycle g (Suc n) v = v#find_cycle g n (snd d)"
       using b d_def by auto
    have d: "(snd d) \<in> \<V>"
