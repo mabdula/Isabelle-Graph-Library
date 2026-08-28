@@ -76,7 +76,19 @@ lemma index_filter_neq: "a \<noteq> v \<Longrightarrow> b \<noteq> v \<Longright
   by (induction xs) auto
 
 lemma length_at_least_two_Cons_Cons: "2 \<le> length xs \<Longrightarrow> \<exists>x x' xs'. xs = x # x' # xs'"
-  by (metis Suc_le_length_iff numeral_2_eq_2)
+proof -
+  assume len: "2 \<le> length xs"
+  then have "xs \<noteq> []"
+    by auto
+  then obtain a ys where xs_eq: "xs = a # ys"
+    by (cases xs) auto
+  from len xs_eq have "ys \<noteq> []"
+    by auto
+  then obtain b zs where ys_eq: "ys = b # zs"
+    by (cases ys) auto
+  from xs_eq ys_eq show "\<exists>x x' xs'. xs = x # x' # xs'"
+    by blast
+qed
 
 lemma filter_take_filter: "filter P (take i (filter P xs)) = take i (filter P xs)"
   by (auto intro!: filter_True dest: in_set_takeD)
