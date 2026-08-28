@@ -935,8 +935,25 @@ proof(induction n arbitrary: g rule: less_induct)
     proof(rule ccontr)
       assume set_assm: "\<not> {e |e. 0 < g' e \<and> e \<in> \<E>} \<noteq> {}"
       obtain e where "g' e > 0 \<and> e \<in> \<E>"  
-        using  res_abs_pos
-        by (metis Abs_def less.prems(2) linorder_not_less sum_nonpos)
+        proof -
+          have "\<exists> d \<in> \<E>. 0 < g' d"
+          proof(rule ccontr)
+            assume no_pos: "\<not> (\<exists> d \<in> \<E>. 0 < g' d)"
+            have sum_le: "(\<Sum> d \<in> \<E>. g' d) \<le> 0"
+            proof(rule sum_nonpos)
+              fix d assume dE: "d \<in> \<E>"
+              have "\<not> (0 < g' d)"
+                using no_pos dE by blast
+              thus "g' d \<le> 0" by linarith
+            qed
+            have "0 < (\<Sum> d \<in> \<E>. g' d)"
+              using res_abs_pos by (simp add: Abs_def)
+            thus False using sum_le by linarith
+          qed
+          then obtain d where d_prop: "d \<in> \<E>" "0 < g' d" by blast
+          show thesis
+            using that[of d] d_prop by blast
+        qed
       then show False using set_assm by auto
     qed
 
