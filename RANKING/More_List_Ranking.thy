@@ -458,7 +458,21 @@ next
       by blast
 
     with cons_suc show ?thesis
-      by (metis \<open>ps = a # tl_ps\<close> append_Cons move_to_Cons_Suc neq)
+    proof -
+      have hd_move: "(a # xs)[x \<mapsto> Suc n] = a # xs[x \<mapsto> n]"
+        by (rule move_to_Cons_Suc[OF neq refl])
+
+      have decomp: "(a # xs)[x \<mapsto> Suc n] = (a # pps) @ x # pss @ ss"
+        using hd_move \<open>xs[x \<mapsto> n] = pps @ x # pss @ ss\<close>
+        by simp
+
+      have parts: "(a # pps) @ pss = ps"
+        using \<open>pps @ pss = tl_ps\<close> \<open>ps = a # tl_ps\<close>
+        by simp
+
+      show ?thesis
+        by (rule cons_suc.prems(1)[OF decomp parts])
+    qed
   qed
 qed auto
 
