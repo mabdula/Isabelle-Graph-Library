@@ -1004,7 +1004,16 @@ proof(rule set_eqI, all \<open>rule\<close>, goal_cases)
 next
   case (2 x)
   then obtain e where "(e \<in> \<E> \<and> (prod.fst (make_pair e) = x \<or> prod.snd (make_pair e) = x))"
-    by (auto simp add: dVs_def) (metis fst_eqD snd_conv)+
+    proof -
+      from 2 obtain u v where uv: "(u, v) \<in> make_pair ` \<E>" "x = u \<or> x = v"
+        by (auto simp add: dVs_def)
+      from uv(1) obtain e_old where e_prop: "e_old \<in> \<E>" "make_pair e_old = (u, v)"
+        by auto
+      have "e_old \<in> \<E> \<and> (prod.fst (make_pair e_old) = x \<or> prod.snd (make_pair e_old) = x)"
+        using e_prop(1) uv(2) by (auto simp add: e_prop(2))
+      thus thesis
+        by (rule that)
+    qed
   hence "(old_edge e \<in> old_edge ` \<E> \<and> (prod.fst (make_pair' (old_edge e)) = x \<or> prod.snd (make_pair' (old_edge e)) = x))"
     using make_pair by auto
   then show ?case 
