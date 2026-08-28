@@ -393,8 +393,16 @@ lemma move_to_index_nth:
   assumes "distinct \<sigma>"
   assumes "i < length \<sigma>"
   shows "\<sigma>[v \<mapsto> i] ! i = v"
-  using assms
-  by (metis count_notin move_to_count_list move_to_index_v nth_index one_neq_zero)
+proof -
+  have "v \<in> set \<sigma>[v \<mapsto> i]"
+    by (simp add: move_to_set)
+  then have "\<sigma>[v \<mapsto> i] ! index \<sigma>[v \<mapsto> i] v = v"
+    by (rule nth_index)
+  moreover have "index \<sigma>[v \<mapsto> i] v = i"
+    using assms by (rule move_to_index_v)
+  ultimately show ?thesis
+    by simp
+qed
 
 lemma move_to_index_less:
   assumes "distinct \<sigma>"
