@@ -1104,8 +1104,13 @@ proof(rule sum_nonneg, goal_cases)
 qed
 
 lemma sum_crossing_in_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>- X) \<ge> 0 "
-  unfolding Delta_minus_def isuflow_def 
-  by (metis (no_types, lifting) mem_Collect_eq sum_nonneg)
+proof(rule sum_nonneg, goal_cases)
+  case (1 e)
+  hence "e \<in> \<E>"
+    by(auto simp add: Delta_plus_def Delta_minus_def)
+  thus ?case
+    using 1 by(auto simp add: isuflow_def)
+qed
 
 corollary flow_less_cut: "f is b flow \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> sum b X \<le> Cap X"
   using  isbflow_def[of f b] flow_cross_cut_less_cap [of f X]
