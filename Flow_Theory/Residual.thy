@@ -794,9 +794,12 @@ proof-
     moreover  have "Rcap f (set (e#p)) > 0"
      using p_prop assm 
      by(cases p)(simp add: Rcap_def, subst rcap_exract_single, auto)
-  ultimately show ?thesis     
-    using assm p_prop unfolding resreach_def
-    by (metis insert_subset list.distinct(1) list.simps(15))
+  ultimately show ?thesis
+  proof(rule resreachI)
+    show "e # p \<noteq> []" by simp
+    show "set (e # p) \<subseteq> \<EE>"
+      using assm(3) p_prop(4) by simp
+  qed
 qed
 
 lemma resreach_intros:
