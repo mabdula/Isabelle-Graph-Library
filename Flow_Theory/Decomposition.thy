@@ -155,7 +155,24 @@ proof(induction g n v rule: find_cycle.induct)
       using "2" True x_def by presburger
     have "length (e#es) = length (find_cycle g (Suc n) v) - 1" 
       using find_cycle_prop es_def 
-      by (metis (no_types, lifting) es_def find_cycle.elims length_Cons length_tl list.sel(3))
+      proof -
+        have ne: "find_cycle g n (snd e) \<noteq> []"
+          by (cases n) auto
+        then obtain u us where cons: "find_cycle g n (snd e) = u # us"
+          by (auto simp add: neq_Nil_conv)
+        have es_len: "length es = length (find_cycle g n (snd e)) - 1"
+          using es_def by simp
+        have len_suc: "length (find_cycle g (Suc n) v) = Suc (length (find_cycle g n (snd e)))"
+          by (simp only: find_cycle_prop length_Cons)
+        have "length (e # es) = Suc (length es)" by simp
+        also have "\<dots> = Suc (length us)"
+          using es_len cons by simp
+        also have "\<dots> = length (find_cycle g n (snd e))"
+          using cons by simp
+        also have "\<dots> = length (find_cycle g (Suc n) v) - 1"
+          by (simp only: len_suc diff_Suc_1)
+        finally show ?thesis .
+      qed
     moreover have "i<length (e#es) \<Longrightarrow>
                     fst ((e#es) ! i) = find_cycle g (Suc n) v ! i \<and>
                     snd ((e#es) ! i) = find_cycle g (Suc n) v ! (i + 1)" for i
