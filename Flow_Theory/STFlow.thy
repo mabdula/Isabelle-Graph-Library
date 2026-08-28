@@ -310,10 +310,45 @@ proof(cases "Abs f > 0", goal_cases)
     next
       case 3
       have "network_of_network.delta_minus t s v = old_edge ` (delta_minus t)"
-        using 3  props(5)  create_edge make_pair'
-        unfolding network_of_network.delta_minus_def 
-        by(auto simp add: fst'_def snd'_def delta_minus_def)
-          (metis make_pair'.simps(2) snd_conv)
+        unfolding network_of_network.delta_minus_def
+        proof(rule set_eqI, rule iffI, goal_cases)
+          case (1 e)
+          have snd_create: "snd (create_edge t s) = s"
+            using snd_create_edge by simp
+          have snd_new: "snd' (new_edge (create_edge t s)) = s"
+            by (simp add: snd_create)
+          from 1 have e_mem: "e \<in> old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
+            and e_snd: "snd' e = v"
+            by (auto simp add: network_of_network.delta_minus_def)
+          have "e \<noteq> new_edge (create_edge t s)"
+          proof(rule notI)
+            assume "e = new_edge (create_edge t s)"
+            hence "v = s"
+              using e_snd snd_new by simp
+            thus False
+              using 3 props(5) by simp
+          qed
+          hence "e \<in> old_edge ` \<E>"
+            using e_mem by auto
+          then obtain d where d: "e = old_edge d" "d \<in> \<E>" by auto
+          have "snd d = t"
+            using e_snd 3 d(1) by simp
+          hence "d \<in> delta_minus t"
+            using d(2) by (simp add: delta_minus_def)
+          thus ?case
+            using d(1) by simp
+        next
+          case (2 e)
+          then obtain d where d: "e = old_edge d" "d \<in> delta_minus t" by auto
+          have dE: "d \<in> \<E>" and dsnd: "snd d = t"
+            using d(2) by (auto simp add: delta_minus_def)
+          have "e \<in> old_edge ` \<E> \<union> {new_edge (create_edge t s)}"
+            using dE d(1) by simp
+          moreover have "snd' e = v"
+            using d(1) dsnd 3 by simp
+          ultimately show ?case
+            by (auto simp add: network_of_network.delta_minus_def)
+        qed
       moreover have "network_of_network.delta_plus t s v = 
                      insert (new_edge (create_edge t s)) (old_edge ` (delta_plus t))"
         using 3 create_edge make_pair
