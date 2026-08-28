@@ -667,8 +667,16 @@ lemma rcap_extr_head:
 
 lemma rcap_extr: 
   "\<lbrakk>e \<in> set es;  \<gamma> \<le> Rcap f (set es)\<rbrakk>  \<Longrightarrow> \<gamma> \<le> rcap f e"
-  by(induction es, simp)
-    (metis order_antisym_conv rcap_extr_head set_ConsD set_subset_Cons subsetI)
+proof(goal_cases)
+  case 1
+  note e_in_es = this(1) and gamma_le = this(2)
+  have set_eq: "set (e # es) = set es"
+    using e_in_es by (simp add: insert_absorb)
+  have "\<gamma> \<le> Rcap f (set (e # es))"
+    unfolding set_eq by (rule gamma_le)
+  thus ?case
+    by (rule rcap_extr_head)
+qed
 
 lemma rcap_extr_non_zero: 
   "\<lbrakk>e \<in> set es;  set es = ES; 0 < Rcap f ES\<rbrakk> \<Longrightarrow> 0 < rcap f e"
