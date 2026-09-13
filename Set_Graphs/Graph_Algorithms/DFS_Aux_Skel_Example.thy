@@ -13,7 +13,7 @@ and update = update and adjmap_inv = adj_inv and vset_delete = vset_delete
 and vset_inv = vset_inv and union = vset_union and inter = vset_inter and G = F and
 s = s for F s
 defines initial_state_aux_skel = auxskel.initial_state and
-find_dircycle_aux = auxskel.aux.DFS_skel_impl and
+find_dircycle_aux = auxskel.aux.DFS_skeleton_impl and
 aux_found_skel = auxskel.aux_found and
 neighbourhood_aux = auxskel.Graph.neighbourhood
   using G.Pair_Graph_Specs_axioms RBT.Set2_axioms
@@ -22,7 +22,7 @@ neighbourhood_aux = auxskel.Graph.neighbourhood
 
 text ‹The partial-function unfolding equation with callbacks inlined as a code equation.›
 lemmas find_dircycle_aux_code[code] =
-  auxskel.aux.DFS_skel_impl.simps[folded find_dircycle_aux_def[folded aux_found_skel_def],
+  auxskel.aux.DFS_skeleton_impl.simps[folded find_dircycle_aux_def[folded aux_found_skel_def],
     unfolded auxskel.aux_on_found_def auxskel.aux_on_empty_def auxskel.aux_on_backtrack_def]
 
 text ‹An undirected triangle: vertices 1,2,3 forming a cycle.

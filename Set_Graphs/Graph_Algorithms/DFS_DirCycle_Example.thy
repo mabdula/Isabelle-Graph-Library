@@ -1,5 +1,5 @@
 theory DFS_DirCycle_Example
-  imports DFS_DirCycle Directed_Set_Graphs.Pair_Graph_RBT
+  imports Directed_Cycle_DFS.DFS_DirCycle Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
 global_interpretation dircycle: DFS_dircycle where insert = vset_insert and
@@ -9,7 +9,7 @@ and update = update and adjmap_inv = adj_inv and vset_delete = vset_delete
 and vset_inv = vset_inv and union = vset_union and inter = vset_inter and G = F and
 s = s for F s
 defines dircycle_initial_state = dircycle.dircycle_initial_state and
-find_dircycle = dircycle.dc.DFS_skel_impl and
+find_dircycle = dircycle.dc.DFS_skeleton_impl and
 cyc_found = dircycle.cyc_found and
 neighbourhood = dircycle.Graph.neighbourhood
   using G.Pair_Graph_Specs_axioms RBT.Set2_axioms
@@ -20,7 +20,7 @@ text ‹The partial-function unfolding equation cannot serve as a code equation 
 carries the instantiated callbacks as compound arguments), so we restate it once at the concrete
 instance, with the callbacks inlined.›
 lemmas find_dircycle_code[code] =
-  dircycle.dc.DFS_skel_impl.simps[folded find_dircycle_def[folded cyc_found_def],
+  dircycle.dc.DFS_skeleton_impl.simps[folded find_dircycle_def[folded cyc_found_def],
     unfolded dircycle.cyc_on_found_def dircycle.cyc_on_empty_def dircycle.cyc_on_backtrack_def]
 
 text ‹A digraph containing the directed cycle 1→2→3→1 (plus a tail 3→4→5).›

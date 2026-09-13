@@ -12,7 +12,7 @@ against the skeleton, and the backtrack-specific invariants are proved on top.�
 
 subsection ‹Setup›
 
-record ('ver, 'vset) DFS_bt_state = "('ver, 'vset) DFS_skel_state" +
+record ('ver, 'vset) DFS_bt_state = "('ver, 'vset) DFS_skeleton_state" +
   return :: return
   backtrack :: "('ver × 'ver) list"
 
@@ -52,14 +52,15 @@ definition "initial_state = ⦇stack = [s], seen = insert s ∅⇩N, return = No
 definition "DFS_axioms =
   (Graph.graph_inv G ∧ Graph.finite_graph G ∧ Graph.finite_vsets G ∧ s ∈ dVs (Graph.digraph_abs G))"
 
-sublocale cb: DFS_skel
+sublocale cb: DFS_skeleton
   where lookup = lookup and G = G and s = s
     and found = cb_found and on_found = cb_on_found
     and on_empty = cb_on_empty and on_backtrack = cb_on_backtrack
+    and on_push = no_push
   by unfold_locales
 
-abbreviation "DFS_collect_backtrack ≡ cb.DFS_skel"
-abbreviation "DFS_collect_backtrack_impl ≡ cb.DFS_skel_impl"
+abbreviation "DFS_collect_backtrack ≡ cb.DFS_skeleton"
+abbreviation "DFS_collect_backtrack_impl ≡ cb.DFS_skeleton_impl"
 
 end
 
@@ -71,47 +72,48 @@ lemma spine_preservation:
   "stack (cb_on_found st) = stack st" "seen (cb_on_found st) = seen st"
   "stack (cb_on_empty st) = stack st" "seen (cb_on_empty st) = seen st"
   "stack (cb_on_backtrack v st) = stack st" "seen (cb_on_backtrack v st) = seen st"
-  by (auto simp: cb_on_found_def cb_on_empty_def cb_on_backtrack_def split: list.splits)
+  by (auto simp: cb_on_found_def cb_on_empty_def cb_on_backtrack_def no_push_def split: list.splits)
 
-sublocale cb: DFS_skel_thms
+sublocale cb: DFS_skeleton_thms
   where lookup = lookup and G = G and s = s
     and found = cb_found and on_found = cb_on_found
     and on_empty = cb_on_empty and on_backtrack = cb_on_backtrack
+    and on_push = no_push
   using DFS_axioms
   by (unfold_locales)
-     (auto simp: cb.DFS_skel_axioms_def DFS_axioms_def
-                 cb_on_found_def cb_on_empty_def cb_on_backtrack_def split: list.splits)
+     (auto simp: cb.DFS_skeleton_axioms_def DFS_axioms_def
+                 cb_on_found_def cb_on_empty_def cb_on_backtrack_def no_push_def split: list.splits)
 
 subsection ‹Unfolding of the skeleton updates›
 
 lemma upd1_unfold:
-  "stack (cb.DFS_skel_upd1 st) = sel ((𝒩⇩G (hd (stack st))) -⇩G seen st) # stack st"
-  "seen (cb.DFS_skel_upd1 st) = insert (sel ((𝒩⇩G (hd (stack st))) -⇩G seen st)) (seen st)"
-  "return (cb.DFS_skel_upd1 st) = return st"
-  "backtrack (cb.DFS_skel_upd1 st) = backtrack st"
-  by (auto simp: cb.DFS_skel_upd1_def Let_def)
+  "stack (cb.DFS_skeleton_upd1 st) = sel ((𝒩⇩G (hd (stack st))) -⇩G seen st) # stack st"
+  "seen (cb.DFS_skeleton_upd1 st) = insert (sel ((𝒩⇩G (hd (stack st))) -⇩G seen st)) (seen st)"
+  "return (cb.DFS_skeleton_upd1 st) = return st"
+  "backtrack (cb.DFS_skeleton_upd1 st) = backtrack st"
+  by (auto simp: cb.DFS_skeleton_upd1_def no_push_def Let_def)
 
 lemma upd2_unfold:
-  "stack (cb.DFS_skel_upd2 st) = tl (stack st)"
-  "seen (cb.DFS_skel_upd2 st) = seen st"
-  "return (cb.DFS_skel_upd2 st) = return st"
-  "backtrack (cb.DFS_skel_upd2 st) =
+  "stack (cb.DFS_skeleton_upd2 st) = tl (stack st)"
+  "seen (cb.DFS_skeleton_upd2 st) = seen st"
+  "return (cb.DFS_skeleton_upd2 st) = return st"
+  "backtrack (cb.DFS_skeleton_upd2 st) =
      (case tl (stack st) of [] ⇒ backtrack st | x # _ ⇒ (x, hd (stack st)) # backtrack st)"
-  by (auto simp: cb.DFS_skel_upd2_def cb_on_backtrack_def split: list.splits)
+  by (auto simp: cb.DFS_skeleton_upd2_def cb_on_backtrack_def split: list.splits)
 
 lemma ret1_unfold:
-  "stack (cb.DFS_skel_ret1 st) = stack st"
-  "seen (cb.DFS_skel_ret1 st) = seen st"
-  "return (cb.DFS_skel_ret1 st) = NotReachable"
-  "backtrack (cb.DFS_skel_ret1 st) = backtrack st"
-  by (auto simp: cb.DFS_skel_ret1_def cb_on_empty_def)
+  "stack (cb.DFS_skeleton_ret1 st) = stack st"
+  "seen (cb.DFS_skeleton_ret1 st) = seen st"
+  "return (cb.DFS_skeleton_ret1 st) = NotReachable"
+  "backtrack (cb.DFS_skeleton_ret1 st) = backtrack st"
+  by (auto simp: cb.DFS_skeleton_ret1_def cb_on_empty_def)
 
 lemma ret2_unfold:
-  "stack (cb.DFS_skel_ret2 st) = stack st"
-  "seen (cb.DFS_skel_ret2 st) = seen st"
-  "return (cb.DFS_skel_ret2 st) = Reachable"
-  "backtrack (cb.DFS_skel_ret2 st) = backtrack st"
-  by (auto simp: cb.DFS_skel_ret2_def cb_on_found_def)
+  "stack (cb.DFS_skeleton_ret2 st) = stack st"
+  "seen (cb.DFS_skeleton_ret2 st) = seen st"
+  "return (cb.DFS_skeleton_ret2 st) = Reachable"
+  "backtrack (cb.DFS_skeleton_ret2 st) = backtrack st"
+  by (auto simp: cb.DFS_skeleton_ret2_def cb_on_found_def)
 
 lemma found_unfold:
   "stack st = v # stack_tl ⟹ cb_found st = (v = t)"
@@ -151,8 +153,8 @@ lemma initial_invars[simp,intro]:
   using DFS_axioms
   by (auto simp: cb.invar_1_def cb.invar_seen_stack_def initial_state_def DFS_axioms_def)
 
-lemma initial_dom: "cb.DFS_skel_dom initial_state"
-  by (intro cb.DFS_skel_terminates initial_invars)
+lemma initial_dom: "cb.DFS_skeleton_dom initial_state"
+  by (intro cb.DFS_skeleton_terminates initial_invars)
 
 subsubsection ‹invar_2›
 
@@ -165,34 +167,34 @@ lemma invar_2_intro[invar_props_intros]:
   by (auto simp: invar_2_def)
 
 lemma invar_2_holds_1[invar_holds_intros]:
-  assumes "cb.DFS_skel_call_1_conds dfs_state" "cb.invar_1 dfs_state" "invar_2 dfs_state"
-  shows "invar_2 (cb.DFS_skel_upd1 dfs_state)"
+  assumes "cb.DFS_skeleton_call_1_conds dfs_state" "cb.invar_1 dfs_state" "invar_2 dfs_state"
+  shows "invar_2 (cb.DFS_skeleton_upd1 dfs_state)"
   using assms cb.graph_inv
-  by (force simp: Let_def cb.DFS_skel_upd1_def elim!: call_cond_elims
+  by (force simp: Let_def cb.DFS_skeleton_upd1_def elim!: call_cond_elims
             elim!: invar_props_elims intro!: Vwalk.vwalk_append2 neighbourhoodI invar_props_intros)
 
 lemma invar_2_holds_2[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_2_conds dfs_state; invar_2 dfs_state⟧ ⟹ invar_2 (cb.DFS_skel_upd2 dfs_state)"
+  "⟦cb.DFS_skeleton_call_2_conds dfs_state; invar_2 dfs_state⟧ ⟹ invar_2 (cb.DFS_skeleton_upd2 dfs_state)"
   by (auto simp: upd2_unfold dest!: append_vwalk_pref elim!: invar_props_elims
            intro!: invar_props_intros elim: call_cond_elims)
 
 lemma invar_2_holds_4[invar_holds_intros]:
-  "⟦cb.DFS_skel_ret_1_conds dfs_state; invar_2 dfs_state⟧ ⟹ invar_2 (cb.DFS_skel_ret1 dfs_state)"
+  "⟦cb.DFS_skeleton_ret_1_conds dfs_state; invar_2 dfs_state⟧ ⟹ invar_2 (cb.DFS_skeleton_ret1 dfs_state)"
   by (auto elim!: invar_props_elims intro: invar_props_intros simp: ret1_unfold)
 
 lemma invar_2_holds_5[invar_holds_intros]:
-  "⟦cb.DFS_skel_ret_2_conds dfs_state; invar_2 dfs_state⟧ ⟹ invar_2 (cb.DFS_skel_ret2 dfs_state)"
+  "⟦cb.DFS_skeleton_ret_2_conds dfs_state; invar_2 dfs_state⟧ ⟹ invar_2 (cb.DFS_skeleton_ret2 dfs_state)"
   by (auto elim!: invar_props_elims intro: invar_props_intros simp: ret2_unfold)
 
 lemma invar_2_holds[invar_holds_intros]:
-   assumes "cb.DFS_skel_dom dfs_state" "cb.invar_1 dfs_state" "invar_2 dfs_state"
-   shows "invar_2 (cb.DFS_skel dfs_state)"
+   assumes "cb.DFS_skeleton_dom dfs_state" "cb.invar_1 dfs_state" "invar_2 dfs_state"
+   shows "invar_2 (cb.DFS_skeleton dfs_state)"
   using assms(2-3)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skel_simps[OF IH(1)])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsubsection ‹invar_s_in_stack›
@@ -207,36 +209,36 @@ lemma invar_s_in_stack_intro[invar_props_intros]:
   by (auto simp: invar_s_in_stack_def)
 
 lemma invar_s_in_stack_holds_1[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_1_conds dfs_state; cb.invar_1 dfs_state; invar_s_in_stack dfs_state⟧ ⟹
-     invar_s_in_stack (cb.DFS_skel_upd1 dfs_state)"
-  by (force simp: Let_def cb.DFS_skel_upd1_def dest!: append_vwalk_pref elim!: call_cond_elims
+  "⟦cb.DFS_skeleton_call_1_conds dfs_state; cb.invar_1 dfs_state; invar_s_in_stack dfs_state⟧ ⟹
+     invar_s_in_stack (cb.DFS_skeleton_upd1 dfs_state)"
+  by (force simp: Let_def cb.DFS_skeleton_upd1_def dest!: append_vwalk_pref elim!: call_cond_elims
             elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_s_in_stack_holds_2[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_2_conds dfs_state; cb.invar_1 dfs_state; invar_s_in_stack dfs_state⟧ ⟹
-     invar_s_in_stack (cb.DFS_skel_upd2 dfs_state)"
+  "⟦cb.DFS_skeleton_call_2_conds dfs_state; cb.invar_1 dfs_state; invar_s_in_stack dfs_state⟧ ⟹
+     invar_s_in_stack (cb.DFS_skeleton_upd2 dfs_state)"
   by (auto elim!: call_cond_elims simp: upd2_unfold elim: vwalk_betE
            elim!: invar_props_elims dest!: Graph.vset.emptyD append_vwalk_pref intro!: invar_props_intros)
 
 lemma invar_s_in_stack_holds_4[invar_holds_intros]:
-   "⟦cb.DFS_skel_ret_1_conds dfs_state; invar_s_in_stack dfs_state⟧ ⟹
-       invar_s_in_stack (cb.DFS_skel_ret1 dfs_state)"
+   "⟦cb.DFS_skeleton_ret_1_conds dfs_state; invar_s_in_stack dfs_state⟧ ⟹
+       invar_s_in_stack (cb.DFS_skeleton_ret1 dfs_state)"
   by (auto elim!: invar_props_elims intro!: invar_props_intros simp: ret1_unfold)
 
 lemma invar_s_in_stack_holds_5[invar_holds_intros]:
-  "⟦cb.DFS_skel_ret_2_conds dfs_state; invar_s_in_stack dfs_state⟧ ⟹
-     invar_s_in_stack (cb.DFS_skel_ret2 dfs_state)"
+  "⟦cb.DFS_skeleton_ret_2_conds dfs_state; invar_s_in_stack dfs_state⟧ ⟹
+     invar_s_in_stack (cb.DFS_skeleton_ret2 dfs_state)"
   by (auto elim!: invar_props_elims intro!: invar_props_intros simp: ret2_unfold)
 
 lemma invar_s_in_stack_holds[invar_holds_intros]:
-   assumes "cb.DFS_skel_dom dfs_state" "cb.invar_1 dfs_state" "invar_s_in_stack dfs_state"
-   shows "invar_s_in_stack (cb.DFS_skel dfs_state)"
+   assumes "cb.DFS_skeleton_dom dfs_state" "cb.invar_1 dfs_state" "invar_s_in_stack dfs_state"
+   shows "invar_s_in_stack (cb.DFS_skeleton dfs_state)"
    using assms(2-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skel_simps[OF IH(1)])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsubsection ‹invar_visited_through_seen›
@@ -255,15 +257,15 @@ lemma invar_visited_through_seen_intro[invar_props_intros]:
   by (auto simp: invar_visited_through_seen_def)
 
 lemma invar_visited_through_seen_holds_1[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_1_conds dfs_state; cb.invar_1 dfs_state; cb.invar_seen_stack dfs_state;
+  "⟦cb.DFS_skeleton_call_1_conds dfs_state; cb.invar_1 dfs_state; cb.invar_seen_stack dfs_state;
     invar_visited_through_seen dfs_state⟧
-    ⟹ invar_visited_through_seen (cb.DFS_skel_upd1 dfs_state)"
-  by(fastforce simp: Let_def cb.DFS_skel_upd1_def dest: append_vwalk_pref hd_of_vwalk_bet''
+    ⟹ invar_visited_through_seen (cb.DFS_skeleton_upd1 dfs_state)"
+  by(fastforce simp: Let_def cb.DFS_skeleton_upd1_def dest: append_vwalk_pref hd_of_vwalk_bet''
                elim!: invar_props_elims intro!: invar_props_intros)
 
 lemma invar_visited_through_seen_holds_2[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_2_conds dfs_state; cb.invar_1 dfs_state; cb.invar_seen_stack dfs_state;
-    invar_visited_through_seen dfs_state⟧ ⟹ invar_visited_through_seen (cb.DFS_skel_upd2 dfs_state)"
+  "⟦cb.DFS_skeleton_call_2_conds dfs_state; cb.invar_1 dfs_state; cb.invar_seen_stack dfs_state;
+    invar_visited_through_seen dfs_state⟧ ⟹ invar_visited_through_seen (cb.DFS_skeleton_upd2 dfs_state)"
 proof(rule invar_props_intros, elim invar_visited_through_seen_props call_cond_elims exE, goal_cases)
   case (1 v1 p v2 stack_tl)
   hence "set p ∩ set (stack dfs_state) ≠ {}"
@@ -301,7 +303,7 @@ proof(rule invar_props_intros, elim invar_visited_through_seen_props call_cond_e
         using 1 False by (fastforce simp: upd2_unfold neq_Nil_conv dest!: split_vwalk)
       moreover have "v2 ∉ set p2"
         using ‹distinct p› by auto
-      ultimately have "set p2 ∩ set (stack (cb.DFS_skel_upd2 dfs_state)) ≠ {}"
+      ultimately have "set p2 ∩ set (stack (cb.DFS_skeleton_upd2 dfs_state)) ≠ {}"
         using 1 by (auto simp: upd2_unfold)
       thus ?thesis by auto
     qed
@@ -309,25 +311,25 @@ proof(rule invar_props_intros, elim invar_visited_through_seen_props call_cond_e
 qed
 
 lemma invar_visited_through_seen_holds_4[invar_holds_intros]:
-  "⟦cb.DFS_skel_ret_1_conds dfs_state; invar_visited_through_seen dfs_state⟧ ⟹
-     invar_visited_through_seen (cb.DFS_skel_ret1 dfs_state)"
+  "⟦cb.DFS_skeleton_ret_1_conds dfs_state; invar_visited_through_seen dfs_state⟧ ⟹
+     invar_visited_through_seen (cb.DFS_skeleton_ret1 dfs_state)"
   by (auto intro: invar_props_intros simp: ret1_unfold)
 
 lemma invar_visited_through_seen_holds_5[invar_holds_intros]:
-  "⟦cb.DFS_skel_ret_2_conds dfs_state; invar_visited_through_seen dfs_state⟧ ⟹
-     invar_visited_through_seen (cb.DFS_skel_ret2 dfs_state)"
+  "⟦cb.DFS_skeleton_ret_2_conds dfs_state; invar_visited_through_seen dfs_state⟧ ⟹
+     invar_visited_through_seen (cb.DFS_skeleton_ret2 dfs_state)"
   by (auto intro: invar_props_intros simp: ret2_unfold)
 
 lemma invar_visited_through_seen_holds[invar_holds_intros]:
-   assumes "cb.DFS_skel_dom dfs_state" "cb.invar_1 dfs_state" "cb.invar_seen_stack dfs_state"
+   assumes "cb.DFS_skeleton_dom dfs_state" "cb.invar_1 dfs_state" "cb.invar_seen_stack dfs_state"
            "invar_visited_through_seen dfs_state"
-   shows "invar_visited_through_seen (cb.DFS_skel dfs_state)"
+   shows "invar_visited_through_seen (cb.DFS_skeleton dfs_state)"
    using assms(2-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
-    by (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skel_simps[OF IH(1)])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsubsection ‹state relation›
@@ -346,71 +348,71 @@ lemma state_rel_1_trans:
   by (auto intro!: state_rel_intros)
 
 lemma state_rel_1_holds_1[state_rel_holds_intros]:
-  "⟦cb.DFS_skel_call_1_conds dfs_state; cb.invar_1 dfs_state⟧ ⟹ state_rel_1 dfs_state (cb.DFS_skel_upd1 dfs_state)"
-  by (auto simp: Let_def cb.DFS_skel_upd1_def elim!: invar_props_elims intro!: state_rel_intros)
+  "⟦cb.DFS_skeleton_call_1_conds dfs_state; cb.invar_1 dfs_state⟧ ⟹ state_rel_1 dfs_state (cb.DFS_skeleton_upd1 dfs_state)"
+  by (auto simp: Let_def cb.DFS_skeleton_upd1_def elim!: invar_props_elims intro!: state_rel_intros)
 
 lemma state_rel_1_holds_2[state_rel_holds_intros]:
-  "⟦cb.DFS_skel_call_2_conds dfs_state; cb.invar_1 dfs_state⟧ ⟹ state_rel_1 dfs_state (cb.DFS_skel_upd2 dfs_state)"
+  "⟦cb.DFS_skeleton_call_2_conds dfs_state; cb.invar_1 dfs_state⟧ ⟹ state_rel_1 dfs_state (cb.DFS_skeleton_upd2 dfs_state)"
   by (auto simp: upd2_unfold intro!: state_rel_intros elim: call_cond_elims)
 
 lemma state_rel_1_holds_4[state_rel_holds_intros]:
-  "⟦cb.DFS_skel_ret_1_conds dfs_state⟧ ⟹ state_rel_1 dfs_state (cb.DFS_skel_ret1 dfs_state)"
+  "⟦cb.DFS_skeleton_ret_1_conds dfs_state⟧ ⟹ state_rel_1 dfs_state (cb.DFS_skeleton_ret1 dfs_state)"
   by (auto intro!: state_rel_intros simp: ret1_unfold)
 
 lemma state_rel_1_holds_5[state_rel_holds_intros]:
-  "⟦cb.DFS_skel_ret_2_conds dfs_state⟧ ⟹ state_rel_1 dfs_state (cb.DFS_skel_ret2 dfs_state)"
+  "⟦cb.DFS_skeleton_ret_2_conds dfs_state⟧ ⟹ state_rel_1 dfs_state (cb.DFS_skeleton_ret2 dfs_state)"
   by (auto intro!: state_rel_intros simp: ret2_unfold)
 
 lemma state_rel_1_holds[state_rel_holds_intros]:
-   assumes "cb.DFS_skel_dom dfs_state" "cb.invar_1 dfs_state"
-   shows "state_rel_1 dfs_state (cb.DFS_skel dfs_state)"
+   assumes "cb.DFS_skeleton_dom dfs_state" "cb.invar_1 dfs_state"
+   shows "state_rel_1 dfs_state (cb.DFS_skeleton dfs_state)"
    using assms(2-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
-    by (auto intro: state_rel_1_trans invar_holds_intros state_rel_holds_intros intro!: IH(2-) simp: cb.DFS_skel_simps[OF IH(1)])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by (auto intro: state_rel_1_trans invar_holds_intros state_rel_holds_intros intro!: IH(2-) simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsubsection ‹Return-condition tracking + reachability correctness›
 
-lemma ret_1[ret_holds_intros]: "cb.DFS_skel_ret_1_conds (dfs_state) ⟹ cb.DFS_skel_ret_1_conds (cb.DFS_skel_ret1 dfs_state)"
+lemma ret_1[ret_holds_intros]: "cb.DFS_skeleton_ret_1_conds (dfs_state) ⟹ cb.DFS_skeleton_ret_1_conds (cb.DFS_skeleton_ret1 dfs_state)"
   by (auto elim!: call_cond_elims intro!: call_cond_intros simp: ret1_unfold)
 
 lemma ret1_holds[ret_holds_intros]:
-   assumes "cb.DFS_skel_dom dfs_state" "return (cb.DFS_skel dfs_state) = NotReachable"
-   shows "cb.DFS_skel_ret_1_conds (cb.DFS_skel dfs_state)"
+   assumes "cb.DFS_skeleton_dom dfs_state" "return (cb.DFS_skeleton dfs_state) = NotReachable"
+   shows "cb.DFS_skeleton_ret_1_conds (cb.DFS_skeleton dfs_state)"
    using assms(2-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
     using IH(4)
-    by (auto intro: ret_holds_intros intro!: IH(2-) simp: cb.DFS_skel_simps[OF IH(1)] ret2_unfold)
+    by (auto intro: ret_holds_intros intro!: IH(2-) simp: cb.DFS_skeleton_simps[OF IH(1)] ret2_unfold)
 qed
 
 lemma DFS_correct_ret_1:
-  "⟦invar_visited_through_seen dfs_state; cb.DFS_skel_ret_1_conds dfs_state; u ∈ t_set (seen dfs_state)⟧
+  "⟦invar_visited_through_seen dfs_state; cb.DFS_skeleton_ret_1_conds dfs_state; u ∈ t_set (seen dfs_state)⟧
          ⟹ ∄p. distinct p ∧ vwalk_bet (Graph.digraph_abs G) u p t"
   by (auto elim!: call_cond_elims invar_props_elims)
 
-lemma ret_2[ret_holds_intros]: "cb.DFS_skel_ret_2_conds (dfs_state) ⟹ cb.DFS_skel_ret_2_conds (cb.DFS_skel_ret2 dfs_state)"
+lemma ret_2[ret_holds_intros]: "cb.DFS_skeleton_ret_2_conds (dfs_state) ⟹ cb.DFS_skeleton_ret_2_conds (cb.DFS_skeleton_ret2 dfs_state)"
   by (auto elim!: call_cond_elims intro!: call_cond_intros simp: ret2_unfold cb_found_def)
 
 lemma ret2_holds[ret_holds_intros]:
-   assumes "cb.DFS_skel_dom dfs_state" "return (cb.DFS_skel dfs_state) = Reachable"
-   shows "cb.DFS_skel_ret_2_conds (cb.DFS_skel dfs_state)"
+   assumes "cb.DFS_skeleton_dom dfs_state" "return (cb.DFS_skeleton dfs_state) = Reachable"
+   shows "cb.DFS_skeleton_ret_2_conds (cb.DFS_skeleton dfs_state)"
    using assms(2-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
     using IH(4)
-    by (auto intro: ret_holds_intros intro!: IH(2-) simp: cb.DFS_skel_simps[OF IH(1)] ret1_unfold)
+    by (auto intro: ret_holds_intros intro!: IH(2-) simp: cb.DFS_skeleton_simps[OF IH(1)] ret1_unfold)
 qed
 
 lemma DFS_correct_ret_2:
-  "⟦invar_2 dfs_state; cb.DFS_skel_ret_2_conds dfs_state⟧
+  "⟦invar_2 dfs_state; cb.DFS_skeleton_ret_2_conds dfs_state⟧
          ⟹ vwalk_bet (Graph.digraph_abs G) (last (stack dfs_state)) (rev (stack dfs_state)) t"
   by (auto elim!: call_cond_elims invar_props_elims simp: hd_rev vwalk_bet_def cb_found_def
            split: list.splits)
@@ -499,15 +501,15 @@ lemma invar_dfs_backtrack_5E: "invar_dfs_backtrack_5 state ⟹ ((⋀ e. e ∈ se
 subsubsection ‹invar_dfs_backtrack_1: collected endpoints are seen›
 
 lemma invar_dfs_backtrack_1_holds_1[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_1_conds dfs_state; invar_dfs_backtrack_1 dfs_state; cb.invar_1 dfs_state⟧ ⟹
-      invar_dfs_backtrack_1 (cb.DFS_skel_upd1 dfs_state)"
+  "⟦cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_1 dfs_state; cb.invar_1 dfs_state⟧ ⟹
+      invar_dfs_backtrack_1 (cb.DFS_skeleton_upd1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_1I simp add: upd1_unfold
       elim!: call_cond_elims invar_dfs_backtrack_1E cb.invar_1_props)
 
 lemma invar_dfs_backtrack_1_holds_2[invar_holds_intros]:
-  assumes "cb.DFS_skel_call_2_conds dfs_state" "invar_dfs_backtrack_1 dfs_state" "cb.invar_1 dfs_state"
+  assumes "cb.DFS_skeleton_call_2_conds dfs_state" "invar_dfs_backtrack_1 dfs_state" "cb.invar_1 dfs_state"
        "cb.invar_seen_stack dfs_state"
-  shows "invar_dfs_backtrack_1 (cb.DFS_skel_upd2 dfs_state)"
+  shows "invar_dfs_backtrack_1 (cb.DFS_skeleton_upd2 dfs_state)"
 proof(cases "tl (stack dfs_state)")
   case Nil
   then show ?thesis
@@ -530,68 +532,68 @@ next
 qed
 
 lemma invar_dfs_backtrack_1_holds_3[invar_holds_intros]:
-  "⟦invar_dfs_backtrack_1 dfs_state⟧ ⟹ invar_dfs_backtrack_1 (cb.DFS_skel_ret1 dfs_state)"
+  "⟦invar_dfs_backtrack_1 dfs_state⟧ ⟹ invar_dfs_backtrack_1 (cb.DFS_skeleton_ret1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_1I simp add: ret1_unfold elim!: invar_dfs_backtrack_1E)
 
 lemma invar_dfs_backtrack_1_holds_4[invar_holds_intros]:
-  "⟦invar_dfs_backtrack_1 dfs_state⟧ ⟹ invar_dfs_backtrack_1 (cb.DFS_skel_ret2 dfs_state)"
+  "⟦invar_dfs_backtrack_1 dfs_state⟧ ⟹ invar_dfs_backtrack_1 (cb.DFS_skeleton_ret2 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_1I simp add: ret2_unfold elim!: invar_dfs_backtrack_1E)
 
 lemma invar_dfs_backtrack_1_holds:
-  assumes "cb.DFS_skel_dom dfs_state" "invar_dfs_backtrack_1 dfs_state"
+  assumes "cb.DFS_skeleton_dom dfs_state" "invar_dfs_backtrack_1 dfs_state"
     "cb.invar_1 dfs_state" "cb.invar_seen_stack dfs_state"
-  shows "invar_dfs_backtrack_1 (cb.DFS_skel dfs_state)"
+  shows "invar_dfs_backtrack_1 (cb.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
-    by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skel_simps[OF IH(1)])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsubsection ‹invar_dfs_backtrack_2: collected edges are graph edges›
 
 lemma invar_dfs_backtrack_2_holds_1[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_1_conds dfs_state; invar_dfs_backtrack_2 dfs_state; cb.invar_1 dfs_state⟧ ⟹
-      invar_dfs_backtrack_2 (cb.DFS_skel_upd1 dfs_state)"
+  "⟦cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_2 dfs_state; cb.invar_1 dfs_state⟧ ⟹
+      invar_dfs_backtrack_2 (cb.DFS_skeleton_upd1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_2I simp add: upd1_unfold
       elim!: call_cond_elims invar_dfs_backtrack_2E cb.invar_1_props)
 
 lemma invar_dfs_backtrack_2_holds_2[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_2_conds dfs_state; invar_dfs_backtrack_2 dfs_state; cb.invar_1 dfs_state;
+  "⟦cb.DFS_skeleton_call_2_conds dfs_state; invar_dfs_backtrack_2 dfs_state; cb.invar_1 dfs_state;
        invar_2 dfs_state⟧ ⟹
-      invar_dfs_backtrack_2 (cb.DFS_skel_upd2 dfs_state)"
+      invar_dfs_backtrack_2 (cb.DFS_skeleton_upd2 dfs_state)"
   using append_vwalk_suff
   by(cases "tl (stack dfs_state)")
     (fastforce intro!: invar_dfs_backtrack_2I simp add: upd2_unfold
       elim!: call_cond_elims invar_dfs_backtrack_2E cb.invar_1_props invar_2_props)+
 
 lemma invar_dfs_backtrack_2_holds_3[invar_holds_intros]:
-  "⟦invar_dfs_backtrack_2 dfs_state⟧ ⟹ invar_dfs_backtrack_2 (cb.DFS_skel_ret1 dfs_state)"
+  "⟦invar_dfs_backtrack_2 dfs_state⟧ ⟹ invar_dfs_backtrack_2 (cb.DFS_skeleton_ret1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_2I simp add: ret1_unfold elim!: invar_dfs_backtrack_2E)
 
 lemma invar_dfs_backtrack_2_holds_4[invar_holds_intros]:
-  "⟦invar_dfs_backtrack_2 dfs_state⟧ ⟹ invar_dfs_backtrack_2 (cb.DFS_skel_ret2 dfs_state)"
+  "⟦invar_dfs_backtrack_2 dfs_state⟧ ⟹ invar_dfs_backtrack_2 (cb.DFS_skeleton_ret2 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_2I simp add: ret2_unfold elim!: invar_dfs_backtrack_2E)
 
 lemma invar_dfs_backtrack_2_holds:
-  assumes "cb.DFS_skel_dom dfs_state" "invar_dfs_backtrack_2 dfs_state"
+  assumes "cb.DFS_skeleton_dom dfs_state" "invar_dfs_backtrack_2 dfs_state"
     "cb.invar_1 dfs_state" "invar_2 dfs_state"
-  shows  "invar_dfs_backtrack_2 (cb.DFS_skel dfs_state)"
+  shows  "invar_dfs_backtrack_2 (cb.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
-    by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skel_simps[OF IH(1)])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsubsection ‹invar_dfs_backtrack_3: collected edges are off the current search path›
 
 lemma invar_dfs_backtrack_3_holds_1[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_1_conds dfs_state; invar_dfs_backtrack_3 dfs_state;
+  "⟦cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_3 dfs_state;
        invar_dfs_backtrack_1 dfs_state; cb.invar_1 dfs_state; cb.invar_seen_stack dfs_state⟧ ⟹
-      invar_dfs_backtrack_3 (cb.DFS_skel_upd1 dfs_state)"
+      invar_dfs_backtrack_3 (cb.DFS_skeleton_upd1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_3I
       simp add: upd1_unfold edges_of_vwalk_append_2[of "[_, _]", simplified]
       elim!: call_cond_elims invar_dfs_backtrack_3E cb.invar_1_props cb.invar_seen_stack_props
@@ -599,9 +601,9 @@ lemma invar_dfs_backtrack_3_holds_1[invar_holds_intros]:
       dest!: Graph.vset.choose')+
 
 lemma invar_dfs_backtrack_3_holds_2[invar_holds_intros]:
-  assumes "cb.DFS_skel_call_2_conds dfs_state" "invar_dfs_backtrack_3 dfs_state"
+  assumes "cb.DFS_skeleton_call_2_conds dfs_state" "invar_dfs_backtrack_3 dfs_state"
        "cb.invar_1 dfs_state" "cb.invar_seen_stack dfs_state"
-  shows "invar_dfs_backtrack_3 (cb.DFS_skel_upd2 dfs_state)"
+  shows "invar_dfs_backtrack_3 (cb.DFS_skeleton_upd2 dfs_state)"
 proof(cases "tl (stack dfs_state)")
   case Nil
   have disj: "set (backtrack dfs_state) ∩ set (edges_of_vwalk (rev (stack dfs_state))) = {}"
@@ -644,83 +646,83 @@ next
   qed
   have bt_disj: "set (backtrack dfs_state) ∩ set (edges_of_vwalk (rev (x # xs))) = {}"
     using disj edges_split by auto
-  have bt2: "backtrack (cb.DFS_skel_upd2 dfs_state) = (x, hd (stack dfs_state)) # backtrack dfs_state"
+  have bt2: "backtrack (cb.DFS_skeleton_upd2 dfs_state) = (x, hd (stack dfs_state)) # backtrack dfs_state"
     using Cons by (simp add: upd2_unfold)
-  have st2: "stack (cb.DFS_skel_upd2 dfs_state) = x # xs"
+  have st2: "stack (cb.DFS_skeleton_upd2 dfs_state) = x # xs"
     using Cons by (simp add: upd2_unfold)
-  have "set (backtrack (cb.DFS_skel_upd2 dfs_state))
-        ∩ set (edges_of_vwalk (rev (stack (cb.DFS_skel_upd2 dfs_state)))) = {}"
+  have "set (backtrack (cb.DFS_skeleton_upd2 dfs_state))
+        ∩ set (edges_of_vwalk (rev (stack (cb.DFS_skeleton_upd2 dfs_state)))) = {}"
     unfolding bt2 st2 using bt_disj newedge_notin by auto
   then show ?thesis
     by (rule invar_dfs_backtrack_3I)
 qed
 
 lemma invar_dfs_backtrack_3_holds_3[invar_holds_intros]:
-  "⟦invar_dfs_backtrack_3 dfs_state⟧ ⟹ invar_dfs_backtrack_3 (cb.DFS_skel_ret1 dfs_state)"
+  "⟦invar_dfs_backtrack_3 dfs_state⟧ ⟹ invar_dfs_backtrack_3 (cb.DFS_skeleton_ret1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_3I simp add: ret1_unfold elim!: invar_dfs_backtrack_3E)
 
 lemma invar_dfs_backtrack_3_holds_4[invar_holds_intros]:
-  "⟦invar_dfs_backtrack_3 dfs_state⟧ ⟹ invar_dfs_backtrack_3 (cb.DFS_skel_ret2 dfs_state)"
+  "⟦invar_dfs_backtrack_3 dfs_state⟧ ⟹ invar_dfs_backtrack_3 (cb.DFS_skeleton_ret2 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_3I simp add: ret2_unfold elim!: invar_dfs_backtrack_3E)
 
 lemma invar_dfs_backtrack_3_holds:
-  assumes "cb.DFS_skel_dom dfs_state" "invar_dfs_backtrack_3 dfs_state"
+  assumes "cb.DFS_skeleton_dom dfs_state" "invar_dfs_backtrack_3 dfs_state"
     "invar_dfs_backtrack_1 dfs_state" "cb.invar_1 dfs_state" "cb.invar_seen_stack dfs_state"
-  shows  "invar_dfs_backtrack_3 (cb.DFS_skel dfs_state)"
+  shows  "invar_dfs_backtrack_3 (cb.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
-    by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skel_simps[OF IH(1)])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsubsection ‹invar_dfs_backtrack_4: collected edges are distinct›
 
 lemma invar_dfs_backtrack_4_holds_1[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_1_conds dfs_state; invar_dfs_backtrack_4 dfs_state⟧ ⟹
-      invar_dfs_backtrack_4 (cb.DFS_skel_upd1 dfs_state)"
+  "⟦cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_4 dfs_state⟧ ⟹
+      invar_dfs_backtrack_4 (cb.DFS_skeleton_upd1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_4I simp add: upd1_unfold elim!: invar_dfs_backtrack_4E)
 
 lemma invar_dfs_backtrack_4_holds_2[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_2_conds dfs_state; invar_dfs_backtrack_4 dfs_state;
+  "⟦cb.DFS_skeleton_call_2_conds dfs_state; invar_dfs_backtrack_4 dfs_state;
        invar_dfs_backtrack_3 dfs_state⟧ ⟹
-      invar_dfs_backtrack_4 (cb.DFS_skel_upd2 dfs_state)"
+      invar_dfs_backtrack_4 (cb.DFS_skeleton_upd2 dfs_state)"
   by(cases "tl (stack dfs_state)")
     (auto intro!: invar_dfs_backtrack_4I
       simp add: upd2_unfold edges_of_vwalk_append_2[of "[_, _]", simplified]
       elim!: call_cond_elims invar_dfs_backtrack_3E invar_dfs_backtrack_4E)
 
 lemma invar_dfs_backtrack_4_holds_3[invar_holds_intros]:
-  "⟦invar_dfs_backtrack_4 dfs_state⟧ ⟹ invar_dfs_backtrack_4 (cb.DFS_skel_ret1 dfs_state)"
+  "⟦invar_dfs_backtrack_4 dfs_state⟧ ⟹ invar_dfs_backtrack_4 (cb.DFS_skeleton_ret1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_4I simp add: ret1_unfold elim!: invar_dfs_backtrack_4E)
 
 lemma invar_dfs_backtrack_4_holds_4[invar_holds_intros]:
-  "⟦invar_dfs_backtrack_4 dfs_state⟧ ⟹ invar_dfs_backtrack_4 (cb.DFS_skel_ret2 dfs_state)"
+  "⟦invar_dfs_backtrack_4 dfs_state⟧ ⟹ invar_dfs_backtrack_4 (cb.DFS_skeleton_ret2 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_4I simp add: ret2_unfold elim!: invar_dfs_backtrack_4E)
 
 lemma invar_dfs_backtrack_4_holds:
-  assumes "cb.DFS_skel_dom dfs_state" "invar_dfs_backtrack_4 dfs_state"
+  assumes "cb.DFS_skeleton_dom dfs_state" "invar_dfs_backtrack_4 dfs_state"
     "invar_dfs_backtrack_3 dfs_state" "invar_dfs_backtrack_1 dfs_state"
     "cb.invar_1 dfs_state" "cb.invar_seen_stack dfs_state"
-  shows  "invar_dfs_backtrack_4 (cb.DFS_skel dfs_state)"
+  shows  "invar_dfs_backtrack_4 (cb.DFS_skeleton dfs_state)"
   using assms(2-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
-    apply(rule cb.DFS_skel_cases[where dfs_state = dfs_state])
-    by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skel_simps[OF IH(1)])
+    apply(rule cb.DFS_skeleton_cases[where dfs_state = dfs_state])
+    by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsubsection ‹invar_dfs_backtrack_5: on an acyclic graph, collected edges lie on no s-t walk›
 
 lemma invar_dfs_backtrack_5_holds_1[invar_holds_intros]:
-  "⟦cb.DFS_skel_call_1_conds dfs_state; invar_dfs_backtrack_5 dfs_state⟧ ⟹
-      invar_dfs_backtrack_5 (cb.DFS_skel_upd1 dfs_state)"
+  "⟦cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_5 dfs_state⟧ ⟹
+      invar_dfs_backtrack_5 (cb.DFS_skeleton_upd1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_5I simp add: upd1_unfold elim!: invar_dfs_backtrack_5E)
 
 lemma invar_dfs_backtrack_5_holds_2[invar_holds_intros]:
-  assumes "cb.DFS_skel_call_2_conds dfs_state"
+  assumes "cb.DFS_skeleton_call_2_conds dfs_state"
     "dir_acyc (Graph.digraph_abs G)"
     "invar_dfs_backtrack_5 dfs_state"
     "invar_dfs_backtrack_4 dfs_state"
@@ -730,7 +732,7 @@ lemma invar_dfs_backtrack_5_holds_2[invar_holds_intros]:
     "invar_visited_through_seen dfs_state"
     "cb.invar_1 dfs_state"
     "invar_2 dfs_state"
-  shows  "invar_dfs_backtrack_5 (cb.DFS_skel_upd2 dfs_state)"
+  shows  "invar_dfs_backtrack_5 (cb.DFS_skeleton_upd2 dfs_state)"
 proof(cases "tl (stack dfs_state)")
   case Nil
   then show ?thesis
@@ -740,7 +742,7 @@ next
   have stk: "stack dfs_state ≠ []" using assms(1) by (auto elim!: call_cond_elims)
   have hd_ne_t: "hd (stack dfs_state) ≠ t"
     using assms(1) stk by (auto elim!: call_cond_elims simp: cb_found_def split: list.splits)
-  have bt2: "backtrack (cb.DFS_skel_upd2 dfs_state) = (u, hd (stack dfs_state)) # backtrack dfs_state"
+  have bt2: "backtrack (cb.DFS_skeleton_upd2 dfs_state) = (u, hd (stack dfs_state)) # backtrack dfs_state"
     using Cons by (simp add: upd2_unfold)
   have False
     if "a = u ∧ b = hd (stack dfs_state) ∨ (a, b) ∈ set (backtrack dfs_state)"
@@ -767,13 +769,13 @@ next
         using assms(6,7) 1(2) stk
         by(auto elim!: cb.invar_seen_stack_props invar_dfs_backtrack_1E
                 simp: subset_iff hd_in_set)
-      have vts_upd2: "invar_visited_through_seen (cb.DFS_skel_upd2 dfs_state)"
+      have vts_upd2: "invar_visited_through_seen (cb.DFS_skeleton_upd2 dfs_state)"
         by (rule invar_visited_through_seen_holds_2[OF assms(1,9,7,8)])
-      have b_seen2: "b ∈ t_set (seen (cb.DFS_skel_upd2 dfs_state))"
+      have b_seen2: "b ∈ t_set (seen (cb.DFS_skeleton_upd2 dfs_state))"
         using b_seen by (simp add: upd2_unfold)
-      have "∀p. vwalk_bet [G]⇩g b p t ∧ distinct p ⟶ set p ∩ set (stack (cb.DFS_skel_upd2 dfs_state)) ≠ {}"
+      have "∀p. vwalk_bet [G]⇩g b p t ∧ distinct p ⟶ set p ∩ set (stack (cb.DFS_skeleton_upd2 dfs_state)) ≠ {}"
         using vts_upd2 b_seen2 unfolding invar_visited_through_seen_def by blast
-      then have "set p2' ∩ set (stack (cb.DFS_skel_upd2 dfs_state)) ≠ {}"
+      then have "set p2' ∩ set (stack (cb.DFS_skeleton_upd2 dfs_state)) ≠ {}"
         using p2'_walk p2'_dist by blast
       then have "set (tl (stack dfs_state)) ∩ set (p2') ≠ {}"
         by (auto simp add: upd2_unfold)
@@ -822,28 +824,28 @@ next
 qed
 
 lemma invar_dfs_backtrack_5_holds_3[invar_holds_intros]:
-  "invar_dfs_backtrack_5 dfs_state ⟹ invar_dfs_backtrack_5 (cb.DFS_skel_ret1 dfs_state)"
+  "invar_dfs_backtrack_5 dfs_state ⟹ invar_dfs_backtrack_5 (cb.DFS_skeleton_ret1 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_5I simp add: ret1_unfold elim!: invar_dfs_backtrack_5E)
 
 lemma invar_dfs_backtrack_5_holds_4[invar_holds_intros]:
-  "invar_dfs_backtrack_5 dfs_state ⟹ invar_dfs_backtrack_5 (cb.DFS_skel_ret2 dfs_state)"
+  "invar_dfs_backtrack_5 dfs_state ⟹ invar_dfs_backtrack_5 (cb.DFS_skeleton_ret2 dfs_state)"
   by(auto intro!: invar_dfs_backtrack_5I simp add: ret2_unfold elim!: invar_dfs_backtrack_5E)
 
 lemma invar_dfs_backtrack_5_holds:
-  assumes "cb.DFS_skel_dom dfs_state"
+  assumes "cb.DFS_skeleton_dom dfs_state"
     "dir_acyc (Graph.digraph_abs G)"
     "invar_dfs_backtrack_5 dfs_state" "invar_dfs_backtrack_4 dfs_state"
     "invar_dfs_backtrack_3 dfs_state" "invar_dfs_backtrack_1 dfs_state"
     "cb.invar_1 dfs_state" "invar_2 dfs_state"
     "cb.invar_seen_stack dfs_state" "invar_visited_through_seen dfs_state"
-  shows  "invar_dfs_backtrack_5 (cb.DFS_skel dfs_state)"
+  shows  "invar_dfs_backtrack_5 (cb.DFS_skeleton dfs_state)"
   using assms(3-)
-proof(induction rule: cb.DFS_skel_induct[OF assms(1)])
+proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
   case IH: (1 dfs_state)
   show ?case
     using assms(2)
-    by(cases rule: cb.DFS_skel_cases[where dfs_state = dfs_state])
-      (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skel_simps[OF IH(1)])
+    by(cases rule: cb.DFS_skeleton_cases[where dfs_state = dfs_state])
+      (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
 subsection ‹Correctness›
@@ -872,7 +874,7 @@ lemma dfs_backtrack_final:
 
 lemma DFS_collect_backtrack_impl_same_on_initial:
   shows   "DFS_collect_backtrack_impl initial_state = DFS_collect_backtrack initial_state"
-  using cb.DFS_skel_impl_same[OF initial_dom] .
+  using cb.DFS_skeleton_impl_same[OF initial_dom] .
 
 end
 
