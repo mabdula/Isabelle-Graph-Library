@@ -1,5 +1,7 @@
 theory Hungarian_CSR_Variants
   imports Hungarian_Method_CSR_Instantiation Basic_Matching.Weighted_Matchings_Reductions
+  Go.Go_Setup
+
 begin
 
 section \<open>Variants of Weighted Bipartite Matching on Arrays\<close>
