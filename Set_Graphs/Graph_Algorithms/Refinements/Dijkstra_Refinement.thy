@@ -69,7 +69,7 @@ text \<open>The heap handles of the program. They do not change during the compu
       operations mutate in place. The vertex currently being scanned is passed as a separate argument
       of the loop and the target found is its result.\<close>
 
-record ('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ti, 'ai) dij_impl_state =
+record ('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state =
   dimp_dist    :: 'di
   dimp_seen    :: 'si
   dimp_parent  :: 'pi
@@ -77,6 +77,7 @@ record ('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ti, 'ai) dij_impl_state =
   dimp_graph   :: 'gi
   dimp_srcs    :: 'srci
   dimp_weight  :: 'wi
+  dimp_ends    :: 'ei
   dimp_target  :: 'ti
   dimp_allowed :: 'ai
 
@@ -88,7 +89,7 @@ locale dijkstra_impl_spec =
     and target_imp :: "'ti \<Rightarrow> 'v::heap \<Rightarrow> bool Heap"
     and allowed_imp :: "'ai \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'e::heap \<Rightarrow> 'n \<Rightarrow> bool Heap"
     and early_stop :: bool
-    and snd_imp :: "'e::heap \<Rightarrow> 'v Heap"
+    and snd_imp :: "'ei \<Rightarrow> 'e::heap \<Rightarrow> 'v Heap"
     and weight_lookup_imp :: "'wi \<Rightarrow> 'e \<Rightarrow> 'n Heap"
     and dist_upd_imp :: "'di \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> unit Heap"
     and dist_lookup_imp :: "'di \<Rightarrow> 'v \<Rightarrow> 'n Heap"
@@ -106,7 +107,7 @@ locale dijkstra_impl_spec =
     and queue_decrease_key_imp :: "'hi \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> unit Heap"
     and queue_insert_imp :: "'hi \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> unit Heap"
     and parent_lookup_imp :: "'pi \<Rightarrow> 'v \<Rightarrow> 'e option Heap"
-    and fst_imp :: "'e \<Rightarrow> 'v Heap"
+    and fst_imp :: "'ei \<Rightarrow> 'e \<Rightarrow> 'v Heap"
 begin
 
 text \<open>Relax the edge @{term e} leaving the vertex @{term u} being scanned, whose distance is
@@ -114,9 +115,9 @@ text \<open>Relax the edge @{term e} leaving the vertex @{term u} being scanned,
       after the seen test and sees the tail, the head, the edge and its weight.\<close>
 
 definition relax_edge_imp ::
-  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> 'e \<Rightarrow> unit Heap" where
+  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> 'e \<Rightarrow> unit Heap" where
   "relax_edge_imp s u du e =
-     do { v \<leftarrow> snd_imp e;
+     do { v \<leftarrow> snd_imp (dimp_ends s) e;
           sn \<leftarrow> seen_isin_imp (dimp_seen s) v;
           if sn then return ()
           else do {
@@ -139,7 +140,7 @@ definition relax_edge_imp ::
 text \<open>Register one source. Mirrors @{const dijkstra.insert_source}.\<close>
 
 definition insert_source_imp ::
-  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v \<Rightarrow> unit Heap" where
+  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v \<Rightarrow> unit Heap" where
   "insert_source_imp s v =
      do { dist_upd_imp (dimp_dist s) v 0;
           queue_insert_imp (dimp_heap s) v 0 }"
@@ -147,7 +148,7 @@ definition insert_source_imp ::
 text \<open>The target test on a settled vertex. It is only made with early stopping.\<close>
 
 definition target_test_imp ::
-  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v \<Rightarrow> bool Heap" where
+  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v \<Rightarrow> bool Heap" where
   "target_test_imp s u = (if early_stop then target_imp (dimp_target s) u else return False)"
 
 text \<open>The main loop, one step of the functional @{const dijkstra.dijkstra} per iteration. The
@@ -155,7 +156,7 @@ text \<open>The main loop, one step of the functional @{const dijkstra.dijkstra}
       (@{const None} if the queue ran empty).\<close>
 
 partial_function (heap) dijkstra_loop_imp ::
-  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v option \<Rightarrow> 'v option Heap" where
+  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v option \<Rightarrow> 'v option Heap" where
   "dijkstra_loop_imp s cur =
      (case cur of
         Some u \<Rightarrow> do {
@@ -200,19 +201,19 @@ text \<open>Path reconstruction on the final state: going back from @{term v} al
       @{term k} on. The path thus ends up reversed in the array. The result is the position after
       the last edge written. Mirrors @{const dijkstra.build_path}.\<close>
 
-partial_function (heap) path_rev_imp :: "'pi \<Rightarrow> 'e array \<Rightarrow> 'v \<Rightarrow> nat \<Rightarrow> nat Heap" where
-  "path_rev_imp Pa Ra v k =
+partial_function (heap) path_rev_imp :: "'ei \<Rightarrow> 'pi \<Rightarrow> 'e array \<Rightarrow> 'v \<Rightarrow> nat \<Rightarrow> nat Heap" where
+  "path_rev_imp Ei Pa Ra v k =
      do { p \<leftarrow> parent_lookup_imp Pa v;
           (case p of
              None \<Rightarrow> return k
            | Some e \<Rightarrow> do {
                _ \<leftarrow> Array.upd k e Ra;
-               u \<leftarrow> fst_imp e;
-               path_rev_imp Pa Ra u (Suc k) }) }"
+               u \<leftarrow> fst_imp Ei e;
+               path_rev_imp Ei Pa Ra u (Suc k) }) }"
 
 definition path_imp ::
-  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ti, 'ai) dij_impl_state \<Rightarrow> 'e array \<Rightarrow> 'v \<Rightarrow> nat Heap" where
-  "path_imp s Ra v = path_rev_imp (dimp_parent s) Ra v 0"
+  "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'e array \<Rightarrow> 'v \<Rightarrow> nat Heap" where
+  "path_imp s Ra v = path_rev_imp (dimp_ends s) (dimp_parent s) Ra v 0"
 
 end
 
@@ -230,12 +231,13 @@ text \<open>The proof locale combines
         \<^item> the code locale @{locale dijkstra_impl_spec}.
 
       The weights are given by a functional array @{term W} over @{term \<E>} agreeing with
-      @{term w}. The endpoint reads @{term snd_imp} and @{term fst_imp} read no heap data. The
+      @{term w}. The endpoint reads @{term snd_imp} and @{term fst_imp} only read a heap
+      representation @{term ends_assn} of the endpoints. The
       target test @{term target_imp} decides the functional predicate @{term target} on a heap
       representation @{term target_assn}. Likewise, the edge test @{term allowed_imp} decides
       @{term allowed} for an edge given by its tail, head and weight on a heap representation
-      @{term allowed_assn}. Neither representation is known to the refinement: it is fixed by
-      the instantiation and carried as a frame through all Hoare triples.\<close>
+      @{term allowed_assn}. None of these representations is known to the refinement: each is
+      fixed by the instantiation and carried as a frame through all Hoare triples.\<close>
 
 locale dijkstra_impl_refine =
   dijkstra where fst = fst and target = target and allowed = allowed and early_stop = early_stop
@@ -330,20 +332,21 @@ locale dijkstra_impl_refine =
     and src_current_imp :: "'srci \<Rightarrow> 'v Heap"
     and src_has_imp :: "'srci \<Rightarrow> bool Heap"
     and src_move_imp :: "'srci \<Rightarrow> unit Heap"
-    and snd_imp :: "'e \<Rightarrow> 'v Heap"
-    and fst_imp :: "'e \<Rightarrow> 'v Heap"
+    and snd_imp :: "'ei \<Rightarrow> 'e \<Rightarrow> 'v Heap"
+    and fst_imp :: "'ei \<Rightarrow> 'e \<Rightarrow> 'v Heap"
     and target_imp :: "'ti \<Rightarrow> 'v \<Rightarrow> bool Heap"
     and allowed :: "'v \<Rightarrow> 'v \<Rightarrow> 'e \<Rightarrow> real \<Rightarrow> bool"
     and allowed_imp :: "'ai \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'e \<Rightarrow> 'n \<Rightarrow> bool Heap" +
   fixes W :: 'warr
+    and ends_assn :: "'ei \<Rightarrow> assn"
     and target_assn :: "'ti \<Rightarrow> assn"
     and allowed_assn :: "'ai \<Rightarrow> assn"
   assumes W_invar: "weight_invar W"
     and W_weights: "\<And>e. e \<in> \<E> \<Longrightarrow> weight_lookup W e = w e"
     and snd_imp_rule[sep_heap_rules]:
-      "e \<in> \<E> \<Longrightarrow> <emp> snd_imp e <\<lambda>v. \<up>(v = snd e)>"
+      "e \<in> \<E> \<Longrightarrow> <ends_assn Ei> snd_imp Ei e <\<lambda>v. ends_assn Ei * \<up>(v = snd e)>"
     and fst_imp_rule[sep_heap_rules]:
-      "e \<in> \<E> \<Longrightarrow> <emp> fst_imp e <\<lambda>u. \<up>(u = fst e)>"
+      "e \<in> \<E> \<Longrightarrow> <ends_assn Ei> fst_imp Ei e <\<lambda>u. ends_assn Ei * \<up>(u = fst e)>"
     and target_imp_rule[sep_heap_rules]:
       "v \<in> \<V> \<Longrightarrow> <target_assn Ti> target_imp Ti v <\<lambda>b. target_assn Ti * \<up>(b = target v)>"
     and allowed_imp_rule[sep_heap_rules]:
@@ -351,8 +354,8 @@ locale dijkstra_impl_refine =
        <allowed_assn Ai> allowed_imp Ai u v e we <\<lambda>b. allowed_assn Ai * \<up>(b = allowed u v e (w e))>"
 begin
 
-text \<open>The functional state together with the weight array, the target test and the edge test is
-      represented by the heap handles.\<close>
+text \<open>The functional state together with the weight array, the endpoints, the target test and
+      the edge test is represented by the heap handles.\<close>
 
 definition state_assn where
   "state_assn st si =
@@ -363,6 +366,7 @@ definition state_assn where
      out_assn (dij_graph st) (dimp_graph si) *
      src_assn (dij_srcs st) (dimp_srcs si) *
      weight_assn W (dimp_weight si) *
+     ends_assn (dimp_ends si) *
      target_assn (dimp_target si) *
      allowed_assn (dimp_allowed si)"
 
@@ -385,6 +389,11 @@ text \<open>Following @{text DFS_Imperative}, we do not unfold the state asserti
 lemma weight_lookup_imp_rule:
   "e \<in> \<E> \<Longrightarrow> <weight_assn W Wi> weight_lookup_imp Wi e <\<lambda>x. weight_assn W Wi * \<up>(h x = w e)>"
   by (sep_auto simp: W_invar W_weights)
+
+lemma snd_state[sep_heap_rules]:
+  "e \<in> \<E> \<Longrightarrow>
+   <state_assn st si> snd_imp (dimp_ends si) e <\<lambda>v. state_assn st si * \<up>(v = snd e)>"
+  unfolding state_assn_def by sep_auto
 
 lemma dist_lookup_state[sep_heap_rules]:
   "\<lbrakk>dist_invar (dij_dist st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
@@ -1132,8 +1141,8 @@ lemma parent_invar_compute: "parent_invar (dij_parent dijkstra_compute)"
 
 lemma path_rev_imp_rule:
   "v \<in> \<V> \<Longrightarrow> k + length (reconstruct_path dijkstra_compute v) \<le> length r \<Longrightarrow>
-   <parent_assn (dij_parent dijkstra_compute) Pa * Ra \<mapsto>\<^sub>a r> path_rev_imp Pa Ra v k
-   <\<lambda>k'. parent_assn (dij_parent dijkstra_compute) Pa *
+   <ends_assn Ei * parent_assn (dij_parent dijkstra_compute) Pa * Ra \<mapsto>\<^sub>a r> path_rev_imp Ei Pa Ra v k
+   <\<lambda>k'. ends_assn Ei * parent_assn (dij_parent dijkstra_compute) Pa *
         Ra \<mapsto>\<^sub>a (take k r @ rev (reconstruct_path dijkstra_compute v) @
                  drop (k + length (reconstruct_path dijkstra_compute v)) r) *
         \<up>(k' = k + length (reconstruct_path dijkstra_compute v))>"

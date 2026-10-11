@@ -10,8 +10,8 @@ text \<open>A graph in compressed sparse row (CSR) form, built by
       indices. Advancing the iterator of a vertex increments its cursor; resetting it copies the
       start index back.
 
-      Edges are triples \<open>(u, v, i)\<close> of source, target and identifier; the identifier makes parallel
-      edges distinct and can index further arrays, e.g.\ of weights.\<close>
+      The entries of \<open>E\<close> are generic: edge indices, which can index further arrays (e.g.\ of
+      endpoints or weights), or directly what a search reads, e.g.\ the targets.\<close>
 
 subsection \<open>The graph in CSR form with a cursor array\<close>
 
@@ -33,8 +33,11 @@ locale csr_graph =
     and B_length: "length B = Suc n"
     and B_mono: "\<And>v. v < n \<Longrightarrow> B ! v \<le> B ! Suc v"
     and B_bound: "\<And>v. v < n \<Longrightarrow> B ! Suc v \<le> length E"
-    and E_distinct: "distinct E"
+    and E_distinct: "\<And>v. v < n \<Longrightarrow> inj_on ((!) E) {B ! v..<B ! Suc v}"
 begin
+
+text \<open>The entries are distinct within each segment only; different segments may share entries,
+      e.g.\ when \<open>E\<close> holds the targets of the edges.\<close>
 
 definition "seg a b = (!) E ` {a..<b}"
 
@@ -54,23 +57,20 @@ lemma seg_empty_iff: "seg a b = {} \<longleftrightarrow> b \<le> a"
   by (auto simp: seg_def)
 
 lemma seg_Int:
-  assumes "b \<le> length E" "b' \<le> length E"
+  assumes "v < n" "B ! v \<le> a" "b \<le> B ! Suc v" "B ! v \<le> a'" "b' \<le> B ! Suc v"
   shows "seg a b \<inter> seg a' b' = (!) E ` ({a..<b} \<inter> {a'..<b'})"
-proof -
-  have "inj_on ((!) E) {..<length E}" using E_distinct by (simp add: inj_on_nth)
-  then show ?thesis unfolding seg_def using assms by (intro inj_on_image_Int[symmetric]) auto
-qed
+  unfolding seg_def using assms
+  by (intro inj_on_image_Int[OF E_distinct[OF assms(1)], symmetric]) auto
 
 lemma seg_Un: "a \<le> b \<Longrightarrow> b \<le> c \<Longrightarrow> seg a b \<union> seg b c = seg a c"
   unfolding seg_def by (metis image_Un ivl_disj_un_two(3))
 
 lemma seg_Suc:
-  assumes "a < b" "b \<le> length E"
+  assumes "v < n" "B ! v \<le> a" "a < b" "b \<le> B ! Suc v"
   shows "seg (Suc a) b = seg a b - {E ! a}"
 proof -
-  have "inj_on ((!) E) {..<length E}" using E_distinct by (simp add: inj_on_nth)
-  then have "(!) E ` ({a..<b} - {a}) = (!) E ` {a..<b} - (!) E ` {a}"
-    using assms by (intro inj_on_image_set_diff) auto
+  have "(!) E ` ({a..<b} - {a}) = (!) E ` {a..<b} - (!) E ` {a}"
+    using assms by (intro inj_on_image_set_diff[OF E_distinct[OF assms(1)]]) auto
   moreover have "{a..<b} - {a} = {Suc a..<b}" by auto
   ultimately show ?thesis by (simp add: seg_def)
 qed
@@ -85,9 +85,9 @@ sublocale csr: indexed_iterable_set csr_invar csr_abstract csr_current csr_has c
     csr_remaining csr_move csr_reset K
 proof (unfold_locales, goal_cases)
   case (1 C i)
-  then have "B ! Suc i \<le> length E" "C i \<le> length E" "C i \<le> B ! Suc i"
-    using B_bound[OF K_less] by (auto simp: csr_invar_def intro: order_trans)
-  then show ?case by (auto simp: csr_iterated_def csr_remaining_def seg_Int)
+  then have "B ! i \<le> C i" "C i \<le> B ! Suc i" by (auto simp: csr_invar_def)
+  then show ?case
+    by (auto simp: csr_iterated_def csr_remaining_def seg_Int[OF K_less[OF 1(2)]])
 next
   case (2 C i) then show ?case
     by (auto simp: csr_invar_def csr_iterated_def csr_remaining_def csr_abstract_def seg_Un)
@@ -103,9 +103,9 @@ next
   case (6 C i j) then show ?case by (simp add: csr_abstract_def)
 next
   case (7 C i)
-  then have "C i < B ! Suc i" "B ! Suc i \<le> length E"
-    using B_bound[OF K_less] by (auto simp: remaining_ne)
-  then show ?case by (simp add: csr_remaining_def csr_move_def csr_current_def seg_Suc)
+  then have "C i < B ! Suc i" "B ! i \<le> C i" by (auto simp: remaining_ne csr_invar_def)
+  then show ?case
+    by (simp add: csr_remaining_def csr_move_def csr_current_def seg_Suc[OF K_less[OF 7(2)]])
 next
   case (8 C i)
   then have "C i < B ! Suc i" "B ! i \<le> C i" by (auto simp: remaining_ne csr_invar_def)
@@ -255,62 +255,92 @@ end
 subsection \<open>Edges and the input\<close>
 
 text \<open>The graph is given by two lists of equal length \<open>m\<close> holding the first and the second
-      endpoints; the \<open>i\<close>-th entries become the edge \<open>(u, v, i)\<close>.\<close>
+      endpoints; the edges are the indices \<open>i < m\<close>, with endpoints \<open>fs ! i\<close> and \<open>ts ! i\<close>.
 
-type_synonym edge = "nat \<times> nat \<times> nat"
+      The multigraph locales ask for an edge between any two vertices (@{term create_edge}). The
+      indices from \<open>m\<close> on serve for this: they encode the pairs of vertices. They are no edges of
+      the graph and only occur in the abstract model.\<close>
 
-definition e_src :: "edge \<Rightarrow> nat" where "e_src e = fst e"
-definition e_tgt :: "edge \<Rightarrow> nat" where "e_tgt e = fst (snd e)"
-definition e_id :: "edge \<Rightarrow> nat" where "e_id e = snd (snd e)"
+definition e_src :: "nat list \<Rightarrow> nat \<Rightarrow> nat" where
+  "e_src fs i = (if i < length fs then fs ! i else fst (prod_decode (i - length fs)))"
 
-definition mk_edge :: "nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> edge" where
-  "mk_edge fs ts i = (fs ! i, ts ! i, i)"
+definition e_tgt :: "nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat" where
+  "e_tgt fs ts i = (if i < length fs then ts ! i else snd (prod_decode (i - length fs)))"
 
-lemma mk_edge_simps[simp]:
-  "e_src (mk_edge fs ts i) = fs ! i" "e_tgt (mk_edge fs ts i) = ts ! i" "e_id (mk_edge fs ts i) = i"
-  by (simp_all add: mk_edge_def e_src_def e_tgt_def e_id_def)
+definition e_new :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where
+  "e_new fs u v = length fs + prod_encode (u, v)"
 
-definition edge_seq :: "nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> edge list" where
-  "edge_seq fs ts i = map (mk_edge fs ts) [i..<length fs]"
+lemma e_new_simps[simp]: "e_src fs (e_new fs u v) = u" "e_tgt fs ts (e_new fs u v) = v"
+  by (simp_all add: e_src_def e_tgt_def e_new_def)
 
-definition edge_next :: "nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> (edge \<times> nat) option" where
-  "edge_next fs ts i = (if i < length fs then Some (mk_edge fs ts i, Suc i) else None)"
+lemma e_nth[simp]: "i < length fs \<Longrightarrow> e_src fs i = fs ! i"
+  "i < length fs \<Longrightarrow> e_tgt fs ts i = ts ! i"
+  by (simp_all add: e_src_def e_tgt_def)
 
-definition edges :: "nat list \<Rightarrow> nat list \<Rightarrow> edge set" where
-  "edges fs ts = set (edge_seq fs ts 0)"
+definition edges :: "nat list \<Rightarrow> nat set" where
+  "edges fs = {..<length fs}"
 
 abbreviation verts :: "nat list \<Rightarrow> nat list \<Rightarrow> nat set" where
-  "verts fs ts \<equiv> dVs (multigraph_spec.make_pair e_src e_tgt ` edges fs ts)"
+  "verts fs ts \<equiv> dVs (multigraph_spec.make_pair (e_src fs) (e_tgt fs ts) ` edges fs)"
 
-lemma edge_seq_distinct: "distinct (edge_seq fs ts i)"
-  unfolding edge_seq_def by (simp add: distinct_map inj_on_def mk_edge_def)
+lemma edges_iff[simp]: "i \<in> edges fs \<longleftrightarrow> i < length fs"
+  by (simp add: edges_def)
 
-lemma edges_iff: "e \<in> edges fs ts \<longleftrightarrow> (\<exists>i<length fs. e = mk_edge fs ts i)"
+definition edge_seq :: "nat list \<Rightarrow> nat \<Rightarrow> nat list" where
+  "edge_seq fs i = [i..<length fs]"
+
+definition edge_next :: "nat list \<Rightarrow> nat \<Rightarrow> (nat \<times> nat) option" where
+  "edge_next fs i = (if i < length fs then Some (i, Suc i) else None)"
+
+lemma edges_seq: "edges fs = set (edge_seq fs 0)"
   by (auto simp: edges_def edge_seq_def)
 
-lemma edge_iterator: "iterator (edge_next fs ts) (edge_seq fs ts) (\<lambda>_. True)"
+lemma edge_seq_distinct: "distinct (edge_seq fs i)"
+  by (simp add: edge_seq_def)
+
+lemma edge_iterator: "iterator (edge_next fs) (edge_seq fs) (\<lambda>_. True)"
   by unfold_locales (auto simp: edge_next_def edge_seq_def upt_conv_Cons split: if_splits)
 
+text \<open>The endpoints are read from the input arrays. The arrays are only read, so the assertion
+      for them is carried as a frame.\<close>
+
+definition ends_assn :: "nat list \<Rightarrow> nat list \<Rightarrow> nat array \<times> nat array \<Rightarrow> assn" where
+  "ends_assn fs ts = (\<lambda>(Fa, Ta). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)"
+
+definition src_imp :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+  "src_imp = (\<lambda>(Fa, Ta) i. Array.nth Fa i)"
+
+definition tgt_imp :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+  "tgt_imp = (\<lambda>(Fa, Ta) i. Array.nth Ta i)"
+
+lemma src_imp_rule:
+  "i < length fs \<Longrightarrow> <ends_assn fs ts Ei> src_imp Ei i <\<lambda>u. ends_assn fs ts Ei * \<up>(u = e_src fs i)>"
+  by (cases Ei) (sep_auto simp: ends_assn_def src_imp_def)
+
+lemma tgt_imp_rule:
+  "\<lbrakk>i < length fs; length ts = length fs\<rbrakk> \<Longrightarrow>
+   <ends_assn fs ts Ei> tgt_imp Ei i <\<lambda>v. ends_assn fs ts Ei * \<up>(v = e_tgt fs ts i)>"
+  by (cases Ei) (sep_auto simp: ends_assn_def tgt_imp_def)
+
 text \<open>The imperative input iterator: the container is the pair of endpoint arrays, the iterator
-      state is the position.\<close>
+      state is the position, which is the edge.\<close>
 
 definition edge_has_next :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "edge_has_next = (\<lambda>(Fa, Ta) i. do { l \<leftarrow> Array.len Fa; return (i < l) })"
 
-definition edge_cur :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> edge Heap" where
-  "edge_cur = (\<lambda>(Fa, Ta) i. do { u \<leftarrow> Array.nth Fa i; v \<leftarrow> Array.nth Ta i; return (u, v, i) })"
+definition edge_cur :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+  "edge_cur = (\<lambda>_ i. return i)"
 
 definition edge_adv :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "edge_adv = (\<lambda>_ i. return (Suc i))"
 
-text \<open>The key of an edge is its tail and the edge itself is stored, so neither operation reads
-      the input arrays.\<close>
+text \<open>The key of an edge is its tail; the edge itself is stored.\<close>
 
-definition edge_key :: "nat array \<times> nat array \<Rightarrow> edge \<Rightarrow> nat Heap" where
-  "edge_key _ e = return (e_src e)"
+definition edge_key :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+  "edge_key = src_imp"
 
-definition edge_val :: "nat array \<times> nat array \<Rightarrow> edge \<Rightarrow> edge Heap" where
-  "edge_val _ e = return e"
+definition edge_val :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+  "edge_val _ i = return i"
 
 subsection \<open>The CSR buildup for the input\<close>
 

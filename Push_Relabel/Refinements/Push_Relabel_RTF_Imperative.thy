@@ -13,11 +13,11 @@ text \<open>The context of the relabel-to-front strategy in place: the list of v
       has been relabelled, and the handle of a structure over which an imperative vertex fold runs.
       The fold builds the initial list. All updates of the context work in place.\<close>
 
-locale push_relabel_rtf_imp_code = push_relabel_ops_imp_code fst snd s t num_verts emap_get_imp
+locale push_relabel_rtf_imp_code = push_relabel_ops_imp_code fst_imp snd_imp s t num_verts emap_get_imp
     emap_upd_imp ex_get_imp ex_upd_imp label_get_imp label_upd_imp count_get_imp count_upd_imp
     out_current_imp out_has_imp out_move_imp out_reset_imp out_reset_to_imp in_current_imp
     in_has_imp in_move_imp in_reset_imp in_reset_to_imp gap_fold_imp edge_fold_imp
-  for fst snd :: "'e::heap \<Rightarrow> 'v::heap" and s t num_verts
+  for fst_imp snd_imp :: "'ei \<Rightarrow> 'e::heap \<Rightarrow> 'v::heap Heap" and s t num_verts
   and emap_get_imp :: "'fi \<Rightarrow> 'e \<Rightarrow> 'n::{linordered_idom, heap} Heap" and emap_upd_imp
   and ex_get_imp :: "'xi \<Rightarrow> 'v \<Rightarrow> 'n Heap" and ex_upd_imp
   and label_get_imp :: "'li \<Rightarrow> 'v \<Rightarrow> nat Heap" and label_upd_imp
@@ -33,7 +33,7 @@ locale push_relabel_rtf_imp_code = push_relabel_ops_imp_code fst snd s t num_ver
 begin
 
 partial_function (heap) rtf_scan_imp ::
-  "'lsi \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'e) pr_imp \<Rightarrow> nat \<Rightarrow> 'v \<Rightarrow> 'v option Heap" where
+  "'lsi \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'ei, 'e) pr_imp \<Rightarrow> nat \<Rightarrow> 'v \<Rightarrow> 'v option Heap" where
   "rtf_scan_imp Ls Si n u =
      (if n = 0 then return None
       else do {
@@ -90,7 +90,7 @@ text \<open>The list is a distinct list in place, and the imperative vertex fold
 locale push_relabel_rtf_imp =
   push_relabel_ops_imp +
   push_relabel_rtf where fst = fst and snd = snd +
-  push_relabel_rtf_imp_code fst snd s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
+  push_relabel_rtf_imp_code fst_imp snd_imp s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
     label_get_imp label_upd_imp count_get_imp count_upd_imp out_current_imp out_has_imp
     out_move_imp out_reset_imp out_reset_to_imp in_current_imp in_has_imp in_move_imp in_reset_imp
     in_reset_to_imp gap_fold_imp edge_fold_imp list_push_front_imp list_move_to_front_imp

@@ -12,11 +12,11 @@ text \<open>The context of the FIFO strategy in place: the queue, the current ve
       and the handle of a structure over which an imperative vertex fold runs. The fold builds the
       initial queue. All updates of the context work in place.\<close>
 
-locale push_relabel_fifo_imp_code = push_relabel_ops_imp_code fst snd s t num_verts emap_get_imp
+locale push_relabel_fifo_imp_code = push_relabel_ops_imp_code fst_imp snd_imp s t num_verts emap_get_imp
     emap_upd_imp ex_get_imp ex_upd_imp label_get_imp label_upd_imp count_get_imp count_upd_imp
     out_current_imp out_has_imp out_move_imp out_reset_imp out_reset_to_imp in_current_imp
     in_has_imp in_move_imp in_reset_imp in_reset_to_imp gap_fold_imp edge_fold_imp
-  for fst snd :: "'e::heap \<Rightarrow> 'v::heap" and s t num_verts
+  for fst_imp snd_imp :: "'ei \<Rightarrow> 'e::heap \<Rightarrow> 'v::heap Heap" and s t num_verts
   and emap_get_imp :: "'fi \<Rightarrow> 'e \<Rightarrow> 'n::{linordered_idom, heap} Heap" and emap_upd_imp
   and ex_get_imp :: "'xi \<Rightarrow> 'v \<Rightarrow> 'n Heap" and ex_upd_imp
   and label_get_imp :: "'li \<Rightarrow> 'v \<Rightarrow> nat Heap" and label_upd_imp
@@ -41,11 +41,13 @@ definition "fifo_ctx_upd_imp op Qi Cf Cu Si u =
      Push_Fwd d \<Rightarrow> do {
        c \<leftarrow> emap_get_imp (pi_fwd Si) d;
        x \<leftarrow> ex_get_imp (pi_ex Si) u;
-       fifo_after_push_imp Qi Cf Cu Si u (snd d) (c < x) }
+       v \<leftarrow> snd_imp (pi_ends Si) d;
+       fifo_after_push_imp Qi Cf Cu Si u v (c < x) }
    | Push_Bwd d \<Rightarrow> do {
        c \<leftarrow> emap_get_imp (pi_bwd Si) d;
        x \<leftarrow> ex_get_imp (pi_ex Si) u;
-       fifo_after_push_imp Qi Cf Cu Si u (fst d) (c < x) }
+       v \<leftarrow> fst_imp (pi_ends Si) d;
+       fifo_after_push_imp Qi Cf Cu Si u v (c < x) }
    | Advance _ \<Rightarrow> cur_set_imp Cf Cu u
    | _ \<Rightarrow> do { queue_push_imp Qi u; cur_clear_imp Cf })"
 
@@ -79,7 +81,7 @@ text \<open>The queue is a bounded queue in place, and the imperative vertex fol
 locale push_relabel_fifo_imp =
   push_relabel_ops_imp +
   push_relabel_fifo where fst = fst and snd = snd +
-  push_relabel_fifo_imp_code fst snd s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
+  push_relabel_fifo_imp_code fst_imp snd_imp s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
     label_get_imp label_upd_imp count_get_imp count_upd_imp out_current_imp out_has_imp
     out_move_imp out_reset_imp out_reset_to_imp in_current_imp in_has_imp in_move_imp in_reset_imp
     in_reset_to_imp gap_fold_imp edge_fold_imp queue_push_imp queue_pop_imp queue_is_empty_imp
@@ -127,7 +129,7 @@ proof-
       unfolding Push_Fwd fifo_ctx_upd_imp_def fifo_ctx_upd_def pr_op.case
       using edge_verts[OF d]
       by (sep_auto heap: fwd_get_state_rule[OF I(1) d] ex_get_state_rule[OF I(2) assms(4)]
-                         fifo_after_push_imp_rule[OF I(2) assms(2,3)])
+                         snd_state_rule[OF d] fifo_after_push_imp_rule[OF I(2) assms(2,3)])
   next
     case (Push_Bwd d)
     have d: "d \<in> \<E>"
@@ -136,7 +138,7 @@ proof-
       unfolding Push_Bwd fifo_ctx_upd_imp_def fifo_ctx_upd_def pr_op.case
       using edge_verts[OF d]
       by (sep_auto heap: bwd_get_state_rule[OF I(13) d] ex_get_state_rule[OF I(2) assms(4)]
-                         fifo_after_push_imp_rule[OF I(2) assms(2,3)])
+                         fst_state_rule[OF d] fifo_after_push_imp_rule[OF I(2) assms(2,3)])
   qed (sep_auto simp: fifo_ctx_upd_imp_def fifo_ctx_upd_def
                 heap: cur_set_rule cur_clear_rule queue_imp.queue_push_rule[OF assms(2,3)])+
 qed

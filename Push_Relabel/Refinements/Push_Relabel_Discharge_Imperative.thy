@@ -44,13 +44,13 @@ definition "discharge_op_imp gap Si u = do {
    b \<leftarrow> out_has_imp (pi_out Si) u;
    if b then do {
      d \<leftarrow> out_current_imp (pi_out Si) u;
-     a \<leftarrow> admissible_fwd_imp (pi_fwd Si) (pi_lab Si) d;
+     a \<leftarrow> admissible_fwd_imp (pi_ends Si) (pi_fwd Si) (pi_lab Si) d;
      return (if a then Push_Fwd d else Advance u) }
    else do {
      c \<leftarrow> in_has_imp (pi_in Si) u;
      if c then do {
        d \<leftarrow> in_current_imp (pi_in Si) u;
-       a \<leftarrow> admissible_bwd_imp (pi_bwd Si) (pi_lab Si) d;
+       a \<leftarrow> admissible_bwd_imp (pi_ends Si) (pi_bwd Si) (pi_lab Si) d;
        return (if a then Push_Bwd d else Advance u) }
      else return (if gap then Relabel_Gap u else Relabel u) } }"
 

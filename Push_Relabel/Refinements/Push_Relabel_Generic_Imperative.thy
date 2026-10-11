@@ -12,13 +12,14 @@ text \<open>The operations of @{locale push_relabel_ops} are implemented once mo
       data structures given by their Hoare triples: the residual capacities, the capacities and
       the excesses are maps whose values are read into the reals by an embedding @{term h}, the
       labels and the counts are maps holding natural numbers, and the outgoing and ingoing edges
-      are indexed iterators with jumping. All operations work in place; the handles of the data
+      are indexed iterators with jumping. The endpoints of an edge are read from a data structure
+      as well, by @{term fst_imp} and @{term snd_imp}. All operations work in place; the handles of the data
       structures are fixed when the algorithm starts and never change. Nothing is allocated.
 
       The programs follow the functional operations step by step, so every Hoare triple says that
       a program computes its functional counterpart.\<close>
 
-record ('fi, 'xi, 'li, 'ci, 'gi, 'e) pr_imp =
+record ('fi, 'xi, 'li, 'ci, 'gi, 'ei, 'e) pr_imp =
   pi_fwd :: 'fi
   pi_bwd :: 'fi
   pi_caps :: 'fi
@@ -27,6 +28,7 @@ record ('fi, 'xi, 'li, 'ci, 'gi, 'e) pr_imp =
   pi_cnt :: 'ci
   pi_out :: 'gi
   pi_in :: 'gi
+  pi_ends :: 'ei
   pi_mf :: "bool ref"
   pi_mk :: "nat ref"
   pi_md :: "'e ref"
@@ -37,7 +39,7 @@ text \<open>The code locale fixes only the imperative operations of the data str
       can be interpreted globally.\<close>
 
 locale push_relabel_ops_imp_code =
-  fixes fst snd :: "'e::heap \<Rightarrow> 'v::heap"
+  fixes fst_imp snd_imp :: "'ei \<Rightarrow> 'e::heap \<Rightarrow> 'v::heap Heap"
     and s t :: 'v
     and num_verts :: nat
     and emap_get_imp :: "'fi \<Rightarrow> 'e \<Rightarrow> 'n::{linordered_idom, heap} Heap"
@@ -62,41 +64,51 @@ locale push_relabel_ops_imp_code =
     and edge_fold_imp :: "'gi \<Rightarrow> ('e \<Rightarrow> unit Heap) \<Rightarrow> unit Heap"
 begin
 
-definition "admissible_fwd_imp Fi Li d = do {
+definition "admissible_fwd_imp Ei Fi Li d = do {
    c \<leftarrow> emap_get_imp Fi d;
    if 0 < c then do {
-     a \<leftarrow> label_get_imp Li (fst d);
-     b \<leftarrow> label_get_imp Li (snd d);
+     u \<leftarrow> fst_imp Ei d;
+     v \<leftarrow> snd_imp Ei d;
+     a \<leftarrow> label_get_imp Li u;
+     b \<leftarrow> label_get_imp Li v;
      return (a = b + 1) }
    else return False }"
 
-definition "admissible_bwd_imp Bi Li d = do {
+definition "admissible_bwd_imp Ei Bi Li d = do {
    c \<leftarrow> emap_get_imp Bi d;
    if 0 < c then do {
-     a \<leftarrow> label_get_imp Li (snd d);
-     b \<leftarrow> label_get_imp Li (fst d);
+     u \<leftarrow> fst_imp Ei d;
+     v \<leftarrow> snd_imp Ei d;
+     a \<leftarrow> label_get_imp Li v;
+     b \<leftarrow> label_get_imp Li u;
      return (a = b + 1) }
    else return False }"
 
-definition "augment_imp d \<delta> Si = do {
+text \<open>The endpoints \<open>u\<close> and \<open>v\<close> of \<open>d\<close> are read once by the caller.\<close>
+
+definition "augment_imp d u v \<delta> Si = do {
    a \<leftarrow> emap_get_imp (pi_fwd Si) d;
    emap_upd_imp (pi_fwd Si) d (a - \<delta>);
    b \<leftarrow> emap_get_imp (pi_bwd Si) d;
    emap_upd_imp (pi_bwd Si) d (b + \<delta>);
-   x \<leftarrow> ex_get_imp (pi_ex Si) (fst d);
-   ex_upd_imp (pi_ex Si) (fst d) (x - \<delta>);
-   y \<leftarrow> ex_get_imp (pi_ex Si) (snd d);
-   ex_upd_imp (pi_ex Si) (snd d) (y + \<delta>) }"
+   x \<leftarrow> ex_get_imp (pi_ex Si) u;
+   ex_upd_imp (pi_ex Si) u (x - \<delta>);
+   y \<leftarrow> ex_get_imp (pi_ex Si) v;
+   ex_upd_imp (pi_ex Si) v (y + \<delta>) }"
 
 definition "push_fwd_imp d Si = do {
-   x \<leftarrow> ex_get_imp (pi_ex Si) (fst d);
+   u \<leftarrow> fst_imp (pi_ends Si) d;
+   v \<leftarrow> snd_imp (pi_ends Si) d;
+   x \<leftarrow> ex_get_imp (pi_ex Si) u;
    c \<leftarrow> emap_get_imp (pi_fwd Si) d;
-   augment_imp d (min x c) Si }"
+   augment_imp d u v (min x c) Si }"
 
 definition "push_bwd_imp d Si = do {
-   x \<leftarrow> ex_get_imp (pi_ex Si) (snd d);
+   u \<leftarrow> fst_imp (pi_ends Si) d;
+   v \<leftarrow> snd_imp (pi_ends Si) d;
+   x \<leftarrow> ex_get_imp (pi_ex Si) v;
    c \<leftarrow> emap_get_imp (pi_bwd Si) d;
-   augment_imp d (- min x c) Si }"
+   augment_imp d u v (- min x c) Si }"
 
 partial_function (heap) skip_scan_imp ::
   "('gi \<Rightarrow> 'v \<Rightarrow> bool Heap) \<Rightarrow> ('gi \<Rightarrow> 'v \<Rightarrow> 'e Heap) \<Rightarrow> ('gi \<Rightarrow> 'v \<Rightarrow> unit Heap) \<Rightarrow>
@@ -111,11 +123,11 @@ partial_function (heap) skip_scan_imp ::
 
 definition "skip_imp u Si = do {
    skip_scan_imp out_has_imp out_current_imp out_move_imp
-     (admissible_fwd_imp (pi_fwd Si) (pi_lab Si)) u (pi_out Si);
+     (admissible_fwd_imp (pi_ends Si) (pi_fwd Si) (pi_lab Si)) u (pi_out Si);
    b \<leftarrow> out_has_imp (pi_out Si) u;
    if b then return ()
    else skip_scan_imp in_has_imp in_current_imp in_move_imp
-          (admissible_bwd_imp (pi_bwd Si) (pi_lab Si)) u (pi_in Si) }"
+          (admissible_bwd_imp (pi_ends Si) (pi_bwd Si) (pi_lab Si)) u (pi_in Si) }"
 
 definition "move_imp u Si = do {
    b \<leftarrow> out_has_imp (pi_out Si) u;
@@ -137,14 +149,15 @@ definition "min_set_imp Si k d = do { pi_mf Si := True; pi_mk Si := k; pi_md Si 
 
 partial_function (heap) min_scan_imp ::
   "('gi \<Rightarrow> 'v \<Rightarrow> bool Heap) \<Rightarrow> ('gi \<Rightarrow> 'v \<Rightarrow> 'e Heap) \<Rightarrow> ('gi \<Rightarrow> 'v \<Rightarrow> unit Heap) \<Rightarrow> 'fi \<Rightarrow>
-   ('e \<Rightarrow> 'v) \<Rightarrow> 'v \<Rightarrow> 'gi \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'e) pr_imp \<Rightarrow> unit Heap" where
+   ('e \<Rightarrow> 'v Heap) \<Rightarrow> 'v \<Rightarrow> 'gi \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'ei, 'e) pr_imp \<Rightarrow> unit Heap" where
   "min_scan_imp has cur move Ri endp u Ci Si = do {
      b \<leftarrow> has Ci u;
      if b then do {
        d \<leftarrow> cur Ci u;
        r \<leftarrow> emap_get_imp Ri d;
        if 0 < r then do {
-         k \<leftarrow> label_get_imp (pi_lab Si) (endp d);
+         w \<leftarrow> endp d;
+         k \<leftarrow> label_get_imp (pi_lab Si) w;
          move Ci u;
          f \<leftarrow> !(pi_mf Si);
          k' \<leftarrow> !(pi_mk Si);
@@ -157,11 +170,13 @@ partial_function (heap) min_scan_imp ::
 definition "new_label_imp u Si = do {
    out_reset_imp (pi_out Si) u;
    pi_mf Si := False;
-   min_scan_imp out_has_imp out_current_imp out_move_imp (pi_fwd Si) snd u (pi_out Si) Si;
+   min_scan_imp out_has_imp out_current_imp out_move_imp (pi_fwd Si) (snd_imp (pi_ends Si)) u
+     (pi_out Si) Si;
    f1 \<leftarrow> !(pi_mf Si);
    m1 \<leftarrow> !(pi_mk Si);
    in_reset_imp (pi_in Si) u;
-   min_scan_imp in_has_imp in_current_imp in_move_imp (pi_bwd Si) fst u (pi_in Si) Si;
+   min_scan_imp in_has_imp in_current_imp in_move_imp (pi_bwd Si) (fst_imp (pi_ends Si)) u
+     (pi_in Si) Si;
    m \<leftarrow> !(pi_mk Si);
    d \<leftarrow> !(pi_md Si);
    if \<not> f1 \<or> m < m1
@@ -196,14 +211,16 @@ fun apply_op_imp where
 
 definition "init_step_imp Si d = do {
    c \<leftarrow> emap_get_imp (pi_caps Si) d;
-   if fst d = s \<and> snd d \<noteq> s
+   u \<leftarrow> fst_imp (pi_ends Si) d;
+   v \<leftarrow> snd_imp (pi_ends Si) d;
+   if u = s \<and> v \<noteq> s
    then do {
      x \<leftarrow> ex_get_imp (pi_ex Si) s;
      ex_upd_imp (pi_ex Si) s (x - c);
      emap_upd_imp (pi_fwd Si) d 0;
      emap_upd_imp (pi_bwd Si) d c;
-     y \<leftarrow> ex_get_imp (pi_ex Si) (snd d);
-     ex_upd_imp (pi_ex Si) (snd d) (y + c) }
+     y \<leftarrow> ex_get_imp (pi_ex Si) v;
+     ex_upd_imp (pi_ex Si) v (y + c) }
    else do { emap_upd_imp (pi_fwd Si) d c; emap_upd_imp (pi_bwd Si) d 0 } }"
 
 definition "init_imp Si = do {
@@ -217,11 +234,11 @@ end
 text \<open>The loop: the strategy decides on the next operation by @{term select_imp}, which updates
       its context @{term Ci} in place.\<close>
 
-locale push_relabel_imp_code = push_relabel_ops_imp_code fst snd s t num_verts emap_get_imp
+locale push_relabel_imp_code = push_relabel_ops_imp_code fst_imp snd_imp s t num_verts emap_get_imp
     emap_upd_imp ex_get_imp ex_upd_imp label_get_imp label_upd_imp count_get_imp count_upd_imp
     out_current_imp out_has_imp out_move_imp out_reset_imp out_reset_to_imp in_current_imp
     in_has_imp in_move_imp in_reset_imp in_reset_to_imp gap_fold_imp edge_fold_imp
-  for fst snd :: "'e::heap \<Rightarrow> 'v::heap" and s t num_verts
+  for fst_imp snd_imp :: "'ei \<Rightarrow> 'e::heap \<Rightarrow> 'v::heap Heap" and s t num_verts
   and emap_get_imp :: "'fi \<Rightarrow> 'e \<Rightarrow> 'n::{linordered_idom, heap} Heap" and emap_upd_imp
   and ex_get_imp :: "'xi \<Rightarrow> 'v \<Rightarrow> 'n Heap" and ex_upd_imp
   and label_get_imp :: "'li \<Rightarrow> 'v \<Rightarrow> nat Heap" and label_upd_imp
@@ -229,8 +246,8 @@ locale push_relabel_imp_code = push_relabel_ops_imp_code fst snd s t num_verts e
   and out_current_imp :: "'gi \<Rightarrow> 'v \<Rightarrow> 'e Heap" and out_has_imp out_move_imp out_reset_imp
   and out_reset_to_imp and in_current_imp in_has_imp in_move_imp in_reset_imp in_reset_to_imp
   and gap_fold_imp edge_fold_imp +
-  fixes select_imp :: "'xc \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'e) pr_imp \<Rightarrow> ('e, 'v) pr_op Heap"
-    and init_ctx_imp :: "'xc \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'e) pr_imp \<Rightarrow> unit Heap"
+  fixes select_imp :: "'xc \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'ei, 'e) pr_imp \<Rightarrow> ('e, 'v) pr_op Heap"
+    and init_ctx_imp :: "'xc \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'ei, 'e) pr_imp \<Rightarrow> unit Heap"
 begin
 
 partial_function (heap) push_relabel_loop_imp where
@@ -262,7 +279,7 @@ text \<open>The data structures are given by their specifications. The map on th
 locale push_relabel_ops_imp =
   push_relabel_ops_correct where fst = fst and snd = snd +
   real_embedding h +
-  push_relabel_ops_imp_code fst snd s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
+  push_relabel_ops_imp_code fst_imp snd_imp s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
     label_get_imp label_upd_imp count_get_imp count_upd_imp out_current_imp out_has_imp
     out_move_imp out_reset_imp out_reset_to_imp in_current_imp in_has_imp in_move_imp in_reset_imp
     in_reset_to_imp gap_fold_imp edge_fold_imp +
@@ -278,7 +295,8 @@ locale push_relabel_ops_imp =
   in_imp: indexed_iterable_set_reset_to_imp in_invar in_abstract in_current in_has in_iterated
     in_remaining in_move in_reset \<V> in_assn in_current_imp in_has_imp in_move_imp
     in_reset_imp in_reset_to in_reset_to_imp
-  for fst snd :: "'e::heap \<Rightarrow> 'v::heap" and h :: "'n::{linordered_idom, heap} \<Rightarrow> real"
+  for fst snd :: "'e::heap \<Rightarrow> 'v::heap" and fst_imp snd_imp :: "'ei \<Rightarrow> 'e \<Rightarrow> 'v Heap"
+  and h :: "'n::{linordered_idom, heap} \<Rightarrow> real"
   and emap_get_imp :: "'fi \<Rightarrow> 'e \<Rightarrow> 'n Heap" and emap_upd_imp
   and ex_get_imp :: "'xi \<Rightarrow> 'v \<Rightarrow> 'n Heap" and ex_upd_imp
   and label_get_imp :: "'li \<Rightarrow> 'v \<Rightarrow> nat Heap" and label_upd_imp
@@ -287,7 +305,12 @@ locale push_relabel_ops_imp =
   and out_reset_to_imp and in_current_imp in_has_imp in_move_imp in_reset_imp in_reset_to_imp
   and gap_fold_imp edge_fold_imp
   and emap_assn ex_assn label_assn count_assn out_assn in_assn +
-  assumes gap_fold_imp_rule:
+  fixes ends_assn :: "'ei \<Rightarrow> assn"
+  assumes fst_imp_rule:
+    "\<And> e Ei. e \<in> \<E> \<Longrightarrow> <ends_assn Ei> fst_imp Ei e <\<lambda>u. ends_assn Ei * \<up>(u = fst e)>"
+  and snd_imp_rule:
+    "\<And> e Ei. e \<in> \<E> \<Longrightarrow> <ends_assn Ei> snd_imp Ei e <\<lambda>v. ends_assn Ei * \<up>(v = snd e)>"
+  and gap_fold_imp_rule:
     "\<And> l k g g_imp R r Li.
        \<lbrakk>label_invar l;
         \<And> acc v. \<lbrakk>label_invar (prod.fst acc); v \<in> \<V>; k < label_get (prod.fst acc) v;
@@ -309,7 +332,7 @@ text \<open>The minimum of a relabelling scan is kept in three references: a fla
       residual edge was found, the least label and the edge reaching it. Between the scans they
       hold arbitrary values.\<close>
 
-definition min_assn :: "(nat \<times> 'e) option \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'e) pr_imp \<Rightarrow> assn" where
+definition min_assn :: "(nat \<times> 'e) option \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'ei, 'e) pr_imp \<Rightarrow> assn" where
   "min_assn mb Si =
      (\<exists>\<^sub>A f k d. pi_mf Si \<mapsto>\<^sub>r f * pi_mk Si \<mapsto>\<^sub>r k * pi_md Si \<mapsto>\<^sub>r d *
                  \<up>(mb = (if f then Some (k, d) else None)))"
@@ -338,7 +361,8 @@ definition state_assn where
      emap_assn (pr_fwd st) (pi_fwd Si) * emap_assn (pr_bwd st) (pi_bwd Si) *
      emap_assn caps (pi_caps Si) * ex_assn (pr_excess st) (pi_ex Si) *
      label_assn (pr_labels st) (pi_lab Si) * count_assn (pr_counts st) (pi_cnt Si) *
-     out_assn (pr_out st) (pi_out Si) * in_assn (pr_in st) (pi_in Si) * min_scratch_assn Si"
+     out_assn (pr_out st) (pi_out Si) * in_assn (pr_in st) (pi_in Si) * ends_assn (pi_ends Si) *
+     min_scratch_assn Si"
 
 lemma state_assn_ctx[simp]: "state_assn (st\<lparr>pr_ctx := c\<rparr>) = state_assn st"
   by (simp add: state_assn_def fun_eq_iff)
@@ -346,27 +370,37 @@ lemma state_assn_ctx[simp]: "state_assn (st\<lparr>pr_ctx := c\<rparr>) = state_
 lemma edge_verts: "d \<in> \<E> \<Longrightarrow> fst d \<in> \<V> \<and> snd d \<in> \<V>"
   by (auto intro: fst_E_V snd_E_V)
 
+lemma fst_state_rule:
+  "d \<in> \<E> \<Longrightarrow> <state_assn st Si> fst_imp (pi_ends Si) d <\<lambda>u. state_assn st Si * \<up>(u = fst d)>"
+  unfolding state_assn_def by (sep_auto heap: fst_imp_rule)
+
+lemma snd_state_rule:
+  "d \<in> \<E> \<Longrightarrow> <state_assn st Si> snd_imp (pi_ends Si) d <\<lambda>v. state_assn st Si * \<up>(v = snd d)>"
+  unfolding state_assn_def by (sep_auto heap: snd_imp_rule)
+
 subsubsection \<open>Pushing\<close>
 
 lemma admissible_fwd_imp_rule:
   assumes "emap_invar fw" "label_invar l" "d \<in> \<E>"
-  shows "<emap_assn fw Fi * label_assn l Li> admissible_fwd_imp Fi Li d
-         <\<lambda>r. emap_assn fw Fi * label_assn l Li * \<up>(r = admissible_fwd_impl fw l d)>"
+  shows "<ends_assn Ei * emap_assn fw Fi * label_assn l Li> admissible_fwd_imp Ei Fi Li d
+         <\<lambda>r. ends_assn Ei * emap_assn fw Fi * label_assn l Li *
+              \<up>(r = admissible_fwd_impl fw l d)>"
   using assms edge_verts[OF assms(3)]
   unfolding admissible_fwd_imp_def admissible_fwd_impl_def
-  by (sep_auto simp: eq_commute[of "h _"])
+  by (sep_auto heap: fst_imp_rule snd_imp_rule simp: eq_commute[of "h _"])
 
 lemma admissible_bwd_imp_rule:
   assumes "emap_invar bw" "label_invar l" "d \<in> \<E>"
-  shows "<emap_assn bw Bi * label_assn l Li> admissible_bwd_imp Bi Li d
-         <\<lambda>r. emap_assn bw Bi * label_assn l Li * \<up>(r = admissible_bwd_impl bw l d)>"
+  shows "<ends_assn Ei * emap_assn bw Bi * label_assn l Li> admissible_bwd_imp Ei Bi Li d
+         <\<lambda>r. ends_assn Ei * emap_assn bw Bi * label_assn l Li *
+              \<up>(r = admissible_bwd_impl bw l d)>"
   using assms edge_verts[OF assms(3)]
   unfolding admissible_bwd_imp_def admissible_bwd_impl_def
-  by (sep_auto simp: eq_commute[of "h _"])
+  by (sep_auto heap: fst_imp_rule snd_imp_rule simp: eq_commute[of "h _"])
 
 lemma augment_imp_rule:
   assumes "emap_invar (pr_fwd st)" "emap_invar (pr_bwd st)" "ex_invar (pr_excess st)" "d \<in> \<E>"
-  shows "<state_assn st Si> augment_imp d \<delta> Si
+  shows "<state_assn st Si> augment_imp d (fst d) (snd d) \<delta> Si
          <\<lambda>_. state_assn (case augment_impl d (h \<delta>) (pr_fwd st) (pr_bwd st) (pr_excess st) of
                            (fw', bw', x') \<Rightarrow> st\<lparr>pr_fwd := fw', pr_bwd := bw', pr_excess := x'\<rparr>) Si>"
   using assms edge_verts[OF assms(4)]
@@ -400,7 +434,8 @@ proof-
   show ?thesis
     unfolding push_fwd_imp_def
     using edge_verts[OF assms(2)]
-    by (sep_auto heap: ex_get_state_rule[OF I(3)] fwd_get_state_rule[OF I(1) assms(2)]
+    by (sep_auto heap: fst_state_rule[OF assms(2)] snd_state_rule[OF assms(2)]
+                       ex_get_state_rule[OF I(3)] fwd_get_state_rule[OF I(1) assms(2)]
                        augment_imp_rule[OF I assms(2)]
                  simp: push_fwd_impl_def Let_def)
 qed
@@ -414,7 +449,8 @@ proof-
   show ?thesis
     unfolding push_bwd_imp_def
     using edge_verts[OF assms(2)]
-    by (sep_auto heap: ex_get_state_rule[OF I(3)] bwd_get_state_rule[OF I(2) assms(2)]
+    by (sep_auto heap: fst_state_rule[OF assms(2)] snd_state_rule[OF assms(2)]
+                       ex_get_state_rule[OF I(3)] bwd_get_state_rule[OF I(2) assms(2)]
                        augment_imp_rule[OF I assms(2)]
                  simp: push_bwd_impl_def Let_def)
 qed
@@ -521,15 +557,17 @@ proof-
   have og': "out_invar og'"
     using skip_scan_props(1)[OF outg.indexed_iterable_set_axioms I(6) assms(2) I(10) og'_def[symmetric]] .
   have a1: "\<And> e. e \<in> out_abstract (pr_out st) u \<Longrightarrow>
-      <emap_assn (pr_fwd st) (pi_fwd Si) * label_assn (pr_labels st) (pi_lab Si)>
-        admissible_fwd_imp (pi_fwd Si) (pi_lab Si) e
-      <\<lambda>r. emap_assn (pr_fwd st) (pi_fwd Si) * label_assn (pr_labels st) (pi_lab Si) *
+      <ends_assn (pi_ends Si) * emap_assn (pr_fwd st) (pi_fwd Si) * label_assn (pr_labels st) (pi_lab Si)>
+        admissible_fwd_imp (pi_ends Si) (pi_fwd Si) (pi_lab Si) e
+      <\<lambda>r. ends_assn (pi_ends Si) * emap_assn (pr_fwd st) (pi_fwd Si) *
+           label_assn (pr_labels st) (pi_lab Si) *
            \<up>(r = admissible_fwd_impl (pr_fwd st) (pr_labels st) e)>"
     using I(8) by (intro admissible_fwd_imp_rule[OF I(1,4)]) (simp add: delta_plus_def)
   have a2: "\<And> e. e \<in> in_abstract (pr_in st) u \<Longrightarrow>
-      <emap_assn (pr_bwd st) (pi_bwd Si) * label_assn (pr_labels st) (pi_lab Si)>
-        admissible_bwd_imp (pi_bwd Si) (pi_lab Si) e
-      <\<lambda>r. emap_assn (pr_bwd st) (pi_bwd Si) * label_assn (pr_labels st) (pi_lab Si) *
+      <ends_assn (pi_ends Si) * emap_assn (pr_bwd st) (pi_bwd Si) * label_assn (pr_labels st) (pi_lab Si)>
+        admissible_bwd_imp (pi_ends Si) (pi_bwd Si) (pi_lab Si) e
+      <\<lambda>r. ends_assn (pi_ends Si) * emap_assn (pr_bwd st) (pi_bwd Si) *
+           label_assn (pr_labels st) (pi_lab Si) *
            \<up>(r = admissible_bwd_impl (pr_bwd st) (pr_labels st) e)>"
     using I(9) by (intro admissible_bwd_imp_rule[OF I(2,4)]) (simp add: delta_minus_def)
   note s1 = skip_scan_imp_rule[OF out_imp.indexed_iterable_set_imp_axioms I(6) assms(2) I(10) a1]
@@ -599,10 +637,13 @@ lemma min_scan_imp_rule:
                  it_reset \<V> A cur_i has_i move_i reset_i"
       and "it_invar C" "u \<in> \<V>" "finite (it_remaining C u)" "emap_invar r" "label_invar l"
       and "\<And> e. e \<in> it_abstract C u \<Longrightarrow> e \<in> \<E> \<and> endp e \<in> \<V>"
-  shows "<A C Ci * emap_assn r Ri * label_assn l (pi_lab Si) * min_assn mb Si>
-         min_scan_imp has_i cur_i move_i Ri endp u Ci Si
+      and endp_imp: "\<And> e. e \<in> \<E> \<Longrightarrow>
+             <ends_assn (pi_ends Si)> endp_imp e <\<lambda>v. ends_assn (pi_ends Si) * \<up>(v = endp e)>"
+  shows "<A C Ci * emap_assn r Ri * label_assn l (pi_lab Si) * ends_assn (pi_ends Si) * min_assn mb Si>
+         min_scan_imp has_i cur_i move_i Ri endp_imp u Ci Si
          <\<lambda>_. case min_scan has cur move r endp l u C mb of (C', mb') \<Rightarrow>
-              A C' Ci * emap_assn r Ri * label_assn l (pi_lab Si) * min_assn mb' Si>"
+              A C' Ci * emap_assn r Ri * label_assn l (pi_lab Si) * ends_assn (pi_ends Si) *
+              min_assn mb' Si>"
 proof-
   interpret it: indexed_iterable_set_imp it_invar it_abstract cur has it_iterated it_remaining move
                  it_reset \<V> A cur_i has_i move_i reset_i
@@ -658,7 +699,7 @@ proof-
         by (subst min_scan_imp.simps)
            (sep_auto heap: it.idx_has_rule[OF less.prems(1,2)] it.idx_current_rule[OF less.prems(1,2) ne]
                            it.idx_move_rule[OF less.prems(1,2) ne] min_get_flag_rule min_get_label_rule
-                           min_set_rule IH[unfolded C'_def]
+                           min_set_rule IH[unfolded C'_def] endp_imp
                      simp: eq_commute[of "h _"])
     qed
   qed
@@ -707,9 +748,9 @@ proof-
                               finite_UnI[OF finite.emptyI scan_labels_finite[OF fin0(1)]] p1(4)
                               scan2[folded ig0_def]]
   note s1 = min_scan_imp_rule[where mb = None, OF out_imp.indexed_iterable_set_imp_axioms og0(1) u
-                              fin0(1) inv(1,3) E0(1), unfolded og0_def scan1 prod.case]
+                              fin0(1) inv(1,3) E0(1) snd_imp_rule, unfolded og0_def scan1 prod.case]
   note s2 = min_scan_imp_rule[where mb = mb1, OF in_imp.indexed_iterable_set_imp_axioms ig0(1) u
-                              fin0(2) inv(13,3) E0(2), unfolded ig0_def scan2 prod.case]
+                              fin0(2) inv(13,3) E0(2) fst_imp_rule, unfolded ig0_def scan2 prod.case]
   show ?thesis
   proof(cases "case mb1 of None \<Rightarrow> True | Some (m1, _) \<Rightarrow> M < m1")
     case True
@@ -932,7 +973,7 @@ text \<open>The strategy is given by its Hoare triples: @{term select_imp} compu
 locale push_relabel_imp =
   push_relabel_ops_imp +
   push_relabel where fst = fst and snd = snd +
-  push_relabel_imp_code fst snd s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
+  push_relabel_imp_code fst_imp snd_imp s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
     label_get_imp label_upd_imp count_get_imp count_upd_imp out_current_imp out_has_imp
     out_move_imp out_reset_imp out_reset_to_imp in_current_imp in_has_imp in_move_imp in_reset_imp
     in_reset_to_imp gap_fold_imp edge_fold_imp select_imp init_ctx_imp
@@ -953,11 +994,12 @@ subsubsection \<open>Initialisation\<close>
 definition "init_assn Si =
    emap_assn emap_init (pi_fwd Si) * emap_assn emap_init (pi_bwd Si) * emap_assn caps (pi_caps Si) *
    ex_assn ex_init (pi_ex Si) * label_assn label_init (pi_lab Si) * count_assn count_init (pi_cnt Si) *
-   out_assn out_init (pi_out Si) * in_assn in_init (pi_in Si) * min_scratch_assn Si"
+   out_assn out_init (pi_out Si) * in_assn in_init (pi_in Si) * ends_assn (pi_ends Si) *
+   min_scratch_assn Si"
 
 definition "init_frame_assn Si = (\<lambda> (fw, bw, x).
    emap_assn fw (pi_fwd Si) * emap_assn bw (pi_bwd Si) * ex_assn x (pi_ex Si) *
-   emap_assn caps (pi_caps Si))"
+   emap_assn caps (pi_caps Si) * ends_assn (pi_ends Si))"
 
 definition "init_invar = (\<lambda> (fw, bw, x). emap_invar fw \<and> emap_invar bw \<and> ex_invar x)"
 
@@ -982,7 +1024,8 @@ proof-
           <\<lambda>_. init_frame_assn Si (init_step (fw, bw, x) d)>"
       using I V assms(2) caps(1)
       unfolding init_frame_assn_def init_step_imp_def init_step_def Let_def
-      by (sep_auto simp: ex_map.fixed_univ_map_upd_invar ex_map.fixed_univ_map_upd h_add)
+      by (sep_auto heap: fst_imp_rule snd_imp_rule
+                   simp: ex_map.fixed_univ_map_upd_invar ex_map.fixed_univ_map_upd h_add)
   qed
 qed
 
@@ -1072,7 +1115,8 @@ text \<open>Started on the initial data structures, the program leaves the resul
 
 theorem push_relabel_imp_rule:
   "<init_assn Si * ctx_init_assn Ci> push_relabel_imp Ci Si
-   <\<lambda>_. emap_assn caps (pi_caps Si) * emap_assn push_relabel (pi_bwd Si) * true>"
+   <\<lambda>_. ends_assn (pi_ends Si) * emap_assn caps (pi_caps Si) * emap_assn push_relabel (pi_bwd Si) *
+        true>"
 proof-
   note ip = init_state_props
   note lp = push_relabel_loop_props[OF ip]

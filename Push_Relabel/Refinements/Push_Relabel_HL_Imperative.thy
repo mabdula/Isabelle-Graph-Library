@@ -14,11 +14,11 @@ text \<open>The context of the highest-label strategy in place: the buckets of a
       builds the initial buckets. All updates of the context work in place. The search for the
       highest non-empty bucket writes the bucket number it finds into the bound.\<close>
 
-locale push_relabel_hl_imp_code = push_relabel_ops_imp_code fst snd s t num_verts emap_get_imp
+locale push_relabel_hl_imp_code = push_relabel_ops_imp_code fst_imp snd_imp s t num_verts emap_get_imp
     emap_upd_imp ex_get_imp ex_upd_imp label_get_imp label_upd_imp count_get_imp count_upd_imp
     out_current_imp out_has_imp out_move_imp out_reset_imp out_reset_to_imp in_current_imp
     in_has_imp in_move_imp in_reset_imp in_reset_to_imp gap_fold_imp edge_fold_imp
-  for fst snd :: "'e::heap \<Rightarrow> 'v::heap" and s t num_verts
+  for fst_imp snd_imp :: "'ei \<Rightarrow> 'e::heap \<Rightarrow> 'v::heap Heap" and s t num_verts
   and emap_get_imp :: "'fi \<Rightarrow> 'e \<Rightarrow> 'n::{linordered_idom, heap} Heap" and emap_upd_imp
   and ex_get_imp :: "'xi \<Rightarrow> 'v \<Rightarrow> 'n Heap" and ex_upd_imp
   and label_get_imp :: "'li \<Rightarrow> 'v \<Rightarrow> nat Heap" and label_upd_imp
@@ -81,11 +81,13 @@ definition "hl_ctx_upd_imp op Bi Br Cf Cu Si u =
      Push_Fwd d \<Rightarrow> do {
        c \<leftarrow> emap_get_imp (pi_fwd Si) d;
        x \<leftarrow> ex_get_imp (pi_ex Si) u;
-       hl_after_push_imp Bi Br Cf Cu Si u (snd d) (c < x) }
+       v \<leftarrow> snd_imp (pi_ends Si) d;
+       hl_after_push_imp Bi Br Cf Cu Si u v (c < x) }
    | Push_Bwd d \<Rightarrow> do {
        c \<leftarrow> emap_get_imp (pi_bwd Si) d;
        x \<leftarrow> ex_get_imp (pi_ex Si) u;
-       hl_after_push_imp Bi Br Cf Cu Si u (fst d) (c < x) }
+       v \<leftarrow> fst_imp (pi_ends Si) d;
+       hl_after_push_imp Bi Br Cf Cu Si u v (c < x) }
    | Relabel_Gap _ \<Rightarrow> hl_after_relabel_imp Bi Br Cf Cu Si u
    | _ \<Rightarrow> cur_set_imp Cf Cu u)"
 
@@ -125,7 +127,7 @@ text \<open>The buckets are buckets in place, and the imperative vertex fold imp
 locale push_relabel_hl_imp =
   push_relabel_ops_imp +
   push_relabel_hl where fst = fst and snd = snd +
-  push_relabel_hl_imp_code fst snd s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
+  push_relabel_hl_imp_code fst_imp snd_imp s t num_verts emap_get_imp emap_upd_imp ex_get_imp ex_upd_imp
     label_get_imp label_upd_imp count_get_imp count_upd_imp out_current_imp out_has_imp
     out_move_imp out_reset_imp out_reset_to_imp in_current_imp in_has_imp in_move_imp in_reset_imp
     in_reset_to_imp gap_fold_imp edge_fold_imp buckets_insert_imp buckets_remove_imp
@@ -343,7 +345,7 @@ proof-
     show ?thesis
       unfolding Push_Fwd hl_ctx_upd_imp_def hl_ctx_upd_def pr_op.case
       by (sep_auto heap: fwd_get_state_rule[OF inv(1) d] ex_get_state_rule[OF inv(2) assms(3)]
-                         hl_after_push_imp_rule[OF assms(1,2) v none[OF v]])
+                         snd_state_rule[OF d] hl_after_push_imp_rule[OF assms(1,2) v none[OF v]])
   next
     case (Push_Bwd d)
     have d: "d \<in> \<E>"
@@ -352,7 +354,7 @@ proof-
     show ?thesis
       unfolding Push_Bwd hl_ctx_upd_imp_def hl_ctx_upd_def pr_op.case
       by (sep_auto heap: bwd_get_state_rule[OF inv(13) d] ex_get_state_rule[OF inv(2) assms(3)]
-                         hl_after_push_imp_rule[OF assms(1,2) v none[OF v]])
+                         fst_state_rule[OF d] hl_after_push_imp_rule[OF assms(1,2) v none[OF v]])
   next
     case (Relabel_Gap w)
     show ?thesis

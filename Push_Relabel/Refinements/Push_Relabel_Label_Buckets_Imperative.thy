@@ -3,6 +3,7 @@ theory Push_Relabel_Label_Buckets_Imperative
     Push_Relabel_Label_Buckets
     Data_Structures.Fixed_Univ_Map_Specs_Imp
     Data_Structures.Fixed_Univ_Buckets_Specs_Imp
+    Data_Structures.Fixed_Univ_Set_Iterate_Imp
 begin
 
 section \<open>Imperative Label Maps with Buckets\<close>

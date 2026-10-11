@@ -26,8 +26,8 @@ text \<open>The imperative modules of the Hungarian method are instantiated with
           (@{const xset_assn}), iterated in increasing order,
         \<^item> all of them are cleared in place,
         \<^item> the queue is the indexed binary heap of size \<open>n\<close>, and
-        \<^item> the neighbourhoods are given in compressed sparse row (CSR) form, together with the
-          weights in CSR order.
+        \<^item> the neighbourhoods are given in compressed sparse row (CSR) form: the CSR holds the
+          targets of the edges, together with the weights in CSR order.
 
       The functional ADT types become the functional models that these data structures represent:
       total functions on the universe \<open>{..<n}\<close> and subsets of it, iterated in the order
@@ -175,7 +175,7 @@ global_interpretation pds_csr: primal_dual_path_search_imp_code
     and queue_clear_imp = heap_clear_imp and queue_extract_min_imp = heap_extract_min_key_imp
     and queue_key_of_imp = heap_key_of_imp and queue_decrease_key_imp = heap_decrease_key_imp
     and queue_insert_imp = heap_insert_imp
-    and has_imp = wnb_has_imp and current_imp = "wnb_current_imp e_tgt"
+    and has_imp = wnb_has_imp and current_imp = "wnb_current_imp id"
     and current_cost_imp = wnb_current_cost_imp and move_imp = wnb_move_imp
     and reset_imp = wnb_reset_imp and reset_all_imp = "wnb_reset_all_imp n"
   for n
@@ -212,7 +212,7 @@ global_interpretation sc_csr: path_search_shortcut_imp_code
   where nil = n and cap = cap and pot_get_imp = xmap_lookup_imp and pot_upd_imp = xmap_upd_imp
     and buddy_imp = "\<lambda>Mt. xmap_lookup_imp (fst Mt)" and rematch_imp = "rematch_counted_csr n"
     and left_it_has_next = xset_it_has_next and left_it_next = xset_it_next
-    and has_imp = wnb_has_imp and current_imp = "wnb_current_imp e_tgt"
+    and has_imp = wnb_has_imp and current_imp = "wnb_current_imp id"
     and current_cost_imp = wnb_current_cost_imp and move_imp = wnb_move_imp
     and reset_imp = wnb_reset_imp
   for n cap
@@ -278,17 +278,21 @@ global_interpretation hl_csr: hungarian_top_loop_imp_code "path_search_sc_csr n 
 
 subsection \<open>Initialisation\<close>
 
-text \<open>The weights are given per input edge. They are permuted into CSR order once, so that the
-      weights of a neighbourhood are read sequentially during the search.\<close>
+text \<open>The CSR is built over the edge indices. The search reads only the target and the weight of
+      an edge, so one pass permutes the weights into CSR order and replaces every edge index by its
+      target, in place. The weights and the targets of a neighbourhood are then read
+      sequentially during the search.\<close>
 
-partial_function (heap) perm_weights_imp ::
-  "edge array \<Rightarrow> 'n::heap array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "perm_weights_imp Ea Wa Wc i m =
+partial_function (heap) perm_weights_targets_imp ::
+  "nat array \<Rightarrow> nat array \<Rightarrow> 'n::heap array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+  "perm_weights_targets_imp Ea Ta Wa Wc i m =
      (if i < m then do {
         e \<leftarrow> Array.nth Ea i;
-        w \<leftarrow> Array.nth Wa (e_id e);
+        w \<leftarrow> Array.nth Wa e;
+        v \<leftarrow> Array.nth Ta e;
         _ \<leftarrow> Array.upd i w Wc;
-        perm_weights_imp Ea Wa Wc (Suc i) m }
+        _ \<leftarrow> Array.upd i v Ea;
+        perm_weights_targets_imp Ea Ta Wa Wc (Suc i) m }
       else return ())"
 
 text \<open>Inserting the elements of an array into a Boolean array, in place.\<close>
@@ -317,7 +321,7 @@ definition hungarian_csr_run ::
      (Ba, Ea) \<leftarrow> csr_build_edges n (Fa, Ta) 0;
      m \<leftarrow> Array.len Ea;
      Wc \<leftarrow> Array.new m 0;
-     perm_weights_imp Ea Wa Wc 0 m;
+     perm_weights_targets_imp Ea Ta Wa Wc 0 m;
      Ca \<leftarrow> csr_cursor_init n Ba;
      cL \<leftarrow> Array.len La;
      cR \<leftarrow> Array.len Rv;
@@ -344,7 +348,7 @@ definition hungarian_csr_run_int ::
    (result \<times> nat array \<times> int array) Heap" where
   "hungarian_csr_run_int = hungarian_csr_run"
 
-declare perm_weights_imp.simps[code] xset_insert_all.simps[code] iter_fold.simps[code]
+declare perm_weights_targets_imp.simps[code] xset_insert_all.simps[code] iter_fold.simps[code]
   forest_csr.get_path_imp_loop.simps[code] aug_csr.augment_loop.simps[code]
   pds_csr.scan_imp.simps[code] pds_csr.loop_imp.simps[code] ip_csr.scan_min_imp.simps[code]
   hl_csr.main_loop_imp.simps[code] csr_copy_imp.simps[code]
@@ -467,27 +471,25 @@ lemma neighbours_G: "v \<in> L \<Longrightarrow> {u. {v, u} \<in> G} = {ts ! i |
 
 subsection \<open>The CSR Representation\<close>
 
-sublocale inp: csr_buildup "edge_next fs ts" "edge_seq fs ts" "\<lambda>_. True" e_src n 0
+sublocale inp: csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" "e_src fs" n 0
   by (rule csr_buildup.intro[OF edge_iterator])
-     (unfold_locales, auto simp: edge_seq_def fs_L L_less)
+     (unfold_locales, auto simp: edge_seq_def intro!: L_less fs_L)
 
-sublocale ci: imp_csr_buildup "edge_next fs ts" "edge_seq fs ts" "\<lambda>_. True" e_src n 0
-    edge_has_next edge_cur edge_adv edge_key edge_val id "\<lambda>s si. si = s"
-    "\<lambda>(Fa, Ta). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts"
+sublocale ci: imp_csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" "e_src fs" n 0
+    edge_has_next edge_cur edge_adv edge_key edge_val id "\<lambda>s si. si = s" "ends_assn fs ts"
 proof (unfold_locales, goal_cases)
   case (1 s si c)
-  have "(edge_next fs ts s \<noteq> None) = (s < length fs)" by (simp add: edge_next_def mk_edge_def)
-  with 1 show ?case by (cases c) (sep_auto simp: edge_has_next_def)
+  have "(edge_next fs s \<noteq> None) = (s < length fs)" by (simp add: edge_next_def)
+  with 1 show ?case by (cases c) (sep_auto simp: edge_has_next_def ends_assn_def)
 next
   case (2 s si e s' c) then show ?case
-    using ts_length
-    by (cases c) (sep_auto simp: edge_cur_def edge_next_def mk_edge_def split: if_splits)
+    by (sep_auto simp: edge_cur_def edge_next_def split: if_splits)
 next
   case (3 s si e s' c) then show ?case
-    by (cases c) (sep_auto simp: edge_adv_def edge_next_def split: if_splits)
+    by (sep_auto simp: edge_adv_def edge_next_def split: if_splits)
 next
   case (4 e c) then show ?case
-    by (sep_auto simp: edge_key_def)
+    by (sep_auto heap: src_imp_rule simp: edge_key_def edge_seq_def)
 next
   case (5 e c) then show ?case
     by (sep_auto simp: edge_val_def)
@@ -495,22 +497,73 @@ qed
 
 lemma E_spec_distinct: "distinct inp.E_spec"
 proof -
-  have "distinct (concat (map inp.blk [0..<k])) \<and>
-        set (concat (map inp.blk [0..<k])) \<subseteq> {e. e_src e < k}" for k
+  have "distinct (concat (map inp.blk [0..<k])) \<and> set (concat (map inp.blk [0..<k])) \<subseteq> {e. e_src fs e < k}"
+    for k
   proof (induction k)
     case 0 show ?case by simp
   next
     case (Suc k) then show ?case
-      using edge_seq_distinct[of fs ts 0] by (fastforce simp: inp.blk_def inp.es_def)
+      using edge_seq_distinct[of fs 0] by (fastforce simp: inp.blk_def inp.es_def)
   qed
   then show ?thesis by (simp add: inp.E_spec_def)
+qed
+
+lemma E_spec_ids: "e \<in> set inp.E_spec \<Longrightarrow> e < length fs"
+  by (auto simp: inp.E_spec_def inp.blk_def inp.es_def edge_seq_def)
+
+lemma B_spec_bound: "v < n \<Longrightarrow> inp.B_spec ! Suc v \<le> length inp.E_spec"
+  using inp.start_mono[of "Suc v" n] by (simp add: inp.B_spec_nth inp.start_n inp.length_E_spec)
+
+text \<open>The block of a vertex holds the indices of its edges.\<close>
+
+lemma block_edges:
+  assumes "v < n"
+  shows "(!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v} = {i. i < length fs \<and> fs ! i = v}"
+proof -
+  have "(!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v} =
+        set (map ((!) inp.E_spec) [inp.B_spec ! v..<inp.B_spec ! Suc v])"
+    by simp
+  also have "\<dots> = set (take (inp.B_spec ! Suc v - inp.B_spec ! v) (drop (inp.B_spec ! v) inp.E_spec))"
+    using B_spec_bound[OF assms] by (simp add: map_nth_upt_take_drop)
+  also have "\<dots> = set (inp.blk v)"
+    using inp.csr_block[OF assms] by simp
+  also have "\<dots> = {i. i < length fs \<and> fs ! i = v}"
+    by (auto simp: inp.blk_def inp.es_def edge_seq_def)
+  finally show ?thesis .
+qed
+
+text \<open>The CSR holds the targets: the initialisation replaces every edge index by its target.\<close>
+
+definition "Et = map ((!) ts) inp.E_spec"
+
+lemma Et_nth: "j < length inp.E_spec \<Longrightarrow> Et ! j = ts ! (inp.E_spec ! j)"
+  by (simp add: Et_def)
+
+text \<open>There are no parallel edges, so the targets are distinct within each block.\<close>
+
+lemma Et_block_inj:
+  assumes "v < n"
+  shows "inj_on ((!) Et) {inp.B_spec ! v..<inp.B_spec ! Suc v}"
+proof (rule inj_onI)
+  fix j j'
+  assume j: "j \<in> {inp.B_spec ! v..<inp.B_spec ! Suc v}"
+     and j': "j' \<in> {inp.B_spec ! v..<inp.B_spec ! Suc v}" and eq: "Et ! j = Et ! j'"
+  have l: "j < length inp.E_spec" "j' < length inp.E_spec"
+    using j j' B_spec_bound[OF assms] by auto
+  have e: "inp.E_spec ! j \<in> {i. i < length fs \<and> fs ! i = v}"
+          "inp.E_spec ! j' \<in> {i. i < length fs \<and> fs ! i = v}"
+    using j j' block_edges[OF assms] by blast+
+  have "inp.E_spec ! j = inp.E_spec ! j'"
+    using e eq Et_nth[OF l(1)] Et_nth[OF l(2)] by (auto intro: edge_unique)
+  thus "j = j'"
+    using E_spec_distinct l by (simp add: nth_eq_iff_index_eq)
 qed
 
 text \<open>The neighbourhoods are indexed by the whole universe of the maps and sets, the vertices below
       \<open>n\<close>.
       Only the left vertices have neighbours.\<close>
 
-sublocale graph: csr_graph n "{..<n}" inp.B_spec inp.E_spec
+sublocale graph: csr_graph n "{..<n}" inp.B_spec Et
 proof (unfold_locales, goal_cases)
   case 1 show ?case by simp
 next
@@ -518,69 +571,46 @@ next
 next
   case (3 v) then show ?case by (simp add: inp.B_spec_nth inp.start_mono)
 next
-  case (4 v) then show ?case
-    using inp.start_mono[of "Suc v" n] by (simp add: inp.B_spec_nth inp.start_n inp.length_E_spec)
+  case (4 v) then show ?case by (simp add: Et_def B_spec_bound)
 next
-  case 5 show ?case by (rule E_spec_distinct)
+  case (5 v) then show ?case by (rule Et_block_inj)
 qed
 
-lemma csr_abstract_edges:
+lemma csr_abstract_targets:
   assumes "v < n"
-  shows "graph.csr_abstract c v = {mk_edge fs ts i | i. i < length fs \<and> fs ! i = v}"
+  shows "graph.csr_abstract c v = {ts ! i | i. i < length fs \<and> fs ! i = v}"
 proof -
-  have "graph.csr_abstract c v = set (map ((!) inp.E_spec) [inp.B_spec ! v..<inp.B_spec ! Suc v])"
-    by (simp add: graph.csr_abstract_def graph.seg_def)
-  also have "\<dots> = set (take (inp.B_spec ! Suc v - inp.B_spec ! v) (drop (inp.B_spec ! v) inp.E_spec))"
-    using graph.B_bound[OF assms] by (simp add: map_nth_upt_take_drop)
-  also have "\<dots> = set (inp.blk v)"
-    using inp.csr_block[OF assms] by simp
-  also have "\<dots> = {mk_edge fs ts i | i. i < length fs \<and> fs ! i = v}"
-    by (auto simp: inp.blk_def inp.es_def edge_seq_def)
-  finally show ?thesis .
+  have "graph.csr_abstract c v =
+        (\<lambda>j. ts ! (inp.E_spec ! j)) ` {inp.B_spec ! v..<inp.B_spec ! Suc v}"
+    unfolding graph.csr_abstract_def graph.seg_def
+    using B_spec_bound[OF assms] by (intro image_cong refl) (simp add: Et_nth)
+  also have "\<dots> = (!) ts ` (!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v}"
+    by (simp add: image_image)
+  also have "\<dots> = (!) ts ` {i. i < length fs \<and> fs ! i = v}"
+    by (simp only: block_edges[OF assms])
+  finally show ?thesis by blast
 qed
 
 text \<open>The weights in CSR order.\<close>
 
-definition "W = map (\<lambda>e. ws ! e_id e) inp.E_spec"
+definition "W = map ((!) ws) inp.E_spec"
 
-lemma seg_edge:
-  assumes "v < n" "inp.B_spec ! v \<le> j" "j < inp.B_spec ! Suc v"
-  shows "\<exists>i. i < length fs \<and> fs ! i = v \<and> inp.E_spec ! j = mk_edge fs ts i"
-proof -
-  have "inp.E_spec ! j \<in> graph.csr_abstract c v"
-    using assms by (auto simp: graph.csr_abstract_def graph.seg_def)
-  thus ?thesis using csr_abstract_edges[OF assms(1)] by auto
-qed
-
-sublocale wcsr: weighted_csr n "{..<n}" inp.B_spec inp.E_spec e_tgt W ecost h
+sublocale wcsr: weighted_csr n "{..<n}" inp.B_spec Et id W ecost h
 proof (unfold_locales, goal_cases)
-  case (1 v)
-  have v: "v < n" using 1 by simp
-  have "(!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v} =
-        {mk_edge fs ts i | i. i < length fs \<and> fs ! i = v}"
-    using csr_abstract_edges[OF v]
-    by (simp add: graph.csr_abstract_def graph.seg_def)
-  moreover have "inj_on e_tgt {mk_edge fs ts i | i. i < length fs \<and> fs ! i = v}"
-  proof (rule inj_onI)
-    fix x y assume "x \<in> {mk_edge fs ts i | i. i < length fs \<and> fs ! i = v}"
-                   "y \<in> {mk_edge fs ts i | i. i < length fs \<and> fs ! i = v}" "e_tgt x = e_tgt y"
-    then obtain i j where "x = mk_edge fs ts i" "y = mk_edge fs ts j" "i < length fs"
-                          "j < length fs" "fs ! i = fs ! j" "ts ! i = ts ! j"
-      by auto
-    moreover have "i = j" by (rule edge_unique) (fact calculation)+
-    ultimately show "x = y" by simp
-  qed
-  ultimately show ?case by simp
+  case (1 v) show ?case by simp
 next
-  case 2 show ?case by (simp add: W_def)
+  case 2 show ?case by (simp add: W_def Et_def)
 next
   case (3 v j)
   have v: "v < n" using 3(1) by simp
-  obtain i where i: "i < length fs" "fs ! i = v" "inp.E_spec ! j = mk_edge fs ts i"
-    using seg_edge[OF v 3(2,3)] by blast
-  have "j < length inp.E_spec"
-    using 3 graph.B_bound[OF v] by simp
-  thus ?case using i by (simp add: W_def ecost_edge flip: i(2))
+  have "inp.E_spec ! j \<in> (!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v}"
+    using 3(2,3) by (intro imageI) simp
+  then have "inp.E_spec ! j \<in> {i. i < length fs \<and> fs ! i = v}"
+    by (simp only: block_edges[OF v])
+  then have i: "inp.E_spec ! j < length fs" "fs ! (inp.E_spec ! j) = v"
+    by simp_all
+  have "j < length inp.E_spec" using 3(3) B_spec_bound[OF v] by simp
+  thus ?case using i ecost_edge[OF i(1)] by (simp add: W_def Et_nth)
 qed
 
 subsection \<open>The Queue\<close>
@@ -602,14 +632,7 @@ lemma L_below: "L \<subseteq> {..<n}"
 
 lemma wnb_abstract_init:
   "v \<in> L \<Longrightarrow> wcsr.wnb_abstract nb_init v = {u. {v, u} \<in> G}"
-proof -
-  assume v: "v \<in> L"
-  have "wcsr.wnb_abstract nb_init v = e_tgt ` {mk_edge fs ts i | i. i < length fs \<and> fs ! i = v}"
-    by (simp add: wcsr.wnb_abstract_def csr_abstract_edges[OF L_less[OF v]])
-  also have "\<dots> = {ts ! i | i. i < length fs \<and> fs ! i = v}"
-    by (simp add: setcompr_eq_image image_image)
-  finally show ?thesis using neighbours_G[OF v] by simp
-qed
+  by (simp add: wcsr.wnb_abstract_def csr_abstract_targets[OF L_less] neighbours_G)
 
 lemma wnb_abstract_finite: "finite (wcsr.wnb_abstract C v)"
   by (simp add: wcsr.wnb_abstract_def graph.csr_abstract_def graph.seg_def)
@@ -624,7 +647,7 @@ text \<open>The path search scans the neighbourhoods of the left vertices only.\
 lemma wnb_imp_L:
   "weighted_neighbourhoods_imp_spec graph.csr_invar wcsr.wnb_abstract wcsr.wnb_current
      graph.csr_has wcsr.wnb_iterated wcsr.wnb_remaining graph.csr_move graph.csr_reset L ecost h
-     nb_init wcsr.wnb_assn wnb_has_imp (wnb_current_imp e_tgt) wnb_current_cost_imp wnb_move_imp
+     nb_init wcsr.wnb_assn wnb_has_imp (wnb_current_imp id) wnb_current_cost_imp wnb_move_imp
      wnb_reset_imp (wnb_reset_all_imp n)"
 proof-
   have L: "\<And>i. i \<in> L \<Longrightarrow> i \<in> {..<n}" using L_less by simp
@@ -658,7 +681,7 @@ sublocale ipot: init_potential_imp
     and potential_empty = "\<lambda>_. 0" and vset_to_set = id and vset_invar = "\<lambda>X. X \<subseteq> {..<n}"
     and lst = sorted_list_of_set
     and h = h and nb_init = nb_init and nb_assn = wcsr.wnb_assn and has_imp = wnb_has_imp
-    and current_imp = "wnb_current_imp e_tgt" and current_cost_imp = wnb_current_cost_imp
+    and current_imp = "wnb_current_imp id" and current_cost_imp = wnb_current_cost_imp
     and move_imp = wnb_move_imp and reset_imp = wnb_reset_imp
     and reset_all_imp = "wnb_reset_all_imp n"
     and pot_assn = "xmap_val_assn h n" and pot_upd_imp = xmap_upd_imp
@@ -855,7 +878,7 @@ sublocale ps: primal_dual_path_search_imp
     and queue_clear_imp = heap_clear_imp and queue_extract_min_imp = heap_extract_min_key_imp
     and queue_key_of_imp = heap_key_of_imp and queue_decrease_key_imp = heap_decrease_key_imp
     and queue_insert_imp = heap_insert_imp
-    and nb_assn = wcsr.wnb_assn and has_imp = wnb_has_imp and current_imp = "wnb_current_imp e_tgt"
+    and nb_assn = wcsr.wnb_assn and has_imp = wnb_has_imp and current_imp = "wnb_current_imp id"
     and current_cost_imp = wnb_current_cost_imp and move_imp = wnb_move_imp
     and reset_imp = wnb_reset_imp and reset_all_imp = "wnb_reset_all_imp n"
     and lst = sorted_list_of_set and forest_assn = "forest_csr.forest_assn n"
@@ -1124,7 +1147,7 @@ sublocale sc: path_search_shortcut_imp
     and rnb_invar = graph.csr_invar and rnb_abstract = wcsr.wnb_abstract
     and rnb_iterated = wcsr.wnb_iterated and rnb_remaining = wcsr.wnb_remaining and K = "{..<n}"
     and L = L and R = R and h = h
-    and nb_assn = wcsr.wnb_assn and has_imp = wnb_has_imp and current_imp = "wnb_current_imp e_tgt"
+    and nb_assn = wcsr.wnb_assn and has_imp = wnb_has_imp and current_imp = "wnb_current_imp id"
     and current_cost_imp = wnb_current_cost_imp and move_imp = wnb_move_imp
     and reset_imp = wnb_reset_imp and reset_all_imp = "wnb_reset_all_imp n"
     and pot_assn = "xmap_val_assn h n" and pot_upd_imp = xmap_upd_imp
@@ -1385,30 +1408,40 @@ end
 
 subsection \<open>Initialisation\<close>
 
-lemma perm_weights_rule:
-  "\<lbrakk>i \<le> length es; length xs = length es; \<forall>e\<in>set es. e_id e < length vs\<rbrakk> \<Longrightarrow>
-   <Ea \<mapsto>\<^sub>a es * Wa \<mapsto>\<^sub>a vs * Wc \<mapsto>\<^sub>a xs> perm_weights_imp Ea Wa Wc i (length es)
-   <\<lambda>_. Ea \<mapsto>\<^sub>a es * Wa \<mapsto>\<^sub>a vs * Wc \<mapsto>\<^sub>a (take i xs @ drop i (map (\<lambda>e. vs ! e_id e) es))>"
+lemma perm_weights_targets_rule:
+  "\<lbrakk>i \<le> length es; length xs = length es; \<forall>e\<in>set es. e < length us \<and> e < length vs\<rbrakk> \<Longrightarrow>
+   <Ea \<mapsto>\<^sub>a (map ((!) us) (take i es) @ drop i es) * Ta \<mapsto>\<^sub>a us * Wa \<mapsto>\<^sub>a vs * Wc \<mapsto>\<^sub>a xs>
+   perm_weights_targets_imp Ea Ta Wa Wc i (length es)
+   <\<lambda>_. Ea \<mapsto>\<^sub>a map ((!) us) es * Ta \<mapsto>\<^sub>a us * Wa \<mapsto>\<^sub>a vs *
+        Wc \<mapsto>\<^sub>a (take i xs @ drop i (map ((!) vs) es))>"
 proof (induction "length es - i" arbitrary: i xs)
   case 0
   hence "i = length es" by simp
-  thus ?case using 0 by (subst perm_weights_imp.simps) sep_auto
+  thus ?case using 0 by (subst perm_weights_targets_imp.simps) sep_auto
 next
   case (Suc d)
   hence i: "i < length es" by simp
-  have eid: "e_id (es ! i) < length vs" using Suc.prems(3) i by simp
-  have IH: "<Ea \<mapsto>\<^sub>a es * Wa \<mapsto>\<^sub>a vs * Wc \<mapsto>\<^sub>a xs[i := vs ! e_id (es ! i)]>
-            perm_weights_imp Ea Wa Wc (Suc i) (length es)
-            <\<lambda>_. Ea \<mapsto>\<^sub>a es * Wa \<mapsto>\<^sub>a vs * Wc \<mapsto>\<^sub>a (take (Suc i) (xs[i := vs ! e_id (es ! i)]) @
-                                           drop (Suc i) (map (\<lambda>e. vs ! e_id e) es))>"
+  have e: "es ! i < length us" "es ! i < length vs" using Suc.prems(3) i by simp_all
+  have IH: "<Ea \<mapsto>\<^sub>a (map ((!) us) (take (Suc i) es) @ drop (Suc i) es) * Ta \<mapsto>\<^sub>a us * Wa \<mapsto>\<^sub>a vs *
+             Wc \<mapsto>\<^sub>a list_update xs i (vs ! (es ! i))>
+            perm_weights_targets_imp Ea Ta Wa Wc (Suc i) (length es)
+            <\<lambda>_. Ea \<mapsto>\<^sub>a map ((!) us) es * Ta \<mapsto>\<^sub>a us * Wa \<mapsto>\<^sub>a vs *
+                 Wc \<mapsto>\<^sub>a (take (Suc i) (list_update xs i (vs ! (es ! i))) @ drop (Suc i) (map ((!) vs) es))>"
     by (rule Suc.hyps(1)) (use Suc i in auto)
-  have t: "(take (Suc i) xs)[i := vs ! e_id (es ! i)] = take i xs @ [vs ! e_id (es ! i)]"
+  have t: "list_update (take (Suc i) xs) i (vs ! (es ! i)) = take i xs @ [vs ! (es ! i)]"
     using i Suc.prems(2) by (simp add: take_Suc_conv_app_nth list_update_append)
-  have dr: "drop i (map (\<lambda>e. vs ! e_id e) es) =
-            vs ! e_id (es ! i) # drop (Suc i) (map (\<lambda>e. vs ! e_id e) es)"
-    using i Cons_nth_drop_Suc[of i "map (\<lambda>e. vs ! e_id e) es"] by simp
+  have dr: "drop i (map ((!) vs) es) = vs ! (es ! i) # drop (Suc i) (map ((!) vs) es)"
+    using i Cons_nth_drop_Suc[of i "map ((!) vs) es"] by simp
+  have d: "drop i es = es ! i # drop (Suc i) es"
+    using i by (simp add: Cons_nth_drop_Suc)
+  have en: "(map ((!) us) (take i es) @ drop i es) ! i = es ! i"
+    using i by (simp add: nth_append)
+  have eu: "list_update (map ((!) us) (take i es) @ drop i es) i (us ! (es ! i)) =
+            map ((!) us) (take (Suc i) es) @ drop (Suc i) es"
+    using i by (simp add: d list_update_append take_Suc_conv_app_nth)
   show ?case
-    using i eid Suc.prems(2) by (subst perm_weights_imp.simps) (sep_auto heap: IH simp: t dr)
+    using i e Suc.prems(2)
+    by (subst perm_weights_targets_imp.simps) (sep_auto heap: IH simp: t dr en eu)
 qed
 
 lemma xset_insert_all_rule:
@@ -1458,7 +1491,7 @@ lemma xmap_val_zero: "Xi \<mapsto>\<^sub>a replicate n 0 \<Longrightarrow>\<^sub
   by (rule ent_ex_postI[where x = "\<lambda>_. 0"]) simp
 
 lemma init_pot_rule:
-  "<graph.csr_assn nb_init (Ba, Ea, Ca) * Wc \<mapsto>\<^sub>a map (\<lambda>e. ws ! e_id e) inp.E_spec *
+  "<graph.csr_assn nb_init (Ba, Ea, Ca) * Wc \<mapsto>\<^sub>a W *
     Pti \<mapsto>\<^sub>a replicate n 0 * xset_assn n L Li>
    init_pot_csr ((Ba, Ea, Ca), Wc) Li Pti
    <\<lambda>_. wcsr.wnb_assn (fst (ipot.init_potential_coll nb_init (\<lambda>_. 0) L)) ((Ba, Ea, Ca), Wc) *
@@ -1474,7 +1507,7 @@ proof -
   show ?thesis
     apply (rule ht_cons_pre[OF _ r])
     unfolding wcsr.wnb_assn_split
-    unfolding W_def xmap_val_assn_def xmap_assn_replicate[symmetric]
+    unfolding xmap_val_assn_def xmap_assn_replicate[symmetric]
     by sep_auto
 qed
 
@@ -1518,13 +1551,19 @@ proof -
        (sep_auto simp: aug_csr.counted_assn_pair split: prod.splits)
 qed
 
-lemma E_spec_id: "e \<in> set inp.E_spec \<Longrightarrow> e_id e < length ws"
-  using ws_length by (auto simp: inp.E_spec_def inp.blk_def inp.es_def edge_seq_def)
+lemma perm_csr_rule:
+  "<Ea \<mapsto>\<^sub>a inp.E_spec * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Wc \<mapsto>\<^sub>a replicate (length inp.E_spec) 0>
+   perm_weights_targets_imp Ea Ta Wa Wc 0 (length inp.E_spec)
+   <\<lambda>_. Ea \<mapsto>\<^sub>a Et * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Wc \<mapsto>\<^sub>a W>"
+  using perm_weights_targets_rule[where i = 0 and es = inp.E_spec and us = ts and vs = ws
+                                    and xs = "replicate (length inp.E_spec) 0"]
+        E_spec_ids ts_length ws_length
+  by (simp add: Et_def W_def)
 
 lemma csr_build_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_edges n (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
-  using ci.csr_build_imp_rule[of "(Fa, Ta)" 0] by (simp add: csr_build_edges_def)
+  using ci.csr_build_imp_rule[of "(Fa, Ta)" 0] by (simp add: csr_build_edges_def ends_assn_def)
 
 text \<open>The imperative Hungarian method on the CSR representation computes the result of the
       functional @{term hl.hungarian}.\<close>
@@ -1541,10 +1580,10 @@ proof -
   show ?thesis
     unfolding hungarian_csr_run_def
     supply wcsr.wnb_imp.reset_all_rule[sep_heap_rules del] xset_it_init_rule[sep_heap_rules del]
-    by (sep_auto heap: csr_build_rule graph.csr_cursor_init_rule perm_weights_rule
+    by (sep_auto heap: csr_build_rule perm_csr_rule graph.csr_cursor_init_rule
                        xset_insert_all_new init_pot_rule rs ii hp.heap_empty_imp_rule
                        forest_csr.forest_empty_imp_rule hungarian_step
-                 simp: E_spec_id L_below)
+                 simp: L_below)
 qed
 
 text \<open>Together with the correctness of the functional Hungarian method: on success, the matching
