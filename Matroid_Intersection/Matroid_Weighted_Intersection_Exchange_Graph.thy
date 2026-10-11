@@ -43,7 +43,6 @@ locale weighted_intersection_exchange_spec =
   fixes c_lookup :: "'cmap \<Rightarrow> 'a \<Rightarrow> real"
     and c_shift :: "'vset \<Rightarrow> real \<Rightarrow> 'cmap \<Rightarrow> 'cmap"
     and c_zero :: "'cmap"
-    and weight :: "'cmap \<Rightarrow> 'mset \<Rightarrow> real"
     and vset_insert :: "'a \<Rightarrow> 'vset \<Rightarrow> 'vset"
 begin
 
@@ -97,7 +96,7 @@ definition "weps K =
                         else acc) (wctx_ae K) None)))"
 
 sublocale wexch_loop: weighted_intersection_path_loop_spec set_insert set_delete to_set set_invar
-  set_empty c_shift c_zero weight wtight_ctx wctx_path wctx_R weps .
+  set_empty c_shift c_zero c_lookup wtight_ctx wctx_path wctx_R weps .
 
 lemmas [code] = tight_def has_tight_nb_def wtight_ctx_def weps_def
 
@@ -118,8 +117,6 @@ locale weighted_intersection_exchange =
     "\<And> R e c. \<lbrakk>c_invar c; vset_inv R\<rbrakk> \<Longrightarrow> c_invar (c_shift R e c)"
     "\<And> R e c. \<lbrakk>c_invar c; vset_inv R\<rbrakk> \<Longrightarrow>
        c_lookup (c_shift R e c) = (\<lambda> x. if x \<in> t_set R then c_lookup c x + e else c_lookup c x)"
-  assumes weight:
-    "\<And> c X. \<lbrakk>c_invar c; set_invar X\<rbrakk> \<Longrightarrow> weight c X = sum (c_lookup c) (to_set X)"
 begin
 
 lemma foldr_vset_insert:
@@ -589,13 +586,13 @@ lemma weps_spec:
 sublocale exch_loop: weighted_intersection_path_loop
   where set_insert = set_insert and set_delete = set_delete and to_set = to_set
     and set_invar = set_invar and set_empty = set_empty and c_shift = c_shift and c_zero = c_zero
-    and weight = weight and tight_ctx = wtight_ctx and tight_path = wctx_path and reach = wctx_R
+    and tight_ctx = wtight_ctx and tight_path = wctx_path and reach = wctx_R
     and eps = weps and carrier = carrier and indep1 = indep1 and indep2 = indep2
     and c_lookup = c_lookup and c_invar = c_invar and r_set = t_set and r_invar = vset_inv
     and ctx_invar = wctx_invar and ctx_edges = "\<lambda> K. set (wctx_es K)"
     and ctx_S = "\<lambda> K. set (wctx_sb K)" and ctx_T = "\<lambda> K. set (wctx_tb K)"
   by unfold_locales
-     (fact set_insert set_delete set_empty c_zero c_shift weight wtight_ctx_invar wctx_abs
+     (fact set_insert set_delete set_empty c_zero c_shift wtight_ctx_invar wctx_abs
         wctx_path_spec wctx_reach_spec weps_spec)+
 
 lemmas total_correctness = exch_loop.impl_total_correctness

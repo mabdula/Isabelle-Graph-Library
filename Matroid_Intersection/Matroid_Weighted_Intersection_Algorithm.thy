@@ -15,7 +15,7 @@ Per iteration a context is built: the endpoint sets \<open>S\<close>/\<open>T\<c
 their maximum-weight elements \<open>Sbar\<close>/\<open>Tbar\<close>, the tight graph \<open>Gbar\<close> and the set reachable in it.
 The tight path, the reachable set and \<open>\<epsilon>\<close> are read off this context. The split weights are values of
 an abstract weight-map type \<open>'cmap\<close>, accessed through \<open>c_lookup\<close>, \<open>c_shift\<close>, \<open>c_zero\<close>,
-\<open>weight_Max\<close>, \<open>restrict_to_max\<close> and \<open>weight\<close>.\<close>
+\<open>weight_Max\<close> and \<open>restrict_to_max\<close>.\<close>
 
 text \<open>The context of one iteration.\<close>
 
@@ -49,7 +49,6 @@ locale weighted_intersection_spec =
     and weight_Max :: "'vset \<Rightarrow> 'cmap \<Rightarrow> real"
     and restrict_to_max :: "'vset \<Rightarrow> 'cmap \<Rightarrow> 'vset"
     and reach_set :: "'vset \<Rightarrow> 'adjmap \<Rightarrow> 'vset"
-    and weight :: "'cmap \<Rightarrow> 'mset \<Rightarrow> real"
     \<comment> \<open>the two set-folds with a running-\<open>min\<close> accumulator, used to \<^emph>\<open>compute\<close> \<open>\<epsilon>\<close>; they are
       \<open>inner_fold\<close>/\<open>outer_fold\<close> at the accumulator type \<^typ>\<open>real option\<close> (\<^const>\<open>None\<close> = \<open>\<infinity>\<close>)\<close>
     and eps_fold :: "'mset \<Rightarrow> ('a \<Rightarrow> real option \<Rightarrow> real option) \<Rightarrow> real option \<Rightarrow> real option"
@@ -172,7 +171,7 @@ definition "aux_eps_circuit K =
     (weight_Max (actx_TX K) (actx_c2 K)) (actx_R K) (actx_c1 K) (actx_c2 K)"
 
 sublocale standard: weighted_intersection_path_loop_spec set_insert set_delete to_set set_invar
-  set_empty c_shift c_zero weight aux_tight_ctx aux_tight_path aux_reach aux_eps .
+  set_empty c_shift c_zero c_lookup aux_tight_ctx aux_tight_path aux_reach aux_eps .
 
 definition "weighted_matroid_intersection \<equiv> standard.weighted_matroid_intersection"
 
@@ -184,7 +183,7 @@ lemmas weighted_matroid_intersection_impl_simps =
   standard.weighted_matroid_intersection_impl.simps[folded weighted_matroid_intersection_impl_def]
 
 sublocale circuit: weighted_intersection_path_loop_spec set_insert set_delete to_set set_invar
-  set_empty c_shift c_zero weight aux_tight_ctx_circuit aux_tight_path aux_reach aux_eps_circuit .
+  set_empty c_shift c_zero c_lookup aux_tight_ctx_circuit aux_tight_path aux_reach aux_eps_circuit .
 
 definition "weighted_matroid_intersection_circuit \<equiv> circuit.weighted_matroid_intersection"
 
@@ -286,8 +285,6 @@ locale weighted_intersection =
     "\<And> Src G. \<lbrakk>graph.graph_inv G; vset_inv Src\<rbrakk> \<Longrightarrow>
        vset (reach_set Src G) =
          {v. \<exists> u \<in> vset Src. u = v \<or> (\<exists> p. vwalk_bet [G]\<^sub>g u p v)}"
-  assumes weight:
-    "\<And> c X. \<lbrakk>c_invar c; set_invar X\<rbrakk> \<Longrightarrow> weight c X = sum (c_lookup c) (to_set X)"
   assumes eps_fold:
     "\<And> X f a. set_invar X \<Longrightarrow> \<exists> xs. set xs = to_set X \<and> eps_fold X f a = foldr f xs a"
   assumes eps_fold_red:
@@ -1614,26 +1611,26 @@ qed
 
 sublocale standard: weighted_intersection_path_loop where set_insert = set_insert
   and set_delete = set_delete and to_set = to_set and set_invar = set_invar
-  and set_empty = set_empty and c_shift = c_shift and c_zero = c_zero and weight = weight
+  and set_empty = set_empty and c_shift = c_shift and c_zero = c_zero
   and tight_ctx = aux_tight_ctx and tight_path = aux_tight_path and reach = aux_reach
   and eps = aux_eps and carrier = carrier and indep1 = indep1 and indep2 = indep2
   and c_lookup = c_lookup and c_invar = c_invar and r_set = vset and r_invar = vset_inv
   and ctx_invar = aux_ctx_invar and ctx_edges = "\<lambda> K. graph.digraph_abs (actx_G K)"
   and ctx_S = "\<lambda> K. vset (actx_Sb K)" and ctx_T = "\<lambda> K. vset (actx_Tb K)"
   by unfold_locales
-    (fact set_insert set_delete set_empty c_zero c_shift weight aux_tight_ctx_invar
+    (fact set_insert set_delete set_empty c_zero c_shift aux_tight_ctx_invar
        aux_ctx_abs aux_tight_path_spec aux_reach_spec aux_eps_spec)+
 
 sublocale circuit: weighted_intersection_path_loop where set_insert = set_insert
   and set_delete = set_delete and to_set = to_set and set_invar = set_invar
-  and set_empty = set_empty and c_shift = c_shift and c_zero = c_zero and weight = weight
+  and set_empty = set_empty and c_shift = c_shift and c_zero = c_zero
   and tight_ctx = aux_tight_ctx_circuit and tight_path = aux_tight_path and reach = aux_reach
   and eps = aux_eps_circuit and carrier = carrier and indep1 = indep1 and indep2 = indep2
   and c_lookup = c_lookup and c_invar = c_invar and r_set = vset and r_invar = vset_inv
   and ctx_invar = aux_ctx_invar and ctx_edges = "\<lambda> K. graph.digraph_abs (actx_G K)"
   and ctx_S = "\<lambda> K. vset (actx_Sb K)" and ctx_T = "\<lambda> K. vset (actx_Tb K)"
   by unfold_locales
-    (fact set_insert set_delete set_empty c_zero c_shift weight aux_tight_ctx_invar
+    (fact set_insert set_delete set_empty c_zero c_shift aux_tight_ctx_invar
        aux_ctx_abs aux_tight_path_spec aux_reach_spec aux_eps_spec)+
 
 lemmas weighted_matroid_intersection_correct = standard.weighted_matroid_intersection_correct[

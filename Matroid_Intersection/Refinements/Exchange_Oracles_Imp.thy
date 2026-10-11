@@ -30,8 +30,9 @@ locale exchange_oracle_imp =
 text \<open>Potential exchange partners. Independently of the solution, an oracle names for every
   element \<open>x\<close> a list \<open>pts x\<close> containing every element that can ever form an exchange pair with
   \<open>x\<close>, in ascending order. The candidate graph of the exchange graph search is built from these
-  lists once. The query works on a static handle \<open>H\<close> of the oracle with assertion \<open>pst H\<close>.
-  Every oracle can name all elements; a specific oracle can name fewer, e.g. a partition
+  lists once. The lists are read through a static handle \<open>H\<close> of the oracle with assertion
+  \<open>pst H\<close>, one entry at a time: one query returns the length of \<open>pts x\<close>, the other its entry at
+  a position. Every oracle can name all elements; a specific oracle can name fewer, e.g. a partition
   oracle names the block of \<open>x\<close>, which makes the candidate graph sparse.\<close>
 
 locale exchange_partners_imp =
@@ -42,20 +43,23 @@ locale exchange_partners_imp =
     and exch_orcl :: "'o \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool"
     and pts :: "nat \<Rightarrow> nat list"
     and pst :: "'h \<Rightarrow> assn"
-    and pts_imp :: "'h \<Rightarrow> nat \<Rightarrow> nat list Heap"
+    and npts_imp :: "'h \<Rightarrow> nat \<Rightarrow> nat Heap"
+    and pt_imp :: "'h \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap"
   assumes pts_sorted: "sorted_wrt (<) (pts x)"
     and pts_bound: "y \<in> set (pts x) \<Longrightarrow> y < n"
     and pts_cover: 
     "\<lbrakk>finite X; X \<subseteq> {0..<n}; indep X; x < n; y < n; x \<in> X; y \<notin> X;
       \<not> ins_orcl (orcl_prep X) y; exch_orcl (orcl_prep X) x y\<rbrakk> 
      \<Longrightarrow> y \<in> set (pts x) \<and> x \<in> set (pts y)"
-    and pts_imp: "<pst H * \<up>(x < n)> pts_imp H x <\<lambda> r. pst H * \<up>(r = pts x)>"
+    and npts_imp: "<pst H * \<up>(x < n)> npts_imp H x <\<lambda> r. pst H * \<up>(r = length (pts x))>"
+    and pt_imp: 
+    "<pst H * \<up>(x < n \<and> k < length (pts x))> pt_imp H x k <\<lambda> r. pst H * \<up>(r = pts x ! k)>"
 
 text \<open>The trivial choice that works for every oracle.\<close>
 
 lemma exchange_partners_all:
   "exchange_partners_imp n indep orcl_prep ins_orcl exch_orcl (\<lambda> _. [0..<n]) (\<lambda> _. emp) 
-     (\<lambda> _ _. return [0..<n])"
+     (\<lambda> _ _. return n) (\<lambda> _ _ k. return k)"
   by unfold_locales sep_auto+
 
 end

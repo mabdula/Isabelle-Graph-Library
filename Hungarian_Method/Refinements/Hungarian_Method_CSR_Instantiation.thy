@@ -1,28 +1,36 @@
 theory Hungarian_Method_CSR_Instantiation
-  imports Directed_Set_Graphs.CSR_Graph Data_Structures.Indexed_Heap
-          Data_Structures.Array_Map_Set_Addons
-          Basic_Matching.Alternating_Forest_Imperative
-          Basic_Matching.Matching_Augmentation_Imperative
-          Primal_Dual_Path_Search_Imperative Init_Potential_Imperative
-          Hungarian_Method_Top_Loop_Imperative
-          Data_Structures.Indexed_Heap_Imperative  Path_Search_Shortcut_Imperative
+  imports
+    Directed_Set_Graphs.CSR_Graph
+    Data_Structures.Indexed_Heap
+    Data_Structures.Imp_Array_Map
+    Data_Structures.Imp_Bool_Set_Iterate
+    Basic_Matching.Alternating_Forest_Imperative
+    Basic_Matching.Matching_Augmentation_Imperative
+    Primal_Dual_Path_Search_Imperative
+    Init_Potential_Imperative
+    Hungarian_Method_Top_Loop_Imperative
+    Data_Structures.Indexed_Heap_Imperative
+    Path_Search_Shortcut_Imperative
 begin
+
 
 section \<open>An Imperative Instantiation of the Hungarian Method\<close>
 
 text \<open>The imperative modules of the Hungarian method are instantiated with data structures of
       fixed size, allocated once at the beginning:
 
-        \<^item> the maps (best even neighbours, missed values, potential, parents, buddies) are array maps
-          @{const is_iam} of size \<open>n\<close>, the sets (left vertices, even and odd vertices) are array
-          sets @{const is_ias} of size \<open>n\<close>; they are cleared in place and iterated in increasing
-          order,
+        \<^item> the maps (best even neighbours, missed values, potential, parents, buddies) are arrays
+          of size \<open>n\<close> that hold the values themselves (@{const xmap_assn}); a vertex without best
+          even neighbour, parent or buddy is mapped to the sentinel \<open>n\<close>,
+        \<^item> the sets (left vertices, even and odd vertices) are Boolean arrays of size \<open>n\<close>
+          (@{const xset_assn}), iterated in increasing order,
+        \<^item> all of them are cleared in place,
         \<^item> the queue is the indexed binary heap of size \<open>n\<close>, and
         \<^item> the neighbourhoods are given in compressed sparse row (CSR) form, together with the
           weights in CSR order.
 
       The functional ADT types become the functional models that these data structures represent:
-      maps @{typ \<open>nat \<rightharpoonup> 'a\<close>} and finite sets of naturals, iterated in the order
+      total functions on the universe \<open>{..<n}\<close> and subsets of it, iterated in the order
       @{const sorted_list_of_set}. The functional models are not executed.\<close>
 
 subsection \<open>Functional Models of the Iterations over Sets\<close>
@@ -31,20 +39,57 @@ definition "fset_iterate f init V = foldl f init (sorted_list_of_set V)"
 definition "fset_filter P (V :: 'a set) = V \<inter> Collect P"
 definition "fset_is_empty (V :: 'a set) = (V = {})"
 
-lemma fset_iterate_foldl:
-  "finite V \<Longrightarrow> \<exists>vs. fset_set V = set vs \<and> distinct vs \<and> fset_iterate f init V = foldl f init vs"
-  by (auto simp: fset_iterate_def fset_set_def intro!: exI[of _ "sorted_list_of_set V"])
-
-lemma fset_iterate_foldl':
-  "finite V \<Longrightarrow> \<exists>vs. set vs = fset_set V \<and> distinct vs \<and> fset_iterate f init V = foldl f init vs"
-  by (auto simp: fset_iterate_def fset_set_def intro!: exI[of _ "sorted_list_of_set V"])
-
 lemma fset_iterate_foldl_set:
   "finite V \<Longrightarrow> \<exists>vs. set vs = V \<and> distinct vs \<and> fset_iterate f init V = foldl f init vs"
-  using fset_iterate_foldl'[of V f init] by (simp add: fset_set_def)
+  by (auto simp: fset_iterate_def intro!: exI[of _ "sorted_list_of_set V"])
 
-lemma iam_empty_sz: "imp_map_empty is_iam (iam_new_sz n)"
-  by unfold_locales
+lemma fset_iterate_below:
+  assumes "V \<subseteq> {..<n::nat}"
+  shows "\<exists>vs. id V = set vs \<and> distinct vs \<and> fset_iterate f init V = foldl f init vs"
+proof-
+  have fin: "finite V" by (rule finite_subset[OF assms]) simp
+  show ?thesis
+    by (rule exI[of _ "sorted_list_of_set V"]) (simp add: fset_iterate_def fin)
+qed
+
+subsection \<open>The Arrays as Fixed-Universe Maps and Sets\<close>
+
+lemma xmap_fixed_univ_map: "fixed_univ_map {..<n} (\<lambda>_. True) xmap_upd xmap_lookup"
+  by unfold_locales (auto simp: xmap_upd_def xmap_lookup_def)
+
+lemma xset_fixed_univ_set:
+  "fixed_univ_set {..<n} (\<lambda> X. X \<subseteq> {..<n}) id {} insert (\<lambda> x X. X - {x}) (\<lambda> X x. x \<in> X)"
+  by unfold_locales auto
+
+text \<open>Clearing in place, without a result.\<close>
+
+definition "xset_clear_unit n Xi = do { _ \<leftarrow> xset_clear_imp n Xi; return () }"
+
+definition "xmap_clear_unit x n Xi = do { _ \<leftarrow> xmap_clear_imp x n Xi; return () }"
+
+lemma xset_clear_unit_rule:
+  "<xset_assn n X Xi> xset_clear_unit n Xi <\<lambda>_. xset_assn n {} Xi>"
+proof-
+  have "<len_assn n Xi> xset_clear_unit n Xi <\<lambda>_. xset_assn n {} Xi>"
+    unfolding xset_clear_unit_def by (sep_auto heap: xset_clear_rule)
+  thus ?thesis by (rule ht_cons_pre[OF xset_len])
+qed
+
+lemma xmap_clear_unit_rule:
+  "<xmap_assn n f Xi> xmap_clear_unit x n Xi <\<lambda>_. xmap_assn n (\<lambda>_. x) Xi>"
+proof-
+  have "<len_assn n Xi> xmap_clear_unit x n Xi <\<lambda>_. xmap_assn n (\<lambda>_. x) Xi>"
+    unfolding xmap_clear_unit_def by (sep_auto heap: xmap_clear_rule)
+  thus ?thesis by (rule ht_cons_pre[OF xmap_len])
+qed
+
+lemma xmap_val_clear_unit_rule:
+  "<xmap_val_assn h n f Xi> xmap_clear_unit x n Xi <\<lambda>_. xmap_val_assn h n (\<lambda>_. h x) Xi>"
+proof-
+  have "<len_assn n Xi> xmap_clear_unit x n Xi <\<lambda>_. xmap_val_assn h n (\<lambda>_. h x) Xi>"
+    unfolding xmap_clear_unit_def by (sep_auto heap: xmap_val_clear_rule)
+  thus ?thesis by (rule ht_cons_pre[OF xmap_val_len])
+qed
 
 section \<open>The Code\<close>
 
@@ -54,57 +99,79 @@ text \<open>The global interpretations of the implementation modules (the forest
 subsection \<open>The Forest\<close>
 
 global_interpretation forest_csr: forest_imp
-  where parent_empty = Map.empty and parent_upd = fmap_update and parent_delete = fmap_delete
-    and parent_lookup = fmap_lookup and parent_invar = fmap_invar
-    and origin_empty = Map.empty and origin_upd = fmap_update and origin_delete = fmap_delete
-    and origin_lookup = fmap_lookup and origin_invar = fmap_invar
-    and vset_empty = "{}" and vset_insert = fset_insert and vset_delete = fset_delete
-    and vset_isin = fset_isin and vset_to_set = fset_set and vset_invar = finite
-    and vset_iterate = fset_iterate
-    and is_set = is_ias and memb_imp = ias_memb and ins_imp = ias_ins and set_clear_imp = ias_clear
-    and set_empty_imp = "ias_new_sz n" and lst = sorted_list_of_set and is_it = ias_is_it
-    and it_init = ias_it_init and it_has_next = ias_it_has_next and it_next = ias_it_next
-    and is_map = is_iam and lookup_imp = iam_lookup and update_imp = iam_update
-    and map_clear_imp = iam_clear and map_empty_imp = "iam_new_sz n"
+  where K = "{..<n}" and parent_invar = "\<lambda>_. True" and parent_upd = xmap_upd
+    and parent_get = xmap_lookup and origin_invar = "\<lambda>_. True" and origin_upd = xmap_upd
+    and origin_get = xmap_lookup and vset_invar = "\<lambda>X. X \<subseteq> {..<n}" and vset_to_set = id
+    and vset_empty = "{}" and vset_insert = insert and vset_delete = "\<lambda>x X. X - {x}"
+    and vset_isin = "\<lambda>X x. x \<in> X" and vset_iterate = fset_iterate
+    and parent_empty = "\<lambda>_. n" and origin_empty = "\<lambda>_. n" and nil = n
+    and vset_assn = "xset_assn n" and vset_empty_imp = "Array.new n False"
+    and vset_insert_imp = xset_insert_imp and vset_delete_imp = xset_delete_imp
+    and vset_isin_imp = xset_isin_imp and lst = sorted_list_of_set and is_it = "xset_is_it n"
+    and it_init = xset_it_init and it_has_next = xset_it_has_next and it_next = xset_it_next
+    and parent_assn = "xmap_assn n" and parent_upd_imp = xmap_upd_imp
+    and parent_get_imp = xmap_lookup_imp
+    and vset_clear_imp = "xset_clear_unit n" and parent_clear_imp = "xmap_clear_unit n n"
+    and parent_empty_imp = "Array.new n n"
   for n
   defines forest_csr_empty = forest_csr.forest_empty_imp
     and forest_csr_clear = forest_csr.forest_clear_imp
     and forest_csr_add_root = forest_csr.forest_add_root_imp
     and forest_csr_extend = forest_csr.forest_extend_imp
     and forest_csr_it_init = forest_csr.forest_it_init
-    and forest_csr_get_path_loop = forest_csr.get_path_loop
+    and forest_csr_get_path_loop = forest_csr.get_path_imp_loop
     and forest_csr_get_path = forest_csr.get_path_imp
-  by (intro forest_imp.intro forest_manipulation.intro forest_manipulation_spec.intro
-            forest_manipulation_axioms.intro fmap_Map fset_Set ias_imp_set_conn ias_empty_sz_impl
-            iam_imp_map_conn_clear iam_empty_sz fset_iterate_foldl fmap_conn_facts)
+  apply (rule forest_imp.intro)
+     apply (rule forest_manipulation.intro)
+      apply (rule forest_manipulation_spec.intro[OF xmap_fixed_univ_map xmap_fixed_univ_map
+                                                   xset_fixed_univ_set])
+     apply (rule forest_manipulation_axioms.intro)
+          apply simp
+         apply simp
+        apply (simp add: xmap_lookup_def)
+       apply simp
+      apply (simp add: xmap_lookup_def)
+     apply (rule fset_iterate_below, assumption)
+    apply (rule xset_fixed_univ_set_iterate_imp)
+   apply (rule xmap_fixed_univ_map_imp)
+  apply (rule forest_imp_axioms.intro)
+    apply (rule xset_clear_unit_rule)
+   apply (rule xmap_clear_unit_rule)
+  apply (rule xmap_assn_new)
+  done
 
 subsection \<open>The Augmentation\<close>
 
 global_interpretation aug_csr: matching_augmentation_imp
-  where buddy_empty = Map.empty and buddy_upd = fmap_update and buddy_delete = fmap_delete
-    and buddy_lookup = fmap_lookup and buddy_invar = fmap_invar
-    and is_map = is_iam and lookup_imp = iam_lookup and update_imp = iam_update
+  where K = "{..<n}" and buddy_invar = "\<lambda>_. True" and buddy_upd = xmap_upd
+    and buddy_get = xmap_lookup and buddy_empty = "\<lambda>_. n" and nil = n
+    and buddy_assn = "xmap_assn n" and buddy_upd_imp = xmap_upd_imp
+    and buddy_get_imp = xmap_lookup_imp
+  for n
   defines augment_csr_loop = aug_csr.augment_loop
     and augment_csr = aug_csr.augment_imp
     and augment_counted_csr = aug_csr.augment_counted_imp
     and matching_card_csr = aug_csr.matching_card_imp
-  by (intro matching_augmentation_imp.intro matching_augmentation_spec.intro fmap_Map
-            iam_imp_map_conn fmap_conn_facts)
+    and rematch_csr = aug_csr.rematch_imp
+    and rematch_counted_csr = aug_csr.rematch_counted_imp
+  by (intro matching_augmentation_imp.intro matching_augmentation_spec.intro xmap_fixed_univ_map
+            xmap_fixed_univ_map_imp)
 
 subsection \<open>The Path Search\<close>
 
 global_interpretation pds_csr: primal_dual_path_search_imp_code
-  where ben_lookup_imp = iam_lookup and ben_update_imp = iam_update and ben_clear_imp = iam_clear
-    and missed_lookup_imp = iam_lookup and missed_update_imp = iam_update
-    and missed_clear_imp = iam_clear
-    and pot_lookup_imp = iam_lookup and pot_update_imp = iam_update
-    and buddy_imp = "\<lambda>Bdi v. iam_lookup v Bdi"
-    and left_it_init = ias_it_init and left_it_has_next = ias_it_has_next
-    and left_it_next = ias_it_next
-    and forest_clear_imp = forest_csr_clear and forest_add_root_imp = forest_csr_add_root
+  where nil = n and ben_get_imp = xmap_lookup_imp and ben_upd_imp = xmap_upd_imp
+    and ben_clear_imp = "xmap_clear_unit n n"
+    and missed_get_imp = xmap_lookup_imp and missed_upd_imp = xmap_upd_imp
+    and missed_clear_imp = "xmap_clear_unit 0 n"
+    and pot_get_imp = xmap_lookup_imp and pot_upd_imp = xmap_upd_imp
+    and buddy_imp = xmap_lookup_imp
+    and left_it_init = xset_it_init and left_it_has_next = xset_it_has_next
+    and left_it_next = xset_it_next
+    and forest_clear_imp = "forest_csr_clear n" and forest_add_root_imp = forest_csr_add_root
     and forest_extend_imp = forest_csr_extend and forest_it_init = forest_csr_it_init
-    and forest_it_has_next = ias_it_has_next and forest_it_next = ias_it_next
-    and get_path_imp = forest_csr_get_path
+    and forest_it_has_next = xset_it_has_next and forest_it_next = xset_it_next
+    and get_path_imp = "forest_csr_get_path n"
     and queue_clear_imp = heap_clear_imp and queue_extract_min_imp = heap_extract_min_key_imp
     and queue_key_of_imp = heap_key_of_imp and queue_decrease_key_imp = heap_decrease_key_imp
     and queue_insert_imp = heap_insert_imp
@@ -112,9 +179,7 @@ global_interpretation pds_csr: primal_dual_path_search_imp_code
     and current_cost_imp = wnb_current_cost_imp and move_imp = wnb_move_imp
     and reset_imp = wnb_reset_imp and reset_all_imp = "wnb_reset_all_imp n"
   for n
-  defines pds_csr_pot_val = pds_csr.pot_val
-    and pds_csr_missed_val = pds_csr.missed_val
-    and pds_csr_relax_new = pds_csr.relax_new_imp
+  defines pds_csr_relax_new = pds_csr.relax_new_imp
     and pds_csr_relax_old = pds_csr.relax_old_imp
     and pds_csr_relax = pds_csr.relax_imp
     and pds_csr_scan = pds_csr.scan_imp
@@ -131,53 +196,71 @@ global_interpretation pds_csr: primal_dual_path_search_imp_code
 
 text \<open>The data structures of the path search form a single handle: the collection of
       neighbourhoods, the queue, the left vertices, the forest, the best even neighbours and the
-      missed values.\<close>
+      missed values. The potential is updated in place.\<close>
 
 definition path_search_csr where
   "path_search_csr n = (\<lambda>(Ci, Qi, Li, Fi, Bi, Mi) Bdi Pti Ra. do {
-     (res, Pti', Fi', Bi', Mi') \<leftarrow> pds_csr_search n Ci Qi Pti Bdi Li Ra Fi Bi Mi;
-     return (res, Pti', (Ci, Qi, Li, Fi', Bi', Mi')) })"
+     (res, Fi') \<leftarrow> pds_csr_search n Ci Qi Pti Bdi Li Ra Fi Bi Mi;
+     return (res, Pti, (Ci, Qi, Li, Fi', Bi, Mi)) })"
 
 subsection \<open>The Shortcut\<close>
 
+text \<open>The shortcut works on the matching with its cardinality: it reads the buddy array and
+      rematches without changing the cardinality.\<close>
+
 global_interpretation sc_csr: path_search_shortcut_imp_code
-  where pot_lookup_imp = iam_lookup and pot_update_imp = iam_update
-    and buddy_imp = "\<lambda>Bdi v. iam_lookup v Bdi"
-    and left_it_init = ias_it_init and left_it_has_next = ias_it_has_next
-    and left_it_next = ias_it_next
+  where nil = n and cap = cap and pot_get_imp = xmap_lookup_imp and pot_upd_imp = xmap_upd_imp
+    and buddy_imp = "\<lambda>Mt. xmap_lookup_imp (fst Mt)" and rematch_imp = "rematch_counted_csr n"
+    and left_it_has_next = xset_it_has_next and left_it_next = xset_it_next
     and has_imp = wnb_has_imp and current_imp = "wnb_current_imp e_tgt"
     and current_cost_imp = wnb_current_cost_imp and move_imp = wnb_move_imp
-    and reset_imp = wnb_reset_imp and reset_all_imp = "wnb_reset_all_imp n"
-  for n
+    and reset_imp = wnb_reset_imp
+  for n cap
   defines sc_csr_scan_best = sc_csr.bs.scan_best_imp
-    and sc_csr_best_of = sc_csr.bs.best_of_imp
+    and sc_csr_best_two = sc_csr.bs.best_two_imp
     and sc_csr_cur_red = sc_csr.cur_red_imp
-    and sc_csr_row_try = sc_csr.row_try_imp
-    and sc_csr_first_success = sc_csr.first_success_imp
+    and sc_csr_pot_shift = sc_csr.pot_shift_imp
+    and sc_csr_chain = sc_csr.chain_imp
+    and sc_csr_row = sc_csr.sc_row_imp
+    and sc_csr_loop = sc_csr.sc_loop_imp
     and sc_csr_shortcut = sc_csr.shortcut_imp
   done
 
+text \<open>The full path search as the fallback of the shortcut. The cursors are reset by the path
+      search before it starts and here after it ends; the iteration over the left vertices
+      starts over.\<close>
+
+definition fallback_csr where
+  "fallback_csr n Di Mt Pti Ra = do {
+     (res, Pti', Di') \<leftarrow> path_search_csr n Di (fst Mt) Pti Ra;
+     (case Di' of (Ci, Qi, Li, Fi, Bi, Mi) \<Rightarrow> do {
+        wnb_reset_all_imp n Ci;
+        it \<leftarrow> xset_it_init Li;
+        return (res, Mt, Pti', (Di', it)) }) }"
+
 text \<open>The path search of the instantiation: while the matching has fewer than @{term theta}
-      edges, the shortcut is tried first. Otherwise, or if it fails, the full path search is run.
-      The matching carries its cardinality, hence the test takes constant time.\<close>
+      edges, the shortcut is tried first, with at most @{term cap} rematches per chain. Otherwise,
+      or if it fails, the full path search is run. The matching carries its cardinality, hence
+      the test takes constant time. The scratch state consists of the data structures of the
+      full path search and the iterator over the left vertices still to be tried.\<close>
 
 definition path_search_sc_csr where
-  "path_search_sc_csr n theta = (\<lambda>Si Mt Pti Ra.
-   case (Si, Mt) of ((Ci, Qi, Li, Fi, Bi, Mi), (Bdi, _)) \<Rightarrow> do {
+  "path_search_sc_csr n theta cap = (\<lambda>Si Mt Pti Ra.
+   case Si of (Di, it) \<Rightarrow> do {
      k \<leftarrow> matching_card_csr Mt;
      (if k < theta then do {
-        (b, Pti') \<leftarrow> sc_csr_shortcut n Ci Li Bdi Pti Ra;
-        (if b then return (Imp_Path 2, Pti', Si) else path_search_csr n Si Bdi Pti' Ra) }
-      else path_search_csr n Si Bdi Pti Ra) })"
+        (b, it') \<leftarrow> sc_csr_shortcut n cap (fst Di) Pti Mt Ra it;
+        (if b then return (Imp_Path 2, Mt, Pti, (Di, it')) else fallback_csr n Di Mt Pti Ra) }
+      else fallback_csr n Di Mt Pti Ra) })"
 
 subsection \<open>The Initial Potential\<close>
 
 global_interpretation ip_csr: init_potential_imp_code
   where has_imp = wnb_has_imp and current_cost_imp = wnb_current_cost_imp
     and move_imp = wnb_move_imp and reset_imp = wnb_reset_imp
-    and pot_lookup_imp = iam_lookup and pot_update_imp = iam_update
-    and left_it_init = ias_it_init and left_it_has_next = ias_it_has_next
-    and left_it_next = ias_it_next
+    and pot_get_imp = xmap_lookup_imp and pot_upd_imp = xmap_upd_imp
+    and left_it_init = xset_it_init and left_it_has_next = xset_it_has_next
+    and left_it_next = xset_it_next
   defines init_pot_csr_upd_min = ip_csr.upd_min_imp
     and init_pot_csr_scan = ip_csr.scan_min_imp
     and init_pot_csr_step = ip_csr.init_pot_step
@@ -186,8 +269,9 @@ global_interpretation ip_csr: init_potential_imp_code
 
 subsection \<open>The Top Loop\<close>
 
-global_interpretation hl_csr: hungarian_top_loop_imp_code "path_search_sc_csr n theta" augment_counted_csr
-  for n theta
+global_interpretation hl_csr: hungarian_top_loop_imp_code "path_search_sc_csr n theta cap"
+  augment_counted_csr
+  for n theta cap
   defines hungarian_csr_main_loop = hl_csr.main_loop_imp
     and hungarian_csr = hl_csr.hungarian_imp
   done
@@ -207,27 +291,29 @@ partial_function (heap) perm_weights_imp ::
         perm_weights_imp Ea Wa Wc (Suc i) m }
       else return ())"
 
-text \<open>Inserting the elements of an array into an array set.\<close>
+text \<open>Inserting the elements of an array into a Boolean array, in place.\<close>
 
-partial_function (heap) ias_insert_all :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> array_set \<Rightarrow> array_set Heap" where
-  "ias_insert_all La i m s =
+partial_function (heap) xset_insert_all :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool array \<Rightarrow> unit Heap" where
+  "xset_insert_all La i m s =
      (if i < m then do {
         v \<leftarrow> Array.nth La i;
-        s' \<leftarrow> ias_ins v s;
-        ias_insert_all La (Suc i) m s' }
-      else return s)"
+        xset_insert_imp v s;
+        xset_insert_all La (Suc i) m s }
+      else return ())"
 
 text \<open>The final program takes the number of vertices \<open>n\<close>, the threshold \<open>theta\<close> for the
-      shortcut, the arrays \<open>Fa\<close>, \<open>Ta\<close> of the left and the right endpoints of the edges, the weight
-      array \<open>Wa\<close>, and the arrays \<open>La\<close>, \<open>Ra\<close> of the left and the right vertices. It builds the CSR
-      representation, allocates all other data structures, computes the initial potential and runs
-      the Hungarian method. It returns the result flag, the matching and the final potential. This
-      is the only place with allocations. With \<open>theta = 0\<close>, the shortcut is never tried.\<close>
+      shortcut, the bound \<open>cap\<close> on the rematches of a chain, the arrays \<open>Fa\<close>, \<open>Ta\<close> of the left
+      and the right endpoints of the edges, the weight array \<open>Wa\<close>, and the arrays \<open>La\<close>, \<open>Ra\<close> of
+      the left and the right vertices. It builds the CSR representation, allocates all other data
+      structures, computes the initial potential and runs the Hungarian method. It returns the
+      result flag, the matching (as the array of buddies, with \<open>n\<close> for a free vertex) and the
+      final potential. This is the only place with allocations. With \<open>theta = 0\<close>, the shortcut is
+      never tried.\<close>
 
 definition hungarian_csr_run ::
-  "nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> nat array \<Rightarrow>
-   nat array \<Rightarrow> (result \<times> nat array_map \<times> 'n array_map) Heap" where
-  "hungarian_csr_run n theta Fa Ta Wa La Rv = do {
+  "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> nat array \<Rightarrow>
+   nat array \<Rightarrow> (result \<times> nat array \<times> 'n array) Heap" where
+  "hungarian_csr_run n theta cap Fa Ta Wa La Rv = do {
      (Ba, Ea) \<leftarrow> csr_build_edges n (Fa, Ta) 0;
      m \<leftarrow> Array.len Ea;
      Wc \<leftarrow> Array.new m 0;
@@ -235,41 +321,44 @@ definition hungarian_csr_run ::
      Ca \<leftarrow> csr_cursor_init n Ba;
      cL \<leftarrow> Array.len La;
      cR \<leftarrow> Array.len Rv;
-     Li0 \<leftarrow> ias_new_sz n;
-     Li \<leftarrow> ias_insert_all La 0 cL Li0;
-     Pti0 \<leftarrow> iam_new_sz n;
-     Pti \<leftarrow> init_pot_csr ((Ba, Ea, Ca), Wc) Li Pti0;
+     Li \<leftarrow> Array.new n False;
+     xset_insert_all La 0 cL Li;
+     Pti \<leftarrow> Array.new n 0;
+     init_pot_csr ((Ba, Ea, Ca), Wc) Li Pti;
+     wnb_reset_all_imp n ((Ba, Ea, Ca), Wc);
+     it \<leftarrow> xset_it_init Li;
      Qi \<leftarrow> heap_empty_imp n 0;
      Fi \<leftarrow> forest_csr_empty n;
-     Bi \<leftarrow> iam_new_sz n;
-     Mi \<leftarrow> iam_new_sz n;
-     Mm \<leftarrow> iam_new_sz n;
+     Bi \<leftarrow> Array.new n n;
+     Mi \<leftarrow> Array.new n 0;
+     Mm \<leftarrow> Array.new n n;
      Ki \<leftarrow> ref 0;
      Ra \<leftarrow> Array.new n 0;
      (r, (Mm', _), Pti', _) \<leftarrow>
-       hungarian_csr n theta cL cR (((Ba, Ea, Ca), Wc), Qi, Li, Fi, Bi, Mi) (Mm, Ki) Pti Ra;
+       hungarian_csr n theta cap cL cR ((((Ba, Ea, Ca), Wc), Qi, Li, Fi, Bi, Mi), it) (Mm, Ki) Pti
+         Ra;
      return (r, Mm', Pti') }"
 
 definition hungarian_csr_run_int ::
-  "nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow>
-   (result \<times> nat array_map \<times> int array_map) Heap" where
+  "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow>
+   (result \<times> nat array \<times> int array) Heap" where
   "hungarian_csr_run_int = hungarian_csr_run"
 
-declare perm_weights_imp.simps[code] ias_insert_all.simps[code] iter_fold.simps[code]
-  forest_csr.get_path_loop.simps[code] aug_csr.augment_loop.simps[code]
+declare perm_weights_imp.simps[code] xset_insert_all.simps[code] iter_fold.simps[code]
+  forest_csr.get_path_imp_loop.simps[code] aug_csr.augment_loop.simps[code]
   pds_csr.scan_imp.simps[code] pds_csr.loop_imp.simps[code] ip_csr.scan_min_imp.simps[code]
-  hl_csr.main_loop_imp.simps[code] csr_copy_imp.simps[code] array_fill.simps[code]
-  ias_scan.simps[code] sc_csr.bs.scan_best_imp.simps[code] iter_find.simps[code]
-  nb_best_scan_imp_code.best_upd_imp_def[code] nb_best_scan_imp_code.better_imp_def[code]
-  sift_down_imp.simps[code] sift_up_imp.simps[code]
+  hl_csr.main_loop_imp.simps[code] csr_copy_imp.simps[code]
+  xset_scan.simps[code] sc_csr.bs.scan_best_imp.simps[code] iter_find.simps[code]
+  nb_best_scan_imp_code.best_upd_imp_def[code] nb_best_scan_imp_code.best2_upd_imp_def[code]
+  nb_best_scan_imp_code.better_imp_def[code] sc_csr.chain_imp.simps[code]
+  sc_csr.sc_loop_imp.simps[code] sift_down_imp.simps[code] sift_up_imp.simps[code]
 
 export_code hungarian_csr_run_int checking SML_imp
-
 text \<open>In the generated code, the computation of the initial potential and the main loop contain no
-      allocation except for @{const array_grow} in @{const iam_update} and @{const ias_ins}, which
-      is only executed for keys beyond the size of the array. All keys are vertices below \<open>n\<close>, so
-      it never is. All other allocations are in @{const hungarian_csr_run} before the computation
+      allocation. All allocations are in @{const hungarian_csr_run} before the computation
       begins.\<close>
+
+
 
 section \<open>Correctness\<close>
 
@@ -278,8 +367,8 @@ subsection \<open>The Input\<close>
 text \<open>The input consists of the lists @{term fs}, @{term ts} of the left and the right endpoints of
       the edges, the weights @{term ws}, and the lists @{term ls}, @{term rs} of the left and the
       right vertices. Every vertex has an edge, the sides are disjoint, all vertices are below
-      @{term n}, and there are no parallel edges. The threshold @{term theta} for the shortcut is
-      arbitrary.\<close>
+      @{term n}, and there are no parallel edges. The threshold @{term theta} for the shortcut and
+      the bound @{term cap} on the rematches of a chain are arbitrary.\<close>
 
 locale hungarian_csr_input = real_embedding h
   for h :: "'n::{linordered_idom, heap} \<Rightarrow> real" +
@@ -290,6 +379,7 @@ locale hungarian_csr_input = real_embedding h
     and ls :: "nat list"
     and rs :: "nat list"
     and theta :: nat
+    and cap :: nat
   assumes ts_length: "length ts = length fs"
     and ws_length: "length ws = length fs"
     and ls_distinct: "distinct ls"
@@ -382,7 +472,7 @@ sublocale inp: csr_buildup "edge_next fs ts" "edge_seq fs ts" "\<lambda>_. True"
      (unfold_locales, auto simp: edge_seq_def fs_L L_less)
 
 sublocale ci: imp_csr_buildup "edge_next fs ts" "edge_seq fs ts" "\<lambda>_. True" e_src n 0
-    edge_has_next edge_cur edge_adv edge_key "\<lambda>s si. si = s"
+    edge_has_next edge_cur edge_adv edge_key edge_val id "\<lambda>s si. si = s"
     "\<lambda>(Fa, Ta). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts"
 proof (unfold_locales, goal_cases)
   case (1 s si c)
@@ -396,8 +486,11 @@ next
   case (3 s si e s' c) then show ?case
     by (cases c) (sep_auto simp: edge_adv_def edge_next_def split: if_splits)
 next
-  case (4 e) then show ?case
+  case (4 e c) then show ?case
     by (sep_auto simp: edge_key_def)
+next
+  case (5 e c) then show ?case
+    by (sep_auto simp: edge_val_def)
 qed
 
 lemma E_spec_distinct: "distinct inp.E_spec"
@@ -413,9 +506,13 @@ proof -
   then show ?thesis by (simp add: inp.E_spec_def)
 qed
 
-sublocale graph: csr_graph n L inp.B_spec inp.E_spec
+text \<open>The neighbourhoods are indexed by the whole universe of the maps and sets, the vertices below
+      \<open>n\<close>.
+      Only the left vertices have neighbours.\<close>
+
+sublocale graph: csr_graph n "{..<n}" inp.B_spec inp.E_spec
 proof (unfold_locales, goal_cases)
-  case 1 show ?case using L_less by auto
+  case 1 show ?case by simp
 next
   case 2 show ?case by (rule inp.length_B_spec)
 next
@@ -447,20 +544,21 @@ text \<open>The weights in CSR order.\<close>
 definition "W = map (\<lambda>e. ws ! e_id e) inp.E_spec"
 
 lemma seg_edge:
-  assumes "v \<in> L" "inp.B_spec ! v \<le> j" "j < inp.B_spec ! Suc v"
+  assumes "v < n" "inp.B_spec ! v \<le> j" "j < inp.B_spec ! Suc v"
   shows "\<exists>i. i < length fs \<and> fs ! i = v \<and> inp.E_spec ! j = mk_edge fs ts i"
 proof -
   have "inp.E_spec ! j \<in> graph.csr_abstract c v"
     using assms by (auto simp: graph.csr_abstract_def graph.seg_def)
-  thus ?thesis using csr_abstract_edges[OF L_less[OF assms(1)]] by auto
+  thus ?thesis using csr_abstract_edges[OF assms(1)] by auto
 qed
 
-sublocale wcsr: weighted_csr n L inp.B_spec inp.E_spec e_tgt W ecost h
+sublocale wcsr: weighted_csr n "{..<n}" inp.B_spec inp.E_spec e_tgt W ecost h
 proof (unfold_locales, goal_cases)
   case (1 v)
+  have v: "v < n" using 1 by simp
   have "(!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v} =
         {mk_edge fs ts i | i. i < length fs \<and> fs ! i = v}"
-    using csr_abstract_edges[OF L_less[OF 1]]
+    using csr_abstract_edges[OF v]
     by (simp add: graph.csr_abstract_def graph.seg_def)
   moreover have "inj_on e_tgt {mk_edge fs ts i | i. i < length fs \<and> fs ! i = v}"
   proof (rule inj_onI)
@@ -477,35 +575,30 @@ next
   case 2 show ?case by (simp add: W_def)
 next
   case (3 v j)
+  have v: "v < n" using 3(1) by simp
   obtain i where i: "i < length fs" "fs ! i = v" "inp.E_spec ! j = mk_edge fs ts i"
-    using seg_edge[OF 3] by blast
+    using seg_edge[OF v 3(2,3)] by blast
   have "j < length inp.E_spec"
-    using 3 graph.B_bound[OF L_less[OF 3(1)]] by simp
+    using 3 graph.B_bound[OF v] by simp
   thus ?case using i by (simp add: W_def ecost_edge flip: i(2))
 qed
 
 subsection \<open>The Queue\<close>
 
-lemma h_less_iff: "h a < h b \<longleftrightarrow> a < b"
-  using h_strict_mono by (metis not_less_iff_gr_or_eq order_less_asym)
-
 sublocale hp: indexed_heap_imp n "Vs G" h 0
-  by unfold_locales (auto simp: Vs_G L_less R_less h_less_iff)
+  by unfold_locales (auto simp: Vs_G L_less R_less)
 
 end
 
-subsection \<open>The Maps, the Path Search and the Initial Potential\<close>
+subsection \<open>The Neighbourhoods and the Initial Potential\<close>
 
 context hungarian_csr_input
 begin
 
-text \<open>The potential and the missed values are array maps whose values are read into the reals.\<close>
-
-sublocale potm: imp_map_conn is_iam iam_lookup iam_update fmap_update fmap_lookup fmap_invar
-    "\<lambda>_ c x. h c = x"
-  by (intro iam_imp_map_conn fmap_conn_facts)
-
 abbreviation "nb_init \<equiv> (\<lambda>v. inp.B_spec ! v)"
+
+lemma L_below: "L \<subseteq> {..<n}"
+  using L_less by auto
 
 lemma wnb_abstract_init:
   "v \<in> L \<Longrightarrow> wcsr.wnb_abstract nb_init v = {u. {v, u} \<in> G}"
@@ -521,200 +614,84 @@ qed
 lemma wnb_abstract_finite: "finite (wcsr.wnb_abstract C v)"
   by (simp add: wcsr.wnb_abstract_def graph.csr_abstract_def graph.seg_def)
 
-text \<open>The data structures of the path search, with arbitrary contents; only the collection of
-      neighbourhoods has to be one of the graph.\<close>
+text \<open>The neighbourhoods do not depend on the cursors.\<close>
 
-definition "csr_scratch_assn Si = (case Si of (Ci, Qi, Li, Fi, Bi, Mi) \<Rightarrow>
-   (\<exists>\<^sub>AC H (F :: (nat set, nat set, nat set, nat \<rightharpoonup> nat, nat \<rightharpoonup> nat) alt_forest) B Mm.
-      wcsr.wnb_assn C Ci * hp.heap_assn H Qi * forest_csr.forest_assn F Fi *
-                   aug_csr.buddy_assn B Bi * potm.map_assn Mm Mi *
-                   \<up>(graph.csr_invar C \<and>
-                     (\<forall>i\<in>L. wcsr.wnb_abstract C i = wcsr.wnb_abstract nb_init i))) *
-   is_ias L Li)"
+lemma wnb_abstract_cursor: "\<forall>i\<in>A. wcsr.wnb_abstract C i = wcsr.wnb_abstract C' i"
+  by (simp add: wcsr.wnb_abstract_def graph.csr_abstract_def)
 
-text \<open>The functional path search for the matching @{term M} and the potential @{term \<pi>}.\<close>
+text \<open>The path search scans the neighbourhoods of the left vertices only.\<close>
 
-definition "fsearch M \<pi> =
-  primal_dual_path_search_spec.search_path Map.empty fmap_update fmap_lookup Map.empty fmap_update
-    fmap_lookup ecost L wcsr.wnb_current graph.csr_has graph.csr_move graph.csr_reset nb_init M
-    forest_csr.extend_forest_even_unclassified evens odds forest_csr.get_path
-    forest_csr.empty_forest fmap_update fmap_lookup \<pi> heap_empty heap_extract_min
-    heap_decrease_key heap_insert fset_iterate fset_iterate fset_filter fset_is_empty"
+lemma wnb_imp_L:
+  "weighted_neighbourhoods_imp_spec graph.csr_invar wcsr.wnb_abstract wcsr.wnb_current
+     graph.csr_has wcsr.wnb_iterated wcsr.wnb_remaining graph.csr_move graph.csr_reset L ecost h
+     nb_init wcsr.wnb_assn wnb_has_imp (wnb_current_imp e_tgt) wnb_current_cost_imp wnb_move_imp
+     wnb_reset_imp (wnb_reset_all_imp n)"
+proof-
+  have L: "\<And>i. i \<in> L \<Longrightarrow> i \<in> {..<n}" using L_less by simp
+  show ?thesis
+    apply (intro weighted_neighbourhoods_imp_spec.intro indexed_iterable_set.intro
+                 weighted_neighbourhoods_imp_spec_axioms.intro)
+    apply (all \<open>(rule wcsr.wnb.idx_partition_disjoint wcsr.wnb.idx_partition_union
+                      wcsr.wnb.idx_has wcsr.wnb.idx_current wcsr.wnb.idx_move_invar
+                      wcsr.wnb.idx_move_abstract wcsr.wnb.idx_move_remaining
+                      wcsr.wnb.idx_move_iterated wcsr.wnb.idx_move_remaining_other
+                      wcsr.wnb.idx_move_iterated_other wcsr.wnb.idx_reset_invar
+                      wcsr.wnb.idx_reset_abstract wcsr.wnb.idx_reset_iterated
+                      wcsr.wnb.idx_reset_remaining wcsr.wnb.idx_reset_remaining_other
+                      wcsr.wnb.idx_reset_iterated_other wcsr.wnb_imp.nb_init_invar
+                      wcsr.wnb_imp.has_rule wcsr.wnb_imp.current_rule
+                      wcsr.wnb_imp.current_cost_rule wcsr.wnb_imp.move_rule
+                      wcsr.wnb_imp.reset_rule wcsr.wnb_imp.reset_all_rule;
+                 (assumption | erule L | rule wnb_abstract_cursor)?)?\<close>)
+    done
+qed
 
-text \<open>The initial potential.\<close>
+text \<open>The initial potential. The potential is an array of values that are read into the reals.\<close>
 
 sublocale ipot: init_potential_imp
-  where potential_upd = fmap_update and potential_lookup = fmap_lookup
+  where potential_upd = xmap_upd and potential_get = xmap_lookup
     and rnb_current = wcsr.wnb_current and rnb_has = graph.csr_has and rnb_move = graph.csr_move
     and rnb_reset = graph.csr_reset and cost = ecost and vset_iterate = fset_iterate
-    and potential_empty = Map.empty and potential_delete = fmap_delete
-    and potential_invar = fmap_invar
+    and potential_invar = "\<lambda>_. True"
     and rnb_invar = graph.csr_invar and rnb_abstract = wcsr.wnb_abstract
-    and rnb_iterated = wcsr.wnb_iterated and rnb_remaining = wcsr.wnb_remaining and K = L
-    and vset_to_set = fset_set and vset_invar = finite and lst = sorted_list_of_set
+    and rnb_iterated = wcsr.wnb_iterated and rnb_remaining = wcsr.wnb_remaining and K = "{..<n}"
+    and potential_empty = "\<lambda>_. 0" and vset_to_set = id and vset_invar = "\<lambda>X. X \<subseteq> {..<n}"
+    and lst = sorted_list_of_set
     and h = h and nb_init = nb_init and nb_assn = wcsr.wnb_assn and has_imp = wnb_has_imp
     and current_imp = "wnb_current_imp e_tgt" and current_cost_imp = wnb_current_cost_imp
     and move_imp = wnb_move_imp and reset_imp = wnb_reset_imp
     and reset_all_imp = "wnb_reset_all_imp n"
-    and pot_is_map = is_iam and pot_lookup_imp = iam_lookup and pot_update_imp = iam_update
-    and left_is_set = is_ias and left_is_it = ias_is_it and left_it_init = ias_it_init
-    and left_it_has_next = ias_it_has_next and left_it_next = ias_it_next
+    and pot_assn = "xmap_val_assn h n" and pot_upd_imp = xmap_upd_imp
+    and pot_get_imp = xmap_lookup_imp
+    and vset_empty = "{}" and vset_insert = insert and vset_delete = "\<lambda>x X. X - {x}"
+    and vset_isin = "\<lambda>X x. x \<in> X" and vset_assn = "xset_assn n"
+    and vset_empty_imp = "Array.new n False" and vset_insert_imp = xset_insert_imp
+    and vset_delete_imp = xset_delete_imp and vset_isin_imp = xset_isin_imp
+    and left_is_it = "xset_is_it n" and left_it_init = xset_it_init
+    and left_it_has_next = xset_it_has_next and left_it_next = xset_it_next
   apply (intro init_potential_imp.intro init_potential_coll.intro init_potential_coll_axioms.intro
-               fmap_Map wcsr.wnb.indexed_iterable_set_axioms real_embedding_axioms
-               wcsr.wnb_imp.weighted_neighbourhoods_imp_spec_axioms iam_imp_map_conn
-               fmap_conn_facts ias_imp_set_ordered_iterate)
-  by (simp_all add: fset_iterate_def fset_set_def)
+               xmap_fixed_univ_map wcsr.wnb.indexed_iterable_set_axioms real_embedding_axioms
+               wcsr.wnb_imp.weighted_neighbourhoods_imp_spec_axioms xmap_val_fixed_univ_map_imp
+               xset_fixed_univ_set_iterate_imp)
+  by (simp_all add: fset_iterate_def xmap_lookup_def)
 
-end
+abbreviation "init_pot \<equiv> snd (ipot.init_potential_coll nb_init (\<lambda>_. 0) L)"
 
-subsection \<open>One Path Search\<close>
+lemma init_pot_props:
+  "\<And>u v. \<lbrakk>u \<in> L; v \<in> wcsr.wnb_abstract nb_init u\<rbrakk> \<Longrightarrow> xmap_lookup init_pot u \<le> ecost u v"
+  "\<And>u. u \<notin> L \<Longrightarrow> xmap_lookup init_pot u = 0"
+  "graph.csr_invar (fst (ipot.init_potential_coll nb_init (\<lambda>_. 0) L))"
+  "wcsr.wnb_abstract (fst (ipot.init_potential_coll nb_init (\<lambda>_. 0) L)) = wcsr.wnb_abstract nb_init"
+  using ipot.init_potential_coll_props[of nb_init L, OF wcsr.csr_init_invar L_below _ _
+                                         wnb_abstract_finite]
+  by (simp_all add: L_below)
 
-text \<open>For a matching @{term M} and a potential @{term \<pi>} that satisfy the precondition of the path
-      search, the imperative path search of @{locale primal_dual_path_search_imp} is interpreted on
-      the data structures of the instantiation.\<close>
+subsection \<open>The Functional Models of the Matching and the Potential\<close>
 
-lemma pds_M_eq: "primal_dual_path_search_spec.\<M> M = {{u, v} |u v. Some v = M u}"
-  by (rule primal_dual_path_search_spec.\<M>_def[OF primal_dual_path_search_spec.intro[OF fmap_Map
-                                                    fmap_Map fset_Set]])
-
-lemma M_abs: "{{u, v} |u v. Some v = M u} = aug_csr.\<M> M"
-  unfolding aug_csr.\<M>_def' fmap_lookup_def by (metis (no_types, lifting))
-
-locale hungarian_csr_search = hungarian_csr_input +
-  fixes M :: "nat \<rightharpoonup> nat" and \<pi> :: "nat \<rightharpoonup> real"
-  assumes buddy_sym: "\<And>u v. M u = Some v \<Longrightarrow> M v = Some u"
-    and buddy_matching: "graph_matching G {{u, v} | u v. M u = Some v}"
-    and buddy_tight: "\<And>u v. {u, v} \<in> {{u, v} | u v. Some v = M u} \<Longrightarrow>
-                       abstract_real_map \<pi> u + abstract_real_map \<pi> v = ecost u v"
-    and pot_feasible: "\<And>u v. {u, v} \<in> G \<Longrightarrow>
-                       abstract_real_map \<pi> u + abstract_real_map \<pi> v \<le> ecost u v"
-    and pot_dom: "dom \<pi> \<subseteq> L \<union> R"
-begin
-
-lemma buddy_lookup_rule:
-  "<aug_csr.buddy_assn M Bdi> iam_lookup v Bdi <\<lambda>r. aug_csr.buddy_assn M Bdi * \<up>(r = M v)>"
-  using aug_csr.buddy_lookup_rule[of M Bdi v] by (simp add: fmap_lookup_def)
-
-sublocale ps: primal_dual_path_search_imp
-  where ben_empty = Map.empty and ben_upd = fmap_update and ben_delete = fmap_delete
-    and ben_lookup = fmap_lookup and ben_invar = fmap_invar
-    and missed_empty = Map.empty and missed_upd = fmap_update and missed_delete = fmap_delete
-    and missed_lookup = fmap_lookup and missed_invar = fmap_invar
-    and vset_empty = "{}" and vset_insert = fset_insert and vset_delete = fset_delete
-    and vset_isin = fset_isin and vset_to_set = fset_set and vset_invar = finite
-    and G = G and edge_costs = ecost and edge_costs_code = ecost and left = L and right = R
-    and in_G = "\<lambda>u v. {u, v} \<in> G"
-    and rnb_invar = graph.csr_invar and rnb_abstract = wcsr.wnb_abstract
-    and rnb_current = wcsr.wnb_current and rnb_has = graph.csr_has
-    and rnb_iterated = wcsr.wnb_iterated and rnb_remaining = wcsr.wnb_remaining
-    and rnb_move = graph.csr_move and rnb_reset = graph.csr_reset and rnb_init = nb_init
-    and buddy = M
-    and extend_forest_even_unclassified = forest_csr.extend_forest_even_unclassified
-    and evens = evens and odds = odds and get_path = forest_csr.get_path
-    and abstract_forest = forest_csr.abstract_forest and empty_forest = forest_csr.empty_forest
-    and forest_invar = forest_csr.forest_invar and roots = roots
-    and potential_upd = fmap_update and potential_lookup = fmap_lookup
-    and potential_invar = fmap_invar and initial_pot = \<pi>
-    and heap_empty = heap_empty and heap_extract_min = heap_extract_min
-    and heap_decrease_key = heap_decrease_key and heap_insert = heap_insert
-    and heap_invar = "heap_invar (Vs G)" and heap_abstract = heap_abstract
-    and vset_iterate_ben = fset_iterate and vset_iterate_pot = fset_iterate
-    and vset_filter = fset_filter and vset_is_empty = fset_is_empty
-    and h = h
-    and queue_assn = hp.heap_assn and queue_empty_imp = "heap_empty_imp n 0"
-    and queue_clear_imp = heap_clear_imp and queue_extract_min_imp = heap_extract_min_key_imp
-    and queue_key_of_imp = heap_key_of_imp and queue_decrease_key_imp = heap_decrease_key_imp
-    and queue_insert_imp = heap_insert_imp
-    and nb_assn = wcsr.wnb_assn and has_imp = wnb_has_imp and current_imp = "wnb_current_imp e_tgt"
-    and current_cost_imp = wnb_current_cost_imp and move_imp = wnb_move_imp
-    and reset_imp = wnb_reset_imp and reset_all_imp = "wnb_reset_all_imp n"
-    and lst = sorted_list_of_set and forest_assn = forest_csr.forest_assn
-    and forest_empty_imp = "forest_csr_empty n" and forest_clear_imp = forest_csr_clear
-    and forest_add_root_imp = forest_csr_add_root and forest_extend_imp = forest_csr_extend
-    and evens_memb_imp = forest_csr.evens_memb_imp and odds_memb_imp = forest_csr.odds_memb_imp
-    and forest_is_it = forest_csr.forest_is_it and forest_it_init = forest_csr_it_init
-    and forest_it_has_next = ias_it_has_next and forest_it_next = ias_it_next
-    and get_path_imp = forest_csr_get_path
-    and ben_is_map = is_iam and ben_lookup_imp = iam_lookup and ben_update_imp = iam_update
-    and ben_clear_imp = iam_clear
-    and missed_is_map = is_iam and missed_lookup_imp = iam_lookup
-    and missed_update_imp = iam_update and missed_clear_imp = iam_clear
-    and pot_is_map = is_iam and pot_lookup_imp = iam_lookup and pot_update_imp = iam_update
-    and left_is_set = is_ias and left_is_it = ias_is_it and left_it_init = ias_it_init
-    and left_it_has_next = ias_it_has_next and left_it_next = ias_it_next
-    and buddy_assn = "aug_csr.buddy_assn M" and buddy_imp = "\<lambda>Bdi v. iam_lookup v Bdi"
-  apply (intro primal_dual_path_search_imp.intro primal_dual_path_search_imp_axioms.intro
-               primal_dual_path_search.intro primal_dual_path_search_spec.intro
-               primal_dual_path_search_axioms.intro
-               fmap_Map fset_Set forest_csr.satisified hp.heap_key_value_queue_hungarian
-               wcsr.wnb.indexed_iterable_set_axioms
-               real_embedding_axioms hp.hqueue.key_value_queue_imp_axioms
-               wcsr.wnb_imp.weighted_neighbourhoods_imp_spec_axioms
-               forest_csr.alternating_forest_imp_spec
-               iam_imp_map_conn_clear iam_imp_map_conn fmap_conn_facts ias_imp_set_ordered_iterate
-               buddy_lookup_rule)
-  apply (unfold fset_set_def fmap_lookup_def)
-  apply (all \<open>((rule bipartite_G wcsr.wnb.indexed_iterable_set_axioms wcsr.csr_init_invar
-                     ecost_sym pot_feasible buddy_sym buddy_matching buddy_tight pot_dom
-                     fmap_conn_facts fset_iterate_foldl_set
-                     wcsr.wnb_imp.weighted_neighbourhoods_imp_spec_axioms); assumption?)?\<close>)
-  apply (all \<open>(simp add: wnb_abstract_init primal_dual_path_search_spec.\<M>_def fset_filter_def
-                         fset_is_empty_def fmap_invar_def fset_iterate_def)?\<close>)
-  apply (all \<open>(simp only: pds_M_eq, blast)?\<close>)
-  done
-
-lemma fsearch_eq: "ps.search_path = fsearch M \<pi>"
-  by (simp add: fsearch_def)
-
-lemma scratch_eq:
-  "csr_scratch_assn (Ci, Qi, Li, Fi, Bi, Mi) = ps.scratch_assn Ci Qi Fi Bi Mi * is_ias L Li"
-  by (simp add: csr_scratch_assn_def ps.scratch_assn_def fset_set_def)
-
-theorem path_search_csr_rule:
-  assumes len: "card (L \<union> R) \<le> length xs"
-  shows "<csr_scratch_assn Si * aug_csr.buddy_assn M Bdi * potm.map_assn \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
-         path_search_csr n Si Bdi Pti Ra
-         <\<lambda>(res, Pti', Si'). \<exists>\<^sub>Axs'. csr_scratch_assn Si' * aug_csr.buddy_assn M Bdi * Ra \<mapsto>\<^sub>a xs' *
-            \<up>(length xs' = length xs) *
-            (case fsearch M \<pi> of
-               Dual_Unbounded \<Rightarrow> \<up>(res = Imp_Unbounded) * potm.map_assn \<pi> Pti'
-             | Lefts_Matched \<Rightarrow> \<up>(res = Imp_Matched) * potm.map_assn \<pi> Pti'
-             | Next_Iteration p \<pi>' \<Rightarrow>
-                 \<up>(\<exists>k. res = Imp_Path k \<and> k \<le> length xs' \<and> take k xs' = p) * potm.map_assn \<pi>' Pti')>"
-proof -
-  obtain Ci Qi Li Fi Bi Mi where Si: "Si = (Ci, Qi, Li, Fi, Bi, Mi)"
-    by (cases Si) (metis prod_cases5)
-  have len': "card (fset_set L \<union> fset_set R) \<le> length xs" using len by (simp add: fset_set_def)
-  have r: "<ps.scratch_assn Ci Qi Fi Bi Mi * is_ias L Li * aug_csr.buddy_assn M Bdi *
-            potm.map_assn \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
-           pds_csr_search n Ci Qi Pti Bdi Li Ra Fi Bi Mi
-           <\<lambda>(res, Pti', Fi', Bi', Mi'). \<exists>\<^sub>Axs'.
-              ps.scratch_assn Ci Qi Fi' Bi' Mi' * is_ias L Li * aug_csr.buddy_assn M Bdi *
-              Ra \<mapsto>\<^sub>a xs' * \<up>(length xs' = length xs) * ps.search_post Pti' res xs'>"
-    using ps.search_imp_rule[OF len', of Ci Qi Fi Bi Mi Li Bdi Pti Ra]
-    by (simp add: pds_csr_search_def fset_set_def)
-  note [simp del] = ps.scratch_assn_def
-  show ?thesis
-    unfolding Si path_search_csr_def prod.case scratch_eq
-    by (sep_auto heap: r simp: ps.search_post_def fsearch_eq scratch_eq
-                  split: path_search_result.splits)
-qed
-
-lemmas fsearch_correct =
-  ps.search_path_correct[unfolded fsearch_eq pds_M_eq M_abs fset_set_def]
-
-end
-
-subsection \<open>The Top Loop\<close>
-
-context hungarian_csr_input
-begin
+text \<open>The matching is the total map of buddies on @{term "{..<n}"}, with @{term n} for a free
+      vertex. The potential is a total function on the vertices.\<close>
 
 abbreviation "wfun \<equiv> \<lambda>e. ecost (pick_one e) (pick_another e)"
-
-definition "pot_invar \<pi> = (fmap_invar \<pi> \<and> dom (fmap_lookup \<pi>) \<subseteq> Vs G)"
-
-abbreviation "init_pot \<equiv> snd (ipot.init_potential_coll nb_init Map.empty L)"
 
 lemma wfun_eq:
   assumes "{u, v} \<in> G"
@@ -727,330 +704,636 @@ proof -
     by (auto simp: doubleton_eq_iff ecost_sym[OF assms])
 qed
 
-lemma init_pot_props:
-  "fmap_invar init_pot"
-  "\<And>u v. \<lbrakk>u \<in> L; v \<in> wcsr.wnb_abstract nb_init u\<rbrakk> \<Longrightarrow>
-          abstract_real_map (fmap_lookup init_pot) u \<le> ecost u v"
-  "dom (fmap_lookup init_pot) \<subseteq> L"
-  using ipot.init_potential_coll_props[of nb_init L, OF wcsr.csr_init_invar]
-  by (auto simp: fset_set_def wnb_abstract_finite)
+sublocale maug: matching_augmentation "{..<n}" "\<lambda>_. True" xmap_upd xmap_lookup "\<lambda>_. n" n
+  by (intro matching_augmentation.intro matching_augmentation_axioms.intro
+            matching_augmentation_spec.intro xmap_fixed_univ_map)
+     (simp_all add: xmap_lookup_def)
 
-lemma feasible_init:
-  "feasible_min_perfect_dual G wfun (\<lambda>v. abstract_real_map (fmap_lookup init_pot) v)"
-proof (rule feasible_min_perfect_dualI)
-  fix e u v assume e: "e \<in> G" "e = {u, v}"
-  then obtain i where i: "i < length fs" "e = {fs ! i, ts ! i}" by (auto simp: G_def)
-  have l: "fs ! i \<in> L" and r: "ts ! i \<in> R" using fs_L ts_R i(1) by auto
-  hence "ts ! i \<notin> dom (fmap_lookup init_pot)" using init_pot_props(3) sides_disjoint by auto
-  hence r0: "abstract_real_map (fmap_lookup init_pot) (ts ! i) = 0"
-    by (simp add: abstract_real_map_outside_dom)
-  have "ts ! i \<in> wcsr.wnb_abstract nb_init (fs ! i)"
-    using wnb_abstract_init[OF l] i e by auto
-  hence le: "abstract_real_map (fmap_lookup init_pot) (fs ! i) \<le> ecost (fs ! i) (ts ! i)"
-    by (rule init_pot_props(2)[OF l])
-  have w: "wfun e = ecost (fs ! i) (ts ! i)"
-    using wfun_eq[of "fs ! i" "ts ! i"] e(1) i(2) by simp
-  have "(f::nat \<Rightarrow> real) u + f v = f (fs ! i) + f (ts ! i)" for f
-    using e(2) i(2) by (auto simp: doubleton_eq_iff)
-  thus "abstract_real_map (fmap_lookup init_pot) u + abstract_real_map (fmap_lookup init_pot) v
-        \<le> wfun e"
-    using r0 le w by simp
+lemma Vs_G_below: "Vs G \<subseteq> {..<n}"
+  using L_less R_less by (auto simp: Vs_G)
+
+lemma buddy_lookup_rule:
+  "v \<in> {..<n} \<Longrightarrow>
+   <xmap_assn n M Bdi> xmap_lookup_imp Bdi v <\<lambda>r. xmap_assn n M Bdi * \<up>(r = xmap_lookup M v)>"
+  by (sep_auto heap: xmap_lookup_rule simp: xmap_lookup_imp_def xmap_lookup_def)
+
+lemma buddy_free:
+  assumes "aug_csr.invar_matching n G M"
+  shows "xmap_lookup M v = n \<longleftrightarrow> v \<notin> Vs (aug_csr.\<M> n M)"
+proof-
+  have sym: "\<And>u w. aug_csr.buddy_lookup n M u = Some w \<Longrightarrow>
+                       aug_csr.buddy_lookup n M w = Some u"
+    using assms by (simp add: aug_csr.invar_matching_def aug_csr.symmetric_buddies_def)
+  have "aug_csr.buddy_lookup n M v = None \<longleftrightarrow> v \<notin> Vs (aug_csr.\<M> n M)"
+  proof
+    assume none: "aug_csr.buddy_lookup n M v = None"
+    show "v \<notin> Vs (aug_csr.\<M> n M)"
+    proof
+      assume "v \<in> Vs (aug_csr.\<M> n M)"
+      then obtain e where e: "e \<in> aug_csr.\<M> n M" "v \<in> e" by (auto simp: Vs_def)
+      then obtain a b where ab: "e = {a, b}" "aug_csr.buddy_lookup n M a = Some b"
+        by (auto simp: aug_csr.\<M>_def')
+      have "v = a \<or> v = b" using e(2) ab(1) by simp
+      thus False using ab(2) sym[OF ab(2)] none by auto
+    qed
+  next
+    assume nV: "v \<notin> Vs (aug_csr.\<M> n M)"
+    show "aug_csr.buddy_lookup n M v = None"
+    proof (rule ccontr)
+      assume "aug_csr.buddy_lookup n M v \<noteq> None"
+      then obtain w where w: "aug_csr.buddy_lookup n M v = Some w" by auto
+      have "{v, w} \<in> aug_csr.\<M> n M" unfolding aug_csr.\<M>_def' using w by blast
+      hence "v \<in> Vs (aug_csr.\<M> n M)" by (auto simp: Vs_def)
+      thus False using nV by simp
+    qed
+  qed
+  thus ?thesis by (simp add: aug_csr.buddy_lookup_def split: if_splits)
 qed
-
-text \<open>The precondition of the path search gives an instance of @{locale hungarian_csr_search}.\<close>
-
-lemma search_instance:
-  assumes "aug_csr.invar_matching G M" "pot_invar \<pi>"
-          "aug_csr.\<M> M \<subseteq> tight_subgraph G wfun (\<lambda>v. abstract_real_map (fmap_lookup \<pi>) v)"
-          "feasible_min_perfect_dual G wfun (\<lambda>v. abstract_real_map (fmap_lookup \<pi>) v)"
-  shows "hungarian_csr_search h n fs ts ws ls rs M \<pi>"
-proof (intro hungarian_csr_search.intro hungarian_csr_input.intro real_embedding_axioms
-             hungarian_csr_search_axioms.intro)
-  show "hungarian_csr_input_axioms n fs ts ws ls rs"
-    by (intro hungarian_csr_input_axioms.intro ts_length ws_length ls_distinct rs_distinct fs_ls
-              ts_rs sides_disjoint verts_below no_parallel)
-  show "\<And>u v. M u = Some v \<Longrightarrow> M v = Some u"
-    using assms(1)
-    by (auto simp: aug_csr.invar_matching_def aug_csr.symmetric_buddies_def fmap_lookup_def)
-  show "graph_matching G {{u, v} |u v. M u = Some v}"
-    using assms(1) by (simp add: aug_csr.invar_matching_def aug_csr.\<M>_def' fmap_lookup_def)
-  show "dom \<pi> \<subseteq> L \<union> R" using assms(2) by (simp add: pot_invar_def Vs_G fmap_lookup_def)
-  show "\<And>u v. {u, v} \<in> G \<Longrightarrow> abstract_real_map \<pi> u + abstract_real_map \<pi> v \<le> ecost u v"
-    using assms(4) wfun_eq by (fastforce simp: feasible_min_perfect_dual_def fmap_lookup_def)
-  fix u v assume "{u, v} \<in> {{u, v} |u v. Some v = M u}"
-  hence "{u, v} \<in> tight_subgraph G wfun (\<lambda>v. abstract_real_map (fmap_lookup \<pi>) v)"
-    using assms(3) M_abs by blast
-  hence "{u, v} \<in> G" "wfun {u, v} = abstract_real_map \<pi> u + abstract_real_map \<pi> v"
-    by (auto simp: tight_subgraph_def doubleton_eq_iff fmap_lookup_def add.commute insert_commute)
-  thus "abstract_real_map \<pi> u + abstract_real_map \<pi> v = ecost u v" using wfun_eq by simp
-qed
-
-sublocale maug: matching_augmentation Map.empty fmap_update fmap_delete fmap_lookup fmap_invar
-  by (intro matching_augmentation.intro matching_augmentation_spec.intro fmap_Map)
 
 abbreviation "csr_precond \<equiv>
-  hungarian_loop_spec.path_search_precond (\<lambda>\<pi> v. abstract_real_map (fmap_lookup \<pi>) v) pot_invar
-    (maug.invar_matching G) maug.\<M> wfun G"
+  hungarian_loop_spec.path_search_precond xmap_lookup (\<lambda>_. True) (aug_csr.invar_matching n G)
+    (aug_csr.\<M> n) wfun G"
+
+text \<open>The functional path search for the matching @{term M} and the potential @{term \<pi>}.\<close>
+
+definition "fsearch M \<pi> =
+  primal_dual_path_search_spec.search_path xmap_upd xmap_lookup xmap_upd xmap_lookup xmap_upd
+    xmap_lookup ecost L wcsr.wnb_current graph.csr_has graph.csr_move graph.csr_reset nb_init
+    (xmap_lookup M) forest_csr.extend_forest_even_unclassified evens odds (forest_csr.get_path n)
+    (forest_csr.empty_forest n) \<pi> heap_empty heap_extract_min heap_decrease_key heap_insert
+    fset_iterate fset_iterate fset_filter fset_is_empty (\<lambda>_. n) (\<lambda>_. 0) n"
+
+lemmas pds_spec = primal_dual_path_search_spec.intro[OF xmap_fixed_univ_map xmap_fixed_univ_map
+                    xmap_fixed_univ_map xset_fixed_univ_set]
+
+lemma pds_buddy_eq:
+  "primal_dual_path_search_spec.buddy (xmap_lookup M) n = aug_csr.buddy_lookup n M"
+  by (rule ext)
+     (simp add: primal_dual_path_search_spec.buddy_def[OF pds_spec] aug_csr.buddy_lookup_def)
+
+lemma pds_M_eq: "primal_dual_path_search_spec.\<M> (xmap_lookup M) n = aug_csr.\<M> n M"
+  unfolding primal_dual_path_search_spec.\<M>_def[OF pds_spec] pds_buddy_eq aug_csr.\<M>_def'
+  by (simp only: eq_commute[of "Some _"])
+
+text \<open>The queue, the forest, the best even neighbours and the missed values of the path search,
+      with arbitrary contents.\<close>
+
+definition "pds_aux_assn Qi Fi Bi Mi =
+   (\<exists>\<^sub>AH (F :: (nat set, nat set, nat set, nat \<Rightarrow> nat, nat \<Rightarrow> nat) alt_forest) B Ms.
+      hp.heap_assn H Qi * forest_csr.forest_assn n F Fi * xmap_assn n B Bi *
+      xmap_val_assn h n Ms Mi)"
+
+text \<open>The data structures of the path search; the cursors are anywhere.\<close>
+
+definition "csr_scratch_assn Di = (case Di of (Ci, Qi, Li, Fi, Bi, Mi) \<Rightarrow>
+   (\<exists>\<^sub>AC. wcsr.wnb_assn C Ci * \<up>(graph.csr_invar C)) * pds_aux_assn Qi Fi Bi Mi *
+   xset_assn n L Li)"
+
+text \<open>The data structures of the path search with the shortcut, for the context of
+      @{const path_search_shortcut_spec.path_search_sc}: the cursors represent the cursors of the
+      context, and the iterator over the left vertices represents its left vertices.\<close>
+
+definition "sc_scratch_assn ctx Si = (case ctx of (xs, C) \<Rightarrow> case Si of (Di, it) \<Rightarrow>
+   case Di of (Ci, Qi, Li, Fi, Bi, Mi) \<Rightarrow>
+     wcsr.wnb_assn C Ci * pds_aux_assn Qi Fi Bi Mi * xset_is_it n L Li xs it)"
+
+end
+
+
+subsection \<open>One Path Search\<close>
+
+text \<open>For a matching @{term M} and a potential @{term \<pi>} that satisfy the precondition of the path
+      search, the imperative path search of @{locale primal_dual_path_search_imp} is interpreted on
+      the data structures of the instantiation.\<close>
+
+locale hungarian_csr_search = hungarian_csr_input +
+  fixes M :: "nat \<Rightarrow> nat" and \<pi> :: "nat \<Rightarrow> real"
+  assumes precond: "csr_precond M \<pi>"
+begin
+
+lemmas pre = hungarian_loop_spec.path_search_precondD[OF precond]
+
+lemma tight_M:
+  assumes "{u, v} \<in> aug_csr.\<M> n M"
+  shows "xmap_lookup \<pi> u + xmap_lookup \<pi> v = ecost u v"
+proof-
+  have "{u, v} \<in> tight_subgraph G wfun (xmap_lookup \<pi>)" using pre(4) assms by blast
+  hence "{u, v} \<in> G" "wfun {u, v} = xmap_lookup \<pi> u + xmap_lookup \<pi> v"
+    by (auto simp: tight_subgraph_def doubleton_eq_iff add.commute insert_commute)
+  thus ?thesis using wfun_eq by simp
+qed
+lemma missed_clear_rule:
+  "<xmap_val_assn h n f Mi> xmap_clear_unit 0 n Mi <\<lambda>_. xmap_val_assn h n (\<lambda>_. 0) Mi>"
+  using xmap_val_clear_unit_rule[of h n f Mi 0] by simp
+
+sublocale ps: primal_dual_path_search_imp
+  where K = "{..<n}" and ben_invar = "\<lambda>_. True" and ben_upd = xmap_upd and ben_get = xmap_lookup
+    and missed_invar = "\<lambda>_. True" and missed_upd = xmap_upd and missed_get = xmap_lookup
+    and potential_invar = "\<lambda>_. True" and potential_upd = xmap_upd and potential_get = xmap_lookup
+    and vset_invar = "\<lambda>X. X \<subseteq> {..<n}" and vset_to_set = id and vset_empty = "{}"
+    and vset_insert = insert and vset_delete = "\<lambda>x X. X - {x}" and vset_isin = "\<lambda>X x. x \<in> X"
+    and G = G and edge_costs = ecost and edge_costs_code = ecost and left = L and right = R
+    and in_G = "\<lambda>u v. {u, v} \<in> G"
+    and rnb_invar = graph.csr_invar and rnb_abstract = wcsr.wnb_abstract
+    and rnb_current = wcsr.wnb_current and rnb_has = graph.csr_has
+    and rnb_iterated = wcsr.wnb_iterated and rnb_remaining = wcsr.wnb_remaining
+    and rnb_move = graph.csr_move and rnb_reset = graph.csr_reset and rnb_init = nb_init
+    and buddy_get = "xmap_lookup M"
+    and extend_forest_even_unclassified = forest_csr.extend_forest_even_unclassified
+    and evens = evens and odds = odds and get_path = "forest_csr.get_path n"
+    and abstract_forest = "forest_csr.abstract_forest n"
+    and empty_forest = "forest_csr.empty_forest n" and forest_invar = "forest_csr.forest_invar n"
+    and roots = roots and initial_pot = \<pi>
+    and heap_empty = heap_empty and heap_extract_min = heap_extract_min
+    and heap_decrease_key = heap_decrease_key and heap_insert = heap_insert
+    and heap_invar = "heap_invar (Vs G)" and heap_abstract = heap_abstract
+    and vset_iterate_ben = fset_iterate and vset_iterate_pot = fset_iterate
+    and vset_filter = fset_filter and vset_is_empty = fset_is_empty
+    and ben_empty = "\<lambda>_. n" and missed_empty = "\<lambda>_. 0" and nil = n
+    and h = h
+    and queue_assn = hp.heap_assn and queue_empty_imp = "heap_empty_imp n 0"
+    and queue_clear_imp = heap_clear_imp and queue_extract_min_imp = heap_extract_min_key_imp
+    and queue_key_of_imp = heap_key_of_imp and queue_decrease_key_imp = heap_decrease_key_imp
+    and queue_insert_imp = heap_insert_imp
+    and nb_assn = wcsr.wnb_assn and has_imp = wnb_has_imp and current_imp = "wnb_current_imp e_tgt"
+    and current_cost_imp = wnb_current_cost_imp and move_imp = wnb_move_imp
+    and reset_imp = wnb_reset_imp and reset_all_imp = "wnb_reset_all_imp n"
+    and lst = sorted_list_of_set and forest_assn = "forest_csr.forest_assn n"
+    and forest_empty_imp = "forest_csr_empty n" and forest_clear_imp = "forest_csr_clear n"
+    and forest_add_root_imp = forest_csr_add_root and forest_extend_imp = forest_csr_extend
+    and evens_memb_imp = forest_csr.evens_memb_imp and odds_memb_imp = forest_csr.odds_memb_imp
+    and forest_is_it = "forest_csr.forest_is_it n" and forest_it_init = forest_csr_it_init
+    and forest_it_has_next = xset_it_has_next and forest_it_next = xset_it_next
+    and get_path_imp = "forest_csr_get_path n"
+    and ben_assn = "xmap_assn n" and ben_upd_imp = xmap_upd_imp and ben_get_imp = xmap_lookup_imp
+    and missed_assn = "xmap_val_assn h n" and missed_upd_imp = xmap_upd_imp
+    and missed_get_imp = xmap_lookup_imp
+    and pot_assn = "xmap_val_assn h n" and pot_upd_imp = xmap_upd_imp
+    and pot_get_imp = xmap_lookup_imp
+    and vset_assn = "xset_assn n" and vset_empty_imp = "Array.new n False"
+    and vset_insert_imp = xset_insert_imp and vset_delete_imp = xset_delete_imp
+    and vset_isin_imp = xset_isin_imp
+    and left_is_it = "xset_is_it n" and left_it_init = xset_it_init
+    and left_it_has_next = xset_it_has_next and left_it_next = xset_it_next
+    and buddy_assn = "xmap_assn n M" and buddy_imp = xmap_lookup_imp
+    and ben_clear_imp = "xmap_clear_unit n n" and missed_clear_imp = "xmap_clear_unit 0 n"
+  apply (intro primal_dual_path_search_imp.intro primal_dual_path_search_imp_axioms.intro
+               primal_dual_path_search.intro primal_dual_path_search_axioms.intro pds_spec
+               alternating_forest_imp_spec.axioms(1)[OF forest_csr.alternating_forest_imp_spec]
+               hp.heap_key_value_queue_hungarian
+               weighted_neighbourhoods_imp_spec.axioms(1)[OF wnb_imp_L]
+               real_embedding_axioms hp.hqueue.key_value_queue_imp_axioms wnb_imp_L
+               forest_csr.alternating_forest_imp_spec
+               xmap_fixed_univ_map_imp xmap_val_fixed_univ_map_imp xset_fixed_univ_set_iterate_imp
+               buddy_lookup_rule xmap_clear_unit_rule missed_clear_rule)
+  subgoal using weighted_neighbourhoods_imp_spec.axioms(1)[OF wnb_imp_L] by simp
+  subgoal by (simp add: bipartite_G)
+  subgoal by (rule L_below)
+  subgoal using R_less by auto
+  subgoal by (rule wcsr.csr_init_invar)
+  subgoal by (simp add: wnb_abstract_init)
+  subgoal by (rule ecost_sym)
+  subgoal premises p using feasible_min_perfect_dualD[OF pre(5) p refl] wfun_eq[OF p] by simp
+  subgoal premises p
+    unfolding pds_buddy_eq
+    by (rule aug_csr.symmetric_buddiesD[OF aug_csr.invar_matchingD(2)[OF pre(1)], THEN iffD1,
+                                        OF p[unfolded pds_buddy_eq]])
+  subgoal using pre(3) unfolding pds_buddy_eq aug_csr.\<M>_def' .
+  subgoal unfolding pds_M_eq by (rule tight_M)
+  subgoal by simp
+  subgoal by simp
+  subgoal by simp
+  subgoal by (simp add: xmap_lookup_def)
+  subgoal by simp
+  subgoal by (simp add: xmap_lookup_def)
+  subgoal for V f init using fset_iterate_below[of V n f init] by auto
+  subgoal for V f init using fset_iterate_below[of V n f init] by auto
+  subgoal by (auto simp: fset_filter_def)
+  subgoal by (simp add: fset_filter_def)
+  subgoal by (simp add: fset_is_empty_def)
+  subgoal by (rule refl)
+  subgoal using wnb_imp_L by simp
+  subgoal by simp
+  subgoal by (simp add: fset_iterate_def)
+  subgoal by (simp add: fset_iterate_def)
+  done
+
+lemma fsearch_eq: "ps.search_path = fsearch M \<pi>"
+  by (simp add: fsearch_def)
+
+lemma scratch_eq:
+  "csr_scratch_assn (Ci, Qi, Li, Fi, Bi, Mi) = ps.scratch_assn Ci Qi Fi Bi Mi * xset_assn n L Li"
+  by (rule ent_iffI)
+     (sep_auto simp: csr_scratch_assn_def pds_aux_assn_def ps.scratch_assn_def
+                     wcsr.wnb_abstract_def graph.csr_abstract_def)+
+
+theorem path_search_csr_rule:
+  assumes len: "card (L \<union> R) \<le> length xs"
+  shows "<csr_scratch_assn Di * xmap_assn n M Bdi * xmap_val_assn h n \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
+         path_search_csr n Di Bdi Pti Ra
+         <\<lambda>(res, Pti', Di'). \<exists>\<^sub>Axs'. csr_scratch_assn Di' * xmap_assn n M Bdi * Ra \<mapsto>\<^sub>a xs' *
+            \<up>(length xs' = length xs) *
+            (case fsearch M \<pi> of (r, \<pi>') \<Rightarrow> \<up>(imp_result_rel xs' res r) * xmap_val_assn h n \<pi>' Pti')>"
+proof -
+  obtain Ci Qi Li Fi Bi Mi where Di: "Di = (Ci, Qi, Li, Fi, Bi, Mi)"
+    by (cases Di) metis
+  have len': "card (id L \<union> id R) \<le> length xs" using len by simp
+  have r: "<ps.scratch_assn Ci Qi Fi Bi Mi * xset_assn n L Li * xmap_assn n M Bdi *
+            xmap_val_assn h n \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
+           pds_csr_search n Ci Qi Pti Bdi Li Ra Fi Bi Mi
+           <\<lambda>(res, Fi'). \<exists>\<^sub>Axs'.
+              ps.scratch_assn Ci Qi Fi' Bi Mi * xset_assn n L Li * xmap_assn n M Bdi *
+              Ra \<mapsto>\<^sub>a xs' * \<up>(length xs' = length xs) * ps.search_post Pti res xs'>"
+    using ps.search_imp_rule[OF len', of Ci Qi Fi Bi Mi Li Bdi Pti Ra]
+    by (simp add: pds_csr_search_def)
+  show ?thesis
+    unfolding Di path_search_csr_def prod.case scratch_eq
+    by (sep_auto heap: r simp: ps.search_post_def fsearch_eq scratch_eq)
+qed
+
+lemmas fsearch_correct = ps.search_path_correct[unfolded fsearch_eq pds_M_eq]
+
+end
+
+subsection \<open>The Contract of the Full Path Search\<close>
+
+context hungarian_csr_input
+begin
 
 lemma precond_instance:
   assumes "csr_precond M \<pi>"
   shows "hungarian_csr_search h n fs ts ws ls rs M \<pi>"
-proof -
-  note d = hungarian_loop_spec.path_search_precondD[OF assms]
-  show ?thesis by (rule search_instance[OF d(1) d(2) d(4) d(5)])
-qed
+  by (intro hungarian_csr_search.intro hungarian_csr_input.intro hungarian_csr_search_axioms.intro
+            real_embedding_axioms hungarian_csr_input_axioms assms)
 
 lemma path_search_rule_csr:
   assumes "csr_precond M \<pi>" "card (L \<union> R) \<le> length xs"
-  shows "<csr_scratch_assn Si * aug_csr.buddy_assn M Bdi * potm.map_assn \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
-         path_search_csr n Si Bdi Pti Ra
-         <\<lambda>(res, Pti', Si'). \<exists>\<^sub>Axs'. csr_scratch_assn Si' * aug_csr.buddy_assn M Bdi * Ra \<mapsto>\<^sub>a xs' *
+  shows "<csr_scratch_assn Di * xmap_assn n M Bdi * xmap_val_assn h n \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
+         path_search_csr n Di Bdi Pti Ra
+         <\<lambda>(res, Pti', Di'). \<exists>\<^sub>Axs'. csr_scratch_assn Di' * xmap_assn n M Bdi * Ra \<mapsto>\<^sub>a xs' *
             \<up>(length xs' = length xs) *
-            (case fsearch M \<pi> of
-               Dual_Unbounded \<Rightarrow> \<up>(res = Imp_Unbounded) * potm.map_assn \<pi> Pti'
-             | Lefts_Matched \<Rightarrow> \<up>(res = Imp_Matched) * potm.map_assn \<pi> Pti'
-             | Next_Iteration p \<pi>' \<Rightarrow>
-                 \<up>(\<exists>k. res = Imp_Path k \<and> k \<le> length xs' \<and> take k xs' = p) * potm.map_assn \<pi>' Pti')>"
+            (case fsearch M \<pi> of (r, \<pi>') \<Rightarrow> \<up>(imp_result_rel xs' res r) * xmap_val_assn h n \<pi>' Pti')>"
 proof -
-  interpret s: hungarian_csr_search h n fs ts ws ls rs theta M \<pi>
+  interpret s: hungarian_csr_search h n fs ts ws ls rs theta cap M \<pi>
     by (rule precond_instance[OF assms(1)])
   show ?thesis by (rule s.path_search_csr_rule[OF assms(2)])
 qed
 
-text \<open>The full path search satisfies the contract of the path search of @{locale hungarian_loop}.\<close>
+abbreviation "csr_good_search \<equiv>
+  hungarian_loop_spec.good_search xmap_lookup (\<lambda>_. True) (aug_csr.invar_matching n G)
+    (aug_csr.\<M> n) wfun G L R"
 
-lemma fsearch_contract:
-  "\<And>M \<pi> B. \<lbrakk>csr_precond M \<pi>; fsearch M \<pi> = Dual_Unbounded\<rbrakk>
-     \<Longrightarrow> \<exists>\<pi>'. feasible_min_perfect_dual G wfun \<pi>' \<and> sum \<pi>' (L \<union> R) > B"
-  "\<And>M \<pi>. \<lbrakk>csr_precond M \<pi>; fsearch M \<pi> = Lefts_Matched\<rbrakk> \<Longrightarrow> L \<subseteq> Vs (maug.\<M> M)"
-  "\<And>M \<pi> \<pi>' p. \<lbrakk>csr_precond M \<pi>; fsearch M \<pi> = Next_Iteration p \<pi>'\<rbrakk> \<Longrightarrow>
-     hungarian_loop_spec.good_search_result (\<lambda>\<pi> v. abstract_real_map (fmap_lookup \<pi>) v) pot_invar
-       maug.\<M> wfun G M \<pi>' p"
-proof-
-  fix M \<pi> B assume a: "csr_precond M \<pi>" "fsearch M \<pi> = Dual_Unbounded"
-  interpret s: hungarian_csr_search h n fs ts ws ls rs theta M \<pi> by (rule precond_instance[OF a(1)])
-  obtain p where p: "\<forall>u v. {u, v} \<in> G \<longrightarrow> p u + p v \<le> ecost u v" "B + 1 \<le> sum p (L \<union> R)"
-    using s.fsearch_correct(2)[OF a(2), of "B + 1"] by auto
-  have "feasible_min_perfect_dual G wfun p"
-  proof (rule feasible_min_perfect_dualI)
-    fix e u v assume "e \<in> G" "e = {u, v}"
-    thus "p u + p v \<le> wfun e" using p(1) wfun_eq by auto
-  qed
-  thus "\<exists>\<pi>'. feasible_min_perfect_dual G wfun \<pi>' \<and> sum \<pi>' (L \<union> R) > B" using p(2) by force
-next
-  fix M \<pi> assume a: "csr_precond M \<pi>" "fsearch M \<pi> = Lefts_Matched"
-  interpret s: hungarian_csr_search h n fs ts ws ls rs theta M \<pi> by (rule precond_instance[OF a(1)])
-  show "L \<subseteq> Vs (maug.\<M> M)" using s.fsearch_correct(1)[OF a(2)] by simp
-next
-  fix M \<pi> \<pi>' p assume a: "csr_precond M \<pi>" "fsearch M \<pi> = Next_Iteration p \<pi>'"
-  interpret s: hungarian_csr_search h n fs ts ws ls rs theta M \<pi> by (rule precond_instance[OF a(1)])
-  note r = s.fsearch_correct(3-8)[OF a(2)]
-  have inG: "{u, v} \<in> G" if "{u, v} \<in> maug.\<M> M" for u v
-    using s.buddy_matching that M_abs[of M] by (auto simp: eq_commute[of "Some _"])
-  show "hungarian_loop_spec.good_search_result (\<lambda>\<pi> v. abstract_real_map (fmap_lookup \<pi>) v) pot_invar
-          maug.\<M> wfun G M \<pi>' p"
+text \<open>The full path search satisfies the contract of a path search; it does not change the
+      matching.\<close>
+
+lemma fsearch_good:
+  assumes "csr_precond M \<pi>" "fsearch M \<pi> = (r, \<pi>')"
+  shows "csr_good_search M (r, M, \<pi>')"
+proof -
+  interpret s: hungarian_csr_search h n fs ts ws ls rs theta cap M \<pi>
+    by (rule precond_instance[OF assms(1)])
+  have same: "\<pi>' = \<pi>" if "\<nexists>p. r = Next_Iteration p"
+    using s.ps.not_Next_Iteration_same_potential[unfolded s.fsearch_eq assms(2)] that by simp
+  have inG: "{u, v} \<in> G" if "{u, v} \<in> aug_csr.\<M> n M" for u v
+    using s.pre(3) that by blast
+  have res: "hungarian_loop_spec.good_search_result xmap_lookup (\<lambda>_. True) (aug_csr.\<M> n) wfun G
+               M \<pi>' p" if p: "r = Next_Iteration p" for p
   proof (rule hungarian_loop_spec.good_search_resultI)
-    show "pot_invar \<pi>'" using r(5,6) by (simp add: pot_invar_def Vs_G fmap_lookup_def)
-    show "maug.\<M> M \<subseteq> tight_subgraph G wfun (\<lambda>v. abstract_real_map (fmap_lookup \<pi>') v)"
+    note r = s.fsearch_correct(3-7)[OF assms(2)[unfolded p]]
+    show "True" by simp
+    show "aug_csr.\<M> n M \<subseteq> tight_subgraph G wfun (xmap_lookup \<pi>')"
     proof
-      fix e assume e: "e \<in> maug.\<M> M"
-      then obtain u v where uv: "e = {u, v}" using M_abs[of M] by blast
-      have "{u, v} \<in> maug.\<M> M" using e uv by simp
-      thus "e \<in> tight_subgraph G wfun (\<lambda>v. abstract_real_map (fmap_lookup \<pi>') v)"
-        using r(2) inG wfun_eq uv by (intro in_tight_subgraphI) (auto simp: fmap_lookup_def)
+      fix e assume e: "e \<in> aug_csr.\<M> n M"
+      then obtain u v where uv: "e = {u, v}" by (auto simp: aug_csr.\<M>_def')
+      have "{u, v} \<in> aug_csr.\<M> n M" using e uv by simp
+      thus "e \<in> tight_subgraph G wfun (xmap_lookup \<pi>')"
+        using r(2) inG wfun_eq uv by (intro in_tight_subgraphI) auto
     qed
-    show "feasible_min_perfect_dual G wfun (\<lambda>v. abstract_real_map (fmap_lookup \<pi>') v)"
+    show "feasible_min_perfect_dual G wfun (xmap_lookup \<pi>')"
     proof (rule feasible_min_perfect_dualI)
       fix e u v assume "e \<in> G" "e = {u, v}"
-      thus "abstract_real_map (fmap_lookup \<pi>') u + abstract_real_map (fmap_lookup \<pi>') v \<le> wfun e"
-        using r(1) wfun_eq by (auto simp: fmap_lookup_def)
+      thus "xmap_lookup \<pi>' u + xmap_lookup \<pi>' v \<le> wfun e" using r(1) wfun_eq by auto
     qed
     have pG: "set (edges_of_path p) \<subseteq> G" using r(4) by (auto dest: path_edges_subset)
-    show "set (edges_of_path p) \<subseteq> tight_subgraph G wfun (\<lambda>v. abstract_real_map (fmap_lookup \<pi>') v)"
+    show "set (edges_of_path p) \<subseteq> tight_subgraph G wfun (xmap_lookup \<pi>')"
     proof
       fix e assume e: "e \<in> set (edges_of_path p)"
       have eG: "e \<in> G" by (rule subsetD[OF pG e])
       obtain u v where uv0: "e = {u, v}" using bipartite_edgeE[OF eG bipartite_G] by blast
       hence uv: "e = {u, v}" "{u, v} \<in> G" using eG by simp_all
-      thus "e \<in> tight_subgraph G wfun (\<lambda>v. abstract_real_map (fmap_lookup \<pi>') v)"
-        using r(3) e wfun_eq by (intro in_tight_subgraphI) (auto simp: fmap_lookup_def)
+      thus "e \<in> tight_subgraph G wfun (xmap_lookup \<pi>')"
+        using r(3) e wfun_eq by (intro in_tight_subgraphI) auto
     qed
-    show "graph_augmenting_path G (maug.\<M> M) p" by (rule r(4))
+    show "graph_augmenting_path G (aug_csr.\<M> n M) p" by (rule r(4))
+  qed
+  show ?thesis
+  proof (rule hungarian_loop_spec.good_searchI)
+    show "csr_precond M \<pi>'"
+    proof (cases "\<exists>p. r = Next_Iteration p")
+      case True
+      then obtain p where p: "r = Next_Iteration p" by blast
+      note g = hungarian_loop_spec.good_search_resultD[OF res[OF p]]
+      show ?thesis using g s.pre(1,3) by (intro hungarian_loop_spec.path_search_precondI) auto
+    next
+      case False
+      thus ?thesis using assms(1) same by simp
+    qed
+    show "card (aug_csr.\<M> n M) = card (aug_csr.\<M> n M)" by (rule refl)
+    show "\<forall>B. \<exists>\<pi>''. feasible_min_perfect_dual G wfun \<pi>'' \<and> sum \<pi>'' (L \<union> R) > B"
+      if u: "r = Dual_Unbounded"
+    proof
+      fix B
+      have "fst (fsearch M \<pi>) = Dual_Unbounded" using assms(2) u by simp
+      then obtain q where q: "\<forall>u v. {u, v} \<in> G \<longrightarrow> q u + q v \<le> ecost u v" "B + 1 \<le> sum q (L \<union> R)"
+        using s.fsearch_correct(2)[of "B + 1"] by auto
+      have "feasible_min_perfect_dual G wfun q"
+      proof (rule feasible_min_perfect_dualI)
+        fix e u v assume "e \<in> G" "e = {u, v}"
+        thus "q u + q v \<le> wfun e" using q(1) wfun_eq by auto
+      qed
+      thus "\<exists>\<pi>''. feasible_min_perfect_dual G wfun \<pi>'' \<and> sum \<pi>'' (L \<union> R) > B" using q(2) by force
+    qed
+    show "L \<subseteq> Vs (aug_csr.\<M> n M)" if "r = Lefts_Matched"
+      using s.fsearch_correct(1) assms(2) that by simp
+    show "hungarian_loop_spec.good_search_result xmap_lookup (\<lambda>_. True) (aug_csr.\<M> n) wfun G
+            M \<pi>' p" if "r = Next_Iteration p" for p
+      by (rule res[OF that])
   qed
 qed
 
-text \<open>The path search with the shortcut, for the threshold @{term theta}.\<close>
+subsection \<open>The Shortcut\<close>
 
-definition "fsearch_sc M \<pi> =
-  path_search_shortcut_spec.path_search_sc fsearch wcsr.wnb_current graph.csr_has graph.csr_move
-    graph.csr_reset fmap_lookup fmap_lookup fmap_update nb_init ecost (sorted_list_of_set L)
-    (card (maug.\<M> M) < theta) M \<pi>"
+text \<open>The full path search as the fallback of the shortcut. It leaves the matching as it is, and
+      the cursors at the beginning of the neighbourhoods.\<close>
 
-lemma buddy_lookup_rule_gen:
-  "<aug_csr.buddy_assn M Bdi> iam_lookup v Bdi
-   <\<lambda>r. aug_csr.buddy_assn M Bdi * \<up>(r = fmap_lookup M v)>"
-  using aug_csr.buddy_lookup_rule[of M Bdi v] .
+definition "ffallback C M \<pi> = (case fsearch M \<pi> of (r, \<pi>') \<Rightarrow> (r, M, \<pi>', nb_init))"
 
-lemma buddy_free:
-  assumes "maug.invar_matching G M"
-  shows "fmap_lookup M v = None \<longleftrightarrow> v \<notin> Vs (maug.\<M> M)"
-proof
-  have sym: "\<And>u w. fmap_lookup M u = Some w \<Longrightarrow> fmap_lookup M w = Some u"
-    using assms by (simp add: maug.invar_matching_def maug.symmetric_buddies_def)
-  assume none: "fmap_lookup M v = None"
-  show "v \<notin> Vs (maug.\<M> M)"
-  proof
-    assume "v \<in> Vs (maug.\<M> M)"
-    then obtain e where e: "e \<in> maug.\<M> M" "v \<in> e" by (auto simp: Vs_def)
-    then obtain a b where ab: "e = {a, b}" "fmap_lookup M a = Some b"
-      by (auto simp: maug.\<M>_def')
-    have "v = a \<or> v = b" using e(2) ab(1) by simp
-    thus False using ab(2) sym[OF ab(2)] none by auto
-  qed
-next
-  assume nV: "v \<notin> Vs (maug.\<M> M)"
-  show "fmap_lookup M v = None"
-  proof (rule ccontr)
-    assume "fmap_lookup M v \<noteq> None"
-    then obtain w where w: "fmap_lookup M v = Some w" by auto
-    have "{v, w} \<in> maug.\<M> M" unfolding maug.\<M>_def' using w by blast
-    hence "v \<in> Vs (maug.\<M> M)" by (auto simp: Vs_def)
-    thus False using nV by simp
-  qed
+lemma ffallback_good:
+  assumes "csr_precond M \<pi>" "graph.csr_invar C" "wcsr.wnb_abstract C = wcsr.wnb_abstract nb_init"
+      and "ffallback C M \<pi> = (r, M', \<pi>', C')"
+  shows "csr_good_search M (r, M', \<pi>') \<and> graph.csr_invar C' \<and>
+         wcsr.wnb_abstract C' = wcsr.wnb_abstract nb_init"
+proof -
+  obtain r0 \<pi>0 where fs: "fsearch M \<pi> = (r0, \<pi>0)" by fastforce
+  have eq: "r = r0" "M' = M" "\<pi>' = \<pi>0" "C' = nb_init"
+    using assms(4) by (simp_all add: ffallback_def fs)
+  show ?thesis using fsearch_good[OF assms(1) fs] wcsr.csr_init_invar by (simp add: eq)
+qed
+
+lemma buddy_edge:
+  "\<lbrakk>aug_csr.invar_matching n G M; xmap_lookup M v \<noteq> n\<rbrakk> \<Longrightarrow> {xmap_lookup M v, v} \<in> aug_csr.\<M> n M"
+  by (auto simp: aug_csr.\<M>_def' aug_csr.buddy_lookup_def insert_commute)
+
+lemma counted_buddy_rule:
+  "v \<in> {..<n} \<Longrightarrow>
+   <aug_csr.counted_assn n M Mt> xmap_lookup_imp (fst Mt) v
+   <\<lambda>r. aug_csr.counted_assn n M Mt * \<up>(r = xmap_lookup M v)>"
+  by (cases Mt) (sep_auto heap: buddy_lookup_rule simp: aug_csr.counted_assn_pair)
+
+lemma rematch_counted_rule:
+  assumes "aug_csr.invar_matching n G M" "{lq, r} \<in> aug_csr.\<M> n M" "l \<notin> Vs (aug_csr.\<M> n M)"
+      "{l, r} \<in> G"
+  shows "<aug_csr.counted_assn n M Mt> rematch_counted_csr n Mt l r
+         <\<lambda>_. aug_csr.counted_assn n (aug_csr.rematch n M l r) Mt>"
+proof -
+  have rV: "r \<in> Vs (aug_csr.\<M> n M)" using assms(2) by (auto simp: Vs_def)
+  have b: "xmap_lookup M r \<noteq> n" using buddy_free[OF assms(1)] rV by simp
+  have bG: "{xmap_lookup M r, r} \<in> G"
+    using buddy_edge[OF assms(1) b] assms(1) by (auto simp: aug_csr.invar_matching_def)
+  have K: "l \<in> {..<n}" "r \<in> {..<n}" "xmap_lookup M r \<in> {..<n}"
+    using assms(4) bG Vs_G_below by (auto intro: edges_are_Vs edges_are_Vs_2)
+  have nin: "{l, r} \<notin> aug_csr.\<M> n M" using assms(3) by (auto simp: Vs_def)
+  have card: "card (aug_csr.\<M> n (aug_csr.rematch n M l r)) = card (aug_csr.\<M> n M)"
+    using maug.rematch_correct(2)[OF assms] card_swap[OF assms(2) nin] by simp
+  show ?thesis
+    using aug_csr.rematch_counted_imp_rule[OF _ K card] by (simp add: rematch_counted_csr_def)
 qed
 
 sublocale sc: path_search_shortcut_imp
-  where potential_abstract = "\<lambda>\<pi> v. abstract_real_map (fmap_lookup \<pi>) v"
-    and init_potential = init_pot and potential_invar = pot_invar
-    and empty_matching = Map.empty and matching_invar = "maug.invar_matching G"
-    and augment = maug.augment_impl and matching_abstract = maug.\<M>
+  where potential_abstract = xmap_lookup
+    and init_potential = init_pot and potential_invar = "\<lambda>_. True"
+    and empty_matching = "\<lambda>_. n" and matching_invar = "aug_csr.invar_matching n G"
+    and augment = aug_csr.augment_impl and matching_abstract = "aug_csr.\<M> n"
     and edge_costs = wfun and card_L = "length ls" and card_R = "length rs"
-    and path_search = fsearch and G = G
+    and fallback = ffallback and G = G and left_order = "sorted_list_of_set L"
     and rnb_current = wcsr.wnb_current and rnb_has = graph.csr_has and rnb_move = graph.csr_move
-    and rnb_reset = graph.csr_reset and buddy_lookup = fmap_lookup
-    and potential_lookup = fmap_lookup and potential_upd = fmap_update and rnb_init = nb_init
-    and edge_costs_code = ecost and left_order = "sorted_list_of_set L"
+    and rnb_reset = graph.csr_reset and buddy_get = xmap_lookup and nil = n
+    and rematch = "aug_csr.rematch n" and cap = cap
+    and potential_get = xmap_lookup and potential_upd = xmap_upd and rnb_init = nb_init
+    and edge_costs_code = ecost
     and rnb_invar = graph.csr_invar and rnb_abstract = wcsr.wnb_abstract
-    and rnb_iterated = wcsr.wnb_iterated and rnb_remaining = wcsr.wnb_remaining and K = L
+    and rnb_iterated = wcsr.wnb_iterated and rnb_remaining = wcsr.wnb_remaining and K = "{..<n}"
     and L = L and R = R and h = h
     and nb_assn = wcsr.wnb_assn and has_imp = wnb_has_imp and current_imp = "wnb_current_imp e_tgt"
     and current_cost_imp = wnb_current_cost_imp and move_imp = wnb_move_imp
     and reset_imp = wnb_reset_imp and reset_all_imp = "wnb_reset_all_imp n"
-    and pot_is_map = is_iam and pot_lookup_imp = iam_lookup and pot_update_imp = iam_update
-    and pot_m_invar = fmap_invar
-    and left_is_set = is_ias and lst = sorted_list_of_set and left_is_it = ias_is_it
-    and left_it_init = ias_it_init and left_it_has_next = ias_it_has_next
-    and left_it_next = ias_it_next
-    and buddy_assn = aug_csr.buddy_assn and buddy_imp = "\<lambda>Bdi v. iam_lookup v Bdi"
+    and pot_assn = "xmap_val_assn h n" and pot_upd_imp = xmap_upd_imp
+    and pot_get_imp = xmap_lookup_imp
+    and vset_invar = "\<lambda>X. X \<subseteq> {..<n}" and vset_to_set = id and vset_empty = "{}"
+    and vset_insert = insert and vset_delete = "\<lambda>x X. X - {x}" and vset_isin = "\<lambda>X x. x \<in> X"
+    and vset_assn = "xset_assn n" and vset_empty_imp = "Array.new n False"
+    and vset_insert_imp = xset_insert_imp and vset_delete_imp = xset_delete_imp
+    and vset_isin_imp = xset_isin_imp and lst = sorted_list_of_set
+    and left_is_it = "xset_is_it n" and left_it_init = xset_it_init
+    and left_it_has_next = xset_it_has_next and left_it_next = xset_it_next
+    and buddy_assn = "aug_csr.counted_assn n" and buddy_imp = "\<lambda>Mt. xmap_lookup_imp (fst Mt)"
+    and rematch_imp = "rematch_counted_csr n" and left = L
   apply (intro path_search_shortcut_imp.intro path_search_shortcut_imp_axioms.intro
                path_search_shortcut.intro path_search_shortcut_axioms.intro
-               nb_best_scan_imp.intro nb_best_scan.intro
+               nb_best_scan_imp.intro nb_best_scan.intro xmap_fixed_univ_map
                wcsr.wnb.indexed_iterable_set_axioms real_embedding_axioms
                wcsr.wnb_imp.weighted_neighbourhoods_imp_spec_axioms
-               iam_imp_map_conn fmap_conn_facts ias_imp_set_ordered_iterate buddy_lookup_rule_gen)
-  apply (rule bipartite_G)
-  apply (simp add: L_less)
-  apply (rule subset_refl)
-  apply (rule wcsr.csr_init_invar)
-  apply (simp add: wnb_abstract_init)
-  apply (rule wnb_abstract_finite)
-  apply (simp add: wfun_eq)
-  apply (rule buddy_free, assumption)
-  apply (rule refl)
-  apply (auto simp: pot_invar_def Vs_G fmap_lookup_def fmap_invar_def fmap_update_def
-              split: if_splits)[2]
-  apply (rule fsearch_contract(1); assumption)
-  apply (rule fsearch_contract(2); assumption)
-  apply (rule fsearch_contract(3); assumption)
-  apply (assumption | rule refl)+
+               xmap_val_fixed_univ_map_imp xset_fixed_univ_set_iterate_imp counted_buddy_rule
+               rematch_counted_rule)
+  subgoal by (rule bipartite_G)
+  subgoal by simp
+  subgoal by (rule L_below)
+  subgoal by (rule Vs_G_below)
+  subgoal by (rule wcsr.csr_init_invar)
+  subgoal by (simp add: wnb_abstract_init)
+  subgoal by (rule wnb_abstract_finite)
+  subgoal by (simp add: wfun_eq)
+  subgoal by (rule buddy_free)
+  subgoal by (rule buddy_edge)
+  subgoal by (simp add: aug_csr.invar_matching_def)
+  subgoal by (rule maug.rematch_correct(1))
+  subgoal by (rule maug.rematch_correct(2))
+  subgoal by (rule refl)
+  subgoal by (rule ffallback_good)
+  subgoal by simp
+  apply assumption+
+  subgoal by (rule L_below)
+  subgoal by simp
+  subgoal by (rule refl)
   done
 
-lemma path_search_sc_rule_csr:
-  assumes "csr_precond M \<pi>" "card (L \<union> R) \<le> length xs"
-  shows "<csr_scratch_assn Si * aug_csr.counted_assn M Mt * potm.map_assn \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
-         path_search_sc_csr n theta Si Mt Pti Ra
-         <\<lambda>(res, Pti', Si'). \<exists>\<^sub>Axs'. csr_scratch_assn Si' * aug_csr.counted_assn M Mt * Ra \<mapsto>\<^sub>a xs' *
-            \<up>(length xs' = length xs) *
-            (case fsearch_sc M \<pi> of
-               Dual_Unbounded \<Rightarrow> \<up>(res = Imp_Unbounded) * potm.map_assn \<pi> Pti'
-             | Lefts_Matched \<Rightarrow> \<up>(res = Imp_Matched) * potm.map_assn \<pi> Pti'
-             | Next_Iteration p \<pi>' \<Rightarrow>
-                 \<up>(\<exists>k. res = Imp_Path k \<and> k \<le> length xs' \<and> take k xs' = p) * potm.map_assn \<pi>' Pti')>"
+text \<open>The path search of the instantiation: the shortcut is tried while the matching has fewer
+      than @{term theta} edges.\<close>
+
+definition "fsearch_sc ctx M \<pi> = sc.path_search_sc (card (aug_csr.\<M> n M) < theta) ctx M \<pi>"
+
+text \<open>The fallback runs the full path search, resets the cursors and starts the iteration over
+      the left vertices over.\<close>
+
+lemma fallback_csr_rule:
+  assumes "csr_precond M \<pi>" "card (L \<union> R) \<le> length xs" "fsearch M \<pi> = (r, \<pi>')"
+      and "graph.csr_invar C"
+  shows "<sc_scratch_assn (ys, C) (Di, it) * aug_csr.counted_assn n M Mt *
+          xmap_val_assn h n \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
+         fallback_csr n Di Mt Pti Ra
+         <\<lambda>(res, Mt', Pti', Si'). \<exists>\<^sub>Axs'. sc_scratch_assn (sorted_list_of_set L, nb_init) Si' *
+            aug_csr.counted_assn n M Mt' * xmap_val_assn h n \<pi>' Pti' * Ra \<mapsto>\<^sub>a xs' *
+            \<up>(length xs' = length xs) * \<up>(imp_result_rel xs' res r)>"
 proof -
-  obtain Ci Qi Li Fi Bi Mi where Si: "Si = (Ci, Qi, Li, Fi, Bi, Mi)"
-    by (cases Si) (metis prod_cases5)
+  obtain Ci Qi Li Fi Bi Mi where Di: "Di = (Ci, Qi, Li, Fi, Bi, Mi)"
+    by (cases Di) metis
   obtain Bdi Ki where Mt: "Mt = (Bdi, Ki)" by (cases Mt)
-  note ps = path_search_rule_csr[OF assms]
-  note mc = aug_csr.matching_card_imp_rule[of M "(Bdi, Ki)", unfolded aug_csr.counted_assn_pair]
-  have len2: "2 \<le> length xs" if "sc.shortcut M \<pi> = Some (l, j, \<pi>')" for l j \<pi>'
-  proof -
-    have "\<exists>x. snd (sc.first_success M \<pi>) = Some (l, j, x)"
-      using that by (cases "snd (sc.first_success M \<pi>)")
-                    (auto simp: path_search_shortcut_spec.shortcut_def)
-    then obtain x where "snd (sc.first_success M \<pi>) = Some (l, j, x)" ..
-    hence "sc.row_ok M \<pi> l j x" by (rule sc.first_success_props(3))
-    hence l: "l \<in> L" "{l, j} \<in> G" by (auto simp: sc.row_ok_def)
-    hence j: "j \<in> R - L" using bipartite_edgeD(1)[OF l(2) bipartite_G] by simp
-    have "card {l, j} \<le> card (L \<union> R)" using l(1) j by (intro card_mono) auto
-    moreover have "card {l, j} = 2" using l(1) j by auto
-    ultimately show ?thesis using assms(2) by linarith
-  qed
-  have sh: "<csr_scratch_assn Si * aug_csr.buddy_assn M Bdi * potm.map_assn \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
-            sc_csr_shortcut n Ci Li Bdi Pti Ra
-            <\<lambda>(b, Pti'). \<exists>\<^sub>Axs'. csr_scratch_assn Si * aug_csr.buddy_assn M Bdi * Ra \<mapsto>\<^sub>a xs' *
-               \<up>(length xs' = length xs) *
-               (case sc.shortcut M \<pi> of
-                  None \<Rightarrow> \<up>(\<not> b \<and> xs' = xs) * potm.map_assn \<pi> Pti'
-                | Some (l, j, \<pi>') \<Rightarrow> \<up>(b \<and> take 2 xs' = [l, j]) * potm.map_assn \<pi>' Pti')>"
-    unfolding Si csr_scratch_assn_def prod.case
-    by (sep_auto heap: sc.shortcut_imp_rule[OF _ _ len2]
-                 simp: sc_csr_shortcut_def sc.first_success_props)
-  have eq: "fsearch_sc M \<pi> =
-    (if card (maug.\<M> M) < theta then
-       (case sc.shortcut M \<pi> of Some (l, j, \<pi>') \<Rightarrow> Next_Iteration [l, j] \<pi>' | None \<Rightarrow> fsearch M \<pi>)
-     else fsearch M \<pi>)"
-    by (simp add: fsearch_sc_def path_search_shortcut_spec.path_search_sc_def)
-  note sh' = sh[unfolded Si]
+  have pre: "sc_scratch_assn (ys, C) (Di, it) \<Longrightarrow>\<^sub>A csr_scratch_assn Di"
+    unfolding sc_scratch_assn_def csr_scratch_assn_def Di prod.case
+    by (rule ent_star_mono[OF _ xset_quit_iteration]) (use assms(4) in sep_auto)
+  note ps = path_search_rule_csr[OF assms(1,2), of Di Bdi Pti Ra, unfolded assms(3) prod.case]
+  have rs: "graph.csr_invar C' \<Longrightarrow>
+            <wcsr.wnb_assn C' Ci'> wnb_reset_all_imp n Ci' <\<lambda>_. wcsr.wnb_assn nb_init Ci'>"
+    for C' Ci'
+    by (rule wcsr.wnb_imp.reset_all_rule) (assumption, rule wnb_abstract_cursor)
+  have ii: "<xset_assn n L Li'> xset_it_init Li' <xset_is_it n L Li' (sorted_list_of_set L)>"
+    for Li'
+    using xset_it_init_rule[OF L_below, of Li'] by simp
   show ?thesis
-  proof (cases "card (maug.\<M> M) < theta")
+    apply (rule ht_cons_pre[OF ent_star_mono[OF ent_star_mono[OF ent_star_mono[OF pre]]]])
+       apply (rule ent_refl)+
+    unfolding fallback_csr_def Mt aug_csr.counted_assn_pair fst_conv
+    supply wcsr.wnb_imp.reset_all_rule[sep_heap_rules del] xset_it_init_rule[sep_heap_rules del]
+    by (sep_auto heap: ps rs ii simp: csr_scratch_assn_def sc_scratch_assn_def
+                 aug_csr.counted_assn_pair split: prod.splits)
+qed
+
+text \<open>The path search with the shortcut refines @{const fsearch_sc}.\<close>
+
+lemma path_search_sc_rule_csr:
+  assumes "csr_precond M \<pi>" "sc.sc_ctx_invar c" "fsearch_sc c M \<pi> = (r, M', \<pi>', c')"
+      and "card (L \<union> R) \<le> length xs"
+  shows "<sc_scratch_assn c Si * aug_csr.counted_assn n M Mt * xmap_val_assn h n \<pi> Pti *
+          Ra \<mapsto>\<^sub>a xs>
+         path_search_sc_csr n theta cap Si Mt Pti Ra
+         <\<lambda>(res, Mt', Pti', Si'). \<exists>\<^sub>Axs'. sc_scratch_assn c' Si' * aug_csr.counted_assn n M' Mt' *
+            xmap_val_assn h n \<pi>' Pti' * Ra \<mapsto>\<^sub>a xs' * \<up>(length xs' = length xs) *
+            \<up>(imp_result_rel xs' res r)>"
+proof -
+  obtain ys C where c: "c = (ys, C)" by (cases c)
+  obtain Di it where Si: "Si = (Di, it)" by (cases Si)
+  obtain Ci Qi Li Fi Bi Mi where Di: "Di = (Ci, Qi, Li, Fi, Bi, Mi)"
+    by (cases Di) metis
+  have I: "set ys \<subseteq> L" "graph.csr_invar C" "wcsr.wnb_abstract C = wcsr.wnb_abstract nb_init"
+    using assms(2) by (simp_all add: sc.sc_ctx_invar_def c)
+  note mc = aug_csr.matching_card_imp_rule[where M = M and Mi = Mt]
+  show ?thesis
+  proof (cases "card (aug_csr.\<M> n M) < theta")
     case False
-    thus ?thesis
-      unfolding path_search_sc_csr_def Si Mt prod.case eq aug_csr.counted_assn_pair
-      by (cases "fsearch M \<pi>") (sep_auto heap: mc ps)+
+    obtain r0 \<pi>0 where fs: "fsearch M \<pi> = (r0, \<pi>0)" by fastforce
+    have eq: "r = r0" "M' = M" "\<pi>' = \<pi>0" "c' = (sorted_list_of_set L, nb_init)"
+      using assms(3) False
+      by (simp_all add: fsearch_sc_def sc.path_search_sc_def sc.sc_try_def c ffallback_def fs)
+    show ?thesis
+      unfolding path_search_sc_csr_def Si prod.case eq c
+      by (sep_auto heap: mc fallback_csr_rule[OF assms(1,4) fs I(2)] simp: False)
   next
     case True
+    obtain C1 M1 \<pi>1 res xs1 where lp: "sc.sc_loop (C, M, \<pi>) ys = ((C1, M1, \<pi>1), res, xs1)"
+      by (metis prod_cases3)
+    have V: "sc.sc_inv M (C1, M1, \<pi>1) res" "set xs1 \<subseteq> set ys"
+      using sc.sc_loop_valid[OF I(1) _ lp] assms(1) I(2,3) by (simp_all add: sc.sc_inv_def)
+    have P1: "csr_precond M1 \<pi>1" "graph.csr_invar C1"
+      using V(1) by (simp_all add: sc.sc_inv_def)
+    have len: "2 \<le> length xs" if nn: "res \<noteq> None"
+    proof -
+      obtain l p where a: "res = Some (l, p)" using nn by (cases res) auto
+      have g: "graph_augmenting_path G (aug_csr.\<M> n M1) p"
+        using V(1) sc.good_search_resultD(5) by (auto simp: sc.sc_inv_def a)
+      have "set p \<subseteq> L \<union> R" using g subset_path_Vs[of G p] by (auto simp: Vs_G)
+      hence "card (set p) \<le> card (L \<union> R)" by (intro card_mono) auto
+      moreover have "distinct p" using g by simp
+      ultimately have "length p \<le> card (L \<union> R)" by (simp add: distinct_card)
+      moreover have "2 \<le> length p" using g by (auto simp: matching_augmenting_path_def)
+      ultimately show ?thesis using assms(4) by linarith
+    qed
+    note sh = sc.shortcut_imp_rule[OF assms(1) I lp len]
     show ?thesis
-    proof (cases "sc.shortcut M \<pi>")
+    proof (cases res)
       case None
-      thus ?thesis
-        unfolding path_search_sc_csr_def Si Mt prod.case eq aug_csr.counted_assn_pair
-        using True by (cases "fsearch M \<pi>") (sep_auto heap: mc sh' ps)+
+      obtain r1 \<pi>1' where fs: "fsearch M1 \<pi>1 = (r1, \<pi>1')" by fastforce
+      have eq: "r = r1" "M' = M1" "\<pi>' = \<pi>1'" "c' = (sorted_list_of_set L, nb_init)"
+        using assms(3) True
+        by (simp_all add: fsearch_sc_def sc.path_search_sc_def sc.sc_try_def c lp None
+                          ffallback_def fs)
+      have fb: "<wcsr.wnb_assn C1 Ci * pds_aux_assn Qi Fi Bi Mi * xset_is_it n L Li xs1 it' *
+                 aug_csr.counted_assn n M1 Mt * xmap_val_assn h n \<pi>1 Pti * Ra \<mapsto>\<^sub>a ys'>
+                fallback_csr n (Ci, Qi, Li, Fi, Bi, Mi) Mt Pti Ra
+                <\<lambda>(res, Mt', Pti', Si'). \<exists>\<^sub>Axs'. sc_scratch_assn (sorted_list_of_set L, nb_init) Si' *
+                   aug_csr.counted_assn n M1 Mt' * xmap_val_assn h n \<pi>1' Pti' * Ra \<mapsto>\<^sub>a xs' *
+                   \<up>(length xs' = length xs) * \<up>(imp_result_rel xs' res r1)>"
+        if "length ys' = length xs" for it' ys'
+        using fallback_csr_rule[OF P1(1) _ fs P1(2), where xs = ys' and ys = xs1 and Di = Di
+                                and it = it' and Mt = Mt and Pti = Pti and Ra = Ra]
+              assms(4) that
+        by (simp add: sc_scratch_assn_def Di)
+      show ?thesis
+        unfolding path_search_sc_csr_def Si Di prod.case eq c
+        by (sep_auto heap: mc sh fb simp: True None sc_csr_shortcut_def sc_scratch_assn_def)
     next
       case (Some a)
-      then obtain l j \<pi>' where a: "sc.shortcut M \<pi> = Some (l, j, \<pi>')" by (cases a) auto
-      have l2: "2 \<le> length xs" by (rule len2[OF a])
+      then obtain l p where a: "res = Some (l, p)" by (cases a) auto
+      have eq: "r = Next_Iteration p" "M' = M1" "\<pi>' = \<pi>1" "c' = (xs1, C1)"
+        using assms(3) True
+        by (simp_all add: fsearch_sc_def sc.path_search_sc_def sc.sc_try_def c lp a)
+      have l2: "2 \<le> length xs" by (rule len) (simp add: a)
       show ?thesis
-        unfolding path_search_sc_csr_def Si Mt prod.case eq aug_csr.counted_assn_pair
-        using True l2 by (sep_auto heap: mc sh' simp: a)
+        unfolding path_search_sc_csr_def Si Di prod.case eq c
+        using l2
+        by (sep_auto heap: mc sh simp: True a sc_csr_shortcut_def sc_scratch_assn_def)
     qed
   qed
 qed
 
+
+
+subsection \<open>The Top Loop\<close>
+
+lemma feasible_init: "feasible_min_perfect_dual G wfun (xmap_lookup init_pot)"
+proof (rule feasible_min_perfect_dualI)
+  fix e u v assume e: "e \<in> G" "e = {u, v}"
+  then obtain i where i: "i < length fs" "e = {fs ! i, ts ! i}" by (auto simp: G_def)
+  have l: "fs ! i \<in> L" and r: "ts ! i \<in> R" using fs_L ts_R i(1) by auto
+  hence r0: "xmap_lookup init_pot (ts ! i) = 0" using init_pot_props(2) sides_disjoint by auto
+  have "ts ! i \<in> wcsr.wnb_abstract nb_init (fs ! i)"
+    using wnb_abstract_init[OF l] i e by auto
+  hence le: "xmap_lookup init_pot (fs ! i) \<le> ecost (fs ! i) (ts ! i)"
+    by (rule init_pot_props(1)[OF l])
+  have w: "wfun e = ecost (fs ! i) (ts ! i)"
+    using wfun_eq[of "fs ! i" "ts ! i"] e(1) i(2) by simp
+  have "fs ! i = u \<and> ts ! i = v \<or> fs ! i = v \<and> ts ! i = u"
+    using e(2) i(2) by (simp add: doubleton_eq_iff)
+  thus "xmap_lookup init_pot u + xmap_lookup init_pot v \<le> wfun e"
+    using r0 le w by (elim disjE) simp_all
+qed
+
 lemma augment_card:
-  assumes "maug.invar_matching G M" "graph_augmenting_path G (maug.\<M> M) p"
-  shows "card (maug.\<M> (maug.augment_impl M p)) = Suc (card (maug.\<M> M))"
-  using new_matching_plus_one[of "maug.\<M> M" p] maug.augmentation_correct(2)[OF assms] assms
-  by (simp add: maug.invar_matching_def)
+  assumes "aug_csr.invar_matching n G M" "graph_augmenting_path G (aug_csr.\<M> n M) p"
+  shows "card (aug_csr.\<M> n (aug_csr.augment_impl M p)) = Suc (card (aug_csr.\<M> n M))"
+  using new_matching_plus_one[of "aug_csr.\<M> n M" p] maug.augmentation_correct(2)[OF assms] assms
+  by (simp add: aug_csr.invar_matching_def)
+
 sublocale hl: hungarian_top_loop_imp
-  where potential_abstract = "\<lambda>\<pi> v. abstract_real_map (fmap_lookup \<pi>) v"
-    and init_potential = init_pot and potential_invar = pot_invar
-    and empty_matching = Map.empty and matching_invar = "maug.invar_matching G"
-    and augment = maug.augment_impl and matching_abstract = maug.\<M>
+  where potential_abstract = xmap_lookup
+    and init_potential = init_pot and potential_invar = "\<lambda>_. True"
+    and empty_matching = "\<lambda>_. n" and matching_invar = "aug_csr.invar_matching n G"
+    and augment = aug_csr.augment_impl and matching_abstract = "aug_csr.\<M> n"
     and edge_costs = wfun and card_L = "length ls" and card_R = "length rs"
-    and path_search = fsearch_sc and G = G and L = L and R = R
-    and path_search_imp = "path_search_sc_csr n theta" and augment_imp = augment_counted_csr
-    and scratch_assn = csr_scratch_assn and matching_assn = aug_csr.counted_assn
-    and pot_assn = potm.map_assn and len_bound = "card (L \<union> R)"
+    and path_search = fsearch_sc and ctx_invar = sc.sc_ctx_invar
+    and init_ctx = "(sorted_list_of_set L, nb_init)" and G = G and L = L and R = R
+    and path_search_imp = "path_search_sc_csr n theta cap" and augment_imp = augment_counted_csr
+    and scratch_assn = sc_scratch_assn and matching_assn = "aug_csr.counted_assn n"
+    and pot_assn = "xmap_val_assn h n" and len_bound = "card (L \<union> R)"
 proof (intro hungarian_top_loop_imp.intro hungarian_top_loop_imp_axioms.intro hungarian_loop.intro,
        goal_cases)
   case 1 show ?case by (rule bipartite_G)
@@ -1065,13 +1348,13 @@ next
 next
   case 6 show ?case by (simp add: Vs_G)
 next
-  case 7 show ?case using init_pot_props(1,3) by (auto simp: pot_invar_def Vs_G)
+  case 7 show ?case by simp
 next
   case 8 show ?case by (rule feasible_init)
 next
-  case (9 M) thus ?case by (simp add: maug.invar_matching_def)
+  case (9 M) thus ?case by (simp add: aug_csr.invar_matching_def)
 next
-  case 10 show ?case by (rule maug.empty_matching_props(1))
+  case 10 show ?case by (rule maug.empty_matching_props(1)[OF Vs_G_below])
 next
   case 11 show ?case by (rule maug.empty_matching_props(2))
 next
@@ -1079,16 +1362,22 @@ next
 next
   case (13 M p) thus ?case by (rule maug.augmentation_correct(2))
 next
-  case (14 M \<pi> B) thus ?case unfolding fsearch_sc_def by (rule sc.path_search_sc_correct(1))
+  case (14 c M \<pi> r M' \<pi>' c')
+  thus ?case unfolding fsearch_sc_def by (rule sc.path_search_sc_correct(1))
 next
-  case (15 M \<pi>) thus ?case unfolding fsearch_sc_def by (rule sc.path_search_sc_correct(2))
+  case (15 c M \<pi> r M' \<pi>' c')
+  thus ?case unfolding fsearch_sc_def by (rule sc.path_search_sc_correct(2))
 next
-  case (16 M \<pi> \<pi>' p) thus ?case unfolding fsearch_sc_def by (rule sc.path_search_sc_correct(3))
+  case 16 show ?case by (simp add: sc.sc_ctx_invar_def wcsr.csr_init_invar)
 next
   case 17 thus ?case by (rule path_search_sc_rule_csr)
 next
   case (18 M p k xs Mi Ra)
-  thus ?case using aug_csr.augment_counted_imp_rule[of k xs M Mi Ra] augment_card[OF 18(1,2)]
+  have sub: "set (take k xs) \<subseteq> {..<n}"
+    using 18(2,4) subset_path_Vs[of G p] Vs_G_below by auto
+  show ?case
+    using aug_csr.augment_counted_imp_rule[where M = M and k = k and xs = xs and Mi = Mi and Ra = Ra,
+                                           OF _ 18(3) sub] augment_card[OF 18(1,2)] 18(4)
     by simp
 qed
 
@@ -1122,93 +1411,107 @@ next
     using i eid Suc.prems(2) by (subst perm_weights_imp.simps) (sep_auto heap: IH simp: t dr)
 qed
 
-lemma ias_insert_all_rule:
-  "i \<le> length xs \<Longrightarrow>
-   <La \<mapsto>\<^sub>a xs * is_ias S s> ias_insert_all La i (length xs) s
-   <\<lambda>s'. La \<mapsto>\<^sub>a xs * is_ias (S \<union> set (drop i xs)) s'>"
-proof (induction "length xs - i" arbitrary: i S s)
+lemma xset_insert_all_rule:
+  "\<lbrakk>i \<le> length xs; set xs \<subseteq> {..<n}; S \<subseteq> {..<n}\<rbrakk> \<Longrightarrow>
+   <La \<mapsto>\<^sub>a xs * xset_assn n S s> xset_insert_all La i (length xs) s
+   <\<lambda>_. La \<mapsto>\<^sub>a xs * xset_assn n (S \<union> set (drop i xs)) s>"
+proof (induction "length xs - i" arbitrary: i S)
   case 0
   hence "i = length xs" by simp
-  thus ?case by (subst ias_insert_all.simps) sep_auto
+  thus ?case by (subst xset_insert_all.simps) sep_auto
 next
   case (Suc d)
   hence i: "i < length xs" by simp
-  have IH: "<La \<mapsto>\<^sub>a xs * is_ias (insert (xs ! i) S) s'> ias_insert_all La (Suc i) (length xs) s'
-            <\<lambda>s''. La \<mapsto>\<^sub>a xs * is_ias (insert (xs ! i) S \<union> set (drop (Suc i) xs)) s''>" for s'
-    by (rule Suc.hyps(1)) (use Suc i in auto)
+  have x: "xs ! i \<in> {..<n}" using Suc.prems(2) nth_mem[OF i] by blast
+  have ins: "<xset_assn n S s> xset_insert_imp (xs ! i) s <\<lambda>_. xset_assn n (insert (xs ! i) S) s>"
+    by (rule fixed_univ_set_imp.fixed_univ_set_insert_rule[OF xset_fixed_univ_set_imp Suc.prems(3) x])
+  have IH: "<La \<mapsto>\<^sub>a xs * xset_assn n (insert (xs ! i) S) s> xset_insert_all La (Suc i) (length xs) s
+            <\<lambda>_. La \<mapsto>\<^sub>a xs * xset_assn n (insert (xs ! i) S \<union> set (drop (Suc i) xs)) s>"
+    by (rule Suc.hyps(1)) (use Suc i x in auto)
   have eq: "insert (xs ! i) (S \<union> set (drop (Suc i) xs)) = S \<union> set (drop i xs)"
     using i by (simp add: Cons_nth_drop_Suc[symmetric])
   show ?case
-    using i by (subst ias_insert_all.simps) (sep_auto heap: ias_ins_rule IH simp: eq)
+    using i
+    by (subst xset_insert_all.simps, simp only: if_P[OF i]) (sep_auto heap: ins IH simp: eq)
 qed
+
+text \<open>Freshly allocated arrays as maps and sets.\<close>
+
+lemma xmap_assn_replicate: "xmap_assn n (\<lambda>_. x) Xi = Xi \<mapsto>\<^sub>a replicate n x"
+  by (simp add: xmap_assn_def map_replicate_const)
+
+lemma xset_assn_replicate: "xset_assn n {} Xi = Xi \<mapsto>\<^sub>a replicate n False"
+  by (simp add: xset_assn_def map_replicate_const)
+
+lemma xset_insert_all_new:
+  "set xs \<subseteq> {..<n} \<Longrightarrow>
+   <La \<mapsto>\<^sub>a xs * s \<mapsto>\<^sub>a replicate n False> xset_insert_all La 0 (length xs) s
+   <\<lambda>_. La \<mapsto>\<^sub>a xs * xset_assn n (set xs) s>"
+  using xset_insert_all_rule[where i = 0 and xs = xs and n = n and S = "{}" and s = s and La = La]
+  by (simp add: xset_assn_replicate)
 
 context hungarian_csr_input
 begin
 
-lemma potm_empty_eq: "potm.map_assn Map.empty p = is_iam Map.empty p"
-  by (rule potm.map_assn_empty_eq) (simp_all add: fmap_invar_def fmap_lookup_def)
-
-interpretation budm: imp_map_conn is_iam iam_lookup iam_update fmap_update fmap_lookup fmap_invar
-    "\<lambda>_ vi v. vi = v"
-  by (intro iam_imp_map_conn fmap_conn_facts)
-
-lemma buddy_empty_eq: "aug_csr.buddy_assn Map.empty p = is_iam Map.empty p"
-  by (rule budm.map_assn_empty_eq) (simp_all add: fmap_invar_def fmap_lookup_def)
+lemma xmap_val_zero: "Xi \<mapsto>\<^sub>a replicate n 0 \<Longrightarrow>\<^sub>A xmap_val_assn h n (\<lambda>_. 0) Xi"
+  unfolding xmap_val_assn_def xmap_assn_replicate[symmetric]
+  by (rule ent_ex_postI[where x = "\<lambda>_. 0"]) simp
 
 lemma init_pot_rule:
   "<graph.csr_assn nb_init (Ba, Ea, Ca) * Wc \<mapsto>\<^sub>a map (\<lambda>e. ws ! e_id e) inp.E_spec *
-    is_iam Map.empty Pti *
-    is_ias L Li>
+    Pti \<mapsto>\<^sub>a replicate n 0 * xset_assn n L Li>
    init_pot_csr ((Ba, Ea, Ca), Wc) Li Pti
-   <\<lambda>Pti'. wcsr.wnb_assn (fst (ipot.init_potential_coll nb_init Map.empty L)) ((Ba, Ea, Ca), Wc) *
-          potm.map_assn init_pot Pti' * is_ias L Li>"
+   <\<lambda>_. wcsr.wnb_assn (fst (ipot.init_potential_coll nb_init (\<lambda>_. 0) L)) ((Ba, Ea, Ca), Wc) *
+         xmap_val_assn h n init_pot Pti * xset_assn n L Li>"
 proof -
-  have r: "<wcsr.wnb_assn nb_init ((Ba, Ea, Ca), Wc) * potm.map_assn Map.empty Pti * is_ias L Li>
+  have r: "<wcsr.wnb_assn nb_init ((Ba, Ea, Ca), Wc) * xmap_val_assn h n (\<lambda>_. 0) Pti *
+            xset_assn n L Li>
            init_pot_csr ((Ba, Ea, Ca), Wc) Li Pti
-           <\<lambda>Pti'. wcsr.wnb_assn (fst (ipot.init_potential_coll nb_init Map.empty L)) ((Ba, Ea, Ca), Wc) *
-                  potm.map_assn init_pot Pti' * is_ias L Li>"
-    using ipot.init_pot_imp_rule[of nb_init L, OF wcsr.csr_init_invar]
-    by (simp add: init_pot_csr_def fset_set_def wnb_abstract_finite)
+           <\<lambda>_. wcsr.wnb_assn (fst (ipot.init_potential_coll nb_init (\<lambda>_. 0) L)) ((Ba, Ea, Ca), Wc) *
+                 xmap_val_assn h n init_pot Pti * xset_assn n L Li>"
+    using ipot.init_pot_imp_rule[of nb_init L, OF wcsr.csr_init_invar L_below _ wnb_abstract_finite]
+    by (simp add: init_pot_csr_def)
   show ?thesis
-    by (rule ht_cons_pre[OF _ r[unfolded potm_empty_eq]])
-       (simp only: wcsr.wnb_assn_split, simp only: W_def, rule ent_refl)
+    apply (rule ht_cons_pre[OF _ r])
+    unfolding wcsr.wnb_assn_split
+    unfolding W_def xmap_val_assn_def xmap_assn_replicate[symmetric]
+    by sep_auto
 qed
-
-lemma init_coll_props:
-  "graph.csr_invar (fst (ipot.init_potential_coll nb_init Map.empty L))"
-  "wcsr.wnb_abstract (fst (ipot.init_potential_coll nb_init Map.empty L)) = wcsr.wnb_abstract nb_init"
-  using ipot.init_potential_coll_props[of nb_init L, OF wcsr.csr_init_invar]
-  by (auto simp: fset_set_def wnb_abstract_finite)
 
 lemma card_LR: "card (L \<union> R) \<le> n"
   using card_mono[OF finite_lessThan verts_below] by simp
 
 lemma hungarian_step:
-  defines "C1 \<equiv> fst (ipot.init_potential_coll nb_init Map.empty L)"
-  shows
-  "<wcsr.wnb_assn C1 Ci * hp.heap_assn heap_empty Qi * forest_csr.forest_assn (forest_csr.empty_forest {}) Fi *
-    is_iam Map.empty Bi * is_iam Map.empty Mi * is_ias L Li * is_iam Map.empty Mm * Ki \<mapsto>\<^sub>r 0 *
-    potm.map_assn init_pot Pti * Ra \<mapsto>\<^sub>a replicate n 0>
-   hungarian_csr n theta (length ls) (length rs) (Ci, Qi, Li, Fi, Bi, Mi) (Mm, Ki) Pti Ra
-   <\<lambda>(r, (Mm', _), Pti', Si'). \<exists>\<^sub>AM \<pi>. aug_csr.buddy_assn M Mm' * potm.map_assn \<pi> Pti' * true *
+  "<wcsr.wnb_assn nb_init Ci * hp.heap_assn heap_empty Qi *
+    forest_csr.forest_assn n (forest_csr.empty_forest n {}) Fi *
+    Bi \<mapsto>\<^sub>a replicate n n * Mi \<mapsto>\<^sub>a replicate n 0 * xset_is_it n L Li (sorted_list_of_set L) it *
+    Mm \<mapsto>\<^sub>a replicate n n * Ki \<mapsto>\<^sub>r 0 * xmap_val_assn h n init_pot Pti * Ra \<mapsto>\<^sub>a replicate n 0>
+   hungarian_csr n theta cap (length ls) (length rs) ((Ci, Qi, Li, Fi, Bi, Mi), it) (Mm, Ki) Pti Ra
+   <\<lambda>(r, (Mm', _), Pti', Si'). \<exists>\<^sub>AM \<pi>. xmap_assn n M Mm' * xmap_val_assn h n \<pi> Pti' * true *
       \<up>((r = result.success \<and> hl.hungarian = Some M) \<or> (r = result.failure \<and> hl.hungarian = None))>"
 proof -
-  have pre: "wcsr.wnb_assn C1 Ci * hp.heap_assn heap_empty Qi *
-             forest_csr.forest_assn (forest_csr.empty_forest {}) Fi *
-             is_iam Map.empty Bi * is_iam Map.empty Mi * is_ias L Li * is_iam Map.empty Mm *
-             Ki \<mapsto>\<^sub>r 0 * potm.map_assn init_pot Pti * Ra \<mapsto>\<^sub>a replicate n 0
-             \<Longrightarrow>\<^sub>A csr_scratch_assn (Ci, Qi, Li, Fi, Bi, Mi) * aug_csr.counted_assn Map.empty (Mm, Ki) *
-                 potm.map_assn init_pot Pti * Ra \<mapsto>\<^sub>a replicate n 0"
-    unfolding aug_csr.counted_assn_pair maug.empty_matching_props(2) buddy_empty_eq[symmetric]
-              potm_empty_eq[symmetric]
-    using init_coll_props
-    by (sep_auto simp: csr_scratch_assn_def C1_def)
-  have hr: "<csr_scratch_assn (Ci, Qi, Li, Fi, Bi, Mi) * aug_csr.counted_assn Map.empty (Mm, Ki) *
-              potm.map_assn init_pot Pti * Ra \<mapsto>\<^sub>a replicate n 0>
-            hungarian_csr n theta (length ls) (length rs) (Ci, Qi, Li, Fi, Bi, Mi) (Mm, Ki) Pti Ra
-            <\<lambda>(r, Mi', Pti', Si'). \<exists>\<^sub>Axs' M \<pi>. csr_scratch_assn Si' * Ra \<mapsto>\<^sub>a xs' *
-               aug_csr.counted_assn M Mi' * potm.map_assn \<pi> Pti' * \<up>(length xs' = length (replicate n (0::nat))) *
-               \<up>((r = result.success \<and> hl.hungarian = Some M) \<or> (r = result.failure \<and> hl.hungarian = None))>"
+  have pre: "wcsr.wnb_assn nb_init Ci * hp.heap_assn heap_empty Qi *
+             forest_csr.forest_assn n (forest_csr.empty_forest n {}) Fi *
+             Bi \<mapsto>\<^sub>a replicate n n * Mi \<mapsto>\<^sub>a replicate n 0 *
+             xset_is_it n L Li (sorted_list_of_set L) it *
+             Mm \<mapsto>\<^sub>a replicate n n * Ki \<mapsto>\<^sub>r 0 * xmap_val_assn h n init_pot Pti *
+             Ra \<mapsto>\<^sub>a replicate n 0
+             \<Longrightarrow>\<^sub>A sc_scratch_assn (sorted_list_of_set L, nb_init) ((Ci, Qi, Li, Fi, Bi, Mi), it) *
+                 aug_csr.counted_assn n (\<lambda>_. n) (Mm, Ki) *
+                 xmap_val_assn h n init_pot Pti * Ra \<mapsto>\<^sub>a replicate n 0"
+    unfolding aug_csr.counted_assn_pair maug.empty_matching_props(2) sc_scratch_assn_def
+              pds_aux_assn_def xmap_val_assn_def xmap_assn_replicate[symmetric]
+    by sep_auto
+  have hr: "<sc_scratch_assn (sorted_list_of_set L, nb_init) ((Ci, Qi, Li, Fi, Bi, Mi), it) *
+              aug_csr.counted_assn n (\<lambda>_. n) (Mm, Ki) *
+              xmap_val_assn h n init_pot Pti * Ra \<mapsto>\<^sub>a replicate n 0>
+            hungarian_csr n theta cap (length ls) (length rs) ((Ci, Qi, Li, Fi, Bi, Mi), it) (Mm, Ki)
+              Pti Ra
+            <\<lambda>(r, Mi', Pti', Si'). \<exists>\<^sub>Axs' M \<pi> c. sc_scratch_assn c Si' * Ra \<mapsto>\<^sub>a xs' *
+               aug_csr.counted_assn n M Mi' * xmap_val_assn h n \<pi> Pti' *
+               \<up>(length xs' = length (replicate n (0::nat))) *
+               \<up>((r = result.success \<and> hl.hungarian = Some M) \<or>
+                 (r = result.failure \<and> hl.hungarian = None))>"
     using hl.hungarian_imp_rule[of "replicate n 0"] card_LR by (simp add: hungarian_csr_def)
   show ?thesis
     by (rule ht_cons_pre[OF pre, OF ht_cons_post[OF hr]])
@@ -1228,25 +1531,31 @@ text \<open>The imperative Hungarian method on the CSR representation computes t
 
 theorem hungarian_csr_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
-   hungarian_csr_run n theta Fa Ta Wa La Rv
+   hungarian_csr_run n theta cap Fa Ta Wa La Rv
    <\<lambda>(r, Mi, Pti). \<exists>\<^sub>AM \<pi>. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-      aug_csr.buddy_assn M Mi * potm.map_assn \<pi> Pti * true *
+      xmap_assn n M Mi * xmap_val_assn h n \<pi> Pti * true *
       \<up>((r = result.success \<and> hl.hungarian = Some M) \<or> (r = result.failure \<and> hl.hungarian = None))>"
-  unfolding hungarian_csr_run_def
-  by (sep_auto heap: csr_build_rule graph.csr_cursor_init_rule perm_weights_rule ias_insert_all_rule
-                     ias_new_sz_rule iam_new_sz_rule init_pot_rule hp.heap_empty_imp_rule
-                     forest_csr.forest_empty_imp_rule hungarian_step
-               simp: E_spec_id fset_set_def)
+proof -
+  note rs = wcsr.wnb_imp.reset_all_rule[OF init_pot_props(3) wnb_abstract_cursor]
+  note ii = xset_it_init_rule[OF L_below, unfolded id_apply]
+  show ?thesis
+    unfolding hungarian_csr_run_def
+    supply wcsr.wnb_imp.reset_all_rule[sep_heap_rules del] xset_it_init_rule[sep_heap_rules del]
+    by (sep_auto heap: csr_build_rule graph.csr_cursor_init_rule perm_weights_rule
+                       xset_insert_all_new init_pot_rule rs ii hp.heap_empty_imp_rule
+                       forest_csr.forest_empty_imp_rule hungarian_step
+                 simp: E_spec_id L_below)
+qed
 
 text \<open>Together with the correctness of the functional Hungarian method: on success, the matching
       is a perfect matching of minimum weight; on failure, there is no perfect matching.\<close>
 
 corollary hungarian_csr_run_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
-   hungarian_csr_run n theta Fa Ta Wa La Rv
+   hungarian_csr_run n theta cap Fa Ta Wa La Rv
    <\<lambda>(r, Mi, Pti). \<exists>\<^sub>AM \<pi>. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-      aug_csr.buddy_assn M Mi * potm.map_assn \<pi> Pti * true *
-      \<up>((r = result.success \<and> min_weight_perfect_matching G wfun (maug.\<M> M)) \<or>
+      xmap_assn n M Mi * xmap_val_assn h n \<pi> Pti * true *
+      \<up>((r = result.success \<and> min_weight_perfect_matching G wfun (aug_csr.\<M> n M)) \<or>
         (r = result.failure \<and> (\<nexists>M'. perfect_matching G M')))>"
   apply (rule ht_cons_post_prec[OF hungarian_csr_run_rule])
   apply (clarsimp split: prod.splits)

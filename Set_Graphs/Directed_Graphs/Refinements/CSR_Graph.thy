@@ -303,8 +303,14 @@ definition edge_cur :: "nat array \<times> nat array \<Rightarrow> nat \<Rightar
 definition edge_adv :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "edge_adv = (\<lambda>_ i. return (Suc i))"
 
-definition edge_key :: "edge \<Rightarrow> nat Heap" where
-  "edge_key e = return (e_src e)"
+text \<open>The key of an edge is its tail and the edge itself is stored, so neither operation reads
+      the input arrays.\<close>
+
+definition edge_key :: "nat array \<times> nat array \<Rightarrow> edge \<Rightarrow> nat Heap" where
+  "edge_key _ e = return (e_src e)"
+
+definition edge_val :: "nat array \<times> nat array \<Rightarrow> edge \<Rightarrow> edge Heap" where
+  "edge_val _ e = return e"
 
 subsection \<open>The CSR buildup for the input\<close>
 
@@ -312,6 +318,7 @@ text \<open>The global interpretation of the CSR buildup for the input iterator.
       @{locale imp_csr_buildup_code} only fixes operations and has no assumptions.\<close>
 
 global_interpretation csr_code: imp_csr_buildup_code n edge_has_next edge_cur edge_adv edge_key
+    edge_val
   for n
   defines csr_build_edges = csr_code.csr_build_imp
     and csr_count_edges = csr_code.count_imp

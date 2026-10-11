@@ -7,6 +7,7 @@ session "Matroid_Intersection" = "HOL-Data_Structures" +
     Undirected_Set_Graphs
     Basic_Matching
     Data_Structures
+    Imperative
 
   directories
     Applications
@@ -50,6 +51,7 @@ session "Matroid_Intersection" = "HOL-Data_Structures" +
     "Applications/Bipartite_B_Matching_Imp"
     "Applications/Weighted_Bipartite_Matching_Imp"
     "Applications/Weighted_Bipartite_B_Matching_Imp"
+    "Applications/Bipartite_Matching_Code_Export"
 
 document_files
   "root.tex"

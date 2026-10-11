@@ -210,6 +210,8 @@ lemma visited_dists_parents_imp_rule:
   using initial_refine BFS_refine
   by (sep_auto simp: state_assn_def)
 
+text \<open>The same, but the final frontier is kept as well, so that its arrays can be reused.\<close>
+
 lemma visited_dists_parents_imp_frontier_rule:
  "<imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
    * imp_par_assn some_parent imp_some_par * graph_assn G G_imp> 
@@ -468,6 +470,9 @@ begin
 definition "Vs (G::nat \<Rightarrow> nat list option) = \<Union> {{u, v} | u v vs. G u = Some vs \<and> v \<in> set vs }"
 
 
+text \<open>The arrays have the fixed lengths @{term L} and the fixed handles given by the caller, so
+      that they can be reused for further searches on other graphs.\<close>
+
 definition "front_assn L Fh G vis (front::nat list) fronti frontp = 
   (\<exists>\<^sub>A frontlist. fronti \<mapsto>\<^sub>a frontlist * \<up> (length frontlist > card (Vs G) \<and>
      frontp < length frontlist - card (Vs G) + card vis \<and> frontp \<le> length frontlist \<and>
@@ -644,6 +649,9 @@ proof-
       done
 qed
 
+text \<open>The frontier and the buffer are the two arrays @{term Fr} and @{term Bf} of length
+      @{term L}, in either order, since they swap their roles in every round.\<close>
+
 fun imp_cf_assn where 
    "imp_cf_assn L Fr Bf (G::nat \<Rightarrow> nat list option) front (fronti, frontp, buffer_fronti) =
       (\<exists>\<^sub>A frontlist buffer_frontlist. fronti \<mapsto>\<^sub>a frontlist *  buffer_fronti \<mapsto>\<^sub>a buffer_frontlist *
@@ -657,8 +665,6 @@ definition "imp_src_assn = imp_cf_assn"
 lemma imp_cf_is_empty_rule:
   "<imp_cf_assn L Fr Bf G S Si> imp_cf_is_empty Si <\<lambda>b. imp_cf_assn L Fr Bf G S Si * \<up> (b = (S = []))>"
   by(cases Si) sep_auto
-term inner_loop
-
 
 lemma foldl_insert:"foldl (\<lambda>S x. if x \<in> S then S else Set.insert x S) A xs = set xs \<union> A"
   by(induction xs arbitrary: A) auto
@@ -688,6 +694,8 @@ lemma set_srcs_visited_rule:
 abbreviation "imp_dist_assn_raw G dlist d di 
    \<equiv> (di \<mapsto>\<^sub>a dlist * 
           \<up>((\<forall> i \<in> dom G. i < length dlist \<and> d i = dlist ! i)))"
+
+text \<open>The distances are kept in the array @{term Da} of length @{term L}.\<close>
 
 definition "imp_dist_assn L Da G d di 
    = (\<exists>\<^sub>A dlist. di \<mapsto>\<^sub>a dlist * 
@@ -996,7 +1004,11 @@ lemma imp_par_assn_char:
 
 end
 
-text \<open>The instance for a fixed graph @{term G} with the heap handle @{term Gi}.\<close>
+text \<open>The instance for a fixed graph @{term G} with the heap handle @{term Gi}. The vertices are
+      below @{term N}; the frontier and the buffer are the arrays @{term Fr} and @{term Bf} of
+      length @{term "Suc N"}, and the distances and the parents are kept in the arrays
+      @{term Da} and @{term Pa} of length @{term N}. The arrays are thus independent of the graph
+      and can be reused for searches on further graphs with vertices below @{term N}.\<close>
 
 locale BFS_lists_instance = BFS_subprocedures_lists
   where is_visited_set = is_visited_set and visited_memb = visited_memb

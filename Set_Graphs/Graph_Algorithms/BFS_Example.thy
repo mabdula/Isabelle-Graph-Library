@@ -69,7 +69,11 @@ defines bfs_initial_state = "bfs.initial_state"
 and bfs_impl = bfs.BFS_impl
   apply unfold_locales
   by (auto simp add: bfs_subprocedures.expand_tree bfs_subprocedures.next_frontier)
-  
+
+definition "BFS_dag_rbt G (srcs::(nat \<times> color) tree) = parents (bfs_impl G (bfs_initial_state srcs))"
+definition "BFS_check_reachable_rbt G (srcs::(nat \<times> color) tree) t = 
+   isin (visited (bfs_impl G (bfs_initial_state srcs))) t"
+
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
                      (7,2), (7,4), (4,3), (3,4), (3,3), (9, 8), (8, 1), (4,5), (5,10)]"
 
@@ -77,7 +81,9 @@ definition "G = a_graph edges"
 
 definition "src_list = [9::nat]"
 
-definition "srcs =  foldr (\<lambda> x tree. insert x tree) src_list empty"
+definition "build_rbt_sources (list::nat list) = foldr (\<lambda> x tree. insert x tree) list empty"
+
+definition "srcs = build_rbt_sources src_list"
 
 value edges
 value "vertices edges"
@@ -85,5 +91,7 @@ value "diff_rbt (nbs edges 1) (nbs edges 2)"
 value G
 value "bfs_initial_state srcs"   
 value "bfs_impl G (bfs_initial_state srcs)"
+value "BFS_dag_rbt G srcs"
+value "BFS_check_reachable_rbt G srcs 14"
 hide_const G src_list srcs edges
 end

@@ -1,5 +1,5 @@
 theory Imp_Bool_Set
-  imports Imp_Range_Iteration
+  imports Imp_Range_Iteration Data_Structures.Fixed_Univ_Set_Specs_Imp
 begin
 
 section \<open>Sets of Nats below a Bound as Boolean Arrays\<close>
@@ -73,7 +73,6 @@ text \<open>The interface through which the algorithms see a solution: a members
   insertion and deletion, which are idempotent. The handle may carry further data that its
   operations keep up to date (e.g. for oracles).\<close>
 
-(* NEW (weighted extension): locale imp_nat_set_spec (with the text before it) *)
 text \<open>Copying the set into a Boolean array, in place.\<close>
 
 locale imp_nat_set_spec =
@@ -81,7 +80,6 @@ locale imp_nat_set_spec =
     and smemb_imp :: "nat \<Rightarrow> 'si \<Rightarrow> bool Heap"
 begin
 
-(* NEW (weighted extension): definition bcopy_imp *)
 definition "bcopy_imp Si Bi = copy_range_imp (\<lambda> i. smemb_imp i Si) n Bi"
 
 end
@@ -118,5 +116,22 @@ proof-
 qed
 
 end
+
+section \<open>The Boolean Arrays as Fixed-Universe Sets\<close>
+
+text \<open>The functional model of a Boolean array of length \<open>n\<close> is the set itself, a subset of the
+      universe \<open>{..<n}\<close>.\<close>
+
+definition "xset_insert_imp x Xi = do { _ \<leftarrow> Array.upd x True Xi; return () }"
+definition "xset_delete_imp x Xi = do { _ \<leftarrow> Array.upd x False Xi; return () }"
+definition "xset_isin_imp Xi x = Array.nth Xi x"
+
+lemma xset_fixed_univ_set_imp:
+  "fixed_univ_set_imp {..<n} (\<lambda> X. X \<subseteq> {..<n}) id {} insert (\<lambda> x X. X - {x})
+     (\<lambda> X x. x \<in> X) (xset_assn n) (Array.new n False) xset_insert_imp xset_delete_imp
+     xset_isin_imp"
+  by unfold_locales
+     (sep_auto simp: xset_insert_imp_def xset_delete_imp_def xset_isin_imp_def
+               heap: xset_assn_new xset_memb_rule xset_upd_rule)+
 
 end

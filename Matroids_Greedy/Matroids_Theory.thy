@@ -3371,6 +3371,171 @@ proof-
   with \<open>y \<in> B1 - B2\<close> show ?thesis by blast
 qed
 
+(* ---------------------------------------------------------------------------------------------- *)
+
+subsection \<open>Theorem 13.22 (auxiliary)\<close>
+
+(* The following theorems are relevant for the worst-out greedy algorithm. Its approximation bound
+is expressed by the lower rank and the rank of the dual independence system (KV (13.3)). *)
+
+lemma Frac_of_int_quotient_mult:
+  assumes "0 < m \<or> n = m" "q = Frac (int n) (int m)"
+  shows "rat_of_nat n = q * rat_of_nat m"
+  using assms by (cases "n = m") (auto simp: Frac_def Fract_of_int_quotient)
+
+context indep_system
+begin
+
+lemma rank_eq_card_imp_lower_rank_eq_card:
+  assumes "X \<subseteq> carrier" "rank X = card X"
+  shows "lower_rank_of X = card X"
+proof-
+  let ?basis_cards = "{card B | B. basis_in X B}"
+  from assms(1) basis_in_ex have "?basis_cards \<noteq> {}" by simp
+  from assms(1) collect_basis_in_finite finite_imageI have "finite ?basis_cards" by simp
+  from Max_in[OF this \<open>?basis_cards \<noteq> {}\<close>] assms
+  obtain B where B: "basis_in X B" "card B = card X"
+    using upper_rank_equiv_rank[OF assms(1)] unfolding upper_rank_of_def by auto
+  have "finite X" using assms(1) carrier_finite finite_subset by blast
+  with B basis_in_subset_carrier[OF assms(1) B(1)] have "B = X"
+    by (simp add: card_subset_eq)
+  with B(1) basis_in_subset_eq[OF assms(1)] basis_in_subset_carrier[OF assms(1)]
+  have "?basis_cards = {card X}" by blast
+  then show ?thesis unfolding lower_rank_of_def by simp
+qed
+
+lemma rank_quotient_eq_1_iff:
+  "rank_quotient = 1 \<longleftrightarrow> (\<forall>X \<subseteq> carrier. lower_rank_of X = rank X)"
+proof
+  assume rq: "rank_quotient = 1"
+  show "\<forall>X \<subseteq> carrier. lower_rank_of X = rank X"
+  proof (rule allI, rule impI)
+    fix X assume "X \<subseteq> carrier"
+    from lower_rank_geq_rank_quotient_prod_rank[OF this] rq
+    have "rank X \<le> lower_rank_of X" by simp
+    with lower_rank_le_upper_rank[OF \<open>X \<subseteq> carrier\<close>] upper_rank_equiv_rank[OF \<open>X \<subseteq> carrier\<close>]
+    show "lower_rank_of X = rank X" by simp
+  qed
+next
+  assume "\<forall>X \<subseteq> carrier. lower_rank_of X = rank X"
+  then have "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} = {1}"
+    by (auto simp: Frac_def)
+  then show "rank_quotient = 1" unfolding rank_quotient_def by simp
+qed
+
+lemma basis_in_extend_to_basis:
+  assumes "X \<subseteq> carrier" "basis_in X B"
+  shows "\<exists>B'. basis B' \<and> B' \<inter> X = B"
+proof-
+  from basis_in_subI[OF order.refl assms(1) order.refl assms(2)]
+  obtain B'' where "B'' \<subseteq> carrier - X" "basis_in carrier (B \<union> B'')" by blast
+  moreover have "B \<subseteq> X" using basis_in_subset_carrier[OF assms] .
+  ultimately show ?thesis using basis_iff_basis_in by blast
+qed
+
+lemma dual_indep_iff_contains_basis:
+  "dual carrier indep D \<longleftrightarrow> D \<subseteq> carrier \<and> (\<exists>B. basis B \<and> B \<subseteq> carrier - D)"
+  unfolding dual_def using basis_subset_carrier by blast
+
+(* The quantity on the right-hand side of (13.3). Again, Frac is used since a quotient 0 / 0 has to
+evaluate to 1. *)
+definition worst_out_ratio :: rat where
+  "worst_out_ratio = Max {Frac (int (card X - indep_system.lower_rank_of (dual carrier indep) X))
+    (int (card X - indep_system.rank (dual carrier indep) X)) | X. X \<subseteq> carrier}"
+
+lemma worst_out_ratio_geq_1:
+  "worst_out_ratio \<ge> 1"
+proof-
+  let ?fracs = "{Frac (int (card X - indep_system.lower_rank_of (dual carrier indep) X))
+    (int (card X - indep_system.rank (dual carrier indep) X)) | X. X \<subseteq> carrier}"
+  have "finite ?fracs" using carrier_finite by simp
+  moreover have "1 \<in> ?fracs"
+    by (rule CollectI, rule exI[of _ "{}"]) (simp add: Frac_def)
+  ultimately show ?thesis unfolding worst_out_ratio_def by (rule Max_ge)
+qed
+
+lemma worst_out_ratio_attained:
+  "\<exists>X. X \<subseteq> carrier \<and> Frac (int (card X - indep_system.lower_rank_of (dual carrier indep) X))
+    (int (card X - indep_system.rank (dual carrier indep) X)) = worst_out_ratio"
+proof-
+  let ?fracs = "{Frac (int (card X - indep_system.lower_rank_of (dual carrier indep) X))
+    (int (card X - indep_system.rank (dual carrier indep) X)) | X. X \<subseteq> carrier}"
+  have "finite ?fracs" using carrier_finite by simp
+  moreover have "?fracs \<noteq> {}" by blast
+  ultimately have "worst_out_ratio \<in> ?fracs" unfolding worst_out_ratio_def by (rule Max_in)
+  then show ?thesis unfolding mem_Collect_eq by (elim exE conjE) (rule exI, rule conjI, assumption, rule sym)
+qed
+
+lemma card_minus_dual_lower_rank_leq_ratio_prod:
+  assumes "X \<subseteq> carrier"
+  shows "rat_of_nat (card X - indep_system.lower_rank_of (dual carrier indep) X) \<le>
+    worst_out_ratio * rat_of_nat (card X - indep_system.rank (dual carrier indep) X)"
+proof-
+  interpret dual: indep_system carrier "dual carrier indep"
+    using dual_indep_system[OF indep_system_axioms] .
+  let ?fracs = "{Frac (int (card X - dual.lower_rank_of X)) (int (card X - dual.rank X)) | X. X \<subseteq> carrier}"
+  have "finite ?fracs" using carrier_finite by simp
+  then have frac_leq: "Frac (int (card X - dual.lower_rank_of X)) (int (card X - dual.rank X)) \<le> worst_out_ratio"
+    unfolding worst_out_ratio_def using assms by (intro Max_ge) blast+
+  have "dual.lower_rank_of X \<le> dual.rank X"
+    using dual.lower_rank_le_upper_rank[OF assms] dual.upper_rank_equiv_rank[OF assms] by simp
+  have "dual.rank X \<le> card X"
+    using dual.upper_rank_of_le[OF assms] dual.upper_rank_equiv_rank[OF assms] by simp
+  show ?thesis
+  proof (cases "dual.rank X = card X")
+    case True
+    with dual.rank_eq_card_imp_lower_rank_eq_card[OF assms] show ?thesis by simp
+  next
+    case False
+    with \<open>dual.rank X \<le> card X\<close> have "0 < card X - dual.rank X" by simp
+    from Frac_of_int_quotient_mult[OF disjI1[OF this] refl]
+    have "rat_of_nat (card X - dual.lower_rank_of X) =
+      Frac (int (card X - dual.lower_rank_of X)) (int (card X - dual.rank X)) * rat_of_nat (card X - dual.rank X)" .
+    also have "... \<le> worst_out_ratio * rat_of_nat (card X - dual.rank X)"
+      using frac_leq by (simp add: mult_right_mono)
+    finally show ?thesis .
+  qed
+qed
+
+lemma worst_out_ratio_eq_1_iff_matroid:
+  "worst_out_ratio = 1 \<longleftrightarrow> matroid carrier indep"
+proof-
+  interpret dual: indep_system carrier "dual carrier indep"
+    using dual_indep_system[OF indep_system_axioms] .
+  have "worst_out_ratio = 1 \<longleftrightarrow> (\<forall>X \<subseteq> carrier. dual.lower_rank_of X = dual.rank X)"
+  proof
+    assume ratio: "worst_out_ratio = 1"
+    show "\<forall>X \<subseteq> carrier. dual.lower_rank_of X = dual.rank X"
+    proof (rule allI, rule impI)
+      fix X assume X: "X \<subseteq> carrier"
+      from card_minus_dual_lower_rank_leq_ratio_prod[OF X] ratio
+      have "card X - dual.lower_rank_of X \<le> card X - dual.rank X" by simp
+      moreover have "dual.lower_rank_of X \<le> dual.rank X"
+        using dual.lower_rank_le_upper_rank[OF X] dual.upper_rank_equiv_rank[OF X] by simp
+      moreover have "dual.rank X \<le> card X"
+        using dual.upper_rank_of_le[OF X] dual.upper_rank_equiv_rank[OF X] by simp
+      ultimately show "dual.lower_rank_of X = dual.rank X" by simp
+    qed
+  next
+    assume a: "\<forall>X \<subseteq> carrier. dual.lower_rank_of X = dual.rank X"
+    let ?fracs = "{Frac (int (card X - dual.lower_rank_of X)) (int (card X - dual.rank X)) | X. X \<subseteq> carrier}"
+    have "finite ?fracs" using carrier_finite by simp
+    moreover have "?fracs \<noteq> {}" by blast
+    moreover have "\<forall>q \<in> ?fracs. q \<le> 1" using a by (auto simp: Frac_def)
+    ultimately have "worst_out_ratio \<le> 1" unfolding worst_out_ratio_def by simp
+    with worst_out_ratio_geq_1 show "worst_out_ratio = 1" by simp
+  qed
+  also have "... \<longleftrightarrow> dual.rank_quotient = 1"
+    using dual.rank_quotient_eq_1_iff by simp
+  also have "... \<longleftrightarrow> matroid carrier (dual carrier indep)"
+    using dual.matroid_iff_rq_eq_1 by simp
+  also have "... \<longleftrightarrow> matroid carrier indep"
+    using matroid_iff_dual_matroid[OF indep_system_axioms] by simp
+  finally show ?thesis .
+qed
+
+end
+
 
 
 

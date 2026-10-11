@@ -19,12 +19,12 @@ text \<open>The graph and the capacities are given as in
   edge arrays, holds the edge weights, in an ordered ring \<open>'n\<close>. The matroids, the oracles and the
   solution handle are those of the unweighted instance; the algorithm is the generic one of
   @{theory Matroid_Intersection.Matroid_Weighted_Intersection_Imp}. The result is the Boolean array
-  of the positions of a maximum weight b-matching.\<close>
+  of the positions of a maximum weight b-matching, from the solution handle.\<close>
 
 subsection \<open>Code\<close>
 
 global_interpretation wbx: weighted_matroid_intersection_imp_spec n id id bb_memb bb_ins1 bb_exch1
-  bb_ins2 bb_exch2 bb_ins bb_del Array.nth Array.nth
+  bb_ins2 bb_exch2 bb_ins bb_del part_npts_imp part_pt_imp part_npts_imp part_pt_imp
   for n
   defines wbx_teq = wbx.wids.teq_imp
     and wbx_tnbs = wbx.wids.tnbs
@@ -43,7 +43,6 @@ global_interpretation wbx: weighted_matroid_intersection_imp_spec n id id bb_mem
     and wbx_weps_step = wbx.wids.weps_step
     and wbx_weps = wbx.wids.weps_imp
     and wbx_wshift = wbx.wids.wshift_imp
-    and wbx_sweight = wbx.wids.sweight_imp
     and wbx_ccopy = wbx.wids.ccopy_imp
     and wbx_czero = wbx.wids.czero_imp
     and wbx_wmi_ids = wbx.wids.wmi_imp
@@ -77,15 +76,14 @@ declare wxbbi.BFS_par_imp.simps[code]
 
 text \<open>The edges are \<open>{Fa[i], Ta[i]}\<close> with weight \<open>Wa[i]\<close>, the capacity of vertex \<open>v\<close> is \<open>Ka[v]\<close>,
   and all vertices are below the length of \<open>Ka\<close>. After the prologue of the unweighted instance,
-  the program allocates the best-solution array and the two weight arrays of the algorithm.\<close>
+  the program allocates the two weight arrays of the algorithm.\<close>
 
 definition "weighted_b_matching_imp Fa Ta Ka Wa =
    bb_setup_imp Fa Ta Ka (\<lambda> m H1 H2 Xi C1 C2. do {
-     Bi \<leftarrow> Array.new m False;
      W1 \<leftarrow> Array.new m 0;
      W2 \<leftarrow> Array.new m 0;
-     wbx_wmi m H1 H2 (Xi, C1, C2, Fa, Ta, Ka) Bi Wa W1 W2;
-     return Bi })"
+     wbx_wmi m H1 H2 (Xi, C1, C2, Fa, Ta, Ka) Wa W1 W2;
+     return Xi })"
 
 export_code weighted_b_matching_imp checking SML_imp
 
@@ -123,9 +121,9 @@ begin
 text \<open>The elements are the positions themselves, so the indexation is the identity.\<close>
 
 interpretation m: weighted_matroid_intersection_imp "length fs" id id bb_memb bb_ins1 bb_exch1 bb_ins2
-  bb_exch2 bb_ins bb_del Array.nth Array.nth "{0..<length fs}" "\<lambda> X. X" lf.cap_ins lf.cap_exch
-  lf.cap_indep sb emp "part_pts fs" "part_pst (length fs) fs" "\<lambda> X. X" rt.cap_ins rt.cap_exch
-  rt.cap_indep emp "part_pts ts" "part_pst (length fs) ts" h
+  bb_exch2 bb_ins bb_del part_npts_imp part_pt_imp part_npts_imp part_pt_imp "{0..<length fs}"
+  "\<lambda> X. X" lf.cap_ins lf.cap_exch lf.cap_indep sb emp "part_pts fs" "part_pst (length fs) fs"
+  "\<lambda> X. X" rt.cap_ins rt.cap_exch rt.cap_indep emp "part_pts ts" "part_pst (length fs) ts" h
   by (intro weighted_matroid_intersection_imp.intro mi_inst real_embedding_axioms)
 
 lemma is_max_weight_b_matching:
@@ -181,11 +179,11 @@ theorem whandles_correct:
   "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * xset_assn (length fs) {} Xi *
     cnt_assn (length ks) fs {} C1 * cnt_assn (length ks) ts {} C2 *
     blocks_assn (length fs) (length ks) fs Fa * blocks_assn (length fs) (length ks) ts Ta *
-    caps_assn (length ks) (\<lambda> v. ks ! v) Ka * len_assn (length fs) Bi *
+    caps_assn (length ks) (\<lambda> v. ks ! v) Ka *
     warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa *
     len_assn (length fs) W1 * len_assn (length fs) W2>
-     wbx_wmi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta, Ka) Bi Wa W1 W2
-   <\<lambda> _. \<exists>\<^sub>A X. xset_assn (length fs) X Bi * blocks_assn (length fs) (length ks) fs Fa *
+     wbx_wmi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta, Ka) Wa W1 W2
+   <\<lambda> _. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * blocks_assn (length fs) (length ks) fs Fa *
               blocks_assn (length fs) (length ks) ts Ta * caps_assn (length ks) (\<lambda> v. ks ! v) Ka *
               warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa * true *
               \<up>(max_weight_b_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) (\<lambda> v. ks ! v)
@@ -201,7 +199,7 @@ subsubsection \<open>The Program\<close>
 
 theorem weighted_b_matching_imp_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * Wa \<mapsto>\<^sub>a ws> weighted_b_matching_imp Fa Ta Ka Wa
-   <\<lambda> Bi. \<exists>\<^sub>A X. xset_assn (length fs) X Bi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * Wa \<mapsto>\<^sub>a ws *
+   <\<lambda> Xi. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * Wa \<mapsto>\<^sub>a ws *
               true * \<up>(max_weight_b_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs})
                         (\<lambda> v. ks ! v) edge_weight ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
 proof-

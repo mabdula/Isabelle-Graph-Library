@@ -13,6 +13,8 @@ Compute_Blocking_Simple
 Compute_Blocking_Residual
 Dinic
 Dinic_Instantiation
+Residual_Buckets
+Unit_Flows_Impl
   
 
 document_files

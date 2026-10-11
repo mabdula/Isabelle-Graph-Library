@@ -20,18 +20,22 @@ text \<open>
     The iterator operations additionally take the handle \<open>c\<close> of the input container (e.g.\ the
     input arrays). No imperative value is fixed by a locale: the container is an argument of the
     programs, and the refinement assertion @{term input_assn} relates it to the input in the
-    Hoare triples, which the operations preserve. The key function reads no heap data.
+    Hoare triples, which the operations preserve.
+  \<^item> \<open>E\<close> does not store the elements themselves but their values under a function \<open>val\<close>, so an
+    element can be a position in the input, from which the key and the stored value are read.
+    The key and the value operations therefore also take the input container.
 \<close>
 
-text \<open>The code locale fixes only the size and the imperative iterator and key operations; it has
-      no assumptions, so that the programs can be globally interpreted and exported.\<close>
+text \<open>The code locale fixes only the size and the imperative iterator, key and value operations;
+      it has no assumptions, so that the programs can be globally interpreted and exported.\<close>
 
 locale imp_csr_buildup_code =
   fixes n :: nat
     and it_has_next_impl :: "'ci \<Rightarrow> 'si \<Rightarrow> bool Heap"
-    and it_cur_impl :: "'ci \<Rightarrow> 'si \<Rightarrow> 'e::heap Heap"
+    and it_cur_impl :: "'ci \<Rightarrow> 'si \<Rightarrow> 'e Heap"
     and it_adv_impl :: "'ci \<Rightarrow> 'si \<Rightarrow> 'si Heap"
-    and key_impl :: "'e \<Rightarrow> nat Heap"
+    and key_impl :: "'ci \<Rightarrow> 'e \<Rightarrow> nat Heap"
+    and val_impl :: "'ci \<Rightarrow> 'e \<Rightarrow> 'x::heap Heap"
 begin
 
 subsection \<open>Programs\<close>
@@ -43,10 +47,10 @@ partial_function (heap) count_imp :: "'ci \<Rightarrow> nat array \<Rightarrow> 
      b \<leftarrow> it_has_next_impl c si;
      if b then do {
        e \<leftarrow> it_cur_impl c si;
-       k \<leftarrow> key_impl e;
+       k \<leftarrow> key_impl c e;
        (if k + 2 \<le> n then do {
-          c \<leftarrow> Array.nth B (k + 2);
-          Array.upd (k + 2) (Suc c) B;
+          d \<leftarrow> Array.nth B (k + 2);
+          Array.upd (k + 2) (Suc d) B;
           return () }
         else return ());
        si' \<leftarrow> it_adv_impl c si;
@@ -64,30 +68,31 @@ partial_function (heap) prefix_imp :: "nat array \<Rightarrow> nat \<Rightarrow>
         prefix_imp B (Suc j) acc' }
       else return ())"
 
-text \<open>Fill pass, refining @{term "it_fold fill_step"}.\<close>
+text \<open>Fill pass, refining @{term "it_fold fill_step"}; the value of the element is stored.\<close>
 
-partial_function (heap) fill_imp :: "'ci \<Rightarrow> nat array \<Rightarrow> 'e array \<Rightarrow> 'si \<Rightarrow> unit Heap" where
+partial_function (heap) fill_imp :: "'ci \<Rightarrow> nat array \<Rightarrow> 'x array \<Rightarrow> 'si \<Rightarrow> unit Heap" where
   "fill_imp c B E si = do {
      b \<leftarrow> it_has_next_impl c si;
      if b then do {
        e \<leftarrow> it_cur_impl c si;
-       k \<leftarrow> key_impl e;
+       k \<leftarrow> key_impl c e;
+       x \<leftarrow> val_impl c e;
        p \<leftarrow> Array.nth B (k + 1);
        Array.upd (k + 1) (Suc p) B;
-       Array.upd p e E;
+       Array.upd p x E;
        si' \<leftarrow> it_adv_impl c si;
        fill_imp c B E si' }
      else return () }"
 
 text \<open>Allocation of the edge array, refining @{const csr_buildup.init_E}.\<close>
 
-definition init_E_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> nat \<Rightarrow> 'e array Heap" where
+definition init_E_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> nat \<Rightarrow> 'x array Heap" where
   "init_E_imp c si m = do {
      b \<leftarrow> it_has_next_impl c si;
-     if b then do { e \<leftarrow> it_cur_impl c si; Array.new m e }
+     if b then do { e \<leftarrow> it_cur_impl c si; x \<leftarrow> val_impl c e; Array.new m x }
      else Array.of_list [] }"
 
-definition csr_build_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> (nat array \<times> 'e array) Heap" where
+definition csr_build_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> (nat array \<times> 'x array) Heap" where
   "csr_build_imp c si = do {
      B \<leftarrow> Array.new (Suc n) 0;
      m \<leftarrow> count_imp c B 0 si;
@@ -98,12 +103,12 @@ definition csr_build_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> (nat array \<ti
 
 end
 
-text \<open>The proof locale: the functional counting sort, the iterator relation and the context
-      assertion, with one Hoare triple per iterator operation.\<close>
+text \<open>The proof locale: the functional counting sort, the value function, the iterator relation
+      and the context assertion, with one Hoare triple per imperative operation.\<close>
 
 locale imp_csr_buildup = csr_buildup it_next it_seq it_invar key n s0 +
-  imp_csr_buildup_code n it_has_next_impl it_cur_impl it_adv_impl key_impl
-  for it_next :: "'s \<Rightarrow> ('e::heap \<times> 's) option"
+  imp_csr_buildup_code n it_has_next_impl it_cur_impl it_adv_impl key_impl val_impl
+  for it_next :: "'s \<Rightarrow> ('e \<times> 's) option"
     and it_seq :: "'s \<Rightarrow> 'e list"
     and it_invar :: "'s \<Rightarrow> bool"
     and key :: "'e \<Rightarrow> nat"
@@ -112,8 +117,10 @@ locale imp_csr_buildup = csr_buildup it_next it_seq it_invar key n s0 +
     and it_has_next_impl :: "'ci \<Rightarrow> 'si \<Rightarrow> bool Heap"
     and it_cur_impl :: "'ci \<Rightarrow> 'si \<Rightarrow> 'e Heap"
     and it_adv_impl :: "'ci \<Rightarrow> 'si \<Rightarrow> 'si Heap"
-    and key_impl :: "'e \<Rightarrow> nat Heap" +
-  fixes it_rel :: "'s \<Rightarrow> 'si \<Rightarrow> bool"
+    and key_impl :: "'ci \<Rightarrow> 'e \<Rightarrow> nat Heap"
+    and val_impl :: "'ci \<Rightarrow> 'e \<Rightarrow> 'x::heap Heap" +
+  fixes val :: "'e \<Rightarrow> 'x"
+    and it_rel :: "'s \<Rightarrow> 'si \<Rightarrow> bool"
     and input_assn :: "'ci \<Rightarrow> assn"
   assumes has_next_rule:
     "\<lbrakk>it_invar s; it_rel s si\<rbrakk> \<Longrightarrow>
@@ -125,7 +132,9 @@ locale imp_csr_buildup = csr_buildup it_next it_seq it_invar key n s0 +
     "\<lbrakk>it_invar s; it_rel s si; it_next s = Some (e, s')\<rbrakk> \<Longrightarrow>
        <input_assn c> it_adv_impl c si <\<lambda>si'. input_assn c * \<up>(it_rel s' si')>"
     and key_rule:
-    "e \<in> set (it_seq s0) \<Longrightarrow> <emp> key_impl e <\<lambda>k. \<up>(k = key e)>"
+    "e \<in> set (it_seq s0) \<Longrightarrow> <input_assn c> key_impl c e <\<lambda>k. input_assn c * \<up>(k = key e)>"
+    and val_rule:
+    "e \<in> set (it_seq s0) \<Longrightarrow> <input_assn c> val_impl c e <\<lambda>x. input_assn c * \<up>(x = val e)>"
 begin
 
 subsection \<open>Correctness\<close>
@@ -231,10 +240,11 @@ corollary prefix_sums_imp_rule:
   using prefix_imp_rule[where j=1 and acc=0] by (simp add: prefix_sums_def)
 
 lemma fill_imp_rule:
-  "<input_assn c * B \<mapsto>\<^sub>a Bs * E \<mapsto>\<^sub>a Es
+  "<input_assn c * B \<mapsto>\<^sub>a Bs * E \<mapsto>\<^sub>a map val Es
       * \<up>(it_invar s \<and> it_rel s si \<and> xs @ it_seq s = es \<and> fill_invar xs (Bs, Es))>
      fill_imp c B E si
-   <\<lambda>_. input_assn c * B \<mapsto>\<^sub>a fst (it_fold fill_step s (Bs, Es)) * E \<mapsto>\<^sub>a snd (it_fold fill_step s (Bs, Es))>"
+   <\<lambda>_. input_assn c * B \<mapsto>\<^sub>a fst (it_fold fill_step s (Bs, Es))
+         * E \<mapsto>\<^sub>a map val (snd (it_fold fill_step s (Bs, Es)))>"
 proof (induction arbitrary: s si xs Bs Es rule: fill_imp.fixp_induct)
   case 1
   show ?case by simp
@@ -277,10 +287,10 @@ next
       have fs: "fill_step e (Bs, Es)
                 = (Bs[Suc (key e) := Suc (Bs ! Suc (key e))], Es[Bs ! Suc (key e) := e])"
         by (simp add: fill_step_def Let_def)
-      have IH': "<input_assn c * B \<mapsto>\<^sub>a fst (fill_step e (Bs, Es)) * E \<mapsto>\<^sub>a snd (fill_step e (Bs, Es))
-                    * \<up>(it_rel s' si')> f c B E si'
+      have IH': "<input_assn c * B \<mapsto>\<^sub>a fst (fill_step e (Bs, Es))
+                    * E \<mapsto>\<^sub>a map val (snd (fill_step e (Bs, Es))) * \<up>(it_rel s' si')> f c B E si'
                  <\<lambda>_. input_assn c * B \<mapsto>\<^sub>a fst (it_fold fill_step s' (fill_step e (Bs, Es)))
-                       * E \<mapsto>\<^sub>a snd (it_fold fill_step s' (fill_step e (Bs, Es)))>" for si'
+                       * E \<mapsto>\<^sub>a map val (snd (it_fold fill_step s' (fill_step e (Bs, Es))))>" for si'
         using IH[where s1=s' and si1=si' and xs1="xs @ [e]" and Bs1="fst (fill_step e (Bs, Es))"
                  and Es1="snd (fill_step e (Bs, Es))"]
               inv' es finv'
@@ -291,14 +301,15 @@ next
       thus ?thesis
         using bnd
         by (sep_auto heap: has_next_rule[OF inv rel] cur_rule[OF inv rel nx]
-                           adv_rule[OF inv rel nx] key_rule[OF eE] IH'[unfolded fs fst_conv snd_conv]
+                           adv_rule[OF inv rel nx] key_rule[OF eE] val_rule[OF eE]
+                           IH'[unfolded fs fst_conv snd_conv map_update]
                      simp: nx)
     qed
   qed
 qed
 
 lemma init_E_imp_rule:
-  "<input_assn c * \<up>(it_rel s0 si)> init_E_imp c si m <\<lambda>E. input_assn c * E \<mapsto>\<^sub>a init_E m>"
+  "<input_assn c * \<up>(it_rel s0 si)> init_E_imp c si m <\<lambda>E. input_assn c * E \<mapsto>\<^sub>a map val (init_E m)>"
 proof (cases "it_next s0")
   case None
   thus ?thesis
@@ -308,13 +319,17 @@ next
   case (Some a)
   then obtain e s' where nx: "it_next s0 = Some (e, s')"
     by (cases a) auto
-  thus ?thesis
+  have eE: "e \<in> set (it_seq s0)"
+    using it_next_Some[OF s0_invar nx] by simp
+  show ?thesis
+    using nx
     unfolding init_E_imp_def init_E_def
-    by (sep_auto heap: has_next_rule[OF s0_invar] cur_rule[OF s0_invar _ nx])
+    by (sep_auto heap: has_next_rule[OF s0_invar] cur_rule[OF s0_invar _ nx] val_rule[OF eE])
 qed
 
 theorem csr_build_imp_rule:
-  "<input_assn c * \<up>(it_rel s0 si)> csr_build_imp c si <\<lambda>(B, E). input_assn c * B \<mapsto>\<^sub>a B_spec * E \<mapsto>\<^sub>a E_spec>"
+  "<input_assn c * \<up>(it_rel s0 si)> csr_build_imp c si
+   <\<lambda>(B, E). input_assn c * B \<mapsto>\<^sub>a B_spec * E \<mapsto>\<^sub>a map val E_spec>"
 proof -
   have c: "it_fold count_step s0 (0 # replicate n 0, 0) = (count_B es, length es)"
     using count_edges by (simp add: count_edges_def)

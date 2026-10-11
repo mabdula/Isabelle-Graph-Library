@@ -345,7 +345,7 @@ in SML_imp module_name exported file_prefix DFS_imperative
     val g' = rbt_from_list [(0,1),(1,2),(2,3),(3,1),(4,1)]
 
     val higraph_from_list = @{code him_graph_from_list} o map (apply2 noi)
-    val g'' =  higraph_from_list [(0,1),(1,2),(2,3),(3,1),(4,1)]
+    val g'' =  higraph_from_list [(0,1),(1,2),(2,3),(3,1),(4,1)] ()
   \<close>
   
 end

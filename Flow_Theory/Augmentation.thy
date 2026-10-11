@@ -1275,4 +1275,45 @@ have awalke:"awalk (make_pair ` \<E>) (fstv e) ([to_vertex_pair e]) (sndv e)"
   ultimately show ?case by simp
 qed
 end
+
+subsection \<open>Integrality\<close>
+
+context
+  flow_network_spec
+begin
+
+text \<open>A flow is integral if it takes integer values on all edges.\<close>
+
+definition "is_integral_flow (f::_\<Rightarrow> real) = (\<forall> e \<in> \<E>. \<exists> n::int. f e =  n)"
+
+end
+
+context
+  flow_network
+begin
+
+lemma is_integral_flow_Ints: "is_integral_flow f = (\<forall>e \<in> \<E>. f e \<in> \<int>)"
+  by (auto simp add: is_integral_flow_def Ints_def)
+
+lemma integral_ex:
+  assumes "is_integral_flow f"
+  shows "ex f x \<in> \<int>"
+  using assms unfolding ex_def
+  by (auto intro!: Ints_diff simp add: is_integral_flow_Ints delta_plus_def delta_minus_def)
+
+text \<open>Augmenting an integral flow by an integer keeps it integral.\<close>
+
+lemma augment_edges_integral:
+  assumes "is_integral_flow f" "\<gamma> \<in> \<int>" "set es \<subseteq> \<EE>"
+  shows "is_integral_flow (augment_edges f \<gamma> es)"
+  using assms(3)
+proof (induction es)
+  case (Cons e es)
+  hence "is_integral_flow (augment_edges f \<gamma> es)"
+    by simp
+  thus ?case
+    using assms(2) by (auto simp add: is_integral_flow_Ints split: Redge.split)
+qed (simp add: assms(1))
+
+end
 end

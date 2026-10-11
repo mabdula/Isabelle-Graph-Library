@@ -269,6 +269,37 @@ lemma take_upd_Suc: "k < length l \<Longrightarrow> take (Suc k) (list_update l 
 lemma take_Suc_upd: "k < length l \<Longrightarrow> list_update (take (Suc k) l) k x = take k l @ [x]"
   using take_upd_Suc[of k l x] by (simp add: take_update_swap)
 
+text \<open>Updating a list at the positions @{term "g j"} for the elements @{term j} of a list, with
+      @{term g} injective.\<close>
+
+lemma length_foldl_upd [simp]: "length (foldl (\<lambda>W j. list_update W (g j) (f j)) W xs) = length W"
+  by (induction xs arbitrary: W) auto
+
+lemma foldl_upd_nth_miss:
+  "x \<notin> g ` set xs \<Longrightarrow> foldl (\<lambda>W j. list_update W (g j) (f j)) W xs ! x = W ! x"
+  by (induction xs arbitrary: W) auto
+
+lemma foldl_upd_nth_hit:
+  assumes "inj_on g (set xs)" "i \<in> set xs" "\<And>j. j \<in> set xs \<Longrightarrow> g j < length W"
+  shows "foldl (\<lambda>W j. list_update W (g j) (f j)) W xs ! g i = f i"
+  using assms
+proof (induction xs arbitrary: W)
+  case Nil thus ?case by simp
+next
+  case (Cons a xs)
+  show ?case
+  proof (cases "i \<in> set xs")
+    case True
+    have "inj_on g (set xs)" using Cons.prems(1) by simp
+    thus ?thesis using True Cons.prems(3) Cons.IH[of "list_update W (g a) (f a)"] by simp
+  next
+    case False
+    hence i: "i = a" using Cons.prems(2) by simp
+    have "g a \<notin> g ` set xs" using Cons.prems(1) False i by (auto simp: inj_on_def)
+    thus ?thesis using i Cons.prems(3)[of a] by (simp add: foldl_upd_nth_miss)
+  qed
+qed
+
 text \<open>Overwriting an array of length \<open>n\<close> with the values of a function.\<close>
 
 definition "fill_range_imp f n a = foldl_range_imp (\<lambda> i a. Array.upd i (f i) a) 0 n a"

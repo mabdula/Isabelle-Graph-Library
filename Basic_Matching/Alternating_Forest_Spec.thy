@@ -1,5 +1,6 @@
 theory Alternating_Forest_Spec
-  imports Matching
+  imports
+    Matching
 begin
 
 section \<open>Specification of Executable Alternating Forest\<close>
@@ -70,6 +71,7 @@ alternating_forest_spec evens odds get_path abstract_forest forest_invar roots
   fixes extend_forest_even_unclassified::
         "'forest \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'forest"
    and empty_forest::"'vset \<Rightarrow> 'forest"
+   and forest_univ::"'v set"
   assumes forest_extend: "\<And> F M x y z. forest_extension_precond F M x y z
       \<Longrightarrow> forest_invar M (extend_forest_even_unclassified F x y z)"
    "\<And> F M x y z. forest_extension_precond F M x y z
@@ -89,7 +91,7 @@ and empty_forest:
     "\<And> R. odds (empty_forest R) = vset_empty"
     "\<And> R. abstract_forest (empty_forest R) = {}"
     "\<And> R M. \<lbrakk>matching M; vset_invar R; vset_to_set R \<inter> Vs M = {}; 
-           finite (vset_to_set R); vset_to_set R \<noteq> {}\<rbrakk>
+           finite (vset_to_set R); vset_to_set R \<noteq> {}; Vs M \<subseteq> forest_univ\<rbrakk>
           \<Longrightarrow> forest_invar M (empty_forest R)"
 
 end

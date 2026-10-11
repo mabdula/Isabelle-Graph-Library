@@ -1,5 +1,7 @@
 theory Alternating_Forest_Imperative_Spec
-  imports Basic_Matching.Alternating_Forest_Spec Data_Structures.Imp_Map_Set_Addons
+  imports
+    Basic_Matching.Alternating_Forest_Spec
+    Data_Structures.Fixed_Univ_Set_Iterate_Imp
 begin
 
 section \<open>Imperative Alternating Forests\<close>
@@ -58,10 +60,12 @@ locale alternating_forest_imp_spec =
        <forest_assn F Fi> forest_extend_imp x y z Fi
        <forest_assn (extend_forest_even_unclassified F x y z)>"
     and evens_memb_rule[sep_heap_rules]:
-      "<forest_assn F Fi> evens_memb_imp v Fi
+      "v \<in> forest_univ \<Longrightarrow>
+       <forest_assn F Fi> evens_memb_imp v Fi
        <\<lambda>r. forest_assn F Fi * \<up>(r \<longleftrightarrow> v \<in> vset_to_set (evens F))>"
     and odds_memb_rule[sep_heap_rules]:
-      "<forest_assn F Fi> odds_memb_imp v Fi
+      "v \<in> forest_univ \<Longrightarrow>
+       <forest_assn F Fi> odds_memb_imp v Fi
        <\<lambda>r. forest_assn F Fi * \<up>(r \<longleftrightarrow> v \<in> vset_to_set (odds F))>"
     and forest_it_init_rule[sep_heap_rules]:
       "<forest_assn F Fi> forest_it_init p Fi

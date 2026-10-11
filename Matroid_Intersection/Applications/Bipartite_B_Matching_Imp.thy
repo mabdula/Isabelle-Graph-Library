@@ -28,7 +28,8 @@ text \<open>The input graph is given by two arrays of the same length \<open>m\<
   @{theory Matroid_Intersection.Matroid_Intersection_Imp}. The solution handle consists of the
   Boolean array of the solution, the two arrays counting the solution elements per block, the two
   input arrays of blocks and the capacity array, which both oracles share since the sides are
-  disjoint; the partner handles hold the list of the block of every edge.\<close>
+  disjoint; the partner handles hold the edges grouped by block and the range of the block of
+  every edge.\<close>
 
 subsection \<open>Code\<close>
 
@@ -57,7 +58,7 @@ definition bb_exch2 :: "bb_sol \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>
   "bb_exch2 Si x y = (case Si of (Xi, C1, C2, Bl, Br, K) \<Rightarrow> part_exch_imp Br x y)"
 
 global_interpretation bx: matroid_intersection_imp_spec n id id bb_memb bb_ins1 bb_exch1
-  bb_ins2 bb_exch2 bb_ins bb_del Array.nth Array.nth
+  bb_ins2 bb_exch2 bb_ins bb_del part_npts_imp part_pt_imp part_npts_imp part_pt_imp
   for n
   defines bx_nb1 = bx.ids.nb1_imp
     and bx_nb2 = bx.ids.nb2_imp
@@ -106,8 +107,7 @@ declare xbbi.BFS_par_imp.simps[code]
 text \<open>The edges are \<open>{Fa[i], Ta[i]}\<close>, the capacity of vertex \<open>v\<close> is \<open>Ka[v]\<close>, and all vertices
   are below the length of \<open>Ka\<close>.\<close>
 
-definition "bb_setup_imp Fa Ta Ka k = 
-   do { nv \<leftarrow> Array.len Ka; bm_setup_imp nv Fa Ta k }"
+definition "bb_setup_imp Fa Ta Ka k = do { nv \<leftarrow> Array.len Ka; bm_setup_imp nv Fa Ta k }"
 
 definition "b_matching_imp Fa Ta Ka =
    bb_setup_imp Fa Ta Ka (\<lambda> m H1 H2 Xi C1 C2. do {
@@ -276,9 +276,9 @@ text \<open>The elements are the positions themselves, so the indexation is the 
 
 lemma mi_inst:
   "matroid_intersection_imp (length fs) id id bb_memb bb_ins1 bb_exch1 bb_ins2 bb_exch2 bb_ins bb_del
-     Array.nth Array.nth {0..<length fs} (\<lambda> X. X) lf.cap_ins lf.cap_exch lf.cap_indep sb emp
-     (part_pts fs) (part_pst (length fs) fs) (\<lambda> X. X) rt.cap_ins rt.cap_exch rt.cap_indep emp
-     (part_pts ts) (part_pst (length fs) ts)"
+     part_npts_imp part_pt_imp part_npts_imp part_pt_imp {0..<length fs} (\<lambda> X. X) lf.cap_ins 
+     lf.cap_exch lf.cap_indep sb emp (part_pts fs) (part_pst (length fs) fs) (\<lambda> X. X) rt.cap_ins 
+     rt.cap_exch rt.cap_indep emp (part_pts ts) (part_pst (length fs) ts)"
   apply (intro matroid_intersection_imp.intro indexed_oracle_imp.intro matroid_ids.intro
         indexed_oracle_imp_axioms.intro matroid_intersection_imp_axioms.intro)
   subgoal by (rule bij_betw_id)
@@ -289,7 +289,8 @@ lemma mi_inst:
   subgoal by (simp add: part_pts_sorted)
   subgoal for x y using part_pts_bound[of y fs x] by simp
   subgoal by (intro part_pts_cover) (auto simp: lf.cap_exch_def)
-  subgoal using part_pts_rule by simp
+  subgoal using part_npts_rule by simp
+  subgoal using part_pt_rule by simp
   subgoal by (rule bij_betw_id)
   subgoal by simp
   subgoal by (rule rt.indep_oracle_axioms)
@@ -298,7 +299,8 @@ lemma mi_inst:
   subgoal by (simp add: part_pts_sorted)
   subgoal for x y using part_pts_bound[of y ts x] lengths by simp
   subgoal using lengths by (intro part_pts_cover) (auto simp: rt.cap_exch_def)
-  subgoal using part_pts_rule by simp
+  subgoal using part_npts_rule by simp
+  subgoal using part_pt_rule by simp
   subgoal using bb_memb_rule by simp
   subgoal using bb_ins_rule by simp
   subgoal using bb_del_rule by simp
@@ -307,7 +309,8 @@ lemma mi_inst:
 interpretation m: matroid_intersection_imp where n = "length fs" and idx = id and elt = id
   and smemb_imp = bb_memb and ins1_imp = bb_ins1 and exch1_imp = bb_exch1 and ins2_imp = bb_ins2 
   and exch2_imp = bb_exch2 and sins_imp = bb_ins and sdel_imp = bb_del 
-  and pts1_imp = Array.nth and pts2_imp = Array.nth and carrier = "{0..<length fs}"
+  and npts1_imp = part_npts_imp and pt1_imp = part_pt_imp and npts2_imp = part_npts_imp 
+  and pt2_imp = part_pt_imp and carrier = "{0..<length fs}"
   and sol_assn = sb and ost1 = emp and ost2 = emp
   and orcl_prep1 = "\<lambda> X. X" and ins_orcl1 = lf.cap_ins and exch_orcl1 = lf.cap_exch
   and orcl_prep2 = "\<lambda> X. X" and ins_orcl2 = rt.cap_ins and exch_orcl2 = rt.cap_exch

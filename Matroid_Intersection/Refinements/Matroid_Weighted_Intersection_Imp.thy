@@ -9,14 +9,14 @@ text \<open>The complete imperative algorithm for two matroids on the nats below
   @{theory Matroid_Intersection.Matroid_Intersection_Imp}, the program builds the CSR of the
   candidate graph, allocates the work arrays of the path search, and runs the loop on them; this is
   the only place where arrays are allocated. The caller provides the handle of the empty solution,
-  the arrays for the best solution and the two current weights, and the weight array. The result is
-  a common independent set of maximum weight, in the best-solution array.\<close>
+  the arrays for the two current weights, and the weight array. The result is a common independent
+  set of maximum weight, in the solution handle.\<close>
 
 subsection \<open>Code\<close>
 
 declare weighted_intersection_imp_loop_spec.wmi_loop_imp.simps[code]
-  weighted_intersection_imp_loop_spec.wmi_run_imp_def[code] imp_nat_set_spec.bcopy_imp_def[code]
-  weighted_intersection_imp_loop_spec.keep_better_imp_def[code]
+  weighted_intersection_imp_loop_spec.wmi_run_imp_def[code]
+  weighted_intersection_imp_loop_spec.gain_imp_def[code]
   weighted_intersection_imp_loop_spec.reweight_imp_def[code]
   weighted_intersection_imp_loop_spec.winit_imp_def[code]
 
@@ -34,14 +34,14 @@ declare unweighted_intersection_exchange_imp_spec.nb1_imp_def[code]
 
 locale weighted_matroid_intersection_imp_ids_spec =
   matroid_intersection_imp_ids_spec n smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp sins_imp sdel_imp
-    pts1_imp pts2_imp +
+    npts1_imp pt1_imp npts2_imp pt2_imp +
   weighted_intersection_exchange_imp_spec n smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp
   for n and smemb_imp :: "nat \<Rightarrow> 'si \<Rightarrow> bool Heap" and ins1_imp exch1_imp ins2_imp exch2_imp
-    sins_imp sdel_imp pts1_imp pts2_imp
+    sins_imp sdel_imp npts1_imp pt1_imp npts2_imp pt2_imp
 begin
 
-definition "wmi_imp H1 H2 Si Bi Co C1 C2 = do {
-   Gc \<leftarrow> cand_csr_imp pts1_imp pts2_imp H1 H2 n;
+definition "wmi_imp H1 H2 Si Co C1 C2 = do {
+   Gc \<leftarrow> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n;
    Vi \<leftarrow> Array.new n False;
    Fr \<leftarrow> Array.new (Suc n) 0;
    Bf \<leftarrow> Array.new (Suc n) 0;
@@ -50,10 +50,9 @@ definition "wmi_imp H1 H2 Si Bi Co C1 C2 = do {
    Ra \<leftarrow> Array.new n 0;
    Mi \<leftarrow> Array.new 2 0;
    Ti \<leftarrow> Array.new 2 0;
-   weighted_intersection_imp_loop_spec.wmi_run_imp sins_imp sdel_imp
-     (imp_nat_set_spec.bcopy_imp n smemb_imp) sweight_imp ccopy_imp czero_imp
+   weighted_intersection_imp_loop_spec.wmi_run_imp sins_imp sdel_imp Array.nth ccopy_imp czero_imp
      (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Da Pa Ti) (weps_imp Gc Vi Mi)
-     (wshift_imp Vi) Si Bi Co C1 C2 Ra }"
+     (wshift_imp Vi) Si Co C1 C2 Ra }"
 
 end
 
@@ -81,16 +80,15 @@ sublocale wm: weighted_intersection_exchange_imp where n = n and smemb_imp = sme
 text \<open>The whole program.\<close>
 
 theorem wmi_imp_correct:
-  "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * len_assn n Bi * warr_assn n h c Co *
-    len_assn n C1 * len_assn n C2> wmi_imp H1 H2 Si Bi Co C1 C2
-   <\<lambda> _. \<exists>\<^sub>A X B c1 c2. sol_assn X Si * xset_assn n B Bi * warr_assn n h c1 C1 * warr_assn n h c2 C2 *
+  "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * warr_assn n h c Co *
+    len_assn n C1 * len_assn n C2> wmi_imp H1 H2 Si Co C1 C2
+   <\<lambda> _. \<exists>\<^sub>A X c1 c2. sol_assn X Si * warr_assn n h c1 C1 * warr_assn n h c2 C2 *
           warr_assn n h c Co * ost1 * ost2 * pst1 H1 * pst2 H2 * true *
-          \<up>(weighted_double_matroid.is_opt indep1 indep2 c B)>"
+          \<up>(weighted_double_matroid.is_opt indep1 indep2 c X)>"
 proof-
-  let ?F = "sol_assn {} Si * ost1 * ost2 * len_assn n Bi * warr_assn n h c Co * len_assn n C1 *
-    len_assn n C2"
-  have cand: "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * len_assn n Bi * warr_assn n h c Co *
-                len_assn n C1 * len_assn n C2> cand_csr_imp pts1_imp pts2_imp H1 H2 n
+  let ?F = "sol_assn {} Si * ost1 * ost2 * warr_assn n h c Co * len_assn n C1 * len_assn n C2"
+  have cand: "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * warr_assn n h c Co *
+                len_assn n C1 * len_assn n C2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
               <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * csr3_assn (build_nhlists (cand_list pts1 pts2 n)) Gc>"
     by (rule ht_frame_ac[OF c.cand_csr_rule, where R = ?F]) (simp only: star_aci, rule ent_refl)+
   show ?thesis
@@ -106,23 +104,24 @@ end
 subsection \<open>Matroids on Any Type\<close>
 
 text \<open>As in the unweighted case, the algorithm on the ids runs with every operation composed with
-  \<open>elt\<close>. The weights are given on the ids, so the weight array is indexed by the ids, and so is
-  the best-solution array. For the proof, an optimum on the ids is mapped back by \<open>elt\<close>.\<close>
+  \<open>elt\<close>. The weights are given on the ids, so the weight array is indexed by the ids. For
+  the proof, an optimum on the ids is mapped back by \<open>elt\<close>.\<close>
 
 locale weighted_matroid_intersection_imp_spec =
   matroid_intersection_imp_spec n idx elt smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp
-    sins_imp sdel_imp pts1_imp pts2_imp
+    sins_imp sdel_imp npts1_imp pt1_imp npts2_imp pt2_imp
   for n idx elt and smemb_imp :: "'a \<Rightarrow> 'si \<Rightarrow> bool Heap" and ins1_imp exch1_imp ins2_imp exch2_imp
-    sins_imp sdel_imp pts1_imp pts2_imp
+    sins_imp sdel_imp npts1_imp pt1_imp npts2_imp pt2_imp
 begin
 
 sublocale wids: weighted_matroid_intersection_imp_ids_spec n "\<lambda> i. smemb_imp (elt i)"
   "\<lambda> Si i. ins1_imp Si (elt i)" "\<lambda> Si i j. exch1_imp Si (elt i) (elt j)"
   "\<lambda> Si i. ins2_imp Si (elt i)" "\<lambda> Si i j. exch2_imp Si (elt i) (elt j)"
   "\<lambda> i. sins_imp (elt i)" "\<lambda> i. sdel_imp (elt i)"
-  "pts_ids_imp idx elt pts1_imp" "pts_ids_imp idx elt pts2_imp" .
+  "\<lambda> H i. npts1_imp H (elt i)" "pt_ids_imp idx elt pt1_imp" 
+  "\<lambda> H i. npts2_imp H (elt i)" "pt_ids_imp idx elt pt2_imp" .
 
-definition "wmi_imp H1 H2 Si Bi Co C1 C2 = wids.wmi_imp H1 H2 Si Bi Co C1 C2"
+definition "wmi_imp H1 H2 Si Co C1 C2 = wids.wmi_imp H1 H2 Si Co C1 C2"
 
 end
 
@@ -182,36 +181,26 @@ locale weighted_matroid_intersection_imp =
 begin
 
 theorem wmi_imp_correct:
-  "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * len_assn n Bi *
+  "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 *
     warr_assn n h (\<lambda> i. if i < n then c (elt i) else 0) Co * len_assn n C1 * len_assn n C2>
-     wmi_imp H1 H2 Si Bi Co C1 C2
-   <\<lambda> _. \<exists>\<^sub>A X B c1 c2. sol_assn X Si * xset_assn n (idx ` B) Bi * warr_assn n h c1 C1 *
-          warr_assn n h c2 C2 * warr_assn n h (\<lambda> i. if i < n then c (elt i) else 0) Co *
-          ost1 * ost2 * pst1 H1 * pst2 H2 * true * \<up>(weighted_double_matroid.is_opt indep1 indep2 c B)>"
+     wmi_imp H1 H2 Si Co C1 C2
+   <\<lambda> _. \<exists>\<^sub>A X c1 c2. sol_assn X Si * warr_assn n h c1 C1 * warr_assn n h c2 C2 *
+          warr_assn n h (\<lambda> i. if i < n then c (elt i) else 0) Co *
+          ost1 * ost2 * pst1 H1 * pst2 H2 * true * \<up>(weighted_double_matroid.is_opt indep1 indep2 c X)>"
 proof-
   interpret m: weighted_matroid_intersection_imp_ids n "\<lambda> i. smemb_imp (elt i)"
     "\<lambda> Si i. ins1_imp Si (elt i)" "\<lambda> Si i j. exch1_imp Si (elt i) (elt j)"
     "\<lambda> Si i. ins2_imp Si (elt i)" "\<lambda> Si i j. exch2_imp Si (elt i) (elt j)"
     "\<lambda> i. sins_imp (elt i)" "\<lambda> i. sdel_imp (elt i)"
-    "pts_ids_imp idx elt pts1_imp" "pts_ids_imp idx elt pts2_imp" o1.prep_ids o1.ins_ids o1.exch_ids
+    "\<lambda> H i. npts1_imp H (elt i)" "pt_ids_imp idx elt pt1_imp" 
+    "\<lambda> H i. npts2_imp H (elt i)" "pt_ids_imp idx elt pt2_imp" o1.prep_ids o1.ins_ids o1.exch_ids
     o2.prep_ids o2.ins_ids o2.exch_ids "o1.pull indep1" "o1.pull indep2" "o1.sol_ids sol_assn"
     ost1 ost2 o1.pts_ids pst1 o2.pts_ids pst2 h
     by (intro weighted_matroid_intersection_imp_ids.intro ids_imp real_embedding_axioms)
-  have opt: "weighted_double_matroid.is_opt indep1 indep2 c (elt ` I)" "idx ` elt ` I = I"
+  have opt: "weighted_double_matroid.is_opt indep1 indep2 c (elt ` I)"
     if a: "weighted_double_matroid.is_opt (o1.pull indep1) (o1.pull indep2)
              (\<lambda> i. if i < n then c (elt i) else 0) I" for I
-  proof-
-    have "I \<subseteq> {0..<n}"
-      using a unfolding weighted_double_matroid.is_opt_def[OF
-          weighted_double_matroid.intro[OF m.double_matroid_axioms]]
-      by (simp add: o1.pull_def)
-    then have "\<And> i. i \<in> I \<Longrightarrow> idx (elt i) = i"
-      using o1.idx_elt by auto
-    then show "idx ` elt ` I = I"
-      unfolding image_image by (simp cong: image_cong)
-    show "weighted_double_matroid.is_opt indep1 indep2 c (elt ` I)"
-      by (rule o1.pull_opt[OF double_matroid_axioms m.double_matroid_axioms a])
-  qed
+    by (rule o1.pull_opt[OF double_matroid_axioms m.double_matroid_axioms a])
   show ?thesis
     unfolding wmi_imp_def
   proof(rule ht_cons[OF _ _ m.wmi_imp_correct[where c = "\<lambda> i. if i < n then c (elt i) else 0"]],
@@ -224,10 +213,10 @@ proof-
     then show ?case
       unfolding o1.sol_ids_def
       apply (rule ent_true_drop(2), (rule ent_ex_preI)+)
-      subgoal for X B c1 c2
+      subgoal for X c1 c2
         by (cases "weighted_double_matroid.is_opt (o1.pull indep1) (o1.pull indep2)
-                     (\<lambda> i. if i < n then c (elt i) else 0) B")
-           (rule ent_ex_postI[where x = "elt ` X"], rule ent_ex_postI[where x = "elt ` B"],
+                     (\<lambda> i. if i < n then c (elt i) else 0) X")
+           (rule ent_ex_postI[where x = "elt ` X"],
             rule ent_ex_postI[where x = c1], rule ent_ex_postI[where x = c2], simp only: opt, sep_auto+)
       done
   qed

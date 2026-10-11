@@ -48,7 +48,10 @@ session "Directed_Set_Graphs" = "HOL-Eisbach" +
     "Refinements/CSR_Buildup_Imperative"
     "Refinements/Weighted_Neighbourhoods_Imperative_Spec"
     "Refinements/CSR_Graph"
+    "Refinements/CSR_Edge_Input"
+    "Refinements/CSR_Graph_Reset_To"
     
+    CSR_Neighbour_Lists
     CSR_Buildup_Simple
     CSR_Graph_Simple
 

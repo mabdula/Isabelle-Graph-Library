@@ -524,15 +524,13 @@ end
 subsection \<open>State and Running Minimum\<close>
 
 text \<open>The state carries the current common independent set \<open>wsol\<close>, the current split
-  \<open>wc1\<close>/\<open>wc2\<close>, the fixed original weight \<open>worig\<close> and the best common independent set \<open>wbest\<close>
-  seen so far.\<close>
+  \<open>wc1\<close>/\<open>wc2\<close> and the fixed original weight \<open>worig\<close>.\<close>
 
 record ('sol, 'cmap) weighted_intersec_state =
   wsol  :: 'sol
   wc1   :: 'cmap
   wc2   :: 'cmap
   worig :: 'cmap
-  wbest :: 'sol
 
 lemma wsol_remove: "wsol (state \<lparr> wsol := new \<rparr>) = new"
   by auto
@@ -610,15 +608,16 @@ lemmas [code] = eps_min_def
 
 subsection \<open>The Loop\<close>
 
-text \<open>One iteration builds the context once. With a tight augmenting path it augments; without
-  one it reweights by \<open>eps\<close> on the reachable set, or stops if \<open>eps\<close> is \<open>\<infinity>\<close>.\<close>
+text \<open>One iteration builds the context once. With a tight augmenting path it augments if this
+  increases the weight, and stops otherwise; without one it reweights by \<open>eps\<close> on the reachable
+  set, or stops if \<open>eps\<close> is \<open>\<infinity>\<close>.\<close>
 
 locale weighted_intersection_path_loop_spec =
   intersection_augment_spec set_insert set_delete to_set set_invar set_empty
   for set_insert :: "'a \<Rightarrow> 'mset \<Rightarrow> 'mset" and set_delete to_set set_invar set_empty +
   fixes c_shift :: "'rset \<Rightarrow> real \<Rightarrow> 'cmap \<Rightarrow> 'cmap"
     and c_zero :: "'cmap"
-    and weight :: "'cmap \<Rightarrow> 'mset \<Rightarrow> real"
+    and c_lookup :: "'cmap \<Rightarrow> 'a \<Rightarrow> real"
     and tight_ctx :: "'mset \<Rightarrow> 'cmap \<Rightarrow> 'cmap \<Rightarrow> 'ctx"
     and tight_path :: "'ctx \<Rightarrow> 'a list option"
     and reach :: "'ctx \<Rightarrow> 'rset"
@@ -630,43 +629,45 @@ text \<open>Reweighting: \<open>c1\<close> decreases and \<open>c2\<close> incre
 definition "reweight R e st =
   st \<lparr> wc1 := c_shift R (- e) (wc1 st), wc2 := c_shift R e (wc2 st) \<rparr>"
 
-text \<open>Keep whichever of the current best and the augmented set has larger original weight.\<close>
+text \<open>The weight gain of augmenting along a tight path \<open>p\<close>: the weights of its first element in
+  the first and of its last element in the second split.\<close>
 
-definition "keep_better st Y =
-  (if weight (worig st) (wbest st) \<le> weight (worig st) Y then Y else wbest st)"
+definition "path_gain st p = c_lookup (wc1 st) (hd p) + c_lookup (wc2 st) (last p)"
 
 function (domintros) weighted_matroid_intersection ::
   "('mset, 'cmap) weighted_intersec_state \<Rightarrow> ('mset, 'cmap) weighted_intersec_state" where
   "weighted_matroid_intersection st =
      (let X = wsol st; K = tight_ctx X (wc1 st) (wc2 st) in
       case tight_path K of
-        Some p \<Rightarrow> weighted_matroid_intersection
-                    (st \<lparr> wsol := augment X p, wbest := keep_better st (augment X p) \<rparr>)
+        Some p \<Rightarrow> (if 0 < path_gain st p
+                    then weighted_matroid_intersection (st \<lparr> wsol := augment X p \<rparr>) else st)
       | None \<Rightarrow> (case eps K of
                    None \<Rightarrow> st
                  | Some e \<Rightarrow> weighted_matroid_intersection (reweight (reach K) e st)))"
   by pat_completeness auto
 
 definition "weighted_augment_cond st =
-  (let K = tight_ctx (wsol st) (wc1 st) (wc2 st) in tight_path K \<noteq> None)"
+  (let K = tight_ctx (wsol st) (wc1 st) (wc2 st) in
+   case tight_path K of Some p \<Rightarrow> 0 < path_gain st p | None \<Rightarrow> False)"
 
 definition "weighted_reweight_cond st =
   (let K = tight_ctx (wsol st) (wc1 st) (wc2 st) in tight_path K = None \<and> eps K \<noteq> None)"
 
 definition "weighted_stop_cond st =
-  (let K = tight_ctx (wsol st) (wc1 st) (wc2 st) in tight_path K = None \<and> eps K = None)"
+  (let K = tight_ctx (wsol st) (wc1 st) (wc2 st) in
+   case tight_path K of Some p \<Rightarrow> \<not> 0 < path_gain st p | None \<Rightarrow> eps K = None)"
 
 definition "weighted_augment_upd st =
   (let X = wsol st; p = the (tight_path (tight_ctx X (wc1 st) (wc2 st)))
-   in st \<lparr> wsol := augment X p, wbest := keep_better st (augment X p) \<rparr>)"
+   in st \<lparr> wsol := augment X p \<rparr>)"
 
 definition "weighted_reweight_upd st =
   (let K = tight_ctx (wsol st) (wc1 st) (wc2 st) in reweight (reach K) (the (eps K)) st)"
 
 lemma P_of_weighted_augmentI:
   "\<lbrakk>weighted_augment_cond st;
-    \<And> X K p. \<lbrakk>X = wsol st; K = tight_ctx X (wc1 st) (wc2 st); tight_path K = Some p\<rbrakk>
-       \<Longrightarrow> P (st \<lparr> wsol := augment X p, wbest := keep_better st (augment X p) \<rparr>)\<rbrakk>
+    \<And> X K p. \<lbrakk>X = wsol st; K = tight_ctx X (wc1 st) (wc2 st); tight_path K = Some p;
+                0 < path_gain st p\<rbrakk> \<Longrightarrow> P (st \<lparr> wsol := augment X p \<rparr>)\<rbrakk>
    \<Longrightarrow> P (weighted_augment_upd st)"
   by (cases "tight_path (tight_ctx (wsol st) (wc1 st) (wc2 st))")
      (auto simp add: weighted_augment_cond_def weighted_augment_upd_def Let_def)
@@ -682,8 +683,11 @@ lemma P_of_weighted_reweightI:
 lemma weighted_stop_condE:
   "\<lbrakk>weighted_stop_cond st;
     \<And> X K. \<lbrakk>X = wsol st; K = tight_ctx X (wc1 st) (wc2 st); tight_path K = None; eps K = None\<rbrakk>
-       \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  by (auto simp add: weighted_stop_cond_def Let_def)
+       \<Longrightarrow> P;
+    \<And> X K p. \<lbrakk>X = wsol st; K = tight_ctx X (wc1 st) (wc2 st); tight_path K = Some p;
+       \<not> 0 < path_gain st p\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by (cases "tight_path (tight_ctx (wsol st) (wc1 st) (wc2 st))")
+     (auto simp add: weighted_stop_cond_def Let_def)
 
 lemma weighted_matroid_intersection_cases:
   "\<lbrakk>weighted_stop_cond st \<Longrightarrow> P; weighted_augment_cond st \<Longrightarrow> P;
@@ -691,7 +695,7 @@ lemma weighted_matroid_intersection_cases:
   by (cases "tight_path (tight_ctx (wsol st) (wc1 st) (wc2 st))";
       cases "eps (tight_ctx (wsol st) (wc1 st) (wc2 st))")
      (auto simp add: weighted_stop_cond_def weighted_augment_cond_def
-        weighted_reweight_cond_def Let_def)
+        weighted_reweight_cond_def Let_def split: if_splits)
 
 lemma weighted_matroid_intersection_simps:
   assumes "weighted_matroid_intersection_dom st"
@@ -720,8 +724,8 @@ partial_function (tailrec) weighted_matroid_intersection_impl ::
   "weighted_matroid_intersection_impl st =
      (let X = wsol st; K = tight_ctx X (wc1 st) (wc2 st) in
       case tight_path K of
-        Some p \<Rightarrow> weighted_matroid_intersection_impl
-                    (st \<lparr> wsol := augment X p, wbest := keep_better st (augment X p) \<rparr>)
+        Some p \<Rightarrow> (if 0 < path_gain st p
+                    then weighted_matroid_intersection_impl (st \<lparr> wsol := augment X p \<rparr>) else st)
       | None \<Rightarrow> (case eps K of
                    None \<Rightarrow> st
                  | Some e \<Rightarrow> weighted_matroid_intersection_impl (reweight (reach K) e st)))"
@@ -737,9 +741,9 @@ lemma weighted_implementation_is_same:
 text \<open>Initial state: \<open>X = \<emptyset>\<close> and split \<open>c1 = c\<close>, \<open>c2 = 0\<close>.\<close>
 
 definition "weighted_initial_state c =
-  \<lparr> wsol = set_empty, wc1 = c, wc2 = c_zero, worig = c, wbest = set_empty \<rparr>"
+  \<lparr> wsol = set_empty, wc1 = c, wc2 = c_zero, worig = c \<rparr>"
 
-lemmas [code] = weighted_matroid_intersection_impl.simps reweight_def keep_better_def
+lemmas [code] = weighted_matroid_intersection_impl.simps reweight_def path_gain_def
   weighted_initial_state_def
 
 end
@@ -759,8 +763,7 @@ locale weighted_intersection_path_loop =
   + intersection_augment where set_insert = set_insert and carrier = carrier
   + double_matroid where carrier = "carrier :: 'a set"
   for set_insert c_shift tight_ctx carrier +
-  fixes c_lookup :: "'cmap \<Rightarrow> 'a \<Rightarrow> real"
-    and c_invar :: "'cmap \<Rightarrow> bool"
+  fixes c_invar :: "'cmap \<Rightarrow> bool"
     and r_set :: "'rset \<Rightarrow> 'a set"
     and r_invar :: "'rset \<Rightarrow> bool"
     and ctx_invar :: "'mset \<Rightarrow> 'cmap \<Rightarrow> 'cmap \<Rightarrow> 'ctx \<Rightarrow> bool"
@@ -772,8 +775,6 @@ locale weighted_intersection_path_loop =
     "\<And> R e c. \<lbrakk>c_invar c; r_invar R\<rbrakk> \<Longrightarrow> c_invar (c_shift R e c)"
     "\<And> R e c. \<lbrakk>c_invar c; r_invar R\<rbrakk> \<Longrightarrow>
        c_lookup (c_shift R e c) = (\<lambda> x. if x \<in> r_set R then c_lookup c x + e else c_lookup c x)"
-  assumes weight:
-    "\<And> c X. \<lbrakk>c_invar c; set_invar X\<rbrakk> \<Longrightarrow> weight c X = sum (c_lookup c) (to_set X)"
   assumes tight_ctx:
     "\<And> X c1 c2. \<lbrakk>set_invar X; to_set X \<subseteq> carrier; indep1 (to_set X); indep2 (to_set X);
         c_invar c1; c_invar c2; matroid1.local_opt (c_lookup c1) (to_set X);
@@ -848,8 +849,8 @@ proof-
 qed
 
 text \<open>The loop invariant: \<open>wsol\<close> is a common independent set that is locally optimal for the
-  split in both matroids, the split sums to the original weight, and \<open>wbest\<close> is a maximum-weight
-  common independent set among those of cardinality at most \<open>card wsol\<close>.\<close>
+  split in both matroids, the split sums to the original weight, and \<open>wsol\<close> has maximum weight
+  among the common independent sets of cardinality at most \<open>card wsol\<close>.\<close>
 
 definition "w_invar s \<longleftrightarrow>
   set_invar (wsol s) \<and> to_set (wsol s) \<subseteq> carrier
@@ -858,9 +859,8 @@ definition "w_invar s \<longleftrightarrow>
   \<and> (\<forall>x\<in>carrier. c_lookup (wc1 s) x + c_lookup (wc2 s) x = c_lookup (worig s) x)
   \<and> matroid1.local_opt (c_lookup (wc1 s)) (to_set (wsol s))
   \<and> matroid2.local_opt (c_lookup (wc2 s)) (to_set (wsol s))
-  \<and> set_invar (wbest s) \<and> indep1 (to_set (wbest s)) \<and> indep2 (to_set (wbest s))
   \<and> (\<forall>Y. indep1 Y \<and> indep2 Y \<and> card Y \<le> card (to_set (wsol s))
-        \<longrightarrow> sum (c_lookup (worig s)) Y \<le> sum (c_lookup (worig s)) (to_set (wbest s)))"
+        \<longrightarrow> sum (c_lookup (worig s)) Y \<le> sum (c_lookup (worig s)) (to_set (wsol s)))"
 
 lemma w_invar_initial:
   assumes "c_invar c"
@@ -881,7 +881,9 @@ proof-
 qed
 
 text \<open>Augment branch: a shortest tight path (or a single tight vertex) keeps both matroids
-  independent and locally optimal and adds one element; the bound on \<open>wbest\<close> is maintained.\<close>
+  independent and locally optimal and adds one element. The original weight grows by the gain of
+  the path, which is positive, so the new set is heavier than all smaller common independent
+  sets.\<close>
 
 lemma weighted_augment_props:
   assumes "w_invar st" "weighted_augment_cond st"
@@ -890,6 +892,7 @@ lemma weighted_augment_props:
 proof(rule P_of_weighted_augmentI[OF assms(2)])
   fix X K p
   assume df: "X = wsol st" "K = tight_ctx X (wc1 st) (wc2 st)" "tight_path K = Some p"
+    and gain: "0 < path_gain st p"
   define c1 where "c1 = wc1 st"
   define c2 where "c2 = wc2 st"
   interpret W: weighted_intersection_graph carrier indep1 indep2 "c_lookup c1" "c_lookup c2"
@@ -898,9 +901,8 @@ proof(rule P_of_weighted_augmentI[OF assms(2)])
     "c_invar c1" "c_invar c2" "c_invar (worig st)"
     "\<forall>x\<in>carrier. c_lookup c1 x + c_lookup c2 x = c_lookup (worig st) x"
     "matroid1.local_opt (c_lookup c1) (to_set X)" "matroid2.local_opt (c_lookup c2) (to_set X)"
-    "set_invar (wbest st)" "indep1 (to_set (wbest st))" "indep2 (to_set (wbest st))"
     "\<forall>Y. indep1 Y \<and> indep2 Y \<and> card Y \<le> card (to_set X) \<longrightarrow>
-       sum (c_lookup (worig st)) Y \<le> sum (c_lookup (worig st)) (to_set (wbest st))"
+       sum (c_lookup (worig st)) Y \<le> sum (c_lookup (worig st)) (to_set X)"
     using assms(1) by (simp_all add: w_invar_def df(1) c1_def c2_def)
   have Xcarr: "to_set X \<subseteq> carrier" using matroid1.indep_subset_carrier[OF facts(2)] .
   obtain u v where p_prop:
@@ -915,7 +917,10 @@ proof(rule P_of_weighted_augmentI[OF assms(2)])
     using p_prop(4) by blast
   have big: "set p \<subseteq> carrier \<and> distinct p \<and> indep1 Xp \<and> indep2 Xp
            \<and> card Xp = card (to_set X) + 1
-           \<and> matroid1.local_opt (c_lookup c1) Xp \<and> matroid2.local_opt (c_lookup c2) Xp"
+           \<and> matroid1.local_opt (c_lookup c1) Xp \<and> matroid2.local_opt (c_lookup c2) Xp
+           \<and> sum (c_lookup c1) Xp = sum (c_lookup c1) (to_set X) + c_lookup c1 u
+           \<and> sum (c_lookup c2) Xp = sum (c_lookup c2) (to_set X) + c_lookup c2 v
+           \<and> hd p = u \<and> last p = v"
   proof(cases "vwalk_bet (W.Gbar (to_set X)) u p v")
     case True
     have "dVs (W.Gbar (to_set X)) \<subseteq> carrier"
@@ -923,7 +928,7 @@ proof(rule P_of_weighted_augmentI[OF assms(2)])
     hence pc: "set p \<subseteq> carrier" using vwalk_bet_in_vertices[OF True] by auto
     have dp: "distinct p" using shortest_vwalk_bet_distinct[OF True sh_gbar] .
     note atp = W.augment_tight_path[OF facts(2,3,8,9) True p_prop(2,3) sh_gbar refl]
-    show ?thesis using pc dp atp by (auto simp add: Xp_def)
+    show ?thesis using pc dp atp True by (auto simp add: Xp_def vwalk_bet_def)
   next
     case False
     hence su: "p = [u]" "u = v" using p_prop(1) by auto
@@ -943,12 +948,17 @@ proof(rule P_of_weighted_augmentI[OF assms(2)])
       using matroid2.greedy_extension[OF facts(3,9) unX i2u mx2] .
     moreover have "card (Set.insert u (to_set X)) = card (to_set X) + 1"
       using unX matroid1.indep_finite[OF facts(2)] by simp
+    moreover have "sum c (Set.insert u (to_set X)) = sum c (to_set X) + c u" for c :: "'a \<Rightarrow> real"
+      using unX matroid1.indep_finite[OF facts(2)] by (simp add: add.commute)
     ultimately show ?thesis using i1u i2u Xp_is su unX by auto
   qed
   have pcarr: "set p \<subseteq> carrier" and distinctp: "distinct p"
     and cX1: "indep1 Xp" and cX2: "indep2 Xp" and cXcard: "card Xp = card (to_set X) + 1"
     and cXlo1: "matroid1.local_opt (c_lookup c1) Xp"
     and cXlo2: "matroid2.local_opt (c_lookup c2) Xp"
+    and cXs1: "sum (c_lookup c1) Xp = sum (c_lookup c1) (to_set X) + c_lookup c1 u"
+    and cXs2: "sum (c_lookup c2) Xp = sum (c_lookup c2) (to_set X) + c_lookup c2 v"
+    and uv: "hd p = u" "last p = v"
     using big by auto
   have Xpeq: "to_set (augment X p) = Xp"
     using effect_of_augmentation(2)[OF facts(1) Xcarr pcarr distinctp refl] by (simp add: Xp_def)
@@ -956,42 +966,35 @@ proof(rule P_of_weighted_augmentI[OF assms(2)])
     using effect_of_augmentation(1)[OF facts(1) Xcarr pcarr distinctp refl] .
   have t2: "to_set (augment X p) \<subseteq> carrier"
     using matroid1.indep_subset_carrier[OF cX1] Xpeq by simp
-  have bestbound: "sum (c_lookup (worig st)) Y
-                     \<le> sum (c_lookup (worig st)) (to_set (keep_better st (augment X p)))"
-    if Yh: "indep1 Y" "indep2 Y" "card Y \<le> card (to_set (augment X p))" for Y
+  have split: "sum (c_lookup (worig st)) Z = sum (c_lookup c1) Z + sum (c_lookup c2) Z"
+    if "Z \<subseteq> carrier" for Z
   proof-
-    have wt1: "weight (worig st) (wbest st) = sum (c_lookup (worig st)) (to_set (wbest st))"
-      using weight[OF facts(6,10)] .
-    have wt2: "weight (worig st) (augment X p) = sum (c_lookup (worig st)) Xp"
-      using weight[OF facts(6) setinvA] Xpeq by simp
-    have kbset: "to_set (keep_better st (augment X p)) =
-        (if sum (c_lookup (worig st)) (to_set (wbest st)) \<le> sum (c_lookup (worig st)) Xp
-         then Xp else to_set (wbest st))"
-      using Xpeq by (simp add: keep_better_def wt1 wt2)
-    show ?thesis
-    proof(cases "card Y \<le> card (to_set X)")
-      case True
-      have "sum (c_lookup (worig st)) Y \<le> sum (c_lookup (worig st)) (to_set (wbest st))"
-        using facts(13) Yh(1,2) True by blast
-      thus ?thesis using kbset by (auto split: if_splits)
-    next
-      case False
-      have ceq: "card Y = card Xp" using Yh(3) Xpeq False cXcard by simp
-      have "sum (c_lookup (worig st)) Y \<le> sum (c_lookup (worig st)) Xp"
-        using common_local_opt_max_worig[OF cX1 cX2 cXlo1 cXlo2 facts(7) Yh(1,2) ceq] .
-      thus ?thesis using kbset by (auto split: if_splits)
-    qed
+    have "sum (c_lookup (worig st)) Z = (\<Sum>x\<in>Z. c_lookup c1 x + c_lookup c2 x)"
+      by (rule sum.cong[OF refl]) (use facts(7) that in auto)
+    thus ?thesis by (simp add: sum.distrib)
   qed
-  have "w_invar (st\<lparr>wsol := augment X p, wbest := keep_better st (augment X p)\<rparr>)"
+  have heavier: "sum (c_lookup (worig st)) (to_set X) < sum (c_lookup (worig st)) Xp"
+    using split[OF Xcarr] split[OF matroid1.indep_subset_carrier[OF cX1]] cXs1 cXs2 gain uv
+    by (simp add: path_gain_def c1_def c2_def)
+  have bound: "sum (c_lookup (worig st)) Y \<le> sum (c_lookup (worig st)) Xp"
+    if Yh: "indep1 Y" "indep2 Y" "card Y \<le> card Xp" for Y
+  proof(cases "card Y \<le> card (to_set X)")
+    case True
+    thus ?thesis using facts(10) Yh(1,2) heavier by fastforce
+  next
+    case False
+    have ceq: "card Y = card Xp" using Yh(3) False cXcard by simp
+    show ?thesis
+      using common_local_opt_max_worig[OF cX1 cX2 cXlo1 cXlo2 facts(7) Yh(1,2) ceq] .
+  qed
+  have "w_invar (st\<lparr>wsol := augment X p\<rparr>)"
     unfolding w_invar_def
-    using setinvA t2 cX1 cX2 cXlo1 cXlo2 Xpeq facts(4-7,10-12) bestbound
-    by (simp add: keep_better_def c1_def c2_def)
-  moreover have "card (to_set (wsol (st\<lparr>wsol := augment X p, wbest := keep_better st (augment X p)\<rparr>)))
-                   = card (to_set (wsol st)) + 1"
+    using setinvA t2 cX1 cX2 cXlo1 cXlo2 Xpeq facts(4-7) bound
+    by (simp add: c1_def c2_def)
+  moreover have "card (to_set (wsol (st\<lparr>wsol := augment X p\<rparr>))) = card (to_set (wsol st)) + 1"
     using cXcard Xpeq df(1) by simp
-  ultimately show "w_invar (st\<lparr>wsol := augment X p, wbest := keep_better st (augment X p)\<rparr>) \<and>
-         card (to_set (wsol (st\<lparr>wsol := augment X p, wbest := keep_better st (augment X p)\<rparr>)))
-           = card (to_set (wsol st)) + 1" ..
+  ultimately show "w_invar (st\<lparr>wsol := augment X p\<rparr>) \<and>
+         card (to_set (wsol (st\<lparr>wsol := augment X p\<rparr>))) = card (to_set (wsol st)) + 1" ..
 qed
 
 lemmas w_invar_augment = weighted_augment_props[THEN conjunct1]
@@ -1074,14 +1077,15 @@ proof (rule P_of_weighted_reweightI[OF assms(2)])
     by (simp add: w_invar_def c1_def c2_def df(1))
 qed
 
-text \<open>Stop branch: without a tight path and without gaps there is no augmenting path at all, so
-  \<open>wsol\<close> has maximum cardinality and \<open>wbest\<close> is optimal.\<close>
+text \<open>Stop branch: \<open>wsol\<close> is optimal. Without a tight path and without gaps there is no
+  augmenting path at all, so \<open>wsol\<close> has maximum cardinality. If a tight path does not increase
+  the weight, then no element addable to \<open>wsol\<close> weighs more than its ends, so each element
+  beyond \<open>card wsol\<close> adds at most the non-positive gain.\<close>
 
 lemma w_invar_max_found:
   assumes "w_invar st" "weighted_stop_cond st"
-  shows "indep1 (to_set (wbest st)) \<and> indep2 (to_set (wbest st))
-         \<and> (\<forall>Y. indep1 Y \<and> indep2 Y \<longrightarrow>
-              sum (c_lookup (worig st)) Y \<le> sum (c_lookup (worig st)) (to_set (wbest st)))"
+  shows "\<forall>Y. indep1 Y \<and> indep2 Y \<longrightarrow>
+           sum (c_lookup (worig st)) Y \<le> sum (c_lookup (worig st)) (to_set (wsol st))"
 proof (rule weighted_stop_condE[OF assms(2)])
   fix X K
   assume df: "X = wsol st" "K = tight_ctx X (wc1 st) (wc2 st)" "tight_path K = None"
@@ -1092,9 +1096,8 @@ proof (rule weighted_stop_condE[OF assms(2)])
     "c_invar (wc1 st)" "c_invar (wc2 st)"
     "matroid1.local_opt (c_lookup (wc1 st)) (to_set X)"
     "matroid2.local_opt (c_lookup (wc2 st)) (to_set X)"
-    "indep1 (to_set (wbest st))" "indep2 (to_set (wbest st))"
     "\<forall>Y. indep1 Y \<and> indep2 Y \<and> card Y \<le> card (to_set X)
-       \<longrightarrow> sum (c_lookup (worig st)) Y \<le> sum (c_lookup (worig st)) (to_set (wbest st))"
+       \<longrightarrow> sum (c_lookup (worig st)) Y \<le> sum (c_lookup (worig st)) (to_set X)"
     using assms(1) by (simp_all add: w_invar_def df(1))
   have "eps_of (W.gaps (to_set X) (W.Rbar (to_set X))) None = None"
     using tight_ctx_props(4)[OF facts(1-8) df(3)[unfolded df(2)]] df(4)[unfolded df(2)] by simp
@@ -1104,7 +1107,72 @@ proof (rule weighted_stop_condE[OF assms(2)])
     using if_no_augpath_then_maximum(1)[OF facts(3,4) W.no_gaps_no_augpath refl] by blast
   hence "\<And>Y. \<lbrakk>indep1 Y; indep2 Y\<rbrakk> \<Longrightarrow> card Y \<le> card (to_set X)"
     by (meson not_le)
-  thus ?thesis using facts(9-11) by blast
+  thus ?thesis using facts(9) df(1) by blast
+next
+  fix X K p
+  assume df: "X = wsol st" "K = tight_ctx X (wc1 st) (wc2 st)" "tight_path K = Some p"
+    and gain: "\<not> 0 < path_gain st p"
+  define c1 where "c1 = c_lookup (wc1 st)"
+  define c2 where "c2 = c_lookup (wc2 st)"
+  define c where "c = c_lookup (worig st)"
+  interpret W: weighted_intersection_graph carrier indep1 indep2 c1 c2
+    by unfold_locales
+  have facts: "set_invar X" "to_set X \<subseteq> carrier" "indep1 (to_set X)" "indep2 (to_set X)"
+    "c_invar (wc1 st)" "c_invar (wc2 st)"
+    "matroid1.local_opt c1 (to_set X)" "matroid2.local_opt c2 (to_set X)"
+    "\<forall>Y. indep1 Y \<and> indep2 Y \<and> card Y \<le> card (to_set X) \<longrightarrow> sum c Y \<le> sum c (to_set X)"
+    "\<forall>x\<in>carrier. c1 x + c2 x = c x"
+    using assms(1) by (simp_all add: w_invar_def df(1) c1_def c2_def c_def)
+  obtain u v where p_prop: "vwalk_bet (W.Gbar (to_set X)) u p v \<or> (p = [u] \<and> u = v)"
+    "u \<in> W.Sbar (to_set X)" "v \<in> W.Tbar (to_set X)"
+    using tight_ctx_props(2)[OF facts(1-6) facts(7,8)[unfolded c1_def c2_def]
+        df(3)[unfolded df(2)]]
+    by (auto simp add: c1_def c2_def)
+  have uv: "hd p = u" "last p = v"
+    using p_prop(1) by (auto simp add: vwalk_bet_def)
+  have nonpos: "c1 u + c2 v \<le> 0"
+    using gain uv by (simp add: path_gain_def c1_def c2_def)
+  have b1: "c1 y \<le> c1 u" if "y \<in> carrier - to_set X" "indep1 (insert y (to_set X))" for y
+  proof-
+    have "y \<in> S (to_set X)" using that by (simp add: S_def)
+    hence "c1 y \<le> Max (c1 ` S (to_set X))" using W.finite_S by simp
+    thus ?thesis using p_prop(2) by (simp add: W.Sbar_def)
+  qed
+  have b2: "c2 y \<le> c2 v" if "y \<in> carrier - to_set X" "indep2 (insert y (to_set X))" for y
+  proof-
+    have "y \<in> T (to_set X)" using that by (simp add: T_def)
+    hence "c2 y \<le> Max (c2 ` T (to_set X))" using W.finite_T by simp
+    thus ?thesis using p_prop(3) by (simp add: W.Tbar_def)
+  qed
+  have split: "sum c Z = sum c1 Z + sum c2 Z" if "Z \<subseteq> carrier" for Z
+  proof-
+    have "sum c Z = (\<Sum>x\<in>Z. c1 x + c2 x)"
+      by (rule sum.cong[OF refl]) (use facts(10) that in auto)
+    thus ?thesis by (simp add: sum.distrib)
+  qed
+  show ?thesis
+    unfolding c_def[symmetric] df(1)[symmetric]
+  proof(intro allI impI, elim conjE)
+    fix Y assume Y: "indep1 Y" "indep2 Y"
+    show "sum c Y \<le> sum c (to_set X)"
+    proof(cases "card Y \<le> card (to_set X)")
+      case True
+      thus ?thesis using facts(9) Y by blast
+    next
+      case False
+      then obtain k where k: "card Y = card (to_set X) + k"
+        using le_Suc_ex[of "card (to_set X)" "card Y"] by auto
+      have "sum c1 Y \<le> sum c1 (to_set X) + sum (\<lambda> _. c1 u) {..<k}"
+        by (rule matroid1.local_opt_larger_bound[OF facts(3,7) Y(1) k b1])
+      moreover have "sum c2 Y \<le> sum c2 (to_set X) + sum (\<lambda> _. c2 v) {..<k}"
+        by (rule matroid2.local_opt_larger_bound[OF facts(4,8) Y(2) k b2])
+      moreover have "real k * (c1 u + c2 v) \<le> 0"
+        using nonpos by (simp add: mult_nonneg_nonpos)
+      ultimately show ?thesis
+        using split[OF matroid1.indep_subset_carrier[OF Y(1)]] split[OF facts(2)]
+        by (simp add: distrib_left)
+    qed
+  qed
 qed
 
 text \<open>Termination: augmentation increases \<open>wsol\<close>, and between two augmentations reweighting
@@ -1250,8 +1318,7 @@ proof (induction m arbitrary: st rule: less_induct)
   next
     case (2 p)
     hence cond: "weighted_augment_cond st" by (simp add: weighted_augment_cond_def Let_def)
-    have upd: "st\<lparr>wsol := augment (wsol st) p, wbest := keep_better st (augment (wsol st) p)\<rparr>
-                 = weighted_augment_upd st"
+    have upd: "st\<lparr>wsol := augment (wsol st) p\<rparr> = weighted_augment_upd st"
       using 2 by (simp add: weighted_augment_upd_def Let_def)
     show ?case
       unfolding upd
@@ -1261,7 +1328,7 @@ proof (induction m arbitrary: st rule: less_induct)
 qed
 
 text \<open>Partial correctness: the original weight is never changed, and when the loop stops,
-  \<open>wbest\<close> is optimal.\<close>
+  \<open>wsol\<close> is optimal.\<close>
 
 lemma weighted_worig_preserved:
   assumes "weighted_matroid_intersection_dom st"
@@ -1292,12 +1359,12 @@ qed
 
 lemma weighted_correctness_general:
   assumes "weighted_matroid_intersection_dom st" "w_invar st"
-  shows "indep1 (to_set (wbest (weighted_matroid_intersection st)))
-       \<and> indep2 (to_set (wbest (weighted_matroid_intersection st)))
+  shows "indep1 (to_set (wsol (weighted_matroid_intersection st)))
+       \<and> indep2 (to_set (wsol (weighted_matroid_intersection st)))
        \<and> (\<forall>Y. indep1 Y \<and> indep2 Y \<longrightarrow>
             sum (c_lookup (worig (weighted_matroid_intersection st))) Y
               \<le> sum (c_lookup (worig (weighted_matroid_intersection st)))
-                     (to_set (wbest (weighted_matroid_intersection st))))"
+                     (to_set (wsol (weighted_matroid_intersection st))))"
   using assms(2)
 proof (induction st rule: weighted_matroid_intersection_induct)
   case 1
@@ -1309,7 +1376,7 @@ next
     case 1
     show ?thesis
       using w_invar_max_found[OF "2.prems" 1] weighted_matroid_intersection_simps(1)[OF "2.hyps"(1) 1]
-      by simp
+        "2.prems" by (simp add: w_invar_def)
   next
     case 2
     show ?thesis
@@ -1326,13 +1393,13 @@ qed
 theorem weighted_matroid_intersection_partial_correct:
   assumes "c_invar c" "weighted_matroid_intersection_dom (weighted_initial_state c)"
   defines "s \<equiv> weighted_matroid_intersection (weighted_initial_state c)"
-  shows "weighted_double_matroid.is_opt indep1 indep2 (c_lookup c) (to_set (wbest s))"
+  shows "weighted_double_matroid.is_opt indep1 indep2 (c_lookup c) (to_set (wsol s))"
 proof -
   interpret WDM: weighted_double_matroid carrier indep1 indep2 "c_lookup c" by unfold_locales
   have "worig s = c" using weighted_worig_preserved[OF assms(2)]
     by (simp add: s_def weighted_initial_state_def)
-  hence "indep1 (to_set (wbest s)) \<and> indep2 (to_set (wbest s))
-       \<and> (\<forall>Y. indep1 Y \<and> indep2 Y \<longrightarrow> sum (c_lookup c) Y \<le> sum (c_lookup c) (to_set (wbest s)))"
+  hence "indep1 (to_set (wsol s)) \<and> indep2 (to_set (wsol s))
+       \<and> (\<forall>Y. indep1 Y \<and> indep2 Y \<longrightarrow> sum (c_lookup c) Y \<le> sum (c_lookup c) (to_set (wsol s)))"
     using weighted_correctness_general[OF assms(2) w_invar_initial[OF assms(1)]] by (simp add: s_def)
   thus ?thesis unfolding WDM.is_opt_def by blast
 qed
@@ -1340,7 +1407,7 @@ qed
 theorem weighted_matroid_intersection_correct:
   assumes "c_invar c"
   defines "s \<equiv> weighted_matroid_intersection (weighted_initial_state c)"
-  shows "weighted_double_matroid.is_opt indep1 indep2 (c_lookup c) (to_set (wbest s))"
+  shows "weighted_double_matroid.is_opt indep1 indep2 (c_lookup c) (to_set (wsol s))"
 proof -
   have dom: "weighted_matroid_intersection_dom (weighted_initial_state c)"
     by (rule weighted_matroid_intersection_terminates[OF w_invar_initial[OF assms(1)] refl])
@@ -1356,7 +1423,7 @@ lemma same_result:
 theorem impl_total_correctness:
   assumes "c_invar c"
   shows "weighted_double_matroid.is_opt indep1 indep2 (c_lookup c)
-           (to_set (wbest (weighted_matroid_intersection_impl (weighted_initial_state c))))"
+           (to_set (wsol (weighted_matroid_intersection_impl (weighted_initial_state c))))"
   using weighted_matroid_intersection_correct[OF assms] same_result[OF assms] by simp
 
 end

@@ -160,11 +160,7 @@ definition "wshift_imp Vi e C = foldr_range_imp (\<lambda> i _. do {
    r \<leftarrow> Array.nth Vi i;
    if r then do { x \<leftarrow> Array.nth C i; Array.upd i (x + e) C; return () } else return () }) n ()"
 
-text \<open>The weight of a solution, and copying and clearing weight arrays, in place.\<close>
-
-definition "sweight_imp Si C = foldr_range_imp (\<lambda> i a. do {
-   b \<leftarrow> smemb_imp i Si;
-   if b then do { x \<leftarrow> Array.nth C i; return (a + x) } else return a }) n 0"
+text \<open>Copying and clearing weight arrays, in place.\<close>
 
 definition "ccopy_imp C' C = copy_range_imp (\<lambda> i. Array.nth C' i) n C"
 
@@ -223,7 +219,7 @@ locale weighted_intersection_exchange_imp =
     and set_empty = "{}" and set_memb = "\<lambda> x X. x \<in> X" and carrier_list = "[0..<n]"
     and carrier = "{0..<n}" and c_lookup = "\<lambda> c. c"
     and c_shift = "\<lambda> R e c x. if x \<in> set R then c x + e else c x" and c_zero = "\<lambda> _. 0"
-    and weight = "\<lambda> c X. sum c X" and c_invar = "\<lambda> _. True" +
+    and c_invar = "\<lambda> _. True" +
   real_embedding h
   for h :: "'n :: {linordered_idom, heap} \<Rightarrow> real"
 begin
@@ -282,7 +278,7 @@ qed
 lemma nbrs_filter: "nbrs (filter P es) u = filter (\<lambda> v. P (u, v)) (nbrs es u)"
   by (induction es) (auto simp: nbrs_def)
 
-text \<open>The weight of a solution, and copying and clearing weight arrays.\<close>
+text \<open>Copying and clearing weight arrays.\<close>
 
 lemma ccopy_rule:
   "<warr_assn n h c C' * len_assn n C> ccopy_imp C' C <\<lambda> _. warr_assn n h c C' * warr_assn n h c C>"
@@ -298,40 +294,6 @@ qed
 
 lemma czero_rule: "<len_assn n C> czero_imp C <\<lambda> _. warr_assn n h (\<lambda> _. 0) C>"
   unfolding czero_imp_def len_assn_def warr_assn_def by (sep_auto heap: fill_range_imp_rule)
-
-lemma foldr_sum: "foldr (\<lambda> i a. if i \<in> X then a + c i else a) [0..<k] a = a + sum c (X \<inter> {..<k})"
-proof(induction k arbitrary: a)
-  case (Suc k)
-  have "X \<inter> {..<Suc k} = (if k \<in> X then Set.insert k (X \<inter> {..<k}) else X \<inter> {..<k})"
-    by (auto simp: less_Suc_eq)
-  thus ?case
-    using Suc by (simp add: algebra_simps)
-qed simp
-
-lemma sweight_rule:
-  "<(sol_assn X Si * warr_assn n h c C)> sweight_imp Si C
-   <\<lambda> r. sol_assn X Si * warr_assn n h c C * \<up>(h r = sum c X)>"
-proof-
-  let ?F = "sol_assn X Si * warr_assn n h c C"
-  have step: "<\<up>(h ai = a) * ?F>
-                do { b \<leftarrow> smemb_imp i Si;
-                     if b then do { x \<leftarrow> Array.nth C i; return (ai + x) } else return ai }
-              <\<lambda> r. \<up>(h r = (if i \<in> X then a + c i else a)) * ?F>" if "i < n" for i a ai
-    using that by (sep_auto heap: smemb_rule warr_nth simp: h_add)
-  have f: "<\<up>(h 0 = 0) * ?F> sweight_imp Si C
-           <\<lambda> r. \<up>(h r = foldr (\<lambda> i a. if i \<in> X then a + c i else a) [0..<n] 0) * ?F>"
-    unfolding sweight_imp_def by (rule foldr_range_imp_rule[where A = "\<lambda> a ai. \<up>(h ai = a)"], rule step)
-  have f': "<?F> sweight_imp Si C <\<lambda> r. ?F * \<up>(h r = sum c X)>" if "X \<subseteq> {..<n}"
-  proof-
-    have X: "X \<inter> {..<n} = X" using that by blast
-    show ?thesis
-      by (rule ht_cons_pre[OF _ ht_cons_post[OF f]]) (sep_auto simp: foldr_sum X)+
-  qed
-  have e: "?F \<Longrightarrow>\<^sub>A ?F * \<up>(X \<subseteq> {..<n})"
-    by (rule ent_trans[OF ent_star_mono[OF sol_bound ent_refl]]) sep_auto
-  show ?thesis
-    by (rule ht_cons_pre[OF e], rule ht_pure_pre, rule f')
-qed
 
 text \<open>The graph handle of the tight iterator: the solution, the CSR and the two weight arrays.\<close>
 
@@ -1485,10 +1447,10 @@ text \<open>The operations of the loop, with the BFS workspace, \<open>Mi\<close
 theorem imp_loop:
   "weighted_intersection_imp_loop wctx_path wctx_R csr.weps indep1 indep2 {0..<n} set (\<lambda> _. True)
      csr.wctx_invar (\<lambda> K. set (wctx_es K)) (\<lambda> K. set (wctx_sb K)) (\<lambda> K. set (wctx_tb K))
-     n sol_assn smemb_imp sins_imp sdel_imp bcopy_imp sweight_imp ccopy_imp czero_imp
+     n sol_assn smemb_imp sins_imp sdel_imp Array.nth ccopy_imp czero_imp
      (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Da Pa Ti) (weps_imp Gc Vi Mi) (wshift_imp Vi)
      h (\<lambda> R e c x. if x \<in> set R then c x + e else c x) csr.wtight_ctx
-     (xset_assn n) (len_assn n) (warr_assn n h) (len_assn n) (wctx_assn Vi Fr Bf Da Pa Mi Ti)
+     (warr_assn n h) (len_assn n) (wctx_assn Vi Fr Bf Da Pa Mi Ti)
      (wws Vi Fr Bf Da Pa Mi Ti) (ost1 * ost2 * csr3_assn (build_nhlists es0) Gc)"
 proof(intro weighted_intersection_imp_loop.intro weighted_intersection_imp_loop_axioms.intro, goal_cases)
   case 1
@@ -1507,74 +1469,62 @@ next
   show ?case
     by auto
 next
-  case 5
+  case (5 c C x)
   show ?case
-    by (rule bcopy_rule)
+    by (rule warr_nth[OF 5])
 next
   case 6
   show ?case
-    by (rule xset_len)
+    by (rule ccopy_rule)
 next
   case 7
   show ?case
-    by (rule sweight_rule)
-next
-  case 8
-  show ?case
-    by (rule ccopy_rule)
-next
-  case 9
-  show ?case
     by (rule czero_rule)
 next
-  case 10
+  case (8 X c1 c2 Si C1 C2)
   show ?case
-    unfolding warr_assn_def len_assn_def by sep_auto
-next
-  case (11 X c1 c2 Si C1 C2)
-  show ?case
-    by (rule ht_cons[OF _ _ wtight_ctx_imp_rule[OF 11(1-4)]])
+    by (rule ht_cons[OF _ _ wtight_ctx_imp_rule[OF 8(1-4)]])
        ((simp only: gtx_def gxs_def prod.case star_aci, rule ent_refl),
         (rule ent_true_drop(2), simp only: gtx_def gxs_def prod.case star_aci, rule ent_refl))
 next
-  case (12 X c1 c2 Ra)
+  case (9 X c1 c2 Ra)
   show ?case
-    by (rule wctx_path_imp_rule[OF 12(1-4)])
+    by (rule wctx_path_imp_rule[OF 9(1-4)])
 next
-  case (13 X c1 c2 Si C1 C2)
+  case (10 X c1 c2 Si C1 C2)
   show ?case
-    by (rule ht_cons[OF _ _ weps_imp_rule[OF 13(1-4,7)]])
+    by (rule ht_cons[OF _ _ weps_imp_rule[OF 10(1-4,7)]])
        ((simp only: gtx_def gxs_def prod.case star_aci, rule ent_refl),
         (rule ent_true_drop(2), simp only: gtx_def gxs_def prod.case star_aci, rule ent_refl))
 next
-  case (14 X c1 c2 c e C)
+  case (11 X c1 c2 c e C)
   show ?case
-    by (rule wshift_imp_rule[OF 14(1-4,7)])
+    by (rule wshift_imp_rule[OF 11(1-4,7)])
 next
-  case (15 X c1 c2)
+  case (12 X c1 c2)
   show ?case
-    by (rule wctx_stale[OF 15])
+    by (rule wctx_stale[OF 12])
 qed
 
 text \<open>The loop on preallocated arrays.\<close>
 
 theorem loop_correct:
-  "<(sol_assn {} Si) * len_assn n Bi * warr_assn n h c Co * len_assn n C1 * len_assn n C2 *
+  "<(sol_assn {} Si) * warr_assn n h c Co * len_assn n C1 * len_assn n C2 *
     wws Vi Fr Bf Da Pa Mi Ti * (ost1 * ost2 * csr3_assn (build_nhlists es0) Gc) * parr_assn n Ra>
-     weighted_intersection_imp_loop_spec.wmi_run_imp sins_imp sdel_imp bcopy_imp sweight_imp
+     weighted_intersection_imp_loop_spec.wmi_run_imp sins_imp sdel_imp Array.nth
        ccopy_imp czero_imp (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Da Pa Ti)
-       (weps_imp Gc Vi Mi) (wshift_imp Vi) Si Bi Co C1 C2 Ra
-   <\<lambda> _. \<exists>\<^sub>A X B c1 c2. sol_assn X Si * xset_assn n B Bi * warr_assn n h c1 C1 * warr_assn n h c2 C2 *
+       (weps_imp Gc Vi Mi) (wshift_imp Vi) Si Co C1 C2 Ra
+   <\<lambda> _. \<exists>\<^sub>A X c1 c2. sol_assn X Si * warr_assn n h c1 C1 * warr_assn n h c2 C2 *
           warr_assn n h c Co * wws Vi Fr Bf Da Pa Mi Ti *
           (ost1 * ost2 * csr3_assn (build_nhlists es0) Gc) * parr_assn n Ra *
-          \<up>(weighted_double_matroid.is_opt indep1 indep2 c B)>"
+          \<up>(weighted_double_matroid.is_opt indep1 indep2 c X)>"
 proof-
   interpret l: weighted_intersection_imp_loop wctx_path wctx_R csr.weps indep1 indep2 "{0..<n}" set
     "\<lambda> _. True" csr.wctx_invar "\<lambda> K. set (wctx_es K)" "\<lambda> K. set (wctx_sb K)"
-    "\<lambda> K. set (wctx_tb K)" n sol_assn smemb_imp sins_imp sdel_imp bcopy_imp
-    sweight_imp ccopy_imp czero_imp "wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti" "wctx_path_imp Da Pa Ti"
+    "\<lambda> K. set (wctx_tb K)" n sol_assn smemb_imp sins_imp sdel_imp Array.nth
+    ccopy_imp czero_imp "wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti" "wctx_path_imp Da Pa Ti"
     "weps_imp Gc Vi Mi" "wshift_imp Vi" h "\<lambda> R e c x. if x \<in> set R then c x + e else c x"
-    csr.wtight_ctx "xset_assn n" "len_assn n" "warr_assn n h" "len_assn n"
+    csr.wtight_ctx "warr_assn n h" "len_assn n"
     "wctx_assn Vi Fr Bf Da Pa Mi Ti" "wws Vi Fr Bf Da Pa Mi Ti"
     "ost1 * ost2 * csr3_assn (build_nhlists es0) Gc"
     by (rule imp_loop)

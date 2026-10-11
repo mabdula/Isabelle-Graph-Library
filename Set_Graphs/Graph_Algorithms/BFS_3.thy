@@ -2858,6 +2858,9 @@ proof-
     using parent_path_acc[OF assms, of "[]"] by simp
 qed
 
+text \<open>The final visited set satisfies the set invariant, so membership can be tested with
+      @{term isin}.\<close>
+
 lemma BFS_par_visited_inv:
   "vset_inv (BFS_dist_state.visited (BFS_par_impl initial_par_state))"
 proof-
@@ -2869,6 +2872,8 @@ proof-
   ultimately show ?thesis
     using BFS_par_final_fields(1) by simp
 qed
+
+text \<open>The reconstructed path is no longer than any walk from a source to the same vertex.\<close>
 
 lemma parent_path_shortest:
   assumes "final_state = BFS_par_impl initial_par_state" 

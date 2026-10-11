@@ -1,0 +1,13 @@
+session "Gammoids" = "HOL-Library" +
+  sessions
+    Menger_Flows
+    Matroids_Greedy
+    Flow_Theory
+    Dinic
+    Spanning_Trees
+
+  theories
+    Gammoids
+    Gammoid_Max_Flow
+    Gammoid_Oracle_Generic
+    Gammoid_Oracle

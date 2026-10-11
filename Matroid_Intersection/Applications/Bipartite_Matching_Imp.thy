@@ -11,8 +11,8 @@ text \<open>The input graph is given by two arrays of the same length \<open>m\<
   @{theory Matroid_Intersection.Matroid_Intersection_Imp}. The two input arrays are the arrays of
   blocks of the two oracles. The solution handle consists of the Boolean array of the solution,
   the two arrays counting the solution elements per block and the two input arrays; the partner
-  handles hold the list of the block of every edge. The result is the Boolean array of the
-  positions of a maximum matching.\<close>
+  handles hold the edges grouped by block and the range of the block of every edge. The result
+  is the Boolean array of the positions of a maximum matching.\<close>
 
 subsection \<open>Code\<close>
 
@@ -29,7 +29,7 @@ definition bm_exch2 :: "bm_sol \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>
   "bm_exch2 Si x y = (case Si of (Xi, C1, C2, Bl, Br) \<Rightarrow> part_exch_imp Br x y)"
 
 global_interpretation mx: matroid_intersection_imp_spec n id id bm_memb bm_ins1 bm_exch1 
-  bm_ins2 bm_exch2 bm_ins bm_del Array.nth Array.nth
+  bm_ins2 bm_exch2 bm_ins bm_del part_npts_imp part_pt_imp part_npts_imp part_pt_imp
   for n
   defines mx_nb1 = mx.ids.nb1_imp
     and mx_nb2 = mx.ids.nb2_imp
@@ -210,9 +210,9 @@ text \<open>The elements are the positions themselves, so the indexation is the 
 
 lemma mi_inst:
   "matroid_intersection_imp (length fs) id id bm_memb bm_ins1 bm_exch1 bm_ins2 bm_exch2 bm_ins bm_del
-     Array.nth Array.nth {0..<length fs} lf.part_prep lf.part_ins lf.part_exch lf.part_indep sa emp
-     (part_pts fs) (part_pst (length fs) fs) rt.part_prep rt.part_ins rt.part_exch rt.part_indep emp
-     (part_pts ts) (part_pst (length fs) ts)"
+     part_npts_imp part_pt_imp part_npts_imp part_pt_imp {0..<length fs} lf.part_prep lf.part_ins 
+     lf.part_exch lf.part_indep sa emp (part_pts fs) (part_pst (length fs) fs) rt.part_prep 
+     rt.part_ins rt.part_exch rt.part_indep emp (part_pts ts) (part_pst (length fs) ts)"
   apply (intro matroid_intersection_imp.intro indexed_oracle_imp.intro matroid_ids.intro
         indexed_oracle_imp_axioms.intro matroid_intersection_imp_axioms.intro)
   subgoal by (rule bij_betw_id)
@@ -223,7 +223,8 @@ lemma mi_inst:
   subgoal by (simp add: part_pts_sorted)
   subgoal for x y using part_pts_bound[of y fs x] by simp
   subgoal by (intro part_pts_cover) (auto simp: lf.part_exch_def)
-  subgoal using part_pts_rule by simp
+  subgoal using part_npts_rule by simp
+  subgoal using part_pt_rule by simp
   subgoal by (rule bij_betw_id)
   subgoal by simp
   subgoal by (rule rt.indep_oracle_axioms)
@@ -232,7 +233,8 @@ lemma mi_inst:
   subgoal by (simp add: part_pts_sorted)
   subgoal for x y using part_pts_bound[of y ts x] lengths by simp
   subgoal using lengths by (intro part_pts_cover) (auto simp: rt.part_exch_def)
-  subgoal using part_pts_rule by simp
+  subgoal using part_npts_rule by simp
+  subgoal using part_pt_rule by simp
   subgoal using bm_memb_rule by simp
   subgoal using bm_ins_rule by simp
   subgoal using bm_del_rule by simp
@@ -241,7 +243,8 @@ lemma mi_inst:
 interpretation m: matroid_intersection_imp where n = "length fs" and idx = id and elt = id
   and smemb_imp = bm_memb and ins1_imp = bm_ins1 and exch1_imp = bm_exch1 and ins2_imp = bm_ins2 
   and exch2_imp = bm_exch2 and sins_imp = bm_ins and sdel_imp = bm_del 
-  and pts1_imp = Array.nth and pts2_imp = Array.nth and carrier = "{0..<length fs}"
+  and npts1_imp = part_npts_imp and pt1_imp = part_pt_imp and npts2_imp = part_npts_imp 
+  and pt2_imp = part_pt_imp and carrier = "{0..<length fs}"
   and sol_assn = sa and ost1 = emp and ost2 = emp
   and orcl_prep1 = lf.part_prep and ins_orcl1 = lf.part_ins and exch_orcl1 = lf.part_exch
   and orcl_prep2 = rt.part_prep and ins_orcl2 = rt.part_ins and exch_orcl2 = rt.part_exch

@@ -14,6 +14,8 @@ sessions
   Matching_LPs
   Separation_Logic_Imperative_HOL_Partial
   Directed_Set_Graphs
+  Imperative
+  Go
 
 directories
   Refinements
@@ -45,6 +47,9 @@ theories
 	"Refinements/Matching_Certificate_Example"
 	"Refinements/Path_Search_Shortcut_Imperative"
 	"Refinements/Neighbourhood_Best_Scan_Imperative"
+	"Refinements/Assignment_Solver"
+	"Refinements/Assignment_Solver_Export"
+	"Refinements/Hungarian_Code_Export"
 
 document_files
   "root.tex"

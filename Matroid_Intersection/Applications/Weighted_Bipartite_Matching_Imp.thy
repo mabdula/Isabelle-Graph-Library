@@ -8,12 +8,12 @@ text \<open>The graph is given as in @{theory Matroid_Intersection.Bipartite_Mat
   array of the same length holds the edge weights, in an ordered ring \<open>'n\<close>. The matroids, the
   oracles and the solution handle are those of the unweighted instance; the algorithm is the generic
   one of @{theory Matroid_Intersection.Matroid_Weighted_Intersection_Imp}. The result is the Boolean
-  array of the positions of a maximum weight matching.\<close>
+  array of the positions of a maximum weight matching, from the solution handle.\<close>
 
 subsection \<open>Code\<close>
 
 global_interpretation wmx: weighted_matroid_intersection_imp_spec n id id bm_memb bm_ins1 bm_exch1
-  bm_ins2 bm_exch2 bm_ins bm_del Array.nth Array.nth
+  bm_ins2 bm_exch2 bm_ins bm_del part_npts_imp part_pt_imp part_npts_imp part_pt_imp
   for n
   defines wmx_teq = wmx.wids.teq_imp
     and wmx_tnbs = wmx.wids.tnbs
@@ -32,7 +32,6 @@ global_interpretation wmx: weighted_matroid_intersection_imp_spec n id id bm_mem
     and wmx_weps_step = wmx.wids.weps_step
     and wmx_weps = wmx.wids.weps_imp
     and wmx_wshift = wmx.wids.wshift_imp
-    and wmx_sweight = wmx.wids.sweight_imp
     and wmx_ccopy = wmx.wids.ccopy_imp
     and wmx_czero = wmx.wids.czero_imp
     and wmx_wmi_ids = wmx.wids.wmi_imp
@@ -65,16 +64,15 @@ lemma wmx_tbfs_run_code [code]: "wmx_tbfs_run n Gh = wxb_run n Gh"
 declare wxbi.BFS_par_imp.simps[code]
 
 text \<open>The edges are \<open>{Fa[i], Ta[i]}\<close> with weight \<open>Wa[i]\<close>, and all vertices are below \<open>nv\<close>. After the
-  prologue of the unweighted instance, the program allocates the best-solution array and the two
-  weight arrays of the algorithm.\<close>
+  prologue of the unweighted instance, the program allocates the two weight arrays of the
+  algorithm.\<close>
 
 definition "weighted_matching_imp nv Fa Ta Wa =
    bm_setup_imp nv Fa Ta (\<lambda> m H1 H2 Xi C1 C2. do {
-     Bi \<leftarrow> Array.new m False;
      W1 \<leftarrow> Array.new m 0;
      W2 \<leftarrow> Array.new m 0;
-     wmx_wmi m H1 H2 (Xi, C1, C2, Fa, Ta) Bi Wa W1 W2;
-     return Bi })"
+     wmx_wmi m H1 H2 (Xi, C1, C2, Fa, Ta) Wa W1 W2;
+     return Xi })"
 
 export_code weighted_matching_imp checking SML_imp
 
@@ -110,9 +108,9 @@ begin
 text \<open>The elements are the positions themselves, so the indexation is the identity.\<close>
 
 interpretation m: weighted_matroid_intersection_imp "length fs" id id bm_memb bm_ins1 bm_exch1 bm_ins2
-  bm_exch2 bm_ins bm_del Array.nth Array.nth "{0..<length fs}" lf.part_prep lf.part_ins lf.part_exch
-  lf.part_indep sa emp "part_pts fs" "part_pst (length fs) fs" rt.part_prep rt.part_ins rt.part_exch
-  rt.part_indep emp "part_pts ts" "part_pst (length fs) ts" h
+  bm_exch2 bm_ins bm_del part_npts_imp part_pt_imp part_npts_imp part_pt_imp "{0..<length fs}"
+  lf.part_prep lf.part_ins lf.part_exch lf.part_indep sa emp "part_pts fs" "part_pst (length fs) fs"
+  rt.part_prep rt.part_ins rt.part_exch rt.part_indep emp "part_pts ts" "part_pst (length fs) ts" h
   by (intro weighted_matroid_intersection_imp.intro mi_inst real_embedding_axioms)
 
 lemma is_max_weight_matching:
@@ -151,11 +149,11 @@ text \<open>The generic algorithm on the allocated handles.\<close>
 theorem whandles_correct:
   "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * xset_assn (length fs) {} Xi *
     cnt_assn nv fs {} C1 * cnt_assn nv ts {} C2 *
-    blocks_assn (length fs) nv fs Fa * blocks_assn (length fs) nv ts Ta * len_assn (length fs) Bi *
+    blocks_assn (length fs) nv fs Fa * blocks_assn (length fs) nv ts Ta *
     warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa *
     len_assn (length fs) W1 * len_assn (length fs) W2>
-     wmx_wmi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta) Bi Wa W1 W2
-   <\<lambda> _. \<exists>\<^sub>A X. xset_assn (length fs) X Bi * blocks_assn (length fs) nv fs Fa *
+     wmx_wmi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta) Wa W1 W2
+   <\<lambda> _. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * blocks_assn (length fs) nv fs Fa *
               blocks_assn (length fs) nv ts Ta *
               warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa * true *
               \<up>(max_weight_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) edge_weight
@@ -171,7 +169,7 @@ subsubsection \<open>The Program\<close>
 
 theorem weighted_matching_imp_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws> weighted_matching_imp nv Fa Ta Wa
-   <\<lambda> Bi. \<exists>\<^sub>A X. xset_assn (length fs) X Bi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * true *
+   <\<lambda> Xi. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * true *
               \<up>(max_weight_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) edge_weight
                                      ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
 proof-

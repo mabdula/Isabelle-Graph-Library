@@ -1,5 +1,7 @@
 theory Matching_Certificate_Arrays
-  imports Matching_Certificate_Imperative Separation_Logic_Imperative_HOL_Partial.Array_Set_Impl
+  imports
+    Matching_Certificate_Imperative
+    Data_Structures.Imp_Bool_Set
 begin
 
 section \<open>Certificate Checkers for Extremal Bipartite Matchings on Arrays\<close>
@@ -8,7 +10,7 @@ text \<open>The instance is given by the arrays of the left endpoints, the right
       weights of the edges, and by the arrays of the left and the right vertices. The edges are
       named by their positions. The candidate matching is an array of edge names, the potential
       an array with one entry per vertex, and the Hall violator an array of left vertices. Mark
-      sets are array sets.\<close>
+      sets are Boolean arrays of length @{term n}.\<close>
 
 subsection \<open>Read-Only Arrays\<close>
 
@@ -65,7 +67,7 @@ subsection \<open>The Programs\<close>
 
 global_interpretation cert_arr: matching_cert_imp_code
   arr_memb arr_fst arr_snd arr_w arr_it_init arr_it_has_next arr_it_next
-  Array.len Array.nth Array.len Array.nth Array.len Array.nth ias_memb ias_ins
+  Array.len Array.nth Array.len Array.nth Array.len Array.nth xset_isin_imp xset_insert_imp
   defines cert_arr_feas_loop = cert_arr.feas_loop
     and cert_arr_match_loop = cert_arr.match_loop
     and cert_arr_vert_loop = cert_arr.vert_loop
@@ -88,26 +90,26 @@ definition certify_arrays ::
   "bool \<Rightarrow> bool \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> bool Heap" where
   "certify_arrays neg perfect n Fa Ta Wa La Rv Ma Ya = do {
-     Ui \<leftarrow> ias_new_sz n;
+     Ui \<leftarrow> Array.new n False;
      cert_arr_certify neg perfect n (Fa, Ta, Wa) La Rv Ma Ya Ui }"
 
 definition hall_arrays ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> bool Heap" where
   "hall_arrays n Fa Ta Wa La Rv Sa = do {
-     Li \<leftarrow> ias_new_sz n;
-     Si \<leftarrow> ias_new_sz n;
-     Ni \<leftarrow> ias_new_sz n;
-     cert_arr_hall (Fa, Ta, Wa) La Rv Sa Li Si Ni }"
+     Li \<leftarrow> Array.new n False;
+     Si \<leftarrow> Array.new n False;
+     Ni \<leftarrow> Array.new n False;
+     cert_arr_hall n (Fa, Ta, Wa) La Rv Sa Li Si Ni }"
 
 definition certify_mc_arrays ::
   "bool \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n \<Rightarrow> nat array \<Rightarrow> bool Heap" where
   "certify_mc_arrays neg n Fa Ta Wa La Rv Ma Ya t Sa = do {
-     Ui \<leftarrow> ias_new_sz n;
-     Li \<leftarrow> ias_new_sz n;
-     Si \<leftarrow> ias_new_sz n;
-     Ni \<leftarrow> ias_new_sz n;
+     Ui \<leftarrow> Array.new n False;
+     Li \<leftarrow> Array.new n False;
+     Si \<leftarrow> Array.new n False;
+     Ni \<leftarrow> Array.new n False;
      cert_arr_certify_mc neg n (Fa, Ta, Wa) La Rv Ma Ya t Sa Ui Li Si Ni }"
 
 subsection \<open>Correctness\<close>
@@ -155,10 +157,12 @@ sublocale cert: matching_cert_imp "{0..<length fs}" "[0..<length fs]" "(!) fs" "
   n ls rs h arr_es_assn arr_elst arr_it_assn arr_memb arr_fst arr_snd arr_w
   arr_it_init arr_it_has_next arr_it_next
   "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth
-  "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth is_ias ias_memb ias_ins
+  "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth
+  "{..<n}" "\<lambda>X. X \<subseteq> {..<n}" id "{}" insert "\<lambda>x X. X - {x}" "\<lambda>X x. x \<in> X" "xset_assn n"
+  "Array.new n False" xset_insert_imp xset_delete_imp xset_isin_imp
   by (rule matching_cert_imp.intro[OF cert_mc arr_edge_set array_rlist array_rlist array_rlist
-             ias_memb_impl ias_ins_impl])
-     (unfold_locales, simp add: arr_elst_def)
+             xset_fixed_univ_set_imp])
+     (unfold_locales; simp add: arr_elst_def)
 
 lemma G_eq: "cert.G = G"
   by (auto simp: cert.G_def cert.cedge_def G_def)
@@ -185,7 +189,7 @@ theorem certify_arrays_rule:
    <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys *
         true * \<up>(r = cert.certify neg perfect ms ys)>"
   unfolding certify_arrays_def cert_arr_certify_def
-  by (sep_auto heap: ias_new_sz_rule cert.certify_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
+  by (sep_auto heap: cert.mark_empty_rule cert.certify_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
 
 theorem hall_arrays_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Sa \<mapsto>\<^sub>a S>
@@ -193,7 +197,7 @@ theorem hall_arrays_rule:
    <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Sa \<mapsto>\<^sub>a S *
         true * \<up>(r = cert.hall_check S)>"
   unfolding hall_arrays_def cert_arr_hall_def
-  by (sep_auto heap: ias_new_sz_rule cert.hall_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
+  by (sep_auto heap: cert.mark_empty_rule cert.hall_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
 
 theorem certify_mc_arrays_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * Sa \<mapsto>\<^sub>a S>
@@ -201,7 +205,7 @@ theorem certify_mc_arrays_rule:
    <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys *
         Sa \<mapsto>\<^sub>a S * true * \<up>(r = cert.certify_mc neg ms ys t S)>"
   unfolding certify_mc_arrays_def cert_arr_certify_mc_def
-  by (sep_auto heap: ias_new_sz_rule cert.certify_mc_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
+  by (sep_auto heap: cert.mark_empty_rule cert.certify_mc_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
 
 subsection \<open>The Certified Properties\<close>
 

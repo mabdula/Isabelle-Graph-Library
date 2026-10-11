@@ -739,6 +739,55 @@ proof-
     using greedy_optimality[OF assms(4)] maxwX'[unfolded X'_def] by blast
 qed
 
+text \<open>A locally optimal \<open>X\<close> bounds the weight of every larger independent set: each further
+element weighs at most the bound \<open>d\<close> on the elements addable to \<open>X\<close>.\<close>
+lemma local_opt_larger_bound:
+  fixes c :: "'a \<Rightarrow> 'b :: linordered_ab_group_add"
+  assumes "indep X" "local_opt c X" "indep Y" "card Y = card X + k"
+    "\<And> y. \<lbrakk>y \<in> carrier - X; indep (insert y X)\<rbrakk> \<Longrightarrow> c y \<le> d"
+  shows "sum c Y \<le> sum c X + sum (\<lambda> _. d) {..<k}"
+  using assms
+proof(induction k arbitrary: X)
+  case 0
+  have "max_weight_card c X"
+    using greedy_optimality[OF 0(1)] 0(2) by blast
+  thus ?case
+    using 0(3,4) by (simp add: max_weight_card_def)
+next
+  case (Suc k)
+  define S where "S = {y \<in> carrier - X. indep (insert y X)}"
+  have finS: "finite S"
+    using carrier_finite by (auto simp add: S_def)
+  obtain w where "w \<in> Y - X" "indep (insert w X)"
+    using augment[OF Suc(4,2)] Suc(5) by auto
+  hence "w \<in> S"
+    using indep_subset_carrier[OF Suc(4)] by (auto simp add: S_def)
+  hence "Max (c ` S) \<in> c ` S"
+    using finS by (intro Max_in) auto
+  then obtain y0 where y0: "y0 \<in> S" "c y0 = Max (c ` S)"
+    by auto
+  have y0X: "y0 \<in> carrier - X" "indep (insert y0 X)"
+    using y0(1) by (simp_all add: S_def)
+  have finX: "finite X"
+    using Suc(2) indep_finite by simp
+  have lo: "local_opt c (insert y0 X)"
+    by (rule greedy_extension[OF Suc(2,3) y0X y0(2)[unfolded S_def]])
+  have IH: "sum c Y \<le> sum c (insert y0 X) + sum (\<lambda> _. d) {..<k}"
+  proof(rule Suc.IH[OF y0X(2) lo Suc(4)])
+    show "card Y = card (insert y0 X) + k"
+      using Suc(5) y0X(1) finX by simp
+    fix y assume "y \<in> carrier - insert y0 X" "indep (insert y (insert y0 X))"
+    thus "c y \<le> d"
+      using Suc(6) indep_subset[of "insert y (insert y0 X)" "insert y X"] by auto
+  qed
+  have "sum c Y \<le> c y0 + (sum c X + sum (\<lambda> _. d) {..<k})"
+    using IH y0X(1) by (simp add: finX algebra_simps)
+  also have "\<dots> \<le> d + (sum c X + sum (\<lambda> _. d) {..<k})"
+    by (rule add_right_mono[OF Suc(6)[OF y0X]])
+  finally show ?case
+    by (simp add: algebra_simps)
+qed
+
 text \<open>C3: shifting the weight down by \<open>\<epsilon>\<close> on a set \<open>R\<close> preserves local optimality, provided \<open>\<epsilon>\<close> does
 not exceed any weight gap across the boundary of \<open>R\<close>. This is the dual (reweighting) step.\<close>
 lemma reweight_preserves_local_opt:
@@ -1252,6 +1301,7 @@ lemma augment_tight_path:
     "X' = (X \<union> {p ! i | i. i < length p \<and> even i}) - {p ! i | i. i < length p \<and> odd i}"
   shows "indep1 X'" "indep2 X'" "card X' = card X + 1"
     "matroid1.local_opt c1 X'" "matroid2.local_opt c2 X'"
+    "sum c1 X' = sum c1 X + c1 u" "sum c2 X' = sum c2 X + c2 v"
 proof-
   have xS: "u \<in> S X" using assms(6) Sbar_subset by blast
   have yT: "v \<in> T X" using assms(7) Tbar_subset by blast
@@ -1477,6 +1527,10 @@ proof-
   show "card X' = card X + 1" using cardX' .
   show "matroid1.local_opt c1 X'" using loc1 .
   show "matroid2.local_opt c2 X'" using loc2 .
+  show "sum c1 X' = sum c1 X + c1 u"
+    using sumX'_c1 hd_conv_nth[OF p_non_empt] assms(5) by (simp add: vwalk_bet_def)
+  show "sum c2 X' = sum c2 X + c2 v"
+    using sumX'_c2 last_conv_nth[OF p_non_empt] assms(5) by (simp add: vwalk_bet_def)
 qed
 
 end

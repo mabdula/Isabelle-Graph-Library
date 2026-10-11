@@ -4,8 +4,8 @@ begin
 
 section \<open>The Exchange Graph Search on the CSR BFS\<close>
 
-text \<open>Glue only. The graph is built by @{const build_nhlists}, the functional model of
-  @{const build_CSR}, and the BFS parameters are exactly those of @{locale BFS_lists_instance},
+text \<open>Glue only. The graph is given by @{const build_nhlists}, the neighbour map of the CSR
+  arrays of an edge list, and the BFS parameters are exactly those of @{locale BFS_lists_instance},
   whose imperative refinement is the CSR BFS of @{theory Graph_Algorithms_Dev.BFS_Instantiation}.
   The sources are reversed as in @{locale bfs_csr}. The matroids and their oracles stay
   abstract.\<close>

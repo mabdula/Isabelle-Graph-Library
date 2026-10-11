@@ -1,6 +1,8 @@
 theory Hungarian_Method_Top_Loop
-  imports Matching_LPs.Matching_LP
-          Path_Search_Result Basic_Matching.Matching_Augmentation_Executable
+  imports
+    Matching_LPs.Matching_LP
+    Path_Search_Result
+    Basic_Matching.Matching_Augmentation_Executable
 begin
 
 section \<open>Top Loop for Hungarian Method\<close>
@@ -11,9 +13,14 @@ no_translations
 
 datatype result = success | failure | notyetterm
 
-record ('buddy, 'potential) hungarian_state = 
+text \<open>A path search returns a result, a new matching (of the same size), a new potential and a
+      new search context. The context is opaque to the top loop: it is only handed back to the
+      next path search. A search may use it to remember where to continue.\<close>
+
+record ('buddy, 'potential, 'ctx) hungarian_state = 
      buddies::'buddy
      potential::'potential
+     search_ctx::'ctx
      result::result
 
 subsection \<open>Locale for Implementation\<close>
@@ -31,36 +38,41 @@ fixes potential_abstract::"'potential \<Rightarrow> 'v \<Rightarrow> real"
    and edge_costs::"'v set \<Rightarrow> real"
 
    and card_L card_R::nat
-   and path_search::"'matching \<Rightarrow> 'potential \<Rightarrow> ('v, 'potential) path_search_result"
+   and path_search::"'ctx \<Rightarrow> 'matching \<Rightarrow> 'potential \<Rightarrow> 
+                      'v path_search_result \<times> 'matching \<times> 'potential \<times> 'ctx"
+   and init_ctx::'ctx
    and G::"'v set set"
 begin
 
 function (domintros) hungarian_loop::
-   "('matching, 'potential) hungarian_state \<Rightarrow> ('matching, 'potential) hungarian_state"
+   "('matching, 'potential, 'ctx) hungarian_state \<Rightarrow> ('matching, 'potential, 'ctx) hungarian_state"
    where "hungarian_loop state =
-     (let M = buddies state;
-          \<pi> = potential state in
-       case path_search M \<pi> of
-         Dual_Unbounded \<Rightarrow> state \<lparr>result:=failure\<rparr>
-       | Lefts_Matched \<Rightarrow> state \<lparr>result:=success\<rparr>
-       | Next_Iteration P \<pi>' \<Rightarrow>
-         let M' = augment M P
-         in hungarian_loop (state \<lparr>buddies:=M', potential := \<pi>' \<rparr>))"
+     (case path_search (search_ctx state) (buddies state) (potential state) of
+       (r, M', \<pi>', c') \<Rightarrow>
+       (case r of
+          Dual_Unbounded \<Rightarrow>
+            state \<lparr>buddies:=M', potential := \<pi>', search_ctx := c', result:=failure\<rparr>
+        | Lefts_Matched \<Rightarrow>
+            state \<lparr>buddies:=M', potential := \<pi>', search_ctx := c', result:=success\<rparr>
+        | Next_Iteration P \<Rightarrow>
+            hungarian_loop (state \<lparr>buddies:=augment M' P, potential := \<pi>', search_ctx := c'\<rparr>)))"
   by pat_completeness auto
 
 partial_function (tailrec) hungarian_loop_impl::
-   "('matching, 'potential) hungarian_state \<Rightarrow> ('matching, 'potential) hungarian_state"
+   "('matching, 'potential, 'ctx) hungarian_state \<Rightarrow> ('matching, 'potential, 'ctx) hungarian_state"
    where "hungarian_loop_impl state =
-     (let M = buddies state;
-          \<pi> = potential state in
-       case path_search M \<pi> of
-         Dual_Unbounded \<Rightarrow> state \<lparr>result:=failure\<rparr>
-       | Lefts_Matched \<Rightarrow> state \<lparr>result:=success\<rparr>
-       | Next_Iteration P \<pi>' \<Rightarrow>
-         let M' = augment M P
-         in hungarian_loop_impl (state \<lparr>buddies:=M', potential := \<pi>' \<rparr>))"
+     (case path_search (search_ctx state) (buddies state) (potential state) of
+       (r, M', \<pi>', c') \<Rightarrow>
+       (case r of
+          Dual_Unbounded \<Rightarrow>
+            state \<lparr>buddies:=M', potential := \<pi>', search_ctx := c', result:=failure\<rparr>
+        | Lefts_Matched \<Rightarrow>
+            state \<lparr>buddies:=M', potential := \<pi>', search_ctx := c', result:=success\<rparr>
+        | Next_Iteration P \<Rightarrow>
+            hungarian_loop_impl (state \<lparr>buddies:=augment M' P, potential := \<pi>', search_ctx := c'\<rparr>)))"
 
-definition "initial_state = \<lparr>buddies = empty_matching, potential = init_potential, result = notyetterm\<rparr>"
+definition "initial_state = \<lparr>buddies = empty_matching, potential = init_potential,
+                             search_ctx = init_ctx, result = notyetterm\<rparr>"
 
 definition "hungarian = 
   (if card_L \<noteq> card_R then None
@@ -78,72 +90,45 @@ lemma hungarian_loop_impl_same:
   apply(induction rule: hungarian_loop.pinduct[OF assms])
   apply(subst hungarian_loop_impl.simps)
   apply(subst hungarian_loop.psimps)
-  by(auto simp add: Let_def split: path_search_result.splits)
+  by(auto split: path_search_result.splits prod.splits)
+
+definition "search_of state = path_search (search_ctx state) (buddies state) (potential state)"
 
 definition  "hungarian_loop_upd state =
-     (let M = buddies state;
-          \<pi> = potential state;
-          P = the_path (path_search M \<pi>);
-          \<pi>' = the_pot (path_search M \<pi>); 
-          M' = augment M P
-       in state \<lparr>buddies:=M', potential := \<pi>' \<rparr>)"
+     (case search_of state of (r, M', \<pi>', c') \<Rightarrow>
+        state \<lparr>buddies:=augment M' (the_path r), potential := \<pi>', search_ctx := c'\<rparr>)"
 
-definition  "hungarian_loop_fail state = (state \<lparr> result:=failure \<rparr>)"
-definition  "hungarian_loop_succ state = (state \<lparr> result:=success \<rparr>)"
+definition  "hungarian_loop_fail state =
+     (case search_of state of (r, M', \<pi>', c') \<Rightarrow>
+        state \<lparr>buddies:=M', potential := \<pi>', search_ctx := c', result:=failure\<rparr>)"
 
-definition  "hungarian_loop_fail_cond state =
-     (let M = buddies state;
-          \<pi> = potential state in
-       case path_search M \<pi> of
-         Dual_Unbounded \<Rightarrow> True
-       | Lefts_Matched \<Rightarrow> False
-       | Next_Iteration P \<pi>' \<Rightarrow> False)"
+definition  "hungarian_loop_succ state =
+     (case search_of state of (r, M', \<pi>', c') \<Rightarrow>
+        state \<lparr>buddies:=M', potential := \<pi>', search_ctx := c', result:=success\<rparr>)"
+
+definition  "hungarian_loop_fail_cond state = (fst (search_of state) = Dual_Unbounded)"
+
+definition  "hungarian_loop_succ_cond state = (fst (search_of state) = Lefts_Matched)"
+
+definition  "hungarian_loop_cont_cond state = (\<exists> p. fst (search_of state) = Next_Iteration p)"
 
 lemma hungarian_loop_fail_condE:
   "\<lbrakk>hungarian_loop_fail_cond state;
-    path_search (buddies state) (potential state) = Dual_Unbounded \<Longrightarrow> P\<rbrakk>
+    \<And> M' \<pi>' c'. search_of state = (Dual_Unbounded, M', \<pi>', c') \<Longrightarrow> P\<rbrakk>
    \<Longrightarrow> P"
-and hungarian_loop_fail_condI:
-  "path_search (buddies state) (potential state) = Dual_Unbounded
-   \<Longrightarrow> hungarian_loop_fail_cond state"
-  by(cases "path_search (buddies state) (potential state)")
-    (auto simp add: hungarian_loop_fail_cond_def)
-
-definition  "hungarian_loop_succ_cond state =
-     (let M = buddies state;
-          \<pi> = potential state in
-       case path_search M \<pi> of
-         Dual_Unbounded \<Rightarrow> False
-       | Lefts_Matched \<Rightarrow> True
-       | Next_Iteration P \<pi>' \<Rightarrow> False)"
+  by(cases "search_of state") (auto simp add: hungarian_loop_fail_cond_def)
 
 lemma hungarian_loop_succ_condE:
   "\<lbrakk>hungarian_loop_succ_cond state;
-    path_search (buddies state) (potential state) = Lefts_Matched \<Longrightarrow> P\<rbrakk>
+    \<And> M' \<pi>' c'. search_of state = (Lefts_Matched, M', \<pi>', c') \<Longrightarrow> P\<rbrakk>
    \<Longrightarrow> P"
-and hungarian_loop_succ_condI:
-  "path_search (buddies state) (potential state) = Lefts_Matched
-   \<Longrightarrow> hungarian_loop_succ_cond state"
-  by(cases "path_search (buddies state) (potential state)")
-    (auto simp add: hungarian_loop_succ_cond_def)
-
-definition  "hungarian_loop_cont_cond state =
-     (let M = buddies state;
-          \<pi> = potential state in
-       case path_search M \<pi> of
-         Dual_Unbounded \<Rightarrow> False
-       | Lefts_Matched \<Rightarrow> False
-       | Next_Iteration P \<pi>' \<Rightarrow> True)"
+  by(cases "search_of state") (auto simp add: hungarian_loop_succ_cond_def)
 
 lemma hungarian_loop_cont_condE:
   "\<lbrakk>hungarian_loop_cont_cond state;
-   \<And> p \<pi>'. path_search (buddies state) (potential state) = Next_Iteration p \<pi>' \<Longrightarrow> P\<rbrakk>
+    \<And> p M' \<pi>' c'. search_of state = (Next_Iteration p, M', \<pi>', c') \<Longrightarrow> P\<rbrakk>
    \<Longrightarrow> P"
-and  hungarian_loop_cont_condI:
-   "path_search (buddies state) (potential state) = Next_Iteration p \<pi>' \<Longrightarrow> 
-    hungarian_loop_cont_cond state"
-  by(cases "path_search (buddies state) (potential state)")
-    (auto simp add: hungarian_loop_cont_cond_def)
+  by(cases "search_of state") (auto simp add: hungarian_loop_cont_cond_def)
 
 lemma hungarian_loop_cases:
   assumes "hungarian_loop_fail_cond state \<Longrightarrow> P"
@@ -151,8 +136,8 @@ lemma hungarian_loop_cases:
           "hungarian_loop_cont_cond state \<Longrightarrow> P"
     shows P
   using assms
-  apply(cases "path_search (buddies state) (potential state)")
-  by(auto simp add: hungarian_loop_fail_cond_def 
+  by(cases "fst (search_of state)")
+    (auto simp add: hungarian_loop_fail_cond_def 
                     hungarian_loop_cont_cond_def
                     hungarian_loop_succ_cond_def)
 
@@ -162,11 +147,11 @@ lemma hungarian_loop_domintros:
   "\<lbrakk>hungarian_loop_cont_cond state; hungarian_loop_dom (hungarian_loop_upd state)\<rbrakk>
     \<Longrightarrow> hungarian_loop_dom state"
     apply(all \<open>rule hungarian_loop.domintros\<close>)
-    apply(all \<open>cases "path_search (buddies state) (potential state)"\<close>)
+    apply(all \<open>cases "path_search (search_ctx state) (buddies state) (potential state)"\<close>)
     by(auto simp add: hungarian_loop_fail_cond_def 
                       hungarian_loop_cont_cond_def
                       hungarian_loop_succ_cond_def
-                      hungarian_loop_upd_def)
+                      hungarian_loop_upd_def search_of_def)
 
 lemma hungarian_loop_simps:
  "hungarian_loop_fail_cond state \<Longrightarrow> hungarian_loop state = hungarian_loop_fail state"
@@ -177,24 +162,9 @@ lemma hungarian_loop_simps:
                     hungarian_loop.psimps[OF hungarian_loop_domintros(2)] 
                     hungarian_loop.psimps  hungarian_loop_upd_def
                     hungarian_loop_fail_def hungarian_loop_succ_def
-            elim: hungarian_loop_fail_condE hungarian_loop_succ_condE
-                  hungarian_loop_cont_condE)
-
-lemma fail_cond_after_fail_upd:
-  "hungarian_loop_fail_cond state \<Longrightarrow> hungarian_loop_fail_cond (hungarian_loop_fail state)"
-  by(auto elim!: hungarian_loop_fail_condE
-         intro!: hungarian_loop_fail_condI
-       simp add: hungarian_loop_fail_def)
-
-lemma succ_cond_after_succ_upd:
-  "hungarian_loop_succ_cond state \<Longrightarrow> hungarian_loop_succ_cond (hungarian_loop_succ state)"
-  by(auto elim!: hungarian_loop_succ_condE
-         intro!: hungarian_loop_succ_condI
-       simp add: hungarian_loop_succ_def)
-
-lemma succ_and_fail_impossible:
- "\<lbrakk>hungarian_loop_succ_cond state; hungarian_loop_fail_cond state\<rbrakk> \<Longrightarrow> False"
-  by(auto elim!: hungarian_loop_succ_condE hungarian_loop_fail_condE)
+            elim!: hungarian_loop_fail_condE hungarian_loop_succ_condE
+                   hungarian_loop_cont_condE)
+     (auto simp add: search_of_def)
 
 lemma hungarian_loop_induct:
   assumes "hungarian_loop_dom state"
@@ -205,39 +175,15 @@ lemma hungarian_loop_induct:
 proof(induction rule: hungarian_loop.pinduct[OF assms(1)])
   case (1 state)
   note IH = this
-show ?case 
-  proof(cases state rule: hungarian_loop_cases, goal_cases)
+  show ?case 
+  proof(rule assms(2)[OF IH(1)], goal_cases)
     case 1
-    then show ?case
-     by(auto elim!:  hungarian_loop_fail_condE
-            intro!: assms(2)[OF IH(1)]
-          simp add: hungarian_loop_cont_cond_def)
-  next
-    case 2
-    then show ?case 
-     by(auto elim!:  hungarian_loop_succ_condE
-            intro!: assms(2)[OF IH(1)] 
-          simp add: hungarian_loop_cont_cond_def)
-  next
-    case 3
-    show ?case 
-      apply(rule assms(2)[OF IH(1)])
-      using 3 
-      by(auto intro!: IH(2)
-               elim!: hungarian_loop_cont_condE
-            simp add: hungarian_loop_upd_def Let_def 
-               split: option.split prod.split path_search_result.splits)
+    then obtain p M' \<pi>' c' where "search_of state = (Next_Iteration p, M', \<pi>', c')"
+      by(auto elim!: hungarian_loop_cont_condE)
+    thus ?case 
+      by(auto intro!: IH(2) simp add: hungarian_loop_upd_def search_of_def)
   qed
 qed
-
-lemma flag_unchanged: "result (hungarian_loop_upd state) = result state"
-  by(auto simp add: hungarian_loop_upd_def Let_def)
-
-lemma flag_fail: "result (hungarian_loop_fail state) = failure"
-  by(auto simp add: hungarian_loop_fail_def Let_def)
-
-lemma flag_succ: "result (hungarian_loop_succ state) = success"
-  by(auto simp add: hungarian_loop_succ_def Let_def)
 
 definition "path_search_precond M \<pi> =
   (matching_invar M \<and> potential_invar \<pi> \<and> graph_matching G (matching_abstract M) \<and>
@@ -301,6 +247,40 @@ and good_search_resultD:
   "good_search_result M \<pi>' p \<Longrightarrow> graph_augmenting_path G (matching_abstract M) p"
   by(auto simp add: good_search_result_def)
 
+text \<open>The contract of a path search. It returns a matching of the same size and a potential that
+      satisfy the precondition again, together with a certificate for the result: unboundedness
+      of the dual, all left vertices matched, or a tight augmenting path.\<close>
+
+definition "good_search (L::'v set) R M res =
+  (case res of (r, M', \<pi>') \<Rightarrow>
+     path_search_precond M' \<pi>' \<and>
+     card (matching_abstract M') = card (matching_abstract M) \<and>
+     (case r of
+        Dual_Unbounded \<Rightarrow>
+          (\<forall> B. \<exists> \<pi>''. feasible_min_perfect_dual G edge_costs \<pi>'' \<and> sum \<pi>'' (L \<union> R) > B)
+      | Lefts_Matched \<Rightarrow> L \<subseteq> Vs (matching_abstract M')
+      | Next_Iteration p \<Rightarrow> good_search_result M' \<pi>' p))"
+
+lemma good_searchD:
+  assumes "good_search L R M (r, M', \<pi>')"
+  shows "path_search_precond M' \<pi>'"
+        "card (matching_abstract M') = card (matching_abstract M)"
+        "r = Dual_Unbounded \<Longrightarrow> 
+           \<forall> B. \<exists> \<pi>''. feasible_min_perfect_dual G edge_costs \<pi>'' \<and> sum \<pi>'' (L \<union> R) > B"
+        "r = Lefts_Matched \<Longrightarrow> L \<subseteq> Vs (matching_abstract M')"
+        "r = Next_Iteration p \<Longrightarrow> good_search_result M' \<pi>' p"
+  using assms by(auto simp add: good_search_def)
+
+lemma good_searchI:
+  "\<lbrakk>path_search_precond M' \<pi>';
+    card (matching_abstract M') = card (matching_abstract M);
+    r = Dual_Unbounded \<Longrightarrow> 
+       \<forall> B. \<exists> \<pi>''. feasible_min_perfect_dual G edge_costs \<pi>'' \<and> sum \<pi>'' (L \<union> R) > B;
+    r = Lefts_Matched \<Longrightarrow> L \<subseteq> Vs (matching_abstract M');
+    \<And> p. r = Next_Iteration p \<Longrightarrow> good_search_result M' \<pi>' p\<rbrakk>
+   \<Longrightarrow> good_search L R M (r, M', \<pi>')"
+  by(cases r) (auto simp add: good_search_def)
+
 end
 
 subsection \<open>Locale for Proofs\<close>
@@ -308,7 +288,7 @@ subsection \<open>Locale for Proofs\<close>
 locale hungarian_loop = 
  hungarian_loop_spec where edge_costs = edge_costs
 for edge_costs::"'v set \<Rightarrow> real" +
-fixes L R
+fixes L R ctx_invar
 assumes G: 
    "bipartite G L R"
    "card_L = card L"
@@ -329,12 +309,13 @@ and augment:
   "\<And> M p. \<lbrakk>matching_invar M; graph_augmenting_path G (matching_abstract M) p\<rbrakk> \<Longrightarrow> 
          matching_abstract (augment M p) =  matching_abstract M \<oplus> set (edges_of_path p)"
 and path_search:
-  "\<And> M \<pi> B. \<lbrakk>path_search_precond M \<pi>; path_search M \<pi> = Dual_Unbounded\<rbrakk>
-    \<Longrightarrow> \<exists> \<pi>'. feasible_min_perfect_dual G edge_costs \<pi>' \<and> sum \<pi>' (L \<union> R) > B"
-   "\<And> M \<pi>. \<lbrakk>path_search_precond M \<pi>; path_search M \<pi> = Lefts_Matched\<rbrakk> 
-    \<Longrightarrow> L \<subseteq> Vs (matching_abstract M)"
-   "\<And> M \<pi> \<pi>' p. \<lbrakk>path_search_precond M \<pi>; path_search M \<pi> = Next_Iteration p \<pi>'\<rbrakk> 
-    \<Longrightarrow> good_search_result M \<pi>' p" 
+  "\<And> c M \<pi> r M' \<pi>' c'. 
+     \<lbrakk>path_search_precond M \<pi>; ctx_invar c; path_search c M \<pi> = (r, M', \<pi>', c')\<rbrakk>
+     \<Longrightarrow> good_search L R M (r, M', \<pi>')"
+  "\<And> c M \<pi> r M' \<pi>' c'. 
+     \<lbrakk>path_search_precond M \<pi>; ctx_invar c; path_search c M \<pi> = (r, M', \<pi>', c')\<rbrakk>
+     \<Longrightarrow> ctx_invar c'"
+and init_ctx: "ctx_invar init_ctx"
 begin
 
 lemma graph_matching_finite: "graph_matching G M \<Longrightarrow> finite M" 
@@ -345,38 +326,21 @@ lemma graph_matching_finite: "graph_matching G M \<Longrightarrow> finite M"
 subsection \<open>Invariant Setup\<close>
 
 definition "state_invar state = 
-  (matching_invar (buddies state) \<and> potential_invar (potential state) \<and>
-   graph_matching G (matching_abstract (buddies state)) \<and>
-  matching_abstract (buddies state) \<subseteq> 
-        tight_subgraph G edge_costs (potential_abstract (potential state)) \<and>
-  feasible_min_perfect_dual G edge_costs (potential_abstract (potential state)))"
+  (path_search_precond (buddies state) (potential state) \<and> ctx_invar (search_ctx state))"
 
-lemma state_invarE:
-  "state_invar state \<Longrightarrow> 
-   (\<lbrakk>matching_invar (buddies state); potential_invar (potential state);
-     graph_matching G (matching_abstract (buddies state));
-     matching_abstract (buddies state) \<subseteq> 
-          tight_subgraph G edge_costs (potential_abstract (potential state));
-     feasible_min_perfect_dual G edge_costs (potential_abstract (potential state))\<rbrakk>
-     \<Longrightarrow> P)
-   \<Longrightarrow> P"
-and state_invarI:
-  "\<lbrakk>matching_invar (buddies state); potential_invar (potential state);
-    graph_matching G (matching_abstract (buddies state));
-    matching_abstract (buddies state) \<subseteq> 
-          tight_subgraph G edge_costs (potential_abstract (potential state));
-    feasible_min_perfect_dual G edge_costs (potential_abstract (potential state))\<rbrakk>
+lemma state_invarI:
+  "\<lbrakk>path_search_precond (buddies state) (potential state); ctx_invar (search_ctx state)\<rbrakk>
    \<Longrightarrow> state_invar state"
 and state_invarD:
-  "state_invar state \<Longrightarrow> matching_invar (buddies state)"
-  "state_invar state \<Longrightarrow> potential_invar (potential state)"
-  "state_invar state \<Longrightarrow> graph_matching G (matching_abstract (buddies state))"
-  "state_invar state \<Longrightarrow> 
-    matching_abstract (buddies state) \<subseteq> 
-         tight_subgraph G edge_costs (potential_abstract (potential state))"
-  "state_invar state \<Longrightarrow> 
-    feasible_min_perfect_dual G edge_costs (potential_abstract (potential state))"
+  "state_invar state \<Longrightarrow> path_search_precond (buddies state) (potential state)"
+  "state_invar state \<Longrightarrow> ctx_invar (search_ctx state)"
   by(auto simp add: state_invar_def)
+
+lemma search_of_props:
+  assumes "state_invar state" "search_of state = (r, M', \<pi>', c')"
+  shows "good_search L R (buddies state) (r, M', \<pi>')" "ctx_invar c'"
+  using path_search[OF state_invarD[OF assms(1)] assms(2)[unfolded search_of_def]] 
+  by auto
 
 subsection \<open>Invariant Preservation\<close>
 
@@ -387,71 +351,82 @@ lemma
  and card_increase: "card (matching_abstract (buddies (hungarian_loop_upd state)))
                      > card (matching_abstract (buddies state))"
 proof-
-  define M where "M = buddies state"
-  define \<pi> where "\<pi> = potential state"
-  obtain p \<pi>' where path_search_result_is:  "path_search M \<pi> = Next_Iteration p \<pi>'"
-    using assms(1)
-    by(auto elim!: hungarian_loop_cont_condE simp add: M_def \<pi>_def)
-  note state_invars = state_invarD[OF assms(2), folded M_def \<pi>_def]
-  hence path_search_precond: "path_search_precond M \<pi>"
-    by(auto intro!: path_search_precondI)
-  note path_search_props = path_search(3)[OF path_search_precond path_search_result_is]
+  obtain p M \<pi>' c' where search_is: "search_of state = (Next_Iteration p, M, \<pi>', c')"
+    using assms(1) by(auto elim!: hungarian_loop_cont_condE)
+  note search_props = search_of_props[OF assms(2) search_is]
+  note precond = path_search_precondD[OF good_searchD(1)[OF search_props(1)]]
   note path_search_props_unfolded = 
-         good_search_resultD[OF path_search_props]
+         good_search_resultD[OF good_searchD(5)[OF search_props(1) refl]]
   define M' where "M' = augment M p"
-  have state'_is: "hungarian_loop_upd state = state \<lparr>buddies:=M', potential := \<pi>' \<rparr>"
-    using path_search_result_is
-    by(auto simp add: hungarian_loop_upd_def M'_def M_def \<pi>_def)
+  have state'_is: 
+    "hungarian_loop_upd state = state \<lparr>buddies:=M', potential := \<pi>', search_ctx := c'\<rparr>"
+    by(simp add: hungarian_loop_upd_def search_is M'_def)
   have matching_invar': "matching_invar M'" 
-    by(auto intro!: augment(1) simp add: M'_def state_invars(1) path_search_props_unfolded(5))
+    by(auto intro!: augment(1) simp add: M'_def precond(1) path_search_props_unfolded(5))
   have M'_is: "matching_abstract M' = matching_abstract M \<oplus> set (edges_of_path p)"
-    using  state_invars(1) path_search_props_unfolded(5)
+    using precond(1) path_search_props_unfolded(5)
     by(auto simp add: augment(2) M'_def)
   hence new_matching_valid: "graph_matching G (matching_abstract M')"
-    using  state_invars(1) path_search_props_unfolded(5) state_invars(3)
+    using precond(1,3) path_search_props_unfolded(5)
     by(auto intro!: graph_matching_finite dest: Berge_2')
   have M'_tight:
      "matching_abstract M' \<subseteq> tight_subgraph G edge_costs (potential_abstract \<pi>')" 
   proof(rule, goal_cases)
     case (1 e)
    hence  "e \<in> matching_abstract M \<or> e \<in> set (edges_of_path p)" "e \<in> G" 
-     using state_invars(3) path_search_props_unfolded(5)
+     using precond(3) path_search_props_unfolded(5)
      by(auto simp add: in_symmetric_diff_iff M'_is intro: path_ball_edges )
    then show ?case 
      using path_search_props_unfolded(2,4)
      by auto
  qed
-    show "state_invar (hungarian_loop_upd state)"
-      using new_matching_valid  M'_tight
-      by(auto intro!: state_invarI matching_invar' path_search_props_unfolded 
-            simp add: state'_is)
-    show  "card (matching_abstract (buddies (hungarian_loop_upd state)))
+  show "state_invar (hungarian_loop_upd state)"
+    using new_matching_valid M'_tight search_props(2)
+    by(auto intro!: state_invarI path_search_precondI matching_invar' path_search_props_unfolded 
+          simp add: state'_is)
+  have "card (matching_abstract M') > card (matching_abstract M)"
+    by(auto intro!: new_matching_bigger graph_matching_finite precond(3)
+          simp add: M'_is path_search_props_unfolded(5,1))
+  thus "card (matching_abstract (buddies (hungarian_loop_upd state)))
                      > card (matching_abstract (buddies state))"
-      by(auto intro!: new_matching_bigger graph_matching_finite state_invars(3)
-            simp add: state'_is M_def[symmetric] M'_is  path_search_props_unfolded(5,1))
-  qed
+    using good_searchD(2)[OF search_props(1)] by(simp add: state'_is)
+qed
 
-lemma 
- assumes "state_invar state"
- shows state_invar_pres_fail: "state_invar (hungarian_loop_fail state)"
-   and state_invar_pres_succ: "state_invar (hungarian_loop_succ state)"
-  using assms
-  by(auto intro!: state_invarI
-           elim!: state_invarE
-        simp add: hungarian_loop_fail_def hungarian_loop_succ_def)
+lemma fail_props:
+  assumes "hungarian_loop_fail_cond state" "state_invar state"
+  shows "state_invar (hungarian_loop_fail state)" 
+        "result (hungarian_loop_fail state) = failure"
+        "\<forall> B. \<exists> \<pi>. feasible_min_perfect_dual G edge_costs \<pi> \<and> sum \<pi> (L \<union> R) > B"
+proof-
+  obtain M' \<pi>' c' where search_is: "search_of state = (Dual_Unbounded, M', \<pi>', c')"
+    using assms(1) by(auto elim!: hungarian_loop_fail_condE)
+  note search_props = search_of_props[OF assms(2) search_is]
+  show "state_invar (hungarian_loop_fail state)"
+    using good_searchD(1)[OF search_props(1)] search_props(2)
+    by(auto intro!: state_invarI simp add: hungarian_loop_fail_def search_is)
+  show "result (hungarian_loop_fail state) = failure"
+    by(simp add: hungarian_loop_fail_def search_is)
+  show "\<forall> B. \<exists> \<pi>. feasible_min_perfect_dual G edge_costs \<pi> \<and> sum \<pi> (L \<union> R) > B"
+    using good_searchD(3)[OF search_props(1) refl] .
+qed
 
-lemma state_invar_pres:
-  assumes "hungarian_loop_dom state"
-          "state_invar state"
-    shows "state_invar (hungarian_loop state)"
-  using assms(2)
-proof(induction rule: hungarian_loop_induct[OF assms(1)])
-  case (1 state)
-  then show ?case
-    by(cases state rule: hungarian_loop_cases)
-      (auto intro: state_invar_pres_fail state_invar_pres_succ 
-                   state_invar_pres_one_step 
-         simp add: hungarian_loop_simps)
+lemma succ_props:
+  assumes "hungarian_loop_succ_cond state" "state_invar state"
+  shows "state_invar (hungarian_loop_succ state)" 
+        "result (hungarian_loop_succ state) = success"
+        "L \<subseteq> Vs (matching_abstract (buddies (hungarian_loop_succ state)))"
+proof-
+  obtain M' \<pi>' c' where search_is: "search_of state = (Lefts_Matched, M', \<pi>', c')"
+    using assms(1) by(auto elim!: hungarian_loop_succ_condE)
+  note search_props = search_of_props[OF assms(2) search_is]
+  show "state_invar (hungarian_loop_succ state)"
+    using good_searchD(1)[OF search_props(1)] search_props(2)
+    by(auto intro!: state_invarI simp add: hungarian_loop_succ_def search_is)
+  show "result (hungarian_loop_succ state) = success"
+    by(simp add: hungarian_loop_succ_def search_is)
+  show "L \<subseteq> Vs (matching_abstract (buddies (hungarian_loop_succ state)))"
+    using good_searchD(4)[OF search_props(1) refl] 
+    by(simp add: hungarian_loop_succ_def search_is)
 qed
 
 subsection \<open>Termination\<close>
@@ -470,7 +445,7 @@ proof(induction n arbitrary: state rule: less_induct)
     hence card_later_less_G:
         "card (matching_abstract (buddies (hungarian_loop_upd state))) \<le> card G"
       using G(1,4,5)  finite_Vs_then_finite finite_parts_bipartite_graph_invar
-      by(auto intro!: card_mono dest!: state_invarD(3))
+      by(auto intro!: card_mono dest!: state_invarD(1) path_search_precondD(3))
     hence card_decrease:
          "card G - card (matching_abstract (buddies (hungarian_loop_upd state))) < n"
       using card_increase[OF 3 less(2)] less(3) by linarith
@@ -484,57 +459,45 @@ lemmas hungarian_loop_termination = hungarian_loop_termination_induction[OF _ re
 
 subsection \<open>Correctness\<close>
 
-lemma final_flag:
-  assumes "hungarian_loop_dom state"
-    shows "result (hungarian_loop state) \<noteq> notyetterm"
-proof(induction rule: hungarian_loop_induct[OF assms(1)])
-  case (1 state)
-  then show ?case
-    by(cases state rule: hungarian_loop_cases)
-      (auto simp add: hungarian_loop_simps flag_fail flag_succ)
-qed
-
-lemma if_fail_flag_then_fail:
-  assumes "hungarian_loop_dom state" "result (hungarian_loop state) = failure"
-    shows "hungarian_loop_fail_cond (hungarian_loop state)"
+lemma hungarian_loop_result:
+  assumes "hungarian_loop_dom state" "state_invar state"
+  shows "state_invar (hungarian_loop state) \<and> result (hungarian_loop state) \<noteq> notyetterm \<and>
+         (result (hungarian_loop state) = success \<longrightarrow>
+            L \<subseteq> Vs (matching_abstract (buddies (hungarian_loop state)))) \<and>
+         (result (hungarian_loop state) = failure \<longrightarrow>
+            (\<forall> B. \<exists> \<pi>. feasible_min_perfect_dual G edge_costs \<pi> \<and> sum \<pi> (L \<union> R) > B))"
   using assms(2)
 proof(induction rule: hungarian_loop_induct[OF assms(1)])
   case (1 state)
-  then show ?case
-    by(cases state rule: hungarian_loop_cases)
-      (auto simp add: hungarian_loop_simps  hungarian_loop_succ_def
-               intro: fail_cond_after_fail_upd)
+  note IH = this
+  show ?case
+  proof(cases state rule: hungarian_loop_cases)
+    assume fc: "hungarian_loop_fail_cond state"
+    show ?thesis 
+      using fail_props[OF fc IH(3)] by(simp add: hungarian_loop_simps(1)[OF fc])
+  next
+    assume sc: "hungarian_loop_succ_cond state"
+    show ?thesis 
+      using succ_props[OF sc IH(3)] by(simp add: hungarian_loop_simps(2)[OF sc])
+  next
+    assume cc: "hungarian_loop_cont_cond state"
+    show ?thesis 
+      using IH(2)[OF cc] state_invar_pres_one_step[OF cc IH(3)]
+      by(simp add: hungarian_loop_simps(3)[OF cc IH(1)])
+  qed
 qed
 
-lemma if_succ_flag_then_succ:
-  assumes "hungarian_loop_dom state" "result (hungarian_loop state) = success"
-    shows "hungarian_loop_succ_cond (hungarian_loop state)"
-  using assms(2)
-proof(induction rule: hungarian_loop_induct[OF assms(1)])
-  case (1 state)
-  then show ?case
-    by(cases state rule: hungarian_loop_cases)
-      (auto simp add: hungarian_loop_simps  hungarian_loop_fail_def
-               intro: succ_cond_after_succ_upd)
-qed
-
-lemma min_perfect_if_algo_says_so:
-  assumes "hungarian_loop_succ_cond state"
-          "state_invar state" "card_L = card_R"
+lemma min_perfect_if_lefts_matched:
+  assumes "state_invar state" "card_L = card_R"
+          "L \<subseteq> Vs (matching_abstract (buddies state))"
     shows "min_weight_perfect_matching G edge_costs (matching_abstract (buddies state))"
 proof-
-  have "L \<subseteq> Vs (matching_abstract (buddies state))" 
-    using assms(1,2)
-    by(intro path_search(2))
-      (auto elim!: hungarian_loop_succ_condE state_invarE
-            intro: path_search_precondI)
-  hence perfect: "perfect_matching G (matching_abstract (buddies state))"
-    using  assms(2,3) 
-    by (auto intro: all_left_matched_perfect[OF G(1)] 
-             elim!: state_invarE 
-          simp add: G(2,3,5))
+  note precond = path_search_precondD[OF state_invarD(1)[OF assms(1)]]
+  have perfect: "perfect_matching G (matching_abstract (buddies state))"
+    using assms(2,3) precond(3)
+    by (auto intro: all_left_matched_perfect[OF G(1)] simp add: G(2,3,5))
   thus ?thesis
-    using G(1,4,5) finite_parts_bipartite_graph_invar state_invarD(4,5)[OF assms(2)]
+    using G(1,4,5) finite_parts_bipartite_graph_invar precond(4,5)
     by(auto intro!: min_weight_perfect_if_tight(1)[of _ _ "potential_abstract (potential state)"])
 qed
 
@@ -544,9 +507,8 @@ lemma infeasible_if_sides_unequal_size:
   by(intro no_perfect_matching_one_side_bigger)
     (auto intro!: G(1) simp add: G(2,3))
 
-lemma no_perfect_if_algo_says_so:
-  assumes "hungarian_loop_fail_cond state"
-          "state_invar state"
+lemma no_perfect_if_unbounded:
+  assumes "\<forall> B. \<exists> \<pi>. feasible_min_perfect_dual G edge_costs \<pi> \<and> sum \<pi> (L \<union> R) > B"
     shows "\<nexists> M. perfect_matching G M"
 proof(rule notI, goal_cases)
   case 1
@@ -554,9 +516,7 @@ proof(rule notI, goal_cases)
     by auto
   define B where "B = sum edge_costs M"
   obtain \<pi> where pi: "feasible_min_perfect_dual G edge_costs \<pi>" "B < sum \<pi> (L \<union> R)"
-    using assms(1,2)
-    by(auto elim!: hungarian_loop_fail_condE state_invarE 
-            dest!: path_search(1)[OF path_search_precondI])
+    using assms by blast
   moreover hence "sum \<pi> (Vs G) \<le> sum edge_costs M"
     using M G(1,4,5) finite_parts_bipartite_graph_invar
     by(auto intro!: min_perfect_matching_weak_duality)
@@ -570,8 +530,8 @@ subsection \<open>The Initial State\<close>
 
 lemma initial_state_invar: 
   "state_invar initial_state"
-  by(auto intro!: state_invarI 
-        simp add: initial_state_def matching potential)
+  by(auto intro!: state_invarI path_search_precondI
+        simp add: initial_state_def matching potential init_ctx)
 
 lemma initial_state_hungarian_dom:
   "hungarian_loop_dom initial_state"
@@ -581,72 +541,45 @@ lemma initial_state_loops_same:
   "hungarian_loop_impl initial_state = hungarian_loop initial_state"
   by (simp add: hungarian_loop_impl_same initial_state_hungarian_dom)
 
-lemma loop_on_initial_state_invar:
+lemma loop_on_initial_state_result:
   "state_invar (hungarian_loop initial_state)"
-  by (simp add: initial_state_hungarian_dom initial_state_invar state_invar_pres)
+  "result (hungarian_loop initial_state) \<noteq> notyetterm"
+  "result (hungarian_loop initial_state) = success \<Longrightarrow>
+     L \<subseteq> Vs (matching_abstract (buddies (hungarian_loop initial_state)))"
+  "result (hungarian_loop initial_state) = failure \<Longrightarrow>
+     \<forall> B. \<exists> \<pi>. feasible_min_perfect_dual G edge_costs \<pi> \<and> sum \<pi> (L \<union> R) > B"
+  using hungarian_loop_result[OF initial_state_hungarian_dom initial_state_invar] by auto
 
 subsection \<open>Final Correctness\<close>
+
+lemma hungarian_cases:
+  "hungarian = None \<Longrightarrow> 
+     card_L \<noteq> card_R \<or> result (hungarian_loop initial_state) = failure"
+  "hungarian = Some M \<Longrightarrow> 
+     card_L = card_R \<and> result (hungarian_loop initial_state) = success \<and>
+     M = buddies (hungarian_loop initial_state)"
+  using loop_on_initial_state_result(2)
+  by(auto simp add: hungarian_def Let_def initial_state_loops_same 
+             split: if_split_asm result.split_asm)
 
 theorem hungarian_correctness:
  "hungarian = None \<Longrightarrow> \<nexists> M. perfect_matching G M"
  "hungarian = Some M \<Longrightarrow> min_weight_perfect_matching G edge_costs (matching_abstract M)"
-proof(goal_cases)
-  case 1
-  show ?case
-  proof(cases "card_L = card_R")
-    case True
-    hence "result (hungarian_loop initial_state) = failure" 
-      using 1 initial_state_hungarian_dom 
-      by(auto simp add: Let_def result.split[of "\<lambda> x. x = None"]
-                        initial_state_loops_same if_split[of "\<lambda> x. x = None"]
-                        hungarian_loop_spec.hungarian_def
-                 intro: result.exhaust[of "result (hungarian_loop initial_state)"]
-                  dest: final_flag) 
-    hence "hungarian_loop_fail_cond (hungarian_loop initial_state)" 
-      using if_fail_flag_then_fail initial_state_hungarian_dom by blast
-    then show ?thesis 
-      using loop_on_initial_state_invar
-      by(rule no_perfect_if_algo_says_so)
-  next
-    case False
-    then show ?thesis 
-      by(rule infeasible_if_sides_unequal_size)
-  qed
-next
-  case 2
-  hence "result (hungarian_loop initial_state) = success" 
-      and same_cards:"card_L = card_R"
-      and M_is: "M = buddies (hungarian_loop initial_state)"
-      using 2 initial_state_hungarian_dom
-      by(auto simp add: hungarian_def Let_def result.split[of "\<lambda> x. x = Some _"]
-                        if_split[of "\<lambda> x. x = Some _"] initial_state_loops_same 
-                 intro: result.exhaust[of "result (hungarian_loop initial_state)"]
-                  dest: final_flag) 
-    hence "hungarian_loop_succ_cond (hungarian_loop initial_state)" 
-      using if_succ_flag_then_succ initial_state_hungarian_dom by blast
-    thus ?case
-      using loop_on_initial_state_invar same_cards
-      by(auto intro!: min_perfect_if_algo_says_so simp add: M_is)
-  qed
+proof-
+  show "hungarian = None \<Longrightarrow> \<nexists> M. perfect_matching G M"
+    using hungarian_cases(1) loop_on_initial_state_result(4)
+          infeasible_if_sides_unequal_size no_perfect_if_unbounded 
+    by blast
+  show "hungarian = Some M \<Longrightarrow> min_weight_perfect_matching G edge_costs (matching_abstract M)"
+    using hungarian_cases(2) loop_on_initial_state_result(1,3)
+    by(auto intro: min_perfect_if_lefts_matched)
+qed
 
 lemma hungarian_final_invar:
   "hungarian = Some M \<Longrightarrow> matching_invar M"
-proof(goal_cases)
-  case 1
-  hence "result (hungarian_loop initial_state) = success" 
-      and same_cards:"card_L = card_R"
-      and M_is: "M = buddies (hungarian_loop initial_state)"
-      using 1 initial_state_hungarian_dom
-      by(auto simp add: hungarian_def Let_def result.split[of "\<lambda> x. x = Some _"]
-                        if_split[of "\<lambda> x. x = Some _"] initial_state_loops_same 
-                 intro: result.exhaust[of "result (hungarian_loop initial_state)"]
-                  dest: final_flag) 
-    hence "hungarian_loop_succ_cond (hungarian_loop initial_state)" 
-      using if_succ_flag_then_succ initial_state_hungarian_dom by blast
-    thus ?case
-      using loop_on_initial_state_invar
-      by(auto simp add: M_is elim!: state_invarE)
-  qed
+  using hungarian_cases(2) loop_on_initial_state_result(1)
+  by(auto dest: state_invarD(1) path_search_precondD(1))
 
 end
+
 end

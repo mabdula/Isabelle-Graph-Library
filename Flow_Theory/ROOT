@@ -14,6 +14,7 @@ theories
   Residual
   STFlow
   Spanning_Tree_Flow
+  Unit_Flows
   
 
 document_files

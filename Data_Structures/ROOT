@@ -16,11 +16,20 @@ session "Data_Structures" = "HOL-Data_Structures" +
     Iterable_Set_Specs
     Fixed_Univ_Key_Value_Queue_Specs
     Real_Embedding
+    Bounded_Queue_Specs
+    Fixed_Univ_Buckets_Specs
+    Fixed_Univ_List_Specs
+    Iterable_Set_Reset_To_Specs
     
     Fixed_Univ_Set_Specs_Imp
     Fixed_Univ_Map_Specs_Imp
     Iterable_Set_Specs_Imp
     Fixed_Univ_Key_Value_Queue_Specs_Imp  
+    Fixed_Univ_Set_Iterate_Imp
+    Bounded_Queue_Specs_Imp
+    Fixed_Univ_Buckets_Specs_Imp
+    Fixed_Univ_List_Specs_Imp
+    Iterable_Set_Reset_To_Specs_Imp
     Imp_Map_Set_Addons
     Array_Map_Set_Addons
     
@@ -28,4 +37,10 @@ session "Data_Structures" = "HOL-Data_Structures" +
     "Implementations/Indexed_Heap_Imperative"
     "Implementations/Imp_Bool_Set"
     "Implementations/Imp_Range_Iteration"
+    "Implementations/Imp_Bool_Set_Iterate"
+    "Implementations/Imp_Array_Map"
+    "Implementations/Array_Linked_Lists"
+    "Implementations/Imp_Array_Buckets"
+    "Implementations/Imp_Array_Move_To_Front_List"
+    "Implementations/Imp_Array_Ring_Queue"
     

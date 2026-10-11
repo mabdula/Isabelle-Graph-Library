@@ -1,0 +1,9 @@
+session "Menger_Flows" = "HOL-Library" +
+  sessions
+    Directed_Set_Graphs
+    Flow_Theory
+
+  theories
+    Menger
+    Menger_Edge
+    Menger_Vertex

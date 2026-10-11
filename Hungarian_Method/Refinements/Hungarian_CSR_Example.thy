@@ -1,5 +1,6 @@
 theory Hungarian_CSR_Example
-  imports Hungarian_CSR_Variants
+  imports
+    Hungarian_CSR_Variants
 begin
 
 section \<open>The Example of  \<open>Hungarian_Example.thy\<close> with Integer Weights\<close>
@@ -21,6 +22,7 @@ definition "ls_ex = [0::nat, 2, 4, 6, 8]"
 definition "rs_ex = [1::nat, 3, 5, 7, 9]"
 definition "n_ex = (10::nat)"
 definition "\<theta> = 10"
+definition "cap_ex = (3::nat)"
 
 subsection \<open>Perfect Matchings\<close>
 
@@ -34,11 +36,10 @@ definition hungarian_csr_example :: "(result \<times> (nat \<times> nat) list \<
      Wa \<leftarrow> Array.of_list ws_ex;
      La \<leftarrow> Array.of_list ls_ex;
      Rv \<leftarrow> Array.of_list rs_ex;
-     (r, Mi, Pti) \<leftarrow> hungarian_csr_run_int n_ex \<theta> Fa Ta Wa La Rv;
+     (r, Mi, Pti) \<leftarrow> hungarian_csr_run_int n_ex \<theta> cap_ex Fa Ta Wa La Rv;
      M \<leftarrow> Array.freeze Mi;
      P \<leftarrow> Array.freeze Pti;
-     return (r, [(u, the (M ! u)). u \<leftarrow> ls_ex, M ! u \<noteq> None],
-             map (\<lambda>x. case x of None \<Rightarrow> 0 | Some p \<Rightarrow> p) P) }"
+     return (r, [(u, M ! u). u \<leftarrow> ls_ex, M ! u \<noteq> n_ex], P) }"
 
 definition hungarian_csr_max_perfect_example :: "(result \<times> (nat \<times> nat) list) Heap" where
   "hungarian_csr_max_perfect_example = do {
@@ -47,9 +48,9 @@ definition hungarian_csr_max_perfect_example :: "(result \<times> (nat \<times> 
      Wa \<leftarrow> Array.of_list ws_ex;
      La \<leftarrow> Array.of_list ls_ex;
      Rv \<leftarrow> Array.of_list rs_ex;
-     (r, Mi, Pti) \<leftarrow> hungarian_csr_max_perfect_run_int n_ex \<theta> Fa Ta Wa La Rv;
+     (r, Mi, Pti) \<leftarrow> hungarian_csr_max_perfect_run_int n_ex \<theta> cap_ex Fa Ta Wa La Rv;
      M \<leftarrow> Array.freeze Mi;
-     return (r, [(u, the (M ! u)). u \<leftarrow> ls_ex, M ! u \<noteq> None]) }"
+     return (r, [(u, M ! u). u \<leftarrow> ls_ex, M ! u \<noteq> n_ex]) }"
 
 text \<open>Minimum weight perfect matching, and maximum weight perfect matching.\<close>
 
@@ -59,7 +60,7 @@ ML_val \<open>@{code hungarian_csr_max_perfect_example} ()\<close>
 subsection \<open>The Other Variants\<close>
 
 definition run_matching_example ::
-  "(nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array_map Heap) \<Rightarrow>
+  "(nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array Heap) \<Rightarrow>
    (nat \<times> nat) list Heap" where
   "run_matching_example prog = do {
      Fa \<leftarrow> Array.of_list fs_ex;
@@ -69,12 +70,14 @@ definition run_matching_example ::
      Rv \<leftarrow> Array.of_list rs_ex;
      Mo \<leftarrow> prog n_ex Fa Ta Wa La Rv;
      M \<leftarrow> Array.freeze Mo;
-     return [(u, the (M ! u)). u \<leftarrow> ls_ex, u < length M \<and> M ! u \<noteq> None] }"
+     return [(u, M ! u). u \<leftarrow> ls_ex, M ! u \<noteq> n_ex] }"
 
-definition "ex_min_matching = run_matching_example (hungarian_csr_mw_run_int False \<theta>)"
-definition "ex_max_matching = run_matching_example (hungarian_csr_mw_run_int True \<theta>)"
-definition "ex_min_max_card_matching = run_matching_example (hungarian_csr_mwmc_run_int False \<theta>)"
-definition "ex_max_max_card_matching = run_matching_example (hungarian_csr_mwmc_run_int True \<theta>)"
+definition "ex_min_matching = run_matching_example (hungarian_csr_mw_run_int False \<theta> cap_ex)"
+definition "ex_max_matching = run_matching_example (hungarian_csr_mw_run_int True \<theta> cap_ex)"
+definition "ex_min_max_card_matching =
+  run_matching_example (hungarian_csr_mwmc_run_int False \<theta> cap_ex)"
+definition "ex_max_max_card_matching =
+  run_matching_example (hungarian_csr_mwmc_run_int True \<theta> cap_ex)"
 
 text \<open>Minimum and maximum weight matchings, and minimum and maximum weight matchings among the
       matchings of maximum cardinality.\<close>
@@ -110,6 +113,7 @@ interpretation int_embedding: real_embedding "of_int :: int \<Rightarrow> real"
 text \<open>The input satisfies the assumptions of @{locale hungarian_csr_input}.\<close>
 
 interpretation ex: hungarian_csr_input "of_int :: int \<Rightarrow> real" n_ex  fs_ex ts_ex ws_ex ls_ex rs_ex \<theta>
+  cap_ex
   apply (intro hungarian_csr_input.intro int_embedding.real_embedding_axioms
                hungarian_csr_input_axioms.intro)
   apply (simp_all add: fs_ex_def ts_ex_def ws_ex_def ls_ex_def rs_ex_def n_ex_def

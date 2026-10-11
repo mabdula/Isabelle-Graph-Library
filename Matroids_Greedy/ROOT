@@ -7,3 +7,5 @@ session "Matroids_Greedy" = "HOL-Data_Structures" +
     "Matroids_Theory"
     "Indep_System_Matroids_Specs"
     "Best_In_Greedy"
+    "Greedy_Common"
+    "Worst_Out_Greedy"

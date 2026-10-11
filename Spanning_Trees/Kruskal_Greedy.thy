@@ -128,7 +128,7 @@ global_interpretation Kruskal_Greedy: Best_In_Greedy'
     and   kruskal_init' = Kruskal_Greedy.initial_state'
     and indep' = "Kruskal_Greedy.indep'"
     and to_ordinary = Kruskal_Greedy.to_ordinary
-  apply (subst Best_In_Greedy'_def, subst Best_In_Greedy_def)
+  apply (subst Best_In_Greedy'_def, subst Best_In_Greedy_def, subst Greedy_Common_def)
   by(auto intro!: Best_In_Greedy'_axioms.intro 
       simp add: Matroid_Specs_Inst.Matroid_Specs_axioms Pair_Graph_RBT.set.Set_axioms
       dfs.Graph.vset.set.invar_insert set.invar_empty)
@@ -753,13 +753,13 @@ for input_G::"(('a::linorder \<times> 'a) \<times> color) tree"+
 begin
 
 lemma best_in_greedy_axioms:
-  shows "Best_In_Greedy.BestInGreedy_axioms vset_inv t_set input_G
+  shows "Greedy_Common.greedy_axioms vset_inv t_set input_G
      (Kruskal_Greedy.indep_graph_matroid input_G)"
   by(auto simp add:  Matroid_Specs_Inst.invar_def local.indep_graph_matroid_def
-      Best_In_Greedy.BestInGreedy_axioms_def[OF Kruskal_Greedy.Kruskal_Greedy.Best_In_Greedy_axioms] G_good Kruskal_Greedy.indep_graph_matroid_def
+      Greedy_Common.greedy_axioms_def[OF Kruskal_Greedy.Kruskal_Greedy.Greedy_Common_axioms] G_good Kruskal_Greedy.indep_graph_matroid_def
       Matroid_Specs_Inst.finite_setsI)
 
-lemma sort_desc_axioms: "Best_In_Greedy.sort_desc_axioms Kruskal_Greedy.carrier_sorted"
+lemma sort_desc_axioms: "Greedy_Common.sort_desc_axioms Kruskal_Greedy.carrier_sorted"
   by (simp add: Kruskal_Greedy.sort_desc_axioms_def insort_key_desc_stable
       length_insort_key_desc set_insort_key_desc sorted_desc_f_insort_key_desc)
 

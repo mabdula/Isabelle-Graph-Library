@@ -49,9 +49,6 @@ definition "c_zero = (Leaf :: (('e \<times> real) \<times> color) tree)"
 
 definition "c_shift Rv e cm = fold_rbt (\<lambda> x acc. update x (c_lookup acc x + e) acc) Rv cm"
 
-definition "weight cm (Ms::('e,'v) matching_set) =
-  inner_fold Ms (\<lambda> x acc. c_lookup cm x + acc) (0::real)"
-
 definition "weight_Max (V::('e \<times> color) tree) cm =
   the (fold_rbt (\<lambda> x acc. Some (case acc of None \<Rightarrow> c_lookup cm x | Some m \<Rightarrow> max m (c_lookup cm x))) V None)"
 
@@ -130,33 +127,6 @@ proof-
   qed
   thus ?thesis
     using xs_prop(1,2) unfolding xs_prop(3) by auto
-qed
-
-lemma inner_fold_distinct_spec:
-  "invar_matching M \<Longrightarrow>
-   \<exists>xs. distinct xs \<and> set xs = set_matching M \<and> inner_fold M f init = foldr f xs init"
-proof(induction M)
-  case (MATCH eds lft rht)
-  have vset_inv_eds: "vset_inv eds"
-    using MATCH by (simp add: invar_matching.simps)
-  show ?case
-    using preorder_witness[of eds f init]
-    by (auto intro!: exI[of _ "map fst (preorder eds)"]
-        simp add: set_matching_def bst_distinct_preorder[OF vset_inv_eds[unfolded vset_inv_def, THEN conjunct2]]
-          Tree2_set_tree_is_fst_of_tree_set_tree in_image_with_fst_eq)
-qed
-
-lemma weight_correct:
-  assumes "c_invar cm" "invar_matching Ms"
-  shows "weight cm Ms = sum (c_lookup cm) (set_matching Ms)"
-proof-
-  obtain xs where xs_prop: "distinct xs" "set xs = set_matching Ms"
-    "inner_fold Ms (\<lambda> x acc. c_lookup cm x + acc) 0 = foldr (\<lambda> x acc. c_lookup cm x + acc) xs 0"
-    using inner_fold_distinct_spec[OF assms(2), of _ 0] by auto
-  have "foldr (\<lambda> x acc. c_lookup cm x + acc) xs (0::real) = sum (c_lookup cm) (set xs)"
-    using xs_prop(1) by (induction xs) auto
-  thus ?thesis
-    unfolding weight_def xs_prop(3) xs_prop(2) by simp
 qed
 
 lemma foldr_max_some:
@@ -254,7 +224,7 @@ subsection \<open>The \<open>reach_set\<close> oracle, obtained from the existin
 
 text \<open>\<open>reach_set Src G\<close> computes the set of vertices reachable from \<open>Src\<close> in \<open>G\<close> (including
 \<open>Src\<close> itself), by running the BFS already interpreted concretely in 
-(via  \<open>Compute_Path.thy\<close>. BFS's precondition needs every source vertex to already be a
+(via \<open>Compute_Path.thy\<close>). BFS's precondition needs every source vertex to already be a
 vertex of the graph (\<open>t_set Src \<subseteq> dVs G\<close>); to satisfy this unconditionally we augment the graph
 with a self-loop at every source vertex before running BFS. The following lemma shows that this
 augmentation does not change which vertices are reachable via genuine walks.\<close>
@@ -534,7 +504,7 @@ text \<open>As in @{file "Max_Bipartite_Matching_Matroid.thy"}, we fix a concret
 build the weighted matroid intersection instance on top. The local definitions are named with a
 \<open>W\<close>-prefix to avoid colliding with the globally-exported \<open>Edges\<close>/\<open>X\<close>/\<open>Y\<close>/\<open>to_dbltn\<close> constants of
 the very same bottom context in @{file "Max_Bipartite_Matching_Matroid.thy"} (both files import
- \<open>Matroid_Intersection_Algorithm.thy\<close> into the same name space).\<close>
+\<open>Matroid_Intersection_Algorithm.thy\<close> into the same name space).\<close>
 
 context
   fixes left_vertex::"'e::linorder \<Rightarrow> 'v::linorder"
@@ -659,7 +629,6 @@ interpretation weighted_matching_algorithm: weighted_intersection
     and weight_Max = weighted_matching_as_matroid_intersection.weight_Max
     and restrict_to_max = weighted_matching_as_matroid_intersection.restrict_to_max
     and reach_set = reach_set
-    and weight = weighted_matching_as_matroid_intersection.weight
     and eps_fold = weighted_matching_as_matroid_intersection.eps_fold
     and eps_fold_red = weighted_matching_as_matroid_intersection.eps_fold_red
 proof(rule weighted_intersection.intro, goal_cases)
@@ -823,18 +792,13 @@ next
     then show ?case
       by (rule reach_set_final_correct)
   next
-    case (29 c X)
-    then show ?case
-      by (auto intro: weighted_matching_as_matroid_intersection.weight_correct
-          simp add: Wsame_invar set_matching_def)
-  next
-    case (30 X f a)
+    case (29 X f a)
     then show ?case
       by (auto intro: matching_as_matroid_intersection_proofs.inner_fold_spec
           simp add: Wsame_invar set_matching_def
           weighted_matching_as_matroid_intersection.eps_fold_def inner_fold_def)
   next
-    case (31 X f a)
+    case (30 X f a)
     then show ?case
       by (auto intro: matching_as_matroid_intersection_proofs.outer_fold_spec
           simp add: set_invar_red_def to_set_red_def
@@ -860,35 +824,35 @@ lemma Wsum_dbltn:
 
 theorem weighted_solution:
   "max_weight_matching (Wto_dbltn ` WEdges) Wweight
-     (Wto_dbltn ` (set_matching (wbest (weighted_matching_algorithm.weighted_matroid_intersection
+     (Wto_dbltn ` (set_matching (wsol (weighted_matching_algorithm.weighted_matroid_intersection
                       (weighted_matching_algorithm.weighted_initial_state cost_map)))))"
 proof-
-  define best where "best = set_matching (wbest (weighted_matching_algorithm.weighted_matroid_intersection
+  define sol where "sol = set_matching (wsol (weighted_matching_algorithm.weighted_matroid_intersection
                       (weighted_matching_algorithm.weighted_initial_state cost_map)))"
   have ci: "weighted_matching_as_matroid_intersection.c_invar cost_map"
     using cost_map_inv by (simp add: weighted_matching_as_matroid_intersection.c_invar_def)
   have opt: "weighted_double_matroid.is_opt Windep1 Windep2
-               (weighted_matching_as_matroid_intersection.c_lookup cost_map) best"
+               (weighted_matching_as_matroid_intersection.c_lookup cost_map) sol"
     using weighted_matching_algorithm.weighted_matroid_intersection_correct[OF ci]
-    by (simp add: best_def)
+    by (simp add: sol_def)
   have dm: "weighted_double_matroid WEdges Windep1 Windep2"
     using Wdouble_matroid by (simp add: weighted_double_matroid_def)
-  have opt': "Windep1 best" "Windep2 best"
+  have opt': "Windep1 sol" "Windep2 sol"
     "\<And>Y. Windep1 Y \<Longrightarrow> Windep2 Y \<Longrightarrow>
        sum (weighted_matching_as_matroid_intersection.c_lookup cost_map) Y
-         \<le> sum (weighted_matching_as_matroid_intersection.c_lookup cost_map) best"
+         \<le> sum (weighted_matching_as_matroid_intersection.c_lookup cost_map) sol"
     using opt by (auto simp add: weighted_double_matroid.is_opt_def[OF dm])
-  have best_sub: "best \<subseteq> WEdges"
+  have sol_sub: "sol \<subseteq> WEdges"
     using opt'(1) by (simp add: Windep1_def matching_as_matroid_intersection.indep1_def)
-  have gm: "graph_matching (Wto_dbltn ` WEdges) (Wto_dbltn ` best)"
+  have gm: "graph_matching (Wto_dbltn ` WEdges) (Wto_dbltn ` sol)"
     using opt'(1,2)[unfolded Windep1_def Windep2_def]
     by (intro matching_as_matroid_intersection.double_indep_to_graph_matching)
   show ?thesis
-    unfolding best_def[symmetric] max_weight_matching_def
+    unfolding sol_def[symmetric] max_weight_matching_def
   proof(intro conjI allI impI)
-    show "matching (Wto_dbltn ` best)" using gm by auto
+    show "matching (Wto_dbltn ` sol)" using gm by auto
   next
-    show "Wto_dbltn ` best \<subseteq> Wto_dbltn ` WEdges" using gm by auto
+    show "Wto_dbltn ` sol \<subseteq> Wto_dbltn ` WEdges" using gm by auto
   next
     fix M' assume M'_gm: "graph_matching (Wto_dbltn ` WEdges) M'"
     have "\<exists>M_impl. M' = Wto_dbltn ` M_impl \<and> matching_as_matroid_intersection.indep1 M_impl \<and>
@@ -899,8 +863,8 @@ proof-
       by auto
     have sub: "M_impl \<subseteq> WEdges"
       using M_impl_prop(2) by (simp add: matching_as_matroid_intersection.indep1_def)
-    show "sum Wweight M' \<le> sum Wweight (Wto_dbltn ` best)"
-      unfolding M_impl_prop(1) Wsum_dbltn[OF sub] Wsum_dbltn[OF best_sub]
+    show "sum Wweight M' \<le> sum Wweight (Wto_dbltn ` sol)"
+      unfolding M_impl_prop(1) Wsum_dbltn[OF sub] Wsum_dbltn[OF sol_sub]
       using opt'(3)[of M_impl] M_impl_prop(2,3)
       by (simp add: Windep1_def Windep2_def)
   qed

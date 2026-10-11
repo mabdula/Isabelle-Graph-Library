@@ -15,10 +15,8 @@ text \<open>The imperative counterpart of the path search of
   targets are scanned directly. The result is that of the functional path search with the set
   model of solutions.\<close>
 
-(* NEW (weighted extension): subsection \<open>The BFS on a Filtered CSR\<close> *)
 subsection \<open>The BFS on a Filtered CSR\<close>
 
-(* MOVED (weighted extension): lemma mem_nbrs, was in locale unweighted_intersection_exchange_imp (with the text before it) *)
 text \<open>The BFS core of the library on the graph of an edge list \<open>E\<close> below \<open>n\<close>, run with an
   iterator \<open>nbs\<close> on a graph handle that walks the neighbours of a vertex in \<open>E\<close> (e.g. the CSR
   neighbours of a constant larger graph, skipping the edges outside \<open>E\<close>). The visited set is exact
@@ -28,24 +26,19 @@ text \<open>The BFS core of the library on the graph of an edge list \<open>E\<c
 lemma mem_nbrs: "v \<in> set (nbrs es u) \<longleftrightarrow> (u, v) \<in> set es"
   unfolding nbrs_def by force
 
-(* MOVED (weighted extension): lemma nbrs_append, was in locale unweighted_intersection_exchange_imp *)
 lemma nbrs_append: "nbrs (xs @ ys) u = nbrs xs u @ nbrs ys u"
   unfolding nbrs_def by simp
 
-(* MOVED (weighted extension): lemma case_build_nhlists, was in locale unweighted_intersection_exchange_imp *)
 lemma case_build_nhlists: "(case build_nhlists es v of None \<Rightarrow> [] | Some vs \<Rightarrow> vs) = nbrs es v"
   unfolding build_nhlists_def by simp
 
-(* MOVED (weighted extension): lemma foldl_filter_if, was in locale unweighted_intersection_exchange_imp *)
 lemma foldl_filter_if:
   "foldl (\<lambda> a x. if p x then f a x else a) a xs = foldl f a (filter p xs)"
   by (induction xs arbitrary: a) simp_all
 
-(* MOVED (weighted extension): lemma foldl_True, was in locale unweighted_intersection_exchange_imp *)
 lemma foldl_True: "foldl (\<lambda> a x. True) b xs = (b \<or> xs \<noteq> [])"
   by (induction xs arbitrary: b) simp_all
 
-(* MOVED (weighted extension): lemma Vs_build_dVs, was in locale unweighted_intersection_exchange_imp *)
 lemma Vs_build_dVs: "BFS_subprocedures_lists.Vs (build_nhlists es) = dVs (set es)"
   unfolding BFS_subprocedures_lists.Vs_def[OF BFS_subprocedures_lists_bset] dVs_def 
   by (simp add: build_nhlists_edge)
@@ -53,25 +46,20 @@ lemma Vs_build_dVs: "BFS_subprocedures_lists.Vs (build_nhlists es) = dVs (set es
 lemma len_intro: "length l = m \<Longrightarrow> a \<mapsto>\<^sub>a l \<Longrightarrow>\<^sub>A len_assn m a"
   unfolding len_assn_def by (rule ent_ex_postI[where x = l]) simp
 
-(* MOVED (weighted extension): lemma len_fill_rule, was in locale unweighted_intersection_exchange_imp *)
 lemma len_fill_rule: "<len_assn n a> fill_range_imp f n a <\<lambda> r. a \<mapsto>\<^sub>a map f [0..<n] * \<up>(r = a)>"
   unfolding len_assn_def by (rule ht_ex_pre) (sep_auto heap: fill_range_imp_rule)
 
-(* MOVED (weighted extension): lemma clear_len, was in locale unweighted_intersection_exchange_imp *)
 lemma clear_len: "<len_assn n Vi> xset_clear_imp n Vi <\<lambda> _. xset_assn n {} Vi>"
   by (rule ht_cons_post[OF xset_clear_rule]) sep_auto
 
-(* MOVED (weighted extension): lemma fill_len, was in locale unweighted_intersection_exchange_imp *)
 lemma fill_len: "<len_assn n a> fill_range_imp f n a <\<lambda> _. a \<mapsto>\<^sub>a map f [0..<n]>"
   by (rule ht_cons_post[OF len_fill_rule]) sep_auto
 
-(* MOVED (weighted extension): lemma pure_mid, was in locale unweighted_intersection_exchange_imp *)
 lemma pure_mid: 
   assumes "b \<Longrightarrow> <P * Fm> c <Q>" 
   shows "<P * \<up>b * Fm> c <Q>"
   by (rule ht_cons_pre[OF _ ht_pure_pre[OF assms]]) (simp only: star_aci, rule ent_refl)
 
-(* MOVED (weighted extension): lemma ex_mid, was in locale unweighted_intersection_exchange_imp *)
 lemma ex_mid: 
   assumes "\<And> x. <P x * Fm> c <Q>" 
   shows "<(\<exists>\<^sub>A x. P x) * Fm> c <Q>"
@@ -82,7 +70,6 @@ proof-
     by (rule ht_cons_pre[rotated]) sep_auto
 qed
 
-(* MOVED (weighted extension): lemma pull_len, was in locale unweighted_intersection_exchange_imp *)
 lemma pull_len:
   assumes "\<And> l. length l = m \<Longrightarrow> <a \<mapsto>\<^sub>a l * Fm> c <Q>"
   shows "<len_assn m a * Fm> c <Q>"
@@ -93,21 +80,17 @@ proof-
     by (rule ht_cons_pre[rotated]) (unfold len_assn_def, sep_auto)
 qed
 
-(* MOVED (weighted extension): lemma parr_len, was in locale unweighted_intersection_exchange_imp *)
 lemma parr_len: "parr_assn n Ra = len_assn n Ra"
   unfolding parr_assn_def len_assn_def by (rule refl)
 
-(* MOVED (weighted extension): lemma path_None, was in locale unweighted_intersection_exchange_imp *)
 lemma path_None: "path_assn n None None Ra = parr_assn n Ra"
   unfolding path_assn_def parr_assn_def by simp
 
-(* MOVED (weighted extension): definition work_assn, was in locale unweighted_intersection_exchange_imp, and changed (with the text before it) *)
 text \<open>The work arrays of the BFS, with arbitrary contents.\<close>
 
 definition "work_assn n Vi Fr Bf Da Pa = 
   len_assn n Vi * len_assn (Suc n) Fr * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa"
 
-(* NEW (weighted extension): locale csr_filtered_bfs *)
 locale csr_filtered_bfs =
   fixes n :: nat
     and E :: "(nat \<times> nat) list"
@@ -123,34 +106,27 @@ locale csr_filtered_bfs =
          <\<lambda> r. ga Gh * F * A (foldl (f u) acc (nbrs E u)) r>"
 begin
 
-(* NEW (weighted extension): abbreviation nbs_bfs (with the text before it) *)
 text \<open>The BFS core of the library with this iterator.\<close>
 
 abbreviation "nbs_bfs Gh \<equiv> BFS_Imperative_spec.visited_dists_parents_imp bfs_src_to_cf
   bfs_set_srcs_visited (BFS_subprocedures_lists_code.next_frontier_current_parents_imp bset_memb
   bset_ins nbs Gh) bfs_cf_is_empty bfs_set_dists"
 
-(* MOVED (weighted extension): definition xvis, was in locale unweighted_intersection_exchange_imp *)
 definition "xvis Vh U Ss a = xset_assn n Ss a * \<up>(Ss \<subseteq> U \<and> U \<subseteq> {..<n} \<and> a = Vh)"
 
-(* MOVED (weighted extension): definition gx, was in locale unweighted_intersection_exchange_imp, and changed *)
 definition "gx G Gh = ga Gh * \<up>(G = build_nhlists E)"
 
-(* MOVED (weighted extension): lemma xvis_only, was in locale unweighted_intersection_exchange_imp *)
 lemma xvis_only: "xvis Vh U Ss a = xvis Vh U Ss a * \<up>(Ss \<subseteq> U)"
   unfolding xvis_def by (rule ent_iffI) sep_auto+
 
-(* MOVED (weighted extension): lemma xvis_memb, was in locale unweighted_intersection_exchange_imp *)
 lemma xvis_memb: 
   "<xvis Vh U Ss a * \<up>(v \<in> U)> bset_memb v a <\<lambda> r. xvis Vh U Ss a * \<up>(r \<longleftrightarrow> v \<in> Ss)>"
   unfolding xvis_def xset_assn_def bset_memb_def by (sep_auto simp: subset_iff)
 
-(* MOVED (weighted extension): lemma xvis_ins, was in locale unweighted_intersection_exchange_imp *)
 lemma xvis_ins: 
   "<xvis Vh U Ss a * \<up>(v \<in> U \<and> v \<notin> Ss)> bset_ins v a <xvis Vh U (Set.insert v Ss)>"
   unfolding xvis_def bset_ins_def by (sep_auto heap: xset_upd_rule simp: subset_iff)
 
-(* MOVED (weighted extension): lemma gx_iterate, was in locale unweighted_intersection_exchange_imp, and changed *)
 lemma gx_iterate:
   fixes acc_assn :: "nat list \<times> nat list \<times> (nat \<Rightarrow> nat) \<Rightarrow> nat array \<times> nat \<times> bool array \<Rightarrow> assn"
   assumes fi: "\<And> acc acci x vs. \<lbrakk>nhlists v = Some vs; x \<in> set vs\<rbrakk> \<Longrightarrow>
@@ -174,29 +150,23 @@ next
        (sep_auto simp: True case_build_nhlists)+
 qed
 
-(* MOVED (weighted extension): lemma BFS_sub, was in locale unweighted_intersection_exchange_imp, and changed *)
 lemma BFS_sub: "BFS_subprocedures_lists (xvis Vh) bset_memb bset_ins nbs gx"
   by unfold_locales (rule xvis_only xvis_memb xvis_ins gx_iterate | assumption)+
 
-(* NEW (weighted extension): lemma Vs_E *)
 lemma Vs_E: "BFS_subprocedures_lists.Vs (build_nhlists E) \<subseteq> {..<n}"
   unfolding Vs_build_dVs using E_bound by (force simp: dVs_def)
 
-(* MOVED (weighted extension): lemma card_Vs (moved within this theory), and changed *)
 lemma card_Vs: "card (BFS_subprocedures_lists.Vs (build_nhlists E)) \<le> n"
   using card_mono[OF finite_lessThan Vs_E] by simp
 
-(* NEW (weighted extension): context "" *)
 context
   fixes ss
   assumes b: "bfs_csr n E ss"
 begin
 
-(* NEW (weighted extension): interpretation b: bfs_csr n E ss *)
 interpretation b: bfs_csr n E ss
   by (rule b)
 
-(* CHANGED (weighted extension): interpretation inst: BFS_lists_instance where is_visited_set = "xvis Vh" *)
 interpretation inst: BFS_lists_instance where is_visited_set = "xvis Vh"
   and visited_memb = bset_memb and distinct_ins = bset_ins and iterate_neighbourhood = nbs
   and graph_assn = gx and G = "build_nhlists E" and Gi = Gh and srcs = "rev ss"
@@ -204,7 +174,6 @@ interpretation inst: BFS_lists_instance where is_visited_set = "xvis Vh"
   using BFS_sub Vs_E
   by (auto intro!: BFS_lists_instance.intro BFS_lists_instance_axioms.intro)
 
-(* CHANGED (weighted extension): lemma code_eqs *)
 lemma code_eqs:
   "inst.imp_bfs.visited_dists_parents_imp Gh = nbs_bfs Gh" "inst.imp_bfs.path_imp = bfs_path"
   by (simp_all add: bfs_path_def bfs_src_to_cf_def bfs_set_srcs_visited_def bfs_cf_is_empty_def
@@ -215,7 +184,6 @@ definition "fin = inst.imp_bfs.BFS_par_impl inst.imp_bfs.initial_par_state"
 lemma BFS_axiom: "inst.imp_bfs.BFS_axiom"
   by (rule b.BFS_axiom)
 
-(* CHANGED (weighted extension): lemma cf_len *)
 lemma cf_len: "inst.imp_cf_assn (Suc n) Fr Bf G cf cfi \<Longrightarrow>\<^sub>A len_assn (Suc n) Fr * len_assn (Suc n) Bf"
 proof-
   obtain a b c where cfi: "cfi = (a, b, c)"
@@ -240,7 +208,6 @@ proof-
     by (intro ent_ex_preI, unfold ent_pure_pre_iff, intro impI, elim conjE, rule e) assumption+
 qed
 
-(* CHANGED (weighted extension): lemma bfs_rule *)
 lemma bfs_rule:
   assumes "length fl = Suc n" "take (length ss) fl = ss" "length bl = Suc n"
   shows "<xset_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] *
@@ -297,7 +264,6 @@ proof-
        (unfold split_paired_all prod.case, rule ent_trans[OF post], sep_auto)
 qed
 
-(* CHANGED (weighted extension): lemma path_rule *)
 lemma path_rule:
   assumes "find (\<lambda> y. y \<in> set (BFS_dist_state.visited fin)) ts = Some t" "length rl = n"
   shows "<inst.imp_dist_assn n Da (build_nhlists E) (BFS_dist_state.dists fin) di *
@@ -334,15 +300,12 @@ proof-
     by (rule r[OF assms(2)])
 qed
 
-(* NEW (weighted extension): lemma dist_len *)
 lemma dist_len: "inst.imp_dist_assn n Da (build_nhlists E) d di \<Longrightarrow>\<^sub>A len_assn n Da"
   unfolding inst.imp_dist_assn_char len_assn_def by sep_auto
 
-(* NEW (weighted extension): lemma par_len *)
 lemma par_len: "inst.imp_par_assn n Pa (build_nhlists E) p pari \<Longrightarrow>\<^sub>A len_assn n Pa"
   unfolding inst.imp_par_assn_char len_assn_def by sep_auto
 
-(* CHANGED (weighted extension): lemma work_ent *)
 lemma work_ent:
   "xset_assn n V Vi * inst.imp_dist_assn n Da (build_nhlists E) d di *
    inst.imp_par_assn n Pa (build_nhlists E) p pari * len_assn (Suc n) Fr * len_assn (Suc n) Bf
@@ -356,7 +319,6 @@ proof-
        (simp only: star_aci, rule ent_refl)
 qed
 
-(* CHANGED (weighted extension): lemma bfs_len_rule *)
 lemma bfs_len_rule:
   assumes "length fl = Suc n" "take (length ss) fl = ss"
   shows "<len_assn (Suc n) Bf * (xset_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Da \<mapsto>\<^sub>a map id [0..<n] *
@@ -379,7 +341,6 @@ proof(rule pull_len)
     by (rule ht_cons_pre[OF _ bfs_rule[OF assms bl]]) (simp only: star_aci, rule ent_refl)
 qed
 
-(* CHANGED (weighted extension): lemma path_len_rule *)
 lemma path_len_rule:
   assumes "find (\<lambda> y. y \<in> set (BFS_dist_state.visited fin)) ts = Some t"
   shows "<parr_assn n Ra * (inst.imp_dist_assn n Da (build_nhlists E) (BFS_dist_state.dists fin) di *
@@ -451,22 +412,17 @@ definition "bfs_run Gh = BFS_Imperative_spec.visited_dists_parents_imp bfs_src_t
 
 definition "has_nb_imp Gc Si y = xnbs (Si, Gc) y (\<lambda> _ _ _. return True) False"
 
-(* NEW (weighted extension): definition s_imp (with the text before it) *)
 text \<open>Sources and targets (elements outside the solution insertable in the first resp. second
   matroid), sources that are targets, sources having an exchange edge, and visited targets.\<close>
 
 definition "s_imp Si y = do { b \<leftarrow> smemb_imp y Si; if b then return False else ins1_imp Si y }"
 
-(* NEW (weighted extension): definition t_imp *)
 definition "t_imp Si y = do { b \<leftarrow> smemb_imp y Si; if b then return False else ins2_imp Si y }"
 
-(* CHANGED (weighted extension): definition st_imp *)
 definition "st_imp Si y = do { s \<leftarrow> s_imp Si y; if s then ins2_imp Si y else return False }"
 
-(* CHANGED (weighted extension): definition src_imp *)
 definition "src_imp Gc Si y = do { s \<leftarrow> s_imp Si y; if s then has_nb_imp Gc Si y else return False }"
 
-(* CHANGED (weighted extension): definition tgt_imp *)
 definition "tgt_imp Si Vi y = do { v \<leftarrow> Array.nth Vi y; if v then t_imp Si y else return False }"
 
 text \<open>One search: a source that is a target is a path on its own. Otherwise, the sources having
@@ -517,7 +473,6 @@ locale unweighted_intersection_exchange_imp =
                      \<not> ins_orcl2 (orcl_prep2 X) u; exch_orcl2 (orcl_prep2 X) v u\<rbrakk> \<Longrightarrow> (u, v) \<in> set es0"
 begin
 
-(* REMOVED (weighted extension): interpretation b: bfs_csr n "EE X" ss *)
 subsubsection \<open>The Exchange Neighbours\<close>
 
 definition "S0 X = {y. y < n \<and> y \<notin> X \<and> ins_orcl1 (orcl_prep1 X) y}"
@@ -789,8 +744,6 @@ qed
 
 subsubsection \<open>The BFS on the Exchange Graph\<close>
 
-(* REMOVED (weighted extension): lemma Vs_EE *)
-(* CHANGED (weighted extension): text "\<open>The BFS of @{locale csr_filtered_bfs} on th" *)
 text \<open>The BFS of @{locale csr_filtered_bfs} on the exchange graph of a solution. The graph
   handle is the pair of the solution handle and the CSR; its assertion holds the solution, the
   static data of the oracles and the CSR.\<close>
@@ -800,7 +753,6 @@ context
   assumes X: "finite X" "X \<subseteq> {0..<n}" "indep1 X" "indep2 X"
 begin
 
-(* NEW (weighted extension): interpretation fb: csr_filtered_bfs n "EE X" xnbs "\<lambda> (Si, Gc). gxs X Si Gc" *)
 interpretation fb: csr_filtered_bfs n "EE X" xnbs "\<lambda> (Si, Gc). gxs X Si Gc"
 proof(unfold_locales, goal_cases)
   case (1 u v)
@@ -876,17 +828,14 @@ lemma nb_char:
 
 subsubsection \<open>The Steps of a Search\<close>
 
-(* NEW (weighted extension): lemma s_imp_rule *)
 lemma s_imp_rule:
   "y < n \<Longrightarrow> <gxs X Si Gc> s_imp Si y <\<lambda> r. gxs X Si Gc * \<up>(r = (y \<notin> X \<and> y \<in> S0 X))>"
   unfolding s_imp_def gxs_def S0_def by (sep_auto heap: smemb_rule o1.ins_imp)
 
-(* NEW (weighted extension): lemma t_imp_rule *)
 lemma t_imp_rule:
   "y < n \<Longrightarrow> <gxs X Si Gc> t_imp Si y <\<lambda> r. gxs X Si Gc * \<up>(r = (y \<notin> X \<and> y \<in> T0 X))>"
   unfolding t_imp_def gxs_def T0_def by (sep_auto heap: smemb_rule o2.ins_imp)
 
-(* CHANGED (weighted extension): lemma st_imp_rule *)
 lemma st_imp_rule:
   "y < n \<Longrightarrow> <gxs X Si Gc> st_imp Si y
    <\<lambda> r. gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> S0 X) \<and> y \<in> T0 X))>"
@@ -910,7 +859,6 @@ proof-
     by (rule ht_cons[OF _ _ r]) (sep_auto simp: foldl_True)+
 qed
 
-(* CHANGED (weighted extension): lemma src_imp_rule *)
 lemma src_imp_rule:
   "y < n \<Longrightarrow> <gxs X Si Gc> src_imp Gc Si y
    <\<lambda> r. gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> S0 X) \<and> 
@@ -928,7 +876,6 @@ lemma collect_src_rule:
                  take k fl' = filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X)))>"
   unfolding eq_srcs[symmetric] by (rule collect_range_imp_rule[OF src_imp_rule assms])
 
-(* CHANGED (weighted extension): lemma tgt_imp_rule *)
 lemma tgt_imp_rule:
   "y < n \<Longrightarrow> <xset_assn n V Vi * gxs X Si Gc> tgt_imp Si Vi y
    <\<lambda> r. xset_assn n V Vi * gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> T0 X) \<and> y \<in> V))>"
@@ -956,7 +903,6 @@ context
   assumes b: "bfs_csr n (EE X) ss"
 begin
 
-(* NEW (weighted extension): interpretation inst: BFS_lists_instance where is_visited_set = "fb.xvis Vh" *)
 interpretation inst: BFS_lists_instance where is_visited_set = "fb.xvis Vh" 
   and visited_memb = bset_memb and distinct_ins = bset_ins and iterate_neighbourhood = xnbs
   and graph_assn = fb.gx and G = "build_nhlists (EE X)" and Gi = Gh and srcs = "rev ss" 
@@ -964,12 +910,10 @@ interpretation inst: BFS_lists_instance where is_visited_set = "fb.xvis Vh"
   using fb.BFS_sub fb.Vs_E
   by (auto intro!: BFS_lists_instance.intro BFS_lists_instance_axioms.intro)
 
-(* CHANGED (weighted extension): lemma fin_eq *)
 lemma fin_eq: "csr.bfs_final (build_nhlists (EE X)) ss = fb.fin ss"
   unfolding csr.bfs_final_def fb.fin_def[OF b] by (rule refl)
 
 
-(* CHANGED (weighted extension): lemma target_path_eq *)
 lemma target_path_eq:
   "csr.target_path (build_nhlists (EE X)) ss ts = 
    (case find (\<lambda> y. y \<in> set (BFS_dist_state.visited (fb.fin ss))) ts of
@@ -977,7 +921,6 @@ lemma target_path_eq:
     | Some t \<Rightarrow> Some (inst.imp_bfs.parent_path (BFS_dist_state.dists (fb.fin ss)) (BFS_par_state.parent (fb.fin ss)) t []))"
   unfolding csr.target_path_def Let_def fin_eq by (rule refl)
 
-(* CHANGED (weighted extension): lemma tail_rule *)
 lemma tail_rule:
   "<xset_assn n (set (BFS_dist_state.visited (fb.fin ss))) Vi * gxs X Si Gc * parr_assn n Ra *
     (inst.imp_dist_assn n Da (build_nhlists (EE X)) (BFS_dist_state.dists (fb.fin ss)) di *
@@ -1024,7 +967,6 @@ proof-
   qed
 qed
 
-(* CHANGED (weighted extension): lemma round_rule *)
 lemma round_rule:
   assumes "length fl = Suc n" "take (length ss) fl = ss"
   shows "<Fr \<mapsto>\<^sub>a fl * gxs X Si Gc * parr_assn n Ra * len_assn n Vi * len_assn (Suc n) Bf * 
@@ -1099,7 +1041,6 @@ lemma collect_src_none:
          \<up>(k = length (filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X))))>"
   by (rule ht_cons_post[OF collect_src_len]) (unfold len_assn_def, sep_auto)
 
-(* CHANGED (weighted extension): theorem aug_path_imp_rule *)
 theorem aug_path_imp_rule:
   "<parr_assn n Ra * gxs X Si Gc * work_assn n Vi Fr Bf Da Pa> aug_path_imp Gc Vi Fr Bf Da Pa Si Ra
    <\<lambda> res. path_assn n (csr.augmenting_path X) res Ra * gxs X Si Gc * work_assn n Vi Fr Bf Da Pa>"
@@ -1163,10 +1104,8 @@ subsubsection \<open>The Path Search of the Imperative Loop\<close>
 
 text \<open>The static data of a search: the oracles, the CSR and the work arrays.\<close>
 
-(* CHANGED (weighted extension): definition mst *)
 definition "mst Gc Vi Fr Bf Da Pa = ost1 * ost2 * csr3_assn (build_nhlists es0) Gc * work_assn n Vi Fr Bf Da Pa"
 
-(* CHANGED (weighted extension): theorem imp_loop *)
 theorem imp_loop:
   "unweighted_intersection_imp_loop csr.augmenting_path indep1 indep2 {0..<n} n sol_assn smemb_imp 
      sins_imp sdel_imp (aug_path_imp Gc Vi Fr Bf Da Pa) (mst Gc Vi Fr Bf Da Pa)"
@@ -1191,7 +1130,6 @@ next
         (rule ent_true_drop(2), simp only: mst_def gxs_def star_aci, rule ent_refl))
 qed
 
-(* NEW (weighted extension): theorem loop_correct, moved here from Matroid_Intersection_Imp (with the text before it) *)
 text \<open>The loop on preallocated arrays.\<close>
 
 theorem loop_correct:

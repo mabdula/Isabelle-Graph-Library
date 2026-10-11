@@ -19,7 +19,6 @@ locale weighted_intersection_exchange_csr_spec =
   fixes c_lookup :: "'cmap \<Rightarrow> nat \<Rightarrow> real"
     and c_shift :: "nat list \<Rightarrow> real \<Rightarrow> 'cmap \<Rightarrow> 'cmap"
     and c_zero :: "'cmap"
-    and weight :: "'cmap \<Rightarrow> 'mset \<Rightarrow> real"
 begin
 
 sublocale csr: weighted_intersection_exchange_spec
@@ -34,7 +33,7 @@ sublocale csr: weighted_intersection_exchange_spec
     and parent_lookup = "\<lambda> p x. p x"
     and next_frontier_current_parents = BFS_subprocedures_lists.next_frontier_current_parents
     and build_graph = build_nhlists and c_lookup = c_lookup and c_shift = c_shift
-    and c_zero = c_zero and weight = weight and vset_insert = Cons .
+    and c_zero = c_zero and vset_insert = Cons .
 
 end
 
@@ -43,21 +42,19 @@ subsection \<open>Correctness\<close>
 locale weighted_intersection_exchange_csr =
   weighted_intersection_exchange_csr_spec set_insert set_delete to_set set_invar set_empty set_memb
     carrier_list orcl_prep1 ins_orcl1 exch_orcl1 orcl_prep2 ins_orcl2 exch_orcl2
-    c_lookup c_shift c_zero weight +
+    c_lookup c_shift c_zero +
   unweighted_intersection_exchange_csr set_insert set_delete to_set set_invar set_empty set_memb
     carrier_list orcl_prep1 ins_orcl1 exch_orcl1 orcl_prep2 ins_orcl2 exch_orcl2 carrier indep1
     indep2
   for set_insert set_delete to_set set_invar set_empty set_memb carrier_list orcl_prep1 ins_orcl1
     exch_orcl1 orcl_prep2 ins_orcl2 exch_orcl2
-    and c_lookup :: "'cmap \<Rightarrow> nat \<Rightarrow> real" and c_shift c_zero weight carrier indep1 indep2 +
+    and c_lookup :: "'cmap \<Rightarrow> nat \<Rightarrow> real" and c_shift c_zero carrier indep1 indep2 +
   fixes c_invar :: "'cmap \<Rightarrow> bool"
   assumes c_zero: "c_invar c_zero" "c_lookup c_zero = (\<lambda> _. 0)"
   assumes c_shift:
     "\<And> R e c. c_invar c \<Longrightarrow> c_invar (c_shift R e c)"
     "\<And> R e c. c_invar c \<Longrightarrow>
        c_lookup (c_shift R e c) = (\<lambda> x. if x \<in> set R then c_lookup c x + e else c_lookup c x)"
-  assumes weight:
-    "\<And> c X. \<lbrakk>c_invar c; set_invar X\<rbrakk> \<Longrightarrow> weight c X = sum (c_lookup c) (to_set X)"
 begin
 
 sublocale csr: weighted_intersection_exchange
@@ -72,7 +69,7 @@ sublocale csr: weighted_intersection_exchange
     and parent_lookup = "\<lambda> p x. p x"
     and next_frontier_current_parents = BFS_subprocedures_lists.next_frontier_current_parents
     and build_graph = build_nhlists and c_lookup = c_lookup and c_shift = c_shift
-    and c_zero = c_zero and weight = weight and vset_insert = Cons
+    and c_zero = c_zero and vset_insert = Cons
     and carrier = carrier and indep1 = indep1 and indep2 = indep2
     and t_set = set and sel = hd and vset_delete = "\<lambda> x xs. filter (\<lambda> y. x \<noteq> y) xs"
     and vset_inv = "\<lambda> _. True" and union = append and inter = "\<lambda> xs ys. filter (\<lambda> y. y \<in> set ys) xs"
@@ -80,7 +77,7 @@ sublocale csr: weighted_intersection_exchange
     and c_invar = c_invar
   by (intro weighted_intersection_exchange.intro weighted_intersection_exchange_axioms.intro
         csr.unweighted_intersection_exchange_axioms)
-     (simp_all add: c_zero c_shift weight)
+     (simp_all add: c_zero c_shift)
 
 lemmas total_correctness = csr.total_correctness
 

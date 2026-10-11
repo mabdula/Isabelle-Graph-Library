@@ -21,12 +21,14 @@ locale matroid_intersection_imp_ids_spec =
   for n and smemb_imp :: "nat \<Rightarrow> 'si \<Rightarrow> bool Heap" and ins1_imp exch1_imp ins2_imp exch2_imp +
   fixes sins_imp :: "nat \<Rightarrow> 'si \<Rightarrow> unit Heap"
     and sdel_imp :: "nat \<Rightarrow> 'si \<Rightarrow> unit Heap"
-    and pts1_imp :: "'h1 \<Rightarrow> nat \<Rightarrow> nat list Heap"
-    and pts2_imp :: "'h2 \<Rightarrow> nat \<Rightarrow> nat list Heap"
+    and npts1_imp :: "'h1 \<Rightarrow> nat \<Rightarrow> nat Heap"
+    and pt1_imp :: "'h1 \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap"
+    and npts2_imp :: "'h2 \<Rightarrow> nat \<Rightarrow> nat Heap"
+    and pt2_imp :: "'h2 \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap"
 begin
 
 definition "mi_imp H1 H2 Si = do {
-   Gc \<leftarrow> cand_csr_imp pts1_imp pts2_imp H1 H2 n;
+   Gc \<leftarrow> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n;
    Vi \<leftarrow> Array.new n False;
    Fr \<leftarrow> Array.new (Suc n) 0;
    Bf \<leftarrow> Array.new (Suc n) 0;
@@ -44,7 +46,7 @@ text \<open>First for matroids on the ids below \<open>n\<close> themselves.\<cl
 
 locale matroid_intersection_imp_ids =
   matroid_intersection_imp_ids_spec n smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp sins_imp sdel_imp
-    pts1_imp pts2_imp +
+    npts1_imp pt1_imp npts2_imp pt2_imp +
   imp_nat_set n sol_assn smemb_imp sins_imp sdel_imp +
   unweighted_intersection_exchange_csr where set_insert = "Set.insert :: nat \<Rightarrow> nat set \<Rightarrow> nat set"
     and set_delete = "\<lambda> x X. X - {x}" and to_set = "\<lambda> X. X" and set_invar = finite
@@ -52,9 +54,10 @@ locale matroid_intersection_imp_ids =
     and carrier = "{0..<n}" +
   o1: exchange_oracle_imp n orcl_prep1 ins_orcl1 exch_orcl1 sol_assn ins1_imp exch1_imp ost1 +
   o2: exchange_oracle_imp n orcl_prep2 ins_orcl2 exch_orcl2 sol_assn ins2_imp exch2_imp ost2 +
-  c: exchange_candidates_imp n indep1 orcl_prep1 ins_orcl1 exch_orcl1 pts1 pst1 pts1_imp
-    indep2 orcl_prep2 ins_orcl2 exch_orcl2 pts2 pst2 pts2_imp
-  for n smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp sins_imp sdel_imp pts1_imp pts2_imp 
+  c: exchange_candidates_imp n indep1 orcl_prep1 ins_orcl1 exch_orcl1 pts1 pst1 npts1_imp pt1_imp
+    indep2 orcl_prep2 ins_orcl2 exch_orcl2 pts2 pst2 npts2_imp pt2_imp
+  for n smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp sins_imp sdel_imp 
+    npts1_imp pt1_imp npts2_imp pt2_imp 
     sol_assn ost1 ost2 pts1 pst1 pts2 pst2
 begin
 
@@ -77,7 +80,7 @@ theorem mi_imp_correct:
    <\<lambda> _. \<exists>\<^sub>A X. sol_assn X Si * ost1 * ost2 * pst1 H1 * pst2 H2 * true * \<up>(is_max X)>"
 proof-
   let ?F = "sol_assn {} Si * ost1 * ost2"
-  have cand: "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2> cand_csr_imp pts1_imp pts2_imp H1 H2 n
+  have cand: "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
               <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * csr3_assn (build_nhlists (cand_list pts1 pts2 n)) Gc>"
     by (rule ht_frame_ac[OF c.cand_csr_rule, where R = ?F]) (simp only: star_aci, rule ent_refl)+
   show ?thesis
@@ -99,7 +102,7 @@ text \<open>The matroids live on any type \<open>'a\<close>. Only the CSR of the
   \<open>elt\<close> and the partners mapped by \<open>idx\<close>. For the proof, the matroids are pulled back to the
   ids and a maximum common independent set on the ids is mapped back by \<open>elt\<close>.\<close>
 
-definition "pts_ids_imp idx elt pts_imp H i = do { xs \<leftarrow> pts_imp H (elt i); return (map idx xs) }"
+definition "pt_ids_imp idx elt pt_imp H i k = do { y \<leftarrow> pt_imp H (elt i) k; return (idx y) }"
 
 locale matroid_intersection_imp_spec =
   fixes n :: nat
@@ -112,15 +115,18 @@ locale matroid_intersection_imp_spec =
     and exch2_imp :: "'si \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool Heap"
     and sins_imp :: "'a \<Rightarrow> 'si \<Rightarrow> unit Heap"
     and sdel_imp :: "'a \<Rightarrow> 'si \<Rightarrow> unit Heap"
-    and pts1_imp :: "'h1 \<Rightarrow> 'a \<Rightarrow> 'a list Heap"
-    and pts2_imp :: "'h2 \<Rightarrow> 'a \<Rightarrow> 'a list Heap"
+    and npts1_imp :: "'h1 \<Rightarrow> 'a \<Rightarrow> nat Heap"
+    and pt1_imp :: "'h1 \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> 'a Heap"
+    and npts2_imp :: "'h2 \<Rightarrow> 'a \<Rightarrow> nat Heap"
+    and pt2_imp :: "'h2 \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> 'a Heap"
 begin
 
 sublocale ids: matroid_intersection_imp_ids_spec n "\<lambda> i. smemb_imp (elt i)" 
   "\<lambda> Si i. ins1_imp Si (elt i)" "\<lambda> Si i j. exch1_imp Si (elt i) (elt j)"
   "\<lambda> Si i. ins2_imp Si (elt i)" "\<lambda> Si i j. exch2_imp Si (elt i) (elt j)"
   "\<lambda> i. sins_imp (elt i)" "\<lambda> i. sdel_imp (elt i)" 
-  "pts_ids_imp idx elt pts1_imp" "pts_ids_imp idx elt pts2_imp" .
+  "\<lambda> H i. npts1_imp H (elt i)" "pt_ids_imp idx elt pt1_imp" 
+  "\<lambda> H i. npts2_imp H (elt i)" "pt_ids_imp idx elt pt2_imp" .
 
 definition "mi_imp H1 H2 Si = ids.mi_imp H1 H2 Si"
 
@@ -282,7 +288,8 @@ locale indexed_oracle_imp =
     and ost :: assn
     and pts :: "'a \<Rightarrow> 'a list"
     and pst :: "'h \<Rightarrow> assn"
-    and pts_imp :: "'h \<Rightarrow> 'a \<Rightarrow> 'a list Heap"
+    and npts_imp :: "'h \<Rightarrow> 'a \<Rightarrow> nat Heap"
+    and pt_imp :: "'h \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> 'a Heap"
   assumes ins_imp:
     "<(sol_assn X Si) * ost * \<up>(y \<in> carrier)> ins_imp Si y
      <\<lambda> r. sol_assn X Si * ost * \<up>(r = ins_orcl (orcl_prep X) y)>"
@@ -295,7 +302,9 @@ locale indexed_oracle_imp =
     "\<lbrakk>finite X; X \<subseteq> carrier; indep X; x \<in> X; y \<in> carrier - X;
       \<not> ins_orcl (orcl_prep X) y; exch_orcl (orcl_prep X) x y\<rbrakk> 
      \<Longrightarrow> y \<in> set (pts x) \<and> x \<in> set (pts y)"
-    and pts_imp: "<pst H * \<up>(x \<in> carrier)> pts_imp H x <\<lambda> r. pst H * \<up>(r = pts x)>"
+    and npts_imp: "<pst H * \<up>(x \<in> carrier)> npts_imp H x <\<lambda> r. pst H * \<up>(r = length (pts x))>"
+    and pt_imp: 
+    "<pst H * \<up>(x \<in> carrier \<and> k < length (pts x))> pt_imp H x k <\<lambda> r. pst H * \<up>(r = pts x ! k)>"
 begin
 
 text \<open>The oracle and the partners on the ids.\<close>
@@ -366,7 +375,7 @@ qed
 
 lemma ids_partners: 
   "exchange_partners_imp n (pull indep) prep_ids ins_ids exch_ids pts_ids pst 
-     (pts_ids_imp idx elt pts_imp)"
+     (\<lambda> H i. npts_imp H (elt i)) (pt_ids_imp idx elt pt_imp)"
 proof(intro exchange_partners_imp.intro, goal_cases)
   case (1 x)
   then show ?case 
@@ -391,10 +400,17 @@ next
     using idx_elt[OF 3(4)] idx_elt[OF 3(5)] by simp
 next
   case (4 H x)
-  have r: "x < n \<Longrightarrow> <pst H> pts_imp H (elt x) <\<lambda> r. pst H * \<up>(r = pts (elt x))>"
-    using pts_imp[of H "elt x"] by (simp add: elt_in)
+  have r: "x < n \<Longrightarrow> <pst H> npts_imp H (elt x) <\<lambda> r. pst H * \<up>(r = length (pts (elt x)))>"
+    using npts_imp[of H "elt x"] by (simp add: elt_in)
   show ?case 
-    unfolding pts_ids_imp_def pts_ids_def by (sep_auto heap: r)
+    unfolding pts_ids_def by (sep_auto heap: r)
+next
+  case (5 H x k)
+  have r: "\<lbrakk>x < n; k < length (pts (elt x))\<rbrakk> \<Longrightarrow> 
+           <pst H> pt_imp H (elt x) k <\<lambda> r. pst H * \<up>(r = pts (elt x) ! k)>"
+    using pt_imp[of H "elt x" k] by (simp add: elt_in)
+  show ?case 
+    unfolding pt_ids_imp_def pts_ids_def by (sep_auto heap: r)
 qed
 
 end
@@ -404,13 +420,13 @@ text \<open>The algorithm for two matroids on \<open>'a\<close>. The solution se
 
 locale matroid_intersection_imp =
   matroid_intersection_imp_spec n idx elt smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp 
-    sins_imp sdel_imp pts1_imp pts2_imp +
+    sins_imp sdel_imp npts1_imp pt1_imp npts2_imp pt2_imp +
   o1: indexed_oracle_imp carrier idx elt n orcl_prep1 ins_orcl1 exch_orcl1 indep1 sol_assn 
-    ins1_imp exch1_imp ost1 pts1 pst1 pts1_imp +
+    ins1_imp exch1_imp ost1 pts1 pst1 npts1_imp pt1_imp +
   o2: indexed_oracle_imp carrier idx elt n orcl_prep2 ins_orcl2 exch_orcl2 indep2 sol_assn 
-    ins2_imp exch2_imp ost2 pts2 pst2 pts2_imp
+    ins2_imp exch2_imp ost2 pts2 pst2 npts2_imp pt2_imp
   for n idx elt smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp sins_imp sdel_imp 
-    pts1_imp pts2_imp carrier orcl_prep1 ins_orcl1 exch_orcl1 indep1 sol_assn ost1 pts1 pst1
+    npts1_imp pt1_imp npts2_imp pt2_imp carrier orcl_prep1 ins_orcl1 exch_orcl1 indep1 sol_assn ost1 pts1 pst1
     orcl_prep2 ins_orcl2 exch_orcl2 indep2 ost2 pts2 pst2 +
   assumes smemb_rule: 
     "<(sol_assn X Si) * \<up>(x \<in> carrier)> smemb_imp x Si <\<lambda> r. sol_assn X Si * \<up>(r = (x \<in> X))>"
@@ -460,7 +476,8 @@ lemma ids_imp:
      (o1.pull indep1) (o1.pull indep2) n (\<lambda> i. smemb_imp (elt i)) (\<lambda> Si i. ins1_imp Si (elt i))
      (\<lambda> Si i j. exch1_imp Si (elt i) (elt j)) (\<lambda> Si i. ins2_imp Si (elt i))
      (\<lambda> Si i j. exch2_imp Si (elt i) (elt j)) (\<lambda> i. sins_imp (elt i)) (\<lambda> i. sdel_imp (elt i))
-     (pts_ids_imp idx elt pts1_imp) (pts_ids_imp idx elt pts2_imp) (o1.sol_ids sol_assn)
+     (\<lambda> H i. npts1_imp H (elt i)) (pt_ids_imp idx elt pt1_imp) 
+     (\<lambda> H i. npts2_imp H (elt i)) (pt_ids_imp idx elt pt2_imp) (o1.sol_ids sol_assn)
      ost1 ost2 o1.pts_ids pst1 o2.pts_ids pst2"
   apply (intro matroid_intersection_imp_ids.intro unweighted_intersection_exchange_csr.intro
       unweighted_intersection_exchange_matroids.intro double_matroid.intro
@@ -480,7 +497,8 @@ proof-
     and ins2_imp = "\<lambda> Si i. ins2_imp Si (elt i)" 
     and exch2_imp = "\<lambda> Si i j. exch2_imp Si (elt i) (elt j)" 
     and sins_imp = "\<lambda> i. sins_imp (elt i)" and sdel_imp = "\<lambda> i. sdel_imp (elt i)" 
-    and pts1_imp = "pts_ids_imp idx elt pts1_imp" and pts2_imp = "pts_ids_imp idx elt pts2_imp" 
+    and npts1_imp = "\<lambda> H i. npts1_imp H (elt i)" and pt1_imp = "pt_ids_imp idx elt pt1_imp" 
+    and npts2_imp = "\<lambda> H i. npts2_imp H (elt i)" and pt2_imp = "pt_ids_imp idx elt pt2_imp" 
     and sol_assn = "o1.sol_ids sol_assn" and ost1 = ost1 and ost2 = ost2 
     and orcl_prep1 = o1.prep_ids and ins_orcl1 = o1.ins_ids and exch_orcl1 = o1.exch_ids 
     and orcl_prep2 = o2.prep_ids and ins_orcl2 = o2.ins_ids and exch_orcl2 = o2.exch_ids 

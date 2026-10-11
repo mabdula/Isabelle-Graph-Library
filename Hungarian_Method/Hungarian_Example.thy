@@ -1,7 +1,10 @@
 theory Hungarian_Example
-  imports Hungarian_Method_Instantiation  Directed_Set_Graphs.Pair_Graph_RBT
-          WBP_Matching_Exec
+  imports
+    Hungarian_Method_Instantiation
+    Directed_Set_Graphs.Pair_Graph_RBT
+    WBP_Matching_Exec
 begin
+
 
 section \<open>6 Matchings on Bipartite Example Graph\<close>
 
@@ -30,42 +33,45 @@ definition "G = a_graph edges"
 
 definition "left = foldr (\<lambda> x tree. RBT.insert x tree) (map fst edges_and_costs) Leaf"
 definition "right = foldr (\<lambda> x tree. RBT.insert x tree) (map (fst o snd) edges_and_costs) Leaf"
-thm hungarian_def
+
+text \<open>The sentinel marking free vertices is a number that is not a vertex of the graph.\<close>
+
+definition "no_vertex = (100::nat)"
 
 definition "final_min_perfect_matching 
-    = compute_min_weight_perfect_matching left right weights (lookup G)"
+    = compute_min_weight_perfect_matching no_vertex left right weights (lookup G)"
 
 value "final_min_perfect_matching"
 value "if final_min_perfect_matching = None 
         then Nil else inorder (the final_min_perfect_matching)"
 
 definition "final_max_perfect_matching 
-    = compute_max_weight_perfect_matching left right weights (lookup G)"
+    = compute_max_weight_perfect_matching no_vertex left right weights (lookup G)"
 
 value "final_max_perfect_matching"
 value "if final_max_perfect_matching = None 
         then Nil else inorder (the final_max_perfect_matching)"
 
 definition "final_min_matching 
-    = compute_min_weight_matching left right weights (lookup G)"
+    = compute_min_weight_matching no_vertex left right weights (lookup G)"
 
 value "final_min_matching"
 value "inorder final_min_matching"
 
 definition "final_max_matching 
-    = compute_max_weight_matching left right weights (lookup G)"
+    = compute_max_weight_matching no_vertex left right weights (lookup G)"
 
 value "final_max_matching"
 value "inorder final_max_matching"
 
 definition "final_min_max_matching 
-    = compute_min_weight_max_card_matching left right weights (lookup G)"
+    = compute_min_weight_max_card_matching no_vertex left right weights (lookup G)"
 
 value "final_min_max_matching"
 value "inorder final_min_max_matching"
 
 definition "final_max_max_matching 
-    = compute_max_weight_max_card_matching left right weights (lookup G)"
+    = compute_max_weight_max_card_matching no_vertex left right weights (lookup G)"
 
 value "final_max_max_matching"
 value "inorder final_max_max_matching"

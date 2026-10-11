@@ -1,6 +1,8 @@
 theory WBP_Matching_Exec
-  imports Basic_Matching.WBP_Matching_Reductions_Exec  "HOL-Library.Product_Lexorder"
-          Hungarian_Method_Instantiation
+  imports
+    Basic_Matching.WBP_Matching_Reductions_Exec
+    "HOL-Library.Product_Lexorder"
+    Hungarian_Method_Instantiation
 begin
 
 hide_const PST_RBT.delete PST_RBT.update left
@@ -49,6 +51,10 @@ end
 
 lemma trivial_map: "Map (\<lambda>x. None) (\<lambda>x y f. f(x \<mapsto> y)) (\<lambda>x f. f(x := None)) (\<lambda>f. f) (\<lambda>f. True)"
   by(auto intro!: Map.intro)
+
+lemma Map_axioms_as_needed: "Map \<langle>\<rangle> RBT_Map.update RBT_Map.delete lookup M.invar"
+  using M.Map_axioms
+  by(auto simp add: RBT_Set.empty_def)
 
 global_interpretation graph_completer_spec_rbt: graph_completer_spec
   where delete = delete
@@ -138,11 +144,11 @@ qed
 next
   case 4
   then show ?case 
-    by (simp add: pd_path_search_spec.missed_map.Map_axioms)
+    by (simp add: Map_axioms_as_needed)
 next
   case 6
   then show ?case 
-    by (simp add: aug_a_matching.buddy_map.Map_axioms)
+    by (simp add: Map_axioms_as_needed)
 next
   case 5
   then show ?case 
@@ -166,19 +172,19 @@ defines inverted_costs = invert_costs.inverted_costs
 
 hide_const right
 
-definition "compute_min_weight_perfect_matching left right edge_costs right_neighbs
-    = hungarian left right edge_costs right_neighbs lookup RBT_Map.update"
+definition "compute_min_weight_perfect_matching nil left right edge_costs right_neighbs
+    = hungarian nil left right edge_costs right_neighbs"
 
-definition "compute_max_weight_perfect_matching left right edge_costs right_neighbs
-         = compute_min_weight_perfect_matching left right (- edge_costs) right_neighbs"
+definition "compute_max_weight_perfect_matching nil left right edge_costs right_neighbs
+         = compute_min_weight_perfect_matching nil left right (- edge_costs) right_neighbs"
 
-definition "compute_max_weight_perfect_matching_inv left right edge_costs right_neighbs
-         = compute_min_weight_perfect_matching left right 
+definition "compute_max_weight_perfect_matching_inv nil left right edge_costs right_neighbs
+         = compute_min_weight_perfect_matching nil left right 
             (curry (abstract_real_map (lookup (inverted_costs edge_costs)))) right_neighbs"
 
-definition "acompute_min_matching left right edge_costs right_neighbs
+definition "acompute_min_matching nil left right edge_costs right_neighbs
             = the (
-                compute_min_weight_perfect_matching
+                compute_min_weight_perfect_matching (old_vertex nil)
                 (new_left left right) 
                 (new_right left right)
                 (curry (abstract_real_map (lookup 
@@ -186,20 +192,21 @@ definition "acompute_min_matching left right edge_costs right_neighbs
                            left right right_neighbs edge_costs))))
                  (lookup (bp_perfect_exec left right)))"
 
-definition "compute_min_weight_matching left right edge_costs right_neighbs
+definition "compute_min_weight_matching nil left right edge_costs right_neighbs
             = extract_mw_matching left right_neighbs edge_costs
-               (lookup (acompute_min_matching left right edge_costs right_neighbs))"
+               (matching_lookup (old_vertex nil)
+                  (acompute_min_matching nil left right edge_costs right_neighbs))"
 
-definition "compute_max_weight_matching left right edge_costs right_neighbs
-         = compute_min_weight_matching left right (- edge_costs) right_neighbs"
+definition "compute_max_weight_matching nil left right edge_costs right_neighbs
+         = compute_min_weight_matching nil left right (- edge_costs) right_neighbs"
 
-definition "compute_max_weight_matching_inv left right edge_costs right_neighbs
-         = compute_min_weight_matching left right 
+definition "compute_max_weight_matching_inv nil left right edge_costs right_neighbs
+         = compute_min_weight_matching nil left right 
             (curry (abstract_real_map (lookup (inverted_costs edge_costs)))) right_neighbs"
 
-definition "acompute_min_max_matching left right edge_costs right_neighbs
+definition "acompute_min_max_matching nil left right edge_costs right_neighbs
             = the (
-                compute_min_weight_perfect_matching 
+                compute_min_weight_perfect_matching (old_vertex nil)
                 (new_left left right) 
                 (new_right left right)
                 (curry (abstract_real_map (lookup 
@@ -207,15 +214,16 @@ definition "acompute_min_max_matching left right edge_costs right_neighbs
                            left right right_neighbs edge_costs))))
                  (lookup (bp_perfect_exec left right)))"
 
-definition "compute_min_weight_max_card_matching left right edge_costs right_neighbs
+definition "compute_min_weight_max_card_matching nil left right edge_costs right_neighbs
             = extract_mwmc_matching left right_neighbs
-               (lookup (acompute_min_max_matching left right edge_costs right_neighbs))"
+               (matching_lookup (old_vertex nil)
+                  (acompute_min_max_matching nil left right edge_costs right_neighbs))"
 
-definition "compute_max_weight_max_card_matching left right edge_costs right_neighbs
-         = compute_min_weight_max_card_matching left right (- edge_costs) right_neighbs"
+definition "compute_max_weight_max_card_matching nil left right edge_costs right_neighbs
+         = compute_min_weight_max_card_matching nil left right (- edge_costs) right_neighbs"
 
-definition "compute_max_weight_max_card_matching_inv left right edge_costs right_neighbs
-         = compute_min_weight_max_card_matching left right 
+definition "compute_max_weight_max_card_matching_inv nil left right edge_costs right_neighbs
+         = compute_min_weight_max_card_matching nil left right 
             (curry (abstract_real_map (lookup (inverted_costs edge_costs)))) right_neighbs"
 
 locale bp_min_weight_matching_algorithms_correct = 
@@ -224,8 +232,9 @@ locale bp_min_weight_matching_algorithms_correct =
     and left::"('v \<times> color) tree"
     and right::"('v \<times> color) tree"
     and right_neighbs::"'v \<Rightarrow> (('v \<times> color) tree) option"
+    and nil::'v
 
-assumes G: "bipartite G (vset_to_set left) (vset_to_set right)"
+assumes nil: "nil \<notin> Vs G" and G: "bipartite G (vset_to_set left) (vset_to_set right)"
   "vset_inv left" "vset_inv right"
   "(vset_to_set left) \<union> (vset_to_set right) \<subseteq> Vs G"
 
@@ -310,11 +319,11 @@ qed
 next
   case 4
   then show ?case 
-    by (simp add: pd_path_search_spec.missed_map.Map_axioms)
+    by (simp add: Map_axioms_as_needed)
 next
   case 6
   then show ?case 
-    by (simp add: aug_a_matching.buddy_map.Map_axioms)
+    by (simp add: Map_axioms_as_needed)
 next
   case 5
   then show ?case 
@@ -377,9 +386,13 @@ next
 qed
 
 interpretation hungarian_same_graph:
-  hungarian_method_together_correct G some_edge_costs left right  right_neighbs
+  hungarian_method_together_correct G some_edge_costs left right  right_neighbs nil
   for some_edge_costs
 proof(rule hungarian_method_together_correct.intro, goal_cases)
+  case 7
+  then show ?case 
+    using nil by simp
+next
   case (5 v N)
   then show ?case 
     using graph_completer_min.G(3) by presburger
@@ -418,9 +431,17 @@ and bp_perfected_R_is_right':
  by (simp add: graph_completer_min.bp_perfected_exec_correct(5,7) new_left_def new_right_def)+
 
 interpretation hungarian_extended_graph:
-  hungarian_method_together_correct G' some_edge_costs left' right'  right_neighbs'
+  hungarian_method_together_correct G' some_edge_costs left' right'  right_neighbs' "old_vertex nil"
   for some_edge_costs
 proof(rule hungarian_method_together_correct.intro, goal_cases)
+  case 7
+  have "Vs G' \<subseteq> vset_to_set left' \<union> vset_to_set right'"
+    using bipartite_vs_subset[OF bipartite_G'] .
+  then show ?case 
+    using nil G(4)
+    by(auto simp add: bp_perfected_L_is_left'[symmetric] bp_perfected_R_is_right'[symmetric]
+                      bp_perfected_L_def bp_perfected_R_def)
+next
   case 1
   then show ?case 
     using  graph_completer_min.bipartite_perfected
@@ -466,7 +487,7 @@ next
       using  graph_completer_spec_rbt.new_graph.are_connected_abs[OF
               graph_completer_min.bp_perfected_exec_correct(1), of u v]
       by (auto intro!: in_UDI[of v u] 
-             simp add: neighv_is N forest_manipulation_spec_i.vset.set_isin
+             simp add: neighv_is N set.set_isin
           graph_completer_min.bp_perfected_exec_correct(1))
   next
     case (2 u)
@@ -479,13 +500,13 @@ next
     proof(cases rule: in_UDE[OF uv_UD])
       case 1
       then show ?thesis 
-        by (simp add: forest_manipulation_spec_i.vset.set_isin
+        by (simp add: set.set_isin
             graph_completer_min.bp_perfected_exec_correct(1) neighv_is)
     next
       case 2
       hence "isin (?nbhd u) v" by force
       hence "(u, v) \<in> set (graph_completer_spec.new_edge_list left right Tree2.inorder)"
-        using forest_manipulation_spec_i.vset.set_isin graph_completer_min.bp_perfected_exec_correct(1)
+        using set.set_isin graph_completer_min.bp_perfected_exec_correct(1)
           graph_completer_min.directed_perfected graph_completer_min.new_edge_list_is by blast
       hence "v \<in> (vset_to_set right')"
         using graph_completer_min.bp_perfected_exec_correct(7) 
@@ -505,18 +526,17 @@ lemmas hungarian_other_graph_correct =
 hungarian_extended_graph.hungarian_correctness
 
 lemma compute_min_weight_perfect_matching_correct:
-"compute_min_weight_perfect_matching left right edge_costs right_neighbs = None
+"compute_min_weight_perfect_matching nil left right edge_costs right_neighbs = None
   \<Longrightarrow> \<nexists> M. perfect_matching G M"
-"compute_min_weight_perfect_matching left right edge_costs right_neighbs = Some M
-  \<Longrightarrow> min_weight_perfect_matching G \<w> (matching_abstract M)"
+"compute_min_weight_perfect_matching nil left right edge_costs right_neighbs = Some M
+  \<Longrightarrow> min_weight_perfect_matching G \<w> (matching_abstract nil M)"
   using hungarian_same_graph_correct
    by(auto simp add: compute_min_weight_perfect_matching_def)
 
 (*TODO MOVE*)
 lemma upairs_matching_abstract:
- "upairs_of_map (lookup M) = matching_abstract M"
-  by(auto simp add: upairs_of_map_def matching_abstract_def
- matching_augmentation_spec.\<M>_def'[OF aug_a_matching.matching_augmentation_spec_axioms])
+ "upairs_of_map (matching_lookup n M) = matching_abstract n M"
+  by(simp add: matching_abstract_def matching_lookup_def aug_a_matching.\<M>_def)
 
 lemma extract_mw_matching_same:
       "graph_completer_spec.extract_mw_matching (\<lambda>f. f) isin vset_empty (\<lambda>f. f) \<langle>\<rangle> RBT_Map.update
@@ -544,25 +564,25 @@ lemma finite_G': "finite G'"
   using finite_G' hungarian_same_graph.G(1) by fastforce
 
 lemma hungarian_min_not_None:
-  "hungarian left' right' min_weights_used right_neighbs' lookup RBT_Map.update \<noteq> None"
+  "hungarian (old_vertex nil) left' right' min_weights_used right_neighbs' \<noteq> None"
   apply(rule ccontr)
   using perfect_matching_in_balanced_complete_bipartite[OF balanced_complete_bipartite_G' finite_G']
   by(auto dest!: hungarian_other_graph_correct(1)[of
          min_weights_used, OF weights_used_symmetric, simplified])
 
 lemma hungarian_min_is_Some:
-    "hungarian left' right' min_weights_used right_neighbs' lookup RBT_Map.update =
-    Some (acompute_min_matching left right edge_costs right_neighbs)"
+    "hungarian (old_vertex nil) left' right' min_weights_used right_neighbs' =
+    Some (acompute_min_matching nil left right edge_costs right_neighbs)"
   by(auto simp add: acompute_min_matching_def
     compute_min_weight_perfect_matching_def hungarian_min_not_None)
 
 lemma compute_min_weight_correct:
-"min_weight_matching G \<w> (matching_abstract
-      (compute_min_weight_matching left right edge_costs right_neighbs))"
+"min_weight_matching G \<w> (upairs_of_map (lookup
+      (compute_min_weight_matching nil left right edge_costs right_neighbs)))"
 proof-
   note proof_rule = back_subst[of "min_weight_matching _ _", OF
     graph_completer_min.minimum_weight_matching[of edge_costs,
-    simplified graph_completer_min.\<w>_def, simplified upairs_matching_abstract
+    simplified graph_completer_min.\<w>_def, simplified
                extract_mw_matching_same], OF _ _ _  refl]
   show ?thesis
   unfolding compute_min_weight_matching_def
@@ -595,7 +615,7 @@ next
   then show ?case 
     using  hungarian_min_is_Some
       hungarian_other_graph_correct(2)[of min_weights_used
-        "acompute_min_matching left right edge_costs right_neighbs",
+        "acompute_min_matching nil left right edge_costs right_neighbs",
                 OF weights_used_symmetric, simplified]
     by(auto simp add: upairs_matching_abstract bp_min_costs_to_min_perfect_costs_exec_def)
 qed
@@ -619,25 +639,25 @@ lemma max_card_weights_used_symmetric:
   by(auto simp add: bp_min_max_card_costs_to_min_perfect_costs_exec_def)
 
 lemma hungarian_min_max_card_not_None:
-  "hungarian left' right' min_max_card_weights_used right_neighbs' lookup RBT_Map.update \<noteq> None"
+  "hungarian (old_vertex nil) left' right' min_max_card_weights_used right_neighbs' \<noteq> None"
   apply(rule ccontr)
   using perfect_matching_in_balanced_complete_bipartite[OF balanced_complete_bipartite_G' finite_G']
   by(auto dest!: hungarian_other_graph_correct(1)[of
          min_max_card_weights_used, OF max_card_weights_used_symmetric, simplified])
 
 lemma hungarian_min_max_card_is_Some:
-    "hungarian left' right' min_max_card_weights_used right_neighbs' lookup RBT_Map.update =
-    Some (acompute_min_max_matching left right edge_costs right_neighbs)"
+    "hungarian (old_vertex nil) left' right' min_max_card_weights_used right_neighbs' =
+    Some (acompute_min_max_matching nil left right edge_costs right_neighbs)"
  by(auto simp add: acompute_min_max_matching_def
     compute_min_weight_perfect_matching_def hungarian_min_max_card_not_None)
 
 lemma compute_min_weight_max_card_correct:
-  "min_weight_max_card_matching G \<w> (matching_abstract
-      (compute_min_weight_max_card_matching left right edge_costs right_neighbs))"
+  "min_weight_max_card_matching G \<w> (upairs_of_map (lookup
+      (compute_min_weight_max_card_matching nil left right edge_costs right_neighbs)))"
 proof-
   note proof_rule =  back_subst[of "min_weight_max_card_matching _ _", OF
     graph_completer_min.minimum_weight_max_card_matching[of edge_costs,
-    simplified graph_completer_min.\<w>_def, simplified upairs_matching_abstract
+    simplified graph_completer_min.\<w>_def, simplified
                extract_mwmc_matching_same], OF _ _ _  refl]
   show ?thesis
   unfolding compute_min_weight_max_card_matching_def
@@ -671,7 +691,7 @@ next
   then show ?case 
     using  hungarian_min_max_card_is_Some
       hungarian_other_graph_correct(2)[of min_max_card_weights_used
-        "acompute_min_max_matching left right edge_costs right_neighbs",
+        "acompute_min_max_matching nil left right edge_costs right_neighbs",
                 OF max_card_weights_used_symmetric, simplified]
     by(auto simp add: upairs_matching_abstract
                       bp_min_max_card_costs_to_min_perfect_costs_exec_def)
@@ -691,8 +711,9 @@ locale bp_matching_algorithms_correct =
     and left::"('v \<times> color) tree"
     and right::"('v \<times> color) tree"
     and right_neighbs::"'v \<Rightarrow> (('v \<times> color) tree) option"
+    and nil::'v
 
-assumes G: "bipartite G (vset_to_set left) (vset_to_set right)"
+assumes nil: "nil \<notin> Vs G" and G: "bipartite G (vset_to_set left) (vset_to_set right)"
   "vset_inv left" "vset_inv right"
   "(vset_to_set left) \<union> (vset_to_set right) \<subseteq> Vs G"
 
@@ -708,38 +729,38 @@ abbreviation "\<w> \<equiv> setify_weight edge_costs"
 
 interpretation min_version:
   bp_min_weight_matching_algorithms_correct
-  G edge_costs left right right_neighbs
-  using G(1-6)
+  G edge_costs left right right_neighbs nil
+  using G(1-6) nil
   by(auto intro!: bp_min_weight_matching_algorithms_correct.intro dest: G(7))
 
 interpretation max_version:
   bp_min_weight_matching_algorithms_correct
-  G "- edge_costs" left right right_neighbs
-  using G(1-6)
+  G "- edge_costs" left right right_neighbs nil
+  using G(1-6) nil
   by(auto intro!: bp_min_weight_matching_algorithms_correct.intro dest: G(7))
 
 lemma minus_minus_w: "- (\<lambda>e. - min_version.\<w> e) = \<w>" 
   by auto
 
 lemma compute_max_weight_perfect_matching_correct:
-"compute_max_weight_perfect_matching left right edge_costs right_neighbs = None
+"compute_max_weight_perfect_matching nil left right edge_costs right_neighbs = None
   \<Longrightarrow> \<nexists> M. perfect_matching G M"
-"compute_max_weight_perfect_matching left right edge_costs right_neighbs = Some M
-  \<Longrightarrow> max_weight_perfect_matching G \<w> (matching_abstract M)"
+"compute_max_weight_perfect_matching nil left right edge_costs right_neighbs = Some M
+  \<Longrightarrow> max_weight_perfect_matching G \<w> (matching_abstract nil M)"
   using max_version.minimum_weight_matching_algos_correct(1,2)
   by(auto simp add: compute_max_weight_perfect_matching_def
                     min_perfect_and_max_perfect_matching minus_minus_w)
 
 lemma compute_max_weight_correct:
-"max_weight_matching G \<w> (matching_abstract
-      (compute_max_weight_matching left right edge_costs right_neighbs))"
+"max_weight_matching G \<w> (upairs_of_map (lookup
+      (compute_max_weight_matching nil left right edge_costs right_neighbs)))"
   using max_version.minimum_weight_matching_algos_correct(3)
   by(auto simp add: compute_max_weight_matching_def
                     min_and_max_matching minus_minus_w)
 
 lemma compute_max_weight_max_card_correct:
-  "max_weight_max_card_matching G \<w> (matching_abstract
-      (compute_max_weight_max_card_matching left right edge_costs right_neighbs))"
+  "max_weight_max_card_matching G \<w> (upairs_of_map (lookup
+      (compute_max_weight_max_card_matching nil left right edge_costs right_neighbs)))"
   using max_version.minimum_weight_matching_algos_correct(4)
   by(auto simp add: compute_max_weight_max_card_matching_def
                     min_max_card_and_max_max_card_matching  minus_minus_w)
@@ -757,8 +778,9 @@ locale bp_matching_algorithms_correct_cost_map =
     and left::"('v \<times> color) tree"
     and right::"('v \<times> color) tree"
     and right_neighbs::"'v \<Rightarrow> (('v \<times> color) tree) option"
+    and nil::'v
 
-assumes G: "bipartite G (vset_to_set left) (vset_to_set right)"
+assumes nil: "nil \<notin> Vs G" and G: "bipartite G (vset_to_set left) (vset_to_set right)"
   "vset_inv left" "vset_inv right"
   "(vset_to_set left) \<union> (vset_to_set right) \<subseteq> Vs G"
 
@@ -775,16 +797,16 @@ abbreviation "\<w> \<equiv> setify_weight (curry \<Parallel>lookup edge_costs\<P
 
 interpretation min_version:
   bp_min_weight_matching_algorithms_correct
-  G "curry \<Parallel>lookup edge_costs\<Parallel>" left right right_neighbs
-  using G(1-6)
+  G "curry \<Parallel>lookup edge_costs\<Parallel>" left right right_neighbs nil
+  using G(1-6) nil
   by(auto intro!: bp_min_weight_matching_algorithms_correct.intro dest: G(7))
 
 lemmas inverted_costs = invert_costs.inverted_costs_correct(2)[OF G(8)]
 
 interpretation max_version:
   bp_min_weight_matching_algorithms_correct
-  G "curry \<Parallel>lookup (inverted_costs edge_costs)\<Parallel>" left right right_neighbs
-  using G(1-6)
+  G "curry \<Parallel>lookup (inverted_costs edge_costs)\<Parallel>" left right right_neighbs nil
+  using G(1-6) nil
   by(auto intro!: bp_min_weight_matching_algorithms_correct.intro dest: G(7)
         simp add: inverted_costs)
 
@@ -793,24 +815,24 @@ lemma minus_minus_w: "- (\<lambda>e. - min_version.\<w> e) = \<w>"
   by auto
 
 lemma compute_max_weight_perfect_matching_correct:
-"compute_max_weight_perfect_matching_inv left right edge_costs right_neighbs = None
+"compute_max_weight_perfect_matching_inv nil left right edge_costs right_neighbs = None
   \<Longrightarrow> \<nexists> M. perfect_matching G M"
-"compute_max_weight_perfect_matching_inv left right edge_costs right_neighbs = Some M
-  \<Longrightarrow> max_weight_perfect_matching G \<w> (matching_abstract M)"
+"compute_max_weight_perfect_matching_inv nil left right edge_costs right_neighbs = Some M
+  \<Longrightarrow> max_weight_perfect_matching G \<w> (matching_abstract nil M)"
   using max_version.minimum_weight_matching_algos_correct(1,2)
   by(auto simp add: compute_max_weight_perfect_matching_inv_def inverted_costs
                     min_perfect_and_max_perfect_matching minus_minus_w)
 
 lemma compute_max_weight_correct:
-"max_weight_matching G \<w> (matching_abstract
-      (compute_max_weight_matching_inv left right edge_costs right_neighbs))"
+"max_weight_matching G \<w> (upairs_of_map (lookup
+      (compute_max_weight_matching_inv nil left right edge_costs right_neighbs)))"
   using max_version.minimum_weight_matching_algos_correct(3)
   by(auto simp add: compute_max_weight_matching_inv_def inverted_costs
                     min_and_max_matching minus_minus_w)
 
 lemma compute_max_weight_max_card_correct:
-  "max_weight_max_card_matching G \<w> (matching_abstract
-      (compute_max_weight_max_card_matching_inv left right edge_costs right_neighbs))"
+  "max_weight_max_card_matching G \<w> (upairs_of_map (lookup
+      (compute_max_weight_max_card_matching_inv nil left right edge_costs right_neighbs)))"
   using max_version.minimum_weight_matching_algos_correct(4)
   by(auto simp add: compute_max_weight_max_card_matching_inv_def inverted_costs
                     min_max_card_and_max_max_card_matching  minus_minus_w)

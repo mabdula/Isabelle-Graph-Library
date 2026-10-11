@@ -1,7 +1,9 @@
 session "Imperative" = "Separation_Logic_Imperative_HOL_Partial" +
-  sessions Data_Structures
+  sessions Data_Structures Go
   theories
     Imperative_Base
     Imperative_DS
     Array_Range_Iteration
+    Imperative_HOL_Go
+    Code_Target_Machine_Int
 

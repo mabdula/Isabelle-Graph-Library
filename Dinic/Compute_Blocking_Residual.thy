@@ -1,5 +1,6 @@
 theory Compute_Blocking_Residual                 
-  imports DFS_Collect_Backtrack_Example Compute_Blocking_Simple
+  imports DFS_Collect_Backtrack_Example Compute_Blocking_Simple Residual_Buckets
+    Flow_Theory.Unit_Flows
     "HOL-Library.Product_Lexorder"
     Graph_Algorithms_Dev.BFS_Example Graph_Algorithms_Dev.RBT_Map_Extension
 begin
@@ -165,18 +166,13 @@ qed
 
 locale blocking_level_residual_spec =
 
-  flow_network_spec where fst = fst  +
-
-  Map_realising: Map realising_edges_empty 
-  "realising_edges_update::('v\<times> 'v) \<Rightarrow> ('e Redge) list \<Rightarrow> 'realising_type \<Rightarrow> 'realising_type"
-   realising_edges_delete realising_edges_lookup realising_edges_invar +
+  residual_buckets_spec where fst = fst  +
 
   Map_residual_flow: Map residual_flow_empty
   "residual_flow_update::'e Redge \<Rightarrow> real \<Rightarrow> 'resflow_map \<Rightarrow> 'resflow_map"
   residual_flow_delete residual_flow_lookup residual_flow_invar
 
-for fst::"'e \<Rightarrow> 'v::linorder" and realising_edges_empty realising_edges_update
-  realising_edges_delete realising_edges_lookup realising_edges_invar
+for fst::"'e \<Rightarrow> 'v::linorder" and
   residual_flow_delete residual_flow_lookup residual_flow_invar residual_flow_empty
   residual_flow_update  +
 fixes s t ::'v
@@ -185,13 +181,6 @@ fixes s t ::'v
 begin
 
 definition "pos_es = filter (\<lambda> e. rcap \<f> e > 0) (map F es @ map B es)"
-  (*Turn later into join/projection/collapsing functions.*)
-definition "realising_edges_general list =
-           (foldr (\<lambda> e found_edges. let ee = to_vertex_pair e in
-                     (case realising_edges_lookup found_edges ee of 
-                      None \<Rightarrow> realising_edges_update ee [e] found_edges
-                     |Some ds \<Rightarrow> realising_edges_update ee (e#ds) found_edges))
-            list realising_edges_empty)"
 
 definition "realising_edges = realising_edges_general pos_es"
 
@@ -233,7 +222,6 @@ definition "find_blocking_flow =
       ))"
 
 lemmas [code] =pos_es_def
-  realising_edges_general_def
   realising_edges_def
   E_simple_def
   u_simple_def
@@ -265,67 +253,10 @@ lemma pos_es_props: "set pos_es = {e | e. e \<in> \<EE> \<and> rcap \<f> e > 0}"
   "distinct pos_es"
   by (auto intro!: distinct_filter inj_onI 
       simp add: pos_es_def \<EE>_def  distinct_map es_props)
-    (*Use for projection*)
-lemma realising_edges_invar_pres: "realising_edges_invar (realising_edges_general list)"
-  unfolding realising_edges_general_def
-  by(auto intro: foldr_invar 
-      simp add: Map_realising.invar_empty Map_realising.invar_update realising_edges_general_def 
-      split: option.split)
-    (*Use for projection*)
-lemma realising_edges_general_result_None_and_Some:
-  assumes "(case realising_edges_lookup (realising_edges_general list) (u, v) 
-            of Some ds \<Rightarrow> ds 
-               | None \<Rightarrow> [])= ds"
-  shows "set ds = {e | e. e \<in> set list \<and> to_vertex_pair e = (u, v)}"
-  using assms
-proof(induction list arbitrary: ds)
-  case Nil
-  then show ?case 
-    by (auto simp add: realising_edges_general_def  Map_realising.map_empty 
-        split: option.split)
-next
-  case (Cons a list ds)
-  show ?case 
-    using Map_realising.map_update[OF  realising_edges_invar_pres] Cons(1)[OF refl] 
-    by (auto intro: realising_edges_invar_pres 
-        simp add: Map_realising.map_update realising_edges_general_def Cons(2)[symmetric] 
-        split: option.split)
-qed
-  (*Use for projection*)
-lemma realising_edges_general_result_distinct:
-  assumes "distinct list"
-    "(case realising_edges_lookup (realising_edges_general list) (u, v) 
-            of Some ds \<Rightarrow> ds 
-               | None \<Rightarrow> [])= ds"
-  shows "distinct ds"
-  using assms
-proof(induction list arbitrary: ds u v)
-  case Nil
-  then show ?case 
-    by (auto simp add: realising_edges_general_def  Map_realising.map_empty 
-        split: option.split)
-next
-  case (Cons e list ds u v)
-  hence distlist: "distinct list" by auto
-  show ?case 
-    using  realising_edges_general_result_None_and_Some[OF Cons(3)]  Cons(1)[OF distlist refl, of u v]
-    unfolding realising_edges_general_def Cons(3)[symmetric]
-    apply(subst (asm) foldr_Cons, subst (asm) o_apply)
-    apply(subst (asm) foldr_Cons, subst (asm) o_apply)
-    apply(subst foldr_Cons, subst  o_apply)
-    unfolding realising_edges_general_def[symmetric]
-    using Cons(1)[OF distlist refl, of u v]  Cons.prems(1) 
-      realising_edges_general_result_None_and_Some[OF refl, of list u v]
-    by (auto simp add: realising_edges_general_def[symmetric] 
-        Map_realising.map_update[OF  realising_edges_invar_pres , of "to_vertex_pair e" _ list] 
-        split: option.split)
-qed
-  (*Use for projection*)
-lemma realising_edges_general_result:
-  assumes "realising_edges_lookup (realising_edges_general list) (u, v) = Some ds"
-  shows "set ds = {e | e. e \<in> set list \<and> to_vertex_pair e = (u, v)}"
-  using realising_edges_general_result_None_and_Some[of list u v ds] assms
-  by simp
+
+text \<open>The lemmas on @{const residual_buckets_spec.realising_edges_general} are in
+theory \<open>Residual_Buckets\<close>.\<close>
+
     (*Use for projection*)
 lemma realising_edges_result:
   "realising_edges_lookup realising_edges d = Some ds \<Longrightarrow>
@@ -631,50 +562,20 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
       (auto simp add: if_not_P)
 qed
 
-lemma vwalk_simple_to_resreach:
+lemma resreach_iff_vwalk_simple:
+  "resreach \<f> s t \<longleftrightarrow> (\<exists> p. vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t)"
+  unfolding E_simple_props(4) pos_es_props(1)
+  by (rule resreach_iff_vwalk[OF s_neq_t])
+
+corollary vwalk_simple_to_resreach:
   assumes "vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t"
   shows "resreach \<f> s t"
-proof-
-  have awalk_found: "awalk (to_vertex_pair ` 
-          {x. (x \<in> F ` \<E> \<or> x \<in> Redge.B ` \<E>) \<and> 0 < \<uu>\<^bsub>\<f>\<^esub>x}) s
-     (edges_of_vwalk p) t"
-    using vwalk_imp_awalk[OF assms]
-    by (unfold E_simple_props(4) pos_es_def set_filter set_map set_append
-        resreach_def  es_props(1) ) auto
-  then obtain pp where pp:"set pp \<subseteq>
-                {x. (x \<in> F ` \<E> \<or> x \<in> Redge.B ` \<E>) \<and> 0 < \<uu>\<^bsub>\<f>\<^esub>x}"
-    "map to_vertex_pair pp = edges_of_vwalk p" 
-    using list_in_image_map[of "edges_of_vwalk p"] 
-    by(force simp add: awalk_def)
-  have "awalk (to_vertex_pair ` \<EE>) s (map to_vertex_pair pp) t"
-    using awalk_found
-    by(auto intro: subset_mono_awalk simp add:  pp(2)[symmetric] \<EE>_def)
-  moreover have "0 < Rcap \<f> (set pp)"
-    using pp(1) 
-    by(auto intro!: Rcap_strictI')
-  moreover have " pp \<noteq> []" 
-    using pp(2) awalk_found s_neq_t by fastforce
-  moreover have "set pp \<subseteq> \<EE>"
-    using pp(1) 
-    by(auto simp add: \<EE>_def)
-  ultimately show ?thesis
-    by(auto intro!: exI[of _ pp] simp add: resreach_def)
-qed
+  using assms resreach_iff_vwalk_simple by blast
 
-lemma resreach_to_vwalk_simple:
+corollary resreach_to_vwalk_simple:
   assumes "resreach \<f> s t"
   shows "\<exists> p. vwalk_bet (dfs.Graph.digraph_abs E_simple) s p t"
-proof-
-  obtain p where p: "awalk (to_vertex_pair ` \<EE>) s (map to_vertex_pair p) t"
-    "Rcap \<f> (set p) > 0" "p \<noteq> []" "set p \<subseteq> \<EE>"
-    using assms by(auto simp add: resreach_def)
-  show ?thesis
-    using p(3)  p(4)
-    by(force intro!: exI[of _ "awalk_verts s (map to_vertex_pair p)"]
-        awalk_imp_vwalk subset_mono_awalk'[OF p(1)] imageI 
-        rcap_extr_strict[OF _ p(2)]
-        simp add: \<EE>_def E_simple_props(4) pos_es_def es_props(1))
-qed
+  using assms resreach_iff_vwalk_simple by blast
 
 lemma residual_add_flow_correct:
   assumes "residual_flow_invar acc"
