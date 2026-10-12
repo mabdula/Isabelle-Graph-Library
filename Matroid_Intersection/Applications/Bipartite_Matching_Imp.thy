@@ -41,8 +41,8 @@ global_interpretation mx: matroid_intersection_imp_spec n id id bm_memb bm_ins1 
     and mx_s = mx.ids.s_imp
     and mx_t = mx.ids.t_imp
     and mx_st = mx.ids.st_imp
-    and mx_src = mx.ids.src_imp
-    and mx_tgt = mx.ids.tgt_imp
+    and mx_src = mx.ids.is_src_imp
+    and mx_tgt = mx.ids.is_tgt_imp
     and mx_tail = mx.ids.tail_imp
     and mx_round = mx.ids.round_imp
     and mx_aug_path = mx.ids.aug_path_imp

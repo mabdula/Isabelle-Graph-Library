@@ -1,5 +1,5 @@
 theory Partition_Oracle_Imp
-  imports Partition_Oracle Exchange_Oracles_Imp Directed_Set_Graphs.CSR_Buildup
+  imports Partition_Oracle Exchange_Oracles_Imp Directed_Set_Graphs.CSR_Buildup_Imperative
 begin
 
 section \<open>The Unit Partition Oracle in Imperative HOL\<close>
@@ -145,24 +145,24 @@ definition part_npts_imp :: "part_hnd \<Rightarrow> nat \<Rightarrow> nat Heap" 
 definition part_pt_imp :: "part_hnd \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "part_pt_imp H x k = (case H of (Oa, Sa, Ea) \<Rightarrow> do { s \<leftarrow> Array.nth Sa x; Array.nth Oa (s + k) })"
 
-definition "part_count_imp n nb Bl B = foldl_range_imp (\<lambda> i _. do { 
-     k \<leftarrow> Array.nth Bl i;
-     if k + 2 \<le> nb then do { c \<leftarrow> Array.nth B (k + 2); Array.upd (k + 2) (c + 1) B; return () }
-     else return () }) 0 n ()"
+text \<open>The block boundaries and the element array are built by the CSR buildup of the library,
+  with a counter over the elements below \<open>n\<close> as iterator, the block of an element as key and
+  the element itself as value.\<close>
 
-definition "part_prefix_imp nb B = foldl_range_imp (\<lambda> j _. do { 
-     c \<leftarrow> Array.nth B j; d \<leftarrow> Array.nth B (j - 1); Array.upd j (c + d) B; return () }) 1 (Suc nb) ()"
+global_interpretation part_csr: imp_csr_buildup_code nb "\<lambda>_ i. return (i < n)" "\<lambda>_ i. return i"
+    "\<lambda>_ i. return (Suc i)" Array.nth "\<lambda>_ i. return i"
+  for n nb
+  defines part_csr_build = part_csr.csr_build_imp
+    and part_csr_count = part_csr.count_imp
+    and part_csr_prefix_sums = part_csr.prefix_imp
+    and part_csr_init = part_csr.init_E_imp
+    and part_csr_fill = part_csr.fill_imp
+  done
 
-definition "part_fill_imp n Bl B Oa = foldl_range_imp (\<lambda> i _. do { 
-     k \<leftarrow> Array.nth Bl i; p \<leftarrow> Array.nth B (k + 1); 
-     Array.upd (k + 1) (Suc p) B; Array.upd p i Oa; return () }) 0 n ()"
+declare part_csr.count_imp.simps[code] part_csr.prefix_imp.simps[code] part_csr.fill_imp.simps[code]
 
 definition "part_handle_imp n nb Bl = do { 
-   B \<leftarrow> Array.new (Suc nb) 0;
-   part_count_imp n nb Bl B;
-   part_prefix_imp nb B;
-   Oa \<leftarrow> Array.new n 0;
-   part_fill_imp n Bl B Oa;
+   (B, Oa) \<leftarrow> part_csr_build n nb Bl 0;
    Sa \<leftarrow> Array.new n 0;
    copy_range_imp (\<lambda> i. do { k \<leftarrow> Array.nth Bl i; Array.nth B k }) n Sa;
    Ea \<leftarrow> Array.new n 0;
@@ -178,109 +178,18 @@ locale part_blocks =
     and bl_bound: "i < n \<Longrightarrow> bl ! i < nb"
 begin
 
-sublocale cs: csr_buildup "range_next n" "range_seq n" "\<lambda> _. True" "\<lambda> i. bl ! i" nb 0
-  by (intro csr_buildup.intro range_it.iterator_axioms csr_buildup_axioms.intro)
-     (simp_all add: range_seq_def bl_bound)
+sublocale cs: imp_csr_buildup "range_next n" "range_seq n" "\<lambda> _. True" "\<lambda> i. bl ! i" nb 0
+    "\<lambda>_ i. return (i < n)" "\<lambda>_ i. return i" "\<lambda>_ i. return (Suc i)" Array.nth "\<lambda>_ i. return i" id
+    "\<lambda>s si. si = s" "\<lambda>Bl. Bl \<mapsto>\<^sub>a bl"
+  by (intro imp_csr_buildup.intro csr_buildup.intro range_it.iterator_axioms csr_buildup_axioms.intro
+            imp_csr_buildup_axioms.intro)
+     (sep_auto simp: range_seq_def range_next_def bl_bound bl_len split: if_splits)+
 
 lemma es: "cs.es = [0..<n]"
   by (simp add: cs.es_def range_seq_def)
 
 lemma blk_bucket: "cs.blk k = bucket bl k"
   by (simp add: cs.blk_def es bucket_def bl_len)
-
-lemma init_E: "cs.init_E n = replicate n 0"
-  by (simp add: cs.init_E_def range_next_def)
-
-lemma fold_fill_spec:
-  "fold cs.fill_step [0..<n] (cs.prefix_sums (cs.count_B [0..<n]), replicate n 0) = (cs.B_spec, cs.E_spec)"
-  using cs.csr_build_correct 
-  by (simp add: cs.csr_build_def cs.count_edges cs.it_fold_s0 es init_E)
-
-lemma count_rule:
-  "<B \<mapsto>\<^sub>a replicate (Suc nb) 0 * Bl \<mapsto>\<^sub>a bl> part_count_imp n nb Bl B 
-   <\<lambda> _. B \<mapsto>\<^sub>a cs.count_B [0..<n] * Bl \<mapsto>\<^sub>a bl>"
-proof-
-  have run: "<B \<mapsto>\<^sub>a fst a0 * \<up>(length (fst a0) = Suc nb) * Bl \<mapsto>\<^sub>a bl> 
-               part_count_imp n nb Bl B 
-             <\<lambda> r. B \<mapsto>\<^sub>a fst (foldl (\<lambda> a j. cs.count_step j a) a0 [0..<n]) * 
-                   \<up>(length (fst (foldl (\<lambda> a j. cs.count_step j a) a0 [0..<n])) = Suc nb) * 
-                   Bl \<mapsto>\<^sub>a bl>" for a0
-    unfolding part_count_imp_def
-    apply (rule foldl_range_imp_rule[where A = "\<lambda> a (_ :: unit). B \<mapsto>\<^sub>a fst a * \<up>(length (fst a) = Suc nb)" 
-          and F = "Bl \<mapsto>\<^sub>a bl" and g = cs.count_step])
-    subgoal for j a ai
-      by (cases a) (sep_auto simp: cs.count_step_def Let_def bl_len bl_bound)
-    done
-  have fin: "foldl (\<lambda> a j. cs.count_step j a) (replicate (Suc nb) 0, 0) [0..<n] = (cs.count_B [0..<n], n)"
-    using cs.fold_count_step[of "[0..<n]"] by (simp add: foldl_conv_fold)
-  show ?thesis
-    by (rule ht_cons_post[OF ht_cons_pre[OF _ run[of "(replicate (Suc nb) 0, 0)"]]]) 
-       (sep_auto simp: fin[unfolded replicate_Suc])+
-qed
-
-lemma prefix_rule:
-  "<B \<mapsto>\<^sub>a Bs * \<up>(length Bs = Suc nb)> part_prefix_imp nb B <\<lambda> _. B \<mapsto>\<^sub>a cs.prefix_sums Bs>"
-proof-
-  have run: "<B \<mapsto>\<^sub>a Bs * \<up>(length Bs = Suc nb) * emp> part_prefix_imp nb B 
-             <\<lambda> r. B \<mapsto>\<^sub>a foldl (\<lambda> a j. cs.prefix_step j a) Bs [1..<Suc nb] * 
-                   \<up>(length (foldl (\<lambda> a j. cs.prefix_step j a) Bs [1..<Suc nb]) = Suc nb) * emp>"
-    unfolding part_prefix_imp_def
-    by (rule foldl_range_imp_rule[where A = "\<lambda> Bs (_ :: unit). B \<mapsto>\<^sub>a Bs * \<up>(length Bs = Suc nb)" 
-          and F = emp and g = cs.prefix_step]) 
-       (sep_auto simp: cs.prefix_step_def)
-  show ?thesis
-    by (rule ht_cons_post[OF ht_cons_pre[OF _ run]]) 
-       (sep_auto simp: cs.prefix_sums_def foldl_conv_fold)+
-qed
-
-lemma fill_rule:
-  "<B \<mapsto>\<^sub>a cs.prefix_sums (cs.count_B [0..<n]) * Oa \<mapsto>\<^sub>a replicate n 0 * Bl \<mapsto>\<^sub>a bl> 
-     part_fill_imp n Bl B Oa 
-   <\<lambda> _. B \<mapsto>\<^sub>a cs.B_spec * Oa \<mapsto>\<^sub>a cs.E_spec * Bl \<mapsto>\<^sub>a bl>"
-proof-
-  define A where "A = (\<lambda> j a (_ :: unit). B \<mapsto>\<^sub>a fst a * Oa \<mapsto>\<^sub>a snd a * \<up>(cs.fill_invar [0..<j] a))"
-  have step: "<A j a ai * Bl \<mapsto>\<^sub>a bl> 
-     do { k \<leftarrow> Array.nth Bl j; p \<leftarrow> Array.nth B (k + 1); 
-          Array.upd (k + 1) (Suc p) B; Array.upd p j Oa; return () }
-     <\<lambda> r. A (Suc j) (cs.fill_step j a) r * Bl \<mapsto>\<^sub>a bl>" if j: "j < n" for j a ai
-  proof(cases a)
-    case (Pair Bs Es)
-    have "[0..<n] = [0..<j] @ [j..<n]"
-      using upt_add_eq_append[of 0 j "n - j"] j by simp
-    then have split: "[0..<j] @ j # [Suc j..<n] = cs.es"
-      using j upt_conv_Cons[of j n] by (simp add: es)
-    show ?thesis
-    proof(cases "cs.fill_invar [0..<j] (Bs, Es)")
-      case inv: True
-      have bnd: "Suc (bl ! j) < length Bs" "Bs ! Suc (bl ! j) < length Es"
-        using cs.fill_step_bounds[OF split inv] by simp_all
-      have inv': "cs.fill_invar [0..<Suc j] (cs.fill_step j (Bs, Es))"
-        using cs.fill_step_invar[OF split inv] by simp
-      have fs: "cs.fill_step j (Bs, Es) = 
-                (Bs[Suc (bl ! j) := Suc (Bs ! Suc (bl ! j))], Es[Bs ! Suc (bl ! j) := j])"
-        by (simp add: cs.fill_step_def Let_def)
-      show ?thesis
-        using bnd inv' j unfolding Pair fs A_def by (sep_auto simp: bl_len)
-    next
-      case False
-      then show ?thesis
-        unfolding Pair A_def by sep_auto
-    qed
-  qed
-  have run: "<A 0 (cs.prefix_sums (cs.count_B [0..<n]), replicate n 0) () * Bl \<mapsto>\<^sub>a bl> 
-               part_fill_imp n Bl B Oa 
-             <\<lambda> r. A n (foldl (\<lambda> a j. cs.fill_step j a) 
-                            (cs.prefix_sums (cs.count_B [0..<n]), replicate n 0) [0..<n]) r * 
-                   Bl \<mapsto>\<^sub>a bl>"
-    unfolding part_fill_imp_def 
-    by (rule foldl_range_imp_idx_rule[where A = A and F = "Bl \<mapsto>\<^sub>a bl" and g = cs.fill_step]) 
-       (rule step, simp_all)
-  have init: "cs.fill_invar [] (cs.prefix_sums (cs.count_B [0..<n]), replicate n 0)"
-    using cs.fill_invar_init by (simp add: es init_E)
-  show ?thesis
-    by (rule ht_cons_post[OF ht_cons_pre[OF _ run]]) 
-       (sep_auto simp: A_def init foldl_conv_fold fold_fill_spec)+
-qed
 
 lemma bounds_rule:
   "<B \<mapsto>\<^sub>a cs.B_spec * Bl \<mapsto>\<^sub>a bl * Sa \<mapsto>\<^sub>a replicate n 0> 
@@ -320,9 +229,10 @@ lemma handle_rule:
 proof-
   note b1 = bounds_rule[where f = "\<lambda> k. k", OF less_imp_le]
   note b2 = bounds_rule[where f = Suc, OF Suc_leI]
+  note build = cs.csr_build_imp_rule[of Bl 0, simplified]
   show ?thesis
-    unfolding part_handle_imp_def
-    by (sep_auto heap: count_rule prefix_rule fill_rule b1 b2 simp: part_pst_def handle_ok)
+    unfolding part_handle_imp_def part_csr_build_def
+    by (sep_auto heap: build b1 b2 simp: part_pst_def handle_ok)
 qed
 
 end

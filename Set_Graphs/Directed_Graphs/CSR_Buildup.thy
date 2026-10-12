@@ -482,14 +482,18 @@ qed
 
 subsubsection \<open>Main Theorem\<close>
 
-theorem csr_build_correct: "csr_build = (B_spec, E_spec)"
+text \<open>The fill pass does not depend on the initial contents of the edge array, only on its length.\<close>
+
+theorem fill_correct:
+  assumes "length E0 = length es"
+  shows "fold fill_step es (prefix_sums (count_B es), E0) = (B_spec, E_spec)"
 proof -
-  obtain B E where BE: "fold fill_step es (prefix_sums (count_B es), init_E (length es)) = (B, E)"
+  obtain B E where BE: "fold fill_step es (prefix_sums (count_B es), E0) = (B, E)"
     by fastforce
-  have build: "csr_build = (B, E)"
-    using BE by (simp add: csr_build_def count_edges it_fold_s0)
-  have "fill_invar es (B, E)"
-    using fold_fill[of es "[]", OF _ fill_invar_init] BE by simp
+  have "fill_invar [] (prefix_sums (count_B es), E0)"
+    using assms by (simp add: fill_invar_def prefix_sums_count_B del: upt_Suc)
+  hence "fill_invar es (B, E)"
+    using fold_fill[of es "[]"] BE by fastforce
   hence lenB: "length B = Suc n" and lenE: "length E = length es" and B0: "B ! 0 = 0"
     and Bk: "\<And>k. k < n \<Longrightarrow> B ! Suc k = start (Suc k)"
     and Ek: "\<And>k i. k < n \<Longrightarrow> i < length (blk k) \<Longrightarrow> E ! (start k + i) = blk k ! i"
@@ -516,8 +520,11 @@ proof -
       using Ek by (simp add: take_map start_def)
   qed
   ultimately show ?thesis
-    using build by simp
+    using BE by simp
 qed
+
+theorem csr_build_correct: "csr_build = (B_spec, E_spec)"
+  using fill_correct[OF length_init_E] by (simp add: csr_build_def count_edges it_fold_s0)
 
 subsubsection \<open>Reading off the Blocks\<close>
 

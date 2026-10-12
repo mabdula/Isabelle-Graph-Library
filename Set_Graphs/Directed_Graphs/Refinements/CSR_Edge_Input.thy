@@ -65,13 +65,11 @@ text \<open>The CSR buildup of the input (theory \<open>CSR_Graph\<close>) group
       endpoint. Grouping them by the second endpoint gives the ingoing edges; it is the same
       buildup with another key.\<close>
 
-definition edge_key_tgt :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
-  "edge_key_tgt = tgt_imp"
-
-global_interpretation csr_code_tgt: imp_csr_buildup_code n edge_has_next edge_cur edge_adv edge_key_tgt
-    edge_val
+global_interpretation csr_code_tgt: imp_csr_buildup_code n edge_has_next edge_cur edge_adv tgt_imp
+    edge_cur
   for n
   defines csr_build_edges_tgt = csr_code_tgt.csr_build_imp
+    and csr_build_into_edges_tgt = csr_code_tgt.csr_build_into
     and csr_count_edges_tgt = csr_code_tgt.count_imp
     and csr_prefix_sums_tgt = csr_code_tgt.prefix_imp
     and csr_init_edges_tgt = csr_code_tgt.init_E_imp
@@ -81,33 +79,32 @@ global_interpretation csr_code_tgt: imp_csr_buildup_code n edge_has_next edge_cu
 declare csr_code_tgt.count_imp.simps[code] csr_code_tgt.prefix_imp.simps[code]
   csr_code_tgt.fill_imp.simps[code]
 
-text \<open>The input: \<open>n\<close> bounds the vertices, @{term fs} and @{term ts} are the endpoint lists. The
-      CSR form groups the edges by @{term key}, one of the two endpoints, read from the endpoint
-      arrays by @{term key_imp}. The neighbourhoods are indexed by the vertices of the input.\<close>
+text \<open>A search that only reads the neighbours stores the heads in the CSR instead of the edges:
+      the same buildup, grouped by the first endpoint, with the second endpoint as value.\<close>
 
-locale csr_edge_input =
-  fixes n :: nat
-    and fs :: "nat list"
-    and ts :: "nat list"
-    and key :: "nat \<Rightarrow> nat"
-    and key_imp :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap"
-  assumes ts_length: "length ts = length fs"
-    and fs_bound: "\<And>u. u \<in> set fs \<Longrightarrow> u < n"
-    and ts_bound: "\<And>v. v \<in> set ts \<Longrightarrow> v < n"
-    and key_endpoint: "key = e_src fs \<or> key = e_tgt fs ts"
-    and key_imp_rule:
+global_interpretation csr_code_heads: imp_csr_buildup_code n edge_has_next edge_cur edge_adv src_imp
+    tgt_imp
+  for n
+  defines csr_build_heads = csr_code_heads.csr_build_imp
+    and csr_count_heads = csr_code_heads.count_imp
+    and csr_prefix_sums_heads = csr_code_heads.prefix_imp
+    and csr_init_heads = csr_code_heads.init_E_imp
+    and csr_fill_heads = csr_code_heads.fill_imp
+  done
+
+declare csr_code_heads.count_imp.simps[code] csr_code_heads.prefix_imp.simps[code]
+  csr_code_heads.fill_imp.simps[code]
+
+text \<open>The input of @{locale csr_edge_spec}, where the key is read from the endpoint arrays by
+      @{term key_imp}.\<close>
+
+locale csr_edge_input = csr_edge_spec n fs ts key
+  for n fs ts key +
+  fixes key_imp :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap"
+  assumes key_imp_rule:
       "\<And>i Ei. i < length fs \<Longrightarrow>
          <ends_assn fs ts Ei> key_imp Ei i <\<lambda>k. ends_assn fs ts Ei * \<up>(k = key i)>"
 begin
-
-lemma edge_bound: "e \<in> edges fs \<Longrightarrow> e_src fs e < n \<and> e_tgt fs ts e < n"
-  using fs_bound[OF nth_mem] ts_bound[OF nth_mem] ts_length by auto
-
-lemma verts_bound: "verts fs ts \<subseteq> {..<n}"
-  using edge_bound by (auto simp: dVs_def multigraph_spec.make_pair_def)
-
-lemma key_bound: "e \<in> edges fs \<Longrightarrow> key e < n"
-  using key_endpoint edge_bound[of e] by (elim disjE) simp_all
 
 lemma edge_key_array: "key_array (length fs) id (edges fs)"
   by unfold_locales auto
@@ -115,12 +112,8 @@ lemma edge_key_array: "key_array (length fs) id (edges fs)"
 lemma vert_key_array: "key_array n id (verts fs ts)"
   by unfold_locales (use verts_bound in auto)
 
-sublocale inp: csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" key n 0
-  by (rule csr_buildup.intro[OF edge_iterator])
-     (unfold_locales, auto simp: edge_seq_def intro!: key_bound)
-
 sublocale ci: imp_csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" key n 0
-    edge_has_next edge_cur edge_adv key_imp edge_val id "\<lambda>s si. si = s" "ends_assn fs ts"
+    edge_has_next edge_cur edge_adv key_imp edge_cur id "\<lambda>s si. si = s" "ends_assn fs ts"
 proof (unfold_locales, goal_cases)
   case (1 s si c)
   have "(edge_next fs s \<noteq> None) = (s < length fs)" by (simp add: edge_next_def)
@@ -136,88 +129,47 @@ next
     by (sep_auto heap: key_imp_rule simp: edge_seq_def)
 next
   case (5 e c) then show ?case
-    by (sep_auto simp: edge_val_def)
+    by (sep_auto simp: edge_cur_def)
 qed
 
-lemma es_edges: "set inp.es = edges fs"
-  by (simp add: inp.es_def edges_seq)
-
-lemma E_spec_distinct: "distinct inp.E_spec"
-proof -
-  have "distinct (concat (map inp.blk [0..<k])) \<and> set (concat (map inp.blk [0..<k])) \<subseteq> {e. key e < k}"
-    for k
-  proof (induction k)
-    case 0 show ?case by simp
-  next
-    case (Suc k) then show ?case
-      using edge_seq_distinct[of fs 0] by (fastforce simp: inp.blk_def inp.es_def)
-  qed
-  then show ?thesis by (simp add: inp.E_spec_def)
-qed
-
-lemma E_spec_edges: "set inp.E_spec = edges fs"
-  using inp.key_es by (auto simp: inp.E_spec_def inp.blk_def es_edges[symmetric])
-
-lemma E_spec_ids: "e \<in> set inp.E_spec \<Longrightarrow> e < length fs"
-  by (simp add: E_spec_edges)
-
-lemma verts_eq: "verts fs ts = set fs \<union> set ts"
-proof
-  show "verts fs ts \<subseteq> set fs \<union> set ts"
-    using ts_length by (auto simp: dVs_def multigraph_spec.make_pair_def)
-next
-  show "set fs \<union> set ts \<subseteq> verts fs ts"
-  proof
-    fix v
-    assume "v \<in> set fs \<union> set ts"
-    then obtain i where i: "i < length fs" "v = fs ! i \<or> v = ts ! i"
-      using ts_length by (auto simp: in_set_conv_nth)
-    have "(fs ! i, ts ! i) \<in> multigraph_spec.make_pair (e_src fs) (e_tgt fs ts) ` edges fs"
-      using i(1) by (intro rev_image_eqI[of i]) (simp_all add: multigraph_spec.make_pair_def)
-    thus "v \<in> verts fs ts"
-      using i(2) unfolding dVs_def by blast
-  qed
-qed
-
-lemma B_spec_bound: "v < n \<Longrightarrow> inp.B_spec ! Suc v \<le> length inp.E_spec"
-  using inp.start_mono[of "Suc v" n] by (simp add: inp.B_spec_nth inp.start_n inp.length_E_spec)
-
-sublocale graph: csr_graph n "verts fs ts" inp.B_spec inp.E_spec
-proof (unfold_locales, goal_cases)
-  case 1 show ?case by (rule verts_bound)
-next
-  case 2 show ?case by (rule inp.length_B_spec)
-next
-  case (3 v) then show ?case by (simp add: inp.B_spec_nth inp.start_mono)
-next
-  case (4 v) then show ?case by (rule B_spec_bound)
-next
-  case (5 v) then show ?case
-    using B_spec_bound[OF 5] by (intro inj_on_nth[OF E_spec_distinct]) auto
-qed
-
-text \<open>The block of a vertex holds exactly the edges whose key is that vertex.\<close>
-
-lemma csr_abstract_key:
-  assumes "v \<in> verts fs ts"
-  shows "graph.csr_abstract c v = {e \<in> edges fs. key e = v}"
-proof -
-  have vn: "v < n" using assms verts_bound by auto
-  have "graph.csr_abstract c v = set (map ((!) inp.E_spec) [inp.B_spec ! v..<inp.B_spec ! Suc v])"
-    by (simp add: graph.csr_abstract_def graph.seg_def)
-  also have "\<dots> = set (take (inp.B_spec ! Suc v - inp.B_spec ! v) (drop (inp.B_spec ! v) inp.E_spec))"
-    using graph.B_bound[OF vn] by (simp add: map_nth_upt_take_drop)
-  also have "\<dots> = set (inp.blk v)"
-    using inp.csr_block[OF vn] by simp
-  also have "\<dots> = {e \<in> edges fs. key e = v}"
-    by (auto simp: inp.blk_def es_edges[symmetric])
-  finally show ?thesis .
-qed
+sublocale graph: csr_graph_imp n "verts fs ts" inp.B_spec inp.E_spec
+  by (rule csr_graph_imp.intro[OF graph.csr_graph_axioms])
 
 lemma csr_build_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> ci.csr_build_imp (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
   using ci.csr_build_imp_rule[of "(Fa, Ta)" 0] by (simp add: ends_assn_def)
+
+text \<open>The build into arrays allocated by the caller, one cell per edge.\<close>
+
+lemma csr_build_into_rule:
+  "length Es = length fs \<Longrightarrow>
+   <Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a replicate (Suc n) 0 * Ea \<mapsto>\<^sub>a Es> ci.csr_build_into (Fa, Ta) 0 Ba Ea
+   <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
+  using ci.csr_build_into_rule[of "(Fa, Ta)" Ba Ea Es 0]
+  by (simp add: ends_assn_def inp.es_def edge_seq_def mult.assoc)
+
+text \<open>The same buildup storing the second endpoints instead of the edges.\<close>
+
+sublocale ch: imp_csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" key n 0
+    edge_has_next edge_cur edge_adv key_imp tgt_imp "e_tgt fs ts" "\<lambda>s si. si = s" "ends_assn fs ts"
+proof (unfold_locales, goal_cases)
+  case (1 s si c) then show ?case by (rule ci.has_next_rule)
+next
+  case (2 s si e s' c) then show ?case by (rule ci.cur_rule)
+next
+  case (3 s si e s' c) then show ?case by (rule ci.adv_rule)
+next
+  case (4 e c) then show ?case by (rule ci.key_rule)
+next
+  case (5 e c) then show ?case
+    using ts_length by (intro tgt_imp_rule) (simp_all add: edge_seq_def)
+qed
+
+lemma csr_build_heads_rule:
+  "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> ch.csr_build_imp (Fa, Ta) 0
+   <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a map (e_tgt fs ts) inp.E_spec>"
+  using ch.csr_build_imp_rule[of "(Fa, Ta)" 0] by (simp add: ends_assn_def)
 
 end
 
@@ -225,13 +177,28 @@ text \<open>The two instances: grouped by the first endpoint, the code is @{cons
       grouped by the second, @{const csr_build_edges_tgt}.\<close>
 
 lemma csr_build_edges_src:
-  "imp_csr_buildup_code.csr_build_imp n edge_has_next edge_cur edge_adv edge_key edge_val =
+  "imp_csr_buildup_code.csr_build_imp n edge_has_next edge_cur edge_adv src_imp edge_cur =
    csr_build_edges n"
   by (simp add: csr_build_edges_def)
 
 lemma csr_build_edges_tgt:
-  "imp_csr_buildup_code.csr_build_imp n edge_has_next edge_cur edge_adv edge_key_tgt edge_val =
+  "imp_csr_buildup_code.csr_build_imp n edge_has_next edge_cur edge_adv tgt_imp edge_cur =
    csr_build_edges_tgt n"
   by (simp add: csr_build_edges_tgt_def)
+
+lemma csr_build_into_edges_src:
+  "imp_csr_buildup_code.csr_build_into n edge_has_next edge_cur edge_adv src_imp edge_cur =
+   csr_build_into_edges n"
+  by (simp add: csr_build_into_edges_def)
+
+lemma csr_build_into_edges_tgt:
+  "imp_csr_buildup_code.csr_build_into n edge_has_next edge_cur edge_adv tgt_imp edge_cur =
+   csr_build_into_edges_tgt n"
+  by (simp add: csr_build_into_edges_tgt_def)
+
+lemma csr_build_heads:
+  "imp_csr_buildup_code.csr_build_imp n edge_has_next edge_cur edge_adv src_imp tgt_imp =
+   csr_build_heads n"
+  by (simp add: csr_build_heads_def)
 
 end

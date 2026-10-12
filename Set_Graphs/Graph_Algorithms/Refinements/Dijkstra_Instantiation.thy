@@ -1,14 +1,17 @@
 theory Dijkstra_Instantiation
   imports Dijkstra_Refinement Data_Structures.Indexed_Heap_Imperative
-    "Directed_Set_Graphs.CSR_Graph"
+    "Directed_Set_Graphs.CSR_Edge_Input"
 begin
+
+no_notation Ref.update (\<open>_ := _\<close> 62)
 
 section \<open>An Instantiation of the Imperative Dijkstra\<close>
 
 text \<open>The locale @{locale dijkstra_impl_refine} is instantiated with purely imperative data
       structures of fixed size, allocated once:
 
-        \<^item> distances, parents and the seen set are arrays over the vertices \<open>{..<n}\<close>,
+        \<^item> distances, parents and the seen set are arrays over the vertices \<open>{..<n}\<close> (the key arrays
+          of @{theory Directed_Set_Graphs.CSR_Edge_Input}),
         \<^item> the weights are an array indexed by edge identifiers,
         \<^item> the queue is the indexed heap of @{theory Data_Structures.Indexed_Heap_Imperative},
         \<^item> the sources are an array traversed by a cursor held in a reference, and
@@ -21,60 +24,6 @@ text \<open>The locale @{locale dijkstra_impl_refine} is instantiated with purel
 
       Edges are the indices of the input arrays \<open>Fa\<close> and \<open>Ta\<close> of their endpoints, from which the
       endpoints are read; the index also indexes the weight array.\<close>
-
-
-subsection \<open>Arrays as functions\<close>
-
-text \<open>An array of size \<open>N\<close> represents a function on a key set @{term K}, whose keys are mapped
-      injectively into \<open>{..<N}\<close> by @{term idx}; entries are read through @{term val}. The functional
-      model is the function itself.\<close>
-
-definition arr_lookup :: "('k \<Rightarrow> 'b) \<Rightarrow> 'k \<Rightarrow> 'b" where
-  "arr_lookup f k = f k"
-
-definition arr_upd :: "('k \<Rightarrow> 'b) \<Rightarrow> 'k \<Rightarrow> 'b \<Rightarrow> ('k \<Rightarrow> 'b)" where
-  "arr_upd f k x = f(k := x)"
-
-lemma arr_lookup_upd[simp]: "arr_lookup (arr_upd f k x) = (arr_lookup f)(k := x)"
-  by (simp add: arr_lookup_def arr_upd_def fun_eq_iff)
-
-definition arr_lookup_imp :: "('k \<Rightarrow> nat) \<Rightarrow> 'b::heap array \<Rightarrow> 'k \<Rightarrow> 'b Heap" where
-  "arr_lookup_imp ix a k = Array.nth a (ix k)"
-
-definition arr_upd_imp :: "('k \<Rightarrow> nat) \<Rightarrow> 'b::heap array \<Rightarrow> 'k \<Rightarrow> 'b \<Rightarrow> unit Heap" where
-  "arr_upd_imp ix a k x = do { _ \<leftarrow> Array.upd (ix k) x a; return () }"
-
-locale key_array =
-  fixes N :: nat
-    and idx :: "'k \<Rightarrow> nat"
-    and K :: "'k set"
-    and val :: "'bi::heap \<Rightarrow> 'b"
-  assumes idx_inj: "inj_on idx K"
-    and idx_bound: "k \<in> K \<Longrightarrow> idx k < N"
-begin
-
-definition arr_assn :: "('k \<Rightarrow> 'b) \<Rightarrow> 'bi array \<Rightarrow> assn" where
-  "arr_assn f a = (\<exists>\<^sub>Al. a \<mapsto>\<^sub>a l * \<up>(length l = N \<and> (\<forall>k\<in>K. val (l ! idx k) = f k)))"
-
-lemma arr_lookup_imp_rule:
-  "k \<in> K \<Longrightarrow> <arr_assn f a> arr_lookup_imp idx a k <\<lambda>x. arr_assn f a * \<up>(val x = arr_lookup f k)>"
-  unfolding arr_assn_def arr_lookup_imp_def arr_lookup_def
-  by (sep_auto simp: idx_bound)
-
-lemma arr_upd_imp_rule:
-  "k \<in> K \<Longrightarrow> <arr_assn f a> arr_upd_imp idx a k x <\<lambda>_. arr_assn (arr_upd f k (val x)) a>"
-  unfolding arr_assn_def arr_upd_imp_def arr_upd_def
-  by (sep_auto simp: idx_bound nth_list_update inj_on_eq_iff[OF idx_inj])
-
-lemma arr_new_rule:
-  "<emp> Array.new N x <\<lambda>a. arr_assn (\<lambda>_. val x) a>"
-  unfolding arr_assn_def by (sep_auto simp: idx_bound)
-
-sublocale arr: fixed_univ_map_imp K "\<lambda>_. True" arr_upd arr_lookup val arr_assn "arr_upd_imp idx"
-    "arr_lookup_imp idx"
-  by unfold_locales (simp_all add: arr_lookup_imp_rule arr_upd_imp_rule)
-
-end
 
 
 subsection \<open>The seen set as a Boolean array\<close>
@@ -141,7 +90,7 @@ definition ait_has_imp :: "'a::heap array \<times> nat ref \<Rightarrow> bool He
   "ait_has_imp = (\<lambda>(Sa, r). do { j \<leftarrow> !r; l \<leftarrow> Array.len Sa; return (j < l) })"
 
 definition ait_move_imp :: "'a::heap array \<times> nat ref \<Rightarrow> unit Heap" where
-  "ait_move_imp = (\<lambda>(Sa, r). do { j \<leftarrow> !r; r := Suc j })"
+  "ait_move_imp = (\<lambda>(Sa, r). do { j \<leftarrow> !r; Ref.update r (Suc j) })"
 
 locale array_iterator =
   fixes S :: "'a::heap list"
@@ -339,73 +288,16 @@ begin
 definition wt :: "nat \<Rightarrow> real" where
   "wt e = h (ws ! e)"
 
-lemma edge_bound: "e \<in> edges fs \<Longrightarrow> e_src fs e < n \<and> e_tgt fs ts e < n"
-  using fs_bound[OF nth_mem] ts_bound[OF nth_mem] ts_length by auto
-
-lemma verts_bound: "verts fs ts \<subseteq> {..<n}"
-  using edge_bound by (auto simp: dVs_def multigraph_spec.make_pair_def)
-
 text \<open>The multigraph of the input, which gives the notions of reachability and of shortest paths.\<close>
 
 sublocale mg: multigraph "e_src fs" "e_tgt fs ts" "e_new fs" "edges fs"
   by unfold_locales (use fs_ne in \<open>auto simp: edges_def\<close>)
 
-sublocale inp: csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" "e_src fs" n 0
-  by (rule csr_buildup.intro[OF edge_iterator])
-    (unfold_locales, auto simp: edge_seq_def intro!: fs_bound)
+text \<open>The CSR of the input, grouped by the sources.\<close>
 
-sublocale ci: imp_csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" "e_src fs" n 0
-    edge_has_next edge_cur edge_adv edge_key edge_val id "\<lambda>s si. si = s" "ends_assn fs ts"
-proof (unfold_locales, goal_cases)
-  case (1 s si c)
-  have "(edge_next fs s \<noteq> None) = (s < length fs)" by (simp add: edge_next_def)
-  with 1 show ?case by (cases c) (sep_auto simp: edge_has_next_def ends_assn_def)
-next
-  case (2 s si e s' c) then show ?case
-    by (sep_auto simp: edge_cur_def edge_next_def split: if_splits)
-next
-  case (3 s si e s' c) then show ?case
-    by (sep_auto simp: edge_adv_def edge_next_def split: if_splits)
-next
-  case (4 e c) then show ?case
-    by (sep_auto heap: src_imp_rule simp: edge_key_def edge_seq_def)
-next
-  case (5 e c) then show ?case
-    by (sep_auto simp: edge_val_def)
-qed
-
-lemma es_edges: "set inp.es = edges fs"
-  by (simp add: inp.es_def edges_seq)
-
-lemma E_spec_distinct: "distinct inp.E_spec"
-proof -
-  have "distinct (concat (map inp.blk [0..<k])) \<and> set (concat (map inp.blk [0..<k])) \<subseteq> {e. e_src fs e < k}"
-    for k
-  proof (induction k)
-    case 0 show ?case by simp
-  next
-    case (Suc k) then show ?case
-      using edge_seq_distinct[of fs 0] by (fastforce simp: inp.blk_def inp.es_def)
-  qed
-  then show ?thesis by (simp add: inp.E_spec_def)
-qed
-
-sublocale graph: csr_graph n "verts fs ts" inp.B_spec inp.E_spec
-proof (unfold_locales, goal_cases)
-  case 1 show ?case by (rule verts_bound)
-next
-  case 2 show ?case by (rule inp.length_B_spec)
-next
-  case (3 v) then show ?case by (simp add: inp.B_spec_nth inp.start_mono)
-next
-  case (4 v) then show ?case
-    using inp.start_mono[of "Suc v" n] by (simp add: inp.B_spec_nth inp.start_n inp.length_E_spec)
-next
-  case (5 v)
-  have "inp.B_spec ! Suc v \<le> length inp.E_spec"
-    using 5 inp.start_mono[of "Suc v" n] by (simp add: inp.B_spec_nth inp.start_n inp.length_E_spec)
-  then show ?case by (intro inj_on_nth[OF E_spec_distinct]) auto
-qed
+sublocale csr_edge_input n fs ts "e_src fs" src_imp
+  by unfold_locales
+     (use ts_length fs_bound ts_bound src_imp_rule[of _ fs ts] in auto)
 
 sublocale dist: key_array n id "verts fs ts" h
   by unfold_locales (use verts_bound in auto)
@@ -428,23 +320,12 @@ sublocale hp: indexed_heap_imp n "verts fs ts" h 0
 lemma csr_abstract_delta:
   assumes "v \<in> verts fs ts"
   shows "graph.csr_abstract c v = multigraph_spec.delta_plus (edges fs) (e_src fs) v"
-proof -
-  have vn: "v < n" using assms verts_bound by auto
-  have "graph.csr_abstract c v = set (map ((!) inp.E_spec) [inp.B_spec ! v..<inp.B_spec ! Suc v])"
-    by (simp add: graph.csr_abstract_def graph.seg_def)
-  also have "\<dots> = set (take (inp.B_spec ! Suc v - inp.B_spec ! v) (drop (inp.B_spec ! v) inp.E_spec))"
-    using graph.B_bound[OF vn] by (simp add: map_nth_upt_take_drop)
-  also have "\<dots> = set (inp.blk v)"
-    using inp.csr_block[OF vn] by simp
-  also have "\<dots> = multigraph_spec.delta_plus (edges fs) (e_src fs) v"
-    by (auto simp: inp.blk_def es_edges[symmetric] multigraph_spec.delta_plus_def)
-  finally show ?thesis .
-qed
+  using csr_abstract_key[OF assms] by (auto simp: multigraph_spec.delta_plus_def)
 
 lemma csr_build_edges_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_edges n (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
-  using ci.csr_build_imp_rule[of "(Fa, Ta)" 0] by (simp add: csr_build_edges_def ends_assn_def)
+  unfolding csr_build_edges_src[symmetric] by (rule csr_build_rule)
 
 end
 

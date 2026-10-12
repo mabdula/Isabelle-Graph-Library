@@ -3,6 +3,7 @@ theory Network_Simplex_Instantiation_Refinement
   imports "../Network_Simplex_Initial_Basis_Selector"
           Network_Simplex_Refinement
           Acyclic_Flow_Refinement
+          Directed_Set_Graphs.CSR_Edge_Input
           "../Rooted_Arborescense/Rooted_Arborescense_Refinement"
 begin
 
@@ -98,52 +99,6 @@ text \<open>The abstract-array model uses @{const nth} for lookup and @{const li
       store assertion the standard @{term \<open>(\<mapsto>\<^sub>a)\<close>}.  No wrapper is needed: the array primitives are
       used directly when instantiating.\<close>
 
-subsection \<open>The CSR edge iterator\<close>
-
-text \<open>A @{typ \<open>'e edge_csr\<close>} is four lists --- @{const csr_edges}, @{const csr_lo}, @{const csr_hi}
-      and the \<^emph>\<open>mutable\<close> cursor @{const csr_cur}; only the cursor is written (by @{const csr_move} /
-      @{const csr_reset}).  Its mutable form is four arrays; the cursor array is the only one ever
-      updated.  The vertex count @{const csr_n} is the cursor array's length.\<close>
-
-type_synonym 'e csr_imp = "'e array \<times> nat array \<times> nat array \<times> nat array"
-
-definition csr_assn :: "'e::heap edge_csr \<Rightarrow> 'e csr_imp \<Rightarrow> assn" where
-  "csr_assn C h =
-     (case h of (ea, la, ha, ca) \<Rightarrow>
-        ea \<mapsto>\<^sub>a csr_edges C * la \<mapsto>\<^sub>a csr_lo C * ha \<mapsto>\<^sub>a csr_hi C * ca \<mapsto>\<^sub>a csr_cur C)"
-
-text \<open>@{const csr_has}: the cursor of the (real) vertex @{term v} is still below its upper bound.  No
-      defensive bound test: the iterator operations are only ever called on real vertices
-      (@{term \<open>v < csr_n C\<close>} is guaranteed by the caller's invariant), so the reads are always in
-      range.\<close>
-definition csr_has_imp :: "'e::heap csr_imp \<Rightarrow> nat \<Rightarrow> bool Heap" where
-  "csr_has_imp h v =
-     (case h of (ea, la, ha, ca) \<Rightarrow>
-        do { c \<leftarrow> Array.nth ca v; hh \<leftarrow> Array.nth ha v; return (c < hh) })"
-
-text \<open>@{const csr_current}: the edge under the cursor.  Called only when the remaining region is
-      non-empty, i.e. @{term \<open>v < csr_n C\<close>} and @{term \<open>csr_cur C ! v < csr_hi C ! v\<close>} with
-      @{term \<open>csr_hi C ! v \<le> length (csr_edges C)\<close>}, so both reads are in range.\<close>
-definition csr_current_imp :: "'e::heap csr_imp \<Rightarrow> nat \<Rightarrow> 'e Heap" where
-  "csr_current_imp h v =
-     (case h of (ea, la, ha, ca) \<Rightarrow>
-        do { c \<leftarrow> Array.nth ca v; Array.nth ea c })"
-
-text \<open>@{const csr_move}: advance the cursor of @{term v} by one.  Called only when the remaining
-      region is non-empty (@{term \<open>v < csr_n C\<close>} and @{term \<open>csr_cur C ! v < csr_hi C ! v\<close>}), so the
-      cursor read/write is in range and the advance is unconditional --- no bound or exhaustion test.\<close>
-definition csr_move_imp :: "'e::heap csr_imp \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "csr_move_imp h v =
-     (case h of (ea, la, ha, ca) \<Rightarrow>
-        do { c \<leftarrow> Array.nth ca v; _ \<leftarrow> Array.upd v (Suc c) ca; return () })"
-
-text \<open>@{const csr_reset}: rewind the cursor of the (real) vertex @{term v} to its lower bound
-      @{term \<open>csr_lo C ! v\<close>}; @{term \<open>v < csr_n C\<close>} guarantees the reads are in range.\<close>
-definition csr_reset_imp :: "'e::heap csr_imp \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "csr_reset_imp h v =
-     (case h of (ea, la, ha, ca) \<Rightarrow>
-        do { l \<leftarrow> Array.nth la v; _ \<leftarrow> Array.upd v l ca; return () })"
-
 subsection \<open>The vertex iterator\<close>
 
 text \<open>A @{typ \<open>'v vtx_iter\<close>} is an immutable vertex list @{const vi_list} with a \<^emph>\<open>mutable\<close> cursor
@@ -176,30 +131,6 @@ subsection \<open>Refinement of the concrete operations to their functional mode
 text \<open>Each concrete Heap program above satisfies exactly the Hoare triple that the abstract
       refinement locales assume for the corresponding functional operation.  These are the
       obligations later fed to the instantiation.\<close>
-
-lemma csr_has_imp_rule:
-  "\<lbrakk>csr_invar C; v < csr_n C\<rbrakk> \<Longrightarrow>
-   <csr_assn C h> csr_has_imp h v <\<lambda>r. csr_assn C h * \<up>(r = csr_has C v)>"
-  by (cases h)
-     (sep_auto simp: csr_assn_def csr_has_imp_def csr_has_def csr_n_def csr_invar_def)
-
-lemma csr_current_imp_rule:
-  "\<lbrakk>csr_invar C; v < csr_n C; csr_cur C ! v < csr_hi C ! v\<rbrakk> \<Longrightarrow>
-   <csr_assn C h> csr_current_imp h v <\<lambda>r. csr_assn C h * \<up>(r = csr_current C v)>"
-  by (cases h)
-     (sep_auto simp: csr_assn_def csr_current_imp_def csr_current_def csr_n_def csr_invar_def)
-
-lemma csr_move_imp_rule:
-  "\<lbrakk>csr_invar C; v < csr_n C; csr_cur C ! v < csr_hi C ! v\<rbrakk> \<Longrightarrow>
-   <csr_assn C h> csr_move_imp h v <\<lambda>_. csr_assn (csr_move C v) h>"
-  by (cases h)
-     (sep_auto simp: csr_assn_def csr_move_imp_def csr_move_def csr_n_def csr_invar_def)
-
-lemma csr_reset_imp_rule:
-  "\<lbrakk>csr_invar C; v < csr_n C\<rbrakk> \<Longrightarrow>
-   <csr_assn C h> csr_reset_imp h v <\<lambda>_. csr_assn (csr_reset C v) h>"
-  by (cases h)
-     (sep_auto simp: csr_assn_def csr_reset_imp_def csr_reset_def csr_n_def csr_invar_def)
 
 lemma vtx_has_imp_rule:
   "<vtx_assn V h> vtx_has_imp h <\<lambda>r. vtx_assn V h * \<up>(r = vtx_has V)>"
@@ -596,25 +527,24 @@ text \<open>The imperative port of the functional builder \<open>build_tree\<clo
       in the flow array, fills the augmented edge arrays (the artificial tail @{term \<open>[m..<m+Kart]\<close>})
       and the strongly-feasible spanning tree --- the very @{typ ndtree_impl}, parent / direction /
       potential arrays and edge-state array the network-simplex loop then mutates.  Following the
-      functional code, \<^emph>\<open>arrays are reused, not reallocated\<close>: the acyclifier's two counting-sort CSRs
-      become the free-edge CSRs in place (Pass A keeps their block starts @{const csr_lo} and
-      overwrites the edge arrays / cursors with the free edges at the front of each block), the excess
-      accumulator is transformed in place into the imbalance, and the DFS stack reuses the acyclifier's
-      three stack arrays.\<close>
+      functional code, \<^emph>\<open>arrays are reused, not reallocated\<close>: the edge arrays of the two CSRs of the
+      input become the free ranges in place (Pass A appends the free edges of each vertex to an
+      initially empty range at the start of its block, @{const csr_append_imp}), the excess
+      accumulator is transformed in place into the imbalance, and the DFS stack reuses a stack array
+      of the acyclifier.\<close>
 
-subsection \<open>Pass A: the fused free-edge CSR sweep, in place\<close>
+subsection \<open>Pass A: the free ranges, in place\<close>
 
 text \<open>The functional \<open>passA_step\<close> as a Heap loop over the edge range @{term \<open>[e..<hi]\<close>}.  For each edge
       it writes the edge tag into the (augmented) edge-state array, accumulates the excess (head then
-      tail, so a self-loop cancels), and --- for a \<^emph>\<open>free\<close> edge (tag @{const InTree}) --- appends the edge
-      to the front of its endpoints' outgoing / ingoing free blocks, bumping the two cursor arrays.  The
-      edge arrays @{term oe} / @{term ie} and cursors @{term oc} / @{term ic} are the acyclifier's CSR
-      edge / cursor arrays, overwritten in place; the block starts stay untouched, so afterwards the
-      free block of @{term v} is the half-open index range \<open>csr_lo ! v\<close> up to \<open>oc ! v\<close>.\<close>
+      tail, so a self-loop cancels), and appends a \<^emph>\<open>free\<close> edge (tag @{const InTree}) to the free
+      outgoing range of its tail and the free ingoing range of its head.  The edge arrays
+      @{term oe_arr} / @{term ie_arr} are those of the two CSRs, the range ends @{term oh_arr} /
+      @{term ih_arr} start at the block starts.\<close>
 partial_function (heap) passA_imp ::
   "'n::{heap,linordered_idom} array \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> edge_tag array \<Rightarrow> 'n array
    \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "passA_imp fl cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr e hi =
+  "passA_imp fl cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oh_arr ie_arr ih_arr e hi =
      (if hi \<le> e then return ()
       else do {
         x \<leftarrow> Array.nth fst_arr e; y \<leftarrow> Array.nth snd_arr e;
@@ -625,10 +555,9 @@ partial_function (heap) passA_imp ::
            ey \<leftarrow> Array.nth exc_arr y; _ \<leftarrow> arr_upd exc_arr y (ey + f);
            ex \<leftarrow> Array.nth exc_arr x; _ \<leftarrow> arr_upd exc_arr x (ex - f);
            _ \<leftarrow> (if st = InTree
-                then do { ox \<leftarrow> Array.nth oc_arr x; _ \<leftarrow> arr_upd oe_arr ox e; _ \<leftarrow> arr_upd oc_arr x (Suc ox);
-                          iy \<leftarrow> Array.nth ic_arr y; _ \<leftarrow> arr_upd ie_arr iy e; arr_upd ic_arr y (Suc iy) }
+                then do { _ \<leftarrow> csr_append_imp oe_arr oh_arr x e; csr_append_imp ie_arr ih_arr y e }
                 else return ());
-           passA_imp fl cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr (Suc e) hi }) })"
+           passA_imp fl cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oh_arr ie_arr ih_arr (Suc e) hi }) })"
 
 subsection \<open>Imbalance: the excess transformed in place\<close>
 
@@ -650,10 +579,10 @@ text \<open>The mutable counterpart of the functional @{typ \<open>'n dfs_state\
       direction / potential / edge-state arrays are likewise the loop's own stores.  The artificial
       edges are written \<^emph>\<open>directly into the augmented endpoint / capacity / flow / edge-state arrays\<close>
       at index @{term \<open>m + k\<close>} (no separate artificial arrays), so @{term di_fst} {\isasymdots} @{term di_es} are
-      the length-\<open>m + K\<close> augmented arrays.  The free-edge CSRs @{term di_oe} / @{term di_olo} /
-      @{term di_ohi} (and the ingoing triple) are the acyclifier's repurposed CSR arrays; the DFS stack
-      of @{term \<open>(v, oc, ic)\<close>} frames is the three arrays @{term di_sv} / @{term di_soc} / @{term di_sic}
-      with the fill pointer @{term di_sp}.\<close>
+      the length-\<open>m + K\<close> augmented arrays.  The free outgoing ranges are the block starts
+      @{term di_ob}, the edges @{term di_oe} and the range ends @{term di_oh} of Pass A, iterated with
+      the cursors @{term di_oc} (likewise for the ingoing ones); the DFS stack of vertices is the array
+      @{term di_stk} with the fill pointer @{term di_sp}.\<close>
 
 record 'n dfs_imp =
   di_seen :: "bool array"          \<comment> \<open>visited flag\<close>
@@ -667,55 +596,59 @@ record 'n dfs_imp =
   di_cost :: "'n array"            \<comment> \<open>edge costs (original block; the {\isasymplusminus} cost seed)\<close>
   di_flow :: "'n array"            \<comment> \<open>augmented flow\<close>
   di_es   :: "edge_tag array"      \<comment> \<open>augmented edge-state tags\<close>
-  di_oe   :: "nat array"           \<comment> \<open>free outgoing CSR edges\<close>
-  di_olo  :: "nat array"           \<comment> \<open>outgoing block starts (\<open>csr_lo\<close>)\<close>
-  di_ohi  :: "nat array"           \<comment> \<open>free outgoing block ends (post-Pass-A cursors)\<close>
-  di_ie   :: "nat array"           \<comment> \<open>free ingoing CSR edges\<close>
-  di_ilo  :: "nat array"           \<comment> \<open>ingoing block starts\<close>
-  di_ihi  :: "nat array"           \<comment> \<open>free ingoing block ends\<close>
-  di_sv   :: "nat array"           \<comment> \<open>DFS stack: frame vertices\<close>
-  di_soc  :: "nat array"           \<comment> \<open>DFS stack: frame out-cursors\<close>
-  di_sic  :: "nat array"           \<comment> \<open>DFS stack: frame in-cursors\<close>
+  di_ob   :: "nat array"           \<comment> \<open>block starts of the outgoing CSR\<close>
+  di_oe   :: "nat array"           \<comment> \<open>free outgoing ranges: edges\<close>
+  di_oh   :: "nat array"           \<comment> \<open>free outgoing ranges: ends\<close>
+  di_oc   :: "nat array"           \<comment> \<open>cursors into the free outgoing ranges\<close>
+  di_ib   :: "nat array"           \<comment> \<open>block starts of the ingoing CSR\<close>
+  di_ie   :: "nat array"           \<comment> \<open>free ingoing ranges: edges\<close>
+  di_ih   :: "nat array"           \<comment> \<open>free ingoing ranges: ends\<close>
+  di_ic   :: "nat array"           \<comment> \<open>cursors into the free ingoing ranges\<close>
+  di_stk  :: "nat array"           \<comment> \<open>DFS stack of vertices\<close>
   di_sp   :: "nat ref"             \<comment> \<open>DFS stack fill pointer\<close>
   di_prev :: "nat ref"             \<comment> \<open>last vertex emitted in preorder\<close>
   di_nxt  :: "nat ref"             \<comment> \<open>next artificial-edge offset (id = \<open>m + di_nxt\<close>)\<close>
 
 subsection \<open>Discovering and finishing a vertex\<close>
 
+text \<open>Linking a vertex @{term w} into the tree: its parent @{term p}, parent edge @{term e}, orientation
+      @{term d} and potential @{term pw}, and the thread after the last emitted vertex, whose successor
+      @{term w} becomes.  Shared by discovering a vertex and opening a tree component.\<close>
+definition tree_link_imp ::
+  "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> mtag \<times> 'n \<Rightarrow> unit Heap" where
+  "tree_link_imp st w p e d pw =
+     do {
+       _ \<leftarrow> arr_upd (di_seen st) w True;
+       _ \<leftarrow> arr_upd (prnt_impl (di_tree st)) w p;
+       _ \<leftarrow> arr_upd (di_par st) w e;
+       _ \<leftarrow> arr_upd (di_dir st) w d;
+       _ \<leftarrow> arr_upd (di_pot st) w pw;
+       pv \<leftarrow> Ref.lookup (di_prev st);
+       _ \<leftarrow> arr_upd (thrd_impl (di_tree st)) pv w;
+       _ \<leftarrow> arr_upd (rvth_impl (di_tree st)) w pv;
+       _ \<leftarrow> arr_upd (snum_impl (di_tree st)) w 1;
+       Ref.update (di_prev st) w }"
+
 text \<open>The functional @{term dfs_discover}: finalise the fresh child @{term w} reached from @{term v}
       across free real edge @{term e} --- seed its tree fields, thread-link it after the last emitted
       vertex, give @{term e} zero reduced cost (\<open>\<plusminus> cost\<close> by whether @{term v} is @{term e}'s tail), and
-      push its frame @{term \<open>(w, out_lo ! w, in_lo ! w)\<close>}.\<close>
+      push it, resetting its two cursors.\<close>
 definition dfs_discover_imp :: "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "dfs_discover_imp st v w e =
      do {
        fe \<leftarrow> Array.nth (di_fst st) e;
        ce \<leftarrow> Array.nth (di_cost st) e;
-       pv \<leftarrow> Ref.lookup (di_prev st);
        potv \<leftarrow> Array.nth (di_pot st) v;
-       (let sgn = (if v = fe then ce else - ce);
-            pw  = pval_plus potv (M_0, sgn)
-        in do {
-          _ \<leftarrow> arr_upd (di_seen st) w True;
-          _ \<leftarrow> arr_upd (prnt_impl (di_tree st)) w v;
-          _ \<leftarrow> arr_upd (di_par st) w e;
-          _ \<leftarrow> arr_upd (di_dir st) w (fe = w);
-          _ \<leftarrow> arr_upd (di_pot st) w pw;
-          _ \<leftarrow> arr_upd (thrd_impl (di_tree st)) pv w;
-          _ \<leftarrow> arr_upd (rvth_impl (di_tree st)) w pv;
-          _ \<leftarrow> arr_upd (snum_impl (di_tree st)) w 1;
-          _ \<leftarrow> Ref.update (di_prev st) w;
-          olo \<leftarrow> Array.nth (di_olo st) w;
-          ilo \<leftarrow> Array.nth (di_ilo st) w;
-          sp \<leftarrow> Ref.lookup (di_sp st);
-          _ \<leftarrow> arr_upd (di_sv st) sp w;
-          _ \<leftarrow> arr_upd (di_soc st) sp olo;
-          _ \<leftarrow> arr_upd (di_sic st) sp ilo;
-          Ref.update (di_sp st) (Suc sp) }) }"
+       _ \<leftarrow> tree_link_imp st w v e (fe = w) (pval_plus potv (M_0, if v = fe then ce else - ce));
+       sp \<leftarrow> Ref.lookup (di_sp st);
+       _ \<leftarrow> arr_upd (di_stk st) sp w;
+       _ \<leftarrow> Ref.update (di_sp st) (Suc sp);
+       _ \<leftarrow> csr_reset_imp (di_ob st, di_oe st, di_oc st) w;
+       csr_reset_imp (di_ib st, di_ie st, di_ic st) w }"
 
 text \<open>The functional @{term dfs_finish}: on popping @{term v} (post-order) the last vertex emitted is
       its rightmost descendant, so it is @{term v}'s \<open>lsuc\<close>; add @{term v}'s completed subtree size to
-      its parent's and pop the frame.\<close>
+      its parent's and pop it.\<close>
 definition dfs_finish_imp :: "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "dfs_finish_imp st v =
      do { p \<leftarrow> Array.nth (prnt_impl (di_tree st)) v;
@@ -729,83 +662,71 @@ definition dfs_finish_imp :: "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> n
 
 subsection \<open>The depth-first traversal\<close>
 
-text \<open>The functional @{term build_dfs_a} on the reused stack arrays: at the stack top scan the free
-      outgoing block, then the free ingoing block, recursing into each unseen neighbour (advancing the
-      frame cursor first, then discovering); when both blocks are exhausted, finish the vertex.  The
-      neighbour across an outgoing edge @{term e} is @{term \<open>snd_list ! e\<close>}, across an ingoing edge
-      @{term \<open>fst_list ! e\<close>}.\<close>
+text \<open>The functional @{term build_dfs_a}: at the stack top @{term v} take one step of the iterator over
+      the free outgoing range, else of the iterator over the free ingoing range
+      (@{const csr_step_upto_imp}), recursing after discovering an unseen neighbour; when both ranges
+      are exhausted, finish the vertex.  The neighbour across an outgoing edge @{term e} is
+      @{term \<open>snd_list ! e\<close>}, across an ingoing edge @{term \<open>fst_list ! e\<close>}.\<close>
 partial_function (heap) build_dfs_a_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> unit Heap" where
   "build_dfs_a_imp st =
      do {
        sp \<leftarrow> Ref.lookup (di_sp st);
        (if sp = 0 then return ()
-        else (let top = sp - 1 in do {
-          v  \<leftarrow> Array.nth (di_sv st) top;
-          oc \<leftarrow> Array.nth (di_soc st) top;
-          oh \<leftarrow> Array.nth (di_ohi st) v;
-          (if oc < oh
-           then do {
-             e \<leftarrow> Array.nth (di_oe st) oc;
-             w \<leftarrow> Array.nth (di_snd st) e;
-             _ \<leftarrow> arr_upd (di_soc st) top (Suc oc);
-             sw \<leftarrow> Array.nth (di_seen st) w;
-             _ \<leftarrow> (if sw then return () else dfs_discover_imp st v w e);
-             build_dfs_a_imp st }
-           else do {
-             ic \<leftarrow> Array.nth (di_sic st) top;
-             ih \<leftarrow> Array.nth (di_ihi st) v;
-             (if ic < ih
-              then do {
-                e \<leftarrow> Array.nth (di_ie st) ic;
-                w \<leftarrow> Array.nth (di_fst st) e;
-                _ \<leftarrow> arr_upd (di_sic st) top (Suc ic);
-                sw \<leftarrow> Array.nth (di_seen st) w;
-                _ \<leftarrow> (if sw then return () else dfs_discover_imp st v w e);
-                build_dfs_a_imp st }
-              else do {
-                _ \<leftarrow> dfs_finish_imp st v;
-                build_dfs_a_imp st }) }) })) }"
+        else do {
+          v \<leftarrow> Array.nth (di_stk st) (sp - 1);
+          csr_step_upto_imp (di_ob st, di_oe st, di_oc st) (di_oh st) v
+            (\<lambda>e. do {
+               w \<leftarrow> Array.nth (di_snd st) e;
+               sw \<leftarrow> Array.nth (di_seen st) w;
+               _ \<leftarrow> (if sw then return () else dfs_discover_imp st v w e);
+               build_dfs_a_imp st })
+            (csr_step_upto_imp (di_ib st, di_ie st, di_ic st) (di_ih st) v
+               (\<lambda>e. do {
+                  w \<leftarrow> Array.nth (di_fst st) e;
+                  sw \<leftarrow> Array.nth (di_seen st) w;
+                  _ \<leftarrow> (if sw then return () else dfs_discover_imp st v w e);
+                  build_dfs_a_imp st })
+               (do { _ \<leftarrow> dfs_finish_imp st v; build_dfs_a_imp st })) }) }"
 
 subsection \<open>Opening tree components and emitting artificial edges\<close>
+
+text \<open>Writing an artificial edge --- tail, head, capacity, flow and tag --- at index @{term aidx} of
+      the augmented arrays.  Shared by opening a tree component and emitting a @{term U} edge.\<close>
+definition art_edge_imp ::
+  "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n \<Rightarrow> edge_tag \<Rightarrow> unit Heap" where
+  "art_edge_imp st aidx x y u f tag =
+     do {
+       _ \<leftarrow> arr_upd (di_fst st) aidx x;
+       _ \<leftarrow> arr_upd (di_snd st) aidx y;
+       _ \<leftarrow> arr_upd (di_cap st) aidx u;
+       _ \<leftarrow> arr_upd (di_flow st) aidx f;
+       arr_upd (di_es st) aidx tag }"
 
 text \<open>The functional @{term open_tree_component}: open an unseen imbalanced (Phase 1) or balanced
       (Phase 2) vertex @{term c} as a child of the root.  Emit @{term c}'s \<^emph>\<open>tree\<close> artificial edge ---
       written directly into the augmented arrays at index @{term \<open>m + k\<close>} and tagged @{const InTree} ---
-      finalise @{term c}'s tree fields, seed its potential to \<open>\<plusminus> M\<close>, thread-link it, then drain its
-      subtree with @{const build_dfs_a_imp}.  Orientation / flow / capacity come from the one
-      @{term \<open>imb_arr ! c\<close>} read (the imbalance array): up (\<open>c \<rightarrow> root\<close>) iff @{term \<open>0 \<le> imb\<close>}, flow
-      @{term \<open>\<bar>imb\<bar>\<close>}, a tree edge getting a \<open>+ 1\<close> slack toward the root when it points up.\<close>
+      finalise @{term c}'s tree fields, seed its potential to \<open>\<plusminus> M\<close>, thread-link it, push it on the
+      empty stack, then drain its subtree with @{const build_dfs_a_imp}.  Orientation / flow / capacity
+      come from the one @{term \<open>imb_arr ! c\<close>} read (the imbalance array): up (\<open>c \<rightarrow> root\<close>) iff
+      @{term \<open>0 \<le> imb\<close>}, flow @{term \<open>\<bar>imb\<bar>\<close>}, a tree edge getting a \<open>+ 1\<close> slack toward the root when it
+      points up.\<close>
 definition open_tree_component_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "open_tree_component_imp st imb_arr m vcount c =
      do {
        imb \<leftarrow> Array.nth imb_arr c;
        nxt \<leftarrow> Ref.lookup (di_nxt st);
-       pv  \<leftarrow> Ref.lookup (di_prev st);
-       (let up = 0 \<le> imb; af = \<bar>imb\<bar>; cp = (if up then af + 1 else af); aidx = m + nxt
+       (let up = 0 \<le> imb; af = \<bar>imb\<bar>; aidx = m + nxt
         in do {
-          _ \<leftarrow> arr_upd (di_fst st) aidx (if up then c else vcount);
-          _ \<leftarrow> arr_upd (di_snd st) aidx (if up then vcount else c);
-          _ \<leftarrow> arr_upd (di_cap st) aidx cp;
-          _ \<leftarrow> arr_upd (di_flow st) aidx af;
-          _ \<leftarrow> arr_upd (di_es st) aidx InTree;
+          _ \<leftarrow> art_edge_imp st aidx (if up then c else vcount) (if up then vcount else c)
+                 (if up then af + 1 else af) af InTree;
           _ \<leftarrow> Ref.update (di_nxt st) (Suc nxt);
-          _ \<leftarrow> arr_upd (di_seen st) c True;
-          _ \<leftarrow> arr_upd (prnt_impl (di_tree st)) c vcount;
-          _ \<leftarrow> arr_upd (di_par st) c aidx;
-          _ \<leftarrow> arr_upd (di_dir st) c up;
-          _ \<leftarrow> arr_upd (di_pot st) c (if up then pval_negM else pval_M);
-          _ \<leftarrow> arr_upd (thrd_impl (di_tree st)) pv c;
-          _ \<leftarrow> arr_upd (rvth_impl (di_tree st)) c pv;
-          _ \<leftarrow> arr_upd (snum_impl (di_tree st)) c 1;
-          _ \<leftarrow> Ref.update (di_prev st) c;
-          olo \<leftarrow> Array.nth (di_olo st) c;
-          ilo \<leftarrow> Array.nth (di_ilo st) c;
-          _ \<leftarrow> arr_upd (di_sv st) 0 c;
-          _ \<leftarrow> arr_upd (di_soc st) 0 olo;
-          _ \<leftarrow> arr_upd (di_sic st) 0 ilo;
+          _ \<leftarrow> tree_link_imp st c vcount aidx up (if up then pval_negM else pval_M);
+          _ \<leftarrow> arr_upd (di_stk st) 0 c;
           _ \<leftarrow> Ref.update (di_sp st) 1;
+          _ \<leftarrow> csr_reset_imp (di_ob st, di_oe st, di_oc st) c;
+          _ \<leftarrow> csr_reset_imp (di_ib st, di_ie st, di_ic st) c;
           build_dfs_a_imp st }) }"
 
 text \<open>The functional @{term emit_U_edge}: a \<^emph>\<open>saturated\<close> @{term U} artificial edge for an already-seen
@@ -817,13 +738,9 @@ definition emit_U_edge_imp ::
      do {
        imb \<leftarrow> Array.nth imb_arr v;
        nxt \<leftarrow> Ref.lookup (di_nxt st);
-       (let up = 0 \<le> imb; fl = \<bar>imb\<bar>; aidx = m + nxt
+       (let up = 0 \<le> imb; fl = \<bar>imb\<bar>
         in do {
-          _ \<leftarrow> arr_upd (di_fst st) aidx (if up then v else vcount);
-          _ \<leftarrow> arr_upd (di_snd st) aidx (if up then vcount else v);
-          _ \<leftarrow> arr_upd (di_cap st) aidx fl;
-          _ \<leftarrow> arr_upd (di_flow st) aidx fl;
-          _ \<leftarrow> arr_upd (di_es st) aidx InU;
+          _ \<leftarrow> art_edge_imp st (m + nxt) (if up then v else vcount) (if up then vcount else v) fl fl InU;
           Ref.update (di_nxt st) (Suc nxt) }) }"
 
 subsection \<open>The two vertex scans\<close>
@@ -848,27 +765,24 @@ partial_function (heap) phase1_imp ::
                 phase1_imp st imb_arr m vcount (Suc v) n })"
 
 text \<open>The functional @{term phase2_step}: open every still-unseen, \<^emph>\<open>non-lonely\<close> (hence balanced)
-      vertex as a flow-0 tree component.  A vertex is lonely when it is an endpoint of no edge --- both
-      its \<^emph>\<open>full\<close> outgoing and ingoing blocks are empty; those full block-ends are the acyclifier's
-      original @{const csr_hi} arrays @{term ofh} / @{term ifh}, untouched by Pass A (which only rewrote
-      the cursors into the free block-ends).\<close>
+      vertex as a flow-0 tree component.  A vertex is lonely when it is an endpoint of no edge --- its
+      blocks in both CSRs are empty (@{const csr_empty_imp}).\<close>
 definition phase2_step_imp ::
-  "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "phase2_step_imp st imb_arr ofh ifh m vcount v =
+  "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+  "phase2_step_imp st imb_arr m vcount v =
      do { sv \<leftarrow> Array.nth (di_seen st) v;
           (if sv then return ()
-           else do { olo \<leftarrow> Array.nth (di_olo st) v; ohi \<leftarrow> Array.nth ofh v;
-                     ilo \<leftarrow> Array.nth (di_ilo st) v; ihi \<leftarrow> Array.nth ifh v;
-                     (if olo = ohi \<and> ilo = ihi then return ()
+           else do { eo \<leftarrow> csr_empty_imp (di_ob st) v; ei \<leftarrow> csr_empty_imp (di_ib st) v;
+                     (if eo \<and> ei then return ()
                       else open_tree_component_imp st imb_arr m vcount v) }) }"
 
 text \<open>@{term phase2}: the second scan opening every remaining balanced vertex.\<close>
 partial_function (heap) phase2_imp ::
-  "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "phase2_imp st imb_arr ofh ifh m vcount v n =
+  "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+  "phase2_imp st imb_arr m vcount v n =
      (if n < v then return ()
-      else do { _ \<leftarrow> phase2_step_imp st imb_arr ofh ifh m vcount v;
-                phase2_imp st imb_arr ofh ifh m vcount (Suc v) n })"
+      else do { _ \<leftarrow> phase2_step_imp st imb_arr m vcount v;
+                phase2_imp st imb_arr m vcount (Suc v) n })"
 
 subsection \<open>The finished builder\<close>
 
@@ -880,156 +794,21 @@ text \<open>The functional @{term build_tree}: seed the root (subtree size @{ter
       directions @{term False}, potentials @{const pval_zero}, sizes @{term 0}); this seeds only the
       root-specific cells and the three references.\<close>
 definition build_tree_imp ::
-  "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "build_tree_imp st imb_arr ofh ifh m vcount n =
+  "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+  "build_tree_imp st imb_arr m vcount n =
      do {
        _ \<leftarrow> arr_upd (snum_impl (di_tree st)) vcount 1;
        _ \<leftarrow> Ref.update (di_prev st) vcount;
        _ \<leftarrow> Ref.update (di_nxt st) 0;
        _ \<leftarrow> Ref.update (di_sp st) 0;
        _ \<leftarrow> phase1_imp st imb_arr m vcount 1 n;
-       _ \<leftarrow> phase2_imp st imb_arr ofh ifh m vcount 1 n;
+       _ \<leftarrow> phase2_imp st imb_arr m vcount 1 n;
        pv \<leftarrow> Ref.lookup (di_prev st);
        arr_upd (lsuc_impl (di_tree st)) vcount pv }"
 
-text \<open>The flat-array DFS stack: @{term di_sv} / @{term di_soc} / @{term di_sic} hold the frames in
-      index order @{term \<open>[0..<sp]\<close>} with the fill pointer @{term \<open>sp = di_sp\<close>}; the functional
-      @{const ds_stk} is that prefix \<^emph>\<open>reversed\<close> --- its head is the array top at index @{term \<open>sp - 1\<close>}.
-      \<open>dfs_discover\<close> pushes (a write at @{term sp}, bump) and \<open>dfs_finish\<close> pops (just a
-      pointer decrement --- the popped slot stays but is invisible above @{term sp}).\<close>
-definition stk_rel :: "nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> (nat \<times> nat \<times> nat) list \<Rightarrow> bool" where
-  "stk_rel svl socl sicl sp stk \<longleftrightarrow>
-     sp \<le> length svl \<and> sp \<le> length socl \<and> sp \<le> length sicl \<and>
-     stk = rev (map (\<lambda>i. (svl ! i, socl ! i, sicl ! i)) [0..<sp])"
+section \<open>Generic array loops\<close>
 
-lemma stk_rel_push:
-  assumes "stk_rel svl socl sicl sp stk" "sp < length svl" "sp < length socl" "sp < length sicl"
-  shows "stk_rel (svl[sp := v]) (socl[sp := oc]) (sicl[sp := ic]) (Suc sp) ((v, oc, ic) # stk)"
-proof -
-  have "map (\<lambda>i. (svl[sp := v] ! i, socl[sp := oc] ! i, sicl[sp := ic] ! i)) [0..<sp]
-      = map (\<lambda>i. (svl ! i, socl ! i, sicl ! i)) [0..<sp]"
-    by (rule map_cong) (auto simp: nth_list_update)
-  thus ?thesis using assms unfolding stk_rel_def by (auto simp: upt_Suc_append)
-qed
-
-lemma stk_rel_top:
-  assumes "stk_rel svl socl sicl (Suc sp) stk"
-  shows "stk = (svl ! sp, socl ! sp, sicl ! sp) # rev (map (\<lambda>i. (svl ! i, socl ! i, sicl ! i)) [0..<sp])"
-  using assms unfolding stk_rel_def by (simp add: upt_Suc_append)
-
-lemma stk_rel_pop:
-  assumes "stk_rel svl socl sicl (Suc sp) ((v, oc, ic) # rest)"
-  shows "stk_rel svl socl sicl sp rest"
-  using assms unfolding stk_rel_def by (simp add: upt_Suc_append)
-
-lemma stk_rel_len: "stk_rel svl socl sicl sp stk \<Longrightarrow> length stk = sp"
-  unfolding stk_rel_def by simp
-
-lemma stk_rel_nil [simp]: "stk_rel svl socl sicl sp [] \<longleftrightarrow> sp = 0"
-  by (auto simp: stk_rel_def)
-
-lemma stk_rel_pop':
-  assumes "stk_rel svl socl sicl sp (f # rest)"
-  shows "0 < sp \<and> stk_rel svl socl sicl (sp - 1) rest"
-proof -
-  have "length (f # rest) = sp" using stk_rel_len[OF assms] .
-  hence sp: "sp = Suc (sp - 1)" and pos: "0 < sp" by auto
-  obtain a b c where f: "f = (a, b, c)" by (cases f)
-  have "stk_rel svl socl sicl (sp - 1) rest"
-    using assms sp f stk_rel_pop[of svl socl sicl "sp - 1" a b c rest] by simp
-  thus ?thesis using pos by simp
-qed
-
-text \<open>Reading the \<^emph>\<open>top\<close> frame of a non-empty flat stack: the fill pointer is one past the frame index
-      @{term \<open>length rest\<close>}, the three arrays hold the head @{term \<open>(v, oc, ic)\<close>} there, that index is in
-      range, and dropping it leaves the tail related to @{term rest}.  This is what the DFS-loop
-      refinement reads at each recursive step (@{const build_dfs_a_imp} takes the top at @{term \<open>sp - 1\<close>}).\<close>
-lemma stk_rel_hd:
-  assumes "stk_rel svl socl sicl sp ((v,oc,ic)#rest)"
-  shows "sp = Suc (length rest) \<and> svl!(length rest)=v \<and> socl!(length rest)=oc \<and> sicl!(length rest)=ic
-         \<and> length rest < length svl \<and> length rest < length socl \<and> length rest < length sicl
-         \<and> stk_rel svl socl sicl (length rest) rest"
-proof -
-  have sp: "sp = Suc (length rest)" using stk_rel_len[OF assms] by simp
-  have top: "((v,oc,ic)#rest) = (svl ! (length rest), socl ! (length rest), sicl ! (length rest))
-               # rev (map (\<lambda>i. (svl ! i, socl ! i, sicl ! i)) [0..<length rest])"
-    using stk_rel_top[of svl socl sicl "length rest" "(v,oc,ic)#rest"] assms sp by simp
-  have hd: "svl!(length rest)=v" "socl!(length rest)=oc" "sicl!(length rest)=ic"
-    using top by simp_all
-  have pop: "stk_rel svl socl sicl (length rest) rest"
-    using stk_rel_pop'[OF assms] sp by simp
-  have lens: "length rest < length svl" "length rest < length socl" "length rest < length sicl"
-    using assms sp unfolding stk_rel_def by auto
-  show ?thesis using sp hd pop lens by blast
-qed
-
-text \<open>A decomposition rewrite for a non-empty flat stack: exposes the top frame values, the fill
-      pointer, the in-range indices and the tail relation as an explicit conjunction --- used to resolve
-      the DFS-loop reads by simplification.\<close>
-lemma stk_rel_cons_simp:
-  "stk_rel svl socl sicl sp ((v,oc,ic)#rest) \<longleftrightarrow>
-     (sp = Suc (length rest) \<and> svl!(length rest)=v \<and> socl!(length rest)=oc \<and> sicl!(length rest)=ic
-      \<and> length rest < length svl \<and> length rest < length socl \<and> length rest < length sicl
-      \<and> stk_rel svl socl sicl (length rest) rest)"
-proof
-  assume "stk_rel svl socl sicl sp ((v,oc,ic)#rest)"
-  thus "sp = Suc (length rest) \<and> svl!(length rest)=v \<and> socl!(length rest)=oc \<and> sicl!(length rest)=ic
-      \<and> length rest < length svl \<and> length rest < length socl \<and> length rest < length sicl
-      \<and> stk_rel svl socl sicl (length rest) rest"
-    using stk_rel_hd by blast
-next
-  assume R: "sp = Suc (length rest) \<and> svl!(length rest)=v \<and> socl!(length rest)=oc \<and> sicl!(length rest)=ic
-      \<and> length rest < length svl \<and> length rest < length socl \<and> length rest < length sicl
-      \<and> stk_rel svl socl sicl (length rest) rest"
-  hence "(v,oc,ic)#rest = rev (map (\<lambda>i. (svl ! i, socl ! i, sicl ! i)) [0..<sp])"
-    unfolding stk_rel_def by (simp add: upt_Suc_append)
-  thus "stk_rel svl socl sicl sp ((v,oc,ic)#rest)"
-    using R unfolding stk_rel_def by simp
-qed
-
-text \<open>Updating a stack array at an index at or above the current depth leaves the frame relation of the
-      tail untouched (the read positions are all strictly below).  The two variants target the
-      out-cursor array (@{term socl}) and the in-cursor array (@{term sicl}) --- the two the DFS loop
-      bumps in place.\<close>
-lemma stk_rel_upd_ge:
-  assumes "stk_rel svl socl sicl sp' rest" "sp' \<le> i"
-  shows "stk_rel svl (list_update socl i x) sicl sp' rest"
-proof -
-  have j: "(list_update socl i x)!j = socl!j" if "j < sp'" for j
-  proof -
-    have "j \<noteq> i" using that assms(2) by linarith
-    thus ?thesis by (simp add: nth_list_update_neq)
-  qed
-  have "map (\<lambda>j. (svl!j, (list_update socl i x)!j, sicl!j)) [0..<sp'] = map (\<lambda>j. (svl!j, socl!j, sicl!j)) [0..<sp']"
-    by (rule map_cong) (auto simp: j)
-  thus ?thesis using assms unfolding stk_rel_def by simp
-qed
-
-lemma stk_rel_upd_ge_sic:
-  assumes "stk_rel svl socl sicl sp' rest" "sp' \<le> i"
-  shows "stk_rel svl socl (list_update sicl i x) sp' rest"
-proof -
-  have j: "(list_update sicl i x)!j = sicl!j" if "j < sp'" for j
-  proof -
-    have "j \<noteq> i" using that assms(2) by linarith
-    thus ?thesis by (simp add: nth_list_update_neq)
-  qed
-  have "map (\<lambda>j. (svl!j, socl!j, (list_update sicl i x)!j)) [0..<sp'] = map (\<lambda>j. (svl!j, socl!j, sicl!j)) [0..<sp']"
-    by (rule map_cong) (auto simp: j)
-  thus ?thesis using assms unfolding stk_rel_def by simp
-qed
-
-section \<open>Building the two adjacency CSRs by counting sort\<close>
-
-text \<open>The imperative port of the functional \<open>build_two_csr\<close> / \<open>build_csr_scatter\<close>: the standard
-      two-pass counting sort.  Each CSR keys every edge on an endpoint (the outgoing CSR on
-      @{term \<open>fst_list ! e\<close>}, the ingoing on @{term \<open>snd_list ! e\<close>}), counts the per-vertex degrees,
-      turns the counts into block starts by a prefix sum, and scatters each edge into its block.  The
-      block-start array @{term lo}, the block-end array @{term hi} and the (scattered) edge array
-      @{term edges} are exactly the fields of a @{typ \<open>nat edge_csr\<close>}; the cursor @{term cur} is left at
-      the block starts, ready for iteration.\<close>
-
-text \<open>Fill a prefix of an array with a constant (used to zero the count array before reuse).\<close>
+text \<open>Fill a prefix of an array with a constant (used to clear the seen array before reuse).\<close>
 partial_function (heap) arr_fill_imp :: "'a::heap array \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "arr_fill_imp a x v nn =
      (if nn \<le> v then return () else do { _ \<leftarrow> arr_upd a v x; arr_fill_imp a x (Suc v) nn })"
@@ -1048,20 +827,6 @@ text \<open>A single in-place write refines a list update; @{const arr_fill_imp}
 lemma arr_upd_rule [sep_heap_rules]:
   "i < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs> arr_upd a i x <\<lambda>_. a \<mapsto>\<^sub>a list_update xs i x>"
   unfolding arr_upd_def by sep_auto
-
-lemma fill_eq_aux:
-  assumes "v < nn" "nn \<le> length xs"
-  shows "take (Suc v) (list_update xs v x) @ replicate (nn - Suc v) x @ drop nn (list_update xs v x)
-       = take v xs @ replicate (nn - v) x @ drop nn xs"
-proof -
-  have a: "take (Suc v) (list_update xs v x) = take v xs @ [x]"
-    using assms by (simp add: take_update_swap take_Suc_conv_app_nth list_update_append)
-  have b: "drop nn (list_update xs v x) = drop nn xs"
-    using assms by (simp add: drop_update_cancel)
-  have c: "replicate (nn - v) x = x # replicate (nn - Suc v) x"
-    by (simp add: Suc_diff_Suc[OF assms(1), symmetric])
-  show ?thesis by (simp only: a b c append.assoc append_Cons append_Nil)
-qed
 
 lemma arr_fill_imp_rule:
   "v \<le> nn \<Longrightarrow> nn \<le> length xs \<Longrightarrow>
@@ -1127,417 +892,45 @@ next
     by (sep_auto heap: step simp: eq)
 qed
 
-text \<open>Counting pass: increment the degree of each edge's key vertex.\<close>
-partial_function (heap) csr_count_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "csr_count_imp key_arr c e hi =
-     (if hi \<le> e then return ()
-      else do { k \<leftarrow> Array.nth key_arr e; ck \<leftarrow> Array.nth c k; _ \<leftarrow> arr_upd c k (Suc ck);
-                csr_count_imp key_arr c (Suc e) hi })"
+section \<open>The edged vertices\<close>
 
-text \<open>Prefix-sum pass: turn the degree counts into block starts (@{term lo}) and ends (@{term hi}),
-      seeding the cursor at the starts.\<close>
-partial_function (heap) csr_psum_imp ::
-  "nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "csr_psum_imp c lo hi cur v acc nn =
-     (if nn \<le> v then return ()
-      else do { cv \<leftarrow> Array.nth c v;
-                _ \<leftarrow> arr_upd lo v acc; _ \<leftarrow> arr_upd cur v acc; _ \<leftarrow> arr_upd hi v (acc + cv);
-                csr_psum_imp c lo hi cur (Suc v) (acc + cv) nn })"
+text \<open>The imperative counterpart of the functional @{const initial_basis_code_spec.edged_vs_list}: the
+      dense vertex range @{term \<open>[1..n]\<close>} with the \<^emph>\<open>lonely\<close> names (endpoints of no edge --- both
+      blocks empty, @{const csr_empty_imp}) removed.  The acyclifier iterates exactly these.  We count
+      them, then fill an exactly-sized array (so the iterator's length matches the abstraction).\<close>
+partial_function (heap) count_edged_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
+  "count_edged_imp ob ib v n acc =
+     (if n < v then return acc
+      else do { eo \<leftarrow> csr_empty_imp ob v; ei \<leftarrow> csr_empty_imp ib v;
+                count_edged_imp ob ib (Suc v) n (if eo \<and> ei then acc else Suc acc) })"
 
-text \<open>Scatter pass: place each edge into its block at the running cursor, bumping the cursor.\<close>
-partial_function (heap) csr_scatter_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "csr_scatter_imp key_arr edges cur e hi =
-     (if hi \<le> e then return ()
-      else do { k \<leftarrow> Array.nth key_arr e; p \<leftarrow> Array.nth cur k; _ \<leftarrow> arr_upd edges p e; _ \<leftarrow> arr_upd cur k (Suc p);
-                csr_scatter_imp key_arr edges cur (Suc e) hi })"
-
-text \<open>Build one CSR keyed by @{term key_arr}: count the degrees (the count array @{term c} must be
-      pre-zeroed by the caller --- freshly allocated for the first build, explicitly re-zeroed for later
-      ones, so no redundant zeroing pass), prefix-sum into @{term lo} / @{term hi} / @{term cur},
-      scatter into @{term edges}, then reset the cursor to the block starts.  @{term m} edges,
-      @{term nn} vertex names.\<close>
-definition build_csr_imp ::
-  "nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "build_csr_imp key_arr c lo hi cur edges m nn =
-     do { _ \<leftarrow> csr_count_imp key_arr c 0 m;
-          _ \<leftarrow> csr_psum_imp c lo hi cur 0 0 nn;
-          _ \<leftarrow> csr_scatter_imp key_arr edges cur 0 m;
-          arr_copy_imp lo cur 0 nn }"
-
-subsection \<open>Refinement rules for the CSR builder loops\<close>
-
-text \<open>The counting pass refines the histogram fold: each key in @{term \<open>[e..<hi]\<close>} bumps its bucket.\<close>
-lemma csr_count_imp_rule:
-  "e \<le> hi \<Longrightarrow> hi \<le> length keys \<Longrightarrow> (\<forall>i\<in>{e..<hi}. keys ! i < length c0) \<Longrightarrow>
-   <ka \<mapsto>\<^sub>a keys * ca \<mapsto>\<^sub>a c0> csr_count_imp ka ca e hi
-   <\<lambda>_. ka \<mapsto>\<^sub>a keys * ca \<mapsto>\<^sub>a fold (\<lambda>i cc. cc[keys ! i := Suc (cc ! (keys ! i))]) [e..<hi] c0>"
-proof (induction "hi - e" arbitrary: e c0)
-  case 0
-  then have "hi = e" by simp
-  then show ?case by (subst csr_count_imp.simps) sep_auto
-next
-  case (Suc d)
-  from Suc.hyps(2) Suc.prems have eh: "e < hi" by simp
-  then have esh: "Suc e \<le> hi" by simp
-  have ke: "keys ! e < length c0" using Suc.prems(3) eh by simp
-  have ekeys: "e < length keys" using eh Suc.prems(2) by simp
-  have d': "d = hi - Suc e" using Suc.hyps(2) by simp
-  have len1: "\<forall>i\<in>{Suc e..<hi}. keys ! i < length (c0[keys ! e := Suc (c0 ! (keys ! e))])"
-    using Suc.prems(3) by simp
-  have step: "<ka \<mapsto>\<^sub>a keys * ca \<mapsto>\<^sub>a c0[keys ! e := Suc (c0 ! (keys ! e))]> csr_count_imp ka ca (Suc e) hi
-              <\<lambda>_. ka \<mapsto>\<^sub>a keys * ca \<mapsto>\<^sub>a fold (\<lambda>i cc. cc[keys ! i := Suc (cc ! (keys ! i))]) [Suc e..<hi] (c0[keys ! e := Suc (c0 ! (keys ! e))])>"
-    using Suc.hyps(1)[OF d' esh Suc.prems(2) len1] by simp
-  have foldeq: "fold (\<lambda>i cc. cc[keys ! i := Suc (cc ! (keys ! i))]) [e..<hi] c0
-              = fold (\<lambda>i cc. cc[keys ! i := Suc (cc ! (keys ! i))]) [Suc e..<hi] (c0[keys ! e := Suc (c0 ! (keys ! e))])"
-    using eh by (simp add: upt_conv_Cons)
-  show ?case
-    using eh ke ekeys
-    apply (subst csr_count_imp.simps)
-    by (sep_auto heap: step simp: foldeq)
-qed
-
-text \<open>Helpers about the running prefix-sum @{const psums}.\<close>
-lemma psums_ne [simp]: "psums acc xs \<noteq> []" by (cases xs) auto
-lemma psums_Cons_drop: "v < length cs \<Longrightarrow> psums acc (drop v cs) = acc # psums (acc + cs ! v) (drop (Suc v) cs)"
-  by (metis Cons_nth_drop_Suc psums.simps(2))
-lemma psums_hd_tl: "psums a xs = a # tl (psums a xs)" by (cases xs) auto
-
-text \<open>The prefix-sum pass refines @{const psums}: it fills @{term lo}/@{term cur} with the block
-      starts @{term \<open>butlast (psums 0 cs)\<close>} and @{term hi} with the block ends @{term \<open>tl (psums 0 cs)\<close>}.\<close>
-lemma csr_psum_imp_rule:
-  "v \<le> nn \<Longrightarrow> length cs = nn \<Longrightarrow> length lo0 = nn \<Longrightarrow> length hi0 = nn \<Longrightarrow> length cur0 = nn \<Longrightarrow>
-   <c \<mapsto>\<^sub>a cs * la \<mapsto>\<^sub>a lo0 * ha \<mapsto>\<^sub>a hi0 * cua \<mapsto>\<^sub>a cur0>
-     csr_psum_imp c la ha cua v acc nn
-   <\<lambda>_. c \<mapsto>\<^sub>a cs
-        * la \<mapsto>\<^sub>a (take v lo0 @ butlast (psums acc (drop v cs)))
-        * ha \<mapsto>\<^sub>a (take v hi0 @ tl (psums acc (drop v cs)))
-        * cua \<mapsto>\<^sub>a (take v cur0 @ butlast (psums acc (drop v cs)))>"
-proof (induction "nn - v" arbitrary: v acc lo0 hi0 cur0)
-  case 0
-  then have vn: "v = nn" by simp
-  show ?case using 0 vn
-    by (subst csr_psum_imp.simps) (sep_auto simp: psums_length)
-next
-  case (Suc d)
-  from Suc.hyps(2) Suc.prems(1) have vn: "v < nn" by simp
-  have vlen: "v < length cs" using vn Suc.prems(2) by simp
-  have d': "d = nn - Suc v" using Suc.hyps(2) by simp
-  let ?P = "psums (acc + cs ! v) (drop (Suc v) cs)"
-  have step: "<c \<mapsto>\<^sub>a cs * la \<mapsto>\<^sub>a lo0[v := acc] * ha \<mapsto>\<^sub>a hi0[v := acc + cs ! v] * cua \<mapsto>\<^sub>a cur0[v := acc]>
-     csr_psum_imp c la ha cua (Suc v) (acc + cs ! v) nn
-   <\<lambda>_. c \<mapsto>\<^sub>a cs
-        * la \<mapsto>\<^sub>a (take (Suc v) (lo0[v := acc]) @ butlast ?P)
-        * ha \<mapsto>\<^sub>a (take (Suc v) (hi0[v := acc + cs ! v]) @ tl ?P)
-        * cua \<mapsto>\<^sub>a (take (Suc v) (cur0[v := acc]) @ butlast ?P)>"
-    using Suc.hyps(1)[OF d' _ Suc.prems(2), of "lo0[v := acc]" "hi0[v := acc + cs ! v]" "cur0[v := acc]" "acc + cs ! v"] vn Suc.prems(3,4,5) by simp
-  have pd: "psums acc (drop v cs) = acc # ?P" by (rule psums_Cons_drop[OF vlen])
-  have la_eq: "(take (Suc v) lo0)[v := acc] @ butlast ?P = take v lo0 @ butlast (psums acc (drop v cs))"
-    using vn Suc.prems(3) by (simp add: pd take_Suc_conv_app_nth list_update_append)
-  have cu_eq: "(take (Suc v) cur0)[v := acc] @ butlast ?P = take v cur0 @ butlast (psums acc (drop v cs))"
-    using vn Suc.prems(5) by (simp add: pd take_Suc_conv_app_nth list_update_append)
-  have hi_eq: "(take (Suc v) hi0)[v := acc + cs ! v] @ tl ?P = take v hi0 @ tl (psums acc (drop v cs))"
-    using vn Suc.prems(4) by (simp add: pd take_Suc_conv_app_nth list_update_append psums_hd_tl[symmetric])
-  show ?case
-    using vn vlen Suc.prems(2,3,4,5)
-    apply (subst csr_psum_imp.simps)
-    by (sep_auto heap: step simp: la_eq cu_eq hi_eq)
-qed
-
-text \<open>Memory-safety of the scatter: under the scatter invariant @{const sc_inv}, the running cursor
-      of the next edge is still inside its block (below @{term \<open>length es\<close>}).  This is exactly the
-      @{text pos_lt} step inside @{thm [source] sc_inv_step}, lifted out.\<close>
-lemma sc_inv_pos_lt:
-  assumes valid: "\<forall>x\<in>set es. key x < n"
-      and split: "es = dn @ e # rest"
-      and inv: "sc_inv n key es ed ps dn"
-    shows "ps ! key e < length es"
-proof -
-  have wn: "key e < n" using valid split by auto
-  have psw: "ps ! key e = sc_lo n key es (key e) + length (filter (\<lambda>x. key x = key e) dn)"
-    using inv wn by (simp add: sc_inv_def)
-  have cntw_lt: "length (filter (\<lambda>x. key x = key e) dn) < ct n key es ! (key e)"
-    using split wn by (auto simp: ct_nth)
-  have "ps ! key e < sc_lo n key es (key e) + ct n key es ! (key e)" using psw cntw_lt by simp
-  also have "\<dots> = sc_lo n key es (Suc (key e))" using wn by (simp add: sc_lo_Suc)
-  also have "\<dots> \<le> length es" using valid wn by (simp add: sc_lo_le_length)
-  finally show ?thesis .
-qed
-
-lemma upt_split3: "e < m \<Longrightarrow> [0..<m] = [0..<e] @ e # [Suc e..<m]"
-  by (metis le0 less_imp_le_nat upt_add_eq_append upt_conv_Cons le_add_diff_inverse)
-lemma upt_snoc_e: "[0..<e] @ [e] = [0..<Suc e]" by simp
-
-text \<open>The scatter pass refines @{const scatter_body}: placing each edge @{term e} at its block cursor
-      @{term \<open>ps ! (keys ! e)\<close>} and bumping that cursor.  @{const sc_inv} (threaded via
-      @{thm [source] sc_inv_step}) both drives the fold and guarantees every write is in range.\<close>
-lemma csr_scatter_imp_rule:
-  "e \<le> hi \<Longrightarrow> hi \<le> m \<Longrightarrow> m \<le> length keys \<Longrightarrow> length ed0 = m \<Longrightarrow> length ps0 = n \<Longrightarrow> (\<forall>i<m. keys ! i < n) \<Longrightarrow>
-   sc_inv n (nth keys) [0..<m] ed0 ps0 [0..<e] \<Longrightarrow>
-   <ka \<mapsto>\<^sub>a keys * ea \<mapsto>\<^sub>a ed0 * cua \<mapsto>\<^sub>a ps0>
-     csr_scatter_imp ka ea cua e hi
-   <\<lambda>_. ka \<mapsto>\<^sub>a keys
-        * ea \<mapsto>\<^sub>a fst (fold (scatter_body (nth keys)) [e..<hi] (ed0, ps0))
-        * cua \<mapsto>\<^sub>a snd (fold (scatter_body (nth keys)) [e..<hi] (ed0, ps0))>"
-proof (induction "hi - e" arbitrary: e ed0 ps0)
-  case 0
-  then have "hi = e" by simp
-  then show ?case by (subst csr_scatter_imp.simps) sep_auto
-next
-  case (Suc d)
-  from Suc.hyps(2) Suc.prems(1) have eh: "e < hi" by simp
-  hence em: "e < m" using Suc.prems(2) by simp
-  have ekeys: "e < length keys" using em Suc.prems(3) by simp
-  have ken: "keys ! e < n" using em Suc.prems(6) by simp
-  have d': "d = hi - Suc e" using Suc.hyps(2) by simp
-  have esh: "Suc e \<le> hi" using eh by simp
-  have lps: "length ps0 = n" by (rule Suc.prems(5))
-  have valid: "\<forall>x\<in>set [0..<m]. (nth keys) x < n" using Suc.prems(6) by simp
-  have split: "[0..<m] = [0..<e] @ e # [Suc e..<m]" by (rule upt_split3[OF em])
-  have led: "length ed0 = length ([0..<m]::nat list)" using Suc.prems(4) by simp
-  have poslt: "ps0 ! (keys ! e) < m"
-    using sc_inv_pos_lt[OF valid split Suc.prems(7)] by simp
-  have inv': "sc_inv n (nth keys) [0..<m] (ed0[ps0 ! (keys ! e) := e]) (ps0[keys ! e := Suc (ps0 ! (keys ! e))]) [0..<Suc e]"
-    using sc_inv_step[OF valid split led lps Suc.prems(7)] by (simp only: upt_snoc_e)
-  have led': "length (ed0[ps0 ! (keys ! e) := e]) = m" using Suc.prems(4) by simp
-  have lps': "length (ps0[keys ! e := Suc (ps0 ! (keys ! e))]) = n" using lps by simp
-  have step: "<ka \<mapsto>\<^sub>a keys * ea \<mapsto>\<^sub>a ed0[ps0 ! (keys ! e) := e] * cua \<mapsto>\<^sub>a ps0[keys ! e := Suc (ps0 ! (keys ! e))]>
-     csr_scatter_imp ka ea cua (Suc e) hi
-   <\<lambda>_. ka \<mapsto>\<^sub>a keys
-        * ea \<mapsto>\<^sub>a fst (fold (scatter_body (nth keys)) [Suc e..<hi] (ed0[ps0 ! (keys ! e) := e], ps0[keys ! e := Suc (ps0 ! (keys ! e))]))
-        * cua \<mapsto>\<^sub>a snd (fold (scatter_body (nth keys)) [Suc e..<hi] (ed0[ps0 ! (keys ! e) := e], ps0[keys ! e := Suc (ps0 ! (keys ! e))]))>"
-    by (rule Suc.hyps(1)[OF d' esh Suc.prems(2) Suc.prems(3) led' lps' Suc.prems(6) inv'])
-  have foldeq: "fold (scatter_body (nth keys)) [e..<hi] (ed0, ps0)
-              = fold (scatter_body (nth keys)) [Suc e..<hi] (ed0[ps0 ! (keys ! e) := e], ps0[keys ! e := Suc (ps0 ! (keys ! e))])"
-    using eh by (simp add: upt_conv_Cons scatter_body_def)
-  show ?case
-    using eh em ekeys ken poslt lps Suc.prems(4)
-    apply (subst csr_scatter_imp.simps)
-    by (sep_auto heap: step simp: foldeq)
-qed
-
-text \<open>The whole CSR build refines the functional constructor: count (@{const ct}) {\isasymrightarrow} prefix-sum
-      (@{const psums}) {\isasymrightarrow} scatter (@{const scatter_edges}) {\isasymrightarrow} reset the cursor to the block starts.\<close>
-lemma fold_scatter_snd_length: "length (snd (fold (scatter_body key) es st)) = length (snd st)"
-  by (induction es arbitrary: st) (auto simp: scatter_body_def split: prod.splits)
-
-lemma build_csr_imp_rule:
-  assumes mk: "m \<le> length keys" and kn: "\<forall>i<m. keys ! i < nn"
-  shows "<ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a replicate nn (0::nat) * lo \<mapsto>\<^sub>a replicate nn (0::nat) * hi \<mapsto>\<^sub>a replicate nn (0::nat) * cur \<mapsto>\<^sub>a replicate nn (0::nat) * ea \<mapsto>\<^sub>a replicate m (0::nat)>
-     build_csr_imp ka c lo hi cur ea m nn
-   <\<lambda>_. ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a ct nn (nth keys) [0..<m]
-        * lo \<mapsto>\<^sub>a butlast (psums 0 (ct nn (nth keys) [0..<m]))
-        * hi \<mapsto>\<^sub>a tl (psums 0 (ct nn (nth keys) [0..<m]))
-        * cur \<mapsto>\<^sub>a butlast (psums 0 (ct nn (nth keys) [0..<m]))
-        * ea \<mapsto>\<^sub>a scatter_edges nn (nth keys) [0..<m] 0>"
-proof -
-  let ?ct = "ct nn (nth keys) [0..<m]"
-  let ?lo = "butlast (psums 0 ?ct)"
-  have si: "sc_inv nn (nth keys) [0..<m] (replicate m 0) ?lo [0..<0]"
-    using scatter_init_inv[of nn "nth keys" "[0..<m]" 0] by simp
-  have p1: "<ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a replicate nn 0> csr_count_imp ka c 0 m <\<lambda>_. ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a ?ct>"
-  proof -
-    have "<ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a replicate nn 0> csr_count_imp ka c 0 m
-          <\<lambda>_. ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a fold (\<lambda>i cc. cc[keys ! i := Suc (cc ! (keys ! i))]) [0..<m] (replicate nn 0)>"
-      by (rule csr_count_imp_rule) (use mk kn in auto)
-    thus ?thesis by (simp add: ct_def)
-  qed
-  have p2: "<c \<mapsto>\<^sub>a ?ct * lo \<mapsto>\<^sub>a replicate nn 0 * hi \<mapsto>\<^sub>a replicate nn 0 * cur \<mapsto>\<^sub>a replicate nn 0>
-              csr_psum_imp c lo hi cur 0 0 nn
-            <\<lambda>_. c \<mapsto>\<^sub>a ?ct * lo \<mapsto>\<^sub>a ?lo * hi \<mapsto>\<^sub>a tl (psums 0 ?ct) * cur \<mapsto>\<^sub>a ?lo>"
-    using csr_psum_imp_rule[of 0 nn ?ct "replicate nn 0" "replicate nn 0" "replicate nn 0" c lo hi cur 0]
-    by simp
-  have p3: "<ka \<mapsto>\<^sub>a keys * ea \<mapsto>\<^sub>a replicate m 0 * cur \<mapsto>\<^sub>a ?lo>
-              csr_scatter_imp ka ea cur 0 m
-            <\<lambda>_. ka \<mapsto>\<^sub>a keys * ea \<mapsto>\<^sub>a scatter_edges nn (nth keys) [0..<m] 0
-                 * cur \<mapsto>\<^sub>a snd (fold (scatter_body (nth keys)) [0..<m] (replicate m 0, ?lo))>"
-    using csr_scatter_imp_rule[of 0 m m keys "replicate m 0" ?lo nn ka ea cur] mk kn si
-    by (simp add: scatter_edges_def psums_length)
-  have p4: "\<And>ys. length ys = nn \<Longrightarrow> <lo \<mapsto>\<^sub>a ?lo * cur \<mapsto>\<^sub>a ys> arr_copy_imp lo cur 0 nn <\<lambda>_. lo \<mapsto>\<^sub>a ?lo * cur \<mapsto>\<^sub>a ?lo>"
-  proof -
-    fix ys :: "nat list" assume l: "length ys = nn"
-    show "<lo \<mapsto>\<^sub>a ?lo * cur \<mapsto>\<^sub>a ys> arr_copy_imp lo cur 0 nn <\<lambda>_. lo \<mapsto>\<^sub>a ?lo * cur \<mapsto>\<^sub>a ?lo>"
-      using arr_copy_imp_rule[of 0 nn ?lo ys lo cur] l by (simp add: psums_length)
-  qed
-  show ?thesis
-    unfolding build_csr_imp_def
-    by (sep_auto heap: p1 p2 p3 p4 simp: fold_scatter_snd_length psums_length)
-qed
+partial_function (heap) fill_edged_imp ::
+  "nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+  "fill_edged_imp vl ob ib v n j =
+     (if n < v then return ()
+      else do { eo \<leftarrow> csr_empty_imp ob v; ei \<leftarrow> csr_empty_imp ib v;
+                (if eo \<and> ei then fill_edged_imp vl ob ib (Suc v) n j
+                 else do { _ \<leftarrow> arr_upd vl j v; fill_edged_imp vl ob ib (Suc v) n (Suc j) }) })"
 
 section \<open>The orchestrator\<close>
 
-text \<open>The imperative counterpart of the functional @{const initial_basis_code_spec.edged_vs_list}: the
-      dense vertex range @{term \<open>[1..n]\<close>} with the \<^emph>\<open>lonely\<close> names (endpoints of no edge --- both full
-      blocks empty) removed.  The acyclifier iterates exactly these.  We count them, then fill an
-      exactly-sized array (so the iterator's length matches the abstraction).\<close>
-partial_function (heap) count_edged_imp ::
-  "nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
-  "count_edged_imp olo ohi ilo ihi v n acc =
-     (if n < v then return acc
-      else do { ol \<leftarrow> Array.nth olo v; oh \<leftarrow> Array.nth ohi v; il \<leftarrow> Array.nth ilo v; ih \<leftarrow> Array.nth ihi v;
-                count_edged_imp olo ohi ilo ihi (Suc v) n (if ol = oh \<and> il = ih then acc else Suc acc) })"
-
-partial_function (heap) fill_edged_imp ::
-  "nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "fill_edged_imp vl olo ohi ilo ihi v n j =
-     (if n < v then return ()
-      else do { ol \<leftarrow> Array.nth olo v; oh \<leftarrow> Array.nth ohi v; il \<leftarrow> Array.nth ilo v; ih \<leftarrow> Array.nth ihi v;
-                (if ol = oh \<and> il = ih then fill_edged_imp vl olo ohi ilo ihi (Suc v) n j
-                 else do { _ \<leftarrow> arr_upd vl j v; fill_edged_imp vl olo ohi ilo ihi (Suc v) n (Suc j) }) })"
-
-text \<open>The functional list the two loops compute: the non-lonely vertices of @{term \<open>[v..n]\<close>} (a vertex
-      is \<^emph>\<open>lonely\<close> when both its CSR blocks are empty, @{term \<open>ol!v = oh!v \<and> il!v = ih!v\<close>}).  Kept as a
-      plain @{const filter}, but wrapped in an \<open>edged_lst\<close> constant so the loop refinements can
-      carry it \<^emph>\<open>opaquely\<close> (otherwise \<open>sep_auto\<close> peels the range and explodes).\<close>
-definition edged_lst :: "nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list" where
-  "edged_lst ol oh il ih v n = filter (\<lambda>w. \<not> (ol ! w = oh ! w \<and> il ! w = ih ! w)) [v..<Suc n]"
-
-lemma edged_lst_Cons:
-  assumes "v \<le> n"
-  shows "edged_lst ol oh il ih v n
-       = (if ol ! v = oh ! v \<and> il ! v = ih ! v then [] else [v]) @ edged_lst ol oh il ih (Suc v) n"
-proof -
-  have vsn: "v < Suc n" using assms by simp
-  show ?thesis unfolding edged_lst_def by (subst upt_conv_Cons[OF vsn]) simp
-qed
-
-lemma edged_lst_empty: "n < v \<Longrightarrow> edged_lst ol oh il ih v n = []"
-  by (simp add: edged_lst_def)
-
-text \<open>@{const count_edged_imp} counts the non-lonely vertices --- the length of \<open>edged_lst\<close>.\<close>
-lemma count_edged_imp_rule:
-  "v \<le> Suc n \<Longrightarrow> Suc n \<le> length ol \<Longrightarrow> Suc n \<le> length oh \<Longrightarrow> Suc n \<le> length il \<Longrightarrow> Suc n \<le> length ih \<Longrightarrow>
-   <olo \<mapsto>\<^sub>a ol * ohi \<mapsto>\<^sub>a oh * ilo \<mapsto>\<^sub>a il * ihi \<mapsto>\<^sub>a ih>
-     count_edged_imp olo ohi ilo ihi v n acc
-   <\<lambda>r. olo \<mapsto>\<^sub>a ol * ohi \<mapsto>\<^sub>a oh * ilo \<mapsto>\<^sub>a il * ihi \<mapsto>\<^sub>a ih
-        * \<up>(r = acc + length (edged_lst ol oh il ih v n))>"
-proof (induction "Suc n - v" arbitrary: v acc)
-  case 0
-  then have vg: "n < v" by simp
-  then show ?case by (subst count_edged_imp.simps) (sep_auto simp: edged_lst_empty[OF vg])
-next
-  case (Suc d)
-  from Suc.hyps(2) Suc.prems(1) have vn: "v \<le> n" by simp
-  from vn have vl: "v < length ol" "v < length oh" "v < length il" "v < length ih"
-    using Suc.prems(2,3,4,5) by auto
-  have d': "d = Suc n - Suc v" using Suc.hyps(2) by simp
-  have step: "<olo \<mapsto>\<^sub>a ol * ohi \<mapsto>\<^sub>a oh * ilo \<mapsto>\<^sub>a il * ihi \<mapsto>\<^sub>a ih>
-     count_edged_imp olo ohi ilo ihi (Suc v) n (if ol ! v = oh ! v \<and> il ! v = ih ! v then acc else Suc acc)
-   <\<lambda>r. olo \<mapsto>\<^sub>a ol * ohi \<mapsto>\<^sub>a oh * ilo \<mapsto>\<^sub>a il * ihi \<mapsto>\<^sub>a ih
-        * \<up>(r = (if ol ! v = oh ! v \<and> il ! v = ih ! v then acc else Suc acc)
-                + length (edged_lst ol oh il ih (Suc v) n))>"
-    by (rule Suc.hyps(1)[OF d' _ Suc.prems(2,3,4,5)]) (use vn in simp)
-  have feq: "acc + length (edged_lst ol oh il ih v n)
-           = (if ol ! v = oh ! v \<and> il ! v = ih ! v then acc else Suc acc) + length (edged_lst ol oh il ih (Suc v) n)"
-    by (simp add: edged_lst_Cons[OF vn])
-  show ?case
-    using vl vn
-    apply (subst count_edged_imp.simps)
-    by (sep_auto heap: step simp: feq)
-qed
-
-text \<open>@{const fill_edged_imp} writes the non-lonely vertices --- @{term \<open>edged_lst ol oh il ih v n\<close>} ---
-      into \<open>vl\<close> starting at index @{term j}, leaving the rest of the array untouched.  Proved \<^emph>\<open>without\<close> an Isar
-      case-split on lonely/non-lonely: splitting makes @{method sep_auto} explore the unreachable
-      branch (whose recursive call has no rule) and loop; giving it the general induction hypothesis as
-      the heap rule instead lets it discharge both branches' preconditions from the \<open>if\<close>-guard.\<close>
-lemma fill_edged_imp_rule:
-  "v \<le> Suc n \<Longrightarrow> Suc n \<le> length ol \<Longrightarrow> Suc n \<le> length oh \<Longrightarrow> Suc n \<le> length il \<Longrightarrow> Suc n \<le> length ih \<Longrightarrow>
-   j + length (edged_lst ol oh il ih v n) \<le> length vlst \<Longrightarrow>
-   <va \<mapsto>\<^sub>a vlst * olo \<mapsto>\<^sub>a ol * ohi \<mapsto>\<^sub>a oh * ilo \<mapsto>\<^sub>a il * ihi \<mapsto>\<^sub>a ih>
-     fill_edged_imp va olo ohi ilo ihi v n j
-   <\<lambda>_. va \<mapsto>\<^sub>a (take j vlst @ edged_lst ol oh il ih v n @ drop (j + length (edged_lst ol oh il ih v n)) vlst)
-        * olo \<mapsto>\<^sub>a ol * ohi \<mapsto>\<^sub>a oh * ilo \<mapsto>\<^sub>a il * ihi \<mapsto>\<^sub>a ih>"
-proof (induction "Suc n - v" arbitrary: v j vlst)
-  case 0
-  then have vg: "n < v" by simp
-  then show ?case by (subst fill_edged_imp.simps) (sep_auto simp: edged_lst_empty[OF vg])
-next
-  case (Suc d)
-  from Suc.hyps(2) Suc.prems(1) have vn: "v \<le> n" by simp
-  hence nnv: "\<not> n < v" by simp
-  from vn have vl: "v < length ol" "v < length oh" "v < length il" "v < length ih"
-    using Suc.prems(2,3,4,5) by auto
-  have d': "d = Suc n - Suc v" using Suc.hyps(2) by simp
-  note ec = edged_lst_Cons[OF vn]
-  show ?case
-    using vl nnv Suc.prems(2,3,4,5,6)
-    apply (subst fill_edged_imp.simps)
-    by (sep_auto heap: Suc.hyps(1)[OF d']
-                 simp: ec take_Suc_conv_app_nth list_update_append drop_update_cancel)
-qed
-
-section \<open>Bridging the built CSRs to the functional @{const initial_basis_code_spec.out_csr} / @{const initial_basis_code_spec.in_csr}\<close>
-
-text \<open>The functional @{const initial_basis_code_spec.build_two_csr} folds a \<^emph>\<open>pair\<close> of counters / edge
-      arrays in one pass; projecting to a component is an ordinary fold fusion.  With it, the outgoing
-      / ingoing CSRs the imperative builder produces (keyed on @{term fst_list} / @{term snd_list}) are
-      literally @{const initial_basis_code_spec.out_csr} / @{const initial_basis_code_spec.in_csr}.\<close>
-
-lemma fold_pair_fst: "fst (fold (\<lambda>e (x,y). (f e x, g e y)) es st) = fold f es (fst st)"
-  by (induction es arbitrary: st) (auto split: prod.splits)
-lemma fold_pair_snd: "snd (fold (\<lambda>e (x,y). (f e x, g e y)) es st) = fold g es (snd st)"
-  by (induction es arbitrary: st) (auto split: prod.splits)
-
-context initial_basis_code_spec
-begin
-
-lemma out_csr_lo: "csr_lo out_csr = butlast (psums 0 (ct vcount ((!) fst_list) [0..<m]))"
-  by (simp add: out_csr_def two_csr_def build_two_csr_def Let_def fold_pair_fst ct_def[symmetric] edge_csr.make_def)
-lemma out_csr_hi: "csr_hi out_csr = tl (psums 0 (ct vcount ((!) fst_list) [0..<m]))"
-  by (simp add: out_csr_def two_csr_def build_two_csr_def Let_def fold_pair_fst ct_def[symmetric] edge_csr.make_def)
-lemma out_csr_cur: "csr_cur out_csr = butlast (psums 0 (ct vcount ((!) fst_list) [0..<m]))"
-  by (simp add: out_csr_def two_csr_def build_two_csr_def Let_def fold_pair_fst ct_def[symmetric] edge_csr.make_def)
-lemma out_csr_edges: "csr_edges out_csr = scatter_edges vcount ((!) fst_list) [0..<m] 0"
-  by (simp add: out_csr_def two_csr_def build_two_csr_def Let_def fold_pair_fst ct_def[symmetric] scatter_edges_def edge_csr.make_def)
-
-lemma in_csr_lo: "csr_lo in_csr = butlast (psums 0 (ct vcount ((!) snd_list) [0..<m]))"
-  by (simp add: in_csr_def two_csr_def build_two_csr_def Let_def fold_pair_snd ct_def[symmetric] edge_csr.make_def)
-lemma in_csr_hi: "csr_hi in_csr = tl (psums 0 (ct vcount ((!) snd_list) [0..<m]))"
-  by (simp add: in_csr_def two_csr_def build_two_csr_def Let_def fold_pair_snd ct_def[symmetric] edge_csr.make_def)
-lemma in_csr_cur: "csr_cur in_csr = butlast (psums 0 (ct vcount ((!) snd_list) [0..<m]))"
-  by (simp add: in_csr_def two_csr_def build_two_csr_def Let_def fold_pair_snd ct_def[symmetric] edge_csr.make_def)
-lemma in_csr_edges: "csr_edges in_csr = scatter_edges vcount ((!) snd_list) [0..<m] 0"
-  by (simp add: in_csr_def two_csr_def build_two_csr_def Let_def fold_pair_snd ct_def[symmetric] scatter_edges_def edge_csr.make_def)
-
-text \<open>Hence the two imperative CSR builds establish the abstract @{const csr_assn} of the outgoing /
-      ingoing CSRs --- exactly the graph assertion the acyclifier refinement consumes.\<close>
-lemma build_csr_out_rule:
-  assumes "m \<le> length fst_list" "\<forall>i<m. fst_list ! i < vcount"
-  shows "<ka \<mapsto>\<^sub>a fst_list * c \<mapsto>\<^sub>a replicate vcount 0 * o_lo \<mapsto>\<^sub>a replicate vcount 0 * o_hi \<mapsto>\<^sub>a replicate vcount 0 * o_cur \<mapsto>\<^sub>a replicate vcount 0 * o_edges \<mapsto>\<^sub>a replicate m 0>
-     build_csr_imp ka c o_lo o_hi o_cur o_edges m vcount
-   <\<lambda>_. ka \<mapsto>\<^sub>a fst_list * c \<mapsto>\<^sub>a ct vcount ((!) fst_list) [0..<m] * csr_assn out_csr (o_edges, o_lo, o_hi, o_cur)>"
-  by (sep_auto heap: build_csr_imp_rule[OF assms]
-               simp: csr_assn_def out_csr_edges out_csr_lo out_csr_hi out_csr_cur)
-
-lemma build_csr_in_rule:
-  assumes "m \<le> length snd_list" "\<forall>i<m. snd_list ! i < vcount"
-  shows "<ka \<mapsto>\<^sub>a snd_list * c \<mapsto>\<^sub>a replicate vcount 0 * i_lo \<mapsto>\<^sub>a replicate vcount 0 * i_hi \<mapsto>\<^sub>a replicate vcount 0 * i_cur \<mapsto>\<^sub>a replicate vcount 0 * i_edges \<mapsto>\<^sub>a replicate m 0>
-     build_csr_imp ka c i_lo i_hi i_cur i_edges m vcount
-   <\<lambda>_. ka \<mapsto>\<^sub>a snd_list * c \<mapsto>\<^sub>a ct vcount ((!) snd_list) [0..<m] * csr_assn in_csr (i_edges, i_lo, i_hi, i_cur)>"
-  by (sep_auto heap: build_csr_imp_rule[OF assms]
-               simp: csr_assn_def in_csr_edges in_csr_lo in_csr_hi in_csr_cur)
-
-text \<open>The edged-vertex loops compute exactly @{const edged_vs_list}: @{const edged_lst} on the CSR
-      block boundaries (@{term out_lo} {\isasymdots} @{term in_hi}) is the non-lonely filter of @{term vs_list}.\<close>
-lemma edged_lst_eq_vs_list: "edged_lst out_lo out_hi in_lo in_hi (Suc 0) n = edged_vs_list"
-  by (simp add: edged_lst_def edged_vs_list_def is_lonely_def vs_list_def)
-
-end
-
 text \<open>The imperative refinement of the functional orchestrator @{const initial_basis_code_spec.solve}.
       All working arrays are allocated \<^emph>\<open>once\<close> here and threaded through the phases, reusing memory
-      wherever the functional code does: the two CSRs are built once and repurposed by Pass A; the
-      acyclifier's DFS stacks @{term vst} / @{term est} are handed on as the tree-builder's stack and
-      then as the network-simplex path buffers.  The augmented endpoint / capacity / flow / edge-state
-      arrays have length @{term \<open>m + n\<close>} (the artificial-edge count @{term Kart} is at most @{term n});
+      wherever the functional code does: the two CSRs of the input are built once by the shared
+      builder (@{const csr_build_into_edges}, @{const csr_build_into_edges_tgt}); the acyclifier
+      iterates them with the cursor arrays @{term o_h} / @{term i_h}, which then become the ends of
+      the free ranges that Pass A appends to the edge arrays in place; the acyclifier's DFS stacks
+      @{term vst} / @{term est} are handed on as the tree-builder's stack and then as the
+      network-simplex path buffers.  The augmented endpoint / capacity / flow / edge-state arrays
+      have length @{term \<open>m + n\<close>} (the artificial-edge count @{term Kart} is at most @{term n});
       their first @{term m} cells are copied from the input.
 
       The phases: build the CSRs; acyclify the flow (an @{term unbounded} answer is a negative
-      infinite-capacity cycle, @{term NegInfCycleF}); reset the cursors and run Pass A + the imbalance
-      transform; build the strongly-feasible spanning tree; run the network-simplex loop (an
-      @{term unbounded} verdict is again @{term NegInfCycleF}); on a bounded optimum inspect the
-      artificial edges @{term \<open>[m..<m + Kart]\<close>} --- all-zero means the minimum-cost @{term b}-flow is left
-      in the first @{term m} flow cells (@{term OptimalF}), otherwise the instance is infeasible
+      infinite-capacity cycle, @{term NegInfCycleF}); reset the range ends and run Pass A + the
+      imbalance transform; build the strongly-feasible spanning tree; run the network-simplex loop
+      (an @{term unbounded} verdict is again @{term NegInfCycleF}); on a bounded optimum inspect the
+      artificial edges @{term \<open>[m..<m + Kart]\<close>} --- all-zero means the minimum-cost @{term b}-flow is
+      left in the first @{term m} flow cells (@{term OptimalF}), otherwise the instance is infeasible
       (@{term InfeasibleF}).\<close>
 definition solve_imp ::
   "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
@@ -1556,42 +949,39 @@ definition solve_imp ::
         lsuc \<leftarrow> Array.new V 0; snum \<leftarrow> Array.new V 0; aux \<leftarrow> Array.new V 0;
         par \<leftarrow> Array.new V 0; dir \<leftarrow> Array.new V False;
         state_arr \<leftarrow> Array.new V Unseen; exc_arr \<leftarrow> Array.new V 0;
-        cnt \<leftarrow> Array.new V 0;
-        o_edges \<leftarrow> Array.new m 0; o_lo \<leftarrow> Array.new vcount 0; o_hi \<leftarrow> Array.new vcount 0; o_cur \<leftarrow> Array.new vcount 0;
-        i_edges \<leftarrow> Array.new m 0; i_lo \<leftarrow> Array.new vcount 0; i_hi \<leftarrow> Array.new vcount 0; i_cur \<leftarrow> Array.new vcount 0;
+        o_b \<leftarrow> Array.new V 0; o_e \<leftarrow> Array.new m 0; o_h \<leftarrow> Array.new vcount 0; o_c \<leftarrow> Array.new vcount 0;
+        i_b \<leftarrow> Array.new V 0; i_e \<leftarrow> Array.new m 0; i_h \<leftarrow> Array.new vcount 0; i_c \<leftarrow> Array.new vcount 0;
         vst \<leftarrow> Array.new V 0; est \<leftarrow> Array.new V 0; dst \<leftarrow> Array.new V False;
-        \<comment> \<open>@{term cnt} is freshly zeroed by @{term \<open>Array.new V 0\<close>}, so the first CSR build needs no
-             zeroing pass; only the second build re-zeroes it.\<close>
-        _ \<leftarrow> build_csr_imp fst_arr cnt o_lo o_hi o_cur o_edges m vcount;
-        _ \<leftarrow> arr_fill_imp cnt 0 0 vcount;
-        _ \<leftarrow> build_csr_imp snd_arr cnt i_lo i_hi i_cur i_edges m vcount;
-        k \<leftarrow> count_edged_imp o_lo o_hi i_lo i_hi 1 n 0;
+        _ \<leftarrow> csr_build_into_edges vcount (in_fst, in_snd) 0 o_b o_e;
+        _ \<leftarrow> csr_build_into_edges_tgt vcount (in_fst, in_snd) 0 i_b i_e;
+        _ \<leftarrow> csr_copy_imp vcount o_b o_h 0;
+        _ \<leftarrow> csr_copy_imp vcount i_b i_h 0;
+        k \<leftarrow> count_edged_imp o_b i_b 1 n 0;
         vl \<leftarrow> Array.new k 0;
-        _ \<leftarrow> fill_edged_imp vl o_lo o_hi i_lo i_hi 1 n 0;
+        _ \<leftarrow> fill_edged_imp vl o_b i_b 1 n 0;
         pr \<leftarrow> ref 0;
         ubd \<leftarrow> make_acyclic_prog cap_arr in_cost fst_arr snd_arr flow_arr state_arr
-                (o_edges, o_lo, o_hi, o_cur) (i_edges, i_lo, i_hi, i_cur) (vl, pr) vst est dst;
+                (o_b, o_e, o_h) (i_b, i_e, i_h) (vl, pr) vst est dst;
         (if ubd then return NegInfCycleF
          else do {
-           _ \<leftarrow> arr_copy_imp o_lo o_cur 0 vcount;
-           _ \<leftarrow> arr_copy_imp i_lo i_cur 0 vcount;
-           _ \<leftarrow> passA_imp flow_arr cap_arr fst_arr snd_arr es_arr exc_arr o_edges o_cur i_edges i_cur 0 m;
+           _ \<leftarrow> csr_copy_imp vcount o_b o_h 0;
+           _ \<leftarrow> csr_copy_imp vcount i_b i_h 0;
+           _ \<leftarrow> passA_imp flow_arr cap_arr fst_arr snd_arr es_arr exc_arr o_e o_h i_e i_h 0 m;
            _ \<leftarrow> imbalance_imp exc_arr in_b 0 vcount;
            \<comment> \<open>Reuse the acyclifier's (now dead) DFS stack @{term dst} as the tree-builder's ``seen''
-              array; it must be all-@{term False} for the build.  Likewise @{term cnt} (dead since the
-              CSR build) becomes the DFS in-cursor stack @{term di_sic} --- no reset needed there, as every
-              stack slot is written before it is read.\<close>
+              array; it must be all-@{term False} for the build.\<close>
            _ \<leftarrow> arr_fill_imp dst False 0 V;
            sp_ref \<leftarrow> ref 0; prev_ref \<leftarrow> ref 0; nxt_ref \<leftarrow> ref 0;
            (let tree = \<lparr> prnt_impl = prnt, thrd_impl = thrd, rvth_impl = rvth,
                          lsuc_impl = lsuc, snum_impl = snum, aux_impl = aux \<rparr>;
                 st = \<lparr> di_seen = dst, di_tree = tree, di_par = par, di_dir = dir, di_pot = pot_arr,
                       di_fst = fst_arr, di_snd = snd_arr, di_cap = cap_arr, di_cost = in_cost,
-                      di_flow = flow_arr, di_es = es_arr, di_oe = o_edges, di_olo = o_lo, di_ohi = o_cur,
-                      di_ie = i_edges, di_ilo = i_lo, di_ihi = i_cur, di_sv = vst, di_soc = est,
-                      di_sic = cnt, di_sp = sp_ref, di_prev = prev_ref, di_nxt = nxt_ref \<rparr>
+                      di_flow = flow_arr, di_es = es_arr,
+                      di_ob = o_b, di_oe = o_e, di_oh = o_h, di_oc = o_c,
+                      di_ib = i_b, di_ie = i_e, di_ih = i_h, di_ic = i_c,
+                      di_stk = vst, di_sp = sp_ref, di_prev = prev_ref, di_nxt = nxt_ref \<rparr>
             in do {
-              _ \<leftarrow> build_tree_imp st exc_arr o_hi i_hi m vcount n;
+              _ \<leftarrow> build_tree_imp st exc_arr m vcount n;
               Kart \<leftarrow> Ref.lookup nxt_ref;
               (let marc = m + Kart
                in do {
@@ -1611,17 +1001,16 @@ definition solve_imp ::
 section \<open>Code generation for the whole solver\<close>
 
 text \<open>Register the fixpoint equations of every recursive Heap sub-program the solver reaches: the
-      materialisation / CSR loops of this theory, the abstract network-simplex loop of
+      materialisation loops of this theory, the abstract network-simplex loop of
       @{locale network_simplex_impl_spec}, and the arborescence-refinement loops.  The acyclifier's
-      equations were registered above.  With these, @{const solve_imp} generates as self-contained
-      imperative SML.\<close>
+      equations were registered above, the CSR builder's in the library.  With these,
+      @{const solve_imp} generates as self-contained imperative SML.\<close>
 
 lemmas [code] =
   ns_loop_prog_def
   scan_art_imp.simps join_of_imp.simps scan_cache_imp.simps scan_imp.simps
   passA_imp.simps imbalance_imp.simps build_dfs_a_imp.simps phase1_imp.simps phase2_imp.simps
-  arr_fill_imp.simps arr_copy_imp.simps csr_count_imp.simps csr_psum_imp.simps csr_scatter_imp.simps
-  count_edged_imp.simps fill_edged_imp.simps
+  arr_fill_imp.simps arr_copy_imp.simps count_edged_imp.simps fill_edged_imp.simps
   initial_basis_code_spec.better.simps
   network_simplex_impl_spec.ns_select_imp_def network_simplex_impl_spec.res_fwd_imp_def
   network_simplex_impl_spec.res_bwd_imp_def network_simplex_impl_spec.par_edge_imp_def
@@ -1637,104 +1026,6 @@ lemmas [code] =
   fused_vin_loop_imp.simps fused_vout_loop_imp.simps join_paths_loop_imp.simps subtree_fold_imp.simps
 
 export_code solve_imp checking SML_imp
-
-
-(* \<midarrow>\<midarrow>\<midarrow> Example / demonstration programs (kept for reference; commented out) \<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>
-
-text \<open>A tiny sample run, in the style of the imperative-DFS example: two vertices \<open>0,1\<close> and one edge
-      \<open>0 \<rightarrow> 1\<close> carrying flow \<open>3 \<le> 5\<close>.  There is no cycle, so the acyclifier returns @{term False}
-      (bounded) and leaves the flow unchanged at \<open>[3]\<close>.  We assemble the arrays inside the Heap
-      monad, run @{const make_acyclic_prog}, freeze the flow, and evaluate the whole run on the empty
-      heap.\<close>
-
-definition af_sample :: "(bool \<times> int list) Heap" where
-  "af_sample = do {
-     cap_arr   \<leftarrow> Array.of_list [5::int];
-     cost_arr  \<leftarrow> Array.of_list [1::int];
-     fst_arr   \<leftarrow> Array.of_list [0::nat];
-     snd_arr   \<leftarrow> Array.of_list [1::nat];
-     flow_arr  \<leftarrow> Array.of_list [3::int];
-     state_arr \<leftarrow> Array.of_list [Unseen, Unseen];
-     oe \<leftarrow> Array.of_list [0::nat]; olo \<leftarrow> Array.of_list [0::nat, 1];
-     ohi \<leftarrow> Array.of_list [1::nat, 1]; ocur \<leftarrow> Array.of_list [0::nat, 1];
-     ie \<leftarrow> Array.of_list [0::nat]; ilo \<leftarrow> Array.of_list [0::nat, 0];
-     ihi \<leftarrow> Array.of_list [0::nat, 1]; icur \<leftarrow> Array.of_list [0::nat, 0];
-     vl \<leftarrow> Array.of_list [0::nat, 1]; pr \<leftarrow> ref (0::nat);
-     vst \<leftarrow> Array.of_list [0::nat, 0]; est \<leftarrow> Array.of_list [0::nat, 0];
-     dst \<leftarrow> Array.of_list [False, False];
-     ubd \<leftarrow> make_acyclic_prog cap_arr cost_arr fst_arr snd_arr flow_arr state_arr
-             (oe, olo, ohi, ocur) (ie, ilo, ihi, icur) (vl, pr) vst est dst;
-     f \<leftarrow> Array.freeze flow_arr;
-     return (ubd, f) }"
-
-text \<open>Running the exported code: @{term af_sample} is generated as an SML function \<open>unit \<Rightarrow> \<dots>\<close> (the
-      native Imperative-HOL Heap model), so applying it to \<open>()\<close> actually executes it on a real
-      mutable heap and returns the pair \<open>(unbounded-flag, resulting flow)\<close> --- expected \<open>(false, [3])\<close>.\<close>
-
-ML_val \<open>
-  val (ubd, f) = @{code af_sample} ();
-  writeln ("acyclifier sample run: unbounded = " ^ @{make_string} ubd
-           ^ ", flow = " ^ @{make_string} f)
-\<close>
-
-text \<open>A CSR sample: vertex \<open>0\<close> owns the edge ids \<open>[10, 20]\<close>, vertex \<open>1\<close> owns \<open>[30]\<close>.  We read the
-      current edge of vertex \<open>0\<close> (its \<^emph>\<open>next\<close>, i.e. first unconsumed, edge --- expected \<open>10\<close>), advance
-      its cursor with @{const csr_move_imp}, read the new current edge (\<open>20\<close>), and finally ask
-      @{const csr_has_imp} whether vertex \<open>0\<close> still has an unconsumed edge (cursor \<open>1 < 2\<close> {\isasymRightarrow}
-      @{term True}).\<close>
-
-definition csr_sample :: "(nat \<times> nat \<times> bool) Heap" where
-  "csr_sample = do {
-     oe   \<leftarrow> Array.of_list [10, 20, 30 :: nat];
-     olo  \<leftarrow> Array.of_list [0, 2 :: nat];
-     ohi  \<leftarrow> Array.of_list [2, 3 :: nat];
-     ocur \<leftarrow> Array.of_list [0, 2 :: nat];
-     e1 \<leftarrow> csr_current_imp (oe, olo, ohi, ocur) 0;
-     _  \<leftarrow> csr_move_imp    (oe, olo, ohi, ocur) 0;
-     e2 \<leftarrow> csr_current_imp (oe, olo, ohi, ocur) 0;
-     h  \<leftarrow> csr_has_imp     (oe, olo, ohi, ocur) 0;
-     return (e1, e2, h) }"
-
-ML_val \<open>
-  val (e1, (e2, h)) = @{code csr_sample} ();
-  writeln ("csr sample run: current edge of v0 = " ^ @{make_string} e1
-           ^ ", after one move = " ^ @{make_string} e2
-           ^ ", still has edge = " ^ @{make_string} h)
-\<close>
-
-text \<open>A \<^emph>\<open>cyclic\<close> flow, acyclified.  Three vertices \<open>0,1,2\<close> and a directed triangle
-      \<open>0 \<rightarrow>\<^sup>0 1 \<rightarrow>\<^sup>1 2 \<rightarrow>\<^sup>2 0\<close> carrying flow \<open>[3, 5, 4]\<close>, all within capacity \<open>10\<close> at unit cost.  The
-      flow's support is the whole cycle, so it is \<^emph>\<open>not\<close> acyclic.  @{const make_acyclic_prog} cancels
-      the cycle --- pushing the bottleneck \<open>3\<close> around it (reducing cost) --- leaving an acyclic flow with
-      the same vertex excesses (expected \<open>[0, 2, 1]\<close>), and reports @{term False} (bounded).\<close>
-
-definition af_cycle_sample :: "(bool \<times> int list) Heap" where
-  "af_cycle_sample = do {
-     cap_arr   \<leftarrow> Array.of_list [10, 10, 10 :: int];
-     cost_arr  \<leftarrow> Array.of_list [1, 1, 1 :: int];
-     fst_arr   \<leftarrow> Array.of_list [0, 1, 2 :: nat];
-     snd_arr   \<leftarrow> Array.of_list [1, 2, 0 :: nat];
-     flow_arr  \<leftarrow> Array.of_list [3, 5, 4 :: int];
-     state_arr \<leftarrow> Array.of_list [Unseen, Unseen, Unseen];
-     oe \<leftarrow> Array.of_list [0, 1, 2 :: nat]; olo \<leftarrow> Array.of_list [0, 1, 2 :: nat];
-     ohi \<leftarrow> Array.of_list [1, 2, 3 :: nat]; ocur \<leftarrow> Array.of_list [0, 1, 2 :: nat];
-     ie \<leftarrow> Array.of_list [2, 0, 1 :: nat]; ilo \<leftarrow> Array.of_list [0, 1, 2 :: nat];
-     ihi \<leftarrow> Array.of_list [1, 2, 3 :: nat]; icur \<leftarrow> Array.of_list [0, 1, 2 :: nat];
-     vl \<leftarrow> Array.of_list [0, 1, 2 :: nat]; pr \<leftarrow> ref (0::nat);
-     vst \<leftarrow> Array.of_list [0, 0, 0 :: nat]; est \<leftarrow> Array.of_list [0, 0, 0 :: nat];
-     dst \<leftarrow> Array.of_list [False, False, False];
-     ubd \<leftarrow> make_acyclic_prog cap_arr cost_arr fst_arr snd_arr flow_arr state_arr
-             (oe, olo, ohi, ocur) (ie, ilo, ihi, icur) (vl, pr) vst est dst;
-     f \<leftarrow> Array.freeze flow_arr;
-     return (ubd, f) }"
-
-ML_val \<open>
-  val (ubd, f) = @{code af_cycle_sample} ();
-  writeln ("cyclic acyclify: unbounded = " ^ @{make_string} ubd
-           ^ ", acyclified flow = " ^ @{make_string} f)
-\<close>
-
-\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow>\<midarrow> *)
 
 section \<open>Correctness of the imperative orchestrator\<close>
 
@@ -1759,30 +1050,29 @@ locale initial_basis_selector_heap =
   for capacity_list :: "('n :: {heap, linordered_idom}) list" and h :: "'n \<Rightarrow> real"
 begin
 
+text \<open>The two CSRs of the input as imperative collections (@{locale csr_edge_input}): the keys are
+      read from the endpoint arrays.\<close>
+
+sublocale outI: csr_edge_input vcount fst_list snd_list "e_src fst_list" src_imp
+  by (intro csr_edge_input.intro out.csr_edge_spec_axioms csr_edge_input_axioms.intro)
+     (use src_imp_rule[of _ fst_list snd_list] in auto)
+
+sublocale incI: csr_edge_input vcount fst_list snd_list "e_tgt fst_list snd_list" tgt_imp
+  by (intro csr_edge_input.intro inc.csr_edge_spec_axioms csr_edge_input_axioms.intro)
+     (use tgt_imp_rule[of _ fst_list snd_list] length_snd length_fst in auto)
+
 subsection \<open>Layer (c): the imperative acyclifier refines @{const make_acyclic}\<close>
 
 text \<open>The concrete assertions relating the functional stores to their imperative arrays.  The flow and
       vertex-state arrays are over-allocated (the flow array carries @{term n} spare artificial-edge
       cells, the state array one spare root cell), so the assertions pad the abstract list with an
-      existential remainder; the graph assertion additionally pins the CSR vertex count to
-      @{term vcount}, which is exactly the information the \<^emph>\<open>unguarded\<close> imperative iterator reads need
-      (a vertex \<open>v \<in> \<V>\<close> satisfies \<open>v < vcount\<close>, which equals \<open>csr_n G\<close>).\<close>
+      existential remainder.  The two edge iterators are the library CSR collections.\<close>
 
 definition flow_assn_m :: "'n list \<Rightarrow> 'n array \<Rightarrow> assn" where
   "flow_assn_m fl ha = (\<exists>\<^sub>A r. ha \<mapsto>\<^sub>a (fl @ r) * \<up>(length r = n))"
 
 definition state_assn_v :: "vertex_state list \<Rightarrow> vertex_state array \<Rightarrow> assn" where
   "state_assn_v st ha = (\<exists>\<^sub>A r. ha \<mapsto>\<^sub>a (st @ r) * \<up>(length r = Suc 0))"
-
-definition graph_assn_c :: "nat edge_csr \<Rightarrow> nat csr_imp \<Rightarrow> assn" where
-  "graph_assn_c C ha = csr_assn C ha * \<up>(csr_n C = vcount)"
-
-text \<open>A remaining region is nonempty exactly when the vertex is in range and its cursor is below its
-      upper bound; this bridges the abstract @{term \<open>csr_remaining C v \<noteq> {}\<close>} premise of the
-      current / move iterator laws to the concrete bounds their imperative reads need.\<close>
-lemma csr_rem_bounds:
-  "csr_remaining C v \<noteq> {} \<Longrightarrow> v < csr_n C \<and> csr_cur C ! v < csr_hi C ! v"
-  by (auto simp: csr_remaining_def csr_seg_rm_def split: if_splits)
 
 lemma vtx_rem_pos:
   assumes "vtx_remaining Vit \<noteq> {}"
@@ -1793,10 +1083,8 @@ proof -
   thus ?thesis by (metis drop_eq_Nil not_le)
 qed
 
-text \<open>The nineteen per-operation Hoare triples that the acyclifier refinement locale assumes, each
-      proved for the concrete arrays.  The flow / state store reads and writes are plain array
-      operations on the padded assertions; the CSR iterator reads use @{thm [source] graph_assn_c_def}
-      to recover the vertex-count bound; the vertex-iterator reads use @{thm [source] vtx_rem_pos}.\<close>
+text \<open>The per-operation Hoare triples of the stores and of the vertex iterator, for the concrete
+      arrays; the edge iterators are discharged by the library rules.\<close>
 
 lemma flow_lookup_rule_c:
   "\<lbrakk>length Fl = m; e \<in> {0..<m}\<rbrakk> \<Longrightarrow>
@@ -1818,38 +1106,6 @@ lemma state_upd_rule_c:
    <state_assn_v St sh> arr_upd sh v q <\<lambda>_. state_assn_v (St[v := q]) sh>"
   unfolding state_assn_v_def arr_upd_def by (sep_auto simp: list_update_append)
 
-lemma csr_has_rule_c:
-  assumes "csr_invar G" "v \<in> original_network.\<V>"
-  shows "<graph_assn_c G gh> csr_has_imp gh v <\<lambda>r. graph_assn_c G gh * \<up>(r = csr_has G v)>"
-proof -
-  have "v < vcount" using assms(2) by (rule V_lt_vcount)
-  thus ?thesis unfolding graph_assn_c_def by (sep_auto heap: csr_has_imp_rule[OF assms(1)])
-qed
-
-lemma csr_reset_rule_c:
-  assumes "csr_invar G" "v \<in> original_network.\<V>"
-  shows "<graph_assn_c G gh> csr_reset_imp gh v <\<lambda>_. graph_assn_c (csr_reset G v) gh>"
-proof -
-  have "v < vcount" using assms(2) by (rule V_lt_vcount)
-  thus ?thesis unfolding graph_assn_c_def by (sep_auto heap: csr_reset_imp_rule[OF assms(1)])
-qed
-
-lemma csr_current_rule_c:
-  assumes "csr_invar G" "v \<in> original_network.\<V>" "csr_remaining G v \<noteq> {}"
-  shows "<graph_assn_c G gh> csr_current_imp gh v <\<lambda>r. graph_assn_c G gh * \<up>(r = csr_current G v)>"
-proof -
-  have b: "v < csr_n G" "csr_cur G ! v < csr_hi G ! v" using csr_rem_bounds[OF assms(3)] by auto
-  show ?thesis unfolding graph_assn_c_def by (sep_auto heap: csr_current_imp_rule[OF assms(1) b])
-qed
-
-lemma csr_move_rule_c:
-  assumes "csr_invar G" "v \<in> original_network.\<V>" "csr_remaining G v \<noteq> {}"
-  shows "<graph_assn_c G gh> csr_move_imp gh v <\<lambda>_. graph_assn_c (csr_move G v) gh>"
-proof -
-  have b: "v < csr_n G" "csr_cur G ! v < csr_hi G ! v" using csr_rem_bounds[OF assms(3)] by auto
-  show ?thesis unfolding graph_assn_c_def by (sep_auto heap: csr_move_imp_rule[OF assms(1) b])
-qed
-
 lemma vtx_has_rule_c:
   "vtx_invar Vit \<Longrightarrow> <vtx_assn Vit vh> vtx_has_imp vh <\<lambda>r. vtx_assn Vit vh * \<up>(r = vtx_has Vit)>"
   by (sep_auto heap: vtx_has_imp_rule)
@@ -1864,15 +1120,14 @@ lemma vtx_current_rule_c:
   using vtx_rem_pos[OF assms(2)] by (sep_auto heap: vtx_current_imp_rule)
 
 text \<open>\<^emph>\<open>Layer (c) target.\<close>  Interpreting the acyclifier refinement proof locale at the concrete
-      CSR / array / vertex operations turns @{thm [source] acyclic_flow_impl_refine_proof.make_acyclic_imp_rule}
-      into a Hoare triple for the executable @{const make_acyclic_prog}: it leaves the flow array holding
+      operations turns @{thm [source] acyclic_flow_impl_refine_proof.make_acyclic_imp_rule} into a
+      Hoare triple for the executable @{const make_acyclic_prog}: it leaves the flow array holding
       the functional @{const make_acyclic} result and returns @{term True} exactly on the unbounded
-      (@{term None}) verdict.  The functional @{locale acyclic_flow_impl} half of the locale is discharged
-      automatically from the standing sublocale; only the nineteen imperative refinement triples remain,
-      supplied by the lemmas above and the four per-edge reads below.\<close>
+      (@{term None}) verdict; the two CSR collections are returned with some cursors.\<close>
 lemma make_acyclic_prog_rule:
   fixes cap_arr cost_arr :: "'n array" and fst_arr snd_arr :: "nat array"
-    and fh :: "'n array" and sh :: "vertex_state array" and oh ih :: "nat csr_imp"
+    and fh :: "'n array" and sh :: "vertex_state array"
+    and oh ih :: "nat array \<times> nat array \<times> nat array"
     and vih :: "nat vtx_imp" and vst est :: "nat array" and dst :: "bool array"
     and cl co :: "'n list" and fla sla :: "nat list" and f0 :: "'n list"
     and vs0 es0 :: "nat list" and ds0 :: "bool list"
@@ -1884,21 +1139,20 @@ lemma make_acyclic_prog_rule:
       and cvs: "card original_network.\<V> \<le> length vs0"
       and ces: "card original_network.\<V> \<le> length es0"
       and cds: "card original_network.\<V> \<le> length ds0"
-  shows "<flow_assn_m f0 fh * state_assn_v (replicate vcount Unseen) sh * graph_assn_c out_csr oh *
-          graph_assn_c in_csr ih * vtx_assn \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> vih *
+  shows "<flow_assn_m f0 fh * state_assn_v (replicate vcount Unseen) sh *
+          outI.graph.csr_assn ((!) out.inp.B_spec) oh * incI.graph.csr_assn ((!) inc.inp.B_spec) ih *
+          vtx_assn \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> vih *
           (cap_arr \<mapsto>\<^sub>a cl * cost_arr \<mapsto>\<^sub>a co * fst_arr \<mapsto>\<^sub>a fla * snd_arr \<mapsto>\<^sub>a sla) *
           vst \<mapsto>\<^sub>a vs0 * est \<mapsto>\<^sub>a es0 * dst \<mapsto>\<^sub>a ds0>
          make_acyclic_prog cap_arr cost_arr fst_arr snd_arr fh sh oh ih vih vst est dst
-        <\<lambda>r. \<exists>\<^sub>A f' C_o C_i. flow_assn_m f' fh *
-             graph_assn_c C_o oh * graph_assn_c C_i ih *
+        <\<lambda>r. \<exists>\<^sub>A f' c_o c_i. flow_assn_m f' fh *
+             outI.graph.csr_assn c_o oh * incI.graph.csr_assn c_i ih *
              (cap_arr \<mapsto>\<^sub>a cl * cost_arr \<mapsto>\<^sub>a co * fst_arr \<mapsto>\<^sub>a fla * snd_arr \<mapsto>\<^sub>a sla) *
              (\<exists>\<^sub>A vl el dl. vst \<mapsto>\<^sub>a vl * est \<mapsto>\<^sub>a el * dst \<mapsto>\<^sub>a dl *
                 \<up>(card original_network.\<V> \<le> length vl \<and> card original_network.\<V> \<le> length el \<and> card original_network.\<V> \<le> length dl \<and>
                   length vl = length vs0 \<and> length el = length es0 \<and> length dl = length ds0)) *
              true *
-             \<up>(csr_edges C_o = csr_edges out_csr \<and> csr_lo C_o = csr_lo out_csr \<and> csr_hi C_o = csr_hi out_csr \<and> csr_n C_o = vcount \<and>
-               csr_edges C_i = csr_edges in_csr \<and> csr_lo C_i = csr_lo in_csr \<and> csr_hi C_i = csr_hi in_csr \<and> csr_n C_i = vcount \<and>
-               (r \<longleftrightarrow> make_acyclic f0 = None) \<and> (make_acyclic f0 = None \<or> make_acyclic f0 = Some f'))>"
+             \<up>((r \<longleftrightarrow> make_acyclic f0 = None) \<and> (make_acyclic f0 = None \<or> make_acyclic f0 = Some f'))>"
 proof -
   have capr: "e \<in> {0..<m} \<Longrightarrow> <cap_arr \<mapsto>\<^sub>a cl * cost_arr \<mapsto>\<^sub>a co * fst_arr \<mapsto>\<^sub>a fla * snd_arr \<mapsto>\<^sub>a sla>
       Array.nth cap_arr e
@@ -1923,18 +1177,20 @@ proof -
       and create_edge = "\<lambda>u v. m + prod_encode (u, v)"
       and \<u> = "\<lambda>e. if e < m then (if capacity_list ! e = - 1 then \<infinity> else ereal (h (capacity_list ! e))) else \<infinity>"
       and \<c> = "\<lambda>e. h (cost_list ! e)"
-      and out_invar = csr_invar and out_abstract = csr_abstract and out_current = csr_current
-      and out_has = csr_has and out_iterated = csr_iterated and out_remaining = csr_remaining
-      and out_move = csr_move and out_reset = csr_reset
-      and in_invar = csr_invar and in_abstract = csr_abstract and in_current = csr_current
-      and in_has = csr_has and in_iterated = csr_iterated and in_remaining = csr_remaining
-      and in_move = csr_move and in_reset = csr_reset
+      and out_invar = out.graph.csr_invar and out_abstract = out.graph.csr_abstract
+      and out_current = out.graph.csr_current and out_has = out.graph.csr_has
+      and out_iterated = out.graph.csr_iterated and out_remaining = out.graph.csr_remaining
+      and out_move = out.graph.csr_move and out_reset = out.graph.csr_reset
+      and in_invar = inc.graph.csr_invar and in_abstract = inc.graph.csr_abstract
+      and in_current = inc.graph.csr_current and in_has = inc.graph.csr_has
+      and in_iterated = inc.graph.csr_iterated and in_remaining = inc.graph.csr_remaining
+      and in_move = inc.graph.csr_move and in_reset = inc.graph.csr_reset
       and flow_invar = "\<lambda>xs. length xs = m" and flow_upd = list_update and flow_lookup = nth
       and st_invar = "\<lambda>xs. \<forall>v\<in>original_network.\<V>. v < length xs" and st_upd = list_update and st_lookup = nth
       and vit_invar = vtx_invar and vit_abstract = vtx_abstract and current_vertex = vtx_current
       and has_vertex = vtx_has and vit_iterated = vtx_iterated and vit_remaining = vtx_remaining
       and move_on_vertex = vtx_move
-      and out_arr = out_csr and in_arr = in_csr
+      and out_arr = "(!) out.inp.B_spec" and in_arr = "(!) inc.inp.B_spec"
       and all_vertices = "\<lparr> vi_list = edged_vs_list, vi_pos = 0 \<rparr>"
       and cap = "\<lambda>e. capacity_list ! e" and cost = "\<lambda>e. cost_list ! e" and h = "h :: 'n \<Rightarrow> real"
       and state_init = "replicate vcount Unseen"
@@ -1950,7 +1206,7 @@ proof -
       and cap_imp = "\<lambda>e. Array.nth cap_arr e" and cost_imp = "\<lambda>e. Array.nth cost_arr e"
       and fst_exec_imp = "\<lambda>e. Array.nth fst_arr e" and snd_exec_imp = "\<lambda>e. Array.nth snd_arr e"
       and flow_assn = flow_assn_m and state_assn = state_assn_v
-      and graph_assn = graph_assn_c and vit_assn = vtx_assn
+      and out_assn = outI.graph.csr_assn and in_assn = incI.graph.csr_assn and vit_assn = vtx_assn
       and rd = "cap_arr \<mapsto>\<^sub>a cl * cost_arr \<mapsto>\<^sub>a co * fst_arr \<mapsto>\<^sub>a fla * snd_arr \<mapsto>\<^sub>a sla"
       and Lvst = "length vs0" and Lest = "length es0" and Ldst = "length ds0"
     apply intro_locales
@@ -1959,14 +1215,14 @@ proof -
     apply (rule flow_upd_rule_c; assumption)
     apply (rule state_lookup_rule_c; assumption)
     apply (rule state_upd_rule_c; assumption)
-    apply (rule csr_has_rule_c; assumption)
-    apply (rule csr_current_rule_c; assumption)
-    apply (rule csr_move_rule_c; assumption)
-    apply (rule csr_reset_rule_c; assumption)
-    apply (rule csr_has_rule_c; assumption)
-    apply (rule csr_current_rule_c; assumption)
-    apply (rule csr_move_rule_c; assumption)
-    apply (rule csr_reset_rule_c; assumption)
+    apply (rule outI.graph.csr_imp.idx_has_rule; simp add: verts_V)
+    apply (rule outI.graph.csr_imp.idx_current_rule; simp add: verts_V)
+    apply (rule outI.graph.csr_imp.idx_move_rule; simp add: verts_V)
+    apply (rule outI.graph.csr_imp.idx_reset_rule; simp add: verts_V)
+    apply (rule incI.graph.csr_imp.idx_has_rule; simp add: verts_V)
+    apply (rule incI.graph.csr_imp.idx_current_rule; simp add: verts_V)
+    apply (rule incI.graph.csr_imp.idx_move_rule; simp add: verts_V)
+    apply (rule incI.graph.csr_imp.idx_reset_rule; simp add: verts_V)
     apply (rule vtx_has_rule_c; assumption)
     apply (rule vtx_current_rule_c; assumption)
     apply (rule vtx_move_rule_c; assumption)
@@ -1979,25 +1235,13 @@ proof -
     by (simp add: vtx_invar_def distinct_edged_vs_list)
   have vab: "vtx_abstract \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> \<subseteq> original_network.\<V>"
     by (simp add: vtx_abstract_def V_orig_eq_edged)
-  have cno: "csr_n out_csr = vcount" by (simp add: csr_n_def out_csr_cur psums_length)
-  have cni: "csr_n in_csr = vcount" by (simp add: csr_n_def in_csr_cur psums_length)
   show ?thesis
     unfolding make_acyclic_prog_def
-    apply (rule ht_cons_post_prec[OF acycR.make_acyclic_imp_rule[OF multigraph_inv_csr ff feas vv vab cvs ces cds refl refl refl]])
-    apply (sep_auto simp:
-      acycR.AF_outer_out_result_proj[where proj = csr_edges, OF csr_move_selectors(1) csr_reset_selectors(1) multigraph_inv_csr ff feas vv vab]
-      acycR.AF_outer_out_result_proj[where proj = csr_lo, OF csr_move_selectors(2) csr_reset_selectors(2) multigraph_inv_csr ff feas vv vab]
-      acycR.AF_outer_out_result_proj[where proj = csr_hi, OF csr_move_selectors(3) csr_reset_selectors(3) multigraph_inv_csr ff feas vv vab]
-      acycR.AF_outer_out_result_proj[where proj = csr_n, OF csr_move_selectors(4) csr_reset_selectors(4) multigraph_inv_csr ff feas vv vab]
-      acycR.AF_outer_in_result_proj[where proj = csr_edges, OF csr_move_selectors(1) csr_reset_selectors(1) multigraph_inv_csr ff feas vv vab]
-      acycR.AF_outer_in_result_proj[where proj = csr_lo, OF csr_move_selectors(2) csr_reset_selectors(2) multigraph_inv_csr ff feas vv vab]
-      acycR.AF_outer_in_result_proj[where proj = csr_hi, OF csr_move_selectors(3) csr_reset_selectors(3) multigraph_inv_csr ff feas vv vab]
-      acycR.AF_outer_in_result_proj[where proj = csr_n, OF csr_move_selectors(4) csr_reset_selectors(4) multigraph_inv_csr ff feas vv vab]
-      cno cni)
-    done
+    by (rule ht_cons_post_prec[OF acycR.make_acyclic_imp_rule[OF multigraph_inv_csr ff feas vv vab cvs ces cds refl refl refl]])
+       sep_auto
 qed
 
-subsection \<open>Layer (d): the in-place imbalance transform refines @{const imbalance}\<close>
+subsection \<open>Layer (d): Pass A and the in-place imbalance transform\<close>
 
 text \<open>Running @{const imbalance_imp} over \<open>[v..<vcount]\<close> adds each vertex's balance-array entry to its
       excess cell, exactly the functional @{const imbalance} fold.  The balance array is a parameter
@@ -2031,226 +1275,172 @@ next
     done
 qed
 
+text \<open>A range that holds a proper subset of its block's entries has room for one more.\<close>
+
+lemma ranges_room:
+  assumes R: "csr_ranges vcount {..<vcount} Bl ((!) Hl) E" and x: "x < vcount"
+    and ab: "csr_ranges.csr_abstract Bl ((!) Hl) E c x \<subset> A"
+    and A: "finite A" "card A = Bl ! Suc x - Bl ! x"
+  shows "Hl ! x < length E"
+proof -
+  interpret R: csr_ranges vcount "{..<vcount}" Bl "(!) Hl" E by (rule R)
+  have "card (R.csr_abstract c x) < card A" by (rule psubset_card_mono[OF A(1) ab])
+  hence "Hl ! x - Bl ! x < Bl ! Suc x - Bl ! x" using R.csr_card_abstract[OF x] A(2) by simp
+  thus ?thesis using R.H_lo[OF x] R.B_bound[OF x] by linarith
+qed
+
+text \<open>Pass A refines the functional @{const passA}: the step at edge @{term e} reads its endpoints,
+      flow and capacity, writes its tag and the excess, and appends a free edge to the two free
+      ranges (@{const csr_append_imp}).  The flow, capacity and endpoint arrays agree with the
+      functional lists on the real edges; the edge-state array may be longer.\<close>
+
 lemma passA_imp_rule:
   fixes fl_arr cap_arr :: "'n array" and fst_arr snd_arr :: "nat array"
     and es_arr :: "edge_tag array" and exc_arr :: "'n array"
-    and oe_arr oc_arr ie_arr ic_arr :: "nat array"
+    and oe_arr oh_arr ie_arr ih_arr :: "nat array"
     and fla cla :: "'n list" and flla slla :: "nat list"
-    and e :: nat and est :: "edge_tag list" and exc :: "'n list"
-    and oe oc ie ic :: "nat list"
   assumes e_le: "e \<le> m"
-    and fla_len: "m \<le> length fla" and cla_len: "m \<le> length cla"
-    and flla_len: "m \<le> length flla" and slla_len: "m \<le> length slla"
-    and cap_eq: "\<And>i. i < m \<Longrightarrow> cla ! i = capacity_list ! i"
-    and fst_eq: "\<And>i. i < m \<Longrightarrow> flla ! i = fst_list ! i"
-    and snd_eq: "\<And>i. i < m \<Longrightarrow> slla ! i = snd_list ! i"
-    and s_eq: "(est, exc, oe, oc, ie, ic) = fold (passA_step fla) [0..<e]
-                 (replicate m InL, replicate (Suc vcount) 0, csr_edges out_csr, out_lo, csr_edges in_csr, in_lo)"
+    and fla_len: "m \<le> length fla" and fla_eq: "\<And>i. i < m \<Longrightarrow> fla ! i = fl ! i"
+    and cla_len: "m \<le> length cla" and cap_eq: "\<And>i. i < m \<Longrightarrow> cla ! i = capacity_list ! i"
+    and flla_len: "m \<le> length flla" and fst_eq: "\<And>i. i < m \<Longrightarrow> flla ! i = fst_list ! i"
+    and slla_len: "m \<le> length slla" and snd_eq: "\<And>i. i < m \<Longrightarrow> slla ! i = snd_list ! i"
+    and s_eq: "(est, exc, fo, fi) = fold (passA_step fl) [0..<e]
+                 (replicate m InL, replicate (Suc vcount) 0, (out_lo, out.inp.E_spec), (in_lo, inc.inp.E_spec))"
   shows "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-          es_arr \<mapsto>\<^sub>a est * exc_arr \<mapsto>\<^sub>a exc * oe_arr \<mapsto>\<^sub>a oe * oc_arr \<mapsto>\<^sub>a oc * ie_arr \<mapsto>\<^sub>a ie * ic_arr \<mapsto>\<^sub>a ic>
-         passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr e m
+          es_arr \<mapsto>\<^sub>a (est @ esr) * exc_arr \<mapsto>\<^sub>a exc *
+          oe_arr \<mapsto>\<^sub>a snd fo * oh_arr \<mapsto>\<^sub>a fst fo * ie_arr \<mapsto>\<^sub>a snd fi * ih_arr \<mapsto>\<^sub>a fst fi>
+         passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oh_arr ie_arr ih_arr e m
         <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-             es_arr \<mapsto>\<^sub>a fst (passA fla) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) *
-             oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) *
-             ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-proof -
-  have sized_init: "sized (replicate m InL, replicate (Suc vcount) (0::'n), csr_edges out_csr, out_lo, csr_edges in_csr, in_lo)"
-    by (simp add: sized_def length_out_lo length_in_lo out_csr_eq in_csr_eq)
-  have sized_fold: "sized s0 \<Longrightarrow> sized (fold (passA_step fla) xs s0)" for s0 xs
-  proof (induct xs arbitrary: s0)
-    case Nil thus ?case by simp
+             es_arr \<mapsto>\<^sub>a (fst (passA fl) @ esr) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fl)) *
+             oe_arr \<mapsto>\<^sub>a snd (free_out fl) * oh_arr \<mapsto>\<^sub>a fst (free_out fl) *
+             ie_arr \<mapsto>\<^sub>a snd (free_in fl) * ih_arr \<mapsto>\<^sub>a fst (free_in fl)>"
+  using e_le s_eq
+proof (induction "m - e" arbitrary: e est exc fo fi)
+  case 0
+  have em: "e = m" using "0.hyps" "0.prems"(1) by simp
+  have s0: "(est, exc, fo, fi) = passA fl" using "0.prems"(2) em by (simp add: passA_def)
+  have fo: "fo = free_out fl" and fi: "fi = free_in fl"
+    using s0 by (cases "passA fl", simp add: free_out_def free_in_def)+
+  show ?case unfolding em fo fi by (subst passA_imp.simps) (sep_auto simp: s0[symmetric])
+next
+  case (Suc d)
+  define init :: "edge_tag list \<times> 'n list \<times> (nat list \<times> nat list) \<times> (nat list \<times> nat list)"
+    where "init = (replicate m InL, replicate (Suc vcount) 0, (out_lo, out.inp.E_spec), (in_lo, inc.inp.E_spec))"
+  have em: "e < m" using Suc.hyps(2) Suc.prems(1) by simp
+  have seq: "(est, exc, fo, fi) = fold (passA_step fl) [0..<e] init" using Suc.prems(2) by (simp add: init_def)
+  have sz: "sized (fold (passA_step fl) xs init)" for xs
+  proof (induct xs rule: rev_induct)
+    case Nil show ?case by (simp add: init_def sized_def length_out_lo length_in_lo length_out_E length_in_E)
   next
-    case (Cons a xs) thus ?case by (simp add: passA_step_sized)
+    case (snoc x xs) thus ?case by (simp add: passA_step_sized)
   qed
-  from e_le s_eq show ?thesis
-  proof (induction "m - e" arbitrary: e est exc oe oc ie ic)
-    case 0
-    have em: "e = m" using "0.hyps" "0.prems"(1) by simp
-    have s0: "(est, exc, oe, oc, ie, ic) = passA fla" using "0.prems"(2) em by (simp add: passA_def)
-    show ?case unfolding em by (subst passA_imp.simps) (sep_auto simp: s0[symmetric])
+  have lens: "length est = m" "length exc = Suc vcount" "length (fst fo) = vcount" "length (fst fi) = vcount"
+    using sz[of "[0..<e]"] seq[symmetric] by (simp_all add: sized_def)
+  have fo_eq: "fo = fold (\<lambda>e p. if classify fl e = InTree then csr_append (fst_list ! e) e p else p) [0..<e]
+                      (out_lo, out.inp.E_spec)"
+    using arg_cong[OF seq, of "\<lambda>s. fst (snd (snd s))"] by (simp add: passA_fold_fo init_def)
+  have fi_eq: "fi = fold (\<lambda>e p. if classify fl e = InTree then csr_append (snd_list ! e) e p else p) [0..<e]
+                      (in_lo, inc.inp.E_spec)"
+    using arg_cong[OF seq, of "\<lambda>s. snd (snd (snd s))"] by (simp add: passA_fold_fi init_def)
+  note OR = out_ranges_fold[OF less_imp_le[OF em], of fl, folded fo_eq]
+  note IR = in_ranges_fold[OF less_imp_le[OF em], of fl, folded fi_eq]
+  have xvc: "fst_list ! e < vcount" and yvc: "snd_list ! e < vcount"
+    using em by (simp_all add: fst_list_lt snd_list_lt)
+  have room_o: "fst fo ! (fst_list ! e) < length (snd fo)"
+  proof (rule ranges_room[OF conjunct1[OF OR] xvc])
+    show "csr_ranges.csr_abstract out.inp.B_spec ((!) (fst fo)) (snd fo) undefined (fst_list ! e)
+          \<subset> {e'. e' < m \<and> fst_list ! e' = fst_list ! e}"
+      using OR xvc em by auto
+    show "card {e'. e' < m \<and> fst_list ! e' = fst_list ! e} = out.inp.B_spec ! Suc (fst_list ! e) - out.inp.B_spec ! (fst_list ! e)"
+      using out.graph.csr_card_abstract[OF xvc, of undefined] out_block[OF xvc, of undefined] by simp
+  qed simp
+  have room_i: "fst fi ! (snd_list ! e) < length (snd fi)"
+  proof (rule ranges_room[OF conjunct1[OF IR] yvc])
+    show "csr_ranges.csr_abstract inc.inp.B_spec ((!) (fst fi)) (snd fi) undefined (snd_list ! e)
+          \<subset> {e'. e' < m \<and> snd_list ! e' = snd_list ! e}"
+      using IR yvc em by auto
+    show "card {e'. e' < m \<and> snd_list ! e' = snd_list ! e} = inc.inp.B_spec ! Suc (snd_list ! e) - inc.inp.B_spec ! (snd_list ! e)"
+      using inc.graph.csr_card_abstract[OF yvc, of undefined] in_block[OF yvc, of undefined] by simp
+  qed simp
+  define s' where "s' = passA_step fl e (est, exc, fo, fi)"
+  have dse: "d = m - Suc e" using Suc.hyps(2) em by simp
+  have s'eq: "(fst s', fst (snd s'), fst (snd (snd s')), snd (snd (snd s'))) =
+              fold (passA_step fl) [0..<Suc e]
+                (replicate m InL, replicate (Suc vcount) 0, (out_lo, out.inp.E_spec), (in_lo, inc.inp.E_spec))"
+    using Suc.prems(2) by (simp add: s'_def)
+  note step = Suc.hyps(1)[OF dse Suc_leI[OF em] s'eq]
+  have xe: "flla ! e = fst_list ! e" and ye: "slla ! e = snd_list ! e"
+    and fe: "fla ! e = fl ! e" and ue: "cla ! e = capacity_list ! e"
+    using em fst_eq snd_eq fla_eq cap_eq by auto
+  have st: "(if fla ! e = 0 then InL else if cla ! e \<noteq> - 1 \<and> fla ! e = cla ! e then InU else InTree) = classify fl e"
+    by (simp add: classify_def fe ue)
+  have es': "(est @ esr)[e := classify fl e] = fst s' @ esr"
+    using lens(1) em by (simp add: s'_def passA_step_fst list_update_append)
+  have exc': "fst (snd s') = exc[slla ! e := exc ! (slla ! e) + fla ! e,
+                flla ! e := exc[slla ! e := exc ! (slla ! e) + fla ! e] ! (flla ! e) - fla ! e]"
+    by (simp add: s'_def passA_step_exc Let_def xe ye fe)
+  have fo': "fst (snd (snd s')) = (if classify fl e = InTree then csr_append (flla ! e) e fo else fo)"
+    by (simp add: s'_def passA_step_fo xe)
+  have fi': "snd (snd (snd s')) = (if classify fl e = InTree then csr_append (slla ! e) e fi else fi)"
+    by (simp add: s'_def passA_step_fi ye)
+  have eb: "e < length flla" "e < length slla" "e < length fla" "e < length cla" "e < length est + length esr"
+    using em flla_len slla_len fla_len cla_len lens(1) by auto
+  have xb: "flla ! e < length exc" "slla ! e < length exc" "flla ! e < length (fst fo)" "slla ! e < length (fst fi)"
+    using xvc yvc lens xe ye by auto
+  have nme: "\<not> m \<le> e" using em by simp
+  obtain Ho Eo Hi Ei where fo_p: "fo = (Ho, Eo)" and fi_p: "fi = (Hi, Ei)" by (cases fo, cases fi)
+  have xb': "flla ! e < length Ho" "slla ! e < length Hi" using xb fo_p fi_p by simp_all
+  show ?case
+  proof (cases "classify fl e = InTree")
+    case True
+    note stepT = step[unfolded es'[symmetric] exc' fo' fi' if_P[OF True], unfolded fo_p fi_p True]
+    have rb: "Ho ! (flla ! e) < length Eo" "Hi ! (slla ! e) < length Ei"
+      using room_o room_i xe ye fo_p fi_p by simp_all
+    show ?thesis
+      unfolding fo_p fi_p
+      apply (subst passA_imp.simps)
+      apply (simp only: nme if_False Let_def)
+      apply (sep_auto heap: csr_append_imp_rule stepT simp: eb xb xb' rb st True)
+      done
   next
-    case (Suc d)
-    have em: "e < m" using Suc.hyps(2) Suc.prems(1) by simp
-    have sized_s: "sized (est, exc, oe, oc, ie, ic)" using Suc.prems(2) sized_fold[OF sized_init] by simp
-    have lens: "length est = m" "length exc = Suc vcount" "length oe = m" "length oc = vcount" "length ie = m" "length ic = vcount"
-      using sized_s by (auto simp: sized_def)
-    have xe: "flla ! e = fst_list ! e" using fst_eq em by simp
-    have ye: "slla ! e = snd_list ! e" using snd_eq em by simp
-    have ue: "cla ! e = capacity_list ! e" using cap_eq em by simp
-    have xvc: "fst_list ! e < vcount" using fst_list_nth_vertex[OF em] vs_less_vcount by simp
-    have yvc: "snd_list ! e < vcount" using snd_list_nth_vertex[OF em] vs_less_vcount by simp
-    have oc_val: "oc ! (fst_list ! e) = out_lo ! (fst_list ! e) + length (filter (\<lambda>e'. classify fla e' = InTree \<and> fst_list ! e' = fst_list ! e) [0..<e])"
-    proof -
-      have "oc = fst (snd (snd (snd (fold (passA_step fla) [0..<e] (replicate m InL, replicate (Suc vcount) 0, csr_edges out_csr, out_lo, csr_edges in_csr, in_lo)))))"
-        using Suc.prems(2)[symmetric] by simp
-      thus ?thesis using passA_fold_oc_count[OF sized_init xvc, where fl=fla and xs="[0..<e]"] by simp
-    qed
-    have ic_val: "ic ! (snd_list ! e) = in_lo ! (snd_list ! e) + length (filter (\<lambda>e'. classify fla e' = InTree \<and> snd_list ! e' = snd_list ! e) [0..<e])"
-    proof -
-      have "ic = snd (snd (snd (snd (snd (fold (passA_step fla) [0..<e] (replicate m InL, replicate (Suc vcount) 0, csr_edges out_csr, out_lo, csr_edges in_csr, in_lo))))))"
-        using Suc.prems(2)[symmetric] by simp
-      thus ?thesis using passA_fold_ic_count[OF sized_init yvc, where fl=fla and xs="[0..<e]"] by simp
-    qed
-    have oc_lt: "classify fla e = InTree \<Longrightarrow> oc ! (fst_list ! e) < m"
-    proof -
-      assume it: "classify fla e = InTree"
-      let ?P = "\<lambda>e'. classify fla e' = InTree \<and> fst_list ! e' = fst_list ! e"
-      have split: "[0..<m] = [0..<e] @ [e..<m]" using em by (simp add: upt_append)
-      have ne: "filter ?P [e..<m] \<noteq> []" using it em by (simp add: filter_empty_conv) (metis atLeastLessThan_iff le_refl)
-      have "length (filter ?P [0..<e]) < length (filter ?P [0..<m])" using split ne by (simp add: filter_append)
-      hence "oc ! (fst_list ! e) < out_lo ! (fst_list ! e) + length (filter ?P [0..<m])" using oc_val by simp
-      also have "... = free_out_hi fla ! (fst_list ! e)" using free_out_hi_count[OF xvc] by simp
-      also have "... \<le> m" using free_out_hi_le_m[OF xvc] .
-      finally show "oc ! (fst_list ! e) < m" .
-    qed
-    have ic_lt: "classify fla e = InTree \<Longrightarrow> ic ! (snd_list ! e) < m"
-    proof -
-      assume it: "classify fla e = InTree"
-      let ?Q = "\<lambda>e'. classify fla e' = InTree \<and> snd_list ! e' = snd_list ! e"
-      have split: "[0..<m] = [0..<e] @ [e..<m]" using em by (simp add: upt_append)
-      have ne: "filter ?Q [e..<m] \<noteq> []" using it em by (simp add: filter_empty_conv) (metis atLeastLessThan_iff le_refl)
-      have "length (filter ?Q [0..<e]) < length (filter ?Q [0..<m])" using split ne by (simp add: filter_append)
-      hence "ic ! (snd_list ! e) < in_lo ! (snd_list ! e) + length (filter ?Q [0..<m])" using ic_val by simp
-      also have "... = free_in_hi fla ! (snd_list ! e)" using free_in_hi_count[OF yvc] by simp
-      also have "... \<le> m" using free_in_hi_le_m[OF yvc] .
-      finally show "ic ! (snd_list ! e) < m" .
-    qed
-    have dse: "d = m - Suc e" using Suc.hyps(2) em by simp
-    have sse: "Suc e \<le> m" using em by simp
-    have step: "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-        es_arr \<mapsto>\<^sub>a fst (passA_step fla e (est, exc, oe, oc, ie, ic)) *
-        exc_arr \<mapsto>\<^sub>a fst (snd (passA_step fla e (est, exc, oe, oc, ie, ic))) *
-        oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))) *
-        oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic))))) *
-        ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) *
-        ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic))))))>
-       passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr (Suc e) m
-      <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-        es_arr \<mapsto>\<^sub>a fst (passA fla) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) *
-        oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) *
-        ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-      by (rule Suc.hyps(1)[OF dse sse]) (simp add: Suc.prems(2))
-    have nme: "\<not> m \<le> e" using em by simp
-    have eb: "e < length flla" "e < length slla" "e < length fla" "e < length cla" "e < length est"
-      using em flla_len slla_len fla_len cla_len lens(1) by auto
-    show ?case
-    proof (cases "classify fla e = InTree")
-      case True
-      have st_val: "(if fla ! e = 0 then InL else if cla ! e \<noteq> - 1 \<and> fla ! e = cla ! e then InU else InTree) = InTree"
-      proof -
-        have "(if fla ! e = 0 then InL else if cla ! e \<noteq> - 1 \<and> fla ! e = cla ! e then InU else InTree) = classify fla e"
-          using ue by (simp add: classify_def)
-        thus ?thesis using True by simp
-      qed
-      have ps_es: "fst (passA_step fla e (est, exc, oe, oc, ie, ic)) = est[e := InTree]"
-        using True by (simp add: passA_step_fst)
-      have ps_oe: "fst (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))) = oe[oc ! (fst_list ! e) := e]"
-        using True by (simp add: passA_step_oe)
-      have ps_oc: "fst (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic))))) = oc[fst_list ! e := Suc (oc ! (fst_list ! e))]"
-        using True by (simp add: passA_step_oc)
-      have ps_ie: "fst (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) = ie[ic ! (snd_list ! e) := e]"
-        using True by (simp add: passA_step_ie)
-      have ps_ic: "snd (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) = ic[snd_list ! e := Suc (ic ! (snd_list ! e))]"
-        using True by (simp add: passA_step_ic)
-      have ps_exc: "fst (snd (passA_step fla e (est, exc, oe, oc, ie, ic))) =
-          exc[snd_list ! e := exc ! (snd_list ! e) + fla ! e,
-              fst_list ! e := exc[snd_list ! e := exc ! (snd_list ! e) + fla ! e] ! (fst_list ! e) - fla ! e]"
-        by (simp add: passA_step_exc Let_def)
-      have step': "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-          es_arr \<mapsto>\<^sub>a est[e := InTree] *
-          exc_arr \<mapsto>\<^sub>a exc[snd_list ! e := exc ! (snd_list ! e) + fla ! e,
-              fst_list ! e := exc[snd_list ! e := exc ! (snd_list ! e) + fla ! e] ! (fst_list ! e) - fla ! e] *
-          oe_arr \<mapsto>\<^sub>a oe[oc ! (fst_list ! e) := e] *
-          oc_arr \<mapsto>\<^sub>a oc[fst_list ! e := Suc (oc ! (fst_list ! e))] *
-          ie_arr \<mapsto>\<^sub>a ie[ic ! (snd_list ! e) := e] *
-          ic_arr \<mapsto>\<^sub>a ic[snd_list ! e := Suc (ic ! (snd_list ! e))]>
-         passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr (Suc e) m
-        <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-          es_arr \<mapsto>\<^sub>a fst (passA fla) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) *
-          oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) *
-          ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-        using step by (simp only: ps_es ps_exc ps_oe ps_oc ps_ie ps_ic)
-      have step'': "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-          es_arr \<mapsto>\<^sub>a est[e := InTree] *
-          exc_arr \<mapsto>\<^sub>a exc[slla ! e := exc ! (slla ! e) + fla ! e,
-              flla ! e := exc[slla ! e := exc ! (slla ! e) + fla ! e] ! (flla ! e) - fla ! e] *
-          oe_arr \<mapsto>\<^sub>a oe[oc ! (flla ! e) := e] *
-          oc_arr \<mapsto>\<^sub>a oc[flla ! e := Suc (oc ! (flla ! e))] *
-          ie_arr \<mapsto>\<^sub>a ie[ic ! (slla ! e) := e] *
-          ic_arr \<mapsto>\<^sub>a ic[slla ! e := Suc (ic ! (slla ! e))]>
-         passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr (Suc e) m
-        <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-          es_arr \<mapsto>\<^sub>a fst (passA fla) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) *
-          oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) *
-          ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-        using step' by (simp only: xe[symmetric] ye[symmetric])
-      have exlv: "slla ! e < Suc vcount" "flla ! e < Suc vcount" using yvc xvc ye xe by simp_all
-      have vbv: "flla ! e < vcount" "slla ! e < vcount" using xvc yvc xe ye by simp_all
-      have exl_f: "flla ! e < length exc" "slla ! e < length exc" using xvc yvc lens(2) xe ye by simp_all
-      have vb_f: "flla ! e < length oc" "slla ! e < length ic" using xvc yvc lens(4) lens(6) xe ye by simp_all
-      have scb_f: "oc ! (flla ! e) < length oe" "ic ! (slla ! e) < length ie"
-        using oc_lt ic_lt lens(3) lens(5) True xe ye by simp_all
-      have scb_v: "oc ! (flla ! e) < m" "ic ! (slla ! e) < m"
-        using scb_f lens(3) lens(5) xe ye by simp_all
-      show ?thesis
-        apply (subst passA_imp.simps)
-        apply (simp only: nme if_False Let_def)
-        apply (sep_auto heap: step'' simp: em st_val eb exlv exl_f vb_f vbv scb_f scb_v lens)
-        done
-    next
-      case False
-      have st_valF: "(if fla ! e = 0 then InL else if cla ! e \<noteq> - 1 \<and> fla ! e = cla ! e then InU else InTree) = classify fla e"
-        using ue by (simp add: classify_def)
-      have psF: "fst (passA_step fla e (est, exc, oe, oc, ie, ic)) = est[e := classify fla e]"
-               "fst (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))) = oe"
-               "fst (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic))))) = oc"
-               "fst (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) = ie"
-               "snd (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) = ic"
-        using False by (simp_all add: passA_step_fst passA_step_oe passA_step_oc passA_step_ie passA_step_ic)
-      have psF_exc: "fst (snd (passA_step fla e (est, exc, oe, oc, ie, ic))) =
-          exc[slla ! e := exc ! (slla ! e) + fla ! e,
-              flla ! e := exc[slla ! e := exc ! (slla ! e) + fla ! e] ! (flla ! e) - fla ! e]"
-        by (simp add: passA_step_exc Let_def xe ye)
-      have step_F: "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-          es_arr \<mapsto>\<^sub>a est[e := classify fla e] *
-          exc_arr \<mapsto>\<^sub>a exc[slla ! e := exc ! (slla ! e) + fla ! e,
-              flla ! e := exc[slla ! e := exc ! (slla ! e) + fla ! e] ! (flla ! e) - fla ! e] *
-          oe_arr \<mapsto>\<^sub>a oe * oc_arr \<mapsto>\<^sub>a oc * ie_arr \<mapsto>\<^sub>a ie * ic_arr \<mapsto>\<^sub>a ic>
-         passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr (Suc e) m
-        <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla *
-          es_arr \<mapsto>\<^sub>a fst (passA fla) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) *
-          oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) *
-          ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-        using step by (simp only: psF(1) psF_exc psF(2) psF(3) psF(4) psF(5))
-      have exl_f: "flla ! e < length exc" "slla ! e < length exc" using xvc yvc lens(2) xe ye by simp_all
-      have exlv: "slla ! e < Suc vcount" "flla ! e < Suc vcount" using yvc xvc ye xe by simp_all
-      show ?thesis
-        apply (subst passA_imp.simps)
-        apply (simp only: nme if_False Let_def)
-        apply (sep_auto heap: step_F simp: em st_valF False eb exlv exl_f lens)
-        done
-    qed
+    case False
+    note stepF = step[unfolded es'[symmetric] exc' fo' fi' if_not_P[OF False], unfolded fo_p fi_p fst_conv snd_conv]
+    show ?thesis
+      unfolding fo_p fi_p
+      apply (subst passA_imp.simps)
+      apply (simp only: nme if_False Let_def)
+      apply (sep_auto heap: stepF simp: eb xb st False)
+      done
   qed
 qed
 
-subsection \<open>Layer (d.5): the depth-first spanning-tree builder refines @{const build_dfs_a}\<close>
+subsection \<open>Layer (d.5): the depth-first spanning-tree builder refines @{const build_dfs}\<close>
+
+text \<open>The free ranges of the acyclified flow, as imperative collections over all vertex names: the
+      block starts of the input CSRs, the range ends and the edges Pass A wrote, and a cursor array.\<close>
+
+sublocale FO: csr_ranges_imp vcount "{..<vcount}" out.inp.B_spec "(!) (fst (free_out acyc_flow))"
+    "snd (free_out acyc_flow)"
+  by (rule csr_ranges_imp.intro[OF free_out(1)])
+
+sublocale FI: csr_ranges_imp vcount "{..<vcount}" inc.inp.B_spec "(!) (fst (free_in acyc_flow))"
+    "snd (free_in acyc_flow)"
+  by (rule csr_ranges_imp.intro[OF free_in(1)])
 
 text \<open>The DFS state relation: the imperative @{typ \<open>'n dfs_imp\<close>} record of array / reference handles
       against the functional @{typ \<open>'n dfs_state\<close>}.  The augmented edge arrays @{term di_fst} /
-      @{term di_snd} (and @{term di_cap} / @{term di_flow} / @{term di_es}) are wider than
-      the real block, so they are existential with their real prefix pinned --- @{term di_fst} /
+      @{term di_snd} (and @{term di_cap} / @{term di_flow} / @{term di_es}) are wider than the real
+      block, so they are existential with their real prefix pinned --- @{term di_fst} /
       @{term di_snd} to @{term fst_list} / @{term snd_list}, @{term di_cap} to @{term capacity_list},
-      and @{term di_flow} to the parameter @{term fl0} (the real-edge flow the tree builder must carry
-      through to the network-simplex loop); the four scanned arrays @{term di_oe} / @{term di_ohi} /
-      @{term di_ie} / @{term di_ihi} are the traversal's fixed arguments @{term oe} / @{term oh} /
-      @{term ie} / @{term ih}, and the block-start reads @{term di_olo} / @{term di_ilo} are the
-      acyclifier CSRs @{term out_lo} / @{term in_lo}.  The DFS stack lives in the three fixed-capacity
-      arrays @{term di_sv} / @{term di_soc} / @{term di_sic} (each of length @{term \<open>Suc vcount\<close>}, the
-      per-vertex allocation) with fill pointer @{term di_sp}, related to @{const ds_stk} by
-      @{const stk_rel}.\<close>
-definition dfs_rel :: "'n list \<Rightarrow> edge_tag list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> 'n dfs_imp \<Rightarrow> 'n dfs_state \<Rightarrow> assn" where
-  "dfs_rel fl0 es0 oe oh ie ih st s =
-     (\<exists>\<^sub>A fsta snda capa flowa esa auxa svl socl sicl sp.
+      and @{term di_flow} / @{term di_es} to the parameters @{term fl0} / @{term es0}.  The two
+      iterators are the free-range collections @{term FO} / @{term FI} with the cursor functions of
+      the state; the stack of vertices is the prefix of length @{term di_sp} of the stack array, top
+      last.\<close>
+definition dfs_rel :: "'n list \<Rightarrow> edge_tag list \<Rightarrow> 'n dfs_imp \<Rightarrow> 'n dfs_state \<Rightarrow> assn" where
+  "dfs_rel fl0 es0 st s =
+     (\<exists>\<^sub>A fsta snda capa flowa esa auxa stl sp.
+        FO.csr_assn (ds_oc s) (di_ob st, di_oe st, di_oc st) * di_oh st \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+        FI.csr_assn (ds_ic s) (di_ib st, di_ie st, di_ic st) * di_ih st \<mapsto>\<^sub>a fst (free_in acyc_flow) *
         di_seen st \<mapsto>\<^sub>a ds_seen s *
         prnt_impl (di_tree st) \<mapsto>\<^sub>a ds_prnt s *
         thrd_impl (di_tree st) \<mapsto>\<^sub>a ds_thrd s *
@@ -2263,12 +1453,9 @@ definition dfs_rel :: "'n list \<Rightarrow> edge_tag list \<Rightarrow> nat lis
         di_pot st \<mapsto>\<^sub>a ds_pot s *
         di_fst st \<mapsto>\<^sub>a fsta * di_snd st \<mapsto>\<^sub>a snda * di_cap st \<mapsto>\<^sub>a capa *
         di_cost st \<mapsto>\<^sub>a cost_list * di_flow st \<mapsto>\<^sub>a flowa * di_es st \<mapsto>\<^sub>a esa *
-        di_oe st \<mapsto>\<^sub>a oe * di_olo st \<mapsto>\<^sub>a out_lo * di_ohi st \<mapsto>\<^sub>a oh *
-        di_ie st \<mapsto>\<^sub>a ie * di_ilo st \<mapsto>\<^sub>a in_lo * di_ihi st \<mapsto>\<^sub>a ih *
-        di_sv st \<mapsto>\<^sub>a svl * di_soc st \<mapsto>\<^sub>a socl * di_sic st \<mapsto>\<^sub>a sicl * di_sp st \<mapsto>\<^sub>r sp *
+        di_stk st \<mapsto>\<^sub>a stl * di_sp st \<mapsto>\<^sub>r sp *
         di_prev st \<mapsto>\<^sub>r ds_prev s * di_nxt st \<mapsto>\<^sub>r ds_nxt s *
-        \<up>(stk_rel svl socl sicl sp (ds_stk s) \<and>
-          length svl = Suc vcount \<and> length socl = Suc vcount \<and> length sicl = Suc vcount \<and>
+        \<up>(ds_stk s = rev (take sp stl) \<and> sp \<le> length stl \<and> length stl = Suc vcount \<and>
           m \<le> length fsta \<and> m \<le> length snda \<and>
           (\<forall>e<m. fsta ! e = fst_list ! e) \<and> (\<forall>e<m. snda ! e = snd_list ! e) \<and>
           (\<forall>e<m. flowa ! e = fl0 ! e) \<and> (\<forall>e<m. capa ! e = capacity_list ! e) \<and>
@@ -2280,1398 +1467,988 @@ definition dfs_rel :: "'n list \<Rightarrow> edge_tag list \<Rightarrow> nat lis
           (\<forall>k<ds_nxt s. capa ! (m+k) = ds_acap s ! k) \<and> (\<forall>k<ds_nxt s. flowa ! (m+k) = ds_aflw s ! k) \<and>
           (\<forall>k<ds_nxt s. esa ! (m+k) = ds_aest s ! k)))"
 
-text \<open>Finishing (popping) a fully-scanned stack-top @{term v}: a straight run of array writes
-      (@{term ds_lsuc}, the parent's @{term ds_snum}) and a fill-pointer decrement.  The stack arrays are
-      not touched --- the popped slot merely falls above @{term \<open>sp - 1\<close>}, exactly @{thm stk_rel_pop'}.\<close>
-lemma dfs_finish_imp_rule:
-  assumes stk: "ds_stk s = (v, oc, ic) # rest"
-    and vlt: "v < length (ds_prnt s)" "v < length (ds_lsuc s)" "v < length (ds_snum s)"
-    and plt: "ds_prnt s ! v < length (ds_snum s)"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s>
-           dfs_finish_imp st v
-         <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (dfs_finish s v rest)>"
-  unfolding dfs_rel_def dfs_finish_imp_def dfs_finish_def Let_def
-  apply (sep_auto simp: vlt plt stk)
-  subgoal for fsta snda capa flowa esa auxa svl socl sicl sp a b
-    using stk_rel_pop'[of svl socl sicl sp "(v,oc,ic)" rest]
-    by sep_auto
-  done
+text \<open>Introducing the relation from its parts.\<close>
 
-text \<open>Discovering a fresh vertex @{term w} from stack-top @{term v} across the free real edge @{term e}:
-      finalise @{term w}'s tree fields, thread-link it after @{term \<open>ds_prev s\<close>}, seed its potential
-      (\<open>\<plusminus> cost_list ! e\<close> by whether @{term v} is @{term e}'s tail), then push its frame
-      @{term \<open>(w, out_lo ! w, in_lo ! w)\<close>} --- a write at the fill pointer plus a bump, exactly
-      @{thm stk_rel_push}.  The single case split is on @{term \<open>v = fst_list ! e\<close>} (the potential seed's
-      sign); every array bound is a caller obligation, and the stack-space bound is
-      @{term \<open>length (ds_stk s) < Suc vcount\<close>}.\<close>
-lemma dfs_discover_imp_rule:
-  assumes elt: "e < m"
-    and wlt: "w < length (ds_seen s)" "w < length (ds_prnt s)" "w < length (ds_par s)"
-             "w < length (ds_dir s)" "w < length (ds_pot s)" "w < length (ds_rvth s)"
-             "w < length (ds_snum s)"
-    and vlt: "v < length (ds_pot s)"
-    and pvlt: "ds_prev s < length (ds_thrd s)"
-    and wvc: "w < vcount"
-    and depth: "length (ds_stk s) < Suc vcount"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s>
-           dfs_discover_imp st v w e
-         <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (dfs_discover s v w e)>"
-  (*nasty refinement proof that takes ages to process*)
-  unfolding dfs_rel_def dfs_discover_imp_def dfs_discover_def Let_def
-  apply (sep_auto simp: elt wlt vlt pvlt wvc depth length_out_lo length_in_lo length_cost_list_m)
-  apply (metis depth stk_rel_len)   
-  apply (meson elt add_leD1 less_le_trans)
-  apply (sep_auto simp: elt wlt vlt pvlt wvc depth length_out_lo length_in_lo length_cost_list_m)
-   apply (metis depth stk_rel_len)
-   apply (frule stk_rel_len)
-   apply (sep_auto simp: depth stk_rel_push)
-  apply (frule stk_rel_len)
-   apply (sep_auto simp: depth length_out_lo length_in_lo stk_rel_push)
-   apply (rule pvlt)
-  apply (frule stk_rel_len)
-  apply (sep_auto simp: wlt vlt pvlt wvc depth length_out_lo length_in_lo stk_rel_push)
-  done
+lemma dfs_rel_intro:
+  assumes "ds_stk s = rev (take sp stl) \<and> sp \<le> length stl \<and> length stl = Suc vcount \<and>
+              m \<le> length fsta \<and> m \<le> length snda \<and>
+              (\<forall>e<m. fsta ! e = fst_list ! e) \<and> (\<forall>e<m. snda ! e = snd_list ! e) \<and>
+              (\<forall>e<m. flowa ! e = fl0 ! e) \<and> (\<forall>e<m. capa ! e = capacity_list ! e) \<and>
+              (\<forall>e<m. esa ! e = es0 ! e) \<and> length auxa = Suc vcount \<and>
+              m + length (ds_afst s) \<le> length fsta \<and> m + length (ds_asnd s) \<le> length snda \<and>
+              m + length (ds_acap s) \<le> length capa \<and> m + length (ds_aflw s) \<le> length flowa \<and>
+              m + length (ds_aest s) \<le> length esa \<and>
+              (\<forall>k<ds_nxt s. fsta ! (m+k) = ds_afst s ! k) \<and> (\<forall>k<ds_nxt s. snda ! (m+k) = ds_asnd s ! k) \<and>
+              (\<forall>k<ds_nxt s. capa ! (m+k) = ds_acap s ! k) \<and> (\<forall>k<ds_nxt s. flowa ! (m+k) = ds_aflw s ! k) \<and>
+              (\<forall>k<ds_nxt s. esa ! (m+k) = ds_aest s ! k)"
+  shows "FO.csr_assn (ds_oc s) (di_ob st, di_oe st, di_oc st) * di_oh st \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+        FI.csr_assn (ds_ic s) (di_ib st, di_ie st, di_ic st) * di_ih st \<mapsto>\<^sub>a fst (free_in acyc_flow) *
+        di_seen st \<mapsto>\<^sub>a ds_seen s *
+        prnt_impl (di_tree st) \<mapsto>\<^sub>a ds_prnt s *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a ds_thrd s *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a ds_rvth s *
+        lsuc_impl (di_tree st) \<mapsto>\<^sub>a ds_lsuc s *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a ds_snum s *
+        aux_impl (di_tree st) \<mapsto>\<^sub>a auxa *
+        di_par st \<mapsto>\<^sub>a ds_par s *
+        di_dir st \<mapsto>\<^sub>a ds_dir s *
+        di_pot st \<mapsto>\<^sub>a ds_pot s *
+        di_fst st \<mapsto>\<^sub>a fsta * di_snd st \<mapsto>\<^sub>a snda * di_cap st \<mapsto>\<^sub>a capa *
+        di_cost st \<mapsto>\<^sub>a cost_list * di_flow st \<mapsto>\<^sub>a flowa * di_es st \<mapsto>\<^sub>a esa *
+        di_stk st \<mapsto>\<^sub>a stl * di_sp st \<mapsto>\<^sub>r sp *
+        di_prev st \<mapsto>\<^sub>r ds_prev s * di_nxt st \<mapsto>\<^sub>r ds_nxt s \<Longrightarrow>\<^sub>A dfs_rel fl0 es0 st s"
+  unfolding dfs_rel_def using assms by sep_auto
 
-text \<open>The DFS-loop refinement invariant.  Beyond @{const dfs_wf} (stack vertices are real, seen array
-      sized) and @{const dfs_sized} (all vertex arrays sized), the loop needs: the stack frames carry
-      \<^emph>\<open>distinct\<close> vertices (so the flat stack never overflows its @{term \<open>Suc vcount\<close>} capacity --- the
-      depth is at most @{term vcount}), every stacked vertex is already seen (so a freshly discovered
-      neighbour is genuinely new, preserving distinctness), and the \<open>prev\<close> pointer / all parent entries
-      are valid vertex names.  Each conjunct is preserved by the three call-updates @{const bd_upd1} /
-      @{const bd_upd2} / @{const bd_upd3}.\<close>
-definition dref_inv :: "'n dfs_state \<Rightarrow> bool" where
-  "dref_inv s \<longleftrightarrow> distinct (map (\<lambda>(v,oc,ic). v) (ds_stk s))
-     \<and> (\<forall>(v,oc,ic)\<in>set (ds_stk s). ds_seen s ! v)
-     \<and> ds_prev s < Suc vcount
-     \<and> (\<forall>v<Suc vcount. ds_prnt s ! v < Suc vcount)"
+text \<open>The stack is the reversed prefix of the stack array.\<close>
 
-text \<open>Distinct stack frames whose vertices are all below @{term vcount} number at most @{term vcount} --- the
-      depth bound that keeps the flat DFS stack within its @{term \<open>Suc vcount\<close>} allocation.\<close>
-lemma stk_depth_le:
-  assumes "distinct (map (\<lambda>(v,oc,ic). v) xs)" and "\<forall>(v,oc,ic)\<in>set xs. v < vcount"
-  shows "length xs \<le> vcount"
+lemma stk_top:
+  assumes "v # rest = rev (take sp stl)" "sp \<le> length stl"
+  shows "sp = Suc (length rest)" "length rest < length stl" "stl ! length rest = v"
+    "rev (take (sp - 1) stl) = rest"
 proof -
-  have "length xs = card (set (map (\<lambda>(v,oc,ic). v) xs))"
-    using distinct_card[OF assms(1)] by simp
-  also have "... \<le> card {0..<vcount}"
-    apply (rule card_mono, simp)
-    using assms(2) by (auto split: prod.splits)
-  finally show ?thesis by simp
+  have l: "sp = Suc (length rest)" using arg_cong[OF assms(1), of length] assms(2) by simp
+  have t: "take sp stl = rev rest @ [v]" using arg_cong[OF assms(1), of rev] by simp
+  show "sp = Suc (length rest)" by (rule l)
+  show "length rest < length stl" using l assms(2) by simp
+  show "stl ! length rest = v"
+    using arg_cong[OF t, of "\<lambda>xs. xs ! length rest"] l by (simp add: nth_append)
+  show "rev (take (sp - 1) stl) = rest"
+    using arg_cong[OF t, of "take (length rest)"] l by (simp add: min_def)
 qed
 
-lemma bd_upd1_dref:
-  assumes inv: "dref_inv s" and wf: "dfs_wf s" and sz: "dfs_sized s" and c: "bd_call1_conds fl s"
-  shows "dref_inv (bd_upd1 fl s)"
-proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest" and oclt: "oc < free_out_hi fl ! v"
-    by (auto simp: bd_call1_conds_def split: list.splits prod.splits)
-  from wf stk have vlt: "v < vcount" and olo: "out_lo ! v \<le> oc" by (auto simp: dfs_wf_def)
-  from sz have lens: "length (ds_seen s) = Suc vcount" "length (ds_prnt s) = Suc vcount"
-    by (auto simp: dfs_sized_def)
-  let ?e = "free_out_edges fl ! oc" let ?w = "snd_list ! ?e"
-  have wlt: "?w < vcount" using Hout_valid[OF vlt olo oclt] .
-  from inv have dist: "distinct (map (\<lambda>(v,oc,ic). v) (ds_stk s))"
-    and seen: "\<forall>(v,oc,ic)\<in>set (ds_stk s). ds_seen s ! v"
-    and prnt: "\<forall>v<Suc vcount. ds_prnt s ! v < Suc vcount" by (auto simp: dref_inv_def)
-  show ?thesis
-  proof (cases "ds_seen s ! ?w")
-    case True
-    thus ?thesis using inv stk by (auto simp: dref_inv_def bd_upd1_def Let_def)
-  next
-    case False
-    have wnotin: "?w \<notin> set (map (\<lambda>(v,oc,ic). v) (ds_stk s))"
-      using False seen by (auto split: prod.splits)
-    have eq: "bd_upd1 fl s = dfs_discover (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>) v ?w ?e"
-      using stk False by (simp add: bd_upd1_def Let_def)
-    show ?thesis unfolding eq
-      using wnotin dist seen prnt vlt wlt stk lens
-      by (auto simp: dref_inv_def dfs_discover_def Let_def nth_list_update split: prod.splits if_splits)
-  qed
-qed
+lemma stk_push:
+  assumes "sp < length stl"
+  shows "rev ((list_update (take (Suc sp) stl) (sp) (w))) = w # rev (take sp stl)"
+  using assms by (simp add: take_Suc_conv_app_nth list_update_append min_def)
 
-lemma bd_upd2_dref:
-  assumes inv: "dref_inv s" and wf: "dfs_wf s" and sz: "dfs_sized s" and c: "bd_call2_conds fl s"
-  shows "dref_inv (bd_upd2 fl s)"
-proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest" and iclt: "ic < free_in_hi fl ! v"
-    by (auto simp: bd_call2_conds_def split: list.splits prod.splits)
-  from wf stk have vlt: "v < vcount" and ilo: "in_lo ! v \<le> ic" by (auto simp: dfs_wf_def)
-  from sz have lens: "length (ds_seen s) = Suc vcount" "length (ds_prnt s) = Suc vcount"
-    by (auto simp: dfs_sized_def)
-  let ?e = "free_in_edges fl ! ic" let ?w = "fst_list ! ?e"
-  have wlt: "?w < vcount" using Hin_valid[OF vlt ilo iclt] .
-  from inv have dist: "distinct (map (\<lambda>(v,oc,ic). v) (ds_stk s))"
-    and seen: "\<forall>(v,oc,ic)\<in>set (ds_stk s). ds_seen s ! v"
-    and prnt: "\<forall>v<Suc vcount. ds_prnt s ! v < Suc vcount" by (auto simp: dref_inv_def)
-  show ?thesis
-  proof (cases "ds_seen s ! ?w")
-    case True
-    thus ?thesis using inv stk by (auto simp: dref_inv_def bd_upd2_def Let_def)
-  next
-    case False
-    have wnotin: "?w \<notin> set (map (\<lambda>(v,oc,ic). v) (ds_stk s))"
-      using False seen by (auto split: prod.splits)
-    have eq: "bd_upd2 fl s = dfs_discover (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>) v ?w ?e"
-      using stk False by (simp add: bd_upd2_def Let_def)
-    show ?thesis unfolding eq
-      using wnotin dist seen prnt vlt wlt stk lens
-      by (auto simp: dref_inv_def dfs_discover_def Let_def nth_list_update split: prod.splits if_splits)
-  qed
-qed
+text \<open>The two shared writers, on the cells they touch.\<close>
 
-lemma bd_upd3_dref:
-  assumes "dref_inv s" "bd_call3_conds fl s"
-  shows "dref_inv (bd_upd3 s)"
-proof -
-  from assms(2) obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest"
-    by (auto simp: bd_call3_conds_def split: list.splits prod.splits)
-  show ?thesis using assms(1) stk
-    by (auto simp: dref_inv_def bd_upd3_def dfs_finish_def Let_def)
-qed
+lemma tree_link_imp_rule:
+  assumes "w < length se" "w < length pr" "w < length pa" "w < length di" "w < length po"
+    "pv < length th" "w < length rv" "w < length sm"
+  shows "<di_seen st \<mapsto>\<^sub>a se *
+        prnt_impl (di_tree st) \<mapsto>\<^sub>a pr *
+        di_par st \<mapsto>\<^sub>a pa *
+        di_dir st \<mapsto>\<^sub>a di *
+        di_pot st \<mapsto>\<^sub>a po *
+        di_prev st \<mapsto>\<^sub>r pv *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a th *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a rv *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a sm>
+         tree_link_imp st w p e d pw
+         <\<lambda>_. di_seen st \<mapsto>\<^sub>a ((list_update se (w) (True))) *
+        prnt_impl (di_tree st) \<mapsto>\<^sub>a ((list_update pr (w) (p))) *
+        di_par st \<mapsto>\<^sub>a ((list_update pa (w) (e))) *
+        di_dir st \<mapsto>\<^sub>a ((list_update di (w) (d))) *
+        di_pot st \<mapsto>\<^sub>a ((list_update po (w) (pw))) *
+        di_prev st \<mapsto>\<^sub>r w *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a ((list_update th (pv) (w))) *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a ((list_update rv (w) (pv))) *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a ((list_update sm (w) (1)))>"
+  unfolding tree_link_imp_def using assms by sep_auto
 
-text \<open>The empty-stack (return) case: when @{term \<open>ds_stk s = []\<close>} the flat fill pointer is @{term 0}
-      (@{thm stk_rel_nil}), so @{const build_dfs_a_imp} reads it, takes the @{term \<open>sp = 0\<close>} branch and
-      returns, leaving the state relation untouched.\<close>
-lemma build_dfs_a_imp_ret:
-  assumes "ds_stk s = []"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st s>"
-  apply (subst build_dfs_a_imp.simps)
-  unfolding dfs_rel_def
-  apply (sep_auto simp: assms)
-  done
+lemma art_edge_imp_rule:
+  assumes "i < length fs" "i < length sn" "i < length cp" "i < length fw" "i < length es"
+  shows "<di_fst st \<mapsto>\<^sub>a fs *
+        di_snd st \<mapsto>\<^sub>a sn *
+        di_cap st \<mapsto>\<^sub>a cp *
+        di_flow st \<mapsto>\<^sub>a fw *
+        di_es st \<mapsto>\<^sub>a es>
+         art_edge_imp st i x y u f tag
+         <\<lambda>_. di_fst st \<mapsto>\<^sub>a ((list_update fs (i) (x))) *
+        di_snd st \<mapsto>\<^sub>a ((list_update sn (i) (y))) *
+        di_cap st \<mapsto>\<^sub>a ((list_update cp (i) (u))) *
+        di_flow st \<mapsto>\<^sub>a ((list_update fw (i) (f))) *
+        di_es st \<mapsto>\<^sub>a ((list_update es (i) (tag)))>"
+  unfolding art_edge_imp_def using assms by sep_auto
 
-text \<open>Field-exposure reads: each recovers one field out of the folded @{const dfs_rel} while framing the
-      rest, so the loop body's array / reference reads compose with the folded discovery and finishing
-      triples.  The three stack reads use @{thm stk_rel_cons_simp} to pin the top-frame values.\<close>
+text \<open>Reads of the fields of the folded relation.\<close>
+
 lemma dfs_rel_sp:
-  "<dfs_rel fl0 es0 oe oh ie ih st s> Ref.lookup (di_sp st) <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = length (ds_stk s))>"
-  unfolding dfs_rel_def
-  apply (sep_auto)
-  apply (subgoal_tac "sp = length (ds_stk s)")
-   apply (sep_auto)
-  apply (metis stk_rel_len)
-  done
+  "<dfs_rel fl0 es0 st s> Ref.lookup (di_sp st) <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = length (ds_stk s))>"
+  unfolding dfs_rel_def by sep_auto
 
-lemma dfs_rel_sv:
-  assumes "ds_stk s = (v,oc,ic)#rest"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_sv st) (length rest) <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = v)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms stk_rel_cons_simp)
-
-lemma dfs_rel_soc:
-  assumes "ds_stk s = (v,oc,ic)#rest"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_soc st) (length rest) <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = oc)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms stk_rel_cons_simp)
-
-lemma dfs_rel_sic:
-  assumes "ds_stk s = (v,oc,ic)#rest"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_sic st) (length rest) <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = ic)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms stk_rel_cons_simp)
-
-lemma dfs_rel_ohi:
-  assumes "v < length oh"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_ohi st) v <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = oh!v)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms)
-
-lemma dfs_rel_ihi:
-  assumes "v < length ih"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_ihi st) v <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = ih!v)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms)
-
-lemma dfs_rel_oe:
-  assumes "oc < length oe"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_oe st) oc <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = oe!oc)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms)
-
-lemma dfs_rel_ie:
-  assumes "ic < length ie"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_ie st) ic <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = ie!ic)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms)
+lemma dfs_rel_top:
+  assumes "ds_stk s = v # rest"
+  shows "<dfs_rel fl0 es0 st s> Array.nth (di_stk st) (length rest) <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = v)>"
+  unfolding dfs_rel_def by (sep_auto simp: assms stk_top(2,3))
 
 lemma dfs_rel_snd:
   assumes "e < m"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_snd st) e <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = snd_list!e)>"
-  unfolding dfs_rel_def
-  by (sep_auto simp: assms)
+  shows "<dfs_rel fl0 es0 st s> Array.nth (di_snd st) e <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = snd_list ! e)>"
+  unfolding dfs_rel_def by (sep_auto simp: assms)
 
 lemma dfs_rel_fst:
   assumes "e < m"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_fst st) e <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = fst_list!e)>"
-  unfolding dfs_rel_def
-  by (sep_auto simp: assms)
+  shows "<dfs_rel fl0 es0 st s> Array.nth (di_fst st) e <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = fst_list ! e)>"
+  unfolding dfs_rel_def by (sep_auto simp: assms)
 
 lemma dfs_rel_seen:
   assumes "w < length (ds_seen s)"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_seen st) w <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = ds_seen s ! w)>"
+  shows "<dfs_rel fl0 es0 st s> Array.nth (di_seen st) w <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = ds_seen s ! w)>"
   unfolding dfs_rel_def by (sep_auto simp: assms)
 
-text \<open>The two in-place cursor bumps: writing @{term \<open>Suc oc\<close>} / @{term \<open>Suc ic\<close>} at the top frame index
-      advances that frame's out- / in-cursor, turning the relation of @{term s} into that of the
-      single-cursor-advanced state (@{thm stk_rel_upd_ge} / @{thm stk_rel_upd_ge_sic}).\<close>
-lemma dfs_rel_bump_soc:
-  assumes "ds_stk s = (v,oc,ic)#rest"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> arr_upd (di_soc st) (length rest) (Suc oc)
-         <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>)>"
-  unfolding dfs_rel_def
-  by (sep_auto simp: assms stk_rel_cons_simp nth_list_update stk_rel_upd_ge)
+text \<open>The stack top: an empty stack ends the traversal, otherwise the continuation runs on the top
+      vertex.\<close>
 
-lemma dfs_rel_bump_sic:
-  assumes "ds_stk s = (v,oc,ic)#rest"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> arr_upd (di_sic st) (length rest) (Suc ic)
-         <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>)>"
-  unfolding dfs_rel_def
-  by (sep_auto simp: assms stk_rel_cons_simp nth_list_update stk_rel_upd_ge_sic)
+lemma dfs_rel_top_rule:
+  assumes stk: "ds_stk s = v # rest" and K: "<dfs_rel fl0 es0 st s> K v <Q>"
+  shows "<dfs_rel fl0 es0 st s>
+           do { sp \<leftarrow> Ref.lookup (di_sp st);
+                if sp = 0 then return () else do { v \<leftarrow> Array.nth (di_stk st) (sp - 1); K v } }
+         <Q>"
+  by (sep_auto heap: dfs_rel_sp dfs_rel_top[OF stk] K simp: stk)
 
-text \<open>The four recursive-step lemmas of the DFS loop, one per call condition of @{const build_dfs_a}: an
-      outgoing / ingoing free edge to a fresh (@{text unseen}) or already discovered (@{text seen})
-      neighbour, and the vertex-finishing step.  Each drives @{const build_dfs_a_imp}'s body one
-      iteration through the field-exposure reads to the recursive call, which the induction hypothesis
-      (@{term IH}) discharges.\<close>
-lemma call1_seen:
-  assumes stk: "ds_stk s = (v,oc,ic)#rest" and oclt: "oc < free_out_hi fl ! v"
-    and vlt: "v < vcount" and olo: "out_lo ! v \<le> oc"
-    and seen: "ds_seen s ! (snd_list ! (free_out_edges fl ! oc))"
-    and sz: "dfs_sized s"
-    and IH: "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>)>
-               build_dfs_a_imp st
-             <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>))>"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st s>
-           build_dfs_a_imp st
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>))>"
+lemma build_dfs_a_imp_ret:
+  assumes "ds_stk s = []"
+  shows "<dfs_rel fl0 es0 st s> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st s>"
+  by (subst build_dfs_a_imp.simps) (sep_auto heap: dfs_rel_sp simp: assms)
+
+text \<open>One step of the iterator of a vertex over its free outgoing resp.\ ingoing range
+      (@{thm [source] FO.csr_step_upto_imp_rule}), on the folded relation.\<close>
+
+lemma dfs_rel_step_out:
+  assumes vlt: "v < vcount"
+    and has: "FO.csr_has (ds_oc s) v \<Longrightarrow>
+       <dfs_rel fl0 es0 st (s\<lparr>ds_oc := FO.csr_move (ds_oc s) v\<rparr>)> f (FO.csr_current (ds_oc s) v) <Q>"
+    and nhas: "\<not> FO.csr_has (ds_oc s) v \<Longrightarrow> <dfs_rel fl0 es0 st s> g <Q>"
+  shows "<dfs_rel fl0 es0 st s> csr_step_upto_imp (di_ob st, di_oe st, di_oc st) (di_oh st) v f g <Q>"
 proof -
-  have elt: "free_out_edges fl ! oc < m" using free_out_edge_fst[OF vlt olo oclt] by simp
-  have ocm0: "oc < m" using oclt free_out_hi_le_m[OF vlt] by (meson less_le_trans)
-  have ocm: "oc < length (free_out_edges fl)" using ocm0 length_free_out_edges by simp
-  have wvc': "snd_list ! (free_out_edges fl ! oc) < Suc vcount" using Hout_valid[OF vlt olo oclt] by simp
-  from sz have lseen: "length (ds_seen s) = Suc vcount" by (simp add: dfs_sized_def)
+  have L: "v < length (fst (free_out acyc_flow))" using vlt out_ranges_fold[OF order.refl, of acyc_flow]
+    by (simp add: free_out_eq)
+  have vK: "v \<in> {..<vcount}" using vlt by simp
   show ?thesis
-    apply (subst build_dfs_a_imp.simps)
-    apply (sep_auto
-        heap: dfs_rel_sp dfs_rel_sv dfs_rel_soc dfs_rel_ohi dfs_rel_oe dfs_rel_snd dfs_rel_bump_soc dfs_rel_seen IH
-        simp: stk vlt olo oclt seen elt ocm ocm0 wvc' lseen length_free_out_hi)
+    unfolding dfs_rel_def[of _ _ _ s]
+    apply (intro ht_exEI ht_extract_pre_pure)
+    subgoal for fsta snda capa flowa esa auxa stl sp
+      apply (rule ht_cons_pre[OF _ FO.csr_step_upto_imp_rule[where c = "ds_oc s" and Hl = "fst (free_out acyc_flow)" and F = "FI.csr_assn (ds_ic s) (di_ib st, di_ie st, di_ic st) * di_ih st \<mapsto>\<^sub>a fst (free_in acyc_flow) *
+        di_seen st \<mapsto>\<^sub>a ds_seen s * prnt_impl (di_tree st) \<mapsto>\<^sub>a ds_prnt s *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a ds_thrd s * rvth_impl (di_tree st) \<mapsto>\<^sub>a ds_rvth s *
+        lsuc_impl (di_tree st) \<mapsto>\<^sub>a ds_lsuc s * snum_impl (di_tree st) \<mapsto>\<^sub>a ds_snum s *
+        aux_impl (di_tree st) \<mapsto>\<^sub>a auxa * di_par st \<mapsto>\<^sub>a ds_par s * di_dir st \<mapsto>\<^sub>a ds_dir s *
+        di_pot st \<mapsto>\<^sub>a ds_pot s * di_fst st \<mapsto>\<^sub>a fsta * di_snd st \<mapsto>\<^sub>a snda * di_cap st \<mapsto>\<^sub>a capa *
+        di_cost st \<mapsto>\<^sub>a cost_list * di_flow st \<mapsto>\<^sub>a flowa * di_es st \<mapsto>\<^sub>a esa *
+        di_stk st \<mapsto>\<^sub>a stl * di_sp st \<mapsto>\<^sub>r sp * di_prev st \<mapsto>\<^sub>r ds_prev s * di_nxt st \<mapsto>\<^sub>r ds_nxt s", OF vK L refl]])
+        apply (simp add: mult.assoc)
+      apply (rule ht_cons_pre[OF _ has])
+       apply (unfold dfs_rel_def, sep_auto)[1]
+      apply assumption
+     apply (rule ht_cons_pre[OF _ nhas])
+      apply (unfold dfs_rel_def, sep_auto)[1]
+     apply assumption
+    done
     done
 qed
 
-lemma call1_unseen:
-  assumes stk: "ds_stk s = (v,oc,ic)#rest" and oclt: "oc < free_out_hi fl ! v"
-    and vlt: "v < vcount" and olo: "out_lo ! v \<le> oc"
-    and unseen: "\<not> ds_seen s ! (snd_list ! (free_out_edges fl ! oc))"
-    and sz: "dfs_sized s" and wf: "dfs_wf s" and dref: "dref_inv s"
-    and IH: "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (bd_upd1 fl s)>
-               build_dfs_a_imp st
-             <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (bd_upd1 fl s))>"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st s>
-           build_dfs_a_imp st
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (bd_upd1 fl s))>"
+lemma dfs_rel_step_in:
+  assumes vlt: "v < vcount"
+    and has: "FI.csr_has (ds_ic s) v \<Longrightarrow>
+       <dfs_rel fl0 es0 st (s\<lparr>ds_ic := FI.csr_move (ds_ic s) v\<rparr>)> f (FI.csr_current (ds_ic s) v) <Q>"
+    and nhas: "\<not> FI.csr_has (ds_ic s) v \<Longrightarrow> <dfs_rel fl0 es0 st s> g <Q>"
+  shows "<dfs_rel fl0 es0 st s> csr_step_upto_imp (di_ib st, di_ie st, di_ic st) (di_ih st) v f g <Q>"
 proof -
-  define e where "e = free_out_edges fl ! oc"
-  define w where "w = snd_list ! e"
-  have elt: "e < m" unfolding e_def using free_out_edge_fst[OF vlt olo oclt] by simp
-  have ocm0: "oc < m" using oclt free_out_hi_le_m[OF vlt] by (meson less_le_trans)
-  have ocm: "oc < length (free_out_edges fl)" using ocm0 length_free_out_edges by simp
-  have wvc: "w < vcount" unfolding w_def e_def using Hout_valid[OF vlt olo oclt] .
-  have wvc': "w < Suc vcount" using wvc by simp
-  have vsuc: "v < Suc vcount" using vlt by simp
-  from sz have lens: "length (ds_seen s) = Suc vcount" "length (ds_prnt s) = Suc vcount"
-    "length (ds_par s) = Suc vcount" "length (ds_dir s) = Suc vcount" "length (ds_pot s) = Suc vcount"
-    "length (ds_thrd s) = Suc vcount" "length (ds_rvth s) = Suc vcount" "length (ds_snum s) = Suc vcount"
-    by (simp_all add: dfs_sized_def)
-  have dist: "distinct (map (\<lambda>(v,oc,ic).v) (ds_stk s))" using dref by (simp add: dref_inv_def)
-  have vts: "\<forall>(v,oc,ic)\<in>set (ds_stk s). v < vcount" using wf by (auto simp: dfs_wf_def)
-  have dpth1: "Suc (length rest) < Suc vcount" using stk_depth_le[OF dist vts] stk by simp
-  have dpth2: "length rest < vcount" using dpth1 by simp
-  have pvlt: "ds_prev s < Suc vcount" using dref by (simp add: dref_inv_def)
-  have bu: "bd_upd1 fl s = dfs_discover (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>) v w e"
-    using stk unseen by (simp add: bd_upd1_def Let_def e_def w_def)
-  have unseen': "\<not> ds_seen s ! w" unfolding w_def e_def using unseen .
-  note disc = dfs_discover_imp_rule[where st=st and s="s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>" and v=v and w=w and e=e]
+  have L: "v < length (fst (free_in acyc_flow))" using vlt in_ranges_fold[OF order.refl, of acyc_flow]
+    by (simp add: free_in_eq)
+  have vK: "v \<in> {..<vcount}" using vlt by simp
   show ?thesis
-    unfolding bu
-    apply (subst build_dfs_a_imp.simps)
-    apply (sep_auto
-        heap: dfs_rel_sp dfs_rel_sv dfs_rel_soc dfs_rel_ohi dfs_rel_oe dfs_rel_snd dfs_rel_bump_soc dfs_rel_seen disc IH[unfolded bu]
-        simp: stk vlt olo oclt unseen unseen' elt ocm ocm0 wvc wvc' vsuc lens dpth1 dpth2 pvlt e_def[symmetric] w_def[symmetric] length_free_out_hi)
+    unfolding dfs_rel_def[of _ _ _ s]
+    apply (intro ht_exEI ht_extract_pre_pure)
+    subgoal for fsta snda capa flowa esa auxa stl sp
+      apply (rule ht_cons_pre[OF _ FI.csr_step_upto_imp_rule[where c = "ds_ic s" and Hl = "fst (free_in acyc_flow)" and F = "FO.csr_assn (ds_oc s) (di_ob st, di_oe st, di_oc st) * di_oh st \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+        di_seen st \<mapsto>\<^sub>a ds_seen s * prnt_impl (di_tree st) \<mapsto>\<^sub>a ds_prnt s *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a ds_thrd s * rvth_impl (di_tree st) \<mapsto>\<^sub>a ds_rvth s *
+        lsuc_impl (di_tree st) \<mapsto>\<^sub>a ds_lsuc s * snum_impl (di_tree st) \<mapsto>\<^sub>a ds_snum s *
+        aux_impl (di_tree st) \<mapsto>\<^sub>a auxa * di_par st \<mapsto>\<^sub>a ds_par s * di_dir st \<mapsto>\<^sub>a ds_dir s *
+        di_pot st \<mapsto>\<^sub>a ds_pot s * di_fst st \<mapsto>\<^sub>a fsta * di_snd st \<mapsto>\<^sub>a snda * di_cap st \<mapsto>\<^sub>a capa *
+        di_cost st \<mapsto>\<^sub>a cost_list * di_flow st \<mapsto>\<^sub>a flowa * di_es st \<mapsto>\<^sub>a esa *
+        di_stk st \<mapsto>\<^sub>a stl * di_sp st \<mapsto>\<^sub>r sp * di_prev st \<mapsto>\<^sub>r ds_prev s * di_nxt st \<mapsto>\<^sub>r ds_nxt s", OF vK L refl]])
+        apply (simp add: ac_simps)
+      apply (rule ht_cons_pre[OF _ has])
+       apply (unfold dfs_rel_def, sep_auto)[1]
+      apply assumption
+     apply (rule ht_cons_pre[OF _ nhas])
+      apply (unfold dfs_rel_def, sep_auto)[1]
+     apply assumption
+    done
     done
 qed
 
-lemma call2_seen:
-  assumes stk: "ds_stk s = (v,oc,ic)#rest"
-    and ocge: "\<not> oc < free_out_hi fl ! v" and iclt: "ic < free_in_hi fl ! v"
-    and vlt: "v < vcount" and ilo: "in_lo ! v \<le> ic"
-    and seen: "ds_seen s ! (fst_list ! (free_in_edges fl ! ic))"
-    and sz: "dfs_sized s"
-    and IH: "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>)>
-               build_dfs_a_imp st
-             <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>))>"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st s>
-           build_dfs_a_imp st
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>))>"
+text \<open>Discovering a fresh vertex @{term w} from @{term v} across the free real edge @{term e}: a
+      straight run of array writes, the push and the reset of the two cursors of @{term w}.\<close>
+
+lemma dfs_discover_imp_rule:
+  assumes elt: "e < m" and wlt: "w < vcount" and sz: "dfs_sized s"
+    and vlt: "v < Suc vcount" and pvlt: "ds_prev s < Suc vcount"
+    and depth: "length (ds_stk s) < Suc vcount"
+  shows "<dfs_rel fl0 es0 st s> dfs_discover_imp st v w e
+         <\<lambda>_. dfs_rel fl0 es0 st (dfs_discover s v w e)>"
 proof -
-  have elt: "free_in_edges fl ! ic < m" using free_in_edge_snd[OF vlt ilo iclt] by simp
-  have icm0: "ic < m" using iclt free_in_hi_le_m[OF vlt] by (meson less_le_trans)
-  have icm: "ic < length (free_in_edges fl)" using icm0 length_free_in_edges by simp
-  have wvc': "fst_list ! (free_in_edges fl ! ic) < Suc vcount" using Hin_valid[OF vlt ilo iclt] by simp
-  from sz have lseen: "length (ds_seen s) = Suc vcount" by (simp add: dfs_sized_def)
+  have wK: "w \<in> {..<vcount}" and wl: "w < Suc vcount" using wlt by simp_all
+  have eq: "dfs_discover s v w e =
+     s\<lparr>ds_seen := (list_update (ds_seen s) (w) (True)), ds_prnt := (list_update (ds_prnt s) (w) (v)), ds_par := (list_update (ds_par s) (w) (e)),
+        ds_dir := (list_update (ds_dir s) (w) ((fst_list ! e = w))),
+        ds_pot := (list_update (ds_pot s) (w) (pval_plus (ds_pot s ! v)
+                    (M_0, if v = fst_list ! e then cost_list ! e else - cost_list ! e))),
+        ds_thrd := (list_update (ds_thrd s) (ds_prev s) (w)), ds_rvth := (list_update (ds_rvth s) (w) (ds_prev s)),
+        ds_snum := (list_update (ds_snum s) (w) (1)), ds_prev := w, ds_stk := w # ds_stk s,
+        ds_oc := FO.csr_reset (ds_oc s) w, ds_ic := FI.csr_reset (ds_ic s) w\<rparr>"
+    by (simp add: dfs_discover_def dfs_push_def Let_def)
+  note L = sz[unfolded dfs_sized_def]
   show ?thesis
-    apply (subst build_dfs_a_imp.simps)
-    apply (sep_auto
-        heap: dfs_rel_sp dfs_rel_sv dfs_rel_soc dfs_rel_ohi dfs_rel_sic dfs_rel_ihi dfs_rel_ie dfs_rel_fst dfs_rel_bump_sic dfs_rel_seen IH
-        simp: stk vlt ilo ocge iclt seen elt icm icm0 wvc' lseen length_free_out_hi length_free_in_hi)
+    unfolding dfs_rel_def[of _ _ _ s]
+    apply (intro ht_exEI ht_extract_pre_pure)
+    subgoal premises PU for fsta snda capa flowa esa auxa stl sp
+    proof -
+      have stk: "ds_stk s = rev (take sp stl)" and spl: "sp \<le> length stl" and ls: "length stl = Suc vcount"
+        and fe: "fsta ! e = fst_list ! e" and fl: "e < length fsta"
+        using PU elt by auto
+      have spv: "sp = length (ds_stk s)" using stk spl by simp
+      have spb: "sp < length stl" using spv depth ls by simp
+      have cl: "e < length cost_list" using elt by simp
+      define pw where "pw = pval_plus (ds_pot s ! v) (M_0, if v = fst_list ! e then cost_list ! e else - cost_list ! e)"
+      have small: "<FO.csr_assn (ds_oc s) (di_ob st, di_oe st, di_oc st) *
+        FI.csr_assn (ds_ic s) (di_ib st, di_ie st, di_ic st) *
+        di_seen st \<mapsto>\<^sub>a (ds_seen s) *
+        prnt_impl (di_tree st) \<mapsto>\<^sub>a (ds_prnt s) *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a (ds_thrd s) *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a (ds_rvth s) *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a (ds_snum s) *
+        di_par st \<mapsto>\<^sub>a (ds_par s) *
+        di_dir st \<mapsto>\<^sub>a (ds_dir s) *
+        di_pot st \<mapsto>\<^sub>a (ds_pot s) *
+        di_fst st \<mapsto>\<^sub>a fsta *
+        di_cost st \<mapsto>\<^sub>a cost_list *
+        di_stk st \<mapsto>\<^sub>a stl *
+        di_sp st \<mapsto>\<^sub>r sp *
+        di_prev st \<mapsto>\<^sub>r (ds_prev s)>
+        dfs_discover_imp st v w e
+        <\<lambda>_. FO.csr_assn (FO.csr_reset (ds_oc s) w) (di_ob st, di_oe st, di_oc st) *
+        FI.csr_assn (FI.csr_reset (ds_ic s) w) (di_ib st, di_ie st, di_ic st) *
+        di_seen st \<mapsto>\<^sub>a ((list_update (ds_seen s) (w) (True))) *
+        prnt_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_prnt s) (w) (v))) *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_thrd s) (ds_prev s) (w))) *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_rvth s) (w) (ds_prev s))) *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_snum s) (w) (1))) *
+        di_par st \<mapsto>\<^sub>a ((list_update (ds_par s) (w) (e))) *
+        di_dir st \<mapsto>\<^sub>a ((list_update (ds_dir s) (w) ((fst_list ! e = w)))) *
+        di_pot st \<mapsto>\<^sub>a ((list_update (ds_pot s) (w) (pw))) *
+        di_fst st \<mapsto>\<^sub>a fsta *
+        di_cost st \<mapsto>\<^sub>a cost_list *
+        di_stk st \<mapsto>\<^sub>a ((list_update stl (sp) (w))) *
+        di_sp st \<mapsto>\<^sub>r (Suc sp) *
+        di_prev st \<mapsto>\<^sub>r w>"
+        unfolding dfs_discover_imp_def pw_def
+        using wl vlt pvlt L spb fl cl
+        by (sep_auto heap: tree_link_imp_rule FO.csr_reset_imp_rule[OF wK] FI.csr_reset_imp_rule[OF wK]
+                     simp: fe)
+      show ?thesis
+        apply (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF small, where R = "di_oh st \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+        di_ih st \<mapsto>\<^sub>a fst (free_in acyc_flow) *
+        lsuc_impl (di_tree st) \<mapsto>\<^sub>a (ds_lsuc s) *
+        aux_impl (di_tree st) \<mapsto>\<^sub>a auxa *
+        di_snd st \<mapsto>\<^sub>a snda *
+        di_cap st \<mapsto>\<^sub>a capa *
+        di_flow st \<mapsto>\<^sub>a flowa *
+        di_es st \<mapsto>\<^sub>a esa *
+        di_nxt st \<mapsto>\<^sub>r (ds_nxt s)"]]])
+         apply (simp add: ac_simps)
+        unfolding eq pw_def[symmetric]
+        apply (rule ent_trans[OF _ ent_star_mono[OF dfs_rel_intro[where fsta = fsta and snda = snda and capa = capa
+                 and flowa = flowa and esa = esa and auxa = auxa and stl = "(list_update stl (sp) (w))" and sp = "Suc sp"]
+                 ent_true[of emp]]])
+         apply (simp add: ac_simps)
+        using PU spb by (simp add: stk_push stk)
+    qed
     done
 qed
 
-lemma call2_unseen:
-  assumes stk: "ds_stk s = (v,oc,ic)#rest"
-    and ocge: "\<not> oc < free_out_hi fl ! v" and iclt: "ic < free_in_hi fl ! v"
-    and vlt: "v < vcount" and ilo: "in_lo ! v \<le> ic"
-    and unseen: "\<not> ds_seen s ! (fst_list ! (free_in_edges fl ! ic))"
-    and sz: "dfs_sized s" and wf: "dfs_wf s" and dref: "dref_inv s"
-    and IH: "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (bd_upd2 fl s)>
-               build_dfs_a_imp st
-             <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (bd_upd2 fl s))>"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st s>
-           build_dfs_a_imp st
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (bd_upd2 fl s))>"
+text \<open>Finishing the top vertex @{term v}: two array writes and the pop.\<close>
+
+lemma dfs_finish_imp_rule:
+  assumes stk: "ds_stk s = v # rest" and sz: "dfs_sized s"
+    and vlt: "v < Suc vcount" and plt: "ds_prnt s ! v < Suc vcount"
+  shows "<dfs_rel fl0 es0 st s> dfs_finish_imp st v <\<lambda>_. dfs_rel fl0 es0 st (dfs_finish s v rest)>"
 proof -
-  define e where "e = free_in_edges fl ! ic"
-  define w where "w = fst_list ! e"
-  have elt: "e < m" unfolding e_def using free_in_edge_snd[OF vlt ilo iclt] by simp
-  have icm0: "ic < m" using iclt free_in_hi_le_m[OF vlt] by (meson less_le_trans)
-  have icm: "ic < length (free_in_edges fl)" using icm0 length_free_in_edges by simp
-  have wvc: "w < vcount" unfolding w_def e_def using Hin_valid[OF vlt ilo iclt] .
-  have wvc': "w < Suc vcount" using wvc by simp
-  have vsuc: "v < Suc vcount" using vlt by simp
-  from sz have lens: "length (ds_seen s) = Suc vcount" "length (ds_prnt s) = Suc vcount"
-    "length (ds_par s) = Suc vcount" "length (ds_dir s) = Suc vcount" "length (ds_pot s) = Suc vcount"
-    "length (ds_thrd s) = Suc vcount" "length (ds_rvth s) = Suc vcount" "length (ds_snum s) = Suc vcount"
-    by (simp_all add: dfs_sized_def)
-  have dist: "distinct (map (\<lambda>(v,oc,ic).v) (ds_stk s))" using dref by (simp add: dref_inv_def)
-  have vts: "\<forall>(v,oc,ic)\<in>set (ds_stk s). v < vcount" using wf by (auto simp: dfs_wf_def)
-  have dpth1: "Suc (length rest) < Suc vcount" using stk_depth_le[OF dist vts] stk by simp
-  have dpth2: "length rest < vcount" using dpth1 by simp
-  have pvlt: "ds_prev s < Suc vcount" using dref by (simp add: dref_inv_def)
-  have bu: "bd_upd2 fl s = dfs_discover (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>) v w e"
-    using stk unseen by (simp add: bd_upd2_def Let_def e_def w_def)
-  have unseen': "\<not> ds_seen s ! w" unfolding w_def e_def using unseen .
-  note disc = dfs_discover_imp_rule[where st=st and s="s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>" and v=v and w=w and e=e]
+  note L = sz[unfolded dfs_sized_def]
+  have eq: "dfs_finish s v rest =
+     s\<lparr>ds_lsuc := (list_update (ds_lsuc s) (v) (ds_prev s)),
+        ds_snum := (list_update (ds_snum s) (ds_prnt s ! v) (ds_snum s ! (ds_prnt s ! v) + ds_snum s ! v)),
+        ds_stk := rest\<rparr>"
+    by (simp add: dfs_finish_def Let_def)
+  have small: "<prnt_impl (di_tree st) \<mapsto>\<^sub>a (ds_prnt s) *
+        lsuc_impl (di_tree st) \<mapsto>\<^sub>a (ds_lsuc s) *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a (ds_snum s) *
+        di_sp st \<mapsto>\<^sub>r sp *
+        di_prev st \<mapsto>\<^sub>r (ds_prev s)> dfs_finish_imp st v <\<lambda>_. prnt_impl (di_tree st) \<mapsto>\<^sub>a (ds_prnt s) *
+        lsuc_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_lsuc s) (v) (ds_prev s))) *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_snum s) (ds_prnt s ! v) (ds_snum s ! (ds_prnt s ! v) + ds_snum s ! v))) *
+        di_sp st \<mapsto>\<^sub>r (sp - 1) *
+        di_prev st \<mapsto>\<^sub>r (ds_prev s)>" for sp
+    unfolding dfs_finish_imp_def using vlt plt L by sep_auto
   show ?thesis
-    unfolding bu
-    apply (subst build_dfs_a_imp.simps)
-    apply (sep_auto
-        heap: dfs_rel_sp dfs_rel_sv dfs_rel_soc dfs_rel_ohi dfs_rel_sic dfs_rel_ihi dfs_rel_ie dfs_rel_fst dfs_rel_bump_sic dfs_rel_seen disc IH[unfolded bu]
-        simp: stk vlt ilo ocge iclt unseen unseen' elt icm icm0 wvc wvc' vsuc lens dpth1 dpth2 pvlt e_def[symmetric] w_def[symmetric] length_free_out_hi length_free_in_hi)
+    unfolding dfs_rel_def[of _ _ _ s]
+    apply (intro ht_exEI ht_extract_pre_pure)
+    subgoal premises PU for fsta snda capa flowa esa auxa stl sp
+    proof -
+      have st: "v # rest = rev (take sp stl)" and spl: "sp \<le> length stl" using PU stk by auto
+      show ?thesis
+        apply (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF small[of sp], where R = "FO.csr_assn (ds_oc s) (di_ob st, di_oe st, di_oc st) *
+        di_oh st \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+        FI.csr_assn (ds_ic s) (di_ib st, di_ie st, di_ic st) *
+        di_ih st \<mapsto>\<^sub>a fst (free_in acyc_flow) *
+        di_seen st \<mapsto>\<^sub>a (ds_seen s) *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a (ds_thrd s) *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a (ds_rvth s) *
+        aux_impl (di_tree st) \<mapsto>\<^sub>a auxa *
+        di_par st \<mapsto>\<^sub>a (ds_par s) *
+        di_dir st \<mapsto>\<^sub>a (ds_dir s) *
+        di_pot st \<mapsto>\<^sub>a (ds_pot s) *
+        di_fst st \<mapsto>\<^sub>a fsta *
+        di_snd st \<mapsto>\<^sub>a snda *
+        di_cap st \<mapsto>\<^sub>a capa *
+        di_cost st \<mapsto>\<^sub>a cost_list *
+        di_flow st \<mapsto>\<^sub>a flowa *
+        di_es st \<mapsto>\<^sub>a esa *
+        di_stk st \<mapsto>\<^sub>a stl *
+        di_nxt st \<mapsto>\<^sub>r (ds_nxt s)"]]])
+         apply (simp add: ac_simps)
+        unfolding eq
+        apply (rule ent_trans[OF _ ent_star_mono[OF dfs_rel_intro[where fsta = fsta and snda = snda and capa = capa
+                 and flowa = flowa and esa = esa and auxa = auxa and stl = stl and sp = "sp - 1"]
+                 ent_true[of emp]]])
+         apply (simp add: ac_simps)
+        using PU stk_top[OF st spl] by simp
+    qed
     done
 qed
 
-lemma call3_step:
-  assumes stk: "ds_stk s = (v,oc,ic)#rest"
-    and ocge: "\<not> oc < free_out_hi fl ! v" and icge: "\<not> ic < free_in_hi fl ! v"
-    and vlt: "v < vcount"
-    and sz: "dfs_sized s" and dref: "dref_inv s"
-    and IH: "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (bd_upd3 s)>
-               build_dfs_a_imp st
-             <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (bd_upd3 s))>"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st s>
-           build_dfs_a_imp st
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (bd_upd3 s))>"
-proof -
-  have vsuc: "v < Suc vcount" using vlt by simp
-  from sz have lens: "length (ds_prnt s) = Suc vcount" "length (ds_lsuc s) = Suc vcount"
-    "length (ds_snum s) = Suc vcount" by (simp_all add: dfs_sized_def)
-  have plt: "ds_prnt s ! v < Suc vcount" using dref vsuc by (simp add: dref_inv_def)
-  have bu: "bd_upd3 s = dfs_finish s v rest" using stk by (simp add: bd_upd3_def)
-  note fin = dfs_finish_imp_rule[where st=st and s=s and v=v and oc=oc and ic=ic and rest=rest]
-  show ?thesis
-    unfolding bu
-    apply (subst build_dfs_a_imp.simps)
-    apply (sep_auto
-        heap: dfs_rel_sp dfs_rel_sv dfs_rel_soc dfs_rel_ohi dfs_rel_sic dfs_rel_ihi fin IH[unfolded bu]
-        simp: stk vlt vsuc ocge icge lens plt length_free_out_hi length_free_in_hi)
-    done
-qed
+text \<open>A distinct stack of vertex names is no deeper than the number of names.\<close>
 
-text \<open>\<^emph>\<open>Layer (d.5) target.\<close>  The imperative free-edge traversal @{const build_dfs_a_imp} refines the
-      functional @{const build_dfs}: by domain induction over the recursion (@{thm bd_induct}), each call
-      condition dispatched to its step lemma with the invariants @{const dfs_wf} / @{const dfs_sized} /
-      @{const dref_inv} carried and re-established by the @{text bd_upd} preservation lemmas.\<close>
+lemma stk_depth:
+  assumes "distinct xs" "set xs \<subseteq> {..<vcount}"
+  shows "length xs \<le> vcount"
+  using distinct_card[OF assms(1)] card_mono[OF _ assms(2)] by simp
+
+text \<open>The traversal: induction along @{const build_dfs}, one case per call.\<close>
+
 lemma build_dfs_a_imp_rule:
-  assumes dom: "build_dfs_dom (fl, s)" and "dfs_wf s" "dfs_sized s" "dref_inv s"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st s>
-      build_dfs_a_imp st
-    <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl s)>"
-  using assms(2-4)
-proof (induct rule: bd_induct[OF dom])
-  case IH: (1 fl s)
-  note IH1 = IH(2) and IH2 = IH(3) and IH3 = IH(4)
-  note wf = IH(5) and sz = IH(6) and dref = IH(7)
-  show ?case
-  proof (rule bd_cases[where s=s and fl=fl])
-    assume c: "bd_call1_conds fl s"
-    then obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest" and oclt: "oc < free_out_hi fl ! v"
-      by (auto simp: bd_call1_conds_def split: list.splits prod.splits)
-    from wf stk have vlt: "v < vcount" and olo: "out_lo ! v \<le> oc" by (auto simp: dfs_wf_def)
-    have IH1': "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (bd_upd1 fl s)>
-                  build_dfs_a_imp st
-                <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (bd_upd1 fl s))>"
-      using IH1[OF c bd_upd1_wf[OF Hout_valid wf c] bd_upd1_sized[OF sz c] bd_upd1_dref[OF dref wf sz c]] .
-    show ?thesis
-    proof (cases "ds_seen s ! (snd_list ! (free_out_edges fl ! oc))")
-      case True
-      have s1: "bd_upd1 fl s = s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>" using stk True by (simp add: bd_upd1_def Let_def)
-      show ?thesis unfolding bd_simps(1)[OF IH(1) c] s1
-        using call1_seen[OF stk oclt vlt olo True sz IH1'[unfolded s1]] .
-    next
-      case False
-      show ?thesis unfolding bd_simps(1)[OF IH(1) c]
-        using call1_unseen[OF stk oclt vlt olo False sz wf dref IH1'] .
+  assumes inv0: "dfs_inv acyc_flow s0"
+  shows "<dfs_rel fl0 es0 st s0> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s0)>"
+proof -
+  have gen: "fl = acyc_flow \<longrightarrow> dfs_inv fl s \<longrightarrow>
+       <dfs_rel fl0 es0 st s> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st (build_dfs fl s)>"
+    if dom: "build_dfs_dom (fl, s)" for fl s
+  proof (induct rule: bd_induct[OF dom])
+    case IH: (1 fl s)
+    show ?case
+    proof (intro impI)
+      assume fl: "fl = acyc_flow" and inv: "dfs_inv fl s"
+      note simps = bd_simps[OF IH(1), unfolded fl]
+      note IH1 = IH(2)[unfolded fl] and IH2 = IH(3)[unfolded fl] and IH3 = IH(4)[unfolded fl]
+      have inv: "dfs_inv acyc_flow s" using inv fl by simp
+      have wf: "dfs_wf acyc_flow s" and sz: "dfs_sized s" and tsi: "tree_seen_inv s"
+        and thi: "thread_inv s" and sni: "snum_inv s"
+        using inv by (simp_all add: dfs_inv_def)
+      have "<dfs_rel fl0 es0 st s> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s)>"
+      proof (cases "ds_stk s")
+        case Nil
+        have "build_dfs acyc_flow s = s" using simps(4) Nil by (simp add: bd_ret_conds_def)
+        thus ?thesis using build_dfs_a_imp_ret[OF Nil] by simp
+      next
+        case (Cons v rest)
+        have vK: "v \<in> dfs_seenK s" using wf Cons by (auto simp: dfs_wf_def)
+        hence vlt: "v < vcount" by (simp add: dfs_seenK_def)
+        have stK: "set (ds_stk s) \<subseteq> {..<vcount}" using wf dfs_seenK_sub by (auto simp: dfs_wf_def)
+        have depth: "length (ds_stk s) \<le> vcount"
+          using stk_depth[OF _ stK] sni by (simp add: snum_inv_def)
+        have pvlt: "ds_prev s < Suc vcount" using thi by (simp add: thread_inv_def)
+        have lens: "length (ds_seen s) = Suc vcount" "length (ds_prnt s) = Suc vcount"
+          using sz by (simp_all add: dfs_sized_def)
+        show ?thesis
+          apply (subst build_dfs_a_imp.simps)
+          apply (rule dfs_rel_top_rule[OF Cons])
+          apply (rule dfs_rel_step_out[OF vlt])
+          subgoal premises h
+          proof -
+            have c1: "bd_call1_conds acyc_flow s" using Cons h by (simp add: bd_call1_conds_def)
+            note S = bd_out_step[OF wf Cons h]
+            define e where "e = FO.csr_current (ds_oc s) v"
+            define s1 where "s1 = s\<lparr>ds_oc := FO.csr_move (ds_oc s) v\<rparr>"
+            have upd: "bd_upd1 acyc_flow s =
+                (if ds_seen s ! (snd_list ! e) then s1 else dfs_discover s1 v (snd_list ! e) e)"
+              by (simp add: bd_upd1_def Cons Let_def e_def s1_def)
+            have T: "<dfs_rel fl0 es0 st (bd_upd1 acyc_flow s)> build_dfs_a_imp st
+                     <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s)>"
+              using IH1[OF c1] bd_upd1_inv[OF inv c1] simps(1)[OF c1] by simp
+            have Ts: "ds_seen s ! (snd_list ! e) \<Longrightarrow>
+                <dfs_rel fl0 es0 st s1> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s)>"
+              using T upd by simp
+            have Tu: "\<not> ds_seen s ! (snd_list ! e) \<Longrightarrow>
+                <dfs_rel fl0 es0 st (dfs_discover s1 v (snd_list ! e) e)> build_dfs_a_imp st
+                <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s)>"
+              using T upd by simp
+            have elt: "e < m" and wlt: "snd_list ! e < vcount" using S(1,4) by (simp_all add: e_def)
+            hence wl: "snd_list ! e < Suc vcount" by simp
+            have sz1: "dfs_sized s1" using sz by (simp add: s1_def dfs_sized_def)
+            have aux1: "v < Suc vcount" "ds_prev s1 < Suc vcount" "length (ds_stk s1) < Suc vcount"
+              "length (ds_seen s1) = Suc vcount" "ds_seen s1 = ds_seen s"
+              using vlt pvlt depth lens by (simp_all add: s1_def)
+            show ?thesis
+              unfolding e_def[symmetric] s1_def[symmetric]
+              by (sep_auto heap: dfs_rel_snd[OF elt] dfs_rel_seen dfs_discover_imp_rule[OF elt wlt sz1 aux1(1-3)] Ts Tu
+                           simp: aux1(5) lens(1) wl)
+          qed
+          apply (rule dfs_rel_step_in[OF vlt])
+          subgoal premises h
+          proof -
+            have c2: "bd_call2_conds acyc_flow s" using Cons h by (simp add: bd_call2_conds_def)
+            note S = bd_in_step[OF wf Cons h(2)]
+            define e where "e = FI.csr_current (ds_ic s) v"
+            define s1 where "s1 = s\<lparr>ds_ic := FI.csr_move (ds_ic s) v\<rparr>"
+            have upd: "bd_upd2 acyc_flow s =
+                (if ds_seen s ! (fst_list ! e) then s1 else dfs_discover s1 v (fst_list ! e) e)"
+              by (simp add: bd_upd2_def Cons Let_def e_def s1_def)
+            have T: "<dfs_rel fl0 es0 st (bd_upd2 acyc_flow s)> build_dfs_a_imp st
+                     <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s)>"
+              using IH2[OF c2] bd_upd2_inv[OF inv c2] simps(2)[OF c2] by simp
+            have Ts: "ds_seen s ! (fst_list ! e) \<Longrightarrow>
+                <dfs_rel fl0 es0 st s1> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s)>"
+              using T upd by simp
+            have Tu: "\<not> ds_seen s ! (fst_list ! e) \<Longrightarrow>
+                <dfs_rel fl0 es0 st (dfs_discover s1 v (fst_list ! e) e)> build_dfs_a_imp st
+                <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s)>"
+              using T upd by simp
+            have elt: "e < m" and wlt: "fst_list ! e < vcount" using S(1,4) by (simp_all add: e_def)
+            hence wl: "fst_list ! e < Suc vcount" by simp
+            have sz1: "dfs_sized s1" using sz by (simp add: s1_def dfs_sized_def)
+            have aux1: "v < Suc vcount" "ds_prev s1 < Suc vcount" "length (ds_stk s1) < Suc vcount"
+              "length (ds_seen s1) = Suc vcount" "ds_seen s1 = ds_seen s"
+              using vlt pvlt depth lens by (simp_all add: s1_def)
+            show ?thesis
+              unfolding e_def[symmetric] s1_def[symmetric]
+              by (sep_auto heap: dfs_rel_fst[OF elt] dfs_rel_seen dfs_discover_imp_rule[OF elt wlt sz1 aux1(1-3)] Ts Tu
+                           simp: aux1(5) lens(1) wl)
+          qed
+          subgoal premises h
+          proof -
+            have c3: "bd_call3_conds acyc_flow s" using Cons h by (simp add: bd_call3_conds_def)
+            have upd: "bd_upd3 s = dfs_finish s v rest" by (simp add: bd_upd3_def Cons)
+            have T: "<dfs_rel fl0 es0 st (dfs_finish s v rest)> build_dfs_a_imp st
+                     <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s)>"
+              using IH3[OF c3] bd_upd3_inv[OF inv c3] simps(3)[OF c3] upd by simp
+            have plt: "ds_prnt s ! v < Suc vcount"
+              using tsi vK by (auto simp: tree_seen_inv_def dfs_seenK_def)
+            show ?thesis
+              using vlt by (sep_auto heap: dfs_finish_imp_rule[OF Cons sz _ plt] T)
+          qed
+          done
+      qed
+      thus "<dfs_rel fl0 es0 st s> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st (build_dfs fl s)>"
+        using fl by simp
     qed
-  next
-    assume c: "bd_call2_conds fl s"
-    then obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest"
-        and ocge: "\<not> oc < free_out_hi fl ! v" and iclt: "ic < free_in_hi fl ! v"
-      by (auto simp: bd_call2_conds_def split: list.splits prod.splits)
-    from wf stk have vlt: "v < vcount" and ilo: "in_lo ! v \<le> ic" by (auto simp: dfs_wf_def)
-    have IH2': "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (bd_upd2 fl s)>
-                  build_dfs_a_imp st
-                <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (bd_upd2 fl s))>"
-      using IH2[OF c bd_upd2_wf[OF Hin_valid wf c] bd_upd2_sized[OF sz c] bd_upd2_dref[OF dref wf sz c]] .
-    show ?thesis
-    proof (cases "ds_seen s ! (fst_list ! (free_in_edges fl ! ic))")
-      case True
-      have s1: "bd_upd2 fl s = s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>" using stk True by (simp add: bd_upd2_def Let_def)
-      show ?thesis unfolding bd_simps(2)[OF IH(1) c] s1
-        using call2_seen[OF stk ocge iclt vlt ilo True sz IH2'[unfolded s1]] .
-    next
-      case False
-      show ?thesis unfolding bd_simps(2)[OF IH(1) c]
-        using call2_unseen[OF stk ocge iclt vlt ilo False sz wf dref IH2'] .
-    qed
-  next
-    assume c: "bd_call3_conds fl s"
-    then obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest"
-        and ocge: "\<not> oc < free_out_hi fl ! v" and icge: "\<not> ic < free_in_hi fl ! v"
-      by (auto simp: bd_call3_conds_def split: list.splits prod.splits)
-    from wf stk have vlt: "v < vcount" by (auto simp: dfs_wf_def)
-    have IH3': "<dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (bd_upd3 s)>
-                  build_dfs_a_imp st
-                <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl)(free_out_hi fl)(free_in_edges fl)(free_in_hi fl) st (build_dfs fl (bd_upd3 s))>"
-      using IH3[OF c bd_upd3_wf[OF wf c] bd_upd3_sized[OF sz c] bd_upd3_dref[OF dref c]] .
-    show ?thesis unfolding bd_simps(3)[OF IH(1) c]
-      using call3_step[OF stk ocge icge vlt sz dref IH3'] .
-  next
-    assume c: "bd_ret_conds s"
-    show ?thesis
-      using build_dfs_a_imp_ret[of s] c bd_simps(4)[OF IH(1) c]
-      by (simp add: bd_ret_conds_def)
   qed
+  have dom0: "build_dfs_dom (acyc_flow, s0)" using inv0 by (simp add: dfs_inv_def build_dfs_dom_wf)
+  show ?thesis using gen[OF dom0] inv0 by simp
 qed
 
-subsection \<open>Layer (d.6): the artificial-edge writers refine @{const open_tree_component} / @{const emit_U_edge}\<close>
+subsection \<open>Layer (d.6): opening tree components and emitting artificial edges\<close>
 
-text \<open>Writing one artificial-edge field at index @{term \<open>m + ds_nxt s\<close>} refines the functional
-      list-update of @{const ds_afst} at @{term \<open>ds_nxt s\<close>}: the write lands past the real block, so the
-      real-prefix pins and the already-emitted artificial entries (indices @{term \<open>k < ds_nxt s\<close>}) are
-      untouched.\<close>
-lemma dfs_rel_afst:
-  assumes "ds_nxt s < length (ds_afst s)"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> arr_upd (di_fst st) (m + ds_nxt s) x
-         <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (s\<lparr>ds_afst := list_update (ds_afst s) (ds_nxt s) x\<rparr>)>"
-  unfolding dfs_rel_def
-  apply (sep_auto simp: assms nth_list_update)
-   apply (meson assms add_strict_left_mono less_le_trans)
-  apply (sep_auto simp: assms nth_list_update)
-  done
+text \<open>Opening a tree component, on the cells it touches: the artificial edge, the tree fields of
+      @{term c}, the one-element stack and the two cursors of @{term c}; the continuation is the
+      traversal.  The orientation @{term u} and the flow @{term a} of the artificial edge are named.\<close>
 
-text \<open>The whole artificial-edge emission: the five field writes at @{term \<open>m + ds_nxt s\<close>} followed by the
-      @{const di_nxt} bump refine appending one edge to the five artificial arrays and advancing
-      @{const ds_nxt}.  The bump extends the artificial invariant to the new index @{term \<open>ds_nxt s\<close>},
-      whose entry is exactly the value just written into each array.  The write-position bounds hold
-      because each augmented array is at least @{term \<open>m + length (ds_afst s)\<close>} long and @{term \<open>ds_nxt s\<close>}
-      is in range.\<close>
-lemma dfs_rel_emit_art:
-  assumes af: "ds_nxt s < length (ds_afst s)" and asd: "ds_nxt s < length (ds_asnd s)"
-    and ac: "ds_nxt s < length (ds_acap s)" and afl: "ds_nxt s < length (ds_aflw s)"
-    and ae: "ds_nxt s < length (ds_aest s)"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s>
-           do { _ \<leftarrow> arr_upd (di_fst st) (m + ds_nxt s) xf;
-                _ \<leftarrow> arr_upd (di_snd st) (m + ds_nxt s) xs;
-                _ \<leftarrow> arr_upd (di_cap st) (m + ds_nxt s) xc;
-                _ \<leftarrow> arr_upd (di_flow st) (m + ds_nxt s) xw;
-                _ \<leftarrow> arr_upd (di_es st) (m + ds_nxt s) xe;
-                Ref.update (di_nxt st) (Suc (ds_nxt s)) }
-         <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st
-                (s\<lparr> ds_afst := list_update (ds_afst s) (ds_nxt s) xf,
-                    ds_asnd := list_update (ds_asnd s) (ds_nxt s) xs,
-                    ds_acap := list_update (ds_acap s) (ds_nxt s) xc,
-                    ds_aflw := list_update (ds_aflw s) (ds_nxt s) xw,
-                    ds_aest := list_update (ds_aest s) (ds_nxt s) xe,
-                    ds_nxt := Suc (ds_nxt s) \<rparr>)>"
-  unfolding dfs_rel_def
-  apply (sep_auto simp: nth_list_update less_Suc_eq)
-   apply (meson af add_strict_left_mono less_le_trans)
-  apply (sep_auto simp: nth_list_update less_Suc_eq)
-   apply (meson asd add_strict_left_mono less_le_trans)
-  apply (sep_auto simp: nth_list_update less_Suc_eq)
-   apply (meson ac add_strict_left_mono less_le_trans)
-  apply (sep_auto simp: nth_list_update less_Suc_eq)
-   apply (meson afl add_strict_left_mono less_le_trans)
-  apply (sep_auto simp: nth_list_update less_Suc_eq)
-   apply (meson ae add_strict_left_mono less_le_trans)
-  apply (sep_auto simp: nth_list_update less_Suc_eq af asd ac afl ae)
-  apply (subgoal_tac "m + ds_nxt s < length fsta \<and> m + ds_nxt s < length snda \<and> m + ds_nxt s < length capa \<and> m + ds_nxt s < length flowa \<and> m + ds_nxt s < length esa")
-   apply (sep_auto simp: nth_list_update)
-  apply (thin_tac "_ \<Turnstile> _", meson af add_strict_left_mono less_le_trans)
-  apply (thin_tac "_ \<Turnstile> _", meson asd add_strict_left_mono less_le_trans)
-  apply (thin_tac "_ \<Turnstile> _", meson ac add_strict_left_mono less_le_trans)
-  apply (thin_tac "_ \<Turnstile> _", meson afl add_strict_left_mono less_le_trans)
-  apply (thin_tac "_ \<Turnstile> _", meson ae add_strict_left_mono less_le_trans)
-  done
-
-text \<open>Finalising the opened vertex @{term c}'s tree fields (parent @{term \<open>m + nxt\<close>}, potential seed
-      @{term pot_c}, thread link after the previous vertex @{term pv}) --- nine straight vertex-array
-      writes that leave the artificial region and the stack untouched.\<close>
-lemma dfs_rel_open_fields:
-  assumes "c < length (ds_seen s)" "c < length (ds_prnt s)" "c < length (ds_par s)" "c < length (ds_dir s)"
-    "c < length (ds_pot s)" "pv < length (ds_thrd s)" "c < length (ds_rvth s)" "c < length (ds_snum s)"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s>
-           do { _ \<leftarrow> arr_upd (di_seen st) c True;
-                _ \<leftarrow> arr_upd (prnt_impl (di_tree st)) c vcount;
-                _ \<leftarrow> arr_upd (di_par st) c aidx;
-                _ \<leftarrow> arr_upd (di_dir st) c up;
-                _ \<leftarrow> arr_upd (di_pot st) c pot_c;
-                _ \<leftarrow> arr_upd (thrd_impl (di_tree st)) pv c;
-                _ \<leftarrow> arr_upd (rvth_impl (di_tree st)) c pv;
-                _ \<leftarrow> arr_upd (snum_impl (di_tree st)) c 1;
-                Ref.update (di_prev st) c }
-         <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st
-                (s\<lparr> ds_seen := list_update (ds_seen s) c True, ds_prnt := list_update (ds_prnt s) c vcount,
-                    ds_par := list_update (ds_par s) c aidx, ds_dir := list_update (ds_dir s) c up,
-                    ds_pot := list_update (ds_pot s) c pot_c, ds_thrd := list_update (ds_thrd s) pv c,
-                    ds_rvth := list_update (ds_rvth s) c pv, ds_snum := list_update (ds_snum s) c 1,
-                    ds_prev := c \<rparr>)>"
-  unfolding dfs_rel_def
-  apply (sep_auto simp: assms)
-  done
-
-text \<open>Seeding the DFS with a single root frame @{term \<open>(c, olo, ilo)\<close>}: three writes at index @{term 0}
-      and setting the fill pointer to @{term 1} establish the single-frame stack \<open>[(c, olo, ilo)]\<close>.\<close>
-lemma dfs_rel_seed_stack:
-  "<dfs_rel fl0 es0 oe oh ie ih st s>
-     do { _ \<leftarrow> arr_upd (di_sv st) 0 c; _ \<leftarrow> arr_upd (di_soc st) 0 olo;
-          _ \<leftarrow> arr_upd (di_sic st) 0 ilo; Ref.update (di_sp st) 1 }
-   <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (s\<lparr>ds_stk := [(c, olo, ilo)]\<rparr>)>"
-  unfolding dfs_rel_def
-  apply (sep_auto simp: stk_rel_cons_simp nth_list_update stk_rel_nil)
-  done
-
-text \<open>Framed reads of the two references and the two CSR block-start arrays the opener consults.\<close>
-lemma dfs_rel_rd_nxt:
-  "<dfs_rel fl0 es0 oe oh ie ih st s> Ref.lookup (di_nxt st) <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = ds_nxt s)>"
-  unfolding dfs_rel_def by sep_auto
-
-lemma dfs_rel_rd_prev:
-  "<dfs_rel fl0 es0 oe oh ie ih st s> Ref.lookup (di_prev st) <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = ds_prev s)>"
-  unfolding dfs_rel_def by sep_auto
-
-lemma dfs_rel_olo:
-  assumes "c < length out_lo"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_olo st) c <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = out_lo!c)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms)
-
-lemma dfs_rel_ilo:
-  assumes "c < length in_lo"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Array.nth (di_ilo st) c <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = in_lo!c)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms)
-
-text \<open>The pre-DFS state @{const open_tree_component} hands to @{const build_dfs}: the opened vertex
-      @{term c}'s artificial tree edge written at slot @{term \<open>ds_nxt s\<close>}, its tree fields set, and the
-      DFS seeded with the single root frame.  Naming it lets the imperative opener's refinement target
-      @{term \<open>build_dfs fl (otc_pre fl s c)\<close>} and reuse @{thm build_dfs_a_imp_rule}.\<close>
-definition otc_pre :: "'n list \<Rightarrow> 'n dfs_state \<Rightarrow> nat \<Rightarrow> 'n dfs_state" where
-  "otc_pre fl s c =
-     (let imb = imbalance ! c; up = 0 \<le> imb; af = \<bar>imb\<bar>; cp = (if up then af + 1 else af); pv = ds_prev s
-      in s\<lparr> ds_afst := list_update (ds_afst s) (ds_nxt s) (if up then c else vcount),
-            ds_asnd := list_update (ds_asnd s) (ds_nxt s) (if up then vcount else c),
-            ds_acap := list_update (ds_acap s) (ds_nxt s) cp,
-            ds_aflw := list_update (ds_aflw s) (ds_nxt s) af,
-            ds_aest := list_update (ds_aest s) (ds_nxt s) InTree,
-            ds_nxt  := Suc (ds_nxt s),
-            ds_seen := list_update (ds_seen s) c True,
-            ds_prnt := list_update (ds_prnt s) c vcount,
-            ds_par  := list_update (ds_par s) c (m + ds_nxt s),
-            ds_dir  := list_update (ds_dir s) c up,
-            ds_pot  := list_update (ds_pot s) c (if up then pval_negM else pval_M),
-            ds_thrd := list_update (ds_thrd s) pv c,
-            ds_rvth := list_update (ds_rvth s) c pv,
-            ds_snum := list_update (ds_snum s) c 1,
-            ds_prev := c,
-            ds_stk  := [(c, out_lo ! c, in_lo ! c)] \<rparr>)"
-
-lemma open_tree_component_eq_pre: "open_tree_component fl s c = build_dfs fl (otc_pre fl s c)"
-  by (simp add: open_tree_component_def otc_pre_def Let_def)
-
-text \<open>The imperative opener refines @{const open_tree_component}.  After the framed read of the
-      imbalance array it writes @{term c}'s artificial tree edge into the augmented arrays at index
-      @{term \<open>m + ds_nxt s\<close>}, bumps @{const ds_nxt}, finalises @{term c}'s tree fields, seeds the DFS
-      with the single root frame and drains the subtree with @{const build_dfs_a_imp}.  The whole write
-      phase reassembles the DFS state into @{term \<open>otc_pre fl s c\<close>}, from which @{thm build_dfs_a_imp_rule}
-      yields @{term \<open>build_dfs fl (otc_pre fl s c)\<close>} \<open>=\<close> @{const open_tree_component} (@{thm
-      open_tree_component_eq_pre}).  We split on the orientation (\<open>up\<close> iff @{term \<open>0 \<le> imbalance ! c\<close>})
-      so the reduced program writes stay in step with the @{const otc_pre} record fields, and use
-      @{thm wlp_apply_ht} to fold the reassembled unfolded state back into the folded
-      @{const build_dfs_a_imp} precondition.\<close>
-lemma open_tree_component_imp_rule:
-  assumes cimb: "c < length imbalance" and cvc: "c < vcount"
-    and la1: "ds_nxt s < length (ds_afst s)" and la2: "ds_nxt s < length (ds_asnd s)"
-    and la3: "ds_nxt s < length (ds_acap s)" and la4: "ds_nxt s < length (ds_aflw s)"
-    and la5: "ds_nxt s < length (ds_aest s)"
-    and lv1: "c < length (ds_seen s)" and lv2: "c < length (ds_prnt s)"
-    and lv3: "c < length (ds_par s)" and lv4: "c < length (ds_dir s)"
-    and lv5: "c < length (ds_pot s)" and lv6: "ds_prev s < length (ds_thrd s)"
-    and lv7: "c < length (ds_rvth s)" and lv8: "c < length (ds_snum s)"
-    and lc1: "c < length out_lo" and lc2: "c < length in_lo"
-    and dom'': "build_dfs_dom (fl, otc_pre fl s c)"
-    and wf'': "dfs_wf (otc_pre fl s c)" and sz'': "dfs_sized (otc_pre fl s c)"
-    and dref'': "dref_inv (otc_pre fl s c)"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance>
-           open_tree_component_imp st imb_arr m vcount c
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (open_tree_component fl s c) * imb_arr \<mapsto>\<^sub>a imbalance>"
-proof (cases "0 \<le> imbalance ! c")
+lemma open_tree_component_imp_cps:
+  assumes cK: "c \<in> {..<vcount}" and x: "imbl ! c = x" and u: "(0 \<le> x) = u" and a: "\<bar>x\<bar> = a"
+    and bnd: "c < length imbl" "m + nx < length fs" "m + nx < length sn" "m + nx < length cp"
+      "m + nx < length fw" "m + nx < length es" "c < length se" "c < length pr" "c < length pa"
+      "c < length di" "c < length po" "pv < length th" "c < length rv" "c < length sm" "0 < length stl"
+    and K: "<FO.csr_assn (FO.csr_reset oc c) (di_ob st, di_oe st, di_oc st) *
+        FI.csr_assn (FI.csr_reset ic c) (di_ib st, di_ie st, di_ic st) *
+        imb_arr \<mapsto>\<^sub>a imbl *
+        di_fst st \<mapsto>\<^sub>a ((list_update fs (m + nx) ((if u then c else vcount)))) *
+        di_snd st \<mapsto>\<^sub>a ((list_update sn (m + nx) ((if u then vcount else c)))) *
+        di_cap st \<mapsto>\<^sub>a ((list_update cp (m + nx) ((if u then a + 1 else a)))) *
+        di_flow st \<mapsto>\<^sub>a ((list_update fw (m + nx) (a))) *
+        di_es st \<mapsto>\<^sub>a ((list_update es (m + nx) (InTree))) *
+        di_nxt st \<mapsto>\<^sub>r (Suc nx) *
+        di_seen st \<mapsto>\<^sub>a ((list_update se (c) (True))) *
+        prnt_impl (di_tree st) \<mapsto>\<^sub>a ((list_update pr (c) (vcount))) *
+        di_par st \<mapsto>\<^sub>a ((list_update pa (c) (m + nx))) *
+        di_dir st \<mapsto>\<^sub>a ((list_update di (c) (u))) *
+        di_pot st \<mapsto>\<^sub>a ((list_update po (c) ((if u then pval_negM else pval_M)))) *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a ((list_update th (pv) (c))) *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a ((list_update rv (c) (pv))) *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a ((list_update sm (c) (1))) *
+        di_prev st \<mapsto>\<^sub>r c *
+        di_stk st \<mapsto>\<^sub>a ((list_update stl (0) (c))) *
+        di_sp st \<mapsto>\<^sub>r 1 *
+        R>
+        build_dfs_a_imp st <Q>"
+  shows "<FO.csr_assn oc (di_ob st, di_oe st, di_oc st) *
+        FI.csr_assn ic (di_ib st, di_ie st, di_ic st) *
+        imb_arr \<mapsto>\<^sub>a imbl *
+        di_fst st \<mapsto>\<^sub>a fs *
+        di_snd st \<mapsto>\<^sub>a sn *
+        di_cap st \<mapsto>\<^sub>a cp *
+        di_flow st \<mapsto>\<^sub>a fw *
+        di_es st \<mapsto>\<^sub>a es *
+        di_nxt st \<mapsto>\<^sub>r nx *
+        di_seen st \<mapsto>\<^sub>a se *
+        prnt_impl (di_tree st) \<mapsto>\<^sub>a pr *
+        di_par st \<mapsto>\<^sub>a pa *
+        di_dir st \<mapsto>\<^sub>a di *
+        di_pot st \<mapsto>\<^sub>a po *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a th *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a rv *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a sm *
+        di_prev st \<mapsto>\<^sub>r pv *
+        di_stk st \<mapsto>\<^sub>a stl *
+        di_sp st \<mapsto>\<^sub>r sp *
+        R>
+        open_tree_component_imp st imb_arr m vcount c <Q>"
+proof (cases u)
   case True
-  show ?thesis
-    unfolding open_tree_component_eq_pre open_tree_component_imp_def Let_def dfs_rel_def
-    apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] 
-                    simp: cimb True)
-    using  la1 apply simp
-    apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] 
-                    simp: cvc True cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    using la2 apply simp 
-     apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] 
-                     simp: cvc True cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    using cvc la3 apply simp 
-     apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] 
-                     simp: cvc True cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    using la4 apply simp 
-     apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] 
-                     simp: cvc True cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    using la5 apply fastforce
-     apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] 
-                     simp: cvc True cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def otc_pre_def Let_def] simp: True cvc lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 la1 la2 la3 la4 la5 nth_list_update less_Suc_eq stk_rel_cons_simp stk_rel_nil Let_def)
-    apply (rule wlp_apply_ht[OF _ _ build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref''], where F="imb_arr \<mapsto>\<^sub>a imbalance * true"])
-      apply assumption
-     apply (sep_auto simp: dfs_rel_def otc_pre_def Let_def True cvc lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 la1 la2 la3 la4 la5 nth_list_update length_list_update stk_rel_cons_simp stk_rel_nil)
-    apply (subgoal_tac "m + ds_nxt s < length fsta \<and> m + ds_nxt s < length snda \<and> m + ds_nxt s < length capa \<and> m + ds_nxt s < length flowa \<and> m + ds_nxt s < length esa")
-     prefer 2 apply (intro conjI; meson add_strict_left_mono less_le_trans la1 la2 la3 la4 la5)
-    apply (sep_auto simp: nth_list_update stk_rel_cons_simp stk_rel_nil)
-    apply (sep_auto simp: dfs_rel_def otc_pre_def Let_def True)
-    done
+  show ?thesis unfolding open_tree_component_imp_def Let_def
+    using bnd by (sep_auto heap: art_edge_imp_rule tree_link_imp_rule FO.csr_reset_imp_rule[OF cK]
+                               FI.csr_reset_imp_rule[OF cK] K[unfolded Eq_TrueI[OF True] if_True One_nat_def]
+                           simp: x u a True)
 next
   case False
-  show ?thesis
-    unfolding open_tree_component_eq_pre open_tree_component_imp_def Let_def dfs_rel_def
-    apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] simp: cimb False)
-    using la1 apply fastforce 
-    apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] simp: cvc False cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    using la2 apply fastforce 
-    apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] simp: cvc False cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    using la3 apply fastforce 
-    apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] simp: cvc False cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    using la4 apply simp 
-    apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] simp: cvc False cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    using la5 apply fastforce 
-    apply (sep_auto heap: build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref'', unfolded dfs_rel_def] simp: cvc False cimb la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 otc_pre_def)
-    apply (rule wlp_apply_ht[OF _ _ build_dfs_a_imp_rule[OF dom'' wf'' sz'' dref''], where F="imb_arr \<mapsto>\<^sub>a imbalance * true"])
-      apply assumption
-     apply (subgoal_tac "m + ds_nxt s < length fsta \<and> m + ds_nxt s < length snda \<and> m + ds_nxt s < length capa \<and> m + ds_nxt s < length flowa \<and> m + ds_nxt s < length esa")
-      prefer 2 apply (intro conjI; meson add_strict_left_mono less_le_trans la1 la2 la3 la4 la5)
-     apply (sep_auto simp: dfs_rel_def otc_pre_def Let_def False cvc lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 la1 la2 la3 la4 la5 nth_list_update stk_rel_cons_simp stk_rel_nil)
-    done
+  show ?thesis unfolding open_tree_component_imp_def Let_def
+    using bnd by (sep_auto heap: art_edge_imp_rule tree_link_imp_rule FO.csr_reset_imp_rule[OF cK]
+                               FI.csr_reset_imp_rule[OF cK] K[unfolded Eq_FalseI[OF False] if_False One_nat_def]
+                           simp: x u a False)
 qed
 
-text \<open>The imperative @{const emit_U_edge_imp} refines @{const emit_U_edge}: for an already-seen
-      imbalanced vertex @{term v} it writes one saturated @{term U} artificial edge into the augmented
-      arrays at index @{term \<open>m + ds_nxt s\<close>} and bumps @{const ds_nxt}, touching no tree or stack field.
-      As it ends at the @{const ds_nxt} bump (no @{const build_dfs_a_imp} tail) the write phase reassembles
-      directly into @{term \<open>emit_U_edge s v\<close>}, so the proof closes with a single fold-in entailment per
-      orientation case (no @{thm wlp_apply_ht} needed).\<close>
+lemma emit_U_edge_imp_small:
+  assumes x: "imbl ! v = x" and u: "(0 \<le> x) = u" and a: "\<bar>x\<bar> = a"
+    and bnd: "v < length imbl" "m + nx < length fs" "m + nx < length sn" "m + nx < length cp"
+      "m + nx < length fw" "m + nx < length es"
+  shows "<imb_arr \<mapsto>\<^sub>a imbl *
+        di_nxt st \<mapsto>\<^sub>r nx *
+        di_fst st \<mapsto>\<^sub>a fs *
+        di_snd st \<mapsto>\<^sub>a sn *
+        di_cap st \<mapsto>\<^sub>a cp *
+        di_flow st \<mapsto>\<^sub>a fw *
+        di_es st \<mapsto>\<^sub>a es>
+         emit_U_edge_imp st imb_arr m vcount v
+         <\<lambda>_. imb_arr \<mapsto>\<^sub>a imbl *
+        di_nxt st \<mapsto>\<^sub>r (Suc nx) *
+        di_fst st \<mapsto>\<^sub>a ((list_update fs (m + nx) ((if u then v else vcount)))) *
+        di_snd st \<mapsto>\<^sub>a ((list_update sn (m + nx) ((if u then vcount else v)))) *
+        di_cap st \<mapsto>\<^sub>a ((list_update cp (m + nx) (a))) *
+        di_flow st \<mapsto>\<^sub>a ((list_update fw (m + nx) (a))) *
+        di_es st \<mapsto>\<^sub>a ((list_update es (m + nx) (InU)))>"
+  unfolding emit_U_edge_imp_def Let_def
+  using bnd by (sep_auto heap: art_edge_imp_rule simp: x u a)
+
+text \<open>Emitting a saturated @{term U} edge refines @{const emit_U_edge}.\<close>
+
 lemma emit_U_edge_imp_rule:
-  assumes cimb: "v < length imbalance" and cvc: "v < vcount"
-    and la1: "ds_nxt s < length (ds_afst s)" and la2: "ds_nxt s < length (ds_asnd s)"
-    and la3: "ds_nxt s < length (ds_acap s)" and la4: "ds_nxt s < length (ds_aflw s)"
-    and la5: "ds_nxt s < length (ds_aest s)"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance>
-           emit_U_edge_imp st imb_arr m vcount v
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (emit_U_edge s v) * imb_arr \<mapsto>\<^sub>a imbalance>"
-proof (cases "0 \<le> imbalance ! v")
-  case True
+  assumes vlt: "v < Suc vcount" and al: "art_len s" and room: "ds_nxt s < length vs_list"
+  shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> emit_U_edge_imp st imb_arr m vcount v
+         <\<lambda>_. dfs_rel fl0 es0 st (emit_U_edge s v) * imb_arr \<mapsto>\<^sub>a imbalance>"
+proof -
+  have eq: "emit_U_edge s v =
+     s\<lparr>ds_afst := (list_update (ds_afst s) (ds_nxt s) ((if 0 \<le> imbalance ! v then v else vcount))),
+        ds_asnd := (list_update (ds_asnd s) (ds_nxt s) ((if 0 \<le> imbalance ! v then vcount else v))),
+        ds_acap := (list_update (ds_acap s) (ds_nxt s) (\<bar>imbalance ! v\<bar>)),
+        ds_aflw := (list_update (ds_aflw s) (ds_nxt s) (\<bar>imbalance ! v\<bar>)),
+        ds_aest := (list_update (ds_aest s) (ds_nxt s) (InU)), ds_nxt := Suc (ds_nxt s)\<rparr>"
+    by (simp add: emit_U_edge_def Let_def)
+  have L: "length (ds_afst s) = length vs_list" "length (ds_asnd s) = length vs_list"
+    "length (ds_acap s) = length vs_list" "length (ds_aflw s) = length vs_list"
+    "length (ds_aest s) = length vs_list" using al by (simp_all add: art_len_def)
   show ?thesis
-    unfolding emit_U_edge_imp_def emit_U_edge_def Let_def dfs_rel_def
-    apply (sep_auto simp: cimb True nth_list_update)
-    using la1 apply simp
-    apply (subgoal_tac "m + ds_nxt s < length fsta \<and> m + ds_nxt s < length snda \<and> m + ds_nxt s < length capa \<and> m + ds_nxt s < length flowa \<and> m + ds_nxt s < length esa")
-     prefer 2 apply (intro conjI; meson add_strict_left_mono less_le_trans la1 la2 la3 la4 la5)
-    apply (sep_auto simp: True nth_list_update la1 la2 la3 la4 la5)
+    unfolding dfs_rel_def[of _ _ _ s]
+    apply (simp only: ex_assn_move_out)
+    apply (intro ht_exEI)
+    apply (subst mult.assoc, subst mult.commute[of "\<up>_"], subst mult.assoc[symmetric])
+    apply (rule ht_extract_pre_pure)
+    subgoal premises PU for fsta snda capa flowa esa auxa stl sp
+    proof -
+      have b: "m + ds_nxt s < length fsta" "m + ds_nxt s < length snda" "m + ds_nxt s < length capa"
+        "m + ds_nxt s < length flowa" "m + ds_nxt s < length esa"
+        using PU room L by auto
+      have vl: "v < length imbalance" using vlt by simp
+      note small = emit_U_edge_imp_small[where imbl = imbalance and x = "imbalance ! v"
+          and u = "0 \<le> imbalance ! v" and a = "\<bar>imbalance ! v\<bar>" and fs = "fsta" and sn = "snda" and cp = "capa" and fw = "flowa" and es = "esa" and nx = "ds_nxt s", OF refl refl refl vl b]
+      show ?thesis
+        apply (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF small, where R = "FO.csr_assn (ds_oc s) (di_ob st, di_oe st, di_oc st) *
+        di_oh st \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+        FI.csr_assn (ds_ic s) (di_ib st, di_ie st, di_ic st) *
+        di_ih st \<mapsto>\<^sub>a fst (free_in acyc_flow) *
+        di_seen st \<mapsto>\<^sub>a (ds_seen s) *
+        prnt_impl (di_tree st) \<mapsto>\<^sub>a (ds_prnt s) *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a (ds_thrd s) *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a (ds_rvth s) *
+        lsuc_impl (di_tree st) \<mapsto>\<^sub>a (ds_lsuc s) *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a (ds_snum s) *
+        aux_impl (di_tree st) \<mapsto>\<^sub>a auxa *
+        di_par st \<mapsto>\<^sub>a (ds_par s) *
+        di_dir st \<mapsto>\<^sub>a (ds_dir s) *
+        di_pot st \<mapsto>\<^sub>a (ds_pot s) *
+        di_cost st \<mapsto>\<^sub>a cost_list *
+        di_stk st \<mapsto>\<^sub>a (stl) *
+        di_sp st \<mapsto>\<^sub>r (sp) *
+        di_prev st \<mapsto>\<^sub>r (ds_prev s)"]]])
+         apply (simp add: ac_simps)
+        unfolding eq
+        apply (rule ent_trans[OF _ ent_star_mono[OF ent_star_mono[OF dfs_rel_intro[where fsta = "(list_update fsta (m + ds_nxt s) ((if 0 \<le> imbalance ! v then v else vcount)))"
+                 and snda = "(list_update snda (m + ds_nxt s) ((if 0 \<le> imbalance ! v then vcount else v)))"
+                 and capa = "(list_update capa (m + ds_nxt s) (\<bar>imbalance ! v\<bar>))" and flowa = "(list_update flowa (m + ds_nxt s) (\<bar>imbalance ! v\<bar>))"
+                 and esa = "(list_update esa (m + ds_nxt s) (InU))" and auxa = auxa and stl = stl and sp = sp]
+                 ent_refl[of "imb_arr \<mapsto>\<^sub>a imbalance"]] ent_true[of emp]]])
+         apply (simp add: ac_simps)
+        using PU room L by (auto simp: nth_list_update less_Suc_eq)
+    qed
     done
+qed
+
+text \<open>Opening a tree component refines @{const open_tree_component}: the writes produce the seed state of
+      @{thm [source] open_tree_component_seed}, from which the traversal runs.\<close>
+
+lemma open_tree_component_imp_rule:
+  assumes inv: "dfs_inv acyc_flow s" and cvc: "c < vcount" and unseen: "\<not> ds_seen s ! c"
+    and cnz: "c \<noteq> 0" and stke: "ds_stk s = []" and al: "art_len s" and room: "ds_nxt s < length vs_list"
+  shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> open_tree_component_imp st imb_arr m vcount c
+         <\<lambda>_. dfs_rel fl0 es0 st (open_tree_component acyc_flow s c) * imb_arr \<mapsto>\<^sub>a imbalance>"
+proof -
+  have wf: "dfs_wf acyc_flow s" and sz: "dfs_sized s" and thi: "thread_inv s"
+    using inv by (simp_all add: dfs_inv_def)
+  note L = sz[unfolded dfs_sized_def]
+  have AL: "length (ds_afst s) = length vs_list" "length (ds_asnd s) = length vs_list"
+    "length (ds_acap s) = length vs_list" "length (ds_aflw s) = length vs_list"
+    "length (ds_aest s) = length vs_list" using al by (simp_all add: art_len_def)
+  have pvl: "ds_prev s < Suc vcount" using thi by (simp add: thread_inv_def)
+  have cK: "c \<in> {..<vcount}" using cvc by simp
+  obtain sd where SD: "open_tree_component acyc_flow s c = build_dfs acyc_flow sd" "build_dfs_dom (acyc_flow, sd)"
+    "(dfs_inv acyc_flow s \<and> \<not> ds_seen s ! c \<and> c \<noteq> 0 \<and> ds_stk s = []) \<longrightarrow> dfs_inv acyc_flow sd"
+    "ds_stk sd = [c]" "ds_oc sd = ds_oc (dfs_push s c)" "ds_ic sd = ds_ic (dfs_push s c)"
+    "ds_nxt sd = Suc (ds_nxt s)"
+    "ds_seen sd = (list_update (ds_seen s) (c) (True))" "ds_prnt sd = (list_update (ds_prnt s) (c) (vcount))"
+    "ds_par sd = (list_update (ds_par s) (c) (m + ds_nxt s))" "ds_dir sd = (list_update (ds_dir s) (c) (art_dir c))"
+    "ds_pot sd = (list_update (ds_pot s) (c) ((if art_dir c then pval_negM else pval_M)))"
+    "ds_thrd sd = (list_update (ds_thrd s) (ds_prev s) (c))" "ds_snum sd = (list_update (ds_snum s) (c) (1))"
+    "ds_afst sd = (list_update (ds_afst s) (ds_nxt s) ((if art_dir c then c else vcount)))"
+    "ds_asnd sd = (list_update (ds_asnd s) (ds_nxt s) ((if art_dir c then vcount else c)))"
+    "ds_acap sd = (list_update (ds_acap s) (ds_nxt s) (art_tree_cap c))"
+    "ds_aflw sd = (list_update (ds_aflw s) (ds_nxt s) (art_flow c))"
+    "ds_aest sd = (list_update (ds_aest s) (ds_nxt s) (InTree))"
+    "ds_rvth sd = (list_update (ds_rvth s) (c) (ds_prev s))" "ds_prev sd = c" "ds_lsuc sd = ds_lsuc s"
+    by (rule open_tree_component_seed[OF wf sz cvc])
+  have isd: "dfs_inv acyc_flow sd" using SD(3) inv unseen cnz stke by blast
+  note B = ht_frame[OF build_dfs_a_imp_rule[OF isd], where R = "imb_arr \<mapsto>\<^sub>a imbalance", folded SD(1)]
+  show ?thesis
+    unfolding dfs_rel_def[of _ _ _ s]
+    apply (simp only: ex_assn_move_out)
+    apply (intro ht_exEI)
+    apply (subst mult.assoc, subst mult.commute[of "\<up>_"], subst mult.assoc[symmetric])
+    apply (rule ht_extract_pre_pure)
+    subgoal premises PU for fsta snda capa flowa esa auxa stl sp
+    proof -
+      have b: "c < length imbalance" "m + ds_nxt s < length fsta" "m + ds_nxt s < length snda"
+        "m + ds_nxt s < length capa" "m + ds_nxt s < length flowa" "m + ds_nxt s < length esa"
+        "c < length (ds_seen s)" "c < length (ds_prnt s)" "c < length (ds_par s)" "c < length (ds_dir s)"
+        "c < length (ds_pot s)" "ds_prev s < length (ds_thrd s)" "c < length (ds_rvth s)"
+        "c < length (ds_snum s)" "0 < length stl"
+        using PU room AL L cvc pvl by auto
+      have K: "<FO.csr_assn (FO.csr_reset (ds_oc s) c) (di_ob st, di_oe st, di_oc st) *
+        FI.csr_assn (FI.csr_reset (ds_ic s) c) (di_ib st, di_ie st, di_ic st) *
+        imb_arr \<mapsto>\<^sub>a imbalance *
+        di_fst st \<mapsto>\<^sub>a ((list_update fsta (m + ds_nxt s) ((if (0 \<le> imbalance ! c) then c else vcount)))) *
+        di_snd st \<mapsto>\<^sub>a ((list_update snda (m + ds_nxt s) ((if (0 \<le> imbalance ! c) then vcount else c)))) *
+        di_cap st \<mapsto>\<^sub>a ((list_update capa (m + ds_nxt s) ((if (0 \<le> imbalance ! c) then \<bar>imbalance ! c\<bar> + 1 else \<bar>imbalance ! c\<bar>)))) *
+        di_flow st \<mapsto>\<^sub>a ((list_update flowa (m + ds_nxt s) (\<bar>imbalance ! c\<bar>))) *
+        di_es st \<mapsto>\<^sub>a ((list_update esa (m + ds_nxt s) (InTree))) *
+        di_nxt st \<mapsto>\<^sub>r (Suc (ds_nxt s)) *
+        di_seen st \<mapsto>\<^sub>a ((list_update (ds_seen s) (c) (True))) *
+        prnt_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_prnt s) (c) (vcount))) *
+        di_par st \<mapsto>\<^sub>a ((list_update (ds_par s) (c) (m + ds_nxt s))) *
+        di_dir st \<mapsto>\<^sub>a ((list_update (ds_dir s) (c) ((0 \<le> imbalance ! c)))) *
+        di_pot st \<mapsto>\<^sub>a ((list_update (ds_pot s) (c) ((if (0 \<le> imbalance ! c) then pval_negM else pval_M)))) *
+        thrd_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_thrd s) (ds_prev s) (c))) *
+        rvth_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_rvth s) (c) (ds_prev s))) *
+        snum_impl (di_tree st) \<mapsto>\<^sub>a ((list_update (ds_snum s) (c) (1))) *
+        di_prev st \<mapsto>\<^sub>r c *
+        di_stk st \<mapsto>\<^sub>a ((list_update stl (0) (c))) *
+        di_sp st \<mapsto>\<^sub>r 1 *
+        (di_oh st \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+        di_ih st \<mapsto>\<^sub>a fst (free_in acyc_flow) *
+        lsuc_impl (di_tree st) \<mapsto>\<^sub>a (ds_lsuc s) *
+        aux_impl (di_tree st) \<mapsto>\<^sub>a auxa *
+        di_cost st \<mapsto>\<^sub>a cost_list)>
+        build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st (open_tree_component acyc_flow s c) * imb_arr \<mapsto>\<^sub>a imbalance>"
+        apply (rule ht_cons_pre[OF _ B])
+        apply (rule ent_trans[OF _ ent_star_mono[OF dfs_rel_intro[where fsta = "(list_update fsta (m + ds_nxt s) ((if (0 \<le> imbalance ! c) then c else vcount)))"
+                 and snda = "(list_update snda (m + ds_nxt s) ((if (0 \<le> imbalance ! c) then vcount else c)))"
+                 and capa = "(list_update capa (m + ds_nxt s) ((if (0 \<le> imbalance ! c) then \<bar>imbalance ! c\<bar> + 1 else \<bar>imbalance ! c\<bar>)))" and flowa = "(list_update flowa (m + ds_nxt s) (\<bar>imbalance ! c\<bar>))"
+                 and esa = "(list_update esa (m + ds_nxt s) (InTree))" and auxa = auxa and stl = "(list_update stl (0) (c))" and sp = 1]
+                 ent_refl]])
+         apply (simp add: SD dfs_push_def art_dir_def ac_simps)
+        using PU room AL b by (auto simp: SD art_dir_def art_flow_def art_tree_cap_def nth_list_update less_Suc_eq
+                                     take_Suc_conv_app_nth)
+      show ?thesis
+        by (rule ht_cons_pre[OF _ open_tree_component_imp_cps[where oc = "ds_oc s" and ic = "ds_ic s" and imbl = "imbalance" and x = "imbalance ! c" and u = "0 \<le> imbalance ! c" and a = "\<bar>imbalance ! c\<bar>" and fs = "fsta" and sn = "snda" and cp = "capa" and fw = "flowa" and es = "esa" and nx = "ds_nxt s" and se = "ds_seen s" and pr = "ds_prnt s" and pa = "ds_par s" and di = "ds_dir s" and po = "ds_pot s" and th = "ds_thrd s" and rv = "ds_rvth s" and sm = "ds_snum s" and pv = "ds_prev s" and stl = "stl" and sp = "sp" and R = "di_oh st \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+        di_ih st \<mapsto>\<^sub>a fst (free_in acyc_flow) *
+        lsuc_impl (di_tree st) \<mapsto>\<^sub>a (ds_lsuc s) *
+        aux_impl (di_tree st) \<mapsto>\<^sub>a auxa *
+        di_cost st \<mapsto>\<^sub>a cost_list", OF cK refl refl refl b K]])
+           (simp add: ac_simps)
+    qed
+    done
+qed
+
+subsection \<open>Layer (d.7): the two vertex scans\<close>
+
+text \<open>The scans never decrease the artificial-edge counter, so the final count bounds every
+      intermediate one --- the room each emission needs.\<close>
+
+lemma fold_nxt_mono:
+  assumes step: "\<And>v t. v \<in> set vs_list \<Longrightarrow> dfs_inv acyc_flow t \<Longrightarrow> ds_stk t = [] \<Longrightarrow>
+                  dfs_inv acyc_flow (g v t) \<and> ds_stk (g v t) = [] \<and> ds_nxt t \<le> ds_nxt (g v t)"
+  shows "set xs \<subseteq> set vs_list \<Longrightarrow> dfs_inv acyc_flow s \<Longrightarrow> ds_stk s = [] \<Longrightarrow>
+         ds_nxt s \<le> ds_nxt (fold g xs s)"
+proof (induct xs arbitrary: s)
+  case Nil thus ?case by simp
 next
-  case False
-  show ?thesis
-    unfolding emit_U_edge_imp_def emit_U_edge_def Let_def dfs_rel_def
-    apply (sep_auto simp: cimb False nth_list_update)
-    using la1 apply fastforce
-    apply (subgoal_tac "m + ds_nxt s < length fsta \<and> m + ds_nxt s < length snda \<and> m + ds_nxt s < length capa \<and> m + ds_nxt s < length flowa \<and> m + ds_nxt s < length esa")
-     prefer 2 apply (intro conjI; meson add_strict_left_mono less_le_trans la1 la2 la3 la4 la5)
-    apply (sep_auto simp: False nth_list_update la1 la2 la3 la4 la5)
-    done
+  case (Cons x xs)
+  have "dfs_inv acyc_flow (g x s) \<and> ds_stk (g x s) = [] \<and> ds_nxt s \<le> ds_nxt (g x s)"
+    using step[of x s] Cons.prems by simp
+  thus ?case using Cons.hyps[of "g x s"] Cons.prems(1) by fastforce
 qed
 
-subsection \<open>Layer (d.7): functional invariant preservation for the vertex scans\<close>
-
-text \<open>The two phase scans repeatedly open tree components and emit artificial edges; to invoke the
-      imperative rules for those operations we must discharge, at every vertex, the well-formedness
-      (@{const dfs_wf}), sizedness (@{const dfs_sized}), reference (@{const dref_inv}) invariants of the
-      pre-DFS state, and a counting bound guaranteeing room in the artificial arrays.  The whole DFS loop
-      @{const build_dfs} preserves the three invariants (per-step lemmas @{thm bd_upd1_wf} etc.) and
-      leaves @{const ds_nxt} and the five artificial arrays untouched (it only writes the seen / tree /
-      stack fields).  Opening a component is @{const build_dfs} of the seeded @{const otc_pre} state, so
-      it preserves the invariants and bumps @{const ds_nxt} by exactly one; emitting a @{term U} edge is a
-      single record update with the same effect.  A @{const phase1_step} does at most one of these.\<close>
-
-lemma build_dfs_wsd:
-  assumes "build_dfs_dom (fl, s)" "dfs_wf s" "dfs_sized s" "dref_inv s"
-  shows "dfs_wf (build_dfs fl s) \<and> dfs_sized (build_dfs fl s) \<and> dref_inv (build_dfs fl s)"
-  using assms(2-4)
-proof (induct rule: bd_induct[OF assms(1)])
-  case IH: (1 fl s)
-  show ?case
-  proof (rule bd_cases[where s = s and fl = fl])
-    assume c: "bd_call1_conds fl s"
-    show ?case unfolding bd_simps(1)[OF IH(1) c]
-      by (rule IH(2)[OF c bd_upd1_wf[OF Hout_valid IH(5) c] bd_upd1_sized[OF IH(6) c]
-                        bd_upd1_dref[OF IH(7) IH(5) IH(6) c]])
-  next
-    assume c: "bd_call2_conds fl s"
-    show ?case unfolding bd_simps(2)[OF IH(1) c]
-      by (rule IH(3)[OF c bd_upd2_wf[OF Hin_valid IH(5) c] bd_upd2_sized[OF IH(6) c]
-                        bd_upd2_dref[OF IH(7) IH(5) IH(6) c]])
-  next
-    assume c: "bd_call3_conds fl s"
-    show ?case unfolding bd_simps(3)[OF IH(1) c]
-      by (rule IH(4)[OF c bd_upd3_wf[OF IH(5) c] bd_upd3_sized[OF IH(6) c]
-                        bd_upd3_dref[OF IH(7) c]])
-  next
-    assume c: "bd_ret_conds s"
-    show ?case unfolding bd_simps(4)[OF IH(1) c] using IH(5) IH(6) IH(7) by simp
-  qed
-qed
-
-lemma bd_upd1_nxt: "bd_call1_conds fl s \<Longrightarrow> ds_nxt (bd_upd1 fl s) = ds_nxt s"
-  by (auto simp: bd_upd1_def bd_call1_conds_def dfs_discover_def Let_def split: prod.splits list.splits if_splits)
-lemma bd_upd2_nxt: "bd_call2_conds fl s \<Longrightarrow> ds_nxt (bd_upd2 fl s) = ds_nxt s"
-  by (auto simp: bd_upd2_def bd_call2_conds_def dfs_discover_def Let_def split: prod.splits list.splits if_splits)
-lemma bd_upd3_nxt: "bd_call3_conds fl s \<Longrightarrow> ds_nxt (bd_upd3 s) = ds_nxt s"
-  by (auto simp: bd_upd3_def bd_call3_conds_def dfs_finish_def Let_def split: prod.splits list.splits if_splits)
-
-lemma build_dfs_nxt:
-  assumes "build_dfs_dom (fl, s)" shows "ds_nxt (build_dfs fl s) = ds_nxt s"
-proof (induct rule: bd_induct[OF assms])
-  case IH: (1 fl s)
-  show ?case
-  proof (rule bd_cases[where s = s and fl = fl])
-    assume c: "bd_call1_conds fl s"
-    show ?case unfolding bd_simps(1)[OF IH(1) c] using IH(2)[OF c] by (simp add: bd_upd1_nxt[OF c])
-  next
-    assume c: "bd_call2_conds fl s"
-    show ?case unfolding bd_simps(2)[OF IH(1) c] using IH(3)[OF c] by (simp add: bd_upd2_nxt[OF c])
-  next
-    assume c: "bd_call3_conds fl s"
-    show ?case unfolding bd_simps(3)[OF IH(1) c] using IH(4)[OF c] by (simp add: bd_upd3_nxt[OF c])
-  next
-    assume c: "bd_ret_conds s"
-    show ?case unfolding bd_simps(4)[OF IH(1) c] by simp
-  qed
-qed
-
-lemma bd_upd1_arts: "bd_call1_conds fl s \<Longrightarrow> ds_afst (bd_upd1 fl s) = ds_afst s \<and> ds_asnd (bd_upd1 fl s) = ds_asnd s \<and> ds_acap (bd_upd1 fl s) = ds_acap s \<and> ds_aflw (bd_upd1 fl s) = ds_aflw s \<and> ds_aest (bd_upd1 fl s) = ds_aest s"
-  by (auto simp: bd_upd1_def bd_call1_conds_def dfs_discover_def Let_def split: prod.splits list.splits if_splits)
-lemma bd_upd2_arts: "bd_call2_conds fl s \<Longrightarrow> ds_afst (bd_upd2 fl s) = ds_afst s \<and> ds_asnd (bd_upd2 fl s) = ds_asnd s \<and> ds_acap (bd_upd2 fl s) = ds_acap s \<and> ds_aflw (bd_upd2 fl s) = ds_aflw s \<and> ds_aest (bd_upd2 fl s) = ds_aest s"
-  by (auto simp: bd_upd2_def bd_call2_conds_def dfs_discover_def Let_def split: prod.splits list.splits if_splits)
-lemma bd_upd3_arts: "bd_call3_conds fl s \<Longrightarrow> ds_afst (bd_upd3 s) = ds_afst s \<and> ds_asnd (bd_upd3 s) = ds_asnd s \<and> ds_acap (bd_upd3 s) = ds_acap s \<and> ds_aflw (bd_upd3 s) = ds_aflw s \<and> ds_aest (bd_upd3 s) = ds_aest s"
-  by (auto simp: bd_upd3_def bd_call3_conds_def dfs_finish_def Let_def split: prod.splits list.splits if_splits)
-
-lemma build_dfs_arts:
-  assumes "build_dfs_dom (fl, s)"
-  shows "ds_afst (build_dfs fl s) = ds_afst s \<and> ds_asnd (build_dfs fl s) = ds_asnd s \<and> ds_acap (build_dfs fl s) = ds_acap s \<and> ds_aflw (build_dfs fl s) = ds_aflw s \<and> ds_aest (build_dfs fl s) = ds_aest s"
-proof (induct rule: bd_induct[OF assms])
-  case IH: (1 fl s)
-  show ?case
-  proof (rule bd_cases[where s = s and fl = fl])
-    assume c: "bd_call1_conds fl s"
-    show ?case unfolding bd_simps(1)[OF IH(1) c] using IH(2)[OF c] bd_upd1_arts[OF c] by simp
-  next
-    assume c: "bd_call2_conds fl s"
-    show ?case unfolding bd_simps(2)[OF IH(1) c] using IH(3)[OF c] bd_upd2_arts[OF c] by simp
-  next
-    assume c: "bd_call3_conds fl s"
-    show ?case unfolding bd_simps(3)[OF IH(1) c] using IH(4)[OF c] bd_upd3_arts[OF c] by simp
-  next
-    assume c: "bd_ret_conds s"
-    show ?case unfolding bd_simps(4)[OF IH(1) c] by simp
-  qed
-qed
-
-lemma otc_pre_sized: "dfs_sized s \<Longrightarrow> dfs_sized (otc_pre fl s c)"
-  by (simp add: dfs_sized_def otc_pre_def Let_def)
-lemma otc_pre_wf:
-  assumes "dfs_wf s" "dfs_sized s" "c < vcount"
-  shows "dfs_wf (otc_pre fl s c)"
-  using assms by (auto simp: dfs_wf_def otc_pre_def Let_def dfs_sized_def)
-lemma otc_pre_dref:
-  assumes "dref_inv s" "dfs_sized s" "c < vcount"
-  shows "dref_inv (otc_pre fl s c)"
-  using assms by (auto simp: dref_inv_def otc_pre_def Let_def dfs_sized_def nth_list_update split: if_splits)
-
-lemma open_tree_component_wsd:
-  assumes "dfs_wf s" "dfs_sized s" "dref_inv s" "c < vcount"
-  shows "dfs_wf (open_tree_component fl s c) \<and> dfs_sized (open_tree_component fl s c) \<and> dref_inv (open_tree_component fl s c)"
+lemma phase1_step_mono:
+  "v \<in> set vs_list \<Longrightarrow> dfs_inv acyc_flow t \<Longrightarrow> ds_stk t = [] \<Longrightarrow>
+   dfs_inv acyc_flow (phase1_step acyc_flow v t) \<and> ds_stk (phase1_step acyc_flow v t) = [] \<and>
+   ds_nxt t \<le> ds_nxt (phase1_step acyc_flow v t)"
 proof -
-  have wf: "dfs_wf (otc_pre fl s c)" using otc_pre_wf[OF assms(1,2,4)] .
-  have dom: "build_dfs_dom (fl, otc_pre fl s c)" using build_dfs_dom_wf'[OF wf] .
-  show ?thesis unfolding open_tree_component_eq_pre
-    using build_dfs_wsd[OF dom wf otc_pre_sized[OF assms(2)] otc_pre_dref[OF assms(3,2,4)]] .
+  assume v: "v \<in> set vs_list" and i: "dfs_inv acyc_flow t" and e: "ds_stk t = []"
+  have "dfs_inv acyc_flow (phase1_step acyc_flow v t) \<and> ds_stk (phase1_step acyc_flow v t) = []"
+    by (rule phase1_step_inv[OF v]) (simp add: i e)
+  moreover have "ds_nxt t \<le> ds_nxt (phase1_step acyc_flow v t)"
+    using phase1_step_nxt[OF i vs_less_vcount[OF v]] by auto
+  ultimately show ?thesis by simp
 qed
 
-lemma open_tree_component_nxt:
-  assumes "dfs_wf s" "dfs_sized s" "c < vcount"
-  shows "ds_nxt (open_tree_component fl s c) = Suc (ds_nxt s)"
+lemma phase2_step_mono:
+  "v \<in> set vs_list \<Longrightarrow> dfs_inv acyc_flow t \<Longrightarrow> ds_stk t = [] \<Longrightarrow>
+   dfs_inv acyc_flow (phase2_step acyc_flow v t) \<and> ds_stk (phase2_step acyc_flow v t) = [] \<and>
+   ds_nxt t \<le> ds_nxt (phase2_step acyc_flow v t)"
 proof -
-  have dom: "build_dfs_dom (fl, otc_pre fl s c)" using build_dfs_dom_wf'[OF otc_pre_wf[OF assms]] .
-  show ?thesis unfolding open_tree_component_eq_pre build_dfs_nxt[OF dom] by (simp add: otc_pre_def Let_def)
+  assume v: "v \<in> set vs_list" and i: "dfs_inv acyc_flow t" and e: "ds_stk t = []"
+  have "dfs_inv acyc_flow (phase2_step acyc_flow v t) \<and> ds_stk (phase2_step acyc_flow v t) = []"
+    by (rule phase2_step_inv[OF v]) (simp add: i e)
+  moreover have "ds_nxt t \<le> ds_nxt (phase2_step acyc_flow v t)"
+    using phase2_step_nxt2[OF i vs_less_vcount[OF v]] by auto
+  ultimately show ?thesis by simp
 qed
 
-lemma open_tree_component_arts_len:
-  assumes "dfs_wf s" "dfs_sized s" "c < vcount"
-  shows "length (ds_afst (open_tree_component fl s c)) = length (ds_afst s) \<and>
-         length (ds_asnd (open_tree_component fl s c)) = length (ds_asnd s) \<and>
-         length (ds_acap (open_tree_component fl s c)) = length (ds_acap s) \<and>
-         length (ds_aflw (open_tree_component fl s c)) = length (ds_aflw s) \<and>
-         length (ds_aest (open_tree_component fl s c)) = length (ds_aest s)"
-proof -
-  have dom: "build_dfs_dom (fl, otc_pre fl s c)" using build_dfs_dom_wf'[OF otc_pre_wf[OF assms]] .
-  show ?thesis unfolding open_tree_component_eq_pre
-    using build_dfs_arts[OF dom] by (simp add: otc_pre_def Let_def)
-qed
+text \<open>The emptiness tests of the two blocks of a vertex, on the folded relation.\<close>
 
-lemma emit_U_edge_wsd:
-  assumes "dfs_wf s" "dfs_sized s" "dref_inv s"
-  shows "dfs_wf (emit_U_edge s v) \<and> dfs_sized (emit_U_edge s v) \<and> dref_inv (emit_U_edge s v)"
-  using assms by (simp add: dfs_wf_def dfs_sized_def dref_inv_def emit_U_edge_def Let_def)
-lemma emit_U_edge_nxt: "ds_nxt (emit_U_edge s v) = Suc (ds_nxt s)"
-  by (simp add: emit_U_edge_def Let_def)
-lemma emit_U_edge_arts_len:
-  "length (ds_afst (emit_U_edge s v)) = length (ds_afst s) \<and>
-   length (ds_asnd (emit_U_edge s v)) = length (ds_asnd s) \<and>
-   length (ds_acap (emit_U_edge s v)) = length (ds_acap s) \<and>
-   length (ds_aflw (emit_U_edge s v)) = length (ds_aflw s) \<and>
-   length (ds_aest (emit_U_edge s v)) = length (ds_aest s)"
-  by (simp add: emit_U_edge_def Let_def)
+lemma dfs_rel_empty_out:
+  "v < vcount \<Longrightarrow> <dfs_rel fl0 es0 st s> csr_empty_imp (di_ob st) v
+   <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = FO.csr_empty v)>"
+  unfolding dfs_rel_def by (sep_auto heap: FO.csr_empty_imp_rule)
 
-lemma phase1_step_wsd:
-  assumes "dfs_wf s" "dfs_sized s" "dref_inv s" "v < vcount"
-  shows "dfs_wf (phase1_step fl v s) \<and> dfs_sized (phase1_step fl v s) \<and> dref_inv (phase1_step fl v s)"
-  using assms open_tree_component_wsd[OF assms(1,2,3,4)] emit_U_edge_wsd[OF assms(1,2,3)]
-  by (auto simp: phase1_step_def)
-lemma phase1_step_nxt_le:
-  assumes "dfs_wf s" "dfs_sized s" "v < vcount"
-  shows "ds_nxt (phase1_step fl v s) \<le> Suc (ds_nxt s)"
-  using open_tree_component_nxt[OF assms] emit_U_edge_nxt
-  by (auto simp: phase1_step_def)
-lemma phase1_step_arts_len:
-  assumes "dfs_wf s" "dfs_sized s" "v < vcount"
-  shows "length (ds_afst (phase1_step fl v s)) = length (ds_afst s) \<and>
-         length (ds_asnd (phase1_step fl v s)) = length (ds_asnd s) \<and>
-         length (ds_acap (phase1_step fl v s)) = length (ds_acap s) \<and>
-         length (ds_aflw (phase1_step fl v s)) = length (ds_aflw s) \<and>
-         length (ds_aest (phase1_step fl v s)) = length (ds_aest s)"
-  using open_tree_component_arts_len[OF assms] emit_U_edge_arts_len
-  by (auto simp: phase1_step_def)
+lemma dfs_rel_empty_in:
+  "v < vcount \<Longrightarrow> <dfs_rel fl0 es0 st s> csr_empty_imp (di_ib st) v
+   <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = FI.csr_empty v)>"
+  unfolding dfs_rel_def by (sep_auto heap: FI.csr_empty_imp_rule)
 
-text \<open>One @{const phase1_step}: read the imbalance, then either skip (balanced), emit a @{term U} edge
-      (imbalanced, already seen) or open a tree component (imbalanced, unseen).  We sequence the read with
-      @{thm ht_bind} so the read value is available to decide the branch, then let @{term sep_auto} pick
-      the matching operation rule; the invariant preconditions (@{const dfs_wf} / @{const dfs_sized} /
-      @{const dref_inv} of @{term s}, the vertex bounds from @{const dfs_sized}, the @{const otc_pre}
-      obligations, and the artificial-array room @{term la1}--@{term la5}) are discharged from the
-      assumptions.\<close>
 lemma phase1_step_imp_rule:
-  assumes wf: "dfs_wf s" and sz: "dfs_sized s" and dref: "dref_inv s" and vc: "v < vcount"
-    and vim: "v < length imbalance"
-    and la1: "ds_nxt s < length (ds_afst s)" and la2: "ds_nxt s < length (ds_asnd s)"
-    and la3: "ds_nxt s < length (ds_acap s)" and la4: "ds_nxt s < length (ds_aflw s)"
-    and la5: "ds_nxt s < length (ds_aest s)"
-    and lc1: "v < length out_lo" and lc2: "v < length in_lo"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance>
-           phase1_step_imp st imb_arr m vcount v
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (phase1_step fl v s) * imb_arr \<mapsto>\<^sub>a imbalance>"
+  assumes v: "v \<in> set vs_list" and inv: "dfs_inv acyc_flow s" and stke: "ds_stk s = []"
+    and al: "art_len s" and room: "ds_nxt (phase1_step acyc_flow v s) \<le> length vs_list"
+  shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> phase1_step_imp st imb_arr m vcount v
+         <\<lambda>_. dfs_rel fl0 es0 st (phase1_step acyc_flow v s) * imb_arr \<mapsto>\<^sub>a imbalance>"
 proof -
-  have lv1: "v < length (ds_seen s)" and lv2: "v < length (ds_prnt s)" and lv3: "v < length (ds_par s)"
-    and lv4: "v < length (ds_dir s)" and lv5: "v < length (ds_pot s)" and lv7: "v < length (ds_rvth s)"
-    and lv8: "v < length (ds_snum s)" using sz vc by (auto simp: dfs_sized_def)
-  have lv6: "ds_prev s < length (ds_thrd s)" using sz dref by (simp add: dfs_sized_def dref_inv_def)
-  have wf'': "dfs_wf (otc_pre fl s v)" using otc_pre_wf[OF wf sz vc] .
-  have sz'': "dfs_sized (otc_pre fl s v)" using otc_pre_sized[OF sz] .
-  have dref'': "dref_inv (otc_pre fl s v)" using otc_pre_dref[OF dref sz vc] .
-  have dom'': "build_dfs_dom (fl, otc_pre fl s v)" using build_dfs_dom_wf'[OF wf''] .
-  show ?thesis unfolding phase1_step_imp_def
-    apply (rule ht_bind[where R="\<lambda>imb. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance * \<up>(imb = imbalance ! v)"])
-    by (sep_auto simp: phase1_step_def
-        heap: dfs_rel_seen[OF lv1]
-              emit_U_edge_imp_rule[OF vim vc la1 la2 la3 la4 la5]
-              open_tree_component_imp_rule[OF vim vc la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 dom'' wf'' sz'' dref''])
+  have vlt: "v < vcount" using v vs_less_vcount by blast
+  have vnz: "v \<noteq> 0" using v zero_notin_vs_list by metis
+  from vlt have vl: "v < Suc vcount" "v < length imbalance" by simp_all
+  have ls: "v < length (ds_seen s)" using inv vlt by (simp add: dfs_inv_def dfs_sized_def)
+  show ?thesis
+  proof (cases "imbalance ! v = 0")
+    case True
+    thus ?thesis by (sep_auto simp: phase1_step_imp_def phase1_step_def vl)
+  next
+    case nz: False
+    show ?thesis
+    proof (cases "ds_seen s ! v")
+      case True
+      have r: "ds_nxt s < length vs_list"
+        using room nz True emit_U_edge_nxt[of s v] by (simp add: phase1_step_def)
+      show ?thesis
+        by (sep_auto heap: dfs_rel_seen[OF ls] emit_U_edge_imp_rule[OF vl(1) al r]
+                     simp: phase1_step_imp_def phase1_step_def nz True vl)
+    next
+      case False
+      have r: "ds_nxt s < length vs_list"
+        using room nz False open_tree_component_art(1)[OF inv vlt] by (simp add: phase1_step_def)
+      show ?thesis
+        by (sep_auto heap: dfs_rel_seen[OF ls] open_tree_component_imp_rule[OF inv vlt False vnz stke al r]
+                     simp: phase1_step_imp_def phase1_step_def nz False vl)
+    qed
+  qed
 qed
 
-text \<open>The whole first scan @{const phase1_imp} refines the functional fold @{term \<open>fold (phase1_step fl)
-      [v..<Suc n]\<close>}, by induction on the number of remaining vertices @{term \<open>Suc n - v\<close>}.  The threaded
-      invariant is @{const dfs_wf} / @{const dfs_sized} / @{const dref_inv} together with a counting bound
-      guaranteeing there is room for every remaining vertex's artificial edge:
-      @{term \<open>ds_nxt s + (Suc n - v) \<le> length (ds_afst s)\<close>} (and likewise for the other four artificial
-      arrays).  Each @{const phase1_step} bumps @{const ds_nxt} by at most one and preserves the array
-      lengths (@{thm phase1_step_nxt_le}, @{thm phase1_step_arts_len}), so the bound is maintained; at every
-      vertex it yields @{term \<open>ds_nxt s < length (ds_afst s)\<close>} since @{term \<open>Suc n - v \<ge> 1\<close>}.\<close>
 lemma phase1_imp_rule:
-  assumes "dfs_wf s" "dfs_sized s" "dref_inv s"
-    and "ds_nxt s + (Suc n - v) \<le> length (ds_afst s)"
-    and "ds_nxt s + (Suc n - v) \<le> length (ds_asnd s)"
-    and "ds_nxt s + (Suc n - v) \<le> length (ds_acap s)"
-    and "ds_nxt s + (Suc n - v) \<le> length (ds_aflw s)"
-    and "ds_nxt s + (Suc n - v) \<le> length (ds_aest s)"
-    and "n < vcount" "Suc vcount \<le> length imbalance" "vcount \<le> length out_lo" "vcount \<le> length in_lo"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance>
-           phase1_imp st imb_arr m vcount v n
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (fold (phase1_step fl) [v..<Suc n] s) * imb_arr \<mapsto>\<^sub>a imbalance>"
+  assumes "Suc 0 \<le> v" "v \<le> Suc n" "dfs_inv acyc_flow s" "ds_stk s = []" "art_len s"
+    "ds_nxt (fold (phase1_step acyc_flow) [v..<Suc n] s) \<le> length vs_list"
+  shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> phase1_imp st imb_arr m vcount v n
+         <\<lambda>_. dfs_rel fl0 es0 st (fold (phase1_step acyc_flow) [v..<Suc n] s) * imb_arr \<mapsto>\<^sub>a imbalance>"
   using assms
 proof (induction "Suc n - v" arbitrary: v s)
   case 0
-  then have nv: "n < v" by linarith
-  have empt: "[v..<Suc n] = []" using nv by simp
-  show ?case by (subst phase1_imp.simps) (simp only: if_P[OF nv] empt, sep_auto)
+  hence "n < v" by simp
+  thus ?case by (subst phase1_imp.simps) sep_auto
 next
-  case (Suc k)
-  have vn: "v \<le> n" using Suc.hyps(2) by linarith
-  have nnv: "\<not> n < v" using vn by simp
-  have snv: "Suc n - v = Suc k" using Suc.hyps(2) by simp
-  have kk: "k = Suc n - Suc v" using snv by simp
-  have vvc: "v < vcount" using vn Suc.prems(9) by (simp add: le_less_trans)
-  have vim: "v < length imbalance" using vvc Suc.prems(10) by simp
-  have lc1: "v < length out_lo" using vvc Suc.prems(11) by simp
-  have lc2: "v < length in_lo" using vvc Suc.prems(12) by simp
-  have la1: "ds_nxt s < length (ds_afst s)" using Suc.prems(4) snv by simp
-  have la2: "ds_nxt s < length (ds_asnd s)" using Suc.prems(5) snv by simp
-  have la3: "ds_nxt s < length (ds_acap s)" using Suc.prems(6) snv by simp
-  have la4: "ds_nxt s < length (ds_aflw s)" using Suc.prems(7) snv by simp
-  have la5: "ds_nxt s < length (ds_aest s)" using Suc.prems(8) snv by simp
-  have nxt': "ds_nxt (phase1_step fl v s) \<le> Suc (ds_nxt s)" using phase1_step_nxt_le[OF Suc.prems(1,2) vvc] .
-  have len': "length (ds_afst (phase1_step fl v s)) = length (ds_afst s) \<and> length (ds_asnd (phase1_step fl v s)) = length (ds_asnd s) \<and> length (ds_acap (phase1_step fl v s)) = length (ds_acap s) \<and> length (ds_aflw (phase1_step fl v s)) = length (ds_aflw s) \<and> length (ds_aest (phase1_step fl v s)) = length (ds_aest s)"
-    using phase1_step_arts_len[OF Suc.prems(1,2) vvc] .
-  have cnt1: "ds_nxt (phase1_step fl v s) + (Suc n - Suc v) \<le> length (ds_afst (phase1_step fl v s))" using nxt' len' Suc.prems(4) snv kk by linarith
-  have cnt2: "ds_nxt (phase1_step fl v s) + (Suc n - Suc v) \<le> length (ds_asnd (phase1_step fl v s))" using nxt' len' Suc.prems(5) snv kk by linarith
-  have cnt3: "ds_nxt (phase1_step fl v s) + (Suc n - Suc v) \<le> length (ds_acap (phase1_step fl v s))" using nxt' len' Suc.prems(6) snv kk by linarith
-  have cnt4: "ds_nxt (phase1_step fl v s) + (Suc n - Suc v) \<le> length (ds_aflw (phase1_step fl v s))" using nxt' len' Suc.prems(7) snv kk by linarith
-  have cnt5: "ds_nxt (phase1_step fl v s) + (Suc n - Suc v) \<le> length (ds_aest (phase1_step fl v s))" using nxt' len' Suc.prems(8) snv kk by linarith
-  have wsd': "dfs_wf (phase1_step fl v s) \<and> dfs_sized (phase1_step fl v s) \<and> dref_inv (phase1_step fl v s)" using phase1_step_wsd[OF Suc.prems(1,2,3) vvc] .
-  have foldeq: "fold (phase1_step fl) [v..<Suc n] s = fold (phase1_step fl) [Suc v..<Suc n] (phase1_step fl v s)"
-    using vn by (subst upt_conv_Cons) auto
-  have IH: "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (phase1_step fl v s) * imb_arr \<mapsto>\<^sub>a imbalance>
-              phase1_imp st imb_arr m vcount (Suc v) n
-            <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (fold (phase1_step fl) [Suc v..<Suc n] (phase1_step fl v s)) * imb_arr \<mapsto>\<^sub>a imbalance>"
-    by (rule Suc.hyps(1)[OF kk conjunct1[OF wsd'] conjunct1[OF conjunct2[OF wsd']] conjunct2[OF conjunct2[OF wsd']] cnt1 cnt2 cnt3 cnt4 cnt5 Suc.prems(9) Suc.prems(10) Suc.prems(11) Suc.prems(12)])
+  case (Suc d)
+  have vn: "v \<le> n" and vs: "v \<in> set vs_list" using Suc.hyps(2) Suc.prems(1) by (auto simp: vs_list_def)
+  have up: "[v..<Suc n] = v # [Suc v..<Suc n]" using vn by (simp add: upt_conv_Cons)
+  note M = phase1_step_mono[OF vs Suc.prems(3,4)]
+  have rest: "set [Suc v..<Suc n] \<subseteq> set vs_list" by (auto simp: vs_list_def)
+  have M1: "dfs_inv acyc_flow (phase1_step acyc_flow v s)" "ds_stk (phase1_step acyc_flow v s) = []"
+    using M by simp_all
+  note P6 = Suc.prems(6)[unfolded up fold_Cons o_apply]
+  have room1: "ds_nxt (phase1_step acyc_flow v s) \<le> length vs_list"
+    by (rule order.trans[OF fold_nxt_mono[where g = "phase1_step acyc_flow", OF _ rest M1] P6])
+       (rule phase1_step_mono; assumption)
+  have al1: "art_len (phase1_step acyc_flow v s)" by (rule phase1_step_art_len[OF vs Suc.prems(3,5)])
+  have IH: "<dfs_rel fl0 es0 st (phase1_step acyc_flow v s) * imb_arr \<mapsto>\<^sub>a imbalance> phase1_imp st imb_arr m vcount (Suc v) n
+         <\<lambda>_. dfs_rel fl0 es0 st (fold (phase1_step acyc_flow) [v..<Suc n] s) * imb_arr \<mapsto>\<^sub>a imbalance>"
+    unfolding up fold_Cons o_apply
+    by (rule Suc.hyps(1)[OF _ _ _ M1 al1 P6]) (use Suc.hyps(2) vn in simp_all)
   show ?case
-    apply (subst phase1_imp.simps)
-    apply (simp only: if_not_P[OF nnv] foldeq)
-    apply (sep_auto heap: phase1_step_imp_rule[OF Suc.prems(1,2,3) vvc vim la1 la2 la3 la4 la5 lc1 lc2] IH)
-    done
+    using vn by (subst phase1_imp.simps) (sep_auto heap: phase1_step_imp_rule[OF vs Suc.prems(3,4,5) room1] IH)
 qed
 
-text \<open>Phase 2 mirrors phase 1 but only ever opens components (for still-unseen, non-lonely --- hence
-      balanced --- vertices), so its per-step preservation and effect lemmas follow directly from those of
-      @{const open_tree_component}.\<close>
-lemma phase2_step_wsd:
-  assumes "dfs_wf s" "dfs_sized s" "dref_inv s" "v < vcount"
-  shows "dfs_wf (phase2_step fl v s) \<and> dfs_sized (phase2_step fl v s) \<and> dref_inv (phase2_step fl v s)"
-  using assms open_tree_component_wsd[OF assms(1,2,3,4)] by (auto simp: phase2_step_def)
-lemma phase2_step_nxt_le:
-  assumes "dfs_wf s" "dfs_sized s" "v < vcount"
-  shows "ds_nxt (phase2_step fl v s) \<le> Suc (ds_nxt s)"
-  using open_tree_component_nxt[OF assms] by (auto simp: phase2_step_def)
-lemma phase2_step_arts_len:
-  assumes "dfs_wf s" "dfs_sized s" "v < vcount"
-  shows "length (ds_afst (phase2_step fl v s)) = length (ds_afst s) \<and>
-         length (ds_asnd (phase2_step fl v s)) = length (ds_asnd s) \<and>
-         length (ds_acap (phase2_step fl v s)) = length (ds_acap s) \<and>
-         length (ds_aflw (phase2_step fl v s)) = length (ds_aflw s) \<and>
-         length (ds_aest (phase2_step fl v s)) = length (ds_aest s)"
-  using open_tree_component_arts_len[OF assms] by (auto simp: phase2_step_def)
-
-text \<open>A @{const phase2_step}: read whether the vertex is already seen, and its full outgoing / ingoing
-      block bounds (from the framed @{term ofh} / @{term ifh} arrays holding @{const out_hi} / @{const
-      in_hi}); a seen or lonely vertex is skipped, an unseen non-lonely one opens its component.  As in
-      phase 1 a single @{thm ht_bind} on the first read makes the remainder a clean triple that @{term
-      sep_auto} discharges via the framed field reads and @{thm open_tree_component_imp_rule}.\<close>
 lemma phase2_step_imp_rule:
-  assumes wf: "dfs_wf s" and sz: "dfs_sized s" and dref: "dref_inv s" and vc: "v < vcount"
-    and vim: "v < length imbalance"
-    and la1: "ds_nxt s < length (ds_afst s)" and la2: "ds_nxt s < length (ds_asnd s)"
-    and la3: "ds_nxt s < length (ds_acap s)" and la4: "ds_nxt s < length (ds_aflw s)"
-    and la5: "ds_nxt s < length (ds_aest s)"
-    and lc1: "v < length out_lo" and lc2: "v < length in_lo"
-    and loh: "v < length out_hi" and lih: "v < length in_hi"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>
-           phase2_step_imp st imb_arr ofh_arr ifh_arr m vcount v
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (phase2_step fl v s) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>"
+  assumes v: "v \<in> set vs_list" and inv: "dfs_inv acyc_flow s" and stke: "ds_stk s = []"
+    and al: "art_len s" and room: "ds_nxt (phase2_step acyc_flow v s) \<le> length vs_list"
+  shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> phase2_step_imp st imb_arr m vcount v
+         <\<lambda>_. dfs_rel fl0 es0 st (phase2_step acyc_flow v s) * imb_arr \<mapsto>\<^sub>a imbalance>"
 proof -
-  have lv1: "v < length (ds_seen s)" and lv2: "v < length (ds_prnt s)" and lv3: "v < length (ds_par s)"
-    and lv4: "v < length (ds_dir s)" and lv5: "v < length (ds_pot s)" and lv7: "v < length (ds_rvth s)"
-    and lv8: "v < length (ds_snum s)" using sz vc by (auto simp: dfs_sized_def)
-  have lv6: "ds_prev s < length (ds_thrd s)" using sz dref by (simp add: dfs_sized_def dref_inv_def)
-  have wf'': "dfs_wf (otc_pre fl s v)" using otc_pre_wf[OF wf sz vc] .
-  have sz'': "dfs_sized (otc_pre fl s v)" using otc_pre_sized[OF sz] .
-  have dref'': "dref_inv (otc_pre fl s v)" using otc_pre_dref[OF dref sz vc] .
-  have dom'': "build_dfs_dom (fl, otc_pre fl s v)" using build_dfs_dom_wf'[OF wf''] .
-  show ?thesis unfolding phase2_step_imp_def
-    apply (rule ht_bind[where R="\<lambda>sv. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi * \<up>(sv = ds_seen s ! v)"])
-     prefer 2
-     apply (sep_auto simp: phase2_step_def is_lonely_def loh lih
-        heap: dfs_rel_olo[OF lc1] dfs_rel_ilo[OF lc2]
-              open_tree_component_imp_rule[OF vim vc la1 la2 la3 la4 la5 lv1 lv2 lv3 lv4 lv5 lv6 lv7 lv8 lc1 lc2 dom'' wf'' sz'' dref''])
-    apply (sep_auto heap: dfs_rel_seen[OF lv1])
-    done
-qed
-
-text \<open>Composable counting helpers for phase 2.  Unlike phase 1 (which always starts from the freshly
-      seeded \<open>ds_nxt = 0\<close>), phase 2 runs on top of the artificial edges already emitted by phase 1,
-      so a per-step bound \<open>ds_nxt s + (Suc n - v) \<le> length \<dots>\<close> would over-count (it counts every
-      remaining vertex once more, on top of phase 1).  We instead thread the exact, composable bound
-      \<open>ds_nxt (fold (phase2_step fl) [v..<Suc n] s) \<le> length \<dots>\<close>: it is preserved trivially along the
-      fold and it is discharged for @{const build_tree} by the functional @{thm build_tree_nxt_le}.  A step
-      only writes an artificial edge when it actually opens a component (\<open>\<not> ds_seen s ! v \<and> \<not> is_lonely v\<close>),
-      so its in-bounds premise is needed only under that guard --- supplied here by monotonicity of \<open>ds_nxt\<close>.\<close>
-
-lemma phase2_step_nxt_ge:
-  assumes "dfs_wf s" "dfs_sized s" "v < vcount"
-  shows "ds_nxt s \<le> ds_nxt (phase2_step fl v s)"
-  using open_tree_component_nxt[OF assms] by (auto simp: phase2_step_def)
-
-lemma phase2_step_nxt_open:
-  assumes "\<not> ds_seen s ! v" "\<not> is_lonely v" "dfs_wf s" "dfs_sized s" "v < vcount"
-  shows "ds_nxt (phase2_step fl v s) = Suc (ds_nxt s)"
-  using open_tree_component_nxt[OF assms(3,4,5)] assms(1,2) by (simp add: phase2_step_def)
-
-lemma fold_phase2_step_nxt_mono:
-  assumes "dfs_wf s" "dfs_sized s" "dref_inv s" "\<forall>w\<in>set xs. w < vcount"
-  shows "ds_nxt s \<le> ds_nxt (fold (phase2_step fl) xs s)"
-  using assms
-proof (induction xs arbitrary: s)
-  case Nil
-  then show ?case by simp
-next
-  case (Cons w ws)
-  have wvc: "w < vcount" using Cons.prems(4) by simp
-  have ge: "ds_nxt s \<le> ds_nxt (phase2_step fl w s)" using phase2_step_nxt_ge[OF Cons.prems(1,2) wvc] .
-  have wsd: "dfs_wf (phase2_step fl w s) \<and> dfs_sized (phase2_step fl w s) \<and> dref_inv (phase2_step fl w s)"
-    using phase2_step_wsd[OF Cons.prems(1,2,3) wvc] .
-  have "ds_nxt (phase2_step fl w s) \<le> ds_nxt (fold (phase2_step fl) ws (phase2_step fl w s))"
-    using Cons.IH[OF conjunct1[OF wsd] conjunct1[OF conjunct2[OF wsd]] conjunct2[OF conjunct2[OF wsd]]] Cons.prems(4) by simp
-  thus ?case using ge by simp
-qed
-
-text \<open>A skipped vertex (already seen, or lonely) leaves the state untouched: the imperative
-      @{const phase2_step_imp} then only reads and returns, needing no artificial-array space.\<close>
-lemma phase2_step_imp_skip:
-  assumes wf: "dfs_wf s" and sz: "dfs_sized s" and vc: "v < vcount"
-    and skip: "ds_seen s ! v \<or> is_lonely v"
-    and lc1: "v < length out_lo" and lc2: "v < length in_lo"
-    and loh: "v < length out_hi" and lih: "v < length in_hi"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>
-           phase2_step_imp st imb_arr ofh_arr ifh_arr m vcount v
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>"
-proof -
-  have lv1: "v < length (ds_seen s)" using sz vc by (auto simp: dfs_sized_def)
+  have vlt: "v < vcount" using v vs_less_vcount by blast
+  have vnz: "v \<noteq> 0" using v zero_notin_vs_list by metis
+  have ls: "v < length (ds_seen s)" using inv vlt by (simp add: dfs_inv_def dfs_sized_def)
+  have lon: "is_lonely v \<longleftrightarrow> FO.csr_empty v \<and> FI.csr_empty v" by (simp add: is_lonely_def)
   show ?thesis
-  proof (cases "ds_seen s ! v")
+  proof (cases "ds_seen s ! v \<or> is_lonely v")
     case True
-    show ?thesis unfolding phase2_step_imp_def
-      apply (rule ht_bind[where R="\<lambda>sv. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi * \<up>(sv = ds_seen s ! v)"])
-       prefer 2
-       apply (sep_auto simp: True)
-      apply (sep_auto simp: True heap: dfs_rel_seen[OF lv1])
-      done
+    thus ?thesis
+      by (sep_auto heap: dfs_rel_seen[OF ls] dfs_rel_empty_out[OF vlt] dfs_rel_empty_in[OF vlt]
+                   simp: phase2_step_imp_def phase2_step_def lon)
   next
     case False
-    with skip have il: "out_lo ! v = out_hi ! v \<and> in_lo ! v = in_hi ! v" by (simp add: is_lonely_def)
-    show ?thesis unfolding phase2_step_imp_def
-      apply (rule ht_bind[where R="\<lambda>sv. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi * \<up>(sv = ds_seen s ! v)"])
-       prefer 2
-       apply (sep_auto simp: False il loh lih heap: dfs_rel_olo[OF lc1] dfs_rel_ilo[OF lc2])
-      apply (sep_auto simp: False heap: dfs_rel_seen[OF lv1])
-      done
+    hence ns: "\<not> ds_seen s ! v" and nl: "\<not> (FO.csr_empty v \<and> FI.csr_empty v)" using lon by auto
+    have r: "ds_nxt s < length vs_list"
+      using room False open_tree_component_art(1)[OF inv vlt] by (simp add: phase2_step_def)
+    show ?thesis
+      using nl
+      by (sep_auto heap: dfs_rel_seen[OF ls] dfs_rel_empty_out[OF vlt] dfs_rel_empty_in[OF vlt]
+                         open_tree_component_imp_rule[OF inv vlt ns vnz stke al r]
+                   simp: phase2_step_imp_def phase2_step_def ns lon)
   qed
 qed
 
-text \<open>The combined phase-2 step rule: dispatch to @{thm phase2_step_imp_rule} on an opening vertex
-      (where its in-bounds premises hold under the guard) and to @{thm phase2_step_imp_skip} otherwise.\<close>
-lemma phase2_step_imp_combined:
-  assumes wf: "dfs_wf s" and sz: "dfs_sized s" and dref: "dref_inv s" and vc: "v < vcount"
-    and vim: "v < length imbalance"
-    and gla1: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_afst s)"
-    and gla2: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_asnd s)"
-    and gla3: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_acap s)"
-    and gla4: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_aflw s)"
-    and gla5: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_aest s)"
-    and lc1: "v < length out_lo" and lc2: "v < length in_lo"
-    and loh: "v < length out_hi" and lih: "v < length in_hi"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>
-           phase2_step_imp st imb_arr ofh_arr ifh_arr m vcount v
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (phase2_step fl v s) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>"
-proof (cases "ds_seen s ! v \<or> is_lonely v")
-  case True
-  have pss: "phase2_step fl v s = s" using True by (auto simp: phase2_step_def)
-  show ?thesis unfolding pss using phase2_step_imp_skip[OF wf sz vc True lc1 lc2 loh lih] .
-next
-  case False
-  hence op1: "\<not> ds_seen s ! v" and op2: "\<not> is_lonely v" by auto
-  have la1: "ds_nxt s < length (ds_afst s)" using gla1 op1 op2 by simp
-  have la2: "ds_nxt s < length (ds_asnd s)" using gla2 op1 op2 by simp
-  have la3: "ds_nxt s < length (ds_acap s)" using gla3 op1 op2 by simp
-  have la4: "ds_nxt s < length (ds_aflw s)" using gla4 op1 op2 by simp
-  have la5: "ds_nxt s < length (ds_aest s)" using gla5 op1 op2 by simp
-  show ?thesis using phase2_step_imp_rule[OF wf sz dref vc vim la1 la2 la3 la4 la5 lc1 lc2 loh lih] .
-qed
-
-text \<open>The whole second scan @{const phase2_imp} refines \<open>fold (phase2_step fl) [v..<Suc n] s\<close> by an
-      induction on \<open>Suc n - v\<close>, threading the composable \<open>ds_nxt (fold \<dots>) \<le> length \<dots>\<close> bound
-      above and dispatching each vertex through @{thm phase2_step_imp_combined}; it frames the two
-      @{const out_hi} / @{const in_hi} arrays.\<close>
 lemma phase2_imp_rule:
-  assumes "dfs_wf s" "dfs_sized s" "dref_inv s"
-    and "ds_nxt (fold (phase2_step fl) [v..<Suc n] s) \<le> length (ds_afst s)"
-    and "ds_nxt (fold (phase2_step fl) [v..<Suc n] s) \<le> length (ds_asnd s)"
-    and "ds_nxt (fold (phase2_step fl) [v..<Suc n] s) \<le> length (ds_acap s)"
-    and "ds_nxt (fold (phase2_step fl) [v..<Suc n] s) \<le> length (ds_aflw s)"
-    and "ds_nxt (fold (phase2_step fl) [v..<Suc n] s) \<le> length (ds_aest s)"
-    and "n < vcount" "vcount \<le> length imbalance" "vcount \<le> length out_lo" "vcount \<le> length in_lo"
-    and "vcount \<le> length out_hi" "vcount \<le> length in_hi"
-  shows "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st s * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>
-           phase2_imp st imb_arr ofh_arr ifh_arr m vcount v n
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (fold (phase2_step fl) [v..<Suc n] s) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>"
+  assumes "Suc 0 \<le> v" "v \<le> Suc n" "dfs_inv acyc_flow s" "ds_stk s = []" "art_len s"
+    "ds_nxt (fold (phase2_step acyc_flow) [v..<Suc n] s) \<le> length vs_list"
+  shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> phase2_imp st imb_arr m vcount v n
+         <\<lambda>_. dfs_rel fl0 es0 st (fold (phase2_step acyc_flow) [v..<Suc n] s) * imb_arr \<mapsto>\<^sub>a imbalance>"
   using assms
 proof (induction "Suc n - v" arbitrary: v s)
   case 0
-  then have nv: "n < v" by linarith
-  have empt: "[v..<Suc n] = []" using nv by simp
-  show ?case by (subst phase2_imp.simps) (simp only: if_P[OF nv] empt, sep_auto)
+  hence "n < v" by simp
+  thus ?case by (subst phase2_imp.simps) sep_auto
 next
-  case (Suc k)
-  have vn: "v \<le> n" using Suc.hyps(2) by linarith
-  have nnv: "\<not> n < v" using vn by simp
-  have snv: "Suc n - v = Suc k" using Suc.hyps(2) by simp
-  have kk: "k = Suc n - Suc v" using snv by simp
-  have vvc: "v < vcount" using vn Suc.prems(9) by (simp add: le_less_trans)
-  have vim: "v < length imbalance" using vvc Suc.prems(10) by simp
-  have lc1: "v < length out_lo" using vvc Suc.prems(11) by simp
-  have lc2: "v < length in_lo" using vvc Suc.prems(12) by simp
-  have loh: "v < length out_hi" using vvc Suc.prems(13) by simp
-  have lih: "v < length in_hi" using vvc Suc.prems(14) by simp
-  have wsd': "dfs_wf (phase2_step fl v s) \<and> dfs_sized (phase2_step fl v s) \<and> dref_inv (phase2_step fl v s)" using phase2_step_wsd[OF Suc.prems(1,2,3) vvc] .
-  have le1: "length (ds_afst (phase2_step fl v s)) = length (ds_afst s)"
-   and le2: "length (ds_asnd (phase2_step fl v s)) = length (ds_asnd s)"
-   and le3: "length (ds_acap (phase2_step fl v s)) = length (ds_acap s)"
-   and le4: "length (ds_aflw (phase2_step fl v s)) = length (ds_aflw s)"
-   and le5: "length (ds_aest (phase2_step fl v s)) = length (ds_aest s)"
-    using phase2_step_arts_len[OF Suc.prems(1,2) vvc] by auto
-  have foldeq: "fold (phase2_step fl) [v..<Suc n] s = fold (phase2_step fl) [Suc v..<Suc n] (phase2_step fl v s)"
-    using vn by (subst upt_conv_Cons) auto
-  have allvc: "\<forall>w\<in>set [Suc v..<Suc n]. w < vcount" using Suc.prems(9) by auto
-  have mono: "ds_nxt (phase2_step fl v s) \<le> ds_nxt (fold (phase2_step fl) [Suc v..<Suc n] (phase2_step fl v s))"
-    using fold_phase2_step_nxt_mono[OF conjunct1[OF wsd'] conjunct1[OF conjunct2[OF wsd']] conjunct2[OF conjunct2[OF wsd']] allvc] .
-  have ff1': "ds_nxt (fold (phase2_step fl) [Suc v..<Suc n] (phase2_step fl v s)) \<le> length (ds_afst (phase2_step fl v s))" using Suc.prems(4) by (simp only: foldeq le1)
-  have ff2': "ds_nxt (fold (phase2_step fl) [Suc v..<Suc n] (phase2_step fl v s)) \<le> length (ds_asnd (phase2_step fl v s))" using Suc.prems(5) by (simp only: foldeq le2)
-  have ff3': "ds_nxt (fold (phase2_step fl) [Suc v..<Suc n] (phase2_step fl v s)) \<le> length (ds_acap (phase2_step fl v s))" using Suc.prems(6) by (simp only: foldeq le3)
-  have ff4': "ds_nxt (fold (phase2_step fl) [Suc v..<Suc n] (phase2_step fl v s)) \<le> length (ds_aflw (phase2_step fl v s))" using Suc.prems(7) by (simp only: foldeq le4)
-  have ff5': "ds_nxt (fold (phase2_step fl) [Suc v..<Suc n] (phase2_step fl v s)) \<le> length (ds_aest (phase2_step fl v s))" using Suc.prems(8) by (simp only: foldeq le5)
-  have gla1: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_afst s)"
-  proof -
-    assume op: "\<not> ds_seen s ! v \<and> \<not> is_lonely v"
-    have "Suc (ds_nxt s) = ds_nxt (phase2_step fl v s)" using phase2_step_nxt_open[OF conjunct1[OF op] conjunct2[OF op] Suc.prems(1,2) vvc] by simp
-    with mono ff1' le1 show "ds_nxt s < length (ds_afst s)" by linarith
-  qed
-  have gla2: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_asnd s)"
-  proof -
-    assume op: "\<not> ds_seen s ! v \<and> \<not> is_lonely v"
-    have "Suc (ds_nxt s) = ds_nxt (phase2_step fl v s)" using phase2_step_nxt_open[OF conjunct1[OF op] conjunct2[OF op] Suc.prems(1,2) vvc] by simp
-    with mono ff2' le2 show "ds_nxt s < length (ds_asnd s)" by linarith
-  qed
-  have gla3: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_acap s)"
-  proof -
-    assume op: "\<not> ds_seen s ! v \<and> \<not> is_lonely v"
-    have "Suc (ds_nxt s) = ds_nxt (phase2_step fl v s)" using phase2_step_nxt_open[OF conjunct1[OF op] conjunct2[OF op] Suc.prems(1,2) vvc] by simp
-    with mono ff3' le3 show "ds_nxt s < length (ds_acap s)" by linarith
-  qed
-  have gla4: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_aflw s)"
-  proof -
-    assume op: "\<not> ds_seen s ! v \<and> \<not> is_lonely v"
-    have "Suc (ds_nxt s) = ds_nxt (phase2_step fl v s)" using phase2_step_nxt_open[OF conjunct1[OF op] conjunct2[OF op] Suc.prems(1,2) vvc] by simp
-    with mono ff4' le4 show "ds_nxt s < length (ds_aflw s)" by linarith
-  qed
-  have gla5: "\<not> ds_seen s ! v \<and> \<not> is_lonely v \<Longrightarrow> ds_nxt s < length (ds_aest s)"
-  proof -
-    assume op: "\<not> ds_seen s ! v \<and> \<not> is_lonely v"
-    have "Suc (ds_nxt s) = ds_nxt (phase2_step fl v s)" using phase2_step_nxt_open[OF conjunct1[OF op] conjunct2[OF op] Suc.prems(1,2) vvc] by simp
-    with mono ff5' le5 show "ds_nxt s < length (ds_aest s)" by linarith
-  qed
-  have IH: "<dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (phase2_step fl v s) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>
-              phase2_imp st imb_arr ofh_arr ifh_arr m vcount (Suc v) n
-            <\<lambda>_. dfs_rel fl0 es0 (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) st (fold (phase2_step fl) [Suc v..<Suc n] (phase2_step fl v s)) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>"
-    by (rule Suc.hyps(1)[OF kk conjunct1[OF wsd'] conjunct1[OF conjunct2[OF wsd']] conjunct2[OF conjunct2[OF wsd']] ff1' ff2' ff3' ff4' ff5' Suc.prems(9) Suc.prems(10) Suc.prems(11) Suc.prems(12) Suc.prems(13) Suc.prems(14)])
+  case (Suc d)
+  have vn: "v \<le> n" and vs: "v \<in> set vs_list" using Suc.hyps(2) Suc.prems(1) by (auto simp: vs_list_def)
+  have up: "[v..<Suc n] = v # [Suc v..<Suc n]" using vn by (simp add: upt_conv_Cons)
+  note M = phase2_step_mono[OF vs Suc.prems(3,4)]
+  have rest: "set [Suc v..<Suc n] \<subseteq> set vs_list" by (auto simp: vs_list_def)
+  have M1: "dfs_inv acyc_flow (phase2_step acyc_flow v s)" "ds_stk (phase2_step acyc_flow v s) = []"
+    using M by simp_all
+  note P6 = Suc.prems(6)[unfolded up fold_Cons o_apply]
+  have room1: "ds_nxt (phase2_step acyc_flow v s) \<le> length vs_list"
+    by (rule order.trans[OF fold_nxt_mono[where g = "phase2_step acyc_flow", OF _ rest M1] P6])
+       (rule phase2_step_mono; assumption)
+  have al1: "art_len (phase2_step acyc_flow v s)" by (rule phase2_step_art_len[OF vs Suc.prems(3,5)])
+  have IH: "<dfs_rel fl0 es0 st (phase2_step acyc_flow v s) * imb_arr \<mapsto>\<^sub>a imbalance> phase2_imp st imb_arr m vcount (Suc v) n
+         <\<lambda>_. dfs_rel fl0 es0 st (fold (phase2_step acyc_flow) [v..<Suc n] s) * imb_arr \<mapsto>\<^sub>a imbalance>"
+    unfolding up fold_Cons o_apply
+    by (rule Suc.hyps(1)[OF _ _ _ M1 al1 P6]) (use Suc.hyps(2) vn in simp_all)
   show ?case
-    apply (subst phase2_imp.simps)
-    apply (simp only: if_not_P[OF nnv] foldeq)
-    apply (sep_auto heap: phase2_step_imp_combined[OF Suc.prems(1,2,3) vvc vim gla1 gla2 gla3 gla4 gla5 lc1 lc2 loh lih] IH)
-    done
+    using vn by (subst phase2_imp.simps) (sep_auto heap: phase2_step_imp_rule[OF vs Suc.prems(3,4,5) room1] IH)
 qed
 
 subsection \<open>Layer (d.8): assembling @{const build_tree_imp}\<close>
 
-text \<open>Single-field @{const dfs_rel} updates for the four state fields the tree-builder seeds before its
-      two scans (@{term ds_snum} / @{term ds_prev} / @{term ds_nxt} / the DFS stack) and for the final
-      @{term ds_lsuc} write, plus a @{term ds_prev} read.  Setting @{term ds_nxt} to @{term 0} makes the
-      artificial-edge counting conditions of @{const dfs_rel} vacuous; setting the fill pointer to
-      @{term 0} empties the abstract stack.\<close>
-lemma dfs_rel_prev_upd:
-  "<dfs_rel fl0 es0 oe oh ie ih st s> Ref.update (di_prev st) p <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (s\<lparr>ds_prev := p\<rparr>)>"
-  unfolding dfs_rel_def by sep_auto
+text \<open>Seeding the root: the four initial writes take the freshly allocated state to @{const dfs_init}.\<close>
 
-lemma dfs_rel_snum_upd:
-  assumes "i < length (ds_snum s)"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> arr_upd (snum_impl (di_tree st)) i x <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (s\<lparr>ds_snum := (ds_snum s)[i := x]\<rparr>)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms)
-
-lemma dfs_rel_nxt_upd0:
-  "<dfs_rel fl0 es0 oe oh ie ih st s> Ref.update (di_nxt st) 0 <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (s\<lparr>ds_nxt := 0\<rparr>)>"
-  unfolding dfs_rel_def by sep_auto
-
-lemma dfs_rel_sp_upd0:
-  "<dfs_rel fl0 es0 oe oh ie ih st s> Ref.update (di_sp st) 0 <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (s\<lparr>ds_stk := []\<rparr>)>"
-  unfolding dfs_rel_def by (sep_auto simp: stk_rel_def)
-
-lemma dfs_rel_prev_get:
-  "<dfs_rel fl0 es0 oe oh ie ih st s> Ref.lookup (di_prev st) <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = ds_prev s)>"
-  unfolding dfs_rel_def by sep_auto
-
-lemma dfs_rel_lsuc_upd:
-  assumes "i < length (ds_lsuc s)"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> arr_upd (lsuc_impl (di_tree st)) i x <\<lambda>_. dfs_rel fl0 es0 oe oh ie ih st (s\<lparr>ds_lsuc := (ds_lsuc s)[i := x]\<rparr>)>"
-  unfolding dfs_rel_def by (sep_auto simp: assms)
-
-text \<open>The seed state @{const dfs_init} satisfies the two DFS-loop invariants that are not already
-      @{thm dfs_init_sized}: its stack is empty (so @{const dfs_wf} / @{const dref_inv} hold trivially)
-      and every parent entry is @{term 0}.\<close>
-lemma dfs_wf_dfs_init: "dfs_wf dfs_init"
-  by (simp add: dfs_wf_def dfs_init_def)
-
-lemma dref_inv_dfs_init: "dref_inv dfs_init"
-  by (simp add: dref_inv_def dfs_init_def nth_replicate del: replicate_Suc)
-
-text \<open>Both scans preserve the three DFS-loop invariants along the whole vertex fold (each step does, by
-      @{thm phase1_step_wsd} / @{thm phase2_step_wsd}).\<close>
-lemma fold_phase1_step_wsd:
-  assumes "dfs_wf s" "dfs_sized s" "dref_inv s" "\<forall>w\<in>set xs. w < vcount"
-  shows "dfs_wf (fold (phase1_step fl) xs s) \<and> dfs_sized (fold (phase1_step fl) xs s) \<and> dref_inv (fold (phase1_step fl) xs s)"
-  using assms
-proof (induction xs arbitrary: s)
-  case Nil then show ?case by simp
-next
-  case (Cons w ws)
-  have wvc: "w < vcount" using Cons.prems(4) by simp
-  have wsd: "dfs_wf (phase1_step fl w s) \<and> dfs_sized (phase1_step fl w s) \<and> dref_inv (phase1_step fl w s)"
-    using phase1_step_wsd[OF Cons.prems(1,2,3) wvc] .
-  show ?case using Cons.IH[OF conjunct1[OF wsd] conjunct1[OF conjunct2[OF wsd]] conjunct2[OF conjunct2[OF wsd]]] Cons.prems(4) by simp
-qed
-
-lemma fold_phase2_step_wsd:
-  assumes "dfs_wf s" "dfs_sized s" "dref_inv s" "\<forall>w\<in>set xs. w < vcount"
-  shows "dfs_wf (fold (phase2_step fl) xs s) \<and> dfs_sized (fold (phase2_step fl) xs s) \<and> dref_inv (fold (phase2_step fl) xs s)"
-  using assms
-proof (induction xs arbitrary: s)
-  case Nil then show ?case by simp
-next
-  case (Cons w ws)
-  have wvc: "w < vcount" using Cons.prems(4) by simp
-  have wsd: "dfs_wf (phase2_step fl w s) \<and> dfs_sized (phase2_step fl w s) \<and> dref_inv (phase2_step fl w s)"
-    using phase2_step_wsd[OF Cons.prems(1,2,3) wvc] .
-  show ?case using Cons.IH[OF conjunct1[OF wsd] conjunct1[OF conjunct2[OF wsd]] conjunct2[OF conjunct2[OF wsd]]] Cons.prems(4) by simp
-qed
-
-text \<open>The tree builder @{const build_tree_imp} refines the functional @{const build_tree}: it seeds the
-      four root fields (@{term ds_snum} at @{term vcount}, @{term ds_prev}, @{term ds_nxt}, the stack) ---
-      each write is idempotent on @{const dfs_init} --- then runs the two scans and the final @{term ds_lsuc}
-      write.  Since @{const build_tree} starts phase 1 from @{const dfs_init} (where @{term ds_nxt} is
-      @{term 0}), the phase-1 in-bounds bound is the trivial \<open>0 + n \<le> n\<close>; the composable phase-2 bound is
-      @{thm build_tree_nxt_le}.  The two scans are sequenced with @{thm wlp_apply_ht} (a plain
-      @{method sep_auto} does not fire a rule whose precondition has two heap conjuncts, \<open>dfs_rel \<dots> \<^emph> imb\<close>,
-      on a bare @{const wlp} goal), framing the @{const out_hi} / @{const in_hi} arrays across phase 1.\<close>
-lemma build_tree_imp_rule:
-  assumes nvc: "n < vcount" and lim: "Suc vcount \<le> length imbalance"
-    and lol: "vcount \<le> length out_lo" and lil: "vcount \<le> length in_lo"
-    and loh: "vcount \<le> length out_hi" and lih: "vcount \<le> length in_hi"
-  shows "<dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st dfs_init * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>
-           build_tree_imp st imb_arr ofh_arr ifh_arr m vcount n
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (build_tree acyc_flow) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>"
+lemma build_tree_seed_cps:
+  assumes K: "<dfs_rel fl0 es0 st dfs_init * Fr> K <Q>"
+  shows "<dfs_rel fl0 es0 st (dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>) * Fr>
+         do { _ \<leftarrow> arr_upd (snum_impl (di_tree st)) vcount 1;
+              _ \<leftarrow> Ref.update (di_prev st) vcount;
+              _ \<leftarrow> Ref.update (di_nxt st) 0;
+              _ \<leftarrow> Ref.update (di_sp st) 0;
+              K }
+         <Q>"
 proof -
-  have allvc: "\<forall>w\<in>set vs_list. w < vcount" using nvc by (auto simp: vs_list_def)
-  have pre0: "dfs_inv acyc_flow dfs_init \<and> ds_stk dfs_init = []" using dfs_init_inv by (simp add: dfs_init_def)
-  have wsd1: "dfs_wf (phase1 acyc_flow dfs_init) \<and> dfs_sized (phase1 acyc_flow dfs_init) \<and> dref_inv (phase1 acyc_flow dfs_init)"
-    using fold_phase1_step_wsd[OF dfs_wf_dfs_init dfs_init_sized dref_inv_dfs_init allvc] by (simp add: phase1_def)
-  have a1: "art_len (phase1 acyc_flow dfs_init)" using phase1_art_len[OF pre0 dfs_init_art_len] .
-  have p1a: "length (ds_afst (phase1 acyc_flow dfs_init)) = length vs_list \<and> length (ds_asnd (phase1 acyc_flow dfs_init)) = length vs_list \<and> length (ds_acap (phase1 acyc_flow dfs_init)) = length vs_list \<and> length (ds_aflw (phase1 acyc_flow dfs_init)) = length vs_list \<and> length (ds_aest (phase1 acyc_flow dfs_init)) = length vs_list"
-    using a1 by (simp add: art_len_def)
-  have bt_nxt: "ds_nxt (build_tree acyc_flow) = ds_nxt (phase2 acyc_flow (phase1 acyc_flow dfs_init))" by (simp add: build_tree_def Let_def)
-  have nxt_le: "ds_nxt (phase2 acyc_flow (phase1 acyc_flow dfs_init)) \<le> length vs_list" using build_tree_nxt_le bt_nxt by simp
-  have phase1_fold_eq: "fold (phase1_step acyc_flow) [Suc 0..<Suc n] dfs_init = phase1 acyc_flow dfs_init" by (simp add: phase1_def vs_list_def)
-  have phase2_fold_eq: "fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init) = phase2 acyc_flow (phase1 acyc_flow dfs_init)" by (simp add: phase2_def vs_list_def)
-  have f1: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_afst (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have f2: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_asnd (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have f3: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_acap (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have f4: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_aflw (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have f5: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_aest (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have lim2: "vcount \<le> length imbalance" using lim by simp
-  have c1: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_afst dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have c2: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_asnd dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have c3: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_acap dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have c4: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_aflw dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have c5: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_aest dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have szp2: "dfs_sized (phase2 acyc_flow (phase1 acyc_flow dfs_init))"
-    using fold_phase2_step_wsd[OF conjunct1[OF wsd1] conjunct1[OF conjunct2[OF wsd1]] conjunct2[OF conjunct2[OF wsd1]] allvc] by (simp add: phase2_def)
-  have lsuc_len: "vcount < length (ds_lsuc (phase2 acyc_flow (phase1 acyc_flow dfs_init)))" using szp2 by (simp add: dfs_sized_def)
-  have bt_eq: "(phase2 acyc_flow (phase1 acyc_flow dfs_init))\<lparr>ds_lsuc := (ds_lsuc (phase2 acyc_flow (phase1 acyc_flow dfs_init)))[vcount := ds_prev (phase2 acyc_flow (phase1 acyc_flow dfs_init))]\<rparr> = build_tree acyc_flow"
-    by (simp add: build_tree_def Let_def)
-  have snum_len: "vcount < length (ds_snum dfs_init)" by (simp add: dfs_init_def del: replicate_Suc)
-  have idall: "dfs_init\<lparr>ds_snum := (ds_snum dfs_init)[vcount := Suc 0], ds_prev := vcount, ds_nxt := 0, ds_stk := []\<rparr> = dfs_init"
-    by (simp add: dfs_init_def list_update_overwrite del: replicate_Suc)
-  have phase1_triple: "<dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st dfs_init * imb_arr \<mapsto>\<^sub>a imbalance> phase1_imp st imb_arr m vcount (Suc 0) n <\<lambda>_. dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (phase1 acyc_flow dfs_init) * imb_arr \<mapsto>\<^sub>a imbalance>"
-    by (rule phase1_imp_rule[where fl=acyc_flow, OF dfs_wf_dfs_init dfs_init_sized dref_inv_dfs_init c1 c2 c3 c4 c5 nvc lim lol lil, unfolded phase1_fold_eq])
-  have phase2_triple: "<dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (phase1 acyc_flow dfs_init) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi> phase2_imp st imb_arr ofh_arr ifh_arr m vcount (Suc 0) n <\<lambda>_. dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (phase2 acyc_flow (phase1 acyc_flow dfs_init)) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>"
-    by (rule phase2_imp_rule[where fl=acyc_flow, OF conjunct1[OF wsd1] conjunct1[OF conjunct2[OF wsd1]] conjunct2[OF conjunct2[OF wsd1]] f1 f2 f3 f4 f5 nvc lim2 lol lil loh lih, unfolded phase2_fold_eq])
-  show ?thesis
-    unfolding build_tree_imp_def
-    apply (sep_auto heap: dfs_rel_snum_upd[OF snum_len] dfs_rel_prev_upd dfs_rel_nxt_upd0 dfs_rel_sp_upd0 simp: idall)
-    apply (rule wlp_apply_ht[OF _ _ phase1_triple, where F="ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi * true"])
-      apply assumption
-     apply sep_auto
-    apply (rule wlp_apply_ht[OF _ _ phase2_triple, where F="true"])
-      apply assumption
-     apply sep_auto
-    apply (sep_auto heap: dfs_rel_prev_get dfs_rel_lsuc_upd[OF lsuc_len] simp: bt_eq)
-    done
+  have "<dfs_rel fl0 es0 st (dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>)>
+         do { _ \<leftarrow> arr_upd (snum_impl (di_tree st)) vcount 1;
+              _ \<leftarrow> Ref.update (di_prev st) vcount;
+              _ \<leftarrow> Ref.update (di_nxt st) 0;
+              Ref.update (di_sp st) 0 }
+         <\<lambda>_. dfs_rel fl0 es0 st dfs_init>"
+    unfolding dfs_rel_def by (sep_auto simp: dfs_init_def)
+  from ht_bind[OF ht_frame[OF this, where R = Fr] K] show ?thesis
+    by (simp only: bind_bind)
 qed
+
+text \<open>The root finalisation: its last successor is the last vertex emitted.\<close>
+
+lemma dfs_rel_root_lsuc:
+  assumes "length (ds_lsuc s) = Suc vcount"
+  shows "<dfs_rel fl0 es0 st s> do { pv \<leftarrow> Ref.lookup (di_prev st); arr_upd (lsuc_impl (di_tree st)) vcount pv }
+         <\<lambda>_. dfs_rel fl0 es0 st (s\<lparr>ds_lsuc := (ds_lsuc s)[vcount := ds_prev s]\<rparr>)>"
+  unfolding dfs_rel_def using assms by sep_auto
+
+text \<open>The builder refines @{const build_tree}, from the freshly allocated arrays.\<close>
+
+lemma build_tree_imp_rule:
+  "<dfs_rel fl0 es0 st (dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>) * imb_arr \<mapsto>\<^sub>a imbalance>
+     build_tree_imp st imb_arr m vcount n
+   <\<lambda>_. dfs_rel fl0 es0 st (build_tree acyc_flow) * imb_arr \<mapsto>\<^sub>a imbalance>"
+proof -
+  have vs: "vs_list = [Suc 0..<Suc n]" by (simp add: vs_list_def)
+  have i0: "dfs_inv acyc_flow dfs_init" "ds_stk dfs_init = []" "art_len dfs_init"
+    by (simp_all only: dfs_init_inv dfs_init_art_len) (simp add: dfs_init_def)
+  define s1 where "s1 = phase1 acyc_flow dfs_init"
+  have p1: "dfs_inv acyc_flow s1 \<and> ds_stk s1 = []" unfolding s1_def by (rule phase1_inv) (simp add: i0)
+  have a1: "art_len s1" unfolding s1_def by (rule phase1_art_len) (simp_all add: i0)
+  have bt: "build_tree acyc_flow = (phase2 acyc_flow s1)\<lparr>ds_lsuc := (ds_lsuc (phase2 acyc_flow s1))[vcount := ds_prev (phase2 acyc_flow s1)]\<rparr>"
+    by (simp add: build_tree_def s1_def Let_def)
+  have n2: "ds_nxt (phase2 acyc_flow s1) \<le> length vs_list" using build_tree_nxt_le bt by simp
+  have n1: "ds_nxt s1 \<le> length vs_list"
+    using fold_nxt_mono[where g = "phase2_step acyc_flow", OF phase2_step_mono order.refl] p1 n2 by (fastforce simp: phase2_def)
+  have R1: "<dfs_rel fl0 es0 st dfs_init * imb_arr \<mapsto>\<^sub>a imbalance> phase1_imp st imb_arr m vcount 1 n
+            <\<lambda>_. dfs_rel fl0 es0 st s1 * imb_arr \<mapsto>\<^sub>a imbalance>"
+    unfolding s1_def phase1_def One_nat_def
+    by (rule phase1_imp_rule[where v = "Suc 0", folded vs]) (use i0 n1[unfolded s1_def phase1_def] in simp_all)
+  have R2: "<dfs_rel fl0 es0 st s1 * imb_arr \<mapsto>\<^sub>a imbalance> phase2_imp st imb_arr m vcount 1 n
+            <\<lambda>_. dfs_rel fl0 es0 st (phase2 acyc_flow s1) * imb_arr \<mapsto>\<^sub>a imbalance>"
+    unfolding phase2_def One_nat_def
+    by (rule phase2_imp_rule[where v = "Suc 0", folded vs]) (use p1 a1 n2[unfolded phase2_def] in simp_all)
+  have ll: "length (ds_lsuc (phase2 acyc_flow s1)) = Suc vcount"
+    using phase2_inv[OF p1] by (simp add: dfs_inv_def dfs_sized_def)
+  show ?thesis
+    unfolding build_tree_imp_def bt
+    by (rule build_tree_seed_cps, rule ht_bind[OF R1], rule ht_bind[OF R2],
+        rule ht_frame[OF dfs_rel_root_lsuc[OF ll]])
+qed
+
 
 subsection \<open>Layer (e): the concrete spanning-tree operations refine the arborescence ADT\<close>
 
@@ -4442,24 +3219,6 @@ proof -
     by (simp only: ns_loop_prog_def nsR.ns_rel_def nsR.ns_rel_weak_def NSg_verts_Varb)
 qed
 
-text \<open>Foundational facts for the capstone: the root name @{term vcount} is above every input vertex,
-      and the freshly built spanning tree is fully sized (all nine per-vertex arrays have length
-      @{term \<open>Suc vcount\<close>}), which the tree / potential / parent / dir bridges below all need.\<close>
-lemma n_less_vcount: "n < vcount"
-  unfolding vcount_def vs_list_def by (induction n) auto
-
-lemma vs_list_lt_vcount: "\<forall>w\<in>set vs_list. w < vcount"
-  using n_less_vcount by (auto simp: set_vs_list)
-
-lemma bt_sized: "dfs_sized (build_tree acyc_flow)"
-proof -
-  have wsd1: "dfs_wf (phase1 acyc_flow dfs_init) \<and> dfs_sized (phase1 acyc_flow dfs_init) \<and> dref_inv (phase1 acyc_flow dfs_init)"
-    using fold_phase1_step_wsd[OF dfs_wf_dfs_init dfs_init_sized dref_inv_dfs_init vs_list_lt_vcount] by (simp add: phase1_def)
-  have szp2: "dfs_sized (phase2 acyc_flow (phase1 acyc_flow dfs_init))"
-    using fold_phase2_step_wsd[OF conjunct1[OF wsd1] conjunct1[OF conjunct2[OF wsd1]] conjunct2[OF conjunct2[OF wsd1]] vs_list_lt_vcount] by (simp add: phase2_def)
-  show ?thesis using szp2 by (simp add: build_tree_def dfs_sized_def Let_def)
-qed
-
 text \<open>The domain/range structural conditions of @{const Sarb} that the @{const ndtree_assn} tree bridge
       needs, extracted from @{thm arb_invar_Sarb}: every parent / thread / reverse-thread entry, and every
       last-successor, stays inside the vertex set @{term Varb}.  The @{term \<open>ran (prnt Sarb) \<subseteq> Varb\<close>} case
@@ -4496,208 +3255,6 @@ proof -
   show "ran (thrd Sarb) \<subseteq> Varb" using bijE drE by (fastforce simp: ran_def dom_def)
   show "ran (rvth Sarb) \<subseteq> Varb" using bijE dtE by (fastforce simp: ran_def dom_def)
   show "\<forall>v\<in>Varb. lsuc Sarb v \<in> Varb" using linE .
-qed
-
-text \<open>The root vertex @{term vcount} is never discovered by the DFS traversal, so its parent slot
-      @{term \<open>ds_prnt s ! vcount\<close>} is preserved by every state transformer and stays at its
-      @{const dfs_init} value @{term 0}.  This is the parent-map root clause the ndtree bridge
-      consumes.  The single-frame steps @{const bd_upd1} / @{const bd_upd2} only ever discover a
-      vertex @{term \<open>w < vcount\<close>} (via @{thm Hout_valid} / @{thm Hin_valid}), and @{const bd_upd3}
-      (@{const dfs_finish}) touches no parent slot; @{const otc_pre} writes the parent slot of a
-      vertex @{term \<open>c::nat\<close>} with @{term \<open>c < vcount\<close>}, never the root slot.\<close>
-
-lemma bd_upd1_prnt_vcount: "\<And>fl s. dfs_wf s \<Longrightarrow> bd_call1_conds fl s \<Longrightarrow> ds_prnt (bd_upd1 fl s) ! vcount = ds_prnt s ! vcount"
-proof -
-  fix fl s assume wf: "dfs_wf s" and c: "bd_call1_conds fl s"
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic) # rest" and oclt: "oc < free_out_hi fl ! v"
-    by (auto simp: bd_call1_conds_def split: list.splits prod.splits)
-  from wf stk have vlt: "v < vcount" and olo: "out_lo ! v \<le> oc" by (auto simp: dfs_wf_def)
-  let ?e = "free_out_edges fl ! oc" let ?w = "snd_list ! ?e"
-  have wvc: "?w < vcount" using Hout_valid[OF vlt olo oclt] .
-  have upd: "bd_upd1 fl s = (if ds_seen s ! ?w then s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr> else dfs_discover (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>) v ?w ?e)"
-    using stk by (simp add: bd_upd1_def Let_def)
-  show "ds_prnt (bd_upd1 fl s) ! vcount = ds_prnt s ! vcount"
-  proof (cases "ds_seen s ! ?w")
-    case True thus ?thesis using upd by simp
-  next
-    case False
-    have "vcount \<noteq> ?w" using wvc by simp
-    thus ?thesis using upd False by (simp add: dfs_discover_def Let_def nth_list_update_neq)
-  qed
-qed
-
-lemma bd_upd2_prnt_vcount: "\<And>fl s. dfs_wf s \<Longrightarrow> bd_call2_conds fl s \<Longrightarrow> ds_prnt (bd_upd2 fl s) ! vcount = ds_prnt s ! vcount"
-proof -
-  fix fl s assume wf: "dfs_wf s" and c: "bd_call2_conds fl s"
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic) # rest" and iclt: "ic < free_in_hi fl ! v"
-    by (auto simp: bd_call2_conds_def split: list.splits prod.splits)
-  from wf stk have vlt: "v < vcount" and ilo: "in_lo ! v \<le> ic" by (auto simp: dfs_wf_def)
-  let ?e = "free_in_edges fl ! ic" let ?w = "fst_list ! ?e"
-  have wvc: "?w < vcount" using Hin_valid[OF vlt ilo iclt] .
-  have upd: "bd_upd2 fl s = (if ds_seen s ! ?w then s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr> else dfs_discover (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>) v ?w ?e)"
-    using stk by (simp add: bd_upd2_def Let_def)
-  show "ds_prnt (bd_upd2 fl s) ! vcount = ds_prnt s ! vcount"
-  proof (cases "ds_seen s ! ?w")
-    case True thus ?thesis using upd by simp
-  next
-    case False
-    have "vcount \<noteq> ?w" using wvc by simp
-    thus ?thesis using upd False by (simp add: dfs_discover_def Let_def nth_list_update_neq)
-  qed
-qed
-
-lemma bd_upd3_prnt_vcount: "\<And>s. ds_stk s \<noteq> [] \<Longrightarrow> ds_prnt (bd_upd3 s) ! vcount = ds_prnt s ! vcount"
-  by (auto simp: bd_upd3_def dfs_finish_def Let_def split: list.splits prod.splits)
-
-lemma build_dfs_prnt_vcount: "\<And>fl s. build_dfs_dom (fl, s) \<Longrightarrow> dfs_inv fl s \<Longrightarrow> ds_prnt (build_dfs fl s) ! vcount = ds_prnt s ! vcount"
-proof -
-  fix fl s assume dom: "build_dfs_dom (fl, s)" and inv0: "dfs_inv fl s"
-  have "dfs_inv fl s \<longrightarrow> ds_prnt (build_dfs fl s) ! vcount = ds_prnt s ! vcount"
-  proof (induct rule: bd_induct[OF dom])
-    case IH: (1 fl s)
-    show ?case
-    proof (intro impI)
-      assume inv: "dfs_inv fl s"
-      have wf: "dfs_wf s" using inv by (simp add: dfs_inv_def)
-      show "ds_prnt (build_dfs fl s) ! vcount = ds_prnt s ! vcount"
-      proof (rule bd_cases[where fl = fl and s = s])
-        assume c: "bd_call1_conds fl s"
-        have fr: "ds_prnt (bd_upd1 fl s) ! vcount = ds_prnt s ! vcount" by (rule bd_upd1_prnt_vcount[OF wf c])
-        have "build_dfs fl s = build_dfs fl (bd_upd1 fl s)" using IH(1) c by (rule bd_simps(1))
-        thus ?thesis using IH(2)[OF c] bd_upd1_inv[OF inv c] fr by simp
-      next
-        assume c: "bd_call2_conds fl s"
-        have fr: "ds_prnt (bd_upd2 fl s) ! vcount = ds_prnt s ! vcount" by (rule bd_upd2_prnt_vcount[OF wf c])
-        have "build_dfs fl s = build_dfs fl (bd_upd2 fl s)" using IH(1) c by (rule bd_simps(2))
-        thus ?thesis using IH(3)[OF c] bd_upd2_inv[OF inv c] fr by simp
-      next
-        assume c: "bd_call3_conds fl s"
-        have ne: "ds_stk s \<noteq> []" using c by (auto simp: bd_call3_conds_def split: list.splits prod.splits)
-        have fr: "ds_prnt (bd_upd3 s) ! vcount = ds_prnt s ! vcount" by (rule bd_upd3_prnt_vcount[OF ne])
-        have "build_dfs fl s = build_dfs fl (bd_upd3 s)" using IH(1) c by (rule bd_simps(3))
-        thus ?thesis using IH(4)[OF c] bd_upd3_inv[OF inv c] fr by simp
-      next
-        assume c: "bd_ret_conds s"
-        have "build_dfs fl s = s" using IH(1) c by (rule bd_simps(4))
-        thus ?thesis by simp
-      qed
-    qed
-  qed
-  thus "ds_prnt (build_dfs fl s) ! vcount = ds_prnt s ! vcount" using inv0 by simp
-qed
-
-lemma otc_pre_inv: "\<And>fl s c. dfs_inv fl s \<Longrightarrow> c < vcount \<Longrightarrow> \<not> ds_seen s ! c \<Longrightarrow> c \<noteq> 0 \<Longrightarrow> ds_stk s = [] \<Longrightarrow> dfs_inv fl (otc_pre fl s c)"
-proof -
-  fix fl s c assume inv: "dfs_inv fl s" and c: "c < vcount" and unseen: "\<not> ds_seen s ! c" and cnz: "c \<noteq> 0" and stke: "ds_stk s = []"
-  show "dfs_inv fl (otc_pre fl s c)"
-    unfolding otc_pre_def Let_def dfs_inv_def
-    apply (intro conjI)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-    subgoal apply (rule thread_inv_upd[where s = s and w = c]) using inv c unseen cnz by (auto simp: dfs_inv_def dfs_sized_def)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def par_edge_inv_def nth_list_update)
-    subgoal apply (rule pot_inv_seed[where s = s and c = c]) using inv c unseen by (auto simp: dfs_inv_def dfs_sized_def nth_list_update)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def root_pot_inv_def nth_list_update)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def stk_prnt_inv_def nth_list_update)
-    subgoal apply (rule emit_ord_inv_seed[where s = s and c = c]) using inv c unseen by (auto simp: dfs_inv_def dfs_sized_def)
-    subgoal apply (rule snum_inv_seed[where s = s and c = c]) using inv c unseen stke by (auto simp: dfs_inv_def dfs_sized_def)
-    subgoal apply (rule lsuc_inv_seed[where s = s and c = c]) using inv c unseen stke by (auto simp: dfs_inv_def dfs_sized_def)
-    done
-qed
-
-lemma open_tree_component_prnt_vcount: "\<And>fl s c. dfs_inv fl s \<Longrightarrow> c < vcount \<Longrightarrow> \<not> ds_seen s ! c \<Longrightarrow> c \<noteq> 0 \<Longrightarrow> ds_stk s = [] \<Longrightarrow> ds_prnt (open_tree_component fl s c) ! vcount = ds_prnt s ! vcount"
-proof -
-  fix fl s c assume inv: "dfs_inv fl s" and c: "c < vcount" and unseen: "\<not> ds_seen s ! c" and cnz: "c \<noteq> 0" and stke: "ds_stk s = []"
-  have iotc: "dfs_inv fl (otc_pre fl s c)" using otc_pre_inv[OF inv c unseen cnz stke] .
-  have wf: "dfs_wf (otc_pre fl s c)" using iotc by (simp add: dfs_inv_def)
-  have dom: "build_dfs_dom (fl, otc_pre fl s c)" using build_dfs_dom_wf'[OF wf] .
-  have "ds_prnt (build_dfs fl (otc_pre fl s c)) ! vcount = ds_prnt (otc_pre fl s c) ! vcount"
-    using build_dfs_prnt_vcount[OF dom iotc] .
-  also have "... = ds_prnt s ! vcount" using c by (simp add: otc_pre_def Let_def nth_list_update_neq)
-  finally show "ds_prnt (open_tree_component fl s c) ! vcount = ds_prnt s ! vcount"
-    by (simp add: open_tree_component_eq_pre)
-qed
-
-lemma phase1_step_prnt_vcount: "\<And>fl v s. v \<in> set vs_list \<Longrightarrow> dfs_inv fl s \<Longrightarrow> ds_stk s = [] \<Longrightarrow> ds_prnt (phase1_step fl v s) ! vcount = ds_prnt s ! vcount"
-proof -
-  fix fl v s assume vin: "v \<in> set vs_list" and inv: "dfs_inv fl s" and stke: "ds_stk s = []"
-  show "ds_prnt (phase1_step fl v s) ! vcount = ds_prnt s ! vcount"
-  proof (cases "imbalance ! v = 0")
-    case True thus ?thesis by (simp add: phase1_step_def)
-  next
-    case nz: False
-    show ?thesis
-    proof (cases "ds_seen s ! v")
-      case True thus ?thesis using nz by (simp add: phase1_step_def emit_U_edge_def Let_def)
-    next
-      case False
-      have vlt: "v < vcount" using vs_less_vcount[OF vin] .
-      have vnz: "v \<noteq> 0" using vin no_zero_node by metis
-      have "ds_prnt (open_tree_component fl s v) ! vcount = ds_prnt s ! vcount"
-        using open_tree_component_prnt_vcount[OF inv vlt False vnz stke] .
-      thus ?thesis using nz False by (simp add: phase1_step_def)
-    qed
-  qed
-qed
-
-lemma phase2_step_prnt_vcount: "\<And>fl v s. v \<in> set vs_list \<Longrightarrow> dfs_inv fl s \<Longrightarrow> ds_stk s = [] \<Longrightarrow> ds_prnt (phase2_step fl v s) ! vcount = ds_prnt s ! vcount"
-proof -
-  fix fl v s assume vin: "v \<in> set vs_list" and inv: "dfs_inv fl s" and stke: "ds_stk s = []"
-  show "ds_prnt (phase2_step fl v s) ! vcount = ds_prnt s ! vcount"
-  proof (cases "ds_seen s ! v \<or> is_lonely v")
-    case True thus ?thesis by (simp add: phase2_step_def)
-  next
-    case False
-    hence ns: "\<not> ds_seen s ! v" by auto
-    have vlt: "v < vcount" using vs_less_vcount[OF vin] .
-    have vnz: "v \<noteq> 0" using vin no_zero_node by metis
-    have "ds_prnt (open_tree_component fl s v) ! vcount = ds_prnt s ! vcount"
-      using open_tree_component_prnt_vcount[OF inv vlt ns vnz stke] .
-    thus ?thesis using False by (simp add: phase2_step_def)
-  qed
-qed
-
-lemma phase1_prnt_vcount: "\<And>fl s. dfs_inv fl s \<Longrightarrow> ds_stk s = [] \<Longrightarrow> ds_prnt (phase1 fl s) ! vcount = ds_prnt s ! vcount"
-proof -
-  fix fl s assume inv: "dfs_inv fl s" and stke: "ds_stk s = []"
-  have "dfs_inv fl (phase1 fl s) \<and> ds_stk (phase1 fl s) = [] \<and> ds_prnt (phase1 fl s) ! vcount = ds_prnt s ! vcount"
-    unfolding phase1_def
-    apply (rule fold_invariant[where Q = "\<lambda>v. v \<in> set vs_list" and P = "\<lambda>t. dfs_inv fl t \<and> ds_stk t = [] \<and> ds_prnt t ! vcount = ds_prnt s ! vcount"])
-      apply simp
-     apply (simp add: inv stke)
-    subgoal for x t
-      using phase1_step_inv[of x fl t] phase1_step_prnt_vcount[of x fl t] by auto
-    done
-  thus "ds_prnt (phase1 fl s) ! vcount = ds_prnt s ! vcount" by simp
-qed
-
-lemma phase2_prnt_vcount: "\<And>fl s. dfs_inv fl s \<Longrightarrow> ds_stk s = [] \<Longrightarrow> ds_prnt (phase2 fl s) ! vcount = ds_prnt s ! vcount"
-proof -
-  fix fl s assume inv: "dfs_inv fl s" and stke: "ds_stk s = []"
-  have "dfs_inv fl (phase2 fl s) \<and> ds_stk (phase2 fl s) = [] \<and> ds_prnt (phase2 fl s) ! vcount = ds_prnt s ! vcount"
-    unfolding phase2_def
-    apply (rule fold_invariant[where Q = "\<lambda>v. v \<in> set vs_list" and P = "\<lambda>t. dfs_inv fl t \<and> ds_stk t = [] \<and> ds_prnt t ! vcount = ds_prnt s ! vcount"])
-      apply simp
-     apply (simp add: inv stke)
-    subgoal for x t
-      using phase2_step_inv[of x fl t] phase2_step_prnt_vcount[of x fl t] by auto
-    done
-  thus "ds_prnt (phase2 fl s) ! vcount = ds_prnt s ! vcount" by simp
-qed
-
-lemma build_tree_root_prnt: "ds_prnt (build_tree fl) ! vcount = 0"
-proof -
-  have i0: "dfs_inv fl dfs_init \<and> ds_stk dfs_init = []" using dfs_init_inv by (simp add: dfs_init_def)
-  have p1: "dfs_inv fl (phase1 fl dfs_init) \<and> ds_stk (phase1 fl dfs_init) = []" using phase1_inv[OF i0] .
-  have "ds_prnt (phase2 fl (phase1 fl dfs_init)) ! vcount = ds_prnt (phase1 fl dfs_init) ! vcount"
-    using phase2_prnt_vcount[OF conjunct1[OF p1] conjunct2[OF p1]] .
-  also have "... = ds_prnt dfs_init ! vcount"
-    using phase1_prnt_vcount[OF conjunct1[OF i0] conjunct2[OF i0]] .
-  also have "... = 0" by (simp add: dfs_init_def del: replicate_Suc)
-  finally have core: "ds_prnt (phase2 fl (phase1 fl dfs_init)) ! vcount = 0" .
-  show "ds_prnt (build_tree fl) ! vcount = 0"
-    unfolding build_tree_def Let_def using core by simp
 qed
 
 text \<open>Layer 1 of the network-simplex loop's padding-coupling lemma: the concrete entering-edge
@@ -5638,230 +4195,192 @@ proof -
     using Dsp invsp0 solveE1 r_eq la_eq tm_eq by simp
 qed
 
-text \<open>CSR-build congruences: the count and scatter phases read the key array only at the edge indices
-      @{term \<open>[0..<m]\<close>}, so they are insensitive to how the key array is padded beyond @{term m}.  This
-      lets the padded working arrays of @{const solve_imp} (length @{term \<open>m+n\<close>}) feed the clean
-      @{const out_csr} / @{const in_csr} builders (which are phrased for the exact-length inputs).\<close>
-lemma ct_key_cong: "(\<forall>e\<in>set es. key e = key' e) \<Longrightarrow> ct nn key es = ct nn key' es"
-  unfolding ct_def by (rule fold_cong[OF refl refl]) auto
+subsection \<open>Layer (f): the CSR build and the edged vertices\<close>
 
-lemma scatter_edges_key_cong:
-  assumes "\<forall>e\<in>set es. key e = key' e"
-  shows "scatter_edges nn key es dflt = scatter_edges nn key' es dflt"
+text \<open>The shared builder fills the block starts and the edges of the two CSRs of the input.\<close>
+
+lemma csr_build_out_rule:
+  "<in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list * ob \<mapsto>\<^sub>a (0 # replicate vcount 0) * oe \<mapsto>\<^sub>a replicate m 0>
+     csr_build_into_edges vcount (in_fst, in_snd) 0 ob oe
+   <\<lambda>_. in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list * ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec>"
+  using outI.csr_build_into_rule[of "replicate m 0", unfolded csr_build_into_edges_src] by simp
+
+lemma csr_build_in_rule:
+  "<in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list * ib \<mapsto>\<^sub>a (0 # replicate vcount 0) * ie \<mapsto>\<^sub>a replicate m 0>
+     csr_build_into_edges_tgt vcount (in_fst, in_snd) 0 ib ie
+   <\<lambda>_. in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list * ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec>"
+  using incI.csr_build_into_rule[of "replicate m 0", unfolded csr_build_into_edges_tgt] by simp
+
+text \<open>Copying the block starts into the cursor array makes the arrays a collection of the input
+      edges (@{thm [source] outI.graph.csr_copy_imp_rule}); after the acyclifier, the same copy turns the
+      cursor array into the empty ranges at the block starts that Pass A appends to.\<close>
+
+lemma copy_ent:
+  assumes "Kv \<subseteq> {..<N}"
+  shows "Ba \<mapsto>\<^sub>a Bl * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = N \<and> (\<forall>j<N. l ! j = Bl ! j))) * Ea \<mapsto>\<^sub>a El \<Longrightarrow>\<^sub>A
+         Ba \<mapsto>\<^sub>a Bl * Ea \<mapsto>\<^sub>a El * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = N \<and> (\<forall>v\<in>Kv. l ! v = Bl ! v)))"
+  using assms by (sep_auto simp: subset_iff)
+
+lemma copy_lo_ent:
+  assumes "length lo = N" "\<forall>j<N. lo ! j = Bl ! j"
+  shows "Ba \<mapsto>\<^sub>a Bl * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = N \<and> (\<forall>j<N. l ! j = Bl ! j))) * Ea \<mapsto>\<^sub>a El \<Longrightarrow>\<^sub>A
+         Ba \<mapsto>\<^sub>a Bl * Ea \<mapsto>\<^sub>a El * Ca \<mapsto>\<^sub>a lo * true"
+  using assms
+  apply (simp only: ex_assn_move_out, intro ent_ex_preI)
+  apply sep_auto
+  subgoal for l
+    apply (subgoal_tac "l = lo")
+     apply sep_auto
+    by (simp add: list_eq_iff_nth_eq)
+  done
+
+lemma csr_copy_out_init:
+  assumes "length l = vcount"
+  shows "<ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec * oh \<mapsto>\<^sub>a l> csr_copy_imp vcount ob oh 0
+         <\<lambda>_. outI.graph.csr_assn ((!) out.inp.B_spec) (ob, oe, oh)>"
 proof -
-  have ct: "ct nn key es = ct nn key' es" using ct_key_cong[OF assms] .
-  have fld: "fold (scatter_body key) es st = fold (scatter_body key') es st" for st
-  proof (rule fold_cong[OF refl refl])
-    fix e assume "e \<in> set es"
-    hence "key e = key' e" using assms by simp
-    thus "scatter_body key e = scatter_body key' e" by (simp add: scatter_body_def)
-  qed
-  show ?thesis unfolding scatter_edges_def ct by (simp add: fld)
+  have T: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l> csr_copy_imp vcount ob oh 0
+     <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec *
+          (\<exists>\<^sub>Al'. oh \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>j<vcount. l' ! j = out.inp.B_spec ! j)))>"
+    by (rule outI.graph.csr_copy_imp_rule) (simp_all add: assms)
+  have T2: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l * oe \<mapsto>\<^sub>a out.inp.E_spec> csr_copy_imp vcount ob oh 0
+     <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec *
+          (\<exists>\<^sub>Al'. oh \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>v\<in>verts fst_list snd_list. l' ! v = out.inp.B_spec ! v)))>"
+    by (rule ht_cons_post[OF ht_frame[OF T]]) (rule ent_true_drop(2)[OF copy_ent[OF out.graph.K_bound]])
+  show ?thesis
+    unfolding outI.graph.csr_assn_split by (rule ht_cons_pre[OF _ T2]) (simp add: ac_simps)
 qed
 
-text \<open>The padded outgoing / ingoing CSR builders: @{const build_csr_imp} on any key array agreeing with
-      @{term fst_list} / @{term snd_list} on @{term \<open>[0..<m]\<close>} establishes @{const csr_assn} of the
-      abstract @{const out_csr} / @{const in_csr} (generalises @{thm build_csr_out_rule} to padded keys).\<close>
-lemma build_csr_out_pad_rule:
-  assumes lk: "m \<le> length keys" and bd: "\<forall>i<m. keys ! i < vcount" and ag: "\<forall>i<m. keys ! i = fst_list ! i"
-  shows "<ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a replicate vcount 0 * o_lo \<mapsto>\<^sub>a replicate vcount 0 * o_hi \<mapsto>\<^sub>a replicate vcount 0 * o_cur \<mapsto>\<^sub>a replicate vcount 0 * o_edges \<mapsto>\<^sub>a replicate m 0>
-     build_csr_imp ka c o_lo o_hi o_cur o_edges m vcount
-   <\<lambda>_. ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a ct vcount ((!) fst_list) [0..<m] * csr_assn out_csr (o_edges, o_lo, o_hi, o_cur)>"
+lemma csr_copy_in_init:
+  assumes "length l = vcount"
+  shows "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec * ih \<mapsto>\<^sub>a l> csr_copy_imp vcount ib ih 0
+         <\<lambda>_. incI.graph.csr_assn ((!) inc.inp.B_spec) (ib, ie, ih)>"
 proof -
-  have ctc: "ct vcount ((!) keys) [0..<m] = ct vcount ((!) fst_list) [0..<m]"
-    by (rule ct_key_cong) (use ag in auto)
-  have scc: "scatter_edges vcount ((!) keys) [0..<m] 0 = scatter_edges vcount ((!) fst_list) [0..<m] 0"
-    by (rule scatter_edges_key_cong) (use ag in auto)
+  have T: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l> csr_copy_imp vcount ib ih 0
+     <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec *
+          (\<exists>\<^sub>Al'. ih \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>j<vcount. l' ! j = inc.inp.B_spec ! j)))>"
+    by (rule incI.graph.csr_copy_imp_rule) (simp_all add: assms)
+  have T2: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l * ie \<mapsto>\<^sub>a inc.inp.E_spec> csr_copy_imp vcount ib ih 0
+     <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec *
+          (\<exists>\<^sub>Al'. ih \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>v\<in>verts fst_list snd_list. l' ! v = inc.inp.B_spec ! v)))>"
+    by (rule ht_cons_post[OF ht_frame[OF T]]) (rule ent_true_drop(2)[OF copy_ent[OF inc.graph.K_bound]])
   show ?thesis
-    apply (sep_auto heap: build_csr_imp_rule[OF lk bd] simp: csr_assn_def out_csr_edges out_csr_lo out_csr_hi out_csr_cur)
-    apply (simp add: ctc scc star_aci)
+    unfolding incI.graph.csr_assn_split by (rule ht_cons_pre[OF _ T2]) (simp add: ac_simps)
+qed
+
+lemma csr_copy_out_ranges:
+  "<outI.graph.csr_assn c (ob, oe, oh)> csr_copy_imp vcount ob oh 0
+   <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec * oh \<mapsto>\<^sub>a out_lo>"
+proof -
+  have lo: "length out_lo = vcount" "\<forall>j<vcount. out_lo ! j = out.inp.B_spec ! j"
+    by (simp_all add: length_out_lo out_lo_nth)
+  have T: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l> csr_copy_imp vcount ob oh 0
+     <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec *
+          (\<exists>\<^sub>Al'. oh \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>j<vcount. l' ! j = out.inp.B_spec ! j)))>"
+    if "length l = vcount" for l
+    by (rule outI.graph.csr_copy_imp_rule) (simp_all add: that)
+  show ?thesis
+    unfolding outI.graph.csr_assn_split
+    apply (simp only: ex_assn_move_out)
+    apply (rule ht_exEI)
+    apply (subst mult.assoc[symmetric])
+    apply (rule ht_extract_pre_pure)
+    subgoal premises p for l
+      by (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF T[OF conjunct1[OF p]]] copy_lo_ent[OF lo]]])
+         (simp add: ac_simps)
     done
 qed
 
-lemma build_csr_in_pad_rule:
-  assumes lk: "m \<le> length keys" and bd: "\<forall>i<m. keys ! i < vcount" and ag: "\<forall>i<m. keys ! i = snd_list ! i"
-  shows "<ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a replicate vcount 0 * i_lo \<mapsto>\<^sub>a replicate vcount 0 * i_hi \<mapsto>\<^sub>a replicate vcount 0 * i_cur \<mapsto>\<^sub>a replicate vcount 0 * i_edges \<mapsto>\<^sub>a replicate m 0>
-     build_csr_imp ka c i_lo i_hi i_cur i_edges m vcount
-   <\<lambda>_. ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a ct vcount ((!) snd_list) [0..<m] * csr_assn in_csr (i_edges, i_lo, i_hi, i_cur)>"
+lemma csr_copy_in_ranges:
+  "<incI.graph.csr_assn c (ib, ie, ih)> csr_copy_imp vcount ib ih 0
+   <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec * ih \<mapsto>\<^sub>a in_lo>"
 proof -
-  have ctc: "ct vcount ((!) keys) [0..<m] = ct vcount ((!) snd_list) [0..<m]"
-    by (rule ct_key_cong) (use ag in auto)
-  have scc: "scatter_edges vcount ((!) keys) [0..<m] 0 = scatter_edges vcount ((!) snd_list) [0..<m] 0"
-    by (rule scatter_edges_key_cong) (use ag in auto)
+  have lo: "length in_lo = vcount" "\<forall>j<vcount. in_lo ! j = inc.inp.B_spec ! j"
+    by (simp_all add: length_in_lo in_lo_nth)
+  have T: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l> csr_copy_imp vcount ib ih 0
+     <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec *
+          (\<exists>\<^sub>Al'. ih \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>j<vcount. l' ! j = inc.inp.B_spec ! j)))>"
+    if "length l = vcount" for l
+    by (rule incI.graph.csr_copy_imp_rule) (simp_all add: that)
   show ?thesis
-    apply (sep_auto heap: build_csr_imp_rule[OF lk bd] simp: csr_assn_def in_csr_edges in_csr_lo in_csr_hi in_csr_cur)
-    apply (simp add: ctc scc star_aci)
+    unfolding incI.graph.csr_assn_split
+    apply (simp only: ex_assn_move_out)
+    apply (rule ht_exEI)
+    apply (subst mult.assoc[symmetric])
+    apply (rule ht_extract_pre_pure)
+    subgoal premises p for l
+      by (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF T[OF conjunct1[OF p]]] copy_lo_ent[OF lo]]])
+         (simp add: ac_simps)
     done
 qed
 
-text \<open>The built CSRs have the vertex-count size that @{const graph_assn_c} demands, so @{const csr_assn}
-      of @{const out_csr} / @{const in_csr} upgrades to @{const graph_assn_c}.\<close>
-lemma csr_n_out_csr: "csr_n out_csr = vcount"
-  by (simp add: csr_n_def out_csr_cur psums_length)
-lemma csr_n_in_csr: "csr_n in_csr = vcount"
-  by (simp add: csr_n_def in_csr_cur psums_length)
+text \<open>The non-lonely vertices of @{term \<open>[v..<Suc n]\<close>}, kept as a constant so that the loop refinements
+      can carry it opaquely.\<close>
 
-text \<open>Pass A reads the flow only at the real edges @{term \<open>[0..<m]\<close>}, so it is insensitive to the
-      padding of the working flow array beyond @{term m}: running it on @{term \<open>acyc_flow @ (padding)\<close>}
-      gives the same result --- hence the same @{const free_out_edges} / @{const free_out_hi} /
-      @{const free_in_edges} / @{const free_in_hi} / @{const edge_state} --- as on @{const acyc_flow}.\<close>
-lemma passA_flow_cong:
-  assumes "\<forall>e<m. fl ! e = fl' ! e" shows "passA fl = passA fl'"
-  unfolding passA_def
-proof (rule fold_cong[OF refl refl])
-  fix e assume "e \<in> set [0..<m]"
-  hence "fl ! e = fl' ! e" using assms by simp
-  thus "passA_step fl e = passA_step fl' e" by (simp add: passA_step_def)
-qed
+definition edged_lst :: "nat \<Rightarrow> nat list" where
+  "edged_lst v = filter (\<lambda>w. \<not> is_lonely w) [v..<Suc n]"
 
-text \<open>The count / prefix-sum passes read the count array only on @{term \<open>[0..<nn]\<close>}, so they tolerate an
-      \<^emph>\<open>over-long\<close> count array --- as arises when @{const solve_imp} reuses the length-@{term \<open>Suc vcount\<close>}
-      array @{term cnt} (later the DFS stack @{term di_sic}) as the CSR builder's count store.\<close>
-lemma fold_upd_take:
-  "take nn (fold (\<lambda>i cc. cc[key i := Suc (cc ! key i)]) es xs)
-     = fold (\<lambda>i cc. cc[key i := Suc (cc ! key i)]) es (take nn xs)"
-proof (induction es arbitrary: xs)
-  case Nil thus ?case by simp
-next
-  case (Cons e es)
-  have "take nn (xs[key e := Suc (xs ! key e)]) = (take nn xs)[key e := Suc (take nn xs ! key e)]"
-  proof (cases "key e < nn")
-    case True thus ?thesis by (simp add: take_update_swap)
-  next
-    case False
-    hence "length (take nn xs) \<le> key e" by (simp add: min_def)
-    thus ?thesis by (simp add: take_update_swap list_update_beyond)
-  qed
-  thus ?case using Cons.IH[of "xs[key e := Suc (xs ! key e)]"] by simp
-qed
+lemma edged_lst_Cons: "v \<le> n \<Longrightarrow> edged_lst v = (if is_lonely v then [] else [v]) @ edged_lst (Suc v)"
+  by (simp add: edged_lst_def upt_conv_Cons del: upt_Suc)
 
-lemma count_fold_length: "length (fold (\<lambda>i cc. cc[key i := Suc (cc ! key i)]) es xs) = length xs"
-  by (induction es arbitrary: xs) auto
+lemma edged_lst_empty: "n < v \<Longrightarrow> edged_lst v = []"
+  by (simp add: edged_lst_def)
 
-lemma csr_psum_imp_over:
-  "v \<le> nn \<Longrightarrow> nn \<le> length cs \<Longrightarrow> length lo0 = nn \<Longrightarrow> length hi0 = nn \<Longrightarrow> length cur0 = nn \<Longrightarrow>
-   <c \<mapsto>\<^sub>a cs * la \<mapsto>\<^sub>a lo0 * ha \<mapsto>\<^sub>a hi0 * cua \<mapsto>\<^sub>a cur0>
-     csr_psum_imp c la ha cua v acc nn
-   <\<lambda>_. c \<mapsto>\<^sub>a cs
-        * la \<mapsto>\<^sub>a (take v lo0 @ butlast (psums acc (drop v (take nn cs))))
-        * ha \<mapsto>\<^sub>a (take v hi0 @ tl (psums acc (drop v (take nn cs))))
-        * cua \<mapsto>\<^sub>a (take v cur0 @ butlast (psums acc (drop v (take nn cs))))>"
-proof (induction "nn - v" arbitrary: v acc lo0 hi0 cur0)
+lemma edged_lst_vs: "edged_lst (Suc 0) = edged_vs_list"
+  by (simp add: edged_lst_def edged_vs_list_def vs_list_def)
+
+lemma count_edged_imp_rule:
+  "v \<le> Suc n \<Longrightarrow>
+   <outI.graph.csr_assn co (ob, oe, oh) * incI.graph.csr_assn ci (ib, ie, ih)>
+     count_edged_imp ob ib v n acc
+   <\<lambda>r. outI.graph.csr_assn co (ob, oe, oh) * incI.graph.csr_assn ci (ib, ie, ih) *
+        \<up>(r = acc + length (edged_lst v))>"
+proof (induction "Suc n - v" arbitrary: v acc)
   case 0
-  then have vn: "v = nn" by simp
-  show ?case using 0 vn
-    by (subst csr_psum_imp.simps) (sep_auto simp: psums_length)
+  then have vg: "n < v" by simp
+  then show ?case by (subst count_edged_imp.simps) (sep_auto simp: edged_lst_empty[OF vg])
 next
   case (Suc d)
-  from Suc.hyps(2) Suc.prems(1) have vn: "v < nn" by simp
-  have vlen: "v < length cs" using vn Suc.prems(2) by simp
-  have vt: "v < length (take nn cs)" using vn Suc.prems(2) by simp
-  have csv: "cs ! v = take nn cs ! v" using vn by simp
-  have d': "d = nn - Suc v" using Suc.hyps(2) by simp
-  let ?P = "psums (acc + cs ! v) (drop (Suc v) (take nn cs))"
-  have step: "<c \<mapsto>\<^sub>a cs * la \<mapsto>\<^sub>a lo0[v := acc] * ha \<mapsto>\<^sub>a hi0[v := acc + cs ! v] * cua \<mapsto>\<^sub>a cur0[v := acc]>
-     csr_psum_imp c la ha cua (Suc v) (acc + cs ! v) nn
-   <\<lambda>_. c \<mapsto>\<^sub>a cs
-        * la \<mapsto>\<^sub>a (take (Suc v) (lo0[v := acc]) @ butlast ?P)
-        * ha \<mapsto>\<^sub>a (take (Suc v) (hi0[v := acc + cs ! v]) @ tl ?P)
-        * cua \<mapsto>\<^sub>a (take (Suc v) (cur0[v := acc]) @ butlast ?P)>"
-    using Suc.hyps(1)[OF d' _ Suc.prems(2), of "lo0[v := acc]" "hi0[v := acc + cs ! v]" "cur0[v := acc]" "acc + cs ! v"] vn Suc.prems(3,4,5) by simp
-  have pd: "psums acc (drop v (take nn cs)) = acc # ?P" using psums_Cons_drop[OF vt] csv by simp
-  have la_eq: "(take (Suc v) lo0)[v := acc] @ butlast ?P = take v lo0 @ butlast (psums acc (drop v (take nn cs)))"
-    using vn Suc.prems(3) by (simp add: pd take_Suc_conv_app_nth list_update_append)
-  have cu_eq: "(take (Suc v) cur0)[v := acc] @ butlast ?P = take v cur0 @ butlast (psums acc (drop v (take nn cs)))"
-    using vn Suc.prems(5) by (simp add: pd take_Suc_conv_app_nth list_update_append)
-  have hi_eq: "(take (Suc v) hi0)[v := acc + cs ! v] @ tl ?P = take v hi0 @ tl (psums acc (drop v (take nn cs)))"
-    using vn Suc.prems(4) by (simp add: pd take_Suc_conv_app_nth list_update_append psums_hd_tl[symmetric])
+  from Suc.hyps(2) Suc.prems have vn: "v \<le> n" by simp
+  hence vc: "v < vcount" by (simp add: vcount_eq)
+  have d': "d = Suc n - Suc v" using Suc.hyps(2) by simp
+  note IH = Suc.hyps(1)[OF d']
   show ?case
-    using vn vlen Suc.prems(2,3,4,5)
-    apply (subst csr_psum_imp.simps)
-    by (sep_auto heap: step simp: la_eq cu_eq hi_eq)
+    using vn vc
+    by (subst count_edged_imp.simps)
+       (sep_auto heap: outI.graph.csr_empty_imp_rule incI.graph.csr_empty_imp_rule IH
+                 simp: edged_lst_Cons[OF vn] is_lonely_def)
 qed
 
-lemma build_csr_imp_over_c:
-  assumes mk: "m \<le> length keys" and kn: "\<forall>i<m. keys ! i < nn" and lc: "nn \<le> lenc"
-  shows "<ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a replicate lenc (0::nat) * lo \<mapsto>\<^sub>a replicate nn (0::nat) * hi \<mapsto>\<^sub>a replicate nn (0::nat) * cur \<mapsto>\<^sub>a replicate nn (0::nat) * ea \<mapsto>\<^sub>a replicate m (0::nat)>
-     build_csr_imp ka c lo hi cur ea m nn
-   <\<lambda>_. ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a fold (\<lambda>i cc. cc[keys ! i := Suc (cc ! (keys ! i))]) [0..<m] (replicate lenc 0)
-        * lo \<mapsto>\<^sub>a butlast (psums 0 (ct nn (nth keys) [0..<m]))
-        * hi \<mapsto>\<^sub>a tl (psums 0 (ct nn (nth keys) [0..<m]))
-        * cur \<mapsto>\<^sub>a butlast (psums 0 (ct nn (nth keys) [0..<m]))
-        * ea \<mapsto>\<^sub>a scatter_edges nn (nth keys) [0..<m] 0>"
-proof -
-  let ?ct = "ct nn (nth keys) [0..<m]"
-  let ?lo = "butlast (psums 0 ?ct)"
-  let ?cto = "fold (\<lambda>i cc. cc[keys ! i := Suc (cc ! (keys ! i))]) [0..<m] (replicate lenc 0)"
-  have takeq: "take nn ?cto = ?ct"
-    using fold_upd_take[of nn "(!) keys" "[0..<m]" "replicate lenc 0"] lc by (simp add: ct_def min_def)
-  have lenq: "nn \<le> length ?cto" using lc by (simp add: count_fold_length)
-  have si: "sc_inv nn (nth keys) [0..<m] (replicate m 0) ?lo [0..<0]"
-    using scatter_init_inv[of nn "nth keys" "[0..<m]" 0] by simp
-  have p1: "<ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a replicate lenc 0> csr_count_imp ka c 0 m <\<lambda>_. ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a ?cto>"
-    by (rule csr_count_imp_rule) (use mk kn lc in auto)
-  have p2: "<c \<mapsto>\<^sub>a ?cto * lo \<mapsto>\<^sub>a replicate nn 0 * hi \<mapsto>\<^sub>a replicate nn 0 * cur \<mapsto>\<^sub>a replicate nn 0>
-              csr_psum_imp c lo hi cur 0 0 nn
-            <\<lambda>_. c \<mapsto>\<^sub>a ?cto * lo \<mapsto>\<^sub>a ?lo * hi \<mapsto>\<^sub>a tl (psums 0 ?ct) * cur \<mapsto>\<^sub>a ?lo>"
-    using csr_psum_imp_over[of 0 nn ?cto "replicate nn 0" "replicate nn 0" "replicate nn 0" c lo hi cur 0] lenq takeq
-    by simp
-  have p3: "<ka \<mapsto>\<^sub>a keys * ea \<mapsto>\<^sub>a replicate m 0 * cur \<mapsto>\<^sub>a ?lo>
-              csr_scatter_imp ka ea cur 0 m
-            <\<lambda>_. ka \<mapsto>\<^sub>a keys * ea \<mapsto>\<^sub>a scatter_edges nn (nth keys) [0..<m] 0
-                 * cur \<mapsto>\<^sub>a snd (fold (scatter_body (nth keys)) [0..<m] (replicate m 0, ?lo))>"
-    using csr_scatter_imp_rule[of 0 m m keys "replicate m 0" ?lo nn ka ea cur] mk kn si
-    by (simp add: scatter_edges_def psums_length)
-  have p4: "\<And>ys. length ys = nn \<Longrightarrow> <lo \<mapsto>\<^sub>a ?lo * cur \<mapsto>\<^sub>a ys> arr_copy_imp lo cur 0 nn <\<lambda>_. lo \<mapsto>\<^sub>a ?lo * cur \<mapsto>\<^sub>a ?lo>"
-  proof -
-    fix ys :: "nat list" assume l: "length ys = nn"
-    show "<lo \<mapsto>\<^sub>a ?lo * cur \<mapsto>\<^sub>a ys> arr_copy_imp lo cur 0 nn <\<lambda>_. lo \<mapsto>\<^sub>a ?lo * cur \<mapsto>\<^sub>a ?lo>"
-      using arr_copy_imp_rule[of 0 nn ?lo ys lo cur] l by (simp add: psums_length)
-  qed
-  show ?thesis
-    unfolding build_csr_imp_def
-    by (sep_auto heap: p1 p2 p3 p4 simp: fold_scatter_snd_length psums_length)
-qed
-
-text \<open>Combined padded builders: an over-long key array (agreeing with @{term fst_list}/@{term snd_list}
-      on @{term \<open>[0..<m]\<close>}) and an over-long count array still establish @{const csr_assn} of
-      @{const out_csr}/@{const in_csr} --- exactly the shape @{const solve_imp} produces.\<close>
-lemma build_csr_out_pad_over_c:
-  assumes mk: "m \<le> length keys" and bd: "\<forall>i<m. keys ! i < vcount" and ag: "\<forall>i<m. keys ! i = fst_list ! i" and lc: "vcount \<le> lenc"
-  shows "<ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a replicate lenc 0 * o_lo \<mapsto>\<^sub>a replicate vcount 0 * o_hi \<mapsto>\<^sub>a replicate vcount 0 * o_cur \<mapsto>\<^sub>a replicate vcount 0 * o_edges \<mapsto>\<^sub>a replicate m 0>
-     build_csr_imp ka c o_lo o_hi o_cur o_edges m vcount
-   <\<lambda>_. ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a fold (\<lambda>i cc. cc[keys ! i := Suc (cc ! (keys ! i))]) [0..<m] (replicate lenc 0) * csr_assn out_csr (o_edges, o_lo, o_hi, o_cur)>"
-proof -
-  have ctc: "ct vcount ((!) keys) [0..<m] = ct vcount ((!) fst_list) [0..<m]"
-    by (rule ct_key_cong) (use ag in auto)
-  have scc: "scatter_edges vcount ((!) keys) [0..<m] 0 = scatter_edges vcount ((!) fst_list) [0..<m] 0"
-    by (rule scatter_edges_key_cong) (use ag in auto)
-  show ?thesis
-    apply (sep_auto heap: build_csr_imp_over_c[OF mk bd lc] simp: csr_assn_def out_csr_edges out_csr_lo out_csr_hi out_csr_cur)
-    apply (simp add: ctc scc star_aci)
-    done
-qed
-
-lemma build_csr_in_pad_over_c:
-  assumes mk: "m \<le> length keys" and bd: "\<forall>i<m. keys ! i < vcount" and ag: "\<forall>i<m. keys ! i = snd_list ! i" and lc: "vcount \<le> lenc"
-  shows "<ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a replicate lenc 0 * i_lo \<mapsto>\<^sub>a replicate vcount 0 * i_hi \<mapsto>\<^sub>a replicate vcount 0 * i_cur \<mapsto>\<^sub>a replicate vcount 0 * i_edges \<mapsto>\<^sub>a replicate m 0>
-     build_csr_imp ka c i_lo i_hi i_cur i_edges m vcount
-   <\<lambda>_. ka \<mapsto>\<^sub>a keys * c \<mapsto>\<^sub>a fold (\<lambda>i cc. cc[keys ! i := Suc (cc ! (keys ! i))]) [0..<m] (replicate lenc 0) * csr_assn in_csr (i_edges, i_lo, i_hi, i_cur)>"
-proof -
-  have ctc: "ct vcount ((!) keys) [0..<m] = ct vcount ((!) snd_list) [0..<m]"
-    by (rule ct_key_cong) (use ag in auto)
-  have scc: "scatter_edges vcount ((!) keys) [0..<m] 0 = scatter_edges vcount ((!) snd_list) [0..<m] 0"
-    by (rule scatter_edges_key_cong) (use ag in auto)
-  show ?thesis
-    apply (sep_auto heap: build_csr_imp_over_c[OF mk bd lc] simp: csr_assn_def in_csr_edges in_csr_lo in_csr_hi in_csr_cur)
-    apply (simp add: ctc scc star_aci)
-    done
+lemma fill_edged_imp_rule:
+  "v \<le> Suc n \<Longrightarrow> j + length (edged_lst v) \<le> length vlst \<Longrightarrow>
+   <va \<mapsto>\<^sub>a vlst * outI.graph.csr_assn co (ob, oe, oh) * incI.graph.csr_assn ci (ib, ie, ih)>
+     fill_edged_imp va ob ib v n j
+   <\<lambda>_. va \<mapsto>\<^sub>a (take j vlst @ edged_lst v @ drop (j + length (edged_lst v)) vlst) *
+        outI.graph.csr_assn co (ob, oe, oh) * incI.graph.csr_assn ci (ib, ie, ih)>"
+proof (induction "Suc n - v" arbitrary: v j vlst)
+  case 0
+  then have vg: "n < v" by simp
+  then show ?case by (subst fill_edged_imp.simps) (sep_auto simp: edged_lst_empty[OF vg])
+next
+  case (Suc d)
+  from Suc.hyps(2) Suc.prems(1) have vn: "v \<le> n" by simp
+  hence vc: "v < vcount" by (simp add: vcount_eq)
+  have d': "d = Suc n - Suc v" using Suc.hyps(2) by simp
+  show ?case
+    using vn vc Suc.prems(2)
+    by (subst fill_edged_imp.simps)
+       (sep_auto heap: outI.graph.csr_empty_imp_rule incI.graph.csr_empty_imp_rule Suc.hyps(1)[OF d']
+                 simp: edged_lst_Cons[OF vn] is_lonely_def take_Suc_conv_app_nth list_update_append
+                       drop_update_cancel)
 qed
 
 text \<open>Exit-bridge core: the six tree arrays produced by @{const build_tree} realise the abstract
       arborescence @{const Sarb} as an @{const ndtree_assn} over @{term Varb}.  The domain / range
       structure comes from @{thm Sarb_struct}; the per-vertex value correspondence from
       @{thm Sarb_sel} together with the @{const Sprnt} / @{const Sthrd} / @{const Srvth} definitions
-      (the root's parent slot is @{term 0} by @{thm build_tree_root_prnt}); the length bounds from
-      @{thm bt_sized}.  The auxiliary array is unconstrained apart from its length.\<close>
+      (the root's parent slot is @{term 0} by @{thm [source] build_tree_inv}); the length bounds from
+      @{thm [source] build_tree_inv}.  The auxiliary array is unconstrained apart from its length.\<close>
 lemma ndtree_assn_Sarb:
   assumes la: "Suc vcount \<le> length auxa"
   shows "prnt_impl Ti \<mapsto>\<^sub>a ds_prnt (build_tree acyc_flow) * thrd_impl Ti \<mapsto>\<^sub>a ds_thrd (build_tree acyc_flow) *
@@ -5869,11 +4388,13 @@ lemma ndtree_assn_Sarb:
    snum_impl Ti \<mapsto>\<^sub>a ds_snum (build_tree acyc_flow) * aux_impl Ti \<mapsto>\<^sub>a auxa
    \<Longrightarrow>\<^sub>A ndtree_assn Varb Sarb Ti"
 proof -
-  note lens = bt_sized[unfolded dfs_sized_def]
+  have bt: "dfs_sized (build_tree acyc_flow)" "ds_prnt (build_tree acyc_flow) ! vcount = 0"
+    using build_tree_inv[of acyc_flow] by (simp_all add: dfs_inv_def tree_seen_inv_def)
+  note lens = bt(1)[unfolded dfs_sized_def]
   have vsub: "Varb \<subseteq> {0..<Suc vcount}" by (auto simp: Varb_def Vseen_def)
   have vaux: "Varb \<subseteq> {0..<length auxa}" using vsub la by auto
   have prnt_cond: "\<forall>v\<in>Varb. (\<forall>u. prnt Sarb v = Some u \<longrightarrow> ds_prnt (build_tree acyc_flow) ! v = u) \<and> (prnt Sarb v = None \<longrightarrow> ds_prnt (build_tree acyc_flow) ! v = 0)"
-    by (auto simp: Sarb_sel Sprnt_def build_tree_root_prnt Varb_def Vseen_def)
+    by (auto simp: Sarb_sel Sprnt_def bt(2) Varb_def Vseen_def)
   have thrd_cond: "\<forall>v\<in>Varb. (\<forall>u. thrd Sarb v = Some u \<longrightarrow> ds_thrd (build_tree acyc_flow) ! v = u) \<and> (thrd Sarb v = None \<longrightarrow> ds_thrd (build_tree acyc_flow) ! v = 0)"
     by (auto simp: Sarb_sel Sthrd_def)
   have rvth_cond: "\<forall>v\<in>Varb. (\<forall>u. rvth Sarb v = Some u \<longrightarrow> ds_rvth (build_tree acyc_flow) ! v = u) \<and> (rvth Sarb v = None \<longrightarrow> ds_rvth (build_tree acyc_flow) ! v = 0)"
@@ -5893,216 +4414,7 @@ proof -
     done
 qed
 
-text \<open>@{const solve_imp} hands the tree builder freshly-allocated arrays, so the DFS state's
-      @{term ds_snum} is all-zero and @{term ds_prev} is @{term 0} --- one short of @{const dfs_init}
-      (which seeds the snum entry at the root to @{term \<open>1::nat\<close>} and @{term ds_prev} to @{term vcount}).  The tree builder itself
-      performs exactly those seed writes as its first action, so it also refines @{const build_tree} from
-      this \<^emph>\<open>raw\<close> pre-seed state \<open>dfs_raw\<close>.\<close>
-definition dfs_raw :: "'n dfs_state" where
-  "dfs_raw = dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>"
 
-lemma raw_seed:
-  "dfs_raw\<lparr>ds_snum := (ds_snum dfs_raw)[vcount := Suc 0], ds_prev := vcount, ds_nxt := 0, ds_stk := []\<rparr> = dfs_init"
-  by (simp add: dfs_raw_def dfs_init_def)
-
-lemma build_tree_imp_raw_rule:
-  assumes nvc: "n < vcount" and lim: "Suc vcount \<le> length imbalance"
-    and lol: "vcount \<le> length out_lo" and lil: "vcount \<le> length in_lo"
-    and loh: "vcount \<le> length out_hi" and lih: "vcount \<le> length in_hi"
-  shows "<dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st dfs_raw * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>
-           build_tree_imp st imb_arr ofh_arr ifh_arr m vcount n
-         <\<lambda>_. dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (build_tree acyc_flow) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>"
-proof -
-  have allvc: "\<forall>w\<in>set vs_list. w < vcount" using nvc by (auto simp: vs_list_def)
-  have pre0: "dfs_inv acyc_flow dfs_init \<and> ds_stk dfs_init = []" using dfs_init_inv by (simp add: dfs_init_def)
-  have wsd1: "dfs_wf (phase1 acyc_flow dfs_init) \<and> dfs_sized (phase1 acyc_flow dfs_init) \<and> dref_inv (phase1 acyc_flow dfs_init)"
-    using fold_phase1_step_wsd[OF dfs_wf_dfs_init dfs_init_sized dref_inv_dfs_init allvc] by (simp add: phase1_def)
-  have a1: "art_len (phase1 acyc_flow dfs_init)" using phase1_art_len[OF pre0 dfs_init_art_len] .
-  have p1a: "length (ds_afst (phase1 acyc_flow dfs_init)) = length vs_list \<and> length (ds_asnd (phase1 acyc_flow dfs_init)) = length vs_list \<and> length (ds_acap (phase1 acyc_flow dfs_init)) = length vs_list \<and> length (ds_aflw (phase1 acyc_flow dfs_init)) = length vs_list \<and> length (ds_aest (phase1 acyc_flow dfs_init)) = length vs_list"
-    using a1 by (simp add: art_len_def)
-  have bt_nxt: "ds_nxt (build_tree acyc_flow) = ds_nxt (phase2 acyc_flow (phase1 acyc_flow dfs_init))" by (simp add: build_tree_def Let_def)
-  have nxt_le: "ds_nxt (phase2 acyc_flow (phase1 acyc_flow dfs_init)) \<le> length vs_list" using build_tree_nxt_le bt_nxt by simp
-  have phase1_fold_eq: "fold (phase1_step acyc_flow) [Suc 0..<Suc n] dfs_init = phase1 acyc_flow dfs_init" by (simp add: phase1_def vs_list_def)
-  have phase2_fold_eq: "fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init) = phase2 acyc_flow (phase1 acyc_flow dfs_init)" by (simp add: phase2_def vs_list_def)
-  have f1: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_afst (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have f2: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_asnd (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have f3: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_acap (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have f4: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_aflw (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have f5: "ds_nxt (fold (phase2_step acyc_flow) [Suc 0..<Suc n] (phase1 acyc_flow dfs_init)) \<le> length (ds_aest (phase1 acyc_flow dfs_init))" using nxt_le p1a unfolding phase2_fold_eq by simp
-  have lim2: "vcount \<le> length imbalance" using lim by simp
-  have c1: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_afst dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have c2: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_asnd dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have c3: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_acap dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have c4: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_aflw dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have c5: "ds_nxt dfs_init + (Suc n - Suc 0) \<le> length (ds_aest dfs_init)" by (simp add: dfs_init_def length_vs_list)
-  have szp2: "dfs_sized (phase2 acyc_flow (phase1 acyc_flow dfs_init))"
-    using fold_phase2_step_wsd[OF conjunct1[OF wsd1] conjunct1[OF conjunct2[OF wsd1]] conjunct2[OF conjunct2[OF wsd1]] allvc] by (simp add: phase2_def)
-  have lsuc_len: "vcount < length (ds_lsuc (phase2 acyc_flow (phase1 acyc_flow dfs_init)))" using szp2 by (simp add: dfs_sized_def)
-  have bt_eq: "(phase2 acyc_flow (phase1 acyc_flow dfs_init))\<lparr>ds_lsuc := (ds_lsuc (phase2 acyc_flow (phase1 acyc_flow dfs_init)))[vcount := ds_prev (phase2 acyc_flow (phase1 acyc_flow dfs_init))]\<rparr> = build_tree acyc_flow"
-    by (simp add: build_tree_def Let_def)
-  have snum_len_raw: "vcount < length (ds_snum dfs_raw)" by (simp add: dfs_raw_def del: replicate_Suc)
-  have phase1_triple: "<dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st dfs_init * imb_arr \<mapsto>\<^sub>a imbalance> phase1_imp st imb_arr m vcount (Suc 0) n <\<lambda>_. dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (phase1 acyc_flow dfs_init) * imb_arr \<mapsto>\<^sub>a imbalance>"
-    by (rule phase1_imp_rule[where fl=acyc_flow, OF dfs_wf_dfs_init dfs_init_sized dref_inv_dfs_init c1 c2 c3 c4 c5 nvc lim lol lil, unfolded phase1_fold_eq])
-  have phase2_triple: "<dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (phase1 acyc_flow dfs_init) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi> phase2_imp st imb_arr ofh_arr ifh_arr m vcount (Suc 0) n <\<lambda>_. dfs_rel fl0 es0 (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (phase2 acyc_flow (phase1 acyc_flow dfs_init)) * imb_arr \<mapsto>\<^sub>a imbalance * ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi>"
-    by (rule phase2_imp_rule[where fl=acyc_flow, OF conjunct1[OF wsd1] conjunct1[OF conjunct2[OF wsd1]] conjunct2[OF conjunct2[OF wsd1]] f1 f2 f3 f4 f5 nvc lim2 lol lil loh lih, unfolded phase2_fold_eq])
-  show ?thesis
-    unfolding build_tree_imp_def
-    apply (sep_auto heap: dfs_rel_snum_upd[OF snum_len_raw] dfs_rel_prev_upd dfs_rel_nxt_upd0 dfs_rel_sp_upd0 simp: raw_seed)
-    apply (rule wlp_apply_ht[OF _ _ phase1_triple, where F="ofh_arr \<mapsto>\<^sub>a out_hi * ifh_arr \<mapsto>\<^sub>a in_hi * true"])
-      apply assumption
-     apply sep_auto
-    apply (rule wlp_apply_ht[OF _ _ phase2_triple, where F="true"])
-      apply assumption
-     apply sep_auto
-    apply (sep_auto heap: dfs_rel_prev_get dfs_rel_lsuc_upd[OF lsuc_len] simp: bt_eq)
-    done
-qed
-
-text \<open>Monolith support: the padded input arrays agree with the functional lists on the real edge range,
-      and the fst-count fold leaves the artificial-root slot @{term \<open>Suc n\<close>} at @{term 0} (so the shared
-      count array @{term cnt} is fully re-zeroed by @{const solve_imp}'s @{const arr_fill_imp} between the
-      two CSR builds).\<close>
-lemma fst_pad_keys: "\<forall>i<m. (fst_list @ replicate n 0) ! i = fst_list ! i" by (auto simp: nth_append length_fst_list_m)
-lemma snd_pad_keys: "\<forall>i<m. (snd_list @ replicate n 0) ! i = snd_list ! i" by (auto simp: nth_append length_snd_list_m)
-lemma fst_pad_bd: "\<forall>i<m. (fst_list @ replicate n 0) ! i < vcount" using keys_fst_lt fst_pad_keys by auto
-lemma snd_pad_bd: "\<forall>i<m. (snd_list @ replicate n 0) ! i < vcount" using keys_snd_lt snd_pad_keys by auto
-lemma fst_pad_mk: "m \<le> length (fst_list @ replicate n 0)" by (simp add: length_fst_list_m)
-lemma snd_pad_mk: "m \<le> length (snd_list @ replicate n 0)" by (simp add: length_snd_list_m)
-lemma vcount_le_V: "vcount \<le> Suc (Suc n)" by (simp add: vcount_eq)
-
-lemma fold_upd_nth_other:
-  "\<forall>i\<in>set es. key i \<noteq> j \<Longrightarrow> (fold (\<lambda>i cc. cc[key i := Suc (cc ! (key i))]) es xs) ! j = xs ! j"
-  by (induction es arbitrary: xs) (auto simp: nth_list_update_neq)
-
-lemma fst_cto_vcount:
-  "(fold (\<lambda>i cc. cc[fst_list ! i := Suc (cc ! (fst_list ! i))]) [0..<m] (replicate (Suc (Suc n)) 0)) ! (Suc n) = 0"
-proof -
-  have "\<forall>i\<in>set [0..<m]. fst_list ! i \<noteq> Suc n" using keys_fst_lt by (auto simp: vcount_eq)
-  from fold_upd_nth_other[OF this, of "replicate (Suc (Suc n)) 0"] show ?thesis by (simp del: replicate_Suc)
-qed
-
-text \<open>CSR count-array reset: after building the out-CSR the count array holds the fst-degrees; the
-      subsequent @{const arr_fill_imp} zeroes indices @{term \<open>[0..<vcount]\<close>} and the reserved root
-      cell @{term vcount} is already @{term 0} (no real edge points at the root), so the array is
-      back to @{term \<open>replicate (Suc (Suc n)) 0\<close>} --- ready to build the in-CSR.\<close>
-lemma arr_fill_to_replicate:
-  assumes len: "length ys = Suc NN" and lastx: "ys ! NN = x"
-  shows "take 0 ys @ replicate (NN - 0) x @ drop NN ys = replicate (Suc NN) x"
-proof -
-  have "drop NN ys = [ys ! NN]" using Cons_nth_drop_Suc[of NN ys] len by simp
-  then show ?thesis using lastx by (simp add: replicate_append_same)
-qed
-
-lemma fst_cto_pad_len:
-  "length (fold (\<lambda>i cc. list_update cc ((fst_list @ replicate n 0) ! i)
-                          (Suc (cc ! ((fst_list @ replicate n 0) ! i)))) [0..<m] (0 # 0 # replicate n 0))
-   = Suc (Suc n)"
-  by (simp add: count_fold_length)
-
-lemma fst_cto_pad_nth:
-  "(fold (\<lambda>i cc. list_update cc ((fst_list @ replicate n 0) ! i)
-                   (Suc (cc ! ((fst_list @ replicate n 0) ! i)))) [0..<m] (0 # 0 # replicate n 0)) ! (Suc n)
-   = 0"
-proof -
-  have nkey: "\<forall>i\<in>set [0..<m]. (fst_list @ replicate n 0) ! i \<noteq> Suc n"
-    using fst_pad_bd by (auto simp: vcount_eq)
-  have e1: "(fold (\<lambda>i cc. list_update cc ((fst_list @ replicate n 0) ! i)
-                   (Suc (cc ! ((fst_list @ replicate n 0) ! i)))) [0..<m] (0 # 0 # replicate n 0)) ! (Suc n)
-          = (0 # 0 # replicate n 0) ! Suc n"
-    by (rule fold_upd_nth_other[OF nkey])
-  have x0: "(0 # 0 # replicate n 0) ! Suc n = 0"
-  proof -
-    have "Suc n < length (0 # 0 # replicate n 0)" by simp
-    then have m: "(0 # 0 # replicate n 0) ! Suc n \<in> set (0 # 0 # replicate n 0)" by (rule nth_mem)
-    have "set (0 # 0 # replicate n 0) \<subseteq> {0}" by auto
-    with m show ?thesis by auto
-  qed
-  show ?thesis by (simp only: e1 x0)
-qed
-
-lemma fst_cto_pad_drop:
-  "drop (Suc n) (fold (\<lambda>i cc. list_update cc ((fst_list @ replicate n 0) ! i)
-                        (Suc (cc ! ((fst_list @ replicate n 0) ! i)))) [0..<m] (0 # 0 # replicate n 0)) = [0]"
-proof -
-  let ?F = "fold (\<lambda>i cc. list_update cc ((fst_list @ replicate n 0) ! i)
-                        (Suc (cc ! ((fst_list @ replicate n 0) ! i)))) [0..<m] (0 # 0 # replicate n 0)"
-  have "drop (Suc n) ?F = [?F ! (Suc n)]"
-    using Cons_nth_drop_Suc[of "Suc n" ?F] fst_cto_pad_len by simp
-  then show ?thesis using fst_cto_pad_nth by simp
-qed
-
-text \<open>The acyclifier phase of @{const solve_imp}, packaged as one Hoare triple over the concrete
-      padded arrays it operates on.  It folds the raw stores into the abstract assertions the
-      acyclifier refinement consumes (@{const flow_assn_m} / @{const state_assn_v} /
-      @{const graph_assn_c} / @{const vtx_assn}) and discharges the multigraph side-conditions, so the
-      capstone can apply it as a black box: the boolean verdict tracks @{term \<open>make_acyclic flow_list = None\<close>}.\<close>
-lemma make_acyclic_solve_triple:
-  "<fh \<mapsto>\<^sub>a (take m flow_list @ replicate n 0) * sh \<mapsto>\<^sub>a (Unseen # Unseen # replicate n Unseen) *
-    oe \<mapsto>\<^sub>a csr_edges out_csr * olo \<mapsto>\<^sub>a csr_lo out_csr * ohi \<mapsto>\<^sub>a csr_hi out_csr * ocur \<mapsto>\<^sub>a csr_cur out_csr *
-    ie \<mapsto>\<^sub>a csr_edges in_csr * ilo \<mapsto>\<^sub>a csr_lo in_csr * ihi \<mapsto>\<^sub>a csr_hi in_csr * icur \<mapsto>\<^sub>a csr_cur in_csr *
-    vl \<mapsto>\<^sub>a edged_vs_list * pr \<mapsto>\<^sub>r 0 *
-    cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
-    fst_arr \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snd_arr \<mapsto>\<^sub>a (snd_list @ replicate n 0) *
-    vst \<mapsto>\<^sub>a (0 # 0 # replicate n 0) * est \<mapsto>\<^sub>a (0 # 0 # replicate n 0) * dst \<mapsto>\<^sub>a (False # False # replicate n False)>
-   make_acyclic_prog cap_arr cost_arr fst_arr snd_arr fh sh (oe, olo, ohi, ocur) (ie, ilo, ihi, icur) (vl, pr) vst est dst
-   <\<lambda>r. \<exists>\<^sub>A f' cur_o cur_i. flow_assn_m f' fh *
-        oe \<mapsto>\<^sub>a csr_edges out_csr * olo \<mapsto>\<^sub>a csr_lo out_csr * ohi \<mapsto>\<^sub>a csr_hi out_csr * ocur \<mapsto>\<^sub>a cur_o *
-        ie \<mapsto>\<^sub>a csr_edges in_csr * ilo \<mapsto>\<^sub>a csr_lo in_csr * ihi \<mapsto>\<^sub>a csr_hi in_csr * icur \<mapsto>\<^sub>a cur_i *
-        (cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
-         fst_arr \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snd_arr \<mapsto>\<^sub>a (snd_list @ replicate n 0)) *
-        (\<exists>\<^sub>A vl' el' dl'. vst \<mapsto>\<^sub>a vl' * est \<mapsto>\<^sub>a el' * dst \<mapsto>\<^sub>a dl' *
-           \<up>(card original_network.\<V> \<le> length vl' \<and> card original_network.\<V> \<le> length el' \<and> card original_network.\<V> \<le> length dl' \<and>
-             length vl' = Suc vcount \<and> length el' = Suc vcount \<and> length dl' = Suc vcount)) *
-        true *
-        \<up>(length cur_o = vcount \<and> length cur_i = vcount \<and> (r \<longleftrightarrow> make_acyclic flow_list = None) \<and> (make_acyclic flow_list = None \<or> make_acyclic flow_list = Some f'))>"
-proof -
-  have lf: "length flow_list = m" by (simp add: length_flow length_edges)
-  have cardn: "card original_network.\<V> \<le> Suc (Suc n)"
-  proof -
-    have "card original_network.\<V> \<le> card (set vs_list)" using card_mono[OF finite_set V_sub_vs_list] .
-    also have "\<dots> \<le> length vs_list" by (rule card_length)
-    also have "\<dots> = n" by (rule length_vs_list)
-    finally show ?thesis by simp
-  qed
-  have cardv: "card original_network.\<V> \<le> length (0 # 0 # replicate n (0::nat))" using cardn by simp
-  have cardb: "card original_network.\<V> \<le> length (False # False # replicate n False)" using cardn by simp
-  have cl_len: "m \<le> length (capacity_list @ replicate n 0)" by (simp add: length_edges)
-  have cl_eq: "\<And>e. e < m \<Longrightarrow> (capacity_list @ replicate n 0) ! e = capacity_list ! e"
-    by (simp add: nth_append length_edges)
-  have co_len: "m \<le> length cost_list" by (simp add: length_cost_list_m)
-  have co_eq: "\<And>e. e < m \<Longrightarrow> cost_list ! e = cost_list ! e" by simp
-  have fla_len: "m \<le> length (fst_list @ replicate n 0)" by (simp add: length_fst_list_m)
-  have fla_eq: "\<And>e. e < m \<Longrightarrow> (fst_list @ replicate n 0) ! e = fst_list ! e"
-    by (simp add: nth_append length_fst_list_m)
-  have sla_len: "m \<le> length (snd_list @ replicate n 0)" by (simp add: length_snd_list_m)
-  have sla_eq: "\<And>e. e < m \<Longrightarrow> (snd_list @ replicate n 0) ! e = snd_list ! e"
-    by (simp add: nth_append length_snd_list_m)
-  have ent: "fh \<mapsto>\<^sub>a (take m flow_list @ replicate n 0) * sh \<mapsto>\<^sub>a (Unseen # Unseen # replicate n Unseen) *
-    oe \<mapsto>\<^sub>a csr_edges out_csr * olo \<mapsto>\<^sub>a csr_lo out_csr * ohi \<mapsto>\<^sub>a csr_hi out_csr * ocur \<mapsto>\<^sub>a csr_cur out_csr *
-    ie \<mapsto>\<^sub>a csr_edges in_csr * ilo \<mapsto>\<^sub>a csr_lo in_csr * ihi \<mapsto>\<^sub>a csr_hi in_csr * icur \<mapsto>\<^sub>a csr_cur in_csr *
-    vl \<mapsto>\<^sub>a edged_vs_list * pr \<mapsto>\<^sub>r 0 *
-    cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
-    fst_arr \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snd_arr \<mapsto>\<^sub>a (snd_list @ replicate n 0) *
-    vst \<mapsto>\<^sub>a (0 # 0 # replicate n 0) * est \<mapsto>\<^sub>a (0 # 0 # replicate n 0) * dst \<mapsto>\<^sub>a (False # False # replicate n False)
-    \<Longrightarrow>\<^sub>A
-    flow_assn_m flow_list fh * state_assn_v (replicate vcount Unseen) sh *
-    graph_assn_c out_csr (oe, olo, ohi, ocur) * graph_assn_c in_csr (ie, ilo, ihi, icur) *
-    vtx_assn \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> (vl, pr) *
-    (cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
-     fst_arr \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snd_arr \<mapsto>\<^sub>a (snd_list @ replicate n 0)) *
-    vst \<mapsto>\<^sub>a (0 # 0 # replicate n 0) * est \<mapsto>\<^sub>a (0 # 0 # replicate n 0) * dst \<mapsto>\<^sub>a (False # False # replicate n False)"
-    unfolding flow_assn_m_def state_assn_v_def graph_assn_c_def vtx_assn_def csr_assn_def
-    apply (simp add: csr_n_out_csr csr_n_in_csr lf)
-    apply (rule ent_ex_postI[where x = "[Unseen]"])
-    apply (rule ent_ex_postI[where x = "replicate n 0"])
-    apply (sep_auto simp: vcount_eq replicate_append_same)
-    done
-  show ?thesis
-    apply (rule ht_cons_pre[OF ent])
-    apply (rule ht_cons_post_prec[OF make_acyclic_prog_rule[OF cl_len cl_eq co_len co_eq fla_len fla_eq sla_len sla_eq lf af_cap_feasible_flow_list cardv cardv cardb]])
-    apply (sep_auto simp: graph_assn_c_def csr_assn_def csr_n_def vcount_eq)
-    done
-qed
 text \<open>The arborescence lives inside @{term \<open>{0..<Suc vcount}\<close>}, so the two path buffers the
       network-simplex loop demands (each of length at least @{term \<open>card Varb - 1\<close>}) are covered by the
       DFS stack arrays, whose length is @{term \<open>Suc vcount\<close>}.\<close>
@@ -6112,45 +4424,10 @@ proof -
   from card_mono[OF _ this] show ?thesis by simp
 qed
 
-text \<open>Exit bridge: the raw arrays the tree builder leaves behind --- which are literally the components
-      of the imperative DFS state --- satisfy the precondition @{thm [source] ns_loop_prog_rule} demands.
-      The six tree arrays become @{const ndtree_assn} via @{thm ndtree_assn_Sarb}; the flow / potential /
-      parent / direction / edge-tag stores are already the loop's own assertions (they are plain
-      points-to); the freshly allocated selector triple is @{const init_sel}; and the two DFS stack
-      arrays serve as the loop's path buffers.\<close>
-lemma ns_pre_ent:
-  assumes laux: "Suc vcount \<le> length auxa"
-    and lp1: "card Varb - 1 \<le> length svl" and lp2: "card Varb - 1 \<le> length socl"
-  shows
-  "prnt_impl Ti \<mapsto>\<^sub>a ds_prnt (build_tree acyc_flow) * thrd_impl Ti \<mapsto>\<^sub>a ds_thrd (build_tree acyc_flow) *
-   rvth_impl Ti \<mapsto>\<^sub>a ds_rvth (build_tree acyc_flow) * lsuc_impl Ti \<mapsto>\<^sub>a ds_lsuc (build_tree acyc_flow) *
-   snum_impl Ti \<mapsto>\<^sub>a ds_snum (build_tree acyc_flow) * aux_impl Ti \<mapsto>\<^sub>a auxa *
-   fa \<mapsto>\<^sub>a flowa * pa \<mapsto>\<^sub>a ds_pot (build_tree acyc_flow) *
-   pare \<mapsto>\<^sub>a ds_par (build_tree acyc_flow) * dire \<mapsto>\<^sub>a ds_dir (build_tree acyc_flow) *
-   esaa \<mapsto>\<^sub>a esa * sarr \<mapsto>\<^sub>a replicate max_candidates 0 * cref \<mapsto>\<^sub>r 0 * lref \<mapsto>\<^sub>r 0 *
-   p1 \<mapsto>\<^sub>a svl * p2 \<mapsto>\<^sub>a socl
-   \<Longrightarrow>\<^sub>A flow_assn_ns flowa fa * pot_assn_ns (ds_pot (build_tree acyc_flow)) pa *
-       ndtree_assn Varb Sarb Ti *
-       parent_assn_ns (ds_par (build_tree acyc_flow)) pare *
-       dir_assn_ns (ds_dir (build_tree acyc_flow)) dire * es_assn_ns esa esaa *
-       sel_assn_ns init_sel (sarr, cref, lref) *
-       (\<exists>\<^sub>A l1 l2. p1 \<mapsto>\<^sub>a l1 * p2 \<mapsto>\<^sub>a l2 * \<up>(card Varb - 1 \<le> length l1 \<and> card Varb - 1 \<le> length l2))"
-  unfolding flow_assn_ns_def pot_assn_ns_def parent_assn_ns_def dir_assn_ns_def
-            es_assn_ns_def sel_assn_ns_def init_sel_def
-  apply (rule ent_frame_fwdI[OF _ ndtree_assn_Sarb[OF laux],
-      where F="fa \<mapsto>\<^sub>a flowa * pa \<mapsto>\<^sub>a ds_pot (build_tree acyc_flow) *
-               pare \<mapsto>\<^sub>a ds_par (build_tree acyc_flow) * dire \<mapsto>\<^sub>a ds_dir (build_tree acyc_flow) *
-               esaa \<mapsto>\<^sub>a esa * sarr \<mapsto>\<^sub>a replicate max_candidates 0 * cref \<mapsto>\<^sub>r 0 * lref \<mapsto>\<^sub>r 0 *
-               p1 \<mapsto>\<^sub>a svl * p2 \<mapsto>\<^sub>a socl"])
-   apply sep_auto
-  apply (rule ent_ex_postI[where x=svl])
-  apply (rule ent_ex_postI[where x=socl])
-  apply (sep_auto simp: lp1[unfolded One_nat_def] lp2[unfolded One_nat_def])
-  done
 
 text \<open>The network-simplex phase of @{const solve_imp}, packaged as one Hoare triple over the raw arrays
-      the tree builder leaves behind.  It bridges into @{thm [source] ns_loop_prog_rule} via
-      @{thm ns_pre_ent} and reads the functional verdict off @{thm solve_via_padded}: on exit the flow
+      the tree builder leaves behind.  It bridges into @{thm [source] ns_loop_prog_rule} and reads the
+      functional verdict off @{thm [source] solve_via_padded}: on exit the flow
       array holds a list whose @{term m}-prefix is the optimum whenever @{const solve} says so, and the
       returned flag decides the three verdicts.  The padded stores are related to the augmented
       @{const flow_all} / @{const state_all} on the real range @{term \<open>{0..<m+Kart}\<close>}, which is exactly
@@ -6252,22 +4529,22 @@ proof (intro allI impI)
   qed
 qed
 
-text \<open>The network-simplex phase over the \<^emph>\<open>tree builder's own\<close> state relation: exactly the shape
-      @{thm [source] build_tree_imp_raw_rule} hands back.  Unfolding @{const dfs_rel} exposes the ten
-      working lists and the pure conjunct block; @{thm agree_marc} turns the ``real prefix + artificial
-      tail'' agreements into agreement with the augmented @{const fst_all} / @{const snd_all} /
-      @{const cap_all} / @{const flow_all} / @{const state_all} on all of @{term \<open>{0..<marc}\<close>}, and the
-      DFS scratch stores that the simplex loop does not touch travel through as a frame.\<close>
+
+text \<open>The network-simplex phase over the tree builder's own state relation.  Unfolding
+      @{const dfs_rel} exposes the working lists and the pure conjunct block; @{thm agree_marc} turns the
+      ``real prefix + artificial tail'' agreements into agreement with the augmented @{const fst_all} /
+      @{const snd_all} / @{const cap_all} / @{const flow_all} / @{const state_all} on all of
+      @{term \<open>{0..<marc}\<close>}; the DFS stack array and the acyclifier's second stack array serve as the
+      loop's path buffers, and the stores the loop does not touch travel through as a frame.\<close>
 lemma ns_phase_triple:
-  assumes some: "acyc_flow_opt \<noteq> None" and mpos: "0 < marc"
+  assumes some: "acyc_flow_opt \<noteq> None" and mpos: "0 < marc" and lel: "length el = Suc vcount"
   shows
-  "<sarr \<mapsto>\<^sub>a replicate max_candidates 0 * cref \<mapsto>\<^sub>r 0 * lref \<mapsto>\<^sub>r 0 *
-    dfs_rel acyc_flow (edge_state acyc_flow) (free_out_edges acyc_flow) (free_out_hi acyc_flow)
-      (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (build_tree acyc_flow)>
+  "<sarr \<mapsto>\<^sub>a replicate max_candidates 0 * cref \<mapsto>\<^sub>r 0 * lref \<mapsto>\<^sub>r 0 * est \<mapsto>\<^sub>a el *
+    dfs_rel acyc_flow (edge_state acyc_flow) st (build_tree acyc_flow)>
     ns_loop_prog vcount m marc block_size min_candidates max_candidates
       (di_fst st) (di_snd st) (di_cost st) (di_cap st)
       (ns_impl_state.make (di_flow st) (di_pot st) (di_tree st) (di_par st) (di_dir st) (di_es st)
-                          (sarr, cref, lref) (di_sv st) (di_soc st))
+                          (sarr, cref, lref) (di_stk st) est)
    <\<lambda>res. (\<exists>\<^sub>A fl'. di_flow st \<mapsto>\<^sub>a fl' * di_cost st \<mapsto>\<^sub>a cost_list *
             \<up>(marc \<le> length fl' \<and>
               solve = (if res = Network_Simplex.unbounded then Neg_inf_cycle
@@ -6278,8 +4555,7 @@ lemma ns_phase_triple:
   apply (rule ht_exEI)+
   apply (simp only: mult.assoc[symmetric])
   apply (rule ht_extract_pre_pure(1))
-  apply (erule conjE)+
-  subgoal premises P for fsta snda capa flowa esa auxa svl socl sicl sp
+  subgoal premises P for fsta snda capa flowa esa auxa stl sp
   proof -
     have Kdef: "Kart = ds_nxt (build_tree acyc_flow)" by (simp add: Kart_def art_tree_def)
     have KA: "Kart \<le> length (ds_afst (build_tree acyc_flow))" using Kart_le len_afst_bt by simp
@@ -6287,29 +4563,29 @@ lemma ns_phase_triple:
     have KC: "Kart \<le> length (ds_acap (build_tree acyc_flow))" using Kart_le len_acap_bt by simp
     have KD: "Kart \<le> length (ds_aflw (build_tree acyc_flow))" using Kart_le len_aflw_bt by simp
     have KE: "Kart \<le> length (ds_aest (build_tree acyc_flow))" using Kart_le len_aest_bt by simp
-    have lf: "marc \<le> length fsta" using P(13) KA by (simp add: marc_def)
-    have ls: "marc \<le> length snda" using P(14) KB by (simp add: marc_def)
-    have lc: "marc \<le> length capa" using P(15) KC by (simp add: marc_def)
+    have lf: "marc \<le> length fsta" using P KA by (simp add: marc_def)
+    have ls: "marc \<le> length snda" using P KB by (simp add: marc_def)
+    have lc: "marc \<le> length capa" using P KC by (simp add: marc_def)
     have af: "\<forall>e<marc. fsta ! e = fst_all ! e"
-      using agree_marc[OF P(7) P(18)[folded Kdef] length_fst_list_m KA]
-      by (simp add: fst_all_def art_tree_def)
+      using agree_marc[of fsta fst_list "ds_afst (build_tree acyc_flow)"] P Kdef KA
+      by (simp add: fst_all_def art_tree_def length_fst_list_m)
     have as: "\<forall>e<marc. snda ! e = snd_all ! e"
-      using agree_marc[OF P(8) P(19)[folded Kdef] length_snd_list_m KB]
-      by (simp add: snd_all_def art_tree_def)
+      using agree_marc[of snda snd_list "ds_asnd (build_tree acyc_flow)"] P Kdef KB
+      by (simp add: snd_all_def art_tree_def length_snd_list_m)
     have ac: "\<forall>e<marc. capa ! e = cap_all ! e"
-      using agree_marc[OF P(10) P(20)[folded Kdef] length_edges KC]
-      by (simp add: cap_all_def art_tree_def)
+      using agree_marc[of capa capacity_list "ds_acap (build_tree acyc_flow)"] P Kdef KC
+      by (simp add: cap_all_def art_tree_def length_edges)
     have afl: "\<forall>e<marc. flowa ! e = flow_all ! e"
-      using agree_marc[OF P(9) P(21)[folded Kdef] length_acyc_flow KD]
-      by (simp add: flow_all_def art_tree_def)
+      using agree_marc[of flowa acyc_flow "ds_aflw (build_tree acyc_flow)"] P Kdef KD
+      by (simp add: flow_all_def art_tree_def length_acyc_flow)
     have aes: "\<forall>e<marc. esa ! e = state_all ! e"
-      using agree_marc[OF P(11) P(22)[folded Kdef] length_edge_state KE]
-      by (simp add: state_all_def art_tree_def)
-    have flen: "\<forall>k\<in>{0..<m+Kart}. k < length flowa" using P(16) KD by auto
-    have eslen: "\<forall>k\<in>{0..<m+Kart}. k < length esa" using P(17) KE by auto
-    have laux: "Suc vcount \<le> length auxa" using P(12) by simp
-    have lsv: "card Varb - 1 \<le> length svl" using P(2) card_Varb_le by simp
-    have lsoc: "card Varb - 1 \<le> length socl" using P(3) card_Varb_le by simp
+      using agree_marc[of esa "edge_state acyc_flow" "ds_aest (build_tree acyc_flow)"] P Kdef KE
+      by (simp add: state_all_def art_tree_def length_edge_state)
+    have flen: "\<forall>k\<in>{0..<m+Kart}. k < length flowa" using P KD by auto
+    have eslen: "\<forall>k\<in>{0..<m+Kart}. k < length esa" using P KE by auto
+    have laux: "Suc vcount \<le> length auxa" using P by simp
+    have lsv: "card Varb - 1 \<le> length stl" using P card_Varb_le by simp
+    have lsoc: "card Varb - 1 \<le> length el" using lel card_Varb_le by simp
     have LF: "marc \<le> length fst_all" by (simp add: marc_def)
     have LS: "marc \<le> length snd_all" by (simp add: marc_def)
     have LC: "marc \<le> length cap_all" by (simp add: marc_def)
@@ -6318,11 +4594,11 @@ lemma ns_phase_triple:
           laux lsv lsoc LF LS LC]
     show ?thesis
       apply (rule ht_cons_post_prec[OF ht_cons_pre[OF _ ht_frame[OF CORE,
-          where R="di_seen st \<mapsto>\<^sub>a ds_seen (build_tree acyc_flow) *
-                   di_oe st \<mapsto>\<^sub>a free_out_edges acyc_flow * di_olo st \<mapsto>\<^sub>a out_lo *
-                   di_ohi st \<mapsto>\<^sub>a free_out_hi acyc_flow * di_ie st \<mapsto>\<^sub>a free_in_edges acyc_flow *
-                   di_ilo st \<mapsto>\<^sub>a in_lo * di_ihi st \<mapsto>\<^sub>a free_in_hi acyc_flow *
-                   di_sic st \<mapsto>\<^sub>a sicl * di_sp st \<mapsto>\<^sub>r sp *
+          where R="FO.csr_assn (ds_oc (build_tree acyc_flow)) (di_ob st, di_oe st, di_oc st) *
+                   di_oh st \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+                   FI.csr_assn (ds_ic (build_tree acyc_flow)) (di_ib st, di_ie st, di_ic st) *
+                   di_ih st \<mapsto>\<^sub>a fst (free_in acyc_flow) *
+                   di_seen st \<mapsto>\<^sub>a ds_seen (build_tree acyc_flow) * di_sp st \<mapsto>\<^sub>r sp *
                    di_prev st \<mapsto>\<^sub>r ds_prev (build_tree acyc_flow) *
                    di_nxt st \<mapsto>\<^sub>r ds_nxt (build_tree acyc_flow)"]]])
       apply sep_auto
@@ -6330,415 +4606,185 @@ lemma ns_phase_triple:
   qed
   done
 
-text \<open>The tail of @{const solve_imp}: read the loop's verdict, and on a bounded optimum scan the
-      artificial range @{term \<open>[m..<marc]\<close>} --- all-zero means the @{term b}-flow is the first @{term m}
-      cells, which are copied back into the caller's flow array.  The three branches deliver exactly
-      @{term \<open>status_of solve\<close>}, and on @{const Optimum} the copied prefix is the optimal flow.\<close>
-lemma ns_tail_triple:
-  assumes lfl: "marc \<le> length fl'"
-    and SV: "solve = (if res = Network_Simplex.unbounded then Neg_inf_cycle else if list_all (\<lambda>k. fl' ! k = 0) [m..<marc] then Optimum (take m fl') else Infeasible)"
-    and lfs: "m \<le> length fs0"
-  shows "<fa \<mapsto>\<^sub>a fl' * in_flow \<mapsto>\<^sub>a fs0> (if res = Network_Simplex.unbounded then return NegInfCycleF else do { allz \<leftarrow> scan_art_imp fa m marc; (if allz then do { _ \<leftarrow> arr_copy_imp fa in_flow 0 m; return OptimalF } else return InfeasibleF) }) <\<lambda>r. \<exists>\<^sub>A fs'. in_flow \<mapsto>\<^sub>a fs' * \<up>(r = status_of solve \<and> (\<forall>fs. solve = Optimum fs \<longrightarrow> take m fs' = fs)) * true>"
-proof -
-  have mfl: "m \<le> length fl'" using lfl by (simp add: marc_def)
-  show ?thesis
-  proof (cases "res = Network_Simplex.unbounded")
-    case True
-    hence sv: "solve = Neg_inf_cycle" using SV by simp
-    show ?thesis using True by (sep_auto simp: sv)
-  next
-    case False
-    have sv: "solve = (if list_all (\<lambda>k. fl' ! k = 0) [m..<marc] then Optimum (take m fl') else Infeasible)" using SV False by simp
-    show ?thesis
-      apply (simp only: if_not_P[OF False])
-      apply (sep_auto heap: scan_art_imp_rule[OF lfl] arr_copy_imp_rule simp: sv mfl lfs)
-      done
-  qed
-qed
-
-text \<open>The tail again, but with the \<^emph>\<open>garbage\<close> predicate already in the precondition, so that it matches
-      the postcondition of the loop phase verbatim --- this is what lets the two compose by a bare
-      @{thm [source] ht_bind}, with no frame and no re-association.\<close>
-lemma ns_tail_triple2:
-  assumes lfl: "marc \<le> length fl'"
-    and SV: "solve = (if res = Network_Simplex.unbounded then Neg_inf_cycle else if list_all (\<lambda>k. fl' ! k = 0) [m..<marc] then Optimum (take m fl') else Infeasible)"
-    and lfs: "m \<le> length fs0"
-  shows "<fa \<mapsto>\<^sub>a fl' * in_flow \<mapsto>\<^sub>a fs0 * true> (if res = Network_Simplex.unbounded then return NegInfCycleF else do { allz \<leftarrow> scan_art_imp fa m marc; (if allz then do { _ \<leftarrow> arr_copy_imp fa in_flow 0 m; return OptimalF } else return InfeasibleF) }) <\<lambda>r. \<exists>\<^sub>A fs'. in_flow \<mapsto>\<^sub>a fs' * \<up>(r = status_of solve \<and> (\<forall>fs. solve = Optimum fs \<longrightarrow> take m fs' = fs)) * true>"
-proof -
-  have mfl: "m \<le> length fl'" using lfl by (simp add: marc_def)
-  show ?thesis
-  proof (cases "res = Network_Simplex.unbounded")
-    case True
-    hence sv: "solve = Neg_inf_cycle" using SV by simp
-    show ?thesis using True by (sep_auto simp: sv)
-  next
-    case False
-    have sv: "solve = (if list_all (\<lambda>k. fl' ! k = 0) [m..<marc] then Optimum (take m fl') else Infeasible)" using SV False by simp
-    show ?thesis
-      apply (simp only: if_not_P[OF False])
-      apply (sep_auto heap: scan_art_imp_rule[OF lfl] arr_copy_imp_rule simp: sv mfl lfs)
-      done
-  qed
-qed
-
 text \<open>The loop phase, reshaped for composition: the caller's flow array @{term in_flow} is threaded
-      through untouched and the pure conjunct is moved \<^emph>\<open>last\<close>, so that stripping the existential and
-      extracting the pure part leaves @{thm [source] ns_tail_triple2}'s precondition (plus the cost
-      array, which @{const ns_loop_prog} also returns unchanged --- the capstone's postcondition asserts
-      that the caller's cost array still holds the cost list on exit, and since @{const solve_imp}
-      passes it in \<^emph>\<open>uncopied\<close> it must not be dropped into the garbage predicate anywhere along the
-      chain).\<close>
+      through untouched and the pure conjunct is moved \<^emph>\<open>last\<close>.\<close>
 lemma ns_phase_triple':
-  assumes some: "acyc_flow_opt \<noteq> None" and mpos: "0 < marc"
-  shows "<sarr \<mapsto>\<^sub>a replicate max_candidates 0 * cref \<mapsto>\<^sub>r 0 * lref \<mapsto>\<^sub>r 0 * dfs_rel acyc_flow (edge_state acyc_flow) (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (build_tree acyc_flow) * in_flow \<mapsto>\<^sub>a fs0> ns_loop_prog vcount m marc block_size min_candidates max_candidates (di_fst st) (di_snd st) (di_cost st) (di_cap st) (ns_impl_state.make (di_flow st) (di_pot st) (di_tree st) (di_par st) (di_dir st) (di_es st) (sarr, cref, lref) (di_sv st) (di_soc st)) <\<lambda>res. \<exists>\<^sub>A fl'. di_flow st \<mapsto>\<^sub>a fl' * di_cost st \<mapsto>\<^sub>a cost_list * in_flow \<mapsto>\<^sub>a fs0 * true * \<up>(marc \<le> length fl' \<and> solve = (if res = Network_Simplex.unbounded then Neg_inf_cycle else if list_all (\<lambda>k. fl' ! k = 0) [m..<marc] then Optimum (take m fl') else Infeasible))>"
-  apply (rule ht_cons_post_prec[OF ht_frame[OF ns_phase_triple[OF some mpos], where R="in_flow \<mapsto>\<^sub>a fs0"]])
+  assumes some: "acyc_flow_opt \<noteq> None" and mpos: "0 < marc" and lel: "length el = Suc vcount"
+  shows "<sarr \<mapsto>\<^sub>a replicate max_candidates 0 * cref \<mapsto>\<^sub>r 0 * lref \<mapsto>\<^sub>r 0 * est \<mapsto>\<^sub>a el *
+          dfs_rel acyc_flow (edge_state acyc_flow) st (build_tree acyc_flow) * in_flow \<mapsto>\<^sub>a fs0>
+         ns_loop_prog vcount m marc block_size min_candidates max_candidates (di_fst st) (di_snd st) (di_cost st) (di_cap st)
+           (ns_impl_state.make (di_flow st) (di_pot st) (di_tree st) (di_par st) (di_dir st) (di_es st) (sarr, cref, lref) (di_stk st) est)
+         <\<lambda>res. \<exists>\<^sub>A fl'. di_flow st \<mapsto>\<^sub>a fl' * di_cost st \<mapsto>\<^sub>a cost_list * in_flow \<mapsto>\<^sub>a fs0 * true *
+           \<up>(marc \<le> length fl' \<and> solve = (if res = Network_Simplex.unbounded then Neg_inf_cycle
+              else if list_all (\<lambda>k. fl' ! k = 0) [m..<marc] then Optimum (take m fl') else Infeasible))>"
+  apply (rule ht_cons_post_prec[OF ht_frame[OF ns_phase_triple[OF some mpos lel], where R="in_flow \<mapsto>\<^sub>a fs0"]])
   apply sep_auto
   done
 
-text \<open>Everything @{const solve_imp} does after the spanning tree is built: run the network-simplex
-      loop and dispatch on its verdict.  The two phases compose by @{thm [source] ht_bind} alone.\<close>
-lemma ns_after_tree:
-  assumes some: "acyc_flow_opt \<noteq> None" and mpos: "0 < marc" and lfs: "m \<le> length fs0"
-  shows "<sarr \<mapsto>\<^sub>a replicate max_candidates 0 * cref \<mapsto>\<^sub>r 0 * lref \<mapsto>\<^sub>r 0 * dfs_rel acyc_flow (edge_state acyc_flow) (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (build_tree acyc_flow) * in_flow \<mapsto>\<^sub>a fs0> do { res \<leftarrow> ns_loop_prog vcount m marc block_size min_candidates max_candidates (di_fst st) (di_snd st) (di_cost st) (di_cap st) (ns_impl_state.make (di_flow st) (di_pot st) (di_tree st) (di_par st) (di_dir st) (di_es st) (sarr, cref, lref) (di_sv st) (di_soc st)); (if res = Network_Simplex.unbounded then return NegInfCycleF else do { allz \<leftarrow> scan_art_imp (di_flow st) m marc; (if allz then do { _ \<leftarrow> arr_copy_imp (di_flow st) in_flow 0 m; return OptimalF } else return InfeasibleF) }) } <\<lambda>r. \<exists>\<^sub>A fs'. in_flow \<mapsto>\<^sub>a fs' * \<up>(r = status_of solve \<and> (\<forall>fs. solve = Optimum fs \<longrightarrow> take m fs' = fs)) * true>"
-  apply (rule ht_bind[OF ns_phase_triple'[OF some mpos]])
-  apply (rule ht_exEI)
-  apply (rule ht_extract_pre_pure(1))
-  apply (erule conjE)
-  apply (rule ht_cons_pre[OF _ ns_tail_triple2[OF _ _ lfs]])
+subsection \<open>Layer (g): assembling @{const solve_imp}\<close>
+
+text \<open>The acyclifier phase of @{const solve_imp}, over the arrays the allocation and CSR phases leave
+      behind.\<close>
+lemma make_acyclic_solve_triple:
+  "<fh \<mapsto>\<^sub>a (flow_list @ replicate n 0) * sh \<mapsto>\<^sub>a (Unseen # replicate vcount Unseen) *
+    outI.graph.csr_assn ((!) out.inp.B_spec) Oi * incI.graph.csr_assn ((!) inc.inp.B_spec) Ii *
+    vl \<mapsto>\<^sub>a edged_vs_list * pr \<mapsto>\<^sub>r 0 *
+    cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
+    fst_arr \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snd_arr \<mapsto>\<^sub>a (snd_list @ replicate n 0) *
+    vst \<mapsto>\<^sub>a (0 # replicate vcount 0) * est \<mapsto>\<^sub>a (0 # replicate vcount 0) * dst \<mapsto>\<^sub>a (False # replicate vcount False)>
+   make_acyclic_prog cap_arr cost_arr fst_arr snd_arr fh sh Oi Ii (vl, pr) vst est dst
+   <\<lambda>r. \<exists>\<^sub>A f' c_o c_i. flow_assn_m f' fh *
+        outI.graph.csr_assn c_o Oi * incI.graph.csr_assn c_i Ii *
+        (cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
+         fst_arr \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snd_arr \<mapsto>\<^sub>a (snd_list @ replicate n 0)) *
+        (\<exists>\<^sub>A vl' el' dl'. vst \<mapsto>\<^sub>a vl' * est \<mapsto>\<^sub>a el' * dst \<mapsto>\<^sub>a dl' *
+           \<up>(length vl' = Suc vcount \<and> length el' = Suc vcount \<and> length dl' = Suc vcount)) *
+        true *
+        \<up>((r \<longleftrightarrow> make_acyclic flow_list = None) \<and> (make_acyclic flow_list = None \<or> make_acyclic flow_list = Some f'))>"
+proof -
+  have lf: "length flow_list = m" by (simp add: length_flow length_edges)
+  have cardn: "card original_network.\<V> \<le> Suc vcount"
+  proof -
+    have "card original_network.\<V> \<le> card (set vs_list)" using card_mono[OF finite_set V_sub_vs_list] .
+    also have "\<dots> \<le> length vs_list" by (rule card_length)
+    also have "\<dots> = n" by (rule length_vs_list)
+    finally show ?thesis by (simp add: vcount_eq)
+  qed
+  have cardv: "card original_network.\<V> \<le> length (0 # replicate vcount (0::nat))" using cardn by simp
+  have cardb: "card original_network.\<V> \<le> length (False # replicate vcount False)" using cardn by simp
+  have cl_len: "m \<le> length (capacity_list @ replicate n 0)" by (simp add: length_edges)
+  have cl_eq: "\<And>e. e < m \<Longrightarrow> (capacity_list @ replicate n 0) ! e = capacity_list ! e"
+    by (simp add: nth_append length_edges)
+  have co_len: "m \<le> length cost_list" by (simp add: length_cost_list_m)
+  have co_eq: "\<And>e. e < m \<Longrightarrow> cost_list ! e = cost_list ! e" by simp
+  have fla_len: "m \<le> length (fst_list @ replicate n 0)" by (simp add: length_fst_list_m)
+  have fla_eq: "\<And>e. e < m \<Longrightarrow> (fst_list @ replicate n 0) ! e = fst_list ! e"
+    by (simp add: nth_append length_fst_list_m)
+  have sla_len: "m \<le> length (snd_list @ replicate n 0)" by (simp add: length_snd_list_m)
+  have sla_eq: "\<And>e. e < m \<Longrightarrow> (snd_list @ replicate n 0) ! e = snd_list ! e"
+    by (simp add: nth_append length_snd_list_m)
+  have ent: "fh \<mapsto>\<^sub>a (flow_list @ replicate n 0) * sh \<mapsto>\<^sub>a (Unseen # replicate vcount Unseen) *
+    outI.graph.csr_assn ((!) out.inp.B_spec) Oi * incI.graph.csr_assn ((!) inc.inp.B_spec) Ii *
+    vl \<mapsto>\<^sub>a edged_vs_list * pr \<mapsto>\<^sub>r 0 *
+    cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
+    fst_arr \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snd_arr \<mapsto>\<^sub>a (snd_list @ replicate n 0) *
+    vst \<mapsto>\<^sub>a (0 # replicate vcount 0) * est \<mapsto>\<^sub>a (0 # replicate vcount 0) * dst \<mapsto>\<^sub>a (False # replicate vcount False)
+    \<Longrightarrow>\<^sub>A
+    flow_assn_m flow_list fh * state_assn_v (replicate vcount Unseen) sh *
+    outI.graph.csr_assn ((!) out.inp.B_spec) Oi * incI.graph.csr_assn ((!) inc.inp.B_spec) Ii *
+    vtx_assn \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> (vl, pr) *
+    (cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
+     fst_arr \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snd_arr \<mapsto>\<^sub>a (snd_list @ replicate n 0)) *
+    vst \<mapsto>\<^sub>a (0 # replicate vcount 0) * est \<mapsto>\<^sub>a (0 # replicate vcount 0) * dst \<mapsto>\<^sub>a (False # replicate vcount False)"
+    unfolding flow_assn_m_def state_assn_v_def vtx_assn_def
+    apply (simp only: ex_assn_move_out)
+    apply (rule ent_ex_postI[where x = "[Unseen]"])
+    apply (rule ent_ex_postI[where x = "replicate n 0"])
+    apply (sep_auto simp: lf replicate_append_same)
+    done
+  show ?thesis
+    apply (rule ht_cons_pre[OF ent])
+    apply (rule ht_cons_post_prec[OF make_acyclic_prog_rule[OF cl_len cl_eq co_len co_eq fla_len fla_eq sla_len sla_eq lf
+                af_cap_feasible_flow_list cardv cardv cardb]])
     apply sep_auto
-  done
-
-text \<open>Block \<^emph>\<open>ends\<close> have the same length as the block \<^emph>\<open>starts\<close>: both are read off the one prefix-sum
-      list, as its @{const tl} and its @{const butlast} respectively.\<close>
-lemma length_out_hi: "length out_hi = vcount"
-proof -
-  have "length out_hi = length out_lo" by (simp add: out_hi_def out_lo_def out_csr_hi out_csr_lo)
-  thus ?thesis by (simp add: length_out_lo)
-qed
-
-lemma length_in_hi: "length in_hi = vcount"
-proof -
-  have "length in_hi = length in_lo" by (simp add: in_hi_def in_lo_def in_csr_hi in_csr_lo)
-  thus ?thesis by (simp add: length_in_lo)
-qed
-
-text \<open>The edged-vertex phase of @{const solve_imp}: count the non-lonely vertices, allocate an
-      exactly-sized array and fill it.  Together the two loops materialise @{const edged_vs_list} ---
-      the vertex iterator the acyclifier consumes --- leaving the four CSR block-boundary arrays
-      untouched.\<close>
-lemma edged_build_triple:
-  "<olo \<mapsto>\<^sub>a out_lo * ohi \<mapsto>\<^sub>a out_hi * ilo \<mapsto>\<^sub>a in_lo * ihi \<mapsto>\<^sub>a in_hi> do { k \<leftarrow> count_edged_imp olo ohi ilo ihi 1 n 0; vl \<leftarrow> Array.new k 0; _ \<leftarrow> fill_edged_imp vl olo ohi ilo ihi 1 n 0; return vl } <\<lambda>vl. vl \<mapsto>\<^sub>a edged_vs_list * olo \<mapsto>\<^sub>a out_lo * ohi \<mapsto>\<^sub>a out_hi * ilo \<mapsto>\<^sub>a in_lo * ihi \<mapsto>\<^sub>a in_hi>"
-proof -
-  have l1: "Suc n \<le> length out_lo" by (simp add: length_out_lo vcount_eq)
-  have l2: "Suc n \<le> length out_hi" by (simp add: length_out_hi vcount_eq)
-  have l3: "Suc n \<le> length in_lo" by (simp add: length_in_lo vcount_eq)
-  have l4: "Suc n \<le> length in_hi" by (simp add: length_in_hi vcount_eq)
-  have v1: "(1::nat) \<le> Suc n" by simp
-  show ?thesis
-    apply (sep_auto heap: count_edged_imp_rule[OF v1 l1 l2 l3 l4] fill_edged_imp_rule[OF v1 l1 l2 l3 l4] simp: edged_lst_eq_vs_list)
     done
 qed
 
-text \<open>The CSR-building phase of @{const solve_imp}, as one triple: build the outgoing CSR keyed on the
-      padded @{term fst_list} array, re-zero the shared count array, then build the ingoing CSR keyed on
-      the padded @{term snd_list} array.  The reset is exactly what @{thm fst_cto_pad_drop} makes
-      possible --- after the first build the count array's reserved root cell is still @{term 0}, so
-      filling @{term \<open>[0..<vcount]\<close>} restores it to all-zero for the second build.  The two padded key
-      arrays are returned untouched and the count array is left as garbage.\<close>
-lemma csr_build_triple:
-  "<fa \<mapsto>\<^sub>a (fst_list @ replicate n 0) * sa \<mapsto>\<^sub>a (snd_list @ replicate n 0) * c \<mapsto>\<^sub>a (0 # 0 # replicate n 0) * o_lo \<mapsto>\<^sub>a replicate vcount 0 * o_hi \<mapsto>\<^sub>a replicate vcount 0 * o_cur \<mapsto>\<^sub>a replicate vcount 0 * o_edges \<mapsto>\<^sub>a replicate m 0 * i_lo \<mapsto>\<^sub>a replicate vcount 0 * i_hi \<mapsto>\<^sub>a replicate vcount 0 * i_cur \<mapsto>\<^sub>a replicate vcount 0 * i_edges \<mapsto>\<^sub>a replicate m 0> do { _ \<leftarrow> build_csr_imp fa c o_lo o_hi o_cur o_edges m vcount; _ \<leftarrow> arr_fill_imp c 0 0 vcount; build_csr_imp sa c i_lo i_hi i_cur i_edges m vcount } <\<lambda>_. fa \<mapsto>\<^sub>a (fst_list @ replicate n 0) * sa \<mapsto>\<^sub>a (snd_list @ replicate n 0) * (\<exists>\<^sub>A cl. c \<mapsto>\<^sub>a cl) * csr_assn out_csr (o_edges, o_lo, o_hi, o_cur) * csr_assn in_csr (i_edges, i_lo, i_hi, i_cur)>"
-proof -
-  have LC: "vcount \<le> Suc vcount" by simp
-  have rep: "(0 # 0 # replicate n 0) = replicate (Suc vcount) (0::nat)" by (simp add: vcount_eq)
-  note OUT = build_csr_out_pad_over_c[OF fst_pad_mk fst_pad_bd fst_pad_keys LC, where c = c, unfolded rep[symmetric]]
-  note IN = build_csr_in_pad_over_c[OF snd_pad_mk snd_pad_bd snd_pad_keys LC, where c = c, unfolded rep[symmetric]]
-  have LEN: "vcount \<le> length (fold (\<lambda>i cc. cc[(fst_list @ replicate n 0) ! i := Suc (cc ! ((fst_list @ replicate n 0) ! i))]) [0..<m] (0 # 0 # replicate n 0))"
-    using fst_cto_pad_len by (simp add: vcount_eq)
-  have RES: "replicate vcount 0 @ drop vcount (fold (\<lambda>i cc. cc[(fst_list @ replicate n 0) ! i := Suc (cc ! ((fst_list @ replicate n 0) ! i))]) [0..<m] (0 # 0 # replicate n 0)) = 0 # 0 # replicate n 0"
-    using fst_cto_pad_drop by (simp add: vcount_eq replicate_append_same)
-  show ?thesis
-    apply (sep_auto heap: OUT arr_fill_imp_rule IN simp: RES LEN)
-    done
-qed
-
-text \<open>Monolith glue, part 1: the shapes @{const solve_imp}'s freshly allocated arrays actually have.
-      @{term \<open>Array.new (Suc vcount) x\<close>} yields @{term \<open>x # replicate vcount x\<close>}, so the count-array
-      facts of @{thm [source] csr_build_triple} are restated in that form, and the four CSR
-      block-boundary lists are named (@{const csr_cur} coincides with @{const csr_lo} on a freshly
-      built CSR).\<close>
-lemma cto_pad_drop': "drop vcount (fold (\<lambda>i cc. cc[(fst_list @ replicate n 0) ! i := Suc (cc ! ((fst_list @ replicate n 0) ! i))]) [0..<m] (0 # replicate vcount 0)) = [0]"
-  using fst_cto_pad_drop by (simp add: vcount_eq)
-
-lemma cto_pad_len': "length (fold (\<lambda>i cc. cc[(fst_list @ replicate n 0) ! i := Suc (cc ! ((fst_list @ replicate n 0) ! i))]) [0..<m] (0 # replicate vcount 0)) = Suc vcount"
-  by (simp add: count_fold_length)
-
-lemma csr_lo_out: "csr_lo out_csr = out_lo" by (simp add: out_lo_def)
-lemma csr_hi_out: "csr_hi out_csr = out_hi" by (simp add: out_hi_def)
-lemma csr_cur_out: "csr_cur out_csr = out_lo" by (simp add: out_lo_def out_csr_cur out_csr_lo)
-lemma csr_lo_in: "csr_lo in_csr = in_lo" by (simp add: in_lo_def)
-lemma csr_hi_in: "csr_hi in_csr = in_hi" by (simp add: in_hi_def)
-lemma csr_cur_in: "csr_cur in_csr = in_lo" by (simp add: in_lo_def in_csr_cur in_csr_lo)
-
-lemma edg_l1: "Suc n \<le> length out_lo" by (simp add: length_out_lo vcount_eq)
-lemma edg_l2: "Suc n \<le> length out_hi" by (simp add: length_out_hi vcount_eq)
-lemma edg_l3: "Suc n \<le> length in_lo" by (simp add: length_in_lo vcount_eq)
-lemma edg_l4: "Suc n \<le> length in_hi" by (simp add: length_in_hi vcount_eq)
-lemma edg_v1: "(Suc 0::nat) \<le> Suc n" by simp
-
-text \<open>Pass A over an \<^emph>\<open>over-long\<close> edge-state array: @{const solve_imp} allocates @{term es_arr} with
-      the augmented length @{term \<open>m + n\<close>} (it must later hold the artificial edges' tags), whereas
-      @{thm [source] passA_imp_rule} is phrased for the exact-length store.  The loop writes only
-      inside @{term \<open>[0..<m]\<close>}, so a fixed suffix @{term pad} rides along untouched.\<close>
-lemma passA_imp_pad_rule:
-  fixes fl_arr cap_arr :: "'n array" and fst_arr snd_arr :: "nat array"
-    and es_arr :: "edge_tag array" and exc_arr :: "'n array"
-    and oe_arr oc_arr ie_arr ic_arr :: "nat array"
-    and fla cla :: "'n list" and flla slla :: "nat list"
-    and e :: nat and est pad :: "edge_tag list" and exc :: "'n list"
-    and oe oc ie ic :: "nat list"
-  assumes e_le: "e \<le> m"
-    and fla_len: "m \<le> length fla" and cla_len: "m \<le> length cla"
-    and flla_len: "m \<le> length flla" and slla_len: "m \<le> length slla"
-    and cap_eq: "\<And>i. i < m \<Longrightarrow> cla ! i = capacity_list ! i"
-    and fst_eq: "\<And>i. i < m \<Longrightarrow> flla ! i = fst_list ! i"
-    and snd_eq: "\<And>i. i < m \<Longrightarrow> slla ! i = snd_list ! i"
-    and s_eq: "(est, exc, oe, oc, ie, ic) = fold (passA_step fla) [0..<e] (replicate m InL, replicate (Suc vcount) 0, csr_edges out_csr, out_lo, csr_edges in_csr, in_lo)"
-  shows "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (est @ pad) * exc_arr \<mapsto>\<^sub>a exc * oe_arr \<mapsto>\<^sub>a oe * oc_arr \<mapsto>\<^sub>a oc * ie_arr \<mapsto>\<^sub>a ie * ic_arr \<mapsto>\<^sub>a ic> passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr e m <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (fst (passA fla) @ pad) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) * oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) * ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-proof -
-  have sized_init: "sized (replicate m InL, replicate (Suc vcount) (0::'n), csr_edges out_csr, out_lo, csr_edges in_csr, in_lo)"
-    by (simp add: sized_def length_out_lo length_in_lo out_csr_eq in_csr_eq)
-  have sized_fold: "sized s0 \<Longrightarrow> sized (fold (passA_step fla) xs s0)" for s0 xs
-  proof (induct xs arbitrary: s0)
-    case Nil thus ?case by simp
-  next
-    case (Cons a xs) thus ?case by (simp add: passA_step_sized)
-  qed
-  from e_le s_eq show ?thesis
-  proof (induction "m - e" arbitrary: e est exc oe oc ie ic)
-    case 0
-    have em: "e = m" using "0.hyps" "0.prems"(1) by simp
-    have s0: "(est, exc, oe, oc, ie, ic) = passA fla" using "0.prems"(2) em by (simp add: passA_def)
-    show ?case unfolding em by (subst passA_imp.simps) (sep_auto simp: s0[symmetric])
-  next
-    case (Suc d)
-    have em: "e < m" using Suc.hyps(2) Suc.prems(1) by simp
-    have sized_s: "sized (est, exc, oe, oc, ie, ic)" using Suc.prems(2) sized_fold[OF sized_init] by simp
-    have lens: "length est = m" "length exc = Suc vcount" "length oe = m" "length oc = vcount" "length ie = m" "length ic = vcount"
-      using sized_s by (auto simp: sized_def)
-    have xe: "flla ! e = fst_list ! e" using fst_eq em by simp
-    have ye: "slla ! e = snd_list ! e" using snd_eq em by simp
-    have ue: "cla ! e = capacity_list ! e" using cap_eq em by simp
-    have xvc: "fst_list ! e < vcount" using fst_list_nth_vertex[OF em] vs_less_vcount by simp
-    have yvc: "snd_list ! e < vcount" using snd_list_nth_vertex[OF em] vs_less_vcount by simp
-    have oc_val: "oc ! (fst_list ! e) = out_lo ! (fst_list ! e) + length (filter (\<lambda>e'. classify fla e' = InTree \<and> fst_list ! e' = fst_list ! e) [0..<e])"
-    proof -
-      have "oc = fst (snd (snd (snd (fold (passA_step fla) [0..<e] (replicate m InL, replicate (Suc vcount) 0, csr_edges out_csr, out_lo, csr_edges in_csr, in_lo)))))"
-        using Suc.prems(2)[symmetric] by simp
-      thus ?thesis using passA_fold_oc_count[OF sized_init xvc, where fl=fla and xs="[0..<e]"] by simp
-    qed
-    have ic_val: "ic ! (snd_list ! e) = in_lo ! (snd_list ! e) + length (filter (\<lambda>e'. classify fla e' = InTree \<and> snd_list ! e' = snd_list ! e) [0..<e])"
-    proof -
-      have "ic = snd (snd (snd (snd (snd (fold (passA_step fla) [0..<e] (replicate m InL, replicate (Suc vcount) 0, csr_edges out_csr, out_lo, csr_edges in_csr, in_lo))))))"
-        using Suc.prems(2)[symmetric] by simp
-      thus ?thesis using passA_fold_ic_count[OF sized_init yvc, where fl=fla and xs="[0..<e]"] by simp
-    qed
-    have oc_lt: "classify fla e = InTree \<Longrightarrow> oc ! (fst_list ! e) < m"
-    proof -
-      assume it: "classify fla e = InTree"
-      let ?P = "\<lambda>e'. classify fla e' = InTree \<and> fst_list ! e' = fst_list ! e"
-      have split: "[0..<m] = [0..<e] @ [e..<m]" using em by (simp add: upt_append)
-      have ne: "filter ?P [e..<m] \<noteq> []" using it em by (simp add: filter_empty_conv) (metis atLeastLessThan_iff le_refl)
-      have "length (filter ?P [0..<e]) < length (filter ?P [0..<m])" using split ne by (simp add: filter_append)
-      hence "oc ! (fst_list ! e) < out_lo ! (fst_list ! e) + length (filter ?P [0..<m])" using oc_val by simp
-      also have "... = free_out_hi fla ! (fst_list ! e)" using free_out_hi_count[OF xvc] by simp
-      also have "... \<le> m" using free_out_hi_le_m[OF xvc] .
-      finally show "oc ! (fst_list ! e) < m" .
-    qed
-    have ic_lt: "classify fla e = InTree \<Longrightarrow> ic ! (snd_list ! e) < m"
-    proof -
-      assume it: "classify fla e = InTree"
-      let ?Q = "\<lambda>e'. classify fla e' = InTree \<and> snd_list ! e' = snd_list ! e"
-      have split: "[0..<m] = [0..<e] @ [e..<m]" using em by (simp add: upt_append)
-      have ne: "filter ?Q [e..<m] \<noteq> []" using it em by (simp add: filter_empty_conv) (metis atLeastLessThan_iff le_refl)
-      have "length (filter ?Q [0..<e]) < length (filter ?Q [0..<m])" using split ne by (simp add: filter_append)
-      hence "ic ! (snd_list ! e) < in_lo ! (snd_list ! e) + length (filter ?Q [0..<m])" using ic_val by simp
-      also have "... = free_in_hi fla ! (snd_list ! e)" using free_in_hi_count[OF yvc] by simp
-      also have "... \<le> m" using free_in_hi_le_m[OF yvc] .
-      finally show "ic ! (snd_list ! e) < m" .
-    qed
-    have dse: "d = m - Suc e" using Suc.hyps(2) em by simp
-    have sse: "Suc e \<le> m" using em by simp
-    have step: "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (fst (passA_step fla e (est, exc, oe, oc, ie, ic)) @ pad) * exc_arr \<mapsto>\<^sub>a fst (snd (passA_step fla e (est, exc, oe, oc, ie, ic))) * oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic))))) * ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic))))))> passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr (Suc e) m <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (fst (passA fla) @ pad) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) * oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) * ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-      by (rule Suc.hyps(1)[OF dse sse]) (simp add: Suc.prems(2))
-    have nme: "\<not> m \<le> e" using em by simp
-    have eb: "e < length flla" "e < length slla" "e < length fla" "e < length cla" "e < length est"
-      using em flla_len slla_len fla_len cla_len lens(1) by auto
-    have ebp: "e < length (est @ pad)" using eb(5) by simp
-    have ebm: "e < m + length pad" using em by simp
-    have updp: "\<And>x. est[e := x] @ pad = (est @ pad)[e := x]" using eb(5) by (simp add: list_update_append)
-    show ?case
-    proof (cases "classify fla e = InTree")
-      case True
-      have st_val: "(if fla ! e = 0 then InL else if cla ! e \<noteq> - 1 \<and> fla ! e = cla ! e then InU else InTree) = InTree"
-      proof -
-        have "(if fla ! e = 0 then InL else if cla ! e \<noteq> - 1 \<and> fla ! e = cla ! e then InU else InTree) = classify fla e"
-          using ue by (simp add: classify_def)
-        thus ?thesis using True by simp
-      qed
-      have ps_es: "fst (passA_step fla e (est, exc, oe, oc, ie, ic)) = est[e := InTree]"
-        using True by (simp add: passA_step_fst)
-      have ps_oe: "fst (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))) = oe[oc ! (fst_list ! e) := e]"
-        using True by (simp add: passA_step_oe)
-      have ps_oc: "fst (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic))))) = oc[fst_list ! e := Suc (oc ! (fst_list ! e))]"
-        using True by (simp add: passA_step_oc)
-      have ps_ie: "fst (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) = ie[ic ! (snd_list ! e) := e]"
-        using True by (simp add: passA_step_ie)
-      have ps_ic: "snd (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) = ic[snd_list ! e := Suc (ic ! (snd_list ! e))]"
-        using True by (simp add: passA_step_ic)
-      have ps_exc: "fst (snd (passA_step fla e (est, exc, oe, oc, ie, ic))) = exc[snd_list ! e := exc ! (snd_list ! e) + fla ! e, fst_list ! e := exc[snd_list ! e := exc ! (snd_list ! e) + fla ! e] ! (fst_list ! e) - fla ! e]"
-        by (simp add: passA_step_exc Let_def)
-      have step': "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (est @ pad)[e := InTree] * exc_arr \<mapsto>\<^sub>a exc[snd_list ! e := exc ! (snd_list ! e) + fla ! e, fst_list ! e := exc[snd_list ! e := exc ! (snd_list ! e) + fla ! e] ! (fst_list ! e) - fla ! e] * oe_arr \<mapsto>\<^sub>a oe[oc ! (fst_list ! e) := e] * oc_arr \<mapsto>\<^sub>a oc[fst_list ! e := Suc (oc ! (fst_list ! e))] * ie_arr \<mapsto>\<^sub>a ie[ic ! (snd_list ! e) := e] * ic_arr \<mapsto>\<^sub>a ic[snd_list ! e := Suc (ic ! (snd_list ! e))]> passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr (Suc e) m <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (fst (passA fla) @ pad) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) * oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) * ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-        using step by (simp only: ps_es ps_exc ps_oe ps_oc ps_ie ps_ic updp)
-      have step'': "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (est @ pad)[e := InTree] * exc_arr \<mapsto>\<^sub>a exc[slla ! e := exc ! (slla ! e) + fla ! e, flla ! e := exc[slla ! e := exc ! (slla ! e) + fla ! e] ! (flla ! e) - fla ! e] * oe_arr \<mapsto>\<^sub>a oe[oc ! (flla ! e) := e] * oc_arr \<mapsto>\<^sub>a oc[flla ! e := Suc (oc ! (flla ! e))] * ie_arr \<mapsto>\<^sub>a ie[ic ! (slla ! e) := e] * ic_arr \<mapsto>\<^sub>a ic[slla ! e := Suc (ic ! (slla ! e))]> passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr (Suc e) m <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (fst (passA fla) @ pad) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) * oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) * ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-        using step' by (simp only: xe[symmetric] ye[symmetric])
-      have exlv: "slla ! e < Suc vcount" "flla ! e < Suc vcount" using yvc xvc ye xe by simp_all
-      have vbv: "flla ! e < vcount" "slla ! e < vcount" using xvc yvc xe ye by simp_all
-      have exl_f: "flla ! e < length exc" "slla ! e < length exc" using xvc yvc lens(2) xe ye by simp_all
-      have vb_f: "flla ! e < length oc" "slla ! e < length ic" using xvc yvc lens(4) lens(6) xe ye by simp_all
-      have scb_f: "oc ! (flla ! e) < length oe" "ic ! (slla ! e) < length ie"
-        using oc_lt ic_lt lens(3) lens(5) True xe ye by simp_all
-      have scb_v: "oc ! (flla ! e) < m" "ic ! (slla ! e) < m"
-        using scb_f lens(3) lens(5) xe ye by simp_all
-      show ?thesis
-        apply (subst passA_imp.simps)
-        apply (simp only: nme if_False Let_def)
-        apply (sep_auto heap: step'' simp: em st_val eb ebp ebm exlv exl_f vb_f vbv scb_f scb_v lens)
-        done
-    next
-      case False
-      have st_valF: "(if fla ! e = 0 then InL else if cla ! e \<noteq> - 1 \<and> fla ! e = cla ! e then InU else InTree) = classify fla e"
-        using ue by (simp add: classify_def)
-      have psF: "fst (passA_step fla e (est, exc, oe, oc, ie, ic)) = est[e := classify fla e]"
-               "fst (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))) = oe"
-               "fst (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic))))) = oc"
-               "fst (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) = ie"
-               "snd (snd (snd (snd (snd (passA_step fla e (est, exc, oe, oc, ie, ic)))))) = ic"
-        using False by (simp_all add: passA_step_fst passA_step_oe passA_step_oc passA_step_ie passA_step_ic)
-      have psF_exc: "fst (snd (passA_step fla e (est, exc, oe, oc, ie, ic))) = exc[slla ! e := exc ! (slla ! e) + fla ! e, flla ! e := exc[slla ! e := exc ! (slla ! e) + fla ! e] ! (flla ! e) - fla ! e]"
-        by (simp add: passA_step_exc Let_def xe ye)
-      have step_F: "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (est @ pad)[e := classify fla e] * exc_arr \<mapsto>\<^sub>a exc[slla ! e := exc ! (slla ! e) + fla ! e, flla ! e := exc[slla ! e := exc ! (slla ! e) + fla ! e] ! (flla ! e) - fla ! e] * oe_arr \<mapsto>\<^sub>a oe * oc_arr \<mapsto>\<^sub>a oc * ie_arr \<mapsto>\<^sub>a ie * ic_arr \<mapsto>\<^sub>a ic> passA_imp fl_arr cap_arr fst_arr snd_arr es_arr exc_arr oe_arr oc_arr ie_arr ic_arr (Suc e) m <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a cla * fst_arr \<mapsto>\<^sub>a flla * snd_arr \<mapsto>\<^sub>a slla * es_arr \<mapsto>\<^sub>a (fst (passA fla) @ pad) * exc_arr \<mapsto>\<^sub>a fst (snd (passA fla)) * oe_arr \<mapsto>\<^sub>a fst (snd (snd (passA fla))) * oc_arr \<mapsto>\<^sub>a fst (snd (snd (snd (passA fla)))) * ie_arr \<mapsto>\<^sub>a fst (snd (snd (snd (snd (passA fla))))) * ic_arr \<mapsto>\<^sub>a snd (snd (snd (snd (snd (passA fla)))))>"
-        using step by (simp only: psF(1) psF_exc psF(2) psF(3) psF(4) psF(5) updp)
-      have exl_f: "flla ! e < length exc" "slla ! e < length exc" using xvc yvc lens(2) xe ye by simp_all
-      have exlv: "slla ! e < Suc vcount" "flla ! e < Suc vcount" using yvc xvc ye xe by simp_all
-      show ?thesis
-        apply (subst passA_imp.simps)
-        apply (simp only: nme if_False Let_def)
-        apply (sep_auto heap: step_F simp: em st_valF False eb ebp ebm exlv exl_f lens)
-        done
-    qed
-  qed
-qed
-
-text \<open>Applying a \<^emph>\<open>multi-command\<close> Hoare triple inside a weakest-precondition goal: the standard
-      @{thm [source] wlp_apply_ht} demands that the triple cover the \<^emph>\<open>whole\<close> remaining program, and
-      \<open>sep_auto\<close> always decomposes down to the leftmost atomic command.  Splitting off the
-      bind first (@{thm [source] decon_bind}) lets a block triple be applied to a \<^emph>\<open>prefix\<close> of the
-      program, with the rest of the program handled by the continuation premise.\<close>
-lemma wlp_apply_ht_bind:
-  assumes hh: "hp \<Turnstile> Pp" and ent: "Pp \<Longrightarrow>\<^sub>A Pq * Fr" and T: "<Pq> c <Qq>"
-    and K: "\<And>hq r. hq \<Turnstile> Qq r * Fr * true \<Longrightarrow> wlp (g r) Qr hq"
-  shows "wlp (c \<bind> g) Qr hp"
-  by (rule decon_bind, rule wlp_apply_ht[OF hh ent T], rule K)
-
-text \<open>Monolith glue, part 2: Pass A's six outputs as plain projections of @{const passA}, its
-      insensitivity to the flow array's padding, and the two @{const excess} facts the imbalance
-      transform needs.\<close>
-lemma passA_sel:
-  "edge_state fl = fst (passA fl)"
-  "free_out_edges fl = fst (snd (snd (passA fl)))"
-  "free_out_hi fl = fst (snd (snd (snd (passA fl))))"
-  "free_in_edges fl = fst (snd (snd (snd (snd (passA fl)))))"
-  "free_in_hi fl = snd (snd (snd (snd (snd (passA fl)))))"
-  by (simp_all add: edge_state_def free_out_edges_def free_out_hi_def free_in_edges_def free_in_hi_def split_beta)
-
-lemma passA_acyc_pad: "length rst = n \<Longrightarrow> passA (acyc_flow @ rst) = passA acyc_flow"
-  by (rule passA_flow_cong) (auto simp: nth_append)
-
-lemma imbalance_fold_b_arr: "fold (\<lambda>w a. a[w := a ! w + b_arr ! w]) [0..<vcount] excess = imbalance"
-  by (simp add: imbalance_def b_lookup_def)
-
-lemma length_excess: "length excess = Suc vcount"
-  using passA_exc_len[of flow_list] by (simp add: excess_def split_beta)
-
-text \<open>Segment (F) of @{const solve_imp}: reset the two CSR cursors, run Pass A on the \<^emph>\<open>acyclified\<close>
-      flow array, fold the balances into the excess array, and re-zero the (now dead) acyclifier DFS
-      stack for reuse as the tree builder's ``seen'' array.  Afterwards every store holds exactly the
-      functional value the tree builder consumes: @{const edge_state} / @{const imbalance} /
-      @{const free_out_edges} / @{const free_out_hi} / @{const free_in_edges} / @{const free_in_hi}
-      of @{const acyc_flow}.  The edge-state array keeps its artificial-edge padding (@{thm [source]
-      passA_imp_pad_rule}) and the flow array its @{term n} spare cells (@{thm [source]
-      passA_acyc_pad}).\<close>
+text \<open>Pass A, the imbalance transform and the clearing of the seen array, over the arrays the
+      acyclifier leaves behind: afterwards every store holds the functional value the tree builder
+      consumes.\<close>
 lemma passA_phase_triple:
-  fixes fl_arr cap_arr exc_arr ba :: "'n array" and fsta snda olo ocur ilo icur oea iea :: "nat array"
+  fixes fl_arr cap_arr exc_arr ba :: "'n array" and fsta snda ob oe oh ib ie ih :: "nat array"
     and es_arr :: "edge_tag array" and dsta :: "bool array"
   assumes some: "acyc_flow_opt = Some f'" and mfla: "m \<le> length fla"
-    and agfla: "\<forall>e<m. fla ! e = acyc_flow ! e"
-    and lco: "length co = vcount" and lci: "length ci = vcount" and ldl: "length dl = Suc vcount"
-  shows "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snda \<mapsto>\<^sub>a (snd_list @ replicate n 0) * es_arr \<mapsto>\<^sub>a replicate (m + n) InL * exc_arr \<mapsto>\<^sub>a (0 # replicate vcount 0) * oea \<mapsto>\<^sub>a csr_edges out_csr * olo \<mapsto>\<^sub>a out_lo * ocur \<mapsto>\<^sub>a co * iea \<mapsto>\<^sub>a csr_edges in_csr * ilo \<mapsto>\<^sub>a in_lo * icur \<mapsto>\<^sub>a ci * ba \<mapsto>\<^sub>a b_arr * dsta \<mapsto>\<^sub>a dl> do { _ \<leftarrow> arr_copy_imp olo ocur 0 vcount; _ \<leftarrow> arr_copy_imp ilo icur 0 vcount; _ \<leftarrow> passA_imp fl_arr cap_arr fsta snda es_arr exc_arr oea ocur iea icur 0 m; _ \<leftarrow> imbalance_imp exc_arr ba 0 vcount; arr_fill_imp dsta False 0 (Suc vcount) } <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snda \<mapsto>\<^sub>a (snd_list @ replicate n 0) * es_arr \<mapsto>\<^sub>a (edge_state acyc_flow @ replicate n InL) * exc_arr \<mapsto>\<^sub>a imbalance * oea \<mapsto>\<^sub>a free_out_edges acyc_flow * olo \<mapsto>\<^sub>a out_lo * ocur \<mapsto>\<^sub>a free_out_hi acyc_flow * iea \<mapsto>\<^sub>a free_in_edges acyc_flow * ilo \<mapsto>\<^sub>a in_lo * icur \<mapsto>\<^sub>a free_in_hi acyc_flow * ba \<mapsto>\<^sub>a b_arr * dsta \<mapsto>\<^sub>a replicate (Suc vcount) False>"
+    and agfla: "\<forall>e<m. fla ! e = acyc_flow ! e" and ldl: "length dl = Suc vcount"
+  shows "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) *
+          snda \<mapsto>\<^sub>a (snd_list @ replicate n 0) * es_arr \<mapsto>\<^sub>a replicate (m + n) InL * exc_arr \<mapsto>\<^sub>a (0 # replicate vcount 0) *
+          outI.graph.csr_assn c_o (ob, oe, oh) * incI.graph.csr_assn c_i (ib, ie, ih) * ba \<mapsto>\<^sub>a b_arr * dsta \<mapsto>\<^sub>a dl>
+         do { _ \<leftarrow> csr_copy_imp vcount ob oh 0; _ \<leftarrow> csr_copy_imp vcount ib ih 0;
+              _ \<leftarrow> passA_imp fl_arr cap_arr fsta snda es_arr exc_arr oe oh ie ih 0 m;
+              _ \<leftarrow> imbalance_imp exc_arr ba 0 vcount; arr_fill_imp dsta False 0 (Suc vcount) }
+         <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) *
+             snda \<mapsto>\<^sub>a (snd_list @ replicate n 0) * es_arr \<mapsto>\<^sub>a (edge_state acyc_flow @ replicate n InL) *
+             exc_arr \<mapsto>\<^sub>a imbalance * ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a snd (free_out acyc_flow) *
+             oh \<mapsto>\<^sub>a fst (free_out acyc_flow) * ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a snd (free_in acyc_flow) *
+             ih \<mapsto>\<^sub>a fst (free_in acyc_flow) * ba \<mapsto>\<^sub>a b_arr * dsta \<mapsto>\<^sub>a replicate (Suc vcount) False>"
 proof -
   have rep_es: "replicate (m + n) InL = replicate m InL @ replicate n InL" by (simp add: replicate_add)
-  have pfl: "passA fla = passA acyc_flow" by (rule passA_flow_cong) (use agfla in auto)
   have caplen: "m \<le> length (capacity_list @ replicate n 0)" by (simp add: length_edges)
-  have capeq: "\<And>i. i < m \<Longrightarrow> (capacity_list @ replicate n 0) ! i = capacity_list ! i" by (simp add: nth_append length_edges)
-  have s0: "(replicate m InL, (0::'n) # replicate vcount 0, csr_edges out_csr, out_lo, csr_edges in_csr, in_lo) = fold (passA_step fla) [0..<0] (replicate m InL, replicate (Suc vcount) (0::'n), csr_edges out_csr, out_lo, csr_edges in_csr, in_lo)" by simp
-  note PA = passA_imp_pad_rule[OF le0 mfla caplen fst_pad_mk snd_pad_mk capeq fst_pad_keys[rule_format] snd_pad_keys[rule_format] s0, where pad = "replicate n InL"]
-  have E1: "fst (passA fla) = edge_state acyc_flow" using pfl passA_sel(1) by simp
-  have E2: "fst (snd (passA fla)) = excess" using pfl passA_exc_acyc[OF some] by simp
-  have E3: "fst (snd (snd (passA fla))) = free_out_edges acyc_flow" using pfl passA_sel(2) by simp
-  have E4: "fst (snd (snd (snd (passA fla)))) = free_out_hi acyc_flow" using pfl passA_sel(3) by simp
-  have E5: "fst (snd (snd (snd (snd (passA fla))))) = free_in_edges acyc_flow" using pfl passA_sel(4) by simp
-  have E6: "snd (snd (snd (snd (snd (passA fla))))) = free_in_hi acyc_flow" using pfl passA_sel(5) by simp
-  have IMB: "<exc_arr \<mapsto>\<^sub>a excess * ba \<mapsto>\<^sub>a b_arr> imbalance_imp exc_arr ba 0 vcount <\<lambda>_. exc_arr \<mapsto>\<^sub>a imbalance * ba \<mapsto>\<^sub>a b_arr>"
-    using imbalance_imp_rule[of 0 excess b_arr exc_arr ba] by (simp add: length_excess length_b_arr imbalance_fold_b_arr)
+  have capeq: "\<And>i. i < m \<Longrightarrow> (capacity_list @ replicate n 0) ! i = capacity_list ! i"
+    by (simp add: nth_append length_edges)
+  have fstlen: "m \<le> length (fst_list @ replicate n 0)" by (simp add: length_fst_list_m)
+  have fsteq: "\<And>i. i < m \<Longrightarrow> (fst_list @ replicate n 0) ! i = fst_list ! i"
+    by (simp add: nth_append length_fst_list_m)
+  have sndlen: "m \<le> length (snd_list @ replicate n 0)" by (simp add: length_snd_list_m)
+  have sndeq: "\<And>i. i < m \<Longrightarrow> (snd_list @ replicate n 0) ! i = snd_list ! i"
+    by (simp add: nth_append length_snd_list_m)
+  have s0: "(replicate m InL, 0 # replicate vcount 0, (out_lo, out.inp.E_spec), (in_lo, inc.inp.E_spec)) =
+            fold (passA_step acyc_flow) [0..<0]
+              (replicate m InL, replicate (Suc vcount) (0::'n), (out_lo, out.inp.E_spec), (in_lo, inc.inp.E_spec))"
+    by simp
+  note PA = passA_imp_rule[OF le0 mfla agfla[rule_format] caplen capeq fstlen fsteq sndlen sndeq s0,
+              where esr = "replicate n InL", simplified]
+  have E1: "fst (passA acyc_flow) = edge_state acyc_flow" by (simp add: edge_state_def split_beta)
+  have E2: "fst (snd (passA acyc_flow)) = excess" by (rule passA_exc_acyc[OF some])
+  have IMB: "<exc_arr \<mapsto>\<^sub>a excess * ba \<mapsto>\<^sub>a b_arr> imbalance_imp exc_arr ba 0 vcount
+             <\<lambda>_. exc_arr \<mapsto>\<^sub>a imbalance * ba \<mapsto>\<^sub>a b_arr>"
+    using imbalance_imp_rule[of 0 excess b_arr exc_arr ba]
+    by (simp add: length_b_arr imbalance_def b_lookup_def)
   show ?thesis
     apply (simp only: rep_es)
-    apply (sep_auto heap: arr_copy_imp_rule PA IMB arr_fill_imp_rule simp: length_out_lo length_in_lo lco lci ldl E1 E2 E3 E4 E5 E6)
+    apply (sep_auto heap: csr_copy_out_ranges csr_copy_in_ranges PA IMB arr_fill_imp_rule
+                    simp: ldl E1 E2)
     done
 qed
 
-text \<open>Segment (F)'s exit bridge: the raw stores segment (F) leaves behind --- together with the three
-      freshly allocated references --- \<^emph>\<open>are\<close> the tree builder's state relation at the pre-seed state
-      @{const dfs_raw}.  Every tree field is a fresh all-zero / all-@{term False} array of length
-      @{term \<open>Suc vcount\<close>}; the augmented endpoint / capacity / flow / edge-state arrays carry their
-      real prefix plus @{term n} spare artificial cells; and the empty DFS stack is the fill pointer
-      @{term 0} (@{thm stk_rel_nil}).\<close>
+text \<open>The stores the Pass-A phase leaves behind, with the freshly allocated tree arrays, the zeroed
+      cursor arrays and the three fresh references, \<^emph>\<open>are\<close> the tree builder's state relation at the
+      state that @{const build_tree_imp} seeds into @{const dfs_init}.\<close>
 lemma dfs_rel_raw_intro:
-  fixes prnt thrd rvth lsuc snum auxa par sv soc sic olo ocur ilo icur oea iea fsta snda :: "nat array"
+  fixes prnt thrd rvth lsuc snum auxa par sv ob oe oh oc ib ie ih ic fsta snda :: "nat array"
     and dira dsta :: "bool array" and fl_arr cap_arr cost_arr :: "'n array"
     and es_arr :: "edge_tag array" and spr pvr nxr :: "nat ref"
   assumes mfla: "m + n \<le> length fla" and agfla: "\<forall>e<m. fla ! e = acyc_flow ! e"
-    and laux: "length aux0 = Suc vcount"
-    and lsvl: "length svl = Suc vcount" and lsocl: "length socl = Suc vcount" and lsicl: "length sicl = Suc vcount"
-  shows "dsta \<mapsto>\<^sub>a replicate (Suc vcount) False * prnt \<mapsto>\<^sub>a (0 # replicate vcount 0) * thrd \<mapsto>\<^sub>a (0 # replicate vcount 0) * rvth \<mapsto>\<^sub>a (0 # replicate vcount 0) * lsuc \<mapsto>\<^sub>a (0 # replicate vcount 0) * snum \<mapsto>\<^sub>a (0 # replicate vcount 0) * auxa \<mapsto>\<^sub>a aux0 * par \<mapsto>\<^sub>a (0 # replicate vcount 0) * dira \<mapsto>\<^sub>a (False # replicate vcount False) * pot \<mapsto>\<^sub>a (pval_zero # replicate vcount pval_zero) * fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snda \<mapsto>\<^sub>a (snd_list @ replicate n 0) * cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list * fl_arr \<mapsto>\<^sub>a fla * es_arr \<mapsto>\<^sub>a (edge_state acyc_flow @ replicate n InL) * oea \<mapsto>\<^sub>a free_out_edges acyc_flow * olo \<mapsto>\<^sub>a out_lo * ocur \<mapsto>\<^sub>a free_out_hi acyc_flow * iea \<mapsto>\<^sub>a free_in_edges acyc_flow * ilo \<mapsto>\<^sub>a in_lo * icur \<mapsto>\<^sub>a free_in_hi acyc_flow * sv \<mapsto>\<^sub>a svl * soc \<mapsto>\<^sub>a socl * sic \<mapsto>\<^sub>a sicl * spr \<mapsto>\<^sub>r 0 * pvr \<mapsto>\<^sub>r 0 * nxr \<mapsto>\<^sub>r 0 \<Longrightarrow>\<^sub>A dfs_rel acyc_flow (edge_state acyc_flow) (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) \<lparr>di_seen = dsta, di_tree = \<lparr>prnt_impl = prnt, thrd_impl = thrd, rvth_impl = rvth, lsuc_impl = lsuc, snum_impl = snum, aux_impl = auxa\<rparr>, di_par = par, di_dir = dira, di_pot = pot, di_fst = fsta, di_snd = snda, di_cap = cap_arr, di_cost = cost_arr, di_flow = fl_arr, di_es = es_arr, di_oe = oea, di_olo = olo, di_ohi = ocur, di_ie = iea, di_ilo = ilo, di_ihi = icur, di_sv = sv, di_soc = soc, di_sic = sic, di_sp = spr, di_prev = pvr, di_nxt = nxr\<rparr> dfs_raw"
-  unfolding dfs_rel_def dfs_raw_def dfs_init_def
+    and laux: "length auxl = Suc vcount" and lsvl: "length svl = Suc vcount"
+  shows "dsta \<mapsto>\<^sub>a replicate (Suc vcount) False * prnt \<mapsto>\<^sub>a (0 # replicate vcount 0) *
+    thrd \<mapsto>\<^sub>a (0 # replicate vcount 0) * rvth \<mapsto>\<^sub>a (0 # replicate vcount 0) *
+    lsuc \<mapsto>\<^sub>a (0 # replicate vcount 0) * snum \<mapsto>\<^sub>a (0 # replicate vcount 0) * auxa \<mapsto>\<^sub>a auxl *
+    par \<mapsto>\<^sub>a (0 # replicate vcount 0) * dira \<mapsto>\<^sub>a (False # replicate vcount False) *
+    pot \<mapsto>\<^sub>a (pval_zero # replicate vcount pval_zero) * fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) *
+    snda \<mapsto>\<^sub>a (snd_list @ replicate n 0) * cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) *
+    cost_arr \<mapsto>\<^sub>a cost_list * fl_arr \<mapsto>\<^sub>a fla * es_arr \<mapsto>\<^sub>a (edge_state acyc_flow @ replicate n InL) *
+    ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a snd (free_out acyc_flow) * oh \<mapsto>\<^sub>a fst (free_out acyc_flow) *
+    oc \<mapsto>\<^sub>a replicate vcount 0 *
+    ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a snd (free_in acyc_flow) * ih \<mapsto>\<^sub>a fst (free_in acyc_flow) *
+    ic \<mapsto>\<^sub>a replicate vcount 0 *
+    sv \<mapsto>\<^sub>a svl * spr \<mapsto>\<^sub>r 0 * pvr \<mapsto>\<^sub>r 0 * nxr \<mapsto>\<^sub>r 0
+    \<Longrightarrow>\<^sub>A dfs_rel acyc_flow (edge_state acyc_flow)
+      \<lparr>di_seen = dsta, di_tree = \<lparr>prnt_impl = prnt, thrd_impl = thrd, rvth_impl = rvth, lsuc_impl = lsuc,
+                                 snum_impl = snum, aux_impl = auxa\<rparr>,
+       di_par = par, di_dir = dira, di_pot = pot, di_fst = fsta, di_snd = snda, di_cap = cap_arr,
+       di_cost = cost_arr, di_flow = fl_arr, di_es = es_arr,
+       di_ob = ob, di_oe = oe, di_oh = oh, di_oc = oc, di_ib = ib, di_ie = ie, di_ih = ih, di_ic = ic,
+       di_stk = sv, di_sp = spr, di_prev = pvr, di_nxt = nxr\<rparr>
+      (dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>)"
+  unfolding dfs_rel_def dfs_init_def FO.csr_assn_split FI.csr_assn_split
   apply (rule ent_ex_postI[of _ _ "fst_list @ replicate n 0"])
   apply (rule ent_ex_postI[of _ _ "snd_list @ replicate n 0"])
   apply (rule ent_ex_postI[of _ _ "capacity_list @ replicate n 0"])
   apply (rule ent_ex_postI[of _ _ "fla"])
   apply (rule ent_ex_postI[of _ _ "edge_state acyc_flow @ replicate n InL"])
-  apply (rule ent_ex_postI[of _ _ "aux0"])
+  apply (rule ent_ex_postI[of _ _ "auxl"])
   apply (rule ent_ex_postI[of _ _ "svl"])
-  apply (rule ent_ex_postI[of _ _ "socl"])
-  apply (rule ent_ex_postI[of _ _ "sicl"])
   apply (rule ent_ex_postI[of _ _ "0::nat"])
-  apply (sep_auto simp: laux lsvl lsocl lsicl mfla agfla length_vs_list length_fst_list_m length_snd_list_m length_edges nth_append)
+  apply (sep_auto simp: laux lsvl mfla agfla length_vs_list length_fst_list_m length_snd_list_m
+                        length_edges nth_append)
   done
 
-text \<open>The acyclifier's flow assertion, weakened to exactly what the tree builder needs: a store of
-      at least the augmented length whose real-edge prefix is @{const acyc_flow}.  Extracting \<^emph>\<open>this\<close>
-      pure part (rather than @{const flow_assn_m}'s @{term \<open>length r = n\<close>}) is what keeps an equation
-      on the locale parameter @{term n} out of the proof context --- with one there, every subsequent
-      @{text sep_auto} substitutes @{term n} away and unfolds the whole locale.\<close>
+text \<open>The acyclifier's flow assertion, weakened to exactly what the tree builder needs: a store of at
+      least the augmented length whose real-edge prefix is @{const acyc_flow}.  Extracting \<^emph>\<open>this\<close> pure
+      part (rather than @{const flow_assn_m}'s @{term \<open>length r = n\<close>}) keeps an equation on the locale
+      parameter @{term n} out of the proof context.\<close>
 lemma flow_assn_m_pad:
   assumes some: "acyc_flow_opt = Some f'"
   shows "flow_assn_m f' fh \<Longrightarrow>\<^sub>A (\<exists>\<^sub>A fla. fh \<mapsto>\<^sub>a fla * \<up>(m + n \<le> length fla \<and> (\<forall>e<m. fla ! e = acyc_flow ! e)))"
@@ -6752,89 +4798,77 @@ proof -
     done
 qed
 
-text \<open>Shape bridges for the capstone: the acyclifier phase restated in exactly the array shapes the
-      allocation block leaves behind, so that @{text sep_auto}'s (purely syntactic) frame inference
-      can apply it without a hand-supplied frame.\<close>
-lemma take_flow_all: "take m flow_list = flow_list" by (simp add: length_flow length_edges)
-lemma rep0_V: "(0::nat) # 0 # replicate n 0 = 0 # replicate vcount 0" by (simp add: vcount_eq)
-lemma repU_V: "Unseen # Unseen # replicate n Unseen = Unseen # replicate vcount Unseen" by (simp add: vcount_eq)
-lemma repF_V: "False # False # replicate n False = False # replicate vcount False" by (simp add: vcount_eq)
-
-lemmas make_acyclic_solve_triple' =
-  make_acyclic_solve_triple[unfolded take_flow_all rep0_V repU_V repF_V
-    csr_lo_out csr_hi_out csr_cur_out csr_lo_in csr_hi_in csr_cur_in]
-
-text \<open>The six side conditions of @{thm [source] build_tree_imp_raw_rule}, discharged once: the
-      imbalance array is @{term \<open>Suc vcount\<close>} long (the excess array it overwrites in place is), and
-      the four CSR block-boundary lists are @{term vcount} long.\<close>
-lemma length_fold_upd: "length (fold (\<lambda>v arr. arr[v := f v arr]) xs ys) = length ys"
-  by (induction xs arbitrary: ys) auto
-
-lemma length_imbalance: "length imbalance = Suc vcount"
-  by (simp add: imbalance_def length_excess length_fold_upd)
-
-lemma nvc_lt: "n < vcount" by (simp add: vcount_eq)
-lemma repSF: "replicate (Suc vcount) False = False # replicate vcount False" by simp
-lemma lrep0: "length ((0::nat) # replicate vcount 0) = Suc vcount" by simp
-lemma lim_ge: "Suc vcount \<le> length imbalance" by (simp add: length_imbalance)
-lemma lol_ge: "vcount \<le> length out_lo" by (simp add: length_out_lo)
-lemma lil_ge: "vcount \<le> length in_lo" by (simp add: length_in_lo)
-lemma loh_ge: "vcount \<le> length out_hi" by (simp add: length_out_hi)
-lemma lih_ge: "vcount \<le> length in_hi" by (simp add: length_in_hi)
-
-lemmas build_tree_raw' = build_tree_imp_raw_rule[OF nvc_lt lim_ge lol_ge lil_ge loh_ge lih_ge]
-
 text \<open>Two rules restated with the state record's \<^emph>\<open>components\<close> as separate parameters plus defining
       equations.  In @{const solve_imp} the DFS state record is built from array / reference
-      variables that are \<^emph>\<open>bound by the program itself\<close> (the three @{term \<open>ref 0\<close>} allocations), so a
-      rule whose program mentions @{term \<open>di_nxt st\<close>} can never be unified against the program's
-      @{term \<open>Ref.lookup nxt_ref\<close>}: higher-order unification would have to invert a record selector.
-      Taking the component as a parameter and discharging @{term \<open>di_nxt st = nx\<close>} \<^emph>\<open>afterwards\<close> --- once
-      the enclosing entailment has pinned @{term st} from the heap --- sidesteps this.\<close>
-lemma dfs_rel_rd_nxt2:
+      variables bound by the program itself, so a rule whose program mentions @{term \<open>di_nxt st\<close>} can
+      never be unified against the program's @{term \<open>Ref.lookup nxt_ref\<close>}: higher-order unification
+      would have to invert a record selector.  Taking the component as a parameter and discharging
+      @{term \<open>di_nxt st = nx\<close>} afterwards sidesteps this.\<close>
+lemma dfs_rel_rd_nxt:
   assumes "di_nxt st = nx"
-  shows "<dfs_rel fl0 es0 oe oh ie ih st s> Ref.lookup nx <\<lambda>r. dfs_rel fl0 es0 oe oh ie ih st s * \<up>(r = ds_nxt s)>"
-  using dfs_rel_rd_nxt[of fl0 es0 oe oh ie ih st s] assms by simp
+  shows "<dfs_rel fl0 es0 st s> Ref.lookup nx <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = ds_nxt s)>"
+  using assms unfolding dfs_rel_def by sep_auto
 
 lemma ns_phase_triple2:
-  assumes some: "acyc_flow_opt \<noteq> None" and mpos: "0 < marc"
+  assumes some: "acyc_flow_opt \<noteq> None" and mpos: "0 < marc" and lel: "length el = Suc vcount"
     and e1: "di_fst st = a1" and e2: "di_snd st = a2" and e3: "di_cost st = a3" and e4: "di_cap st = a4"
     and e5: "di_flow st = a5" and e6: "di_pot st = a6" and e7: "di_tree st = a7" and e8: "di_par st = a8"
-    and e9: "di_dir st = a9" and e10: "di_es st = a10" and e11: "di_sv st = a11" and e12: "di_soc st = a12"
-  shows "<sarr \<mapsto>\<^sub>a replicate max_candidates 0 * cref \<mapsto>\<^sub>r 0 * lref \<mapsto>\<^sub>r 0 * dfs_rel acyc_flow (edge_state acyc_flow) (free_out_edges acyc_flow) (free_out_hi acyc_flow) (free_in_edges acyc_flow) (free_in_hi acyc_flow) st (build_tree acyc_flow) * ofl \<mapsto>\<^sub>a fs0> ns_loop_prog vcount m marc block_size min_candidates max_candidates a1 a2 a3 a4 (ns_impl_state.make a5 a6 a7 a8 a9 a10 (sarr, cref, lref) a11 a12) <\<lambda>res. \<exists>\<^sub>A fl'. a5 \<mapsto>\<^sub>a fl' * a3 \<mapsto>\<^sub>a cost_list * ofl \<mapsto>\<^sub>a fs0 * true * \<up>(marc \<le> length fl' \<and> solve = (if res = Network_Simplex.unbounded then Neg_inf_cycle else if list_all (\<lambda>k. fl' ! k = 0) [m..<marc] then Optimum (take m fl') else Infeasible))>"
-  using ns_phase_triple'[OF some mpos, where st = st and sarr = sarr and cref = cref and lref = lref]
-  by (simp only: e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 e12)
+    and e9: "di_dir st = a9" and e10: "di_es st = a10" and e11: "di_stk st = a11"
+  shows "<sarr \<mapsto>\<^sub>a replicate max_candidates 0 * cref \<mapsto>\<^sub>r 0 * lref \<mapsto>\<^sub>r 0 * est \<mapsto>\<^sub>a el *
+          dfs_rel acyc_flow (edge_state acyc_flow) st (build_tree acyc_flow) * ofl \<mapsto>\<^sub>a fs0>
+         ns_loop_prog vcount m marc block_size min_candidates max_candidates a1 a2 a3 a4
+           (ns_impl_state.make a5 a6 a7 a8 a9 a10 (sarr, cref, lref) a11 est)
+         <\<lambda>res. \<exists>\<^sub>A fl'. a5 \<mapsto>\<^sub>a fl' * a3 \<mapsto>\<^sub>a cost_list * ofl \<mapsto>\<^sub>a fs0 * true *
+           \<up>(marc \<le> length fl' \<and> solve = (if res = Network_Simplex.unbounded then Neg_inf_cycle
+              else if list_all (\<lambda>k. fl' ! k = 0) [m..<marc] then Optimum (take m fl') else Infeasible))>"
+  using ns_phase_triple'[OF some mpos lel, where st = st and sarr = sarr and cref = cref and lref = lref]
+  by (simp only: e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11)
 
 lemma marc_eq: "marc = m + ds_nxt (build_tree acyc_flow)" by (simp add: marc_def Kart_def art_tree_def)
 lemma marc_pos: "0 < marc" using num_edges_gtr_0 by (simp add: marc_def)
-lemma some_ne: "acyc_flow_opt = Some f' \<Longrightarrow> acyc_flow_opt \<noteq> None" by simp
 
-text \<open>The \<^emph>\<open>else\<close> branch of @{const solve_imp} --- Pass A, the imbalance transform, the tree builder, the
-      network-simplex loop and the verdict tail --- as one Hoare triple over the raw arrays that the
-      allocation and acyclifier phases leave behind.
-
-      Two points of technique.  First, the precondition keeps the acyclifier's @{const flow_assn_m}
-      \<^emph>\<open>last\<close>, and the proof immediately weakens it with @{thm [source] flow_assn_m_pad}: extracting
-      @{const flow_assn_m}'s own pure part would put the equation @{term \<open>length r = n\<close>} into the
-      context, after which every @{method sep_auto} substitutes @{term n} away and unfolds the whole
-      locale.  Second, @{method sep_auto} always decomposes a goal down to its \<^emph>\<open>leftmost atomic\<close>
-      command, so a block triple can never be applied to an already-decomposed goal; instead each
-      block is spliced in by re-associating the binds (four @{method subst} of
-      @{thm [source] bind_bind}, matching the five commands of @{thm [source] passA_phase_triple})
-      and then applying @{thm [source] ht_bind} / @{thm [source] wlp_apply_ht} with an explicit frame.
-      In the @{thm [source] ent_frame_fwdI} step the two premises must be discharged \<^emph>\<open>out of order\<close>
-      (\<open>prefer\<close>): all seven tree arrays hold the same list and all three references hold
-      @{term \<open>0::nat\<close>}, so solving the forward entailment first lets frame inference pick a wrong
-      assignment of arrays to record slots, whereas the other order pins the record from the goal.\<close>
+text \<open>The \<^emph>\<open>else\<close> branch of @{const solve_imp} --- Pass A, the imbalance transform, the tree builder,
+      the network-simplex loop and the verdict tail --- as one Hoare triple over the arrays that the
+      allocation and acyclifier phases leave behind.  The precondition keeps the acyclifier's
+      @{const flow_assn_m} \<^emph>\<open>last\<close>, and the proof immediately weakens it with
+      @{thm [source] flow_assn_m_pad}.  @{method sep_auto} always decomposes a goal down to its
+      leftmost atomic command, so a block triple is spliced in by re-associating the binds (four
+      @{method subst} of @{thm [source] bind_bind}, matching the five commands of
+      @{thm [source] passA_phase_triple}) and applying @{thm [source] ht_bind} /
+      @{thm [source] wlp_apply_ht} with an explicit frame.\<close>
 lemma solve_tail_triple:
   fixes fl_arr cap_arr cost_arr exc_arr ba outfl :: "'n array"
-    and fsta snda olo ocur ohi ilo icur ihi oea iea pra tha rva lsa sna aua paa sva soa sia :: "nat array"
+    and fsta snda ob oe oh oc ib ie ih ic pra tha rva lsa sna aua paa sva esta :: "nat array"
     and dira dsta :: "bool array" and es_arr :: "edge_tag array"
   assumes some: "acyc_flow_opt = Some f'"
-    and lco: "length co = vcount" and lci: "length ci = vcount" and ldl: "length dl = Suc vcount"
-    and lvl: "length vl0 = Suc vcount" and lel: "length el0 = Suc vcount" and lcnt: "length cntl = Suc vcount"
+    and ldl: "length dl = Suc vcount" and lvl: "length vl0 = Suc vcount" and lel: "length el0 = Suc vcount"
     and lfs: "m \<le> length fs0"
-  shows "<oea \<mapsto>\<^sub>a csr_edges out_csr * olo \<mapsto>\<^sub>a out_lo * ohi \<mapsto>\<^sub>a out_hi * ocur \<mapsto>\<^sub>a co * iea \<mapsto>\<^sub>a csr_edges in_csr * ilo \<mapsto>\<^sub>a in_lo * ihi \<mapsto>\<^sub>a in_hi * icur \<mapsto>\<^sub>a ci * cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list * fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snda \<mapsto>\<^sub>a (snd_list @ replicate n 0) * sva \<mapsto>\<^sub>a vl0 * soa \<mapsto>\<^sub>a el0 * dsta \<mapsto>\<^sub>a dl * sia \<mapsto>\<^sub>a cntl * exc_arr \<mapsto>\<^sub>a (0 # replicate vcount 0) * dira \<mapsto>\<^sub>a (False # replicate vcount False) * paa \<mapsto>\<^sub>a (0 # replicate vcount 0) * aua \<mapsto>\<^sub>a (0 # replicate vcount 0) * sna \<mapsto>\<^sub>a (0 # replicate vcount 0) * lsa \<mapsto>\<^sub>a (0 # replicate vcount 0) * rva \<mapsto>\<^sub>a (0 # replicate vcount 0) * tha \<mapsto>\<^sub>a (0 # replicate vcount 0) * pra \<mapsto>\<^sub>a (0 # replicate vcount 0) * poa \<mapsto>\<^sub>a (pval_zero # replicate vcount pval_zero) * es_arr \<mapsto>\<^sub>a replicate (m + n) InL * outfl \<mapsto>\<^sub>a fs0 * ba \<mapsto>\<^sub>a b_arr * flow_assn_m f' fl_arr> arr_copy_imp olo ocur 0 vcount \<bind> (\<lambda>_. arr_copy_imp ilo icur 0 vcount \<bind> (\<lambda>_. passA_imp fl_arr cap_arr fsta snda es_arr exc_arr oea ocur iea icur 0 m \<bind> (\<lambda>_. imbalance_imp exc_arr ba 0 vcount \<bind> (\<lambda>_. arr_fill_imp dsta False 0 (Suc vcount) \<bind> (\<lambda>_. ref 0 \<bind> (\<lambda>sp_ref. ref 0 \<bind> (\<lambda>prev_ref. ref 0 \<bind> (\<lambda>nxt_ref. build_tree_imp \<lparr>di_seen = dsta, di_tree = \<lparr>prnt_impl = pra, thrd_impl = tha, rvth_impl = rva, lsuc_impl = lsa, snum_impl = sna, aux_impl = aua\<rparr>, di_par = paa, di_dir = dira, di_pot = poa, di_fst = fsta, di_snd = snda, di_cap = cap_arr, di_cost = cost_arr, di_flow = fl_arr, di_es = es_arr, di_oe = oea, di_olo = olo, di_ohi = ocur, di_ie = iea, di_ilo = ilo, di_ihi = icur, di_sv = sva, di_soc = soa, di_sic = sia, di_sp = sp_ref, di_prev = prev_ref, di_nxt = nxt_ref\<rparr> exc_arr ohi ihi m vcount n \<bind> (\<lambda>_. Ref.lookup nxt_ref \<bind> (\<lambda>Kart. Array.new max_candidates 0 \<bind> (\<lambda>sel_arr. ref 0 \<bind> (\<lambda>scur. ref 0 \<bind> (\<lambda>slen. ns_loop_prog vcount m (m + Kart) block_size min_candidates max_candidates fsta snda cost_arr cap_arr (ns_impl_state.make fl_arr poa \<lparr>prnt_impl = pra, thrd_impl = tha, rvth_impl = rva, lsuc_impl = lsa, snum_impl = sna, aux_impl = aua\<rparr> paa dira es_arr (sel_arr, scur, slen) sva soa) \<bind> (\<lambda>res. if res = Network_Simplex.unbounded then Heap_Monad.return NegInfCycleF else scan_art_imp fl_arr m (m + Kart) \<bind> (\<lambda>allz. if allz then arr_copy_imp fl_arr outfl 0 m \<bind> (\<lambda>_. Heap_Monad.return OptimalF) else Heap_Monad.return InfeasibleF))))))))))))))) <\<lambda>r. \<exists>\<^sub>A fs'. outfl \<mapsto>\<^sub>a fs' * cost_arr \<mapsto>\<^sub>a cost_list * ba \<mapsto>\<^sub>a b_arr * \<up>(r = status_of solve \<and> length fs' = length fs0 \<and> (\<forall>fs. solve = Optimum fs \<longrightarrow> take m fs' = fs)) * true>"
+  shows "<outI.graph.csr_assn c_o (ob, oe, oh) * incI.graph.csr_assn c_i (ib, ie, ih) *
+          oc \<mapsto>\<^sub>a replicate vcount 0 * ic \<mapsto>\<^sub>a replicate vcount 0 *
+          cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
+          fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snda \<mapsto>\<^sub>a (snd_list @ replicate n 0) *
+          sva \<mapsto>\<^sub>a vl0 * esta \<mapsto>\<^sub>a el0 * dsta \<mapsto>\<^sub>a dl * exc_arr \<mapsto>\<^sub>a (0 # replicate vcount 0) *
+          dira \<mapsto>\<^sub>a (False # replicate vcount False) * paa \<mapsto>\<^sub>a (0 # replicate vcount 0) *
+          aua \<mapsto>\<^sub>a (0 # replicate vcount 0) * sna \<mapsto>\<^sub>a (0 # replicate vcount 0) *
+          lsa \<mapsto>\<^sub>a (0 # replicate vcount 0) * rva \<mapsto>\<^sub>a (0 # replicate vcount 0) *
+          tha \<mapsto>\<^sub>a (0 # replicate vcount 0) * pra \<mapsto>\<^sub>a (0 # replicate vcount 0) *
+          poa \<mapsto>\<^sub>a (pval_zero # replicate vcount pval_zero) * es_arr \<mapsto>\<^sub>a replicate (m + n) InL *
+          outfl \<mapsto>\<^sub>a fs0 * ba \<mapsto>\<^sub>a b_arr * flow_assn_m f' fl_arr>
+     do { _ \<leftarrow> csr_copy_imp vcount ob oh 0; _ \<leftarrow> csr_copy_imp vcount ib ih 0;
+          _ \<leftarrow> passA_imp fl_arr cap_arr fsta snda es_arr exc_arr oe oh ie ih 0 m;
+          _ \<leftarrow> imbalance_imp exc_arr ba 0 vcount; _ \<leftarrow> arr_fill_imp dsta False 0 (Suc vcount);
+          sp_ref \<leftarrow> ref 0; prev_ref \<leftarrow> ref 0; nxt_ref \<leftarrow> ref 0;
+          _ \<leftarrow> build_tree_imp \<lparr>di_seen = dsta, di_tree = \<lparr>prnt_impl = pra, thrd_impl = tha, rvth_impl = rva, lsuc_impl = lsa, snum_impl = sna, aux_impl = aua\<rparr>, di_par = paa, di_dir = dira, di_pot = poa, di_fst = fsta, di_snd = snda, di_cap = cap_arr, di_cost = cost_arr, di_flow = fl_arr, di_es = es_arr, di_ob = ob, di_oe = oe, di_oh = oh, di_oc = oc, di_ib = ib, di_ie = ie, di_ih = ih, di_ic = ic, di_stk = sva, di_sp = sp_ref, di_prev = prev_ref, di_nxt = nxt_ref\<rparr> exc_arr m vcount n;
+          Kart \<leftarrow> Ref.lookup nxt_ref;
+          sel_arr \<leftarrow> Array.new max_candidates 0; scur \<leftarrow> ref 0; slen \<leftarrow> ref 0;
+          res \<leftarrow> ns_loop_prog vcount m (m + Kart) block_size min_candidates max_candidates fsta snda cost_arr cap_arr
+                   (ns_impl_state.make fl_arr poa \<lparr>prnt_impl = pra, thrd_impl = tha, rvth_impl = rva, lsuc_impl = lsa, snum_impl = sna, aux_impl = aua\<rparr> paa dira es_arr (sel_arr, scur, slen) sva esta);
+          (if res = Network_Simplex.unbounded then return NegInfCycleF
+           else do { allz \<leftarrow> scan_art_imp fl_arr m (m + Kart);
+                     (if allz then do { _ \<leftarrow> arr_copy_imp fl_arr outfl 0 m; return OptimalF }
+                      else return InfeasibleF) }) }
+   <\<lambda>r. \<exists>\<^sub>A fs'. outfl \<mapsto>\<^sub>a fs' * cost_arr \<mapsto>\<^sub>a cost_list * ba \<mapsto>\<^sub>a b_arr *
+        \<up>(r = status_of solve \<and> length fs' = length fs0 \<and> (\<forall>fs. solve = Optimum fs \<longrightarrow> take m fs' = fs)) * true>"
   apply (rule ht_cons_pre[OF ent_star_mono[OF ent_refl flow_assn_m_pad[OF some]]])
   apply (simp only: ex_assn_move_out)
   apply (rule ht_exEI)
@@ -6845,24 +4879,25 @@ lemma solve_tail_triple:
     have mfla: "m \<le> length fla" using pre by simp
     have agfla: "\<forall>e<m. fla ! e = acyc_flow ! e" using pre by simp
     have mnfla: "m + n \<le> length fla" using pre by simp
-    note PA = passA_phase_triple[OF some mfla agfla lco lci ldl, unfolded bind_bind[symmetric]]
-    note DR = dfs_rel_raw_intro[OF mnfla agfla lrep0 lvl lel lcnt, unfolded repSF]
+    note PA = passA_phase_triple[OF some mfla agfla ldl, unfolded bind_bind[symmetric]]
+    note DR = dfs_rel_raw_intro[OF mnfla agfla _ lvl, where auxl = "0 # replicate vcount 0", simplified]
+    have sne: "acyc_flow_opt \<noteq> None" using some by simp
     show ?thesis
       apply (subst bind_bind[symmetric])
       apply (subst bind_bind[symmetric])
       apply (subst bind_bind[symmetric])
       apply (subst bind_bind[symmetric])
-      apply (rule ht_bind[OF ht_cons_pre[OF _ ht_frame[OF PA, where R = "cost_arr \<mapsto>\<^sub>a cost_list * sva \<mapsto>\<^sub>a vl0 * soa \<mapsto>\<^sub>a el0 * sia \<mapsto>\<^sub>a cntl * dira \<mapsto>\<^sub>a (False # replicate vcount False) * paa \<mapsto>\<^sub>a (0 # replicate vcount 0) * aua \<mapsto>\<^sub>a (0 # replicate vcount 0) * sna \<mapsto>\<^sub>a (0 # replicate vcount 0) * lsa \<mapsto>\<^sub>a (0 # replicate vcount 0) * rva \<mapsto>\<^sub>a (0 # replicate vcount 0) * tha \<mapsto>\<^sub>a (0 # replicate vcount 0) * pra \<mapsto>\<^sub>a (0 # replicate vcount 0) * poa \<mapsto>\<^sub>a (pval_zero # replicate vcount pval_zero) * ohi \<mapsto>\<^sub>a out_hi * ihi \<mapsto>\<^sub>a in_hi * outfl \<mapsto>\<^sub>a fs0"]]])
+      apply (rule ht_bind[OF ht_cons_pre[OF _ ht_frame[OF PA, where R = "cost_arr \<mapsto>\<^sub>a cost_list * sva \<mapsto>\<^sub>a vl0 * esta \<mapsto>\<^sub>a el0 * oc \<mapsto>\<^sub>a replicate vcount 0 * ic \<mapsto>\<^sub>a replicate vcount 0 * dira \<mapsto>\<^sub>a (False # replicate vcount False) * paa \<mapsto>\<^sub>a (0 # replicate vcount 0) * aua \<mapsto>\<^sub>a (0 # replicate vcount 0) * sna \<mapsto>\<^sub>a (0 # replicate vcount 0) * lsa \<mapsto>\<^sub>a (0 # replicate vcount 0) * rva \<mapsto>\<^sub>a (0 # replicate vcount 0) * tha \<mapsto>\<^sub>a (0 # replicate vcount 0) * pra \<mapsto>\<^sub>a (0 # replicate vcount 0) * poa \<mapsto>\<^sub>a (pval_zero # replicate vcount pval_zero) * outfl \<mapsto>\<^sub>a fs0"]]])
        apply sep_auto
-      apply (rule wlp_apply_ht[OF _ _ build_tree_raw', where F = "ba \<mapsto>\<^sub>a b_arr * outfl \<mapsto>\<^sub>a fs0 * true"])
+      apply (rule wlp_apply_ht[OF _ _ build_tree_imp_rule, where F = "esta \<mapsto>\<^sub>a el0 * ba \<mapsto>\<^sub>a b_arr * outfl \<mapsto>\<^sub>a fs0 * true"])
         apply assumption
-       apply (rule ent_frame_fwdI[OF _ DR, where F = "exc_arr \<mapsto>\<^sub>a imbalance * ohi \<mapsto>\<^sub>a out_hi * ihi \<mapsto>\<^sub>a in_hi * ba \<mapsto>\<^sub>a b_arr * outfl \<mapsto>\<^sub>a fs0 * true"])
+       apply (rule ent_frame_fwdI[OF _ DR, where F = "exc_arr \<mapsto>\<^sub>a imbalance * esta \<mapsto>\<^sub>a el0 * ba \<mapsto>\<^sub>a b_arr * outfl \<mapsto>\<^sub>a fs0 * true"])
         prefer 2
         apply sep_auto
-      apply (rule wlp_apply_ht[OF _ _ dfs_rel_rd_nxt2, where F = "exc_arr \<mapsto>\<^sub>a imbalance * ohi \<mapsto>\<^sub>a out_hi * ihi \<mapsto>\<^sub>a in_hi * ba \<mapsto>\<^sub>a b_arr * outfl \<mapsto>\<^sub>a fs0 * true"])
+      apply (rule wlp_apply_ht[OF _ _ dfs_rel_rd_nxt, where F = "exc_arr \<mapsto>\<^sub>a imbalance * esta \<mapsto>\<^sub>a el0 * ba \<mapsto>\<^sub>a b_arr * outfl \<mapsto>\<^sub>a fs0 * true"])
          apply assumption
         apply sep_auto
-      apply (rule wlp_apply_ht[OF _ _ ns_phase_triple2[OF some_ne[OF some] marc_pos, unfolded marc_eq, where ofl = outfl], where F = "exc_arr \<mapsto>\<^sub>a imbalance * ohi \<mapsto>\<^sub>a out_hi * ihi \<mapsto>\<^sub>a in_hi * ba \<mapsto>\<^sub>a b_arr * true"])
+      apply (rule wlp_apply_ht[OF _ _ ns_phase_triple2[OF sne marc_pos lel, unfolded marc_eq, where ofl = outfl], where F = "exc_arr \<mapsto>\<^sub>a imbalance * ba \<mapsto>\<^sub>a b_arr * true"])
         apply assumption
        apply sep_auto
        apply (sep_auto heap: scan_art_imp_rule arr_copy_imp_rule simp: lfs)
@@ -6870,18 +4905,13 @@ lemma solve_tail_triple:
   qed
   done
 
-text \<open>\<^emph>\<open>Total correctness of the whole solver.\<close>  @{const solve_imp} --- allocation and padding of the six
+text \<open>\<^emph>\<open>Total correctness of the whole solver.\<close>  @{const solve_imp} --- allocation and padding of the
       input arrays, the two CSR builds, the edged-vertex materialisation, the acyclifier, Pass A, the
       spanning-tree build, the network-simplex loop and the verdict tail --- returns exactly
       @{term \<open>status_of solve\<close>}, and on @{const Optimum} the caller's flow array holds the optimal
-      @{term b}-flow in its first @{term m} cells.
-
-      The script walks the program phase by phase.  Each @{method sep_auto} consumes one phase; the
-      rules are pre-instantiated (@{thm [source] make_acyclic_solve_triple'} and friends) so that frame
-      inference --- which is purely \<^emph>\<open>syntactic\<close> --- finds the frame without any hand-supplied
-      @{text \<open>where F = \<dots>\<close>}.  The acyclifier splits the proof in two: its @{const None} verdict is the
-      infinite-cycle branch, closed outright, and its @{term \<open>Some f'\<close>} verdict is the whole rest of the
-      solver, which is @{thm [source] solve_tail_triple}.\<close>
+      @{term b}-flow in its first @{term m} cells.  The acyclifier splits the proof in two: its
+      @{const None} verdict is the infinite-cycle branch, closed outright, and its @{term \<open>Some f'\<close>}
+      verdict is the whole rest of the solver, which is @{thm [source] solve_tail_triple}.\<close>
 theorem solve_imp_correct:
   "<in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list * in_cap \<mapsto>\<^sub>a capacity_list *
     in_cost \<mapsto>\<^sub>a cost_list * in_flow \<mapsto>\<^sub>a flow_list * in_b \<mapsto>\<^sub>a b_arr>
@@ -6895,25 +4925,18 @@ theorem solve_imp_correct:
   apply (simp only: vcount_eq[symmetric])
   apply (sep_auto heap: arr_copy_imp_rule
            simp: length_fst_list_m length_snd_list_m length_edges length_flow)
-  apply (sep_auto heap: build_csr_out_pad_over_c[OF fst_pad_mk fst_pad_bd fst_pad_keys
-                          le_SucI[OF order_refl], simplified])
-  apply (sep_auto heap: arr_fill_imp_rule simp: cto_pad_len' cto_pad_drop' replicate_append_same)
-  apply (sep_auto heap: build_csr_in_pad_over_c[OF snd_pad_mk snd_pad_bd snd_pad_keys
-                          le_SucI[OF order_refl], simplified])
-  apply (simp only: csr_assn_def prod.case csr_lo_out csr_hi_out csr_cur_out
-                    csr_lo_in csr_hi_in csr_cur_in)
-  apply (sep_auto heap: count_edged_imp_rule[OF edg_v1 edg_l1 edg_l2 edg_l3 edg_l4]
-                        fill_edged_imp_rule[OF edg_v1 edg_l1 edg_l2 edg_l3 edg_l4]
-                  simp: edged_lst_eq_vs_list)
-  apply (sep_auto heap: make_acyclic_solve_triple')
+  apply (sep_auto heap: csr_build_out_rule csr_build_in_rule)
+  apply (sep_auto heap: csr_copy_out_init csr_copy_in_init)
+  apply (sep_auto heap: count_edged_imp_rule fill_edged_imp_rule simp: edged_lst_vs)
+  apply (sep_auto heap: make_acyclic_solve_triple)
   subgoal by (sep_auto simp: acyc_flow_opt_def solve_none length_flow length_edges)
   apply (rule wlp_apply_ht[OF _ _ solve_tail_triple,
            where F = "in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list * in_cap \<mapsto>\<^sub>a capacity_list * true"])
    apply assumption
   apply sep_auto
-  prefer 9
-  apply (sep_auto simp: length_flow length_edges)
-  apply (simp_all add: acyc_flow_opt_def count_fold_length length_flow length_edges)
+  apply (simp_all add: acyc_flow_opt_def length_flow length_edges)
+  apply (rule entailsD[rotated], assumption)
+  apply sep_auto
   done
 
 subsection \<open>The specification of @{const solve_imp}, free of the functional implementation\<close>
@@ -7076,7 +5099,9 @@ corollary solve_imp_spec:
    apply assumption
   apply (rule solve_verdict_transfer; assumption)
   done
+
 end
+
 
 section \<open>A worked example: 10 vertices, 40 edges\<close>
 

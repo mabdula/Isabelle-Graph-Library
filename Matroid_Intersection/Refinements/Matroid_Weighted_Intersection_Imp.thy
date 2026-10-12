@@ -30,7 +30,7 @@ declare unweighted_intersection_exchange_imp_spec.nb1_imp_def[code]
   unweighted_intersection_exchange_imp_spec.s_imp_def[code]
   unweighted_intersection_exchange_imp_spec.t_imp_def[code]
   unweighted_intersection_exchange_imp_spec.st_imp_def[code]
-  unweighted_intersection_exchange_imp_spec.tgt_imp_def[code]
+  unweighted_intersection_exchange_imp_spec.is_tgt_imp_def[code]
 
 locale weighted_matroid_intersection_imp_ids_spec =
   matroid_intersection_imp_ids_spec n smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp sins_imp sdel_imp
@@ -89,7 +89,7 @@ proof-
   let ?F = "sol_assn {} Si * ost1 * ost2 * warr_assn n h c Co * len_assn n C1 * len_assn n C2"
   have cand: "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * warr_assn n h c Co *
                 len_assn n C1 * len_assn n C2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
-              <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * csr3_assn (build_nhlists (cand_list pts1 pts2 n)) Gc>"
+              <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * bcsr_assn (build_nhlists (cand_list pts1 pts2 n)) Gc>"
     by (rule ht_frame_ac[OF c.cand_csr_rule, where R = ?F]) (simp only: star_aci, rule ent_refl)+
   show ?thesis
     unfolding wmi_imp_def

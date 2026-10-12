@@ -19,7 +19,7 @@ lemma build_nhlists_edge:
 lemma finite_Vs_build_nhlists: "finite (BFS_subprocedures_lists.Vs (build_nhlists es))"
 proof-
   have "BFS_subprocedures_lists.Vs (build_nhlists es) = dVs (set es)"
-    unfolding BFS_subprocedures_lists.Vs_def[OF BFS_subprocedures_lists_bset] dVs_def 
+    unfolding BFS_subprocedures_lists.Vs_def[OF BFS_subprocedures_lists_bcsr] dVs_def 
     by (simp add: build_nhlists_edge)
   thus ?thesis
     by (simp add: finite_vertices_iff)
@@ -47,10 +47,10 @@ lemma bfs_build_nhlists:
        (\<lambda> p x. p x) parent_invar id"
 proof-
   interpret inst: BFS_lists_instance where is_visited_set = bset_assn
-    and visited_memb = bset_memb and distinct_ins = bset_ins and iterate_neighbourhood = bfs_nbs
-    and graph_assn = csr3_assn and G = "build_nhlists es" and Gi = Gi and srcs = "[]"
+    and visited_memb = bset_memb and distinct_ins = bset_ins and iterate_neighbourhood = bfs_csr_nbs
+    and graph_assn = bcsr_assn and G = "build_nhlists es" and Gi = Gi and srcs = "[]"
     and N = "nh_bound es" and Fr = Fr and Bf = Bf and Da = Da and Pa = Pa for Gi Fr Bf Da Pa
-    using BFS_subprocedures_lists_bset Vs_build_nhlists_bound
+    using BFS_subprocedures_lists_bcsr Vs_build_nhlists_bound
     by (auto intro!: BFS_lists_instance.intro BFS_lists_instance_axioms.intro)
   show ?thesis
     using inst.imp_bfs.BFS_distance_parents_axioms unfolding fun_upd_def by blast
@@ -62,10 +62,10 @@ lemma Pair_Graph_Specs_lists:
           (\<lambda> x xs. filter (\<lambda> y. (x::nat) \<noteq> y) xs) (\<lambda> _. True)"
 proof-
   interpret inst: BFS_lists_instance where is_visited_set = bset_assn
-    and visited_memb = bset_memb and distinct_ins = bset_ins and iterate_neighbourhood = bfs_nbs
-    and graph_assn = csr3_assn and G = "build_nhlists []" and Gi = Gi and srcs = "[]"
+    and visited_memb = bset_memb and distinct_ins = bset_ins and iterate_neighbourhood = bfs_csr_nbs
+    and graph_assn = bcsr_assn and G = "build_nhlists []" and Gi = Gi and srcs = "[]"
     and N = "nh_bound []" and Fr = Fr and Bf = Bf and Da = Da and Pa = Pa for Gi Fr Bf Da Pa
-    using BFS_subprocedures_lists_bset Vs_build_nhlists_bound
+    using BFS_subprocedures_lists_bcsr Vs_build_nhlists_bound
     by (auto intro!: BFS_lists_instance.intro BFS_lists_instance_axioms.intro)
   show ?thesis
     unfolding fun_upd_def by (rule inst.Graph.Pair_Graph_Specs_axioms)
@@ -127,10 +127,10 @@ sublocale csr: unweighted_intersection_exchange
     and diff = "\<lambda> xs ys. filter (\<lambda> y. y \<notin> set ys) xs" and vset_inv2 = distinct
 proof(intro unweighted_intersection_exchange.intro unweighted_intersection_exchange_axioms.intro)
   interpret inst: BFS_lists_instance where is_visited_set = bset_assn
-    and visited_memb = bset_memb and distinct_ins = bset_ins and iterate_neighbourhood = bfs_nbs
-    and graph_assn = csr3_assn and G = "build_nhlists []" and Gi = Gi and srcs = "[]"
+    and visited_memb = bset_memb and distinct_ins = bset_ins and iterate_neighbourhood = bfs_csr_nbs
+    and graph_assn = bcsr_assn and G = "build_nhlists []" and Gi = Gi and srcs = "[]"
     and N = "nh_bound []" and Fr = Fr and Bf = Bf and Da = Da and Pa = Pa for Gi Fr Bf Da Pa
-    using BFS_subprocedures_lists_bset Vs_build_nhlists_bound
+    using BFS_subprocedures_lists_bcsr Vs_build_nhlists_bound
     by (auto intro!: BFS_lists_instance.intro BFS_lists_instance_axioms.intro)
   show "unweighted_intersection_exchange_matroids carrier indep1 indep2 orcl_prep1 ins_orcl1 
           exch_orcl1 orcl_prep2 ins_orcl2 exch_orcl2 to_set set_invar set_insert set_delete set_empty 
@@ -147,33 +147,12 @@ proof(intro unweighted_intersection_exchange.intro unweighted_intersection_excha
   fix es
   show "inst.Graph.graph_inv (build_nhlists es)"
     by (rule inst.Graph.graph_invI) (rule TrueI)+
-  have "{v. build_nhlists es v \<noteq> None} \<subseteq> fst ` set es"
-    unfolding dom_def[symmetric] build_nhlists_dom nbrs_def map_is_Nil_conv filter_empty_conv
-    by blast
-  thus "inst.Graph.finite_graph (build_nhlists es)"
-    by (intro inst.Graph.finite_graphI finite_subset[OF _ finite_imageI[OF finite_set]])
+  show "inst.Graph.finite_graph (build_nhlists es)"
+    by (rule inst.Graph.finite_graphI) (simp only: dom_def[symmetric] finite_build_nhlists_dom)
   show "inst.Graph.finite_vsets (build_nhlists es)"
     by (rule inst.Graph.finite_vsetsI) (rule finite_set)
   show "inst.Graph.digraph_abs (build_nhlists es) = set es"
-  proof(rule set_eqI)
-    fix e :: "nat \<times> nat"
-    obtain u v where e: "e = (u, v)" 
-      by (cases e)
-    have "v \<in> set (case build_nhlists es u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs) \<longleftrightarrow> 
-          (\<exists> vs. build_nhlists es u = Some vs \<and> v \<in> set vs)"
-    proof(cases "build_nhlists es u")
-      case None
-      show ?thesis
-        unfolding None option.case(1) list.set(1) using option.distinct(1) by blast
-    next
-      case (Some vs)
-      show ?thesis
-        unfolding Some option.case(2) using option.inject by blast
-    qed
-    thus "e \<in> inst.Graph.digraph_abs (build_nhlists es) \<longleftrightarrow> e \<in> set es"
-      unfolding e inst.Graph.digraph_abs_def inst.Graph.neighbourhood_def mem_Collect_eq 
-                case_prod_conv build_nhlists_edge[symmetric] .
-  qed
+    unfolding inst.Graph.digraph_abs_def inst.Graph.neighbourhood_def build_nhlists_set by simp
   show "\<exists> exp_tree nfc dist_invar parent_invar. 
      BFS_3.BFS_distance_parents (\<lambda> x. None) (\<lambda> x G. G(x := None)) Cons (\<lambda> xs x. x \<in> set xs) set hd
        (\<lambda> x N G. G(x := Some N)) (\<lambda> G. True) [] (\<lambda> x xs. filter (\<lambda> y. x \<noteq> y) xs) (\<lambda> _. True)

@@ -39,9 +39,6 @@ lemma foldl_filter_if:
 lemma foldl_True: "foldl (\<lambda> a x. True) b xs = (b \<or> xs \<noteq> [])"
   by (induction xs arbitrary: b) simp_all
 
-lemma Vs_build_dVs: "BFS_subprocedures_lists.Vs (build_nhlists es) = dVs (set es)"
-  unfolding BFS_subprocedures_lists.Vs_def[OF BFS_subprocedures_lists_bset] dVs_def 
-  by (simp add: build_nhlists_edge)
 
 lemma len_intro: "length l = m \<Longrightarrow> a \<mapsto>\<^sub>a l \<Longrightarrow>\<^sub>A len_assn m a"
   unfolding len_assn_def by (rule ent_ex_postI[where x = l]) simp
@@ -154,7 +151,7 @@ lemma BFS_sub: "BFS_subprocedures_lists (xvis Vh) bset_memb bset_ins nbs gx"
   by unfold_locales (rule xvis_only xvis_memb xvis_ins gx_iterate | assumption)+
 
 lemma Vs_E: "BFS_subprocedures_lists.Vs (build_nhlists E) \<subseteq> {..<n}"
-  unfolding Vs_build_dVs using E_bound by (force simp: dVs_def)
+  unfolding Vs_build_nhlists using E_bound by (force simp: dVs_def)
 
 lemma card_Vs: "card (BFS_subprocedures_lists.Vs (build_nhlists E)) \<le> n"
   using card_mono[OF finite_lessThan Vs_E] by simp
@@ -220,7 +217,7 @@ lemma bfs_rule:
 proof-
   let ?G = "build_nhlists E"
   have sV: "set ss \<subseteq> BFS_subprocedures_lists.Vs ?G"
-    using b.ss_in_graph unfolding Vs_build_dVs .
+    using b.ss_in_graph unfolding Vs_build_nhlists .
   have ls: "length ss \<le> n"
     using card_mono[OF finite_subset[OF Vs_E finite_lessThan] sV] distinct_card[OF b.ss_distinct]
           card_Vs by simp
@@ -283,7 +280,7 @@ proof-
       using inst.imp_bfs.parent_path_length[OF BFS_axiom fin_def t]
       unfolding b.digraph_abs_build b.\<E>_def .
     then show ?thesis
-      using card_Vs[unfolded Vs_build_dVs] by (rule le_trans)
+      using card_Vs[unfolded Vs_build_nhlists] by (rule le_trans)
   qed
   have p: "bfs_path di pari Ra t = inst.imp_bfs.path_rev_imp di pari Ra t 0"
     unfolding code_eqs(2)[symmetric] inst.imp_bfs.path_imp_def by (rule refl)
@@ -393,14 +390,14 @@ definition "filt_imp P Si fi = (\<lambda> u v a. do { ok \<leftarrow> P Si u v; 
 
 text \<open>The iterator over the exchange neighbours, on the solution handle and the CSR.\<close>
 
-definition xnbs :: "'si \<times> (nat array \<times> nat array \<times> nat array) \<Rightarrow> nat \<Rightarrow>
+definition xnbs :: "'si \<times> (nat array \<times> nat array) \<Rightarrow> nat \<Rightarrow>
                      (nat \<Rightarrow> nat \<Rightarrow> 'acc \<Rightarrow> 'acc Heap) \<Rightarrow> 'acc \<Rightarrow> 'acc Heap" where
   "xnbs Gh u fi acc = (case Gh of (Si, Gc) \<Rightarrow>
      if u < n then do {
        b \<leftarrow> smemb_imp u Si;
-       if b then bfs_nbs Gc u (filt_imp nb1_imp Si fi) acc
+       if b then bfs_csr_nbs Gc u (filt_imp nb1_imp Si fi) acc
        else do { t \<leftarrow> ins2_imp Si u;
-                 if t then return acc else bfs_nbs Gc u (filt_imp nb2_imp Si fi) acc } }
+                 if t then return acc else bfs_csr_nbs Gc u (filt_imp nb2_imp Si fi) acc } }
      else return acc)"
 
 text \<open>The BFS core of the library with this iterator.\<close>
@@ -421,16 +418,16 @@ definition "t_imp Si y = do { b \<leftarrow> smemb_imp y Si; if b then return Fa
 
 definition "st_imp Si y = do { s \<leftarrow> s_imp Si y; if s then ins2_imp Si y else return False }"
 
-definition "src_imp Gc Si y = do { s \<leftarrow> s_imp Si y; if s then has_nb_imp Gc Si y else return False }"
+definition "is_src_imp Gc Si y = do { s \<leftarrow> s_imp Si y; if s then has_nb_imp Gc Si y else return False }"
 
-definition "tgt_imp Si Vi y = do { v \<leftarrow> Array.nth Vi y; if v then t_imp Si y else return False }"
+definition "is_tgt_imp Si Vi y = do { v \<leftarrow> Array.nth Vi y; if v then t_imp Si y else return False }"
 
 text \<open>One search: a source that is a target is a path on its own. Otherwise, the sources having
   an exchange edge are written into the frontier array, the visited, distance and parent arrays
   are reset in place, the BFS runs, and the first visited target gives the path.\<close>
 
 definition "tail_imp Si Ra r = (case r of (Vi', Da', Pa') \<Rightarrow> do {
-   t \<leftarrow> find_range_imp (tgt_imp Si Vi') 0 n;
+   t \<leftarrow> find_range_imp (is_tgt_imp Si Vi') 0 n;
    (case t of
       None \<Rightarrow> return None
     | Some t \<Rightarrow> do { l \<leftarrow> bfs_path Da' Pa' Ra t; return (Some l) }) })"
@@ -447,7 +444,7 @@ definition "aug_path_imp Gc Vi Fr Bf Da Pa Si Ra = do {
    (case r of
       Some s \<Rightarrow> do { Array.upd 0 s Ra; return (Some 1) }
     | None \<Rightarrow> do {
-        k \<leftarrow> collect_range_imp (src_imp Gc Si) n Fr;
+        k \<leftarrow> collect_range_imp (is_src_imp Gc Si) n Fr;
         if k = 0 then return None else round_imp Gc Vi Fr Bf Da Pa Si Ra k }) }"
 
 end
@@ -621,7 +618,7 @@ end
 
 subsubsection \<open>The Iterator\<close>
 
-definition "gxs X Si Gc = sol_assn X Si * ost1 * ost2 * csr3_assn (build_nhlists es0) Gc"
+definition "gxs X Si Gc = sol_assn X Si * ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc"
 
 
 text \<open>(A triple must not start with \<open><sol_assn\<close> here, which is read as another token.)\<close>
@@ -647,7 +644,7 @@ lemma bfs_nbs_filt_rule:
                                    <\<lambda> r. ost1 * ost2 * sol_assn X Si * Q * \<up>(r = p v)>"
     and fi: "\<And> acc acci x. x \<in> set (filter p (nbrs es0 u)) \<Longrightarrow>
                <A acc acci * F> fi u x acci <\<lambda> r. A (f u acc x) r * F>"
-  shows "<gxs X Si Gc * A acc acci * F> bfs_nbs Gc u (filt_imp P Si fi) acci
+  shows "<gxs X Si Gc * A acc acci * F> bfs_csr_nbs Gc u (filt_imp P Si fi) acci
          <\<lambda> r. gxs X Si Gc * F * A (foldl (f u) acc (filter p (nbrs es0 u))) r>"
 proof-
   let ?R = "ost1 * ost2 * sol_assn X Si"
@@ -674,10 +671,10 @@ proof-
         unfolding filt_imp_def by (rule ht_bind[OF p], rule ht_pure_pre) (sep_auto simp: False)
     qed
   qed
-  have r: "<csr3_assn (build_nhlists es0) Gc * A acc acci * (F * ?R)> bfs_nbs Gc u (filt_imp P Si fi) acci
-           <\<lambda> r. csr3_assn (build_nhlists es0) Gc * (F * ?R) *
+  have r: "<bcsr_assn (build_nhlists es0) Gc * A acc acci * (F * ?R)> bfs_csr_nbs Gc u (filt_imp P Si fi) acci
+           <\<lambda> r. bcsr_assn (build_nhlists es0) Gc * (F * ?R) *
                  A (foldl (?g u) acc (case build_nhlists es0 u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs)) r>"
-    by (rule bfs_nbs_rule[where G = "build_nhlists es0" and f = ?g]) (rule step)
+    by (rule bfs_csr_nbs_rule[where G = "build_nhlists es0" and f = ?g]) (rule step)
   show ?thesis
     unfolding gxs_def
     by (rule ht_cons[OF _ _ r]) (sep_auto, simp only: case_build_nhlists foldl_filter_if, sep_auto)
@@ -704,7 +701,7 @@ next
     case uX: True
     have e: "filter (allowed1 X u) (nbrs es0 u) = nbrs (EE X) u"
       using nbrs_es0[OF X True] uX unfolding exch_nb_def by simp
-    have b: "<gxs X Si Gc * A acc acci * F> bfs_nbs Gc u (filt_imp nb1_imp Si fi) acci
+    have b: "<gxs X Si Gc * A acc acci * F> bfs_csr_nbs Gc u (filt_imp nb1_imp Si fi) acci
              <\<lambda> r. gxs X Si Gc * F * A (foldl (f u) acc (nbrs (EE X) u)) r>"
       unfolding e[symmetric] by (rule bfs_nbs_filt_rule) (rule nb1_rule[OF True], assumption, 
                                                          rule fi, unfold e)
@@ -729,7 +726,7 @@ next
       case nit: False
       have e: "filter (allowed2 X u) (nbrs es0 u) = nbrs (EE X) u"
         using nbrs_es0[OF X True] nX nit unfolding exch_nb_def by simp
-      have b: "<gxs X Si Gc * A acc acci * F> bfs_nbs Gc u (filt_imp nb2_imp Si fi) acci
+      have b: "<gxs X Si Gc * A acc acci * F> bfs_csr_nbs Gc u (filt_imp nb2_imp Si fi) acci
                <\<lambda> r. gxs X Si Gc * F * A (foldl (f u) acc (nbrs (EE X) u)) r>"
         unfolding e[symmetric] by (rule bfs_nbs_filt_rule) (rule nb2_rule[OF True], assumption,
                                                            rule fi, unfold e)
@@ -859,32 +856,32 @@ proof-
     by (rule ht_cons[OF _ _ r]) (sep_auto simp: foldl_True)+
 qed
 
-lemma src_imp_rule:
-  "y < n \<Longrightarrow> <gxs X Si Gc> src_imp Gc Si y
+lemma is_src_imp_rule:
+  "y < n \<Longrightarrow> <gxs X Si Gc> is_src_imp Gc Si y
    <\<lambda> r. gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> S0 X) \<and> 
             (y \<notin> T0 X \<and> find (\<lambda> x. x \<in> X \<and> exch_orcl2 (orcl_prep2 X) x y) [0..<n] \<noteq> None)))>"
-  unfolding src_imp_def s_imp_def
+  unfolding is_src_imp_def s_imp_def
   by (sep_auto heap: smemb_rule[where X = X] o1.ins_imp has_nb_rule[unfolded gxs_def] 
                simp: gxs_def S0_def nb_char)
 
 lemma collect_src_rule:
   assumes "n \<le> length fl"
-  shows "<Fr \<mapsto>\<^sub>a fl * gxs X Si Gc> collect_range_imp (src_imp Gc Si) n Fr
+  shows "<Fr \<mapsto>\<^sub>a fl * gxs X Si Gc> collect_range_imp (is_src_imp Gc Si) n Fr
          <\<lambda> k. \<exists>\<^sub>A fl'. Fr \<mapsto>\<^sub>a fl' * gxs X Si Gc * 
                \<up>(length fl' = length fl \<and> 
                  k = length (filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X))) \<and> 
                  take k fl' = filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X)))>"
-  unfolding eq_srcs[symmetric] by (rule collect_range_imp_rule[OF src_imp_rule assms])
+  unfolding eq_srcs[symmetric] by (rule collect_range_imp_rule[OF is_src_imp_rule assms])
 
-lemma tgt_imp_rule:
-  "y < n \<Longrightarrow> <xset_assn n V Vi * gxs X Si Gc> tgt_imp Si Vi y
+lemma is_tgt_imp_rule:
+  "y < n \<Longrightarrow> <xset_assn n V Vi * gxs X Si Gc> is_tgt_imp Si Vi y
    <\<lambda> r. xset_assn n V Vi * gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> T0 X) \<and> y \<in> V))>"
-  unfolding tgt_imp_def t_imp_def gxs_def T0_def by (sep_auto heap: xset_memb_rule smemb_rule o2.ins_imp)
+  unfolding is_tgt_imp_def t_imp_def gxs_def T0_def by (sep_auto heap: xset_memb_rule smemb_rule o2.ins_imp)
 
 lemma find_tgt_rule:
-  "<xset_assn n V Vi * gxs X Si Gc> find_range_imp (tgt_imp Si Vi) 0 n
+  "<xset_assn n V Vi * gxs X Si Gc> find_range_imp (is_tgt_imp Si Vi) 0 n
    <\<lambda> r. xset_assn n V Vi * gxs X Si Gc * \<up>(r = find (\<lambda> y. y \<in> V) (csr.tgts (csr.exch_ctx X)))>"
-  unfolding eq_tgts[symmetric] find_filter by (rule find_range_imp_rule, rule tgt_imp_rule, assumption)
+  unfolding eq_tgts[symmetric] find_filter by (rule find_range_imp_rule, rule is_tgt_imp_rule, assumption)
 
 lemma single_path_rule:
   assumes "s < n"
@@ -936,7 +933,7 @@ proof-
   let ?DP = "inst.imp_dist_assn n Da (build_nhlists (EE X)) (BFS_dist_state.dists (fb.fin ss)) di *
              inst.imp_par_assn n Pa (build_nhlists (EE X)) (BFS_par_state.parent (fb.fin ss)) pari"
   let ?f = "find (\<lambda> y. y \<in> ?V) ?ts"
-  have f: "<xset_assn n ?V Vi * gxs X Si Gc * parr_assn n Ra * ?DP> find_range_imp (tgt_imp Si Vi) 0 n
+  have f: "<xset_assn n ?V Vi * gxs X Si Gc * parr_assn n Ra * ?DP> find_range_imp (is_tgt_imp Si Vi) 0 n
            <\<lambda> r. xset_assn n ?V Vi * gxs X Si Gc * (parr_assn n Ra * ?DP) * \<up>(r = ?f)>"
     by (rule ht_frame_ac[OF find_tgt_rule[where V = ?V and Vi = Vi and Si = Si and Gc = Gc], 
                          where R = "parr_assn n Ra * ?DP"]) 
@@ -1013,7 +1010,7 @@ end
 subsubsection \<open>A Search\<close>
 
 lemma collect_src_len:
-  "<len_assn (Suc n) Fr * gxs X Si Gc> collect_range_imp (src_imp Gc Si) n Fr
+  "<len_assn (Suc n) Fr * gxs X Si Gc> collect_range_imp (is_src_imp Gc Si) n Fr
    <\<lambda> k. \<exists>\<^sub>A fl'. Fr \<mapsto>\<^sub>a fl' * gxs X Si Gc * 
          \<up>(length fl' = Suc n \<and> 
            k = length (filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X))) \<and> 
@@ -1021,13 +1018,13 @@ lemma collect_src_len:
 proof(rule pull_len)
   fix fl :: "nat list"
   assume fl: "length fl = Suc n"
-  have r: "<Fr \<mapsto>\<^sub>a fl * gxs X Si Gc> collect_range_imp (src_imp Gc Si) n Fr
+  have r: "<Fr \<mapsto>\<^sub>a fl * gxs X Si Gc> collect_range_imp (is_src_imp Gc Si) n Fr
            <\<lambda> k. \<exists>\<^sub>A fl'. Fr \<mapsto>\<^sub>a fl' * gxs X Si Gc * 
              \<up>(length fl' = length fl \<and> 
                k = length (filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X))) \<and> 
                take k fl' = filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X)))>"
     by (rule collect_src_rule) (simp add: fl)
-  show "<Fr \<mapsto>\<^sub>a fl * gxs X Si Gc> collect_range_imp (src_imp Gc Si) n Fr
+  show "<Fr \<mapsto>\<^sub>a fl * gxs X Si Gc> collect_range_imp (is_src_imp Gc Si) n Fr
    <\<lambda> k. \<exists>\<^sub>A fl'. Fr \<mapsto>\<^sub>a fl' * gxs X Si Gc * 
          \<up>(length fl' = Suc n \<and> 
            k = length (filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X))) \<and> 
@@ -1036,7 +1033,7 @@ proof(rule pull_len)
 qed
 
 lemma collect_src_none:
-  "<len_assn (Suc n) Fr * gxs X Si Gc> collect_range_imp (src_imp Gc Si) n Fr
+  "<len_assn (Suc n) Fr * gxs X Si Gc> collect_range_imp (is_src_imp Gc Si) n Fr
    <\<lambda> k. len_assn (Suc n) Fr * gxs X Si Gc * 
          \<up>(k = length (filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X))))>"
   by (rule ht_cons_post[OF collect_src_len]) (unfold len_assn_def, sep_auto)
@@ -1069,7 +1066,7 @@ next
     have ap: "csr.augmenting_path X = None"
       unfolding ap_char None option.case(1) if_P[OF True] by (rule refl)
     have co: "<gxs X Si Gc * (parr_assn n Ra * work_assn n Vi Fr Bf Da Pa)> 
-                collect_range_imp (src_imp Gc Si) n Fr
+                collect_range_imp (is_src_imp Gc Si) n Fr
               <\<lambda> k. len_assn (Suc n) Fr * gxs X Si Gc * \<up>(k = length ?ss) * ?W>"
       by (rule ht_frame_ac[OF collect_src_none[where Fr = Fr and Si = Si and Gc = Gc], where R = ?W])
          (simp only: work_assn_def star_aci, rule ent_refl)+
@@ -1082,7 +1079,7 @@ next
   next
     case False
     have co: "<gxs X Si Gc * (parr_assn n Ra * work_assn n Vi Fr Bf Da Pa)> 
-                collect_range_imp (src_imp Gc Si) n Fr
+                collect_range_imp (is_src_imp Gc Si) n Fr
               <\<lambda> k. (\<exists>\<^sub>A fl'. Fr \<mapsto>\<^sub>a fl' * gxs X Si Gc * 
                        \<up>(length fl' = Suc n \<and> k = length ?ss \<and> take k fl' = ?ss)) * ?W>"
       by (rule ht_frame_ac[OF collect_src_len[where Fr = Fr and Si = Si and Gc = Gc], where R = ?W])
@@ -1104,7 +1101,7 @@ subsubsection \<open>The Path Search of the Imperative Loop\<close>
 
 text \<open>The static data of a search: the oracles, the CSR and the work arrays.\<close>
 
-definition "mst Gc Vi Fr Bf Da Pa = ost1 * ost2 * csr3_assn (build_nhlists es0) Gc * work_assn n Vi Fr Bf Da Pa"
+definition "mst Gc Vi Fr Bf Da Pa = ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc * work_assn n Vi Fr Bf Da Pa"
 
 theorem imp_loop:
   "unweighted_intersection_imp_loop csr.augmenting_path indep1 indep2 {0..<n} n sol_assn smemb_imp 

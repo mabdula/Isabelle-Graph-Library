@@ -101,6 +101,15 @@ definition csr_build_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> (nat array \<ti
      fill_imp c B E si;
      return (B, E) }"
 
+text \<open>The build into arrays allocated by the caller: \<open>B\<close> is zero, \<open>E\<close> has one cell per element.
+      This lets an algorithm allocate all its arrays once at the start.\<close>
+
+definition csr_build_into :: "'ci \<Rightarrow> 'si \<Rightarrow> nat array \<Rightarrow> 'x array \<Rightarrow> unit Heap" where
+  "csr_build_into c si B E = do {
+     count_imp c B 0 si;
+     prefix_imp B 1 0;
+     fill_imp c B E si }"
+
 end
 
 text \<open>The proof locale: the functional counting sort, the value function, the iterator relation
@@ -344,6 +353,30 @@ proof -
     by (sep_auto heap: count_imp_rule[where s=s0] prefix_sums_imp_rule init_E_imp_rule
                        fill_imp_rule[where s=s0 and xs="[]"]
                  simp: c B0 fl s0_invar seq0 fill_invar_init)
+qed
+
+theorem csr_build_into_rule:
+  "<input_assn c * B \<mapsto>\<^sub>a replicate (Suc n) 0 * E \<mapsto>\<^sub>a map val Es
+      * \<up>(it_rel s0 si \<and> length Es = length es)>
+     csr_build_into c si B E
+   <\<lambda>_. input_assn c * B \<mapsto>\<^sub>a B_spec * E \<mapsto>\<^sub>a map val E_spec>"
+proof -
+  have c: "it_fold count_step s0 (0 # replicate n 0, 0) = (count_B es, length es)"
+    using count_edges by (simp add: count_edges_def)
+  have seq0: "it_seq s0 = es"
+    by (simp add: es_def)
+  have B0: "count_B es ! 0 = 0"
+    by (simp add: count_B_nth)
+  have fi: "fill_invar [] (prefix_sums (count_B es), Es)" if "length Es = length es"
+    using that by (simp add: fill_invar_def prefix_sums_count_B del: upt_Suc)
+  have fl: "it_fold fill_step s0 (prefix_sums (count_B es), Es) = (B_spec, E_spec)"
+    if "length Es = length es"
+    using fill_correct[OF that] by (simp add: it_fold_s0)
+  show ?thesis
+    unfolding csr_build_into_def
+    by (sep_auto heap: count_imp_rule[where s=s0] prefix_sums_imp_rule
+                       fill_imp_rule[where s=s0 and xs="[]"]
+                 simp: c B0 s0_invar seq0 fi fl)
 qed
 
 end

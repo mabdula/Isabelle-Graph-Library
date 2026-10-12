@@ -12,7 +12,7 @@ text \<open>The CSR collection of @{locale csr_graph} extended by a position arr
       at the identifier of an edge. Setting the iterator of \<open>v\<close> to an element \<open>e\<close> of its block
       then sets the cursor of \<open>v\<close> to the position of \<open>e\<close>: one array read and one array write.\<close>
 
-locale csr_graph_reset_to = csr_graph n K B E
+locale csr_graph_reset_to = csr_graph_imp n K B E
   for n K B and E :: "'e::heap list" +
   fixes key :: "'e \<Rightarrow> nat"
     and P :: "nat list"
@@ -187,7 +187,7 @@ qed
 lemma csr_graph_reset_to_pos_list:
   assumes "csr_graph n K B E" "distinct (map key E)" "\<forall> e \<in> set E. key e < length P0"
   shows "csr_graph_reset_to n K B E key (csr_pos_list key E P0)"
-  using assms(1) csr_pos_list_props(2)[OF assms(2,3)]
+  using csr_graph_imp.intro[OF assms(1)] csr_pos_list_props(2)[OF assms(2,3)]
   by (intro csr_graph_reset_to.intro csr_graph_reset_to_axioms.intro) simp_all
 
 definition csr_pos_build_imp :: "('e \<Rightarrow> nat) \<Rightarrow> 'e::heap array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where

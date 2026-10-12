@@ -1,6 +1,6 @@
 theory Hungarian_Method_CSR_Instantiation
   imports
-    Directed_Set_Graphs.CSR_Graph
+    Directed_Set_Graphs.CSR_Edge_Input
     Data_Structures.Indexed_Heap
     Data_Structures.Imp_Array_Map
     Data_Structures.Imp_Bool_Set_Iterate
@@ -471,109 +471,62 @@ lemma neighbours_G: "v \<in> L \<Longrightarrow> {u. {v, u} \<in> G} = {ts ! i |
 
 subsection \<open>The CSR Representation\<close>
 
-sublocale inp: csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" "e_src fs" n 0
-  by (rule csr_buildup.intro[OF edge_iterator])
-     (unfold_locales, auto simp: edge_seq_def intro!: L_less fs_L)
-
-sublocale ci: imp_csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" "e_src fs" n 0
-    edge_has_next edge_cur edge_adv edge_key edge_val id "\<lambda>s si. si = s" "ends_assn fs ts"
-proof (unfold_locales, goal_cases)
-  case (1 s si c)
-  have "(edge_next fs s \<noteq> None) = (s < length fs)" by (simp add: edge_next_def)
-  with 1 show ?case by (cases c) (sep_auto simp: edge_has_next_def ends_assn_def)
-next
-  case (2 s si e s' c) then show ?case
-    by (sep_auto simp: edge_cur_def edge_next_def split: if_splits)
-next
-  case (3 s si e s' c) then show ?case
-    by (sep_auto simp: edge_adv_def edge_next_def split: if_splits)
-next
-  case (4 e c) then show ?case
-    by (sep_auto heap: src_imp_rule simp: edge_key_def edge_seq_def)
-next
-  case (5 e c) then show ?case
-    by (sep_auto simp: edge_val_def)
-qed
-
-lemma E_spec_distinct: "distinct inp.E_spec"
-proof -
-  have "distinct (concat (map inp.blk [0..<k])) \<and> set (concat (map inp.blk [0..<k])) \<subseteq> {e. e_src fs e < k}"
-    for k
-  proof (induction k)
-    case 0 show ?case by simp
-  next
-    case (Suc k) then show ?case
-      using edge_seq_distinct[of fs 0] by (fastforce simp: inp.blk_def inp.es_def)
-  qed
-  then show ?thesis by (simp add: inp.E_spec_def)
-qed
-
-lemma E_spec_ids: "e \<in> set inp.E_spec \<Longrightarrow> e < length fs"
-  by (auto simp: inp.E_spec_def inp.blk_def inp.es_def edge_seq_def)
-
-lemma B_spec_bound: "v < n \<Longrightarrow> inp.B_spec ! Suc v \<le> length inp.E_spec"
-  using inp.start_mono[of "Suc v" n] by (simp add: inp.B_spec_nth inp.start_n inp.length_E_spec)
+sublocale ei: csr_edge_input n fs ts "e_src fs" src_imp
+  by unfold_locales
+     (use ts_length fs_ls ts_rs verts_below src_imp_rule[of _ fs ts] in auto)
 
 text \<open>The block of a vertex holds the indices of its edges.\<close>
 
 lemma block_edges:
   assumes "v < n"
-  shows "(!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v} = {i. i < length fs \<and> fs ! i = v}"
-proof -
-  have "(!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v} =
-        set (map ((!) inp.E_spec) [inp.B_spec ! v..<inp.B_spec ! Suc v])"
-    by simp
-  also have "\<dots> = set (take (inp.B_spec ! Suc v - inp.B_spec ! v) (drop (inp.B_spec ! v) inp.E_spec))"
-    using B_spec_bound[OF assms] by (simp add: map_nth_upt_take_drop)
-  also have "\<dots> = set (inp.blk v)"
-    using inp.csr_block[OF assms] by simp
-  also have "\<dots> = {i. i < length fs \<and> fs ! i = v}"
-    by (auto simp: inp.blk_def inp.es_def edge_seq_def)
-  finally show ?thesis .
-qed
+  shows "(!) ei.inp.E_spec ` {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v} =
+         {i. i < length fs \<and> fs ! i = v}"
+  using ei.block_key[OF assms] by (auto simp: edges_def e_src_def)
 
 text \<open>The CSR holds the targets: the initialisation replaces every edge index by its target.\<close>
 
-definition "Et = map ((!) ts) inp.E_spec"
+definition "Et = map ((!) ts) ei.inp.E_spec"
 
-lemma Et_nth: "j < length inp.E_spec \<Longrightarrow> Et ! j = ts ! (inp.E_spec ! j)"
+lemma Et_nth: "j < length ei.inp.E_spec \<Longrightarrow> Et ! j = ts ! (ei.inp.E_spec ! j)"
   by (simp add: Et_def)
 
 text \<open>There are no parallel edges, so the targets are distinct within each block.\<close>
 
 lemma Et_block_inj:
   assumes "v < n"
-  shows "inj_on ((!) Et) {inp.B_spec ! v..<inp.B_spec ! Suc v}"
+  shows "inj_on ((!) Et) {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}"
 proof (rule inj_onI)
   fix j j'
-  assume j: "j \<in> {inp.B_spec ! v..<inp.B_spec ! Suc v}"
-     and j': "j' \<in> {inp.B_spec ! v..<inp.B_spec ! Suc v}" and eq: "Et ! j = Et ! j'"
-  have l: "j < length inp.E_spec" "j' < length inp.E_spec"
-    using j j' B_spec_bound[OF assms] by auto
-  have e: "inp.E_spec ! j \<in> {i. i < length fs \<and> fs ! i = v}"
-          "inp.E_spec ! j' \<in> {i. i < length fs \<and> fs ! i = v}"
+  assume j: "j \<in> {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}"
+     and j': "j' \<in> {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}" and eq: "Et ! j = Et ! j'"
+  have l: "j < length ei.inp.E_spec" "j' < length ei.inp.E_spec"
+    using j j' ei.B_spec_bound[OF assms] by auto
+  have e: "ei.inp.E_spec ! j \<in> {i. i < length fs \<and> fs ! i = v}"
+          "ei.inp.E_spec ! j' \<in> {i. i < length fs \<and> fs ! i = v}"
     using j j' block_edges[OF assms] by blast+
-  have "inp.E_spec ! j = inp.E_spec ! j'"
+  have "ei.inp.E_spec ! j = ei.inp.E_spec ! j'"
     using e eq Et_nth[OF l(1)] Et_nth[OF l(2)] by (auto intro: edge_unique)
   thus "j = j'"
-    using E_spec_distinct l by (simp add: nth_eq_iff_index_eq)
+    using ei.E_spec_distinct l by (simp add: nth_eq_iff_index_eq)
 qed
 
 text \<open>The neighbourhoods are indexed by the whole universe of the maps and sets, the vertices below
       \<open>n\<close>.
       Only the left vertices have neighbours.\<close>
 
-sublocale graph: csr_graph n "{..<n}" inp.B_spec Et
+sublocale graph: csr_graph_imp n "{..<n}" ei.inp.B_spec Et
 proof (unfold_locales, goal_cases)
   case 1 show ?case by simp
 next
-  case 2 show ?case by (rule inp.length_B_spec)
+  case 2 show ?case by (rule ei.inp.length_B_spec)
 next
-  case (3 v) then show ?case by (simp add: inp.B_spec_nth inp.start_mono)
+  case (3 v) then show ?case by (simp add: ei.inp.B_spec_nth ei.inp.start_mono)
 next
-  case (4 v) then show ?case by (simp add: Et_def B_spec_bound)
+  case (4 v) then show ?case by (simp add: Et_def ei.B_spec_bound)
 next
   case (5 v) then show ?case by (rule Et_block_inj)
+next
+  case (6 v) show ?case by (rule order.refl)
 qed
 
 lemma csr_abstract_targets:
@@ -581,10 +534,10 @@ lemma csr_abstract_targets:
   shows "graph.csr_abstract c v = {ts ! i | i. i < length fs \<and> fs ! i = v}"
 proof -
   have "graph.csr_abstract c v =
-        (\<lambda>j. ts ! (inp.E_spec ! j)) ` {inp.B_spec ! v..<inp.B_spec ! Suc v}"
-    unfolding graph.csr_abstract_def graph.seg_def
-    using B_spec_bound[OF assms] by (intro image_cong refl) (simp add: Et_nth)
-  also have "\<dots> = (!) ts ` (!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v}"
+        (\<lambda>j. ts ! (ei.inp.E_spec ! j)) ` {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}"
+    unfolding graph.csr_abstract_eq
+    using ei.B_spec_bound[OF assms] by (intro image_cong refl) (simp add: Et_nth)
+  also have "\<dots> = (!) ts ` (!) ei.inp.E_spec ` {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}"
     by (simp add: image_image)
   also have "\<dots> = (!) ts ` {i. i < length fs \<and> fs ! i = v}"
     by (simp only: block_edges[OF assms])
@@ -593,9 +546,9 @@ qed
 
 text \<open>The weights in CSR order.\<close>
 
-definition "W = map ((!) ws) inp.E_spec"
+definition "W = map ((!) ws) ei.inp.E_spec"
 
-sublocale wcsr: weighted_csr n "{..<n}" inp.B_spec Et id W ecost h
+sublocale wcsr: weighted_csr n "{..<n}" ei.inp.B_spec Et id W ecost h
 proof (unfold_locales, goal_cases)
   case (1 v) show ?case by simp
 next
@@ -603,13 +556,13 @@ next
 next
   case (3 v j)
   have v: "v < n" using 3(1) by simp
-  have "inp.E_spec ! j \<in> (!) inp.E_spec ` {inp.B_spec ! v..<inp.B_spec ! Suc v}"
+  have "ei.inp.E_spec ! j \<in> (!) ei.inp.E_spec ` {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}"
     using 3(2,3) by (intro imageI) simp
-  then have "inp.E_spec ! j \<in> {i. i < length fs \<and> fs ! i = v}"
+  then have "ei.inp.E_spec ! j \<in> {i. i < length fs \<and> fs ! i = v}"
     by (simp only: block_edges[OF v])
-  then have i: "inp.E_spec ! j < length fs" "fs ! (inp.E_spec ! j) = v"
+  then have i: "ei.inp.E_spec ! j < length fs" "fs ! (ei.inp.E_spec ! j) = v"
     by simp_all
-  have "j < length inp.E_spec" using 3(3) B_spec_bound[OF v] by simp
+  have "j < length ei.inp.E_spec" using 3(3) ei.B_spec_bound[OF v] by simp
   thus ?case using i ecost_edge[OF i(1)] by (simp add: W_def Et_nth)
 qed
 
@@ -625,7 +578,7 @@ subsection \<open>The Neighbourhoods and the Initial Potential\<close>
 context hungarian_csr_input
 begin
 
-abbreviation "nb_init \<equiv> (\<lambda>v. inp.B_spec ! v)"
+abbreviation "nb_init \<equiv> (\<lambda>v. ei.inp.B_spec ! v)"
 
 lemma L_below: "L \<subseteq> {..<n}"
   using L_less by auto
@@ -635,12 +588,12 @@ lemma wnb_abstract_init:
   by (simp add: wcsr.wnb_abstract_def csr_abstract_targets[OF L_less] neighbours_G)
 
 lemma wnb_abstract_finite: "finite (wcsr.wnb_abstract C v)"
-  by (simp add: wcsr.wnb_abstract_def graph.csr_abstract_def graph.seg_def)
+  by (simp add: wcsr.wnb_abstract_def graph.csr_abstract_eq)
 
 text \<open>The neighbourhoods do not depend on the cursors.\<close>
 
 lemma wnb_abstract_cursor: "\<forall>i\<in>A. wcsr.wnb_abstract C i = wcsr.wnb_abstract C' i"
-  by (simp add: wcsr.wnb_abstract_def graph.csr_abstract_def)
+  by (simp add: wcsr.wnb_abstract_def graph.csr_abstract_eq)
 
 text \<open>The path search scans the neighbourhoods of the left vertices only.\<close>
 
@@ -705,7 +658,7 @@ lemma init_pot_props:
   "\<And>u. u \<notin> L \<Longrightarrow> xmap_lookup init_pot u = 0"
   "graph.csr_invar (fst (ipot.init_potential_coll nb_init (\<lambda>_. 0) L))"
   "wcsr.wnb_abstract (fst (ipot.init_potential_coll nb_init (\<lambda>_. 0) L)) = wcsr.wnb_abstract nb_init"
-  using ipot.init_potential_coll_props[of nb_init L, OF wcsr.csr_init_invar L_below _ _
+  using ipot.init_potential_coll_props[of nb_init L, OF graph.csr_init_invar L_below _ _
                                          wnb_abstract_finite]
   by (simp_all add: L_below)
 
@@ -913,7 +866,7 @@ sublocale ps: primal_dual_path_search_imp
   subgoal by (simp add: bipartite_G)
   subgoal by (rule L_below)
   subgoal using R_less by auto
-  subgoal by (rule wcsr.csr_init_invar)
+  subgoal by (rule graph.csr_init_invar)
   subgoal by (simp add: wnb_abstract_init)
   subgoal by (rule ecost_sym)
   subgoal premises p using feasible_min_perfect_dualD[OF pre(5) p refl] wfun_eq[OF p] by simp
@@ -948,7 +901,7 @@ lemma scratch_eq:
   "csr_scratch_assn (Ci, Qi, Li, Fi, Bi, Mi) = ps.scratch_assn Ci Qi Fi Bi Mi * xset_assn n L Li"
   by (rule ent_iffI)
      (sep_auto simp: csr_scratch_assn_def pds_aux_assn_def ps.scratch_assn_def
-                     wcsr.wnb_abstract_def graph.csr_abstract_def)+
+                     wcsr.wnb_abstract_def graph.csr_abstract_eq)+
 
 theorem path_search_csr_rule:
   assumes len: "card (L \<union> R) \<le> length xs"
@@ -1100,7 +1053,7 @@ proof -
   obtain r0 \<pi>0 where fs: "fsearch M \<pi> = (r0, \<pi>0)" by fastforce
   have eq: "r = r0" "M' = M" "\<pi>' = \<pi>0" "C' = nb_init"
     using assms(4) by (simp_all add: ffallback_def fs)
-  show ?thesis using fsearch_good[OF assms(1) fs] wcsr.csr_init_invar by (simp add: eq)
+  show ?thesis using fsearch_good[OF assms(1) fs] graph.csr_init_invar by (simp add: eq)
 qed
 
 lemma buddy_edge:
@@ -1172,7 +1125,7 @@ sublocale sc: path_search_shortcut_imp
   subgoal by simp
   subgoal by (rule L_below)
   subgoal by (rule Vs_G_below)
-  subgoal by (rule wcsr.csr_init_invar)
+  subgoal by (rule graph.csr_init_invar)
   subgoal by (simp add: wnb_abstract_init)
   subgoal by (rule wnb_abstract_finite)
   subgoal by (simp add: wfun_eq)
@@ -1391,7 +1344,7 @@ next
   case (15 c M \<pi> r M' \<pi>' c')
   thus ?case unfolding fsearch_sc_def by (rule sc.path_search_sc_correct(2))
 next
-  case 16 show ?case by (simp add: sc.sc_ctx_invar_def wcsr.csr_init_invar)
+  case 16 show ?case by (simp add: sc.sc_ctx_invar_def graph.csr_init_invar)
 next
   case 17 thus ?case by (rule path_search_sc_rule_csr)
 next
@@ -1502,7 +1455,7 @@ proof -
            init_pot_csr ((Ba, Ea, Ca), Wc) Li Pti
            <\<lambda>_. wcsr.wnb_assn (fst (ipot.init_potential_coll nb_init (\<lambda>_. 0) L)) ((Ba, Ea, Ca), Wc) *
                  xmap_val_assn h n init_pot Pti * xset_assn n L Li>"
-    using ipot.init_pot_imp_rule[of nb_init L, OF wcsr.csr_init_invar L_below _ wnb_abstract_finite]
+    using ipot.init_pot_imp_rule[of nb_init L, OF graph.csr_init_invar L_below _ wnb_abstract_finite]
     by (simp add: init_pot_csr_def)
   show ?thesis
     apply (rule ht_cons_pre[OF _ r])
@@ -1552,18 +1505,18 @@ proof -
 qed
 
 lemma perm_csr_rule:
-  "<Ea \<mapsto>\<^sub>a inp.E_spec * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Wc \<mapsto>\<^sub>a replicate (length inp.E_spec) 0>
-   perm_weights_targets_imp Ea Ta Wa Wc 0 (length inp.E_spec)
+  "<Ea \<mapsto>\<^sub>a ei.inp.E_spec * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Wc \<mapsto>\<^sub>a replicate (length ei.inp.E_spec) 0>
+   perm_weights_targets_imp Ea Ta Wa Wc 0 (length ei.inp.E_spec)
    <\<lambda>_. Ea \<mapsto>\<^sub>a Et * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Wc \<mapsto>\<^sub>a W>"
-  using perm_weights_targets_rule[where i = 0 and es = inp.E_spec and us = ts and vs = ws
-                                    and xs = "replicate (length inp.E_spec) 0"]
-        E_spec_ids ts_length ws_length
+  using perm_weights_targets_rule[where i = 0 and es = ei.inp.E_spec and us = ts and vs = ws
+                                    and xs = "replicate (length ei.inp.E_spec) 0"]
+        ei.E_spec_ids ts_length ws_length
   by (simp add: Et_def W_def)
 
 lemma csr_build_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_edges n (Fa, Ta) 0
-   <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
-  using ci.csr_build_imp_rule[of "(Fa, Ta)" 0] by (simp add: csr_build_edges_def ends_assn_def)
+   <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a ei.inp.B_spec * Ea \<mapsto>\<^sub>a ei.inp.E_spec>"
+  unfolding csr_build_edges_src[symmetric] by (rule ei.csr_build_rule)
 
 text \<open>The imperative Hungarian method on the CSR representation computes the result of the
       functional @{term hl.hungarian}.\<close>

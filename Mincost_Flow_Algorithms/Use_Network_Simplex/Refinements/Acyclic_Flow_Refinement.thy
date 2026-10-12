@@ -375,8 +375,8 @@ text \<open>The proof locale combines the functional proof locale @{locale acycl
 
       For each mutable store it fixes a \<^emph>\<open>representation assertion\<close> relating a functional store value to
       its imperative heap handle (@{typ assn} is the separation-logic heap predicate): @{term flow_assn}
-      for the flow, @{term state_assn} for the vertex-state map, @{term graph_assn} for either
-      edge-iterator collection (used at @{term iout} and @{term iin} alike), and @{term vit_assn} for
+      for the flow, @{term state_assn} for the vertex-state map, @{term out_assn} and @{term in_assn} for the
+      outgoing and the ingoing edge-iterator collection (at @{term iout} and @{term iin}), and @{term vit_assn} for
       the vertex iterator.
 
       It then \<^emph>\<open>assumes one Hoare triple per imperative operation\<close>. The discipline is:
@@ -414,7 +414,8 @@ locale acyclic_flow_impl_refine_proof =
     and current_vertex_imp :: "'vviti \<Rightarrow> 'v Heap" +
   fixes flow_assn  :: "'farr \<Rightarrow> 'farri \<Rightarrow> assn"
     and state_assn :: "'sarr \<Rightarrow> 'sarri \<Rightarrow> assn"
-    and graph_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn"
+    and out_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn"
+    and in_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn"
     and vit_assn   :: "'vvit \<Rightarrow> 'vviti \<Rightarrow> assn"
     and rd         :: assn  \<comment> \<open>footprint of the (read-only) per-edge cap / cost / endpoint stores\<close>
     and Lvst :: nat and Lest :: nat and Ldst :: nat
@@ -439,30 +440,30 @@ locale acyclic_flow_impl_refine_proof =
                  <\<lambda>_. state_assn (st_upd St v q) sh>"
     \<comment> \<open>outgoing edge iterator --- an @{locale indexed_iterable_set} with key set @{term \<V>}\<close>
     and out_has_rule:
-      "\<lbrakk>out_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <graph_assn G gh> out_has_imp gh v
-                 <\<lambda>r. graph_assn G gh * \<up>(r = out_has G v)>"
+      "\<lbrakk>out_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <out_assn G gh> out_has_imp gh v
+                 <\<lambda>r. out_assn G gh * \<up>(r = out_has G v)>"
     and out_current_rule:
-      "\<lbrakk>out_invar G; v \<in> \<V>; out_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <graph_assn G gh> out_current_imp gh v
-                 <\<lambda>r. graph_assn G gh * \<up>(r = out_current G v)>"
+      "\<lbrakk>out_invar G; v \<in> \<V>; out_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <out_assn G gh> out_current_imp gh v
+                 <\<lambda>r. out_assn G gh * \<up>(r = out_current G v)>"
     and out_move_rule:
-      "\<lbrakk>out_invar G; v \<in> \<V>; out_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <graph_assn G gh> out_move_imp gh v
-                 <\<lambda>_. graph_assn (out_move G v) gh>"
+      "\<lbrakk>out_invar G; v \<in> \<V>; out_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <out_assn G gh> out_move_imp gh v
+                 <\<lambda>_. out_assn (out_move G v) gh>"
     and out_reset_rule:
-      "\<lbrakk>out_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <graph_assn G gh> out_reset_imp gh v
-                 <\<lambda>_. graph_assn (out_reset G v) gh>"
+      "\<lbrakk>out_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <out_assn G gh> out_reset_imp gh v
+                 <\<lambda>_. out_assn (out_reset G v) gh>"
     \<comment> \<open>ingoing edge iterator --- an @{locale indexed_iterable_set} with key set @{term \<V>}\<close>
     and in_has_rule:
-      "\<lbrakk>in_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <graph_assn G gh> in_has_imp gh v
-                 <\<lambda>r. graph_assn G gh * \<up>(r = in_has G v)>"
+      "\<lbrakk>in_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <in_assn G gh> in_has_imp gh v
+                 <\<lambda>r. in_assn G gh * \<up>(r = in_has G v)>"
     and in_current_rule:
-      "\<lbrakk>in_invar G; v \<in> \<V>; in_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <graph_assn G gh> in_current_imp gh v
-                 <\<lambda>r. graph_assn G gh * \<up>(r = in_current G v)>"
+      "\<lbrakk>in_invar G; v \<in> \<V>; in_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <in_assn G gh> in_current_imp gh v
+                 <\<lambda>r. in_assn G gh * \<up>(r = in_current G v)>"
     and in_move_rule:
-      "\<lbrakk>in_invar G; v \<in> \<V>; in_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <graph_assn G gh> in_move_imp gh v
-                 <\<lambda>_. graph_assn (in_move G v) gh>"
+      "\<lbrakk>in_invar G; v \<in> \<V>; in_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <in_assn G gh> in_move_imp gh v
+                 <\<lambda>_. in_assn (in_move G v) gh>"
     and in_reset_rule:
-      "\<lbrakk>in_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <graph_assn G gh> in_reset_imp gh v
-                 <\<lambda>_. graph_assn (in_reset G v) gh>"
+      "\<lbrakk>in_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <in_assn G gh> in_reset_imp gh v
+                 <\<lambda>_. in_assn (in_reset G v) gh>"
     \<comment> \<open>vertex iterator --- an @{locale iterable_set}\<close>
     and has_vertex_rule:
       "vit_invar Vit \<Longrightarrow> <vit_assn Vit vh> has_vertex_imp vh
@@ -535,7 +536,7 @@ text \<open>@{term dfs_rel} ties an \<open>AF_DFS_state\<close> to an imperative
 definition dfs_rel :: "('v,'e,'farr,'g,'sarr) AF_DFS_state \<Rightarrow> ('farri,'sarri,'gi,'vviti,'v,'e) af_impl_state \<Rightarrow> nat \<Rightarrow> assn" where
   "dfs_rel st s sp = rd *
      flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) *
-     graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) *
+     out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) *
      (\<exists>\<^sub>A vl el dl. ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl *
         \<up>( card \<V> \<le> length vl \<and> card \<V> \<le> length el \<and> card \<V> \<le> length dl \<and> sp \<le> card \<V> \<and>
            af_vstack st = rev (take sp vl) \<and>
@@ -546,7 +547,7 @@ definition dfs_rel :: "('v,'e,'farr,'g,'sarr) AF_DFS_state \<Rightarrow> ('farri
 definition outer_rel :: "('v,'farr,'sarr,'vvit,'g) AF_state \<Rightarrow> ('farri,'sarri,'gi,'vviti,'v,'e) af_impl_state \<Rightarrow> assn" where
   "outer_rel st s = rd *
      flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) *
-     graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) *
+     out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) *
      vit_assn (aff_vit st) (ivit s) *
      (\<exists>\<^sub>A vl el dl. ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl *
         \<up>( card \<V> \<le> length vl \<and> card \<V> \<le> length el \<and> card \<V> \<le> length dl \<and>
@@ -923,8 +924,8 @@ qed
 text \<open>Reset one vertex's two edge iterators in place.\<close>
 lemma af_reset_imp_rule:
   "\<lbrakk>out_invar OG; in_invar IG; v \<in> \<V>\<rbrakk> \<Longrightarrow>
-   <graph_assn OG (iout s) * graph_assn IG (iin s)> af_reset_imp s v
-   <\<lambda>_. graph_assn (out_reset OG v) (iout s) * graph_assn (in_reset IG v) (iin s)>"
+   <out_assn OG (iout s) * in_assn IG (iin s)> af_reset_imp s v
+   <\<lambda>_. out_assn (out_reset OG v) (iout s) * in_assn (in_reset IG v) (iin s)>"
   unfolding af_reset_imp_def by sep_auto
 
 text \<open>Generalised fused truncation clean-up over the top @{term n} stack vertices, the walked list
@@ -932,12 +933,12 @@ text \<open>Generalised fused truncation clean-up over the top @{term n} stack v
 lemma af_reset_unsee_seg_imp_gen:
   "\<lbrakk>st_invar (af_state st); out_invar (af_out_arr st); in_invar (af_in_arr st);
     n \<le> sp; sp \<le> length vl; set (take sp vl) \<subseteq> \<V>\<rbrakk> \<Longrightarrow>
-   <state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) *
-    graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
+   <state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) *
+    in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
      af_reset_unsee_seg_imp s n (sp - Suc 0)
    <\<lambda>_. state_assn (af_state (af_reset_unsee_seg n (rev (take sp vl)) st)) (istate s) *
-        graph_assn (af_out_arr (af_reset_unsee_seg n (rev (take sp vl)) st)) (iout s) *
-        graph_assn (af_in_arr (af_reset_unsee_seg n (rev (take sp vl)) st)) (iin s) * ivstack s \<mapsto>\<^sub>a vl>"
+        out_assn (af_out_arr (af_reset_unsee_seg n (rev (take sp vl)) st)) (iout s) *
+        in_assn (af_in_arr (af_reset_unsee_seg n (rev (take sp vl)) st)) (iin s) * ivstack s \<mapsto>\<^sub>a vl>"
 proof (induction n arbitrary: st sp)
   case 0 then show ?case by (subst af_reset_unsee_seg_imp.simps) sep_auto
 next
@@ -964,20 +965,20 @@ next
   have iti: "in_invar (af_in_arr (af_reset (vl ! (sp - Suc 0)) (st\<lparr>af_state := st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen\<rparr>)))"
     using in_reset_invar[OF Suc.prems(3) vV] by (simp add: af_reset_def)
   note IH = Suc.IH[OF sti oti iti nle svl ssub]
-  have rd: "<state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
+  have rd: "<state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
               Array.nth (ivstack s) (sp - Suc 0)
-            <\<lambda>r. state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl
+            <\<lambda>r. state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl
                  * \<up>(r = vl ! (sp - Suc 0))>"
     by (sep_auto simp: spvl)
-  have su: "<state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
+  have su: "<state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
               st_upd_imp (istate s) (vl ! (sp - Suc 0)) Unseen
-            <\<lambda>_. state_assn (st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>"
+            <\<lambda>_. state_assn (st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>"
     by (sep_auto simp: Suc.prems(1) vV)
-  have ar: "<state_assn (st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
+  have ar: "<state_assn (st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
               af_reset_imp s (vl ! (sp - Suc 0))
             <\<lambda>_. state_assn (af_state (af_reset (vl ! (sp - Suc 0)) (st\<lparr>af_state := st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen\<rparr>))) (istate s)
-                 * graph_assn (af_out_arr (af_reset (vl ! (sp - Suc 0)) (st\<lparr>af_state := st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen\<rparr>))) (iout s)
-                 * graph_assn (af_in_arr (af_reset (vl ! (sp - Suc 0)) (st\<lparr>af_state := st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen\<rparr>))) (iin s) * ivstack s \<mapsto>\<^sub>a vl>"
+                 * out_assn (af_out_arr (af_reset (vl ! (sp - Suc 0)) (st\<lparr>af_state := st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen\<rparr>))) (iout s)
+                 * in_assn (af_in_arr (af_reset (vl ! (sp - Suc 0)) (st\<lparr>af_state := st_upd (af_state st) (vl ! (sp - Suc 0)) Unseen\<rparr>))) (iin s) * ivstack s \<mapsto>\<^sub>a vl>"
     by (sep_auto heap: af_reset_imp_rule simp: Suc.prems(2) Suc.prems(3) vV af_reset_def)
   have prog: "af_reset_unsee_seg_imp s (Suc n) (sp - Suc 0) =
               do { v \<leftarrow> Array.nth (ivstack s) (sp - Suc 0); _ \<leftarrow> st_upd_imp (istate s) v Unseen;
@@ -997,12 +998,12 @@ text \<open>Fused truncation clean-up over the top @{term n} stack vertices.\<cl
 lemma af_reset_unsee_seg_imp_rule:
   "\<lbrakk>st_invar (af_state st); out_invar (af_out_arr st); in_invar (af_in_arr st);
     n \<le> sp; sp \<le> length vl; set (take sp vl) \<subseteq> \<V>; af_vstack st = rev (take sp vl)\<rbrakk> \<Longrightarrow>
-   <state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) *
-    graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
+   <state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) *
+    in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl>
      af_reset_unsee_seg_imp s n (sp - Suc 0)
    <\<lambda>_. state_assn (af_state (af_reset_unsee_seg n (af_vstack st) st)) (istate s) *
-        graph_assn (af_out_arr (af_reset_unsee_seg n (af_vstack st) st)) (iout s) *
-        graph_assn (af_in_arr (af_reset_unsee_seg n (af_vstack st) st)) (iin s) * ivstack s \<mapsto>\<^sub>a vl>"
+        out_assn (af_out_arr (af_reset_unsee_seg n (af_vstack st) st)) (iout s) *
+        in_assn (af_in_arr (af_reset_unsee_seg n (af_vstack st) st)) (iin s) * ivstack s \<mapsto>\<^sub>a vl>"
   by (simp add: af_reset_unsee_seg_imp_gen)
 
 text \<open>Self-loop normalisation, mutating the flow and returning the unbounded flag.\<close>
@@ -1073,7 +1074,7 @@ proof -
   obtain fl'' cm ub where cs: "af_cancel_seg up dn x (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) = (fl'', cm, ub)" by (cases "af_cancel_seg up dn x (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st)") auto
   have mles: "cm \<le> length (af_estack st)" using af_cancel_seg_drop_bound[OF cs] .
   have ubflow: "ub \<Longrightarrow> fl'' = af_flow st" using cs by (auto simp: af_cancel_seg_def Let_def split: prod.splits if_splits)
-  have body: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_close_cycle_imp s up dn x a dir sp <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (case af_cancel_seg up dn x (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>)) s sp' * \<up>(sp' = length (af_vstack (case af_cancel_seg up dn x (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>))) \<and> ubd = af_unbounded (case af_cancel_seg up dn x (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>)))>"
+  have body: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_close_cycle_imp s up dn x a dir sp <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (case af_cancel_seg up dn x (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>)) s sp' * \<up>(sp' = length (af_vstack (case af_cancel_seg up dn x (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>))) \<and> ubd = af_unbounded (case af_cancel_seg up dn x (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>)))>"
     if T: "card \<V> \<le> length vl" "card \<V> \<le> length el" "card \<V> \<le> length dl" "sp \<le> card \<V>" "af_vstack st = rev (take sp vl)" "af_estack st = rev (drop (Suc 0) (take sp el))" "af_dstack st = rev (drop (Suc 0) (take sp dl))" "length vl = Lvst" "length el = Lest" "length dl = Ldst" for vl el dl
   proof -
     have svl: "sp \<le> length vl" using T(1,4) by simp
@@ -1090,7 +1091,7 @@ proof -
     have esub': "set (drop (Suc 0) (take sp el)) \<subseteq> \<E>" using esub T(6) by simp
     have cmle: "cm \<le> sp - Suc 0" using mles by (simp add: T(6) sel)
     have cmsp: "cm \<le> sp" using cmle by simp
-    have cr: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_cancel_seg_imp s up dn x a dir sp <\<lambda>r. flow_assn fl'' (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = (cm, ub))>"
+    have cr: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_cancel_seg_imp s up dn x a dir sp <\<lambda>r. flow_assn fl'' (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = (cm, ub))>"
       by (sep_auto heap: af_cancel_seg_imp_rule[OF fi I(2) I(7) svl sel sdl esub' xmem] simp: T(5)[symmetric] T(6)[symmetric] T(7)[symmetric] cs)
     have vsub': "set (take sp vl) \<subseteq> \<V>" using vsub T(5) by simp
     have scc: "sp - cm \<le> card \<V>" using T(4) by (meson diff_le_self le_trans)
@@ -1099,9 +1100,9 @@ proof -
     have otiI: "out_invar (af_out_arr (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))" using oti by simp
     have itiI: "in_invar (af_in_arr (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))" using iti by simp
     note gg = af_reset_unsee_seg_imp_gen[OF stiI otiI itiI cmsp svl vsub', simplified]
-    have rst: "<flow_assn fl'' (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_reset_unsee_seg_imp s cm (sp - 1) <\<lambda>_. flow_assn fl'' (iflow s) * state_assn (af_state (af_reset_unsee_seg cm (rev (take sp vl)) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (istate s) * graph_assn (af_out_arr (af_reset_unsee_seg cm (rev (take sp vl)) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (iout s) * graph_assn (af_in_arr (af_reset_unsee_seg cm (rev (take sp vl)) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
+    have rst: "<flow_assn fl'' (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_reset_unsee_seg_imp s cm (sp - 1) <\<lambda>_. flow_assn fl'' (iflow s) * state_assn (af_state (af_reset_unsee_seg cm (rev (take sp vl)) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (istate s) * out_assn (af_out_arr (af_reset_unsee_seg cm (rev (take sp vl)) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (iout s) * in_assn (af_in_arr (af_reset_unsee_seg cm (rev (take sp vl)) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
       by (sep_auto heap: gg simp: One_nat_def)
-    have entF_m: "flow_assn fl'' (iflow s) * state_assn (af_state (af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (istate s) * graph_assn (af_out_arr (af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (iout s) * graph_assn (af_in_arr (af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>)) s (sp - cm) * true * \<up>(sp - cm = length (af_vstack st) - cm \<and> \<not> af_unbounded st)"
+    have entF_m: "flow_assn fl'' (iflow s) * state_assn (af_state (af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (istate s) * out_assn (af_out_arr (af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (iout s) * in_assn (af_in_arr (af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>)) s (sp - cm) * true * \<up>(sp - cm = length (af_vstack st) - cm \<and> \<not> af_unbounded st)"
       unfolding dfs_rel_def
       apply (simp only: ex_assn_move_out)
       apply (rule ent_ex_postI[where x=vl])
@@ -1109,7 +1110,7 @@ proof -
       apply (rule ent_ex_postI[where x=dl])
       apply (sep_auto simp: T(1) T(2) T(3) T(5) T(6) T(7) T(8) T(9) T(10) cLv cLe cLd tr_v[OF svl] tr_e[OF cmle sel] tr_e[OF cmle sdl] lvst I(3) scc)
       by (simp add: min.absorb2 spLv)
-    have entT_m: "fl'' = af_flow st \<Longrightarrow> flow_assn fl'' (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_unbounded := True\<rparr>) s sp * true * \<up>(sp = length (af_vstack st))"
+    have entT_m: "fl'' = af_flow st \<Longrightarrow> flow_assn fl'' (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_unbounded := True\<rparr>) s sp * true * \<up>(sp = length (af_vstack st))"
       unfolding dfs_rel_def
       apply (simp only: ex_assn_move_out)
       apply (rule ent_ex_postI[where x=vl])
@@ -1117,7 +1118,7 @@ proof -
       apply (rule ent_ex_postI[where x=dl])
       apply (sep_auto simp: T(1) T(2) T(3) T(4) T(5) T(6) T(7) T(8) T(9) T(10) cLv cLe cLd lvst)
       by (simp add: min.absorb2 spLv)
-    have step2: "<flow_assn fl'' (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if ub then return (sp, True) else do { _ \<leftarrow> af_reset_unsee_seg_imp s cm (sp - 1); return (sp - cm, False) }) <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>)) s sp' * \<up>(sp' = length (af_vstack (if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) \<and> ubd = af_unbounded (if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>)))>"
+    have step2: "<flow_assn fl'' (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if ub then return (sp, True) else do { _ \<leftarrow> af_reset_unsee_seg_imp s cm (sp - 1); return (sp - cm, False) }) <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>)) s sp' * \<up>(sp' = length (af_vstack (if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>))) \<and> ubd = af_unbounded (if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg cm (af_vstack st) (st\<lparr>af_flow := fl'', af_vstack := drop cm (af_vstack st), af_estack := drop cm (af_estack st), af_dstack := drop cm (af_dstack st)\<rparr>)))>"
     proof (cases ub)
       case True
       show ?thesis
@@ -1175,7 +1176,7 @@ lemma af_push_vertex_imp_rule:
                       af_estack := a # af_estack st, af_dstack := dir # af_dstack st\<rparr>) s sp' *
           \<up>(sp' = Suc sp \<and> \<not> ubd)>"
 proof -
-  have ent: "flow_assn (af_flow st) (iflow s) * state_assn (st_upd (af_state st) x OnStack) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl[sp := x] * iestack s \<mapsto>\<^sub>a el[sp := a] * idstack s \<mapsto>\<^sub>a dl[sp := dir] * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_vstack := x # af_vstack st, af_state := st_upd (af_state st) x OnStack, af_estack := a # af_estack st, af_dstack := dir # af_dstack st\<rparr>) s (Suc sp)"
+  have ent: "flow_assn (af_flow st) (iflow s) * state_assn (st_upd (af_state st) x OnStack) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl[sp := x] * iestack s \<mapsto>\<^sub>a el[sp := a] * idstack s \<mapsto>\<^sub>a dl[sp := dir] * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_vstack := x # af_vstack st, af_state := st_upd (af_state st) x OnStack, af_estack := a # af_estack st, af_dstack := dir # af_dstack st\<rparr>) s (Suc sp)"
     if T: "card \<V> \<le> length vl" "card \<V> \<le> length el" "card \<V> \<le> length dl" "sp \<le> card \<V>" "af_vstack st = rev (take sp vl)" "af_estack st = rev (drop (Suc 0) (take sp el))" "af_dstack st = rev (drop (Suc 0) (take sp dl))" "length vl = Lvst" "length el = Lest" "length dl = Ldst" for vl el dl
   proof -
     have svl: "sp < length vl" using A(3) T(1) by (rule less_le_trans)
@@ -1221,7 +1222,7 @@ proof -
   have dvst: "distinct (af_vstack st)" using inv2 by (auto elim: AF_invar_2E)
   have onmem: "\<And>v. v \<in> \<V> \<Longrightarrow> (st_lookup (af_state st) v = OnStack) = (v \<in> set (af_vstack st))" using inv2 by (auto elim: AF_invar_2E)
   have xV: "(if dir then snd_exec a else fst_exec a) \<in> \<V>" using I(2) fst_E_V[OF I(2)] snd_E_V[OF I(2)] by (cases dir) (auto simp: snd_exec_eq[OF I(2)] fst_exec_eq[OF I(2)])
-  have body: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_handle_imp s a dir sp <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (af_handle st a dir) s sp' * \<up>(sp' = length (af_vstack (af_handle st a dir)) \<and> ubd = af_unbounded (af_handle st a dir))>"
+  have body: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_handle_imp s a dir sp <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (af_handle st a dir) s sp' * \<up>(sp' = length (af_vstack (af_handle st a dir)) \<and> ubd = af_unbounded (af_handle st a dir))>"
     if T: "card \<V> \<le> length vl" "card \<V> \<le> length el" "card \<V> \<le> length dl" "sp \<le> card \<V>" "af_vstack st = rev (take sp vl)" "af_estack st = rev (drop (Suc 0) (take sp el))" "af_dstack st = rev (drop (Suc 0) (take sp dl))" "length vl = Lvst" "length el = Lest" "length dl = Ldst" for vl el dl
   proof -
     have svl: "sp \<le> length vl" using T(1,4) by simp
@@ -1233,28 +1234,28 @@ proof -
     have spLv: "sp \<le> Lvst" using svl T(8) by simp
     have lvst: "length (af_vstack st) = sp" using T(5) svl by simp
     have sp1: "Suc 0 \<le> sp" using I(4) lvst by (cases "af_vstack st") auto
-    have foldflat: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel st s sp"
+    have foldflat: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel st s sp"
       unfolding dfs_rel_def
       apply (simp only: ex_assn_move_out)
       apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl])
       by (sep_auto simp: T cLv cLe cLd)
-    have pfe: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> fst_exec_imp a <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = fst_exec a)>"
+    have pfe: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> fst_exec_imp a <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = fst_exec a)>"
       by (sep_auto simp: I(2))
-    have pse: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> snd_exec_imp a <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = snd_exec a)>"
+    have pse: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> snd_exec_imp a <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = snd_exec a)>"
       by (sep_auto simp: I(2))
-    have prooms: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_rooms_imp s a <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = af_rooms (af_flow st) a)>"
+    have prooms: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_rooms_imp s a <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = af_rooms (af_flow st) a)>"
       by (sep_auto heap: af_rooms_imp_rule[OF fi I(2)])
-    have pnth: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.nth (iestack s) (sp - 1) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = el ! (sp - 1))>"
+    have pnth: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.nth (iestack s) (sp - 1) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = el ! (sp - 1))>"
       using sp1 sel by (sep_auto)
-    have pstlook: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_lookup_imp (istate s) (if dir then snd_exec a else fst_exec a) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = st_lookup (af_state st) (if dir then snd_exec a else fst_exec a))>"
+    have pstlook: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_lookup_imp (istate s) (if dir then snd_exec a else fst_exec a) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = st_lookup (af_state st) (if dir then snd_exec a else fst_exec a))>"
       by (sep_auto heap: st_lookup_rule[OF sti xV])
-    have ret_ent: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel st s sp * true * \<up>(sp = length (af_vstack st) \<and> \<not> af_unbounded st)"
+    have ret_ent: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel st s sp * true * \<up>(sp = length (af_vstack st) \<and> \<not> af_unbounded st)"
       unfolding dfs_rel_def
       apply (simp only: ex_assn_move_out)
       apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl])
       apply (sep_auto simp: T cLv cLe cLd lvst I(3))
       by (simp add: min.absorb2 spLv)
-    have selfl_ent: "flow_assn (af_flow (af_selfloop_handle st a)) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (af_selfloop_handle st a) s sp * true * \<up>(sp = length (af_vstack st))"
+    have selfl_ent: "flow_assn (af_flow (af_selfloop_handle st a)) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (af_selfloop_handle st a) s sp * true * \<up>(sp = length (af_vstack st))"
       unfolding dfs_rel_def
       apply (simp only: ex_assn_move_out af_selfloop_handle_proj)
       apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl])
@@ -1275,26 +1276,26 @@ proof -
       have sub: "set (af_vstack st) \<subset> \<V>" using vsub xV xnmem by blast
       show ?thesis using psubset_card_mono[OF \<V>_finite sub] cardv by simp
     qed
-    have slh: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_selfloop_handle_imp s a <\<lambda>r. flow_assn (af_flow (af_selfloop_handle st a)) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = af_unbounded (af_selfloop_handle st a))>"
+    have slh: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_selfloop_handle_imp s a <\<lambda>r. flow_assn (af_flow (af_selfloop_handle st a)) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = af_unbounded (af_selfloop_handle st a))>"
       by (sep_auto heap: af_selfloop_handle_imp_rule[OF fi I(2) I(3)])
-    have tr_sl: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_selfloop_handle_imp s a \<bind> (\<lambda>ubd. return (sp, ubd)) <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (af_selfloop_handle st a) s sp' * \<up>(sp' = length (af_vstack (af_selfloop_handle st a)) \<and> ubd = af_unbounded (af_selfloop_handle st a))>"
+    have tr_sl: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_selfloop_handle_imp s a \<bind> (\<lambda>ubd. return (sp, ubd)) <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (af_selfloop_handle st a) s sp' * \<up>(sp' = length (af_vstack (af_selfloop_handle st a)) \<and> ubd = af_unbounded (af_selfloop_handle st a))>"
       apply (rule ht_bind[OF slh]) apply (rule ht_extract_pre_pure(1)) apply hypsubst
       apply (sep_auto)
       apply (rule entailsD[OF selfl_ent]) apply assumption
       done
-    have tr_ret: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> return (sp, False) <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel st s sp' * \<up>(sp' = length (af_vstack st) \<and> ubd = af_unbounded st)>"
+    have tr_ret: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> return (sp, False) <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel st s sp' * \<up>(sp' = length (af_vstack st) \<and> ubd = af_unbounded st)>"
       apply (sep_auto)
       apply (rule entailsD[OF ret_ent]) apply assumption
       done
-    have tr_on: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_close_cycle_imp s up1 dn1 (if dir then snd_exec a else fst_exec a) a dir sp <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (case af_cancel_seg up1 dn1 (if dir then snd_exec a else fst_exec a) (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>)) s sp' * \<up>(sp' = length (af_vstack (case af_cancel_seg up1 dn1 (if dir then snd_exec a else fst_exec a) (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>))) \<and> ubd = af_unbounded (case af_cancel_seg up1 dn1 (if dir then snd_exec a else fst_exec a) (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>)))>"
+    have tr_on: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_close_cycle_imp s up1 dn1 (if dir then snd_exec a else fst_exec a) a dir sp <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (case af_cancel_seg up1 dn1 (if dir then snd_exec a else fst_exec a) (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>)) s sp' * \<up>(sp' = length (af_vstack (case af_cancel_seg up1 dn1 (if dir then snd_exec a else fst_exec a) (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>))) \<and> ubd = af_unbounded (case af_cancel_seg up1 dn1 (if dir then snd_exec a else fst_exec a) (af_vstack st) (af_estack st) (af_dstack st) a dir (af_flow st) of (fl, m', ub) \<Rightarrow> if ub then st\<lparr>af_unbounded := True\<rparr> else af_reset_unsee_seg m' (af_vstack st) (st\<lparr>af_flow := fl, af_vstack := drop m' (af_vstack st), af_estack := drop m' (af_estack st), af_dstack := drop m' (af_dstack st)\<rparr>)))>"
       if nsl: "fst_exec a \<noteq> snd_exec a" and onst: "st_lookup (af_state st) (if dir then snd_exec a else fst_exec a) = OnStack" for up1 dn1
       by (rule ht_cons_pre[OF foldflat af_close_cycle_imp_rule[OF I(1) I(2) I(3) onst xV xhd[OF nsl] sp1]])
-    have tr_un: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_push_vertex_imp s (if dir then snd_exec a else fst_exec a) a dir sp <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (st\<lparr>af_vstack := (if dir then snd_exec a else fst_exec a) # af_vstack st, af_state := st_upd (af_state st) (if dir then snd_exec a else fst_exec a) OnStack, af_estack := a # af_estack st, af_dstack := dir # af_dstack st\<rparr>) s sp' * \<up>(sp' = length (af_vstack (st\<lparr>af_vstack := (if dir then snd_exec a else fst_exec a) # af_vstack st, af_state := st_upd (af_state st) (if dir then snd_exec a else fst_exec a) OnStack, af_estack := a # af_estack st, af_dstack := dir # af_dstack st\<rparr>)) \<and> ubd = af_unbounded (st\<lparr>af_vstack := (if dir then snd_exec a else fst_exec a) # af_vstack st, af_state := st_upd (af_state st) (if dir then snd_exec a else fst_exec a) OnStack, af_estack := a # af_estack st, af_dstack := dir # af_dstack st\<rparr>))>"
+    have tr_un: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_push_vertex_imp s (if dir then snd_exec a else fst_exec a) a dir sp <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (st\<lparr>af_vstack := (if dir then snd_exec a else fst_exec a) # af_vstack st, af_state := st_upd (af_state st) (if dir then snd_exec a else fst_exec a) OnStack, af_estack := a # af_estack st, af_dstack := dir # af_dstack st\<rparr>) s sp' * \<up>(sp' = length (af_vstack (st\<lparr>af_vstack := (if dir then snd_exec a else fst_exec a) # af_vstack st, af_state := st_upd (af_state st) (if dir then snd_exec a else fst_exec a) OnStack, af_estack := a # af_estack st, af_dstack := dir # af_dstack st\<rparr>)) \<and> ubd = af_unbounded (st\<lparr>af_vstack := (if dir then snd_exec a else fst_exec a) # af_vstack st, af_state := st_upd (af_state st) (if dir then snd_exec a else fst_exec a) OnStack, af_estack := a # af_estack st, af_dstack := dir # af_dstack st\<rparr>))>"
       if un: "st_lookup (af_state st) (if dir then snd_exec a else fst_exec a) = Unseen"
       apply (rule ht_cons_post_prec[OF ht_cons_pre[OF foldflat af_push_vertex_imp_rule[OF sti xV spcard[OF un] sp1]]])
       apply (sep_auto simp: lvst I(3) split: prod.splits)
       done
-    have pparent: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if 2 \<le> sp then Array.nth (iestack s) (sp - 1) \<bind> (\<lambda>top_e. return (a = top_e)) else return False) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = (af_estack st \<noteq> [] \<and> a = hd (af_estack st)))>"
+    have pparent: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if 2 \<le> sp then Array.nth (iestack s) (sp - 1) \<bind> (\<lambda>top_e. return (a = top_e)) else return False) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = (af_estack st \<noteq> [] \<and> a = hd (af_estack st)))>"
     proof (cases "2 \<le> sp")
       case True
       show ?thesis
@@ -1309,7 +1310,7 @@ proof -
         apply (sep_auto simp: neest False)
         done
     qed
-    have mainif: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if fst_exec a = snd_exec a then af_selfloop_handle_imp s a \<bind> (\<lambda>ubd. return (sp, ubd)) else af_rooms_imp s a \<bind> (\<lambda>updn. if \<not> (0 < prod.snd updn \<and> (prod.fst updn = - 1 \<or> 0 < prod.fst updn)) then return (sp, False) else (if 2 \<le> sp then Array.nth (iestack s) (sp - 1) \<bind> (\<lambda>top_e. return (a = top_e)) else return False) \<bind> (\<lambda>is_parent. if is_parent then return (sp, False) else let x = if dir then snd_exec a else fst_exec a in st_lookup_imp (istate s) x \<bind> case_vertex_state (af_push_vertex_imp s x a dir sp) (af_close_cycle_imp s (prod.fst updn) (prod.snd updn) x a dir sp) (return (sp, False))))) <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (af_handle st a dir) s sp' * \<up>(sp' = length (af_vstack (af_handle st a dir)) \<and> ubd = af_unbounded (af_handle st a dir))>"
+    have mainif: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if fst_exec a = snd_exec a then af_selfloop_handle_imp s a \<bind> (\<lambda>ubd. return (sp, ubd)) else af_rooms_imp s a \<bind> (\<lambda>updn. if \<not> (0 < prod.snd updn \<and> (prod.fst updn = - 1 \<or> 0 < prod.fst updn)) then return (sp, False) else (if 2 \<le> sp then Array.nth (iestack s) (sp - 1) \<bind> (\<lambda>top_e. return (a = top_e)) else return False) \<bind> (\<lambda>is_parent. if is_parent then return (sp, False) else let x = if dir then snd_exec a else fst_exec a in st_lookup_imp (istate s) x \<bind> case_vertex_state (af_push_vertex_imp s x a dir sp) (af_close_cycle_imp s (prod.fst updn) (prod.snd updn) x a dir sp) (return (sp, False))))) <\<lambda>r. case r of (sp', ubd) \<Rightarrow> dfs_rel (af_handle st a dir) s sp' * \<up>(sp' = length (af_vstack (af_handle st a dir)) \<and> ubd = af_unbounded (af_handle st a dir))>"
     proof (cases "fst_exec a = snd_exec a")
       case True
       have afh: "af_handle st a dir = af_selfloop_handle st a" using True by (simp add: af_handle_def)
@@ -1442,7 +1443,7 @@ proof -
         have mi_cur: "multigraph_inv (af_out_arr st) (af_in_arr st)" using invit by (simp add: AF_invar_iter_def)
         have ane: "af_vstack st \<noteq> []" using I(3) sp1 by (cases "af_vstack st") auto
         have vV: "hd (af_vstack st) \<in> \<V>" using invV ane by (auto simp: AF_invar_V_def hd_in_set)
-        have body: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.nth (ivstack s) (sp - 1) \<bind> (\<lambda>v. out_has_imp (iout s) v \<bind> (\<lambda>oh. if oh then out_current_imp (iout s) v \<bind> (\<lambda>a. out_move_imp (iout s) v \<bind> (\<lambda>_. af_handle_imp s a True sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else in_has_imp (iin s) v \<bind> (\<lambda>ih. if ih then in_current_imp (iin s) v \<bind> (\<lambda>a. in_move_imp (iin s) v \<bind> (\<lambda>_. af_handle_imp s a False sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else st_upd_imp (istate s) v Finished \<bind> (\<lambda>_. f s (sp - 1))))) <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl st) s sp') * \<up>(r = af_unbounded (AF_DFS_impl st))>"
+        have body: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.nth (ivstack s) (sp - 1) \<bind> (\<lambda>v. out_has_imp (iout s) v \<bind> (\<lambda>oh. if oh then out_current_imp (iout s) v \<bind> (\<lambda>a. out_move_imp (iout s) v \<bind> (\<lambda>_. af_handle_imp s a True sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else in_has_imp (iin s) v \<bind> (\<lambda>ih. if ih then in_current_imp (iin s) v \<bind> (\<lambda>a. in_move_imp (iin s) v \<bind> (\<lambda>_. af_handle_imp s a False sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else st_upd_imp (istate s) v Finished \<bind> (\<lambda>_. f s (sp - 1))))) <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl st) s sp') * \<up>(r = af_unbounded (AF_DFS_impl st))>"
           if T: "card \<V> \<le> length vl" "card \<V> \<le> length el" "card \<V> \<le> length dl" "sp \<le> card \<V>" "af_vstack st = rev (take sp vl)" "af_estack st = rev (drop (Suc 0) (take sp el))" "af_dstack st = rev (drop (Suc 0) (take sp dl))" "length vl = Lvst" "length el = Lest" "length dl = Ldst" for vl el dl
         proof -
           have svl: "sp \<le> length vl" using T(1,4) by simp
@@ -1462,19 +1463,19 @@ proof -
             thus ?thesis by simp
           qed
           have vVn: "vl ! (sp - 1) \<in> \<V>" using vhd vV by simp
-          have foldflat: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel st s sp"
+          have foldflat: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel st s sp"
             unfolding dfs_rel_def
             apply (simp only: ex_assn_move_out)
             apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl])
             by (sep_auto simp: T cLv cLe cLd)
           have svn: "sp - 1 < length vl" using svl sp1 by simp
-          have pv: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.nth (ivstack s) (sp - 1) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = vl ! (sp - 1))>"
+          have pv: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.nth (ivstack s) (sp - 1) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = vl ! (sp - 1))>"
             using svn by sep_auto
-          have phas_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_has_imp (iout s) (vl ! (sp - 1)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = out_has (af_out_arr st) (vl ! (sp - 1)))>"
+          have phas_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_has_imp (iout s) (vl ! (sp - 1)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = out_has (af_out_arr st) (vl ! (sp - 1)))>"
             by (sep_auto heap: out_has_rule[OF oti vVn])
-          have phas_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_has_imp (iin s) (vl ! (sp - 1)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = in_has (af_in_arr st) (vl ! (sp - 1)))>"
+          have phas_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_has_imp (iin s) (vl ! (sp - 1)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = in_has (af_in_arr st) (vl ! (sp - 1)))>"
             by (sep_auto heap: in_has_rule[OF iti vVn])
-          have disp: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if out_has (af_out_arr st) (vl ! (sp - 1)) then out_current_imp (iout s) (vl ! (sp - 1)) \<bind> (\<lambda>a. out_move_imp (iout s) (vl ! (sp - 1)) \<bind> (\<lambda>_. af_handle_imp s a True sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else in_has_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>ih. if ih then in_current_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>a. in_move_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>_. af_handle_imp s a False sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else st_upd_imp (istate s) (vl ! (sp - 1)) Finished \<bind> (\<lambda>_. f s (sp - 1)))) <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl st) s sp') * \<up>(r = af_unbounded (AF_DFS_impl st))>"
+          have disp: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if out_has (af_out_arr st) (vl ! (sp - 1)) then out_current_imp (iout s) (vl ! (sp - 1)) \<bind> (\<lambda>a. out_move_imp (iout s) (vl ! (sp - 1)) \<bind> (\<lambda>_. af_handle_imp s a True sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else in_has_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>ih. if ih then in_current_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>a. in_move_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>_. af_handle_imp s a False sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else st_upd_imp (istate s) (vl ! (sp - 1)) Finished \<bind> (\<lambda>_. f s (sp - 1)))) <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl st) s sp') * \<up>(r = af_unbounded (AF_DFS_impl st))>"
           proof (cases "out_has (af_out_arr st) (vl ! (sp - 1))")
             case oh: True
             have he: "out_has (af_out_arr st) (hd (af_vstack st))" using oh vhd by simp
@@ -1483,9 +1484,9 @@ proof -
             have fsto: "fst_exec (out_current (af_out_arr st) (hd (af_vstack st))) = hd (af_vstack st)" using af_current_out_endpoint[OF mi_cur vV he] fst_exec_eq[OF aeo] by simp
             have call1: "AF_DFS_call_1_conds st" using I(2) ane he by (auto simp: AF_DFS_call_1_conds_def split: list.splits)
             have inv_moved: "AF_inv (st\<lparr>af_out_arr := out_move (af_out_arr st) (hd (af_vstack st))\<rparr>)" using I(1) AF_invar_1_out_advance[OF vV inv1] multigraph_inv_out_advance[OF mi_cur he] vV by (auto simp: AF_inv_def AF_invar_iter_def)
-            have pcur_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_current_imp (iout s) (hd (af_vstack st)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = out_current (af_out_arr st) (hd (af_vstack st)))>" by (sep_auto heap: out_current_rule[OF oti vV ne_out])
-            have pmove_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_move_imp (iout s) (hd (af_vstack st)) <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (out_move (af_out_arr st) (hd (af_vstack st))) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: out_move_rule[OF oti vV ne_out])
-            have foldflat_moved: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (out_move (af_out_arr st) (hd (af_vstack st))) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_out_arr := out_move (af_out_arr st) (hd (af_vstack st))\<rparr>) s sp"
+            have pcur_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_current_imp (iout s) (hd (af_vstack st)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = out_current (af_out_arr st) (hd (af_vstack st)))>" by (sep_auto heap: out_current_rule[OF oti vV ne_out])
+            have pmove_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_move_imp (iout s) (hd (af_vstack st)) <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (out_move (af_out_arr st) (hd (af_vstack st))) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: out_move_rule[OF oti vV ne_out])
+            have foldflat_moved: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (out_move (af_out_arr st) (hd (af_vstack st))) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_out_arr := out_move (af_out_arr st) (hd (af_vstack st))\<rparr>) s sp"
               unfolding dfs_rel_def apply (simp only: ex_assn_move_out) apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl]) by (sep_auto simp: T cLv cLe cLd)
             have upd1eq: "AF_DFS_upd1 st = af_handle (st\<lparr>af_out_arr := out_move (af_out_arr st) (hd (af_vstack st))\<rparr>) (out_current (af_out_arr st) (hd (af_vstack st))) True" by (simp add: AF_DFS_upd1_def Let_def)
             have impl_out: "AF_DFS_impl st = AF_DFS_impl (AF_DFS_upd1 st)"
@@ -1535,7 +1536,7 @@ proof -
           next
             case onoh: False
             have heno: "\<not> out_has (af_out_arr st) (hd (af_vstack st))" using onoh vhd by simp
-            have disp2: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if in_has (af_in_arr st) (vl ! (sp - 1)) then in_current_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>a. in_move_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>_. af_handle_imp s a False sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else st_upd_imp (istate s) (vl ! (sp - 1)) Finished \<bind> (\<lambda>_. f s (sp - 1))) <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl st) s sp') * \<up>(r = af_unbounded (AF_DFS_impl st))>"
+            have disp2: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if in_has (af_in_arr st) (vl ! (sp - 1)) then in_current_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>a. in_move_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>_. af_handle_imp s a False sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else st_upd_imp (istate s) (vl ! (sp - 1)) Finished \<bind> (\<lambda>_. f s (sp - 1))) <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl st) s sp') * \<up>(r = af_unbounded (AF_DFS_impl st))>"
             proof (cases "in_has (af_in_arr st) (vl ! (sp - 1))")
               case ih: True
               have hi: "in_has (af_in_arr st) (hd (af_vstack st))" using ih vhd by simp
@@ -1544,9 +1545,9 @@ proof -
               have fsti: "snd_exec (in_current (af_in_arr st) (hd (af_vstack st))) = hd (af_vstack st)" using af_current_in_endpoint[OF mi_cur vV hi] snd_exec_eq[OF aei] by simp
               have call2: "AF_DFS_call_2_conds st" using I(2) ane heno hi by (auto simp: AF_DFS_call_2_conds_def split: list.splits)
               have inv_moved: "AF_inv (st\<lparr>af_in_arr := in_move (af_in_arr st) (hd (af_vstack st))\<rparr>)" using I(1) AF_invar_1_in_advance[OF vV inv1] multigraph_inv_in_advance[OF mi_cur hi] vV by (auto simp: AF_inv_def AF_invar_iter_def)
-              have pcur_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_current_imp (iin s) (hd (af_vstack st)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = in_current (af_in_arr st) (hd (af_vstack st)))>" by (sep_auto heap: in_current_rule[OF iti vV ne_in])
-              have pmove_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_move_imp (iin s) (hd (af_vstack st)) <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (in_move (af_in_arr st) (hd (af_vstack st))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: in_move_rule[OF iti vV ne_in])
-              have foldflat_moved: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (in_move (af_in_arr st) (hd (af_vstack st))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_in_arr := in_move (af_in_arr st) (hd (af_vstack st))\<rparr>) s sp"
+              have pcur_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_current_imp (iin s) (hd (af_vstack st)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = in_current (af_in_arr st) (hd (af_vstack st)))>" by (sep_auto heap: in_current_rule[OF iti vV ne_in])
+              have pmove_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_move_imp (iin s) (hd (af_vstack st)) <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (in_move (af_in_arr st) (hd (af_vstack st))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: in_move_rule[OF iti vV ne_in])
+              have foldflat_moved: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (in_move (af_in_arr st) (hd (af_vstack st))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_in_arr := in_move (af_in_arr st) (hd (af_vstack st))\<rparr>) s sp"
                 unfolding dfs_rel_def apply (simp only: ex_assn_move_out) apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl]) by (sep_auto simp: T cLv cLe cLd)
               have upd2eq: "AF_DFS_upd2 st = af_handle (st\<lparr>af_in_arr := in_move (af_in_arr st) (hd (af_vstack st))\<rparr>) (in_current (af_in_arr st) (hd (af_vstack st))) False" by (simp add: AF_DFS_upd2_def Let_def)
               have impl_in: "AF_DFS_impl st = AF_DFS_impl (AF_DFS_upd2 st)"
@@ -1600,9 +1601,9 @@ proof -
               have tle: "tl (af_estack st) = rev (drop (Suc 0) (take (sp - 1) el))" using T(6) sel by (simp add: tl_rev butlast_take butlast_drop drop_take)
               have tld: "tl (af_dstack st) = rev (drop (Suc 0) (take (sp - 1) dl))" using T(7) sdl by (simp add: tl_rev butlast_take butlast_drop drop_take)
               have spcm: "sp - Suc 0 \<le> card \<V>" using T(4) by (meson diff_le_self le_trans)
-              have foldflat_pop: "flow_assn (af_flow st) (iflow s) * state_assn (st_upd (af_state st) (hd (af_vstack st)) Finished) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (AF_DFS_upd3 st) s (sp - 1)"
+              have foldflat_pop: "flow_assn (af_flow st) (iflow s) * state_assn (st_upd (af_state st) (hd (af_vstack st)) Finished) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (AF_DFS_upd3 st) s (sp - 1)"
                 unfolding dfs_rel_def AF_DFS_upd3_def apply (simp only: ex_assn_move_out) apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl]) by (sep_auto simp: T(1) T(2) T(3) spcm tlv tle tld T(8) T(9) T(10) cLv cLe cLd)
-              have pupd: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_upd_imp (istate s) (hd (af_vstack st)) Finished <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (st_upd (af_state st) (hd (af_vstack st)) Finished) (istate s) * graph_assn (af_out_arr st) (iout s) * graph_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: st_upd_rule[OF sti vV])
+              have pupd: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_upd_imp (istate s) (hd (af_vstack st)) Finished <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (st_upd (af_state st) (hd (af_vstack st)) Finished) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: st_upd_rule[OF sti vV])
               have call3: "AF_DFS_call_3_conds st" using I(2) ane heno hino by (auto simp: AF_DFS_call_3_conds_def split: list.splits)
               have inv3u: "AF_inv (AF_DFS_upd3 st)" using AF_inv_holds_3[OF call3 I(1)] .
               have impl_pop: "AF_DFS_impl st = AF_DFS_impl (AF_DFS_upd3 st)"
@@ -1660,7 +1661,7 @@ lemma af_dfs_start_imp_rule:
     and noos: "\<forall>w\<in>\<V>. st_lookup St w \<noteq> OnStack"
     and cvl: "card \<V> \<le> length vl" and cel: "card \<V> \<le> length el" and cdl: "card \<V> \<le> length dl"
     and lvl: "length vl = Lvst" and lel: "length el = Lest" and ldl: "length dl = Ldst"
-  shows "<flow_assn Fl (iflow s) * state_assn St (istate s) * graph_assn OG (iout s) * graph_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_dfs_start_imp s v <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl (AF_DFS_initial Fl OG IG St v)) s sp') * \<up>(r = af_unbounded (AF_DFS_impl (AF_DFS_initial Fl OG IG St v)))>"
+  shows "<flow_assn Fl (iflow s) * state_assn St (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_dfs_start_imp s v <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl (AF_DFS_initial Fl OG IG St v)) s sp') * \<up>(r = af_unbounded (AF_DFS_impl (AF_DFS_initial Fl OG IG St v)))>"
 proof -
   have AF_inv_init: "AF_inv (AF_DFS_initial Fl OG IG St v)" using AF_inv_initial[OF fi si ao ai miOG vV feas noos] .
   have nub_init: "\<not> af_unbounded (AF_DFS_initial Fl OG IG St v)" by (simp add: AF_DFS_initial_def)
@@ -1670,14 +1671,14 @@ proof -
   have cardpos: "0 < length vl" using vlne by simp
   have suc1: "Suc 0 \<le> card \<V>" using cV by simp
   have vst: "(take (Suc 0) vl)[0 := v] = [v]" using vlne by (cases vl) auto
-  have foldinit: "flow_assn Fl (iflow s) * state_assn (st_upd St v OnStack) (istate s) * graph_assn OG (iout s) * graph_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (AF_DFS_initial Fl OG IG St v) s 1"
+  have foldinit: "flow_assn Fl (iflow s) * state_assn (st_upd St v OnStack) (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (AF_DFS_initial Fl OG IG St v) s 1"
     unfolding dfs_rel_def AF_DFS_initial_def
     apply (simp only: ex_assn_move_out)
     apply (rule ent_ex_postI[where x="vl[0 := v]"], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl])
     by (sep_auto simp: cvl cel cdl lvl lel ldl cvl[unfolded lvl] cel[unfolded lel] cdl[unfolded ldl] suc1 vlne vst)
-  have pupd: "<flow_assn Fl (iflow s) * state_assn St (istate s) * graph_assn OG (iout s) * graph_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.upd 0 v (ivstack s) <\<lambda>r. flow_assn Fl (iflow s) * state_assn St (istate s) * graph_assn OG (iout s) * graph_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
+  have pupd: "<flow_assn Fl (iflow s) * state_assn St (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.upd 0 v (ivstack s) <\<lambda>r. flow_assn Fl (iflow s) * state_assn St (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
     by (sep_auto simp: cardpos vlne)
-  have pstupd: "<flow_assn Fl (iflow s) * state_assn St (istate s) * graph_assn OG (iout s) * graph_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_upd_imp (istate s) v OnStack <\<lambda>_. flow_assn Fl (iflow s) * state_assn (st_upd St v OnStack) (istate s) * graph_assn OG (iout s) * graph_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
+  have pstupd: "<flow_assn Fl (iflow s) * state_assn St (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_upd_imp (istate s) v OnStack <\<lambda>_. flow_assn Fl (iflow s) * state_assn (st_upd St v OnStack) (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
     by (sep_auto heap: st_upd_rule[OF si vV])
   show ?thesis
     unfolding af_dfs_start_imp_def
@@ -1814,15 +1815,15 @@ proof -
       note I = 1
       have vinv: "vit_invar (aff_vit st)" and vsub: "vit_abstract (aff_vit st) \<subseteq> \<V>" and ffi: "flow_invar (aff_flow st)" and sti: "st_invar (aff_state st)" and aoi: "out_invar (aff_out_arr st)" and aii: "in_invar (aff_in_arr st)" and mii: "multigraph_inv (aff_out_arr st) (aff_in_arr st)" and feas: "af_cap_feasible (aff_flow st)" and noos0: "\<not> aff_unbounded st \<longrightarrow> (\<forall>w\<in>\<V>. st_lookup (aff_state st) w \<noteq> OnStack)" using I(1) by (auto simp: AFF_inv_def)
       have noos: "\<forall>w\<in>\<V>. st_lookup (aff_state st) w \<noteq> OnStack" using noos0 I(2) by simp
-      have body: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> has_vertex_imp (ivit s) \<bind> (\<lambda>hv. if \<not> hv then return False else current_vertex_imp (ivit s) \<bind> (\<lambda>v. move_on_vertex_imp (ivit s) \<bind> (\<lambda>_. st_lookup_imp (istate s) v \<bind> (\<lambda>stv. if stv \<noteq> Unseen then f s else af_dfs_start_imp s v \<bind> (\<lambda>ubd. if ubd then return True else f s))))) <\<lambda>r. outer_rel (AF_outer_impl st) s * \<up>(r = aff_unbounded (AF_outer_impl st))>"
+      have body: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> has_vertex_imp (ivit s) \<bind> (\<lambda>hv. if \<not> hv then return False else current_vertex_imp (ivit s) \<bind> (\<lambda>v. move_on_vertex_imp (ivit s) \<bind> (\<lambda>_. st_lookup_imp (istate s) v \<bind> (\<lambda>stv. if stv \<noteq> Unseen then f s else af_dfs_start_imp s v \<bind> (\<lambda>ubd. if ubd then return True else f s))))) <\<lambda>r. outer_rel (AF_outer_impl st) s * \<up>(r = aff_unbounded (AF_outer_impl st))>"
         if T: "card \<V> \<le> length vl" "card \<V> \<le> length el" "card \<V> \<le> length dl" "length vl = Lvst" "length el = Lest" "length dl = Ldst" for vl el dl
       proof -
-        have foldouter: "flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A outer_rel st s"
+        have foldouter: "flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A outer_rel st s"
           unfolding outer_rel_def
           apply (simp only: ex_assn_move_out)
           apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl])
           by (sep_auto simp: T T(1)[unfolded T(4)] T(2)[unfolded T(5)] T(3)[unfolded T(6)])
-        have phv: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> has_vertex_imp (ivit s) <\<lambda>r. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = has_vertex (aff_vit st))>"
+        have phv: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> has_vertex_imp (ivit s) <\<lambda>r. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = has_vertex (aff_vit st))>"
           by (sep_auto heap: has_vertex_rule[OF vinv])
         show ?thesis
         proof (cases "has_vertex (aff_vit st)")
@@ -1841,13 +1842,13 @@ proof -
           have ne: "vit_remaining (aff_vit st) \<noteq> {}" using hvT vinv vertex_iterator.has_current by auto
           have ncond: "\<not> \<not> has_vertex (aff_vit st)" using hvT by simp
           have vV: "current_vertex (aff_vit st) \<in> \<V>" using vit_current_V[OF I(1) hvT] .
-          have pcur: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> current_vertex_imp (ivit s) <\<lambda>r. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = current_vertex (aff_vit st))>"
+          have pcur: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> current_vertex_imp (ivit s) <\<lambda>r. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = current_vertex (aff_vit st))>"
             by (sep_auto heap: current_vertex_rule[OF vinv ne])
-          have pmove: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> move_on_vertex_imp (ivit s) <\<lambda>_. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
+          have pmove: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> move_on_vertex_imp (ivit s) <\<lambda>_. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
             by (sep_auto heap: move_on_vertex_rule[OF vinv ne])
-          have pstlook: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_lookup_imp (istate s) (current_vertex (aff_vit st)) <\<lambda>r. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = st_lookup (aff_state st) (current_vertex (aff_vit st)))>"
+          have pstlook: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_lookup_imp (istate s) (current_vertex (aff_vit st)) <\<lambda>r. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = st_lookup (aff_state st) (current_vertex (aff_vit st)))>"
             by (sep_auto heap: st_lookup_rule[OF sti vV])
-          have foldmoved: "flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A outer_rel (AF_outer_upd1 st) s"
+          have foldmoved: "flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A outer_rel (AF_outer_upd1 st) s"
             unfolding outer_rel_def AF_outer_upd1_def
             apply simp
             apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl])
@@ -1863,9 +1864,9 @@ proof -
             have bridge: "res = AF_DFS (AF_DFS_initial (aff_flow st) (aff_out_arr st) (aff_in_arr st) (aff_state st) (current_vertex (aff_vit st)))" unfolding res_def using AF_DFS_impl_eq[OF mi0 inv_init] .
             have st2_upd2: "st2 = AF_outer_upd2 st" unfolding st2_def AF_outer_upd2_def Let_def using bridge by simp
             have impl: "AF_outer_impl st = AF_outer_impl st2" unfolding st2_def res_def by (subst AF_outer_impl.simps) (simp add: I(2) hvT unseenT Let_def)
-            have dfs_base: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_dfs_start_imp s (current_vertex (aff_vit st)) <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel res s sp') * \<up>(r = af_unbounded res)>"
+            have dfs_base: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> af_dfs_start_imp s (current_vertex (aff_vit st)) <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel res s sp') * \<up>(r = af_unbounded res)>"
               unfolding res_def using af_dfs_start_imp_rule[OF ffi sti aoi aii vV mi0 mii feas noos T(1) T(2) T(3) T(4) T(5) T(6)] .
-            have reorder: "flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A (flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * graph_assn (aff_out_arr st) (iout s) * graph_assn (aff_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd) * vit_assn (move_on_vertex (aff_vit st)) (ivit s)"
+            have reorder: "flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A (flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd) * vit_assn (move_on_vertex (aff_vit st)) (ivit s)"
               by sep_auto
             have fold_dfs: "(\<exists>\<^sub>A sp'. dfs_rel res s sp' * vit_assn (move_on_vertex (aff_vit st)) (ivit s)) \<Longrightarrow>\<^sub>A outer_rel st2 s"
               unfolding dfs_rel_def outer_rel_def st2_def by sep_auto
@@ -1956,12 +1957,12 @@ theorem make_acyclic_imp_rule:
     and vv: "vit_invar all_vertices" and vab: "vit_abstract all_vertices \<subseteq> \<V>"
     and cvs: "card \<V> \<le> length vs0" and ces: "card \<V> \<le> length es0" and cds: "card \<V> \<le> length ds0"
     and lvs: "length vs0 = Lvst" and les: "length es0 = Lest" and lds: "length ds0 = Ldst"
-  shows "<flow_assn f0 fh * state_assn state_init sh * graph_assn out_arr oh * graph_assn in_arr ih *
+  shows "<flow_assn f0 fh * state_assn state_init sh * out_assn out_arr oh * in_assn in_arr ih *
     vit_assn all_vertices vih * rd * vst \<mapsto>\<^sub>a vs0 * est \<mapsto>\<^sub>a es0 * dst \<mapsto>\<^sub>a ds0>
      make_acyclic_imp fh sh oh ih vih vst est dst
    <\<lambda>r. \<exists>\<^sub>A f'. flow_assn f' fh *
-        graph_assn (aff_out_arr (AF_outer (AF_outer_initial f0))) oh *
-        graph_assn (aff_in_arr (AF_outer (AF_outer_initial f0))) ih *
+        out_assn (aff_out_arr (AF_outer (AF_outer_initial f0))) oh *
+        in_assn (aff_in_arr (AF_outer (AF_outer_initial f0))) ih *
         (\<exists>\<^sub>A vl el dl. vst \<mapsto>\<^sub>a vl * est \<mapsto>\<^sub>a el * dst \<mapsto>\<^sub>a dl *
            \<up>(card \<V> \<le> length vl \<and> card \<V> \<le> length el \<and> card \<V> \<le> length dl \<and>
              length vl = Lvst \<and> length el = Lest \<and> length dl = Ldst)) *
@@ -1974,14 +1975,14 @@ proof -
   have resO_eq: "resO = AF_outer (AF_outer_initial f0)" unfolding resO_def using AF_outer_impl_eq[OF mi0 affinv] .
   have mkac: "make_acyclic f0 = (if aff_unbounded resO then None else Some (aff_flow resO))"
     by (simp add: make_acyclic_def resO_eq[symmetric] Let_def)
-  have foldinit: "flow_assn f0 fh * state_assn state_init sh * graph_assn out_arr oh * graph_assn in_arr ih * vit_assn all_vertices vih * rd * vst \<mapsto>\<^sub>a vs0 * est \<mapsto>\<^sub>a es0 * dst \<mapsto>\<^sub>a ds0 \<Longrightarrow>\<^sub>A outer_rel (AF_outer_initial f0) (af_impl_state_init fh sh oh ih vih vst est dst)"
+  have foldinit: "flow_assn f0 fh * state_assn state_init sh * out_assn out_arr oh * in_assn in_arr ih * vit_assn all_vertices vih * rd * vst \<mapsto>\<^sub>a vs0 * est \<mapsto>\<^sub>a es0 * dst \<mapsto>\<^sub>a ds0 \<Longrightarrow>\<^sub>A outer_rel (AF_outer_initial f0) (af_impl_state_init fh sh oh ih vih vst est dst)"
     unfolding outer_rel_def AF_outer_initial_def af_impl_state_init_def
     apply simp
     apply (rule ent_ex_postI[where x=vs0], rule ent_ex_postI[where x=es0], rule ent_ex_postI[where x=ds0])
     by (sep_auto simp: cvs ces cds lvs les lds cvs[unfolded lvs] ces[unfolded les] cds[unfolded lds])
   have run: "<outer_rel (AF_outer_initial f0) (af_impl_state_init fh sh oh ih vih vst est dst)> AF_outer_imp (af_impl_state_init fh sh oh ih vih vst est dst) <\<lambda>r. outer_rel resO (af_impl_state_init fh sh oh ih vih vst est dst) * \<up>(r = aff_unbounded resO)>"
     using AF_outer_imp_rule[OF mi0 affinv nub] unfolding resO_def .
-  have foldout: "outer_rel resO (af_impl_state_init fh sh oh ih vih vst est dst) * \<up>(r = aff_unbounded resO) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>A f'. flow_assn f' fh * graph_assn (aff_out_arr (AF_outer (AF_outer_initial f0))) oh * graph_assn (aff_in_arr (AF_outer (AF_outer_initial f0))) ih * (\<exists>\<^sub>A vl el dl. vst \<mapsto>\<^sub>a vl * est \<mapsto>\<^sub>a el * dst \<mapsto>\<^sub>a dl * \<up>(card \<V> \<le> length vl \<and> card \<V> \<le> length el \<and> card \<V> \<le> length dl \<and> length vl = Lvst \<and> length el = Lest \<and> length dl = Ldst)) * rd * true * \<up>((r \<longleftrightarrow> make_acyclic f0 = None) \<and> (make_acyclic f0 = None \<or> make_acyclic f0 = Some f')))" for r
+  have foldout: "outer_rel resO (af_impl_state_init fh sh oh ih vih vst est dst) * \<up>(r = aff_unbounded resO) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>A f'. flow_assn f' fh * out_assn (aff_out_arr (AF_outer (AF_outer_initial f0))) oh * in_assn (aff_in_arr (AF_outer (AF_outer_initial f0))) ih * (\<exists>\<^sub>A vl el dl. vst \<mapsto>\<^sub>a vl * est \<mapsto>\<^sub>a el * dst \<mapsto>\<^sub>a dl * \<up>(card \<V> \<le> length vl \<and> card \<V> \<le> length el \<and> card \<V> \<le> length dl \<and> length vl = Lvst \<and> length el = Lest \<and> length dl = Ldst)) * rd * true * \<up>((r \<longleftrightarrow> make_acyclic f0 = None) \<and> (make_acyclic f0 = None \<or> make_acyclic f0 = Some f')))" for r
     unfolding outer_rel_def af_impl_state_init_def resO_eq[symmetric]
     apply (rule ent_ex_postI[where x="aff_flow resO"])
     by (sep_auto simp: mkac cvs ces cds lvs les lds cvs[unfolded lvs] ces[unfolded les] cds[unfolded lds])
@@ -1990,29 +1991,6 @@ proof -
     apply (rule ht_cons_pre[OF foldinit])
     apply (rule ht_cons_post_prec[OF run foldout])
     done
-qed
-
-text \<open>Convenience wrappers (in the refinement locale, so they are reachable through an interpretation's
-      prefix): the graph the acyclifier returns agrees with the input graph on any projection the
-      cursor operations preserve.\<close>
-lemma AF_outer_out_result_proj:
-  assumes "\<And>G v. proj (out_move G v) = proj G" and "\<And>G v. proj (out_reset G v) = proj G"
-    and "multigraph_inv out_arr in_arr" and "flow_invar f0" and "af_cap_feasible f0"
-    and "vit_invar all_vertices" and "vit_abstract all_vertices \<subseteq> \<V>"
-  shows "proj (aff_out_arr (AF_outer (AF_outer_initial f0))) = proj out_arr"
-proof -
-  have "AFF_inv (AF_outer_initial f0)" using AFF_inv_initial[OF assms(3,4,5,6,7)] .
-  from AF_outer_out_proj[OF assms(1,2,3) this] show ?thesis by (simp add: AF_outer_initial_def)
-qed
-
-lemma AF_outer_in_result_proj:
-  assumes "\<And>G v. proj (in_move G v) = proj G" and "\<And>G v. proj (in_reset G v) = proj G"
-    and "multigraph_inv out_arr in_arr" and "flow_invar f0" and "af_cap_feasible f0"
-    and "vit_invar all_vertices" and "vit_abstract all_vertices \<subseteq> \<V>"
-  shows "proj (aff_in_arr (AF_outer (AF_outer_initial f0))) = proj in_arr"
-proof -
-  have "AFF_inv (AF_outer_initial f0)" using AFF_inv_initial[OF assms(3,4,5,6,7)] .
-  from AF_outer_in_proj[OF assms(1,2,3) this] show ?thesis by (simp add: AF_outer_initial_def)
 qed
 
 end

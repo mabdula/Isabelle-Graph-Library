@@ -70,8 +70,8 @@ global_interpretation bx: matroid_intersection_imp_spec n id id bb_memb bb_ins1 
     and bx_s = bx.ids.s_imp
     and bx_t = bx.ids.t_imp
     and bx_st = bx.ids.st_imp
-    and bx_src = bx.ids.src_imp
-    and bx_tgt = bx.ids.tgt_imp
+    and bx_src = bx.ids.is_src_imp
+    and bx_tgt = bx.ids.is_tgt_imp
     and bx_tail = bx.ids.tail_imp
     and bx_round = bx.ids.round_imp
     and bx_aug_path = bx.ids.aug_path_imp

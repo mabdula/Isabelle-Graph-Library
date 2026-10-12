@@ -1,6 +1,7 @@
 theory Network_Simplex_Initial_Basis_Code
   imports Mincost_Flow_Algorithms.Network_Simplex_Final
-          Acyclic_Flow_Instantiation
+          Mincost_Flow_Algorithms.Acyclic_Flow
+          "../../Set_Graphs/Directed_Graphs/CSR_Graph_Spec"
           "Rooted_Arborescense/Rooted_Arborescense"
 begin
 
@@ -336,9 +337,10 @@ qed
 text \<open>The mutable state carried by the free-edge DFS builder (design notes {\isasymsection}4/{\isasymsection}6.1). Every field is
       an array read with @{const nth} and written with @{const list_update}; the option-valued pointer
       maps @{term prnt}/@{term thrd}/@{term rvth} use @{term \<open>0::nat\<close>} as the null sentinel (there is
-      no node \<open>0\<close>). The stack @{term ds_stk} makes the recursion explicit --- one frame
-      @{term \<open>(v, oc, ic)\<close>} per active vertex, holding the two cursors into @{term v}'s free outgoing
-      and ingoing CSR blocks --- so the later array refinement has exactly the same (while-loop) shape.\<close>
+      no node \<open>0\<close>). The stack @{term ds_stk} of active vertices makes the recursion explicit, so the
+      later array refinement has exactly the same (while-loop) shape. The iterators over the free
+      outgoing and ingoing ranges of the vertices are the cursor functions @{term ds_oc} and
+      @{term ds_ic} (@{locale csr_ranges}); a vertex's cursors are reset when it is pushed.\<close>
 
 record 'n dfs_state =
   ds_seen :: "bool list"                   \<comment> \<open>visited flag (= in tree)\<close>
@@ -351,7 +353,9 @@ record 'n dfs_state =
   ds_lsuc :: "nat list"                    \<comment> \<open>last successor (rightmost descendant in thread)\<close>
   ds_snum :: "nat list"                    \<comment> \<open>subtree size\<close>
   ds_prev :: "nat"                         \<comment> \<open>last vertex emitted in preorder\<close>
-  ds_stk  :: "(nat \<times> nat \<times> nat) list"      \<comment> \<open>DFS stack of \<open>(vertex, out-cursor, in-cursor)\<close>\<close>
+  ds_stk  :: "nat list"                    \<comment> \<open>DFS stack of active vertices\<close>
+  ds_oc   :: "nat \<Rightarrow> nat"                 \<comment> \<open>cursors into the free outgoing ranges\<close>
+  ds_ic   :: "nat \<Rightarrow> nat"                 \<comment> \<open>cursors into the free ingoing ranges\<close>
   ds_afst :: "nat list"                    \<comment> \<open>artificial-edge tails (fst / snd / capacity / flow / tag),
                                                 each pre-sized to the \<open>K \<le> length vs_list\<close> bound and
                                                 filled at cursor @{term ds_nxt} --- an array push, no growth\<close>
@@ -522,71 +526,44 @@ definition b_arr :: "'n list" where
 definition b_lookup :: "nat \<Rightarrow> 'n" where
   "b_lookup v = b_arr ! v"
 
-subsection \<open>The graph as two counting-sort CSRs and the acyclic-flow procedure\<close>
+subsection \<open>The graph as two CSRs and the acyclic-flow procedure\<close>
 
-text \<open>Both adjacency structures are the cache-friendly two-pass counting-sort CSR
-      @{const build_csr_scatter}: the outgoing one keys each edge on its tail @{term \<open>fst_list ! e\<close>},
-      the ingoing one on its head @{term \<open>snd_list ! e\<close>}.  The blocks are indexed by vertex \<^emph>\<open>name\<close>,
-      so the array of blocks is sized to @{term vcount}, one past the largest name (exactly as
-      @{const b_arr}); names that are not vertices index empty blocks.  Building each CSR is two
-      passes over the @{term m} edges plus one scan of the @{term vcount} blocks, and every scanning
-      operation the algorithm then performs is \<open>O(1)\<close>.\<close>
-
-text \<open>The two graph CSRs are built \<^emph>\<open>once\<close> and \<^emph>\<open>in parallel\<close>: a single fused pass counts both the
-      out-degrees (by tail) and in-degrees (by head), and a single fused scatter places each edge into
-      both CSRs --- two edge sweeps for both structures, not four. The generic \<open>build_two_csr\<close> projects
-      onto the two independent \<open>build_csr_scatter\<close> builds (lemmas \<open>build_two_csr_fst\<close> / \<open>build_two_csr_snd\<close>
-      below), so every existing CSR fact transfers unchanged. The acyclic-flow instance uses the two
-      CSRs as its edge iterators, and the initial-basis construction reuses their block starts and
-      overwrites their edge arrays in place with the free edges ({\isasymsection}4, no rebuild, no new allocation).\<close>
-
-definition build_two_csr ::
-  "nat \<Rightarrow> ('e \<Rightarrow> nat) \<Rightarrow> ('e \<Rightarrow> nat) \<Rightarrow> 'e list \<Rightarrow> 'e \<Rightarrow> ('e edge_csr \<times> 'e edge_csr)" where
-  "build_two_csr nn k1 k2 es dflt =
-     (let cc = fold (\<lambda>e (c1,c2). (c1[k1 e := Suc (c1 ! k1 e)], c2[k2 e := Suc (c2 ! k2 e)]))
-                    es (replicate nn 0, replicate nn 0);
-          p1 = psums 0 (fst cc); lo1 = butlast p1;
-          p2 = psums 0 (snd cc); lo2 = butlast p2;
-          AB = fold (\<lambda>e (A,B). (scatter_body k1 e A, scatter_body k2 e B)) es
-                    ((replicate (length es) dflt, lo1), (replicate (length es) dflt, lo2))
-      in (edge_csr.make (fst (fst AB)) lo1 (tl p1) lo1,
-          edge_csr.make (fst (snd AB)) lo2 (tl p2) lo2))"
-
-definition two_csr :: "nat edge_csr \<times> nat edge_csr" where
-  "two_csr = build_two_csr vcount (nth fst_list) (nth snd_list) [0..<m] 0"
-
-definition out_csr :: "nat edge_csr" where "out_csr = fst two_csr"
-definition in_csr :: "nat edge_csr" where "in_csr = snd two_csr"
+text \<open>Both adjacency structures are the CSR of the edge list built by the counting sort
+      @{locale csr_buildup}, with the edges @{term \<open>[0..<length fst_list]\<close>} as elements: the
+      outgoing one keys each edge on its tail (@{term \<open>e_src fst_list\<close>}), the ingoing one on its head
+      (@{term \<open>e_tgt fst_list snd_list\<close>}).  The blocks are indexed by vertex \<^emph>\<open>name\<close>, so the array of
+      block starts \<open>B\<close> has @{term \<open>Suc vcount\<close>} entries, one past the largest name (exactly as
+      @{const b_arr}); names that are not vertices index empty blocks.  The acyclic-flow instance
+      uses the two CSRs as its edge iterators (@{locale csr_graph}, the iterator state being the
+      cursor function), and the initial-basis construction reuses their block starts and
+      overwrites their edge arrays in place with the free edges ({\isasymsection}4, no rebuild, no
+      new allocation).\<close>
 
 section \<open>Initial-basis construction: the strongly-feasible spanning tree\<close>
 
 subsection \<open>Pass A: one fused sweep --- status, excess, and the free-edge CSRs\<close>
 
 text \<open>Realising the notes' single pass: one fold over the edges records, per edge, its status
-      (\<open>edge_state\<close>), accumulates the excess (\<open>excess\<close>), and --- for a \<^emph>\<open>free\<close> (tree) edge --- overwrites
-      it into the two adjacency CSRs in place. We reuse the block starts of the already-built
-      outgoing/ingoing CSRs (\<open>out_lo\<close> / \<open>in_lo\<close>); the cursors run from those starts, so each vertex's
-      free edges occupy the front of its old block, the tail becoming unused \<^emph>\<open>holes\<close>. No list is
-      materialised beyond the ones the notes name.\<close>
+      (\<open>edge_state\<close>), accumulates the excess (\<open>excess\<close>), and --- for a \<^emph>\<open>free\<close> (tree) edge --- appends
+      it to the range of its tail in the outgoing CSR and to the range of its head in the ingoing CSR
+      (@{const csr_append}), in place. Each range starts empty at the start of its block
+      (\<open>out_lo\<close> / \<open>in_lo\<close>), so each vertex's free edges occupy the front of its block
+      (@{locale csr_ranges}). No list is materialised beyond the ones the notes name.\<close>
 
 definition out_lo :: "nat list" where
-  "out_lo = csr_lo out_csr"
+  "out_lo = butlast (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
 
 definition in_lo :: "nat list" where
-  "in_lo = csr_lo in_csr"
+  "in_lo = butlast (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
 
-text \<open>Block \<^emph>\<open>ends\<close> of the full outgoing/ingoing CSRs. A vertex whose block is empty in \<^emph>\<open>both\<close>
-      structures (@{term \<open>out_lo ! v = out_hi ! v \<and> in_lo ! v = in_hi ! v\<close>}) is an endpoint of no
-      edge --- a \<^emph>\<open>lonely\<close> vertex. The test is two O(1) reads, so it introduces no extra sweep.\<close>
-
-definition out_hi :: "nat list" where
-  "out_hi = csr_hi out_csr"
-
-definition in_hi :: "nat list" where
-  "in_hi = csr_hi in_csr"
+text \<open>A vertex whose blocks are empty in \<^emph>\<open>both\<close> CSRs (@{const csr_ranges.csr_empty}) is an endpoint of
+      no edge --- a \<^emph>\<open>lonely\<close> vertex. The test is two O(1) reads per CSR, so it introduces no extra
+      sweep.\<close>
 
 definition is_lonely :: "nat \<Rightarrow> bool" where
-  "is_lonely v \<longleftrightarrow> out_lo ! v = out_hi ! v \<and> in_lo ! v = in_hi ! v"
+  "is_lonely v \<longleftrightarrow>
+     csr_ranges.csr_empty (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0) v \<and>
+     csr_ranges.csr_empty (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0) v"
 
 text \<open>The edged vertices: the dense range with the edge-less (lonely) names removed.  This is the
       vertex set actually fed to the acyclifier, so its abstraction stays exactly the graph vertex
@@ -597,53 +574,45 @@ text \<open>The edged vertices: the dense range with the edge-less (lonely) name
 definition edged_vs_list :: "nat list" where
   "edged_vs_list = filter (\<lambda>v. \<not> is_lonely v) vs_list"
 
-text \<open>The fused step for edge @{term e}. The state is the six arrays being built: the status list,
-      the excess, and the outgoing/ingoing free-CSR edge arrays with their cursors. A self-loop
-      cancels in the excess (the head update is read back by the tail update).\<close>
+text \<open>The fused step for edge @{term e}. The state is the status list, the excess, and the outgoing
+      and ingoing free ranges, each a pair of the range ends and the edge array. A self-loop cancels
+      in the excess (the head update is read back by the tail update).\<close>
 
 definition passA_step ::
-  "'n list \<Rightarrow> nat \<Rightarrow> edge_tag list \<times> 'n list \<times> nat list \<times> nat list \<times> nat list \<times> nat list
-       \<Rightarrow> edge_tag list \<times> 'n list \<times> nat list \<times> nat list \<times> nat list \<times> nat list" where
-  "passA_step fl e = (\<lambda>(est, exc, oe, oc, ie, ic).
+  "'n list \<Rightarrow> nat \<Rightarrow> edge_tag list \<times> 'n list \<times> (nat list \<times> nat list) \<times> (nat list \<times> nat list)
+       \<Rightarrow> edge_tag list \<times> 'n list \<times> (nat list \<times> nat list) \<times> (nat list \<times> nat list)" where
+  "passA_step fl e = (\<lambda>(est, exc, fo, fi).
      let x = fst_list ! e; y = snd_list ! e; f = fl ! e; u = capacity_list ! e;
          st = (if f = 0 then InL else if u \<noteq> - 1 \<and> f = u then InU else InTree);
          exc' = (let a = exc[y := exc ! y + f] in a[x := a ! x - f])
      in if st = InTree
-        then (est[e := st], exc', oe[oc ! x := e], oc[x := oc ! x + 1],
-              ie[ic ! y := e], ic[y := ic ! y + 1])
-        else (est[e := st], exc', oe, oc, ie, ic))"
+        then (est[e := st], exc', csr_append x e fo, csr_append y e fi)
+        else (est[e := st], exc', fo, fi))"
 
 definition passA ::
-  "'n list \<Rightarrow> edge_tag list \<times> 'n list \<times> nat list \<times> nat list \<times> nat list \<times> nat list" where
+  "'n list \<Rightarrow> edge_tag list \<times> 'n list \<times> (nat list \<times> nat list) \<times> (nat list \<times> nat list)" where
   "passA fl = fold (passA_step fl) [0..<m]
-     (replicate m InL, replicate (Suc vcount) (0::'n), csr_edges out_csr, out_lo,
-      csr_edges in_csr, in_lo)"
+     (replicate m InL, replicate (Suc vcount) (0::'n),
+      (out_lo, csr_buildup.E_spec (edge_seq fst_list) (e_src fst_list) vcount 0),
+      (in_lo, csr_buildup.E_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0))"
 
 definition edge_state :: "'n list \<Rightarrow> edge_tag list" where
-  "edge_state fl = (let (est, _, _, _, _, _) = passA fl in est)"
+  "edge_state fl = (let (est, _, _, _) = passA fl in est)"
 
 definition excess :: "'n list" where
-  "excess = (let (_, exc, _, _, _, _) = passA flow_list in exc)"
+  "excess = (let (_, exc, _, _) = passA flow_list in exc)"
 
-definition free_out_edges :: "'n list \<Rightarrow> nat list" where
-  "free_out_edges fl = (let (_, _, oe, _, _, _) = passA fl in oe)"
+definition free_out :: "'n list \<Rightarrow> nat list \<times> nat list" where
+  "free_out fl = (let (_, _, fo, _) = passA fl in fo)"
 
-definition free_out_hi :: "'n list \<Rightarrow> nat list" where
-  "free_out_hi fl = (let (_, _, _, oc, _, _) = passA fl in oc)"
-
-definition free_in_edges :: "'n list \<Rightarrow> nat list" where
-  "free_in_edges fl = (let (_, _, _, _, ie, _) = passA fl in ie)"
-
-definition free_in_hi :: "'n list \<Rightarrow> nat list" where
-  "free_in_hi fl = (let (_, _, _, _, _, ic) = passA fl in ic)"
+definition free_in :: "'n list \<Rightarrow> nat list \<times> nat list" where
+  "free_in fl = (let (_, _, _, fi) = passA fl in fi)"
 
 subsection \<open>Derived views: status and imbalance\<close>
 
-text \<open>Vertex v's free incident edges are the CSR block: entries of \<^emph>\<open>free\_out\_edges\<close> from index
-      \<^emph>\<open>out\_lo!v\<close> up to \<^emph>\<open>free\_out\_hi!v\<close> (outgoing), and of \<^emph>\<open>free\_in\_edges\<close> from \<^emph>\<open>in\_lo!v\<close> up to
-      \<^emph>\<open>free\_in\_hi!v\<close> (ingoing) --- a constant-time index range, no rescan. The DFS scans these ranges
-      \<^emph>\<open>by index\<close>, so no per-vertex edge list is materialised (over all vertices they cover each free
-      edge once).\<close>
+text \<open>Vertex v's free outgoing edges are its range in @{term \<open>free_out fl\<close>}, its free ingoing edges
+      its range in @{term \<open>free_in fl\<close>} (@{locale csr_ranges}, with the block starts of the full CSRs).
+      The DFS iterates over these ranges, so no per-vertex edge list is materialised.\<close>
 
 text \<open>The imbalance @{term \<open>imbalance ! v\<close>} = achieved - target balance = the signed amount @{term v}'s
       artificial edge must ship toward the root (surplus positive); the root carries none. It is the
@@ -676,17 +645,15 @@ text \<open>The augmented network's endpoints, capacity and flow are \<^emph>\<o
       arrays are defined once the phase construction is in place; the earlier per-edge endpoint
       functions \<open>fst_aug\<close> / \<open>snd_aug\<close> (which branched on \<open>e < m\<close>) are therefore dropped.\<close>
 
-subsection \<open>The free-edge DFS builder\<close>
-
 text \<open>Design notes {\isasymsection}4/{\isasymsection}6.1. A single depth-first traversal of the free-edge CSRs (built by Pass A)
       grows the rooted arborescence toward @{term vcount}. The traversal is a genuine recursive
-      function stepping an explicit stack --- the same shape the later array refinement will have --- with
-      one frame @{term \<open>(v, oc, ic)\<close>} per active vertex, holding cursors into @{term v}'s free
-      outgoing block \<open>[out_lo ! v ..< free_out_hi ! v)\<close> and free ingoing block
-      \<open>[in_lo ! v ..< free_in_hi ! v)\<close>.\<close>
+      function stepping an explicit stack of vertices --- the same shape the later array refinement
+      will have --- iterating over the free outgoing and then the free ingoing range of the top
+      vertex with the iterators @{term ds_oc} / @{term ds_ic} of @{locale csr_ranges}.\<close>
 
 text \<open>The initial builder state: nothing visited, the root @{term vcount} seeded (its subtree size
-      starts at \<open>1\<close> and the thread predecessor of the first emitted vertex will be the root).\<close>
+      starts at \<open>1\<close> and the thread predecessor of the first emitted vertex will be the root). The
+      cursors are arbitrary; each vertex's cursors are reset when it is pushed.\<close>
 
 definition dfs_init :: "'n dfs_state" where
   "dfs_init =
@@ -701,16 +668,28 @@ definition dfs_init :: "'n dfs_state" where
        ds_snum = (replicate (Suc vcount) 0)[vcount := 1],
        ds_prev = vcount,
        ds_stk  = [],
+       ds_oc   = (\<lambda>_. 0),
+       ds_ic   = (\<lambda>_. 0),
        ds_afst = replicate (length vs_list) 0, ds_asnd = replicate (length vs_list) 0,
        ds_acap = replicate (length vs_list) 0, ds_aflw = replicate (length vs_list) 0,
        ds_aest = replicate (length vs_list) InL,
        ds_nxt  = 0 \<rparr>"
 
+text \<open>Pushing vertex @{term w}: reset both its iterators and put it on the stack.\<close>
+
+definition dfs_push :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> 'n dfs_state" where
+  "dfs_push s w =
+     s\<lparr> ds_stk := w # ds_stk s,
+        ds_oc := csr_ranges.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)
+                   (ds_oc s) w,
+        ds_ic := csr_ranges.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)
+                   (ds_ic s) w \<rparr>"
+
 text \<open>Discovering a fresh vertex @{term w} from stack-top @{term v} across the free real edge
       @{term e}: finalise @{term w}'s tree fields, link it into the thread after the last emitted
       vertex @{term \<open>ds_prev s\<close>}, seed its potential to give @{term e} zero reduced cost
-      (\<open>\<plusminus> cost_list ! e\<close> by whether @{term v} is @{term e}'s tail), and push @{term w}'s
-      frame. The orientation flag is \<open>True\<close> iff @{term e} points \<open>w \<rightarrow> v\<close> (up toward the
+      (\<open>\<plusminus> cost_list ! e\<close> by whether @{term v} is @{term e}'s tail), and push @{term w}.
+      The orientation flag is \<open>True\<close> iff @{term e} points \<open>w \<rightarrow> v\<close> (up toward the
       parent).\<close>
 
 definition dfs_discover :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n dfs_state" where
@@ -718,97 +697,102 @@ definition dfs_discover :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> nat \<R
      (let sgn = (if v = fst_list ! e then (cost_list ! e) else - (cost_list ! e));
           pw  = pval_plus (ds_pot s ! v) (M_0, sgn);
           pv  = ds_prev s
-      in s\<lparr> ds_seen := (ds_seen s)[w := True],
-            ds_prnt := (ds_prnt s)[w := v],
-            ds_par  := (ds_par s)[w := e],
-            ds_dir  := (ds_dir s)[w := (fst_list ! e = w)],
-            ds_pot  := (ds_pot s)[w := pw],
-            ds_thrd := (ds_thrd s)[pv := w],
-            ds_rvth := (ds_rvth s)[w := pv],
-            ds_snum := (ds_snum s)[w := 1],
-            ds_prev := w,
-            ds_stk  := (w, out_lo ! w, in_lo ! w) # ds_stk s \<rparr>)"
+      in dfs_push
+           (s\<lparr> ds_seen := (ds_seen s)[w := True],
+               ds_prnt := (ds_prnt s)[w := v],
+               ds_par  := (ds_par s)[w := e],
+               ds_dir  := (ds_dir s)[w := (fst_list ! e = w)],
+               ds_pot  := (ds_pot s)[w := pw],
+               ds_thrd := (ds_thrd s)[pv := w],
+               ds_rvth := (ds_rvth s)[w := pv],
+               ds_snum := (ds_snum s)[w := 1],
+               ds_prev := w \<rparr>) w)"
 
 text \<open>Finishing (post-order) stack-top @{term v}: the last vertex emitted so far is the rightmost
       descendant of @{term v}'s subtree, so it is @{term v}'s \<open>lsuc\<close>; add @{term v}'s completed
-      subtree size to its parent's running count and pop the frame.\<close>
+      subtree size to its parent's running count and pop @{term v}.\<close>
 
-definition dfs_finish :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> (nat \<times> nat \<times> nat) list \<Rightarrow> 'n dfs_state" where
+definition dfs_finish :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> 'n dfs_state" where
   "dfs_finish s v rest =
      (let p = ds_prnt s ! v
       in s\<lparr> ds_lsuc := (ds_lsuc s)[v := ds_prev s],
             ds_snum := (ds_snum s)[p := ds_snum s ! p + ds_snum s ! v],
             ds_stk  := rest \<rparr>)"
 
-text \<open>The traversal itself: at the stack top scan the free outgoing block, then the free ingoing
-      block, recursing into each unseen neighbour; when both are exhausted, finish the vertex.
-      Termination (each real recursion either marks a fresh vertex or advances a cursor) is deferred to
-      a separate measure lemma, as for \<open>AF_DFS\<close>.\<close>
+text \<open>The traversal itself: at the stack top iterate over the free outgoing range, then the free
+      ingoing range, recursing into each unseen neighbour; when both are exhausted, finish the
+      vertex. Termination (each real recursion either marks a fresh vertex or advances an iterator)
+      is deferred to a separate measure lemma, as for \<open>AF_DFS\<close>.\<close>
 
-text \<open>The recursion takes the four Pass-A arrays it scans --- the free outgoing / ingoing edge arrays
-      @{term oe} / @{term ie} and their block ends @{term oh} / @{term ih} --- rather than the flow.
-      This is what keeps the traversal linear.  Each of \<open>free_out_edges\<close> / \<open>free_out_hi\<close> /
-      \<open>free_in_edges\<close> / \<open>free_in_hi\<close> re-runs the \<^emph>\<open>whole\<close> of @{const passA}, a fold over all @{term m}
-      edges, and then keeps one of its six results; so a flow-indexed recursion would redo Pass A at
-      every single DFS step, one to four times over.  Taking the arrays as arguments --- they are fixed
-      for the entire traversal --- runs @{const passA} once, in \<open>build_dfs\<close> just below, and
-      shares it across the whole descent.\<close>
+text \<open>The recursion takes the two free ranges of Pass A --- @{term fo} / @{term fi}, each the pair
+      of range ends and edge array --- rather than the flow. This is what keeps the traversal
+      linear: @{const free_out} / @{const free_in} re-run the \<^emph>\<open>whole\<close> of @{const passA}, a fold over
+      all @{term m} edges, so a flow-indexed recursion would redo Pass A at every single DFS step.
+      Taking the ranges as arguments --- they are fixed for the entire traversal --- runs
+      @{const passA} once, in \<open>build_dfs\<close> just below, and shares it across the whole descent.\<close>
 
 function (domintros) build_dfs_a ::
-  "nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> 'n dfs_state \<Rightarrow> 'n dfs_state" where
-  "build_dfs_a oe oh ie ih s =
+  "nat list \<times> nat list \<Rightarrow> nat list \<times> nat list \<Rightarrow> 'n dfs_state \<Rightarrow> 'n dfs_state" where
+  "build_dfs_a fo fi s =
      (case ds_stk s of
         [] \<Rightarrow> s
-      | (v, oc, ic) # rest \<Rightarrow>
-         if oc < oh ! v then
-           (let e = oe ! oc; w = snd_list ! e;
-                s1 = s\<lparr> ds_stk := (v, Suc oc, ic) # rest \<rparr>
-            in build_dfs_a oe oh ie ih (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
-         else if ic < ih ! v then
-           (let e = ie ! ic; w = fst_list ! e;
-                s1 = s\<lparr> ds_stk := (v, oc, Suc ic) # rest \<rparr>
-            in build_dfs_a oe oh ie ih (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
+      | v # rest \<Rightarrow>
+         if csr_ranges.csr_has ((!) (fst fo)) (ds_oc s) v then
+           (let e = csr_ranges.csr_current (snd fo) (ds_oc s) v; w = snd_list ! e;
+                s1 = s\<lparr> ds_oc := csr_ranges.csr_move ((!) (fst fo)) (ds_oc s) v \<rparr>
+            in build_dfs_a fo fi (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
+         else if csr_ranges.csr_has ((!) (fst fi)) (ds_ic s) v then
+           (let e = csr_ranges.csr_current (snd fi) (ds_ic s) v; w = fst_list ! e;
+                s1 = s\<lparr> ds_ic := csr_ranges.csr_move ((!) (fst fi)) (ds_ic s) v \<rparr>
+            in build_dfs_a fo fi (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
          else
-           build_dfs_a oe oh ie ih (dfs_finish s v rest))"
+           build_dfs_a fo fi (dfs_finish s v rest))"
   by pat_completeness auto
 
-text \<open>The flow-indexed traversal: \<^emph>\<open>one\<close> @{const passA}, its four scanned arrays handed to the
-      recursion. The domain predicate and the unfolding / induction rules of the original
-      flow-indexed recursion are recovered by \<open>build_dfs_dom\<close>, \<open>build_dfs_unfold\<close> and the \<open>bd_\<close>
-      wrappers, so the correctness development is unchanged.\<close>
+text \<open>The flow-indexed traversal: \<^emph>\<open>one\<close> @{const passA}, its two free ranges handed to the
+      recursion. The domain predicate and the unfolding rule of the flow-indexed recursion are
+      recovered by \<open>build_dfs_dom\<close> and \<open>build_dfs_psimps\<close>.\<close>
 
 definition build_dfs :: "'n list \<Rightarrow> 'n dfs_state \<Rightarrow> 'n dfs_state" where
-  "build_dfs fl s = (let (est, exc, oe, oh, ie, ih) = passA fl in build_dfs_a oe oh ie ih s)"
+  "build_dfs fl s = (let (_, _, fo, fi) = passA fl in build_dfs_a fo fi s)"
 
 definition build_dfs_dom :: "'n list \<times> 'n dfs_state \<Rightarrow> bool" where
-  "build_dfs_dom p \<longleftrightarrow> build_dfs_a_dom (free_out_edges (fst p), free_out_hi (fst p),
-                                       free_in_edges (fst p), free_in_hi (fst p), snd p)"
+  "build_dfs_dom p \<longleftrightarrow> build_dfs_a_dom (free_out (fst p), free_in (fst p), snd p)"
 
-lemma build_dfs_unfold:
-  "build_dfs fl s = build_dfs_a (free_out_edges fl) (free_out_hi fl) (free_in_edges fl) (free_in_hi fl) s"
-  by (simp add: build_dfs_def free_out_edges_def free_out_hi_def free_in_edges_def free_in_hi_def
-           split: prod.splits)
+lemma build_dfs_unfold: "build_dfs fl s = build_dfs_a (free_out fl) (free_in fl) s"
+  by (simp add: build_dfs_def free_out_def free_in_def split: prod.splits)
 
 lemma build_dfs_dom_iff:
-  "build_dfs_dom (fl, s) \<longleftrightarrow>
-     build_dfs_a_dom (free_out_edges fl, free_out_hi fl, free_in_edges fl, free_in_hi fl, s)"
+  "build_dfs_dom (fl, s) \<longleftrightarrow> build_dfs_a_dom (free_out fl, free_in fl, s)"
   by (simp add: build_dfs_dom_def)
 
-text \<open>The original flow-indexed unfolding rule, recovered from the array-indexed recursion. This is
-      verbatim the equation @{const build_dfs} used to be defined by, so the correctness development
-      reasons about the traversal exactly as before --- only the evaluation shares Pass A.\<close>
+text \<open>The flow-indexed unfolding rule, recovered from the range-indexed recursion.\<close>
 
 lemma build_dfs_psimps:
   assumes "build_dfs_dom (fl, s)"
-  shows "build_dfs fl s = (case ds_stk s of [] \<Rightarrow> s | (v, oc, ic) # rest \<Rightarrow> if oc < free_out_hi fl ! v then (let e = free_out_edges fl ! oc; w = snd_list ! e; s1 = s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr> in build_dfs fl (if ds_seen s ! w then s1 else dfs_discover s1 v w e)) else if ic < free_in_hi fl ! v then (let e = free_in_edges fl ! ic; w = fst_list ! e; s1 = s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr> in build_dfs fl (if ds_seen s ! w then s1 else dfs_discover s1 v w e)) else build_dfs fl (dfs_finish s v rest))"
+  shows "build_dfs fl s =
+    (case ds_stk s of
+       [] \<Rightarrow> s
+     | v # rest \<Rightarrow>
+        if csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v then
+          (let e = csr_ranges.csr_current (snd (free_out fl)) (ds_oc s) v; w = snd_list ! e;
+               s1 = s\<lparr> ds_oc := csr_ranges.csr_move ((!) (fst (free_out fl))) (ds_oc s) v \<rparr>
+           in build_dfs fl (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
+        else if csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v then
+          (let e = csr_ranges.csr_current (snd (free_in fl)) (ds_ic s) v; w = fst_list ! e;
+               s1 = s\<lparr> ds_ic := csr_ranges.csr_move ((!) (fst (free_in fl))) (ds_ic s) v \<rparr>
+           in build_dfs fl (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
+        else
+          build_dfs fl (dfs_finish s v rest))"
   using assms unfolding build_dfs_unfold build_dfs_dom_iff by (rule build_dfs_a.psimps)
+
 text \<open>Opening a tree component at an unseen vertex @{term c}: emit @{term c}'s \<^emph>\<open>tree\<close> artificial edge
       (write its endpoints / capacity / flow into the pre-sized artificial tails at cursor
       @{term \<open>ds_nxt s\<close>}, tag @{const InTree}),
       finalise @{term c} as a child of the root @{term vcount}, seed its potential to \<open>\<plusminus> M\<close>
-      (a down edge \<open>r \<rightarrow> c\<close> gives \<open>+ M\<close>, an up edge \<open>- M\<close>), thread-link it, then drain its
-      subtree by @{const build_dfs}. Orientation / flow / capacity are computed inline from a
-      \<^emph>\<open>single\<close> @{term \<open>imbalance ! c\<close>} read (the build-time formulas @{const art_dir} /
+      (a down edge \<open>r \<rightarrow> c\<close> gives \<open>+ M\<close>, an up edge \<open>- M\<close>), thread-link it, push it on the empty
+      stack, then drain its subtree by @{const build_dfs}. Orientation / flow / capacity are computed
+      inline from a \<^emph>\<open>single\<close> @{term \<open>imbalance ! c\<close>} read (the build-time formulas @{const art_dir} /
       @{const art_flow} / @{const art_tree_cap}, unfolded to avoid re-reading @{const imbalance}).\<close>
 
 definition open_tree_component :: "'n list \<Rightarrow> 'n dfs_state \<Rightarrow> nat \<Rightarrow> 'n dfs_state" where
@@ -816,22 +800,23 @@ definition open_tree_component :: "'n list \<Rightarrow> 'n dfs_state \<Rightarr
      (let imb = imbalance ! c; up = 0 \<le> imb; af = \<bar>imb\<bar>; cp = (if up then af + 1 else af);
           pv = ds_prev s
       in build_dfs fl
-           (s\<lparr> ds_afst := (ds_afst s)[ds_nxt s := (if up then c else vcount)],
-               ds_asnd := (ds_asnd s)[ds_nxt s := (if up then vcount else c)],
-               ds_acap := (ds_acap s)[ds_nxt s := cp],
-               ds_aflw := (ds_aflw s)[ds_nxt s := af],
-               ds_aest := (ds_aest s)[ds_nxt s := InTree],
-               ds_nxt  := Suc (ds_nxt s),
-               ds_seen := (ds_seen s)[c := True],
-               ds_prnt := (ds_prnt s)[c := vcount],
-               ds_par  := (ds_par s)[c := m + ds_nxt s],
-               ds_dir  := (ds_dir s)[c := up],
-               ds_pot  := (ds_pot s)[c := (if up then pval_negM else pval_M)],
-               ds_thrd := (ds_thrd s)[pv := c],
-               ds_rvth := (ds_rvth s)[c := pv],
-               ds_snum := (ds_snum s)[c := 1],
-               ds_prev := c,
-               ds_stk  := [(c, out_lo ! c, in_lo ! c)] \<rparr>))"
+           (dfs_push
+             (s\<lparr> ds_afst := (ds_afst s)[ds_nxt s := (if up then c else vcount)],
+                 ds_asnd := (ds_asnd s)[ds_nxt s := (if up then vcount else c)],
+                 ds_acap := (ds_acap s)[ds_nxt s := cp],
+                 ds_aflw := (ds_aflw s)[ds_nxt s := af],
+                 ds_aest := (ds_aest s)[ds_nxt s := InTree],
+                 ds_nxt  := Suc (ds_nxt s),
+                 ds_seen := (ds_seen s)[c := True],
+                 ds_prnt := (ds_prnt s)[c := vcount],
+                 ds_par  := (ds_par s)[c := m + ds_nxt s],
+                 ds_dir  := (ds_dir s)[c := up],
+                 ds_pot  := (ds_pot s)[c := (if up then pval_negM else pval_M)],
+                 ds_thrd := (ds_thrd s)[pv := c],
+                 ds_rvth := (ds_rvth s)[c := pv],
+                 ds_snum := (ds_snum s)[c := 1],
+                 ds_prev := c,
+                 ds_stk  := [] \<rparr>) c))"
 
 text \<open>Emitting a \<^emph>\<open>saturated\<close> @{term U} artificial edge for an already-seen imbalanced vertex
       @{term v} (design notes {\isasymsection}4, last table row): it carries @{term \<open>art_flow v\<close>} at its bound
@@ -884,16 +869,20 @@ definition build_tree :: "'n list \<Rightarrow> 'n dfs_state" where
 text \<open>The acyclic-flow procedure is available here as an assumption-free specification instance: the two counting-sort CSRs are its edge iterators, the flow and vertex-state arrays are lists, and fst-exec / snd-exec are the constant-time endpoint reads. Interpreting the acyclic-flow specification locale exports the executable acyclifier into this specification locale, so the acyclifier can be executed without discharging any ADT law.\<close>
 
 sublocale acyclic_flow_impl_spec
-  where  out_current = csr_current and out_has = csr_has
-    and out_move = csr_move and out_reset = csr_reset
-    and in_current = csr_current and in_has = csr_has
-    and in_move = csr_move and in_reset = csr_reset
+  where out_current = "csr_ranges.csr_current (csr_buildup.E_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
+    and out_has = "csr_ranges.csr_has (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0 ! Suc v)"
+    and out_move = "csr_ranges.csr_move (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0 ! Suc v)"
+    and out_reset = "csr_ranges.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
+    and in_current = "csr_ranges.csr_current (csr_buildup.E_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
+    and in_has = "csr_ranges.csr_has (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0 ! Suc v)"
+    and in_move = "csr_ranges.csr_move (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0 ! Suc v)"
+    and in_reset = "csr_ranges.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
     and flow_upd = list_update and flow_lookup = nth
     and st_upd = list_update and st_lookup = nth
     and current_vertex = vtx_current and has_vertex = vtx_has
     and move_on_vertex = vtx_move
-    and out_arr = out_csr
-    and in_arr = in_csr
+    and out_arr = "(!) (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
+    and in_arr = "(!) (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
     and all_vertices = "\<lparr> vi_list = edged_vs_list, vi_pos = 0 \<rparr>"
     and cap = "\<lambda> e.  capacity_list ! e "
     and cost = "\<lambda> e. cost_list ! e"

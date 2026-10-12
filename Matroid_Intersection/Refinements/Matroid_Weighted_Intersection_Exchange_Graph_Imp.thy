@@ -29,7 +29,7 @@ text \<open>The tight exchange neighbours: the exchange iterator, skipping the n
 
 definition "teq_imp C cu = (\<lambda> _ _ v. do { cv \<leftarrow> Array.nth C v; return (cu = cv) })"
 
-definition tnbs :: "'si \<times> (nat array \<times> nat array \<times> nat array) \<times> 'n::heap array \<times> 'n array \<Rightarrow> nat \<Rightarrow>
+definition tnbs :: "'si \<times> (nat array \<times> nat array) \<times> 'n::heap array \<times> 'n array \<Rightarrow> nat \<Rightarrow>
                      (nat \<Rightarrow> nat \<Rightarrow> 'acc \<Rightarrow> 'acc Heap) \<Rightarrow> 'acc \<Rightarrow> 'acc Heap" where
   "tnbs Gh u fi acc = (case Gh of (Si, Gc, C1, C2) \<Rightarrow>
      if u < n then do {
@@ -68,7 +68,7 @@ definition "wsrc_imp Gh mS y = (case Gh of (Si, Gc, C1, C2) \<Rightarrow> do {
    else return False })"
 
 definition "wtgt_imp Si Vi C2 mT y = do {
-   t \<leftarrow> tgt_imp Si Vi y;
+   t \<leftarrow> is_tgt_imp Si Vi y;
    if t then do { z \<leftarrow> Array.nth C2 y; return (z = mT) } else return False }"
 
 text \<open>The sources of maximum weight without tight out-edge belong to the reachable set.\<close>
@@ -653,9 +653,9 @@ lemma wtgt_imp_rule:
          <\<lambda> r. xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(r = (((y \<notin> X \<and> y \<in> T0 X) \<and>
                 c2 y = wctx_mT (csr.wtight_ctx X c1 c2)) \<and> y \<in> V))>"
 proof-
-  have tg: "<xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> tgt_imp Si Vi y
+  have tg: "<xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> is_tgt_imp Si Vi y
             <\<lambda> r. xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(r = ((y \<notin> X \<and> y \<in> T0 X) \<and> y \<in> V))>"
-    by (rule ht_frame_ac[OF tgt_imp_rule[OF X y], where R = "warr_assn n h c1 C1 * warr_assn n h c2 C2"])
+    by (rule ht_frame_ac[OF is_tgt_imp_rule[OF X y], where R = "warr_assn n h c1 C1 * warr_assn n h c2 C2"])
        (simp only: gtx_def prod.case star_aci, rule ent_refl)+
   show ?thesis
   proof(cases "(y \<notin> X \<and> y \<in> T0 X) \<and> y \<in> V")
@@ -1451,7 +1451,7 @@ theorem imp_loop:
      (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Da Pa Ti) (weps_imp Gc Vi Mi) (wshift_imp Vi)
      h (\<lambda> R e c x. if x \<in> set R then c x + e else c x) csr.wtight_ctx
      (warr_assn n h) (len_assn n) (wctx_assn Vi Fr Bf Da Pa Mi Ti)
-     (wws Vi Fr Bf Da Pa Mi Ti) (ost1 * ost2 * csr3_assn (build_nhlists es0) Gc)"
+     (wws Vi Fr Bf Da Pa Mi Ti) (ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc)"
 proof(intro weighted_intersection_imp_loop.intro weighted_intersection_imp_loop_axioms.intro, goal_cases)
   case 1
   show ?case
@@ -1510,13 +1510,13 @@ text \<open>The loop on preallocated arrays.\<close>
 
 theorem loop_correct:
   "<(sol_assn {} Si) * warr_assn n h c Co * len_assn n C1 * len_assn n C2 *
-    wws Vi Fr Bf Da Pa Mi Ti * (ost1 * ost2 * csr3_assn (build_nhlists es0) Gc) * parr_assn n Ra>
+    wws Vi Fr Bf Da Pa Mi Ti * (ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc) * parr_assn n Ra>
      weighted_intersection_imp_loop_spec.wmi_run_imp sins_imp sdel_imp Array.nth
        ccopy_imp czero_imp (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Da Pa Ti)
        (weps_imp Gc Vi Mi) (wshift_imp Vi) Si Co C1 C2 Ra
    <\<lambda> _. \<exists>\<^sub>A X c1 c2. sol_assn X Si * warr_assn n h c1 C1 * warr_assn n h c2 C2 *
           warr_assn n h c Co * wws Vi Fr Bf Da Pa Mi Ti *
-          (ost1 * ost2 * csr3_assn (build_nhlists es0) Gc) * parr_assn n Ra *
+          (ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc) * parr_assn n Ra *
           \<up>(weighted_double_matroid.is_opt indep1 indep2 c X)>"
 proof-
   interpret l: weighted_intersection_imp_loop wctx_path wctx_R csr.weps indep1 indep2 "{0..<n}" set
@@ -1526,7 +1526,7 @@ proof-
     "weps_imp Gc Vi Mi" "wshift_imp Vi" h "\<lambda> R e c x. if x \<in> set R then c x + e else c x"
     csr.wtight_ctx "warr_assn n h" "len_assn n"
     "wctx_assn Vi Fr Bf Da Pa Mi Ti" "wws Vi Fr Bf Da Pa Mi Ti"
-    "ost1 * ost2 * csr3_assn (build_nhlists es0) Gc"
+    "ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc"
     by (rule imp_loop)
   show ?thesis
     by (rule l.wmi_run_imp_correct)

@@ -375,30 +375,25 @@ lemma dfs_discover_tspan:
   assumes inv: "dfs_inv acyc_flow s" and tsp: "tspan s"
       and wlt: "w < vcount" and wnz: "w \<noteq> 0" and unseen: "\<not> ds_seen s ! w"
   shows "tspan (dfs_discover s v w e)"
-  by (rule tspan_append[OF inv tsp wlt wnz unseen]) (simp_all add: dfs_discover_def Let_def)
+  by (rule tspan_append[OF inv tsp wlt wnz unseen]) (simp_all add: dfs_discover_def dfs_push_def Let_def)
 
 lemma bd_upd1_tspan:
   assumes inv: "dfs_inv fl s" and tsp: "tspan s" and c: "bd_call1_conds fl s"
   shows "tspan (bd_upd1 fl s)"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v, oc, ic) # rest" and oclt: "oc < (free_out_hi fl) ! v"
-    by (auto simp: bd_call1_conds_def split: list.splits prod.splits)
-  have wf: "dfs_wf s" and sz: "dfs_sized s" using inv by (auto simp: dfs_inv_def)
-  from wf stk have vlt: "v < vcount" and olo: "out_lo ! v \<le> oc" by (auto simp: dfs_wf_def)
-  let ?w = "snd_list ! ((free_out_edges fl) ! oc)"
-  have wlt: "?w < vcount" using Hout_valid[OF vlt olo oclt] .
-  have wnz: "?w \<noteq> 0" using Hout_nz[OF vlt olo oclt] .
+  have wf: "dfs_wf fl s" using inv by (simp add: dfs_inv_def)
+  obtain v rest e w c' where e: "e < m" "snd_list ! e = w" and wlt: "w < vcount"
+    and up: "bd_upd1 fl s = (if ds_seen s ! w then s\<lparr>ds_oc := c'\<rparr> else dfs_discover (s\<lparr>ds_oc := c'\<rparr>) v w e)"
+    by (rule bd_upd1_eq[OF wf c])
+  have wnz: "w \<noteq> 0" using snd_list_nz e by blast
   show ?thesis
-  proof (cases "ds_seen s ! ?w")
-    case True
-    have "bd_upd1 fl s = s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>" using stk True by (simp add: bd_upd1_def Let_def)
-    thus ?thesis using tsp by (simp add: tspan_def thrdstep_def)
+  proof (cases "ds_seen s ! w")
+    case True thus ?thesis using tsp up by (simp add: tspan_def thrdstep_def)
   next
     case False
-    have "bd_upd1 fl s = dfs_discover (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>) v ?w ((free_out_edges fl) ! oc)"
-      using stk False by (simp add: bd_upd1_def Let_def)
-    thus ?thesis
-      by (rule ssubst) (rule tspan_append[OF inv tsp wlt wnz False]; simp add: dfs_discover_def Let_def)
+    have "tspan (dfs_discover (s\<lparr>ds_oc := c'\<rparr>) v w e)"
+      by (rule tspan_append[OF inv tsp wlt wnz False]) (simp_all add: dfs_discover_def dfs_push_def Let_def)
+    thus ?thesis using up False by simp
   qed
 qed
 
@@ -406,25 +401,19 @@ lemma bd_upd2_tspan:
   assumes inv: "dfs_inv fl s" and tsp: "tspan s" and c: "bd_call2_conds fl s"
   shows "tspan (bd_upd2 fl s)"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v, oc, ic) # rest"
-      and noc: "\<not> oc < (free_out_hi fl) ! v" and iclt: "ic < (free_in_hi fl) ! v"
-    by (auto simp: bd_call2_conds_def split: list.splits prod.splits)
-  have wf: "dfs_wf s" and sz: "dfs_sized s" using inv by (auto simp: dfs_inv_def)
-  from wf stk have vlt: "v < vcount" and ilo: "in_lo ! v \<le> ic" by (auto simp: dfs_wf_def)
-  let ?w = "fst_list ! ((free_in_edges fl) ! ic)"
-  have wlt: "?w < vcount" using Hin_valid[OF vlt ilo iclt] .
-  have wnz: "?w \<noteq> 0" using Hin_nz[OF vlt ilo iclt] .
+  have wf: "dfs_wf fl s" using inv by (simp add: dfs_inv_def)
+  obtain v rest e w c' where e: "e < m" "fst_list ! e = w" and wlt: "w < vcount"
+    and up: "bd_upd2 fl s = (if ds_seen s ! w then s\<lparr>ds_ic := c'\<rparr> else dfs_discover (s\<lparr>ds_ic := c'\<rparr>) v w e)"
+    by (rule bd_upd2_eq[OF wf c])
+  have wnz: "w \<noteq> 0" using fst_list_nz e by blast
   show ?thesis
-  proof (cases "ds_seen s ! ?w")
-    case True
-    have "bd_upd2 fl s = s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>" using stk True by (simp add: bd_upd2_def Let_def)
-    thus ?thesis using tsp by (simp add: tspan_def thrdstep_def)
+  proof (cases "ds_seen s ! w")
+    case True thus ?thesis using tsp up by (simp add: tspan_def thrdstep_def)
   next
     case False
-    have "bd_upd2 fl s = dfs_discover (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>) v ?w ((free_in_edges fl) ! ic)"
-      using stk False by (simp add: bd_upd2_def Let_def)
-    thus ?thesis
-      by (rule ssubst) (rule tspan_append[OF inv tsp wlt wnz False]; simp add: dfs_discover_def Let_def)
+    have "tspan (dfs_discover (s\<lparr>ds_ic := c'\<rparr>) v w e)"
+      by (rule tspan_append[OF inv tsp wlt wnz False]) (simp_all add: dfs_discover_def dfs_push_def Let_def)
+    thus ?thesis using up False by simp
   qed
 qed
 
@@ -432,9 +421,7 @@ lemma bd_upd3_tspan:
   assumes tsp: "tspan s" and c: "bd_call3_conds fl s"
   shows "tspan (bd_upd3 s)"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v, oc, ic) # rest"
-    by (auto simp: bd_call3_conds_def split: list.splits prod.splits)
-  have "bd_upd3 s = dfs_finish s v rest" using stk by (simp add: bd_upd3_def)
+  obtain v rest where "bd_upd3 s = dfs_finish s v rest" by (rule bd_upd3_eq[OF c])
   thus ?thesis using dfs_finish_tspan[OF tsp] by simp
 qed
 
@@ -455,38 +442,16 @@ lemma open_tree_component_tspan:
   assumes inv: "dfs_inv acyc_flow s" and tsp: "tspan s" and c: "c < vcount"
       and unseen: "\<not> ds_seen s ! c" and cnz: "c \<noteq> 0" and stke: "ds_stk s = []"
   shows "tspan (open_tree_component acyc_flow s c)"
-  unfolding open_tree_component_def Let_def
-  apply (rule build_dfs_tspan)
-    apply (rule build_dfs_dom_wf')
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-   subgoal
-     unfolding dfs_inv_def
-     apply (intro conjI)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-     subgoal
-       apply (rule thread_inv_upd[where s = s and w = c])
-       using inv c unseen cnz by (auto simp: dfs_inv_def dfs_sized_def)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def par_edge_inv_def nth_list_update)
-     subgoal
-       apply (rule pot_inv_seed[where s = s and c = c])
-       using inv c unseen by (auto simp: dfs_inv_def dfs_sized_def nth_list_update)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def root_pot_inv_def nth_list_update)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def stk_prnt_inv_def nth_list_update)
-     subgoal
-       apply (rule emit_ord_inv_seed[where s = s and c = c])
-       using inv c unseen by (auto simp: dfs_inv_def dfs_sized_def)
-     subgoal
-       apply (rule snum_inv_seed[where s = s and c = c])
-       using inv c unseen stke by (auto simp: dfs_inv_def dfs_sized_def)
-     subgoal
-       apply (rule lsuc_inv_seed[where s = s and c = c])
-       using inv c unseen stke by (auto simp: dfs_inv_def dfs_sized_def)
-     done
-   subgoal
-     by (rule tspan_append[OF inv tsp c cnz unseen]) (simp_all add: nth_list_update)
-  done
+proof -
+  have "dfs_wf acyc_flow s" "dfs_sized s" using inv by (simp_all add: dfs_inv_def)
+  then obtain sd where opd: "open_tree_component acyc_flow s c = build_dfs acyc_flow sd"
+    and dom: "build_dfs_dom (acyc_flow, sd)"
+    and I: "(dfs_inv acyc_flow s \<and> \<not> ds_seen s ! c \<and> c \<noteq> 0 \<and> ds_stk s = []) \<longrightarrow> dfs_inv acyc_flow sd"
+    and seen: "ds_seen sd = (ds_seen s)[c := True]" and thrd: "ds_thrd sd = (ds_thrd s)[ds_prev s := c]"
+    using c by (rule open_tree_component_seed)
+  have "tspan sd" by (rule tspan_append[OF inv tsp c cnz unseen seen thrd])
+  thus ?thesis unfolding opd using build_dfs_tspan[OF dom] I inv unseen cnz stke by blast
+qed
 
 lemma dfs_init_tspan: "tspan dfs_init"
   by (auto simp: tspan_def thrdstep_def dfs_init_def simp del: replicate_Suc)
@@ -584,6 +549,7 @@ proof -
     by (simp_all add: build_tree_def Let_def)
   thus ?thesis using tspan_cong t2 by blast
 qed
+
 
 subsection \<open>The thread relation is single-valued, injective, and (with spanning) acyclic\<close>
 
@@ -1138,7 +1104,7 @@ text \<open>The subtree-size obligation for interior vertices is @{thm snum_eq_c
 
 definition rootacc :: "'n dfs_state \<Rightarrow> bool" where
   "rootacc s \<longleftrightarrow> Suc (card {y. y < vcount \<and> ds_seen s ! y})
-     = ds_snum s ! vcount + (if ds_stk s = [] then 0 else dcard s (last (map (\<lambda>(v,oc,ic). v) (ds_stk s))))"
+     = ds_snum s ! vcount + (if ds_stk s = [] then 0 else dcard s (last (ds_stk s)))"
 
 lemma dfs_init_rootacc: "rootacc dfs_init"
   by (auto simp: rootacc_def dfs_init_def simp del: replicate_Suc)
@@ -1149,11 +1115,11 @@ lemma rootacc_discover_core:
     and w_fresh: "w < vcount" "\<not> ds_seen s ! w"
     and snum_root: "ds_snum t ! vcount = ds_snum s ! vcount"
     and stk_ne: "ds_stk t \<noteq> []" and stk_s_ne: "ds_stk s \<noteq> []"
-    and bot_eq: "last (map (\<lambda>(v,oc,ic). v) (ds_stk t)) = last (map (\<lambda>(v,oc,ic). v) (ds_stk s))"
-    and dcard_bot: "dcard t (last (map (\<lambda>(v,oc,ic). v) (ds_stk s))) = Suc (dcard s (last (map (\<lambda>(v,oc,ic). v) (ds_stk s))))"
+    and bot_eq: "last (ds_stk t) = last (ds_stk s)"
+    and dcard_bot: "dcard t (last (ds_stk s)) = Suc (dcard s (last (ds_stk s)))"
   shows "rootacc t"
 proof -
-  let ?b = "last (map (\<lambda>(v,oc,ic). v) (ds_stk s))"
+  let ?b = "last (ds_stk s)"
   have fin: "finite {y. y < vcount \<and> ds_seen s ! y}" by simp
   have wnotin: "w \<notin> {y. y < vcount \<and> ds_seen s ! y}" using w_fresh by simp
   have card_grow: "card {y. y < vcount \<and> ds_seen t ! y} = Suc (card {y. y < vcount \<and> ds_seen s ! y})"
@@ -1168,37 +1134,30 @@ qed
 
 lemma rootacc_append:
   assumes inv: "dfs_inv fl s" and ra: "rootacc s"
-      and stk: "ds_stk s = (v0, oc, ic) # rest"
+      and stk: "ds_stk s = v0 # rest"
       and wlt: "w < vcount" and unseen: "\<not> ds_seen s ! w"
       and t_seen: "ds_seen t = (ds_seen s)[w := True]"
       and t_prnt: "ds_prnt t = (ds_prnt s)[w := v0]"
       and t_snum: "ds_snum t = (ds_snum s)[w := 1]"
-      and t_stk:  "ds_stk t = (w, ow, iw) # (v0, oc2, ic2) # rest"
+      and t_stk:  "ds_stk t = w # v0 # rest"
   shows "rootacc t"
 proof -
-  have wf: "dfs_wf s" and sz: "dfs_sized s" and tsi: "tree_seen_inv s" and spi: "stk_prnt_inv s"
+  have wf: "dfs_wf fl s" and sz: "dfs_sized s" and tsi: "tree_seen_inv s" and spi: "stk_prnt_inv s"
     using inv by (auto simp: dfs_inv_def)
   have lens: "length (ds_seen s) = Suc vcount" "length (ds_prnt s) = Suc vcount" "length (ds_snum s) = Suc vcount"
     using sz by (auto simp: dfs_sized_def)
-  define b where "b = last (map (\<lambda>(v,oc,ic). v) (ds_stk s))"
-  have stkv_s: "map (\<lambda>(v,oc,ic). v) (ds_stk s) = v0 # map (\<lambda>(v,oc,ic). v) rest" using stk by simp
-  have b_in: "b \<in> stkverts s"
-  proof -
-    have "map (\<lambda>(v,oc,ic). v) (ds_stk s) \<noteq> []" using stkv_s by simp
-    hence "last (map (\<lambda>(v,oc,ic). v) (ds_stk s)) \<in> set (map (\<lambda>(v,oc,ic). v) (ds_stk s))" by (rule last_in_set)
-    thus ?thesis by (simp add: b_def stkverts_def)
-  qed
+  define b where "b = last (ds_stk s)"
+  have b_in: "b \<in> stkverts s" using last_in_set[of "ds_stk s"] stk by (simp add: b_def stkverts_def)
   have v0in: "v0 \<in> stkverts s" using stk by (simp add: stkverts_def)
-  have v0seen: "ds_seen s ! v0" using stkverts_props[OF wf tsi v0in] by simp
+  have v0seen: "ds_seen s ! v0" using stkverts_props[OF wf v0in] by simp
   have v0nw: "v0 \<noteq> w" using v0seen unseen by auto
-  have reach: "(v0, b) \<in> (pstep s)\<^sup>*" using stk_top_reaches[OF spi wf tsi stk b_in] .
+  have reach: "(v0, b) \<in> (pstep s)\<^sup>*" using stk_top_reaches[OF spi wf stk b_in] .
   have Vg: "{y. y < vcount \<and> ds_seen t ! y} = insert w {y. y < vcount \<and> ds_seen s ! y}"
     using t_seen wlt lens by (auto simp: nth_list_update)
   have snr: "ds_snum t ! vcount = ds_snum s ! vcount" using t_snum wlt by (simp add: nth_list_update)
   have stk_ne: "ds_stk t \<noteq> []" by (simp add: t_stk)
   have stk_s_ne: "ds_stk s \<noteq> []" by (simp add: stk)
-  have bot_eq: "last (map (\<lambda>(v,oc,ic). v) (ds_stk t)) = last (map (\<lambda>(v,oc,ic). v) (ds_stk s))"
-    using t_stk stk b_def by simp
+  have bot_eq: "last (ds_stk t) = last (ds_stk s)" using t_stk stk by simp
   have desct: "desc t b = insert w (desc s b)"
   proof -
     have "desc t b = (if b = w \<or> (v0, b) \<in> (pstep s)\<^sup>* then insert w (desc s b) else desc s b)"
@@ -1206,21 +1165,19 @@ proof -
     thus ?thesis using reach by simp
   qed
   have wnd: "w \<notin> desc s b" using unseen by (auto simp: desc_def)
-  have dcard_bot: "dcard t (last (map (\<lambda>(v,oc,ic). v) (ds_stk s))) = Suc (dcard s (last (map (\<lambda>(v,oc,ic). v) (ds_stk s))))"
+  have dcard_bot: "dcard t (last (ds_stk s)) = Suc (dcard s (last (ds_stk s)))"
     using desct wnd b_def by (simp add: dcard_def desc_finite)
   show ?thesis using rootacc_discover_core[OF ra Vg wlt unseen snr stk_ne stk_s_ne bot_eq dcard_bot] .
 qed
 
 lemma rootacc_cong:
   assumes se: "ds_seen t = ds_seen s" and su: "ds_snum t = ds_snum s" and pr: "ds_prnt t = ds_prnt s"
-      and sv: "map (\<lambda>(v,oc,ic). v) (ds_stk t) = map (\<lambda>(v,oc,ic). v) (ds_stk s)"
+      and sv: "ds_stk t = ds_stk s"
   shows "rootacc t = rootacc s"
 proof -
   have pe: "pstep t = pstep s" using se pr by (simp add: pstep_def)
   have de: "\<And>x. desc t x = desc s x" using se pe by (simp add: desc_def)
-  have e1: "(ds_stk t = []) = (ds_stk s = [])" using sv by auto
-  have e2: "last (map (\<lambda>(v,oc,ic). v) (ds_stk t)) = last (map (\<lambda>(v,oc,ic). v) (ds_stk s))" using sv by simp
-  show ?thesis using se su de e1 e2 by (simp add: rootacc_def dcard_def)
+  show ?thesis using se su de sv by (simp add: rootacc_def dcard_def)
 qed
 
 lemma emit_U_edge_rootacc: "rootacc s \<Longrightarrow> rootacc (emit_U_edge s v)"
@@ -1230,10 +1187,9 @@ lemma bd_upd3_rootacc:
   assumes inv: "dfs_inv fl s" and ra: "rootacc s" and c: "bd_call3_conds fl s"
   shows "rootacc (bd_upd3 s)"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v, oc, ic) # rest"
-    by (auto simp: bd_call3_conds_def split: list.splits prod.splits)
-  have bu: "bd_upd3 s = dfs_finish s v rest" using stk by (simp add: bd_upd3_def)
-  have wf: "dfs_wf s" and sz: "dfs_sized s" and tsi: "tree_seen_inv s" and spi: "stk_prnt_inv s" and sni: "snum_inv s"
+  obtain v rest where stk: "ds_stk s = v # rest" and bu: "bd_upd3 s = dfs_finish s v rest"
+    by (rule bd_upd3_eq[OF c])
+  have wf: "dfs_wf fl s" and sz: "dfs_sized s" and spi: "stk_prnt_inv s" and sni: "snum_inv s"
     using inv by (auto simp: dfs_inv_def)
   have lens: "length (ds_snum s) = Suc vcount" using sz by (simp add: dfs_sized_def)
   define t where "t = dfs_finish s v rest"
@@ -1245,10 +1201,10 @@ proof -
   have pe: "pstep t = pstep s" using t_seen t_prnt by (simp add: pstep_def)
   have de: "\<And>x. desc t x = desc s x" using t_seen pe by (simp add: desc_def)
   have Ve: "{y. y < vcount \<and> ds_seen t ! y} = {y. y < vcount \<and> ds_seen s ! y}" using t_seen by simp
-  have vc: "vchain (ds_prnt s) (v # map (\<lambda>(v,oc,ic). v) rest)" using spi stk by (simp add: stk_prnt_inv_def)
-  have snchk0: "snchk s 0 (v # map (\<lambda>(v,oc,ic). v) rest)" using sni stk by (simp add: snum_inv_def del: snchk.simps)
+  have vc: "vchain (ds_prnt s) (v # rest)" using spi stk by (simp add: stk_prnt_inv_def)
+  have snchk0: "snchk s 0 (v # rest)" using sni stk by (simp add: snum_inv_def del: snchk.simps)
   have dcv: "dcard s v = ds_snum s ! v" using snchk0 by simp
-  have raU: "Suc (card {y. y < vcount \<and> ds_seen s ! y}) = ds_snum s ! vcount + dcard s (last (map (\<lambda>(v,oc,ic). v) (ds_stk s)))"
+  have raU: "Suc (card {y. y < vcount \<and> ds_seen s ! y}) = ds_snum s ! vcount + dcard s (last (ds_stk s))"
     using ra stk by (simp add: rootacc_def)
   show "rootacc (bd_upd3 s)"
     unfolding bu t_def[symmetric]
@@ -1256,19 +1212,14 @@ proof -
     case Nil
     have pvc: "p = vcount" using vc Nil p_def by simp
     have snr: "ds_snum t ! vcount = ds_snum s ! vcount + ds_snum s ! v" using t_snum pvc lens by (simp add: nth_list_update)
-    have lhs: "last (map (\<lambda>(v,oc,ic). v) (ds_stk s)) = v" using stk Nil by simp
-    show "rootacc t" unfolding rootacc_def using Ve snr t_stk Nil raU lhs dcv by simp
+    show "rootacc t" unfolding rootacc_def using Ve snr t_stk Nil raU stk dcv by simp
   next
-    case (Cons gf rest2)
-    obtain gv goc gic where gf: "gf = (gv, goc, gic)" by (cases gf) auto
-    have vcC: "vchain (ds_prnt s) (v # gv # map (\<lambda>(v,oc,ic). v) rest2)" using vc Cons gf by simp
-    have pg: "p = gv" using vcC p_def by simp
-    have gin: "gv \<in> stkverts s" using stk Cons gf by (simp add: stkverts_def)
-    have glt: "gv < vcount" using stkverts_props[OF wf tsi gin] by simp
+    case (Cons gv rest2)
+    have pg: "p = gv" using vc Cons p_def by simp
+    have gin: "gv \<in> stkverts s" using stk Cons by (simp add: stkverts_def)
+    have glt: "gv < vcount" using stkverts_props[OF wf gin] by simp
     have snr: "ds_snum t ! vcount = ds_snum s ! vcount" using t_snum pg glt by (simp add: nth_list_update)
-    have bot: "last (map (\<lambda>(v,oc,ic). v) (ds_stk t)) = last (map (\<lambda>(v,oc,ic). v) (ds_stk s))"
-      using t_stk stk Cons gf by simp
-    show "rootacc t" unfolding rootacc_def using Ve snr t_stk Cons gf raU bot de by (simp add: dcard_def)
+    show "rootacc t" unfolding rootacc_def using Ve snr t_stk Cons raU stk de by (simp add: dcard_def)
   qed
 qed
 
@@ -1276,26 +1227,20 @@ lemma bd_upd1_rootacc:
   assumes inv: "dfs_inv fl s" and ra: "rootacc s" and c: "bd_call1_conds fl s"
   shows "rootacc (bd_upd1 fl s)"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v, oc, ic) # rest" and oclt: "oc < (free_out_hi fl) ! v"
-    by (auto simp: bd_call1_conds_def split: list.splits prod.splits)
-  have wf: "dfs_wf s" using inv by (auto simp: dfs_inv_def)
-  from wf stk have vlt: "v < vcount" and olo: "out_lo ! v \<le> oc" by (auto simp: dfs_wf_def)
-  let ?e = "(free_out_edges fl) ! oc"
-  let ?w = "snd_list ! ?e"
-  have wlt: "?w < vcount" using Hout_valid[OF vlt olo oclt] .
+  have wf: "dfs_wf fl s" using inv by (simp add: dfs_inv_def)
+  obtain v rest e w c' where stk: "ds_stk s = v # rest" and wlt: "w < vcount"
+    and up: "bd_upd1 fl s = (if ds_seen s ! w then s\<lparr>ds_oc := c'\<rparr> else dfs_discover (s\<lparr>ds_oc := c'\<rparr>) v w e)"
+    by (rule bd_upd1_eq[OF wf c])
   show ?thesis
-  proof (cases "ds_seen s ! ?w")
+  proof (cases "ds_seen s ! w")
     case True
-    have eqt: "bd_upd1 fl s = s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>" using stk True by (simp add: bd_upd1_def Let_def)
-    have "rootacc (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>) = rootacc s" by (rule rootacc_cong) (simp_all add: stk)
-    thus ?thesis using eqt ra by simp
+    have "rootacc (s\<lparr>ds_oc := c'\<rparr>) = rootacc s" by (rule rootacc_cong) simp_all
+    thus ?thesis using up True ra by simp
   next
     case False
-    have eq: "bd_upd1 fl s = dfs_discover (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>) v ?w ?e"
-      using stk False by (simp add: bd_upd1_def Let_def)
-    have "rootacc (dfs_discover (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>) v ?w ?e)"
-      by (rule rootacc_append[OF inv ra stk wlt False]) (simp_all add: dfs_discover_def Let_def)
-    thus ?thesis using eq by simp
+    have "rootacc (dfs_discover (s\<lparr>ds_oc := c'\<rparr>) v w e)"
+      by (rule rootacc_append[OF inv ra stk wlt False]) (simp_all add: stk dfs_discover_def dfs_push_def Let_def)
+    thus ?thesis using up False by simp
   qed
 qed
 
@@ -1303,27 +1248,20 @@ lemma bd_upd2_rootacc:
   assumes inv: "dfs_inv fl s" and ra: "rootacc s" and c: "bd_call2_conds fl s"
   shows "rootacc (bd_upd2 fl s)"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v, oc, ic) # rest"
-      and noc: "\<not> oc < (free_out_hi fl) ! v" and iclt: "ic < (free_in_hi fl) ! v"
-    by (auto simp: bd_call2_conds_def split: list.splits prod.splits)
-  have wf: "dfs_wf s" using inv by (auto simp: dfs_inv_def)
-  from wf stk have vlt: "v < vcount" and ilo: "in_lo ! v \<le> ic" by (auto simp: dfs_wf_def)
-  let ?e = "(free_in_edges fl) ! ic"
-  let ?w = "fst_list ! ?e"
-  have wlt: "?w < vcount" using Hin_valid[OF vlt ilo iclt] .
+  have wf: "dfs_wf fl s" using inv by (simp add: dfs_inv_def)
+  obtain v rest e w c' where stk: "ds_stk s = v # rest" and wlt: "w < vcount"
+    and up: "bd_upd2 fl s = (if ds_seen s ! w then s\<lparr>ds_ic := c'\<rparr> else dfs_discover (s\<lparr>ds_ic := c'\<rparr>) v w e)"
+    by (rule bd_upd2_eq[OF wf c])
   show ?thesis
-  proof (cases "ds_seen s ! ?w")
+  proof (cases "ds_seen s ! w")
     case True
-    have eqt: "bd_upd2 fl s = s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>" using stk True by (simp add: bd_upd2_def Let_def)
-    have "rootacc (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>) = rootacc s" by (rule rootacc_cong) (simp_all add: stk)
-    thus ?thesis using eqt ra by simp
+    have "rootacc (s\<lparr>ds_ic := c'\<rparr>) = rootacc s" by (rule rootacc_cong) simp_all
+    thus ?thesis using up True ra by simp
   next
     case False
-    have eq: "bd_upd2 fl s = dfs_discover (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>) v ?w ?e"
-      using stk False by (simp add: bd_upd2_def Let_def)
-    have "rootacc (dfs_discover (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>) v ?w ?e)"
-      by (rule rootacc_append[OF inv ra stk wlt False]) (simp_all add: dfs_discover_def Let_def)
-    thus ?thesis using eq by simp
+    have "rootacc (dfs_discover (s\<lparr>ds_ic := c'\<rparr>) v w e)"
+      by (rule rootacc_append[OF inv ra stk wlt False]) (simp_all add: stk dfs_discover_def dfs_push_def Let_def)
+    thus ?thesis using up False by simp
   qed
 qed
 
@@ -1346,7 +1284,7 @@ lemma rootacc_seed:
       and t_seen: "ds_seen t = (ds_seen s)[c := True]"
       and t_prnt: "ds_prnt t = (ds_prnt s)[c := vcount]"
       and t_snum: "ds_snum t = (ds_snum s)[c := 1]"
-      and t_stk:  "ds_stk t = [(c, ocw, icw)]"
+      and t_stk:  "ds_stk t = [c]"
   shows "rootacc t"
 proof -
   have sz: "dfs_sized s" and tsi: "tree_seen_inv s" using inv by (auto simp: dfs_inv_def)
@@ -1373,38 +1311,17 @@ lemma open_tree_component_rootacc:
   assumes inv: "dfs_inv acyc_flow s" and ra: "rootacc s" and c: "c < vcount"
       and unseen: "\<not> ds_seen s ! c" and cnz: "c \<noteq> 0" and stke: "ds_stk s = []"
   shows "rootacc (open_tree_component acyc_flow s c)"
-  unfolding open_tree_component_def Let_def
-  apply (rule build_dfs_rootacc)
-    apply (rule build_dfs_dom_wf')
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-   subgoal
-     unfolding dfs_inv_def
-     apply (intro conjI)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-     subgoal
-       apply (rule thread_inv_upd[where s = s and w = c])
-       using inv c unseen cnz by (auto simp: dfs_inv_def dfs_sized_def)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def par_edge_inv_def nth_list_update)
-     subgoal
-       apply (rule pot_inv_seed[where s = s and c = c])
-       using inv c unseen by (auto simp: dfs_inv_def dfs_sized_def nth_list_update)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def root_pot_inv_def nth_list_update)
-     subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def stk_prnt_inv_def nth_list_update)
-     subgoal
-       apply (rule emit_ord_inv_seed[where s = s and c = c])
-       using inv c unseen by (auto simp: dfs_inv_def dfs_sized_def)
-     subgoal
-       apply (rule snum_inv_seed[where s = s and c = c])
-       using inv c unseen stke by (auto simp: dfs_inv_def dfs_sized_def)
-     subgoal
-       apply (rule lsuc_inv_seed[where s = s and c = c])
-       using inv c unseen stke by (auto simp: dfs_inv_def dfs_sized_def)
-     done
-   subgoal
-     by (rule rootacc_seed[OF inv ra stke c unseen]) simp_all
-  done
+proof -
+  have "dfs_wf acyc_flow s" "dfs_sized s" using inv by (simp_all add: dfs_inv_def)
+  then obtain sd where opd: "open_tree_component acyc_flow s c = build_dfs acyc_flow sd"
+    and dom: "build_dfs_dom (acyc_flow, sd)"
+    and I: "(dfs_inv acyc_flow s \<and> \<not> ds_seen s ! c \<and> c \<noteq> 0 \<and> ds_stk s = []) \<longrightarrow> dfs_inv acyc_flow sd"
+    and stk: "ds_stk sd = [c]" and seen: "ds_seen sd = (ds_seen s)[c := True]"
+    and prnt: "ds_prnt sd = (ds_prnt s)[c := vcount]" and snum: "ds_snum sd = (ds_snum s)[c := 1]"
+    using c by (rule open_tree_component_seed)
+  have "rootacc sd" by (rule rootacc_seed[OF inv ra stke c unseen seen prnt snum stk])
+  thus ?thesis unfolding opd using build_dfs_rootacc[OF dom] I inv unseen cnz stke by blast
+qed
 
 lemma phase1_step_rootacc:
   assumes v: "v \<in> set vs_list" and pre: "dfs_inv acyc_flow s \<and> ds_stk s = []" and ra: "rootacc s"
@@ -1580,17 +1497,20 @@ text \<open>Towards the @{const network_simplex_init} obligations for the constr
 lemma bd_upd1_art:
   assumes "bd_call1_conds fl s"
   shows "ds_nxt (bd_upd1 fl s) = ds_nxt s \<and> ds_afst (bd_upd1 fl s) = ds_afst s \<and> ds_asnd (bd_upd1 fl s) = ds_asnd s \<and> ds_acap (bd_upd1 fl s) = ds_acap s \<and> ds_aflw (bd_upd1 fl s) = ds_aflw s \<and> ds_aest (bd_upd1 fl s) = ds_aest s"
-  using assms by (auto simp: bd_upd1_def bd_call1_conds_def dfs_discover_def dfs_finish_def Let_def split: list.splits prod.splits)
+  using assms by (auto simp: bd_upd1_def bd_call1_conds_def dfs_discover_def dfs_push_def Let_def split: list.splits)
 
 lemma bd_upd2_art:
   assumes "bd_call2_conds fl s"
   shows "ds_nxt (bd_upd2 fl s) = ds_nxt s \<and> ds_afst (bd_upd2 fl s) = ds_afst s \<and> ds_asnd (bd_upd2 fl s) = ds_asnd s \<and> ds_acap (bd_upd2 fl s) = ds_acap s \<and> ds_aflw (bd_upd2 fl s) = ds_aflw s \<and> ds_aest (bd_upd2 fl s) = ds_aest s"
-  using assms by (auto simp: bd_upd2_def bd_call2_conds_def dfs_discover_def dfs_finish_def Let_def split: list.splits prod.splits)
+  using assms by (auto simp: bd_upd2_def bd_call2_conds_def dfs_discover_def dfs_push_def Let_def split: list.splits)
 
 lemma bd_upd3_art:
   assumes "bd_call3_conds fl s"
   shows "ds_nxt (bd_upd3 s) = ds_nxt s \<and> ds_afst (bd_upd3 s) = ds_afst s \<and> ds_asnd (bd_upd3 s) = ds_asnd s \<and> ds_acap (bd_upd3 s) = ds_acap s \<and> ds_aflw (bd_upd3 s) = ds_aflw s \<and> ds_aest (bd_upd3 s) = ds_aest s"
-  using assms by (auto simp: bd_upd3_def bd_call3_conds_def dfs_discover_def dfs_finish_def Let_def split: list.splits prod.splits)
+proof -
+  obtain v rest where "bd_upd3 s = dfs_finish s v rest" by (rule bd_upd3_eq[OF assms])
+  thus ?thesis by (simp add: dfs_finish_def Let_def)
+qed
 
 lemma build_dfs_art:
   assumes dom: "build_dfs_dom (fl, s)"
@@ -1603,6 +1523,35 @@ proof (induct rule: bd_induct[OF dom])
     by (auto simp: bd_simps[OF IH(1)] bd_ret_conds_def IH(2) IH(3) IH(4) bd_upd1_art bd_upd2_art bd_upd3_art)
 qed
 
+text \<open>So opening a component writes exactly its own artificial edge, at the cursor.\<close>
+
+lemma open_tree_component_art:
+  assumes inv: "dfs_inv fl s" and c: "c < vcount"
+  shows "ds_nxt (open_tree_component fl s c) = Suc (ds_nxt s)"
+    and "ds_afst (open_tree_component fl s c) = (ds_afst s)[ds_nxt s := (if art_dir c then c else vcount)]"
+    and "ds_asnd (open_tree_component fl s c) = (ds_asnd s)[ds_nxt s := (if art_dir c then vcount else c)]"
+    and "ds_acap (open_tree_component fl s c) = (ds_acap s)[ds_nxt s := art_tree_cap c]"
+    and "ds_aflw (open_tree_component fl s c) = (ds_aflw s)[ds_nxt s := art_flow c]"
+    and "ds_aest (open_tree_component fl s c) = (ds_aest s)[ds_nxt s := InTree]"
+proof -
+  have "dfs_wf fl s" "dfs_sized s" using inv by (simp_all add: dfs_inv_def)
+  then obtain sd where opd: "open_tree_component fl s c = build_dfs fl sd" and dom: "build_dfs_dom (fl, sd)"
+    and "ds_nxt sd = Suc (ds_nxt s)"
+    and "ds_afst sd = (ds_afst s)[ds_nxt s := (if art_dir c then c else vcount)]"
+    and "ds_asnd sd = (ds_asnd s)[ds_nxt s := (if art_dir c then vcount else c)]"
+    and "ds_acap sd = (ds_acap s)[ds_nxt s := art_tree_cap c]"
+    and "ds_aflw sd = (ds_aflw s)[ds_nxt s := art_flow c]"
+    and "ds_aest sd = (ds_aest s)[ds_nxt s := InTree]"
+    using c by (rule open_tree_component_seed)
+  moreover note build_dfs_art[OF dom]
+  ultimately show "ds_nxt (open_tree_component fl s c) = Suc (ds_nxt s)"
+    and "ds_afst (open_tree_component fl s c) = (ds_afst s)[ds_nxt s := (if art_dir c then c else vcount)]"
+    and "ds_asnd (open_tree_component fl s c) = (ds_asnd s)[ds_nxt s := (if art_dir c then vcount else c)]"
+    and "ds_acap (open_tree_component fl s c) = (ds_acap s)[ds_nxt s := art_tree_cap c]"
+    and "ds_aflw (open_tree_component fl s c) = (ds_aflw s)[ds_nxt s := art_flow c]"
+    and "ds_aest (open_tree_component fl s c) = (ds_aest s)[ds_nxt s := InTree]"
+    by simp_all
+qed
 
 subsection \<open>Assembly substrate: the artificial-edge count is in bounds\<close>
 
@@ -1615,15 +1564,6 @@ text \<open>Each @{const open_tree_component} / @{const emit_U_edge} increments 
 
 lemma emit_U_edge_nxt: "ds_nxt (emit_U_edge s v) = Suc (ds_nxt s)"
   by (simp add: emit_U_edge_def Let_def)
-
-lemma open_tree_component_nxt:
-  assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount"
-  shows "ds_nxt (open_tree_component acyc_flow s c) = Suc (ds_nxt s)"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_art[THEN conjunct1])
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  by simp
 
 lemma phase1_step_seen_mono:
   assumes "dfs_inv acyc_flow s" "v < vcount" "ds_seen s ! x"
@@ -1656,7 +1596,7 @@ next
     ultimately show ?thesis by simp
   next
     case Fv: False
-    have "ds_nxt (phase1_step acyc_flow v s) = Suc (ds_nxt s)" using nz Fv open_tree_component_nxt[OF inv v] by (simp add: phase1_step_def)
+    have "ds_nxt (phase1_step acyc_flow v s) = Suc (ds_nxt s)" using nz Fv open_tree_component_art(1)[OF inv v] by (simp add: phase1_step_def)
     moreover have "ds_seen (phase1_step acyc_flow v s) ! v" using nz Fv open_tree_component_marks[OF inv v] by (simp add: phase1_step_def)
     ultimately show ?thesis by simp
   qed
@@ -1676,7 +1616,7 @@ next
     thus ?thesis by simp
   next
     case False
-    have "ds_nxt (phase2_step acyc_flow v s) = Suc (ds_nxt s)" using notseen False open_tree_component_nxt[OF inv v] by (simp add: phase2_step_def)
+    have "ds_nxt (phase2_step acyc_flow v s) = Suc (ds_nxt s)" using notseen False open_tree_component_art(1)[OF inv v] by (simp add: phase2_step_def)
     moreover have "ds_seen (phase2_step acyc_flow v s) ! v" using notseen False open_tree_component_marks[OF inv v] by (simp add: phase2_step_def)
     ultimately show ?thesis using notseen by simp
   qed
@@ -1823,17 +1763,10 @@ lemma dfs_init_art_len: "art_len dfs_init"
 lemma emit_U_edge_art_len: "art_len s \<Longrightarrow> art_len (emit_U_edge s v)"
   by (simp add: art_len_def emit_U_edge_def Let_def)
 
-lemma build_dfs_art_len: "build_dfs_dom (acyc_flow, s) \<Longrightarrow> art_len (build_dfs acyc_flow s) = art_len s"
-  using build_dfs_art[of acyc_flow s] by (simp add: art_len_def)
-
 lemma open_tree_component_art_len:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and al: "art_len s"
   shows "art_len (open_tree_component acyc_flow s c)"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_art_len)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using al by (simp add: art_len_def)
+  using open_tree_component_art[OF inv c] al by (simp add: art_len_def)
 
 lemma phase1_step_art_len:
   assumes v: "v \<in> set vs_list" and inv: "dfs_inv acyc_flow s" and al: "art_len s"
@@ -1915,60 +1848,31 @@ text \<open>Each @{const open_tree_component} (a component-tree edge, tag @{cons
       @{const art_flow} / @{const art_tree_cap}. These per-emission content facts feed \<open>init_bflow\<close> /
       \<open>init_partition\<close> / \<open>init_flow_fits\<close> / \<open>init_pot_fits\<close>.\<close>
 
-lemma build_dfs_afst: "build_dfs_dom (acyc_flow, s) \<Longrightarrow> ds_afst (build_dfs acyc_flow s) = ds_afst s" using build_dfs_art[of acyc_flow s] by blast
-
-lemma build_dfs_asnd: "build_dfs_dom (acyc_flow, s) \<Longrightarrow> ds_asnd (build_dfs acyc_flow s) = ds_asnd s" using build_dfs_art[of acyc_flow s] by blast
-
-lemma build_dfs_acap: "build_dfs_dom (acyc_flow, s) \<Longrightarrow> ds_acap (build_dfs acyc_flow s) = ds_acap s" using build_dfs_art[of acyc_flow s] by blast
-
-lemma build_dfs_aflw: "build_dfs_dom (acyc_flow, s) \<Longrightarrow> ds_aflw (build_dfs acyc_flow s) = ds_aflw s" using build_dfs_art[of acyc_flow s] by blast
-
-lemma build_dfs_aest: "build_dfs_dom (acyc_flow, s) \<Longrightarrow> ds_aest (build_dfs acyc_flow s) = ds_aest s" using build_dfs_art[of acyc_flow s] by blast
-
 lemma open_tree_component_afst_at:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and inb: "ds_nxt s < length vs_list" and al: "art_len s"
   shows "ds_afst (open_tree_component acyc_flow s c) ! (ds_nxt s) = (if art_dir c then c else vcount)"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_afst)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using inb al by (simp add: art_dir_def art_len_def nth_list_update)
+  using open_tree_component_art(2)[OF inv c] inb al by (simp add: art_dir_def art_len_def)
 
 lemma open_tree_component_asnd_at:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and inb: "ds_nxt s < length vs_list" and al: "art_len s"
   shows "ds_asnd (open_tree_component acyc_flow s c) ! (ds_nxt s) = (if art_dir c then vcount else c)"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_asnd)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using inb al by (simp add: art_dir_def art_len_def nth_list_update)
+  using open_tree_component_art(3)[OF inv c] inb al by (simp add: art_dir_def art_len_def)
 
 lemma open_tree_component_acap_at:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and inb: "ds_nxt s < length vs_list" and al: "art_len s"
   shows "ds_acap (open_tree_component acyc_flow s c) ! (ds_nxt s) = (art_tree_cap c)"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_acap)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using inb al by (simp add: art_tree_cap_def art_flow_def art_dir_def art_len_def nth_list_update)
+  using open_tree_component_art(4)[OF inv c] inb al
+  by (simp add: art_tree_cap_def art_flow_def art_dir_def art_len_def)
 
 lemma open_tree_component_aflw_at:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and inb: "ds_nxt s < length vs_list" and al: "art_len s"
   shows "ds_aflw (open_tree_component acyc_flow s c) ! (ds_nxt s) = (art_flow c)"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_aflw)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using inb al by (simp add: art_flow_def art_len_def nth_list_update)
+  using open_tree_component_art(5)[OF inv c] inb al by (simp add: art_flow_def art_len_def)
 
 lemma open_tree_component_aest_at:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and inb: "ds_nxt s < length vs_list" and al: "art_len s"
   shows "ds_aest (open_tree_component acyc_flow s c) ! (ds_nxt s) = (InTree)"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_aest)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using inb al by (simp add:  art_len_def nth_list_update)
+  using open_tree_component_art(6)[OF inv c] inb al by (simp add: art_len_def)
 
 lemma emit_U_edge_afst_at:
   assumes inb: "ds_nxt s < length vs_list" and al: "art_len s"
@@ -2024,47 +1928,27 @@ lemma emit_U_edge_tail_edge_ok_old:
 lemma open_tree_component_afst_old:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and k: "k < ds_nxt s"
   shows "ds_afst (open_tree_component acyc_flow s c) ! k = ds_afst s ! k"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_afst)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using k by (simp add: nth_list_update_neq)
+  using open_tree_component_art(2)[OF inv c] k by simp
 
 lemma open_tree_component_asnd_old:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and k: "k < ds_nxt s"
   shows "ds_asnd (open_tree_component acyc_flow s c) ! k = ds_asnd s ! k"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_asnd)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using k by (simp add: nth_list_update_neq)
+  using open_tree_component_art(3)[OF inv c] k by simp
 
 lemma open_tree_component_acap_old:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and k: "k < ds_nxt s"
   shows "ds_acap (open_tree_component acyc_flow s c) ! k = ds_acap s ! k"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_acap)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using k by (simp add: nth_list_update_neq)
+  using open_tree_component_art(4)[OF inv c] k by simp
 
 lemma open_tree_component_aflw_old:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and k: "k < ds_nxt s"
   shows "ds_aflw (open_tree_component acyc_flow s c) ! k = ds_aflw s ! k"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_aflw)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using k by (simp add: nth_list_update_neq)
+  using open_tree_component_art(5)[OF inv c] k by simp
 
 lemma open_tree_component_aest_old:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and k: "k < ds_nxt s"
   shows "ds_aest (open_tree_component acyc_flow s c) ! k = ds_aest s ! k"
-  unfolding open_tree_component_def Let_def
-  apply (subst build_dfs_aest)
-   apply (rule build_dfs_dom_wf')
-   subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-  using k by (simp add: nth_list_update_neq)
+  using open_tree_component_art(6)[OF inv c] k by simp
 
 lemma open_tree_component_tail_edge_ok_old:
   assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and k: "k < ds_nxt s" and ok: "tail_edge_ok s k"
@@ -2126,7 +2010,7 @@ next
   next
     case notseen: False
     have eq: "phase1_step acyc_flow v s = open_tree_component acyc_flow s v" using nz notseen by (simp add: phase1_step_def)
-    have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_nxt[OF inv vlt] .
+    have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_art(1)[OF inv vlt] .
     have inbs: "ds_nxt s < length vs_list" using inb eq nxt by simp
     show ?thesis
       unfolding eq tail_content_def
@@ -2158,7 +2042,7 @@ next
   hence notseen: "\<not> ds_seen s ! v" and nl: "\<not> is_lonely v" by auto
   have vlt: "v < vcount" using v vs_less_vcount by simp
   have eq: "phase2_step acyc_flow v s = open_tree_component acyc_flow s v" using notseen nl by (simp add: phase2_step_def)
-  have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_nxt[OF inv vlt] .
+  have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_art(1)[OF inv vlt] .
   have inbs: "ds_nxt s < length vs_list" using inb eq nxt by simp
   show ?thesis
     unfolding eq tail_content_def
@@ -4227,30 +4111,25 @@ lemma bd_upd1_cr:
   shows "ds_seen s ! x \<and> ds_prnt s ! x = vcount
          \<and> ds_par (bd_upd1 fl s) ! x = ds_par s ! x \<and> ds_pot (bd_upd1 fl s) ! x = ds_pot s ! x"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest" and oclt: "oc < (free_out_hi fl) ! v"
-    by (auto simp: bd_call1_conds_def split: list.splits prod.splits)
-  have wf: "dfs_wf s" and sz: "dfs_sized s" using inv by (auto simp: dfs_inv_def)
-  from wf stk have vlt: "v < vcount" and olo: "out_lo ! v \<le> oc" by (auto simp: dfs_wf_def)
-  let ?e = "(free_out_edges fl) ! oc"
-  let ?w = "snd_list ! ?e"
-  have wlt: "?w < vcount" using Hout_valid[OF vlt olo oclt] .
+  have wf: "dfs_wf fl s" and sz: "dfs_sized s" using inv by (auto simp: dfs_inv_def)
+  obtain v rest e w c' where stk: "ds_stk s = v # rest" and wlt: "w < vcount"
+    and up: "bd_upd1 fl s = (if ds_seen s ! w then s\<lparr>ds_oc := c'\<rparr> else dfs_discover (s\<lparr>ds_oc := c'\<rparr>) v w e)"
+    by (rule bd_upd1_eq[OF wf c])
+  have vlt: "v < vcount" using stkverts_props[OF wf, of v] stk by (simp add: stkverts_def)
   have lenp: "length (ds_prnt s) = Suc vcount" using sz by (simp add: dfs_sized_def)
   show ?thesis
-  proof (cases "ds_seen s ! ?w")
-    case True
-    have "bd_upd1 fl s = s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>" using stk True by (simp add: bd_upd1_def Let_def)
-    thus ?thesis using sx px by simp
+  proof (cases "ds_seen s ! w")
+    case True thus ?thesis using up sx px by simp
   next
     case False
-    have up: "bd_upd1 fl s = dfs_discover (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>) v ?w ?e"
-      using stk False by (simp add: bd_upd1_def Let_def)
-    have xnw: "x \<noteq> ?w"
+    have up': "bd_upd1 fl s = dfs_discover (s\<lparr>ds_oc := c'\<rparr>) v w e" using up False by simp
+    have xnw: "x \<noteq> w"
     proof
-      assume e: "x = ?w"
-      have "ds_prnt (bd_upd1 fl s) ! ?w = v" using up wlt lenp by (simp add: dfs_discover_def Let_def nth_list_update_eq)
-      thus False using px e vlt by simp
+      assume "x = w"
+      moreover have "ds_prnt (bd_upd1 fl s) ! w = v" using up' wlt lenp by (simp add: dfs_discover_def dfs_push_def Let_def)
+      ultimately show False using px vlt by simp
     qed
-    thus ?thesis using up sx px by (simp add: dfs_discover_def Let_def nth_list_update_neq)
+    thus ?thesis using up' sx px by (simp add: dfs_discover_def dfs_push_def Let_def)
   qed
 qed
 
@@ -4260,31 +4139,25 @@ lemma bd_upd2_cr:
   shows "ds_seen s ! x \<and> ds_prnt s ! x = vcount
          \<and> ds_par (bd_upd2 fl s) ! x = ds_par s ! x \<and> ds_pot (bd_upd2 fl s) ! x = ds_pot s ! x"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest"
-      and noc: "\<not> oc < (free_out_hi fl) ! v" and iclt: "ic < (free_in_hi fl) ! v"
-    by (auto simp: bd_call2_conds_def split: list.splits prod.splits)
-  have wf: "dfs_wf s" and sz: "dfs_sized s" using inv by (auto simp: dfs_inv_def)
-  from wf stk have vlt: "v < vcount" and ilo: "in_lo ! v \<le> ic" by (auto simp: dfs_wf_def)
-  let ?e = "(free_in_edges fl) ! ic"
-  let ?w = "fst_list ! ?e"
-  have wlt: "?w < vcount" using Hin_valid[OF vlt ilo iclt] .
+  have wf: "dfs_wf fl s" and sz: "dfs_sized s" using inv by (auto simp: dfs_inv_def)
+  obtain v rest e w c' where stk: "ds_stk s = v # rest" and wlt: "w < vcount"
+    and up: "bd_upd2 fl s = (if ds_seen s ! w then s\<lparr>ds_ic := c'\<rparr> else dfs_discover (s\<lparr>ds_ic := c'\<rparr>) v w e)"
+    by (rule bd_upd2_eq[OF wf c])
+  have vlt: "v < vcount" using stkverts_props[OF wf, of v] stk by (simp add: stkverts_def)
   have lenp: "length (ds_prnt s) = Suc vcount" using sz by (simp add: dfs_sized_def)
   show ?thesis
-  proof (cases "ds_seen s ! ?w")
-    case True
-    have "bd_upd2 fl s = s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>" using stk True by (simp add: bd_upd2_def Let_def)
-    thus ?thesis using sx px by simp
+  proof (cases "ds_seen s ! w")
+    case True thus ?thesis using up sx px by simp
   next
     case False
-    have up: "bd_upd2 fl s = dfs_discover (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>) v ?w ?e"
-      using stk False by (simp add: bd_upd2_def Let_def)
-    have xnw: "x \<noteq> ?w"
+    have up': "bd_upd2 fl s = dfs_discover (s\<lparr>ds_ic := c'\<rparr>) v w e" using up False by simp
+    have xnw: "x \<noteq> w"
     proof
-      assume e: "x = ?w"
-      have "ds_prnt (bd_upd2 fl s) ! ?w = v" using up wlt lenp by (simp add: dfs_discover_def Let_def nth_list_update_eq)
-      thus False using px e vlt by simp
+      assume "x = w"
+      moreover have "ds_prnt (bd_upd2 fl s) ! w = v" using up' wlt lenp by (simp add: dfs_discover_def dfs_push_def Let_def)
+      ultimately show False using px vlt by simp
     qed
-    thus ?thesis using up sx px by (simp add: dfs_discover_def Let_def nth_list_update_neq)
+    thus ?thesis using up' sx px by (simp add: dfs_discover_def dfs_push_def Let_def)
   qed
 qed
 
@@ -4294,9 +4167,7 @@ lemma bd_upd3_cr:
   shows "ds_seen s ! x \<and> ds_prnt s ! x = vcount
          \<and> ds_par (bd_upd3 s) ! x = ds_par s ! x \<and> ds_pot (bd_upd3 s) ! x = ds_pot s ! x"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest"
-    by (auto simp: bd_call3_conds_def split: list.splits prod.splits)
-  have "bd_upd3 s = dfs_finish s v rest" using stk by (simp add: bd_upd3_def)
+  obtain v rest where "bd_upd3 s = dfs_finish s v rest" by (rule bd_upd3_eq[OF c])
   thus ?thesis using sx px by (simp add: dfs_finish_def Let_def)
 qed
 
@@ -4368,78 +4239,6 @@ proof -
   thus ?thesis using invs0 sb0 pb0 by blast
 qed
 
-lemma open_tree_component_seed:
-  assumes inv: "dfs_inv acyc_flow s" and c: "c < vcount" and unseen: "\<not> ds_seen s ! c" and cnz: "c \<noteq> 0"
-      and stke: "ds_stk s = []"
-  obtains sd where
-    "open_tree_component acyc_flow s c = build_dfs acyc_flow sd"
-    "dfs_inv acyc_flow sd"
-    "ds_nxt sd = Suc (ds_nxt s)"
-    "ds_seen sd = (ds_seen s)[c := True]"
-    "ds_prnt sd = (ds_prnt s)[c := vcount]"
-    "ds_par sd = (ds_par s)[c := m + ds_nxt s]"
-    "ds_pot sd = (ds_pot s)[c := (if art_dir c then pval_negM else pval_M)]"
-    "ds_afst sd = (ds_afst s)[ds_nxt s := (if art_dir c then c else vcount)]"
-    "ds_asnd sd = (ds_asnd s)[ds_nxt s := (if art_dir c then vcount else c)]"
-proof -
-  define sd where "sd = s\<lparr>
-      ds_afst := (ds_afst s)[ds_nxt s := (if 0 \<le> imbalance ! c then c else vcount)],
-      ds_asnd := (ds_asnd s)[ds_nxt s := (if 0 \<le> imbalance ! c then vcount else c)],
-      ds_acap := (ds_acap s)[ds_nxt s := (if 0 \<le> imbalance ! c then \<bar>imbalance ! c\<bar> + 1 else \<bar>imbalance ! c\<bar>)],
-      ds_aflw := (ds_aflw s)[ds_nxt s := \<bar>imbalance ! c\<bar>],
-      ds_aest := (ds_aest s)[ds_nxt s := InTree],
-      ds_nxt  := Suc (ds_nxt s),
-      ds_seen := (ds_seen s)[c := True],
-      ds_prnt := (ds_prnt s)[c := vcount],
-      ds_par  := (ds_par s)[c := m + ds_nxt s],
-      ds_dir  := (ds_dir s)[c := (0 \<le> imbalance ! c)],
-      ds_pot  := (ds_pot s)[c := (if 0 \<le> imbalance ! c then pval_negM else pval_M)],
-      ds_thrd := (ds_thrd s)[ds_prev s := c],
-      ds_rvth := (ds_rvth s)[c := ds_prev s],
-      ds_snum := (ds_snum s)[c := 1],
-      ds_prev := c,
-      ds_stk  := [(c, out_lo ! c, in_lo ! c)] \<rparr>"
-  have opd: "open_tree_component acyc_flow s c = build_dfs acyc_flow sd"
-    by (simp add: open_tree_component_def Let_def sd_def)
-  have invsd: "dfs_inv acyc_flow sd"
-    unfolding sd_def dfs_inv_def
-    apply (intro conjI)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_wf_def dfs_sized_def tree_seen_inv_def nth_list_update)
-    subgoal
-      apply (rule thread_inv_upd[where s = s and w = c])
-      using inv c unseen cnz by (auto simp: dfs_inv_def dfs_sized_def)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def par_edge_inv_def nth_list_update)
-    subgoal
-      apply (rule pot_inv_seed[where s = s and c = c])
-      using inv c unseen by (auto simp: dfs_inv_def dfs_sized_def nth_list_update)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def root_pot_inv_def nth_list_update)
-    subgoal using inv c by (auto simp: dfs_inv_def dfs_sized_def stk_prnt_inv_def nth_list_update)
-    subgoal
-      apply (rule emit_ord_inv_seed[where s = s and c = c])
-      using inv c unseen by (auto simp: dfs_inv_def dfs_sized_def)
-    subgoal
-      apply (rule snum_inv_seed[where s = s and c = c])
-      using inv c unseen stke by (auto simp: dfs_inv_def dfs_sized_def)
-    subgoal
-      apply (rule lsuc_inv_seed[where s = s and c = c])
-      using inv c unseen stke by (auto simp: dfs_inv_def dfs_sized_def)
-    done
-  show ?thesis
-    apply (rule that[of sd])
-    subgoal by (rule opd)
-    subgoal by (rule invsd)
-    subgoal by (simp add: sd_def)
-    subgoal by (simp add: sd_def)
-    subgoal by (simp add: sd_def)
-    subgoal by (simp add: sd_def)
-    subgoal by (simp add: sd_def art_dir_def)
-    subgoal by (simp add: sd_def art_dir_def)
-    subgoal by (simp add: sd_def art_dir_def)
-    done
-qed
-
 definition comproot_edge_ok :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> bool" where
   "comproot_edge_ok s c \<longleftrightarrow>
      m \<le> ds_par s ! c \<and> ds_par s ! c - m < ds_nxt s
@@ -4483,7 +4282,10 @@ lemma open_tree_component_cri:
       and ci: "comproot_inv s"
   shows "comproot_inv (open_tree_component acyc_flow s c)"
 proof -
-  obtain sd where opd: "open_tree_component acyc_flow s c = build_dfs acyc_flow sd" and invsd: "dfs_inv acyc_flow sd"
+  have "dfs_wf acyc_flow s" "dfs_sized s" using inv by (simp_all add: dfs_inv_def)
+  then obtain sd where opd: "open_tree_component acyc_flow s c = build_dfs acyc_flow sd"
+      and dom: "build_dfs_dom (acyc_flow, sd)"
+      and I: "(dfs_inv acyc_flow s \<and> \<not> ds_seen s ! c \<and> c \<noteq> 0 \<and> ds_stk s = []) \<longrightarrow> dfs_inv acyc_flow sd"
       and nxtsd: "ds_nxt sd = Suc (ds_nxt s)"
       and seensd: "ds_seen sd = (ds_seen s)[c := True]"
       and prntsd: "ds_prnt sd = (ds_prnt s)[c := vcount]"
@@ -4491,8 +4293,8 @@ proof -
       and potsd: "ds_pot sd = (ds_pot s)[c := (if art_dir c then pval_negM else pval_M)]"
       and afstsd: "ds_afst sd = (ds_afst s)[ds_nxt s := (if art_dir c then c else vcount)]"
       and asndsd: "ds_asnd sd = (ds_asnd s)[ds_nxt s := (if art_dir c then vcount else c)]"
-    using open_tree_component_seed[OF inv c unseen cnz stke] .
-  have dom: "build_dfs_dom (acyc_flow, sd)" using invsd by (simp add: dfs_inv_def build_dfs_dom_wf')
+    using c by (rule open_tree_component_seed)
+  have invsd: "dfs_inv acyc_flow sd" using I inv unseen cnz stke by blast
   have art: "ds_nxt (build_dfs acyc_flow sd) = ds_nxt sd \<and> ds_afst (build_dfs acyc_flow sd) = ds_afst sd \<and> ds_asnd (build_dfs acyc_flow sd) = ds_asnd sd
              \<and> ds_acap (build_dfs acyc_flow sd) = ds_acap sd \<and> ds_aflw (build_dfs acyc_flow sd) = ds_aflw sd \<and> ds_aest (build_dfs acyc_flow sd) = ds_aest sd"
     using build_dfs_art[OF dom] .
@@ -4577,7 +4379,7 @@ next
     case notseen: False
     have vnz: "v \<noteq> 0" using v no_zero_node by metis
     have eq: "phase1_step acyc_flow v s = open_tree_component acyc_flow s v" using nz notseen by (simp add: phase1_step_def)
-    have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_nxt[OF inv vlt] .
+    have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_art(1)[OF inv vlt] .
     have inbs: "ds_nxt s < length vs_list" using inb eq nxt by simp
     show ?thesis using eq open_tree_component_cri[OF inv vlt notseen vnz stke al inbs ci] by simp
   qed
@@ -4595,7 +4397,7 @@ next
   have vlt: "v < vcount" using v vs_less_vcount by simp
   have vnz: "v \<noteq> 0" using v no_zero_node by metis
   have eq: "phase2_step acyc_flow v s = open_tree_component acyc_flow s v" using notseen nl by (simp add: phase2_step_def)
-  have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_nxt[OF inv vlt] .
+  have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_art(1)[OF inv vlt] .
   have inbs: "ds_nxt s < length vs_list" using inb eq nxt by simp
   show ?thesis using eq open_tree_component_cri[OF inv vlt notseen vnz stke al inbs ci] by simp
 qed
@@ -4906,75 +4708,40 @@ definition seen_sub :: "'n dfs_state \<Rightarrow> bool" where
 lemma bd_upd1_seen_sub:
   assumes inv: "dfs_inv fl s" and c: "bd_call1_conds fl s" and ss: "seen_sub s"
   shows "seen_sub (bd_upd1 fl s)"
-proof (unfold seen_sub_def, intro allI impI)
+  unfolding seen_sub_def
+proof (intro allI impI)
   fix y assume ylt: "y < vcount" and sy: "ds_seen (bd_upd1 fl s) ! y"
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest" and oclt: "oc < (free_out_hi fl) ! v"
-    by (auto simp: bd_call1_conds_def split: list.splits prod.splits)
-  have wf: "dfs_wf s" using inv by (auto simp: dfs_inv_def)
-  from wf stk have vlt: "v < vcount" and olo: "out_lo ! v \<le> oc" by (auto simp: dfs_wf_def)
-  let ?e = "(free_out_edges fl) ! oc"
-  let ?w = "snd_list ! ?e"
+  have wf: "dfs_wf fl s" using inv by (simp add: dfs_inv_def)
+  obtain v rest e w c' where e: "e < m" "snd_list ! e = w"
+    and up: "bd_upd1 fl s = (if ds_seen s ! w then s\<lparr>ds_oc := c'\<rparr> else dfs_discover (s\<lparr>ds_oc := c'\<rparr>) v w e)"
+    by (rule bd_upd1_eq[OF wf c])
   show "y \<in> set fst_list \<union> set snd_list"
-  proof (cases "ds_seen s ! ?w")
-    case True
-    have "bd_upd1 fl s = s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>" using stk True by (simp add: bd_upd1_def Let_def)
-    hence "ds_seen s ! y" using sy by simp
-    thus ?thesis using ss ylt by (simp add: seen_sub_def)
+  proof (cases "y = w")
+    case True thus ?thesis using e by (metis UnI2 len_snd_list_m nth_mem)
   next
-    case False 
-    have up: "bd_upd1 fl s = dfs_discover (s\<lparr>ds_stk := (v, Suc oc, ic) # rest\<rparr>) v ?w ?e"
-      using stk False by (simp add: bd_upd1_def Let_def)
-    show ?thesis
-    proof (cases "y = ?w")
-      case True
-      have elt: "?e < m" using free_out_edge_fst[OF vlt olo oclt] by simp
-      have "?w \<in> set snd_list" using elt by (metis len_snd_list_m nth_mem)
-      thus ?thesis using True by blast
-    next
-      case False
-      have "ds_seen (bd_upd1 fl s) ! y = ds_seen s ! y"
-        using up False by (simp add: dfs_discover_def Let_def nth_list_update_neq)
-      hence "ds_seen s ! y" using sy by simp
-      thus ?thesis using ss ylt by (simp add: seen_sub_def)
-    qed
+    case False
+    hence "ds_seen s ! y" using sy up by (simp add: dfs_discover_def dfs_push_def Let_def split: if_splits)
+    thus ?thesis using ss ylt by (simp add: seen_sub_def)
   qed
 qed
 
 lemma bd_upd2_seen_sub:
   assumes inv: "dfs_inv fl s" and c: "bd_call2_conds fl s" and ss: "seen_sub s"
   shows "seen_sub (bd_upd2 fl s)"
-proof (unfold seen_sub_def, intro allI impI)
+  unfolding seen_sub_def
+proof (intro allI impI)
   fix y assume ylt: "y < vcount" and sy: "ds_seen (bd_upd2 fl s) ! y"
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest"
-      and noc: "\<not> oc < (free_out_hi fl) ! v" and iclt: "ic < (free_in_hi fl) ! v"
-    by (auto simp: bd_call2_conds_def split: list.splits prod.splits)
-  have wf: "dfs_wf s" using inv by (auto simp: dfs_inv_def)
-  from wf stk have vlt: "v < vcount" and ilo: "in_lo ! v \<le> ic" by (auto simp: dfs_wf_def)
-  let ?e = "(free_in_edges fl) ! ic"
-  let ?w = "fst_list ! ?e"
+  have wf: "dfs_wf fl s" using inv by (simp add: dfs_inv_def)
+  obtain v rest e w c' where e: "e < m" "fst_list ! e = w"
+    and up: "bd_upd2 fl s = (if ds_seen s ! w then s\<lparr>ds_ic := c'\<rparr> else dfs_discover (s\<lparr>ds_ic := c'\<rparr>) v w e)"
+    by (rule bd_upd2_eq[OF wf c])
   show "y \<in> set fst_list \<union> set snd_list"
-  proof (cases "ds_seen s ! ?w")
-    case True
-    have "bd_upd2 fl s = s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>" using stk True noc by (simp add: bd_upd2_def Let_def)
-    hence "ds_seen s ! y" using sy by simp
-    thus ?thesis using ss ylt by (simp add: seen_sub_def)
+  proof (cases "y = w")
+    case True thus ?thesis using e by (metis UnI1 len_fst_list_m nth_mem)
   next
     case False
-    have up: "bd_upd2 fl s = dfs_discover (s\<lparr>ds_stk := (v, oc, Suc ic) # rest\<rparr>) v ?w ?e"
-      using stk False noc by (simp add: bd_upd2_def Let_def)
-    show ?thesis
-    proof (cases "y = ?w")
-      case True
-      have elt: "?e < m" using free_in_edge_snd[OF vlt ilo iclt] by simp
-      have "?w \<in> set fst_list" using elt by (metis len_fst_list_m nth_mem)
-      thus ?thesis using True by blast
-    next
-      case False
-      have "ds_seen (bd_upd2 fl s) ! y = ds_seen s ! y"
-        using up False by (simp add: dfs_discover_def Let_def nth_list_update_neq)
-      hence "ds_seen s ! y" using sy by simp
-      thus ?thesis using ss ylt by (simp add: seen_sub_def)
-    qed
+    hence "ds_seen s ! y" using sy up by (simp add: dfs_discover_def dfs_push_def Let_def split: if_splits)
+    thus ?thesis using ss ylt by (simp add: seen_sub_def)
   qed
 qed
 
@@ -4982,10 +4749,8 @@ lemma bd_upd3_seen_sub:
   assumes c: "bd_call3_conds fl s" and ss: "seen_sub s"
   shows "seen_sub (bd_upd3 s)"
 proof -
-  from c obtain v oc ic rest where stk: "ds_stk s = (v,oc,ic)#rest"
-    by (auto simp: bd_call3_conds_def split: list.splits prod.splits)
-  have "ds_seen (bd_upd3 s) = ds_seen s" using stk by (simp add: bd_upd3_def dfs_finish_def Let_def)
-  thus ?thesis using ss by (simp add: seen_sub_def)
+  obtain v rest where "bd_upd3 s = dfs_finish s v rest" by (rule bd_upd3_eq[OF c])
+  thus ?thesis using ss by (simp add: seen_sub_def dfs_finish_def Let_def)
 qed
 
 lemma build_dfs_seen_sub:
@@ -5040,7 +4805,10 @@ lemma open_tree_component_seen_sub:
       and stke: "ds_stk s = []" and cin: "c \<in> set fst_list \<union> set snd_list" and ss: "seen_sub s"
   shows "seen_sub (open_tree_component acyc_flow s c)"
 proof -
-  obtain sd where opd: "open_tree_component acyc_flow s c = build_dfs acyc_flow sd" and invsd: "dfs_inv acyc_flow sd"
+  have "dfs_wf acyc_flow s" "dfs_sized s" using inv by (simp_all add: dfs_inv_def)
+  then obtain sd where opd: "open_tree_component acyc_flow s c = build_dfs acyc_flow sd"
+      and dom: "build_dfs_dom (acyc_flow, sd)"
+      and I: "(dfs_inv acyc_flow s \<and> \<not> ds_seen s ! c \<and> c \<noteq> 0 \<and> ds_stk s = []) \<longrightarrow> dfs_inv acyc_flow sd"
       and nxtsd: "ds_nxt sd = Suc (ds_nxt s)"
       and seensd: "ds_seen sd = (ds_seen s)[c := True]"
       and prntsd: "ds_prnt sd = (ds_prnt s)[c := vcount]"
@@ -5048,8 +4816,8 @@ proof -
       and potsd: "ds_pot sd = (ds_pot s)[c := (if art_dir c then pval_negM else pval_M)]"
       and afstsd: "ds_afst sd = (ds_afst s)[ds_nxt s := (if art_dir c then c else vcount)]"
       and asndsd: "ds_asnd sd = (ds_asnd s)[ds_nxt s := (if art_dir c then vcount else c)]"
-    using open_tree_component_seed[OF inv c unseen cnz stke] .
-  have dom: "build_dfs_dom (acyc_flow, sd)" using invsd by (simp add: dfs_inv_def build_dfs_dom_wf')
+    using c by (rule open_tree_component_seed)
+  have invsd: "dfs_inv acyc_flow sd" using I inv unseen cnz stke by blast
   have sssd: "seen_sub sd"
   proof (unfold seen_sub_def, intro allI impI)
     fix y assume ylt: "y < vcount" and sy: "ds_seen sd ! y"
@@ -5237,7 +5005,7 @@ next
   next
     case notseen: False
     have eq: "phase1_step acyc_flow v s = open_tree_component acyc_flow s v" using nz notseen by (simp add: phase1_step_def)
-    have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_nxt[OF inv vlt] .
+    have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_art(1)[OF inv vlt] .
     have inbs: "ds_nxt s < length vs_list" using inb eq nxt by simp
     have mono: "seen_set s \<subseteq> seen_set (open_tree_component acyc_flow s v)"
       by (auto simp: seen_set_def dest: open_tree_component_seen_mono[OF inv vlt])
@@ -5279,7 +5047,7 @@ next
   hence notseen: "\<not> ds_seen s ! v" and nl: "\<not> is_lonely v" by auto
   have vlt: "v < vcount" using v vs_less_vcount by simp
   have eq: "phase2_step acyc_flow v s = open_tree_component acyc_flow s v" using notseen nl by (simp add: phase2_step_def)
-  have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_nxt[OF inv vlt] .
+  have nxt: "ds_nxt (open_tree_component acyc_flow s v) = Suc (ds_nxt s)" using open_tree_component_art(1)[OF inv vlt] .
   have inbs: "ds_nxt s < length vs_list" using inb eq nxt by simp
   have mono: "seen_set s \<subseteq> seen_set (open_tree_component acyc_flow s v)"
     by (auto simp: seen_set_def dest: open_tree_component_seen_mono[OF inv vlt])

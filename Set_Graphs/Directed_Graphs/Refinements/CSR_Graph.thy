@@ -1,137 +1,27 @@
 theory CSR_Graph
-  imports CSR_Buildup_Imperative Weighted_Neighbourhoods_Imperative_Spec Directed_Set_Graphs.Multigraph
+  imports CSR_Buildup_Imperative Weighted_Neighbourhoods_Imperative_Spec "../CSR_Graph_Spec"
+    "../../../Imperative/Array_Range_Iteration"
 begin
 
 section \<open>Graphs in CSR Form\<close>
 
-text \<open>A graph in compressed sparse row (CSR) form, built by
-      @{theory Directed_Set_Graphs.CSR_Buildup_Imperative}: an array \<open>B\<close> of block starts, an
-      array \<open>E\<close> of edges sorted by source, and a cursor array \<open>C\<close>, initially a copy of the start
-      indices. Advancing the iterator of a vertex increments its cursor; resetting it copies the
-      start index back.
+text \<open>The imperative refinement of the CSR graphs of @{theory Directed_Set_Graphs.CSR_Graph_Spec},
+      built by @{theory Directed_Set_Graphs.CSR_Buildup_Imperative}: an array \<open>B\<close> of block
+      starts, an array \<open>E\<close> of edges sorted by source, and a cursor array \<open>C\<close>, initially a copy of
+      the start indices. Advancing the iterator of a vertex increments its cursor; resetting it
+      copies the start index back.\<close>
 
-      The entries of \<open>E\<close> are generic: edge indices, which can index further arrays (e.g.\ of
-      endpoints or weights), or directly what a search reads, e.g.\ the targets.\<close>
+subsection \<open>The imperative collection\<close>
 
-subsection \<open>The graph in CSR form with a cursor array\<close>
+text \<open>The entries of the arrays are stored on the heap, so their type has sort @{class heap}.\<close>
 
-text \<open>The out-edges of vertex \<open>v\<close> are the entries \<open>E!i\<close> for \<open>B!v \<le> i < B!(v+1)\<close>. The functional
-      model of the collection of iterators is the cursor function \<open>c\<close>: the edges before \<open>c v\<close> are
-      iterated, the ones from \<open>c v\<close> on remain. The arrays \<open>B\<close> and \<open>E\<close> are never modified, so the
-      start index needed for a reset is always available in \<open>B\<close>.\<close>
-
-lemma map_nth_upt_take_drop:
-  "b \<le> length xs \<Longrightarrow> map ((!) xs) [a..<b] = take (b - a) (drop a xs)"
-  by (rule nth_equalityI) auto
-
-locale csr_graph =
-  fixes n :: nat
-    and K :: "nat set"
-    and B :: "nat list"
-    and E :: "'e::heap list"
-  assumes K_bound: "K \<subseteq> {..<n}"
-    and B_length: "length B = Suc n"
-    and B_mono: "\<And>v. v < n \<Longrightarrow> B ! v \<le> B ! Suc v"
-    and B_bound: "\<And>v. v < n \<Longrightarrow> B ! Suc v \<le> length E"
-    and E_distinct: "\<And>v. v < n \<Longrightarrow> inj_on ((!) E) {B ! v..<B ! Suc v}"
-begin
-
-text \<open>The entries are distinct within each segment only; different segments may share entries,
-      e.g.\ when \<open>E\<close> holds the targets of the edges.\<close>
-
-definition "seg a b = (!) E ` {a..<b}"
-
-definition "csr_invar c \<longleftrightarrow> (\<forall>v\<in>K. B ! v \<le> c v \<and> c v \<le> B ! Suc v)"
-definition "csr_abstract (c::nat \<Rightarrow> nat) v = seg (B ! v) (B ! Suc v)"
-definition "csr_current c v = E ! c v"
-definition "csr_has c v \<longleftrightarrow> c v < B ! Suc v"
-definition "csr_iterated c v = seg (B ! v) (c v)"
-definition "csr_remaining c v = seg (c v) (B ! Suc v)"
-definition "csr_move c v = (if c v < B ! Suc v then c(v := Suc (c v)) else c)"
-definition "csr_reset c v = c(v := B ! v)"
-
-lemma K_less: "v \<in> K \<Longrightarrow> v < n"
-  using K_bound by auto
-
-lemma seg_empty_iff: "seg a b = {} \<longleftrightarrow> b \<le> a"
-  by (auto simp: seg_def)
-
-lemma seg_Int:
-  assumes "v < n" "B ! v \<le> a" "b \<le> B ! Suc v" "B ! v \<le> a'" "b' \<le> B ! Suc v"
-  shows "seg a b \<inter> seg a' b' = (!) E ` ({a..<b} \<inter> {a'..<b'})"
-  unfolding seg_def using assms
-  by (intro inj_on_image_Int[OF E_distinct[OF assms(1)], symmetric]) auto
-
-lemma seg_Un: "a \<le> b \<Longrightarrow> b \<le> c \<Longrightarrow> seg a b \<union> seg b c = seg a c"
-  unfolding seg_def by (metis image_Un ivl_disj_un_two(3))
-
-lemma seg_Suc:
-  assumes "v < n" "B ! v \<le> a" "a < b" "b \<le> B ! Suc v"
-  shows "seg (Suc a) b = seg a b - {E ! a}"
-proof -
-  have "(!) E ` ({a..<b} - {a}) = (!) E ` {a..<b} - (!) E ` {a}"
-    using assms by (intro inj_on_image_set_diff[OF E_distinct[OF assms(1)]]) auto
-  moreover have "{a..<b} - {a} = {Suc a..<b}" by auto
-  ultimately show ?thesis by (simp add: seg_def)
-qed
-
-lemma seg_snoc: "a \<le> b \<Longrightarrow> seg a (Suc b) = seg a b \<union> {E ! b}"
-  unfolding seg_def by (auto simp: less_Suc_eq)
-
-lemma remaining_ne: "csr_remaining c v \<noteq> {} \<longleftrightarrow> c v < B ! Suc v"
-  by (simp add: csr_remaining_def seg_empty_iff not_le)
-
-sublocale csr: indexed_iterable_set csr_invar csr_abstract csr_current csr_has csr_iterated
-    csr_remaining csr_move csr_reset K
-proof (unfold_locales, goal_cases)
-  case (1 C i)
-  then have "B ! i \<le> C i" "C i \<le> B ! Suc i" by (auto simp: csr_invar_def)
-  then show ?case
-    by (auto simp: csr_iterated_def csr_remaining_def seg_Int[OF K_less[OF 1(2)]])
-next
-  case (2 C i) then show ?case
-    by (auto simp: csr_invar_def csr_iterated_def csr_remaining_def csr_abstract_def seg_Un)
-next
-  case (3 C i) then show ?case by (simp add: csr_has_def remaining_ne)
-next
-  case (4 C i) then show ?case
-    by (auto simp: csr_current_def csr_remaining_def remaining_ne seg_def)
-next
-  case (5 C i) then show ?case
-    by (auto simp: csr_invar_def csr_move_def)
-next
-  case (6 C i j) then show ?case by (simp add: csr_abstract_def)
-next
-  case (7 C i)
-  then have "C i < B ! Suc i" "B ! i \<le> C i" by (auto simp: remaining_ne csr_invar_def)
-  then show ?case
-    by (simp add: csr_remaining_def csr_move_def csr_current_def seg_Suc[OF K_less[OF 7(2)]])
-next
-  case (8 C i)
-  then have "C i < B ! Suc i" "B ! i \<le> C i" by (auto simp: remaining_ne csr_invar_def)
-  then show ?case by (simp add: csr_iterated_def csr_move_def csr_current_def seg_snoc)
-next
-  case (9 C i j) then show ?case by (simp add: csr_remaining_def csr_move_def)
-next
-  case (10 C i j) then show ?case by (simp add: csr_iterated_def csr_move_def)
-next
-  case (11 C i) then show ?case
-    by (auto simp: csr_invar_def csr_reset_def B_mono K_less)
-next
-  case (12 C i j) then show ?case by (simp add: csr_abstract_def)
-next
-  case (13 C i) then show ?case by (simp add: csr_iterated_def csr_reset_def seg_def)
-next
-  case (14 C i) then show ?case by (simp add: csr_remaining_def csr_reset_def csr_abstract_def)
-next
-  case (15 C i j) then show ?case by (simp add: csr_remaining_def csr_reset_def)
-next
-  case (16 C i j) then show ?case by (simp add: csr_iterated_def csr_reset_def)
-qed
-
-end
+locale csr_ranges_imp = csr_ranges n K B H E
+  for n K B H and E :: "'e::heap list"
 
 
+locale csr_graph_imp = csr_graph n K B E
+  for n K B and E :: "'e::heap list"
+sublocale csr_graph_imp \<subseteq> csr_ranges_imp n K B "\<lambda>v. B ! Suc v" E ..
 
 text \<open>The imperative collection: the arrays \<open>B\<close> and \<open>E\<close> and the cursor array \<open>C\<close> of size \<open>n\<close>.
       The programs are global.\<close>
@@ -148,6 +38,52 @@ definition csr_move_imp :: "nat array \<times> 'e::heap array \<times> nat array
 definition csr_reset_imp :: "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "csr_reset_imp = (\<lambda>(Ba, Ea, Ca) v. do { s \<leftarrow> Array.nth Ba v; _ \<leftarrow> Array.upd v s Ca; return () })"
 
+text \<open>One step of the iterator of \<open>v\<close> over a range whose end is read from the array \<open>Ha\<close>: if
+      entries remain, read the current one, advance the cursor and continue with \<open>f\<close>, otherwise
+      continue with \<open>g\<close>. The cursor is read once. The step is inlined at its call sites.\<close>
+
+definition csr_step_upto_imp ::
+  "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> ('e \<Rightarrow> 'a Heap) \<Rightarrow> 'a Heap
+   \<Rightarrow> 'a Heap" where
+  "csr_step_upto_imp = (\<lambda>(Ba, Ea, Ca) Ha v f g. do {
+     i \<leftarrow> Array.nth Ca v;
+     h \<leftarrow> Array.nth Ha v;
+     if i < h then do { e \<leftarrow> Array.nth Ea i; _ \<leftarrow> Array.upd v (Suc i) Ca; f e } else g })"
+
+lemma csr_step_upto_imp_inline[code_unfold]:
+  "csr_step_upto_imp (Ba, Ea, Ca) Ha v f g = do {
+     i \<leftarrow> Array.nth Ca v;
+     h \<leftarrow> Array.nth Ha v;
+     if i < h then do { e \<leftarrow> Array.nth Ea i; _ \<leftarrow> Array.upd v (Suc i) Ca; f e } else g }"
+  by (simp add: csr_step_upto_imp_def)
+
+text \<open>The step may contain recursive calls of a heap @{command partial_function}.\<close>
+
+lemma csr_step_upto_imp_mono[partial_function_mono]:
+  assumes "\<And>e. mono_Heap (\<lambda>r. f r e)" "mono_Heap g"
+  shows "mono_Heap (\<lambda>r. csr_step_upto_imp Ci Ha v (f r) (g r))"
+  by (cases Ci) (simp add: csr_step_upto_imp_def, intro partial_function_mono assms)
+
+text \<open>Appending to a range (@{const csr_append}): the end is read once.\<close>
+
+definition csr_append_imp :: "'e::heap array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> 'e \<Rightarrow> unit Heap" where
+  "csr_append_imp Ea Ha v x = do {
+     h \<leftarrow> Array.nth Ha v;
+     _ \<leftarrow> Array.upd h x Ea;
+     _ \<leftarrow> Array.upd v (Suc h) Ha;
+     return () }"
+
+lemma csr_append_imp_rule:
+  "\<lbrakk>v < length Hl; Hl ! v < length E\<rbrakk> \<Longrightarrow>
+   <Ea \<mapsto>\<^sub>a E * Ha \<mapsto>\<^sub>a Hl> csr_append_imp Ea Ha v x
+   <\<lambda>_. Ea \<mapsto>\<^sub>a snd (csr_append v x (Hl, E)) * Ha \<mapsto>\<^sub>a fst (csr_append v x (Hl, E))>"
+  by (sep_auto simp: csr_append_imp_def csr_append_def)
+
+text \<open>Emptiness of the block of a vertex (@{const csr_ranges.csr_empty}): two reads of \<open>B\<close>.\<close>
+
+definition csr_empty_imp :: "nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
+  "csr_empty_imp Ba v = do { a \<leftarrow> Array.nth Ba v; b \<leftarrow> Array.nth Ba (Suc v); return (a = b) }"
+
 text \<open>The cursor array is initialised as a copy of the start indices.\<close>
 
 partial_function (heap) csr_copy_imp :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
@@ -161,19 +97,20 @@ partial_function (heap) csr_copy_imp :: "nat \<Rightarrow> nat array \<Rightarro
 definition csr_cursor_init :: "nat \<Rightarrow> nat array \<Rightarrow> nat array Heap" where
   "csr_cursor_init n Ba = do { Ca \<leftarrow> Array.new n 0; csr_copy_imp n Ba Ca 0; return Ca }"
 
-context csr_graph
+context csr_ranges_imp
 begin
 
 definition csr_assn :: "(nat \<Rightarrow> nat) \<Rightarrow> nat array \<times> 'e array \<times> nat array \<Rightarrow> assn" where
   "csr_assn c = (\<lambda>(Ba, Ea, Ca). Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E *
      (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = n \<and> (\<forall>v\<in>K. l ! v = c v))))"
 
-lemma csr_has_imp_rule:
-  assumes "v \<in> K"
-  shows "<csr_assn c (Ba, Ea, Ca)> csr_has_imp (Ba, Ea, Ca) v
-         <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_has c v)>"
-  using K_less[OF assms] assms B_length
-  by (sep_auto simp: csr_assn_def csr_has_imp_def csr_has_def)
+text \<open>The assertion of a collection given by its three arrays, for clients that hand the arrays on
+      to other programs.\<close>
+
+lemma csr_assn_split:
+  "csr_assn c (Ba, Ea, Ca) =
+   Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = n \<and> (\<forall>v\<in>K. l ! v = c v)))"
+  by (simp add: csr_assn_def)
 
 lemma csr_current_imp_rule:
   assumes "v \<in> K" "csr_invar c" "csr_remaining c v \<noteq> {}"
@@ -181,7 +118,8 @@ lemma csr_current_imp_rule:
          <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_current c v)>"
 proof -
   have "c v < length E"
-    using assms B_bound[OF K_less[OF assms(1)]] by (auto simp: remaining_ne)
+    using assms H_hi[OF K_less[OF assms(1)]] B_bound[OF K_less[OF assms(1)]]
+    by (auto simp: remaining_ne)
   then show ?thesis
     using K_less[OF assms(1)] assms(1)
     by (sep_auto simp: csr_assn_def csr_current_imp_def csr_current_def)
@@ -206,22 +144,37 @@ lemma csr_reset_imp_rule:
   using K_less[OF assms] assms B_length
   by (sep_auto simp: csr_assn_def csr_reset_imp_def csr_reset_def nth_list_update)
 
-sublocale csr_imp: indexed_iterable_set_imp csr_invar csr_abstract csr_current csr_has
-    csr_iterated csr_remaining csr_move csr_reset K csr_assn csr_current_imp csr_has_imp
-    csr_move_imp csr_reset_imp
-proof (unfold_locales, goal_cases)
-  case (1 C i Ci) then show ?case
-    by (cases Ci) (simp add: csr_current_imp_rule)
+lemma csr_step_upto_imp_rule:
+  assumes "v \<in> K" "v < length Hl" "Hl ! v = H v"
+    and "csr_has c v \<Longrightarrow>
+           <csr_assn (csr_move c v) (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> f (csr_current c v) <Q>"
+    and "\<not> csr_has c v \<Longrightarrow> <csr_assn c (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> g <Q>"
+  shows "<csr_assn c (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> csr_step_upto_imp (Ba, Ea, Ca) Ha v f g <Q>"
+proof (cases "csr_has c v")
+  case True
+  have hv: "c v < H v" using True by (simp add: csr_has_def)
+  have cE: "c v < length E"
+    using hv H_hi[OF K_less[OF assms(1)]] B_bound[OF K_less[OF assms(1)]] by linarith
+  have post: "<csr_assn (c(v := Suc (c v))) (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> f (E ! c v) <Q>"
+    using assms(4)[OF True] hv by (simp add: csr_move_def csr_current_def)
+  show ?thesis
+    using K_less[OF assms(1)] assms(1-3) hv cE
+    by (sep_auto simp: csr_step_upto_imp_def csr_assn_def nth_list_update
+                 heap: post[unfolded csr_assn_def prod.case])
 next
-  case (2 C i Ci) then show ?case
-    by (cases Ci) (simp add: csr_has_imp_rule)
-next
-  case (3 C i Ci) then show ?case
-    by (cases Ci) (simp add: csr_move_imp_rule)
-next
-  case (4 C i Ci) then show ?case
-    by (cases Ci) (simp add: csr_reset_imp_rule)
+  case False
+  have hv: "\<not> c v < H v" using False by (simp add: csr_has_def)
+  show ?thesis
+    using K_less[OF assms(1)] assms(1-3) hv
+    by (sep_auto simp: csr_step_upto_imp_def csr_assn_def
+                 heap: assms(5)[OF False, unfolded csr_assn_def prod.case])
 qed
+
+lemma csr_empty_imp_rule:
+  assumes "v < n"
+  shows "<csr_assn c (Ba, Ea, Ca)> csr_empty_imp Ba v
+         <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_empty v)>"
+  using assms B_length by (sep_auto simp: csr_assn_def csr_empty_imp_def csr_empty_def)
 
 lemma csr_copy_imp_rule:
   "\<lbrakk>i \<le> n; length l = n; \<forall>j<i. l ! j = B ! j\<rbrakk> \<Longrightarrow>
@@ -252,57 +205,112 @@ qed
 
 end
 
-subsection \<open>Edges and the input\<close>
+context csr_graph_imp
+begin
 
-text \<open>The graph is given by two lists of equal length \<open>m\<close> holding the first and the second
-      endpoints; the edges are the indices \<open>i < m\<close>, with endpoints \<open>fs ! i\<close> and \<open>ts ! i\<close>.
+lemma csr_has_imp_rule:
+  assumes "v \<in> K"
+  shows "<csr_assn c (Ba, Ea, Ca)> csr_has_imp (Ba, Ea, Ca) v
+         <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_has c v)>"
+  using K_less[OF assms] assms B_length
+  by (sep_auto simp: csr_assn_def csr_has_imp_def csr_has_def)
 
-      The multigraph locales ask for an edge between any two vertices (@{term create_edge}). The
-      indices from \<open>m\<close> on serve for this: they encode the pairs of vertices. They are no edges of
-      the graph and only occur in the abstract model.\<close>
+sublocale csr_imp: indexed_iterable_set_imp csr_invar csr_abstract csr_current csr_has
+    csr_iterated csr_remaining csr_move csr_reset K csr_assn csr_current_imp csr_has_imp
+    csr_move_imp csr_reset_imp
+proof (unfold_locales, goal_cases)
+  case (1 C i Ci) then show ?case
+    by (cases Ci) (simp add: csr_current_imp_rule)
+next
+  case (2 C i Ci) then show ?case
+    by (cases Ci) (simp add: csr_has_imp_rule)
+next
+  case (3 C i Ci) then show ?case
+    by (cases Ci) (simp add: csr_move_imp_rule)
+next
+  case (4 C i Ci) then show ?case
+    by (cases Ci) (simp add: csr_reset_imp_rule)
+qed
 
-definition e_src :: "nat list \<Rightarrow> nat \<Rightarrow> nat" where
-  "e_src fs i = (if i < length fs then fs ! i else fst (prod_decode (i - length fs)))"
+end
 
-definition e_tgt :: "nat list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat" where
-  "e_tgt fs ts i = (if i < length fs then ts ! i else snd (prod_decode (i - length fs)))"
+subsection \<open>Folding over a block\<close>
 
-definition e_new :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where
-  "e_new fs u v = length fs + prod_encode (u, v)"
+text \<open>The entries of the block of a vertex can also be folded over directly, without a cursor
+      array: the fold reads the two bounds from \<open>B\<close> and runs over that range of \<open>E\<close>. It needs
+      neither the cursor array nor distinct entries within a block, so its rule is stated for any
+      arrays \<open>B\<close> and \<open>E\<close>.
 
-lemma e_new_simps[simp]: "e_src fs (e_new fs u v) = u" "e_tgt fs ts (e_new fs u v) = v"
-  by (simp_all add: e_src_def e_tgt_def e_new_def)
+      The rule of @{const iterate_range_strict} in @{theory Imperative.Array_Range_Iteration}
+      requires the end of the range to be a valid index; the last block ends at the length of
+      the array.\<close>
 
-lemma e_nth[simp]: "i < length fs \<Longrightarrow> e_src fs i = fs ! i"
-  "i < length fs \<Longrightarrow> e_tgt fs ts i = ts ! i"
-  by (simp_all add: e_src_def e_tgt_def)
+lemma nths_strict_split_off_first_le:
+  assumes "start < end" "end \<le> length list"
+  shows "nths list {start..<end} = list ! start # nths list {Suc start..<end}"
+proof -
+  have "start < length (take end list)"
+    using assms by simp
+  then have "drop start (take end list) = take end list ! start # drop (Suc start) (take end list)"
+    by (rule Cons_nth_drop_Suc[symmetric])
+  then show ?thesis
+    using assms(1) unfolding nths_intervall_strict_as_drop_and_take by simp
+qed
 
-definition edges :: "nat list \<Rightarrow> nat set" where
-  "edges fs = {..<length fs}"
+lemma iterate_range_strict_le_rule:
+  assumes "\<And> acc acci x. x \<in> set (nths list {start..<end}) \<Longrightarrow> <acc_assn acc acci * F> fi x acci
+            <\<lambda> r. acc_assn (f acc x) r * F>"
+  shows "<arr \<mapsto>\<^sub>a list * \<up> (end \<le> length list) *F * acc_assn acc acci>
+          iterate_range_strict arr start end fi acci
+         <\<lambda> r. arr \<mapsto>\<^sub>a list * acc_assn (foldl f acc (nths list {start..<end})) r * F>"
+  using assms
+proof(induction arbitrary: start acc acci rule: iterate_range_strict.fixp_induct, goal_cases)
+  case 1
+  then show ?case
+    by simp
+next
+  case 2
+  then show ?case
+    by simp
+next
+  case (3 fi start acc acci)
+  note IH = this
+  show ?case
+     using IH(1)[of "Suc start" "f acc _"] IH(2)
+     by (sep_auto simp: nths_strict_split_off_first_le[of start] split: if_split)
+qed
 
-abbreviation verts :: "nat list \<Rightarrow> nat list \<Rightarrow> nat set" where
-  "verts fs ts \<equiv> dVs (multigraph_spec.make_pair (e_src fs) (e_tgt fs ts) ` edges fs)"
+definition csr_fold_imp ::
+  "nat array \<times> 'e::heap array \<Rightarrow> nat \<Rightarrow> ('e \<Rightarrow> 'a \<Rightarrow> 'a Heap) \<Rightarrow> 'a \<Rightarrow> 'a Heap" where
+  "csr_fold_imp = (\<lambda>(Ba, Ea) v f acc. do {
+     i \<leftarrow> Array.nth Ba v;
+     j \<leftarrow> Array.nth Ba (Suc v);
+     iterate_range_strict Ea i j f acc })"
 
-lemma edges_iff[simp]: "i \<in> edges fs \<longleftrightarrow> i < length fs"
-  by (simp add: edges_def)
+text \<open>The fold is inlined at its call sites, so a wrapper around it costs no call.\<close>
 
-definition edge_seq :: "nat list \<Rightarrow> nat \<Rightarrow> nat list" where
-  "edge_seq fs i = [i..<length fs]"
+lemma csr_fold_imp_inline[code_unfold]:
+  "csr_fold_imp (Ba, Ea) v f acc = do {
+     i \<leftarrow> Array.nth Ba v;
+     j \<leftarrow> Array.nth Ba (Suc v);
+     iterate_range_strict Ea i j f acc }"
+  by (simp add: csr_fold_imp_def)
 
-definition edge_next :: "nat list \<Rightarrow> nat \<Rightarrow> (nat \<times> nat) option" where
-  "edge_next fs i = (if i < length fs then Some (i, Suc i) else None)"
+declare iterate_range_strict.simps[code]
 
-lemma edges_seq: "edges fs = set (edge_seq fs 0)"
-  by (auto simp: edges_def edge_seq_def)
+lemma csr_fold_imp_rule:
+  assumes "Suc v < length B" "B ! Suc v \<le> length E"
+    and "\<And>acc acci x. x \<in> set (nths E {B ! v..<B ! Suc v}) \<Longrightarrow>
+           <acc_assn acc acci * F> fi x acci <\<lambda>r. acc_assn (f acc x) r * F>"
+  shows "<Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * acc_assn acc acci * F> csr_fold_imp (Ba, Ea) v fi acci
+         <\<lambda>r. Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * acc_assn (foldl f acc (nths E {B ! v..<B ! Suc v})) r * F>"
+  using assms(1,2) unfolding csr_fold_imp_inline
+  by (sep_auto heap: iterate_range_strict_le_rule[where f = f, OF assms(3)])
 
-lemma edge_seq_distinct: "distinct (edge_seq fs i)"
-  by (simp add: edge_seq_def)
+subsection \<open>Reading the input\<close>
 
-lemma edge_iterator: "iterator (edge_next fs) (edge_seq fs) (\<lambda>_. True)"
-  by unfold_locales (auto simp: edge_next_def edge_seq_def upt_conv_Cons split: if_splits)
-
-text \<open>The endpoints are read from the input arrays. The arrays are only read, so the assertion
-      for them is carried as a frame.\<close>
+text \<open>The endpoints of the input edges (@{const e_src}, @{const e_tgt}) are read from the input
+      arrays. The arrays are only read, so the assertion for them is carried as a frame.\<close>
 
 definition ends_assn :: "nat list \<Rightarrow> nat list \<Rightarrow> nat array \<times> nat array \<Rightarrow> assn" where
   "ends_assn fs ts = (\<lambda>(Fa, Ta). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)"
@@ -334,23 +342,17 @@ definition edge_cur :: "nat array \<times> nat array \<Rightarrow> nat \<Rightar
 definition edge_adv :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "edge_adv = (\<lambda>_ i. return (Suc i))"
 
-text \<open>The key of an edge is its tail; the edge itself is stored.\<close>
-
-definition edge_key :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
-  "edge_key = src_imp"
-
-definition edge_val :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
-  "edge_val _ i = return i"
-
 subsection \<open>The CSR buildup for the input\<close>
 
-text \<open>The global interpretation of the CSR buildup for the input iterator. The locale
+text \<open>The global interpretation of the CSR buildup for the input iterator: the key of an edge is
+      its tail, read by @{const src_imp}, and the edge itself is stored. The locale
       @{locale imp_csr_buildup_code} only fixes operations and has no assumptions.\<close>
 
-global_interpretation csr_code: imp_csr_buildup_code n edge_has_next edge_cur edge_adv edge_key
-    edge_val
+global_interpretation csr_code: imp_csr_buildup_code n edge_has_next edge_cur edge_adv src_imp
+    edge_cur
   for n
   defines csr_build_edges = csr_code.csr_build_imp
+    and csr_build_into_edges = csr_code.csr_build_into
     and csr_count_edges = csr_code.count_imp
     and csr_prefix_sums = csr_code.prefix_imp
     and csr_init_edges = csr_code.init_E_imp
@@ -405,7 +407,7 @@ lemma wnb_handle_cases:
   obtains Ba Ea Ca Wa where "Ci = ((Ba, Ea, Ca), Wa)"
   by (cases Ci) (metis prod_cases3)
 
-locale weighted_csr = csr_graph n K B E
+locale weighted_csr = csr_graph_imp n K B E
   for n K B and E :: "'e::heap list" +
   fixes tgt :: "'e \<Rightarrow> 'a"
     and W :: "'w::heap list"
@@ -559,9 +561,6 @@ lemma wnb_reset_all_imp_rule:
    <\<lambda>_. wnb_assn (\<lambda>v. B ! v) ((Ba, Ea, Ca), Wa)>"
   unfolding wnb_reset_all_imp_def wnb_assn_def csr_assn_def prod.case
   by (sep_auto heap: csr_copy_imp_rule simp: K_less)
-
-lemma csr_init_invar: "csr_invar (\<lambda>v. B ! v)"
-  by (simp add: csr_invar_def B_mono K_less)
 
 sublocale wnb_imp: weighted_neighbourhoods_imp_spec csr_invar wnb_abstract wnb_current csr_has
     wnb_iterated wnb_remaining csr_move csr_reset K cost wval "\<lambda>v. B ! v" wnb_assn

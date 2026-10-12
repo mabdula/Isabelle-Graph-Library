@@ -9,7 +9,6 @@ directories
   Refinements
 
 theories
-  Acyclic_Flow_Instantiation
   Mincost_Oracle_Certificates
   Mincost_Oracle_Certificates_Pluggable
   Mincost_Solver_Reduction

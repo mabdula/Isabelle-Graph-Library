@@ -335,13 +335,13 @@ qed simp_all
 
 text \<open>The edges grouped by their first and by their second endpoints, and the position arrays.\<close>
 
-sublocale out: csr_edge_input n fs ts "e_src fs" edge_key
+sublocale out: csr_edge_input n fs ts "e_src fs" src_imp
   by unfold_locales
-     (use ts_length fs_bound ts_bound src_imp_rule[of _ fs ts] in \<open>auto simp: edge_key_def\<close>)
+     (use ts_length fs_bound ts_bound src_imp_rule[of _ fs ts] in auto)
 
-sublocale inc: csr_edge_input n fs ts "e_tgt fs ts" edge_key_tgt
+sublocale inc: csr_edge_input n fs ts "e_tgt fs ts" tgt_imp
   by unfold_locales
-     (use ts_length fs_bound ts_bound tgt_imp_rule[of _ fs ts] in \<open>auto simp: edge_key_tgt_def\<close>)
+     (use ts_length fs_bound ts_bound tgt_imp_rule[of _ fs ts] in auto)
 
 definition "Po = csr_pos_list id out.inp.E_spec (replicate (length fs) 0)"
 definition "Pin = csr_pos_list id inc.inp.E_spec (replicate (length fs) 0)"

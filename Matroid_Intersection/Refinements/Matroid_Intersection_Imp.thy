@@ -81,7 +81,7 @@ theorem mi_imp_correct:
 proof-
   let ?F = "sol_assn {} Si * ost1 * ost2"
   have cand: "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
-              <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * csr3_assn (build_nhlists (cand_list pts1 pts2 n)) Gc>"
+              <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * bcsr_assn (build_nhlists (cand_list pts1 pts2 n)) Gc>"
     by (rule ht_frame_ac[OF c.cand_csr_rule, where R = ?F]) (simp only: star_aci, rule ent_refl)+
   show ?thesis
     unfolding mi_imp_def
