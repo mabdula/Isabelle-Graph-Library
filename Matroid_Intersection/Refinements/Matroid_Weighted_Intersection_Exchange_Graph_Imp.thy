@@ -95,7 +95,7 @@ definition "wsearch_imp Gc Vi Fr Bf Da Pa Si C1 C2 mS mT = do {
       Some s \<Rightarrow> return (1 :: nat, s)
     | None \<Rightarrow> do {
         k \<leftarrow> collect_range_imp (wsrc_imp (Si, Gc, C1, C2) mS) n Fr;
-        xset_clear_imp n Vi;
+        bool_array_set_clear_imp n Vi;
         t \<leftarrow> (if k = 0 then return None
               else do {
                 fill_range_imp id n Da;
@@ -175,6 +175,9 @@ text \<open>Weight arrays represent maps that vanish outside the elements.\<clos
 definition warr_assn :: "nat \<Rightarrow> ('n :: heap \<Rightarrow> real) \<Rightarrow> (nat \<Rightarrow> real) \<Rightarrow> 'n array \<Rightarrow> assn" where
   "warr_assn n h c C = (\<exists>\<^sub>A l. C \<mapsto>\<^sub>a l * \<up>(length l = n \<and> c = (\<lambda> i. if i < n then h (l ! i) else 0)))"
 
+lemma len_warr: "len_assn n C \<Longrightarrow>\<^sub>A \<exists>\<^sub>A c. warr_assn n h c C"
+  unfolding len_assn_def warr_assn_def by sep_auto
+
 text \<open>An array holding a list is the weight array of the list read through the embedding.\<close>
 
 lemma warr_of_list:
@@ -248,23 +251,23 @@ lemma foldr_shift:
   by (induction k arbitrary: c) (auto simp: fun_eq_iff less_Suc_eq)
 
 lemma wshift_set_rule:
-  "<xset_assn n V Vi * warr_assn n h c C> wshift_imp Vi e C
-   <\<lambda> _. xset_assn n V Vi * warr_assn n h (\<lambda> x. if x \<in> V then c x + h e else c x) C>"
+  "<bool_array_set_assn n V Vi * warr_assn n h c C> wshift_imp Vi e C
+   <\<lambda> _. bool_array_set_assn n V Vi * warr_assn n h (\<lambda> x. if x \<in> V then c x + h e else c x) C>"
 proof(cases "V \<subseteq> {..<n}")
   case True
-  have step: "<warr_assn n h c' C * xset_assn n V Vi>
+  have step: "<warr_assn n h c' C * bool_array_set_assn n V Vi>
                 do { r \<leftarrow> Array.nth Vi j;
                      if r then do { x \<leftarrow> Array.nth C j; Array.upd j (x + e) C; return () }
                      else return () }
               <\<lambda> _. warr_assn n h (if j \<in> V then fun_upd c' j (c' j + h e) else c') C *
-                    xset_assn n V Vi>" if "j < n" for j c'
+                    bool_array_set_assn n V Vi>" if "j < n" for j c'
     using that unfolding warr_assn_def
-    by (sep_auto heap: xset_memb_rule simp: h_add nth_list_update fun_eq_iff)
+    by (sep_auto heap: bool_array_set_memb_rule simp: h_add nth_list_update fun_eq_iff)
   have e: "(\<lambda> x. if x < n \<and> x \<in> V then c x + h e else c x) = (\<lambda> x. if x \<in> V then c x + h e else c x)"
     using True by (auto simp: fun_eq_iff)
-  have f: "<warr_assn n h c C * xset_assn n V Vi> wshift_imp Vi e C
+  have f: "<warr_assn n h c C * bool_array_set_assn n V Vi> wshift_imp Vi e C
            <\<lambda> _. warr_assn n h (\<lambda> x. if x < n \<and> x \<in> V then c x + h e else c x) C *
-                 xset_assn n V Vi>"
+                 bool_array_set_assn n V Vi>"
     unfolding wshift_imp_def foldr_shift[symmetric]
     by (rule foldr_range_imp_rule[where A = "\<lambda> c' _. warr_assn n h c' C"], rule step)
   show ?thesis
@@ -272,7 +275,7 @@ proof(cases "V \<subseteq> {..<n}")
 next
   case False
   show ?thesis
-    unfolding xset_assn_def using False by sep_auto
+    unfolding bool_array_set_assn_def using False by sep_auto
 qed
 
 lemma nbrs_filter: "nbrs (filter P es) u = filter (\<lambda> v. P (u, v)) (nbrs es u)"
@@ -281,7 +284,7 @@ lemma nbrs_filter: "nbrs (filter P es) u = filter (\<lambda> v. P (u, v)) (nbrs 
 text \<open>Copying and clearing weight arrays.\<close>
 
 lemma ccopy_rule:
-  "<warr_assn n h c C' * len_assn n C> ccopy_imp C' C <\<lambda> _. warr_assn n h c C' * warr_assn n h c C>"
+  "<warr_assn n h c C' * warr_assn n h d C> ccopy_imp C' C <\<lambda> _. warr_assn n h c C' * warr_assn n h c C>"
 proof-
   have r: "<C' \<mapsto>\<^sub>a l'> Array.nth C' i <\<lambda> r. C' \<mapsto>\<^sub>a l' * \<up>(r = l' ! i)>" if "i < n" "length l' = n" for i l'
     using that by sep_auto
@@ -289,11 +292,21 @@ proof-
            <\<lambda> _. C \<mapsto>\<^sub>a map (\<lambda> i. l' ! i) [0..<n] * C' \<mapsto>\<^sub>a l'>" if "length l' = n" for l l'
     unfolding ccopy_imp_def by (rule copy_range_imp_rule[OF r[OF _ that]])
   show ?thesis
-    unfolding warr_assn_def len_assn_def by (sep_auto heap: c)
+    unfolding warr_assn_def by (sep_auto heap: c)
 qed
 
-lemma czero_rule: "<len_assn n C> czero_imp C <\<lambda> _. warr_assn n h (\<lambda> _. 0) C>"
-  unfolding czero_imp_def len_assn_def warr_assn_def by (sep_auto heap: fill_range_imp_rule)
+lemma czero_rule: "<warr_assn n h d C> czero_imp C <\<lambda> _. warr_assn n h (\<lambda> _. 0) C>"
+  unfolding czero_imp_def warr_assn_def by (sep_auto heap: fill_range_imp_rule)
+
+text \<open>The weight arrays as immutable fixed-universe maps with copying and clearing.\<close>
+
+lemma warr_copy_clear_imp:
+  "fixed_univ_map_copy_imp {..<n} (\<lambda> _. True) (\<lambda> c. c) h (warr_assn n h) Array.nth ccopy_imp"
+  "fixed_univ_map_clear_imp {..<n} (\<lambda> _. True) (\<lambda> c. c) h (warr_assn n h) Array.nth
+     (\<lambda> _. 0) czero_imp"
+  by (intro fixed_univ_map_copy_imp.intro fixed_univ_map_clear_imp.intro
+        fixed_univ_map_basic_imp.intro fixed_univ_map_copy_imp_axioms.intro
+        fixed_univ_map_clear_imp_axioms.intro ccopy_rule czero_rule warr_nth, simp)+
 
 text \<open>The graph handle of the tight iterator: the solution, the CSR and the two weight arrays.\<close>
 
@@ -305,7 +318,7 @@ text \<open>The context \<open>K\<close> in the arrays. Without a path the visit
   distance and parent arrays of some BFS run on the tight graph.\<close>
 
 definition "wpath_assn Vi Da Pa (t :: nat \<times> nat) K = (case wctx_path K of
-    None \<Rightarrow> xset_assn n (set (wctx_R K)) Vi * len_assn n Da * len_assn n Pa * \<up>(fst t = 0)
+    None \<Rightarrow> bool_array_set_assn n (set (wctx_R K)) Vi * len_assn n Da * len_assn n Pa * \<up>(fst t = 0)
   | Some p \<Rightarrow> len_assn n Vi *
       (if fst t = 1 then len_assn n Da * len_assn n Pa * \<up>(p = [snd t] \<and> snd t < n)
        else (\<exists>\<^sub>A ss. BFS_subprocedures_lists.imp_dist_assn n Da (build_nhlists (wctx_es K))
@@ -649,12 +662,12 @@ qed
 
 lemma wtgt_imp_rule:
   assumes y: "y < n" and mT: "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
-  shows "<xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> wtgt_imp Si Vi C2 mT y
-         <\<lambda> r. xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(r = (((y \<notin> X \<and> y \<in> T0 X) \<and>
+  shows "<bool_array_set_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> wtgt_imp Si Vi C2 mT y
+         <\<lambda> r. bool_array_set_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(r = (((y \<notin> X \<and> y \<in> T0 X) \<and>
                 c2 y = wctx_mT (csr.wtight_ctx X c1 c2)) \<and> y \<in> V))>"
 proof-
-  have tg: "<xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> is_tgt_imp Si Vi y
-            <\<lambda> r. xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(r = ((y \<notin> X \<and> y \<in> T0 X) \<and> y \<in> V))>"
+  have tg: "<bool_array_set_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> is_tgt_imp Si Vi y
+            <\<lambda> r. bool_array_set_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(r = ((y \<notin> X \<and> y \<in> T0 X) \<and> y \<in> V))>"
     by (rule ht_frame_ac[OF is_tgt_imp_rule[OF X y], where R = "warr_assn n h c1 C1 * warr_assn n h c2 C2"])
        (simp only: gtx_def prod.case star_aci, rule ent_refl)+
   show ?thesis
@@ -682,34 +695,34 @@ lemma foldr_ins: "foldr (\<lambda> y W. if P y then Set.insert y W else W) xs V 
 
 lemma drop_imp_rule:
   assumes mS: "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
-  shows "<xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> drop_imp (Si, Gc, C1, C2) mS Vi
-         <\<lambda> _. xset_assn n (V \<union> {y. y < n \<and> (((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
+  shows "<bool_array_set_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> drop_imp (Si, Gc, C1, C2) mS Vi
+         <\<lambda> _. bool_array_set_assn n (V \<union> {y. y < n \<and> (((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                 \<not> csr.has_tight_nb (csr.exch_ctx X) c2 y)}) Vi * gtx X c1 c2 (Si, Gc, C1, C2)>"
 proof-
   let ?P = "\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                  \<not> csr.has_tight_nb (csr.exch_ctx X) c2 y"
-  have step: "<xset_assn n W Vi * gtx X c1 c2 (Si, Gc, C1, C2)> do { s \<leftarrow> s_imp Si y; if s then do { x \<leftarrow> Array.nth C1 y; if x = mS then do { e \<leftarrow> thas_nb_imp (Si, Gc, C1, C2) y; if e then return () else do { Array.upd y True Vi; return () } } else return () } else return () }
-              <\<lambda> r. xset_assn n (if ?P y then Set.insert y W else W) Vi * gtx X c1 c2 (Si, Gc, C1, C2)>"
+  have step: "<bool_array_set_assn n W Vi * gtx X c1 c2 (Si, Gc, C1, C2)> do { s \<leftarrow> s_imp Si y; if s then do { x \<leftarrow> Array.nth C1 y; if x = mS then do { e \<leftarrow> thas_nb_imp (Si, Gc, C1, C2) y; if e then return () else do { Array.upd y True Vi; return () } } else return () } else return () }
+              <\<lambda> r. bool_array_set_assn n (if ?P y then Set.insert y W else W) Vi * gtx X c1 c2 (Si, Gc, C1, C2)>"
     if y: "y < n" for y W
   proof(cases "y \<notin> X \<and> y \<in> S0 X")
     case False
     show ?thesis
-      by (rule ht_bind[OF ht_frame_ac[OF gtx_lift[OF s_imp_rule[OF X y]], where R = "xset_assn n W Vi"]],
+      by (rule ht_bind[OF ht_frame_ac[OF gtx_lift[OF s_imp_rule[OF X y]], where R = "bool_array_set_assn n W Vi"]],
           (simp only: star_aci, rule ent_refl), rule ent_refl, rule pure_mid) (sep_auto simp: False)
   next
     case True
     have hS: "h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
       using mS src_ne[OF y] True by blast
     show ?thesis
-      by (rule ht_bind[OF ht_frame_ac[OF gtx_lift[OF s_imp_rule[OF X y]], where R = "xset_assn n W Vi"]],
+      by (rule ht_bind[OF ht_frame_ac[OF gtx_lift[OF s_imp_rule[OF X y]], where R = "bool_array_set_assn n W Vi"]],
           (simp only: star_aci, rule ent_refl), rule ent_refl, rule pure_mid, simp only: True simp_thms if_True)
-         (sep_auto heap: rd_eq[OF rd_c1[OF y] hS] thas_nb_rule xset_upd_rule simp: y True htn_eq[OF y True])
+         (sep_auto heap: rd_eq[OF rd_c1[OF y] hS] thas_nb_rule bool_array_set_upd_rule simp: y True htn_eq[OF y True])
   qed
-  have r: "<xset_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> drop_imp (Si, Gc, C1, C2) mS Vi
-           <\<lambda> r. xset_assn n (foldr (\<lambda> y W. if ?P y then Set.insert y W else W) [0..<n] V) Vi *
+  have r: "<bool_array_set_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> drop_imp (Si, Gc, C1, C2) mS Vi
+           <\<lambda> r. bool_array_set_assn n (foldr (\<lambda> y W. if ?P y then Set.insert y W else W) [0..<n] V) Vi *
                  gtx X c1 c2 (Si, Gc, C1, C2)>"
     unfolding drop_imp_def prod.case
-    by (rule foldr_range_imp_rule[where A = "\<lambda> W u. xset_assn n W Vi"]) (rule step)
+    by (rule foldr_range_imp_rule[where A = "\<lambda> W u. bool_array_set_assn n W Vi"]) (rule step)
   show ?thesis
     by (rule ht_cons_post[OF r]) (sep_auto simp: foldr_ins)
 qed
@@ -845,12 +858,12 @@ lemma wsearch_bfs:
   assumes hT: "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
     and b: "bfs_csr n (wctx_es (csr.wtight_ctx X c1 c2)) ss"
     and fl: "length fl = Suc n" "take (length ss) fl = ss"
-  shows "<gtx X c1 c2 (Si, Gc, C1, C2) * xset_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * len_assn n Da *
+  shows "<gtx X c1 c2 (Si, Gc, C1, C2) * bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * len_assn n Da *
           len_assn n Pa>
            do { fill_range_imp id n Da; fill_range_imp id n Pa; tbfs_run (Si, Gc, C1, C2) Vi (Fr, length ss, Bf) Da Pa;
                 find_range_imp (wtgt_imp Si Vi C2 mT) 0 n }
          <\<lambda> t. gtx X c1 c2 (Si, Gc, C1, C2) *
-               xset_assn n (set (BFS_dist_state.visited (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss))) Vi *
+               bool_array_set_assn n (set (BFS_dist_state.visited (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss))) Vi *
                BFS_subprocedures_lists.imp_dist_assn n Da (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
                  (BFS_dist_state.dists (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss)) Da *
                BFS_subprocedures_lists.imp_par_assn n Pa (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
@@ -866,21 +879,21 @@ proof-
              BFS_subprocedures_lists.imp_par_assn n Pa (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
                (BFS_par_state.parent (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss)) Pa *
              len_assn (Suc n) Fr * len_assn (Suc n) Bf"
-  have w: "<xset_assn n ?V Vi * ?G * ?DP> wtgt_imp Si Vi C2 mT y
-           <\<lambda> r. xset_assn n ?V Vi * ?G * ?DP * \<up>(r = (((y \<notin> X \<and> y \<in> T0 X) \<and>
+  have w: "<bool_array_set_assn n ?V Vi * ?G * ?DP> wtgt_imp Si Vi C2 mT y
+           <\<lambda> r. bool_array_set_assn n ?V Vi * ?G * ?DP * \<up>(r = (((y \<notin> X \<and> y \<in> T0 X) \<and>
                  c2 y = wctx_mT (csr.wtight_ctx X c1 c2)) \<and> y \<in> ?V))>" if "y < n" for y
     by (rule ht_frame_ac[OF wtgt_imp_rule[of y mT ?V Vi Si Gc C1 C2, OF that hT], where R = ?DP])
        (simp only: star_aci, rule ent_refl)+
-  have f: "<xset_assn n ?V Vi * ?G * ?DP> find_range_imp (wtgt_imp Si Vi C2 mT) 0 n
-           <\<lambda> t. xset_assn n ?V Vi * ?G * ?DP * \<up>(t = find (\<lambda> y. y \<in> ?V) (wctx_tb (csr.wtight_ctx X c1 c2)))>"
+  have f: "<bool_array_set_assn n ?V Vi * ?G * ?DP> find_range_imp (wtgt_imp Si Vi C2 mT) 0 n
+           <\<lambda> t. bool_array_set_assn n ?V Vi * ?G * ?DP * \<up>(t = find (\<lambda> y. y \<in> ?V) (wctx_tb (csr.wtight_ctx X c1 c2)))>"
     unfolding tb_find by (rule find_range_imp_rule, rule w) assumption
   show ?thesis
     unfolding tbfs_run_def tround_def
     by (rule ht_bind[OF ht_frame_ac[OF fill_len[where a = Da and f = id],
-            where R = "?G * xset_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * len_assn n Pa"]],
+            where R = "?G * bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * len_assn n Pa"]],
         (simp only: star_aci, rule ent_refl), rule ent_refl,
         rule ht_bind[OF ht_frame_ac[OF fill_len[where a = Pa and f = id],
-            where R = "?G * xset_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * Da \<mapsto>\<^sub>a map id [0..<n]"]],
+            where R = "?G * bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * Da \<mapsto>\<^sub>a map id [0..<n]"]],
         (simp only: star_aci, rule ent_refl), rule ent_refl,
         rule ht_bind[OF ht_cons_pre[OF _ tb.bfs_len_rule[OF b fl, where Bf = Bf and Vi = Vi and Fr = Fr and
             Da = Da and Pa = Pa and Gh = "(Si, Gc, C1, C2)"]]],
@@ -901,7 +914,7 @@ lemma wsearch_rest:
              csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n]"
   shows "<Fr \<mapsto>\<^sub>a fl * gtx X c1 c2 (Si, Gc, C1, C2) *
           (len_assn n Vi * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>
-           do { xset_clear_imp n Vi;
+           do { bool_array_set_clear_imp n Vi;
                 t \<leftarrow> (if k = 0 then return None else do { fill_range_imp id n Da; fill_range_imp id n Pa;
                        tbfs_run (Si, Gc, C1, C2) Vi (Fr, k, Bf) Da Pa; find_range_imp (wtgt_imp Si Vi C2 mT) 0 n });
                 (case t of Some t \<Rightarrow> return (2 :: nat, t)
@@ -915,8 +928,8 @@ proof-
                 \<not> csr.has_tight_nb (csr.exch_ctx X) c2 y)}"
   let ?G = "gtx X c1 c2 (Si, Gc, C1, C2)"
   have cl: "<Fr \<mapsto>\<^sub>a fl * ?G * (len_assn n Vi * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>
-              xset_clear_imp n Vi
-            <\<lambda> _. xset_assn n {} Vi * (Fr \<mapsto>\<^sub>a fl * ?G * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>"
+              bool_array_set_clear_imp n Vi
+            <\<lambda> _. bool_array_set_assn n {} Vi * (Fr \<mapsto>\<^sub>a fl * ?G * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>"
     by (rule ht_frame_ac[OF clear_len[where Vi = Vi],
           where R = "Fr \<mapsto>\<^sub>a fl * ?G * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa"])
        (simp only: star_aci, rule ent_refl)+
@@ -931,9 +944,9 @@ proof-
       unfolding path_char None option.case(1) if_P[OF True] ..
     have R: "set (wctx_R (csr.wtight_ctx X c1 c2)) = {} \<union> ?D"
       unfolding R_char if_P[OF True] by auto
-    have d: "<xset_assn n {} Vi * (Fr \<mapsto>\<^sub>a fl * ?G * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>
+    have d: "<bool_array_set_assn n {} Vi * (Fr \<mapsto>\<^sub>a fl * ?G * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>
                drop_imp (Si, Gc, C1, C2) mS Vi
-             <\<lambda> _. xset_assn n ({} \<union> ?D) Vi * ?G * (Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>"
+             <\<lambda> _. bool_array_set_assn n ({} \<union> ?D) Vi * ?G * (Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>"
       by (rule ht_frame_ac[OF drop_imp_rule[OF hS],
             where R = "Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa"])
          (simp only: star_aci, rule ent_refl)+
@@ -963,10 +976,10 @@ proof-
       unfolding path_char None option.case(1) if_not_P[OF False] csr.target_path_def Let_def tfin_eq[OF b] ..
     have R: "set (wctx_R (csr.wtight_ctx X c1 c2)) = ?V \<union> ?D"
       unfolding R_char if_not_P[OF False] tfin_eq[OF b] by auto
-    have bf: "<xset_assn n {} Vi * (Fr \<mapsto>\<^sub>a fl * ?G * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>
+    have bf: "<bool_array_set_assn n {} Vi * (Fr \<mapsto>\<^sub>a fl * ?G * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>
                 do { fill_range_imp id n Da; fill_range_imp id n Pa; tbfs_run (Si, Gc, C1, C2) Vi (Fr, length ?ss, Bf) Da Pa;
                      find_range_imp (wtgt_imp Si Vi C2 mT) 0 n }
-              <\<lambda> t. ?G * xset_assn n ?V Vi * ?DP * len_assn (Suc n) Fr * len_assn (Suc n) Bf *
+              <\<lambda> t. ?G * bool_array_set_assn n ?V Vi * ?DP * len_assn (Suc n) Fr * len_assn (Suc n) Bf *
                     \<up>(t = find (\<lambda> y. y \<in> ?V) (wctx_tb (csr.wtight_ctx X c1 c2)))>"
       by (rule ht_cons_pre[OF _ ht_cons_post[OF wsearch_bfs[OF hT b fl(1) tk]]])
          ((simp only: star_aci, rule ent_refl) | (rule ent_true_drop(2), simp only: star_aci, rule ent_refl))+
@@ -977,15 +990,15 @@ proof-
                 Some (BFS_distance_parents.parent_path (\<lambda> d. d) (\<lambda> p. p) (BFS_dist_state.dists ?fin)
                         (BFS_par_state.parent ?fin) t [])"
         unfolding p Some option.case(2) ..
-      have e: "xset_assn n ?V Vi * ?DP \<Longrightarrow>\<^sub>A wpath_assn Vi Da Pa (2 :: nat, t) (csr.wtight_ctx X c1 c2)"
+      have e: "bool_array_set_assn n ?V Vi * ?DP \<Longrightarrow>\<^sub>A wpath_assn Vi Da Pa (2 :: nat, t) (csr.wtight_ctx X c1 c2)"
         unfolding wpath_assn_def pS option.case(2) fst_conv snd_conv if_not_P[OF two]
-        by (rule ent_star_mono[OF xset_len], rule ent_ex_postI[where x = ?ss]) (use b Some in sep_auto)
+        by (rule ent_star_mono[OF bool_array_set_len], rule ent_ex_postI[where x = ?ss]) (use b Some in sep_auto)
       show ?thesis
         unfolding fl(2)
         apply (rule ht_bind[OF cl], simp only: if_not_P[OF k])
         apply (rule ht_bind[OF bf], rule ht_pure_pre, simp only: Some option.case(2),
                rule ht_cons_pre[OF _ ht_return_wp])
-        apply (rule ent_trans[where Q = "(xset_assn n ?V Vi * ?DP) * (?G * len_assn (Suc n) Fr * len_assn (Suc n) Bf)"],
+        apply (rule ent_trans[where Q = "(bool_array_set_assn n ?V Vi * ?DP) * (?G * len_assn (Suc n) Fr * len_assn (Suc n) Bf)"],
                simp only: star_aci, rule ent_refl)
         apply (rule ent_trans[OF ent_star_mono[OF e ent_refl]], simp only: star_aci, rule ent_refl)
         done
@@ -993,8 +1006,8 @@ proof-
       case None
       have pN: "wctx_path (csr.wtight_ctx X c1 c2) = None"
         unfolding p None option.case(1) ..
-      have d: "<xset_assn n ?V Vi * (?G * ?DP * len_assn (Suc n) Fr * len_assn (Suc n) Bf)> drop_imp (Si, Gc, C1, C2) mS Vi
-               <\<lambda> _. xset_assn n (?V \<union> ?D) Vi * ?G * (?DP * len_assn (Suc n) Fr * len_assn (Suc n) Bf)>"
+      have d: "<bool_array_set_assn n ?V Vi * (?G * ?DP * len_assn (Suc n) Fr * len_assn (Suc n) Bf)> drop_imp (Si, Gc, C1, C2) mS Vi
+               <\<lambda> _. bool_array_set_assn n (?V \<union> ?D) Vi * ?G * (?DP * len_assn (Suc n) Fr * len_assn (Suc n) Bf)>"
         by (rule ht_frame_ac[OF drop_imp_rule[OF hS, where V = ?V],
               where R = "?DP * len_assn (Suc n) Fr * len_assn (Suc n) Bf"])
            (simp only: star_aci, rule ent_refl)+
@@ -1186,30 +1199,30 @@ subsubsection \<open>The Minimum Gap\<close>
 
 lemma gap_rule:
   assumes "u < n" "v < n"
-  shows "<\<up>(map_option h ai = a) * (F * (xset_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2))>
+  shows "<\<up>(map_option h ai = a) * (F * (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2))>
            gap_imp C1 C2 (u \<in> X) Vi u v ai
          <\<lambda> r. \<up>(map_option h r = (if v \<notin> V then eps_min a (if u \<in> X then c1 u - c1 v else c2 v - c2 u)
                                   else a)) *
-               (F * (xset_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2))>"
+               (F * (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2))>"
   unfolding gap_imp_def
-  by (sep_auto heap: xset_memb_rule warr_nth simp: assms eps_min_h)
+  by (sep_auto heap: bool_array_set_memb_rule warr_nth simp: assms eps_min_h)
 
 text \<open>The gaps of the exchange edges leaving an element.\<close>
 
 lemma edge_part:
   assumes "u < n"
   shows "<gxs X Si Gc * \<up>(map_option h ai = a) *
-          (xset_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2)>
+          (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2)>
            xnbs (Si, Gc) u (gap_imp C1 C2 (u \<in> X) Vi) ai
-         <\<lambda> r. gxs X Si Gc * (xset_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2) *
+         <\<lambda> r. gxs X Si Gc * (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2) *
                \<up>(map_option h r = eps_of ((\<lambda> v. if u \<in> X then c1 u - c1 v else c2 v - c2 u) `
                                            {v \<in> set (nbrs (EE X) u). v \<notin> V}) a)>"
 proof-
-  have fi: "<\<up>(map_option h acci = acc) * (xset_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2)>
+  have fi: "<\<up>(map_option h acci = acc) * (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2)>
               gap_imp C1 C2 (u \<in> X) Vi u x acci
             <\<lambda> r. \<up>(map_option h r = (if x \<notin> V then eps_min acc (if u \<in> X then c1 u - c1 x else c2 x - c2 u)
                                      else acc)) *
-                  (xset_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2)>"
+                  (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2)>"
     if "x \<in> set (nbrs (EE X) u)" for acc acci x
   proof-
     have x: "x < n"
@@ -1219,7 +1232,7 @@ proof-
   qed
   show ?thesis
     by (rule ht_cons_post[OF xnbs_rule[OF X, where A = "\<lambda> a ai. \<up>(map_option h ai = a)"
-          and F = "xset_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2"
+          and F = "bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2"
           and f = "\<lambda> u a v. if v \<notin> V then eps_min a (if u \<in> X then c1 u - c1 v else c2 v - c2 u) else a"
           and u = u and fi = "gap_imp C1 C2 (u \<in> X) Vi", OF fi]], assumption)
        (simp only: foldl_eps_of, rule ent_true_drop(2), rule ent_refl)
@@ -1231,7 +1244,7 @@ lemma weps_step_rule:
   assumes u: "u < n"
     and hS: "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
     and hT: "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
-  shows "<\<up>(map_option h ai = a) * (gtx X c1 c2 (Si, Gc, C1, C2) * xset_assn n V Vi)>
+  shows "<\<up>(map_option h ai = a) * (gtx X c1 c2 (Si, Gc, C1, C2) * bool_array_set_assn n V Vi)>
            weps_step Gc Vi Si C1 C2 mS mT u ai
          <\<lambda> r. \<up>(map_option h r =
                   eps_of (if (u \<notin> X \<and> u \<in> T0 X) \<and> u \<in> V then {wctx_mT (csr.wtight_ctx X c1 c2) - c2 u} else {})
@@ -1239,11 +1252,11 @@ lemma weps_step_rule:
                             else {})
                      (eps_of (if u \<in> V then (\<lambda> v. if u \<in> X then c1 u - c1 v else c2 v - c2 u) `
                                              {v \<in> set (nbrs (EE X) u). v \<notin> V} else {}) a))) *
-               (gtx X c1 c2 (Si, Gc, C1, C2) * xset_assn n V Vi)>"
+               (gtx X c1 c2 (Si, Gc, C1, C2) * bool_array_set_assn n V Vi)>"
 proof-
-  let ?G = "gtx X c1 c2 (Si, Gc, C1, C2) * xset_assn n V Vi"
+  let ?G = "gtx X c1 c2 (Si, Gc, C1, C2) * bool_array_set_assn n V Vi"
   have r1: "<?G> Array.nth Vi u <\<lambda> r. ?G * \<up>(r = (u \<in> V))>"
-    by (rule ht_frame_ac[OF xset_memb_rule[where i = u], where R = "gtx X c1 c2 (Si, Gc, C1, C2)"])
+    by (rule ht_frame_ac[OF bool_array_set_memb_rule[where i = u], where R = "gtx X c1 c2 (Si, Gc, C1, C2)"])
        (use u in sep_auto)+
   have r2: "<?G> smemb_imp u Si <\<lambda> r. ?G * \<up>(r = (u \<in> X))>"
     unfolding gtx_def gxs_def prod.case using u by (sep_auto heap: smemb_rule)
@@ -1254,15 +1267,15 @@ proof-
           and Vi = Vi and ai = ai' and a = a' and ?C1.0 = C1 and ?C2.0 = C2]]])
        (sep_auto simp: gtx_def)+
   have r4: "<?G> s_imp Si u <\<lambda> r. ?G * \<up>(r = (u \<notin> X \<and> u \<in> S0 X))>"
-    by (rule ht_frame_ac[OF gtx_lift[OF s_imp_rule[OF X u]], where R = "xset_assn n V Vi"])
+    by (rule ht_frame_ac[OF gtx_lift[OF s_imp_rule[OF X u]], where R = "bool_array_set_assn n V Vi"])
        (simp only: star_aci, rule ent_refl)+
   have r5: "<?G> t_imp Si u <\<lambda> r. ?G * \<up>(r = (u \<notin> X \<and> u \<in> T0 X))>"
-    by (rule ht_frame_ac[OF gtx_lift[OF t_imp_rule[OF X u]], where R = "xset_assn n V Vi"])
+    by (rule ht_frame_ac[OF gtx_lift[OF t_imp_rule[OF X u]], where R = "bool_array_set_assn n V Vi"])
        (simp only: star_aci, rule ent_refl)+
   have r6: "<?G> Array.nth C1 u <\<lambda> r. ?G * \<up>(h r = c1 u)>"
-    by (rule ht_frame_ac[OF rd_c1[OF u], where R = "xset_assn n V Vi"]) (simp only: star_aci, rule ent_refl)+
+    by (rule ht_frame_ac[OF rd_c1[OF u], where R = "bool_array_set_assn n V Vi"]) (simp only: star_aci, rule ent_refl)+
   have r7: "<?G> Array.nth C2 u <\<lambda> r. ?G * \<up>(h r = c2 u)>"
-    by (rule ht_frame_ac[OF rd_c2[OF u], where R = "xset_assn n V Vi"]) (simp only: star_aci, rule ent_refl)+
+    by (rule ht_frame_ac[OF rd_c2[OF u], where R = "bool_array_set_assn n V Vi"]) (simp only: star_aci, rule ent_refl)+
   have hS': "u \<notin> X \<and> u \<in> S0 X \<Longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
     using hS src_ne[OF u] by blast
   have hT': "u \<notin> X \<and> u \<in> T0 X \<Longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
@@ -1351,10 +1364,10 @@ lemma weps_fold:
   assumes hS: "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
     and hT: "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
   shows "<\<up>(map_option h None = None) *
-          (gtx X c1 c2 (Si, Gc, C1, C2) * xset_assn n (set (wctx_R (csr.wtight_ctx X c1 c2))) Vi)>
+          (gtx X c1 c2 (Si, Gc, C1, C2) * bool_array_set_assn n (set (wctx_R (csr.wtight_ctx X c1 c2))) Vi)>
            foldr_range_imp (weps_step Gc Vi Si C1 C2 mS mT) n None
          <\<lambda> r. \<up>(map_option h r = csr.weps (csr.wtight_ctx X c1 c2)) *
-               (gtx X c1 c2 (Si, Gc, C1, C2) * xset_assn n (set (wctx_R (csr.wtight_ctx X c1 c2))) Vi)>"
+               (gtx X c1 c2 (Si, Gc, C1, C2) * bool_array_set_assn n (set (wctx_R (csr.wtight_ctx X c1 c2))) Vi)>"
   unfolding weps_pass[symmetric]
   by (rule foldr_range_imp_rule[where A = "\<lambda> a ai. \<up>(map_option h ai = a)"], rule weps_step_rule[OF _ hS hT])
      simp
@@ -1369,9 +1382,9 @@ lemma weps_imp_rule:
                \<up>(map_option h r = csr.weps (csr.wtight_ctx X c1 c2))>"
 proof-
   let ?V = "set (wctx_R (csr.wtight_ctx X c1 c2))"
-  have main: "<Mi \<mapsto>\<^sub>a mi * (gtx X c1 c2 (Si, Gc, C1, C2) * xset_assn n ?V Vi)> weps_imp Gc Vi Mi Si C1 C2
+  have main: "<Mi \<mapsto>\<^sub>a mi * (gtx X c1 c2 (Si, Gc, C1, C2) * bool_array_set_assn n ?V Vi)> weps_imp Gc Vi Mi Si C1 C2
               <\<lambda> r. \<up>(map_option h r = csr.weps (csr.wtight_ctx X c1 c2)) *
-                    (gtx X c1 c2 (Si, Gc, C1, C2) * xset_assn n ?V Vi) * Mi \<mapsto>\<^sub>a mi>"
+                    (gtx X c1 c2 (Si, Gc, C1, C2) * bool_array_set_assn n ?V Vi) * Mi \<mapsto>\<^sub>a mi>"
     if l: "length mi = 2"
       and hS: "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h (mi ! 0) = wctx_mS (csr.wtight_ctx X c1 c2)"
       and hT: "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h (mi ! 1) = wctx_mT (csr.wtight_ctx X c1 c2)" for mi
@@ -1400,7 +1413,7 @@ proof(cases "wctx_path (csr.wtight_ctx X c1 c2)")
   case None
   show ?thesis
     unfolding wpath_assn_def None option.case(1)
-    by (rule ent_trans[OF _ ent_star_mono[OF ent_star_mono[OF xset_len ent_refl] ent_refl]]) sep_auto
+    by (rule ent_trans[OF _ ent_star_mono[OF ent_star_mono[OF bool_array_set_len ent_refl] ent_refl]]) sep_auto
 next
   case (Some p)
   have b: "len_assn n Vi *
@@ -1450,9 +1463,10 @@ theorem imp_loop:
      n sol_assn smemb_imp sins_imp sdel_imp Array.nth ccopy_imp czero_imp
      (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Da Pa Ti) (weps_imp Gc Vi Mi) (wshift_imp Vi)
      h (\<lambda> R e c x. if x \<in> set R then c x + e else c x) csr.wtight_ctx
-     (warr_assn n h) (len_assn n) (wctx_assn Vi Fr Bf Da Pa Mi Ti)
+     (warr_assn n h) (wctx_assn Vi Fr Bf Da Pa Mi Ti)
      (wws Vi Fr Bf Da Pa Mi Ti) (ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc)"
-proof(intro weighted_intersection_imp_loop.intro weighted_intersection_imp_loop_axioms.intro, goal_cases)
+proof(intro weighted_intersection_imp_loop.intro weighted_intersection_imp_loop_axioms.intro
+      warr_copy_clear_imp, goal_cases)
   case 1
   show ?case
     by (rule intersection_augment_imp.intro[OF imp_nat_set_axioms])
@@ -1469,41 +1483,29 @@ next
   show ?case
     by auto
 next
-  case (5 c C x)
+  case (5 X c1 c2 Si C1 C2)
   show ?case
-    by (rule warr_nth[OF 5])
-next
-  case 6
-  show ?case
-    by (rule ccopy_rule)
-next
-  case 7
-  show ?case
-    by (rule czero_rule)
-next
-  case (8 X c1 c2 Si C1 C2)
-  show ?case
-    by (rule ht_cons[OF _ _ wtight_ctx_imp_rule[OF 8(1-4)]])
+    by (rule ht_cons[OF _ _ wtight_ctx_imp_rule[OF 5(1-4)]])
        ((simp only: gtx_def gxs_def prod.case star_aci, rule ent_refl),
         (rule ent_true_drop(2), simp only: gtx_def gxs_def prod.case star_aci, rule ent_refl))
 next
-  case (9 X c1 c2 Ra)
+  case (6 X c1 c2 Ra)
   show ?case
-    by (rule wctx_path_imp_rule[OF 9(1-4)])
+    by (rule wctx_path_imp_rule[OF 6(1-4)])
 next
-  case (10 X c1 c2 Si C1 C2)
+  case (7 X c1 c2 Si C1 C2)
   show ?case
-    by (rule ht_cons[OF _ _ weps_imp_rule[OF 10(1-4,7)]])
+    by (rule ht_cons[OF _ _ weps_imp_rule[OF 7(1-4,7)]])
        ((simp only: gtx_def gxs_def prod.case star_aci, rule ent_refl),
         (rule ent_true_drop(2), simp only: gtx_def gxs_def prod.case star_aci, rule ent_refl))
 next
-  case (11 X c1 c2 c e C)
+  case (8 X c1 c2 c e C)
   show ?case
-    by (rule wshift_imp_rule[OF 11(1-4,7)])
+    by (rule wshift_imp_rule[OF 8(1-4,7)])
 next
-  case (12 X c1 c2)
+  case (9 X c1 c2)
   show ?case
-    by (rule wctx_stale[OF 12])
+    by (rule wctx_stale[OF 9])
 qed
 
 text \<open>The loop on preallocated arrays.\<close>
@@ -1524,12 +1526,12 @@ proof-
     "\<lambda> K. set (wctx_tb K)" n sol_assn smemb_imp sins_imp sdel_imp Array.nth
     ccopy_imp czero_imp "wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti" "wctx_path_imp Da Pa Ti"
     "weps_imp Gc Vi Mi" "wshift_imp Vi" h "\<lambda> R e c x. if x \<in> set R then c x + e else c x"
-    csr.wtight_ctx "warr_assn n h" "len_assn n"
+    csr.wtight_ctx "warr_assn n h"
     "wctx_assn Vi Fr Bf Da Pa Mi Ti" "wws Vi Fr Bf Da Pa Mi Ti"
     "ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc"
     by (rule imp_loop)
   show ?thesis
-    by (rule l.wmi_run_imp_correct)
+    by (rule ht_cons_pre[OF _ l.wmi_run_imp_correct]) (intro ent_star_mono ent_refl len_warr)
 qed
 end
 

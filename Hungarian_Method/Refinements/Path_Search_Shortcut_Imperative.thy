@@ -158,7 +158,7 @@ lemma cur_red_imp_rule:
          <\<lambda>(k, r, f). nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi) *
                      \<up>(h k = red \<pi> l r \<and> r = rnb_current C l \<and> f = free M r)>"
   unfolding code.cur_red_imp_def
-  by (sep_auto heap: bs.nb.current_rule bs.nb.current_cost_rule
+  by (sep_auto heap: bs.nb.idx_current_rule bs.nb.current_cost_rule
                simp: assms red_def free_def)
 
 lemma pot_shift_imp_rule:

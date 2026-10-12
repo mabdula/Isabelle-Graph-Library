@@ -1,5 +1,6 @@
 theory Matroid_Weighted_Intersection_Imp_Loop
   imports Matroid_Weighted_Intersection_Path_Loop Matroid_Intersection_Imp_Loop
+    Data_Structures.Fixed_Univ_Map_Specs_Imp
 begin
 
 section \<open>The Weighted Loop in Imperative HOL\<close>
@@ -142,6 +143,9 @@ locale weighted_intersection_imp_loop =
   weighted_intersection_imp_loop_spec sins_imp sdel_imp cval_imp ccopy_imp czero_imp
     tight_ctx_imp tight_path_imp eps_imp shift_imp +
   intersection_augment_imp n sol_assn smemb_imp sins_imp sdel_imp +
+  c: fixed_univ_map_copy_imp "{..<n}" "\<lambda> _. True" "\<lambda> c. c" h wmap_assn cval_imp ccopy_imp +
+  c: fixed_univ_map_clear_imp "{..<n}" "\<lambda> _. True" "\<lambda> c. c" h wmap_assn cval_imp "\<lambda> _. 0"
+    czero_imp +
   real_embedding h +
   weighted_intersection_path_loop where set_insert = "insert :: nat \<Rightarrow> nat set \<Rightarrow> nat set"
     and set_delete = "\<lambda> x X. X - {x}" and to_set = "\<lambda> X. X" and set_invar = finite
@@ -151,18 +155,12 @@ locale weighted_intersection_imp_loop =
     and tight_ctx = "tight_ctx :: nat set \<Rightarrow> (nat \<Rightarrow> real) \<Rightarrow> (nat \<Rightarrow> real) \<Rightarrow> 'ctx"
   for n sol_assn smemb_imp sins_imp sdel_imp
     and cval_imp :: "'ci \<Rightarrow> nat \<Rightarrow> 'n :: {linordered_idom, heap} Heap"
-    and ccopy_imp czero_imp tight_ctx_imp tight_path_imp eps_imp shift_imp h c_shift tight_ctx +
-  fixes wmap_assn :: "(nat \<Rightarrow> real) \<Rightarrow> 'ci \<Rightarrow> assn"
-    and wany_assn :: "'ci \<Rightarrow> assn"
-    and ctx_assn :: "'ctx \<Rightarrow> assn"
+    and ccopy_imp czero_imp tight_ctx_imp tight_path_imp eps_imp shift_imp h c_shift tight_ctx
+    and wmap_assn :: "(nat \<Rightarrow> real) \<Rightarrow> 'ci \<Rightarrow> assn" +
+  fixes ctx_assn :: "'ctx \<Rightarrow> assn"
     and ws :: assn
     and st :: assn
   assumes carrier_bound: "carrier \<subseteq> {..<n}"
-    and cval_rule: "\<And> c C x. x < n \<Longrightarrow>
-                    <wmap_assn c C> cval_imp C x <\<lambda> r. wmap_assn c C * \<up>(h r = c x)>"
-    and ccopy_rule: "<wmap_assn c C' * wany_assn C> ccopy_imp C' C
-                     <\<lambda> _. wmap_assn c C' * wmap_assn c C>"
-    and czero_rule: "<wany_assn C> czero_imp C <\<lambda> _. wmap_assn (\<lambda> _. 0) C>"
     and tight_ctx_rule: "\<And> X c1 c2 Si C1 C2. \<lbrakk>finite X; X \<subseteq> carrier; indep1 X; indep2 X;
       matroid1.local_opt c1 X; matroid2.local_opt c2 X\<rbrakk> \<Longrightarrow>
       <sol_assn X Si * wmap_assn c1 C1 * wmap_assn c2 C2 * ws * st> tight_ctx_imp Si C1 C2
@@ -204,7 +202,7 @@ proof-
   have hl: "hd p = ps ! (k - 1)" "last p = ps ! 0"
     unfolding assms(3)[symmetric] using k ne
     by (simp_all add: hd_rev last_rev last_conv_nth hd_conv_nth)
-  have b: "ps ! (k - 1) < n" "ps ! 0 < n"
+  have b: "ps ! (k - 1) \<in> {..<n}" "ps ! 0 \<in> {..<n}"
     using assms(5) hd_in_set[OF assms(4)] last_in_set[OF assms(4)] unfolding hl by auto
   have kk: "k - 1 < length ps" "0 < length ps"
     using k by auto
@@ -213,7 +211,8 @@ proof-
   show ?thesis
     unfolding gain_imp_def
     using kk(1)[simplified] kk(2)
-    by (sep_auto heap: cval_rule[OF b(1)] cval_rule[OF b(2)] simp: hl hs)
+    by (sep_auto heap: c.fixed_univ_map_lookup_rule[OF TrueI b(1)]
+                       c.fixed_univ_map_lookup_rule[OF TrueI b(2)] simp: hl hs)
 qed
 
 lemma reweight_imp_rule:
@@ -227,10 +226,10 @@ lemma reweight_imp_rule:
   by (sep_auto heap: shift_rule[OF assms, where e = "- e", simplified] shift_rule[OF assms])
 
 lemma winit_imp_rule:
-  "<wmap_assn c Co * wany_assn C1 * wany_assn C2> winit_imp Co C1 C2
+  "<wmap_assn c Co * (\<exists>\<^sub>A d. wmap_assn d C1) * (\<exists>\<^sub>A d. wmap_assn d C2)> winit_imp Co C1 C2
    <\<lambda> _. wmap_assn c Co * wmap_assn c C1 * wmap_assn (\<lambda> _. 0) C2>"
   unfolding winit_imp_def
-  by (sep_auto heap: ccopy_rule czero_rule)
+  by (sep_auto heap: c.fixed_univ_map_copy_rule c.fixed_univ_map_clear_rule)
 
 lemma tight_path_bound:
   assumes "w_invar s" "tight_path (tight_ctx (wsol s) (wc1 s) (wc2 s)) = Some p"
@@ -433,7 +432,7 @@ next
 qed
 
 theorem wmi_run_imp_correct:
-  "<sol_assn {} Si * wmap_assn c Co * wany_assn C1 * wany_assn C2 * ws * st * parr_assn n Ra>
+  "<sol_assn {} Si * wmap_assn c Co * (\<exists>\<^sub>A d. wmap_assn d C1) * (\<exists>\<^sub>A d. wmap_assn d C2) * ws * st * parr_assn n Ra>
      wmi_run_imp Si Co C1 C2 Ra
    <\<lambda> _. \<exists>\<^sub>A X c1 c2. sol_assn X Si * wmap_assn c1 C1 * wmap_assn c2 C2 * wmap_assn c Co *
           ws * st * parr_assn n Ra * \<up>(weighted_double_matroid.is_opt indep1 indep2 c X)>"
@@ -445,7 +444,7 @@ proof-
   have opt: "weighted_double_matroid.is_opt indep1 indep2 c
                (wsol (weighted_matroid_intersection (weighted_initial_state c)))"
     using impl_total_correctness[OF TrueI] same_result[OF TrueI] by simp
-  have i: "<sol_assn {} Si * wmap_assn c Co * wany_assn C1 * wany_assn C2 * ws * st *
+  have i: "<sol_assn {} Si * wmap_assn c Co * (\<exists>\<^sub>A d. wmap_assn d C1) * (\<exists>\<^sub>A d. wmap_assn d C2) * ws * st *
     parr_assn n Ra> winit_imp Co C1 C2
     <\<lambda> _. wstate_assn (weighted_initial_state c) Si C1 C2 * wmap_assn c Co * ws * st *
           parr_assn n Ra>"

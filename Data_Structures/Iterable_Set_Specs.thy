@@ -78,5 +78,19 @@ locale indexed_iterable_set =
       "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K; j \<noteq> i\<rbrakk> \<Longrightarrow> idx_remaining (idx_reset C i) j = idx_remaining C j"
     and idx_reset_iterated_other:
       "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K; j \<noteq> i\<rbrakk> \<Longrightarrow> idx_iterated (idx_reset C i) j = idx_iterated C j"
+begin
 
+text \<open>The axioms only speak about indices in @{term K}, so they hold for every subset.\<close>
+
+lemma indexed_iterable_set_restrict:
+  "K' \<subseteq> K \<Longrightarrow> indexed_iterable_set idx_invar idx_abstract idx_current idx_has idx_iterated
+     idx_remaining idx_move idx_reset K'"
+  by (unfold_locales;
+      (rule idx_partition_disjoint idx_partition_union idx_has idx_current idx_move_invar
+            idx_move_abstract idx_move_remaining idx_move_iterated idx_move_remaining_other
+            idx_move_iterated_other idx_reset_invar idx_reset_abstract idx_reset_iterated
+            idx_reset_remaining idx_reset_remaining_other idx_reset_iterated_other;
+       (assumption | erule subsetD)))
+
+end
 end

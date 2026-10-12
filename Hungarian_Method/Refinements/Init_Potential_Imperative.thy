@@ -136,7 +136,7 @@ proof(induction "card (rnb_remaining C u)" arbitrary: C \<pi> rule: less_induct)
     note um = upd_min_imp_rule[OF less.prems(4,2)]
     show ?thesis
       apply(subst code.scan_min_imp.simps)
-      apply(sep_auto heap: nb.has_rule nb.current_cost_rule nb.move_rule
+      apply(sep_auto heap: nb.idx_has_rule nb.current_cost_rule nb.idx_move_rule
                      simp: less.prems(1,2) True ne)
       apply(sep_auto heap: um)
       by (sep_auto heap: IH simp: eq True)
@@ -145,7 +145,7 @@ proof(induction "card (rnb_remaining C u)" arbitrary: C \<pi> rule: less_induct)
     have eq: "scan_min u C \<pi> = (C, \<pi>)" by (simp add: scan_min.simps[of u C \<pi>] False)
     show ?thesis
       apply(subst code.scan_min_imp.simps)
-      by (sep_auto heap: nb.has_rule simp: less.prems(1,2) False eq)
+      by (sep_auto heap: nb.idx_has_rule simp: less.prems(1,2) False eq)
   qed
 qed
 
@@ -175,7 +175,7 @@ proof-
       by (simp add: init_step_def Let_def C1_def[symmetric] True)
     show ?thesis
       unfolding code.init_pot_step_def
-      by (sep_auto heap: nb.reset_rule nb.has_rule nb.current_cost_rule nb.move_rule sc
+      by (sep_auto heap: nb.idx_reset_rule nb.idx_has_rule nb.current_cost_rule nb.idx_move_rule sc
                    simp: assms(1,3,5) C1_def[symmetric] C1(1) True ne eq)
   next
     case False
@@ -183,7 +183,7 @@ proof-
       by (simp add: init_step_def Let_def C1_def[symmetric] False)
     show ?thesis
       unfolding code.init_pot_step_def
-      by (sep_auto heap: nb.reset_rule nb.has_rule
+      by (sep_auto heap: nb.idx_reset_rule nb.idx_has_rule
                    simp: assms(1,3) C1_def[symmetric] C1(1) False eq)
   qed
 qed

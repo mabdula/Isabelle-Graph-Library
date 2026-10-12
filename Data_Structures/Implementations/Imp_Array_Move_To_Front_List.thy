@@ -1,7 +1,7 @@
 theory Imp_Array_Move_To_Front_List
   imports
     Array_Linked_Lists
-    Imp_Array_Map
+    Imp_Array_Fun
     Fixed_Univ_List_Specs_Imp
 begin
 
@@ -172,7 +172,7 @@ section \<open>The Arrays\<close>
 type_synonym amtfi = "nat option ref \<times> nat option array \<times> nat option array"
 
 fun amtf_assn :: "nat \<Rightarrow> amtf \<Rightarrow> amtfi \<Rightarrow> assn" where
-  "amtf_assn n (F, NX, PV) (Fr, NXa, PVa) = Fr \<mapsto>\<^sub>r F * xmap_assn n NX NXa * xmap_assn n PV PVa"
+  "amtf_assn n (F, NX, PV) (Fr, NXa, PVa) = Fr \<mapsto>\<^sub>r F * array_fun_assn n NX NXa * array_fun_assn n PV PVa"
 
 definition amtf_empty_imp :: "nat \<Rightarrow> amtfi Heap" where
   "amtf_empty_imp n = do {
@@ -230,7 +230,7 @@ qed
 
 lemma amtf_empty_rule: "<emp> amtf_empty_imp n <\<lambda> Li. amtf_assn n amtf_empty Li>"
   unfolding amtf_empty_imp_def amtf_empty_def
-  by (sep_auto heap: xmap_assn_new)
+  by (sep_auto heap: array_fun_assn_new)
 
 lemma amtf_push_front_rule:
   assumes "amtf_good n L xs" "x < n"
@@ -245,7 +245,7 @@ proof-
   show ?thesis
     unfolding L Li amtf_push_front_imp_def amtf_push_front_def
     using assms(2) y
-    by (cases F) (sep_auto heap: xmap_upd_rule)+
+    by (cases F) (sep_auto heap: array_fun_upd_rule)+
 qed
 
 lemma amtf_remove_rule:
@@ -264,7 +264,7 @@ proof-
     unfolding L Li amtf_remove_imp_def amtf_remove_def
     using x a b
     by (cases "PV x"; cases "NX x")
-       (sep_auto simp: remove_nx_def remove_pv_def heap: xmap_lookup_rule xmap_upd_rule)+
+       (sep_auto simp: remove_nx_def remove_pv_def heap: array_fun_lookup_rule array_fun_upd_rule)+
 qed
 
 lemma amtf_move_to_front_rule:
@@ -299,7 +299,7 @@ proof-
     using assms(2) amtf_abstract_good[OF xs] xs by (cases L) (auto simp add: amtf_good_def)
   thus ?thesis
     unfolding amtf_next_imp_def amtf_next_def
-    by (cases L; cases Li) (sep_auto heap: xmap_lookup_rule)
+    by (cases L; cases Li) (sep_auto heap: array_fun_lookup_rule)
 qed
 
 lemma amtf_fixed_univ_list_imp:

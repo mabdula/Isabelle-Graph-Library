@@ -44,7 +44,7 @@ definition sel_step :: "nat array \<Rightarrow> nat array \<Rightarrow> nat arra
      v \<leftarrow> Array.nth Ta i;
      bu \<leftarrow> Array.nth Mi u;
      bv \<leftarrow> Array.nth Mi v;
-     if bu = v \<or> bv = u then xset_insert_imp i Sel else return () }"
+     if bu = v \<or> bv = u then bool_array_set_insert_imp i Sel else return () }"
 
 text \<open>Checking the oracle's answer.\<close>
 
@@ -60,7 +60,7 @@ text \<open>Reporting an accepted answer.\<close>
 
 definition asn_accept :: "'n::heap asn_answer \<Rightarrow> bool array \<Rightarrow> (bool \<times> bool array) Heap" where
   "asn_accept a Sel = (case a of
-     Asn_opt Ma Ya \<Rightarrow> do { k \<leftarrow> Array.len Ma; xset_insert_all Ma 0 k Sel; return (True, Sel) }
+     Asn_opt Ma Ya \<Rightarrow> do { k \<leftarrow> Array.len Ma; bool_array_set_insert_all Ma 0 k Sel; return (True, Sel) }
    | _ \<Rightarrow> return (False, Sel))"
 
 text \<open>Reporting the result of the Hungarian method.\<close>
@@ -101,8 +101,8 @@ definition asn_covered :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \
      cL \<leftarrow> Array.len La;
      cR \<leftarrow> Array.len Rv;
      Cv \<leftarrow> Array.new n False;
-     xset_insert_all Fa 0 m Cv;
-     xset_insert_all Ta 0 m Cv;
+     bool_array_set_insert_all Fa 0 m Cv;
+     bool_array_set_insert_all Ta 0 m Cv;
      okL \<leftarrow> fold_imp 0 cL (all_in_step La Cv) True;
      okR \<leftarrow> fold_imp 0 cR (all_in_step Rv Cv) True;
      return (okL \<and> okR) }"
@@ -127,15 +127,15 @@ subsection \<open>The Loops\<close>
 
 lemma all_in_rule:
   assumes "set xs \<subseteq> {..<n}"
-  shows "<La \<mapsto>\<^sub>a xs * xset_assn n S Cv> fold_imp 0 (length xs) (all_in_step La Cv) True
-         <\<lambda>b. La \<mapsto>\<^sub>a xs * xset_assn n S Cv * \<up>(b \<longleftrightarrow> set xs \<subseteq> S)>"
+  shows "<La \<mapsto>\<^sub>a xs * bool_array_set_assn n S Cv> fold_imp 0 (length xs) (all_in_step La Cv) True
+         <\<lambda>b. La \<mapsto>\<^sub>a xs * bool_array_set_assn n S Cv * \<up>(b \<longleftrightarrow> set xs \<subseteq> S)>"
 proof -
-  let ?P = "\<lambda>j b. La \<mapsto>\<^sub>a xs * xset_assn n S Cv * \<up>(b \<longleftrightarrow> set (take j xs) \<subseteq> S)"
+  let ?P = "\<lambda>j b. La \<mapsto>\<^sub>a xs * bool_array_set_assn n S Cv * \<up>(b \<longleftrightarrow> set (take j xs) \<subseteq> S)"
   have step: "<?P j b> all_in_step La Cv j b <?P (Suc j)>" if j: "j < length xs" for j b
   proof -
     have "xs ! j < n" using assms nth_mem[OF j] by auto
     thus ?thesis unfolding all_in_step_def using j
-      by (sep_auto heap: xset_memb_rule simp: take_Suc_conv_app_nth)
+      by (sep_auto heap: bool_array_set_memb_rule simp: take_Suc_conv_app_nth)
   qed
   have "<?P 0 True> fold_imp 0 (length xs) (all_in_step La Cv) True <?P (length xs)>"
     by (rule fold_imp_rule) (simp_all add: step)
@@ -144,14 +144,14 @@ qed
 
 lemma sel_rule:
   assumes "set fs \<subseteq> {..<n}" "set ts \<subseteq> {..<n}" "length ts = length fs"
-  shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * xmap_assn n M Mi * xset_assn (length fs) {} Sel>
+  shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * array_fun_assn n M Mi * bool_array_set_assn (length fs) {} Sel>
          fold_imp 0 (length fs) (sel_step Fa Ta Mi Sel) ()
-         <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * xmap_assn n M Mi *
-              xset_assn (length fs) {i. i < length fs \<and> (M (fs ! i) = ts ! i \<or> M (ts ! i) = fs ! i)} Sel>"
+         <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * array_fun_assn n M Mi *
+              bool_array_set_assn (length fs) {i. i < length fs \<and> (M (fs ! i) = ts ! i \<or> M (ts ! i) = fs ! i)} Sel>"
 proof -
   let ?c = "\<lambda>i. M (fs ! i) = ts ! i \<or> M (ts ! i) = fs ! i"
-  let ?P = "\<lambda>j (_::unit). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * xmap_assn n M Mi *
-                         xset_assn (length fs) {i. i < j \<and> ?c i} Sel"
+  let ?P = "\<lambda>j (_::unit). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * array_fun_assn n M Mi *
+                         bool_array_set_assn (length fs) {i. i < j \<and> ?c i} Sel"
   have step: "<?P j u> sel_step Fa Ta Mi Sel j u <?P (Suc j)>" if j: "j < length fs" for j u
   proof -
     have b: "fs ! j < n" "ts ! j < n"
@@ -161,8 +161,8 @@ proof -
       using that by (auto simp: less_Suc_eq)
     have e: "{i. i < j \<and> ?c i} = {i. i < Suc j \<and> ?c i}" if "\<not> ?c j"
       using that by (auto simp: less_Suc_eq)
-    show ?thesis unfolding sel_step_def xset_insert_imp_def using j b assms(3)
-      by (sep_auto heap: xmap_lookup_rule xset_upd_rule simp: i e)
+    show ?thesis unfolding sel_step_def bool_array_set_insert_imp_def using j b assms(3)
+      by (sep_auto heap: array_fun_lookup_rule bool_array_set_upd_rule simp: i e)
   qed
   have "<?P 0 ()> fold_imp 0 (length fs) (sel_step Fa Ta Mi Sel) () <?P (length fs)>"
     by (rule fold_imp_rule) (simp_all add: step)
@@ -253,11 +253,11 @@ lemma covered_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs> asn_covered n Fa Ta La Rv
    <\<lambda>b. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * true * \<up>(b \<longleftrightarrow> covered)>"
 proof -
-  have ins2: "<Ta \<mapsto>\<^sub>a ts * xset_assn n (set fs) Cv> xset_insert_all Ta 0 (length fs) Cv
-              <\<lambda>_. Ta \<mapsto>\<^sub>a ts * xset_assn n (set fs \<union> set ts) Cv>" for Cv
-    using xset_insert_all_rule[of 0 ts n "set fs" Ta Cv] fs_below ts_below ts_length by simp
+  have ins2: "<Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n (set fs) Cv> bool_array_set_insert_all Ta 0 (length fs) Cv
+              <\<lambda>_. Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n (set fs \<union> set ts) Cv>" for Cv
+    using bool_array_set_insert_all_rule[of 0 ts n "set fs" Ta Cv] fs_below ts_below ts_length by simp
   show ?thesis unfolding asn_covered_def
-    by (sep_auto heap: xset_insert_all_new[OF fs_below] ins2 all_in_rule[OF ls_below]
+    by (sep_auto heap: bool_array_set_insert_all_new[OF fs_below] ins2 all_in_rule[OF ls_below]
                        all_in_rule[OF rs_below])
 qed
 
@@ -316,7 +316,7 @@ lemma buddy_sel:
   shows "Msel {i. i < length fs \<and> (M (fs ! i) = ts ! i \<or> M (ts ! i) = fs ! i)} = aug_csr.\<M> n M"
 proof -
   have Meq: "aug_csr.\<M> n M = {{x, M x} | x. M x \<noteq> n}"
-    by (auto simp: aug_csr.\<M>_def aug_csr.buddy_lookup_def xmap_lookup_def upairs_of_map_def
+    by (auto simp: aug_csr.\<M>_def aug_csr.buddy_lookup_def array_fun_lookup_def upairs_of_map_def
              split: if_splits)
   show ?thesis
   proof
@@ -371,23 +371,23 @@ lemma failure_post: "\<nexists>M. perfect_matching hi.G M \<Longrightarrow> asn_
 
 lemma select_rule:
   assumes "min_weight_perfect_matching hi.G hi.wfun (aug_csr.\<M> n M)"
-  shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * xmap_assn n M Mi * xset_assn (length fs) {} Sel>
+  shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * array_fun_assn n M Mi * bool_array_set_assn (length fs) {} Sel>
          fold_imp 0 (length fs) (sel_step Fa Ta Mi Sel) ()
-         <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * xmap_assn n M Mi *
-              (\<exists>\<^sub>AS. xset_assn (length fs) S Sel * \<up>(asn_post True S))>"
+         <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * array_fun_assn n M Mi *
+              (\<exists>\<^sub>AS. bool_array_set_assn (length fs) S Sel * \<up>(asn_post True S))>"
   by (rule ht_cons_post_prec[OF sel_rule[OF fs_below ts_below ts_length]])
      (sep_auto simp: hungarian_post[OF assms])
 
 lemma cleanup_rule:
-  "<arrays_assn Fa Ta Wa La Rv * xset_assn (length fs) {} Sel>
+  "<arrays_assn Fa Ta Wa La Rv * bool_array_set_assn (length fs) {} Sel>
    asn_cleanup n Fa Ta Wa La Rv Sel
    <\<lambda>(b, Sel'). arrays_assn Fa Ta Wa La Rv *
-     (\<exists>\<^sub>AS. xset_assn (length fs) S Sel' * \<up>(asn_post b S)) * true>"
+     (\<exists>\<^sub>AS. bool_array_set_assn (length fs) S Sel' * \<up>(asn_post b S)) * true>"
 proof -
-  have cont: "<arrays_assn Fa Ta Wa La Rv * xmap_assn n M Mi * xset_assn (length fs) {} Sel>
+  have cont: "<arrays_assn Fa Ta Wa La Rv * array_fun_assn n M Mi * bool_array_set_assn (length fs) {} Sel>
      asn_select r Fa Ta Mi Sel
      <\<lambda>(b, Sel'). arrays_assn Fa Ta Wa La Rv *
-       (\<exists>\<^sub>AS. xset_assn (length fs) S Sel' * \<up>(asn_post b S)) * true>"
+       (\<exists>\<^sub>AS. bool_array_set_assn (length fs) S Sel' * \<up>(asn_post b S)) * true>"
     if P: "(r = result.success \<and> min_weight_perfect_matching hi.G hi.wfun (aug_csr.\<M> n M)) \<or>
            (r = result.failure \<and> (\<nexists>M'. perfect_matching hi.G M'))" for r M Mi
   proof (cases "r = result.success")
@@ -424,16 +424,16 @@ lemma hall_post: "bp.cert.hall_check S \<Longrightarrow> asn_post False S'"
   using bp.cert.hall_sound[of S] by (simp add: asn_post_def bp.G_eq bp_G)
 
 lemma finish_rule:
-  "<arrays_assn Fa Ta Wa La Rv * asn_answer_assn a * xset_assn (length fs) {} Sel>
+  "<arrays_assn Fa Ta Wa La Rv * asn_answer_assn a * bool_array_set_assn (length fs) {} Sel>
    asn_finish n Fa Ta Wa La Rv a Sel
    <\<lambda>(b, Sel'). arrays_assn Fa Ta Wa La Rv *
-     (\<exists>\<^sub>AS. xset_assn (length fs) S Sel' * \<up>(asn_post b S)) * true>"
+     (\<exists>\<^sub>AS. bool_array_set_assn (length fs) S Sel' * \<up>(asn_post b S)) * true>"
 proof (cases a)
   case (Asn_opt Ma Ya)
-  have ins: "<Ma \<mapsto>\<^sub>a ms * xset_assn (length fs) {} Sel> xset_insert_all Ma 0 (length ms) Sel
-             <\<lambda>_. Ma \<mapsto>\<^sub>a ms * xset_assn (length fs) (set ms) Sel>"
+  have ins: "<Ma \<mapsto>\<^sub>a ms * bool_array_set_assn (length fs) {} Sel> bool_array_set_insert_all Ma 0 (length ms) Sel
+             <\<lambda>_. Ma \<mapsto>\<^sub>a ms * bool_array_set_assn (length fs) (set ms) Sel>"
     if "set ms \<subseteq> {..<length fs}" for ms
-    using xset_insert_all_rule[of 0 ms "length fs" "{}" Ma Sel] that by simp
+    using bool_array_set_insert_all_rule[of 0 ms "length fs" "{}" Ma Sel] that by simp
   show ?thesis unfolding Asn_opt asn_finish_def asn_check_def asn_accept_def
     by (sep_auto heap: bp.certify_arrays_rule cleanup_rule ins
                  dest: certified_below certified_post)
@@ -461,17 +461,17 @@ theorem asn_solve_rule:
                 <\<lambda>a. arrays_assn Fa Ta Wa La Rv * asn_answer_assn a>"
   shows "<arrays_assn Fa Ta Wa La Rv> asn_solve orc n Fa Ta Wa La Rv
          <\<lambda>(b, Sel). arrays_assn Fa Ta Wa La Rv *
-           (\<exists>\<^sub>AS. xset_assn (length fs) S Sel * \<up>(asn_post b S)) * true>"
+           (\<exists>\<^sub>AS. bool_array_set_assn (length fs) S Sel * \<up>(asn_post b S)) * true>"
 proof (cases covered)
   case True
   interpret c: asn_cov h n fs ts ws ls rs by unfold_locales (rule True)
   show ?thesis unfolding asn_solve_def
-    by (sep_auto heap: covered_rule orc c.finish_rule[unfolded xset_assn_replicate] simp: True)
+    by (sep_auto heap: covered_rule orc c.finish_rule[unfolded bool_array_set_assn_replicate] simp: True)
 next
   case False
   have pf: "asn_post False {}" using False unfolding asn_post_def covered_iff[symmetric] by blast
   show ?thesis unfolding asn_solve_def
-    by (sep_auto heap: covered_rule simp: False pf xset_assn_replicate[symmetric])
+    by (sep_auto heap: covered_rule simp: False pf bool_array_set_assn_replicate[symmetric])
 qed
 
 text \<open>The selected edges as read from the array.\<close>
@@ -528,7 +528,7 @@ proof -
   show ?thesis unfolding asn_solve_int_def
     by (rule ht_cons_post_prec[OF asn_solve_rule[where Fa = Fa and Ta = Ta and Wa = Wa
                                                    and La = La and Rv = Rv and orc = orc, OF orc]])
-       (sep_auto simp: xset_assn_def asn_post_def Msel_map G_def w_def)
+       (sep_auto simp: bool_array_set_assn_def asn_post_def Msel_map G_def w_def)
 qed
 
 end

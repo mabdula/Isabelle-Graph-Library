@@ -1116,12 +1116,12 @@ definition extract_imp_step :: "('n::heap \<Rightarrow> bool) \<Rightarrow> nat 
                                 'n array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow> unit Heap" where
   "extract_imp_step kp n' k La Pa Wc Mi Mo a s = do {
      u \<leftarrow> Array.nth La a;
-     v \<leftarrow> xmap_lookup_imp Mi u;
+     v \<leftarrow> array_fun_lookup_imp Mi u;
      (if v = n' then return ()
       else do {
         pv \<leftarrow> Array.nth Pa v;
         w \<leftarrow> Array.nth Wc (a * k + pv);
-        if kp w then do { xmap_upd_imp Mo u v; xmap_upd_imp Mo v u } else return () }) }"
+        if kp w then do { array_fun_upd_imp Mo u v; array_fun_upd_imp Mo v u } else return () }) }"
 
 definition extract_imp :: "('n::heap \<Rightarrow> bool) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow>
                            nat array \<Rightarrow> nat array \<Rightarrow> unit Heap" where
@@ -1214,16 +1214,16 @@ text \<open>The matching of the completed graph is the total map @{term Mb} with
 lemma extract_imp_rule:
   assumes edges: "\<And>u v. aug_csr.buddy_lookup n' Mb u = Some v \<Longrightarrow> {u, v} \<in> cp.G"
     and kept: "\<And>u v. \<lbrakk>u \<in> L; v \<in> set rs'; kp (ws' ! (pos u * k + pos v))\<rbrakk> \<Longrightarrow> v < n"
-  shows "<La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * xmap_assn n' Mb Mi * Mo \<mapsto>\<^sub>a replicate n n>
+  shows "<La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi * Mo \<mapsto>\<^sub>a replicate n n>
          extract_imp kp n' k La Pa Wc Mi Mo
-         <\<lambda>_. \<exists>\<^sub>AMt. La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * xmap_assn n' Mb Mi *
-              xmap_assn n Mt Mo *
+         <\<lambda>_. \<exists>\<^sub>AMt. La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi *
+              array_fun_assn n Mt Mo *
               \<up>(aug_csr.buddy_lookup n Mt = extract kp (aug_csr.buddy_lookup n' Mb))>"
 proof -
   let ?B = "aug_csr.buddy_lookup n' Mb"
   let ?E = "\<lambda>a. foldl (extract_step kp ?B) Map.empty (take a ls)"
-  let ?P = "\<lambda>a (s::unit). \<exists>\<^sub>AMt. La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * xmap_assn n' Mb Mi *
-                               xmap_assn n Mt Mo * \<up>(aug_csr.buddy_lookup n Mt = ?E a)"
+  let ?P = "\<lambda>a (s::unit). \<exists>\<^sub>AMt. La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi *
+                               array_fun_assn n Mt Mo * \<up>(aug_csr.buddy_lookup n Mt = ?E a)"
   have step: "<?P a s> extract_imp_step kp n' k La Pa Wc Mi Mo a s <?P (Suc a)>"
     if a: "a < length ls" for a s
   proof -
@@ -1238,13 +1238,13 @@ proof -
     show ?thesis
     proof (cases "Mb (ls ! a) = n'")
       case True
-      hence B: "?B (ls ! a) = None" by (simp add: aug_csr.buddy_lookup_def xmap_lookup_def)
-      show ?thesis unfolding extract_imp_step_def xmap_lookup_imp_def using a un True
-        by (sep_auto heap: xmap_lookup_rule simp: E extract_step_def B)
+      hence B: "?B (ls ! a) = None" by (simp add: aug_csr.buddy_lookup_def array_fun_lookup_def)
+      show ?thesis unfolding extract_imp_step_def array_fun_lookup_imp_def using a un True
+        by (sep_auto heap: array_fun_lookup_rule simp: E extract_step_def B)
     next
       case False
       define v where "v = Mb (ls ! a)"
-      have B: "?B (ls ! a) = Some v" using False by (simp add: aug_csr.buddy_lookup_def xmap_lookup_def v_def)
+      have B: "?B (ls ! a) = Some v" using False by (simp add: aug_csr.buddy_lookup_def array_fun_lookup_def v_def)
       have v: "v \<in> set rs'" by (rule cp_G_right[OF edges[OF B] u(1)])
       have pv: "posl ! v < k" "v < n'" using v pos_less below_n' by (auto simp: pos_def)
       have idx: "a * k + posl ! v < k * k" by (rule mult_add_less[OF ak pv(1)])
@@ -1258,18 +1258,18 @@ proof -
         have vn: "v < n" using kept[OF uL v] True w by simp
         have upd: "aug_csr.buddy_lookup n (Mt(ls ! a := v, v := ls ! a)) =
                    (aug_csr.buddy_lookup n Mt)(ls ! a \<mapsto> v, v \<mapsto> ls ! a)" for Mt
-          using un vn by (auto simp: aug_csr.buddy_lookup_def xmap_lookup_def)
+          using un vn by (auto simp: aug_csr.buddy_lookup_def array_fun_lookup_def)
         show ?thesis
           apply (rule ht_exEI, rule norm_pre_extractI(5))
           subgoal premises Mt for Mt
           proof -
-            have c: "<La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * xmap_assn n' Mb Mi * xmap_assn n Mt Mo>
+            have c: "<La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi * array_fun_assn n Mt Mo>
                      extract_imp_step kp n' k La Pa Wc Mi Mo a s
-                     <\<lambda>_. La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * xmap_assn n' Mb Mi *
-                          xmap_assn n (Mt(ls ! a := v, v := ls ! a)) Mo>"
-              unfolding extract_imp_step_def xmap_lookup_imp_def xmap_upd_imp_def
+                     <\<lambda>_. La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi *
+                          array_fun_assn n (Mt(ls ! a := v, v := ls ! a)) Mo>"
+              unfolding extract_imp_step_def array_fun_lookup_imp_def array_fun_upd_imp_def
               using a un nv pv idx True vn
-              by (sep_auto heap: xmap_lookup_rule xmap_upd_rule simp: vv)
+              by (sep_auto heap: array_fun_lookup_rule array_fun_upd_rule simp: vv)
             have e: "aug_csr.buddy_lookup n (Mt(ls ! a := v, v := ls ! a)) = ?E (Suc a)"
               using Mt True by (simp add: E extract_step_def B w upd)
             show ?thesis by (rule ht_cons_post[OF c]) (sep_auto simp: e)
@@ -1281,12 +1281,12 @@ proof -
           apply (rule ht_exEI, rule norm_pre_extractI(5))
           subgoal premises Mt for Mt
           proof -
-            have c: "<La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * xmap_assn n' Mb Mi * xmap_assn n Mt Mo>
+            have c: "<La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi * array_fun_assn n Mt Mo>
                      extract_imp_step kp n' k La Pa Wc Mi Mo a s
-                     <\<lambda>_. La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * xmap_assn n' Mb Mi * xmap_assn n Mt Mo>"
-              unfolding extract_imp_step_def xmap_lookup_imp_def
+                     <\<lambda>_. La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi * array_fun_assn n Mt Mo>"
+              unfolding extract_imp_step_def array_fun_lookup_imp_def
               using a un nv pv idx False
-              by (sep_auto heap: xmap_lookup_rule simp: vv)
+              by (sep_auto heap: array_fun_lookup_rule simp: vv)
             have e: "aug_csr.buddy_lookup n Mt = ?E (Suc a)"
               using Mt False by (simp add: E extract_step_def B w)
             show ?thesis by (rule ht_cons_post[OF c]) (sep_auto simp: e)
@@ -1298,12 +1298,12 @@ proof -
   have loop: "<?P 0 ()> fold_imp 0 (length ls) (extract_imp_step kp n' k La Pa Wc Mi Mo) ()
               <?P (length ls)>"
     by (rule fold_imp_rule[where P = ?P]) (simp_all add: step)
-  have init: "La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * xmap_assn n' Mb Mi * Mo \<mapsto>\<^sub>a replicate n n
+  have init: "La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi * Mo \<mapsto>\<^sub>a replicate n n
               \<Longrightarrow>\<^sub>A ?P 0 ()"
-    unfolding xmap_assn_replicate[symmetric]
+    unfolding array_fun_assn_replicate[symmetric]
     by (rule ent_ex_postI[where x = "\<lambda>_. n"])
-       (sep_auto simp: aug_csr.buddy_lookup_def xmap_lookup_def)
-  have loop': "<La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * xmap_assn n' Mb Mi * Mo \<mapsto>\<^sub>a replicate n n>
+       (sep_auto simp: aug_csr.buddy_lookup_def array_fun_lookup_def)
+  have loop': "<La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi * Mo \<mapsto>\<^sub>a replicate n n>
                fold_imp 0 (length ls) (extract_imp_step kp n' k La Pa Wc Mi Mo) () <?P (length ls)>"
     by (rule ht_cons_pre[OF init loop])
   show ?thesis
@@ -1347,7 +1347,7 @@ theorem reduced_run_rule:
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_reduced_run dflt cf kp n theta cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AMb Mt. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-         xmap_assn n Mt Mo * true *
+         array_fun_assn n Mt Mo * true *
          \<up>(cp.hl.hungarian = Some Mb \<and>
            aug_csr.buddy_lookup n Mt = extract kp (aug_csr.buddy_lookup n' Mb))>"
 proof -
@@ -1383,7 +1383,7 @@ theorem mw_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_reduced_run 0 (\<lambda>w. min 0 (sgn_w neg w)) (\<lambda>w. w < 0) n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-         xmap_assn n M Mo * true *
+         array_fun_assn n M Mo * true *
          \<up>(min_weight_matching G (\<lambda>e. sgn_w neg (wfun e)) (aug_csr.\<M> n M))>"
   apply (rule ht_cons_post_prec[OF reduced_run_rule])
   subgoal by (rule mw_kept)
@@ -1431,7 +1431,7 @@ theorem mwmc_run_rule:
    hungarian_csr_reduced_run (2 + of_nat (length ls + length rs) * max_abs_weight ws) (sgn_w neg)
      (\<lambda>w. w < 2 + of_nat (length ls + length rs) * max_abs_weight ws) n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-         xmap_assn n M Mo * true *
+         array_fun_assn n M Mo * true *
          \<up>(min_weight_max_card_matching G (\<lambda>e. sgn_w neg (wfun e)) (aug_csr.\<M> n M))>"
   apply (rule ht_cons_post_prec[OF reduced_run_rule])
   subgoal by (rule mwmc_kept)
@@ -1546,7 +1546,7 @@ theorem hungarian_csr_mw_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mw_run neg n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-         xmap_assn n M Mo * true *
+         array_fun_assn n M Mo * true *
          \<up>(min_weight_matching G (\<lambda>e. sgn_w neg (wfun e)) (aug_csr.\<M> n M))>"
 proof -
   interpret mw: hungarian_csr_mw h n fs ts ws ls rs neg by unfold_locales
@@ -1557,21 +1557,21 @@ corollary min_weight_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mw_run False n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-         xmap_assn n M Mo * true * \<up>(min_weight_matching G wfun (aug_csr.\<M> n M))>"
+         array_fun_assn n M Mo * true * \<up>(min_weight_matching G wfun (aug_csr.\<M> n M))>"
   using hungarian_csr_mw_run_rule[of _ _ _ _ _ False] by simp
 
 corollary max_weight_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mw_run True n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-         xmap_assn n M Mo * true * \<up>(max_weight_matching G wfun (aug_csr.\<M> n M))>"
+         array_fun_assn n M Mo * true * \<up>(max_weight_matching G wfun (aug_csr.\<M> n M))>"
   using hungarian_csr_mw_run_rule[of _ _ _ _ _ True] by (simp add: neg_min_weight_matching)
 
 theorem hungarian_csr_mwmc_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mwmc_run neg n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-         xmap_assn n M Mo * true *
+         array_fun_assn n M Mo * true *
          \<up>(min_weight_max_card_matching G (\<lambda>e. sgn_w neg (wfun e)) (aug_csr.\<M> n M))>"
 proof -
   interpret mwmc: hungarian_csr_mwmc h n fs ts ws ls rs neg by unfold_locales
@@ -1583,7 +1583,7 @@ corollary min_weight_max_card_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mwmc_run False n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-         xmap_assn n M Mo * true *
+         array_fun_assn n M Mo * true *
          \<up>(min_weight_max_card_matching G wfun (aug_csr.\<M> n M))>"
   using hungarian_csr_mwmc_run_rule[of _ _ _ _ _ False] by simp
 
@@ -1591,7 +1591,7 @@ corollary max_weight_max_card_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mwmc_run True n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-         xmap_assn n M Mo * true *
+         array_fun_assn n M Mo * true *
          \<up>(max_weight_max_card_matching G wfun (aug_csr.\<M> n M))>"
   using hungarian_csr_mwmc_run_rule[of _ _ _ _ _ True] by (simp add: neg_min_weight_max_card_matching)
 
@@ -1604,7 +1604,7 @@ theorem max_weight_perfect_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_max_perfect_run n theta cap Fa Ta Wa La Rv
    <\<lambda>(r, Mi, Pti). \<exists>\<^sub>AM \<pi>. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-      xmap_assn n M Mi * xmap_val_assn h n \<pi> Pti * true *
+      array_fun_assn n M Mi * array_fun_val_assn h n \<pi> Pti * true *
       \<up>((r = result.success \<and> max_weight_perfect_matching G wfun (aug_csr.\<M> n M)) \<or>
         (r = result.failure \<and> (\<nexists>M'. perfect_matching G M')))>"
 proof -
@@ -1627,7 +1627,7 @@ proof -
   have run: "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_max_perfect_run n theta cap Fa Ta Wa La Rv
    <\<lambda>(r, Mi, Pti). \<exists>\<^sub>AM \<pi>. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
-      xmap_assn n M Mi * xmap_val_assn h n \<pi> Pti * true *
+      array_fun_assn n M Mi * array_fun_val_assn h n \<pi> Pti * true *
       \<up>((r = result.success \<and> min_weight_perfect_matching G ng.wfun (aug_csr.\<M> n M)) \<or>
         (r = result.failure \<and> (\<nexists>M'. perfect_matching G M')))>"
     unfolding hungarian_csr_max_perfect_run_def

@@ -424,16 +424,12 @@ locale matroid_intersection_imp =
   o1: indexed_oracle_imp carrier idx elt n orcl_prep1 ins_orcl1 exch_orcl1 indep1 sol_assn 
     ins1_imp exch1_imp ost1 pts1 pst1 npts1_imp pt1_imp +
   o2: indexed_oracle_imp carrier idx elt n orcl_prep2 ins_orcl2 exch_orcl2 indep2 sol_assn 
-    ins2_imp exch2_imp ost2 pts2 pst2 npts2_imp pt2_imp
+    ins2_imp exch2_imp ost2 pts2 pst2 npts2_imp pt2_imp +
+  s: fixed_univ_set_basic_imp carrier "\<lambda> X. X \<subseteq> carrier" id "{}" Set.insert "\<lambda> x X. X - {x}"
+    "\<lambda> X x. x \<in> X" sol_assn sins_imp sdel_imp "\<lambda> Si x. smemb_imp x Si"
   for n idx elt smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp sins_imp sdel_imp 
     npts1_imp pt1_imp npts2_imp pt2_imp carrier orcl_prep1 ins_orcl1 exch_orcl1 indep1 sol_assn ost1 pts1 pst1
-    orcl_prep2 ins_orcl2 exch_orcl2 indep2 ost2 pts2 pst2 +
-  assumes smemb_rule: 
-    "<(sol_assn X Si) * \<up>(x \<in> carrier)> smemb_imp x Si <\<lambda> r. sol_assn X Si * \<up>(r = (x \<in> X))>"
-    and sins_rule: 
-    "<(sol_assn X Si) * \<up>(x \<in> carrier)> sins_imp x Si <\<lambda> _. sol_assn (Set.insert x X) Si>"
-    and sdel_rule: 
-    "<(sol_assn X Si) * \<up>(x \<in> carrier)> sdel_imp x Si <\<lambda> _. sol_assn (X - {x}) Si>"
+    orcl_prep2 ins_orcl2 exch_orcl2 indep2 ost2 pts2 pst2
 begin
 
 sublocale double_matroid carrier indep1 indep2
@@ -442,31 +438,25 @@ sublocale double_matroid carrier indep1 indep2
 lemma ids_set: 
   "imp_nat_set n (o1.sol_ids sol_assn) (\<lambda> i. smemb_imp (elt i)) (\<lambda> i. sins_imp (elt i)) 
      (\<lambda> i. sdel_imp (elt i))"
-proof(intro imp_nat_set.intro, goal_cases)
-  case (1 X Si)
+proof(intro imp_nat_set.intro fixed_univ_set_basic_imp.intro set_fixed_univ_set
+        fixed_univ_set_basic_imp_axioms.intro imp_nat_set_axioms.intro, goal_cases)
+  case (1 X x Si)
+  then show ?case 
+    unfolding o1.sol_ids_def by (sep_auto heap: s.fixed_univ_set_insert_rule simp: o1.elt_in)
+next
+  case (2 X x Si)
+  then show ?case 
+    unfolding o1.sol_ids_def
+    by (sep_auto heap: s.fixed_univ_set_delete_rule simp: o1.elt_in o1.elt_diff)
+next
+  case (3 X x Si)
+  then show ?case 
+    unfolding o1.sol_ids_def
+    by (sep_auto heap: s.fixed_univ_set_isin_rule simp: o1.elt_in o1.elt_mem)
+next
+  case (4 X Si)
   then show ?case 
     unfolding o1.sol_ids_def by sep_auto
-next
-  case (2 X Si x)
-  have r: "x < n \<Longrightarrow> <(sol_assn Y Si)> smemb_imp (elt x) Si <\<lambda> r. sol_assn Y Si * \<up>(r = (elt x \<in> Y))>" 
-    for Y
-    using smemb_rule[of Y Si "elt x"] by (simp add: o1.elt_in)
-  show ?case 
-    unfolding o1.sol_ids_def by (sep_auto simp: o1.elt_mem heap: r)
-next
-  case (3 X Si x)
-  have r: "x < n \<Longrightarrow> <(sol_assn Y Si)> sins_imp (elt x) Si <\<lambda> _. sol_assn (Set.insert (elt x) Y) Si>" 
-    for Y
-    using sins_rule[of Y Si "elt x"] by (simp add: o1.elt_in)
-  show ?case 
-    unfolding o1.sol_ids_def by (sep_auto heap: r)
-next
-  case (4 X Si x)
-  have r: "x < n \<Longrightarrow> <(sol_assn Y Si)> sdel_imp (elt x) Si <\<lambda> _. sol_assn (Y - {elt x}) Si>" 
-    for Y
-    using sdel_rule[of Y Si "elt x"] by (simp add: o1.elt_in)
-  show ?case 
-    unfolding o1.sol_ids_def by (sep_auto simp: o1.elt_diff heap: r)
 qed
 
 text \<open>The instance on the ids.\<close>

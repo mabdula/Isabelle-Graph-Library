@@ -214,7 +214,8 @@ lemma mi_inst:
      lf.part_exch lf.part_indep sa emp (part_pts fs) (part_pst (length fs) fs) rt.part_prep 
      rt.part_ins rt.part_exch rt.part_indep emp (part_pts ts) (part_pst (length fs) ts)"
   apply (intro matroid_intersection_imp.intro indexed_oracle_imp.intro matroid_ids.intro
-        indexed_oracle_imp_axioms.intro matroid_intersection_imp_axioms.intro)
+        indexed_oracle_imp_axioms.intro fixed_univ_set_basic_imp.intro set_fixed_univ_set
+        fixed_univ_set_basic_imp_axioms.intro)
   subgoal by (rule bij_betw_id)
   subgoal by simp
   subgoal by (rule lf.indep_oracle_axioms)
@@ -235,9 +236,9 @@ lemma mi_inst:
   subgoal using lengths by (intro part_pts_cover) (auto simp: rt.part_exch_def)
   subgoal using part_npts_rule by simp
   subgoal using part_pt_rule by simp
-  subgoal using bm_memb_rule by simp
-  subgoal using bm_ins_rule by simp
-  subgoal using bm_del_rule by simp
+  subgoal by (sep_auto heap: bm_ins_rule)
+  subgoal by (sep_auto heap: bm_del_rule)
+  subgoal by (sep_auto heap: bm_memb_rule)
   done
 
 interpretation m: matroid_intersection_imp where n = "length fs" and idx = id and elt = id
@@ -297,11 +298,11 @@ qed
 text \<open>The generic algorithm on the allocated handles.\<close>
 
 theorem handles_correct:
-  "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * xset_assn (length fs) {} Xi * 
+  "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * bool_array_set_assn (length fs) {} Xi * 
     cnt_assn nv fs {} C1 * cnt_assn nv ts {} C2 * 
     blocks_assn (length fs) nv fs Fa * blocks_assn (length fs) nv ts Ta>
      mx_mi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta)
-   <\<lambda> _. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * blocks_assn (length fs) nv fs Fa * 
+   <\<lambda> _. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * blocks_assn (length fs) nv fs Fa * 
               blocks_assn (length fs) nv ts Ta * true * 
               \<up>(max_card_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) 
                                    ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
@@ -313,7 +314,7 @@ subsubsection \<open>The Program\<close>
 
 theorem matching_imp_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> matching_imp nv Fa Ta 
-   <\<lambda> Xi. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * true * 
+   <\<lambda> Xi. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * true * 
               \<up>(max_card_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) 
                                    ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
   unfolding matching_imp_def

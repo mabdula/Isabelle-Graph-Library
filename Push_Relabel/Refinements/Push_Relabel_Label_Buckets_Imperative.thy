@@ -167,8 +167,8 @@ qed
 
 lemma lb_fixed_univ_map_imp:
   "fixed_univ_map_imp V lb_invar lb_upd lb_get (id :: nat \<Rightarrow> nat) lb_assn lb_upd_imp lb_get_imp"
-  by (intro fixed_univ_map_imp.intro lb_fixed_univ_map fixed_univ_map_imp_axioms.intro
-            lb_get_imp_rule lb_upd_imp_rule)
+  by (intro fixed_univ_map_imp.intro lb_fixed_univ_map fixed_univ_map_basic_imp.intro
+            fixed_univ_map_imp_axioms.intro lb_get_imp_rule lb_upd_imp_rule)
 
 subsection \<open>The Gap Enumeration\<close>
 

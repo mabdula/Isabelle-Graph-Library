@@ -3,6 +3,7 @@ theory Network_Simplex_Initial_Basis_Code
           Mincost_Flow_Algorithms.Acyclic_Flow
           "../../Set_Graphs/Directed_Graphs/CSR_Graph_Spec"
           "Rooted_Arborescense/Rooted_Arborescense"
+          Data_Structures.List_Cursor
 begin
 
 text \<open>This is the single \<^emph>\<open>code\<close> theory of the initial-basis construction: it collects every executable definition (the CSR builds, Pass A, the free-edge DFS builder, the augmented-network arrays, the arborescence swap, and the whole M-free entering-edge selector) into one assumption-free specification locale \<open>initial_basis_code_spec\<close>.The four downstream theories import it and add only assumptions and proofs.\<close>
@@ -13,9 +14,9 @@ text \<open>The acyclic-flow procedure is stated over abstract data types: two @
       (the flow and the three-valued vertex state) and one @{locale iterable_set} (the vertices to
       scan).  We give the cheapest faithful models, meant to be read as arrays: a flow / state array
       is a plain list, looked up with @{const nth} and written with @{const list_update} --- both
-      \<open>O(1)\<close> once the list is a genuine array --- and the vertex iterator is the vertex list
-      together with a single moving cursor, so @{term current}, @{term has} and @{term move} are a
-      read, a length-compare and an increment.  The set-valued fields (@{term abstract},
+      \<open>O(1)\<close> once the list is a genuine array --- and the vertex iterator is the list cursor
+      @{typ \<open>'v list_cursor\<close>}, a vertex list together with a single moving cursor, so
+      @{term current}, @{term has} and @{term move} are a read, a length-compare and an increment.  The set-valued fields (@{term abstract},
       @{term iterated}, @{term remaining}) are ghosts used only in the proofs and vanish at code
       generation.\<close>
 
@@ -92,74 +93,6 @@ proof (unfold_locales, goal_cases)
 next
   case (2 A k v)
   thus ?case by simp
-qed
-subsection \<open>The vertex list with a cursor as an iterable set\<close>
-
-record 'v vtx_iter = vi_list :: "'v list"  vi_pos :: nat
-
-definition vtx_invar :: "'v vtx_iter \<Rightarrow> bool" where
-  "vtx_invar V \<longleftrightarrow> distinct (vi_list V) \<and> vi_pos V \<le> length (vi_list V)"
-definition vtx_abstract :: "'v vtx_iter \<Rightarrow> 'v set" where
-  "vtx_abstract V = set (vi_list V)"
-definition vtx_iterated :: "'v vtx_iter \<Rightarrow> 'v set" where
-  "vtx_iterated V = set (take (vi_pos V) (vi_list V))"
-definition vtx_remaining :: "'v vtx_iter \<Rightarrow> 'v set" where
-  "vtx_remaining V = set (drop (vi_pos V) (vi_list V))"
-definition vtx_has :: "'v vtx_iter \<Rightarrow> bool" where
-  "vtx_has V \<longleftrightarrow> vi_pos V < length (vi_list V)"
-definition vtx_current :: "'v vtx_iter \<Rightarrow> 'v" where
-  "vtx_current V = vi_list V ! vi_pos V"
-definition vtx_move :: "'v vtx_iter \<Rightarrow> 'v vtx_iter" where
-  "vtx_move V = V\<lparr> vi_pos := Suc (vi_pos V) \<rparr>"
-
-lemma set_take_inter_set_drop_distinct:
-  "distinct xs \<Longrightarrow> set (take n xs) \<inter> set (drop n xs) = {}"
-  by (metis append_take_drop_id distinct_append)
-
-lemma vtx_remaining_ne_lt:
-  "vtx_remaining V \<noteq> {} \<Longrightarrow> vi_pos V < length (vi_list V)"
-  by (simp add: vtx_remaining_def)
-
-lemma vtx_iterable_set:
-  "iterable_set vtx_invar vtx_abstract vtx_current vtx_has vtx_iterated vtx_remaining vtx_move"
-proof (unfold_locales, goal_cases)
-  case (1 S)
-  then show ?case
-    by (auto simp: vtx_invar_def vtx_iterated_def vtx_remaining_def
-                   set_take_inter_set_drop_distinct)
-next
-  case (2 S)
-  show ?case
-    by (metis vtx_abstract_def vtx_iterated_def vtx_remaining_def
-              append_take_drop_id set_append)
-next
-  case (3 S)
-  show ?case by (auto simp: vtx_has_def vtx_remaining_def)
-next
-  case (4 S)
-  note lt = vtx_remaining_ne_lt[OF 4(2)]
-  show ?case using lt
-    by (metis Cons_nth_drop_Suc list.set_intros(1) vtx_current_def vtx_remaining_def)
-next
-  case (5 S)
-  show ?case by (simp add: vtx_abstract_def vtx_move_def)
-next
-  case (6 S)
-  note lt = vtx_remaining_ne_lt[OF 6(2)]
-  from 6(1) have dist: "distinct (vi_list S)" by (simp add: vtx_invar_def)
-  show ?case using lt dist
-    by (simp add: vtx_remaining_def vtx_current_def vtx_move_def)
-       (metis Cons_nth_drop_Suc distinct_drop distinct.simps(2)
-              Diff_insert_absorb list.simps(15))
-next
-  case (7 S)
-  note lt = vtx_remaining_ne_lt[OF 7(2)]
-  show ?case using lt
-    by (simp add: vtx_iterated_def vtx_current_def vtx_move_def take_Suc_conv_app_nth)
-next
-  case (8 S)
-  note lt = vtx_remaining_ne_lt[OF 8(2)]
-  show ?case using 8(1) lt by (simp add: vtx_invar_def vtx_move_def)
 qed
 
 section \<open>Array-mimicking input lists for the initial basis\<close>
@@ -879,11 +812,11 @@ sublocale acyclic_flow_impl_spec
     and in_reset = "csr_ranges.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
     and flow_upd = list_update and flow_lookup = nth
     and st_upd = list_update and st_lookup = nth
-    and current_vertex = vtx_current and has_vertex = vtx_has
-    and move_on_vertex = vtx_move
+    and current_vertex = lc_current and has_vertex = lc_has
+    and move_on_vertex = lc_move
     and out_arr = "(!) (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
     and in_arr = "(!) (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
-    and all_vertices = "\<lparr> vi_list = edged_vs_list, vi_pos = 0 \<rparr>"
+    and all_vertices = "\<lparr> lc_list = edged_vs_list, lc_pos = 0 \<rparr>"
     and cap = "\<lambda> e.  capacity_list ! e "
     and cost = "\<lambda> e. cost_list ! e"
     and state_init = "replicate vcount Unseen"
@@ -1186,7 +1119,7 @@ definition solve :: "'n ns_outcome" where
              (let s = NSc.ns_loop_impl NSc.init_state; f = current_flow s
               in if return s = unbounded then Neg_inf_cycle
                  else if list_all (\<lambda>k. f ! k = 0) [m..<m+Kart]
-                      then Optimum (take m f)
+                      then Optimum (take m f )
                       else Infeasible))"
 
 

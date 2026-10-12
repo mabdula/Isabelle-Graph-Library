@@ -2578,10 +2578,10 @@ text \<open>make\_acyclic\_none\_unbounded is reused verbatim. Its balance premi
 lemma acyc_none_neg_cycle:
   assumes "acyc_flow_opt = None" shows neg_infty_cycle
 proof -
-  have vv: "vtx_invar \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr>"
-    using distinct_vs_list by (simp add: vtx_invar_def edged_vs_list_def distinct_filter)
-  have vab: "vtx_abstract \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> \<subseteq> original_network.\<V>"
-    by (simp add: vtx_abstract_def V_orig_eq_edged)
+  have vv: "lc_invar \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr>"
+    using distinct_vs_list by (simp add: lc_invar_def edged_vs_list_def distinct_filter)
+  have vab: "lc_abstract \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> \<subseteq> original_network.\<V>"
+    by (simp add: lc_abstract_def V_orig_eq_edged)
   have ff: "length flow_list = m" using length_flow length_edges by simp
   have res: "make_acyclic flow_list = None" using assms by (simp add: acyc_flow_opt_def)
   have feas: "af_feasible (\<lambda>v. - original_network.ex (h \<circ> (!) flow_list) v) flow_list"
@@ -5191,10 +5191,10 @@ lemma orig_ex_acyc_eq_excess:
   assumes some: "acyc_flow_opt = Some f'" and v: "v < Suc vcount"
   shows "original_network.ex (h \<circ> nth acyc_flow) v = h (excess ! v)"
 proof -
-  have vv: "vtx_invar \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr>"
-    using distinct_vs_list by (simp add: vtx_invar_def edged_vs_list_def distinct_filter)
-  have vab: "vtx_abstract \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> \<subseteq> original_network.\<V>"
-    by (simp add: vtx_abstract_def V_orig_eq_edged)
+  have vv: "lc_invar \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr>"
+    using distinct_vs_list by (simp add: lc_invar_def edged_vs_list_def distinct_filter)
+  have vab: "lc_abstract \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> \<subseteq> original_network.\<V>"
+    by (simp add: lc_abstract_def V_orig_eq_edged)
   have ff: "length flow_list = m" using length_flow length_edges by simp
   have res: "make_acyclic flow_list = Some f'" using some by (simp add: acyc_flow_opt_def)
   have "original_network.ex (h \<circ> (!) f') v = original_network.ex (h \<circ> (!) flow_list) v"
@@ -5466,11 +5466,11 @@ lemma acyc_of_some:
   assumes some: "acyc_flow_opt = Some f'"
   shows "original_network.acyclic_flow (h \<circ> nth acyc_flow)"
 proof -
-  have vv: "vtx_invar \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr>"
-    using distinct_vs_list by (simp add: vtx_invar_def edged_vs_list_def distinct_filter)
-  have vabsV: "vtx_abstract \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> = original_network.\<V>"
-    by (simp add: vtx_abstract_def V_orig_eq_edged)
-  have vit0: "vtx_iterated \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> = {}" by (simp add: vtx_iterated_def)
+  have vv: "lc_invar \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr>"
+    using distinct_vs_list by (simp add: lc_invar_def edged_vs_list_def distinct_filter)
+  have vabsV: "lc_abstract \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> = original_network.\<V>"
+    by (simp add: lc_abstract_def V_orig_eq_edged)
+  have vit0: "lc_iterated \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> = {}" by (simp add: lc_iterated_def)
   have ff: "length flow_list = m" using length_flow length_edges by simp
   have fresh: "\<forall>u. out.graph.csr_iterated ((!) out.inp.B_spec) u = {} \<and> inc.graph.csr_iterated ((!) inc.inp.B_spec) u = {}"
     using out.graph.csr_init_iterated inc.graph.csr_init_iterated by simp
@@ -5548,11 +5548,11 @@ lemma acyc_flow_selfloop:
   shows "(0 \<le> cost_list ! e \<longrightarrow> acyc_flow ! e = 0) \<and> (cost_list ! e < 0 \<longrightarrow> acyc_flow ! e = capacity_list ! e)"
 proof -
   obtain f' where sf: "acyc_flow_opt = Some f'" using ne by (cases acyc_flow_opt) auto
-  have vv: "vtx_invar \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr>"
-    using distinct_vs_list by (simp add: vtx_invar_def edged_vs_list_def distinct_filter)
-  have vabsV: "vtx_abstract \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> = original_network.\<V>"
-    by (simp add: vtx_abstract_def V_orig_eq_edged)
-  have vit0: "vtx_iterated \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> = {}" by (simp add: vtx_iterated_def)
+  have vv: "lc_invar \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr>"
+    using distinct_vs_list by (simp add: lc_invar_def edged_vs_list_def distinct_filter)
+  have vabsV: "lc_abstract \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> = original_network.\<V>"
+    by (simp add: lc_abstract_def V_orig_eq_edged)
+  have vit0: "lc_iterated \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> = {}" by (simp add: lc_iterated_def)
   have ff: "length flow_list = m" using length_flow length_edges by simp
   have fresh: "\<forall>u. out.graph.csr_iterated ((!) out.inp.B_spec) u = {} \<and> inc.graph.csr_iterated ((!) inc.inp.B_spec) u = {}" using out.graph.csr_init_iterated inc.graph.csr_init_iterated by simp
   have res: "make_acyclic flow_list = Some f'" using sf by (simp add: acyc_flow_opt_def)

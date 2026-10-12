@@ -46,7 +46,7 @@ definition "best_two_imp cur Ci u = do { reset_imp Ci u; scan_best_imp cur Ci u 
 end
 
 locale nb_best_scan_imp =
-  nb_best_scan +
+  nb_best_scan where rnb_current = rnb_current +
   real_embedding h +
   nb: weighted_neighbourhoods_imp_spec
     where idx_invar = rnb_invar and idx_abstract = rnb_abstract and idx_current = rnb_current
@@ -55,7 +55,8 @@ locale nb_best_scan_imp =
       and cost = cost and wval = wval and nb_init = nb_init and nb_assn = nb_assn
       and has_imp = has_imp and current_imp = current_imp and current_cost_imp = current_cost_imp
       and move_imp = move_imp and reset_imp = reset_imp and reset_all_imp = reset_all_imp
-  for h :: "'n::linordered_idom \<Rightarrow> real"
+  for rnb_current :: "'g \<Rightarrow> 'v::heap \<Rightarrow> 'v"
+    and h :: "'n::linordered_idom \<Rightarrow> real"
     and cost wval nb_init nb_assn has_imp current_imp current_cost_imp move_imp reset_imp
         reset_all_imp
 
@@ -163,7 +164,7 @@ proof(induction "card (rnb_remaining C u)" arbitrary: C bs bsi rule: less_induct
          simp_all
     show ?thesis
       apply(subst code.scan_best_imp.simps)
-      by (sep_auto heap: nb.has_rule cur[OF less.prems(1) ne xA] nb.move_rule step
+      by (sep_auto heap: nb.idx_has_rule cur[OF less.prems(1) ne xA] nb.idx_move_rule step
                    simp: less.prems(1,2) True ne)
   next
     case False
@@ -171,7 +172,7 @@ proof(induction "card (rnb_remaining C u)" arbitrary: C bs bsi rule: less_induct
       by (simp add: scan_best.simps[of key pref u C bs] False)
     show ?thesis
       apply(subst code.scan_best_imp.simps)
-      by (sep_auto heap: nb.has_rule simp: less.prems False eq)
+      by (sep_auto heap: nb.idx_has_rule simp: less.prems False eq)
   qed
 qed
 
@@ -194,7 +195,7 @@ proof-
                                OF cur R(1) assms(3) R(2) _ R(3)]
   show ?thesis
     unfolding code.best_two_imp_def best_two_def
-    by (sep_auto heap: nb.reset_rule sc simp: assms(2,3) best2_rel_def best_rel_def)
+    by (sep_auto heap: nb.idx_reset_rule sc simp: assms(2,3) best2_rel_def best_rel_def)
 qed
 
 end

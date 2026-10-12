@@ -142,20 +142,20 @@ fun bb_sol_assn ::
   "nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> nat set \<Rightarrow> bb_sol \<Rightarrow> assn"
   where
   "bb_sol_assn m nb bl br cap X (Xi, C1, C2, Bl, Br, K) =
-     xset_assn m X Xi * cnt_assn nb bl X C1 * cnt_assn nb br X C2 *
+     bool_array_set_assn m X Xi * cnt_assn nb bl X C1 * cnt_assn nb br X C2 *
      blocks_assn m nb bl Bl * blocks_assn m nb br Br * caps_assn nb cap K"
 
 lemma bb_memb_rule:
   "<bb_sol_assn m nb bl br cap X Si * \<up>(x < m)> bb_memb x Si
    <\<lambda> r. bb_sol_assn m nb bl br cap X Si * \<up>(r = (x \<in> X))>"
-  by (cases Si rule: prod_cases6) (sep_auto simp: bb_memb_def bm_memb_def heap: xset_memb_rule)
+  by (cases Si rule: prod_cases6) (sep_auto simp: bb_memb_def bm_memb_def heap: bool_array_set_memb_rule)
 
 lemma bb_ins_rule:
   "<bb_sol_assn m nb bl br cap X Si * \<up>(x < m)> bb_ins x Si
    <\<lambda> _. bb_sol_assn m nb bl br cap (Set.insert x X) Si>"
   by (cases Si rule: prod_cases6)
      (sep_auto simp: bb_ins_def bm_ins_def insert_absorb
-        heap: xset_memb_rule xset_upd_rule part_cnt_ins_rule)
+        heap: bool_array_set_memb_rule bool_array_set_upd_rule part_cnt_ins_rule)
 
 lemma bb_del_rule:
   "<bb_sol_assn m nb bl br cap X Si * \<up>(x < m)> bb_del x Si
@@ -165,7 +165,7 @@ proof-
     by blast
   then show ?thesis
     by (cases Si rule: prod_cases6)
-       (sep_auto simp: bb_del_def bm_del_def heap: xset_memb_rule xset_upd_rule part_cnt_del_rule)
+       (sep_auto simp: bb_del_def bm_del_def heap: bool_array_set_memb_rule bool_array_set_upd_rule part_cnt_del_rule)
 qed
 
 subsubsection \<open>The Instance\<close>
@@ -280,7 +280,8 @@ lemma mi_inst:
      lf.cap_exch lf.cap_indep sb emp (part_pts fs) (part_pst (length fs) fs) (\<lambda> X. X) rt.cap_ins 
      rt.cap_exch rt.cap_indep emp (part_pts ts) (part_pst (length fs) ts)"
   apply (intro matroid_intersection_imp.intro indexed_oracle_imp.intro matroid_ids.intro
-        indexed_oracle_imp_axioms.intro matroid_intersection_imp_axioms.intro)
+        indexed_oracle_imp_axioms.intro fixed_univ_set_basic_imp.intro set_fixed_univ_set
+        fixed_univ_set_basic_imp_axioms.intro)
   subgoal by (rule bij_betw_id)
   subgoal by simp
   subgoal by (rule lf.indep_oracle_axioms)
@@ -301,9 +302,9 @@ lemma mi_inst:
   subgoal using lengths by (intro part_pts_cover) (auto simp: rt.cap_exch_def)
   subgoal using part_npts_rule by simp
   subgoal using part_pt_rule by simp
-  subgoal using bb_memb_rule by simp
-  subgoal using bb_ins_rule by simp
-  subgoal using bb_del_rule by simp
+  subgoal by (sep_auto heap: bb_ins_rule)
+  subgoal by (sep_auto heap: bb_del_rule)
+  subgoal by (sep_auto heap: bb_memb_rule)
   done
 
 interpretation m: matroid_intersection_imp where n = "length fs" and idx = id and elt = id
@@ -370,12 +371,12 @@ qed
 text \<open>The generic algorithm on the allocated handles.\<close>
 
 theorem handles_correct:
-  "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * xset_assn (length fs) {} Xi *
+  "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * bool_array_set_assn (length fs) {} Xi *
     cnt_assn (length ks) fs {} C1 * cnt_assn (length ks) ts {} C2 *
     blocks_assn (length fs) (length ks) fs Fa * blocks_assn (length fs) (length ks) ts Ta *
     caps_assn (length ks) (\<lambda> v. ks ! v) Ka>
      bx_mi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta, Ka)
-   <\<lambda> _. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * blocks_assn (length fs) (length ks) fs Fa * 
+   <\<lambda> _. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * blocks_assn (length fs) (length ks) fs Fa * 
               blocks_assn (length fs) (length ks) ts Ta * caps_assn (length ks) (\<lambda> v. ks ! v) Ka *
               true * 
               \<up>(max_card_b_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) (\<lambda> v. ks ! v)
@@ -395,7 +396,7 @@ text \<open>The allocation prologue of @{locale bipartite_matching_imp}, after r
 lemma bb_setup_rule:
   assumes k: "\<And> H1 H2 Xi C1 C2.
     <F * caps_assn (length ks) (\<lambda> v. ks ! v) Ka * part_pst (length fs) fs H1 *
-       part_pst (length fs) ts H2 * xset_assn (length fs) {} Xi *
+       part_pst (length fs) ts H2 * bool_array_set_assn (length fs) {} Xi *
        cnt_assn (length ks) fs {} C1 * cnt_assn (length ks) ts {} C2 *
        blocks_assn (length fs) (length ks) fs Fa * blocks_assn (length fs) (length ks) ts Ta * true>
       k (length fs) H1 H2 Xi C1 C2 <Q>"
@@ -412,7 +413,7 @@ qed
 
 theorem b_matching_imp_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks> b_matching_imp Fa Ta Ka
-   <\<lambda> Xi. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * true *
+   <\<lambda> Xi. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * true *
               \<up>(max_card_b_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) (\<lambda> v. ks ! v)
                                      ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
   unfolding b_matching_imp_def

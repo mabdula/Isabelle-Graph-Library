@@ -416,7 +416,7 @@ lemma wnb_handle_cases:
 
 locale weighted_csr = csr_graph_imp n K B E
   for n K B and E :: "'e::heap list" +
-  fixes tgt :: "'e \<Rightarrow> 'a"
+  fixes tgt :: "'e \<Rightarrow> 'a::heap"
     and W :: "'w::heap list"
     and cost :: "nat \<Rightarrow> 'a \<Rightarrow> real"
     and wval :: "'w \<Rightarrow> real"
@@ -573,11 +573,13 @@ lemma wnb_reset_all_imp_rule:
   by (sep_auto heap: csr_copy_imp_rule simp: K_less B_length)
 
 sublocale wnb_imp: weighted_neighbourhoods_imp_spec csr_invar wnb_abstract wnb_current csr_has
-    wnb_iterated wnb_remaining csr_move csr_reset K cost wval "\<lambda>v. B ! v" wnb_assn
-    wnb_has_imp "wnb_current_imp tgt" wnb_current_cost_imp wnb_move_imp wnb_reset_imp
-    "wnb_reset_all_imp n"
+    wnb_iterated wnb_remaining csr_move csr_reset K wnb_assn "wnb_current_imp tgt" wnb_has_imp
+    wnb_move_imp wnb_reset_imp cost wval "\<lambda>v. B ! v" wnb_current_cost_imp "wnb_reset_all_imp n"
 proof (unfold_locales, goal_cases)
-  case 1 show ?case by (rule csr_init_invar)
+  case (1 C i Ci)
+  obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
+  have r: "csr_remaining C i \<noteq> {}" using 1(3) by (simp add: wnb_remaining_ne)
+  show ?case unfolding Ci by (rule wnb_current_imp_rule[OF 1(2,1) r])
 next
   case (2 C i Ci)
   obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
@@ -586,21 +588,18 @@ next
   case (3 C i Ci)
   obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
   have r: "csr_remaining C i \<noteq> {}" using 3(3) by (simp add: wnb_remaining_ne)
-  show ?case unfolding Ci by (rule wnb_current_imp_rule[OF 3(2,1) r])
+  show ?case unfolding Ci by (rule wnb_move_imp_rule[OF 3(2) r])
 next
   case (4 C i Ci)
   obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
-  have r: "csr_remaining C i \<noteq> {}" using 4(3) by (simp add: wnb_remaining_ne)
-  show ?case unfolding Ci by (rule wnb_current_cost_imp_rule[OF 4(2,1) r])
+  show ?case unfolding Ci by (rule wnb_reset_imp_rule[OF 4(2)])
 next
-  case (5 C i Ci)
-  obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
-  have r: "csr_remaining C i \<noteq> {}" using 5(3) by (simp add: wnb_remaining_ne)
-  show ?case unfolding Ci by (rule wnb_move_imp_rule[OF 5(2) r])
+  case 5 show ?case by (rule csr_init_invar)
 next
   case (6 C i Ci)
   obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
-  show ?case unfolding Ci by (rule wnb_reset_imp_rule[OF 6(2)])
+  have r: "csr_remaining C i \<noteq> {}" using 6(3) by (simp add: wnb_remaining_ne)
+  show ?case unfolding Ci by (rule wnb_current_cost_imp_rule[OF 6(2,1) r])
 next
   case (7 C Ci)
   obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)

@@ -26,7 +26,13 @@ locale forest_imp =
     vset_isin vset_assn vset_empty_imp vset_insert_imp vset_delete_imp vset_isin_imp lst
     is_it it_init it_has_next it_next +
   par: fixed_univ_map_imp K parent_invar parent_upd parent_get id parent_assn parent_upd_imp
-    parent_get_imp
+    parent_get_imp +
+  vsc: fixed_univ_set_clear_imp K vset_invar vset_to_set vset_empty vset_insert vset_delete
+    vset_isin vset_assn vset_insert_imp vset_delete_imp vset_isin_imp vset_clear_imp +
+  parc: fixed_univ_map_clear_imp K parent_invar parent_get id parent_assn parent_get_imp
+    parent_empty parent_clear_imp +
+  pari: fixed_univ_map_init_imp K parent_invar parent_get id parent_assn parent_get_imp
+    parent_empty parent_empty_imp
   for K :: "'v::heap set" and parent_invar and parent_upd :: "'parent \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'parent"
     and parent_get origin_invar and origin_upd :: "'origin \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'origin"
     and origin_get vset_invar and vset_to_set :: "'vset \<Rightarrow> 'v set" and vset_empty
@@ -35,17 +41,10 @@ locale forest_imp =
     and vset_assn :: "'vset \<Rightarrow> 'si \<Rightarrow> assn"
     and vset_empty_imp vset_insert_imp vset_delete_imp vset_isin_imp lst
     and is_it :: "'vset \<Rightarrow> 'si \<Rightarrow> 'v list \<Rightarrow> 'it \<Rightarrow> assn" and it_init it_has_next it_next
-    and parent_assn :: "'parent \<Rightarrow> 'pi \<Rightarrow> assn" and parent_upd_imp parent_get_imp +
-  fixes vset_clear_imp :: "'si \<Rightarrow> unit Heap"
+    and parent_assn :: "'parent \<Rightarrow> 'pi \<Rightarrow> assn" and parent_upd_imp parent_get_imp
+    and vset_clear_imp :: "'si \<Rightarrow> unit Heap"
     and parent_clear_imp :: "'pi \<Rightarrow> unit Heap"
     and parent_empty_imp :: "'pi Heap"
-  assumes vset_clear_rule[sep_heap_rules]:
-      "vset_invar S \<Longrightarrow> <vset_assn S Si> vset_clear_imp Si <\<lambda>_. vset_assn vset_empty Si>"
-    and parent_clear_rule[sep_heap_rules]:
-      "parent_invar P \<Longrightarrow>
-       <parent_assn P Pai> parent_clear_imp Pai <\<lambda>_. parent_assn parent_empty Pai>"
-    and parent_empty_rule[sep_heap_rules]:
-      "<emp> parent_empty_imp <parent_assn parent_empty>"
 begin
 
 subsection \<open>Representation\<close>

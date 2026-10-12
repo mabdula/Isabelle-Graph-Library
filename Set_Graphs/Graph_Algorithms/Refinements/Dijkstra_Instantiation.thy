@@ -1,6 +1,7 @@
 theory Dijkstra_Instantiation
-  imports Dijkstra_Refinement Data_Structures.Indexed_Heap_Imperative
+  imports Dijkstra_Refinement Data_Structures.Indexed_Heap_Imperative Data_Structures.Imp_Bool_Set
     "Directed_Set_Graphs.CSR_Edge_Input"
+    Data_Structures.List_Cursor_Imperative
 begin
 
 no_notation Ref.update (\<open>_ := _\<close> 62)
@@ -26,143 +27,6 @@ text \<open>The locale @{locale dijkstra_impl_refine} is instantiated with purel
       endpoints are read; the index also indexes the weight array.\<close>
 
 
-subsection \<open>The seen set as a Boolean array\<close>
-
-definition bset_invar :: "'k set \<Rightarrow> 'k set \<Rightarrow> bool" where
-  "bset_invar K S \<longleftrightarrow> S \<subseteq> K"
-
-definition "bset_empty_imp N = Array.new N False"
-definition "bset_insert_imp ix k a = arr_upd_imp ix a k True"
-definition "bset_delete_imp ix k a = arr_upd_imp ix a k False"
-definition "bset_isin_imp ix a k = arr_lookup_imp ix a k"
-
-locale bool_set = key_array N idx K "id :: bool \<Rightarrow> bool"
-  for N :: nat and idx :: "'k \<Rightarrow> nat" and K :: "'k set"
-begin
-
-definition bset_assn :: "'k set \<Rightarrow> bool array \<Rightarrow> assn" where
-  "bset_assn S a = arr_assn (\<lambda>k. k \<in> S) a"
-
-lemma bset_empty_rule: "<emp> bset_empty_imp N <\<lambda>a. bset_assn {} a>"
-  using arr_new_rule[of False] unfolding bset_empty_imp_def bset_assn_def by simp
-
-lemma bset_insert_rule: "x \<in> K \<Longrightarrow> <bset_assn S a> bset_insert_imp idx x a <\<lambda>_. bset_assn (insert x S) a>"
-proof -
-  assume x: "x \<in> K"
-  have e: "arr_upd (\<lambda>k. k \<in> S) x (id True) = (\<lambda>k. k \<in> insert x S)"
-    by (auto simp: arr_upd_def fun_eq_iff)
-  show ?thesis
-    unfolding bset_insert_imp_def bset_assn_def
-    using arr_upd_imp_rule[OF x, of "\<lambda>k. k \<in> S" a True] e by (simp only: id_apply)
-qed
-
-lemma bset_delete_rule: "x \<in> K \<Longrightarrow> <bset_assn S a> bset_delete_imp idx x a <\<lambda>_. bset_assn (S - {x}) a>"
-proof -
-  assume x: "x \<in> K"
-  have e: "arr_upd (\<lambda>k. k \<in> S) x (id False) = (\<lambda>k. k \<in> S - {x})"
-    by (auto simp: arr_upd_def fun_eq_iff)
-  show ?thesis
-    unfolding bset_delete_imp_def bset_assn_def
-    using arr_upd_imp_rule[OF x, of "\<lambda>k. k \<in> S" a False] e by (simp only: id_apply)
-qed
-
-lemma bset_isin_rule: "x \<in> K \<Longrightarrow> <bset_assn S a> bset_isin_imp idx a x <\<lambda>r. bset_assn S a * \<up>(r = (x \<in> S))>"
-  unfolding bset_isin_imp_def bset_assn_def
-  by (sep_auto heap: arr_lookup_imp_rule simp: arr_lookup_def)
-
-sublocale bset: fixed_univ_set_imp K "bset_invar K" id "{}" insert "\<lambda>x S. S - {x}" "\<lambda>S x. x \<in> S"
-    bset_assn "bset_empty_imp N" "bset_insert_imp idx" "bset_delete_imp idx" "bset_isin_imp idx"
-  by unfold_locales
-     (auto simp: bset_invar_def bset_empty_rule bset_insert_rule bset_delete_rule bset_isin_rule)
-
-end
-
-
-subsection \<open>The sources as an array with a cursor\<close>
-
-text \<open>The functional model of the iterator is the cursor position into the fixed list @{term S}
-      of distinct sources.\<close>
-
-definition ait_current_imp :: "'a::heap array \<times> nat ref \<Rightarrow> 'a Heap" where
-  "ait_current_imp = (\<lambda>(Sa, r). do { j \<leftarrow> !r; Array.nth Sa j })"
-
-definition ait_has_imp :: "'a::heap array \<times> nat ref \<Rightarrow> bool Heap" where
-  "ait_has_imp = (\<lambda>(Sa, r). do { j \<leftarrow> !r; l \<leftarrow> Array.len Sa; return (j < l) })"
-
-definition ait_move_imp :: "'a::heap array \<times> nat ref \<Rightarrow> unit Heap" where
-  "ait_move_imp = (\<lambda>(Sa, r). do { j \<leftarrow> !r; Ref.update r (Suc j) })"
-
-locale array_iterator =
-  fixes S :: "'a::heap list"
-  assumes S_distinct: "distinct S"
-begin
-
-definition "ait_invar j \<longleftrightarrow> j \<le> length S"
-definition "ait_abstract (j::nat) = set S"
-definition "ait_current j = S ! j"
-definition "ait_has j \<longleftrightarrow> j < length S"
-definition "ait_iterated j = set (take j S)"
-definition "ait_remaining j = set (drop j S)"
-definition "ait_move j = Suc j"
-
-lemma ait_remaining_ne: "ait_remaining j \<noteq> {} \<longleftrightarrow> j < length S"
-  by (simp add: ait_remaining_def not_le)
-
-sublocale ait: iterable_set ait_invar ait_abstract ait_current ait_has ait_iterated ait_remaining
-    ait_move
-proof (unfold_locales, goal_cases)
-  case (1 j) show ?case
-    using S_distinct set_take_disj_set_drop_if_distinct[of S j j]
-    by (simp add: ait_iterated_def ait_remaining_def)
-next
-  case (2 j) show ?case
-    by (simp add: ait_iterated_def ait_remaining_def ait_abstract_def flip: set_append)
-next
-  case (3 j) show ?case unfolding ait_has_def ait_remaining_def by auto
-next
-  case (4 j)
-  then have j: "j < length S" by (simp add: ait_remaining_ne)
-  show ?case
-    unfolding ait_current_def ait_remaining_def using j by (metis Cons_nth_drop_Suc list.set_intros(1))
-next
-  case (5 j) show ?case by (simp add: ait_abstract_def)
-next
-  case (6 j)
-  then have j: "j < length S" by (simp add: ait_remaining_ne)
-  have "drop j S = S ! j # drop (Suc j) S" using j by (simp add: Cons_nth_drop_Suc)
-  moreover have "S ! j \<notin> set (drop (Suc j) S)"
-    using distinct_drop[OF S_distinct, of j] by (simp add: Cons_nth_drop_Suc[OF j, symmetric])
-  ultimately show ?case
-    by (simp add: ait_remaining_def ait_move_def ait_current_def)
-next
-  case (7 j)
-  then have j: "j < length S" by (simp add: ait_remaining_ne)
-  show ?case by (simp add: ait_iterated_def ait_move_def ait_current_def take_Suc_conv_app_nth j)
-next
-  case (8 j) then show ?case by (simp add: ait_invar_def ait_move_def ait_remaining_ne)
-qed
-
-definition ait_assn :: "nat \<Rightarrow> 'a array \<times> nat ref \<Rightarrow> assn" where
-  "ait_assn j = (\<lambda>(Sa, r). Sa \<mapsto>\<^sub>a S * r \<mapsto>\<^sub>r j)"
-
-lemma ait_move_imp_rule: "<ait_assn j (Sa, r)> ait_move_imp (Sa, r) <\<lambda>_. ait_assn (Suc j) (Sa, r)>"
-  unfolding ait_assn_def ait_move_imp_def by sep_auto
-
-sublocale ait_imp: iterable_set_imp ait_invar ait_abstract ait_current ait_has ait_iterated
-    ait_remaining ait_move ait_assn ait_current_imp ait_has_imp ait_move_imp
-proof (unfold_locales, goal_cases)
-  case (1 j Si) then show ?case
-    by (cases Si) (sep_auto simp: ait_assn_def ait_current_imp_def ait_current_def ait_remaining_ne)
-next
-  case (2 j Si) then show ?case
-    by (cases Si) (sep_auto simp: ait_assn_def ait_has_imp_def ait_has_def)
-next
-  case (3 j Si) then show ?case
-    by (cases Si) (simp add: ait_move_imp_rule ait_move_def)
-qed
-
-end
-
 
 section \<open>The Code\<close>
 
@@ -170,10 +34,10 @@ text \<open>The global interpretation of the refined Dijkstra. The locale @{loca
       only fixes operations and has no assumptions. The CSR buildup for the input iterator is
       interpreted in @{theory Directed_Set_Graphs.CSR_Graph}.\<close>
 
-global_interpretation dijkstra_code: dijkstra_impl_spec unreached "bset_isin_imp id" "\<lambda>Al. Al" early_stop
+global_interpretation dijkstra_code: dijkstra_impl_spec unreached bool_array_set_isin_imp "\<lambda>Al. Al" early_stop
     tgt_imp "arr_lookup_imp id" "arr_upd_imp id" "arr_lookup_imp id"
-    "arr_upd_imp id" "bset_insert_imp id" "bset_isin_imp id"
-    ait_current_imp ait_has_imp ait_move_imp
+    "arr_upd_imp id" bool_array_set_insert_imp bool_array_set_isin_imp
+    lc_current_imp lc_has_imp lc_move_imp
     csr_current_imp csr_has_imp csr_move_imp csr_reset_imp
     heap_extract_min_key_imp heap_decrease_key_imp heap_insert_imp
     "arr_lookup_imp id" src_imp
@@ -198,7 +62,7 @@ definition dijkstra_csr_run where
      Ca \<leftarrow> csr_cursor_init n Ba;
      Da \<leftarrow> Array.new n unreached;
      Pa \<leftarrow> Array.new n None;
-     Se \<leftarrow> bset_empty_imp n;
+     Se \<leftarrow> Array.new n False;
      Hq \<leftarrow> heap_empty_imp n 0;
      r \<leftarrow> ref 0;
      let si = \<lparr>dimp_dist = Da, dimp_seen = Se, dimp_parent = Pa, dimp_heap = Hq,
@@ -247,7 +111,7 @@ lemma dijkstra_csr_run_all_code[code]:
      Ca \<leftarrow> csr_cursor_init n Ba;
      Da \<leftarrow> Array.new n unreached;
      Pa \<leftarrow> Array.new n None;
-     Se \<leftarrow> bset_empty_imp n;
+     Se \<leftarrow> Array.new n False;
      Hq \<leftarrow> heap_empty_imp n 0;
      r \<leftarrow> ref 0;
      let si = \<lparr>dimp_dist = Da, dimp_seen = Se, dimp_parent = Pa, dimp_heap = Hq,
@@ -308,11 +172,11 @@ sublocale par: key_array n id "verts fs ts" "id :: nat option \<Rightarrow> nat 
 sublocale wgt: key_array "length fs" id "edges fs" h
   by unfold_locales auto
 
-sublocale seen: bool_set n id "verts fs ts"
-  by unfold_locales (use verts_bound in auto)
+sublocale seen: fixed_univ_set_imp "verts fs ts" "\<lambda>S. S \<subseteq> verts fs ts" id "{}" insert
+    "\<lambda>x S. S - {x}" "\<lambda>S x. x \<in> S" "bool_array_set_assn n" "Array.new n False"
+    bool_array_set_insert_imp bool_array_set_delete_imp bool_array_set_isin_imp
+  using bool_array_set_idx_fixed_univ_set_imp[of id "verts fs ts" n] verts_bound by (simp add: subset_iff)
 
-sublocale src: array_iterator sl
-  by unfold_locales (rule sl_distinct)
 
 sublocale hp: indexed_heap_imp n "verts fs ts" h 0
   by unfold_locales (simp_all add: verts_bound)
@@ -348,6 +212,14 @@ locale dijkstra_csr_inst = dijkstra_csr +
      <allowed_assn Al> Al u v e we <\<lambda>b. allowed_assn Al * \<up>(b = allowed u v e (wt e))>"
 begin
 
+text \<open>The target array is the Boolean array of the target predicate below the vertex bound.\<close>
+
+lemma target_isin_rule:
+  "v \<in> verts fs ts \<Longrightarrow>
+   <bool_array_set_assn n {v. v < n \<and> target v} Ti> bool_array_set_isin_imp Ti v
+   <\<lambda>b. bool_array_set_assn n {v. v < n \<and> target v} Ti * \<up>(b = target v)>"
+  unfolding bool_array_set_isin_imp_def bool_array_set_assn_def using verts_bound by sep_auto
+
 sublocale dij: dijkstra_impl_refine where
       fst = "e_src fs" and \<E> = "edges fs" and snd = "e_tgt fs ts" and create_edge = "e_new fs"
   and out_invar = graph.csr_invar and out_abstract = graph.csr_abstract
@@ -356,16 +228,16 @@ sublocale dij: dijkstra_impl_refine where
   and out_move = graph.csr_move and out_reset = graph.csr_reset
   and dist_invar = "\<lambda>_. True" and dist_upd = arr_upd and dist_lookup = arr_lookup
   and parent_invar = "\<lambda>_. True" and parent_upd = arr_upd and parent_lookup = arr_lookup
-  and seen_invar = "bset_invar (verts fs ts)" and seen_abstract = id and seen_empty = "{}"
+  and seen_invar = "\<lambda>S. S \<subseteq> verts fs ts" and seen_abstract = id and seen_empty = "{}"
   and seen_insert = insert and seen_delete = "\<lambda>x S. S - {x}" and seen_isin = "\<lambda>S x. x \<in> S"
-  and src_invar = src.ait_invar and src_abstract = src.ait_abstract
-  and src_current = src.ait_current and src_has = src.ait_has
-  and src_iterated = src.ait_iterated and src_remaining = src.ait_remaining
-  and src_move = src.ait_move
+  and src_invar = lc_invar and src_abstract = lc_abstract
+  and src_current = lc_current and src_has = lc_has
+  and src_iterated = lc_iterated and src_remaining = lc_remaining
+  and src_move = lc_move
   and queue_empty = heap_empty and queue_extract_min = heap_extract_min
   and queue_decrease_key = heap_decrease_key and queue_insert = heap_insert
   and queue_invar = "heap_invar (verts fs ts)" and queue_abstract = heap_abstract
-  and og = "\<lambda>v. inp.B_spec ! v" and srcs = 0 and w = wt
+  and og = "\<lambda>v. inp.B_spec ! v" and srcs = "\<lparr>lc_list = sl, lc_pos = 0\<rparr>" and w = wt
   and target = target and allowed = allowed and early_stop = early_stop
   and dist_init = "\<lambda>_. -1" and parent_init = "\<lambda>_. None"
   and h = h and unreached = unreached
@@ -379,17 +251,18 @@ sublocale dij: dijkstra_impl_refine where
   and weight_invar = "\<lambda>_. True" and weight_upd = arr_upd and weight_lookup = arr_lookup
   and weight_assn = wgt.arr_assn and weight_upd_imp = "arr_upd_imp id"
   and weight_lookup_imp = "arr_lookup_imp id"
-  and seen_assn = seen.bset_assn and seen_empty_imp = "bset_empty_imp n"
-  and seen_insert_imp = "bset_insert_imp id" and seen_delete_imp = "bset_delete_imp id"
-  and seen_isin_imp = "bset_isin_imp id"
-  and src_assn = src.ait_assn and src_current_imp = ait_current_imp
-  and src_has_imp = ait_has_imp and src_move_imp = ait_move_imp
+  and seen_assn = "bool_array_set_assn n" and seen_empty_imp = "Array.new n False"
+  and seen_insert_imp = bool_array_set_insert_imp and seen_delete_imp = bool_array_set_delete_imp
+  and seen_isin_imp = bool_array_set_isin_imp
+  and src_assn = lc_assn and src_current_imp = lc_current_imp
+  and src_has_imp = lc_has_imp and src_move_imp = lc_move_imp
   and queue_assn = hp.heap_assn and queue_empty_imp = "heap_empty_imp n 0"
   and queue_extract_min_imp = heap_extract_min_key_imp
   and queue_decrease_key_imp = heap_decrease_key_imp
   and queue_insert_imp = heap_insert_imp
   and snd_imp = tgt_imp and fst_imp = src_imp and W = wt and ends_assn = "ends_assn fs ts"
-  and target_imp = "bset_isin_imp id" and target_assn = "seen.bset_assn (Collect target)"
+  and target_imp = bool_array_set_isin_imp
+  and target_assn = "bool_array_set_assn n {v. v < n \<and> target v}"
   and allowed_imp = "\<lambda>Al. Al" and allowed_assn = allowed_assn
   and queue_clear_imp = heap_clear_imp
   and queue_key_of_imp = heap_key_of_imp
@@ -405,23 +278,23 @@ proof (intro_locales, goal_cases)
       unfolding outgoing_edge_iterator.out_graph_inv_def[OF oi]
       using graph.csr_init_invar csr_abstract_delta by auto
   next
-    case 2 show ?case by (simp add: src.ait_invar_def)
+    case 2 show ?case by (simp add: lc_invar_def sl_distinct)
   next
-    case 3 show ?case using sl_verts by (simp add: src.ait_abstract_def)
+    case 3 show ?case using sl_verts by (simp add: lc_abstract_def)
   next
     case (4 e)
     then have "e < length ws" using ws_length by simp
     then show ?case using ws_nonneg nth_mem by (auto simp: wt_def)
   next
     case (9 v) show ?case by (rule graph.csr_init_iterated)
-  qed (simp_all add: arr_lookup_def src.ait_remaining_def src.ait_abstract_def)
+  qed (simp_all add: arr_lookup_def lc_remaining_def lc_abstract_def)
 next
   case 2 show ?case
   proof (unfold_locales, goal_cases)
     case (3 e Ei) then show ?case by (intro tgt_imp_rule) (simp_all add: ts_length)
   next
     case (4 e Ei) then show ?case by (intro src_imp_rule) simp
-  qed (simp_all add: arr_lookup_def allowed_imp_rule, (sep_auto heap: seen.bset_isin_rule)+)
+  qed (simp_all add: arr_lookup_def allowed_imp_rule target_isin_rule)
 qed
 
 text \<open>The code part of this interpretation is the instance of @{locale dijkstra_impl_spec} that is
@@ -434,10 +307,10 @@ theorem dijkstra_imp_code_correct:
   unfolding dijkstra_imp_code_def by (rule dij.dijkstra_imp_correct)
 
 lemma dijkstra_imp_init:
-  "<dist.arr_assn (\<lambda>_. -1) Da * seen.bset_assn {} Se * par.arr_assn (\<lambda>_. None) Pa *
+  "<dist.arr_assn (\<lambda>_. -1) Da * bool_array_set_assn n {} Se * par.arr_assn (\<lambda>_. None) Pa *
     hp.heap_assn heap_empty Hq * graph.csr_assn ((!) inp.B_spec) (Ba, Ea, Ca) *
     Sa \<mapsto>\<^sub>a sl * r \<mapsto>\<^sub>r 0 * Wa \<mapsto>\<^sub>a ws * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts *
-    seen.bset_assn (Collect target) Tg * allowed_assn Al>
+    bool_array_set_assn n {v. v < n \<and> target v} Tg * allowed_assn Al>
    dijkstra_imp_code unreached early_stop
      \<lparr>dimp_dist = Da, dimp_seen = Se, dimp_parent = Pa, dimp_heap = Hq,
       dimp_graph = (Ba, Ea, Ca), dimp_srcs = (Sa, r), dimp_weight = Wa, dimp_ends = (Fa, Ta),
@@ -450,15 +323,20 @@ lemma dijkstra_imp_init:
   (is "<?P> dijkstra_imp_code unreached early_stop ?si <?Q>")
 proof (rule ht_cons_pre[OF _ dijkstra_imp_code_correct[of ?si]])
   show "?P \<Longrightarrow>\<^sub>A dij.state_assn dij.initial_state ?si"
-    unfolding dij.state_assn_def dij.initial_state_def src.ait_assn_def wgt.arr_assn_def
+    unfolding dij.state_assn_def dij.initial_state_def lc_assn_def wgt.arr_assn_def
     by (sep_auto simp: ws_length wt_def ends_assn_def)
 qed
 
 text \<open>The target array is the target predicate tabulated over the vertex bound.\<close>
 
 lemma target_array_assn:
-  "Tg \<mapsto>\<^sub>a map target [0..<n] \<Longrightarrow>\<^sub>A seen.bset_assn (Collect target) Tg"
-  unfolding seen.bset_assn_def seen.arr_assn_def using verts_bound by sep_auto
+  "Tg \<mapsto>\<^sub>a map target [0..<n] \<Longrightarrow>\<^sub>A bool_array_set_assn n {v. v < n \<and> target v} Tg"
+proof-
+  have eq: "map (\<lambda>i. i < n \<and> target i) [0..<n] = map target [0..<n]"
+    by (rule map_cong) auto
+  show ?thesis
+    unfolding bool_array_set_assn_def by (sep_auto simp: eq)
+qed
 
 text \<open>The whole program computes @{const dij.dijkstra_compute}: the state returned refines it.\<close>
 
@@ -469,7 +347,7 @@ theorem dijkstra_csr_run_compute:
   unfolding dijkstra_csr_run_def
   by (rule ht_cons_pre[OF ent_star_mono[OF ent_star_mono[OF ent_refl target_array_assn] ent_refl]])
     (sep_auto heap: csr_build_edges_rule graph.csr_cursor_init_rule dist.arr_new_rule
-      par.arr_new_rule seen.bset_empty_rule hp.heap_empty_imp_rule dijkstra_imp_init)
+      par.arr_new_rule seen.fixed_univ_set_empty_rule hp.heap_empty_imp_rule dijkstra_imp_init)
 
 text \<open>Without early stopping, every reached vertex is settled at the end.\<close>
 
@@ -495,11 +373,11 @@ lemma dist_assn_shortest:
          (\<exists>\<^sub>Adl. Da \<mapsto>\<^sub>a dl * \<up>(length dl = n \<and> shortest_dists dl))"
 proof -
   have compl: "arr_lookup (dij_dist dij.dijkstra_compute) v \<noteq> -1 \<longleftrightarrow> (\<exists>s \<in> set sl. dij.ag.reachable s v)"
-    for v using dij.dijkstra_compute_complete[OF assms] by (simp add: src.ait_abstract_def)
+    for v using dij.dijkstra_compute_complete[OF assms] by (simp add: lc_abstract_def)
   have opt: "arr_lookup (dij_dist dij.dijkstra_compute) v \<noteq> -1 \<Longrightarrow>
       ereal (arr_lookup (dij_dist dij.dijkstra_compute) v) = dij.ag.distance_set wt (set sl) v" for v
     using dij.dijkstra_compute_optimal dijkstra_compute_reached_seen[OF assms]
-    by (simp add: src.ait_abstract_def)
+    by (simp add: lc_abstract_def)
   have P: "shortest_dists dl"
     if A: "\<forall>v \<in> verts fs ts. h (dl ! v) = arr_lookup (dij_dist dij.dijkstra_compute) v" for dl
     unfolding shortest_dists_def
@@ -579,7 +457,7 @@ proof -
     if a: "length p = length r \<and> k = length (dij.reconstruct_path dij.dijkstra_compute v) \<and>
       rev (take k p) = dij.reconstruct_path dij.dijkstra_compute v \<and>
       (arr_lookup (dij_dist dij.dijkstra_compute) v \<noteq> -1 \<longrightarrow>
-        (\<exists>s \<in> src.ait_abstract 0. dij.ag.path_bet (rev (take k p)) s v \<and>
+        (\<exists>s \<in> lc_abstract \<lparr>lc_list = sl, lc_pos = 0\<rparr>. dij.ag.path_bet (rev (take k p)) s v \<and>
            mg.weight wt (rev (take k p)) = arr_lookup (dij_dist dij.dijkstra_compute) v))" for p k
   proof -
     have "k \<le> n" using a dij.reconstruct_path_compute_length[of v] card_verts by linarith
@@ -587,10 +465,10 @@ proof -
     proof -
       have "v \<in> dij_seen dij.dijkstra_compute"
         using dijkstra_compute_reached_seen[OF assms(1)] dij.dijkstra_compute_complete[OF assms(1)] re
-        by (simp add: src.ait_abstract_def)
+        by (simp add: lc_abstract_def)
       then show ?thesis
         using a dij.reconstruct_path_shortest[of v] unfolding shortest_path_def
-        by (auto simp: src.ait_abstract_def simp del: distinct_rev)
+        by (auto simp: lc_abstract_def simp del: distinct_rev)
     qed
     ultimately show ?thesis using a by blast
   qed
@@ -624,7 +502,7 @@ proof -
     for pl
     using a dij.dijkstra_compute_tight_parents[OF assms]
     unfolding tight_parent_array_def dij.tight_parents_def
-    by (auto simp: arr_lookup_def src.ait_abstract_def simp del: e_nth)
+    by (auto simp: arr_lookup_def lc_abstract_def simp del: e_nth)
   have mono: "(A \<Longrightarrow> B) \<Longrightarrow> X * \<up>A \<Longrightarrow>\<^sub>A X * \<up>B" for X A B
     by (cases A) simp_all
   show ?thesis
@@ -670,7 +548,7 @@ proof (rule ht_cons[OF ent_refl _ dijkstra_csr_run_compute], goal_cases)
     have a: "target u" "u \<in> verts fs ts"
         "ereal (arr_lookup (dij_dist dij.dijkstra_compute) u) = dij.ag.distance_set wt (set sl) u"
         "\<forall>x. target x \<longrightarrow> dij.ag.distance_set wt (set sl) u \<le> dij.ag.distance_set wt (set sl) x"
-      using dij.dijkstra_compute_target[OF that] by (auto simp: src.ait_abstract_def)
+      using dij.dijkstra_compute_target[OF that] by (auto simp: lc_abstract_def)
     have "dij.ag.distance_set wt (set sl) u \<noteq> \<infinity>" unfolding a(3)[symmetric] by simp
     then have "\<exists>s \<in> set sl. dij.ag.reachable s u"
       unfolding dij.ag_distance_set_infty_iff by blast
@@ -678,7 +556,7 @@ proof (rule ht_cons[OF ent_refl _ dijkstra_csr_run_compute], goal_cases)
   qed
   have nt: "early_stop \<Longrightarrow> dij_target dij.dijkstra_compute = None \<Longrightarrow> target v \<Longrightarrow>
       \<not> (\<exists>s \<in> set sl. dij.ag.reachable s v)" for v
-    using dij.dijkstra_compute_no_target by (auto simp: src.ait_abstract_def)
+    using dij.dijkstra_compute_no_target by (auto simp: lc_abstract_def)
   have g: "P T \<Longrightarrow> X * \<up>(t = T) \<Longrightarrow>\<^sub>A X * \<up>(t = T \<and> P t) * true"
     for X and t T :: "nat option" and P
     by sep_auto
@@ -703,16 +581,16 @@ proof -
       (\<forall>s \<in> set sl. \<forall>x q. target x \<longrightarrow> dij.ag.path_bet q s x \<longrightarrow> distinct q \<longrightarrow>
          mg.weight wt (rev (take k p)) \<le> mg.weight wt q)"
     if a: "length p = length r \<and> k = length (dij.reconstruct_path dij.dijkstra_compute u) \<and>
-      target u \<and> (\<exists>s \<in> src.ait_abstract 0. dij.ag.path_bet (rev (take k p)) s u \<and>
+      target u \<and> (\<exists>s \<in> lc_abstract \<lparr>lc_list = sl, lc_pos = 0\<rparr>. dij.ag.path_bet (rev (take k p)) s u \<and>
         distinct (rev (take k p)) \<and>
-        ereal (mg.weight wt (rev (take k p))) = dij.ag.distance_set wt (src.ait_abstract 0) u \<and>
+        ereal (mg.weight wt (rev (take k p))) = dij.ag.distance_set wt (lc_abstract \<lparr>lc_list = sl, lc_pos = 0\<rparr>) u \<and>
         ereal (mg.weight wt (rev (take k p))) = dij.ag.distance wt s u) \<and>
-      (\<forall>s \<in> src.ait_abstract 0. \<forall>x q. target x \<longrightarrow> dij.ag.path_bet q s x \<longrightarrow> distinct q \<longrightarrow>
+      (\<forall>s \<in> lc_abstract \<lparr>lc_list = sl, lc_pos = 0\<rparr>. \<forall>x q. target x \<longrightarrow> dij.ag.path_bet q s x \<longrightarrow> distinct q \<longrightarrow>
          mg.weight wt (rev (take k p)) \<le> mg.weight wt q)"
     for p k
   proof -
     have "k \<le> n" using a dij.reconstruct_path_compute_length[of u] card_verts by linarith
-    then show ?thesis using a unfolding shortest_path_def by (auto simp: src.ait_abstract_def)
+    then show ?thesis using a unfolding shortest_path_def by (auto simp: lc_abstract_def)
   qed
   have g: "(\<And>p. A p \<Longrightarrow> B p) \<Longrightarrow>
            X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(A p)) \<Longrightarrow>\<^sub>A X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(B p)) * true"
@@ -1155,7 +1033,7 @@ proof -
   obtain si Ra where th: "th = (si, Ra)" by (cases th)
   have r: "arr_lookup (dij_dist all.dij.dijkstra_compute) v \<noteq> -1 \<longleftrightarrow> (\<exists>s \<in> set sl. mg.reachable s v)"
     using all.dij.dijkstra_compute_complete[OF assms(1), of v]
-    unfolding all_Ea by (simp add: src.ait_abstract_def)
+    unfolding all_Ea by (simp add: lc_abstract_def)
   have nth: "arr_lookup_imp id (dimp_dist si) v = Array.nth (dimp_dist si) v"
     by (simp add: arr_lookup_imp_def)
   note l = all.dij.dist_lookup_state[where u = v and si = si, OF TrueI assms(2), unfolded nth]

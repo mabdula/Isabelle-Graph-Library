@@ -176,14 +176,14 @@ qed
 text \<open>The generic algorithm on the allocated handles.\<close>
 
 theorem whandles_correct:
-  "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * xset_assn (length fs) {} Xi *
+  "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * bool_array_set_assn (length fs) {} Xi *
     cnt_assn (length ks) fs {} C1 * cnt_assn (length ks) ts {} C2 *
     blocks_assn (length fs) (length ks) fs Fa * blocks_assn (length fs) (length ks) ts Ta *
     caps_assn (length ks) (\<lambda> v. ks ! v) Ka *
     warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa *
     len_assn (length fs) W1 * len_assn (length fs) W2>
      wbx_wmi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta, Ka) Wa W1 W2
-   <\<lambda> _. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * blocks_assn (length fs) (length ks) fs Fa *
+   <\<lambda> _. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * blocks_assn (length fs) (length ks) fs Fa *
               blocks_assn (length fs) (length ks) ts Ta * caps_assn (length ks) (\<lambda> v. ks ! v) Ka *
               warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa * true *
               \<up>(max_weight_b_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) (\<lambda> v. ks ! v)
@@ -199,7 +199,7 @@ subsubsection \<open>The Program\<close>
 
 theorem weighted_b_matching_imp_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * Wa \<mapsto>\<^sub>a ws> weighted_b_matching_imp Fa Ta Ka Wa
-   <\<lambda> Xi. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * Wa \<mapsto>\<^sub>a ws *
+   <\<lambda> Xi. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * Wa \<mapsto>\<^sub>a ws *
               true * \<up>(max_weight_b_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs})
                         (\<lambda> v. ks ! v) edge_weight ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
 proof-

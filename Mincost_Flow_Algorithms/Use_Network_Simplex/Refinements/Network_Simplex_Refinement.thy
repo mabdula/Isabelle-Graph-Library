@@ -1,5 +1,5 @@
 theory Network_Simplex_Refinement
-  imports Mincost_Flow_Algorithms.Network_Simplex_Final
+  imports Mincost_Flow_Algorithms.Network_Simplex_Final Data_Structures.Fixed_Univ_Map_Specs_Imp
           Separation_Logic_Imperative_HOL_Partial.Array_Blit
 begin
 
@@ -345,6 +345,11 @@ text \<open>The proof locale combines the functional proof locale @{locale netwo
       @{term get_path_pair} / @{term swap_edge} hypotheses of the @{locale arborescense_adt} axioms;
       and for the selector @{term sel_invar}, @{term pot_invar}, @{term es_invar}.\<close>
 
+text \<open>The edge-state tags are stored in arrays.\<close>
+
+instance edge_tag :: countable by countable_datatype
+instance edge_tag :: heap ..
+
 locale network_simplex_impl_refine =
   network_simplex where flow_lookup = flow_lookup and pot_lookup = pot_lookup
       and get_path_pair = get_path_pair and parent_lookup = parent_lookup
@@ -352,8 +357,24 @@ locale network_simplex_impl_refine =
   network_simplex_impl_spec where flow_lookup_imp = flow_lookup_imp
       and shift_pot_imp = shift_pot_imp and parent_lookup_imp = parent_lookup_imp
       and dir_lookup_imp = dir_lookup_imp and es_lookup_imp = es_lookup_imp
-      and sel_select_imp = sel_select_imp
-  for flow_lookup       :: "'farr \<Rightarrow> 'edge \<Rightarrow> 'n::linordered_idom"
+      and sel_select_imp = sel_select_imp +
+  flow_imp: fixed_univ_map_imp where K = \<E> and fixed_univ_map_invar = flow_invar
+      and fixed_univ_map_upd = flow_upd and fixed_univ_map_lookup = flow_lookup
+      and fixed_univ_map_val = id and fixed_univ_map_assn = flow_assn
+      and fixed_univ_map_upd_imp = flow_upd_imp and fixed_univ_map_lookup_imp = flow_lookup_imp +
+  es_imp: fixed_univ_map_imp where K = \<E> and fixed_univ_map_invar = es_invar
+      and fixed_univ_map_upd = es_upd and fixed_univ_map_lookup = es_lookup
+      and fixed_univ_map_val = id and fixed_univ_map_assn = es_assn
+      and fixed_univ_map_upd_imp = es_upd_imp and fixed_univ_map_lookup_imp = es_lookup_imp +
+  parent_imp: fixed_univ_map_imp where K = "\<V> - {r}" and fixed_univ_map_invar = parent_invar
+      and fixed_univ_map_upd = parent_upd and fixed_univ_map_lookup = parent_lookup
+      and fixed_univ_map_val = id and fixed_univ_map_assn = parent_assn
+      and fixed_univ_map_upd_imp = parent_upd_imp and fixed_univ_map_lookup_imp = parent_lookup_imp +
+  dir_imp: fixed_univ_map_imp where K = "\<V> - {r}" and fixed_univ_map_invar = dir_invar
+      and fixed_univ_map_upd = dir_upd and fixed_univ_map_lookup = dir_lookup
+      and fixed_univ_map_val = id and fixed_univ_map_assn = dir_assn
+      and fixed_univ_map_upd_imp = dir_upd_imp and fixed_univ_map_lookup_imp = dir_lookup_imp
+  for flow_lookup       :: "'farr \<Rightarrow> 'edge::heap \<Rightarrow> 'n::{linordered_idom, heap}"
     and flow_lookup_imp   :: "'farri \<Rightarrow> 'edge \<Rightarrow> 'n Heap"
     and pot_lookup        :: "'parr \<Rightarrow> 'a::heap \<Rightarrow> 'p"
     and get_path_pair     :: "'arbor \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a list \<times> 'a list"
@@ -365,48 +386,21 @@ locale network_simplex_impl_refine =
     and es_lookup         :: "'earr \<Rightarrow> 'edge \<Rightarrow> edge_tag"
     and es_lookup_imp     :: "'earri \<Rightarrow> 'edge \<Rightarrow> edge_tag Heap"
     and sel_select        :: "'selector \<Rightarrow> 'parr \<Rightarrow> 'earr \<Rightarrow> ('edge \<times> bool \<times> 'r \<times> 'selector) option"
-    and sel_select_imp    :: "'seli \<Rightarrow> 'parri \<Rightarrow> 'earri \<Rightarrow> ('edge \<times> bool \<times> 'r) option Heap" +
-  fixes flow_assn   :: "'farr \<Rightarrow> 'farri \<Rightarrow> assn"
-    and pot_assn    :: "'parr \<Rightarrow> 'parri \<Rightarrow> assn"
-    and tree_assn   :: "'arbor \<Rightarrow> 'arbori \<Rightarrow> assn"
+    and sel_select_imp    :: "'seli \<Rightarrow> 'parri \<Rightarrow> 'earri \<Rightarrow> ('edge \<times> bool \<times> 'r) option Heap"
+    and flow_assn   :: "'farr \<Rightarrow> 'farri \<Rightarrow> assn"
     and parent_assn :: "'pearr \<Rightarrow> 'pearri \<Rightarrow> assn"
     and dir_assn    :: "'darr \<Rightarrow> 'darri \<Rightarrow> assn"
-    and es_assn     :: "'earr \<Rightarrow> 'earri \<Rightarrow> assn"
+    and es_assn     :: "'earr \<Rightarrow> 'earri \<Rightarrow> assn" +
+  fixes pot_assn    :: "'parr \<Rightarrow> 'parri \<Rightarrow> assn"
+    and tree_assn   :: "'arbor \<Rightarrow> 'arbori \<Rightarrow> assn"
     and sel_assn    :: "'selector \<Rightarrow> 'seli \<Rightarrow> assn"
     and rd          :: assn  \<comment> \<open>footprint of the read-only per-edge cap / endpoint stores\<close>
   assumes
-    \<comment> \<open>flow store --- an @{locale fixed_univ_map} with key set @{term \<E>}\<close>
-    flow_lookup_rule:
-      "\<lbrakk>flow_invar Fl; e \<in> \<E>\<rbrakk> \<Longrightarrow> <flow_assn Fl fh> flow_lookup_imp fh e
-                 <\<lambda>x. flow_assn Fl fh * \<up>(x = flow_lookup Fl e)>"
-    and flow_upd_rule:
-      "\<lbrakk>flow_invar Fl; e \<in> \<E>\<rbrakk> \<Longrightarrow> <flow_assn Fl fh> flow_upd_imp fh e w
-                 <\<lambda>_. flow_assn (flow_upd Fl e w) fh>"
-    \<comment> \<open>edge-state store --- an @{locale fixed_univ_map} with key set @{term \<E>}\<close>
-    and es_lookup_rule:
-      "\<lbrakk>es_invar Es; e \<in> \<E>\<rbrakk> \<Longrightarrow> <es_assn Es esh> es_lookup_imp esh e
-                 <\<lambda>x. es_assn Es esh * \<up>(x = es_lookup Es e)>"
-    and es_upd_rule:
-      "\<lbrakk>es_invar Es; e \<in> \<E>\<rbrakk> \<Longrightarrow> <es_assn Es esh> es_upd_imp esh e t
-                 <\<lambda>_. es_assn (es_upd Es e t) esh>"
-    \<comment> \<open>parent-edge store --- an @{locale fixed_univ_map} with key set @{term \<open>\<V> - {r}\<close>}\<close>
-    and parent_lookup_rule:
-      "\<lbrakk>parent_invar Pe; v \<in> \<V> - {r}\<rbrakk> \<Longrightarrow> <parent_assn Pe ph> parent_lookup_imp ph v
-                 <\<lambda>x. parent_assn Pe ph * \<up>(x = parent_lookup Pe v)>"
-    and parent_upd_rule:
-      "\<lbrakk>parent_invar Pe; v \<in> \<V> - {r}\<rbrakk> \<Longrightarrow> <parent_assn Pe ph> parent_upd_imp ph v e
-                 <\<lambda>_. parent_assn (parent_upd Pe v e) ph>"
-    \<comment> \<open>parent-direction store --- an @{locale fixed_univ_map} with key set @{term \<open>\<V> - {r}\<close>}\<close>
-    and dir_lookup_rule:
-      "\<lbrakk>dir_invar D; v \<in> \<V> - {r}\<rbrakk> \<Longrightarrow> <dir_assn D dh> dir_lookup_imp dh v
-                 <\<lambda>x. dir_assn D dh * \<up>(x = dir_lookup D v)>"
-    and dir_upd_rule:
-      "\<lbrakk>dir_invar D; v \<in> \<V> - {r}\<rbrakk> \<Longrightarrow> <dir_assn D dh> dir_upd_imp dh v q
-                 <\<lambda>_. dir_assn (dir_upd D v q) dh>"
+
     \<comment> \<open>potential shift --- the first-order subtree traversal refining the functional \<open>shift_pot\<close>; it
         reads the tree and mutates the potential store, whose functional value becomes
         \<open>shift_pot T v pa g up\<close>. Its precondition is exactly that of the functional law \<open>shift_pot_spec\<close>.\<close>
-    and shift_pot_rule:
+    shift_pot_rule:
       "\<lbrakk>arborescense_invar T; v \<in> \<V>; pot_invar pa; \<And>u. u \<in> \<V> \<Longrightarrow> pot_value_invar (pot_lookup pa u)\<rbrakk> \<Longrightarrow>
        <tree_assn T th * pot_assn pa poth> shift_pot_imp th v poth g up
                  <\<lambda>_. tree_assn T th * pot_assn (shift_pot T v pa g up) poth>"
@@ -448,8 +442,7 @@ begin
 text \<open>The assumed per-operation Hoare triples are registered for @{method sep_auto}; each derived
       read / write and, ultimately, the whole loop then refines its functional counterpart.\<close>
 lemmas [sep_heap_rules] =
-  flow_lookup_rule flow_upd_rule es_lookup_rule es_upd_rule
-  parent_lookup_rule parent_upd_rule dir_lookup_rule dir_upd_rule
+
   shift_pot_rule sel_select_rule get_path_pair_rule swap_edge_rule
   cap_rule fst_exec_rule snd_exec_rule
 

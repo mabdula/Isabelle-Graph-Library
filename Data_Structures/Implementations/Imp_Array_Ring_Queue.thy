@@ -1,6 +1,6 @@
 theory Imp_Array_Ring_Queue
   imports
-    Imp_Array_Map
+    Imp_Array_Fun
     Bounded_Queue_Specs_Imp
 begin
 
@@ -121,7 +121,7 @@ section \<open>The Arrays\<close>
 type_synonym 'a arqi = "'a array \<times> nat ref \<times> nat ref"
 
 fun arq_assn :: "nat \<Rightarrow> 'a::heap arq \<Rightarrow> 'a arqi \<Rightarrow> assn" where
-  "arq_assn cap (A, h, sz) (Aa, hr, sr) = xmap_assn cap A Aa * hr \<mapsto>\<^sub>r h * sr \<mapsto>\<^sub>r sz"
+  "arq_assn cap (A, h, sz) (Aa, hr, sr) = array_fun_assn cap A Aa * hr \<mapsto>\<^sub>r h * sr \<mapsto>\<^sub>r sz"
 
 definition arq_empty_imp :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a arqi Heap" where
   "arq_empty_imp cap d = do { Aa \<leftarrow> Array.new cap d; hr \<leftarrow> ref 0; sr \<leftarrow> ref 0; return (Aa, hr, sr) }"
@@ -152,7 +152,7 @@ proof-
   proof(intro bounded_queue_imp.intro[OF arq_bounded_queue] bounded_queue_imp_axioms.intro, goal_cases)
     case 1
     show ?case
-      unfolding arq_empty_imp_def arq_empty_def by (sep_auto heap: xmap_assn_new)
+      unfolding arq_empty_imp_def arq_empty_def by (sep_auto heap: array_fun_assn_new)
   next
     case (2 Q Qi x)
     obtain A h sz where Q: "Q = (A, h, sz)"
@@ -161,7 +161,7 @@ proof-
       using 2 by (auto simp add: arq_invar_def arq_abstract_def wrap_def Q)
     thus ?case
       unfolding Q arq_push_imp_def arq_push_def
-      by (cases Qi) (sep_auto heap: xmap_upd_rule)
+      by (cases Qi) (sep_auto heap: array_fun_upd_rule)
   next
     case (3 Q Qi)
     obtain A h sz where Q: "Q = (A, h, sz)"
@@ -170,7 +170,7 @@ proof-
       using 3 by (auto simp add: arq_invar_def arq_abstract_def Q)
     thus ?case
       unfolding Q arq_pop_imp_def arq_pop_def
-      by (cases Qi) (sep_auto heap: xmap_lookup_rule)
+      by (cases Qi) (sep_auto heap: array_fun_lookup_rule)
   next
     case (4 Q Qi)
     show ?case

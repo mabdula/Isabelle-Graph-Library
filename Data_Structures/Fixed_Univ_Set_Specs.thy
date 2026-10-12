@@ -26,4 +26,10 @@ locale fixed_univ_set =
   and fixed_univ_set_isin:
       "\<And> x S. fixed_univ_set_invar S \<Longrightarrow> fixed_univ_set_isin S x \<longleftrightarrow> x \<in> fixed_univ_set_abstract S"
 
+text \<open>A set is its own model, over any universe.\<close>
+
+lemma set_fixed_univ_set:
+  "fixed_univ_set U (\<lambda>S. S \<subseteq> U) id {} insert (\<lambda>x S. S - {x}) (\<lambda>S x. x \<in> S)"
+  by unfold_locales auto
+
 end

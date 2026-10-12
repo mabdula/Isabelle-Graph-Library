@@ -2247,12 +2247,12 @@ proof (cases acyc_flow_opt)
   thus ?thesis using length_flow length_edges by (simp add: acyc_flow_def)
 next
   case (Some f')
-  have vv: "vtx_invar \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr>"
-    by (simp add: vtx_invar_def distinct_edged_vs_list)
-  have vab: "vtx_abstract \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> \<subseteq> original_network.\<V>"
-    by (simp add: vtx_abstract_def V_orig_eq_edged)
-  have vit0: "vtx_iterated \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> = {}"
-    by (simp add: vtx_iterated_def)
+  have vv: "lc_invar \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr>"
+    by (simp add: lc_invar_def distinct_edged_vs_list)
+  have vab: "lc_abstract \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> \<subseteq> original_network.\<V>"
+    by (simp add: lc_abstract_def V_orig_eq_edged)
+  have vit0: "lc_iterated \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> = {}"
+    by (simp add: lc_iterated_def)
   have ff: "length flow_list = m" using length_flow length_edges by simp
   have res: "make_acyclic flow_list = Some f'" using Some by (simp add: acyc_flow_opt_def)
   have "length f' = m"
@@ -2273,10 +2273,10 @@ proof (cases acyc_flow_opt)
   thus ?thesis using af_cap_feasible_flow_list by (simp add: acyc_flow_def)
 next
   case (Some f')
-  have vv: "vtx_invar \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr>"
-    by (simp add: vtx_invar_def distinct_edged_vs_list)
-  have vab: "vtx_abstract \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> \<subseteq> original_network.\<V>"
-    by (simp add: vtx_abstract_def V_orig_eq_edged)
+  have vv: "lc_invar \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr>"
+    by (simp add: lc_invar_def distinct_edged_vs_list)
+  have vab: "lc_abstract \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> \<subseteq> original_network.\<V>"
+    by (simp add: lc_abstract_def V_orig_eq_edged)
   have ff: "length flow_list = m" using length_flow length_edges by simp
   have res: "make_acyclic flow_list = Some f'" using Some by (simp add: acyc_flow_opt_def)
   have "af_cap_feasible f'"

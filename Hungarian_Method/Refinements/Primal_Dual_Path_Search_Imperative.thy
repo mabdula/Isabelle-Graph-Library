@@ -245,11 +245,15 @@ locale primal_dual_path_search_imp =
       and fixed_univ_map_lookup = ben_get and fixed_univ_map_val = id
       and fixed_univ_map_assn = ben_assn and fixed_univ_map_upd_imp = ben_upd_imp
       and fixed_univ_map_lookup_imp = ben_get_imp +
+  ben: fixed_univ_map_clear_imp K ben_invar ben_get id ben_assn ben_get_imp ben_empty
+    ben_clear_imp +
   missed: fixed_univ_map_imp
     where K = K and fixed_univ_map_invar = missed_invar and fixed_univ_map_upd = missed_upd
       and fixed_univ_map_lookup = missed_get and fixed_univ_map_val = h
       and fixed_univ_map_assn = missed_assn and fixed_univ_map_upd_imp = missed_upd_imp
       and fixed_univ_map_lookup_imp = missed_get_imp +
+  missed: fixed_univ_map_clear_imp K missed_invar missed_get h missed_assn missed_get_imp
+    missed_empty missed_clear_imp +
   pot: fixed_univ_map_imp
     where K = K and fixed_univ_map_invar = potential_invar
       and fixed_univ_map_upd = potential_upd and fixed_univ_map_lookup = potential_get
@@ -273,18 +277,14 @@ locale primal_dual_path_search_imp =
     and missed_assn :: "_ \<Rightarrow> 'mi \<Rightarrow> assn" and missed_upd_imp missed_get_imp
     and pot_assn pot_upd_imp pot_get_imp
     and vset_assn vset_empty_imp vset_insert_imp vset_delete_imp vset_isin_imp
-    and left_is_it left_it_init left_it_has_next left_it_next +
+    and left_is_it left_it_init left_it_has_next left_it_next
+    and ben_clear_imp :: "'bi \<Rightarrow> unit Heap" and missed_clear_imp :: "'mi \<Rightarrow> unit Heap" +
   fixes buddy_assn :: "'bdi \<Rightarrow> assn"
     and buddy_imp :: "'bdi \<Rightarrow> 'v \<Rightarrow> 'v Heap"
-    and ben_clear_imp :: "'bi \<Rightarrow> unit Heap"
-    and missed_clear_imp :: "'mi \<Rightarrow> unit Heap"
+
   assumes buddy_rule[sep_heap_rules]:
       "v \<in> K \<Longrightarrow> <buddy_assn Bdi> buddy_imp Bdi v <\<lambda>r. buddy_assn Bdi * \<up>(r = buddy_get v)>"
-    and ben_clear_rule[sep_heap_rules]:
-      "ben_invar B \<Longrightarrow> <ben_assn B Bi> ben_clear_imp Bi <\<lambda>_. ben_assn ben_empty Bi>"
-    and missed_clear_rule[sep_heap_rules]:
-      "missed_invar M \<Longrightarrow>
-       <missed_assn M Mi> missed_clear_imp Mi <\<lambda>_. missed_assn missed_empty Mi>"
+
     and vset_iterate_ben_lst:
       "\<And>V f init. vset_invar V \<Longrightarrow> vset_iterate_ben f init V = foldl f init (lst (vset_to_set V))"
     and vset_iterate_pot_lst:
@@ -459,7 +459,7 @@ proof(induction "card (rnb_remaining C l)" arbitrary: C ben queue rule: less_ind
     note relax = relax_imp_rule[OF less.prems(4) x_rn _ less.prems(5,6)]
     show ?thesis
       apply(subst code.scan_imp.simps)
-      apply(sep_auto heap: nb.has_rule nb.current_rule nb.current_cost_rule nb.move_rule
+      apply(sep_auto heap: nb.idx_has_rule nb.idx_current_rule nb.current_cost_rule nb.idx_move_rule
                      simp: less.prems(1,2) True ne)
       apply(sep_auto heap: relax)
       by (sep_auto heap: IH simp: scan_eq True)
@@ -469,7 +469,7 @@ proof(induction "card (rnb_remaining C l)" arbitrary: C ben queue rule: less_ind
       by (simp add: scan_neighbours.simps[of off l C] False)
     show ?thesis
       apply(subst code.scan_imp.simps)
-      by (sep_auto heap: nb.has_rule simp: less.prems(1,2) False scan_eq)
+      by (sep_auto heap: nb.idx_has_rule simp: less.prems(1,2) False scan_eq)
   qed
 qed
 
@@ -492,7 +492,7 @@ proof-
   note scan = scan_imp_rule[OF C0(1) assms(2) C0(2) assms(5)]
   show ?thesis
     unfolding code.update_ben_imp_def update_best_even_neighbour_def
-    by (sep_auto heap: nb.reset_rule scan simp: assms(1,2,4) lK potential)
+    by (sep_auto heap: nb.idx_reset_rule scan simp: assms(1,2,4) lK potential)
 qed
 
 text \<open>Functional preservation facts for a whole scan.\<close>

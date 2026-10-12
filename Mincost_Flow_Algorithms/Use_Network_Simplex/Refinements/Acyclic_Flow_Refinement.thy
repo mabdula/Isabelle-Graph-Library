@@ -1,7 +1,7 @@
 theory Acyclic_Flow_Refinement
   imports Mincost_Flow_Algorithms.Acyclic_Flow 
           Separation_Logic_Imperative_HOL_Partial.Array_Blit
-          Data_Structures.Iterable_Set_Specs_Imp
+          Data_Structures.Iterable_Set_Specs_Imp Data_Structures.Fixed_Univ_Map_Specs_Imp
 begin
 
 section \<open>Imperative refinement of the acyclic-flow procedure\<close>
@@ -398,6 +398,11 @@ text \<open>The proof locale combines the functional proof locale @{locale acycl
       for \<open>current\<close>/\<open>move_on\<close>, @{term \<open>vit_remaining Vit \<noteq> {}\<close>} (mirroring \<open>iterable_set.has_current\<close>
       and \<open>iterable_set.current_element\<close>).\<close>
 
+text \<open>The vertex states are stored in arrays.\<close>
+
+instance vertex_state :: countable by countable_datatype
+instance vertex_state :: heap ..
+
 locale acyclic_flow_impl_refine_proof =
   acyclic_flow_impl where flow_lookup = flow_lookup and st_lookup = st_lookup
       and out_current = out_current and current_vertex = current_vertex +
@@ -416,8 +421,16 @@ locale acyclic_flow_impl_refine_proof =
       and idx_move = in_move and idx_reset = in_reset and K = \<V>
       and idx_assn = in_assn and idx_current_imp = in_current_imp
       and idx_has_imp = in_has_imp and idx_move_imp = in_move_imp
-      and idx_reset_imp = in_reset_imp
-  for flow_lookup       :: "'farr \<Rightarrow> 'e::heap \<Rightarrow> ('n::linordered_idom)"
+      and idx_reset_imp = in_reset_imp +
+  flow_imp: fixed_univ_map_imp where K = \<E> and fixed_univ_map_invar = flow_invar
+      and fixed_univ_map_upd = flow_upd and fixed_univ_map_lookup = flow_lookup
+      and fixed_univ_map_val = id and fixed_univ_map_assn = flow_assn
+      and fixed_univ_map_upd_imp = flow_upd_imp and fixed_univ_map_lookup_imp = flow_lookup_imp +
+  st_imp: fixed_univ_map_imp where K = \<V> and fixed_univ_map_invar = st_invar
+      and fixed_univ_map_upd = st_upd and fixed_univ_map_lookup = st_lookup
+      and fixed_univ_map_val = id and fixed_univ_map_assn = state_assn
+      and fixed_univ_map_upd_imp = st_upd_imp and fixed_univ_map_lookup_imp = st_lookup_imp
+  for flow_lookup       :: "'farr \<Rightarrow> 'e::heap \<Rightarrow> ('n::{linordered_idom, heap})"
     and flow_lookup_imp   :: "'farri \<Rightarrow> 'e \<Rightarrow> 'n Heap"
     and st_lookup         :: "'sarr \<Rightarrow> 'v::heap \<Rightarrow> vertex_state"
     and st_lookup_imp     :: "'sarri \<Rightarrow> 'v \<Rightarrow> vertex_state Heap"
@@ -426,10 +439,10 @@ locale acyclic_flow_impl_refine_proof =
     and current_vertex    :: "'vvit \<Rightarrow> 'v"
     and current_vertex_imp :: "'vviti \<Rightarrow> 'v Heap"
     and out_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn"
-    and in_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn" +
-  fixes flow_assn  :: "'farr \<Rightarrow> 'farri \<Rightarrow> assn"
-    and state_assn :: "'sarr \<Rightarrow> 'sarri \<Rightarrow> assn"
-    and vit_assn   :: "'vvit \<Rightarrow> 'vviti \<Rightarrow> assn"
+    and in_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn"
+    and flow_assn  :: "'farr \<Rightarrow> 'farri \<Rightarrow> assn"
+    and state_assn :: "'sarr \<Rightarrow> 'sarri \<Rightarrow> assn" +
+  fixes vit_assn   :: "'vvit \<Rightarrow> 'vviti \<Rightarrow> assn"
     and rd         :: assn  \<comment> \<open>footprint of the (read-only) per-edge cap / cost / endpoint stores\<close>
     and Lvst :: nat and Lest :: nat and Ldst :: nat
       \<comment> \<open>the (fixed) physical lengths of the three caller-supplied DFS stack arrays.  Imperative-HOL
@@ -437,22 +450,9 @@ locale acyclic_flow_impl_refine_proof =
          caller (which reuses these arrays afterwards) needs it back.  The acyclifier's own
          requirement stays the lower bound in terms of the vertex count, kept alongside.\<close>
   assumes
-    \<comment> \<open>flow store --- an @{locale fixed_univ_map} with key set @{term \<E>}\<close>
-    flow_lookup_rule:
-      "\<lbrakk>flow_invar Fl; e \<in> \<E>\<rbrakk> \<Longrightarrow> <flow_assn Fl fh> flow_lookup_imp fh e
-                 <\<lambda>r. flow_assn Fl fh * \<up>(r = flow_lookup Fl e)>"
-    and flow_upd_rule:
-      "\<lbrakk>flow_invar Fl; e \<in> \<E>\<rbrakk> \<Longrightarrow> <flow_assn Fl fh> flow_upd_imp fh e w
-                 <\<lambda>_. flow_assn (flow_upd Fl e w) fh>"
-    \<comment> \<open>vertex-state store --- an @{locale fixed_univ_map} with key set @{term \<V>}\<close>
-    and st_lookup_rule:
-      "\<lbrakk>st_invar St; v \<in> \<V>\<rbrakk> \<Longrightarrow> <state_assn St sh> st_lookup_imp sh v
-                 <\<lambda>r. state_assn St sh * \<up>(r = st_lookup St v)>"
-    and st_upd_rule:
-      "\<lbrakk>st_invar St; v \<in> \<V>\<rbrakk> \<Longrightarrow> <state_assn St sh> st_upd_imp sh v q
-                 <\<lambda>_. state_assn (st_upd St v q) sh>"
+
     \<comment> \<open>vertex iterator --- an @{locale iterable_set}\<close>
-    and has_vertex_rule:
+    has_vertex_rule:
       "vit_invar Vit \<Longrightarrow> <vit_assn Vit vh> has_vertex_imp vh
                  <\<lambda>r. vit_assn Vit vh * \<up>(r = has_vertex Vit)>"
     and current_vertex_rule:
@@ -475,7 +475,7 @@ subsection \<open>Refinement of the derived leaf operations\<close>
 text \<open>The assumed per-operation Hoare triples are registered for @{method sep_auto}; each derived read
       / write then refines its functional counterpart by a one-line separation-logic proof.\<close>
 lemmas [sep_heap_rules] =
-  flow_lookup_rule flow_upd_rule st_lookup_rule st_upd_rule
+
   has_vertex_rule current_vertex_rule move_on_vertex_rule
   cap_rule cost_rule fst_exec_rule snd_exec_rule
 
@@ -1233,7 +1233,7 @@ proof -
     have pnth: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.nth (iestack s) (sp - 1) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = el ! (sp - 1))>"
       using sp1 sel by (sep_auto)
     have pstlook: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_lookup_imp (istate s) (if dir then snd_exec a else fst_exec a) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = st_lookup (af_state st) (if dir then snd_exec a else fst_exec a))>"
-      by (sep_auto heap: st_lookup_rule[OF sti xV])
+      by (sep_auto heap: st_imp.fixed_univ_map_lookup_rule[OF sti xV])
     have ret_ent: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel st s sp * true * \<up>(sp = length (af_vstack st) \<and> \<not> af_unbounded st)"
       unfolding dfs_rel_def
       apply (simp only: ex_assn_move_out)
@@ -1588,7 +1588,7 @@ proof -
               have spcm: "sp - Suc 0 \<le> card \<V>" using T(4) by (meson diff_le_self le_trans)
               have foldflat_pop: "flow_assn (af_flow st) (iflow s) * state_assn (st_upd (af_state st) (hd (af_vstack st)) Finished) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (AF_DFS_upd3 st) s (sp - 1)"
                 unfolding dfs_rel_def AF_DFS_upd3_def apply (simp only: ex_assn_move_out) apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl]) by (sep_auto simp: T(1) T(2) T(3) spcm tlv tle tld T(8) T(9) T(10) cLv cLe cLd)
-              have pupd: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_upd_imp (istate s) (hd (af_vstack st)) Finished <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (st_upd (af_state st) (hd (af_vstack st)) Finished) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: st_upd_rule[OF sti vV])
+              have pupd: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_upd_imp (istate s) (hd (af_vstack st)) Finished <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (st_upd (af_state st) (hd (af_vstack st)) Finished) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: st_imp.fixed_univ_map_upd_rule[OF sti vV])
               have call3: "AF_DFS_call_3_conds st" using I(2) ane heno hino by (auto simp: AF_DFS_call_3_conds_def split: list.splits)
               have inv3u: "AF_inv (AF_DFS_upd3 st)" using AF_inv_holds_3[OF call3 I(1)] .
               have impl_pop: "AF_DFS_impl st = AF_DFS_impl (AF_DFS_upd3 st)"
@@ -1664,7 +1664,7 @@ proof -
   have pupd: "<flow_assn Fl (iflow s) * state_assn St (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.upd 0 v (ivstack s) <\<lambda>r. flow_assn Fl (iflow s) * state_assn St (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
     by (sep_auto simp: cardpos vlne)
   have pstupd: "<flow_assn Fl (iflow s) * state_assn St (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_upd_imp (istate s) v OnStack <\<lambda>_. flow_assn Fl (iflow s) * state_assn (st_upd St v OnStack) (istate s) * out_assn OG (iout s) * in_assn IG (iin s) * ivstack s \<mapsto>\<^sub>a (vl[0 := v]) * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
-    by (sep_auto heap: st_upd_rule[OF si vV])
+    by (sep_auto heap: st_imp.fixed_univ_map_upd_rule[OF si vV])
   show ?thesis
     unfolding af_dfs_start_imp_def
     apply (rule ht_bind[OF pupd])
@@ -1832,7 +1832,7 @@ proof -
           have pmove: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (aff_vit st) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> move_on_vertex_imp (ivit s) <\<lambda>_. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>"
             by (sep_auto heap: move_on_vertex_rule[OF vinv ne])
           have pstlook: "<flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> st_lookup_imp (istate s) (current_vertex (aff_vit st)) <\<lambda>r. flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = st_lookup (aff_state st) (current_vertex (aff_vit st)))>"
-            by (sep_auto heap: st_lookup_rule[OF sti vV])
+            by (sep_auto heap: st_imp.fixed_univ_map_lookup_rule[OF sti vV])
           have foldmoved: "flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s) * out_assn (aff_out_arr st) (iout s) * in_assn (aff_in_arr st) (iin s) * vit_assn (move_on_vertex (aff_vit st)) (ivit s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A outer_rel (AF_outer_upd1 st) s"
             unfolding outer_rel_def AF_outer_upd1_def
             apply simp

@@ -4,6 +4,8 @@ theory Network_Simplex_Instantiation_Refinement
           Network_Simplex_Refinement
           Acyclic_Flow_Refinement
           Directed_Set_Graphs.CSR_Edge_Input
+          Data_Structures.List_Cursor_Imperative
+          Data_Structures.Imp_Array_Fun
           "../Rooted_Arborescense/Rooted_Arborescense_Refinement"
 begin
 
@@ -99,70 +101,15 @@ text \<open>The abstract-array model uses @{const nth} for lookup and @{const li
       store assertion the standard @{term \<open>(\<mapsto>\<^sub>a)\<close>}.  No wrapper is needed: the array primitives are
       used directly when instantiating.\<close>
 
-subsection \<open>The vertex iterator\<close>
 
-text \<open>A @{typ \<open>'v vtx_iter\<close>} is an immutable vertex list @{const vi_list} with a \<^emph>\<open>mutable\<close> cursor
-      @{const vi_pos}; only the cursor moves (@{const vtx_move}).  Its mutable form is an array and a
-      reference.\<close>
-
-type_synonym 'v vtx_imp = "'v array \<times> nat ref"
-
-definition vtx_assn :: "'v::heap vtx_iter \<Rightarrow> 'v vtx_imp \<Rightarrow> assn" where
-  "vtx_assn V h = (case h of (la, pr) \<Rightarrow> la \<mapsto>\<^sub>a vi_list V * pr \<mapsto>\<^sub>r vi_pos V)"
-
-text \<open>@{const vtx_has}: the cursor has not reached the end of the vertex list.\<close>
-definition vtx_has_imp :: "'v::heap vtx_imp \<Rightarrow> bool Heap" where
-  "vtx_has_imp h = (case h of (la, pr) \<Rightarrow>
-     do { n \<leftarrow> Array.len la; p \<leftarrow> Ref.lookup pr; return (p < n) })"
-
-text \<open>@{const vtx_current}: the vertex under the cursor.  Called only when the remaining region is
-      non-empty, i.e. @{term \<open>vi_pos V < length (vi_list V)\<close>}, so the read is in range.\<close>
-definition vtx_current_imp :: "'v::heap vtx_imp \<Rightarrow> 'v Heap" where
-  "vtx_current_imp h = (case h of (la, pr) \<Rightarrow>
-     do { p \<leftarrow> Ref.lookup pr; Array.nth la p })"
-
-text \<open>@{const vtx_move}: advance the cursor by one.\<close>
-definition vtx_move_imp :: "'v::heap vtx_imp \<Rightarrow> unit Heap" where
-  "vtx_move_imp h = (case h of (la, pr) \<Rightarrow>
-     do { p \<leftarrow> Ref.lookup pr; Ref.update pr (Suc p) })"
-
-subsection \<open>Refinement of the concrete operations to their functional models\<close>
-
-text \<open>Each concrete Heap program above satisfies exactly the Hoare triple that the abstract
-      refinement locales assume for the corresponding functional operation.  These are the
-      obligations later fed to the instantiation.\<close>
-
-lemma vtx_has_imp_rule:
-  "<vtx_assn V h> vtx_has_imp h <\<lambda>r. vtx_assn V h * \<up>(r = vtx_has V)>"
-  by (cases h) (sep_auto simp: vtx_assn_def vtx_has_imp_def vtx_has_def)
-
-lemma vtx_current_imp_rule:
-  "vi_pos V < length (vi_list V) \<Longrightarrow>
-   <vtx_assn V h> vtx_current_imp h <\<lambda>r. vtx_assn V h * \<up>(r = vtx_current V)>"
-  by (cases h) (sep_auto simp: vtx_assn_def vtx_current_imp_def vtx_current_def)
-
-lemma vtx_move_imp_rule:
-  "<vtx_assn V h> vtx_move_imp h <\<lambda>_. vtx_assn (vtx_move V) h>"
-  by (cases h) (sep_auto simp: vtx_assn_def vtx_move_imp_def vtx_move_def)
-
-subsection \<open>Plain array update returning unit\<close>
-
-text \<open>The abstract-array update @{const list_update} refines to an in-place @{const Array.upd} whose
-      returned handle is dropped, so the result type is @{typ \<open>unit Heap\<close>} --- matching the
-      @{text \<open>_upd_imp\<close>} shape both refinement locales fix.\<close>
-definition arr_upd :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> unit Heap" where
-  "arr_upd a i x = do { _ \<leftarrow> Array.upd i x a; return () }"
 
 section \<open>Heap instances for the datatypes stored in arrays\<close>
 
-text \<open>The state / edge-tag / potential-tag datatypes are held in mutable arrays, so they must be
-      @{class heap} (i.e. @{class countable} and @{class typerep}).  They are finite enumerations, so
-      the instances are immediate.\<close>
+text \<open>The potential tags are held in mutable arrays, so they must be @{class heap} (i.e.
+      @{class countable} and @{class typerep}); the vertex states and the edge tags are made instances
+      in the refinement theories of the acyclifier and of the loop.\<close>
 
-instance vertex_state :: countable by countable_datatype
-instance vertex_state :: heap ..
-instance edge_tag :: countable by countable_datatype
-instance edge_tag :: heap ..
+
 instance mtag :: countable by countable_datatype
 instance mtag :: heap ..
 
@@ -183,10 +130,10 @@ global_interpretation acyc: acyclic_flow_impl_refine
     and out_move_imp = csr_move_imp and out_reset_imp = csr_reset_imp
     and in_current_imp = csr_current_imp and in_has_imp = csr_has_imp
     and in_move_imp = csr_move_imp and in_reset_imp = csr_reset_imp
-    and flow_upd_imp = arr_upd and flow_lookup_imp = Array.nth
-    and st_upd_imp = arr_upd and st_lookup_imp = Array.nth
-    and current_vertex_imp = vtx_current_imp and has_vertex_imp = vtx_has_imp
-    and move_on_vertex_imp = vtx_move_imp
+    and flow_upd_imp = array_fun_upd_imp and flow_lookup_imp = Array.nth
+    and st_upd_imp = array_fun_upd_imp and st_lookup_imp = Array.nth
+    and current_vertex_imp = lc_current_imp and has_vertex_imp = lc_has_imp
+    and move_on_vertex_imp = lc_move_imp
     and cap_imp  = "\<lambda>e. Array.nth cap_arr  e" and cost_imp = "\<lambda>e. Array.nth cost_arr e"
     and fst_exec_imp = "\<lambda>e. Array.nth fst_arr e" and snd_exec_imp = "\<lambda>e. Array.nth snd_arr e"
   for cap_arr cost_arr fst_arr snd_arr
@@ -445,7 +392,7 @@ partial_function (heap) scan_cache_imp ::
          then scan_cache_imp m fst_arr snd_arr cost_arr es pt sarr (Suc i) len
                 (initial_basis_code_spec.better best (e, u, g))
          else do { lst \<leftarrow> Array.nth sarr (len - 1);
-                   _ \<leftarrow> arr_upd sarr i lst;
+                   _ \<leftarrow> array_fun_upd_imp sarr i lst;
                    scan_cache_imp m fst_arr snd_arr cost_arr es pt sarr i (len - 1) best }) })"
 
 text \<open>Major iteration (the functional \<open>scan\<close>): the wrap-around block sweep from the bookmark
@@ -463,7 +410,7 @@ partial_function (heap) scan_imp ::
       else if bpos = 0 \<and> min_c \<le> len then return (cur, len, best)
       else do {
         (elig, u, g) \<leftarrow> evaluate_imp m fst_arr snd_arr cost_arr es pt cur;
-        _ \<leftarrow> (if elig then arr_upd sarr len cur else return ());
+        _ \<leftarrow> (if elig then array_fun_upd_imp sarr len cur else return ());
         (let bpos1 = (if bpos = 0 then block_size else bpos);
              len1  = (if elig then Suc len else len);
              best1 = (if elig then initial_basis_code_spec.better best (cur, u, g) else best);
@@ -497,7 +444,7 @@ definition ns_sel_select_imp ::
 
 subsection \<open>The @{command global_interpretation}\<close>
 
-text \<open>The store reads are @{const Array.nth}, the store writes @{const arr_upd}; the two path buffers
+text \<open>The store reads are @{const Array.nth}, the store writes @{const array_fun_upd_imp}; the two path buffers
       are plain @{typ \<open>nat array\<close>}s.  The selector, the three tree operations and the endpoint /
       capacity reads are the concrete functions above.  The graph arrays and the selector's tuning
       constants become parameters via \<open>for\<close>; @{term ns_loop_prog} is the resulting executable loop.\<close>
@@ -509,10 +456,10 @@ global_interpretation ns: network_simplex_impl_spec
     and shift_pot_imp = ns_shift_pot_imp
     and get_path_pair_imp = ns_get_path_pair_imp
     and swap_edge_imp = ns_swap_edge_imp
-    and flow_upd_imp = arr_upd and flow_lookup_imp = Array.nth
-    and parent_upd_imp = arr_upd and parent_lookup_imp = Array.nth
-    and dir_upd_imp = arr_upd and dir_lookup_imp = Array.nth
-    and es_upd_imp = arr_upd and es_lookup_imp = Array.nth
+    and flow_upd_imp = array_fun_upd_imp and flow_lookup_imp = Array.nth
+    and parent_upd_imp = array_fun_upd_imp and parent_lookup_imp = Array.nth
+    and dir_upd_imp = array_fun_upd_imp and dir_lookup_imp = Array.nth
+    and es_upd_imp = array_fun_upd_imp and es_lookup_imp = Array.nth
     and cap_imp = "Array.nth cap_arr"
     and fst_exec_imp = "Array.nth fst_arr"
     and snd_exec_imp = "Array.nth snd_arr"
@@ -551,9 +498,9 @@ partial_function (heap) passA_imp ::
         f \<leftarrow> Array.nth fl e; u \<leftarrow> Array.nth cap_arr e;
         (let st = (if f = 0 then InL else if u \<noteq> - 1 \<and> f = u then InU else InTree)
          in do {
-           _ \<leftarrow> arr_upd es_arr e st;
-           ey \<leftarrow> Array.nth exc_arr y; _ \<leftarrow> arr_upd exc_arr y (ey + f);
-           ex \<leftarrow> Array.nth exc_arr x; _ \<leftarrow> arr_upd exc_arr x (ex - f);
+           _ \<leftarrow> array_fun_upd_imp es_arr e st;
+           ey \<leftarrow> Array.nth exc_arr y; _ \<leftarrow> array_fun_upd_imp exc_arr y (ey + f);
+           ex \<leftarrow> Array.nth exc_arr x; _ \<leftarrow> array_fun_upd_imp exc_arr x (ex - f);
            _ \<leftarrow> (if st = InTree
                 then do { _ \<leftarrow> csr_append_imp oe_arr oh_arr x e; csr_append_imp ie_arr ih_arr y e }
                 else return ());
@@ -568,7 +515,7 @@ partial_function (heap) imbalance_imp ::
   "imbalance_imp exc_arr b_arr v vcount =
      (if vcount \<le> v then return ()
       else do { e \<leftarrow> Array.nth exc_arr v; bb \<leftarrow> Array.nth b_arr v;
-                _ \<leftarrow> arr_upd exc_arr v (e + bb);
+                _ \<leftarrow> array_fun_upd_imp exc_arr v (e + bb);
                 imbalance_imp exc_arr b_arr (Suc v) vcount })"
 
 subsection \<open>The imperative builder state\<close>
@@ -618,15 +565,15 @@ definition tree_link_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> mtag \<times> 'n \<Rightarrow> unit Heap" where
   "tree_link_imp st w p e d pw =
      do {
-       _ \<leftarrow> arr_upd (di_seen st) w True;
-       _ \<leftarrow> arr_upd (prnt_impl (di_tree st)) w p;
-       _ \<leftarrow> arr_upd (di_par st) w e;
-       _ \<leftarrow> arr_upd (di_dir st) w d;
-       _ \<leftarrow> arr_upd (di_pot st) w pw;
+       _ \<leftarrow> array_fun_upd_imp (di_seen st) w True;
+       _ \<leftarrow> array_fun_upd_imp (prnt_impl (di_tree st)) w p;
+       _ \<leftarrow> array_fun_upd_imp (di_par st) w e;
+       _ \<leftarrow> array_fun_upd_imp (di_dir st) w d;
+       _ \<leftarrow> array_fun_upd_imp (di_pot st) w pw;
        pv \<leftarrow> Ref.lookup (di_prev st);
-       _ \<leftarrow> arr_upd (thrd_impl (di_tree st)) pv w;
-       _ \<leftarrow> arr_upd (rvth_impl (di_tree st)) w pv;
-       _ \<leftarrow> arr_upd (snum_impl (di_tree st)) w 1;
+       _ \<leftarrow> array_fun_upd_imp (thrd_impl (di_tree st)) pv w;
+       _ \<leftarrow> array_fun_upd_imp (rvth_impl (di_tree st)) w pv;
+       _ \<leftarrow> array_fun_upd_imp (snum_impl (di_tree st)) w 1;
        Ref.update (di_prev st) w }"
 
 text \<open>The functional @{term dfs_discover}: finalise the fresh child @{term w} reached from @{term v}
@@ -641,7 +588,7 @@ definition dfs_discover_imp :: "'n::{heap,linordered_idom} dfs_imp \<Rightarrow>
        potv \<leftarrow> Array.nth (di_pot st) v;
        _ \<leftarrow> tree_link_imp st w v e (fe = w) (pval_plus potv (M_0, if v = fe then ce else - ce));
        sp \<leftarrow> Ref.lookup (di_sp st);
-       _ \<leftarrow> arr_upd (di_stk st) sp w;
+       _ \<leftarrow> array_fun_upd_imp (di_stk st) sp w;
        _ \<leftarrow> Ref.update (di_sp st) (Suc sp);
        _ \<leftarrow> csr_reset_imp (di_ob st, di_oe st, di_oc st) w;
        csr_reset_imp (di_ib st, di_ie st, di_ic st) w }"
@@ -653,10 +600,10 @@ definition dfs_finish_imp :: "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> n
   "dfs_finish_imp st v =
      do { p \<leftarrow> Array.nth (prnt_impl (di_tree st)) v;
           pv \<leftarrow> Ref.lookup (di_prev st);
-          _ \<leftarrow> arr_upd (lsuc_impl (di_tree st)) v pv;
+          _ \<leftarrow> array_fun_upd_imp (lsuc_impl (di_tree st)) v pv;
           snp \<leftarrow> Array.nth (snum_impl (di_tree st)) p;
           snv \<leftarrow> Array.nth (snum_impl (di_tree st)) v;
-          _ \<leftarrow> arr_upd (snum_impl (di_tree st)) p (snp + snv);
+          _ \<leftarrow> array_fun_upd_imp (snum_impl (di_tree st)) p (snp + snv);
           sp \<leftarrow> Ref.lookup (di_sp st);
           Ref.update (di_sp st) (sp - 1) }"
 
@@ -697,11 +644,11 @@ definition art_edge_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n \<Rightarrow> edge_tag \<Rightarrow> unit Heap" where
   "art_edge_imp st aidx x y u f tag =
      do {
-       _ \<leftarrow> arr_upd (di_fst st) aidx x;
-       _ \<leftarrow> arr_upd (di_snd st) aidx y;
-       _ \<leftarrow> arr_upd (di_cap st) aidx u;
-       _ \<leftarrow> arr_upd (di_flow st) aidx f;
-       arr_upd (di_es st) aidx tag }"
+       _ \<leftarrow> array_fun_upd_imp (di_fst st) aidx x;
+       _ \<leftarrow> array_fun_upd_imp (di_snd st) aidx y;
+       _ \<leftarrow> array_fun_upd_imp (di_cap st) aidx u;
+       _ \<leftarrow> array_fun_upd_imp (di_flow st) aidx f;
+       array_fun_upd_imp (di_es st) aidx tag }"
 
 text \<open>The functional @{term open_tree_component}: open an unseen imbalanced (Phase 1) or balanced
       (Phase 2) vertex @{term c} as a child of the root.  Emit @{term c}'s \<^emph>\<open>tree\<close> artificial edge ---
@@ -723,7 +670,7 @@ definition open_tree_component_imp ::
                  (if up then af + 1 else af) af InTree;
           _ \<leftarrow> Ref.update (di_nxt st) (Suc nxt);
           _ \<leftarrow> tree_link_imp st c vcount aidx up (if up then pval_negM else pval_M);
-          _ \<leftarrow> arr_upd (di_stk st) 0 c;
+          _ \<leftarrow> array_fun_upd_imp (di_stk st) 0 c;
           _ \<leftarrow> Ref.update (di_sp st) 1;
           _ \<leftarrow> csr_reset_imp (di_ob st, di_oe st, di_oc st) c;
           _ \<leftarrow> csr_reset_imp (di_ib st, di_ie st, di_ic st) c;
@@ -797,36 +744,36 @@ definition build_tree_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "build_tree_imp st imb_arr m vcount n =
      do {
-       _ \<leftarrow> arr_upd (snum_impl (di_tree st)) vcount 1;
+       _ \<leftarrow> array_fun_upd_imp (snum_impl (di_tree st)) vcount 1;
        _ \<leftarrow> Ref.update (di_prev st) vcount;
        _ \<leftarrow> Ref.update (di_nxt st) 0;
        _ \<leftarrow> Ref.update (di_sp st) 0;
        _ \<leftarrow> phase1_imp st imb_arr m vcount 1 n;
        _ \<leftarrow> phase2_imp st imb_arr m vcount 1 n;
        pv \<leftarrow> Ref.lookup (di_prev st);
-       arr_upd (lsuc_impl (di_tree st)) vcount pv }"
+       array_fun_upd_imp (lsuc_impl (di_tree st)) vcount pv }"
 
 section \<open>Generic array loops\<close>
 
 text \<open>Fill a prefix of an array with a constant (used to clear the seen array before reuse).\<close>
 partial_function (heap) arr_fill_imp :: "'a::heap array \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "arr_fill_imp a x v nn =
-     (if nn \<le> v then return () else do { _ \<leftarrow> arr_upd a v x; arr_fill_imp a x (Suc v) nn })"
+     (if nn \<le> v then return () else do { _ \<leftarrow> array_fun_upd_imp a v x; arr_fill_imp a x (Suc v) nn })"
 
 text \<open>Copy a prefix of one array into another (used to reset the cursor array to the block starts).\<close>
 partial_function (heap) arr_copy_imp :: "'a::heap array \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "arr_copy_imp src dst v nn =
      (if nn \<le> v then return ()
-      else do { x \<leftarrow> Array.nth src v; _ \<leftarrow> arr_upd dst v x; arr_copy_imp src dst (Suc v) nn })"
+      else do { x \<leftarrow> Array.nth src v; _ \<leftarrow> array_fun_upd_imp dst v x; arr_copy_imp src dst (Suc v) nn })"
 
 subsection \<open>Refinement rules for the generic array loops\<close>
 
 text \<open>A single in-place write refines a list update; @{const arr_fill_imp} and @{const arr_copy_imp}
       then refine the corresponding range operations on the abstract list.\<close>
 
-lemma arr_upd_rule [sep_heap_rules]:
-  "i < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs> arr_upd a i x <\<lambda>_. a \<mapsto>\<^sub>a list_update xs i x>"
-  unfolding arr_upd_def by sep_auto
+lemma array_fun_upd_imp_list_rule [sep_heap_rules]:
+  "i < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs> array_fun_upd_imp a i x <\<lambda>_. a \<mapsto>\<^sub>a list_update xs i x>"
+  unfolding array_fun_upd_imp_def by sep_auto
 
 lemma arr_fill_imp_rule:
   "v \<le> nn \<Longrightarrow> nn \<le> length xs \<Longrightarrow>
@@ -910,7 +857,7 @@ partial_function (heap) fill_edged_imp ::
      (if n < v then return ()
       else do { eo \<leftarrow> csr_empty_imp ob v; ei \<leftarrow> csr_empty_imp ib v;
                 (if eo \<and> ei then fill_edged_imp vl ob ib (Suc v) n j
-                 else do { _ \<leftarrow> arr_upd vl j v; fill_edged_imp vl ob ib (Suc v) n (Suc j) }) })"
+                 else do { _ \<leftarrow> array_fun_upd_imp vl j v; fill_edged_imp vl ob ib (Suc v) n (Suc j) }) })"
 
 section \<open>The orchestrator\<close>
 
@@ -1074,17 +1021,8 @@ definition flow_assn_m :: "'n list \<Rightarrow> 'n array \<Rightarrow> assn" wh
 definition state_assn_v :: "vertex_state list \<Rightarrow> vertex_state array \<Rightarrow> assn" where
   "state_assn_v st ha = (\<exists>\<^sub>A r. ha \<mapsto>\<^sub>a (st @ r) * \<up>(length r = Suc 0))"
 
-lemma vtx_rem_pos:
-  assumes "vtx_remaining Vit \<noteq> {}"
-  shows "vi_pos Vit < length (vi_list Vit)"
-proof -
-  have "drop (vi_pos Vit) (vi_list Vit) \<noteq> []"
-    using assms by (auto simp: vtx_remaining_def)
-  thus ?thesis by (metis drop_eq_Nil not_le)
-qed
-
-text \<open>The per-operation Hoare triples of the stores and of the vertex iterator, for the concrete
-      arrays; the edge iterators are discharged by the library rules.\<close>
+text \<open>The per-operation Hoare triples of the stores, for the concrete arrays; the edge iterators
+      and the vertex iterator are discharged by the library rules.\<close>
 
 lemma flow_lookup_rule_c:
   "\<lbrakk>length Fl = m; e \<in> {0..<m}\<rbrakk> \<Longrightarrow>
@@ -1093,8 +1031,8 @@ lemma flow_lookup_rule_c:
 
 lemma flow_upd_rule_c:
   "\<lbrakk>length Fl = m; e \<in> {0..<m}\<rbrakk> \<Longrightarrow>
-   <flow_assn_m Fl fh> arr_upd fh e w <\<lambda>_. flow_assn_m (Fl[e := w]) fh>"
-  unfolding flow_assn_m_def arr_upd_def by (sep_auto simp: list_update_append)
+   <flow_assn_m Fl fh> array_fun_upd_imp fh e w <\<lambda>_. flow_assn_m (Fl[e := w]) fh>"
+  unfolding flow_assn_m_def array_fun_upd_imp_def by (sep_auto simp: list_update_append)
 
 lemma state_lookup_rule_c:
   "\<lbrakk>\<forall>v\<in>original_network.\<V>. v < length St; v \<in> original_network.\<V>\<rbrakk> \<Longrightarrow>
@@ -1103,21 +1041,9 @@ lemma state_lookup_rule_c:
 
 lemma state_upd_rule_c:
   "\<lbrakk>\<forall>v\<in>original_network.\<V>. v < length St; v \<in> original_network.\<V>\<rbrakk> \<Longrightarrow>
-   <state_assn_v St sh> arr_upd sh v q <\<lambda>_. state_assn_v (St[v := q]) sh>"
-  unfolding state_assn_v_def arr_upd_def by (sep_auto simp: list_update_append)
+   <state_assn_v St sh> array_fun_upd_imp sh v q <\<lambda>_. state_assn_v (St[v := q]) sh>"
+  unfolding state_assn_v_def array_fun_upd_imp_def by (sep_auto simp: list_update_append)
 
-lemma vtx_has_rule_c:
-  "vtx_invar Vit \<Longrightarrow> <vtx_assn Vit vh> vtx_has_imp vh <\<lambda>r. vtx_assn Vit vh * \<up>(r = vtx_has Vit)>"
-  by (sep_auto heap: vtx_has_imp_rule)
-
-lemma vtx_move_rule_c:
-  "\<lbrakk>vtx_invar Vit; vtx_remaining Vit \<noteq> {}\<rbrakk> \<Longrightarrow> <vtx_assn Vit vh> vtx_move_imp vh <\<lambda>_. vtx_assn (vtx_move Vit) vh>"
-  by (sep_auto heap: vtx_move_imp_rule)
-
-lemma vtx_current_rule_c:
-  assumes "vtx_invar Vit" "vtx_remaining Vit \<noteq> {}"
-  shows "<vtx_assn Vit vh> vtx_current_imp vh <\<lambda>r. vtx_assn Vit vh * \<up>(r = vtx_current Vit)>"
-  using vtx_rem_pos[OF assms(2)] by (sep_auto heap: vtx_current_imp_rule)
 
 text \<open>\<^emph>\<open>Layer (c) target.\<close>  Interpreting the acyclifier refinement proof locale at the concrete
       operations turns @{thm [source] acyclic_flow_impl_refine_proof.make_acyclic_imp_rule} into a
@@ -1128,7 +1054,7 @@ lemma make_acyclic_prog_rule:
   fixes cap_arr cost_arr :: "'n array" and fst_arr snd_arr :: "nat array"
     and fh :: "'n array" and sh :: "vertex_state array"
     and oh ih :: "nat array \<times> nat array \<times> nat array"
-    and vih :: "nat vtx_imp" and vst est :: "nat array" and dst :: "bool array"
+    and vih :: "nat list_cursor_imp" and vst est :: "nat array" and dst :: "bool array"
     and cl co :: "'n list" and fla sla :: "nat list" and f0 :: "'n list"
     and vs0 es0 :: "nat list" and ds0 :: "bool list"
   assumes cl_len: "m \<le> length cl" and cl_eq: "\<And>e. e < m \<Longrightarrow> cl ! e = capacity_list ! e"
@@ -1141,7 +1067,7 @@ lemma make_acyclic_prog_rule:
       and cds: "card original_network.\<V> \<le> length ds0"
   shows "<flow_assn_m f0 fh * state_assn_v (replicate vcount Unseen) sh *
           outI.graph.csr_assn ((!) out.inp.B_spec) oh * incI.graph.csr_assn ((!) inc.inp.B_spec) ih *
-          vtx_assn \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> vih *
+          lc_assn \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> vih *
           (cap_arr \<mapsto>\<^sub>a cl * cost_arr \<mapsto>\<^sub>a co * fst_arr \<mapsto>\<^sub>a fla * snd_arr \<mapsto>\<^sub>a sla) *
           vst \<mapsto>\<^sub>a vs0 * est \<mapsto>\<^sub>a es0 * dst \<mapsto>\<^sub>a ds0>
          make_acyclic_prog cap_arr cost_arr fst_arr snd_arr fh sh oh ih vih vst est dst
@@ -1187,11 +1113,11 @@ proof -
       and in_move = inc.graph.csr_move and in_reset = inc.graph.csr_reset
       and flow_invar = "\<lambda>xs. length xs = m" and flow_upd = list_update and flow_lookup = nth
       and st_invar = "\<lambda>xs. \<forall>v\<in>original_network.\<V>. v < length xs" and st_upd = list_update and st_lookup = nth
-      and vit_invar = vtx_invar and vit_abstract = vtx_abstract and current_vertex = vtx_current
-      and has_vertex = vtx_has and vit_iterated = vtx_iterated and vit_remaining = vtx_remaining
-      and move_on_vertex = vtx_move
+      and vit_invar = lc_invar and vit_abstract = lc_abstract and current_vertex = lc_current
+      and has_vertex = lc_has and vit_iterated = lc_iterated and vit_remaining = lc_remaining
+      and move_on_vertex = lc_move
       and out_arr = "(!) out.inp.B_spec" and in_arr = "(!) inc.inp.B_spec"
-      and all_vertices = "\<lparr> vi_list = edged_vs_list, vi_pos = 0 \<rparr>"
+      and all_vertices = "\<lparr> lc_list = edged_vs_list, lc_pos = 0 \<rparr>"
       and cap = "\<lambda>e. capacity_list ! e" and cost = "\<lambda>e. cost_list ! e" and h = "h :: 'n \<Rightarrow> real"
       and state_init = "replicate vcount Unseen"
       and fst_exec = "\<lambda>e. fst_list ! e" and snd_exec = "\<lambda>e. snd_list ! e"
@@ -1199,44 +1125,37 @@ proof -
       and out_move_imp = csr_move_imp and out_reset_imp = csr_reset_imp
       and in_current_imp = csr_current_imp and in_has_imp = csr_has_imp
       and in_move_imp = csr_move_imp and in_reset_imp = csr_reset_imp
-      and flow_upd_imp = arr_upd and flow_lookup_imp = Array.nth
-      and st_upd_imp = arr_upd and st_lookup_imp = Array.nth
-      and current_vertex_imp = vtx_current_imp and has_vertex_imp = vtx_has_imp
-      and move_on_vertex_imp = vtx_move_imp
+      and flow_upd_imp = array_fun_upd_imp and flow_lookup_imp = Array.nth
+      and st_upd_imp = array_fun_upd_imp and st_lookup_imp = Array.nth
+      and current_vertex_imp = lc_current_imp and has_vertex_imp = lc_has_imp
+      and move_on_vertex_imp = lc_move_imp
       and cap_imp = "\<lambda>e. Array.nth cap_arr e" and cost_imp = "\<lambda>e. Array.nth cost_arr e"
       and fst_exec_imp = "\<lambda>e. Array.nth fst_arr e" and snd_exec_imp = "\<lambda>e. Array.nth snd_arr e"
       and flow_assn = flow_assn_m and state_assn = state_assn_v
-      and out_assn = outI.graph.csr_assn and in_assn = incI.graph.csr_assn and vit_assn = vtx_assn
+      and out_assn = outI.graph.csr_assn and in_assn = incI.graph.csr_assn and vit_assn = lc_assn
       and rd = "cap_arr \<mapsto>\<^sub>a cl * cost_arr \<mapsto>\<^sub>a co * fst_arr \<mapsto>\<^sub>a fla * snd_arr \<mapsto>\<^sub>a sla"
       and Lvst = "length vs0" and Lest = "length es0" and Ldst = "length ds0"
     apply intro_locales
-    apply (rule indexed_iterable_set_imp_axioms.intro)
-    apply (rule outI.graph.csr_imp.idx_current_rule; simp add: verts_V)
-    apply (rule outI.graph.csr_imp.idx_has_rule; simp add: verts_V)
-    apply (rule outI.graph.csr_imp.idx_move_rule; simp add: verts_V)
-    apply (rule outI.graph.csr_imp.idx_reset_rule; simp add: verts_V)
-    apply (rule indexed_iterable_set_imp_axioms.intro)
-    apply (rule incI.graph.csr_imp.idx_current_rule; simp add: verts_V)
-    apply (rule incI.graph.csr_imp.idx_has_rule; simp add: verts_V)
-    apply (rule incI.graph.csr_imp.idx_move_rule; simp add: verts_V)
-    apply (rule incI.graph.csr_imp.idx_reset_rule; simp add: verts_V)
+    apply (insert indexed_iterable_set_imp.axioms(2)[OF outI.graph.csr_imp.indexed_iterable_set_imp_axioms], simp add: verts_V)
+    apply (insert indexed_iterable_set_imp.axioms(2)[OF incI.graph.csr_imp.indexed_iterable_set_imp_axioms], simp add: verts_V)
+    apply (rule fixed_univ_map_basic_imp.intro; unfold id_apply; rule flow_lookup_rule_c; assumption)
+    apply (rule fixed_univ_map_imp_axioms.intro; unfold id_apply; rule flow_upd_rule_c; assumption)
+    apply (rule fixed_univ_map_basic_imp.intro; unfold id_apply; rule state_lookup_rule_c; assumption)
+    apply (rule fixed_univ_map_imp_axioms.intro; unfold id_apply; rule state_upd_rule_c; assumption)
     apply (rule acyclic_flow_impl_refine_proof_axioms.intro)
-    apply (rule flow_lookup_rule_c; assumption)
-    apply (rule flow_upd_rule_c; assumption)
-    apply (rule state_lookup_rule_c; assumption)
-    apply (rule state_upd_rule_c; assumption)
-    apply (rule vtx_has_rule_c; assumption)
-    apply (rule vtx_current_rule_c; assumption)
-    apply (rule vtx_move_rule_c; assumption)
+
+    apply (rule lc.has_current_rule; assumption)
+    apply (rule lc.current_element_rule; assumption)
+    apply (rule lc.move_on_rule; assumption)
     apply (rule capr; assumption)
     apply (rule costr; assumption)
     apply (rule fstr; assumption)
     apply (rule sndr; assumption)
     done
-  have vv: "vtx_invar \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr>"
-    by (simp add: vtx_invar_def distinct_edged_vs_list)
-  have vab: "vtx_abstract \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> \<subseteq> original_network.\<V>"
-    by (simp add: vtx_abstract_def V_orig_eq_edged)
+  have vv: "lc_invar \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr>"
+    by (simp add: lc_invar_def distinct_edged_vs_list)
+  have vab: "lc_abstract \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> \<subseteq> original_network.\<V>"
+    by (simp add: lc_abstract_def V_orig_eq_edged)
   show ?thesis
     unfolding make_acyclic_prog_def
     by (rule ht_cons_post_prec[OF acycR.make_acyclic_imp_rule[OF multigraph_inv_csr ff feas vv vab cvs ces cds refl refl refl]])
@@ -1972,7 +1891,7 @@ lemma open_tree_component_imp_cps:
         di_cap st \<mapsto>\<^sub>a ((list_update cp (m + nx) ((if u then a + 1 else a)))) *
         di_flow st \<mapsto>\<^sub>a ((list_update fw (m + nx) (a))) *
         di_es st \<mapsto>\<^sub>a ((list_update es (m + nx) (InTree))) *
-        di_nxt st \<mapsto>\<^sub>r (Suc nx) *
+        di_nxt st \<mapsto>\<^sub>r (Suc nx) * 
         di_seen st \<mapsto>\<^sub>a ((list_update se (c) (True))) *
         prnt_impl (di_tree st) \<mapsto>\<^sub>a ((list_update pr (c) (vcount))) *
         di_par st \<mapsto>\<^sub>a ((list_update pa (c) (m + nx))) *
@@ -2391,7 +2310,7 @@ text \<open>Seeding the root: the four initial writes take the freshly allocated
 lemma build_tree_seed_cps:
   assumes K: "<dfs_rel fl0 es0 st dfs_init * Fr> K <Q>"
   shows "<dfs_rel fl0 es0 st (dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>) * Fr>
-         do { _ \<leftarrow> arr_upd (snum_impl (di_tree st)) vcount 1;
+         do { _ \<leftarrow> array_fun_upd_imp (snum_impl (di_tree st)) vcount 1;
               _ \<leftarrow> Ref.update (di_prev st) vcount;
               _ \<leftarrow> Ref.update (di_nxt st) 0;
               _ \<leftarrow> Ref.update (di_sp st) 0;
@@ -2399,7 +2318,7 @@ lemma build_tree_seed_cps:
          <Q>"
 proof -
   have "<dfs_rel fl0 es0 st (dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>)>
-         do { _ \<leftarrow> arr_upd (snum_impl (di_tree st)) vcount 1;
+         do { _ \<leftarrow> array_fun_upd_imp (snum_impl (di_tree st)) vcount 1;
               _ \<leftarrow> Ref.update (di_prev st) vcount;
               _ \<leftarrow> Ref.update (di_nxt st) 0;
               Ref.update (di_sp st) 0 }
@@ -2413,7 +2332,7 @@ text \<open>The root finalisation: its last successor is the last vertex emitted
 
 lemma dfs_rel_root_lsuc:
   assumes "length (ds_lsuc s) = Suc vcount"
-  shows "<dfs_rel fl0 es0 st s> do { pv \<leftarrow> Ref.lookup (di_prev st); arr_upd (lsuc_impl (di_tree st)) vcount pv }
+  shows "<dfs_rel fl0 es0 st s> do { pv \<leftarrow> Ref.lookup (di_prev st); array_fun_upd_imp (lsuc_impl (di_tree st)) vcount pv }
          <\<lambda>_. dfs_rel fl0 es0 st (s\<lparr>ds_lsuc := (ds_lsuc s)[vcount := ds_prev s]\<rparr>)>"
   unfolding dfs_rel_def using assms by sep_auto
 
@@ -3136,10 +3055,10 @@ proof -
         and rcost_abstract = "pval_abstract bigM"
         and fst_exec = "\<lambda> e. fst_all ! e"
         and snd_exec = "\<lambda> e. snd_all ! e"
-        and flow_lookup_imp = Array.nth and flow_upd_imp = arr_upd
-        and parent_lookup_imp = Array.nth and parent_upd_imp = arr_upd
-        and dir_lookup_imp = Array.nth and dir_upd_imp = arr_upd
-        and es_lookup_imp = Array.nth and es_upd_imp = arr_upd
+        and flow_lookup_imp = Array.nth and flow_upd_imp = array_fun_upd_imp
+        and parent_lookup_imp = Array.nth and parent_upd_imp = array_fun_upd_imp
+        and dir_lookup_imp = Array.nth and dir_upd_imp = array_fun_upd_imp
+        and es_lookup_imp = Array.nth and es_upd_imp = array_fun_upd_imp
         and sel_select_imp = "ns_sel_select_imp m marc block_size min_candidates max_candidates fst_arr snd_arr cost_arr"
         and shift_pot_imp = ns_shift_pot_imp and get_path_pair_imp = ns_get_path_pair_imp and swap_edge_imp = ns_swap_edge_imp
         and cap_imp = "Array.nth cap_arr" and fst_exec_imp = "Array.nth fst_arr" and snd_exec_imp = "Array.nth snd_arr"
@@ -3147,7 +3066,8 @@ proof -
         and parent_assn = parent_assn_ns and dir_assn = dir_assn_ns and es_assn = es_assn_ns and sel_assn = sel_assn_ns
         and rd = "cap_arr \<mapsto>\<^sub>a capl * cost_arr \<mapsto>\<^sub>a cost_list * fst_arr \<mapsto>\<^sub>a fstl * snd_arr \<mapsto>\<^sub>a sndl"
     apply intro_locales
-    apply (rule network_simplex_impl_refine_axioms.intro)
+    apply (all \<open>(rule fixed_univ_map_basic_imp.intro fixed_univ_map_imp_axioms.intro
+                       network_simplex_impl_refine_axioms.intro)?\<close>)
     apply (unfold NSg_verts_Varb flow_assn_ns_def es_assn_ns_def parent_assn_ns_def dir_assn_ns_def pot_assn_ns_def)
     apply (sep_auto heap: ns_shift_pot_imp_rule ns_get_path_pair_imp_rule ns_swap_edge_imp_rule)
     defer 1
@@ -4663,11 +4583,11 @@ proof -
     \<Longrightarrow>\<^sub>A
     flow_assn_m flow_list fh * state_assn_v (replicate vcount Unseen) sh *
     outI.graph.csr_assn ((!) out.inp.B_spec) Oi * incI.graph.csr_assn ((!) inc.inp.B_spec) Ii *
-    vtx_assn \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> (vl, pr) *
+    lc_assn \<lparr>lc_list = edged_vs_list, lc_pos = 0\<rparr> (vl, pr) *
     (cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * cost_arr \<mapsto>\<^sub>a cost_list *
      fst_arr \<mapsto>\<^sub>a (fst_list @ replicate n 0) * snd_arr \<mapsto>\<^sub>a (snd_list @ replicate n 0)) *
     vst \<mapsto>\<^sub>a (0 # replicate vcount 0) * est \<mapsto>\<^sub>a (0 # replicate vcount 0) * dst \<mapsto>\<^sub>a (False # replicate vcount False)"
-    unfolding flow_assn_m_def state_assn_v_def vtx_assn_def
+    unfolding flow_assn_m_def state_assn_v_def lc_assn_def
     apply (simp only: ex_assn_move_out)
     apply (rule ent_ex_postI[where x = "[Unseen]"])
     apply (rule ent_ex_postI[where x = "replicate n 0"])

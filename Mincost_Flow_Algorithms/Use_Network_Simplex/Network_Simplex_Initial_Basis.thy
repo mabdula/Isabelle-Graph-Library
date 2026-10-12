@@ -232,12 +232,12 @@ sublocale acyclic_flow_impl
     and in_move = inc.graph.csr_move and in_reset = inc.graph.csr_reset
     and flow_invar = "\<lambda>xs. length xs = m" and flow_upd = list_update and flow_lookup = nth
     and st_invar = "\<lambda>xs. \<forall>v\<in>original_network.\<V>. v < length xs" and st_upd = list_update and st_lookup = nth
-    and vit_invar = vtx_invar and vit_abstract = vtx_abstract and current_vertex = vtx_current
-    and has_vertex = vtx_has and vit_iterated = vtx_iterated and vit_remaining = vtx_remaining
-    and move_on_vertex = vtx_move
+    and vit_invar = lc_invar and vit_abstract = lc_abstract and current_vertex = lc_current
+    and has_vertex = lc_has and vit_iterated = lc_iterated and vit_remaining = lc_remaining
+    and move_on_vertex = lc_move
     and out_arr = "(!) out.inp.B_spec"
     and in_arr = "(!) inc.inp.B_spec"
-    and all_vertices = "\<lparr> vi_list = edged_vs_list, vi_pos = 0 \<rparr>"
+    and all_vertices = "\<lparr> lc_list = edged_vs_list, lc_pos = 0 \<rparr>"
     and cap = "\<lambda> e.  capacity_list ! e "
     and cost = "\<lambda> e. cost_list ! e"
     and h = "h :: 'n \<Rightarrow> real"
@@ -245,7 +245,7 @@ sublocale acyclic_flow_impl
     and fst_exec = "\<lambda> e. fst_list ! e"
     and snd_exec = "\<lambda> e. snd_list ! e"
   apply (rule acyclic_flow_impl.intro)
-  apply (all \<open>(rule list_fixed_univ_map list_fixed_univ_map_len vtx_iterable_set)?\<close>)
+  apply (all \<open>(rule list_fixed_univ_map list_fixed_univ_map_len lc.iterable_set_axioms)?\<close>)
   apply (all \<open>(unfold bidirectional_iterator_def outgoing_edge_iterator_def ingoing_edge_iterator_def,
                  intro conjI)?\<close>)
   apply (all \<open>(subst verts_V[symmetric], rule out.graph.csr.indexed_iterable_set_axioms

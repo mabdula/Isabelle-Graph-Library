@@ -67,7 +67,7 @@ subsection \<open>The Programs\<close>
 
 global_interpretation cert_arr: matching_cert_imp_code
   arr_memb arr_fst arr_snd arr_w arr_it_init arr_it_has_next arr_it_next
-  Array.len Array.nth Array.len Array.nth Array.len Array.nth xset_isin_imp xset_insert_imp
+  Array.len Array.nth Array.len Array.nth Array.len Array.nth bool_array_set_isin_imp bool_array_set_insert_imp
   defines cert_arr_feas_loop = cert_arr.feas_loop
     and cert_arr_match_loop = cert_arr.match_loop
     and cert_arr_vert_loop = cert_arr.vert_loop
@@ -158,10 +158,10 @@ sublocale cert: matching_cert_imp "{0..<length fs}" "[0..<length fs]" "(!) fs" "
   arr_it_init arr_it_has_next arr_it_next
   "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth
   "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth
-  "{..<n}" "\<lambda>X. X \<subseteq> {..<n}" id "{}" insert "\<lambda>x X. X - {x}" "\<lambda>X x. x \<in> X" "xset_assn n"
-  "Array.new n False" xset_insert_imp xset_delete_imp xset_isin_imp
+  "{..<n}" "\<lambda>X. X \<subseteq> {..<n}" id "{}" insert "\<lambda>x X. X - {x}" "\<lambda>X x. x \<in> X" "bool_array_set_assn n"
+  "Array.new n False" bool_array_set_insert_imp bool_array_set_delete_imp bool_array_set_isin_imp
   by (rule matching_cert_imp.intro[OF cert_mc arr_edge_set array_rlist array_rlist array_rlist
-             xset_fixed_univ_set_imp])
+             bool_array_set_fixed_univ_set_imp])
      (unfold_locales; simp add: arr_elst_def)
 
 lemma G_eq: "cert.G = G"

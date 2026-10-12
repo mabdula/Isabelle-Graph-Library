@@ -147,13 +147,13 @@ qed
 text \<open>The generic algorithm on the allocated handles.\<close>
 
 theorem whandles_correct:
-  "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * xset_assn (length fs) {} Xi *
+  "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * bool_array_set_assn (length fs) {} Xi *
     cnt_assn nv fs {} C1 * cnt_assn nv ts {} C2 *
     blocks_assn (length fs) nv fs Fa * blocks_assn (length fs) nv ts Ta *
     warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa *
     len_assn (length fs) W1 * len_assn (length fs) W2>
      wmx_wmi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta) Wa W1 W2
-   <\<lambda> _. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * blocks_assn (length fs) nv fs Fa *
+   <\<lambda> _. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * blocks_assn (length fs) nv fs Fa *
               blocks_assn (length fs) nv ts Ta *
               warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa * true *
               \<up>(max_weight_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) edge_weight
@@ -169,7 +169,7 @@ subsubsection \<open>The Program\<close>
 
 theorem weighted_matching_imp_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws> weighted_matching_imp nv Fa Ta Wa
-   <\<lambda> Xi. \<exists>\<^sub>A X. xset_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * true *
+   <\<lambda> Xi. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * true *
               \<up>(max_weight_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) edge_weight
                                      ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
 proof-

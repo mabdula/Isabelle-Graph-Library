@@ -46,8 +46,8 @@ lemma len_intro: "length l = m \<Longrightarrow> a \<mapsto>\<^sub>a l \<Longrig
 lemma len_fill_rule: "<len_assn n a> fill_range_imp f n a <\<lambda> r. a \<mapsto>\<^sub>a map f [0..<n] * \<up>(r = a)>"
   unfolding len_assn_def by (rule ht_ex_pre) (sep_auto heap: fill_range_imp_rule)
 
-lemma clear_len: "<len_assn n Vi> xset_clear_imp n Vi <\<lambda> _. xset_assn n {} Vi>"
-  by (rule ht_cons_post[OF xset_clear_rule]) sep_auto
+lemma clear_len: "<len_assn n Vi> bool_array_set_clear_imp n Vi <\<lambda> _. bool_array_set_assn n {} Vi>"
+  by (rule ht_cons_post[OF bool_array_set_clear_rule]) sep_auto
 
 lemma fill_len: "<len_assn n a> fill_range_imp f n a <\<lambda> _. a \<mapsto>\<^sub>a map f [0..<n]>"
   by (rule ht_cons_post[OF len_fill_rule]) sep_auto
@@ -109,7 +109,7 @@ abbreviation "nbs_bfs Gh \<equiv> BFS_Imperative_spec.visited_dists_parents_imp 
   bfs_set_srcs_visited (BFS_subprocedures_lists_code.next_frontier_current_parents_imp bset_memb
   bset_ins nbs Gh) bfs_cf_is_empty bfs_set_dists"
 
-definition "xvis Vh U Ss a = xset_assn n Ss a * \<up>(Ss \<subseteq> U \<and> U \<subseteq> {..<n} \<and> a = Vh)"
+definition "xvis Vh U Ss a = bool_array_set_assn n Ss a * \<up>(Ss \<subseteq> U \<and> U \<subseteq> {..<n} \<and> a = Vh)"
 
 definition "gx G Gh = ga Gh * \<up>(G = build_nhlists E)"
 
@@ -118,11 +118,11 @@ lemma xvis_only: "xvis Vh U Ss a = xvis Vh U Ss a * \<up>(Ss \<subseteq> U)"
 
 lemma xvis_memb: 
   "<xvis Vh U Ss a * \<up>(v \<in> U)> bset_memb v a <\<lambda> r. xvis Vh U Ss a * \<up>(r \<longleftrightarrow> v \<in> Ss)>"
-  unfolding xvis_def xset_assn_def bset_memb_def by (sep_auto simp: subset_iff)
+  unfolding xvis_def bool_array_set_assn_def bset_memb_def by (sep_auto simp: subset_iff)
 
 lemma xvis_ins: 
   "<xvis Vh U Ss a * \<up>(v \<in> U \<and> v \<notin> Ss)> bset_ins v a <xvis Vh U (Set.insert v Ss)>"
-  unfolding xvis_def bset_ins_def by (sep_auto heap: xset_upd_rule simp: subset_iff)
+  unfolding xvis_def bset_ins_def by (sep_auto heap: bool_array_set_upd_rule simp: subset_iff)
 
 lemma gx_iterate:
   fixes acc_assn :: "nat list \<times> nat list \<times> (nat \<Rightarrow> nat) \<Rightarrow> nat array \<times> nat \<times> bool array \<Rightarrow> assn"
@@ -207,10 +207,10 @@ qed
 
 lemma bfs_rule:
   assumes "length fl = Suc n" "take (length ss) fl = ss" "length bl = Suc n"
-  shows "<xset_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] *
+  shows "<bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] *
           Pa \<mapsto>\<^sub>a map id [0..<n] * ga Gh>
            nbs_bfs Gh Vi (Fr, length ss, Bf) Da Pa
-         <\<lambda> _. ga Gh * xset_assn n (set (BFS_dist_state.visited fin)) Vi *
+         <\<lambda> _. ga Gh * bool_array_set_assn n (set (BFS_dist_state.visited fin)) Vi *
             inst.imp_dist_assn n Da (build_nhlists E) (BFS_dist_state.dists fin) Da *
             inst.imp_par_assn n Pa (build_nhlists E) (BFS_par_state.parent fin) Pa *
             len_assn (Suc n) Fr * len_assn (Suc n) Bf>"
@@ -223,14 +223,14 @@ proof-
           card_Vs by simp
   have ids: "\<forall>i \<in> BFS_subprocedures_lists.Vs ?G. i < length (map id [0..<n]) \<and> id i = map id [0..<n] ! i"
     using Vs_E by auto
-  have pre: "xset_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] *
+  have pre: "bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] *
              Pa \<mapsto>\<^sub>a map id [0..<n] * ga Gh
              \<Longrightarrow>\<^sub>A xvis Vi (BFS_subprocedures_lists.Vs ?G) (set []) Vi *
              inst.imp_src_assn (Suc n) Fr Bf ?G (rev ss) (Fr, length ss, Bf) *
              inst.imp_dist_assn n Da ?G id Da * inst.imp_par_assn n Pa ?G id Pa * gx ?G Gh"
     if "length bl = Suc n" for bl
   proof-
-    have v: "xset_assn n {} Vi \<Longrightarrow>\<^sub>A xvis Vi (BFS_subprocedures_lists.Vs ?G) (set []) Vi"
+    have v: "bool_array_set_assn n {} Vi \<Longrightarrow>\<^sub>A xvis Vi (BFS_subprocedures_lists.Vs ?G) (set []) Vi"
       unfolding xvis_def using Vs_E by sep_auto
     have g: "ga Gh \<Longrightarrow>\<^sub>A gx ?G Gh"
       unfolding gx_def by sep_auto
@@ -244,7 +244,7 @@ proof-
   have post: "gx ?G Gh * xvis Vi (BFS_subprocedures_lists.Vs ?G) (set V) visi *
               inst.imp_dist_assn n Da ?G d di * inst.imp_par_assn n Pa ?G p pari *
               (\<exists>\<^sub>A cf cfi. inst.imp_cf_assn (Suc n) Fr Bf ?G cf cfi)
-              \<Longrightarrow>\<^sub>A ga Gh * xset_assn n (set V) Vi * inst.imp_dist_assn n Da ?G d Da *
+              \<Longrightarrow>\<^sub>A ga Gh * bool_array_set_assn n (set V) Vi * inst.imp_dist_assn n Da ?G d Da *
               inst.imp_par_assn n Pa ?G p Pa * len_assn (Suc n) Fr * len_assn (Suc n) Bf"
     for V visi d di p pari
   proof-
@@ -304,34 +304,34 @@ lemma par_len: "inst.imp_par_assn n Pa (build_nhlists E) p pari \<Longrightarrow
   unfolding inst.imp_par_assn_char len_assn_def by sep_auto
 
 lemma work_ent:
-  "xset_assn n V Vi * inst.imp_dist_assn n Da (build_nhlists E) d di *
+  "bool_array_set_assn n V Vi * inst.imp_dist_assn n Da (build_nhlists E) d di *
    inst.imp_par_assn n Pa (build_nhlists E) p pari * len_assn (Suc n) Fr * len_assn (Suc n) Bf
    \<Longrightarrow>\<^sub>A work_assn n Vi Fr Bf Da Pa"
 proof-
   note d = dist_len and p = par_len
   show ?thesis
     unfolding work_assn_def
-    by (rule ent_trans[OF ent_star_mono[OF ent_star_mono[OF ent_star_mono[OF ent_star_mono[OF xset_len d] p]
+    by (rule ent_trans[OF ent_star_mono[OF ent_star_mono[OF ent_star_mono[OF ent_star_mono[OF bool_array_set_len d] p]
                                     ent_refl] ent_refl]])
        (simp only: star_aci, rule ent_refl)
 qed
 
 lemma bfs_len_rule:
   assumes "length fl = Suc n" "take (length ss) fl = ss"
-  shows "<len_assn (Suc n) Bf * (xset_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Da \<mapsto>\<^sub>a map id [0..<n] *
+  shows "<len_assn (Suc n) Bf * (bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Da \<mapsto>\<^sub>a map id [0..<n] *
           Pa \<mapsto>\<^sub>a map id [0..<n] * ga Gh)>
            nbs_bfs Gh Vi (Fr, length ss, Bf) Da Pa
-         <\<lambda> _. ga Gh * xset_assn n (set (BFS_dist_state.visited fin)) Vi *
+         <\<lambda> _. ga Gh * bool_array_set_assn n (set (BFS_dist_state.visited fin)) Vi *
             inst.imp_dist_assn n Da (build_nhlists E) (BFS_dist_state.dists fin) Da *
             inst.imp_par_assn n Pa (build_nhlists E) (BFS_par_state.parent fin) Pa *
             len_assn (Suc n) Fr * len_assn (Suc n) Bf>"
 proof(rule pull_len)
   fix bl :: "nat list"
   assume bl: "length bl = Suc n"
-  show "<Bf \<mapsto>\<^sub>a bl * (xset_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Da \<mapsto>\<^sub>a map id [0..<n] *
+  show "<Bf \<mapsto>\<^sub>a bl * (bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Da \<mapsto>\<^sub>a map id [0..<n] *
           Pa \<mapsto>\<^sub>a map id [0..<n] * ga Gh)>
            nbs_bfs Gh Vi (Fr, length ss, Bf) Da Pa
-         <\<lambda> _. ga Gh * xset_assn n (set (BFS_dist_state.visited fin)) Vi *
+         <\<lambda> _. ga Gh * bool_array_set_assn n (set (BFS_dist_state.visited fin)) Vi *
             inst.imp_dist_assn n Da (build_nhlists E) (BFS_dist_state.dists fin) Da *
             inst.imp_par_assn n Pa (build_nhlists E) (BFS_par_state.parent fin) Pa *
             len_assn (Suc n) Fr * len_assn (Suc n) Bf>"
@@ -433,7 +433,7 @@ definition "tail_imp Si Ra r = (case r of (Vi', Da', Pa') \<Rightarrow> do {
     | Some t \<Rightarrow> do { l \<leftarrow> bfs_path Da' Pa' Ra t; return (Some l) }) })"
 
 definition "round_imp Gc Vi Fr Bf Da Pa Si Ra k = do {
-   xset_clear_imp n Vi;
+   bool_array_set_clear_imp n Vi;
    fill_range_imp id n Da;
    fill_range_imp id n Pa;
    bfs_run (Si, Gc) Vi (Fr, k, Bf) Da Pa;
@@ -874,13 +874,13 @@ lemma collect_src_rule:
   unfolding eq_srcs[symmetric] by (rule collect_range_imp_rule[OF is_src_imp_rule assms])
 
 lemma is_tgt_imp_rule:
-  "y < n \<Longrightarrow> <xset_assn n V Vi * gxs X Si Gc> is_tgt_imp Si Vi y
-   <\<lambda> r. xset_assn n V Vi * gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> T0 X) \<and> y \<in> V))>"
-  unfolding is_tgt_imp_def t_imp_def gxs_def T0_def by (sep_auto heap: xset_memb_rule smemb_rule o2.ins_imp)
+  "y < n \<Longrightarrow> <bool_array_set_assn n V Vi * gxs X Si Gc> is_tgt_imp Si Vi y
+   <\<lambda> r. bool_array_set_assn n V Vi * gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> T0 X) \<and> y \<in> V))>"
+  unfolding is_tgt_imp_def t_imp_def gxs_def T0_def by (sep_auto heap: bool_array_set_memb_rule smemb_rule o2.ins_imp)
 
 lemma find_tgt_rule:
-  "<xset_assn n V Vi * gxs X Si Gc> find_range_imp (is_tgt_imp Si Vi) 0 n
-   <\<lambda> r. xset_assn n V Vi * gxs X Si Gc * \<up>(r = find (\<lambda> y. y \<in> V) (csr.tgts (csr.exch_ctx X)))>"
+  "<bool_array_set_assn n V Vi * gxs X Si Gc> find_range_imp (is_tgt_imp Si Vi) 0 n
+   <\<lambda> r. bool_array_set_assn n V Vi * gxs X Si Gc * \<up>(r = find (\<lambda> y. y \<in> V) (csr.tgts (csr.exch_ctx X)))>"
   unfolding eq_tgts[symmetric] find_filter by (rule find_range_imp_rule, rule is_tgt_imp_rule, assumption)
 
 lemma single_path_rule:
@@ -919,13 +919,13 @@ lemma target_path_eq:
   unfolding csr.target_path_def Let_def fin_eq by (rule refl)
 
 lemma tail_rule:
-  "<xset_assn n (set (BFS_dist_state.visited (fb.fin ss))) Vi * gxs X Si Gc * parr_assn n Ra *
+  "<bool_array_set_assn n (set (BFS_dist_state.visited (fb.fin ss))) Vi * gxs X Si Gc * parr_assn n Ra *
     (inst.imp_dist_assn n Da (build_nhlists (EE X)) (BFS_dist_state.dists (fb.fin ss)) di *
      inst.imp_par_assn n Pa (build_nhlists (EE X)) (BFS_par_state.parent (fb.fin ss)) pari)>
      tail_imp Si Ra (Vi, di, pari)
    <\<lambda> res. gxs X Si Gc * 
            path_assn n (csr.target_path (build_nhlists (EE X)) ss (csr.tgts (csr.exch_ctx X))) res Ra *
-           (xset_assn n (set (BFS_dist_state.visited (fb.fin ss))) Vi * 
+           (bool_array_set_assn n (set (BFS_dist_state.visited (fb.fin ss))) Vi * 
             inst.imp_dist_assn n Da (build_nhlists (EE X)) (BFS_dist_state.dists (fb.fin ss)) di *
             inst.imp_par_assn n Pa (build_nhlists (EE X)) (BFS_par_state.parent (fb.fin ss)) pari)>"
 proof-
@@ -933,8 +933,8 @@ proof-
   let ?DP = "inst.imp_dist_assn n Da (build_nhlists (EE X)) (BFS_dist_state.dists (fb.fin ss)) di *
              inst.imp_par_assn n Pa (build_nhlists (EE X)) (BFS_par_state.parent (fb.fin ss)) pari"
   let ?f = "find (\<lambda> y. y \<in> ?V) ?ts"
-  have f: "<xset_assn n ?V Vi * gxs X Si Gc * parr_assn n Ra * ?DP> find_range_imp (is_tgt_imp Si Vi) 0 n
-           <\<lambda> r. xset_assn n ?V Vi * gxs X Si Gc * (parr_assn n Ra * ?DP) * \<up>(r = ?f)>"
+  have f: "<bool_array_set_assn n ?V Vi * gxs X Si Gc * parr_assn n Ra * ?DP> find_range_imp (is_tgt_imp Si Vi) 0 n
+           <\<lambda> r. bool_array_set_assn n ?V Vi * gxs X Si Gc * (parr_assn n Ra * ?DP) * \<up>(r = ?f)>"
     by (rule ht_frame_ac[OF find_tgt_rule[where V = ?V and Vi = Vi and Si = Si and Gc = Gc], 
                          where R = "parr_assn n Ra * ?DP"]) 
        (simp only: star_aci, rule ent_refl)+
@@ -952,9 +952,9 @@ proof-
     let ?pp = "inst.imp_bfs.parent_path (BFS_dist_state.dists (fb.fin ss)) (BFS_par_state.parent (fb.fin ss)) t []"
     have tp: "csr.target_path (build_nhlists (EE X)) ss ?ts = Some ?pp"
       unfolding target_path_eq Some option.case(2) by (rule refl)
-    have p: "<parr_assn n Ra * ?DP * (xset_assn n ?V Vi * gxs X Si Gc)> bfs_path di pari Ra t
-             <\<lambda> k. ?DP * path_assn n (Some ?pp) (Some k) Ra * (xset_assn n ?V Vi * gxs X Si Gc)>"
-      using ht_frame[OF fb.path_len_rule[OF b Some], where R = "xset_assn n ?V Vi * gxs X Si Gc"]
+    have p: "<parr_assn n Ra * ?DP * (bool_array_set_assn n ?V Vi * gxs X Si Gc)> bfs_path di pari Ra t
+             <\<lambda> k. ?DP * path_assn n (Some ?pp) (Some k) Ra * (bool_array_set_assn n ?V Vi * gxs X Si Gc)>"
+      using ht_frame[OF fb.path_len_rule[OF b Some], where R = "bool_array_set_assn n ?V Vi * gxs X Si Gc"]
       by (simp only: mult.assoc)
     show ?thesis
       unfolding tail_imp_def prod.case tp
@@ -981,16 +981,16 @@ proof-
   have raw: "<?Fl * ?G * ?R * len_assn n Vi * ?B * len_assn n Da * len_assn n Pa>
                round_imp Gc Vi Fr Bf Da Pa Si Ra (length ss)
              <\<lambda> res. ?G * path_assn n ?T res Ra * 
-                    (xset_assn n ?V Vi * ?D * ?P * len_assn (Suc n) Fr * ?B)>"
+                    (bool_array_set_assn n ?V Vi * ?D * ?P * len_assn (Suc n) Fr * ?B)>"
     unfolding round_imp_def bfs_run_def xround_def
     by (rule ht_bind[OF ht_frame_ac[OF clear_len[where Vi = Vi], 
                        where R = "?Fl * ?G * ?R * ?B * len_assn n Da * len_assn n Pa"]],
         (simp only: star_aci, rule ent_refl), rule ent_refl,
         rule ht_bind[OF ht_frame_ac[OF fill_len[where a = Da and f = id], 
-                       where R = "xset_assn n {} Vi * (?Fl * ?G * ?R * ?B * len_assn n Pa)"]],
+                       where R = "bool_array_set_assn n {} Vi * (?Fl * ?G * ?R * ?B * len_assn n Pa)"]],
         (simp only: star_aci, rule ent_refl), rule ent_refl,
         rule ht_bind[OF ht_frame_ac[OF fill_len[where a = Pa and f = id], 
-                       where R = "Da \<mapsto>\<^sub>a map id [0..<n] * (xset_assn n {} Vi * (?Fl * ?G * ?R * ?B))"]],
+                       where R = "Da \<mapsto>\<^sub>a map id [0..<n] * (bool_array_set_assn n {} Vi * (?Fl * ?G * ?R * ?B))"]],
         (simp only: star_aci, rule ent_refl), rule ent_refl,
         rule ht_bind[OF ht_frame_ac[OF fb.bfs_len_rule[OF b assms, where Bf = Bf and Vi = Vi and Fr = Fr and
                                        Da = Da and Pa = Pa and Gh = "(Si, Gc)", unfolded prod.case],

@@ -135,7 +135,7 @@ next
   define x where "x = rnb_current C u"
   define C' where "C' = rnb_move C u"
   have x_in: "x \<in> rnb_remaining C u" using rnb.idx_current[OF Suc(3,4) ne] by (simp add: x_def)
-  have xS: "x \<notin> S" using x_in Suc(7) by blast
+  have xS: "x \<notin> S" using disjoint_iff[THEN iffD1, OF Suc(7), rule_format, of x] x_in by auto
   have C': "rnb_invar C'" "rnb_remaining C' u = rnb_remaining C u - {x}"
            "rnb_abstract C' = rnb_abstract C"
     using rnb.idx_move_invar[OF Suc(3,4)] rnb.idx_move_remaining[OF Suc(3,4) ne]

@@ -82,7 +82,7 @@ declare pr_ops.skip_scan_imp.simps[code] pr_ops.min_scan_imp.simps[code]
 
 text \<open>The strategies. The imperative vertex fold walks the Boolean array of the vertex set.\<close>
 
-abbreviation "xset_fold_imp \<equiv> iter_set_fold_imp xset_it_init xset_it_has_next xset_it_next"
+abbreviation "bool_array_set_fold_imp \<equiv> iter_set_fold_imp bool_array_set_it_init bool_array_set_it_has_next bool_array_set_it_next"
 
 global_interpretation pr_fifo: push_relabel_fifo_imp_code src_imp tgt_imp s t nv
     "arr_lookup_imp id" "arr_upd_imp id" "arr_lookup_imp id" "arr_upd_imp id"
@@ -90,7 +90,7 @@ global_interpretation pr_fifo: push_relabel_fifo_imp_code src_imp tgt_imp s t nv
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     pr_lb_gap_fold csr_rt_edges_fold_imp "arq_push_imp nv" "arq_pop_imp nv" arq_is_empty_imp
-    xset_fold_imp
+    bool_array_set_fold_imp
   for s t nv
   defines pr_fifo_after_push = pr_fifo.fifo_after_push_imp
     and pr_fifo_ctx_upd = pr_fifo.fifo_ctx_upd_imp
@@ -117,7 +117,7 @@ global_interpretation pr_rtf: push_relabel_rtf_imp_code src_imp tgt_imp s t nv
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     pr_lb_gap_fold csr_rt_edges_fold_imp amtf_push_front_imp amtf_move_to_front_imp amtf_first_imp
-    amtf_next_imp xset_fold_imp
+    amtf_next_imp bool_array_set_fold_imp
   for s t nv
   defines pr_rtf_scan = pr_rtf.rtf_scan_imp
     and pr_rtf_discharge = pr_rtf.rtf_discharge_imp
@@ -145,7 +145,7 @@ global_interpretation pr_hl: push_relabel_hl_imp_code src_imp tgt_imp s t nv
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     pr_lb_gap_fold csr_rt_edges_fold_imp abk_insert_imp abk_remove_imp abk_pick_imp abk_move_imp
-    xset_fold_imp
+    bool_array_set_fold_imp
   for s t nv
   defines pr_hl_find = pr_hl.hl_find_imp
     and pr_hl_insert = pr_hl.hl_insert_imp
@@ -173,7 +173,7 @@ global_interpretation pr_hl_loop: push_relabel_imp_code src_imp tgt_imp s t nv
 declare pr_fifo_loop.push_relabel_loop_imp.simps[code] pr_rtf_loop.push_relabel_loop_imp.simps[code]
   pr_hl_loop.push_relabel_loop_imp.simps[code] pr_rtf.rtf_scan_imp.simps[code]
   pr_hl.hl_find_imp.simps[code] pr_hl.hl_lift_imp.simps[code]
-  iter_fold.simps[code] xset_scan.simps[code] foldl_range_imp.simps[code] csr_copy_imp.simps[code]
+  iter_fold.simps[code] bool_array_set_scan.simps[code] foldl_range_imp.simps[code] csr_copy_imp.simps[code]
 
 subsection \<open>Allocation and Initialisation\<close>
 
@@ -183,7 +183,7 @@ text \<open>The vertex set, the endpoints of the edges, is collected in a Boolea
 definition pr_vertex_count_step :: "bool array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "pr_vertex_count_step Vi u c = do {
      b \<leftarrow> Array.nth Vi u;
-     if b then return c else do { xset_insert_imp u Vi; return (Suc c) } }"
+     if b then return c else do { bool_array_set_insert_imp u Vi; return (Suc c) } }"
 
 definition pr_vertex_set_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> bool array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "pr_vertex_set_imp Fa Ta Vi m =
@@ -225,7 +225,7 @@ definition push_relabel_setup :: "nat \<Rightarrow> nat array \<Rightarrow> nat 
      La \<leftarrow> Array.new n 0;
      Lb \<leftarrow> abk_empty_imp n nv;
      Dr \<leftarrow> ref 0;
-     pr_lb_init (xset_fold_imp Vi) (La, Lb, Dr);
+     pr_lb_init (bool_array_set_fold_imp Vi) (La, Lb, Dr);
      Cn \<leftarrow> Array.new (2 * nv) 0;
      Mf \<leftarrow> ref False;
      Mk \<leftarrow> ref 0;
@@ -491,8 +491,8 @@ qed simp_all
 
 text \<open>The imperative vertex fold of the strategies walks the Boolean array of the vertex set.\<close>
 
-lemma vset_fold: "set_fold_imp_rule (verts fs ts) (xset_assn n (verts fs ts) Vi) vfold (xset_fold_imp Vi)"
-  using fixed_univ_set_iterate_imp.iter_set_fold_imp_rule[OF xset_fixed_univ_set_iterate_imp,
+lemma vset_fold: "set_fold_imp_rule (verts fs ts) (bool_array_set_assn n (verts fs ts) Vi) vfold (bool_array_set_fold_imp Vi)"
+  using fixed_univ_set_iterate_imp.iter_set_fold_imp_rule[OF bool_array_set_fixed_univ_set_iterate_imp,
           of "verts fs ts"] out.verts_bound \<V>_finite
   by simp
 
@@ -538,9 +538,9 @@ sublocale fifo: push_relabel_fifo_imp where \<E> = "edges fs" and fst = "e_src f
     and queue_empty = "arq_empty 0" and queue_push = "arq_push nV" and queue_pop = "arq_pop nV"
     and queue_is_empty = arq_is_empty and queue_vertex_fold = vfold
     and queue_push_imp = "arq_push_imp nV" and queue_pop_imp = "arq_pop_imp nV"
-    and queue_is_empty_imp = arq_is_empty_imp and vertex_fold_imp = xset_fold_imp
+    and queue_is_empty_imp = arq_is_empty_imp and vertex_fold_imp = bool_array_set_fold_imp
     and queue_assn = "arq_assn nV" and queue_empty_imp = "arq_empty_imp nV 0"
-    and vset_assn = "xset_assn n (verts fs ts)"
+    and vset_assn = "bool_array_set_assn n (verts fs ts)"
 proof(unfold_locales, goal_cases)
   case (1 Q) then show ?case by (rule bounded_queue.queue_capacity[OF arq_bounded_queue])
 next
@@ -626,8 +626,8 @@ sublocale rtf: push_relabel_rtf_imp where \<E> = "edges fs" and fst = "e_src fs"
     and list_first = amtf_first and list_next = amtf_next and list_vertex_fold = vfold
     and list_push_front_imp = amtf_push_front_imp and list_move_to_front_imp = amtf_move_to_front_imp
     and list_first_imp = amtf_first_imp and list_next_imp = amtf_next_imp
-    and vertex_fold_imp = xset_fold_imp and list_assn = "amtf_assn n"
-    and list_empty_imp = "amtf_empty_imp n" and vset_assn = "xset_assn n (verts fs ts)"
+    and vertex_fold_imp = bool_array_set_fold_imp and list_assn = "amtf_assn n"
+    and list_empty_imp = "amtf_empty_imp n" and vset_assn = "bool_array_set_assn n (verts fs ts)"
 proof(unfold_locales, goal_cases)
   case (1 g acc) show ?case by (rule vfold)
 next
@@ -686,8 +686,8 @@ sublocale hl: push_relabel_hl_imp where \<E> = "edges fs" and fst = "e_src fs" a
     and buckets_move = abk_move and bucket_vertex_fold = vfold
     and buckets_insert_imp = abk_insert_imp and buckets_remove_imp = abk_remove_imp
     and buckets_pick_imp = abk_pick_imp and buckets_move_imp = abk_move_imp
-    and vertex_fold_imp = xset_fold_imp and buckets_assn = "abk_assn n (2 * nV)"
-    and buckets_empty_imp = "abk_empty_imp n (2 * nV)" and vset_assn = "xset_assn n (verts fs ts)"
+    and vertex_fold_imp = bool_array_set_fold_imp and buckets_assn = "abk_assn n (2 * nV)"
+    and buckets_empty_imp = "abk_empty_imp n (2 * nV)" and vset_assn = "bool_array_set_assn n (verts fs ts)"
 proof(unfold_locales, goal_cases)
   case (1 g acc) show ?case by (rule vfold)
 next
@@ -736,26 +736,26 @@ qed
 
 lemma pr_vertex_count_step_rule:
   assumes "u < n" "finite W"
-  shows "<xset_assn n W Vi> pr_vertex_count_step Vi u (card W)
-         <\<lambda> r. xset_assn n (insert u W) Vi * \<up>(r = card (insert u W))>"
+  shows "<bool_array_set_assn n W Vi> pr_vertex_count_step Vi u (card W)
+         <\<lambda> r. bool_array_set_assn n (insert u W) Vi * \<up>(r = card (insert u W))>"
 proof(cases "u \<in> W")
   case True
   then show ?thesis
     unfolding pr_vertex_count_step_def
-    using assms(1) by (sep_auto heap: xset_memb_rule simp: insert_absorb)
+    using assms(1) by (sep_auto heap: bool_array_set_memb_rule simp: insert_absorb)
 next
   case False
   then show ?thesis
-    unfolding pr_vertex_count_step_def xset_insert_imp_def
-    using assms by (sep_auto heap: xset_memb_rule xset_upd_rule)
+    unfolding pr_vertex_count_step_def bool_array_set_insert_imp_def
+    using assms by (sep_auto heap: bool_array_set_memb_rule bool_array_set_upd_rule)
 qed
 
 lemma pr_vertex_set_imp_rule:
-  "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * xset_assn n {} Vi> pr_vertex_set_imp Fa Ta Vi (length fs)
-   <\<lambda> r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * xset_assn n (verts fs ts) Vi * \<up>(r = nV)>"
+  "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n {} Vi> pr_vertex_set_imp Fa Ta Vi (length fs)
+   <\<lambda> r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n (verts fs ts) Vi * \<up>(r = nV)>"
 proof-
   define W where "W = (\<lambda> j. set (take j fs) \<union> set (take j ts))"
-  let ?A = "\<lambda> j (_::unit) r. xset_assn n (W j) Vi * \<up>(r = card (W j))"
+  let ?A = "\<lambda> j (_::unit) r. bool_array_set_assn n (W j) Vi * \<up>(r = card (W j))"
   have "<?A 0 () 0 * (Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)> pr_vertex_set_imp Fa Ta Vi (length fs)
         <\<lambda> r. ?A (length fs) (foldl (\<lambda> a j. a) () [0..<length fs]) r * (Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)>"
     unfolding pr_vertex_set_imp_def
@@ -784,9 +784,9 @@ lemma la_new_rule: "<emp> Array.new n 0 <la.arr_assn (\<lambda> _. 0)>"
   using la.arr_new_rule[of 0] by simp
 
 lemma pr_lb_init_rule:
-  "<xset_assn n (verts fs ts) Vi * (la.arr_assn (\<lambda> _. 0) La * abk_assn n nV abk_empty Lb * Dr \<mapsto>\<^sub>r d0)>
-     pr_lb_init (xset_fold_imp Vi) (La, Lb, Dr)
-   <\<lambda>_. xset_assn n (verts fs ts) Vi * lb.lb_assn lb.lb_init (La, Lb, Dr)>"
+  "<bool_array_set_assn n (verts fs ts) Vi * (la.arr_assn (\<lambda> _. 0) La * abk_assn n nV abk_empty Lb * Dr \<mapsto>\<^sub>r d0)>
+     pr_lb_init (bool_array_set_fold_imp Vi) (La, Lb, Dr)
+   <\<lambda>_. bool_array_set_assn n (verts fs ts) Vi * lb.lb_assn lb.lb_init (La, Lb, Dr)>"
   unfolding pr_lb_init_def by (rule lb.lb_init_imp_rule[OF vset_fold])
 
 text \<open>The initial state of all three strategies.\<close>
@@ -801,15 +801,15 @@ definition "setup_assn Si =
 
 lemma push_relabel_setup_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs> push_relabel_setup n Fa Ta Ca
-   <\<lambda>(Si, Vi, nv). setup_assn Si * xset_assn n (verts fs ts) Vi *
+   <\<lambda>(Si, Vi, nv). setup_assn Si * bool_array_set_assn n (verts fs ts) Vi *
      \<up>(nv = nV \<and> pi_caps Si = Ca \<and> pi_ends Si = (Fa, Ta))>"
 proof-
   have ht: "<ea.arr_assn cap_of Ca * (Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)> push_relabel_setup n Fa Ta Ca
-   <\<lambda>(Si, Vi, nv). setup_assn Si * xset_assn n (verts fs ts) Vi *
+   <\<lambda>(Si, Vi, nv). setup_assn Si * bool_array_set_assn n (verts fs ts) Vi *
      \<up>(nv = nV \<and> pi_caps Si = Ca \<and> pi_ends Si = (Fa, Ta))>"
     unfolding push_relabel_setup_def setup_assn_def pr.min_scratch_assn_def pr.min_assn_def
       ends_assn_def
-    by (sep_auto heap: out_setup_rule in_setup_rule xset_assn_new pr_vertex_set_imp_rule
+    by (sep_auto heap: out_setup_rule in_setup_rule bool_array_set_assn_new pr_vertex_set_imp_rule
           ea.arr_new_rule va.arr_new_rule la_new_rule abk_empty_rule pr_lb_init_rule
           ca.arr_new_rule)
   have ent: "Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs \<Longrightarrow>\<^sub>A
@@ -829,7 +829,7 @@ text \<open>The part shared by the three proofs: running a strategy after the se
 
 lemma setup_bind_rule:
   assumes "\<And> Si Vi. \<lbrakk>pi_caps Si = Ca; pi_ends Si = (Fa, Ta)\<rbrakk> \<Longrightarrow>
-             <setup_assn Si * xset_assn n (verts fs ts) Vi> body Si Vi nV <Q>"
+             <setup_assn Si * bool_array_set_assn n (verts fs ts) Vi> body Si Vi nV <Q>"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs>
            push_relabel_setup n Fa Ta Ca \<bind> (\<lambda> (Si, Vi, nv). body Si Vi nv) <Q>"
 proof(rule ht_bind[OF push_relabel_setup_rule], goal_cases)
@@ -840,7 +840,7 @@ proof(rule ht_bind[OF push_relabel_setup_rule], goal_cases)
     unfolding x prod.case
   proof(rule ht_extract_pre_pure(1), elim conjE)
     assume "nv = nV" "pi_caps Si = Ca" "pi_ends Si = (Fa, Ta)"
-    then show "<setup_assn Si * xset_assn n (verts fs ts) Vi> body Si Vi nv <Q>"
+    then show "<setup_assn Si * bool_array_set_assn n (verts fs ts) Vi> body Si Vi nv <Q>"
       using assms[of Si Vi] by simp
   qed
 qed
@@ -870,7 +870,7 @@ proof-
     using fifo.fifo_imp.push_relabel_imp_rule[of Si Ci]
     unfolding main fifo.fifo_imp.init_assn_def setup_assn_def .
   have ctx: "arq_assn nV (arq_empty 0) Qi * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r (0::nat) *
-             xset_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A fifo.fifo_ctx_init_assn (Qi, Cf, Cu, Vi)" for Qi Cf Cu Vi
+             bool_array_set_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A fifo.fifo_ctx_init_assn (Qi, Cf, Cu, Vi)" for Qi Cf Cu Vi
     unfolding fifo.fifo_ctx_init_assn_def cur_assn_def by sep_auto
   have opt: "is_max_flow s t fifo.fifo.push_relabel"
     using fifo.fifo.push_relabel_correct by (simp add: arr_lookup_def[abs_def])
@@ -879,7 +879,7 @@ proof-
   proof(rule setup_bind_rule, goal_cases)
     case (1 Si Vi)
     have main: "<setup_assn Si * (arq_assn nV (arq_empty 0) Qi * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r 0 *
-                   xset_assn n (verts fs ts) Vi)> pr_fifo_main s t nV (Qi, Cf, Cu, Vi) Si
+                   bool_array_set_assn n (verts fs ts) Vi)> pr_fifo_main s t nV (Qi, Cf, Cu, Vi) Si
                 <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
                      ea.arr_assn fifo.fifo.push_relabel (pi_bwd Si) * true>"
       for Qi Cf Cu
@@ -905,7 +905,7 @@ proof-
     using rtf.rtf_imp.push_relabel_imp_rule[of Si Ci]
     unfolding main rtf.rtf_imp.init_assn_def setup_assn_def .
   have ctx: "amtf_assn n amtf_empty Ls * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r (0::nat) * Rr \<mapsto>\<^sub>r False *
-             xset_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A rtf.rtf_ctx_init_assn (Ls, Cf, Cu, Rr, Vi)"
+             bool_array_set_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A rtf.rtf_ctx_init_assn (Ls, Cf, Cu, Rr, Vi)"
     for Ls Cf Cu Rr Vi
     unfolding rtf.rtf_ctx_init_assn_def cur_assn_def by sep_auto
   have opt: "is_max_flow s t rtf.rtf.push_relabel"
@@ -915,7 +915,7 @@ proof-
   proof(rule setup_bind_rule, goal_cases)
     case (1 Si Vi)
     have main: "<setup_assn Si * (amtf_assn n amtf_empty Ls * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r 0 *
-                   Rr \<mapsto>\<^sub>r False * xset_assn n (verts fs ts) Vi)> pr_rtf_main s t nV (Ls, Cf, Cu, Rr, Vi) Si
+                   Rr \<mapsto>\<^sub>r False * bool_array_set_assn n (verts fs ts) Vi)> pr_rtf_main s t nV (Ls, Cf, Cu, Rr, Vi) Si
                 <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
                      ea.arr_assn rtf.rtf.push_relabel (pi_bwd Si) * true>"
       for Ls Cf Cu Rr
@@ -941,7 +941,7 @@ proof-
     using hl.hl_imp.push_relabel_imp_rule[of Si Ci]
     unfolding main hl.hl_imp.init_assn_def setup_assn_def .
   have ctx: "abk_assn n (2 * nV) abk_empty Bi * Br \<mapsto>\<^sub>r (0::nat) * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r (0::nat) *
-             xset_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A hl.hl_ctx_init_assn (Bi, Br, Cf, Cu, Vi)"
+             bool_array_set_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A hl.hl_ctx_init_assn (Bi, Br, Cf, Cu, Vi)"
     for Bi Br Cf Cu Vi
     unfolding hl.hl_ctx_init_assn_def cur_assn_def by sep_auto
   have opt: "is_max_flow s t hl.hl.push_relabel"
@@ -951,7 +951,7 @@ proof-
   proof(rule setup_bind_rule, goal_cases)
     case (1 Si Vi)
     have main: "<setup_assn Si * (abk_assn n (2 * nV) abk_empty Bi * Br \<mapsto>\<^sub>r 0 * Cf \<mapsto>\<^sub>r False *
-                   Cu \<mapsto>\<^sub>r 0 * xset_assn n (verts fs ts) Vi)> pr_hl_main s t nV (Bi, Br, Cf, Cu, Vi) Si
+                   Cu \<mapsto>\<^sub>r 0 * bool_array_set_assn n (verts fs ts) Vi)> pr_hl_main s t nV (Bi, Br, Cf, Cu, Vi) Si
                 <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
                      ea.arr_assn hl.hl.push_relabel (pi_bwd Si) * true>"
       for Bi Br Cf Cu

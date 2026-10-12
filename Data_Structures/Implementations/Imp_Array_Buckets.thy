@@ -1,7 +1,7 @@
 theory Imp_Array_Buckets
   imports
     Array_Linked_Lists
-    Imp_Array_Map
+    Imp_Array_Fun
     Fixed_Univ_Buckets_Specs_Imp
 begin
 
@@ -455,7 +455,7 @@ type_synonym abki = "nat option array \<times> nat option array \<times> nat opt
 
 fun abk_assn :: "nat \<Rightarrow> nat \<Rightarrow> abk \<Rightarrow> abki \<Rightarrow> assn" where
   "abk_assn n nb (H, T, NX, PV) (Ha, Ta, NXa, PVa) =
-   xmap_assn nb H Ha * xmap_assn nb T Ta * xmap_assn n NX NXa * xmap_assn n PV PVa"
+   array_fun_assn nb H Ha * array_fun_assn nb T Ta * array_fun_assn n NX NXa * array_fun_assn n PV PVa"
 
 definition abk_empty_imp :: "nat \<Rightarrow> nat \<Rightarrow> abki Heap" where
   "abk_empty_imp n nb = do {
@@ -531,7 +531,7 @@ qed
 
 lemma abk_empty_rule: "<emp> abk_empty_imp n nb <\<lambda> Bi. abk_assn n nb abk_empty Bi>"
   unfolding abk_empty_imp_def abk_empty_def
-  by (sep_auto heap: xmap_assn_new)
+  by (sep_auto heap: array_fun_assn_new)
 
 lemma abk_insert_rule:
   assumes "abk_invar n nb B" "x < n" "k < nb"
@@ -548,7 +548,7 @@ proof-
   show ?thesis
     unfolding B Bi abk_insert_imp_def abk_insert_def
     using assms(2,3) y
-    by (cases "H k") (sep_auto heap: xmap_lookup_rule xmap_upd_rule)+
+    by (cases "H k") (sep_auto heap: array_fun_lookup_rule array_fun_upd_rule)+
 qed
 
 lemma abk_remove_rule:
@@ -574,14 +574,14 @@ proof-
     unfolding B Bi abk_remove_imp_def abk_remove_def
     using k x a b
     by (cases "PV x"; cases "NX x")
-       (sep_auto simp: remove_nx_def remove_pv_def heap: xmap_lookup_rule xmap_upd_rule)+
+       (sep_auto simp: remove_nx_def remove_pv_def heap: array_fun_lookup_rule array_fun_upd_rule)+
 qed
 
 lemma abk_pick_rule:
   assumes "k < nb"
   shows "<abk_assn n nb B Bi> abk_pick_imp Bi k <\<lambda> r. abk_assn n nb B Bi * \<up>(r = abk_pick B k)>"
   unfolding abk_pick_imp_def abk_pick_def using assms
-  by (cases B; cases Bi) (sep_auto heap: xmap_lookup_rule)
+  by (cases B; cases Bi) (sep_auto heap: array_fun_lookup_rule)
 
 lemma abk_move_rule:
   assumes "abk_invar n nb B" "j < nb" "j' < nb"
@@ -604,7 +604,7 @@ proof-
     case None
     thus ?thesis
       unfolding B Bi abk_move_imp_def abk_move_def
-      using assms(2) by (sep_auto heap: xmap_lookup_rule)
+      using assms(2) by (sep_auto heap: array_fun_lookup_rule)
   next
     case (Some a)
     then obtain zz where Tz: "T j = Some zz"
@@ -616,14 +616,14 @@ proof-
       case None
       thus ?thesis
         unfolding B Bi abk_move_imp_def abk_move_def
-        using assms(2,3) Some Tz zn by (sep_auto heap: xmap_lookup_rule xmap_upd_rule)
+        using assms(2,3) Some Tz zn by (sep_auto heap: array_fun_lookup_rule array_fun_upd_rule)
     next
       case (Some b)
       have "b < n"
         using y[OF Some] .
       thus ?thesis
         unfolding B Bi abk_move_imp_def abk_move_def
-        using assms(2,3) \<open>H j = Some a\<close> Tz zn Some by (sep_auto heap: xmap_lookup_rule xmap_upd_rule)
+        using assms(2,3) \<open>H j = Some a\<close> Tz zn Some by (sep_auto heap: array_fun_lookup_rule array_fun_upd_rule)
     qed
   qed
 qed

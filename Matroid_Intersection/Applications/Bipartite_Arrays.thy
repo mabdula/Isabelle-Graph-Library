@@ -70,7 +70,7 @@ text \<open>The allocation prologue shared by the programs on such graphs: the p
 
 lemma bm_setup_rule:
   assumes k: "\<And> H1 H2 Xi C1 C2.
-    <F * part_pst (length fs) fs H1 * part_pst (length fs) ts H2 * xset_assn (length fs) {} Xi *
+    <F * part_pst (length fs) fs H1 * part_pst (length fs) ts H2 * bool_array_set_assn (length fs) {} Xi *
        cnt_assn nv fs {} C1 * cnt_assn nv ts {} C2 *
        blocks_assn (length fs) nv fs Fa * blocks_assn (length fs) nv ts Ta * true>
       k (length fs) H1 H2 Xi C1 C2 <Q>"
@@ -93,7 +93,7 @@ proof-
     unfolding bm_setup_imp_def pre
     apply (rule ht_bind[OF len], rule ht_pure_pre, simp only:)
     apply (rule ht_bind[OF h1], rule ht_bind[OF h2])
-    apply (rule alloc_bind[OF xset_assn_new], rule alloc_bind[OF cnt_assn_new[of _ fs]],
+    apply (rule alloc_bind[OF bool_array_set_assn_new], rule alloc_bind[OF cnt_assn_new[of _ fs]],
            rule alloc_bind[OF cnt_assn_new[of _ ts]])
     apply (rule ht_cons_pre[OF _ k], simp only: star_aci, rule ent_refl)
     done

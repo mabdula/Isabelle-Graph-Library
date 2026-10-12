@@ -304,19 +304,19 @@ definition bm_del :: "nat \<Rightarrow> bm_sol \<Rightarrow> unit Heap" where
 
 fun bm_sol_assn :: "nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> nat set \<Rightarrow> bm_sol \<Rightarrow> assn" where
   "bm_sol_assn m nb bl br X (Xi, C1, C2, Bl, Br) = 
-     xset_assn m X Xi * cnt_assn nb bl X C1 * cnt_assn nb br X C2 * 
+     bool_array_set_assn m X Xi * cnt_assn nb bl X C1 * cnt_assn nb br X C2 * 
      blocks_assn m nb bl Bl * blocks_assn m nb br Br"
 
 lemma bm_memb_rule:
   "<bm_sol_assn m nb bl br X Si * \<up>(x < m)> bm_memb x Si 
    <\<lambda> r. bm_sol_assn m nb bl br X Si * \<up>(r = (x \<in> X))>"
-  by (cases Si rule: prod_cases5) (sep_auto simp: bm_memb_def heap: xset_memb_rule)
+  by (cases Si rule: prod_cases5) (sep_auto simp: bm_memb_def heap: bool_array_set_memb_rule)
 
 lemma bm_ins_rule:
   "<bm_sol_assn m nb bl br X Si * \<up>(x < m)> bm_ins x Si 
    <\<lambda> _. bm_sol_assn m nb bl br (Set.insert x X) Si>"
   by (cases Si rule: prod_cases5) 
-     (sep_auto simp: bm_ins_def insert_absorb heap: xset_memb_rule xset_upd_rule part_cnt_ins_rule)
+     (sep_auto simp: bm_ins_def insert_absorb heap: bool_array_set_memb_rule bool_array_set_upd_rule part_cnt_ins_rule)
 
 lemma bm_del_rule:
   "<bm_sol_assn m nb bl br X Si * \<up>(x < m)> bm_del x Si 
@@ -326,7 +326,7 @@ proof-
     by blast
   then show ?thesis
     by (cases Si rule: prod_cases5) 
-       (sep_auto simp: bm_del_def heap: xset_memb_rule xset_upd_rule part_cnt_del_rule)
+       (sep_auto simp: bm_del_def heap: bool_array_set_memb_rule bool_array_set_upd_rule part_cnt_del_rule)
 qed
 
 end
