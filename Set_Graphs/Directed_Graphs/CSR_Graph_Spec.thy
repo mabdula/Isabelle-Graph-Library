@@ -201,6 +201,9 @@ text \<open>The cursors at the starts of the ranges.\<close>
 lemma csr_init_invar: "csr_invar (\<lambda>v. B ! v)"
   by (simp add: csr_invar_def H_lo K_less)
 
+lemma csr_init_iterated: "csr_iterated (\<lambda>v. B ! v) v = {}"
+  by (simp add: csr_iterated_def seg_def)
+
 end
 
 text \<open>Empty ranges over the same lists: the start of a sub-collection built by \<open>csr_append\<close>.\<close>

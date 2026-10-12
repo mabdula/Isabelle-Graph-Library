@@ -403,7 +403,7 @@ proof (intro_locales, goal_cases)
       unfolding outgoing_edge_iterator_def by (rule graph.csr.indexed_iterable_set_axioms)
     show ?case
       unfolding outgoing_edge_iterator.out_graph_inv_def[OF oi]
-      using graph.B_mono graph.K_less csr_abstract_delta by (auto simp: graph.csr_invar_def)
+      using graph.csr_init_invar csr_abstract_delta by auto
   next
     case 2 show ?case by (simp add: src.ait_invar_def)
   next
@@ -413,7 +413,7 @@ proof (intro_locales, goal_cases)
     then have "e < length ws" using ws_length by simp
     then show ?case using ws_nonneg nth_mem by (auto simp: wt_def)
   next
-    case (9 v) show ?case by (simp add: graph.csr_iterated_def graph.seg_def)
+    case (9 v) show ?case by (rule graph.csr_init_iterated)
   qed (simp_all add: arr_lookup_def src.ait_remaining_def src.ait_abstract_def)
 next
   case 2 show ?case

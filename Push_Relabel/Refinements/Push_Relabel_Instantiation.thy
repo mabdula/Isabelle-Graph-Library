@@ -28,13 +28,6 @@ text \<open>The input is a network with vertices below \<open>n\<close>, given b
 
 subsection \<open>The Programs\<close>
 
-text \<open>The fold over all edges walks the edge array of the outgoing CSR collection.\<close>
-
-definition csr_edge_fold_imp :: "nat csr_rt_imp \<Rightarrow> (nat \<Rightarrow> unit Heap) \<Rightarrow> unit Heap" where
-  "csr_edge_fold_imp = (\<lambda> (Ba, Ea, Ca, Pa) g. do {
-     m \<leftarrow> Array.len Ea;
-     foldl_range_imp (\<lambda> i _. do { e \<leftarrow> Array.nth Ea i; g e }) 0 m () })"
-
 text \<open>The label map with buckets.\<close>
 
 global_interpretation pr_lb: label_buckets_imp_code N "arr_lookup_imp id" "arr_upd_imp id"
@@ -59,7 +52,7 @@ global_interpretation pr_ops: push_relabel_ops_imp_code src_imp tgt_imp s t nv
     pr_lb_get "pr_lb_upd nv" "arr_lookup_imp id" "arr_upd_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
-    pr_lb_gap_fold csr_edge_fold_imp
+    pr_lb_gap_fold csr_rt_edges_fold_imp
   for s t nv
   defines pr_admissible_fwd = pr_ops.admissible_fwd_imp
     and pr_admissible_bwd = pr_ops.admissible_bwd_imp
@@ -96,7 +89,7 @@ global_interpretation pr_fifo: push_relabel_fifo_imp_code src_imp tgt_imp s t nv
     pr_lb_get "pr_lb_upd nv" "arr_lookup_imp id" "arr_upd_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
-    pr_lb_gap_fold csr_edge_fold_imp "arq_push_imp nv" "arq_pop_imp nv" arq_is_empty_imp
+    pr_lb_gap_fold csr_rt_edges_fold_imp "arq_push_imp nv" "arq_pop_imp nv" arq_is_empty_imp
     xset_fold_imp
   for s t nv
   defines pr_fifo_after_push = pr_fifo.fifo_after_push_imp
@@ -112,7 +105,7 @@ global_interpretation pr_fifo_loop: push_relabel_imp_code src_imp tgt_imp s t nv
     pr_lb_get "pr_lb_upd nv" "arr_lookup_imp id" "arr_upd_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
-    pr_lb_gap_fold csr_edge_fold_imp "pr_fifo_select s t nv" "pr_fifo_init_ctx s t nv"
+    pr_lb_gap_fold csr_rt_edges_fold_imp "pr_fifo_select s t nv" "pr_fifo_init_ctx s t nv"
   for s t nv
   defines pr_fifo_main_loop = pr_fifo_loop.push_relabel_loop_imp
     and pr_fifo_main = pr_fifo_loop.push_relabel_imp
@@ -123,7 +116,7 @@ global_interpretation pr_rtf: push_relabel_rtf_imp_code src_imp tgt_imp s t nv
     pr_lb_get "pr_lb_upd nv" "arr_lookup_imp id" "arr_upd_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
-    pr_lb_gap_fold csr_edge_fold_imp amtf_push_front_imp amtf_move_to_front_imp amtf_first_imp
+    pr_lb_gap_fold csr_rt_edges_fold_imp amtf_push_front_imp amtf_move_to_front_imp amtf_first_imp
     amtf_next_imp xset_fold_imp
   for s t nv
   defines pr_rtf_scan = pr_rtf.rtf_scan_imp
@@ -140,7 +133,7 @@ global_interpretation pr_rtf_loop: push_relabel_imp_code src_imp tgt_imp s t nv
     pr_lb_get "pr_lb_upd nv" "arr_lookup_imp id" "arr_upd_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
-    pr_lb_gap_fold csr_edge_fold_imp "pr_rtf_select nv" "pr_rtf_init_ctx s t"
+    pr_lb_gap_fold csr_rt_edges_fold_imp "pr_rtf_select nv" "pr_rtf_init_ctx s t"
   for s t nv
   defines pr_rtf_main_loop = pr_rtf_loop.push_relabel_loop_imp
     and pr_rtf_main = pr_rtf_loop.push_relabel_imp
@@ -151,7 +144,7 @@ global_interpretation pr_hl: push_relabel_hl_imp_code src_imp tgt_imp s t nv
     pr_lb_get "pr_lb_upd nv" "arr_lookup_imp id" "arr_upd_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
-    pr_lb_gap_fold csr_edge_fold_imp abk_insert_imp abk_remove_imp abk_pick_imp abk_move_imp
+    pr_lb_gap_fold csr_rt_edges_fold_imp abk_insert_imp abk_remove_imp abk_pick_imp abk_move_imp
     xset_fold_imp
   for s t nv
   defines pr_hl_find = pr_hl.hl_find_imp
@@ -171,7 +164,7 @@ global_interpretation pr_hl_loop: push_relabel_imp_code src_imp tgt_imp s t nv
     pr_lb_get "pr_lb_upd nv" "arr_lookup_imp id" "arr_upd_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
     csr_rt_current_imp csr_rt_has_imp csr_rt_move_imp csr_rt_reset_imp "csr_reset_to_imp id"
-    pr_lb_gap_fold csr_edge_fold_imp "pr_hl_select s t nv" "pr_hl_init_ctx s t"
+    pr_lb_gap_fold csr_rt_edges_fold_imp "pr_hl_select s t nv" "pr_hl_init_ctx s t"
   for s t nv
   defines pr_hl_main_loop = pr_hl_loop.push_relabel_loop_imp
     and pr_hl_main = pr_hl_loop.push_relabel_imp
@@ -394,50 +387,6 @@ sublocale lb: label_buckets_imp "verts fs ts" nV "\<lambda> _. True" arr_upd arr
     "abk_empty_imp n nV" abk_move_imp
   using V_non_empt by unfold_locales (simp_all add: \<V>_finite vfold arr_lookup_def[abs_def])
 
-text \<open>The fold over all edges visits the edge array of the outgoing CSR collection.\<close>
-
-lemma foldl_upt_nth: "foldl (\<lambda> a j. g a (xs ! j)) a [0..<length xs] = foldl g a xs"
-  by (subst (2) map_nth[symmetric]) (simp add: foldl_map)
-
-lemma csr_edge_fold_imp_rule:
-  assumes "P acc"
-      and g: "\<And> acc e. \<lbrakk>P acc; e \<in> edges fs\<rbrakk> \<Longrightarrow>
-                P (g acc e) \<and> <R acc> g_imp e <\<lambda>_. R (g acc e)>"
-  shows "<out_rt.csr_rt_assn c Oi * R acc> csr_edge_fold_imp Oi g_imp
-         <\<lambda>_. out_rt.csr_rt_assn c Oi * R (foldl g acc out.inp.E_spec)>"
-proof-
-  obtain Ba Ea Ca Pa where Oi: "Oi = (Ba, Ea, Ca, Pa)"
-    by (cases Oi) auto
-  let ?E = out.inp.E_spec
-  define F where
-    "F = Ba \<mapsto>\<^sub>a out.inp.B_spec * Pa \<mapsto>\<^sub>a Po *
-         (\<exists>\<^sub>A l. Ca \<mapsto>\<^sub>a l * \<up>(length l = n \<and> (\<forall> v \<in> verts fs ts. l ! v = c v)))"
-  have split: "out_rt.csr_rt_assn c Oi = Ea \<mapsto>\<^sub>a ?E * F"
-    unfolding Oi out_rt.csr_rt_assn_def out.graph.csr_assn_def F_def by (simp add: ac_simps)
-  let ?A = "\<lambda> a (_::unit). R a * \<up>(P a)"
-  have step: "<?A a u * (Ea \<mapsto>\<^sub>a ?E * F)> do { e \<leftarrow> Array.nth Ea j; g_imp e }
-              <\<lambda> r. ?A (g a (?E ! j)) r * (Ea \<mapsto>\<^sub>a ?E * F)>"
-    if "0 \<le> j" "j < length ?E" for j a and u :: unit
-  proof-
-    have e: "?E ! j \<in> edges fs"
-      using that(2) out.E_spec_edges nth_mem by blast
-    have gP: "P a \<Longrightarrow> P (g a (?E ! j))"
-      and gi: "P a \<Longrightarrow> <R a> g_imp (?E ! j) <\<lambda>_. R (g a (?E ! j))>"
-      using g[OF _ e] by simp_all
-    show ?thesis
-      using that(2) by (sep_auto heap: gi simp: gP)
-  qed
-  have run: "<?A acc () * (Ea \<mapsto>\<^sub>a ?E * F)> foldl_range_imp (\<lambda> i _. do { e \<leftarrow> Array.nth Ea i; g_imp e })
-               0 (length ?E) ()
-             <\<lambda> r. ?A (foldl g acc ?E) r * (Ea \<mapsto>\<^sub>a ?E * F)>"
-    using foldl_range_imp_rule[where A = ?A and g = "\<lambda> j a. g a (?E ! j)" and i = 0
-            and n = "length ?E", OF step]
-    by (simp add: foldl_upt_nth)
-  show ?thesis
-    unfolding split unfolding Oi csr_edge_fold_imp_def prod.case
-    using assms(1) by (sep_auto heap: run)
-qed
-
 subsection \<open>The Generic Algorithm\<close>
 
 lemma out_iterator: "outgoing_edge_iterator (edges fs) (e_tgt fs ts) (e_src fs) out.graph.csr_invar
@@ -480,7 +429,7 @@ sublocale pr: push_relabel_ops_imp where \<E> = "edges fs" and fst = "e_src fs" 
     and in_current_imp = csr_rt_current_imp and in_has_imp = csr_rt_has_imp
     and in_move_imp = csr_rt_move_imp and in_reset_imp = csr_rt_reset_imp
     and in_reset_to_imp = "csr_reset_to_imp id"
-    and gap_fold_imp = pr_lb_gap_fold and edge_fold_imp = csr_edge_fold_imp
+    and gap_fold_imp = pr_lb_gap_fold and edge_fold_imp = csr_rt_edges_fold_imp
     and emap_assn = ea.arr_assn and ex_assn = va.arr_assn and label_assn = lb.lb_assn
     and count_assn = ca.arr_assn and out_assn = out_rt.csr_rt_assn and in_assn = in_rt.csr_rt_assn
     and fst_imp = src_imp and snd_imp = tgt_imp and ends_assn = "ends_assn fs ts"
@@ -515,13 +464,11 @@ next
 next
   case 15 show ?case
     unfolding outgoing_edge_iterator.out_graph_inv_def[OF out_iterator]
-    using out.graph.B_mono out.graph.K_less
-    by (auto simp: out.graph.csr_invar_def out.csr_abstract_key delta_plus_def)
+    using out.graph.csr_init_invar by (auto simp: out.csr_abstract_key delta_plus_def)
 next
   case 16 show ?case
     unfolding ingoing_edge_iterator.in_graph_inv_def[OF in_iterator]
-    using inc.graph.B_mono inc.graph.K_less
-    by (auto simp: inc.graph.csr_invar_def inc.csr_abstract_key delta_minus_def)
+    using inc.graph.csr_init_invar by (auto simp: inc.csr_abstract_key delta_minus_def)
 next
   case (17 A k Ai) then show ?case
     unfolding pr_lb_get_def by (rule lb.lb_get_imp_rule)
@@ -539,7 +486,7 @@ next
     unfolding pr_lb_gap_fold_def by (rule lb.lb_gap_fold_imp_rule)
 next
   case (22 g g_imp P R acc og Oi) then show ?case
-    by (intro csr_edge_fold_imp_rule)
+    using out.E_spec_edges by (intro out_rt.csr_rt_edges_fold_imp_rule[where I = P]) auto
 qed simp_all
 
 text \<open>The imperative vertex fold of the strategies walks the Boolean array of the vertex set.\<close>
@@ -583,7 +530,7 @@ sublocale fifo: push_relabel_fifo_imp where \<E> = "edges fs" and fst = "e_src f
     and in_current_imp = csr_rt_current_imp and in_has_imp = csr_rt_has_imp
     and in_move_imp = csr_rt_move_imp and in_reset_imp = csr_rt_reset_imp
     and in_reset_to_imp = "csr_reset_to_imp id"
-    and gap_fold_imp = pr_lb_gap_fold and edge_fold_imp = csr_edge_fold_imp
+    and gap_fold_imp = pr_lb_gap_fold and edge_fold_imp = csr_rt_edges_fold_imp
     and emap_assn = ea.arr_assn and ex_assn = va.arr_assn and label_assn = lb.lb_assn
     and count_assn = ca.arr_assn and out_assn = out_rt.csr_rt_assn and in_assn = in_rt.csr_rt_assn
     and fst_imp = src_imp and snd_imp = tgt_imp and ends_assn = "ends_assn fs ts"
@@ -669,7 +616,7 @@ sublocale rtf: push_relabel_rtf_imp where \<E> = "edges fs" and fst = "e_src fs"
     and in_current_imp = csr_rt_current_imp and in_has_imp = csr_rt_has_imp
     and in_move_imp = csr_rt_move_imp and in_reset_imp = csr_rt_reset_imp
     and in_reset_to_imp = "csr_reset_to_imp id"
-    and gap_fold_imp = pr_lb_gap_fold and edge_fold_imp = csr_edge_fold_imp
+    and gap_fold_imp = pr_lb_gap_fold and edge_fold_imp = csr_rt_edges_fold_imp
     and emap_assn = ea.arr_assn and ex_assn = va.arr_assn and label_assn = lb.lb_assn
     and count_assn = ca.arr_assn and out_assn = out_rt.csr_rt_assn and in_assn = in_rt.csr_rt_assn
     and fst_imp = src_imp and snd_imp = tgt_imp and ends_assn = "ends_assn fs ts"
@@ -728,7 +675,7 @@ sublocale hl: push_relabel_hl_imp where \<E> = "edges fs" and fst = "e_src fs" a
     and in_current_imp = csr_rt_current_imp and in_has_imp = csr_rt_has_imp
     and in_move_imp = csr_rt_move_imp and in_reset_imp = csr_rt_reset_imp
     and in_reset_to_imp = "csr_reset_to_imp id"
-    and gap_fold_imp = pr_lb_gap_fold and edge_fold_imp = csr_edge_fold_imp
+    and gap_fold_imp = pr_lb_gap_fold and edge_fold_imp = csr_rt_edges_fold_imp
     and emap_assn = ea.arr_assn and ex_assn = va.arr_assn and label_assn = lb.lb_assn
     and count_assn = ca.arr_assn and out_assn = out_rt.csr_rt_assn and in_assn = in_rt.csr_rt_assn
     and fst_imp = src_imp and snd_imp = tgt_imp and ends_assn = "ends_assn fs ts"

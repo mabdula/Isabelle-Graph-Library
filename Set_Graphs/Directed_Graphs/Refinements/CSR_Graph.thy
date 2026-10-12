@@ -104,13 +104,17 @@ definition csr_assn :: "(nat \<Rightarrow> nat) \<Rightarrow> nat array \<times>
   "csr_assn c = (\<lambda>(Ba, Ea, Ca). Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E *
      (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = n \<and> (\<forall>v\<in>K. l ! v = c v))))"
 
-text \<open>The assertion of a collection given by its three arrays, for clients that hand the arrays on
-      to other programs.\<close>
+text \<open>Arrays become a collection, and a collection gives its arrays back, for clients that hand
+      the arrays on to other programs. The cursors are given by the contents of the cursor array.\<close>
 
-lemma csr_assn_split:
-  "csr_assn c (Ba, Ea, Ca) =
-   Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = n \<and> (\<forall>v\<in>K. l ! v = c v)))"
-  by (simp add: csr_assn_def)
+lemma csr_assn_intro:
+  assumes "length l = n" "\<forall>v\<in>K. l ! v = c v"
+  shows "Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * Ca \<mapsto>\<^sub>a l \<Longrightarrow>\<^sub>A csr_assn c (Ba, Ea, Ca)"
+  using assms by (sep_auto simp: csr_assn_def)
+
+lemma csr_assn_release:
+  "csr_assn c (Ba, Ea, Ca) \<Longrightarrow>\<^sub>A Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = n))"
+  by (sep_auto simp: csr_assn_def)
 
 lemma csr_current_imp_rule:
   assumes "v \<in> K" "csr_invar c" "csr_remaining c v \<noteq> {}"
@@ -179,16 +183,17 @@ lemma csr_empty_imp_rule:
 lemma csr_copy_imp_rule:
   "\<lbrakk>i \<le> n; length l = n; \<forall>j<i. l ! j = B ! j\<rbrakk> \<Longrightarrow>
    <Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a l> csr_copy_imp n Ba Ca i
-   <\<lambda>_. Ba \<mapsto>\<^sub>a B * (\<exists>\<^sub>Al'. Ca \<mapsto>\<^sub>a l' * \<up>(length l' = n \<and> (\<forall>j<n. l' ! j = B ! j)))>"
+   <\<lambda>_. Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a take n B>"
 proof (induction "n - i" arbitrary: i l)
   case 0
   then have "i = n" by simp
-  with 0 show ?case by (subst csr_copy_imp.simps) sep_auto
+  with 0 have "l = take n B" using B_length by (simp add: list_eq_iff_nth_eq)
+  with \<open>i = n\<close> show ?case by (subst csr_copy_imp.simps) sep_auto
 next
   case (Suc k)
   then have i: "i < n" by simp
   have IH: "<Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a l[i := B ! i]> csr_copy_imp n Ba Ca (Suc i)
-            <\<lambda>_. Ba \<mapsto>\<^sub>a B * (\<exists>\<^sub>Al'. Ca \<mapsto>\<^sub>a l' * \<up>(length l' = n \<and> (\<forall>j<n. l' ! j = B ! j)))>"
+            <\<lambda>_. Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a take n B>"
     by (rule Suc.hyps(1)) (use Suc i in \<open>auto simp: nth_list_update less_Suc_eq\<close>)
   show ?case
     using i B_length Suc.prems by (subst csr_copy_imp.simps) (sep_auto heap: IH)
@@ -197,10 +202,12 @@ qed
 lemma csr_cursor_init_rule:
   "<Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E> csr_cursor_init n Ba <\<lambda>Ca. csr_assn (\<lambda>v. B ! v) (Ba, Ea, Ca)>"
 proof -
-  have K': "\<And>l' v. length l' = n \<Longrightarrow> v \<in> K \<Longrightarrow> v < length l'" using K_less by auto
-  show ?thesis
-    unfolding csr_cursor_init_def csr_assn_def
-    by (sep_auto heap: csr_copy_imp_rule simp: K')
+  have I: "Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * Ca \<mapsto>\<^sub>a take n B \<Longrightarrow>\<^sub>A csr_assn (\<lambda>v. B ! v) (Ba, Ea, Ca)" for Ca
+    by (rule csr_assn_intro) (use B_length K_less in auto)
+  have "<Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E> csr_cursor_init n Ba <\<lambda>Ca. Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * Ca \<mapsto>\<^sub>a take n B>"
+    unfolding csr_cursor_init_def by (sep_auto heap: csr_copy_imp_rule)
+  then show ?thesis
+    by (rule ht_cons_post) (rule ent_true_drop(2)[OF I])
 qed
 
 end
@@ -425,6 +432,9 @@ definition "wnb_current c v = tgt (csr_current c v)"
 definition "wnb_iterated c v = tgt ` csr_iterated c v"
 definition "wnb_remaining c v = tgt ` csr_remaining c v"
 
+lemma wnb_abstract_eq: "wnb_abstract c v = tgt ` (!) E ` {B ! v..<B ! Suc v}"
+  by (simp add: wnb_abstract_def csr_abstract_eq)
+
 lemma wnb_inj: "v \<in> K \<Longrightarrow> inj_on tgt (csr_abstract c v)"
   by (simp add: csr_abstract_def seg_def tgt_inj)
 
@@ -560,7 +570,7 @@ lemma wnb_reset_all_imp_rule:
   "<wnb_assn c ((Ba, Ea, Ca), Wa)> wnb_reset_all_imp n ((Ba, Ea, Ca), Wa)
    <\<lambda>_. wnb_assn (\<lambda>v. B ! v) ((Ba, Ea, Ca), Wa)>"
   unfolding wnb_reset_all_imp_def wnb_assn_def csr_assn_def prod.case
-  by (sep_auto heap: csr_copy_imp_rule simp: K_less)
+  by (sep_auto heap: csr_copy_imp_rule simp: K_less B_length)
 
 sublocale wnb_imp: weighted_neighbourhoods_imp_spec csr_invar wnb_abstract wnb_current csr_has
     wnb_iterated wnb_remaining csr_move csr_reset K cost wval "\<lambda>v. B ! v" wnb_assn

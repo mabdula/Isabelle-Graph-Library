@@ -574,9 +574,14 @@ end
 subsection \<open>Multigraphs\<close>
 
 text \<open>
+  The CSR of an unweighted directed multigraph with edges and vertices of arbitrary types.
   The key of an edge is the index of its source vertex.
   Injectivity of the index is only needed to read off the out-edges of a vertex.
   The targets @{term tgt} play no role in the construction.
+
+  This locale is not used yet; the algorithms use the CSR of \<open>csr_edge_spec\<close>, where edges
+  and vertices are natural numbers. The iterator view and the imperative construction for
+  arbitrary edge and vertex types are future work.
 \<close>
 
 locale csr_multigraph = iterator it_next it_seq it_invar

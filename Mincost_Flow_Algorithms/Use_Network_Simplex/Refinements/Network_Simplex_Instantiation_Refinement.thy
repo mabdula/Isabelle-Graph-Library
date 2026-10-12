@@ -4212,27 +4212,10 @@ lemma csr_build_in_rule:
   using incI.csr_build_into_rule[of "replicate m 0", unfolded csr_build_into_edges_tgt] by simp
 
 text \<open>Copying the block starts into the cursor array makes the arrays a collection of the input
-      edges (@{thm [source] outI.graph.csr_copy_imp_rule}); after the acyclifier, the same copy turns the
-      cursor array into the empty ranges at the block starts that Pass A appends to.\<close>
-
-lemma copy_ent:
-  assumes "Kv \<subseteq> {..<N}"
-  shows "Ba \<mapsto>\<^sub>a Bl * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = N \<and> (\<forall>j<N. l ! j = Bl ! j))) * Ea \<mapsto>\<^sub>a El \<Longrightarrow>\<^sub>A
-         Ba \<mapsto>\<^sub>a Bl * Ea \<mapsto>\<^sub>a El * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = N \<and> (\<forall>v\<in>Kv. l ! v = Bl ! v)))"
-  using assms by (sep_auto simp: subset_iff)
-
-lemma copy_lo_ent:
-  assumes "length lo = N" "\<forall>j<N. lo ! j = Bl ! j"
-  shows "Ba \<mapsto>\<^sub>a Bl * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = N \<and> (\<forall>j<N. l ! j = Bl ! j))) * Ea \<mapsto>\<^sub>a El \<Longrightarrow>\<^sub>A
-         Ba \<mapsto>\<^sub>a Bl * Ea \<mapsto>\<^sub>a El * Ca \<mapsto>\<^sub>a lo * true"
-  using assms
-  apply (simp only: ex_assn_move_out, intro ent_ex_preI)
-  apply sep_auto
-  subgoal for l
-    apply (subgoal_tac "l = lo")
-     apply sep_auto
-    by (simp add: list_eq_iff_nth_eq)
-  done
+      edges (@{thm [source] outI.graph.csr_copy_imp_rule}, @{thm [source] outI.graph.csr_assn_intro});
+      after the acyclifier, the same copy turns the cursor array of the released collection
+      (@{thm [source] outI.graph.csr_assn_release}) into the empty ranges at the block starts that
+      Pass A appends to.\<close>
 
 lemma csr_copy_out_init:
   assumes "length l = vcount"
@@ -4240,15 +4223,16 @@ lemma csr_copy_out_init:
          <\<lambda>_. outI.graph.csr_assn ((!) out.inp.B_spec) (ob, oe, oh)>"
 proof -
   have T: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l> csr_copy_imp vcount ob oh 0
-     <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec *
-          (\<exists>\<^sub>Al'. oh \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>j<vcount. l' ! j = out.inp.B_spec ! j)))>"
+     <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a take vcount out.inp.B_spec>"
     by (rule outI.graph.csr_copy_imp_rule) (simp_all add: assms)
-  have T2: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l * oe \<mapsto>\<^sub>a out.inp.E_spec> csr_copy_imp vcount ob oh 0
-     <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec *
-          (\<exists>\<^sub>Al'. oh \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>v\<in>verts fst_list snd_list. l' ! v = out.inp.B_spec ! v)))>"
-    by (rule ht_cons_post[OF ht_frame[OF T]]) (rule ent_true_drop(2)[OF copy_ent[OF out.graph.K_bound]])
+  have I: "ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a take vcount out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec \<Longrightarrow>\<^sub>A
+           outI.graph.csr_assn ((!) out.inp.B_spec) (ob, oe, oh)"
+    using outI.graph.csr_assn_intro[where l = "take vcount out.inp.B_spec" and c = "(!) out.inp.B_spec"
+            and Ba = ob and Ea = oe and Ca = oh]
+    by (simp add: ac_simps out.graph.B_length out.graph.K_less)
   show ?thesis
-    unfolding outI.graph.csr_assn_split by (rule ht_cons_pre[OF _ T2]) (simp add: ac_simps)
+    by (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF T, where R = "oe \<mapsto>\<^sub>a out.inp.E_spec"] ent_true_drop(2)[OF I]]])
+       (simp add: ac_simps)
 qed
 
 lemma csr_copy_in_init:
@@ -4257,36 +4241,39 @@ lemma csr_copy_in_init:
          <\<lambda>_. incI.graph.csr_assn ((!) inc.inp.B_spec) (ib, ie, ih)>"
 proof -
   have T: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l> csr_copy_imp vcount ib ih 0
-     <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec *
-          (\<exists>\<^sub>Al'. ih \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>j<vcount. l' ! j = inc.inp.B_spec ! j)))>"
+     <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a take vcount inc.inp.B_spec>"
     by (rule incI.graph.csr_copy_imp_rule) (simp_all add: assms)
-  have T2: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l * ie \<mapsto>\<^sub>a inc.inp.E_spec> csr_copy_imp vcount ib ih 0
-     <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec *
-          (\<exists>\<^sub>Al'. ih \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>v\<in>verts fst_list snd_list. l' ! v = inc.inp.B_spec ! v)))>"
-    by (rule ht_cons_post[OF ht_frame[OF T]]) (rule ent_true_drop(2)[OF copy_ent[OF inc.graph.K_bound]])
+  have I: "ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a take vcount inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec \<Longrightarrow>\<^sub>A
+           incI.graph.csr_assn ((!) inc.inp.B_spec) (ib, ie, ih)"
+    using incI.graph.csr_assn_intro[where l = "take vcount inc.inp.B_spec" and c = "(!) inc.inp.B_spec"
+            and Ba = ib and Ea = ie and Ca = ih]
+    by (simp add: ac_simps inc.graph.B_length inc.graph.K_less)
   show ?thesis
-    unfolding incI.graph.csr_assn_split by (rule ht_cons_pre[OF _ T2]) (simp add: ac_simps)
+    by (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF T, where R = "ie \<mapsto>\<^sub>a inc.inp.E_spec"] ent_true_drop(2)[OF I]]])
+       (simp add: ac_simps)
 qed
 
 lemma csr_copy_out_ranges:
   "<outI.graph.csr_assn c (ob, oe, oh)> csr_copy_imp vcount ob oh 0
    <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec * oh \<mapsto>\<^sub>a out_lo>"
 proof -
-  have lo: "length out_lo = vcount" "\<forall>j<vcount. out_lo ! j = out.inp.B_spec ! j"
-    by (simp_all add: length_out_lo out_lo_nth)
+  have lo: "take vcount out.inp.B_spec = out_lo"
+    by (simp add: list_eq_iff_nth_eq length_out_lo out_lo_nth out.graph.B_length)
   have T: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l> csr_copy_imp vcount ob oh 0
-     <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec *
-          (\<exists>\<^sub>Al'. oh \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>j<vcount. l' ! j = out.inp.B_spec ! j)))>"
+     <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a out_lo>"
     if "length l = vcount" for l
-    by (rule outI.graph.csr_copy_imp_rule) (simp_all add: that)
+    using outI.graph.csr_copy_imp_rule[of 0 l ob oh] that by (simp add: lo)
+  have E: "ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a out_lo * oe \<mapsto>\<^sub>a out.inp.E_spec \<Longrightarrow>\<^sub>A
+           ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec * oh \<mapsto>\<^sub>a out_lo * true"
+    by (rule ent_true_drop(2)) (simp add: ac_simps)
   show ?thesis
-    unfolding outI.graph.csr_assn_split
+    apply (rule ht_cons_pre[OF outI.graph.csr_assn_release])
     apply (simp only: ex_assn_move_out)
     apply (rule ht_exEI)
     apply (subst mult.assoc[symmetric])
     apply (rule ht_extract_pre_pure)
     subgoal premises p for l
-      by (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF T[OF conjunct1[OF p]]] copy_lo_ent[OF lo]]])
+      by (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF T[OF p], where R = "oe \<mapsto>\<^sub>a out.inp.E_spec"] E]])
          (simp add: ac_simps)
     done
 qed
@@ -4295,21 +4282,23 @@ lemma csr_copy_in_ranges:
   "<incI.graph.csr_assn c (ib, ie, ih)> csr_copy_imp vcount ib ih 0
    <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec * ih \<mapsto>\<^sub>a in_lo>"
 proof -
-  have lo: "length in_lo = vcount" "\<forall>j<vcount. in_lo ! j = inc.inp.B_spec ! j"
-    by (simp_all add: length_in_lo in_lo_nth)
+  have lo: "take vcount inc.inp.B_spec = in_lo"
+    by (simp add: list_eq_iff_nth_eq length_in_lo in_lo_nth inc.graph.B_length)
   have T: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l> csr_copy_imp vcount ib ih 0
-     <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec *
-          (\<exists>\<^sub>Al'. ih \<mapsto>\<^sub>a l' * \<up>(length l' = vcount \<and> (\<forall>j<vcount. l' ! j = inc.inp.B_spec ! j)))>"
+     <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a in_lo>"
     if "length l = vcount" for l
-    by (rule incI.graph.csr_copy_imp_rule) (simp_all add: that)
+    using incI.graph.csr_copy_imp_rule[of 0 l ib ih] that by (simp add: lo)
+  have E: "ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a in_lo * ie \<mapsto>\<^sub>a inc.inp.E_spec \<Longrightarrow>\<^sub>A
+           ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec * ih \<mapsto>\<^sub>a in_lo * true"
+    by (rule ent_true_drop(2)) (simp add: ac_simps)
   show ?thesis
-    unfolding incI.graph.csr_assn_split
+    apply (rule ht_cons_pre[OF incI.graph.csr_assn_release])
     apply (simp only: ex_assn_move_out)
     apply (rule ht_exEI)
     apply (subst mult.assoc[symmetric])
     apply (rule ht_extract_pre_pure)
     subgoal premises p for l
-      by (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF T[OF conjunct1[OF p]]] copy_lo_ent[OF lo]]])
+      by (rule ht_cons_pre[OF _ ht_cons_post[OF ht_frame[OF T[OF p], where R = "ie \<mapsto>\<^sub>a inc.inp.E_spec"] E]])
          (simp add: ac_simps)
     done
 qed
@@ -4768,7 +4757,17 @@ lemma dfs_rel_raw_intro:
        di_ob = ob, di_oe = oe, di_oh = oh, di_oc = oc, di_ib = ib, di_ie = ie, di_ih = ih, di_ic = ic,
        di_stk = sv, di_sp = spr, di_prev = pvr, di_nxt = nxr\<rparr>
       (dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>)"
-  unfolding dfs_rel_def dfs_init_def FO.csr_assn_split FI.csr_assn_split
+proof -
+  have O: "ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a snd (free_out acyc_flow) * oc \<mapsto>\<^sub>a replicate vcount 0 \<Longrightarrow>\<^sub>A
+           FO.csr_assn (\<lambda>_. 0) (ob, oe, oc)"
+    by (rule FO.csr_assn_intro) simp_all
+  have I: "ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a snd (free_in acyc_flow) * ic \<mapsto>\<^sub>a replicate vcount 0 \<Longrightarrow>\<^sub>A
+           FI.csr_assn (\<lambda>_. 0) (ib, ie, ic)"
+    by (rule FI.csr_assn_intro) simp_all
+  show ?thesis
+  unfolding dfs_rel_def dfs_init_def
+  apply (sep_frame_fwd rule: O)
+  apply (sep_frame_fwd rule: I)
   apply (rule ent_ex_postI[of _ _ "fst_list @ replicate n 0"])
   apply (rule ent_ex_postI[of _ _ "snd_list @ replicate n 0"])
   apply (rule ent_ex_postI[of _ _ "capacity_list @ replicate n 0"])
@@ -4780,6 +4779,7 @@ lemma dfs_rel_raw_intro:
   apply (sep_auto simp: laux lsvl mfla agfla length_vs_list length_fst_list_m length_snd_list_m
                         length_edges nth_append)
   done
+qed
 
 text \<open>The acyclifier's flow assertion, weakened to exactly what the tree builder needs: a store of at
       least the augmented length whose real-edge prefix is @{const acyc_flow}.  Extracting \<^emph>\<open>this\<close> pure

@@ -585,15 +585,15 @@ lemma L_below: "L \<subseteq> {..<n}"
 
 lemma wnb_abstract_init:
   "v \<in> L \<Longrightarrow> wcsr.wnb_abstract nb_init v = {u. {v, u} \<in> G}"
-  by (simp add: wcsr.wnb_abstract_def csr_abstract_targets[OF L_less] neighbours_G)
+  using csr_abstract_targets[OF L_less] by (simp add: wcsr.wnb_abstract_eq graph.csr_abstract_eq neighbours_G)
 
 lemma wnb_abstract_finite: "finite (wcsr.wnb_abstract C v)"
-  by (simp add: wcsr.wnb_abstract_def graph.csr_abstract_eq)
+  by (simp add: wcsr.wnb_abstract_eq)
 
 text \<open>The neighbourhoods do not depend on the cursors.\<close>
 
 lemma wnb_abstract_cursor: "\<forall>i\<in>A. wcsr.wnb_abstract C i = wcsr.wnb_abstract C' i"
-  by (simp add: wcsr.wnb_abstract_def graph.csr_abstract_eq)
+  by (simp add: wcsr.wnb_abstract_eq)
 
 text \<open>The path search scans the neighbourhoods of the left vertices only.\<close>
 
@@ -901,7 +901,7 @@ lemma scratch_eq:
   "csr_scratch_assn (Ci, Qi, Li, Fi, Bi, Mi) = ps.scratch_assn Ci Qi Fi Bi Mi * xset_assn n L Li"
   by (rule ent_iffI)
      (sep_auto simp: csr_scratch_assn_def pds_aux_assn_def ps.scratch_assn_def
-                     wcsr.wnb_abstract_def graph.csr_abstract_eq)+
+                     wcsr.wnb_abstract_eq)+
 
 theorem path_search_csr_rule:
   assumes len: "card (L \<union> R) \<le> length xs"

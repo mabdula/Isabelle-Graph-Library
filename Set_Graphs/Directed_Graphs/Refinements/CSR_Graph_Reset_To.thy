@@ -160,6 +160,58 @@ qed
 
 end
 
+section \<open>Folding over All Elements\<close>
+
+text \<open>A fold over the whole element array, independent of the cursors.\<close>
+
+definition csr_rt_edges_fold_imp :: "'e::heap csr_rt_imp \<Rightarrow> ('e \<Rightarrow> unit Heap) \<Rightarrow> unit Heap" where
+  "csr_rt_edges_fold_imp = (\<lambda> (Ba, Ea, Ca, Pa) g. do {
+     m \<leftarrow> Array.len Ea;
+     foldl_range_imp (\<lambda> i _. do { e \<leftarrow> Array.nth Ea i; g e }) 0 m () })"
+
+lemma foldl_upt_nth: "foldl (\<lambda> a j. g a (xs ! j)) a [0..<length xs] = foldl g a xs"
+  by (subst (2) map_nth[symmetric]) (simp add: foldl_map)
+
+context csr_graph_reset_to
+begin
+
+lemma csr_rt_edges_fold_imp_rule:
+  assumes "I acc"
+      and g: "\<And> acc e. \<lbrakk>I acc; e \<in> set E\<rbrakk> \<Longrightarrow>
+                I (g acc e) \<and> <R acc> g_imp e <\<lambda>_. R (g acc e)>"
+  shows "<csr_rt_assn c Ci * R acc> csr_rt_edges_fold_imp Ci g_imp
+         <\<lambda>_. csr_rt_assn c Ci * R (foldl g acc E)>"
+proof-
+  obtain Ba Ea Ca Pa where Ci: "Ci = (Ba, Ea, Ca, Pa)"
+    by (cases Ci) auto
+  define F where
+    "F = Ba \<mapsto>\<^sub>a B * Pa \<mapsto>\<^sub>a P * (\<exists>\<^sub>A l. Ca \<mapsto>\<^sub>a l * \<up>(length l = n \<and> (\<forall> v \<in> K. l ! v = c v)))"
+  have split: "csr_rt_assn c Ci = Ea \<mapsto>\<^sub>a E * F"
+    unfolding Ci csr_rt_assn_def csr_assn_def F_def by (simp add: ac_simps)
+  let ?A = "\<lambda> a (_::unit). R a * \<up>(I a)"
+  have step: "<?A a u * (Ea \<mapsto>\<^sub>a E * F)> do { e \<leftarrow> Array.nth Ea j; g_imp e }
+              <\<lambda> r. ?A (g a (E ! j)) r * (Ea \<mapsto>\<^sub>a E * F)>"
+    if "0 \<le> j" "j < length E" for j a and u :: unit
+  proof-
+    have gI: "I a \<Longrightarrow> I (g a (E ! j))"
+      and gi: "I a \<Longrightarrow> <R a> g_imp (E ! j) <\<lambda>_. R (g a (E ! j))>"
+      using g[OF _ nth_mem[OF that(2)]] by simp_all
+    show ?thesis
+      using that(2) by (sep_auto heap: gi simp: gI)
+  qed
+  have run: "<?A acc () * (Ea \<mapsto>\<^sub>a E * F)> foldl_range_imp (\<lambda> i _. do { e \<leftarrow> Array.nth Ea i; g_imp e })
+               0 (length E) ()
+             <\<lambda> r. ?A (foldl g acc E) r * (Ea \<mapsto>\<^sub>a E * F)>"
+    using foldl_range_imp_rule[where A = ?A and g = "\<lambda> j a. g a (E ! j)" and i = 0
+            and n = "length E", OF step]
+    by (simp add: foldl_upt_nth)
+  show ?thesis
+    unfolding split unfolding Ci csr_rt_edges_fold_imp_def prod.case
+    using assms(1) by (sep_auto heap: run)
+qed
+
+end
+
 section \<open>Building the Position Array\<close>
 
 text \<open>One pass over the element array writes the position of every element at its key into a

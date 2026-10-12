@@ -5462,11 +5462,6 @@ text \<open>On the branch where the acyclifier returns a flow (acyc\_flow\_opt =
       obligations (free-edge coverage / init\_partition) become provable; it is discharged at the use
       site, inside solve on the Some branch.\<close>
 
-lemma out_in_csr_fresh:
-  "out.graph.csr_iterated ((!) out.inp.B_spec) u = {}" "inc.graph.csr_iterated ((!) inc.inp.B_spec) u = {}"
-  by (simp_all add: out.graph.csr_iterated_def inc.graph.csr_iterated_def out.graph.seg_def
-                    inc.graph.seg_def)
-
 lemma acyc_of_some:
   assumes some: "acyc_flow_opt = Some f'"
   shows "original_network.acyclic_flow (h \<circ> nth acyc_flow)"
@@ -5478,7 +5473,7 @@ proof -
   have vit0: "vtx_iterated \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> = {}" by (simp add: vtx_iterated_def)
   have ff: "length flow_list = m" using length_flow length_edges by simp
   have fresh: "\<forall>u. out.graph.csr_iterated ((!) out.inp.B_spec) u = {} \<and> inc.graph.csr_iterated ((!) inc.inp.B_spec) u = {}"
-    using out_in_csr_fresh by simp
+    using out.graph.csr_init_iterated inc.graph.csr_init_iterated by simp
   have res: "make_acyclic flow_list = Some f'" using some by (simp add: acyc_flow_opt_def)
   have "original_network.acyclic_flow (h \<circ> (!) f')"
     using make_acyclic_correct_unconditional[OF multigraph_inv_csr ff af_cap_feasible_flow_list vv vabsV vit0 fresh res] by blast
@@ -5559,7 +5554,7 @@ proof -
     by (simp add: vtx_abstract_def V_orig_eq_edged)
   have vit0: "vtx_iterated \<lparr>vi_list = edged_vs_list, vi_pos = 0\<rparr> = {}" by (simp add: vtx_iterated_def)
   have ff: "length flow_list = m" using length_flow length_edges by simp
-  have fresh: "\<forall>u. out.graph.csr_iterated ((!) out.inp.B_spec) u = {} \<and> inc.graph.csr_iterated ((!) inc.inp.B_spec) u = {}" using out_in_csr_fresh by simp
+  have fresh: "\<forall>u. out.graph.csr_iterated ((!) out.inp.B_spec) u = {} \<and> inc.graph.csr_iterated ((!) inc.inp.B_spec) u = {}" using out.graph.csr_init_iterated inc.graph.csr_init_iterated by simp
   have res: "make_acyclic flow_list = Some f'" using sf by (simp add: acyc_flow_opt_def)
   have af: "acyc_flow = f'" using sf by (simp add: acyc_flow_def)
   have eE: "e \<in> {0..<m}" using em by simp
