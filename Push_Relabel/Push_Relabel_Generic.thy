@@ -2,79 +2,11 @@ theory Push_Relabel_Generic
   imports
     Push_Relabel_Basic
     Data_Structures.Fixed_Univ_Map_Specs
-    Data_Structures.Iterable_Set_Specs
+    "../Set_Graphs/Directed_Graphs/Edge_Iterators"
     Data_Structures.Iterable_Set_Reset_To_Specs
 begin
 
 section \<open>The Generic Push-Relabel Algorithm on Abstract Data Types\<close>
-
-subsection \<open>Iterators over Outgoing and Ingoing Edges\<close>
-
-text \<open>REDUNDANT: the two locales below are verbatim copies of @{text outgoing_edge_iterator} and
-      @{text ingoing_edge_iterator} from \<open>Mincost_Flow_Algorithms/Acyclic_Flow.thy\<close>, which must
-      not be imported here. They should be moved to a common place and unified with that copy.\<close>
-
-locale outgoing_edge_iterator =
-  multigraph_spec where fst = fst +
-  outg: indexed_iterable_set where
-      idx_invar     = out_invar and
-      idx_abstract  = out_abstract and
-      idx_current   = out_current and
-      idx_has       = out_has and
-      idx_iterated  = out_iterated and
-      idx_remaining = out_remaining and
-      idx_move      = out_move and
-      idx_reset     = out_reset and
-      K = \<V>
-  for fst :: "'e \<Rightarrow> 'v"
-  and out_invar     :: "'g \<Rightarrow> bool"
-  and out_abstract  :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-  and out_current   :: "'g \<Rightarrow> 'v \<Rightarrow> 'e"
-  and out_has       :: "'g \<Rightarrow> 'v \<Rightarrow> bool"
-  and out_iterated  :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-  and out_remaining :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-  and out_move      :: "'g \<Rightarrow> 'v \<Rightarrow> 'g"
-  and out_reset     :: "'g \<Rightarrow> 'v \<Rightarrow> 'g"
-begin
-
-text \<open>The collection @{term og} implements the outgoing adjacency iff it is well-formed and
-      abstracts, at every vertex, to that vertex's outgoing edges.\<close>
-
-definition "out_graph_inv og \<longleftrightarrow>
-   out_invar og \<and> (\<forall>v \<in> \<V>. out_abstract og v = \<delta>\<^sup>+ v)"
-
-end
-
-locale ingoing_edge_iterator =
-  multigraph_spec where fst = fst +
-  ing: indexed_iterable_set where
-      idx_invar     = in_invar and
-      idx_abstract  = in_abstract and
-      idx_current   = in_current and
-      idx_has       = in_has and
-      idx_iterated  = in_iterated and
-      idx_remaining = in_remaining and
-      idx_move      = in_move and
-      idx_reset     = in_reset and
-      K = \<V>
-  for fst :: "'e \<Rightarrow> 'v"
-  and in_invar     :: "'g \<Rightarrow> bool"
-  and in_abstract  :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-  and in_current   :: "'g \<Rightarrow> 'v \<Rightarrow> 'e"
-  and in_has       :: "'g \<Rightarrow> 'v \<Rightarrow> bool"
-  and in_iterated  :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-  and in_remaining :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-  and in_move      :: "'g \<Rightarrow> 'v \<Rightarrow> 'g"
-  and in_reset     :: "'g \<Rightarrow> 'v \<Rightarrow> 'g"
-begin
-
-text \<open>The collection @{term ig} implements the ingoing adjacency iff it is well-formed and
-      abstracts, at every vertex, to that vertex's ingoing edges.\<close>
-
-definition "in_graph_inv ig \<longleftrightarrow>
-   in_invar ig \<and> (\<forall>v \<in> \<V>. in_abstract ig v = \<delta>\<^sup>- v)"
-
-end
 
 subsection \<open>State and Operations\<close>
 
@@ -94,7 +26,7 @@ text \<open>The state of the algorithm consists of the forward and backward resi
       vertex, relabel a vertex (optionally followed by a gap relabelling) or stop. The operations
       themselves are implemented here once, on the abstract data types, and never construct
       residual edges. The contract of the strategy is stated in terms of the mathematical objects
-      of @{theory Draft.Push_Relabel_Basic}.\<close>
+      of @{theory Push_Relabel.Push_Relabel_Basic}.\<close>
 
 datatype ('e, 'v) pr_op = Push_Fwd 'e | Push_Bwd 'e | Advance 'v | Relabel 'v | Relabel_Gap 'v | Done
 
@@ -114,12 +46,11 @@ locale push_relabel_ops =
   ex_map: fixed_univ_map \<V> ex_invar ex_upd ex_get +
   label_map: fixed_univ_map \<V> label_invar label_upd label_get +
   count_map: fixed_univ_map "{..<2 * card \<V>}" count_invar count_upd count_get +
-  outgoing_edge_iterator where fst = fst and snd = snd
+  bidirectional_iterator where fst = fst and snd = snd
       and out_invar = out_invar and out_abstract = out_abstract
       and out_current = out_current and out_has = out_has
       and out_iterated = out_iterated and out_remaining = out_remaining
-      and out_move = out_move and out_reset = out_reset +
-  ingoing_edge_iterator where fst = fst and snd = snd
+      and out_move = out_move and out_reset = out_reset
       and in_invar = in_invar and in_abstract = in_abstract
       and in_current = in_current and in_has = in_has
       and in_iterated = in_iterated and in_remaining = in_remaining

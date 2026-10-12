@@ -1,52 +1,11 @@
 theory Dijkstra
   imports Directed_Set_Graphs.Multigraph_Weighted_Paths
-          Data_Structures.Iterable_Set_Specs 
+          "../Directed_Graphs/Edge_Iterators"
           Data_Structures.Fixed_Univ_Key_Value_Queue_Specs
           Data_Structures.Fixed_Univ_Map_Specs Data_Structures.Fixed_Univ_Set_Specs
 begin
 
 section \<open>Dijkstra's Shortest-Path Algorithm\<close>
-
-subsection \<open>The Graph as Outgoing Neighbourhoods\<close>
-
-text \<open>The graph is presented to Dijkstra through an @{locale indexed_iterable_set} over the vertices
-      whose iterable set at a vertex \<open>v\<close> is the set of \<^emph>\<open>outgoing\<close> edges \<open>\<delta>\<^sup>+ v\<close> (the neighbourhood of
-      \<open>v\<close>). This is one direction of the two-iterator multigraph presentation from the acyclic-flow
-      development.\<close>
-
-locale outgoing_edge_iterator =
-  multigraph_spec where fst = fst +
-  outg: indexed_iterable_set where
-      idx_invar     = out_invar and
-      idx_abstract  = out_abstract and
-      idx_current   = out_current and
-      idx_has       = out_has and
-      idx_iterated  = out_iterated and
-      idx_remaining = out_remaining and
-      idx_move      = out_move and
-      idx_reset     = out_reset and
-      K = \<V>
-  for fst :: "'e \<Rightarrow> 'v"
-  and out_invar     :: "'g \<Rightarrow> bool"
-  and out_abstract  :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-  and out_current   :: "'g \<Rightarrow> 'v \<Rightarrow> 'e"
-  and out_has       :: "'g \<Rightarrow> 'v \<Rightarrow> bool"
-  and out_iterated  :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-  and out_remaining :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-  and out_move      :: "'g \<Rightarrow> 'v \<Rightarrow> 'g"
-  and out_reset     :: "'g \<Rightarrow> 'v \<Rightarrow> 'g"
-begin
-
-text \<open>The collection @{term og} implements the outgoing adjacency iff it is well-formed and
-      abstracts, at every vertex, to that vertex's outgoing edges.\<close>
-
-definition "out_graph_inv og \<longleftrightarrow>
-   out_invar og \<and> (\<forall>v \<in> \<V>. out_abstract og v = \<delta>\<^sup>+ v)"
-
-end
-
-
-
 
 section \<open>The Program State\<close>
 

@@ -246,7 +246,8 @@ sublocale acyclic_flow_impl
     and snd_exec = "\<lambda> e. snd_list ! e"
   apply (rule acyclic_flow_impl.intro)
   apply (all \<open>(rule list_fixed_univ_map list_fixed_univ_map_len vtx_iterable_set)?\<close>)
-  apply (all \<open>(unfold outgoing_edge_iterator_def ingoing_edge_iterator_def)?\<close>)
+  apply (all \<open>(unfold bidirectional_iterator_def outgoing_edge_iterator_def ingoing_edge_iterator_def,
+                 intro conjI)?\<close>)
   apply (all \<open>(subst verts_V[symmetric], rule out.graph.csr.indexed_iterable_set_axioms
                     inc.graph.csr.indexed_iterable_set_axioms)?\<close>)
   apply unfold_locales

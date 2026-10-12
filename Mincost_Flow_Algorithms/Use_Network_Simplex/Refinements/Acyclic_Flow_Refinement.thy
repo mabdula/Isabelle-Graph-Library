@@ -1,6 +1,7 @@
 theory Acyclic_Flow_Refinement
   imports Mincost_Flow_Algorithms.Acyclic_Flow 
           Separation_Logic_Imperative_HOL_Partial.Array_Blit
+          Data_Structures.Iterable_Set_Specs_Imp
 begin
 
 section \<open>Imperative refinement of the acyclic-flow procedure\<close>
@@ -377,9 +378,10 @@ text \<open>The proof locale combines the functional proof locale @{locale acycl
       its imperative heap handle (@{typ assn} is the separation-logic heap predicate): @{term flow_assn}
       for the flow, @{term state_assn} for the vertex-state map, @{term out_assn} and @{term in_assn} for the
       outgoing and the ingoing edge-iterator collection (at @{term iout} and @{term iin}), and @{term vit_assn} for
-      the vertex iterator.
+      the vertex iterator. The two edge-iterator collections are library instances @{text out_imp} and
+      @{text in_imp} of @{locale indexed_iterable_set_imp} over @{term \<V>}, which supply their triples.
 
-      It then \<^emph>\<open>assumes one Hoare triple per imperative operation\<close>. The discipline is:
+      For the other stores it \<^emph>\<open>assumes one Hoare triple per imperative operation\<close>. The discipline is:
       \<^item> a mutating operation (result @{typ \<open>unit Heap\<close>}) turns the pre-representation of the store into
         the representation of the \<^emph>\<open>functionally updated\<close> store, with no returned value;
       \<^item> a reading operation returns the value the \<^emph>\<open>functional\<close> operation computes, keeping the
@@ -392,10 +394,7 @@ text \<open>The proof locale combines the functional proof locale @{locale acycl
       remainder), so those hypotheses must \<^emph>\<open>still be assumed\<close>. For the flow store that is
       @{term \<open>flow_invar Fl\<close>} together with the key-set membership @{term \<open>e \<in> \<E>\<close>} (mirroring the law
       \<open>fixed_univ_map.fixed_univ_map_upd\<close>); for the vertex-state store @{term \<open>st_invar St\<close>} and
-      @{term \<open>v \<in> \<V>\<close>}; for the two indexed edge iterators @{term \<open>out_invar G\<close>} resp.\ @{term \<open>in_invar G\<close>},
-      @{term \<open>v \<in> \<V>\<close>}, and --- for the \<open>current\<close>/\<open>move\<close> steps --- the extra @{term \<open>out_remaining G v \<noteq> {}\<close>}
-      / @{term \<open>in_remaining G v \<noteq> {}\<close>} (mirroring \<open>indexed_iterable_set.idx_current\<close> and
-      \<open>indexed_iterable_set.idx_move_invar\<close>); and for the vertex iterator @{term \<open>vit_invar Vit\<close>} plus,
+      @{term \<open>v \<in> \<V>\<close>}; and for the vertex iterator @{term \<open>vit_invar Vit\<close>} plus,
       for \<open>current\<close>/\<open>move_on\<close>, @{term \<open>vit_remaining Vit \<noteq> {}\<close>} (mirroring \<open>iterable_set.has_current\<close>
       and \<open>iterable_set.current_element\<close>).\<close>
 
@@ -403,7 +402,21 @@ locale acyclic_flow_impl_refine_proof =
   acyclic_flow_impl where flow_lookup = flow_lookup and st_lookup = st_lookup
       and out_current = out_current and current_vertex = current_vertex +
   acyclic_flow_impl_refine where flow_lookup_imp = flow_lookup_imp and st_lookup_imp = st_lookup_imp
-      and out_current_imp = out_current_imp and current_vertex_imp = current_vertex_imp
+      and out_current_imp = out_current_imp and current_vertex_imp = current_vertex_imp +
+  out_imp: indexed_iterable_set_imp where
+      idx_invar = out_invar and idx_abstract = out_abstract and idx_current = out_current
+      and idx_has = out_has and idx_iterated = out_iterated and idx_remaining = out_remaining
+      and idx_move = out_move and idx_reset = out_reset and K = \<V>
+      and idx_assn = out_assn and idx_current_imp = out_current_imp
+      and idx_has_imp = out_has_imp and idx_move_imp = out_move_imp
+      and idx_reset_imp = out_reset_imp +
+  in_imp: indexed_iterable_set_imp where
+      idx_invar = in_invar and idx_abstract = in_abstract and idx_current = in_current
+      and idx_has = in_has and idx_iterated = in_iterated and idx_remaining = in_remaining
+      and idx_move = in_move and idx_reset = in_reset and K = \<V>
+      and idx_assn = in_assn and idx_current_imp = in_current_imp
+      and idx_has_imp = in_has_imp and idx_move_imp = in_move_imp
+      and idx_reset_imp = in_reset_imp
   for flow_lookup       :: "'farr \<Rightarrow> 'e::heap \<Rightarrow> ('n::linordered_idom)"
     and flow_lookup_imp   :: "'farri \<Rightarrow> 'e \<Rightarrow> 'n Heap"
     and st_lookup         :: "'sarr \<Rightarrow> 'v::heap \<Rightarrow> vertex_state"
@@ -411,11 +424,11 @@ locale acyclic_flow_impl_refine_proof =
     and out_current       :: "'g \<Rightarrow> 'v \<Rightarrow> 'e"
     and out_current_imp   :: "'gi \<Rightarrow> 'v \<Rightarrow> 'e Heap"
     and current_vertex    :: "'vvit \<Rightarrow> 'v"
-    and current_vertex_imp :: "'vviti \<Rightarrow> 'v Heap" +
+    and current_vertex_imp :: "'vviti \<Rightarrow> 'v Heap"
+    and out_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn"
+    and in_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn" +
   fixes flow_assn  :: "'farr \<Rightarrow> 'farri \<Rightarrow> assn"
     and state_assn :: "'sarr \<Rightarrow> 'sarri \<Rightarrow> assn"
-    and out_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn"
-    and in_assn :: "'g \<Rightarrow> 'gi \<Rightarrow> assn"
     and vit_assn   :: "'vvit \<Rightarrow> 'vviti \<Rightarrow> assn"
     and rd         :: assn  \<comment> \<open>footprint of the (read-only) per-edge cap / cost / endpoint stores\<close>
     and Lvst :: nat and Lest :: nat and Ldst :: nat
@@ -438,32 +451,6 @@ locale acyclic_flow_impl_refine_proof =
     and st_upd_rule:
       "\<lbrakk>st_invar St; v \<in> \<V>\<rbrakk> \<Longrightarrow> <state_assn St sh> st_upd_imp sh v q
                  <\<lambda>_. state_assn (st_upd St v q) sh>"
-    \<comment> \<open>outgoing edge iterator --- an @{locale indexed_iterable_set} with key set @{term \<V>}\<close>
-    and out_has_rule:
-      "\<lbrakk>out_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <out_assn G gh> out_has_imp gh v
-                 <\<lambda>r. out_assn G gh * \<up>(r = out_has G v)>"
-    and out_current_rule:
-      "\<lbrakk>out_invar G; v \<in> \<V>; out_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <out_assn G gh> out_current_imp gh v
-                 <\<lambda>r. out_assn G gh * \<up>(r = out_current G v)>"
-    and out_move_rule:
-      "\<lbrakk>out_invar G; v \<in> \<V>; out_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <out_assn G gh> out_move_imp gh v
-                 <\<lambda>_. out_assn (out_move G v) gh>"
-    and out_reset_rule:
-      "\<lbrakk>out_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <out_assn G gh> out_reset_imp gh v
-                 <\<lambda>_. out_assn (out_reset G v) gh>"
-    \<comment> \<open>ingoing edge iterator --- an @{locale indexed_iterable_set} with key set @{term \<V>}\<close>
-    and in_has_rule:
-      "\<lbrakk>in_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <in_assn G gh> in_has_imp gh v
-                 <\<lambda>r. in_assn G gh * \<up>(r = in_has G v)>"
-    and in_current_rule:
-      "\<lbrakk>in_invar G; v \<in> \<V>; in_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <in_assn G gh> in_current_imp gh v
-                 <\<lambda>r. in_assn G gh * \<up>(r = in_current G v)>"
-    and in_move_rule:
-      "\<lbrakk>in_invar G; v \<in> \<V>; in_remaining G v \<noteq> {}\<rbrakk> \<Longrightarrow> <in_assn G gh> in_move_imp gh v
-                 <\<lambda>_. in_assn (in_move G v) gh>"
-    and in_reset_rule:
-      "\<lbrakk>in_invar G; v \<in> \<V>\<rbrakk> \<Longrightarrow> <in_assn G gh> in_reset_imp gh v
-                 <\<lambda>_. in_assn (in_reset G v) gh>"
     \<comment> \<open>vertex iterator --- an @{locale iterable_set}\<close>
     and has_vertex_rule:
       "vit_invar Vit \<Longrightarrow> <vit_assn Vit vh> has_vertex_imp vh
@@ -489,8 +476,6 @@ text \<open>The assumed per-operation Hoare triples are registered for @{method 
       / write then refines its functional counterpart by a one-line separation-logic proof.\<close>
 lemmas [sep_heap_rules] =
   flow_lookup_rule flow_upd_rule st_lookup_rule st_upd_rule
-  out_has_rule out_current_rule out_move_rule out_reset_rule
-  in_has_rule in_current_rule in_move_rule in_reset_rule
   has_vertex_rule current_vertex_rule move_on_vertex_rule
   cap_rule cost_rule fst_exec_rule snd_exec_rule
 
@@ -1472,9 +1457,9 @@ proof -
           have pv: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> Array.nth (ivstack s) (sp - 1) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = vl ! (sp - 1))>"
             using svn by sep_auto
           have phas_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_has_imp (iout s) (vl ! (sp - 1)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = out_has (af_out_arr st) (vl ! (sp - 1)))>"
-            by (sep_auto heap: out_has_rule[OF oti vVn])
+            by (sep_auto heap: out_imp.idx_has_rule[OF oti vVn])
           have phas_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_has_imp (iin s) (vl ! (sp - 1)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = in_has (af_in_arr st) (vl ! (sp - 1)))>"
-            by (sep_auto heap: in_has_rule[OF iti vVn])
+            by (sep_auto heap: in_imp.idx_has_rule[OF iti vVn])
           have disp: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> (if out_has (af_out_arr st) (vl ! (sp - 1)) then out_current_imp (iout s) (vl ! (sp - 1)) \<bind> (\<lambda>a. out_move_imp (iout s) (vl ! (sp - 1)) \<bind> (\<lambda>_. af_handle_imp s a True sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else in_has_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>ih. if ih then in_current_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>a. in_move_imp (iin s) (vl ! (sp - 1)) \<bind> (\<lambda>_. af_handle_imp s a False sp \<bind> (\<lambda>a. case a of (sp', ubd) \<Rightarrow> if ubd then return True else f s sp'))) else st_upd_imp (istate s) (vl ! (sp - 1)) Finished \<bind> (\<lambda>_. f s (sp - 1)))) <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl st) s sp') * \<up>(r = af_unbounded (AF_DFS_impl st))>"
           proof (cases "out_has (af_out_arr st) (vl ! (sp - 1))")
             case oh: True
@@ -1484,8 +1469,8 @@ proof -
             have fsto: "fst_exec (out_current (af_out_arr st) (hd (af_vstack st))) = hd (af_vstack st)" using af_current_out_endpoint[OF mi_cur vV he] fst_exec_eq[OF aeo] by simp
             have call1: "AF_DFS_call_1_conds st" using I(2) ane he by (auto simp: AF_DFS_call_1_conds_def split: list.splits)
             have inv_moved: "AF_inv (st\<lparr>af_out_arr := out_move (af_out_arr st) (hd (af_vstack st))\<rparr>)" using I(1) AF_invar_1_out_advance[OF vV inv1] multigraph_inv_out_advance[OF mi_cur he] vV by (auto simp: AF_inv_def AF_invar_iter_def)
-            have pcur_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_current_imp (iout s) (hd (af_vstack st)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = out_current (af_out_arr st) (hd (af_vstack st)))>" by (sep_auto heap: out_current_rule[OF oti vV ne_out])
-            have pmove_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_move_imp (iout s) (hd (af_vstack st)) <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (out_move (af_out_arr st) (hd (af_vstack st))) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: out_move_rule[OF oti vV ne_out])
+            have pcur_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_current_imp (iout s) (hd (af_vstack st)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = out_current (af_out_arr st) (hd (af_vstack st)))>" by (sep_auto heap: out_imp.idx_current_rule[OF oti vV ne_out])
+            have pmove_out: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> out_move_imp (iout s) (hd (af_vstack st)) <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (out_move (af_out_arr st) (hd (af_vstack st))) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: out_imp.idx_move_rule[OF oti vV ne_out])
             have foldflat_moved: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (out_move (af_out_arr st) (hd (af_vstack st))) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_out_arr := out_move (af_out_arr st) (hd (af_vstack st))\<rparr>) s sp"
               unfolding dfs_rel_def apply (simp only: ex_assn_move_out) apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl]) by (sep_auto simp: T cLv cLe cLd)
             have upd1eq: "AF_DFS_upd1 st = af_handle (st\<lparr>af_out_arr := out_move (af_out_arr st) (hd (af_vstack st))\<rparr>) (out_current (af_out_arr st) (hd (af_vstack st))) True" by (simp add: AF_DFS_upd1_def Let_def)
@@ -1545,8 +1530,8 @@ proof -
               have fsti: "snd_exec (in_current (af_in_arr st) (hd (af_vstack st))) = hd (af_vstack st)" using af_current_in_endpoint[OF mi_cur vV hi] snd_exec_eq[OF aei] by simp
               have call2: "AF_DFS_call_2_conds st" using I(2) ane heno hi by (auto simp: AF_DFS_call_2_conds_def split: list.splits)
               have inv_moved: "AF_inv (st\<lparr>af_in_arr := in_move (af_in_arr st) (hd (af_vstack st))\<rparr>)" using I(1) AF_invar_1_in_advance[OF vV inv1] multigraph_inv_in_advance[OF mi_cur hi] vV by (auto simp: AF_inv_def AF_invar_iter_def)
-              have pcur_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_current_imp (iin s) (hd (af_vstack st)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = in_current (af_in_arr st) (hd (af_vstack st)))>" by (sep_auto heap: in_current_rule[OF iti vV ne_in])
-              have pmove_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_move_imp (iin s) (hd (af_vstack st)) <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (in_move (af_in_arr st) (hd (af_vstack st))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: in_move_rule[OF iti vV ne_in])
+              have pcur_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_current_imp (iin s) (hd (af_vstack st)) <\<lambda>r. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd * \<up>(r = in_current (af_in_arr st) (hd (af_vstack st)))>" by (sep_auto heap: in_imp.idx_current_rule[OF iti vV ne_in])
+              have pmove_in: "<flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (af_in_arr st) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd> in_move_imp (iin s) (hd (af_vstack st)) <\<lambda>_. flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (in_move (af_in_arr st) (hd (af_vstack st))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd>" by (sep_auto heap: in_imp.idx_move_rule[OF iti vV ne_in])
               have foldflat_moved: "flow_assn (af_flow st) (iflow s) * state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) * in_assn (in_move (af_in_arr st) (hd (af_vstack st))) (iin s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el * idstack s \<mapsto>\<^sub>a dl * rd \<Longrightarrow>\<^sub>A dfs_rel (st\<lparr>af_in_arr := in_move (af_in_arr st) (hd (af_vstack st))\<rparr>) s sp"
                 unfolding dfs_rel_def apply (simp only: ex_assn_move_out) apply (rule ent_ex_postI[where x=vl], rule ent_ex_postI[where x=el], rule ent_ex_postI[where x=dl]) by (sep_auto simp: T cLv cLe cLd)
               have upd2eq: "AF_DFS_upd2 st = af_handle (st\<lparr>af_in_arr := in_move (af_in_arr st) (hd (af_vstack st))\<rparr>) (in_current (af_in_arr st) (hd (af_vstack st))) False" by (simp add: AF_DFS_upd2_def Let_def)

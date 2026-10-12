@@ -1210,19 +1210,21 @@ proof -
       and rd = "cap_arr \<mapsto>\<^sub>a cl * cost_arr \<mapsto>\<^sub>a co * fst_arr \<mapsto>\<^sub>a fla * snd_arr \<mapsto>\<^sub>a sla"
       and Lvst = "length vs0" and Lest = "length es0" and Ldst = "length ds0"
     apply intro_locales
+    apply (rule indexed_iterable_set_imp_axioms.intro)
+    apply (rule outI.graph.csr_imp.idx_current_rule; simp add: verts_V)
+    apply (rule outI.graph.csr_imp.idx_has_rule; simp add: verts_V)
+    apply (rule outI.graph.csr_imp.idx_move_rule; simp add: verts_V)
+    apply (rule outI.graph.csr_imp.idx_reset_rule; simp add: verts_V)
+    apply (rule indexed_iterable_set_imp_axioms.intro)
+    apply (rule incI.graph.csr_imp.idx_current_rule; simp add: verts_V)
+    apply (rule incI.graph.csr_imp.idx_has_rule; simp add: verts_V)
+    apply (rule incI.graph.csr_imp.idx_move_rule; simp add: verts_V)
+    apply (rule incI.graph.csr_imp.idx_reset_rule; simp add: verts_V)
     apply (rule acyclic_flow_impl_refine_proof_axioms.intro)
     apply (rule flow_lookup_rule_c; assumption)
     apply (rule flow_upd_rule_c; assumption)
     apply (rule state_lookup_rule_c; assumption)
     apply (rule state_upd_rule_c; assumption)
-    apply (rule outI.graph.csr_imp.idx_has_rule; simp add: verts_V)
-    apply (rule outI.graph.csr_imp.idx_current_rule; simp add: verts_V)
-    apply (rule outI.graph.csr_imp.idx_move_rule; simp add: verts_V)
-    apply (rule outI.graph.csr_imp.idx_reset_rule; simp add: verts_V)
-    apply (rule incI.graph.csr_imp.idx_has_rule; simp add: verts_V)
-    apply (rule incI.graph.csr_imp.idx_current_rule; simp add: verts_V)
-    apply (rule incI.graph.csr_imp.idx_move_rule; simp add: verts_V)
-    apply (rule incI.graph.csr_imp.idx_reset_rule; simp add: verts_V)
     apply (rule vtx_has_rule_c; assumption)
     apply (rule vtx_current_rule_c; assumption)
     apply (rule vtx_move_rule_c; assumption)
@@ -4675,6 +4677,10 @@ proof -
     apply (rule ht_cons_pre[OF ent])
     apply (rule ht_cons_post_prec[OF make_acyclic_prog_rule[OF cl_len cl_eq co_len co_eq fla_len fla_eq sla_len sla_eq lf
                 af_cap_feasible_flow_list cardv cardv cardb]])
+    apply (all \<open>(assumption)?\<close>)
+    apply (intro ent_ex_preI)
+    apply (rule ent_ex_postI)+
+    apply (rule ent_star_mono ent_refl)+
     apply sep_auto
     done
 qed

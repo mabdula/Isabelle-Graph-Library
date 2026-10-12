@@ -5,44 +5,6 @@ theory Dijkstra_Refinement
    Data_Structures.Fixed_Univ_Key_Value_Queue_Specs_Imp
 begin
 
-locale outgoing_edge_iterator_imp =
-  outgoing_edge_iterator where fst = fst
-    and out_invar = out_invar and out_abstract = out_abstract
-    and out_current = out_current and out_has = out_has
-    and out_iterated = out_iterated and out_remaining = out_remaining
-    and out_move = out_move and out_reset = out_reset +
-  outg: indexed_iterable_set_imp where
-      idx_invar     = out_invar and
-      idx_abstract  = out_abstract and
-      idx_current   = out_current and
-      idx_has       = out_has and
-      idx_iterated  = out_iterated and
-      idx_remaining = out_remaining and
-      idx_move      = out_move and
-      idx_reset     = out_reset and
-      K = \<V> and
-      idx_assn        = out_assn and
-      idx_current_imp = out_current_imp and
-      idx_has_imp     = out_has_imp and
-      idx_move_imp    = out_move_imp and
-      idx_reset_imp   = out_reset_imp
-  for fst :: "'e::heap \<Rightarrow> 'v"
-    and out_invar     :: "'g \<Rightarrow> bool"
-    and out_abstract  :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-    and out_current   :: "'g \<Rightarrow> 'v \<Rightarrow> 'e"
-    and out_has       :: "'g \<Rightarrow> 'v \<Rightarrow> bool"
-    and out_iterated  :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-    and out_remaining :: "'g \<Rightarrow> 'v \<Rightarrow> 'e set"
-    and out_move      :: "'g \<Rightarrow> 'v \<Rightarrow> 'g"
-    and out_reset     :: "'g \<Rightarrow> 'v \<Rightarrow> 'g"
-    and out_assn        :: "'g \<Rightarrow> 'gi \<Rightarrow> assn"
-    and out_current_imp :: "'gi \<Rightarrow> 'v \<Rightarrow> 'e Heap"
-    and out_has_imp     :: "'gi \<Rightarrow> 'v \<Rightarrow> bool Heap"
-    and out_move_imp    :: "'gi \<Rightarrow> 'v \<Rightarrow> unit Heap"
-    and out_reset_imp   :: "'gi \<Rightarrow> 'v \<Rightarrow> unit Heap"
-
-
-
 section \<open>Refinement of Dijkstra's Algorithm to Imperative HOL\<close>
 
 text \<open>The refinement follows the discipline of the network simplex refinement: a code locale
@@ -245,8 +207,13 @@ locale dijkstra_impl_refine =
       and parent_invar = parent_invar and parent_upd = parent_upd and parent_lookup = parent_lookup
       and queue_abstract = queue_abstract +
   dist_embedding where h = h and unreached = unreached +
-  graph_imp: outgoing_edge_iterator_imp where fst = fst
-      and out_current_imp = out_current_imp +
+  graph_imp: indexed_iterable_set_imp where
+      idx_invar = out_invar and idx_abstract = out_abstract and idx_current = out_current
+      and idx_has = out_has and idx_iterated = out_iterated and idx_remaining = out_remaining
+      and idx_move = out_move and idx_reset = out_reset and K = \<V>
+      and idx_assn = out_assn and idx_current_imp = out_current_imp
+      and idx_has_imp = out_has_imp and idx_move_imp = out_move_imp
+      and idx_reset_imp = out_reset_imp +
   dist_imp: fixed_univ_map_imp where K = \<V>
       and fixed_univ_map_invar = dist_invar
       and fixed_univ_map_upd = dist_upd
@@ -309,9 +276,10 @@ locale dijkstra_impl_refine =
     and parent_lookup :: "'parr \<Rightarrow> 'v \<Rightarrow> 'e option"
     and queue_abstract :: "'queue \<Rightarrow> ('v \<times> real) set"
     and h :: "'n::{linordered_ab_group_add, heap} \<Rightarrow> real"
-    and unreached :: 'n
-    and out_current_imp :: "'gi \<Rightarrow> 'v \<Rightarrow> 'e Heap"
-    and dist_assn :: "'darr \<Rightarrow> 'di \<Rightarrow> assn"
+    and unreached :: 'n    and out_current_imp :: "'gi \<Rightarrow> 'v \<Rightarrow> 'e Heap"
+    and out_assn
+    and dist_assn
+:: "'darr \<Rightarrow> 'di \<Rightarrow> assn"
     and dist_upd_imp :: "'di \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> unit Heap"
     and dist_lookup_imp :: "'di \<Rightarrow> 'v \<Rightarrow> 'n Heap"
     and parent_assn :: "'parr \<Rightarrow> 'pi \<Rightarrow> assn"
