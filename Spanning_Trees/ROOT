@@ -11,6 +11,7 @@ session "Spanning_Trees" = "HOL-Data_Structures" +
     "Spanning_Trees"
     "Encoding"
     "Insertion_Sort_Desc"
-    "Kruskal_Greedy"
+    "Kruskal_Functional"
+    "Kruskal"
     Arborescense
     Jarnik_Prim

@@ -5,3 +5,4 @@ session "Data_Structures" = "HOL-Data_Structures" +
     Map_Addons
     Set2_Addons             
     Set_Choose
+    UnionFind_Specs

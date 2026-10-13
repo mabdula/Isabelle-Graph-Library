@@ -6,4 +6,6 @@ session "Matroids_Greedy" = "HOL-Data_Structures" +
   theories
     "Matroids_Theory"
     "Indep_System_Matroids_Specs"
-    "Best_In_Greedy"
+    "BestInGreedy_base"
+    "BestInGreedy_exec"
+    "BestInGreedy_stablesort"

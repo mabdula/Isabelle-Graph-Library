@@ -1,6 +1,6 @@
 (*Authors: Mohammad Abdulaziz, Thomas Ammer, Christoph Madlener, Adem Rimpapa,*)
 theory Undirected_Set_Graphs
-  imports Misc
+  imports Undirected_Misc
 begin
 
 section\<open>Undirected Graphs\<close>
