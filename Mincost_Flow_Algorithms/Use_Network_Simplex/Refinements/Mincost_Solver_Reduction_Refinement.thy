@@ -1,5 +1,5 @@
 theory Mincost_Solver_Reduction_Refinement
-  imports "../Mincost_Solver_Reduction"
+  imports Use_Network_Simplex.Mincost_Solver_Reduction
            Separation_Logic_Imperative_HOL_Partial.Array_Blit
 begin
 

@@ -1,7 +1,7 @@
 theory BFS_Refinement
-  imports "../BFS_3" BFS_Subprocedures  Directed_Set_Graphs.Pair_Graph_Imperative
+  imports Graph_Algorithms_Dev.BFS_3 BFS_Subprocedures  Directed_Set_Graphs.Pair_Graph_Imperative
  "HOL-Imperative_HOL.Imperative_HOL" "HOL-Library.IArray" 
-  "../../../Imperative/Array_Range_Iteration"
+  Imperative.Array_Range_Iteration
 begin
 
 lemma triple_res_ht_ex_pre_and_post_I:"(\<And> x. <P x> c <\<lambda> (r1,r2,r3). Q x r1 r2 r3>) 

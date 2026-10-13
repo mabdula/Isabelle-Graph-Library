@@ -1,6 +1,6 @@
 theory Awalk
   imports 
-    "Adaptors/Pair_Graph_Library_Awalk_Adaptor"
+    Directed_Set_Graphs.Pair_Graph_Library_Awalk_Adaptor
     Vwalk         
 begin
 

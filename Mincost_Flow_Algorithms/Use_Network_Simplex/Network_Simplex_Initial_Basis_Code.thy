@@ -1,8 +1,8 @@
 theory Network_Simplex_Initial_Basis_Code
   imports Mincost_Flow_Algorithms.Network_Simplex_Final
           Mincost_Flow_Algorithms.Acyclic_Flow
-          "../../Set_Graphs/Directed_Graphs/CSR_Graph_Spec"
-          "Rooted_Arborescense/Rooted_Arborescense"
+          Directed_Set_Graphs.CSR_Graph_Spec
+          Use_Network_Simplex.Rooted_Arborescense
           Data_Structures.List_Cursor
 begin
 

@@ -2,7 +2,7 @@ theory Push_Relabel_Generic
   imports
     Push_Relabel_Basic
     Data_Structures.Fixed_Univ_Map_Specs
-    "../Set_Graphs/Directed_Graphs/Edge_Iterators"
+    Directed_Set_Graphs.Edge_Iterators
     Data_Structures.Iterable_Set_Reset_To_Specs
 begin
 

@@ -1,6 +1,6 @@
 theory Mincost_Oracle_Certificates_Pluggable_Refinement
   imports Mincost_Oracle_Certificates_Refinement 
-          "../Mincost_Oracle_Certificates_Pluggable"
+          Use_Network_Simplex.Mincost_Oracle_Certificates_Pluggable
 begin
 
 section \<open>Imperative refinement of the pluggable checker\<close>

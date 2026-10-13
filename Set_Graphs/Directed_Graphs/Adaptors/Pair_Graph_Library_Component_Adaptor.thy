@@ -3,7 +3,7 @@ theory Pair_Graph_Library_Component_Adaptor
   imports
     Pair_Graph_Library_Adaptor
     Pair_Graph_Library_Awalk_Adaptor
-    "../Component_Defs"
+    Directed_Set_Graphs.Component_Defs
     Digraph_Component_More
 begin
 

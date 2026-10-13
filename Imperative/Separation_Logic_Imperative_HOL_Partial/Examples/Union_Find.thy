@@ -1,7 +1,7 @@
 section \<open>Union-Find Data-Structure\<close>
 theory Union_Find
 imports 
-  "../Sep_Main" 
+  Separation_Logic_Imperative_HOL_Partial.Sep_Main 
   Collections.Partial_Equivalence_Relation
   "HOL-Library.Code_Target_Numeral"
 begin

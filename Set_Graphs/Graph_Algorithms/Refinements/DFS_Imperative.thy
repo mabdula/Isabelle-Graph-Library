@@ -233,7 +233,7 @@ lemma DFS_imperative'_absrl:
   section \<open>Example Instantiations and Execution\<close>
   
   setup Locale_Code.open_block  
-  interpretation iam_graph: Pair_Graph_Imperative  
+  interpretation iam_graph: Pair_Graph_Imperative_Arrays  
     is_iam iam_new iam_lookup iam_update 
     by unfold_locales
   setup Locale_Code.close_block  
@@ -291,6 +291,8 @@ lemma DFS_imperative'_absrl:
   definition "iam_dfs_imp = iam_dfs.DFS_imperative"
   definition "iam_dfs_initial_state = iam_dfs.DFS_initial_state_impl"
   definition "iam_graph_from_list \<equiv> iam_graph.from_list_impl"
+  definition "iam_graph_from_arrays \<equiv> iam_graph.from_arrays_impl"
+
   definition "sstack \<equiv> DFS_state.stack"
   definition "sseen \<equiv> DFS_state.stack"
   definition "rreturn \<equiv> DFS_state.return"
@@ -347,5 +349,38 @@ in SML_imp module_name exported file_prefix DFS_imperative
     val higraph_from_list = @{code him_graph_from_list} o map (apply2 noi)
     val g'' =  higraph_from_list [(0,1),(1,2),(2,3),(3,1),(4,1)] ()
   \<close>
-  
+
+  text \<open>DFS on a graph given by two arrays holding the first and the second endpoints of the
+        edges: build the imperative graph (a map to neighbourhood lists) and run the imperative DFS.\<close>
+
+  definition dfs_input_arrays_run where
+    "dfs_input_arrays_run Fa Ta s t = do {
+       G \<leftarrow> iam_graph.from_arrays_impl Fa Ta;
+       iam_dfs.DFS_imperative' G s t }"
+
+  export_code dfs_input_arrays_run checking SML_imp
+
+  locale imp_DFS_by_input_arrays =
+    fixes fs ts :: "nat list" and s t :: nat
+  assumes ts_length: "length ts = length fs"
+    and s_in_G: "s \<in> dVs (set (zip fs ts))"
+  begin
+
+  interpretation dfs: imp_DFS_thms is_iam iam_new iam_lookup iam_update
+    is_ias ias_new ias_memb ias_ins ias_delete "iam_graph.from_list (zip fs ts)" s t
+    by unfold_locales (simp add: iam_dfs.DFS_axioms_def iam_graph.from_list_correct(2,3) s_in_G)
+
+  theorem dfs_input_arrays_run_correct:
+    "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> dfs_input_arrays_run Fa Ta s t
+     <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * \<up>(case DFS_state.return r of
+          NotReachable \<Rightarrow> \<nexists>p. vwalk_bet (set (zip fs ts)) s p t
+        | Reachable \<Rightarrow> vwalk_bet (set (zip fs ts)) s (rev (stack r)) t \<and> distinct (stack r)) * true>"
+    using dfs.DFS_correct_1_strong dfs.DFS_correct_2
+    unfolding dfs_input_arrays_run_def
+    by (sep_auto heap: iam_graph.from_arrays_impl_rule[OF ts_length]
+                 simp: iam_dfs.DFS_state_assn_def iam_dfs.DFS_run_impl_def dfs.DFS_impl_to_DFS
+                 split: return.splits)
+
+  end
+
 end

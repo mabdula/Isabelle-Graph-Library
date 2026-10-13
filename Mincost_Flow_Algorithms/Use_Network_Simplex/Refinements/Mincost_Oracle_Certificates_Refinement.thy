@@ -1,5 +1,5 @@
 theory Mincost_Oracle_Certificates_Refinement
-  imports "../Mincost_Oracle_Certificates" 
+  imports Use_Network_Simplex.Mincost_Oracle_Certificates 
           Separation_Logic_Imperative_HOL_Partial.Array_Blit
 begin
 

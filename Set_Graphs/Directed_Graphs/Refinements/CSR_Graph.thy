@@ -1,6 +1,6 @@
 theory CSR_Graph
-  imports CSR_Buildup_Imperative Weighted_Neighbourhoods_Imperative_Spec "../CSR_Graph_Spec"
-    "../../../Imperative/Array_Range_Iteration"
+  imports CSR_Buildup_Imperative Weighted_Neighbourhoods_Imperative_Spec Directed_Set_Graphs.CSR_Graph_Spec
+    Imperative.Array_Range_Iteration
 begin
 
 section \<open>Graphs in CSR Form\<close>

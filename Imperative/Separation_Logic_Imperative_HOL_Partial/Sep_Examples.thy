@@ -2,14 +2,14 @@
 theory Sep_Examples
 imports 
   Sep_Main
-  "Examples/Imp_List_Spec"
-  "Examples/List_Seg" "Examples/Open_List" "Examples/Circ_List"
-  "Examples/Imp_Map_Spec" "Examples/Hash_Map_Impl" "Examples/Array_Map_Impl"
-  "Examples/Imp_Set_Spec" "Examples/Hash_Set_Impl" "Examples/Array_Set_Impl"
-  "Examples/To_List_GA"
-  "Examples/From_List_GA"
-  "Examples/Union_Find"
-  "Examples/Idioms"  
+  Separation_Logic_Imperative_HOL_Partial.Imp_List_Spec
+  Separation_Logic_Imperative_HOL_Partial.List_Seg Separation_Logic_Imperative_HOL_Partial.Open_List Separation_Logic_Imperative_HOL_Partial.Circ_List
+  Separation_Logic_Imperative_HOL_Partial.Imp_Map_Spec Separation_Logic_Imperative_HOL_Partial.Hash_Map_Impl Separation_Logic_Imperative_HOL_Partial.Array_Map_Impl
+  Separation_Logic_Imperative_HOL_Partial.Imp_Set_Spec Separation_Logic_Imperative_HOL_Partial.Hash_Set_Impl Separation_Logic_Imperative_HOL_Partial.Array_Set_Impl
+  Separation_Logic_Imperative_HOL_Partial.To_List_GA
+  Separation_Logic_Imperative_HOL_Partial.From_List_GA
+  Separation_Logic_Imperative_HOL_Partial.Union_Find
+  Separation_Logic_Imperative_HOL_Partial.Idioms  
 begin
 
 

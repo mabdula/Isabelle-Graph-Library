@@ -1,5 +1,5 @@
 theory Dist
-  imports "../Misc/enat_misc" Vwalk
+  imports Directed_Set_Graphs.enat_misc Vwalk
 begin
 
 section \<open>Distances\<close>

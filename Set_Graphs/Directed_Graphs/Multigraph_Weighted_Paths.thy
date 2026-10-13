@@ -1,5 +1,5 @@
 theory Multigraph_Weighted_Paths
-  imports "../Directed_Graphs/Multigraph"
+  imports Directed_Set_Graphs.Multigraph
 begin
 
 section \<open>Weighted Paths and Distances in a Multigraph\<close>

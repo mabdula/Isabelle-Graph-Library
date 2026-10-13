@@ -1,7 +1,7 @@
 theory Component
   imports
     Component_Defs
-    "Adaptors/Pair_Graph_Library_Component_Adaptor"
+    Directed_Set_Graphs.Pair_Graph_Library_Component_Adaptor
     Awalk
     Vwalk
 begin

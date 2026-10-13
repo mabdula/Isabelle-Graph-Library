@@ -1,6 +1,6 @@
 section \<open>Interface for Lists\<close>
 theory Imp_List_Spec
-imports "../Sep_Main"
+imports Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 text \<open>
   This file specifies an abstract interface for list data structures. It can

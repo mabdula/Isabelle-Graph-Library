@@ -1,5 +1,5 @@
 theory CSR_Neighbour_Lists
-  imports "../../Imperative/Array_Range_Iteration"
+  imports Imperative.Array_Range_Iteration
 begin
 
 section \<open>Neighbour Lists of an Edge List\<close>

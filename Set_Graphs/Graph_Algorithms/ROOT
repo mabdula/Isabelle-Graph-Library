@@ -9,6 +9,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     RBT_Map_Extension
     DFS
     DFS_Example
+    DFS_by_Iterator
     BFS_2
     BFS_Subprocedures
     BFS_Example
@@ -27,6 +28,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     "Refinements/BFS_Instantiation"
     "Refinements/BFS_Code_Export"
     "Refinements/Dijkstra_Code_Export"
+    "Refinements/DFS_by_Iterator_Imperative"
 
   document_files
     "root.tex"

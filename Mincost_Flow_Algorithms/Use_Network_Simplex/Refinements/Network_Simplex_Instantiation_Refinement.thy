@@ -1,12 +1,12 @@
 
 theory Network_Simplex_Instantiation_Refinement
-  imports "../Network_Simplex_Initial_Basis_Selector"
+  imports Use_Network_Simplex.Network_Simplex_Initial_Basis_Selector
           Network_Simplex_Refinement
           Acyclic_Flow_Refinement
           Directed_Set_Graphs.CSR_Edge_Input
           Data_Structures.List_Cursor_Imperative
           Data_Structures.Imp_Array_Fun
-          "../Rooted_Arborescense/Rooted_Arborescense_Refinement"
+          Use_Network_Simplex.Rooted_Arborescense_Refinement
 begin
 
 section \<open>Imperative refinement of the orchestrator @{const initial_basis_code_spec.solve}\<close>

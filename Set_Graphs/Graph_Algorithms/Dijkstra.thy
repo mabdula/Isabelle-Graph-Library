@@ -1,6 +1,6 @@
 theory Dijkstra
   imports Directed_Set_Graphs.Multigraph_Weighted_Paths
-          "../Directed_Graphs/Edge_Iterators"
+          Directed_Set_Graphs.Edge_Iterators
           Data_Structures.Fixed_Univ_Key_Value_Queue_Specs
           Data_Structures.Fixed_Univ_Map_Specs Data_Structures.Fixed_Univ_Set_Specs
 begin

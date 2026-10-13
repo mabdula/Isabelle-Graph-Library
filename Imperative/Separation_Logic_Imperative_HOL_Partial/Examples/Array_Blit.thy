@@ -1,7 +1,7 @@
 section \<open>Bit Block Transfer and Other Array Optimizations\<close>
 theory Array_Blit
 imports 
-  "../Sep_Main" 
+  Separation_Logic_Imperative_HOL_Partial.Sep_Main 
   "HOL-Library.Code_Target_Numeral"
 begin
 

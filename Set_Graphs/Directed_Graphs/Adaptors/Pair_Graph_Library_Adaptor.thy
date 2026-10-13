@@ -1,8 +1,8 @@
 (*Author: Christoph Madlener, Mohammad Abdulziz *)
 theory Pair_Graph_Library_Adaptor
   imports
-    "../Pair_Graph"
-    "../Vwalk"
+    Directed_Set_Graphs.Pair_Graph
+    Directed_Set_Graphs.Vwalk
     Graph_Theory.Graph_Theory
 begin
 

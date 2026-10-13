@@ -1,5 +1,5 @@
 theory CSR_Buildup_Imperative
-  imports "../CSR_Buildup" Separation_Logic_Imperative_HOL_Partial.Sep_Main
+  imports Directed_Set_Graphs.CSR_Buildup Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 
 section \<open>Imperative CSR Buildup\<close>

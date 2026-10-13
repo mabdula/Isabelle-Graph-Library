@@ -1,5 +1,5 @@
 theory Pair_Graph_Imperative
-imports Pair_Graph_Specs Imperative.Imperative_DS
+imports Pair_Graph_Specs Imperative.Imperative_DS Imperative.Array_Range_Iteration
 begin
 
   type_synonym 'v id_dl_graph = "'v \<Rightarrow> 'v list option"
@@ -72,8 +72,42 @@ begin
       unfolding from_list_impl_def from_list_def'
       apply sep_auto
       done
-    
-  end    
+
+  end
+
+  text \<open>The same buildup from two arrays of equal length holding the first and the second
+        endpoints of the edges. Storing vertices in arrays needs them to be of sort \<open>heap\<close>.\<close>
+
+  declare iterate_range_infoed.simps[code]
+
+  locale Pair_Graph_Imperative_Arrays =
+    Pair_Graph_Imperative is_map mempty_impl mlookup_impl mupdate_impl
+    for is_map :: "('v::heap \<rightharpoonup> 'v list) \<Rightarrow> 'gimpl \<Rightarrow> assn"
+      and mempty_impl mlookup_impl mupdate_impl
+  begin
+
+    definition "from_arrays_impl Fa Ta \<equiv> do {
+      l \<leftarrow> Array.len Fa;
+      G \<leftarrow> empty_graph_impl;
+      if l = 0 then return G
+      else iterate_range_infoed Fa Ta 0 (l - 1) (\<lambda>u v G. add_edge_impl G u v) G
+    }"
+
+    lemma from_arrays_impl_rule[sep_heap_rules]:
+      assumes "length ts = length fs"
+      shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> from_arrays_impl Fa Ta
+               <\<lambda>G. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * graph_assn (from_list (zip fs ts)) G>"
+    proof -
+      have "{0..length fs - 1} = {..<length fs}" if "fs \<noteq> []"
+        using that by (cases "length fs") auto
+      thus ?thesis
+        unfolding from_arrays_impl_def
+        by (sep_auto heap: iterate_range_infoed_rule[where acc_assn=graph_assn
+              and f="\<lambda>G (u, v). add_edge G u v" and F=emp, simplified]
+            simp: from_list_def assms)
+    qed
+
+  end
 
 
 

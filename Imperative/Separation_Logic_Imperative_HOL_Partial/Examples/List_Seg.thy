@@ -1,6 +1,6 @@
 section \<open>Singly Linked List Segments\<close>
 theory List_Seg
-imports "../Sep_Main"
+imports Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 
 subsection \<open>Nodes\<close>

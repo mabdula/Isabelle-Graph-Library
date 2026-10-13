@@ -1,6 +1,6 @@
 theory Acyclic_Flow
   imports Flow_Theory.Cost_Optimality 
-       "../Set_Graphs/Directed_Graphs/Edge_Iterators"
+       Directed_Set_Graphs.Edge_Iterators
        Data_Structures.Fixed_Univ_Map_Specs
        Data_Structures.Real_Embedding
 begin

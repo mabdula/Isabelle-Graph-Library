@@ -1,7 +1,7 @@
 theory DIMACS_Solver
   imports Mincost_Oracle_Certificates_Pluggable_Refinement Mincost_Solver_Reduction_Refinement
     Network_Simplex_Instantiation_Refinement 
-    "../Network_Simplex_Int"
+    Use_Network_Simplex.Network_Simplex_Int
     Code_Target_Nat_Machine
 begin
 
