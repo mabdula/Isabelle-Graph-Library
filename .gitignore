@@ -1,14 +1,16 @@
+# Only theories, ROOT/ROOTS files and LaTeX document sources are versioned.
+# Everything else (generated code, zips, python, drivers, tests, benchmarks,
+# planning notes, build output) stays local.
+*
+!*/
+!*.thy
+!ROOT
+!ROOTS
+!**/document/**
+!.gitignore
+
+# editor backups and scratch
 *.thy~
 ROOT~
 ROOTS~
-Berge_Formula/output
-Berge_Lemma/output
-Edmonds_Blossom_Algorithm/output
-Matching_LPs/output
-Mincost_Flow_Algorithms/output
-Mincost_Flow_Theory/output
-Primal_Dual_Bipartite_Matching/output
-RANKING/output
-Tutte_Theorem/output
-code/Hungarian_CSR_Variants_imperative.ML
-code
+Scratch.thy
