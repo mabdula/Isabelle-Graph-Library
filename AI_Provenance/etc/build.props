@@ -1,0 +1,8 @@
+title = AI_Provenance
+module = lib/ai_provenance.jar
+requirements = \
+  env:ISABELLE_SCALA_JAR
+sources = \
+  src/ai_provenance.scala
+services = \
+  isabelle.ai_provenance.Tools
