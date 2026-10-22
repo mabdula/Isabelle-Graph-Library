@@ -6,6 +6,8 @@ theory Bipartite_Vertex_Weighted_Matching_LP
   imports Bipartite_Matching_LP
 begin
 
+provenance human
+
 locale bipartite_vertex_weighted_matching_lp = bipartite_matching_lp +
   fixes v :: "'a \<Rightarrow> real"
   assumes weights_pos: "i \<in> L \<Longrightarrow> 0 < v i"

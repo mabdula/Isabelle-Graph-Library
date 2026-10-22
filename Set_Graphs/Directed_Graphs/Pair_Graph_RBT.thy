@@ -1,7 +1,14 @@
+(*
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+*)
+
 theory Pair_Graph_RBT
 imports Pair_Graph_Specs "HOL-Data_Structures.RBT_Set" "HOL-Data_Structures.RBT_Map"
        "Set2_Join_RBT" Tree_Filter
 begin
+
+provenance human
 
 lemma Map_axioms_as_needed: "Map \<langle>\<rangle> RBT_Map.update RBT_Map.delete lookup M.invar"
   using M.Map_axioms

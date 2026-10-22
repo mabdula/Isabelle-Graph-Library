@@ -1,6 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory DFS_Time
   imports DFS "HOL-Library.Time_Functions"
 begin
+
+provenance human
+
 locale DFS_time = DFS where lookup = lookup 
 for lookup :: "'adjmapmap\<Rightarrow> 'v \<Rightarrow> 'vset option" +
 fixes T_diff::"'vset \<Rightarrow> 'vset \<Rightarrow> nat"

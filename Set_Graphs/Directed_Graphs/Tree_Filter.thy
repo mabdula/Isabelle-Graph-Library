@@ -1,6 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Tree_Filter
-  imports "HOL-Data_Structures.Set2_Join"
+  imports "HOL-Data_Structures.Set2_Join" AI_Provenance.Provenance
 begin
+
+provenance human
+
 (*by Thomas*)
 (*Filter as another join-based set operation on binary search trees*)
 context Set2_Join

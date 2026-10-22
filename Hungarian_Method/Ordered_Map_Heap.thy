@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Ordered_Map_Heap (*TODO rename to Key_Value_Queue_Instantiation*)
   imports Complex_Main "Priority_Search_Trees.PST_RBT" Key_Value_Queue_Spec
 begin
+
+provenance human
 
 section \<open>Instantiation of Queue\<close>
 

@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Multigraph
   imports Directed_Set_Graphs.Awalk 
 begin
+
+provenance human
 
 locale multigraph_spec =
   fixes \<E>::"'edge set"

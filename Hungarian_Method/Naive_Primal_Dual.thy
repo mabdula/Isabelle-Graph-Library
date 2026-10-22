@@ -1,3 +1,7 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Naive_Primal_Dual
   imports Directed_Set_Graphs.More_Arith "HOL-Data_Structures.Set_Specs"
     "HOL-Data_Structures.Map_Specs"  Directed_Set_Graphs.More_Logic
@@ -5,6 +9,8 @@ theory Naive_Primal_Dual
     Undirected_Set_Graphs.Directed_Undirected
     Egervary
 begin
+
+provenance human
 
 section \<open>The Algorithm Resulting from Egerváry's Theorem in Schrijver's Book\<close>
 

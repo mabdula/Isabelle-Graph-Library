@@ -1,9 +1,15 @@
+(*
+  Author: Thomas Ammer
+*)
+
 subsection \<open>Flows in Multigraphs with Capacities\<close>
 
 theory Usage_Capacitated
   imports Instantiation 
           Flow_Theory.Hitchcock_Reduction Flow_Theory.STFlow
 begin
+
+provenance human
 
   instantiation hitchcock_wrapper::(linorder, linorder) linorder
 begin

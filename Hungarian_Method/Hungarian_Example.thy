@@ -1,7 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Hungarian_Example
   imports Hungarian_Method_Instantiation  Directed_Set_Graphs.Pair_Graph_RBT
           WBP_Matching_Exec
 begin
+
+provenance human
 
 section \<open>6 Matchings on Bipartite Example Graph\<close>
 

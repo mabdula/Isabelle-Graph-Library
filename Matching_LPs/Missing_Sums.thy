@@ -1,7 +1,14 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Missing_Sums
   imports  Linear_Inequalities.Integer_Hull
-    Jordan_Normal_Form.Missing_VectorSpace
+    Jordan_Normal_Form.Missing_VectorSpace AI_Provenance.Provenance
 begin
+
+provenance human
 
 context gram_schmidt
 begin

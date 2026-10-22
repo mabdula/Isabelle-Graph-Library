@@ -1,3 +1,7 @@
+(*
+  Author: Peter Lammich
+*)
+
 section "Hash-Tables"
 theory Hash_Table
 imports
@@ -5,6 +9,8 @@ imports
   "HOL-Library.Code_Target_Numeral"
   "../Sep_Main"
 begin
+
+provenance human
 
 subsection \<open>Datatype\<close>
 

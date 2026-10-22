@@ -1,9 +1,16 @@
+(*
+  Author: Adem Rimpapa
+  Author: Thomas Ammer
+*)
+
 theory Pair_Graph_U_Specs
   imports Directed_Set_Graphs.Awalk Data_Structures.Map_Addons 
           Data_Structures.Set_Addons Directed_Set_Graphs.Pair_Graph_Specs 
           Undirected_Set_Graphs Pair_Graph_Berge_Adaptor
           "HOL-Eisbach.Eisbach"
 begin
+
+provenance human
 
 (* Note: Some of the definitions in this file are currently not relevant to the rest of
 the formalisation. *)

@@ -1,7 +1,14 @@
+(*
+  Author: Thomas Ammer
+  Author: Mohammad Abdulaziz
+*)
+
 theory Misc
   imports "Directed_Set_Graphs.enat_misc" "HOL-Eisbach.Eisbach_Tools" "HOL-Library.FuncSet" 
           "HOL-Library.Disjoint_Sets" Main "Directed_Set_Graphs.More_Lists"
 begin
+
+provenance human
 
 subsection \<open>Misc\<close>
 

@@ -1,8 +1,14 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Formalisation of the Running Time of Orlin's Algorithm\<close>
 
 theory Orlins_Time
   imports Maintain_Forest_Time Send_Flow_Time Orlins Laminar_Family
 begin
+
+provenance human
 
 locale orlins_time =
  maintain_forest_time where fst = fst + 

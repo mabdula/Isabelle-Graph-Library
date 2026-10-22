@@ -1,7 +1,15 @@
-(*Authors: Mohammad Abdulaziz, Thomas Ammer, Christoph Madlener, Adem Rimpapa,*)
+(*
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+  Author: Christoph Madlener
+  Author: Adem Rimpapa
+*)
 theory Connected_Components
   imports Undirected_Set_Graphs Paths
 begin
+
+provenance human
+
 section \<open>Connected Components and Connectivity\<close>
 
 subsection \<open>Basics of Connected Components\<close>

@@ -1,8 +1,15 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Jarnik_Prim
   imports Arborescense Greedoids.Greedoids_Optimisation  "HOL-Library.Product_Lexorder"
     Directed_Set_Graphs.Pair_Graph_RBT
     Undirected_Set_Graphs.Directed_Undirected
 begin
+
+provenance human
+
 hide_const RBT_Set.insert
 
 lemmas [simp] = set_of_pair_def

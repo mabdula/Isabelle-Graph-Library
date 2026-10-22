@@ -1,8 +1,15 @@
+(*
+  Author: Adem Rimpapa
+  Author: Thomas Ammer
+*)
+
 theory Spanning_Trees
   imports Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor 
           Undirected_Set_Graphs.Pair_Graph_U_Specs
     Matroids_Greedy.Matroids_Theory
 begin
+
+provenance human
 
 section \<open>Spanning Trees\<close>
 

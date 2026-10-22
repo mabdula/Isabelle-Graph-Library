@@ -1,6 +1,13 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Map_Addons
-  imports "HOL-Data_Structures.Map_Specs"
+  imports "HOL-Data_Structures.Map_Specs" AI_Provenance.Provenance
 begin
+
+provenance human
+
 context Map
 begin
 bundle automation = map_empty[simp] map_update[simp] map_delete[simp] invar_empty[simp]

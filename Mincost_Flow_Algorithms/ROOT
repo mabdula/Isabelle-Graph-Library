@@ -2,6 +2,7 @@ session "Mincost_Flow_Algorithms" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
+  AI_Provenance
   Undirected_Set_Graphs
   Flow_Theory
 

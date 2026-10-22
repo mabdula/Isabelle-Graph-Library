@@ -1,6 +1,13 @@
+(*
+  Author: Thomas Ammer
+  Author: Mohammad Abdulaziz
+*)
+
 theory BFS_Subprocedures
   imports BFS_2 "HOL-Data_Structures.RBT_Map" Data_Structures.Set_Addons 
 begin
+
+provenance human
 
 locale Pair_Graph_Sepcs_Set2 =
   Graph: Pair_Graph_Specs

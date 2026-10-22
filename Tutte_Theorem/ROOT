@@ -2,6 +2,7 @@ session "Tutte_Theorem" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
+  AI_Provenance
   "Basic_Matching"
   "Transition_Systems_and_Automata"
   "Kruskal"

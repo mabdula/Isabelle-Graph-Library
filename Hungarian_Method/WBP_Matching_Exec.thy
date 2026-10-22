@@ -1,7 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory WBP_Matching_Exec
   imports Basic_Matching.WBP_Matching_Reductions_Exec  "HOL-Library.Product_Lexorder"
           Hungarian_Method_Instantiation
 begin
+
+provenance human
 
 hide_const PST_RBT.delete PST_RBT.update left
 

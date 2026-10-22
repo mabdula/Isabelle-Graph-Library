@@ -1,4 +1,8 @@
-(*authors: Mohammad Abdulaziz, Thomas Ammer, Christoph Madlener*)
+(*
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+  Author: Christoph Madlener
+*)
 section \<open>Basic Theory on Matchings\<close>
 
 theory Matching
@@ -6,6 +10,8 @@ theory Matching
           Directed_Set_Graphs.More_Lists
           Undirected_Set_Graphs.Bipartite
 begin
+
+provenance human
 
 subsection \<open>Misc\<close>
 

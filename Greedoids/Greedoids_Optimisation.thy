@@ -2,7 +2,12 @@ theory Greedoids_Optimisation
   imports Greedoids "HOL-Eisbach.Eisbach"
 begin
 
-(*Authored by Shriya Meenakshisundaram and Thomas Ammer*)
+provenance human
+
+(*
+  Author: Shriya Meenakshisundaram
+  Author: Thomas Ammer
+*)
 
 section \<open>A Greedy Algorithm for Greedoid Optimisation\<close>
 

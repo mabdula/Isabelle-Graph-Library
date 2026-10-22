@@ -8,6 +8,8 @@ theory Ranking_Order
     Order_Relations
 begin
 
+provenance human
+
 sledgehammer_params [provers = cvc4 vampire verit e spass z3 zipperposition]
 
 definition step :: "('a \<times> 'a) set \<Rightarrow> 'a graph \<Rightarrow> 'a graph \<Rightarrow> 'a \<Rightarrow> 'a graph" where

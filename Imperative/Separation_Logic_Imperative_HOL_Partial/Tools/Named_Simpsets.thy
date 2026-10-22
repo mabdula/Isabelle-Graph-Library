@@ -19,6 +19,8 @@ imports General_ML_Tools
 keywords "named_simpset" :: thy_decl and "print_named_simpset" :: diag
 begin
 
+provenance human
+
 
   subsection \<open>Setup\<close>
   ML_file "named_simpsets.ML"

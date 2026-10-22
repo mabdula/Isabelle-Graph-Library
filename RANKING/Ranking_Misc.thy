@@ -8,8 +8,10 @@ theory Ranking_Misc
     "HOL-Library.FuncSet"
     "HOL-Probability.Probability"
     "Monad_Normalisation.Monad_Normalisation"
-    "HOL-Library.LaTeXsugar"
+    "HOL-Library.LaTeXsugar" AI_Provenance.Provenance
 begin
+
+provenance human
 
 text \<open>
   This theory contains auxiliary lemmas for the probabilistic part, i.e.\ mainly inequalities

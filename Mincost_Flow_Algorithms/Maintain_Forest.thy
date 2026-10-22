@@ -1,8 +1,15 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Formalisation of Forest Maintenance\<close>
 
 theory Maintain_Forest
   imports Orlins_Preparation
 begin
+
+provenance human
+
 subsection \<open>Setup\<close>
 
 locale 

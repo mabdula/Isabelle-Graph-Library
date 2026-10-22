@@ -1,3 +1,7 @@
+(*
+  Author: Peter Lammich
+*)
+
 (*<*)
 theory Sep_Examples
 imports 
@@ -11,6 +15,8 @@ imports
   "Examples/Union_Find"
   "Examples/Idioms"  
 begin
+
+provenance human
 
 
 end

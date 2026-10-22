@@ -1,7 +1,14 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Matrix_Invertable
   imports Jordan_Normal_Form.Determinant
-  Smith_Normal_Form.SNF_Missing_Lemmas
+  Smith_Normal_Form.SNF_Missing_Lemmas AI_Provenance.Provenance
 begin
+
+provenance human
 
 lemma invertible_right_inverse1:
   fixes A :: "'a::{semiring_1, comm_ring_1} mat"

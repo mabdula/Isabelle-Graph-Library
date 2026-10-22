@@ -1,7 +1,14 @@
-(*Authors: Mohammad Abdulaziz, Thomas Ammer, Christoph Madlener, Adem Rimpapa,*)
+(*
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+  Author: Christoph Madlener
+  Author: Adem Rimpapa
+*)
 theory Undirected_Set_Graphs
   imports Misc
 begin
+
+provenance human
 
 section\<open>Undirected Graphs\<close>
 

@@ -1,6 +1,12 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Vwalk
   imports Pair_Graph
 begin
+
+provenance human
 
 context fixes G :: "'a dgraph" begin
 inductive vwalk where

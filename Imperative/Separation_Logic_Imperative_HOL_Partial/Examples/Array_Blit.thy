@@ -1,9 +1,15 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Bit Block Transfer and Other Array Optimizations\<close>
 theory Array_Blit
 imports 
   "../Sep_Main" 
   "HOL-Library.Code_Target_Numeral"
 begin
+
+provenance human
 
 subsection "Definition"
 

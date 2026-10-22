@@ -1,7 +1,14 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Common Proof Methods and Idioms\<close> 
 theory Idioms 
 imports "../Sep_Main" Open_List Circ_List Hash_Set_Impl Array_List
-begin 
+begin
+
+provenance human
+ 
 text_raw\<open>\label{thy:ex:idioms}\<close>
 
   text \<open>

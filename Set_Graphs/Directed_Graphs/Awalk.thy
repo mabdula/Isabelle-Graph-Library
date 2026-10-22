@@ -1,8 +1,15 @@
+(*
+  Author: Mohammad Abdulaziz
+  Author: Adem Rimpapa
+*)
+
 theory Awalk
   imports 
     "Adaptors/Pair_Graph_Library_Awalk_Adaptor"
     Vwalk         
 begin
+
+provenance human
 
 no_notation Digraph.dominates ("_ \<rightarrow>\<index> _")
 no_notation Digraph.reachable1 ("_ \<rightarrow>\<^sup>+\<index> _")

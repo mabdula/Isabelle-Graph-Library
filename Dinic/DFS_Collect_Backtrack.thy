@@ -1,6 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory DFS_Collect_Backtrack
   imports  Graph_Algorithms_Dev.DFS
-begin 
+begin
+
+provenance human
+ 
 section \<open>A DFS with Collection of Dead-End Edges\<close>
 
 text \<open>When DFS backtracks from an edge without finding a path, we call this a dead-end edge.

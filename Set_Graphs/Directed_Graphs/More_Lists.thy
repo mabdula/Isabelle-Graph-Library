@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory More_Lists
-  imports Main "HOL-Library.Extended_Real"
+  imports Main "HOL-Library.Extended_Real" AI_Provenance.Provenance
 begin
+
+provenance human
 
 lemma list_2_preds_aux:
   "\<lbrakk>x' \<in> set xs; P1 x'; \<And>xs1 x xs2. \<lbrakk>xs = xs1 @ [x] @ xs2; P1 x\<rbrakk> \<Longrightarrow>

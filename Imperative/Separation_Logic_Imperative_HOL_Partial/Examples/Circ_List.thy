@@ -1,7 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Circular Singly Linked Lists\<close>
 theory Circ_List
 imports List_Seg Imp_List_Spec
 begin
+
+provenance human
 
 text \<open>
   Example of circular lists, with efficient append, prepend, pop, and rotate

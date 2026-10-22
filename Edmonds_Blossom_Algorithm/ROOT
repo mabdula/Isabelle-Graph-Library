@@ -2,6 +2,7 @@ session "Blossom" = Basic_Matching +
   options [document = pdf, document_output = "output"]
 
   sessions
+    AI_Provenance
     Graph_Algorithms_Dev
 
   (*directories*)

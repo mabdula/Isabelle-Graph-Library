@@ -1,6 +1,13 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Set_Addons
-  imports "HOL-Data_Structures.Set_Specs"
+  imports "HOL-Data_Structures.Set_Specs" AI_Provenance.Provenance
 begin
+
+provenance human
+
 context Set
 begin
 bundle automation = set_empty[simp] set_isin[simp] set_insert[simp] set_delete[simp]

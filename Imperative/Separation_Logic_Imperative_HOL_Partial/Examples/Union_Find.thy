@@ -1,3 +1,7 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Union-Find Data-Structure\<close>
 theory Union_Find
 imports 
@@ -5,6 +9,9 @@ imports
   Collections.Partial_Equivalence_Relation
   "HOL-Library.Code_Target_Numeral"
 begin
+
+provenance human
+
 text \<open>
   We implement a simple union-find data-structure based on an array.
   It uses path compression and a size-based union heuristics.

@@ -1,7 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Generic Algorithm to Generate Sets from Lists\<close>
 theory From_List_GA
 imports Imp_Set_Spec Imp_List_Spec Hash_Set_Impl Array_Set_Impl
 begin
+
+provenance human
 
 term fold
 

@@ -1,7 +1,11 @@
-(*Author: Christoph Madlener *)
+(*
+  Author: Christoph Madlener
+*)
 theory Digraph_Component_More
-  imports Graph_Theory.Digraph_Component
+  imports Graph_Theory.Digraph_Component AI_Provenance.Provenance
 begin
+
+provenance human
 
 text \<open>A maximum subgraph with regard to a property of the arcs will always contain all vertices.\<close>
 lemma max_subgraph_P_arcs_verts:

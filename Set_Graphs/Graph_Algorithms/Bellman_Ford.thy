@@ -1,10 +1,17 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Bellman-Ford Algorithms with Abstract Datatypes\<close>
 theory Bellman_Ford
   imports  "HOL-Library.Extended_Real" 
            Directed_Set_Graphs.Pair_Graph_Specs Directed_Set_Graphs.Awalk "HOL-Eisbach.Eisbach"
            Parent_Map Directed_Set_Graphs.More_Lists Directed_Set_Graphs.More_Logic
            Directed_Set_Graphs.More_Arith
-begin                                 
+begin
+
+provenance human
+                                 
 
 subsection \<open>Auxiliary Lemmas\<close>
 

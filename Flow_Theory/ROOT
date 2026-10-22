@@ -2,6 +2,7 @@ session "Flow_Theory" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
+  AI_Provenance
   Directed_Set_Graphs
 
 theories

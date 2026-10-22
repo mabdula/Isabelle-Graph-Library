@@ -3,8 +3,10 @@
 *)
 
 theory Measure_Misc
-  imports "HOL-Probability.Probability"
+  imports "HOL-Probability.Probability" AI_Provenance.Provenance
 begin
+
+provenance human
 
 lemma restrict_space_UNIV[simp]: "restrict_space M UNIV = M"
   unfolding restrict_space_def

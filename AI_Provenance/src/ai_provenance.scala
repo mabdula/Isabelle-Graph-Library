@@ -73,10 +73,9 @@ object AI_Provenance {
     line: Int,
     name: String,
     label: String,
-    lines: Int
-  ) {
-    def is_header: Boolean = name == Thy_Header.THEORY
-  }
+    lines: Int,
+    is_header: Boolean
+  )
 
   def theory_commands(
     syntax: Outer_Syntax,
@@ -112,6 +111,7 @@ object AI_Provenance {
     var depth = 0
     var switch: Option[String] = None
     var scopes: List[(Int, Option[String])] = Nil
+    var header = true
 
     for ((span, i) <- spans.iterator.zipWithIndex) {
       def where: String = " (line " + start_line(i) + " of theory " + quote(theory) + ")"
@@ -139,7 +139,8 @@ object AI_Provenance {
             }
             else scopes0
           depth = depth1
-          result += Command(theory, start_line(i), name, label getOrElse unmarked, line_count(i))
+          result += Command(theory, start_line(i), name, label getOrElse unmarked, line_count(i), header)
+          if (name == Thy_Header.THEORY) header = false
         case Command_Span.Malformed_Span =>
           error("Malformed command span" + where)
         case _ =>
@@ -191,13 +192,24 @@ object AI_Provenance {
     val selected = structure.build_selection(selection)
     val deps = Sessions.deps(structure.selection(selection), progress = progress)
 
+    /* the theories of a session include those that only other sessions load */
+
+    val theories: Map[String, List[(Document.Node.Name, Outer_Syntax)]] =
+      (for {
+        session <- selected
+        base = deps(session)
+        (name, _) <- base.used_theories
+        if selected.contains(deps.sessions_structure.theory_qualifier(name))
+      } yield (name, base.theory_syntax(name)))
+        .distinctBy({ case (name, _) => name.theory })
+        .groupBy({ case (name, _) => deps.sessions_structure.theory_qualifier(name) })
+
     val all_commands =
       for (session <- selected) yield {
-        val base = deps(session)
         val commands =
-          for (name <- base.proper_session_theories) yield {
+          for ((name, syntax) <- theories.getOrElse(session, Nil).sortBy(_._1.theory)) yield {
             val commands =
-              theory_commands(base.theory_syntax(name), name.theory, File.read(name.path),
+              theory_commands(syntax, name.theory, File.read(name.path),
                 warning = msg => progress.echo_warning(msg))
             if (per_theory) progress.echo(print_count("Theory " + name.theory + ":", count(commands)))
             commands
@@ -259,7 +271,7 @@ Usage: isabelle ai_provenance [OPTIONS] [SESSIONS ...]
   Count the commands and lines of the theories of the given sessions by
   provenance label (human, ai_human, ai, or unmarked), from the theory
   sources. A line belongs to the command in which its first visible symbol
-  occurs; theory headers are not counted.
+  occurs; theory headers, and commands before them, are not counted.
 """,
           "D:" -> (arg => select_dirs = select_dirs ::: List(Path.explode(arg))),
           "d:" -> (arg => dirs = dirs ::: List(Path.explode(arg))),

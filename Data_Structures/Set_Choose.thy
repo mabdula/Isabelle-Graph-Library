@@ -1,6 +1,12 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Set_Choose
 imports Set_Addons
 begin
+
+provenance human
 
 locale Set_Choose = set: Set 
   where set = t_set for t_set ("[_]\<^sub>s") +

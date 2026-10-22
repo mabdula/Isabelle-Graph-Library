@@ -2,6 +2,7 @@ session Basic_Matching = "Undirected_Set_Graphs" +
   options [document = pdf, document_output = "output"]
 
   sessions
+    AI_Provenance
     Undirected_Set_Graphs
     Graph_Algorithms_Dev
     Alternating_Lists

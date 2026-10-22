@@ -2,6 +2,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
   options [document = pdf, document_output = "output"]
 
   sessions
+    AI_Provenance
     Verified_SAT_Based_AI_Planning
     Undirected_Set_Graphs
   theories

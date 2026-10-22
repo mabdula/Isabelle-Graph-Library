@@ -1,8 +1,14 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Using Orlins Algorithms for Flows in Uncapacitated Simple Graphs\<close>
 
 theory Usage_Pair_Graph
   imports Instantiation
 begin
+
+provenance human
 
 definition "\<E>_impl = [(1::nat, 2::nat), (1,3), (3,2), (2,4), (2,5),
 (3,5), (4,6), (6,5), (2,6)] "

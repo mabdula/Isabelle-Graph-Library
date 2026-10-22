@@ -1,3 +1,8 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Faces
   imports  
     Linear_Inequalities.Decomposition_Theorem 
@@ -7,7 +12,10 @@ theory Faces
     Jordan_Normal_Form.DL_Rank_Submatrix
     Subsystems
     Matching_LP
-begin 
+begin
+
+provenance human
+ 
 (*
 
 definition undef_vec :: "nat \<Rightarrow> 'a" where

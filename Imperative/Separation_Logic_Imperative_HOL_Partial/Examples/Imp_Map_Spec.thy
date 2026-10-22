@@ -1,7 +1,14 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Interface for Maps\<close>
 theory Imp_Map_Spec
 imports "../Sep_Main"
 begin
+
+provenance human
+
 text \<open>
   This file specifies an abstract interface for map data structures. It can
   be implemented by concrete map data structures, as demonstrated in the 

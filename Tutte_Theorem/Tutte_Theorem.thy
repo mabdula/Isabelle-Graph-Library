@@ -1,6 +1,13 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Tutte_Theorem
   imports Odd_Components Cardinality_Sums
 begin
+
+provenance human
 
 definition tutte_condition where
   "tutte_condition G = ( \<forall> X \<subseteq> Vs G. card (odd_comps_in_diff G X) \<le> card X)"

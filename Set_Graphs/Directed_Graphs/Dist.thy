@@ -1,6 +1,13 @@
+(*
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+*)
+
 theory Dist
   imports "../Misc/enat_misc" Vwalk
 begin
+
+provenance human
 
 section \<open>Distances\<close>
 

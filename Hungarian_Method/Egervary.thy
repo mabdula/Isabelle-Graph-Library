@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Egervary
   imports Matching_LPs.Matching_LP Tutte_Theorem.Bipartite_Matchings_Existence
 begin
+
+provenance human
 
 section \<open>Egerváry's Theorem\<close>
 

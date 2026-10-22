@@ -1,7 +1,14 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Separation Logic Framework Entrypoint\<close>
 theory Sep_Main
 imports Automation "HOL-Library.Complete_Partial_Order2"
 begin
+
+provenance human
+
   text \<open>Import this theory to make available Imperative/HOL with 
     separation logic.\<close>
     

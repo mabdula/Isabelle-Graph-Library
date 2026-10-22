@@ -1,6 +1,13 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Cardinality_Sums
   imports Basic_Matching.Matching Basic_Matching.Berge
 begin
+
+provenance human
 
 lemma matching_int_card_is_sum:
   assumes "finite (Vs M)"

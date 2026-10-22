@@ -1,6 +1,12 @@
+(*
+  Author: Adem Rimpapa
+*)
+
 theory Best_In_Greedy
   imports Main Indep_System_Matroids_Specs
 begin
+
+provenance human
 
 section \<open>The Best-In-Greedy Algorithm for Matroids\<close>
 

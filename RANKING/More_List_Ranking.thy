@@ -7,8 +7,11 @@ theory More_List_Ranking
   imports
     "List-Index.List_Index"
     "HOL-Library.Sublist"
-    "HOL-Library.LaTeXsugar"
+    "HOL-Library.LaTeXsugar" AI_Provenance.Provenance
 begin
+
+provenance human
+
 text \<open>
   Permutations are modelled as distinct lists over some set in this formalization. That means both
   the arrival order of the online vertices $U$ and the (later random) ordering of the offline

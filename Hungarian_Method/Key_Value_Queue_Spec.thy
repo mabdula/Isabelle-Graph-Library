@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Key_Value_Queue_Spec
-  imports Main
+  imports Main AI_Provenance.Provenance
 begin
+
+provenance human
 
 section \<open>Specification of Queue as used by Hungarian Method\<close>
 

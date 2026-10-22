@@ -1,6 +1,13 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Even_More_Graph_2
   imports Undirected_Set_Graphs.Undirected_Set_Graphs
 begin
+
+provenance human
 
 (*definition Vs where "Vs E \<equiv> \<Union> E"*)
 

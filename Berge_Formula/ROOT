@@ -1,7 +1,8 @@
 session "Berge_Formula" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
-sessions    
+sessions
+  AI_Provenance
   "Tutte_Theorem"
 
 theories

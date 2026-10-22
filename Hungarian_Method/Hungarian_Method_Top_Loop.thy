@@ -1,7 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Hungarian_Method_Top_Loop
   imports Matching_LPs.Matching_LP
           Path_Search_Result Basic_Matching.Matching_Augmentation_Executable
 begin
+
+provenance human
 
 section \<open>Top Loop for Hungarian Method\<close>
 

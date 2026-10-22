@@ -1,9 +1,13 @@
-(*Author: Christoph Madlener *)
+(*
+  Author: Christoph Madlener
+*)
 theory Pair_Graph_Library_Awalk_Adaptor
   imports
     "../Awalk_Defs"
     Pair_Graph_Library_Adaptor
 begin
+
+provenance human
 
 context ddfs
 begin

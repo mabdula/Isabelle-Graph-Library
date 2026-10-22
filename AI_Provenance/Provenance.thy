@@ -1,6 +1,6 @@
 theory Provenance
   imports Pure
-  keywords "provenance" :: thy_decl
+  keywords "provenance" :: thy_decl % "invisible"
 begin
 
 section \<open>Provenance of theory content\<close>
@@ -24,6 +24,10 @@ text \<open>
   of the three above, and reports it as markup. The labels have no other effect on the
   theory. They are counted from the theory sources by the separate tool
   \<^verbatim>\<open>isabelle ai_provenance\<close>.
+
+  A theory that does not import this theory through other theories imports it as its last
+  import: as the first import, it would give the theory the simplifier set-up of Pure
+  instead of that of HOL.
 \<close>
 
 ML \<open>

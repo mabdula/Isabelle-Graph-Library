@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Dinic
 imports Blocking_Flow
 begin
+
+provenance human
 
 section \<open>Dinic's Algorithm to Compute Maximum Flows\<close>
 

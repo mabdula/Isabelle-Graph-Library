@@ -1,6 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Alternating_Forest_Executable
   imports  Graph_Algorithms_Dev.Parent_Map  Alternating_Forest_Spec
 begin
+
+provenance human
+
 hide_const verts
 section \<open>Executable Alternating Forest\<close>
 

@@ -3,8 +3,10 @@
 *)
 
 theory enat_misc
-  imports Main "HOL-Library.Extended_Nat"
+  imports Main "HOL-Library.Extended_Nat" AI_Provenance.Provenance
 begin
+
+provenance human
 
 declare one_enat_def
 

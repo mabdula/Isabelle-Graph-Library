@@ -1,3 +1,8 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Integer_hull_f_to_a
   imports 
     Matrix_Invertable
@@ -7,6 +12,8 @@ theory Integer_hull_f_to_a
     Integer_Polyhedron
     Missing_Sums 
 begin
+
+provenance human
 
 context gram_schmidt
 begin

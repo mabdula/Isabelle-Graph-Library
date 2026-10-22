@@ -14,7 +14,7 @@ Humans assign `human` and `ai_human`. You make no judgement between the labels:
   - on `apply`, it labels the rest of the apply script, including `done`;
   - on any other command, e.g. `by`, it labels that command only.
 - Examples: `lemma \<^marker>\<open>provenance ai\<close> foo: ...` labels a lemma and its proof; `by \<^marker>\<open>provenance ai\<close> auto` labels only the proof; `have \<^marker>\<open>provenance ai\<close> ...` labels one step of an Isar proof and its sub-proof.
-- The keyword is only available in theories that import `AI_Provenance.Provenance`, directly or through other imports. If a theory you create does not reach it, add it to the imports, and add `AI_Provenance` to the `sessions` of the ROOT file.
+- The keyword is only available in theories that import `AI_Provenance.Provenance`, directly or through other imports. If a theory you create does not reach it, add it as the last of the imports, and add `AI_Provenance` to the `sessions` of the ROOT file. If it is the first import, the theory gets the simplifier set-up of Pure instead of that of HOL, and simple proofs and definitions fail.
 
 ## Rules
 

@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory More_Arith
   imports Main Complex_Main "HOL-Library.Extended_Real" More_Logic
 begin
+
+provenance human
 
 subsection \<open>Sums\<close>
 

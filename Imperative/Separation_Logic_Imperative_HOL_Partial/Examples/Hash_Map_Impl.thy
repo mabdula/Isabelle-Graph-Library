@@ -1,7 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 section "Hash-Maps (Interface Instantiations)"
 theory Hash_Map_Impl
 imports Imp_Map_Spec Hash_Map
 begin
+
+provenance human
 
 (*
 lemma hm_map_impl: "imp_map is_hashmap"

@@ -1,7 +1,14 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Interface for Sets\<close>
 theory Imp_Set_Spec
 imports "../Sep_Main"
 begin
+
+provenance human
+
 text \<open>
   This file specifies an abstract interface for set data structures. It can
   be implemented by concrete set data structures, as demonstrated in the 

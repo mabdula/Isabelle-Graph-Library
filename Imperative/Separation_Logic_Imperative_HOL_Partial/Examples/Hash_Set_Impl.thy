@@ -1,7 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 section "Hash-Sets"
 theory Hash_Set_Impl
 imports Imp_Set_Spec Hash_Map_Impl
 begin
+
+provenance human
 
 subsection \<open>Auxiliary Definitions\<close>
 definition map_of_set:: "'a set \<Rightarrow> 'a\<rightharpoonup>unit" 

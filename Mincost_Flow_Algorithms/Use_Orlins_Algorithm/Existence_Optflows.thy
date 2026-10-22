@@ -1,8 +1,15 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Characterising the Existence of Optimum Flows\<close>
 
 theory Existence_Optflows
   imports Usage_Capacitated
 begin
+
+provenance human
+
 hide_const \<E>_impl es \<c>_impl \<b>_impl \<u>_impl \<b>
 
 locale cost_flow_network_flow_existence

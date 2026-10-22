@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Alternating_Forest_Spec
   imports Matching
 begin
+
+provenance human
 
 section \<open>Specification of Executable Alternating Forest\<close>
 

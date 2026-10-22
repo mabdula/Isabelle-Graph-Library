@@ -1,6 +1,12 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Alternating_Lists
 imports Undirected_Set_Graphs.Undirected_Set_Graphs
 begin
+
+provenance human
 
 
 subsection\<open>Alternating lists and auxilliary theory about them\<close>

@@ -1,8 +1,15 @@
+(*
+  Author: Peter Lammich
+*)
+
 theory Array_Map_Impl
 imports 
   "../Sep_Main" Imp_Map_Spec Array_Blit
   "HOL-Library.Code_Target_Numeral"
 begin
+
+provenance human
+
   subsection "Array Map"
 
   type_synonym 'v array_map = "'v option array"

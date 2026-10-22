@@ -2,6 +2,7 @@ session "Primal_Dual_Bipartite_Matching" = "HOL-Probability" +
   options [document = pdf, document_output = "output"]
 
 sessions
+    AI_Provenance
     "LP_Duality"
     "Treaps"
     "Basic_Matching"

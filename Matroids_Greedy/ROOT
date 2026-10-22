@@ -1,6 +1,7 @@
 session "Matroids_Greedy" = "HOL-Data_Structures" + 
   options [document = pdf, document_output = "output"]
   sessions
+    AI_Provenance
     "Matroids"
 
   theories

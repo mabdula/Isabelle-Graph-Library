@@ -1,8 +1,16 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Subsystems
   imports  Linear_Inequalities.Decomposition_Theorem 
-    Jordan_Normal_Form.DL_Rank_Submatrix
+    Jordan_Normal_Form.DL_Rank_Submatrix AI_Provenance.Provenance
 
-begin 
+begin
+
+provenance human
+ 
 
 definition sub_system where
   "sub_system A b I = (submatrix A I UNIV,  vec_of_list (nths (list_of_vec b) I))"

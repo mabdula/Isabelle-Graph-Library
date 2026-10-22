@@ -1,5 +1,8 @@
 session "Data_Structures" = "HOL-Data_Structures" +
 
+  sessions
+    AI_Provenance
+
   theories
     Set_Addons
     Map_Addons

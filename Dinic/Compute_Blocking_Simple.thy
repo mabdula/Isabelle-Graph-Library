@@ -1,9 +1,15 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Compute_Blocking_Simple
   imports Directed_Set_Graphs.Pair_Graph_Specs
     Data_Structures.Set2_Addons Data_Structures.Set_Addons
     Blocking_Flow
 
 begin
+
+provenance human
 
 section \<open>Computation of Blocking Flows in Simple Directed Graphs\<close>
 

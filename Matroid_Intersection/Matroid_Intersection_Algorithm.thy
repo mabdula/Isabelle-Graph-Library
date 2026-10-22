@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Matroid_Intersection_Algorithm
   imports Matroid_Intersection
 begin
+
+provenance human
 
 section \<open>Maximum Cardinality Matroid Intersection Algorithm\<close>
 

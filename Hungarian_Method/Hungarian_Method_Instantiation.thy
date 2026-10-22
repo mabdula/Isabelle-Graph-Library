@@ -1,3 +1,7 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Hungarian_Method_Instantiation
   imports  Primal_Dual_Path_Search Basic_Matching.Alternating_Forest_Executable 
     Ordered_Map_Heap Naive_Primal_Dual Basic_Matching.Matching_Augmentation_Executable
@@ -5,6 +9,9 @@ theory Hungarian_Method_Instantiation
     Directed_Set_Graphs.Pair_Graph_RBT
     Graph_Algorithms_Dev.RBT_Map_Extension
 begin
+
+provenance human
+
 section \<open>Instantiation of the Hungarian Method\<close>
 
 text \<open>We use Red-Black-Trees to obtain an executable for the Hungarian Method.

@@ -2,6 +2,7 @@ session "Dinic" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
+  AI_Provenance
   Flow_Theory
   Graph_Algorithms_Dev
 

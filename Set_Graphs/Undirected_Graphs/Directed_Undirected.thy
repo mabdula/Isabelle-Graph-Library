@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Directed_Undirected 
   imports Directed_Set_Graphs.Awalk Undirected_Set_Graphs Pair_Graph_Berge_Adaptor
 begin
+
+provenance human
 
 subsection \<open>Relationship between Symmetric Directed Graphs and Undirected Graphs\<close>
 

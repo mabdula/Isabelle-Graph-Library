@@ -3,8 +3,10 @@
 *)
 
 theory Order_Relations
-  imports Comparison_Sort_Lower_Bound.Linorder_Relations
+  imports Comparison_Sort_Lower_Bound.Linorder_Relations AI_Provenance.Provenance
 begin
+
+provenance human
 
 
 text \<open>Weaker versions of \<^term>\<open>refl_on\<close> (and \<^term>\<open>preorder_on\<close>/\<^term>\<open>linorder_on\<close>) that don't enforce

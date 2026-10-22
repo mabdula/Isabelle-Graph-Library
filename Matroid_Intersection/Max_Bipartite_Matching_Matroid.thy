@@ -1,7 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Max_Bipartite_Matching_Matroid
   imports Basic_Matching.Matching  Matroid_Intersection_Algorithm
           Compute_Path "HOL-Library.Product_Lexorder"
 begin
+
+provenance human
 
 lemma card_geq_2I: "\<lbrakk>finite X; x \<in> X; y \<in> X; x\<noteq> y\<rbrakk> \<Longrightarrow> card X \<ge> 2"
   by (metis card_le_Suc0_iff_eq not_less_eq_eq numeral_2_eq_2)

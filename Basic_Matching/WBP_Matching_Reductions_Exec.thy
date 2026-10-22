@@ -1,8 +1,14 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory WBP_Matching_Reductions_Exec
   imports Directed_Set_Graphs.More_Arith Undirected_Set_Graphs.Directed_Undirected
           Directed_Set_Graphs.Pair_Graph_RBT Graph_Algorithms_Dev.RBT_Map_Extension
           Weighted_Matchings_Reductions
 begin
+
+provenance human
 
 section \<open>Reductions for Weighted Bipartite Matching Executable\<close>
 
