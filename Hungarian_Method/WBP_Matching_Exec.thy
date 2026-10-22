@@ -516,7 +516,7 @@ lemma compute_min_weight_perfect_matching_correct:
 lemma upairs_matching_abstract:
  "upairs_of_map (lookup M) = matching_abstract M"
   by(auto simp add: upairs_of_map_def matching_abstract_def
- matching_augmentation_spec.\<M>_def'[OF aug_a_matching.matching_augmentation_spec_axioms])
+ Matching_Augmentation_Specs.\<M>_def'[OF aug_a_matching.Matching_Augmentation_Specs_axioms])
 
 lemma extract_mw_matching_same:
       "graph_completer_spec.extract_mw_matching (\<lambda>f. f) isin vset_empty (\<lambda>f. f) \<langle>\<rangle> RBT_Map.update

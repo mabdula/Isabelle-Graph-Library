@@ -21,11 +21,11 @@ lemma Map_axioms_as_needed: "Map \<langle>\<rangle> RBT_Map.update RBT_Map.delet
   by(auto simp add: RBT_Set.empty_def)
 
 global_interpretation aug_a_matching:
-  matching_augmentation_spec Leaf update delete lookup M.invar
+  Matching_Augmentation_Specs Leaf update delete lookup M.invar
   defines matching_augment_impl = aug_a_matching.augment_impl
     and matching_abstract = aug_a_matching.\<M>
     and matching_invar = aug_a_matching.invar_matching
-  by(auto intro!: matching_augmentation_spec.intro 
+  by(auto intro!: Matching_Augmentation_Specs.intro 
       simp add:  Map_axioms_as_needed)
 
 abbreviation "vset_to_set \<equiv> Tree2.set_tree"
@@ -598,7 +598,7 @@ interpretation fe_spec:
 
 interpretation matching_augmentation_thms:
   matching_augmentation Leaf update delete lookup M.invar
-  using aug_a_matching.matching_augmentation_spec_axioms
+  using aug_a_matching.Matching_Augmentation_Specs_axioms
   by(auto intro!: matching_augmentation.intro)
 
 lemmas augmentation_correct =
@@ -628,7 +628,7 @@ abbreviation "search_path_here \<equiv>
                      (\<lambda> f T init. fold_rbt (\<lambda> x y. f y x) init T)
                      filter_rbt)"
 
-abbreviation "symmetric_buddies \<equiv> matching_augmentation_spec.symmetric_buddies"
+abbreviation "symmetric_buddies \<equiv> Matching_Augmentation_Specs.symmetric_buddies"
 
 abbreviation "good_search_result \<equiv>  
   hungarian_top_loop.good_search_result lookup potential_invar' edge_costs G"
@@ -710,7 +710,7 @@ next
   have \<M>_is: "pd_path_search_spec.\<M> (lookup M) =
              matching_abstract M" 
     by(force simp add: matching_abstract_def pd_path_search_spec.\<M>_def
-        matching_augmentation_spec.\<M>_def'[OF aug_a_matching.matching_augmentation_spec_axioms]
+        Matching_Augmentation_Specs.\<M>_def'[OF aug_a_matching.Matching_Augmentation_Specs_axioms]
         doubleton_eq_iff) 
   interpret pd_path_search: primal_dual_path_search
     (*the graph*)
