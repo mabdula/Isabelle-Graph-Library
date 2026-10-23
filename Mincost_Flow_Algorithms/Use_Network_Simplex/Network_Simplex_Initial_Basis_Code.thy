@@ -489,7 +489,7 @@ definition out_lo :: "nat list" where
 definition in_lo :: "nat list" where
   "in_lo = butlast (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
 
-text \<open>A vertex whose blocks are empty in \<^emph>\<open>both\<close> CSRs (@{const csr_ranges.csr_empty}) is an endpoint of
+text \<open>A vertex whose blocks are empty in \<^emph>\<open>both\<close> CSRs (@{const csr_blocks.csr_empty}) is an endpoint of
       no edge --- a \<^emph>\<open>lonely\<close> vertex. The test is two O(1) reads per CSR, so it introduces no extra
       sweep.\<close>
 

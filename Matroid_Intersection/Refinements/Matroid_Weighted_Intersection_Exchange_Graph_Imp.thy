@@ -1554,7 +1554,7 @@ proof-
     csr.wtight_ctx "warr_assn n h"
     "wctx_assn Vi Fr Bf Da Pa Mi Ti" "wws Vi Fr Bf Da Pa Mi Ti"
     "ost1 * ost2 * (case Gc of (Ba, Ga) \<Rightarrow>
-       Ba \<mapsto>\<^sub>a map (start_off es0) [0..<Suc n] * Ga \<mapsto>\<^sub>a build_nha es0 n)"
+       Ba \<mapsto>\<^sub>a map (csr_start (nbrs es0)) [0..<Suc n] * Ga \<mapsto>\<^sub>a csr_entries (nbrs es0) n)"
     by (rule imp_loop)
   show ?thesis
     by (rule ht_cons_pre[OF _ l.wmi_run_imp_correct]) (intro ent_star_mono ent_refl len_warr)

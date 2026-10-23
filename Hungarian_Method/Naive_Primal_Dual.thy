@@ -6,7 +6,7 @@ theory Naive_Primal_Dual
     Egervary
 begin
 
-section \<open>The Algorithm Resulting from Egerváry's Theorem in Schrijver's Book\<close>
+section \<open>The Algorithm Resulting from Egervary's Theorem in Schrijver's Book\<close>
 
 subsection \<open>Preparation, to be moved\<close>
 
