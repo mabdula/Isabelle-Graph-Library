@@ -2,7 +2,7 @@ theory Matching_Certificate_Imperative
   imports
     Hungarian_Method.Matching_Certificate_Spec
     Separation_Logic_Imperative_HOL_Partial.Sep_Main
-    Data_Structures.Fixed_Univ_Set_Specs_Imp
+    Data_Structures.Fixed_Univ_Set_Iterate_Imp
 begin
 
 section \<open>Certificate Checkers for Extremal Bipartite Matchings: Imperative Refinement\<close>
@@ -19,33 +19,34 @@ locale imp_rlist =
   assumes len_rule: "<rl_assn xs p> len_imp p <\<lambda>r. rl_assn xs p * \<up>(r = length xs)>"
     and nth_rule: "i < length xs \<Longrightarrow> <rl_assn xs p> nth_imp p i <\<lambda>r. rl_assn xs p * \<up>(r = xs ! i)>"
 
-text \<open>The edges: an iterable set of edge names with membership, and the left endpoint, the right
-      endpoint and the weight of every edge. The iterator enumerates the set in the order
-      @{term elst}.\<close>
+text \<open>The edges: an iterable fixed-universe set of edge names
+      (@{locale fixed_univ_set_iterate_imp}) with membership, and the left endpoint
+      @{term efst}, the right endpoint @{term esnd} and the weight @{term ew} of every edge.\<close>
 
 locale imp_edge_set =
-  fixes es_assn :: "'e set \<Rightarrow> ('e \<Rightarrow> nat) \<Rightarrow> ('e \<Rightarrow> nat) \<Rightarrow> ('e \<Rightarrow> 'n) \<Rightarrow> 'p \<Rightarrow> assn"
-    and elst :: "'e set \<Rightarrow> 'e list"
-    and it_assn :: "'e list \<Rightarrow> 'it \<Rightarrow> assn"
+  es: fixed_univ_set_iterate_imp U es_invar id es_assn lst it_assn it_init it_has_next it_next
+  for U :: "'e set" and es_invar :: "'e set \<Rightarrow> bool" and es_assn :: "'e set \<Rightarrow> 'p \<Rightarrow> assn"
+    and lst :: "'e set \<Rightarrow> 'e list" and it_assn :: "'e set \<Rightarrow> 'p \<Rightarrow> 'e list \<Rightarrow> 'it \<Rightarrow> assn"
+    and it_init :: "'p \<Rightarrow> 'it Heap" and it_has_next :: "'it \<Rightarrow> bool Heap"
+    and it_next :: "'it \<Rightarrow> ('e \<times> 'it) Heap" +
+  fixes efst :: "'e \<Rightarrow> nat"
+    and esnd :: "'e \<Rightarrow> nat"
+    and ew :: "'e \<Rightarrow> 'n"
     and memb_imp :: "'p \<Rightarrow> 'e \<Rightarrow> bool Heap"
     and fst_imp :: "'p \<Rightarrow> 'e \<Rightarrow> nat Heap"
     and snd_imp :: "'p \<Rightarrow> 'e \<Rightarrow> nat Heap"
     and w_imp :: "'p \<Rightarrow> 'e \<Rightarrow> 'n Heap"
-    and it_init :: "'p \<Rightarrow> 'it Heap"
-    and it_has_next :: "'p \<Rightarrow> 'it \<Rightarrow> bool Heap"
-    and it_next :: "'p \<Rightarrow> 'it \<Rightarrow> ('e \<times> 'it) Heap"
-  assumes memb_rule:
-      "<es_assn D F T W p> memb_imp p e <\<lambda>r. es_assn D F T W p * \<up>(r \<longleftrightarrow> e \<in> D)>"
-    and fst_rule: "e \<in> D \<Longrightarrow> <es_assn D F T W p> fst_imp p e <\<lambda>r. es_assn D F T W p * \<up>(r = F e)>"
-    and snd_rule: "e \<in> D \<Longrightarrow> <es_assn D F T W p> snd_imp p e <\<lambda>r. es_assn D F T W p * \<up>(r = T e)>"
-    and w_rule: "e \<in> D \<Longrightarrow> <es_assn D F T W p> w_imp p e <\<lambda>r. es_assn D F T W p * \<up>(r = W e)>"
-    and it_init_rule: "<es_assn D F T W p> it_init p <\<lambda>it. es_assn D F T W p * it_assn (elst D) it>"
-    and it_has_next_rule:
-      "<es_assn D F T W p * it_assn xs it> it_has_next p it
-       <\<lambda>r. es_assn D F T W p * it_assn xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
-    and it_next_rule:
-      "<es_assn D F T W p * it_assn (x # xs) it> it_next p it
-       <\<lambda>(y, it'). es_assn D F T W p * it_assn xs it' * \<up>(y = x)>"
+  assumes memb_rule: "<es_assn D p> memb_imp p e <\<lambda>r. es_assn D p * \<up>(r \<longleftrightarrow> e \<in> D)>"
+    and fst_rule: "e \<in> D \<Longrightarrow> <es_assn D p> fst_imp p e <\<lambda>r. es_assn D p * \<up>(r = efst e)>"
+    and snd_rule: "e \<in> D \<Longrightarrow> <es_assn D p> snd_imp p e <\<lambda>r. es_assn D p * \<up>(r = esnd e)>"
+    and w_rule: "e \<in> D \<Longrightarrow> <es_assn D p> w_imp p e <\<lambda>r. es_assn D p * \<up>(r = ew e)>"
+begin
+
+lemmas it_init_rule = es.it_init_rule[unfolded id_apply]
+  and it_has_next_rule = es.it_has_next_rule[unfolded id_apply]
+  and it_next_rule = es.it_next_rule[unfolded id_apply]
+
+end
 
 text \<open>The mark sets are fixed-universe sets (@{locale fixed_univ_set_imp}), of which the programs
       use membership and insertion in place. The programs do not allocate: the empty mark sets
@@ -59,8 +60,8 @@ locale matching_cert_imp_code =
     and snd_imp :: "'p \<Rightarrow> 'e \<Rightarrow> nat Heap"
     and w_imp :: "'p \<Rightarrow> 'e \<Rightarrow> 'n::linordered_idom Heap"
     and it_init :: "'p \<Rightarrow> 'it Heap"
-    and it_has_next :: "'p \<Rightarrow> 'it \<Rightarrow> bool Heap"
-    and it_next :: "'p \<Rightarrow> 'it \<Rightarrow> ('e \<times> 'it) Heap"
+    and it_has_next :: "'it \<Rightarrow> bool Heap"
+    and it_next :: "'it \<Rightarrow> ('e \<times> 'it) Heap"
     and elen :: "'pe \<Rightarrow> nat Heap"
     and enth :: "'pe \<Rightarrow> nat \<Rightarrow> 'e Heap"
     and ylen :: "'py \<Rightarrow> nat Heap"
@@ -75,9 +76,9 @@ text \<open>Feasibility, over all edges.\<close>
 
 partial_function (heap) feas_loop :: "bool \<Rightarrow> 'n \<Rightarrow> 'p \<Rightarrow> 'py \<Rightarrow> 'it \<Rightarrow> bool Heap" where
   "feas_loop neg t p Ya it = do {
-     b \<leftarrow> it_has_next p it;
+     b \<leftarrow> it_has_next it;
      (if b then do {
-        (e, it') \<leftarrow> it_next p it;
+        (e, it') \<leftarrow> it_next it;
         u \<leftarrow> fst_imp p e;
         v \<leftarrow> snd_imp p e;
         c \<leftarrow> w_imp p e;
@@ -167,9 +168,9 @@ partial_function (heap) hall_S_loop ::
 
 partial_function (heap) hall_N_loop :: "'p \<Rightarrow> 's \<Rightarrow> 'it \<Rightarrow> 's \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "hall_N_loop p Si it Ni c = do {
-     b \<leftarrow> it_has_next p it;
+     b \<leftarrow> it_has_next it;
      (if b then do {
-        (e, it') \<leftarrow> it_next p it;
+        (e, it') \<leftarrow> it_next it;
         u \<leftarrow> fst_imp p e;
         v \<leftarrow> snd_imp p e;
         bu \<leftarrow> smemb Si u;
@@ -222,22 +223,24 @@ text \<open>The mark sets are over a universe @{term K} containing the vertices 
 
 locale matching_cert_imp =
   matching_cert E elist efst esnd ew n ls rs h +
-  es: imp_edge_set es_assn elst it_assn memb_imp fst_imp snd_imp w_imp it_init it_has_next it_next +
+  es: imp_edge_set EU es_invar es_assn lst it_assn it_init it_has_next it_next efst esnd ew
+        memb_imp fst_imp snd_imp w_imp +
   el: imp_rlist el_assn elen enth +
   yl: imp_rlist yl_assn ylen ynth +
   vl: imp_rlist vl_assn vlen vnth +
   mk: fixed_univ_set_imp K sinvar sabs sempty sinsert sdelete sisin set_assn sempty_imp sins sdel
         smemb
   for E :: "'e set" and elist efst esnd and ew :: "'e \<Rightarrow> 'n::linordered_idom" and n ls rs h
-    and es_assn :: "'e set \<Rightarrow> ('e \<Rightarrow> nat) \<Rightarrow> ('e \<Rightarrow> nat) \<Rightarrow> ('e \<Rightarrow> 'n) \<Rightarrow> 'p \<Rightarrow> assn"
-    and elst and it_assn :: "'e list \<Rightarrow> 'it \<Rightarrow> assn"
-    and memb_imp fst_imp snd_imp w_imp it_init it_has_next it_next
+    and EU es_invar and es_assn :: "'e set \<Rightarrow> 'p \<Rightarrow> assn"
+    and lst and it_assn :: "'e set \<Rightarrow> 'p \<Rightarrow> 'e list \<Rightarrow> 'it \<Rightarrow> assn"
+    and it_init it_has_next it_next memb_imp fst_imp snd_imp w_imp
     and el_assn :: "'e list \<Rightarrow> 'pe \<Rightarrow> assn" and elen enth
     and yl_assn :: "'n list \<Rightarrow> 'py \<Rightarrow> assn" and ylen ynth
     and vl_assn :: "nat list \<Rightarrow> 'pv \<Rightarrow> assn" and vlen vnth
     and K :: "nat set" and sinvar :: "'set \<Rightarrow> bool" and sabs sempty sinsert sdelete sisin
     and set_assn :: "'set \<Rightarrow> 's \<Rightarrow> assn" and sempty_imp sins sdel smemb +
-  assumes elist_elst: "elist = elst E"
+  assumes E_invar: "es_invar E"
+    and elist_lst: "elist = lst E"
     and verts_K: "{..<n} \<subseteq> K"
 
 sublocale matching_cert_imp \<subseteq> code: matching_cert_imp_code
@@ -247,7 +250,9 @@ sublocale matching_cert_imp \<subseteq> code: matching_cert_imp_code
 context matching_cert_imp
 begin
 
-abbreviation "EA p \<equiv> es_assn E efst esnd ew p"
+abbreviation "EA p \<equiv> es_assn E p"
+
+abbreviation "EI p \<equiv> it_assn E p"
 
 text \<open>A mark set, up to abstraction.\<close>
 
@@ -288,7 +293,7 @@ lemma edge_K:
 
 lemma feas_loop_rule:
   assumes "set xs \<subseteq> E" "n \<le> length ys"
-  shows "<EA p * yl_assn ys Ya * it_assn xs it> code.feas_loop neg t p Ya it
+  shows "<EA p * yl_assn ys Ya * EI p xs it> code.feas_loop neg t p Ya it
          <\<lambda>r. EA p * yl_assn ys Ya * true * \<up>(r = list_all (feas_ok neg t ys) xs)>"
   using assms(1)
 proof (induction xs arbitrary: it)
@@ -389,7 +394,7 @@ proof (cases "n \<le> length ys")
 next
   case True
   have el: "set elist \<subseteq> E" using elist_E by simp
-  note init = es.it_init_rule[where D = E, folded elist_elst]
+  note init = es.it_init_rule[OF E_invar, folded elist_lst]
   note feas = feas_loop_rule[OF el True]
   note match = match_loop_rule[OF refl True, where i = 0]
   note vls = vert_loop_rule[OF refl _ True, where xs = ls and i = 0]
@@ -470,7 +475,7 @@ qed
 
 lemma hall_N_loop_rule:
   assumes "set xs \<subseteq> E"
-  shows "<EA p * mark_assn Sm Si * mark_assn Nm Ni * it_assn xs it> code.hall_N_loop p Si it Ni c
+  shows "<EA p * mark_assn Sm Si * mark_assn Nm Ni * EI p xs it> code.hall_N_loop p Si it Ni c
          <\<lambda>c'. EA p * mark_assn Sm Si * mark_assn (fst (hall_N Sm Nm c xs)) Ni * true *
               \<up>(c' = snd (hall_N Sm Nm c xs))>"
   using assms
@@ -504,7 +509,7 @@ theorem hall_imp_rule:
    <\<lambda>r. EA p * vl_assn ls La * vl_assn rs Ra * vl_assn S Sa * true * \<up>(r = hall_check S)>"
 proof -
   have el: "set elist \<subseteq> E" using elist_E by simp
-  note init = es.it_init_rule[where D = E, folded elist_elst]
+  note init = es.it_init_rule[OF E_invar, folded elist_lst]
   note ins = insert_loop_rule[OF refl ls_K, where i = 0 and U = "{}"]
   note hS = hall_S_loop_rule[OF refl, where i = 0 and Sm = "{}" and c = 0]
   note hN = hall_N_loop_rule[OF el, where Nm = "{}" and c = 0]
@@ -528,7 +533,7 @@ theorem certify_mc_imp_rule:
         true * \<up>(r = certify_mc neg ms ys t S)>"
 proof -
   have el: "set elist \<subseteq> E" using elist_E by simp
-  note init = es.it_init_rule[where D = E, folded elist_elst]
+  note init = es.it_init_rule[OF E_invar, folded elist_lst]
   note ins = insert_loop_rule[OF refl ls_K, where i = 0 and U = "{}"]
   note hS = hall_S_loop_rule[OF refl, where i = 0 and Sm = "{}" and c = 0]
   note hN = hall_N_loop_rule[OF el, where Nm = "{}" and c = 0]

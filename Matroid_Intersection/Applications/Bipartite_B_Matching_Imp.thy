@@ -64,7 +64,10 @@ global_interpretation bx: matroid_intersection_imp_spec n id id bb_memb bb_ins1 
     and bx_nb2 = bx.ids.nb2_imp
     and bx_filt = bx.ids.filt_imp
     and bx_xnbs = bx.ids.xnbs
+    and bx_x_inner = bx.ids.x_inner
+    and bx_x_outer = bx.ids.x_outer
     and bx_xround = bx.ids.xround
+    and bx_x_loop = bx.ids.x_loop
     and bx_bfs_run = bx.ids.bfs_run
     and bx_has_nb = bx.ids.has_nb_imp
     and bx_s = bx.ids.s_imp
@@ -79,30 +82,10 @@ global_interpretation bx: matroid_intersection_imp_spec n id id bb_memb bb_ins1 
     and bx_mi = bx.mi_imp
   done
 
-text \<open>A copy of the BFS core with the iterator fixed at code generation time.\<close>
+text \<open>The BFS of the library with the iterator fixed at code generation time.\<close>
 
-global_interpretation xbb: BFS_subprocedures_lists_code bset_memb bset_ins "bx_xnbs n"
-  for n
-  defines xbb_inner = xbb.inner_loop
-    and xbb_outer = xbb.outer_loop
-    and xbb_round = xbb.next_frontier_current_parents_imp
-  done
-
-global_interpretation xbbi: BFS_Imperative_spec bfs_src_to_cf bfs_set_srcs_visited
-    "xbb_round n Gh" bfs_cf_is_empty bset_memb bfs_set_dists Array.nth Array.nth
-  for n Gh
-  defines xbb_loop = xbbi.BFS_par_imp
-    and xbb_init = xbbi.initial_state_imp
-    and xbb_run = xbbi.visited_dists_parents_imp
-  done
-
-lemma bx_xround_code [code]: "bx_xround n = xbb_round n"
-  unfolding bx.ids.xround_def xbb_round_def ..
-
-lemma bx_bfs_run_code [code]: "bx_bfs_run n Gh = xbb_run n Gh"
-  unfolding bx.ids.bfs_run_def xbb_run_def bx_xround_code ..
-
-declare xbbi.BFS_par_imp.simps[code]
+declare bx.ids.x_inner_code[code] bx.ids.x_outer_code[code] bx.ids.xround_code[code]
+  bx.ids.x_loop_code[code] bx.ids.bfs_run_code[code]
 
 text \<open>The edges are \<open>{Fa[i], Ta[i]}\<close>, the capacity of vertex \<open>v\<close> is \<open>Ka[v]\<close>, and all vertices
   are below the length of \<open>Ka\<close>.\<close>

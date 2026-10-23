@@ -75,8 +75,7 @@ definition "wtight_ctx X c1 c2 =
                (if ss = [] then None
                 else (case find (isin (BFS_dist_state.visited fin)) tb of
                         None \<Rightarrow> None
-                      | Some t \<Rightarrow> Some (BFS_distance_parents.parent_path dist_lookup parent_lookup
-                                          (dists fin) (parent fin) t []))));
+                      | Some t \<Rightarrow> Some (rev (get_path (parent fin) t)))));
        vis = (if ss = [] then vset_empty else BFS_dist_state.visited fin)
    in \<lparr>wctx_c = c, wctx_c1 = c1, wctx_c2 = c2, wctx_ae = ae, wctx_mS = mS, wctx_mT = mT,
        wctx_es = es, wctx_sb = sb, wctx_tb = tb, wctx_path = P,
@@ -272,6 +271,8 @@ proof-
   show "set (wctx_tb K) = weighted_intersection_graph.Tbar carrier indep2 (c_lookup c2) (to_set X)"
     using tbar by (simp add: tb_eq tb_def mT_def c_def)
   have Gdig: "Graph.digraph_abs Gt = set es" by (simp add: Gt_def build_graph(4))
+  have es_c: "set es \<subseteq> carrier \<times> carrier"
+    using exch_edges_carrier[OF X] by (auto simp add: es_def c_def)
   have sb_srcs: "set sb \<subseteq> set (srcs c)" by (auto simp add: sb_def)
   have ss: "distinct ss" "set ss \<subseteq> set sb"
     using srcs(2)[OF X] by (auto simp add: ss_def sb_def c_def)
@@ -298,7 +299,7 @@ proof-
       using P None by (auto simp add: path_eq split: if_splits)
     obtain u v where uv: "u \<in> set ss" "v \<in> set tb" "vwalk_bet (Graph.digraph_abs Gt) u p v"
       "\<forall> u' p'. u' \<in> set ss \<and> vwalk_bet (Graph.digraph_abs Gt) u' p' v \<longrightarrow> length p \<le> length p'"
-      using target_path(2)[OF Gt_def ss(1) ne ss_dVs tp] by blast
+      using target_path(2)[OF Gt_def ss(1) ne ss_dVs es_c tp] by blast
     have "u \<noteq> v" using None find_None uv(1,2) ss(2) by auto
     hence short: "\<nexists> p'. (vwalk_bet (set es) u p' v \<or> (p' = [u] \<and> u = v)) \<and> length p' < length p"
       using uv(1,4) Gdig by (auto simp add: not_less[symmetric])
@@ -331,7 +332,7 @@ proof-
     hence ne: "ss \<noteq> []" by auto
     have "target_path Gt ss tb = None" using none fN ne by (simp add: path_eq)
     hence "\<nexists> u p v. u \<in> set ss \<and> v \<in> set tb \<and> vwalk_bet (Graph.digraph_abs Gt) u p v"
-      by (rule target_path(1)[OF Gt_def ss(1) ne ss_dVs])
+      by (rule target_path(1)[OF Gt_def ss(1) ne ss_dVs es_c])
     moreover have "vwalk_bet (Graph.digraph_abs Gt) u p v" using walk Gdig by simp
     ultimately show False using uss puv(3) by blast
   qed
@@ -364,18 +365,18 @@ proof-
     thus ?thesis by (simp add: Graph.vset.set.set_empty Graph.vset.set.invar_empty)
   next
     case False
-    obtain exp_tree nfc dist_invar parent_invar where B:
+    obtain exp_tree nfc dist_invar parent_abstract parent_invar par_U par_roots where B:
       "BFS_distance_parents (\<lambda> x. None) (\<lambda> x G. G(x := None)) vset_insert isin t_set sel 
          (\<lambda> x N G. G(x := Some N)) (\<lambda> G. True) vset_empty 
          vset_delete vset_inv union inter diff Gt exp_tree nfc vset_inv2 some_dist dist_lookup 
-         dist_invar (\<lambda> G x. G x) set_all_dists_in_set (next_frontier_current_parents Gt) 
-         parent_lookup parent_invar some_parent"
-      by (rule bfs_inst[OF Gt_def])
-    note ax = bfs_axiomI[OF Gt_def ss(1) False ss_dVs]
+         dist_invar (\<lambda> G x. G x) set_all_dists_in_set parent_abstract parent_invar par_U get_path
+         par_roots parent_init (next_frontier_current_parents Gt)"
+      by (rule bfs_inst[OF Gt_def es_c])
+    note ax = bfs_axiomI[OF Gt_def ss(1) False ss_dVs es_c]
     have fin_is: "bfs_final Gt ss = BFS_distance_parents.BFS_par_impl vset_empty set_all_dists_in_set 
        (next_frontier_current_parents Gt)
        (BFS_distance_parents.initial_par_state (vset_of_list ss) some_dist set_all_dists_in_set 
-           some_parent)"
+           parent_init)"
       by (simp add: bfs_final_def)
     have "vset_inv (BFS_dist_state.visited (bfs_final Gt ss))"
       using BFS_distance_parents.BFS_par_visited_inv[OF B ax] by (simp add: fin_is)

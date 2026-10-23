@@ -116,10 +116,7 @@ locale path_search_shortcut_imp =
       and fixed_univ_map_upd_imp = pot_upd_imp and fixed_univ_map_lookup_imp = pot_get_imp +
   left: fixed_univ_set_iterate_imp
     where U = K and set_invar = vset_invar and set_abstract = vset_to_set
-      and set_empty = vset_empty and set_insert = vset_insert and set_delete = vset_delete
-      and set_isin = vset_isin and set_assn = vset_assn and set_empty_imp = vset_empty_imp
-      and set_insert_imp = vset_insert_imp and set_delete_imp = vset_delete_imp
-      and set_isin_imp = vset_isin_imp and lst = lst and is_it = left_is_it
+      and set_assn = vset_assn and lst = lst and is_it = left_is_it
       and it_init = left_it_init and it_has_next = left_it_has_next and it_next = left_it_next
   for G :: "'v::heap set set"
     and potential_get :: "'potential \<Rightarrow> 'v \<Rightarrow> real"
@@ -127,8 +124,7 @@ locale path_search_shortcut_imp =
     and h :: "'n::{linordered_idom, heap} \<Rightarrow> real"
     and nb_assn has_imp current_imp current_cost_imp move_imp reset_imp reset_all_imp
     and pot_assn pot_upd_imp pot_get_imp
-    and vset_invar vset_to_set vset_empty vset_insert vset_delete vset_isin
-    and vset_assn vset_empty_imp vset_insert_imp vset_delete_imp vset_isin_imp
+    and vset_invar vset_to_set vset_assn
     and lst :: "'v set \<Rightarrow> 'v list"
     and left_is_it left_it_init left_it_has_next left_it_next +
   fixes buddy_assn and buddy_imp and rematch_imp :: "'bdi \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> unit Heap" and left
@@ -378,8 +374,10 @@ text \<open>The loop takes the left vertices from the iterator and hands back th
 
 lemma sc_loop_imp_rule:
   assumes "set xs \<subseteq> L" "sc_P s"
-  shows "<left_is_it left Li xs it * sc_A Ci Pti Bdi s> code.sc_loop_imp Ci Pti Bdi it
-         <\<lambda>(r, it'). left_is_it left Li (snd (snd (sc_loop s xs))) it' *
+  shows "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it * sc_A Ci Pti Bdi s>
+         code.sc_loop_imp Ci Pti Bdi it
+         <\<lambda>(r, it'). vset_assn left Li *
+                     left_is_it (vset_to_set left) Li (snd (snd (sc_loop s xs))) it' *
                      sc_A Ci Pti Bdi (fst (sc_loop s xs)) *
                      \<up>(rel_option (rel_prod (=) path_rel) r (fst (snd (sc_loop s xs))))>"
   using assms
@@ -423,26 +421,29 @@ theorem shortcut_imp_rule:
       and "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
       and sc: "sc_loop (C, M, \<pi>) xs = ((C', M', \<pi>'), res, xs')"
       and len: "res \<noteq> None \<Longrightarrow> 2 \<le> length ys"
-  shows "<left_is_it left Li xs it * nb_assn C Ci * buddy_assn M Bdi * pot_assn \<pi> Pti *
-          Ra \<mapsto>\<^sub>a ys>
+  shows "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it * nb_assn C Ci *
+          buddy_assn M Bdi * pot_assn \<pi> Pti * Ra \<mapsto>\<^sub>a ys>
          code.shortcut_imp Ci Pti Bdi Ra it
-         <\<lambda>(b, it'). \<exists>\<^sub>Ays'. left_is_it left Li xs' it' * nb_assn C' Ci * buddy_assn M' Bdi *
+         <\<lambda>(b, it'). \<exists>\<^sub>Ays'. vset_assn left Li * left_is_it (vset_to_set left) Li xs' it' *
+            nb_assn C' Ci * buddy_assn M' Bdi *
             pot_assn \<pi>' Pti * Ra \<mapsto>\<^sub>a ys' * \<up>(length ys' = length ys) *
             \<up>(case res of None \<Rightarrow> \<not> b | Some (l, p) \<Rightarrow> b \<and> take 2 ys' = p)>"
 proof-
   have P0: "sc_P (C, M, \<pi>)" using assms(1,3,4) by (simp add: sc_P_def)
-  have loop: "<left_is_it left Li xs it * (nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi))>
+  have loop: "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it *
+                (nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi))>
       code.sc_loop_imp Ci Pti Bdi it
-      <\<lambda>(r, it'). left_is_it left Li xs' it' *
+      <\<lambda>(r, it'). vset_assn left Li * left_is_it (vset_to_set left) Li xs' it' *
                   (nb_assn C' Ci * (pot_assn \<pi>' Pti * buddy_assn M' Bdi)) *
                   \<up>(rel_option (rel_prod (=) path_rel) r res)>"
     using sc_loop_imp_rule[OF assms(2) P0, of Li it Ci Pti Bdi] by (simp add: sc sc_A_def)
   show ?thesis
   proof(cases res)
     case None
-    have loopN: "<left_is_it left Li xs it * (nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi))>
+    have loopN: "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it *
+                  (nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi))>
         code.sc_loop_imp Ci Pti Bdi it
-        <\<lambda>x. left_is_it left Li xs' (snd x) *
+        <\<lambda>x. vset_assn left Li * left_is_it (vset_to_set left) Li xs' (snd x) *
              (nb_assn C' Ci * (pot_assn \<pi>' Pti * buddy_assn M' Bdi)) * \<up>(fst x = None)>"
       using loop by (simp add: None case_prod_beta')
     show ?thesis
@@ -454,9 +455,10 @@ proof-
     have rs: "rel_option (rel_prod (=) path_rel) r (Some (l, p)) \<longleftrightarrow>
               (\<exists>u v. r = Some (l, u, v) \<and> p = [u, v])"
       for r by (cases r) (auto simp: path_rel_def split: prod.splits)
-    have loopS: "<left_is_it left Li xs it * (nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi))>
+    have loopS: "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it *
+                  (nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi))>
         code.sc_loop_imp Ci Pti Bdi it
-        <\<lambda>x. left_is_it left Li xs' (snd x) *
+        <\<lambda>x. vset_assn left Li * left_is_it (vset_to_set left) Li xs' (snd x) *
              (nb_assn C' Ci * (pot_assn \<pi>' Pti * buddy_assn M' Bdi)) *
              \<up>(\<exists>u v. fst x = Some (l, u, v) \<and> p = [u, v])>"
       using loop by (simp add: a rs case_prod_beta')

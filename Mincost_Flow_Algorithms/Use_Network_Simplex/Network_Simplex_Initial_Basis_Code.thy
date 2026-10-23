@@ -495,8 +495,8 @@ text \<open>A vertex whose blocks are empty in \<^emph>\<open>both\<close> CSRs 
 
 definition is_lonely :: "nat \<Rightarrow> bool" where
   "is_lonely v \<longleftrightarrow>
-     csr_ranges.csr_empty (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0) v \<and>
-     csr_ranges.csr_empty (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0) v"
+     csr_blocks.csr_empty (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0) v \<and>
+     csr_blocks.csr_empty (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0) v"
 
 text \<open>The edged vertices: the dense range with the edge-less (lonely) names removed.  This is the
       vertex set actually fed to the acyclifier, so its abstraction stays exactly the graph vertex
@@ -613,9 +613,9 @@ text \<open>Pushing vertex @{term w}: reset both its iterators and put it on the
 definition dfs_push :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> 'n dfs_state" where
   "dfs_push s w =
      s\<lparr> ds_stk := w # ds_stk s,
-        ds_oc := csr_ranges.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)
+        ds_oc := csr_blocks.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)
                    (ds_oc s) w,
-        ds_ic := csr_ranges.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)
+        ds_ic := csr_blocks.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)
                    (ds_ic s) w \<rparr>"
 
 text \<open>Discovering a fresh vertex @{term w} from stack-top @{term v} across the free real edge
@@ -670,13 +670,13 @@ function (domintros) build_dfs_a ::
      (case ds_stk s of
         [] \<Rightarrow> s
       | v # rest \<Rightarrow>
-         if csr_ranges.csr_has ((!) (fst fo)) (ds_oc s) v then
-           (let e = csr_ranges.csr_current (snd fo) (ds_oc s) v; w = snd_list ! e;
-                s1 = s\<lparr> ds_oc := csr_ranges.csr_move ((!) (fst fo)) (ds_oc s) v \<rparr>
+         if csr_blocks.csr_has ((!) (fst fo)) (ds_oc s) v then
+           (let e = csr_blocks.csr_current (snd fo) (ds_oc s) v; w = snd_list ! e;
+                s1 = s\<lparr> ds_oc := csr_blocks.csr_move ((!) (fst fo)) (ds_oc s) v \<rparr>
             in build_dfs_a fo fi (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
-         else if csr_ranges.csr_has ((!) (fst fi)) (ds_ic s) v then
-           (let e = csr_ranges.csr_current (snd fi) (ds_ic s) v; w = fst_list ! e;
-                s1 = s\<lparr> ds_ic := csr_ranges.csr_move ((!) (fst fi)) (ds_ic s) v \<rparr>
+         else if csr_blocks.csr_has ((!) (fst fi)) (ds_ic s) v then
+           (let e = csr_blocks.csr_current (snd fi) (ds_ic s) v; w = fst_list ! e;
+                s1 = s\<lparr> ds_ic := csr_blocks.csr_move ((!) (fst fi)) (ds_ic s) v \<rparr>
             in build_dfs_a fo fi (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
          else
            build_dfs_a fo fi (dfs_finish s v rest))"
@@ -707,13 +707,13 @@ lemma build_dfs_psimps:
     (case ds_stk s of
        [] \<Rightarrow> s
      | v # rest \<Rightarrow>
-        if csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v then
-          (let e = csr_ranges.csr_current (snd (free_out fl)) (ds_oc s) v; w = snd_list ! e;
-               s1 = s\<lparr> ds_oc := csr_ranges.csr_move ((!) (fst (free_out fl))) (ds_oc s) v \<rparr>
+        if csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v then
+          (let e = csr_blocks.csr_current (snd (free_out fl)) (ds_oc s) v; w = snd_list ! e;
+               s1 = s\<lparr> ds_oc := csr_blocks.csr_move ((!) (fst (free_out fl))) (ds_oc s) v \<rparr>
            in build_dfs fl (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
-        else if csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v then
-          (let e = csr_ranges.csr_current (snd (free_in fl)) (ds_ic s) v; w = fst_list ! e;
-               s1 = s\<lparr> ds_ic := csr_ranges.csr_move ((!) (fst (free_in fl))) (ds_ic s) v \<rparr>
+        else if csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v then
+          (let e = csr_blocks.csr_current (snd (free_in fl)) (ds_ic s) v; w = fst_list ! e;
+               s1 = s\<lparr> ds_ic := csr_blocks.csr_move ((!) (fst (free_in fl))) (ds_ic s) v \<rparr>
            in build_dfs fl (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
         else
           build_dfs fl (dfs_finish s v rest))"
@@ -802,14 +802,14 @@ definition build_tree :: "'n list \<Rightarrow> 'n dfs_state" where
 text \<open>The acyclic-flow procedure is available here as an assumption-free specification instance: the two counting-sort CSRs are its edge iterators, the flow and vertex-state arrays are lists, and fst-exec / snd-exec are the constant-time endpoint reads. Interpreting the acyclic-flow specification locale exports the executable acyclifier into this specification locale, so the acyclifier can be executed without discharging any ADT law.\<close>
 
 sublocale acyclic_flow_impl_spec
-  where out_current = "csr_ranges.csr_current (csr_buildup.E_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
-    and out_has = "csr_ranges.csr_has (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0 ! Suc v)"
-    and out_move = "csr_ranges.csr_move (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0 ! Suc v)"
-    and out_reset = "csr_ranges.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
-    and in_current = "csr_ranges.csr_current (csr_buildup.E_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
-    and in_has = "csr_ranges.csr_has (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0 ! Suc v)"
-    and in_move = "csr_ranges.csr_move (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0 ! Suc v)"
-    and in_reset = "csr_ranges.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
+  where out_current = "csr_blocks.csr_current (csr_buildup.E_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
+    and out_has = "csr_blocks.csr_has (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0 ! Suc v)"
+    and out_move = "csr_blocks.csr_move (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0 ! Suc v)"
+    and out_reset = "csr_blocks.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
+    and in_current = "csr_blocks.csr_current (csr_buildup.E_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
+    and in_has = "csr_blocks.csr_has (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0 ! Suc v)"
+    and in_move = "csr_blocks.csr_move (\<lambda>v. csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0 ! Suc v)"
+    and in_reset = "csr_blocks.csr_reset (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
     and flow_upd = list_update and flow_lookup = nth
     and st_upd = list_update and st_lookup = nth
     and current_vertex = lc_current and has_vertex = lc_has

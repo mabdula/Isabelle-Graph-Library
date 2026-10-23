@@ -29,7 +29,7 @@ lemma map_nth_upt_take_drop:
   "b \<le> length xs \<Longrightarrow> map ((!) xs) [a..<b] = take (b - a) (drop a xs)"
   by (rule nth_equalityI) auto
 
-locale csr_ranges =
+locale csr_blocks =
   fixes n :: nat
     and K :: "nat set"
     and B :: "nat list"
@@ -39,12 +39,12 @@ locale csr_ranges =
     and B_length: "length B = Suc n"
     and H_lo: "\<And>v. v < n \<Longrightarrow> B ! v \<le> H v"
     and B_bound: "\<And>v. v < n \<Longrightarrow> B ! Suc v \<le> length E"
-    and E_distinct: "\<And>v. v < n \<Longrightarrow> inj_on ((!) E) {B ! v..<H v}"
     and H_hi: "\<And>v. v < n \<Longrightarrow> H v \<le> B ! Suc v"
 begin
 
-text \<open>The entries are distinct within each range only; different ranges may share entries,
-      e.g.\ when \<open>E\<close> holds the targets of the edges.\<close>
+text \<open>A range may contain an entry more than once. The features that need no distinct entries
+      are provided here: the static view, the fold over a range and the reset of a cursor.
+      Iterating by a cursor needs distinct entries within each range (@{text csr_ranges} below).\<close>
 
 definition "seg a b = (!) E ` {a..<b}"
 
@@ -60,6 +60,13 @@ definition "csr_reset c v = c(v := B ! v)"
 text \<open>Emptiness of the block reserved for \<open>v\<close>, which holds the range of \<open>v\<close>.\<close>
 
 definition "csr_empty v \<longleftrightarrow> B ! v = B ! Suc v"
+
+text \<open>The entries of the range of \<open>v\<close> as a list, which a fold runs over, and the ranges as a
+      map from the vertices below \<open>n\<close>, e.g.\ the neighbour lists of a graph.\<close>
+
+definition "csr_list v = map ((!) E) [B ! v..<H v]"
+
+definition "csr_map v = (if v < n then Some (csr_list v) else None)"
 
 lemma K_less: "v \<in> K \<Longrightarrow> v < n"
   using K_bound by auto
@@ -101,24 +108,8 @@ qed
 lemma seg_empty_iff: "seg a b = {} \<longleftrightarrow> b \<le> a"
   by (auto simp: seg_def)
 
-lemma seg_Int:
-  assumes "v < n" "B ! v \<le> a" "b \<le> H v" "B ! v \<le> a'" "b' \<le> H v"
-  shows "seg a b \<inter> seg a' b' = (!) E ` ({a..<b} \<inter> {a'..<b'})"
-  unfolding seg_def using assms
-  by (intro inj_on_image_Int[OF E_distinct[OF assms(1)], symmetric]) auto
-
 lemma seg_Un: "a \<le> b \<Longrightarrow> b \<le> c \<Longrightarrow> seg a b \<union> seg b c = seg a c"
   unfolding seg_def by (metis image_Un ivl_disj_un_two(3))
-
-lemma seg_Suc:
-  assumes "v < n" "B ! v \<le> a" "a < b" "b \<le> H v"
-  shows "seg (Suc a) b = seg a b - {E ! a}"
-proof -
-  have "(!) E ` ({a..<b} - {a}) = (!) E ` {a..<b} - (!) E ` {a}"
-    using assms by (intro inj_on_image_set_diff[OF E_distinct[OF assms(1)]]) auto
-  moreover have "{a..<b} - {a} = {Suc a..<b}" by auto
-  ultimately show ?thesis by (simp add: seg_def)
-qed
 
 lemma seg_snoc: "a \<le> b \<Longrightarrow> seg a (Suc b) = seg a b \<union> {E ! b}"
   unfolding seg_def by (auto simp: less_Suc_eq)
@@ -140,8 +131,78 @@ lemma csr_reset_remaining_other: "j \<noteq> v \<Longrightarrow> csr_remaining (
 lemma csr_reset_iterated_other: "j \<noteq> v \<Longrightarrow> csr_iterated (csr_reset c v) j = csr_iterated c j"
   by (simp add: csr_iterated_def csr_reset_def)
 
-sublocale csr: indexed_iterable_set csr_invar csr_abstract csr_current csr_has csr_iterated
-    csr_remaining csr_move csr_reset K
+text \<open>The facts clients need, so that they never unfold the definitions.\<close>
+
+lemma csr_abstract_eq: "csr_abstract c v = (!) E ` {B ! v..<H v}"
+  by (simp add: csr_abstract_def seg_def)
+
+lemma csr_list_set: "set (csr_list v) = csr_abstract c v"
+  by (simp add: csr_list_def csr_abstract_eq)
+
+text \<open>The fold over a range runs over the range in the order of the block.\<close>
+
+definition "csr_fold (c::nat \<Rightarrow> nat) v f acc = foldl (\<lambda>acc x. f x acc) acc (csr_list v)"
+
+sublocale csr: indexed_set_fold csr_invar csr_abstract K csr_fold
+proof (unfold_locales, goal_cases)
+  case (1 C i)
+  show ?case by (intro exI[of _ "csr_list i"]) (simp add: csr_fold_def csr_list_set)
+qed
+
+sublocale csr: indexed_set_reset csr_invar csr_abstract K csr_iterated csr_remaining csr_reset
+proof (unfold_locales, goal_cases)
+  case (1 C i) then show ?case
+    by (auto simp: csr_invar_def csr_reset_def H_lo K_less)
+next
+  case (2 C i j) then show ?case by (simp add: csr_abstract_def)
+next
+  case (3 C i) show ?case by (rule csr_reset_iterated)
+next
+  case (4 C i) show ?case by (rule csr_reset_remaining)
+next
+  case (5 C i j) then show ?case by (simp add: csr_reset_remaining_other)
+next
+  case (6 C i j) then show ?case by (simp add: csr_reset_iterated_other)
+qed
+
+text \<open>The cursors at the starts of the ranges.\<close>
+
+lemma csr_init_invar: "csr_invar (\<lambda>v. B ! v)"
+  by (simp add: csr_invar_def H_lo K_less)
+
+lemma csr_init_iterated: "csr_iterated (\<lambda>v. B ! v) v = {}"
+  by (simp add: csr_iterated_def seg_def)
+
+end
+
+subsection \<open>Ranges with distinct entries\<close>
+
+text \<open>The entries are distinct within each range only; different ranges may share entries,
+      e.g.\ when \<open>E\<close> holds the targets of the edges. Distinctness is what the set semantics of
+      the cursor needs: moving past the current entry removes it from the remaining ones.\<close>
+
+locale csr_ranges = csr_blocks +
+  assumes E_distinct: "\<And>v. v < n \<Longrightarrow> inj_on ((!) E) {B ! v..<H v}"
+begin
+
+lemma seg_Int:
+  assumes "v < n" "B ! v \<le> a" "b \<le> H v" "B ! v \<le> a'" "b' \<le> H v"
+  shows "seg a b \<inter> seg a' b' = (!) E ` ({a..<b} \<inter> {a'..<b'})"
+  unfolding seg_def using assms
+  by (intro inj_on_image_Int[OF E_distinct[OF assms(1)], symmetric]) auto
+
+lemma seg_Suc:
+  assumes "v < n" "B ! v \<le> a" "a < b" "b \<le> H v"
+  shows "seg (Suc a) b = seg a b - {E ! a}"
+proof -
+  have "(!) E ` ({a..<b} - {a}) = (!) E ` {a..<b} - (!) E ` {a}"
+    using assms by (intro inj_on_image_set_diff[OF E_distinct[OF assms(1)]]) auto
+  moreover have "{a..<b} - {a} = {Suc a..<b}" by auto
+  ultimately show ?thesis by (simp add: seg_def)
+qed
+
+sublocale csr: indexed_set_cursor csr_invar csr_abstract K csr_current csr_has csr_iterated
+    csr_remaining csr_move
 proof (unfold_locales, goal_cases)
   case (1 C i)
   then have "B ! i \<le> C i" "C i \<le> H i" by (auto simp: csr_invar_def)
@@ -173,36 +234,14 @@ next
   case (9 C i j) then show ?case by (simp add: csr_remaining_def csr_move_def)
 next
   case (10 C i j) then show ?case by (simp add: csr_iterated_def csr_move_def)
-next
-  case (11 C i) then show ?case
-    by (auto simp: csr_invar_def csr_reset_def H_lo K_less)
-next
-  case (12 C i j) then show ?case by (simp add: csr_abstract_def)
-next
-  case (13 C i) show ?case by (rule csr_reset_iterated)
-next
-  case (14 C i) show ?case by (rule csr_reset_remaining)
-next
-  case (15 C i j) then show ?case by (simp add: csr_reset_remaining_other)
-next
-  case (16 C i j) then show ?case by (simp add: csr_reset_iterated_other)
 qed
 
-text \<open>The facts clients need, so that they never unfold the definitions.\<close>
-
-lemma csr_abstract_eq: "csr_abstract c v = (!) E ` {B ! v..<H v}"
-  by (simp add: csr_abstract_def seg_def)
+sublocale csr: indexed_iterable_set csr_invar csr_abstract csr_current csr_has csr_iterated
+    csr_remaining csr_move csr_reset K
+  by intro_locales
 
 lemma csr_card_abstract: "v < n \<Longrightarrow> card (csr_abstract c v) = H v - B ! v"
   by (simp add: csr_abstract_eq card_image[OF E_distinct])
-
-text \<open>The cursors at the starts of the ranges.\<close>
-
-lemma csr_init_invar: "csr_invar (\<lambda>v. B ! v)"
-  by (simp add: csr_invar_def H_lo K_less)
-
-lemma csr_init_iterated: "csr_iterated (\<lambda>v. B ! v) v = {}"
-  by (simp add: csr_iterated_def seg_def)
 
 end
 
@@ -220,24 +259,27 @@ qed
 text \<open>The iterators of a growing set of vertices: initially none, then each one is added with its
       cursor reset. So the cursors of the other vertices need no initialisation.\<close>
 
+lemma csr_blocks_subset: "csr_blocks n K B H E \<Longrightarrow> K' \<subseteq> {..<n} \<Longrightarrow> csr_blocks n K' B H E"
+  by (auto simp: csr_blocks_def)
+
 lemma csr_ranges_subset: "csr_ranges n K B H E \<Longrightarrow> K' \<subseteq> {..<n} \<Longrightarrow> csr_ranges n K' B H E"
-  by (auto simp: csr_ranges_def)
+  by (auto simp: csr_ranges_def csr_blocks_def)
 
 lemma csr_invar_empty:
-  assumes "csr_ranges n K B H E"
-  shows "csr_ranges.csr_invar {} B H c"
-  using csr_ranges.csr_invar_def[OF csr_ranges_subset[OF assms, of "{}"]] by simp
+  assumes "csr_blocks n K B H E"
+  shows "csr_blocks.csr_invar {} B H c"
+  using csr_blocks.csr_invar_def[OF csr_blocks_subset[OF assms, of "{}"]] by simp
 
 lemma csr_invar_reset_insert:
-  assumes R: "csr_ranges n K B H E" and "csr_ranges.csr_invar K B H c" "v < n"
-  shows "csr_ranges.csr_invar (insert v K) B H (csr_ranges.csr_reset B c v)"
+  assumes R: "csr_blocks n K B H E" and "csr_blocks.csr_invar K B H c" "v < n"
+  shows "csr_blocks.csr_invar (insert v K) B H (csr_blocks.csr_reset B c v)"
 proof -
-  have R': "csr_ranges n (insert v K) B H E"
-    using assms(3) csr_ranges.K_bound[OF R] by (intro csr_ranges_subset[OF R]) auto
+  have R': "csr_blocks n (insert v K) B H E"
+    using assms(3) csr_blocks.K_bound[OF R] by (intro csr_blocks_subset[OF R]) auto
   show ?thesis
-    using assms(2,3) csr_ranges.H_lo[OF R]
-    by (auto simp: csr_ranges.csr_invar_def[OF R'] csr_ranges.csr_invar_def[OF R]
-                   csr_ranges.csr_reset_def[OF R])
+    using assms(2,3) csr_blocks.H_lo[OF R]
+    by (auto simp: csr_blocks.csr_invar_def[OF R'] csr_blocks.csr_invar_def[OF R]
+                   csr_blocks.csr_reset_def[OF R])
 qed
 
 text \<open>Appending entry \<open>x\<close> to the range of vertex \<open>v\<close>: \<open>x\<close> is written at the end of the range, which
@@ -250,17 +292,16 @@ lemma length_csr_append[simp]:
   "length (fst (csr_append v x p)) = length (fst p)" "length (snd (csr_append v x p)) = length (snd p)"
   by (cases p, simp add: csr_append_def)+
 
-lemma csr_ranges_append:
-  assumes R: "csr_ranges n K B ((!) Hl) E"
+lemma csr_blocks_append:
+  assumes R: "csr_blocks n K B ((!) Hl) E"
     and v: "v < n" "v < length Hl" "Hl ! v < B ! Suc v"
-    and x: "x \<notin> csr_ranges.csr_abstract B ((!) Hl) E c v"
     and app: "csr_append v x (Hl, E) = (Hl', E')"
-  shows "csr_ranges n K B ((!) Hl') E'"
-    and "u < n \<Longrightarrow> csr_ranges.csr_abstract B ((!) Hl') E' c u =
-           (if u = v then insert x (csr_ranges.csr_abstract B ((!) Hl) E c u)
-            else csr_ranges.csr_abstract B ((!) Hl) E c u)"
+  shows "csr_blocks n K B ((!) Hl') E'"
+    and "u < n \<Longrightarrow> csr_blocks.csr_abstract B ((!) Hl') E' c u =
+           (if u = v then insert x (csr_blocks.csr_abstract B ((!) Hl) E c u)
+            else csr_blocks.csr_abstract B ((!) Hl) E c u)"
 proof -
-  interpret R: csr_ranges n K B "(!) Hl" E by (rule R)
+  interpret R: csr_blocks n K B "(!) Hl" E by (rule R)
   define p where "p = Hl ! v"
   have Hl': "Hl' = Hl[v := Suc p]" and E': "E' = E[p := x]"
     using app by (auto simp: csr_append_def p_def)
@@ -284,7 +325,7 @@ proof -
   have img_other: "(!) E' ` {B ! u..<Hl ! u} = (!) E ` {B ! u..<Hl ! u}"
     if "u < n" "u \<noteq> v" for u
     using other[OF that] by (intro image_cong refl) auto
-  show R': "csr_ranges n K B ((!) Hl') E'"
+  show R': "csr_blocks n K B ((!) Hl') E'"
   proof (unfold_locales, goal_cases)
     case 1 show ?case by (rule R.K_bound)
   next
@@ -294,30 +335,9 @@ proof -
   next
     case (4 u) then show ?case using R.B_bound[OF 4] by (simp add: E')
   next
-    case (5 u)
-    show ?case
-    proof (cases "u = v")
-      case True
-      have "inj_on ((!) E') {B ! v..<p} = inj_on ((!) E) {B ! v..<p}"
-        using own by (intro inj_on_cong) auto
-      moreover have "inj_on ((!) E) {B ! v..<p}"
-        using R.E_distinct[OF v(1)] by (simp add: p_def)
-      moreover have "x \<notin> (!) E' ` {B ! v..<p}"
-        using x old img_own by simp
-      moreover have "p \<notin> {B ! v..<p}" by simp
-      ultimately show ?thesis
-        using True by (simp add: Hl'_nth ivl Ex)
-    next
-      case False
-      have "inj_on ((!) E') {B ! u..<Hl ! u} = inj_on ((!) E) {B ! u..<Hl ! u}"
-        using other[OF 5 False] by (intro inj_on_cong) auto
-      then show ?thesis
-        using R.E_distinct[OF 5] False by (simp add: Hl'_nth)
-    qed
-  next
-    case (6 u) then show ?case using R.H_hi[OF 6] pS by (auto simp: Hl'_nth)
+    case (5 u) then show ?case using R.H_hi[OF 5] pS by (auto simp: Hl'_nth)
   qed
-  interpret R': csr_ranges n K B "(!) Hl'" E' by (rule R')
+  interpret R': csr_blocks n K B "(!) Hl'" E' by (rule R')
   show "R'.csr_abstract c u = (if u = v then insert x (R.csr_abstract c u) else R.csr_abstract c u)"
     if "u < n"
   proof (cases "u = v")
@@ -328,6 +348,46 @@ proof -
     case False
     then show ?thesis
       using img_other[OF that False] by (simp add: R'.csr_abstract_eq R.csr_abstract_eq Hl'_nth)
+  qed
+qed
+
+text \<open>Appending a new entry keeps the entries of the ranges distinct.\<close>
+
+lemma csr_ranges_append:
+  assumes R: "csr_ranges n K B ((!) Hl) E"
+    and v: "v < n" "v < length Hl" "Hl ! v < B ! Suc v"
+    and x: "x \<notin> csr_blocks.csr_abstract B ((!) Hl) E c v"
+    and app: "csr_append v x (Hl, E) = (Hl', E')"
+  shows "csr_ranges n K B ((!) Hl') E'"
+    and "u < n \<Longrightarrow> csr_blocks.csr_abstract B ((!) Hl') E' c u =
+           (if u = v then insert x (csr_blocks.csr_abstract B ((!) Hl) E c u)
+            else csr_blocks.csr_abstract B ((!) Hl) E c u)"
+proof -
+  interpret R: csr_ranges n K B "(!) Hl" E by (rule R)
+  note A = csr_blocks_append[OF R.csr_blocks_axioms v app]
+  interpret R': csr_blocks n K B "(!) Hl'" E' by (rule A(1))
+  show "u < n \<Longrightarrow> R'.csr_abstract c u =
+          (if u = v then insert x (R.csr_abstract c u) else R.csr_abstract c u)"
+    by (rule A(2))
+  have Hl': "Hl' = Hl[v := Suc (Hl ! v)]"
+    using app by (simp add: csr_append_def)
+  show "csr_ranges n K B ((!) Hl') E'"
+  proof (intro csr_ranges.intro[OF A(1)] csr_ranges_axioms.intro)
+    fix u assume u: "u < n"
+    have "card (R'.csr_abstract c u) = Hl' ! u - B ! u"
+    proof (cases "u = v")
+      case True
+      have "card (R'.csr_abstract c u) = Suc (card (R.csr_abstract c u))"
+        using A(2)[OF u] True x by (simp add: R.csr_abstract_eq)
+      then show ?thesis
+        using R.csr_card_abstract[OF u] R.H_lo[OF u] True v(2) by (simp add: Hl')
+    next
+      case False
+      then show ?thesis
+        using A(2)[OF u] R.csr_card_abstract[OF u] v(2) by (simp add: Hl')
+    qed
+    then show "inj_on ((!) E') {B ! u..<Hl' ! u}"
+      by (simp add: R'.csr_abstract_eq inj_on_iff_eq_card)
   qed
 qed
 
@@ -477,10 +537,10 @@ next
 next
   case (4 v) then show ?case by (rule B_spec_bound)
 next
-  case (5 v) then show ?case
-    using B_spec_bound[OF 5] by (intro inj_on_nth[OF E_spec_distinct]) auto
+  case (5 v) show ?case by (rule order.refl)
 next
-  case (6 v) show ?case by (rule order.refl)
+  case (6 v) then show ?case
+    using B_spec_bound[OF 6] by (intro inj_on_nth[OF E_spec_distinct]) auto
 qed
 
 text \<open>The block of a vertex holds exactly the edges whose key is that vertex.\<close>

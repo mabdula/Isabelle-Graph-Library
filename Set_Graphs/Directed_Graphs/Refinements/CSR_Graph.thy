@@ -15,8 +15,12 @@ subsection \<open>The imperative collection\<close>
 
 text \<open>The entries of the arrays are stored on the heap, so their type has sort @{class heap}.\<close>
 
+locale csr_blocks_imp = csr_blocks n K B H E
+  for n K B H and E :: "'e::heap list"
+
 locale csr_ranges_imp = csr_ranges n K B H E
   for n K B H and E :: "'e::heap list"
+sublocale csr_ranges_imp \<subseteq> csr_blocks_imp ..
 
 
 locale csr_graph_imp = csr_graph n K B E
@@ -79,25 +83,19 @@ lemma csr_append_imp_rule:
    <\<lambda>_. Ea \<mapsto>\<^sub>a snd (csr_append v x (Hl, E)) * Ha \<mapsto>\<^sub>a fst (csr_append v x (Hl, E))>"
   by (sep_auto simp: csr_append_imp_def csr_append_def)
 
-text \<open>Emptiness of the block of a vertex (@{const csr_ranges.csr_empty}): two reads of \<open>B\<close>.\<close>
+text \<open>Emptiness of the block of a vertex (@{const csr_blocks.csr_empty}): two reads of \<open>B\<close>.\<close>
 
 definition csr_empty_imp :: "nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "csr_empty_imp Ba v = do { a \<leftarrow> Array.nth Ba v; b \<leftarrow> Array.nth Ba (Suc v); return (a = b) }"
 
 text \<open>The cursor array is initialised as a copy of the start indices.\<close>
 
-partial_function (heap) csr_copy_imp :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "csr_copy_imp n Ba Ca i =
-     (if i < n then do {
-        s \<leftarrow> Array.nth Ba i;
-        _ \<leftarrow> Array.upd i s Ca;
-        csr_copy_imp n Ba Ca (Suc i) }
-      else return ())"
-
 definition csr_cursor_init :: "nat \<Rightarrow> nat array \<Rightarrow> nat array Heap" where
-  "csr_cursor_init n Ba = do { Ca \<leftarrow> Array.new n 0; csr_copy_imp n Ba Ca 0; return Ca }"
+  "csr_cursor_init n Ba = do { Ca \<leftarrow> Array.new n 0; copy_prefix_imp n Ba Ca 0; return Ca }"
 
-context csr_ranges_imp
+text \<open>Cursors and their reset need no distinct entries.\<close>
+
+context csr_blocks_imp
 begin
 
 definition csr_assn :: "(nat \<Rightarrow> nat) \<Rightarrow> nat array \<times> 'e array \<times> nat array \<Rightarrow> assn" where
@@ -180,23 +178,17 @@ lemma csr_empty_imp_rule:
          <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_empty v)>"
   using assms B_length by (sep_auto simp: csr_assn_def csr_empty_imp_def csr_empty_def)
 
-lemma csr_copy_imp_rule:
-  "\<lbrakk>i \<le> n; length l = n; \<forall>j<i. l ! j = B ! j\<rbrakk> \<Longrightarrow>
-   <Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a l> csr_copy_imp n Ba Ca i
-   <\<lambda>_. Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a take n B>"
-proof (induction "n - i" arbitrary: i l)
-  case 0
-  then have "i = n" by simp
-  with 0 have "l = take n B" using B_length by (simp add: list_eq_iff_nth_eq)
-  with \<open>i = n\<close> show ?case by (subst csr_copy_imp.simps) sep_auto
-next
-  case (Suc k)
-  then have i: "i < n" by simp
-  have IH: "<Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a l[i := B ! i]> csr_copy_imp n Ba Ca (Suc i)
-            <\<lambda>_. Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a take n B>"
-    by (rule Suc.hyps(1)) (use Suc i in \<open>auto simp: nth_list_update less_Suc_eq\<close>)
-  show ?case
-    using i B_length Suc.prems by (subst csr_copy_imp.simps) (sep_auto heap: IH)
+text \<open>Copying the start indices into the cursor array, from index \<open>i\<close> on.\<close>
+
+lemma csr_cursor_copy_rule:
+  assumes "i \<le> n" "length l = n" "\<forall>j<i. l ! j = B ! j"
+  shows "<Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a l> copy_prefix_imp n Ba Ca i
+         <\<lambda>_. Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a take n B>"
+proof -
+  have "take i l = take i B"
+    using assms B_length by (intro nth_equalityI) auto
+  then show ?thesis
+    using copy_prefix_imp_rule[of i n B l Ba Ca] assms(1,2) B_length by simp
 qed
 
 lemma csr_cursor_init_rule:
@@ -205,9 +197,16 @@ proof -
   have I: "Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * Ca \<mapsto>\<^sub>a take n B \<Longrightarrow>\<^sub>A csr_assn (\<lambda>v. B ! v) (Ba, Ea, Ca)" for Ca
     by (rule csr_assn_intro) (use B_length K_less in auto)
   have "<Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E> csr_cursor_init n Ba <\<lambda>Ca. Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * Ca \<mapsto>\<^sub>a take n B>"
-    unfolding csr_cursor_init_def by (sep_auto heap: csr_copy_imp_rule)
+    unfolding csr_cursor_init_def by (sep_auto heap: csr_cursor_copy_rule)
   then show ?thesis
     by (rule ht_cons_post) (rule ent_true_drop(2)[OF I])
+qed
+
+sublocale csr_imp: indexed_set_reset_imp csr_invar csr_abstract K csr_iterated csr_remaining
+    csr_reset csr_assn csr_reset_imp
+proof (unfold_locales, goal_cases)
+  case (1 C i Ci) then show ?case
+    by (cases Ci) (simp add: csr_reset_imp_rule)
 qed
 
 end
@@ -234,9 +233,7 @@ next
 next
   case (3 C i Ci) then show ?case
     by (cases Ci) (simp add: csr_move_imp_rule)
-next
-  case (4 C i Ci) then show ?case
-    by (cases Ci) (simp add: csr_reset_imp_rule)
+
 qed
 
 end
@@ -314,6 +311,51 @@ lemma csr_fold_imp_rule:
   using assms(1,2) unfolding csr_fold_imp_inline
   by (sep_auto heap: iterate_range_strict_le_rule[where f = f, OF assms(3)])
 
+text \<open>The fold is the fold layer (@{locale indexed_set_fold_imp}) of the ranges that end where the
+      next block starts. It needs no distinct entries and no cursor array: the collection is
+      given by the arrays \<open>B\<close> and \<open>E\<close> only.\<close>
+
+locale csr_graph_blocks_imp = csr_blocks n K B "\<lambda>v. B ! Suc v" E
+  for n K B and E :: "'e::heap list"
+begin
+
+definition csr_blocks_assn :: "(nat \<Rightarrow> nat) \<Rightarrow> nat array \<times> 'e array \<Rightarrow> assn" where
+  "csr_blocks_assn c = (\<lambda>(Ba, Ea). Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E)"
+
+lemma csr_list_nths: "v < n \<Longrightarrow> csr_list v = nths E {B ! v..<B ! Suc v}"
+  using B_bound
+  by (simp add: csr_list_def map_nth_upt_take_drop nths_intervall_strict_as_drop_and_take drop_take)
+
+lemma csr_fold_imp_refine:
+  assumes "v \<in> K"
+    and "\<And>acc acci x. x \<in> csr_abstract c v \<Longrightarrow>
+           <acc_assn acc acci> fi x acci <\<lambda>r. acc_assn (f x acc) r>"
+  shows "<csr_blocks_assn c Ci * acc_assn acc acci> csr_fold_imp Ci v fi acci
+         <\<lambda>r. csr_blocks_assn c Ci * acc_assn (csr_fold c v f acc) r>"
+proof -
+  obtain Ba Ea where Ci: "Ci = (Ba, Ea)" by (cases Ci)
+  have v: "v < n" by (rule K_less[OF assms(1)])
+  have xs: "set (nths E {B ! v..<B ! Suc v}) = csr_abstract c v"
+    using csr_list_nths[OF v] csr_list_set by metis
+  have "<Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * acc_assn acc acci * emp> csr_fold_imp (Ba, Ea) v fi acci
+        <\<lambda>r. Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E *
+             acc_assn (foldl (\<lambda>acc x. f x acc) acc (nths E {B ! v..<B ! Suc v})) r * emp>"
+    by (rule csr_fold_imp_rule) (simp_all add: v B_length B_bound xs assms(2))
+  then show ?thesis
+    by (simp add: Ci csr_blocks_assn_def csr_fold_def csr_list_nths[OF v])
+qed
+
+sublocale csr_imp: indexed_set_fold_imp csr_invar csr_abstract K csr_fold csr_blocks_assn
+    csr_fold_imp
+proof (unfold_locales, goal_cases)
+  case (1 C i acc_assn fi f Ci acc acci)
+  show ?case by (rule csr_fold_imp_refine[where f = f, OF 1(2,3)])
+qed
+
+end
+
+sublocale csr_graph_imp \<subseteq> csr_graph_blocks_imp ..
+
 subsection \<open>Reading the input\<close>
 
 text \<open>The endpoints of the input edges (@{const e_src}, @{const e_tgt}) are read from the input
@@ -369,7 +411,6 @@ global_interpretation csr_code: imp_csr_buildup_code n edge_has_next edge_cur ed
 text \<open>The heap @{command partial_function}s do not register their equations for code generation.\<close>
 
 declare csr_code.count_imp.simps[code] csr_code.prefix_imp.simps[code] csr_code.fill_imp.simps[code]
-  csr_copy_imp.simps[code]
 
 section \<open>Weighted Neighbourhoods in CSR Representation\<close>
 
@@ -408,7 +449,7 @@ definition wnb_reset_imp ::
 
 definition wnb_reset_all_imp ::
   "nat \<Rightarrow> (nat array \<times> 'e::heap array \<times> nat array) \<times> 'w::heap array \<Rightarrow> unit Heap" where
-  "wnb_reset_all_imp n = (\<lambda>((Ba, Ea, Ca), Wa). csr_copy_imp n Ba Ca 0)"
+  "wnb_reset_all_imp n = (\<lambda>((Ba, Ea, Ca), Wa). copy_prefix_imp n Ba Ca 0)"
 
 lemma wnb_handle_cases:
   obtains Ba Ea Ca Wa where "Ci = ((Ba, Ea, Ca), Wa)"
@@ -570,7 +611,7 @@ lemma wnb_reset_all_imp_rule:
   "<wnb_assn c ((Ba, Ea, Ca), Wa)> wnb_reset_all_imp n ((Ba, Ea, Ca), Wa)
    <\<lambda>_. wnb_assn (\<lambda>v. B ! v) ((Ba, Ea, Ca), Wa)>"
   unfolding wnb_reset_all_imp_def wnb_assn_def csr_assn_def prod.case
-  by (sep_auto heap: csr_copy_imp_rule simp: K_less B_length)
+  by (sep_auto heap: csr_cursor_copy_rule simp: K_less B_length)
 
 sublocale wnb_imp: weighted_neighbourhoods_imp_spec csr_invar wnb_abstract wnb_current csr_has
     wnb_iterated wnb_remaining csr_move csr_reset K wnb_assn "wnb_current_imp tgt" wnb_has_imp

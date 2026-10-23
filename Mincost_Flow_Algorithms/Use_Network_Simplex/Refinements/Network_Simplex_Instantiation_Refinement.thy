@@ -760,16 +760,10 @@ partial_function (heap) arr_fill_imp :: "'a::heap array \<Rightarrow> 'a \<Right
   "arr_fill_imp a x v nn =
      (if nn \<le> v then return () else do { _ \<leftarrow> array_fun_upd_imp a v x; arr_fill_imp a x (Suc v) nn })"
 
-text \<open>Copy a prefix of one array into another (used to reset the cursor array to the block starts).\<close>
-partial_function (heap) arr_copy_imp :: "'a::heap array \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "arr_copy_imp src dst v nn =
-     (if nn \<le> v then return ()
-      else do { x \<leftarrow> Array.nth src v; _ \<leftarrow> array_fun_upd_imp dst v x; arr_copy_imp src dst (Suc v) nn })"
-
 subsection \<open>Refinement rules for the generic array loops\<close>
 
-text \<open>A single in-place write refines a list update; @{const arr_fill_imp} and @{const arr_copy_imp}
-      then refine the corresponding range operations on the abstract list.\<close>
+text \<open>A single in-place write refines a list update; @{const arr_fill_imp} then refines the
+      corresponding range operation on the abstract list.\<close>
 
 lemma array_fun_upd_imp_list_rule [sep_heap_rules]:
   "i < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs> array_fun_upd_imp a i x <\<lambda>_. a \<mapsto>\<^sub>a list_update xs i x>"
@@ -806,38 +800,6 @@ next
     by (sep_auto heap: step simp: eq)
 qed
 
-lemma arr_copy_imp_rule:
-  "v \<le> nn \<Longrightarrow> nn \<le> length xs \<Longrightarrow> nn \<le> length ys \<Longrightarrow>
-   <src \<mapsto>\<^sub>a xs * dst \<mapsto>\<^sub>a ys> arr_copy_imp src dst v nn
-   <\<lambda>_. src \<mapsto>\<^sub>a xs * dst \<mapsto>\<^sub>a (take v ys @ take (nn - v) (drop v xs) @ drop nn ys)>"
-proof (induction "nn - v" arbitrary: v ys)
-  case 0
-  then have "nn = v" by simp
-  then show ?case by (subst arr_copy_imp.simps) sep_auto
-next
-  case (Suc d)
-  from Suc.hyps(2) Suc.prems have vn: "v < nn" by simp
-  have vx: "v < length xs" using vn Suc.prems(2) by simp
-  have d': "d = nn - Suc v" using Suc.hyps(2) by simp
-  have lenys': "nn \<le> length (list_update ys v (xs ! v))" using Suc.prems(3) by simp
-  have step: "<src \<mapsto>\<^sub>a xs * dst \<mapsto>\<^sub>a list_update ys v (xs ! v)> arr_copy_imp src dst (Suc v) nn
-              <\<lambda>_. src \<mapsto>\<^sub>a xs * dst \<mapsto>\<^sub>a (take (Suc v) (list_update ys v (xs ! v))
-                        @ take (nn - Suc v) (drop (Suc v) xs) @ drop nn (list_update ys v (xs ! v)))>"
-    using Suc.hyps(1)[OF d' _ Suc.prems(2) lenys'] vn by simp
-  have eq: "(take (Suc v) ys)[v := xs ! v] @ take (nn - Suc v) (drop (Suc v) xs) @ drop nn ys
-            = take v ys @ take (nn - v) (drop v xs) @ drop nn ys"
-  proof -
-    have a: "(take (Suc v) ys)[v := xs ! v] = take v ys @ [xs ! v]"
-      using vn Suc.prems(3) by (simp add: take_Suc_conv_app_nth list_update_append)
-    have c: "take (nn - v) (drop v xs) = xs ! v # take (nn - Suc v) (drop (Suc v) xs)"
-      by (simp only: Cons_nth_drop_Suc[OF vx, symmetric] Suc_diff_Suc[OF vn, symmetric] take_Suc_Cons)
-    show ?thesis by (simp only: a c append.assoc append_Cons append_Nil)
-  qed
-  show ?case
-    using vn Suc.prems(2,3)
-    apply (subst arr_copy_imp.simps)
-    by (sep_auto heap: step simp: eq)
-qed
 
 section \<open>The edged vertices\<close>
 
@@ -886,10 +848,10 @@ definition solve_imp ::
   "solve_imp n m block_size min_cand max_cand in_fst in_snd in_cap in_cost in_flow in_b =
      (let vcount = Suc n; V = Suc vcount; mn = m + n
       in do {
-        fst_arr  \<leftarrow> Array.new mn 0;   _ \<leftarrow> arr_copy_imp in_fst  fst_arr  0 m;
-        snd_arr  \<leftarrow> Array.new mn 0;   _ \<leftarrow> arr_copy_imp in_snd  snd_arr  0 m;
-        cap_arr  \<leftarrow> Array.new mn 0;   _ \<leftarrow> arr_copy_imp in_cap  cap_arr  0 m;
-        flow_arr \<leftarrow> Array.new mn 0;   _ \<leftarrow> arr_copy_imp in_flow flow_arr 0 m;
+        fst_arr  \<leftarrow> Array.new mn 0;   _ \<leftarrow> copy_prefix_imp m in_fst  fst_arr  0;
+        snd_arr  \<leftarrow> Array.new mn 0;   _ \<leftarrow> copy_prefix_imp m in_snd  snd_arr  0;
+        cap_arr  \<leftarrow> Array.new mn 0;   _ \<leftarrow> copy_prefix_imp m in_cap  cap_arr  0;
+        flow_arr \<leftarrow> Array.new mn 0;   _ \<leftarrow> copy_prefix_imp m in_flow flow_arr 0;
         es_arr   \<leftarrow> Array.new mn InL;
         pot_arr \<leftarrow> Array.new V pval_zero;
         prnt \<leftarrow> Array.new V 0; thrd \<leftarrow> Array.new V 0; rvth \<leftarrow> Array.new V 0;
@@ -901,8 +863,8 @@ definition solve_imp ::
         vst \<leftarrow> Array.new V 0; est \<leftarrow> Array.new V 0; dst \<leftarrow> Array.new V False;
         _ \<leftarrow> csr_build_into_edges vcount (in_fst, in_snd) 0 o_b o_e;
         _ \<leftarrow> csr_build_into_edges_tgt vcount (in_fst, in_snd) 0 i_b i_e;
-        _ \<leftarrow> csr_copy_imp vcount o_b o_h 0;
-        _ \<leftarrow> csr_copy_imp vcount i_b i_h 0;
+        _ \<leftarrow> copy_prefix_imp vcount o_b o_h 0;
+        _ \<leftarrow> copy_prefix_imp vcount i_b i_h 0;
         k \<leftarrow> count_edged_imp o_b i_b 1 n 0;
         vl \<leftarrow> Array.new k 0;
         _ \<leftarrow> fill_edged_imp vl o_b i_b 1 n 0;
@@ -911,8 +873,8 @@ definition solve_imp ::
                 (o_b, o_e, o_h) (i_b, i_e, i_h) (vl, pr) vst est dst;
         (if ubd then return NegInfCycleF
          else do {
-           _ \<leftarrow> csr_copy_imp vcount o_b o_h 0;
-           _ \<leftarrow> csr_copy_imp vcount i_b i_h 0;
+           _ \<leftarrow> copy_prefix_imp vcount o_b o_h 0;
+           _ \<leftarrow> copy_prefix_imp vcount i_b i_h 0;
            _ \<leftarrow> passA_imp flow_arr cap_arr fst_arr snd_arr es_arr exc_arr o_e o_h i_e i_h 0 m;
            _ \<leftarrow> imbalance_imp exc_arr in_b 0 vcount;
            \<comment> \<open>Reuse the acyclifier's (now dead) DFS stack @{term dst} as the tree-builder's ``seen''
@@ -942,7 +904,7 @@ definition solve_imp ::
                      else do {
                        allz \<leftarrow> scan_art_imp flow_arr m marc;
                        (if allz
-                        then do { _ \<leftarrow> arr_copy_imp flow_arr in_flow 0 m; return OptimalF }
+                        then do { _ \<leftarrow> copy_prefix_imp m flow_arr in_flow 0; return OptimalF }
                         else return InfeasibleF) }) }) }) }) }) })"
 
 section \<open>Code generation for the whole solver\<close>
@@ -957,7 +919,7 @@ lemmas [code] =
   ns_loop_prog_def
   scan_art_imp.simps join_of_imp.simps scan_cache_imp.simps scan_imp.simps
   passA_imp.simps imbalance_imp.simps build_dfs_a_imp.simps phase1_imp.simps phase2_imp.simps
-  arr_fill_imp.simps arr_copy_imp.simps count_edged_imp.simps fill_edged_imp.simps
+  arr_fill_imp.simps count_edged_imp.simps fill_edged_imp.simps
   initial_basis_code_spec.better.simps
   network_simplex_impl_spec.ns_select_imp_def network_simplex_impl_spec.res_fwd_imp_def
   network_simplex_impl_spec.res_bwd_imp_def network_simplex_impl_spec.par_edge_imp_def
@@ -1136,8 +1098,10 @@ proof -
       and rd = "cap_arr \<mapsto>\<^sub>a cl * cost_arr \<mapsto>\<^sub>a co * fst_arr \<mapsto>\<^sub>a fla * snd_arr \<mapsto>\<^sub>a sla"
       and Lvst = "length vs0" and Lest = "length es0" and Ldst = "length ds0"
     apply intro_locales
-    apply (insert indexed_iterable_set_imp.axioms(2)[OF outI.graph.csr_imp.indexed_iterable_set_imp_axioms], simp add: verts_V)
-    apply (insert indexed_iterable_set_imp.axioms(2)[OF incI.graph.csr_imp.indexed_iterable_set_imp_axioms], simp add: verts_V)
+    apply (insert indexed_set_cursor_imp.axioms(2)[OF outI.graph.csr_imp.indexed_set_cursor_imp_axioms], simp add: verts_V)
+    apply (insert indexed_set_reset_imp.axioms(2)[OF outI.graph.csr_imp.indexed_set_reset_imp_axioms], simp add: verts_V)
+    apply (insert indexed_set_cursor_imp.axioms(2)[OF incI.graph.csr_imp.indexed_set_cursor_imp_axioms], simp add: verts_V)
+    apply (insert indexed_set_reset_imp.axioms(2)[OF incI.graph.csr_imp.indexed_set_reset_imp_axioms], simp add: verts_V)
     apply (rule fixed_univ_map_basic_imp.intro; unfold id_apply; rule flow_lookup_rule_c; assumption)
     apply (rule fixed_univ_map_imp_axioms.intro; unfold id_apply; rule flow_upd_rule_c; assumption)
     apply (rule fixed_univ_map_basic_imp.intro; unfold id_apply; rule state_lookup_rule_c; assumption)
@@ -1200,7 +1164,7 @@ text \<open>A range that holds a proper subset of its block's entries has room f
 
 lemma ranges_room:
   assumes R: "csr_ranges vcount {..<vcount} Bl ((!) Hl) E" and x: "x < vcount"
-    and ab: "csr_ranges.csr_abstract Bl ((!) Hl) E c x \<subset> A"
+    and ab: "csr_blocks.csr_abstract Bl ((!) Hl) E c x \<subset> A"
     and A: "finite A" "card A = Bl ! Suc x - Bl ! x"
   shows "Hl ! x < length E"
 proof -
@@ -1269,7 +1233,7 @@ next
     using em by (simp_all add: fst_list_lt snd_list_lt)
   have room_o: "fst fo ! (fst_list ! e) < length (snd fo)"
   proof (rule ranges_room[OF conjunct1[OF OR] xvc])
-    show "csr_ranges.csr_abstract out.inp.B_spec ((!) (fst fo)) (snd fo) undefined (fst_list ! e)
+    show "csr_blocks.csr_abstract out.inp.B_spec ((!) (fst fo)) (snd fo) undefined (fst_list ! e)
           \<subset> {e'. e' < m \<and> fst_list ! e' = fst_list ! e}"
       using OR xvc em by auto
     show "card {e'. e' < m \<and> fst_list ! e' = fst_list ! e} = out.inp.B_spec ! Suc (fst_list ! e) - out.inp.B_spec ! (fst_list ! e)"
@@ -1277,7 +1241,7 @@ next
   qed simp
   have room_i: "fst fi ! (snd_list ! e) < length (snd fi)"
   proof (rule ranges_room[OF conjunct1[OF IR] yvc])
-    show "csr_ranges.csr_abstract inc.inp.B_spec ((!) (fst fi)) (snd fi) undefined (snd_list ! e)
+    show "csr_blocks.csr_abstract inc.inp.B_spec ((!) (fst fi)) (snd fi) undefined (snd_list ! e)
           \<subset> {e'. e' < m \<and> snd_list ! e' = snd_list ! e}"
       using IR yvc em by auto
     show "card {e'. e' < m \<and> snd_list ! e' = snd_list ! e} = inc.inp.B_spec ! Suc (snd_list ! e) - inc.inp.B_spec ! (snd_list ! e)"
@@ -2034,7 +1998,7 @@ lemma open_tree_component_imp_rule:
     and cnz: "c \<noteq> 0" and stke: "ds_stk s = []" and al: "art_len s" and room: "ds_nxt s < length vs_list"
   shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> open_tree_component_imp st imb_arr m vcount c
          <\<lambda>_. dfs_rel fl0 es0 st (open_tree_component acyc_flow s c) * imb_arr \<mapsto>\<^sub>a imbalance>"
-proof -
+proof - 
   have wf: "dfs_wf acyc_flow s" and sz: "dfs_sized s" and thi: "thread_inv s"
     using inv by (simp_all add: dfs_inv_def)
   note L = sz[unfolded dfs_sized_def]
@@ -4134,19 +4098,19 @@ lemma csr_build_in_rule:
   using incI.csr_build_into_rule[of "replicate m 0", unfolded csr_build_into_edges_tgt] by simp
 
 text \<open>Copying the block starts into the cursor array makes the arrays a collection of the input
-      edges (@{thm [source] outI.graph.csr_copy_imp_rule}, @{thm [source] outI.graph.csr_assn_intro});
+      edges (@{thm [source] outI.graph.csr_cursor_copy_rule}, @{thm [source] outI.graph.csr_assn_intro});
       after the acyclifier, the same copy turns the cursor array of the released collection
       (@{thm [source] outI.graph.csr_assn_release}) into the empty ranges at the block starts that
       Pass A appends to.\<close>
 
 lemma csr_copy_out_init:
   assumes "length l = vcount"
-  shows "<ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec * oh \<mapsto>\<^sub>a l> csr_copy_imp vcount ob oh 0
+  shows "<ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec * oh \<mapsto>\<^sub>a l> copy_prefix_imp vcount ob oh 0
          <\<lambda>_. outI.graph.csr_assn ((!) out.inp.B_spec) (ob, oe, oh)>"
 proof -
-  have T: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l> csr_copy_imp vcount ob oh 0
+  have T: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l> copy_prefix_imp vcount ob oh 0
      <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a take vcount out.inp.B_spec>"
-    by (rule outI.graph.csr_copy_imp_rule) (simp_all add: assms)
+    by (rule outI.graph.csr_cursor_copy_rule) (simp_all add: assms)
   have I: "ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a take vcount out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec \<Longrightarrow>\<^sub>A
            outI.graph.csr_assn ((!) out.inp.B_spec) (ob, oe, oh)"
     using outI.graph.csr_assn_intro[where l = "take vcount out.inp.B_spec" and c = "(!) out.inp.B_spec"
@@ -4159,12 +4123,12 @@ qed
 
 lemma csr_copy_in_init:
   assumes "length l = vcount"
-  shows "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec * ih \<mapsto>\<^sub>a l> csr_copy_imp vcount ib ih 0
+  shows "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec * ih \<mapsto>\<^sub>a l> copy_prefix_imp vcount ib ih 0
          <\<lambda>_. incI.graph.csr_assn ((!) inc.inp.B_spec) (ib, ie, ih)>"
 proof -
-  have T: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l> csr_copy_imp vcount ib ih 0
+  have T: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l> copy_prefix_imp vcount ib ih 0
      <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a take vcount inc.inp.B_spec>"
-    by (rule incI.graph.csr_copy_imp_rule) (simp_all add: assms)
+    by (rule incI.graph.csr_cursor_copy_rule) (simp_all add: assms)
   have I: "ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a take vcount inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec \<Longrightarrow>\<^sub>A
            incI.graph.csr_assn ((!) inc.inp.B_spec) (ib, ie, ih)"
     using incI.graph.csr_assn_intro[where l = "take vcount inc.inp.B_spec" and c = "(!) inc.inp.B_spec"
@@ -4176,15 +4140,15 @@ proof -
 qed
 
 lemma csr_copy_out_ranges:
-  "<outI.graph.csr_assn c (ob, oe, oh)> csr_copy_imp vcount ob oh 0
+  "<outI.graph.csr_assn c (ob, oe, oh)> copy_prefix_imp vcount ob oh 0
    <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec * oh \<mapsto>\<^sub>a out_lo>"
 proof -
   have lo: "take vcount out.inp.B_spec = out_lo"
     by (simp add: list_eq_iff_nth_eq length_out_lo out_lo_nth out.graph.B_length)
-  have T: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l> csr_copy_imp vcount ob oh 0
+  have T: "<ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a l> copy_prefix_imp vcount ob oh 0
      <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a out_lo>"
     if "length l = vcount" for l
-    using outI.graph.csr_copy_imp_rule[of 0 l ob oh] that by (simp add: lo)
+    using outI.graph.csr_cursor_copy_rule[of 0 l ob oh] that by (simp add: lo)
   have E: "ob \<mapsto>\<^sub>a out.inp.B_spec * oh \<mapsto>\<^sub>a out_lo * oe \<mapsto>\<^sub>a out.inp.E_spec \<Longrightarrow>\<^sub>A
            ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec * oh \<mapsto>\<^sub>a out_lo * true"
     by (rule ent_true_drop(2)) (simp add: ac_simps)
@@ -4201,15 +4165,15 @@ proof -
 qed
 
 lemma csr_copy_in_ranges:
-  "<incI.graph.csr_assn c (ib, ie, ih)> csr_copy_imp vcount ib ih 0
+  "<incI.graph.csr_assn c (ib, ie, ih)> copy_prefix_imp vcount ib ih 0
    <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec * ih \<mapsto>\<^sub>a in_lo>"
 proof -
   have lo: "take vcount inc.inp.B_spec = in_lo"
     by (simp add: list_eq_iff_nth_eq length_in_lo in_lo_nth inc.graph.B_length)
-  have T: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l> csr_copy_imp vcount ib ih 0
+  have T: "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a l> copy_prefix_imp vcount ib ih 0
      <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a in_lo>"
     if "length l = vcount" for l
-    using incI.graph.csr_copy_imp_rule[of 0 l ib ih] that by (simp add: lo)
+    using incI.graph.csr_cursor_copy_rule[of 0 l ib ih] that by (simp add: lo)
   have E: "ib \<mapsto>\<^sub>a inc.inp.B_spec * ih \<mapsto>\<^sub>a in_lo * ie \<mapsto>\<^sub>a inc.inp.E_spec \<Longrightarrow>\<^sub>A
            ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec * ih \<mapsto>\<^sub>a in_lo * true"
     by (rule ent_true_drop(2)) (simp add: ac_simps)
@@ -4601,7 +4565,14 @@ proof -
     apply (intro ent_ex_preI)
     apply (rule ent_ex_postI)+
     apply (rule ent_star_mono ent_refl)+
-    apply sep_auto
+    subgoal for x f' c_o c_i
+      apply (intro ent_ex_preI)
+      subgoal for vl el dl
+        apply (rule ent_ex_postI[where x = vl], rule ent_ex_postI[where x = el],
+               rule ent_ex_postI[where x = dl])
+        by (simp add: mod_pure_star_dist)
+      done
+    apply (rule ent_refl)+
     done
 qed
 
@@ -4616,7 +4587,7 @@ lemma passA_phase_triple:
   shows "<fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) *
           snda \<mapsto>\<^sub>a (snd_list @ replicate n 0) * es_arr \<mapsto>\<^sub>a replicate (m + n) InL * exc_arr \<mapsto>\<^sub>a (0 # replicate vcount 0) *
           outI.graph.csr_assn c_o (ob, oe, oh) * incI.graph.csr_assn c_i (ib, ie, ih) * ba \<mapsto>\<^sub>a b_arr * dsta \<mapsto>\<^sub>a dl>
-         do { _ \<leftarrow> csr_copy_imp vcount ob oh 0; _ \<leftarrow> csr_copy_imp vcount ib ih 0;
+         do { _ \<leftarrow> copy_prefix_imp vcount ob oh 0; _ \<leftarrow> copy_prefix_imp vcount ib ih 0;
               _ \<leftarrow> passA_imp fl_arr cap_arr fsta snda es_arr exc_arr oe oh ie ih 0 m;
               _ \<leftarrow> imbalance_imp exc_arr ba 0 vcount; arr_fill_imp dsta False 0 (Suc vcount) }
          <\<lambda>_. fl_arr \<mapsto>\<^sub>a fla * cap_arr \<mapsto>\<^sub>a (capacity_list @ replicate n 0) * fsta \<mapsto>\<^sub>a (fst_list @ replicate n 0) *
@@ -4780,7 +4751,7 @@ lemma solve_tail_triple:
           tha \<mapsto>\<^sub>a (0 # replicate vcount 0) * pra \<mapsto>\<^sub>a (0 # replicate vcount 0) *
           poa \<mapsto>\<^sub>a (pval_zero # replicate vcount pval_zero) * es_arr \<mapsto>\<^sub>a replicate (m + n) InL *
           outfl \<mapsto>\<^sub>a fs0 * ba \<mapsto>\<^sub>a b_arr * flow_assn_m f' fl_arr>
-     do { _ \<leftarrow> csr_copy_imp vcount ob oh 0; _ \<leftarrow> csr_copy_imp vcount ib ih 0;
+     do { _ \<leftarrow> copy_prefix_imp vcount ob oh 0; _ \<leftarrow> copy_prefix_imp vcount ib ih 0;
           _ \<leftarrow> passA_imp fl_arr cap_arr fsta snda es_arr exc_arr oe oh ie ih 0 m;
           _ \<leftarrow> imbalance_imp exc_arr ba 0 vcount; _ \<leftarrow> arr_fill_imp dsta False 0 (Suc vcount);
           sp_ref \<leftarrow> ref 0; prev_ref \<leftarrow> ref 0; nxt_ref \<leftarrow> ref 0;
@@ -4791,7 +4762,7 @@ lemma solve_tail_triple:
                    (ns_impl_state.make fl_arr poa \<lparr>prnt_impl = pra, thrd_impl = tha, rvth_impl = rva, lsuc_impl = lsa, snum_impl = sna, aux_impl = aua\<rparr> paa dira es_arr (sel_arr, scur, slen) sva esta);
           (if res = Network_Simplex.unbounded then return NegInfCycleF
            else do { allz \<leftarrow> scan_art_imp fl_arr m (m + Kart);
-                     (if allz then do { _ \<leftarrow> arr_copy_imp fl_arr outfl 0 m; return OptimalF }
+                     (if allz then do { _ \<leftarrow> copy_prefix_imp m fl_arr outfl 0; return OptimalF }
                       else return InfeasibleF) }) }
    <\<lambda>r. \<exists>\<^sub>A fs'. outfl \<mapsto>\<^sub>a fs' * cost_arr \<mapsto>\<^sub>a cost_list * ba \<mapsto>\<^sub>a b_arr *
         \<up>(r = status_of solve \<and> length fs' = length fs0 \<and> (\<forall>fs. solve = Optimum fs \<longrightarrow> take m fs' = fs)) * true>"
@@ -4826,7 +4797,7 @@ lemma solve_tail_triple:
       apply (rule wlp_apply_ht[OF _ _ ns_phase_triple2[OF sne marc_pos lel, unfolded marc_eq, where ofl = outfl], where F = "exc_arr \<mapsto>\<^sub>a imbalance * ba \<mapsto>\<^sub>a b_arr * true"])
         apply assumption
        apply sep_auto
-       apply (sep_auto heap: scan_art_imp_rule arr_copy_imp_rule simp: lfs)
+       apply (sep_auto heap: scan_art_imp_rule copy_prefix_imp_rule simp: lfs)
       done
   qed
   done
@@ -4849,7 +4820,7 @@ theorem solve_imp_correct:
                   (\<forall>fs. solve = Optimum fs \<longrightarrow> take m fs' = fs)) * true>"
   unfolding solve_imp_def Let_def
   apply (simp only: vcount_eq[symmetric])
-  apply (sep_auto heap: arr_copy_imp_rule
+  apply (sep_auto heap: copy_prefix_imp_rule
            simp: length_fst_list_m length_snd_list_m length_edges length_flow)
   apply (sep_auto heap: csr_build_out_rule csr_build_in_rule)
   apply (sep_auto heap: csr_copy_out_init csr_copy_in_init)

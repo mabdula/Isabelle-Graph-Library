@@ -2,7 +2,7 @@ theory Push_Relabel_Generic_Imperative
   imports
     Push_Relabel_Generic
     Data_Structures.Fixed_Univ_Map_Specs_Imp
-    Data_Structures.Iterable_Set_Reset_To_Specs_Imp
+    Data_Structures.Iterable_Set_Specs_Imp
     Data_Structures.Real_Embedding
 begin
 

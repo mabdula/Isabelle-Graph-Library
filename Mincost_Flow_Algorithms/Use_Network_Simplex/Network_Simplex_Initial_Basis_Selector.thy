@@ -3278,14 +3278,14 @@ text \<open>scan\_complete tracks that every free edge already scanned from a se
 definition scan_complete :: "'n dfs_state \<Rightarrow> bool" where
   "scan_complete s \<longleftrightarrow> (\<forall>v<vcount. ds_seen s ! v \<longrightarrow>
      (\<forall>e<m. is_free acyc_flow e \<and> fst_list ! e = v
-        \<and> e \<notin> csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) v
+        \<and> e \<notin> csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) v
         \<longrightarrow> ds_seen s ! (snd_list ! e))
    \<and> (\<forall>e<m. is_free acyc_flow e \<and> snd_list ! e = v
-        \<and> e \<notin> csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) v
+        \<and> e \<notin> csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) v
         \<longrightarrow> ds_seen s ! (fst_list ! e))
    \<and> (v \<notin> set (ds_stk s) \<longrightarrow>
-        csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) v = {}
-      \<and> csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) v = {}))"
+        csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) v = {}
+      \<and> csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) v = {}))"
 
 text \<open>The generic preservation step: seen vertices stay seen, a freshly seen vertex is pushed with a
       full iterator, an edge leaving a remaining set has its far endpoint seen, and a vertex that is
@@ -3295,33 +3295,33 @@ lemma scan_complete_upd:
   assumes sc: "scan_complete s"
     and seen: "\<And>x. ds_seen s ! x \<Longrightarrow> ds_seen t ! x"
     and fresh: "\<And>x. x < vcount \<Longrightarrow> ds_seen t ! x \<Longrightarrow> \<not> ds_seen s ! x \<Longrightarrow> x \<in> set (ds_stk t)
-       \<and> csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x
+       \<and> csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x
            = {e. e < m \<and> fst_list ! e = x \<and> is_free acyc_flow e}
-       \<and> csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x
+       \<and> csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x
            = {e. e < m \<and> snd_list ! e = x \<and> is_free acyc_flow e}"
     and out: "\<And>x e. x < vcount \<Longrightarrow> ds_seen s ! x
-       \<Longrightarrow> e \<in> csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) x
-       \<Longrightarrow> e \<notin> csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x
+       \<Longrightarrow> e \<in> csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) x
+       \<Longrightarrow> e \<notin> csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x
        \<Longrightarrow> ds_seen t ! (snd_list ! e)"
     and inn: "\<And>x e. x < vcount \<Longrightarrow> ds_seen s ! x
-       \<Longrightarrow> e \<in> csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) x
-       \<Longrightarrow> e \<notin> csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x
+       \<Longrightarrow> e \<in> csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) x
+       \<Longrightarrow> e \<notin> csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x
        \<Longrightarrow> ds_seen t ! (fst_list ! e)"
     and fin: "\<And>x. x < vcount \<Longrightarrow> ds_seen s ! x \<Longrightarrow> x \<notin> set (ds_stk t) \<Longrightarrow>
        (x \<notin> set (ds_stk s)
-        \<and> csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x
-          \<subseteq> csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) x
-        \<and> csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x
-          \<subseteq> csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) x)
-       \<or> (csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x = {}
-          \<and> csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x = {})"
+        \<and> csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x
+          \<subseteq> csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) x
+        \<and> csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x
+          \<subseteq> csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) x)
+       \<or> (csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x = {}
+          \<and> csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x = {})"
   shows "scan_complete t"
   unfolding scan_complete_def
 proof (intro allI impI conjI)
   fix x assume x: "x < vcount" and xt: "ds_seen t ! x"
   note S = sc[unfolded scan_complete_def, rule_format, OF x]
   fix e assume e: "e < m" and E: "is_free acyc_flow e \<and> fst_list ! e = x
-      \<and> e \<notin> csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x"
+      \<and> e \<notin> csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x"
   show "ds_seen t ! (snd_list ! e)"
   proof (cases "ds_seen s ! x")
     case True
@@ -3334,7 +3334,7 @@ next
   fix x assume x: "x < vcount" and xt: "ds_seen t ! x"
   note S = sc[unfolded scan_complete_def, rule_format, OF x]
   fix e assume e: "e < m" and E: "is_free acyc_flow e \<and> snd_list ! e = x
-      \<and> e \<notin> csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x"
+      \<and> e \<notin> csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x"
   show "ds_seen t ! (fst_list ! e)"
   proof (cases "ds_seen s ! x")
     case True
@@ -3347,9 +3347,9 @@ next
   fix x assume x: "x < vcount" and xt: "ds_seen t ! x" and xs: "x \<notin> set (ds_stk t)"
   note S = sc[unfolded scan_complete_def, rule_format, OF x]
   have xss: "ds_seen s ! x" using fresh[OF x xt] xs by blast
-  show "csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x = {}"
+  show "csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc t) x = {}"
     using fin[OF x xss xs] S[OF xss] by blast
-  show "csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x = {}"
+  show "csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic t) x = {}"
     using fin[OF x xss xs] S[OF xss] by blast
 qed
 
@@ -3357,16 +3357,16 @@ text \<open>The iterators restart at a pushed vertex: everything it owns is rema
 
 lemma dfs_push_remaining:
   assumes w: "w < vcount"
-  shows "csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc (dfs_push s w)) w
+  shows "csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc (dfs_push s w)) w
            = {e. e < m \<and> fst_list ! e = w \<and> is_free acyc_flow e}"
-    and "csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic (dfs_push s w)) w
+    and "csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic (dfs_push s w)) w
            = {e. e < m \<and> snd_list ! e = w \<and> is_free acyc_flow e}"
     and "\<And>j. j \<noteq> w \<Longrightarrow>
-         csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc (dfs_push s w)) j
-         = csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) j"
+         csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc (dfs_push s w)) j
+         = csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) j"
     and "\<And>j. j \<noteq> w \<Longrightarrow>
-         csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic (dfs_push s w)) j
-         = csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) j"
+         csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic (dfs_push s w)) j
+         = csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) j"
 proof -
   interpret F: csr_ranges vcount "{..<vcount}" out.inp.B_spec "(!) (fst (free_out acyc_flow))" "snd (free_out acyc_flow)"
     by (rule free_out(1))
@@ -3391,11 +3391,11 @@ lemma bd_upd1_scan_complete:
 proof -
   have wf: "dfs_wf acyc_flow s" and sz: "dfs_sized s" using inv by (simp_all add: dfs_inv_def)
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and has: "csr_ranges.csr_has ((!) (fst (free_out acyc_flow))) (ds_oc s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_out acyc_flow))) (ds_oc s) v"
     by (auto simp: bd_call1_conds_def split: list.splits)
   note S = bd_out_step[OF wf stk has]
-  define e where "e = csr_ranges.csr_current (snd (free_out acyc_flow)) (ds_oc s) v"
-  define c' where "c' = csr_ranges.csr_move ((!) (fst (free_out acyc_flow))) (ds_oc s) v"
+  define e where "e = csr_blocks.csr_current (snd (free_out acyc_flow)) (ds_oc s) v"
+  define c' where "c' = csr_blocks.csr_move ((!) (fst (free_out acyc_flow))) (ds_oc s) v"
   define w where "w = snd_list ! e"
   have up: "bd_upd1 acyc_flow s
             = (if ds_seen s ! w then s\<lparr>ds_oc := c'\<rparr> else dfs_discover (s\<lparr>ds_oc := c'\<rparr>) v w e)"
@@ -3403,9 +3403,9 @@ proof -
   have wlt: "w < vcount" using S(4) by (simp add: w_def e_def)
   have lseen: "length (ds_seen s) = Suc vcount" using sz by (simp add: dfs_sized_def)
   have vin: "v \<in> set (ds_stk s)" using stk by simp
-  have rem: "\<And>x. csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) c' x
-      = (if x = v then csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) v - {e}
-         else csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) x)"
+  have rem: "\<And>x. csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) c' x
+      = (if x = v then csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) v - {e}
+         else csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) x)"
     using S(7,8)[folded e_def c'_def] by simp
   show ?thesis
   proof (cases "ds_seen s ! w")
@@ -3418,13 +3418,13 @@ proof -
     note P = dfs_push_remaining[OF wlt]
     have tseen: "ds_seen ?t = (ds_seen s)[w := True]" using False by (simp add: up discover_seen_eq)
     have tstk: "ds_stk ?t = w # ds_stk s" using False by (simp add: up dfs_discover_def dfs_push_def Let_def)
-    have toc: "csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc ?t) j
+    have toc: "csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc ?t) j
         = (if j = w then {e. e < m \<and> fst_list ! e = w \<and> is_free acyc_flow e}
-           else csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) c' j)" for j
+           else csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) c' j)" for j
       using False P(1,3) by (cases "j = w") (simp_all add: up dfs_discover_def Let_def)
-    have tic: "csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic ?t) j
+    have tic: "csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic ?t) j
         = (if j = w then {e. e < m \<and> snd_list ! e = w \<and> is_free acyc_flow e}
-           else csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) j)" for j
+           else csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) j)" for j
       using False P(2,4) by (cases "j = w") (simp_all add: up dfs_discover_def Let_def)
     show ?thesis
       by (rule scan_complete_upd[OF sc])
@@ -3438,12 +3438,12 @@ lemma bd_upd2_scan_complete:
 proof -
   have wf: "dfs_wf acyc_flow s" and sz: "dfs_sized s" using inv by (simp_all add: dfs_inv_def)
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and nho: "\<not> csr_ranges.csr_has ((!) (fst (free_out acyc_flow))) (ds_oc s) v"
-    and has: "csr_ranges.csr_has ((!) (fst (free_in acyc_flow))) (ds_ic s) v"
+    and nho: "\<not> csr_blocks.csr_has ((!) (fst (free_out acyc_flow))) (ds_oc s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_in acyc_flow))) (ds_ic s) v"
     by (auto simp: bd_call2_conds_def split: list.splits)
   note S = bd_in_step[OF wf stk has]
-  define e where "e = csr_ranges.csr_current (snd (free_in acyc_flow)) (ds_ic s) v"
-  define c' where "c' = csr_ranges.csr_move ((!) (fst (free_in acyc_flow))) (ds_ic s) v"
+  define e where "e = csr_blocks.csr_current (snd (free_in acyc_flow)) (ds_ic s) v"
+  define c' where "c' = csr_blocks.csr_move ((!) (fst (free_in acyc_flow))) (ds_ic s) v"
   define w where "w = fst_list ! e"
   have up: "bd_upd2 acyc_flow s
             = (if ds_seen s ! w then s\<lparr>ds_ic := c'\<rparr> else dfs_discover (s\<lparr>ds_ic := c'\<rparr>) v w e)"
@@ -3451,9 +3451,9 @@ proof -
   have wlt: "w < vcount" using S(4) by (simp add: w_def e_def)
   have lseen: "length (ds_seen s) = Suc vcount" using sz by (simp add: dfs_sized_def)
   have vin: "v \<in> set (ds_stk s)" using stk by simp
-  have rem: "\<And>x. csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) c' x
-      = (if x = v then csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) v - {e}
-         else csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) x)"
+  have rem: "\<And>x. csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) c' x
+      = (if x = v then csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) v - {e}
+         else csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) x)"
     using S(7,8)[folded e_def c'_def] by simp
   show ?thesis
   proof (cases "ds_seen s ! w")
@@ -3466,13 +3466,13 @@ proof -
     note P = dfs_push_remaining[OF wlt]
     have tseen: "ds_seen ?t = (ds_seen s)[w := True]" using False by (simp add: up discover_seen_eq)
     have tstk: "ds_stk ?t = w # ds_stk s" using False by (simp add: up dfs_discover_def dfs_push_def Let_def)
-    have toc: "csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc ?t) j
+    have toc: "csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc ?t) j
         = (if j = w then {e. e < m \<and> fst_list ! e = w \<and> is_free acyc_flow e}
-           else csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) j)" for j
+           else csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) j)" for j
       using False P(1,3) by (cases "j = w") (simp_all add: up dfs_discover_def Let_def)
-    have tic: "csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic ?t) j
+    have tic: "csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic ?t) j
         = (if j = w then {e. e < m \<and> snd_list ! e = w \<and> is_free acyc_flow e}
-           else csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) c' j)" for j
+           else csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) c' j)" for j
       using False P(2,4) by (cases "j = w") (simp_all add: up dfs_discover_def Let_def)
     show ?thesis
       by (rule scan_complete_upd[OF sc])
@@ -3486,8 +3486,8 @@ lemma bd_upd3_scan_complete:
 proof -
   have wf: "dfs_wf acyc_flow s" using inv by (simp add: dfs_inv_def)
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and o: "\<not> csr_ranges.csr_has ((!) (fst (free_out acyc_flow))) (ds_oc s) v"
-    and i: "\<not> csr_ranges.csr_has ((!) (fst (free_in acyc_flow))) (ds_ic s) v"
+    and o: "\<not> csr_blocks.csr_has ((!) (fst (free_out acyc_flow))) (ds_oc s) v"
+    and i: "\<not> csr_blocks.csr_has ((!) (fst (free_in acyc_flow))) (ds_ic s) v"
     by (auto simp: bd_call3_conds_def split: list.splits)
   note E = bd_finish_empty[OF wf stk o i]
   have up: "bd_upd3 s = dfs_finish s v rest" by (simp add: bd_upd3_def stk)
@@ -3915,13 +3915,13 @@ proof -
   have lseen: "length (ds_seen s) = Suc vcount" and lprnt: "length (ds_prnt s) = Suc vcount"
     using sz by (auto simp: dfs_sized_def)
   note P = dfs_push_remaining[OF c]
-  have toc: "csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc sd) j
+  have toc: "csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc sd) j
       = (if j = c then {e. e < m \<and> fst_list ! e = c \<and> is_free acyc_flow e}
-         else csr_ranges.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) j)" for j
+         else csr_blocks.csr_remaining ((!) (fst (free_out acyc_flow))) (snd (free_out acyc_flow)) (ds_oc s) j)" for j
     using oc P(1,3) by (cases "j = c") simp_all
-  have tic: "csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic sd) j
+  have tic: "csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic sd) j
       = (if j = c then {e. e < m \<and> snd_list ! e = c \<and> is_free acyc_flow e}
-         else csr_ranges.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) j)" for j
+         else csr_blocks.csr_remaining ((!) (fst (free_in acyc_flow))) (snd (free_in acyc_flow)) (ds_ic s) j)" for j
     using ic P(2,4) by (cases "j = c") simp_all
   have scd: "scan_complete sd"
     by (rule scan_complete_upd[OF sc])

@@ -172,6 +172,45 @@ next
      by (sep_auto simp: nths_intervall_split_off_first[of start] split: if_split)
  qed
 
+section \<open>Copying a Prefix of an Array\<close>
+
+text \<open>The entries of \<open>Sa\<close> from position \<open>i\<close> up to \<open>k\<close> are copied to the same positions
+      of \<open>Da\<close>.\<close>
+
+partial_function (heap) copy_prefix_imp :: "nat \<Rightarrow> 'a::heap array \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> unit Heap" where
+  "copy_prefix_imp k Sa Da i =
+     (if i < k then do {
+        x \<leftarrow> Array.nth Sa i;
+        _ \<leftarrow> Array.upd i x Da;
+        copy_prefix_imp k Sa Da (Suc i) }
+      else return ())"
+
+declare copy_prefix_imp.simps[code]
+
+lemma copy_prefix_imp_rule:
+  "\<lbrakk>i \<le> k; k \<le> length xs; k \<le> length l; take i l = take i xs\<rbrakk> \<Longrightarrow>
+   <Sa \<mapsto>\<^sub>a xs * Da \<mapsto>\<^sub>a l> copy_prefix_imp k Sa Da i
+   <\<lambda>_. Sa \<mapsto>\<^sub>a xs * Da \<mapsto>\<^sub>a (take k xs @ drop k l)>"
+proof (induction "k - i" arbitrary: i l)
+  case 0
+  then have i: "i = k" by simp
+  have "take k xs @ drop k l = l"
+    using 0(5) i append_take_drop_id[of k l] by simp
+  then show ?case
+    using i by (subst copy_prefix_imp.simps) sep_auto
+next
+  case (Suc m)
+  have i: "i < k" "m = k - Suc i"
+    using Suc.hyps(2) by simp_all
+  have tk: "take (Suc i) (list_update l i (xs ! i)) = take (Suc i) xs"
+    using Suc.prems i by (simp add: take_Suc_conv_app_nth list_update_append)
+  have dr: "drop k (list_update l i (xs ! i)) = drop k l"
+    using i by simp
+  show ?case
+    using i Suc.prems(2,3)
+    by (subst copy_prefix_imp.simps) (sep_auto heap: Suc.hyps(1)[OF i(2) _ _ _ tk] simp: dr)
+qed
+
 (*TODO MOVE*)
 lemma ht_ex_pre_and_post_I:
   "(\<And> x. <P x> c <\<lambda> r. Q x r>) \<Longrightarrow> <\<exists>\<^sub>A x. P x> c <\<lambda> r. \<exists>\<^sub>A x. Q x r>"

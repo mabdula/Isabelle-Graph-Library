@@ -30,20 +30,39 @@ text \<open>The tight exchange neighbours: the exchange iterator, skipping the n
 definition "teq_imp C cu = (\<lambda> _ _ v. do { cv \<leftarrow> Array.nth C v; return (cu = cv) })"
 
 definition tnbs :: "'si \<times> (nat array \<times> nat array) \<times> 'n::heap array \<times> 'n array \<Rightarrow> nat \<Rightarrow>
-                     (nat \<Rightarrow> nat \<Rightarrow> 'acc \<Rightarrow> 'acc Heap) \<Rightarrow> 'acc \<Rightarrow> 'acc Heap" where
+                     (nat \<Rightarrow> 'acc \<Rightarrow> 'acc Heap) \<Rightarrow> 'acc \<Rightarrow> 'acc Heap" where
   "tnbs Gh u fi acc = (case Gh of (Si, Gc, C1, C2) \<Rightarrow>
      if u < n then do {
        b \<leftarrow> smemb_imp u Si;
        cu \<leftarrow> Array.nth (if b then C1 else C2) u;
-       xnbs (Si, Gc) u (filt_imp (teq_imp (if b then C1 else C2) cu) Si fi) acc }
+       xnbs (Si, Gc) u (filt_imp (teq_imp (if b then C1 else C2) cu) Si u fi) acc }
      else return acc)"
 
-text \<open>The BFS core of the library with this iterator.\<close>
+text \<open>The BFS of the library with this iterator, specialised to it as in
+  @{theory Matroid_Intersection.Matroid_Intersection_Exchange_Graph_Imp}.\<close>
 
-definition "tround = BFS_subprocedures_lists_code.next_frontier_current_parents_imp bset_memb bset_ins tnbs"
+definition "t_inner Gh = bfs_inner_loop (tnbs Gh)"
 
-definition "tbfs_run Gh = BFS_Imperative_spec.visited_dists_parents_imp bfs_src_to_cf bfs_set_srcs_visited
-                           (tround Gh) bfs_cf_is_empty bfs_set_dists"
+definition "t_outer Gh = bfs_outer_loop (tnbs Gh)"
+
+definition "tround Gh = bfs_round (tnbs Gh)"
+
+definition "t_loop Gh = bfs_loop (tnbs Gh)"
+
+definition "tbfs_run Gh = bfs_visited_dists_parents (tnbs Gh)"
+
+lemmas t_inner_code = bfs_sub_code.inner_loop.simps[of "tnbs Gh" for Gh, folded t_inner_def]
+
+lemmas t_outer_code =
+  bfs_sub_code.outer_loop.simps[of "tnbs Gh" for Gh, folded t_outer_def t_inner_def]
+
+lemmas tround_code =
+  bfs_sub_code.next_frontier_current_parents_imp.simps[of "tnbs Gh" for Gh, folded tround_def t_outer_def]
+
+lemmas t_loop_code = bfs_code.BFS_par_imp.simps[of "tnbs Gh" for Gh, folded t_loop_def tround_def]
+
+lemmas tbfs_run_code =
+  bfs_code.visited_dists_parents_imp_def[of "tnbs Gh" for Gh, folded tbfs_run_def t_loop_def]
 
 text \<open>The maximum weight over a range, and the tests of a search: the unweighted ones with the
   weights compared and the tight iterator.\<close>
@@ -53,7 +72,7 @@ definition "max_imp P C = foldr_range_imp (\<lambda> y a. do {
    if p then do { x \<leftarrow> Array.nth C y; return (Some (case a of None \<Rightarrow> x | Some w \<Rightarrow> max w x)) }
    else return a }) n None"
 
-definition "thas_nb_imp Gh y = tnbs Gh y (\<lambda> _ _ _. return True) False"
+definition "thas_nb_imp Gh y = tnbs Gh y (\<lambda> _ _. return True) False"
 
 definition "wst_imp Si C1 C2 mS mT y = do {
    s \<leftarrow> st_imp Si y;
@@ -99,7 +118,6 @@ definition "wsearch_imp Gc Vi Fr Bf Da Pa Si C1 C2 mS mT = do {
         t \<leftarrow> (if k = 0 then return None
               else do {
                 fill_range_imp id n Da;
-                fill_range_imp id n Pa;
                 tbfs_run (Si, Gc, C1, C2) Vi (Fr, k, Bf) Da Pa;
                 find_range_imp (wtgt_imp Si Vi C2 mT) 0 n });
         (case t of
@@ -121,18 +139,18 @@ definition "wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti Si C1 C2 = do {
 text \<open>The path of the context, written into the path array; the counterpart of
   @{const wctx_path}.\<close>
 
-definition "wctx_path_imp Da Pa Ti Ra = do {
+definition "wctx_path_imp Pa Ti Ra = do {
    k \<leftarrow> Array.nth Ti 0;
    v \<leftarrow> Array.nth Ti 1;
    if k = 1 then do { Array.upd 0 v Ra; return (Some 1) }
-   else if k = 2 then do { l \<leftarrow> bfs_path Da Pa Ra v; return (Some l) }
+   else if k = 2 then do { l \<leftarrow> bfs_path Pa Ra v; return (Some l) }
    else return None }"
 
 text \<open>The minimum gap, the counterpart of @{const weighted_intersection_exchange_spec.weps}: one pass
   over the elements with the exchange edges leaving the reachable set, the sources outside it and the
   targets inside it.\<close>
 
-definition "gap_imp C1 C2 b Vi = (\<lambda> u v a. do {
+definition "gap_imp C1 C2 b Vi u = (\<lambda> v a. do {
    r \<leftarrow> Array.nth Vi v;
    if r then return a
    else do {
@@ -143,7 +161,7 @@ definition "gap_imp C1 C2 b Vi = (\<lambda> u v a. do {
 definition "weps_step Gc Vi Si C1 C2 mS mT u a = do {
    r \<leftarrow> Array.nth Vi u;
    b \<leftarrow> smemb_imp u Si;
-   a1 \<leftarrow> (if r then xnbs (Si, Gc) u (gap_imp C1 C2 b Vi) a else return a);
+   a1 \<leftarrow> (if r then xnbs (Si, Gc) u (gap_imp C1 C2 b Vi u) a else return a);
    s \<leftarrow> s_imp Si u;
    a2 \<leftarrow> (if s \<and> \<not> r then do { x \<leftarrow> Array.nth C1 u; return (eps_min a1 (mS - x)) } else return a1);
    t \<leftarrow> t_imp Si u;
@@ -226,6 +244,12 @@ locale weighted_intersection_exchange_imp =
   real_embedding h
   for h :: "'n :: {linordered_idom, heap} \<Rightarrow> real"
 begin
+
+text \<open>The fields of the tight context, in the form the simplifier produces (the bound of the parent
+  paths, the length of the carrier list, simplified).\<close>
+
+lemmas wtight_ctx_fields_n = csr.wtight_ctx_fields[unfolded length_upt diff_zero]
+  and tight_iff_n = csr.tight_iff[unfolded length_upt diff_zero]
 
 subsubsection \<open>The Tight Iterator\<close>
 
@@ -321,16 +345,15 @@ definition "wpath_assn Vi Da Pa (t :: nat \<times> nat) K = (case wctx_path K of
     None \<Rightarrow> bool_array_set_assn n (set (wctx_R K)) Vi * len_assn n Da * len_assn n Pa * \<up>(fst t = 0)
   | Some p \<Rightarrow> len_assn n Vi *
       (if fst t = 1 then len_assn n Da * len_assn n Pa * \<up>(p = [snd t] \<and> snd t < n)
-       else (\<exists>\<^sub>A ss. BFS_subprocedures_lists.imp_dist_assn n Da (build_nhlists (wctx_es K))
-                (BFS_dist_state.dists (csr_filtered_bfs.fin (wctx_es K) ss)) Da *
-              BFS_subprocedures_lists.imp_par_assn n Pa (build_nhlists (wctx_es K))
-                (BFS_par_state.parent (csr_filtered_bfs.fin (wctx_es K) ss)) Pa *
-              \<up>(fst t = 2 \<and> bfs_csr n (wctx_es K) ss \<and>
-                find (\<lambda> y. y \<in> set (BFS_dist_state.visited (csr_filtered_bfs.fin (wctx_es K) ss)))
+       else (\<exists>\<^sub>A ss. BFS_subprocedures_lists.imp_dist_assn n Da (nbrs_map (wctx_es K))
+                (BFS_dist_state.dists (bfs_iterator_arrays.fin (nbrs_map (wctx_es K)) ss)) Da *
+              parent_array.pa_parent_assn n
+                (BFS_par_state.parent (bfs_iterator_arrays.fin (nbrs_map (wctx_es K)) ss)) Pa *
+              \<up>(fst t = 2 \<and> bfs_iterator_arrays.bfs_sources (nbrs_map (wctx_es K)) ss \<and>
+                find (\<lambda> y. y \<in> set (BFS_dist_state.visited (bfs_iterator_arrays.fin (nbrs_map (wctx_es K)) ss)))
                   (wctx_tb K) = Some (snd t) \<and>
-                p = BFS_distance_parents.parent_path (\<lambda> d. d) (\<lambda> p. p)
-                      (BFS_dist_state.dists (csr_filtered_bfs.fin (wctx_es K) ss))
-                      (BFS_par_state.parent (csr_filtered_bfs.fin (wctx_es K) ss)) (snd t) []))))"
+                p = rev (parent_array.pa_get_path n
+                      (BFS_par_state.parent (bfs_iterator_arrays.fin (nbrs_map (wctx_es K)) ss)) (snd t))))))"
 
 definition "wctx_assn Vi Fr Bf Da Pa Mi Ti K =
   (\<exists>\<^sub>A mi ti. Mi \<mapsto>\<^sub>a mi * Ti \<mapsto>\<^sub>a ti * len_assn (Suc n) Fr * len_assn (Suc n) Bf *
@@ -351,7 +374,7 @@ begin
 lemma nbrs_tight:
   "nbrs (wctx_es (csr.wtight_ctx X c1 c2)) u =
      filter (\<lambda> v. if u \<in> X then c1 u = c1 v else c2 u = c2 v) (nbrs (EE X) u)"
-  by (simp add: csr.wtight_ctx_fields[OF X] nbrs_filter csr.tight_iff[OF X])
+  by (simp add: wtight_ctx_fields_n[OF X] nbrs_filter tight_iff_n[OF X])
 
 lemma nbrs_tight_out: "\<not> u < n \<Longrightarrow> nbrs (wctx_es (csr.wtight_ctx X c1 c2)) u = []"
   unfolding nbrs_tight nbrs_EE_out[OF X] by simp
@@ -360,9 +383,9 @@ end
 
 lemma teq_filt_rule:
   assumes "h cu = c u" "<W> Array.nth C v <\<lambda> r. W * \<up>(h r = c v)>"
-    and fi: "c u = c v \<Longrightarrow> <A acc acci * F> fi u v acci <\<lambda> r. A (f u acc v) r * F>"
-  shows "<A acc acci * (F * W)> filt_imp (teq_imp C cu) Si fi u v acci
-         <\<lambda> r. A (if c u = c v then f u acc v else acc) r * (F * W)>"
+    and fi: "c u = c v \<Longrightarrow> <A acc acci * F> fi v acci <\<lambda> r. A (f v acc) r * F>"
+  shows "<A acc acci * (F * W)> filt_imp (teq_imp C cu) Si u fi v acci
+         <\<lambda> r. A (if c u = c v then f v acc else acc) r * (F * W)>"
 proof-
   have rd: "<A acc acci * (F * W)> Array.nth C v <\<lambda> r. A acc acci * (F * W) * \<up>(h r = c v)>"
     by (rule ht_frame_ac[OF assms(2), where R = "A acc acci * F"]) (simp only: star_aci, rule ent_refl)+
@@ -374,7 +397,7 @@ proof-
   show ?thesis
   proof(cases "c u = c v")
     case True
-    have f: "<A acc acci * (F * W)> fi u v acci <\<lambda> r. A (f u acc v) r * (F * W)>"
+    have f: "<A acc acci * (F * W)> fi v acci <\<lambda> r. A (f v acc) r * (F * W)>"
       using ht_frame[OF fi[OF True], where R = W] by (simp only: mult.assoc)
     show ?thesis
       unfolding filt_imp_def
@@ -396,16 +419,18 @@ text \<open>The tight iterator walks the neighbours in the tight graph.\<close>
 
 lemma tnbs_rule:
   assumes fi: "\<And> acc acci x. x \<in> set (nbrs (wctx_es (csr.wtight_ctx X c1 c2)) u) \<Longrightarrow>
-               <A acc acci * F> fi u x acci <\<lambda> r. A (f u acc x) r * F>"
+               <A acc acci * F> fi x acci <\<lambda> r. A (f x acc) r * F>"
   shows "<gtx X c1 c2 Gh * A acc acci * F> tnbs Gh u fi acci
-         <\<lambda> r. gtx X c1 c2 Gh * F * A (foldl (f u) acc (nbrs (wctx_es (csr.wtight_ctx X c1 c2)) u)) r>"
+         <\<lambda> r. gtx X c1 c2 Gh * F *
+               A (foldl (\<lambda> acc x. f x acc) acc (nbrs (wctx_es (csr.wtight_ctx X c1 c2)) u)) r>"
 proof-
   let ?E = "wctx_es (csr.wtight_ctx X c1 c2)"
   obtain Si Gc C1 C2 where Gh: "Gh = (Si, Gc, C1, C2)"
     by (cases Gh) auto
   let ?W = "warr_assn n h c1 C1 * warr_assn n h c2 C2"
-  have main: "<gtx X c1 c2 Gh * A acc acci * F> do { cu \<leftarrow> Array.nth C u; xnbs (Si, Gc) u (filt_imp (teq_imp C cu) Si fi) acci }
-              <\<lambda> r. gtx X c1 c2 Gh * F * A (foldl (f u) acc (nbrs ?E u)) r>"
+  have main: "<gtx X c1 c2 Gh * A acc acci * F>
+                do { cu \<leftarrow> Array.nth C u; xnbs (Si, Gc) u (filt_imp (teq_imp C cu) Si u fi) acci }
+              <\<lambda> r. gtx X c1 c2 Gh * F * A (foldl (\<lambda> acc x. f x acc) acc (nbrs ?E u)) r>"
     if u: "u < n" and rd: "\<And> v. v < n \<Longrightarrow> <?W> Array.nth C v <\<lambda> r. ?W * \<up>(h r = c v)>"
       and nb: "nbrs ?E u = filter (\<lambda> v. c u = c v) (nbrs (EE X) u)" for c C
   proof-
@@ -413,18 +438,19 @@ proof-
               <\<lambda> r. gxs X Si Gc * A acc acci * (F * ?W) * \<up>(h r = c u)>"
       by (rule ht_frame_ac[OF rd[OF u], where R = "gxs X Si Gc * A acc acci * F"])
          (simp only: Gh gtx_def prod.case star_aci, rule ent_refl)+
-    have x: "<gxs X Si Gc * A acc acci * (F * ?W)> xnbs (Si, Gc) u (filt_imp (teq_imp C cu) Si fi) acci
+    have x: "<gxs X Si Gc * A acc acci * (F * ?W)> xnbs (Si, Gc) u (filt_imp (teq_imp C cu) Si u fi) acci
              <\<lambda> r. gxs X Si Gc * (F * ?W) *
-                   A (foldl (\<lambda> a x. if c u = c x then f u a x else a) acc (nbrs (EE X) u)) r>"
+                   A (foldl (\<lambda> a x. if c u = c x then f x a else a) acc (nbrs (EE X) u)) r>"
       if cu: "h cu = c u" for cu
     proof(rule xnbs_rule[OF X])
       fix acc acci x
       assume x: "x \<in> set (nbrs (EE X) u)"
       have xn: "x < n"
         using EE_bound[OF X] x by (auto simp: mem_nbrs)
-      show "<A acc acci * (F * ?W)> filt_imp (teq_imp C cu) Si fi u x acci
-            <\<lambda> r. A (if c u = c x then f u acc x else acc) r * (F * ?W)>"
-        by (rule teq_filt_rule[OF cu rd[OF xn]], rule fi) (use x in \<open>simp add: nb\<close>)
+      show "<A acc acci * (F * ?W)> filt_imp (teq_imp C cu) Si u fi x acci
+            <\<lambda> r. A (if c u = c x then f x acc else acc) r * (F * ?W)>"
+        by (rule teq_filt_rule[OF cu rd[OF xn]], rule fi)
+           (unfold nb set_filter mem_Collect_eq, rule conjI[OF x], assumption)
     qed
     show ?thesis
       unfolding nb foldl_filter_if[symmetric]
@@ -455,14 +481,14 @@ proof-
         unfolding Gh tnbs_def prod.case if_P[OF True]
         by (rule ht_bind[OF m[unfolded Gh]], rule ht_pure_pre)
            (simp only: uX if_True, rule main[OF True rd1, unfolded Gh], assumption,
-            simp add: nbrs_tight[OF X] uX)
+            simp only: nbrs_tight[OF X] uX if_True)
     next
       case nX: False
       show ?thesis
         unfolding Gh tnbs_def prod.case if_P[OF True]
         by (rule ht_bind[OF m[unfolded Gh]], rule ht_pure_pre)
            (simp only: nX if_False, rule main[OF True rd2, unfolded Gh], assumption,
-            simp add: nbrs_tight[OF X] nX)
+            simp only: nbrs_tight[OF X] nX if_False)
     qed
   qed
 qed
@@ -471,13 +497,23 @@ text \<open>The BFS on the tight graph.\<close>
 
 interpretation tb: csr_filtered_bfs n "wctx_es (csr.wtight_ctx X c1 c2)" tnbs "gtx X c1 c2"
 proof(unfold_locales, goal_cases)
-  case (1 u v)
+  case 1
+  have "fst e < n" "snd e < n" if "e \<in> set (wctx_es (csr.wtight_ctx X c1 c2))" for e
+    using EE_bound[OF X, of "fst e" "snd e"] that by (auto simp: wtight_ctx_fields_n[OF X])
   then show ?case
-    using EE_bound[OF X] by (auto simp: csr.wtight_ctx_fields[OF X])
+    unfolding nbrs_map_edges dVs_eq by (intro Un_least image_subsetI) (simp_all only: lessThan_iff)
 next
-  case (2 u A F fi f Gh acc acci)
-  then show ?case
-    by (rule tnbs_rule)
+  case 2
+  show ?case
+    by (rule finite_nbrs_map_dom)
+next
+  case (3 u A fi f Gh acc acci)
+  have r: "<gtx X c1 c2 Gh * A acc acci * emp> tnbs Gh u fi acci
+           <\<lambda> r. gtx X c1 c2 Gh * emp *
+                 A (foldl (\<lambda> acc x. f x acc) acc (nbrs (wctx_es (csr.wtight_ctx X c1 c2)) u)) r>"
+    by (rule tnbs_rule) (simp only: mult_1_right, rule 3(2)[unfolded case_nbrs_map])
+  show ?case
+    using r unfolding mult_1_right case_nbrs_map .
 qed
 
 subsubsection \<open>The Steps of a Round\<close>
@@ -574,14 +610,14 @@ lemma mS_rule:
    <\<lambda> r. gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow>
           h (case r of None \<Rightarrow> 0 | Some x \<Rightarrow> x) = wctx_mS (csr.wtight_ctx X c1 c2))>"
   by (rule ht_cons_post[OF max_imp_rule[OF gtx_lift[OF s_imp_rule[OF X]] rd_c1]])
-     (sep_auto simp: csr.wtight_ctx_fields[OF X] list_max set_srcs[symmetric] split: option.splits if_splits)
+     (sep_auto simp: wtight_ctx_fields_n[OF X] list_max set_srcs[symmetric] split: option.splits if_splits)
 
 lemma mT_rule:
   "<gtx X c1 c2 (Si, Gc, C1, C2)> max_imp (t_imp Si) C2
    <\<lambda> r. gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow>
           h (case r of None \<Rightarrow> 0 | Some x \<Rightarrow> x) = wctx_mT (csr.wtight_ctx X c1 c2))>"
   by (rule ht_cons_post[OF max_imp_rule[OF gtx_lift[OF t_imp_rule[OF X]] rd_c2]])
-     (sep_auto simp: csr.wtight_ctx_fields[OF X] list_max set_tgts[symmetric] split: option.splits if_splits)
+     (sep_auto simp: wtight_ctx_fields_n[OF X] list_max set_tgts[symmetric] split: option.splits if_splits)
 
 lemma wst_imp_rule:
   assumes y: "y < n" and mS: "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
@@ -619,7 +655,7 @@ proof-
            <\<lambda> r. gtx X c1 c2 Gh * emp *
                  \<up>(r = foldl (\<lambda> a x. True) False (nbrs (wctx_es (csr.wtight_ctx X c1 c2)) y))>"
     unfolding thas_nb_imp_def
-    by (rule tnbs_rule[where A = "\<lambda> b bi. \<up>(bi = b)" and F = emp and f = "\<lambda> u a x. True"]) sep_auto
+    by (rule tnbs_rule[where A = "\<lambda> b bi. \<up>(bi = b)" and F = emp and f = "\<lambda> x a. True"]) sep_auto
   show ?thesis
     by (rule ht_cons[OF _ _ r]) (sep_auto simp: foldl_True)+
 qed
@@ -738,7 +774,7 @@ lemma path_char:
         Some s \<Rightarrow> Some [s]
       | None \<Rightarrow> (if filter (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                               csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n] = [] then None
-                 else csr.target_path (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
+                 else csr.target_path (nbrs_map (wctx_es (csr.wtight_ctx X c1 c2)))
                         (filter (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                                    csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n])
                         (wctx_tb (csr.wtight_ctx X c1 c2))))"
@@ -751,7 +787,7 @@ lemma R_char:
          \<not> csr.has_tight_nb (csr.exch_ctx X) c2 y} \<union>
      (if filter (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                     csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n] = [] then {}
-      else set (BFS_dist_state.visited (csr.bfs_final (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
+      else set (BFS_dist_state.visited (csr.bfs_final (nbrs_map (wctx_es (csr.wtight_ctx X c1 c2)))
                   (filter (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                              csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n]))))"
 proof-
@@ -762,7 +798,7 @@ proof-
                     \<not> csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n]) \<union>
      set (if filter (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                         csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n] = [] then []
-      else BFS_dist_state.visited (csr.bfs_final (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
+      else BFS_dist_state.visited (csr.bfs_final (nbrs_map (wctx_es (csr.wtight_ctx X c1 c2)))
                   (filter (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                              csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n])))"
     by (simp only: csr.wtight_ctx_R[OF X] Let_def csr.wtight_ctx_fields[OF X] srcs_eq filter_filter fc
@@ -779,15 +815,11 @@ lemma tb_find:
 lemma tbfs_ok:
   assumes "filter (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                         csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n] \<noteq> []"
-  shows "bfs_csr n (wctx_es (csr.wtight_ctx X c1 c2))
+  shows "tb.bfs_sources
            (filter (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                       csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n])"
-proof(rule bfs_csr.intro)
-  fix u v
-  assume "(u, v) \<in> set (wctx_es (csr.wtight_ctx X c1 c2))"
-  then show "u < n \<and> v < n"
-    by (rule tb.E_bound)
-next
+  unfolding tb.bfs_sources_def nbrs_map_edges
+proof(intro conjI)
   show "distinct (filter (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y = wctx_mS (csr.wtight_ctx X c1 c2)) \<and>
                             csr.has_tight_nb (csr.exch_ctx X) c2 y) [0..<n])"
     by simp
@@ -813,9 +845,7 @@ next
 qed
 
 lemma tfin_eq:
-  "bfs_csr n (wctx_es (csr.wtight_ctx X c1 c2)) ss \<Longrightarrow>
-   csr.bfs_final (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2))) ss =
-   csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss"
+  "tb.bfs_sources ss \<Longrightarrow> csr.bfs_final (nbrs_map (wctx_es (csr.wtight_ctx X c1 c2))) ss = tb.fin ss"
   unfolding csr.bfs_final_def by (simp only: tb.fin_def)
 
 lemma wsearch_single:
@@ -856,28 +886,25 @@ qed
 
 lemma wsearch_bfs:
   assumes hT: "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
-    and b: "bfs_csr n (wctx_es (csr.wtight_ctx X c1 c2)) ss"
+    and b: "tb.bfs_sources ss"
     and fl: "length fl = Suc n" "take (length ss) fl = ss"
   shows "<gtx X c1 c2 (Si, Gc, C1, C2) * bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * len_assn n Da *
           len_assn n Pa>
-           do { fill_range_imp id n Da; fill_range_imp id n Pa; tbfs_run (Si, Gc, C1, C2) Vi (Fr, length ss, Bf) Da Pa;
+           do { fill_range_imp id n Da; tbfs_run (Si, Gc, C1, C2) Vi (Fr, length ss, Bf) Da Pa;
                 find_range_imp (wtgt_imp Si Vi C2 mT) 0 n }
          <\<lambda> t. gtx X c1 c2 (Si, Gc, C1, C2) *
-               bool_array_set_assn n (set (BFS_dist_state.visited (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss))) Vi *
-               BFS_subprocedures_lists.imp_dist_assn n Da (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
-                 (BFS_dist_state.dists (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss)) Da *
-               BFS_subprocedures_lists.imp_par_assn n Pa (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
-                 (BFS_par_state.parent (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss)) Pa *
+               bool_array_set_assn n (set (BFS_dist_state.visited (tb.fin ss))) Vi *
+               BFS_subprocedures_lists.imp_dist_assn n Da (nbrs_map (wctx_es (csr.wtight_ctx X c1 c2)))
+                 (BFS_dist_state.dists (tb.fin ss)) Da *
+               parent_array.pa_parent_assn n (BFS_par_state.parent (tb.fin ss)) Pa *
                len_assn (Suc n) Fr * len_assn (Suc n) Bf *
-               \<up>(t = find (\<lambda> y. y \<in> set (BFS_dist_state.visited (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss)))
-                        (wctx_tb (csr.wtight_ctx X c1 c2)))>"
+               \<up>(t = find (\<lambda> y. y \<in> set (BFS_dist_state.visited (tb.fin ss))) (wctx_tb (csr.wtight_ctx X c1 c2)))>"
 proof-
   let ?G = "gtx X c1 c2 (Si, Gc, C1, C2)"
-  let ?V = "set (BFS_dist_state.visited (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss))"
-  let ?DP = "BFS_subprocedures_lists.imp_dist_assn n Da (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
-               (BFS_dist_state.dists (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss)) Da *
-             BFS_subprocedures_lists.imp_par_assn n Pa (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
-               (BFS_par_state.parent (csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ss)) Pa *
+  let ?V = "set (BFS_dist_state.visited (tb.fin ss))"
+  let ?DP = "BFS_subprocedures_lists.imp_dist_assn n Da (nbrs_map (wctx_es (csr.wtight_ctx X c1 c2)))
+               (BFS_dist_state.dists (tb.fin ss)) Da *
+             parent_array.pa_parent_assn n (BFS_par_state.parent (tb.fin ss)) Pa *
              len_assn (Suc n) Fr * len_assn (Suc n) Bf"
   have w: "<bool_array_set_assn n ?V Vi * ?G * ?DP> wtgt_imp Si Vi C2 mT y
            <\<lambda> r. bool_array_set_assn n ?V Vi * ?G * ?DP * \<up>(r = (((y \<notin> X \<and> y \<in> T0 X) \<and>
@@ -888,12 +915,9 @@ proof-
            <\<lambda> t. bool_array_set_assn n ?V Vi * ?G * ?DP * \<up>(t = find (\<lambda> y. y \<in> ?V) (wctx_tb (csr.wtight_ctx X c1 c2)))>"
     unfolding tb_find by (rule find_range_imp_rule, rule w) assumption
   show ?thesis
-    unfolding tbfs_run_def tround_def
+    unfolding tbfs_run_def
     by (rule ht_bind[OF ht_frame_ac[OF fill_len[where a = Da and f = id],
             where R = "?G * bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * len_assn n Pa"]],
-        (simp only: star_aci, rule ent_refl), rule ent_refl,
-        rule ht_bind[OF ht_frame_ac[OF fill_len[where a = Pa and f = id],
-            where R = "?G * bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * len_assn (Suc n) Bf * Da \<mapsto>\<^sub>a map id [0..<n]"]],
         (simp only: star_aci, rule ent_refl), rule ent_refl,
         rule ht_bind[OF ht_cons_pre[OF _ tb.bfs_len_rule[OF b fl, where Bf = Bf and Vi = Vi and Fr = Fr and
             Da = Da and Pa = Pa and Gh = "(Si, Gc, C1, C2)"]]],
@@ -915,7 +939,7 @@ lemma wsearch_rest:
   shows "<Fr \<mapsto>\<^sub>a fl * gtx X c1 c2 (Si, Gc, C1, C2) *
           (len_assn n Vi * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>
            do { bool_array_set_clear_imp n Vi;
-                t \<leftarrow> (if k = 0 then return None else do { fill_range_imp id n Da; fill_range_imp id n Pa;
+                t \<leftarrow> (if k = 0 then return None else do { fill_range_imp id n Da;
                        tbfs_run (Si, Gc, C1, C2) Vi (Fr, k, Bf) Da Pa; find_range_imp (wtgt_imp Si Vi C2 mT) 0 n });
                 (case t of Some t \<Rightarrow> return (2 :: nat, t)
                  | None \<Rightarrow> do { drop_imp (Si, Gc, C1, C2) mS Vi; return (0 :: nat, 0) }) }
@@ -962,22 +986,21 @@ proof-
       using fl(2,3) by simp
     have k: "length ?ss \<noteq> 0"
       using False by simp
-    let ?fin = "csr_filtered_bfs.fin (wctx_es (csr.wtight_ctx X c1 c2)) ?ss"
+    let ?fin = "tb.fin ?ss"
     let ?V = "set (BFS_dist_state.visited ?fin)"
-    let ?DP = "BFS_subprocedures_lists.imp_dist_assn n Da (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
+    let ?DP = "BFS_subprocedures_lists.imp_dist_assn n Da (nbrs_map (wctx_es (csr.wtight_ctx X c1 c2)))
                  (BFS_dist_state.dists ?fin) Da *
-               BFS_subprocedures_lists.imp_par_assn n Pa (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2)))
-                 (BFS_par_state.parent ?fin) Pa"
+               parent_array.pa_parent_assn n (BFS_par_state.parent ?fin) Pa"
     have p: "wctx_path (csr.wtight_ctx X c1 c2) =
              (case find (\<lambda> y. y \<in> ?V) (wctx_tb (csr.wtight_ctx X c1 c2)) of
                 None \<Rightarrow> None
-              | Some t \<Rightarrow> Some (BFS_distance_parents.parent_path (\<lambda> d. d) (\<lambda> p. p) (BFS_dist_state.dists ?fin)
-                                (BFS_par_state.parent ?fin) t []))"
-      unfolding path_char None option.case(1) if_not_P[OF False] csr.target_path_def Let_def tfin_eq[OF b] ..
+              | Some t \<Rightarrow> Some (rev (parent_array.pa_get_path n (BFS_par_state.parent ?fin) t)))"
+      unfolding path_char None option.case(1) if_not_P[OF False] csr.target_path_def Let_def tfin_eq[OF b]
+      unfolding length_upt diff_zero ..
     have R: "set (wctx_R (csr.wtight_ctx X c1 c2)) = ?V \<union> ?D"
       unfolding R_char if_not_P[OF False] tfin_eq[OF b] by auto
     have bf: "<bool_array_set_assn n {} Vi * (Fr \<mapsto>\<^sub>a fl * ?G * len_assn (Suc n) Bf * len_assn n Da * len_assn n Pa)>
-                do { fill_range_imp id n Da; fill_range_imp id n Pa; tbfs_run (Si, Gc, C1, C2) Vi (Fr, length ?ss, Bf) Da Pa;
+                do { fill_range_imp id n Da; tbfs_run (Si, Gc, C1, C2) Vi (Fr, length ?ss, Bf) Da Pa;
                      find_range_imp (wtgt_imp Si Vi C2 mT) 0 n }
               <\<lambda> t. ?G * bool_array_set_assn n ?V Vi * ?DP * len_assn (Suc n) Fr * len_assn (Suc n) Bf *
                     \<up>(t = find (\<lambda> y. y \<in> ?V) (wctx_tb (csr.wtight_ctx X c1 c2)))>"
@@ -987,8 +1010,7 @@ proof-
     proof(cases "find (\<lambda> y. y \<in> ?V) (wctx_tb (csr.wtight_ctx X c1 c2))")
       case (Some t)
       have pS: "wctx_path (csr.wtight_ctx X c1 c2) =
-                Some (BFS_distance_parents.parent_path (\<lambda> d. d) (\<lambda> p. p) (BFS_dist_state.dists ?fin)
-                        (BFS_par_state.parent ?fin) t [])"
+                Some (rev (parent_array.pa_get_path n (BFS_par_state.parent ?fin) t))"
         unfolding p Some option.case(2) ..
       have e: "bool_array_set_assn n ?V Vi * ?DP \<Longrightarrow>\<^sub>A wpath_assn Vi Da Pa (2 :: nat, t) (csr.wtight_ctx X c1 c2)"
         unfolding wpath_assn_def pS option.case(2) fst_conv snd_conv if_not_P[OF two]
@@ -1012,7 +1034,7 @@ proof-
               where R = "?DP * len_assn (Suc n) Fr * len_assn (Suc n) Bf"])
            (simp only: star_aci, rule ent_refl)+
       have dp: "?DP \<Longrightarrow>\<^sub>A len_assn n Da * len_assn n Pa"
-        by (rule ent_star_mono[OF tb.dist_len[OF b] tb.par_len[OF b]])
+        by (rule ent_star_mono[OF tb.dist_len tb.par_len])
       show ?thesis
         unfolding fl(2)
         apply (rule ht_bind[OF cl], simp only: if_not_P[OF k])
@@ -1044,7 +1066,7 @@ proof(cases "find (\<lambda> y. ((y \<notin> X \<and> y \<in> S0 X) \<and> c1 y 
     unfolding wsearch_imp_def
     by (rule ht_bind[OF wsearch_single[OF hS hT, where F = "work_assn n Vi Fr Bf Da Pa"]], rule ht_pure_pre,
         simp only: Some option.case(2), rule ht_cons_pre[OF _ ht_return_wp])
-       (sep_auto simp: wpath_assn_def p work_assn_def s)
+       (sep_auto simp: wpath_assn_def p[unfolded length_upt diff_zero] work_assn_def s)
 next
   case None
   show ?thesis
@@ -1138,8 +1160,8 @@ text \<open>The path of the context: (P).\<close>
 lemma ti_reads:
   assumes l: "length ti = 2"
     and c: "<Ti \<mapsto>\<^sub>a ti * F> (if ti ! 0 = 1 then do { Array.upd 0 (ti ! 1) Ra; return (Some 1) }
-              else if ti ! 0 = 2 then do { l \<leftarrow> bfs_path Da Pa Ra (ti ! 1); return (Some l) } else return None) <Q>"
-  shows "<Ti \<mapsto>\<^sub>a ti * F> wctx_path_imp Da Pa Ti Ra <Q>"
+              else if ti ! 0 = 2 then do { l \<leftarrow> bfs_path Pa Ra (ti ! 1); return (Some l) } else return None) <Q>"
+  shows "<Ti \<mapsto>\<^sub>a ti * F> wctx_path_imp Pa Ti Ra <Q>"
 proof-
   have r: "<Ti \<mapsto>\<^sub>a ti * F> Array.nth Ti i <\<lambda> r. Ti \<mapsto>\<^sub>a ti * F * \<up>(r = ti ! i)>" if "i < 2" for i
     by (rule ht_frame_ac[OF nth_rule[where i = i and xs = ti and a = Ti], where R = F]) (use that l in sep_auto)+
@@ -1152,7 +1174,7 @@ lemma wctx_path_cases:
   assumes l: "length ti = 2"
   shows "<Ti \<mapsto>\<^sub>a ti * (wpath_assn Vi Da Pa (ti ! 0, ti ! 1) (csr.wtight_ctx X c1 c2) * parr_assn n Ra)>
            (if ti ! 0 = 1 then do { Array.upd 0 (ti ! 1) Ra; return (Some 1) }
-            else if ti ! 0 = 2 then do { l \<leftarrow> bfs_path Da Pa Ra (ti ! 1); return (Some l) } else return None)
+            else if ti ! 0 = 2 then do { l \<leftarrow> bfs_path Pa Ra (ti ! 1); return (Some l) } else return None)
          <\<lambda> r. Ti \<mapsto>\<^sub>a ti * wpath_assn Vi Da Pa (ti ! 0, ti ! 1) (csr.wtight_ctx X c1 c2) *
                path_assn n (wctx_path (csr.wtight_ctx X c1 c2)) r Ra>"
 proof(cases "wctx_path (csr.wtight_ctx X c1 c2)")
@@ -1177,13 +1199,13 @@ next
 qed
 
 lemma wctx_path_imp_rule:
-  "<wctx_assn Vi Fr Bf Da Pa Mi Ti (csr.wtight_ctx X c1 c2) * parr_assn n Ra> wctx_path_imp Da Pa Ti Ra
+  "<wctx_assn Vi Fr Bf Da Pa Mi Ti (csr.wtight_ctx X c1 c2) * parr_assn n Ra> wctx_path_imp Pa Ti Ra
    <\<lambda> r. wctx_assn Vi Fr Bf Da Pa Mi Ti (csr.wtight_ctx X c1 c2) *
          path_assn n (wctx_path (csr.wtight_ctx X c1 c2)) r Ra>"
 proof-
   have step: "<Ti \<mapsto>\<^sub>a ti * (Mi \<mapsto>\<^sub>a mi * len_assn (Suc n) Fr * len_assn (Suc n) Bf *
                 (wpath_assn Vi Da Pa (ti ! 0, ti ! 1) (csr.wtight_ctx X c1 c2) * parr_assn n Ra))>
-                wctx_path_imp Da Pa Ti Ra
+                wctx_path_imp Pa Ti Ra
               <\<lambda> r. Ti \<mapsto>\<^sub>a ti * wpath_assn Vi Da Pa (ti ! 0, ti ! 1) (csr.wtight_ctx X c1 c2) *
                     path_assn n (wctx_path (csr.wtight_ctx X c1 c2)) r Ra *
                     (Mi \<mapsto>\<^sub>a mi * len_assn (Suc n) Fr * len_assn (Suc n) Bf)>"
@@ -1213,7 +1235,7 @@ lemma edge_part:
   assumes "u < n"
   shows "<gxs X Si Gc * \<up>(map_option h ai = a) *
           (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2)>
-           xnbs (Si, Gc) u (gap_imp C1 C2 (u \<in> X) Vi) ai
+           xnbs (Si, Gc) u (gap_imp C1 C2 (u \<in> X) Vi u) ai
          <\<lambda> r. gxs X Si Gc * (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2) *
                \<up>(map_option h r = eps_of ((\<lambda> v. if u \<in> X then c1 u - c1 v else c2 v - c2 u) `
                                            {v \<in> set (nbrs (EE X) u). v \<notin> V}) a)>"
@@ -1233,8 +1255,8 @@ proof-
   show ?thesis
     by (rule ht_cons_post[OF xnbs_rule[OF X, where A = "\<lambda> a ai. \<up>(map_option h ai = a)"
           and F = "bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2"
-          and f = "\<lambda> u a v. if v \<notin> V then eps_min a (if u \<in> X then c1 u - c1 v else c2 v - c2 u) else a"
-          and u = u and fi = "gap_imp C1 C2 (u \<in> X) Vi", OF fi]], assumption)
+          and f = "\<lambda> v a. if v \<notin> V then eps_min a (if u \<in> X then c1 u - c1 v else c2 v - c2 u) else a"
+          and u = u and fi = "gap_imp C1 C2 (u \<in> X) Vi u", OF fi]], assumption)
        (simp only: foldl_eps_of, rule ent_true_drop(2), rule ent_refl)
 qed
 
@@ -1260,7 +1282,7 @@ proof-
        (use u in sep_auto)+
   have r2: "<?G> smemb_imp u Si <\<lambda> r. ?G * \<up>(r = (u \<in> X))>"
     unfolding gtx_def gxs_def prod.case using u by (sep_auto heap: smemb_rule)
-  have r3: "<\<up>(map_option h ai' = a') * ?G> xnbs (Si, Gc) u (gap_imp C1 C2 (u \<in> X) Vi) ai'
+  have r3: "<\<up>(map_option h ai' = a') * ?G> xnbs (Si, Gc) u (gap_imp C1 C2 (u \<in> X) Vi u) ai'
             <\<lambda> r. ?G * \<up>(map_option h r = eps_of ((\<lambda> v. if u \<in> X then c1 u - c1 v else c2 v - c2 u) `
                                                 {v \<in> set (nbrs (EE X) u). v \<notin> V}) a')>" for ai' a'
     by (rule ht_cons_pre[OF _ ht_cons_post[OF edge_part[OF u, where Si = Si and Gc = Gc and V = V
@@ -1417,13 +1439,13 @@ proof(cases "wctx_path (csr.wtight_ctx X c1 c2)")
 next
   case (Some p)
   have b: "len_assn n Vi *
-           (BFS_subprocedures_lists.imp_dist_assn n Da (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2))) d Da *
-            BFS_subprocedures_lists.imp_par_assn n Pa (build_nhlists (wctx_es (csr.wtight_ctx X c1 c2))) pa Pa *
-            \<up>(fst t = 2 \<and> bfs_csr n (wctx_es (csr.wtight_ctx X c1 c2)) ss \<and> Q))
+           (BFS_subprocedures_lists.imp_dist_assn n Da (nbrs_map (wctx_es (csr.wtight_ctx X c1 c2))) d Da *
+            parent_array.pa_parent_assn n pa Pa *
+            \<up>(fst t = 2 \<and> tb.bfs_sources ss \<and> Q))
            \<Longrightarrow>\<^sub>A len_assn n Vi * len_assn n Da * len_assn n Pa" for d pa ss Q
     unfolding star_assoc[symmetric]
     by (rule ent_pure_preI, elim conjE,
-        rule ent_star_mono[OF ent_star_mono[OF ent_refl tb.dist_len] tb.par_len]) assumption+
+        rule ent_star_mono[OF ent_star_mono[OF ent_refl tb.dist_len] tb.par_len])
   show ?thesis
   proof(cases "fst t = 1")
     case True
@@ -1461,10 +1483,11 @@ theorem imp_loop:
   "weighted_intersection_imp_loop wctx_path wctx_R csr.weps indep1 indep2 {0..<n} set (\<lambda> _. True)
      csr.wctx_invar (\<lambda> K. set (wctx_es K)) (\<lambda> K. set (wctx_sb K)) (\<lambda> K. set (wctx_tb K))
      n sol_assn smemb_imp sins_imp sdel_imp Array.nth ccopy_imp czero_imp
-     (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Da Pa Ti) (weps_imp Gc Vi Mi) (wshift_imp Vi)
+     (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Pa Ti) (weps_imp Gc Vi Mi) (wshift_imp Vi)
      h (\<lambda> R e c x. if x \<in> set R then c x + e else c x) csr.wtight_ctx
      (warr_assn n h) (wctx_assn Vi Fr Bf Da Pa Mi Ti)
-     (wws Vi Fr Bf Da Pa Mi Ti) (ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc)"
+     (wws Vi Fr Bf Da Pa Mi Ti) (ost1 * ost2 * (case Gc of (Ba, Ga) \<Rightarrow>
+       Ba \<mapsto>\<^sub>a map (csr_start (nbrs es0)) [0..<Suc n] * Ga \<mapsto>\<^sub>a csr_entries (nbrs es0) n))"
 proof(intro weighted_intersection_imp_loop.intro weighted_intersection_imp_loop_axioms.intro
       warr_copy_clear_imp, goal_cases)
   case 1
@@ -1512,23 +1535,26 @@ text \<open>The loop on preallocated arrays.\<close>
 
 theorem loop_correct:
   "<(sol_assn {} Si) * warr_assn n h c Co * len_assn n C1 * len_assn n C2 *
-    wws Vi Fr Bf Da Pa Mi Ti * (ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc) * parr_assn n Ra>
+    wws Vi Fr Bf Da Pa Mi Ti * (ost1 * ost2 * (case Gc of (Ba, Ga) \<Rightarrow>
+      Ba \<mapsto>\<^sub>a map (csr_start (nbrs es0)) [0..<Suc n] * Ga \<mapsto>\<^sub>a csr_entries (nbrs es0) n)) * parr_assn n Ra>
      weighted_intersection_imp_loop_spec.wmi_run_imp sins_imp sdel_imp Array.nth
-       ccopy_imp czero_imp (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Da Pa Ti)
+       ccopy_imp czero_imp (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Pa Ti)
        (weps_imp Gc Vi Mi) (wshift_imp Vi) Si Co C1 C2 Ra
    <\<lambda> _. \<exists>\<^sub>A X c1 c2. sol_assn X Si * warr_assn n h c1 C1 * warr_assn n h c2 C2 *
           warr_assn n h c Co * wws Vi Fr Bf Da Pa Mi Ti *
-          (ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc) * parr_assn n Ra *
+          (ost1 * ost2 * (case Gc of (Ba, Ga) \<Rightarrow>
+             Ba \<mapsto>\<^sub>a map (csr_start (nbrs es0)) [0..<Suc n] * Ga \<mapsto>\<^sub>a csr_entries (nbrs es0) n)) * parr_assn n Ra *
           \<up>(weighted_double_matroid.is_opt indep1 indep2 c X)>"
 proof-
   interpret l: weighted_intersection_imp_loop wctx_path wctx_R csr.weps indep1 indep2 "{0..<n}" set
     "\<lambda> _. True" csr.wctx_invar "\<lambda> K. set (wctx_es K)" "\<lambda> K. set (wctx_sb K)"
     "\<lambda> K. set (wctx_tb K)" n sol_assn smemb_imp sins_imp sdel_imp Array.nth
-    ccopy_imp czero_imp "wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti" "wctx_path_imp Da Pa Ti"
+    ccopy_imp czero_imp "wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti" "wctx_path_imp Pa Ti"
     "weps_imp Gc Vi Mi" "wshift_imp Vi" h "\<lambda> R e c x. if x \<in> set R then c x + e else c x"
     csr.wtight_ctx "warr_assn n h"
     "wctx_assn Vi Fr Bf Da Pa Mi Ti" "wws Vi Fr Bf Da Pa Mi Ti"
-    "ost1 * ost2 * bcsr_assn (build_nhlists es0) Gc"
+    "ost1 * ost2 * (case Gc of (Ba, Ga) \<Rightarrow>
+       Ba \<mapsto>\<^sub>a map (start_off es0) [0..<Suc n] * Ga \<mapsto>\<^sub>a build_nha es0 n)"
     by (rule imp_loop)
   show ?thesis
     by (rule ht_cons_pre[OF _ l.wmi_run_imp_correct]) (intro ent_star_mono ent_refl len_warr)

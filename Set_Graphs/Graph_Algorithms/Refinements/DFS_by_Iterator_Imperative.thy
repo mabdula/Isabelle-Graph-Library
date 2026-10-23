@@ -570,8 +570,6 @@ locale imp_DFS_by_Iterator_CSR_thms =
     and s_in_G: "s \<in> dVs {(u, E ! i) | u i. u < n \<and> B ! u \<le> i \<and> i < B ! Suc u}"
 begin
 
-definition "csr_G v = (if v < n then Some (map ((!) E) [B ! v..<B ! Suc v]) else None)"
-
 sublocale imp_DFS_by_Iterator where nbs_invar = csr_invar and nbs_abstract = csr_abstract
   and nbs_current = csr_current and nbs_has = csr_has and nbs_iterated = csr_iterated
   and nbs_remaining = csr_remaining and nbs_move = csr_move and nbs_reset = csr_reset
@@ -579,14 +577,14 @@ sublocale imp_DFS_by_Iterator where nbs_invar = csr_invar and nbs_abstract = csr
   and nbs_has_imp = csr_has_imp and nbs_move_imp = csr_move_imp and nbs_reset_imp = csr_reset_imp
   by unfold_locales
 
-lemma csr_G_neighbourhood: "v < n \<Longrightarrow> set (Graph.neighbourhood csr_G v) = csr_abstract c v"
-  by (simp add: Graph.neighbourhood_def csr_G_def csr_abstract_eq)
+lemma csr_map_neighbourhood: "v < n \<Longrightarrow> set (Graph.neighbourhood csr_map v) = csr_abstract c v"
+  by (simp add: Graph.neighbourhood_def csr_map_def csr_list_def csr_abstract_eq)
 
-lemma csr_G_digraph_abs:
-  "Graph.digraph_abs csr_G = {(u, E ! i) | u i. u < n \<and> B ! u \<le> i \<and> i < B ! Suc u}"
+lemma csr_map_digraph_abs:
+  "Graph.digraph_abs csr_map = {(u, E ! i) | u i. u < n \<and> B ! u \<le> i \<and> i < B ! Suc u}"
 proof-
-  have "v \<in> set (Graph.neighbourhood csr_G u) \<longleftrightarrow> u < n \<and> v \<in> (!) E ` {B ! u..<B ! Suc u}" for u v
-    by (simp add: Graph.neighbourhood_def csr_G_def)
+  have "v \<in> set (Graph.neighbourhood csr_map u) \<longleftrightarrow> u < n \<and> v \<in> (!) E ` {B ! u..<B ! Suc u}" for u v
+    by (simp add: Graph.neighbourhood_def csr_map_def csr_list_def)
   thus ?thesis
     by (auto simp: Graph.digraph_abs_def dls_isin_def)
 qed
@@ -596,25 +594,25 @@ sublocale imp_DFS_by_Iterator_thms where nbs_invar = csr_invar and nbs_abstract 
   and nbs_remaining = csr_remaining and nbs_move = csr_move and nbs_reset = csr_reset
   and K = "{..<n}" and nbs_assn = csr_assn and nbs_current_imp = csr_current_imp
   and nbs_has_imp = csr_has_imp and nbs_move_imp = csr_move_imp and nbs_reset_imp = csr_reset_imp
-  and G = csr_G and s = s and t = t and nbs_init = "\<lambda>v. B ! v"
+  and G = csr_map and s = s and t = t and nbs_init = "\<lambda>v. B ! v"
 proof unfold_locales
   have "E ! i < n" if "u < n" "i < B ! Suc u" for u i
     using E_bound nth_mem[OF order.strict_trans2[OF that(2) B_bound[OF that(1)]]] by blast
-  thus V: "dVs (Graph.digraph_abs csr_G) \<subseteq> {..<n}"
-    by (auto simp: csr_G_digraph_abs dVs_def)
-  thus "dVs (Graph.digraph_abs csr_G) \<subseteq> U"
+  thus V: "dVs (Graph.digraph_abs csr_map) \<subseteq> {..<n}"
+    by (auto simp: csr_map_digraph_abs dVs_def)
+  thus "dVs (Graph.digraph_abs csr_map) \<subseteq> U"
     using U_bound by blast
-  show "card (dVs (Graph.digraph_abs csr_G)) \<le> cap"
+  show "card (dVs (Graph.digraph_abs csr_map)) \<le> cap"
     using card_mono[OF finite_lessThan V] n_cap by simp
-  have "Graph.graph_inv csr_G"
-    using E_distinct by (auto simp: Graph.graph_inv_def csr_G_def distinct_map split: if_splits)
-  thus "DFS_axioms csr_G s"
+  have "Graph.graph_inv csr_map"
+    using E_distinct by (auto simp: Graph.graph_inv_def csr_map_def csr_list_def distinct_map split: if_splits)
+  thus "DFS_axioms csr_map s"
     using s_in_G
-    by (simp add: DFS_axioms_def Graph.finite_graph_def Graph.finite_vsets_def csr_G_def
-                  csr_G_digraph_abs)
-  show "csr_remaining ((!) B) v = set (Graph.neighbourhood csr_G v)" if "v \<in> {..<n}" for v
+    by (simp add: DFS_axioms_def Graph.finite_graph_def Graph.finite_vsets_def csr_map_def csr_list_def
+                  csr_map_digraph_abs)
+  show "csr_remaining ((!) B) v = set (Graph.neighbourhood csr_map v)" if "v \<in> {..<n}" for v
     using csr.idx_partition_union[OF csr_init_invar, of v] csr_init_iterated[of v]
-          csr_G_neighbourhood[of v "(!) B"] that
+          csr_map_neighbourhood[of v "(!) B"] that
     by simp
 qed (simp_all add: csr_init_invar csr_init_iterated)
 
@@ -711,13 +709,7 @@ next
 next
   case 3 show ?case
   proof (unfold_locales, goal_cases)
-    case 2 show ?case by (rule ei.inp.length_B_spec)
-  next
-    case (3 v) then show ?case by (rule ei.graph.B_mono)
-  next
-    case (4 v) then show ?case by (simp add: ei.B_spec_bound)
-  next
-    case (5 v)
+    case (1 v)
     have "inj_on (e_tgt fs ts) {e \<in> edges fs. e_src fs e = v}"
     proof (rule inj_onI)
       fix e e'
@@ -728,11 +720,21 @@ next
       then show "e = e'"
         using nth_eq_iff_index_eq[OF edges_distinct] by blast
     qed
-    then have "inj_on (e_tgt fs ts \<circ> (!) ei.inp.E_spec) {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}"
-      using comp_inj_on[OF ei.graph.E_distinct[OF 5]] ei.block_key[OF 5] by simp
-    then show ?case
-      using ei.B_spec_bound[OF 5] by (auto simp: inj_on_def)
-  qed simp_all
+    then have inj: "inj_on (e_tgt fs ts \<circ> (!) ei.inp.E_spec) {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}"
+      using comp_inj_on[OF ei.graph.E_distinct[OF 1]] ei.block_key[OF 1] by simp
+    have eq: "map (e_tgt fs ts) ei.inp.E_spec ! i = (e_tgt fs ts \<circ> (!) ei.inp.E_spec) i"
+      if "i \<in> {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}" for i
+      using that ei.B_spec_bound[OF 1] by simp
+    show ?case
+    proof (rule inj_onI)
+      fix i j
+      assume i: "i \<in> {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}"
+        and j: "j \<in> {ei.inp.B_spec ! v..<ei.inp.B_spec ! Suc v}"
+        and e: "map (e_tgt fs ts) ei.inp.E_spec ! i = map (e_tgt fs ts) ei.inp.E_spec ! j"
+      show "i = j"
+        using e unfolding eq[OF i] eq[OF j] by (rule inj_onD[OF inj _ i j])
+    qed
+  qed
 next
   case 4 show ?case
   proof unfold_locales
@@ -753,7 +755,7 @@ proof -
     by (rule ei.csr_build_heads_rule[of Fa Ta, unfolded csr_build_heads])
   note dfs = DFS_it_imperative'_correct[OF stk.stack_empty,
                 where sti = "\<lparr>imp_stack = Si, imp_seen = Vi, imp_its = Gi\<rparr>" for Si Vi Gi,
-                unfolded csr_G_digraph_abs heads_edges, simplified]
+                unfolded csr_map_digraph_abs heads_edges, simplified]
   note ars_assn.simps[simp del]
   show ?thesis
     unfolding dfs_edges_run_def dfs_csr_def

@@ -20,7 +20,6 @@ session "Data_Structures" = "HOL-Data_Structures" +
     Bounded_Stack_Specs
     Fixed_Univ_Buckets_Specs
     Fixed_Univ_List_Specs
-    Iterable_Set_Reset_To_Specs
     
     Fixed_Univ_Set_Specs_Imp
     Fixed_Univ_Map_Specs_Imp
@@ -31,7 +30,6 @@ session "Data_Structures" = "HOL-Data_Structures" +
     Bounded_Stack_Specs_Imp
     Fixed_Univ_Buckets_Specs_Imp
     Fixed_Univ_List_Specs_Imp
-    Iterable_Set_Reset_To_Specs_Imp
     Imp_Map_Set_Addons
     Array_Map_Set_Addons
     

@@ -230,7 +230,6 @@ locale primal_dual_path_search_imp =
   forest: alternating_forest_imp_spec
     where vset_invar = vset_invar and vset_to_set = vset_to_set and odds = odds
       and abstract_forest = abstract_forest and forest_invar = forest_invar and roots = roots
-      and vset_empty = vset_empty
       and extend_forest_even_unclassified = extend_forest_even_unclassified
       and empty_forest = empty_forest and forest_univ = K and get_path = get_path
       and evens = evens and lst = lst
@@ -261,10 +260,7 @@ locale primal_dual_path_search_imp =
       and fixed_univ_map_upd_imp = pot_upd_imp and fixed_univ_map_lookup_imp = pot_get_imp +
   left: fixed_univ_set_iterate_imp
     where U = K and set_invar = vset_invar and set_abstract = vset_to_set
-      and set_empty = vset_empty and set_insert = vset_insert and set_delete = vset_delete
-      and set_isin = vset_isin and set_assn = vset_assn and set_empty_imp = vset_empty_imp
-      and set_insert_imp = vset_insert_imp and set_delete_imp = vset_delete_imp
-      and set_isin_imp = vset_isin_imp and lst = lst and is_it = left_is_it
+      and set_assn = vset_assn and lst = lst and is_it = left_is_it
       and it_init = left_it_init and it_has_next = left_it_has_next and it_next = left_it_next
   for G :: "'v::heap set set" and h :: "'n::{linordered_idom, heap} \<Rightarrow> real"
     and queue_assn queue_empty_imp queue_clear_imp queue_extract_min_imp queue_key_of_imp
@@ -276,7 +272,7 @@ locale primal_dual_path_search_imp =
     and ben_assn :: "_ \<Rightarrow> 'bi \<Rightarrow> assn" and ben_upd_imp ben_get_imp
     and missed_assn :: "_ \<Rightarrow> 'mi \<Rightarrow> assn" and missed_upd_imp missed_get_imp
     and pot_assn pot_upd_imp pot_get_imp
-    and vset_assn vset_empty_imp vset_insert_imp vset_delete_imp vset_isin_imp
+    and vset_assn
     and left_is_it left_it_init left_it_has_next left_it_next
     and ben_clear_imp :: "'bi \<Rightarrow> unit Heap" and missed_clear_imp :: "'mi \<Rightarrow> unit Heap" +
   fixes buddy_assn :: "'bdi \<Rightarrow> assn"
@@ -738,7 +734,8 @@ proof-
   have pre: "fold_pre init_P init_g b0 (lst L)"
     unfolding b0_def
     by (rule init_fold_pre[OF _ init_ok_init]) (simp add: forest.lst_set[OF finite_L])
-  note fold = iter_fold_rule_gen[where I = "left_is_it left Li" and Q = "vset_assn left Li"
+  note fold = iter_fold_rule_gen[where I = "\<lambda>xs it. vset_assn left Li * left_is_it L Li xs it"
+                 and Q = "vset_assn left Li"
                  and A = "init_A Ci Pti Mi Qi Bi Bdi",
                  OF left.it_has_next_rule left.it_next_rule left.quit_iteration init_step_rule pre]
   have main: "<vset_assn left Li * init_A Ci Pti Mi Qi Bi Bdi b0 (Fi, False)>
@@ -1124,19 +1121,20 @@ proof-
     <pot_assn p Pti * missed_assn (missed st) Mi> code.pot_step_odd Pti Mi av v u
     <\<lambda>_. pot_assn (go p v) Pti * missed_assn (missed st) Mi>"
     unfolding go_def using pot_step_odd_rule[OF _ assms(2,3)] .
-  note fold1 = iter_fold_rule_gen[where I = "forest_is_it (forest st) Fi Evens"
+  note fold1 = iter_fold_rule_gen[where I = "\<lambda>xs it. forest_assn (forest st) Fi *
+                                               forest_is_it Evens (aevens st) Fi xs it"
       and Q = "forest_assn (forest st) Fi"
       and A = "\<lambda>p (u::unit). pot_assn p Pti * missed_assn (missed st) Mi",
-      OF forest.forest_it_has_next_rule forest.forest_it_next_rule forest.forest_quit_iteration
-         step1 pre1]
-  note fold2 = iter_fold_rule_gen[where I = "forest_is_it (forest st) Fi Odds"
+      OF forest.ev.it_has_next_rule forest.ev.it_next_rule forest.ev.quit_iteration step1 pre1]
+  note fold2 = iter_fold_rule_gen[where I = "\<lambda>xs it. forest_assn (forest st) Fi *
+                                               forest_is_it Odds (aodds st) Fi xs it"
       and Q = "forest_assn (forest st) Fi"
       and A = "\<lambda>p (u::unit). pot_assn p Pti * missed_assn (missed st) Mi",
-      OF forest.forest_it_has_next_rule forest.forest_it_next_rule forest.forest_quit_iteration
-         step2 pre2]
+      OF forest.od.it_has_next_rule forest.od.it_next_rule forest.od.quit_iteration step2 pre2]
   show ?thesis
     unfolding code.new_pot_imp_def
-    by (sep_auto heap: forest.forest_it_init_rule fold1 fold2 simp: NP)
+    by (sep_auto heap: forest.ev.it_init_rule[OF vinv(1)] forest.od.it_init_rule[OF vinv(2)]
+                       fold1 fold2 simp: NP)
 qed
 
 subsection \<open>The Path Search\<close>

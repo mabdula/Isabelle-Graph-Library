@@ -22,7 +22,6 @@ definition "bool_array_set_it_next it = (case it of (a, l, i) \<Rightarrow>
    do { j \<leftarrow> bool_array_set_scan a l (Suc i); return (i, (a, l, j)) })"
 
 definition "bool_array_set_is_it n X p xs it = (case it of (a, l, i) \<Rightarrow>
-   bool_array_set_assn n X p *
    \<up>(a = p \<and> l = n \<and> i \<le> n \<and> (i < n \<longrightarrow> i \<in> X) \<and> xs = filter (\<lambda>j. j \<in> X) [i..<n]))"
 
 lemma bool_array_set_scan_rule:
@@ -60,32 +59,36 @@ lemma bool_array_set_len_rule: "<bool_array_set_assn n X p> Array.len p <\<lambd
 
 lemma bool_array_set_it_init_rule:
   "X \<subseteq> {..<n} \<Longrightarrow>
-   <bool_array_set_assn n X p> bool_array_set_it_init p <bool_array_set_is_it n X p (sorted_list_of_set (id X))>"
+   <bool_array_set_assn n X p> bool_array_set_it_init p
+   <\<lambda>it. bool_array_set_assn n X p * bool_array_set_is_it n X p (sorted_list_of_set X) it>"
   unfolding bool_array_set_it_init_def bool_array_set_is_it_def
   by (sep_auto heap: bool_array_set_len_rule bool_array_set_scan_rule simp: sorted_list_of_xset)
 
 lemma bool_array_set_it_next_rule:
-  "<bool_array_set_is_it n X p (x # xs) it> bool_array_set_it_next it <\<lambda>(y, it'). bool_array_set_is_it n X p xs it' * \<up>(y = x)>"
+  "<bool_array_set_assn n X p * bool_array_set_is_it n X p (x # xs) it> bool_array_set_it_next it
+   <\<lambda>(y, it'). bool_array_set_assn n X p * bool_array_set_is_it n X p xs it' * \<up>(y = x)>"
 proof-
   obtain a l i where it: "it = (a, l, i)" by (cases it) auto
-  show ?thesis
-    unfolding it bool_array_set_it_next_def bool_array_set_is_it_def prod.case
-  proof(rule ht_extract_pre_pure(1), elim conjE)
-    assume a: "a = p" "l = n" "i \<le> n" "i < n \<longrightarrow> i \<in> X" "x # xs = filter (\<lambda>j. j \<in> X) [i..<n]"
-    hence i: "i < n" by (cases "i < n") auto
+  have step: "<bool_array_set_assn n X p> bool_array_set_it_next (a, l, i)
+              <\<lambda>(y, it'). bool_array_set_assn n X p * bool_array_set_is_it n X p xs it' * \<up>(y = x)>"
+    if a: "a = p" "l = n" "i \<le> n" "i < n \<longrightarrow> i \<in> X" "x # xs = filter (\<lambda>j. j \<in> X) [i..<n]"
+  proof-
+    have i: "i < n" using a by (cases "i < n") auto
     hence split: "[i..<n] = i # [Suc i..<n]" by (simp add: upt_conv_Cons)
     have x: "x = i" and xs: "xs = filter (\<lambda>j. j \<in> X) [Suc i..<n]"
       using a(4,5) i by (simp_all add: split)
-    show "<bool_array_set_assn n X p> bool_array_set_scan a l (Suc i) \<bind> (\<lambda>j. return (i, a, l, j))
-          <\<lambda>(y, it'). (case it' of (a, l, i) \<Rightarrow>
-             bool_array_set_assn n X p * \<up>(a = p \<and> l = n \<and> i \<le> n \<and> (i < n \<longrightarrow> i \<in> X) \<and>
-                                   xs = filter (\<lambda>j. j \<in> X) [i..<n])) * \<up>(y = x)>"
+    show ?thesis
+      unfolding bool_array_set_it_next_def bool_array_set_is_it_def
       using i by (sep_auto heap: bool_array_set_scan_rule simp: a(1,2) x xs)
   qed
+  show ?thesis
+    unfolding it bool_array_set_is_it_def[of n X p "x # xs"] prod.case
+    by (rule ht_extract_pre_pure(1), elim conjE, rule step, assumption+)
 qed
 
 lemma bool_array_set_it_has_next_rule:
-  "<bool_array_set_is_it n X p xs it> bool_array_set_it_has_next it <\<lambda>r. bool_array_set_is_it n X p xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+  "<bool_array_set_assn n X p * bool_array_set_is_it n X p xs it> bool_array_set_it_has_next it
+   <\<lambda>r. bool_array_set_assn n X p * bool_array_set_is_it n X p xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
 proof-
   obtain a l i where it: "it = (a, l, i)" by (cases it) auto
   have "\<lbrakk>i \<le> n; i < n \<longrightarrow> i \<in> X\<rbrakk> \<Longrightarrow> (i < n) = (filter (\<lambda>j. j \<in> X) [i..<n] \<noteq> [])"
@@ -95,15 +98,17 @@ proof-
     by sep_auto
 qed
 
-lemma bool_array_set_quit_iteration: "bool_array_set_is_it n X p xs it \<Longrightarrow>\<^sub>A bool_array_set_assn n X p"
+lemma bool_array_set_quit_iteration:
+  "bool_array_set_assn n X p * bool_array_set_is_it n X p xs it \<Longrightarrow>\<^sub>A bool_array_set_assn n X p"
   unfolding bool_array_set_is_it_def by (cases it) sep_auto
 
 lemma bool_array_set_fixed_univ_set_iterate_imp:
-  "fixed_univ_set_iterate_imp {..<n} (\<lambda> X. X \<subseteq> {..<n}) id {} insert (\<lambda> x X. X - {x})
-     (\<lambda> X x. x \<in> X) (bool_array_set_assn n) (Array.new n False) bool_array_set_insert_imp bool_array_set_delete_imp
-     bool_array_set_isin_imp sorted_list_of_set (bool_array_set_is_it n) bool_array_set_it_init bool_array_set_it_has_next bool_array_set_it_next"
+  "fixed_univ_set_iterate_imp {..<n} (\<lambda> X. X \<subseteq> {..<n}) id (bool_array_set_assn n) sorted_list_of_set
+     (bool_array_set_is_it n) bool_array_set_it_init bool_array_set_it_has_next bool_array_set_it_next"
   by (intro fixed_univ_set_iterate_imp.intro fixed_univ_set_iterate_imp_axioms.intro
-            bool_array_set_fixed_univ_set_imp sorted_list_of_set_order bool_array_set_it_init_rule bool_array_set_it_next_rule
-            bool_array_set_it_has_next_rule bool_array_set_quit_iteration)
+            sorted_list_of_set_order)
+     (simp_all only: id_apply, (rule bool_array_set_it_init_rule bool_array_set_it_next_rule
+                                   bool_array_set_it_has_next_rule bool_array_set_quit_iteration
+                             | assumption)+)
 
 end

@@ -3,7 +3,6 @@ theory Push_Relabel_Generic
     Push_Relabel_Basic
     Data_Structures.Fixed_Univ_Map_Specs
     Directed_Set_Graphs.Edge_Iterators
-    Data_Structures.Iterable_Set_Reset_To_Specs
 begin
 
 section \<open>The Generic Push-Relabel Algorithm on Abstract Data Types\<close>

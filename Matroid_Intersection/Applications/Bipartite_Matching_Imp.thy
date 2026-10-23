@@ -35,7 +35,10 @@ global_interpretation mx: matroid_intersection_imp_spec n id id bm_memb bm_ins1 
     and mx_nb2 = mx.ids.nb2_imp
     and mx_filt = mx.ids.filt_imp
     and mx_xnbs = mx.ids.xnbs
+    and mx_x_inner = mx.ids.x_inner
+    and mx_x_outer = mx.ids.x_outer
     and mx_xround = mx.ids.xround
+    and mx_x_loop = mx.ids.x_loop
     and mx_bfs_run = mx.ids.bfs_run
     and mx_has_nb = mx.ids.has_nb_imp
     and mx_s = mx.ids.s_imp
@@ -50,30 +53,10 @@ global_interpretation mx: matroid_intersection_imp_spec n id id bm_memb bm_ins1 
     and mx_mi = mx.mi_imp
   done
 
-text \<open>A copy of the BFS core with the iterator fixed at code generation time.\<close>
+text \<open>The BFS of the library with the iterator fixed at code generation time.\<close>
 
-global_interpretation xb: BFS_subprocedures_lists_code bset_memb bset_ins "mx_xnbs n"
-  for n
-  defines xb_inner = xb.inner_loop
-    and xb_outer = xb.outer_loop
-    and xb_round = xb.next_frontier_current_parents_imp
-  done
-
-global_interpretation xbi: BFS_Imperative_spec bfs_src_to_cf bfs_set_srcs_visited
-    "xb_round n Gh" bfs_cf_is_empty bset_memb bfs_set_dists Array.nth Array.nth
-  for n Gh
-  defines xb_loop = xbi.BFS_par_imp
-    and xb_init = xbi.initial_state_imp
-    and xb_run = xbi.visited_dists_parents_imp
-  done
-
-lemma mx_xround_code [code]: "mx_xround n = xb_round n"
-  unfolding mx.ids.xround_def xb_round_def ..
-
-lemma mx_bfs_run_code [code]: "mx_bfs_run n Gh = xb_run n Gh"
-  unfolding mx.ids.bfs_run_def xb_run_def mx_xround_code ..
-
-declare xbi.BFS_par_imp.simps[code]
+declare mx.ids.x_inner_code[code] mx.ids.x_outer_code[code] mx.ids.xround_code[code]
+  mx.ids.x_loop_code[code] mx.ids.bfs_run_code[code]
 
 definition "matching_imp nv Fa Ta =
    bm_setup_imp nv Fa Ta (\<lambda> m H1 H2 Xi C1 C2. do {
