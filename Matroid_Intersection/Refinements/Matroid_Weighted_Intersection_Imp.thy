@@ -51,7 +51,7 @@ definition "wmi_imp H1 H2 Si Co C1 C2 = do {
    Mi \<leftarrow> Array.new 2 0;
    Ti \<leftarrow> Array.new 2 0;
    weighted_intersection_imp_loop_spec.wmi_run_imp sins_imp sdel_imp Array.nth ccopy_imp czero_imp
-     (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Da Pa Ti) (weps_imp Gc Vi Mi)
+     (wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti) (wctx_path_imp Pa Ti) (weps_imp Gc Vi Mi)
      (wshift_imp Vi) Si Co C1 C2 Ra }"
 
 end
@@ -89,8 +89,11 @@ proof-
   let ?F = "sol_assn {} Si * ost1 * ost2 * warr_assn n h c Co * len_assn n C1 * len_assn n C2"
   have cand: "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * warr_assn n h c Co *
                 len_assn n C1 * len_assn n C2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
-              <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * bcsr_assn (build_nhlists (cand_list pts1 pts2 n)) Gc>"
-    by (rule ht_frame_ac[OF c.cand_csr_rule, where R = ?F]) (simp only: star_aci, rule ent_refl)+
+              <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * (case Gc of (Ba, Ga) \<Rightarrow>
+                Ba \<mapsto>\<^sub>a map (csr_start (nbrs (cand_list pts1 pts2 n))) [0..<Suc n] *
+                Ga \<mapsto>\<^sub>a csr_entries (nbrs (cand_list pts1 pts2 n)) n)>"
+    by (rule ht_frame_ac[OF c.cand_csr_rule, where R = ?F])
+       (simp only: star_aci, rule ent_refl, sep_auto split: prod.splits)
   show ?thesis
     unfolding wmi_imp_def
     by (rule ht_bind[OF cand], (rule alloc_bind[OF len_assn_new])+,

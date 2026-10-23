@@ -28,7 +28,10 @@ global_interpretation wbx: weighted_matroid_intersection_imp_spec n id id bb_mem
   for n
   defines wbx_teq = wbx.wids.teq_imp
     and wbx_tnbs = wbx.wids.tnbs
+    and wbx_t_inner = wbx.wids.t_inner
+    and wbx_t_outer = wbx.wids.t_outer
     and wbx_tround = wbx.wids.tround
+    and wbx_t_loop = wbx.wids.t_loop
     and wbx_tbfs_run = wbx.wids.tbfs_run
     and wbx_max = wbx.wids.max_imp
     and wbx_thas_nb = wbx.wids.thas_nb_imp
@@ -49,30 +52,10 @@ global_interpretation wbx: weighted_matroid_intersection_imp_spec n id id bb_mem
     and wbx_wmi = wbx.wmi_imp
   done
 
-text \<open>A copy of the BFS core with the tight iterator fixed at code generation time.\<close>
+text \<open>The BFS of the library with the tight iterator fixed at code generation time.\<close>
 
-global_interpretation wxbb: BFS_subprocedures_lists_code bset_memb bset_ins "wbx_tnbs n"
-  for n
-  defines wxbb_inner = wxbb.inner_loop
-    and wxbb_outer = wxbb.outer_loop
-    and wxbb_round = wxbb.next_frontier_current_parents_imp
-  done
-
-global_interpretation wxbbi: BFS_Imperative_spec bfs_src_to_cf bfs_set_srcs_visited
-    "wxbb_round n Gh" bfs_cf_is_empty bset_memb bfs_set_dists Array.nth Array.nth
-  for n Gh
-  defines wxbb_loop = wxbbi.BFS_par_imp
-    and wxbb_init = wxbbi.initial_state_imp
-    and wxbb_run = wxbbi.visited_dists_parents_imp
-  done
-
-lemma wbx_tround_code [code]: "wbx_tround n = wxbb_round n"
-  unfolding wbx.wids.tround_def wxbb_round_def ..
-
-lemma wbx_tbfs_run_code [code]: "wbx_tbfs_run n Gh = wxbb_run n Gh"
-  unfolding wbx.wids.tbfs_run_def wxbb_run_def wbx_tround_code ..
-
-declare wxbbi.BFS_par_imp.simps[code]
+declare wbx.wids.t_inner_code[code] wbx.wids.t_outer_code[code] wbx.wids.tround_code[code]
+  wbx.wids.t_loop_code[code] wbx.wids.tbfs_run_code[code]
 
 text \<open>The edges are \<open>{Fa[i], Ta[i]}\<close> with weight \<open>Wa[i]\<close>, the capacity of vertex \<open>v\<close> is \<open>Ka[v]\<close>,
   and all vertices are below the length of \<open>Ka\<close>. After the prologue of the unweighted instance,

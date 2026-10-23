@@ -81,8 +81,11 @@ theorem mi_imp_correct:
 proof-
   let ?F = "sol_assn {} Si * ost1 * ost2"
   have cand: "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
-              <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * bcsr_assn (build_nhlists (cand_list pts1 pts2 n)) Gc>"
-    by (rule ht_frame_ac[OF c.cand_csr_rule, where R = ?F]) (simp only: star_aci, rule ent_refl)+
+              <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * (case Gc of (Ba, Ga) \<Rightarrow>
+                Ba \<mapsto>\<^sub>a map (csr_start (nbrs (cand_list pts1 pts2 n))) [0..<Suc n] *
+                Ga \<mapsto>\<^sub>a csr_entries (nbrs (cand_list pts1 pts2 n)) n)>"
+    by (rule ht_frame_ac[OF c.cand_csr_rule, where R = ?F])
+       (simp only: star_aci, rule ent_refl, sep_auto split: prod.splits)
   show ?thesis
     unfolding mi_imp_def
     by (rule ht_bind[OF cand], (rule alloc_bind[OF len_assn_new])+,
@@ -471,9 +474,11 @@ lemma ids_imp:
      ost1 ost2 o1.pts_ids pst1 o2.pts_ids pst2"
   apply (intro matroid_intersection_imp_ids.intro unweighted_intersection_exchange_csr.intro
       unweighted_intersection_exchange_matroids.intro double_matroid.intro
-      unweighted_intersection_exchange_matroids_axioms.intro exchange_candidates_imp.intro)
+      unweighted_intersection_exchange_matroids_axioms.intro exchange_candidates_imp.intro
+      unweighted_intersection_exchange_csr_axioms.intro)
   apply (rule ids_set o1.ids_matroid o2.ids_matroid o1.ids_indep_oracle o2.ids_indep_oracle)+
-  apply (simp_all only: finite_insert finite_Diff finite.emptyI set_upt distinct_upt refl simp_thms)
+  apply (simp_all only: finite_insert finite_Diff finite.emptyI set_upt distinct_upt refl simp_thms
+                        length_upt diff_zero atLeast0LessThan subset_refl)
   apply (rule o1.ids_oracle_imp o2.ids_oracle_imp o1.ids_partners o2.ids_partners)+
   done
 

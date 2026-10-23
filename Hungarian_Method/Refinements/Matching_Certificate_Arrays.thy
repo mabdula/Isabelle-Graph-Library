@@ -22,14 +22,13 @@ subsection \<open>The Edges as an Iterable Set of Positions\<close>
 type_synonym 'n edge_arrays = "nat array \<times> nat array \<times> 'n array"
 
 definition arr_es_assn ::
-  "nat set \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> (nat \<Rightarrow> 'n::heap) \<Rightarrow> 'n edge_arrays \<Rightarrow> assn" where
-  "arr_es_assn D F T W = (\<lambda>(Fa, Ta, Wa).
+  "(nat \<Rightarrow> nat) \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> (nat \<Rightarrow> 'n::heap) \<Rightarrow> nat set \<Rightarrow> 'n edge_arrays \<Rightarrow> assn" where
+  "arr_es_assn F T W D = (\<lambda>(Fa, Ta, Wa).
      Fa \<mapsto>\<^sub>a map F [0..<card D] * Ta \<mapsto>\<^sub>a map T [0..<card D] * Wa \<mapsto>\<^sub>a map W [0..<card D] *
      \<up>(\<exists>m. D = {0..<m}))"
 
-definition "arr_elst D = [0..<card D]"
-
-definition "arr_it_assn xs it = \<up>(xs = [fst it..<snd it])"
+definition arr_it_assn :: "nat set \<Rightarrow> 'n edge_arrays \<Rightarrow> nat list \<Rightarrow> nat \<times> nat \<Rightarrow> assn" where
+  "arr_it_assn D p xs it = \<up>(xs = [fst it..<snd it])"
 
 definition arr_memb :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "arr_memb = (\<lambda>(Fa, Ta, Wa) e. do { m \<leftarrow> Array.len Fa; return (e < m) })"
@@ -46,22 +45,26 @@ definition arr_w :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> 'n Hea
 definition arr_it_init :: "'n::heap edge_arrays \<Rightarrow> (nat \<times> nat) Heap" where
   "arr_it_init = (\<lambda>(Fa, Ta, Wa). do { m \<leftarrow> Array.len Fa; return (0, m) })"
 
-definition arr_it_has_next :: "'n::heap edge_arrays \<Rightarrow> nat \<times> nat \<Rightarrow> bool Heap" where
-  "arr_it_has_next p it = return (fst it < snd it)"
+definition arr_it_has_next :: "nat \<times> nat \<Rightarrow> bool Heap" where
+  "arr_it_has_next it = return (fst it < snd it)"
 
-definition arr_it_next :: "'n::heap edge_arrays \<Rightarrow> nat \<times> nat \<Rightarrow> (nat \<times> nat \<times> nat) Heap" where
-  "arr_it_next p it = return (fst it, Suc (fst it), snd it)"
+definition arr_it_next :: "nat \<times> nat \<Rightarrow> (nat \<times> nat \<times> nat) Heap" where
+  "arr_it_next it = return (fst it, Suc (fst it), snd it)"
 
 lemma Cons_eq_upt_conv: "(x # xs = [i..<j]) = (i < j \<and> x = i \<and> xs = [Suc i..<j])"
   by (subst eq_commute) (auto simp: upt_eq_Cons_conv)
 
+text \<open>The arrays store the edge names below @{term m}.\<close>
+
 lemma arr_edge_set:
-  "imp_edge_set arr_es_assn arr_elst arr_it_assn arr_memb arr_fst arr_snd arr_w
-     arr_it_init arr_it_has_next arr_it_next"
-  by (unfold_locales; unfold split_paired_all;
-      sep_auto simp: arr_es_assn_def arr_elst_def arr_it_assn_def arr_memb_def arr_fst_def
+  "imp_edge_set {..<m} (\<lambda>D. D = {..<m}) (arr_es_assn F T W) sorted_list_of_set arr_it_assn
+     arr_it_init arr_it_has_next arr_it_next F T W arr_memb arr_fst arr_snd arr_w"
+  by (intro imp_edge_set.intro imp_edge_set_axioms.intro fixed_univ_set_iterate_imp.intro
+            fixed_univ_set_iterate_imp_axioms.intro sorted_list_of_set_order;
+      (unfold split_paired_all id_apply)?;
+      sep_auto simp: arr_es_assn_def arr_it_assn_def arr_memb_def arr_fst_def
                      arr_snd_def arr_w_def arr_it_init_def arr_it_has_next_def arr_it_next_def
-                     Cons_eq_upt_conv)
+                     Cons_eq_upt_conv lessThan_atLeast0)
 
 subsection \<open>The Programs\<close>
 
@@ -154,15 +157,16 @@ proof (intro matching_cert.intro real_embedding_axioms matching_cert_axioms.intr
 qed
 
 sublocale cert: matching_cert_imp "{0..<length fs}" "[0..<length fs]" "(!) fs" "(!) ts" "(!) ws"
-  n ls rs h arr_es_assn arr_elst arr_it_assn arr_memb arr_fst arr_snd arr_w
-  arr_it_init arr_it_has_next arr_it_next
+  n ls rs h "{..<length fs}" "\<lambda>D. D = {..<length fs}" "arr_es_assn ((!) fs) ((!) ts) ((!) ws)"
+  sorted_list_of_set arr_it_assn arr_it_init arr_it_has_next arr_it_next
+  arr_memb arr_fst arr_snd arr_w
   "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth
   "\<lambda>xs a. a \<mapsto>\<^sub>a xs" Array.len Array.nth
   "{..<n}" "\<lambda>X. X \<subseteq> {..<n}" id "{}" insert "\<lambda>x X. X - {x}" "\<lambda>X x. x \<in> X" "bool_array_set_assn n"
   "Array.new n False" bool_array_set_insert_imp bool_array_set_delete_imp bool_array_set_isin_imp
   by (rule matching_cert_imp.intro[OF cert_mc arr_edge_set array_rlist array_rlist array_rlist
              bool_array_set_fixed_univ_set_imp])
-     (unfold_locales; simp add: arr_elst_def)
+     (unfold_locales; simp add: lessThan_atLeast0)
 
 lemma G_eq: "cert.G = G"
   by (auto simp: cert.G_def cert.cedge_def G_def)

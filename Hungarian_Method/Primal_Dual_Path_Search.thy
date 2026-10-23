@@ -3347,6 +3347,13 @@ update_best_even_neighbours_correct[where off = "\<lambda> x. 0" and C = rnb_ini
  OF best_even_neighbour(1) heap(1) unmatched_lefts_in_L _ _ _ unmatched_lefts(2) G(4), 
  simplified best_even_neighbour heap(11), simplified, folded init_best_even_neighbour_def]
 
+lemma initial_forest_invar: "forest_invar \<M> (empty_forest forest_roots)"
+  using forest_roots Vs_M_in_K
+  by(auto intro!: empty_forest(4) simp add: \<M>_is_matching)
+
+lemma initial_forest_odds: "vset_to_set (odds (empty_forest forest_roots)) = {}"
+  by (rule empty_forest(2)[OF initial_forest_invar])
+
 lemma invars_init:
 "invar_basic initial_state"
 "invar_feasible_potential initial_state"
@@ -3432,7 +3439,7 @@ proof(goal_cases)
    next
      case 10
      show ?case
-       by(simp add: empty_forest(2) initial_state_def vset(2))
+       by(simp add: initial_forest_odds initial_state_def)
    next
      case 11
      show ?case
@@ -3452,7 +3459,7 @@ proof(goal_cases)
    next 
      case 12
      show ?case
-       by (simp add: empty_forest(2) initial_state_def vset(2))
+       by (simp add: initial_forest_odds initial_state_def)
    next 
      case 13
      show ?case
@@ -3485,7 +3492,7 @@ next
     using matching(3)
     by(auto intro!: invar_matching_tightI
           simp add:  initial_state_def empty_forest(3)
-                     working_potential_def empty_forest(1,2) missed(2)
+                     working_potential_def empty_forest(1) initial_forest_odds missed(2)
                      abstract_real_map_def)
 next
   case 5
@@ -3514,7 +3521,7 @@ next
   show ?case 
     by(auto intro!: help1 help2 help3 help4 invar_best_even_neighbour_heapI
          simp add: initial_state_def missed(2) abstract_real_map_def
-                   empty_forest(1,2) vset(2))
+                   empty_forest(1) initial_forest_odds vset(2))
 next
   case 6
   have helper1: False if
@@ -3550,7 +3557,7 @@ next
      by(force intro: invar_best_even_neighbour_mapI helper1 helper2
                      props_of_init_heap_and_ben(5)[OF triple_collapse]
          simp add: initial_state_def missed(2) abstract_real_map_def
-                   empty_forest(1,2) vset(2) unmatched_lefts(2))
+                   empty_forest(1) initial_forest_odds vset(2) unmatched_lefts(2))
  next
    case 7
    show ?case

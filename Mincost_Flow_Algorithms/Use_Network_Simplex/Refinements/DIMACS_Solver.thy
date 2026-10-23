@@ -70,7 +70,7 @@ definition ns_cleanup_imp ::
   "ns_cleanup_imp nn mm blk mnc mxc fa sa ca oa ba fla =
      do {
        b2 \<leftarrow> Array.new (Suc (Suc nn)) 0;
-       _  \<leftarrow> arr_copy_imp ba b2 0 (Suc nn);
+       _  \<leftarrow> copy_prefix_imp (Suc nn) ba b2 0;
        s  \<leftarrow> solve_imp nn mm blk mnc mxc fa sa ca oa fla b2;
        Heap_Monad.return (case s of OptimalF \<Rightarrow> VOptimumF
                                   | InfeasibleF \<Rightarrow> VInfeasibleF
@@ -764,7 +764,7 @@ proof -
   have slv: "NSH.solve = ns_run fl" by(simp add: ns_run_def)
   show ?thesis
     unfolding ns_cleanup_imp_def reduced.inst_assn_def
-    apply(sep_auto heap: arr_copy_imp_rule NSH.solve_imp_correct[unfolded barr slv]
+    apply(sep_auto heap: copy_prefix_imp_rule NSH.solve_imp_correct[unfolded barr slv]
                    simp: cert_length drop_zeros ns_flag_def[symmetric])
     apply(drule sym)
     apply(sep_auto simp: ns_flag_ok[OF st])

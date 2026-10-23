@@ -22,8 +22,9 @@ locale forest_imp =
   forest_manipulation K parent_invar parent_upd parent_get origin_invar origin_upd origin_get
     vset_invar vset_to_set vset_empty vset_insert vset_delete vset_isin vset_iterate
     parent_empty origin_empty nil +
-  vs: fixed_univ_set_iterate_imp K vset_invar vset_to_set vset_empty vset_insert vset_delete
-    vset_isin vset_assn vset_empty_imp vset_insert_imp vset_delete_imp vset_isin_imp lst
+  vs: fixed_univ_set_imp K vset_invar vset_to_set vset_empty vset_insert vset_delete
+    vset_isin vset_assn vset_empty_imp vset_insert_imp vset_delete_imp vset_isin_imp +
+  vit: fixed_univ_set_iterate_imp K vset_invar vset_to_set vset_assn lst
     is_it it_init it_has_next it_next +
   par: fixed_univ_map_imp K parent_invar parent_upd parent_get id parent_assn parent_upd_imp
     parent_get_imp +
@@ -40,7 +41,7 @@ locale forest_imp =
     and parent_empty origin_empty nil
     and vset_assn :: "'vset \<Rightarrow> 'si \<Rightarrow> assn"
     and vset_empty_imp vset_insert_imp vset_delete_imp vset_isin_imp lst
-    and is_it :: "'vset \<Rightarrow> 'si \<Rightarrow> 'v list \<Rightarrow> 'it \<Rightarrow> assn" and it_init it_has_next it_next
+    and is_it :: "'v set \<Rightarrow> 'si \<Rightarrow> 'v list \<Rightarrow> 'it \<Rightarrow> assn" and it_init it_has_next it_next
     and parent_assn :: "'parent \<Rightarrow> 'pi \<Rightarrow> assn" and parent_upd_imp parent_get_imp
     and vset_clear_imp :: "'si \<Rightarrow> unit Heap"
     and parent_clear_imp :: "'pi \<Rightarrow> unit Heap"
@@ -52,18 +53,15 @@ subsection \<open>Representation\<close>
 definition "vs_assn V Vi =
    (\<exists>\<^sub>AS. vset_assn S Vi * \<up>(vset_invar S \<and> vset_invar V \<and> vset_to_set S = vset_to_set V))"
 
-definition "vs_is_it V Vi xs it =
-   (\<exists>\<^sub>AS. is_it S Vi xs it * \<up>(vset_invar S \<and> vset_invar V \<and> vset_to_set S = vset_to_set V))"
-
 definition "forest_assn F Fi = (case Fi of (ei, oi, pai) \<Rightarrow>
    vs_assn (evens F) ei * vs_assn (odds F) oi * parent_assn (parents F) pai *
    \<up>(parent_invar (parents F)))"
 
-definition "forest_is_it F Fi p xs it = (case Fi of (ei, oi, pai) \<Rightarrow>
-   (case p of
-      Evens \<Rightarrow> vs_is_it (evens F) ei xs it * vs_assn (odds F) oi
-    | Odds \<Rightarrow> vs_assn (evens F) ei * vs_is_it (odds F) oi xs it) *
-   parent_assn (parents F) pai * \<up>(parent_invar (parents F)))"
+text \<open>The iterators over the even and the odd vertices are those of the respective vertex
+      set.\<close>
+
+definition "forest_is_it p A Fi xs it = (case Fi of (ei, oi, pai) \<Rightarrow>
+   (case p of Evens \<Rightarrow> is_it A ei xs it | Odds \<Rightarrow> is_it A oi xs it))"
 
 subsection \<open>Programs\<close>
 
@@ -177,36 +175,105 @@ lemma odds_memb_imp_rule:
   unfolding odds_memb_imp_def forest_assn_def vs_assn_def
   by (sep_auto split: prod.splits simp: vset.fixed_univ_set_isin)
 
+text \<open>The iterator of a vertex set refers to its abstraction only, so it iterates the vertex
+      set whichever representation the existential in @{term vs_assn} chooses.\<close>
+
+lemma vs_it_init_rule:
+  "<vs_assn V Vi> it_init Vi <\<lambda>it. vs_assn V Vi * is_it (vset_to_set V) Vi (lst (vset_to_set V)) it>"
+proof-
+  have step: "<vset_assn S Vi> it_init Vi
+              <\<lambda>it. vset_assn S Vi * is_it (vset_to_set V) Vi (lst (vset_to_set V)) it>"
+    if "vset_invar S" "vset_to_set S = vset_to_set V" for S
+    using vit.it_init_rule[OF that(1), of Vi] that(2) by simp
+  show ?thesis
+    unfolding vs_assn_def by (sep_auto heap: step)
+qed
+
+lemma vs_it_next_rule:
+  "<vs_assn V Vi * is_it (vset_to_set V) Vi (x # xs) it> it_next it
+   <\<lambda>(y, it'). vs_assn V Vi * is_it (vset_to_set V) Vi xs it' * \<up>(y = x)>"
+proof-
+  have step: "<vset_assn S Vi * is_it (vset_to_set V) Vi (x # xs) it> it_next it
+              <\<lambda>(y, it'). vset_assn S Vi * is_it (vset_to_set V) Vi xs it' * \<up>(y = x)>"
+    if "vset_to_set S = vset_to_set V" for S
+    using vit.it_next_rule[of S Vi x xs it] that by simp
+  show ?thesis
+    unfolding vs_assn_def by (sep_auto heap: step)
+qed
+
+lemma vs_it_has_next_rule:
+  "<vs_assn V Vi * is_it (vset_to_set V) Vi xs it> it_has_next it
+   <\<lambda>r. vs_assn V Vi * is_it (vset_to_set V) Vi xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+proof-
+  have step: "<vset_assn S Vi * is_it (vset_to_set V) Vi xs it> it_has_next it
+              <\<lambda>r. vset_assn S Vi * is_it (vset_to_set V) Vi xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+    if "vset_to_set S = vset_to_set V" for S
+    using vit.it_has_next_rule[of S Vi xs it] that by simp
+  show ?thesis
+    unfolding vs_assn_def by (sep_auto heap: step)
+qed
+
+lemma vs_quit_iteration: "vs_assn V Vi * is_it (vset_to_set V) Vi xs it \<Longrightarrow>\<^sub>A vs_assn V Vi"
+  unfolding vs_assn_def ex_distrib_star[symmetric]
+proof(rule ent_ex_preI)
+  fix S
+  have q: "vset_to_set S = vset_to_set V \<Longrightarrow>
+           vset_assn S Vi * is_it (vset_to_set V) Vi xs it \<Longrightarrow>\<^sub>A vset_assn S Vi"
+    using vit.quit_iteration[of S Vi xs it] by simp
+  show "vset_assn S Vi * \<up>(vset_invar S \<and> vset_invar V \<and> vset_to_set S = vset_to_set V) *
+        is_it (vset_to_set V) Vi xs it \<Longrightarrow>\<^sub>A
+        \<exists>\<^sub>AS. vset_assn S Vi * \<up>(vset_invar S \<and> vset_invar V \<and> vset_to_set S = vset_to_set V)"
+  proof(cases "vset_invar S \<and> vset_invar V \<and> vset_to_set S = vset_to_set V")
+    case True
+    show ?thesis
+      by (rule ent_ex_postI[where x = S]) (use True q in simp)
+  next
+    case False
+    show ?thesis
+      by (simp add: Eq_FalseI[OF False])
+  qed
+qed
+
 lemma forest_it_init_rule:
   "<forest_assn F Fi> forest_it_init p Fi
-   <forest_is_it F Fi p (lst (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)))>"
-  unfolding forest_it_init_def forest_assn_def forest_is_it_def vs_assn_def vs_is_it_def
-  by (sep_auto split: prod.splits forest_part.splits)
+   <\<lambda>it. forest_assn F Fi *
+         forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi
+           (lst (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F))) it>"
+  unfolding forest_it_init_def forest_assn_def forest_is_it_def
+  by (cases p) (sep_auto split: prod.splits heap: vs_it_init_rule)+
 
 lemma forest_it_next_rule:
-  "<forest_is_it F Fi p (x # xs) it> it_next it
-   <\<lambda>(y, it'). forest_is_it F Fi p xs it' * \<up>(y = x)>"
-  unfolding forest_is_it_def vs_is_it_def
-  by (sep_auto split: prod.splits forest_part.splits)
+  "<forest_assn F Fi *
+    forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi (x # xs) it>
+   it_next it
+   <\<lambda>(y, it'). forest_assn F Fi *
+      forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi xs it' *
+      \<up>(y = x)>"
+  unfolding forest_assn_def forest_is_it_def
+  by (cases p) (sep_auto split: prod.splits heap: vs_it_next_rule[of "evens F"],
+                sep_auto split: prod.splits heap: vs_it_next_rule[of "odds F"])
 
 lemma forest_it_has_next_rule:
-  "<forest_is_it F Fi p xs it> it_has_next it
-   <\<lambda>r. forest_is_it F Fi p xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
-  unfolding forest_is_it_def vs_is_it_def
-  by (sep_auto split: prod.splits forest_part.splits)
-
-lemma vs_quit_iteration: "vs_is_it V Vi xs it \<Longrightarrow>\<^sub>A vs_assn V Vi"
-  unfolding vs_is_it_def vs_assn_def
-  apply(rule ent_ex_preI)
-  subgoal for S
-    by (rule ent_ex_postI[where x = S], rule ent_star_mono[OF vs.quit_iteration ent_refl])
-  done
+  "<forest_assn F Fi *
+    forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi xs it>
+   it_has_next it
+   <\<lambda>r. forest_assn F Fi *
+      forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi xs it *
+      \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+  unfolding forest_assn_def forest_is_it_def
+  by (cases p) (sep_auto split: prod.splits heap: vs_it_has_next_rule[of "evens F"],
+                sep_auto split: prod.splits heap: vs_it_has_next_rule[of "odds F"])
 
 lemma forest_quit_iteration:
-  "forest_is_it F Fi p xs it \<Longrightarrow>\<^sub>A forest_assn F Fi"
-  unfolding forest_is_it_def forest_assn_def
+  "forest_assn F Fi *
+   forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi xs it
+   \<Longrightarrow>\<^sub>A forest_assn F Fi"
+  unfolding forest_assn_def forest_is_it_def
   apply(cases p; cases Fi rule: prod_cases3; simp only: prod.case forest_part.case)
-  by (rule ent_star_mono ent_refl vs_quit_iteration)+
+   apply(sep_frame_fwd rule: vs_quit_iteration[of "evens F"])
+   apply sep_auto
+  apply(sep_frame_fwd rule: vs_quit_iteration[of "odds F"])
+  by sep_auto
 
 lemma get_path_imp_loop_rule:
   assumes "parent_spec_i.follow_dom (parent_lookup P) v"
@@ -289,17 +356,28 @@ qed
 
 subsection \<open>Interpretation of the Imperative Forest Specification\<close>
 
+lemma forest_fixed_univ_set_iterate_imp:
+  "fixed_univ_set_iterate_imp K (\<lambda> F. vset_invar (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F))
+     (\<lambda> F. vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F))
+     forest_assn lst (forest_is_it p) (forest_it_init p) it_has_next it_next"
+  by (intro fixed_univ_set_iterate_imp.intro fixed_univ_set_iterate_imp_axioms.intro
+            vit.set_order_axioms)
+     (rule vset.fixed_univ_set_universe forest_it_init_rule forest_it_next_rule
+           forest_it_has_next_rule forest_quit_iteration | assumption)+
+
 lemma alternating_forest_imp_spec:
   "alternating_forest_imp_spec vset_invar vset_to_set odds abstract_forest forest_invar
-     roots vset_empty extend_forest_even_unclassified empty_forest K get_path evens lst
-     forest_assn forest_empty_imp forest_clear_imp forest_add_root_imp forest_extend_imp
-     evens_memb_imp odds_memb_imp forest_is_it forest_it_init it_has_next it_next get_path_imp"
+     roots extend_forest_even_unclassified empty_forest K get_path evens lst
+     forest_assn forest_is_it forest_it_init it_has_next it_next
+     forest_empty_imp forest_clear_imp forest_add_root_imp forest_extend_imp
+     evens_memb_imp odds_memb_imp get_path_imp"
   by (intro alternating_forest_imp_spec.intro alternating_forest_imp_spec_axioms.intro
-            satisified vs.set_order_axioms
+            satisified vit.set_order_axioms
+            forest_fixed_univ_set_iterate_imp[of Evens, unfolded forest_part.case]
+            forest_fixed_univ_set_iterate_imp[of Odds, unfolded forest_part.case]
             forest_empty_imp_rule forest_clear_imp_rule forest_empty_cong forest_add_root_imp_rule
             satisfied_simple_extension_precond_same[THEN iffD1, THEN forest_extend_imp_rule]
-            evens_memb_imp_rule odds_memb_imp_rule forest_it_init_rule
-            forest_it_next_rule forest_it_has_next_rule forest_quit_iteration get_path_imp_rule)
+            evens_memb_imp_rule odds_memb_imp_rule get_path_imp_rule)
 
 end
 

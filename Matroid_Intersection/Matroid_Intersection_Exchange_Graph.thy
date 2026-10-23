@@ -43,8 +43,8 @@ locale unweighted_intersection_exchange_spec =
     and some_dist :: "'dist"
     and set_all_dists_in_set :: "'dist \<Rightarrow> 'vset \<Rightarrow> nat \<Rightarrow> 'dist"
     and dist_lookup :: "'dist \<Rightarrow> 'a \<Rightarrow> nat"
-    and some_parent :: "'par"
-    and parent_lookup :: "'par \<Rightarrow> 'a \<Rightarrow> 'a"
+    and parent_init :: "'vset \<Rightarrow> 'par"
+    and get_path :: "'par \<Rightarrow> 'a \<Rightarrow> 'a list"
     and next_frontier_current_parents :: 
           "('a \<Rightarrow> 'vset option) \<Rightarrow> 'vset \<Rightarrow> 'vset \<Rightarrow> 'par \<Rightarrow> 'vset \<times> 'vset \<times> 'par"
     and build_graph :: "('a \<times> 'a) list \<Rightarrow> 'a \<Rightarrow> 'vset option"
@@ -92,7 +92,7 @@ definition "bfs_final G S =
    BFS_distance_parents.BFS_par_impl vset_empty set_all_dists_in_set 
      (next_frontier_current_parents G)
      (BFS_distance_parents.initial_par_state (vset_of_list S) some_dist set_all_dists_in_set 
-         some_parent)"
+         parent_init)"
 
 text \<open>The first target visited by the BFS and the parent path to it.\<close>
 
@@ -100,8 +100,7 @@ definition "target_path G S ts =
    (let fin = bfs_final G S in
      case find (isin (BFS_dist_state.visited fin)) ts of
        None \<Rightarrow> None
-     | Some t \<Rightarrow> Some (BFS_distance_parents.parent_path dist_lookup parent_lookup 
-                        (dists fin) (parent fin) t []))"
+     | Some t \<Rightarrow> Some (rev (get_path (parent fin) t)))"
 
 text \<open>A source that is a target is a path on its own. Otherwise, sources without out-edges
   are dropped before the BFS.\<close>
@@ -152,8 +151,8 @@ text \<open>The assumptions on the graph construction and the BFS.\<close>
 locale unweighted_intersection_exchange =
   unweighted_intersection_exchange_spec set_insert set_delete to_set set_invar set_empty set_memb
     carrier_list orcl_prep1 ins_orcl1 exch_orcl1 orcl_prep2 ins_orcl2 exch_orcl2
-    vset_empty isin vset_of_list some_dist set_all_dists_in_set dist_lookup some_parent
-    parent_lookup next_frontier_current_parents build_graph +
+    vset_empty isin vset_of_list some_dist set_all_dists_in_set dist_lookup parent_init
+    get_path next_frontier_current_parents build_graph +
   unweighted_intersection_exchange_matroids carrier indep1 indep2 orcl_prep1 ins_orcl1 exch_orcl1
     orcl_prep2 ins_orcl2 exch_orcl2 to_set set_invar set_insert set_delete set_empty set_memb
     carrier_list +
@@ -181,8 +180,8 @@ locale unweighted_intersection_exchange =
     and some_dist :: "'dist"
     and set_all_dists_in_set :: "'dist \<Rightarrow> 'vset \<Rightarrow> nat \<Rightarrow> 'dist"
     and dist_lookup :: "'dist \<Rightarrow> 'a \<Rightarrow> nat"
-    and some_parent :: "'par"
-    and parent_lookup :: "'par \<Rightarrow> 'a \<Rightarrow> 'a"
+    and parent_init :: "'vset \<Rightarrow> 'par"
+    and get_path :: "'par \<Rightarrow> 'a \<Rightarrow> 'a list"
     and next_frontier_current_parents :: 
           "('a \<Rightarrow> 'vset option) \<Rightarrow> 'vset \<Rightarrow> 'vset \<Rightarrow> 'par \<Rightarrow> 'vset \<times> 'vset \<times> 'par"
     and build_graph :: "('a \<times> 'a) list \<Rightarrow> 'a \<Rightarrow> 'vset option"
@@ -193,12 +192,13 @@ locale unweighted_intersection_exchange =
     "\<And> es. Graph.finite_vsets (build_graph es)" 
     "\<And> es. Graph.digraph_abs (build_graph es) = set es"
   assumes bfs: 
-    "\<And> es. \<exists> exp_tree nfc dist_invar parent_invar. 
+    "\<And> es. set es \<subseteq> carrier \<times> carrier \<Longrightarrow>
+       \<exists> exp_tree nfc dist_invar parent_abstract parent_invar par_U par_roots. 
        BFS_distance_parents (\<lambda> x. None) (\<lambda> x G. G(x := None)) insert isin t_set sel 
          (\<lambda> x N G. G(x := Some N)) (\<lambda> G. True) vset_empty 
          vset_delete vset_inv union inter diff (build_graph es) exp_tree nfc vset_inv2 some_dist 
-         dist_lookup dist_invar (\<lambda> G x. G x) set_all_dists_in_set 
-         (next_frontier_current_parents (build_graph es)) parent_lookup parent_invar some_parent"
+         dist_lookup dist_invar (\<lambda> G x. G x) set_all_dists_in_set parent_abstract parent_invar
+         par_U get_path par_roots parent_init (next_frontier_current_parents (build_graph es))"
   assumes vset_of_list:
     "\<And> xs. distinct xs \<Longrightarrow> vset_inv2 (vset_of_list xs)"
     "\<And> xs. distinct xs \<Longrightarrow> t_set (vset_of_list xs) = set xs"
@@ -209,21 +209,21 @@ subsubsection \<open>The BFS on Built Graphs\<close>
 abbreviation "graph_ok G \<equiv> Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets G"
 
 lemma bfs_inst:
-  assumes "G = build_graph es"
-  obtains exp_tree nfc dist_invar parent_invar where 
+  assumes "G = build_graph es" "set es \<subseteq> carrier \<times> carrier"
+  obtains exp_tree nfc dist_invar parent_abstract parent_invar par_U par_roots where 
     "BFS_distance_parents (\<lambda> x. None) (\<lambda> x G. G(x := None)) insert isin t_set sel 
          (\<lambda> x N G. G(x := Some N)) (\<lambda> G. True) vset_empty 
          vset_delete vset_inv union inter diff G exp_tree nfc vset_inv2 some_dist dist_lookup 
-         dist_invar (\<lambda> G x. G x) set_all_dists_in_set (next_frontier_current_parents G) 
-         parent_lookup parent_invar some_parent"
-  using bfs[of es] unfolding assms[symmetric] by (elim exE) (rule that)
+         dist_invar (\<lambda> G x. G x) set_all_dists_in_set parent_abstract parent_invar par_U get_path
+         par_roots parent_init (next_frontier_current_parents G)"
+  using bfs[OF assms(2)] unfolding assms(1)[symmetric] by (elim exE) (rule that)
 
 lemma bfs_of_bfs_dp:
   assumes "BFS_distance_parents (\<lambda> x. None) (\<lambda> x G. G(x := None)) insert isin t_set sel 
          (\<lambda> x N G. G(x := Some N)) (\<lambda> G. True) vset_empty 
          vset_delete vset_inv union inter diff G exp_tree nfc vset_inv2 some_dist dist_lookup 
-         dist_invar (\<lambda> G x. G x) set_all_dists_in_set (next_frontier_current_parents G) 
-         parent_lookup parent_invar some_parent"
+         dist_invar (\<lambda> G x. G x) set_all_dists_in_set parent_abstract parent_invar par_U get_path
+         par_roots parent_init (next_frontier_current_parents G)"
   shows "BFS_3.BFS (\<lambda> x. None) (\<lambda> x G. G(x := None)) insert isin t_set sel 
          (\<lambda> x N G. G(x := Some N)) (\<lambda> G. True) vset_empty vset_delete vset_inv 
          union inter diff (\<lambda> G x. G x) G exp_tree nfc vset_inv2"
@@ -232,13 +232,13 @@ lemma bfs_of_bfs_dp:
 lemma vset_of_list_inv: "distinct xs \<Longrightarrow> vset_inv (vset_of_list xs)"
 proof-
   assume "distinct xs"
-  obtain exp_tree nfc dist_invar parent_invar where B: 
+  obtain exp_tree nfc dist_invar parent_abstract parent_invar par_U par_roots where B: 
     "BFS_distance_parents (\<lambda> x. None) (\<lambda> x G. G(x := None)) insert isin t_set sel 
          (\<lambda> x N G. G(x := Some N)) (\<lambda> G. True) vset_empty 
          vset_delete vset_inv union inter diff (build_graph []) exp_tree nfc vset_inv2 some_dist 
-         dist_lookup dist_invar (\<lambda> G x. G x) set_all_dists_in_set 
-         (next_frontier_current_parents (build_graph [])) parent_lookup parent_invar some_parent"
-    by (rule bfs_inst[OF refl])
+         dist_lookup dist_invar (\<lambda> G x. G x) set_all_dists_in_set parent_abstract parent_invar
+         par_U get_path par_roots parent_init (next_frontier_current_parents (build_graph []))"
+    by (rule bfs_inst[OF refl, where es = "[]"]) simp
   show ?thesis
     using BFS_3.BFS.vset_inv2[OF bfs_of_bfs_dp[OF B] vset_of_list(1)[OF \<open>distinct xs\<close>]] .
 qed
@@ -248,16 +248,17 @@ lemma isin_vset_of_list: "distinct xs \<Longrightarrow> isin (vset_of_list xs) v
 
 lemma bfs_axiomI:
   assumes "G = build_graph es" "distinct ss" "ss \<noteq> []" "set ss \<subseteq> dVs (Graph.digraph_abs G)"
+    "set es \<subseteq> carrier \<times> carrier"
   shows "BFS_3.BFS.BFS_axiom isin t_set (\<lambda> G. True) vset_empty vset_inv (\<lambda> G x. G x)
            (vset_of_list ss) G vset_inv2"
 proof-
-  obtain exp_tree nfc dist_invar parent_invar where B: 
+  obtain exp_tree nfc dist_invar parent_abstract parent_invar par_U par_roots where B: 
     "BFS_distance_parents (\<lambda> x. None) (\<lambda> x G. G(x := None)) insert isin t_set sel 
          (\<lambda> x N G. G(x := Some N)) (\<lambda> G. True) vset_empty 
          vset_delete vset_inv union inter diff G exp_tree nfc vset_inv2 some_dist dist_lookup 
-         dist_invar (\<lambda> G x. G x) set_all_dists_in_set (next_frontier_current_parents G) 
-         parent_lookup parent_invar some_parent"
-    by (rule bfs_inst[OF assms(1)])
+         dist_invar (\<lambda> G x. G x) set_all_dists_in_set parent_abstract parent_invar par_U get_path
+         par_roots parent_init (next_frontier_current_parents G)"
+    by (rule bfs_inst[OF assms(1,5)])
   have "graph_ok G"
     using build_graph assms(1) by simp
   then show ?thesis
@@ -267,6 +268,7 @@ qed
 
 lemma target_path:
   assumes "G = build_graph es" "distinct ss" "ss \<noteq> []" "set ss \<subseteq> dVs (Graph.digraph_abs G)"
+    "set es \<subseteq> carrier \<times> carrier"
   shows "target_path G ss ts = None \<Longrightarrow>
            \<nexists> u p v. u \<in> set ss \<and> v \<in> set ts \<and> vwalk_bet (Graph.digraph_abs G) u p v"
     and "target_path G ss ts = Some p \<Longrightarrow>
@@ -274,19 +276,19 @@ lemma target_path:
              (\<forall> u' p'. u' \<in> set ss \<and> vwalk_bet (Graph.digraph_abs G) u' p' v 
                         \<longrightarrow> length p \<le> length p')"
 proof-
-  obtain exp_tree nfc dist_invar parent_invar where B:
+  obtain exp_tree nfc dist_invar parent_abstract parent_invar par_U par_roots where B:
     "BFS_distance_parents (\<lambda> x. None) (\<lambda> x G. G(x := None)) insert isin t_set sel 
          (\<lambda> x N G. G(x := Some N)) (\<lambda> G. True) vset_empty 
          vset_delete vset_inv union inter diff G exp_tree nfc vset_inv2 some_dist dist_lookup 
-         dist_invar (\<lambda> G x. G x) set_all_dists_in_set (next_frontier_current_parents G) 
-         parent_lookup parent_invar some_parent"
-    by (rule bfs_inst[OF assms(1)])
+         dist_invar (\<lambda> G x. G x) set_all_dists_in_set parent_abstract parent_invar par_U get_path
+         par_roots parent_init (next_frontier_current_parents G)"
+    by (rule bfs_inst[OF assms(1,5)])
   note ax = bfs_axiomI[OF assms]
   define fin where "fin = bfs_final G ss"
   have fin_is: "fin = BFS_distance_parents.BFS_par_impl vset_empty set_all_dists_in_set 
      (next_frontier_current_parents G)
      (BFS_distance_parents.initial_par_state (vset_of_list ss) some_dist set_all_dists_in_set 
-         some_parent)"
+         parent_init)"
     by (simp add: fin_def bfs_final_def)
   have srcs: "t_set (vset_of_list ss) = set ss"
     using vset_of_list(2)[OF assms(2)] .
@@ -315,16 +317,19 @@ proof-
   proof(goal_cases)
     case 1
     then obtain t where t: "find (isin (BFS_dist_state.visited fin)) ts = Some t"
-       "p = BFS_distance_parents.parent_path dist_lookup parent_lookup (dists fin) (parent fin) t []"
+       "p = rev (get_path (parent fin) t)"
       by (auto simp add: target_path_def fin_def[symmetric] split: option.splits)
     hence t_props: "t \<in> set ts" "t \<in> t_set (BFS_dist_state.visited fin)"
       using isin_vis by (auto simp add: find_Some_iff)
     obtain u where u: "u \<in> set ss" "vwalk_bet (Graph.digraph_abs G) u p t"
       "\<And> u' p'. \<lbrakk>u' \<in> set ss; vwalk_bet (Graph.digraph_abs G) u' p' t\<rbrakk> \<Longrightarrow> length p \<le> length p'"
-    proof(rule BFS_distance_parents.parent_path_shortest[OF B ax fin_is t_props(2)], goal_cases)
+    proof(rule BFS_distance_parents.get_path_shortest[OF B ax fin_is t_props(2)], goal_cases)
       case (1 u)
-      note u = 1(2-4)[unfolded t(2)[symmetric] srcs]
-      show ?case by (rule 1(1)[OF u(1,2) u(3)])
+      have len: "length p \<le> length p'"
+        if "u' \<in> set ss" "vwalk_bet (Graph.digraph_abs G) u' p' t" for u' p'
+        using 1(4)[of u' p'] that srcs t(2) by simp
+      show ?case
+        by (rule 1(1)[OF _ _ len]) (use 1(2,3) srcs t(2) in simp_all)
     qed
     show ?case 
       using u(1,2) t_props(1) u(3)
@@ -422,6 +427,10 @@ lemma exch_edge:
                      else u \<notin> T (to_set X) \<and> v \<in> set (out2 (exch_ctx X) u))"
   using X(2) by (auto simp add: exch_edges_set)
 
+lemma exch_edges_carrier: "set (exch_edges (exch_ctx X)) \<subseteq> carrier \<times> carrier"
+  by (rule subrelI) 
+     (use X(2) in \<open>auto simp add: exch_edge out1_def out2_def notX(1) inX(1) split: if_splits\<close>)
+
 lemma exchange_edges: 
   "set (exch_edges (exch_ctx X)) = A1 (to_set X) \<union> A2 (to_set X)"
 proof(rule set_eqI, goal_cases)
@@ -444,7 +453,7 @@ proof(rule set_eqI, goal_cases)
       by (auto simp add: S_def)
     moreover have "\<lbrakk>v \<in> carrier - to_set X; \<not> indep1 (Set.insert v (to_set X))\<rbrakk> \<Longrightarrow>
        exch_orcl1 (orcl_prep1 X) u v \<longleftrightarrow> indep1 (Set.insert v (to_set X - {u}))"
-      using matroid1.exch_orcl[OF X(1,2,3) _ True] by blast
+      by (rule matroid1.exch_orcl[OF X(1,2,3) _ True])
     ultimately show ?thesis
       using e exch_edge out1 True \<open>u \<in> carrier\<close> A1_exchange[OF X(3), where x = u and y = v] 
       by auto
@@ -518,7 +527,7 @@ proof(cases "find (in_T (exch_ctx X)) (srcs (exch_ctx X))")
     "\<forall> u' p'. u' \<in> set ss' \<and> 
                vwalk_bet (Graph.digraph_abs (build_graph (exch_edges (exch_ctx X)))) u' p' v 
                \<longrightarrow> length p \<le> length p'"
-    using target_path(2)[OF refl ss'(1) ne ss'_dVs tp] by blast
+    using target_path(2)[OF refl ss'(1) ne ss'_dVs exch_edges_carrier tp] by blast
   have u: "u \<in> S (to_set X)" 
     using uv(1) ss'(2) by auto
   have "u \<notin> T (to_set X)"
@@ -596,7 +605,7 @@ proof(rule, goal_cases none no_path)
     have "target_path (build_graph (exch_edges (exch_ctx X))) ss' (tgts (exch_ctx X)) = None"
       using none find_None ne by (simp add: augmenting_path_def Let_def ss'_def)
     then show ?case 
-      using target_path(1)[where ts = "tgts (exch_ctx X)", OF refl ss' ne ss'_dVs, 
+      using target_path(1)[where ts = "tgts (exch_ctx X)", OF refl ss' ne ss'_dVs exch_edges_carrier, 
                            unfolded exchange_graph tgts]
             \<open>u \<in> set ss'\<close> puv(3) walk 
       by blast

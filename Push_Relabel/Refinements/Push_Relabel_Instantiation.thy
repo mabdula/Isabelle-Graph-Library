@@ -173,7 +173,7 @@ global_interpretation pr_hl_loop: push_relabel_imp_code src_imp tgt_imp s t nv
 declare pr_fifo_loop.push_relabel_loop_imp.simps[code] pr_rtf_loop.push_relabel_loop_imp.simps[code]
   pr_hl_loop.push_relabel_loop_imp.simps[code] pr_rtf.rtf_scan_imp.simps[code]
   pr_hl.hl_find_imp.simps[code] pr_hl.hl_lift_imp.simps[code]
-  iter_fold.simps[code] bool_array_set_scan.simps[code] foldl_range_imp.simps[code] csr_copy_imp.simps[code]
+  iter_fold.simps[code] bool_array_set_scan.simps[code] foldl_range_imp.simps[code]
 
 subsection \<open>Allocation and Initialisation\<close>
 

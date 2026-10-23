@@ -4,6 +4,5 @@ session "Menger_Flows" = "HOL-Library" +
     Flow_Theory
 
   theories
-    Menger
     Menger_Edge
     Menger_Vertex

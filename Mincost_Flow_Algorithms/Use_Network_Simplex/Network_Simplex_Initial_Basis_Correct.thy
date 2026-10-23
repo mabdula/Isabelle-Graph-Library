@@ -424,7 +424,7 @@ lemma passA_fold_fi:
 lemma ranges_fold:
   fixes B :: "nat list" and ks :: "nat list" and P :: "nat \<Rightarrow> bool"
   assumes R0: "csr_ranges vcount {..<vcount} B ((!) Hl0) E0" and len0: "length Hl0 = vcount"
-    and ab0: "\<And>v c. v < vcount \<Longrightarrow> csr_ranges.csr_abstract B ((!) Hl0) E0 c v = {}"
+    and ab0: "\<And>v c. v < vcount \<Longrightarrow> csr_blocks.csr_abstract B ((!) Hl0) E0 c v = {}"
     and blk: "\<And>v. v < vcount \<Longrightarrow> card {e. e < m \<and> ks ! e = v} = B ! Suc v - B ! v"
     and ks: "\<And>e. e < m \<Longrightarrow> ks ! e < vcount"
     and k: "k \<le> m"
@@ -432,7 +432,7 @@ lemma ranges_fold:
            (snd (fold (\<lambda>e p. if P e then csr_append (ks ! e) e p else p) [0..<k] (Hl0, E0))) \<and>
          length (fst (fold (\<lambda>e p. if P e then csr_append (ks ! e) e p else p) [0..<k] (Hl0, E0))) = vcount \<and>
          (\<forall>v c. v < vcount \<longrightarrow>
-            csr_ranges.csr_abstract B ((!) (fst (fold (\<lambda>e p. if P e then csr_append (ks ! e) e p else p) [0..<k] (Hl0, E0))))
+            csr_blocks.csr_abstract B ((!) (fst (fold (\<lambda>e p. if P e then csr_append (ks ! e) e p else p) [0..<k] (Hl0, E0))))
               (snd (fold (\<lambda>e p. if P e then csr_append (ks ! e) e p else p) [0..<k] (Hl0, E0))) c v =
             {e. e < k \<and> ks ! e = v \<and> P e})"
   using k
@@ -443,10 +443,10 @@ next
   define F where "F = fold (\<lambda>e p. if P e then csr_append (ks ! e) e p else p) [0..<k] (Hl0, E0)"
   obtain Hl E where FHE: "F = (Hl, E)" by (cases F)
   have IH: "csr_ranges vcount {..<vcount} B ((!) Hl) E \<and> length Hl = vcount \<and>
-            (\<forall>v c. v < vcount \<longrightarrow> csr_ranges.csr_abstract B ((!) Hl) E c v = {e. e < k \<and> ks ! e = v \<and> P e})"
+            (\<forall>v c. v < vcount \<longrightarrow> csr_blocks.csr_abstract B ((!) Hl) E c v = {e. e < k \<and> ks ! e = v \<and> P e})"
     using Suc by (simp add: F_def[symmetric] FHE)
   have R: "csr_ranges vcount {..<vcount} B ((!) Hl) E" and len: "length Hl = vcount"
-    and ab: "\<And>v c. v < vcount \<Longrightarrow> csr_ranges.csr_abstract B ((!) Hl) E c v = {e. e < k \<and> ks ! e = v \<and> P e}"
+    and ab: "\<And>v c. v < vcount \<Longrightarrow> csr_blocks.csr_abstract B ((!) Hl) E c v = {e. e < k \<and> ks ! e = v \<and> P e}"
     using IH by auto
   have unf: "fold (\<lambda>e p. if P e then csr_append (ks ! e) e p else p) [0..<Suc k] (Hl0, E0) =
                (if P k then csr_append (ks ! k) k (Hl, E) else (Hl, E))"
@@ -481,7 +481,7 @@ next
       by (rule csr_ranges_append(1)[OF R kx kl hlt notin app])
     have len': "length Hl' = vcount"
       using len length_csr_append(1)[of "ks ! k" k "(Hl, E)"] by (simp add: app)
-    have ab': "csr_ranges.csr_abstract B ((!) Hl') E' c v = {e. e < Suc k \<and> ks ! e = v \<and> P e}"
+    have ab': "csr_blocks.csr_abstract B ((!) Hl') E' c v = {e. e < Suc k \<and> ks ! e = v \<and> P e}"
       if "v < vcount" for v c
       using csr_ranges_append(2)[OF R kx kl hlt notin app that] ab[OF that] True
       by (auto simp: less_Suc_eq ab[OF kx])
@@ -533,7 +533,7 @@ lemma out_ranges_fold:
            (snd (fold (\<lambda>e p. if classify fl e = InTree then csr_append (fst_list ! e) e p else p) [0..<k] (out_lo, out.inp.E_spec))) \<and>
          length (fst (fold (\<lambda>e p. if classify fl e = InTree then csr_append (fst_list ! e) e p else p) [0..<k] (out_lo, out.inp.E_spec))) = vcount \<and>
          (\<forall>v c. v < vcount \<longrightarrow>
-            csr_ranges.csr_abstract out.inp.B_spec
+            csr_blocks.csr_abstract out.inp.B_spec
               ((!) (fst (fold (\<lambda>e p. if classify fl e = InTree then csr_append (fst_list ! e) e p else p) [0..<k] (out_lo, out.inp.E_spec))))
               (snd (fold (\<lambda>e p. if classify fl e = InTree then csr_append (fst_list ! e) e p else p) [0..<k] (out_lo, out.inp.E_spec))) c v =
             {e. e < k \<and> fst_list ! e = v \<and> classify fl e = InTree})"
@@ -558,7 +558,7 @@ lemma in_ranges_fold:
            (snd (fold (\<lambda>e p. if classify fl e = InTree then csr_append (snd_list ! e) e p else p) [0..<k] (in_lo, inc.inp.E_spec))) \<and>
          length (fst (fold (\<lambda>e p. if classify fl e = InTree then csr_append (snd_list ! e) e p else p) [0..<k] (in_lo, inc.inp.E_spec))) = vcount \<and>
          (\<forall>v c. v < vcount \<longrightarrow>
-            csr_ranges.csr_abstract inc.inp.B_spec
+            csr_blocks.csr_abstract inc.inp.B_spec
               ((!) (fst (fold (\<lambda>e p. if classify fl e = InTree then csr_append (snd_list ! e) e p else p) [0..<k] (in_lo, inc.inp.E_spec))))
               (snd (fold (\<lambda>e p. if classify fl e = InTree then csr_append (snd_list ! e) e p else p) [0..<k] (in_lo, inc.inp.E_spec))) c v =
             {e. e < k \<and> snd_list ! e = v \<and> classify fl e = InTree})"
@@ -578,13 +578,13 @@ qed
 
 lemma free_out:
   "csr_ranges vcount {..<vcount} out.inp.B_spec ((!) (fst (free_out fl))) (snd (free_out fl))"
-  "v < vcount \<Longrightarrow> csr_ranges.csr_abstract out.inp.B_spec ((!) (fst (free_out fl))) (snd (free_out fl)) c v =
+  "v < vcount \<Longrightarrow> csr_blocks.csr_abstract out.inp.B_spec ((!) (fst (free_out fl))) (snd (free_out fl)) c v =
                     {e. e < m \<and> fst_list ! e = v \<and> is_free fl e}"
   using out_ranges_fold[OF order.refl, of fl, folded free_out_eq] by (auto simp: is_free_classify)
 
 lemma free_in:
   "csr_ranges vcount {..<vcount} inc.inp.B_spec ((!) (fst (free_in fl))) (snd (free_in fl))"
-  "v < vcount \<Longrightarrow> csr_ranges.csr_abstract inc.inp.B_spec ((!) (fst (free_in fl))) (snd (free_in fl)) c v =
+  "v < vcount \<Longrightarrow> csr_blocks.csr_abstract inc.inp.B_spec ((!) (fst (free_in fl))) (snd (free_in fl)) c v =
                     {e. e < m \<and> snd_list ! e = v \<and> is_free fl e}"
   using in_ranges_fold[OF order.refl, of fl, folded free_in_eq] by (auto simp: is_free_classify)
 
@@ -599,21 +599,21 @@ text \<open>We equip the recursive @{const build_dfs} with the standard call-abs
 subsection \<open>Call-abstraction scaffold\<close>
 
 definition "bd_call1_conds fl s \<longleftrightarrow> (case ds_stk s of [] \<Rightarrow> False | v # rest \<Rightarrow>
-     csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v)"
+     csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v)"
 definition "bd_upd1 fl s = (case ds_stk s of v # rest \<Rightarrow>
-     (let e = csr_ranges.csr_current (snd (free_out fl)) (ds_oc s) v; w = snd_list ! e;
-          s1 = s\<lparr>ds_oc := csr_ranges.csr_move ((!) (fst (free_out fl))) (ds_oc s) v\<rparr>
+     (let e = csr_blocks.csr_current (snd (free_out fl)) (ds_oc s) v; w = snd_list ! e;
+          s1 = s\<lparr>ds_oc := csr_blocks.csr_move ((!) (fst (free_out fl))) (ds_oc s) v\<rparr>
       in if ds_seen s ! w then s1 else dfs_discover s1 v w e))"
 definition "bd_call2_conds fl s \<longleftrightarrow> (case ds_stk s of [] \<Rightarrow> False | v # rest \<Rightarrow>
-     \<not> csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v \<and>
-     csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v)"
+     \<not> csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v \<and>
+     csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v)"
 definition "bd_upd2 fl s = (case ds_stk s of v # rest \<Rightarrow>
-     (let e = csr_ranges.csr_current (snd (free_in fl)) (ds_ic s) v; w = fst_list ! e;
-          s1 = s\<lparr>ds_ic := csr_ranges.csr_move ((!) (fst (free_in fl))) (ds_ic s) v\<rparr>
+     (let e = csr_blocks.csr_current (snd (free_in fl)) (ds_ic s) v; w = fst_list ! e;
+          s1 = s\<lparr>ds_ic := csr_blocks.csr_move ((!) (fst (free_in fl))) (ds_ic s) v\<rparr>
       in if ds_seen s ! w then s1 else dfs_discover s1 v w e))"
 definition "bd_call3_conds fl s \<longleftrightarrow> (case ds_stk s of [] \<Rightarrow> False | v # rest \<Rightarrow>
-     \<not> csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v \<and>
-     \<not> csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v)"
+     \<not> csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v \<and>
+     \<not> csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v)"
 definition "bd_upd3 s = (case ds_stk s of v # rest \<Rightarrow> dfs_finish s v rest)"
 definition "bd_ret_conds s \<longleftrightarrow> ds_stk s = []"
 
@@ -626,8 +626,8 @@ proof (cases "ds_stk s")
 next
   case (Cons v rest)
   thus ?thesis using assms
-    by (cases "csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v";
-        cases "csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v")
+    by (cases "csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v";
+        cases "csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v")
        (auto simp: bd_call1_conds_def bd_call2_conds_def bd_call3_conds_def)
 qed
 
@@ -666,23 +666,23 @@ proof -
       next
         assume c: "bd_call1_conds fl t"
         then obtain v rest where stk: "ds_stk t = v # rest"
-          and h: "csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc t) v"
+          and h: "csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc t) v"
           by (auto simp: bd_call1_conds_def split: list.splits)
         show "P fl (bd_upd1 fl t)"
           using IH1[OF stk h refl refl refl] stk by (simp add: bd_upd1_def Let_def)
       next
         assume c: "bd_call2_conds fl t"
         then obtain v rest where stk: "ds_stk t = v # rest"
-          and ho: "\<not> csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc t) v"
-          and hi: "csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic t) v"
+          and ho: "\<not> csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc t) v"
+          and hi: "csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic t) v"
           by (auto simp: bd_call2_conds_def split: list.splits)
         show "P fl (bd_upd2 fl t)"
           using IH2[OF stk ho hi refl refl refl] stk by (simp add: bd_upd2_def Let_def)
       next
         assume c: "bd_call3_conds fl t"
         then obtain v rest where stk: "ds_stk t = v # rest"
-          and ho: "\<not> csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc t) v"
-          and hi: "\<not> csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic t) v"
+          and ho: "\<not> csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc t) v"
+          and hi: "\<not> csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic t) v"
           by (auto simp: bd_call3_conds_def split: list.splits)
         show "P fl (bd_upd3 t)"
           using IH3[OF stk ho hi] stk by (simp add: bd_upd3_def)
@@ -721,7 +721,7 @@ lemma bd_upd3_sized: "dfs_sized s \<Longrightarrow> bd_call3_conds fl s \<Longri
 subsection \<open>The iterators of the seen vertices\<close>
 
 text \<open>The cursors of a vertex are reset when it is pushed, i.e.\ when it is seen. So the iterators of
-      the seen vertices are well-formed (@{const csr_ranges.csr_invar} over the seen vertices), and the
+      the seen vertices are well-formed (@{const csr_blocks.csr_invar} over the seen vertices), and the
       stack holds seen vertices only. The other cursors are arbitrary.\<close>
 
 definition dfs_seenK :: "'n dfs_state \<Rightarrow> nat set" where
@@ -729,8 +729,8 @@ definition dfs_seenK :: "'n dfs_state \<Rightarrow> nat set" where
 
 definition dfs_wf :: "'n list \<Rightarrow> 'n dfs_state \<Rightarrow> bool" where
   "dfs_wf fl s \<longleftrightarrow> length (ds_seen s) = Suc vcount \<and> set (ds_stk s) \<subseteq> dfs_seenK s \<and>
-     csr_ranges.csr_invar (dfs_seenK s) out.inp.B_spec ((!) (fst (free_out fl))) (ds_oc s) \<and>
-     csr_ranges.csr_invar (dfs_seenK s) inc.inp.B_spec ((!) (fst (free_in fl))) (ds_ic s)"
+     csr_blocks.csr_invar (dfs_seenK s) out.inp.B_spec ((!) (fst (free_out fl))) (ds_oc s) \<and>
+     csr_blocks.csr_invar (dfs_seenK s) inc.inp.B_spec ((!) (fst (free_in fl))) (ds_ic s)"
 
 lemma dfs_seenK_sub: "dfs_seenK s \<subseteq> {..<vcount}"
   by (auto simp: dfs_seenK_def)
@@ -747,7 +747,7 @@ lemma dfs_init_wf: "dfs_wf fl dfs_init"
 proof -
   have "dfs_seenK dfs_init = {}" by (simp add: dfs_seenK_def dfs_init_def nth_append del: replicate_Suc)
   then show ?thesis
-    using csr_invar_empty[OF free_out(1)] csr_invar_empty[OF free_in(1)]
+    using csr_invar_empty[OF csr_ranges.axioms(1)[OF free_out(1)]] csr_invar_empty[OF csr_ranges.axioms(1)[OF free_in(1)]]
     by (simp add: dfs_wf_def dfs_init_def del: replicate_Suc)
 qed
 
@@ -756,16 +756,16 @@ text \<open>Pushing a vertex that has just been marked seen.\<close>
 lemma dfs_push_wf:
   assumes len: "length (ds_seen s) = Suc vcount" and K: "dfs_seenK s = insert w K" and w: "w < vcount"
     and stk: "set (ds_stk s) \<subseteq> dfs_seenK s"
-    and io: "csr_ranges.csr_invar K out.inp.B_spec ((!) (fst (free_out fl))) (ds_oc s)"
-    and ii: "csr_ranges.csr_invar K inc.inp.B_spec ((!) (fst (free_in fl))) (ds_ic s)"
+    and io: "csr_blocks.csr_invar K out.inp.B_spec ((!) (fst (free_out fl))) (ds_oc s)"
+    and ii: "csr_blocks.csr_invar K inc.inp.B_spec ((!) (fst (free_in fl))) (ds_ic s)"
   shows "dfs_wf fl (dfs_push s w)"
 proof -
   have Ksub: "K \<subseteq> {..<vcount}" using K dfs_seenK_sub by blast
   have sk: "dfs_seenK (dfs_push s w) = dfs_seenK s" by (simp add: dfs_seenK_def dfs_push_def)
   show ?thesis
     unfolding dfs_wf_def sk
-    using len stk K w csr_invar_reset_insert[OF free_out_K[OF Ksub] io w]
-          csr_invar_reset_insert[OF free_in_K[OF Ksub] ii w]
+    using len stk K w csr_invar_reset_insert[OF csr_ranges.axioms(1)[OF free_out_K[OF Ksub]] io w]
+          csr_invar_reset_insert[OF csr_ranges.axioms(1)[OF free_in_K[OF Ksub]] ii w]
     by (simp add: dfs_push_def)
 qed
 
@@ -781,17 +781,17 @@ text \<open>One step of the iterator of the top vertex: the current edge is a fr
 
 lemma bd_out_step:
   assumes wf: "dfs_wf fl s" and stk: "ds_stk s = v # rest"
-    and has: "csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
-  defines "e \<equiv> csr_ranges.csr_current (snd (free_out fl)) (ds_oc s) v"
-    and "c' \<equiv> csr_ranges.csr_move ((!) (fst (free_out fl))) (ds_oc s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
+  defines "e \<equiv> csr_blocks.csr_current (snd (free_out fl)) (ds_oc s) v"
+    and "c' \<equiv> csr_blocks.csr_move ((!) (fst (free_out fl))) (ds_oc s) v"
   shows "e < m" "fst_list ! e = v" "is_free fl e" "snd_list ! e < vcount"
-    "csr_ranges.csr_invar (dfs_seenK s) out.inp.B_spec ((!) (fst (free_out fl))) c'"
-    "e \<in> csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v"
-    "csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) c' v =
-       csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v - {e}"
-    "\<And>j. j \<noteq> v \<Longrightarrow> csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) c' j =
-       csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) j"
-    "finite (csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v)"
+    "csr_blocks.csr_invar (dfs_seenK s) out.inp.B_spec ((!) (fst (free_out fl))) c'"
+    "e \<in> csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v"
+    "csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) c' v =
+       csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v - {e}"
+    "\<And>j. j \<noteq> v \<Longrightarrow> csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) c' j =
+       csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) j"
+    "finite (csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v)"
 proof -
   interpret F: csr_ranges vcount "dfs_seenK s" out.inp.B_spec "(!) (fst (free_out fl))" "snd (free_out fl)"
     by (rule free_out_K[OF dfs_seenK_sub])
@@ -813,17 +813,17 @@ qed
 
 lemma bd_in_step:
   assumes wf: "dfs_wf fl s" and stk: "ds_stk s = v # rest"
-    and has: "csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
-  defines "e \<equiv> csr_ranges.csr_current (snd (free_in fl)) (ds_ic s) v"
-    and "c' \<equiv> csr_ranges.csr_move ((!) (fst (free_in fl))) (ds_ic s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
+  defines "e \<equiv> csr_blocks.csr_current (snd (free_in fl)) (ds_ic s) v"
+    and "c' \<equiv> csr_blocks.csr_move ((!) (fst (free_in fl))) (ds_ic s) v"
   shows "e < m" "snd_list ! e = v" "is_free fl e" "fst_list ! e < vcount"
-    "csr_ranges.csr_invar (dfs_seenK s) inc.inp.B_spec ((!) (fst (free_in fl))) c'"
-    "e \<in> csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v"
-    "csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) c' v =
-       csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v - {e}"
-    "\<And>j. j \<noteq> v \<Longrightarrow> csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) c' j =
-       csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) j"
-    "finite (csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v)"
+    "csr_blocks.csr_invar (dfs_seenK s) inc.inp.B_spec ((!) (fst (free_in fl))) c'"
+    "e \<in> csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v"
+    "csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) c' v =
+       csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v - {e}"
+    "\<And>j. j \<noteq> v \<Longrightarrow> csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) c' j =
+       csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) j"
+    "finite (csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v)"
 proof -
   interpret F: csr_ranges vcount "dfs_seenK s" inc.inp.B_spec "(!) (fst (free_in fl))" "snd (free_in fl)"
     by (rule free_in_K[OF dfs_seenK_sub])
@@ -847,10 +847,10 @@ text \<open>An exhausted vertex has nothing left to iterate.\<close>
 
 lemma bd_finish_empty:
   assumes wf: "dfs_wf fl s" and stk: "ds_stk s = v # rest"
-    and o: "\<not> csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
-    and i: "\<not> csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
-  shows "csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v = {}"
-    "csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v = {}"
+    and o: "\<not> csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
+    and i: "\<not> csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
+  shows "csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v = {}"
+    "csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v = {}"
 proof -
   interpret F: csr_ranges vcount "dfs_seenK s" out.inp.B_spec "(!) (fst (free_out fl))" "snd (free_out fl)"
     by (rule free_out_K[OF dfs_seenK_sub])
@@ -870,10 +870,10 @@ lemma bd_upd1_wf:
   shows "dfs_wf fl (bd_upd1 fl s)"
 proof -
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and has: "csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
     by (auto simp: bd_call1_conds_def split: list.splits)
   note S = bd_out_step[OF wf stk has]
-  let ?s1 = "s\<lparr>ds_oc := csr_ranges.csr_move ((!) (fst (free_out fl))) (ds_oc s) v\<rparr>"
+  let ?s1 = "s\<lparr>ds_oc := csr_blocks.csr_move ((!) (fst (free_out fl))) (ds_oc s) v\<rparr>"
   have wf1: "dfs_wf fl ?s1" using wf S(5) by (simp add: dfs_wf_def dfs_seenK_def)
   show ?thesis
     using stk wf1 dfs_discover_wf[OF wf1 S(4)] by (simp add: bd_upd1_def Let_def)
@@ -884,10 +884,10 @@ lemma bd_upd2_wf:
   shows "dfs_wf fl (bd_upd2 fl s)"
 proof -
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and has: "csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
     by (auto simp: bd_call2_conds_def split: list.splits)
   note S = bd_in_step[OF wf stk has]
-  let ?s1 = "s\<lparr>ds_ic := csr_ranges.csr_move ((!) (fst (free_in fl))) (ds_ic s) v\<rparr>"
+  let ?s1 = "s\<lparr>ds_ic := csr_blocks.csr_move ((!) (fst (free_in fl))) (ds_ic s) v\<rparr>"
   have wf1: "dfs_wf fl ?s1" using wf S(5) by (simp add: dfs_wf_def dfs_seenK_def)
   show ?thesis
     using stk wf1 dfs_discover_wf[OF wf1 S(4)] by (simp add: bd_upd2_def Let_def)
@@ -911,8 +911,8 @@ definition dfs_unseen :: "'n dfs_state \<Rightarrow> nat" where
 
 definition dfs_budget :: "'n list \<Rightarrow> 'n dfs_state \<Rightarrow> nat" where
   "dfs_budget fl s = (\<Sum>v\<leftarrow>ds_stk s.
-     card (csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v) +
-     card (csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v))"
+     card (csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s) v) +
+     card (csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s) v))"
 
 definition dfs_stklen :: "'n dfs_state \<Rightarrow> nat" where
   "dfs_stklen s = length (ds_stk s)"
@@ -943,12 +943,12 @@ lemma bd_meas1:
   shows "(bd_upd1 fl s, s) \<in> dfs_meas fl"
 proof -
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and has: "csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
     by (auto simp: bd_call1_conds_def split: list.splits)
   note S = bd_out_step[OF wf stk has]
-  let ?e = "csr_ranges.csr_current (snd (free_out fl)) (ds_oc s) v"
-  let ?c' = "csr_ranges.csr_move ((!) (fst (free_out fl))) (ds_oc s) v"
-  let ?R = "csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl))"
+  let ?e = "csr_blocks.csr_current (snd (free_out fl)) (ds_oc s) v"
+  let ?c' = "csr_blocks.csr_move ((!) (fst (free_out fl))) (ds_oc s) v"
+  let ?R = "csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl))"
   let ?s1 = "s\<lparr>ds_oc := ?c'\<rparr>"
   have len: "length (ds_seen s) = Suc vcount" using wf by (simp add: dfs_wf_def)
   show ?thesis
@@ -959,7 +959,7 @@ proof -
       unfolding S(7) by (rule card_Diff1_less[OF S(9) S(6)])
     have le: "card (?R ?c' y) \<le> card (?R (ds_oc s) y)" for y
       using lt S(8)[of y] by (cases "y = v") simp_all
-    let ?I = "csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s)"
+    let ?I = "csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl)) (ds_ic s)"
     have sm: "(\<Sum>y\<leftarrow>rest. card (?R ?c' y) + card (?I y)) \<le> (\<Sum>y\<leftarrow>rest. card (?R (ds_oc s) y) + card (?I y))"
       by (rule sum_list_mono) (simp add: le)
     have "dfs_budget fl ?s1 < dfs_budget fl s"
@@ -981,13 +981,13 @@ lemma bd_meas2:
   shows "(bd_upd2 fl s, s) \<in> dfs_meas fl"
 proof -
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and has: "csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
-    and no: "\<not> csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
+    and no: "\<not> csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
     by (auto simp: bd_call2_conds_def split: list.splits)
   note S = bd_in_step[OF wf stk has]
-  let ?e = "csr_ranges.csr_current (snd (free_in fl)) (ds_ic s) v"
-  let ?c' = "csr_ranges.csr_move ((!) (fst (free_in fl))) (ds_ic s) v"
-  let ?R = "csr_ranges.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl))"
+  let ?e = "csr_blocks.csr_current (snd (free_in fl)) (ds_ic s) v"
+  let ?c' = "csr_blocks.csr_move ((!) (fst (free_in fl))) (ds_ic s) v"
+  let ?R = "csr_blocks.csr_remaining ((!) (fst (free_in fl))) (snd (free_in fl))"
   let ?s1 = "s\<lparr>ds_ic := ?c'\<rparr>"
   have len: "length (ds_seen s) = Suc vcount" using wf by (simp add: dfs_wf_def)
   show ?thesis
@@ -998,7 +998,7 @@ proof -
       unfolding S(7) by (rule card_Diff1_less[OF S(9) S(6)])
     have le: "card (?R ?c' y) \<le> card (?R (ds_ic s) y)" for y
       using lt S(8)[of y] by (cases "y = v") simp_all
-    let ?O = "csr_ranges.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s)"
+    let ?O = "csr_blocks.csr_remaining ((!) (fst (free_out fl))) (snd (free_out fl)) (ds_oc s)"
     have sm: "(\<Sum>y\<leftarrow>rest. card (?O y) + card (?R ?c' y)) \<le> (\<Sum>y\<leftarrow>rest. card (?O y) + card (?R (ds_ic s) y))"
       by (rule sum_list_mono) (simp add: le)
     have "dfs_budget fl ?s1 < dfs_budget fl s"
@@ -1020,8 +1020,8 @@ lemma bd_meas3:
   shows "(bd_upd3 s, s) \<in> dfs_meas fl"
 proof -
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and o: "\<not> csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
-    and i: "\<not> csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
+    and o: "\<not> csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
+    and i: "\<not> csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
     by (auto simp: bd_call3_conds_def split: list.splits)
   note E = bd_finish_empty[OF wf stk o i]
   have up: "bd_upd3 s = dfs_finish s v rest" using stk by (simp add: bd_upd3_def)
@@ -1082,10 +1082,10 @@ lemma bd_upd1_eq:
     "bd_upd1 fl s = (if ds_seen s ! w then s\<lparr>ds_oc := c'\<rparr> else dfs_discover (s\<lparr>ds_oc := c'\<rparr>) v w e)"
 proof -
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and has: "csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
     by (auto simp: bd_call1_conds_def split: list.splits)
   note S = bd_out_step[OF wf stk has]
-  have wf1: "dfs_wf fl (s\<lparr>ds_oc := csr_ranges.csr_move ((!) (fst (free_out fl))) (ds_oc s) v\<rparr>)"
+  have wf1: "dfs_wf fl (s\<lparr>ds_oc := csr_blocks.csr_move ((!) (fst (free_out fl))) (ds_oc s) v\<rparr>)"
     using wf S(5) by (simp add: dfs_wf_def dfs_seenK_def)
   show ?thesis
     by (rule that[OF stk S(1,2) refl S(3,4) wf1]) (simp add: bd_upd1_def stk Let_def)
@@ -1099,11 +1099,11 @@ lemma bd_upd2_eq:
     "bd_upd2 fl s = (if ds_seen s ! w then s\<lparr>ds_ic := c'\<rparr> else dfs_discover (s\<lparr>ds_ic := c'\<rparr>) v w e)"
 proof -
   from c obtain v rest where stk: "ds_stk s = v # rest"
-    and has: "csr_ranges.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
-    and no: "\<not> csr_ranges.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
+    and has: "csr_blocks.csr_has ((!) (fst (free_in fl))) (ds_ic s) v"
+    and no: "\<not> csr_blocks.csr_has ((!) (fst (free_out fl))) (ds_oc s) v"
     by (auto simp: bd_call2_conds_def split: list.splits)
   note S = bd_in_step[OF wf stk has]
-  have wf1: "dfs_wf fl (s\<lparr>ds_ic := csr_ranges.csr_move ((!) (fst (free_in fl))) (ds_ic s) v\<rparr>)"
+  have wf1: "dfs_wf fl (s\<lparr>ds_ic := csr_blocks.csr_move ((!) (fst (free_in fl))) (ds_ic s) v\<rparr>)"
     using wf S(5) by (simp add: dfs_wf_def dfs_seenK_def)
   show ?thesis
     by (rule that[OF stk S(1,2) refl S(3,4) wf1]) (simp add: bd_upd2_def stk no Let_def)

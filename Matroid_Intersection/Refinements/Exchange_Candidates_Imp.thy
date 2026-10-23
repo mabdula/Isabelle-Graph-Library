@@ -1,5 +1,5 @@
 theory Exchange_Candidates_Imp
-  imports Exchange_Oracles_Imp "Graph_Algorithms_Dev.BFS_Instantiation"
+  imports Exchange_Oracles_Imp Directed_Set_Graphs.CSR_Neighbour_Lists
 begin
 
 section \<open>The Candidate Graph from Exchange Partners\<close>
@@ -7,7 +7,7 @@ section \<open>The Candidate Graph from Exchange Partners\<close>
 text \<open>The constant candidate graph of the exchange graph search, built once from the partner
   lists of the two oracles: the neighbours of an element are the union of its partners in both
   matroids, in ascending order. It contains every exchange edge of every solution. It is a CSR
-  as used by the BFS (@{const bcsr_assn}): the array of the block ends and the array of the
+  (@{locale csr_concat}): the array of the block ends and the array of the
   neighbours. Both are filled in two passes over the elements, each merging the two partner
   lists of an element through the partner queries: the first pass counts the neighbours and
   writes the block ends, the second writes the neighbours into the array allocated in between.
@@ -60,28 +60,19 @@ partial_function (heap) merge_wr ::
 
 declare merge_cnt.simps[code] merge_wr.simps[code]
 
-text \<open>The first pass writes the end position of the neighbours of every element \<open>u\<close> into
-  entry \<open>u + 1\<close> of the block array, whose entry \<open>0\<close> is \<open>0\<close>, and returns their total number;
-  the second pass writes the neighbours.\<close>
+text \<open>The CSR is built vertex by vertex (@{const csr_concat_build_imp}): the steps of the two passes
+  merge the two partner lists of an element.\<close>
 
-definition "cand_bounds_imp nq1 q1 nq2 q2 H1 H2 Ba n = foldl_range_imp (\<lambda> u c. do {
-     a \<leftarrow> nq1 H1 u;
-     b \<leftarrow> nq2 H2 u;
-     c' \<leftarrow> merge_cnt (q1 H1 u) (q2 H2 u) a b 0 0 c;
-     Array.upd (Suc u) c' Ba;
-     return c' }) 0 n 0"
-
-definition "cand_fill_imp nq1 q1 nq2 q2 H1 H2 Ga n = foldl_range_imp (\<lambda> u p. do {
-     a \<leftarrow> nq1 H1 u;
-     b \<leftarrow> nq2 H2 u;
-     merge_wr (q1 H1 u) (q2 H2 u) a b Ga 0 0 p }) 0 n 0"
-
-definition "cand_csr_imp nq1 q1 nq2 q2 H1 H2 n = do {
-   Ba \<leftarrow> Array.new (Suc n) 0;
-   m \<leftarrow> cand_bounds_imp nq1 q1 nq2 q2 H1 H2 Ba n;
-   Ga \<leftarrow> Array.new m 0;
-   cand_fill_imp nq1 q1 nq2 q2 H1 H2 Ga n;
-   return (Ba, Ga) }"
+definition "cand_csr_imp nq1 q1 nq2 q2 H1 H2 n = csr_concat_build_imp 0
+   (\<lambda> u c. do {
+      a \<leftarrow> nq1 H1 u;
+      b \<leftarrow> nq2 H2 u;
+      merge_cnt (q1 H1 u) (q2 H2 u) a b 0 0 c })
+   (\<lambda> u Ga p. do {
+      a \<leftarrow> nq1 H1 u;
+      b \<leftarrow> nq2 H2 u;
+      merge_wr (q1 H1 u) (q2 H2 u) a b Ga 0 0 p })
+   n"
 
 subsection \<open>Correctness\<close>
 
@@ -301,53 +292,6 @@ proof(induction "length xs - i + (length ys - j)" arbitrary: i j p g rule: less_
   qed
 qed
 
-text \<open>The CSR of the flat neighbour array of an edge list whose sources are below \<open>n\<close>: the
-  block array holds the start offsets of the vertices up to \<open>n\<close>.\<close>
-
-lemma bcsr_rel_build_nha:
-  assumes out: "\<And> v. n \<le> v \<Longrightarrow> nbrs es v = []"
-  shows "bcsr_rel (build_nhlists es) (map (start_off es) [0..<Suc n]) (build_nha es n)"
-proof-
-  let ?B = "map (start_off es) [0..<Suc n]"
-  have mono: "?B ! v \<le> ?B ! Suc v \<and> ?B ! Suc v \<le> length (build_nha es n)"
-    if "Suc v < length ?B" for v
-  proof-
-    have v: "v < n"
-      using that by simp
-    have "start_off es (Suc v) \<le> start_off es n"
-      using v by (intro start_off_mono) simp
-    then show ?thesis
-      using v by (simp add: start_off_Suc length_build_nha del: upt_Suc)
-  qed
-  have blk: "(case build_nhlists es v of None \<Rightarrow> [] | Some vs \<Rightarrow> vs) =
-             (if Suc v < length ?B then nths (build_nha es n) {?B ! v..<?B ! Suc v} else [])" for v
-  proof (cases "v < n")
-    case True
-    then show ?thesis
-      using build_nha_nths_vertex[OF True, of es]
-      by (simp add: build_nhlists_def start_off_Suc del: upt_Suc)
-  next
-    case False
-    then show ?thesis
-      using out[of v] by (simp add: build_nhlists_def del: upt_Suc)
-  qed
-  show ?thesis
-    unfolding bcsr_rel_def using mono blk by blast
-qed
-
-text \<open>Arrays whose entries below \<open>u\<close> are written.\<close>
-
-definition "prefix_map f u n = map (\<lambda> v. if v < u then f v else (0 :: nat)) [0..<n]"
-
-lemma length_prefix_map [simp]: "length (prefix_map f u n) = n"
-  unfolding prefix_map_def by simp
-
-lemma prefix_map_upd: 
-  "\<lbrakk>u < n; x = f u\<rbrakk> \<Longrightarrow> (prefix_map f u n)[u := x] = prefix_map f (Suc u) n"
-  unfolding prefix_map_def by (rule nth_equalityI) (auto simp: nth_list_update)
-
-lemma prefix_map_n: "prefix_map f n n = map f [0..<n]"
-  unfolding prefix_map_def by simp
 
 locale exchange_candidates_imp =
   p1: exchange_partners_imp n indep1 orcl_prep1 ins_orcl1 exch_orcl1 pts1 pst1 npts1_imp pt1_imp +
@@ -392,103 +336,17 @@ lemma wr_rule:
       and G = G, OF pt1_rule[OF _ u] pt2_rule[OF _ u]] le
   by (simp add: nbrs_es0 u)
 
-lemma bounds_rule:
-  "<pst1 H1 * pst2 H2 * Ba \<mapsto>\<^sub>a replicate (Suc n) 0> 
-     cand_bounds_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 Ba n
-   <\<lambda> m. pst1 H1 * pst2 H2 * Ba \<mapsto>\<^sub>a map (start_off es0) [0..<Suc n] * \<up>(m = start_off es0 n)>"
-proof-
-  define A where "A = (\<lambda> u (_ :: unit) c. 
-     Ba \<mapsto>\<^sub>a prefix_map (start_off es0) (Suc u) (Suc n) * \<up>(c = start_off es0 u))"
-  have step: "<A u st c * (pst1 H1 * pst2 H2)> 
-     do { a \<leftarrow> npts1_imp H1 u; b \<leftarrow> npts2_imp H2 u;
-          c' \<leftarrow> merge_cnt (pt1_imp H1 u) (pt2_imp H2 u) a b 0 0 c;
-          Array.upd (Suc u) c' Ba;
-          return c' }
-     <\<lambda> r. A (Suc u) () r * (pst1 H1 * pst2 H2)>" if u: "u < n" for u st c
-    unfolding A_def
-    using u by (sep_auto heap: p1.npts_imp p2.npts_imp cnt_rule simp: prefix_map_upd start_off_Suc)
-  have run: "<A 0 () 0 * (pst1 H1 * pst2 H2)> 
-               cand_bounds_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 Ba n
-             <\<lambda> r. A n (foldl (\<lambda> a j. ()) () [0..<n]) r * (pst1 H1 * pst2 H2)>"
-    unfolding cand_bounds_imp_def
-    by (rule foldl_range_imp_idx_rule[where A = A and F = "pst1 H1 * pst2 H2" and g = "\<lambda> _ _. ()"]) 
-       (rule step, simp_all)
-  have init: "prefix_map (start_off es0) (Suc 0) (Suc n) = replicate (Suc n) 0"
-    unfolding prefix_map_def by (rule nth_equalityI) (simp_all del: upt_Suc)
-  show ?thesis
-    by (rule ht_cons_post[OF ht_cons_pre[OF _ run]]) (sep_auto simp: A_def init prefix_map_n)+
-qed
-
-lemma fill_rule:
-  "<pst1 H1 * pst2 H2 * Ga \<mapsto>\<^sub>a replicate (start_off es0 n) 0> 
-     cand_fill_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 Ga n
-   <\<lambda> _. pst1 H1 * pst2 H2 * Ga \<mapsto>\<^sub>a build_nha es0 n>"
-proof-
-  define A where "A = (\<lambda> u (gl :: nat list) p. 
-     Ga \<mapsto>\<^sub>a gl * \<up>(p = start_off es0 u \<and> length gl = start_off es0 n \<and> 
-                     take p gl = build_nha es0 u))"
-  define g where "g = (\<lambda> u (gl :: nat list). 
-     take (start_off es0 u) gl @ nbrs es0 u @ drop (start_off es0 (Suc u)) gl)"
-  have step: "<A u gl p * (pst1 H1 * pst2 H2)> 
-     do { a \<leftarrow> npts1_imp H1 u; b \<leftarrow> npts2_imp H2 u; 
-          merge_wr (pt1_imp H1 u) (pt2_imp H2 u) a b Ga 0 0 p }
-     <\<lambda> r. A (Suc u) (g u gl) r * (pst1 H1 * pst2 H2)>" if u: "u < n" for u gl p
-  proof(cases "p = start_off es0 u \<and> length gl = start_off es0 n")
-    case True
-    have le: "p + length (nbrs es0 u) \<le> length gl"
-      using True start_off_mono[of "Suc u" n es0] u by (simp add: start_off_Suc)
-    have g: "g u gl = take p gl @ nbrs es0 u @ drop (p + length (nbrs es0 u)) gl"
-      using True by (simp add: g_def start_off_Suc)
-    have nha: "build_nha es0 (Suc u) = build_nha es0 u @ nbrs es0 u"
-      by (simp add: build_nha_def)
-    show ?thesis
-      unfolding A_def g
-      using u le True 
-      by (sep_auto heap: p1.npts_imp p2.npts_imp wr_rule simp: start_off_Suc nha length_build_nha)
-  next
-    case False
-    then show ?thesis
-      unfolding A_def by sep_auto
-  qed
-  have run: "<A 0 (replicate (start_off es0 n) 0) 0 * (pst1 H1 * pst2 H2)> 
-               cand_fill_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 Ga n
-             <\<lambda> r. A n (foldl (\<lambda> a j. g j a) (replicate (start_off es0 n) 0) [0..<n]) r * 
-                   (pst1 H1 * pst2 H2)>"
-    unfolding cand_fill_imp_def
-    by (rule foldl_range_imp_idx_rule[where A = A and F = "pst1 H1 * pst2 H2" and g = g]) 
-       (rule step, simp_all)
-  have fin: "\<lbrakk>length gl = start_off es0 n; take (start_off es0 n) gl = build_nha es0 n\<rbrakk> \<Longrightarrow> 
-             gl = build_nha es0 n" for gl
-    by simp
-  show ?thesis
-    by (rule ht_cons_post[OF ht_cons_pre[OF _ run]]) 
-       (sep_auto simp: A_def build_nha_def dest: fin)+
-qed
-
 lemma cand_csr_rule:
   "<pst1 H1 * pst2 H2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n 
-   <\<lambda> G. pst1 H1 * pst2 H2 * bcsr_assn (build_nhlists es0) G>"
-proof-
-  let ?B = "map (start_off es0) [0..<n] @ [start_off es0 n]"
-  have rel: "bcsr_rel (build_nhlists es0) ?B (build_nha es0 n)"
-    using bcsr_rel_build_nha[of n es0] by (simp add: nbrs_cand_list)
-  have fin: "Ga \<mapsto>\<^sub>a build_nha es0 n * Ba \<mapsto>\<^sub>a ?B
-             \<Longrightarrow>\<^sub>A bcsr_assn (build_nhlists es0) (Ba, Ga)" for Ba Ga
-    unfolding bcsr_assn_def using rel by sep_auto
-  have fin': "pst1 H1 * pst2 H2 * Ga \<mapsto>\<^sub>a build_nha es0 n * Ba \<mapsto>\<^sub>a ?B * true
-              \<Longrightarrow>\<^sub>A pst1 H1 * pst2 H2 * bcsr_assn (build_nhlists es0) (Ba, Ga) * true" for Ba Ga
-  proof-
-    have "pst1 H1 * pst2 H2 * Ga \<mapsto>\<^sub>a build_nha es0 n * Ba \<mapsto>\<^sub>a ?B * true = 
-          pst1 H1 * pst2 H2 * (Ga \<mapsto>\<^sub>a build_nha es0 n * Ba \<mapsto>\<^sub>a ?B) * true"
-      by (simp only: mult.assoc)
-    then show ?thesis
-      by (simp only:) (intro ent_star_mono ent_refl fin)
-  qed
-  show ?thesis
-    unfolding cand_csr_imp_def
-    apply (sep_auto heap: bounds_rule fill_rule)
-    apply (erule entailsD[OF fin'])
-    done
+   <\<lambda> (Ba, Ga). pst1 H1 * pst2 H2 * Ba \<mapsto>\<^sub>a map (csr_start (nbrs es0)) [0..<Suc n] *
+                Ga \<mapsto>\<^sub>a csr_entries (nbrs es0) n>"
+  unfolding cand_csr_imp_def
+proof(rule csr_concat_build.csr_concat_build_rule, unfold_locales, goal_cases)
+  case (1 u c)
+  then show ?case by (sep_auto heap: p1.npts_imp p2.npts_imp cnt_rule)
+next
+  case (2 u p g G)
+  then show ?case by (sep_auto heap: p1.npts_imp p2.npts_imp wr_rule)
 qed
 
 text \<open>The properties the exchange graph search requires of its candidate graph.\<close>

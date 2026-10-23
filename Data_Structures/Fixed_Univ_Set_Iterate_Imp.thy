@@ -146,28 +146,32 @@ qed
 
 subsection \<open>Iterators over Fixed-Universe Sets\<close>
 
-text \<open>The iterator visits the elements of a set in the order @{term lst}. Leaving the iteration
-      gives back exactly the set.\<close>
+text \<open>The iterator visits the elements of a set in the order @{term lst}. It is stated next to
+      the set, which stays available during the iteration. The iterator assertion refers to the
+      abstraction of the set only, so a representation that is determined up to its abstraction
+      can be iterated. Leaving the iteration gives back exactly the set.\<close>
 
 locale fixed_univ_set_iterate_imp =
-  fixed_univ_set_imp U set_invar set_abstract set_empty set_insert set_delete set_isin
-    set_assn set_empty_imp set_insert_imp set_delete_imp set_isin_imp +
   set_order lst
-  for U :: "'a set" and set_invar :: "'set \<Rightarrow> bool" and set_abstract set_empty set_insert
-    set_delete set_isin and set_assn :: "'set \<Rightarrow> 'seti \<Rightarrow> assn"
-    and set_empty_imp set_insert_imp set_delete_imp set_isin_imp and lst :: "'a set \<Rightarrow> 'a list" +
-  fixes is_it :: "'set \<Rightarrow> 'seti \<Rightarrow> 'a list \<Rightarrow> 'it \<Rightarrow> assn"
+  for U :: "'a set" and set_invar :: "'set \<Rightarrow> bool" and set_abstract :: "'set \<Rightarrow> 'a set"
+    and set_assn :: "'set \<Rightarrow> 'seti \<Rightarrow> assn" and lst :: "'a set \<Rightarrow> 'a list" +
+  fixes is_it :: "'a set \<Rightarrow> 'seti \<Rightarrow> 'a list \<Rightarrow> 'it \<Rightarrow> assn"
     and it_init :: "'seti \<Rightarrow> 'it Heap"
     and it_has_next :: "'it \<Rightarrow> bool Heap"
     and it_next :: "'it \<Rightarrow> ('a \<times> 'it) Heap"
-  assumes it_init_rule[sep_heap_rules]:
-      "set_invar S \<Longrightarrow> <set_assn S Si> it_init Si <is_it S Si (lst (set_abstract S))>"
+  assumes fixed_univ_set_universe: "set_invar S \<Longrightarrow> set_abstract S \<subseteq> U"
+    and it_init_rule[sep_heap_rules]:
+      "set_invar S \<Longrightarrow>
+       <set_assn S Si> it_init Si
+       <\<lambda>it. set_assn S Si * is_it (set_abstract S) Si (lst (set_abstract S)) it>"
     and it_next_rule[sep_heap_rules]:
-      "<is_it S Si (x # xs) it> it_next it <\<lambda>(y, it'). is_it S Si xs it' * \<up>(y = x)>"
+      "<set_assn S Si * is_it (set_abstract S) Si (x # xs) it> it_next it
+       <\<lambda>(y, it'). set_assn S Si * is_it (set_abstract S) Si xs it' * \<up>(y = x)>"
     and it_has_next_rule[sep_heap_rules]:
-      "<is_it S Si xs it> it_has_next it <\<lambda>r. is_it S Si xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+      "<set_assn S Si * is_it (set_abstract S) Si xs it> it_has_next it
+       <\<lambda>r. set_assn S Si * is_it (set_abstract S) Si xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
     and quit_iteration:
-      "is_it S Si xs it \<Longrightarrow>\<^sub>A set_assn S Si"
+      "set_assn S Si * is_it (set_abstract S) Si xs it \<Longrightarrow>\<^sub>A set_assn S Si"
 
 subsection \<open>Folds over Finite Sets\<close>
 
@@ -239,11 +243,12 @@ proof(rule set_fold_imp_ruleI)
        (use P0 step lst_distinct[OF assms(2)] lst_set[OF assms(2)] in auto)
   have st: "<R b> g_imp x <\<lambda>_. R (g b x)>" if "Q x b" for x b
     using that step by (auto simp: Q_def)
-  have fold: "<is_it X Si (lst (set_abstract X)) it * R acc>
+  have fold: "<(set_assn X Si * is_it (set_abstract X) Si (lst (set_abstract X)) it) * R acc>
                 iter_fold it_has_next it_next (\<lambda> x _. g_imp x) it ()
               <\<lambda>_. set_assn X Si * R (foldl g acc (lst (set_abstract X)))>" for it
-    by (rule iter_fold_rule_gen[where P = Q and A = "\<lambda> b (_::unit). R b", OF it_has_next_rule
-          it_next_rule quit_iteration st pre])
+    by (rule iter_fold_rule_gen[where I = "\<lambda> xs it. set_assn X Si * is_it (set_abstract X) Si xs it"
+          and P = Q and A = "\<lambda> b (_::unit). R b", OF it_has_next_rule it_next_rule quit_iteration
+          st pre])
   show "<set_assn X Si * R acc> iter_set_fold_imp it_init it_has_next it_next Si g_imp
         <\<lambda>_. set_assn X Si * R (foldl g acc (lst (set_abstract X)))>"
     unfolding iter_set_fold_imp_def

@@ -1,3 +1,4 @@
+
 theory Alternating_Forest_Executable
   imports
     Graph_Algorithms_Dev.Parent_Map
@@ -1212,9 +1213,33 @@ begin
 interpretation  satisfied_simple:
   alternating_forest_spec evens odds local.get_path local.abstract_forest forest_invar roots 
                           vset_invar vset_to_set
-  using complex_invariant_consequences(1,2) 
-  by(intro alternating_forest_spec.intro simple_invariant_consequences)
-    (auto simp add: get_path_correct(1,2,3,4,5))
+proof(intro alternating_forest_spec.intro, goal_cases)
+  case (1 F M) then show ?case by (rule simple_invariant_consequences(1))
+next
+  case (2 F M) then show ?case by (rule simple_invariant_consequences(2))
+next
+  case (3 F M) then show ?case using simple_invariant_consequences(3)[OF 3] by blast
+next
+  case (4 F M) then show ?case using simple_invariant_consequences(3,4,9)[OF 4] by blast
+next
+  case (5 F M) then show ?case using simple_invariant_consequences(4,9)[OF 5] by blast
+next
+  case (6 F M) then show ?case by (rule simple_invariant_consequences(6))
+next
+  case (7 F M) then show ?case by (rule simple_invariant_consequences(8))
+next
+  case (8 F M) then show ?case by (rule simple_invariant_consequences(9))
+next
+  case (9 F M) then show ?case by (rule simple_invariant_consequences(10))
+next
+  case (10 F M v p) then show ?case using get_path_correct(1,3,4,5)[OF 10] by blast
+next
+  case (11 F M) then show ?case by (rule simple_invariant_consequences(11))
+next
+  case (12 F M u v) then show ?case using complex_invariant_consequences(1)[OF 12] by blast
+next
+  case (13 F M u v) then show ?case by (rule complex_invariant_consequences(2))
+qed
 
 lemma satisfied_simple_extension_precond_same:
   "satisfied_simple.forest_extension_precond F M x y z = forest_extension_precond F M x y z"
@@ -1223,15 +1248,14 @@ lemma satisfied_simple_extension_precond_same:
 interpretation satisfied: alternating_forest_ordinary_extension_spec
   vset_invar vset_to_set 
   evens odds "get_path "
-  "abstract_forest" forest_invar  roots vset_empty
+  "abstract_forest" forest_invar  roots
   "extend_forest_even_unclassified"
   "empty_forest" K
   by(intro alternating_forest_ordinary_extension_spec.intro
       satisfied_simple.alternating_forest_spec_axioms
       alternating_forest_ordinary_extension_spec_axioms.intro)
-    (simp_all add: satisfied_simple_extension_precond_same extension_main_preservation 
-      extension_abstract_is extension_evens extension_odds extension_roots 
-      empty_forest_correctess)
+    (simp_all add: satisfied_simple_extension_precond_same extension_main_preservation
+      extension_abstract_is extension_evens empty_forest_correctess)
 
 lemmas satisified = satisfied.alternating_forest_ordinary_extension_spec_axioms
 

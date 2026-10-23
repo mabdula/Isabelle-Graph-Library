@@ -29,10 +29,11 @@ sublocale csr: weighted_intersection_exchange_spec
     and exch_orcl2 = exch_orcl2 and vset_empty = Nil and isin = "\<lambda> xs x. x \<in> set xs"
     and vset_of_list = rev and some_dist = "id :: nat \<Rightarrow> nat"
     and set_all_dists_in_set = "\<lambda> d S n. \<lambda> y. if y \<in> set S then n else d y"
-    and dist_lookup = "\<lambda> d x. d x" and some_parent = "id :: nat \<Rightarrow> nat"
-    and parent_lookup = "\<lambda> p x. p x"
-    and next_frontier_current_parents = BFS_subprocedures_lists.next_frontier_current_parents
-    and build_graph = build_nhlists and c_lookup = c_lookup and c_shift = c_shift
+    and dist_lookup = "\<lambda> d x. d x" and parent_init = parent_array.pa_init
+    and get_path = "parent_array.pa_get_path (length carrier_list)"
+    and next_frontier_current_parents =
+          "BFS_subprocedures_lists.next_frontier_current_parents parent_array.pa_extend"
+    and build_graph = nbrs_map and c_lookup = c_lookup and c_shift = c_shift
     and c_zero = c_zero and vset_insert = Cons .
 
 end
@@ -65,10 +66,11 @@ sublocale csr: weighted_intersection_exchange
     and exch_orcl2 = exch_orcl2 and vset_empty = Nil and isin = "\<lambda> xs x. x \<in> set xs"
     and vset_of_list = rev and some_dist = "id :: nat \<Rightarrow> nat"
     and set_all_dists_in_set = "\<lambda> d S n. \<lambda> y. if y \<in> set S then n else d y"
-    and dist_lookup = "\<lambda> d x. d x" and some_parent = "id :: nat \<Rightarrow> nat"
-    and parent_lookup = "\<lambda> p x. p x"
-    and next_frontier_current_parents = BFS_subprocedures_lists.next_frontier_current_parents
-    and build_graph = build_nhlists and c_lookup = c_lookup and c_shift = c_shift
+    and dist_lookup = "\<lambda> d x. d x" and parent_init = parent_array.pa_init
+    and get_path = "parent_array.pa_get_path (length carrier_list)"
+    and next_frontier_current_parents =
+          "BFS_subprocedures_lists.next_frontier_current_parents parent_array.pa_extend"
+    and build_graph = nbrs_map and c_lookup = c_lookup and c_shift = c_shift
     and c_zero = c_zero and vset_insert = Cons
     and carrier = carrier and indep1 = indep1 and indep2 = indep2
     and t_set = set and sel = hd and vset_delete = "\<lambda> x xs. filter (\<lambda> y. x \<noteq> y) xs"

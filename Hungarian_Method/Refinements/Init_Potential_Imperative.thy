@@ -74,17 +74,13 @@ locale init_potential_imp =
       and fixed_univ_map_upd_imp = pot_upd_imp and fixed_univ_map_lookup_imp = pot_get_imp +
   left: fixed_univ_set_iterate_imp
     where U = K and set_invar = vset_invar and set_abstract = vset_to_set
-      and set_empty = vset_empty and set_insert = vset_insert and set_delete = vset_delete
-      and set_isin = vset_isin and set_assn = vset_assn and set_empty_imp = vset_empty_imp
-      and set_insert_imp = vset_insert_imp and set_delete_imp = vset_delete_imp
-      and set_isin_imp = vset_isin_imp and lst = lst and is_it = left_is_it
+      and set_assn = vset_assn and lst = lst and is_it = left_is_it
       and it_init = left_it_init and it_has_next = left_it_has_next and it_next = left_it_next
   for cost :: "'v::heap \<Rightarrow> 'v \<Rightarrow> real" and vset_to_set :: "'vset \<Rightarrow> 'v set"
     and h :: "'n::{linordered_idom, heap} \<Rightarrow> real"
     and nb_init nb_assn has_imp current_imp current_cost_imp move_imp reset_imp reset_all_imp
     and pot_assn pot_upd_imp pot_get_imp
-    and vset_empty vset_insert vset_delete vset_isin
-    and vset_assn vset_empty_imp vset_insert_imp vset_delete_imp vset_isin_imp
+    and vset_assn
     and left_is_it left_it_init left_it_has_next left_it_next
 
 sublocale init_potential_imp \<subseteq> code: init_potential_imp_code
@@ -233,7 +229,7 @@ proof-
      <\<lambda>_. nb_assn (fst (init_step Cp u)) Ci * pot_assn (snd (init_step Cp u)) Pti>"
       using a init_pot_step_rule[of C C0 u \<pi> Ci Pti x] by (simp add: init_pre_def Cp)
   qed
-  note fold = iter_fold_rule_gen[where I = "left_is_it left Li" and Q = "vset_assn left Li"
+  note fold = iter_fold_rule_gen[where I = "\<lambda>xs it. vset_assn left Li * left_is_it (vset_to_set left) Li xs it" and Q = "vset_assn left Li"
       and A = "\<lambda>Cp (x::unit). nb_assn (fst Cp) Ci * pot_assn (snd Cp) Pti",
       OF left.it_has_next_rule left.it_next_rule left.quit_iteration step pre]
   show ?thesis

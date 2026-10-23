@@ -99,8 +99,8 @@ global_interpretation forest_csr: forest_imp
        apply simp
       apply (simp add: array_fun_lookup_def)
      apply (rule fset_iterate_below, assumption)
-    apply (rule bool_array_set_fixed_univ_set_iterate_imp)
-  by (rule array_fun_fixed_univ_map_imp bool_array_set_fixed_univ_set_clear_imp
+  by (rule bool_array_set_fixed_univ_set_imp bool_array_set_fixed_univ_set_iterate_imp
+        array_fun_fixed_univ_map_imp bool_array_set_fixed_univ_set_clear_imp
         array_fun_fixed_univ_map_clear_imp array_fun_fixed_univ_map_init_imp)+
 
 subsection \<open>The Augmentation\<close>
@@ -314,7 +314,7 @@ definition hungarian_csr_run_int ::
 declare perm_weights_targets_imp.simps[code] bool_array_set_insert_all.simps[code] iter_fold.simps[code]
   forest_csr.get_path_imp_loop.simps[code] aug_csr.augment_loop.simps[code]
   pds_csr.scan_imp.simps[code] pds_csr.loop_imp.simps[code] ip_csr.scan_min_imp.simps[code]
-  hl_csr.main_loop_imp.simps[code] csr_copy_imp.simps[code]
+  hl_csr.main_loop_imp.simps[code]
   bool_array_set_scan.simps[code] sc_csr.bs.scan_best_imp.simps[code] iter_find.simps[code]
   nb_best_scan_imp_code.best_upd_imp_def[code] nb_best_scan_imp_code.best2_upd_imp_def[code]
   nb_best_scan_imp_code.better_imp_def[code] sc_csr.chain_imp.simps[code]
@@ -487,9 +487,9 @@ next
 next
   case (4 v) then show ?case by (simp add: Et_def ei.B_spec_bound)
 next
-  case (5 v) then show ?case by (rule Et_block_inj)
+  case (5 v) show ?case by (rule order.refl)
 next
-  case (6 v) show ?case by (rule order.refl)
+  case (6 v) then show ?case by (rule Et_block_inj)
 qed
 
 lemma csr_abstract_targets:
@@ -569,8 +569,11 @@ proof-
   have L: "\<And>i. i \<in> L \<Longrightarrow> i \<in> {..<n}" using L_less by simp
   show ?thesis
     apply (intro weighted_neighbourhoods_imp_spec.intro indexed_iterable_set_imp.intro
-                 weighted_neighbourhoods_imp_spec_axioms.intro indexed_iterable_set_imp_axioms.intro
-                 wcsr.wnb.indexed_iterable_set_restrict subsetI)
+                 indexed_set_cursor_imp.intro indexed_set_reset_imp.intro
+                 weighted_neighbourhoods_imp_spec_axioms.intro indexed_set_cursor_imp_axioms.intro
+                 indexed_set_reset_imp_axioms.intro
+                 wcsr.wnb.indexed_iterable_set_restrict
+                 indexed_iterable_set.axioms[OF wcsr.wnb.indexed_iterable_set_restrict] subsetI)
     apply (all \<open>(erule L | rule wcsr.wnb_imp.nb_init_invar wcsr.wnb_imp.idx_has_rule
                       wcsr.wnb_imp.idx_current_rule wcsr.wnb_imp.current_cost_rule
                       wcsr.wnb_imp.idx_move_rule wcsr.wnb_imp.idx_reset_rule wcsr.wnb_imp.reset_all_rule;
@@ -595,10 +598,7 @@ sublocale ipot: init_potential_imp
     and reset_all_imp = "wnb_reset_all_imp n"
     and pot_assn = "array_fun_val_assn h n" and pot_upd_imp = array_fun_upd_imp
     and pot_get_imp = array_fun_lookup_imp
-    and vset_empty = "{}" and vset_insert = insert and vset_delete = "\<lambda>x X. X - {x}"
-    and vset_isin = "\<lambda>X x. x \<in> X" and vset_assn = "bool_array_set_assn n"
-    and vset_empty_imp = "Array.new n False" and vset_insert_imp = bool_array_set_insert_imp
-    and vset_delete_imp = bool_array_set_delete_imp and vset_isin_imp = bool_array_set_isin_imp
+    and vset_assn = "bool_array_set_assn n"
     and left_is_it = "bool_array_set_is_it n" and left_it_init = bool_array_set_it_init
     and left_it_has_next = bool_array_set_it_has_next and left_it_next = bool_array_set_it_next
   apply (intro init_potential_imp.intro init_potential_coll.intro init_potential_coll_axioms.intro
@@ -728,7 +728,8 @@ text \<open>The data structures of the path search with the shortcut, for the co
 
 definition "sc_scratch_assn ctx Si = (case ctx of (xs, C) \<Rightarrow> case Si of (Di, it) \<Rightarrow>
    case Di of (Ci, Qi, Li, Fi, Bi, Mi) \<Rightarrow>
-     wcsr.wnb_assn C Ci * pds_aux_assn Qi Fi Bi Mi * bool_array_set_is_it n L Li xs it)"
+     wcsr.wnb_assn C Ci * pds_aux_assn Qi Fi Bi Mi * bool_array_set_assn n L Li *
+     bool_array_set_is_it n L Li xs it)"
 
 end
 
@@ -804,9 +805,7 @@ sublocale ps: primal_dual_path_search_imp
     and missed_get_imp = array_fun_lookup_imp
     and pot_assn = "array_fun_val_assn h n" and pot_upd_imp = array_fun_upd_imp
     and pot_get_imp = array_fun_lookup_imp
-    and vset_assn = "bool_array_set_assn n" and vset_empty_imp = "Array.new n False"
-    and vset_insert_imp = bool_array_set_insert_imp and vset_delete_imp = bool_array_set_delete_imp
-    and vset_isin_imp = bool_array_set_isin_imp
+    and vset_assn = "bool_array_set_assn n"
     and left_is_it = "bool_array_set_is_it n" and left_it_init = bool_array_set_it_init
     and left_it_has_next = bool_array_set_it_has_next and left_it_next = bool_array_set_it_next
     and buddy_assn = "array_fun_assn n M" and buddy_imp = array_fun_lookup_imp
@@ -1065,11 +1064,8 @@ sublocale sc: path_search_shortcut_imp
     and reset_imp = wnb_reset_imp and reset_all_imp = "wnb_reset_all_imp n"
     and pot_assn = "array_fun_val_assn h n" and pot_upd_imp = array_fun_upd_imp
     and pot_get_imp = array_fun_lookup_imp
-    and vset_invar = "\<lambda>X. X \<subseteq> {..<n}" and vset_to_set = id and vset_empty = "{}"
-    and vset_insert = insert and vset_delete = "\<lambda>x X. X - {x}" and vset_isin = "\<lambda>X x. x \<in> X"
-    and vset_assn = "bool_array_set_assn n" and vset_empty_imp = "Array.new n False"
-    and vset_insert_imp = bool_array_set_insert_imp and vset_delete_imp = bool_array_set_delete_imp
-    and vset_isin_imp = bool_array_set_isin_imp and lst = sorted_list_of_set
+    and vset_invar = "\<lambda>X. X \<subseteq> {..<n}" and vset_to_set = id
+    and vset_assn = "bool_array_set_assn n" and lst = sorted_list_of_set
     and left_is_it = "bool_array_set_is_it n" and left_it_init = bool_array_set_it_init
     and left_it_has_next = bool_array_set_it_has_next and left_it_next = bool_array_set_it_next
     and buddy_assn = "aug_csr.counted_assn n" and buddy_imp = "\<lambda>Mt. array_fun_lookup_imp (fst Mt)"
@@ -1127,13 +1123,16 @@ proof -
   obtain Bdi Ki where Mt: "Mt = (Bdi, Ki)" by (cases Mt)
   have pre: "sc_scratch_assn (ys, C) (Di, it) \<Longrightarrow>\<^sub>A csr_scratch_assn Di"
     unfolding sc_scratch_assn_def csr_scratch_assn_def Di prod.case
-    by (rule ent_star_mono[OF _ bool_array_set_quit_iteration]) (use assms(4) in sep_auto)
+    apply (rule ent_trans[OF _ ent_star_mono[OF _ bool_array_set_quit_iteration]])
+     apply (simp only: mult.assoc[symmetric], rule ent_refl)
+    using assms(4) by sep_auto
   note ps = path_search_rule_csr[OF assms(1,2), of Di Bdi Pti Ra, unfolded assms(3) prod.case]
   have rs: "graph.csr_invar C' \<Longrightarrow>
             <wcsr.wnb_assn C' Ci'> wnb_reset_all_imp n Ci' <\<lambda>_. wcsr.wnb_assn nb_init Ci'>"
     for C' Ci'
     by (rule wcsr.wnb_imp.reset_all_rule) (assumption, rule wnb_abstract_cursor)
-  have ii: "<bool_array_set_assn n L Li'> bool_array_set_it_init Li' <bool_array_set_is_it n L Li' (sorted_list_of_set L)>"
+  have ii: "<bool_array_set_assn n L Li'> bool_array_set_it_init Li'
+             <\<lambda>it. bool_array_set_assn n L Li' * bool_array_set_is_it n L Li' (sorted_list_of_set L) it>"
     for Li'
     using bool_array_set_it_init_rule[OF L_below, of Li'] by simp
   show ?thesis
@@ -1194,7 +1193,7 @@ proof -
       moreover have "2 \<le> length p" using g by (auto simp: matching_augmenting_path_def)
       ultimately show ?thesis using assms(4) by linarith
     qed
-    note sh = sc.shortcut_imp_rule[OF assms(1) I lp len]
+    note sh = sc.shortcut_imp_rule[OF assms(1) I lp len, unfolded id_apply[of L]]
     show ?thesis
     proof (cases res)
       case None
@@ -1203,7 +1202,8 @@ proof -
         using assms(3) True
         by (simp_all add: fsearch_sc_def sc.path_search_sc_def sc.sc_try_def c lp None
                           ffallback_def fs)
-      have fb: "<wcsr.wnb_assn C1 Ci * pds_aux_assn Qi Fi Bi Mi * bool_array_set_is_it n L Li xs1 it' *
+      have fb: "<wcsr.wnb_assn C1 Ci * pds_aux_assn Qi Fi Bi Mi * bool_array_set_assn n L Li *
+                 bool_array_set_is_it n L Li xs1 it' *
                  aug_csr.counted_assn n M1 Mt * array_fun_val_assn h n \<pi>1 Pti * Ra \<mapsto>\<^sub>a ys'>
                 fallback_csr n (Ci, Qi, Li, Fi, Bi, Mi) Mt Pti Ra
                 <\<lambda>(res, Mt', Pti', Si'). \<exists>\<^sub>Axs'. sc_scratch_assn (sorted_list_of_set L, nb_init) Si' *
@@ -1432,7 +1432,8 @@ lemma card_LR: "card (L \<union> R) \<le> n"
 lemma hungarian_step:
   "<wcsr.wnb_assn nb_init Ci * hp.heap_assn heap_empty Qi *
     forest_csr.forest_assn n (forest_csr.empty_forest n {}) Fi *
-    Bi \<mapsto>\<^sub>a replicate n n * Mi \<mapsto>\<^sub>a replicate n 0 * bool_array_set_is_it n L Li (sorted_list_of_set L) it *
+    Bi \<mapsto>\<^sub>a replicate n n * Mi \<mapsto>\<^sub>a replicate n 0 * bool_array_set_assn n L Li *
+    bool_array_set_is_it n L Li (sorted_list_of_set L) it *
     Mm \<mapsto>\<^sub>a replicate n n * Ki \<mapsto>\<^sub>r 0 * array_fun_val_assn h n init_pot Pti * Ra \<mapsto>\<^sub>a replicate n 0>
    hungarian_csr n theta cap (length ls) (length rs) ((Ci, Qi, Li, Fi, Bi, Mi), it) (Mm, Ki) Pti Ra
    <\<lambda>(r, (Mm', _), Pti', Si'). \<exists>\<^sub>AM \<pi>. array_fun_assn n M Mm' * array_fun_val_assn h n \<pi> Pti' * true *
@@ -1441,7 +1442,7 @@ proof -
   have pre: "wcsr.wnb_assn nb_init Ci * hp.heap_assn heap_empty Qi *
              forest_csr.forest_assn n (forest_csr.empty_forest n {}) Fi *
              Bi \<mapsto>\<^sub>a replicate n n * Mi \<mapsto>\<^sub>a replicate n 0 *
-             bool_array_set_is_it n L Li (sorted_list_of_set L) it *
+             bool_array_set_assn n L Li * bool_array_set_is_it n L Li (sorted_list_of_set L) it *
              Mm \<mapsto>\<^sub>a replicate n n * Ki \<mapsto>\<^sub>r 0 * array_fun_val_assn h n init_pot Pti *
              Ra \<mapsto>\<^sub>a replicate n 0
              \<Longrightarrow>\<^sub>A sc_scratch_assn (sorted_list_of_set L, nb_init) ((Ci, Qi, Li, Fi, Bi, Mi), it) *

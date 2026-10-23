@@ -558,9 +558,33 @@ interpretation  satisfied_simple:
   alternating_forest_spec evens odds "get_path nil" "abstract_forest nil"
   forest_invar roots vset_invar vset_to_set
   unfolding abstract_forest_def get_path_def  
-  by(intro alternating_forest_spec.intro 
-      fmnlp.simple_invariant_consequences fmnlp.complex_invariant_consequences(1,2)
-      | assumption | rule conjI  fmnlp.get_path_correct(1,2,3,4,5))+
+proof(intro alternating_forest_spec.intro, goal_cases)
+  case (1 F M) then show ?case by (rule fmnlp.simple_invariant_consequences(1))
+next
+  case (2 F M) then show ?case by (rule fmnlp.simple_invariant_consequences(2))
+next
+  case (3 F M) then show ?case using fmnlp.simple_invariant_consequences(3)[OF 3] by blast
+next
+  case (4 F M) then show ?case using fmnlp.simple_invariant_consequences(3,4,9)[OF 4] by blast
+next
+  case (5 F M) then show ?case using fmnlp.simple_invariant_consequences(4,9)[OF 5] by blast
+next
+  case (6 F M) then show ?case by (rule fmnlp.simple_invariant_consequences(6))
+next
+  case (7 F M) then show ?case by (rule fmnlp.simple_invariant_consequences(8))
+next
+  case (8 F M) then show ?case by (rule fmnlp.simple_invariant_consequences(9))
+next
+  case (9 F M) then show ?case by (rule fmnlp.simple_invariant_consequences(10))
+next
+  case (10 F M v p) then show ?case using fmnlp.get_path_correct(1,3,4,5)[OF 10] by blast
+next
+  case (11 F M) then show ?case by (rule fmnlp.simple_invariant_consequences(11))
+next
+  case (12 F M u v) then show ?case using fmnlp.complex_invariant_consequences(1)[OF 12] by blast
+next
+  case (13 F M u v) then show ?case by (rule fmnlp.complex_invariant_consequences(2))
+qed
 
 abbreviation "\<ww> \<equiv> (\<lambda> e. edge_costs (pick_one e) (pick_another e))"
 
@@ -607,13 +631,13 @@ qed
 
 interpretation fe_spec: 
   alternating_forest_ordinary_extension_spec vset_invar vset_to_set evens odds
-  "get_path nil" "abstract_forest nil" forest_invar roots vset_empty
+  "get_path nil" "abstract_forest nil" forest_invar roots
   "extend_forest_even_unclassified nil" empty_forest "- {nil}"
   by(intro alternating_forest_ordinary_extension_spec.intro
       satisfied_simple.alternating_forest_spec_axioms
       alternating_forest_ordinary_extension_spec_axioms.intro)
     (simp_all add:  fmnlp.extension_main_preservation fmnlp.satisfied_simple_extension_precond_same
-      fmnlp.extension_abstract_is fmnlp.extension_evens fmnlp.extension_odds fmnlp.extension_roots 
+      fmnlp.extension_abstract_is fmnlp.extension_evens
       fmnlp.empty_forest_correctess  extend_forest_even_unclassified_def 
       abstract_forest_def empty_forest_def)
 

@@ -171,6 +171,12 @@ lemma csr_build_heads_rule:
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a map (e_tgt fs ts) inp.E_spec>"
   using ch.csr_build_imp_rule[of "(Fa, Ta)" 0] by (simp add: ends_assn_def)
 
+text \<open>The second endpoints grouped by the key are the blocks of a CSR. They need not be
+      distinct.\<close>
+
+sublocale heads: csr_graph_blocks_imp n "{..<n}" inp.B_spec "map (e_tgt fs ts) inp.E_spec"
+  by unfold_locales (simp_all add: inp.length_B_spec graph.B_mono B_spec_bound)
+
 end
 
 text \<open>The two instances: grouped by the first endpoint, the code is @{const csr_build_edges},

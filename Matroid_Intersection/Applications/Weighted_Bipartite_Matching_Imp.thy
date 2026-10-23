@@ -17,7 +17,10 @@ global_interpretation wmx: weighted_matroid_intersection_imp_spec n id id bm_mem
   for n
   defines wmx_teq = wmx.wids.teq_imp
     and wmx_tnbs = wmx.wids.tnbs
+    and wmx_t_inner = wmx.wids.t_inner
+    and wmx_t_outer = wmx.wids.t_outer
     and wmx_tround = wmx.wids.tround
+    and wmx_t_loop = wmx.wids.t_loop
     and wmx_tbfs_run = wmx.wids.tbfs_run
     and wmx_max = wmx.wids.max_imp
     and wmx_thas_nb = wmx.wids.thas_nb_imp
@@ -38,30 +41,10 @@ global_interpretation wmx: weighted_matroid_intersection_imp_spec n id id bm_mem
     and wmx_wmi = wmx.wmi_imp
   done
 
-text \<open>A copy of the BFS core with the tight iterator fixed at code generation time.\<close>
+text \<open>The BFS of the library with the tight iterator fixed at code generation time.\<close>
 
-global_interpretation wxb: BFS_subprocedures_lists_code bset_memb bset_ins "wmx_tnbs n"
-  for n
-  defines wxb_inner = wxb.inner_loop
-    and wxb_outer = wxb.outer_loop
-    and wxb_round = wxb.next_frontier_current_parents_imp
-  done
-
-global_interpretation wxbi: BFS_Imperative_spec bfs_src_to_cf bfs_set_srcs_visited
-    "wxb_round n Gh" bfs_cf_is_empty bset_memb bfs_set_dists Array.nth Array.nth
-  for n Gh
-  defines wxb_loop = wxbi.BFS_par_imp
-    and wxb_init = wxbi.initial_state_imp
-    and wxb_run = wxbi.visited_dists_parents_imp
-  done
-
-lemma wmx_tround_code [code]: "wmx_tround n = wxb_round n"
-  unfolding wmx.wids.tround_def wxb_round_def ..
-
-lemma wmx_tbfs_run_code [code]: "wmx_tbfs_run n Gh = wxb_run n Gh"
-  unfolding wmx.wids.tbfs_run_def wxb_run_def wmx_tround_code ..
-
-declare wxbi.BFS_par_imp.simps[code]
+declare wmx.wids.t_inner_code[code] wmx.wids.t_outer_code[code] wmx.wids.tround_code[code]
+  wmx.wids.t_loop_code[code] wmx.wids.tbfs_run_code[code]
 
 text \<open>The edges are \<open>{Fa[i], Ta[i]}\<close> with weight \<open>Wa[i]\<close>, and all vertices are below \<open>nv\<close>. After the
   prologue of the unweighted instance, the program allocates the two weight arrays of the

@@ -1,7 +1,10 @@
 theory BFS_3
   imports Directed_Set_Graphs.Pair_Graph_Specs "HOL-Eisbach.Eisbach_Tools" Directed_Set_Graphs.Dist
           Data_Structures.Set2_Addons Directed_Set_Graphs.More_Lists
+          Parent_Map_Spec
 begin
+
+hide_const  Undirected_Set_Graphs.neighbourhood
 
 record ('parents, 'vset) BFS_state = parents:: "'parents" current:: "'vset" visited:: "'vset"
 
@@ -2461,34 +2464,50 @@ record ('dist, 'vset, 'par) BFS_par_state = "('dist, 'vset) BFS_dist_state" + pa
 
 locale BFS_distance_parents =
   BFS_distance where lookup = lookup and set_all_dists_in_set = set_all_dists_in_set
-  for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option"
-  and set_all_dists_in_set :: "'dist \<Rightarrow> 'vset \<Rightarrow> nat \<Rightarrow> 'dist" +
+  + Parent_Map_Spec_static where U = U and to_dir_graph = parent_abstract
+        and get_path = get_path and roots = roots and invar = parent_invar
+  + Parent_Map_Spec_init where U = U and to_dir_graph = parent_abstract
+        and roots = roots and invar = parent_invar and vset_abstract = t_set
+        and init = parent_init and vset_invar = vset_inv
+for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option"
+  and set_all_dists_in_set :: "'dist \<Rightarrow> 'vset \<Rightarrow> nat \<Rightarrow> 'dist"
+  and parent_abstract::"'par \<Rightarrow> ('ver \<times> 'ver) set"
+   and parent_invar :: "'par \<Rightarrow> bool"
+   and U::"'ver set"
+   and get_path::"'par \<Rightarrow> 'ver \<Rightarrow> 'ver list"
+   and roots::"'par \<Rightarrow> 'ver set"
+   and parent_init::"'vset \<Rightarrow> 'par" +
   fixes next_frontier_current_parents :: "'vset \<Rightarrow> 'vset \<Rightarrow> 'par \<Rightarrow> 'vset \<times> 'vset \<times> 'par"
-    and parent_lookup :: "'par \<Rightarrow> 'ver \<Rightarrow> 'ver"
-    and parent_invar :: "'par \<Rightarrow> bool"
-    and some_parent :: "'par"
   assumes next_frontier_current_parents:
     "\<And> frontier vis par front' vis' par'.
        \<lbrakk>vset_inv2 frontier; vset_inv vis; Graph.graph_inv G; t_set frontier \<subseteq> t_set vis;
         t_set vis \<subseteq> dVs (Graph.digraph_abs G); parent_invar par;
+        dVs (parent_abstract par) \<union> roots par = t_set vis;
         next_frontier_current_parents frontier vis par = (front', vis', par')\<rbrakk>
        \<Longrightarrow> next_frontier_and_current frontier vis = (front', vis')"
     "\<And> frontier vis par front' vis' par'.
        \<lbrakk>vset_inv2 frontier; vset_inv vis; Graph.graph_inv G; t_set frontier \<subseteq> t_set vis;
         t_set vis \<subseteq> dVs (Graph.digraph_abs G); parent_invar par;
+        dVs (parent_abstract par) \<union> roots par = t_set vis;
         next_frontier_current_parents frontier vis par = (front', vis', par')\<rbrakk>
        \<Longrightarrow> parent_invar par'"
-    "\<And> frontier vis par front' vis' par' x.
+    "\<And> frontier vis par front' vis' par' .
        \<lbrakk>vset_inv2 frontier; vset_inv vis; Graph.graph_inv G; t_set frontier \<subseteq> t_set vis;
         t_set vis \<subseteq> dVs (Graph.digraph_abs G); parent_invar par;
-        next_frontier_current_parents frontier vis par = (front', vis', par'); x \<in> t_set vis\<rbrakk>
-       \<Longrightarrow> parent_lookup par' x = parent_lookup par x"
-    "\<And> frontier vis par front' vis' par' x.
+        dVs (parent_abstract par) \<union> roots par = t_set vis;
+        next_frontier_current_parents frontier vis par = (front', vis', par')\<rbrakk>
+       \<Longrightarrow> \<exists> Ex. parent_abstract par' = parent_abstract par \<union> Ex \<and>
+                ( \<forall> x \<in> t_set front'. \<exists> x' \<in> t_set frontier.
+                        (x', x) \<in> Graph.digraph_abs G \<and> (x, x') \<in> Ex) \<and>
+                (\<forall> x x'. (x, x') \<in> Ex \<longrightarrow> x \<in> t_set front' \<and> x' \<in> t_set frontier 
+                            \<and> (x', x) \<in> Graph.digraph_abs G)"
+    "\<And> frontier vis par front' vis' par'.
        \<lbrakk>vset_inv2 frontier; vset_inv vis; Graph.graph_inv G; t_set frontier \<subseteq> t_set vis;
         t_set vis \<subseteq> dVs (Graph.digraph_abs G); parent_invar par;
-        next_frontier_current_parents frontier vis par = (front', vis', par'); x \<in> t_set front'\<rbrakk>
-       \<Longrightarrow> parent_lookup par' x \<in> t_set frontier \<and> (parent_lookup par' x, x) \<in> Graph.digraph_abs G"
-  and some_parent: "parent_invar some_parent"
+        dVs (parent_abstract par) \<union> roots par = t_set vis;
+        next_frontier_current_parents frontier vis par = (front', vis', par')\<rbrakk>
+       \<Longrightarrow> roots par' = roots par"
+   and G_in_U: "dVs (Graph.digraph_abs G) \<subseteq> U"
 begin
 
 partial_function (tailrec) BFS_par_impl ::
@@ -2505,7 +2524,7 @@ partial_function (tailrec) BFS_par_impl ::
 
 definition "initial_par_state =
   \<lparr>dists = set_all_dists_in_set some_dist srcs 0, current = srcs, visited = srcs,
-   current_dist = 0, parent = some_parent\<rparr>"
+   current_dist = 0, parent = parent_init srcs\<rparr>"
 
 definition BFS_par_upd :: "('dist, 'vset, 'par) BFS_par_state \<Rightarrow> ('dist, 'vset, 'par) BFS_par_state" where
   "BFS_par_upd s = 
@@ -2523,25 +2542,22 @@ lemma BFS_par_impl_simps:
   "current s = \<emptyset>\<^sub>N \<Longrightarrow> BFS_par_impl s = s"
   by (subst BFS_par_impl.simps, simp add: BFS_par_upd_def Let_def split: prod.split)+
 
-text \<open>Path reconstruction: going back from @{term v} along the parents until a vertex of distance
-      \<open>0\<close>, i.e.\ a source, is reached. The vertices are collected in the accumulator.\<close>
-
-partial_function (tailrec) parent_path :: "'dist \<Rightarrow> 'par \<Rightarrow> 'ver \<Rightarrow> 'ver list \<Rightarrow> 'ver list" where
-  "parent_path d par v acc =
-     (if dist_lookup d v = 0 then v # acc
-      else parent_path d par (parent_lookup par v) (v # acc))"
-
 context 
   assumes BFS_axiom: BFS_axiom
 begin
 
+text \<open>Every parent edge goes from a visited vertex to a visited vertex whose distance is one
+      smaller and reverses an edge of the graph. Every visited vertex that is not a source has a
+      parent. The roots are the sources.\<close>
+
 definition "parents_invar s =
-   (parent_invar (parent s) \<and>
+   (parent_invar (parent s) \<and> roots (parent s) = t_set srcs \<and>
     (\<forall> x \<in> t_set srcs. dist_lookup (dists s) x = 0) \<and>
-    (\<forall> v \<in> t_set (visited s) - t_set srcs.
-        parent_lookup (parent s) v \<in> t_set (visited s) \<and>
-        dist_lookup (dists s) (parent_lookup (parent s) v) + 1 = dist_lookup (dists s) v \<and>
-        (parent_lookup (parent s) v, v) \<in> Graph.digraph_abs G))"
+    (\<forall> v \<in> t_set (visited s) - t_set srcs. \<exists> u. (v, u) \<in> parent_abstract (parent s)) \<and>
+    (\<forall> v u. (v, u) \<in> parent_abstract (parent s) \<longrightarrow>
+        v \<in> t_set (visited s) \<and> u \<in> t_set (visited s) \<and>
+        dist_lookup (dists s) u + 1 = dist_lookup (dists s) v \<and>
+        (u, v) \<in> Graph.digraph_abs G))"
 
 lemma parents_invar_pres_one_step:
   assumes "BFS_call_1_conds state" "invar_1 state" "invar_2 state" 
@@ -2558,7 +2574,38 @@ proof-
   have pre: "vset_inv2 (current s)" "vset_inv (visited s)" "t_set (current s) \<subseteq> t_set (visited s)"
             "t_set (visited s) \<subseteq> dVs (Graph.digraph_abs G)" "parent_invar (parent s)"
     using invar_1D(1,2)[OF assms(2)] assms(3,5) vis_cur by (auto simp: invar_2_def parents_invar_def)
-  note nf = next_frontier_current_parents[OF pre(1,2) graph_inv(1)[OF BFS_axiom] pre(3,4,5) nfcp]
+  have tree: "dVs (parent_abstract (parent s)) \<union> roots (parent s) = t_set (visited s)"
+  proof-
+    have pinv: "roots (parent s) = t_set srcs"
+      "\<forall> v \<in> t_set (visited s) - t_set srcs. \<exists> u. (v, u) \<in> parent_abstract (parent s)"
+      "\<forall> v u. (v, u) \<in> parent_abstract (parent s) \<longrightarrow>
+        v \<in> t_set (visited s) \<and> u \<in> t_set (visited s) \<and>
+        dist_lookup (dists s) u + 1 = dist_lookup (dists s) v \<and>
+        (u, v) \<in> Graph.digraph_abs G"
+      using assms(5) by (simp_all add: parents_invar_def)
+    have srcs: "t_set srcs \<subseteq> t_set (visited s)"
+      using assms(3) vis_cur by (simp add: invar_2_def)
+    have "x \<in> dVs (parent_abstract (parent s)) \<union> roots (parent s)" if "x \<in> t_set (visited s)" for x
+    proof(cases "x \<in> t_set srcs")
+      case True
+      then show ?thesis
+        using pinv(1) by simp
+    next
+      case False
+      then have "x \<in> t_set (visited s) - t_set srcs"
+        using that by simp
+      then obtain u where "(x, u) \<in> parent_abstract (parent s)"
+        using pinv(2) by blast
+      then show ?thesis
+        by (simp add: dVsI)
+    qed
+    moreover have "fst e \<in> t_set (visited s) \<and> snd e \<in> t_set (visited s)"
+      if "e \<in> parent_abstract (parent s)" for e
+      using pinv(3)[rule_format, of "fst e" "snd e"] that by simp
+    ultimately show ?thesis
+      using pinv(1) srcs unfolding dVs_eq by blast
+  qed
+  note nf = next_frontier_current_parents[OF pre(1,2) graph_inv(1)[OF BFS_axiom] pre(3,4,5) tree nfcp]
   note front' = next_frontier(1,2)[OF pre(1,2) graph_inv(1)[OF BFS_axiom] pre(3) nf(1) pre(4)]
   have vis': "t_set vis' = t_set (visited s) \<union> t_set front'"
     using next_vis(2)[OF pre(1,2) graph_inv(1)[OF BFS_axiom] pre(3) nf(1) pre(4)] .
@@ -2576,22 +2623,50 @@ proof-
   have d_cur: "dist_lookup (dists s) x = current_dist s" if "x \<in> t_set (current s)" for x
     using distances_invarD(6)[OF BFS_axiom assms(4)] that pre(3)
     by (auto simp: BFS_dist_state.truncate_def)
-  have "parent_lookup par' v \<in> t_set vis' \<and>
-        dist_lookup ?d (parent_lookup par' v) + 1 = dist_lookup ?d v \<and>
-        (parent_lookup par' v, v) \<in> Graph.digraph_abs G" if "v \<in> t_set vis' - t_set srcs" for v
-  proof(cases "v \<in> t_set (visited s)")
+  obtain Ex where Ex: "parent_abstract par' = parent_abstract (parent s) \<union> Ex"
+    "\<forall> x \<in> t_set front'. \<exists> x' \<in> t_set (current s). (x', x) \<in> Graph.digraph_abs G \<and> (x, x') \<in> Ex"
+    "\<forall> x x'. (x, x') \<in> Ex \<longrightarrow>
+       x \<in> t_set front' \<and> x' \<in> t_set (current s) \<and> (x', x) \<in> Graph.digraph_abs G"
+    using nf(3) by blast
+  have "v \<in> t_set vis' \<and> u \<in> t_set vis' \<and> dist_lookup ?d u + 1 = dist_lookup ?d v \<and>
+        (u, v) \<in> Graph.digraph_abs G" if "(v, u) \<in> parent_abstract par'" for v u
+  proof(cases "(v, u) \<in> parent_abstract (parent s)")
     case True
     then show ?thesis
-      using assms(5) that nf(3)[OF True] d_vis vis' by (auto simp: parents_invar_def)
+      using assms(5) d_vis vis' by (auto simp: parents_invar_def)
   next
     case False
-    then have v: "v \<in> t_set front'"
-      using that vis' by auto
+    then have "(v, u) \<in> Ex"
+      using that Ex(1) by auto
     then show ?thesis
-      using nf(4)[OF v] pre(3) d_cur d_front'[OF v] d_vis[of "parent_lookup par' v"] vis' by auto
+      using Ex(3) pre(3) d_cur d_front' d_vis[of u] vis' by auto
+  qed
+  moreover have "\<exists> u. (v, u) \<in> parent_abstract par'" if "v \<in> t_set vis' - t_set srcs" for v
+  proof(cases "v \<in> t_set (visited s)")
+    case True
+    have "\<forall> v \<in> t_set (visited s) - t_set srcs. \<exists> u. (v, u) \<in> parent_abstract (parent s)"
+      using assms(5) unfolding parents_invar_def by blast
+    moreover have "v \<in> t_set (visited s) - t_set srcs"
+      using True that by simp
+    ultimately have "\<exists> u. (v, u) \<in> parent_abstract (parent s)"
+      by (rule bspec)
+    then obtain u where "(v, u) \<in> parent_abstract (parent s)"
+      by blast
+    then show ?thesis
+      using Ex(1) by blast
+  next
+    case False
+    then have "v \<in> t_set front'"
+      using that vis' by blast
+    then obtain u where "(v, u) \<in> Ex"
+      using Ex(2) by blast
+    then show ?thesis
+      using Ex(1) by blast
   qed
   moreover have "dist_lookup ?d x = 0" if "x \<in> t_set srcs" for x
     using assms(3,5) vis_cur d_vis that by (auto simp: invar_2_def parents_invar_def)
+  moreover have "roots par' = t_set srcs"
+    using nf(4) assms(5) by (simp add: parents_invar_def)
   ultimately show "parents_invar (BFS_par_upd s)"
     using nf(2) nfcp by (simp add: parents_invar_def BFS_par_upd_def Let_def)
 qed
@@ -2636,7 +2711,8 @@ proof-
   have "BFS_dist_state.truncate initial_par_state = initial_dist_state"
     by (simp add: initial_par_state_def initial_dist_state_def BFS_dist_state.truncate_def)
   moreover have "parents_invar initial_par_state"
-    using some_parent BFS_axiom set_all_dists_in_set(2)[OF vset_inv2[OF srcs_invar(2)] srcs_in_G some_dist]
+    using init[OF vset_inv2[OF srcs_invar(2)] order.trans[OF srcs_in_G G_in_U]]
+          BFS_axiom set_all_dists_in_set(2)[OF vset_inv2[OF srcs_invar(2)] srcs_in_G some_dist]
     by (simp add: parents_invar_def initial_par_state_def)
   ultimately show "BFS_dist_state.truncate (BFS_par_impl initial_par_state) = BFS_dist initial_dist_state"
                   "parents_invar (BFS_par_impl initial_par_state)"
@@ -2644,18 +2720,19 @@ proof-
           distances_invar_intial[OF BFS_axiom] by auto
 qed
 
-text \<open>Every visited vertex that is not a source is reached from its parent by an edge of the
-      level graph, i.e.\ following the parents yields shortest paths from the sources.\<close>
-
 lemma BFS_par_final_fields:
   "visited (BFS_par_impl initial_par_state) = visited (BFS_dist initial_dist_state)"
   "dists (BFS_par_impl initial_par_state) = dists (BFS_dist initial_dist_state)"
   using arg_cong[OF BFS_par_final(1), of visited] arg_cong[OF BFS_par_final(1), of dists]
   by (simp_all add: BFS_dist_state.truncate_def)
 
+text \<open>Every parent edge reverses an edge of the level graph, i.e.\ following the parents yields
+      shortest paths from the sources.\<close>
+
 theorem BFS_par_parent_in_level_graph:
-  assumes "final_state = BFS_par_impl initial_par_state" "v \<in> t_set (visited final_state) - t_set srcs"
-  shows "(parent_lookup (parent final_state) v, v) \<in> level_graph (Graph.digraph_abs G) (t_set srcs)"
+  assumes "final_state = BFS_par_impl initial_par_state"
+          "(v, u) \<in> parent_abstract (parent final_state)"
+  shows "(u, v) \<in> level_graph (Graph.digraph_abs G) (t_set srcs)"
   using BFS_par_final(2) assms BFS_dist_level_graph[OF BFS_axiom refl] BFS_par_final_fields
   by (fastforce simp: parents_invar_def)
 
@@ -2667,6 +2744,18 @@ lemma BFS_par_unvisited_unreachable:
         BFS_par_final_fields(1) assms
   by simp
 
+lemma BFS_par_has_parent:
+  assumes "final_state = BFS_par_impl initial_par_state"
+          "x \<in> t_set (visited final_state) - t_set srcs"
+  obtains u where "(x, u) \<in> parent_abstract (parent final_state)"
+proof-
+  have "\<forall> v \<in> t_set (visited final_state) - t_set srcs. \<exists> u. (v, u) \<in> parent_abstract (parent final_state)"
+    using BFS_par_final(2) unfolding assms(1) parents_invar_def by blast
+  then have "\<exists> u. (x, u) \<in> parent_abstract (parent final_state)"
+    using assms(2) by (rule bspec)
+  then show ?thesis
+    using that by blast
+qed
 lemma BFS_par_dist:
   assumes "final_state = BFS_par_impl initial_par_state" "x \<in> t_set (visited final_state)"
   shows "dist_lookup (dists final_state) x = distance_set (Graph.digraph_abs G) (t_set srcs) x"
@@ -2682,114 +2771,129 @@ proof(induction "dist_lookup (dists final_state) x" arbitrary: x rule: less_indu
       using True BFS_par_final(2) assms(1) by (simp add: parents_invar_def zero_enat_def)
   next 
     case False
-    let ?p = "parent_lookup (parent final_state) x"
-    have p: "?p \<in> t_set (visited final_state)"
-            "dist_lookup (dists final_state) ?p + 1 = dist_lookup (dists final_state) x"
-      using BFS_par_final(2) less.prems False assms(1) by (auto simp: parents_invar_def)
-    have "x \<in> t_set (visited final_state) - t_set srcs"
-      using less.prems False by simp
-    then have "(?p, x) \<in> level_graph (Graph.digraph_abs G) (t_set srcs)"
-      by (rule BFS_par_parent_in_level_graph[OF assms(1)])
+    obtain p where xp: "(x, p) \<in> parent_abstract (parent final_state)"
+      using BFS_par_has_parent[OF assms(1)] less.prems False by blast
+    have p: "p \<in> t_set (visited final_state)"
+            "dist_lookup (dists final_state) p + 1 = dist_lookup (dists final_state) x"
+      using BFS_par_final(2) xp assms(1) by (auto simp: parents_invar_def)
+    have "(p, x) \<in> level_graph (Graph.digraph_abs G) (t_set srcs)"
+      by (rule BFS_par_parent_in_level_graph[OF assms(1) xp])
     then have lg: "distance_set (Graph.digraph_abs G) (t_set srcs) x =
-                   distance_set (Graph.digraph_abs G) (t_set srcs) ?p + 1"
+                   distance_set (Graph.digraph_abs G) (t_set srcs) p + 1"
       by (rule in_level_graphE)
-    have IH: "enat (dist_lookup (dists final_state) ?p) = distance_set (Graph.digraph_abs G) (t_set srcs) ?p"
+    have IH: "enat (dist_lookup (dists final_state) p) = distance_set (Graph.digraph_abs G) (t_set srcs) p"
       using less.hyps[OF _ p(1)] p(2) by simp
     show ?thesis
       by (simp add: lg IH[symmetric] p(2)[symmetric] eSuc_plus_1)
   qed
 qed
 
-lemma parent_path_acc:
-  assumes "final_state = BFS_par_impl initial_par_state" "x \<in> t_set (visited final_state)"
-  shows "parent_path (dists final_state) (parent final_state) x acc =
-           parent_path (dists final_state) (parent final_state) x [] @ acc \<and>
-         (\<exists>u \<in> t_set srcs. vwalk_bet (Graph.digraph_abs G) u
-                              (parent_path (dists final_state) (parent final_state) x []) x) \<and>
-         length (parent_path (dists final_state) (parent final_state) x []) =
-           Suc (dist_lookup (dists final_state) x)"
+text \<open>A walk along the parents, reversed, is a walk in the graph, and every step along the parents
+      decreases the distance by one.\<close>
+
+lemma parent_walk:
+  assumes "final_state = BFS_par_impl initial_par_state"
+          "vwalk_bet (parent_abstract (parent final_state)) x p t" "t \<in> dVs (Graph.digraph_abs G)"
+  shows "vwalk_bet (Graph.digraph_abs G) t (rev p) x \<and>
+         dist_lookup (dists final_state) x = dist_lookup (dists final_state) t + (length p - 1)"
   using assms(2)
-proof(induction "dist_lookup (dists final_state) x" arbitrary: x acc rule: less_induct)
-  case less
+proof(induction p arbitrary: x)
+  case Nil
+  then show ?case
+    by (simp add: vwalk_bet_def)
+next
+  case (Cons y p)
+  note IH = Cons.IH and prems = Cons.prems
   show ?case
-  proof(cases "x \<in> t_set srcs")
-    case True
-    have d0: "dist_lookup (dists final_state) x = 0"
-      using BFS_par_final(2) True assms(1) by (simp add: parents_invar_def)
-    have "parent_path (dists final_state) (parent final_state) x acc' = x # acc'" for acc'
-      by (subst parent_path.simps) (simp add: d0)
+  proof(cases p)
+    case Nil
     then show ?thesis
-      using True srcs_in_G[OF BFS_axiom] d0 by (auto intro!: bexI[OF _ True] vwalk_bet_reflexive)
+      using prems assms(3) by (auto simp: vwalk_bet_def)
   next
-    case False
-    let ?p = "parent_lookup (parent final_state) x"
-    have p: "?p \<in> t_set (visited final_state)"
-            "dist_lookup (dists final_state) ?p + 1 = dist_lookup (dists final_state) x"
-            "(?p, x) \<in> Graph.digraph_abs G"
-      using BFS_par_final(2) less.prems False assms(1) by (auto simp: parents_invar_def)
-    have step: "parent_path (dists final_state) (parent final_state) x acc' =
-                parent_path (dists final_state) (parent final_state) ?p (x # acc')" for acc'
-      by (subst parent_path.simps) (use p(2) in simp)
-    have IH_acc: "parent_path (dists final_state) (parent final_state) ?p acc' =
-                  parent_path (dists final_state) (parent final_state) ?p [] @ acc'" for acc'
-      using less.hyps[OF _ p(1), of acc'] p(2) by auto
-    obtain u where u: "u \<in> t_set srcs"
-      "vwalk_bet (Graph.digraph_abs G) u (parent_path (dists final_state) (parent final_state) ?p []) ?p"
-      "length (parent_path (dists final_state) (parent final_state) ?p []) =
-         Suc (dist_lookup (dists final_state) ?p)"
-      using less.hyps[OF _ p(1), of "[]"] p(2) by auto
-    have px: "parent_path (dists final_state) (parent final_state) x acc' =
-              parent_path (dists final_state) (parent final_state) ?p [] @ x # acc'" for acc'
-      by (rule trans[OF step IH_acc])
+    case (Cons z p')
+    have xz: "(x, z) \<in> parent_abstract (parent final_state)"
+             "vwalk_bet (parent_abstract (parent final_state)) z p t" "y = x"
+      using prems Cons by (auto simp: vwalk_bet_def)
+    have e: "dist_lookup (dists final_state) z + 1 = dist_lookup (dists final_state) x"
+            "(z, x) \<in> Graph.digraph_abs G"
+      using BFS_par_final(2) xz(1) assms(1) by (auto simp: parents_invar_def)
+    note IH' = IH[OF xz(2)]
     show ?thesis
-      unfolding px[of acc] px[of "[]"]
-      using vwalk_bet_transitive[OF u(2) edges_are_vwalk_bet[OF p(3)]] u(3) p(2)
-      by (intro conjI bexI[OF _ u(1)]) simp_all
+      using vwalk_bet_transitive[OF conjunct1[OF IH'] edges_are_vwalk_bet[OF e(2)]]
+            conjunct2[OF IH'] e(1) xz(3) Cons
+      by simp
   qed
 qed
 
-text \<open>One step of the path reconstruction: a vertex of distance \<open>0\<close> ends the path; otherwise its
-      parent is visited, has a smaller distance and the path extends the one to the parent.\<close>
+text \<open>Path reconstruction: @{term get_path} leads from a visited vertex along the parents to a
+      root, i.e.\ a source. Reversed, this is a walk from that source whose number of edges is the
+      distance of the vertex.\<close>
 
-lemma parent_path_step:
+text \<open>The preconditions of @{term get_path} hold for every visited vertex.\<close>
+
+lemma get_path_pre:
   assumes "final_state = BFS_par_impl initial_par_state" "x \<in> t_set (visited final_state)"
-  shows "dist_lookup (dists final_state) x = 0 \<Longrightarrow>
-           parent_path (dists final_state) (parent final_state) x [] = [x]"
-    and "dist_lookup (dists final_state) x \<noteq> 0 \<Longrightarrow>
-           parent_lookup (parent final_state) x \<in> t_set (visited final_state) \<and>
-           dist_lookup (dists final_state) (parent_lookup (parent final_state) x) <
-             dist_lookup (dists final_state) x \<and>
-           parent_path (dists final_state) (parent final_state) x [] =
-             parent_path (dists final_state) (parent final_state) (parent_lookup (parent final_state) x) []
-             @ [x]"
+  shows "parent_invar (parent final_state)"
+        "x \<in> dVs (parent_abstract (parent final_state)) \<union> roots (parent final_state)"
 proof-
-  show "dist_lookup (dists final_state) x = 0 \<Longrightarrow>
-          parent_path (dists final_state) (parent final_state) x [] = [x]"
-    by (subst parent_path.simps) simp
-next
-  assume d: "dist_lookup (dists final_state) x \<noteq> 0"
-  let ?p = "parent_lookup (parent final_state) x"
-  have "x \<in> t_set (visited final_state) - t_set srcs"
-    using d assms BFS_par_final(2) by (auto simp: parents_invar_def)
-  then have p: "?p \<in> t_set (visited final_state)"
-               "dist_lookup (dists final_state) ?p + 1 = dist_lookup (dists final_state) x"
-    using bspec[OF conjunct2[OF conjunct2[OF BFS_par_final(2)[unfolded parents_invar_def]]], of x] assms(1)
-    by auto
-  have "parent_path (dists final_state) (parent final_state) x [] =
-        parent_path (dists final_state) (parent final_state) ?p [] @ [x]"
-    using conjunct1[OF parent_path_acc[OF assms(1) p(1), of "[x]"]]
-    by (subst parent_path.simps) (simp add: d)
-  then show "?p \<in> t_set (visited final_state) \<and>
-             dist_lookup (dists final_state) ?p < dist_lookup (dists final_state) x \<and>
-             parent_path (dists final_state) (parent final_state) x [] =
-               parent_path (dists final_state) (parent final_state) ?p [] @ [x]"
-    using p by simp
+  have inv: "parent_invar (parent final_state)" "roots (parent final_state) = t_set srcs"
+    using BFS_par_final(2) assms(1) by (auto simp: parents_invar_def)
+  then show "parent_invar (parent final_state)"
+    by simp
+  show "x \<in> dVs (parent_abstract (parent final_state)) \<union> roots (parent final_state)"
+  proof(cases "x \<in> t_set srcs")
+    case True
+    then show ?thesis
+      using inv(2) by simp
+  next
+    case False
+    then obtain u where "(x, u) \<in> parent_abstract (parent final_state)"
+      using BFS_par_has_parent[OF assms(1)] assms(2) by blast
+    then show ?thesis
+      by auto
+  qed
+qed
+
+lemma get_path_walk:
+  assumes "final_state = BFS_par_impl initial_par_state" "x \<in> t_set (visited final_state)"
+  shows "\<exists>u \<in> t_set srcs.
+           vwalk_bet (Graph.digraph_abs G) u (rev (get_path (parent final_state) x)) x \<and>
+           length (get_path (parent final_state) x) = Suc (dist_lookup (dists final_state) x) \<and>
+           distinct (get_path (parent final_state) x)"
+proof-
+  have inv: "parent_invar (parent final_state)" "roots (parent final_state) = t_set srcs"
+            "\<forall> x \<in> t_set srcs. dist_lookup (dists final_state) x = 0"
+    using BFS_par_final(2) assms(1) by (auto simp: parents_invar_def)
+  note x_in = get_path_pre(2)[OF assms]
+  obtain t where t: "distinct_vwalk_bet (parent_abstract (parent final_state)) x
+                       (get_path (parent final_state) x) t \<or>
+                     (x = t \<and> get_path (parent final_state) x = [x])" "t \<in> t_set srcs"
+    using get_path[OF inv(1) x_in] inv(2) by blast
+  from t(1) show ?thesis
+  proof
+    assume "distinct_vwalk_bet (parent_abstract (parent final_state)) x
+              (get_path (parent final_state) x) t"
+    then have p: "vwalk_bet (parent_abstract (parent final_state)) x (get_path (parent final_state) x) t"
+                 "distinct (get_path (parent final_state) x)"
+      by (simp_all add: distinct_vwalk_bet_def)
+    have "get_path (parent final_state) x \<noteq> []"
+      using p(1) by (simp add: vwalk_bet_def)
+    then show ?thesis
+      using parent_walk[OF assms(1) p(1)] srcs_in_G[OF BFS_axiom] p(2) t(2) inv(3)
+      by (intro bexI[OF _ t(2)]) auto
+  next
+    assume "x = t \<and> get_path (parent final_state) x = [x]"
+    then show ?thesis
+      using t(2) inv(3) srcs_in_G[OF BFS_axiom]
+      by (intro bexI[of _ x]) (auto simp: vwalk_bet_def)
+  qed
 qed
 
 text \<open>The main properties of the final state: a vertex is visited iff it is reachable from a
       source, the distance computed for a visited vertex is its distance from the sources, every
-      visited vertex that is not a source has a visited parent whose distance is one smaller, and
-      following the parents yields a shortest path from the sources.\<close>
+      visited vertex that is not a source has a parent, every parent is visited, reached by a graph
+      edge and has a distance that is one smaller, and
+      the path reconstructed by @{term get_path} is a shortest path from the sources.\<close>
 
 theorem BFS_par_correct:
   assumes "final_state = BFS_par_impl initial_par_state"
@@ -2798,64 +2902,74 @@ theorem BFS_par_correct:
     and "x \<in> t_set (visited final_state) \<Longrightarrow>
            dist_lookup (dists final_state) x = distance_set (Graph.digraph_abs G) (t_set srcs) x"
     and "x \<in> t_set (visited final_state) - t_set srcs \<Longrightarrow>
-           parent_lookup (parent final_state) x \<in> t_set (visited final_state) \<and>
-           (parent_lookup (parent final_state) x, x) \<in> Graph.digraph_abs G \<and>
-           distance_set (Graph.digraph_abs G) (t_set srcs) x =
-             distance_set (Graph.digraph_abs G) (t_set srcs) (parent_lookup (parent final_state) x) + 1"
+           (\<exists> u. (x, u) \<in> parent_abstract (parent final_state)) \<and>
+           (\<forall> u. (x, u) \<in> parent_abstract (parent final_state) \<longrightarrow>
+                u \<in> t_set (visited final_state) \<and> (u, x) \<in> Graph.digraph_abs G \<and>
+                distance_set (Graph.digraph_abs G) (t_set srcs) x =
+                  distance_set (Graph.digraph_abs G) (t_set srcs) u + 1)"
     and "x \<in> t_set (visited final_state) \<Longrightarrow>
            \<exists>u \<in> t_set srcs.
-             vwalk_bet (Graph.digraph_abs G) u (parent_path (dists final_state) (parent final_state) x []) x \<and>
-             length (parent_path (dists final_state) (parent final_state) x []) - 1 =
+             vwalk_bet (Graph.digraph_abs G) u (rev (get_path (parent final_state) x)) x \<and>
+             length (get_path (parent final_state) x) - 1 =
                distance_set (Graph.digraph_abs G) (t_set srcs) x"
 proof-
   show path: "x \<in> t_set (visited final_state) \<Longrightarrow>
            \<exists>u \<in> t_set srcs.
-             vwalk_bet (Graph.digraph_abs G) u (parent_path (dists final_state) (parent final_state) x []) x \<and>
-             length (parent_path (dists final_state) (parent final_state) x []) - 1 =
+             vwalk_bet (Graph.digraph_abs G) u (rev (get_path (parent final_state) x)) x \<and>
+             length (get_path (parent final_state) x) - 1 =
                distance_set (Graph.digraph_abs G) (t_set srcs) x"
-    using parent_path_acc[OF assms, of x "[]"] BFS_par_dist[OF assms, of x] by auto
+    using get_path_walk[OF assms, of x] BFS_par_dist[OF assms, of x] by auto
   show "x \<in> t_set (visited final_state) \<longleftrightarrow>
            (\<exists>u \<in> t_set srcs. \<exists>q. vwalk_bet (Graph.digraph_abs G) u q x)"
     using path BFS_par_unvisited_unreachable[OF assms] by blast
   show "x \<in> t_set (visited final_state) - t_set srcs \<Longrightarrow>
-           parent_lookup (parent final_state) x \<in> t_set (visited final_state) \<and>
-           (parent_lookup (parent final_state) x, x) \<in> Graph.digraph_abs G \<and>
-           distance_set (Graph.digraph_abs G) (t_set srcs) x =
-             distance_set (Graph.digraph_abs G) (t_set srcs) (parent_lookup (parent final_state) x) + 1"
+           (\<exists> u. (x, u) \<in> parent_abstract (parent final_state)) \<and>
+           (\<forall> u. (x, u) \<in> parent_abstract (parent final_state) \<longrightarrow>
+                u \<in> t_set (visited final_state) \<and> (u, x) \<in> Graph.digraph_abs G \<and>
+                distance_set (Graph.digraph_abs G) (t_set srcs) x =
+                  distance_set (Graph.digraph_abs G) (t_set srcs) u + 1)"
   proof-
     assume x: "x \<in> t_set (visited final_state) - t_set srcs"
-    have "distance_set (Graph.digraph_abs G) (t_set srcs) x =
-          distance_set (Graph.digraph_abs G) (t_set srcs) (parent_lookup (parent final_state) x) + 1"
-      using BFS_par_parent_in_level_graph[OF assms x] by (rule in_level_graphE)
-    then show ?thesis
-      using BFS_par_final(2) assms x by (simp add: parents_invar_def)
+    have "u \<in> t_set (visited final_state) \<and> (u, x) \<in> Graph.digraph_abs G \<and>
+          distance_set (Graph.digraph_abs G) (t_set srcs) x =
+            distance_set (Graph.digraph_abs G) (t_set srcs) u + 1"
+      if xu: "(x, u) \<in> parent_abstract (parent final_state)" for u
+    proof-
+      have "distance_set (Graph.digraph_abs G) (t_set srcs) x =
+            distance_set (Graph.digraph_abs G) (t_set srcs) u + 1"
+        using BFS_par_parent_in_level_graph[OF assms xu] by (rule in_level_graphE)
+      then show ?thesis
+        using BFS_par_final(2) assms xu by (auto simp: parents_invar_def)
+    qed
+    moreover obtain u where "(x, u) \<in> parent_abstract (parent final_state)"
+      by (rule BFS_par_has_parent[OF assms x])
+    ultimately show ?thesis
+      by blast
   qed
 qed (rule BFS_par_dist[OF assms])
 
 text \<open>The reconstructed path has at most as many vertices as the graph.\<close>
 
-lemma parent_path_length:
+lemma get_path_length:
   assumes "final_state = BFS_par_impl initial_par_state" "x \<in> t_set (visited final_state)"
-  shows "length (parent_path (dists final_state) (parent final_state) x []) \<le>
-           card (dVs (Graph.digraph_abs G))"
+  shows "length (get_path (parent final_state) x) \<le> card (dVs (Graph.digraph_abs G))"
 proof-
   obtain u where u: "u \<in> t_set srcs"
-    and w: "vwalk_bet (Graph.digraph_abs G) u (parent_path (dists final_state) (parent final_state) x []) x"
-    and l: "length (parent_path (dists final_state) (parent final_state) x []) - 1 =
+    and w: "vwalk_bet (Graph.digraph_abs G) u (rev (get_path (parent final_state) x)) x"
+    and l: "length (get_path (parent final_state) x) - 1 =
               distance_set (Graph.digraph_abs G) (t_set srcs) x"
     using BFS_par_correct(4)[OF assms] by blast
   have fin: "distance (Graph.digraph_abs G) u x < \<infinity>"
     by (rule le_less_trans[OF vwalk_bet_dist[OF w]]) simp
   have lt: "distance (Graph.digraph_abs G) u x < card (dVs (Graph.digraph_abs G))"
     by (rule distance_less_vert_card[OF fin Graph.finite_graph[OF graph_inv(1-3)[OF BFS_axiom]]])
-  have "enat (length (parent_path (dists final_state) (parent final_state) x []) - 1) \<le>
-        distance (Graph.digraph_abs G) u x"
+  have "enat (length (get_path (parent final_state) x) - 1) \<le> distance (Graph.digraph_abs G) u x"
     unfolding l by (rule dist_set_mem[OF u])
-  then have "enat (length (parent_path (dists final_state) (parent final_state) x []) - 1) <
+  then have "enat (length (get_path (parent final_state) x) - 1) <
              enat (card (dVs (Graph.digraph_abs G)))"
     using lt by (rule le_less_trans)
   then show ?thesis
-    using parent_path_acc[OF assms, of "[]"] by simp
+    using get_path_walk[OF assms] by auto
 qed
 
 text \<open>The final visited set satisfies the set invariant, so membership can be tested with
@@ -2875,15 +2989,15 @@ qed
 
 text \<open>The reconstructed path is no longer than any walk from a source to the same vertex.\<close>
 
-lemma parent_path_shortest:
+lemma get_path_shortest:
   assumes "final_state = BFS_par_impl initial_par_state" 
           "x \<in> t_set (BFS_dist_state.visited final_state)"
   obtains u where "u \<in> t_set srcs"
-    "vwalk_bet (Graph.digraph_abs G) u (parent_path (dists final_state) (parent final_state) x []) x"
+    "vwalk_bet (Graph.digraph_abs G) u (rev (get_path (parent final_state) x)) x"
     "\<And> u' p'. \<lbrakk>u' \<in> t_set srcs; vwalk_bet (Graph.digraph_abs G) u' p' x\<rbrakk> \<Longrightarrow>
-        length (parent_path (dists final_state) (parent final_state) x []) \<le> length p'"
+        length (get_path (parent final_state) x) \<le> length p'"
 proof-
-  define pp where "pp = parent_path (dists final_state) (parent final_state) x []"
+  define pp where "pp = rev (get_path (parent final_state) x)"
   obtain u where u: "u \<in> t_set srcs" "vwalk_bet (Graph.digraph_abs G) u pp x"
     "enat (length pp - 1) = distance_set (Graph.digraph_abs G) (t_set srcs) x"
     using BFS_par_correct(4)[OF assms] by (auto simp add: pp_def)

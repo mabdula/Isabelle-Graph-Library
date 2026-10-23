@@ -1,7 +1,6 @@
 theory CSR_Graph_Reset_To
   imports
     CSR_Graph
-    Data_Structures.Iterable_Set_Reset_To_Specs_Imp
     Data_Structures.Imp_Range_Iteration
 begin
 
@@ -35,8 +34,7 @@ qed
 
 sublocale csr_rt: indexed_iterable_set_reset_to csr_invar csr_abstract csr_current csr_has
     csr_iterated csr_remaining csr_move csr_reset K csr_reset_to
-proof(intro indexed_iterable_set_reset_to.intro[OF csr.indexed_iterable_set_axioms]
-        indexed_iterable_set_reset_to_axioms.intro, goal_cases)
+proof(unfold_locales, goal_cases)
   case (1 C i x)
   have "B ! i \<le> P ! key x" "P ! key x < B ! Suc i"
     using seg_pos(1,2)[OF 1(3)[unfolded csr_abstract_def] B_bound[OF K_less[OF 1(2)]]] by simp_all
@@ -122,9 +120,7 @@ qed
 sublocale csr_rt_imp: indexed_iterable_set_reset_to_imp csr_invar csr_abstract csr_current csr_has
     csr_iterated csr_remaining csr_move csr_reset K csr_rt_assn csr_rt_current_imp csr_rt_has_imp
     csr_rt_move_imp csr_rt_reset_imp csr_reset_to "csr_reset_to_imp key"
-proof(intro indexed_iterable_set_reset_to_imp.intro indexed_iterable_set_reset_to_imp_axioms.intro
-        indexed_iterable_set_imp.intro indexed_iterable_set_imp_axioms.intro
-        csr.indexed_iterable_set_axioms csr_rt.indexed_iterable_set_reset_to_axioms, goal_cases)
+proof(unfold_locales, goal_cases)
   case (1 C i Ci)
   obtain Ba Ea Ca Pa where Ci: "Ci = (Ba, Ea, Ca, Pa)"
     by (cases Ci) auto
