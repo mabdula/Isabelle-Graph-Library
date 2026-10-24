@@ -1,6 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Decomposition
   imports Augmentation
 begin
+
+provenance human
+
 context flow_network_spec
 begin
 

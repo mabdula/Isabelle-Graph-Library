@@ -1,3 +1,7 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Preliminaries\<close>
 text \<open>In this theory we set up some preliminary mathematics to be used later on.\<close>
 
@@ -7,4 +11,7 @@ theory Preliminaries
          Directed_Set_Graphs.More_Arith Directed_Set_Graphs.Awalk Directed_Set_Graphs.Summary
           Directed_Set_Graphs.Multigraph
 begin
+
+provenance human
+
 end

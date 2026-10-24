@@ -1,6 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 theory General_ML_Tools
-imports Main
+imports Main AI_Provenance.Provenance
 begin
+
+provenance human
+
 ML \<open>
   infix 0 THEN_ELSE' SOLVED_THEN_ELSE
   infix 1 THEN_ALL_NEW_FWD

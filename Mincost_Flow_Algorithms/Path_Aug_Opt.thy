@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Path_Aug_Opt 
   imports "Flow_Theory.Cost_Optimality"
 begin
+
+provenance human
 
 context 
  cost_flow_network

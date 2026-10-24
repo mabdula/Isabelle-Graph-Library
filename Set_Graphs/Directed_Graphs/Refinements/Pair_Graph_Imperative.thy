@@ -1,6 +1,12 @@
+(*
+  Author: Peter Lammich
+*)
+
 theory Pair_Graph_Imperative
 imports Pair_Graph_Specs Imperative.Imperative_DS Imperative.Array_Range_Iteration
 begin
+
+provenance human
 
   type_synonym 'v id_dl_graph = "'v \<Rightarrow> 'v list option"
     

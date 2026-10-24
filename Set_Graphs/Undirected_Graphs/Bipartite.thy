@@ -1,7 +1,13 @@
-(*Authors: Mohammad Abdulaziz, Thomas Ammer, Christoph Madlener*)
+(*
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+  Author: Christoph Madlener
+*)
 theory Bipartite
   imports Undirected_Set_Graphs Paths
 begin
+
+provenance human
 
 subsection \<open>Bipartite Graphs\<close>
 text \<open>

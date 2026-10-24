@@ -1,3 +1,7 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Supplementary Theory for Orlin's Algorithm\<close>
 
 theory Orlins_Preparation
@@ -6,6 +10,8 @@ theory Orlins_Preparation
           Undirected_Set_Graphs.Connected_Components
           Undirected_Set_Graphs.Directed_Undirected
 begin
+
+provenance human
 
 context 
   flow_network

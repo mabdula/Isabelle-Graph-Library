@@ -1,6 +1,12 @@
+(*
+  Author: Peter Lammich
+*)
+
 theory More_Eisbach
 imports General_ML_Tools "HOL-Eisbach.Eisbach_Tools"
 begin
+
+provenance human
 
 print_claset
   

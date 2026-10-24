@@ -2,6 +2,7 @@ session "Hungarian_Method" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
+  AI_Provenance
   Graph_Algorithms_Dev
   Data_Structures
   Alternating_Lists

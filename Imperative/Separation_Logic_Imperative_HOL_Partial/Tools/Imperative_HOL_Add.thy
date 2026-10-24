@@ -1,7 +1,14 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Additions to Imperative/HOL\<close>
 theory Imperative_HOL_Add
-imports "HOL-Imperative_HOL.Imperative_HOL" 
-begin 
+imports "HOL-Imperative_HOL.Imperative_HOL" AI_Provenance.Provenance 
+begin
+
+provenance human
+ 
 
 text \<open>This theory loads the Imperative HOL framework and provides 
         some additional lemmas needed for the separation logic framework.\<close> 

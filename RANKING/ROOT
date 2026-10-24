@@ -2,6 +2,7 @@ session "RANKING" = "HOL" +
   options [document = pdf, document_output = "output", document_variants="document:outline=/proof,/ML"]
   
   sessions
+    AI_Provenance
     "HOL-Probability"
     "HOL-Real_Asymp"
     "Monad_Normalisation"

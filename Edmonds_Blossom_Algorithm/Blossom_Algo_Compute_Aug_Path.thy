@@ -1,6 +1,12 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Blossom_Algo_Compute_Aug_Path
   imports Blossom_Algo_Contraction
 begin
+
+provenance human
 
 subsection \<open>Computing a Blossom or an Augmenting Path\<close>
 

@@ -1,6 +1,13 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Odd_Components
   imports Bipartite_Matchings_Existence Cardinality_Sums
 begin
+
+provenance human
 
 section \<open>Odd and Even Connected Components\<close>
 

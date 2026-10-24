@@ -1,8 +1,14 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Laminar Families\<close>
 
 theory Laminar_Family
-  imports Main
+  imports Main AI_Provenance.Provenance
 begin
+
+provenance human
 
 definition "laminar U \<X> = 
             ((\<forall> X Y. X \<in> \<X> \<longrightarrow> Y \<in> \<X> \<longrightarrow> (X \<subseteq> Y \<or> Y \<subseteq> X \<or> X \<inter> Y = {}))

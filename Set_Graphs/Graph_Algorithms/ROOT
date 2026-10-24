@@ -2,6 +2,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
   options [document = pdf, document_output = "output"]
 
   sessions
+    AI_Provenance
     Verified_SAT_Based_AI_Planning
     Undirected_Set_Graphs
   directories Refinements
@@ -17,6 +18,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     DFS_Cycles_Aux
     DFS_Cycles
     DFS_Cycles_Example
+    DFS_Time
     Parent_Map
     Bellman_Ford
     Bellman_Ford_Example

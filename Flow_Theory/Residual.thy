@@ -1,3 +1,7 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Flow Networks and Residual Graphs\<close>
 
 text \<open>In this file we build a theory related to residual graphs and some of their properties.\<close>
@@ -5,6 +9,8 @@ text \<open>In this file we build a theory related to residual graphs and some o
 theory Residual
   imports Preliminaries
 begin
+
+provenance human
 
 text \<open>When conducting pen-and-paper proofs on graphs, almost no attention is paid to a 
      suitable formal foundation.

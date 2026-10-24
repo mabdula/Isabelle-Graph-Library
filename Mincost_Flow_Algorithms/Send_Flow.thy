@@ -1,8 +1,14 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Formalisation of Loop for Ordinary Augmentations (Send-Flow)\<close>
 
 theory Send_Flow
   imports Orlins_Preparation
 begin
+
+provenance human
 
 subsection \<open>Setup\<close>
 

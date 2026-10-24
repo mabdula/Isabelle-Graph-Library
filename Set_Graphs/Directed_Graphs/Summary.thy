@@ -1,8 +1,14 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Summary
   imports 
     Pair_Graph
     Vwalk
 begin
+
+provenance human
 
 text \<open>Summary of the graph formalization DDFS.\<close>
 text \<open>A graph is a set of edges, where each edge is a pair. The vertices are defined implicitly.\<close>

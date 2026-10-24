@@ -1,8 +1,14 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Formalisation of Running Time of Ordinary Augmentations (Send-Flow)\<close>
 
 theory Send_Flow_Time
   imports Send_Flow 
 begin
+
+provenance human
 
 locale send_flow_time =
 send_flow where fst = fst for fst::"'edge \<Rightarrow> 'a"+

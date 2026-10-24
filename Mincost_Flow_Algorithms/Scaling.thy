@@ -1,3 +1,7 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>A Capacity Scaling Algorithm\<close>
 
 text \<open>In the last section we have proven that augmenting along a path preserves optimality. 
@@ -33,6 +37,8 @@ In case of non-existence go to 5.
 theory Scaling
   imports SSP_Preps
 begin
+
+provenance human
 
 text \<open>In contrast to the naive algorithm, we are now facing two mutually nested loops. 
 We will compile this to Isabelle by making use of two recursive functions, one for each loop.

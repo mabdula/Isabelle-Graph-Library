@@ -1,5 +1,6 @@
 (*
-Authors: Christoph Madlener and Thomas Ammer
+  Author: Christoph Madlener
+  Author: Thomas Ammer
 *)
 
 theory Matching_LP
@@ -7,6 +8,9 @@ theory Matching_LP
     Basic_Matching.Matching
     Jordan_Normal_Form.Matrix 
 begin
+
+provenance human
+
 subsection \<open>Definitions of certain matchings, to be moved\<close>
 
 definition "feasible_max_dual V E w (y::'v \<Rightarrow> real) = 

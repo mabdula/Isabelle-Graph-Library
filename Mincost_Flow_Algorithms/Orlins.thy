@@ -1,8 +1,15 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Top Loop of Orlin's Algorithm\<close>
  
 theory Orlins
   imports Maintain_Forest Send_Flow
 begin
+
+provenance human
+
 subsection \<open>Setup\<close>
 locale orlins_spec = 
 

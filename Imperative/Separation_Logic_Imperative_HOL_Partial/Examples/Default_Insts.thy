@@ -1,6 +1,12 @@
+(*
+  Author: Peter Lammich
+*)
+
 theory Default_Insts
-imports Main
+imports Main AI_Provenance.Provenance
 begin
+
+provenance human
 
   instantiation nat :: default begin
     definition "default = (0::nat)"

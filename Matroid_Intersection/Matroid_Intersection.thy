@@ -1,7 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Matroid_Intersection
   imports Matroids.Matroid Directed_Set_Graphs.Awalk "HOL-Eisbach.Eisbach" 
          "Directed_Set_Graphs.Pair_Graph_Specs" Alternating_Lists.Alternating_Lists
 begin
+
+provenance human
 
 section \<open>Theory for Matroid Intersection\<close>
 

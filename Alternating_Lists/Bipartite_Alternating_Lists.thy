@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Bipartite_Alternating_Lists
   imports Alternating_Lists Undirected_Set_Graphs.Bipartite
 begin
+
+provenance human
 
 lemma bipartite_alternation:
   assumes "bipartite G X Y" "walk_betw G s p t"

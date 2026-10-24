@@ -1,5 +1,11 @@
 session "Imperative" = "Separation_Logic_Imperative_HOL_Partial" +
+<<<<<<< HEAD
   sessions Data_Structures Go
+=======
+  sessions
+    AI_Provenance
+    Data_Structures
+>>>>>>> main
   theories
     Imperative_Base
     Imperative_DS

@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Blocking_Flow 
   imports Flow_Theory.STFlow Directed_Set_Graphs.Dist
 begin
+
+provenance human
 
 section \<open>Flow Theory for Dinic's Algorithm\<close>
 

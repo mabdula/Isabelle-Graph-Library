@@ -1,9 +1,15 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Compute_Blocking_Residual                 
   imports DFS_Collect_Backtrack_Example Compute_Blocking_Simple Residual_Buckets
     Flow_Theory.Unit_Flows
     "HOL-Library.Product_Lexorder"
     Graph_Algorithms_Dev.BFS_Example Graph_Algorithms_Dev.RBT_Map_Extension
 begin
+
+provenance human
 
 section \<open>Computation of Blocking Flows as Used by Dinic's Algorithm\<close>
 

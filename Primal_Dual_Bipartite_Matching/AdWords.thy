@@ -9,6 +9,8 @@ theory AdWords
     "HOL-Combinatorics.Multiset_Permutations"
 begin
 
+provenance human
+
 sledgehammer_params [provers = cvc4 vampire verit e spass z3 zipperposition]
 
 lemma finite_image_set2':

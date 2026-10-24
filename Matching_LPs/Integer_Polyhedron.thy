@@ -1,8 +1,15 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Integer_Polyhedron
   imports Faces
     Linear_Inequalities.Integer_Hull
     Missing_Sums 
 begin
+
+provenance human
 
 context gram_schmidt
 begin

@@ -1,6 +1,13 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Blossom_Algo_Contraction
   imports Blossom_Algo_Main_Loop Graph_Quotient
 begin
+
+provenance human
+
 subsection\<open>Contracting blossoms and lifting found augmenting paths\<close>
 
 text\<open>We refine the algorithm \<open>aug_path_search\<close>. Here we only handle contracting \<open>match_blossoms\<close> and lifting

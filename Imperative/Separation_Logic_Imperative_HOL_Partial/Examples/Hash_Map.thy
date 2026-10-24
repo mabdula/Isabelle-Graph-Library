@@ -1,7 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 section "Hash-Maps"
 theory Hash_Map
   imports Hash_Table
 begin
+
+provenance human
 
 subsection \<open>Auxiliary Lemmas\<close>
 lemma map_of_ls_update: 

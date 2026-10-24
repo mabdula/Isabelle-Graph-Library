@@ -1,4 +1,6 @@
-(*Author: Christoph Madlener *)
+(*
+  Author: Christoph Madlener
+*)
 theory Pair_Graph_Library_Component_Adaptor
   imports
     Pair_Graph_Library_Adaptor
@@ -6,6 +8,8 @@ theory Pair_Graph_Library_Component_Adaptor
     Directed_Set_Graphs.Component_Defs
     Digraph_Component_More
 begin
+
+provenance human
 
 abbreviation "subgraph_digraph \<equiv> Digraph_Component.subgraph"
 abbreviation "induced_subgraph_digraph \<equiv> Digraph_Component.induced_subgraph"

@@ -1,3 +1,7 @@
+(*
+  Author: Peter Lammich
+*)
+
 theory Imperative_Base
 imports
   "Separation_Logic_Imperative_HOL_Partial.Array_Set_Impl"
@@ -6,6 +10,8 @@ imports
   "Separation_Logic_Imperative_HOL_Partial.Hash_Map_Impl"
   "Collections.Locale_Code"
 begin
+
+provenance human
 
 
 

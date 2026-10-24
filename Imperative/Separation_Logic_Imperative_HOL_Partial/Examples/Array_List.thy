@@ -1,7 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 theory Array_List
 imports 
   Array_Blit
 begin
+
+provenance human
 
   type_synonym 'a array_list = "'a Heap.array \<times> nat"
 

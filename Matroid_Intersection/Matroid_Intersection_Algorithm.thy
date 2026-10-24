@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Matroid_Intersection_Algorithm
   imports Matroid_Intersection_Path_Loop
 begin
+
+provenance human
 
 section \<open>Maximum Cardinality Matroid Intersection Algorithm\<close>
 

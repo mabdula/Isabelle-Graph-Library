@@ -1,7 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Arborescense
   imports Spanning_Trees Undirected_Set_Graphs.Undirected_Set_Graphs Greedoids.Greedoids
           Directed_Set_Graphs.More_Lists 
 begin
+
+provenance human
 
 section \<open>Arborescences\<close>
 

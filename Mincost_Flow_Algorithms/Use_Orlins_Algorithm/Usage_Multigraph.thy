@@ -1,8 +1,14 @@
+(*
+  Author: Thomas Ammer
+*)
+
 subsection \<open>Flows in Multigraphs without Capacities\<close>
 
 theory Usage_Multigraph
   imports Instantiation
 begin
+
+provenance human
 
 datatype 'a edge_type = an_edge "('a \<times>'a)" | another_edge "('a \<times> 'a)"
 

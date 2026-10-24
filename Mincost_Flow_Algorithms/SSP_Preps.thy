@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory SSP_Preps 
   imports Path_Aug_Opt
 begin
+
+provenance human
 
 section \<open>Definitions used by SSP and Capacity Scaling\<close>
 

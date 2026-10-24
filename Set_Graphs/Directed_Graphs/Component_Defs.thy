@@ -1,7 +1,13 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Component_Defs
   imports
     Pair_Graph
 begin
+
+provenance human
 
 definition subgraph :: "'a dgraph \<Rightarrow> 'a dgraph \<Rightarrow> bool" where
   "subgraph H G = ( H \<subseteq> G)"

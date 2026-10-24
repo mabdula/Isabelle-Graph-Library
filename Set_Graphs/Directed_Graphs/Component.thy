@@ -1,3 +1,7 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Component
   imports
     Component_Defs
@@ -5,6 +9,8 @@ theory Component
     Awalk
     Vwalk
 begin
+
+provenance human
 
 subsection \<open>Basic lemmas\<close>
 lemma subgraph_refl: "subgraph G G"

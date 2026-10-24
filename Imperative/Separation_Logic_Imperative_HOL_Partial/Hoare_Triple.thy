@@ -1,7 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Hoare-Triples\<close>
 theory Hoare_Triple
 imports Run Assertions
 begin
+
+provenance human
 
 (* TODO: Move \<rightarrow> Assertions:thm merge_true_star *)  
 lemma merge_true_star'[simp]:

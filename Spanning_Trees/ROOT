@@ -1,6 +1,7 @@
 session "Spanning_Trees" = "HOL-Data_Structures" + 
   options [document = pdf, document_output = "output"]
   sessions
+    AI_Provenance
     "Matroids_Greedy"
     "Undirected_Set_Graphs"
     "Graph_Algorithms_Dev"

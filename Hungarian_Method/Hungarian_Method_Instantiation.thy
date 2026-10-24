@@ -1,3 +1,7 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Hungarian_Method_Instantiation
   imports
     Primal_Dual_Path_Search
@@ -9,6 +13,9 @@ theory Hungarian_Method_Instantiation
     Directed_Set_Graphs.Pair_Graph_RBT
     Graph_Algorithms_Dev.RBT_Map_Extension
 begin
+
+provenance human
+
 section \<open>Instantiation of the Hungarian Method\<close>
 
 text \<open>We use Red-Black-Trees to obtain an executable for the Hungarian Method.
@@ -40,6 +47,7 @@ lemma rbt_fixed_univ_set:
                      set.set_isin rbt_set_invar_def)
 
 global_interpretation aug_a_matching:
+<<<<<<< HEAD
   matching_augmentation_spec "- {nil}" M.invar rbt_upd "rbt_get nil" Leaf nil
   for nil
   defines matching_augment_impl = aug_a_matching.augment_impl
@@ -47,6 +55,14 @@ global_interpretation aug_a_matching:
     and matching_invar = aug_a_matching.invar_matching
     and matching_lookup = aug_a_matching.buddy_lookup
   by(auto intro!: matching_augmentation_spec.intro rbt_fixed_univ_map)
+=======
+  Matching_Augmentation_Specs Leaf update delete lookup M.invar
+  defines matching_augment_impl = aug_a_matching.augment_impl
+    and matching_abstract = aug_a_matching.\<M>
+    and matching_invar = aug_a_matching.invar_matching
+  by(auto intro!: Matching_Augmentation_Specs.intro 
+      simp add:  Map_axioms_as_needed)
+>>>>>>> main
 
 lemmas [code] = aug_a_matching.buddy_lookup_def[folded matching_lookup_def]
 
@@ -642,10 +658,16 @@ interpretation fe_spec:
       abstract_forest_def empty_forest_def)
 
 interpretation matching_augmentation_thms:
+<<<<<<< HEAD
   matching_augmentation "- {nil}" M.invar rbt_upd
     "rbt_get nil" Leaf nil
   by(auto intro!: matching_augmentation.intro matching_augmentation_axioms.intro
        aug_a_matching.matching_augmentation_spec_axioms simp add: rbt_map_empty)
+=======
+  matching_augmentation Leaf update delete lookup M.invar
+  using aug_a_matching.Matching_Augmentation_Specs_axioms
+  by(auto intro!: matching_augmentation.intro)
+>>>>>>> main
 
 lemmas augmentation_correct =
   matching_augmentation_thms.augmentation_correct
@@ -669,7 +691,18 @@ abbreviation "search_path_core \<equiv>
              edge_costs right_neighbs \<pi>)"
 
 abbreviation "search_path_here \<equiv>
+<<<<<<< HEAD
    (\<lambda> c M \<pi>. case search_path_core M \<pi> of (r, \<pi>') \<Rightarrow> (r, M, \<pi>', c))"
+=======
+   (\<lambda> M \<pi>. search_path left (lookup M) edge_costs
+        (default_neighb vset_empty right_neighbs) \<pi> lookup
+        update (\<lambda> f T init. fold_rbt (\<lambda> x y. f y x) init T)
+                     (\<lambda> f T init. fold_rbt (\<lambda> x y. f y x) init T)
+                     (\<lambda> f T init. fold_rbt (\<lambda> x y. f y x) init T)
+                     filter_rbt)"
+
+abbreviation "symmetric_buddies \<equiv> Matching_Augmentation_Specs.symmetric_buddies"
+>>>>>>> main
 
 abbreviation "good_search_result \<equiv>  
   hungarian_loop_spec.good_search_result (rbt_get 0) M.invar 
@@ -750,10 +783,18 @@ next
   note asm = 14(1)
   note path_search_precondD = hungarian_loop_spec.path_search_precondD[OF asm]
   note symmetric_buddiesD = aug_a_matching.symmetric_buddiesD
+<<<<<<< HEAD
   have \<M>_is: "pd_path_search_spec.\<M> (rbt_get nil M) nil =
              matching_abstract nil M" 
     by(force simp add: matching_abstract_def pd_path_search_spec.\<M>_def pd_path_search_spec.buddy_def
         aug_a_matching.\<M>_def' aug_a_matching.buddy_lookup_def doubleton_eq_iff)
+=======
+  have \<M>_is: "pd_path_search_spec.\<M> (lookup M) =
+             matching_abstract M" 
+    by(force simp add: matching_abstract_def pd_path_search_spec.\<M>_def
+        Matching_Augmentation_Specs.\<M>_def'[OF aug_a_matching.Matching_Augmentation_Specs_axioms]
+        doubleton_eq_iff) 
+>>>>>>> main
   interpret pd_path_search: primal_dual_path_search
     where K = "- {nil}"
       and ben_invar = M.invar 

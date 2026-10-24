@@ -1,6 +1,13 @@
+(*
+  Author: Thomas Ammer
+  Author: Mohammad Abdulaziz
+*)
+
 theory DFS_Cycles_Example
   imports DFS_Cycles_Aux DFS_Cycles Directed_Set_Graphs.Pair_Graph_RBT
 begin
+
+provenance human
 
 global_interpretation dfs_cycle_aux: DFS_Aux
   where empty = empty

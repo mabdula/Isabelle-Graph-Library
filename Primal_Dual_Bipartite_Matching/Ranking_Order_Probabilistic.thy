@@ -9,6 +9,8 @@ theory Ranking_Order_Probabilistic
     Bipartite_Vertex_Priorities
 begin
 
+provenance human
+
 hide_type Finite_Cartesian_Product.vec
 hide_const Finite_Cartesian_Product.vec Finite_Cartesian_Product.vec.vec_nth
 

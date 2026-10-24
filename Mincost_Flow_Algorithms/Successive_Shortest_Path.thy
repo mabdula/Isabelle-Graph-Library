@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Successive_Shortest_Path
   imports SSP_Preps
 begin
+
+provenance human
 
 section \<open>The Successive Shortest Path Algorithm\<close>
 

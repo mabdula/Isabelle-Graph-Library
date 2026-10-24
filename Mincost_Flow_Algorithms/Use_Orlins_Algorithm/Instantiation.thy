@@ -1,3 +1,7 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Orlin's Algorithm Executable\<close>
 
 theory Instantiation
@@ -7,6 +11,8 @@ theory Instantiation
           Graph_Algorithms_Dev.DFS_Example
           Mincost_Flow_Algorithms.Orlins
 begin
+
+provenance human
 
 subsection \<open>Definitions\<close>
 

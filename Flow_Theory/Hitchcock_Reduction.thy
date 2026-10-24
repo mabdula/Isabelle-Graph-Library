@@ -1,7 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Eliminating Capacities\<close>
 theory Hitchcock_Reduction
   imports Cost_Optimality
 begin
+
+provenance human
 
 section \<open>Reduction: Eliminating Capacities from a Flow Network\<close>
 

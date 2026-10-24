@@ -1,7 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Open Singly Linked Lists\<close>
 theory Open_List
 imports List_Seg Imp_List_Spec
 begin
+
+provenance human
 
 subsection \<open>Definitions\<close>
 type_synonym 'a os_list = "'a node ref option"

@@ -2,6 +2,7 @@ session "Directed_Set_Graphs" = "HOL-Eisbach" +
   options [document = pdf, document_output = "output"]
 
   sessions
+    AI_Provenance
     "Data_Structures"
     "Graph_Theory" 
     (*more sessions since Peter's experiment*)

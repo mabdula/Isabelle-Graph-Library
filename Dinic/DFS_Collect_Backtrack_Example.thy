@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory DFS_Collect_Backtrack_Example                 
   imports DFS_Collect_Backtrack Directed_Set_Graphs.Pair_Graph_RBT
 begin
+
+provenance human
 
 text \<open>Instantion of the dead-end collecting DFS with Red-Back Trees.\<close>
 

@@ -1,8 +1,14 @@
+(*
+  Author: Thomas Ammer
+*)
+
 section \<open>Formalisation of the Running Time of Forest Maintenance\<close>
 
 theory Maintain_Forest_Time
   imports Maintain_Forest
 begin
+
+provenance human
 
 locale maintain_forest_time =
 maintain_forest where fst = fst for fst::"'edge \<Rightarrow> 'a"+ 

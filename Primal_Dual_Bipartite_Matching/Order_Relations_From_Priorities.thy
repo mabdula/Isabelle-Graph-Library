@@ -8,6 +8,8 @@ theory Order_Relations_From_Priorities
     Treaps.Random_List_Permutation
 begin
 
+provenance human
+
 subsection \<open>Unweighted Case\<close>
 lemma preorder_on_linorder_from_keys[intro]: "preorder_on A (linorder_from_keys A f)"
   unfolding linorder_from_keys_def preorder_on_def

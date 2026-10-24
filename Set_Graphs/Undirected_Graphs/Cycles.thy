@@ -1,7 +1,13 @@
-(*Authors: Mohammad Abdulaziz, Thomas Ammer, Adem Rimpapa,*)
+(*
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+  Author: Adem Rimpapa
+*)
 theory Cycles
   imports Undirected_Set_Graphs Connected_Components
 begin
+
+provenance human
 
 section \<open>Cycles\<close>
 

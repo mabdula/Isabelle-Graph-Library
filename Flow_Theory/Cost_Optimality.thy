@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Cost_Optimality
 imports Augmentation Decomposition
 begin
+
+provenance human
 
 context 
   cost_flow_spec

@@ -1,8 +1,13 @@
 theory Greedoids
-  imports Main Complex_Main
-begin    
+  imports Main Complex_Main AI_Provenance.Provenance
+begin
 
-(*Authored by Shriya Meenakshisundaram*)
+provenance human
+    
+
+(*
+  Author: Shriya Meenakshisundaram
+*)
 
 subsection \<open>Auxiliary Lemmas\<close>
 

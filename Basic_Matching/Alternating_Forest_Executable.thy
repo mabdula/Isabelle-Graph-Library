@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+(*
+  Author: Thomas Ammer
+*)
+>>>>>>> main
 
 theory Alternating_Forest_Executable
   imports
@@ -6,6 +12,9 @@ theory Alternating_Forest_Executable
     Data_Structures.Fixed_Univ_Map_Specs
     Data_Structures.Fixed_Univ_Set_Specs
 begin
+
+provenance human
+
 hide_const verts
 section \<open>Executable Alternating Forest\<close>
 

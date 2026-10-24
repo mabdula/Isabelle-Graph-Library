@@ -1,7 +1,13 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Awalk_Defs
   imports 
     Pair_Graph
 begin
+
+provenance human
 
 type_synonym 'a awalk = "('a \<times> 'a) list"
 

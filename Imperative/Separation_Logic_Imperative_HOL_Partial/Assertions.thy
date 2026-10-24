@@ -1,3 +1,7 @@
+(*
+  Author: Peter Lammich
+*)
+
 section "Assertions"
 
 theory Assertions
@@ -5,6 +9,8 @@ imports
   Separation_Logic_Imperative_HOL_Partial.Imperative_HOL_Add 
   Automatic_Refinement.Misc
 begin
+
+provenance human
 
 subsection \<open>Partial Heaps\<close>
 text \<open>

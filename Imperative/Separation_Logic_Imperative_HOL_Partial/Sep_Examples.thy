@@ -1,3 +1,7 @@
+(*
+  Author: Peter Lammich
+*)
+
 (*<*)
 theory Sep_Examples
 imports 
@@ -11,6 +15,8 @@ imports
   Separation_Logic_Imperative_HOL_Partial.Union_Find
   Separation_Logic_Imperative_HOL_Partial.Idioms  
 begin
+
+provenance human
 
 
 end

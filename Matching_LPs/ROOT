@@ -2,6 +2,7 @@ session "Matching_LPs" = "HOL-Library" +
   options [document = pdf, document_output = "output"]
 
 sessions
+  AI_Provenance
   Smith_Normal_Form
   Jordan_Normal_Form
   LP_Duality

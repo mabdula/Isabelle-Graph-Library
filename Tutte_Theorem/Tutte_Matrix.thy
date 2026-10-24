@@ -1,7 +1,14 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Tutte_Matrix
   imports "HOL-Combinatorics.Cycles" "HOL-Analysis.Determinants" Tutte_Theorem
     "HOL-Library.Poly_Mapping"
 begin
+
+provenance human
 
 text \<open>Embedding of indeterminates and constants in type-class polynomials,
   can be used as constructors.\<close>

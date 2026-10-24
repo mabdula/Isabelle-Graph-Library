@@ -1,11 +1,18 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory DFS_Time
-  imports DFS "HOL-Data_Structures.Define_Time_Function"
+  imports DFS "HOL-Library.Time_Functions"
 begin
+
+provenance human
+
 locale DFS_time = DFS where lookup = lookup 
-for lookup :: "'adjmapmap\<Rightarrow> 'v \<Rightarrow> 'vset option" +
+for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
 fixes T_diff::"'vset \<Rightarrow> 'vset \<Rightarrow> nat"
 and T_sel::"'vset \<Rightarrow> nat" and T_insert::"'v \<Rightarrow> 'vset \<Rightarrow> nat"
-and T_lookup::"'adjmapmap\<Rightarrow> 'v \<Rightarrow> nat" and T_G::nat and T_vset_empty::nat
+and T_lookup::"'adjmap \<Rightarrow> 'v \<Rightarrow> nat" and T_G::nat and T_vset_empty::nat
 and t_ret1::"('v, 'vset) DFS_state \<Rightarrow> nat" and t_ret2::"('v, 'vset) DFS_state \<Rightarrow> nat"
 and t_call1::"('v, 'vset) DFS_state \<Rightarrow> nat" and t_call2::"('v, 'vset) DFS_state \<Rightarrow> nat"
 begin
@@ -52,3 +59,8 @@ function (domintros) T_DFS_coarse::"('v, 'vset) DFS_state \<Rightarrow> nat" whe
                 else (let stack' = stack_tl 
                       in t_call2 dfs_state +  T_DFS_coarse (dfs_state \<lparr>stack := stack'\<rparr>)))))
      | _ \<Rightarrow> t_ret2 dfs_state)"
+  by pat_completeness auto
+
+end
+
+end

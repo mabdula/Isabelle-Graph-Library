@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Bellman_Ford_Example
   imports Bellman_Ford  "HOL-Data_Structures.RBT_Map"
 begin
+
+provenance human
 
 instantiation prod::(linorder, linorder) linorder
 begin

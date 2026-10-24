@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory RBT_Map_Extension
-  imports "HOL-Data_Structures.RBT_Map"
+  imports "HOL-Data_Structures.RBT_Map" AI_Provenance.Provenance
 begin
+
+provenance human
 
 fun update_all where
 "update_all f Leaf = Leaf"|

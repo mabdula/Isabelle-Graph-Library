@@ -1,8 +1,14 @@
+(*
+  Author: Mohammad Abdulaziz
+*)
+
 theory Pair_Graph
   imports 
     Main
-    Graph_Theory.Rtrancl_On
+    Graph_Theory.Rtrancl_On AI_Provenance.Provenance
 begin
+
+provenance human
 
 text \<open>Graphs are a fundamental structure in computer science and mathematics.\<close>
 

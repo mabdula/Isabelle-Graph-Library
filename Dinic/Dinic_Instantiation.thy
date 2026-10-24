@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Dinic_Instantiation
   imports Dinic Compute_Blocking_Residual Graph_Algorithms_Dev.RBT_Map_Extension
 begin
+
+provenance human
 
 section \<open>Dinic's Algorithm Executable\<close>
 

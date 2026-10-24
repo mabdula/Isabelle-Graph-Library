@@ -1,7 +1,14 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Generic Algorithm to Convert Sets to Lists\<close>
 theory To_List_GA
 imports Imp_Set_Spec Imp_List_Spec Hash_Set_Impl Open_List
 begin
+
+provenance human
+
   text \<open>This theory demonstrates how to develop a generic to-list 
     algorithm, and gives a sample instantiation for hash sets and open lists.
 \<close>

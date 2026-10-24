@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Augmentation
   imports Residual
 begin
+
+provenance human
 
 context 
  flow_network_spec

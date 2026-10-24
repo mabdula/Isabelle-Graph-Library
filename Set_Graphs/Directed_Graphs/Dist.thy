@@ -1,6 +1,13 @@
+(*
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+*)
+
 theory Dist
   imports Directed_Set_Graphs.enat_misc Vwalk
 begin
+
+provenance human
 
 section \<open>Distances\<close>
 

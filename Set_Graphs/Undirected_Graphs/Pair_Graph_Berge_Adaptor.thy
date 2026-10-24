@@ -1,4 +1,6 @@
-(*Author: Christoph Madlener *)
+(*
+  Author: Christoph Madlener
+*)
 theory Pair_Graph_Berge_Adaptor
   imports 
     Directed_Set_Graphs.Pair_Graph
@@ -7,6 +9,8 @@ theory Pair_Graph_Berge_Adaptor
     Undirected_Set_Graphs.Undirected_Set_Graphs
     Paths Cycles
 begin
+
+provenance human
 
 subsection \<open>Directed-Undirected Graph Adaptor\<close>
 text \<open>Here we have adaptors between directed and undirected graphs. These are for the concepts of 

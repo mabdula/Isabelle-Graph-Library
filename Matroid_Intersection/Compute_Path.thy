@@ -1,7 +1,14 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Compute_Path
   imports "Graph_Algorithms_Dev.BFS_Example" "Graph_Algorithms_Dev.DFS_Example"
     "Graph_Algorithms_Dev.RBT_Map_Extension"
-begin  
+begin
+
+provenance human
+  
 
 section \<open>Shortest Paths between Sources and Targets\<close>
 

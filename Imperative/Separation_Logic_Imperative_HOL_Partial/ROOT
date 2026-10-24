@@ -3,6 +3,7 @@ chapter AFP
 session "Separation_Logic_Imperative_HOL_Partial" = "HOL-Library" +
   options [timeout = 600]
   sessions
+    AI_Provenance
     "HOL-Imperative_HOL"
     "HOL-ex"
     Automatic_Refinement

@@ -1,3 +1,7 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Primal_Dual_Path_Search
   imports
     Basic_Matching.Berge
@@ -10,6 +14,8 @@ theory Primal_Dual_Path_Search
     Path_Search_Result
     Data_Structures.Iterable_Set_Specs
 begin
+
+provenance human
 
 section \<open>Path Search for Hungarian Method\<close>
 

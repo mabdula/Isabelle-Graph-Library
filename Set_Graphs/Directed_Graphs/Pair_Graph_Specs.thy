@@ -1,6 +1,13 @@
+(*
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+*)
+
 theory Pair_Graph_Specs
   imports Awalk "Data_Structures.Map_Addons" "Data_Structures.Set_Addons" "Data_Structures.Set_Choose" "HOL-Eisbach.Eisbach"
  begin
+
+provenance human
 
 section \<open>Locale for Executable Functions on Directed Graphs\<close>
 

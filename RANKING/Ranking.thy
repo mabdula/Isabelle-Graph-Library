@@ -10,6 +10,9 @@ theory Ranking
     "HOL-Library.LaTeXsugar"
     More_List_Ranking
 begin
+
+provenance human
+
 text \<open>
   We start off by formulating the algorithm in a deterministic fashion. Both the arrival order
   of the online vertices and the ranking of the offline vertices are modelled as lists. In this

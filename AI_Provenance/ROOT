@@ -1,0 +1,7 @@
+session "AI_Provenance" = Pure +
+  description "Labels stating whether parts of a theory were developed by humans, collaboratively by humans and an LLM, or by an LLM."
+  options [document = false]
+
+  theories
+    Provenance
+    Test

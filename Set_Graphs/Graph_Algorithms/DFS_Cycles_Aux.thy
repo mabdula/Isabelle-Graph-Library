@@ -1,7 +1,13 @@
+(*
+  Author: Adem Rimpapa
+*)
+
 theory DFS_Cycles_Aux              
   imports Directed_Set_Graphs.Pair_Graph_Specs
     Data_Structures.Set_Addons Directed_Set_Graphs.Component_Defs Directed_Set_Graphs.Awalk
 begin
+
+provenance human
 
 context Set2
 begin

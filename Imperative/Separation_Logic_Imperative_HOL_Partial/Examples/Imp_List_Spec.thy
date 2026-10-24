@@ -1,7 +1,14 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Interface for Lists\<close>
 theory Imp_List_Spec
 imports Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
+
+provenance human
+
 text \<open>
   This file specifies an abstract interface for list data structures. It can
   be implemented by concrete list data structures, as demonstrated in the open

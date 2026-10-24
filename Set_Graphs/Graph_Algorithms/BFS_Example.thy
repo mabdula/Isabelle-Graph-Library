@@ -1,7 +1,14 @@
+(*
+  Author: Thomas Ammer
+  Author: Mohammad Abdulaziz
+*)
+
 theory BFS_Example 
   imports BFS_Subprocedures "HOL-Data_Structures.RBT_Map"
           Directed_Set_Graphs.Pair_Graph_RBT
 begin
+
+provenance human
 
 
 definition "fold_vset = (fold_rbt)"

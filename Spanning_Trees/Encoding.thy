@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Encoding
   imports Undirected_Set_Graphs.Pair_Graph_U_Specs Matroids_Greedy.Indep_System_Matroids_Specs
 begin
+
+provenance human
 
 section \<open>Transformations between Matroid and Graph ADTs\<close>
 

@@ -1,10 +1,15 @@
-(*Author: Christoph Madlener, Mohammad Abdulziz *)
+(*
+  Author: Christoph Madlener
+  Author: Mohammad Abdulaziz
+*)
 theory Pair_Graph_Library_Adaptor
   imports
     Directed_Set_Graphs.Pair_Graph
     Directed_Set_Graphs.Vwalk
     Graph_Theory.Graph_Theory
 begin
+
+provenance human
 
 subsection \<open>Digraph to DDFS\<close>
 text \<open>lemmas from DDFS to Noschinski\<close>

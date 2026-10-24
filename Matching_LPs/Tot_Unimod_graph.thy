@@ -1,6 +1,15 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+  Author: Thomas Ammer
+*)
+
 theory Tot_Unimod_graph
   imports Totally_Unimodular Even_More_Graph_2 Matching_LP
 begin
+
+provenance human
+
 (*
 no_notation Matching_LP.one_vec ("1\<^sub>v")
 hide_const Matching_LP.one_vec

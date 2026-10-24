@@ -1,6 +1,12 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory More_Logic
-  imports Complex_Main  "HOL-Eisbach.Eisbach"
+  imports Complex_Main  "HOL-Eisbach.Eisbach" AI_Provenance.Provenance
 begin
+
+provenance human
 
 lemma option_Some_theE: 
   "\<lbrakk>x = Some y; P (f ( the  x))\<rbrakk> \<Longrightarrow> P (case x of Some y \<Rightarrow> f y | None \<Rightarrow> g)"

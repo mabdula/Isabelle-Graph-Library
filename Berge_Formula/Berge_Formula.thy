@@ -1,6 +1,13 @@
+(*
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Berge_Formula
   imports Tutte_Theorem.Tutte_Theorem
 begin
+
+provenance human
 
 lemma sum_card_edges2:
   assumes "graph_invar G"

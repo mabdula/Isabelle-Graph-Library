@@ -1,6 +1,12 @@
+(*
+  Author: Peter Lammich
+*)
+
 theory Imperative_DS
 imports Imperative_Base "Data_Structures.Set_Choose" "Data_Structures.Map_Addons"
 begin
+
+provenance human
 
   (* Marrying functional Set-ADT and its imperative version, using a multi-valued refinement assertion *)
   locale imp_set_conn = Set + imp_set 

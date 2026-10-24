@@ -1,7 +1,13 @@
+(*
+  Author: Peter Lammich
+*)
+
 section \<open>Singly Linked List Segments\<close>
 theory List_Seg
 imports Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
+
+provenance human
 
 subsection \<open>Nodes\<close>
 text \<open>

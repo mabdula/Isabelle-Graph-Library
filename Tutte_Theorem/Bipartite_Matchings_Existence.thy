@@ -1,6 +1,14 @@
+(*
+  Author: Thomas Ammer
+  Author: Ralitsa Dordjonova
+  Author: Mohammad Abdulaziz
+*)
+
 theory Bipartite_Matchings_Existence
   imports Basic_Matching.Berge "HOL.Set" Alternating_Lists.Bipartite_Alternating_Lists
 begin
+
+provenance human
 
 section \<open>Existence of Certain Matchings in Bipartite Graphs\<close>
 

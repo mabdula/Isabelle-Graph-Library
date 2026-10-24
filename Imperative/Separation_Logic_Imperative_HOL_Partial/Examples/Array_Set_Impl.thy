@@ -1,8 +1,15 @@
+(*
+  Author: Peter Lammich
+*)
+
 theory Array_Set_Impl
 imports 
   Separation_Logic_Imperative_HOL_Partial.Sep_Main Imp_Set_Spec Array_Blit
   "HOL-Library.Code_Target_Numeral"
 begin
+
+provenance human
+
   subsection "Array Set"
 
   type_synonym array_set = "bool array"

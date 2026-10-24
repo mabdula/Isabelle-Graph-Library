@@ -1,7 +1,13 @@
+(*
+  Author: Thomas Ammer
+*)
+
 theory Parent_Map
   imports "HOL-Data_Structures.Map_Specs"  "HOL-Data_Structures.Set_Specs"
           Undirected_Set_Graphs.Directed_Undirected
 begin
+
+provenance human
 
 definition parent_spec::"('a \<Rightarrow> 'a option) \<Rightarrow> bool" where
   "parent_spec parent = wf {(x, y) |x y. (Some x = parent y)}"
