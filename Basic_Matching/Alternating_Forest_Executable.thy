@@ -1,9 +1,6 @@
-<<<<<<< HEAD
-=======
 (*
   Author: Thomas Ammer
 *)
->>>>>>> main
 
 theory Alternating_Forest_Executable
   imports

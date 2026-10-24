@@ -6,13 +6,13 @@ begin
 
 section \<open>Imperative Augmentation of Matchings\<close>
 
-text \<open>This is the imperative counterpart of @{locale matching_augmentation_spec}. It is generic in
+text \<open>This is the imperative counterpart of @{locale Matching_Augmentation_Specs}. It is generic in
       the buddy map and uses the imperative fixed-universe map only through its interface. The
       buddy map is updated in place. The augmenting path is not a list but the prefix of length
       @{term k} of an array, which belongs to the caller. The program does not allocate.\<close>
 
 locale matching_augmentation_imp =
-  matching_augmentation_spec K buddy_invar buddy_upd buddy_get buddy_empty nil +
+  Matching_Augmentation_Specs K buddy_invar buddy_upd buddy_get buddy_empty nil +
   bm: fixed_univ_map_imp K buddy_invar buddy_upd buddy_get id buddy_assn buddy_upd_imp
     buddy_get_imp
   for K :: "'v::heap set" and buddy_invar and buddy_upd :: "'buddy \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'buddy"

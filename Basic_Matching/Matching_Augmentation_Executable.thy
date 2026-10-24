@@ -25,23 +25,15 @@ lemma symmetric_sym_diff_pres:
    "\<lbrakk>symmetric_digraph A; symmetric_digraph B\<rbrakk> \<Longrightarrow> symmetric_digraph (A \<oplus> B)"
   by(auto simp add:  symmetric_digraph_def symmetric_diff_def)
 
-<<<<<<< HEAD
 text \<open>The matching is a total map on a fixed universe @{term K} of vertices. A free vertex is
       mapped to the sentinel @{term nil}, which is not in @{term K}. The partial map
       @{term buddy_lookup} is a view used in the proofs only.\<close>
 
-locale matching_augmentation_spec =
+locale Matching_Augmentation_Specs =
   buddy_map: fixed_univ_map K buddy_invar buddy_upd buddy_get
   for K::"'v set" and buddy_invar and buddy_upd::"'buddy \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'buddy"
   and buddy_get +
   fixes buddy_empty::'buddy and nil::'v
-=======
-locale Matching_Augmentation_Specs =
-  buddy_map: Map buddy_empty buddy_upd buddy_delete buddy_lookup buddy_invar
-  for  buddy_empty
-  and  buddy_upd::"'v \<Rightarrow> 'v \<Rightarrow> 'buddy \<Rightarrow> 'buddy"
-  and  buddy_delete buddy_lookup buddy_invar
->>>>>>> main
 begin
 
 fun augment_impl
@@ -124,13 +116,9 @@ and invar_matchingD:
 
 end
 
-<<<<<<< HEAD
-locale matching_augmentation = matching_augmentation_spec +
+locale matching_augmentation = Matching_Augmentation_Specs +
   assumes nil: "nil \<notin> K"
   and empties: "buddy_invar buddy_empty" "buddy_get buddy_empty = (\<lambda> _. nil)"
-=======
-locale matching_augmentation = Matching_Augmentation_Specs 
->>>>>>> main
 begin
 
 lemma in_K_not_nil: "k \<in> K \<Longrightarrow> k \<noteq> nil"

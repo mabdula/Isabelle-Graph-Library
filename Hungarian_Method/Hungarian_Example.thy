@@ -9,10 +9,7 @@ theory Hungarian_Example
     WBP_Matching_Exec
 begin
 
-<<<<<<< HEAD
-=======
 provenance human
->>>>>>> main
 
 section \<open>6 Matchings on Bipartite Example Graph\<close>
 

@@ -6,13 +6,9 @@ theory Egervary
   imports Matching_LPs.Matching_LP Tutte_Theorem.Bipartite_Matchings_Existence
 begin
 
-<<<<<<< HEAD
-section \<open>Egervary's Theorem\<close>
-=======
 provenance human
 
-section \<open>Egerváry's Theorem\<close>
->>>>>>> main
+section \<open>Egervary's Theorem\<close>
 
 text \<open>This is a formalisation of Egervary's Theorem which inspired Kuhn for his Hungarian Method.
       We follow the proof by Schrijver (Theorem 17.1 in his book).\<close>

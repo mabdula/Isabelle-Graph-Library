@@ -1,14 +1,11 @@
 session "Data_Structures" = "HOL-Data_Structures" +
 
   sessions
-<<<<<<< HEAD
+    AI_Provenance
     Separation_Logic_Imperative_HOL_Partial
 
   directories
     Implementations
-=======
-    AI_Provenance
->>>>>>> main
 
   theories
     Set_Addons

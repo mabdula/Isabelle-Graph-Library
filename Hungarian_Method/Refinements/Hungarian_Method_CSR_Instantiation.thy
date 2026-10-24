@@ -117,7 +117,7 @@ global_interpretation aug_csr: matching_augmentation_imp
     and matching_card_csr = aug_csr.matching_card_imp
     and rematch_csr = aug_csr.rematch_imp
     and rematch_counted_csr = aug_csr.rematch_counted_imp
-  by (intro matching_augmentation_imp.intro matching_augmentation_spec.intro array_fun_fixed_univ_map
+  by (intro matching_augmentation_imp.intro Matching_Augmentation_Specs.intro array_fun_fixed_univ_map
             array_fun_fixed_univ_map_imp)
 
 subsection \<open>The Path Search\<close>
@@ -639,7 +639,7 @@ qed
 
 sublocale maug: matching_augmentation "{..<n}" "\<lambda>_. True" array_fun_upd array_fun_lookup "\<lambda>_. n" n
   by (intro matching_augmentation.intro matching_augmentation_axioms.intro
-            matching_augmentation_spec.intro array_fun_fixed_univ_map)
+            Matching_Augmentation_Specs.intro array_fun_fixed_univ_map)
      (simp_all add: array_fun_lookup_def)
 
 lemma Vs_G_below: "Vs G \<subseteq> {..<n}"

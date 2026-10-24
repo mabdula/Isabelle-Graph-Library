@@ -3,10 +3,11 @@
 *)
 
 theory Path_Search_Result
-<<<<<<< HEAD
-  imports
-    Main
+  imports Main AI_Provenance.Provenance
 begin
+
+provenance human
+
 datatype 'v path_search_result = 
   Dual_Unbounded | Lefts_Matched | Next_Iteration (the_path: "'v list")
 
@@ -26,13 +27,4 @@ lemma imp_result_rel_simps[simp]:
   "imp_result_rel xs res (Next_Iteration p) =
      (\<exists>k. res = Imp_Path k \<and> k \<le> length xs \<and> take k xs = p)"
   by (simp_all add: imp_result_rel_def)
-=======
-  imports Main AI_Provenance.Provenance
-begin
-
-provenance human
-
-datatype ('v, 'pot) path_search_result = 
-  Dual_Unbounded | Lefts_Matched | Next_Iteration (the_path: "'v list") (the_pot: 'pot)
->>>>>>> main
 end

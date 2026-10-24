@@ -10,13 +10,9 @@ theory Naive_Primal_Dual
     Egervary
 begin
 
-<<<<<<< HEAD
-section \<open>The Algorithm Resulting from Egervary's Theorem in Schrijver's Book\<close>
-=======
 provenance human
 
-section \<open>The Algorithm Resulting from Egerváry's Theorem in Schrijver's Book\<close>
->>>>>>> main
+section \<open>The Algorithm Resulting from Egervary's Theorem in Schrijver's Book\<close>
 
 subsection \<open>Preparation, to be moved\<close>
 

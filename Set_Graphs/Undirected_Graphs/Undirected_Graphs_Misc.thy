@@ -1,13 +1,9 @@
-<<<<<<< HEAD:Set_Graphs/Undirected_Graphs/Undirected_Graphs_Misc.thy
-theory Undirected_Graphs_Misc
-=======
 (*
   Author: Thomas Ammer
   Author: Mohammad Abdulaziz
 *)
 
-theory Misc
->>>>>>> main:Set_Graphs/Undirected_Graphs/Misc.thy
+theory Undirected_Graphs_Misc
   imports "Directed_Set_Graphs.enat_misc" "HOL-Eisbach.Eisbach_Tools" "HOL-Library.FuncSet" 
           "HOL-Library.Disjoint_Sets" Main "Directed_Set_Graphs.More_Lists"
 begin
