@@ -485,3 +485,106 @@ STAGES A AND B GREEN.
 - Incident: a script bug (file opened for writing before it was read) emptied the five files for
   about a minute; restored from `backups/v2_before_copy_relabel/` (identical to the last good state)
   and redone. Backup of the result: `backups/v2_copies_relabelled_2026-10-25/`.
+
+## Phase 10 (linear-time fixes) - 2026-10-25
+
+- The user's jEdit occupies the I/Q instance, so the orchestrator did this phase by batch builds of
+  scratch copies (session BXF, then BXT with 15 `by eval` tests), then wrote the two files to disk
+  (base = HEAD, checked before writing). Backup: `backups/v2_before_linear_fixes_2026-10-25`.
+- Graph_Quotient_Lifting: `pref_suf_rev`, `pref_suf_rev_eq`, `pref_suf_code [code]` (ai).
+- Find_Aug_Path_Subprocedures: `longest_disj_sfx`, `longest_disj_sfx_split`, `last_find_pfx_in_set`,
+  `find_pfx_first`, `longest_disj_pfx_first_common`, `longest_disj_pfx_common_sfx`,
+  `common_suffix_disj_iff`, `longest_disj_pfx_rev` (ai); `compute_match_blossom` edited (human);
+  both soundness proofs adapted (ai).
+- Repairs during scratch builds: two forward text references removed; `longest_disj_sfx_split`
+  step case given explicit witnesses; `last_find_pfx_in_set` by cases on the tail; `l1 \<noteq> []`
+  made explicit in `longest_disj_pfx_first_common`; one `rule` replaced by `using ... by simp`.
+- Generated SML: `pref_suf` calls `pref_suf_rev`; `compute_match_blossom_impl` uses `last` and
+  `longest_disj_sfx`; `longest_disj_pfx` no longer occurs in the code.
+- Final: real build of Blossom_Executable green (0:00:33); provenance human 60.9%, ai_human 3.1%,
+  ai 36.1%; outside the two theories every label is unchanged.
+
+## Phase 11 (provenance of mechanical transformations) - 2026-10-25
+
+- Label definitions extended (AI_Provenance/Provenance.thy, system_prompt.md): semantic
+  contribution required for ai/ai_human; mechanical work keeps the source's label.
+- Block rewrite (scratch v4, `blocks.py` + hand fixes): 25 block-derived haves -> `have ... if ... for`;
+  hand fixes: d1 premise stated with `hd p2` (the defined `a2'` is not available in `if`),
+  p_nempty_even gets its last premise from the former `moreover assume odd_length`
+  (`moreover note odd_length`), `hl` of Graph_Quotient as two statements with `if`.
+- Relabel: 132 scaffolding commands of apply-to-Isar conversions (`scaffold.py`) and the block
+  rewrites -> human; markers recomputed minimally (`relabel.py`), 0 mismatches; the user's
+  ai_human labels in Graph_Quotient_Lifting kept. Backup: `backups/v2_before_block_relabel_2026-10-25`.
+- Checks: scratch build BXR and real build green; strict provenance: human 62.5%, ai_human 3.5%,
+  ai 34.1% (before: 60.9 / 3.1 / 36.1). Copied theories: Misc 88.9% human, Graph_Quotient 88.9%,
+  Lifting 76.6% (+1.8% ai_human), Prefixes 96.3%, Invars 86.9%.
+
+## Phase 12 (provenance audit of the whole session) - 2026-10-25
+
+- Trigger: `path_find_pref` had AI-written proof steps labelled human (the earlier text-similarity
+  classifier counted them as edits). Audit of all 11 theories against the original Blossom
+  theories (`plan_v2/scripts/relabel/audit2.py`), lemma by lemma: a statement is human iff its
+  propositions occur in the original lemma (after the systematic renamings, `let`/`define`
+  abbreviations, and in the lifting theory the `chv` adaptation of the d1 blocks); the proof of a new
+  statement is ai; a proof that replaced an original metis/smt/meson one-liner is ai; verbatim
+  copies are human; user decisions (ai_human labels, the edited copies) kept.
+- Result: 560 commands human -> ai (new statements, e.g. choose_vert_works_3, hd_find_pfx,
+  find_pfx_hd, distinct_find_pfx_cycle, search_invarsD/_if1/_if2_sound, the steps of metis
+  replacements), 10 ai -> human (copied statements). The AI theories needed no change.
+- Markers recomputed (`relabel5.py`), 0 mismatches; text without markers unchanged. Backup:
+  `backups/v2_before_audit_relabel_2026-10-25`. Real build green; strict provenance: human 58.3%,
+  ai_human 3.5%, ai 38.3%.
+
+## Phase 13 (scaffolding and metis-replacement relabel) - 2026-10-25
+- User question: "line 1546 says provenance ai ... 'qed'?" (Graph_Quotient_Lifting): the marker labelled
+  the `qed` closing the copied proof of `append_works`; a leftover of the first (difflib) relabel, which
+  matched short generic commands (qed, next, case, show ?case, using assms) by text, and of the audit
+  (Phase 12), which kept the labels of generic commands. User: "yes, fix them".
+- Method (`plan_v2/scripts/relabel/audit3b.py`, on top of audit2): every goal of a copied lemma is mapped
+  to its original goal (aligned text; same conclusion, with the chv adaptation; ?thesis/?case steps and
+  subgoals of apply scripts by position; a rewritten { } block maps to its last statement). A structured
+  proof is copied (same `proof` method), mechanical (its method is the first method of an original
+  `apply`: apply script rewritten as Isar), or new. Scaffolding (proof, qed, next, case, then/moreover/...,
+  ?thesis/?case steps) takes the label of its proof; a new proof is ai except copied statements,
+  verbatim proofs and verbatim runs of >= 3 commands. A step that replaced an original metis/smt/meson
+  call (the mapped step or subgoal) is ai, apart from verbatim copied `using` facts; a terminal proof that
+  is verbatim or mechanically rewritten (same methods, same facts) is human. 14 manual decisions (two
+  metis replacements in the d1 block, the AI proofs of stem2vert_path_def'/replace_cycle_def' (statements
+  stay human), two qed of new proofs, one apply script rewritten as Isar).
+- 381 commands relabelled (human->ai 175, ai->human 206); the scan for scaffolding labelled unlike its
+  proof went from 192 to 2 (a copied `then show ?thesis` block inside a new proof, correct).
+- Markers recomputed (`relabel6.py`), 0 mismatches; text and line numbers unchanged. Backup:
+  `backups/v2_before_scaffold_relabel_2026-10-25`. Real build green (34 s); strict provenance: human 58.4%,
+  ai_human 3.5%, ai 38.1%. Not committed.
+- Follow-up (user: "yes, relabel the six statements human"): the six `have cvw: "chv \<in> set (rev C)" ...`
+  statements in Graph_Quotient_Lifting (1097, 1160, 1598, 1667, 2152, 2221) are the original
+  `choose_vert_works` statement of `d1`, moved to the call sites and instantiated with `rev C`: human;
+  their proofs (via choose_vert_works_3, replacing the original metis call) stay ai. Build green;
+  strict provenance: human 58.5%, ai_human 3.5%, ai 38.1%.
+- Follow-up (user: "yes, relabel them; keep disj and pfxs ai"): in alt_list_replace_cycle, `alt_p1hd` (line
+  966) and `alt_p1` (973) are the implicit first subgoals of the original `apply(intro alt_list_append_3)`
+  and `apply(rule alt_list_append_2)`, written out with the subgoals' original proofs (the original metis
+  calls even cite them as cartouches): statements, scaffolding, verbatim steps and the glue
+  `by (rule alt_p1)`/`by (rule alt_p1hd)` human (26 commands); the replacements of the smt/metis calls
+  stay ai. A scan of all ai statements against all original statements up to instantiation (51 matches)
+  found no other moved copy; `disj`/`pfxs` in Find_Aug_Path_Subprocedures stay ai (user). Build green;
+  strict provenance: human 58.7%, ai_human 3.5%, ai 37.9%.
+
+### Phase 14 (2026-10-26): copied theories human, metis/smt/meson replacements ai
+
+User decision: the five copied theories (Blossom_Misc, Graph_Quotient, Graph_Quotient_Lifting,
+Blossom_Prefixes, Compute_Alt_Path_Invars) are labelled human; only the replacements of
+metis/smt/meson calls of the original theories are ai (user ai_human labels kept). Supersedes the
+Phase 12/13 rules (new statements/proofs ai, scaffolding follows its proof).
+
+- Unit of a replacement: the whole proof of the step whose original proof contained the call
+  (`using`/`unfolding` lines included), with every command inside it; the step's statement stays
+  human. Local facts added only for a replacement (e.g. `aux`, `stem_C_disj`, `hds`) are ai;
+  apply scripts rewritten as Isar with the same first method keep their scaffolding human.
+- Calls mapped through the audit3b goal map (281 of 337) plus a manual review of the rest
+  (`plan_v2/scripts/relabel/manual.txt`); every original call is covered or was dropped
+  (the `obtain ... sel_if1` steps, now hypotheses of `search_invars_if1`).
+- Result: no human command inside an ai proof; 404 commands ai -> human, 148 human -> ai.
+  Text unchanged (markers only); build green (25 s); strict provenance passes.
+  Session: human 60.9% / ai_human 3.5% / ai 35.7% of lines.
+- Backup: `backups/v2_before_simple_relabel_2026-10-26/`.

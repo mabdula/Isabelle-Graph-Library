@@ -14,7 +14,7 @@ subsection \<open>List Auxiliary Lemmas\<close>
 
 lemma neq_Nil_conv_2:
   "l \<noteq> [] \<longleftrightarrow> (\<exists>l' x. l = l' @ [x])"
-  by (auto intro: rev_exhaust)
+  by \<^marker>\<open>provenance ai\<close> (auto intro: rev_exhaust)
 
 lemma tl_distinct_rev:
   assumes "hd l = last l" "distinct (tl l)"
@@ -24,10 +24,10 @@ proof-
     by (induction l; auto)
   then have "(butlast (tl (rev l))) = rev (butlast (tl l))"
     proof(induction l)
-      case \<^marker>\<open>provenance ai\<close> (Cons a l)
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        by \<^marker>\<open>provenance human\<close> (cases "l = []"; auto)
-    qed \<^marker>\<open>provenance ai\<close> auto
+      case (Cons a l)
+      then show ?case
+        by (cases "l = []"; auto)
+    qed auto
   then have set_butlast_tl: "set (butlast (tl (rev l))) = set (butlast (tl l))"
     by simp
   have [simp]: "distinct l \<longleftrightarrow> card (set l) = length l" for l
@@ -57,25 +57,25 @@ proof(induction l)
 next
   case (Cons a l)
   then show ?case
-    by (cases l rule: rev_cases; auto)
+    by \<^marker>\<open>provenance ai\<close> (cases l rule: rev_cases; auto)
 qed
 
 lemma two_mem_list_split:
   assumes "v1 \<in> set p" "v2 \<in> set p" "Q v1" "Q v2" "v1 \<noteq> v2"
   shows "\<exists>w x p1 p2 p3. p = p1 @ w # p2 @ x # p3 \<and> Q w \<and> Q x"
-  using extract_first_and_last[of v1 p v2 Q, OF assms]
-  by fastforce
+  using \<^marker>\<open>provenance ai\<close> extract_first_and_last[of v1 p v2 Q, OF assms]
+  by \<^marker>\<open>provenance ai\<close> fastforce
 
 lemma two_mem_list_split':
   assumes "v1 \<in> set p" "v2 \<in> set p" "Q v1" "Q v2" "v1 \<noteq> v2"
   shows "\<exists>w x p1 p2 p3. p = p1 @ w # p2 @ x # p3 \<and> Q w \<and> Q x \<and> (\<forall>x\<in>set p1. \<not> Q x)"
 proof \<^marker>\<open>provenance ai\<close>-
   obtain a b as bs cs where "p = as @ a # bs @ b # cs" "Q a" "Q b" "\<forall>z\<in>set as. \<not> Q z"
-    using \<^marker>\<open>provenance human\<close> extract_first_and_last[of v1 p v2 Q, OF assms]
-    by \<^marker>\<open>provenance human\<close> auto
-  then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> ?thesis
-    by \<^marker>\<open>provenance ai\<close> (intro exI[of _ a] exI[of _ b] exI[of _ as] exI[of _ bs] exI[of _ cs]) simp
-qed \<^marker>\<open>provenance human\<close>
+    using extract_first_and_last[of v1 p v2 Q, OF assms]
+    by auto
+  then show ?thesis
+    by (intro exI[of _ a] exI[of _ b] exI[of _ as] exI[of _ bs] exI[of _ cs]) simp
+qed
 
 lemma one_mem_pure_suff:
   assumes "v \<in> set p" "Q v"
@@ -94,29 +94,29 @@ lemma two_mem_list_split'':
   shows "\<exists>p1 p2 p3 w x. p = p1 @ w # p2 @ x # p3 \<and> Q w \<and> Q x \<and> w \<noteq> x \<and> (\<forall>x\<in>set p1. \<not> Q x) \<and> (\<forall>x\<in>set p3. \<not> Q x)"
 proof \<^marker>\<open>provenance ai\<close>-
   obtain a b as bs cs where p: "p = as @ a # bs @ b # cs" and Q: "Q a" "Q b" and pre: "\<forall>z\<in>set as. \<not> Q z" and suf: "\<forall>z\<in>set cs. \<not> Q z"
-    using \<^marker>\<open>provenance human\<close> extract_first_and_last[of v1 p v2 Q, OF assms(1-5)]
+    using extract_first_and_last[of v1 p v2 Q, OF assms(1-5)]
     by auto
   have ab: "a \<noteq> b"
     using assms(6) p
-    by \<^marker>\<open>provenance human\<close> (simp add: distinct_append)
-  show \<^marker>\<open>provenance human\<close> ?thesis
-    using \<^marker>\<open>provenance ai\<close> p Q pre suf ab
+    by (simp add: distinct_append)
+  show ?thesis
+    using p Q pre suf ab
     by blast
-qed \<^marker>\<open>provenance human\<close>
+qed
 
 lemma split_list_pure_pref_suff:
   assumes "x\<in>(set p)" "\<forall>y\<in>set p. Q y  \<longrightarrow> x = y" "distinct p"
   shows "\<exists>p1 p2. p = p1 @ x # p2 \<and> (\<forall>x\<in>set p1. \<not> Q x) \<and> (\<forall>x\<in>set p2. \<not> Q x)"
 proof-
   obtain p1 p2 where p1p2: "p = p1 @ x # p2"
-    using assms(1)
-    by (auto dest: split_list)
+    using \<^marker>\<open>provenance ai\<close> assms(1)
+    by \<^marker>\<open>provenance ai\<close> (auto dest: split_list)
   then have "\<forall>x\<in>set p1. \<not> Q x" "\<forall>x\<in>set p2. \<not> Q x"
     using assms(2,3)
     by auto
   then show ?thesis
-    using p1p2
-    by blast
+    using \<^marker>\<open>provenance ai\<close> p1p2
+    by \<^marker>\<open>provenance ai\<close> blast
 qed
 
 lemma card2_subset:
@@ -134,7 +134,7 @@ lemma odd_cycle_nempty:
   assumes "odd_cycle p"
   shows "p \<noteq> []"
   using \<^marker>\<open>provenance ai\<close> assms
-  unfolding odd_cycle_def
+  unfolding \<^marker>\<open>provenance ai\<close> odd_cycle_def
   by \<^marker>\<open>provenance ai\<close> (cases p; auto)
 
 lemma odd_cycleD:
@@ -185,8 +185,8 @@ next
     using edges_of_path_append_2
     by force
   then have "alt_path M (stem @ [hd C])"
-    using match_blossomD(1)[OF assms]
-    by (auto dest: alt_list_append_1 simp flip: eq)
+    using \<^marker>\<open>provenance ai\<close> match_blossomD(1)[OF assms]
+    by \<^marker>\<open>provenance ai\<close> (auto dest: alt_list_append_1 simp flip: eq)
   moreover case False
   ultimately have "last (edges_of_path (stem @ [hd C])) \<in> M"
     using match_blossomD(5)[OF assms]
@@ -252,13 +252,13 @@ lemma edge_in_quot_in_graph_1:
   assumes edge: "(P ` e) \<in> (quot_graph P E)" "e \<subseteq> s"
   shows "e \<in> E"
 proof \<^marker>\<open>provenance ai\<close>-
-  obtain \<^marker>\<open>provenance human\<close> e' where e': "e' \<in> E" "P ` e = P ` e'"
-    using \<^marker>\<open>provenance ai\<close> edge(1)
+  obtain e' where e': "e' \<in> E" "P ` e = P ` e'"
+    using edge(1)
     unfolding quot_graph_def
-    by \<^marker>\<open>provenance ai\<close> auto
+    by auto
   have Pe: "P ` e = e"
     using edge(2)
-    by \<^marker>\<open>provenance human\<close> (auto simp: subset_iff)
+    by (auto simp: subset_iff)
   have "e' \<subseteq> s"
   proof
     fix x
@@ -267,27 +267,27 @@ proof \<^marker>\<open>provenance ai\<close>-
       using e'(2)
       by blast
     then have "P x \<in> e"
-      by \<^marker>\<open>provenance human\<close> (simp only: Pe)
+      by (simp only: Pe)
     then have "P x \<in> s"
       using edge(2)
       by blast
     then show "x \<in> s"
       using good_quot_map(1)
-      by \<^marker>\<open>provenance human\<close> (auto split: if_splits)
+      by (auto split: if_splits)
   qed
   then have "P ` e' = e'"
-    by \<^marker>\<open>provenance human\<close> (auto simp: subset_iff)
-  then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> ?thesis
-    using \<^marker>\<open>provenance ai\<close> e' Pe
-    by \<^marker>\<open>provenance ai\<close> simp
+    by (auto simp: subset_iff)
+  then show ?thesis
+    using e' Pe
+    by simp
 qed
 
 lemma edge_in_quot_in_graph_1':
   assumes edge: "e \<in> (quot_graph P M)" "e \<subseteq> s" "M \<subseteq> E"
   shows "e \<in> M"
 proof \<^marker>\<open>provenance ai\<close>-
-  obtain \<^marker>\<open>provenance human\<close> e' where e': "e' \<in> M" "e = P ` e'"
-    using \<^marker>\<open>provenance ai\<close> edge(1)
+  obtain e' where e': "e' \<in> M" "e = P ` e'"
+    using edge(1)
     unfolding quot_graph_def
     by auto
   have "e' \<subseteq> s"
@@ -302,13 +302,13 @@ proof \<^marker>\<open>provenance ai\<close>-
       by blast
     then show "x \<in> s"
       using good_quot_map(1)
-      by \<^marker>\<open>provenance human\<close> (auto split: if_splits)
-  qed \<^marker>\<open>provenance human\<close>
+      by (auto split: if_splits)
+  qed
   then have "P ` e' = e'"
-    by \<^marker>\<open>provenance human\<close> (auto simp: subset_iff)
+    by (auto simp: subset_iff)
   then show ?thesis
     using e'
-    by \<^marker>\<open>provenance human\<close> simp
+    by simp
 qed
 
 lemma edge_in_quot_in_graph_2':
@@ -382,7 +382,7 @@ qed
 lemma path_is_quot_path':
   assumes path: "path (quotG E) p" "set p \<subseteq> s"
   shows "path E p"
-  using \<^marker>\<open>provenance ai\<close> assms
+  using assms
   by (rule path_is_quot_path)
 
 lemma edge_of_path_in_graph_iff_in_quot:
@@ -390,8 +390,8 @@ lemma edge_of_path_in_graph_iff_in_quot:
   shows "e \<in> M \<longleftrightarrow> e \<in> quotG M"
 proof-
   have e_sub_s: "e \<subseteq> s"
-    using assms
-    by (auto simp: subset_iff dest: v_in_edge_in_path_gen)
+    using \<^marker>\<open>provenance ai\<close> assms
+    by \<^marker>\<open>provenance ai\<close> (auto simp: subset_iff dest: v_in_edge_in_path_gen)
   then have imP: "e = P ` e"
     using assms
     by(simp add: image_def subset_iff)
@@ -453,12 +453,11 @@ proof-
   have "alt_path M p = alt_path (quotG M) p"
     using edge_of_path_in_graph_iff_in_quot path assms
     by (intro alt_list_cong_eq; blast)
-  moreover have hl: "length p \<ge> 2 \<Longrightarrow> hd p \<in> s \<and> last p \<in> s"
-  proof \<^marker>\<open>provenance ai\<close>-
-    assume \<^marker>\<open>provenance human\<close> "length p \<ge> 2"
-    then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "p \<noteq> []"
+  moreover have hl: "hd p \<in> s" "last p \<in> s" if "length p \<ge> 2"
+  proof-
+    from that have "p \<noteq> []"
       by (auto simp: Suc_le_length_iff)
-    then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> "hd p \<in> s \<and> last p \<in> s"
+    then show "hd p \<in> s" "last p \<in> s"
       using path
       by auto
   qed
@@ -493,12 +492,12 @@ next
     by (simp add: good_quot_map(1))
 next
   case (path2 v v' vs)
-  have "{v, v'} \<in> quot_graph P E"
+  have \<^marker>\<open>provenance ai\<close> "{v, v'} \<in> quot_graph P E"
     using edge_in_graph_in_quot[OF path2.hyps(1), of P] path2.prems(1)
-    by \<^marker>\<open>provenance ai\<close> simp
-  then show ?case
-    using path2 good_quot_map
-    by (auto simp: path2.IH)
+    by simp
+  then \<^marker>\<open>provenance ai\<close> show ?case
+    using \<^marker>\<open>provenance ai\<close> path2 good_quot_map
+    by \<^marker>\<open>provenance ai\<close> (auto simp: path2.IH)
 
 qed
 
@@ -508,10 +507,10 @@ lemma qug_path_iff_case_1_ii:
 proof \<^marker>\<open>provenance ai\<close>-
   have mp: "map P p = p"
     using path
-    by \<^marker>\<open>provenance human\<close> (auto intro!: map_idI simp: subset_iff)
+    by (auto intro!: map_idI simp: subset_iff)
   show ?thesis
-    using \<^marker>\<open>provenance human\<close> path path_is_quot_path'[OF _ path] path_is_quot_path_diff_u[OF _ path] good_quot_map mp
-    by \<^marker>\<open>provenance human\<close> auto
+    using path path_is_quot_path'[OF _ path] path_is_quot_path_diff_u[OF _ path] good_quot_map mp
+    by auto
 qed
 
 
@@ -624,19 +623,19 @@ proof(rule ccontr)
     using cycle(3)
     by (simp add: distinct_edges_of_vpath)
   then have "distinct (edges_of_path p)"
-    using cycle[unfolded odd_cycle_def]
-    by (cases p; simp add: distinct_edges_of_vpath split: if_splits; use alternating_list_odd_last inM in blast)
+    using \<^marker>\<open>provenance ai\<close> cycle[unfolded odd_cycle_def]
+    by \<^marker>\<open>provenance ai\<close> (cases p; simp add: distinct_edges_of_vpath split: if_splits; use alternating_list_odd_last inM in blast)
   moreover have "length (edges_of_path p) \<ge> 2"
-    using cycle(1)
-    unfolding odd_cycle_def
-    by (auto simp: edges_of_path_length)
+    using \<^marker>\<open>provenance ai\<close> cycle(1)
+    unfolding \<^marker>\<open>provenance ai\<close> odd_cycle_def
+    by \<^marker>\<open>provenance ai\<close> (auto simp: edges_of_path_length)
   ultimately have "hd (edges_of_path p) \<noteq> last (edges_of_path p)"
-    by (cases "edges_of_path p"; auto)
+    by \<^marker>\<open>provenance ai\<close> (cases "edges_of_path p"; auto)
   moreover have "last p \<in> (hd (edges_of_path p))" "last p \<in> (last (edges_of_path p))"
-    using cycle
-    unfolding odd_cycle_def
-    using alternating_list_odd_last inM
-    by (auto intro: hd_v_in_hd_e)
+    using \<^marker>\<open>provenance ai\<close> cycle
+    unfolding \<^marker>\<open>provenance ai\<close> odd_cycle_def
+    using \<^marker>\<open>provenance ai\<close> alternating_list_odd_last inM
+    by \<^marker>\<open>provenance ai\<close> (auto intro: hd_v_in_hd_e)
   moreover have "last p \<in> Vs M"
     using inM
     using Vs_def calculation(2)
@@ -672,38 +671,38 @@ proof(induction "length p" arbitrary: p rule: nat_less_induct)
         by simp
     next
       case cons2: (Cons a'' p'')
-      show \<^marker>\<open>provenance ai\<close> ?thesis
-      proof(cases p'')
+      show ?thesis
+      proof \<^marker>\<open>provenance ai\<close>(cases p'')
         case Nil
-        then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> ?thesis
+        then show ?thesis
           using ass.prems cons1 cons2
-          by \<^marker>\<open>provenance ai\<close> simp
+          by simp
       next
         case (Cons y ys)
-        then have \<^marker>\<open>provenance human\<close> alt: "{a', a''} \<notin> M" "{a'', y} \<in> M" "alt_path M (y # ys)"
+        then have alt: "{a', a''} \<notin> M" "{a'', y} \<in> M" "alt_path M (y # ys)"
           using ass.prems(1) cons1 cons2
           by (auto simp: alt_list_step)
         show ?thesis
-        proof \<^marker>\<open>provenance human\<close>(cases "v = a'' \<or> v = y")
-          case \<^marker>\<open>provenance ai\<close> True
-          then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?thesis
-            using \<^marker>\<open>provenance human\<close> alt(2) cons1 cons2 Cons
+        proof(cases "v = a'' \<or> v = y")
+          case True
+          then show ?thesis
+            using alt(2) cons1 cons2 Cons
             by auto
-        next \<^marker>\<open>provenance ai\<close>
-          case \<^marker>\<open>provenance ai\<close> False
-          then \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "v \<in> set ys"
-            using \<^marker>\<open>provenance human\<close> ass.prems(2,3) cons1 cons2 Cons
+        next
+          case False
+          then have "v \<in> set ys"
+            using ass.prems(2,3) cons1 cons2 Cons
             by auto
-          moreover \<^marker>\<open>provenance ai\<close> have "length (y # ys) < length p"
+          moreover have "length (y # ys) < length p"
             using cons1 cons2 Cons
-            by \<^marker>\<open>provenance ai\<close> simp
-          ultimately \<^marker>\<open>provenance ai\<close> have "\<exists>e\<in>set (edges_of_path (y # ys)). v \<in> e \<and> e \<in> M"
-            using \<^marker>\<open>provenance ai\<close> ass.hyps[rule_format, of "length (y # ys)" "y # ys"] ass.prems(4) alt(3) cons1 cons2 Cons False
-            by \<^marker>\<open>provenance ai\<close> auto
-          then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?thesis
+            by simp
+          ultimately have "\<exists>e\<in>set (edges_of_path (y # ys)). v \<in> e \<and> e \<in> M"
+            using ass.hyps[rule_format, of "length (y # ys)" "y # ys"] ass.prems(4) alt(3) cons1 cons2 Cons False
+            by auto
+          then show ?thesis
             using cons1 cons2 Cons
             by auto
-        qed \<^marker>\<open>provenance ai\<close>
+        qed
       qed
     qed
   qed
@@ -740,8 +739,8 @@ proof(rule ccontr; simp)
       using cycle(1)[unfolded odd_cycle_def]
       by (auto simp: Suc_le_length_iff numeral_3_eq_3)
     ultimately have "e = last (edges_of_path p) \<or> e = hd (edges_of_path p)" if "last p \<in> e" "e \<in> set (edges_of_path p)" for e
-      using in_edges_of_path_hd_or_tl[OF that(2)] that
-      by (cases p rule: edges_of_path.cases; auto)
+      using \<^marker>\<open>provenance ai\<close> in_edges_of_path_hd_or_tl[OF that(2)] that
+      by \<^marker>\<open>provenance ai\<close> (cases p rule: edges_of_path.cases; auto)
     moreover case True
     ultimately show ?thesis
       using e matching_odd_cycle_hd_last_unmatched[OF cycle match(1)]
@@ -764,7 +763,7 @@ proof(rule ccontr; simp)
         using odd_cycleD[OF cycle(1)] cycle(2) v
         by (intro alt_path_vert_is_matched v T1 odd_cycleD[OF cycle(1)]; auto)
       ultimately show ?thesis
-        using match[unfolded matching_def2]
+        using \<^marker>\<open>provenance ai\<close> match[unfolded matching_def2]
               e v F1
         by \<^marker>\<open>provenance ai\<close> auto
     next
@@ -809,21 +808,21 @@ next
   proof \<^marker>\<open>provenance ai\<close>(cases "Q a'")
     case True
     then show ?thesis
-      by \<^marker>\<open>provenance human\<close> simp
+      by simp
   next
     case False
     then have "y \<in> set l'"
-      using \<^marker>\<open>provenance human\<close> Cons.prems
+      using Cons.prems
       by auto
-    then have \<^marker>\<open>provenance human\<close> "Q (last (find_pfx Q l'))"
+    then have "Q (last (find_pfx Q l'))"
       using Cons.IH Cons.prems(2)
-      by \<^marker>\<open>provenance ai\<close> blast
-    moreover have \<^marker>\<open>provenance human\<close> "find_pfx Q l' \<noteq> []"
+      by blast
+    moreover have "find_pfx Q l' \<noteq> []"
       using \<open>y \<in> set l'\<close>
-      by \<^marker>\<open>provenance ai\<close> (cases l'; auto)
+      by (cases l'; auto)
     ultimately show ?thesis
       using False
-      by \<^marker>\<open>provenance human\<close> simp
+      by simp
   qed
 qed
 
@@ -859,7 +858,7 @@ next
   case (Cons a' l1')
   then show ?case
     using \<^marker>\<open>provenance ai\<close> find_pfx_nempty[of y "l1' @ [y]" Q]
-    by auto
+    by \<^marker>\<open>provenance ai\<close> auto
 qed
 
 lemma find_pfx_append:
@@ -885,7 +884,7 @@ proof(induction l1 arbitrary: l P1 P2)
     by simp
   ultimately have "(last (find_pfx Q (rev l))) = y"
     using \<^marker>\<open>provenance ai\<close> Nil find_pfx_append[of Q y "rev l2" "[x]"]
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
   moreover have "(last (find_pfx Q l)) = x"
     using Nil
     by auto
@@ -904,12 +903,12 @@ next
   moreover \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> nQ: "\<not> Q a'"
     using Cons.prems(3-5)
     by auto
-  moreover \<^marker>\<open>provenance ai\<close> have "last (find_pfx Q l) = last (find_pfx Q (l' @ x # y # l2))"
-    using \<^marker>\<open>provenance ai\<close> nQ Cons.prems(5) find_pfx_nempty[of x "l' @ x # y # l2" Q] Cons.prems(1)
-    by \<^marker>\<open>provenance ai\<close> auto
-  moreover \<^marker>\<open>provenance ai\<close> have "last (find_pfx Q (rev l)) = last (find_pfx Q (rev (l' @ x # y # l2)))"
-    using \<^marker>\<open>provenance ai\<close> nQ Cons.prems(2,5) find_pfx_append[of Q y "rev l2" "x # rev l'"] find_pfx_append[of Q y "rev l2" "x # rev l' @ [a']"]
-    by \<^marker>\<open>provenance ai\<close> auto
+  moreover \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "last (find_pfx Q l) = last (find_pfx Q (l' @ x # y # l2))"
+    using nQ Cons.prems(5) find_pfx_nempty[of x "l' @ x # y # l2" Q] Cons.prems(1)
+    by auto
+  moreover \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "last (find_pfx Q (rev l)) = last (find_pfx Q (rev (l' @ x # y # l2)))"
+    using nQ Cons.prems(2,5) find_pfx_append[of Q y "rev l2" "x # rev l'"] find_pfx_append[of Q y "rev l2" "x # rev l' @ [a']"]
+    by auto
   ultimately show ?case
     using \<^marker>\<open>provenance ai\<close> Cons.prems(2,5)
     by \<^marker>\<open>provenance ai\<close> auto
@@ -952,50 +951,50 @@ proof-
   ultimately show ?g1
     by simp
   have rev_eofp_pfx: "(edges_of_path (find_pfx ((=) v) (rev p))) = (find_pfx ((\<in>) v) (edges_of_path (rev p)))"
-    using odd_cycleD(1,3)[OF cycle(1)] cycle(5)
-    by (intro edges_of_path_find_pfx cycle; simp add: hd_rev)
+    using \<^marker>\<open>provenance ai\<close> odd_cycleD(1,3)[OF cycle(1)] cycle(5)
+    by \<^marker>\<open>provenance ai\<close> (intro edges_of_path_find_pfx cycle; simp add: hd_rev)
   have rev_eop: "(edges_of_path (rev p)) = rev (edges_of_path p)"
     by (simp add: edges_of_path_rev)
   obtain p' p'' where p'p''[simp]: "p = p' @ (v # p'')"
-    using cycle
-    by (auto dest: split_list_last)
+    using \<^marker>\<open>provenance ai\<close> cycle
+    by \<^marker>\<open>provenance ai\<close> (auto dest: split_list_last)
   show ?g2
     unfolding eofp_pfx rev_eofp_pfx rev_eop
   proof(intro find_pfx_alt_list[where x = "{last p', v}" and y = "{v, hd p''}" and ?l1.0 = "(edges_of_path p')" and ?l2.0 = "(edges_of_path p'')"] cycle, goal_cases)
-    case \<^marker>\<open>provenance ai\<close> 1
-    show \<^marker>\<open>provenance ai\<close> ?case
-      by \<^marker>\<open>provenance human\<close> simp
-  next \<^marker>\<open>provenance ai\<close>
-    case \<^marker>\<open>provenance ai\<close> 2
-    show \<^marker>\<open>provenance ai\<close> ?case
-      by \<^marker>\<open>provenance human\<close> simp
-  next \<^marker>\<open>provenance ai\<close>
-    case \<^marker>\<open>provenance ai\<close> 3
-    show \<^marker>\<open>provenance ai\<close> ?case
-      using \<^marker>\<open>provenance human\<close> assms(3,5)
-      by \<^marker>\<open>provenance human\<close> (intro ballI impI where_is_v; cases p'; auto)
-  next \<^marker>\<open>provenance ai\<close>
-    case \<^marker>\<open>provenance ai\<close> 4
-    show \<^marker>\<open>provenance ai\<close> ?case
-    proof \<^marker>\<open>provenance human\<close>-
+    case 1
+    show ?case
+      by simp
+  next
+    case 2
+    show ?case
+      by simp
+  next
+    case 3
+    show ?case
+      using assms(3,5)
+      by (intro ballI impI where_is_v; cases p'; auto)
+  next
+    case 4
+    show ?case
+    proof-
       have "v \<notin> set p'"
-        using cycle
-        by (cases p'; auto simp: distinct_append)
+        using \<^marker>\<open>provenance ai\<close> cycle
+        by \<^marker>\<open>provenance ai\<close> (cases p'; auto simp: distinct_append)
       moreover have "v \<notin> set p''"
-        using cycle
-        by (cases p'; auto simp: distinct_append)
+        using \<^marker>\<open>provenance ai\<close> cycle
+        by \<^marker>\<open>provenance ai\<close> (cases p'; auto simp: distinct_append)
       ultimately show ?thesis
         by (auto simp add: v_in_edge_in_path_gen)
     qed
-  next \<^marker>\<open>provenance ai\<close>
-    case \<^marker>\<open>provenance ai\<close> 5
-    have nn: "p' \<noteq> []" "p'' \<noteq> []"
+  next
+    case 5
+    have \<^marker>\<open>provenance ai\<close> nn: "p' \<noteq> []" "p'' \<noteq> []"
       using cycle(5) odd_cycleD(3)[OF cycle(1)]
-      by \<^marker>\<open>provenance ai\<close> auto
-    then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-      using \<^marker>\<open>provenance human\<close> edges_of_path_append_3[of p' "v # p''"]
-      by (cases p''; auto)
-  qed \<^marker>\<open>provenance ai\<close>
+      by auto
+    then \<^marker>\<open>provenance ai\<close> show ?case
+      using \<^marker>\<open>provenance ai\<close> edges_of_path_append_3[of p' "v # p''"]
+      by \<^marker>\<open>provenance ai\<close> (cases p''; auto)
+  qed
 qed
 
 text\<open>This is a function that chooses an edge connecting a vertex to another vertex in a given set of
@@ -1019,7 +1018,7 @@ next
   case (Cons a1' l1')
   then show ?case 
     using \<^marker>\<open>provenance ai\<close> Cons.prems path_suff[of E "[a1']"]
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
 qed
 
 context quot
@@ -1052,8 +1051,8 @@ qed
 lemma neq_u_notin_quot_graph:
   assumes "v \<notin> s" "v \<noteq> u"
   shows "v \<notin> Vs (quot_graph P E)"
-  using assms
-  by (auto dest: in_quot_graph_neq_u)
+  using \<^marker>\<open>provenance ai\<close> assms
+  by \<^marker>\<open>provenance ai\<close> (auto dest: in_quot_graph_neq_u)
 
 lemma neq_u_notin_quotG:
   assumes "v \<notin> s" "v \<noteq> u"
@@ -1089,7 +1088,7 @@ proof(rule ccontr)
     using edges_of_path_snoc[OF p1p2(2)]
     by auto
   moreover have "edges_of_path (v1 # p2) = {v1, hd p2} # edges_of_path p2"
-    using p1p2(3)
+    using \<^marker>\<open>provenance ai\<close> p1p2(3)
     by \<^marker>\<open>provenance ai\<close> (cases p2; auto)
   moreover have "edges_of_path C = (edges_of_path (p1 @ [v1])) @ (edges_of_path (v1 # p2))"
     using edges_of_path_append_2[where p' = "v1 # p2"] p1p2(1)
@@ -1098,8 +1097,8 @@ proof(rule ccontr)
     using p1p2(1)
     by auto
   then have i: "{last p1, v1} \<in> M \<or> {v1, hd p2} \<in> M"
-    using odd_cycleD(2)[OF assms(1)] assms(2)[unfolded eqC]
-    by (cases "{last p1, v1} \<in> M"; auto dest: alt_list_append_1'')
+    using \<^marker>\<open>provenance ai\<close> odd_cycleD(2)[OF assms(1)] assms(2)[unfolded eqC]
+    by \<^marker>\<open>provenance ai\<close> (cases "{last p1, v1} \<in> M"; auto dest: alt_list_append_1'')
   have "last p1 \<in> set C" "hd p2 \<in> set C"
     using p1p2
     by auto
@@ -1110,12 +1109,12 @@ proof(rule ccontr)
   have \<^marker>\<open>provenance ai\<close> "v1 \<in> Vs M"
     using assms(3,6)
     by (auto simp: Vs_def)
-  then \<^marker>\<open>provenance ai\<close> have "\<exists>!f. f \<in> M \<and> v1 \<in> f"
-    using \<^marker>\<open>provenance ai\<close> assms(7)
+  then \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "\<exists>!f. f \<in> M \<and> v1 \<in> f"
+    using assms(7)
     unfolding matching_def2
-    by \<^marker>\<open>provenance ai\<close> blast
+    by blast
   then \<^marker>\<open>provenance ai\<close> show False
-    using i ii assms(3,6)
+    using \<^marker>\<open>provenance ai\<close> i ii assms(3,6)
     by \<^marker>\<open>provenance ai\<close> auto
 qed
 
@@ -1157,15 +1156,15 @@ lemma edge_in_graph_edge_in_quot:
   assumes "v \<in> s" "w \<notin> s" "{v, w} \<in> E" 
   shows "{v, u} \<in> quotG E "
 proof \<^marker>\<open>provenance ai\<close>-
-  have \<^marker>\<open>provenance human\<close> "P ` {v, w} = {v, u}"
-    using \<^marker>\<open>provenance ai\<close> assms(1,2)
+  have "P ` {v, w} = {v, u}"
+    using assms(1,2)
     by (simp add: insert_commute)
-  then have \<^marker>\<open>provenance human\<close> "{v, u} \<in> quot_graph P E"
+  then have "{v, u} \<in> quot_graph P E"
     using edge_in_graph_in_quot[OF assms(3), of P]
-    by \<^marker>\<open>provenance ai\<close> simp
-  moreover have \<^marker>\<open>provenance human\<close> "{v, u} \<noteq> {u}"
+    by simp
+  moreover have "{v, u} \<noteq> {u}"
     using assms(1) good_quot_map(1)
-    by \<^marker>\<open>provenance ai\<close> auto
+    by auto
   ultimately show ?thesis
     by simp
 qed
@@ -1218,8 +1217,8 @@ proof-
     for w and p p1 p2:: "'a list"
   proof-
     have last_p1_in_s: "last p1 \<in> s"
-      using p1_nempty p1_subset_s
-      by (auto intro: last_in_set)
+      using \<^marker>\<open>provenance ai\<close> p1_nempty p1_subset_s
+      by \<^marker>\<open>provenance ai\<close> (auto intro: last_in_set)
     have "{last p1, u} \<in> quotG E"
     proof-
       have "last p1 \<in> Vs E"
@@ -1242,8 +1241,8 @@ proof-
         have \<^marker>\<open>provenance ai\<close> "path E (p1 @ [w])"
           using aug_path path_pref[of E "p1 @ [w]" p2] wx(1)
           by auto
-        then have "path E (butlast p1 @ (last p1 # w # []))"
-          by (simp only: *[symmetric])
+        then \<^marker>\<open>provenance ai\<close> have "path E (butlast p1 @ (last p1 # w # []))"
+          by \<^marker>\<open>provenance ai\<close> (simp only: *[symmetric])
         then show ?thesis
           by \<^marker>\<open>provenance ai\<close> (rule path_adj_verts_edge[of E "butlast p1" "last p1" w "[]"])
       qed
@@ -1328,19 +1327,19 @@ proof-
       have "{last p1, x} \<noteq> {hd p3 , x}" if "p1 \<noteq> []"
       proof-
         have "last p1 \<noteq> hd p3"
-          using aug_path(2) wx(1) that p3_nempty
-          by (auto simp: distinct_append dest: last_in_set hd_in_set)
+          using \<^marker>\<open>provenance ai\<close> aug_path(2) wx(1) that p3_nempty
+          by \<^marker>\<open>provenance ai\<close> (auto simp: distinct_append dest: last_in_set hd_in_set)
         then show ?thesis
           by (auto simp add: doubleton_eq_iff)
       qed
       then have hdp3_x_nin_M: "{x, hd p3} \<notin> M"
-        using matching(1)
-        unfolding Vs_def matching_def2
+        using \<^marker>\<open>provenance ai\<close> matching(1)
+        unfolding \<^marker>\<open>provenance ai\<close> Vs_def matching_def2
         using \<^marker>\<open>provenance ai\<close> alt_list_p1_u[of "rev p3" "rev p" x "rev p1"] p3_nempty p3_subset_s wx(1,2)
-        by (auto simp: last_rev insert_commute)
+        by \<^marker>\<open>provenance ai\<close> (auto simp: last_rev insert_commute)
       have "edges_of_path p = edges_of_path (p1  @ [x])@ edges_of_path (x # p3)"
-        unfolding wx(1)
-        using edges_of_path_append_2[where p' = "x # p3"]
+        unfolding \<^marker>\<open>provenance ai\<close> wx(1)
+        using \<^marker>\<open>provenance ai\<close> edges_of_path_append_2[where p' = "x # p3"]
         by \<^marker>\<open>provenance ai\<close> simp
       then have "alt_path M (x # p3) \<or> 
                 alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) (edges_of_path (x # p3))"
@@ -1356,14 +1355,14 @@ proof-
       moreover have "{u, hd p3} \<notin> quotG M"
       proof(rule ccontr)
         have hd_p3_in_s: "hd p3 \<in> s"
-          using p3_nempty p3_subset_s
-          by (auto intro: hd_in_set)
+          using \<^marker>\<open>provenance ai\<close> p3_nempty p3_subset_s
+          by \<^marker>\<open>provenance ai\<close> (auto intro: hd_in_set)
         assume "\<not> {u, hd p3} \<notin> quotG M"
         then have "{u, hd p3} \<in> quotG M"
           by simp
         then have "\<exists>v. {v, hd p3} \<in> M \<and> v \<notin> s"
           using \<^marker>\<open>provenance ai\<close> hd_p3_in_s matching(2) edge_in_quotG_2'_doubleton[of "hd p3" M]
-          by (auto simp: insert_commute)
+          by \<^marker>\<open>provenance ai\<close> (auto simp: insert_commute)
         moreover have "v \<in> set C" if "v \<in> Vs E" "v \<notin> s" for v
           using that quot(1)
           by fastforce
@@ -1405,8 +1404,8 @@ proof-
     have p1_subset_s[simp]: "set p1 \<subseteq> s"
     proof-
       have "path E p1"
-        using p1p2x(1) aug_path(2) path_pref
-        by (auto dest: path_pref)
+        using \<^marker>\<open>provenance ai\<close> p1p2x(1) aug_path(2) path_pref
+        by \<^marker>\<open>provenance ai\<close> (auto dest: path_pref)
       then show ?thesis
         using quot p1p2x(3)
         using mem_path_Vs
@@ -1415,7 +1414,7 @@ proof-
     have p2_subset_s[simp]: "set p2 \<subseteq> s"
     proof-
       have "path E p2"
-        using p1p2x(1) aug_path(2) path_suff[of E "p1 @ [x]" p2]
+        using \<^marker>\<open>provenance ai\<close> p1p2x(1) aug_path(2) path_suff[of E "p1 @ [x]" p2]
         by \<^marker>\<open>provenance ai\<close> auto
       then show ?thesis
         using quot p1p2x(4)
@@ -1452,12 +1451,12 @@ proof-
         proof \<^marker>\<open>provenance ai\<close>-
           have "last p2 \<in> s"
             by (rule subsetD[OF p2_subset_s last_in_set[OF p2_nempty]])
-          moreover have \<^marker>\<open>provenance human\<close> "last p2 \<notin> Vs M"
+          moreover have "last p2 \<notin> Vs M"
             using p1p2x(1) matching_augmenting_path_feats(4)[OF aug_path(1)] p1_empty p2_nempty
-            by \<^marker>\<open>provenance ai\<close> auto
-          ultimately have \<^marker>\<open>provenance human\<close> "last p2 \<notin> Vs (quotG M)"
+            by auto
+          ultimately have "last p2 \<notin> Vs (quotG M)"
             using vert_in_graph_iff_in_quot_diff_u \<open>M \<subseteq> E\<close>
-            by \<^marker>\<open>provenance ai\<close> blast
+            by blast
           then show ?thesis
             using p2_nempty
             by simp
@@ -1479,7 +1478,7 @@ proof-
         case p2_empty: True
         have "alt_path (quotG M) (u # (rev p1))"
           using aug_path(3) distinct_rev
-          by \<^marker>\<open>provenance ai\<close> (intro alt_list_u_p3[of "rev p" "rev p2" x] matching_augmenting_path_rev[OF aug_path(1)] aug_path(5); auto)
+          by (intro alt_list_u_p3[of "rev p" "rev p2" x] matching_augmenting_path_rev[OF aug_path(1)] aug_path(5); auto)
         moreover have "path (quotG E) (u # (rev p1))"
           by (intro path_u_p3[of "rev p" "rev p2" x] rev_path_is_path[OF aug_path(2)]; simp)
         moreover have "distinct (u # (rev p1))"
@@ -1491,16 +1490,16 @@ proof-
         moreover have "last (u # (rev p1)) \<notin> Vs (quotG M)"
         proof \<^marker>\<open>provenance ai\<close>-
           have "hd p1 \<in> s"
-            by \<^marker>\<open>provenance human\<close> (rule subsetD[OF p1_subset_s hd_in_set[OF p1_nempty]])
-          moreover have \<^marker>\<open>provenance human\<close> "hd p1 \<notin> Vs M"
+            by (rule subsetD[OF p1_subset_s hd_in_set[OF p1_nempty]])
+          moreover have "hd p1 \<notin> Vs M"
             using p1p2x(1) matching_augmenting_path_feats(3)[OF aug_path(1)] p1_nempty
-            by \<^marker>\<open>provenance ai\<close> auto
-          ultimately have \<^marker>\<open>provenance human\<close> "hd p1 \<notin> Vs (quotG M)"
+            by auto
+          ultimately have "hd p1 \<notin> Vs (quotG M)"
             using vert_in_graph_iff_in_quot_diff_u \<open>M \<subseteq> E\<close>
-            by \<^marker>\<open>provenance ai\<close> blast
+            by blast
           then show ?thesis
             using p1_nempty
-            by \<^marker>\<open>provenance human\<close> (simp add: last_rev)
+            by (simp add: last_rev)
         qed
         moreover have "length (u # (rev p1)) \<ge> 2"
           by (auto simp add: leI)
@@ -1530,16 +1529,16 @@ proof-
               using p2_nempty
               by (auto simp add: neq_Nil_conv simp del: p2_nempty)
             show ?thesis
-              using matching_augmenting_path_feats(2)[OF aug_path(1), unfolded rw1 rw2 rw3]
+              using \<^marker>\<open>provenance ai\<close> matching_augmenting_path_feats(2)[OF aug_path(1), unfolded rw1 rw2 rw3]
               using \<^marker>\<open>provenance ai\<close> alt_list_append_1'[of "\<lambda>e. e \<notin> M" "\<lambda>e. e \<in> M" "edges_of_path p1 @ [{last p1, x}]" "{hd p2, x} # edges_of_path p2"]
                     p1_x_nin_M
-              by (auto simp: alt_list_step)
+              by \<^marker>\<open>provenance ai\<close> (auto simp: alt_list_step)
           qed
           have False
             using hdp2_x_in_M
-            by \<^marker>\<open>provenance ai\<close> (intro alt_list_p1_u[of "rev p2" "rev p" x "rev p1"]; simp add: last_rev)
+            by (intro alt_list_p1_u[of "rev p2" "rev p" x "rev p1"]; simp add: last_rev)
           then show ?thesis
-            by simp
+            by \<^marker>\<open>provenance ai\<close> simp
         qed
       qed
     qed
@@ -1556,8 +1555,8 @@ proof-
     have p1_subset_s[simp]: "set p1 \<subseteq> s"
     proof-
       have "path E p1"
-        using wx(1) aug_path(2) path_pref
-        by (auto dest: path_pref)
+        using \<^marker>\<open>provenance ai\<close> wx(1) aug_path(2) path_pref
+        by \<^marker>\<open>provenance ai\<close> (auto dest: path_pref)
       then show ?thesis
         using quot wx(5)
         using mem_path_Vs
@@ -1566,7 +1565,7 @@ proof-
     have p3_subset_s: "set p3 \<subseteq> s"
     proof-
       have "path E p3"
-        using wx(1) aug_path(2) path_suff[of E "p1 @ w # p2 @ [x]" p3]
+        using \<^marker>\<open>provenance ai\<close> wx(1) aug_path(2) path_suff[of E "p1 @ w # p2 @ [x]" p3]
         by \<^marker>\<open>provenance ai\<close> auto
       then show ?thesis
         using quot wx(6)
@@ -1582,8 +1581,8 @@ proof-
       for p1 w p2 x p3 p
     proof-
       have "edges_of_path p = edges_of_path (p1 @ w # p2 @ [x])@ edges_of_path (x # p3)"
-        unfolding wx(1)
-        using edges_of_path_append_2[where p' = "x # p3" and p = "p1 @ w # p2"]
+        unfolding \<^marker>\<open>provenance ai\<close> wx(1)
+        using \<^marker>\<open>provenance ai\<close> edges_of_path_append_2[where p' = "x # p3" and p = "p1 @ w # p2"]
         by \<^marker>\<open>provenance ai\<close> simp
       then have "alt_path M (x # p3) \<or> 
                 alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) (edges_of_path (x # p3))"
@@ -1600,14 +1599,14 @@ proof-
       moreover have "{u, hd p3} \<notin> quotG M"
       proof(rule ccontr)
         have hd_p3_in_s: "hd p3 \<in> s"
-          using p3_nempty p3_subset_s
-          by (auto intro: hd_in_set)
+          using \<^marker>\<open>provenance ai\<close> p3_nempty p3_subset_s
+          by \<^marker>\<open>provenance ai\<close> (auto intro: hd_in_set)
         assume "\<not> {u, hd p3} \<notin> quotG M"
         then have "{u, hd p3} \<in> quotG M"
           by simp
         then have "\<exists>v. {v, hd p3} \<in> M \<and> v \<notin> s"
           using \<^marker>\<open>provenance ai\<close> hd_p3_in_s matching(2) edge_in_quotG_2'_doubleton[of "hd p3" M]
-          by (auto simp: insert_commute)
+          by \<^marker>\<open>provenance ai\<close> (auto simp: insert_commute)
         moreover have "v \<in> set C" if "v \<in> Vs E" "v \<notin> s" for v
           using that quot(1)
           by fastforce
@@ -1669,15 +1668,15 @@ proof-
         then have "x \<notin> Vs M"
           using wx(1) matching_augmenting_path_feats(4)[OF aug_path(1)]
           by auto
-        then have \<^marker>\<open>provenance ai\<close> "x = last C"
-          using \<^marker>\<open>provenance human\<close> wx(3) in_odd_cycle_in_M[OF _ cycle]
+        then \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "x = last C"
+          using wx(3) in_odd_cycle_in_M[OF _ cycle]
           by blast
         moreover \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "w = last C"
-          using \<^marker>\<open>provenance human\<close> w_nin_M wx(2) in_odd_cycle_in_M[OF _ cycle]
+          using w_nin_M wx(2) in_odd_cycle_in_M[OF _ cycle]
           by blast
         ultimately \<^marker>\<open>provenance ai\<close> show False
           using \<^marker>\<open>provenance ai\<close> wx(4)
-          by simp
+          by \<^marker>\<open>provenance ai\<close> simp
       qed
       have "{x, hd p3} \<notin> M"
         using x_hdp3_nin_M[OF w_nin_M p3_nempty wx(2,3,4,6)] .
@@ -1697,12 +1696,12 @@ proof-
       proof \<^marker>\<open>provenance ai\<close>-
         have "last p3 \<in> s"
           by (rule subsetD[OF p3_subset_s last_in_set[OF p3_nempty]])
-        moreover have \<^marker>\<open>provenance human\<close> "last p3 \<notin> Vs M"
+        moreover have "last p3 \<notin> Vs M"
           using wx(1) matching_augmenting_path_feats(4)[OF aug_path(1)] p3_nempty
-          by \<^marker>\<open>provenance ai\<close> auto
-        ultimately have \<^marker>\<open>provenance human\<close> "last p3 \<notin> Vs (quotG M)"
+          by auto
+        ultimately have "last p3 \<notin> Vs (quotG M)"
           using vert_in_graph_iff_in_quot_diff_u \<open>M \<subseteq> E\<close>
-          by \<^marker>\<open>provenance ai\<close> blast
+          by blast
         then show ?thesis
           using p3_nempty
           by simp
@@ -1728,7 +1727,7 @@ proof-
         case F4: False
         have "alt_path (quotG M) (u # rev p1)"
           using F4
-          by \<^marker>\<open>provenance ai\<close> (intro alt_list_u_p3[of "rev p" "rev p3" x "rev p2" w] matching_augmenting_path_rev[OF aug_path(1)] aug_path(5); simp add: insert_commute hd_rev)
+          by (intro alt_list_u_p3[of "rev p" "rev p3" x "rev p2" w] matching_augmenting_path_rev[OF aug_path(1)] aug_path(5); simp add: insert_commute hd_rev)
         moreover have "path (quotG E) (u # (rev p1))"
           by (intro path_u_p3[of "rev p" "rev (p2 @ x # p3)" w] rev_path_is_path[OF aug_path(2)]; auto)
         moreover have "distinct (u # (rev p1))"
@@ -1740,16 +1739,16 @@ proof-
         moreover have "last (u # (rev p1)) \<notin> Vs (quotG M)"
         proof \<^marker>\<open>provenance ai\<close>-
           have "hd p1 \<in> s"
-            by \<^marker>\<open>provenance human\<close> (rule subsetD[OF p1_subset_s hd_in_set[OF p1_nempty]])
-          moreover have \<^marker>\<open>provenance human\<close> "hd p1 \<notin> Vs M"
+            by (rule subsetD[OF p1_subset_s hd_in_set[OF p1_nempty]])
+          moreover have "hd p1 \<notin> Vs M"
             using wx(1) matching_augmenting_path_feats(3)[OF aug_path(1)] p1_nempty
-            by \<^marker>\<open>provenance ai\<close> auto
-          ultimately have \<^marker>\<open>provenance human\<close> "hd p1 \<notin> Vs (quotG M)"
+            by auto
+          ultimately have "hd p1 \<notin> Vs (quotG M)"
             using vert_in_graph_iff_in_quot_diff_u \<open>M \<subseteq> E\<close>
-            by \<^marker>\<open>provenance ai\<close> blast
+            by blast
           then show ?thesis
             using p1_nempty
-            by \<^marker>\<open>provenance human\<close> (simp add: last_rev)
+            by (simp add: last_rev)
         qed
         moreover have "length (u # (rev p1)) \<ge> 2"
           by (simp add: Suc_leI)
@@ -1836,11 +1835,11 @@ proof(rule ccontr)
     unfolding Vs_def
     by auto 
   ultimately obtain qe' where qe': "v \<in> qe'" "qe \<noteq> qe'" "qe' \<in> quotG M"
-    by (auto dest: bspec[of _ _ qe])
+    by \<^marker>\<open>provenance ai\<close> (auto dest: bspec[of _ _ qe])
   have \<^marker>\<open>provenance ai\<close> aux2: "\<exists>w. w \<in> qq \<and> w \<noteq> u \<and> w \<in> s \<and> qq = {u, w}" if "qq \<in> quotG M" "u \<in> qq" for qq
-    using \<^marker>\<open>provenance human\<close> that assms(3) good_quot_map(1) dblton_E
-    unfolding \<^marker>\<open>provenance human\<close> quot_graph_def
-    by \<^marker>\<open>provenance human\<close> (auto simp: image_iff)
+    using that assms(3) good_quot_map(1) dblton_E
+    unfolding quot_graph_def
+    by (auto simp: image_iff)
   show False
   proof(cases "v \<in> s")
     text\<open>if v in s, then due to the way the quot mapping works, and since qe, qe' in quotG M,
@@ -1848,11 +1847,11 @@ proof(rule ccontr)
       contradiction.\<close>
     case True
     have \<^marker>\<open>provenance ai\<close> aux: "\<exists>e\<in>M. qq = P ` e \<and> v \<in> e" if "qq \<in> quotG M" "v \<in> qq" for qq
-      using \<^marker>\<open>provenance human\<close> that True good_quot_map(1)
-      unfolding \<^marker>\<open>provenance human\<close> quot_graph_def
-      by \<^marker>\<open>provenance human\<close> (auto simp: image_iff)
+      using that True good_quot_map(1)
+      unfolding quot_graph_def
+      by (auto simp: image_iff)
     then obtain e e' where e: "v \<in> e" "v \<in> e'" "e \<in> M" "e' \<in> M" "e \<noteq> e'"
-      using aux[OF qe(2) qe(1)] aux[OF qe'(3) qe'(1)] qe'(2)
+      using \<^marker>\<open>provenance ai\<close> aux[OF qe(2) qe(1)] aux[OF qe'(3) qe'(1)] qe'(2)
       by \<^marker>\<open>provenance ai\<close> auto
     moreover have "v \<in> Vs M"
       using True \<open>M\<subseteq>E\<close>
@@ -1870,12 +1869,12 @@ proof(rule ccontr)
       by blast
     moreover obtain w x where wx: "w \<noteq> x" "w \<in> qe" "w \<noteq> u" "w \<in> s" "x \<in> qe'" "x \<noteq> u" "x \<in> s"
     proof \<^marker>\<open>provenance ai\<close>-
-      obtain \<^marker>\<open>provenance human\<close> w where w: "w \<in> qe" "w \<noteq> u" "w \<in> s" "qe = {u, w}"
+      obtain w where w: "w \<in> qe" "w \<noteq> u" "w \<in> s" "qe = {u, w}"
         using aux2[OF qe(2)] qe(1) vu
-        by \<^marker>\<open>provenance ai\<close> auto
-      obtain \<^marker>\<open>provenance human\<close> x where x: "x \<in> qe'" "x \<noteq> u" "x \<in> s" "qe' = {u, x}"
+        by auto
+      obtain x where x: "x \<in> qe'" "x \<noteq> u" "x \<in> s" "qe' = {u, x}"
         using aux2[OF qe'(3)] qe'(1) vu
-        by \<^marker>\<open>provenance ai\<close> auto
+        by auto
       show thesis
         using that w x qe'(2)
         by auto
@@ -1947,8 +1946,8 @@ next
   next
     case False
     have "P ` e \<noteq> {u}"
-      using False good_quot_map
-      by (auto simp: image_iff set_eq_iff)
+      using \<^marker>\<open>provenance ai\<close> False good_quot_map
+      by \<^marker>\<open>provenance ai\<close> (auto simp: image_iff set_eq_iff)
     then have "(quotG (insert e E')) =  insert (P ` e) (quotG E')"
       by (auto simp add: quot_graph_def)
     moreover have "P ` e \<notin> (quotG E')"
@@ -1966,11 +1965,11 @@ next
       ultimately have disj: "\<forall>e'\<in>E'. (\<forall>v\<in>e'. v \<in> s) \<or> (\<forall>v\<in>e'. v \<notin> s)"
         using insert(5)
         by blast
-      have uin: "u \<in> P ` e"
-        using \<^marker>\<open>provenance ai\<close> True
+      have \<^marker>\<open>provenance ai\<close> uin: "u \<in> P ` e"
+        using True
         by (auto simp: image_iff)
-      have sin: "\<exists>x\<in>s. x \<in> P ` e"
-        using \<^marker>\<open>provenance ai\<close> False
+      have \<^marker>\<open>provenance ai\<close> sin: "\<exists>x\<in>s. x \<in> P ` e"
+        using False
         by (auto simp: image_iff)
       then have "\<forall>e'\<in>E'. P ` e \<noteq> P ` e'"
       proof \<^marker>\<open>provenance ai\<close>(intro ballI notI)
@@ -1978,13 +1977,13 @@ next
         assume e': "e' \<in> E'" "P ` e = P ` e'"
         have "u \<in> P ` e'"
           using uin
-          by \<^marker>\<open>provenance human\<close> (simp only: e')
-        moreover have \<^marker>\<open>provenance human\<close> "\<exists>x\<in>s. x \<in> P ` e'"
-          using \<^marker>\<open>provenance ai\<close> sin
+          by (simp only: e')
+        moreover have "\<exists>x\<in>s. x \<in> P ` e'"
+          using sin
           by (simp only: e')
         ultimately show False
-          using \<^marker>\<open>provenance human\<close> disj e'(1) good_quot_map(1)
-          by \<^marker>\<open>provenance human\<close> (auto simp: image_iff)
+          using disj e'(1) good_quot_map(1)
+          by (auto simp: image_iff)
       qed
       then show ?thesis
         unfolding quot_graph_def
@@ -2002,23 +2001,23 @@ next
           using F2
           by auto
         then have Pe: "P ` e = e"
-          by \<^marker>\<open>provenance human\<close> (auto simp: subset_iff)
+          by (auto simp: subset_iff)
         have "e' \<subseteq> s"
         proof
           fix x
           assume "x \<in> e'"
           then have "P x \<in> e"
-            using \<^marker>\<open>provenance human\<close> e'(2) Pe
+            using e'(2) Pe
             by blast
           then have "P x \<in> s"
-            using \<^marker>\<open>provenance human\<close> \<open>e \<subseteq> s\<close>
+            using \<open>e \<subseteq> s\<close>
             by blast
           then show "x \<in> s"
-            using \<^marker>\<open>provenance human\<close> good_quot_map(1)
-            by \<^marker>\<open>provenance human\<close> (auto split: if_splits)
+            using good_quot_map(1)
+            by (auto split: if_splits)
         qed
         then have "P ` e' = e'"
-          by \<^marker>\<open>provenance human\<close> (auto simp: subset_iff)
+          by (auto simp: subset_iff)
         then show False
           using e' Pe neq
           by auto
@@ -2094,35 +2093,35 @@ proof(induction "length p" arbitrary: p M rule: less_induct)
             using less.prems(1)
             by (simp add: alt_list_step alt_list_empty)
           ultimately show False
-            using less.prems(2)
-            unfolding matching_def2 Vs_def
+            using \<^marker>\<open>provenance ai\<close> less.prems(2)
+            unfolding \<^marker>\<open>provenance ai\<close> matching_def2 Vs_def
             by \<^marker>\<open>provenance ai\<close> auto
         qed
         have "matching ((M - {{a'', a'''}}) \<oplus> set (edges_of_path (a''' # p''')))"
         proof(intro less, goal_cases)
-          case \<^marker>\<open>provenance ai\<close> 1
-          show \<^marker>\<open>provenance ai\<close> ?case
-            by \<^marker>\<open>provenance human\<close> simp
-        next \<^marker>\<open>provenance ai\<close>
-          case \<^marker>\<open>provenance ai\<close> 2
+          case 1
+          show ?case
+            by simp
+        next
+          case 2
           have *: "alt_path M p''"
             using less
             by (auto simp add: alt_list_step)
           show ?case
             using distinct_edges
             by (intro alt_list_cong[OF *[simplified]]; auto simp add: alt_list_step)
-        next \<^marker>\<open>provenance ai\<close>
-          case \<^marker>\<open>provenance ai\<close> 3
-          show \<^marker>\<open>provenance ai\<close> ?case
-            using \<^marker>\<open>provenance human\<close> less.prems(2)
-            by \<^marker>\<open>provenance human\<close> (rule matching_delete)
-        next \<^marker>\<open>provenance ai\<close>
-          case \<^marker>\<open>provenance ai\<close> 4
-          show \<^marker>\<open>provenance ai\<close> ?case
-            using \<^marker>\<open>provenance human\<close> a'''nin
-            by \<^marker>\<open>provenance human\<close> simp
-        next \<^marker>\<open>provenance ai\<close>
-          case \<^marker>\<open>provenance ai\<close> 5
+        next
+          case 3
+          show ?case
+            using \<^marker>\<open>provenance ai\<close> less.prems(2)
+            by \<^marker>\<open>provenance ai\<close> (rule matching_delete)
+        next
+          case 4
+          show ?case
+            using a'''nin
+            by simp
+        next
+          case 5
           have "last (edges_of_path (a''' # p''')) \<noteq> {a'', a'''}" if "2 \<le> length (a''' # p''')"
           proof(cases p''')
             case Nil
@@ -2141,24 +2140,24 @@ proof(induction "length p" arbitrary: p M rule: less_induct)
           then show ?case
             using a'''nin less.prems(4)
             by (cases p'''; simp split: if_splits)
-        next \<^marker>\<open>provenance ai\<close>
-          case \<^marker>\<open>provenance ai\<close> 6
-          show \<^marker>\<open>provenance ai\<close> ?case
-            using \<^marker>\<open>provenance human\<close> less.prems(5)
+        next
+          case 6
+          show ?case
+            using less.prems(5)
             by simp
         qed
         moreover have "(M \<oplus> set (edges_of_path p)) - {{a', a''}} =  (M - {{a'', a'''}} \<oplus> set (edges_of_path (a''' # p''')))"
         proof(intro equalityI subsetI, goal_cases)
-          case \<^marker>\<open>provenance ai\<close> (1 x)
-          then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-            using \<^marker>\<open>provenance human\<close> less.prems(1)
-            by \<^marker>\<open>provenance human\<close> (simp add: alt_list_step alt_list_empty symmetric_diff_def; blast)
-        next \<^marker>\<open>provenance ai\<close>
-          case \<^marker>\<open>provenance ai\<close> (2 x)
-          then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-            using \<^marker>\<open>provenance human\<close> less.prems(1,5) v_in_edge_in_path
-            by \<^marker>\<open>provenance human\<close> (simp add: alt_list_step alt_list_empty symmetric_diff_def; fastforce)
-        qed \<^marker>\<open>provenance ai\<close>
+          case (1 x)
+          then show ?case
+            using less.prems(1)
+            by (simp add: alt_list_step alt_list_empty symmetric_diff_def; blast)
+        next
+          case (2 x)
+          then show ?case
+            using less.prems(1,5) v_in_edge_in_path
+            by (simp add: alt_list_step alt_list_empty symmetric_diff_def; fastforce)
+        qed
         ultimately have "matching ((M \<oplus> set (edges_of_path p)) - {{a', a''}})"
           by simp
         moreover have "a' \<notin> Vs ((M \<oplus> set (edges_of_path p)) - {{a', a''}})"
@@ -2214,8 +2213,8 @@ proof(induction "length p" arbitrary: p M rule: less_induct)
           next
             case False
             moreover have False if "e \<in> M"
-              using less.prems(2) False e(2) that a''a'''_in_both(1)
-              by (auto simp add: matching_def2 Vs_def)
+              using \<^marker>\<open>provenance ai\<close> less.prems(2) False e(2) that a''a'''_in_both(1)
+              by \<^marker>\<open>provenance ai\<close> (auto simp add: matching_def2 Vs_def)
             moreover have False if "e \<in> set (edges_of_path p)"
             proof-
               have "e \<in> set (edges_of_path p'')"
@@ -2365,15 +2364,15 @@ proof(rule dblton_graphI, goal_cases)
       have \<^marker>\<open>provenance ai\<close> "u \<notin> quote"
         using v False
         by simp
-      then \<^marker>\<open>provenance ai\<close> have "quote \<subseteq> s"
+      then \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "quote \<subseteq> s"
         using 1 u_nin_edge_in_quot
-        by \<^marker>\<open>provenance ai\<close> blast
-      then \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "quote \<in> M"
-        using \<^marker>\<open>provenance human\<close> 1 edge_in_quot_in_graph_1' \<open>M \<subseteq> E\<close>
         by blast
-      then have False
-        using \<open>dblton_graph M\<close> v
-        by (auto elim: dblton_graphE)
+      then \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "quote \<in> M"
+        using 1 edge_in_quot_in_graph_1' \<open>M \<subseteq> E\<close>
+        by blast
+      then \<^marker>\<open>provenance ai\<close> have False
+        using \<^marker>\<open>provenance ai\<close> \<open>dblton_graph M\<close> v
+        by \<^marker>\<open>provenance ai\<close> (auto elim: dblton_graphE)
       then show ?thesis
         by simp
     qed
@@ -2397,7 +2396,7 @@ proof(rule dblton_graphI, goal_cases)
         using card_quote
         by auto
       then obtain v1 v2 where "quote = {v1,v2}" "v1 \<noteq> v2"
-        by (auto simp: card_2_iff)
+        by \<^marker>\<open>provenance ai\<close> (auto simp: card_2_iff)
       then show ?thesis
         by auto
     qed
@@ -2454,29 +2453,29 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         by (simp add: finite_symm_diff)
       have alt_list_stem_hdC: "alt_path M (stem @ [hd C])"
       proof \<^marker>\<open>provenance ai\<close>-
-        have \<^marker>\<open>provenance human\<close> eq: "edges_of_path (stem @ C) = edges_of_path (stem @ [hd C]) @ edges_of_path C"
+        have eq: "edges_of_path (stem @ C) = edges_of_path (stem @ [hd C]) @ edges_of_path C"
           using odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] edges_of_path_append_2
-          by \<^marker>\<open>provenance ai\<close> blast
+          by blast
         then show ?thesis
-          using \<^marker>\<open>provenance human\<close> match_blossomD(1)[OF \<open>match_blossom M stem C\<close>] alt_list_append_1
+          using match_blossomD(1)[OF \<open>match_blossom M stem C\<close>] alt_list_append_1
           by auto
       qed
       have distinct_stem_hdC: "distinct (stem @ [hd C])"
       proof-
         have bl: "butlast C = hd C # tl (butlast C)"
-          using odd_cycleD(1)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
+          using \<^marker>\<open>provenance ai\<close> odd_cycleD(1)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
           by \<^marker>\<open>provenance ai\<close> (cases C; auto)
         then show ?thesis
-          using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] bl
-          by (cases "butlast C"; auto simp: distinct_append)
+          using \<^marker>\<open>provenance ai\<close> match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] bl
+          by \<^marker>\<open>provenance ai\<close> (cases "butlast C"; auto simp: distinct_append)
       qed
       have path_stem_hdC: "path E (stem @ [hd C])"
-        using match_blossom(1) odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
+        using \<^marker>\<open>provenance ai\<close> match_blossom(1) odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
         using \<^marker>\<open>provenance ai\<close> path_pref[of E "stem @ [hd C]" "tl C"]
         by \<^marker>\<open>provenance ai\<close> (cases C; auto)
       have stem_hdC_nempty: "edges_of_path (stem @ [hd C]) \<noteq> []"
         using \<^marker>\<open>provenance ai\<close> stem_nempty edges_of_path_snoc[OF stem_nempty, of "hd C"]
-        by (auto simp flip: edges_of_path_snoc)
+        by \<^marker>\<open>provenance ai\<close> (auto simp flip: edges_of_path_snoc)
       have "(edges_of_path (stem @ C)) = (edges_of_path (stem @ [hd C])) @ (edges_of_path (C))"
         using odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
         using edges_of_path_append_2
@@ -2488,28 +2487,28 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         using match_blossomD(5)[OF \<open>match_blossom M stem C\<close>] stem_hdC_nempty
               alternating_list_even_last
         by auto
-      have stem_C_disj: "set C \<inter> set stem = {}"
+      have \<^marker>\<open>provenance ai\<close> stem_C_disj: "set C \<inter> set stem = {}"
         using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] distinct_stem_hdC odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
         by (cases C rule: rev_cases; auto simp: distinct_append)
       have M'_matching: "matching M'"
         unfolding M'_def
       proof(intro symm_diff_is_matching' distinct_stem_hdC, goal_cases)
-        case \<^marker>\<open>provenance ai\<close> 1
-        show \<^marker>\<open>provenance ai\<close> ?case
-          using \<^marker>\<open>provenance human\<close> alt_list_stem_hdC
-          by \<^marker>\<open>provenance human\<close> auto
-      next \<^marker>\<open>provenance ai\<close>
-        case \<^marker>\<open>provenance ai\<close> 2
-        show \<^marker>\<open>provenance ai\<close> ?case
-          using \<^marker>\<open>provenance human\<close> matching(1)
-          by \<^marker>\<open>provenance human\<close> auto
-      next \<^marker>\<open>provenance ai\<close>
-        case \<^marker>\<open>provenance ai\<close> 3
-        show \<^marker>\<open>provenance ai\<close> ?case
-          using \<^marker>\<open>provenance human\<close> match_blossomD(4)[OF \<open>match_blossom M stem C\<close>]
-          by \<^marker>\<open>provenance human\<close> (simp add: stem_nempty)
-      next \<^marker>\<open>provenance ai\<close>
-        case \<^marker>\<open>provenance ai\<close> 4
+        case 1
+        show ?case
+          using alt_list_stem_hdC
+          by auto
+      next
+        case 2
+        show ?case
+          using matching(1)
+          by auto
+      next
+        case 3
+        show ?case
+          using match_blossomD(4)[OF \<open>match_blossom M stem C\<close>]
+          by (simp add: stem_nempty)
+      next
+        case 4
         have "last (edges_of_path (stem @ [hd C])) \<in> M"
           by (rule alternating_list_even_last[where ?P1.0 = "(\<lambda>e. e \<notin> M)", OF alt_list_stem_hdC match_blossomD(5)[OF \<open>match_blossom M stem C\<close>] stem_hdC_nempty])
         then show ?case
@@ -2522,13 +2521,13 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         using Berge_2[OF graph_augmenting_path_feats(1)[OF aug_path] matching(2) graph_augmenting_path_feats(3,2)[OF aug_path] matching(3,1)]
         by auto
       moreover have M'_subset_G: "M' \<subseteq> E"
-        unfolding M'_def
-        using matching(2)
+        unfolding \<^marker>\<open>provenance ai\<close> M'_def
+        using \<^marker>\<open>provenance ai\<close> matching(2)
         using \<^marker>\<open>provenance ai\<close> sym_diff_subset[of M "set (edges_of_path (stem @ [hd C]))"] path_edges_subset[OF path_stem_hdC]
         by \<^marker>\<open>provenance ai\<close> blast
       ultimately obtain p_M' where aug_M': "matching_augmenting_path M' p_M'" "path E p_M'" "distinct p_M'"
-        using Berge[OF M'_finite _ _ dblton_E finite_Vs]
-        by auto
+        using \<^marker>\<open>provenance ai\<close> Berge[OF M'_finite _ _ dblton_E finite_Vs]
+        by \<^marker>\<open>provenance ai\<close> auto
 
       moreover have lastC_nin_M': "last C \<notin> Vs M'"
       proof-
@@ -2552,19 +2551,19 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
             by (auto dest: matching_unique_match)
         qed
         ultimately have "\<forall>e\<in>M'. hd C \<notin> e"
-          unfolding M'_def
+          unfolding \<^marker>\<open>provenance ai\<close> M'_def
         proof \<^marker>\<open>provenance ai\<close>(intro ballI notI)
           fix e
-          assume \<^marker>\<open>provenance human\<close> e: "e \<in> M \<oplus> set (edges_of_path (stem @ [hd C]))" "hd C \<in> e"
-          have \<^marker>\<open>provenance human\<close> "e \<in> M \<or> e \<in> set (edges_of_path (stem @ [hd C]))"
-            using \<^marker>\<open>provenance ai\<close> e(1)
+          assume e: "e \<in> M \<oplus> set (edges_of_path (stem @ [hd C]))" "hd C \<in> e"
+          have "e \<in> M \<or> e \<in> set (edges_of_path (stem @ [hd C]))"
+            using e(1)
             by (auto simp: symmetric_diff_def)
-          then have \<^marker>\<open>provenance human\<close> "e = last (edges_of_path (stem @ [hd C]))"
-            using \<^marker>\<open>provenance ai\<close> e(2) memlast Mhd
-            by \<^marker>\<open>provenance ai\<close> blast
+          then have "e = last (edges_of_path (stem @ [hd C]))"
+            using e(2) memlast Mhd
+            by blast
           then show False
             using e(1) lastnin
-            unfolding \<^marker>\<open>provenance human\<close> M'_def
+            unfolding M'_def
             by blast
         qed
         then show ?thesis
@@ -2575,13 +2574,13 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
       moreover have alt_M'C: "alt_path M' C"
         unfolding M'_def
       proof(rule alt_path_in_symm_diff, goal_cases)
-        case \<^marker>\<open>provenance ai\<close> 1
-        show \<^marker>\<open>provenance ai\<close> ?case
-          using \<^marker>\<open>provenance human\<close> match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] . \<^marker>\<open>provenance human\<close>
-      next \<^marker>\<open>provenance ai\<close>
-        case \<^marker>\<open>provenance ai\<close> 2
-        show \<^marker>\<open>provenance ai\<close> ?case
-        proof \<^marker>\<open>provenance human\<close>-
+        case 1
+        show ?case
+          using match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] .
+      next
+        case 2
+        show ?case
+        proof-
           have *: "(edges_of_path (stem @ [hd C])) = (edges_of_path (stem)) @ [{last stem, hd C}]"
             using stem_nempty
             by (simp add: edges_of_path_snoc)
@@ -2596,7 +2595,7 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
             unfolding *
             by (auto dest: edges_of_path_disj)
         qed
-      qed \<^marker>\<open>provenance ai\<close>
+      qed
       ultimately obtain p'_quotM' where p'_M': "alt_path (quotG M') p'_quotM'" 
         "path (quotG E) p'_quotM'"
         "distinct p'_quotM'"
@@ -2658,7 +2657,7 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         using graph_subset_quot_subset M'_subset_G
         by auto
       ultimately obtain quotM'_large where quotM'_large: "matching quotM'_large" "card quotM'_large > card (quotG M')" "quotM'_large \<subseteq> quotG E"
-        using Berge_2[OF qaug(1) sub_qM' qaug(2) qaug(3) fin_qM' match_qM']
+        using \<^marker>\<open>provenance ai\<close> Berge_2[OF qaug(1) sub_qM' qaug(2) qaug(3) fin_qM' match_qM']
         by \<^marker>\<open>provenance ai\<close> auto
       have finite_quotG_M: "finite (quotG M)"
         using finite_quot matching(3)
@@ -2858,16 +2857,16 @@ proof-
   moreover have C: "card (Vs E \<inter> s) < card (Vs E) - 1"
     using assms
     by (simp add: card_Diff_subset_Int)
-  ultimately have eq: "insert u (Vs (quotG E)) = insert u (Vs E \<inter> s)"
-    by \<^marker>\<open>provenance ai\<close> simp
-  have fin: "finite (insert u (Vs E \<inter> s))"
-    using \<^marker>\<open>provenance ai\<close> assms(1)
-    by \<^marker>\<open>provenance ai\<close> simp
-  have cu: "card (insert u (Vs E \<inter> s)) = card (Vs E \<inter> s) + 1"
+  ultimately \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> eq: "insert u (Vs (quotG E)) = insert u (Vs E \<inter> s)"
+    by simp
+  have \<^marker>\<open>provenance ai\<close> fin: "finite (insert u (Vs E \<inter> s))"
+    using assms(1)
+    by simp
+  have \<^marker>\<open>provenance ai\<close> cu: "card (insert u (Vs E \<inter> s)) = card (Vs E \<inter> s) + 1"
     using assms(1) good_quot_map(1)
-    by \<^marker>\<open>provenance ai\<close> simp
-  have "card (Vs (quotG E)) \<le> card (insert u (Vs E \<inter> s))"
-    using \<^marker>\<open>provenance ai\<close> eq fin
+    by simp
+  have \<^marker>\<open>provenance ai\<close> "card (Vs (quotG E)) \<le> card (insert u (Vs E \<inter> s))"
+    using eq fin
     by (intro card_mono; auto)
   then \<^marker>\<open>provenance ai\<close> show ?thesis
     using \<^marker>\<open>provenance ai\<close> cu C
@@ -2925,7 +2924,7 @@ next
   proof-
     have stem_hdC_nempty: "edges_of_path (stem @ [hd C]) \<noteq> []"
       using \<^marker>\<open>provenance ai\<close> edges_of_path_snoc[OF stem_nempty, of "hd C"]
-      by (auto simp flip: edges_of_path_snoc)
+      by \<^marker>\<open>provenance ai\<close> (auto simp flip: edges_of_path_snoc)
     have "(edges_of_path (stem @ C)) = (edges_of_path (stem @ [hd C])) @ (edges_of_path (C))"
       using odd_cycle_nempty[OF match_blossomD(3)[OF match_blossom]]
       using edges_of_path_append_2
@@ -2962,15 +2961,15 @@ next
       using matching_edge_incident_on_cycle[OF match_blossomD(3)[OF match_blossom] match_blossom_alt_cycle[OF match_blossom] that(1) _ _ _ matching(1)] that(2,4)
       by simp
     moreover have "{last stem, last C} \<in> M"
-      using last_stem_hdC stem_nempty odd_cycleD(3)[OF match_blossomD(3)[OF match_blossom]]
-      by (simp flip: edges_of_path_snoc[OF stem_nempty])
+      using \<^marker>\<open>provenance ai\<close> last_stem_hdC stem_nempty odd_cycleD(3)[OF match_blossomD(3)[OF match_blossom]]
+      by \<^marker>\<open>provenance ai\<close> (simp flip: edges_of_path_snoc[OF stem_nempty])
     ultimately show ?p2
-      using that(1,2,4) matching(1) \<open>v \<in> set C\<close> \<open>w \<notin> set C\<close>
-      by (auto simp add: matching_def2 Vs_def)
+      using \<^marker>\<open>provenance ai\<close> that(1,2,4) matching(1) \<open>v \<in> set C\<close> \<open>w \<notin> set C\<close>
+      by \<^marker>\<open>provenance ai\<close> (auto simp add: matching_def2 Vs_def)
   qed
   then show ?thesis
-    using dblton_E matching(2)
-    by (intro quot_is_matching[where dume = "{last stem, last C}"] matching(1,2); auto elim!: dblton_graphE)
+    using \<^marker>\<open>provenance ai\<close> dblton_E matching(2)
+    by \<^marker>\<open>provenance ai\<close> (intro quot_is_matching[where dume = "{last stem, last C}"] matching(1,2); auto elim!: dblton_graphE)
 qed
 
 

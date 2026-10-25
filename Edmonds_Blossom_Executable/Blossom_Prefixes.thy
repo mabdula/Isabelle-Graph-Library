@@ -16,7 +16,7 @@ lemma match_blossom_distinct_tl:
   assumes "match_blossom M stem cyc"
   shows "distinct (tl cyc)"
 proof-
-  obtain a b cs where cyc: "cyc = a # b # cs"
+  obtain \<^marker>\<open>provenance ai\<close> a b cs where cyc: "cyc = a # b # cs"
     using odd_cycleD(1)[OF match_blossomD(3)[OF assms]]
     by (cases cyc; cases "tl cyc"; auto)
   have "distinct (butlast cyc)" "hd cyc = last cyc"
@@ -24,7 +24,7 @@ proof-
     unfolding distinct_append[symmetric] 
     by auto
   then have "distinct (tl (butlast cyc))" "hd cyc \<notin> set (tl (butlast cyc))"
-    using distinct_tl
+    using \<^marker>\<open>provenance ai\<close> distinct_tl
     by \<^marker>\<open>provenance ai\<close> (auto simp: cyc)
   then have "distinct ((tl (butlast cyc)) @ [last cyc])"
     using \<open>hd cyc = last cyc\<close>
@@ -50,8 +50,8 @@ qed
 lemma cycle_set_tl_eq_butlast:
   assumes "match_blossom M stem cyc"
   shows "set (tl cyc) = set (butlast cyc)"
-  using match_blossomD(3)[OF assms]
-  by (auto simp: set_butlast_tl[symmetric] odd_cycle_nempty odd_cycleD(3))
+  using \<^marker>\<open>provenance ai\<close> match_blossomD(3)[OF assms]
+  by \<^marker>\<open>provenance ai\<close> (auto simp: set_butlast_tl[symmetric] odd_cycle_nempty odd_cycleD(3))
 
 text\<open>This is a naive function to ascend the given blossom. It takes time quadratic in the size of
      the blossom.\<close>
@@ -100,8 +100,8 @@ next
   next
     case (Cons a1' l1')
     then show ?thesis
-      using cons1
-      by (auto simp: Let_def split: if_splits prod.splits option.splits
+      using \<^marker>\<open>provenance ai\<close> cons1
+      by \<^marker>\<open>provenance ai\<close> (auto simp: Let_def split: if_splits prod.splits option.splits
                                dest: cons1(1)[OF sym])
   qed
 qed
@@ -123,8 +123,8 @@ next
   next
     case (Cons a1' l1')
     then show ?thesis
-      using cons1
-      by (auto simp: Let_def split: if_splits prod.splits option.splits
+      using \<^marker>\<open>provenance ai\<close> cons1
+      by \<^marker>\<open>provenance ai\<close> (auto simp: Let_def split: if_splits prod.splits option.splits
                                dest: cons1(1)[OF sym])
   qed
 qed
@@ -146,8 +146,8 @@ next
   next
     case (Cons a1' l1')
     then show ?thesis
-      using cons1
-      by (auto simp: Let_def split: if_splits prod.splits option.splits
+      using \<^marker>\<open>provenance ai\<close> cons1
+      by \<^marker>\<open>provenance ai\<close> (auto simp: Let_def split: if_splits prod.splits option.splits
                                dest: cons1(1)[OF sym])
   qed
 qed
@@ -191,8 +191,8 @@ next
   next
     case (Cons a1' l1')
     then show ?thesis
-      using cons1 
-      by (auto simp: Let_def split: if_splits prod.splits option.splits
+      using \<^marker>\<open>provenance ai\<close> cons1 
+      by \<^marker>\<open>provenance ai\<close> (auto simp: Let_def split: if_splits prod.splits option.splits
                                dest: cons1(1)[OF sym] snd_pfx_nempty[OF sym])
   qed
 qed
@@ -247,8 +247,8 @@ next
   next
     case (Cons a1' l1')
     then show ?thesis
-      using cons1
-      by (auto simp: Let_def split: if_splits prod.splits option.splits
+      using \<^marker>\<open>provenance ai\<close> cons1
+      by \<^marker>\<open>provenance ai\<close> (auto simp: Let_def split: if_splits prod.splits option.splits
                                dest: cons1(1)[OF sym])
   qed
 qed
@@ -274,26 +274,26 @@ next
     then show ?thesis
       using cons1(1,2)
     proof (clarsimp simp add: Let_def split: if_splits prod.splits option.splits, goal_cases)
-      case \<^marker>\<open>provenance ai\<close> 1
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        by \<^marker>\<open>provenance human\<close> (auto dest: cons1(1)[OF sym])
-    next \<^marker>\<open>provenance ai\<close>
-      case \<^marker>\<open>provenance ai\<close> 2
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        using 2(2)[OF sym[OF 2(5)]] disj_pref_append1[OF sym[OF 2(5)]]
+      case 1
+      then show ?case
+        by (auto dest: cons1(1)[OF sym])
+    next
+      case 2
+      then show ?case
+        using \<^marker>\<open>provenance ai\<close> 2(2)[OF sym[OF 2(5)]] disj_pref_append1[OF sym[OF 2(5)]]
               first_pfx_nempty[OF sym[OF 2(5)]] find_pfx_empty[OF 2(3)]
-        by \<^marker>\<open>provenance human\<close> (auto simp: Cons_eq_append_conv)
-    next \<^marker>\<open>provenance ai\<close>
-      case \<^marker>\<open>provenance ai\<close> 3
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        by \<^marker>\<open>provenance human\<close> (auto dest: cons1(1)[OF sym])
-    next \<^marker>\<open>provenance ai\<close>
-      case \<^marker>\<open>provenance ai\<close> 4
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        using 4(2)[OF sym[OF 4(6)]] disj_pref_append1[OF sym[OF 4(6)]]
+        by \<^marker>\<open>provenance ai\<close> (auto simp: Cons_eq_append_conv)
+    next
+      case 3
+      then show ?case
+        by \<^marker>\<open>provenance ai\<close> (auto dest: cons1(1)[OF sym])
+    next
+      case 4
+      then show ?case
+        using \<^marker>\<open>provenance ai\<close> 4(2)[OF sym[OF 4(6)]] disj_pref_append1[OF sym[OF 4(6)]]
               first_pfx_nempty[OF sym[OF 4(6)]] find_pfx_works_1[of a2 l1' "(=) a2"]
-        by \<^marker>\<open>provenance human\<close> (auto simp: Cons_eq_append_conv)
-    qed \<^marker>\<open>provenance ai\<close>
+        by \<^marker>\<open>provenance ai\<close> (auto simp: Cons_eq_append_conv)
+    qed
   qed
 qed
 
@@ -342,30 +342,30 @@ next
     then show ?thesis
       using cons1(1,2)
     proof (clarsimp simp add: Let_def split: if_splits prod.splits option.splits, goal_cases)
-      case \<^marker>\<open>provenance ai\<close> 1
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        by \<^marker>\<open>provenance human\<close> (auto dest: find_pfx_butlast_2)
-    next \<^marker>\<open>provenance ai\<close>
-      case \<^marker>\<open>provenance ai\<close> 2
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        using 2(2)[OF sym[OF 2(5)]] disj_pref_append1[OF sym[OF 2(5)]]
+      case 1
+      then show ?case
+        by (auto dest: find_pfx_butlast_2)
+    next
+      case 2
+      then show ?case
+        using \<^marker>\<open>provenance ai\<close> 2(2)[OF sym[OF 2(5)]] disj_pref_append1[OF sym[OF 2(5)]]
               first_pfx_nempty[OF sym[OF 2(5)]] find_pfx_empty[OF 2(3)]
-        by \<^marker>\<open>provenance human\<close> (auto simp: Cons_eq_append_conv)
-    next \<^marker>\<open>provenance ai\<close>
-      case \<^marker>\<open>provenance ai\<close> 3
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        using 3(2)[OF sym[OF 3(6)]] disj_pref_append1[OF sym[OF 3(6)]]
+        by \<^marker>\<open>provenance ai\<close> (auto simp: Cons_eq_append_conv)
+    next
+      case 3
+      then show ?case
+        using \<^marker>\<open>provenance ai\<close> 3(2)[OF sym[OF 3(6)]] disj_pref_append1[OF sym[OF 3(6)]]
               first_pfx_nempty[OF sym[OF 3(6)]] find_pfx_works_1[of a2 l1' "(=) a2"]
-        by \<^marker>\<open>provenance human\<close> (auto simp: Cons_eq_append_conv dest: in_set_butlastD)
-    qed \<^marker>\<open>provenance ai\<close>
+        by \<^marker>\<open>provenance ai\<close> (auto simp: Cons_eq_append_conv dest: in_set_butlastD)
+    qed
   qed
 qed
 
 lemma disj_pfx_are_disj_3:
   assumes "(Some pfx1, l2_pfx) = (longest_disj_pfx l1 l2)"
   shows "set (butlast pfx1) \<inter> set (butlast (the l2_pfx)) = {}"
-  using disj_pfx_are_disj_1[OF assms]
-  by (auto dest: in_set_butlastD)
+  using \<^marker>\<open>provenance ai\<close> disj_pfx_are_disj_1[OF assms]
+  by \<^marker>\<open>provenance ai\<close> (auto dest: in_set_butlastD)
 
 lemma disj_pfx_is_complete:
   assumes "(None, l2_pfx) = (longest_disj_pfx l1 l2)"
@@ -388,26 +388,26 @@ next
     then show ?thesis
       using cons1(1,2)
     proof (clarsimp simp add: Let_def split: if_splits prod.splits option.splits, goal_cases)
-      case \<^marker>\<open>provenance ai\<close> 1
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        using 1(2)[OF sym[OF 1(5)]] find_pfx_empty[OF 1(3)]
-        by auto
-    next \<^marker>\<open>provenance ai\<close>
-      case \<^marker>\<open>provenance ai\<close> 2
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        using 2(2)[OF sym[OF 2(5)]] find_pfx_empty[OF 2(3)]
-        by auto
-    next \<^marker>\<open>provenance ai\<close>
-      case \<^marker>\<open>provenance ai\<close> 3
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        using 3(2)[OF sym[OF 3(6)]] find_pfx_works_1[of a2 l1' "(=) a2"]
-        by auto
-    next \<^marker>\<open>provenance ai\<close>
-      case \<^marker>\<open>provenance ai\<close> 4
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-        using 4(2)[OF sym[OF 4(6)]] find_pfx_works_1[of a2 l1' "(=) a2"]
-        by auto
-    qed \<^marker>\<open>provenance ai\<close>
+      case 1
+      then show ?case
+        using \<^marker>\<open>provenance ai\<close> 1(2)[OF sym[OF 1(5)]] find_pfx_empty[OF 1(3)]
+        by \<^marker>\<open>provenance ai\<close> auto
+    next
+      case 2
+      then show ?case
+        using \<^marker>\<open>provenance ai\<close> 2(2)[OF sym[OF 2(5)]] find_pfx_empty[OF 2(3)]
+        by \<^marker>\<open>provenance ai\<close> auto
+    next
+      case 3
+      then show ?case
+        using \<^marker>\<open>provenance ai\<close> 3(2)[OF sym[OF 3(6)]] find_pfx_works_1[of a2 l1' "(=) a2"]
+        by \<^marker>\<open>provenance ai\<close> auto
+    next
+      case 4
+      then show ?case
+        using \<^marker>\<open>provenance ai\<close> 4(2)[OF sym[OF 4(6)]] find_pfx_works_1[of a2 l1' "(=) a2"]
+        by \<^marker>\<open>provenance ai\<close> auto
+    qed
   qed
 qed
 
@@ -462,7 +462,7 @@ proof-
         by (simp add: Cons split: if_splits; simp add: **)
       then show ?thesis
         using alt_paths(2)
-        by \<^marker>\<open>provenance ai\<close> (subst conjunct1[OF alt_list_append_1[where ?l2.0 = "edges_of_path (last (hd p1 # pfx2) # p2')"]];
+        by (subst conjunct1[OF alt_list_append_1[where ?l2.0 = "edges_of_path (last (hd p1 # pfx2) # p2')"]];
                                 simp add: \<open>p2 = pfx2 @ p2'\<close>)
     qed
     ultimately show ?thesis
@@ -470,7 +470,7 @@ proof-
       by (fastforce simp: eqop_append alt_list_empty intro!: alt_list_append_3)+
   qed
   ultimately show ?thesis
-    by (simp flip: append_assoc)
+    by \<^marker>\<open>provenance ai\<close> (simp flip: append_assoc)
 qed
 
 lemma pfxs_path:
@@ -508,7 +508,7 @@ proof-
       by (intro path_append; simp add: last_rev edges_of_path_rev[symmetric])
   qed
   ultimately show ?thesis
-    by (simp flip: append_assoc)
+    by \<^marker>\<open>provenance ai\<close> (simp flip: append_assoc)
 qed
 
 lemma pfxs_distinct:
@@ -522,14 +522,14 @@ proof-
     using assms(1) disj_pref_append1
     by fastforce
   moreover have "butlast (rev pfx1 @ pfx2) = (rev pfx1 @ (butlast pfx2))"
-    using assms
-    by (simp add: butlast_append snd_pfx_nempty[OF pfxs_are_pfxs])
+    using \<^marker>\<open>provenance ai\<close> assms
+    by \<^marker>\<open>provenance ai\<close> (simp add: butlast_append snd_pfx_nempty[OF pfxs_are_pfxs])
   moreover have "distinct ((rev p1) @ (butlast pfx2))"
-    using disj_pfx_are_disj_1[OF pfxs_are_pfxs] distinct
-    by (auto simp: distinct_append inter_distr_append
+    using \<^marker>\<open>provenance ai\<close> disj_pfx_are_disj_1[OF pfxs_are_pfxs] distinct
+    by \<^marker>\<open>provenance ai\<close> (auto simp: distinct_append inter_distr_append
                          dest: in_set_butlastD distinct_butlast)
   ultimately show ?thesis
-    by (simp flip: append_assoc)
+    by \<^marker>\<open>provenance ai\<close> (simp flip: append_assoc)
 qed
 
 lemma pfxs_odd_cycle':
@@ -577,8 +577,8 @@ proof-
       using snd_pfx_nempty pfxs_are_pfxs
       by auto
     moreover have "hd (rev pfx1) = last pfx2" 
-      using hd_rev pfx_common_end pfxs_are_pfxs
-      by (simp add: hd_rev pfx_common_end[OF pfxs_are_pfxs])
+      using \<^marker>\<open>provenance ai\<close> hd_rev pfx_common_end pfxs_are_pfxs
+      by \<^marker>\<open>provenance ai\<close> (simp add: hd_rev pfx_common_end[OF pfxs_are_pfxs])
     ultimately show ?thesis
       by auto
   qed
@@ -592,7 +592,7 @@ proof-
       by simp
     then show ?thesis
       using \<^marker>\<open>provenance ai\<close> T1
-      by (auto simp: edges_of_path_length)
+      by \<^marker>\<open>provenance ai\<close> (auto simp: edges_of_path_length)
   next
     case F1: False
     then have "even (length pfx1)" "even (length pfx2)"
@@ -600,7 +600,7 @@ proof-
       by auto
     then show ?thesis
       using \<^marker>\<open>provenance ai\<close> hds_neq from_tree
-      by (cases pfx1; cases pfx2; auto simp: edges_of_path_length)
+      by \<^marker>\<open>provenance ai\<close> (cases pfx1; cases pfx2; auto simp: edges_of_path_length)
   qed
   ultimately show ?thesis
     unfolding odd_cycle_def
@@ -639,41 +639,38 @@ proof-
                       for pfx1 pfx2
     using \<^marker>\<open>provenance ai\<close> that last_in_set[of "butlast pfx1"] last_in_set[of "butlast pfx2"]
           in_set_butlastD[of "last (butlast pfx2)" pfx2]
-    by (auto simp: disjoint_iff length_greater_0_conv[symmetric] length_butlast)
+    by \<^marker>\<open>provenance ai\<close> (auto simp: disjoint_iff length_greater_0_conv[symmetric] length_butlast)
 
-  have \<^marker>\<open>provenance ai\<close> p_nempty_even: "\<And>p1 pfx1 p2 pfx2::'a list. p \<noteq> [] \<Longrightarrow> 2 \<le> length pfx1 \<Longrightarrow> pfx2 \<noteq> [] \<Longrightarrow>
-      p1 = pfx1 @ p \<Longrightarrow> p2 = pfx2 @ p \<Longrightarrow> odd (length p1) \<Longrightarrow> odd (length p2) \<Longrightarrow>
-      last pfx1 = last pfx2 \<Longrightarrow> hd p1 \<noteq> hd p2 \<Longrightarrow> set (butlast pfx1) \<inter> set pfx2 = {} \<Longrightarrow>
-      distinct p1 \<Longrightarrow> alt_path M (hd p2 # p1) \<Longrightarrow> alt_path M (hd p1 # p2) \<Longrightarrow>
-      last p1 \<notin> Vs M \<Longrightarrow> odd (length (edges_of_path ((last pfx1) # p))) \<Longrightarrow> False"
+  have p_nempty_even: False
+    if "p \<noteq> []"
+      and "length pfx1 \<ge> 2"
+      and pfx2_nempty: "pfx2 \<noteq> []"
+      and from_tree: "p1 = pfx1 @ p" "p2 = pfx2 @ p"
+      and odd_lens: "odd (length p1)" "odd (length p2)"
+      and last_pfx1_eq: "last pfx1 = last pfx2"
+      and hds_neq: "hd p1 \<noteq> hd p2"
+      and pfxs_disj: "set (butlast pfx1) \<inter> set pfx2 = {}"
+      and distinct: "distinct p1"
+      and alt_paths: "alt_path M (hd p2 # p1)" "alt_path M (hd p1 # p2)" "last p1 \<notin> Vs M"
+      and odd_length: "odd (length (edges_of_path ((last pfx1) # p)))"
+    for p1 pfx1 p2 pfx2::"'a list"
   proof-
-    fix \<^marker>\<open>provenance human\<close> p1 pfx1 p2 pfx2::"'a list"
-    assume \<^marker>\<open>provenance human\<close> "p \<noteq> []"
-    assume \<^marker>\<open>provenance human\<close> "length pfx1 \<ge> 2"
-    then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> pfx1_nempty: "pfx1 \<noteq> []"
+    from \<open>length pfx1 \<ge> 2\<close> have pfx1_nempty: "pfx1 \<noteq> []"
       by auto
-    assume \<^marker>\<open>provenance human\<close> pfx2_nempty: "pfx2 \<noteq> []"
-    assume \<^marker>\<open>provenance human\<close> from_tree: "p1 = pfx1 @ p" "p2 = pfx2 @ p"
-    assume \<^marker>\<open>provenance human\<close> odd_lens: "odd (length p1)" "odd (length p2)"
-    assume \<^marker>\<open>provenance human\<close> last_pfx1_eq: "last pfx1 = last pfx2"
-    assume \<^marker>\<open>provenance human\<close> hds_neq: "hd p1 \<noteq> hd p2"
-    assume \<^marker>\<open>provenance human\<close> pfxs_disj: "set (butlast pfx1) \<inter> set pfx2 = {}"
-    assume \<^marker>\<open>provenance human\<close> distinct: "distinct p1"
-    have *: "\<And>p1 pfx1::'a list. p1 = pfx1 @ p \<Longrightarrow> odd (length p1) \<Longrightarrow> alt_path (-M) p1 \<Longrightarrow>
-        last p1 \<notin> Vs M \<Longrightarrow> 2 \<le> length pfx1 \<Longrightarrow> alt_path M ((rev p) @ [last pfx1, last (butlast pfx1)])"
+    have *: "alt_path M ((rev p) @ [last pfx1, last (butlast pfx1)])"
+      if from_tree: "p1 = pfx1 @ p"
+        and odd_lens: "odd (length p1)"
+        and alt_paths: "alt_path (-M) p1" "last p1 \<notin> Vs M"
+        and "length pfx1 \<ge> 2"
+      for p1 pfx1::"'a list"
     proof-
-      fix \<^marker>\<open>provenance human\<close> p1 pfx1::"'a list"
-      assume \<^marker>\<open>provenance human\<close> from_tree: "p1 = pfx1 @ p"
-      assume \<^marker>\<open>provenance human\<close> odd_lens: "odd (length p1)"
-      assume \<^marker>\<open>provenance human\<close> alt_paths: "alt_path (-M) p1" "last p1 \<notin> Vs M"
-      assume \<^marker>\<open>provenance human\<close> "length pfx1 \<ge> 2"
-      then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "pfx1 \<noteq> []"
+      from \<open>length pfx1 \<ge> 2\<close> have "pfx1 \<noteq> []"
         by auto
-      show \<^marker>\<open>provenance human\<close> "alt_path M ((rev p) @ [last pfx1, last (butlast pfx1)])"
+      show ?thesis
       proof-
         have "last (edges_of_path ((last pfx1) # p)) = last (edges_of_path p1)"
-          using \<open>pfx1 \<noteq> []\<close> \<open>p \<noteq> []\<close>
-          by (cases p; simp add: from_tree(1) edges_of_path_append_3)
+          using \<^marker>\<open>provenance ai\<close> \<open>pfx1 \<noteq> []\<close> \<open>p \<noteq> []\<close>
+          by \<^marker>\<open>provenance ai\<close> (cases p; simp add: from_tree(1) edges_of_path_append_3)
         moreover have "last (edges_of_path p1) \<notin> M"
         proof-
           have "(edges_of_path p1) \<noteq> []"
@@ -705,7 +702,7 @@ proof-
             by fastforce
         qed
         then obtain pfx1' where "rev pfx1 = ([last pfx1, last (butlast pfx1)]) @ pfx1'"
-          by blast
+          by \<^marker>\<open>provenance ai\<close> blast
         then have revp1_eq: "rev p1 = (rev p @ [last pfx1, last (butlast pfx1)]) @pfx1'"
           using from_tree(1)
           by auto
@@ -713,32 +710,31 @@ proof-
           using \<^marker>\<open>provenance ai\<close> edges_of_path_append_3[of "rev p @ [last pfx1, last (butlast pfx1)]" pfx1']
           by \<^marker>\<open>provenance ai\<close> simp
         show ?thesis
-          using \<^marker>\<open>provenance ai\<close> revp1_alt[unfolded revp1_eq eop_cat]
+          using revp1_alt[unfolded revp1_eq eop_cat]
           by (rule conjunct1[OF alt_list_append_1])
       qed
     qed
-    assume \<^marker>\<open>provenance human\<close> alt_paths: "alt_path M (hd p2 # p1)" "alt_path M (hd p1 # p2)" "last p1 \<notin> Vs M" 
-    then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> alt_paths': "alt_path (-M) p1" "alt_path (-M) p2" "{hd p1, hd p2} \<notin> M"
+    from alt_paths have alt_paths': "alt_path (-M) p1" "alt_path (-M) p2" "{hd p1, hd p2} \<notin> M"
       by(intro alt_path_cons_odd[where p = p1 and v = "hd p2"] alt_path_cons_odd[where p = p2 and v = "hd p1"] odd_lens; simp)+
-    have \<^marker>\<open>provenance human\<close> alt_path_pfx1: "alt_path M (rev p @ [last pfx1, last (butlast pfx1)])"
+    have alt_path_pfx1: "alt_path M (rev p @ [last pfx1, last (butlast pfx1)])"
       using *[OF from_tree(1) odd_lens(1) alt_paths'(1) alt_paths(3) \<open>length pfx1 \<ge> 2\<close>]
       by simp
-    have \<^marker>\<open>provenance human\<close> "alt_path M (rev p @ [last pfx1])"
-      using alt_path_pfx1
-      by (auto dest: alt_list_append_1 simp: edges_of_path_snoc_2)
-    moreover \<^marker>\<open>provenance human\<close> assume \<^marker>\<open>provenance human\<close> odd_length: "odd (length (edges_of_path ((last pfx1) # p)))"
-    ultimately \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "last (edges_of_path ((rev p) @ [last pfx1])) \<notin> M"
+    have "alt_path M (rev p @ [last pfx1])"
+      using \<^marker>\<open>provenance ai\<close> alt_path_pfx1
+      by \<^marker>\<open>provenance ai\<close> (auto dest: alt_list_append_1 simp: edges_of_path_snoc_2)
+    moreover note odd_length
+    ultimately have "last (edges_of_path ((rev p) @ [last pfx1])) \<notin> M"
       by \<^marker>\<open>provenance ai\<close> (auto dest: alternating_list_odd_last
                 simp: odd_length length_edges_of_path_rev[of "(last pfx1) # p", simplified])
-    have \<^marker>\<open>provenance human\<close> "even (length (edges_of_path ((rev p) @ [last pfx1, last (butlast pfx1)])))"
-      using odd_length
-      by (simp add: edges_of_path_snoc_2 length_edges_of_path_rev[of "(last pfx1) # p", simplified])
-    then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "last (edges_of_path ((rev p) @ [last pfx1, last (butlast pfx1)])) \<in> M"
-      using alt_path_pfx1
-      by (auto dest: alternating_list_even_last simp: edges_of_path_snoc_2)
-    then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> last_pfx1_matched: "{last pfx1, last (butlast pfx1)} \<in> M"
-      by (simp add: edges_of_path_snoc_2)
-    show \<^marker>\<open>provenance human\<close> False
+    have "even (length (edges_of_path ((rev p) @ [last pfx1, last (butlast pfx1)])))"
+      using \<^marker>\<open>provenance ai\<close> odd_length
+      by \<^marker>\<open>provenance ai\<close> (simp add: edges_of_path_snoc_2 length_edges_of_path_rev[of "(last pfx1) # p", simplified])
+    then have "last (edges_of_path ((rev p) @ [last pfx1, last (butlast pfx1)])) \<in> M"
+      using \<^marker>\<open>provenance ai\<close> alt_path_pfx1
+      by \<^marker>\<open>provenance ai\<close> (auto dest: alternating_list_even_last simp: edges_of_path_snoc_2)
+    then have last_pfx1_matched: "{last pfx1, last (butlast pfx1)} \<in> M"
+      by \<^marker>\<open>provenance ai\<close> (simp add: edges_of_path_snoc_2)
+    show ?thesis
     proof(cases "length pfx2 > 1")
       case gt_1: True
       then have "length pfx2 \<ge> 2"
@@ -753,7 +749,7 @@ proof-
           using last_pfx1_eq
           by (auto simp add: doubleton_eq_iff)
         then show ?thesis 
-          using matching_unique_match[OF matching _ _ last_pfx2_matched last_pfx1_matched, of "last pfx1"]
+          using \<^marker>\<open>provenance ai\<close> matching_unique_match[OF matching _ _ last_pfx2_matched last_pfx1_matched, of "last pfx1"]
                 \<open>last pfx1 = last pfx2\<close>
           by \<^marker>\<open>provenance ai\<close> simp
       next
@@ -764,11 +760,11 @@ proof-
           using *[OF from_tree(2) odd_lens(2) alt_paths'(2) _ \<open>length pfx2 \<ge> 2\<close>]
           by simp
         moreover have "even (length (edges_of_path (rev p @ [last pfx2, last (butlast pfx2)])))"
-          using odd_length \<open>last pfx1 = last pfx2\<close>
-          by (simp add: edges_of_path_snoc_2
+          using \<^marker>\<open>provenance ai\<close> odd_length \<open>last pfx1 = last pfx2\<close>
+          by \<^marker>\<open>provenance ai\<close> (simp add: edges_of_path_snoc_2
                                            length_edges_of_path_rev[of "(last pfx2) # p", simplified])
         moreover have "last (edges_of_path (rev p @ [last pfx2, last (butlast pfx2)])) = {last pfx2, last (butlast pfx2)}"
-          by (simp add: edges_of_path_snoc_2)
+          by \<^marker>\<open>provenance ai\<close> (simp add: edges_of_path_snoc_2)
         ultimately have "{last pfx2, last (butlast pfx2)} \<in> M"
           using alternating_list_even_last edges_of_path_nempty
           by fastforce
@@ -789,8 +785,8 @@ proof-
         using alt_paths'(3) from_tree(1) from_tree(2) pfx1_nempty pfx2_nempty
         by auto
       moreover have "{last pfx2, hd p} \<notin> M"
-        using \<open>last (edges_of_path (rev p @ [last pfx1])) \<notin> M\<close> \<open>p \<noteq> []\<close> last_pfx1_eq
-        by (simp add: edges_of_path_snoc[symmetric] last_rev insert_commute)
+        using \<^marker>\<open>provenance ai\<close> \<open>last (edges_of_path (rev p @ [last pfx1])) \<notin> M\<close> \<open>p \<noteq> []\<close> last_pfx1_eq
+        by \<^marker>\<open>provenance ai\<close> (simp add: edges_of_path_snoc[symmetric] last_rev insert_commute)
       ultimately show ?thesis
         using alt_paths(2) \<open>length pfx1 \<ge> 2\<close> \<open>length pfx2 = 1\<close> \<open>p \<noteq> []\<close>
         by(auto simp add: from_tree numeral_2_eq_2 Suc_le_length_iff length_Suc_conv neq_Nil_conv alt_list_step alt_list_empty)
@@ -810,8 +806,8 @@ proof-
       have "set (butlast pfx1) \<inter> set pfx2 = {}"
         by (simp add: disj_pfx_are_disj_2 pfxs_are_pfxs)
       show ?thesis
-        using p_nempty_even[OF p_nempty len_pf1_ge_2 pfx2_nempty from_tree odd_lens \<open>last pfx1 = last pfx2\<close> hds_neq \<open>set (butlast pfx1) \<inter> set pfx2 = {}\<close> distinct(1) alt_paths(1,2,3)]
-        by (auto simp: calculation \<open>drop (length pfx1) p1 = p\<close> hd_rev pfx1_nempty
+        using \<^marker>\<open>provenance ai\<close> p_nempty_even[OF p_nempty len_pf1_ge_2 pfx2_nempty from_tree odd_lens \<open>last pfx1 = last pfx2\<close> hds_neq \<open>set (butlast pfx1) \<inter> set pfx2 = {}\<close> distinct(1) alt_paths(1,2,3)]
+        by \<^marker>\<open>provenance ai\<close> (auto simp: calculation \<open>drop (length pfx1) p1 = p\<close> hd_rev pfx1_nempty
                                        length_edges_of_path_rev[of "last pfx1 # p", simplified])
     next
       case False
@@ -831,14 +827,14 @@ proof-
         have "last pfx2 = last pfx1"
           by (simp add: last_pfx1_eq)
         show ?thesis
-          using p_nempty_even[OF p_nempty len_pf2_ge_2 pfx1_nempty from_tree(2,1) odd_lens(2,1) \<open>last pfx2 = last pfx1\<close> hds_neq[symmetric] \<open>set (butlast pfx2) \<inter> set pfx1 = {}\<close> distinct(2) alt_paths(2,1) \<open>last p2 \<notin> Vs M\<close>]
-          by (auto simp: calculation \<open>drop (length pfx1) p1 = p\<close> hd_rev pfx1_nempty last_pfx1_eq
+          using \<^marker>\<open>provenance ai\<close> p_nempty_even[OF p_nempty len_pf2_ge_2 pfx1_nempty from_tree(2,1) odd_lens(2,1) \<open>last pfx2 = last pfx1\<close> hds_neq[symmetric] \<open>set (butlast pfx2) \<inter> set pfx1 = {}\<close> distinct(2) alt_paths(2,1) \<open>last p2 \<notin> Vs M\<close>]
+          by \<^marker>\<open>provenance ai\<close> (auto simp: calculation \<open>drop (length pfx1) p1 = p\<close> hd_rev pfx1_nempty last_pfx1_eq
                                          length_edges_of_path_rev[of "last pfx2 # p", simplified])
       next
         case len_pf2_le_1: False
         then show ?thesis
           using \<^marker>\<open>provenance ai\<close> from_tree hds_neq last_pfx1_eq len_pf1_le_1 pfx1_nempty pfx2_nempty
-          by (cases pfx1; cases pfx2; auto simp: Suc_le_eq length_greater_0_conv)
+          by \<^marker>\<open>provenance ai\<close> (cases pfx1; cases pfx2; auto simp: Suc_le_eq length_greater_0_conv)
       qed
     qed
   qed
@@ -889,17 +885,17 @@ lemma construct_aug_path:
   shows "matching_augmenting_path M ((rev p1) @ p2)"
 proof-
   have "length p1 \<ge> 2"
-    using alt_paths(3,5) nempty
-    by (cases p1; cases "tl p1"; auto dest: edges_are_Vs)
+    using \<^marker>\<open>provenance ai\<close> alt_paths(3,5) nempty
+    by \<^marker>\<open>provenance ai\<close> (cases p1; cases "tl p1"; auto dest: edges_are_Vs)
   then have "last (edges_of_path p1) \<notin> M"
-    using alt_paths
-    by (auto dest: last_edge_in_last_vert_in)
+    using \<^marker>\<open>provenance ai\<close> alt_paths
+    by \<^marker>\<open>provenance ai\<close> (auto dest: last_edge_in_last_vert_in)
   then have "alt_path M (rev p1)"
     using alt_paths(1) alt_list_rev
     by (simp add: \<open>2 \<le> length p1\<close> even_alt_path_rev even_lens(1))
   moreover have "last (edges_of_path (rev p1)) \<notin> M"
-    using alt_paths(1) \<open>2 \<le> length p1\<close> edges_of_path_nempty[of p1]
-    by (cases "edges_of_path p1"; simp add: edges_of_path_rev[symmetric] alt_list_step)
+    using \<^marker>\<open>provenance ai\<close> alt_paths(1) \<open>2 \<le> length p1\<close> edges_of_path_nempty[of p1]
+    by \<^marker>\<open>provenance ai\<close> (cases "edges_of_path p1"; simp add: edges_of_path_rev[symmetric] alt_list_step)
   moreover have "alt_path (-M) (hd p1 # p2)"
     using alt_paths(2,5)
     by(cases p2; auto simp add: alt_list_step alt_list_empty)
@@ -935,14 +931,14 @@ proof(cases "length p1 \<ge> 2")
     using alt_paths(1) alt_path_cons_odd(1) odd_lens(1)
     by fastforce
   have "last (edges_of_path p1) \<notin> M"
-    using alt_paths True
-    by (auto dest: last_edge_in_last_vert_in)
+    using \<^marker>\<open>provenance ai\<close> alt_paths True
+    by \<^marker>\<open>provenance ai\<close> (auto dest: last_edge_in_last_vert_in)
   moreover have "(edges_of_path p1) \<noteq> []"
     using True
     by (simp add: edges_of_path_nempty)
   ultimately have "last (edges_of_path (rev p1)) \<in> M"
-    using \<open>alt_path (-M) p1\<close>
-    by (cases "edges_of_path p1"; simp add: edges_of_path_rev[symmetric] alt_list_step)
+    using \<^marker>\<open>provenance ai\<close> \<open>alt_path (-M) p1\<close>
+    by \<^marker>\<open>provenance ai\<close> (cases "edges_of_path p1"; simp add: edges_of_path_rev[symmetric] alt_list_step)
   moreover have "edges_of_path ((rev p1) @ p2) = (edges_of_path (rev p1)) @ (edges_of_path (hd p1 # p2))"
     using \<^marker>\<open>provenance ai\<close> nempty(1) edges_of_path_append_3[of "rev p1" p2]
     by \<^marker>\<open>provenance ai\<close> (simp add: last_rev)
@@ -965,14 +961,14 @@ proof(cases "length p1 \<ge> 2")
 next
   case False
   then have "p1 = [hd p1]"
-    using odd_lens(1) nempty(1) edges_of_path_length' edges_of_path_nempty
-    by (cases p1; cases "tl p1"; auto)
+    using \<^marker>\<open>provenance ai\<close> odd_lens(1) nempty(1) edges_of_path_length' edges_of_path_nempty
+    by \<^marker>\<open>provenance ai\<close> (cases p1; cases "tl p1"; auto)
   have "alt_path M ((rev p1) @ p2)"
     using alt_paths(2)
     by (subst \<open>p1 = [hd p1]\<close>; simp)
   moreover have " 2 \<le> length (rev p1 @ p2)"
-    using odd_lens(2) False nempty
-    by (cases p1; cases p2; auto simp: edges_of_path_length' dest: odd_pos)
+    using \<^marker>\<open>provenance ai\<close> odd_lens(2) False nempty
+    by \<^marker>\<open>provenance ai\<close> (cases p1; cases p2; auto simp: edges_of_path_length' dest: odd_pos)
   moreover have "hd (rev p1 @ p2) \<notin> Vs M"
     by (simp add: assms(6) hd_rev nempty(1))
   moreover have "last (rev p1 @ p2) \<notin> Vs M"
@@ -985,14 +981,14 @@ qed
 lemma odd_cycle_length_edges_ge_3:
   assumes "odd_cycle p"
   shows "length (edges_of_path p) \<ge> 3"
-  using odd_cycleD[OF assms] odd_cycle_even_verts[OF assms]
-  by (simp add: edges_of_path_length; presburger)
+  using \<^marker>\<open>provenance ai\<close> odd_cycleD[OF assms] odd_cycle_even_verts[OF assms]
+  by \<^marker>\<open>provenance ai\<close> (simp add: edges_of_path_length; presburger)
 
 lemma odd_cycle_length_verts_ge_4:
   assumes "odd_cycle p"
   shows "length p \<ge> 4"
-  using odd_cycle_length_edges_ge_3[OF assms] odd_cycle_even_verts[OF assms]
-  by (auto simp: edges_of_path_length elim: evenE)
+  using \<^marker>\<open>provenance ai\<close> odd_cycle_length_edges_ge_3[OF assms] odd_cycle_even_verts[OF assms]
+  by \<^marker>\<open>provenance ai\<close> (auto simp: edges_of_path_length elim: evenE)
 
 lemma odd_cycle_set_butlast_tl:
   assumes "odd_cycle C"

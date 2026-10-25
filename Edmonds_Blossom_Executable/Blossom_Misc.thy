@@ -52,13 +52,13 @@ lemma set_butlast_tl:
 proof \<^marker>\<open>provenance ai\<close>(cases l)
   case Nil
   then show ?thesis
-    using \<^marker>\<open>provenance human\<close> assms
+    using assms
     by simp
 next
   case (Cons x xs)
   then show ?thesis
     using assms
-    by \<^marker>\<open>provenance human\<close> (cases xs rule: rev_cases; auto)
+    by (cases xs rule: rev_cases; auto)
 qed
 
 fun dist_neq where
@@ -97,18 +97,18 @@ lemma dist_neq_append: "dist_neq n (xs @ ys) \<Longrightarrow> dist_neq n xs"
 
 lemma dist_neq_append2: "dist_neq n (xs @ ys) \<Longrightarrow> dist_neq n ys"
 proof(induction xs)
-  case \<^marker>\<open>provenance ai\<close> (Cons x xs)
-  then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-    by (cases "n < length (xs @ ys)"; cases ys; auto)
-qed \<^marker>\<open>provenance ai\<close> simp
+  case (Cons x xs)
+  then show ?case
+    by \<^marker>\<open>provenance ai\<close> (cases "n < length (xs @ ys)"; cases ys; auto)
+qed simp
 
 lemma dist_neq_split_2: "(x \<noteq> z \<and> dist_neq 1 (xs1 @ [x, y]) \<and> dist_neq (Suc 0) (y # z # xs2))
                        \<Longrightarrow> dist_neq (Suc 0) (xs1 @ x # y # z # xs2)"
 proof(induction xs1)
   case (Cons a xs1)
-  then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?case
-    by \<^marker>\<open>provenance human\<close> (cases xs1; auto simp add: hd_drop_conv_nth hd_append)
-qed \<^marker>\<open>provenance ai\<close> auto
+  then show ?case
+    by (cases xs1; auto simp add: hd_drop_conv_nth hd_append)
+qed auto
 
 lemma dist_neq_split_2': assumes "((last xs1 \<noteq> z) \<or> xs1 = [])" "dist_neq 1 (xs1 @ [y])" "dist_neq 1 (y # z # xs2)"
   shows "dist_neq 1 (xs1 @ y # z # xs2)"

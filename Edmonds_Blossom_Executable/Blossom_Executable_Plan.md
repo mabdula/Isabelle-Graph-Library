@@ -324,3 +324,35 @@ chains: rewriting those as well would replace most of the human text by ai text.
 | B4 | **green** 2026-10-25 (PIDE 0 errors; 107/107 statements unchanged; all counts 0; 36 lemmas + 1 interpretation rewritten; 7 `{ }` blocks as ai statements with human-restored bodies; no unchanged human line in an ai scope; human 2125 / ai 692 commands) |
 | B1 | **green** 2026-10-25 (Blossom_Misc PIDE 247 / Graph_Quotient 5940 commands, 0 errors; 14/14 and 89/89 statements unchanged; all counts 0; 6 + 40 proofs rewritten; the 3 diff flags are new `qed`/`by auto` lines inside new ai blocks (alignment artefacts); one dead commented-out proof attempt removed from Graph_Quotient) |
 | B close | **green** 2026-10-25 (jEdit stopped; ASCII; clean build exit 0, 34 s; provenance strict ok; human 57.0% / ai 43.0% of lines) |
+
+## 10. Linear-time fixes (2026-10-25, status: green)
+
+Three operations were quadratic in the path length; each is replaced by a linear one, proved to
+compute the same result, so the correctness proofs are unchanged in substance.
+
+1. Disjointness test in `compute_match_blossom`: `set p1 \<inter> set p2 = {}` becomes
+   `last p1 \<noteq> last p2` (`common_suffix_disj_iff`, from the common-suffix property of the spec).
+2. `longest_disj_pfx p1 p2` becomes `longest_disj_sfx (rev p1) (rev p2)` (a `fun` that strips the
+   longest common prefix of the reversed paths except its last vertex);
+   `longest_disj_pfx_rev` proves the results equal under the spec.
+3. `pref_suf` gets the code equation `pref_suf_code` via the accumulator variant `pref_suf_rev`
+   (`pref_suf_rev_eq`); no definition or proof of the lifting changes.
+
+Provenance: new text `ai`; the edited `compute_match_blossom` keeps `human`. Checked text:
+`plan_v2/oneshots/linear_fixes/`. Tests: `plan_v2/scripts/linear_fixes_tests.py` (15 graphs, `by eval`
+against brute-force maximum matchings).
+
+## 11. Provenance of mechanical transformations (2026-10-25, status: green)
+
+Rule (user, now in `AI_Provenance/Provenance.thy` and `system_prompt.md`): `ai`/`ai_human` mean
+that an LLM made a semantic contribution; copying, adaptation to changed constants, restructuring
+without changing the steps of a proof, and layout are mechanical and keep the source's label.
+
+- The 25 former `{ }` blocks of the copied theories (16 in Graph_Quotient_Lifting, 2 in
+  Blossom_Prefixes, 7 in Compute_Alt_Path_Invars) and the `moreover { }` block of Graph_Quotient
+  are written as `have name: "C" if a1: "A1" and ... for x y` (former `assume ... if ...`
+  premises as `"B \<Longrightarrow> A"`, chained assumptions as `from that` or `note name`); labelled human.
+- Apply scripts turned into Isar: the scaffolding (`case`, `next`, `qed`, `show ?case`, the
+  `then` before it) and the steps that keep a method or the facts of the script are human; steps
+  that replace metis/smt/meson or add facts stay ai.
+- Scripts: `plan_v2/scripts/relabel/{blocks,scaffold,relabel}.py`.

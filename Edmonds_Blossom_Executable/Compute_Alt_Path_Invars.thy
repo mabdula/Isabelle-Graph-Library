@@ -30,7 +30,7 @@ definition if1 where (*I am using this because when the RHS is in the function t
 
 interpretation matching_graph: graph_abs M
   using graph_invar_subset[OF graph matching(2)]
-  by \<^marker>\<open>provenance ai\<close> unfold_locales
+  by unfold_locales
 
 definition if2_cond where "if2_cond flabel =
    (\<exists>v1 v2 r r'. {v1, v2} \<in> G \<and> flabel v1 = Some (r, Even) \<and> flabel v2 = Some (r', Even))"
@@ -68,17 +68,17 @@ lemma if1_props:
 lemma if1_cond_props'':
   assumes "if1_cond flabel ex"
   obtains v1 v2 v3 r where "if1 flabel ex v1 v2 v3 r"
-  using assms(1)
-  unfolding if1_cond_def if1_def
-  by auto
+  using \<^marker>\<open>provenance ai\<close> assms(1)
+  unfolding \<^marker>\<open>provenance ai\<close> if1_cond_def if1_def
+  by \<^marker>\<open>provenance ai\<close> auto
 
 
 lemma if2_cond_props'':
   assumes "if2_cond flabel"
   obtains v1 v2 r r' where "if2 flabel v1 v2 r r'"
-  using assms(1)
-  unfolding if2_cond_def if2_def
-  by auto
+  using \<^marker>\<open>provenance ai\<close> assms(1)
+  unfolding \<^marker>\<open>provenance ai\<close> if2_cond_def if2_def
+  by \<^marker>\<open>provenance ai\<close> auto
 
 subsubsection \<open>Termination of the Search Procedure\<close>
 
@@ -96,8 +96,8 @@ proof-
   proof \<^marker>\<open>provenance ai\<close>
     assume "(v2, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*"
     then show False
-      using \<^marker>\<open>provenance human\<close> neq(1) no_ances(1)
-      by \<^marker>\<open>provenance human\<close> (cases rule: converse_rtranclE) auto
+      using neq(1) no_ances(1)
+      by (cases rule: converse_rtranclE) auto
   qed
   then have wf_v2_v1: "wf (insert (v1, v2) {(x,y) | x y. (Some x = par y)})"
     using wf[unfolded parent_spec_def]
@@ -113,24 +113,24 @@ proof-
   proof \<^marker>\<open>provenance ai\<close>
     assume "(v3, v2) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*"
     then show False
-      using \<^marker>\<open>provenance human\<close> neq(2) no_ances(2)
-      by \<^marker>\<open>provenance human\<close> (cases rule: converse_rtranclE) auto
+      using neq(2) no_ances(2)
+      by (cases rule: converse_rtranclE) auto
   qed
   moreover have "(v3, v2) \<notin>  {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
   proof \<^marker>\<open>provenance ai\<close>
     assume "(v3, v2) \<in> {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
-    then have \<^marker>\<open>provenance human\<close> "(v3, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*"
-      by \<^marker>\<open>provenance ai\<close> simp
+    then have "(v3, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*"
+      by simp
     then show False
-      using \<^marker>\<open>provenance human\<close> neq(3) no_ances(2)
-      by \<^marker>\<open>provenance human\<close> (cases rule: converse_rtranclE) auto
+      using neq(3) no_ances(2)
+      by (cases rule: converse_rtranclE) auto
   qed
   ultimately have "(v3, v2) \<notin> (insert (v1, v2) {(x,y) | x y. (Some x = par y)})\<^sup>*"
     unfolding rtrancl_insert
     by simp
   then have "wf (insert (v2, v3) (insert (v1, v2) {(x,y) | x y. (Some x = par y)}))"
     using wf_v2_v1
-    by \<^marker>\<open>provenance ai\<close> (simp add: wf_insert)
+    by (simp add: wf_insert)
   moreover have "{(x,y) | x y. (Some x = par' y)} = insert (v2, v3) (insert (v1, v2) {(x,y) | x y. (Some x = par y)})"
     using neq(1,2) no_par
     by(auto simp add: par')
@@ -177,14 +177,14 @@ proof-
     unfolding flabel_invar_def
     by auto
 
-  have aux: "(flabel a = None) = (flabel b = None)" if "{a, b} \<in> M" for a b
+  have \<^marker>\<open>provenance ai\<close> aux: "(flabel a = None) = (flabel b = None)" if "{a, b} \<in> M" for a b
     using invars[unfolded flabel_invar_def] that
-    by \<^marker>\<open>provenance ai\<close> blast
+    by blast
   have \<^marker>\<open>provenance ai\<close> aux2: "(a \<in> {v2, v3}) = (b \<in> {v2, v3})" if "{a, b} \<in> M" for a b
-    using \<^marker>\<open>provenance human\<close> matching \<open>{v2,v3} \<in> M\<close> that
-    by \<^marker>\<open>provenance human\<close> (auto intro: doubleton_in_matching simp: insert_commute)
+    using matching \<open>{v2,v3} \<in> M\<close> that
+    by (auto intro: doubleton_in_matching simp: insert_commute)
   show ?thesis
-    unfolding flabel_invar_def
+    unfolding \<^marker>\<open>provenance ai\<close> flabel_invar_def
   proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
     fix a b
     assume ab: "{a, b} \<in> M"
@@ -192,7 +192,7 @@ proof-
       using aux[OF ab] aux2[OF ab]
       by simp_all
     then show "((flabel(v2 := Some (r, lab), v3 := Some (r2, lab2))) a = None) = ((flabel(v2 := Some (r, lab), v3 := Some (r2, lab2))) b = None)"
-      by \<^marker>\<open>provenance human\<close> (auto simp: fun_upd_def)
+      by (auto simp: fun_upd_def)
   qed
 qed
 
@@ -204,24 +204,24 @@ proof-
   have "{v1,v2} \<in> G - ex" "flabel v1 = Some (r, Even)" "{v2, v3} \<in> M" "flabel v2 = None"
     by (intro if1_props[OF ass])+
 
-  have aux: "(\<exists>r. flabel a = Some (r, Even)) = (\<exists>r. flabel b = Some (r, Odd))" if "{a, b} \<in> M" for a b
+  have \<^marker>\<open>provenance ai\<close> aux: "(\<exists>r. flabel a = Some (r, Even)) = (\<exists>r. flabel b = Some (r, Odd))" if "{a, b} \<in> M" for a b
     using invars[unfolded flabel_invar_2_def] that
-    by \<^marker>\<open>provenance ai\<close> blast
+    by blast
   have \<^marker>\<open>provenance ai\<close> aux2: "(a = v2 \<and> b = v3) \<or> (a = v3 \<and> b = v2) \<or> (a \<notin> {v2, v3} \<and> b \<notin> {v2, v3})" if "{a, b} \<in> M" for a b
-    using \<^marker>\<open>provenance human\<close> matching \<open>{v2,v3} \<in> M\<close> that
-    by \<^marker>\<open>provenance human\<close> (auto intro: doubleton_in_matching simp: insert_commute)
-  have "v2 \<noteq> v3"
+    using matching \<open>{v2,v3} \<in> M\<close> that
+    by (auto intro: doubleton_in_matching simp: insert_commute)
+  have \<^marker>\<open>provenance ai\<close> "v2 \<noteq> v3"
     using \<open>{v2,v3} \<in> M\<close> matching(2) graph
     by (fastforce elim: dblton_graphE)
   show ?thesis
-    unfolding flabel_invar_2_def
+    unfolding \<^marker>\<open>provenance ai\<close> flabel_invar_2_def
   proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
     fix a b
     assume ab: "{a, b} \<in> M"
     show "((\<exists>r'. (flabel(v2 := Some (r, Odd), v3 := Some (r, Even))) a = Some (r', Even)) =
            (\<exists>r'. (flabel(v2 := Some (r, Odd), v3 := Some (r, Even))) b = Some (r', Odd)))"
-      using \<^marker>\<open>provenance human\<close> aux[OF ab] aux2[OF ab] \<open>v2 \<noteq> v3\<close>
-      by \<^marker>\<open>provenance human\<close> (auto simp: fun_upd_def)
+      using aux[OF ab] aux2[OF ab] \<open>v2 \<noteq> v3\<close>
+      by (auto simp: fun_upd_def)
   qed
 qed
 
@@ -282,7 +282,7 @@ proof-
   qed
   ultimately show ?g1 ?g2
     by(auto intro: wf_par'[OF invars(1), of _ v2 v1 v3])
-qed \<^marker>\<open>provenance ai\<close>
+qed
 
 (*Done: Invar 1 and 2*)
 
@@ -374,7 +374,7 @@ proof-
     using if1_props[OF assms(1)]
     by auto
   ultimately show ?thesis
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
 qed
 
 end
@@ -407,31 +407,31 @@ proof-
     by (intro v2_nin_ancestors neq)
   then have *: "\<forall>v'\<in>set (parent_spec.follow par v). par v' = (par(v2 \<mapsto> v1)) v'"
     by (intro ancestors_unaffected_1[where ?v1.0 = v1 and ?v2.0 = v2] neq \<open>parent par\<close>) blast+
-  have "flabel v3 = None"
+  have \<^marker>\<open>provenance ai\<close> "flabel v3 = None"
     using invars(3) if1_props(3,4)[OF ass]
     unfolding flabel_invar_def
-    by \<^marker>\<open>provenance ai\<close> auto
+    by auto
   have "parent (par(v2 \<mapsto> v1))"
     unfolding parent_def
     by(intro parent_spec_pres(2)[OF invars(2,3,1) ass] \<open>parent par\<close>[unfolded parent_def])
   moreover  have "\<forall>v''. (par(v2 \<mapsto> v1)) v'' \<noteq> Some v3"
-    using flabel_par_invar_props(2)[OF invars(1) \<open>flabel v3 = None\<close>] if1_props(2)[OF ass] \<open>flabel v3 = None\<close>
-    by (auto simp: map_upd_Some_unfold)
+    using \<^marker>\<open>provenance ai\<close> flabel_par_invar_props(2)[OF invars(1) \<open>flabel v3 = None\<close>] if1_props(2)[OF ass] \<open>flabel v3 = None\<close>
+    by \<^marker>\<open>provenance ai\<close> (auto simp: map_upd_Some_unfold)
   ultimately have "\<forall>v'\<in>set (parent_spec.follow (par(v2 \<mapsto> v1)) v). v' \<noteq> v3"
     by (intro v2_nin_ancestors neq)
   then have "\<forall>v'\<in>set (parent_spec.follow (par(v2 \<mapsto> v1)) v). (par(v2 \<mapsto> v1)) v' = (par(v2 \<mapsto> v1, v3 \<mapsto> v2)) v'"
     by (intro ancestors_unaffected_1[where ?par = "(par(v2 \<mapsto> v1))" and ?v1.0 = v2 and ?v2.0 = v3] neq \<open>parent (par(v2 \<mapsto> v1))\<close>) blast+
   moreover have "v3 \<notin> set (parent_spec.follow par v)"
-  proof (intro parent.nin_ancestors[OF \<open>parent par\<close> _ neq(2)] ballI)
-    fix \<^marker>\<open>provenance ai\<close> x
-    assume \<^marker>\<open>provenance ai\<close> "x \<in> set (parent_spec.follow par v)"
-    then \<^marker>\<open>provenance ai\<close> have "par x = (par(v2 \<mapsto> v1)) x"
-      using \<^marker>\<open>provenance ai\<close> *
-      by \<^marker>\<open>provenance ai\<close> blast
-    then \<^marker>\<open>provenance ai\<close> show "par x \<noteq> Some v3"
+  proof \<^marker>\<open>provenance ai\<close> (intro parent.nin_ancestors[OF \<open>parent par\<close> _ neq(2)] ballI)
+    fix x
+    assume "x \<in> set (parent_spec.follow par v)"
+    then have "par x = (par(v2 \<mapsto> v1)) x"
+      using *
+      by blast
+    then show "par x \<noteq> Some v3"
       using \<open>\<forall>v''. (par(v2 \<mapsto> v1)) v'' \<noteq> Some v3\<close>
       by (auto dest: spec[of _ x])
-  qed \<^marker>\<open>provenance ai\<close>
+  qed
   ultimately show "?par' \<Longrightarrow> ?g1"
     by (simp add: "*")
   have *: "\<forall>v'\<in>set (parent_spec.follow par v). flabel v' = (flabel(v2 \<mapsto> a)) v'"
@@ -553,27 +553,27 @@ next
   have "{v2,v3} \<in> M"
     using if1_props(4)[OF 3(3)]
     .
-  have "flabel v3 = None"
+  have \<^marker>\<open>provenance ai\<close> "flabel v3 = None"
     using invars(4) if1_props(3,4)[OF ass]
     unfolding flabel_invar_def
-    by \<^marker>\<open>provenance ai\<close> auto
+    by auto
   have "{v} \<notin> M" for v
     using matching(2) graph
     by (blast elim: dblton_graphE)
   have "par' v3 = Some v2"
     by (simp add: par')
   moreover have "par' v1' = Some v2'"
-    using 3(2)[symmetric] parent.follow_cons_2(2)[OF **(2)] parent.follow_cons[OF **(2)]
-    by blast
+    using \<^marker>\<open>provenance ai\<close> 3(2)[symmetric] parent.follow_cons_2(2)[OF **(2)] parent.follow_cons[OF **(2)]
+    by \<^marker>\<open>provenance ai\<close> blast
   ultimately have "v1' = v3 \<longrightarrow> v2' = v2"
     by auto
   moreover  have "v1' = v2 \<Longrightarrow> v2' \<noteq> v3"
-    using \<open>par' v1' = Some v2'\<close> v1_neq_v3[OF ass invars(4)] v1_neq_v2_neq_v3[OF ass]
+    using \<^marker>\<open>provenance ai\<close> \<open>par' v1' = Some v2'\<close> v1_neq_v3[OF ass invars(4)] v1_neq_v2_neq_v3[OF ass]
     by \<^marker>\<open>provenance ai\<close> (auto simp: par')
   ultimately have "v2' \<noteq> v3"
-    using \<open>par' v1' = Some v2'\<close> flabel_par_invar_props(2)[OF invars(5) \<open>flabel v3 = None\<close>]
+    using \<^marker>\<open>provenance ai\<close> \<open>par' v1' = Some v2'\<close> flabel_par_invar_props(2)[OF invars(5) \<open>flabel v3 = None\<close>]
       v1_neq_v2_neq_v3[OF ass]
-    by (auto simp: par' split: if_splits)
+    by \<^marker>\<open>provenance ai\<close> (auto simp: par' split: if_splits)
   moreover have "v3 \<noteq> v2"
     using \<open>\<And>v. {v} \<notin> M\<close> \<open>{v2, v3} \<in> M\<close>
     by auto
@@ -585,27 +585,27 @@ next
   then show ?case
   proof(cases )
     case c1
-    show \<^marker>\<open>provenance ai\<close> ?thesis
-    proof-
-      have \<^marker>\<open>provenance human\<close> e: "v1' = v3" "v2' = v2"
-        using \<^marker>\<open>provenance ai\<close> c1
-        by \<^marker>\<open>provenance ai\<close> simp_all
-      have \<^marker>\<open>provenance human\<close> fl: "flabel' v3 = Some (r, Even)" "flabel' v2 = Some (r, Odd)"
+    show ?thesis
+    proof \<^marker>\<open>provenance ai\<close>-
+      have e: "v1' = v3" "v2' = v2"
+        using c1
+        by simp_all
+      have fl: "flabel' v3 = Some (r, Even)" "flabel' v2 = Some (r, Odd)"
         using e \<open>v3 \<noteq> v2\<close> 3(10)
-        by \<^marker>\<open>provenance ai\<close> simp_all
+        by simp_all
       have "r' = r"
-        using \<^marker>\<open>provenance human\<close> 3(9) \<open>v1' = v\<close> e(1) fl(1)
+        using 3(9) \<open>v1' = v\<close> e(1) fl(1)
         by auto
-      have \<^marker>\<open>provenance human\<close> p1: "v2' # vs = parent_spec.follow par' v2"
+      have p1: "v2' # vs = parent_spec.follow par' v2"
         using parent.follow_cons_2(1)[OF **(2), of v v2' vs] 3(2)[symmetric] \<open>v1' = v\<close> e(2)
-        by \<^marker>\<open>provenance ai\<close> simp
-      have \<^marker>\<open>provenance human\<close> p2: "\<exists>lab. flabel' v2 = Some (r', lab)"
+        by simp
+      have p2: "\<exists>lab. flabel' v2 = Some (r', lab)"
         using fl(2) \<open>r' = r\<close>
-        by \<^marker>\<open>provenance ai\<close> auto
-      have \<^marker>\<open>provenance human\<close> "alt_labels_invar flabel' r' (v2 # vs)"
+        by auto
+      have "alt_labels_invar flabel' r' (v2 # vs)"
         using 3(1)[of v2, OF p1 3(3-8) p2 3(10,11)] p1 e(2)
-        by \<^marker>\<open>provenance ai\<close> simp
-      then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> ?thesis
+        by simp
+      then show ?thesis
         using 3(2)[symmetric] e fl \<open>r' = r\<close> \<open>{v2, v3} \<in> M\<close>
         by (simp add: insert_commute)
     qed
@@ -614,34 +614,34 @@ next
       using doubleton_in_matching[OF matching(1)] \<open>{v2, v3} \<in> M\<close>
       by blast
     case c2
-    show \<^marker>\<open>provenance ai\<close> ?thesis
-    proof-
-      have \<^marker>\<open>provenance human\<close> e: "v1' = v2" "v2' = v1"
-        using \<^marker>\<open>provenance ai\<close> c2
-        by \<^marker>\<open>provenance ai\<close> simp_all
-      have \<^marker>\<open>provenance human\<close> n13: "v1 \<noteq> v3"
+    show ?thesis
+    proof \<^marker>\<open>provenance ai\<close>-
+      have e: "v1' = v2" "v2' = v1"
+        using c2
+        by simp_all
+      have n13: "v1 \<noteq> v3"
         by (rule v1_neq_v3[OF ass invars(4)])
-      have \<^marker>\<open>provenance human\<close> fl: "flabel' v2 = Some (r, Odd)" "flabel' v1 = Some (r, Even)"
+      have fl: "flabel' v2 = Some (r, Odd)" "flabel' v1 = Some (r, Even)"
         using e n13 v1_neq_v2_neq_v3[OF ass] if1_props(2)[OF ass] 3(10)
-        by \<^marker>\<open>provenance ai\<close> simp_all
+        by simp_all
       have "r' = r"
-        using \<^marker>\<open>provenance human\<close> 3(9) \<open>v1' = v\<close> e(1) fl(1)
+        using 3(9) \<open>v1' = v\<close> e(1) fl(1)
         by auto
-      have \<^marker>\<open>provenance human\<close> "{v2, v1} \<notin> M"
-        using \<^marker>\<open>provenance ai\<close> aa[of v1] n13
-        by \<^marker>\<open>provenance ai\<close> auto
-      have \<^marker>\<open>provenance human\<close> p1: "v2' # vs = parent_spec.follow par' v1"
+      have "{v2, v1} \<notin> M"
+        using aa[of v1] n13
+        by auto
+      have p1: "v2' # vs = parent_spec.follow par' v1"
         using parent.follow_cons_2(1)[OF **(2), of v v2' vs] 3(2)[symmetric] \<open>v1' = v\<close> e(2)
-        by \<^marker>\<open>provenance ai\<close> simp
-      have \<^marker>\<open>provenance human\<close> p2: "\<exists>lab. flabel' v1 = Some (r', lab)"
+        by simp
+      have p2: "\<exists>lab. flabel' v1 = Some (r', lab)"
         using fl(2) \<open>r' = r\<close>
-        by \<^marker>\<open>provenance ai\<close> auto
-      have \<^marker>\<open>provenance human\<close> "alt_labels_invar flabel' r' (v1 # vs)"
+        by auto
+      have "alt_labels_invar flabel' r' (v1 # vs)"
         using 3(1)[of v1, OF p1 3(3-8) p2 3(10,11)] p1 e(2)
-        by \<^marker>\<open>provenance ai\<close> simp
-      then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> ?thesis
+        by simp
+      then show ?thesis
         using 3(2)[symmetric] e fl \<open>r' = r\<close> \<open>{v2, v1} \<notin> M\<close>
-        by \<^marker>\<open>provenance ai\<close> simp
+        by simp
     qed
   next
     case c3
@@ -691,16 +691,16 @@ proof(induction "(parent_spec.follow par' v)" arbitrary: v rule: induct_list012)
     by (simp add: alt_list_empty)
 next
   case (single x)
-  have "parent par'"
+  have \<^marker>\<open>provenance ai\<close> "parent par'"
     unfolding parent_def par'
-    using \<^marker>\<open>provenance ai\<close> single
+    using single
     by (intro parent_spec_pres)
   then \<^marker>\<open>provenance ai\<close> have \<^marker>\<open>provenance ai\<close> "x = v"
-    using \<^marker>\<open>provenance human\<close> single(1)[symmetric] parent.follow_cons[of par' v x "[]"]
+    using single(1)[symmetric] parent.follow_cons[of par' v x "[]"]
     by simp
-  then show ?case
-    using single(1)[symmetric] single(7)
-    by (simp add: alt_list_singleton)
+  then \<^marker>\<open>provenance ai\<close> show ?case
+    using \<^marker>\<open>provenance ai\<close> single(1)[symmetric] single(7)
+    by \<^marker>\<open>provenance ai\<close> (simp add: alt_list_singleton)
 next
   case (sucsuc x y zs)
   have **:"parent par" "parent par'"
@@ -713,27 +713,27 @@ next
   have "{v2,v3} \<in> M"
     using if1_props(4)[OF sucsuc(4)]
     .
-  have "flabel v3 = None"
+  have \<^marker>\<open>provenance ai\<close> "flabel v3 = None"
     using invars(3) if1_props(3,4)[OF ass]
     unfolding flabel_invar_def
-    by \<^marker>\<open>provenance ai\<close> auto
+    by auto
   have "{v} \<notin> M" for v
     using matching(2) graph
     by (blast elim: dblton_graphE)
   have "par' v3 = Some v2"
     by (simp add: par')
   moreover have "par' x = Some y"
-    using sucsuc(3)[symmetric] parent.follow_cons_2(2)[OF **(2)] parent.follow_cons[OF **(2)]
-    by blast
+    using \<^marker>\<open>provenance ai\<close> sucsuc(3)[symmetric] parent.follow_cons_2(2)[OF **(2)] parent.follow_cons[OF **(2)]
+    by \<^marker>\<open>provenance ai\<close> blast
   ultimately have "x = v3 \<longrightarrow> y = v2"
     by auto
   moreover  have "x = v2 \<Longrightarrow> y \<noteq> v3"
-    using \<open>par' x = Some y\<close> v1_neq_v3[OF ass invars(3)] v1_neq_v2_neq_v3[OF ass]
+    using \<^marker>\<open>provenance ai\<close> \<open>par' x = Some y\<close> v1_neq_v3[OF ass invars(3)] v1_neq_v2_neq_v3[OF ass]
     by \<^marker>\<open>provenance ai\<close> (auto simp: par')
   ultimately have "y \<noteq> v3"
-    using \<open>par' x = Some y\<close> flabel_par_invar_props(2)[OF invars(4) \<open>flabel v3 = None\<close>]
+    using \<^marker>\<open>provenance ai\<close> \<open>par' x = Some y\<close> flabel_par_invar_props(2)[OF invars(4) \<open>flabel v3 = None\<close>]
       v1_neq_v2_neq_v3[OF ass]
-    by (auto simp: par' split: if_splits)
+    by \<^marker>\<open>provenance ai\<close> (auto simp: par' split: if_splits)
   moreover have "v3 \<noteq> v2"
     using \<open>\<And>v. {v} \<notin> M\<close> \<open>{v2, v3} \<in> M\<close>
     by auto
@@ -745,34 +745,34 @@ next
   then show ?case
   proof cases
     case c1
-    show \<^marker>\<open>provenance ai\<close> ?thesis
-    proof-
-      have \<^marker>\<open>provenance human\<close> e: "x = v3" "y = v2"
-        using \<^marker>\<open>provenance ai\<close> c1
-        by \<^marker>\<open>provenance ai\<close> simp_all
-      have \<^marker>\<open>provenance human\<close> n13: "v1 \<noteq> v3"
+    show ?thesis
+    proof \<^marker>\<open>provenance ai\<close>-
+      have e: "x = v3" "y = v2"
+        using c1
+        by simp_all
+      have n13: "v1 \<noteq> v3"
         by (rule v1_neq_v3[OF ass invars(3)])
-      have \<^marker>\<open>provenance human\<close> fl: "flabel' v3 = Some (r, Even)" "flabel' v2 = Some (r, Odd)" "flabel' v1 = Some (r, Even)"
+      have fl: "flabel' v3 = Some (r, Even)" "flabel' v2 = Some (r, Odd)" "flabel' v1 = Some (r, Even)"
         using e n13 v1_neq_v2_neq_v3[OF ass] if1_props(2)[OF ass] flabel'
-        by \<^marker>\<open>provenance ai\<close> simp_all
-      have \<^marker>\<open>provenance human\<close> fv: "flabel' v = Some (r, Even)"
+        by simp_all
+      have fv: "flabel' v = Some (r, Even)"
         using fl(1) e(1) \<open>x = v\<close>
-        by \<^marker>\<open>provenance ai\<close> simp
-      have "r' = r"
-        using \<^marker>\<open>provenance human\<close> sucsuc(9)[unfolded fv]
         by simp
-      have \<^marker>\<open>provenance human\<close> h1: "zs = parent_spec.follow par' v1"
+      have "r' = r"
+        using sucsuc(9)[unfolded fv]
+        by simp
+      have h1: "zs = parent_spec.follow par' v1"
         using parent.follow_psimps[OF **(2), of y] parent.follow_cons_2(1)[OF **(2), of x y zs] sucsuc(3)[symmetric]
               \<open>x = v\<close> e(2) par' v1_neq_v2_neq_v3[OF ass]
-        by \<^marker>\<open>provenance ai\<close> simp
-      have \<^marker>\<open>provenance human\<close> h2: "flabel' v1 = Some (r', Even)"
+        by simp
+      have h2: "flabel' v1 = Some (r', Even)"
         using fl(3) \<open>r' = r\<close>
-        by \<^marker>\<open>provenance ai\<close> simp
-      have \<^marker>\<open>provenance human\<close> "alt_list (\<lambda>v. flabel' v = Some (r', Even)) (\<lambda>v. flabel' v = Some (r', Odd)) zs"
+        by simp
+      have "alt_list (\<lambda>v. flabel' v = Some (r', Even)) (\<lambda>v. flabel' v = Some (r', Odd)) zs"
         using sucsuc(1)[of v1, OF h1 sucsuc(4-8) h2 sucsuc(10,11)] h1
-        by \<^marker>\<open>provenance ai\<close> simp
-      then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> ?thesis
-        using \<^marker>\<open>provenance ai\<close> sucsuc(3)[symmetric] e fl \<open>r' = r\<close>
+        by simp
+      then show ?thesis
+        using sucsuc(3)[symmetric] e fl \<open>r' = r\<close>
         by (simp add: alt_list_step)
     qed
   next
@@ -825,12 +825,12 @@ context parent
 begin
 
 lemma follow_cons_3: "\<exists>l. follow v = v # l"
-  using follow_nempty[of v] follow_cons
-  by (cases "follow v") auto
+  using \<^marker>\<open>provenance ai\<close> follow_nempty[of v] follow_cons
+  by \<^marker>\<open>provenance ai\<close> (cases "follow v") auto
 
 lemma follow_cons_3': obtains l where "follow v = v # l"
-  using follow_nempty[of v] follow_cons
-  by (cases "follow v") auto
+  using \<^marker>\<open>provenance ai\<close> follow_nempty[of v] follow_cons
+  by \<^marker>\<open>provenance ai\<close> (cases "follow v") auto
 
 lemma follow_cons_4: "parent v = Some v' \<Longrightarrow> follow v = v # (follow v')"
   using follow_psimps
@@ -838,7 +838,7 @@ lemma follow_cons_4: "parent v = Some v' \<Longrightarrow> follow v = v # (follo
 
 lemma follow_pinduct:
   "(\<And>v. (\<And>x2. parent v = Some x2 \<Longrightarrow> P x2) \<Longrightarrow> P v) \<Longrightarrow> P a"
-  by (rule follow.pinduct[OF follow_dom]) blast
+  by \<^marker>\<open>provenance ai\<close> (rule follow.pinduct[OF follow_dom]) blast
 
 end
 
@@ -880,7 +880,7 @@ proof(induction v' rule: parent.follow_pinduct[OF parent.intro[OF invar(1)]])
       using last_ConsR[OF parent.follow_nempty[OF \<open>parent par\<close>]]
       .
     ultimately show ?thesis
-      by (simp only: fun_upd_def)
+      by \<^marker>\<open>provenance ai\<close> (simp only: fun_upd_def)
   qed
 qed
 
@@ -888,7 +888,7 @@ lemma follow_eq:
   assumes invar: "parent_spec par" "parent_spec (par (v \<mapsto> v''))" and
     neq: "\<forall>v'. par v' \<noteq> Some v" "v'' \<noteq> v"
   shows "parent_spec.follow par v'' = parent_spec.follow (par(v \<mapsto> v'')) v''"
-  by \<^marker>\<open>provenance ai\<close> (intro follow_cong parent.intro[OF invar(1)] parent.follow_dom[OF parent.intro[OF invar(1)]]
+  by (intro follow_cong parent.intro[OF invar(1)] parent.follow_dom[OF parent.intro[OF invar(1)]]
             no_children_not_in_follow[OF parent.intro[OF invar(1)] neq(1) _ refl] parent.intro[OF invar(2)])
      (use neq(2) in simp)
 
@@ -957,17 +957,17 @@ proof-
     by(intro v1_neq_v2_neq_v3[OF ass])
   ultimately show ?g1 "\<And>v. ?p v \<Longrightarrow> ?g2 v"
     by(intro last_follow_eq[OF invars(1) parent_spec] last_follow_eq_2[OF invars(1) parent_spec]; simp)+
-  have "flabel v3 = None"
+  have \<^marker>\<open>provenance ai\<close> "flabel v3 = None"
     using invars(2) if1_props(3,4)[OF ass]
     unfolding flabel_invar_def
-    by \<^marker>\<open>provenance ai\<close> auto
+    by auto
   have "parent_spec (par(v2 \<mapsto> v1))" "parent_spec (par(v2 \<mapsto> v1, v3 \<mapsto> v2))"
     by (intro parent_spec_pres[OF invars(1-3) ass])+
   moreover have "v2 \<noteq> v3"
     by(intro v1_neq_v2_neq_v3[OF ass])
   moreover have  "\<forall>v'. (par(v2 \<mapsto> v1)) v' \<noteq> Some v3"
-    using flabel_par_invar_props(2)[OF invars(3) \<open>flabel v3 = None\<close>] v1_neq_v3[OF ass invars(2)]
-    by (auto simp: map_upd_Some_unfold)
+    using \<^marker>\<open>provenance ai\<close> flabel_par_invar_props(2)[OF invars(3) \<open>flabel v3 = None\<close>] v1_neq_v3[OF ass invars(2)]
+    by \<^marker>\<open>provenance ai\<close> (auto simp: map_upd_Some_unfold)
   ultimately
   show ?g3 "\<And>v. ?p2 v \<Longrightarrow> ?g4 v"
     by(intro last_follow_eq[OF _ ] last_follow_eq_2[OF _ ]; simp)+
@@ -984,28 +984,23 @@ lemma last_not_matched_invar_pres:
   shows "last_not_matched_invar (par(v2 \<mapsto> v1)) (flabel(v2 \<mapsto> (r, lab)))" (is ?g1)
     "last_not_matched_invar (par(v2 \<mapsto> v1, v3 \<mapsto> v2)) (flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r2, lab2)))" (is ?g2)
 proof-
-  have \<^marker>\<open>provenance ai\<close> gen: "\<And>v2 v1 v3 r lab (par :: 'a \<Rightarrow> 'a option) (flabel :: 'a \<Rightarrow> ('b \<times> label) option).
-      last (parent_spec.follow (par(v2 \<mapsto> v1)) v2) = last (parent_spec.follow par v1) \<Longrightarrow>
-      (\<And>v. v \<noteq> v2 \<Longrightarrow> last (parent_spec.follow (par(v2 \<mapsto> v1)) v) = last (parent_spec.follow par v)) \<Longrightarrow>
-      last_not_matched_invar par flabel \<Longrightarrow> flabel_par_invar par flabel \<Longrightarrow> flabel v1 \<noteq> None \<Longrightarrow>
-      last_not_matched_invar (par(v2 \<mapsto> v1)) (flabel(v2 \<mapsto> (r, lab)))"
+  have gen: "last_not_matched_invar (par(v2 \<mapsto> v1)) (flabel(v2 := Some (r, lab)))"
+    if *: "last (parent_spec.follow (par(v2 \<mapsto> v1)) v2) = last (parent_spec.follow par v1)" "\<And>v. v \<noteq> v2 \<Longrightarrow> last (parent_spec.follow (par(v2 \<mapsto> v1)) v) = last (parent_spec.follow par v)"
+      and invar: "last_not_matched_invar par flabel" "flabel_par_invar par flabel"
+      and ass: "flabel v1 \<noteq> None"
+    for v2 v1 v3 r lab and par :: "'a \<Rightarrow> 'a option" and flabel::"'a \<Rightarrow> ('b \<times> label) option"
   proof-
-    fix \<^marker>\<open>provenance human\<close> v2 v1 v3 r lab and par :: "'a \<Rightarrow> 'a option" and flabel::"'a \<Rightarrow> ('b \<times> label) option"
-    assume \<^marker>\<open>provenance human\<close> *: "last (parent_spec.follow (par(v2 \<mapsto> v1)) v2) = last (parent_spec.follow par v1)"
-      "\<And>v. v \<noteq> v2 \<Longrightarrow> last (parent_spec.follow (par(v2 \<mapsto> v1)) v) = last (parent_spec.follow par v)"
-    assume \<^marker>\<open>provenance human\<close> invar: "last_not_matched_invar par flabel" "flabel_par_invar par flabel"  and
-      ass: "flabel v1 \<noteq> None"
-    have \<^marker>\<open>provenance human\<close> "last (parent_spec.follow (par(v2 \<mapsto> v1)) v) \<notin> Vs M" if "(flabel(v2 \<mapsto> (r, lab))) v \<noteq> None" for v
+    have "last (parent_spec.follow (par(v2 \<mapsto> v1)) v) \<notin> Vs M" if "(flabel(v2 \<mapsto> (r, lab))) v \<noteq> None" for v
     proof(cases "v = v2")
       case True
       have "last (parent_spec.follow par v1) \<notin> Vs M"
         using invar(1) ass
         by (auto simp: last_not_matched_invar_def)
       then have "last (parent_spec.follow (par(v2 \<mapsto> v1)) v1) \<notin> Vs M"
-        using "*"(1,2)
-        by (cases "v1 = v2") auto
+        using \<^marker>\<open>provenance ai\<close> "*"(1,2)
+        by \<^marker>\<open>provenance ai\<close> (cases "v1 = v2") auto
       then have "last (parent_spec.follow (par(v2 \<mapsto> v1)) v2) \<notin> Vs M"
-        using "*"(1) \<open>last (parent_spec.follow par v1) \<notin> Vs M\<close>
+        using \<^marker>\<open>provenance ai\<close> "*"(1) \<open>last (parent_spec.follow par v1) \<notin> Vs M\<close>
         by \<^marker>\<open>provenance ai\<close> simp
       then show ?thesis
         using True
@@ -1017,7 +1012,7 @@ proof-
         using invar that
         by (fastforce simp: last_not_matched_invar_def flabel_par_invar_def)
     qed
-    then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> "last_not_matched_invar (par(v2 \<mapsto> v1)) (flabel(v2 := Some (r, lab)))"
+    then show ?thesis
       unfolding last_not_matched_invar_def
       by(intro conjI allI impI)
         (*moreover have " v \<notin> Vs M" if "(par(v2 \<mapsto> v1)) v = None" for v
@@ -1066,30 +1061,30 @@ lemma matching_examined_invar_pres:
     ass: "if1 flabel ex v1 v2 v3 r"
   shows "matching_examined_invar (flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab'))) (insert {v2, v3} (insert {v1, v2} ex))" (is ?g1)
 proof-
-  have \<^marker>\<open>provenance ai\<close> "\<And>v1' v2'. {v1', v2'} \<in> M \<Longrightarrow> (flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab'))) v1' \<noteq> None \<Longrightarrow>
-      {v1', v2'} \<in> insert {v2, v3} (insert {v1, v2} ex)"
+  have "{v1', v2'} \<in> insert {v2, v3} (insert {v1, v2} ex)"
+    if ass2: "{v1', v2'} \<in> M" "(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab'))) v1' \<noteq> None"
+    for v1' v2'
   proof-
-    fix \<^marker>\<open>provenance human\<close> v1' v2'
-    have \<^marker>\<open>provenance human\<close> "flabel_invar (flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab')))"
+    have "flabel_invar (flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab')))"
       using flabel_invar_pres[OF invars(1) ass]
       .
-    assume \<^marker>\<open>provenance human\<close> ass2: "{v1', v2'} \<in> M" "(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab'))) v1' \<noteq> None"
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab'))) v2' \<noteq> None"
+    note ass2
+    moreover have "(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab'))) v2' \<noteq> None"
       by (rule flabel_invar_props[OF flabel_invar_pres[OF invars(1) ass], of v1']) (use ass2 in auto)
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "{v1, v2} \<notin> M"
+    moreover have "{v1, v2} \<notin> M"
       using matching_examined_invar_props[OF invars(2)]
         if1_props[OF ass]
       by fastforce
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "v1' \<noteq> v2'"
+    moreover have "v1' \<noteq> v2'"
       using matching(2) graph \<open>{v1', v2'} \<in> M\<close>
       by (auto elim: dblton_graphE)
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "v1 \<noteq> v2"
+    moreover have "v1 \<noteq> v2"
       using graph if1_props(1)[OF ass(1)]
       by (auto elim: dblton_graphE)
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "v1 \<noteq> v3"
+    moreover have "v1 \<noteq> v3"
       using v1_neq_v3[OF ass invars(1)].
-    ultimately \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> "{v1', v2'} \<in> insert {v2, v3} (insert {v1, v2} ex)"
-      by (auto split: if_splits simp add: matching_examined_invar_props[OF invars(2)] insert_commute doubleton_eq_iff
+    ultimately show ?thesis
+      by \<^marker>\<open>provenance ai\<close> (auto split: if_splits simp add: matching_examined_invar_props[OF invars(2)] insert_commute doubleton_eq_iff
                     dest: flabel_invar_props(1)[OF invars(1) _ if1_props(3)[OF ass]])
   qed
   then show ?thesis
@@ -1178,34 +1173,32 @@ proof-
     using parent.intro[OF parent_spec_pres(1)[OF invars(1-3) ass]]
     .
   note follow_simps [simp] = parent_spec.follow.psimps[OF parent.follow_dom[OF \<open>parent par'\<close>]]
-  have F: "\<And>v r lab. v2 \<noteq> v \<Longrightarrow> v3 \<noteq> v \<Longrightarrow> flabel' v = Some (r, lab) \<Longrightarrow>
-      flabel' (last (parent_spec.follow par' v)) = Some (r, Even)"
-  proof \<^marker>\<open>provenance ai\<close>-
-    fix \<^marker>\<open>provenance human\<close> v r lab
-    assume \<^marker>\<open>provenance human\<close> "v2 \<noteq> v" "v3 \<noteq> v"
-      "flabel' v = Some (r, lab)" 
-    then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "flabel v = Some (r, lab)"
+  have F: "flabel' (last (parent_spec.follow par' v)) = Some (r, Even)"
+    if "v2 \<noteq> v" "v3 \<noteq> v" "flabel' v = Some (r, lab)"
+    for v r lab
+  proof-
+    from that have "flabel v = Some (r, lab)"
       by (auto simp: flabel'_def)
-    then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> i: "flabel (last (parent_spec.follow par v)) = Some (r, Even)"
+    then have i: "flabel (last (parent_spec.follow par v)) = Some (r, Even)"
       by (intro last_even_invar_props[OF invars(4), of _ r lab])
-    have \<^marker>\<open>provenance human\<close> "flabel (last (parent_spec.follow par v)) = Some (r, Even)"
+    have "flabel (last (parent_spec.follow par v)) = Some (r, Even)"
       using i
       by simp
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "\<forall>v'\<in>set (parent_spec.follow par v). v' \<noteq> v2"
+    moreover have "\<forall>v'\<in>set (parent_spec.follow par v). v' \<noteq> v2"
       by(intro v2_nin_ancestors[OF parent.intro[OF invars(1)] flabel_par_invar_props(2)[OF invars(3)]] if1_props[OF ass] \<open>v2 \<noteq> v\<close>)
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "\<forall>v'\<in>set (parent_spec.follow par v). v' \<noteq> v3"
+    moreover have "\<forall>v'\<in>set (parent_spec.follow par v). v' \<noteq> v3"
       by(intro v2_nin_ancestors[OF parent.intro[OF invars(1)] flabel_par_invar_props(2)[OF invars(3)]] flabel_invar_props(1)[OF invars(2) if1_props(4,3)[OF ass]] \<open>v3 \<noteq> v\<close> )
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "(last (parent_spec.follow par v)) \<in> set (parent_spec.follow par v)"
+    moreover have "(last (parent_spec.follow par v)) \<in> set (parent_spec.follow par v)"
       using parent.follow_nempty[OF parent.intro[OF invars(1)]]
       by simp
-    ultimately \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "flabel' (last (parent_spec.follow par v)) = Some (r, Even)"
+    ultimately have "flabel' (last (parent_spec.follow par v)) = Some (r, Even)"
       unfolding flabel'_def
       by simp
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "parent_spec.follow par v =  parent_spec.follow par' v"
+    moreover have "parent_spec.follow par v =  parent_spec.follow par' v"
       unfolding par'_def
       using compute_alt_path_follow_eq[OF ass invars(1,2,3) \<open>v2 \<noteq> v\<close> \<open>v3 \<noteq> v\<close>]
       .
-    ultimately \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> "flabel' (last (parent_spec.follow par' v)) = Some (r, Even)"
+    ultimately show ?thesis
       by simp
   qed
   moreover have *: "(last (parent_spec.follow par' v2)) = (last (parent_spec.follow par' v1))"
@@ -1233,30 +1226,30 @@ proof-
   ultimately have "flabel' (last (parent_spec.follow par' v)) = Some (r, Even)" if "flabel' v = Some (r, lab)" for v r lab
   proof \<^marker>\<open>provenance ai\<close> (cases "v = v2")
     case True
-    have \<^marker>\<open>provenance human\<close> "flabel' v1 = Some (r, Even)"
+    have "flabel' v1 = Some (r, Even)"
       using that True v1_neq_v2_neq_v3(2)[OF ass] v1_neq_v2_neq_v3(1)[OF ass] v1_neq_v3[OF ass invars(2)] if1_props(2)[OF ass]
       by (auto simp: flabel'_def)
     then show ?thesis
       using F[of v1] * True that v1_neq_v2_neq_v3(1)[OF ass] v1_neq_v3[OF ass invars(2)]
-      by \<^marker>\<open>provenance human\<close> (simp del: follow_simps)
+      by (simp del: follow_simps)
   next
     case False
     show ?thesis
-    proof \<^marker>\<open>provenance human\<close>(cases "v = v3")
-      case \<^marker>\<open>provenance ai\<close> True
+    proof(cases "v = v3")
+      case True
       have "flabel' v1 = Some (r, Even)"
         using that True v1_neq_v2_neq_v3(2)[OF ass] v1_neq_v2_neq_v3(1)[OF ass] v1_neq_v3[OF ass invars(2)] if1_props(2)[OF ass]
         by (auto simp: flabel'_def)
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?thesis
+      then show ?thesis
         using F[of v1] \<open>last (parent_spec.follow par' v3) = last (parent_spec.follow par' v1)\<close> True that
           v1_neq_v2_neq_v3(1)[OF ass] v1_neq_v3[OF ass invars(2)]
-        by \<^marker>\<open>provenance human\<close> (simp del: follow_simps)
-    next \<^marker>\<open>provenance ai\<close>
-      case \<^marker>\<open>provenance ai\<close> False
-      then \<^marker>\<open>provenance ai\<close> show \<^marker>\<open>provenance ai\<close> ?thesis
-        using \<^marker>\<open>provenance human\<close> F[of v] \<open>\<not> v = v2\<close> that
+        by (simp del: follow_simps)
+    next
+      case False
+      then show ?thesis
+        using F[of v] \<open>\<not> v = v2\<close> that
         by simp
-    qed \<^marker>\<open>provenance ai\<close>
+    qed
   qed
   then show ?thesis
     unfolding flabel'_def par'_def last_even_invar_def
@@ -1276,10 +1269,10 @@ proof-
     unfolding last_even_invar_def
     by simp
   moreover have "parent_spec.follow par v \<noteq> []"
-    by (rule parent.follow_nempty[OF parent.intro[OF invars(1)]])
+    by \<^marker>\<open>provenance ai\<close> (rule parent.follow_nempty[OF parent.intro[OF invars(1)]])
   moreover have "flabel (hd (parent_spec.follow par v)) = Some (r, Even)"
-    using invars(2) \<open>parent_spec.follow par v \<noteq> []\<close>
-    by (cases "parent_spec.follow par v") (auto simp: alt_list_step)
+    using \<^marker>\<open>provenance ai\<close> invars(2) \<open>parent_spec.follow par v \<noteq> []\<close>
+    by \<^marker>\<open>provenance ai\<close> (cases "parent_spec.follow par v") (auto simp: alt_list_step)
   ultimately show ?thesis
     by (intro alt_list_length_odd[OF invars(2)])
 qed
@@ -1306,8 +1299,8 @@ proof-
 
   define par' where "par' = (par(v2 \<mapsto> v1, v3 \<mapsto> v2))"
   have invar': "parent_spec par'"
-    unfolding par'_def
-    by (rule parent_spec_pres(1)[OF invars(1-3) ass])
+    unfolding \<^marker>\<open>provenance ai\<close> par'_def
+    by \<^marker>\<open>provenance ai\<close> (rule parent_spec_pres(1)[OF invars(1-3) ass])
   note follow_simps [simp] = parent_spec.follow.psimps[OF  parent.follow_dom[OF parent.intro[OF invar']], of v2]
     parent_spec.follow.psimps[OF  parent.follow_dom[OF parent.intro[OF invar']], of v3]
 
@@ -1344,12 +1337,12 @@ proof-
   then have rw_v1: "(parent_spec.follow par v1) = (parent_spec.follow par' v1)"
     using \<open>flabel v1 = Some (r, Even)\<close> \<open>flabel v2 = None\<close> \<open>flabel v3 = None\<close>
     by force
-  have "\<And>v. distinct (parent_spec.follow par' v)"
-  proof \<^marker>\<open>provenance ai\<close>-
-    fix \<^marker>\<open>provenance human\<close> v
-    consider \<^marker>\<open>provenance human\<close> (c1) "v = v2" | (c2) "v = v3" | (c3) "v \<notin> {v2, v3}"
+  have "distinct (parent_spec.follow par' v)"
+    for v
+  proof-
+    consider (c1) "v = v2" | (c2) "v = v3" | (c3) "v \<notin> {v2, v3}"
       by auto
-    then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> "distinct (parent_spec.follow par' v)"
+    then show ?thesis
     proof(cases)
       case c1
       moreover have "distinct (parent_spec.follow par' v1)"
@@ -1409,8 +1402,8 @@ lemma path_invar_pres:
 proof-
   define par' where "par' = (par(v2 \<mapsto> v1, v3 \<mapsto> v2))"
   have invar': "parent_spec par'"
-    unfolding par'_def
-    by (rule parent_spec_pres(1)[OF invars(1-3) ass])
+    unfolding \<^marker>\<open>provenance ai\<close> par'_def
+    by \<^marker>\<open>provenance ai\<close> (rule parent_spec_pres(1)[OF invars(1-3) ass])
   note follow_simps [simp] = parent_spec.follow.psimps[OF parent.follow_dom[OF parent.intro[OF invar']]]
 
   have "v2 \<noteq> v3"
@@ -1422,11 +1415,11 @@ proof-
     by simp
 
   have "{v3, v2} \<in> G"
-    using if1_props(4)[OF ass] matching(2)
-    by (auto simp: insert_commute)
+    using \<^marker>\<open>provenance ai\<close> if1_props(4)[OF ass] matching(2)
+    by \<^marker>\<open>provenance ai\<close> (auto simp: insert_commute)
   have "{v2, v1} \<in> G"
-    using if1_props(1)[OF ass]
-    by (auto simp: insert_commute)
+    using \<^marker>\<open>provenance ai\<close> if1_props(1)[OF ass]
+    by \<^marker>\<open>provenance ai\<close> (auto simp: insert_commute)
   then have "v1 \<in> Vs G"
     unfolding Vs_def
     by auto
@@ -1437,13 +1430,13 @@ proof-
   then have rw_v1: "(parent_spec.follow par v1) = (parent_spec.follow par' v1)"
     using ass invars(2) v1_neq_v2_neq_v3(1) v1_neq_v3
     by fastforce
-  have "\<And>v. v \<in> Vs G \<Longrightarrow> path G (parent_spec.follow par' v)"
-  proof \<^marker>\<open>provenance ai\<close>-
-    fix \<^marker>\<open>provenance human\<close> v
-    assume \<^marker>\<open>provenance human\<close> "v \<in> Vs G"
-    consider \<^marker>\<open>provenance human\<close> (c1) "v = v2" | (c2) "v = v3" | (c3) "v \<notin> {v2, v3}"
+  have "path G (parent_spec.follow par' v)"
+    if "v \<in> Vs G"
+    for v
+  proof-
+    consider (c1) "v = v2" | (c2) "v = v3" | (c3) "v \<notin> {v2, v3}"
       by auto
-    then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> "path G (parent_spec.follow par' v)"
+    then show ?thesis
     proof(cases)
       case c1
       moreover have "path G (parent_spec.follow par' v1)"
@@ -1494,7 +1487,7 @@ proof-
   moreover have "flabel v3 = None"
     by(rule if1_props[OF ass] flabel_invar_props(1)[OF invars(1)])+
   ultimately show ?thesis
-    using invars(2) v1_neq_v2_neq_v3(2)[OF ass]
+    using \<^marker>\<open>provenance ai\<close> invars(2) v1_neq_v2_neq_v3(2)[OF ass]
     by \<^marker>\<open>provenance ai\<close> (clarsimp simp: examined_have_odd_verts_invar_def) (drule bspec, assumption, erule bexE, intro bexI, auto)
 qed
 
@@ -1712,9 +1705,9 @@ proof-
       by (auto elim: dblton_graphE)
     define es' where "es' = es s - {e}"
     define s' where "s' = s - e"
-    have "card s = 1 \<or> card s = 3 \<or> 5 \<le> card s"
-      using \<^marker>\<open>provenance ai\<close> insert(8)
-      by \<^marker>\<open>provenance ai\<close> presburger
+    have \<^marker>\<open>provenance ai\<close> "card s = 1 \<or> card s = 3 \<or> 5 \<le> card s"
+      using insert(8)
+      by presburger
     consider (one) "card s = 1" | (three) "card s = 3" | (ge_five)"card s \<ge> 5"
       using \<^marker>\<open>provenance ai\<close> \<open>card s = 1 \<or> card s = 3 \<or> 5 \<le> card s\<close>
       by \<^marker>\<open>provenance ai\<close> blast
@@ -1741,20 +1734,20 @@ proof-
         by (auto simp: card_Suc_eq numeral_2_eq_2 subset_iff)
       then have "\<exists>e1 e2. e1 \<noteq> e2 \<and> e1 \<in> M \<and> e2 \<in> M \<and> e1 \<inter> e2 \<noteq> empty" if "2 \<le> card (M \<inter> es s)"
       proof \<^marker>\<open>provenance ai\<close>-
-        have \<^marker>\<open>provenance human\<close> "Suc 1 \<le> card (M \<inter> es s)"
-          using \<^marker>\<open>provenance ai\<close> that
-          by \<^marker>\<open>provenance ai\<close> simp
+        have "Suc 1 \<le> card (M \<inter> es s)"
+          using that
+          by simp
         then have "\<exists>a B. M \<inter> es s = insert a B \<and> a \<notin> B \<and> 1 \<le> card B \<and> finite B"
-          by \<^marker>\<open>provenance human\<close> (rule iffD1[OF card_le_Suc_iff])
+          by (rule iffD1[OF card_le_Suc_iff])
         then obtain a B where aB: "M \<inter> es s = insert a B" "a \<notin> B" "1 \<le> card B"
-          by \<^marker>\<open>provenance human\<close> (elim exE conjE) (intro that)
+          by (elim exE conjE) (intro that)
         then have "B \<noteq> {}"
           by auto
         then obtain b where "b \<in> B"
           by auto
-        then have \<^marker>\<open>provenance human\<close> e12: "a \<in> M \<inter> es s" "b \<in> M \<inter> es s" "a \<noteq> b"
-          using \<^marker>\<open>provenance ai\<close> aB
-          by \<^marker>\<open>provenance ai\<close> auto
+        then have e12: "a \<in> M \<inter> es s" "b \<in> M \<inter> es s" "a \<noteq> b"
+          using aB
+          by auto
         then have "a \<in> M" "b \<in> M" "a \<inter> b \<noteq> empty"
           using \<open>es s = {{u1, u2}, {u2, u3}, {u1, u3}}\<close> u1u2u3(2-4)
           by auto
@@ -1817,19 +1810,19 @@ lemma OSC_insert:
   assumes "card s \<ge> 3" "odd_set_cover (insert s OSC) G" "dblton_graph G"
   shows "odd_set_cover OSC (G - es s)"
 proof-
-  have "\<And>e. e \<in> G - es s \<Longrightarrow> \<exists>s\<in>OSC. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s"
-  proof \<^marker>\<open>provenance ai\<close>-
-    fix \<^marker>\<open>provenance human\<close> e
-    assume \<^marker>\<open>provenance human\<close> "e\<in>G - es s"
-    then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "e \<in> G"
+  have "\<exists>s\<in>OSC. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s"
+    if "e\<in>G - es s"
+    for e
+  proof-
+    from that have "e \<in> G"
       by simp
-    then \<^marker>\<open>provenance human\<close> obtain \<^marker>\<open>provenance human\<close> s' where s': "s'\<in>(insert s OSC)"  "if card s' = 1 then s' \<inter> e \<noteq> {} else e \<subseteq> s'"
+    then obtain s' where s': "s'\<in>(insert s OSC)"  "if card s' = 1 then s' \<inter> e \<noteq> {} else e \<subseteq> s'"
       using assms(2)
       by (auto simp add: odd_set_cover_def)
-    moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "card e = 2"
+    moreover have "card e = 2"
       using assms(3) \<open>e \<in> G\<close>
       by (fastforce elim: dblton_graphE)
-    ultimately \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> "\<exists>s\<in>OSC. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s"
+    ultimately show ?thesis
       using assms(1) s' \<open>e \<in> G - es s\<close>
       by (fastforce simp add: es_def)
   qed
@@ -1868,9 +1861,9 @@ proof-
       then obtain v where v: "s = {v}"
         by(elim card_1_singletonE)
       define ev where "ev = {e. v \<in> e}"
-      have "finite (M \<inter> ev)"
+      have \<^marker>\<open>provenance ai\<close> "finite (M \<inter> ev)"
         using insert.prems(1,3) infinite_super
-        by \<^marker>\<open>provenance ai\<close> blast
+        by blast
       have "odd_set_cover OSC (G - ev)"
         using insert(1,7)
         unfolding odd_set_cover_def ev_def
@@ -1882,13 +1875,13 @@ proof-
         by (intro insert(3)[where G = "G - ev"]) (use insert in \<open>auto simp add: dblton_graph_def\<close>)
       moreover have "\<exists>e1 e2. e1 \<noteq> e2 \<and> e1 \<in> M \<and> e2 \<in> M \<and> e1 \<inter> e2 \<noteq> empty" if "2 \<le> card (M \<inter> ev)"
       proof \<^marker>\<open>provenance ai\<close>-
-        have \<^marker>\<open>provenance human\<close> "Suc 1 \<le> card (M \<inter> ev)"
+        have "Suc 1 \<le> card (M \<inter> ev)"
           using that
-          by \<^marker>\<open>provenance ai\<close> simp
+          by simp
         then have "\<exists>a B. M \<inter> ev = insert a B \<and> a \<notin> B \<and> 1 \<le> card B \<and> finite B"
-          by \<^marker>\<open>provenance human\<close> (rule iffD1[OF card_le_Suc_iff])
+          by (rule iffD1[OF card_le_Suc_iff])
         then obtain a B where aB: "M \<inter> ev = insert a B" "a \<notin> B" "1 \<le> card B"
-          by \<^marker>\<open>provenance human\<close> (elim exE conjE) (intro that)
+          by (elim exE conjE) (intro that)
         then have "B \<noteq> {}"
           by auto
         then obtain b where "b \<in> B"
@@ -1944,7 +1937,7 @@ proof-
 qed
 
 lemma OSC_union: "odd_set_cover OSC1 G1 \<Longrightarrow> odd_set_cover OSC2 G2 \<Longrightarrow> odd_set_cover (OSC1 \<union> OSC2) (G1 \<union> G2)"
-  unfolding odd_set_cover_def
+  unfolding \<^marker>\<open>provenance ai\<close> odd_set_cover_def
   by \<^marker>\<open>provenance ai\<close> (auto simp: Un_iff; (drule bspec, assumption, erule bexE, rule bexI, auto split: if_splits))
 
 lemma OSC_inter: "odd_set_cover OSC G1 \<Longrightarrow> odd_set_cover OSC (G1 \<inter> G2)"
@@ -1974,25 +1967,25 @@ next
   then show ?case
   proof \<^marker>\<open>provenance ai\<close> (cases "k = 0")
     case True
-    have \<^marker>\<open>provenance human\<close> "card s = 0" "card (\<Union> S') = 0"
-      using \<^marker>\<open>provenance ai\<close> insert True
-      by \<^marker>\<open>provenance ai\<close> auto
+    have "card s = 0" "card (\<Union> S') = 0"
+      using insert True
+      by auto
     then show ?thesis
       using True
-      by \<^marker>\<open>provenance human\<close> (cases "finite s") (auto simp: card_eq_0_iff)
+      by (cases "finite s") (auto simp: card_eq_0_iff)
   next
     case False
-    have \<^marker>\<open>provenance human\<close> fin: "finite s" "finite (\<Union> S')"
-      using \<^marker>\<open>provenance ai\<close> insert False
+    have fin: "finite s" "finite (\<Union> S')"
+      using insert False
       by (auto intro: card_ge_0_finite)
-    have \<^marker>\<open>provenance human\<close> "s \<inter> s' = {}" if "s' \<in> S'" for s'
+    have "s \<inter> s' = {}" if "s' \<in> S'" for s'
       using insert.prems(2)[of s s'] insert.hyps(2) that
-      by \<^marker>\<open>provenance ai\<close> auto
-    then have \<^marker>\<open>provenance human\<close> "s \<inter> \<Union> S' = {}"
-      by \<^marker>\<open>provenance ai\<close> auto
+      by auto
+    then have "s \<inter> \<Union> S' = {}"
+      by auto
     then show ?thesis
       using fin insert
-      by \<^marker>\<open>provenance human\<close> (simp add: card_Un_disjoint)
+      by (simp add: card_Un_disjoint)
   qed
 
 qed
@@ -2039,60 +2032,59 @@ lemma compute_alt_path_from_tree_2':
   shows "\<nexists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p"
 proof-
   have "\<exists>OSC. odd_set_cover OSC G \<and> capacity2 OSC = card M"
-  proof \<^marker>\<open>provenance ai\<close>-
-      define \<^marker>\<open>provenance human\<close> lab_osc where "lab_osc = {{v} | v . \<exists>r. flabel v = Some (r, Odd)}"
-      have \<^marker>\<open>provenance human\<close> *: "\<And>es. (\<And>e. e \<in> es \<Longrightarrow> \<exists>v \<in> e. \<exists>r. flabel v = Some (r, Odd)) \<Longrightarrow>
-                    odd_set_cover lab_osc (es \<inter> G)"
-      proof \<^marker>\<open>provenance ai\<close>-
-        fix \<^marker>\<open>provenance human\<close> es
-        assume \<^marker>\<open>provenance human\<close> "\<And>e. e \<in> es \<Longrightarrow> \<exists>v \<in> e. \<exists>r. flabel v = Some (r, Odd)"
-        then \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "\<exists>s\<in>lab_osc. e \<inter> s \<noteq> {}" if "e \<in> es" for e 
+  proof-
+      define lab_osc where "lab_osc = {{v} | v . \<exists>r. flabel v = Some (r, Odd)}"
+      have *: "odd_set_cover lab_osc (es \<inter> G)"
+        if "\<And>e. e \<in> es \<Longrightarrow> \<exists>v \<in> e. \<exists>r. flabel v = Some (r, Odd)"
+        for es
+      proof-
+        from that have "\<exists>s\<in>lab_osc. e \<inter> s \<noteq> {}" if "e \<in> es" for e 
         proof \<^marker>\<open>provenance ai\<close>-
-          obtain \<^marker>\<open>provenance human\<close> v where "v \<in> e" "\<exists>r. flabel v = Some (r, Odd)"
-            using \<^marker>\<open>provenance ai\<close> \<open>\<And>e. e \<in> es \<Longrightarrow> \<exists>v \<in> e. \<exists>r. flabel v = Some (r, Odd)\<close>[of e] \<open>e \<in> es\<close>
-            by \<^marker>\<open>provenance ai\<close> blast
+          obtain v where "v \<in> e" "\<exists>r. flabel v = Some (r, Odd)"
+            using \<open>\<And>e. e \<in> es \<Longrightarrow> \<exists>v \<in> e. \<exists>r. flabel v = Some (r, Odd)\<close>[of e] \<open>e \<in> es\<close>
+            by blast
           then show ?thesis
-            unfolding \<^marker>\<open>provenance human\<close> lab_osc_def
-            by \<^marker>\<open>provenance human\<close> auto
+            unfolding lab_osc_def
+            by auto
         qed
-        moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "finite lab_osc"
+        moreover have "finite lab_osc"
           unfolding lab_osc_def
           using \<open>finite_odds_invar flabel\<close> finite_odds_invar_def
           by force
-        moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "odd (card s) \<and> finite s" if "s\<in>lab_osc" for s
+        moreover have "odd (card s) \<and> finite s" if "s\<in>lab_osc" for s
           using that
           unfolding lab_osc_def
           by auto
-        moreover \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "card s = 1" if "s \<in> lab_osc" for s
+        moreover have "card s = 1" if "s \<in> lab_osc" for s
           using that
           unfolding lab_osc_def
           by auto
-        ultimately \<^marker>\<open>provenance human\<close> have \<^marker>\<open>provenance human\<close> "odd_set_cover lab_osc es"
+        ultimately have "odd_set_cover lab_osc es"
           unfolding odd_set_cover_def
           by (simp add: inf_commute)
-        then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> "odd_set_cover lab_osc (es \<inter> G)"
+        then show ?thesis
           by(rule OSC_inter)
       qed
-      have \<^marker>\<open>provenance human\<close> "odd_set_cover lab_osc (ex \<inter> G)"
-        by \<^marker>\<open>provenance ai\<close> (intro *) (use \<open>examined_have_odd_verts_invar ex flabel\<close> examined_have_odd_verts_invar_def in blast)
-      have \<^marker>\<open>provenance human\<close> "finite lab_osc"
+      have "odd_set_cover lab_osc (ex \<inter> G)"
+        by (intro *) (use \<open>examined_have_odd_verts_invar ex flabel\<close> examined_have_odd_verts_invar_def in blast)
+      have "finite lab_osc"
         unfolding lab_osc_def
         using \<open>finite_odds_invar flabel\<close> finite_odds_invar_def
         by force
-      have \<^marker>\<open>provenance human\<close> lab: "flabel x = None \<or> (\<exists>r. flabel x = Some (r, Odd)) \<or> (\<exists>r. flabel x = Some (r, Even))" for x
-      proof \<^marker>\<open>provenance ai\<close>(cases "flabel x")
+      have \<^marker>\<open>provenance ai\<close> lab: "flabel x = None \<or> (\<exists>r. flabel x = Some (r, Odd)) \<or> (\<exists>r. flabel x = Some (r, Even))" for x
+      proof(cases "flabel x")
         case None
         then show ?thesis
           by simp
       next
         case (Some p)
-        then obtain \<^marker>\<open>provenance human\<close> r l where "p = (r, l)"
-          by \<^marker>\<open>provenance ai\<close> (cases p)
+        then obtain r l where "p = (r, l)"
+          by (cases p)
         then show ?thesis
           using Some
           by (cases l) auto
       qed
-      have \<^marker>\<open>provenance human\<close> all_verts_labelled: "\<exists>v. v \<in> e \<and> (flabel v = None \<or> (\<exists>r. flabel v = Some (r, Odd)))"
+      have all_verts_labelled: "\<exists>v. v \<in> e \<and> (flabel v = None \<or> (\<exists>r. flabel v = Some (r, Odd)))"
         if "e \<in> G" for e
       proof-
         obtain v1 v2 where "e = {v1, v2}" "v1 \<noteq> v2"
@@ -2100,8 +2092,8 @@ proof-
           by (auto elim: dblton_graphE)
         then have "flabel v1 = None \<or> (\<exists>r. flabel v1 = Some (r, Odd)) \<or>
                    flabel v2 = None \<or> (\<exists>r. flabel v2 = Some (r, Odd))"
-          using if2_nholds lab[of v1] lab[of v2] \<open>e = {v1, v2}\<close> that
-          unfolding if2_cond_def
+          using \<^marker>\<open>provenance ai\<close> if2_nholds lab[of v1] lab[of v2] \<open>e = {v1, v2}\<close> that
+          unfolding \<^marker>\<open>provenance ai\<close> if2_cond_def
           by \<^marker>\<open>provenance ai\<close> auto
         moreover have "v1 \<in> e" "v2 \<in> e"
           using \<open>e = {v1, v2}\<close>
@@ -2109,7 +2101,7 @@ proof-
         ultimately show ?thesis
           by auto
       qed
-      have \<^marker>\<open>provenance human\<close> lab_osc_covers: "\<exists>s\<in>lab_osc. s \<inter> e \<noteq> {} \<and>  card s = 1"
+      have lab_osc_covers: "\<exists>s\<in>lab_osc. s \<inter> e \<noteq> {} \<and>  card s = 1"
         if "v \<in> e" "\<exists>r. flabel v = Some (r, Odd)" for e v
       proof-
         have "{v} \<in> lab_osc"
@@ -2122,9 +2114,9 @@ proof-
           using that
           by auto
       qed
-      consider \<^marker>\<open>provenance human\<close> (all_match_ex) "card (M - ex) = 0" | (one_match_unex) "card (M - ex) = 1" | (mult_match_unex) "2 \<le> card (M - ex)"
+      consider (all_match_ex) "card (M - ex) = 0" | (one_match_unex) "card (M - ex) = 1" | (mult_match_unex) "2 \<le> card (M - ex)"
         by linarith
-      then \<^marker>\<open>provenance human\<close> show \<^marker>\<open>provenance human\<close> ?thesis
+      then show ?thesis
       proof cases
         case all_match_ex
         then have "flabel v \<noteq> None" if "v \<in> e" "e \<in> G" for v e
@@ -2191,8 +2183,8 @@ proof-
           next
             case 2
             then have "va = v1 \<or> va = v2"
-              using invars(6) \<open>M - ex = {e}\<close> \<open>e = {v1, v2}\<close> \<open>va \<in> e'\<close> that edges_are_Vs
-              unfolding ulabelled_verts_matched_invar_def
+              using \<^marker>\<open>provenance ai\<close> invars(6) \<open>M - ex = {e}\<close> \<open>e = {v1, v2}\<close> \<open>va \<in> e'\<close> that edges_are_Vs
+              unfolding \<^marker>\<open>provenance ai\<close> ulabelled_verts_matched_invar_def
               by \<^marker>\<open>provenance ai\<close> auto
             then consider (v1) "va = v1" | (v2) "va = v2"
               by auto
@@ -2215,17 +2207,17 @@ proof-
                 then show ?thesis
                 proof \<^marker>\<open>provenance ai\<close>-
                   have "vb \<in> Vs G"
-                    using \<^marker>\<open>provenance human\<close> \<open>e' = {va, vb}\<close> \<open>e' \<in> G - ex\<close> edges_are_Vs
+                    using \<open>e' = {va, vb}\<close> \<open>e' \<in> G - ex\<close> edges_are_Vs
                     by auto
-                  then have \<^marker>\<open>provenance human\<close> "vb = v1 \<or> vb = v2"
+                  then have "vb = v1 \<or> vb = v2"
                     using invars(6) none \<open>M - ex = {e}\<close> \<open>e = {v1, v2}\<close>
                     unfolding ulabelled_verts_matched_invar_def
-                    by \<^marker>\<open>provenance ai\<close> auto
+                    by auto
                   then have "e' = e"
-                    using \<^marker>\<open>provenance human\<close> \<open>e' = {va, vb}\<close> \<open>va \<noteq> vb\<close> v2 \<open>e = {v1, v2}\<close>
+                    using \<open>e' = {va, vb}\<close> \<open>va \<noteq> vb\<close> v2 \<open>e = {v1, v2}\<close>
                     by auto
                   then show ?thesis
-                    using \<^marker>\<open>provenance human\<close> \<open>M - ex = {e}\<close> False
+                    using \<open>M - ex = {e}\<close> False
                     by auto
                 qed
               next
@@ -2245,9 +2237,9 @@ proof-
                   using \<open>e' \<in> G - ex\<close> \<open>e' = {va, vb}\<close>
                   by (simp add: insert_commute)
                 ultimately have "if1_cond flabel ex"
-                  unfolding if1_cond_def
-                  using v2 \<open>flabel v2 = None\<close>
-                  by auto
+                  unfolding \<^marker>\<open>provenance ai\<close> if1_cond_def
+                  using \<^marker>\<open>provenance ai\<close> v2 \<open>flabel v2 = None\<close>
+                  by \<^marker>\<open>provenance ai\<close> auto
                 then show ?thesis
                   using noL1
                   by simp
@@ -2307,8 +2299,8 @@ proof-
         ultimately have "capacity2 osc = card M"
           by simp
         then show ?thesis
-          using i
-          by blast
+          using \<^marker>\<open>provenance ai\<close> i
+          by \<^marker>\<open>provenance ai\<close> blast
       next
         case mult_match_unex
         then obtain e M' where M': "e \<in> M - ex" "M - ex = insert e M'" "e \<notin> M'"
@@ -2316,20 +2308,20 @@ proof-
         then obtain v1 v2 where v1v2: "e = {v1, v2}" "v1 \<noteq> v2"
           using matching(2) graph
           by (force elim: dblton_graphE)
-        have M'M: "M' \<subseteq> M"
-          using \<^marker>\<open>provenance ai\<close> M'(2)
-          by \<^marker>\<open>provenance ai\<close> auto
-        have \<^marker>\<open>provenance ai\<close> finM': "finite M'"
-          using \<^marker>\<open>provenance human\<close> finite_Diff[OF finiteM, of ex] M'(2)
-          by simp
+        have \<^marker>\<open>provenance ai\<close> M'M: "M' \<subseteq> M"
+          using M'(2)
+          by auto
+        have finM': "finite M'"
+          using \<^marker>\<open>provenance ai\<close> finite_Diff[OF finiteM, of ex] M'(2)
+          by \<^marker>\<open>provenance ai\<close> simp
         have "v1 \<notin> \<Union> M'" (*as, e is disjoint will edges in M', as M is a matching*)
-          using M'M M'(1,3) v1v2(1) matching_unique_match[OF matching(1)]
+          using \<^marker>\<open>provenance ai\<close> M'M M'(1,3) v1v2(1) matching_unique_match[OF matching(1)]
           by \<^marker>\<open>provenance ai\<close> blast
         have "e = {v2, v1}"
           using \<open>e = {v1, v2}\<close>
           by auto
         then have "v2 \<notin> \<Union> M'"
-          using M'M M'(1,3) matching_unique_match[OF matching(1)]
+          using \<^marker>\<open>provenance ai\<close> M'M M'(1,3) matching_unique_match[OF matching(1)]
           by \<^marker>\<open>provenance ai\<close> blast
         define unlab_osc1 where "unlab_osc1  = {{v1}}"
         define unlab_osc2 where "unlab_osc2  = {{v2} \<union> \<Union>M'}"
@@ -2339,10 +2331,10 @@ proof-
           have "finite M'"
             by \<^marker>\<open>provenance ai\<close> (rule finM')
           moreover have "card e = 2" if "e \<in> M'" for e
-            using graph matching(2) M'M that
-            by (auto simp: dblton_graph_def card_2_iff)
+            using \<^marker>\<open>provenance ai\<close> graph matching(2) M'M that
+            by \<^marker>\<open>provenance ai\<close> (auto simp: dblton_graph_def card_2_iff)
           moreover have "e \<inter> e' = {}" if "e \<in> M'" "e' \<in> M'" "e \<noteq> e'" for e e'
-            using matching(1) that M'M matching_unique_match[OF matching(1)]
+            using \<^marker>\<open>provenance ai\<close> matching(1) that M'M matching_unique_match[OF matching(1)]
             by \<^marker>\<open>provenance ai\<close> blast
           ultimately have "card (\<Union>M') = (2 * card M')"
             by (intro card_UNION_const)
@@ -2350,8 +2342,8 @@ proof-
             using \<open>v2 \<notin> \<Union>M'\<close>
             by auto
           moreover have "finite (\<Union>M')"
-            using finM' M'M matching(2) graph_invar_dblton[OF graph]
-            by (intro finite_Union) (auto simp: dblton_graph_def)
+            using \<^marker>\<open>provenance ai\<close> finM' M'M matching(2) graph_invar_dblton[OF graph]
+            by \<^marker>\<open>provenance ai\<close> (intro finite_Union) (auto simp: dblton_graph_def)
           ultimately have "card ({v2} \<union> \<Union> M') = card {v2} + card (\<Union>M')"
             unfolding unlab_osc2_def
             by (intro card_Un_disjoint) auto
@@ -2391,15 +2383,15 @@ proof-
           by simp
         moreover have "card (M - ex) = Suc (card M')"
           using \<^marker>\<open>provenance ai\<close> M'(2,3) finM'
-          by (simp add: card_insert_disjoint)
+          by \<^marker>\<open>provenance ai\<close> (simp add: card_insert_disjoint)
         ultimately have "capacity2 (unlab_osc1 \<union> unlab_osc2) = card (M -ex)"
           by auto
         moreover have "capacity2 (lab_osc \<union> (unlab_osc1 \<union> unlab_osc2)) = capacity2 lab_osc + capacity2 (unlab_osc1 \<union> unlab_osc2)"
         proof-
           have "flabel v = None" if "v \<in> \<Union>M'" for v
-            using that invars(3) M'(2)
-            unfolding unexamined_matched_unlabelled_invar_def
-            by auto
+            using \<^marker>\<open>provenance ai\<close> that invars(3) M'(2)
+            unfolding \<^marker>\<open>provenance ai\<close> unexamined_matched_unlabelled_invar_def
+            by \<^marker>\<open>provenance ai\<close> auto
           moreover have "flabel v2 = None"
             using invars(3) M'(1) unexamined_matched_unlabelled_invar_props v1v2(1)
             by fastforce
@@ -2445,7 +2437,7 @@ proof-
               using M' v1v2 that
               by auto
             then consider (e) "e' = e" | (M') "e' \<in> M'" | (unmatched) "e' \<notin> M"
-              by blast
+              by \<^marker>\<open>provenance ai\<close> blast
             then show ?thesis
             proof cases
               case e
@@ -2514,7 +2506,7 @@ proof-
                   by auto
                 then have "if1_cond flabel ex"
                 proof \<^marker>\<open>provenance ai\<close>-
-                  have \<^marker>\<open>provenance human\<close> e'G: "{va, vb} \<in> G - ex" "{vb, va} \<in> G - ex"
+                  have e'G: "{va, vb} \<in> G - ex" "{vb, va} \<in> G - ex"
                     using \<open>e' = {va, vb}\<close> that
                     by (simp_all add: insert_commute)
                   consider (A) "flabel va = None \<and> e = {v, va}" | (B) "flabel vb = None \<and> e = {v, vb}"
@@ -2523,19 +2515,19 @@ proof-
                   then show ?thesis
                   proof cases
                     case A
-                    then obtain \<^marker>\<open>provenance human\<close> r where "flabel vb = Some (r, Even)"
-                      using \<^marker>\<open>provenance ai\<close> even_unlab
-                      by \<^marker>\<open>provenance ai\<close> auto
+                    then obtain r where "flabel vb = Some (r, Even)"
+                      using even_unlab
+                      by auto
                     then show ?thesis
-                      unfolding \<^marker>\<open>provenance human\<close> if1_cond_def
+                      unfolding if1_cond_def
                       by (intro exI[of _ vb] exI[of _ va]) (use A e'G \<open>e \<in> M\<close> in \<open>auto simp: insert_commute\<close>)
                   next
                     case B
-                    then obtain \<^marker>\<open>provenance human\<close> r where "flabel va = Some (r, Even)"
-                      using \<^marker>\<open>provenance ai\<close> even_unlab
-                      by \<^marker>\<open>provenance ai\<close> auto
+                    then obtain r where "flabel va = Some (r, Even)"
+                      using even_unlab
+                      by auto
                     then show ?thesis
-                      unfolding \<^marker>\<open>provenance human\<close> if1_cond_def
+                      unfolding if1_cond_def
                       by (intro exI[of _ va] exI[of _ vb]) (use B e'G \<open>e \<in> M\<close> in \<open>auto simp: insert_commute\<close>)
                   qed
                 qed
@@ -2569,12 +2561,12 @@ proof-
                   finally have "\<Union>(M - ex) - {v1} = {v2} \<union> \<Union> M'".
                   moreover have "va \<in> \<Union>(M - ex)" "vb \<in> \<Union>(M - ex)"
                     proof \<^marker>\<open>provenance ai\<close>-
-                      have \<^marker>\<open>provenance human\<close> "va \<in> Vs G" "vb \<in> Vs G"
+                      have "va \<in> Vs G" "vb \<in> Vs G"
                         using \<open>e' = {va, vb}\<close> \<open>e' \<in> G\<close> edges_are_Vs edges_are_Vs_2
-                        by \<^marker>\<open>provenance ai\<close> auto
+                        by auto
                       then show "va \<in> \<Union>(M - ex)" "vb \<in> \<Union>(M - ex)"
-                        using \<^marker>\<open>provenance human\<close> nones invars(6)
-                        unfolding \<^marker>\<open>provenance human\<close> ulabelled_verts_matched_invar_def
+                        using nones invars(6)
+                        unfolding ulabelled_verts_matched_invar_def
                         by auto
                     qed
                   then have "{va, vb} \<subseteq> \<Union>(M - ex) - {v1}"
@@ -2593,46 +2585,46 @@ proof-
           moreover have "finite osc"
             by (simp add: \<open>finite lab_osc\<close> osc_def unlab_osc1_def unlab_osc2_def)
           moreover have "odd (card s) \<and> finite s" if "s \<in> osc" for s
-            using that card_unlab_osc2
-            unfolding lab_osc_def osc_def unlab_osc1_def unlab_osc2_def
-            by (cases "finite (\<Union>M')") auto
+            using \<^marker>\<open>provenance ai\<close> that card_unlab_osc2
+            unfolding \<^marker>\<open>provenance ai\<close> lab_osc_def osc_def unlab_osc1_def unlab_osc2_def
+            by \<^marker>\<open>provenance ai\<close> (cases "finite (\<Union>M')") auto
           ultimately have i: "odd_set_cover osc (G - ex)"
           proof \<^marker>\<open>provenance ai\<close>-
-            have \<^marker>\<open>provenance human\<close> e_ne: "e \<noteq> {}" if "e \<in> G" for e
+            have e_ne: "e \<noteq> {}" if "e \<in> G" for e
               using that graph_invar_dblton[OF graph]
               by (auto elim: dblton_graphE)
-            have \<^marker>\<open>provenance human\<close> "\<exists>s\<in>osc. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s" if "e \<in> G - ex" for e
-              using \<^marker>\<open>provenance ai\<close> \<open>\<And>e'. e' \<in> G - ex \<Longrightarrow> \<exists>s\<in>osc. s \<inter> e' \<noteq> {} \<and> card s = 1 \<or> e' \<subseteq> s\<close>[of e] that e_ne[of e]
-              by \<^marker>\<open>provenance ai\<close> auto
+            have "\<exists>s\<in>osc. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s" if "e \<in> G - ex" for e
+              using \<open>\<And>e'. e' \<in> G - ex \<Longrightarrow> \<exists>s\<in>osc. s \<inter> e' \<noteq> {} \<and> card s = 1 \<or> e' \<subseteq> s\<close>[of e] that e_ne[of e]
+              by auto
             then show ?thesis
               using \<open>finite osc\<close> \<open>\<And>s. s \<in> osc \<Longrightarrow> odd (card s) \<and> finite s\<close>
-              by \<^marker>\<open>provenance human\<close> (intro odd_set_coverI) auto
+              by (intro odd_set_coverI) auto
           qed
           hence "odd_set_cover (osc \<union> lab_osc) ((G - ex) \<union> (ex \<inter> G))"
             by (intro OSC_union) (use \<open>odd_set_cover lab_osc (ex \<inter> G)\<close> in \<open>simp+\<close>)
           then show ?thesis
-            unfolding osc_def
-            by (simp add: Un_Diff_Int inf_commute Un_ac)
+            unfolding \<^marker>\<open>provenance ai\<close> osc_def
+            by \<^marker>\<open>provenance ai\<close> (simp add: Un_Diff_Int inf_commute Un_ac)
         qed
         ultimately show ?thesis
-          by blast
+          by \<^marker>\<open>provenance ai\<close> blast
       qed
-  qed \<^marker>\<open>provenance human\<close>
+  qed
   then have bound: "card M' \<le> card M" if "matching M'" "M' \<subseteq> G" for M'
     by \<^marker>\<open>provenance ai\<close> (elim exE conjE)
        (drule odd_set_cover_bounds_matching_size[OF finite_E that(1) that(2) _ graph_invar_dblton[OF graph]], simp)
-  show \<^marker>\<open>provenance ai\<close> ?thesis
-  proof (rule notI)
+  show ?thesis
+  proof \<^marker>\<open>provenance ai\<close> (rule notI)
     assume "\<exists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p"
     then obtain p where p: "matching_augmenting_path M p" "path G p" "distinct p"
       by auto
-    have \<^marker>\<open>provenance human\<close> "card (M \<oplus> set (edges_of_path p)) \<le> card M"
+    have "card (M \<oplus> set (edges_of_path p)) \<le> card M"
       by (rule bound[OF Berge_2(1,3)[OF p(1) matching(2) p(2,3) finiteM matching(1)]])
     then show False
-      using \<^marker>\<open>provenance human\<close> Berge_2(2)[OF p(1) matching(2) p(2,3) finiteM matching(1)]
+      using Berge_2(2)[OF p(1) matching(2) p(2,3) finiteM matching(1)]
       by simp
-  qed \<^marker>\<open>provenance human\<close>
-qed \<^marker>\<open>provenance ai\<close>
+  qed
+qed
 
 subsubsection \<open>Bringing it All Together: Final Correctness Theorems\<close>
 
@@ -2701,8 +2693,8 @@ proof-
     using parent.follow_psimps[OF \<open>parent par\<close>] that
     by auto
   then show "\<And>v r lab. flabel v = Some (r, lab) \<Longrightarrow> alt_labels_invar flabel r (parent_spec.follow par v)"
-    using assms  
-    by (auto split: if_splits)
+    using \<^marker>\<open>provenance ai\<close> assms  
+    by \<^marker>\<open>provenance ai\<close> (auto split: if_splits)
   show "\<And>v r. flabel v = Some (r, Even) \<Longrightarrow> alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (parent_spec.follow par v)"
     using assms  
     by (auto simp: alt_list_step alt_list_empty)
@@ -2740,16 +2732,16 @@ abbreviation "ex_init \<equiv> {}"
 abbreviation "par_init \<equiv> Map.empty"
 abbreviation "flabel_init \<equiv> (\<lambda>v. if v \<in> Vs G \<and> v \<notin> Vs M then Some (v, Even) else None)"
 
-end \<^marker>\<open>provenance ai\<close>
+end
 
-subsection \<^marker>\<open>provenance ai\<close> \<open>The abstract search, one state at a time\<close>
+subsection \<open>The abstract search, one state at a time\<close>
 
-context \<^marker>\<open>provenance ai\<close> compute_alt_path
+context compute_alt_path
 begin
 
 (* PLAN CHANGE: type annotation; without it the label type of flabel is generalised to a second
    type variable and the lemmas cannot be applied to the abstract search of type 'a. *)
-definition \<^marker>\<open>provenance ai\<close> search_invars ::
+definition search_invars ::
   "'a set set \<Rightarrow> ('a \<Rightarrow> 'a option) \<Rightarrow> ('a \<Rightarrow> ('a \<times> label) option) \<Rightarrow> bool" where
   "search_invars ex par flabel \<longleftrightarrow>
      (\<forall>v r lab. flabel v = Some (r, lab) \<longrightarrow> alt_labels_invar flabel r (parent_spec.follow par v)) \<and>
@@ -2781,153 +2773,153 @@ lemma search_invarsD:
   using assms
   by (auto simp: search_invars_def)
 
-lemma \<^marker>\<open>provenance ai\<close> search_invars_init:
+lemma search_invars_init:
   "search_invars {} (\<lambda>v. None) (\<lambda>v. if v \<in> Vs G \<and> v \<notin> Vs M then Some (v, Even) else None)"
   using invar_init[where flabel = "\<lambda>v. if v \<in> Vs G \<and> v \<notin> Vs M then Some (v, Even) else None"
                      and ex = "{}" and par = "\<lambda>v. None"]
   by (simp add: search_invars_def)
 
-text \<^marker>\<open>provenance ai\<close> \<open>A growth step preserves the invariants. The individual steps are those of the induction
+text \<open>A growth step preserves the invariants. The individual steps are those of the induction
   steps of the soundness and the completeness proofs of the abstract search.\<close>
 
 lemma search_invars_if1:
   assumes invars: "search_invars ex par flabel" and ass: "if1 flabel ex v1 v2 v3 r"
   shows "search_invars (insert {v2, v3} (insert {v1, v2} ex)) (par(v2 \<mapsto> v1, v3 \<mapsto> v2))
            (flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r, Even)))"
-proof \<^marker>\<open>provenance ai\<close>-
+proof-
   note I = search_invarsD[OF invars]
-  let \<^marker>\<open>provenance human\<close> ?par' = "par(v2 \<mapsto> v1, v3 \<mapsto> v2)"
-  let \<^marker>\<open>provenance human\<close> ?flabel' = "flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r, Even))"
-  let \<^marker>\<open>provenance human\<close> ?ex' = "insert {v2, v3} (insert {v1, v2} ex)"
-  have \<^marker>\<open>provenance human\<close> "parent_spec ?par'"
-    using parent_spec_pres(1)[OF I(3,4,5) ass] . \<^marker>\<open>provenance ai\<close>
-  moreover have \<^marker>\<open>provenance human\<close> "flabel_invar ?flabel'"
-    using flabel_invar_pres[OF I(4) ass, of Odd _ Even] . \<^marker>\<open>provenance ai\<close>
-  moreover have \<^marker>\<open>provenance human\<close> "flabel_par_invar ?par' ?flabel'"
-    using flabel_par_invar_pres(1)[OF I(5) ass] . \<^marker>\<open>provenance ai\<close>
-  moreover have \<^marker>\<open>provenance human\<close> "alt_labels_invar ?flabel' r' (parent_spec.follow ?par' v)"
+  let ?par' = "par(v2 \<mapsto> v1, v3 \<mapsto> v2)"
+  let ?flabel' = "flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r, Even))"
+  let ?ex' = "insert {v2, v3} (insert {v1, v2} ex)"
+  have "parent_spec ?par'"
+    using parent_spec_pres(1)[OF I(3,4,5) ass] .
+  moreover have "flabel_invar ?flabel'"
+    using flabel_invar_pres[OF I(4) ass, of Odd _ Even] .
+  moreover have "flabel_par_invar ?par' ?flabel'"
+    using flabel_par_invar_pres(1)[OF I(5) ass] .
+  moreover have "alt_labels_invar ?flabel' r' (parent_spec.follow ?par' v)"
     if "?flabel' v = Some (r', lab)" for v r' lab
     by (intro alt_labels_invar_pres[OF ass I(1,2,3,4,5)]) (use that in auto)
-  moreover have \<^marker>\<open>provenance human\<close> "alt_list (\<lambda>v. ?flabel' v = Some (r', Even)) (\<lambda>v. ?flabel' v = Some (r', Odd))
+  moreover have "alt_list (\<lambda>v. ?flabel' v = Some (r', Even)) (\<lambda>v. ?flabel' v = Some (r', Odd))
                    (parent_spec.follow ?par' v)"
     if "?flabel' v = Some (r', Even)" for v r'
     using alt_list_pres[OF ass I(2,3,4,5)] that
     by auto
-  moreover have \<^marker>\<open>provenance human\<close> "last_not_matched_invar ?par' ?flabel'"
+  moreover have "last_not_matched_invar ?par' ?flabel'"
     by (intro last_not_matched_invar_pres(2)[OF ass I(3,4,5,6)])
-  moreover have \<^marker>\<open>provenance human\<close> "matching_examined_invar ?flabel' ?ex'"
-    using matching_examined_invar_pres[OF I(4,7) ass] . \<^marker>\<open>provenance ai\<close>
-  moreover have \<^marker>\<open>provenance human\<close> "last_even_invar ?par' ?flabel'"
-    using last_even_invar_pres[OF I(3,4,5,8) ass] . \<^marker>\<open>provenance ai\<close>
-  moreover have \<^marker>\<open>provenance human\<close> "distinct_invar ?par'"
-    using distinct_invar_pres[OF I(3,4,5,2,9) ass] . \<^marker>\<open>provenance ai\<close>
-  moreover have \<^marker>\<open>provenance human\<close> "path_invar ?par'"
-    using path_invar_pres[OF I(3,4,5,10) ass] . \<^marker>\<open>provenance ai\<close>
-  moreover have \<^marker>\<open>provenance human\<close> "flabel_invar_2 ?flabel'"
+  moreover have "matching_examined_invar ?flabel' ?ex'"
+    using matching_examined_invar_pres[OF I(4,7) ass] .
+  moreover have "last_even_invar ?par' ?flabel'"
+    using last_even_invar_pres[OF I(3,4,5,8) ass] .
+  moreover have "distinct_invar ?par'"
+    using distinct_invar_pres[OF I(3,4,5,2,9) ass] .
+  moreover have "path_invar ?par'"
+    using path_invar_pres[OF I(3,4,5,10) ass] .
+  moreover have "flabel_invar_2 ?flabel'"
     by (intro flabel_invar_2_pres[OF _ ass] I(11))
-  moreover have \<^marker>\<open>provenance human\<close> "examined_have_odd_verts_invar ?ex' ?flabel'"
-    using examined_have_odd_verts_invar_pres(1)[OF I(4,12) ass] . \<^marker>\<open>provenance ai\<close>
-  moreover have \<^marker>\<open>provenance human\<close> "unexamined_matched_unlabelled_invar ?ex' ?flabel'"
-    using unexamined_matched_unlabelled_invar_pres(1)[OF I(4,13) ass] . \<^marker>\<open>provenance ai\<close>
-  moreover have \<^marker>\<open>provenance human\<close> "finite_odds_invar ?flabel'"
+  moreover have "examined_have_odd_verts_invar ?ex' ?flabel'"
+    using examined_have_odd_verts_invar_pres(1)[OF I(4,12) ass] .
+  moreover have "unexamined_matched_unlabelled_invar ?ex' ?flabel'"
+    using unexamined_matched_unlabelled_invar_pres(1)[OF I(4,13) ass] .
+  moreover have "finite_odds_invar ?flabel'"
     by (intro finite_odds_invar_pres[where ex = ex and ?v1.0 = v1] I ass)
-  moreover have \<^marker>\<open>provenance human\<close> "odd_labelled_verts_num_invar ?ex' ?flabel'"
+  moreover have "odd_labelled_verts_num_invar ?ex' ?flabel'"
     by (intro odd_labelled_verts_num_invar_pres[where ex = ex and ?v1.0 = v1] I ass)
-  moreover have \<^marker>\<open>provenance human\<close> "ulabelled_verts_matched_invar ?ex' ?flabel'"
+  moreover have "ulabelled_verts_matched_invar ?ex' ?flabel'"
     by (intro ulabelled_verts_matched_invar_pres[where ex = ex and ?v1.0 = v1] I ass)
-  moreover have \<^marker>\<open>provenance human\<close> "odd_then_matched_examined_invar ?ex' ?flabel'"
+  moreover have "odd_then_matched_examined_invar ?ex' ?flabel'"
     by (intro odd_then_matched_examined_invar_pres[where ex = ex and ?v1.0 = v1] I ass)
-  moreover have \<^marker>\<open>provenance human\<close> "finite ?ex'"
-    using \<^marker>\<open>provenance ai\<close> I(18)
-    by \<^marker>\<open>provenance ai\<close> simp
-  moreover have \<^marker>\<open>provenance human\<close> "?ex' \<subseteq> G"
-    using I(19) if1_props(1,4)[OF ass] matching(2)
+  moreover have "finite ?ex'"
+    using I(18)
+    by simp
+  moreover have "?ex' \<subseteq> G"
+    using \<^marker>\<open>provenance ai\<close> I(19) if1_props(1,4)[OF ass] matching(2)
     by \<^marker>\<open>provenance ai\<close> auto
   ultimately show ?thesis
-    by \<^marker>\<open>provenance human\<close> (simp add: search_invars_def)
+    by (simp add: search_invars_def)
 qed
 
-text \<^marker>\<open>provenance ai\<close> \<open>An edge between two even vertices yields two paths with the properties required by
+text \<open>An edge between two even vertices yields two paths with the properties required by
   @{const compute_alt_path_spec}. The argument is the returning case of the soundness proof of
   the abstract search.\<close>
 
 lemma search_invars_if2_sound:
   assumes invars: "search_invars ex par flabel" and if2: "if2 flabel v1 v2 r s"
   shows "compute_alt_path_spec G M (Some (parent_spec.follow par v1, parent_spec.follow par v2))"
-proof \<^marker>\<open>provenance ai\<close>-
+proof-
   note I = search_invarsD[OF invars]
-  define \<^marker>\<open>provenance human\<close> p1 where "p1 = parent_spec.follow par v1"
+  define p1 where "p1 = parent_spec.follow par v1"
   define p2 where "p2 = parent_spec.follow par v2"
-  have \<^marker>\<open>provenance human\<close> s: "flabel v1 = Some (r, Even)" "flabel v2 = Some (s, Even)" "{v1, v2} \<in> G"
-    using \<^marker>\<open>provenance ai\<close> if2
-    by \<^marker>\<open>provenance ai\<close> (auto simp: if2_def)
-  have prt: "parent par"
+  have s: "flabel v1 = Some (r, Even)" "flabel v2 = Some (s, Even)" "{v1, v2} \<in> G"
+    using if2
+    by (auto simp: if2_def)
+  have \<^marker>\<open>provenance ai\<close> prt: "parent par"
     using I(3)
-    by \<^marker>\<open>provenance human\<close> (simp add: parent_def)
-  have \<^marker>\<open>provenance human\<close> hds: "hd p1 = v1" "hd p2 = v2"
+    by (simp add: parent_def)
+  have \<^marker>\<open>provenance ai\<close> hds: "hd p1 = v1" "hd p2 = v2"
     by (simp_all add: p1_def p2_def parent.follow_hd[OF prt])
-  have \<^marker>\<open>provenance human\<close> from_tree:
+  have from_tree:
     "\<And>pref1 x post1 pref2 post2. \<lbrakk>p1 = pref1 @ x # post1; p2 = pref2 @ x # post2\<rbrakk> \<Longrightarrow> post1 = post2"
     using parent.from_tree[OF prt]
     by (fastforce simp: p1_def p2_def)
-  have \<^marker>\<open>provenance human\<close> lasts: "last p1 \<notin> Vs M" "last p2 \<notin> Vs M"
-    using \<^marker>\<open>provenance ai\<close> I(6) s(1,2)
+  have lasts: "last p1 \<notin> Vs M" "last p2 \<notin> Vs M"
+    using I(6) s(1,2)
     by (auto simp: last_not_matched_invar_def p1_def p2_def)
-  have \<^marker>\<open>provenance human\<close> nM: "{v1, v2} \<notin> M"
+  have nM: "{v1, v2} \<notin> M"
     by (rule flabel_invar_2_props[OF I(11) s(1,2)])
-  have \<^marker>\<open>provenance human\<close> alt1: "alt_path M (hd p1 # p2)"
-  proof \<^marker>\<open>provenance ai\<close>-
+  have alt1: "alt_path M (hd p1 # p2)"
+  proof-
     have "alt_path (-M) p2"
       unfolding p2_def
-      by \<^marker>\<open>provenance human\<close> (rule alt_invars_then_alt_path[OF I(3) I(2)[OF s(2)] I(1)[OF s(2)]])
-    moreover have \<^marker>\<open>provenance human\<close> "{hd p1, hd p2} \<notin> M"
-      using \<^marker>\<open>provenance ai\<close> nM
-      by \<^marker>\<open>provenance ai\<close> (simp add: hds)
+      by (rule alt_invars_then_alt_path[OF I(3) I(2)[OF s(2)] I(1)[OF s(2)]])
+    moreover have "{hd p1, hd p2} \<notin> M"
+      using nM
+      by (simp add: hds)
     ultimately show ?thesis
-      by \<^marker>\<open>provenance human\<close> (rule nin_M_alt_path[rotated])
+      by (rule nin_M_alt_path[rotated])
   qed
-  have \<^marker>\<open>provenance human\<close> alt2: "alt_path M (hd p2 # p1)"
-  proof \<^marker>\<open>provenance ai\<close>-
+  have alt2: "alt_path M (hd p2 # p1)"
+  proof-
     have "alt_path (-M) p1"
       unfolding p1_def
-      by \<^marker>\<open>provenance human\<close> (rule alt_invars_then_alt_path[OF I(3) I(2)[OF s(1)] I(1)[OF s(1)]])
-    moreover have \<^marker>\<open>provenance human\<close> "{hd p2, hd p1} \<notin> M"
-      using \<^marker>\<open>provenance ai\<close> nM
+      by (rule alt_invars_then_alt_path[OF I(3) I(2)[OF s(1)] I(1)[OF s(1)]])
+    moreover have "{hd p2, hd p1} \<notin> M"
+      using nM
       by (simp add: hds insert_commute)
     ultimately show ?thesis
-      by \<^marker>\<open>provenance human\<close> (rule nin_M_alt_path[rotated])
+      by (rule nin_M_alt_path[rotated])
   qed
-  have \<^marker>\<open>provenance human\<close> "v1 \<noteq> v2"
-    using \<^marker>\<open>provenance ai\<close> graph s(3)
+  have "v1 \<noteq> v2"
+    using graph s(3)
     by (auto elim: dblton_graphE simp: doubleton_eq_iff)
-  hence hds_neq: "hd p1 \<noteq> hd p2"
+  hence \<^marker>\<open>provenance ai\<close> hds_neq: "hd p1 \<noteq> hd p2"
     by (simp add: hds)
   have odds: "odd (length p1)" "odd (length p2)"
     using last_even_invar_imp[OF I(3) I(2)[OF s(1)] I(8) s(1)]
           last_even_invar_imp[OF I(3) I(2)[OF s(2)] I(8) s(2)]
-    by \<^marker>\<open>provenance human\<close> (simp_all add: p1_def p2_def)
-  have \<^marker>\<open>provenance human\<close> dists: "distinct p1" "distinct p2"
+    by (simp_all add: p1_def p2_def)
+  have dists: "distinct p1" "distinct p2"
     by (simp_all add: p1_def p2_def distinct_invar_props[OF I(9)])
-  have \<^marker>\<open>provenance human\<close> "v1 \<in> Vs G" "v2 \<in> Vs G"
-    using \<^marker>\<open>provenance ai\<close> s(3)
+  have "v1 \<in> Vs G" "v2 \<in> Vs G"
+    using s(3)
     by (auto simp: Vs_def)
   hence paths: "path G p1" "path G p2"
-    by \<^marker>\<open>provenance human\<close> (simp_all add: p1_def p2_def path_invar_props[OF I(10)])
-  have \<^marker>\<open>provenance human\<close> edge: "{hd p1, hd p2} \<in> G"
-    using \<^marker>\<open>provenance ai\<close> s(3)
-    by \<^marker>\<open>provenance ai\<close> (simp add: hds)
-  have \<^marker>\<open>provenance human\<close> "compute_alt_path_spec G M (Some (p1, p2))"
+    by (simp_all add: p1_def p2_def path_invar_props[OF I(10)])
+  have \<^marker>\<open>provenance ai\<close> edge: "{hd p1, hd p2} \<in> G"
+    using s(3)
+    by (simp add: hds)
+  have \<^marker>\<open>provenance ai\<close> "compute_alt_path_spec G M (Some (p1, p2))"
     unfolding compute_alt_path_spec_def
-    using \<^marker>\<open>provenance ai\<close> from_tree alt1 alt2 lasts hds_neq odds dists paths edge
+    using from_tree alt1 alt2 lasts hds_neq odds dists paths edge
     by auto
-  thus ?thesis
-    by \<^marker>\<open>provenance human\<close> (simp add: p1_def p2_def)
-qed \<^marker>\<open>provenance human\<close>
+  thus \<^marker>\<open>provenance ai\<close> ?thesis
+    by (simp add: p1_def p2_def)
+qed
 
-text \<^marker>\<open>provenance ai\<close> \<open>If no growth step applies and no edge joins two even vertices, there is no augmenting
+text \<open>If no growth step applies and no edge joins two even vertices, there is no augmenting
   path (@{thm [source] compute_alt_path_from_tree_2'}).\<close>
 
-lemma \<^marker>\<open>provenance ai\<close> search_invars_complete:
+lemma search_invars_complete:
   assumes invars: "search_invars ex par flabel"
       and no_if1: "\<not> if1_cond flabel ex" and no_if2: "\<not> if2_cond flabel"
   shows "\<nexists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p"
