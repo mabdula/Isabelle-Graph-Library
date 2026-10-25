@@ -1,0 +1,23 @@
+session Blossom_Executable = Basic_Matching +
+  description "A verified executable version of Edmonds' blossom algorithm, as a functional program, self-contained."
+  options [document = false, timeout = 7200]
+
+  sessions
+    AI_Provenance
+    Data_Structures
+    Directed_Set_Graphs
+    Undirected_Set_Graphs
+    Graph_Algorithms_Dev
+
+  theories
+    Blossom_Misc
+    Graph_Quotient
+    Graph_Quotient_Lifting
+    Blossom_Prefixes
+    Compute_Alt_Path_Invars
+    Graph_Matching_Specs
+    Find_Max_Matching
+    Compute_Alt_Path
+    Find_Aug_Path
+    Find_Aug_Path_Subprocedures
+    Edmonds_Blossom_Example

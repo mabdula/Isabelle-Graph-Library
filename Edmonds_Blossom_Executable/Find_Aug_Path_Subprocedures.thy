@@ -1,0 +1,198 @@
+theory Find_Aug_Path_Subprocedures
+  imports Find_Aug_Path
+begin
+
+provenance ai
+
+section \<open>Finding an augmenting path or a blossom\<close>
+
+text \<open>The alternating forest search returns two alternating paths, from the endpoints of an edge
+  between two even vertices to the roots of their trees. If the two paths are vertex-disjoint,
+  they form an augmenting path together with that edge. Otherwise they share a suffix, and their
+  longest disjoint prefixes form a blossom with the remainder of either path as its stem. In the
+  original formalisation, the procedure has a special case for an edge between two free
+  vertices; it is not needed here, as the forest search returns such an edge itself.\<close>
+
+lemma \<^marker>\<open>provenance human\<close> compute_alt_path_specD:
+  assumes "compute_alt_path_spec G M (Some (p1, p2))"
+  shows "\<And>pref1 x post1 pref2 post2. \<lbrakk>p1 = pref1 @ x # post1; p2 = pref2 @ x # post2\<rbrakk>
+           \<Longrightarrow> post1 = post2"
+        "alt_path M (hd p1 # p2)" "alt_path M (hd p2 # p1)" "last p1 \<notin> Vs M" "last p2 \<notin> Vs M"
+        "hd p1 \<noteq> hd p2" "odd (length p1)" "odd (length p2)" "distinct p1" "distinct p2"
+        "path G p1" "path G p2" "{hd p1, hd p2} \<in> G"
+proof \<^marker>\<open>provenance ai\<close>-
+  note S = assms[unfolded compute_alt_path_spec_def, simplified]
+  show "\<And>pref1 x post1 pref2 post2. \<lbrakk>p1 = pref1 @ x # post1; p2 = pref2 @ x # post2\<rbrakk>
+           \<Longrightarrow> post1 = post2"
+    using S
+    by blast
+  show "alt_path M (hd p1 # p2)"
+    using S
+    by blast
+  show "alt_path M (hd p2 # p1)"
+    using S
+    by blast
+  show "last p1 \<notin> Vs M"
+    using S
+    by blast
+  show "last p2 \<notin> Vs M"
+    using S
+    by blast
+  show "hd p1 \<noteq> hd p2"
+    using S
+    by blast
+  show "odd (length p1)"
+    using S
+    by blast
+  show "odd (length p2)"
+    using S
+    by blast
+  show "distinct p1"
+    using S
+    by blast
+  show "distinct p2"
+    using S
+    by blast
+  show "path G p1"
+    using S
+    by blast
+  show "path G p2"
+    using S
+    by blast
+  show "{hd p1, hd p2} \<in> G"
+    using S
+    by blast
+qed
+
+lemma \<^marker>\<open>provenance human\<close> common_suffix:
+  assumes "compute_alt_path_spec G M (Some (p1, p2))"
+          "(Some pfx1, Some pfx2) = longest_disj_pfx p1 p2"
+  obtains p where "p1 = pfx1 @ p" "p2 = pfx2 @ p"
+proof \<^marker>\<open>provenance ai\<close>-
+  obtain p1' p2' where pp: "p1 = pfx1 @ p1'" "p2 = pfx2 @ p2'"
+    using disj_pref_append1[OF assms(2)] disj_pref_append2[OF assms(2)]
+    by blast
+  obtain ys1 y1 where s1: "pfx1 = ys1 @ [y1]"
+    using first_pfx_nempty[OF assms(2)]
+    by (cases pfx1 rule: rev_cases) auto
+  obtain ys2 y2 where s2: "pfx2 = ys2 @ [y2]"
+    using snd_pfx_nempty[OF assms(2)]
+    by (cases pfx2 rule: rev_cases) auto
+  have "y1 = y2"
+    using pfx_common_end[OF assms(2)] s1 s2
+    by simp
+  hence "p1' = p2'"
+    using compute_alt_path_specD(1)[OF assms(1), of ys1 y1 p1' ys2 p2'] pp s1 s2
+    by simp
+  thus ?thesis
+    using that pp
+    by blast
+qed
+
+locale Find_Aug_Path_subprocedures = Graph_Matching_Specs where lookup = lookup and mate_empty = mate_empty
+  for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" and mate_empty :: 'mate +
+  fixes compute_alt_path ::
+    "'adjmap \<Rightarrow> 'v list \<Rightarrow> 'mate \<Rightarrow> ('v list \<times> 'v list) option"
+  assumes compute_alt_path:
+    "\<And>G vs M. \<lbrakk>graph_input G vs; matching_invar G M\<rbrakk>
+       \<Longrightarrow> compute_alt_path_spec (ugraph_abs G) (matching_abs M) (compute_alt_path G vs M)"
+    "\<And>G vs M. \<lbrakk>graph_input G vs; matching_invar G M;
+                \<exists>p. graph_augmenting_path (ugraph_abs G) (matching_abs M) p\<rbrakk>
+       \<Longrightarrow> compute_alt_path G vs M \<noteq> None"
+begin
+
+definition \<^marker>\<open>provenance human\<close> "compute_match_blossom G vs M =
+  (case compute_alt_path G vs M of
+     Some (p1, p2) \<Rightarrow>
+       (if set p1 \<inter> set p2 = {} then Some (Path (rev p1 @ p2))
+        else (case longest_disj_pfx p1 p2 of
+                (pfx1, pfx2) \<Rightarrow>
+                  Some (Blossom (rev (drop (length (the pfx1)) p1)) (rev (the pfx1) @ the pfx2))))
+   | None \<Rightarrow> None)"
+
+lemmas [code] = compute_match_blossom_def
+
+lemma compute_match_blossom_sound_path:
+  assumes "graph_input G vs" "matching_invar G M" "compute_match_blossom G vs M = Some (Path p)"
+  shows "graph_augmenting_path (ugraph_abs G) (matching_abs M) p"
+proof-
+  obtain p1 p2 where res: "compute_alt_path G vs M = Some (p1, p2)"
+      "set p1 \<inter> set p2 = {}" "p = rev p1 @ p2"
+    using assms(3)
+    by (auto simp: compute_match_blossom_def split: option.splits if_splits prod.splits)
+  have spec: "compute_alt_path_spec (ugraph_abs G) (matching_abs M) (Some (p1, p2))"
+    using compute_alt_path(1)[OF assms(1,2)] res(1)
+    by simp
+  note S = compute_alt_path_specD[OF spec]
+  have ne: "p1 \<noteq> []" "p2 \<noteq> []"
+    using S(7,8)
+    by auto
+  have "path (ugraph_abs G) (rev p1 @ p2)"
+    by (rule construct_path[OF S(11,12,13)])
+  moreover have "distinct (rev p1 @ p2)"
+    using S(9,10) res(2)
+    by simp
+  moreover have "matching_augmenting_path (matching_abs M) (rev p1 @ p2)"
+    by (rule construct_aug_path'[OF res(2) ne S(3,2,4,5,7,8)])
+  ultimately show ?thesis
+    using res(3)
+    by simp
+qed
+
+lemma compute_match_blossom_sound_blossom:
+  assumes "graph_input G vs" "matching_invar G M" "compute_match_blossom G vs M = Some (Blossom stem C)"
+  shows "blossom (ugraph_abs G) (matching_abs M) stem C"
+proof-
+  obtain p1 p2 pfx1 pfx2 where res: "compute_alt_path G vs M = Some (p1, p2)"
+      "set p1 \<inter> set p2 \<noteq> {}" "longest_disj_pfx p1 p2 = (pfx1, pfx2)"
+      "stem = rev (drop (length (the pfx1)) p1)" "C = rev (the pfx1) @ the pfx2"
+    using assms(3)
+    by (auto simp: compute_match_blossom_def split: option.splits if_splits prod.splits)
+  have spec: "compute_alt_path_spec (ugraph_abs G) (matching_abs M) (Some (p1, p2))"
+    using compute_alt_path(1)[OF assms(1,2)] res(1)
+    by simp
+  note S = compute_alt_path_specD[OF spec]
+  have "pfx1 \<noteq> None"
+  proof
+    assume "pfx1 = None"
+    hence "(None, pfx2) = longest_disj_pfx p1 p2"
+      using res(3)
+      by simp
+    hence "set p1 \<inter> set p2 = {}"
+      by (rule disj_pfx_is_complete)
+    thus False
+      using res(2)
+      by simp
+  qed
+  then obtain q1 where q1: "pfx1 = Some q1"
+    by blast
+  then obtain q2 where q2: "pfx2 = Some q2"
+    using first_pfx_then_snd_pfx[of q1 pfx2 p1 p2] res(3)
+    by auto
+  have pfxs: "(Some q1, Some q2) = longest_disj_pfx p1 p2"
+    using res(3) q1 q2
+    by simp
+  obtain p where p: "p1 = q1 @ p" "p2 = q2 @ p"
+    by (rule common_suffix[OF spec pfxs])
+  have "path (ugraph_abs G) (rev (drop (length q1) p1) @ rev q1 @ q2)"
+    by (rule pfxs_path[OF pfxs S(11,12,13)])
+  moreover have "match_blossom (matching_abs M) (rev (drop (length q1) p1)) (rev q1 @ q2)"
+    by (rule common_pfxs_form_match_blossom'[OF pfxs p S(3,2,4,6,7,8,9,10)
+                                                matching_invar_props(2)[OF assms(2)]])
+  ultimately show ?thesis
+    using res(4,5) q1 q2
+    by simp
+qed
+
+lemma compute_match_blossom_complete:
+  assumes "graph_input G vs" "matching_invar G M"
+          "\<exists>p. graph_augmenting_path (ugraph_abs G) (matching_abs M) p"
+  shows "compute_match_blossom G vs M \<noteq> None"
+  using compute_alt_path(2)[OF assms]
+  by (auto simp: compute_match_blossom_def split: option.splits prod.splits)
+
+lemmas compute_match_blossom = compute_match_blossom_sound_path compute_match_blossom_sound_blossom compute_match_blossom_complete
+
+end
+
+end
