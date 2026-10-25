@@ -14,11 +14,20 @@ text \<open>
     formalised parts of it manually;
   \<^descr> \<open>ai\<close>: written from scratch by an LLM, e.g.\ auxiliary lemmas and definitions.
 
+  The labels \<open>ai_human\<close> and \<open>ai\<close> mean that an LLM made a semantic contribution: a
+  new definition, statement, proof, or proof step. Mechanical work is not an LLM contribution.
+  Text that an LLM produces mechanically keeps the label of the text it comes from, even when
+  the LLM wrote the new lines: text that it copies and pastes, adapts to renamed or changed
+  constants, restructures without changing the steps of a proof (e.g.\ a block
+  \<open>{ fix x assume A have B }\<close> turned into \<open>have B if A for x\<close>), or only lays out
+  differently.
+
   Parts without a label are \<open>unmarked\<close>.
 
   An LLM makes no judgement between \<open>ai\<close> and \<open>ai_human\<close>: it labels everything it
-  writes from scratch \<open>ai\<close>, and lines that it edits keep their label. The labels
-  \<open>human\<close> and \<open>ai_human\<close> are assigned by humans.
+  writes from scratch \<open>ai\<close>, and lines that it edits keep their label. Copying, pasting,
+  and mechanical transformations are not writing from scratch. The labels \<open>human\<close> and
+  \<open>ai_human\<close> are assigned by humans.
 
   This theory only defines the syntax of the labels: Isabelle checks that every label is one
   of the three above, and reports it as markup. The labels have no other effect on the
