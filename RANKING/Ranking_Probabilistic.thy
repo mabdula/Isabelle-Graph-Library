@@ -972,7 +972,19 @@ next
     next
       case (3 y)
       with \<sigma>_tl \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
-        by (metis DiffD1 DiffD2 insertI1 permutations_of_setD(1) set_ConsD)
+      proof -
+      from \<open>\<sigma> \<in> permutations_of_set V\<close> have set_\<sigma>: "set \<sigma> = V"
+        by (rule permutations_of_setD(1))
+      have V_eq: "V = insert x (set (tl \<sigma>))"
+      proof -
+        have "set \<sigma> = set (x # tl \<sigma>)"
+          using \<sigma>_tl by (rule arg_cong[where f = set])
+        then show ?thesis
+          using set_\<sigma> by simp
+      qed
+      from 3 V_eq show ?thesis
+        by auto
+    qed
     next
       case 4
       from \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
