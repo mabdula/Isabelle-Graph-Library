@@ -973,7 +973,22 @@ proof
       by force
     then show "\<forall>x \<in> carrier_vec n.  C *\<^sub>v x = d \<longrightarrow> row A i \<bullet> x = b $ i"
       using 6 i 
-      by (metis 6  i)
+  proof -
+    have eq: "row A i \<bullet> x = b $ i" if "x \<in> carrier_vec n" and "C *\<^sub>v x = d" for x
+    proof -
+      have "row A i \<bullet> x = row A' j \<bullet> x"
+        using i by auto
+      also have "\<dots> = sum_list (map (\<lambda>i. c i * d $ i) [0..<length (rows C)])"
+        using 6 that by blast
+      also have "\<dots> = b' $ j"
+        using \<open>b' $ j = sum_list (map (\<lambda>i. c i * d $ i) [0..<length (rows C)])\<close> by simp
+      also have "\<dots> = b $ i"
+        using i by auto
+      finally show ?thesis .
+    qed
+    show ?thesis
+      using eq by blast
+  qed
   qed
   then have "dim_vec b' \<le> dim_vec d"  
     using elems_ge_min[of ?M "dim_vec d" "dim_vec b'"]
