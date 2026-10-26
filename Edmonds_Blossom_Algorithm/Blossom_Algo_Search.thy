@@ -557,7 +557,56 @@ proof-
     using invars
     unfolding flabel_invar_def
     apply safe
-    subgoal by (smt \<open>\<And>va. {va, v2} \<in> M \<Longrightarrow> va = v3\<close> \<open>\<And>va. {va, v3} \<in> M \<Longrightarrow> va = v2\<close> fun_upd_idem_iff fun_upd_other fun_upd_upd option.distinct(1))
+    subgoal premises prems for v1a v2a
+    proof -
+      from prems have uniq_v3: "\<And>x. {x, v3} \<in> M \<Longrightarrow> x = v2"
+        by blast
+      from prems have uniq_v2: "\<And>x. {x, v2} \<in> M \<Longrightarrow> x = v3"
+        by blast
+      from prems have inv: "\<forall>x y. {x, y} \<in> M \<longrightarrow> (flabel x = None) = (flabel y = None)"
+        by blast
+      from prems have M_edge: "{v1a, v2a} \<in> M"
+        by blast
+      from prems have upd_none: "(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r2, lab2))) v1a = None"
+        by blast
+      have v2_ne_v3: "v2 \<noteq> v3"
+        using graph \<open>{v2, v3} \<in> M\<close> matching(2)
+        by (fastforce elim: dblton_graphE)
+      have v1a_ne_v2: "v1a \<noteq> v2"
+      proof
+        assume "v1a = v2"
+        then have "(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r2, lab2))) v1a = Some (r, lab)"
+          using v2_ne_v3 by simp
+        with upd_none show False by simp
+      qed
+      have v1a_ne_v3: "v1a \<noteq> v3"
+      proof
+        assume "v1a = v3"
+        then have "(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r2, lab2))) v1a = Some (r2, lab2)"
+          by simp
+        with upd_none show False by simp
+      qed
+      have flabel_v1a_none: "flabel v1a = None"
+        using upd_none v1a_ne_v2 v1a_ne_v3 by simp
+      have flabel_v2a_none: "flabel v2a = None"
+        using inv M_edge flabel_v1a_none by blast
+      have v2a_ne_v2: "v2a \<noteq> v2"
+      proof
+        assume "v2a = v2"
+        with M_edge have "{v1a, v2} \<in> M" by simp
+        with uniq_v2 have "v1a = v3" by blast
+        with v1a_ne_v3 show False by simp
+      qed
+      have v2a_ne_v3: "v2a \<noteq> v3"
+      proof
+        assume "v2a = v3"
+        with M_edge have "{v1a, v3} \<in> M" by simp
+        with uniq_v3 have "v1a = v2" by blast
+        with v1a_ne_v2 show False by simp
+      qed
+      show "(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r2, lab2))) v2a = None"
+        using flabel_v2a_none v2a_ne_v2 v2a_ne_v3 by simp
+    qed
     subgoal by (metis \<open>\<And>v2a v1a. \<lbrakk>\<And>v. {v, v3} \<in> M \<Longrightarrow> v = v2; \<And>v. {v, v2} \<in> M \<Longrightarrow> v = v3; \<forall>v1 v2. {v1, v2} \<in> M \<longrightarrow> (flabel v1 = None) = (flabel v2 = None); {v1a, v2a} \<in> M; (flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r2, lab2))) v1a = None\<rbrakk> \<Longrightarrow> (flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r2, lab2))) v2a = None\<close> \<open>\<And>va. {va, v2} \<in> M \<Longrightarrow> va = v3\<close> \<open>\<And>va. {va, v3} \<in> M \<Longrightarrow> va = v2\<close> doubleton_eq_iff)
     done
 qed
