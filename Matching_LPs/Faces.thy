@@ -1570,9 +1570,12 @@ next
   case False
   have 1:"i \<ge> dim_row A'" using False by auto 
   have 2:"i < dim_row A' + dim_row (-A')" 
-    by (metis (mono_tags, lifting) A assms(4) assms(6) b carrier_matD(1) carrier_vecD 
-        dims_subsyst_same' face_is_polyhedron'(2) index_append_vec(2) index_uminus_mat(2) 
-        index_uminus_vec(2))
+  proof -
+    have "dim_row (A' @\<^sub>r (-A')) = dim_row A' + dim_row (-A')"
+      unfolding append_rows_def by simp
+    then show "i < dim_row A' + dim_row (-A')"
+      using assms(6) by simp
+  qed
   let ?i' = "i - dim_row A'"
   have "row (A' @\<^sub>r (-A')) i = row (-A') ?i'" 
     using append_rows_nth(2)[of A' "dim_row A'" _ "-A'" "dim_row (-A')" i] 
