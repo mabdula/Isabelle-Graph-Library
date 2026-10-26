@@ -1792,7 +1792,20 @@ proof (cases "u \<in> set \<pi>")
         qed
 
       with sucsuc assms have "v \<notin> set \<pi>"
-        by (metis DiffE bipartite_edgeD(1) local.Cons zag_then_zig zig_matching_edge)
+        proof -
+          have zag_eq: "zag G M u \<pi> \<sigma> = u' # v # u'' # vus"
+            using sucsuc(3) local.Cons by simp
+          have zig_v: "zig G M v \<pi> \<sigma> = v # u'' # vus"
+            by (rule zag_then_zig[OF zag_eq])
+          have edge: "{u'', v} \<in> M"
+            by (rule zig_matching_edge[OF zig_v])
+          from assms edge \<open>u'' \<in> set \<pi>\<close> have "v \<in> set \<sigma>"
+            by (auto dest: bipartite_edgeD)
+          moreover have "set \<pi> \<inter> set \<sigma> = {}"
+            by (rule bipartite_disjointD[OF assms])
+          ultimately show "v \<notin> set \<pi>"
+            by blast
+        qed
 
       from sucsuc have "u' \<in> set \<pi>"
         by (auto elim: zag_symE)
