@@ -1629,11 +1629,11 @@ proof (cases "v \<in> set \<sigma>")
     from this(1)[symmetric] show ?case
       by simp
   next
-    case (sucsuc v u vus v')    have edge_uv': "{u, v'} ∈ M"
+    case (sucsuc v u vus v')    have edge_uv': "{u, v'} \<in> M"
       using sucsuc(3)[symmetric] by (rule zig_matching_edge)
     have v'_eq: "v' = v"
       using sucsuc(3)[symmetric] by (elim zig_ConsE) simp_all
-    have "{u,v} ∈ M" "v' = v"
+    have "{u,v} \<in> M" "v' = v"
       using edge_uv' v'_eq by simp_all
   
     with sucsuc have "u \<notin> set \<sigma>"
@@ -1645,59 +1645,59 @@ proof (cases "v \<in> set \<sigma>")
       with \<open>v # u # vus = zig G M v' \<pi> \<sigma>\<close>[symmetric] \<open>u \<notin> set \<sigma>\<close> show ?thesis
         by simp
     next
-      case (Cons v'' uvs)      with sucsuc Cons have vus_zig: "vus = zig G M v'' π σ"
+      case (Cons v'' uvs)      with sucsuc Cons have vus_zig: "vus = zig G M v'' \<pi> \<sigma>"
       proof -
-        have "zag G M u π σ = u # vus"
+        have "zag G M u \<pi> \<sigma> = u # vus"
           using sucsuc(3)[symmetric] by (rule zig_then_zag)
-        then have "zag G M u π σ = u # v'' # uvs"
+        then have "zag G M u \<pi> \<sigma> = u # v'' # uvs"
           using Cons by simp
-        then have "zig G M v'' π σ = v'' # uvs"
+        then have "zig G M v'' \<pi> \<sigma> = v'' # uvs"
           by (rule zag_then_zig)
         with Cons show ?thesis by simp
-      qed      have "v'' ∈ set σ"
+      qed      have "v'' \<in> set \<sigma>"
       proof -
-        have zag_eq: "zag G M u π σ = u # vus"
+        have zag_eq: "zag G M u \<pi> \<sigma> = u # vus"
           using sucsuc(3)[symmetric] by (rule zig_then_zag)
-        then have "zag G M u π σ = u # zig G M v'' π σ"
+        then have "zag G M u \<pi> \<sigma> = u # zig G M v'' \<pi> \<sigma>"
           using vus_zig by simp
-        then obtain v_old where "shifts_to G M u v_old v'' π σ"
+        then obtain v_old where "shifts_to G M u v_old v'' \<pi> \<sigma>"
           by (elim zag_Cons_zigE)
-        then show "v'' ∈ set σ"
+        then show "v'' \<in> set \<sigma>"
           by (rule shifts_to_only_from_input(2))
       qed
   
       from \<open>v # u # vus = zig G M v' \<pi> \<sigma>\<close>[symmetric] vus_zig \<open>v' = v\<close> \<open>u \<notin> set \<sigma>\<close> \<open>v' \<in> set \<sigma>\<close>
       have "[x <- zig G M v' \<pi> \<sigma>. x \<in> set \<sigma>] = v # [x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>]"
-        by auto      with sucsuc vus_zig ‹v' = v› ‹v'' ∈ set σ› show ?thesis
+        by auto      with sucsuc vus_zig \<open>v' = v\<close> \<open>v'' \<in> set \<sigma>\<close> show ?thesis
       proof -
-        have zig_eq: "zig G M v π σ = v # u # zig G M v'' π σ"
-          using sucsuc(3)[symmetric] ‹v' = v› vus_zig by simp
-        have rank_lt: "index σ v < index σ v''"
+        have zig_eq: "zig G M v \<pi> \<sigma> = v # u # zig G M v'' \<pi> \<sigma>"
+          using sucsuc(3)[symmetric] \<open>v' = v\<close> vus_zig by simp
+        have rank_lt: "index \<sigma> v < index \<sigma> v''"
           by (rule zig_increasing_ranks[OF zig_eq])
-        have zig_eq': "zig G M v'' π σ = v'' # uvs"
+        have zig_eq': "zig G M v'' \<pi> \<sigma> = v'' # uvs"
           using vus_zig local.Cons by simp
-        have hd_eq: "hd [x <- zig G M v'' π σ. x ∈ set σ] = v''"
+        have hd_eq: "hd [x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>] = v''"
         proof -
-          from zig_eq' ‹v'' ∈ set σ›
-          have "filter (λx. x ∈ set σ) (zig G M v'' π σ) = v'' # filter (λx. x ∈ set σ) uvs"
+          from zig_eq' \<open>v'' \<in> set \<sigma>\<close>
+          have "filter (\<lambda>x. x \<in> set \<sigma>) (zig G M v'' \<pi> \<sigma>) = v'' # filter (\<lambda>x. x \<in> set \<sigma>) uvs"
             by (simp add: filter.simps(2))
           then show ?thesis by (simp add: list.sel(1))
         qed
-        have nonempty: "[x <- zig G M v'' π σ. x ∈ set σ] ≠ []"
+        have nonempty: "[x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>] \<noteq> []"
         proof -
-          from zig_eq' ‹v'' ∈ set σ›
-          show "[x <- zig G M v'' π σ. x ∈ set σ] ≠ []"
+          from zig_eq' \<open>v'' \<in> set \<sigma>\<close>
+          show "[x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>] \<noteq> []"
             by (simp add: filter.simps(2))
         qed
-        have sorted_tail: "sorted_wrt (λa b. index σ a < index σ b)
-                             [x <- zig G M v'' π σ. x ∈ set σ]"
-          using sucsuc(1)[OF vus_zig sucsuc(4) ‹v'' ∈ set σ›] by simp
-        have filter_eq: "[x <- zig G M v' π σ. x ∈ set σ] = v # [x <- zig G M v'' π σ. x ∈ set σ]"
-          using sucsuc(3)[symmetric] vus_zig ‹v' = v› ‹u ∉ set σ› sucsuc(5) by auto
-        have successively_tail: "successively (λa b. index σ a < index σ b) [x <- zig G M v'' π σ. x ∈ set σ]"
+        have sorted_tail: "sorted_wrt (\<lambda>a b. index \<sigma> a < index \<sigma> b)
+                             [x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>]"
+          using sucsuc(1)[OF vus_zig sucsuc(4) \<open>v'' \<in> set \<sigma>\<close>] by simp
+        have filter_eq: "[x <- zig G M v' \<pi> \<sigma>. x \<in> set \<sigma>] = v # [x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>]"
+          using sucsuc(3)[symmetric] vus_zig \<open>v' = v\<close> \<open>u \<notin> set \<sigma>\<close> sucsuc(5) by auto
+        have successively_tail: "successively (\<lambda>a b. index \<sigma> a < index \<sigma> b) [x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>]"
           using sorted_tail
           by (simp add: successively_conv_sorted_wrt[OF transp_index_less])
-        have "successively (λa b. index σ a < index σ b) (v # [x <- zig G M v'' π σ. x ∈ set σ])"
+        have "successively (\<lambda>a b. index \<sigma> a < index \<sigma> b) (v # [x <- zig G M v'' \<pi> \<sigma>. x \<in> set \<sigma>])"
           using nonempty rank_lt hd_eq successively_tail
           by (simp add: successively_Cons)
         then show ?thesis
@@ -1737,28 +1737,28 @@ proof (cases "u \<in> set \<pi>")
       case Nil
       with sucsuc show ?thesis
       proof -
-        have zag_eq: "zag G M u π σ = [u', v]"
-          using sucsuc(3) ‹uvs = []› by simp
+        have zag_eq: "zag G M u \<pi> \<sigma> = [u', v]"
+          using sucsuc(3) \<open>uvs = []\<close> by simp
 
-        have alt_zag: "alt_list (λx. x ∈ set π) (λx. x ∈ set σ) (zag G M u π σ)"
-          using assms ‹u ∈ set π› by (rule alt_list_zag)
+        have alt_zag: "alt_list (\<lambda>x. x \<in> set \<pi>) (\<lambda>x. x \<in> set \<sigma>) (zag G M u \<pi> \<sigma>)"
+          using assms \<open>u \<in> set \<pi>\<close> by (rule alt_list_zag)
 
-        have alt: "alt_list (λx. x ∈ set π) (λx. x ∈ set σ) [u', v]"
+        have alt: "alt_list (\<lambda>x. x \<in> set \<pi>) (\<lambda>x. x \<in> set \<sigma>) [u', v]"
           using alt_zag zag_eq by simp
 
-        have u'_pi: "u' ∈ set π"
+        have u'_pi: "u' \<in> set \<pi>"
           using alt by (simp add: alt_list_step)
 
-        have v_sigma: "v ∈ set σ"
+        have v_sigma: "v \<in> set \<sigma>"
           using alt by (simp add: alt_list_step)
 
-        have disj: "set π ∩ set σ = {}"
+        have disj: "set \<pi> \<inter> set \<sigma> = {}"
           using bipartite_disjointD assms by blast
 
-        have v_not_pi: "v ∉ set π"
+        have v_not_pi: "v \<notin> set \<pi>"
           using disj v_sigma by auto
 
-        have filter_eq: "[x ← zag G M u π σ. x ∈ set π] = [u']"
+        have filter_eq: "[x \<leftarrow> zag G M u \<pi> \<sigma>. x \<in> set \<pi>] = [u']"
           using zag_eq u'_pi v_not_pi
           by (simp add: filter.simps)
 
@@ -1766,19 +1766,30 @@ proof (cases "u \<in> set \<pi>")
           unfolding filter_eq by (simp add: sorted_wrt1)
       qed
     next
-      case (Cons u'' vus)      with sucsuc have uvs_zag: "uvs = zag G M u'' π σ"
+      case (Cons u'' vus)      with sucsuc have uvs_zag: "uvs = zag G M u'' \<pi> \<sigma>"
       proof -
-        have "zig G M v π σ = v # uvs"
+        have "zig G M v \<pi> \<sigma> = v # uvs"
           using sucsuc(3)[symmetric] by (rule zag_then_zig)
-        then have "zig G M v π σ = v # u'' # vus"
+        then have "zig G M v \<pi> \<sigma> = v # u'' # vus"
           using Cons by simp
-        then have "zag G M u'' π σ = u'' # vus"
+        then have "zag G M u'' \<pi> \<sigma> = u'' # vus"
           by (rule zig_then_zag)
         with Cons show ?thesis by simp
       qed
 
       with sucsuc assms have "u'' \<in> set \<pi>"
-        by (metis alt_list_step alt_list_zag zag_hdE)
+        proof -
+          have alt_zag: "alt_list (\<lambda>x. x \<in> set \<pi>) (\<lambda>x. x \<in> set \<sigma>) (zag G M u \<pi> \<sigma>)"
+            using assms \<open>u \<in> set \<pi>\<close> by (rule alt_list_zag)
+          have zag_eq: "zag G M u \<pi> \<sigma> = u' # v # u'' # vus"
+            using \<open>u' # v # uvs = zag G M u \<pi> \<sigma>\<close> local.Cons by simp
+          have alt_cons: "alt_list (\<lambda>x. x \<in> set \<pi>) (\<lambda>x. x \<in> set \<sigma>) (u' # v # u'' # vus)"
+            using alt_zag zag_eq by simp
+          then have "alt_list (\<lambda>x. x \<in> set \<pi>) (\<lambda>x. x \<in> set \<sigma>) (u'' # vus)"
+            by (simp add: alt_list_step)
+          then show "u'' \<in> set \<pi>"
+            by (simp add: alt_list_step)
+        qed
 
       with sucsuc assms have "v \<notin> set \<pi>"
         by (metis DiffE bipartite_edgeD(1) local.Cons zag_then_zig zig_matching_edge)
