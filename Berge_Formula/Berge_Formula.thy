@@ -1318,7 +1318,26 @@ next
           by (rule finite_UnionD)
       qed
     then have "card {e. e \<in> Mh \<and> e \<inter> A = {}} + card {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}} = card Mh "  
-      by (metis (no_types, lifting) 9 10 card_Un_disjoint finite_Un)
+      proof -
+        assume fin_Mh: "finite Mh"
+        have sub0: "{e. e \<in> Mh \<and> e \<inter> A = {}} \<subseteq> Mh"
+          by blast
+        have sub1: "{e. e \<in> Mh \<and> e \<inter> A \<noteq> {}} \<subseteq> Mh"
+          by blast
+        have fin0: "finite {e. e \<in> Mh \<and> e \<inter> A = {}}"
+          by (rule finite_subset[OF sub0 fin_Mh])
+        have fin1: "finite {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}}"
+          by (rule finite_subset[OF sub1 fin_Mh])
+        have disj: "{e. e \<in> Mh \<and> e \<inter> A = {}} \<inter> {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}} = {}"
+          by blast
+        have un: "{e. e \<in> Mh \<and> e \<inter> A = {}} \<union> {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}} = Mh"
+          by blast
+        have "card ({e. e \<in> Mh \<and> e \<inter> A = {}} \<union> {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}})
+              = card {e. e \<in> Mh \<and> e \<inter> A = {}} + card {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}}"
+          by (rule card_Un_disjoint[OF fin0 fin1 disj])
+        then show ?thesis
+          using un by simp
+      qed
     then have "card {e. e \<in> Mh \<and> e \<inter> A = {}} = card Mh - card A" 
       using 11 by presburger
     then have 12:"card (graph_diff Mh A) = card Mh - card A" 
