@@ -1400,7 +1400,19 @@ lemma on_odd_p_permutes:
 proof -
   let ?A = "set (support p  (least_odd p))"
   have "(\<forall>x\<in>?A. \<forall>y\<in>?A. (on_odd p) x = (on_odd p) y \<longrightarrow> x = y)"
-    by (rule+; metis assms on_odd_def permutes_inv_eq)
+  proof (intro ballI impI)
+    fix x y
+    assume xA: "x \<in> set (support p (least_odd p))"
+      and yA: "y \<in> set (support p (least_odd p))"
+      and eq: "on_odd p x = on_odd p y"
+    have hx: "on_odd p x = p x"
+      unfolding on_odd_def using xA by simp
+    have hy: "on_odd p y = p y"
+      unfolding on_odd_def using yA by simp
+    from eq hx hy have "p x = p y" by simp
+    moreover have "inj p" using assms by (rule permutes_inj)
+    ultimately show "x = y" by (rule injD[rotated])
+  qed
   then have "inj_on (on_odd p) ?A" 
     using inj_on_def by blast
   have "(on_odd p) ` ?A = ?A"
