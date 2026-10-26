@@ -3168,7 +3168,19 @@ proof -
               by (auto elim: ranking_matching_earlier_match_onlineE)
 
             have "x \<noteq> x3"
-              by (metis \<open>{u'', x3} \<in> M'\<close> edges_are_Vs insert_commute ranking_matchingE remove_vertices_not_vs rm_G' singletonI subset_iff)
+              proof
+                assume "x = x3"
+                from \<open>{u'',x3} \<in> M'\<close> rm_G' have "{u'',x3} \<in> G \<setminus> {x}"
+                  by (auto dest: ranking_matchingE)
+                then have "x3 \<in> Vs (G \<setminus> {x})"
+                  by (auto dest: edges_are_Vs_2)
+                with \<open>x = x3\<close> have "x \<in> Vs (G \<setminus> {x})"
+                  by simp
+                moreover have "x \<notin> Vs (G \<setminus> {x})"
+                  by (rule remove_vertices_not_vs) simp
+                ultimately show False
+                  by blast
+              qed
 
             with rm_G \<open>{u3,x3} \<in> M\<close> \<open>{u,x} \<in> M\<close> have "u \<noteq> u3"
               by (metis ranking_matching_def the_match')
