@@ -301,11 +301,33 @@ lemma if_sum_0_then_all_0:
   assumes "(\<Sum>i = 0..<nr. f i) = 0"
   assumes "\<forall> i < nr. f i \<ge> 0"
   shows "(\<Sum>i = 0..<nr. f i) = 0 \<longleftrightarrow> (\<forall> i < nr. f i = 0)" 
-  using assms
-  apply (induct rule: nat_induct)
-   apply blast
-  by (metis add_nonneg_eq_0_iff atLeastLessThan_iff less_Suc_eq 
-      sum.atLeast0_lessThan_Suc sum_nonneg)
+proof -
+  have zero: "f i = 0" if i: "i < nr" for i
+  proof -
+    have fin: "finite {0..<nr}" by simp
+    have mem: "i \<in> {0..<nr}" using i by simp
+    have split: "(\<Sum>j = 0..<nr. f j) = f i + (\<Sum>j \<in> {0..<nr} - {i}. f j)"
+      by (rule sum.remove[OF fin mem])
+    have rest: "0 \<le> (\<Sum>j \<in> {0..<nr} - {i}. f j)"
+      using assms(2) by (intro sum_nonneg) auto
+    have fi: "0 \<le> f i"
+      using assms(2) i by blast
+    have "f i + (\<Sum>j \<in> {0..<nr} - {i}. f j) = 0"
+      unfolding split[symmetric] by (rule assms(1))
+    then show "f i = 0"
+      using add_nonneg_eq_0_iff[OF fi rest] by simp
+  qed
+  show ?thesis
+  proof
+    assume "(\<Sum>i = 0..<nr. f i) = 0"
+    show "\<forall>i<nr. f i = 0"
+      using zero by blast
+  next
+    assume "\<forall>i<nr. f i = 0"
+    show "(\<Sum>i = 0..<nr. f i) = 0"
+      by (rule assms(1))
+  qed
+qed
 
 lemma eq_vec_zero_diff_in_mult:
   fixes a :: "'a :: trivial_conjugatable_linordered_field vec"
