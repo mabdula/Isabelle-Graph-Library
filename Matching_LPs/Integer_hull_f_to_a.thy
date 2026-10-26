@@ -909,7 +909,15 @@ proof
         using asm by simp
       with len show ?thesis by blast
     qed    obtain i' where i':"i' < nr \<and> i' \<in> (I - {i}) \<and> row A i' = row C j' \<and> d $ j' = b $ i'" 
-      by (metis exist_index_in_A_carr[of A nr n b C d _ j'] C_d assms(1) b  j')
+      proof -
+    have jC: "j' < dim_row C"
+      using j' by blast
+    have "\<exists>k. k < nr \<and> k \<in> I - {i} \<and> row A k = row C j' \<and> d $ j' = b $ k"
+      using exist_index_in_A_carr[of A nr n b C d "I - {i}" j'] A b C_d jC
+      by auto
+    then show thesis
+      using that by blast
+  qed
     then show ?thesis 
       by (smt (verit, best) Cd_non_empty Collect_empty_eq i index_mult_mat_vec j j')
   next
