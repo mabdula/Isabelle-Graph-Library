@@ -191,7 +191,17 @@ lemma if2_cond_props'':
   obtains v1 v2 r r' where "if2 flabel v1 v2 r r'"
   using assms(1)
   unfolding if2_cond_def if2_def
-  by (smt surj_pair)
+proof -
+  obtain v1 v2 r r' where
+    e: "{v1, v2} \<in> G" and
+    r1: "flabel v1 = Some (r, Even)" and
+    r2: "flabel v2 = Some (r', Even)"
+    using assms unfolding if2_cond_def by blast
+  have "if2 flabel v1 v2 r r'"
+    unfolding if2_def using e r1 r2 by blast
+  then show thesis
+    by (rule that)
+qed
 
 lemma if2_cond_props''':
   assumes "if2_cond flabel" "(v1, v2, r1, r2) = sel_if2 flabel"
