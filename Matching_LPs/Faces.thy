@@ -229,7 +229,15 @@ lemma face_is_Max':
 proof - 
   have "\<beta> \<in> {\<alpha> \<bullet> x | x. x \<in> P}" using assms(1)  by auto
   then show "\<beta> = Maximum ?Ineq" 
-    by (smt (verit, best) assms(2) eqMaximumI valid_ineq_def mem_Collect_eq)
+    proof (rule eqMaximumI[symmetric] eqMaximumI)
+      fix y assume "y \<in> {\<alpha> \<bullet> x |x. x \<in> P}"
+      then obtain z where z: "z \<in> P" "y = \<alpha> \<bullet> z"
+        by blast
+      have "\<forall>x \<in> P. \<alpha> \<bullet> x \<le> \<beta>"
+        using assms by (auto simp: valid_ineq_def)
+      then show "y \<le> \<beta>"
+        using z by simp
+    qed
   show "has_Maximum ?Ineq"
     unfolding has_Maximum_def
     using assms(2) \<open>\<beta> \<in> {\<alpha> \<bullet> x |x. x \<in> P}\<close>
