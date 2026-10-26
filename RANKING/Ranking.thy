@@ -3085,7 +3085,18 @@ proof -
           by (auto dest!: index_less_in_set)
 
         from rm_G' \<open>{u', x''} \<in> M'\<close> have "x \<noteq> x''"
-          by (metis in_mono insertI1 insert_commute ranking_matchingE remove_vertices_not_vs vs_member_intro)
+          proof -
+            from rm_G' have "M' \<subseteq> G \<setminus> {x}"
+              by (auto elim!: ranking_matchingE)
+            with \<open>{u', x''} \<in> M'\<close> have "{u',x''} \<in> G \<setminus> {x}"
+              by blast
+            then have "x'' \<in> Vs (G \<setminus> {x})"
+              by (auto dest: edges_are_Vs_2)
+            moreover have "x \<notin> Vs (G \<setminus> {x})"
+              by (simp add: remove_vertices_not_vs)
+            ultimately show "x \<noteq> x''"
+              by blast
+          qed
 
         with \<open>{u'',x''} \<in> M\<close> \<open>u'' \<noteq> x\<close> rm_G have "{u'',x''} \<in> G \<setminus> {x}" 
           by (auto intro: in_remove_verticesI dest: ranking_matchingE)
