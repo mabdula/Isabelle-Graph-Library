@@ -672,7 +672,18 @@ proof(rule ccontr)
         finally show ?thesis .
       qed
     then show "row A i1 \<bullet> x = b $ i1" 
-      by (metis \<open>b $ i1 = b $ i2\<close> i1 i2 j j1j2)
+      proof -
+      have "row A i1 = row A' j1" using i1 by blast
+      also have "\<dots> = row A' j2" using j1j2 by simp
+      also have "\<dots> = row A i2" using i2[THEN conjunct2, THEN conjunct2, THEN conjunct1] by simp
+      also have "\<dots> = row C j" using j by simp
+      finally have row_eq: "row A i1 = row C j" .
+      have "row A i1 \<bullet> x = row C j \<bullet> x" using row_eq by simp
+      also have "\<dots> = d $ j" using \<open>row C j \<bullet> x = d $ j\<close> by simp
+      also have "\<dots> = b $ i2" using j by simp
+      also have "\<dots> = b $ i1" using \<open>b $ i1 = b $ i2\<close> by simp
+      finally show "row A i1 \<bullet> x = b $ i1" .
+    qed
   qed
   then have "{x.  A' *\<^sub>v x = b'} = {x. C *\<^sub>v x = d}"
     using \<open>{x. A' *\<^sub>v x = b'} = {x. C *\<^sub>v x = d \<and> row A i1 \<bullet> x = b $ i1}\<close> by blast
