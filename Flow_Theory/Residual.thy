@@ -500,7 +500,12 @@ lemma redge_erve_cases_with_e:
   by(cases e, auto)
 
 lemma inj_erev: "inj_on erev A" for A 
-     using  erve_erve_id inj_on_def by metis 
+  proof (rule inj_onI)
+    fix x y :: "'edge Redge"
+    assume "erev x = erev y"
+    hence "erev (erev x) = erev (erev y)" by simp
+    thus "x = y" by (simp add: erve_erve_id)
+  qed
 
 lemmas redge_case_flip = Redge.case_distrib
 end
