@@ -4827,7 +4827,27 @@ proof-
     using odd_cycle_nempty[OF cycle(1)].
   ultimately show ?thesis
     using length_replace_cycle
-    by (smt One_nat_def Suc_1 add_Suc_right add_leE dual_order.antisym le_zero_eq length_0_conv not_less_eq_eq)
+  proof -
+    have C_nempty: "C \<noteq> []"
+      by (rule odd_cycle_nempty[OF cycle(1)])
+    have disj: "p1 \<noteq> [] \<or> p2 \<noteq> []"
+      using quot_aug_path(1,2)
+      by (auto simp add: matching_augmenting_path_def split: if_splits)
+    have len_ge_1: "1 \<le> length p1 + length p2"
+    proof (rule disjE[OF disj])
+      assume "p1 \<noteq> []"
+      then have "0 < length p1" by simp
+      then show ?thesis by linarith
+    next
+      assume "p2 \<noteq> []"
+      then have "0 < length p2" by simp
+      then show ?thesis by linarith
+    qed
+    have "length p1 + length p2 + 1 \<le> length (replace_cycle C M p1 p2)"
+      by (rule length_replace_cycle[OF C_nempty disj])
+    then show ?thesis
+      using len_ge_1 by linarith
+  qed
 qed
 
 text\<open>Lifting a path in case it intersects with a contracted vertex\<close>
