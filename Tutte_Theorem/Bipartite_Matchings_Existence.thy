@@ -95,8 +95,12 @@ qed
         by (auto simp: vs_member)
       then have "v \<notin> ?B_s" by auto
       have "card ?A_s < card A" 
-        by (smt (verit, best) DiffD1 DiffD2 IntE \<open>u \<in> A \<and> v \<in> Vs G - A\<close> finite_subset inf_le1 
-            graphE Asubs mem_Collect_eq psubsetI psubset_card_mono vs_member)
+      proof -
+        have A_s_subset: "?A_s \<subseteq> A" by blast
+        have u_in_A: "u \<in> A" using \<open>u \<in> A \<and> v \<in> Vs G - A\<close> by blast
+        have "?A_s \<subset> A" using A_s_subset u_in_A \<open>u \<notin> ?A_s\<close> by blast
+        then show ?thesis using finite_subset graphE Asubs psubset_card_mono by meson
+      qed
 
       have "partitioned_bipartite ?E_s ?A_s"
         using less.prems(1,3) part_bipartite_diff by blast
