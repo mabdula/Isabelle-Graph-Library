@@ -1113,8 +1113,18 @@ proof -
 qed
 
 lemma sum_crossing_in_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>- X) \<ge> 0 "
-  unfolding Delta_minus_def isuflow_def 
-  by (metis (no_types, lifting) mem_Collect_eq sum_nonneg)
+proof -
+  assume assm: "isuflow f"
+  show "0 \<le> sum f (\<Delta>\<^sup>- X)"
+  proof (rule sum_nonneg)
+    fix e
+    assume "e \<in> \<Delta>\<^sup>- X"
+    hence "e \<in> \<E>"
+      unfolding Delta_minus_def by blast
+    thus "0 \<le> f e"
+      using assm unfolding isuflow_def by blast
+  qed
+qed
 
 corollary flow_less_cut: "f is b flow \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> sum b X \<le> Cap X"
   using  isbflow_def[of f b] flow_cross_cut_less_cap [of f X]
