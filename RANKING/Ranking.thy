@@ -3258,8 +3258,44 @@ proof -
             by (intro graph_invar_no_edge_no_vertex) (auto dest: ranking_matchingE graph_invar_subgraph)
 
           with rm_G' \<open>{u'',x''} \<in> G \<setminus> {x}\<close> obtain u3 where "{u3,x''} \<in> M'"
-            unfolding ranking_matching_def
-            by (metis graph_invar_no_edge_no_vertex insert_commute maximal_matching_def ranking_matchingE rm_G')
+          proof -
+            note outer = that
+            from rm_G' have graph_M': "graph_invar M'"
+              by (auto elim!: ranking_matchingE)
+
+            from rm_G' \<open>{u'',x''} \<in> G \<setminus> {x}\<close>
+            obtain e where e: "e \<in> M'" "u'' \<in> e \<or> x'' \<in> e"
+              by (auto elim: ranking_matching_maximalE)
+
+            have "x'' \<in> e"
+            proof (cases "u'' \<in> e")
+              case True
+              with \<open>e \<in> M'\<close> have "u'' \<in> Vs M'"
+                by (auto intro: vs_member_intro)
+              with \<open>u'' \<notin> Vs M'\<close> show ?thesis
+                by blast
+            next
+              case False
+              with e show ?thesis
+                by blast
+            qed
+
+            with \<open>e \<in> M'\<close> have "x'' \<in> Vs M'"
+              by (auto intro: vs_member_intro)
+
+            have "\<exists>u3. {u3,x''} \<in> M'"
+            proof (rule ccontr)
+              assume "\<nexists>u3. {u3,x''} \<in> M'"
+              then have "\<forall>v. {x'',v} \<notin> M'"
+                by (auto simp: insert_commute)
+              from graph_M' this have "x'' \<notin> Vs M'"
+                by (rule graph_invar_no_edge_no_vertex)
+              with \<open>x'' \<in> Vs M'\<close> show False
+                by blast
+            qed
+            with outer show thesis
+              by blast
+          qed
 
           with rm_G' \<open>u'' \<notin> Vs M'\<close> \<open>{u'', x''} \<in> G \<setminus> {x}\<close> \<open>index \<sigma> x'' < index \<sigma> x'\<close> have "index \<pi> u3 < index \<pi> u''"
             by (smt (verit, best) edges_are_Vs(1) index_eq_index_conv index_less_in_set linorder_neqE_nat ranking_matching_bipartite_edges' ranking_matching_earlier_match_offlineE)
