@@ -277,7 +277,7 @@ lemma compute_alt_path_pinduct_2':
   shows "P ex par flabel"
   apply(rule compute_alt_path.pinduct[OF assms(1)])
   using assms(2)
-  by metis
+  by (rule compute_alt_path.pinduct[OF assms(1)]; (rule assms(2) | blast intro: assms(2)))
 
 lemma compute_alt_path_pinduct_2:
   "compute_alt_path_dom (ex, par, flabel) \<Longrightarrow> 
