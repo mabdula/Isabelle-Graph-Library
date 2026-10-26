@@ -1420,9 +1420,33 @@ proof(induction l1 arbitrary: l P1 P2)
   moreover have "[y, x] = [y] @ [x]"
     by simp
   ultimately have "(last (find_pfx Q (rev l))) = y"
-    using Nil
-    apply simp
-    by (smt \<open>[y, x] = [y] @ [x]\<close> find_pfx_append)
+  proof -
+    have Qy: "Q y"
+      using Nil by simp
+    have l_eq: "l = x # y # l2"
+      using Nil by simp
+    have no_Q: "\<forall>a\<in>set (rev l2). \<not> Q a"
+    proof (intro ballI notI)
+      fix a
+      assume a_rev: "a \<in> set (rev l2)" and Qa: "Q a"
+      have a_l2: "a \<in> set l2"
+        using a_rev by simp
+      then have "a \<in> set l"
+        by (simp add: l_eq)
+      then have "a = x \<or> a = y"
+        using Qa Nil by blast
+      then show False
+        using a_l2 Nil by auto
+    qed
+    have last_pfx: "last (find_pfx Q (rev l2 @ [y])) = y"
+      by (rule last_find_pfx_val[OF no_Q Qy])
+    have append_eq: "find_pfx Q (rev l2 @ [y] @ [x]) = find_pfx Q (rev l2 @ [y])"
+      using Qy by (rule find_pfx_append)
+    have rev_l: "rev l = rev l2 @ [y] @ [x]"
+      by (simp add: l_eq)
+    show ?thesis
+      using rev_l append_eq last_pfx by simp
+  qed
   moreover have "(last (find_pfx Q l)) = x"
     using Nil
     by auto
