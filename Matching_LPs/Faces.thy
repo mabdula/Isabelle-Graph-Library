@@ -696,8 +696,14 @@ proof -
       then show thesis using that i_lt by blast
     qed
     then have "sum (\<lambda> i. (A' *\<^sub>v x) $ i) {0..<dim_vec b'}  < sum (\<lambda> i. b' $ i) {0..<dim_vec b'}"
-      by (metis \<open>A' *\<^sub>v x \<le> b'\<close> atLeastLessThan_iff bot_nat_0.extremum carrier_vec_dim_vec
-          finite_atLeastLessThan lesseq_vecD sum_strict_mono_ex1)
+      proof -
+      have le: "\<forall>j \<in> {0..<dim_vec b'}. (A' *\<^sub>v x) $ j \<le> b' $ j"
+        using lesseq_vecD[OF carrier_vec_dim_vec \<open>A' *\<^sub>v x \<le> b'\<close>] by auto
+      have lt: "\<exists>j \<in> {0..<dim_vec b'}. (A' *\<^sub>v x) $ j < b' $ j"
+        using \<open>i < dim_vec b' \<and> (A' *\<^sub>v x) $ i < b' $ i\<close> by auto
+      show ?thesis
+        by (rule sum_strict_mono_ex1[OF finite_atLeastLessThan le lt])
+    qed
     then have "1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x) < 1\<^sub>v (dim_vec b') \<bullet> b'"
       by (metis \<open>A' *\<^sub>v x \<le> b'\<close> carrier_vec_dim_vec less_eq_vec_def scalar_prod_left_one)
     then show False 
