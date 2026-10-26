@@ -6275,7 +6275,64 @@ next
         by blast
       then have "\<forall>e'\<in>E'. P ` e \<noteq> P ` e'"
         using True False good_quot_map insert(2)
-        by (auto simp add: image_def set_eq_iff; metis)
+      proof -
+        have dichot: "\<forall>e'\<in>E'. (\<forall>v\<in>e'. v \<in> s) \<or> (\<forall>v\<in>e'. v \<notin> s)"
+        proof -
+          have e_in_s: "\<exists>v\<in>e. v \<in> s"
+            using False by blast
+          have "e = dume"
+            using True e_in_s insert(5) by auto
+          moreover have "\<forall>e'\<in>E'. e \<noteq> e'"
+            using insert(2) by auto
+          ultimately show ?thesis
+            using insert(5) by blast
+        qed
+        show "\<forall>e'\<in>E'. P ` e \<noteq> P ` e'"
+        proof
+          fix e'
+          assume e'_E': "e' \<in> E'"
+          show "P ` e \<noteq> P ` e'"
+          proof
+            assume eq: "P ` e = P ` e'"
+            from dichot e'_E' have "(\<forall>v\<in>e'. v \<in> s) \<or> (\<forall>v\<in>e'. v \<notin> s)"
+              by blast
+            then show False
+            proof
+              assume all_in_s: "\<forall>v\<in>e'. v \<in> s"
+              obtain v0 where v0: "v0 \<in> e" "v0 \<notin> s"
+                using True by blast
+              have u_in_Pe: "u \<in> P ` e"
+                using v0 by (force simp: image_iff)
+              then have u_in_Pe': "u \<in> P ` e'"
+                using eq by blast
+              obtain w where w: "w \<in> e'" "P w = u"
+                using u_in_Pe' by (auto simp: image_iff)
+              have w_in_s: "w \<in> s"
+                using w(1) all_in_s by blast
+              then have "P w = w" by simp
+              with w(2) have "w = u" by simp
+              with w_in_s have "u \<in> s" by simp
+              with good_quot_map(1) show False by simp
+            next
+              assume all_notin_s: "\<forall>v\<in>e'. v \<notin> s"
+              obtain v1 where v1: "v1 \<in> e" "v1 \<in> s"
+                using False by blast
+              have v1_in_Pe: "v1 \<in> P ` e"
+                using v1 by (force simp: image_iff)
+              then have v1_in_Pe': "v1 \<in> P ` e'"
+                using eq by blast
+              obtain w where w: "w \<in> e'" "P w = v1"
+                using v1_in_Pe' by (auto simp: image_iff)
+              have w_notin_s: "w \<notin> s"
+                using w(1) all_notin_s by blast
+              then have "P w = u" by simp
+              with w(2) have "v1 = u" by simp
+              with v1(2) have "u \<in> s" by simp
+              with good_quot_map(1) show False by simp
+            qed
+          qed
+        qed
+      qed
       then show ?thesis
         unfolding quot_graph_def
         by auto
