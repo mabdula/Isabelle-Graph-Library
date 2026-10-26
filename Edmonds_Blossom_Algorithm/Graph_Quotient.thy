@@ -4193,9 +4193,25 @@ proof-
       next
         case False
         have choose_vert_works: "chv \<in> set C"
-          unfolding chv_def
-          using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path p1_nempty rev_p1_nempty
-          by (metis (no_types,lifting) append_Nil hd_rev)
+proof -
+          have hd_rev_p1: "hd (rev p1) = last p1"
+            using p1_nempty by (simp add: hd_rev)
+          have rev_ne: "rev p1 \<noteq> []"
+            using p1_nempty by simp
+          have decomp: "u # rev p1 = [] @ u # rev p1"
+            by simp
+          have dist: "distinct (u # rev p1)"
+            using quot_aug_path by blast
+          have pth: "path (quotG E) (u # rev p1)"
+            using quot_aug_path by blast
+          have works: "choose_con_vert (set C) (hd (rev p1)) \<in> set C \<and>
+                       {hd (rev p1), choose_con_vert (set C) (hd (rev p1))} \<in> E"
+            by (rule choose_vert_works_1[OF cycle(3) decomp dist pth rev_ne quot(1)])
+          from works have "choose_con_vert (set C) (hd (rev p1)) \<in> set C"
+            by simp
+          then show ?thesis
+            by (simp add: chv_def hd_rev_p1)
+        qed
         moreover have "chv \<noteq> hd C"
           using odd_cycleD(3)[OF cycle(1)] False
           by auto
