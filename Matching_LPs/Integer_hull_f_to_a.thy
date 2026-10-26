@@ -1720,8 +1720,18 @@ proof -
     using A P_def assms(4) assms(6) assms(7) assms(8) assms(9) b 
     by blast
   have 2:"A' \<in> carrier_mat (dim_row A') n" 
-    by (metis A assms(9) b carrier_matD(1) carrier_matD(2) carrier_mat_subsyst 
-        carrier_vecD fst_conv)
+  proof -
+    have A'_fst: "A' = fst (sub_system A b I)"
+      by (simp add: assms(9)[symmetric])
+    have "dim_col A' = dim_col A"
+      by (simp add: A'_fst dim_col_subsyst_mat)
+    moreover have "dim_col A = n"
+      using A by (rule carrier_matD(2))
+    ultimately have dimcol: "dim_col A' = n"
+      by simp
+    show ?thesis
+      by (rule carrier_matI[OF refl dimcol])
+  qed
   have "b' \<in> carrier_vec (dim_row A')" 
     by (metis \<open>A' \<in> carrier_mat (dim_row A') n\<close> 1 mult_mat_vec_carrier)
   then show "dim_row A' = n" 
