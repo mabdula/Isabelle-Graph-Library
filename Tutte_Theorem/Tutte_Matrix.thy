@@ -647,7 +647,15 @@ proof(safe)
           by (rule path_pref)
       qed
     then have "hd (ys @ [x]) = i" using `hd ?l = i`
-      by (metis Nil_is_append_conv \<open>(ys @ [x]) @ zs = ?l\<close> hd_append2 list.distinct(1))
+    proof -
+      have "hd (ys @ [x]) = hd ((ys @ [x]) @ zs)"
+        by (cases ys) simp_all
+      also have "\<dots> = hd ?l"
+        using \<open>(ys @ [x]) @ zs = ?l\<close> by simp
+      also have "\<dots> = i"
+        using \<open>hd ?l = i\<close> .
+      finally show ?thesis .
+    qed
     have "last (ys @ [x]) = x" 
       by simp 
     have "walk_betw (u_edges p) i (ys @ [x]) x" 
