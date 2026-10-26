@@ -169,7 +169,22 @@ lemma carrier_mat_subsyst:
 lemma subsyst_rows_carr:
   assumes "A \<in> carrier_mat nr n"
   shows "set (rows (submatrix A I UNIV)) \<subseteq> carrier_vec n"
-  by (metis assms dim_col_submatrix_UNIV carrier_matD(2) rows_carrier)
+proof -
+  have dc: "dim_col (submatrix A I UNIV) = n"
+    using dim_col_submatrix_UNIV[of A I] carrier_matD(2)[OF assms] by simp
+  show ?thesis
+  proof
+    fix v
+    assume "v \<in> set (rows (submatrix A I UNIV))"
+    then obtain i where i: "i < dim_row (submatrix A I UNIV)"
+      and v: "v = row (submatrix A I UNIV) i"
+      unfolding rows_def by auto
+    have "dim_vec v = dim_col (submatrix A I UNIV)"
+      unfolding v by simp
+    then show "v \<in> carrier_vec n"
+      unfolding carrier_vec_def using dc by simp
+  qed
+qed
 
 lemma nths_list_pick_vec_same:
   shows "vec_of_list (nths (list_of_vec b) I) = 
