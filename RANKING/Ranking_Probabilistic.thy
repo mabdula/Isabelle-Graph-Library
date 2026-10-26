@@ -788,7 +788,14 @@ next
   next
     case 2
     then show ?case
-      by (metis subseq_filter_left)
+      proof -
+      have "subseq (filter (\<lambda>v. v \<in> X) \<sigma>) \<sigma>"
+        by (rule subseq_filter_left)
+      then have "subseq (v' # \<sigma>') \<sigma>"
+        unfolding \<open>v' # \<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> .
+      then show ?thesis
+        by (simp only: \<sigma>_tl[symmetric])
+    qed
   next
     case 3
     then show ?case
