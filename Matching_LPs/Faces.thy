@@ -655,7 +655,14 @@ lemma eq_iff_sum_eq_for_el_in_P:
 proof -
   assume  " 1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x) = 1\<^sub>v (dim_vec b') \<bullet> b'"
   then have "A' *\<^sub>v x \<le> b'" 
-    by (metis (no_types, lifting) assms polyhedron_def subsyst_valid  prod.sel(1) prod.sel(2))
+  proof -
+  have le: "fst (sub_system A b I) *\<^sub>v x \<le> snd (sub_system A b I)"
+    by (rule subsyst_valid[OF assms(2)])
+  have A'_eq: "fst (sub_system A b I) = A'" and b'_eq: "snd (sub_system A b I) = b'"
+    using assms(1)[symmetric] by simp_all
+  from le show "A' *\<^sub>v x \<le> b'"
+    by (simp add: A'_eq b'_eq)
+  qed
   then have "\<forall>i<dim_vec b'. (A' *\<^sub>v x) $ i \<le> b' $ i" 
     using less_eq_vec_def by blast
   show "A' *\<^sub>v x = b'"
