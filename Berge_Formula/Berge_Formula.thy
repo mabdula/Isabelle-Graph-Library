@@ -1381,7 +1381,7 @@ next
         by (simp add: le_diff_conv)
     qed
     then have "2* card M + ?k \<ge> 2*card Mh - card A" 
-      by (metis assms(7))
+      by (simp only: assms(7))
     also have "2*card Mh - card A = card (Vs Mh) - card A" 
       using Mh dblton_graph_subset matching_vertices_double_size graph_invar_H
       by(force elim!: perfect_matchingE simp add: matching_vertices_double_size[symmetric])
