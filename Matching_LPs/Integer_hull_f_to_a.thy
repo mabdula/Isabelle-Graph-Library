@@ -2026,7 +2026,12 @@ proof -
       have 2:"(A @\<^sub>r B) $$ (i, j) = row (A @\<^sub>r B) i $ j" 
         by (simp add: asmi asmj)
       have "j < dim_col A" 
-        by (metis 1 asmj index_row(2))
+        proof -
+          have "j < dim_vec (row (A @\<^sub>r B) i)"
+            using asmj by (simp only: index_row(2))
+          then show ?thesis
+            by (simp only: 1 index_row(2))
+        qed
       then have "A $$ (i, j) = row A i $ j" 
         by (simp add: True)
       then have "(A @\<^sub>r B) $$ (i, j) = A $$ (i, j)" 
