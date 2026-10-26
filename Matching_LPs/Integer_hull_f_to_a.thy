@@ -548,7 +548,20 @@ proof(rule ccontr)
   qed
   obtain i2 where i2: "i2 < dim_row A \<and> i2 \<in> I \<and> row A i2 = row A' j2 \<and> 
                        i2 = (pick I j2) \<and> b' $ j2 = b $ i2" 
-    by (metis assms(8) dims_eq dims_subsyst_same exist_index_in_A fst_conv j1j2 snd_conv)
+  proof -
+  have dims_A'b': "dim_row A' = dim_vec b'"
+    using dims_subsyst_same[OF dims_eq, of I]
+    by (simp add: assms(8)[symmetric])
+  have j2_dim: "j2 < dim_vec b'"
+    using j1j2 dims_A'b' by simp
+  have j2_snd: "j2 < dim_vec (snd (sub_system A b I))"
+    using j2_dim by (simp add: assms(8)[symmetric])
+  have "\<exists>i. i < dim_row A \<and> i \<in> I \<and> row A i = row A' j2 \<and>
+             i = pick I j2 \<and> b' $ j2 = b $ i"
+    using exist_index_in_A[OF dims_eq j2_snd] by (simp add: assms(8)[symmetric] dims_eq)
+  then show thesis
+    using that by blast
+  qed
   then have "i1 \<noteq> i2" using subsyst_indx_neq_syst_indx_neq[of i1 I j1 i2 j2 A' b' A b] 
     using i1 j1j2 assms(8) by presburger
   have " b $ i1 =  b $ i2" 
