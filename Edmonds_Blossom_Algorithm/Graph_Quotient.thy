@@ -4728,7 +4728,12 @@ proof-
   then have "set p1 \<subseteq> Vs (quotG E)"
     using quot
     using split_list_first tl_path_is_path
-    by (metis path_pref subset_path_Vs)
+  proof -
+    have "path (quotG E) p1"
+      using \<open>path (quotG E) (p1 @ [u])\<close> path_pref by blast
+    then show ?thesis
+      using subset_path_Vs by blast
+  qed
   moreover have u_nin_p1: "u \<notin> set (rev p1)"
     using quot_aug_path
     by auto
