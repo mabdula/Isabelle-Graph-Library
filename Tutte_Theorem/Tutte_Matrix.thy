@@ -1753,8 +1753,26 @@ proof(induct "card A" arbitrary: A rule: less_induct)
       then show thesis by (rule that)
     qed
     then have "odd (card (A - {a, b}))" 
-      by (metis False One_nat_def \<open>finite A\<close> card_Diff_insert card_Diff_singleton card_Suc_Diff1
-          even_add even_diff_nat less.prems(2) less_one odd_one singletonD)
+      proof -
+  have aA: "a \<in> A" and bA: "b \<in> A" and neq: "a \<noteq> b"
+    using \<open>a \<in> A \<and> b \<in> A \<and> a \<noteq> b\<close> by auto
+  have finb: "finite (A - {b})"
+    using \<open>finite A\<close> by (rule finite_Diff)
+  have amem: "a \<in> A - {b}"
+    using aA neq by blast
+  have c1: "Suc (card (A - {b} - {a})) = card (A - {b})"
+    using finb amem by (rule card_Suc_Diff1)
+  have c2: "Suc (card (A - {b})) = card A"
+    using \<open>finite A\<close> bA by (rule card_Suc_Diff1)
+  have card2: "card {a, b} = 2" using neq by simp
+  have fin2: "finite {a, b}" by simp
+  have sub: "{a, b} \<subseteq> A" using aA bA by simp
+  have "card {a, b} \<le> card A"
+    using \<open>finite A\<close> sub by (rule card_mono)
+  with card2 have "2 \<le> card A" by simp
+  then show "odd (card (A - {a, b}))"
+    using card_Diff_subset[OF fin2 sub] card2 less.prems(2) by presburger
+      qed
     have "(card (A - {a, b})) < card A" 
       by (metis Diff_insert2 ab \<open>finite A\<close> card_Diff2_less)
     have "\<forall>a \<in> (A - {a, b}). h a = - (g a)" 
