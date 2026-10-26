@@ -3949,10 +3949,65 @@ lemma stem2vert_path_distinct:
   shows "distinct (stem2vert_path C M v)"
 proof(cases "w = last C")
   case True
-  then show ?thesis
-    using assms
-    unfolding stem2vert_path_def
-    by (smt distinct.simps(1) distinct.simps(2) empty_iff empty_set find_pfx.simps(2) hd_rev list.exhaust_sel odd_cycleD(3) set_rev)
+  have C_nempty: "C \<noteq> []"
+    by (rule odd_cycle_nempty[OF assms(1)])
+  obtain c cs where C_eq: "C = c # cs"
+    using C_nempty by (cases C) auto
+  have hd_last: "hd C = last C"
+    by (rule odd_cycleD(3)[OF assms(1)])
+  have w_c: "w = c"
+  proof -
+    have "w = last C" by (rule True)
+    also have "\<dots> = hd C" by (rule hd_last[symmetric])
+    also have "\<dots> = c" by (simp add: C_eq)
+    finally show ?thesis .
+  qed
+  have c_last: "c = last C"
+  proof -
+    have "c = w" by (rule w_c[symmetric])
+    also have "\<dots> = last C" by (rule True)
+    finally show ?thesis .
+  qed
+  have chv_c: "choose_con_vert (set C) v = c"
+  proof -
+    have "choose_con_vert (set C) v = w" by (rule assms(4)[symmetric])
+    also have "\<dots> = c" by (rule w_c)
+    finally show ?thesis .
+  qed
+  have pfx_C: "find_pfx ((=) (choose_con_vert (set C) v)) C = [c]"
+  proof -
+    have "find_pfx ((=) (choose_con_vert (set C) v)) C = find_pfx ((=) c) C"
+      by (simp only: chv_c)
+    also have "\<dots> = [c]"
+      by (simp add: C_eq)
+    finally show ?thesis .
+  qed
+  have C_snoc: "butlast C @ [last C] = C"
+    by (rule append_butlast_last_id[OF C_nempty])
+  have rev_C_eq: "rev C = c # rev (butlast C)"
+  proof -
+    have "rev C = rev (butlast C @ [last C])"
+      by (simp only: C_snoc)
+    also have "\<dots> = last C # rev (butlast C)"
+      by simp
+    also have "\<dots> = c # rev (butlast C)"
+      by (simp only: c_last[symmetric])
+    finally show ?thesis .
+  qed
+  have pfx_rev: "find_pfx ((=) (choose_con_vert (set C) v)) (rev C) = [c]"
+  proof -
+    have "find_pfx ((=) (choose_con_vert (set C) v)) (rev C) = find_pfx ((=) c) (rev C)"
+      by (simp only: chv_c)
+    also have "\<dots> = [c]"
+      by (simp add: rev_C_eq)
+    finally show ?thesis .
+  qed
+  have pfx_rev': "find_pfx ((=) (choose_con_vert (set (rev C)) v)) (rev C) = [c]"
+    using pfx_rev by simp
+  have sv: "stem2vert_path C M v = [c]"
+    by (simp add: stem2vert_path_def Let_def set_rev pfx_C pfx_rev pfx_rev')
+  show ?thesis
+    by (simp add: sv)
 next
   case False
   then show ?thesis
