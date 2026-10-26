@@ -6343,7 +6343,39 @@ next
         by auto
       ultimately have "\<forall>e'\<in>E'. P ` e \<noteq> P ` e'"
         using good_quot_map insert(2)
-        by (simp add: image_def set_eq_iff; metis)
+        proof (intro ballI)
+          fix e'
+          assume e'_E: "e' \<in> E'"
+          show "P ` e \<noteq> P ` e'"
+          proof
+            assume eq: "P ` e = P ` e'"
+            have e_sub_s: "e \<subseteq> s"
+              using F2 by auto
+            have Pe: "P ` e = e"
+              using e_sub_s by (auto split: if_splits)
+            have e'_sub_s: "e' \<subseteq> s"
+            proof
+              fix w
+              assume w_e: "w \<in> e'"
+              then have "P w \<in> P ` e'"
+                by simp
+              then have "P w \<in> P ` e"
+                using eq by simp
+              then have "P w \<in> e"
+                using Pe by (auto split: if_splits)
+              with e_sub_s have "P w \<in> s"
+                by auto
+              then show "w \<in> s"
+                using good_quot_map(1) by (auto split: if_splits)
+            qed
+            have "P ` e' = e'"
+              using e'_sub_s by (auto split: if_splits)
+            with Pe eq have "e = e'"
+              by simp
+            with insert(2) show False
+              using e'_E by auto
+          qed
+        qed
       then show ?thesis
         unfolding quot_graph_def
         by auto
