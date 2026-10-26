@@ -4243,7 +4243,18 @@ proof (induction "card G" arbitrary: G M M' \<pi> \<sigma> x rule: less_induct)
       by simp
 
     also from \<open>matching M\<close> have "\<dots> = set (edges_of_path (x # zag G M u \<pi> \<sigma>))"
-      by (smt (verit, ccfv_SIG) edges_of_path.elims hd_zag insert_commute list.inject list.sel(1) list.simps(15) list.simps(3) zag_NilE)
+    proof -
+      obtain vus where zag_eq: "zag G M u \<pi> \<sigma> = u # vus"
+        by (rule zag_hdE)
+      have "insert {u, x} (set (edges_of_path (zag G M u \<pi> \<sigma>))) =
+            insert {x, u} (set (edges_of_path (u # vus)))"
+        by (simp add: zag_eq insert_commute)
+      also have "\<dots> = set (edges_of_path (x # u # vus))"
+        by simp
+      also have "\<dots> = set (edges_of_path (x # zag G M u \<pi> \<sigma>))"
+        by (simp add: zag_eq)
+      finally show ?thesis .
+    qed
 
     also have "\<dots> = set (edges_of_path (zig G M x \<pi> \<sigma>))"
       using \<open>matching M\<close> \<open>{u,x} \<in> M\<close>
