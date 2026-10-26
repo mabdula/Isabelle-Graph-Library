@@ -825,7 +825,16 @@ proof
       using that by blast
   qed
   then have j:"j < dim_row A' \<and> row A' j = u" using nth_rows length_rows 
-    by metis
+    proof -
+    have jlen: "j < length (rows A')" and jnth: "rows A' ! j = u"
+      using \<open>j < length (rows A') \<and> rows A' ! j = u\<close> by auto
+    have jlt: "j < dim_row A'"
+      using jlen by (simp add: length_rows)
+    moreover have "row A' j = u"
+      using jlt jnth by (simp add: nth_rows)
+    ultimately show ?thesis
+      by (rule conjI)
+  qed
   obtain i where i:"i < dim_row A \<and> i \<in> I \<and> row A i = row A' j \<and> i = (pick I j) \<and>  b $ i = b' $ j" 
     by (metis assms(8) dim_sameAb dims_subsyst_same exist_index_in_A fst_conv j snd_conv)
   obtain C d where C_d: "(C, d) = sub_system A b (I - {i})"
