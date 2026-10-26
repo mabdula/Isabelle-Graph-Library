@@ -4165,7 +4165,20 @@ proof (induction u \<pi> arbitrary: x G M M' rule: index_gt_induct)
 
     with \<open>ranking_matching G M \<pi> \<sigma>\<close> \<open>ranking_matching (G \<setminus> {x}) M' \<sigma> \<pi>\<close> \<open>x \<in> set \<sigma>\<close> \<open>{u,x} \<in> M\<close> False
     have "\<nexists>x'. shifts_to G M u x x' \<pi> \<sigma>"
-      by (metis (full_types) insert_commute shifts_to_implies_reduced_edge)
+      proof -
+        show "\<nexists>x'. shifts_to G M u x x' \<pi> \<sigma>"
+        proof (rule ccontr)
+          assume "\<not> (\<nexists>x'. shifts_to G M u x x' \<pi> \<sigma>)"
+          then obtain x' where shift: "shifts_to G M u x x' \<pi> \<sigma>"
+            by blast
+          from shifts_to_implies_reduced_edge[OF \<open>ranking_matching G M \<pi> \<sigma>\<close> \<open>ranking_matching (G \<setminus> {x}) M' \<sigma> \<pi>\<close> \<open>x \<in> set \<sigma>\<close> \<open>{u,x} \<in> M\<close> shift]
+          have "{u,x'} \<in> M'" .
+          then have "{x',u} \<in> M'"
+            by (simp add: insert_commute)
+          with False show False
+            by blast
+        qed
+      qed
 
     with x_unique_match \<open>{u,x} \<in> M\<close> matching_M have rhs: "zag G M u \<pi> \<sigma> = [u]"
       by (auto simp: zag.simps)
