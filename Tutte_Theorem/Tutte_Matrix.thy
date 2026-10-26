@@ -2566,7 +2566,15 @@ proof -
       then have "a (a i) = i" 
         using \<open>a = rev_p a\<close> by auto
       then have "(a^^2) i = i" 
-        by (metis One_nat_def funpow.simps(2) funpow_0 nat_1_add_1 o_apply plus_1_eq_Suc)
+      proof -
+        have "(a ^^ 2) i = a (a ((a ^^ 0) i))"
+          by (simp add: numeral_2_eq_2 funpow.simps o_apply)
+        also have "\<dots> = a (a i)"
+          by (simp add: funpow_0)
+        finally have "(a ^^ 2) i = a (a i)" .
+        then show ?thesis
+          using \<open>a (a i) = i\<close> by simp
+      qed
       then have "least_power a i \<le> 2" 
         by (simp add: least_power_le)
       have "odd (least_power a i)" 
