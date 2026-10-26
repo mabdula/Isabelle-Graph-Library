@@ -187,7 +187,16 @@ next
   proof (rule move_to_eq_unique_vertex[symmetric, OF assms(3) assms(1) \<open>index \<sigma> v = t\<close>], goal_cases)
     case (1 v')
     with \<open>index \<sigma> v = t\<close> assms(1) assms(2) show ?case
-     by (metis  index_less_size_conv permutations_of_setD(1))
+  proof -
+    from \<open>index \<sigma> v = t\<close> assms(2) have "index \<sigma> v < length \<sigma>"
+      by simp
+    then have "v \<in> set \<sigma>"
+      by (simp add: index_less_size_conv)
+    moreover from assms(1) have "set \<sigma> = V"
+      by (rule permutations_of_setD(1))
+    ultimately show ?thesis
+      by simp
+  qed
   next
     case (2 v')
     then show ?case by blast
