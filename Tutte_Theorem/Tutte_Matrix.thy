@@ -785,7 +785,9 @@ proof(safe)
   then obtain n where "(p^^n) i = x" 
     using \<open>x \<in> set xs\<close> by blast
   then show "x \<in> set (support p i)" 
-    by (metis \<open>i \<in> set (support p i)\<close> assms(1) elemnets_in_support_expo p_is_permutation)
+    using elemnets_in_support_expo[OF p_is_permutation[OF assms(1)]
+            \<open>i \<in> set (support p i)\<close> \<open>(p ^^ n) i = x\<close>[symmetric]]
+    by blast
 qed
 
 
