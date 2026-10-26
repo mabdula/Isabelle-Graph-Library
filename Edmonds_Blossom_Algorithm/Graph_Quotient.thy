@@ -1572,9 +1572,22 @@ proof-
       by(cases p'; auto)+
     subgoal proof-
       have "v \<notin> set p'"
-        using cycle
-        apply simp
-        by (metis disjoint_insert(1) distinct_append hd_append list.sel(1) list.sel(3) list.set_cases list.simps(15) tl_append2)
+      proof (cases p')
+        case Nil
+        then show ?thesis by simp
+      next
+        case (Cons a q)
+        have hd_p: "hd p = a"
+          by (simp add: p'p'' Cons)
+        have dist: "distinct (q @ v # p'')"
+          using cycle(3) by (simp add: p'p'' Cons)
+        have v_notin_q: "v \<notin> set q"
+          using dist by (auto simp add: distinct_append)
+        have "v \<noteq> a"
+          using cycle(5) hd_p by simp
+        then show ?thesis
+          using v_notin_q by (simp add: Cons)
+      qed
       moreover have "v \<notin> set p''"
         using cycle
         apply simp
