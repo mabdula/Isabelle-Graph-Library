@@ -2291,8 +2291,23 @@ proof -
                       " F = {x.  A' *\<^sub>v x = b' \<and> x \<in> P}"
     using char_face1[of A nr b F]
     using A P_def assms(4) b by blast
-  then show ?thesis using face_is_polyhedron'' 
-    by (smt (verit, best) A Collect_cong P_def b gram_schmidt.polyhedron_def mem_Collect_eq that)
+  note obt = this
+  have sub: "(A', b') = sub_system A b I'"
+    by (rule obt(1))
+  have F_P: "F = {x. A' *\<^sub>v x = b' \<and> x \<in> P}"
+    by (rule obt(2))
+  have P_eq: "P = {x. x \<in> carrier_vec n \<and> A *\<^sub>v x \<le> b}"
+    by (simp add: P_def polyhedron_def)
+  have F_eq: "F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b' \<and> A *\<^sub>v x \<le> b}"
+    using F_P P_eq by blast
+  have poly: "F = polyhedron (A @\<^sub>r (A' @\<^sub>r (- A'))) (b @\<^sub>v (b' @\<^sub>v (- b')))"
+    by (rule face_is_polyhedron''2(1)[OF A b sub F_eq])
+  have rows: "dim_row (A @\<^sub>r (A' @\<^sub>r (- A'))) = dim_vec (b @\<^sub>v (b' @\<^sub>v (- b')))"
+    by (rule face_is_polyhedron''2(2)[OF A b sub F_eq])
+  have cols: "dim_col (A @\<^sub>r (A' @\<^sub>r (- A'))) = n"
+    by (rule face_is_polyhedron''2(3)[OF A b sub F_eq])
+  show ?thesis
+    by (rule that[OF poly rows cols])
 qed
 
 end
