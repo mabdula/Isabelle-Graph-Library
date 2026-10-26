@@ -929,7 +929,7 @@ proof -
   have "even (card (set (support p x)))" 
     using \<open>set (support p x) = C\<close> assms(3) by blast
   then have "even (length (support p x))" 
-    by (metis \<open>p permutes UNIV\<close> distinct_card perm_support_distinct)
+    using distinct_card[OF perm_support_distinct[OF \<open>p permutes UNIV\<close>]] by simp
   have 3:"set ?start_vert \<subseteq> (UNIV :: 'a set)" 
     by blast
   then have "?m_edges \<subseteq> u_edges p" 
