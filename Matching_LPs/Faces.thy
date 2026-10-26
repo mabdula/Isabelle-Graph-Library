@@ -1551,7 +1551,13 @@ qed
   finally show ?thesis
     by (rule sym)
   qed  have "?i' = i + dim_vec b'"
-    by (metis A assms(4) b carrier_matD(1) carrier_vecD dims_subsyst_same')
+    proof -
+      have dimAb: "dim_row A = dim_vec b"
+        using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+      have "dim_row A' = dim_vec b'"
+        using dims_subsyst_same' dimAb assms(4) by blast
+      then show ?thesis by simp
+    qed
   then have "(b' @\<^sub>v (-b')) $ ?i' = - b' $ i" 
     by (simp add: \<open>i < dim_vec b'\<close>)
   then have 1:"(b' @\<^sub>v (-b')) $ i = - ((b' @\<^sub>v (-b')) $ ?i')" 
