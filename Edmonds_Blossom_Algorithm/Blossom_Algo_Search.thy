@@ -385,7 +385,7 @@ proof(induction "compute_alt_path_meas ex" arbitrary: ex par flabel rule: nat_le
     }
     then show ?thesis
       using compute_alt_path.domintros
-      by metis
+      by blast
   next
     case False
     then show ?thesis
