@@ -3081,7 +3081,14 @@ qed
     then have 7: "poly_mapping.lookup (\<Sum>b\<in>F. ?m b) (f a) \<noteq> 0" 
       using insert.hyps 1 insert.prems(3) by blast
     have "(f x ) \<noteq> (f a )" 
-      by (metis False insert.prems(1) insert.prems(2) insert_Diff insert_iff)
+      proof -
+      have "x \<in> insert x F - {a}"
+        using False by simp
+      then have "f a \<noteq> f x"
+        using insert.prems(2) by blast
+      then show ?thesis
+        by simp
+    qed
     have "(\<Sum>b\<in>(insert x F). ?m b) =  (\<Sum>b\<in>F. ?m b) +  ?m x" 
       by (simp add: insert.hyps(1) insert.hyps(2))
     then have 6: "poly_mapping.lookup (\<Sum>b\<in>(insert x F). ?m b) (f a) = 
