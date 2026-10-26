@@ -7397,7 +7397,56 @@ qed
                 using match_blossom(1) path_pref by blast
               moreover have "set C \<inter> set stem = {}"
                 using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
-                by (smt Un_iff append_butlast_last_id disjoint_iff_not_equal distinct_append distinct_stem_hdC empty_iff empty_set set_append)
+              proof -
+                have dist_stem_butlast: "distinct (stem @ butlast C)"
+                  using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] .
+                have hd_eq_last: "hd C = last C"
+                  using odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] .
+                have len_C: "length C \<ge> 3"
+                  using odd_cycleD(1)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] .
+                have C_nempty: "C \<noteq> []"
+                  using len_C by auto
+                have butlast_nempty: "butlast C \<noteq> []"
+                proof (rule notI)
+                  assume bl: "butlast C = []"
+                  have C_eq_here: "C = [last C]"
+                    using append_butlast_last_id[OF C_nempty] bl by simp
+                  have "length C = 1"
+                    by (subst C_eq_here) simp
+                  then show False
+                    using len_C by linarith
+                qed
+                have C_eq: "C = butlast C @ [last C]"
+                  using append_butlast_last_id[OF C_nempty] by simp
+                have hd_C_eq: "hd C = hd (butlast C)"
+                proof -
+                  have "hd (butlast C @ [last C]) = hd (butlast C)"
+                    using butlast_nempty by (simp add: hd_append)
+                  then show ?thesis
+                    using C_eq by simp
+                qed
+                have last_in_butlast: "last C \<in> set (butlast C)"
+                proof -
+                  have "hd (butlast C) \<in> set (butlast C)"
+                    using hd_in_set[OF butlast_nempty] .
+                  then show ?thesis
+                    using hd_C_eq hd_eq_last by simp
+                qed
+                have setC_eq: "set C = set (butlast C)"
+                proof -
+                  have "set C = set (butlast C @ [last C])"
+                    using C_eq by simp
+                  also have "\<dots> = insert (last C) (set (butlast C))"
+                    by simp
+                  also have "\<dots> = set (butlast C)"
+                    using last_in_butlast by (simp add: insert_absorb)
+                  finally show ?thesis .
+                qed
+                have disj: "set stem \<inter> set (butlast C) = {}"
+                  using dist_stem_butlast[unfolded distinct_append] by blast
+                show "set C \<inter> set stem = {}"
+                  using setC_eq disj by auto
+              qed
               ultimately show ?thesis
                 using quot (1) mem_path_Vs 
                 by fastforce
