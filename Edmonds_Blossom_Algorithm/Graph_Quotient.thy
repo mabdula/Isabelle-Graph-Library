@@ -5101,7 +5101,49 @@ proof(rule ccontr)
     by auto
   then have i: "{last p1, v1} \<in> M \<or> {v1, hd p2} \<in> M"
     using odd_cycleD(2)[OF assms(1)] assms(2)
-    by (metis alt_list_append_1'')
+  proof -
+    have p1_ne: "p1 \<noteq> []" and p2_ne: "p2 \<noteq> []"
+      using p1p2 by auto
+    have dec: "edges_of_path C =
+                 edges_of_path p1 @ {last p1, v1} # {v1, hd p2} # edges_of_path p2"
+    proof -
+      have "edges_of_path (p1 @ v1 # p2) =
+              edges_of_path (p1 @ [hd (v1 # p2)]) @ edges_of_path (v1 # p2)"
+        by (rule edges_of_path_append_2) simp
+      then have app: "edges_of_path (p1 @ v1 # p2) =
+                        edges_of_path (p1 @ [v1]) @ edges_of_path (v1 # p2)"
+        by simp
+      have snoc: "edges_of_path (p1 @ [v1]) = edges_of_path p1 @ [{last p1, v1}]"
+        by (simp add: edges_of_path_snoc[OF p1_ne])
+      have cons: "edges_of_path (v1 # p2) = {v1, hd p2} # edges_of_path p2"
+        using p2_ne by (cases p2) auto
+      show ?thesis
+        using p1p2(1) app snoc cons by simp
+    qed
+    have alt: "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M)
+                 (edges_of_path p1 @ {last p1, v1} # {v1, hd p2} # edges_of_path p2)"
+      using assms(2) dec by simp
+    have split:
+      "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) ({last p1, v1} # {v1, hd p2} # edges_of_path p2) \<or>
+       alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) ({last p1, v1} # {v1, hd p2} # edges_of_path p2)"
+      using alt_list_append_1[OF alt] by blast
+    show ?thesis
+    proof (rule disjE[OF split])
+      assume "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M)
+                ({last p1, v1} # {v1, hd p2} # edges_of_path p2)"
+      then have "alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) ({v1, hd p2} # edges_of_path p2)"
+        by (simp add: alt_list_step)
+      then have "{v1, hd p2} \<in> M"
+        by (simp add: alt_list_step)
+      then show ?thesis by blast
+    next
+      assume "alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M)
+                ({last p1, v1} # {v1, hd p2} # edges_of_path p2)"
+      then have "{last p1, v1} \<in> M"
+        by (simp add: alt_list_step)
+      then show ?thesis by blast
+    qed
+  qed
   have "last p1 \<in> set C" "hd p2 \<in> set C"
     using p1p2 by auto
   then have ii: "{last p1, v1} \<noteq> e" "{v1, hd p2} \<noteq> e"
