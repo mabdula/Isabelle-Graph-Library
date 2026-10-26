@@ -3170,7 +3170,7 @@ proof-
               by linarith
             qed
           then obtain a where "p2 = [a]"
-            by (metis One_nat_def add.commute add.right_neutral length_0_conv length_tl list.collapse list.sel(3) list.size(4))
+            by (auto simp: length_Suc_conv One_nat_def)
           then have False
             using quot_aug_path(1) p'_feats up2_nin_M p2_nempty
             by (metis (no_types, lifting) insert_iff last.simps last_appendR list.distinct(1)
