@@ -444,9 +444,25 @@ proof-
     by simp
 
   have "(v3, v2) \<notin> {(x,y) | x y. (Some x = par y)}\<^sup>*"
-    using neq(2) no_ances(2)
-    apply clarsimp
-    by (metis (mono_tags, lifting) converse_rtranclE mem_Collect_eq old.prod.case)
+  proof
+    assume "(v3, v2) \<in> {(x, y) | x y. Some x = par y}\<^sup>*"
+    then show False
+    proof (rule converse_rtranclE)
+      assume "v3 = v2"
+      then show False
+        using neq(2) by simp
+    next
+      fix y
+      assume "(v3, y) \<in> {(x, y) | x y. Some x = par y}"
+        and "(y, v2) \<in> {(x, y) | x y. Some x = par y}\<^sup>*"
+      then have "Some v3 = par y"
+        by auto
+      moreover have "par y \<noteq> Some v3"
+        using no_ances(2) by blast
+      ultimately show False
+        by simp
+    qed
+  qed
   moreover have "(v3, v2) \<notin>  {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
     using neq(3) no_ances(2)
     apply clarsimp
