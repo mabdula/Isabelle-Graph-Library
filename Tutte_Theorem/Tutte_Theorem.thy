@@ -218,7 +218,14 @@ proof(rule ccontr)
   then have "comp_out G C X = {}" by auto
   obtain x where "x \<in> Vs G \<and> x \<in> C"
     using component_in_E[of C G X] assms(2)
-    by (metis odd_components_nonempty subset_empty subset_eq)
+  proof -
+    have "C \<subseteq> Vs G"
+      using component_in_E assms(2) by blast
+    moreover have "C \<noteq> {}"
+      using odd_components_nonempty assms(1) assms(2) by blast
+    ultimately show thesis
+      using that by blast
+  qed
   then have "connected_component (graph_diff G X) x = C"
     using odd_comps_in_diff_is_component[of C G X] 
     by (simp add: \<open>C \<in> odd_comps_in_diff G X\<close>)
