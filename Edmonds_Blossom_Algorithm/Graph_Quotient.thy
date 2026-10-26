@@ -3695,7 +3695,24 @@ proof -
         have rw: "edges_of_path p' = (edges_of_path (p1 @ [u])) @ edges_of_path (u # p2)"
           using edges_of_path_append_2 quot_aug_path(1) by fastforce
         have eop_nempty: "edges_of_path (p1 @ [u]) \<noteq> []"
-          by (metis Nil_is_append_conv edges_of_path_snoc list.distinct(1) p1_nempty)
+          proof -
+            obtain a q where p1_eq: "p1 = a # q"
+              using p1_nempty by (cases p1) auto
+            show ?thesis
+            proof (cases q)
+              case Nil
+              then have "p1 @ [u] = [a, u]"
+                using p1_eq by simp
+              then show ?thesis
+                by simp
+            next
+              case (Cons b bs)
+              then have "p1 @ [u] = a # b # (bs @ [u])"
+                using p1_eq by simp
+              then show ?thesis
+                by simp
+            qed
+          qed
         show ?p1 ?p2
           using alt_list_append_1'[OF matching_augmenting_path_feats(2)[OF \<open>matching_augmenting_path (quotG M) p'\<close>, unfolded rw] eop_nempty] p2_nalt
           by blast+
