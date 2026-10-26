@@ -7275,7 +7275,8 @@ qed
         qed
         then show ?thesis
           apply(intro quot_is_matching[where dume = "{last stem, last C}"] matching(1,2))
-          by (auto simp add: doubleton_eq_iff; metis)
+          using dblton_E matching(2)
+          by (fastforce simp add: doubleton_eq_iff dblton_graph_def)
       qed
       have quotG_graph: "dblton_graph (quotG E)"
         using doubleton_quot graph(1)
