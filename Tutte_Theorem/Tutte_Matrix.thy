@@ -823,8 +823,14 @@ lemma nths_in_result:
 lemma nths_obtain_index:
   assumes "a \<in>  set (nths xs I)"
   obtains i where "a = xs!i" "i \<in> I" "i < length xs"
-  using assms(1)  set_nths
-  by (smt (verit, ccfv_threshold) mem_Collect_eq)
+proof -
+  have "a \<in> {xs ! i | i. i < length xs \<and> i \<in> I}"
+    using assms by (simp only: set_nths)
+  then obtain i where "a = xs ! i" and "i < length xs" and "i \<in> I"
+    by blast
+  then show ?thesis
+    using that by blast
+qed
 
 lemma next_elem_by_p:
   assumes "p permutes (UNIV :: 'a set)"
