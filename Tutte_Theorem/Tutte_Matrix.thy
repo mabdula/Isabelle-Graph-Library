@@ -1337,8 +1337,13 @@ proof(rule ccontr)
   then have "p ((inv p) a) = a" 
     by (meson assms(1) bij_inv_eq_iff permutation_bijective)
   have "p ((inv p) a) \<in> set (support p i)" 
-    by (metis (no_types, lifting) \<open>inv p a \<in> set (support p i)\<close> assms(1) cycle_is_surj 
-        cycle_of_permutation cycle_restrict image_iff map_eq_conv)
+  proof -
+    have "p (inv p a) = (p ^^ (1::nat)) (inv p a)"
+      by simp
+    then show ?thesis
+      using elemnets_in_support_expo[OF assms(1) \<open>inv p a \<in> set (support p i)\<close>]
+      by blast
+  qed
   then show False 
     using \<open>p (inv p a) = a\<close> assms(2) by auto
 qed
