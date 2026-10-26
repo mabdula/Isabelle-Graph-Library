@@ -1279,7 +1279,7 @@ next
         then obtain x y where "e = {x, y} \<and> x \<in> Vs G \<and> y \<in> A"
           by blast
         then have "(e \<inter> A) = {y}" 
-          by (metis Int_insert_left_if0 Int_insert_left_if1 assms(8) disjoint_iff inf_bot_right)
+          using assms(8) by (auto simp: disjoint_iff)
         then show False 
           using `card (e \<inter> A) = 2` by auto
       qed
