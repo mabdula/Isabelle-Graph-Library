@@ -1779,7 +1779,22 @@ let find_pfx' = (\<lambda>C. find_pfx ((=) (choose_con_vert (set C) v)) C) in
 
 lemma find_pfx_subset:
   "set (find_pfx Q l) \<subseteq> set l"
-  by (metis Un_iff find_pfx_append_2 set_append subsetI)
+proof (induction l)
+  case Nil
+  show ?case by simp
+next
+  case (Cons a l)
+  show ?case
+  proof (cases "Q a")
+    case True
+    then have "find_pfx Q (a # l) = [a]" by simp
+    then show ?thesis by simp
+  next
+    case False
+    then have "find_pfx Q (a # l) = a # find_pfx Q l" by simp
+    then show ?thesis using Cons.IH by auto
+  qed
+qed
 
 lemma stem2vert_path_subset:
   "set (stem2vert_path C M v) \<subseteq> (set C)"
