@@ -2280,8 +2280,19 @@ proof -
     using lin_indpt_full_rank[of "A'\<^sup>T" "dim_row A'"]
       `lin_indpt (set (cols A'\<^sup>T))` `distinct (cols A'\<^sup>T)`  transpose_carrier_mat by blast
   then show "det A' \<noteq> 0" 
-    by (metis \<open>A' \<in> carrier_mat (dim_row A') n\<close> \<open>dim_row A' = n\<close> det_rank_iff
-        det_transpose transpose_carrier_mat)
+  proof -
+    assume rankAT: "rank A'\<^sup>T = dim_row A'"
+    have Asq: "A' \<in> carrier_mat n n"
+      using \<open>A' \<in> carrier_mat (dim_row A') n\<close> \<open>dim_row A' = n\<close> by simp
+    have ATsq: "A'\<^sup>T \<in> carrier_mat n n"
+      using Asq transpose_carrier_mat by blast
+    have "rank A'\<^sup>T = n"
+      using rankAT \<open>dim_row A' = n\<close> by simp
+    then have "det A'\<^sup>T \<noteq> 0"
+      using det_rank_iff[OF ATsq] by simp
+    then show "det A' \<noteq> 0"
+      using det_transpose[OF Asq] by simp
+  qed
 qed
 
 lemma min_face_has_int:
