@@ -1804,8 +1804,33 @@ lemma stem2vert_path_subset:
 
 lemma hd_stem2vert_path:
   "C \<noteq> [] \<Longrightarrow> (hd (stem2vert_path C M a2') = hd C \<or> hd (stem2vert_path C M a2') = last C)"
-  apply(simp add: stem2vert_path_def Let_def)
-  by (smt find_pfx.elims hd_rev list.sel(1))
+proof -
+  assume C_nempty: "C \<noteq> []"
+  have hd_find_pfx: "hd (find_pfx Q l) = hd l" if "l \<noteq> []" for Q :: "'a \<Rightarrow> bool" and l :: "'a list"
+    using that by (cases l) auto
+  have rev_nempty: "rev C \<noteq> []"
+    using C_nempty by simp
+  have hd_C: "hd (find_pfx Q C) = hd C" for Q :: "'a \<Rightarrow> bool"
+    by (rule hd_find_pfx[OF C_nempty])
+  have hd_rev_C: "hd (find_pfx Q (rev C)) = last C" for Q :: "'a \<Rightarrow> bool"
+    using hd_find_pfx[OF rev_nempty] C_nempty by (simp add: hd_rev)
+  show "hd (stem2vert_path C M a2') = hd C \<or> hd (stem2vert_path C M a2') = last C"
+  proof (cases "last (edges_of_path (find_pfx ((=) (choose_con_vert (set C) a2')) C)) \<in> M")
+    case True
+    have "stem2vert_path C M a2' = find_pfx ((=) (choose_con_vert (set C) a2')) C"
+      using True by (simp add: stem2vert_path_def Let_def)
+    then have "hd (stem2vert_path C M a2') = hd C"
+      by (simp add: hd_C)
+    then show ?thesis by blast
+  next
+    case False
+    have "stem2vert_path C M a2' = find_pfx ((=) (choose_con_vert (set (rev C)) a2')) (rev C)"
+      using False by (simp add: stem2vert_path_def Let_def)
+    then have "hd (stem2vert_path C M a2') = last C"
+      by (simp add: hd_rev_C)
+    then show ?thesis by blast
+  qed
+qed
 
 lemma hd_stem2vert_nempty:
   "C \<noteq> [] \<Longrightarrow> ((stem2vert_path C M a2') \<noteq> [])"
