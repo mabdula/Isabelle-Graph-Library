@@ -180,9 +180,10 @@ next
     show thesis
       using that face_P_F by (blast elim!: faceE)
   qed
+  have face_P_F: "face P F"
+    by (rule min_face_elim(1)[OF assms(5)])
   obtain C d where C_d: "F = polyhedron C d"  "dim_row C = dim_vec d" "dim_col C = n" 
-    using face_is_polyhedron 
-    by (metis A P_def assms(5) b min_face_elim(1))
+    using face_is_polyhedron[OF A b face_P_F[unfolded P_def]] by blast
   have "\<exists>x\<in>carrier_vec n. C *\<^sub>v x \<le> d" 
     apply (insert assms(5) char_min_face[of A nr b F])
     by(auto simp: \<open>F = polyhedron C d\<close>  A b P_def polyhedron_def)
