@@ -1636,7 +1636,19 @@ next
           by (simp add: \<open>A *\<^sub>v v = 0\<^sub>v nr\<close> x b)
       qed
       then show ?thesis 
-        by (metis \<open>x + v \<noteq> x\<close> add_carrier_vec assms(3) v(1) x)
+        proof -
+          have xv_carr: "x + v \<in> carrier_vec n"
+            using x v(1) by (blast intro: add_carrier_vec)
+          have xv_sol: "x + v \<in> carrier_vec n \<and> A *\<^sub>v (x + v) = b"
+            using xv_carr \<open>A *\<^sub>v (x + v) = b\<close> by (rule conjI)
+          have eq1: "(THE y. y \<in> carrier_vec n \<and> A *\<^sub>v y = b) = x + v"
+            using assms(3) xv_sol by (rule the1_equality)
+          have eq2: "(THE y. y \<in> carrier_vec n \<and> A *\<^sub>v y = b) = x"
+            using assms(3) x by (rule the1_equality)
+          have "x + v = x"
+            using eq1[symmetric] eq2 by (rule trans)
+          with \<open>x + v \<noteq> x\<close> show ?thesis by blast
+        qed
     qed
   next
     case False
