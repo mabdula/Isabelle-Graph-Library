@@ -1240,7 +1240,7 @@ next
     have "matching Mh" 
       using Mh perfect_matchingE by blast
     have 6: "Vs Mh = Vs ?H" 
-      by (metis (no_types, lifting) Mh perfect_matchingE)
+      using perfect_matchingD(3)[OF Mh] by simp
     then  have "\<forall>a \<in> Vs ?H. \<exists>! e \<in> Mh. a \<in> e"
       using \<open>matching Mh\<close> unfolding matching_def2 by argo
     then have "\<forall>a \<in> A.  \<exists>! e \<in> Mh. a \<in> e" 
