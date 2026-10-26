@@ -864,8 +864,8 @@ proof -
   have "0 < n+1"   using zero_less_one by blast
   have "n + 1< length (support p i)" using assms(2) by linarith
   then show ?thesis
-    using next_elem_by_p[of p "n+1"] assms 
-    by (metis (no_types, lifting) \<open>0 < n + 1\<close> add_diff_cancel_right'  length_map length_upt)
+    using next_elem_by_p[of p "n+1"] assms(1) \<open>0 < n + 1\<close>
+    by simp
 qed
 
 lemma perm_verts_in_all_verts:
