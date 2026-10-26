@@ -1101,7 +1101,12 @@ proof -
       then show "i < dim_row (A @\<^sub>r B)" by (simp add: AB_dim_row)
     qed
     have j_dimAB:"j < dim_col (A @\<^sub>r B)" 
-      by (metis AB_dim_col \<open>j < dim_col A\<close> assms(1) carrier_matD(2))
+      proof -
+        have "dim_col A = n"
+          by (rule carrier_matD(2)[OF assms(1)])
+        then show ?thesis
+          using AB_dim_col \<open>j < dim_col A\<close> by simp
+      qed
     show " submatrix (A @\<^sub>r B) {0..<nr1} UNIV $$ (i, j) = A $$ (i, j)"
     proof -
       have "i < nr1" using `i < dim_row A` 
