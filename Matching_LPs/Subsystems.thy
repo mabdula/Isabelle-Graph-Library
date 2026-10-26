@@ -50,7 +50,7 @@ proof -
   then have "card {i. i < dim_row A \<and> i \<in> I} \<le> card I" 
     using assms card_mono by blast
   then show ?thesis 
-    using dim_row_subsyst_mat by metis
+    unfolding dim_row_subsyst_mat[of A b I] .
 qed
 
 lemma dim_subsyst_vec:
