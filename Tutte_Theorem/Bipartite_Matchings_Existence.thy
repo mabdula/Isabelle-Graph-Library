@@ -527,10 +527,43 @@ qed
       then have vs_subs: "Vs G - neighbours_of_Vs G X - A \<subseteq> Vs ?AX_gr - (A - X)"
         by blast
       have AX_unfold:"\<forall>e\<in> ?AX_gr. \<exists>u v. e = {u, v} \<and> (u \<in> A - X \<and> v \<in> Vs ?AX_gr - (A - X))" 
-        using less.prems(1)
-        unfolding partitioned_bipartite_def
-        apply safe
-        by (smt (verit, best) DiffI insert_iff singletonD subsetD vs_subs)
+      proof
+        fix e
+        assume e_mem: "e \<in> ?AX_gr"
+        then obtain x y where xy: "x \<in> A - X" "y \<in> Vs G - neighbours_of_Vs G X - A"
+          "y \<in> e" "x \<in> e" "e \<in> G"
+          by blast
+        obtain u v where u_v: "e = {u, v}" "u \<in> A" "v \<in> Vs G - A"
+          using less.prems(1) xy(5) unfolding partitioned_bipartite_def by meson
+        have xy_neq: "x \<noteq> y"
+          using xy(1) xy(2) by auto
+        have e_eq: "e = {x, y}"
+        proof (cases "x = u")
+          case True
+          have "y \<in> {u, v}"
+            using u_v(1) xy(3) by auto
+          then have "y = v"
+            using True xy_neq by auto
+          then show ?thesis
+            using True u_v(1) by simp
+        next
+          case False
+          have "x \<in> {u, v}"
+            using u_v(1) xy(4) by auto
+          then have x_eq_v: "x = v"
+            using False by auto
+          have "y \<in> {u, v}"
+            using u_v(1) xy(3) by auto
+          then have "y = u"
+            using x_eq_v xy_neq by auto
+          then show ?thesis
+            using x_eq_v u_v(1) by blast
+        qed
+        have "y \<in> Vs ?AX_gr - (A - X)"
+          using vs_subs xy(2) by auto
+        then show "\<exists>u v. e = {u, v} \<and> u \<in> A - X \<and> v \<in> Vs ?AX_gr - (A - X)"
+          using e_eq xy(1) by blast
+      qed
       then have AX_partb:"partitioned_bipartite ?AX_gr (A - X)"
         unfolding partitioned_bipartite_def 
         using A_X_graph A_X_vs by fastforce
