@@ -5295,7 +5295,14 @@ proof-
           by auto
         then have "path E (butlast p1 @ (last p1 # w # []))"
           using aug_path path_pref *
-          by metis
+          proof -
+            have "path E ((p1 @ [w]) @ p2)"
+              using aug_path \<open>p = (p1 @ [w]) @ p2\<close> by simp
+            then have "path E (p1 @ [w])"
+              using path_pref by blast
+            then show ?thesis
+              using * by simp
+          qed
         then show ?thesis
           using path_adj_verts_edge
           by metis
