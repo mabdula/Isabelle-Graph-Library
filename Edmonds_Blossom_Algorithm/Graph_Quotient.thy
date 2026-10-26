@@ -2373,7 +2373,7 @@ proof-
               by (auto simp: matching_def2 Vs_def insert_commute)
           qed
 
-          subgoal by (metis True \<open>last (edges_of_path (chp @ [chv])) \<noteq> {chv, a2'}\<close> edges_are_Vs insertI1)
+                    subgoal using True by (blast dest: edges_are_Vs)
           done
       qed
       then have alt_list_p2: "alt_path M (chv # a2' # p2')"
