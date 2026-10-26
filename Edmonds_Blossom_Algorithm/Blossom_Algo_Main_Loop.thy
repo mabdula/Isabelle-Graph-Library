@@ -37,7 +37,32 @@ proof(induction G arbitrary: M M')
 next
   case (insert x F)
   then show ?case
-    by (metis card_Diff_subset card_mono diff_less_mono2 finite.insertI infinite_super leD psubsetI psubset_card_mono)
+  proof -
+    have fin_ins: "finite (insert x F)"
+      using insert.hyps(1) by simp
+    have M_sub: "M \<subseteq> insert x F"
+      using insert.prems(2) by simp
+    have M'_sub: "M' \<subseteq> insert x F"
+      using insert.prems(3) by simp
+    have card_lt: "card M < card M'"
+      using insert.prems(4) by simp
+    have fin_M: "finite M"
+      using fin_ins M_sub finite_subset by blast
+    have fin_M': "finite M'"
+      using fin_ins M'_sub finite_subset by blast
+    have eq_M: "card (insert x F - M) = card (insert x F) - card M"
+      using card_Diff_subset[OF fin_M M_sub] by simp
+    have eq_M': "card (insert x F - M') = card (insert x F) - card M'"
+      using card_Diff_subset[OF fin_M' M'_sub] by simp
+    have le_card: "card M' \<le> card (insert x F)"
+      using card_mono[OF fin_ins M'_sub] by simp
+    have card_lt_ins: "card M < card (insert x F)"
+      using card_lt le_card less_le_trans by blast
+    have diff_lt: "card (insert x F) - card M' < card (insert x F) - card M"
+      using diff_less_mono2[OF card_lt card_lt_ins] by simp
+    show ?case
+      using eq_M eq_M' diff_lt by simp
+  qed
 qed
 
 
