@@ -3460,7 +3460,20 @@ qed
           then obtain x'' where "{u',x''} \<in> M" by blast
 
           with \<open>{u',x'} \<notin> M\<close> x_to_x' consider (before_x') "index \<sigma> x'' < index \<sigma> x'" | (after_x') "index \<sigma> x' < index \<sigma> x''"
-            by (metis index_eq_index_conv nat_neq_iff shifts_to_only_from_input(2))
+          proof -
+            have neq: "x'' \<noteq> x'"
+              using \<open>{u',x''} \<in> M\<close> \<open>{u',x'} \<notin> M\<close> by blast
+            have "x' \<in> set \<sigma>"
+              by (rule shifts_to_only_from_input(2)[OF x_to_x'])
+            then have "x'' \<in> set \<sigma> \<or> x' \<in> set \<sigma>"
+              by blast
+            with neq have "index \<sigma> x'' \<noteq> index \<sigma> x'"
+              by (simp add: index_eq_index_conv)
+            then have "index \<sigma> x'' < index \<sigma> x' \<or> index \<sigma> x' < index \<sigma> x''"
+              by (simp add: nat_neq_iff)
+            then show thesis
+              using that by blast
+          qed
 
           then show ?thesis
           proof cases
