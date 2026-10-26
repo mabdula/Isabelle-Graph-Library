@@ -787,7 +787,22 @@ proof-
      by(cases p)(simp add: Rcap_def, subst rcap_exract_single, auto)
   ultimately show ?thesis     
     using assm p_prop unfolding resreach_def
-    by (metis insert_subset list.distinct(1) list.simps(15))
+    proof (intro exI[of _ "e # p"] conjI)
+      show "awalk (to_vertex_pair ` \<EE>) (fstv e) (map to_vertex_pair (e # p)) v"
+        using arg_cong[of "to_vertex_pair e " "(fstv e, sndv e)" "\<lambda> d. cas (fstv e) (d # map to_vertex_pair p) v"]
+              to_vertex_pair_fst_snd assm cas.simps(2) p_prop fstv_in_verts
+        by (auto simp add: to_vertex_pair_fst_snd awalk_def)
+    next
+      show "Rcap f (set (e # p)) > 0"
+        using p_prop assm
+        by (cases p)(simp add: Rcap_def, subst rcap_exract_single, auto)
+    next
+      show "e # p \<noteq> []"
+        by simp
+    next
+      show "set (e # p) \<subseteq> \<EE>"
+        using assm(3) p_prop(4) by auto
+    qed
 qed
 
 lemma resreach_intros:
