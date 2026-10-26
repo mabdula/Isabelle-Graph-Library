@@ -102,7 +102,19 @@ lemma exists_greater_if_not_Maximum:
   assumes "a \<noteq> Maximum A"
   shows "\<exists> m \<in> A. m > a"
   using assms 
-  by (metis assms(2) eqMaximumI leI) 
+proof -
+  show ?thesis
+  proof (rule ccontr)
+    assume nex: "\<not> (\<exists>m\<in>A. m > a)"
+    have le: "y \<le> a" if "y \<in> A" for y
+    proof (rule leI)
+      show "\<not> a < y" using nex that by blast
+    qed
+    have "Maximum A = a"
+      by (rule eqMaximumI[OF assms(1) le])
+    with assms(2) show False by simp
+  qed
+qed
 
 lemma valid_ineq_non_empty_is_support:
   assumes "valid_ineq P \<alpha> \<beta>"
