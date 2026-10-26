@@ -398,7 +398,21 @@ proof -
     using transpose_vec_mult_scalar[of A nr n x y] assms(1) assms(3) 
     using assms(4) gram_schmidt.polyhedron_def by blast
   then have " \<alpha> \<bullet> x = \<beta>  \<longleftrightarrow> y \<bullet> (A *\<^sub>v x) = y \<bullet> b" 
-    by (metis \<open>y \<in> carrier_vec nr\<close> assms(3) b comm_scalar_prod)
+  proof -
+    note y_carr = \<open>y \<in> carrier_vec nr\<close>
+    have x_carr: "x \<in> carrier_vec n"
+      using assms(4) unfolding polyhedron_def by blast
+    have alpha_eq: "A\<^sup>T *\<^sub>v y = \<alpha>" and beta_eq: "b \<bullet> y = \<beta>"
+      using assms(3) by blast+
+    have trans: "(A\<^sup>T *\<^sub>v y) \<bullet> x = y \<bullet> (A *\<^sub>v x)"
+      using transpose_vec_mult_scalar[of A nr n x y] A x_carr y_carr by blast
+    have lhs: "\<alpha> \<bullet> x = y \<bullet> (A *\<^sub>v x)"
+      using trans alpha_eq by simp
+    have rhs: "\<beta> = y \<bullet> b"
+      using beta_eq comm_scalar_prod[OF b y_carr] by simp
+    show ?thesis
+      using lhs rhs by simp
+  qed
   also have "\<dots> \<longleftrightarrow> (\<forall> i < nr. y $ i * (b - A *\<^sub>v x) $ i = 0)"
     using eq_vec_zero_diff_in_mult[of "A *\<^sub>v x" nr b y]  
     using A \<open>y \<in> carrier_vec nr\<close> assms(3) assms(4) b mult_mat_vec_carrier 
