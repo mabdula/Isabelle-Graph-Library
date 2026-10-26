@@ -2040,7 +2040,15 @@ proof (induct n)
   case (Suc n)
   let ?A = "(set (support p (least_odd p)))" 
   have "(p^^n) a \<notin>  (set (support p  (least_odd p)))" 
-    by (smt (verit, best) assms elemnets_in_support_expo' map_eq_conv p_is_permutation)
+  proof (rule ccontr)
+    assume "\<not> (p ^^ n) a \<notin> set (support p (least_odd p))"
+    then have h1: "(p ^^ n) a \<in> set (support p (least_odd p))" by blast
+    have h2: "permutation p" using assms(1) p_is_permutation by blast
+    have h3: "(p ^^ n) a = (p ^^ n) a" by (rule refl)
+    have "a \<in> set (support p (least_odd p))"
+      using elemnets_in_support_expo'[OF h2 h1 h3] .
+    then show False using assms(2) by blast
+  qed
   then have "(rev_p p) ((p ^^ n) a) = p ((p ^^ n) a)" 
     using assms(1) p_rev_p_same' by presburger
   then show "(p ^^ Suc n) a = (rev_p p ^^ Suc n) a" 
