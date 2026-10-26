@@ -1182,7 +1182,14 @@ lemma row_in_set_rows:
   fixes A :: "'a  mat"
   assumes "i < dim_row A"
   shows "row A i \<in> set (rows A)"
-  by (metis assms in_set_conv_nth length_rows nth_rows)
+proof -
+  have "i < length (rows A)"
+    using assms by (simp add: length_rows)
+  then have "rows A ! i \<in> set (rows A)"
+    by (rule nth_mem)
+  then show ?thesis
+    using assms by (simp add: nth_rows)
+qed
 
 lemma  mult_row_lin_dep:
   fixes A :: "'a  mat"
