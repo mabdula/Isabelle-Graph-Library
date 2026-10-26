@@ -265,7 +265,7 @@ proof
     apply (fastforce simp: dim_submatrix(2))
     done
   then show "fst (A, b) = fst (sub_system A b UNIV)"
-    by (metis fst_eqD sub_system_fst)
+    unfolding sub_system_fst fst_conv .
   show "snd (A, b) = snd (sub_system A b UNIV)" 
     by (metis snd_eqD nths_UNIV_same vec_list sub_system_snd)
 qed  
