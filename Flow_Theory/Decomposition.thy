@@ -180,7 +180,24 @@ proof(induction g n v rule: find_cycle.induct)
       using "2" True x_def by presburger
     have "length (e#es) = length (find_cycle g (Suc n) v) - 1" 
       using find_cycle_prop es_def 
-      by (metis (no_types, lifting) es_def find_cycle.elims length_Cons length_tl list.sel(3))
+    proof -
+      have len_pos: "length (find_cycle g n (snd e)) > 0"
+      proof (cases n)
+        case 0
+        then show ?thesis by simp
+      next
+        case (Suc n')
+        then show ?thesis by simp
+      qed
+      have "length (e#es) = Suc (length es)" by simp
+      also have "... = Suc (length (find_cycle g n (snd e)) - 1)"
+        using es_def by simp
+      also have "... = length (find_cycle g n (snd e))"
+        using len_pos by simp
+      also have "... = length (find_cycle g (Suc n) v) - 1"
+        using find_cycle_prop by simp
+      finally show ?thesis .
+    qed
     moreover have "i<length (e#es) \<Longrightarrow>
                     fst ((e#es) ! i) = find_cycle g (Suc n) v ! i \<and>
                     snd ((e#es) ! i) = find_cycle g (Suc n) v ! (i + 1)" for i
