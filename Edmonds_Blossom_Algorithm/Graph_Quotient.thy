@@ -1555,7 +1555,7 @@ proof-
     apply(intro edges_of_path_find_pfx cycle)
     subgoal using odd_cycleD(1,3)[OF cycle(1)] cycle(5) by simp
     subgoal using odd_cycleD(1,3)[OF cycle(1)] cycle(5)
-      by (metis hd_rev rev.simps(1))
+      by (simp add: hd_rev odd_cycleD(3)[OF cycle(1)])
     done
   have rev_eop: "(edges_of_path (rev p)) = rev (edges_of_path p)"
     by (simp add: edges_of_path_rev)
