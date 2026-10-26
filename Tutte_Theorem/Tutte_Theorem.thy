@@ -203,7 +203,9 @@ next
   ultimately show "y \<in> connected_component G x" by auto
 qed
   then show ?thesis 
-    by (metis \<open>x \<in> Vs G \<and> x \<in> C\<close> connected_components_closed' own_connected_component_unique)
+    using \<open>x \<in> Vs G \<and> x \<in> C\<close>
+    unfolding connected_components_def
+    by blast
 qed
 
 lemma comp_out_nonempty:
