@@ -372,7 +372,7 @@ proof(cases "Abs f > 0", goal_cases)
     case (1 cs')
     then obtain cs where cs_prop: "cs \<in> set css" " set cs \<subseteq> old_edge ` \<E>"
       "cs' = map network_of_network.get_old_edge cs"
-      by auto (metis set_zip_leftD)
+      by (auto dest: set_zip_leftD)
     hence cs_further_prop:"network_of_network.flowcycle f' cs"
       "set cs \<subseteq> network_of_network.support t s f'"  "distinct cs"
       using css_ws(4) by auto
