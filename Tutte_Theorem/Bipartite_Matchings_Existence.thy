@@ -740,8 +740,16 @@ qed
           case False
           have "\<exists>!e\<in>(M'). v \<in> e" 
             using M' unfolding cover_matching_def 
-            by (metis (no_types, lifting) False UnE \<open>Vs M \<union> Vs M' = Vs (M \<union> M')\<close> 
-                \<open>v \<in> Vs (M \<union> M')\<close> matching_def2)
+            proof -
+              have "v \<in> Vs M \<union> Vs M'"
+                using \<open>Vs M \<union> Vs M' = Vs (M \<union> M')\<close> \<open>v \<in> Vs (M \<union> M')\<close> by simp
+              hence v_in_M': "v \<in> Vs M'"
+                using False by simp
+              have "matching M'"
+                using M' unfolding cover_matching_def by blast
+              thus "\<exists>!e\<in>M'. v \<in> e"
+                using v_in_M' by (simp add: matching_def2)
+            qed
           then show ?thesis 
             using False \<open>Vs M \<inter> Vs M' = {}\<close> UnE by blast
         qed
