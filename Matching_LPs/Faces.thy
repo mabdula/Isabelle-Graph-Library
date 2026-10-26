@@ -1206,11 +1206,37 @@ proof -
           by (rule carrier_matI[OF refl dc])
       qed
       then have 3:"A' *\<^sub>v ?z = b'" 
-        using linear_comb_holds_eq[of A' _ n x y ?z b' ?l] 
-          x y `?z = (1 - ?l) \<cdot>\<^sub>v y + ?l  \<cdot>\<^sub>v x` `?z \<in> carrier_vec n` 
-        by (smt (verit, ccfv_SIG) M.add.m_comm \<open>?l \<le> 1\<close> \<open>0 < ?l\<close> divide_nonneg_pos 
-            divide_nonpos_neg smult_closed zero_le_divide_iff zero_less_divide_iff 
-            zero_less_one_class.zero_le_one)
+      proof -
+        note A'_carr = \<open>A' \<in> carrier_mat (dim_row A') n\<close>
+        note l_pos = \<open>0 < ?l\<close>
+        note l_le1 = \<open>?l \<le> 1\<close>
+        note z_carr = \<open>?z \<in> carrier_vec n\<close>
+        note z_eq_yx = \<open>?z = (1 - ?l) \<cdot>\<^sub>v y + ?l  \<cdot>\<^sub>v x\<close>
+        have xc: "x \<in> carrier_vec n" by (rule x_n)
+        have yc: "y \<in> carrier_vec n" by (rule y_n)
+        have Ax: "A' *\<^sub>v x = b'" using x by blast
+        have Ay: "A' *\<^sub>v y = b'" using y by blast
+        have l_nonneg: "0 \<le> ?l" using l_pos by (rule less_imp_le)
+        have l1_nonneg: "0 \<le> 1 - ?l" using l_le1 by linarith
+        have l1_le1: "1 - ?l \<le> 1" using l_nonneg by linarith
+        have sx: "?l \<cdot>\<^sub>v x \<in> carrier_vec n" using xc by simp
+        have sy: "(1 - ?l) \<cdot>\<^sub>v y \<in> carrier_vec n" using yc by simp
+        have z_eq_xy: "?z = ?l \<cdot>\<^sub>v x + (1 - ?l) \<cdot>\<^sub>v y"
+          using z_eq_yx comm_add_vec[OF sy sx] by simp
+        have z_eq_xy': "?z = (1 - (1 - ?l)) \<cdot>\<^sub>v x + (1 - ?l) \<cdot>\<^sub>v y"
+          using z_eq_xy by simp
+        have z_eq_yx': "?z = (1 - ?l) \<cdot>\<^sub>v y + (1 - (1 - ?l)) \<cdot>\<^sub>v x"
+          using z_eq_yx by simp
+        show ?thesis
+          using linear_comb_holds_eq[of A' "dim_row A'" n x y ?z b' ?l]
+                linear_comb_holds_eq[of A' "dim_row A'" n y x ?z b' "1 - ?l"]
+                A'_carr xc yc z_carr Ax Ay
+                z_eq_xy z_eq_yx z_eq_xy' z_eq_yx'
+                z_eq_xy[symmetric] z_eq_yx[symmetric]
+                z_eq_xy'[symmetric] z_eq_yx'[symmetric]
+                l_pos l_le1 l_nonneg l1_nonneg l1_le1
+          by blast
+      qed
       have "C \<in> carrier_mat (dim_row C) n" 
         by (metis A carrier_matD(2) carrier_mat_triv dim_col_subsyst_mat prod.sel(1) sub_C)
       then have " C *\<^sub>v ?z \<le> d" 
