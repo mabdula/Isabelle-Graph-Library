@@ -797,7 +797,18 @@ lemma laterally_transfer_aug_path':
   obtains q where "graph_augmenting_path G M' q"
 proof-
   from graph_augmenting_path
-  obtain N where N_def: "N \<subseteq> G" "matching N" "card M < card N" using Berge matching' graph by metis
+  have M_in_G: "M \<subseteq> G" and match_M: "matching M"
+    using matching'(1) by auto
+  have berge_M:
+    "(\<exists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p) =
+       (\<exists>N\<subseteq>G. matching N \<and> card M < card N)"
+    by (rule Berge[OF matching'(2) match_M M_in_G graph])
+  have "\<exists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p"
+    using graph_augmenting_path by blast
+  with berge_M have "\<exists>N\<subseteq>G. matching N \<and> card M < card N"
+    by blast
+  then obtain N where N_def: "N \<subseteq> G" "matching N" "card M < card N"
+    by blast
   hence "card M' < card N" using assms(1) by linarith
   then obtain q where "graph_augmenting_path G M' q" using Berge matching graph N_def(1, 2) by metis
   then show ?thesis using that by simp
