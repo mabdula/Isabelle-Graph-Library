@@ -92,7 +92,7 @@ proof (rule notI)
 qed
       then have "u \<notin> ?A_s" by auto
       have "v \<notin> Vs ?E_s"
-        by (smt (verit, best) DiffD1 DiffD2 mem_Collect_eq vs_member)
+        by (auto simp: vs_member)
       then have "v \<notin> ?B_s" by auto
       have "card ?A_s < card A" 
         by (smt (verit, best) DiffD1 DiffD2 IntE \<open>u \<in> A \<and> v \<in> Vs G - A\<close> finite_subset inf_le1 
