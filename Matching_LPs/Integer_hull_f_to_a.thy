@@ -2313,7 +2313,7 @@ lemma min_face_has_int:
   shows "\<exists> x \<in> F. abs(det A') \<cdot>\<^sub>v x \<in>  \<int>\<^sub>v"
 proof -
   obtain z where "z \<in> F" using assms(8)
-    by (metis ex_in_conv face_non_empty gram_schmidt.min_face_elim(1))
+  by (blast dest: gram_schmidt.min_face_elim(1) face_non_empty)
   have 1: "polyhedron A b \<noteq> {}"
     using assms(5) assms(6) by auto
   have 2: " (\<forall>x\<in>local.polyhedron A b. \<forall>i<n. x $v i \<le> bound) \<or>
