@@ -1036,7 +1036,7 @@ proof(rule set_eqI, all \<open>rule\<close>, goal_cases)
 next
   case (2 x)
   then obtain e where "(e \<in> \<E> \<and> (prod.fst (make_pair e) = x \<or> prod.snd (make_pair e) = x))"
-    by (auto simp add: dVs_def) (metis fst_eqD snd_conv)+
+    by (auto simp add: dVs_def make_pair_function)
   hence "(old_edge e \<in> old_edge ` \<E> \<and> (prod.fst (make_pair' (old_edge e)) = x \<or> prod.snd (make_pair' (old_edge e)) = x))"
     using make_pair by auto
   then show ?case 
