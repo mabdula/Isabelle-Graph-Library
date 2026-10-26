@@ -1774,7 +1774,26 @@ proof(induct "card A" arbitrary: A rule: less_induct)
     using card_Diff_subset[OF fin2 sub] card2 less.prems(2) by presburger
       qed
     have "(card (A - {a, b})) < card A" 
-      by (metis Diff_insert2 ab \<open>finite A\<close> card_Diff2_less)
+      proof -
+        have finA: "finite A"
+          using \<open>finite A\<close> .
+        have aA: "a \<in> A"
+          using ab by blast
+        have finA': "finite (A - {a})"
+          using finA by blast
+        have bA': "b \<in> A - {a}"
+          using ab by blast
+        have less1: "card (A - {a} - {b}) < card (A - {a})"
+          by (rule card_Diff1_less[OF finA' bA'])
+        have less2: "card (A - {a}) < card A"
+          by (rule card_Diff1_less[OF finA aA])
+        have eq: "A - {a, b} = A - {a} - {b}"
+          by blast
+        have "card (A - {a, b}) = card (A - {a} - {b})"
+          using eq by simp
+        then show ?thesis
+          using less1 less2 by linarith
+      qed
     have "\<forall>a \<in> (A - {a, b}). h a = - (g a)" 
       by (meson DiffD1 less.prems(1))
     then have "prod h (A - {a, b}) = - prod g (A - {a, b})" 
