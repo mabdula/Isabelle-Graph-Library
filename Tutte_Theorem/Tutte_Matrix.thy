@@ -3484,7 +3484,7 @@ proof -
         then have "y \<in> Vs M" 
           by (simp add: \<open>Vs M = UNIV\<close>)
         have "\<exists>!e. e \<in> M \<and> y \<in> e" 
-          by (metis \<open>y \<in> Vs M\<close> \<open>matching M\<close> matching_def2)
+          using \<open>matching M\<close>[unfolded matching_def2] \<open>y \<in> Vs M\<close> by blast
         then have "{e . e \<in> M \<and> y \<in> e} =  {e}" 
           using `y \<in> e \<and> e \<in> M` by blast
         then have "{e - {y} |e. e \<in> M \<and> y \<in> e} = {e - {y}}" 
