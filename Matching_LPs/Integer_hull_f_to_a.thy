@@ -2190,7 +2190,7 @@ proof(safe)
   show " vec_of_list (nths (list_of_vec b) I) $v i \<in> \<int>" 
   proof -
     have "vec_of_list (nths (list_of_vec b) I) $v i = (nths (list_of_vec b) I) ! i" 
-      by (metis  vec_of_list_index)
+      by (simp add: vec_of_list_index)
     obtain j where "j< length (list_of_vec b)" "(list_of_vec b) ! j = (nths (list_of_vec b) I) ! i"
       by (metis Matrix.dim_vec_of_list asmi in_set_conv_nth notin_set_nthsI)
     then have "(list_of_vec b) ! j \<in> \<int>" 
