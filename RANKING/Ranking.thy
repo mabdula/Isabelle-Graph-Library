@@ -3833,7 +3833,36 @@ proof (rule ccontr)
         by (auto elim: ranking_matching_earlier_match_onlineE)
 
       with rm_G \<open>{u', x'} \<in> G \<setminus> {x}\<close> \<open>{u,x} \<in> M\<close> have "u \<noteq> u''"
-        by (metis edges_are_Vs_2 insertI1 ranking_matchingE remove_vertices_not_vs the_match')
+      proof (intro notI)
+        assume u_eq: "u = u''"
+
+        have matching_M: "matching M"
+          using rm_G by (auto dest: ranking_matchingE maximal_matchingD)
+
+        have x'_in_Vs: "x' \<in> Vs (G \<setminus> {x})"
+          using \<open>{u', x'} \<in> G \<setminus> {x}\<close> by (rule edges_are_Vs_2)
+
+        have x_notin_Vs: "x \<notin> Vs (G \<setminus> {x})"
+          using remove_vertices_not_vs[OF insertI1] .
+
+        from x'_in_Vs x_notin_Vs have x'_neq_x: "x' \<noteq> x"
+          by blast
+
+        from u_eq \<open>{u'',x'} \<in> M\<close> have "{u,x'} \<in> M"
+          by simp
+
+        have eq1: "(THE v. {u,v} \<in> M) = x"
+          using the_match'[OF matching_M \<open>{u,x} \<in> M\<close>] .
+
+        have eq2: "(THE v. {u,v} \<in> M) = x'"
+          using the_match'[OF matching_M \<open>{u,x'} \<in> M\<close>] .
+
+        from eq1 eq2 have "x = x'"
+          by simp
+
+        with x'_neq_x show False
+          by simp
+      qed
 
       with \<open>index \<pi> u'' < index \<pi> u'\<close> consider (before_u) "index \<pi> u'' < index \<pi> u" | (after_u) "index \<pi> u < index \<pi> u''"
         by (force dest: index_less_in_set)
