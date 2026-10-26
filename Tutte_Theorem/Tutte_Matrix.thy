@@ -2367,7 +2367,7 @@ proof(rule ccontr)
   then have "(inv p) (p x) \<in> set (support (inv p) i)" 
     using assms(1) inv_in_support inv_support_same p_is_permutation by fast
   then have "x \<in> set (support (inv p) i)" 
-    by (metis assms(1) permutes_inv_eq)
+    using permutes_inverses(2)[OF assms(1)] by simp
   then show False 
     using assms inv_support_same p_is_permutation by fast
 qed
