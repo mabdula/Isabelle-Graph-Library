@@ -2183,10 +2183,21 @@ proof(safe)
       using False assms by blast
     then have "((rev_p p)^^(?lp-j)) x = i" 
       using \<open>(rev_p p ^^ (least_power (rev_p p) i - j)) x = i\<close> by blast 
-    then show ?thesis using
-        `i \<in> set (support p i)` 
-        elemnets_in_support_expo' `permutation p` 
-      by (metis False assms j_sup pow_rev_p_is_same)
+    show ?thesis
+    proof -
+      have i_in_supp: "i \<in> set (support p i)"
+        using assms el_in_own_support by blast
+      have perm_p: "permutation p"
+        using assms p_is_permutation by blast
+      have eq1: "(p ^^ j) i = (rev_p p ^^ j) i"
+        by (rule pow_rev_p_is_same[OF assms False])
+      have eq2: "(rev_p p ^^ j) i = x"
+        using j_sup by simp
+      have eq3: "x = (p ^^ j) i"
+        using eq1 eq2 by simp
+      show "x \<in> set (support p i)"
+        using elemnets_in_support_expo[OF perm_p i_in_supp eq3] .
+    qed
   qed
 qed
 
