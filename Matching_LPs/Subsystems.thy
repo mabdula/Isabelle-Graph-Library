@@ -606,8 +606,34 @@ proof -
       using insert_elem_sub_system_fulfills_P[of A b i A' b' I A'' b'' "(\<lambda> r y.   r \<bullet> x \<le> y)"] 
         assms by fast
     then show "A'' *\<^sub>v x \<le> b'' \<longleftrightarrow>  A' *\<^sub>v x \<le> b' \<and> row A i \<bullet> x \<le> b $ i"
-      using leq_for_all_index_then_eq 
-      by (metis assms(1) assms(3-4) dims_subsyst_same' index_mult_mat_vec less_eq_vec_def)
+    proof -
+      have dA': "dim_row A' = dim_vec b'"
+        using assms(1) assms(3) by (rule dims_subsyst_same')
+      have dA'': "dim_row A'' = dim_vec b''"
+        using assms(1) assms(4) by (rule dims_subsyst_same')
+      have pointwise: "(M *\<^sub>v x \<le> v) = (\<forall>k<dim_row M. row M k \<bullet> x \<le> v $ k)"
+        if dims: "dim_row M = dim_vec v" for M v
+      proof (rule iffI)
+        assume "M *\<^sub>v x \<le> v"
+        then show "\<forall>k<dim_row M. row M k \<bullet> x \<le> v $ k"
+          using dims by (auto simp add: less_eq_vec_def index_mult_mat_vec)
+      next
+        assume "\<forall>k<dim_row M. row M k \<bullet> x \<le> v $ k"
+        then show "M *\<^sub>v x \<le> v"
+          by (rule leq_for_all_index_then_eq[OF dims])
+      qed
+      have key: "(\<forall>k<dim_row A''. row A'' k \<bullet> x \<le> b'' $ k) =
+                 ((\<forall>j<dim_row A'. row A' j \<bullet> x \<le> b' $ j) \<and> row A i \<bullet> x \<le> b $ i)"
+        using insert_elem_sub_system_fulfills_P[of A b i A' b' I A'' b'' "\<lambda>r y. r \<bullet> x \<le> y"]
+          assms by blast
+      have "(A'' *\<^sub>v x \<le> b'') = (\<forall>k<dim_row A''. row A'' k \<bullet> x \<le> b'' $ k)"
+        by (rule pointwise[OF dA''])
+      also have "\<dots> = ((\<forall>j<dim_row A'. row A' j \<bullet> x \<le> b' $ j) \<and> row A i \<bullet> x \<le> b $ i)"
+        by (rule key)
+      also have "\<dots> = (A' *\<^sub>v x \<le> b' \<and> row A i \<bullet> x \<le> b $ i)"
+        using pointwise[OF dA'] by blast
+      finally show ?thesis .
+    qed
   qed
   then show ?thesis by presburger
 qed
