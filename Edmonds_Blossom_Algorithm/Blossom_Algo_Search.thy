@@ -290,8 +290,20 @@ lemma compute_alt_path_pinduct_2:
         par' = par(v2 \<mapsto> v1, v3 \<mapsto> v2) \<Longrightarrow>
         flabel' = flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r, Even)) \<Longrightarrow> P ex' par' flabel') \<Longrightarrow>
     P ex par flabel) \<Longrightarrow> P ex par flabel"
-  apply (rule compute_alt_path_pinduct_2')
-  by metis+
+proof -
+  assume dom: "compute_alt_path_dom (ex, par, flabel)"
+  assume step: "\<And>ex par flabel.
+    compute_alt_path_dom (ex, par, flabel) \<Longrightarrow>
+    (\<And>v1 v2 v3 r ex' par' flabel'.
+        if1_cond flabel ex \<Longrightarrow>
+        (v1, v2, v3, r) = sel_if1 flabel ex \<Longrightarrow>
+        ex' = insert {v2, v3} (insert {v1, v2} ex) \<Longrightarrow>
+        par' = par(v2 \<mapsto> v1, v3 \<mapsto> v2) \<Longrightarrow>
+        flabel' = flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r, Even)) \<Longrightarrow> P ex' par' flabel') \<Longrightarrow>
+    P ex par flabel"
+  show "P ex par flabel"
+    by (rule compute_alt_path_pinduct_2'[OF dom step])
+qed
 
 subsubsection \<open>Termination of the Search Procedure\<close>
 
