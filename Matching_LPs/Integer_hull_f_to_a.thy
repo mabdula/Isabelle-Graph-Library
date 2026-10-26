@@ -1013,8 +1013,30 @@ proof
   have A_t: "A\<^sup>T \<in> carrier_mat n n" 
     by (simp add: assms(1))
   show "lin_dep (set (cols A)) \<Longrightarrow> lin_dep (set (Matrix.rows A))"
-    using idom_vec.lin_dep_rows_imp_det_0[OF A_t]
-    by (metis A_t Matrix.rows_transpose assms(3) cols_transpose det_rank_iff lin_indpt_full_rank)
+  proof -
+    assume dep_cols: "lin_dep (set (cols A))"
+    show "lin_dep (set (Matrix.rows A))"
+    proof (rule ccontr)
+      assume indpt: "\<not> lin_dep (set (Matrix.rows A))"
+      have cT: "cols A\<^sup>T = Matrix.rows A"
+        by (rule cols_transpose)
+      have rT: "Matrix.rows A\<^sup>T = cols A"
+        by (rule Matrix.rows_transpose)
+      have dist: "distinct (cols A\<^sup>T)"
+        using assms(3) by (simp add: cT)
+      have ind: "lin_indpt (set (cols A\<^sup>T))"
+        using indpt by (simp add: cT)
+      have "rank A\<^sup>T = n"
+        using lin_indpt_full_rank[OF A_t] dist ind by blast
+      then have nonzero: "det A\<^sup>T \<noteq> 0"
+        using det_rank_iff[OF A_t] by simp
+      have "lin_dep (set (Matrix.rows A\<^sup>T))"
+        using dep_cols by (simp add: rT)
+      then have "det A\<^sup>T = 0"
+        using idom_vec.lin_dep_rows_imp_det_0[OF A_t] by blast
+      then show False using nonzero by simp
+    qed
+  qed
 qed
 
 lemma mult_unit_vec_is_col:
