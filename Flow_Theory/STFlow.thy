@@ -397,7 +397,7 @@ proof(cases "Abs f > 0", goal_cases)
       using cs_prop(3)  cs_prop(2)  make_pair by auto
     moreover hence "make_pair ` set cs' = (id o make_pair') ` set cs " 
       using cs_prop(3)  cs_prop(2)  make_pair 
-      by (metis id_comp list.set_map)
+      by (subst list.set_map[symmetric], simp add: list.set_map)
     ultimately have "awalk (make_pair ` set cs') (fst (hd cs')) (map make_pair cs') (fst (hd cs'))"
       by(simp only:)
         (fastforce intro!: awalk_image[OF _ _ refl, of "make_pair' ` set cs" "prod.fst (make_pair' (hd cs))"
