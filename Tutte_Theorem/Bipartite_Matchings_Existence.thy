@@ -109,7 +109,12 @@ qed
         by auto
       have "neighbours_of_Vs ?E_s ?A_s = Vs ?E_s - ?A_s" 
         using part_bipartite_diff
-        by (metis (no_types, lifting) less.prems(1,3) neighbours_of_Vs_bipartite) 
+        proof -
+          have pb: "partitioned_bipartite ?E_s ?A_s"
+            using less.prems(1,3) part_bipartite_diff by blast
+          show ?thesis
+            by (simp add: pb neighbours_of_Vs_bipartite)
+        qed
       have 6:"?A_s \<subset> A" 
         using \<open>card ?A_s < card A\<close> by fastforce
 
