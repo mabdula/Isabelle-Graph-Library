@@ -562,7 +562,31 @@ proof -
     using P_def face by fastforce
   then obtain y' where y': "y' \<ge> 0\<^sub>v nr \<and> A\<^sup>T *\<^sub>v y' = \<alpha> \<and> b \<bullet> y' = \<beta>" 
     using valid_ineq_dual_min[of A nr b \<alpha> \<beta>]  
-    by (smt (verit, best) A P_def b face has_MinimumD(1) mem_Collect_eq)
+  proof -
+  have vi: "valid_ineq (polyhedron A b) \<alpha> \<beta>"
+    using face by (simp add: P_def)
+  from face have "F \<noteq> {}" by auto
+  then obtain z where z: "z \<in> F" by blast
+  have z_P: "z \<in> P" and z_eq: "\<alpha> \<bullet> z = \<beta>"
+    using face z by auto
+  have "z \<in> {x. \<alpha> \<bullet> x = \<beta> \<and> x \<in> polyhedron A b}"
+    using z_P z_eq by (simp add: P_def)
+  then have ne: "{x. \<alpha> \<bullet> x = \<beta> \<and> x \<in> polyhedron A b} \<noteq> {}"
+    by blast
+  have hasmin: "has_Minimum {b \<bullet> y | y. y \<ge> 0\<^sub>v nr \<and> A\<^sup>T *\<^sub>v y = \<alpha>}"
+    using valid_ineq_dual_min(2)[of A nr b \<alpha> \<beta>] A b vi ne by blast
+  have beta: "\<beta> = Minimum {b \<bullet> y | y. y \<ge> 0\<^sub>v nr \<and> A\<^sup>T *\<^sub>v y = \<alpha>}"
+    using valid_ineq_dual_min(1)[of A nr b \<alpha> \<beta>] A b vi ne by blast
+  have "\<beta> \<in> {b \<bullet> y | y. y \<ge> 0\<^sub>v nr \<and> A\<^sup>T *\<^sub>v y = \<alpha>}"
+    using has_MinimumD(1)[OF hasmin] beta by simp
+  then obtain y where y: "\<beta> = b \<bullet> y" "y \<ge> 0\<^sub>v nr" "A\<^sup>T *\<^sub>v y = \<alpha>"
+    by blast
+  show thesis
+  proof (rule that)
+    show "y \<ge> 0\<^sub>v nr \<and> A\<^sup>T *\<^sub>v y = \<alpha> \<and> b \<bullet> y = \<beta>"
+      using y by simp
+  qed
+  qed
   let ?A' = "fst (sub_system A b {i. y' $ i > 0 \<and> i < nr})" 
   let ?b' = "snd (sub_system A b {i. y' $ i > 0 \<and> i < nr})"
   have "{x. \<alpha> \<bullet> x = \<beta> \<and> x \<in> P} = {x. ?A' *\<^sub>v x = ?b' \<and> x \<in> P}"
