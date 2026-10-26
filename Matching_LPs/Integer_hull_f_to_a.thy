@@ -1120,7 +1120,17 @@ proof -
           i_dimAB \<open>i < nr1\<close> j_dimAB by force
       also have " (A @\<^sub>r B) $$ (i, j) =  A $$ (i, j)" 
         using append_rows_index_same[of A nr1 B nr2] assms(1-2) 
-        by (metis i_dimA i_dimAB j_dimA j_dimAB  index_row(1))
+    proof -
+      have row_eq: "row (A @\<^sub>r B) i = row A i"
+        using Missing_Matrix.append_rows_nth(1) assms(1) assms(2) i_dimA by blast
+      have "(A @\<^sub>r B) $$ (i, j) = row (A @\<^sub>r B) i $ j"
+        using i_dimAB j_dimAB by (simp add: index_row(1))
+      also have "\<dots> = row A i $ j"
+        using row_eq by simp
+      also have "\<dots> = A $$ (i, j)"
+        using i_dimA j_dimA by (simp add: index_row(1))
+      finally show ?thesis .
+    qed
       ultimately show "submatrix (A @\<^sub>r B) {0..<nr1} UNIV $$ (i, j) = A $$ (i, j)" 
         by presburger
     qed
