@@ -3145,7 +3145,18 @@ proof -
           case True
           then obtain x3 where "{u'',x3} \<in> M'" by blast
           with \<open>{u'',x''} \<notin> M'\<close> consider (before_x'') "index \<sigma> x3 < index \<sigma> x''" | (after_x'') "index \<sigma> x'' < index \<sigma> x3"
-            by (metis index_eq_index_conv index_less_in_set index_less.prems(2) linorder_neqE_nat)
+          proof -
+            have x3_neq: "x3 \<noteq> x''"
+              using \<open>{u'',x3} \<in> M'\<close> \<open>{u'',x''} \<notin> M'\<close> by blast
+            have x''_in_\<sigma>: "x'' \<in> set \<sigma>"
+              using \<open>index \<sigma> x'' < index \<sigma> x'\<close> by (rule index_less_in_set)
+            from x''_in_\<sigma> x3_neq have "index \<sigma> x3 \<noteq> index \<sigma> x''"
+              by (simp add: index_eq_index_conv)
+            then have "index \<sigma> x3 < index \<sigma> x'' \<or> index \<sigma> x'' < index \<sigma> x3"
+              by (simp add: nat_neq_iff)
+            then show thesis
+              using that by blast
+          qed
 
           then show ?thesis
           proof cases
