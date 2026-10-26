@@ -3781,7 +3781,9 @@ proof (rule ccontr)
           then obtain u'' where "{u'',x''} \<in> M'" by blast
 
           with \<open>{u', x''} \<notin> M'\<close> u_to_u' consider (before_u') "index \<pi> u'' < index \<pi> u'" | (after_u') "index \<pi> u' < index \<pi> u''"
-            by (metis index_eq_index_conv nat_neq_iff shifts_to_only_from_input(2))
+            by (cases "index \<pi> u'' = index \<pi> u'")
+               (auto simp: index_eq_index_conv nat_neq_iff
+                     dest: shifts_to_only_from_input(2))
 
           then show ?thesis
           proof cases
