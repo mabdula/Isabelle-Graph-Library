@@ -891,7 +891,38 @@ next
     by (auto dest: Cons_eq_filterD)
 
   from 3 have \<sigma>_tl: "\<sigma> = x # tl \<sigma>"
-    by (smt (verit, ccfv_SIG) Cons_eq_map_D filter.simps(1) filter.simps(2) index_Cons list.collapse list.inject nat.simps(3))
+    proof -
+    have "\<sigma> \<noteq> []"
+    proof
+      assume "\<sigma> = []"
+      with \<open>x # xs = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> show False
+        by simp
+    qed
+    then obtain a \<sigma>s where \<sigma>_cons: "\<sigma> = a # \<sigma>s"
+      by (cases \<sigma>) auto
+
+    have "a \<notin> X"
+    proof
+      assume "a \<in> X"
+      with \<sigma>_cons \<open>\<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> have \<sigma>'_cons: "\<sigma>' = a # filter (\<lambda>v. v \<in> X) \<sigma>s"
+        by simp
+
+      have "hd (map (index \<sigma>) \<sigma>') = 0"
+        by (simp add: \<sigma>'_cons \<sigma>_cons index_Cons)
+
+      moreover have "hd (map (index \<sigma>) \<sigma>') = Suc n"
+        by (simp add: \<open>Suc n # ns = map (index \<sigma>) \<sigma>'\<close>[symmetric])
+
+      ultimately show False
+        by simp
+    qed
+
+    with \<sigma>_cons \<open>x # xs = filter (\<lambda>v. v \<notin> X) \<sigma>\<close> have "x = a"
+      by simp
+
+    with \<sigma>_cons show ?thesis
+      by simp
+  qed
 
   then have \<sigma>_nonempty: "\<sigma> \<noteq> []" by blast
 
