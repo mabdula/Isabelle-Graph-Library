@@ -2860,9 +2860,20 @@ proof-
       next
         case False
         have choose_vert_works: "chv \<in> set C"
-          unfolding chv_def
-          using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path p1_nempty rev_p1_nempty
-          by (metis (no_types, lifting) append_self_conv2 hd_rev)
+          proof -
+          have p'_eq: "u # rev p1 = [] @ u # rev p1"
+            by simp
+          have works: "choose_con_vert (set C) (hd (rev p1)) \<in> set C \<and>
+                       {hd (rev p1), choose_con_vert (set C) (hd (rev p1))} \<in> E"
+            by (rule choose_vert_works_1[OF cycle(3) p'_eq quot_aug_path(2) quot_aug_path(3)
+                                            rev_p1_nempty quot(1)])
+          have hd_eq: "hd (rev p1) = last p1"
+            by (simp add: hd_rev)
+          from works hd_eq have "choose_con_vert (set C) (last p1) \<in> set C"
+            by simp
+          then show ?thesis
+            by (simp add: chv_def)
+          qed
         moreover have "chv \<noteq> hd C"
           using odd_cycleD(3)[OF cycle(1)] False
           by auto
