@@ -4351,7 +4351,35 @@ proof -
   next
     case no_vertex
     with \<open>ranking_matching G M \<pi> \<sigma>\<close> have rm_path: "remove_vertex_path G M x \<pi> \<sigma> = [x]"      
-      by (smt (verit, ccfv_SIG) edges_are_Vs_2 ranking_matchingE remove_vertex_path_def subsetD zig.simps(1))
+    proof -
+      from \<open>ranking_matching G M \<pi> \<sigma>\<close> have subset: "M \<subseteq> G"
+        by (auto elim: ranking_matchingE)
+      have no_edge: "\<nexists>u. {u,x} \<in> M"
+      proof
+        assume "\<exists>u. {u,x} \<in> M"
+        then obtain u where "{u,x} \<in> M" by blast
+        with subset have "{u,x} \<in> G" by blast
+        then have "x \<in> Vs G" by (auto dest: edges_are_Vs_2)
+        with no_vertex show False by blast
+      qed
+      have zig_eq: "\<And>as bs. zig G M x as bs = [x]"
+      proof -
+        fix as bs
+        show "zig G M x as bs = [x]"
+        proof (cases "matching M")
+          case True
+          with no_edge show ?thesis
+            by (simp add: zig.simps)
+        next
+          case False
+          then show ?thesis
+            by (simp add: zig.simps)
+        qed
+      qed
+      show ?thesis
+        unfolding remove_vertex_path_def
+        by (simp add: zig_eq)
+    qed
 
     from no_vertex assms have "M \<oplus> M' = {}"
       by (intro symm_diff_empty ranking_matching_unique)
