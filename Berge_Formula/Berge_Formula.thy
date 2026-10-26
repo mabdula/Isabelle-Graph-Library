@@ -1371,7 +1371,15 @@ next
     then have "card M + card M \<ge> card Mh + card Mh - card A - card A" 
       by auto
     then have "2* card M + card A\<ge> 2*card Mh - card A" 
-      by (metis le_diff_conv mult_2)
+    proof -
+      assume H: "card Mh + card Mh - card A - card A \<le> card M + card M"
+      have "card Mh + card Mh \<le> card M + card M + card A + card A"
+        using H by (simp add: le_diff_conv)
+      then have "2 * card Mh \<le> (2 * card M + card A) + card A"
+        by linarith
+      then show ?thesis
+        by (simp add: le_diff_conv)
+    qed
     then have "2* card M + ?k \<ge> 2*card Mh - card A" 
       by (metis assms(7))
     also have "2*card Mh - card A = card (Vs Mh) - card A" 
