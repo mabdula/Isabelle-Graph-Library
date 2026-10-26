@@ -1413,7 +1413,16 @@ proof(safe)
     then have 2:"- A' \<in> carrier_mat (dim_row A') n" 
       using uminus_carrier_mat by blast
     have 3:" b' \<in> carrier_vec (dim_row A')"  
-      by (metis A assms(4) b carrier_dim_vec carrier_matD(1) dims_subsyst_same')
+      proof -
+    have dim_Ab: "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    have rows: "dim_row A' = dim_vec b'"
+      using dims_subsyst_same' dim_Ab assms(4) by blast
+    have "dim_vec b' = dim_row A'"
+      using rows by simp
+    then show ?thesis
+      unfolding carrier_dim_vec by simp
+  qed
   show "\<And>x. x \<in> F \<Longrightarrow> (A' @\<^sub>r - A') *\<^sub>v x \<le> b' @\<^sub>v - b'" 
   proof -
     fix x 
