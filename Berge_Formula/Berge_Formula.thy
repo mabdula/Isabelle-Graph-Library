@@ -1285,10 +1285,21 @@ next
       qed
       have "card e = 2" 
         using `graph_invar ?H` `e \<in> ?H` by (meson card_edge)
-      then show "card (e \<inter> A) = 1" 
-        using `card (e \<inter> A) \<ge> 1`
-        by (metis Suc_1 \<open>card (e \<inter> A) \<noteq> 2\<close> card.infinite card_seteq inf_le1 nat.simps(3) nle_le
-                  not_less_eq_eq)
+      then show "card (e \<inter> A) = 1"
+      proof -
+        have "0 < card e"
+          using `card e = 2` by simp
+        then have fin_e: "finite e"
+          by (rule card_ge_0_finite)
+        have sub: "e \<inter> A \<subseteq> e"
+          by blast
+        have "card (e \<inter> A) \<le> card e"
+          by (rule card_mono[OF fin_e sub])
+        then have "card (e \<inter> A) \<le> 2"
+          using `card e = 2` by simp
+        then show ?thesis
+          using `card (e \<inter> A) \<ge> 1` `card (e \<inter> A) \<noteq> 2` by linarith
+      qed
     qed
     then have "sum (\<lambda> e. card (e \<inter> A)) (?edges_A) = card ?edges_A" 
       by auto
