@@ -688,8 +688,26 @@ proof(rule ccontr)
   then have "{x.  A' *\<^sub>v x = b'} = {x. C *\<^sub>v x = d}"
     using \<open>{x. A' *\<^sub>v x = b'} = {x. C *\<^sub>v x = d \<and> row A i1 \<bullet> x = b $ i1}\<close> by blast
   have "dim_vec d + 1 = dim_vec b'" 
-    using remove_index_sub_system_dims[of i1 I b A' b' A C d] 
-    by (metis C_d assms(8) dims_eq i1)
+  proof -
+    have i1_I: "i1 \<in> I"
+      using i1 by blast
+    have i1_A: "i1 < dim_row A"
+      using i1 by blast
+    have i1_b: "i1 < dim_vec b"
+      using i1 dims_eq by auto
+    have Ab: "dim_row A = dim_vec b"
+      using dims_eq by simp
+    have bA: "dim_vec b = dim_row A"
+      using dims_eq by simp
+    have sub_I: "(A', b') = sub_system A b I"
+      using assms(8) by simp
+    have sub_I': "(C, d) = sub_system A b (I - {i1})"
+      using C_d by simp
+    show ?thesis
+      using remove_index_sub_system_dims[of i1 I b A' b' A C d,
+        OF i1_I i1_b sub_I sub_I']
+      by simp
+  qed
   have "dim_vec d \<ge> dim_vec b'" 
     using elems_ge_min[of ?M "dim_vec d" "dim_vec b'"] 
       C_d \<open>{x. A' *\<^sub>v x = b'} = {x. C *\<^sub>v x = d}\<close> assms(7)  
