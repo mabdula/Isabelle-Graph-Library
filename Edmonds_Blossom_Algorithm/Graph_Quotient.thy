@@ -1955,8 +1955,13 @@ qed
 lemma neq_u_notin_quot_graph:
   assumes "v \<notin> s" "v \<noteq> u"
   shows "v \<notin> Vs (quot_graph P E)"
-  using assms
-  by (metis in_quot_graph_neq_u)
+proof (rule notI)
+  assume "v \<in> Vs (quot_graph P E)"
+  from in_quot_graph_neq_u[OF this assms(2)]
+  have "v \<in> s" .
+  with assms(1) show False
+    by simp
+qed
 
 lemma neq_u_notin_quotG:
   assumes "v \<notin> s" "v \<noteq> u"
