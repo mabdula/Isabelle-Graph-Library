@@ -5730,9 +5730,16 @@ proof-
       for p1 w p2 x p3 p
     proof-
       have "edges_of_path p = edges_of_path (p1 @ w # p2 @ [x])@ edges_of_path (x # p3)"
-        unfolding wx(1)
-        using edges_of_path_append_2[where p' = "x # p3"]
-        by (metis append_Cons append_assoc list.distinct(1) list.sel(1))
+      proof -
+        have "edges_of_path (p1 @ w # p2 @ x # p3) =
+              edges_of_path ((p1 @ w # p2) @ (x # p3))"
+          by simp
+        also have "\<dots> = edges_of_path ((p1 @ w # p2) @ [hd (x # p3)]) @ edges_of_path (x # p3)"
+          by (rule edges_of_path_append_2) simp
+        also have "\<dots> = edges_of_path (p1 @ w # p2 @ [x]) @ edges_of_path (x # p3)"
+          by simp
+        finally show ?thesis unfolding wx(1) .
+      qed
       then have "alt_path M (x # p3) \<or> 
                 alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) (edges_of_path (x # p3))"
         apply(intro conjunct2[OF alt_list_append_1] )
