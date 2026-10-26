@@ -3199,8 +3199,14 @@ end
 lemma path_find_pref:
   assumes "path E C"
   shows "path E (find_pfx Q C)"
-  using assms
-  by (metis find_pfx_append_2 path_pref)
+proof -
+  obtain l2 where l2: "C = find_pfx Q C @ l2"
+    using find_pfx_append_2 by blast
+  have "path E (find_pfx Q C @ l2)"
+    using assms by (simp only: l2[symmetric])
+  then show ?thesis
+    by (rule path_pref)
+qed
 
 context quot
 begin
