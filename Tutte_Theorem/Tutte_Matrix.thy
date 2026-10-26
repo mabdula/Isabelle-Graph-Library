@@ -3445,7 +3445,27 @@ proof -
         have "is_singleton {e - {y} |e. e \<in> M \<and> y \<in> e}" 
           using 2 by auto
         then have "{a} \<in> {e - {y} |e. e \<in> M \<and> y \<in> e}" 
-          by (metis (no_types, lifting) 4 ccpo_Sup_singleton is_singleton_the_elem singletonI)
+        proof -
+          let ?S = "{e - {y} |e. e \<in> M \<and> y \<in> e}"
+          have "is_singleton ?S"
+            using 2 by auto
+          then have S_eq: "?S = {the_elem ?S}"
+            by (rule is_singleton_the_elem[THEN iffD1])
+          have "the_elem ?S = \<Union>?S"
+          proof -
+            have "\<Union>?S = \<Union>{the_elem ?S}"
+              by (rule arg_cong[OF S_eq])
+            also have "\<dots> = the_elem ?S"
+              by simp
+            finally show "the_elem ?S = \<Union>?S"
+              by (rule sym)
+          qed
+          also have "\<dots> = {a}"
+            using 4 by simp
+          finally have "the_elem ?S = {a}" .
+          with S_eq show "{a} \<in> ?S"
+            by simp
+        qed
         then have "{y, a} \<in> M" 
           using insert_Diff by force
         then show "x = y"
