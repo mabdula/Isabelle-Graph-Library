@@ -2589,7 +2589,14 @@ proof -
     using odd by auto
 qed
       then have "(a^^1) i = i" 
-        by (metis a_perm least_power_dvd one_dvd p_is_permutation)
+      proof -
+        have perm: "permutation a"
+          by (rule p_is_permutation[OF a_perm])
+        have "(a ^^ least_power a i) i = i"
+          by (rule least_power_of_permutation(1)[OF perm])
+        then show "(a ^^ 1) i = i"
+          using \<open>least_power a i = 1\<close> by simp
+      qed
       then have "a i = i" 
         by simp
       show "?g a = 0" 
