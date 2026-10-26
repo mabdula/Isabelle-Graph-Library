@@ -2133,7 +2133,15 @@ proof-
       using that by simp
     have butlast_nempty: "butlast p1 \<noteq> []"
       using len_ge_2
-      by (metis One_nat_def Suc_1 Suc_le_eq butlast length_append_singleton list.size(3) not_less_eq_eq not_less_iff_gr_or_eq)
+    proof -
+      have len_bl: "length (butlast p1) = length p1 - 1"
+        by (rule length_butlast)
+      have "1 \<le> length p1 - 1"
+        using len_ge_2 by simp
+      then show ?thesis
+        using len_bl len_ge_2
+        by (cases p1 rule: rev_cases) auto
+    qed
     show ?thesis
       unfolding rw3[of p1 p2] edges_of_path_snoc[OF p1_nempty, symmetric]
       using edges_of_path_snoc[OF butlast_nempty, symmetric]
