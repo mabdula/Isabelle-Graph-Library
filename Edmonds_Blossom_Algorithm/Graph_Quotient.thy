@@ -4652,7 +4652,24 @@ proof-
             using hd_app by simp
         qed
       subgoal using matching_augmenting_path_feats(4)[OF quot_aug_path(1)] p2_nempty
-        by (metis (no_types,lifting) matching(2) append_is_Nil_conv last_ConsR last_append last_in_set list.simps(3) p2_subset_s subsetCE vert_in_graph_iff_in_quot_diff_u)
+        proof -
+          have last_mem: "last p2 \<in> set p2"
+            by (rule last_in_set[OF p2_nempty])
+          have last_in_s: "last p2 \<in> s"
+            by (rule subsetD[OF p2_subset_s last_mem])
+          have last_quot: "last (p1 @ u # p2) \<notin> Vs (quotG M)"
+            by (rule matching_augmenting_path_feats(4)[OF quot_aug_path(1)])
+          have eq1: "last (p1 @ u # p2) = last p2"
+            using p2_nempty by simp
+          have eq2: "last (p1 @ p3 @ p2) = last p2"
+            using p2_nempty by simp
+          have "last p2 \<notin> Vs (quotG M)"
+            using last_quot eq1 by simp
+          then have "last p2 \<notin> Vs M"
+            using vert_in_graph_iff_in_quot_diff_u[OF last_in_s matching(2)] by blast
+          then show "last (p1 @ p3 @ p2) \<notin> Vs M"
+            using eq2 by simp
+        qed
       done
   } note append_works = this  
 
