@@ -5865,9 +5865,22 @@ proof-
       moreover have "last (u # p3) \<notin> Vs (quotG M)"
         using wx(1) matching_augmenting_path_feats(4)[OF aug_path(1)] p3_nempty
           \<open>M \<subseteq> E\<close>
-        by (metis (no_types, lifting) append_is_Nil_conv calculation(2) calculation(4) last_ConsR
-            last_appendR last_in_set list.discI list.sel(1) mem_path_Vs neq_u_notin_quotG
-            vert_in_graph_iff_in_quot_diff_u)
+      proof -
+        have p_eq: "p = (p1 @ w # p2 @ [x]) @ p3"
+          using wx(1) by simp
+        have last_p_eq: "last p = last p3"
+          using p_eq p3_nempty by (simp add: last_append)
+        have "last p \<notin> Vs M"
+          using matching_augmenting_path_feats(4)[OF aug_path(1)] .
+        hence last_p3_nin_M: "last p3 \<notin> Vs M"
+          using last_p_eq by simp
+        have "last p3 \<in> s"
+          using p3_nempty p3_subset_s last_in_set by blast
+        hence "last p3 \<notin> Vs (quotG M)"
+          using last_p3_nin_M vert_in_graph_iff_in_quot_diff_u \<open>M \<subseteq> E\<close> by blast
+        thus "last (u # p3) \<notin> Vs (quotG M)"
+          using p3_nempty by simp
+      qed
       moreover have "length (u # p3) \<ge> 2"
         using p3_nempty
         by (auto simp add: neq_Nil_conv)
