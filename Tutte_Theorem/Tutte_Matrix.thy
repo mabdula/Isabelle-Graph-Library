@@ -2873,7 +2873,7 @@ proof(induct A)
   then have "Poly_Mapping.single (sum (\<lambda> i. Poly_Mapping.single {i, p i} 1) (insert x F)) (1::real) 
              = 
             (Poly_Mapping.single (sum (\<lambda> i. Poly_Mapping.single {i, p i} 1) F) 1) * Var\<^sub>0 {x, p x}" 
-    unfolding Var\<^sub>0_def by (smt (z3) 2)
+    unfolding Var\<^sub>0_def by (simp add: 2 mult_single insert.hyps(2) sum.insert add.commute)
   then show ?case
     by (simp add:1 insert.hyps(3))
 qed simp
