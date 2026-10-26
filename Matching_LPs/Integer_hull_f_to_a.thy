@@ -720,9 +720,18 @@ lemma subsyst_rows_carr:
   assumes "A \<in> carrier_mat nr n"
   assumes "(A', b') = sub_system A b I"
   shows "set (rows A') \<subseteq> carrier_vec n" 
-  using dim_col_subsyst_mat[of A b I]
-  using assms carrier_matD(2) prod.sel(1) rows_carrier 
-  by metis
+proof -
+  have A'_eq: "A' = fst (sub_system A b I)"
+    by (simp add: assms(2)[symmetric])
+  have dim_A: "dim_col A = n"
+    by (rule carrier_matD(2)[OF assms(1)])
+  have dim_A': "dim_col A' = n"
+    using dim_col_subsyst_mat[of A b I] dim_A by (simp add: A'_eq)
+  have "set (rows A') \<subseteq> carrier_vec (dim_col A')"
+    by (rule rows_carrier)
+  then show ?thesis
+    by (simp add: dim_A')
+qed
 
 lemma itself_is_subsyst_set_idcs:
   fixes A :: "'a  mat"
