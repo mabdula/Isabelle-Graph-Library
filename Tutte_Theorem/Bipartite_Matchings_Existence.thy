@@ -761,8 +761,20 @@ qed
         by fast
       have "A \<subseteq> Vs (M \<union> M')" 
         using M M' unfolding cover_matching_def
-        by (metis (no_types, lifting) Diff_partition Un_mono 
-            \<open>Vs M \<union> Vs M' = Vs (M \<union> M')\<close> \<open>X \<subset> A\<close> psubset_imp_subset)
+      proof -
+        have X_sub_M: "X \<subseteq> Vs M"
+          using M unfolding cover_matching_def by blast
+        have AX_sub_M': "A - X \<subseteq> Vs M'"
+          using M' unfolding cover_matching_def by blast
+        have X_sub_A: "X \<subseteq> A"
+          using \<open>X \<subset> A\<close> by (rule psubset_imp_subset)
+        have "X \<union> (A - X) = A"
+          using X_sub_A by (rule Diff_partition)
+        moreover have "X \<union> (A - X) \<subseteq> Vs M \<union> Vs M'"
+          using X_sub_M AX_sub_M' by (rule Un_mono)
+        ultimately show "A \<subseteq> Vs (M \<union> M')"
+          using \<open>Vs M \<union> Vs M' = Vs (M \<union> M')\<close> by simp
+      qed
       then have "cover_matching G (M \<union> M') A" 
         unfolding cover_matching_def 
         using \<open>M \<union> M' \<subseteq> G\<close> \<open>matching (M \<union> M')\<close> graphE by fastforce
