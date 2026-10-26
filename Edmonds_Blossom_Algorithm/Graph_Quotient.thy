@@ -6871,7 +6871,17 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         using matching(3)
         by (simp add: finite_symm_diff)
       have alt_list_stem_hdC: "alt_path M (stem @ [hd C])"
-        by (metis alt_list_append_1 match_blossomD(1,3)[OF \<open>match_blossom M stem C\<close>] edges_of_path_append_2 odd_cycle_nempty)
+      proof -
+        have "C \<noteq> []"
+          using match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] odd_cycle_nempty by auto
+        then have "edges_of_path (stem @ [hd C]) @ edges_of_path C = edges_of_path (stem @ C)"
+          using edges_of_path_append_2 by force
+        then show ?thesis
+          using alt_list_append_1[THEN conjunct1, of "\<lambda>e. e \<notin> M" "\<lambda>e. e \<in> M"
+                "edges_of_path (stem @ [hd C])" "edges_of_path C"]
+                match_blossomD(1)[OF \<open>match_blossom M stem C\<close>]
+          by auto
+      qed
       have distinct_stem_hdC: "distinct (stem @ [hd C])"
       proof-
         have "butlast C = hd C # tl (butlast C)"
