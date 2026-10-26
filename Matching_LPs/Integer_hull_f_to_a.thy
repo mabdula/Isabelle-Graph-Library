@@ -2453,7 +2453,13 @@ proof(rule ccontr)
   then have "\<forall>x \<in> P. \<exists> y \<in> P. c \<bullet> y > c \<bullet> x" 
     by auto
   have "P \<noteq> {}" using assms(8) 
-    by (metis P_def assms(1) b gram_schmidt.int_hull_subset subset_empty) 
+  proof -
+    have "integer_hull P \<subseteq> P"
+      unfolding P_def
+      using gram_schmidt.int_hull_subset[OF assms(1) b] .
+    then show ?thesis
+      using assms(8) by blast
+  qed
   have "\<forall> v. \<exists> x \<in> P. c \<bullet> x \<ge> v"
   proof(rule ccontr)
     assume "\<not> (\<forall>v. \<exists>x\<in>P. v \<le> c \<bullet> x)"
