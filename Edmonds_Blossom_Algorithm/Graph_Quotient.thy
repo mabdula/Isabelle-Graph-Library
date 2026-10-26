@@ -2067,7 +2067,15 @@ proof-
       ultimately show False
         using vC(1) matching(1) edges_are_Vs
         unfolding matching_def2
-        by (metis insert_commute insert_iff)
+      proof -
+        have vC_in_Vs: "vC \<in> Vs M"
+          using e(2) e(3) by (auto simp: Vs_def)
+        have "e = {last p1, vC}"
+          using matching(1)[unfolded matching_def2] vC_in_Vs e(2) e(3) vC(1)
+          by blast
+        then show False
+          using \<open>e \<noteq> {last p1, vC}\<close> by simp
+      qed
     qed
     moreover have "hd (stem2vert_path C  M (hd p2)) = last C"
       using hd_stem2vert_path[OF odd_cycle_nempty[OF cycle(1)]] odd_cycleD[OF cycle(1)]
