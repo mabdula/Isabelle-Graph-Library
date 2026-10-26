@@ -269,16 +269,39 @@ proof
     finally show "\<sigma>1 = \<sigma>2" .
   qed
 next
-  from assms show "?f ` ?L = ?R"
-    apply (auto)
-     apply (metis index_less_size_conv length_finite_permutations_of_set permutations_of_setD(1))
-  proof -
-    fix x
-    assume "x < length \<sigma>"
-    with assms obtain \<sigma>' where "\<sigma>' \<in> permutations_of_set V" "index \<sigma>' v = x" "[x <- \<sigma>'. x \<noteq> v] = [x <- \<sigma>. x \<noteq> v]"
+  show "?f ` ?L = ?R"
+  proof (intro equalityI subsetI)
+    fix y
+    assume "y \<in> ?f ` ?L"
+    then obtain \<sigma>' where \<sigma>': "\<sigma>' \<in> permutations_of_set V"
+      "[x <- \<sigma>'. x \<noteq> v] = [x <- \<sigma>. x \<noteq> v]" "y = index \<sigma>' v"
+      by blast
+
+    from \<sigma>'(1) assms(2) have "v \<in> set \<sigma>'"
+      by (auto dest: permutations_of_setD(1))
+
+    then have "index \<sigma>' v < length \<sigma>'"
+      by (simp add: index_less_size_conv)
+
+    also from \<sigma>'(1) have "length \<sigma>' = card V"
+      by (rule length_finite_permutations_of_set)
+
+    also from assms(1) have "card V = length \<sigma>"
+      by (simp add: length_finite_permutations_of_set)
+
+    finally show "y \<in> ?R"
+      using \<sigma>'(3) by simp
+  next
+    fix t
+    assume "t \<in> ?R"
+    then have "t < length \<sigma>"
+      by simp
+
+    with assms obtain \<sigma>' where "\<sigma>' \<in> permutations_of_set V" "index \<sigma>' v = t"
+      "[x <- \<sigma>'. x \<noteq> v] = [x <- \<sigma>. x \<noteq> v]"
       by (auto elim: permutation_vertex_at_tE)
 
-    then show "x \<in> (\<lambda>\<sigma>'. index \<sigma>' v) ` {\<sigma>' \<in> permutations_of_set V. filter (\<lambda>x. x \<noteq> v) \<sigma>' = filter (\<lambda>x. x \<noteq> v) \<sigma>}"
+    then show "t \<in> ?f ` ?L"
       by blast
   qed
 qed
