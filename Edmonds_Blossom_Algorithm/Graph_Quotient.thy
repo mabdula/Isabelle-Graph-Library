@@ -7459,10 +7459,21 @@ qed
               using stem_nempty \<open>set stem \<subseteq> s\<close>
               by auto
           qed
+          note disj = this
+          have mem_eq: "\<And>e. e \<inter> s = {} \<Longrightarrow> (e \<in> M) = (e \<in> M')"
+          proof -
+            fix e
+            assume "e \<inter> s = {}"
+            then have "e \<notin> set (edges_of_path (stem @ [hd C]))"
+              using disj by auto
+            then show "(e \<in> M) = (e \<in> M')"
+              unfolding M'_def
+              by (simp add: symmetric_diff_def)
+          qed
+          have "{e \<in> M. e \<inter> s = {}} = {e \<in> M'. e \<inter> s = {}}"
+            using mem_eq by auto
           then show ?thesis
-            unfolding M'_def
-            using in_symm_diff_eq_2
-            by (metis (mono_tags, lifting) disjoint_iff_not_equal mem_Collect_eq)
+            by simp
         qed
         ultimately show ?thesis
           using i cardM'_eq_cardM
