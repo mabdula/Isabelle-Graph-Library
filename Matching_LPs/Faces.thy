@@ -360,7 +360,12 @@ proof -
     qed
   have "y \<bullet> a = y \<bullet> b \<longleftrightarrow> y \<bullet> b - y \<bullet> a  = 0" using assms(5)  by auto
   also have "\<dots> \<longleftrightarrow> y \<bullet> (b - a) = 0" 
-    by (metis assms(1-3) scalar_prod_minus_distrib)
+  proof -
+    have "y \<bullet> (b - a) = y \<bullet> b - y \<bullet> a"
+      by (rule scalar_prod_minus_distrib[OF assms(3) assms(2) assms(1)])
+    thus ?thesis
+      by simp
+  qed
   also have "\<dots> \<longleftrightarrow> (\<Sum>i = 0..<nr. y $ i * (b - a) $ i) = 0"
     unfolding scalar_prod_def 
     using assms(1)  by auto
