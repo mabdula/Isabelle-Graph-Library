@@ -7029,7 +7029,40 @@ qed
         qed
         ultimately have "\<forall>e\<in>M'. hd C \<notin> e"
           unfolding M'_def
-          by (metis in_symm_diff_eq_2)
+          proof -
+  assume f1: "last (edges_of_path (stem @ [hd C])) \<notin> M \<oplus> set (edges_of_path (stem @ [hd C]))"
+  assume f2: "\<forall>e\<in>set (edges_of_path (stem @ [hd C])). hd C \<in> e \<longrightarrow> e = last (edges_of_path (stem @ [hd C]))"
+  assume f3: "\<forall>e\<in>M. e \<noteq> last (edges_of_path (stem @ [hd C])) \<longrightarrow> hd C \<notin> e"
+  show "\<forall>e\<in>M \<oplus> set (edges_of_path (stem @ [hd C])). hd C \<notin> e"
+  proof
+    fix e
+    assume e_mem: "e \<in> M \<oplus> set (edges_of_path (stem @ [hd C]))"
+    then have "(e \<in> M \<and> e \<notin> set (edges_of_path (stem @ [hd C]))) \<or>
+               (e \<in> set (edges_of_path (stem @ [hd C])) \<and> e \<notin> M)"
+      by (simp add: symmetric_diff_def)
+    then show "hd C \<notin> e"
+    proof
+      assume e_in1: "e \<in> M \<and> e \<notin> set (edges_of_path (stem @ [hd C]))"
+      have e_neq_last: "e \<noteq> last (edges_of_path (stem @ [hd C]))"
+        using e_in1 stem_hdC_nempty last_in_set by blast
+      show "hd C \<notin> e"
+        using e_in1 e_neq_last f3 by blast
+    next
+      assume e_in2: "e \<in> set (edges_of_path (stem @ [hd C])) \<and> e \<notin> M"
+      show "hd C \<notin> e"
+      proof
+        assume hdC_in_e: "hd C \<in> e"
+        have e_eq_last: "e = last (edges_of_path (stem @ [hd C]))"
+          using e_in2 f2 hdC_in_e by blast
+        have e_in_M': "e \<in> M'"
+          unfolding M'_def symmetric_diff_def
+          using e_in2 by blast
+        show False
+          using e_in_M'[unfolded M'_def] e_eq_last f1 by blast
+      qed
+    qed
+  qed
+qed
         then show ?thesis
           unfolding Vs_def
           using odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
