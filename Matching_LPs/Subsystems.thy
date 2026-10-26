@@ -970,11 +970,36 @@ proof -
     finally show "(l \<cdot>\<^sub>v (A *\<^sub>v x)) $ i \<le> (l \<cdot>\<^sub>v b) $ i" .
   qed
   have "(1 - l) \<cdot>\<^sub>v (A *\<^sub>v y) \<le> (1 - l) \<cdot>\<^sub>v b" 
-    apply (cases "l = 0")
-    using assms(6) apply force
-    by (smt (verit, best) Orderings.order_eq_iff assms(6) assms(8) diff_gt_0_iff_gt
-        diff_numeral_special(9) index_smult_vec(1) index_smult_vec(2) less_eq_vec_def
-        mult_le_cancel_left_pos multiply_by_zero_eq order_le_imp_less_or_eq)
+  proof -
+    have nonneg: "0 \<le> 1 - l"
+      using assms(8) by simp
+    have dims: "dim_vec (A *\<^sub>v y) = dim_vec b"
+      using assms(6)[unfolded less_eq_vec_def] by simp
+    have le: "\<forall>i<dim_vec b. (A *\<^sub>v y) $ i \<le> b $ i"
+      using assms(6)[unfolded less_eq_vec_def] by blast
+    have dims': "dim_vec ((1 - l) \<cdot>\<^sub>v (A *\<^sub>v y)) = dim_vec ((1 - l) \<cdot>\<^sub>v b)"
+      using dims by simp
+    have all_le: "\<forall>i<dim_vec ((1 - l) \<cdot>\<^sub>v b).
+                    ((1 - l) \<cdot>\<^sub>v (A *\<^sub>v y)) $ i \<le> ((1 - l) \<cdot>\<^sub>v b) $ i"
+    proof (intro allI impI)
+      fix i
+      assume i: "i < dim_vec ((1 - l) \<cdot>\<^sub>v b)"
+      then have i': "i < dim_vec b" by simp
+      have "(A *\<^sub>v y) $ i \<le> b $ i"
+        using le i' by blast
+      then have step: "(1 - l) * ((A *\<^sub>v y) $ i) \<le> (1 - l) * (b $ i)"
+        using nonneg by (rule mult_left_mono)
+      have "((1 - l) \<cdot>\<^sub>v (A *\<^sub>v y)) $ i = (1 - l) * ((A *\<^sub>v y) $ i)"
+        using i' dims by simp
+      moreover have "((1 - l) \<cdot>\<^sub>v b) $ i = (1 - l) * (b $ i)"
+        using i' by simp
+      ultimately show "((1 - l) \<cdot>\<^sub>v (A *\<^sub>v y)) $ i \<le> ((1 - l) \<cdot>\<^sub>v b) $ i"
+        using step by simp
+    qed
+    show ?thesis
+      unfolding less_eq_vec_def
+      by (rule conjI[OF dims' all_le])
+  qed
   have "A *\<^sub>v z \<le> A *\<^sub>v (l \<cdot>\<^sub>v x) + A *\<^sub>v ((1 - l) \<cdot>\<^sub>v y)" 
     using mult_add_distrib_mat_vec[of A nr n "l \<cdot>\<^sub>v x" "(1 - l) \<cdot>\<^sub>v y"] 
     using assms(1) assms(2) assms(3) assms(7) smult_carrier_vec 
