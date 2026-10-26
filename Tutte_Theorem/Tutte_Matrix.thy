@@ -1425,7 +1425,13 @@ proof -
       using \<open>x \<in> ?A\<close> assms inv_in_support p_is_permutation
       by fast
     have "(on_odd p) ((inv p) x) = x" 
-      by (metis \<open>inv p x \<in> ?A\<close> assms  on_odd_def permutes_inverses(1))
+    proof -
+      have "on_odd p (inv p x) = p (inv p x)"
+        using \<open>inv p x \<in> ?A\<close> by (rule on_odd_in)
+      also have "\<dots> = x"
+        using assms by (rule permutes_inverses(1))
+      finally show ?thesis .
+    qed
     then show "x \<in> (on_odd p) ` ?A" 
       by (metis \<open>inv p x \<in> ?A\<close> image_eqI)
   qed
