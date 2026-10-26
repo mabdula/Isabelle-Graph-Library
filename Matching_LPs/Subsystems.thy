@@ -681,7 +681,17 @@ proof(safe)
     fix r
     assume "r \<in> set (rows C)" 
     then obtain j' where j': "j' < dim_row C \<and> row C j' = r" 
-      by (metis in_set_conv_nth length_rows nth_rows)
+    proof -
+      from \<open>r \<in> set (rows C)\<close> obtain k
+        where k: "k < length (rows C)" and rk: "rows C ! k = r"
+        by (auto simp: in_set_conv_nth)
+      have kdim: "k < dim_row C"
+        using k by (simp add: length_rows)
+      have "row C k = r"
+        using rk kdim by (simp add: nth_rows)
+      show thesis
+        using that kdim \<open>row C k = r\<close> by blast
+    qed
     obtain i' where i:"i' < dim_row A \<and> i' \<in> (I - {i}) \<and> row A i' = row C j' \<and> d $ j' = b $ i'" 
       using exist_index_in_A[of A b j' "I - {i}"] 
         dims_subsyst_same' fst_conv j' snd_conv 
