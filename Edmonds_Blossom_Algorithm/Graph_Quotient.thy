@@ -3528,7 +3528,22 @@ proof -
     by auto
   ultimately have p2_subset_s[simp]: "set p2 \<subseteq> s"
     using quot good_quot_map
-    by (metis (no_types, lifting) neq_u_notin_quotG set_rev_mp subsetI)
+  proof -
+    have "x \<in> s" if x_mem: "x \<in> set p2" for x
+    proof (rule ccontr)
+      assume x_nin_s: "x \<notin> s"
+      have x_neq_u: "x \<noteq> u"
+        using u_nin_p2 x_mem by blast
+      have "x \<notin> Vs (quotG E)"
+        by (rule neq_u_notin_quotG[OF x_nin_s x_neq_u])
+      moreover have "x \<in> Vs (quotG E)"
+        using x_mem \<open>set p2 \<subseteq> Vs (quotG E)\<close> by blast
+      ultimately show False
+        by simp
+    qed
+    then show ?thesis
+      by blast
+  qed
 
   have "path (quotG E) (p1 @ [u])"
     using quot_aug_path(1) quot_aug_path(2)
