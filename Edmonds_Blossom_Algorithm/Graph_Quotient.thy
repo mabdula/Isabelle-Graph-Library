@@ -5664,7 +5664,17 @@ proof-
               by (auto simp add: neq_Nil_conv simp del: p2_nempty)
             show ?thesis
               using matching_augmenting_path_feats(2)[OF aug_path(1), unfolded rw1 rw2 rw3]
-              by (metis (no_types, lifting) alt_list_append_1' alt_list_step append_is_Nil_conv last_snoc list.simps(3) p1_x_nin_M)
+            proof -
+              have alt_fact: "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M)
+                    (edges_of_path p1 @ {last p1, x} # {hd p2, x} # edges_of_path p2)"
+                using matching_augmenting_path_feats(2)[OF aug_path(1), unfolded rw1 rw2 rw3]
+                by simp
+              have "{hd p2, x} \<in> M"
+                using alt_list_append_1''[OF alt_fact] p1_x_nin_M
+                by blast
+              then show ?thesis
+                using p1_x_nin_M by blast
+            qed
           qed
           have False
             apply(rule alt_list_p1_u[of "rev p2" "rev p" x "rev p1"])
