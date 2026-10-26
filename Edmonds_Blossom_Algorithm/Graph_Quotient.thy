@@ -7007,7 +7007,25 @@ qed
             qed
           then show ?thesis
             using matching(1)
-            by (metis \<open>last (edges_of_path (stem @ [hd C])) \<in> M\<close> \<open>last C \<in> Vs M\<close> match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] matching_def2 odd_cycleD(3))
+            proof (intro ballI impI notI)
+              fix e
+              assume e_in_M: "e \<in> M"
+              assume e_neq: "e \<noteq> last (edges_of_path (stem @ [hd C]))"
+              assume hdC_in_e: "hd C \<in> e"
+              have hdC_eq_lastC: "hd C = last C"
+                using odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] .
+              have hdC_in_Vs_M: "hd C \<in> Vs M"
+                using hdC_eq_lastC \<open>last C \<in> Vs M\<close> by simp
+              have "\<exists>!e. e \<in> M \<and> hd C \<in> e"
+                using matching(1)[unfolded matching_def2] hdC_in_Vs_M
+                by blast
+              then have "e = last (edges_of_path (stem @ [hd C]))"
+                using e_in_M hdC_in_e \<open>hd C \<in> last (edges_of_path (stem @ [hd C]))\<close>
+                      \<open>last (edges_of_path (stem @ [hd C])) \<in> M\<close>
+                by blast
+              then show False
+                using e_neq by blast
+            qed
         qed
         ultimately have "\<forall>e\<in>M'. hd C \<notin> e"
           unfolding M'_def
