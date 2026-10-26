@@ -151,7 +151,12 @@ lemma I_subsys_same_card:
 proof -
   have "{i. i < nr \<and> i \<in> I} = I" using assms(3) by auto 
   then have " card {i. i < dim_row A \<and> i \<in> I} = card I" using A by auto
-  then show "dim_row (fst (sub_system A b I)) = card I" using dim_row_subsyst_mat by metis 
+  then have eq_card: "card {i. i < dim_row A \<and> i \<in> I} = card I" .
+  have "dim_row (fst (sub_system A b I)) = card {i. i < dim_row A \<and> i \<in> I}"
+    by (rule dim_row_subsyst_mat)
+  also have "\<dots> = card I"
+    by (rule eq_card)
+  finally show "dim_row (fst (sub_system A b I)) = card I" .
   then show "dim_vec (snd (sub_system A b I)) = card I" using b 
     by (simp add: \<open>{i. i < nr \<and> i \<in> I} = I\<close> dim_subsyst_vec)
 qed
