@@ -23,7 +23,8 @@
   procedure keeps `compute_match_blossom`; the subprocedure parameters keep `aug_path_search`,
   `blos_search`, `create_vert`, `compute_alt_path`.
 - "The abstract blossom version should be removed, after everything is done and I am
-  satisfied." Until then `Edmonds_Blossom_Algorithm/` and its `ROOTS` line stay untouched.
+  satisfied." Done on 2026-10-26: `Edmonds_Blossom_Algorithm/` (session `Blossom`) and its
+  `ROOTS` line were removed at the user's request.
 - "Backup the executable version, write a plan, and execute it in the usual way" (one-shots in
   the plan, coders copy and repair, orchestrator gates and reports per phase).
 

@@ -588,3 +588,10 @@ Phase 12/13 rules (new statements/proofs ai, scaffolding follows its proof).
   Text unchanged (markers only); build green (25 s); strict provenance passes.
   Session: human 60.9% / ai_human 3.5% / ai 35.7% of lines.
 - Backup: `backups/v2_before_simple_relabel_2026-10-26/`.
+
+### 2026-10-26: abstract session removed
+
+At the user's request the abstract session `Blossom` (`Edmonds_Blossom_Algorithm/`) and its `ROOTS`
+line are removed; no session depended on it. It remains in the git history (last at 199ea45). The
+campaign scripts under `plan_v2/scripts/` that read the original theories from that directory need
+a checkout of an earlier commit.
