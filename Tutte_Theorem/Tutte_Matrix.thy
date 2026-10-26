@@ -908,7 +908,14 @@ proof -
   have "C \<subseteq> Vs (u_edges p)" 
     by (simp add: \<open>C \<in> connected_components (u_edges p)\<close> connected_component_subs_Vs)
   obtain x where "x \<in> C" 
-    by (metis \<open>C \<in> connected_components (u_edges p)\<close> connected_comp_nempty ex_in_conv)
+  proof -
+    have "C \<noteq> {}"
+      using assms(2) by (rule connected_comp_nempty)
+    then have "\<exists>x. x \<in> C"
+      by (simp add: ex_in_conv)
+    then show thesis
+      using that by blast
+  qed
   then have "x \<in> Vs (u_edges p)" 
     by (meson \<open>C \<in> connected_components (u_edges p)\<close> connected_comp_verts_in_verts)
   have "set (support p x) = C" 
