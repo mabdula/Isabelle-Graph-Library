@@ -193,8 +193,15 @@ proof -
             using \<open>\<forall>z \<in> set p. z \<in> C\<close> by blast
         qed
     qed   
-  qed (metis \<open>connected_component (graph_diff G X) x = C\<close> 
-      con_comp_subset graph_diff_subset insert_absorb insert_subset)
+next
+  fix y
+  assume "y \<in> C"
+  then have "y \<in> connected_component (graph_diff G X) x"
+    using \<open>connected_component (graph_diff G X) x = C\<close> by simp
+  moreover have "connected_component (graph_diff G X) x \<subseteq> connected_component G x"
+    by (rule con_comp_subset) (rule graph_diff_subset)
+  ultimately show "y \<in> connected_component G x" by auto
+qed
   then show ?thesis 
     by (metis \<open>x \<in> Vs G \<and> x \<in> C\<close> connected_components_closed' own_connected_component_unique)
 qed
