@@ -1842,7 +1842,7 @@ proof-
         by auto
       obtain e where e: "e \<in> set (edges_of_path C)" "vC \<in> e" "e \<in> M"
         using alt_path_vert_is_matched[OF cycle(2) vCinC \<open>vC \<noteq> hd C\<close> ass(1) \<open>C \<noteq> []\<close>]
-        by metis
+        by blast
       moreover have "e \<noteq> {last p1, vC}"
         using p1_subset_s quot(1) e(1) v_in_edge_in_path \<open>last p1 \<in> s\<close>
         by fastforce
