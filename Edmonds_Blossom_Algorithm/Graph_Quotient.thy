@@ -3803,8 +3803,15 @@ proof -
             by fastforce
         qed
         show "path E (replace_cycle C M p1 p2)"
-          using replace_cycle_cases_p1[OF p1_subset_s _ p1_nempty quot_aug_path_p1 app_works] up2_in_M
-          using hd_rev p1_nempty by (metis(no_types,lifting))
+        proof -
+          have p2_nempty: "p2 \<noteq> []"
+            using len_p2_ge_2 by (cases p2) simp_all
+          have disj: "{u, hd p2} \<in> quotG M \<or> p2 = []"
+            using up2_in_M[OF p2_nempty] by blast
+          show ?thesis
+            by (rule replace_cycle_cases_p1[unfolded hd_rev,
+                                    OF p1_subset_s disj p1_nempty quot_aug_path_p1 app_works])
+        qed
       next
         case len_p2_nge_2: False
         show ?thesis
