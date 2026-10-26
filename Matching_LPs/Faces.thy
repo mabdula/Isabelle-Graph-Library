@@ -1490,7 +1490,14 @@ proof(cases "i < dim_row A'")
   have "row (A' @\<^sub>r (-A')) i = row A' i" 
     by (meson True append_rows_nth(1) carrier_matI uminus_carrier_mat)
   have "i < dim_vec b'" using True assms(4) A b 
-    by (metis carrier_matD(1) carrier_vecD dims_subsyst_same')
+  proof -
+    have dim_Ab: "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    have dims: "dim_row A' = dim_vec b'"
+      using dims_subsyst_same' dim_Ab assms(4) by blast
+    then show ?thesis
+      using True by simp
+  qed
   then have "(b' @\<^sub>v (-b')) $ i = b' $ i" using index_append_vec 
     by (metis trans_less_add1) 
   let ?i' = "i + dim_row A'"
