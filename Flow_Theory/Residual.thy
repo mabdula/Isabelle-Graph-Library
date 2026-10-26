@@ -1412,11 +1412,27 @@ proof(rule ccontr)
     hence a:"rcap f (F e) > 0" "e \<in> \<E>"
       using Delta_minus_def \<open>e \<in> \<Delta>\<^sup>- (ARescut f v) \<and> f e < \<u> e\<close> 
       by(auto simp add: ereal_diff_gr0)
-    hence "snd e \<noteq> v \<Longrightarrow> resreach f (fst e) v "
-      using resreach_intros(2)[of f "F e" "snd e" v] a0 unfolding ARescut_def \<EE>_def 
-      by (metis (no_types, lifting) CollectD \<open>\<lbrakk>0 < \<uu>\<^bsub>f\<^esub>F e; sndv (F e) = snd e; F e \<in> \<EE>; 
-            resreach f (snd e) v\<rbrakk> \<Longrightarrow> resreach f (fstv (F e)) v\<close> fstv.simps(1) insertE o_edge_res 
-               oedge.simps(1) prod.collapse sndv.simps(1))
+    hence "snd e \<noteq> v \<Longrightarrow> resreach f (fst e) v"
+    proof -
+      assume "snd e \<noteq> v"
+      have "snd e \<in> ARescut f v"
+        using a0 by blast
+      hence "snd e \<in> insert v {u. resreach f u v}"
+        unfolding ARescut_def by simp
+      with \<open>snd e \<noteq> v\<close> have snd_reach: "resreach f (snd e) v"
+        by blast
+      have cap_pos: "0 < \<uu>\<^bsub>f\<^esub>(F e)"
+        using a(1) by simp
+      have snd_eq: "sndv (F e) = snd e"
+        by simp
+      have Fe_in: "F e \<in> \<EE>"
+        unfolding \<EE>_def using a(2) by blast
+      have "resreach f (fstv (F e)) v"
+        using resreach_intros(2)[of f "F e" "snd e" v] cap_pos snd_eq Fe_in snd_reach
+        by blast
+      thus "resreach f (fst e) v"
+        by simp
+    qed
     hence "fst e \<in> ARescut f v" 
       using resreach_intros(1)[of f "F e"] a 
       unfolding ARescut_def \<EE>_def
