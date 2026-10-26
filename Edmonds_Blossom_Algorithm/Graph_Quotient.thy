@@ -4990,8 +4990,21 @@ proof(cases "u \<in> set p'")
 next
   case False
   then have p_subset_s: "set p' \<subseteq> s"
-    using quot(1) mem_path_Vs in_quotG_neq_u quot_aug_path
-    by (metis (no_types, lifting) subsetI)
+    proof -
+    have path_p': "path (quotG E) p'"
+      by (rule graph_augmenting_path_feats(3)[OF quot_aug_path])
+    have "x \<in> s" if x_mem: "x \<in> set p'" for x
+    proof -
+      have "x \<in> Vs (quotG E)"
+        using path_p' x_mem by (blast intro: mem_path_Vs)
+      moreover have "x \<noteq> u"
+        using False x_mem by blast
+      ultimately show ?thesis
+        by (rule in_quotG_neq_u)
+    qed
+    then show ?thesis
+      by (rule subsetI)
+  qed
   then have "path E p'"
     using quot_aug_path
     using qug_path_iff_case_1_ii quot(1) by blast
