@@ -1858,8 +1858,54 @@ proof
     by (simp add: x)
   then have "row C j \<bullet> x \<le> d $ j \<and> row C j' \<bullet> x \<le> d $ j'" 
     using A C_d j 1
-    by (smt (verit, best) assms(5) b eq_polyhedron_neg_indices index_mult_mat_vec less_eq_vec_def
-        neg_equal_iff_equal uminus_eq_vec)
+  proof -
+  have Cxd: "C *\<^sub>v x \<le> d"
+    using x by blast
+  have dims: "dim_row C = dim_vec d"
+    using Cxd by (simp add: less_eq_vec_def)
+  have le: "row C m \<bullet> x \<le> d $ m" if m: "m < dim_row C" for m
+  proof -
+    have m_d: "m < dim_vec d"
+      using m dims by simp
+    have "row C m \<bullet> x = (C *\<^sub>v x) $ m"
+      by (rule index_mult_mat_vec[OF m, symmetric])
+    also have "\<dots> \<le> d $ m"
+      by (rule lesseq_vecD[OF carrier_vec_dim_vec Cxd m_d])
+    finally show ?thesis .
+  qed
+  have first: "row C j \<bullet> x \<le> d $ j"
+    by (rule le[OF j(1)])
+  have j_lt: "j < dim_row (A' @\<^sub>r (- A'))"
+    using j(1) C_d(2) by simp
+  obtain k where k1: "k < dim_row (A' @\<^sub>r (- A'))"
+    and k2: "row (A' @\<^sub>r (- A')) j = - row (A' @\<^sub>r (- A')) k"
+    and k3: "(b' @\<^sub>v (- b')) $ j = - ((b' @\<^sub>v (- b')) $ k)"
+    by (rule eq_polyhedron_neg_indices[OF A b assms(5) assms(4) j_lt])
+  have k_lt: "k < dim_row C"
+    using k1 C_d(2) by simp
+  have rowk: "row C j = - row C k"
+    using k2 C_d(2) by simp
+  have dk: "d $ j = - (d $ k)"
+    using k3 C_d(3) by simp
+  have rj: "row C j' = row C k"
+  proof -
+    have "row C j' = - (- row C j')"
+      by (simp add: uminus_uminus_vec)
+    also have "\<dots> = - (row C j)"
+      by (simp add: j(2))
+    also have "\<dots> = - (- row C k)"
+      by (simp add: rowk)
+    also have "\<dots> = row C k"
+      by (simp add: uminus_uminus_vec)
+    finally show ?thesis .
+  qed
+  have dj: "d $ j' = d $ k"
+    using j(3) dk by simp
+  have second: "row C j' \<bullet> x \<le> d $ j'"
+    using le[OF k_lt] rj dj by simp
+  show ?thesis
+    by (rule conjI[OF first second])
+  qed
   then have "row C j \<bullet> x \<le> d $ j \<and> - (row C j) \<bullet> x \<le> - d $ j"
     by (metis j(2-3) R.minus_minus uminus_uminus_vec)
   then have "row C j \<bullet> x \<le> d $ j \<and>  (row C j) \<bullet> x \<ge>  d $ j"
