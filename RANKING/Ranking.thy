@@ -4794,7 +4794,46 @@ proof -
     by (auto elim: ranking_matchingE dest: bipartite_edgeD)
 
   from \<open>\<sigma> \<noteq> []\<close> have index_gt: "\<And>v'. ?v \<noteq> v' \<Longrightarrow> index \<sigma> ?v < index \<sigma> v'"
-    by (metis gr0I index_conv_size_if_notin index_first length_greater_0_conv nth_index)
+proof -
+  fix v'
+  assume "?v \<noteq> v'"
+  have sigma_eq: "\<sigma> = hd \<sigma> # tl \<sigma>"
+    using \<open>\<sigma> \<noteq> []\<close> by (simp add: hd_Cons_tl)
+  have hd_eq: "hd \<sigma> = \<sigma> ! 0"
+    using \<open>\<sigma> \<noteq> []\<close> by (simp add: hd_conv_nth)
+  have index_v0: "index \<sigma> (\<sigma> ! 0) = 0"
+  proof -
+    have "index \<sigma> (\<sigma> ! 0) = index (hd \<sigma> # tl \<sigma>) (\<sigma> ! 0)"
+      using sigma_eq by simp
+    also have "\<dots> = index (hd \<sigma> # tl \<sigma>) (hd \<sigma>)"
+      using hd_eq by simp
+    also have "\<dots> = 0"
+      by simp
+    finally show ?thesis .
+  qed
+  have index_v'_gt: "0 < index \<sigma> v'"
+  proof (cases "v' \<in> set \<sigma>")
+    case True
+    show ?thesis
+    proof (rule ccontr)
+      assume "\<not> 0 < index \<sigma> v'"
+      then have "index \<sigma> v' = 0" by simp
+      have "\<sigma> ! index \<sigma> v' = v'"
+        using True by (rule nth_index)
+      with \<open>index \<sigma> v' = 0\<close> have "\<sigma> ! 0 = v'" by simp
+      with \<open>?v \<noteq> v'\<close> show False by simp
+    qed
+  next
+    case False
+    then have "index \<sigma> v' = length \<sigma>"
+      by (simp add: index_conv_size_if_notin)
+    moreover from \<open>\<sigma> \<noteq> []\<close> have "0 < length \<sigma>"
+      by (simp add: length_greater_0_conv)
+    ultimately show ?thesis by simp
+  qed
+  from index_v0 index_v'_gt show "index \<sigma> ?v < index \<sigma> v'"
+    by simp
+qed
 
   consider (matched) "?v \<in> Vs M" | (unmatched) "?v \<notin> Vs M" by blast
   then show ?thesis
