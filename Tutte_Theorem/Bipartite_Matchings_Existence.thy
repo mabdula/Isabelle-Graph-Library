@@ -297,8 +297,16 @@ qed
       have "matching M" 
         using \<open>cover_matching G M ?A_s\<close> cover_matching_def by blast
       have "\<forall> e \<in> M. u \<notin> e \<and> v \<notin> e "
-        by (metis (no_types, lifting) \<open>cover_matching ?E_s M ?A_s\<close> cover_matching_def 
-            mem_Collect_eq set_diff_eq subset_iff)
+        proof (rule ballI)
+          fix e
+          assume "e \<in> M"
+          have "M \<subseteq> ?E_s"
+            using \<open>cover_matching ?E_s M ?A_s\<close> unfolding cover_matching_def by blast
+          hence "e \<in> ?E_s"
+            using \<open>e \<in> M\<close> by blast
+          thus "u \<notin> e \<and> v \<notin> e"
+            by auto
+        qed
       then have "\<forall> e \<in> M. e \<noteq> {u, v} \<longrightarrow> e \<inter> {u, v} = {}" 
         by simp
       then have 8:"matching (insert {u, v} M)"
