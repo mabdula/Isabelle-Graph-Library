@@ -1607,8 +1607,48 @@ proof-
         by (auto simp add: v_in_edge_in_path_gen)
     qed
     subgoal unfolding p'p''
-      using edges_of_path_append_2 edges_of_path_snoc
-      by (smt append.assoc append_Cons cycle(1) cycle(5) edges_of_path.simps(3) last.simps last_appendR list.distinct(1) list.sel(1) odd_cycleD(3) p'p'' self_append_conv2)
+      proof -
+        have p'_nempty: "p' \<noteq> []"
+        proof
+          assume "p' = []"
+          then have "hd p = v"
+            using p'p'' by simp
+          then show False
+            using cycle(5) by simp
+        qed
+        have p''_nempty: "p'' \<noteq> []"
+        proof
+          assume p''_eq: "p'' = []"
+          have "hd p = last p"
+            by (rule odd_cycleD(3)[OF cycle(1)])
+          also have "last p = v"
+            using p'p'' p''_eq by simp
+          finally have "hd p = v" .
+          then show False
+            using cycle(5) by simp
+        qed
+        have split1: "edges_of_path (p' @ v # p'') = edges_of_path (p' @ [v]) @ edges_of_path (v # p'')"
+        proof -
+          have "edges_of_path (p' @ v # p'') = edges_of_path (p' @ [hd (v # p'')]) @ edges_of_path (v # p'')"
+            by (rule edges_of_path_append_2) simp
+          then show ?thesis
+            by simp
+        qed
+        have split2: "edges_of_path (p' @ [v]) = edges_of_path p' @ [{last p', v}]"
+          by (simp add: edges_of_path_snoc p'_nempty)
+        have split3: "edges_of_path (v # p'') = {v, hd p''} # edges_of_path p''"
+        proof (cases p'')
+          case Nil
+          then show ?thesis
+            using p''_nempty by simp
+        next
+          case (Cons a r)
+          then show ?thesis
+            by simp
+        qed
+        show "edges_of_path (p' @ v # p'') = edges_of_path p' @ {last p', v} # {v, hd p''} # edges_of_path p''"
+          by (simp add: split1 split2 split3)
+      qed
     done
 qed
 
