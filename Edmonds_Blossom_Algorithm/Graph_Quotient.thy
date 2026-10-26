@@ -2335,7 +2335,8 @@ proof-
             qed
           qed
           then show False
-            by (metis Diff_iff ass(2) contra_subsetD list.set_intros(1) local.Cons p2_subset_s quot)
+            using ass(2) p2_subset_s quot local.Cons
+            by auto
         qed
         then have "last (edges_of_path (chp @ [chv])) \<noteq> {chv, a2'}"
           by auto
