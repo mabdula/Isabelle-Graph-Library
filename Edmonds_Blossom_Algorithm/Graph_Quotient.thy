@@ -2565,7 +2565,13 @@ proof-
     by (auto simp: path_pref)
   then have "set p1 \<subseteq> Vs (quotG E)"
     using quot
-    by (metis path_pref subset_path_Vs)
+    proof -
+      have "path (quotG E) p1"
+        using \<open>path (quotG E) (p1 @ [u])\<close>
+        by (rule path_pref)
+      then show ?thesis
+        by (rule subset_path_Vs)
+    qed
   moreover have u_nin_p1: "u \<notin> set (rev p1)"
     using quot_aug_path
     by auto
