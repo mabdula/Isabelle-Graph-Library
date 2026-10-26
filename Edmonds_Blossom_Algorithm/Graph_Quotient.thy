@@ -5614,8 +5614,28 @@ proof-
         moreover have "last (u # (rev p1)) \<notin> Vs (quotG M)"
           using p1p2x(1) matching_augmenting_path_feats(3)[OF aug_path(1)] p1_nempty
             \<open>M \<subseteq> E\<close>
-          by (metis (no_types,lifting) hd_append2 hd_in_set last.simps last_rev p1_subset_s 
-              rev_is_Nil_conv set_rev_mp vert_in_graph_iff_in_quot_diff_u)
+          proof -
+            have p_eq: "p = p1 @ [x]"
+              using p1p2x(1) p2_empty by simp
+            have hd_p1_eq_hd_p: "hd p1 = hd p"
+              using p1_nempty p_eq by (simp add: hd_append2)
+            have hd_p1_in_s: "hd p1 \<in> s"
+              using p1_nempty p1_subset_s by (blast intro: subsetD hd_in_set)
+            have hd_p_notin_M: "hd p \<notin> Vs M"
+              using matching_augmenting_path_feats(3)[OF aug_path(1)] .
+            have hd_p1_notin_M: "hd p1 \<notin> Vs M"
+              using hd_p1_eq_hd_p hd_p_notin_M by simp
+            have hd_p1_notin_quotM: "hd p1 \<notin> Vs (quotG M)"
+              using vert_in_graph_iff_in_quot_diff_u[OF hd_p1_in_s \<open>M \<subseteq> E\<close>] hd_p1_notin_M
+              by simp
+            have rev_p1_nempty: "rev p1 \<noteq> []"
+              using p1_nempty by simp
+            have last_rev_p1: "last (rev p1) = hd p1"
+              using p1_nempty by (simp add: last_rev)
+            thus "last (u # (rev p1)) \<notin> Vs (quotG M)"
+              using rev_p1_nempty last_rev_p1 hd_p1_notin_quotM
+              by simp
+          qed
         moreover have "length (u # (rev p1)) \<ge> 2"
           by (auto simp add: leI)
         ultimately show ?thesis
