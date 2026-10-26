@@ -2280,12 +2280,33 @@ proof-
       have chva2': "{chv, a2'} \<notin> M"
       proof(cases "chv = last C")
         case T2: True
-        then show ?thesis
-          using quot_aug_path Cons edge_in_quot_in_graph_2'_doubleton
-          apply (simp add: alt_list_step)
-          by (smt Diff_disjoint choose_vert_works contra_subsetD good_quot_map(1) 
-                  image_empty image_insert insert_Diff insert_disjoint(2) list.set_intros(1)
-                  mem_Collect_eq p2_subset_s quot quot_graph_def)
+        show ?thesis
+        proof
+          assume inM: "{chv, a2'} \<in> M"
+          have a2'_in_s: "a2' \<in> s"
+            using p2_subset_s Cons by auto
+          have chv_nin_s: "chv \<notin> s"
+            using choose_vert_works(1) quot by auto
+          have a2'_neq_u: "a2' \<noteq> u"
+            using a2'_in_s good_quot_map(1) by auto
+          have P_eq: "P ` {chv, a2'} = {u, a2'}"
+            using a2'_in_s chv_nin_s by simp
+          have "P ` {chv, a2'} \<in> quot_graph P M"
+            by (rule edge_in_graph_in_quot[OF inM])
+          then have in_quot_graph: "{u, a2'} \<in> quot_graph P M"
+            using P_eq by simp
+          have "{u, a2'} \<noteq> {u}"
+          proof
+            assume "{u, a2'} = {u}"
+            then have "a2' = u" by blast
+            with a2'_neq_u show False by simp
+          qed
+          then have in_quotG: "{u, a2'} \<in> quotG M"
+            using in_quot_graph by simp
+          have "{u, a2'} \<notin> quotG M"
+            using quot_aug_path(1) Cons by (simp add: alt_list_step)
+          with in_quotG show False by simp
+        qed
       next
         case F2: False
         then have True: "last (edges_of_path (chp @ [chv])) \<in> M"
