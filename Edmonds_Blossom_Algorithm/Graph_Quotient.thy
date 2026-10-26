@@ -2577,7 +2577,21 @@ proof-
     by auto
   ultimately have p1_subset_s: "set (rev p1) \<subseteq> s"
     using quot good_quot_map
-    by (metis (no_types, lifting) in_quotG_neq_u set_rev subset_eq)
+    proof -
+      have in_s: "v \<in> s" if v_mem: "v \<in> set (rev p1)" for v
+      proof -
+        have v_p1: "v \<in> set p1"
+          using v_mem by simp
+        have v_quot: "v \<in> Vs (quotG E)"
+          using v_p1 \<open>set p1 \<subseteq> Vs (quotG E)\<close> by blast
+        have v_neq_u: "v \<noteq> u"
+          using v_mem \<open>u \<notin> set (rev p1)\<close> by blast
+        show "v \<in> s"
+          by (rule in_quotG_neq_u[OF v_quot v_neq_u])
+      qed
+      show ?thesis
+        using in_s by blast
+    qed
 
 
   note inBetinM = 
