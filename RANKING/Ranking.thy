@@ -3738,7 +3738,14 @@ proof (rule ccontr)
           proof cases
             case before_x''
             with \<open>{u', x3} \<in> M'\<close> u_to_u' before_x' show ?thesis
-              by (metis (no_types, lifting) insert_commute order.strict_trans shifts_to_def)
+            proof -
+              have x3_lt_x': "index \<sigma> x3 < index \<sigma> x'"
+                using before_x'' before_x' by (rule order.strict_trans)
+              have x3_u': "{x3,u'} \<in> M'"
+                using \<open>{u', x3} \<in> M'\<close> by (simp add: insert_commute)
+              show ?thesis
+                using u_to_u' x3_lt_x' x3_u' unfolding shifts_to_def by blast
+            qed
           next
             case after_x''
             with \<open>{u',x3} \<in> M'\<close> \<open>{u',x''} \<in> G \<setminus> {x}\<close> \<open>{u',x''} \<in> M\<close> before_x' show ?thesis
