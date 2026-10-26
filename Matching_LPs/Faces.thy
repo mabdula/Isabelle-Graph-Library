@@ -1265,7 +1265,7 @@ proof -
         using \<open>i < nr \<and> i \<in> I'' \<and> row A'' j = row A i \<and> b'' $ j = b $ i\<close>
         by fastforce
       obtain C' d'  where "(C', d') = sub_system A b (I \<union> {i})" 
-        by (metis surj_pair)
+        by (rule that[OF prod.collapse])
       then have "{x. C' *\<^sub>v x = d'} = {x. A' *\<^sub>v x = b' \<and> row A i \<bullet> x = b $ i}" 
         using insert_sub_system_eq[of A b i  A' b' I  C' d'] 
               \<open>i \<notin> I\<close> sub_A(1) A \<open>dim_vec b = nr\<close> i by blast
