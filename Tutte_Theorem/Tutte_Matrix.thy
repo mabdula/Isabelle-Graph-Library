@@ -2829,8 +2829,24 @@ next
   have "var_sign p = -1"
     by (meson False var_sign_def)
   have "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = - prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
-    by (metis (no_types, lifting) \<open>var_sign p = - 1\<close> assms finite_class.finite_UNIV 
-        minus_equation_iff one_neq_neg_one  product_is_var_product var_sign_def)
+  proof -
+    have disj: "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV \<or>
+        - (prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
+      using product_is_var_product[OF assms finite_class.finite_UNIV] .
+    show ?thesis
+      using disj False
+    proof (elim disjE)
+      assume "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
+      then show ?thesis
+        using False by simp
+    next
+      assume "- (prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
+      then have "- (- (prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set))) = - prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
+        by (rule arg_cong)
+      then show ?thesis
+        by simp
+    qed
+  qed
   then show ?thesis 
     by (simp add: \<open>var_sign p = - 1\<close>)
 qed
