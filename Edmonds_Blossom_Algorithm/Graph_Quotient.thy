@@ -3049,7 +3049,19 @@ proof-
         have rw: "edges_of_path p' = (edges_of_path (p1 @ [u])) @ edges_of_path (u # p2)"
           using edges_of_path_append_2 quot_aug_path(1) by fastforce
         have eop_nempty: "edges_of_path (p1 @ [u]) \<noteq> []"
-          by (metis Nil_is_append_conv edges_of_path_snoc list.distinct(1) p1_nempty)
+          proof -
+          have "length (edges_of_path (p1 @ [u])) = length (p1 @ [u]) - 1"
+            by (rule edges_of_path_length)
+          also have "\<dots> = length p1"
+            by simp
+          finally have len_eq: "length (edges_of_path (p1 @ [u])) = length p1" .
+          have "0 < length p1"
+            using p1_nempty by simp
+          with len_eq have "0 < length (edges_of_path (p1 @ [u]))"
+            by simp
+          then show ?thesis
+            by simp
+          qed
         show ?p1 ?p2
           using alt_list_append_1'[OF p'_feats(2)[unfolded rw] eop_nempty] p2_nalt
           by blast+
