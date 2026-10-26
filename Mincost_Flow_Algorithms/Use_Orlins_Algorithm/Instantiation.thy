@@ -140,7 +140,7 @@ interpretation Pair_Graph_Specs_satisfied:
      Pair_Graph_Specs map_empty RBT_Map.delete lookup vset_insert isin t_set sel
      edge_map_update adj_inv vset_empty vset_delete vset_inv
   using Set_Choose_satisfied Map_satisfied
-  by(auto simp add: Pair_Graph_Specs_def map_empty_def  RBT_Set.empty_def)
+  by(auto simp add: Pair_Graph_Specs_def Pair_Graph_Specs_Read_Only_def map_empty_def  RBT_Set.empty_def)
 
 lemmas Pair_Graph_Specs_satisfied = Pair_Graph_Specs_satisfied.Pair_Graph_Specs_axioms
 
@@ -976,12 +976,12 @@ lemma algo_axioms: " algo_axioms snd \<u> \<c> \<E> set_invar to_set lookup adj_
 lemmas dfs_defs = dfs.initial_state_def
 
 lemma same_digraph_abses:
- "Adj_Map_Specs2.digraph_abs = Pair_Graph_Specs_satisfied.digraph_abs"
+ "Adj_Map_Specs2.digraph_abs = dfs.Graph.digraph_abs"
 and same_neighbourhoods: 
- "Adj_Map_Specs2.neighbourhood = Pair_Graph_Specs_satisfied.neighbourhood"
+ "Adj_Map_Specs2.neighbourhood = dfs.Graph.neighbourhood"
  by(auto intro!: ext 
-       simp add: Adj_Map_Specs2.digraph_abs_def Pair_Graph_Specs_satisfied.digraph_abs_def
-                Adj_Map_Specs2.neighbourhood_def Pair_Graph_Specs_satisfied.neighbourhood_def)
+       simp add: Adj_Map_Specs2.digraph_abs_def dfs.Graph.digraph_abs_def
+                Adj_Map_Specs2.neighbourhood_def dfs.Graph.neighbourhood_def)
 
 lemma maintain_forest_axioms_extended: 
   assumes "maintain_forest_spec.maintain_forest_get_path_cond \<emptyset>\<^sub>N vset_inv isin lookup
@@ -993,16 +993,16 @@ proof(insert maintain_forest_spec.maintain_forest_get_path_cond_unfold_meta[OF
                      maintain_forest_spec assms], goal_cases)
   case 1
   note assms = this
-  have graph_invar: "Pair_Graph_Specs_satisfied.graph_inv E"
-  and finite_graph:"Pair_Graph_Specs_satisfied.finite_graph E"
-  and finite_neighbs:"Pair_Graph_Specs_satisfied.finite_vsets E"
+  have graph_invar: "dfs.Graph.graph_inv E"
+  and finite_graph:"dfs.Graph.finite_graph E"
+  and finite_neighbs:"dfs.Graph.finite_vsets E"
     using assms(4) by (auto elim!: Instantiation.Adj_Map_Specs2.good_graph_invarE)
   obtain e where e_prop:"e \<in> (Adj_Map_Specs2.digraph_abs  E)" "u = prod.fst e"
     using assms(1) assms(5) no_outgoing_last 
-    by(unfold vwalk_bet_def Pair_Graph_Specs_satisfied.digraph_abs_def) fastforce
+    by(unfold vwalk_bet_def dfs.Graph.digraph_abs_def) fastforce
   hence neighb_u: "Adj_Map_Specs2.neighbourhood  E u \<noteq> vset_empty"
     using   assms(2)
-             Pair_Graph_Specs_satisfied.are_connected_absI[OF _  graph_invar, 
+             dfs.Graph.are_connected_absI[OF _  graph_invar, 
              of "prod.fst e" "prod.snd e", simplified]  
     by(auto simp add: same_neighbourhoods same_digraph_abses)
   have q_non_empt: "q \<noteq> []"

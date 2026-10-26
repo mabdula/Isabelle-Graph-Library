@@ -7,8 +7,11 @@ session Micali_Vazirani = Graph_Algorithms_Dev +
     Alt_Dist
     Alt_BFS
     Alt_BFS_Example
+    Layered_Digraph
     DDFS
     DFS_Avoid
     IDFS
+    IDFS_Example
     DDFS_Interpretation
     DDFS_Example
+    Top_Loop

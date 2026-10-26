@@ -76,28 +76,25 @@ no_notation digraph ("digraph")
 named_theorems Graph_Spec_Elims
 named_theorems Graph_Spec_Intros
 named_theorems Graph_Spec_Simps
-(*TODO: List parameters in desired order, othw. ordering is broken,
-bad for instantiation!*)
-locale Pair_Graph_Specs = 
- adjmap: Map 
- where update = update and invar = adjmap_inv +
 
+subsection \<open>The read-only part\<close>
 
- vset: Set_Choose
- where empty = vset_empty and delete = vset_delete and invar = vset_inv
+text \<open>The read-only part of the specification: the lookup function, the graph invariant and
+  the vertex-set operations, without the map operations that modify a graph (empty, update,
+  delete). Algorithms that only read a graph can assume this locale; algorithms that build or
+  modify graphs assume the locale \<open>Pair_Graph_Specs\<close> below, which extends it.\<close>
 
- for update :: "'v \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and adjmap_inv :: "'adjmap \<Rightarrow> bool"  and
-
-     vset_empty :: "'vset" and vset_delete :: "'v \<Rightarrow> 'vset \<Rightarrow> 'vset" and
-     vset_inv
-(*  Adjmap_Map_Specs where update = update
-for update :: "'a \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap"*) 
+locale Pair_Graph_Specs_Read_Only =
+  vset: Set_Choose
+  where empty = vset_empty and delete = vset_delete and invar = vset_inv
+  for vset_empty :: "'vset" and vset_delete :: "'v \<Rightarrow> 'vset \<Rightarrow> 'vset" and vset_inv +
+  fixes lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option"
+    and adjmap_inv :: "'adjmap \<Rightarrow> bool"
 begin
 
 notation vset_empty ("\<emptyset>\<^sub>N")
-notation empty ("\<emptyset>\<^sub>G")
 
-abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" (* TODO @M strange parameter names. swap G and v? *)
+abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G"
 abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equiv> \<not> isin' G v"
 
 definition "set_of_map (m::'adjmap) = {(u,v). case (lookup m u) of Some vs \<Rightarrow> v \<in>\<^sub>G vs}"
@@ -106,18 +103,161 @@ definition "graph_inv G = (adjmap_inv G \<and> (\<forall>v vset. lookup G v = So
 definition "finite_graph G = (finite {v. (lookup G v) \<noteq> None})"
 definition "finite_vsets G = (\<forall>v N. (lookup G v) = Some N \<longrightarrow> finite (t_set N))"
 
-lemma finite_vsets_empty: "finite_vsets  \<emptyset>\<^sub>G"
-  by (simp add: adjmap.map_empty finite_vsets_def)
-
-lemma graph_inv_empty[simp,intro!]: "graph_inv \<emptyset>\<^sub>G"
-  by (simp add: adjmap.invar_empty adjmap.map_empty graph_inv_def)
-
 definition neighbourhood::"'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset" where
   "(neighbourhood G v) = (case (lookup G v) of Some vset \<Rightarrow> vset | _ \<Rightarrow> vset_empty)"
 
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
-definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
+definition digraph_abs ("[_]\<^sub>g") where "digraph_abs G = {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}"
+
+definition "has_neighb_set G u = (\<exists> N. lookup G u = Some N)"
+
+lemmas [code] = neighbourhood_def
+
+context \<comment>\<open>Locale properties\<close>
+  includes vset.set.automation
+begin
+
+lemma graph_invE[elim]:
+  "graph_inv G \<Longrightarrow> (\<lbrakk>adjmap_inv G; (\<And>v vset. lookup G v = Some vset \<Longrightarrow> vset_inv vset)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+  by (auto simp: graph_inv_def)
+
+lemma graph_invI[intro]:
+  "\<lbrakk>adjmap_inv G; (\<And>v vset. lookup G v = Some vset \<Longrightarrow> vset_inv vset)\<rbrakk> \<Longrightarrow> graph_inv G"
+  by (auto simp: graph_inv_def)
+
+lemma finite_graphE[elim]:
+  "finite_graph G \<Longrightarrow> (finite {v. (lookup G v) \<noteq> None} \<Longrightarrow> P) \<Longrightarrow> P"
+  by (auto simp: finite_graph_def)
+
+lemma finite_graphI[intro]:
+  "finite {v. (lookup G v) \<noteq> None}  \<Longrightarrow> finite_graph G"
+  by (auto simp: finite_graph_def)
+
+lemma finite_vsetsE[elim]:
+  "finite_vsets G \<Longrightarrow> ((\<And> v N. lookup G v = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> P) \<Longrightarrow> P"
+  by (auto simp: finite_vsets_def)
+
+lemma finite_vsetsI[intro]:
+  "(\<And> v N. lookup G v = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> finite_vsets G"
+  by (auto simp: finite_vsets_def)
+
+lemma neighbourhood_invars'[simp,dest]:
+   "graph_inv G \<Longrightarrow> vset_inv (\<N>\<^sub>G G v)"
+  by (auto simp add: graph_inv_def neighbourhood_def split: option.splits)
+
+lemma finite_graph[intro!]:
+  assumes "graph_inv G" "finite_graph G" "finite_vsets G"
+  shows "finite (digraph_abs G)"
+proof-
+
+  have "digraph_abs G \<subseteq> {v. lookup G v \<noteq> None} \<times> (\<Union> (t_set ` {N | N v. lookup G v = Some N}))"
+    using assms
+    by (fastforce simp: digraph_abs_def neighbourhood_def graph_inv_def split: option.splits)
+
+  moreover have "finite {v. lookup G v \<noteq> None}"
+    using assms
+    by fastforce
+
+  moreover have "finite (\<Union> (t_set ` {N | N v. lookup G v = Some N}))"
+    using assms
+    by (force elim!: finite_vsetsE finite_graphE
+              intro!: finite_imageI
+                      rev_finite_subset
+                        [where B = "(the o lookup G) ` {v. \<exists>y. lookup G v = Some y}"])
+  ultimately show ?thesis
+    by(fastforce intro!: finite_cartesian_product dest: finite_subset)+
+
+qed
+
+corollary finite_vertices[intro!]:
+  assumes "graph_inv G" "finite_graph G" "finite_vsets G"
+  shows "finite (dVs (digraph_abs G))"
+  using finite_graph[OF assms]
+  by (simp add: finite_vertices_iff)
+
+lemma finite_neighbourhoods: "finite_vsets G \<Longrightarrow> finite (t_set (neighbourhood G v))"
+  by(auto simp add: neighbourhood_def vset.emptyD(3) split: option.split)
+
+subsection \<open>Abstraction lemmas\<close>
+
+text \<open>These are lemmas for automation. Their purpose is to remove any mention of the neighbourhood
+      concept implemented using the locale constructs and replace it with abstract terms
+      on pair graphs.\<close>
+
+lemma are_connected_abs_general:
+  "graph_inv F \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G F u) \<longleftrightarrow> (u,v) \<in> digraph_abs F"
+  by(auto simp: digraph_abs_def neighbourhood_def option.discI graph_inv_def
+          split: option.split)
+
+lemma are_connected_abs[simp]:
+  "graph_inv G \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u) \<longleftrightarrow> (u,v) \<in> digraph_abs G"
+  by(auto simp: digraph_abs_def neighbourhood_def option.discI graph_inv_def
+          split: option.split)
+
+lemma are_connected_absD[dest]:
+  "\<lbrakk>v \<in> t_set (\<N>\<^sub>G G u); graph_inv G\<rbrakk> \<Longrightarrow> (u,v) \<in> digraph_abs G"
+  by (auto simp: are_connected_abs)
+
+lemma are_connected_absI[intro]:
+  "\<lbrakk>(u,v) \<in> digraph_abs G; graph_inv G\<rbrakk> \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u)"
+  by (auto simp: are_connected_abs)
+
+lemma neighbourhood_absD[dest!]:
+  "\<lbrakk>t_set (\<N>\<^sub>G G x) \<noteq> {}; graph_inv G\<rbrakk> \<Longrightarrow> x \<in> dVs (digraph_abs G)"
+  by blast
+
+lemma neighbourhood_abs[simp]:
+  "graph_inv G \<Longrightarrow> t_set (\<N>\<^sub>G G u) = Pair_Graph.neighbourhood (digraph_abs G) u"
+  by(auto simp: digraph_abs_def neighbourhood_def Pair_Graph.neighbourhood_def option.discI graph_inv_def
+          split: option.split)
+
+lemma s_non_in_dVs_neighb_empty:
+  "s \<notin> dVs (digraph_abs G) \<Longrightarrow> \<N>\<^sub>G G s =  \<emptyset>\<^sub>N"
+  using vset.choose[of "\<N>\<^sub>G G s"]
+  unfolding digraph_abs_def dVs_def
+  by blast
+
+end \<comment> \<open>Properties context\<close>
+
+lemma source_of_path_neighb_non_empty:
+  assumes "vwalk_bet (digraph_abs G) a p b" "length p \<ge> 2"
+shows "neighbourhood G a\<noteq> vset_empty"
+proof-
+  obtain x y es where "p = x#y#es"using assms(2)
+    by(cases p rule: edges_of_vwalk.cases) auto
+  hence "x = a" "(x, y) \<in> digraph_abs G"
+    using assms(1) hd_of_vwalk_bet vwalk_bet_nonempty_vwalk(1) by fastforce+
+  thus ?thesis
+    by (auto intro: option.exhaust[of "lookup G a"]
+          simp add: vset.set.invar_empty vset.set.set_empty vset.set.set_isin
+                    neighbourhood_def digraph_abs_def)
+qed
+
+end text \<open>@{locale Pair_Graph_Specs_Read_Only}\<close>
+
+subsection \<open>The read-write specification\<close>
+
+(*TODO: List parameters in desired order, othw. ordering is broken,
+bad for instantiation!*)
+locale Pair_Graph_Specs = 
+ adjmap: Map 
+ where update = update and invar = adjmap_inv +
+ Pair_Graph_Specs_Read_Only
+ where vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
+   and adjmap_inv = adjmap_inv
+ for update :: "'v \<Rightarrow> 'vset \<Rightarrow> 'adjmap \<Rightarrow> 'adjmap" and adjmap_inv :: "'adjmap \<Rightarrow> bool"  and
+     vset_empty :: "'vset" and vset_delete :: "'v \<Rightarrow> 'vset \<Rightarrow> 'vset" and
+     vset_inv
+begin
+
+notation empty ("\<emptyset>\<^sub>G")
+
+lemma finite_vsets_empty: "finite_vsets  \<emptyset>\<^sub>G"
+  by (simp add: adjmap.map_empty finite_vsets_def)
+
+lemma graph_inv_empty[simp,intro!]: "graph_inv \<emptyset>\<^sub>G"
+  by (simp add: adjmap.invar_empty adjmap.map_empty graph_inv_def)
 
 lemma digraph_abs_empty[simp]: "digraph_abs empty = {}" 
   by (simp add: adjmap.map_empty digraph_abs_def local.neighbourhood_def vset.set.invar_empty vset.set.set_empty vset.set.set_isin)
@@ -159,105 +299,11 @@ lemma from_list_def': "from_list xs = fold (\<lambda> (u,v) G. add_edge G u v) x
   by(rule fun_cong[of _ _ "\<emptyset>\<^sub>G"], rule fun_cong[of _ _ xs], rule arg_cong[of _ _ fold], rule ext)
      auto
 
-lemmas [code] = neighbourhood_def add_edge_def delete_edge_def from_list_def
+lemmas [code] = add_edge_def delete_edge_def from_list_def
 
 context \<comment>\<open>Locale properties\<close>
   includes vset.set.automation and  adjmap.automation
 begin
-
-lemma graph_invE[elim]: 
-  "graph_inv G \<Longrightarrow> (\<lbrakk>adjmap_inv G; (\<And>v vset. lookup G v = Some vset \<Longrightarrow> vset_inv vset)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
-  by (auto simp: graph_inv_def)
-
-lemma graph_invI[intro]: 
-  "\<lbrakk>adjmap_inv G; (\<And>v vset. lookup G v = Some vset \<Longrightarrow> vset_inv vset)\<rbrakk> \<Longrightarrow> graph_inv G"
-  by (auto simp: graph_inv_def)
-
-lemma finite_graphE[elim]: 
-  "finite_graph G \<Longrightarrow> (finite {v. (lookup G v) \<noteq> None} \<Longrightarrow> P) \<Longrightarrow> P"
-  by (auto simp: finite_graph_def)
-
-lemma finite_graphI[intro]: 
-  "finite {v. (lookup G v) \<noteq> None}  \<Longrightarrow> finite_graph G"
-  by (auto simp: finite_graph_def)
-
-lemma finite_vsetsE[elim]: 
-  "finite_vsets G \<Longrightarrow> ((\<And> v N. lookup G v = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> P) \<Longrightarrow> P"
-  by (auto simp: finite_vsets_def)
-
-lemma finite_vsetsI[intro]: 
-  "(\<And> v N. lookup G v = Some N \<Longrightarrow> finite (t_set N)) \<Longrightarrow> finite_vsets G"
-  by (auto simp: finite_vsets_def)
-
-lemma neighbourhood_invars'[simp,dest]:
-   "graph_inv G \<Longrightarrow> vset_inv (\<N>\<^sub>G G v)"
-  by (auto simp add: graph_inv_def neighbourhood_def split: option.splits)
-
-lemma finite_graph[intro!]:
-  assumes "graph_inv G" "finite_graph G" "finite_vsets G"
-  shows "finite (digraph_abs G)"
-proof-
-
-  have "digraph_abs G \<subseteq> {v. lookup G v \<noteq> None} \<times> (\<Union> (t_set ` {N | N v. lookup G v = Some N}))"
-    using assms 
-    by (fastforce simp: digraph_abs_def neighbourhood_def graph_inv_def split: option.splits)
-
-  moreover have "finite {v. lookup G v \<noteq> None}"
-    using assms
-    by fastforce
-
-  moreover have "finite (\<Union> (t_set ` {N | N v. lookup G v = Some N}))"
-    using assms
-    by (force elim!: finite_vsetsE finite_graphE
-              intro!: finite_imageI 
-                      rev_finite_subset
-                        [where B = "(the o lookup G) ` {v. \<exists>y. lookup G v = Some y}"])
-  ultimately show ?thesis
-    by(fastforce intro!: finite_cartesian_product dest: finite_subset)+
-
-qed
-
-corollary finite_vertices[intro!]:
-  assumes "graph_inv G" "finite_graph G" "finite_vsets G"
-  shows "finite (dVs (digraph_abs G))"
-  using finite_graph[OF assms]
-  by (simp add: finite_vertices_iff)
-
-lemma finite_neighbourhoods: "finite_vsets G \<Longrightarrow> finite (t_set (neighbourhood G v))"
-  by(auto simp add: neighbourhood_def vset.emptyD(3) split: option.split)
-
-subsection \<open>Abstraction lemmas\<close>
-
-text \<open>These are lemmas for automation. Their purpose is to remove any mention of the neighbourhood
-      concept implemented using the locale constructs and replace it with abstract terms
-      on pair graphs.\<close>
-
-lemma are_connected_abs_general: 
-  "graph_inv F \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G F u) \<longleftrightarrow> (u,v) \<in> digraph_abs F" 
-  by(auto simp: digraph_abs_def neighbourhood_def option.discI graph_inv_def
-          split: option.split)
-
-lemma are_connected_abs[simp]: 
-  "graph_inv G \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u) \<longleftrightarrow> (u,v) \<in> digraph_abs G" 
-  by(auto simp: digraph_abs_def neighbourhood_def option.discI graph_inv_def
-          split: option.split)
-
-lemma are_connected_absD[dest]: 
-  "\<lbrakk>v \<in> t_set (\<N>\<^sub>G G u); graph_inv G\<rbrakk> \<Longrightarrow> (u,v) \<in> digraph_abs G"
-  by (auto simp: are_connected_abs)
-
-lemma are_connected_absI[intro]: 
-  "\<lbrakk>(u,v) \<in> digraph_abs G; graph_inv G\<rbrakk> \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u)"
-  by (auto simp: are_connected_abs)
-
-lemma neighbourhood_absD[dest!]:
-  "\<lbrakk>t_set (\<N>\<^sub>G G x) \<noteq> {}; graph_inv G\<rbrakk> \<Longrightarrow> x \<in> dVs (digraph_abs G)"
-  by blast
-
-lemma neighbourhood_abs[simp]:
-  "graph_inv G \<Longrightarrow> t_set (\<N>\<^sub>G G u) = Pair_Graph.neighbourhood (digraph_abs G) u"
-  by(auto simp: digraph_abs_def neighbourhood_def Pair_Graph.neighbourhood_def option.discI graph_inv_def
-          split: option.split)
 
 lemma adjmap_inv_insert[intro, simp]: "graph_inv G \<Longrightarrow> graph_inv (add_edge G u v)"
   by (auto simp: add_edge_def graph_inv_def split: option.splits)
@@ -337,18 +383,10 @@ proof(rule finite_vsetsI, goal_cases)
           simp add: delete_edge_def adjmap.map_update[OF adj_inv]  graph_inv_def)+
 qed
 
-lemma s_non_in_dVs_neighb_empty:
-  "s \<notin> dVs (digraph_abs G) \<Longrightarrow> \<N>\<^sub>G G s =  \<emptyset>\<^sub>N"
-  using vset.choose[of "\<N>\<^sub>G G s"] 
-  unfolding digraph_abs_def dVs_def
-  by blast
-
 lemmas [code] = from_list_def
 
 lemma finite_graph_empty: "finite_graph \<emptyset>\<^sub>G"
   by (simp add: finite_graph_def)
-
-definition "has_neighb_set G u = (\<exists> N. lookup G u = Some N)"
 
 lemma add_edge_neighb_set:
   "adjmap_inv G \<Longrightarrow> \<exists> N. lookup (add_edge G u v) u = Some N"
@@ -407,21 +445,6 @@ proof-
 qed
 
 end \<comment> \<open>Properties context\<close>  
-
-lemma source_of_path_neighb_non_empty:
-  assumes "vwalk_bet (digraph_abs G) a p b" "length p \<ge> 2"
-shows "neighbourhood G a\<noteq> vset_empty" 
-proof-
-  obtain x y es where "p = x#y#es"using assms(2)
-    by(cases p rule: edges_of_vwalk.cases) auto
-  hence "x = a" "(x, y) \<in> digraph_abs G" 
-    using assms(1) hd_of_vwalk_bet vwalk_bet_nonempty_vwalk(1) by fastforce+
-  thus ?thesis
-    by (auto intro: option.exhaust[of "lookup G a"]
-          simp add: vset.set.invar_empty vset.set.set_empty vset.set.set_isin
-                    neighbourhood_def digraph_abs_def)
-qed
-
 
 end text \<open>@{const Pair_Graph_Specs}\<close>
 

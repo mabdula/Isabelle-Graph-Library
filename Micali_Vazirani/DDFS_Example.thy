@@ -1,5 +1,5 @@
 theory DDFS_Example
-  imports DDFS_Interpretation Directed_Set_Graphs.Pair_Graph_RBT
+  imports DDFS_Interpretation IDFS_Example Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
 text \<open>
@@ -213,12 +213,8 @@ global_interpretation ddfs_diamond: DDFS_layered
   defines ddfs_diamond_run = ddfs_diamond.DDFS_impl
       and vol_diamond = ddfs_diamond.vset_of_list
       and idfs_diamond_run = ddfs_diamond.IDFS_impl
-      and neighbourhood_diamond = ddfs_diamond.Graph.neighbourhood
-      and add_edge_diamond    = ddfs_diamond.Graph.add_edge
-      and delete_edge_diamond = ddfs_diamond.Graph.delete_edge
-      and from_list_diamond   = ddfs_diamond.Graph.from_list
       and IDFS_stack0_diamond = ddfs_diamond.IDFS_stack0
-  proof (intro IDFS.DDFS_layered.intro IDFS.IDFS_witness.intro
+  proof (intro DDFS_layered.intro IDFS.IDFS_witness.intro
                IDFS.IDFS_witness_axioms.intro, goal_cases)
     case 1
     show ?case
@@ -235,13 +231,13 @@ global_interpretation ddfs_diamond: DDFS_layered
                                  t_set sel update adj_inv vset_empty vset_delete vset_inv"
       using G.Pair_Graph_Specs_axioms
       by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-    have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_diamond_rbt
+    have eq: "Pair_Graph_Specs_Read_Only.digraph_abs isin vset_empty lookup G_diamond_rbt
               = dG_diamond"
       using dabs_diamond
       by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-    have gi: "Pair_Graph_Specs.graph_inv lookup adj_inv vset_inv G_diamond_rbt"
+    have gi: "Pair_Graph_Specs_Read_Only.graph_inv vset_inv lookup adj_inv G_diamond_rbt"
       using graph_inv_diamond
-      unfolding G.graph_inv_def Pair_Graph_Specs.graph_inv_def adj_inv_def by blast
+      unfolding G.graph_inv_def Pair_Graph_Specs_Read_Only.graph_inv_def adj_inv_def by blast
     have fg: "G.finite_graph G_diamond_rbt"
       by (rule finite_graph_diamond)
     have fv: "G.finite_vsets G_diamond_rbt"
@@ -262,7 +258,7 @@ global_interpretation ddfs_chain: DDFS_layered
   defines ddfs_chain_run = ddfs_chain.DDFS_impl
       and vol_chain = ddfs_chain.vset_of_list
       and idfs_chain_run  = ddfs_chain.IDFS_impl
-  proof (intro IDFS.DDFS_layered.intro IDFS.IDFS_witness.intro
+  proof (intro DDFS_layered.intro IDFS.IDFS_witness.intro
                IDFS.IDFS_witness_axioms.intro, goal_cases)
     case 1
     show ?case
@@ -279,13 +275,13 @@ global_interpretation ddfs_chain: DDFS_layered
                                  t_set sel update adj_inv vset_empty vset_delete vset_inv"
       using G.Pair_Graph_Specs_axioms
       by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-    have eq: "Pair_Graph_Specs.digraph_abs lookup isin vset_empty G_chain_rbt
+    have eq: "Pair_Graph_Specs_Read_Only.digraph_abs isin vset_empty lookup G_chain_rbt
               = dG_chain"
       using dabs_chain
       by (simp add: adj_inv_def map_empty_def RBT_Set.empty_def)
-    have gi: "Pair_Graph_Specs.graph_inv lookup adj_inv vset_inv G_chain_rbt"
+    have gi: "Pair_Graph_Specs_Read_Only.graph_inv vset_inv lookup adj_inv G_chain_rbt"
       using graph_inv_chain
-      unfolding G.graph_inv_def Pair_Graph_Specs.graph_inv_def adj_inv_def by blast
+      unfolding G.graph_inv_def Pair_Graph_Specs_Read_Only.graph_inv_def adj_inv_def by blast
     have fg: "G.finite_graph G_chain_rbt"
       by (rule finite_graph_chain)
     have fv: "G.finite_vsets G_chain_rbt"
@@ -295,40 +291,13 @@ global_interpretation ddfs_chain: DDFS_layered
       by (intro conjI gi fg fv dG_chain_layered)
   qed
 
-section \<open>Generic DFS\_avoid interpretation (axioms-free skeleton pattern)\<close>
-
-global_interpretation idfs: DFS_avoid
-  where insert = vset_insert and sel = sel and vset_empty = vset_empty
-    and diff = vset_diff and lookup = lookup and empty = map_empty
-    and delete = RBT_Map.delete and isin = isin and t_set = t_set
-    and update = update and adjmap_inv = adj_inv
-    and vset_delete = vset_delete and vset_inv = vset_inv
-    and union = vset_union and inter = vset_inter
-    and G = G and stack0 = p0 and vis0 = V0 and avoid = A0
-    and Pv = P and level = lev
-  for G p0 V0 A0 P lev
-  defines find_idfs = idfs.av.DFS_skel_impl
-    and   av_found_rbt = idfs.av_found
-    and   neighbourhood_idfs = idfs.Graph.neighbourhood
-    and   avoid_impl_rbt = idfs.avoid_final_state_impl
-    and   avoid_initial_rbt = idfs.avoid_initial_state
-    and   vset_of_list_rbt = idfs.vset_of_list
-  using G.Pair_Graph_Specs_axioms RBT.Set2_axioms
-  by (auto intro!: DFS_avoid.intro
-           simp: adj_inv_def map_empty_def vset_inv_def RBT_Set.empty_def)
-
-lemmas find_idfs_code[code] =
-  idfs.av.DFS_skel_impl.simps[folded find_idfs_def[folded av_found_rbt_def],
-    unfolded idfs.av_on_found_def idfs.av_on_empty_def
-             idfs.av_on_backtrack_def]
-lemmas av_found_rbt_code[code] = idfs.av_found_def
-
 text \<open>Code equations for the DDFS layer (diamond graph).\<close>
 
 lemmas ddfs_diamond_code[code] =
   DDFS.DDFS_impl.simps[OF ddfs_diamond.DDFS_axioms,
-    folded ddfs_diamond_run_def[folded idfs_diamond_run_def neighbourhood_diamond_def],
-    folded vol_diamond_def]
+    folded ddfs_diamond_run_def[folded idfs_diamond_run_def],
+    folded vol_diamond_def,
+    folded neighbourhood_idfs_def]
 
 lemmas idfs_diamond_code[code] =
   ddfs_diamond.IDFS_impl_def[folded idfs_diamond_run_def,
@@ -352,17 +321,6 @@ lemmas idfs_chain_code[code] =
 
 lemmas vol_chain_code[code] =
   ddfs_chain.vset_of_list_def[folded vol_chain_def]
-
-text \<open>Routing lemmas for the IDFS/DFS\_avoid code-equation chain.
-
-Note: The fold find\_idfs\_def[folded av\_found\_rbt\_def] transforms find\_idfs G A0 P into
-idfs.av.DFS\_skel\_impl G A0 P (at the term level), allowing avoid\_impl\_rbt to be routed
-through find\_idfs which already has code equations via find\_idfs\_code.\<close>
-
-lemmas avoid_impl_rbt_code[code] =
-  idfs.avoid_final_state_impl_def[folded find_idfs_def[folded av_found_rbt_def]]
-lemmas avoid_initial_rbt_code[code] = idfs.avoid_initial_state_def
-lemmas vset_of_list_rbt_code[code] = idfs.vset_of_list_def
 
 
 text \<open>Sanity check: vol_diamond is computable.
