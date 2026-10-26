@@ -947,7 +947,16 @@ qed
 lemma distinct_move_to_indices_if_eq:
   assumes "xs'[v \<mapsto> t] = xs"
   shows "\<forall>x y. x \<noteq> v \<and> y \<noteq> v \<longrightarrow> (index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y)"
-  by (metis assms move_to_others_leq)
+proof (intro allI impI, elim conjE)
+  fix x y
+  assume "x \<noteq> v" "y \<noteq> v"
+  then have "v \<noteq> x" "v \<noteq> y"
+    by simp_all
+  have "index xs' x \<le> index xs' y \<longleftrightarrow> index xs'[v \<mapsto> t] x \<le> index xs'[v \<mapsto> t] y"
+    using \<open>v \<noteq> x\<close> \<open>v \<noteq> y\<close> by (rule move_to_others_leq)
+  then show "index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y"
+    by (simp add: assms)
+qed
 
 lemma set_take_insert_drop: "set ((take n xs) @ x # (drop n xs)) = {x} \<union> set xs"
   by (induction xs n rule: induct_list_nat)
