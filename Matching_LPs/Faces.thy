@@ -1148,7 +1148,28 @@ proof -
             by (simp only: add_dist smult_dist)
         qed
       then have "row A i \<bullet> ?z = row A i \<bullet> y + (b $ i - row A i \<bullet> y)" 
-        by (metis 2 1 x_n y_n nonzero_eq_divide_eq scalar_prod_minus_distrib)
+      proof -
+        have xy: "x - y \<in> carrier_vec n"
+          by (simp add: x_n y_n)
+        have sm: "((b $ i - row A i \<bullet> y) / (row A i \<bullet> x - row A i \<bullet> y)) \<cdot>\<^sub>v (x - y) \<in> carrier_vec n"
+          by (simp add: x_n y_n)
+        have zsplit: "row A i \<bullet> ?z =
+            row A i \<bullet> y +
+            row A i \<bullet> (((b $ i - row A i \<bullet> y) / (row A i \<bullet> x - row A i \<bullet> y)) \<cdot>\<^sub>v (x - y))"
+          by (rule scalar_prod_add_distrib[OF 1 y_n sm])
+        have smult_out:
+          "row A i \<bullet> (((b $ i - row A i \<bullet> y) / (row A i \<bullet> x - row A i \<bullet> y)) \<cdot>\<^sub>v (x - y)) =
+           ((b $ i - row A i \<bullet> y) / (row A i \<bullet> x - row A i \<bullet> y)) * (row A i \<bullet> (x - y))"
+          by (rule scalar_prod_smult_distrib[OF 1 xy])
+        have minus_out: "row A i \<bullet> (x - y) = row A i \<bullet> x - row A i \<bullet> y"
+          by (rule scalar_prod_minus_distrib[OF 1 x_n y_n])
+        have cancel:
+          "((b $ i - row A i \<bullet> y) / (row A i \<bullet> x - row A i \<bullet> y)) * (row A i \<bullet> x - row A i \<bullet> y) =
+           b $ i - row A i \<bullet> y"
+          using 2 by (simp add: field_simps)
+        show ?thesis
+          by (simp only: zsplit smult_out minus_out cancel)
+      qed
       then have 4:"row A i \<bullet> ?z = b $ i" 
         by simp
       let ?l = "(b $ i - row A i \<bullet> y)/(row A i \<bullet> x - row A i \<bullet> y)"
