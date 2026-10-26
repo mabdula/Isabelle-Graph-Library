@@ -2432,7 +2432,16 @@ proof
         by (rule on_odd_out)
     qed
     then have "inv (on_odd  (rev_p p)) (p x) = (p x)" 
-      by (metis assms(1) on_odd_p_permutes_UNIV permutes_inv_eq rev_p_permutes)
+    proof -
+      assume E: "on_odd (rev_p p) (p x) = p x"
+      have perm: "on_odd (rev_p p) permutes UNIV"
+        using assms(1) rev_p_permutes on_odd_p_permutes_UNIV by blast
+      have "inv (on_odd (rev_p p)) (p x) = inv (on_odd (rev_p p)) (on_odd (rev_p p) (p x))"
+        using E[symmetric] by (rule arg_cong)
+      also have "inv (on_odd (rev_p p)) (on_odd (rev_p p) (p x)) = p x"
+        by (rule permutes_inverses(2)[OF perm])
+      finally show ?thesis .
+    qed
     then show "(rev_p (rev_p p)) x = p x"  
       by (simp add: 3 2 \<open>rev_p p x = p x\<close>)
   qed
