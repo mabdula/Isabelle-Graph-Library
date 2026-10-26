@@ -639,7 +639,28 @@ proof(rule ccontr)
           using that by blast
       qed
     then have "row A i1 = row C j \<and> b $ i1 = d $ j" 
-      by (metis \<open>b $ i1 = b $ i2\<close> i1 i2 j1j2)
+      proof -
+        have rA2: "row A i2 = row A' j2"
+          using i2 by blast
+        have "row A i1 = row A' j1"
+          using i1 by blast
+        also have "\<dots> = row A' j2"
+          using j1j2 by blast
+        also have "\<dots> = row A i2"
+          using rA2 by (rule sym)
+        also have "\<dots> = row C j"
+          using j by blast
+        finally have rows_eq: "row A i1 = row C j" .
+        have bs_eq: "b $ i1 = d $ j"
+        proof -
+          have "b $ i2 = d $ j"
+            using j by blast
+          with \<open>b $ i1 = b $ i2\<close> show ?thesis
+            by (rule trans)
+        qed
+        from rows_eq bs_eq show ?thesis
+          by (rule conjI)
+      qed
     then have "row C j \<bullet> x = d $ j" using `d = C *\<^sub>v x`  j 
       by (metis index_mult_mat_vec)
     then show "row A i1 \<bullet> x = b $ i1" 
