@@ -212,8 +212,24 @@ qed
           then have "card (neighbours_of_Vs G {a}) \<ge> 2" 
             by simp
           then obtain v1 v2 where v1_v2:"v1 \<noteq> v2 \<and> v1 \<in> neighbours_of_Vs G {a} \<and> v2 \<in> neighbours_of_Vs G {a}"
-            by (metis One_nat_def card.infinite card_le_Suc0_iff_eq not_less_eq_eq numerals(2) 
-                order_less_imp_le zero_less_one)
+          proof -
+            assume card_ge: "2 \<le> card (neighbours_of_Vs G {a})"
+            have fin: "finite (neighbours_of_Vs G {a})"
+            proof (rule ccontr)
+              assume "\<not> finite (neighbours_of_Vs G {a})"
+              then have "card (neighbours_of_Vs G {a}) = 0"
+                by simp
+              with card_ge show False
+                by simp
+            qed
+            have not_le: "\<not> card (neighbours_of_Vs G {a}) \<le> 1"
+              using card_ge by simp
+            have "\<exists>v1 v2. v1 \<noteq> v2 \<and> v1 \<in> neighbours_of_Vs G {a} \<and> v2 \<in> neighbours_of_Vs G {a}"
+              using fin not_le card_le_Suc0_iff_eq[of "neighbours_of_Vs G {a}"]
+              by (simp, blast)
+            then show ?thesis
+              by (blast intro: that)
+          qed
           then have "v1 \<noteq> v \<or> v2 \<noteq> v" 
             by blast
           then have "\<exists> v'. v' \<noteq> v \<and> (\<exists> u \<in> {a}. \<exists> e \<in> G. v' \<noteq> u \<and> u \<in> e \<and> v' \<in> e)"
