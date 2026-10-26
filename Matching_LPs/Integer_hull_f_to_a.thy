@@ -816,7 +816,14 @@ proof
     using lindpA' carrA' lindep_span by blast
   then obtain u where u:"u\<in>(set (rows A'))\<and> u \<in> span ((set (rows A')) - {u})" by auto
   then obtain j where "j < length (rows  A') \<and> rows A' ! j = u" using in_set_conv_nth 
-    by metis
+  proof -
+    have "u \<in> set (rows A')"
+      using u by blast
+    then obtain k where "k < length (rows A')" "rows A' ! k = u"
+      by (auto simp: in_set_conv_nth)
+    then show thesis
+      using that by blast
+  qed
   then have j:"j < dim_row A' \<and> row A' j = u" using nth_rows length_rows 
     by metis
   obtain i where i:"i < dim_row A \<and> i \<in> I \<and> row A i = row A' j \<and> i = (pick I j) \<and>  b $ i = b' $ j" 
