@@ -1501,9 +1501,27 @@ proof -
         then show ?thesis by blast
       qed
       then show "x \<in> not_on_odd p ` ?A" 
-        using \<open>x \<in> ?A\<close> not_on_odd_def 
-        by (smt (z3) Diff_iff assms bij_is_surj image_iff inj_onD map_eq_conv on_odd_def
-            on_odd_p_permutes permutes_imp_bij permutes_inj)
+      proof -
+        have perm: "permutation p"
+          using assms by (rule p_is_permutation)
+        have "x \<notin> set (support p (least_odd p))"
+          using \<open>x \<in> ?A\<close> by simp
+        with perm have inv_notin: "inv p x \<notin> set (support p (least_odd p))"
+          by (rule inv_notin_support)
+        then have mem: "inv p x \<in> ?A"
+          by simp
+        have eq: "not_on_odd p (inv p x) = p (inv p x)"
+          using inv_notin by (rule not_on_odd_in)
+        have px: "p (inv p x) = x"
+          by (rule permutes_inverses(1)[OF assms])
+        show ?thesis
+        proof (rule image_eqI[where x = "inv p x"])
+          show "x = not_on_odd p (inv p x)"
+            using eq px by simp
+          show "inv p x \<in> ?A"
+            by (rule mem)
+        qed
+      qed
     qed
     fix x
     assume asmx: "x \<in>  not_on_odd p ` ?A"  "x \<in>  set (support p (least_odd p)) " 
