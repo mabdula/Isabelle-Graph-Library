@@ -2330,7 +2330,19 @@ proof -
           least_power (rev_p p) (least_odd (rev_p p))"
       using 1 3 distinct_card perm_support_distinct by force
     then show ?thesis
-      using f1 by (metis (no_types) 4 diff_zero distinct_card length_map length_upt)
+    proof -
+      have card_eq_p: "card (set (support p (least_odd (rev_p p)))) = 
+                    least_power p (least_odd (rev_p p))"
+        using assms(1) distinct_card perm_support_distinct by force
+      have "least_power p (least_odd (rev_p p)) = card (set (support p (least_odd (rev_p p))))"
+        using card_eq_p by simp
+      also have "... = least_power (rev_p p) (least_odd (rev_p p))"
+        using \<open>card (set (support p (least_odd (rev_p p)))) = 
+           least_power (rev_p p) (least_odd (rev_p p))\<close> by simp
+      finally have "least_power p (least_odd (rev_p p)) = 
+                least_power (rev_p p) (least_odd (rev_p p))" .
+      then show ?thesis using 4 by simp
+    qed
   qed
   then have "least_odd p \<le> least_odd (rev_p p)" 
     by (metis least_odd_def wellorder_Least_lemma(2))
