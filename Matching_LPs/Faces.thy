@@ -2133,9 +2133,24 @@ proof(safe)
     using \<open>A' *\<^sub>v x \<le> b' \<and> - A' *\<^sub>v x \<le> - b' \<and> A *\<^sub>v x \<le> b\<close> by blast
 }
   show "dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_vec ((b' @\<^sub>v - b') @\<^sub>v b)" 
-    using "1" "2" "3" append_carrier_vec carrier_append_rows carrier_matD(1) 
-      carrier_vecD uminus_carrier_vec
-    by (smt (verit, ccfv_SIG) A b)
+  proof -
+    have rows1: "dim_row (A' @\<^sub>r - A') = dim_row A' + dim_row A'"
+      by (simp add: append_rows_def)
+    have rows2: "dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_row (A' @\<^sub>r - A') + dim_row A"
+      by (simp add: append_rows_def)
+    have dA: "dim_row A = nr"
+      using carrier_matD(1)[OF A] by simp
+    have db: "dim_vec b = nr"
+      using carrier_vecD[OF b] by simp
+    have db': "dim_vec b' = dim_row A'"
+      using "3" carrier_vecD by blast
+    have lhs: "dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_row A' + dim_row A' + nr"
+      by (simp add: rows1 rows2 dA)
+    have rhs: "dim_vec ((b' @\<^sub>v - b') @\<^sub>v b) = dim_row A' + dim_row A' + nr"
+      by (simp add: db db')
+    show ?thesis
+      by (simp only: lhs rhs)
+  qed
   show " dim_col ((A' @\<^sub>r - A') @\<^sub>r A) = n" 
     using "1" "2" carrier_append_rows carrier_matD(2) 
     by (metis append_rows_def index_mat_four_block(3) index_zero_mat(3))
