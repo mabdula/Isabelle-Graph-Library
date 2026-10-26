@@ -1344,7 +1344,18 @@ proof(cases "nr = 0")
   proof(rule ccontr)
     assume "n \<noteq> 0" 
     have "(1\<^sub>v n:: 'a vec) \<noteq> (0\<^sub>v n:: 'a vec)"
-      by (metis \<open>n \<noteq> 0\<close> index_one_vec(1) index_zero_vec(1) neq0_conv zero_neq_one)
+    proof
+      assume eq: "(1\<^sub>v n :: 'a vec) = (0\<^sub>v n :: 'a vec)"
+      from \<open>n \<noteq> 0\<close> have n0: "0 < n" by simp
+      have e1: "(1\<^sub>v n :: 'a vec) $ 0 = 1"
+        using index_one_vec(1)[OF n0] by simp
+      have e0: "(0\<^sub>v n :: 'a vec) $ 0 = 0"
+        using index_zero_vec(1)[OF n0] by simp
+      have "(1\<^sub>v n :: 'a vec) $ 0 = (0\<^sub>v n :: 'a vec) $ 0"
+        using eq by simp
+      with e1 e0 have "(1 :: 'a) = 0" by simp
+      then show False using zero_neq_one by simp
+    qed
     then show False 
       using \<open>\<exists>!x. x \<in> carrier_vec n\<close> one_carrier_vec by blast
   qed
