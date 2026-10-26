@@ -3517,7 +3517,17 @@ proof -
       have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}" 
         using 2 by auto
       then have "{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}" 
-        by (metis (no_types, lifting) 6 ccpo_Sup_singleton is_singleton_the_elem singletonI)
+      proof -
+        assume "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}"
+        then have eq: "{e - {a} |e. e \<in> M \<and> a \<in> e} = {the_elem {e - {a} |e. e \<in> M \<and> a \<in> e}}"
+          by (simp add: is_singleton_the_elem)
+        then have "\<Union>{the_elem {e - {a} |e. e \<in> M \<and> a \<in> e}} = {b}"
+          using 6 by simp
+        then have "the_elem {e - {a} |e. e \<in> M \<and> a \<in> e} = {b}"
+          by (simp add: ccpo_Sup_singleton)
+        with eq show "{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}"
+          by simp
+      qed
       then have "{a, b} \<in> M" 
         using  insert_Diff 
         by (smt (verit, del_insts) insert_commute mem_Collect_eq)
