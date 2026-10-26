@@ -3891,7 +3891,33 @@ proof (rule ccontr)
     case u'_unmatched
     then obtain u'' where "{u'',x'} \<in> M" by blast
     with assms \<open>index \<pi> u < index \<pi> u'\<close> \<open>{u', x'} \<notin> M\<close> show ?thesis
-      by (metis index_less_in_set ranking_matchingE ranking_matching_shifts_to_original_edges ranking_matching_shifts_to_reduced_edges shifts_to_inj shifts_to_matched_vertex_later_match)
+  proof -
+    have matching_M: "matching M"
+      using rm_G by (auto dest: ranking_matchingE maximal_matchingD)
+
+    have shift_x_x': "shifts_to G M u x x' \<pi> \<sigma>"
+      using ranking_matching_shifts_to_reduced_edges[OF rm_G \<open>ranking_matching (G \<setminus> {x}) M' \<sigma> \<pi>\<close>
+          \<open>x \<in> set \<sigma>\<close> \<open>{u,x} \<in> M\<close> \<open>{u,x'} \<in> M'\<close>] .
+
+    from shift_x_x' have u_in_pi: "u \<in> set \<pi>"
+      unfolding shifts_to_def by blast
+
+    have u_before_u'': "index \<pi> u < index \<pi> u''"
+      using shifts_to_matched_vertex_later_match[OF shift_x_x' \<open>{u,x} \<in> M\<close> \<open>{u'',x'} \<in> M\<close> matching_M u_in_pi] .
+
+    have shift_u_u'': "shifts_to (G \<setminus> {x}) M' x' u u'' \<sigma> \<pi>"
+      using ranking_matching_shifts_to_original_edges[OF rm_G \<open>ranking_matching (G \<setminus> {x}) M' \<sigma> \<pi>\<close>
+          \<open>x \<in> set \<sigma>\<close> \<open>{u,x} \<in> M\<close> \<open>{u,x'} \<in> M'\<close> \<open>{u'',x'} \<in> M\<close> u_before_u''] .
+
+    have "u' = u''"
+      using shifts_to_inj[OF u_to_u' shift_u_u''] .
+
+    with \<open>{u'',x'} \<in> M\<close> have "{u',x'} \<in> M"
+      by simp
+
+    with \<open>{u', x'} \<notin> M\<close> show ?thesis
+      by blast
+  qed
   qed
 qed
 
