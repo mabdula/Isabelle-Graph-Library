@@ -1,0 +1,410 @@
+\section{Double Depth First Search}
+
+\subsection{Preliminaries}
+
+\newcommand{\ddfs}{\textsf{\upshape ddfs}}
+\newcommand{\digraph}{\DAG}
+\newcommand{\level}{\textsf{\upshape level}}
+\renewcommand{\choice}{\textsf{\upshape choose}}
+\newcommand{\visa}{\ensuremath{\vis_1}}
+\newcommand{\visb}{\ensuremath{\vis_2}}
+\newcommand{\patha}{\ensuremath{\path_1}}
+\newcommand{\pathb}{\ensuremath{\path_2}}
+\newcommand{\Plevel}[1]{\ensuremath{P_{#1}}}
+\newcommand{\butlast}{\textsf{\upshape butlast}}
+
+A digraph $\digraph$ is a set of ordered pairs of vertices, each of which corresponding to a directed edge.
+The set of vertices $\vertices(\DAG)$ is defined to be the set $\bigcup\{\{\vertexa,\vertexb\}\mid(\vertexa,\vertexb)\in\digraph\}$.
+A list of vertices $\vertexa\vertexb\dots\vertexgen_n$ is a path w.r.t.\ a digraph $\digraph$ iff every $(\vertexgen_i, \vertexgen_{i+1})\in\digraph$.
+\emph{(In the formalisation, the path predicate and the vertex-set function are those of the library: \texttt{Vwalk.vwalk} / \texttt{vwalk\_bet} from \texttt{Directed\_Set\_Graphs.Vwalk} and \texttt{Pair\_Graph.dVs} from \texttt{Directed\_Set\_Graphs.Pair\_Graph}; the \texttt{DDFS.thy} source uses thin abbreviations \texttt{dpath}/\texttt{dpath\_bet} for backward compatibility.)}
+
+A path $\vertexa\vertexb\dots\vertexgen_n$ is a simple path iff for every $1\leq i\neq j\leq n$, $\vertexgen_i \neq \vertexgen_j$.
+For a vertex $\vertexgen$, $[\vertexgen]$ denotes a singleton path constituted of this vertex.
+For two paths $\patha$ and $\pathb$, $\patha\cat\pathb$ denotes their concatenation.
+If it causes no ambiguity, we refer to the set of vertices in a path with the path name.
+E.g. for paths $\patha$ and $\pathb$, $\patha\cap\pathb$ refers to the intersection of the sets of vertices in the two paths.
+
+
+In the following, we assume that we have an implicit fixed digraph $\DAG$, on which the algorithms operate.
+We do not pass $\DAG$ as an argument to algorithms that do not change it for notational economy.
+Lastly, we refer to the digraph $\DAG$ as a layered digraph iff it satisfies the following properties:
+\begin{enumerate}
+\item if $(\vertexa,\vertexb)\in\DAG$ then $\level(\vertexa) > \level(\vertexb)$, and
+\item for any vertex $\vertexgen$ in the vertices of $\digraph$, there is a path $\path$ starting at $\vertexgen$ s.t. $\level(\last(\path)) = 0$.
+\end{enumerate}
+Any algorithms or theorems that state a digraph $\DAG$ in this section assume that it is a layered digraph.
+
+
+
+\subsection{DFS}
+
+\newcommand{\dfs}[0]{\textsf{\upshape dfs}}
+\newcommand{\vis}[0]{\textsf{\upshape vis}}
+\newcommand{\avoid}[0]{\textsf{\upshape avoid}}
+\renewcommand{\invariant}[0]{\textsf{\upshape invariant}}
+\newcommand{\none}[0]{\textsf{\upshape none}}
+
+Let $\dfs$ be a function s.t. for a list of vertices $\path$, two sets of vertices $\avoid$ and $\vis$, and a predicate on vertices $P$; $\dfs(\avoid,\vis,\path,P)$ is a pair $(\path',\vis')$.
+The first member of the pair, $\path'$, can be a list of vertices or nothing (denoted by $\none$), and the second member of the pair is a set of vertices.
+
+\begin{myproperty}
+  \label{property:dfs}
+  For any $\avoid,\vis,\path$, and $P$, if $\dfs(\avoid,\vis,\path,P) = (\path',\vis')$, %% and $\invariant_0(\avoid,\vis,P)$ holds
+the following statements hold:
+  \begin{enumerate}
+  \item {\label{property:dfs:1} $\invariant_0(\avoid,\vis'\setminus\vis,P)$}
+  \item {\label{property:dfs:2}if $\path' = \none$, then $\path \setminus \avoid\subseteq \vis'$}
+  \item if $\path'\neq\none$:
+    \begin{enumerate}
+      %\item for any path $\path''$ starting from a vertex $\vertexgen\in\path'$ and whose last vertex satisfies the predicate $P$, then $\path''\cap\avoid\neq\emptyset$
+    \item {\label{property:dfs:12}$\path'$ is not empty}
+    \item {\label{property:dfs:3}$\path'$ is a simple path w.r.t.\ $\DAG$}
+    \item {\label{property:dfs:4}$P(\last(\path'))$ holds}
+    \item {\label{property:dfs:5}$(\path'\setminus\butlast(\path))\cap(\avoid\cup\vis') = \emptyset$}
+    \item {\label{property:dfs:6}$\head \path' = \head \path$}
+    \item {\label{property:dfs:7}$\path\setminus\path'\subseteq\vis'$}
+    \item {\label{property:dfs:11}if $\forall\vertexgen\in\butlast(\path).\;\neg P(\vertexgen)$, then we have $\forall\vertexgen\in\butlast(\path').\;\neg P(\vertexgen)$}
+    \end{enumerate}
+  \item {\label{property:dfs:8}$\vis \subseteq \vis'$}
+  \item {\label{property:dfs:9}for any $\vertexgen\in\vis'\setminus\vis$, we have $\neg P (\vertexgen)$}
+  \item {\label{property:dfs:10}for any $\vis'\setminus\vis\cap \avoid=\emptyset$}
+  \item {\label{property:dfs:13}$\vis'\setminus \vis$ is finite}
+  
+  \end{enumerate}
+\end{myproperty}
+
+Above, $\invariant_0(\avoid,\vis,P)$ is a predicate that holds iff, for any vertex $\vertexgen\in\vis$ and a path $\path$ starting at $\vertexgen$, we have $\path\; \cap\; \avoid \neq \emptyset$ if $P(\last \path)$ holds, where $\last(\path)$ denotes the last vertex in a list of vertices $\path$.
+
+Intuitively, $\dfs$ is a depth first search procedure that can start from a state of a previous call to itself, i.e. it can start from a stack of vertices currently being processed and a set of already visited vertices and continues searching from there.
+It tries to find a path to a vertex that satisfies the given predicate, starting at a vertex in the given stack.
+That path has to be disjoint from the set of vertices that is the first argument to $\dfs$.
+
+\subsection{Amendments to the DFS interface}
+\label{sec:dfs-amendments}
+
+During the formal derivation of a $\dfs$ procedure satisfying Property~\ref{property:dfs}
+(as an instance of a generic DFS skeleton; theories \textsf{DFS\_Avoid} and \textsf{IDFS}),
+the property, as originally stated in the formalisation, turned out to be
+\emph{unrealisable}: no function satisfies all of its clauses simultaneously, for any
+digraph with at least one edge.  The following amendments repair this.  Throughout,
+recall that in the formalisation the list $\path$ is kept in reverse order (its head is
+the tip of the search stack), and that the digraph is assumed to be layered.
+
+\begin{enumerate}
+\item \textbf{A vestigial clause is dropped.}  The formalisation contained a clause with
+  no counterpart in Property~\ref{property:dfs} (the fifth vis-works assumption), stating
+  that every newly visited vertex $\vertexgen\in\vis'\setminus\vis$ satisfies
+  $\vertexgen = \last(\path)$.  Together with clause~\ref{property:dfs:2}
+  (completeness) this is contradictory: for $P = \lambda\vertexgen.\,\mathsf{False}$ the
+  procedure must return $\none$, completeness then forces at least two distinct new
+  visited vertices for a two-element stack, and both would have to equal $\last(\path)$.
+  The clause was referenced only from a commented-out proof sketch and is deleted.
+
+\item \textbf{The precondition on $\vis$ is reinstated.}  Clause~\ref{property:dfs:1}
+  ($\invariant_0(\avoid,\vis'\setminus\vis,P)$) originally carried the precondition
+  $\invariant_0(\avoid,\vis,P)$, which had been commented out.  Without it the clause is
+  unrealisable in combination with clauses~\ref{property:dfs:5}, \ref{property:dfs:7}
+  and~\ref{property:dfs:2}: those clauses force the search to prune at previously visited
+  vertices and to record the pruned stack vertices as visited, so a $P$-vertex hidden
+  behind $\vis$ (e.g.\ $\digraph\supseteq\{(\vertexa,\vertexb)\}$, $P=\{\vertexb\}$,
+  $\vis=\{\vertexb\}$, $\avoid=\emptyset$) yields a newly visited vertex from which a
+  $P$-vertex is reachable without meeting $\avoid$.  Clause~\ref{property:dfs:1} now
+  carries the premises
+  \[
+    \invariant_0(\avoid,\vis,P), \qquad
+    \forall\vertexgen\in\vis.\;\neg P(\vertexgen), \qquad
+    \text{$\path$ is a simple path w.r.t.\ $\digraph$.}
+  \]
+  The path premise is needed because for an arbitrary (non-path) stack the newly visited
+  vertices need not have been exhaustively explored; the layered structure of the digraph
+  and the fact that the stack is a path exclude edges from finished vertices back into
+  the live stack.
+
+\item \textbf{Output simplicity needs input simplicity.}  Clause~\ref{property:dfs:3}
+  ($\path'$ is a simple path) now carries the premise that $\path$ is simple: the
+  procedure keeps the given stack as the bottom of its own stack, so duplicates in the
+  input reappear in the output.
+
+\item \textbf{Vertices of $\path$ in $\avoid$ are exempt from clause~\ref{property:dfs:7}.}
+  The clause $\path\setminus\path'\subseteq\vis'$ becomes
+  $(\path\setminus\path')\setminus\avoid\subseteq\vis'$.  A vertex of $\path$ that lies in
+  $\avoid$ and is dropped from the stack can be recorded neither in $\vis'$ (it would
+  violate clause~\ref{property:dfs:10}) nor kept in $\path'$
+  (clause~\ref{property:dfs:5}).
+\end{enumerate}
+
+All premises added above are available at every call site of $\dfs$ inside
+Algorithm~\ref{alg:ddfs}: invariants \ref{invar:2}~and~\ref{invar:3} are exactly the
+$\invariant_0$ preconditions, invariants \ref{invar:10}~and~\ref{invar:11} give
+$\neg P$ on the visited sets, and invariants \ref{invar:4}~and~\ref{invar:5} give that
+the stacks are paths; simplicity of the stacks is maintained by
+clause~\ref{property:dfs:3} itself together with the level structure.
+(In the completed formalisation two further invariants, maintained for the same
+purpose, state that the visited sets stay inside the vertices of $\DAG$; they supply
+the well-formedness premises discussed at the end of this subsection.)
+
+\paragraph{Final form of the amendment to clause~\ref{property:dfs:1}.}
+In the completed formalisation the history-style precondition of item~2 was replaced by
+\emph{closure} clauses, which need no precondition at all: if
+$\dfs(\avoid,\vis,\path,P) = (\none,\vis')$ then every edge from a vertex of
+$\vis'\setminus\vis$ leads into $\avoid\cup\vis'$; if the result is
+$(\path',\vis')$ then every such edge leads into $\avoid\cup\vis'\cup\path'$.
+The $\invariant_0$-style facts are then derived by the caller by induction along walks.
+Correspondingly, invariants \ref{invar:2}~and~\ref{invar:3} take a ``big'' form whose
+hit-set also contains the searching side's own stack, and the termination measure of
+Theorem~\ref{thm:ddfsterminates} is replaced by the lexicographic pair
+$(\level(\vertexa)+\level(\vertexb),\;[\vertexa=\vertexb])$: the searches never
+increase the level sum, and every search launched from a state with equal tips returns a
+new tip outside its avoid set, hence unequal to the other tip.
+
+\paragraph{Well-formedness preconditions (final interface).}
+A further round of amendments turned out to be unavoidable when the interface was
+discharged against an \emph{executable} witness.  Contrary to an earlier working
+hypothesis, the clauses that remained unconditional are \emph{not} jointly realisable
+by any executable procedure: on ill-formed inputs (e.g.\ an $\avoid$ or $\vis$
+argument that is not a well-formed finite set structure, or one containing vertices
+outside $\DAG$) the monotonicity clause~\ref{property:dfs:8} and the well-formedness
+of $\vis'$ (clause~\ref{property:dfs:13} in its formalised guise) conflict.
+Consequently, in the final formalisation \emph{every} clause of
+Property~\ref{property:dfs} carries a common input precondition: $\avoid$ and $\vis$
+are well-formed set structures whose elements are vertices of $\DAG$, and $\path$ is
+a simple path w.r.t.\ $\DAG$.  One new clause is added so that callers can
+re-establish this precondition across successive calls: $\vis'$ is again contained in
+the vertices of $\DAG$.  Two further remarks on the final form: the disjointness
+clause~\ref{property:dfs:10} is to be read as
+$(\vis'\setminus\vis)\cap\avoid=\emptyset$ (the formalisation originally reflected
+the other reading of the unparenthesised formula, which is unrealisable and was never
+used); and the path-preservation part of clause~\ref{property:dfs:3} does \emph{not}
+need the simplicity premise --- on a layered digraph every path is automatically
+simple, since levels strictly decrease along edges, and the formal proof derives
+simplicity from this observation where the premise is unavailable.
+
+A $\dfs$ procedure satisfying the amended property has been formally derived from a
+generic DFS-skeleton locale: theory \textsf{DFS\_Avoid} proves the properties for the
+skeleton instance, and theory \textsf{IDFS} transfers them to the exact vocabulary of
+the DDFS development and proves that the witness realises the full DDFS interface (a
+\textsf{sublocale} between the layered-digraph locale and the DDFS locale, discharging
+all clauses of Property~\ref{property:dfs} plus the digraph assumptions).  The
+development is executable end to end: theory \textsf{DDFS\_Example} instantiates the
+locale stack with red-black-tree set and adjacency-map structures, runs the resulting
+$\ddfs$ on concrete layered digraphs (e.g.\ two searchers started on a diamond return
+two vertex-disjoint level-decreasing paths to level $0$; started on the same vertex or
+on a chain they return the overlapping stacks, signalling the bottleneck case of
+Theorem~\ref{thm:ddfsvalid}), and exports SML code.
+
+\subsection{DDFS}
+
+We now are ready to state the definition of the double depth first search (DDFS) procedure which operates on a layered digraph $\DAG$.
+Assume there is a function $\level$ that maps every vertex in $\digraph$ to a natural number.
+Also assume that the predicate $\Plevel{\vertexgen}$ is defined to be true for a vertex $\vertexgen'$ iff $\level(\vertexgen') \leq \level(\vertexgen)$.
+DDFS takes as input two vertices from $\digraph$, and returns a pair of lists of vertices.
+It is described as Algorithm~\ref{alg:ddfs}.
+{
+\SetKwIF{If}{ElseIf}{Else}{if}{}{else if}{else}{endif}
+\begin{algorithm}\DontPrintSemicolon
+  \begin{enumerate}
+  \item $\patha=[]$; $\visa = \emptyset$; $\pathb=[]$; $\pathb'=[]$; $\visb = \emptyset$;\;
+  \item \KwSty{while} $\level(\vertexa) \neq 0$ or $\level(\vertexb) \neq 0$\;
+  \item \ \ \KwSty{if} $\vertexa = \vertexb$\;
+  \item {\label{step:dfscall1}
+        \ \ \ \ $(\path,\visb) = \dfs((\patha\cat[\vertexa])\cup\visa, \pathb'\cat[\vertexb], \visb, \Plevel{\vertexb})$\;}
+  \item \ \ \ \ \KwSty{if} $\path \neq \none$\;
+  \item {\label{step:newitr1}
+        \ \ \ \ \ \ $\vertexb=\last(\path)$; $\pathb'=\butlast(\path)$\;}
+  \item \ \ \ \ \KwSty{else}\;
+  \item \ \ \ \ \ \ $\pathb=\pathb\cat\pathb'$; $\pathb'=[]$ //New barrier\;
+  \item \ \ \ \ \ \ $(\path,\visa) = \dfs(\pathb\cat[\vertexb], \patha\cat[\vertexa],\visa, \Plevel{\vertexa})$\;
+  \item \ \ \ \ \ \ \KwSty{if} $\path \neq \none$\;
+        {\label{step:newitr2}
+  \item \ \ \ \ \ \ \ \ $\vertexa=\last(\path)$; $\patha=\butlast(\path)$\;}
+  \item \ \ \ \ \ \ \KwSty{else}\;
+  \item {\label{step:ret1}
+        \ \ \ \ \ \ \ \ \KwSty{return} $(\patha\cat[\vertexa], \pathb\cat[\vertexb])$}\;
+  \item \ \ \KwSty{else} \KwSty{if} $\level(\vertexb) \leq \level(\vertexa)$\;
+  \item {\label{step:newitr3}
+        \ \ \ \ $\patha = \patha\cat[\vertexa]$; $\vertexa = \choice(\{\vertexgen\mid (\vertexa,\vertexgen)\in \digraph\})$\;}
+  \item \ \ \KwSty{else}\;
+  \item {\label{step:newitr4}
+        \ \ \ \ $\pathb' = \pathb'\cat[\vertexb]$; $\vertexb = \choice(\{\vertexgen\mid (\vertexb,\vertexgen)\in \digraph\})$\;}
+  \item {\label{step:ret2} \KwSty{return} $(\patha\cat[\vertexa], \pathb\cat\pathb'\cat[\vertexb])$}\;
+  \end{enumerate}
+  \caption{$\ddfs(\vertexa,\vertexb)$}\label{alg:ddfs}
+\end{algorithm}
+}
+\newcommand{\patharet}{\ensuremath{\overline{\patha}}}
+\newcommand{\pathbret}{\ensuremath{\overline{\pathb}}}
+
+Before we state or prove the main theorems about DDFS, we first show that the following statements are invariants that hold throughout the execution of the while loop in Algorithm~\ref{alg:ddfs}.
+\begin{enumerate}
+\item {\label{invar:1} $\patha \cap \pathb\cat\pathb' = \emptyset$}
+\item {\label{invar:2} $\forall\vertexgen\in\visa$ and $\path$, if $\head(\path) = \vertexgen$ and $\level(\last(\path)) \leq \level(\vertexb)$, then $\path\cap(\pathb\cat[\vertexb']) \neq \emptyset$, where $\vertexb'$ denotes $\head(\pathb'\cat[\vertexb])$}
+\item {\label{invar:3} $\forall\vertexgen\in\visb$ and $\path$, if $\head(\path) = \vertexgen$ and $\level(\last(\path)) \leq \level(\vertexa)$, then $\path\cap((\patha\cat[\vertexa]) \cup \visa)\neq \emptyset$}
+\item {\label{invar:4} $\patha\cat[\vertexa]$ is a path in the given digraph $\DAG$}
+\item {\label{invar:5} $\pathb\cat\pathb'\cat[\vertexb]$ is a path in the given digraph $\DAG$}
+\item {\label{invar:6} $\forall\vertexgen\in\patha. \level(\vertexa) < \level(\vertexgen)$}
+\item {\label{invar:7} $\forall\vertexgen\in\pathb\cat\pathb'. \level(\vertexb) < \level(\vertexgen)$}
+\item {\label{invar:6'} $\forall\vertexgen\in\patha$ either $\vertexb\neq\vertexgen$ or $\level(\vertexb) < \level(\vertexgen)$}
+\item {\label{invar:7'} $\forall\vertexgen\in(\pathb\cat\pathb')$ either $\vertexa\neq\vertexgen$ or $\level(\vertexa) < \level(\vertexgen)$}
+\item {\label{invar:8} $\pathb\setminus(\visa\cup(\patha\cat[\vertexa]))\subseteq\visb$}
+\item {\label{invar:10} $\forall\vertexgen\in\visa.\level(\vertexgen)>\level(\vertexa)$}
+\item {\label{invar:11} $\forall\vertexgen\in\visb.\level(\vertexgen)>\level(\vertexb)$}
+\item {\label{invar:12} $\visa$ is finite}
+\item {\label{invar:13} $\visb$ is finite}
+%% \item \textcolor{red}{\label{invar:11} $\forall\vertexgen\in\visa.\level(\vertexgen)>\level(\vertexa)$}
+%% \item \textcolor{red}{\label{invar:12} $\forall\vertexgen\in\visb.\level(\vertexgen)>\level(\vertexb)$}
+%% \item \textcolor{red}{\label{invar:13} $(\pathb\cat\pathb')\cap\visa=\emptyset$}
+%% \item \textcolor{red}{\label{invar:13'} if $\pathb\cat\pathb'$ is empty, then $\vertexb\not\in\visa$}
+\end{enumerate}
+
+\begin{mythm}
+  \label{thm:ddfsterminates}
+  For any two vertices $\vertexa,\vertexb\in\vertices(\DAG)$, $\ddfs(\vertexa,\vertexb)$ terminates.
+\end{mythm}
+%% Before we prove any properties about the lists returned by DDFS, it should be clear that the termination of Algorithm~\ref{alg:ddfs} follows from invariants~\ref{invar:8},~\ref{invar:10},~and~\ref{invar:11}.
+\begin{proof}
+To show termination, we show that the quantity $\level(\vertexa)+\level(\vertexb)+\cardinality{\vertices(\DAG)\setminus\visa}+\cardinality{\vertices(\DAG)\setminus\visb}$ decreases with every iteration of the algorithm.
+The algorithm starts new iterations at four points: at the end of lines~\ref{step:newitr1},~\ref{step:newitr2},~\ref{step:newitr3},~and~\ref{step:newitr4}.
+We shall analyse each of them separately.
+Note: if a variable $x$ is assigned a new value in an iteration, we refer to it as $x^*$ after being assigned the new value.
+This is only during the iteration in which the new value was assigned.
+E.g. after line~\ref{step:dfscall1}, we refer to the set $\visb$ as $\visb^*$ in our proofs.
+
+{\bf Line~\ref{step:newitr1}:} from invariant~\ref{invar:11}, we have that $\vertexb\not\in\visb$ before the iteration starts.
+However, from properties~\ref{property:dfs:5}~and~\ref{property:dfs:7}, we have that $\vertexb\in\visb^*$ after the call to $\dfs$ on line~\ref{step:dfscall1}, since $\vertexb$ was in the avoid argument to $\dfs$.
+Accordingly, the size of the set $\visb^*$ is at least one bigger than that of $\varb$, i.e. its size at the beginning of the iteration.
+This implies that the expression above is one less in the new iteration.
+
+{\bf Line~\ref{step:newitr2}:} this uses an argument analogous to that used for the case when the new iteration is started on line~\ref{step:newitr1}, but regarding the size of the set $\visa$ instead of $\visb$.
+
+{\bf Line~\ref{step:newitr3}:} firstly, there will always be an edge from $\vertexa$ to another vertex, since $\DAG$ is a layered digraph and since the layer of $\vertexa$ is not $0$, which comes from the condition of the while loop.
+Also, we have that $\level(\vertexa^*) < \level(\vertexa)$, since $(\vertexa, \vertexa^*)\in\DAG$ and $\DAG$ is a layered digraph.
+Thus, the expression above will be less in the next iteration.
+
+{\bf Line~\ref{step:newitr4}:} this is analogous to the case of line~\ref{step:newitr3}.
+\end{proof}
+
+
+
+
+
+\begin{mythm}
+  \label{thm:ddfsvalid}
+  Assume that $\dfs$ satisfies Property~\ref{property:dfs}.
+  %, for any two sets of vertices $\avoid$ and $\vis$, path $\path$ and a predicate $P$ on vertices from the digraph $\DAG$.
+
+  Then, for any two vertices $\vertexa$ and $\vertexb$ in the digraph $\digraph$, if $\ddfs(\vertexa,\vertexb) = (\patharet,\pathbret)$, then one of the following statements holds:
+  \begin{enumerate}
+  \item $\last(\patharet) = \last (\pathbret)$ and $\butlast(\patharet) \cap \butlast(\pathbret) = \emptyset$ and $\forall\path.$ if $\path$ is a path starting at $\vertexa$ or $\vertexb$ s.t. $\level(\last(\path)) \leq \level(\last(\patharet))$, then $\last(\patharet)\in\path$
+  \item $\patharet \cap \pathbret = \emptyset$ and $\level(\last(\patharet)) = \level(\last(\pathbret)) = 0$
+  \end{enumerate}
+  Furthermore, $\patharet$ and $\pathbret$ are both paths in the given digraph $\DAG$.
+\end{mythm}
+To prove this theorem, we need the following lemmas.
+
+\begin{mylem}
+\label{lem:ddfs:1}
+At line~\ref{step:ret1}, for any path $\path$ starting at a vertex $\vertexgen\in(\pathb\cat[\vertexb])$ s.t.\ $\level(\last(\path)) \leq \level(\vertexa)$, there are $\path',\path''$, and $\vertexgen'$ s.t.\ $\path=[\vertexgen]\cat\path'\cat[\vertexgen']\cat\path''$ and $\vertexb\in(\pathb\cat[\vertexb])$.
+\end{mylem}
+\begin{proof}
+From our assumption on $\path$, and invariants~\ref{invar:3}~and~\ref{invar:8}, we have that $\path\cap(\patha\cup\visa^*)\neq\emptyset$.
+Also, from Property~\ref{property:dfs:2} of $\dfs$, we have that $\patha\subseteq\visa^*$ since $\dfs$, when called at step~\ref{step:dfscall1}, was unable to find a path starting at a vertex on $\patha\cat[\vertexa]$ and from $\dfs$.
+Accordingly, there exists two paths $\path_a$ and $\path_b$ and a vertex $\vertexgen_a\in\visa^*$ s.t.\ $\path=\path_a\cat[\vertexgen_a]\cat\path_b$.
+From that and from invariant~\ref{invar:2}, we have that $[\vertexgen_0]\cat\path_b\cap(\patha\cat[\vertexb]) \neq \emptyset$.
+Thus, there are paths $\path_c$, $\path_d$, and $\vertexgen_b$ s.t.\ $\path_b=\path_c\cat[\vertexgen_b]\cat\path_d$ and $\vertexgen_b\in(\pathb\cat[\vertexb])$, which shows that $\path=[\vertexgen]\cat\path'\cat[\vertexgen']\cat\path''$, for some $\vertexgen'\in(\pathb\cat[\vertexb])$, if we set $\path'=\path_a\cat[\vertexgen_a]\cat\path_c$, $\vertexgen'=\vertexgen_b$, and $\path''=\path_d$.
+\end{proof}
+
+\begin{mylem}
+\label{lem:ddfs:2}
+For a predicate $P$ and a list $\path \neq []$, suppose we have $\path_b'$, $\vertexgen'$ and $\path_b''$, s.t. $\path_b=\path_b'\cat[\vertexgen']\cat\path_b''$ and $P(\vertexgen')$ hold, for any $\path_a,\vertexgen,\path_b$, if $\path=\path_a\cat[\vertexgen]\cat\path_b$, $\path_b\neq[]$ and $P(\vertexgen)$.
+Then $P(\last(\path))$ holds.
+\end{mylem}
+
+\begin{mylem}
+\label{lem:ddfs:3}
+At line~\ref{step:ret1}, for any path $\path$ starting at a vertex $\vertexgen\in(\pathb\cat[\vertexb])$, then $\last(\path)\in(\pathb\cat[\vertexb])$.
+\end{mylem}
+\begin{proof}
+This follows from Lemma~\ref{lem:ddfs:1}~and~\ref{lem:ddfs:2}.
+\end{proof}
+
+
+\begin{mylem}
+\label{lem:ddfs:4}
+At line~\ref{step:ret1}, for any path $\path$ starting at a vertex $\vertexgen\in(\pathb\cat[\vertexb])$ s.t.\ $\level(\last(\path)) \leq \level(\vertexa)$, we have that $\vertexb\in\path$.
+\end{mylem}
+\begin{proof}
+From Lemma~\ref{lem:ddfs:3}, we know that $\last(\path) \in (\pathb\cat[\vertexb])$.
+Also, observe that our assumptions on $\DAG$ imply that for any vertex $\vertexgen\in\butlast(\path)$, $\level(\vertexgen) > \level (\last (\path))$ holds.
+Accordingly, the fact that $\level(\last(\path)) \leq \level(\vertexa)$ implies that $\vertexb\in\path$.
+\end{proof}
+
+
+\begin{mylem}
+\label{lem:ddfs:5}
+At line~\ref{step:ret1}, for any path $\path$ starting at a vertex $\vertexgen\in(\patha\cat[\vertexa])$ s.t.\ $\level(\last(\path)) \leq \level(\vertexa)$, we have that $\vertexb\in\path$.
+\end{mylem}
+\begin{proof}
+From Property~\ref{property:dfs:2} of $\dfs$, and the fact that $\dfs$ could not replace $\patha\cat[\vertexa]$ when , we have that $\patha\cat[\vertexa]\subseteq\visa$.
+Accordingly, $\vertexa\in\visa$.
+From that, from invariant~\ref{invar:2}, and the fact that $\pathb'=[]$, we have that $\path\cap(\pathb\cat[\vertexb])\neq\emptyset$.
+Hence, there is a vertex $\vertexgen'\in(\pathb\cat[\vertexb])$; and paths $\path'$ and $\path''$ s.t. $\path=[\vertexgen]\cat\path'\cat[\vertexgen']\cat\path''$.
+From that and from Lemma~\ref{lem:ddfs:4}, we have that $\vertexb\in\path$.
+\end{proof}
+
+\begin{mylem}
+\label{lem:ddfs:6}
+$\patha\cap(\pathb\cat\pathb') = \emptyset$
+\end{mylem}
+\begin{proof}
+This follows from invariant~\ref{invar:1}.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:ddfsvalid}]
+The first property of DDFS we prove is that both $\patharet$ and $\pathbret$ are paths in $\DAG$.
+This follows from invariants~\ref{invar:4}~and~\ref{invar:5}.
+
+To prove the other statement about the returned paths from Algorithm~\ref{alg:ddfs}, we consider the two cases in which it returns separately.
+
+{\bf Return at step~\ref{step:ret1}}: from Lemmas~\ref{lem:ddfs:4},~\ref{lem:ddfs:5},~and~\ref{lem:ddfs:6}, and the fact that $\vertexa=\vertexb$, we have that
+$\last(\patharet) = \last (\pathbret)$ and $\butlast(\patharet) \cap \butlast(\pathbret) = \emptyset$ and $\forall\path.$ if $\path$ is a path starting at $\vertexa$ or $\vertexb$ s.t. $\level(\last(\path)) \leq \level(\last(\patharet))$, then $\last(\patharet)\in\path$.
+This is what we want to prove for the paths returned by DDFS.
+
+{\bf Return at step~\ref{step:ret2}:} from invariant~\ref{invar:1}, we have that $\patha\cap(\pathb\cat\pathb')=\emptyset$.
+From that, and the fact that $\vertexa\neq\vertexb$, we have that $\patharet$ and $\pathbret$, are disjoint.
+
+\end{proof}
+
+\subsection{Formalisation details}
+
+The following is the recursive definition of DDFS that is actually used to prove theorems about DDFS by computational induction.
+
+\SetKwIF{If}{ElseIf}{Else}{if}{}{else if}{else}{endif}
+\begin{algorithm}\DontPrintSemicolon
+  \KwSty{if} $\vertexa = \vertexb$\;
+  \ \ $(\path,\visb) = \dfs(\patha\cat[\vertexa], \pathb'\cat[\vertexb], \visb, \Plevel{\vertexb})$\;
+  \ \ \KwSty{if} $\path \neq \none$\;
+  \ \ \ \ $\vertexb=\last(\path)$\;
+  \ \ \ \ $\pathb'=\butlast(\path)$\;
+  \ \ \ \ \KwSty{return} $\ddfs(\vertexa,\path_1,\visa,\vertexb,\path_2,\path_2',\visb)$\;
+  \ \ \KwSty{else}\;
+  \ \ \ \ $\pathb=\pathb\cat\pathb'$ //New barrier\;
+  \ \ \ \ $\pathb'=[]$\;
+  \ \ \ \ $(\path,\visa) = \dfs(\pathb\cat[\vertexb], \patha\cat[\vertexa],\visb, \Plevel{\vertexa})$\;
+  \ \ \ \ \KwSty{if} $\path \neq \none$\;
+  \ \ \ \ \ \ $\vertexa=\last(\path)$\;
+  \ \ \ \ \ \ $\patha=\butlast(\path)$\;
+  \ \ \ \ \ \ \KwSty{return} $\ddfs(\vertexa,\path_1,\visa,\vertexb,\path_2,\path_2',\visb)$\;
+  \ \ \ \ \KwSty{else}\;
+  \ \ \ \ \ \ \KwSty{return} $(\patha\cat[\vertexa], \pathb\cat[\vertexb])$\;
+  \KwSty{else} \KwSty{if} $\level(\vertexa) = 0$ and $\level(\vertexb) = 0$\;
+  \ \ \KwSty{return} $(\patha\cat[\vertexa], \pathb\cat\pathb'\cat[\vertexb])$\;
+  \KwSty{else} \KwSty{if} $\level(\vertexb) \leq \level(\vertexa)$\;
+  \ \ $\patha = \patha\cat[\vertexa]$\;
+  \ \ $\vertexa = \choice(\{\vertexgen\mid (\vertexa,\vertexgen)\in \digraph\})$\;
+  \ \ \KwSty{return} $\ddfs(\vertexa,\path_1,\visa,\vertexb,\path_2,\path_2',\visb)$\;
+  \KwSty{else}\;
+  \ \ $\pathb' = \pathb'\cat[\vertexb]$\;
+  \ \ $\vertexb = \choice(\{\vertexgen\mid (\vertexb,\vertexgen)\in \digraph\})$\;
+  \ \ \KwSty{return} $\ddfs(\vertexa,\path_1,\visa,\vertexb,\path_2,\path_2',\visb)$\;
+  \caption{$\ddfs(\vertexa,\path_1,\visa,\vertexb,\path_2,\path_2',\visb)$}\label{alg:BlossomOrAug}
+\end{algorithm}

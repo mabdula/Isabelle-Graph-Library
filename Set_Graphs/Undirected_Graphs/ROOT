@@ -1,5 +1,4 @@
 session "Undirected_Set_Graphs" = "HOL-Eisbach" +
-  options [document = pdf, document_output = "output"]
 
   sessions
     AI_Provenance
@@ -21,5 +20,5 @@ session "Undirected_Set_Graphs" = "HOL-Eisbach" +
     Pair_Graph_U_Specs
     Directed_Undirected
 
-  document_files
-    "root.tex"
+
+
