@@ -306,10 +306,18 @@ proof -
       by (rule pick_le)
   qed
   moreover have "(pick I j) \<in> I" 
-    apply(cases "finite I") 
-     apply (metis (mono_tags, lifting) assms dim_row_less_card_I dims_subsyst_same 
-        order_less_le_trans pick_in_set_le)
-    using pick_in_set_inf by auto
+  proof (cases "finite I")
+    case True
+    have "j < dim_row (fst (sub_system A b I))"
+      using assms(2) dims_subsyst_same[OF assms(1)] by simp
+    moreover have "dim_row (fst (sub_system A b I)) \<le> card I"
+      using dim_row_less_card_I[OF True] by blast
+    ultimately have "j < card I" by linarith
+    then show ?thesis by (rule pick_in_set_le)
+  next
+    case False
+    then show ?thesis by (rule pick_in_set_inf)
+  qed
   ultimately show ?thesis
     using  assms dims_subsyst_same pick_index_row_in_A subsyst_b_i 
     by metis
