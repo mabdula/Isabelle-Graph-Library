@@ -2155,7 +2155,23 @@ proof(safe)
     then have "((inv p)^^j) i = x" 
       using j_sup by presburger
     then have "i = (p^^j) x" 
-      by (metis (no_types, lifting) assms bij_fn bij_inv_eq_iff inv_fn permutes_imp_bij)
+    proof -
+      assume inv_fact: "(inv p ^^ j) i = x"
+      have bij_p: "bij p"
+        using assms permutes_imp_bij by blast
+      have bij_pow: "bij (p ^^ j)"
+        using bij_p by (rule bij_fn)
+      have inv_pow: "inv (p ^^ j) = (inv p) ^^ j"
+        using bij_p by (rule inv_fn)
+      have "inv (p ^^ j) i = x"
+        using inv_pow inv_fact by simp
+      have id_c: "p ^^ j \<circ> inv p ^^ j = (\<lambda>x::'a. x)"
+        using bij_p by (rule fn_o_inv_fn_is_id)
+      have "((p ^^ j) o (inv p ^^ j)) i = i"
+        using id_c by simp
+      then show "i = (p ^^ j) x"
+        using inv_fact by simp
+    qed
     then show ?thesis using 
         `i \<in> set (support p  i)` 
         elemnets_in_support_expo'[of p i i j x] assms 
