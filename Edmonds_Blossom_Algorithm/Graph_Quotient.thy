@@ -1589,9 +1589,20 @@ proof-
           using v_notin_q by (simp add: Cons)
       qed
       moreover have "v \<notin> set p''"
-        using cycle
-        apply simp
-        by (metis distinct.simps(2) distinct_append hd_append list.sel(1) tl_append2)
+      proof -
+        have p'_nempty: "p' \<noteq> []"
+        proof (rule notI)
+          assume p'_empty: "p' = []"
+          have "hd p = v"
+            using p'p'' p'_empty by simp
+          then show False
+            using cycle(5) by simp
+        qed
+        have "distinct (tl p' @ v # p'')"
+          using cycle(3) p'_nempty by (simp add: tl_append2)
+        then show ?thesis
+          by (auto simp: distinct_append)
+      qed
       ultimately show ?thesis
         by (auto simp add: v_in_edge_in_path_gen)
     qed
