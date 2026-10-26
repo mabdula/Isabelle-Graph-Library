@@ -5305,7 +5305,7 @@ proof-
           qed
         then show ?thesis
           using path_adj_verts_edge
-          by metis
+          by (blast intro: path_adj_verts_edge)
       qed
       ultimately show ?thesis 
         apply(intro edge_in_graph_edge_in_quot[OF last_p1_in_s])
