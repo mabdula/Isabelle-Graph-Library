@@ -365,8 +365,20 @@ qed
         using \<open>?X_gr \<subseteq> G\<close>
         by (meson graphE graph_invar_subset)
       have "X \<subseteq> Vs ?X_gr" 
-        by (smt (verit, best) vs_member_elim X  Asubs mem_Collect_eq
-            psubsetD subset_iff vs_transport)
+      proof
+        fix x
+        assume "x \<in> X"
+        then have "x \<in> A"
+          using X by blast
+        then have "x \<in> Vs G"
+          using Asubs by blast
+        then obtain e where "e \<in> G" "x \<in> e"
+          using vs_member[of x G] by blast
+        then have "e \<in> {e \<in> G. \<exists>x\<in>X. x \<in> e}"
+          using \<open>x \<in> X\<close> by blast
+        then show "x \<in> Vs {e \<in> G. \<exists>x\<in>X. x \<in> e}"
+          using \<open>x \<in> e\<close> by (auto intro: vs_member_intro)
+      qed
       have "(\<forall>e\<in> ?X_gr. \<exists>u v. e = {u, v} \<and> (u \<in> X \<and> v \<in> Vs {e \<in> G. \<exists>x\<in>X. x \<in> e} - X))"
       proof 
         fix e
