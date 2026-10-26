@@ -1814,8 +1814,60 @@ proof (cases "u \<in> set \<pi>")
         by simp
 
       with sucsuc uvs_zag \<open>u'' \<in> set \<pi>\<close> show ?thesis
-        by (simp flip: successively_conv_sorted_wrt[OF transp_index_less])
-           (metis (no_types, lifting) filter.simps(2) local.Cons successively.simps(3) zag_ConsE zag_increasing_arrival)
+        proof -
+          have zag_u: "zag G M u \<pi> \<sigma> = u' # v # uvs"
+            using \<open>u' # v # uvs = zag G M u \<pi> \<sigma>\<close> by (rule sym)
+
+          have u'_eq: "u' = u"
+          proof -
+            have "hd (zag G M u \<pi> \<sigma>) = u"
+              by (rule hd_zag)
+            then show ?thesis
+              by (simp add: zag_u)
+          qed
+
+          have zag_u'': "zag G M u'' \<pi> \<sigma> = u'' # vus"
+            using uvs_zag local.Cons by simp
+
+          have zag_cons: "zag G M u \<pi> \<sigma> = u # v # zag G M u'' \<pi> \<sigma>"
+            using zag_u u'_eq uvs_zag by simp
+
+          have idx: "index \<pi> u < index \<pi> u''"
+            by (rule zag_increasing_arrival[OF zag_cons])
+
+          have sorted_tail: "sorted_wrt (\<lambda>a b. index \<pi> a < index \<pi> b) [x <- zag G M u'' \<pi> \<sigma>. x \<in> set \<pi>]"
+            by (rule sucsuc(1)[OF uvs_zag \<open>u'' \<in> set \<pi>\<close>])
+
+          have sorted_tail': "sorted_wrt (\<lambda>a b. index \<pi> a < index \<pi> b) (u'' # [x <- vus. x \<in> set \<pi>])"
+            using sorted_tail \<open>u'' \<in> set \<pi>\<close> by (simp add: zag_u'')
+
+          have filter_eq: "[x <- zag G M u \<pi> \<sigma>. x \<in> set \<pi>] = u' # u'' # [x <- vus. x \<in> set \<pi>]"
+            using \<open>u' \<in> set \<pi>\<close> \<open>v \<notin> set \<pi>\<close> \<open>u'' \<in> set \<pi>\<close> by (simp add: zag_u local.Cons)
+
+          have head_less: "\<forall>y \<in> set (u'' # [x <- vus. x \<in> set \<pi>]). index \<pi> u' < index \<pi> y"
+          proof
+            fix y assume "y \<in> set (u'' # [x <- vus. x \<in> set \<pi>])"
+            then consider (head) "y = u''" | (tail) "y \<in> set [x <- vus. x \<in> set \<pi>]"
+              by auto
+            then show "index \<pi> u' < index \<pi> y"
+            proof cases
+              case head
+              with idx u'_eq show ?thesis by simp
+            next
+              case tail
+              from sorted_tail' have "\<forall>z \<in> set [x <- vus. x \<in> set \<pi>]. index \<pi> u'' < index \<pi> z"
+                by simp
+              with tail have "index \<pi> u'' < index \<pi> y" by blast
+              with idx u'_eq show ?thesis by simp
+            qed
+          qed
+
+          have "sorted_wrt (\<lambda>a b. index \<pi> a < index \<pi> b) (u' # u'' # [x <- vus. x \<in> set \<pi>])"
+            using head_less sorted_tail' by auto
+
+          then show ?thesis
+            by (simp only: filter_eq)
+        qed
     qed
   qed simp
 next
