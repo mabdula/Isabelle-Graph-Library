@@ -1615,7 +1615,14 @@ next
         by (simp add: row_i row_k neg)
     qed
   have "?i' = i - dim_vec b'"
-    by (metis A assms(4) b carrier_matD(1) carrier_vecD dims_subsyst_same')
+  proof -
+    have dimAb: "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    have eq: "dim_row A' = dim_vec b'"
+      using dims_subsyst_same' dimAb assms(4) by blast
+    show ?thesis
+      by (simp add: eq)
+  qed
   then have "(b' @\<^sub>v (-b')) $ i = - b' $ ?i'" 
     by (metis A False 1 2 assms(4) assms(6) b carrier_matD(1) carrier_vecD dims_subsyst_same' 
         face_is_polyhedron'(2) index_append_vec(1) index_append_vec(2) index_uminus_mat(2) 
