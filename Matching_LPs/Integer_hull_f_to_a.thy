@@ -1821,7 +1821,16 @@ proof -
     have 3:"\<forall> i < n.  x $ i \<ge> -1" 
       using \<open>x \<in> S\<close> assms(3) by blast 
     have "set\<^sub>v c \<noteq> {}" using `n > 0` 
-      by (metis carrier_vecD equals0D  vec_setI assms(5))
+  proof -
+    have dim_c: "dim_vec c = n"
+      using assms(5) by (rule carrier_vecD)
+    have "c $ 0 \<in> set\<^sub>v c"
+    proof (rule vec_setI)
+      show "c $ 0 = c $ 0" by (rule refl)
+      show "0 < dim_vec c" using dim_c assms(4) by simp
+    qed
+    then show ?thesis by blast
+  qed
     have "Max (abs ` (vec_set c)) \<ge> 0" 
       by (metis (mono_tags, lifting) Max_in \<open>set\<^sub>v c \<noteq> {}\<close> abs_ge_zero finite_imageI
           finite_vec_set imageE image_is_empty)
