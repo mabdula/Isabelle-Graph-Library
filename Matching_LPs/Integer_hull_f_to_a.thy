@@ -2265,7 +2265,17 @@ proof -
   have "lin_indpt (set (cols A'\<^sup>T))" using `lin_indpt (set (rows A'))` by auto
   have "distinct (cols A'\<^sup>T)" using `distinct (rows A')` by auto
   have "A' \<in> carrier_mat (dim_row A') n" 
-    by (metis assms(1,9) carrier_matD(2) carrier_matI dim_col_subsyst_mat fst_conv)
+  proof -
+  have fstA': "fst (sub_system A b I) = A'"
+    using assms(9)[symmetric] by simp
+  have "dim_col A' = dim_col A"
+    using dim_col_subsyst_mat[of A b I] by (simp add: fstA')
+  moreover have "dim_col A = n"
+    using A by (rule carrier_matD(2))
+  ultimately have "dim_col A' = n" by simp
+  then show ?thesis
+    by (intro carrier_matI) auto
+  qed
   then have "rank A'\<^sup>T = dim_row A'" 
     using lin_indpt_full_rank[of "A'\<^sup>T" "dim_row A'"]
       `lin_indpt (set (cols A'\<^sup>T))` `distinct (cols A'\<^sup>T)`  transpose_carrier_mat by blast
