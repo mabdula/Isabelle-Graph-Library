@@ -377,7 +377,7 @@ proof -
   let ?i = "card {a\<in>I. a < j}" 
   have "pick I ?i = j" using pick_card_in_set assms(2) by auto
   have "dim_vec (snd (sub_system A b I)) = card {i. i < dim_vec b \<and> i \<in> I}" 
-    by (metis dim_subsyst_vec)
+    by (rule dim_subsyst_vec)
   have "j \<notin> {a\<in>I. a < j} \<and> j \<in> {i. i < dim_vec b \<and> i \<in> I}" using assms(1-2) by auto
   then  have "{a\<in>I. a < j} \<subset> {i. i < dim_vec b \<and> i \<in> I}" 
     by auto
