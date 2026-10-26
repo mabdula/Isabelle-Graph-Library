@@ -1858,7 +1858,9 @@ proof -
     by (rule p_in_same_cycle[OF assms]) 
   then have "(rev_p p) (p i) = i"  
     unfolding rev_p_def 
-    by (metis assms(1) permutes_inv_eq)
+    by (simp add: rev_p_def
+                   if_P[OF p_in_same_cycle[OF assms(1) assms(2)]]
+                   permutes_inv_eq[OF assms(1)])
   then show ?thesis 
     using  assms(1) tutte_skew_symmetric 
     by metis
