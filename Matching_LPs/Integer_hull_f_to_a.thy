@@ -1425,7 +1425,17 @@ next
       proof(rule ccontr)
         assume "\<not> distinct (rows fullA)" 
         then obtain i j where "i < n \<and> j < n \<and> i \<noteq> j \<and> rows fullA ! i = rows fullA ! j" 
-          by (metis carrier_matD(1) distinct_conv_nth length_rows sq_fullA)
+        proof -
+          have len_fullA: "length (rows fullA) = n"
+            using carrier_matD(1)[OF sq_fullA] by (simp add: length_rows)
+          have neq: "\<not> (\<forall>i<n. \<forall>j<n. i \<noteq> j \<longrightarrow> rows fullA ! i \<noteq> rows fullA ! j)"
+            using \<open>\<not> distinct (rows fullA)\<close> len_fullA
+            by (simp add: distinct_conv_nth)
+          have "\<exists>i j. i < n \<and> j < n \<and> i \<noteq> j \<and> rows fullA ! i = rows fullA ! j"
+            using neq by blast
+          then show thesis
+            using that by blast
+        qed
         then have i_j:"i < n \<and> j < n \<and> i \<noteq> j \<and> row fullA i = row fullA j"  
           by (metis sq_fullA carrier_matD(1) nth_rows)
         show False
