@@ -2142,11 +2142,33 @@ proof-
         using len_bl len_ge_2
         by (cases p1 rule: rev_cases) auto
     qed
-    show ?thesis
-      unfolding rw3[of p1 p2] edges_of_path_snoc[OF p1_nempty, symmetric]
-      using edges_of_path_snoc[OF butlast_nempty, symmetric]
-        butlast[OF p1_nempty] butlast[OF butlast_nempty]
-      by (metis append.assoc append_Cons append_Nil)
+    have p1_eq: "p1 = butlast p1 @ [last p1]"
+      by (rule append_butlast_last_id[OF p1_nempty, symmetric])
+    have snoc_p1: "edges_of_path (p1 @ [u]) = edges_of_path p1 @ [{last p1, u}]"
+      by (simp add: edges_of_path_snoc[OF p1_nempty])
+    have snoc_bl: "edges_of_path (butlast p1 @ [last p1]) =
+                     edges_of_path (butlast p1) @ [{last (butlast p1), last p1}]"
+      by (simp add: edges_of_path_snoc[OF butlast_nempty])
+    have eop_p1: "edges_of_path p1 =
+                    edges_of_path (butlast p1) @ [{last (butlast p1), last p1}]"
+    proof -
+      have "edges_of_path p1 = edges_of_path (butlast p1 @ [last p1])"
+        by (simp only: p1_eq[symmetric])
+      also have "\<dots> = edges_of_path (butlast p1) @ [{last (butlast p1), last p1}]"
+        by (rule snoc_bl)
+      finally show ?thesis .
+    qed
+    have "edges_of_path (p1 @ u # p2) = edges_of_path (p1 @ [u]) @ edges_of_path (u # p2)"
+      by (rule rw3)
+    also have "\<dots> = (edges_of_path p1 @ [{last p1, u}]) @ edges_of_path (u # p2)"
+      by (simp only: snoc_p1)
+    also have "\<dots> = ((edges_of_path (butlast p1) @ [{last (butlast p1), last p1}])
+                        @ [{last p1, u}]) @ edges_of_path (u # p2)"
+      by (simp only: eop_p1)
+    also have "\<dots> = edges_of_path (butlast p1) @ {last (butlast p1), last p1} #
+                       {last p1, u} # edges_of_path (u # p2)"
+      by simp
+    finally show ?thesis .
   qed
 qed
 
