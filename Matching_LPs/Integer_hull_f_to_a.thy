@@ -662,7 +662,15 @@ proof(rule ccontr)
           by (rule conjI)
       qed
     then have "row C j \<bullet> x = d $ j" using `d = C *\<^sub>v x`  j 
-      by (metis index_mult_mat_vec)
+      proof -
+        have jlt: "j < dim_row C"
+          using j by blast
+        have "row C j \<bullet> x = (C *\<^sub>v x) $ j"
+          using jlt by simp
+        also have "\<dots> = d $ j"
+          using \<open>d = C *\<^sub>v x\<close> by simp
+        finally show ?thesis .
+      qed
     then show "row A i1 \<bullet> x = b $ i1" 
       by (metis \<open>b $ i1 = b $ i2\<close> i1 i2 j j1j2)
   qed
