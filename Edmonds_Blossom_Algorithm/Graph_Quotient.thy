@@ -1455,18 +1455,57 @@ proof(induction l1 arbitrary: l P1 P2)
     by (simp add: alt_list_step)
 next
   case (Cons a' l') 
-  then obtain l'' where "l = a' # l''"
-    by auto
-  moreover have
-    "P2 (last (find_pfx Q (l' @ x # y # l2))) \<and> P1 (last (find_pfx Q (rev (l' @ x # y # l2)))) \<or>
-          P1 (last (find_pfx Q (l' @ x # y # l2))) \<and> P2 (last (find_pfx Q (rev (l' @ x # y # l2))))"
-    apply(intro Cons)
-    using Cons
-    by (auto simp add: alt_list_step)
-  ultimately show ?case
-    using Cons
-    apply (auto simp add: alt_list_step)
-    by (metis find_pfx_nempty in_set_conv_decomp append_Cons append_Nil find_pfx_append)+
+    have l_eq: "l = a' # (l' @ x # y # l2)"
+      using Cons.prems(5) by simp
+    have a'_mem: "a' \<in> set l"
+      by (simp add: l_eq)
+    have a'_neq: "a' \<noteq> x" "a' \<noteq> y"
+      using Cons.prems(4) by auto
+    have not_Qa': "\<not> Q a'"
+      using Cons.prems(3) a'_mem a'_neq by blast
+    have notin': "x \<notin> set l' \<and> x \<notin> set l2 \<and> y \<notin> set l' \<and> y \<notin> set l2"
+      using Cons.prems(4) by simp
+    have set_sub: "\<forall>a\<in>set (l' @ x # y # l2). Q a \<longrightarrow> (a = x \<or> a = y)"
+      using Cons.prems(3) l_eq by auto
+    have "alt_list P1 P2 (a' # (l' @ x # y # l2))"
+      using Cons.prems(6) l_eq by simp
+    then have alt_tl: "alt_list P2 P1 (l' @ x # y # l2)"
+      by (simp add: alt_list_step)
+    have IH_inst:
+      "(P2 (last (find_pfx Q (l' @ x # y # l2))) \<and> P1 (last (find_pfx Q (rev (l' @ x # y # l2))))) \<or>
+       (P1 (last (find_pfx Q (l' @ x # y # l2))) \<and> P2 (last (find_pfx Q (rev (l' @ x # y # l2)))))"
+      by (rule Cons.IH[OF Cons.prems(1,2) set_sub notin' refl alt_tl])
+    have x_mem: "x \<in> set (l' @ x # y # l2)"
+      by simp
+    have pfx_nempty: "find_pfx Q (l' @ x # y # l2) \<noteq> []"
+      using x_mem Cons.prems(1) by (rule find_pfx_nempty)
+    have last_l: "last (find_pfx Q l) = last (find_pfx Q (l' @ x # y # l2))"
+      by (simp add: l_eq not_Qa' pfx_nempty)
+    have fp1: "find_pfx Q (rev l2 @ [y] @ (x # rev l' @ [a'])) = find_pfx Q (rev l2 @ [y])"
+      using Cons.prems(2) by (rule find_pfx_append)
+    have fp2: "find_pfx Q (rev l2 @ [y] @ (x # rev l')) = find_pfx Q (rev l2 @ [y])"
+      using Cons.prems(2) by (rule find_pfx_append)
+    have rev_pfx: "find_pfx Q (rev l) = find_pfx Q (rev (l' @ x # y # l2))"
+    proof -
+      have "rev l = rev l2 @ [y] @ (x # rev l' @ [a'])"
+        by (simp add: l_eq)
+      moreover have "rev (l' @ x # y # l2) = rev l2 @ [y] @ (x # rev l')"
+        by simp
+      ultimately show ?thesis
+        using fp1 fp2 by simp
+    qed
+    show ?case
+    proof (rule disjE[OF IH_inst])
+      assume "P2 (last (find_pfx Q (l' @ x # y # l2))) \<and>
+              P1 (last (find_pfx Q (rev (l' @ x # y # l2))))"
+      then show ?thesis
+        by (simp add: last_l rev_pfx)
+    next
+      assume "P1 (last (find_pfx Q (l' @ x # y # l2))) \<and>
+              P2 (last (find_pfx Q (rev (l' @ x # y # l2))))"
+      then show ?thesis
+        by (simp add: last_l rev_pfx)
+    qed
 qed
 
 lemma edges_of_path_find_pfx:
