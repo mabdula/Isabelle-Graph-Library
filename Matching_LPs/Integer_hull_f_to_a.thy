@@ -1046,7 +1046,14 @@ lemma mult_unit_vec_is_col:
   shows "A *\<^sub>v unit_vec n i = col A i" 
 proof
   show "dim_vec (A *\<^sub>v unit_vec n i) = dim_vec (col A i)" 
-    by (metis dim_col dim_mult_mat_vec)
+  proof -
+    have "dim_vec (A *\<^sub>v unit_vec n i) = dim_row A"
+      by simp
+    moreover have "dim_vec (col A i) = dim_row A"
+      by simp
+    ultimately show ?thesis
+      by simp
+  qed
   fix j
   assume j_in_dim:"j < dim_vec (col A i)"
   have "(A *\<^sub>v unit_vec n i) $ j = row A j \<bullet> unit_vec n i" 
