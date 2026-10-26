@@ -5010,7 +5010,18 @@ next
     using qug_path_iff_case_1_ii quot(1) by blast
   then show ?thesis
     using quot_aug_path qug_path_iff_case_1_i p_subset_s \<open>M \<subseteq> E\<close>
-    by (metis (no_types,lifting) False refine_def)
+  proof -
+    have refine_eq: "refine C M p' = p'"
+      using False by (simp add: refine_def)
+    have p'_feats: "matching_augmenting_path (quotG M) p'" "distinct p'"
+      using graph_augmenting_path_feats[OF quot_aug_path] by blast+
+    have "matching_augmenting_path M p'"
+      unfolding qug_path_iff_case_1_i[OF p_subset_s \<open>M \<subseteq> E\<close>]
+      by (rule p'_feats(1))
+    then show ?thesis
+      using \<open>path E p'\<close> p'_feats(2) refine_eq
+      by simp
+  qed
 qed
 
 theorem refine_works:
