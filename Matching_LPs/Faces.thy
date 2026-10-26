@@ -739,7 +739,28 @@ proof -
   have "?\<beta> = sum (\<lambda> i. b' $ i) {0..<dim_vec b'}"   
     by auto
   have "A' \<in> carrier_mat (dim_vec b') n" using carrier_mat_subsyst 
-    by (metis A assms(4) b carrier_matD(1) carrier_matD(2) carrier_vecD dims_subsyst_same' fst_conv)
+  proof -
+    have dimAb: "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    have colA: "dim_col A = n"
+      by (rule carrier_matD(2)[OF A])
+    have A'_eq: "A' = fst (sub_system A b I)"
+      by (simp add: assms(4)[symmetric])
+    have rows: "dim_row A' = dim_vec b'"
+      using dims_subsyst_same' dimAb assms(4) by blast
+    have cols: "dim_col A' = n"
+    proof -
+      have "dim_col A' = dim_col (fst (sub_system A b I))"
+        by (simp add: A'_eq)
+      also have "\<dots> = dim_col A"
+        by (simp add: dim_col_subsyst_mat)
+      also have "\<dots> = n"
+        by (rule colA)
+      finally show ?thesis .
+    qed
+    show ?thesis
+      by (rule carrier_matI[OF rows cols])
+  qed
   have 1: "\<forall> x\<in> carrier_vec n. (A'\<^sup>T *\<^sub>v 1\<^sub>v (dim_vec b')) \<bullet> x =  1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x)" 
     using transpose_vec_mult_scalar[of A' "dim_vec b'" n  _ "1\<^sub>v (dim_vec b')"]
     using `A' \<in> carrier_mat (dim_vec b') n`  by simp
