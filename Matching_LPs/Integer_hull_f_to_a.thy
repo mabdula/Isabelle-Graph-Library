@@ -2253,8 +2253,8 @@ proof -
     using bounded_min_faces_square_mat[OF A b 1 2 3]
     using assms(7-9) by blast
   then have "A' \<in> carrier_mat n n" 
-    using  A  carrier_matD(2) carrier_matI dim_col_subsyst_mat fst_conv
-    by (metis assms(9))
+    using dim_col_subsyst_mat[of A b I] carrier_matD(2)[OF A]
+    by (auto simp: assms(9)[symmetric] intro!: carrier_matI)
   then have "lin_indpt (set (rows A'))"
     using min_face_lin_indpt[OF A b 1 3] 
     using assms(7-9) by blast
