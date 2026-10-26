@@ -112,7 +112,20 @@ lemma if1_cond_props'':
   obtains v1 v2 v3 r where "if1 flabel ex v1 v2 v3 r"
   using assms(1)
   unfolding if1_cond_def if1_def
-  by (smt surj_pair)
+proof -
+  from assms(1) obtain v1 v2 where
+    e: "{v1, v2} \<in> G - ex" and
+    r_ex: "\<exists>r. flabel v1 = Some (r, Even)" and
+    lab2: "flabel v2 = None" and
+    v3_ex: "\<exists>v3. {v2, v3} \<in> M"
+    unfolding if1_cond_def by blast
+  from r_ex obtain r where r: "flabel v1 = Some (r, Even)" by blast
+  from v3_ex obtain v3 where m: "{v2, v3} \<in> M" by blast
+  have "if1 flabel ex v1 v2 v3 r"
+    unfolding if1_def using e r lab2 m by blast
+  then show thesis
+    by (rule that)
+qed
 
 
 lemma if1_cond_props''':
