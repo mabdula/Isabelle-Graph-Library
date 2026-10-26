@@ -5084,8 +5084,15 @@ proof(rule ccontr)
     using edges_of_path_snoc[OF p1p2(2)]
     by auto
   moreover have "edges_of_path (v1 # p2) = {v1, hd p2} # edges_of_path p2"
-    using p1p2(3)
-    by (metis edges_of_path.simps(3) list.exhaust_sel)
+  proof (cases p2)
+    case Nil
+    then show ?thesis
+      using p1p2 by simp
+  next
+    case (Cons a p2')
+    then show ?thesis
+      by simp
+  qed
   moreover have "edges_of_path C = (edges_of_path (p1 @ [v1])) @ (edges_of_path (v1 # p2))"
     using edges_of_path_append_2[where p' = "v1 # p2"] p1p2(1)
     by auto
