@@ -98,7 +98,22 @@ proof -
   qed
   then have "\<forall>x y. {x, y} \<in> G \<and> x \<in> C \<longrightarrow> {x, y} \<in> graph_diff G X"   
     using assms(1) odd_comps_in_diff_not_in_X 
-    by (metis Int_empty_left disjoint_iff_not_equal graph_diffI insert_disjoint(1))
+  proof (intro allI impI)
+    fix x y
+    assume "{x, y} \<in> G \<and> x \<in> C"
+    hence edge: "{x, y} \<in> G" and xC: "x \<in> C" by auto
+    have xX: "x \<notin> X"
+      using assms(1) odd_comps_in_diff_not_in_X xC by blast
+    have yX: "y \<notin> X"
+    proof
+      assume "y \<in> X"
+      hence "x \<in> C \<and> y \<in> X \<and> {x, y} \<in> G" using xC edge by blast
+      thus False
+        using \<open>\<nexists>x y. x \<in> C \<and> y \<in> X \<and> {x, y} \<in> G\<close> by blast
+    qed
+    have "{x, y} \<inter> X = {}" using xX yX by blast
+    thus "{x, y} \<in> graph_diff G X" using edge graph_diffI by blast
+  qed
   then have "\<forall>x y. {x, y} \<in> G \<and> x \<in> C \<longrightarrow> y \<in> C" 
     by (metis assms(1) odd_comps_in_diff_is_component vertices_edges_in_same_component)
   have "connected_component G x = C" 
