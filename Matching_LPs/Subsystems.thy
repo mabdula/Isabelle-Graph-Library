@@ -282,8 +282,15 @@ qed
 lemma pick_index_row_in_A:
   assumes "j < dim_row (fst (sub_system A b I))" 
   shows "row (fst (sub_system A b I)) j = row A (pick I j)"
-  using row_submatrix_UNIV[of j A I]
-  by (metis assms dim_row_subsyst_mat sub_system_fst)
+proof -
+  have j: "j < card {i. i < dim_row A \<and> i \<in> I}"
+    using assms by (simp add: dim_row_subsyst_mat)
+  have "row (fst (sub_system A b I)) j = row (submatrix A I UNIV) j"
+    by (simp only: sub_system_fst)
+  also have "\<dots> = row A (pick I j)"
+    by (rule row_submatrix_UNIV[OF j])
+  finally show ?thesis .
+qed
 
 lemma exist_index_in_A:
   assumes "dim_row A = dim_vec b"
