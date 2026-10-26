@@ -3344,7 +3344,18 @@ proof-
           by auto
         ultimately have i: "last (edges_of_path (find_pfx ((=) chv) (rev C))) \<in> M"
           using F1 find_pfx_edges_of_path_alt_list(2)[OF cycle(1,2,3)]
-          using chv_def hd_rev p1_nempty by metis
+        proof -
+          have chv_eq: "chv = choose_con_vert (set C) (hd (rev p1))"
+            by (simp add: chv_def hd_rev p1_nempty)
+          have chv_hd: "chv \<noteq> hd C"
+            using odd_cycleD(3)[OF cycle(1)] False by auto
+          have notin: "last (edges_of_path (find_pfx ((=) chv) C)) \<notin> M"
+            using F1 by (auto simp: chv_def hd_rev p1_nempty)
+          note disj = find_pfx_edges_of_path_alt_list(2)
+                        [OF cycle(1) cycle(2) cycle(3) choose_vert_works chv_hd]
+          from disj notin show ?thesis
+            by blast
+        qed
         have ii: "distinct (tl (rev C))"
           using cycle(3) odd_cycleD(3)[OF cycle(1)] tl_distinct_rev
           by auto
