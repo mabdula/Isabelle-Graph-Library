@@ -2101,7 +2101,22 @@ lemma rw4:
         using p2_nempty 
         by simp
       ultimately show ?thesis
-        by (metis append_Cons append_eq_append_conv2 append_self_conv edges_of_path.simps(3) edges_of_path_append_2 list.distinct(1) list.sel(1))
+        proof -
+        have split_at_u: "edges_of_path (p1 @ u # p2) = edges_of_path (p1 @ [u]) @ edges_of_path (u # p2)"
+          by (rule rw3)
+        have snoc_p1: "edges_of_path (p1 @ [u]) = edges_of_path p1 @ [{last p1, u}]"
+          by (simp add: edges_of_path_snoc p1_nempty)
+        have cons_p2: "edges_of_path (u # p2) = {u, hd p2} # edges_of_path p2"
+        proof (cases p2)
+          case Nil
+          then show ?thesis using p2_nempty by simp
+        next
+          case (Cons a p2')
+          then show ?thesis by simp
+        qed
+        show ?thesis
+          unfolding split_at_u snoc_p1 cons_p2 by simp
+      qed
     qed
 
 lemma rw5:
