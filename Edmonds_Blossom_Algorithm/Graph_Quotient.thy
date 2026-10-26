@@ -2817,7 +2817,7 @@ proof-
               show ?thesis
                 using alt_list_app[OF i]
                 unfolding replace_cycle_def
-                by (metis set_rev stem2vert_path_def)
+                by (simp add: stem2vert_path_def Let_def split: if_split_asm)
             qed
             done
           subgoal using p2_nempty by simp
