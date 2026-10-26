@@ -1682,7 +1682,7 @@ next
       by (simp only: i_eq idx idx2 neg_idx)
   qed
   then show ?thesis 
-    by (metis 1 3 add_lessD1 assms(6) ordered_cancel_comm_monoid_diff_class.diff_add that)
+    by (rule that[OF le_less_trans[OF diff_le_self assms(6)] 3])
 qed
 
 lemma subset_is_face:
