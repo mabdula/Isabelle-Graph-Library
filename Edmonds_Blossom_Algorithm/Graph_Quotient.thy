@@ -3912,9 +3912,37 @@ lemma stem2vert_path_pref_or_suc:
 lemma stem2vert_path_distinct_neq_lastC:
   assumes "odd_cycle C" "alt_path M C" "w \<noteq> last C" "w \<in> set C" "w = choose_con_vert (set C) v" "distinct (tl C)"
   shows "distinct (stem2vert_path C M v)"
-  using stem2vert_path_pref_or_suc[OF assms(1-4)] 
-  using distinct_tl_then_butlast[OF assms(6)  odd_cycleD(3)[OF assms(1)] odd_cycle_nempty[OF assms(1)]]
-  by (metis assms(5) assms(6) distinct_append distinct_rev)
+proof -
+  have pref_or_suf:
+    "(\<exists>pref. pref @ rev (stem2vert_path C M v) = tl C) \<or>
+     (\<exists>suf. stem2vert_path C M v @ suf = butlast C)"
+    by (rule stem2vert_path_pref_or_suc[OF assms(1-5)])
+  have dist_butlast: "distinct (butlast C)"
+    by (rule distinct_tl_then_butlast[OF assms(6) odd_cycleD(3)[OF assms(1)]
+                                                  odd_cycle_nempty[OF assms(1)]])
+  show ?thesis
+  proof (cases "\<exists>pref. pref @ rev (stem2vert_path C M v) = tl C")
+    case True
+    then obtain pref where pref: "pref @ rev (stem2vert_path C M v) = tl C"
+      by blast
+    have "distinct (pref @ rev (stem2vert_path C M v))"
+      using pref assms(6) by simp
+    then have "distinct (rev (stem2vert_path C M v))"
+      by (simp add: distinct_append)
+    then show ?thesis
+      by simp
+  next
+    case False
+    then have "\<exists>suf. stem2vert_path C M v @ suf = butlast C"
+      using pref_or_suf by blast
+    then obtain suf where suf: "stem2vert_path C M v @ suf = butlast C"
+      by blast
+    have "distinct (stem2vert_path C M v @ suf)"
+      using suf dist_butlast by simp
+    then show ?thesis
+      by (simp add: distinct_append)
+  qed
+qed
 
 lemma stem2vert_path_distinct:
   assumes "odd_cycle C" "alt_path M C" "w \<in> set C" "w = choose_con_vert (set C) v" "distinct (tl C)"
