@@ -3133,7 +3133,25 @@ lemma el_in_sum_is_nonzero:
   assumes "a \<in> A"
   shows "Poly_Mapping.lookup (sum (\<lambda> b. (Poly_Mapping.single (f b) (1::nat))) A) (f a) \<noteq> 0" 
   using assms
-  by (metis (mono_tags, lifting) lookup_single_eq lookup_sum one_neq_zero sum_eq_0_iff)
+proof -
+  have lookup_eq: "Poly_Mapping.lookup (sum (\<lambda>b. Poly_Mapping.single (f b) (1::nat)) A) (f a) =
+        (\<Sum>b\<in>A. Poly_Mapping.lookup (Poly_Mapping.single (f b) (1::nat)) (f a))"
+    by (simp add: lookup_sum)
+  have term_a: "Poly_Mapping.lookup (Poly_Mapping.single (f a) (1::nat)) (f a) = 1"
+    by (simp add: lookup_single_eq)
+  have "(\<Sum>b\<in>A. Poly_Mapping.lookup (Poly_Mapping.single (f b) (1::nat)) (f a)) \<noteq> 0"
+  proof (rule notI)
+    assume "(\<Sum>b\<in>A. Poly_Mapping.lookup (Poly_Mapping.single (f b) (1::nat)) (f a)) = 0"
+    with assms(1) have "\<forall>b\<in>A. Poly_Mapping.lookup (Poly_Mapping.single (f b) (1::nat)) (f a) = 0"
+      by (simp add: sum_eq_0_iff)
+    with assms(2) have "Poly_Mapping.lookup (Poly_Mapping.single (f a) (1::nat)) (f a) = 0"
+      by blast
+    with term_a show False
+      by linarith
+  qed
+  then show ?thesis
+    using lookup_eq by simp
+qed
 
 lemma monom_is_nonzero_for_unique_p:
   assumes "p \<in> nonzero_perms" 
