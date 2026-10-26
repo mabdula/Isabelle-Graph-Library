@@ -1619,7 +1619,20 @@ proof -
   obtain C where C:"C \<in> connected_components (u_edges p) \<and> odd (card C)"
     using assms by blast
   then obtain x where "x \<in> C" 
-    by (metis card.empty card.infinite finite_has_maximal odd_card_imp_not_empty)
+proof -
+  have "C \<noteq> {}"
+  proof
+    assume "C = {}"
+    then have "card C = 0"
+      by simp
+    then show False
+      using C by simp
+  qed
+  then obtain y where "y \<in> C"
+    by blast
+  then show thesis
+    by (rule that)
+qed
   then have "x \<in> Vs (u_edges p)" 
     by (meson C connected_comp_verts_in_verts)
   have "C = set (support p x)" 
