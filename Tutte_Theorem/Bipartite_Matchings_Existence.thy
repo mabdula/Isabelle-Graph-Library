@@ -170,7 +170,26 @@ qed
             using \<open>neighbours_of_Vs G X \<subseteq> {u, v} \<union> neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X\<close> by fastforce
 
           then have "card (neighbours_of_Vs G X) - 1 \<le> card (neighbours_of_Vs ?E_s X)"
-            by (smt (z3) \<open>finite (neighbours_of_Vs G X)\<close> \<open>neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X \<subseteq> neighbours_of_Vs G X\<close> card_Diff_singleton diff_le_self insert_is_Un insert_subset order_refl subset_antisym subset_insert_iff)
+          proof -
+  have subset_N': "neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X \<subseteq> neighbours_of_Vs G X"
+    using \<open>neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X \<subseteq> neighbours_of_Vs G X\<close> .
+  have subset_vN': "neighbours_of_Vs G X \<subseteq> {v} \<union> neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X"
+    using \<open>neighbours_of_Vs G X \<subseteq> {v} \<union> neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X\<close> .
+  have finN: "finite (neighbours_of_Vs G X)"
+    using \<open>finite (neighbours_of_Vs G X)\<close> .
+  have finN': "finite (neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X)"
+    using finite_subset[OF subset_N' finN] .
+  have fin_union: "finite ({v} \<union> neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X)"
+    using finN' by simp
+  have step1: "card (neighbours_of_Vs G X) \<le>
+               card ({v} \<union> neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X)"
+    using card_mono[OF fin_union subset_vN'] .
+  have step2: "card ({v} \<union> neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X) \<le>
+               1 + card (neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X)"
+    using card_Un_le[of "{v}" "neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X"] by simp
+  show ?thesis
+    using step1 step2 by linarith
+qed
 
           then show " card X \<le> card (neighbours_of_Vs ?E_s X)" 
             using \<open>card X \<le> card (neighbours_of_Vs G X) - 1\<close> le_trans by blast
