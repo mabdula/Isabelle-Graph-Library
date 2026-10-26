@@ -1889,7 +1889,14 @@ proof -
   let ?h = "(\<lambda>i. (tutte_matrix )$i$p i)" 
   let ?g = "(\<lambda>i. (tutte_matrix )$i$(rev_p p) i)" 
   have 3: "prod ?h UNIV =  prod ?h ?A *  prod ?h (UNIV - ?A)" 
-    by (metis (no_types, lifting) mult.commute prod.subset_diff top_greatest univ_is_finite)
+  proof -
+    have fin: "finite (UNIV :: 'a set)"
+      by (rule univ_is_finite)
+    have subs: "?A \<subseteq> (UNIV :: 'a set)"
+      by (rule subset_UNIV)
+    show ?thesis
+      by (rule trans[OF prod.subset_diff[OF subs fin] mult.commute])
+  qed
   have 4:"prod ?g UNIV =  prod ?g ?A *  prod ?g (UNIV - ?A)"
     by (metis (no_types, lifting) mult.commute prod.subset_diff top_greatest univ_is_finite)
   have "\<forall> i\<in> (UNIV - ?A). (rev_p p) i = p i" 
