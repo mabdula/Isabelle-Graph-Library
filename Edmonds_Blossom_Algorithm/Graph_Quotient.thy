@@ -6886,9 +6886,24 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
       proof-
         have "butlast C = hd C # tl (butlast C)"
           using odd_cycleD(1)
-          by (metis One_nat_def append_butlast_last_id match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] hd_append2
-                    length_append_singleton list.exhaust_sel list.size(3) numeral_le_one_iff
-                    odd_cycle_nempty semiring_norm(70))
+          proof -
+  have odd_cyc: "odd_cycle C"
+    using match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] .
+  have len_ge_3: "length C \<ge> 3"
+    using odd_cycleD(1)[OF odd_cyc] .
+  then have C_nempty: "C \<noteq> []"
+    by auto
+  then obtain a rest where C_eq: "C = a # rest"
+    by (cases C) auto
+  have "length rest \<ge> 2"
+    using len_ge_3 C_eq by simp
+  then have rest_nempty: "rest \<noteq> []"
+    by auto
+  have "butlast C = a # butlast rest"
+    using C_eq rest_nempty by simp
+  then show "butlast C = hd C # tl (butlast C)"
+    using C_eq by simp
+qed
         then show ?thesis
           using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>]
           by (metis append_Nil2 disjoint_insert(1) distinct_append distinct_singleton list.simps(15))
