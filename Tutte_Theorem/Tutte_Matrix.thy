@@ -1665,7 +1665,8 @@ proof -
   obtain i where "odd (least_power p i)" 
     using odd_component_then_odd_circuit[of p] assms by blast
   then show ?thesis
-    by (metis least_odd_def wellorder_Least_lemma(1))
+    unfolding least_odd_def
+    using LeastI[of "\<lambda>a. odd (least_power p a)"] by blast
 qed
 
 lemma reverse_for_each_product:
