@@ -72,7 +72,19 @@ proof -
   then have "card {i. i < dim_vec b \<and> i \<in> I} \<le> card  {0..<dim_vec b}" 
     by (rule card_mono[OF finite_atLeastLessThan])
   then show ?thesis 
-    by (metis card_atLeastLessThan diff_zero dim_subsyst_vec)
+  proof -
+    have fin: "finite {0..<dim_vec b}"
+      by simp
+    have sub: "{i. i < dim_vec b \<and> i \<in> I} \<subseteq> {0..<dim_vec b}"
+      by auto
+    have "dim_vec (snd (sub_system A b I)) = card {i. i < dim_vec b \<and> i \<in> I}"
+      by (rule dim_subsyst_vec)
+    also have "\<dots> \<le> card {0..<dim_vec b}"
+      using fin sub by (rule card_mono)
+    also have "\<dots> = dim_vec b"
+      by simp
+    finally show ?thesis .
+  qed
 qed
 
 lemma  dim_subsyst_mat_less_A:
