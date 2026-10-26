@@ -4518,9 +4518,27 @@ proof (cases "x \<in> Vs M")
   qed
 next
   case False
-  with assms have "M = M'"
-    by (metis ranking_matchingE ranking_matching_online_match ranking_matching_unique
-              online_match_remove_unmatched_vertex_same)
+  have "M = M'"
+  proof -
+    from rm_M have bip: "bipartite G (set \<pi>) (set \<sigma>)"
+      by (auto elim: ranking_matchingE)
+    from bip have rm_online: "ranking_matching G (online_match G \<pi> \<sigma>) \<pi> \<sigma>"
+      by (rule ranking_matching_online_match)
+    from rm_M rm_online have M_eq: "M = online_match G \<pi> \<sigma>"
+      by (rule ranking_matching_unique)
+    from bip have bip': "bipartite (G \<setminus> {x}) (set \<pi>) (set \<sigma>)"
+      by (rule bipartite_remove_vertices)
+    from bip' have rm_online': "ranking_matching (G \<setminus> {x}) (online_match (G \<setminus> {x}) \<pi> \<sigma>) \<pi> \<sigma>"
+      by (rule ranking_matching_online_match)
+    from rm_M' rm_online' have M'_eq: "M' = online_match (G \<setminus> {x}) \<pi> \<sigma>"
+      by (rule ranking_matching_unique)
+    from False M_eq have "x \<notin> Vs (online_match G \<pi> \<sigma>)"
+      by simp
+    then have "online_match G \<pi> \<sigma> = online_match (G \<setminus> {x}) \<pi> \<sigma>"
+      by (rule online_match_remove_unmatched_vertex_same)
+    with M_eq M'_eq show "M = M'"
+      by simp
+  qed
   then show ?thesis
     by blast
 qed
