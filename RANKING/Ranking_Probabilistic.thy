@@ -836,7 +836,21 @@ next
     next
       case (3 x)
       with \<open>\<sigma> \<in> permutations_of_set V\<close> \<sigma>_tl show ?case
-        by (metis Diff_iff insertI1 permutations_of_setD(1) set_ConsD)
+        proof -
+          from 3 have x_in_V: "x \<in> V" and x_neq: "x \<noteq> v'"
+            by auto
+          from \<open>\<sigma> \<in> permutations_of_set V\<close> have set_\<sigma>: "set \<sigma> = V"
+            by (rule permutations_of_setD(1))
+          have "V = set \<sigma>"
+            by (rule set_\<sigma>[symmetric])
+          also have "\<dots> = set (v' # tl \<sigma>)"
+            using \<sigma>_tl by (rule arg_cong[where f = set])
+          also have "\<dots> = insert v' (set (tl \<sigma>))"
+            by simp
+          finally have V_eq: "V = insert v' (set (tl \<sigma>))" .
+          from V_eq x_in_V x_neq show ?case
+            by simp
+        qed
     next
       case 4
       with \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
