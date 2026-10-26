@@ -1381,7 +1381,32 @@ proof(rule ccontr)
       by force     
     then obtain e where "e \<in> \<Delta>\<^sup>- (ARescut f v)\<and> f e < \<u> e"
       unfolding ACap_def 
-      by (metis linorder_not_le sum_ereal sum_mono)
+    proof -
+      have lt: "sum f (\<Delta>\<^sup>- (ARescut f v)) < ACap (ARescut f v)"
+        using assms flow_less_acut[of f b "ARescut f v"] asm
+              arescut_all_edges_sat[of f b v, OF assms] sum_ereal[of b "ARescut f v"]
+              ereal_uminus_le_reorder
+        by force
+      have lt': "sum f (\<Delta>\<^sup>- (ARescut f v)) < (\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e)"
+        using lt unfolding ACap_def .
+      have "\<not> (\<forall>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e \<le> ereal (f e))"
+      proof
+        assume all_ge: "\<forall>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e \<le> ereal (f e)"
+        have "(\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e) \<le> (\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). ereal (f e))"
+          by (rule sum_mono) (use all_ge in blast)
+        also have "(\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). ereal (f e)) = ereal (sum f (\<Delta>\<^sup>- (ARescut f v)))"
+          by (simp add: sum_ereal)
+        finally have le: "(\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e) \<le> ereal (sum f (\<Delta>\<^sup>- (ARescut f v)))" .
+        with lt' show False
+          using leD by blast
+      qed
+      then obtain e where "e \<in> \<Delta>\<^sup>- (ARescut f v)" "\<not> \<u> e \<le> ereal (f e)"
+        by blast
+      then have "e \<in> \<Delta>\<^sup>- (ARescut f v) \<and> f e < \<u> e"
+        by (auto simp add: not_le)
+      then show ?thesis
+        by (rule that)
+    qed
     hence a0:"fst e \<notin> (ARescut f v) \<and> snd e \<in> (ARescut f v) \<and> f e < \<u> e" 
       using Delta_minus_def by force
     hence a:"rcap f (F e) > 0" "e \<in> \<E>"
