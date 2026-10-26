@@ -104,9 +104,34 @@ proof(cases "infinite I")
     using assms(1) assms(2) assms(6) pick_eq_iff_inf by blast
 next
   case False
-  then show ?thesis using dim_row_less_card_I[of I A b] 
-    by (metis assms(1) assms(2) assms(3) assms(4) assms(5) assms(6) fst_conv 
-        not_less_iff_gr_or_eq order_less_le_trans pick_mono_le)
+    have fin: "finite I"
+      using False by simp
+    have A'_fst: "A' = fst (sub_system A b I)"
+      using assms(3)[symmetric] by simp
+    have le: "dim_row A' \<le> card I"
+      using dim_row_less_card_I[of I A b] fin A'_fst by simp
+    have j1_card: "j1 < card I"
+      using assms(4) le by linarith
+    have j2_card: "j2 < card I"
+      using assms(5) le by linarith
+    have "pick I j1 \<noteq> pick I j2"
+    proof (cases j1 j2 rule: linorder_cases)
+      case less
+      then have "pick I j1 < pick I j2"
+        using pick_mono_le j2_card fin by blast
+      then show "pick I j1 \<noteq> pick I j2" by linarith
+    next
+      case equal
+      then show "pick I j1 \<noteq> pick I j2"
+        using assms(6) by simp
+    next
+      case greater
+      then have "pick I j2 < pick I j1"
+        using pick_mono_le j1_card fin by blast
+      then show "pick I j1 \<noteq> pick I j2" by linarith
+    qed
+    then show ?thesis
+      using assms(1) assms(2) by simp
 qed
 
 lemma elems_ge_min:
