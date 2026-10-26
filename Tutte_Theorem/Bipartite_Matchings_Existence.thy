@@ -145,8 +145,16 @@ qed
             using 0 by blast
 
           have "{u, v} \<inter> X = {}" 
-            by (metis (no_types, lifting) DiffD2 Int_ac(3) Int_subset_iff 
-                \<open>X \<subseteq> ?A_s\<close> \<open>u \<notin> ?A_s\<close> disjoint_insert(1) inf_bot_right subsetD u_v)
+          proof -
+            have "u \<notin> X"
+              using \<open>X \<subseteq> ?A_s\<close> \<open>u \<notin> ?A_s\<close> by blast
+            moreover have "v \<notin> A"
+              using u_v by blast
+            moreover have "X \<subseteq> A"
+              using \<open>X \<subseteq> ?A_s\<close> by blast
+            ultimately show "{u, v} \<inter> X = {}"
+              by blast
+          qed
 
           then have "neighbours_of_Vs G X \<subseteq> {u,v} \<union> neighbours_of_Vs ?E_s X" 
             using neighbours_of_Vs_remove_vert[of G "{u,v}" X] 
