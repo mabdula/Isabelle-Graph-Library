@@ -531,10 +531,13 @@ proof-
     by auto
 
   have "v = v2" if "{v, v3} \<in> M" for v
-    using matching that \<open>{v2,v3} \<in> M\<close>
-    unfolding matching_def2
-    apply (clarsimp simp add: doubleton_eq_iff Vs_def)
-    by (smt doubleton_eq_iff insertI1)
+  proof -
+    have "{v, v3} = {v2, v3}"
+      using matching_unique_match[OF matching(1) insertI2 insertI2 that \<open>{v2, v3} \<in> M\<close>]
+      by simp
+    then show ?thesis
+      by (auto simp add: doubleton_eq_iff)
+  qed
   moreover have "v = v3" if "{v, v2} \<in> M" for v
     using matching that \<open>{v2,v3} \<in> M\<close>
     unfolding matching_def2
