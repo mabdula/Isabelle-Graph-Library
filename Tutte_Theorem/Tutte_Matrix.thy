@@ -805,8 +805,14 @@ lemma p_in_same_cycle:
   assumes "p permutes (UNIV :: 'a set)"
   assumes "a \<in> set (support p i)"
   shows "p a \<in> set (support p i)" 
-  by (metis (no_types, lifting) assms(1) assms(2) cycle_is_surj cycle_restrict image_iff 
-      map_eq_conv p_is_permutation perm_support_distinct)
+proof -
+  have perm: "permutation p"
+    using assms(1) by (simp add: p_is_permutation)
+  have "p a = (p ^^ (1::nat)) a"
+    by simp
+  with perm assms(2) show ?thesis
+    by (rule elemnets_in_support_expo)
+qed
 
 lemma nths_in_result:
   assumes "i \<in> I"
