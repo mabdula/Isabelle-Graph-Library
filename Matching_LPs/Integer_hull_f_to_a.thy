@@ -744,7 +744,17 @@ lemma itself_is_subsyst_set_idcs:
 lemma sum_list_of_map_eq:
   assumes "\<forall>i \<in> set L. f i = g i"
   shows "sum_list (map f L) = sum_list (map g L)" 
-  by (metis assms map_eq_conv)
+proof -
+  have maps_eq: "map f L = map g L"
+  proof (rule map_cong)
+    show "L = L" by (rule refl)
+  next
+    fix x
+    assume "x \<in> set L"
+    then show "f x = g x" using assms by blast
+  qed
+  show ?thesis by (simp only: maps_eq)
+qed
 
 lemma list_range_lt: "i \<in> set [0..<l] \<longleftrightarrow> i < l" 
   using atLeast_upt by blast
