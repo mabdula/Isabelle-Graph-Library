@@ -823,7 +823,16 @@ next
     next
       case (2 x)
       with \<sigma>_tl \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
-        by (metis distinct.simps(2) permutations_of_setD(2) singletonD)
+      proof -
+        from \<open>\<sigma> \<in> permutations_of_set V\<close> have dist: "distinct \<sigma>"
+          by (rule permutations_of_setD(2))
+        have "distinct (v' # tl \<sigma>)"
+          by (simp only: \<sigma>_tl[symmetric] dist)
+        then have "v' \<notin> set (tl \<sigma>)"
+          by simp
+        with 2 show ?case
+          by auto
+      qed
     next
       case (3 x)
       with \<open>\<sigma> \<in> permutations_of_set V\<close> \<sigma>_tl show ?case
