@@ -2071,10 +2071,32 @@ proof(safe)
     have "A' *\<^sub>v x \<le> b' \<and> (-A') *\<^sub>v x \<le> - b'" using eq_system_is_leq_system 
       using \<open>dim_col A' = n\<close> \<open>x \<in> F\<close> assms(5) carrier_vecD by blast
     then show "((A' @\<^sub>r - A') @\<^sub>r A) *\<^sub>v x \<le> (b' @\<^sub>v - b') @\<^sub>v b" 
-      using append_rows_le[of A' "dim_row A'" n "-A'" "dim_row A'" b' x "-b'"]  
-      1 2 3 4  
-      by (metis (no_types, lifting) A \<open>x \<in> F\<close> append_rows_le assms(4) assms(5) b carrier_matI 
-          carrier_vec_dim_vec face_is_polyhedron'(2) face_is_polyhedron'(3) mem_Collect_eq)
+    proof -
+      have xF: "x \<in> carrier_vec n \<and> A' *\<^sub>v x = b' \<and> A *\<^sub>v x \<le> b"
+        using \<open>x \<in> F\<close> assms(5) by blast
+      have Axb: "A *\<^sub>v x \<le> b"
+        using xF by blast
+      have A'x: "A' *\<^sub>v x = b'"
+        using xF by blast
+      have dimx: "dim_vec x = dim_col A'"
+      proof -
+        have "dim_vec x = n" using 4 by (rule carrier_vecD)
+        moreover have "dim_col A' = n" using 1 by (rule carrier_matD(2))
+        ultimately show ?thesis by simp
+      qed
+      have both: "A' *\<^sub>v x \<le> b' \<and> (- A') *\<^sub>v x \<le> - b'"
+        using eq_system_is_leq_system dimx A'x by blast
+      have mb': "- b' \<in> carrier_vec (dim_row A')"
+        using 3 uminus_carrier_vec by blast
+      have AA: "A' @\<^sub>r - A' \<in> carrier_mat (dim_row A' + dim_row A') n"
+        using 1 2 carrier_append_rows by blast
+      have bb: "b' @\<^sub>v - b' \<in> carrier_vec (dim_row A' + dim_row A')"
+        using 3 mb' append_carrier_vec by blast
+      have inner: "(A' @\<^sub>r - A') *\<^sub>v x \<le> b' @\<^sub>v - b'"
+        using append_rows_le 1 2 3 4 mb' both by blast
+      show "((A' @\<^sub>r - A') @\<^sub>r A) *\<^sub>v x \<le> (b' @\<^sub>v - b') @\<^sub>v b"
+        using append_rows_le AA A bb b 4 inner Axb by blast
+    qed
   qed
   {
   fix x
