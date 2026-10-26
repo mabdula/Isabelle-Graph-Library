@@ -855,9 +855,22 @@ qed
       unfolding support_def
     proof(rule ccontr)
       assume set_assm: "\<not> {e |e. 0 < g' e \<and> e \<in> \<E>} \<noteq> {}"
-      obtain e where "g' e > 0 \<and> e \<in> \<E>"  
-        using  res_abs_pos
-        by (metis Abs_def less.prems(2) linorder_not_less sum_nonpos)
+      obtain e where "g' e > 0 \<and> e \<in> \<E>"
+      proof -
+        have "\<exists>e. 0 < g' e \<and> e \<in> \<E>"
+        proof(rule ccontr)
+          assume "\<nexists>e. 0 < g' e \<and> e \<in> \<E>"
+          hence le_zero: "\<And>e. e \<in> \<E> \<Longrightarrow> g' e \<le> 0"
+            by (auto simp add: not_less)
+          have "sum g' \<E> \<le> 0"
+            by (rule sum_nonpos) (simp add: le_zero)
+          hence "Abs g' \<le> 0"
+            unfolding Abs_def by simp
+          thus False
+            using res_abs_pos by simp
+        qed
+        then show thesis using that by auto
+      qed
       then show False using set_assm by auto
     qed
 
