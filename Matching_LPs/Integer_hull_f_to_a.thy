@@ -2140,7 +2140,7 @@ proof(safe)
     case True
     have "(v @\<^sub>v w) $v i = v $ i" 
       using True 
-      by (metis asmi assms(1) carrier_vecD index_append_vec(1) index_append_vec(2))
+      using True asmi by (simp add: index_append_vec(1) index_append_vec(2) carrier_vecD[OF assms(1)])
     then show ?thesis 
       using assms(3) unfolding Ints_vec_def  using True assms(1) by auto
   next
