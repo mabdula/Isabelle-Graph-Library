@@ -2329,7 +2329,14 @@ proof -
     using assms(9-11) 
     by blast
   then have "A' \<in> carrier_mat n n" 
-    by (metis  A assms(11) carrier_matD(2) carrier_matI dim_col_subsyst_mat fst_conv)
+  proof -
+    have A'_eq: "A' = fst (sub_system A b I)"
+      using arg_cong[OF assms(11), of fst] by simp
+    have "dim_col A' = n"
+      using dim_col_subsyst_mat[of A b I] A'_eq A carrier_matD(2) by simp
+    then show "A' \<in> carrier_mat n n"
+      using \<open>dim_row A' = n\<close> by (intro carrier_matI)
+  qed
   have 5:"A' *\<^sub>v z = b' \<longleftrightarrow> z = vec n (\<lambda> k. det (replace_col A' b' k) / det A')" 
     using cramer1[of A' n  b' z] `det A' \<noteq> 0` `A' \<in> carrier_mat n n` 
     using \<open>z \<in> F\<close> assms(10) by fastforce
