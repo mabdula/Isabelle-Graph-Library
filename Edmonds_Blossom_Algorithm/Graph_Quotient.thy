@@ -4397,7 +4397,20 @@ qed
         have rw: "edges_of_path p' = (edges_of_path (p1 @ [u])) @ edges_of_path (u # p2)"
           using edges_of_path_append_2 quot_aug_path(1) by fastforce
         have eop_nempty: "edges_of_path (p1 @ [u]) \<noteq> []"
-          by (metis Nil_is_append_conv edges_of_path_snoc list.distinct(1) p1_nempty)
+        proof -
+          obtain a p1' where p1_eq: "p1 = a # p1'"
+            using p1_nempty by (cases p1) auto
+          show ?thesis
+          proof (cases p1')
+            case Nil
+            then show ?thesis
+              using p1_eq by simp
+          next
+            case (Cons b p1'')
+            then show ?thesis
+              using p1_eq by simp
+          qed
+        qed
         show ?p1 ?p2
           using alt_list_append_1'[OF p'_feats(2)[unfolded rw] eop_nempty] p2_nalt
           by blast+
