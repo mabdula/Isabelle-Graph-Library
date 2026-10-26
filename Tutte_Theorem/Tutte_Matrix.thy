@@ -2216,8 +2216,7 @@ proof(safe)
     proof(cases "i \<in> ?A")
       case True
       then have "p i \<in> ?A" 
-        by (smt (verit, best) assms(1) comp_apply map_eq_conv not_on_odd_def on_odd_p_permutes 
-            p_is_composition permutes_in_image)
+        by (blast intro: p_in_same_cycle assms(1))
       then have "(rev_p p) (p i) = (inv p) (p i)" 
         using rev_p_def by presburger
       then have "(rev_p p) (p i) = i " 
