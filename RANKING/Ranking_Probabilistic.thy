@@ -754,7 +754,29 @@ next
     by force
 
   with \<open>v' # \<sigma>' = filter (\<lambda>v. v \<in> X) \<sigma>\<close> have \<sigma>_tl: "\<sigma> = v' # tl \<sigma>"
-    by (metis filter.simps(1) index_Cons index_eq_index_conv list.exhaust_sel list.set_intros(1) list.simps(3))
+  proof -
+    have idx0: "index \<sigma> v' = 0"
+      using 2 by force
+    have sub: "set (v' # \<sigma>') \<subseteq> set \<sigma>"
+      using "2.prems" by auto
+    then have v'_mem: "v' \<in> set \<sigma>"
+      by auto
+    then have ne: "\<sigma> \<noteq> []"
+      by auto
+    from v'_mem have "\<sigma> ! index \<sigma> v' = v'"
+      by (rule nth_index)
+    with idx0 have nth0: "\<sigma> ! 0 = v'"
+      by simp
+    from ne have "hd \<sigma> = \<sigma> ! 0"
+      by (rule hd_conv_nth)
+    with nth0 have hd_eq: "hd \<sigma> = v'"
+      by simp
+    have "\<sigma> = hd \<sigma> # tl \<sigma>"
+      using ne by simp
+    also have "\<dots> = v' # tl \<sigma>"
+      using hd_eq by simp
+    finally show ?thesis .
+  qed
 
   then have \<sigma>_nonempty: "\<sigma> \<noteq> []" by blast
 
