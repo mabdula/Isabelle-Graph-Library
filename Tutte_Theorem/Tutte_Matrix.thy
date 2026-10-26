@@ -1575,7 +1575,7 @@ proof
     using qx by (rule iffD2[OF permutes_inv_eq[OF q]])
 qed
     then have "rev_p p x = (inv p x)" 
-      by (metis \<open>on_odd p x = p x\<close> assms on_odd_def permutes_inv_eq rev_p_def)
+      using True by (simp add: rev_p_def)
     then show ?thesis 
       by (simp add: \<open>inv (on_odd p) x = inv p x\<close> \<open>not_on_odd p x = x\<close>)
   next
