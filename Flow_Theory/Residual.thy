@@ -641,8 +641,32 @@ lemma rcap_extr_head:
 
 lemma rcap_extr: 
   "\<lbrakk>e \<in> set es;  \<gamma> \<le> Rcap f (set es)\<rbrakk>  \<Longrightarrow> \<gamma> \<le> rcap f e"
-  by(induction es, simp)
-    (metis order_antisym_conv rcap_extr_head set_ConsD set_subset_Cons subsetI)
+proof(induction es)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons e' es')
+  show ?case
+  proof(cases "e = e'")
+    case True
+    then show ?thesis using Cons.prems(2) rcap_extr_head by blast
+  next
+    case False
+    hence e_in: "e \<in> set es'" using Cons.prems(1) by simp
+    hence ne: "set es' \<noteq> {}" by auto
+    have mono: "Rcap f (set (e' # es')) \<le> Rcap f (set es')"
+    proof (rule ccontr)
+      assume "\<not> Rcap f (set (e' # es')) \<le> Rcap f (set es')"
+      hence lt: "Rcap f (set es') < Rcap f (set (e' # es'))" by simp
+      from ne lt Rcap_subset[where A = "set es'" and B = "set (e' # es')"
+          and f = f and x = "Rcap f (set es')"]
+        show False by auto
+    qed
+    have "\<gamma> \<le> Rcap f (set es')"
+      using Cons.prems(2) mono by (rule order_trans)
+    then show ?thesis using Cons.IH[OF e_in] by blast
+  qed
+qed
 
 lemma rcap_extr_non_zero: 
   "\<lbrakk>e \<in> set es;  set es = ES; 0 < Rcap f ES\<rbrakk> \<Longrightarrow> 0 < rcap f e"
