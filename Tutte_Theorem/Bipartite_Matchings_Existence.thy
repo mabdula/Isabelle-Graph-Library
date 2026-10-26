@@ -257,7 +257,22 @@ qed
           then have "a \<in> A \<and> v' \<in> Vs G - A"
             using `partitioned_bipartite G A` 
             unfolding partitioned_bipartite_def neighbours_of_Vs_def 
-            by (metis Diff_iff \<open>a \<in> A - {u}\<close> v'_e doubleton_eq_iff)   
+          proof -
+            have "e' \<in> G"
+              using v'_e by blast
+            then obtain p q where pq: "e' = {p, q} \<and> (p \<in> A \<and> q \<in> Vs G - A)"
+              using `partitioned_bipartite G A` unfolding partitioned_bipartite_def by blast
+            have "(a = p \<and> v' = q) \<or> (a = q \<and> v' = p)"
+              using pq \<open>e' = {a, v'}\<close> by (simp add: doubleton_eq_iff)
+            then show "a \<in> A \<and> v' \<in> Vs G - A"
+            proof
+              assume "a = p \<and> v' = q"
+              then show ?thesis using pq by auto
+            next
+              assume "a = q \<and> v' = p"
+              then show ?thesis using pq \<open>a \<in> A - {u}\<close> by auto
+            qed
+          qed 
           have "v' \<in> Vs G - A"
             using \<open>a \<in> A \<and> v' \<in> Vs G - A\<close> by blast
           have "v' \<noteq> u" 
