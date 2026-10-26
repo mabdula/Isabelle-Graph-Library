@@ -845,8 +845,15 @@ lemma add_index_sub_system_dims:
   shows "dim_vec b'' = dim_vec b' + 1"
 proof -
   have 1:"dim_vec b' = card {i. i < dim_vec b \<and> i \<in> I}" 
-    using dim_subsyst_vec using assms(3) 
-    by (metis snd_conv)
+  proof -
+    have "snd (sub_system A b I) = b'"
+      by (simp add: assms(3)[symmetric])
+    then have "dim_vec b' = dim_vec (snd (sub_system A b I))"
+      by simp
+    also have "\<dots> = card {i. i < dim_vec b \<and> i \<in> I}"
+      by (rule dim_subsyst_vec)
+    finally show ?thesis .
+  qed
   have "{i. i < dim_vec b \<and> i \<in> I} = {i. i < dim_vec b} \<inter> I" by auto
   have 2:"dim_vec b'' = card {j. j < dim_vec b \<and> j \<in> (I \<union> {i})}" 
     using dim_subsyst_vec using assms(4) 
