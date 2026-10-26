@@ -84,7 +84,18 @@ proof -
     using odd_comps_in_diff_is_component[of C G X] 
     by (simp add: \<open>C \<in> odd_comps_in_diff G X\<close>)
   have " \<nexists>x y. x \<in> C \<and> y \<in> X \<and> {x, y} \<in> G" 
-    by (metis assms(2) comp_outI insert_absorb insert_commute insert_not_empty)
+  proof
+    assume "\<exists>x y. x \<in> C \<and> y \<in> X \<and> {x, y} \<in> G"
+    then obtain x y where xy: "x \<in> C" "y \<in> X" "{x, y} \<in> G" by auto
+    have "{y, x} \<in> comp_out G C X"
+    proof (rule comp_outI)
+      show "{y, x} = {y, x}" by simp
+      show "x \<in> C" using xy(1) by simp
+      show "y \<in> X" using xy(2) by simp
+      show "{y, x} \<in> G" using xy(3) by (simp add: insert_commute)
+    qed
+    then show False using assms(2) by simp
+  qed
   then have "\<forall>x y. {x, y} \<in> G \<and> x \<in> C \<longrightarrow> {x, y} \<in> graph_diff G X"   
     using assms(1) odd_comps_in_diff_not_in_X 
     by (metis Int_empty_left disjoint_iff_not_equal graph_diffI insert_disjoint(1))
