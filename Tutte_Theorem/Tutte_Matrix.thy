@@ -2001,7 +2001,15 @@ proof (induct n)
     have "\<forall>n. p (inv p n) = n"
       by (meson assms(1) permutes_inverses(1))
     then show ?thesis 
-      by (smt (verit, ccfv_SIG) same_support assms inv_in_support map_eq_conv p_is_permutation)
+      proof -
+        have pperm: "permutation p"
+          by (rule p_is_permutation[OF assms(1)])
+        have "inv p a \<in> set (support p (least_odd p))"
+          by (rule inv_in_support[OF pperm assms(2)])
+        moreover have "set (support p (least_odd p)) = set (support (inv p) (least_odd p))"
+          by (rule inv_support_same[OF pperm])
+        ultimately show ?thesis by simp
+      qed
   qed
   then have "(inv p ^^ n) a \<in> set (support (inv p)  (least_odd p))"
     by (metis same_support assms elemnets_in_support_expo p_is_permutation permutation_inverse)
