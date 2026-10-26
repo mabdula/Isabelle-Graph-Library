@@ -339,8 +339,25 @@ lemma eq_vec_zero_diff_in_mult:
   shows "y \<bullet> a = y \<bullet> b \<longleftrightarrow> (\<forall> i < nr. y $ i * (b - a) $ i = 0)" 
 proof -
   have ge0:"\<forall> i < nr. y $ i * (b - a) $ i \<ge> 0" 
-    by (metis assms(1-5) carrier_vecD diff_ge_0_iff_ge index_minus_vec(1) index_zero_vec(1)
-        lesseq_vecD zero_le_mult_iff)
+    proof (intro allI impI)
+      fix i :: nat
+      assume i: "i < nr"
+      have dim_a: "dim_vec a = nr" using assms(1) by auto
+      have dim_b: "dim_vec b = nr" using assms(2) by auto
+      have dim_y: "dim_vec y = nr" using assms(3) by auto
+      have "0\<^sub>v nr $ i \<le> y $ i"
+        using assms(5) dim_y i by (simp add: less_eq_vec_def)
+      hence y_nonneg: "0 \<le> y $ i"
+        using i by simp
+      have "a $ i \<le> b $ i"
+        using assms(4) dim_b i by (simp add: less_eq_vec_def)
+      hence "0 \<le> b $ i - a $ i" by simp
+      moreover have "(b - a) $ i = b $ i - a $ i"
+        using i dim_a dim_b by simp
+      ultimately have diff_nonneg: "0 \<le> (b - a) $ i" by simp
+      show "y $ i * (b - a) $ i \<ge> 0"
+        by (rule mult_nonneg_nonneg[OF y_nonneg diff_nonneg])
+    qed
   have "y \<bullet> a = y \<bullet> b \<longleftrightarrow> y \<bullet> b - y \<bullet> a  = 0" using assms(5)  by auto
   also have "\<dots> \<longleftrightarrow> y \<bullet> (b - a) = 0" 
     by (metis assms(1-3) scalar_prod_minus_distrib)
