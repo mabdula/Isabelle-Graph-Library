@@ -691,7 +691,7 @@ qed
           by auto
         then obtain e x y where e:"e \<in> G \<and> z \<in> e \<and> x \<in> A - X \<and> 
                                y \<in> Vs G - neighbours_of_Vs G X - A \<and> y \<in> e \<and> x \<in> e"
-          by (smt (verit) mem_Collect_eq vs_member z)
+          by (insert z) (auto simp: vs_member)
         then have "z = x \<or> z = y"
           using graphE by fastforce
         then have "z \<in> A - X \<or> z\<in> Vs G - neighbours_of_Vs G X - A" using e by presburger
