@@ -7514,8 +7514,54 @@ proof-
     using assms
     by (simp add: card_Diff_subset_Int)
   ultimately show ?thesis
-    by (smt (verit, ccfv_SIG) Diff_insert_absorb Suc_leI assms(1) card.insert card_Diff_singleton
-                              diff_le_self finite_Int insert_absorb leD order.trans order_less_le)
+  proof -
+    assume facts: "insert u (Vs (quotG E)) = insert u (P ` (Vs E) - (Vs E - s))"
+      "insert u (P ` (Vs E) - (Vs E - s)) = insert u (Vs E \<inter> s)"
+      "card (Vs E \<inter> s) < card (Vs E) - 1"
+    have eq: "insert u (Vs (quotG E)) = insert u (Vs E \<inter> s)"
+    proof -
+      have "insert u (Vs (quotG E)) = insert u (P ` (Vs E) - (Vs E - s))"
+        by (rule facts(1))
+      also have "... = insert u (Vs E \<inter> s)"
+        by (rule facts(2))
+      finally show ?thesis .
+    qed
+    have finite_inter: "finite (Vs E \<inter> s)"
+      using finite_subset[OF Int_lower1 assms(1)] .
+    have subset: "Vs (quotG E) \<subseteq> insert u (Vs E \<inter> s)"
+    proof
+      fix x
+      assume "x \<in> Vs (quotG E)"
+      then have "x \<in> insert u (Vs (quotG E))"
+        by simp
+      then show "x \<in> insert u (Vs E \<inter> s)"
+        using eq by simp
+    qed
+    have finite_ins: "finite (insert u (Vs E \<inter> s))"
+      using finite_inter by simp
+    have card_le_ins: "card (Vs (quotG E)) \<le> card (insert u (Vs E \<inter> s))"
+      using card_mono[OF finite_ins subset] .
+    have card_ins_le: "card (insert u (Vs E \<inter> s)) \<le> Suc (card (Vs E \<inter> s))"
+    proof (cases "u \<in> Vs E \<inter> s")
+      case True
+      then have eq_ins: "insert u (Vs E \<inter> s) = Vs E \<inter> s"
+        by (rule insert_absorb)
+      show ?thesis
+        unfolding eq_ins by linarith
+    next
+      case False
+      then have "card (insert u (Vs E \<inter> s)) = Suc (card (Vs E \<inter> s))"
+        by (simp add: card.insert finite_inter)
+      then show ?thesis
+        by linarith
+    qed
+    have card_le: "card (Vs (quotG E)) \<le> Suc (card (Vs E \<inter> s))"
+      using card_le_ins card_ins_le by linarith
+    have suc_lt: "Suc (card (Vs E \<inter> s)) < card (Vs E)"
+      using facts(3) by arith
+    show ?thesis
+      using card_le suc_lt by linarith
+  qed
 qed
 
 lemma matching_quotM:
