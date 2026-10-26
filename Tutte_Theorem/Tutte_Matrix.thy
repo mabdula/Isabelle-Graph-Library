@@ -2012,7 +2012,18 @@ proof (induct n)
       qed
   qed
   then have "(inv p ^^ n) a \<in> set (support (inv p)  (least_odd p))"
-    by (metis same_support assms elemnets_in_support_expo p_is_permutation permutation_inverse)
+  proof -
+    have perm: "permutation p"
+      using assms(1) p_is_permutation by blast
+    then have perm_inv: "permutation (inv p)"
+      using permutation_inverse by blast
+    have supp_eq: "set (support p (least_odd p)) = set (support (inv p) (least_odd p))"
+      by (rule inv_support_same[OF perm])
+    have a_in: "a \<in> set (support (inv p) (least_odd p))"
+      using assms(2) supp_eq by simp
+    show ?thesis
+      by (rule elemnets_in_support_expo[OF perm_inv a_in refl])
+  qed
   then have "(inv p ^^ n) a \<in> set (support p (least_odd p))"
     using same_support by blast
   then have "(rev_p p) ((inv p ^^ n) a) = (inv p) ((inv p ^^ n) a)"  
