@@ -2686,11 +2686,34 @@ proof-
                 then show ?thesis
                   using snoc ys_nempty by simp
               qed
-                then show ?thesis
-                  using alt_list_append_1''''[OF matching_augmenting_path_feats(2)[OF quot_aug_path, unfolded rw5[OF len_ge_2]] _ inM]
-                  using p1_subset_s inM 
-                  apply auto
-                  by (metis (no_types, lifting) \<open>\<forall>x\<in>{{last (butlast p1), last p1}, {last p1, u}}. (x \<notin> quot_graph P M - {{u}}) = (x \<notin> quot_graph P M - {{u}}) \<Longrightarrow> {last (butlast p1), last p1} \<notin> quot_graph P M - {{u}}\<close> \<open>alt_path M p1\<close> alternating_list_even_last edge_of_path_in_graph_iff_in_quot edges_of_path_nempty last_in_set len_ge_2 matching(2))
+                have p1_ne: "p1 \<noteq> []"
+                  using len_ge_2 by auto
+                have eop_split: "edges_of_path (p1 @ u # p2) =
+                                   edges_of_path (p1 @ [u]) @ edges_of_path (u # p2)"
+                  by (rule rw3)
+                have alt_full: "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M)
+                                  (edges_of_path (p1 @ u # p2))"
+                  by (rule matching_augmenting_path_feats(2)[OF quot_aug_path])
+                have alt_pref: "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M)
+                                  (edges_of_path (p1 @ [u]))"
+                  using alt_list_append_1[OF alt_full[unfolded eop_split]]
+                  by blast
+                have eop_snoc: "edges_of_path (p1 @ [u]) = edges_of_path p1 @ [{last p1, u}]"
+                  by (simp add: edges_of_path_snoc p1_ne)
+                have last_pref: "last (edges_of_path (p1 @ [u])) = {last p1, u}"
+                  by (simp add: eop_snoc)
+                have even_pref: "even (length (edges_of_path (p1 @ [u])))"
+                proof (rule ccontr)
+                  assume "\<not> even (length (edges_of_path (p1 @ [u])))"
+                  then have odd_len: "odd (length (edges_of_path (p1 @ [u])))"
+                    by simp
+                  have "last (edges_of_path (p1 @ [u])) \<notin> quotG M"
+                    by (rule alternating_list_odd_last[OF alt_pref odd_len])
+                  then show False
+                    using inM last_pref by simp
+                qed
+                show ?thesis
+                  using even_pref by (simp add: eop_snoc)
               qed
               done
           qed
