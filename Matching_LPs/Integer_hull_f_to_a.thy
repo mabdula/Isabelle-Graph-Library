@@ -623,7 +623,21 @@ proof(rule ccontr)
     have "i2 \<in> I - {i1}" 
       using \<open>i1 \<noteq> i2\<close> i2 by blast
     then obtain j where j: "j < dim_row C \<and> row A i2 = row C j \<and> b $ i2 = d $ j" 
-      by (metis C_d dims_eq dims_subsyst_same' exist_index_in_A' fst_conv i2 snd_conv)
+      proof -
+        have i2_mem: "i2 \<in> I - {i1}"
+          using i2 \<open>i1 \<noteq> i2\<close> by blast
+        have i2_dim: "i2 < dim_vec b"
+          using i2 dims_eq by simp
+        have sub_C_d: "sub_system A b (I - {i1}) = (C, d)"
+          using C_d by simp
+        have dimsC: "dim_row C = dim_vec d"
+          by (rule dims_subsyst_same'[OF dims_eq C_d])
+        have "\<exists>j. j < dim_row C \<and> row A i2 = row C j \<and> b $ i2 = d $ j"
+          using exist_index_in_A'[OF dims_eq i2_dim i2_mem]
+          by (auto simp: sub_C_d dimsC)
+        then show ?thesis
+          using that by blast
+      qed
     then have "row A i1 = row C j \<and> b $ i1 = d $ j" 
       by (metis \<open>b $ i1 = b $ i2\<close> i1 i2 j1j2)
     then have "row C j \<bullet> x = d $ j" using `d = C *\<^sub>v x`  j 
