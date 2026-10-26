@@ -2395,8 +2395,7 @@ proof
     then have "not_on_odd (rev_p p) x = x" 
       using \<open>?A = ?A'\<close> not_on_odd_out by force
     have "p x \<in> ?A" 
-      by (smt (z3) True assms(1) bij_imp_bij_inv bij_is_surj map_eq_conv on_odd_def 
-          on_odd_p_permutes_UNIV permutes_imp_bij permutes_inv_inv surj_f_inv_f)
+      using p_in_same_cycle[OF assms(1) True] by blast
     then have "(on_odd  (rev_p p)) (p x) = (inv p) (p x)"   
       unfolding on_odd_def using \<open>?A = ?A'\<close> unfolding rev_p_def by presburger 
     then have "(on_odd  (rev_p p)) (p x) = x" 
