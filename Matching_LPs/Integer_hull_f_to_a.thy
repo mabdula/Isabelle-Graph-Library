@@ -2146,7 +2146,11 @@ proof(safe)
   next
     case False
     have "(v @\<^sub>v w) $v i = w $ (i - nr1)" 
-      by (metis False asmi assms(1) carrier_vecD index_append_vec(1) index_append_vec(2))
+    proof -
+      have dim_v: "dim_vec v = nr1"
+        using assms(1) by (rule carrier_vecD)
+      then show ?thesis
+        using asmi False index_append_vec(1) by simp    qed
     then show ?thesis using assms(4) unfolding Ints_vec_def 
       using False assms(2) 
       using \<open>i < dim_vec (v @\<^sub>v w)\<close> assms(1) by auto
