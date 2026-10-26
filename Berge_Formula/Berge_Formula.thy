@@ -1310,7 +1310,13 @@ next
     have 9:"{e. e \<in> Mh \<and> e \<inter> A = {}} \<inter> {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}} = {}"
       by blast
     have "finite Mh"    
-      by (metis (mono_tags, lifting) Vs_def 6 \<open>graph_invar ?H\<close> finite_UnionD)
+      proof -
+        have "finite (Vs Mh)"
+          using 6 graph_invar_finite_Vs[OF \<open>graph_invar ?H\<close>] by simp
+        then have "finite (\<Union> Mh)"          by (simp add: Vs_def)
+        then show ?thesis
+          by (rule finite_UnionD)
+      qed
     then have "card {e. e \<in> Mh \<and> e \<inter> A = {}} + card {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}} = card Mh "  
       by (metis (no_types, lifting) 9 10 card_Un_disjoint finite_Un)
     then have "card {e. e \<in> Mh \<and> e \<inter> A = {}} = card Mh - card A" 
