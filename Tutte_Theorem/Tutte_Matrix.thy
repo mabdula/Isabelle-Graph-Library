@@ -3528,9 +3528,18 @@ proof -
         with eq show "{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}"
           by simp
       qed
-      then have "{a, b} \<in> M" 
-        using  insert_Diff 
-        by (smt (verit, del_insts) insert_commute mem_Collect_eq)
+      then have "{a, b} \<in> M"
+      proof -
+        obtain e' where e': "e' \<in> M" "a \<in> e'" "e' - {a} = {b}"
+          using \<open>{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}\<close>
+          by blast
+        from e'(2) have eq1: "insert a (e' - {a}) = e'"
+          by (rule insert_Diff)
+        have "e' = {a, b}"
+          using e'(2,3) eq1 by simp
+        with e'(1) show "{a, b} \<in> M"
+          by simp
+      qed
       then show "e \<in> M" 
         by (simp add: b a) 
     }
