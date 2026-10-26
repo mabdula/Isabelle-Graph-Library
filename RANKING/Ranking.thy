@@ -2196,8 +2196,52 @@ proof -
   proof cases
     case earlier
     with assms have "\<exists>v''. index \<sigma> v < index \<sigma> v'' \<and> index \<sigma> v'' < index \<sigma> v' \<and> {u,v''} \<in> G \<and> (\<nexists>u'. index \<pi> u' < index \<pi> u \<and> {u',v''} \<in> M)"
-      unfolding shifts_to_def
-      by (smt (verit, best) Diff_disjoint Diff_insert_absorb Int_insert_left_if0 disjoint_iff in_remove_verticesI index_less_in_set less_asym' remove_vertices_subgraph')
+    proof -
+      from assms(4) have u_pi: "u \<in> set \<pi>"
+        unfolding shifts_to_def by blast
+      from assms(4) have v'_sigma: "v' \<in> set \<sigma>"
+        unfolding shifts_to_def by blast
+      from assms(4) have v_lt_v': "index \<sigma> v < index \<sigma> v'"
+        unfolding shifts_to_def by blast
+      from assms(4) have uv'_GX: "{u,v'} \<in> G \<setminus> X"
+        unfolding shifts_to_def by blast
+      from assms(4) have no_earlier_X: "\<nexists>u'. index \<pi> u' < index \<pi> u \<and> {u',v'} \<in> M \<setminus> X"
+        unfolding shifts_to_def by blast
+
+      from uv'_GX have uv'_G: "{u,v'} \<in> G"
+        by (auto dest: remove_vertices_subgraph')
+
+      have v'_not_X: "v' \<notin> X"
+      proof
+        assume "v' \<in> X"
+        with assms(3) have "index \<sigma> v' < index \<sigma> v" by blast
+        with v_lt_v' show False by linarith
+      qed
+
+      have no_earlier: "\<nexists>u'. index \<pi> u' < index \<pi> u \<and> {u',v'} \<in> M"
+      proof (rule notI)
+        assume "\<exists>u'. index \<pi> u' < index \<pi> u \<and> {u',v'} \<in> M"
+        then obtain u' where u'_lt: "index \<pi> u' < index \<pi> u" and u'_M: "{u',v'} \<in> M"
+          by blast
+        from u'_lt have "u' \<in> set \<pi>"
+          by (auto dest: index_less_in_set)
+        with assms(1,2) have "u' \<notin> X"
+          by (auto simp: disjoint_iff)
+        with u'_M v'_not_X have "{u',v'} \<in> M \<setminus> X"
+          by (auto intro!: in_remove_verticesI)
+        with u'_lt no_earlier_X show False
+          by blast
+      qed
+
+      show ?thesis
+      proof (rule ccontr)
+        assume no_v'': "\<not> ?thesis"
+        have "shifts_to G M u v v' \<pi> \<sigma>"
+          unfolding shifts_to_def
+          using u_pi v'_sigma v_lt_v' uv'_G no_earlier no_v'' by blast
+        with earlier show False by blast
+      qed
+    qed
 
     then obtain v'' where "index \<sigma> v < index \<sigma> v''" "index \<sigma> v'' < index \<sigma> v'" "{u,v''} \<in> G" "\<nexists>u'. index \<pi> u' < index \<pi> u \<and> {u',v''} \<in> M"
       by blast
