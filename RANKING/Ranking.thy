@@ -2862,7 +2862,16 @@ proof -
         by blast
 
       then have "{u,x''} \<in> G \<setminus> {x}"
-        by (metis \<open>u \<in> set \<pi>\<close> assms(3) disjoint disjoint_iff_not_equal empty_iff in_remove_verticesI insertE neq_iff)
+      proof -
+        have "u \<noteq> x"
+          using \<open>u \<in> set \<pi>\<close> \<open>x \<in> set \<sigma>\<close> disjoint by blast
+        moreover have "x'' \<noteq> x"
+          using \<open>index \<sigma> x < index \<sigma> x''\<close> by auto
+        ultimately have "{u,x''} \<inter> {x} = {}"
+          by blast
+        with \<open>{u,x''} \<in> G\<close> show ?thesis
+          by (auto intro!: in_remove_verticesI)
+      qed
 
       from \<open>index \<sigma> x < index \<sigma> x''\<close> have "x \<noteq> x''"
         by blast
