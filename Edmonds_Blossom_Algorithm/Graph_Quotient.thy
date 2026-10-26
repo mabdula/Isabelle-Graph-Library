@@ -7110,7 +7110,30 @@ qed
             by (meson v_in_edge_in_path)
           moreover have "set C \<inter> set stem = {}"
             using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
-            by (smt Un_iff append_butlast_last_id disjoint_iff_not_equal distinct_append distinct_stem_hdC empty_iff empty_set set_append)
+          proof -
+            have odd_cyc: "odd_cycle C"
+              using match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] .
+            have C_nempty: "C \<noteq> []"
+              using odd_cycle_nempty[OF odd_cyc] .
+            have hdC_eq_lastC: "hd C = last C"
+              using odd_cycleD(3)[OF odd_cyc] .
+            have C_eq: "C = butlast C @ [last C]"
+              using append_butlast_last_id[OF C_nempty] by simp
+            have dist_stem_butlast: "distinct (stem @ butlast C)"
+              using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] .
+            have stem_disj_butlast: "set stem \<inter> set (butlast C) = {}"
+              using dist_stem_butlast unfolding distinct_append by blast
+            have hdC_notin_stem: "hd C \<notin> set stem"
+              using distinct_stem_hdC unfolding distinct_append by auto
+            have set_C_eq: "set C = set (butlast C @ [last C])"
+              by (rule arg_cong[OF C_eq])
+            have last_notin_stem: "last C \<notin> set stem"
+              using hdC_eq_lastC hdC_notin_stem by simp
+            show "set C \<inter> set stem = {}"
+              unfolding set_C_eq
+              using last_notin_stem stem_disj_butlast
+              by auto
+          qed
           ultimately show ?thesis
             unfolding *
             apply simp
