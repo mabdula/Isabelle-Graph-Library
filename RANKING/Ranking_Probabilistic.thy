@@ -134,7 +134,20 @@ next
   assume filter_eq: "[x <- \<sigma>'. x \<noteq> (THE v. index \<sigma> v = t)] = [x <- \<sigma>. x \<noteq> (THE v. index \<sigma> v = t)]"
 
   from assms obtain v where v: "index \<sigma> v = t" "v \<in> V"
-    by (metis index_nth_id nth_mem permutations_of_setD(1) permutations_of_setD(2))
+  proof -
+    have dist: "distinct \<sigma>"
+      using \<open>\<sigma> \<in> permutations_of_set V\<close> by (rule permutations_of_setD(2))
+    have set_eq: "set \<sigma> = V"
+      using \<open>\<sigma> \<in> permutations_of_set V\<close> by (rule permutations_of_setD(1))
+    have "\<sigma> ! t \<in> set \<sigma>"
+      using \<open>t < length \<sigma>\<close> by (rule nth_mem)
+    with set_eq have mem: "\<sigma> ! t \<in> V"
+      by simp
+    have idx: "index \<sigma> (\<sigma> ! t) = t"
+      using dist \<open>t < length \<sigma>\<close> by (rule index_nth_id)
+    show thesis
+      by (rule that[OF idx mem])
+  qed
 
   with \<open>t < length \<sigma>\<close> have "(THE v. index \<sigma> v = t) = v"
     by (auto simp: index_less_size_conv)
