@@ -1532,7 +1532,7 @@ next
             then have "of_int ((i - nr) + 2) \<cdot>\<^sub>v row A 0 - of_int ((j - nr) + 2) \<cdot>\<^sub>v row A 0 = 0\<^sub>v n"
               using \<open>0 < nr\<close> assms(1) by auto
             then have smult_zero:"(of_int ((i - nr) + 2) - of_int ((j - nr) + 2)) \<cdot>\<^sub>v row A 0 = 0\<^sub>v n"
-              by (metis diff_smult_distrib_vec)
+              by (simp only: diff_smult_distrib_vec)
             show ?thesis
             proof(cases "row A 0 = 0\<^sub>v n")
               case True
