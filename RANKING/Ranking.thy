@@ -4653,8 +4653,38 @@ proof -
     with rm_M' obtain u' where "{u',w} \<in> M'"
       by (meson edge_commute graph_invar_no_edge_no_vertex ranking_matchingE)
 
-    with rm_M' \<open>{u,w} \<in> G\<close> \<open>u \<in> set \<pi>\<close> \<open>u \<notin> Vs M'\<close> have "index \<pi> u' < index \<pi> u"
-      by (metis edges_are_Vs(1) index_eq_index_conv linorder_neqE ranking_matching_earlier_match_offlineE)
+    have "index \<pi> u' < index \<pi> u"
+    proof -
+      have bipartite_G: "bipartite G (set \<pi>) (set (\<sigma>[v \<mapsto> i]))"
+        using rm_M' by (auto elim: ranking_matchingE)
+      have w_in_sigma: "w \<in> set (\<sigma>[v \<mapsto> i])"
+        using bipartite_G \<open>u \<in> set \<pi>\<close> \<open>{u,w} \<in> G\<close>
+        by (auto dest: bipartite_edgeD)
+      have u'_in_pi: "u' \<in> set \<pi>"
+        by (rule ranking_matching_bipartite_edges'[OF rm_M' \<open>{u',w} \<in> M'\<close> w_in_sigma])
+      have u_neq_u': "u \<noteq> u'"
+      proof
+        assume "u = u'"
+        with \<open>{u',w} \<in> M'\<close> have "{u,w} \<in> M'" by simp
+        then have "u \<in> Vs M'" by (rule edges_are_Vs(1))
+        with \<open>u \<notin> Vs M'\<close> show False ..
+      qed
+      have not_less: "\<not> index \<pi> u < index \<pi> u'"
+      proof
+        assume "index \<pi> u < index \<pi> u'"
+        with rm_M' \<open>{u',w} \<in> M'\<close> \<open>{u,w} \<in> G\<close> obtain v' where "{u,v'} \<in> M'"
+          by (auto elim: ranking_matching_earlier_match_offlineE)
+        then have "u \<in> Vs M'" by (rule edges_are_Vs(1))
+        with \<open>u \<notin> Vs M'\<close> show False ..
+      qed
+      have idx_neq: "index \<pi> u \<noteq> index \<pi> u'"
+        using \<open>u \<in> set \<pi>\<close> u'_in_pi u_neq_u'
+        by (meson index_eq_index_conv)
+      have "index \<pi> u < index \<pi> u' \<or> index \<pi> u' < index \<pi> u"
+        using idx_neq by (simp add: nat_neq_iff)
+      with not_less show ?thesis
+        by blast
+    qed
 
     with \<open>{u,w} \<in> M\<close> \<open>{u',w} \<in> M'\<close> show False
     proof (induction u' \<pi> arbitrary: w u rule: index_less_induct)
