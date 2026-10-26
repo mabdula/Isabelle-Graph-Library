@@ -4123,9 +4123,23 @@ proof-
       next
         case F2: False
         have choose_vert_works: "chv \<in> set C"
-          unfolding chv_def
-          using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path  p2_nempty
-          by (metis (no_types,lifting) append_Nil)
+        proof -
+          have p_eq: "u # p2 = [] @ u # p2"
+            by simp
+          have dist: "distinct (u # p2)"
+            using quot_aug_path by blast
+          have pth: "path (quotG E) (u # p2)"
+            using quot_aug_path by blast
+          have ne: "p2 \<noteq> []"
+            using p2_nempty by blast
+          have "choose_con_vert (set C) (hd p2) \<in> set C \<and>
+                {hd p2, choose_con_vert (set C) (hd p2)} \<in> E"
+            by (rule choose_vert_works_1[OF cycle(3) p_eq dist pth ne quot(1)])
+          then have chv_mem: "choose_con_vert (set C) (hd p2) \<in> set C"
+            by (rule conjunct1)
+          show "chv \<in> set C"
+            unfolding chv_def by (rule chv_mem)
+        qed
         moreover have "chv \<noteq> hd C"
           using odd_cycleD(3)[OF cycle(1)] F2
           by auto
