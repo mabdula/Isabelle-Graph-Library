@@ -1678,7 +1678,12 @@ lemma reverse_for_each_product:
 proof(induct "card A" arbitrary: A rule: less_induct)
   case less
   have "finite A" 
-    by (metis card_eq_0_iff dvd_0_right less.prems(2))
+  proof (rule ccontr)
+    assume "infinite A"
+    then have "card A = 0"
+      by (rule card.infinite)
+    with less.prems(2) show False by simp
+  qed
   then show ?case
   proof(cases "card A = 1")
     case True
