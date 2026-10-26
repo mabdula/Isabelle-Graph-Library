@@ -1197,7 +1197,19 @@ proof(rule ccontr)
       using assms(1) assms(2) flow_less_cut[of f b "Rescut f v"]  less_eq_ereal_def 
             rescut_all_edges_sat[of f b v] sum_ereal[of f "(\<Delta>\<^sup>+ (Rescut f v))"] by simp
     then obtain e where "e \<in> \<Delta>\<^sup>+ (Rescut f v)\<and> f e < \<u> e"
-      by (metis Cap_def linorder_not_less sum_ereal sum_mono)
+    proof -
+      have ex: "\<exists>e. e \<in> \<Delta>\<^sup>+ (Rescut f v) \<and> f e < \<u> e"
+      proof (rule ccontr)
+        assume none: "\<nexists>e. e \<in> \<Delta>\<^sup>+ (Rescut f v) \<and> f e < \<u> e"
+        have ge: "\<And>e. e \<in> \<Delta>\<^sup>+ (Rescut f v) \<Longrightarrow> \<u> e \<le> f e"
+          using none by (auto simp: linorder_not_less)
+        have le: "Cap (Rescut f v) \<le> sum f (\<Delta>\<^sup>+ (Rescut f v))"
+          unfolding Cap_def sum_ereal[symmetric] by (rule sum_mono) (rule ge)
+        from order_le_less_trans[OF le \<open>sum f (\<Delta>\<^sup>+ (Rescut f v)) < Cap (Rescut f v)\<close>]
+        show False by simp
+      qed
+      with that show thesis by blast
+    qed
     hence "fst e \<in> (Rescut f v) \<and> snd e \<notin> (Rescut f v) \<and> f e < \<u> e" 
       using Delta_plus_def by force
     hence a:"rcap f (F e) > 0" "e \<in> \<E>"
