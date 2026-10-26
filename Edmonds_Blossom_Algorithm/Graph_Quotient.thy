@@ -3721,7 +3721,7 @@ proof -
       proof-
         have "last (edges_of_path (p1 @ [u])) = {last p1, u}"
           using p1_nempty
-          by (metis edges_of_path_snoc last_snoc)
+          by (simp add: edges_of_path_snoc[OF p1_nempty, symmetric])
         then show ?thesis 
           using last_p1_nin by auto
       qed
