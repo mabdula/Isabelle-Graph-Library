@@ -4632,7 +4632,25 @@ proof-
     have alt_list_app: "hd (p1 @ p3 @ p2) \<notin> Vs M \<and> last (p1 @ p3 @ p2) \<notin> Vs M"
       apply(intro conjI)
       subgoal using matching_augmenting_path_feats(3)[OF quot_aug_path(1)] p1_nempty
-        by (metis (no_types,lifting) matching(2) hd_append2 list.set_sel(1) p1_subset_s rev_subsetD vert_in_graph_iff_in_quot_diff_u)
+        proof -
+          have hd_in_p1: "hd p1 \<in> set p1"
+            by (rule hd_in_set[OF p1_nempty])
+          have hd_p1_in_s: "hd p1 \<in> s"
+            using hd_in_p1 p1_subset_s by blast
+          have hd_app: "hd (p1 @ p3 @ p2) = hd p1"
+            by (rule hd_append2[OF p1_nempty])
+          have hd_app_u: "hd (p1 @ u # p2) = hd p1"
+            by (rule hd_append2[OF p1_nempty])
+          have "hd (p1 @ u # p2) \<notin> Vs (quotG M)"
+            by (rule matching_augmenting_path_feats(3)[OF quot_aug_path(1)])
+          then have hd_p1_nin_quot: "hd p1 \<notin> Vs (quotG M)"
+            using hd_app_u by simp
+          have "hd p1 \<notin> Vs M"
+            using vert_in_graph_iff_in_quot_diff_u[OF hd_p1_in_s matching(2)] hd_p1_nin_quot
+            by simp
+          then show "hd (p1 @ p3 @ p2) \<notin> Vs M"
+            using hd_app by simp
+        qed
       subgoal using matching_augmenting_path_feats(4)[OF quot_aug_path(1)] p2_nempty
         by (metis (no_types,lifting) matching(2) append_is_Nil_conv last_ConsR last_append last_in_set list.simps(3) p2_subset_s subsetCE vert_in_graph_iff_in_quot_diff_u)
       done
