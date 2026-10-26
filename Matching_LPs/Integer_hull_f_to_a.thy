@@ -1437,7 +1437,7 @@ next
             using that by blast
         qed
         then have i_j:"i < n \<and> j < n \<and> i \<noteq> j \<and> row fullA i = row fullA j"  
-          by (metis sq_fullA carrier_matD(1) nth_rows)
+          by (auto simp: carrier_matD(1)[OF sq_fullA] nth_rows)
         show False
         proof(cases "i < nr")
           case True
