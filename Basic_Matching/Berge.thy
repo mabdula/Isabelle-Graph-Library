@@ -810,7 +810,17 @@ proof-
   then obtain N where N_def: "N \<subseteq> G" "matching N" "card M < card N"
     by blast
   hence "card M' < card N" using assms(1) by linarith
-  then obtain q where "graph_augmenting_path G M' q" using Berge matching graph N_def(1, 2) by metis
+  have M'_sub: "M' \<subseteq> G" and M'_match: "matching M'"
+    using matching(1) by auto
+  have card_M'_N: "card M' < card N"
+    using assms(1) N_def(3) by simp
+  have bigger: "\<exists>N'\<subseteq>G. matching N' \<and> card M' < card N'"
+    using N_def(1,2) card_M'_N by blast
+  have "\<exists>q. matching_augmenting_path M' q \<and> path G q \<and> distinct q"
+    using Berge[OF matching(2) M'_match M'_sub graph] bigger
+    by blast
+  then obtain q where "graph_augmenting_path G M' q"
+    by blast
   then show ?thesis using that by simp
 qed
 
