@@ -3554,7 +3554,14 @@ proof -
     have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}" 
       using 2 by auto
     then have "\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e} = {b}" 
-      by (metis (no_types, lifting) 7 ccpo_Sup_singleton is_singleton_def singletonD)
+    proof -
+      have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}"
+        using 2 by auto
+      then obtain x where x: "{e - {a} |e. e \<in> M \<and> a \<in> e} = {x}"
+        unfolding is_singleton_def by blast
+      from 7 x have "{b} = x" by auto
+      with x show "\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e} = {b}" by auto
+    qed
     then have "?f a = b" 
       by simp   
     have "{a, ?f a} \<in> u_edges ?f"
