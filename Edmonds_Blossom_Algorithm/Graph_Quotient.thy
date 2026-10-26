@@ -2237,9 +2237,20 @@ proof-
       by (simp add: hd_append)
     define chv where "chv = (choose_con_vert (set C) a2')"
     have choose_vert_works: "chv \<in> set C" "{a2', chv} \<in> E"
-      unfolding chv_def
-      using choose_vert_works_1[OF cycle(3) _ _ _  _ quot] Cons quot_aug_path(1,2,3)
-      by (metis (no_types, lifting) \<open>p2 \<noteq> []\<close> a2'_def append_self_conv2)+
+      proof -
+      have p2_eq: "u # p2 = [] @ u # p2"
+        by simp
+      have works: "choose_con_vert (set C) (hd p2) \<in> set C \<and>
+                   {hd p2, choose_con_vert (set C) (hd p2)} \<in> E"
+        by (rule choose_vert_works_1[OF cycle(3) p2_eq quot_aug_path(2) quot_aug_path(3)
+                                        \<open>p2 \<noteq> []\<close> quot])
+      show "chv \<in> set C"
+        using conjunct1[OF works]
+        by (simp add: chv_def a2'_def)
+      show "{a2', chv} \<in> E"
+        using conjunct2[OF works]
+        by (simp add: chv_def a2'_def)
+      qed
     have "last (stem2vert_path C M a2') = chv"
       using choose_vert_works(1)
       unfolding stem2vert_path_def
