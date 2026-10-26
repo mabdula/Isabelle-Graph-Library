@@ -1733,7 +1733,14 @@ proof -
       by (rule carrier_matI[OF refl dimcol])
   qed
   have "b' \<in> carrier_vec (dim_row A')" 
-    by (metis \<open>A' \<in> carrier_mat (dim_row A') n\<close> 1 mult_mat_vec_carrier)
+  proof -
+  from 1 obtain x where xcarr: "x \<in> carrier_vec n" and xeq: "A' *\<^sub>v x = b'"
+    by blast
+  have "A' *\<^sub>v x \<in> carrier_vec (dim_row A')"
+    by (rule mult_mat_vec_carrier[OF \<open>A' \<in> carrier_mat (dim_row A') n\<close> xcarr])
+  then show ?thesis
+    by (simp add: xeq)
+  qed
   then show "dim_row A' = n" 
     using one_solution_system_sq_mat[of A' "dim_row A'" b']
       2 1 \<open>distinct (rows A')\<close> \<open>lin_indpt (set (rows A'))\<close> by blast
