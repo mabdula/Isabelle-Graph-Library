@@ -1093,7 +1093,13 @@ proof -
     assume i_dimA:"i < dim_row A"
     assume j_dimA:"j < dim_col A"
     have i_dimAB:"i < dim_row (A @\<^sub>r B)" 
-      by (metis AB_dim_row \<open>i < dim_row A\<close> assms(1) carrier_matD(1) trans_less_add1)
+    proof -
+      have "dim_row A = nr1"
+        using assms(1) by (rule carrier_matD(1))
+      with i_dimA have "i < nr1" by simp
+      then have "i < nr1 + nr2" by simp
+      then show "i < dim_row (A @\<^sub>r B)" by (simp add: AB_dim_row)
+    qed
     have j_dimAB:"j < dim_col (A @\<^sub>r B)" 
       by (metis AB_dim_col \<open>j < dim_col A\<close> assms(1) carrier_matD(2))
     show " submatrix (A @\<^sub>r B) {0..<nr1} UNIV $$ (i, j) = A $$ (i, j)"
