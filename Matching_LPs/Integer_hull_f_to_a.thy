@@ -2090,10 +2090,37 @@ proof -
       then have "(A @\<^sub>r B) $$ (i, j) = B $$ (i - nr1, j)" 
         using 2 1 by presburger
       then show ?thesis 
-        using assms(4) unfolding Ints_mat_def 
-        by (metis (no_types, lifting) False asmi \<open>j < dim_col B\<close> append_rows_def assms(1)
-            carrier_matD(1) index_mat_four_block(2) index_zero_mat(2) le_add_diff_inverse
-            mem_Collect_eq nat_add_left_cancel_less not_less)
+      proof -
+        have dimA: "dim_row A = nr1" "dim_col A = n"
+          using assms(1) by blast+
+        have dimB: "dim_row B = nr2" "dim_col B = n"
+          using assms(2) by blast+
+        have dim_r: "dim_row (A @\<^sub>r B) = nr1 + nr2"
+          by (simp add: append_rows_def dimA(1) dimB(1))
+        have dim_c: "dim_col (A @\<^sub>r B) = n"
+          by (simp add: append_rows_def dimA(2))
+        have i_nlt: "\<not> i < nr1"
+          using False dimA(1) by simp
+        have i_lt: "i < nr1 + nr2"
+          using asmi dim_r by simp
+        have iB: "i - nr1 < dim_row B"
+          using i_nlt i_lt dimB(1) by arith
+        have jB: "j < dim_col B"
+          using asmj dim_c dimB(2) by simp
+        have row_eq: "row (A @\<^sub>r B) i = row B (i - nr1)"
+          using Missing_Matrix.append_rows_nth(2)[OF assms(1) assms(2)] i_lt i_nlt by simp
+        have "(A @\<^sub>r B) $$ (i, j) = row (A @\<^sub>r B) i $ j"
+          using asmi asmj by simp
+        also have "\<dots> = row B (i - nr1) $ j"
+          using row_eq by simp
+        also have "\<dots> = B $$ (i - nr1, j)"
+          using iB jB by simp
+        finally have eq: "(A @\<^sub>r B) $$ (i, j) = B $$ (i - nr1, j)" .
+        have "B $$ (i - nr1, j) \<in> \<int>"
+          using assms(4) iB jB by (auto simp: Ints_mat_def)
+        then show ?thesis
+          using eq by simp
+      qed
     qed
   qed
 qed
