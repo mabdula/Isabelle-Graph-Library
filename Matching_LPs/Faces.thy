@@ -1115,7 +1115,16 @@ proof -
         by fastforce
       then have y_n:"y \<in> carrier_vec n" by auto
       obtain x  where "x\<in> F" 
-        by (metis \<open>face P F\<close> equals0I gram_schmidt.face_non_empty)
+        proof -
+          have "F \<noteq> {}"
+            by (rule face_non_empty[OF \<open>face P F\<close>])
+          then have "\<exists>z. z \<in> F"
+            by (simp add: ex_in_conv)
+          then obtain z where "z \<in> F"
+            by blast
+          then show thesis
+            by (rule that)
+        qed
       then have x: "x \<in> carrier_vec n \<and> A' *\<^sub>v x = b' \<and> C *\<^sub>v x \<le> d \<and> row A i \<bullet> x \<le> b $ i" 
         using F_by_Cd by fastforce
       then have x_n:"x \<in> carrier_vec n" by auto
