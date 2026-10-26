@@ -232,7 +232,29 @@ next
       by blast
   qed
     then obtain i where i:"i < n \<and> x $ i \<noteq> y $ i"
-      using eq_vecI x_y carrier_vecD by metis 
+    proof -
+      have xF: "x \<in> F" and yF: "y \<in> F" and xy: "x \<noteq> y"
+        using x_y by blast+
+      have xc: "x \<in> carrier_vec n" and yc: "y \<in> carrier_vec n"
+        using xF yF \<open>\<forall>x\<in>F. x \<in> carrier_vec n\<close> by blast+
+      have dx: "dim_vec x = n" and dy: "dim_vec y = n"
+        using xc yc carrier_vecD by blast+
+      have "\<exists>i<n. x $ i \<noteq> y $ i"
+      proof (rule ccontr)
+        assume contr: "\<not> (\<exists>i<n. x $ i \<noteq> y $ i)"
+        have "x = y"
+        proof (rule eq_vecI)
+          fix i
+          assume "i < dim_vec y"
+          then have "i < n" using dy by simp
+          then show "x $ i = y $ i" using contr by blast
+        next
+          show "dim_vec x = dim_vec y" using dx dy by simp
+        qed
+        then show False using xy by blast
+      qed
+      then show thesis using that by blast
+    qed
     have "\<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i" 
       using \<open>\<forall>i<n. \<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i\<close> i by presburger
     then show False 
