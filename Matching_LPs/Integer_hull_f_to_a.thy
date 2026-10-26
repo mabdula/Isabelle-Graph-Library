@@ -350,9 +350,11 @@ next
         using inF \<open>\<forall> x \<in> F. - unit_vec n i  \<bullet> x \<le> - bound\<close> by blast
     qed
     then have "has_Maximum {- unit_vec n i  \<bullet> x | x. x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d}"
-      using strong_duality_theorem_primal_sat_bounded_min_max(2)[of C _ n d " - unit_vec n i"]
-        C_d `\<exists>x\<in>carrier_vec n. C *\<^sub>v x \<le> d`  unit_vec_carrier  carrier_dim_vec 
-      by (smt (verit, del_insts) carrier_matI index_uminus_vec(2))
+      using strong_duality_theorem_primal_sat_bounded_min_max(2)
+          [OF carrier_matI[OF C_d(2) C_d(3)] carrier_vecI[OF refl]
+               uminus_carrier_vec[THEN iffD2, OF unit_vec_carrier]
+               `\<exists>x\<in>carrier_vec n. C *\<^sub>v x \<le> d`]
+      by blast
     then obtain \<beta>\<^sub>i where "\<beta>\<^sub>i \<in> { - unit_vec n i  \<bullet> x | x. x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d} 
         \<and> \<beta>\<^sub>i = Maximum { - unit_vec n i  \<bullet> x | x. x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d}" 
       using has_MaximumD(1) by blast
