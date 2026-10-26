@@ -763,7 +763,26 @@ proof(safe)
   obtain i' where i:"i' < dim_row A \<and> i' \<in> I \<and> row A i' = row A' j' \<and> b' $ j' = b $ i'" 
     using exist_index_in_A[of A b j' "I"] 
       dims_subsyst_same' fst_conv j' snd_conv 
-    by (metis assms(1) assms(4))
+  proof -
+    note eq = assms(4)[symmetric]
+    note dims = dims_subsyst_same'[OF assms(1) assms(4)]
+    have j'_lt: "j' < dim_vec (snd (sub_system A b I))"
+      using j' dims by (simp add: eq)
+    from exist_index_in_A[OF assms(1) j'_lt]
+    obtain i0 where i0: "i0 < dim_vec b" "i0 \<in> I"
+      "row (fst (sub_system A b I)) j' = row A i0"
+      "snd (sub_system A b I) $ j' = b $ i0"
+      by blast
+    have "i0 < dim_row A"
+      using i0(1) assms(1) by simp
+    moreover have "row A i0 = row A' j'"
+      using i0(3) by (simp add: eq)
+    moreover have "b' $ j' = b $ i0"
+      using i0(4) by (simp add: eq)
+    ultimately have "i0 < dim_row A \<and> i0 \<in> I \<and> row A i0 = row A' j' \<and> b' $ j' = b $ i0"
+      using i0(2) by blast
+    then show thesis by (rule that)
+  qed
   show "r = row A i" 
   proof(cases "i' \<in> (I - {i})")
     case True
