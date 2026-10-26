@@ -1014,8 +1014,14 @@ proof -
         by (simp add: n_exp less_imp_diff_less)
       then have 1:"(support p x)!(n-1) \<in> 
                  set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})"      
-        by (metis (no_types, lifting) n_exp  diff_zero length_map length_upt 
-            less_imp_diff_less nths_in_result)
+      proof -
+        have lt: "n - 1 < length (support p x)"
+          using n_exp by (simp add: less_imp_diff_less)
+        have mem: "n - 1 \<in> {j \<in> {0..<length (support p x)}. even j}"
+          using lt \<open>even (n - 1)\<close> by simp
+        show ?thesis
+          by (rule nths_in_result[OF mem lt])
+      qed
       have "support p x ! n = p ((support p x)!(n-1))"  
         using \<open>0 < n\<close> n_exp \<open>p permutes UNIV\<close> length_upt map_eq_conv next_elem_by_p by force
       have 2:"{((support p x)!(n-1)), (p ((support p x)!(n-1)))} \<in> ?m_edges"  
