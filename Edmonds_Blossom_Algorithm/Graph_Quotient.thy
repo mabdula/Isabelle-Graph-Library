@@ -7687,9 +7687,55 @@ next
         using w_mem w_ne_lastC by blast
     qed
   qed
-  then show ?thesis
-    apply(intro quot_is_matching[where dume = "{last stem, last C}"] matching(1,2))
-    by (auto simp add: doubleton_eq_iff; metis)
+  note key = this
+  show ?thesis
+  proof (intro quot_is_matching[where dume = "{last stem, last C}"] matching(1,2))
+    show "{e. e \<in> M \<and> (\<exists>v\<in>e. v \<notin> s) \<and> (\<exists>v\<in>e. v \<in> s)} \<subseteq> {{last stem, last C}}"
+    proof
+      fix e
+      assume "e \<in> {e. e \<in> M \<and> (\<exists>v\<in>e. v \<notin> s) \<and> (\<exists>v\<in>e. v \<in> s)}"
+      then have e_M: "e \<in> M" and ex1: "\<exists>v\<in>e. v \<notin> s" and ex2: "\<exists>v\<in>e. v \<in> s"
+        by auto
+      obtain v where v_e: "v \<in> e" and v_nin_s: "v \<notin> s"
+        using ex1 by auto
+      obtain w where w_e: "w \<in> e" and w_in_s: "w \<in> s"
+        using ex2 by auto
+      have vw: "v = last C" "w = last stem"
+        using key e_M v_e w_in_s w_e v_nin_s by blast+
+      have v_ne_w: "v \<noteq> w"
+        using v_nin_s w_in_s by blast
+      have e_in_E: "e \<in> E"
+        using e_M matching(2) by blast
+      obtain a b where ab: "e = {a, b}" "a \<noteq> b"
+        using dblton_E e_in_E by (fastforce simp: dblton_graph_def)
+      have e_eq: "e = {v, w}"
+      proof (cases "v = a")
+        case True
+        then have "w \<noteq> a"
+          using v_ne_w by simp
+        then have "w = b"
+          using ab(1) w_e by auto
+        with True ab(1) show ?thesis by simp
+      next
+        case False
+        then have v_eq_b: "v = b"
+          using ab(1) v_e by auto
+        have "w \<noteq> b"
+        proof
+          assume "w = b"
+          with v_eq_b have "v = w" by simp
+          with v_ne_w show False by simp
+        qed
+        then have "w = a"
+          using ab(1) w_e by auto
+        with v_eq_b ab(1) show ?thesis by (simp add: insert_commute)
+      qed
+      have "e = {last stem, last C}"
+        using e_eq vw by (simp add: insert_commute)
+      then show "e \<in> {{last stem, last C}}"
+        by simp
+    qed
+  qed
 qed
 
 
