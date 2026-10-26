@@ -5405,7 +5405,24 @@ proof-
       then have hdp3_x_nin_M: "{x, hd p3} \<notin> M"
         using matching(1)
         unfolding Vs_def matching_def2
-        by (metis alt_list_p1_u insert_commute last_rev p3_nempty p3_subset_s rev_is_Nil_conv set_rev wx(2))
+      proof -
+        have rev_p3_nempty: "rev p3 \<noteq> []"
+          using p3_nempty by simp
+        have rev_p3_subset_s: "set (rev p3) \<subseteq> s"
+          using p3_subset_s by simp
+        have last_rev_p3: "last (rev p3) = hd p3"
+          by (simp add: last_rev)
+        show ?thesis
+        proof (rule notI)
+          assume x_hd_in_M: "{x, hd p3} \<in> M"
+          have eq: "{last (rev p3), x} = {x, hd p3}"
+            by (simp add: last_rev_p3 insert_commute)
+          have inM: "{last (rev p3), x} \<in> M"
+            using x_hd_in_M by (simp add: eq)
+          show False
+            by (rule alt_list_p1_u[OF rev_p3_nempty refl wx(2) rev_p3_subset_s inM])
+        qed
+      qed
       have "edges_of_path p = edges_of_path (p1  @ [x])@ edges_of_path (x # p3)"
         unfolding wx(1)
         using edges_of_path_append_2[where p' = "x # p3"]
