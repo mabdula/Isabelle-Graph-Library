@@ -290,8 +290,54 @@ next
 next
   case (5 u v v')
   then show ?case
-    by (smt (verit, ccfv_threshold) DiffI edges_are_Vs empty_iff insert_commute insert_iff
-            remove_edge_matching remove_vertices_not_vs remove_vertices_subgraph')
+    proof -
+  from 5 have uv_M: "{u,v} \<in> M" and uv'_G: "{u,v'} \<in> G"
+    and v'_before_v: "index \<sigma> v' < index \<sigma> v"
+    by (auto dest: remove_vertices_subgraph')
+
+  from 5 have matching_M: "matching M"
+    by blast
+
+  from 5 have lowest_rank:
+    "\<forall>x y z. ({x,y} \<in> M \<and> {x,z} \<in> G \<and> index \<sigma> z < index \<sigma> y) \<longrightarrow>
+       (\<exists>x'. {x',z} \<in> M \<and> index \<pi> x' < index \<pi> x)"
+    by blast
+
+  from lowest_rank uv_M uv'_G v'_before_v obtain w
+    where w_M: "{w,v'} \<in> M" and w_earlier: "index \<pi> w < index \<pi> u"
+    by blast
+
+  have gen: "\<And>e. e \<in> M \<Longrightarrow> {u,v'} \<in> G \<setminus> e \<Longrightarrow>
+      (\<exists>u'. {u',v'} \<in> M \<setminus> e \<and> index \<pi> u' < index \<pi> u)"
+  proof -
+    fix e
+    assume e_M: "e \<in> M" and uv'_red: "{u,v'} \<in> G \<setminus> e"
+
+    have v'_not_e: "v' \<notin> e"
+      using uv'_red by (auto dest: remove_vertices_not_vs edges_are_Vs_2)
+
+    have disj: "{w,v'} \<inter> e = {}"
+    proof (cases "{w,v'} = e")
+      case True
+      then have "v' \<notin> {w,v'}" using v'_not_e by simp
+      then show ?thesis by simp
+    next
+      case False
+      then show ?thesis using matching_M[unfolded matching_def] w_M e_M
+        by simp
+    qed
+
+    have w_reduced: "{w,v'} \<in> M \<setminus> e"
+      using w_M disj by (auto intro: in_remove_verticesI)
+
+    from w_reduced w_earlier
+    show "\<exists>u'. {u',v'} \<in> M \<setminus> e \<and> index \<pi> u' < index \<pi> u"
+      by blast
+  qed
+
+  from 5(1) 5(3) show ?thesis
+    by (auto intro: gen)
+qed
 next
   case (6 u v u')
   then show ?case
