@@ -504,10 +504,16 @@ proof
     assume "?P_A''" 
     then have "\<forall>i \<in> (I \<union> {i}) \<inter> {0..<dim_row A}. P (row A i) (b $ i)" 
       using subsystem_fulfills_P  assms(1) assms(4) by blast
-    then show "?P_A'"
-      using subsystem_fulfills_P'[of A b A' b' I P] 
-      by (metis Int_iff assms(1-3) atLeastLessThan_iff insert_iff insert_union le_less_linear
-          less_nat_zero_code)
+    note P_all = this
+    have i_lt: "i < dim_row A"
+      using assms(1,2) by simp
+    have P_i: "P (row A i) (b $ i)"
+      using P_all i_lt by auto
+    have "\<forall> j \<in> I \<inter> {0..<dim_row A}. P (row A j) (b $ j)"
+      using P_all by auto
+    note P_sub = subsystem_fulfills_P'[OF assms(1) assms(3) this]
+    show "?P_A'"
+      using P_sub P_i by blast
   qed
   show "?P_A' \<Longrightarrow> ?P_A''" 
   proof -
