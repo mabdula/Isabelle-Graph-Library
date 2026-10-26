@@ -3727,10 +3727,28 @@ proof -
       qed
       have rev_p1_nempty: "rev p1 \<noteq> []" using p1_nempty by auto
       have up2_in_M: "{u, hd p2} \<in> quotG M" if "p2 \<noteq> []"
-        using  matching_augmenting_path_feats(2)[OF \<open>matching_augmenting_path (quotG M) p'\<close>]
-        unfolding rw4[OF p1_nempty that] quot_aug_path(1)
-        using alt_list_append_1'' p2_nalt up2_nin_M
-        by (metis (no_types,lifting)) 
+        proof -
+          have alt_p': "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M) (edges_of_path p')"
+            by (rule matching_augmenting_path_feats(2)[OF \<open>matching_augmenting_path (quotG M) p'\<close>])
+          have eop: "edges_of_path p' =
+                       edges_of_path p1 @ {last p1, u} # {u, hd p2} # edges_of_path p2"
+            unfolding quot_aug_path(1)
+            by (rule rw4[OF p1_nempty that])
+          have alt_app: "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M)
+                           (edges_of_path p1 @ {last p1, u} # {u, hd p2} # edges_of_path p2)"
+            using alt_p' by (simp only: eop)
+          from alt_list_append_1[OF alt_app]
+          have "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M)
+                   ({last p1, u} # {u, hd p2} # edges_of_path p2) \<or>
+                alt_list (\<lambda>e. e \<in> quotG M) (\<lambda>e. e \<notin> quotG M)
+                   ({last p1, u} # {u, hd p2} # edges_of_path p2)"
+            by blast
+          then have "({last p1, u} \<notin> quotG M \<and> {u, hd p2} \<in> quotG M) \<or>
+                     ({last p1, u} \<in> quotG M \<and> {u, hd p2} \<notin> quotG M)"
+            by (auto simp: alt_list_step)
+          then show "{u, hd p2} \<in> quotG M"
+            using up2_nin_M by blast
+        qed
       show ?thesis
       proof(cases "length p2 \<ge> 2")
         case len_p2_ge_2[simp]: True
