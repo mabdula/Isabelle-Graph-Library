@@ -2673,9 +2673,18 @@ proof-
           using odd_cycleD(3)[OF cycle(1)] False
           by auto
         ultimately have i: "last (edges_of_path (find_pfx ((=) chv) (rev C))) \<in> M"
-          using F1 find_pfx_edges_of_path_alt_list(2)[OF cycle]
-          using chv_def hd_rev p1_nempty
-          by metis
+          proof -
+          have hd_rev_p1: "hd (rev p1) = last p1"
+            using p1_nempty by (simp add: hd_rev)
+          have chv_alt: "choose_con_vert (set C) (hd (rev p1)) = chv"
+            by (simp add: chv_def hd_rev_p1)
+          have notin: "last (edges_of_path (find_pfx ((=) chv) C)) \<notin> M"
+            using F1 by (simp add: chv_alt)
+          note disj = find_pfx_edges_of_path_alt_list(2)
+                        [OF cycle(1) cycle(2) cycle(3) choose_vert_works \<open>chv \<noteq> hd C\<close>]
+          show ?thesis
+            using disj notin by blast
+        qed
         have ii: "distinct (tl (rev C))"
           using cycle(3) odd_cycleD(3)[OF cycle(1)] tl_distinct_rev
           by auto
