@@ -1653,8 +1653,34 @@ next
       using dims by simp
   qed
   then have "(b' @\<^sub>v (-b')) $ i = - ((b' @\<^sub>v (-b')) $ ?i')" 
-    by (metis A 1 2 assms(4) b carrier_matD(1) carrier_vecD dims_subsyst_same'
-        index_append_vec(1) index_uminus_mat(2) less_diff_conv2 trans_less_add1)
+  proof -
+    have dimAb: "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    have dim_eq: "dim_row A' = dim_vec b'"
+      using dims_subsyst_same' dimAb assms(4) by blast
+    have le_i: "dim_vec b' \<le> i"
+      using 1 dim_eq by simp
+    have i_lt2: "i < dim_vec b' + dim_vec b'"
+      using 2 dim_eq by simp
+    have sub_lt: "i - dim_vec b' < dim_vec b'"
+      using less_diff_conv2[OF le_i] i_lt2 by simp
+    have sub_lt': "i - dim_vec b' < dim_vec b' + dim_vec (- b')"
+      by (rule trans_less_add1[OF sub_lt])
+    have i_big: "i < dim_vec b' + dim_vec (- b')"
+      using i_lt2 by simp
+    have not_lt: "\<not> i < dim_vec b'"
+      using le_i by simp
+    have idx: "(b' @\<^sub>v - b') $ i = (- b') $ (i - dim_vec b')"
+      using index_append_vec(1)[OF i_big] not_lt by simp
+    have neg_idx: "(- b') $ (i - dim_vec b') = - (b' $ (i - dim_vec b'))"
+      using sub_lt by simp
+    have idx2: "(b' @\<^sub>v - b') $ (i - dim_vec b') = b' $ (i - dim_vec b')"
+      using index_append_vec(1)[OF sub_lt'] sub_lt by simp
+    have i_eq: "i - dim_row A' = i - dim_vec b'"
+      using dim_eq by simp
+    show ?thesis
+      by (simp only: i_eq idx idx2 neg_idx)
+  qed
   then show ?thesis 
     by (metis 1 3 add_lessD1 assms(6) ordered_cancel_comm_monoid_diff_class.diff_add that)
 qed
