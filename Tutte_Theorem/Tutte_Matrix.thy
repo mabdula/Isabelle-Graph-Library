@@ -3428,7 +3428,20 @@ proof -
         have "is_singleton (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e})" 
           using 1 by blast
         then have 4:"\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e} = {a}" 
-          by (metis (no_types, lifting) a asm(3) is_singleton_the_elem)
+        proof -
+          have "is_singleton (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e})"
+            using 1 by blast
+          then have singleton_eq: "\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e} =
+                     {the_elem (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e})}"
+            by (simp add: is_singleton_the_elem)
+          have "the_elem (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e}) =
+                the_elem (\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e})"
+            using asm(3) by simp
+          also have "\<dots> = a"
+            using a by simp
+          finally show "\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e} = {a}"
+            using singleton_eq by simp
+        qed
         have "is_singleton {e - {y} |e. e \<in> M \<and> y \<in> e}" 
           using 2 by auto
         then have "{a} \<in> {e - {y} |e. e \<in> M \<and> y \<in> e}" 
