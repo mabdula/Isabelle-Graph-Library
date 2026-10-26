@@ -878,8 +878,20 @@ lemma perm_verts_eq_all:
   shows "Vs (u_edges p) = Vs G" 
 proof - 
   have "Vs (u_edges p) = UNIV" 
-    by (smt (verit, ccfv_SIG) insertCI mem_Collect_eq subsetI subset_antisym
-        top_greatest tutte_matrix.u_edges_def tutte_matrix_axioms vs_member) 
+    proof (rule equalityI)
+    show "Vs (u_edges p) \<subseteq> (UNIV :: 'a set)"
+      by (rule subset_UNIV)
+  next
+    show "(UNIV :: 'a set) \<subseteq> Vs (u_edges p)"
+    proof
+      fix i :: 'a
+      assume "i \<in> (UNIV :: 'a set)"
+      have "{i, p i} \<in> u_edges p"
+        unfolding u_edges_def by blast
+      then show "i \<in> Vs (u_edges p)"
+        unfolding Vs_def by blast
+    qed
+  qed
   then show " Vs (u_edges p) = Vs G" 
     by (simp add: univ)
 qed
