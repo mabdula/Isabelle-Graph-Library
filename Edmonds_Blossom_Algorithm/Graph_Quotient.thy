@@ -3161,7 +3161,14 @@ proof-
           case p2_nempty: False
           then have "length p2 = 1"
             using len_p2_nge_2
-            by (metis One_nat_def Suc_1 Suc_leI eq_iff length_greater_0_conv not_less_eq_eq p2_nempty)
+            proof -
+            have "0 < length p2"
+              using p2_nempty by simp
+            moreover have "length p2 < 2"
+              using len_p2_nge_2 by simp
+            ultimately show ?thesis
+              by linarith
+            qed
           then obtain a where "p2 = [a]"
             by (metis One_nat_def add.commute add.right_neutral length_0_conv length_tl list.collapse list.sel(3) list.size(4))
           then have False
