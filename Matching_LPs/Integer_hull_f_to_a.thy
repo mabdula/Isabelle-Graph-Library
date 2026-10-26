@@ -1778,7 +1778,28 @@ lemma vec_carr_add_mono:
   assumes "x \<le> a"
   assumes "y \<le> b"
   shows "x + y \<le> a + b" 
-  by (metis assms(3) assms(4) assms(5) assms(6) carrier_vecD vec_add_mono)
+proof -
+  have dx: "dim_vec x = n" and dy: "dim_vec y = n"
+    and da: "dim_vec a = n" and db: "dim_vec b = n"
+    using assms(1) assms(2) assms(3) assms(4) by auto
+  have le_xa: "\<forall>i<dim_vec x. x $ i \<le> a $ i"
+    using assms(5) unfolding less_eq_vec_def by simp
+  have le_yb: "\<forall>i<dim_vec y. y $ i \<le> b $ i"
+    using assms(6) unfolding less_eq_vec_def by simp
+  have dim_eq: "dim_vec (x + y) = dim_vec (a + b)"
+    using dy db by simp
+  have entries: "(x + y) $ i \<le> (a + b) $ i" if i: "i < dim_vec (x + y)" for i
+  proof -
+    have i_n: "i < n" using i dy by simp
+    have "(x + y) $ i = x $ i + y $ i" using i_n dy by simp
+    moreover have "(a + b) $ i = a $ i + b $ i" using i_n db by simp
+    moreover have "x $ i + y $ i \<le> a $ i + b $ i"
+      using le_xa le_yb i_n dx dy by (intro add_mono) auto
+    ultimately show ?thesis by simp
+  qed
+  show ?thesis
+    unfolding less_eq_vec_def using dim_eq entries by auto
+qed
 
 lemma bound_vec_smult_bound:
   fixes S :: "'a vec set"
