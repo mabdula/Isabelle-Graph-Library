@@ -633,7 +633,11 @@ proof(safe)
     have "path (u_edges p) ?l" 
       using assms(1) circuit_is_upath by blast
     obtain ys zs where "?l = ys @ x # zs" 
-      by (metis \<open>x \<in> set ?l\<close> split_list)
+    proof -
+      have "\<exists>ys zs. ?l = ys @ x # zs"
+        using \<open>x \<in> set ?l\<close> by (rule split_list)
+      then show thesis using that by blast
+    qed
     then have "(ys @ [x]) @ zs = ?l" by simp
     then have "path (u_edges p) (ys @ [x])" 
       by (metis \<open>path (u_edges p) ?l\<close> path_pref)
