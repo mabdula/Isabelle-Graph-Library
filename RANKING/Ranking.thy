@@ -3298,7 +3298,39 @@ proof -
           qed
 
           with rm_G' \<open>u'' \<notin> Vs M'\<close> \<open>{u'', x''} \<in> G \<setminus> {x}\<close> \<open>index \<sigma> x'' < index \<sigma> x'\<close> have "index \<pi> u3 < index \<pi> u''"
-            by (smt (verit, best) edges_are_Vs(1) index_eq_index_conv index_less_in_set linorder_neqE_nat ranking_matching_bipartite_edges' ranking_matching_earlier_match_offlineE)
+            proof -
+              have x''_sigma: "x'' \<in> set \<sigma>"
+                using \<open>index \<sigma> x'' < index \<sigma> x'\<close>
+                by (auto intro: index_less_in_set)
+
+              have u3_pi: "u3 \<in> set \<pi>"
+                by (rule ranking_matching_bipartite_edges'[OF rm_G' \<open>{u3,x''} \<in> M'\<close> x''_sigma])
+
+              have "u3 \<in> Vs M'"
+                using \<open>{u3,x''} \<in> M'\<close>
+                by (auto dest: edges_are_Vs)
+
+              with \<open>u'' \<notin> Vs M'\<close> have "u3 \<noteq> u''"
+                by blast
+
+              with u3_pi have neq: "index \<pi> u3 \<noteq> index \<pi> u''"
+                by (auto simp: index_eq_index_conv)
+
+              have not_gt: "\<not> index \<pi> u'' < index \<pi> u3"
+              proof
+                assume gt: "index \<pi> u'' < index \<pi> u3"
+                from rm_G' \<open>{u3,x''} \<in> M'\<close> \<open>{u'',x''} \<in> G \<setminus> {x}\<close> gt
+                obtain x3 where "{u'',x3} \<in> M'" "index \<sigma> x3 < index \<sigma> x''"
+                  by (rule ranking_matching_earlier_match_offlineE)
+                then have "u'' \<in> Vs M'"
+                  by (auto dest: edges_are_Vs)
+                with \<open>u'' \<notin> Vs M'\<close> show False
+                  by blast
+              qed
+
+              from neq not_gt show ?thesis
+                by (auto simp: nat_neq_iff)
+            qed
 
           from rm_G' \<open>{u3,x''} \<in> M'\<close> have "{u3,x''} \<in> G" 
             by (auto dest: ranking_matchingE remove_vertices_subgraph')
