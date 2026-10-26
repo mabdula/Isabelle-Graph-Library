@@ -1827,7 +1827,12 @@ proof
     have "not_on_odd p x = x" 
       using True not_on_odd_out by presburger
     have "on_odd p x = p x" 
-      by (metis \<open>not_on_odd p x = x\<close> not_on_odd_def on_odd_def)
+  proof -
+    have "x \<in> set (support p (least_odd p))"
+      using True by blast
+    then show ?thesis
+      by (rule on_odd_in)
+  qed
     then show ?thesis 
       by (simp add: \<open>not_on_odd p x = x\<close>)
   next
