@@ -1855,7 +1855,7 @@ lemma rev_p_opposit_tutte_value:
   shows "(tutte_matrix )$i$p i = - (tutte_matrix )$p i$(rev_p p) (p i)"
 proof - 
   have "p i \<in> set (support p  (least_odd p))" 
-    by (metis assms on_odd_def on_odd_p_permutes permutes_inv_eq)   
+    by (rule p_in_same_cycle[OF assms]) 
   then have "(rev_p p) (p i) = i"  
     unfolding rev_p_def 
     by (metis assms(1) permutes_inv_eq)
