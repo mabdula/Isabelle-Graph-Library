@@ -907,7 +907,23 @@ proof -
   also have "\<dots> = l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b" 
     using assms(5) assms(6) by presburger
   finally show "A *\<^sub>v z = b" 
-    by (metis add_smult_distrib_vec assms(8) le_add_diff_inverse one_smult_vec)
+  proof (rule trans)
+    show "l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b = b"
+    proof (rule eq_vecI)
+      fix i
+      assume i: "i < dim_vec b"
+      then have "(l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b) $ i = l * (b $ i) + (1 - l) * (b $ i)"
+        by simp
+      also have "\<dots> = (l + (1 - l)) * (b $ i)"
+        by (simp add: ring_distribs)
+      also have "\<dots> = b $ i"
+        by (simp add: algebra_simps)
+      finally show "(l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b) $ i = b $ i" .
+    next
+      show "dim_vec (l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b) = dim_vec b"
+        by simp
+    qed
+  qed
 qed
 
 lemma multiply_by_zero_eq:
