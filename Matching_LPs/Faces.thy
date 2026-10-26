@@ -1136,7 +1136,17 @@ proof -
         by (meson 1 x_n y_n minus_carrier_vec scalar_prod_add_distrib smult_closed)
       then have "row A i \<bullet> ?z = row A i \<bullet> y + ((b $ i - row A i \<bullet> y)/(row A i \<bullet> x - row A i \<bullet> y)) * 
                                                (row A i \<bullet> (x - y))" 
-        by (metis 1 x_n y_n minus_carrier_vec scalar_prod_smult_distrib)
+        proof -
+          have xy_carr: "x - y \<in> carrier_vec n"
+            using x_n y_n by auto
+          have smult_dist: "row A i \<bullet> (c \<cdot>\<^sub>v (x - y)) = c * (row A i \<bullet> (x - y))" for c
+            using 1 xy_carr by (rule scalar_prod_smult_distrib)
+          have add_dist: "row A i \<bullet> (y + c \<cdot>\<^sub>v (x - y)) = row A i \<bullet> y + row A i \<bullet> (c \<cdot>\<^sub>v (x - y))" for c
+            using 1 y_n smult_closed xy_carr by (blast intro: scalar_prod_add_distrib)
+
+          show ?thesis
+            by (simp only: add_dist smult_dist)
+        qed
       then have "row A i \<bullet> ?z = row A i \<bullet> y + (b $ i - row A i \<bullet> y)" 
         by (metis 2 1 x_n y_n nonzero_eq_divide_eq scalar_prod_minus_distrib)
       then have 4:"row A i \<bullet> ?z = b $ i" 
