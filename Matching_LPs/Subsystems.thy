@@ -318,9 +318,15 @@ proof -
     case False
     then show ?thesis by (rule pick_in_set_inf)
   qed
-  ultimately show ?thesis
-    using  assms dims_subsyst_same pick_index_row_in_A subsyst_b_i 
-    by metis
+  moreover have "row (fst (sub_system A b I)) j = row A (pick I j)"
+  proof -
+    have "j < dim_row (fst (sub_system A b I))"
+      using assms(2) dims_subsyst_same[OF assms(1)] by simp
+    from pick_index_row_in_A[OF this] show ?thesis .
+  qed
+  moreover have "snd (sub_system A b I) $ j = b $ (pick I j)"
+    by (rule subsyst_b_i[OF assms(2)])
+  ultimately show ?thesis by blast
 qed
 
 lemma exist_index_in_A_carr:
