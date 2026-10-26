@@ -1138,7 +1138,21 @@ next
           have "x \<in> Vs {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}" 
             using False x by blast
           then obtain x' y' where " x' \<in> Vs G \<and> y' \<in> A \<and> x \<in> {x', y'}" 
-            by (smt (verit, del_insts) Union_eq Vs_def mem_Collect_eq singleton_conv2)
+            proof -
+            have "x \<in> \<Union> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}"
+              using \<open>x \<in> Vs {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}\<close>
+              by (simp add: Vs_def)
+            then obtain e where e_in: "e \<in> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}"
+              and x_in_e: "x \<in> e"
+              by blast
+            from e_in obtain x' y' where e_eq: "e = {x', y'}"
+              and x'_G: "x' \<in> Vs G" and y'_A: "y' \<in> A"
+              by blast
+            have "x' \<in> Vs G \<and> y' \<in> A \<and> x \<in> {x', y'}"
+              using x'_G y'_A x_in_e e_eq by simp
+            then show thesis
+              by (rule that)
+          qed
           then show ?thesis 
             using `x \<notin> A` by blast
         qed
