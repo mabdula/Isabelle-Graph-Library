@@ -934,7 +934,10 @@ proof(rule ccontr)
   assume "I' \<inter> I'' \<inter> {0..<nr}\<noteq> {}" 
   then obtain i where i:"i \<in> I' \<and> i \<in> I'' \<and> i < nr" by fastforce
   then obtain C d where "(C, d) = sub_system A b (I'' - {i})" 
-    by (metis surj_pair)
+  proof -
+    show ?thesis
+      by (rule that[OF prod.collapse])
+  qed
   then have "{x. A'' *\<^sub>v x \<le> b''} = {x. C *\<^sub>v x \<le> d \<and> row A i \<bullet> x \<le> b $ i}"
     using remove_index_sub_system assms(4) i  A \<open>dim_vec b = nr\<close> by blast
   then have "F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b' \<and> C *\<^sub>v x \<le> d \<and> row A i \<bullet> x \<le> b $ i}"
