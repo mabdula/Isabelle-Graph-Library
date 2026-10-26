@@ -282,7 +282,18 @@ lemma flowpath_cases:
    (\<And>g e. \<lbrakk> a1 = g; a2 = [e]; 0 < g e \<rbrakk> \<Longrightarrow> P);
    (\<And>g e es. \<lbrakk> a1 = g; a2 = e # es; 0 < g e; snd e = fst (hd es); flowpath g es\<rbrakk> \<Longrightarrow> P)\<rbrakk>
     \<Longrightarrow> P"
-  using flowpath_simps by metis
+proof -
+  assume fp: "flowpath a1 a2"
+     and c1: "\<And>g. \<lbrakk>a1 = g; a2 = []\<rbrakk> \<Longrightarrow> P"
+     and c2: "\<And>g e. \<lbrakk>a1 = g; a2 = [e]; 0 < g e\<rbrakk> \<Longrightarrow> P"
+     and c3: "\<And>g e es. \<lbrakk>a1 = g; a2 = e # es; 0 < g e; snd e = fst (hd es); flowpath g es\<rbrakk> \<Longrightarrow> P"
+  from fp have "(\<exists>g. a1 = g \<and> a2 = []) \<or>
+     (\<exists>g e. a1 = g \<and> a2 = [e] \<and> 0 < g e) \<or>
+     (\<exists>g e es. a1 = g \<and> a2 = e # es \<and> 0 < g e \<and> snd e = fst (hd es) \<and> flowpath g es)"
+    by (rule flowpath_simps[THEN iffD1])
+  then show P
+    by (elim disjE exE conjE; auto intro: c1 c2 c3)
+qed
 
 text \<open>Let us now take a look at the properties of flowpaths.
 We observe a relationship to augmenting paths and some topological statements on connectivity.
