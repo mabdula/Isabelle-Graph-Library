@@ -1345,7 +1345,24 @@ proof
       by (simp add: assms neighbours_of_Vs_bipartite)
     then have "neighbours_of_Vs M A = Vs G - A" 
       using M unfolding cover_matching_def 
-      by (metis \<open>card A = card (neighbours_of_Vs M A)\<close> \<open>neighbours_of_Vs M A \<subseteq> neighbours_of_Vs G A\<close> assms(2) asm card_subset_eq finite_Diff)
+      proof -
+      have fin: "finite (neighbours_of_Vs G A)"
+        using finite_neighbours_of_Vs assms(2) by blast
+      have card_eq: "card (neighbours_of_Vs M A) = card (neighbours_of_Vs G A)"
+      proof -
+        have "card (neighbours_of_Vs M A) = card A"
+          using \<open>card A = card (neighbours_of_Vs M A)\<close> by simp
+        also have "... = card (Vs G - A)"
+          using asm by simp
+        also have "... = card (neighbours_of_Vs G A)"
+          using \<open>Vs G - A = neighbours_of_Vs G A\<close> by simp
+        finally show ?thesis .
+      qed
+      have "neighbours_of_Vs M A = neighbours_of_Vs G A"
+        using card_subset_eq[OF fin \<open>neighbours_of_Vs M A \<subseteq> neighbours_of_Vs G A\<close> card_eq] .
+      then show "neighbours_of_Vs M A = Vs G - A"
+        using \<open>Vs G - A = neighbours_of_Vs G A\<close> by simp
+    qed
     have "Vs G = Vs M" 
       using neighbours_of_Vs_bipartite[OF part_bipart_of_cover_matching[OF assms(1) M]] 
         M assms unfolding partitioned_bipartite_def cover_matching_def
