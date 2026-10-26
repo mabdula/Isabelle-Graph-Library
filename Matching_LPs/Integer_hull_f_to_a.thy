@@ -948,7 +948,19 @@ proof
     qed
     then obtain c where "u = lincomb_list c (rows C)" 
       using  `set (rows C) \<subseteq> carrier_vec n`
-      by (metis List.finite_set finite_in_span lincomb_then_lincomb_list u)
+    proof -
+      note carr = \<open>set (rows C) \<subseteq> carrier_vec n\<close>
+      have fin: "finite (set (rows C))"
+        by simp
+      have "u \<in> span (set (rows C))"
+        using u \<open>set (rows C) = set (rows A') - {u}\<close> by simp
+      then obtain a where a: "u = lincomb a (set (rows C))"
+        using finite_in_span[OF fin carr] by blast
+      then have "\<exists>c'. u = lincomb_list c' (rows C)"
+        using carr lincomb_then_lincomb_list by blast
+      then show thesis
+        using that by blast
+    qed
     then have "u = sumlist (map (\<lambda>i. c i \<cdot>\<^sub>v  (rows C) ! i) [0..<length (rows C)])"
       using lincomb_list_def by presburger
     then have 6:"\<forall>x \<in> carrier_vec n.  C *\<^sub>v x = d \<longrightarrow>
