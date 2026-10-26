@@ -1898,7 +1898,7 @@ proof -
       by (rule trans[OF prod.subset_diff[OF subs fin] mult.commute])
   qed
   have 4:"prod ?g UNIV =  prod ?g ?A *  prod ?g (UNIV - ?A)"
-    by (metis (no_types, lifting) mult.commute prod.subset_diff top_greatest univ_is_finite)
+    by (rule trans[OF prod.subset_diff[OF subset_UNIV univ_is_finite] mult.commute])
   have "\<forall> i\<in> (UNIV - ?A). (rev_p p) i = p i" 
     using assms p_rev_p_same' by auto
   then have 2:" prod ?h (UNIV  - ?A) =  prod ?g (UNIV - ?A)"    
