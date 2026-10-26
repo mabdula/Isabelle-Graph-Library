@@ -3356,7 +3356,7 @@ proof -
     fix i
     assume asmi: "i \<in> Vs M" 
     have 1:"\<exists>!e.  e \<in> M \<and> i \<in> e" 
-      by (metis asmi M_match matching_def2)
+      using M_match asmi unfolding matching_def2 by blast
     then obtain e where e:"e \<in> M \<and> i \<in> e" 
       by auto
     then have "{e . e \<in> M \<and> i \<in> e} =  {e}" 
