@@ -871,7 +871,14 @@ proof-
                 IH(3) local.Cons  rcap_exract_single[of p1 f e] Cons IH(5) 
           by (force intro!: exI[of _ p1])     
       have 002: "awalk (to_vertex_pair ` \<EE>) (sndv e) (map to_vertex_pair p1) v"
-          by (metis IH(2) awalk_Cons_iff list.simps(9) vs_to_vertex_pair_pres(2))
+      proof -
+        have "awalk (to_vertex_pair ` \<EE>) u (to_vertex_pair e # map to_vertex_pair p1) v"
+          using IH(2) by (simp add: list.simps(9))
+        hence "awalk (to_vertex_pair ` \<EE>) (sndv e) (map to_vertex_pair p1) v"
+          using awalk_Cons_iff[of "(to_vertex_pair ` \<EE>)" u "to_vertex_pair e" "map to_vertex_pair p1" v]
+                vs_to_vertex_pair_pres(2)[of e] by auto
+        thus ?thesis .
+      qed
       have aa: "P f (sndv e) v"
           using 002 rcap_exract_single[of list f a] rcap_exract_single[of p1 f e] Cons IH(3)
             IH(5) assms(2) IH(7)  Cons.IH by fastforce
