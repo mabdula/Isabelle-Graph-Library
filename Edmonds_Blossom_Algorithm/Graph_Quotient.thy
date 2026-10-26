@@ -2315,8 +2315,25 @@ proof-
         proof(rule ccontr; simp)
           assume "a2' \<in> last (edges_of_path (chp @ [chv]))"
           then have "a2' \<in> set (chp @ [chv])"
-            using ass F2
-            by (metis Nil_is_append_conv edges_of_path_snoc last_in_set list.distinct(1) v_in_edge_in_path_gen)
+          proof -
+            have chp_ne: "chp \<noteq> []"
+              using ass(1) F2 by auto
+            have eop: "edges_of_path (chp @ [chv]) = edges_of_path chp @ [{last chp, chv}]"
+              using edges_of_path_snoc[OF chp_ne] by simp
+            have last_eq: "last (edges_of_path (chp @ [chv])) = {last chp, chv}"
+              using eop by simp
+            have "a2' = last chp \<or> a2' = chv"
+              using \<open>a2' \<in> last (edges_of_path (chp @ [chv]))\<close> last_eq by simp
+            then show "a2' \<in> set (chp @ [chv])"
+            proof
+              assume "a2' = last chp"
+              then show ?thesis
+                using last_in_set[OF chp_ne] by simp
+            next
+              assume "a2' = chv"
+              then show ?thesis by simp
+            qed
+          qed
           then show False
             by (metis Diff_iff ass(2) contra_subsetD list.set_intros(1) local.Cons p2_subset_s quot)
         qed
