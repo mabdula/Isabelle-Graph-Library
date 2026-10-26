@@ -2107,9 +2107,23 @@ proof (induction G u \<sigma> M rule: step.induct)
       using in_remove_verticesI vs_member by fastforce
   next
     case False
-    with 2 show ?thesis
-      using remove_vertices_subgraph'
-      by (metis step.simps(2))
+    show ?thesis
+    proof -
+      have not_cond: "\<not> (v \<notin> Vs M \<and> u \<notin> Vs M \<and> {u, v} \<in> G)"
+        using False by blast
+      then have step_G: "step G u (v # vs) M = step G u vs M"
+        by (simp only: step.simps(2) if_not_P[OF not_cond] if_False)
+      from not_cond have not_cond': "\<not> (v \<notin> Vs M \<and> u \<notin> Vs M \<and> {u, v} \<in> G \<setminus> {x})"
+        by (auto dest: remove_vertices_subgraph')
+      then have step_Gx: "step (G \<setminus> {x}) u (v # vs) M = step (G \<setminus> {x}) u vs M"
+        by (simp only: step.simps(2) if_not_P[OF not_cond'] if_False)
+      have x_notin: "x \<notin> Vs (step G u vs M)"
+        unfolding step_G[symmetric] by (rule "2.prems")
+      have IH_eq: "step (G \<setminus> {x}) u vs M = step G u vs M"
+        using "2.IH" not_cond x_notin by blast
+      show ?thesis
+        unfolding step_G step_Gx by (rule IH_eq)
+    qed
   qed
 qed simp
 
