@@ -6239,7 +6239,24 @@ next
     case False
     have "P ` e \<noteq> {u}"
       using False good_quot_map
-      by (simp add: image_def set_eq_iff; metis)
+    proof -
+      show ?thesis
+      proof
+        assume eq: "P ` e = {u}"
+        from False obtain v where v_in_e: "v \<in> e" and v_in_s: "v \<in> s"
+          by auto
+        have "P v \<in> P ` e"
+          using v_in_e by auto
+        with eq have "P v = u"
+          by simp
+        moreover have "P v = v"
+          using v_in_s by simp
+        ultimately have "v = u"
+          by simp
+        with v_in_s good_quot_map(1) show False
+          by simp
+      qed
+    qed
     then have "(quotG (insert e E')) =  insert (P ` e) (quotG E')"
       by (auto simp add: quot_graph_def)
     moreover have "P ` e \<notin> (quotG E')"
