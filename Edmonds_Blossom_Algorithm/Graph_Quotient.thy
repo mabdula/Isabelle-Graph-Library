@@ -6737,10 +6737,41 @@ proof(rule dblton_graphI, goal_cases)
       case False
       then have False
         using \<open>dblton_graph M\<close> \<open>M\<subseteq>E\<close> 1 good_quot_map dblton_E
-        apply(simp add: image_def)
-        by (metis (no_types, lifting) "1" Undirected_Set_Graphs.dblton_graphE \<open>dblton_graph M\<close> 
-                  doubleton_eq_iff edge_in_quot_in_graph_1' qtuoe_eq_v singleton_iff 
-                  singleton_insert_inj_eq' u_nin_edge_in_quot)+
+        proof -
+          have "quote \<in> quot_graph P M"
+            using "1" by auto
+          then obtain e where e_M: "e \<in> M" and quote_eq: "quote = P ` e"
+            by (auto simp: quot_graph_def)
+          have "\<exists>w1 w2. e = {w1, w2} \<and> w1 \<noteq> w2"
+            using \<open>dblton_graph M\<close> e_M by (blast elim: Undirected_Set_Graphs.dblton_graphE)
+          then obtain w1 w2 where e_eq: "e = {w1, w2}" and w1_neq_w2: "w1 \<noteq> w2"
+            by blast
+          have quote_eq2: "quote = {P w1, P w2}"
+            using quote_eq e_eq by simp
+          have Pw1_eq_v: "P w1 = v" and Pw2_eq_v: "P w2 = v"
+            using quote_eq2 v by auto
+          consider (c1) "w1 \<noteq> v" | (c2) "w2 \<noteq> v"
+            using w1_neq_w2 by blast
+          then have "\<exists>w. w \<noteq> v \<and> P w = v"
+          proof cases
+            case c1
+            then show ?thesis using Pw1_eq_v by blast
+          next
+            case c2
+            then show ?thesis using Pw2_eq_v by blast
+          qed
+          then obtain w where w_ne_v: "w \<noteq> v" and Pw_eq_v: "P w = v"
+            by blast
+          have "w \<notin> s"
+          proof
+            assume "w \<in> s"
+            then have "P w = w" by simp
+            with Pw_eq_v w_ne_v show False by simp
+          qed
+          then have "P w = u" by simp
+          with Pw_eq_v have "v = u" by simp
+          with False show False by simp
+        qed
 
       then show ?thesis
         by simp
