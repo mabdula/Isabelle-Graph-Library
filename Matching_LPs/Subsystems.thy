@@ -100,7 +100,15 @@ qed
 lemma dims_subsyst_same:
   assumes "dim_row A = dim_vec b"
   shows "dim_row (fst (sub_system A b I)) = dim_vec (snd (sub_system A b I))" 
-  by (metis  assms dim_row_subsyst_mat dim_subsyst_vec) 
+proof -
+  have "dim_row (fst (sub_system A b I)) = card {i. i < dim_row A \<and> i \<in> I}"
+    by (rule dim_row_subsyst_mat)
+  also have "\<dots> = card {i. i < dim_vec b \<and> i \<in> I}"
+    using assms by simp
+  also have "\<dots> = dim_vec (snd (sub_system A b I))"
+    by (rule dim_subsyst_vec[symmetric])
+  finally show ?thesis .
+qed
 
 lemma dims_subsyst_same':
   assumes "dim_row A = dim_vec b"
