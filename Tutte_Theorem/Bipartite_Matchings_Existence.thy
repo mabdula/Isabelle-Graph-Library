@@ -69,7 +69,7 @@ proof(induct "card A" arbitrary: A G rule: less_induct)
       have "\<exists> e. e \<in> G" 
         using False by blast
       then obtain e where e:"\<exists>u v. e \<in> G \<and> e = {u, v} \<and> u \<in> A \<and> v \<in> Vs G - A"
-        by (metis less.prems(1) partitioned_bipartite_def)
+        using less.prems(1) unfolding partitioned_bipartite_def by fastforce
       then obtain u v where u_v: "e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs G - A)" 
         by auto
       then  have "(u \<in> A \<and> v \<in> Vs G - A)" by auto
