@@ -1079,7 +1079,7 @@ proof -
         using that k_in by blast
     qed
     obtain C d where sub_C: "((C, d) = sub_system A b (I'' - {i}))" 
-      by (metis surj_pair)
+      using that[OF prod.collapse] by blast
     have "{x. A'' *\<^sub>v x \<le> b''} = {x. C *\<^sub>v x \<le> d \<and> row A i \<bullet> x \<le> b $ i}"    
       using remove_index_sub_system
       using sub_A''(1) sub_C(1)  i 
