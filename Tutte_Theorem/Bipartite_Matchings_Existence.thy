@@ -988,8 +988,44 @@ next
     proof(rule ccontr, goal_cases)
       case 1
       then obtain p1 p2 y z where p_split: "p = p1@[y,x,z]@p2" 
-        by (metis element_of_list_cases last_ConsL last_appendR list.sel(1) not_Cons_self2 p_props(2)
-            x_in_C)
+      proof -
+        have hd_neq: "x \<noteq> hd p"
+          using 1 by auto
+        have last_neq: "x \<noteq> last p"
+          using 1 by auto
+        have x_in_p: "x \<in> set p"
+          using p_props(2) x_in_C by fastforce
+        obtain ys zs where ys_zs: "p = ys @ x # zs"
+          using split_list[OF x_in_p] by blast
+        have ys_nonempty: "ys \<noteq> []"
+        proof
+          assume "ys = []"
+          hence "hd p = x"
+            using ys_zs by simp
+          thus False
+            using hd_neq by simp
+        qed
+        have zs_nonempty: "zs \<noteq> []"
+        proof
+          assume "zs = []"
+          hence "last p = x"
+            using ys_zs by simp
+          thus False
+            using last_neq by simp
+        qed
+        define p1 where "p1 = butlast ys"
+        define y where "y = last ys"
+        define z where "z = hd zs"
+        define p2 where "p2 = tl zs"
+        have ys_split: "ys = p1 @ [y]"
+          using append_butlast_last_id[OF ys_nonempty] by (simp add: p1_def y_def)
+        have zs_split: "zs = z # p2"
+          using hd_Cons_tl[OF zs_nonempty] by (simp add: z_def p2_def)
+        have p_split: "p = p1@[y,x,z]@p2"
+          using ys_zs ys_split zs_split by simp
+        show thesis
+          using that p_split by blast
+      qed
       have "{y, x} \<in> set (edges_of_path p)"  "{x, z} \<in> set (edges_of_path p)"
         using edges_of_path_append_subset p_split by fastforce+
       moreover have "set (edges_of_path p) \<subseteq> M \<union> M'"
