@@ -6098,7 +6098,80 @@ proof(rule ccontr)
     moreover obtain w x where wx: "w \<noteq> x" "w \<in> qe" "w \<noteq> u" "w \<in> s" "x \<in> qe'" "x \<noteq> u" "x \<in> s"
       using qe qe'
       unfolding quot_graph_def image_def
-      by (auto; metis (no_types, lifting) calculation good_quot_map(1))
+    proof -
+      have qe_in_quot: "qe \<in> quot_graph P M" and qe_ne_u: "qe \<noteq> {u}"
+        using qe(2) by auto
+      have qe'_in_quot: "qe' \<in> quot_graph P M" and qe'_ne_u: "qe' \<noteq> {u}"
+        using qe'(3) by auto
+      obtain e where e_mem: "e \<in> M" and qe_eq: "qe = P ` e"
+        using qe_in_quot unfolding quot_graph_def by auto
+      obtain e' where e'_mem: "e' \<in> M" and qe'_eq: "qe' = P ` e'"
+        using qe'_in_quot unfolding quot_graph_def by auto
+      have e_in_E: "e \<in> E" using e_mem \<open>M \<subseteq> E\<close> by auto
+      have e'_in_E: "e' \<in> E" using e'_mem \<open>M \<subseteq> E\<close> by auto
+      obtain a b where ab_eq: "e = {a, b}" and ab_neq: "a \<noteq> b"
+        using dblton_E e_in_E by (auto elim: dblton_graphE)
+      obtain a' b' where ab'_eq: "e' = {a', b'}" and ab'_neq: "a' \<noteq> b'"
+        using dblton_E e'_in_E by (auto elim: dblton_graphE)
+      have u_in_qe: "u \<in> qe"
+        using qe(1) \<open>v = u\<close> by simp
+      have u_in_qe': "u \<in> qe'"
+        using qe'(1) \<open>v = u\<close> by simp
+      have witness: "\<exists>w. P ` e0 = {u, w} \<and> w \<noteq> u \<and> w \<in> s"
+        if e0_eq: "e0 = {a0, b0}" and u_mem: "u \<in> P ` e0" and ne_u: "P ` e0 \<noteq> {u}"
+        for e0 a0 b0
+      proof -
+        have im_eq: "P ` e0 = {P a0, P b0}"
+          using e0_eq by simp
+        have u_in: "u = P a0 \<or> u = P b0"
+          using u_mem im_eq by auto
+        show ?thesis
+        proof (cases "P a0 = u")
+          case True
+          have Pb0_ne_u: "P b0 \<noteq> u"
+          proof
+            assume "P b0 = u"
+            with True have "P ` e0 = {u}" using im_eq by auto
+            with ne_u show False by simp
+          qed
+          moreover have "P b0 \<in> s"
+            using Pb0_ne_u by (auto split: if_splits)
+          ultimately show ?thesis
+            using True im_eq by (intro exI[of _ "P b0"]) auto
+        next
+          case False
+          then have Pb0_eq_u: "P b0 = u"
+            using u_in by auto
+          moreover have "P a0 \<in> s"
+            using False by (auto split: if_splits)
+          ultimately show ?thesis
+            using False im_eq by fastforce
+        qed
+      qed
+      have u_in_Pe: "u \<in> P ` e" using u_in_qe qe_eq by simp
+      have Pe_ne_u: "P ` e \<noteq> {u}" using qe_ne_u qe_eq by simp
+      have u_in_Pe': "u \<in> P ` e'" using u_in_qe' qe'_eq by simp
+      have Pe'_ne_u: "P ` e' \<noteq> {u}" using qe'_ne_u qe'_eq by simp
+      obtain w where w_char: "P ` e = {u, w}" and w_ne_u: "w \<noteq> u" and w_in_s: "w \<in> s"
+        using witness[OF ab_eq u_in_Pe Pe_ne_u] by auto
+      obtain x where x_char: "P ` e' = {u, x}" and x_ne_u: "x \<noteq> u" and x_in_s: "x \<in> s"
+        using witness[OF ab'_eq u_in_Pe' Pe'_ne_u] by auto
+      have qe_char: "qe = {u, w}"
+        using qe_eq w_char by simp
+      have qe'_char: "qe' = {u, x}"
+        using qe'_eq x_char by simp
+      have w_in_qe: "w \<in> qe" using qe_char by simp
+      have x_in_qe': "x \<in> qe'" using qe'_char by simp
+      have w_ne_x: "w \<noteq> x"
+      proof
+        assume "w = x"
+        with qe_char qe'_char have "qe = qe'" by simp
+        with qe'(2) show False by simp
+      qed
+      show thesis
+        using that[of w x] w_ne_x w_in_qe w_ne_u w_in_s x_in_qe' x_ne_u x_in_s
+        by blast
+    qed
     ultimately obtain e e' v1 v2 where ee': "e \<in> M" "e' \<in> M" "w \<in> e" "x \<in> e'" "v1 \<in> e" "v2 \<in> e'"
                                             "v1 \<notin> s" "v2 \<notin> s" "e \<noteq> e'"
       using edge_in_quot_in_graph_2''[OF qe(2)] qe(1) edge_in_quot_in_graph_2''[OF qe'(3)] qe'(1,2)
