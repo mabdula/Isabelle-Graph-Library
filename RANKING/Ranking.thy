@@ -2334,7 +2334,30 @@ lemma shifts_to_matched_vertex_later_match:
   shows "index \<pi> u < index \<pi> u'"
   using assms
   unfolding shifts_to_def
-  by auto (metis doubleton_eq_iff index_eq_index_conv insertI1 linorder_neqE_nat matching_unique_match)
+proof -
+  have v_neq: "v \<noteq> v'"
+    using assms(1) by (auto simp: shifts_to_def)
+
+  have not_before: "\<not> index \<pi> u' < index \<pi> u"
+    using assms(1) assms(3) by (auto simp: shifts_to_def)
+
+  have neq: "u \<noteq> u'"
+  proof
+    assume eq: "u = u'"
+    have the_v: "(THE w. {u,w} \<in> M) = v"
+      by (rule the_match'[OF assms(4) assms(2)])
+    from eq assms(3) have "{u,v'} \<in> M" by simp
+    then have "(THE w. {u,w} \<in> M) = v'"
+      by (rule the_match'[OF assms(4)])
+    with the_v v_neq show False by simp
+  qed
+
+  have "index \<pi> u \<noteq> index \<pi> u'"
+    using assms(5) neq by (meson index_eq_index_conv)
+
+  with not_before show ?thesis
+    by linarith
+qed
 
 lemma remove_online_vertices_before_shifts_to_same:
   assumes subset_pi: "xs' \<subseteq> set \<pi>"
