@@ -6967,9 +6967,16 @@ qed
         by auto
       moreover have M'_subset_G: "M' \<subseteq> E"
         unfolding M'_def
-        using matching(2)
-        using path_edges_subset sym_diff_subset path_stem_hdC
-        by (metis le_supI order.trans)
+      proof -
+        have "set (edges_of_path (stem @ [hd C])) \<subseteq> E"
+          using path_stem_hdC path_edges_subset by blast
+        hence "M \<union> set (edges_of_path (stem @ [hd C])) \<subseteq> E"
+          using matching(2) by blast
+        moreover have "M \<oplus> set (edges_of_path (stem @ [hd C])) \<subseteq> M \<union> set (edges_of_path (stem @ [hd C]))"
+          by (rule sym_diff_subset)
+        ultimately show "M \<oplus> set (edges_of_path (stem @ [hd C])) \<subseteq> E"
+          by blast
+      qed
       ultimately obtain p_M' where "matching_augmenting_path M' p_M'" "path E p_M'" "distinct p_M'"
         using Berge[OF M'_finite] graph
         by metis
