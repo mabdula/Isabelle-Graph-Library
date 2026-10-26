@@ -473,9 +473,17 @@ proof(rule)+
       by (simp add: subsys)
     finally show ?thesis .
   qed
-  then obtain j where "j \<in> I \<and> j <dim_row A \<and> (row A j) = (row A' i) \<and> b $ j = b' $ i"
-    using exist_index_in_A[of A b i] assms(1-2) `i < dim_row A'`
-    by (metis fst_conv snd_conv) 
+  have A'_eq: "fst (sub_system A b I) = A'" and b'_eq: "snd (sub_system A b I) = b'"
+    by (simp_all add: assms(2)[symmetric])
+  have "i < dim_vec (snd (sub_system A b I))"
+    using \<open>i < dim_row A'\<close> dims_subsyst_same'[OF assms(1) assms(2)] b'_eq by simp
+  from exist_index_in_A[OF assms(1) this]
+  obtain j where j_props: "j < dim_vec b" "j \<in> I"
+    "row (fst (sub_system A b I)) i = row A j"
+    "snd (sub_system A b I) $ i = b $ j"
+    by blast
+  have "j \<in> I \<and> j < dim_row A \<and> row A j = row A' i \<and> b $ j = b' $ i"
+    using j_props assms(1) A'_eq b'_eq by simp
   then have "P (row A j) (b $ j)" using assms(3) 
     by (metis Int_iff atLeastLessThan_iff zero_le)
   then show " P (row A' i) (b' $ i)" 
