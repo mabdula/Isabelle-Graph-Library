@@ -341,7 +341,50 @@ qed
 next
   case (6 u v u')
   then show ?case
-    by (metis edges_are_Vs insert_Diff insert_iff remove_edge_matching remove_vertices_not_vs remove_vertices_subgraph')
+    proof -
+    from 6 have m_matching: "matching M"
+      by blast
+    have disj: "\<And>e1 e2. e1 \<in> M \<Longrightarrow> e2 \<in> M \<Longrightarrow> e1 \<noteq> e2 \<Longrightarrow> e1 \<inter> e2 = {}"
+      using m_matching[unfolded matching_def] by blast
+    from 6 have off: "\<And>a b c. {a,b} \<in> M \<Longrightarrow> {c,b} \<in> G \<Longrightarrow> index \<pi> c < index \<pi> a \<Longrightarrow>
+        \<exists>b'. {c,b'} \<in> M \<and> index \<sigma> b' < index \<sigma> b"
+      by blast
+    have gen: "\<And>x y a b c. {x,y} \<in> M \<Longrightarrow> {a,b} \<in> M \<setminus> {x,y} \<Longrightarrow> {c,b} \<in> G \<setminus> {x,y} \<Longrightarrow>
+        index \<pi> c < index \<pi> a \<Longrightarrow> \<exists>b'. {c,b'} \<in> M \<setminus> {x,y} \<and> index \<sigma> b' < index \<sigma> b"
+    proof -
+      fix x y a b c
+      assume xy_M: "{x,y} \<in> M"
+        and ab_red: "{a,b} \<in> M \<setminus> {x,y}"
+        and cb_red: "{c,b} \<in> G \<setminus> {x,y}"
+        and idx: "index \<pi> c < index \<pi> a"
+      from ab_red have ab_M: "{a,b} \<in> M"
+        by (auto dest: remove_vertices_subgraph')
+      from cb_red have cb_G: "{c,b} \<in> G"
+        by (auto dest: remove_vertices_subgraph')
+      from off[OF ab_M cb_G idx] obtain d
+        where d_M: "{c,d} \<in> M" and d_idx: "index \<sigma> d < index \<sigma> b"
+        by blast
+      from cb_red have c_Vs: "c \<in> Vs (G \<setminus> {x,y})"
+        by (blast intro: edges_are_Vs)
+      have c_notin: "c \<notin> {x,y}"
+      proof (rule notI)
+        assume "c \<in> {x,y}"
+        then have "c \<notin> Vs (G \<setminus> {x,y})" by (rule remove_vertices_not_vs)
+        with c_Vs show False by simp
+      qed
+      have c_in: "c \<in> {c,d}" by simp
+      have cd_neq: "{c,d} \<noteq> {x,y}"
+        using c_notin c_in by blast
+      have cd_disj: "{c,d} \<inter> {x,y} = {}"
+        by (rule disj[OF d_M xy_M cd_neq])
+      from d_M cd_disj have "{c,d} \<in> M \<setminus> {x,y}"
+        by (auto intro: in_remove_verticesI)
+      with d_idx show "\<exists>b'. {c,b'} \<in> M \<setminus> {x,y} \<and> index \<sigma> b' < index \<sigma> b"
+        by blast
+    qed
+    show ?thesis
+      using 6 gen by blast
+  qed
 qed
 
 lemma step_already_matched:
