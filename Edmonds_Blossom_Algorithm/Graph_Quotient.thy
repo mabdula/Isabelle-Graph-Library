@@ -3069,8 +3069,12 @@ proof-
       have up2_nin_M: "{last p1 , u} \<notin> quotG M"
       proof-
         have "last (edges_of_path (p1 @ [u])) = {last p1, u}"
-          using p1_nempty
-          by (metis edges_of_path_snoc last_snoc)
+        proof -
+          have snoc: "edges_of_path (p1 @ [u]) = edges_of_path p1 @ [{last p1, u}]"
+            by (simp add: edges_of_path_snoc p1_nempty)
+          show ?thesis
+            by (simp add: snoc)
+        qed
         then show ?thesis 
           using last_p1_nin by auto
       qed
