@@ -2192,7 +2192,21 @@ proof(safe)
     have "vec_of_list (nths (list_of_vec b) I) $v i = (nths (list_of_vec b) I) ! i" 
       by (simp add: vec_of_list_index)
     obtain j where "j< length (list_of_vec b)" "(list_of_vec b) ! j = (nths (list_of_vec b) I) ! i"
-      by (metis Matrix.dim_vec_of_list asmi in_set_conv_nth notin_set_nthsI)
+  proof -
+    have i_len: "i < length (nths (list_of_vec b) I)"
+      using asmi by (simp add: Matrix.dim_vec_of_list)
+    then have "nths (list_of_vec b) I ! i \<in> set (nths (list_of_vec b) I)"
+      by (rule nth_mem)
+    then have mem: "nths (list_of_vec b) I ! i \<in> set (list_of_vec b)"
+      by (rule in_set_nthsD)
+    from mem have ex_j: "\<exists>j<length (list_of_vec b). list_of_vec b ! j = nths (list_of_vec b) I ! i"
+      by (simp add: in_set_conv_nth)
+    then obtain j where "j < length (list_of_vec b)"
+      and "list_of_vec b ! j = nths (list_of_vec b) I ! i"
+      by blast
+    then show thesis
+      using that by blast
+  qed
     then have "(list_of_vec b) ! j \<in> \<int>" 
       by (metis Matrix.length_list_of_vec \<open>\<forall>i<dim_vec b. b $v i \<in> \<int>\<close> list_of_vec_index)
     then show ?thesis 
