@@ -700,7 +700,18 @@ proof -
             qed
 
             with x \<open>v#\<sigma>' \<in> permutations_of_set X\<close> have after_v: "x \<in> set (drop (Suc (index \<sigma> x)) \<sigma>)"
-              by (metis permutations_of_setD(1) subseq_order.dual_order.trans subseq_singleton_left)
+              proof -
+                have set_eq: "set (v # \<sigma>') = X"
+                  using \<open>v # \<sigma>' \<in> permutations_of_set X\<close>
+                  by (rule permutations_of_setD(1))
+
+                from x(1) set_eq have x_in: "x \<in> set (v # \<sigma>')"
+                  by blast
+
+                from \<open>subseq (v # \<sigma>') (drop (Suc (index \<sigma> x)) \<sigma>)\<close> x_in
+                show ?thesis
+                  by (auto elim!: list_emb_set)
+              qed
 
             from x \<open>distinct \<sigma>\<close> have "x \<notin> set (drop (Suc (index \<sigma> x)) \<sigma>)"
               by (intro set_drop_if_index) blast+
