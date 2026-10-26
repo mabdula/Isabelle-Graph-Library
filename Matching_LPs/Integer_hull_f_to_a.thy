@@ -581,10 +581,27 @@ proof(rule ccontr)
       using assms(7) by blast
     have "row A' j1 = row A' j2" using j1j2 
       by blast
-    then show False 
-      using j1j2 \<open>x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'\<close> index_mult_mat_vec
-      using \<open>b' $ j1 \<noteq> b' $ j2\<close> 
-      by metis  
+    show False
+    proof -
+      have j1_lt: "j1 < dim_row A'" and j2_lt: "j2 < dim_row A'"
+        and rows_eq: "row A' j1 = row A' j2"
+        using j1j2 by simp_all
+      have Ax: "A' *\<^sub>v x = b'"
+        using \<open>x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'\<close> by simp
+      have "b' $ j1 = (A' *\<^sub>v x) $ j1"
+        using Ax by simp
+      also have "\<dots> = row A' j1 \<bullet> x"
+        by (rule index_mult_mat_vec[OF j1_lt])
+      also have "\<dots> = row A' j2 \<bullet> x"
+        using rows_eq by simp
+      also have "\<dots> = (A' *\<^sub>v x) $ j2"
+        by (rule index_mult_mat_vec[OF j2_lt, symmetric])
+      also have "\<dots> = b' $ j2"
+        using Ax by simp
+      finally have "b' $ j1 = b' $ j2" .
+      then show False
+        using \<open>b' $ j1 \<noteq> b' $ j2\<close> by simp
+    qed
   qed
   obtain C d where C_d: "(C, d) = sub_system A b (I - {i1})"
     by (metis surj_pair)
