@@ -316,7 +316,14 @@ next
     using A P_def assms(5) b char_min_face by blast
   obtain \<alpha> \<beta> where \<alpha>_\<beta>:"support_hyp P \<alpha> \<beta> \<and> F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>}"
     using assms(5)
-    by (metis faceE min_face_elim(1))
+  proof -
+    have face_P_F: "face P F"
+      by (rule min_face_elim(1)[OF assms(5)])
+    have "\<exists>\<alpha> \<beta>. support_hyp P \<alpha> \<beta> \<and> F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>}"
+      using face_P_F unfolding face_def by blast
+    then show ?thesis
+      using that by blast
+  qed
   obtain C d where C_d: "F = polyhedron C d"  "dim_row C = dim_vec d" "dim_col C = n" 
     using face_is_polyhedron 
     by (metis A P_def assms(5) b min_face_elim(1))
