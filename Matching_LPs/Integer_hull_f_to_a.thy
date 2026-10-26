@@ -857,7 +857,7 @@ proof
     by (rule that)
   qed
   obtain C d where C_d: "(C, d) = sub_system A b (I - {i})"
-    by (metis surj_pair)
+    by (rule that[OF prod.collapse])
   have 4: "{x. A' *\<^sub>v x = b'} = {x.  C *\<^sub>v x = d \<and> row A i \<bullet> x = b $ i }"
     using remove_index_sub_system_eq[of A b i I A' b' C d]  C_d assms(8) dim_sameAb i by linarith 
   have "u \<in> carrier_vec n" 
