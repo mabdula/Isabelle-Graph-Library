@@ -2399,8 +2399,13 @@ proof-
         done
     }note alt_list_p2 = this
     have e_of_p_chp: "(edges_of_path (chp @ [chv, a2'])) = edges_of_path(chp @ [chv]) @ edges_of_path ([chv, a2'])"
-      using edges_of_path_append_2
-      by (metis list.distinct(1) list.sel(1))
+      proof -
+        have "edges_of_path (chp @ [chv, a2']) =
+                edges_of_path (chp @ [hd [chv, a2']]) @ edges_of_path [chv, a2']"
+          by (rule edges_of_path_append_2) simp
+        then show ?thesis
+          by simp
+      qed
     assume True: "last (edges_of_path (find_pfx ((=) (choose_con_vert (set C) a2')) C)) \<in> M \<or>
                   (choose_con_vert (set C) a2') = last C"
     then obtain Ctail where Ctail: "C = (stem2vert_path C M a2') @ Ctail"
