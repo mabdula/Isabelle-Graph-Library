@@ -106,7 +106,14 @@ proof(induction g n v rule: find_cycle.induct)
     case True
     then obtain e where e_Def:"e = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>)" by auto
     hence a:"0 < g e" "fst e = v" "e \<in> \<E>" 
-      by (metis (mono_tags, lifting) True someI_ex)+
+    proof -
+      have ex_prop: "\<exists>e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>"
+        using True by blast
+      have conj_prop: "0 < g e \<and> fst e = v \<and> e \<in> \<E>"
+        unfolding e_Def by (rule someI_ex[OF ex_prop])
+      show "0 < g e" "fst e = v" "e \<in> \<E>"
+        using conj_prop by simp_all
+    qed
     hence b:"snd e \<in> \<V>" 
       using  a dVsI(1) dVsI(2) 
       by(auto simp add: snd_E_V fst_E_V )
