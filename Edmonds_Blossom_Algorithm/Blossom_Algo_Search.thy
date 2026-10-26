@@ -539,10 +539,20 @@ proof-
       by (auto simp add: doubleton_eq_iff)
   qed
   moreover have "v = v3" if "{v, v2} \<in> M" for v
-    using matching that \<open>{v2,v3} \<in> M\<close>
-    unfolding matching_def2
-    apply (clarsimp simp add: doubleton_eq_iff Vs_def)
-    by (smt doubleton_eq_iff insertI1)
+  proof -
+    have inG: "{v2, v3} \<in> G"
+      using matching(2) \<open>{v2, v3} \<in> M\<close>
+      by auto
+    have neq23: "v2 \<noteq> v3"
+      using graph inG
+      by (fastforce elim: dblton_graphE)
+    have eq_sets: "{v, v2} = {v2, v3}"
+      using matching_unique_match[OF matching(1)] that \<open>{v2, v3} \<in> M\<close>
+      by blast
+    show "v = v3"
+      using eq_sets neq23
+      by (auto simp: doubleton_eq_iff)
+  qed
   ultimately show ?thesis
     using invars
     unfolding flabel_invar_def
