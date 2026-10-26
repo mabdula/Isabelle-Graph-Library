@@ -1158,8 +1158,22 @@ proof -
               have "an + 1 \<noteq> bn" 
                 using \<open>even an\<close> \<open>even bn\<close> even_add odd_one by blast
               then have "\<not> distinct (support p x)" 
-                by (metis (no_types, lifting) 4 5 6 add_diff_cancel_right' less_diff_conv 
-                    less_imp_diff_less nth_eq_iff_index_eq)
+                proof -
+                  have len1: "an + 1 < length (support p x)"
+                    using 4 by (simp add: less_diff_conv)
+                  have len2: "bn < length (support p x)"
+                    using 5 by (meson diff_le_self less_le_trans)
+                  show "\<not> distinct (support p x)"
+                  proof
+                    assume dist: "distinct (support p x)"
+                    have "(support p x ! (an + 1) = support p x ! bn) = (an + 1 = bn)"
+                      by (rule nth_eq_iff_index_eq[OF dist len1 len2])
+                    then have "an + 1 = bn"
+                      using 6 by simp
+                    then show False
+                      using \<open>an + 1 \<noteq> bn\<close> by simp
+                  qed
+                qed
               then show ?thesis 
                 using \<open>p permutes UNIV\<close> perm_support_distinct by force
             qed
