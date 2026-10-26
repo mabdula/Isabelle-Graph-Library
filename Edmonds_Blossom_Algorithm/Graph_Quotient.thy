@@ -1727,9 +1727,23 @@ shows "(choose_con_vert (set C) (last p1)) \<in> set C \<and> {last p1, (choose_
 proof-
   have *: "\<exists>w. {last p1, w} \<in> E \<and> w \<notin> s"
     apply(rule edge_in_quotG_2'_doubleton[where M = E])
-    subgoal using quot_aug_path path_adj_verts_edge
-      apply(auto simp add: neq_Nil_conv_2)
-      by (smt Diff_subset insert_commute path_adj_verts_edge subsetCE)
+    subgoal
+    proof -
+      have "p1 = butlast p1 @ [last p1]"
+        using quot_aug_path(4) by simp
+      then obtain l' x where p1_eq: "p1 = l' @ [x]"
+        by blast
+      have p'_eq: "p' = l' @ x # u # p2"
+        using quot_aug_path(1) p1_eq by simp
+      have "path (quotG E) (l' @ x # u # p2)"
+        using quot_aug_path(3) p'_eq by simp
+      then have xu: "{x, u} \<in> quotG E"
+        by (rule path_adj_verts_edge)
+      have "{u, last p1} = {x, u}"
+        using p1_eq by (simp add: insert_commute)
+      then show ?thesis
+        using xu by simp
+    qed
     subgoal using \<open>{u, last p1} \<in> quot_graph P E - {{u}}\<close> edge_in_quot_in_graph_2'' by auto    
     subgoal using graph by blast
     done
