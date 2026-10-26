@@ -3095,8 +3095,31 @@ qed
                   poly_mapping.lookup (\<Sum>b\<in>F. ?m b) (f a) + poly_mapping.lookup (?m x) (f a)" 
       by (simp add: lookup_add)
     have " poly_mapping.lookup (?m x) (f a) = 0"
-      by (metis (no_types, lifting) \<open>f x \<noteq> f a\<close>  lookup_single_not_eq mult.assoc mult.left_neutral 
-          mult_single single_of_int single_one)
+    proof -
+      have scalar: "of_int (sign x) * of_int (g x)
+          = Poly_Mapping.single 0 (of_int (sign x) * of_int (g x))"
+      proof -
+        have "of_int (sign x) * of_int (g x)
+            = Poly_Mapping.single 0 (of_int (sign x)) * Poly_Mapping.single 0 (of_int (g x))"
+          by (simp add: single_of_int)
+        also have "\<dots> = Poly_Mapping.single (0 + 0) (of_int (sign x) * of_int (g x))"
+          by (rule mult_single)
+        then show ?thesis by simp
+      qed
+      have key: "of_int (sign x) * of_int (g x) * (Poly_Mapping.single (f x) (1::real))
+          = Poly_Mapping.single (f x) (of_int (sign x) * of_int (g x))"
+      proof -
+        have "of_int (sign x) * of_int (g x) * (Poly_Mapping.single (f x) (1::real))
+            = Poly_Mapping.single 0 (of_int (sign x) * of_int (g x))
+              * Poly_Mapping.single (f x) (1::real)"
+          by (simp add: scalar)
+        also have "\<dots> = Poly_Mapping.single (0 + f x) (of_int (sign x) * of_int (g x) * 1)"
+          by (simp add: mult_single)
+        finally show ?thesis by simp
+      qed
+      show "poly_mapping.lookup (?m x) (f a) = 0"
+        using \<open>f x \<noteq> f a\<close> by (simp add: key lookup_single_not_eq)
+    qed
     then have "poly_mapping.lookup (\<Sum>b\<in>(insert x F). ?m b) (f a) = 
                poly_mapping.lookup (\<Sum>b\<in>F. ?m b) (f a)"
       by (simp add: 6)
