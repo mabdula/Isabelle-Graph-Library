@@ -898,8 +898,17 @@ proof
     case True
     then obtain j' where "j' < length (rows C) \<and> (rows C) ! j' = u"  
       by (meson in_set_conv_nth)
-    then have  j': "j' < dim_row C \<and> row C  j' = u"  using length_rows nth_rows by metis  
-    obtain i' where i':"i' < nr \<and> i' \<in> (I - {i}) \<and> row A i' = row C j' \<and> d $ j' = b $ i'" 
+    then have  j': "j' < dim_row C \<and> row C  j' = u"
+    proof -
+      assume asm: "j' < length (rows C) \<and> (rows C) ! j' = u"
+      have len: "j' < dim_row C"
+        using asm by (simp add: length_rows)
+      have "row C j' = rows C ! j'"
+        using nth_rows[OF len] by simp
+      then have "row C j' = u"
+        using asm by simp
+      with len show ?thesis by blast
+    qed    obtain i' where i':"i' < nr \<and> i' \<in> (I - {i}) \<and> row A i' = row C j' \<and> d $ j' = b $ i'" 
       by (metis exist_index_in_A_carr[of A nr n b C d _ j'] C_d assms(1) b  j')
     then show ?thesis 
       by (smt (verit, best) Cd_non_empty Collect_empty_eq i index_mult_mat_vec j j')
