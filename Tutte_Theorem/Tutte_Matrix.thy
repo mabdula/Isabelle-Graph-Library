@@ -1196,7 +1196,22 @@ proof -
               have "bn + 1 \<noteq> an" 
                 using \<open>even an\<close> \<open>even bn\<close> even_add odd_one by blast
               then have "\<not> distinct (support p x)" 
-                by (metis 4 5 7 add_lessD1 less_diff_conv nth_eq_iff_index_eq)
+              proof -
+                have ean: "even an" using an by auto
+                have ebn: "even bn" using bn by auto
+                have Bl: "bn + 1 < length (support p x)"
+                  using 5 by (simp add: less_diff_conv)
+                have Al: "an + 1 < length (support p x)"
+                  using 4 by (simp add: less_diff_conv)
+                then have Al': "an < length (support p x)" by linarith
+                show ?thesis
+                proof
+                  assume dist: "distinct (support p x)"
+                  have eq: "bn + 1 = an"
+                    using 7 nth_eq_iff_index_eq[OF dist Bl Al'] by simp
+                  show False using ean ebn eq by presburger
+                qed
+              qed
               then show ?thesis 
                 using \<open>p permutes UNIV\<close> perm_support_distinct by force
             next
