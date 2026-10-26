@@ -1173,7 +1173,32 @@ next
       by (simp add: assms(1) assms(6))
     have graph_invar_H:"graph_invar ?H" 
       using `finite (Vs ?H)` assms(1) assms(8)
-      by (smt (verit) Un_iff dblton_graph_def disjoint_iff_not_equal mem_Collect_eq)
+    proof -
+      have "dblton_graph ?H"
+        unfolding dblton_graph_def
+      proof (intro ballI)
+        fix e assume "e \<in> ?H"
+        then have "e \<in> G \<or> e \<in> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}"
+          by simp
+        then show "\<exists>u v. e = {u, v} \<and> u \<noteq> v"
+        proof (elim disjE)
+          assume "e \<in> G"
+          then obtain u v where "e = {u, v}" "u \<noteq> v"
+            using dblton_graphE assms(1) by blast
+          then show ?thesis by blast
+        next
+          assume "e \<in> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}"
+          then obtain x y where e_eq: "e = {x, y}" and x_G: "x \<in> Vs G" and y_A: "y \<in> A"
+            by blast
+          have "x \<noteq> y"
+            using x_G y_A assms(8) by blast
+          then show ?thesis
+            using e_eq by blast
+        qed
+      qed
+      then show ?thesis
+        using \<open>finite (Vs ?H)\<close> by simp
+    qed
     obtain Mh where Mh:"perfect_matching ?H Mh" 
       using  construct_perfect_matching_with_new_vertices[of G X A] assms(1,3,4,6-8) 
       by (smt (verit, best) 5 diff_add_inverse le_Suc_ex le_diff_conv of_nat_add of_nat_le_iff)
