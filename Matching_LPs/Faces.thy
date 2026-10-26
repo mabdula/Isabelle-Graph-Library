@@ -485,9 +485,25 @@ proof -
     qed
   qed
   also have "\<dots> \<longleftrightarrow> (\<forall> i < dim_row ?A'. (row ?A' i) \<bullet> x = ?b' $ i)"
-    using subsystem_fulfills_P'[of A b ?A' ?b' _ "(\<lambda> a c. a \<bullet> x = c)"] 
- using subsystem_fulfills_P[of A b ?A' ?b' _ "(\<lambda> a c. a \<bullet> x = c)"]
-    by (metis (no_types, lifting) A b carrier_matD(1) carrier_vecD prod.collapse)
+  proof -
+    let ?I = "{i. y $ i > 0 \<and> i < nr}"
+    have dims: "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    have sub: "(?A', ?b') = sub_system A b ?I"
+      by simp
+    show ?thesis
+    proof
+      assume "\<forall>i\<in>?I \<inter> {0..<dim_row A}. row A i \<bullet> x = b $ i"
+      then show "\<forall>i<dim_row ?A'. row ?A' i \<bullet> x = ?b' $ i"
+        using subsystem_fulfills_P'[of A b ?A' ?b' ?I "\<lambda>a c. a \<bullet> x = c"] dims sub A b
+        by blast
+    next
+      assume "\<forall>i<dim_row ?A'. row ?A' i \<bullet> x = ?b' $ i"
+      then show "\<forall>i\<in>?I \<inter> {0..<dim_row A}. row A i \<bullet> x = b $ i"
+        using subsystem_fulfills_P[of A b ?A' ?b' ?I "\<lambda>a c. a \<bullet> x = c"] dims sub A b
+        by blast
+    qed
+  qed
   also have "(\<forall> i < dim_row ?A'. (row ?A' i) \<bullet> x = ?b' $ i) \<longleftrightarrow> ?A' *\<^sub>v x = ?b'" 
     unfolding mult_mat_vec_def 
     by (smt (verit, ccfv_SIG) A b carrier_matD(1) carrier_vecD dim_vec dims_subsyst_same 
