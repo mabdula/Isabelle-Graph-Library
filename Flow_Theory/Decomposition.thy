@@ -643,7 +643,31 @@ proof(induction n arbitrary: g rule: less_induct)
   have integral_g: "is_integral_flow g \<Longrightarrow>is_integral_flow g'"
     using integral_gamma 
     unfolding g'_def is_integral_flow_def
-    by (metis of_int_diff of_int_of_nat_eq)
+    proof -
+  assume h1: "(\<forall>e\<in>\<E>. \<exists>n::int. g e = n) \<Longrightarrow> (\<exists>n::nat. \<gamma> = n)"
+  assume h2: "\<forall>e\<in>\<E>. \<exists>n::int. g e = n"
+  show "\<forall>e\<in>\<E>. \<exists>n::int. (if e \<in> set es then g e - \<gamma> else g e) = n"
+  proof
+    fix e
+    assume e_in: "e \<in> \<E>"
+    from h1 h2 obtain n1 :: nat where gamma_eq: "\<gamma> = n1" by blast
+    from h2 e_in obtain n2 :: int where g_eq: "g e = n2" by blast
+    show "\<exists>n::int. (if e \<in> set es then g e - \<gamma> else g e) = n"
+    proof (cases "e \<in> set es")
+      case True
+      have eq: "g e - \<gamma> = real_of_int (n2 - int n1)"
+        using g_eq gamma_eq by (simp add: of_int_diff of_int_of_nat_eq)
+      show ?thesis
+      proof (rule exI[where ?x = "n2 - int n1"])
+        show "(if e \<in> set es then g e - \<gamma> else g e) = real_of_int (n2 - int n1)"
+          using True eq by auto
+      qed
+    next
+      case False
+      with g_eq show ?thesis by auto
+    qed
+  qed
+qed
 
   have g_greater_g': "e \<in> set es \<Longrightarrow>g e\<ge> g' e " for e
     unfolding g'_def 
