@@ -863,9 +863,36 @@ proof
   have "u \<in> carrier_vec n" 
     using carrA' u by blast
   have Cd_non_empty: "{x. x \<in> carrier_vec n \<and>  C *\<^sub>v x = d \<and> row A' j \<bullet> x = b' $ j } \<noteq> {}" 
-    using assms(5)  
-    unfolding min_face_def
-    by (smt (verit, best) face_non_empty assms(7) "4" Collect_empty_eq Collect_mono_iff i)
+  proof -
+    have facePF: "face P F"
+      using assms(5) by (rule min_face_elim(1))
+    have "F \<noteq> {}"
+      using face_non_empty[OF facePF] .
+    then obtain x where xF: "x \<in> F" by blast
+    have x_carr: "x \<in> carrier_vec n"
+      using xF assms(7) by simp
+    have x_eq: "A' *\<^sub>v x = b'"
+      using xF assms(7) by simp
+    have split: "C *\<^sub>v x = d \<and> row A i \<bullet> x = b $ i"
+    proof -
+      from 4 have "(A' *\<^sub>v x = b') \<longleftrightarrow> (C *\<^sub>v x = d \<and> row A i \<bullet> x = b $ i)"
+        by (simp add: set_eq_iff)
+      then show ?thesis using x_eq by blast
+    qed
+    have Cx: "C *\<^sub>v x = d" using split by blast
+    have rx: "row A i \<bullet> x = b $ i" using split by blast
+    have rowj: "row A i = row A' j" using i by blast
+    have bj: "b $ i = b' $ j" using i by blast
+    have rowjx: "row A' j \<bullet> x = b' $ j"
+    proof -
+      have "row A' j \<bullet> x = row A i \<bullet> x" using rowj by simp
+      also have "\<dots> = b $ i" using rx by simp
+      also have "\<dots> = b' $ j" using bj by simp
+      finally show ?thesis .
+    qed    have "x \<in> {x. x \<in> carrier_vec n \<and>  C *\<^sub>v x = d \<and> row A' j \<bullet> x = b' $ j }"
+      using x_carr Cx rowjx by simp
+    then show ?thesis by blast
+  qed
   have "\<forall>x \<in> carrier_vec n.  C *\<^sub>v x = d \<longrightarrow> row A i \<bullet> x = b $ i"
   proof(cases "u \<in> set (rows C)")
     case True
