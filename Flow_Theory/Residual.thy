@@ -1100,8 +1100,17 @@ proof -
 qed
 
 lemma sum_crossing_out_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>+ X) \<ge> 0 "
-  unfolding Delta_plus_def isuflow_def 
-  by (metis (no_types, lifting) mem_Collect_eq sum_nonneg)
+proof -
+  assume assm: "isuflow f"
+  show "sum f (\<Delta>\<^sup>+ X) \<ge> 0"
+  proof (rule sum_nonneg)
+    fix e
+    assume e_in: "e \<in> \<Delta>\<^sup>+ X"
+    hence "e \<in> \<E>" unfolding Delta_plus_def by simp
+    thus "0 \<le> f e"
+      using assm unfolding isuflow_def by blast
+  qed
+qed
 
 lemma sum_crossing_in_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>- X) \<ge> 0 "
   unfolding Delta_minus_def isuflow_def 
