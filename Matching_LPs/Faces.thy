@@ -1238,7 +1238,19 @@ proof -
           by blast
       qed
       have "C \<in> carrier_mat (dim_row C) n" 
-        by (metis A carrier_matD(2) carrier_mat_triv dim_col_subsyst_mat prod.sel(1) sub_C)
+      proof -
+        have C_eq: "C = fst (sub_system A b (I'' - {i}))"
+          by (simp add: sub_C [symmetric])
+        have "dim_col C = dim_col (fst (sub_system A b (I'' - {i})))"
+          by (simp add: C_eq)
+        also have "\<dots> = dim_col A"
+          by (simp add: dim_col_subsyst_mat)
+        also have "\<dots> = n"
+          by (rule carrier_matD(2)[OF A])
+        finally have dc: "dim_col C = n" .
+        show ?thesis
+          by (rule carrier_matI[OF refl dc])
+      qed
       then have " C *\<^sub>v ?z \<le> d" 
         using linear_comb_holds_less_eq[of C _ n x y ?z d ?l]
           x y `?z = (1 - ?l) \<cdot>\<^sub>v y + ?l  \<cdot>\<^sub>v x` `?z \<in> carrier_vec n` 
