@@ -1594,8 +1594,26 @@ next
         by (rule append_rows_nth(2)[OF cA' cmA' not_lt i_lt])
     qed
   then have 3:"row (A' @\<^sub>r (-A')) i = - (row (A' @\<^sub>r (-A')) ?i')" 
-    by (smt (verit, best) 1 2 append_rows_nth(1) carrier_matI index_uminus_mat(2) 
-        index_uminus_mat(3) less_diff_conv2 row_uminus)
+    proof -
+      have carrA': "A' \<in> carrier_mat (dim_row A') (dim_col A')"
+        by (rule carrier_mat_triv)
+      have carrA'': "- A' \<in> carrier_mat (dim_row A') (dim_col A')"
+        using carrA' uminus_carrier_mat by blast
+      have i_lt2: "i < dim_row A' + dim_row A'"
+        using 2 by simp
+      have lt: "i - dim_row A' < dim_row A'"
+        using 1 i_lt2 by (simp add: less_diff_conv2)
+      have lt2: "i - dim_row A' < dim_row A' + dim_row A'"
+        using lt by (rule trans_less_add1)
+      have row_i: "row (A' @\<^sub>r - A') i = row (- A') (i - dim_row A')"
+        by (rule append_rows_nth(2)[OF carrA' carrA'' 1 i_lt2])
+      have row_k: "row (A' @\<^sub>r - A') (i - dim_row A') = row A' (i - dim_row A')"
+        by (rule append_rows_nth(1)[OF carrA' carrA'' lt])
+      have neg: "row (- A') (i - dim_row A') = - row A' (i - dim_row A')"
+        using lt by (simp add: row_uminus)
+      show ?thesis
+        by (simp add: row_i row_k neg)
+    qed
   have "?i' = i - dim_vec b'"
     by (metis A assms(4) b carrier_matD(1) carrier_vecD dims_subsyst_same')
   then have "(b' @\<^sub>v (-b')) $ i = - b' $ ?i'" 
