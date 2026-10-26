@@ -807,7 +807,27 @@ proof(safe)
         by (rule that)
     qed
     then show ?thesis 
-      by (metis \<open>r \<notin> set (rows C)\<close> i in_set_conv_nth j' length_rows nth_rows)
+      proof -
+        have jC: "j < dim_row C"
+          using j by simp
+        have "rows C ! j = row C j"
+          using jC by simp
+        also have "\<dots> = row A i'"
+          using j by simp
+        also have "\<dots> = row A' j'"
+          using i by simp
+        also have "\<dots> = r"
+          using j' by simp
+        finally have rj: "rows C ! j = r" .
+        have "j < length (rows C)"
+          using jC by simp
+        then have "rows C ! j \<in> set (rows C)"
+          by (rule nth_mem)
+        then have "r \<in> set (rows C)"
+          using rj by simp
+        then show ?thesis
+          using \<open>r \<notin> set (rows C)\<close> by blast
+      qed
   next
     case False
     then have "i' = i" 
