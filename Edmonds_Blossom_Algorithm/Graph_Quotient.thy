@@ -4433,10 +4433,26 @@ qed
       qed
       have rev_p1_nempty: "rev p1 \<noteq> []" using p1_nempty by auto
       have up2_in_M: "{u, hd p2} \<in> quotG M" if "p2 \<noteq> []"
-        using p'_feats(2)
-        unfolding rw4[OF p1_nempty that] quot_aug_path(1)
-        using alt_list_append_1'' p2_nalt up2_nin_M
-        by (metis(no_types,lifting)) 
+        proof -
+          have alt: "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M)
+                       (edges_of_path p1 @ {last p1, u} # {u, hd p2} # edges_of_path p2)"
+            using p'_feats(2)[unfolded quot_aug_path(1) rw4[OF p1_nempty that]] .
+          from conjunct2[OF alt_list_append_1[OF alt]]
+          show ?thesis
+          proof
+            assume "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M)
+                      ({last p1, u} # {u, hd p2} # edges_of_path p2)"
+            then show ?thesis
+              by (simp add: alt_list_step)
+          next
+            assume "alt_list (\<lambda>e. e \<in> quotG M) (\<lambda>e. e \<notin> quotG M)
+                      ({last p1, u} # {u, hd p2} # edges_of_path p2)"
+            then have "{last p1, u} \<in> quotG M"
+              by (simp add: alt_list_step)
+            with up2_nin_M show ?thesis
+              by blast
+          qed
+        qed
       show ?thesis
       proof(cases "length p2 \<ge> 2")
         case len_p2_ge_2: True
