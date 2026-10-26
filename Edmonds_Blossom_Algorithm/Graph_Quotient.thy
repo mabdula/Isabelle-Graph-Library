@@ -4708,7 +4708,19 @@ proof-
     by auto
   ultimately have p2_subset_s: "set p2 \<subseteq> s"
     using quot good_quot_map
-    by (metis (no_types,lifting) neq_u_notin_quotG set_rev_mp subsetI)
+  proof -
+    have in_s: "x \<in> s" if x_in: "x \<in> set p2" for x
+    proof -
+      have "x \<in> Vs (quotG E)"
+        using x_in \<open>set p2 \<subseteq> Vs (quotG E)\<close> by blast
+      moreover have "x \<noteq> u"
+        using x_in u_nin_p2 by blast
+      ultimately show ?thesis
+        by (rule in_quotG_neq_u)
+    qed
+    show ?thesis
+      using in_s by blast
+  qed
 
   have "path (quotG E) (p1 @ [u])"
     using quot_aug_path
