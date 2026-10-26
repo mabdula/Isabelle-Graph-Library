@@ -1537,8 +1537,20 @@ qed
     by simp
   qed
   then have 2:"row (A' @\<^sub>r (-A')) i = - (row (A' @\<^sub>r (-A')) ?i')" 
-    by (metis True \<open>row (A' @\<^sub>r - A') i = row A' i\<close> row_uminus uminus_uminus_vec)
-  have "?i' = i + dim_vec b'"
+  proof -
+  note i'_row = \<open>row (A' @\<^sub>r (- A')) ?i' = row (- A') i\<close>
+  note i_row = \<open>row (A' @\<^sub>r (- A')) i = row A' i\<close>
+  have neg: "row (- A') i = - row A' i"
+    using True by (simp add: row_uminus)
+  have "- (row (A' @\<^sub>r (- A')) ?i') = - (- row A' i)"
+    by (simp only: i'_row neg)
+  also have "\<dots> = row A' i"
+    by (rule uminus_uminus_vec)
+  also have "\<dots> = row (A' @\<^sub>r (- A')) i"
+    by (simp only: i_row)
+  finally show ?thesis
+    by (rule sym)
+  qed  have "?i' = i + dim_vec b'"
     by (metis A assms(4) b carrier_matD(1) carrier_vecD dims_subsyst_same')
   then have "(b' @\<^sub>v (-b')) $ ?i' = - b' $ i" 
     by (simp add: \<open>i < dim_vec b'\<close>)
