@@ -5516,7 +5516,7 @@ proof-
     proof-
       have "path E p1"
         using p1p2x(1) aug_path(2) path_pref
-        by metis
+        by blast
       then show ?thesis
         using quot p1p2x(3)
         using mem_path_Vs by fastforce
