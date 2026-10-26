@@ -1485,8 +1485,21 @@ proof -
       fix x
       assume "x \<in> ?A"
       then have "p x \<in> ?A" 
-        by (smt (z3) Diff_iff UNIV_I assms bij_betw_inv_into_left inv_in_support map_eq_conv 
-            p_is_permutation permutes_imp_bij)
+      proof -
+        have perm: "permutation p"
+          using assms by (rule p_is_permutation)
+        have xout: "x \<notin> set (support p (least_odd p))"
+          using \<open>x \<in> ?A\<close> by blast
+        have "p x \<notin> set (support p (least_odd p))"
+        proof
+          assume px: "p x \<in> set (support p (least_odd p))"
+          have "p x = (p ^^ Suc 0) x" by simp
+          then have "x \<in> set (support p (least_odd p))"
+            using elemnets_in_support_expo'[OF perm px] by blast
+          then show False using xout by blast
+        qed
+        then show ?thesis by blast
+      qed
       then show "x \<in> not_on_odd p ` ?A" 
         using \<open>x \<in> ?A\<close> not_on_odd_def 
         by (smt (z3) Diff_iff assms bij_is_surj image_iff inj_onD map_eq_conv on_odd_def
