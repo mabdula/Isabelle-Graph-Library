@@ -1442,7 +1442,18 @@ proof -
     then obtain x where  "x \<in> Vs G \<and> f x = a" 
       by blast
     then show False 
-      by (metis IntD2 a add_vertices_axioms add_vertices_def)
+    proof -
+      have hnot: "\<forall>y \<in> Vs G. f y \<notin> Vs G"
+        using add_vertices_axioms[unfolded add_vertices_def] by simp
+      from a have a_A': "a \<in> A'" and a_G: "a \<in> Vs G"
+        by blast+
+      from a_A' A' obtain z where z_G: "z \<in> Vs G" and az: "a = f z"
+        by auto
+      have "f z \<notin> Vs G"
+        using hnot z_G by blast
+      then show False
+        using a_G az by simp
+    qed
   qed
   have "card (odd_comps_in_diff G X)  \<le> card (Vs G)" 
     by (metis (no_types, lifting) assms(2) card_Diff_subset diff_le_self diff_odd_comps_card
