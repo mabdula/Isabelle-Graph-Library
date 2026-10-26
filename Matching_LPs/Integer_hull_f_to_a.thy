@@ -272,7 +272,15 @@ next
     qed
   qed
   then show "card F = 1" 
-    by (metis \<open>F \<noteq> {}\<close> is_singletonI' is_singleton_altdef)
+  proof -
+    from \<open>\<exists>!x. x \<in> F\<close> obtain x
+      where x_in: "x \<in> F" and x_uniq: "\<And>y. y \<in> F \<Longrightarrow> y = x"
+      by blast
+    have "F \<subseteq> {x}" using x_uniq by blast
+    moreover have "{x} \<subseteq> F" using x_in by blast
+    ultimately have "F = {x}" by (rule subset_antisym)
+    then show "card F = 1" by simp
+  qed
 qed
 
 lemma bounded_min_faces_are_vertex':
