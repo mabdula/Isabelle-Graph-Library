@@ -92,7 +92,7 @@ lemma  dim_subsyst_mat_less_A:
 proof -
   have "{i. i < dim_row A \<and> i \<in> I} \<subseteq> {0..<dim_row A}" by auto
   then have "card {i. i < dim_row A \<and> i \<in> I} \<le> card  {0..<dim_row A}" 
-    by (metis card_mono finite_atLeastLessThan)
+    by (rule card_mono[OF finite_atLeastLessThan])
   then show ?thesis 
     by (metis card_atLeastLessThan diff_zero dim_row_subsyst_mat)
 qed
