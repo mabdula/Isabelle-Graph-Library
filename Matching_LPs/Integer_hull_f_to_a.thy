@@ -1135,8 +1135,10 @@ proof -
         by presburger
     qed
   qed
+  then have "distinct (cols (submatrix (A @\<^sub>r B) {0..<nr1} UNIV))"
+    using assms(3) by simp
   then show ?thesis
-    by (metis distinct_cols_submatrix_UNIV assms(3))
+    by (rule distinct_cols_submatrix_UNIV)
 qed
 
 lemma append_rows_eq: assumes A: "A \<in> carrier_mat nr1 nc" 
