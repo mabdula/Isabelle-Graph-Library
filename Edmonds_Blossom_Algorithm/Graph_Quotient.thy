@@ -5524,8 +5524,16 @@ proof-
     have p2_subset_s[simp]: "set p2 \<subseteq> s"
     proof-
       have "path E p2"
-        using p1p2x(1) aug_path(2) path_suff
-        by (metis list.sel(3) tl_path_is_path)
+      proof -
+        have "path E (p1 @ x # p2)"
+          using aug_path(2) p1p2x(1) by simp
+        then have "path E (x # p2)"
+          by (rule path_suff)
+        then have "path E (tl (x # p2))"
+          by (rule tl_path_is_path)
+        then show "path E p2"
+          by simp
+      qed
       then show ?thesis
         using quot p1p2x(4)
         using mem_path_Vs by fastforce
