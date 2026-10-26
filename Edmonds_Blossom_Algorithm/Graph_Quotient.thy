@@ -4488,7 +4488,26 @@ qed
         qed
         show "distinct (replace_cycle C M p1 p2)"
           using replace_cycle_cases_p1[OF p1_subset_s _ p1_nempty quot_aug_path_p1 app_works] up2_in_M
-          using hd_rev p1_nempty by (metis(no_types,lifting))
+          proof -
+            have up2_in_M': "{u, hd p2} \<in> quotG M \<or> p2 = []"
+            proof (cases "p2 = []")
+              case True
+              then show ?thesis by simp
+            next
+              case False
+              then show ?thesis using up2_in_M by simp
+            qed
+            show ?thesis
+            proof (rule replace_cycle_cases_p1[OF p1_subset_s up2_in_M' p1_nempty quot_aug_path_p1])
+              assume hyp: "distinct (stem2vert_path C M (hd (rev p1)) @ rev p1)"
+              have "hd (rev p1) = last p1"
+                by (simp add: hd_rev)
+              with hyp have "distinct (stem2vert_path C M (last p1) @ rev p1)"
+                by simp
+              then show "distinct (rev p2 @ stem2vert_path C M (last p1) @ rev p1)"
+                by (rule app_works)
+            qed
+          qed
       next
         case len_p2_nge_2: False
         show ?thesis
