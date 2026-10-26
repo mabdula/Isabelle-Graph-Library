@@ -2951,7 +2951,12 @@ proof(induct A)
       have 3: "poly_mapping.lookup (\<Sum>b\<in>(insert t T). ?m b) (f a) = 
             poly_mapping.lookup (\<Sum>b\<in>T. ?m b) (f a) +
       poly_mapping.lookup (?m t) (f a)" 
-        by (smt (verit, del_insts) insert.hyps(1-2) lookup_sum sum.insert)
+      proof -
+        have "(\<Sum>b\<in>insert t T. ?m b) = ?m t + (\<Sum>b\<in>T. ?m b)"
+          by (simp add: sum.insert insert.hyps(1) insert.hyps(2))
+        then show ?thesis
+          by (simp add: lookup_add add.commute)
+      qed
       have "a \<noteq> t" 
         using insert.prems by auto
       have "\<forall>a'\<in>T - {a}. f a \<noteq> f a'" 
