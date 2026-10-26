@@ -2176,7 +2176,15 @@ lemma face_is_polyhedron''2:
         "dim_col (A @\<^sub>r(A' @\<^sub>r (-A'))) = n"
 proof - 
 have "dim_col A' = n" using dim_col_subsyst_mat A 
-      by (metis assms(4) carrier_matD(2) prod.sel(1))
+    proof -
+    have A'_eq: "A' = fst (sub_system A b I')"
+      by (simp add: assms(4)[symmetric])
+    have "dim_col A' = dim_col A"
+      by (simp add: A'_eq dim_col_subsyst_mat)
+    also have "\<dots> = n"
+      by (rule carrier_matD(2)[OF A])
+    finally show ?thesis .
+  qed
     then have 1:"A' \<in> carrier_mat (dim_row A') n" 
       by blast
     then have 2:"- A' \<in> carrier_mat (dim_row A') n" 
