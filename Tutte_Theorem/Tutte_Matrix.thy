@@ -948,8 +948,27 @@ proof -
         then show thesis using that bs by blast
       qed
       then show "y \<in> set (support p x)" 
-        by (metis (no_types, lifting)  \<open>p permutes UNIV\<close> \<open>set (support p x) = C\<close> empty_iff 
-            insertE notin_set_nthsI p_in_same_cycle)
+      proof -
+        assume ya: "y \<in> {a, p a} \<and> a \<in> set ?start_vert"
+        have a_in: "a \<in> set (support p x)"
+        proof (rule ccontr)
+          assume "a \<notin> set (support p x)"
+          then have "a \<notin> set ?start_vert"
+            by (rule notin_set_nthsI)
+          with ya show False by blast
+        qed
+        have pa_in: "p a \<in> set (support p x)"
+          using \<open>p permutes UNIV\<close> a_in by (rule p_in_same_cycle)
+        from ya have "y = a \<or> y = p a" by simp
+        then show "y \<in> set (support p x)"
+        proof
+          assume "y = a"
+          then show ?thesis using a_in by simp
+        next
+          assume "y = p a"
+          then show ?thesis using pa_in by simp
+        qed
+      qed
     }
     fix y
     assume "y \<in> set (support p x)" 
