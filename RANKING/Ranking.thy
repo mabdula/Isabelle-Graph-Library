@@ -3388,7 +3388,38 @@ proof (rule ccontr)
       by (auto dest: ranking_matchingE remove_vertices_subgraph')
 
     from \<open>{u',x'} \<in> M'\<close> \<open>{u,x'} \<notin> M'\<close> assms rm_G consider (before_u) "index \<pi> u' < index \<pi> u" | (after_u) "index \<pi> u < index \<pi> u'"
-      by (metis index_eq_index_conv less_linear ranking_matching_bipartite_edges')
+    proof -
+  have u_pi: "u \<in> set \<pi>"
+    using x_to_x' by (auto simp: shifts_to_def)
+
+  have u_neq: "u \<noteq> u'"
+  proof
+    assume "u = u'"
+    with \<open>{u',x'} \<in> M'\<close> have "{u,x'} \<in> M'" by simp
+    with \<open>{u,x'} \<notin> M'\<close> show False by blast
+  qed
+
+  have neq_index: "index \<pi> u \<noteq> index \<pi> u'"
+  proof
+    assume "index \<pi> u = index \<pi> u'"
+    with u_pi have "u = u'"
+      by (simp add: index_eq_index_conv)
+    with u_neq show False by blast
+  qed
+
+  have "index \<pi> u' < index \<pi> u \<or> index \<pi> u < index \<pi> u'"
+  proof (cases "index \<pi> u' < index \<pi> u")
+    case True
+    then show ?thesis by blast
+  next
+    case False
+    then have "index \<pi> u \<le> index \<pi> u'" by simp
+    from le_neq_implies_less[OF this neq_index] show ?thesis by blast
+  qed
+
+  then show thesis
+    using that by blast
+qed
     then show ?thesis
     proof cases
       case before_u
