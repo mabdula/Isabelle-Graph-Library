@@ -267,7 +267,16 @@ proof
   then show "fst (A, b) = fst (sub_system A b UNIV)"
     unfolding sub_system_fst fst_conv .
   show "snd (A, b) = snd (sub_system A b UNIV)" 
-    by (metis snd_eqD nths_UNIV_same vec_list sub_system_snd)
+  proof -
+  have "snd (sub_system A b UNIV) = vec_of_list (nths (list_of_vec b) UNIV)"
+    by (rule sub_system_snd)
+  also have "\<dots> = vec_of_list (list_of_vec b)"
+    by (simp add: nths_UNIV_same)
+  also have "\<dots> = b"
+    by (rule vec_list)
+  finally show ?thesis
+    by simp
+  qed
 qed  
 
 lemma pick_index_row_in_A:
