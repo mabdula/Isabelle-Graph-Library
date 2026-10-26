@@ -1861,9 +1861,11 @@ proof -
     by (simp add: rev_p_def
                    if_P[OF p_in_same_cycle[OF assms(1) assms(2)]]
                    permutes_inv_eq[OF assms(1)])
-  then show ?thesis 
-    using  assms(1) tutte_skew_symmetric 
-    by metis
+  note rev_eq = this
+  have "tutte_matrix $ i $ p i = - tutte_matrix $ (p i) $ i"
+    by (rule tutte_skew_symmetric)
+  then show ?thesis
+    by (simp only: rev_eq)
 qed
 
 lemma least_odd_support_is_odd:
