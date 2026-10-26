@@ -964,9 +964,16 @@ proof(rule ccontr)
     using 2 assms(6) `(C, d) = sub_system A b (I'' - {i})`
     by auto
   have "dim_vec d + 1 = dim_vec b''"
-    using \<open>(A'', b'') = sub_system A b I''\<close> \<open>(C, d) = sub_system A b (I'' - {i})\<close> 
-      i remove_index_sub_system_dims 
-    by (metis \<open>dim_vec b = nr\<close>)
+  proof -
+    have i_in: "i \<in> I''"
+      using i by auto
+    have i_lt: "i < dim_vec b"
+      using i carrier_vecD[OF b] by auto
+    show ?thesis
+      using remove_index_sub_system_dims[of i I'' b A'' b'' A]
+            i_in i_lt assms(4) \<open>(C, d) = sub_system A b (I'' - {i})\<close>
+      by simp
+  qed
   then have "dim_vec d < dim_vec b''" by auto
   then show False 
     using \<open>dim_vec b'' \<le> dim_vec d\<close> linorder_not_le by blast
