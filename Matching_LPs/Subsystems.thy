@@ -712,9 +712,28 @@ proof(safe)
       using k1 k2 k3 k4 assms(1) C_eq d_eq by simp
     then show thesis by (rule that)
   qed
-    then obtain j where j: "j < dim_row A' \<and> row A' j = row A i'" 
-      using exist_index_in_A'[of A b i' I] 
-      by (metis Diff_iff assms(1) assms(4) dims_subsyst_same fst_conv)
+    then obtain j where j: "j < dim_row A' \<and> row A' j = row A i'"
+    proof -
+      have i'_in_I: "i' \<in> I"
+        using i by blast
+      have i'_lt: "i' < dim_vec b"
+        using i assms(1) by simp
+      have A'_eq: "A' = fst (sub_system A b I)"
+        by (simp add: assms(4)[symmetric])
+      have b'_eq: "b' = snd (sub_system A b I)"
+        by (simp add: assms(4)[symmetric])
+      have dims: "dim_row A' = dim_vec b'"
+        by (rule dims_subsyst_same'[OF assms(1) assms(4)])
+      obtain k where k_lt: "k < dim_vec (snd (sub_system A b I))"
+        and k_row: "row (fst (sub_system A b I)) k = row A i'"
+        using exist_index_in_A'[OF assms(1) i'_lt i'_in_I] by blast
+      have "k < dim_row A'"
+        using k_lt dims b'_eq by simp
+      moreover have "row A' k = row A i'"
+        using k_row A'_eq by simp
+      ultimately show thesis
+        using that by blast
+    qed
     then show "r \<in> set (rows A')" 
       by (metis i in_set_conv_nth j' length_rows nth_rows)
   }
