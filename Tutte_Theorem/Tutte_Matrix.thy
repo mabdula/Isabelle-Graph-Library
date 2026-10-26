@@ -2580,9 +2580,14 @@ proof -
       have "odd (least_power a i)" 
         using \<open>a \<in> nonzero_perms\<close> a_perm i assms least_odd_is_odd by blast
       then have "(least_power a i) = 1" 
-        using \<open>least_power a i \<le> 2\<close> dbl_simps(5) 
-        by (smt (z3) dbl_simps(3) dvd_0_right even_numeral even_of_nat int_ops(2) le_antisym 
-            negative_zle numeral_One of_nat_le_iff of_nat_numeral)
+        using \<open>least_power a i \<le> 2\<close> \<open>odd (least_power a i)\<close>
+proof -
+  assume le: "least_power a i \<le> 2" and odd: "odd (least_power a i)"
+  have "least_power a i = 0 \<or> least_power a i = 1 \<or> least_power a i = 2"
+    using le by auto
+  then show "least_power a i = 1"
+    using odd by auto
+qed
       then have "(a^^1) i = i" 
         by (metis a_perm least_power_dvd one_dvd p_is_permutation)
       then have "a i = i" 
