@@ -2423,8 +2423,14 @@ proof
     have "p x \<notin> ?A" 
       using False p_also_not_in_support assms(1) by presburger
     then  have "(on_odd  (rev_p p)) (p x) = (p x)" 
-      by (metis 3 \<open>rev_p p x = p x\<close> assms(1) comp_def tutte_matrix.p_is_composition 
-          tutte_matrix.rev_p_permutes tutte_matrix_axioms)
+    proof -
+      have "p x \<notin> set (support (rev_p p) (least_odd (rev_p p)))"
+        using \<open>set (support p (least_odd p)) = set (support (rev_p p) (least_odd (rev_p p)))\<close>
+              \<open>p x \<notin> set (support p (least_odd p))\<close>
+        by blast
+      then show ?thesis
+        by (rule on_odd_out)
+    qed
     then have "inv (on_odd  (rev_p p)) (p x) = (p x)" 
       by (metis assms(1) on_odd_p_permutes_UNIV permutes_inv_eq rev_p_permutes)
     then show "(rev_p (rev_p p)) x = p x"  
