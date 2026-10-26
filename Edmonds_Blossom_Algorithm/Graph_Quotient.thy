@@ -5697,8 +5697,8 @@ proof-
     have p1_subset_s[simp]: "set p1 \<subseteq> s"
     proof-
       have "path E p1"
-        using wx(1) aug_path(2) path_pref
-        by metis
+        using path_pref[of E p1 "w # p2 @ x # p3"] wx(1) aug_path(2)
+        by blast
       then show ?thesis
         using quot wx(5)
         using mem_path_Vs by fastforce
