@@ -3219,7 +3219,29 @@ proof -
               by (auto elim: ranking_matching_earlier_match_offlineE)
 
             with rm_G rm_G' \<open>{u3,x''} \<in> M'\<close> \<open>{u, x} \<in> M\<close> \<open>{u, x'} \<in> M'\<close> \<open>index \<sigma> x'' < index \<sigma> x'\<close> have "x \<noteq> x4"
-              by (metis nat_neq_iff ranking_matchingE the_match the_match')
+            proof -
+              have "matching M"
+                using rm_G by (auto dest: ranking_matchingE maximal_matchingD)
+              have "matching M'"
+                using rm_G' by (auto dest: ranking_matchingE maximal_matchingD)
+              show ?thesis
+              proof
+                assume "x = x4"
+                with \<open>{u3,x4} \<in> M\<close> have "{u3,x} \<in> M" by simp
+                with \<open>matching M\<close> have "(THE w. {w,x} \<in> M) = u3"
+                  by (auto intro: the_match)
+                moreover from \<open>matching M\<close> \<open>{u,x} \<in> M\<close> have "(THE w. {w,x} \<in> M) = u"
+                  by (auto intro: the_match)
+                ultimately have "u3 = u" by simp
+                with \<open>{u3,x''} \<in> M'\<close> have "{u,x''} \<in> M'" by simp
+                with \<open>matching M'\<close> have "(THE w. {u,w} \<in> M') = x''"
+                  by (auto intro: the_match')
+                moreover from \<open>matching M'\<close> \<open>{u,x'} \<in> M'\<close> have "(THE w. {u,w} \<in> M') = x'"
+                  by (auto intro: the_match')
+                ultimately have "x'' = x'" by simp
+                with \<open>index \<sigma> x'' < index \<sigma> x'\<close> show False by simp
+              qed
+            qed
 
             with rm_G' \<open>{u3,x''} \<in> M'\<close> \<open>{u,x'} \<in> M'\<close> \<open>index \<sigma> x'' < index \<sigma> x'\<close> have "u \<noteq> u3"
               by (auto dest: ranking_matching_unique_match)
