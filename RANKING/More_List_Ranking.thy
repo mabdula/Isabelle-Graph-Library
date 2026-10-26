@@ -909,7 +909,19 @@ lemma distinct_filter_eq_order:
   assumes "[x <- xs. x \<noteq> v] = [x <- xs'. x \<noteq> v]"
   shows "\<forall>x y. x \<noteq> v \<and> y \<noteq> v \<longrightarrow> (index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y)"
   using assms
-  by auto (metis index_filter_neq)+
+proof (intro allI impI)
+    fix x y
+    assume "x \<noteq> v \<and> y \<noteq> v"
+    then have "x \<noteq> v" "y \<noteq> v"
+      by simp_all
+    have "index xs x \<le> index xs y \<longleftrightarrow> index [z <- xs. z \<noteq> v] x \<le> index [z <- xs. z \<noteq> v] y"
+      using index_filter_neq[OF \<open>x \<noteq> v\<close> \<open>y \<noteq> v\<close>] .
+    also have "\<dots> \<longleftrightarrow> index [z <- xs'. z \<noteq> v] x \<le> index [z <- xs'. z \<noteq> v] y"
+      using assms(4) by simp
+    also have "\<dots> \<longleftrightarrow> index xs' x \<le> index xs' y"
+      using index_filter_neq[OF \<open>x \<noteq> v\<close> \<open>y \<noteq> v\<close>] by simp
+    finally show "index xs x \<le> index xs y \<longleftrightarrow> index xs' x \<le> index xs' y" .
+  qed
 
 lemma distinct_move_to_eq_if:
   assumes "distinct xs" "distinct xs'"
