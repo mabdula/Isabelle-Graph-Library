@@ -6018,7 +6018,7 @@ proof(rule ccontr)
     unfolding Vs_def
     by auto 
   ultimately obtain qe' where qe': "v \<in> qe'" "qe \<noteq> qe'" "qe' \<in> quotG M"
-    by (metis (no_types,lifting))
+    by blast
   show False
   proof(cases "v \<in> s")
     text\<open>if v in s, then due to the way the quot mapping works, and since qe, qe' in quotG M,
