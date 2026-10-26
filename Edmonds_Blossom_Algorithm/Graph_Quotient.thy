@@ -2909,7 +2909,7 @@ proof-
               using alt_list_rev[OF i]
               unfolding replace_cycle_def
               using p1_nempty
-              by (metis set_rev stem2vert_path_def)
+              by (auto simp add: stem2vert_path_def Let_def F1 hd_rev)
           qed
           done
         ultimately show ?thesis
