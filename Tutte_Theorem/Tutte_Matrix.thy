@@ -1697,8 +1697,12 @@ proof(induct "card A" arbitrary: A rule: less_induct)
           using that by blast
       qed
     then have "A = {a}" 
-      using True card_1_singletonE 
-      by (metis empty_iff insertE)
+      proof -
+        obtain b where "A = {b}"
+          using True by (rule card_1_singletonE)
+        then show "A = {a}"
+          using \<open>a \<in> A\<close> by simp
+      qed
     then have "prod h A = h a" 
       by simp
     have "prod g A = g a" using `A = {a}` by simp
