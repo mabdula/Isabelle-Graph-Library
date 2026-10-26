@@ -606,8 +606,16 @@ proof(rule ccontr)
   obtain C d where C_d: "(C, d) = sub_system A b (I - {i1})"
     by (rule that[OF prod.collapse])
   have "{x.  A' *\<^sub>v x = b'} = {x.  C *\<^sub>v x = d \<and> row A i1 \<bullet> x = b $ i1 }"
-    using remove_index_sub_system_eq[of A b i1 I A' b' C d] 
-    by (metis A C_d i1 assms(8) b carrier_matD(1) carrier_vecD)
+  proof -
+    have dim_Ab: "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    have i1_in: "i1 \<in> I"
+      using i1 by blast
+    have i1_lt: "i1 < dim_vec b"
+      using i1 dim_Ab by fastforce
+    show ?thesis
+      using remove_index_sub_system_eq[OF dim_Ab i1_in i1_lt assms(8) C_d] .
+  qed
   have "\<forall>x.  C *\<^sub>v x = d \<longrightarrow> row A i1 \<bullet> x = b $ i1"
   proof(safe)
     fix x
