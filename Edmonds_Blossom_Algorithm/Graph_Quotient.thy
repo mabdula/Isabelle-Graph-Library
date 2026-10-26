@@ -2721,7 +2721,32 @@ proof-
             unfolding chp_def
             by auto
           subgoal using i
-            by (metis \<open>alt_path M (p1 @ [hd chp])\<close> alternating_list_odd_last edges_of_path_snoc last_snoc p1_nempty)
+            proof -
+              have eop_split: "edges_of_path (p1 @ u # p2) =
+                                 edges_of_path (p1 @ [u]) @ edges_of_path (u # p2)"
+                by (rule rw3)
+              have alt_full: "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M)
+                                  (edges_of_path (p1 @ u # p2))"
+                by (rule matching_augmenting_path_feats(2)[OF quot_aug_path])
+              have alt_p1u:
+                "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M) (edges_of_path (p1 @ [u]))"
+                using alt_list_append_1[OF alt_full[unfolded eop_split]]
+                by blast
+              have eop_p1u: "edges_of_path (p1 @ [u]) = edges_of_path p1 @ [{last p1, u}]"
+                by (simp add: edges_of_path_snoc p1_nempty)
+              have last_p1u: "last (edges_of_path (p1 @ [u])) = {last p1, u}"
+                by (simp add: eop_p1u)
+              have even_p1u: "even (length (edges_of_path (p1 @ [u])))"
+              proof (rule ccontr)
+                assume odd_len: "\<not> even (length (edges_of_path (p1 @ [u])))"
+                from alternating_list_odd_last[OF alt_p1u odd_len]
+                show False
+                  using last_p1u inM by simp
+              qed
+              show ?thesis
+                using even_p1u by (simp add: edges_of_path_length)
+            qed
+
           done
         then show ?thesis
           unfolding chp_def
