@@ -54,7 +54,16 @@ proof(induct "card A" arbitrary: A G rule: less_induct)
     proof (cases "G = {}") 
       case True
       then show ?thesis 
-        by (metis cover_matching_def equals0D graphE Asubs matching_def subset_empty)
+        proof -
+          have "Vs G = {}"
+            using True by (simp add: Vs_def)
+          then have "A = {}"
+            using Asubs by simp
+          then have "cover_matching G {} A"
+            unfolding cover_matching_def
+            using graphE by (simp add: matching_def)
+          then show ?thesis by blast
+        qed
     next
       case False
       have "\<exists> e. e \<in> G" 
