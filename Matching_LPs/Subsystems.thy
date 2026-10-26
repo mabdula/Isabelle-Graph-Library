@@ -1048,7 +1048,16 @@ proof -
     qed
   qed
   finally show "A *\<^sub>v z \<le> b" 
-    by (metis add_smult_distrib_vec assms(8) le_add_diff_inverse one_smult_vec)
+  proof (rule order_trans)
+    have "l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b = (l + (1 - l)) \<cdot>\<^sub>v b"
+      by (rule add_smult_distrib_vec[symmetric])
+    also have "\<dots> = 1 \<cdot>\<^sub>v b"
+      by simp
+    also have "\<dots> = b"
+      by (simp add: one_smult_vec)
+    finally show "l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b \<le> b"
+      by simp
+  qed
 qed
 
 end
