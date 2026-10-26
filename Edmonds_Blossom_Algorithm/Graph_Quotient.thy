@@ -5208,10 +5208,24 @@ qed
 lemma edge_in_graph_edge_in_quot:
   assumes "v \<in> s" "w \<notin> s" "{v, w} \<in> E" 
   shows "{v, u} \<in> quotG E "
-  using assms good_quot_map
-  apply(simp add: image_def quot_graph_def)
-  by (smt (verit, best) Collect_cong Int_insert_left_if0 Un_Int_eq(3) insertCI insert_commute 
-                        insert_def mk_disjoint_insert singleton_conv)
+proof -
+  have Pv: "P v = v"
+    using assms(1) by simp
+  have Pw: "P w = u"
+    using assms(2) by simp
+  have img: "P ` {v, w} = {v, u}"
+    using assms(1,2) Pv Pw by (simp add: insert_commute)
+  have "P ` {v, w} \<in> quot_graph P E"
+    by (rule edge_in_graph_in_quot[OF assms(3)])
+  then have in_quot: "{v, u} \<in> quot_graph P E"
+    by (simp only: img)
+  have "v \<noteq> u"
+    using assms(1) good_quot_map(1) by blast
+  then have "{v, u} \<noteq> {u}"
+    by simp
+  then show ?thesis
+    using in_quot by simp
+qed
 
 text\<open>Constructing an absrtact aumenting path from a concrete path, given that the blossom's base is
      not matched.\<close>
