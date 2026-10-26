@@ -3339,7 +3339,15 @@ proof -
   then have M_match: "matching M" 
     using perfect_matching_def by blast
   have "Vs M = UNIV" 
-    by (metis \<open>perfect_matching G M\<close> perfect_matching_member univ)
+  proof -
+    have MG: "Vs M = Vs G"
+      using \<open>perfect_matching G M\<close>
+      unfolding perfect_matching_def by simp
+    have GU: "Vs G = (UNIV :: 'a set)"
+      by (rule univ[symmetric])
+    show ?thesis
+      by (rule trans[OF MG GU])
+  qed
   have "graph_invar M" 
     by (meson M graph_invar_subset perfect_matchingE assms(2))
   let ?singletons = "(\<lambda> i. {e - {i}| e. e \<in> M \<and> i \<in> e})" 
