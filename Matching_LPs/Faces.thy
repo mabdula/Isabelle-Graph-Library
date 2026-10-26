@@ -2153,7 +2153,14 @@ proof(safe)
   qed
   show " dim_col ((A' @\<^sub>r - A') @\<^sub>r A) = n" 
     using "1" "2" carrier_append_rows carrier_matD(2) 
-    by (metis append_rows_def index_mat_four_block(3) index_zero_mat(3))
+  proof -
+    have step1: "A' @\<^sub>r - A' \<in> carrier_mat (dim_row A' + dim_row A') n"
+      using "1" "2" by (rule carrier_append_rows)
+    have step2: "(A' @\<^sub>r - A') @\<^sub>r A \<in> carrier_mat (dim_row A' + dim_row A' + nr) n"
+      using step1 A by (rule carrier_append_rows)
+    show ?thesis
+      using step2 by (rule carrier_matD(2))
+  qed
 qed
 
 lemma face_is_polyhedron''2:
