@@ -843,7 +843,13 @@ proof -
   have "(support p i)!(n-1) = (p^^(n-1)) i" 
     using assms(3) by fastforce
   have "(p^^n) i = (p \<circ> (p^^(n-1))) i" 
-    by (metis Suc_diff_1 assms(2) funpow.simps(2))
+  proof -
+    have "(p ^^ n) i = (p ^^ Suc (n - 1)) i"
+      using assms(2) by simp
+    also have "\<dots> = (p \<circ> (p ^^ (n - 1))) i"
+      by (simp only: funpow.simps(2))
+    finally show ?thesis .
+  qed
   then have "(p^^n) i = p ((p^^(n-1)) i)" 
     by simp
   then show ?thesis 
