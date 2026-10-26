@@ -1834,8 +1834,25 @@ qed
 
 lemma hd_stem2vert_nempty:
   "C \<noteq> [] \<Longrightarrow> ((stem2vert_path C M a2') \<noteq> [])"
-  apply(simp add: stem2vert_path_def Let_def)
-  by (metis find_pfx.elims list.distinct(1) rev_is_Nil_conv)
+proof -
+  assume C_nempty: "C \<noteq> []"
+  then have rev_nempty: "rev C \<noteq> []"
+    by simp
+  have 1: "find_pfx ((=) (choose_con_vert (set C) a2')) C \<noteq> []"
+    using C_nempty by (cases C) auto
+  have 2: "find_pfx ((=) (choose_con_vert (set (rev C)) a2')) (rev C) \<noteq> []"
+    using rev_nempty by (cases "rev C") auto
+  show "stem2vert_path C M a2' \<noteq> []"
+  proof (cases "last (edges_of_path (find_pfx ((=) (choose_con_vert (set C) a2')) C)) \<in> M")
+    case True
+    then show ?thesis
+      using 1 by (simp add: stem2vert_path_def Let_def)
+  next
+    case False
+    then show ?thesis
+      using 2 by (simp add: stem2vert_path_def Let_def)
+  qed
+qed
 
 subsubsection \<open>Lifting the Path\<close>
 
