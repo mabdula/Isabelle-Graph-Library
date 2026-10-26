@@ -602,8 +602,48 @@ lemma subsyst_valid:
  shows "fst (sub_system A b I) *\<^sub>v x \<le> snd (sub_system A b I)" 
   using assms 
   unfolding polyhedron_def 
-  by (smt (verit, best) dim_mult_mat_vec dims_subsyst_same exist_index_in_A
-       index_mult_mat_vec less_eq_vec_def mem_Collect_eq)
+proof -
+  let ?A' = "fst (sub_system A b I)"
+  let ?b' = "snd (sub_system A b I)"
+  have sub_eq: "(?A', ?b') = sub_system A b I" by simp
+  have Ax: "A *\<^sub>v x \<le> b"
+    using assms by (auto simp: polyhedron_def)
+  have dim_Ab: "dim_row A = dim_vec b"
+    using Ax by (auto simp: less_eq_vec_def)
+  have Ax_idx: "(A *\<^sub>v x) $ k \<le> b $ k" if "k < dim_vec b" for k
+    using Ax that by (auto simp: less_eq_vec_def)
+  have dims': "dim_row ?A' = dim_vec ?b'"
+    using dims_subsyst_same dim_Ab sub_eq by blast
+  show ?thesis
+    unfolding less_eq_vec_def
+  proof (intro conjI allI impI)
+    show "dim_vec (?A' *\<^sub>v x) = dim_vec ?b'"
+      using dims' by simp
+  next
+    fix i
+    assume i: "i < dim_vec ?b'"
+    have i_row: "i < dim_row ?A'"
+      using i dims' by simp
+    have "\<exists>k. k < dim_row A \<and> row ?A' i = row A k \<and> ?b' $ i = b $ k"
+      using exist_index_in_A[of A b i I] dim_Ab sub_eq i i_row by fastforce
+    then obtain k where k1: "k < dim_row A"
+      and k2: "row ?A' i = row A k"
+      and k3: "?b' $ i = b $ k" by blast
+    have k_b: "k < dim_vec b"
+      using k1 dim_Ab by simp
+    have "(?A' *\<^sub>v x) $ i = row ?A' i \<bullet> x"
+      using i_row by simp
+    also have "\<dots> = row A k \<bullet> x"
+      using k2 by simp
+    also have "\<dots> = (A *\<^sub>v x) $ k"
+      using k1 by simp
+    also have "\<dots> \<le> b $ k"
+      using Ax_idx[OF k_b] .
+    also have "\<dots> = ?b' $ i"
+      using k3 by simp
+    finally show "(?A' *\<^sub>v x) $ i \<le> ?b' $ i" .
+  qed
+qed
 
 lemma eq_iff_sum_eq_for_el_in_P:
   fixes A :: "'a :: trivial_conjugatable_linordered_field mat"
