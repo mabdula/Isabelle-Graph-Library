@@ -3410,7 +3410,19 @@ proof -
         have "is_singleton {e - {x} |e. e \<in> M \<and> x \<in> e}" 
           using 2 by auto
         then have "{a} \<in> {e - {x} |e. e \<in> M \<and> x \<in> e}" 
-          by (metis (no_types, lifting) 3 ccpo_Sup_singleton is_singleton_the_elem singletonI)
+          proof -
+            from 2 have s: "is_singleton {e - {x} |e. e \<in> M \<and> x \<in> e}" by auto
+            then have eq: "{e - {x} |e. e \<in> M \<and> x \<in> e} = {the_elem {e - {x} |e. e \<in> M \<and> x \<in> e}}"
+              by (simp add: is_singleton_the_elem)
+            from eq 3 have "\<Union> {the_elem {e - {x} |e. e \<in> M \<and> x \<in> e}} = {a}"
+              by (rule subst)
+            then have u: "the_elem {e - {x} |e. e \<in> M \<and> x \<in> e} = {a}"
+              by simp
+            from u eq have "{e - {x} |e. e \<in> M \<and> x \<in> e} = {{a}}"
+              by (rule subst)
+            then show "{a} \<in> {e - {x} |e. e \<in> M \<and> x \<in> e}"
+              by simp
+          qed
         then have "{x, a} \<in> M" 
           using  insert_Diff by force
         have "is_singleton (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e})" 
