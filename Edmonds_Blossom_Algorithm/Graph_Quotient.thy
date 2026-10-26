@@ -5384,8 +5384,21 @@ proof-
       have "{last p1, x} \<noteq> {hd p3 , x}" if "p1 \<noteq> []"
       proof-
         have "last p1 \<noteq> hd p3"
-          using aug_path(2) wx(1) that p3_nempty
-          by (metis IntI distinct_append empty_iff last_in_set list.distinct(1) list.sel(3) list.set_sel(1) list.set_sel(2))
+        proof (rule notI)
+          assume eq: "last p1 = hd p3"
+          have dist: "distinct (p1 @ x # p3)"
+            using aug_path(2) wx(1) by simp
+          have disj: "set p1 \<inter> set (x # p3) = {}"
+            using dist distinct_append[of p1 "x # p3"] by blast
+          have l1: "last p1 \<in> set p1"
+            using that by (rule last_in_set)
+          have h1: "hd p3 \<in> set p3"
+            using p3_nempty by (rule hd_in_set)
+          have "last p1 \<in> set (x # p3)"
+            using eq h1 by simp
+          with l1 disj show False
+            by blast
+        qed
         then show ?thesis
           by (auto simp add: doubleton_eq_iff)
       qed
