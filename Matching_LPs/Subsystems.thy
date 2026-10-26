@@ -788,7 +788,24 @@ proof(safe)
     case True
     then obtain j where j: "j < dim_row C \<and> row C j = row A i'" 
       using exist_index_in_A'[of A b i' "I - {i}"] 
-      by (metis assms(1) assms(5) dims_subsyst_same fst_conv i) 
+    proof -
+      have C_eq: "fst (sub_system A b (I - {i})) = C"
+        by (simp add: assms(5)[symmetric])
+      have d_eq: "snd (sub_system A b (I - {i})) = d"
+        by (simp add: assms(5)[symmetric])
+      have i'_lt: "i' < dim_vec b"
+        using i assms(1) by simp
+      have "\<exists>k<dim_vec d. row C k = row A i' \<and> d $ k = b $ i'"
+        using exist_index_in_A'[OF assms(1) i'_lt True] by (simp add: C_eq d_eq)
+      then obtain k where k_lt: "k < dim_vec d" and k_row: "row C k = row A i'"
+        by blast
+      have "k < dim_row C"
+        using k_lt dims_subsyst_same'[OF assms(1) assms(5)] by simp
+      then have "k < dim_row C \<and> row C k = row A i'"
+        using k_row by simp
+      then show thesis
+        by (rule that)
+    qed
     then show ?thesis 
       by (metis \<open>r \<notin> set (rows C)\<close> i in_set_conv_nth j' length_rows nth_rows)
   next
