@@ -168,7 +168,8 @@ proof(induction g n v rule: find_cycle.induct)
     then obtain e where x_def: "e = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>)"
       by simp
     hence aaa:"0 < g e" "fst e = v" "e \<in> \<E>" 
-      by (metis (mono_tags, lifting) True someI_ex)+
+      using True someI_ex[of "\<lambda>e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>"]
+      unfolding x_def by auto
     hence find_cycle_prop: "find_cycle g (Suc n) v = v#(find_cycle g n (snd e))" 
       using True x_def by simp
     obtain es where es_def: "length es = length (find_cycle g n (snd e)) - 1 \<and>
