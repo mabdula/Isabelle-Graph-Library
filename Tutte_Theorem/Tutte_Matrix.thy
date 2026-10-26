@@ -2276,7 +2276,7 @@ lemma least_odd_least:
   assumes "odd (least_power p a)"
   shows "(least_odd p) \<le> a" 
   unfolding least_odd_def
-  by (metis Least_le  assms(3))
+  using assms(3) by (rule Least_le[of _ a])
 
 lemma rev_least_odd_same:
   assumes "p permutes (UNIV:: 'a set)"
