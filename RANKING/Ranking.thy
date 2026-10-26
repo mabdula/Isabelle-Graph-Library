@@ -3452,7 +3452,32 @@ qed
         assume \<open>{u',x'} \<notin> M\<close>
 
         with rm_G \<open>{u',x'} \<in> G\<close> consider (u'_matched) "\<exists>x''. {u',x''} \<in> M" | (u'_unmatched) "\<exists>u''. {u'',x'} \<in> M"
-          by (metis graph_invar_no_edge_no_vertex insert_commute maximal_matching_def ranking_matchingE)
+          proof -
+            from rm_G have invar: "graph_invar M"
+              by (auto elim: ranking_matchingE)
+
+            obtain e where e_M: "e \<in> M" and e_mem: "u' \<in> e \<or> x' \<in> e"
+              by (rule ranking_matching_maximalE[OF rm_G \<open>{u',x'} \<in> G\<close>])
+
+            from e_mem show thesis
+            proof
+              assume "u' \<in> e"
+              with e_M have "u' \<in> Vs M"
+                by (auto intro: vs_member_intro)
+              with invar obtain w where "{u',w} \<in> M"
+                by (elim graph_invar_vertex_edgeE)
+              then show thesis
+                using that by blast
+            next
+              assume "x' \<in> e"
+              with e_M have "x' \<in> Vs M"
+                by (auto intro: vs_member_intro)
+              with invar obtain w where "{w,x'} \<in> M"
+                by (elim graph_invar_vertex_edgeE')
+              then show thesis
+                using that by blast
+            qed
+          qed
 
         then show False
         proof cases
