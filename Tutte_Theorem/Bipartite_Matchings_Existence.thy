@@ -233,7 +233,23 @@ qed
           then have "v1 \<noteq> v \<or> v2 \<noteq> v" 
             by blast
           then have "\<exists> v'. v' \<noteq> v \<and> (\<exists> u \<in> {a}. \<exists> e \<in> G. v' \<noteq> u \<and> u \<in> e \<and> v' \<in> e)"
-            by (smt (verit, ccfv_SIG) v1_v2 mem_Collect_eq neighbours_of_Vs_def)
+proof -
+  have "v1 \<noteq> v \<or> v2 \<noteq> v"
+    using v1_v2 by blast
+  then consider (v1) "v1 \<noteq> v" | (v2) "v2 \<noteq> v" by blast
+  then show ?thesis
+  proof cases
+    case v1
+    then obtain u e where "u \<in> {a}" "e \<in> G" "v1 \<noteq> u" "u \<in> e" "v1 \<in> e"
+      using v1_v2 unfolding neighbours_of_Vs_def by blast
+    with v1 show ?thesis by blast
+  next
+    case v2
+    then obtain u e where "u \<in> {a}" "e \<in> G" "v2 \<noteq> u" "u \<in> e" "v2 \<in> e"
+      using v1_v2 unfolding neighbours_of_Vs_def by blast
+    with v2 show ?thesis by blast
+  qed
+qed
           then obtain v' e' where v'_e: "v' \<noteq> v \<and> e' \<in> G \<and>  v' \<noteq> a \<and> a \<in> e' \<and> v' \<in> e'" 
             by blast
           then have "e' = {a, v'}"
