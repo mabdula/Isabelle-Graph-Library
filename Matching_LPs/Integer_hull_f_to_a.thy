@@ -402,7 +402,14 @@ next
     then obtain x y where x_y:"x \<in> F \<and> y \<in> F \<and> x \<noteq> y" 
       using \<open>F \<noteq> {}\<close> by blast
     have "\<forall>x \<in> F. x  \<in> carrier_vec n" 
-      by (metis (no_types, lifting) C_d(1) polyhedron_def mem_Collect_eq)
+    proof (intro ballI)
+      fix x
+      assume "x \<in> F"
+      then have "x \<in> {v. v \<in> carrier_vec n \<and> C *\<^sub>v v \<le> d}"
+        using C_d(1) by (simp add: polyhedron_def)
+      then show "x \<in> carrier_vec n"
+        by blast
+    qed
     then obtain i where i:"i < n \<and> x $ i \<noteq> y $ i"
       using eq_vecI x_y carrier_vecD by metis 
     have "\<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i" 
