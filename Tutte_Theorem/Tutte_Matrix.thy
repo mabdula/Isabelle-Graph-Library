@@ -1291,7 +1291,19 @@ proof -
   have "(p^^n) i = ((p^^n) \<circ> (p^^least_power p i)) i" 
     by (simp add: assms(1) least_power_of_permutation(1))
   then have "((p^^least_power p i)\<circ>(p^^n)) i = (p^^n) i" 
-    by (metis add.commute funpow_add)
+  proof -
+  have fix_i: "(p ^^ least_power p i) i = i"
+    by (simp add: assms(1) least_power_of_permutation(1))
+  have "(p ^^ least_power p i) \<circ> (p ^^ n) = p ^^ (least_power p i + n)"
+    by (simp add: funpow_add)
+  also have "\<dots> = p ^^ (n + least_power p i)"
+    by (simp add: add.commute)
+  also have "\<dots> = (p ^^ n) \<circ> (p ^^ least_power p i)"
+    by (simp add: funpow_add)
+  finally have comm: "(p ^^ least_power p i) \<circ> (p ^^ n) = (p ^^ n) \<circ> (p ^^ least_power p i)" .
+  show ?thesis
+    using comm fix_i by simp
+  qed
   then have "(p^^least_power p i) ((p^^n) i) = (p^^n) i" 
     by simp
   then show ?thesis 
