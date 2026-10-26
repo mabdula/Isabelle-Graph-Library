@@ -1049,8 +1049,35 @@ proof -
     then have "dim_vec b'' > 0" by auto
     then obtain j where "j < dim_vec b''" by auto
     then obtain i where i:"i < nr \<and> i \<in> I'' \<and> row A'' j = row A i \<and> b'' $ j = b $ i" 
-      using exist_index_in_A[of A  b j I''] 
-      by (metis A sub_A''(1) \<open>dim_vec b = nr\<close> carrier_matD(1) fst_conv snd_conv)
+    proof -
+      have dim_A: "dim_row A = nr"
+        using A by (rule carrier_matD(1))
+      have dim_b: "dim_vec b = nr"
+        using b by (rule carrier_vecD)
+      have dims: "dim_row A = dim_vec b"
+        using dim_A dim_b by simp
+      have sub_eq: "sub_system A b I'' = (A'', b'')"
+        using sub_A''(1) by (rule sym)
+      have fst_eq: "fst (sub_system A b I'') = A''"
+        by (simp add: sub_eq)
+      have snd_eq: "snd (sub_system A b I'') = b''"
+        by (simp add: sub_eq)
+      have j_lt: "j < dim_vec (snd (sub_system A b I''))"
+        using \<open>j < dim_vec b''\<close> snd_eq by simp
+      obtain k where k_lt: "k < dim_vec b"
+        and k_in: "k \<in> I''"
+        and k_row: "row (fst (sub_system A b I'')) j = row A k"
+        and k_val: "snd (sub_system A b I'') $ j = b $ k"
+        using exist_index_in_A[OF dims j_lt] by blast
+      have "k < nr"
+        using k_lt dim_b by simp
+      moreover have "row A'' j = row A k"
+        using k_row fst_eq by simp
+      moreover have "b'' $ j = b $ k"
+        using k_val snd_eq by simp
+      ultimately show thesis
+        using that k_in by blast
+    qed
     obtain C d where sub_C: "((C, d) = sub_system A b (I'' - {i}))" 
       by (metis surj_pair)
     have "{x. A'' *\<^sub>v x \<le> b''} = {x. C *\<^sub>v x \<le> d \<and> row A i \<bullet> x \<le> b $ i}"    
