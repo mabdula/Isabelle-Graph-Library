@@ -4739,7 +4739,27 @@ proof-
     by auto
   ultimately have p1_subset_s: "set (rev p1) \<subseteq> s"
     using quot good_quot_map
-    by (metis (no_types,lifting) in_quotG_neq_u order_refl set_rev subset_code(1))
+  proof -
+    have "path (quotG E) p'"
+      using quot_aug_path(2) by simp
+    then have "set p' \<subseteq> Vs (quotG E)"
+      by (rule subset_path_Vs)
+    then have p1_Vs: "set p1 \<subseteq> Vs (quotG E)"
+      using quot_aug_path(1) by auto
+    show ?thesis
+    proof (rule subsetI)
+      fix v
+      assume v_mem: "v \<in> set (rev p1)"
+      then have "v \<in> set p1"
+        by simp
+      then have v_Vs: "v \<in> Vs (quotG E)"
+        using p1_Vs by blast
+      have "v \<noteq> u"
+        using v_mem u_nin_p1 by auto
+      show "v \<in> s"
+        by (rule in_quotG_neq_u[OF v_Vs \<open>v \<noteq> u\<close>])
+    qed
+  qed
 
   show ?thesis
   proof(cases "p1 = []")
