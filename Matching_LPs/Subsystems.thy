@@ -336,8 +336,38 @@ lemma exist_index_in_A_carr:
   assumes "j < dim_row C"
   shows "\<exists> i < nr. i \<in> I \<and> row C j = row A i 
           \<and> d $ j = b $ i \<and> i = pick I j"
-  by (metis assms carrier_matD(1) carrier_vecD dims_subsyst_same_carr 
-      exist_index_in_A fst_conv snd_conv)
+proof -
+  have Cd: "sub_system A b I = (C, d)"
+    by (rule assms(3)[symmetric])
+  have C_eq: "fst (sub_system A b I) = C"
+    by (simp add: Cd)
+  have d_eq: "snd (sub_system A b I) = d"
+    by (simp add: Cd)
+  have dim_A: "dim_row A = nr"
+    by (rule carrier_matD(1)[OF assms(1)])
+  have dim_b: "dim_vec b = nr"
+    by (rule carrier_vecD[OF assms(2)])
+  have dims: "dim_row A = dim_vec b"
+    using dim_A dim_b by simp
+  have "dim_row C = dim_vec d"
+    by (rule dims_subsyst_same_carr[OF assms(1,2,3)])
+  then have j_lt: "j < dim_vec (snd (sub_system A b I))"
+    using assms(4) d_eq by simp
+  obtain i where i_lt: "i < dim_vec b"
+    and i_I: "i \<in> I"
+    and i_row: "row (fst (sub_system A b I)) j = row A i"
+    and i_b: "snd (sub_system A b I) $ j = b $ i"
+    and i_pick: "i = pick I j"
+    using exist_index_in_A[OF dims j_lt] by blast
+  have "i < nr"
+    using i_lt dim_b by simp
+  moreover have "row C j = row A i"
+    using i_row C_eq by simp
+  moreover have "d $ j = b $ i"
+    using i_b d_eq by simp
+  ultimately show ?thesis
+    using i_I i_pick by blast
+qed
 
 lemma card_of_smaller_is_index_in_subsystem:
   assumes "j < dim_vec b"
