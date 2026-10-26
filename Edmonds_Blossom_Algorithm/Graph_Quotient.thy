@@ -4419,7 +4419,15 @@ qed
       proof-
         have "last (edges_of_path (p1 @ [u])) = {last p1, u}"
           using p1_nempty
-          by (metis edges_of_path_snoc last_snoc)
+        proof -
+          have eq: "edges_of_path (p1 @ [u]) = edges_of_path p1 @ [{last p1, u}]"
+            using edges_of_path_snoc[OF p1_nempty] by simp
+          have "last (edges_of_path (p1 @ [u])) = last (edges_of_path p1 @ [{last p1, u}])"
+            by (simp only: eq)
+          also have "\<dots> = {last p1, u}"
+            by (rule last_snoc)
+          finally show ?thesis .
+        qed
         then show ?thesis 
           using last_p1_nin by auto
       qed
