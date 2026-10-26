@@ -1119,7 +1119,14 @@ proof -
           then obtain bn where bn: "b = (support p x)!bn \<and> 
                                     bn \<in> {j \<in> {0..<length (support p x)}. even j}"
             using b_elem  nths_obtain_index 
-            by (metis (no_types, lifting))
+          proof -
+            have bmem: "b \<in> set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})"
+              using b_elem by blast
+            have "\<exists>bn. b = (support p x)!bn \<and> bn \<in> {j \<in> {0..<length (support p x)}. even j}"
+              using bmem[unfolded set_nths] by blast
+            then show thesis
+              using that by blast
+          qed
           then have 5:"bn < (length (support p x)) - 1" 
             using `even (length (support p x))` by fastforce
           have "even bn" 
