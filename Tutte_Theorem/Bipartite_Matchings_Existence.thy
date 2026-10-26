@@ -647,7 +647,7 @@ qed
         then have "card (neighbours_of_Vs G (Y \<union> X)) - card (neighbours_of_Vs G X) \<ge> card (Y \<union> X) - card X"
           using `card X = card (neighbours_of_Vs G X)` by auto
         moreover have "X \<inter> Y = {}"
-          by (metis Diff_eq Int_commute Int_subset_iff \<open>Y \<subseteq> A - X\<close> disjoint_eq_subset_Compl)
+          using \<open>Y \<subseteq> A - X\<close> by auto
         moreover have "card (Y \<union> X) - card X = card Y" 
           by (metis (no_types, lifting) A_X_graph A_X_vs Un_commute \<open>X \<inter> Y = {}\<close> \<open>X \<subset> A\<close> 
               \<open>Y \<subseteq> A - X\<close> add_diff_cancel_left' card_Un_disjoint finite_subset graphE Asubs
