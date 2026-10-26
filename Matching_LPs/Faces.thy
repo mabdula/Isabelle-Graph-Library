@@ -1260,7 +1260,7 @@ proof -
       then have "?z \<in> F" 
         using F_by_Cd by presburger
       then have "?z \<in> P" using `face P F`  
-        by (metis IntE gram_schmidt.face_def)
+        using face_subset_polyhedron[OF \<open>face P F\<close>] by blast
       have "i \<notin> I" using `I \<inter> I'' \<inter> {0..<nr}= {}` 
         using \<open>i < nr \<and> i \<in> I'' \<and> row A'' j = row A i \<and> b'' $ j = b $ i\<close>
         by fastforce
