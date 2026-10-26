@@ -18,13 +18,36 @@ lemma integer_hull_is_integer_hull:
   assumes "P \<subseteq> carrier_vec n"
   shows "integer_hull (integer_hull P) = integer_hull P"  
 proof -
-  have int_in_carr: "P \<inter> \<int>\<^sub>v \<subseteq> carrier_vec n" 
+  have int_in_carr: "P \<inter> \<int>\<^sub>v \<subseteq> carrier_vec n"
     using assms by auto
-  show ?thesis unfolding integer_hull_def
-    apply rule
-    using convex_convex_hull 
-     apply (metis Int_lower1 int_in_carr convex_hull_mono convex_hulls_are_convex)
-    by (simp add:int_in_carr set_in_convex_hull convex_hull_mono)
+  have hull_carr: "convex_hull (P \<inter> \<int>\<^sub>v) \<subseteq> carrier_vec n"
+    using int_in_carr convex_hull_carrier by blast
+  have int_carr: "convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v \<subseteq> carrier_vec n"
+    using hull_carr by blast
+  have conv: "convex (convex_hull (P \<inter> \<int>\<^sub>v))"
+    using int_in_carr convex_hulls_are_convex by blast
+  have idem: "convex_hull (convex_hull (P \<inter> \<int>\<^sub>v)) = convex_hull (P \<inter> \<int>\<^sub>v)"
+    using conv hull_carr convex_convex_hull by blast
+  have sub_hull: "convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v \<subseteq> convex_hull (P \<inter> \<int>\<^sub>v)"
+    by blast
+  have le1: "convex_hull (convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v) \<subseteq> convex_hull (P \<inter> \<int>\<^sub>v)"
+  proof -
+    have "convex_hull (convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v)
+            \<subseteq> convex_hull (convex_hull (P \<inter> \<int>\<^sub>v))"
+      using sub_hull hull_carr convex_hull_mono by blast
+    then show ?thesis
+      by (simp add: idem)
+  qed
+  have le2: "convex_hull (P \<inter> \<int>\<^sub>v) \<subseteq> convex_hull (convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v)"
+  proof -
+    have "P \<inter> \<int>\<^sub>v \<subseteq> convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v"
+      using int_in_carr set_in_convex_hull by blast
+    then show ?thesis
+      using int_carr convex_hull_mono by blast
+  qed
+  show ?thesis
+    unfolding integer_hull_def
+    using le1 le2 by blast
 qed
 
 lemma integer_hull_in_carrier:
