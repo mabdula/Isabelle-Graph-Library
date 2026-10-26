@@ -1015,8 +1015,38 @@ proof -
     using mult_mat_vec[of A] 
     using assms(1) assms(2) assms(3) by presburger
   also have "\<dots> \<le> l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b" 
-    using `l \<cdot>\<^sub>v (A *\<^sub>v x) \<le> l \<cdot>\<^sub>v b` `(1 - l) \<cdot>\<^sub>v (A *\<^sub>v y) \<le> (1 - l) \<cdot>\<^sub>v b`
-    by (metis index_smult_vec(2) vec_add_mono)
+  proof -
+    have l_nonneg: "0 \<le> l" and l_le_one: "l \<le> 1"
+      using assms(8) by simp_all
+    have one_minus_nonneg: "0 \<le> 1 - l"
+      using l_le_one by simp
+    have dim_x: "dim_vec (A *\<^sub>v x) = dim_vec b"
+      using assms(5) by (simp add: less_eq_vec_def)
+    have dim_y: "dim_vec (A *\<^sub>v y) = dim_vec b"
+      using assms(6) by (simp add: less_eq_vec_def)
+    show ?thesis
+      unfolding less_eq_vec_def
+    proof (intro conjI allI impI)
+      show "dim_vec (l \<cdot>\<^sub>v (A *\<^sub>v x) + (1 - l) \<cdot>\<^sub>v (A *\<^sub>v y))
+              = dim_vec (l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b)"
+        using dim_x dim_y by simp
+    next
+      fix i
+      assume "i < dim_vec (l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b)"
+      then have i_b: "i < dim_vec b" by simp
+      have x_le: "(A *\<^sub>v x) $ i \<le> b $ i"
+        using assms(5) i_b by (auto simp add: less_eq_vec_def index_mult_mat_vec)
+      have y_le: "(A *\<^sub>v y) $ i \<le> b $ i"
+        using assms(6) i_b by (auto simp add: less_eq_vec_def index_mult_mat_vec)
+      have l1: "l * ((A *\<^sub>v x) $ i) \<le> l * (b $ i)"
+        using x_le l_nonneg by (rule mult_left_mono)
+      have l2: "(1 - l) * ((A *\<^sub>v y) $ i) \<le> (1 - l) * (b $ i)"
+        using y_le one_minus_nonneg by (rule mult_left_mono)
+      show "(l \<cdot>\<^sub>v (A *\<^sub>v x) + (1 - l) \<cdot>\<^sub>v (A *\<^sub>v y)) $ i
+              \<le> (l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b) $ i"
+        using add_mono[OF l1 l2] i_b dim_x dim_y by simp
+    qed
+  qed
   finally show "A *\<^sub>v z \<le> b" 
     by (metis add_smult_distrib_vec assms(8) le_add_diff_inverse one_smult_vec)
 qed
