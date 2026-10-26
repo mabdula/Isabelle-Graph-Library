@@ -3405,8 +3405,8 @@ proof -
           by blast
         have "is_singleton (\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e})" 
           using 1 by blast
-        then have 3: "\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e} = {a}" 
-          by (metis (no_types, lifting) a is_singleton_the_elem)
+        then have 3: "\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e} = {a}"
+          using 1 a by (simp add: is_singleton_the_elem)
         have "is_singleton {e - {x} |e. e \<in> M \<and> x \<in> e}" 
           using 2 by auto
         then have "{a} \<in> {e - {x} |e. e \<in> M \<and> x \<in> e}" 
