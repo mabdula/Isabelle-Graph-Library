@@ -2351,7 +2351,28 @@ proof-
           using matching(1)
           unfolding matching_def2
           apply auto
-          subgoal by (metis True \<open>last (edges_of_path (chp @ [chv])) \<noteq> {chv, a2'}\<close> edges_are_Vs insertI1)
+          subgoal premises prems
+          proof -
+            have last_in_last_e: "last (chp @ [chv]) \<in> last (edges_of_path (chp @ [chv]))"
+              by (rule last_v_in_last_e) (use F2 ass(1) not_less_eq_eq in auto)
+            have chv_in_last: "chv \<in> last (edges_of_path (chp @ [chv]))"
+              using last_in_last_e by simp
+            have not_in: "{chv, a2'} \<notin> M"
+            proof
+              assume in_M: "{chv, a2'} \<in> M"
+              have chv_Vs: "chv \<in> Vs M"
+                using in_M by (auto simp: Vs_def)
+              show False
+                using matching(1) in_M True chv_in_last chv_Vs
+                      \<open>last (edges_of_path (chp @ [chv])) \<noteq> {chv, a2'}\<close>
+                using matching(1)[unfolded matching_def2] by blast
+            qed
+            show ?thesis
+              using not_in prems True chv_in_last matching(1)
+                    \<open>last (edges_of_path (chp @ [chv])) \<noteq> {chv, a2'}\<close>
+              by (auto simp: matching_def2 Vs_def insert_commute)
+          qed
+
           subgoal by (metis True \<open>last (edges_of_path (chp @ [chv])) \<noteq> {chv, a2'}\<close> edges_are_Vs insertI1)
           done
       qed
