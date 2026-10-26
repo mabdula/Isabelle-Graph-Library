@@ -177,9 +177,28 @@ lemma faceE':
 "face P F \<Longrightarrow>
    (\<lbrakk>(\<exists> \<alpha> \<beta>. F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>} \<and> valid_ineq P \<alpha> \<beta> \<and> F \<noteq> {})\<rbrakk> \<Longrightarrow> R)
    \<Longrightarrow> R"
-  apply (elim faceE)
-  using support_hyp_is_valid 
-  by (metis  inf.commute)
+  proof -
+    assume face: "face P F"
+    assume ih: "(\<exists> \<alpha> \<beta>. F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>} \<and> valid_ineq P \<alpha> \<beta> \<and> F \<noteq> {}) \<Longrightarrow> R"
+    from face obtain a c
+      where F_eq: "F = P \<inter> {x |x. a \<bullet> x = c}"
+        and sh: "support_hyp P a c"
+      by (auto simp: face_def)
+    have valid: "valid_ineq P a c"
+      by (rule support_hyp_is_valid(1)[OF sh])
+    have "{x. a \<bullet> x = c} \<inter> P \<noteq> {}"
+      by (rule support_hyp_is_valid(2)[OF sh])
+    then obtain z where z_eq: "a \<bullet> z = c" and z_P: "z \<in> P"
+      by blast
+    have "z \<in> F"
+      using F_eq z_eq z_P by blast
+    then have F_ne: "F \<noteq> {}"
+      by blast
+    have "\<exists> \<alpha> \<beta>. F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>} \<and> valid_ineq P \<alpha> \<beta> \<and> F \<noteq> {}"
+      using F_eq valid F_ne by blast
+    then show R
+      by (rule ih)
+  qed
 
 lemma face_intro'[intro]:
   assumes "valid_ineq P \<alpha> \<beta>"
