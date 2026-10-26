@@ -990,7 +990,17 @@ proof -
       then have "n \<in>  {j \<in> {0..<length (support p x)}. even j}" 
         by (simp add: n_exp)
       then have "y \<in> set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})" 
-        by (metis (mono_tags, lifting) n_exp diff_zero length_map length_upt nths_in_result)
+      proof -
+        have n_lt: "n < length (support p x)"
+          using n_exp by simp
+        have n_mem: "n \<in> {j \<in> {0..<length (support p x)}. even j}"
+          using True n_lt by simp
+        have "support p x ! n
+                \<in> set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})"
+          by (rule nths_in_result[OF n_mem n_lt])
+        then show ?thesis
+          using n_exp by simp
+      qed
       then have "{y, p y} \<in> ?m_edges" 
         by blast
       then show ?thesis by blast 
