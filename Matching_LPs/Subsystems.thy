@@ -759,7 +759,7 @@ proof(safe)
   assume "r \<in> set (rows A')" 
   assume "r \<notin> set (rows C)"
   then obtain j' where j': "j' < dim_row A' \<and> row A' j' = r" using `r \<in> set (rows A')`
-    by (metis in_set_conv_nth length_rows nth_rows)
+    by (auto simp add: in_set_conv_nth length_rows nth_rows)
   obtain i' where i:"i' < dim_row A \<and> i' \<in> I \<and> row A i' = row A' j' \<and> b' $ j' = b $ i'" 
     using exist_index_in_A[of A b j' "I"] 
       dims_subsyst_same' fst_conv j' snd_conv 
