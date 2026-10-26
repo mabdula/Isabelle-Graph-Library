@@ -1141,8 +1141,7 @@ proof -
                 using `a = u \<and> (p a) = t` True 
                 by auto
               then have "a = b" 
-                by (smt (verit, ccfv_SIG) \<open>p permutes UNIV\<close> 3 a_elem b_elem bij_betw_iff_bijections
-                    permutes_imp_bij subsetD)
+                by (blast intro: injD permutes_inj \<open>p permutes UNIV\<close>)
               then show ?thesis 
                 using True uv \<open>e1 \<noteq> e2\<close> a_elem by blast
             next
