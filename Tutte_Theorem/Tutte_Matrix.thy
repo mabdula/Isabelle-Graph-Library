@@ -686,8 +686,15 @@ proof(safe)
     case (path1 v)
     have "v = i" 
       using path1.prems by auto
-    then show ?case 
-      by (metis funpow_0 list.set_cases neq_Nil_conv set_ConsD)
+    show ?case
+    proof (intro ballI)
+      fix y
+      assume "y \<in> set [v]"
+      then have "y = v" by simp
+      moreover have "v = i" using path1.prems by simp
+      ultimately have "(p ^^ (0::nat)) i = y" by simp
+      then show "\<exists>n. (p ^^ n) i = y" by blast
+    qed
   next
     case (path2 v v' vs)
     have "v = p v' \<or> v' = p v" 
