@@ -2263,8 +2263,16 @@ have "dim_col A' = n" using dim_col_subsyst_mat A
     unfolding append_vec_def 
     by (simp add: Let_def add.commute)
   then show "dim_row (A @\<^sub>r A' @\<^sub>r - A') = dim_vec (b @\<^sub>v b' @\<^sub>v - b')" 
-    by (metis \<open>dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_row (A @\<^sub>r A' @\<^sub>r - A')\<close>
-        \<open>dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_vec ((b' @\<^sub>v - b') @\<^sub>v b)\<close>)
+    proof -
+      have base: "dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_vec ((b' @\<^sub>v - b') @\<^sub>v b)"
+        using face_is_polyhedron''(2) assms by blast
+      have rows: "dim_row (A @\<^sub>r A' @\<^sub>r - A') = dim_row ((A' @\<^sub>r - A') @\<^sub>r A)"
+        by (simp add: append_rows_def ac_simps)
+      have vecs: "dim_vec ((b' @\<^sub>v - b') @\<^sub>v b) = dim_vec (b @\<^sub>v b' @\<^sub>v - b')"
+        by (simp add: ac_simps)
+      show ?thesis
+        using rows base vecs by simp
+    qed
   show "dim_col (A @\<^sub>r(A' @\<^sub>r (-A'))) = n"
     using "1" "2" carrier_append_rows carrier_matD(2) 
     using A by blast
