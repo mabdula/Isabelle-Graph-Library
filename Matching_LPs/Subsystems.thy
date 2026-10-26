@@ -189,8 +189,50 @@ qed
 lemma nths_list_pick_vec_same:
   shows "vec_of_list (nths (list_of_vec b) I) = 
     vec (card {i. i<dim_vec b \<and> i\<in>I})  (\<lambda> i. b $ (pick I i))"
-  by (smt (verit, best) Collect_cong Matrix.dim_vec_of_list Matrix.length_list_of_vec
-      dim_vec eq_vecI index_vec length_nths list_of_vec_index nth_nths vec_of_list_index)
+proof -
+  have len_lv: "length (list_of_vec b) = dim_vec b"
+    by (simp add: Matrix.length_list_of_vec)
+  have len: "length (nths (list_of_vec b) I) = card {i. i < dim_vec b \<and> i \<in> I}"
+    using length_nths[of "list_of_vec b" I] len_lv by simp
+  have entries: "vec_of_list (nths (list_of_vec b) I) $ i = b $ pick I i"
+    if i_lt: "i < card {i. i < dim_vec b \<and> i \<in> I}" for i
+  proof -
+    have i_len: "i < length (nths (list_of_vec b) I)"
+      using i_lt len by simp
+    have i_card: "i < card {i. i < length (list_of_vec b) \<and> i \<in> I}"
+      using i_lt len_lv by simp
+    have pick_lt: "pick I i < dim_vec b"
+    proof -
+      have "i < card {a. a < dim_vec b \<and> a \<in> I}"
+        using i_lt by simp
+      then show ?thesis by (rule pick_le)
+    qed
+    have "vec_of_list (nths (list_of_vec b) I) $ i = nths (list_of_vec b) I ! i"
+      by (simp add: vec_of_list_index)
+    also have "\<dots> = list_of_vec b ! pick I i"
+      by (rule nth_nths[OF i_card])
+    also have "\<dots> = b $ pick I i"
+      using pick_lt len_lv by (simp add: list_of_vec_index)
+    finally show ?thesis .
+  qed
+  show ?thesis
+  proof (rule eq_vecI)
+    fix i
+    assume "i < dim_vec (vec (card {i. i < dim_vec b \<and> i \<in> I}) (\<lambda>i. b $ pick I i))"
+    then have i_lt: "i < card {i. i < dim_vec b \<and> i \<in> I}"
+      by simp
+    have "vec_of_list (nths (list_of_vec b) I) $ i = b $ pick I i"
+      by (rule entries[OF i_lt])
+    also have "\<dots> = vec (card {i. i < dim_vec b \<and> i \<in> I}) (\<lambda>i. b $ pick I i) $ i"
+      by (rule index_vec[OF i_lt, symmetric])
+    finally show "vec_of_list (nths (list_of_vec b) I) $ i =
+                  vec (card {i. i < dim_vec b \<and> i \<in> I}) (\<lambda>i. b $ pick I i) $ i" .
+  next
+    show "dim_vec (vec_of_list (nths (list_of_vec b) I)) =
+          dim_vec (vec (card {i. i < dim_vec b \<and> i \<in> I}) (\<lambda>i. b $ pick I i))"
+      using len by simp
+  qed
+qed
 
 lemma subsyst_b_i:
   assumes "i < dim_vec (snd (sub_system A b I))"  
