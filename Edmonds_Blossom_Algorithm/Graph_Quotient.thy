@@ -7078,7 +7078,34 @@ qed
             by (simp add: edges_of_path_snoc)
           have "last stem \<notin> set C"
             using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] stem_nempty
-            by (smt Un_iff append_butlast_last_id match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] disjoint_insert(1) distinct_append distinct_stem_hdC insert_Diff last_in_set odd_cycleD(3) odd_cycle_nempty set_append)
+          proof -
+            have C_nempty: "C \<noteq> []"
+              using odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] .
+            have hd_eq_last: "hd C = last C"
+              using odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] .
+            have C_eq: "C = butlast C @ [last C]"
+              using append_butlast_last_id[OF C_nempty] by simp
+            have set_C_eq: "set C = insert (last C) (set (butlast C))"
+              by (subst C_eq) simp
+            have last_stem_in_stem: "last stem \<in> set stem"
+              using stem_nempty by simp
+            have disj1: "set stem \<inter> set (butlast C) = {}"
+              using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] by (auto simp: distinct_append)
+            have hd_C_nin_stem: "hd C \<notin> set stem"
+              using distinct_stem_hdC by (auto simp: distinct_append)
+            have "last stem \<notin> set (butlast C)"
+              using disj1 last_stem_in_stem by blast
+            moreover have "last stem \<noteq> last C"
+            proof
+              assume eq: "last stem = last C"
+              then have "last stem \<notin> set stem"
+                using hd_C_nin_stem[unfolded hd_eq_last] by simp
+              then show False
+                using last_stem_in_stem by simp
+            qed
+            ultimately show ?thesis
+              using set_C_eq by auto
+          qed
           then have "{last stem, hd C} \<notin> set (edges_of_path C)"
             by (meson v_in_edge_in_path)
           moreover have "set C \<inter> set stem = {}"
