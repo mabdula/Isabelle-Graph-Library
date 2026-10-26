@@ -312,10 +312,25 @@ qed
       then have 8:"matching (insert {u, v} M)"
         using `matching M` unfolding matching_def  
         by auto 
-      then have "A \<subseteq> Vs (insert {u, v} M)"
-        using `A - {u} \<subseteq> Vs M` 
-        by (smt (verit, ccfv_threshold) Sup_insert UnCI Vs_def u_v
-            insertCI insertE insert_Diff subset_iff)
+      have "A \<subseteq> Vs (insert {u, v} M)"
+      proof (rule subsetI)
+        fix a
+        assume "a \<in> A"
+        show "a \<in> Vs (insert {u, v} M)"
+        proof (cases "a = u")
+          case True
+          then show ?thesis
+            unfolding Vs_def by blast
+        next
+          case False
+          then have "a \<in> A - {u}"
+            using \<open>a \<in> A\<close> by blast
+          then have "a \<in> Vs M"
+            using \<open>A - {u} \<subseteq> Vs M\<close> by blast
+          then show ?thesis
+            unfolding Vs_def by blast
+        qed
+      qed
       have "insert {u, v} M \<subseteq> G" 
         using `{u, v} \<in> G`  \<open>M \<subseteq> G\<close> by blast
       then have "cover_matching G (insert {u, v} M) A"
