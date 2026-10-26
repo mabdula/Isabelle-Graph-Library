@@ -1428,7 +1428,17 @@ proof(safe)
     fix x 
     assume "x \<in> F" 
     have "dim_col A' = n" using dim_col_subsyst_mat A 
-      by (metis assms(4) carrier_matD(2) prod.sel(1))
+  proof -
+    have A'_eq: "A' = fst (sub_system A b I')"
+      by (simp add: assms(4)[symmetric])
+    have "dim_col A' = dim_col (fst (sub_system A b I'))"
+      by (simp add: A'_eq)
+    also have "\<dots> = dim_col A"
+      by (simp add: dim_col_subsyst_mat)
+    also have "\<dots> = n"
+      by (rule carrier_matD(2)[OF A])
+    finally show ?thesis .
+  qed
     have 4:"x \<in> carrier_vec n" using `x \<in> F` assms(5) by blast
     have "A' *\<^sub>v x \<le> b' \<and> (-A') *\<^sub>v x \<le> - b'" using eq_system_is_leq_system 
       using \<open>dim_col A' = n\<close> \<open>x \<in> F\<close> assms(5) carrier_vecD by blast
