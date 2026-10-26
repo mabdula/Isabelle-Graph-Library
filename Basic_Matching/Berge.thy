@@ -749,8 +749,19 @@ proof
   then obtain p where "matching_augmenting_path M p" "path G p" "distinct p"
     by blast
   then obtain M' where "M' \<subseteq> G" "matching M'" "card M < card M'"
-    using Berge_2 matching
-    by metis
+    proof -
+      have mtch: "matching (M \<oplus> set (edges_of_path p))"
+        by (rule Berge_2(1)[OF \<open>matching_augmenting_path M p\<close> matching(3) \<open>path G p\<close>
+                               \<open>distinct p\<close> matching(1) matching(2)])
+      have bigger: "card M < card (M \<oplus> set (edges_of_path p))"
+        by (rule Berge_2(2)[OF \<open>matching_augmenting_path M p\<close> matching(3) \<open>path G p\<close>
+                               \<open>distinct p\<close> matching(1) matching(2)])
+      have sub: "(M \<oplus> set (edges_of_path p)) \<subseteq> G"
+        by (rule Berge_2(3)[OF \<open>matching_augmenting_path M p\<close> matching(3) \<open>path G p\<close>
+                               \<open>distinct p\<close> matching(1) matching(2)])
+      show thesis
+        by (rule that[OF sub mtch bigger])
+    qed
   then show "\<exists>M'\<subseteq>G. matching M' \<and> card M < card M'"
     by blast
 next
