@@ -2530,7 +2530,14 @@ proof-
   then have "set p2 \<subseteq> Vs (quotG E)"
     using quot
     using  tl_path_is_path
-    by (metis list.sel(3) subset_path_Vs)
+  proof -
+    have "path (quotG E) p'"
+      using quot_aug_path(2) graph_augmenting_path_feats by blast
+    then have "set p' \<subseteq> Vs (quotG E)"
+      by (rule subset_path_Vs)
+    then show ?thesis
+      using quot_aug_path(1) by auto
+  qed
 
   moreover have u_nin_p2: "u \<notin> set p2"
     using quot_aug_path
