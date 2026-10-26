@@ -1194,7 +1194,17 @@ proof -
       have 5:"?z \<in> carrier_vec n" 
         by (simp add: \<open>x \<in> carrier_vec n\<close> \<open>y \<in> carrier_vec n\<close>)
       have "A' \<in> carrier_mat (dim_row A') n" 
-        by (metis A carrier_matD(2) carrier_matI dim_col_subsyst_mat prod.sel(1) sub_A(1))
+      proof -
+        have A'_eq: "A' = fst (sub_system A b I)"
+          by (simp add: sub_A(1)[symmetric])
+        have "dim_col A' = dim_col A"
+          by (simp add: A'_eq dim_col_subsyst_mat)
+        also have "\<dots> = n"
+          using A by (rule carrier_matD(2))
+        finally have dc: "dim_col A' = n" .
+        show "A' \<in> carrier_mat (dim_row A') n"
+          by (rule carrier_matI[OF refl dc])
+      qed
       then have 3:"A' *\<^sub>v ?z = b'" 
         using linear_comb_holds_eq[of A' _ n x y ?z b' ?l] 
           x y `?z = (1 - ?l) \<cdot>\<^sub>v y + ?l  \<cdot>\<^sub>v x` `?z \<in> carrier_vec n` 
