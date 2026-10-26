@@ -2175,7 +2175,7 @@ proof(safe)
     have "Matrix.mat n n (\<lambda>(i, j). if i = j then 1 else 0) $$ (i, j) = 0" 
       using False asmi asmj by simp
     then show ?thesis 
-      by (smt (verit) Ints_0)
+      by (insert False asmi asmj, simp add: Ints_0)
   qed
 qed
 
