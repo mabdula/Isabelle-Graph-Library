@@ -3562,7 +3562,21 @@ proof -
     by auto
   ultimately have p1_subset_s: "set (rev p1) \<subseteq> s"
     using quot good_quot_map
-    by (metis (no_types,lifting)  in_quotG_neq_u set_rev subset_code(1))
+  proof -
+    have "x \<in> s" if "x \<in> set (rev p1)" for x
+    proof -
+      have "x \<in> set p1"
+        using that by (simp add: set_rev)
+      then have "x \<in> Vs (quotG E)"
+        using \<open>set p1 \<subseteq> Vs (quotG E)\<close> by blast
+      moreover have "x \<noteq> u"
+        using u_nin_p1 that by blast
+      ultimately show "x \<in> s"
+        by (rule in_quotG_neq_u)
+    qed
+    then show ?thesis
+      by (rule subsetI)
+  qed
 
   have [simp]: "matching_augmenting_path (quotG M) p'" "path (quotG E) p'"
     using quot_aug_path(2) by simp+
