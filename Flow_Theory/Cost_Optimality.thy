@@ -563,7 +563,28 @@ proof(rule ccontr)
     using  f_f'_diff_neg  R_cost_g by fastforce
   then obtain i where i_Def:"i<length css" 
               "(\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e) < 0" 
-    by (smt (verit, best) Rcost_sum lessThan_iff sum_nonneg)
+  proof -
+    have neg: "residual_flow.\<C> g < 0"
+      using f_f'_diff_neg R_cost_g by simp
+    have ex_i: "\<exists>i. i < length css \<and>
+                  (\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e) < 0"
+    proof (rule ccontr)
+      assume "\<nexists>i. i < length css \<and>
+                   (\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e) < 0"
+      hence all_nonneg: "\<And>i. i < length css \<Longrightarrow>
+                   0 \<le> (\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e)"
+        by fastforce
+      have "0 \<le> (\<Sum>i<length css. \<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e)"
+      proof (rule sum_nonneg)
+        fix i assume "i \<in> {..<length css}"
+        thus "0 \<le> (\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e)"
+          using all_nonneg by simp
+      qed
+      thus False
+        using neg Rcost_sum by simp
+    qed
+    then show thesis using that by blast
+  qed
   hence "set (css ! i) \<subseteq> residual_flow.support g"  
      using css_ws_def(4) nth_mem by blast
   hence "set (css ! i) \<subseteq> \<EE> " "\<forall> e \<in> set (css ! i). g e > 0" by(auto simp add: residual_flow.support_def)
