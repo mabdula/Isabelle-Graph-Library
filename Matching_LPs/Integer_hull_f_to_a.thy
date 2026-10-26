@@ -1550,8 +1550,49 @@ next
             next
               case False
               then show False 
-                by (metis False R.minus_other_side smult_zero \<open>nr \<le> i\<close> \<open>nr \<le> j\<close> diff_add_inverse2 
-                    eq_diff_iff i_j of_int_of_nat_eq of_nat_eq_iff smult_r_null smult_vec_nonneg_eq)
+                proof -
+                  assume nz: "row A 0 \<noteq> 0\<^sub>v n"
+                  have dimn: "dim_vec (row A 0) = n"
+                    using assms(1) by auto
+                  have gen: "\<And>c. c \<cdot>\<^sub>v row A 0 = 0\<^sub>v n \<Longrightarrow> c = 0"
+                  proof -
+                    fix c
+                    assume czero: "c \<cdot>\<^sub>v row A 0 = 0\<^sub>v n"
+                    show "c = 0"
+                    proof (rule ccontr)
+                      assume cnz: "c \<noteq> 0"
+                      have "row A 0 = 0\<^sub>v n"
+                      proof (rule eq_vecI)
+                        show "dim_vec (row A 0) = dim_vec (0\<^sub>v n)"
+                          using dimn by simp
+                      next
+                        fix k
+                        assume "k < dim_vec (0\<^sub>v n)"
+                        then have kn: "k < n" by simp
+                        have "c * (row A 0 $ k) = (c \<cdot>\<^sub>v row A 0) $ k"
+                          using kn dimn by simp
+                        also have "\<dots> = 0"
+                          using czero kn by simp
+                        finally have "c * (row A 0 $ k) = 0" .
+                        then have "row A 0 $ k = 0"
+                          using cnz by simp
+                        then show "row A 0 $ k = 0\<^sub>v n $ k"
+                          using kn by simp
+                      qed
+                      then show False using nz by simp
+                    qed
+                  qed
+                  have eq_diff: "i - nr = j - nr"
+                    using gen[OF smult_zero] by simp
+                  have "i = i - nr + nr"
+                    using \<open>nr \<le> i\<close> by simp
+                  also have "\<dots> = j - nr + nr"
+                    using eq_diff by simp
+                  also have "\<dots> = j"
+                    using \<open>nr \<le> j\<close> by simp
+                  finally have "i = j" .
+                  then show False using i_j by auto
+                qed
             qed
           qed
         qed
