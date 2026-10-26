@@ -569,7 +569,14 @@ proof(rule ccontr)
     assume "b $ i1 \<noteq> b $ i2"
     then have "b' $ j1 \<noteq> b' $ j2" using i1 i2 by auto
     obtain x where "x \<in> F" 
-      by (metis A P_def assms(5) b equals0I gram_schmidt.char_min_face)
+      proof -
+      have "face P F"
+        using min_face_elim(1)[OF assms(5)] by blast
+      then have "F \<noteq> {}"
+        by (rule face_non_empty)
+      then show thesis
+        using that by blast
+    qed
     then have "x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'" 
       using assms(7) by blast
     have "row A' j1 = row A' j2" using j1j2 
