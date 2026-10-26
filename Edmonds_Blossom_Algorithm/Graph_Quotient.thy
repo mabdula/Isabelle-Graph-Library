@@ -3837,7 +3837,22 @@ proof -
             by (auto simp: One_nat_def length_Suc_conv)
           then have False
             using quot_aug_path(1) matching_augmenting_path_feats(2)[OF \<open>matching_augmenting_path (quotG M) p'\<close>] up2_nin_M p2_nempty
-            by (metis matching_augmenting_path_last_edge_nin edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append last_snoc list.sel(1) quot_aug_path(2) up2_in_M)
+            proof -
+            have p2_ne: "p2 \<noteq> []"
+              using \<open>p2 = [a]\<close> by simp
+            have ua: "{u, a} \<in> quotG M"
+              using up2_in_M[OF p2_ne] \<open>p2 = [a]\<close> by simp
+            have a_in: "a \<in> Vs (quotG M)"
+              using ua by (auto simp: Vs_def)
+            have last_p': "last p' = a"
+              using quot_aug_path(1) \<open>p2 = [a]\<close> by simp
+            have "last p' \<notin> Vs (quotG M)"
+              by (rule matching_augmenting_path_feats(4)[OF \<open>matching_augmenting_path (quotG M) p'\<close>])
+            then have "a \<notin> Vs (quotG M)"
+              using last_p' by simp
+            with a_in show False
+              by simp
+          qed
           then show ?thesis by simp
         qed
       qed
