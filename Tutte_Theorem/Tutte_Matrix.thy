@@ -3184,8 +3184,21 @@ proof -
              (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set))) nonzero_perms) =
              (sum (\<lambda> b. of_int (sign b) * (var_sign b) *
              (Poly_Mapping.single (?f b) (1::nat))) nonzero_perms)"
-    by (smt (z3) mult.commute mult.right_neutral mult_minus_right of_int_1 of_int_minus of_nat_1 
-        sign_def sum.cong)
+  proof -
+    assume eq: "\<forall>b \<in> nonzero_perms. (var_sign b)*  (Poly_Mapping.single (?f b) (1::real)) = 
+                                  (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set))"
+    show ?thesis
+    proof (intro sum.cong refl)
+      fix b
+      assume "b \<in> nonzero_perms"
+      then have "var_sign b * (Poly_Mapping.single (?f b) 1) =
+                 prod (\<lambda> i. tutte_matrix $ i $ b i) (UNIV::'a set)"
+        using eq by blast
+      then show "of_int (sign b) * (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set)) =
+                 of_int (sign b) * (var_sign b) * (Poly_Mapping.single (?f b) (1::nat))"
+        by (simp add: algebra_simps)
+    qed
+  qed
   then have 1:"Poly_Mapping.lookup (sum (\<lambda> b. of_int (sign b) * 
             (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set))) nonzero_perms) (?f p) \<noteq> 0"
     using 1 by force
