@@ -25,7 +25,7 @@ proof rule+
     then have 3: "card (neighbours_of_Vs M X) \<le> card (neighbours_of_Vs G X)" using 1 2 
       by (simp add: card_mono)
     have "card X = card (neighbours_of_Vs M X)" 
-      by (metis \<open>X \<subseteq> A\<close> assms cover_matching_neighbours_of_Vs_card)
+      by (simp add: cover_matching_neighbours_of_Vs_card[OF assms(1,2)] \<open>X \<subseteq> A\<close>)
     then show ?thesis using 3 by auto
   qed
 qed
