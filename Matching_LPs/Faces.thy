@@ -943,9 +943,19 @@ proof(rule ccontr)
   then have "F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b' \<and> C *\<^sub>v x \<le> d \<and> row A i \<bullet> x \<le> b $ i}"
     using assms(5) by blast
   have "\<forall> x \<in> carrier_vec n. b' = A' *\<^sub>v x \<longrightarrow> row A i \<bullet> x = b $ i"
-    using remove_index_sub_system_eq[of A b i I' A' b']
-    by (metis (mono_tags, lifting) A \<open>dim_vec b = nr\<close> assms(3) carrier_vecD dim_mult_mat_vec i 
-        mem_Collect_eq mult_mat_vec_carrier surj_pair)
+    proof (intro ballI impI)
+      fix z :: "'a vec"
+      assume z: "z \<in> carrier_vec n"
+      assume eq: "b' = A' *\<^sub>v z"
+      obtain C d where Cd: "(C, d) = sub_system A b (I' - {i})"
+        using prod.collapse by blast
+      have set_eq: "{y. A' *\<^sub>v y = b'} = {y. C *\<^sub>v y = d \<and> row A i \<bullet> y = b $ i}"
+        using remove_index_sub_system_eq Cd assms(3) i A \<open>dim_vec b = nr\<close> by blast
+      have "z \<in> {y. A' *\<^sub>v y = b'}"
+        using eq by simp
+      then show "row A i \<bullet> z = b $ i"
+        using set_eq by blast
+    qed
   then have "F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b' \<and> C *\<^sub>v x \<le> d}" 
     using \<open>F = {x \<in> carrier_vec n. A' *\<^sub>v x = b' \<and> C *\<^sub>v x \<le> d \<and> row A i \<bullet> x \<le> b $ i}\<close> by fastforce
   then have "dim_vec d \<in> ?N" 
