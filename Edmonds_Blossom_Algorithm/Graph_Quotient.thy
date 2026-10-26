@@ -6915,8 +6915,18 @@ qed
           using distinct_append[of "stem @ [hd C]" "tl (butlast C)"] by blast
       qed
       have path_stem_hdC: "path E (stem @ [hd C])"
-        using match_blossom(1) odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
-        by (metis append_Cons append_Nil append_assoc list.collapse path_pref)
+      proof -
+        have C_nempty: "C \<noteq> []"
+          using odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] .
+        have path_stem_C: "path E (stem @ C)"
+          using match_blossom by (rule blossomD(1))
+        have split_eq: "stem @ C = (stem @ [hd C]) @ tl C"
+          using C_nempty by simp
+        have "path E ((stem @ [hd C]) @ tl C)"
+          using path_stem_C split_eq by simp
+        then show "path E (stem @ [hd C])"
+          by (rule path_pref)
+      qed
       have stem_hdC_nempty: "edges_of_path (stem @ [hd C]) \<noteq> []"
         using stem_nempty
         by (metis edges_of_path_snoc snoc_eq_iff_butlast)
