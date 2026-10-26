@@ -4579,8 +4579,13 @@ lemma\<^marker>\<open>tag important\<close> ranking_matching_comp_ratio_perfect_
   assumes "max_card_matching G N" "max_card_matching (make_perfect_matching G N) N'"
   shows "(real (card M)) / card N \<ge> card M' / card N'"
 proof -
-  from assms have max_cards_eq: "card N = card N'"
-    by (metis make_perfect_matching.simps(2) max_card_matching_def max_card_matching_make_perfect_matching max_card_matchings_same_size ranking_matchingE)
+  have max_N: "max_card_matching (make_perfect_matching G N) N"
+    using ranking_matchingE [OF assms(1)] assms(3)
+    by (auto intro: max_card_matching_make_perfect_matching
+             dest: max_card_matchingDs)
+  from assms(4) max_N have max_cards_eq: "card N = card N'"
+    by (auto intro: max_card_matchings_same_size
+             simp: max_card_matching_def)
 
   from assms have "card M' \<le> card M"
     by (auto intro: ranking_matching_card_leq_on_perfect_matching_graph)
