@@ -2380,7 +2380,12 @@ proof -
     proof(cases "det A' > 0")
       case True
       have "\<bar>det A'\<bar> /det A' = 1" 
-        by (metis True \<open>Determinant.det A' \<noteq> 0\<close> abs_of_pos divide_self)
+      proof -
+        have "\<bar>Determinant.det A'\<bar> = Determinant.det A'"
+          using True by (rule abs_of_pos)
+        then show ?thesis
+          using \<open>Determinant.det A' \<noteq> 0\<close> by (simp add: divide_self)
+      qed
       then show ?thesis 
         by fastforce
     next
