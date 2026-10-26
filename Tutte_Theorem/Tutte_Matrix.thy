@@ -1353,11 +1353,13 @@ lemma p_rev_p_same:
   assumes "x \<in> set (support p (least_odd p))" 
   shows "p (rev_p p x) = x" 
 proof -
-  have "(rev_p p x) = (inv p) x" 
-    using rev_p_def 
-    using assms(2) by presburger
-  then show ?thesis 
-    by (metis assms(1) permutes_inv_eq)
+  have "rev_p p x = inv p x"
+    using assms(2) by (simp add: rev_p_def)
+  hence "p (rev_p p x) = p (inv p x)"
+    by simp
+  also have "\<dots> = x"
+    by (rule permutes_inverses(1)[OF assms(1)])
+  finally show ?thesis .
 qed
 
 lemma p_rev_p_same':
