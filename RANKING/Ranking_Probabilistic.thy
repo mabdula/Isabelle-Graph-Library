@@ -231,9 +231,43 @@ lemma permutations_but_v_bij_betw:
   unfolding bij_betw_def
 proof
   show "inj_on ?f ?L"
-    apply (auto intro!: inj_onI)
-    apply (smt (verit, del_insts) assms(2) distinct_count_in_set filter_cong mem_Collect_eq move_to_def move_to_id permutations_of_setD(1) permutations_of_setD(2))
-    done
+  proof (rule inj_onI)
+    fix \<sigma>1 \<sigma>2
+    assume L1: "\<sigma>1 \<in> ?L"
+    assume L2: "\<sigma>2 \<in> ?L"
+    assume idx: "index \<sigma>1 v = index \<sigma>2 v"
+
+    from L1 have perm1: "\<sigma>1 \<in> permutations_of_set V"
+      and filt1: "[x <- \<sigma>1. x \<noteq> v] = [x <- \<sigma>. x \<noteq> v]"
+      by auto
+
+    from L2 have perm2: "\<sigma>2 \<in> permutations_of_set V"
+      and filt2: "[x <- \<sigma>2. x \<noteq> v] = [x <- \<sigma>. x \<noteq> v]"
+      by auto
+
+    from perm1 have d1: "distinct \<sigma>1" and s1: "set \<sigma>1 = V"
+      by (auto dest: permutations_of_setD)
+
+    from perm2 have d2: "distinct \<sigma>2" and s2: "set \<sigma>2 = V"
+      by (auto dest: permutations_of_setD)
+
+    from d1 s1 assms(2) have c1: "count_list \<sigma>1 v = 1"
+      by (simp add: distinct_count_in_set)
+
+    from d2 s2 assms(2) have c2: "count_list \<sigma>2 v = 1"
+      by (simp add: distinct_count_in_set)
+
+    have "\<sigma>1 = \<sigma>1[v \<mapsto> index \<sigma>1 v]"
+      using c1 d1 s1 assms(2) by (simp add: move_to_id)
+
+    also have "\<dots> = \<sigma>2[v \<mapsto> index \<sigma>2 v]"
+      using idx filt1 filt2 by (simp add: move_to_def Let_def)
+
+    also have "\<dots> = \<sigma>2"
+      using c2 d2 s2 assms(2) by (simp add: move_to_id)
+
+    finally show "\<sigma>1 = \<sigma>2" .
+  qed
 next
   from assms show "?f ` ?L = ?R"
     apply (auto)
