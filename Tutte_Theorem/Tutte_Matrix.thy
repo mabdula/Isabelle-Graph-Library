@@ -766,8 +766,16 @@ proof(safe)
         using elemnets_in_support_expo'[of p v' i "(1::nat)" v] 
         using \<open>v' \<in> set (support p i)\<close> assms(1) p_is_permutation by blast
       then obtain j where "v = support p i!j \<and> j < least_power p i" 
-        by (smt (verit, best) add.left_neutral atLeastLessThan_iff diff_zero imageE 
-            length_upt nth_map nth_upt set_map set_upt)
+      proof -
+        obtain m where m_less: "m < least_power p i" and m_eq: "v = (p ^^ m) i"
+          using \<open>v \<in> set (support p i)\<close> by fastforce
+        have "support p i ! m = (p ^^ m) i"
+          using m_less by simp
+        with m_eq m_less have "v = support p i ! m \<and> m < least_power p i"
+          by simp
+        then show thesis
+          using that by blast
+      qed
       then have "(p^^j) i = v" 
         by simp
       then show ?thesis 
