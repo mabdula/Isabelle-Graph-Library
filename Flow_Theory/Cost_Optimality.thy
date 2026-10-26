@@ -343,7 +343,8 @@ proof
     using finite_imageI[of "\<delta>\<^sup>- v" F ] delta_minus_finite[of v]
           finite_imageI[of "\<delta>\<^sup>+ v" "\<lambda> e. B e"]   delta_plus_finite[of v]
           finite_imageI[of "\<delta>\<^sup>+ v" F ] finite_imageI[of "\<delta>\<^sup>- v" "\<lambda> e. B e"]
-    by (metis Setcompr_eq_image)+
+    unfolding Setcompr_eq_image
+      by auto
   have 00: "(\<Sum> e \<in> {F e |e. e \<in> \<delta>\<^sup>- v} \<union> {B e |e. e \<in> \<delta>\<^sup>+ v}.  
                                   (difference f' f)  e)                =
                 ((\<Sum> e \<in> {F e |e. e \<in> \<delta>\<^sup>- v}.  (difference f' f)  e) +
