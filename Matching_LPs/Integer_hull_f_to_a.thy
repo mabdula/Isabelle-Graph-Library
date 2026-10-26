@@ -343,8 +343,12 @@ next
     have "\<forall> x \<in> F. - unit_vec n i  \<bullet> x \<le> - bound" 
       by (simp add: bound_scalar \<open>i < n\<close> \<alpha>_\<beta>)
     then have  "\<forall> x \<in> carrier_vec n. C *\<^sub>v x \<le> d \<longrightarrow> - unit_vec n i  \<bullet> x \<le> - bound"
-      apply (simp add: \<open>F = polyhedron C d\<close> gram_schmidt.polyhedron_def)
-      by (metis neg_le_iff_le uminus_scalar_prod unit_vec_carrier)
+    proof -
+      have inF: "\<forall>x \<in> carrier_vec n. C *\<^sub>v x \<le> d \<longrightarrow> x \<in> F"
+        unfolding C_d(1) polyhedron_def by blast
+      show ?thesis
+        using inF \<open>\<forall> x \<in> F. - unit_vec n i  \<bullet> x \<le> - bound\<close> by blast
+    qed
     then have "has_Maximum {- unit_vec n i  \<bullet> x | x. x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d}"
       using strong_duality_theorem_primal_sat_bounded_min_max(2)[of C _ n d " - unit_vec n i"]
         C_d `\<exists>x\<in>carrier_vec n. C *\<^sub>v x \<le> d`  unit_vec_carrier  carrier_dim_vec 
