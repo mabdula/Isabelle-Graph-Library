@@ -6025,10 +6025,63 @@ proof(rule ccontr)
       we will have two different matched edges in M that both include M. This leads to a
       contradiction.\<close>
     case True
-    then obtain e e' where e: "v \<in> e" "v \<in> e'" "e \<in> M" "e' \<in> M" "e \<noteq> e'"
-      using qe qe' quot_edge_inter_s[OF qe(2) \<open>M\<subseteq>E\<close>] quot_edge_inter_s[OF qe'(3) \<open>M\<subseteq> E\<close>]
-            edge_in_quot_in_graph_1'[OF _ _ \<open>M \<subseteq> E\<close>] edge_in_quot_in_graph_2'' u_nin_edge_in_quot
-      by (smt (verit, best) DiffD1 Int_iff assms(3) subset_iff)
+    have ex_ee': "\<exists>e e'. v \<in> e \<and> v \<in> e' \<and> e \<in> M \<and> e' \<in> M \<and> e \<noteq> e'"
+    proof -
+      note v_in_s = True
+      have quotG_to_quot_graph: "\<And>f. f \<in> quotG M \<Longrightarrow> f \<in> quot_graph P M"
+        by auto
+      have find_edge: "\<exists>e. e \<in> M \<and> v \<in> e \<and> P ` e = f" if f_quot: "f \<in> quotG M" and v_in_f: "v \<in> f" for f
+      proof (cases "u \<in> f")
+        case True
+        then have u_in_f: "u \<in> f" .
+        obtain e1 w1 where e1: "e1 \<in> M" "P ` e1 = f" "w1 \<notin> s" "w1 \<in> e1" "f \<inter> s = e1 \<inter> s"
+          using edge_in_quot_in_graph_2''[OF f_quot u_in_f \<open>M \<subseteq> E\<close>]
+          by blast
+        have "v \<in> f \<inter> s"
+          using v_in_f v_in_s by blast
+        then have "v \<in> e1"
+          using e1(5) by blast
+        then show ?thesis
+          using e1(1,2) by blast
+      next
+        case False
+        then have u_nin_f: "u \<notin> f" .
+        have f_sub_s: "f \<subseteq> s"
+          using u_nin_edge_in_quot[OF u_nin_f f_quot] .
+        have f_in_M: "f \<in> M"
+          using edge_in_quot_in_graph_1'[OF quotG_to_quot_graph[OF f_quot] f_sub_s \<open>M \<subseteq> E\<close>] .
+        have Pf_eq: "P ` f = f"
+        proof -
+          have "P ` f = (\<lambda>x. x) ` f"
+            by (rule image_cong[OF refl]) (use f_sub_s in auto)
+          then show ?thesis
+            by simp
+        qed
+        then show ?thesis
+          using f_in_M v_in_f by blast
+      qed
+      obtain e0 where e0_img: "e0 \<in> M" "v \<in> e0" "P ` e0 = qe"
+        using find_edge[OF qe(2) qe(1)] by blast
+      obtain e0' where e0'_img: "e0' \<in> M" "v \<in> e0'" "P ` e0' = qe'"
+        using find_edge[OF qe'(3) qe'(1)] by blast
+      have "e0 \<noteq> e0'"
+      proof
+        assume e_eq: "e0 = e0'"
+        have "qe = P ` e0"
+          using e0_img(3) by simp
+        also have "\<dots> = P ` e0'"
+          using e_eq by simp
+        also have "\<dots> = qe'"
+          using e0'_img(3) by simp
+        finally have "qe = qe'" .
+        then show False
+          using qe'(2) by simp
+      qed
+      then show ?thesis
+        using e0_img e0'_img by blast
+    qed
+    obtain e e' where e: "v \<in> e" "v \<in> e'" "e \<in> M" "e' \<in> M" "e \<noteq> e'"
+      using ex_ee' by blast
     moreover have "v \<in> Vs M"
       using True \<open>M\<subseteq>E\<close>
       by (simp add: v(1) vert_in_graph_iff_in_quot_diff_u)
