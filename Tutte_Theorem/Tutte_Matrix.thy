@@ -3602,7 +3602,7 @@ proof -
           using 1 \<open>u_edges ?f = u_edges p\<close> \<open>{x, ?f x} \<in> u_edges ?f\<close> 
           using \<open>u_edges ?f = M\<close> by force
         then show "?f x = p x" 
-          by (metis (no_types, lifting) doubleton_eq_iff)
+          by (fastforce simp: doubleton_eq_iff)
       qed
       then have "?f = p"by auto 
       then show False 
