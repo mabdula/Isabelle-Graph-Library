@@ -1579,7 +1579,20 @@ next
   let ?i' = "i - dim_row A'"
   have "row (A' @\<^sub>r (-A')) i = row (-A') ?i'" 
     using append_rows_nth(2)[of A' "dim_row A'" _ "-A'" "dim_row (-A')" i] 
-    by (metis \<open>dim_row A' \<le> i\<close> \<open>i < dim_row A' + dim_row (- A')\<close> carrier_matI index_uminus_mat(3))
+    proof -
+      have cA': "A' \<in> carrier_mat (dim_row A') (dim_col A')"
+        by (rule carrier_mat_triv)
+      have cmA': "- A' \<in> carrier_mat (dim_row (- A')) (dim_col A')"
+        by (rule carrier_matI) simp_all
+      have app: "A' @\<^sub>r - A' \<in> carrier_mat (dim_row A' + dim_row (- A')) (dim_col A')"
+        by (rule carrier_append_rows[OF cA' cmA'])
+      have i_lt: "i < dim_row A' + dim_row (- A')"
+        using assms(6) carrier_matD(1)[OF app] by simp
+      have not_lt: "dim_row A' \<le> i"
+        using False by simp
+      show ?thesis
+        by (rule append_rows_nth(2)[OF cA' cmA' not_lt i_lt])
+    qed
   then have 3:"row (A' @\<^sub>r (-A')) i = - (row (A' @\<^sub>r (-A')) ?i')" 
     by (smt (verit, best) 1 2 append_rows_nth(1) carrier_matI index_uminus_mat(2) 
         index_uminus_mat(3) less_diff_conv2 row_uminus)
