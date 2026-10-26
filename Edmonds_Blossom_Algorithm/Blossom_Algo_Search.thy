@@ -178,11 +178,12 @@ lemma if1_cond_props'''':
   shows "\<exists>v1 v2 v3 r. (v1, v2, v3, r) = sel_if1 flabel ex \<and> if1 flabel ex v1 v2 v3 r"
 proof-
   let ?q = "sel_if1 flabel ex"
-  have "(fst ?q, fst (snd ?q), fst (snd (snd ?q)), snd (snd (snd ?q))) = ?q"
+  have q_eq: "(fst ?q, fst (snd ?q), fst (snd (snd ?q)), snd (snd (snd ?q))) = ?q"
     by simp
-  then show ?thesis
-    using if1_cond_props'''[OF assms]
-    by metis
+  have "if1 flabel ex (fst ?q) (fst (snd ?q)) (fst (snd (snd ?q))) (snd (snd (snd ?q)))"
+    using if1_cond_props'''[OF assms q_eq] .
+  with q_eq show ?thesis
+    by blast
 qed
 
 lemma if2_cond_props'':
