@@ -4480,8 +4480,23 @@ proof (cases "x \<in> Vs M")
 
     with rm_M graph_M.graph graph_M'.graph
     have doubleton_neq_edges: "\<forall>e\<in>(M \<oplus> M'). \<exists>u v. e = {u,v} \<and> u \<noteq> v" "\<forall>e\<in>M. \<exists>u v. e = {u,v} \<and> u \<noteq> v"
-      using graph_abs_edges_of_distinct_path[OF distinct_remove_vertex_path]
-      by (smt (verit, ccfv_threshold) dblton_graphE ranking_matchingE)+
+      proof (goal_cases)
+        case 1
+        have bip: "bipartite M (set \<pi>) (set \<sigma>)"
+          using rm_M by (auto elim: ranking_matchingE)
+        have "graph_invar (set (edges_of_path (remove_vertex_path G M x \<pi> \<sigma>)))"
+          using graph_abs_edges_of_distinct_path[OF distinct_remove_vertex_path[OF bip]] .
+        then have "dblton_graph (set (edges_of_path (remove_vertex_path G M x \<pi> \<sigma>)))"
+          by (rule graph_invar_dblton)
+        then show ?case
+          unfolding symm_diff_eq
+          by (simp add: dblton_graph_def)
+      next
+        case 2
+        show ?case
+          using graph_invar_dblton[OF graph_M'.graph]
+          by (simp add: dblton_graph_def)
+      qed
 
     with Berge_1[OF matchings lt_matching]
     obtain p where aug_path: "matching_augmenting_path M p" "path (?symm_diff) p" "distinct p"
