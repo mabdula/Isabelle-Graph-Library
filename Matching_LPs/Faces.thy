@@ -1499,7 +1499,26 @@ proof(cases "i < dim_row A'")
       using True by simp
   qed
   then have "(b' @\<^sub>v (-b')) $ i = b' $ i" using index_append_vec 
-    by (metis trans_less_add1) 
+proof -
+  have dim_Ab: "dim_row A = dim_vec b"
+    using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+  have rows: "dim_row A' = dim_vec b'"
+    using dims_subsyst_same' dim_Ab assms(4) by blast
+  have i_lt: "i < dim_vec b'"
+    using True rows by simp
+  have i_app: "i < dim_vec b' + dim_vec (- b')"
+  proof -
+    have "dim_vec (b' @\<^sub>v - b') = dim_vec b' + dim_vec (- b')"
+      by (rule index_append_vec(2))
+    then show ?thesis
+      using i_lt by linarith
+  qed
+  have "(b' @\<^sub>v - b') $ i
+          = (if i < dim_vec b' then b' $ i else (- b') $ (i - dim_vec b'))"
+    by (rule index_append_vec(1)[OF i_app])
+  then show ?thesis
+    using i_lt by simp
+qed
   let ?i' = "i + dim_row A'"
   have "row (A' @\<^sub>r (-A')) ?i' = row (-A') i" using append_rows_nth(2) 
     by (smt (verit, ccfv_threshold) True add.commute add_diff_cancel_right'
