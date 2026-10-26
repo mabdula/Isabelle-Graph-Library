@@ -88,7 +88,15 @@ lemma prepath_cases: "prepath a2 \<Longrightarrow>
                      (\<And>e. a2 = [e]  \<Longrightarrow> P) \<Longrightarrow>
                      (\<And> e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P) \<Longrightarrow>
                      P"
-  using  prepath_induct[of a2 ] by (metis prepath_simps)
+proof -
+  assume asm: "prepath a2"
+    and case_single: "\<And>e. a2 = [e] \<Longrightarrow> P"
+    and case_cons: "\<And>e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P"
+  from asm have "(\<exists>e. a2 = [e]) \<or> (\<exists>e d es. a2 = e # d # es \<and> sndv e = fstv d \<and> prepath (d # es))"
+    by (rule iffD1[OF prepath_simps])
+  then show P
+    using case_single case_cons by blast
+qed
 
 text \<open>Now we can reason about some properties of $prepath$.\<close>
 
