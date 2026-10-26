@@ -521,7 +521,12 @@ lemma move_to_others_leq:
   assumes "v \<noteq> w" "v \<noteq> w'"
   shows "index xs w \<le> index xs w' \<longleftrightarrow> index xs[v \<mapsto> i] w \<le> index xs[v \<mapsto> i] w'"
   using assms
-  by (metis linorder_not_le move_to_others_less)
+proof -
+  from assms have "index xs w' < index xs w \<longleftrightarrow> index xs[v \<mapsto> i] w' < index xs[v \<mapsto> i] w"
+    by (intro move_to_others_less) simp_all
+  then show ?thesis
+    using linorder_not_less by blast
+qed
 
 lemma index_less_index_leq_move_to:
   "index \<sigma> w < index \<sigma> v \<Longrightarrow> index \<sigma>[v \<mapsto> i] w \<le> index \<sigma> v"
