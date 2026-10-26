@@ -1841,7 +1841,9 @@ proof
       using False not_on_odd_in by presburger
     then have "on_odd p (p x) = p x" 
       unfolding on_odd_def
-      by (metis assms not_on_odd_def not_on_odd_p_permutes_UNIV permutes_inv_eq)
+      using False
+        inv_in_support[OF p_is_permutation[OF assms], where a = "p x" and i = "least_odd p"]
+      by (auto simp add: on_odd_def permutes_inverses(2)[OF assms])
     then show ?thesis 
       by (simp add: \<open>not_on_odd p x = p x\<close>)
   qed
