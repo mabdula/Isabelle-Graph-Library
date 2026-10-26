@@ -2403,7 +2403,18 @@ proof -
       then show ?thesis by auto
     qed
     then have "\<forall>k < n.\<bar>det A'\<bar> * det (replace_col A' b' k) / det A' \<in> \<int>" 
-      by (metis Ints_mult \<open>\<forall>k<n. Determinant.det (replace_col A' b' k) \<in> \<int>\<close> times_divide_eq_left)
+    proof (intro allI impI)
+      fix k
+      assume "k < n"
+      have "\<bar>det A'\<bar> * det (replace_col A' b' k) / det A'
+              = \<bar>det A'\<bar> / det A' * det (replace_col A' b' k)"
+        by (rule times_divide_eq_left[symmetric])
+      also have "\<dots> \<in> \<int>"
+        using Ints_mult[OF \<open>\<bar>det A'\<bar> /det A' \<in> \<int>\<close>]
+              \<open>\<forall> k < n. det (replace_col A' b' k) \<in> \<int>\<close> \<open>k < n\<close>
+        by blast
+      finally show "\<bar>det A'\<bar> * det (replace_col A' b' k) / det A' \<in> \<int>" .
+    qed
     then have "vec n (\<lambda> k. \<bar>det A'\<bar> * det (replace_col A' b' k) / det A') \<in> \<int>\<^sub>v" 
       unfolding Ints_vec_def  
       by simp
