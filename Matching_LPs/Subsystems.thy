@@ -735,7 +735,23 @@ proof(safe)
         using that by blast
     qed
     then show "r \<in> set (rows A')" 
-      by (metis i in_set_conv_nth j' length_rows nth_rows)
+      proof -
+        have "r = row C j'"
+          using j' by simp
+        also have "\<dots> = row A i'"
+          using i by simp
+        also have "\<dots> = row A' j"
+          using j by simp
+        finally have r_eq: "r = row A' j" .
+        have jlen: "j < length (rows A')"
+          using j by (simp add: length_rows)
+        have "rows A' ! j = row A' j"
+          using j by (simp add: nth_rows)
+        moreover have "rows A' ! j \<in> set (rows A')"
+          using jlen by (rule nth_mem)
+        ultimately show "r \<in> set (rows A')"
+          using r_eq by simp
+      qed
   }
   show "\<And>x. row A i \<in> set (rows C) \<Longrightarrow> False" using assms(6) by auto
 
