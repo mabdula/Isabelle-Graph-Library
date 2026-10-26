@@ -2364,7 +2364,15 @@ proof -
       using 4 index_vec by blast
     then have "\<forall>k < n.  (\<lambda>i. \<bar>det A'\<bar> * z $v i) k =
      (\<lambda>k. \<bar>det A'\<bar> * det (replace_col A' b' k) / det A') k  " 
-      by (metis times_divide_eq_right)
+    proof (intro allI impI)
+      assume z_eq: "\<forall>k < n. z $ k = det (replace_col A' b' k) / det A'"
+      fix k
+      assume k_lt: "k < n"
+      have "z $ k = det (replace_col A' b' k) / det A'"
+        using z_eq k_lt by blast
+      then show "(\<lambda>i. \<bar>det A'\<bar> * z $v i) k = (\<lambda>k. \<bar>det A'\<bar> * det (replace_col A' b' k) / det A') k"
+        by simp
+    qed
     then have 6:"?z' =  vec n (\<lambda> k. \<bar>det A'\<bar> * det (replace_col A' b' k) / det A')" 
       unfolding smult_vec_def 
       by (auto simp: `dim_vec z = n` 4) 
