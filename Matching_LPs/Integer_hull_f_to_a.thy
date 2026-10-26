@@ -2208,7 +2208,16 @@ proof(safe)
       using that by blast
   qed
     then have "(list_of_vec b) ! j \<in> \<int>" 
-      by (metis Matrix.length_list_of_vec \<open>\<forall>i<dim_vec b. b $v i \<in> \<int>\<close> list_of_vec_index)
+      proof -
+        have j_dim: "j < dim_vec b"
+          using \<open>j < length (list_of_vec b)\<close>
+          by (simp add: Matrix.length_list_of_vec)
+        have "list_of_vec b ! j = b $v j"
+          using j_dim by (simp add: list_of_vec_index)
+        moreover have "b $v j \<in> \<int>"
+          using j_dim \<open>\<forall>i<dim_vec b. b $v i \<in> \<int>\<close> by blast
+        ultimately show ?thesis by simp
+      qed
     then show ?thesis 
       by (simp add: \<open>list_of_vec b ! j = nths (list_of_vec b) I ! i\<close>)
   qed
