@@ -2074,7 +2074,12 @@ proof(safe)
     then obtain j where j:"x = (p^^j) i \<and> j < least_power p i" 
       by fastforce
     then have "((inv p)^^j) x= i" 
-      by (metis assms bij_fn bij_inv_eq_iff inv_fn permutes_imp_bij)
+  proof -
+    have bij_p: "bij p" using assms permutes_imp_bij by blast
+    then have inj_pj: "inj (p ^^ j)" using bij_fn bij_is_inj by blast
+    have "inv (p ^^ j) x = i" using j inj_pj inv_f_f by fastforce
+    then show "((inv p)^^j) x= i" using inv_fn [OF bij_p, symmetric] by simp
+  qed
     have 1: "(least_power p i)-j > 0" 
       by (simp add: j)
     have "(p^^(least_power p i)) x = (p^^((least_power p i) + j)) i" 
