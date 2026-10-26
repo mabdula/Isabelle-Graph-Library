@@ -242,11 +242,12 @@ lemma if2_cond_props'''':
   shows "\<exists>v1 v2 r r'. (v1, v2, r, r') = sel_if2 flabel \<and> if2 flabel v1 v2 r r'"
 proof-
   let ?q = "sel_if2 flabel"
-  have "(fst ?q, fst (snd ?q), fst (snd (snd ?q)), snd (snd (snd ?q))) = ?q"
+  have q: "(fst ?q, fst (snd ?q), fst (snd (snd ?q)), snd (snd (snd ?q))) = ?q"
     by simp
+  have "if2 flabel (fst ?q) (fst (snd ?q)) (fst (snd (snd ?q))) (snd (snd (snd ?q)))"
+    using if2_cond_props'''[OF assms q] .
   then show ?thesis
-    using if2_cond_props'''[OF assms]
-    by metis
+    using q by force
 qed
 
 
