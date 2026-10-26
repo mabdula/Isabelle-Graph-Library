@@ -5833,8 +5833,21 @@ proof-
           by auto
         then show False
           using w_nin_M wx(2,3,4) in_odd_cycle_in_M[OF _ cycle]
-          by metis
+        proof(cases "w = last C")
+          case True
+          then have "x \<noteq> last C"
+            using wx(4) by force
+          then have "x \<in> Vs M"
+            using wx(3) in_odd_cycle_in_M[OF _ cycle] by blast
+          then show False
+            using \<open>x \<notin> Vs M\<close> by blast
+        next
+          case False
+          then show False
+            using w_nin_M wx(2) in_odd_cycle_in_M[OF _ cycle] by blast
+        qed
       qed
+
       have "{x, hd p3} \<notin> M"
         using x_hdp3_nin_M[OF w_nin_M p3_nempty wx(2,3,4,6)] .
       then have "alt_path (quotG M) (u # p3)"
