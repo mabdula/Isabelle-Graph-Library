@@ -6997,7 +6997,14 @@ qed
         proof-
           have "hd C \<in> last (edges_of_path (stem @ [hd C]))"
             using stem_nempty
-            by (metis edges_of_path_snoc insert_iff last_snoc)
+            proof -
+              have "edges_of_path (stem @ [hd C]) = edges_of_path stem @ [{last stem, hd C}]"
+                using stem_nempty by (simp add: edges_of_path_snoc)
+              hence "last (edges_of_path (stem @ [hd C])) = {last stem, hd C}"
+                by simp
+              then show ?thesis
+                by simp
+            qed
           then show ?thesis
             using matching(1)
             by (metis \<open>last (edges_of_path (stem @ [hd C])) \<in> M\<close> \<open>last C \<in> Vs M\<close> match_blossomD(3)[OF \<open>match_blossom M stem C\<close>] match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] matching_def2 odd_cycleD(3))
