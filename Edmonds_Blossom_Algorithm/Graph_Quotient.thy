@@ -1536,7 +1536,16 @@ proof-
   obtain ep where "edges_of_path p = find_pfx ((\<in>) v) (edges_of_path p) @ ep"
     using find_pfx_append_2 by auto
   then have "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (find_pfx ((\<in>) v) (edges_of_path p))"
-    by (metis alt_list_append_1 cycle(2))
+  proof -
+    have eq: "edges_of_path p = find_pfx ((\<in>) v) (edges_of_path p) @ ep"
+      by fact
+    have "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M)
+            (find_pfx ((\<in>) v) (edges_of_path p) @ ep)"
+      using cycle(2) by (simp only: eq[symmetric])
+    from alt_list_append_1[OF this]
+    show ?thesis
+      by blast
+  qed
   moreover have eofp_pfx: "(edges_of_path (find_pfx ((=) v) p)) = (find_pfx ((\<in>) v) (edges_of_path p))"
     apply(intro edges_of_path_find_pfx cycle)
     using odd_cycleD(1)[OF cycle(1)] by simp
