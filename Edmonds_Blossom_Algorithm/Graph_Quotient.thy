@@ -5459,7 +5459,21 @@ proof-
         then have "{u, hd p3} \<in> quotG M" by simp
         then have "\<exists>v. {v, hd p3} \<in> M \<and> v \<notin> s"
           using hd_p3_in_s edge_in_quotG_2'_doubleton graph matching(2)
-          by (smt dblton_graphE Diff_eq_empty_iff Diff_iff empty_iff insert_commute)
+        proof -
+          have uinq: "{u, hd p3} \<in> quotG M"
+            by fact
+          have "\<exists>w. {hd p3, w} \<in> M \<and> w \<notin> s"
+            by (rule edge_in_quotG_2'_doubleton[OF uinq hd_p3_in_s matching(2)])
+          then obtain w where w1: "{hd p3, w} \<in> M" and w2: "w \<notin> s"
+            by blast
+          show ?thesis
+          proof (intro exI[of _ w] conjI)
+            show "{w, hd p3} \<in> M"
+              using w1 by (simp add: insert_commute)
+            show "w \<notin> s"
+              using w2 .
+          qed
+        qed
         moreover have "v \<in> set C" if "v \<in> Vs E" "v \<notin> s" for v
           using that quot(1)
           by fastforce
