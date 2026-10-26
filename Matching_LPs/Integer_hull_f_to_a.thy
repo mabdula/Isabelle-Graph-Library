@@ -836,7 +836,26 @@ proof
       by (rule conjI)
   qed
   obtain i where i:"i < dim_row A \<and> i \<in> I \<and> row A i = row A' j \<and> i = (pick I j) \<and>  b $ i = b' $ j" 
-    by (metis assms(8) dim_sameAb dims_subsyst_same exist_index_in_A fst_conv j snd_conv)
+  proof -
+  have sub_eq: "sub_system A b I = (A', b')"
+    by (rule assms(8)[symmetric])
+  have fstA': "fst (sub_system A b I) = A'"
+    by (simp add: sub_eq)
+  have sndb': "snd (sub_system A b I) = b'"
+    by (simp add: sub_eq)
+  have jvec: "j < dim_vec (snd (sub_system A b I))"
+    using j dims_subsyst_same[OF dim_sameAb, of I] by (simp add: fstA' sndb')
+  obtain i0 where i0:
+      "i0 < dim_vec b" "i0 \<in> I"
+      "row (fst (sub_system A b I)) j = row A i0"
+      "snd (sub_system A b I) $ j = b $ i0"
+      "i0 = pick I j"
+    using exist_index_in_A[OF dim_sameAb jvec] by auto
+  have "i0 < dim_row A \<and> i0 \<in> I \<and> row A i0 = row A' j \<and> i0 = pick I j \<and> b $ i0 = b' $ j"
+    using i0 by (simp add: fstA' sndb' dim_sameAb)
+  then show thesis
+    by (rule that)
+  qed
   obtain C d where C_d: "(C, d) = sub_system A b (I - {i})"
     by (metis surj_pair)
   have 4: "{x. A' *\<^sub>v x = b'} = {x.  C *\<^sub>v x = d \<and> row A i \<bullet> x = b $ i }"
