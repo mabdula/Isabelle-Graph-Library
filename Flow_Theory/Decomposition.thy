@@ -496,8 +496,31 @@ qed
           by (cases "j +1 = length ES")  auto       
         ultimately have  "\<not> distinct ([x] @ bs)" 
           using hij j_def 
-          by (smt (verit, best) Es_len_b_len \<open>0 < b_len\<close> add.commute b_len_def eiv_def i_def
-                length_append mod_less mod_less_divisor nth_eq_iff_index_eq w_prop)
+proof -
+          show "\<not> distinct ([x] @ bs)"
+          proof (rule notI)
+          assume dist_xbs: "distinct ([x] @ bs)"
+          have len_eq: "length ([x] @ bs) = b_len"
+            using b_len_def by (simp add: add.commute)
+          have i_less_blen: "i < b_len"
+            using i_def[THEN conjunct1] Es_len_b_len by simp
+          have i_less: "i < length ([x] @ bs)"
+            using i_less_blen len_eq by simp
+          have j1_less: "(j + 1) mod b_len < length ([x] @ bs)"
+            using \<open>0 < b_len\<close> len_eq mod_less_divisor by simp
+          have eiv'_eq: "snd eiv' = ([x] @ bs) ! ((j + 1) mod b_len)"
+            using \<open>snd (ES ! j) = ([x] @ bs) ! ((j + 1) mod b_len)\<close> j_def(2) by simp
+          have eiv_eq: "snd eiv = ([x] @ bs) ! i"
+            using w_prop eiv_def by simp
+          have nth_eq: "([x] @ bs) ! ((j + 1) mod b_len) = ([x] @ bs) ! i"
+            using eiv'_eq eiv_eq \<open>snd eiv' = snd eiv\<close> by simp
+          have idx_eq: "(j + 1) mod b_len = i"
+            using nth_eq_iff_index_eq[OF dist_xbs j1_less i_less] nth_eq by simp
+          have "(j + 1) mod b_len = i mod b_len"
+            using idx_eq i_less_blen by (simp add: mod_less)
+          with \<open>(j + 1) mod b_len \<noteq> i mod b_len\<close> show False by simp
+        qed
+        qed
         then show False 
             using xbs_distinct by blast
         qed
