@@ -5913,8 +5913,27 @@ proof-
           by(rule not_in_quot_matching_not_in_matching_2[OF matching(1,2) cycle quot(1) aug_path(5)])
         moreover have "last (u # (rev p1)) \<notin> Vs (quotG M)"
           using wx(1) matching_augmenting_path_feats(3)[OF aug_path(1)] p1_nempty \<open>M \<subseteq> E\<close>
-          by (metis (no_types,lifting) hd_append2 last_ConsR last_rev list.set_sel(1) p1_subset_s
-              rev_p1_nempty subsetCE vert_in_graph_iff_in_quot_diff_u)
+          proof -
+            have hd_p_eq: "hd p = hd p1"
+              using wx(1) p1_nempty hd_append2
+              by simp
+            have hd_p1_nin_M: "hd p1 \<notin> Vs M"
+              using matching_augmenting_path_feats(3)[OF aug_path(1)] hd_p_eq
+              by simp
+            have hd_p1_in_s: "hd p1 \<in> s"
+              using hd_in_set[OF p1_nempty] p1_subset_s
+              by blast
+            have hd_p1_nin_quotM: "hd p1 \<notin> Vs (quotG M)"
+              using vert_in_graph_iff_in_quot_diff_u[OF hd_p1_in_s matching(2)] hd_p1_nin_M
+              by simp
+            have rev_p1_nempty: "rev p1 \<noteq> []"
+              using p1_nempty by simp
+            have last_eq: "last (u # rev p1) = hd p1"
+              using p1_nempty rev_p1_nempty
+              by (simp add: last_rev)
+            show "last (u # rev p1) \<notin> Vs (quotG M)"
+              using last_eq hd_p1_nin_quotM by simp
+          qed
         moreover have "length (u # (rev p1)) \<ge> 2"
           by (simp add: Suc_leI)
         ultimately show ?thesis
