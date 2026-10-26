@@ -681,7 +681,12 @@ qed
         then obtain z where z: "z \<in> Vs ?X_gr \<and> z\<in> Vs ?AX_gr" 
           by auto
         then have "\<exists> e \<in> G. \<exists>x\<in>X. x \<in> e \<and> z \<in> e"
-          by (smt (verit, ccfv_SIG) mem_Collect_eq vs_member_elim)
+        proof -
+          from z have "z \<in> Vs {e \<in> G. \<exists>x \<in> X. x \<in> e}" by simp
+          then obtain e where "z \<in> e" and "e \<in> {e \<in> G. \<exists>x \<in> X. x \<in> e}"
+            by (rule vs_member_elim)
+          then show ?thesis by auto
+        qed
         then obtain e' x' where e'_x':"e' \<in> G \<and> x'\<in>X \<and> x' \<in> e' \<and> z \<in> e'" 
           by auto
         then obtain e x y where e:"e \<in> G \<and> z \<in> e \<and> x \<in> A - X \<and> 
