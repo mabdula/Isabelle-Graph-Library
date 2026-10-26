@@ -973,7 +973,17 @@ proof -
     fix y
     assume "y \<in> set (support p x)" 
     then obtain n where n_exp: "y = (support p x)!n \<and> n < least_power p x" 
-      by (metis diff_zero in_set_conv_nth length_map length_upt)
+      proof -
+        have len: "length (support p x) = least_power p x"
+          by simp
+        from \<open>y \<in> set (support p x)\<close> obtain k
+          where k_less: "k < length (support p x)" and k_eq: "support p x ! k = y"
+          using in_set_conv_nth[of y "support p x"] by blast
+        have "y = support p x ! k \<and> k < least_power p x"
+          using k_eq k_less len by simp
+        then show thesis
+          by (rule that)
+      qed
     show "y \<in> Vs ?m_edges" 
     proof(cases "even n")
       case True
