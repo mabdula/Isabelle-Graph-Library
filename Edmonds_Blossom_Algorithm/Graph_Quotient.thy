@@ -4530,7 +4530,21 @@ qed
             by (fastforce simp: One_nat_def length_Suc_conv)
           then have False
             using quot_aug_path(1) p'_feats(2) up2_nin_M p2_nempty
-            by (metis (no_types,lifting) matching_augmenting_path_last_edge_nin edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append last_snoc list.sel(1) quot_aug_path(2) up2_in_M)
+          proof -
+            have amp: "matching_augmenting_path (quotG M) p'"
+              using quot_aug_path(2) by simp
+            have p2_edges: "edges_of_path p2 = []"
+              by (simp add: \<open>p2 = [a]\<close>)
+            have last_eop: "last (edges_of_path p') = {u, hd p2}"
+              unfolding quot_aug_path(1) rw4[OF p1_nempty p2_nempty] p2_edges
+              by simp
+            have in_M: "last (edges_of_path p') \<in> quotG M"
+              unfolding last_eop
+              by (rule up2_in_M[OF p2_nempty])
+            have nin_M: "last (edges_of_path p') \<notin> quotG M"
+              using matching_augmenting_path_last_edge_nin amp by blast
+            from in_M nin_M show False by simp
+          qed
           then show ?thesis by simp
         qed
       qed
