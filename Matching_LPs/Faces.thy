@@ -1333,15 +1333,53 @@ lemma eq_system_is_leq_system:
   fixes A :: "'a :: trivial_conjugatable_linordered_field mat"
   assumes "dim_vec x = dim_col A"
   shows "A *\<^sub>v x = b \<longleftrightarrow> A *\<^sub>v x \<le> b \<and> (-A) *\<^sub>v x \<le> - b"
-  apply safe
-  using uminus_mult_mat_vec[of x A] assms 
-   apply simp
-  using uminus_mult_mat_vec[of x A] assms 
-  apply simp
-  apply (auto simp:less_eq_vec_def  order_le_imp_less_or_eq)
-  apply rule
-   apply (metis index_mult_mat_vec order_antisym_conv)
-  by (metis dim_mult_mat_vec)
+proof -
+  have neg: "(- A) *\<^sub>v x = - (A *\<^sub>v x)"
+    using uminus_mult_mat_vec[of x A] assms by simp
+  show ?thesis
+  proof (rule iffI, goal_cases fwd bwd)
+    case fwd
+    show ?case
+      using fwd neg by (simp add: less_eq_vec_def)
+  next
+    case bwd
+    have le1: "A *\<^sub>v x \<le> b"
+      using bwd by blast
+    have le2: "(- A) *\<^sub>v x \<le> - b"
+      using bwd by blast
+    have dims: "dim_vec (A *\<^sub>v x) = dim_vec b"
+      using le1 unfolding less_eq_vec_def by blast
+    have upper: "(A *\<^sub>v x) $ i \<le> b $ i" if "i < dim_vec b" for i
+      using le1 that unfolding less_eq_vec_def by blast
+    have lower: "b $ i \<le> (A *\<^sub>v x) $ i" if i: "i < dim_vec b" for i
+    proof -
+      have m: "- (A *\<^sub>v x) \<le> - b"
+        using le2 neg by simp
+      have lt: "i < dim_vec (A *\<^sub>v x)"
+        using i dims by simp
+      have e1: "(- (A *\<^sub>v x)) $ i = - ((A *\<^sub>v x) $ i)"
+        using lt by (rule index_uminus_vec)
+      have e2: "(- b) $ i = - (b $ i)"
+        using i by (rule index_uminus_vec)
+      have lt2: "i < dim_vec (- b)"
+        using i by simp
+      have comp: "(- (A *\<^sub>v x)) $ i \<le> (- b) $ i"
+        using m i lt2 unfolding less_eq_vec_def by blast
+      then show ?thesis
+        using e1 e2 by (simp add: neg_le_iff_le)
+    qed
+    show ?case
+    proof (rule eq_vecI)
+      fix i
+      assume i: "i < dim_vec b"
+      show "(A *\<^sub>v x) $ i = b $ i"
+        by (rule order_antisym[OF upper[OF i] lower[OF i]])
+    next
+      show "dim_vec (A *\<^sub>v x) = dim_vec b"
+        by (rule dims)
+    qed
+  qed
+qed
 
 lemma face_is_polyhedron':
    fixes A :: "'a :: trivial_conjugatable_linordered_field mat"
