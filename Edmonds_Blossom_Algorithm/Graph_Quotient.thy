@@ -7361,11 +7361,23 @@ qed
               by simp
           qed
           ultimately show ?p2
-            using that(1,2,4) matching(1)
-            unfolding matching_def2 Vs_def
-            apply auto
-            by (metis \<open>v \<in> set C\<close> \<open>w \<notin> set C\<close> insert_iff singletonD)
-        qed
+          proof -
+            have v_mem: "v \<in> {last stem, last C}"
+              using \<open>v = last C\<close> by simp
+            have e_eq: "e = {last stem, last C}"
+              using matching(1)[unfolded matching_def2] v_inM that(1) that(2)
+                    \<open>{last stem, last C} \<in> M\<close> v_mem
+              by blast
+            have w_mem: "w \<in> {last stem, last C}"
+              using that(4) e_eq by simp
+            have C_nonempty: "C \<noteq> []"
+              using odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] .            have lastC_mem: "last C \<in> set C"
+              using last_in_set[OF C_nonempty] .
+            have w_neq_lastC: "w \<noteq> last C"
+              using \<open>w \<notin> set C\<close> lastC_mem by blast
+            from w_mem w_neq_lastC show "w = last stem"
+              by blast
+          qed        qed
         moreover have "\<forall>e\<in>M. e \<noteq> {}"
           using matching(2) graph(1)
           by (auto elim: dblton_graphE)
