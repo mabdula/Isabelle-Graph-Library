@@ -823,7 +823,13 @@ qed
         hence "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = sum g (\<delta>\<^sup>- v) - sum g (\<delta>\<^sup>+ v)" 
           using 005 by simp
         then show "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = 0" 
-          by (metis is_circ_def less.prems(3) ex_def v_Assm)
+        proof -
+          have "ex g v = 0"
+            using less.prems(3) v_Assm unfolding is_circ_def by blast
+          thus ?thesis
+            using \<open>sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = sum g (\<delta>\<^sup>- v) - sum g (\<delta>\<^sup>+ v)\<close>
+            unfolding ex_def by simp
+        qed
       qed
     qed
 
