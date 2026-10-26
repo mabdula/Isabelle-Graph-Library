@@ -1975,8 +1975,42 @@ lemma char_min_face:
  defines "P \<equiv> polyhedron A b"
  shows "min_face P F \<longleftrightarrow> F \<subseteq> P \<and> F \<noteq> {} \<and> 
         (\<exists> A' b' I'. (A', b') = sub_system A b I' \<and> F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'})"
-  using char_min_face1 char_min_face2 
-  by (smt (verit, best) A P_def b face_non_empty face_subset_polyhedron min_face_elim(1))
+proof (rule iffI)
+  assume mf: "min_face P F"
+  have fc: "face P F"
+    by (rule min_face_elim(1)[OF mf])
+  have ne: "F \<noteq> {}"
+    by (rule face_non_empty[OF fc])
+  have sub: "F \<subseteq> P"
+    by (rule face_subset_polyhedron[OF fc])
+  obtain A1 b1 I1 where
+      F_eq: "F = {x. x \<in> carrier_vec n \<and> A1 *\<^sub>v x = b1}" and
+      sys: "(A1, b1) = sub_system A b I1"
+    by (rule char_min_face1[OF A b mf[unfolded P_def]])
+  have ex: "\<exists>A' b' I'. (A', b') = sub_system A b I' \<and>
+                       F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'}"
+    using sys F_eq by blast
+  show "F \<subseteq> P \<and> F \<noteq> {} \<and>
+        (\<exists> A' b' I'. (A', b') = sub_system A b I' \<and>
+                    F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'})"
+    using sub ne ex by blast
+next
+  assume rhs: "F \<subseteq> P \<and> F \<noteq> {} \<and>
+        (\<exists> A' b' I'. (A', b') = sub_system A b I' \<and>
+                    F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'})"
+  have sub: "F \<subseteq> P"
+    using rhs by blast
+  have ne: "F \<noteq> {}"
+    using rhs by blast
+  obtain A1 b1 I1 where
+      sys: "(A1, b1) = sub_system A b I1" and
+      F_eq: "F = {x. x \<in> carrier_vec n \<and> A1 *\<^sub>v x = b1}"
+    using rhs by blast
+  have mf2: "min_face (polyhedron A b) F"
+    by (rule char_min_face2[OF A b F_eq sys sub[unfolded P_def] ne])
+  show "min_face P F"
+    unfolding P_def by (rule mf2)
+qed
 
 lemma face_is_polyhedron'':
    fixes A :: "'a :: trivial_conjugatable_linordered_field mat"
