@@ -1638,8 +1638,21 @@ qed
   have "C = set (support p x)" 
     using support_is_connected_component[of p C x] C \<open>x \<in> C\<close> assms(1) by fastforce
   then have " odd (least_power p x)" 
-    by (metis (no_types, lifting) C assms(1) cycle_vert_is_distict diff_zero distinct_card 
-        length_map length_upt)
+proof -
+  have dist: "distinct (support p x)"
+    using assms(1) by (rule cycle_vert_is_distict)
+  have "card C = card (set (support p x))"
+    using \<open>C = set (support p x)\<close> by simp
+  also have "\<dots> = length (support p x)"
+    using dist by (rule distinct_card)
+  also have "\<dots> = least_power p x"
+    by simp
+  finally have "card C = least_power p x" .
+  moreover have "odd (card C)"
+    using C by blast
+  ultimately show ?thesis
+    by simp
+  qed
   show ?thesis 
     using \<open>odd (least_power p x)\<close> that by auto
 qed
