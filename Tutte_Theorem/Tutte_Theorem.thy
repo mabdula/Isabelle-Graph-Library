@@ -115,7 +115,21 @@ proof -
     thus "{x, y} \<in> graph_diff G X" using edge graph_diffI by blast
   qed
   then have "\<forall>x y. {x, y} \<in> G \<and> x \<in> C \<longrightarrow> y \<in> C" 
-    by (metis assms(1) odd_comps_in_diff_is_component vertices_edges_in_same_component)
+  proof (intro allI impI)
+    fix x y
+    assume "{x, y} \<in> G \<and> x \<in> C"
+    then have xy_G: "{x, y} \<in> G" and xC: "x \<in> C"
+      by auto
+    have "{x, y} \<in> graph_diff G X"
+      using xy_G xC \<open>\<forall>x y. {x, y} \<in> G \<and> x \<in> C \<longrightarrow> {x, y} \<in> graph_diff G X\<close>
+      by blast
+    then have "y \<in> connected_component (graph_diff G X) x"
+      by (rule vertices_edges_in_same_component)
+    moreover have "connected_component (graph_diff G X) x = C"
+      using odd_comps_in_diff_is_component[OF assms(1) xC] .
+    ultimately show "y \<in> C"
+      by simp
+  qed
   have "connected_component G x = C" 
   proof(safe)
     fix y
