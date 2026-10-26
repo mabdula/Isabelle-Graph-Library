@@ -3495,7 +3495,7 @@ proof -
               using alt_list_rev[OF i]
               unfolding replace_cycle_def
               using p1_nempty
-              by (metis set_rev stem2vert_path_def)
+              by (simp add: F1 chv_def hd_rev stem2vert_path_def Let_def split: if_splits)
           qed
           done
         ultimately show ?thesis
