@@ -419,7 +419,7 @@ proof
   fix i
   assume "i \<in> I \<inter> {0..<dim_row A}" 
   have "dim_row A' = dim_vec b'" using assms(1) 
-    by (metis assms(2) dims_subsyst_same prod.sel(1) prod.sel(2))
+    by (simp add: dims_subsyst_same'[OF assms(1,2)])
   then obtain j where "j<dim_row A' \<and> row A' j = row A i \<and> b' $ j = b $ i" 
     using exist_index_in_A'[of A b i I]  assms(1-2) 
     by (metis IntD1 IntD2 \<open>i \<in> I \<inter> {0..<dim_row A}\<close> atLeastLessThan_iff fst_conv snd_conv)
