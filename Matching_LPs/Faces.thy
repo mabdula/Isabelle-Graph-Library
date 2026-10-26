@@ -2261,7 +2261,7 @@ have "dim_col A' = n" using dim_col_subsyst_mat A
     by (simp add: add.commute)
   have "dim_vec ((b' @\<^sub>v - b') @\<^sub>v b) =  dim_vec (b @\<^sub>v b' @\<^sub>v - b')" 
     unfolding append_vec_def 
-    by (metis add.commute dim_vec)
+    by (simp add: Let_def add.commute)
   then show "dim_row (A @\<^sub>r A' @\<^sub>r - A') = dim_vec (b @\<^sub>v b' @\<^sub>v - b')" 
     by (metis \<open>dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_row (A @\<^sub>r A' @\<^sub>r - A')\<close>
         \<open>dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_vec ((b' @\<^sub>v - b') @\<^sub>v b)\<close>)
