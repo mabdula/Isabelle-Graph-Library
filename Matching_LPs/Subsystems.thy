@@ -114,8 +114,17 @@ lemma dims_subsyst_same':
   assumes "dim_row A = dim_vec b"
   assumes "(A', b') = (sub_system A b I)" 
   shows "dim_row A' = dim_vec b'"
-  using dims_subsyst_same assms 
-  by (metis fst_conv snd_conv)
+proof -
+  have eq: "sub_system A b I = (A', b')"
+    using assms(2) by (rule sym)
+  have "dim_row A' = dim_row (fst (sub_system A b I))"
+    by (simp add: eq)
+  also have "\<dots> = dim_vec (snd (sub_system A b I))"
+    by (rule dims_subsyst_same[OF assms(1)])
+  also have "\<dots> = dim_vec b'"
+    by (simp add: eq)
+  finally show ?thesis .
+qed
 
 lemma dims_subsyst_same_carr:
   assumes "A \<in> carrier_mat nr n"
