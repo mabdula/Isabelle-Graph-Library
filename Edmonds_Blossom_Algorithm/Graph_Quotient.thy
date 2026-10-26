@@ -3302,7 +3302,18 @@ proof-
             using path_is_quot_path'[OF _ p1_subset_s] quot by blast
           subgoal using that . 
           subgoal using i matching(2)
-            by (metis contra_subsetD cycle(1) hd_append2 hd_stem2vert_nempty odd_cycle_nempty)
+            proof -
+              have C_nempty: "C \<noteq> []"
+                by (rule odd_cycle_nempty[OF cycle(1)])
+              have sv_nempty: "stem2vert_path C M (hd p2) \<noteq> []"
+                by (rule hd_stem2vert_nempty[OF C_nempty])
+              have hd_eq: "hd (stem2vert_path C M (hd p2) @ p2) = hd (stem2vert_path C M (hd p2))"
+                by (rule hd_append2[OF sv_nempty])
+              have "{last p1, hd (stem2vert_path C M (hd p2))} \<in> E"
+                using i matching(2) by blast
+              then show ?thesis
+                by (simp add: hd_eq)
+            qed
           done
       qed
     qed
