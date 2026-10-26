@@ -1320,8 +1320,8 @@ proof  -
   moreover have "a \<in> set (support (inv p) i)" 
     using assms(1) assms(2) inv_support_same by fastforce
   ultimately have "(inv p) a \<in> set (support (inv p) i)" 
-    by (smt (verit, ccfv_SIG) cycle_is_surj cycle_of_permutation cycle_restrict 
-        image_iff map_eq_conv)
+    using elemnets_in_support_expo[where n = 1 and p = "inv p" and x = a and i = i and y = "inv p a"]
+    by simp
   then show ?thesis 
     using assms(1) inv_support_same by fastforce
 qed
