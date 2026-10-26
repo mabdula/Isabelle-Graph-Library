@@ -911,7 +911,28 @@ lemma resreach_cases:
   (\<And>f e u v. \<lbrakk>a1 = f; a2 = fstv e; a3 = v; 0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u; e \<in> \<EE>; resreach f u v\<rbrakk> \<Longrightarrow> P)\<rbrakk>
    \<Longrightarrow> P"
   using  resreach_induct[of a1 a2 a3 ]
-  by (metis resreach_simps)
+proof -
+  assume res: "resreach a1 a2 a3"
+    and case1: "\<And>f e. \<lbrakk>a1 = f; a2 = fstv e; a3 = sndv e; 0 < \<uu>\<^bsub>f\<^esub>e; e \<in> \<EE>\<rbrakk> \<Longrightarrow> P"
+    and case2: "\<And>f e u v. \<lbrakk>a1 = f; a2 = fstv e; a3 = v; 0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u; e \<in> \<EE>; resreach f u v\<rbrakk> \<Longrightarrow> P"
+  from res have "(\<exists>f e. a1 = f \<and> a2 = fstv e \<and> a3 = sndv e \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> e \<in> \<EE>) \<or>
+   (\<exists>f e u v. a1 = f \<and> a2 = fstv e \<and> a3 = v \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = u \<and> e \<in> \<EE> \<and> resreach f u v)"
+    using resreach_simps by blast
+  then show P
+  proof (rule disjE)
+    assume "\<exists>f e. a1 = f \<and> a2 = fstv e \<and> a3 = sndv e \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> e \<in> \<EE>"
+    then obtain f e where f1: "a1 = f" and f2: "a2 = fstv e" and f3: "a3 = sndv e"
+      and f4: "0 < \<uu>\<^bsub>f\<^esub>e" and f5: "e \<in> \<EE>"
+      by blast
+    show P by (rule case1[OF f1 f2 f3 f4 f5])
+  next
+    assume "\<exists>f e u v. a1 = f \<and> a2 = fstv e \<and> a3 = v \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = u \<and> e \<in> \<EE> \<and> resreach f u v"
+    then obtain f e u v where g1: "a1 = f" and g2: "a2 = fstv e" and g3: "a3 = v"
+      and g4: "0 < \<uu>\<^bsub>f\<^esub>e" and g5: "sndv e = u" and g6: "e \<in> \<EE>" and g7: "resreach f u v"
+      by blast
+    show P by (rule case2[OF g1 g2 g3 g4 g5 g6 g7])
+  qed
+qed
 
 lemma resreach_app_single': 
   assumes "resreach f u v"
