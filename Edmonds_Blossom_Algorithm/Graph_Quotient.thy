@@ -4380,7 +4380,7 @@ qed
         next
           case False                                                                                                    
           then have "length p1 = 1"
-            by (metis One_nat_def Suc_1 Suc_leI eq_iff length_greater_0_conv not_less_eq_eq p1_nempty)
+            using p1_nempty by (cases p1) (simp, force simp: not_le Nat.less_one)
           then obtain a where "p1 = [a]"
             by (metis One_nat_def add.commute add.right_neutral length_0_conv length_tl list.collapse list.sel(3) list.size(4))
           then have False
