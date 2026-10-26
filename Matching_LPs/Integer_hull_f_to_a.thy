@@ -370,8 +370,31 @@ next
     then have "\<forall> x \<in> F. (- unit_vec n i) \<bullet> x = \<beta>\<^sub>i"
       using assms(5) unfolding min_face_def using  basic_trans_rules(17) by blast
     then show "(\<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i)"
-      apply (simp add: C_d(1) \<open>i < n\<close> polyhedron_def)
-      by (metis R.minus_minus \<open>i < n\<close> scalar_prod_left_unit uminus_scalar_prod unit_vec_carrier)
+    proof -
+      assume key: "\<forall>x\<in>F. - unit_vec n i \<bullet> x = \<beta>\<^sub>i"
+      have "\<forall>x\<in>F. x $ i = - \<beta>\<^sub>i"
+      proof (rule ballI)
+        fix x
+        assume xF: "x \<in> F"
+        then have xc: "x \<in> carrier_vec n"
+          using C_d(1) by (simp add: polyhedron_def)
+        have key_x: "(- unit_vec n i) \<bullet> x = \<beta>\<^sub>i"
+          using key xF by blast
+        have neg: "(- unit_vec n i) \<bullet> x = - (x $ i)"
+        proof -
+          have "(- unit_vec n i) \<bullet> x = - (unit_vec n i \<bullet> x)"
+            using xc unit_vec_carrier by (simp add: uminus_scalar_prod)
+          also have "\<dots> = - (x $ i)"
+            using xc \<open>i < n\<close> by (simp add: scalar_prod_left_unit)
+          finally show ?thesis .
+        qed
+        have "x $ i = - ((- unit_vec n i) \<bullet> x)"
+          using neg by simp
+        then show "x $ i = - \<beta>\<^sub>i"
+          using key_x by simp
+      qed
+      then show ?thesis by blast
+    qed
   qed
   have "\<exists>! x. x \<in> F" 
   proof(rule ccontr)
