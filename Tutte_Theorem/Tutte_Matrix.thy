@@ -3230,9 +3230,23 @@ proof -
       using el_in_sum_is_nonzero[of UNIV a "\<lambda> j. {j, p j}"] 
             a finite_class.finite_UNIV by blast 
     have "Poly_Mapping.lookup (\<Sum>i\<in>UNIV. Poly_Mapping.single {i, p' i} (1::nat)) e = 0"
-      using lookup_single_eq lookup_sum 
-      by (smt (verit, best) \<open>e \<notin> u_edges p'\<close> lookup_single_not_eq mem_Collect_eq sum_eq_0_iff
-          u_edges_def univ_is_finite)
+      proof -
+        have "\<And>i. i \<in> (UNIV::'a set) \<Longrightarrow> 
+              Poly_Mapping.lookup (Poly_Mapping.single {i, p' i} (1::nat)) e = 0"
+        proof -
+          fix i :: 'a
+          assume "i \<in> (UNIV::'a set)"
+          have "{i, p' i} \<noteq> e" 
+            using \<open>e \<notin> u_edges p'\<close> unfolding u_edges_def by blast
+          then show "Poly_Mapping.lookup (Poly_Mapping.single {i, p' i} (1::nat)) e = 0"
+            by (simp add: lookup_single_not_eq)
+        qed
+        then have "(\<Sum>i\<in>(UNIV::'a set). 
+              Poly_Mapping.lookup (Poly_Mapping.single {i, p' i} (1::nat)) e) = 0"
+          by (auto intro: sum.neutral)
+        then show ?thesis
+          by (simp add: lookup_sum)
+      qed
     then show ?thesis 
       using 1 by fastforce
   next
