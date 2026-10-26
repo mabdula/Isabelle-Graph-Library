@@ -143,7 +143,16 @@ proof -
       case False
       then obtain p where p_walk:"walk_betw G x p y"
         using `y \<in> connected_component G x`
-        by (metis  in_con_comp_has_walk )
+        proof -
+        have yx: "y \<noteq> x"
+          using False by blast
+        show thesis
+        proof (rule in_con_comp_has_walk[OF `y \<in> connected_component G x` yx])
+          fix q
+          assume "walk_betw G x q y"
+          then show thesis by (rule that)
+        qed
+      qed
       then have "hd p \<in> C" 
         by (simp add: \<open>x \<in> Vs G \<and> x \<in> C\<close> walk_between_nonempty_pathD(3))
       then have "path G p" 
