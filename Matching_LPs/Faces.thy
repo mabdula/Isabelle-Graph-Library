@@ -825,7 +825,18 @@ lemma set_of_sub_dims_finite:
   shows "finite {dim_vec d| C d I. (C, d) = sub_system A b I}" (is "finite ?M")
 proof -
   have "\<forall> nd \<in> ?M. nd\<le> dim_vec b"
-    by (smt (verit, ccfv_SIG) dim_subsyst_vec_less_b mem_Collect_eq snd_eqD)
+  proof (rule ballI, goal_cases)
+    case (1 nd)
+    then obtain C d I where nd_eq: "nd = dim_vec d"
+      and sub: "(C, d) = sub_system A b I"
+      by blast
+    have snd_eq: "snd (sub_system A b I) = d"
+      by (simp add: sub [symmetric])
+    have "dim_vec (snd (sub_system A b I)) \<le> dim_vec b"
+      by (rule dim_subsyst_vec_less_b)
+    then show ?case
+      using nd_eq snd_eq by simp
+  qed
    then have "?M \<subseteq> {0..<dim_vec b+1}" by fastforce 
   then show "finite ?M" 
     using subset_eq_atLeast0_lessThan_finite by blast
