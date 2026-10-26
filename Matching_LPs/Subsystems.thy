@@ -485,7 +485,7 @@ proof(rule)+
   have "j \<in> I \<and> j < dim_row A \<and> row A j = row A' i \<and> b $ j = b' $ i"
     using j_props assms(1) A'_eq b'_eq by simp
   then have "P (row A j) (b $ j)" using assms(3) 
-    by (metis Int_iff atLeastLessThan_iff zero_le)
+    by fastforce
   then show " P (row A' i) (b' $ i)" 
     by (simp add: \<open>j \<in> I \<and> j < dim_row A \<and> row A j = row A' i \<and> b $ j = b' $ i\<close>)
 qed
