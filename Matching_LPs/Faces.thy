@@ -1836,8 +1836,24 @@ proof
   have "\<not> (row C j \<bullet> x = d $ j)" 
     using \<open>j < dim_row C \<and> row C' i = row C j \<and> d' $ i = d $ j\<close> i by presburger
   then obtain j' where j :"j < dim_row C" "row C j = - (row C j')" "d $ j = - (d $ j')"
-    using eq_polyhedron_neg_indices A \<open>C = A' @\<^sub>r - A'\<close> j assms(5) b \<open>d = b' @\<^sub>v - b'\<close> 
-    by metis
+  proof -
+    have j_lt: "j < dim_row (A' @\<^sub>r - A')"
+      using j C_d(2) by simp
+    obtain k where
+      k_lt: "k < dim_row (A' @\<^sub>r - A')" and
+      k_row: "row (A' @\<^sub>r - A') j = - (row (A' @\<^sub>r - A') k)" and
+      k_val: "(b' @\<^sub>v - b') $ j = - ((b' @\<^sub>v - b') $ k)"
+      by (rule eq_polyhedron_neg_indices[OF A b assms(5) assms(4) j_lt])
+    show thesis
+    proof (rule that[of k])
+      show "j < dim_row C"
+        using j_lt C_d(2) by simp
+      show "row C j = - (row C k)"
+        unfolding C_d(2) by (rule k_row)
+      show "d $ j = - (d $ k)"
+        unfolding C_d(3) by (rule k_val)
+    qed
+  qed
   have "x \<in>  carrier_vec n \<and> C *\<^sub>v x \<le> d"     
     by (simp add: x)
   then have "row C j \<bullet> x \<le> d $ j \<and> row C j' \<bullet> x \<le> d $ j'" 
