@@ -1769,8 +1769,38 @@ proof
           gram_schmidt.polyhedron_def)
   then obtain i where i: "i < dim_row C' \<and> \<not> (row C' i \<bullet> x = d' $ i)"
     using index_mult_mat_vec 
-    by (metis C'_d'(1) \<open>C \<in> carrier_mat (dim_vec d) n\<close> carrier_matD(1) 
-        dim_mult_mat_vec dims_subsyst_same' eq_vecI)
+  proof -
+    have neq: "C' *\<^sub>v x \<noteq> d'"
+      using x by blast
+    have dimC: "dim_row C = dim_vec d"
+      using \<open>C \<in> carrier_mat (dim_vec d) n\<close> by (rule carrier_matD(1))
+    have dims: "dim_row C' = dim_vec d'"
+      using dims_subsyst_same' dimC C'_d'(1) by blast
+    have "\<exists>i. i < dim_row C' \<and> row C' i \<bullet> x \<noteq> d' $ i"
+    proof (rule ccontr)
+      assume "\<not> (\<exists>i. i < dim_row C' \<and> row C' i \<bullet> x \<noteq> d' $ i)"
+      then have all_eq: "\<And>i. i < dim_row C' \<Longrightarrow> row C' i \<bullet> x = d' $ i"
+        by blast
+      have "C' *\<^sub>v x = d'"
+      proof (rule eq_vecI)
+        fix i
+        assume "i < dim_vec d'"
+        then have i: "i < dim_row C'"
+          using dims by simp
+        have "(C' *\<^sub>v x) $ i = row C' i \<bullet> x"
+          by (rule index_mult_mat_vec[OF i])
+        also have "\<dots> = d' $ i"
+          by (rule all_eq[OF i])
+        finally show "(C' *\<^sub>v x) $ i = d' $ i" .
+      next
+        show "dim_vec (C' *\<^sub>v x) = dim_vec d'"
+          using dims by simp
+      qed
+      with neq show False by simp
+    qed
+    then show thesis
+      using that by blast
+  qed
   then obtain j where j:"j < dim_row C \<and>  row C' i = row C j \<and> d' $ i = d $ j" 
     using exist_index_in_A
     by (metis C'_d'(1) \<open>dim_row C = dim_vec d\<close> dims_subsyst_same fst_conv snd_conv)
