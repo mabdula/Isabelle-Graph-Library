@@ -384,7 +384,16 @@ lemma complementary_slackness:
 proof -
   have "dim_row A = nr" using A by auto
   have "y \<in> carrier_vec nr" 
-    by (metis assms(3) carrier_dim_vec index_zero_vec(2) less_eq_vec_def)
+  proof -
+    have y_ge: "0\<^sub>v nr \<le> y"
+      using assms(3) by blast
+    have "dim_vec y = dim_vec (0\<^sub>v nr)"
+      using y_ge by (simp add: less_eq_vec_def)
+    then have "dim_vec y = nr"
+      by simp
+    then show "y \<in> carrier_vec nr"
+      by (rule carrier_dim_vec[THEN iffD2])
+  qed
   then  have "(A\<^sup>T *\<^sub>v y) \<bullet> x = y \<bullet> (A *\<^sub>v x)" 
     using transpose_vec_mult_scalar[of A nr n x y] assms(1) assms(3) 
     using assms(4) gram_schmidt.polyhedron_def by blast
