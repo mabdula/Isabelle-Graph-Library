@@ -1091,7 +1091,16 @@ proof -
           then obtain a where a_elem:"{a, (p a)} = {u, t}  \<and> a \<in> set ?start_vert" 
             using asme1 uv by blast
           obtain b where b_elem:"{b, (p b)} = {v, t}  \<and> b \<in> set ?start_vert" 
-            by (smt (verit, ccfv_SIG) asme2 insert_commute mem_Collect_eq uv)
+          proof -
+            from asme2 obtain b where b1: "e2 = {b, p b}" and b2: "b \<in> set ?start_vert"
+              by blast
+            have "{b, p b} = e2" using b1 by (rule sym)
+            also have "e2 = {t, v}" using uv by simp
+            also have "{t, v} = {v, t}" by auto
+            finally have b3: "{b, p b} = {v, t}" .
+            from b3 b2 have "{b, p b} = {v, t} \<and> b \<in> set ?start_vert" by (rule conjI)
+            then show thesis by (rule that)
+          qed
           have "even (length (support p x))" 
             using \<open>even (length (support p x))\<close> by blast
           have "a \<in> set (support p x)"  
