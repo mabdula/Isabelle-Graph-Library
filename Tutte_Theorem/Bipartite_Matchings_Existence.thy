@@ -614,9 +614,27 @@ qed
         have "(neighbours_of_Vs G Y - neighbours_of_Vs G X) \<inter> neighbours_of_Vs G X = {}"  by auto
         then have "card (neighbours_of_Vs G (Y \<union> X))  = 
                    card (neighbours_of_Vs G Y - neighbours_of_Vs G X) + card (neighbours_of_Vs G X)"
-          by (metis (no_types, lifting) \<open>X \<noteq> {}\<close> \<open>X \<subset> A\<close> \<open>card X = card (neighbours_of_Vs G X)\<close> 
-              \<open>?AX_gr \<subseteq> G\<close>  card.infinite card_0_eq card_Un_disjoint finite_neighbours_of_Vs finite_subset
-              graphE Asubs psubset_imp_subset reach_AX_Y neighbours_of_Vs_un)
+        proof -
+          have finite_X: "finite (neighbours_of_Vs G X)"
+            using finite_neighbours_of_Vs graphE by auto
+          have finite_Y: "finite (neighbours_of_Vs G Y)"
+            using finite_neighbours_of_Vs graphE by auto
+          have finite_diff: "finite (neighbours_of_Vs G Y - neighbours_of_Vs G X)"
+            using finite_Y by simp
+          have union_eq: "neighbours_of_Vs G (Y \<union> X) = neighbours_of_Vs G Y \<union> neighbours_of_Vs G X"
+            unfolding neighbours_of_Vs_def by auto
+          have split_eq: "neighbours_of_Vs G Y \<union> neighbours_of_Vs G X
+                 = (neighbours_of_Vs G Y - neighbours_of_Vs G X) \<union> neighbours_of_Vs G X"
+            by auto
+          have split_card: "card ((neighbours_of_Vs G Y - neighbours_of_Vs G X) \<union> neighbours_of_Vs G X)
+                 = card (neighbours_of_Vs G Y - neighbours_of_Vs G X) + card (neighbours_of_Vs G X)"
+            using finite_diff finite_X
+                  \<open>(neighbours_of_Vs G Y - neighbours_of_Vs G X) \<inter> neighbours_of_Vs G X = {}\<close>
+            by (rule card_Un_disjoint)
+          show ?thesis
+            unfolding union_eq split_eq
+            by (rule split_card)
+        qed
         then have card_diff:"card (neighbours_of_Vs G Y - neighbours_of_Vs G X) = 
                    card (neighbours_of_Vs G (Y \<union> X)) - card (neighbours_of_Vs G X)" by auto
         have "card (neighbours_of_Vs G (Y \<union> X)) \<ge> card (Y \<union> X)"
