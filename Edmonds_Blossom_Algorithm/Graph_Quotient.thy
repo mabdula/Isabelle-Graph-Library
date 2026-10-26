@@ -2443,7 +2443,55 @@ proof-
       moreover have "alt_path M (chp @ [chv])"
         using alt_list_chp_chv .
       moreover have "edges_of_path (chp @ [chv]) \<noteq> [] \<longrightarrow> last (edges_of_path (chp @ [chv])) \<in> M"
-        by (metis (mono_tags, lifting) \<open>C \<noteq> []\<close> \<open>hd C = hd (rev C)\<close> \<open>last (edges_of_path (chp @ [chv])) \<in> M \<and> chp \<noteq> [] \<or> chv = hd C\<close> chp chv_def edges_of_path.simps(2) find_pfx.simps(2) list.exhaust_sel rev_is_Nil_conv set_rev stem2vert_path_def)
+        proof (intro impI)
+          assume ne: "edges_of_path (chp @ [chv]) \<noteq> []"
+          have chp_empty: "chp = []" if hd_eq: "chv = hd C"
+          proof -
+            obtain c cs where C_eq: "C = c # cs"
+              using \<open>C \<noteq> []\<close> by (cases C) auto
+            have c_eq: "c = chv"
+              using hd_eq C_eq by simp
+            have pfx1: "find_pfx ((=) chv) C = [chv]"
+              using C_eq c_eq by simp
+            have rev_ne: "rev C \<noteq> []"
+              using \<open>C \<noteq> []\<close> by simp
+            then obtain d ds where rC_eq: "rev C = d # ds"
+              by (cases "rev C") auto
+            have d_eq: "d = chv"
+            proof -
+              have "d = hd (rev C)"
+                using rC_eq by simp
+              also have "\<dots> = hd C"
+                using \<open>hd C = hd (rev C)\<close> by simp
+              finally show ?thesis
+                using hd_eq by simp
+            qed
+            have pfx2: "find_pfx ((=) chv) (rev C) = [chv]"
+              using rC_eq d_eq by simp
+            have sv: "stem2vert_path C M a2' =
+                        (if last (edges_of_path (find_pfx ((=) chv) C)) \<in> M
+                         then find_pfx ((=) chv) C
+                         else find_pfx ((=) chv) (rev C))"
+              unfolding stem2vert_path_def Let_def chv_def by (simp add: set_rev)
+            have "stem2vert_path C M a2' = [chv]"
+              using sv pfx1 pfx2 by simp
+            then have "chp @ [chv] = [chv]"
+              using chp by simp
+            then show "chp = []"
+              by simp
+          qed
+          from \<open>last (edges_of_path (chp @ [chv])) \<in> M \<and> chp \<noteq> [] \<or> chv = hd C\<close>
+          show "last (edges_of_path (chp @ [chv])) \<in> M"
+          proof (elim disjE)
+            assume "last (edges_of_path (chp @ [chv])) \<in> M \<and> chp \<noteq> []"
+            then show ?thesis by simp
+          next
+            assume hdC: "chv = hd C"
+            have "edges_of_path (chp @ [chv]) = []"
+              using chp_empty[OF hdC] by simp
+            with ne show ?thesis by simp
+          qed
+        qed
       moreover have "\<forall>x\<in>set (edges_of_path (chp @ [chv])). (x \<notin> M) = (x \<notin> M)"
         by auto
       ultimately have "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path ((chp @ [chv])) @ edges_of_path (chv # a2' # p2'))"
