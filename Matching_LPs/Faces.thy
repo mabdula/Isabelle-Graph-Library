@@ -785,8 +785,35 @@ proof -
       by (simp add: eq)
   qed
   then have "\<forall> x \<in> P.  1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x) \<le> 1\<^sub>v (dim_vec b') \<bullet> b'"
-    by (metis (no_types, lifting) atLeastLessThan_iff carrier_vec_dim_vec 
-         less_eq_vec_def scalar_prod_left_one sum_mono)
+  proof -
+    assume subsyst_le: "\<forall> x \<in> P. A' *\<^sub>v x \<le> b'"
+    show ?thesis
+    proof (rule ballI)
+      fix x
+      assume "x \<in> P"
+      then have le: "A' *\<^sub>v x \<le> b'"
+        using subsyst_le by blast
+      have dim_eq: "dim_vec (A' *\<^sub>v x) = dim_vec b'"
+        using le unfolding less_eq_vec_def by blast
+      have carr: "A' *\<^sub>v x \<in> carrier_vec (dim_vec b')"
+        using dim_eq unfolding carrier_vec_def by simp
+      have le_index: "\<forall> i < dim_vec b'. (A' *\<^sub>v x) $ i \<le> b' $ i"
+        using le unfolding less_eq_vec_def by blast
+      have "1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x) = (\<Sum> i = 0..<dim_vec b'. (A' *\<^sub>v x) $ i)"
+        by (rule scalar_prod_left_one[OF carr])
+      also have "\<dots> \<le> (\<Sum> i = 0..<dim_vec b'. b' $ i)"
+      proof (rule sum_mono)
+        fix i
+        assume "i \<in> {0..<dim_vec b'}"
+        then have "i < dim_vec b'" by simp
+        then show "(A' *\<^sub>v x) $ i \<le> b' $ i"
+          using le_index by blast
+      qed
+      also have "\<dots> = 1\<^sub>v (dim_vec b') \<bullet> b'"
+        by (rule scalar_prod_left_one[OF carrier_vec_dim_vec, symmetric])
+      finally show "1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x) \<le> 1\<^sub>v (dim_vec b') \<bullet> b'" .
+    qed
+  qed
   then have "valid_ineq P ?\<alpha> ?\<beta>" 
     unfolding valid_ineq_def P_def polyhedron_def 
     using "1" \<open>A' \<in> carrier_mat (dim_vec b') n\<close> by force
