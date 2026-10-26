@@ -2298,8 +2298,28 @@ proof -
   have "?sup p ?i = ?sup (rev_p p) ?i" 
     using assms(1) rev_p_support_same by presburger
   then have 5: "odd (least_power (rev_p p) ?i)" 
-    by (smt (verit, best) \<open>odd (least_power p (least_odd p))\<close> 1 assms(1) 
-        diff_zero distinct_card length_map length_upt map_eq_conv perm_support_distinct)
+  proof -
+    have supp_eq: "set (support p (least_odd p)) = set (support (rev_p p) (least_odd p))"
+      using assms(1) rev_p_support_same by presburger
+    have dist_p: "distinct (support p (least_odd p))"
+      using perm_support_distinct assms(1) by blast
+    have dist_rev: "distinct (support (rev_p p) (least_odd p))"
+      using perm_support_distinct "1" by blast
+    have len_p: "length (support p (least_odd p)) = least_power p (least_odd p)"
+      by simp
+    have len_rev: "length (support (rev_p p) (least_odd p)) = least_power (rev_p p) (least_odd p)"
+      by simp
+    have card_p: "card (set (support p (least_odd p))) = least_power p (least_odd p)"
+      using dist_p len_p distinct_card by fastforce
+    have card_rev: "card (set (support (rev_p p) (least_odd p))) = least_power (rev_p p) (least_odd p)"
+      using dist_rev len_rev distinct_card by fastforce
+    have card_eq: "card (set (support p (least_odd p))) = card (set (support (rev_p p) (least_odd p)))"
+      using supp_eq by simp
+    have "least_power p (least_odd p) = least_power (rev_p p) (least_odd p)"
+      using card_p card_rev card_eq by simp
+    then show ?thesis
+      using \<open>odd (least_power p (least_odd p))\<close> by simp
+  qed
   have 3: "?sup p ?i_rev = ?sup (rev_p p) ?i_rev" 
     using assms(1) rev_p_support_same by presburger
   then have "odd (least_power p ?i_rev)"  
