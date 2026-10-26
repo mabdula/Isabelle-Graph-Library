@@ -1127,9 +1127,24 @@ proof -
 qed
 
 corollary flow_less_cut: "f is b flow \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> sum b X \<le> Cap X"
-  using  isbflow_def[of f b] flow_cross_cut_less_cap [of f X]
-         flow_value[of f  b X] sum_crossing_in_pos[of f X] 
-  by (smt (verit, best) dual_order.trans le_ereal_le sum.cong sum_ereal verit_comp_simplify1(2))
+proof -
+  assume fb: "f is b flow" and XV: "X \<subseteq> \<V>"
+  have isu: "isuflow f"
+    using fb by (auto simp add: isbflow_def)
+  have eq: "(\<Sum> v \<in> X. b v) = (\<Sum> e \<in> \<Delta>\<^sup>+ X. f e) - (\<Sum> e \<in> \<Delta>\<^sup>- X. f e)"
+    using flow_value[OF fb XV] by simp
+  have nonneg_in: "(\<Sum> e \<in> \<Delta>\<^sup>- X. f e) \<ge> 0"
+    using sum_crossing_in_pos[OF isu] by simp
+  have le_out: "sum b X \<le> (\<Sum> e \<in> \<Delta>\<^sup>+ X. f e)"
+    using eq nonneg_in by linarith
+  have le_cap: "ereal (\<Sum> e \<in> \<Delta>\<^sup>+ X. f e) \<le> Cap X"
+    using flow_cross_cut_less_cap[OF isu] by simp
+  have "ereal (sum b X) \<le> ereal (\<Sum> e \<in> \<Delta>\<^sup>+ X. f e)"
+    using le_out by simp
+  also have "\<dots> \<le> Cap X"
+    using le_cap by simp
+  finally show ?thesis by simp
+qed
 
 text \<open>Furthermore, we observe that for the residual cut around a vertex, no incoming edge can carry any flow.
      Otherwise, the was an activated residual edge in the opposite direction 
