@@ -1624,9 +1624,34 @@ next
       by (simp add: eq)
   qed
   then have "(b' @\<^sub>v (-b')) $ i = - b' $ ?i'" 
-    by (metis A False 1 2 assms(4) assms(6) b carrier_matD(1) carrier_vecD dims_subsyst_same' 
-        face_is_polyhedron'(2) index_append_vec(1) index_append_vec(2) index_uminus_mat(2) 
-        index_uminus_vec(1) less_diff_conv2)
+  proof -
+    have dimAb: "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    have dims: "dim_row A' = dim_vec b'"
+      using dims_subsyst_same' dimAb assms(4) by blast
+    have ge': "dim_vec b' \<le> i"
+      using 1 dims by simp
+    have lt': "i < dim_vec b' + dim_vec b'"
+      using 2 dims by simp
+    have ncond: "\<not> i < dim_vec b'"
+      using ge' by linarith
+    have app: "(b' @\<^sub>v - b') $ i =
+                 (if i < dim_vec b' then b' $ i else (- b') $ (i - dim_vec b'))"
+    proof (rule index_append_vec(1))
+      show "i < dim_vec b' + dim_vec (- b')"
+        using lt' by simp
+    qed
+    have step1: "(b' @\<^sub>v - b') $ i = (- b') $ (i - dim_vec b')"
+      using app by (simp add: ncond)
+    have lt2: "i - dim_vec b' < dim_vec b'"
+      using lt' by (simp add: less_diff_conv2[OF ge'])
+    have step2: "(- b') $ (i - dim_vec b') = - (b' $ (i - dim_vec b'))"
+      by (rule index_uminus_vec(1)[OF lt2])
+    have "(b' @\<^sub>v - b') $ i = - (b' $ (i - dim_vec b'))"
+      using step1 step2 by simp
+    then show ?thesis
+      using dims by simp
+  qed
   then have "(b' @\<^sub>v (-b')) $ i = - ((b' @\<^sub>v (-b')) $ ?i')" 
     by (metis A 1 2 assms(4) b carrier_matD(1) carrier_vecD dims_subsyst_same'
         index_append_vec(1) index_uminus_mat(2) less_diff_conv2 trans_less_add1)
