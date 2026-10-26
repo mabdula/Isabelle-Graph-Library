@@ -1470,7 +1470,18 @@ proof -
   have "finite A'" 
     using A' graph by blast
   then obtain A where "A \<subseteq> A' \<and> (card (odd_comps_in_diff G X) - card X = card A)" 
-    by (metis 4 obtain_subset_with_card_n)
+  proof -
+    have "\<exists>B. B \<subseteq> A' \<and> card (odd_comps_in_diff G X) - card X = card B"
+    proof (rule obtain_subset_with_card_n[OF 4])
+      fix T
+      assume T_sub: "T \<subseteq> A'"
+        and T_card: "card T = card (odd_comps_in_diff G X) - card X"
+      show "\<exists>B. B \<subseteq> A' \<and> card (odd_comps_in_diff G X) - card X = card B"
+        by (rule exI[where x=T]) (simp add: T_sub T_card)
+    qed
+    then show ?thesis
+      using that by blast
+  qed
   then show " 2 * (card M) + card (odd_comps_in_diff G X) - card X \<ge> card (Vs G)"
     using berge_formula2[of G M X A] assms 
     by (smt (z3) \<open>A' \<inter> Vs G = {}\<close> \<open>finite A'\<close> disjoint_iff_not_equal finite_subset graph subsetD)
