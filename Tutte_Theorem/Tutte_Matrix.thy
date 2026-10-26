@@ -2251,7 +2251,16 @@ proof(safe)
     have "{((inv p) i), (p ((inv p) i))} \<in> u_edges p" 
       using u_edges_def by auto
     then show ?thesis 
-      by (metis i \<open>rev_p p i = inv p i\<close> assms(1) doubleton_eq_iff permutes_inv_eq)
+    proof -
+      have p_inv: "p (inv p i) = i"
+        using permutes_inv_eq[OF assms(1)] by blast
+      have mem: "{inv p i, p (inv p i)} \<in> u_edges p"
+        using u_edges_def by auto
+      have e_eq: "e = {inv p i, p (inv p i)}"
+        using i \<open>rev_p p i = inv p i\<close> p_inv by (simp add: insert_commute)
+      show ?thesis
+        using mem e_eq by simp
+    qed
   next
     case False
     have "(rev_p p) i = p i" using False 
