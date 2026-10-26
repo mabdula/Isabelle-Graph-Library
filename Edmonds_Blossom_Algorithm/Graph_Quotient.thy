@@ -6463,8 +6463,37 @@ proof(induction "length p" arbitrary: p M rule: less_induct)
               by (auto simp add: alt_list_step)
           qed
           subgoal using less
-            apply (simp add: alt_list_step matching_def2 Vs_def)
-            by (metis DiffD1 DiffD2 singleton_iff)
+            proof (unfold matching_def2, intro ballI)
+              fix v
+              assume v_in_Vs: "v \<in> Vs (M - {{a'', a'''}})"
+              then obtain e0 where e0_in: "e0 \<in> M - {{a'', a'''}}" and v_in_e0: "v \<in> e0"
+                by (auto simp: Vs_def)
+              have e0_in_M: "e0 \<in> M"
+                using e0_in by blast
+              have v_in_VsM: "v \<in> Vs M"
+                using v_in_e0 e0_in_M by (auto simp: Vs_def)
+              have "\<exists>!e\<in>M. v \<in> e"
+                using less.prems(2)[unfolded matching_def2] v_in_VsM by blast
+              then obtain e where e_in_M: "e \<in> M" and v_in_e: "v \<in> e"
+                and e_unique: "\<forall>x\<in>M. v \<in> x \<longrightarrow> x = e"
+                by auto
+              have e0_eq_e: "e0 = e"
+                using e_unique e0_in_M v_in_e0 by blast
+              show "\<exists>!e\<in>M - {{a'', a'''}}. v \<in> e"
+              proof (rule ex1I[of _ e0])
+                show "e0 \<in> M - {{a'', a'''}} \<and> v \<in> e0"
+                  using e0_in v_in_e0 by blast
+              next
+                fix x
+                assume "x \<in> M - {{a'', a'''}} \<and> v \<in> x"
+                then have "x \<in> M" "v \<in> x"
+                  by blast+
+                then have "x = e"
+                  using e_unique by blast
+                then show "x = e0"
+                  using e0_eq_e by simp
+              qed
+            qed
           subgoal using a'''nin by simp
           subgoal proof-
             have "last (edges_of_path (a''' # p''')) \<noteq> {a'', a'''}" if "2 \<le> length (a''' # p''')"
