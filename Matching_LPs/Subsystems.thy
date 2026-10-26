@@ -422,7 +422,34 @@ proof
     by (simp add: dims_subsyst_same'[OF assms(1,2)])
   then obtain j where "j<dim_row A' \<and> row A' j = row A i \<and> b' $ j = b $ i" 
     using exist_index_in_A'[of A b i I]  assms(1-2) 
-    by (metis IntD1 IntD2 \<open>i \<in> I \<inter> {0..<dim_row A}\<close> atLeastLessThan_iff fst_conv snd_conv)
+  proof -
+    have i_in: "i \<in> I"
+      using \<open>i \<in> I \<inter> {0..<dim_row A}\<close> by auto
+    have i_lt: "i < dim_row A"
+      using \<open>i \<in> I \<inter> {0..<dim_row A}\<close> by auto
+    have i_b: "i < dim_vec b"
+      using i_lt assms(1) by simp
+    have A'_eq: "A' = fst (sub_system A b I)"
+      using assms(2)[symmetric] by simp
+    have b'_eq: "b' = snd (sub_system A b I)"
+      using assms(2)[symmetric] by simp
+    have dims: "dim_row A' = dim_vec b'"
+      by (rule dims_subsyst_same'[OF assms(1) assms(2)])
+    obtain k where k1: "k < dim_vec (snd (sub_system A b I))"
+      and k2: "row (fst (sub_system A b I)) k = row A i"
+      and k3: "snd (sub_system A b I) $ k = b $ i"
+      using exist_index_in_A'[OF assms(1) i_b i_in] by blast
+    have "k < dim_row A'"
+      using k1 dims b'_eq by simp
+    moreover have "row A' k = row A i"
+      using k2 A'_eq by simp
+    moreover have "b' $ k = b $ i"
+      using k3 b'_eq by simp
+    ultimately have "k < dim_row A' \<and> row A' k = row A i \<and> b' $ k = b $ i"
+      by blast
+    then show thesis
+      by (rule that)
+  qed
   then show "P (row A i) (b $ i)" using assms(3) by auto
 qed
 
