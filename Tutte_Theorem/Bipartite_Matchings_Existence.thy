@@ -638,8 +638,12 @@ qed
         then have card_diff:"card (neighbours_of_Vs G Y - neighbours_of_Vs G X) = 
                    card (neighbours_of_Vs G (Y \<union> X)) - card (neighbours_of_Vs G X)" by auto
         have "card (neighbours_of_Vs G (Y \<union> X)) \<ge> card (Y \<union> X)"
-          by (metis Diff_subset \<open>X \<subset> A\<close> \<open>Y \<subseteq> A - X\<close> le_sup_iff less.prems(2) 
-              psubset_imp_subset subset_Un_eq)
+          proof -
+            have "Y \<union> X \<subseteq> A"
+              using \<open>Y \<subseteq> A - X\<close> \<open>X \<subset> A\<close> by blast
+            thus ?thesis
+              using less.prems(2) by blast
+          qed
         then have "card (neighbours_of_Vs G (Y \<union> X)) - card (neighbours_of_Vs G X) \<ge> card (Y \<union> X) - card X"
           using `card X = card (neighbours_of_Vs G X)` by auto
         moreover have "X \<inter> Y = {}"
