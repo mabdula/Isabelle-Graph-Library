@@ -2668,7 +2668,45 @@ proof(induct A)
       have "(tutte_matrix)$a$p a =  Var\<^sub>0  {a, p a}" 
         by (simp add: True in_oriented)
       then show ?thesis 
-        by (smt (z3) "1" "2" insert.hyps(3) insert.prems insert_iff mult_minus_left)
+        proof -
+          assume eq_a: "tutte_matrix $ a $ p a = Var\<^sub>0 {a, p a}"
+          have F_sub: "\<forall>i\<in>F. {i, p i} \<in> G"
+            using insert.prems by auto
+          have F_disj: "(\<Prod>i\<in>F. tutte_matrix $ i $ p i) = (\<Prod>i\<in>F. Var\<^sub>0 {i, p i}) \<or>
+                        - (\<Prod>i\<in>F. tutte_matrix $ i $ p i) = (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            using insert.hyps(3) F_sub by blast
+          have pt: "(\<Prod>i\<in>insert a F. tutte_matrix $ i $ p i)
+                      = Var\<^sub>0 {a, p a} * (\<Prod>i\<in>F. tutte_matrix $ i $ p i)"
+            using insert.hyps(1) insert.hyps(2) eq_a by simp
+          have pv: "(\<Prod>i\<in>insert a F. Var\<^sub>0 {i, p i})
+                      = Var\<^sub>0 {a, p a} * (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            using insert.hyps(1) insert.hyps(2) by simp
+          consider (F_pos) "(\<Prod>i\<in>F. tutte_matrix $ i $ p i) = (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            | (F_neg) "- (\<Prod>i\<in>F. tutte_matrix $ i $ p i) = (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            using F_disj by blast
+          then show ?thesis
+          proof cases
+            case F_pos
+            have "(\<Prod>i\<in>insert a F. tutte_matrix $ i $ p i)
+                    = (\<Prod>i\<in>insert a F. Var\<^sub>0 {i, p i})"
+              unfolding pt pv using F_pos by simp
+            then show ?thesis by (rule disjI1)
+          next
+            case F_neg
+            have F_neg': "(\<Prod>i\<in>F. tutte_matrix $ i $ p i)
+                                 = - (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            proof -
+              have "(\<Prod>i\<in>F. Var\<^sub>0 {i, p i})
+                      = - (\<Prod>i\<in>F. tutte_matrix $ i $ p i)"
+                using F_neg by simp
+              then show ?thesis by simp
+            qed
+            have "- (\<Prod>i\<in>insert a F. tutte_matrix $ i $ p i)
+                    = (\<Prod>i\<in>insert a F. Var\<^sub>0 {i, p i})"
+              unfolding pt pv using F_neg' by simp
+            then show ?thesis by (rule disjI2)
+          qed
+        qed
     next
       case False
       then have "(p a, a) \<in> oriented_edges"
