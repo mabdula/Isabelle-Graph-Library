@@ -3613,7 +3613,12 @@ proof -
           have rw: "edges_of_path p' = (edges_of_path (p1 @ [u])) @ edges_of_path (u # p2)"
             using edges_of_path_append_2 quot_aug_path(1) by fastforce
           have eop_nempty: "edges_of_path (p1 @ [u]) \<noteq> []"
-            by (metis Nil_is_append_conv edges_of_path_snoc list.distinct(1) p1_nempty)
+          proof -
+            have "edges_of_path (p1 @ [u]) = edges_of_path p1 @ [{last p1, u}]"
+              using edges_of_path_snoc[OF p1_nempty] by simp
+            then show ?thesis
+              by simp
+          qed
           have "alt_path (quotG M) (rev (p1 @ [u]))"
             unfolding edges_of_path_rev[symmetric]
             apply(intro alt_list_rev)
