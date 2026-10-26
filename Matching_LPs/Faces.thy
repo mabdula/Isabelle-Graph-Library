@@ -772,7 +772,18 @@ proof -
   then have "{x. A' *\<^sub>v x = b' \<and> x \<in> P} = {x. ?\<alpha> \<bullet> x = ?\<beta> \<and> x \<in> P}"
     by blast 
   have "\<forall> x \<in> P. A' *\<^sub>v x \<le> b'" 
-    by (metis (no_types, lifting) assms(3-4) polyhedron_def subsyst_valid  prod.sel(1) prod.sel(2))
+  proof (intro ballI)
+    fix x
+    assume xP: "x \<in> P"
+    then have x: "x \<in> polyhedron A b"
+      by (simp add: P_def)
+    have eq: "sub_system A b I = (A', b')"
+      using assms(4) by simp
+    from x have "fst (sub_system A b I) *\<^sub>v x \<le> snd (sub_system A b I)"
+      by (rule subsyst_valid)
+    then show "A' *\<^sub>v x \<le> b'"
+      by (simp add: eq)
+  qed
   then have "\<forall> x \<in> P.  1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x) \<le> 1\<^sub>v (dim_vec b') \<bullet> b'"
     by (metis (no_types, lifting) atLeastLessThan_iff carrier_vec_dim_vec 
          less_eq_vec_def scalar_prod_left_one sum_mono)
