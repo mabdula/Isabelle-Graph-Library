@@ -2498,7 +2498,22 @@ proof -
       by (simp add: sign_def)
     then have "(\<Prod>i\<in>UNIV. local.tutte_matrix  $ i $ p i) = 0"
       using `?g p = 0` unfolding sign_def
-      by (smt (verit, best) add.inverse_neutral lambda_one minus_mult_minus of_int_1 of_int_minus)
+    proof -
+      have zero: "of_int (sign p) * (\<Prod>i\<in>UNIV. local.tutte_matrix $ i $ p i) = 0"
+        using `?g p = 0` by simp
+      show ?thesis
+      proof (cases "evenperm p")
+        case True
+        then have "sign p = 1"
+          by (simp add: sign_def)
+        with zero show ?thesis by simp
+      next
+        case False
+        then have "sign p = - 1"
+          by (simp add: sign_def)
+        with zero show ?thesis by simp
+      qed
+    qed
     then show False 
       using 1 by blast
   qed
