@@ -47,7 +47,12 @@ proof -
     by (simp add: assms(1) finite_odd_comps_in_diff)
   have "{} \<subseteq> G" by auto
   then have "card (odd_comps_in_diff G {}) \<le> card {}" using assms(2) 
-    by (metis card.empty empty_subsetI tutte_conditionE)
+  proof -
+    have "{} \<subseteq> Vs G"
+      by simp
+    then show ?thesis
+      using assms(2) tutte_condition_member by fastforce
+  qed
   then show ?thesis 
     using \<open>finite (odd_comps_in_diff G {})\<close> by auto
 qed
