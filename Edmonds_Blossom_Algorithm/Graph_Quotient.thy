@@ -2629,7 +2629,18 @@ proof-
           then have "chp = ((hd chp) # (tl chp))"
             by auto
           then show ?thesis
-            by (metis Nil_is_append_conv \<open>chp \<noteq> []\<close> edges_of_path_append_2 hd_append2)
+          proof -
+            have chp_p2_nempty: "chp @ p2 \<noteq> []"
+              using \<open>chp \<noteq> []\<close> by simp
+            have hd_chp_p2: "hd (chp @ p2) = hd chp"
+              using \<open>chp \<noteq> []\<close> by simp
+            have "edges_of_path (p1 @ chp @ p2)
+                    = edges_of_path (p1 @ [hd (chp @ p2)]) @ edges_of_path (chp @ p2)"
+              by (rule edges_of_path_append_2[OF chp_p2_nempty])
+            also have "\<dots> = edges_of_path (p1 @ [hd chp]) @ edges_of_path (chp @ p2)"
+              by (simp only: hd_chp_p2)
+            finally show ?thesis .
+          qed
         qed
         have "alt_path M (p1 @ chp @ p2)"
           unfolding rw
