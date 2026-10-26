@@ -947,10 +947,28 @@ lemma linear_comb_holds_less_eq:
   shows "A *\<^sub>v z \<le> b" 
 proof -
   have "l \<cdot>\<^sub>v (A *\<^sub>v x) \<le> l \<cdot>\<^sub>v b" 
-    apply (cases "l = 0")
-     apply (metis multiply_by_zero_eq Orderings.order_eq_iff assms(5) less_eq_vec_def)
-    by (smt (verit, del_insts) assms(5) assms(8) index_smult_vec(1) index_smult_vec(2) 
-        less_eq_vec_def mult_le_cancel_left_pos order_le_imp_less_or_eq)
+  proof (unfold less_eq_vec_def, intro conjI allI impI)
+    show "dim_vec (l \<cdot>\<^sub>v (A *\<^sub>v x)) = dim_vec (l \<cdot>\<^sub>v b)"
+      using assms(5) unfolding less_eq_vec_def by simp
+  next
+    fix i
+    assume i: "i < dim_vec (l \<cdot>\<^sub>v b)"
+    hence ib: "i < dim_vec b" by simp
+    have ix: "i < dim_vec (A *\<^sub>v x)"
+      using assms(5) ib unfolding less_eq_vec_def by simp
+    have "(l \<cdot>\<^sub>v (A *\<^sub>v x)) $ i = l * ((A *\<^sub>v x) $ i)"
+      using ix by simp
+    also have "\<dots> \<le> l * (b $ i)"
+    proof (rule mult_left_mono)
+      show "(A *\<^sub>v x) $ i \<le> b $ i"
+        using assms(5) ib unfolding less_eq_vec_def by blast
+      show "0 \<le> l"
+        using assms(8) by simp
+    qed
+    also have "\<dots> = (l \<cdot>\<^sub>v b) $ i"
+      using ib by simp
+    finally show "(l \<cdot>\<^sub>v (A *\<^sub>v x)) $ i \<le> (l \<cdot>\<^sub>v b) $ i" .
+  qed
   have "(1 - l) \<cdot>\<^sub>v (A *\<^sub>v y) \<le> (1 - l) \<cdot>\<^sub>v b" 
     apply (cases "l = 0")
     using assms(6) apply force
