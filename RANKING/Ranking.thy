@@ -3645,7 +3645,20 @@ proof (rule ccontr)
     then obtain x'' where "{u',x''} \<in> M" by blast
 
     from u_to_u' have "x \<noteq> u'"
-      by (metis edges_are_Vs_2 insertI1 remove_vertices_not_vs shifts_to_def)
+      proof -
+        have edge: "{x', u'} \<in> G \<setminus> {x}"
+          using u_to_u' unfolding shifts_to_def by blast
+        have u'_in_Vs: "u' \<in> Vs (G \<setminus> {x})"
+          using edge by (rule edges_are_Vs_2)
+        have "u' \<notin> {x}"
+        proof
+          assume "u' \<in> {x}"
+          then have "u' \<notin> Vs (G \<setminus> {x})" by (rule remove_vertices_not_vs)
+          with u'_in_Vs show False by blast
+        qed
+        then show "x \<noteq> u'"
+          by blast
+      qed
 
     from rm_G \<open>{u,x} \<in> M\<close> \<open>{u',x''} \<in> M\<close> \<open>index \<pi> u < index \<pi> u'\<close> have "x \<noteq> x''"
       by (auto dest: ranking_matching_unique_match')
