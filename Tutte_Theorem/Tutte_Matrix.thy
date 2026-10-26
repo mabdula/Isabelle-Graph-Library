@@ -2722,7 +2722,20 @@ proof(induct A)
   next
     case False
     then have "(prod (\<lambda>i. (tutte_matrix)$i$p i) F) = - prod (\<lambda> i.  Var\<^sub>0 ({i, p i})) F"
-      by (metis (no_types, lifting) add.inverse_inverse insert.hyps(3) insert.prems insert_iff)
+    proof -
+      have "\<forall>i\<in>F. {i, p i} \<in> G"
+        using insert.prems by blast
+      then have "(prod (\<lambda>i. (tutte_matrix)$i$p i) F) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) F \<or>
+                 - (prod (\<lambda>i. (tutte_matrix)$i$p i) F) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) F"
+        using insert.hyps(3) by blast
+      with False have B: "- (prod (\<lambda>i. (tutte_matrix)$i$p i) F) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) F"
+        by blast
+      have "prod (\<lambda>i. (tutte_matrix)$i$p i) F = - (- (prod (\<lambda>i. (tutte_matrix)$i$p i) F))"
+        by simp
+      also have "\<dots> = - prod (\<lambda> i. Var\<^sub>0 ({i, p i})) F"
+        using B by simp
+      finally show ?thesis .
+    qed
     have 1:"(prod (\<lambda>i. (tutte_matrix)$i$p i) (insert a F) =
             (prod (\<lambda>i. (tutte_matrix)$i$p i) F) * (tutte_matrix)$a$p a)" 
       by (simp add: insert.hyps(2))
