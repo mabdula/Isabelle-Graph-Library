@@ -1695,7 +1695,22 @@ proof -
   qed
   qed
   then have "\<exists>!x. x \<in> F" using card_eq_Suc_0_ex1 
-    by (metis One_nat_def)
+  proof -
+    have "is_singleton F"
+      using \<open>card F = 1\<close> by (simp add: is_singleton_altdef)
+    then obtain xF where Fx: "F = {xF}"
+      by (auto simp: is_singleton_def)
+    show "\<exists>!x. x \<in> F"
+    proof (rule ex1I[of _ xF])
+      show "xF \<in> F"
+        by (simp add: Fx)
+    next
+      fix y
+      assume "y \<in> F"
+      then show "y = xF"
+        by (simp add: Fx)
+    qed
+  qed
   then have 1:"\<exists>!x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'" 
     using assms(8) 
     by auto
