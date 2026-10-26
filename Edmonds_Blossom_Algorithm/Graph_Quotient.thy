@@ -4579,7 +4579,22 @@ proof-
       apply(intro conjI)
       subgoal proof-
         have "hd (stem2vert_path C M (hd p2) @ p2) = hd C"
-          by (metis cycle(1) hd_append2 hd_stem2vert_nempty hd_stem2vert_path odd_cycleD(3) odd_cycle_nempty)
+          proof -
+            have C_nempty: "C \<noteq> []"
+              by (rule odd_cycle_nempty[OF cycle(1)])
+            have S_nempty: "stem2vert_path C M (hd p2) \<noteq> []"
+              by (rule hd_stem2vert_nempty[OF C_nempty])
+            have hd_or: "hd (stem2vert_path C M (hd p2)) = hd C \<or>
+                         hd (stem2vert_path C M (hd p2)) = last C"
+              by (rule hd_stem2vert_path[OF C_nempty])
+            have hd_last: "hd C = last C"
+              by (rule odd_cycleD(3)[OF cycle(1)])
+            have "hd (stem2vert_path C M (hd p2) @ p2) = hd (stem2vert_path C M (hd p2))"
+              by (rule hd_append2[OF S_nempty])
+            also have "\<dots> = hd C"
+              using hd_or hd_last by auto
+            finally show ?thesis .
+          qed
         then show ?thesis
           using matching_augmenting_path_feats(3)[OF quot_aug_path(1)]
                 quot
