@@ -485,7 +485,13 @@ proof(rule ccontr)
   let ?M = "{dim_vec d | C d I'.  F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d} \<and> 
           (C, d) = sub_system A b I'}" 
   have dims_eq: "dim_row A = dim_vec b" 
-    by (metis assms(1) assms(2) carrier_matD(1) carrier_vecD)
+    proof -
+      have "dim_row A = nr"
+        using assms(1) by (rule carrier_matD(1))
+      moreover have "dim_vec b = nr"
+        using assms(2) by (rule carrier_vecD)
+      ultimately show ?thesis by simp
+    qed
   assume "\<not> distinct (Matrix.rows A') "
   then obtain j1 j2 where j1j2: "j1 \<noteq> j2 \<and> j1 < dim_row A' \<and> 
                                  j2 < dim_row A' \<and> row A' j1 = row A' j2" 
