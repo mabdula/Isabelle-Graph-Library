@@ -698,7 +698,22 @@ proof(safe)
   next
     case (path2 v v' vs)
     have "v = p v' \<or> v' = p v" 
-      by (metis doubleton_eq_iff path2.hyps(1) u_edges_elim)
+      proof -
+        from path2.hyps(1) obtain w where w: "{v, v'} = {w, p w}"
+          unfolding u_edges_def by blast
+        then have "(v = w \<and> v' = p w) \<or> (v = p w \<and> v' = w)"
+          by (simp add: doubleton_eq_iff)
+        then show ?thesis
+        proof
+          assume "v = w \<and> v' = p w"
+          then have "v' = p v" by simp
+          then show ?thesis by blast
+        next
+          assume "v = p w \<and> v' = w"
+          then have "v = p v'" by simp
+          then show ?thesis by blast
+        qed
+      qed
 
     obtain n where "(p^^n) i = v'" 
       using path2.hyps(3) path2.prems by auto
