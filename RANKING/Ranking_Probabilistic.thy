@@ -957,7 +957,18 @@ next
     next
       case (2 y)
       with \<sigma>_tl \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
-        by (metis distinct.simps(2) permutations_of_setD(2) singletonD)
+      proof -
+        from \<open>\<sigma> \<in> permutations_of_set V\<close> have sigma_distinct: "distinct \<sigma>"
+          by (rule permutations_of_setD(2))
+        have "distinct (x # tl \<sigma>)"
+          using sigma_distinct by (simp only: \<sigma>_tl[symmetric])
+        then have x_not_in_tl: "x \<notin> set (tl \<sigma>)"
+          by simp
+        from 2 have "y \<in> set (tl \<sigma>)"
+          by blast
+        with x_not_in_tl show ?case
+          by blast
+      qed
     next
       case (3 y)
       with \<sigma>_tl \<open>\<sigma> \<in> permutations_of_set V\<close> show ?case
