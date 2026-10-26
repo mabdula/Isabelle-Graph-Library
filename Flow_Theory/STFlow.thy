@@ -267,7 +267,7 @@ proof(cases "Abs f > 0", goal_cases)
         using 2  props(5) create_edge make_pair
         unfolding network_of_network.delta_plus_def 
         by(auto simp add: fst'_def snd'_def delta_plus_def)
-          (metis eq_fst_iff make_pair'.simps(2))
+          (fastforce simp add: eq_fst_iff create_edge make_pair'.simps)
       moreover have "network_of_network.delta_minus t s v = 
                      insert (new_edge (create_edge t s)) (old_edge ` (delta_minus s))"
         using 2 create_edge make_pair'
