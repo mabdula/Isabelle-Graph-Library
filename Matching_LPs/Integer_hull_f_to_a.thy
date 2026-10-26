@@ -438,7 +438,18 @@ next
     have "\<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i" 
       using \<open>\<forall>i<n. \<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i\<close> i by presburger
     then show False 
-      by (metis i x_y)
+    proof (elim exE)
+      fix \<beta>\<^sub>i
+      assume beta: "\<forall>x\<in>F. x $ i = \<beta>\<^sub>i"
+      have "x $ i = \<beta>\<^sub>i"
+        using beta x_y by blast
+      moreover have "y $ i = \<beta>\<^sub>i"
+        using beta x_y by blast
+      ultimately have "x $ i = y $ i"
+        by simp
+      then show False
+        using i by simp
+    qed
   qed
   then show "card F = 1" 
     by (metis \<open>F \<noteq> {}\<close> is_singletonI' is_singleton_altdef)
