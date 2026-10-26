@@ -5680,7 +5680,7 @@ proof-
             apply(rule alt_list_p1_u[of "rev p2" "rev p" x "rev p1"])
             using hdp2_x_in_M by (simp add: last_rev)+
           then show ?thesis
-            by metis
+            by blast
         qed
       qed
     qed
