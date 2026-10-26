@@ -2748,7 +2748,43 @@ proof(induct A)
       have "(tutte_matrix)$a$p a =  Var\<^sub>0  {a, p a}" 
         by (simp add: True in_oriented)
       then show ?thesis 
-        by (smt (z3) "1" "2" insert.hyps(3) insert.prems insert_iff mult_minus_left)
+      proof -
+        have eq_a: "(tutte_matrix)$a$p a = Var\<^sub>0 {a, p a}"
+          by (simp add: True in_oriented)
+        have F_sub: "\<forall>i\<in>F. {i, p i} \<in> G"
+          using insert.prems by auto
+        have F_disj: "prod (\<lambda>i. (tutte_matrix)$i$p i) F = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F \<or>
+                      - prod (\<lambda>i. (tutte_matrix)$i$p i) F = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F"
+          using insert.hyps(3) F_sub by blast
+        consider (F_pos) "prod (\<lambda>i. (tutte_matrix)$i$p i) F = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F"
+               | (F_neg) "- prod (\<lambda>i. (tutte_matrix)$i$p i) F = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F"
+          using F_disj by blast
+        then show ?thesis
+        proof cases
+          case F_pos
+          have "prod (\<lambda>i. (tutte_matrix)$i$p i) (insert a F) = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F * (tutte_matrix)$a$p a"
+            using "1" F_pos by simp
+          also have "... = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F * Var\<^sub>0 {a, p a}"
+            using eq_a by simp
+          also have "... = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) (insert a F)"
+            by (simp add: "2")
+          finally show ?thesis by (rule disjI1)
+        next
+          case F_neg
+          have "- prod (\<lambda>i. (tutte_matrix)$i$p i) (insert a F)
+                = - (prod (\<lambda>i. (tutte_matrix)$i$p i) F * (tutte_matrix)$a$p a)"
+            using "1" by simp
+          also have "... = - (prod (\<lambda>i. (tutte_matrix)$i$p i) F * Var\<^sub>0 {a, p a})"
+            using eq_a by simp
+          also have "... = (- prod (\<lambda>i. (tutte_matrix)$i$p i) F) * Var\<^sub>0 {a, p a}"
+            by (simp add: mult_minus_left)
+          also have "... = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F * Var\<^sub>0 {a, p a}"
+            using F_neg by simp
+          also have "... = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) (insert a F)"
+            by (simp add: "2")
+          finally show ?thesis by (rule disjI2)
+        qed
+      qed
     next
       case False
       then have "(p a, a) \<in> oriented_edges"
