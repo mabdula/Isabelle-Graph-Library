@@ -3875,7 +3875,16 @@ proof (rule ccontr)
       next
         case after_u
         with assms \<open>index \<pi> u'' < index \<pi> u'\<close> \<open>{u'', x'} \<in> M\<close> show ?thesis
-          by (metis nat_neq_iff ranking_matching_shifts_to_original_edges shifts_to_inj)
+          proof -
+            have shift_u'': "shifts_to (G \<setminus> {x}) M' x' u u'' \<sigma> \<pi>"
+              by (rule ranking_matching_shifts_to_original_edges
+                    [OF rm_G \<open>ranking_matching (G \<setminus> {x}) M' \<sigma> \<pi>\<close> \<open>x \<in> set \<sigma>\<close> \<open>{u,x} \<in> M\<close>
+                        \<open>{u,x'} \<in> M'\<close> \<open>{u'',x'} \<in> M\<close> \<open>index \<pi> u < index \<pi> u''\<close>])
+            have "u' = u''"
+              by (rule shifts_to_inj[OF u_to_u' shift_u''])
+            with \<open>index \<pi> u'' < index \<pi> u'\<close> show ?thesis
+              by simp
+          qed
       qed
     qed
   next
