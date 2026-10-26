@@ -2894,7 +2894,22 @@ proof -
     by simp
   then have "Poly_Mapping.single 
             (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real) \<noteq> 0" 
-    by (smt (z3) lookup_zero)
+  proof -
+    assume lookup_neq: "Poly_Mapping.lookup (Poly_Mapping.single 
+              (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real))
+              (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) \<noteq> 0"
+    show "Poly_Mapping.single 
+              (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real) \<noteq> 0"
+    proof
+      assume "Poly_Mapping.single 
+              (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real) = 0"
+      then have "Poly_Mapping.lookup (Poly_Mapping.single 
+                  (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real))
+                  (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) = 0"
+        by (simp add: lookup_zero)
+      with lookup_neq show False by simp
+    qed
+  qed
   then have "prod (\<lambda> i. Var\<^sub>0 ({i, p i}) ::(_\<Rightarrow>\<^sub>0 real)) (UNIV::'a set) \<noteq> 0" 
     using 1 by presburger
   have "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV \<or>
