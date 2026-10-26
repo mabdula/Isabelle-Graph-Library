@@ -6796,7 +6796,26 @@ proof(rule dblton_graphI, goal_cases)
         using card_quote
         by auto
       then obtain v1 v2 where "quote = {v1,v2}" "v1 \<noteq> v2"
-        by (metis Suc_1 card_1_singletonE card_eq_SucD singletonI)
+      proof -
+        have "card quote \<noteq> 1" "card quote \<noteq> 0"
+          using \<open>quote \<noteq> {}\<close> finite_quote quote_nsing card_1_singletonE card_eq_0_iff
+          by auto
+        then have card_Suc: "card quote = Suc 1"
+          using card_quote
+          by auto
+        obtain a B where aB: "quote = insert a B" "a \<notin> B" "card B = 1"
+          using card_eq_SucD[OF card_Suc] by blast
+        have card_B_Suc: "card B = Suc 0"
+          using aB(3) by simp
+        obtain b C where bC: "B = insert b C" "b \<notin> C" "card C = 0" "C = {}"
+          using card_eq_SucD[OF card_B_Suc] by blast
+        have "B = {b}"
+          using bC(1) bC(4) by simp
+        with aB have "quote = {a, b}" "a \<noteq> b"
+          by auto
+        then show thesis
+          using that by blast
+      qed
       then show ?thesis
         by auto
     qed
