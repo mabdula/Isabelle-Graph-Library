@@ -454,7 +454,32 @@ qed
           using x'_e graphE by fastforce
         have "z \<in> Vs G - A" 
           using less.prems(1) z unfolding partitioned_bipartite_def
-          by (metis Diff_iff \<open>e = {x, z}\<close> \<open>x \<in> A - X\<close> doubleton_eq_iff x'_e)
+          proof -
+            have "e \<in> G"
+              using x'_e by blast
+            then obtain u v where uv: "e = {u, v}" "u \<in> A" "v \<in> Vs G - A"
+              using less.prems(1) unfolding partitioned_bipartite_def by meson
+            have "z \<noteq> x"
+              using x'_e by auto
+            have eq_sets: "{u, v} = {x, z}"
+              using uv(1) \<open>e = {x, z}\<close> by simp
+            show "z \<in> Vs G - A"
+            proof (cases "u = x")
+              case True
+              then have "v = z"
+                using eq_sets \<open>z \<noteq> x\<close> by (auto simp add: doubleton_eq_iff)
+              then show ?thesis
+                using uv(3) by simp
+            next
+              case False
+              then have uzvx: "u = z" "v = x"
+                using eq_sets by (auto simp add: doubleton_eq_iff)
+              have "x \<in> Vs G - A"
+                using uv(3) uzvx(2) by simp
+              with \<open>x \<in> A - X\<close> show ?thesis
+                by blast
+            qed
+          qed
         then have "e \<in> G \<and> x\<in>A - X \<and>  z \<in> Vs G - neighbours_of_Vs G X - A \<and>  z \<in> e \<and> x \<in> e" 
           using \<open>x \<in> A - X\<close> x'_e z by blast
         then show "x \<in> Vs ?AX_gr"
