@@ -649,9 +649,22 @@ qed
         moreover have "X \<inter> Y = {}"
           using \<open>Y \<subseteq> A - X\<close> by auto
         moreover have "card (Y \<union> X) - card X = card Y" 
-          by (metis (no_types, lifting) A_X_graph A_X_vs Un_commute \<open>X \<inter> Y = {}\<close> \<open>X \<subset> A\<close> 
-              \<open>Y \<subseteq> A - X\<close> add_diff_cancel_left' card_Un_disjoint finite_subset graphE Asubs
-              psubset_imp_subset)
+        proof -
+          have finVsG: "finite (Vs G)"
+            using graph_invar_finite_Vs graphE by blast
+          have fin_X: "finite X"
+            using \<open>X \<subset> A\<close> Asubs finVsG
+            by (meson finite_subset psubset_imp_subset subset_trans)
+          have fin_Y: "finite Y"
+            using \<open>Y \<subseteq> A - X\<close> \<open>X \<subset> A\<close> Asubs finVsG
+            by (meson Diff_subset finite_subset psubset_imp_subset subset_trans)
+          have disj: "Y \<inter> X = {}"
+            using \<open>X \<inter> Y = {}\<close> by (simp add: Int_commute)
+          have "card (Y \<union> X) = card Y + card X"
+            using card_Un_disjoint[OF fin_Y fin_X disj] .
+          then show "card (Y \<union> X) - card X = card Y"
+            by simp
+        qed
         ultimately show "card Y \<le> card (neighbours_of_Vs ?AX_gr Y)" 
           using card_diff reach_AX_Y by presburger
       qed
