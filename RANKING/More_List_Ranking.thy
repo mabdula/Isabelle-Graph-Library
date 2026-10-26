@@ -745,8 +745,76 @@ proof (induction xs xs' rule: list_induct2')
     by simp_all
 
   from 4 have "\<forall>x y. (index xs x \<le> index xs y) = (index xs' x \<le> index xs' y)"
-    by (auto split: if_splits)
-       (metis index_conv_size_if_notin index_le_size index_less_size_conv insert_eq_iff linorder_not_le)+
+  proof -
+    have x_notin: "x \<notin> set xs"
+      using 4 by simp
+    have x'_notin: "x' \<notin> set xs'"
+      using 4 by simp
+    have set_full_eq: "set (x # xs) = set (x' # xs')"
+      using 4 by simp
+    have set_eq: "set xs = set xs'"
+      using set_full_eq x_notin x'_notin \<open>x = x'\<close>
+      by (simp add: insert_eq_iff)
+    have index_all: "\<forall>p q. index (x # xs) p \<le> index (x # xs) q \<longleftrightarrow> index (x' # xs') p \<le> index (x' # xs') q"
+      using 4 by blast
+    show ?thesis
+    proof (intro allI)
+      fix p q
+      consider (p_eq) "p = x" | (q_eq) "p \<noteq> x" "q = x" | (neither) "p \<noteq> x" "q \<noteq> x"
+        by blast
+      then show "(index xs p \<le> index xs q) = (index xs' p \<le> index xs' q)"
+      proof cases
+        case p_eq
+        have p_xs: "index xs p = length xs"
+          using p_eq x_notin by (simp add: index_conv_size_if_notin)
+        have p_xs': "index xs' p = length xs'"
+          using p_eq x'_notin \<open>x = x'\<close> by (simp add: index_conv_size_if_notin)
+        have left: "index xs p \<le> index xs q \<longleftrightarrow> q \<notin> set xs"
+        proof
+          assume "index xs p \<le> index xs q"
+          with p_xs have "length xs \<le> index xs q" by simp
+          with index_le_size[of xs q] have "index xs q = length xs" by linarith
+          then show "q \<notin> set xs"
+            using index_less_size_conv[of xs q] by simp
+        next
+          assume "q \<notin> set xs"
+          then have "index xs q = length xs"
+            by (simp add: index_conv_size_if_notin)
+          with p_xs show "index xs p \<le> index xs q" by simp
+        qed
+        have right: "index xs' p \<le> index xs' q \<longleftrightarrow> q \<notin> set xs'"
+        proof
+          assume "index xs' p \<le> index xs' q"
+          with p_xs' have "length xs' \<le> index xs' q" by simp
+          with index_le_size[of xs' q] have "index xs' q = length xs'" by linarith
+          then show "q \<notin> set xs'"
+            using index_less_size_conv[of xs' q] by simp
+        next
+          assume "q \<notin> set xs'"
+          then have "index xs' q = length xs'"
+            by (simp add: index_conv_size_if_notin)
+          with p_xs' show "index xs' p \<le> index xs' q" by simp
+        qed
+        from left right set_eq show ?thesis by simp
+      next
+        case q_eq
+        have "index xs p \<le> index xs q"
+          using q_eq x_notin by (simp add: index_conv_size_if_notin index_le_size)
+        moreover have "index xs' p \<le> index xs' q"
+          using q_eq x'_notin \<open>x = x'\<close> by (simp add: index_conv_size_if_notin index_le_size)
+        ultimately show ?thesis by blast
+      next
+        case neither
+        have p_eqs: "index (x # xs) p = Suc (index xs p)" "index (x' # xs') p = Suc (index xs' p)"
+          using neither \<open>x = x'\<close> by simp_all
+        have q_eqs: "index (x # xs) q = Suc (index xs q)" "index (x' # xs') q = Suc (index xs' q)"
+          using neither \<open>x = x'\<close> by simp_all
+        from index_all have "index (x # xs) p \<le> index (x # xs) q \<longleftrightarrow> index (x' # xs') p \<le> index (x' # xs') q"
+          by blast
+        with p_eqs q_eqs show ?thesis by simp
+      qed
+    qed
+  qed
 
   with 4 distinct \<open>x = x'\<close> show ?case
     by fastforce
