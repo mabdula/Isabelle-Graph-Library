@@ -63,8 +63,23 @@ lemma connected_comp_if_comp_out_empty:
   shows "C \<in> connected_components G"
 proof -
   obtain x where "x \<in> Vs G \<and> x \<in> C"
-    using component_in_E[of C G X] 
-    by (metis assms(1) disjoint_iff_not_equal le_iff_inf odd_components_nonempty)
+  proof -
+    have odd_C: "odd (card C)"
+      using assms diff_odd_compoenent_has_odd_card by blast
+    have C_ne: "C \<noteq> {}"
+    proof
+      assume "C = {}"
+      then have "card C = 0" by simp
+      with odd_C show False by simp
+    qed
+    then obtain c where c_mem: "c \<in> C" by blast
+    have "C \<subseteq> Vs G"
+      using assms component_in_E by blast
+    then have "c \<in> Vs G \<and> c \<in> C"
+      using c_mem by blast
+    then show thesis
+      using that by blast
+  qed
   then have "connected_component (graph_diff G X) x = C"
     using odd_comps_in_diff_is_component[of C G X] 
     by (simp add: \<open>C \<in> odd_comps_in_diff G X\<close>)
