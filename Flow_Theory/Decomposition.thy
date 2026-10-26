@@ -934,11 +934,23 @@ qed
       also have "... =  (\<Sum>i\<in>{x |x. x > 0 \<and> x <length (es# css)}. if e \<in> set ((es # css) ! (i)) 
                                               then (\<gamma> # ws) ! (i) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
-        apply(rule sum_eq_split, rule sum.cong)
-        defer
-        by (simp, rule, rule, force, rule,
-             smt (verit) Suc_eq_plus1 Suc_length_conv Suc_pred lessThan_atLeast0 lessThan_iff 
-            less_Suc_eq less_imp_diff_less mem_Collect_eq)  
+      proof -
+        have set_eq: "{x + 1 |x. x \<in> {0..<length css}} = {x |x. x > 0 \<and> x < length (es # css)}"
+        proof (rule set_eqI, rule iffI)
+          fix y
+          assume "y \<in> {x + 1 |x. x \<in> {0..<length css}}"
+          then obtain x where "y = x + 1" and "x < length css" by auto
+          then show "y \<in> {x |x. x > 0 \<and> x < length (es # css)}" by auto
+        next
+          fix y
+          assume "y \<in> {x |x. x > 0 \<and> x < length (es # css)}"
+          then have y_pos: "y > 0" and y_lt: "y < length (es # css)" by auto
+          then have "y - 1 < length css" by auto
+          moreover have "y = (y - 1) + 1" using y_pos by auto
+          ultimately show "y \<in> {x + 1 |x. x \<in> {0..<length css}}" by auto
+        qed
+        show ?thesis unfolding set_eq by (rule refl)
+      qed
       also have "... = (\<Sum>i\<in>{i| i. i> 0 \<and> i <length (es#css)}. if e \<in> set ((es # css) ! (i))
                                               then (\<gamma> # ws) ! (i) else 0) +
                        (\<Sum>i\<in>{0}. if e \<in> set ((es # css) ! (i))
