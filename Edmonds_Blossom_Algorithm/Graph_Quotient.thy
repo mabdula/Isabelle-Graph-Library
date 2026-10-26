@@ -7239,7 +7239,16 @@ qed
             by simp
           moreover have "{last stem, last C} \<in> M"
             using last_stem_hdC stem_nempty odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
-            by (metis edges_of_path_snoc last_snoc)
+          proof -
+            have "edges_of_path (stem @ [hd C]) = edges_of_path stem @ [{last stem, hd C}]"
+              using stem_nempty by (simp add: edges_of_path_snoc)
+            hence "last (edges_of_path (stem @ [hd C])) = {last stem, hd C}"
+              by (simp add: last_snoc)
+            hence "{last stem, hd C} \<in> M"
+              using last_stem_hdC by simp
+            then show ?thesis
+              using odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]] by simp
+          qed
           ultimately show ?p2
             using that(1,2,4) matching(1)
             unfolding matching_def2 Vs_def
