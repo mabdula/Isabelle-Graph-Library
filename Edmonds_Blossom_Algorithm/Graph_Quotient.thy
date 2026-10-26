@@ -4783,7 +4783,26 @@ proof-
       case T2: True
       have rev_p1_nempty: "rev p1 \<noteq> []" using p1_nempty by simp
       show ?thesis
-        by (smt T2 matching_augmenting_path_rev cycle(1-3) d1 hd_rev p1_nempty p1_subset_s quot quot_aug_path(1) quot_aug_path(2) replace_cycle_def rev_eq_Cons_iff rev_p1_nempty rev_rev_ident)
+        proof -
+        have aug_p': "matching_augmenting_path (quotG M) p'"
+          using quot_aug_path(2) by simp
+        have p'_eq: "p' = p1 @ [u]"
+          using quot_aug_path(1) T2 by simp
+        have rev_p'_eq: "rev p' = u # rev p1"
+          by (simp add: p'_eq)
+        have aug_rev: "matching_augmenting_path (quotG M) (u # rev p1)"
+          using matching_augmenting_path_rev[OF aug_p']
+          by (simp add: rev_p'_eq)
+        have key: "hd (stem2vert_path C M (last p1) @ rev p1) \<notin> Vs M \<and>
+                   last (stem2vert_path C M (last p1) @ rev p1) \<notin> Vs M"
+          using d1[OF aug_rev p1_subset_s cycle(1) cycle(2) cycle(3) quot rev_p1_nempty]
+          by (simp add: hd_rev)
+        have rc_eq: "replace_cycle C M p1 p2 = stem2vert_path C M (last p1) @ rev p1"
+          using p1_nempty T2
+          by (simp add: replace_cycle_def Let_def)
+        show ?thesis
+          using key by (simp add: rc_eq)
+      qed
     next
       case p2_nempty: False
       show ?thesis
