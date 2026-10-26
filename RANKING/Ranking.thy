@@ -3183,7 +3183,22 @@ proof -
               qed
 
             with rm_G \<open>{u3,x3} \<in> M\<close> \<open>{u,x} \<in> M\<close> have "u \<noteq> u3"
-              by (metis ranking_matching_def the_match')
+            proof -
+              from rm_G have "matching M"
+                by (auto elim: ranking_matchingE)
+              show ?thesis
+              proof (rule notI)
+                assume "u = u3"
+                with \<open>{u3,x3} \<in> M\<close> have "{u,x3} \<in> M"
+                  by simp
+                have eq1: "(THE v. {u,v} \<in> M) = x"
+                  by (rule the_match'[OF \<open>matching M\<close> \<open>{u,x} \<in> M\<close>])
+                have eq2: "(THE v. {u,v} \<in> M) = x3"
+                  by (rule the_match'[OF \<open>matching M\<close> \<open>{u,x3} \<in> M\<close>])
+                from eq1 eq2 \<open>x \<noteq> x3\<close> show False
+                  by simp
+              qed
+            qed
 
             from rm_G' \<open>{u'',x3} \<in> M'\<close> \<open>index \<pi> u3 < index \<pi> u''\<close> have "{u3,x3} \<notin> M'"
               by (auto dest: ranking_matching_unique_match')
