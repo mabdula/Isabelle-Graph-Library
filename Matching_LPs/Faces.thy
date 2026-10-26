@@ -705,7 +705,20 @@ proof -
         by (rule sum_strict_mono_ex1[OF finite_atLeastLessThan le lt])
     qed
     then have "1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x) < 1\<^sub>v (dim_vec b') \<bullet> b'"
-      by (metis \<open>A' *\<^sub>v x \<le> b'\<close> carrier_vec_dim_vec less_eq_vec_def scalar_prod_left_one)
+    proof -
+      have dim_eq: "dim_vec (A' *\<^sub>v x) = dim_vec b'"
+        using \<open>A' *\<^sub>v x \<le> b'\<close> by (simp add: less_eq_vec_def)
+      have carr: "A' *\<^sub>v x \<in> carrier_vec (dim_vec b')"
+        using dim_eq carrier_vecI by blast
+      have e1: "1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x) = (\<Sum>i = 0..<dim_vec b'. (A' *\<^sub>v x) $ i)"
+        by (rule scalar_prod_left_one[OF carr])
+      have e2: "1\<^sub>v (dim_vec b') \<bullet> b' = (\<Sum>i = 0..<dim_vec b'. b' $ i)"
+        by (rule scalar_prod_left_one[OF carrier_vec_dim_vec])
+      show ?thesis
+        using e1 e2
+          \<open>(\<Sum>i = 0..<dim_vec b'. (A' *\<^sub>v x) $ i) < (\<Sum>i = 0..<dim_vec b'. b' $ i)\<close>
+        by linarith
+    qed
     then show False 
       using \<open>1\<^sub>v (dim_vec b') \<bullet> (A' *\<^sub>v x) = 1\<^sub>v (dim_vec b') \<bullet> b'\<close> by linarith
   qed
