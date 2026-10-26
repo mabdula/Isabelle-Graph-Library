@@ -56,11 +56,13 @@ qed
 lemma dim_subsyst_vec:
   shows "dim_vec (snd (sub_system A b I)) = card {i. i < dim_vec b \<and> i \<in> I}"
 proof -
-  have "length (list_of_vec b) = dim_vec b" 
-    using Matrix.length_list_of_vec  carrier_vecD by blast
-  then show ?thesis
-    using sub_system_snd length_nths 
-    by (metis Matrix.length_list_of_vec list_of_vec_vec_of_list)
+  have "dim_vec (snd (sub_system A b I)) = length (nths (list_of_vec b) I)"
+    by (simp add: sub_system_snd Matrix.dim_vec_of_list)
+  also have "\<dots> = card {i. i < length (list_of_vec b) \<and> i \<in> I}"
+    by (rule length_nths)
+  also have "\<dots> = card {i. i < dim_vec b \<and> i \<in> I}"
+    by (simp only: Matrix.length_list_of_vec)
+  finally show ?thesis .
 qed
 
 lemma  dim_subsyst_vec_less_b:
