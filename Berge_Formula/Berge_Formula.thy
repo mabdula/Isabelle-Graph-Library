@@ -1483,8 +1483,19 @@ proof -
       using that by blast
   qed
   then show " 2 * (card M) + card (odd_comps_in_diff G X) - card X \<ge> card (Vs G)"
-    using berge_formula2[of G M X A] assms 
-    by (smt (z3) \<open>A' \<inter> Vs G = {}\<close> \<open>finite A'\<close> disjoint_iff_not_equal finite_subset graph subsetD)
+  proof -
+    assume A_props: "A \<subseteq> A' \<and> card (odd_comps_in_diff G X) - card X = card A"
+    have A_sub: "A \<subseteq> A'"
+      using A_props by simp
+    have card_A: "card A = card (odd_comps_in_diff G X) - card X"
+      using A_props by simp
+    have fin_A: "finite A"
+      using A_sub \<open>finite A'\<close> by (rule finite_subset)
+    have disj_A: "A \<inter> Vs G = {}"
+      using A_sub \<open>A' \<inter> Vs G = {}\<close> by blast
+    show ?thesis
+      by (rule berge_formula2[OF graph assms(1) assms(2) assms(3) assms(4) fin_A card_A disj_A])
+  qed
 qed
 
 lemma  berge_formula:
