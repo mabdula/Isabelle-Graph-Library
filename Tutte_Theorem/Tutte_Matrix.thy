@@ -1688,7 +1688,14 @@ proof(induct "card A" arbitrary: A rule: less_induct)
   proof(cases "card A = 1")
     case True
     obtain a where "a \<in> A" 
-      by (metis True card.empty card_mono finite.emptyI le_0_eq subset_eq zero_neq_one)
+      proof -
+        from True obtain b where "A = {b}"
+          by (rule card_1_singletonE)
+        then have "b \<in> A"
+          by simp
+        then show thesis
+          using that by blast
+      qed
     then have "A = {a}" 
       using True card_1_singletonE 
       by (metis empty_iff insertE)
