@@ -2102,9 +2102,30 @@ proof(safe)
   fix x
   assume "x \<in> carrier_vec n" "((A' @\<^sub>r - A') @\<^sub>r A) *\<^sub>v x \<le> (b' @\<^sub>v - b') @\<^sub>v b"
   then have  "A' *\<^sub>v x \<le> b' \<and> (-A') *\<^sub>v x \<le> - b' \<and> A *\<^sub>v x \<le> b" 
-    using "1" "2" "3" append_rows_le 
-    by (smt (verit, ccfv_threshold) A assms(4) b carrier_matI carrier_vec_dim_vec 
-        face_is_polyhedron'(2) face_is_polyhedron'(3))
+  proof -
+  have xn: "x \<in> carrier_vec n"
+    and le: "((A' @\<^sub>r - A') @\<^sub>r A) *\<^sub>v x \<le> (b' @\<^sub>v - b') @\<^sub>v b"
+    by fact+
+  have mb': "- b' \<in> carrier_vec (dim_row A')"
+    using "3" uminus_carrier_vec by blast
+  have AA: "A' @\<^sub>r - A' \<in> carrier_mat (dim_row A' + dim_row A') n"
+    using "1" "2" by (rule carrier_append_rows)
+  have bb: "b' @\<^sub>v - b' \<in> carrier_vec (dim_row A' + dim_row A')"
+    using "3" mb' by (rule append_carrier_vec)
+  have outer: "(((A' @\<^sub>r - A') @\<^sub>r A) *\<^sub>v x \<le> (b' @\<^sub>v - b') @\<^sub>v b) =
+               ((A' @\<^sub>r - A') *\<^sub>v x \<le> b' @\<^sub>v - b' \<and> A *\<^sub>v x \<le> b)"
+    using append_rows_le[of "A' @\<^sub>r - A'" "dim_row A' + dim_row A'" n A nr
+                            "b' @\<^sub>v - b'" x b]
+          AA A bb xn
+    by blast
+  have inner: "((A' @\<^sub>r - A') *\<^sub>v x \<le> b' @\<^sub>v - b') =
+               (A' *\<^sub>v x \<le> b' \<and> - A' *\<^sub>v x \<le> - b')"
+    using append_rows_le[of A' "dim_row A'" n "- A'" "dim_row A'" b' x "- b'"]
+          "1" "2" "3" xn
+    by blast
+  show ?thesis
+    using le outer inner by blast
+  qed
     then have "A' *\<^sub>v x = b'" using eq_system_is_leq_system[of x A' b'] 
       using \<open>dim_col A' = n\<close> \<open>x \<in> carrier_vec n\<close> carrier_vecD by blast
   then show "x \<in> F" 
