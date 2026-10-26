@@ -2260,7 +2260,20 @@ proof-
       done
     then obtain chp where chp: "(stem2vert_path C M a2') = chp @ [chv]"
       unfolding stem2vert_path_def
-      by (smt append_butlast_last_id cycle(1) len_find_pfx list.size(3) not_one_le_zero odd_cycle_nempty rev_is_Nil_conv)
+    proof -
+      have C_nempty: "C \<noteq> []"
+        by (rule odd_cycle_nempty[OF cycle(1)])
+      have sv_nempty: "stem2vert_path C M a2' \<noteq> []"
+        by (rule hd_stem2vert_nempty[OF C_nempty])
+      have "butlast (stem2vert_path C M a2') @ [last (stem2vert_path C M a2')]
+              = stem2vert_path C M a2'"
+        by (rule append_butlast_last_id[OF sv_nempty])
+      then have "stem2vert_path C M a2' = butlast (stem2vert_path C M a2') @ [chv]"
+        using \<open>last (stem2vert_path C M a2') = chv\<close>
+        by simp
+      then show thesis
+        by (rule that)
+    qed
     {
       fix chp
       assume ass: "(last (edges_of_path (chp @ [chv])) \<in> M \<and> chp \<noteq> []) \<or> chv = last C" "set (chp @ [chv]) \<subseteq> set C"
