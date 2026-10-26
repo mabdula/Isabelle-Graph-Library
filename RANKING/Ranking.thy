@@ -1891,7 +1891,24 @@ proof (cases "v \<in> set \<sigma>")
     proof (cases uvs)
       case (Cons u vus)
       with \<open>zig G M v \<pi> \<sigma> = v' # uvs\<close> have "zig G M v \<pi> \<sigma> = v # zag G M u \<pi> \<sigma>" "{u,v} \<in> M"
-        by (metis zig_Cons_zagE zig_then_zag)+
+      proof -
+        have zig_eq: "zig G M v \<pi> \<sigma> = v' # u # vus"
+          using \<open>zig G M v \<pi> \<sigma> = v' # uvs\<close> \<open>uvs = u # vus\<close> by simp
+        have zag_eq: "zag G M u \<pi> \<sigma> = u # vus"
+          by (rule zig_then_zag[OF zig_eq])
+        have v'_eq: "v' = v"
+        proof -
+          have "v' = hd (zig G M v \<pi> \<sigma>)"
+            using zig_eq by simp
+          also have "\<dots> = v"
+            by (rule hd_zig)
+          finally show ?thesis .
+        qed
+        show "zig G M v \<pi> \<sigma> = v # zag G M u \<pi> \<sigma>"
+          using zig_eq zag_eq v'_eq by simp
+        show "{u,v} \<in> M"
+          by (rule zig_matching_edge[OF zig_eq])
+      qed
 
       with \<open>v \<notin> set \<pi>\<close> assms
       show ?thesis
