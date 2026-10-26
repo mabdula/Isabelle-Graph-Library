@@ -3129,9 +3129,26 @@ proof-
             by fastforce
         qed
         show "alt_path M (replace_cycle C M p1 p2)"
-          using replace_cycle_cases_p1[OF p1_subset_s _ p1_nempty quot_aug_path_p1 app_works] up2_in_M
-          using hd_rev p1_nempty
-          by (metis (no_types, lifting)) 
+          proof -
+            have disj: "{u, hd p2} \<in> quotG M \<or> p2 = []"
+            proof (cases "p2 = []")
+              case True
+              then show ?thesis by simp
+            next
+              case False
+              then have "{u, hd p2} \<in> quotG M"
+                by (rule up2_in_M)
+              then show ?thesis
+                by (rule disjI1)
+            qed
+            have hd_rev_p1: "hd (rev p1) = last p1"
+              using p1_nempty by (simp add: hd_rev)
+            have app_works': "alt_path M (rev p2 @ stem2vert_path C M (last p1) @ rev p1)"
+              if "alt_path M (stem2vert_path C M (hd (rev p1)) @ rev p1)"
+              using app_works[OF that[unfolded hd_rev_p1]] .
+            show ?thesis
+              by (rule replace_cycle_cases_p1[OF p1_subset_s disj p1_nempty quot_aug_path_p1 app_works'])
+          qed
       next
         case len_p2_nge_2: False
         show ?thesis
