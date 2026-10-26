@@ -861,8 +861,23 @@ lemma exist_max_subsystem:
 proof-
   have "dim_vec b = nr" using b by auto
   let ?M = "{dim_vec d| C d I.  (C, d) = sub_system A b I \<and> F = {x. C *\<^sub>v x = d \<and> x \<in> P}}"
-  have "?M \<noteq> {}"  using char_face1[of A nr b F] assms
-    by (smt (verit, best) Collect_cong Collect_empty_eq)
+  have "?M \<noteq> {}"
+  proof -
+    have faceP: "face (polyhedron A b) F"
+      using assms by (simp add: P_def)
+    obtain A' b' I' where A'b': "(A', b') = sub_system A b I'"
+      and F_eq: "F = {x. A' *\<^sub>v x = b' \<and> x \<in> polyhedron A b}"
+      by (rule char_face1[OF A b faceP])
+    have F_eq_P: "F = {x. A' *\<^sub>v x = b' \<and> x \<in> P}"
+      using F_eq by (simp add: P_def)
+    have mem: "dim_vec b' \<in> ?M"
+      using A'b' F_eq_P by blast
+    show ?thesis
+    proof
+      assume "?M = {}"
+      with mem show False by blast
+    qed
+  qed
   then have "finite ?M"
     using subset_set_of_sub_dims_finite[of ?M A b] by blast
   then have "Max ?M \<in> ?M \<and> (\<forall>a \<in> ?M. a \<le> (Max ?M))"
