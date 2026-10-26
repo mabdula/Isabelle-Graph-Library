@@ -2071,9 +2071,22 @@ proof -
           using asmj by simp
       qed
       then have "B $$ (i-nr1, j) = row B (i-nr1) $ j"
-        using False 1 2 
-        by (metis (mono_tags, lifting) asmi add_0_right append_rows_def assms(1-2) carrier_matD(1) 
-            carrier_matD(2) index_mat_four_block(1) index_mat_four_block(2) index_zero_mat(3))
+      proof -
+        have dimA: "dim_row A = nr1"
+          by (rule carrier_matD(1)[OF assms(1)])
+        have dimB: "dim_row B = nr2"
+          by (rule carrier_matD(1)[OF assms(2)])
+        have dimAB: "dim_row (A @\<^sub>r B) = nr1 + nr2"
+          by (simp add: append_rows_def dimA dimB)
+        have i_lt: "i < nr1 + nr2"
+          using asmi dimAB by simp
+        have nr1_le: "nr1 \<le> i"
+          using False dimA by simp
+        have idx_lt: "i - nr1 < dim_row B"
+          using i_lt nr1_le dimB by arith
+        show ?thesis
+          using idx_lt \<open>j < dim_col B\<close> by simp
+      qed
       then have "(A @\<^sub>r B) $$ (i, j) = B $$ (i - nr1, j)" 
         using 2 1 by presburger
       then show ?thesis 
