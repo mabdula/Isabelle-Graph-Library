@@ -1097,7 +1097,20 @@ next
     then have "\<forall>x \<in> (Vs G). barrier G {x}"
       by (force simp: barrier_def insert_not_empty)
     then have "\<exists> X \<subseteq> Vs G. barrier G X"
-      by (metis False assms(1) dblton_graphE empty_subsetI equals0I insert_subset vs_member_intro) 
+    proof -
+      assume all_barrier: "\<forall>x \<in> (Vs G). barrier G {x}"
+      have "\<exists>e. e \<in> G"
+        using \<open>G \<noteq> {}\<close> by (simp add: ex_in_conv)
+      then obtain e where e_in: "e \<in> G" by blast
+      obtain u v where e_eq: "e = {u, v}" and "u \<noteq> v"
+        using assms(1) e_in dblton_graphE by blast
+      have u_in: "u \<in> Vs G"
+        using e_in e_eq by (auto simp: Vs_def)
+      then have "{u} \<subseteq> Vs G" by simp
+      moreover have "barrier G {u}"
+        using all_barrier u_in by blast
+      ultimately show ?thesis by blast
+    qed
     then obtain X' where X':"X' \<subseteq> Vs G \<and> card (odd_comps_in_diff G X') = card X'"
       by (meson Tutte_Theorem.barrier_def)
     have "card (odd_comps_in_diff G X) - card X = 0" 
