@@ -833,9 +833,21 @@ lemma laterally_transfer_aug_path:
 proof-
   from assms(1) have card': "card M' = card M" by simp
   show ?thesis
-    using laterally_transfer_aug_path'[OF assms(1) matching matching' graph]
-          laterally_transfer_aug_path'[OF card' matching' matching graph]
-    by metis
+  proof (intro iffI)
+    assume "\<exists>p. graph_augmenting_path G M p"
+    then obtain p where p: "graph_augmenting_path G M p"
+      by blast
+    obtain q where "graph_augmenting_path G M' q"
+      by (rule laterally_transfer_aug_path'[OF assms(1) matching matching' graph p])
+    thus "\<exists>p. graph_augmenting_path G M' p"
+      by blast
+  next
+    assume "\<exists>p. graph_augmenting_path G M' p"
+    then obtain p where p: "graph_augmenting_path G M' p"
+      by blast
+    show "\<exists>p. graph_augmenting_path G M p"
+      by (rule laterally_transfer_aug_path'[OF card' matching' matching graph p]) blast
+  qed
 qed
 
 locale graph_matching_defs =
