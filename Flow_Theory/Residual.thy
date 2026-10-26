@@ -1436,9 +1436,8 @@ proof(rule ccontr)
     hence "fst e \<in> ARescut f v" 
       using resreach_intros(1)[of f "F e"] a 
       unfolding ARescut_def \<EE>_def
-      by (metis (mono_tags, lifting) \<open>\<lbrakk>0 < \<uu>\<^bsub>f\<^esub>F e; F e \<in> \<EE>\<rbrakk> \<Longrightarrow> resreach f (fstv (F e)) 
-                 (sndv (F e))\<close> fstv.simps(1) insertCI mem_Collect_eq o_edge_res oedge.simps(1)
-                   prod.collapse sndv.simps(1))
+      by (cases "snd e = v") (auto simp: fstv.simps sndv.simps oedge.simps prod.collapse
+              split: if_splits)
     thus False 
       using a0 by blast
  qed
