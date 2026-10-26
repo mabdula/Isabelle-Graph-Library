@@ -2026,8 +2026,14 @@ lemma inBetinM:
   shows "{last p1, hd (stem2vert_path C M (hd p2))} \<in> M"
 proof-
   have "dblton_graph M"
-    using graph subsetD[OF matching(2)]
-    by (metis dblton_graph_def)
+    proof(rule dblton_graphI)
+      fix e
+      assume "e \<in> M"
+      then have "e \<in> E"
+        using matching(2) by blast
+      with dblton_E show "\<exists>u v. e = {u, v} \<and> u \<noteq> v"
+        unfolding dblton_graph_def by blast
+    qed
 
   show "{last p1, hd (stem2vert_path C  M (hd p2))} \<in> M"
   proof-
