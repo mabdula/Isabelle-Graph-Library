@@ -1200,8 +1200,43 @@ next
         using \<open>finite (Vs ?H)\<close> by simp
     qed
     obtain Mh where Mh:"perfect_matching ?H Mh" 
-      using  construct_perfect_matching_with_new_vertices[of G X A] assms(1,3,4,6-8) 
-      by (smt (verit, best) 5 diff_add_inverse le_Suc_ex le_diff_conv of_nat_add of_nat_le_iff)
+      proof -
+      have hnat: "\<forall>Y \<subseteq> Vs G. card (odd_comps_in_diff G X) - card X \<ge>
+                  card (odd_comps_in_diff G Y) - card Y"
+      proof (intro allI impI)
+        fix Y
+        assume hY: "Y \<subseteq> Vs G"
+        have hint: "int (card (odd_comps_in_diff G Y)) - int (card Y) \<le>
+                    int (card (odd_comps_in_diff G X)) - int (card X)"
+          using assms(4) hY by blast
+        have hXeq: "int (card (odd_comps_in_diff G X) - card X) =
+                    int (card (odd_comps_in_diff G X)) - int (card X)"
+          using 5 by (simp add: of_nat_diff)
+        show "card (odd_comps_in_diff G X) - card X \<ge>
+              card (odd_comps_in_diff G Y) - card Y"
+        proof (cases "card Y \<le> card (odd_comps_in_diff G Y)")
+          case True
+          have hYeq: "int (card (odd_comps_in_diff G Y) - card Y) =
+                      int (card (odd_comps_in_diff G Y)) - int (card Y)"
+            using True by (simp add: of_nat_diff)
+          have "int (card (odd_comps_in_diff G Y) - card Y)
+                  \<le> int (card (odd_comps_in_diff G X) - card X)"
+            using hint hXeq hYeq by linarith
+          then show ?thesis by simp
+        next
+          case False
+          then have "card (odd_comps_in_diff G Y) \<le> card Y"
+            by (simp add: not_le order_less_imp_le)
+          then have "card (odd_comps_in_diff G Y) - card Y = 0"
+            by simp
+          then show ?thesis by simp
+        qed
+      qed
+      show thesis
+        using construct_perfect_matching_with_new_vertices[OF assms(1) assms(3) hnat
+                assms(6) assms(7) assms(8)] that
+        by blast
+    qed
     have "matching Mh" 
       using Mh perfect_matchingE by blast
     have 6: "Vs Mh = Vs ?H" 
