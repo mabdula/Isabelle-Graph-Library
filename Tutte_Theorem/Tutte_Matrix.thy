@@ -2399,7 +2399,7 @@ proof
     then have "(on_odd  (rev_p p)) (p x) = (inv p) (p x)"   
       unfolding on_odd_def using \<open>?A = ?A'\<close> unfolding rev_p_def by presburger 
     then have "(on_odd  (rev_p p)) (p x) = x" 
-      by (metis assms(1) permutes_inv_eq) 
+      by (simp add: permutes_inverses(2)[OF assms(1)])
     then have "inv ((on_odd  (rev_p p))) x = p x" 
       by (metis assms(1) on_odd_p_permutes_UNIV permutes_inv_eq rev_p_permutes)
     then show "(rev_p (rev_p p)) x = p x" 
