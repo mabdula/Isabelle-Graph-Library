@@ -617,8 +617,14 @@ proof(safe)
   have "hd (support p i) = i" 
     by (simp add: assms(1) hd_conv_nth least_power_of_permutation(2) p_is_permutation)
   then have "i \<in> set ?l" 
-    by (metis Nil_is_map_conv assms(1) finite le_zero_eq least_power_of_permutation(2) 
-        list.set_sel(1) neq0_conv permutation_permutes upt_eq_Nil_conv)  
+  proof -
+    have "0 < least_power p i"
+      by (simp add: assms(1) p_is_permutation least_power_of_permutation(2))
+    then have "0 \<in> {0..<least_power p i}" by simp
+    then have "(p ^^ 0) i \<in> (\<lambda>n. (p ^^ n) i) ` {0..<least_power p i}"
+      by (rule imageI)
+    then show ?thesis by simp
+  qed
   {
     fix x
     assume "x \<in> set ?l" 
