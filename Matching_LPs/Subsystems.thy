@@ -693,9 +693,25 @@ proof(safe)
         using that kdim \<open>row C k = r\<close> by blast
     qed
     obtain i' where i:"i' < dim_row A \<and> i' \<in> (I - {i}) \<and> row A i' = row C j' \<and> d $ j' = b $ i'" 
-      using exist_index_in_A[of A b j' "I - {i}"] 
-        dims_subsyst_same' fst_conv j' snd_conv 
-      by (metis assms(1) assms(5))
+  proof -
+    have C_eq: "fst (sub_system A b (I - {i})) = C"
+      using assms(5)[symmetric] by simp
+    have d_eq: "snd (sub_system A b (I - {i})) = d"
+      using assms(5)[symmetric] by simp
+    have dim_Cd: "dim_row C = dim_vec d"
+      by (rule dims_subsyst_same'[OF assms(1) assms(5)])
+    have "j' < dim_vec (snd (sub_system A b (I - {i})))"
+      using j' dim_Cd d_eq by simp
+    from exist_index_in_A[OF assms(1) this] obtain k where
+      k1: "k < dim_vec b" and
+      k2: "k \<in> I - {i}" and
+      k3: "row (fst (sub_system A b (I - {i}))) j' = row A k" and
+      k4: "snd (sub_system A b (I - {i})) $ j' = b $ k"
+      by blast
+    have "k < dim_row A \<and> k \<in> I - {i} \<and> row A k = row C j' \<and> d $ j' = b $ k"
+      using k1 k2 k3 k4 assms(1) C_eq d_eq by simp
+    then show thesis by (rule that)
+  qed
     then obtain j where j: "j < dim_row A' \<and> row A' j = row A i'" 
       using exist_index_in_A'[of A b i' I] 
       by (metis Diff_iff assms(1) assms(4) dims_subsyst_same fst_conv)
