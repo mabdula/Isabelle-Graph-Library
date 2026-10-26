@@ -1907,7 +1907,21 @@ proof
     by (rule conjI[OF first second])
   qed
   then have "row C j \<bullet> x \<le> d $ j \<and> - (row C j) \<bullet> x \<le> - d $ j"
-    by (metis j(2-3) R.minus_minus uminus_uminus_vec)
+  proof -
+    note prev = \<open>row C j \<bullet> x \<le> d $ j \<and> row C j' \<bullet> x \<le> d $ j'\<close>
+    have c1: "row C j \<bullet> x \<le> d $ j"
+      using prev by (rule conjunct1)
+    have c2: "row C j' \<bullet> x \<le> d $ j'"
+      using prev by (rule conjunct2)
+    have row_eq: "- (row C j) = row C j'"
+      by (simp add: j(2) uminus_uminus_vec)
+    have d_eq: "- d $ j = d $ j'"
+      by (simp add: j(3))
+    have c2': "- (row C j) \<bullet> x \<le> - d $ j"
+      unfolding row_eq d_eq by (rule c2)
+    show ?thesis
+      by (rule conjI[OF c1 c2'])
+  qed
   then have "row C j \<bullet> x \<le> d $ j \<and>  (row C j) \<bullet> x \<ge>  d $ j"
     by (metis \<open>C \<in> carrier_mat (dim_vec d) n\<close> \<open>x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d\<close> carrier_matD(2) 
         carrier_vecD neg_le_iff_le row_carrier scalar_prod_uminus_left)
