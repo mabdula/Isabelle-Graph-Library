@@ -3772,10 +3772,27 @@ proof -
         have quot_aug_path_p1: "alt_path (quotG M) (u # rev p1)" (is ?p1) "distinct (u # rev p1)" (is ?p2) "path (quotG E) (u # rev p1)" (is ?p3)
         proof-
           have "alt_path (quotG M) (rev (p1 @ [u]))"
-            unfolding edges_of_path_rev[symmetric]
-            apply(intro alt_list_rev)
-            using last_p1_nin
-            by (metis(no_types,lifting) alternating_list_even_last edges_of_path_snoc last_p1_nin(1) last_p1_nin(2) p1_nempty snoc_eq_iff_butlast)+
+          proof -
+            have snoc_p1u: "edges_of_path (p1 @ [u]) = edges_of_path p1 @ [{last p1, u}]"
+              by (simp add: edges_of_path_snoc[OF p1_nempty])
+            have eop_p1u_nempty: "edges_of_path (p1 @ [u]) \<noteq> []"
+              by (simp add: snoc_p1u)
+            have odd_len_p1u: "odd (length (edges_of_path (p1 @ [u])))"
+            proof (rule ccontr)
+              assume "\<not> odd (length (edges_of_path (p1 @ [u])))"
+              then have even_len: "even (length (edges_of_path (p1 @ [u])))"
+                by simp
+              note alternating_list_even_last[OF last_p1_nin(1) even_len eop_p1u_nempty]
+              then show False
+                using last_p1_nin(2) by simp
+            qed
+            have rev_alt: "alt_list (\<lambda>e. e \<notin> quotG M) (\<lambda>e. e \<in> quotG M)
+                             (rev (edges_of_path (p1 @ [u])))"
+              by (rule alt_list_rev[OF last_p1_nin(1) odd_len_p1u])
+            show ?thesis
+              unfolding edges_of_path_rev[symmetric]
+              by (rule rev_alt)
+          qed
           then show ?p1
             by simp
           show ?p2
