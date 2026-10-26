@@ -6448,8 +6448,7 @@ proof(induction "length p" arbitrary: p M rule: less_induct)
           ultimately show False
             using less.prems(2)
             unfolding matching_def2 Vs_def
-            apply simp
-            by (metis (full_types) insertI1 insert_commute)
+            by (fastforce simp: insert_commute)
         qed
         have "matching ((M - {{a'', a'''}}) \<oplus> set (edges_of_path (a''' # p''')))"
           apply (intro less)
