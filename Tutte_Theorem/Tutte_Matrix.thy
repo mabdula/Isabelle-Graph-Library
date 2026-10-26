@@ -2087,7 +2087,18 @@ proof(safe)
     then have "(p^^(((least_power p i)-j)+j)) x = (p^^((least_power p i)+j)) i"
       using 1 by simp
     then have "(p^^(((least_power p i)-j))) x = (p^^((least_power p i))) i"
-      by (metis (mono_tags, lifting) comp_apply funpow_add j le_add_diff_inverse2 order_less_imp_le)
+    proof -
+      have j1: "x = (p ^^ j) i" and j2: "j < least_power p i"
+        using j by auto
+      have j3: "j \<le> least_power p i"
+        using j2 by (rule order_less_imp_le)
+      have "least_power p i - j + j = least_power p i"
+        using j3 by (simp add: le_add_diff_inverse2)
+      moreover have "(p ^^ (least_power p i - j)) x = (p ^^ (least_power p i - j + j)) i"
+        by (simp add: j1 funpow_add)
+      ultimately show "(p ^^ (least_power p i - j)) x = (p ^^ least_power p i) i"
+        by simp
+    qed
     then have "(p^^((least_power p i)-j)) x = i" 
       by (simp add: assms least_power_of_permutation(1) p_is_permutation)
     show "x \<in>  set (support (rev_p p) i)" 
