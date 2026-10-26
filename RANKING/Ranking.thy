@@ -3578,7 +3578,15 @@ qed
         by (auto elim: ranking_matching_earlier_match_offlineE)
 
       with assms rm_G x_to_x' show ?thesis
-        by (metis nat_neq_iff ranking_matching_shifts_to_reduced_edges shifts_to_inj)
+        proof -
+          have shift_x'': "shifts_to G M u x x'' \<pi> \<sigma>"
+            by (rule ranking_matching_shifts_to_reduced_edges[OF rm_G assms(2) assms(3) assms(4)
+                  \<open>{u,x''} \<in> M'\<close>])
+          have "x'' = x'"
+            by (rule shifts_to_inj[OF shift_x'' x_to_x'])
+          with \<open>index \<sigma> x'' < index \<sigma> x'\<close> show ?thesis
+            by simp
+        qed
     qed
   qed
 qed
