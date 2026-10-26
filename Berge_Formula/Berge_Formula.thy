@@ -1361,7 +1361,13 @@ next
     then have "graph_matching G (graph_diff Mh A)" 
       by (simp add: \<open>matching (graph_diff Mh A)\<close>)
     then have "card M \<ge> card Mh - card A" 
-      by (metis 12 assms(5))
+      proof -
+        assume match_diff: "graph_matching G (graph_diff Mh A)"
+        have "card (graph_diff Mh A) \<le> card M"
+          using assms(5) match_diff by blast
+        then show ?thesis
+          using 12 by simp
+      qed
     then have "card M + card M \<ge> card Mh + card Mh - card A - card A" 
       by auto
     then have "2* card M + card A\<ge> 2*card Mh - card A" 
