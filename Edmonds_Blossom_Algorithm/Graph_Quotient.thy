@@ -2650,7 +2650,20 @@ proof-
               unfolding chp_def
               by (simp add: edges_of_path_snoc p1_nempty)
             have rw2:"(edges_of_path (p1 @ l)) = (edges_of_path p1  @ (edges_of_path (last p1 # l)))" for l
-              by (smt append_Cons append_assoc append_butlast_last_id append_self_conv2 edges_of_path_append_2 list.sel(1) list.simps(3) p1_nempty)
+              proof -
+                obtain q z where p1_eq: "p1 = q @ [z]"
+                  using append_butlast_last_id[OF p1_nempty, symmetric] by blast
+                have split: "edges_of_path (q @ (z # l)) =
+                               edges_of_path (q @ [hd (z # l)]) @ edges_of_path (z # l)"
+                  by (rule edges_of_path_append_2) simp
+                have "edges_of_path (p1 @ l) = edges_of_path (q @ (z # l))"
+                  by (simp add: p1_eq)
+                also have "\<dots> = edges_of_path (q @ [z]) @ edges_of_path (z # l)"
+                  using split by simp
+                also have "\<dots> = edges_of_path p1 @ edges_of_path (last p1 # l)"
+                  by (simp add: p1_eq)
+                finally show ?thesis .
+              qed
             show ?thesis
               unfolding rw
               apply(rule alt_list_append_2)
