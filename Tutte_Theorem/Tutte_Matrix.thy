@@ -3040,8 +3040,38 @@ proof(induct A)
 qed
     then  have "poly_mapping.lookup (?m x) (f a) \<noteq> 0" 
       using True 
-      by (smt (z3) \<open>g a \<in> {1, - 1}\<close> insert_iff lambda_one lookup_single_eq mult_minus_left of_int_1
-          of_int_minus sign_def single_uminus singletonD)
+      proof -
+        have gx: "g x \<in> {1::int, - 1}"
+          using True insert.prems by auto
+        have sx: "sign x \<in> {1::int, - 1}"
+          by (simp add: sign_def)
+        have key: "?m x = Poly_Mapping.single (f x) (of_int (sign x) * of_int (g x) :: real)"
+        proof -
+          have "?m x = (Poly_Mapping.single 0 (of_int (sign x) :: real)
+                          * Poly_Mapping.single 0 (of_int (g x) :: real))
+                       * Poly_Mapping.single (f x) (1::real)"
+            by (simp add: single_of_int)
+          also have "\<dots> = Poly_Mapping.single (0 + 0) (of_int (sign x) * of_int (g x) :: real)
+                       * Poly_Mapping.single (f x) (1::real)"
+            by (simp add: mult_single del: single_of_int)
+          also have "\<dots> = Poly_Mapping.single (0 + 0 + f x)
+                            (of_int (sign x) * of_int (g x) * 1 :: real)"
+            by (simp add: mult_single del: single_of_int)
+          finally show ?thesis by simp
+        qed
+        have lk: "poly_mapping.lookup (?m x) (f x)
+                    = (of_int (sign x) * of_int (g x) :: real)"
+          by (simp add: key lookup_single_eq)
+        have nz: "(of_int (sign x) * of_int (g x) :: real) \<noteq> 0"
+        proof -
+          have s0: "sign x \<noteq> (0::int)" using sx by auto
+          have g0: "g x \<noteq> (0::int)" using gx by auto
+          show ?thesis using s0 g0 by simp
+        qed
+        have "poly_mapping.lookup (?m x) (f a) = poly_mapping.lookup (?m x) (f x)"
+          using True by simp
+        then show ?thesis using lk nz by simp
+      qed
     then show ?thesis 
       using 5 by presburger
   next 
