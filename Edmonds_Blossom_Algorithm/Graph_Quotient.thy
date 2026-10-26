@@ -4257,7 +4257,12 @@ proof -
   then have "set p2 \<subseteq> Vs (quotG E)"
     using quot
     using split_list_first tl_path_is_path
-    by (metis list.sel(3) subset_path_Vs)
+proof -
+  have "path (quotG E) p2"
+    using tl_path_is_path[OF \<open>path (quotG E) (u # p2)\<close>] by simp
+  then show ?thesis
+    by (rule subset_path_Vs)
+qed
   moreover have u_nin_p2: "u \<notin> set p2"
     using quot_aug_path
     by auto
