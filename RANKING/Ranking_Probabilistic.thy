@@ -112,7 +112,18 @@ proof (rule iffI)
   next
     case (2 v)
     then have "v \<in> V"
-      by (metis index_less_size_conv permutations_of_setD(1))
+  proof -
+    from 2 have idx: "index \<sigma> v = t"
+      by blast
+    from idx assms(2) have "index \<sigma> v < length \<sigma>"
+      by simp
+    then have "v \<in> set \<sigma>"
+      by (simp add: index_less_size_conv)
+    moreover from assms(1) have "set \<sigma> = V"
+      by (rule permutations_of_setD(1))
+    ultimately show "v \<in> V"
+      by blast
+  qed
     with 2 show ?case
       by (auto intro: move_to_eq_unique_vertex)
   qed
