@@ -1923,8 +1923,44 @@ proof
       by (rule conjI[OF c1 c2'])
   qed
   then have "row C j \<bullet> x \<le> d $ j \<and>  (row C j) \<bullet> x \<ge>  d $ j"
-    by (metis \<open>C \<in> carrier_mat (dim_vec d) n\<close> \<open>x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d\<close> carrier_matD(2) 
-        carrier_vecD neg_le_iff_le row_carrier scalar_prod_uminus_left)
+  proof -
+    note prev = \<open>row C j \<bullet> x \<le> d $ j \<and> - (row C j) \<bullet> x \<le> - d $ j\<close>
+    have le1: "row C j \<bullet> x \<le> d $ j"
+      using prev by blast
+    have le2: "(- (row C j)) \<bullet> x \<le> - (d $ j)"
+      using prev by blast
+    have xn: "x \<in> carrier_vec n"
+      using \<open>x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d\<close> by blast
+    have dimx: "dim_vec x = n"
+      using xn by (rule carrier_vecD)
+    have dimC: "dim_col C = n"
+      using \<open>C \<in> carrier_mat (dim_vec d) n\<close> by (rule carrier_matD(2))
+    have dimrow: "dim_vec (row C j) = n"
+      using dimC by simp
+    have neg: "(- (row C j)) \<bullet> x = - (row C j \<bullet> x)"
+    proof -
+      have "(- (row C j)) \<bullet> x = (\<Sum>i = 0..<dim_vec x. (- (row C j)) $ i * x $ i)"
+        by (simp add: scalar_prod_def)
+      also have "\<dots> = (\<Sum>i = 0..<dim_vec x. - (row C j $ i * x $ i))"
+      proof (intro sum.cong refl)
+        fix i
+        assume "i \<in> {0..<dim_vec x}"
+        then have "i < dim_vec (row C j)"
+          using dimx dimrow by simp
+        then show "(- (row C j)) $ i * x $ i = - (row C j $ i * x $ i)"
+          by simp
+      qed
+      also have "\<dots> = - (\<Sum>i = 0..<dim_vec x. row C j $ i * x $ i)"
+        by (simp add: sum_negf)
+      also have "\<dots> = - (row C j \<bullet> x)"
+        by (simp add: scalar_prod_def)
+      finally show ?thesis .
+    qed
+    have ge: "d $ j \<le> row C j \<bullet> x"
+      using le2 by (simp add: neg)
+    show ?thesis
+      using le1 ge by (rule conjI)
+  qed
     then have "row C j \<bullet> x = d $ j" 
       using nle_le by blast
     then show False 
