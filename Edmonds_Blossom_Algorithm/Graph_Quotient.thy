@@ -6581,8 +6581,15 @@ proof(induction "length p" arbitrary: p M rule: less_induct)
             case False
             moreover have False if "e \<in> M"
               using less.prems(2) False e(2) that a''a'''_in_both(1)
-              apply (simp add: matching_def2 Vs_def)
-              by (metis insertI1)
+            proof -
+              have a''_in_Vs: "a'' \<in> Vs M"
+                using that e(2) by (auto simp: Vs_def)
+              have "e = {a'', a'''}"
+                using less.prems(2)[unfolded matching_def2] a''_in_Vs that e(2) a''a'''_in_both(1)
+                by blast
+              then show False
+                using False by simp
+            qed
             moreover have False if "e \<in> set (edges_of_path p)"
             proof-
               have "e \<in> set (edges_of_path p'')"
