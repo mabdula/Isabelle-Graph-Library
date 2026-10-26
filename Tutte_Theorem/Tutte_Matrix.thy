@@ -1585,8 +1585,21 @@ qed
     have "not_on_odd p x = p x" 
       using False not_on_odd_in by presburger
     then have "inv (on_odd  p) (p x) = p x" 
-      by (smt (z3)  assms bij_is_surj inj_imp_surj_inv not_on_odd_def surj_f_inv_f
-          on_odd_def on_odd_p_permutes_UNIV permutes_imp_bij permutes_inj permutes_inv_inv )
+    proof -
+      have notin: "p x \<notin> set (support p (least_odd p))"
+      proof
+        assume "p x \<in> set (support p (least_odd p))"
+        then have "inv p (p x) \<in> set (support p (least_odd p))"
+          using inv_in_support[OF p_is_permutation[OF assms]] by blast
+        moreover have "inv p (p x) = x"
+          by (simp add: permutes_inv_eq[OF assms])
+        ultimately show False using False by simp
+      qed
+      have "on_odd p (p x) = p x"
+        by (rule on_odd_out[OF notin])
+      then show ?thesis
+        using permutes_inv_eq[OF on_odd_p_permutes_UNIV[OF assms]] by simp
+    qed
     then show ?thesis 
       using \<open>not_on_odd p x = p x\<close> \<open>rev_p p x = p x\<close> by force
   qed
