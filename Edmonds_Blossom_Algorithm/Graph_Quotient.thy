@@ -5707,7 +5707,16 @@ proof-
     proof-
       have "path E p3"
         using wx(1) aug_path(2) path_suff
-        by (metis list.sel(3) tl_path_is_path)
+      proof -
+        have "path E ((p1 @ w # p2) @ x # p3)"
+          using aug_path(2) wx(1) by simp
+        then have "path E (x # p3)"
+          by (rule path_suff)
+        then have "path E (tl (x # p3))"
+          using tl_path_is_path by blast
+        then show "path E p3"
+          by simp
+      qed
       then show ?thesis
         using quot wx(6)
         using mem_path_Vs by fastforce
