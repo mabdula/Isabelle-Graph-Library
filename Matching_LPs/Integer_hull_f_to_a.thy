@@ -1224,7 +1224,29 @@ proof -
         apply(auto simp: diff_smult_distrib_vec)
         by (meson assms(1) assms(3) minus_cancel_vec row_carrier_vec)
       then have "1 - k = 0"
-        by (metis False rmult_0 smult_vec_nonneg_eq)
+        proof -
+          assume eq0: "(1 - k) \<cdot>\<^sub>v row A j = 0\<^sub>v n"
+          have dim_j: "dim_vec (row A j) = n"
+            using carrier_matD(2)[OF assms(1)] by simp
+          have "\<exists>l<n. row A j $ l \<noteq> 0"
+          proof (rule ccontr)
+            assume "\<not> (\<exists>l<n. row A j $ l \<noteq> 0)"
+            then have all0: "\<And>l. l < n \<Longrightarrow> row A j $ l = 0" by auto
+            have "row A j = 0\<^sub>v n"
+              by (rule eq_vecI)
+                (auto simp: dim_j all0 carrier_matD(2)[OF assms(1)])
+            with False show False by simp
+          qed
+          then obtain l where l_lt: "l < n" and l_nz: "row A j $ l \<noteq> 0" by blast
+          have l_dim: "l < dim_vec (row A j)"
+            using l_lt dim_j by simp
+          have z1: "((1 - k) \<cdot>\<^sub>v row A j) $ l = 0"
+            by (simp only: eq0 index_zero_vec(1)[OF l_lt])
+          have z2: "((1 - k) \<cdot>\<^sub>v row A j) $ l = (1 - k) * row A j $ l"
+            using l_dim by simp
+          from z1 z2 have "(1 - k) * row A j $ l = 0" by simp
+          then show "1 - k = 0" using l_nz by simp
+        qed
       then show False
         by (simp add: assms(4))
     qed
