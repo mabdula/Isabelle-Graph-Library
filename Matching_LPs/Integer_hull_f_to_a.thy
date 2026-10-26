@@ -1292,8 +1292,26 @@ proof -
   then have "dim_span (set (cols A\<^sup>T)) \<le> n" 
     using dim_span_le_n  by blast
   have "rank A\<^sup>T = dim_span (set (cols A\<^sup>T))" 
-    by (metis \<open>rank A\<^sup>T = nr\<close> \<open>set (cols A\<^sup>T) \<subseteq> carrier_vec n\<close> assms carrier_matD(1) cols_length
-        cols_transpose distinct_card index_transpose_mat(3) same_span_imp_card_eq_dim_span)
+  proof -
+    have set_eq: "set (cols A\<^sup>T) = set (rows A)"
+      by (simp add: cols_transpose)
+    have fin: "finite (set (cols A\<^sup>T))"
+      by simp
+    have lin: "lin_indpt (set (cols A\<^sup>T))"
+      using assms(2) by (simp add: set_eq)
+    have card_nr: "card (set (cols A\<^sup>T)) = nr"
+      by (simp add: set_eq distinct_card[OF assms(3)] length_rows
+          carrier_matD(1)[OF assms(1)])
+    have span_refl: "span (set (cols A\<^sup>T)) = span (set (cols A\<^sup>T))"
+      by (rule refl)
+    have card_dim: "card (set (cols A\<^sup>T)) = dim_span (set (cols A\<^sup>T))"
+      using same_span_imp_card_eq_dim_span \<open>set (cols A\<^sup>T) \<subseteq> carrier_vec n\<close> lin fin span_refl
+      by blast
+    have "rank A\<^sup>T = nr" by fact
+    also have "\<dots> = card (set (cols A\<^sup>T))" using card_nr by simp
+    also have "\<dots> = dim_span (set (cols A\<^sup>T))" by (rule card_dim)
+    finally show ?thesis .
+  qed
   then show "nr \<le> n" 
     using \<open>dim_span (set (cols A\<^sup>T)) \<le> n\<close> \<open>rank A\<^sup>T = nr\<close> by presburger
 qed
