@@ -1672,8 +1672,28 @@ lemma bounded_min_faces_square_mat:
   assumes "(A', b') = sub_system A b I"
   shows "dim_row A' = n"
 proof -
-  have "card F = 1" using bounded_min_faces_are_vertex bounded_min_faces_are_vertex' assms(1-6)
-    by metis
+  have "card F = 1"
+  proof -
+  have ne: "polyhedron A b \<noteq> {}"
+    using assms(3) assms(4) by blast
+  have bnd: "(\<forall> x \<in> polyhedron A b. \<forall> i < n. x $ i \<le> bound) \<or>
+             (\<forall> x \<in> polyhedron A b. \<forall> i < n. bound \<le> x $ i)"
+    using assms(3) assms(5) by fastforce
+  have mf: "min_face (polyhedron A b) F"
+    using assms(3) assms(6) by blast
+  show ?thesis
+  proof (cases "\<forall> x \<in> polyhedron A b. \<forall> i < n. x $ i \<le> bound")
+    case True
+    show ?thesis
+      by (rule bounded_min_faces_are_vertex[OF A b ne mf True])
+  next
+    case False
+    have ge: "\<forall> x \<in> polyhedron A b. \<forall> i < n. bound \<le> x $ i"
+      using bnd False by blast
+    show ?thesis
+      by (rule bounded_min_faces_are_vertex'[OF A b ne mf ge])
+  qed
+  qed
   then have "\<exists>!x. x \<in> F" using card_eq_Suc_0_ex1 
     by (metis One_nat_def)
   then have 1:"\<exists>!x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'" 
