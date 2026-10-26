@@ -939,7 +939,14 @@ proof -
     {  fix y
       assume "y \<in> Vs ?m_edges"
       then obtain a where "y \<in> {a, (p a)} \<and> a \<in> set ?start_vert" 
-        by (smt (z3) mem_Collect_eq vs_member_elim)
+      proof -
+        from \<open>y \<in> Vs ?m_edges\<close> obtain e where ye: "y \<in> e" and em: "e \<in> ?m_edges"
+          by (auto simp add: Vs_def)
+        from em obtain b where eb: "e = {b, p b}" and bs: "b \<in> set ?start_vert"
+          by blast
+        have "y \<in> {b, p b}" using ye eb by simp
+        then show thesis using that bs by blast
+      qed
       then show "y \<in> set (support p x)" 
         by (metis (no_types, lifting)  \<open>p permutes UNIV\<close> \<open>set (support p x) = C\<close> empty_iff 
             insertE notin_set_nthsI p_in_same_cycle)
