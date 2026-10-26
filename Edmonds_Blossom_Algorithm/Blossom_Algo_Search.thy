@@ -673,10 +673,14 @@ proof-
     by (intro if1_props[OF ass])+
 
   have "v = v2" if "{v, v3} \<in> M" for v
-    using matching that \<open>{v2,v3} \<in> M\<close>
-    unfolding matching_def2
-    apply (clarsimp simp add: doubleton_eq_iff Vs_def)
-    by (smt doubleton_eq_iff insertI1)
+    proof -
+      have "{v3, v} \<in> M"
+        using that by (simp add: insert_commute)
+      moreover have "{v3, v2} \<in> M"
+        using \<open>{v2,v3} \<in> M\<close> by (simp add: insert_commute)
+      ultimately show "v = v2"
+        using doubleton_in_matching[OF matching(1)] by blast
+    qed
   moreover have "v = v3" if "{v, v2} \<in> M" for v
     using matching that \<open>{v2,v3} \<in> M\<close>
     unfolding matching_def2
