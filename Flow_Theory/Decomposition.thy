@@ -911,9 +911,22 @@ qed
       also have ac:"... =  (\<Sum>i\<in>{0..<length (css)}. if e \<in> set ((es # css) ! (i+1)) 
                                               then (\<gamma> # ws) ! (i+1) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
-        by(rule sum_eq_split,
-           smt (verit, del_insts) add_diff_cancel_right' add_is_0 gr_zeroI lessThan_atLeast0 
-               nth_Cons_pos sum.cong zero_neq_one) simp
+      proof -
+        have "(\<Sum>i<length css. if e \<in> set (css ! i) then ws ! i else 0) =
+              (\<Sum>i\<in>{0..<length css}. if e \<in> set (css ! i) then ws ! i else 0)"
+          by (simp only: lessThan_atLeast0)
+        also have "... = (\<Sum>i\<in>{0..<length css}. if e \<in> set ((es # css) ! (i + 1))
+                                              then (\<gamma> # ws) ! (i + 1) else 0)"
+        proof (rule sum.cong, rule refl)
+          fix i :: nat
+          assume "i \<in> {0..<length css}"
+          have eq: "i + 1 = Suc i" by simp
+          show "(if e \<in> set (css ! i) then ws ! i else 0) =
+                (if e \<in> set ((es # css) ! (i + 1)) then (\<gamma> # ws) ! (i + 1) else 0)"
+            by (simp add: eq)
+        qed
+        finally show ?thesis by simp
+      qed
       also have ae:"... =  (\<Sum>i\<in>{x + 1 |x. x \<in> {0..<length css}}. if e \<in> set ((es # css) ! (i)) 
                                               then (\<gamma> # ws) ! (i) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
