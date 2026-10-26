@@ -2220,7 +2220,12 @@ proof(safe)
       then have "(rev_p p) (p i) = (inv p) (p i)" 
         using rev_p_def by presburger
       then have "(rev_p p) (p i) = i " 
-        by (metis assms(1) permutes_inverses(2))
+      proof -
+        have "inv p (p i) = i"
+          by (rule permutes_inverses(2)[OF assms(1)])
+        with \<open>rev_p p (p i) = inv p (p i)\<close> show ?thesis
+          by simp
+      qed
       have "{(p i), ((rev_p p) (p i))} \<in> (u_edges (rev_p p))"  
         using tutte_matrix.u_edges_def tutte_matrix_axioms by fastforce
       then show ?thesis 
