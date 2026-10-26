@@ -2193,9 +2193,67 @@ have "dim_col A' = n" using dim_col_subsyst_mat A
     using face_is_polyhedron'' assms 
     by blast
   then show "F = polyhedron (A @\<^sub>r A' @\<^sub>r - A') (b @\<^sub>v b' @\<^sub>v - b')" 
-    by (smt (verit, best) A Collect_cong append_rows_le assms(4) b carrier_matI 
-        carrier_vec_dim_vec face_is_polyhedron'(2) face_is_polyhedron'(3)
-        gram_schmidt.polyhedron_def)
+  proof -
+    have dimAb: "dim_row A = dim_vec b"
+      using A b by auto
+    have A'_eq: "A' = fst (sub_system A b I')"
+      by (simp add: assms(4)[symmetric])
+    have dc: "dim_col A' = n"
+    proof -
+      have "dim_col A' = dim_col (fst (sub_system A b I'))"
+        by (simp add: A'_eq)
+      also have "\<dots> = dim_col A"
+        by (simp add: dim_col_subsyst_mat)
+      also have "\<dots> = n"
+        using A by (rule carrier_matD(2))
+      finally show ?thesis .
+    qed
+    have carr_A': "A' \<in> carrier_mat (dim_row A') n"
+      by (rule carrier_matI[OF refl dc])
+    have carr_uA': "- A' \<in> carrier_mat (dim_row A') n"
+      using carr_A' uminus_carrier_mat by blast
+    have carr_app: "A' @\<^sub>r (- A') \<in> carrier_mat (dim_row A' + dim_row A') n"
+      by (rule carrier_append_rows[OF carr_A' carr_uA'])
+    have rows_eq: "dim_row A' = dim_vec b'"
+      using dims_subsyst_same' dimAb assms(4) by blast
+    have carr_b': "b' \<in> carrier_vec (dim_row A')"
+      unfolding carrier_dim_vec using rows_eq by simp
+    have key: "((A @\<^sub>r (A' @\<^sub>r (- A'))) *\<^sub>v x \<le> b @\<^sub>v (b' @\<^sub>v (- b'))) \<longleftrightarrow>
+               (A' *\<^sub>v x = b' \<and> A *\<^sub>v x \<le> b)"
+      if x: "x \<in> carrier_vec n" for x
+    proof -
+      have s1: "((A @\<^sub>r (A' @\<^sub>r (- A'))) *\<^sub>v x \<le> b @\<^sub>v (b' @\<^sub>v (- b'))) \<longleftrightarrow>
+                (A *\<^sub>v x \<le> b \<and> (A' @\<^sub>r (- A')) *\<^sub>v x \<le> b' @\<^sub>v (- b'))"
+        by (rule append_rows_le[OF A carr_app b x])
+      have s2: "((A' @\<^sub>r (- A')) *\<^sub>v x \<le> b' @\<^sub>v (- b')) \<longleftrightarrow>
+                (A' *\<^sub>v x \<le> b' \<and> (- A') *\<^sub>v x \<le> - b')"
+        by (rule append_rows_le[OF carr_A' carr_uA' carr_b' x])
+      have dimn: "dim_vec x = n"
+        using x by (rule carrier_vecD)
+      have dimx: "dim_vec x = dim_col A'"
+        using dimn dc by simp
+      have s3: "(A' *\<^sub>v x = b') \<longleftrightarrow> (A' *\<^sub>v x \<le> b' \<and> (- A') *\<^sub>v x \<le> - b')"
+        by (rule eq_system_is_leq_system[OF dimx])
+      show ?thesis
+        using s1 s2 s3 by blast
+    qed
+    have F_eq: "F = {x. x \<in> carrier_vec n \<and>
+                        (A @\<^sub>r (A' @\<^sub>r (- A'))) *\<^sub>v x \<le> b @\<^sub>v (b' @\<^sub>v (- b'))}"
+    proof (rule Set.set_eqI)
+      fix x
+      have "(x \<in> F) \<longleftrightarrow> (x \<in> carrier_vec n \<and> A' *\<^sub>v x = b' \<and> A *\<^sub>v x \<le> b)"
+        using assms(5) by blast
+      also have "\<dots> \<longleftrightarrow> (x \<in> carrier_vec n \<and>
+                          (A @\<^sub>r (A' @\<^sub>r (- A'))) *\<^sub>v x \<le> b @\<^sub>v (b' @\<^sub>v (- b')))"
+        using key by blast
+      finally show "(x \<in> F) =
+        (x \<in> {x. x \<in> carrier_vec n \<and>
+                  (A @\<^sub>r (A' @\<^sub>r (- A'))) *\<^sub>v x \<le> b @\<^sub>v (b' @\<^sub>v (- b'))})"
+        by blast
+    qed
+    show ?thesis
+      using F_eq unfolding polyhedron_def by blast
+  qed
   have "dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_vec ((b' @\<^sub>v - b') @\<^sub>v b)" 
     using face_is_polyhedron''(2) assms by blast
   have "dim_row ((A' @\<^sub>r - A') @\<^sub>r A) = dim_row (A @\<^sub>r (A' @\<^sub>r - A'))"
