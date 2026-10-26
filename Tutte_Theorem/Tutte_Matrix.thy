@@ -1051,8 +1051,41 @@ proof -
           assume "e1 \<inter> e2 \<noteq> {}" 
           then obtain t where "t \<in> e1 \<inter> e2" by auto
           obtain u v where uv:"e1 = {u, t} \<and> e2 = {t, v}" 
-            by (smt (z3) IntD1 IntD2 asme1 asme2 \<open>t \<in> e1 \<inter> e2\<close> empty_iff insert_commute insert_iff 
-                mem_Collect_eq)
+            proof -
+              have te1: "t \<in> e1" and te2: "t \<in> e2"
+                using \<open>t \<in> e1 \<inter> e2\<close> by auto
+              from asme1 obtain a1 where a1: "e1 = {a1, p a1}" by blast
+              from asme2 obtain b1 where b1: "e2 = {b1, p b1}" by blast
+              have ex1: "\<exists>u. e1 = {u, t}"
+              proof(cases "t = a1")
+                case True
+                have "e1 = {p a1, t}"
+                  using a1 True by (simp add: insert_commute)
+                then show ?thesis by blast
+              next
+                case False
+                have "t = p a1"
+                  using te1 a1 False by simp
+                then have "e1 = {a1, t}"
+                  using a1 by simp
+                then show ?thesis by blast
+              qed
+              have ex2: "\<exists>v. e2 = {t, v}"
+              proof(cases "t = b1")
+                case True
+                have "e2 = {t, p b1}"
+                  using b1 True by simp
+                then show ?thesis by blast
+              next
+                case False
+                have "t = p b1"
+                  using te2 b1 False by simp
+                then have "e2 = {t, b1}"
+                  using b1 by (simp add: insert_commute)
+                then show ?thesis by blast
+              qed
+              show thesis using ex1 ex2 that by blast
+            qed
           then have "u \<noteq> v" 
             using \<open>e1 \<noteq> e2\<close> by fastforce
           then obtain a where a_elem:"{a, (p a)} = {u, t}  \<and> a \<in> set ?start_vert" 
