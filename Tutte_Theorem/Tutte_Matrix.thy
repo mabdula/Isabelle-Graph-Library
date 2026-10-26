@@ -3007,8 +3007,37 @@ proof(induct A)
       by auto
     then have "poly_mapping.lookup (of_int (sign a) * of_int (g a) * 
               (Poly_Mapping.single (f a) (int 1))) (f a) \<noteq> 0"
-      by (smt (z3) insert_iff int_ops(2) lookup_single_eq mult_1 mult_minus_left of_int_1 
-          of_int_minus sign_cases single_uminus singletonD)
+    proof -
+  have g_ne: "g a \<noteq> (0::int)"
+    using assms(2) assms(4) by auto
+  have sign_ne: "of_int (sign a) \<noteq> (0::real)"
+    by (simp add: sign_def)
+  have g_ne': "of_int (g a) \<noteq> (0::real)"
+    using g_ne by simp
+  have sign_ne_i: "of_int (sign a) \<noteq> (0::int)"
+    by (simp add: sign_def)
+  have e1: "of_int (sign a) = Poly_Mapping.single 0 (of_int (sign a) :: int)"
+    by (simp only: single_of_int)
+  have e2: "of_int (g a) = Poly_Mapping.single 0 (of_int (g a) :: int)"
+    by (simp only: single_of_int)
+  have s2: "(Poly_Mapping.single 0 (of_int (sign a) :: int) * Poly_Mapping.single 0 (of_int (g a) :: int))
+             * Poly_Mapping.single (f a) (1::int)
+           = of_int (sign a) * of_int (g a) * Poly_Mapping.single (f a) (1::int)"
+    by (simp only: single_of_int)
+  have s3: "(Poly_Mapping.single 0 (of_int (sign a) :: int) * Poly_Mapping.single 0 (of_int (g a) :: int))
+             * Poly_Mapping.single (f a) (1::int)
+           = Poly_Mapping.single (0 + 0 + f a) (of_int (sign a) * of_int (g a) * 1)"
+    by (simp only: mult_single)
+  then have s4: "(Poly_Mapping.single 0 (of_int (sign a) :: int) * Poly_Mapping.single 0 (of_int (g a) :: int))
+             * Poly_Mapping.single (f a) (1::int)
+           = Poly_Mapping.single (f a) (of_int (sign a) * of_int (g a))"
+    by simp
+  have mp: "of_int (sign a) * of_int (g a) * Poly_Mapping.single (f a) (1::int)
+           = Poly_Mapping.single (f a) (of_int (sign a) * of_int (g a))"
+    by (rule trans [OF s2 [symmetric] s4])
+  show ?thesis
+    using mp g_ne sign_ne_i by (simp add: lookup_single_eq)
+qed
     then  have "poly_mapping.lookup (?m x) (f a) \<noteq> 0" 
       using True 
       by (smt (z3) \<open>g a \<in> {1, - 1}\<close> insert_iff lambda_one lookup_single_eq mult_minus_left of_int_1
