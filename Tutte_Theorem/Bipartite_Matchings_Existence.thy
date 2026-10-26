@@ -411,8 +411,23 @@ qed
       have "X \<noteq> {}"
         by (simp add: \<open>X \<subset> A \<and> X \<noteq> {} \<and> card (neighbours_of_Vs G X) = card X\<close>)
       have " card (A - X) < card A"
-        by (metis \<open>X \<noteq> {}\<close> \<open>X \<subset> A\<close> card_Diff_subset card_gt_0_iff diff_less 
-            dual_order.strict_implies_order finite_subset graphE Asubs subset_empty)
+      proof -
+        have finite_A: "finite A"
+          using finite_subset graphE Asubs by meson
+        have X_subset_A: "X \<subseteq> A"
+          using \<open>X \<subset> A\<close> by (rule psubset_imp_subset)
+        have finite_X: "finite X"
+          using finite_A X_subset_A finite_subset by blast
+        have card_X_pos: "0 < card X"
+          using finite_X \<open>X \<noteq> {}\<close> card_gt_0_iff by blast
+        have card_A_pos: "0 < card A"
+          using \<open>card X < card A\<close> by linarith
+        have "card (A - X) = card A - card X"
+          using finite_X X_subset_A card_Diff_subset by blast
+        also have "... < card A"
+          using card_X_pos card_A_pos diff_less by blast
+        finally show "card (A - X) < card A" .
+      qed
       have A_X_graph:"graph_invar ?AX_gr" using `?AX_gr \<subseteq> G`
         by (meson graphE graph_invar_subset)
       have A_X_vs:"A - X \<subseteq> Vs ?AX_gr"
