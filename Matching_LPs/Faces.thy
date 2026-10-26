@@ -1803,7 +1803,36 @@ proof
   qed
   then obtain j where j:"j < dim_row C \<and>  row C' i = row C j \<and> d' $ i = d $ j" 
     using exist_index_in_A
-    by (metis C'_d'(1) \<open>dim_row C = dim_vec d\<close> dims_subsyst_same fst_conv snd_conv)
+  proof -
+    have i_row: "i < dim_row C'"
+      using i by blast
+    have sub_eq: "sub_system C d I'' = (C', d')"
+      by (rule C'_d'(1)[symmetric])
+    have fst_eq: "fst (sub_system C d I'') = C'"
+      by (simp add: sub_eq)
+    have snd_eq: "snd (sub_system C d I'') = d'"
+      by (simp add: sub_eq)
+    have dims0: "dim_row (fst (sub_system C d I'')) = dim_vec (snd (sub_system C d I''))"
+      by (rule dims_subsyst_same[OF \<open>dim_row C = dim_vec d\<close>])
+    have dims': "dim_row C' = dim_vec d'"
+      using dims0 by (simp only: fst_eq snd_eq)
+    have i_lt: "i < dim_vec (snd (sub_system C d I''))"
+      using i_row dims' snd_eq by simp
+    obtain k where k_lt: "k < dim_vec d"
+      and k_row: "row (fst (sub_system C d I'')) i = row C k"
+      and k_val: "snd (sub_system C d I'') $ i = d $ k"
+      using exist_index_in_A[OF \<open>dim_row C = dim_vec d\<close> i_lt] by blast
+    have k1: "k < dim_row C"
+      using k_lt \<open>dim_row C = dim_vec d\<close> by simp
+    have k2: "row C' i = row C k"
+      using k_row by (simp only: fst_eq)
+    have k3: "d' $ i = d $ k"
+      using k_val by (simp only: snd_eq)
+    have "k < dim_row C \<and> row C' i = row C k \<and> d' $ i = d $ k"
+      using k1 k2 k3 by blast
+    then show thesis
+      by (rule that)
+  qed
   have "\<not> (row C j \<bullet> x = d $ j)" 
     using \<open>j < dim_row C \<and> row C' i = row C j \<and> d' $ i = d $ j\<close> i by presburger
   then obtain j' where j :"j < dim_row C" "row C j = - (row C j')" "d $ j = - (d $ j')"
