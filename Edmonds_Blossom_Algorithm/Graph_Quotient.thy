@@ -2430,7 +2430,13 @@ proof-
       ultimately have "last (edges_of_path (chp @ [chv])) \<in> M \<and> chp \<noteq> [] \<or> chv = hd C"
         by auto
       moreover have "set (chp @ [chv]) \<subseteq> set C"
-        by (metis chp stem2vert_path_subset) 
+      proof -
+        have "set (chp @ [chv]) = set (stem2vert_path C M a2')"
+          using chp by simp
+        also have "\<dots> \<subseteq> set C"
+          by (rule stem2vert_path_subset)
+        finally show ?thesis .
+      qed
       ultimately have "alt_path M (chv # a2' # p2')"
         using alt_list_p2[where ?chpa7 = chp] odd_cycleD(3)[OF cycle(1)]
         by simp
