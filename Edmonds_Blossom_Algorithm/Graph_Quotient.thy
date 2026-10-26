@@ -2544,7 +2544,21 @@ proof-
     by auto
   ultimately have p2_subset_s: "set p2 \<subseteq> s"
     using quot good_quot_map
-    by (smt (verit) Vs_quotG_subset_Vs_quot_graph in_mono in_quot_graph_neq_u subsetI)
+    proof -
+      have in_s: "x \<in> s" if x_mem: "x \<in> set p2" for x
+      proof -
+        have x_quotG: "x \<in> Vs (quotG E)"
+          using x_mem \<open>set p2 \<subseteq> Vs (quotG E)\<close> by blast
+        have x_quot_graph: "x \<in> Vs (quot_graph P E)"
+          using x_quotG Vs_quotG_subset_Vs_quot_graph by blast
+        have x_neq_u: "x \<noteq> u"
+          using x_mem u_nin_p2 by blast
+        show "x \<in> s"
+          by (rule in_quot_graph_neq_u[OF x_quot_graph x_neq_u])
+      qed
+      show ?thesis
+        using in_s by blast
+    qed
 
   have "path (quotG E) (p1 @ [u])"
     using quot_aug_path
