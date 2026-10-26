@@ -1760,7 +1760,13 @@ proof
   have "- (v $ i) = - 1 * v $ i" 
     by simp
   then show " (- v) $ i = vec (dim_vec v) (\<lambda>i. - 1 * v $ i) $ i" 
-    by (metis \<open>(- v) $ i = - v $ i\<close> asmi dim_vec index_vec)
+  proof -
+    have i_lt: "i < dim_vec v" using asmi by simp
+    have "(- v) $ i = - (v $ i)" using i_lt by simp
+    also have "\<dots> = - 1 * v $ i" by simp
+    also have "\<dots> = vec (dim_vec v) (\<lambda>i. - 1 * v $ i) $ i" using i_lt by simp
+    finally show ?thesis .
+  qed
 qed
 
 lemma vec_carr_add_mono:
