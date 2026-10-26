@@ -495,7 +495,28 @@ proof(rule ccontr)
   assume "\<not> distinct (Matrix.rows A') "
   then obtain j1 j2 where j1j2: "j1 \<noteq> j2 \<and> j1 < dim_row A' \<and> 
                                  j2 < dim_row A' \<and> row A' j1 = row A' j2" 
-    by (metis distinct_conv_nth length_rows nth_rows)
+  proof -
+    assume nd: "\<not> distinct (Matrix.rows A')"
+    have len: "length (Matrix.rows A') = dim_row A'"
+      by (simp add: length_rows)
+    from nd have "\<not> (\<forall>i<length (Matrix.rows A'). \<forall>j<length (Matrix.rows A').
+                       i \<noteq> j \<longrightarrow> Matrix.rows A' ! i \<noteq> Matrix.rows A' ! j)"
+      by (unfold distinct_conv_nth)
+    then obtain k1 k2
+      where k1: "k1 < length (Matrix.rows A')"
+        and k2: "k2 < length (Matrix.rows A')"
+        and kneq: "k1 \<noteq> k2"
+        and keq: "Matrix.rows A' ! k1 = Matrix.rows A' ! k2"
+      by blast
+    have k1': "k1 < dim_row A'" using k1 len by simp
+    have k2': "k2 < dim_row A'" using k2 len by simp
+    have "row A' k1 = row A' k2"
+      using keq k1' k2' by (simp add: nth_rows)
+    with kneq k1' k2'
+    have "k1 \<noteq> k2 \<and> k1 < dim_row A' \<and> k2 < dim_row A' \<and> row A' k1 = row A' k2"
+      by blast
+    then show thesis by (rule that)
+  qed
   obtain i1 where i1:"i1 < dim_row A \<and> i1 \<in> I \<and> row A i1 = row A' j1 \<and>
                       i1 = (pick I j1) \<and> b' $ j1 = b $ i1" 
     by (metis assms(8) dims_eq dims_subsyst_same exist_index_in_A fst_conv j1j2 snd_conv)
