@@ -3372,7 +3372,31 @@ proof (rule ccontr)
     by (auto intro!: in_remove_verticesI simp: shifts_to_def dest: ranking_matchingE bipartite_disjointD)
 
   with \<open>{u,x'} \<notin> M'\<close> rm_G' consider (u_matched) "\<exists>x''. {u,x''} \<in> M'" | (u_unmatched) "\<exists>u'. {u',x'} \<in> M'"
-    by (metis graph_invar_no_edge_no_vertex insert_commute maximal_matching_def ranking_matchingE)
+  proof -
+    have gi: "graph_invar M'"
+      using rm_G' by (auto elim!: ranking_matchingE)
+    obtain ea where ea_M: "ea \<in> M'" and ea_mem: "u \<in> ea \<or> x' \<in> ea"
+      using rm_G' \<open>{u,x'} \<in> G \<setminus> {x}\<close>
+      by (blast elim: ranking_matching_maximalE)
+    from ea_mem show ?thesis
+    proof
+      assume "u \<in> ea"
+      with ea_M have "u \<in> Vs M'"
+        by (auto simp: Vs_def)
+      with gi obtain w where "{u,w} \<in> M'"
+        by (rule graph_invar_vertex_edgeE)
+      with that(1) show ?thesis
+        by blast
+    next
+      assume "x' \<in> ea"
+      with ea_M have "x' \<in> Vs M'"
+        by (auto simp: Vs_def)
+      with gi obtain z where "{z,x'} \<in> M'"
+        by (rule graph_invar_vertex_edgeE')
+      with that(2) show ?thesis
+        by blast
+    qed
+  qed
 
   then show False
   proof cases
