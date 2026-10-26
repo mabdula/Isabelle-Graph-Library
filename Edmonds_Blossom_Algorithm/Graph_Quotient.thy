@@ -4600,14 +4600,24 @@ proof-
                 quot
           using cycle(1-3) graph matching(1) matching(2) odd_cycleD(3) not_in_quot_matching_not_in_matching by fastforce
       qed
-      subgoal proof-
-        have "last (stem2vert_path C M (hd p2) @ p2) = last p2"
+      subgoal proof -
+        have last_eq: "last (stem2vert_path C M (hd p2) @ p2) = last p2"
           using p2_nempty
           by simp
+        have last_mem: "last p2 \<in> set p2"
+          by (rule last_in_set[OF p2_nempty])
+        have last_in_s: "last p2 \<in> s"
+          using last_mem p2_subset_s
+          by blast
+        have "last p2 \<notin> Vs (quotG M)"
+          using matching_augmenting_path_feats(4)[OF quot_aug_path(1)] p2_nempty
+          by simp
+        then have "last p2 \<notin> Vs M"
+          using vert_in_graph_iff_in_quot_diff_u[OF last_in_s matching(2)]
+          by blast
         then show ?thesis
-          using matching_augmenting_path_feats(4)[OF quot_aug_path(1)]
-          using p2_nempty
-          by (metis (no_types, lifting) last.simps last_in_set matching(2) p2_subset_s subsetD vert_in_graph_iff_in_quot_diff_u)
+          using last_eq
+          by simp
       qed
       done
   } note d1 = this
