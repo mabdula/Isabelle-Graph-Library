@@ -2345,7 +2345,7 @@ proof -
     qed
   qed
   then have "least_odd p \<le> least_odd (rev_p p)" 
-    by (metis least_odd_def wellorder_Least_lemma(2))
+    unfolding least_odd_def by (rule Least_le)
   have "least_odd p \<ge> least_odd (rev_p p)"  
     using 5 least_odd_def wellorder_Least_lemma(2) by fastforce
   then show ?thesis 
