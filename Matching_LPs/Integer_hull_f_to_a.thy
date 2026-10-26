@@ -1832,8 +1832,18 @@ proof -
     then show ?thesis by blast
   qed
     have "Max (abs ` (vec_set c)) \<ge> 0" 
-      by (metis (mono_tags, lifting) Max_in \<open>set\<^sub>v c \<noteq> {}\<close> abs_ge_zero finite_imageI
-          finite_vec_set imageE image_is_empty)
+    proof -
+      have fin: "finite (abs ` set\<^sub>v c)"
+        using finite_vec_set finite_imageI by blast
+      have ne: "abs ` set\<^sub>v c \<noteq> {}"
+        using \<open>set\<^sub>v c \<noteq> {}\<close> by blast
+      have mem: "Max (abs ` set\<^sub>v c) \<in> abs ` set\<^sub>v c"
+        by (rule Max_in[OF fin ne])
+      have nonneg: "\<forall>x \<in> abs ` set\<^sub>v c. 0 \<le> x"
+        by auto
+      show ?thesis
+        using mem nonneg by blast
+    qed
     have "c \<bullet> 1\<^sub>v n = sum (\<lambda> i. c $ i) {0..<n}" 
       using assms(5) scalar_prod_right_one by blast
     have "\<forall> i < n. c $ i * x $ i \<le> abs (c $ i)" 
