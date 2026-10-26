@@ -505,9 +505,43 @@ proof -
     qed
   qed
   also have "(\<forall> i < dim_row ?A'. (row ?A' i) \<bullet> x = ?b' $ i) \<longleftrightarrow> ?A' *\<^sub>v x = ?b'" 
-    unfolding mult_mat_vec_def 
-    by (smt (verit, ccfv_SIG) A b carrier_matD(1) carrier_vecD dim_vec dims_subsyst_same 
-        eq_vecI index_vec)
+  proof -
+    have dimAb: "dim_row A = dim_vec b"
+      using A b by auto
+    have dims: "dim_row ?A' = dim_vec ?b'"
+      using dims_subsyst_same'[OF dimAb] by simp
+    show ?thesis
+    proof
+      assume asm: "\<forall> i < dim_row ?A'. (row ?A' i) \<bullet> x = ?b' $ i"
+      show "?A' *\<^sub>v x = ?b'"
+      proof (rule eq_vecI)
+        fix i
+        assume "i < dim_vec ?b'"
+        then have i: "i < dim_row ?A'"
+          using dims by simp
+        have "(?A' *\<^sub>v x) $ i = row ?A' i \<bullet> x"
+          by (rule index_mult_mat_vec[OF i])
+        also have "\<dots> = ?b' $ i"
+          using asm i by blast
+        finally show "(?A' *\<^sub>v x) $ i = ?b' $ i" .
+      next
+        show "dim_vec (?A' *\<^sub>v x) = dim_vec ?b'"
+          using dims by simp
+      qed
+    next
+      assume eq: "?A' *\<^sub>v x = ?b'"
+      show "\<forall> i < dim_row ?A'. (row ?A' i) \<bullet> x = ?b' $ i"
+      proof (intro allI impI)
+        fix i
+        assume i: "i < dim_row ?A'"
+        have "row ?A' i \<bullet> x = (?A' *\<^sub>v x) $ i"
+          by (rule index_mult_mat_vec[OF i, symmetric])
+        also have "\<dots> = ?b' $ i"
+          by (simp only: eq)
+        finally show "row ?A' i \<bullet> x = ?b' $ i" .
+      qed
+    qed
+  qed
   finally show ?thesis 
     by blast
 qed
