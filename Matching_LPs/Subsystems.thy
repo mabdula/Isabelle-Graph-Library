@@ -34,8 +34,13 @@ lemma dim_col_submatrix_UNIV:
 
 lemma dim_col_subsyst_mat:
   shows "dim_col (fst (sub_system A b I)) = dim_col A" 
-  using dim_col_submatrix_UNIV 
-  by (metis sub_system_fst)
+proof -
+  have "dim_col (fst (sub_system A b I)) = dim_col (submatrix A I UNIV)"
+    by (simp add: sub_system_fst)
+  also have "\<dots> = dim_col A"
+    by (rule dim_col_submatrix_UNIV)
+  finally show ?thesis .
+qed
 
 lemma dim_row_less_card_I:
   assumes "finite I" 
