@@ -180,7 +180,18 @@ proof -
             using \<open>v \<in> C\<close> by auto
         qed
       then show "y \<in> C" 
-        by (metis last_in_set p_walk walk_betw_def)
+        proof -
+          have "p \<noteq> []"
+            using p_walk by auto
+          have "last p = y"
+            using walk_between_nonempty_pathD(4)[OF p_walk] by simp
+          from \<open>p \<noteq> []\<close> have "last p \<in> set p"
+            by (rule last_in_set)
+          then have "y \<in> set p"
+            using \<open>last p = y\<close> by simp
+          then show ?thesis
+            using \<open>\<forall>z \<in> set p. z \<in> C\<close> by blast
+        qed
     qed   
   qed (metis \<open>connected_component (graph_diff G X) x = C\<close> 
       con_comp_subset graph_diff_subset insert_absorb insert_subset)
