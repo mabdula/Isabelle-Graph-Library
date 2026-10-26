@@ -2062,7 +2062,14 @@ proof -
       have 2:"(A @\<^sub>r B) $$ (i, j) = row (A @\<^sub>r B) i $ j" 
         by (simp add: asmi asmj)
       have "j < dim_col B" 
-        by (metis 1 asmj index_row(2))
+      proof -
+        have "dim_col (A @\<^sub>r B) = n"
+          using assms(1) assms(2) carrier_matD(2) by blast
+        moreover have "dim_col B = n"
+          using assms(2) carrier_matD(2) by blast
+        ultimately show ?thesis
+          using asmj by simp
+      qed
       then have "B $$ (i-nr1, j) = row B (i-nr1) $ j"
         using False 1 2 
         by (metis (mono_tags, lifting) asmi add_0_right append_rows_def assms(1-2) carrier_matD(1) 
