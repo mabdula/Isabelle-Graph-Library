@@ -7613,7 +7613,7 @@ next
   have "v = last C" (is ?p1) "w = last stem" (is ?p2) if "e \<in> M" "v \<in> e" "w \<in> s" "w \<in> e" "v \<notin> s" for w v e
   proof-
     have stem_hdC_nempty: "edges_of_path (stem @ [hd C]) \<noteq> []"
-      by (metis edges_of_path_snoc snoc_eq_iff_butlast stem_nempty)
+      by (simp add: edges_of_path_snoc[OF stem_nempty, symmetric])
     have "(edges_of_path (stem @ C)) = (edges_of_path (stem @ [hd C])) @ (edges_of_path (C))"
       using odd_cycle_nempty[OF match_blossomD(3)[OF match_blossom]]
       using edges_of_path_append_2 by blast
