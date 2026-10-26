@@ -6929,7 +6929,11 @@ qed
       qed
       have stem_hdC_nempty: "edges_of_path (stem @ [hd C]) \<noteq> []"
         using stem_nempty
-        by (metis edges_of_path_snoc snoc_eq_iff_butlast)
+        proof -
+          have "edges_of_path (stem @ [hd C]) = edges_of_path stem @ [{last stem, hd C}]"
+            using edges_of_path_snoc[OF stem_nempty] by simp
+          then show ?thesis by simp
+        qed
       have "(edges_of_path (stem @ C)) = (edges_of_path (stem @ [hd C])) @ (edges_of_path (C))"
         using odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
         using edges_of_path_append_2 by blast
