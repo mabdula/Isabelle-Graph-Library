@@ -1456,8 +1456,13 @@ proof -
     qed
   qed
   have "card (odd_comps_in_diff G X)  \<le> card (Vs G)" 
-    by (metis (no_types, lifting) assms(2) card_Diff_subset diff_le_self diff_odd_comps_card
-        finite_subset graph order_trans)
+  proof -
+    have "card (odd_comps_in_diff G X) \<le> card (Vs G - X)"
+      by (rule diff_odd_comps_card[OF graph])
+    also have "\<dots> \<le> card (Vs G)"
+      by (rule card_mono[OF graph_invar_finite_Vs[OF graph] Diff_subset])
+    finally show ?thesis .
+  qed
   then have " card (odd_comps_in_diff G X) - card X  \<le> card (Vs G)" 
     by (meson diff_le_self dual_order.trans)
   then have 4:"card (odd_comps_in_diff G X) - card X  \<le> card A'" 
