@@ -153,7 +153,35 @@ next
     by (auto simp: index_less_size_conv)
 
   with assms filter_eq v have "\<sigma> = \<sigma>'[v \<mapsto> t]"
-    by (metis distinct_count_in_set index_less_size_conv move_to_def move_to_id permutations_of_setD(2))
+    proof -
+      from assms(1) have dist_\<sigma>: "distinct \<sigma>"
+        by (auto dest: permutations_of_setD)
+
+      from assms(1) v(2) have v_in_\<sigma>: "v \<in> set \<sigma>"
+        by (auto dest: permutations_of_setD)
+
+      from dist_\<sigma> v_in_\<sigma> have count_v: "count_list \<sigma> v = 1"
+        by (simp add: distinct_count_in_set)
+
+      have the_index_v: "(THE v. index \<sigma> v = t) = v"
+        using v \<open>t < length \<sigma>\<close>
+        by (auto simp: index_less_size_conv)
+
+      have filter_v: "[x <- \<sigma>'. x \<noteq> v] = [x <- \<sigma>. x \<noteq> v]"
+        using filter_eq by (simp add: the_index_v)
+
+      have move_\<sigma>': "\<sigma>'[v \<mapsto> t] = \<sigma>[v \<mapsto> t]"
+        unfolding move_to_def by (simp add: filter_v)
+
+      have move_id: "\<sigma>[v \<mapsto> index \<sigma> v] = \<sigma>"
+        using dist_\<sigma> v_in_\<sigma> count_v by (simp add: move_to_id)
+
+      with v(1) have move_\<sigma>: "\<sigma>[v \<mapsto> t] = \<sigma>"
+        by simp
+
+      from move_\<sigma>' move_\<sigma> show ?thesis
+        by simp
+    qed
 
   have "\<And>v'. \<sigma> = \<sigma>'[v' \<mapsto> t] \<Longrightarrow> v' = v"
   proof (rule move_to_eq_unique_vertex[symmetric, OF assms(3) assms(1) \<open>index \<sigma> v = t\<close>], goal_cases)
