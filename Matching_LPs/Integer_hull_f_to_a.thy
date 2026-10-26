@@ -2169,7 +2169,7 @@ proof(safe)
     have "Matrix.mat n n (\<lambda>(i, j). if i = j then 1 else 0) $$ (i, j) = 1" 
       using True asmi by auto
     then show ?thesis  
-      by (smt (verit, ccfv_SIG) Ints_1)
+      by (insert True asmi asmj, simp add: Ints_1)
   next
     case False
     have "Matrix.mat n n (\<lambda>(i, j). if i = j then 1 else 0) $$ (i, j) = 0" 
