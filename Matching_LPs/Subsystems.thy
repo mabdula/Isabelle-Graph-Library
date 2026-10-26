@@ -299,7 +299,12 @@ lemma exist_index_in_A:
           \<and> (snd (sub_system A b I)) $ j = b $ i \<and> i = pick I j"
 proof -
   have "(pick I j) < dim_vec b" 
-    by (metis assms(2)  dim_subsyst_vec pick_le)
+  proof -
+    have "j < card {i. i < dim_vec b \<and> i \<in> I}"
+      using assms(2) by (simp add: dim_subsyst_vec)
+    then show ?thesis
+      by (rule pick_le)
+  qed
   moreover have "(pick I j) \<in> I" 
     apply(cases "finite I") 
      apply (metis (mono_tags, lifting) assms dim_row_less_card_I dims_subsyst_same 
