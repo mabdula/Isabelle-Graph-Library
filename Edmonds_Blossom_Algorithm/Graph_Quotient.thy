@@ -2268,7 +2268,7 @@ proof-
                   (choose_con_vert (set C) a2') = last C"
     then obtain Ctail where Ctail: "C = (stem2vert_path C M a2') @ Ctail"
       using stem2vert_path_append_1 stem2vert_path_append_2[OF _ cycle(1)]
-      by metis
+      by blast
     then have "edges_of_path C = edges_of_path(chp @ [chv]) @ edges_of_path (chv # Ctail)"
       using edges_of_path_append_2 chp
       by fastforce
