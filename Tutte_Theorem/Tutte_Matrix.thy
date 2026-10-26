@@ -2134,8 +2134,17 @@ proof(safe)
     using `?lp-j > 0`  
     by simp
   then have "((rev_p p)^^((?lp-j))) x = ((rev_p p)^^(?lp)) i"
-    by (metis (no_types, lifting) Nat.add_diff_assoc2 j_sup add_diff_cancel_right' funpow_add
-        less_imp_le o_apply)
+  proof -
+    have j_le: "j \<le> ?lp" using j_sup by linarith
+    have exp_eq: "(?lp - j) + j = ?lp" using j_le by linarith
+    have "((rev_p p)^^(?lp-j)) x = ((rev_p p)^^(?lp-j)) (((rev_p p)^^j) i)"
+      using j_sup by simp
+    also have "\<dots> = ((rev_p p)^^((?lp-j)+j)) i"
+      by (simp add: funpow_add)
+    also have "\<dots> = ((rev_p p)^^?lp) i"
+      by (simp add: exp_eq)
+    finally show ?thesis .
+  qed
   then have "((rev_p p)^^(?lp-j)) x = i" 
     by (simp add: \<open>permutation (rev_p p)\<close> least_power_of_permutation(1))
   show "x \<in>  set (support p i)" 
