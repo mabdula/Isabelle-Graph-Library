@@ -452,7 +452,21 @@ next
     qed
   qed
   then show "card F = 1" 
-    by (metis \<open>F \<noteq> {}\<close> is_singletonI' is_singleton_altdef)
+  proof -
+    from \<open>\<exists>!x. x \<in> F\<close> obtain v where vF: "v \<in> F" and vuniq: "\<forall>y. y \<in> F \<longrightarrow> y = v"
+      by blast
+    have "F = {v}"
+    proof (intro equalityI subsetI)
+      fix y assume "y \<in> F"
+      then have "y = v" using vuniq by blast
+      then show "y \<in> {v}" by simp
+    next
+      fix y assume "y \<in> {v}"
+      then have "y = v" by simp
+      then show "y \<in> F" using vF by simp
+    qed
+    then show "card F = 1" by simp
+  qed
 qed
 
 lemma min_face_distinct:
