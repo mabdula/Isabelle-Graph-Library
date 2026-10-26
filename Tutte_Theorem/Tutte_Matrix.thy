@@ -2964,8 +2964,29 @@ proof(induct A)
       then have "f a \<noteq> f t" 
         using insert.prems(1-2) by force
       then have "poly_mapping.lookup (?m t) (f a) = 0" 
-        by (metis (no_types, lifting) lookup_single_not_eq mult.assoc mult_1 
-            mult_single single_of_int single_one)
+      proof -
+        have e1: "of_int (sign t) = Poly_Mapping.single 0 (of_int (sign t) :: real)"
+          by (simp add: single_of_int)
+        have e2: "of_int (g t) = Poly_Mapping.single 0 (of_int (g t) :: real)"
+          by (simp add: single_of_int)
+        have s2: "(Poly_Mapping.single 0 (of_int (sign t)) * Poly_Mapping.single 0 (of_int (g t)))
+                   * Poly_Mapping.single (f t) (1::real)
+                 = of_int (sign t) * of_int (g t) * Poly_Mapping.single (f t) (1::real)"
+          by (simp add: single_of_int)
+        have s3: "(Poly_Mapping.single 0 (of_int (sign t)) * Poly_Mapping.single 0 (of_int (g t)))
+                   * Poly_Mapping.single (f t) (1::real)
+                 = Poly_Mapping.single (0 + 0 + f t) (of_int (sign t) * of_int (g t) * 1)"
+          by (simp only: mult_single)
+        then have s4: "(Poly_Mapping.single 0 (of_int (sign t)) * Poly_Mapping.single 0 (of_int (g t)))
+                   * Poly_Mapping.single (f t) (1::real)
+                 = Poly_Mapping.single (f t) (of_int (sign t) * of_int (g t))"
+          by simp
+        have mp: "of_int (sign t) * of_int (g t) * Poly_Mapping.single (f t) (1::real)
+                 = Poly_Mapping.single (f t) (of_int (sign t) * of_int (g t))"
+          by (rule trans [OF s2 [symmetric] s4])
+        then show ?thesis
+          using \<open>f a \<noteq> f t\<close> by (simp add: lookup_single_not_eq)
+      qed
       then have "poly_mapping.lookup (\<Sum>b\<in>(insert t T). ?m b) (f a) =  
                  poly_mapping.lookup (\<Sum>b\<in>T. ?m b) (f a)"
         using 3 by linarith
