@@ -2500,7 +2500,22 @@ proof-
         by auto
       moreover have "(edges_of_path (chp @ [chv]) @ edges_of_path (chv # a2' # p2')) =
                            (edges_of_path ((chp @ [chv] @ [a2']) @ p2'))"
-        by (metis append_Cons append_Nil append_assoc edges_of_path_append_2 list.sel(1) list.simps(3))
+      proof -
+        have gen: "edges_of_path (xs @ y # z # zs) =
+                     edges_of_path (xs @ [y]) @ edges_of_path (y # z # zs)"
+          for xs zs :: "'a list" and y z :: 'a
+        proof -
+          have ne: "y # z # zs \<noteq> []"
+            by simp
+          have "edges_of_path (xs @ y # z # zs) =
+                  edges_of_path (xs @ [hd (y # z # zs)]) @ edges_of_path (y # z # zs)"
+            by (rule edges_of_path_append_2[OF ne])
+          then show ?thesis
+            by simp
+        qed
+        show ?thesis
+          by (simp only: append_assoc append_Cons append_Nil gen)
+      qed
       ultimately show ?thesis
         by simp
     qed
