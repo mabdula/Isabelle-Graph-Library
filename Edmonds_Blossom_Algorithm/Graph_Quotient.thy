@@ -4268,7 +4268,17 @@ qed
     by auto
   ultimately have p2_subset_s: "set p2 \<subseteq> s"
     using quot good_quot_map
-    by (metis (no_types,lifting) neq_u_notin_quotG set_rev_mp subsetI)
+  proof -
+  have "x \<in> s" if "x \<in> set p2" for x
+  proof (rule in_quotG_neq_u)
+    show "x \<in> Vs (quotG E)"
+      using that \<open>set p2 \<subseteq> Vs (quotG E)\<close> by blast
+    show "x \<noteq> u"
+      using that u_nin_p2 by blast
+  qed
+  then show "set p2 \<subseteq> s"
+    by blast
+  qed
 
   have "path (quotG E) (p1 @ [u])"
     using quot_aug_path
