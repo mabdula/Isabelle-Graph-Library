@@ -3717,7 +3717,22 @@ proof (rule ccontr)
           case u'_matched'
           then obtain x3 where "{u',x3} \<in> M'" by blast
           with rm_G u_to_u' \<open>{u', x''} \<in> M\<close> \<open>{u', x''} \<notin> M'\<close> consider (before_x'') "index \<sigma> x3 < index \<sigma> x''" | (after_x'') "index \<sigma> x'' < index \<sigma> x3"
-            by (metis index_eq_index_conv less_linear ranking_matching_bipartite_edges shifts_to_only_from_input(2))
+          proof -
+            from u_to_u' have "u' \<in> set \<pi>"
+              by (rule shifts_to_only_from_input(2))
+            with rm_G \<open>{u', x''} \<in> M\<close> have "x'' \<in> set \<sigma>"
+              by (rule ranking_matching_bipartite_edges)
+            moreover from rm_G' \<open>{u', x3} \<in> M'\<close> \<open>u' \<in> set \<pi>\<close> have "x3 \<in> set \<sigma>"
+              by (rule ranking_matching_bipartite_edges)
+            moreover have "x3 \<noteq> x''"
+              using \<open>{u', x3} \<in> M'\<close> \<open>{u', x''} \<notin> M'\<close> by blast
+            ultimately have "index \<sigma> x3 \<noteq> index \<sigma> x''"
+              by (simp add: index_eq_index_conv)
+            then have "index \<sigma> x3 < index \<sigma> x'' \<or> index \<sigma> x'' < index \<sigma> x3"
+              by linarith
+            then show thesis
+              using that by blast
+          qed
 
           then show ?thesis
           proof cases
