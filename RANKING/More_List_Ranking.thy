@@ -967,8 +967,29 @@ lemma list_emb_drop_before_first:
   assumes "\<forall>y \<in> set ys. \<not>P (hd xs) y"
   shows "list_emb P xs zs"
   using assms
-  by (induction ys; simp)
-     (metis list.exhaust_sel list_emb_Cons_iff2 list_emb_Nil)
+proof (induction ys)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons y ys)
+  show ?case
+  proof (cases "xs = []")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    then obtain x xs' where x_xs': "xs = x # xs'"
+      by (cases xs) auto
+    from Cons.prems(1) have h1: "list_emb P xs (y # (ys @ zs))"
+      by simp
+    from Cons.prems(2) have h2: "\<not> P (hd xs) y" and h3: "\<forall>y' \<in> set ys. \<not> P (hd xs) y'"
+      by simp_all
+    from h1 h2 x_xs' have "list_emb P xs (ys @ zs)"
+      by (simp add: list_emb_Cons_iff2)
+    then show ?thesis
+      using Cons.IH h3 by blast
+  qed
+qed
 
 lemma sorted_strict_last_geq_length_offset:
   assumes "ns \<noteq> []"
