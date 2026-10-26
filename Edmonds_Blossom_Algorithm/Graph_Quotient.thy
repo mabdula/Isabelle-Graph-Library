@@ -5567,8 +5567,23 @@ proof-
         moreover have "last (u # p2) \<notin> Vs (quotG M)"
           using p1p2x(1) matching_augmenting_path_feats(4)[OF aug_path(1)] p2_nempty
             \<open>M \<subseteq> E\<close>
-          by (metis (no_types,lifting) last_ConsR last_in_set p1_empty p2_subset_s self_append_conv2 
-              subsetCE vert_in_graph_iff_in_quot_diff_u)
+          proof -
+            have last_p2_in_s: "last p2 \<in> s"
+              using p2_nempty p2_subset_s by (simp add: subset_iff)
+            have p_eq: "p = x # p2"
+              using p1p2x(1) p1_empty by simp
+            have last_p_eq_last_p2: "last p = last p2"
+              using p_eq p2_nempty by simp
+            have last_p_nin_M: "last p \<notin> Vs M"
+              using matching_augmenting_path_feats(4)[OF aug_path(1)] .
+            have last_p2_nin_M: "last p2 \<notin> Vs M"
+              using last_p_nin_M last_p_eq_last_p2 by simp
+            have last_p2_nin_quotM: "last p2 \<notin> Vs (quotG M)"
+              using vert_in_graph_iff_in_quot_diff_u[OF last_p2_in_s \<open>M \<subseteq> E\<close>] last_p2_nin_M
+              by simp
+            show "last (u # p2) \<notin> Vs (quotG M)"
+              using last_p2_nin_quotM p2_nempty by simp
+          qed
         moreover have "hd (u # p2) \<notin> Vs (quotG M)"
           apply simp
           by(rule not_in_quot_matching_not_in_matching_2[OF matching(1,2) cycle quot(1) aug_path(5)])
