@@ -3513,7 +3513,7 @@ proof -
       have "is_singleton (\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e})" 
         using 1 by blast
       then have 6: "\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e} = {b}" 
-        by (metis (no_types, lifting) b is_singleton_the_elem)
+        by (simp add: is_singleton_the_elem b)
       have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}" 
         using 2 by auto
       then have "{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}" 
