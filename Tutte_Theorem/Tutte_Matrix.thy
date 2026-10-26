@@ -1433,7 +1433,7 @@ proof -
       finally show ?thesis .
     qed
     then show "x \<in> (on_odd p) ` ?A" 
-      by (metis \<open>inv p x \<in> ?A\<close> image_eqI)
+      by (rule image_eqI[OF sym]) fact
   qed
   then have "bij_betw (on_odd p) ?A ?A" 
     unfolding bij_betw_def 
