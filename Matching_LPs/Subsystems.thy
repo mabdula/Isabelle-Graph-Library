@@ -19,7 +19,13 @@ lemma sub_system_snd:
 
 lemma dim_row_subsyst_mat:
   shows "dim_row (fst (sub_system A b I)) = card {i. i < dim_row A \<and> i \<in> I}" 
-  using dim_submatrix(1)[of A I UNIV] sub_system_fst by metis
+proof -
+  have "dim_row (fst (sub_system A b I)) = dim_row (submatrix A I UNIV)"
+    by (simp add: sub_system_fst)
+  also have "\<dots> = card {i. i < dim_row A \<and> i \<in> I}"
+    by (rule dim_submatrix(1))
+  finally show ?thesis .
+qed
 
 lemma dim_col_submatrix_UNIV:
   shows "dim_col (submatrix A I UNIV) = dim_col A"
