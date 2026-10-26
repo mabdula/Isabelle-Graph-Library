@@ -604,7 +604,7 @@ proof(rule ccontr)
     qed
   qed
   obtain C d where C_d: "(C, d) = sub_system A b (I - {i1})"
-    by (metis surj_pair)
+    by (rule that[OF prod.collapse])
   have "{x.  A' *\<^sub>v x = b'} = {x.  C *\<^sub>v x = d \<and> row A i1 \<bullet> x = b $ i1 }"
     using remove_index_sub_system_eq[of A b i1 I A' b' C d] 
     by (metis A C_d i1 assms(8) b carrier_matD(1) carrier_vecD)
