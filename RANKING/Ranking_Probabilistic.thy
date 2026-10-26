@@ -85,7 +85,20 @@ lemma permutations_move_to_eq_iff:
 proof (rule iffI)
   assume card_1: "card (V \<inter> {v. \<sigma> = \<sigma>'[v \<mapsto> t]}) = 1"
   with assms  obtain w where w: "w \<in> V" "\<sigma> = \<sigma>'[w \<mapsto> t]"
-    by (smt (verit) card.empty disjoint_iff_not_equal mem_Collect_eq zero_neq_one)
+  proof -
+    have "V \<inter> {v. \<sigma> = \<sigma>'[v \<mapsto> t]} \<noteq> {}"
+    proof
+      assume "V \<inter> {v. \<sigma> = \<sigma>'[v \<mapsto> t]} = {}"
+      with card_1 show False
+        by simp
+    qed
+    then obtain w where "w \<in> V \<inter> {v. \<sigma> = \<sigma>'[v \<mapsto> t]}"
+      by blast
+    then have "w \<in> V" and "\<sigma> = \<sigma>'[w \<mapsto> t]"
+      by auto
+    then show thesis
+      by (rule that)
+  qed
 
   with card_1 assms have filter_eq: "[x <- \<sigma>'. x \<noteq> w] = [x <- \<sigma>. x \<noteq> w]"
     by (auto intro!: distinct_order_filter_eq dest: permutations_of_setD permutation_move_to
