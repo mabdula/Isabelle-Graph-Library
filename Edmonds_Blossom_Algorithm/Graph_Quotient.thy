@@ -5151,9 +5151,24 @@ proof(rule ccontr)
     by fastforce+
 
   show False
-    using i ii assms(4-7)
-    unfolding matching_def2 Vs_def
-    by (metis UnionI assms(3) insertI1 insert_commute insert_subset)
+  proof -
+    have v1_in_e: "v1 \<in> e"
+      using assms(6) by auto
+    have v1_Vs: "v1 \<in> Vs M"
+      using assms(3) v1_in_e by (auto simp: Vs_def)
+    have uniq: "\<exists>!e'. e' \<in> M \<and> v1 \<in> e'"
+      using assms(7)[unfolded matching_def2] v1_Vs by blast
+    from i show False
+    proof (elim disjE)
+      assume a: "{last p1, v1} \<in> M"
+      have "v1 \<in> {last p1, v1}" by simp
+      with a uniq assms(3) v1_in_e ii(1) show False by blast
+    next
+      assume a: "{v1, hd p2} \<in> M"
+      have "v1 \<in> {v1, hd p2}" by simp
+      with a uniq assms(3) v1_in_e ii(2) show False by blast
+    qed
+  qed
 qed
 
 context quot
