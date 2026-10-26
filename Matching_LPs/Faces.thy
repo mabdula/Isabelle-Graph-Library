@@ -1301,8 +1301,25 @@ proof -
     then have "\<exists> x. x\<in> {x.  A'' *\<^sub>v x \<le> b''}" 
       using sub_A'' \<open>face P F\<close> face_non_empty by auto 
     then have "{x.  A'' *\<^sub>v x \<le> b''} = UNIV" using `dim_vec b'' = 0`
-      by (metis (no_types, lifting) UNIV_eq_I dim_mult_mat_vec less_eq_vec_def
-          mem_Collect_eq vec_of_dim_1) 
+    proof -
+      have dimAb: "dim_row A = dim_vec b"
+        using A b by auto
+      have "dim_row (fst (sub_system A b I'')) = dim_vec (snd (sub_system A b I''))"
+        by (rule dims_subsyst_same[OF dimAb])
+      then have rows: "dim_row A'' = dim_vec b''"
+        by (simp add: sub_A''(1)[symmetric])
+      have all: "A'' *\<^sub>v v \<le> b''" for v
+      proof -
+        have dimz: "dim_vec (A'' *\<^sub>v v) = dim_vec b''"
+          by (simp only: dim_mult_mat_vec rows)
+        have idx: "\<forall>i < dim_vec b''. (A'' *\<^sub>v v) $ i \<le> b'' $ i"
+          using \<open>dim_vec b'' = 0\<close> by simp
+        show ?thesis
+          using dimz idx unfolding less_eq_vec_def by blast
+      qed
+      show ?thesis
+        using all by simp
+    qed
     then have "{x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b' \<and> A'' *\<^sub>v x \<le> b''}
                  = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'}" 
       by blast
