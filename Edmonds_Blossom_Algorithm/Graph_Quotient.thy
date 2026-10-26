@@ -7661,8 +7661,31 @@ next
     qed
     ultimately show ?p2
       using that(1,2,4) matching(1)
-      apply (simp add: matching_def2 Vs_def)
-      by (metis \<open>v \<in> set C\<close> \<open>w \<notin> set C\<close> insert_iff singletonD)
+    proof -
+      assume v_eq_lastC: "v = last C"
+         and stem_lastC_in_M: "{last stem, last C} \<in> M"
+         and e_in_M: "e \<in> M"
+         and v_in_e: "v \<in> e"
+         and w_in_e: "w \<in> e"
+         and matching_M: "matching M"
+      have C_nempty: "C \<noteq> []"
+        using odd_cycle_nempty[OF match_blossomD(3)[OF match_blossom]] .
+      have lastC_in_e: "last C \<in> e"
+        using v_in_e v_eq_lastC by simp
+      have lastC_in_stem_edge: "last C \<in> {last stem, last C}"
+        by simp
+      have e_eq: "e = {last stem, last C}"
+        using matching_M[unfolded matching_def2] e_in_M stem_lastC_in_M lastC_in_e lastC_in_stem_edge
+        by blast
+      have w_mem: "w = last stem \<or> w = last C"
+        using w_in_e e_eq by auto
+      have lastC_in_C: "last C \<in> set C"
+        using C_nempty last_in_set by blast
+      have w_ne_lastC: "w \<noteq> last C"
+        using \<open>w \<notin> set C\<close> lastC_in_C by blast
+      show ?p2
+        using w_mem w_ne_lastC by blast
+    qed
   qed
   then show ?thesis
     apply(intro quot_is_matching[where dume = "{last stem, last C}"] matching(1,2))
