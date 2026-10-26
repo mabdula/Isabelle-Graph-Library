@@ -319,8 +319,28 @@ lemma augpath_cases:
 (\<And>f e d es. a1 = f \<Longrightarrow> a2 = e # d # es \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> sndv e = fstv d  \<Longrightarrow> 
             augpath f (d # es) \<Longrightarrow> P) \<Longrightarrow>
 P"
-  using  augpath_induct[of a1 a2 ]
-  by (metis augpath_simps)
+proof -
+  assume p: "augpath a1 a2"
+  assume single: "\<And>f e.     a1 = f \<Longrightarrow> a2 = [e] \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> P"
+  assume cons: "\<And>f e d es. a1 = f \<Longrightarrow> a2 = e # d # es \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> sndv e = fstv d  \<Longrightarrow>
+            augpath f (d # es) \<Longrightarrow> P"
+  from p have "(\<exists>f e. a1 = f \<and> a2 = [e] \<and> 0 < \<uu>\<^bsub>f\<^esub>e) \<or>
+               (\<exists>f e d es. a1 = f \<and> a2 = e # d # es \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = fstv d \<and>
+                            augpath f (d # es))"
+    by (rule iffD1[OF augpath_simps])
+  then show P
+  proof
+    assume "\<exists>f e. a1 = f \<and> a2 = [e] \<and> 0 < \<uu>\<^bsub>f\<^esub>e"
+    then obtain f e where "a1 = f" and "a2 = [e]" and "0 < \<uu>\<^bsub>f\<^esub>e" by blast
+    then show P by (rule single)
+  next
+    assume "\<exists>f e d es. a1 = f \<and> a2 = e # d # es \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = fstv d \<and>
+                 augpath f (d # es)"
+    then obtain f e d es where "a1 = f" and "a2 = e # d # es" and "0 < \<uu>\<^bsub>f\<^esub>e"
+      and "sndv e = fstv d" and "augpath f (d # es)" by blast
+    then show P by (rule cons)
+  qed
+qed
 
 text \<open>Let us examine the relationship between $augpath$ and $prepath$.\<close>
 
