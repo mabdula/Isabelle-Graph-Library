@@ -3680,7 +3680,7 @@ proof -
                 by linarith
             qed
           then obtain a where "p1 = [a]"
-            by (metis One_nat_def add.commute add.right_neutral length_0_conv length_tl list.collapse list.sel(3) list.size(4))
+            by (auto simp: One_nat_def length_Suc_conv)
           then have False
             using quot_aug_path(1) matching_augmenting_path_feats(2)[OF \<open>matching_augmenting_path (quotG M) p'\<close>] up2_nin_M p2_nempty
             by(auto simp add: alt_list_step neq_Nil_conv)
