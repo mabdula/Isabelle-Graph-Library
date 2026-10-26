@@ -308,7 +308,33 @@ proof(induction "es@fs" arbitrary: es fs rule: flowpath_induct, goal_cases)
 next
   case (4 g e es esa fs)
   then show ?case 
-    by (smt (verit, ccfv_SIG) Cons_eq_append_conv hd_append2 flowpath_simps)
+  proof (cases esa)
+    case Nil
+    then show ?thesis
+      by (auto intro: flowpath_intros)
+  next
+    case (Cons a list)
+    then have eq1: "a = e" and eq2: "es = list @ fs"
+      using 4 by auto
+    then have fp: "flowpath g list"
+      using 4 by blast
+    then show ?thesis
+    proof (cases "list = []")
+      case True
+      have "esa = [e]" using eq1 Cons True by simp
+      with 4 have "flowpath g [e]" by (auto intro: flowpath_intros)
+      with \<open>esa = [e]\<close> show ?thesis by simp
+    next
+      case False
+      then have ne: "list \<noteq> []" by simp
+      from eq2 have "hd es = hd (list @ fs)" by simp
+      then have "snd e = fst (hd list)"
+        using ne hd_append2 4 by auto
+      then have "flowpath g (e # list)"
+        using fp 4 by (auto intro: flowpath_intros)
+      with Cons eq1 show ?thesis by simp
+    qed
+  qed
 qed (auto simp add: assms flowpath_intros)
 
 lemma flow_path_split_right: 
