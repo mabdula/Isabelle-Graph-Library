@@ -4616,8 +4616,28 @@ proof -
     by (meson graph_invar_no_edge_no_vertex ranking_matchingE ranking_matching_maximalE vs_member_intro)
 
   with assms have "index \<sigma> w < index \<sigma> v"
-    by (metis edges_are_Vs_2 index_eq_index_conv linorder_less_linear ranking_matching_earlier_match_onlineE)
-
+  proof -
+  have "w \<in> Vs M"
+    using \<open>{u,w} \<in> M\<close> by (auto dest: edges_are_Vs_2)
+  with \<open>v \<notin> Vs M\<close> have "w \<noteq> v" by blast
+  have "w \<in> set \<sigma>"
+    using ranking_matching_bipartite_edges[OF rm_M \<open>{u,w} \<in> M\<close> \<open>u \<in> set \<pi>\<close>] .
+  have "index \<sigma> w \<noteq> index \<sigma> v"
+    using \<open>w \<in> set \<sigma>\<close> \<open>v \<in> set \<sigma>\<close> \<open>w \<noteq> v\<close>
+    by (meson index_eq_index_conv)
+  show "index \<sigma> w < index \<sigma> v"
+  proof (rule ccontr)
+    assume "\<not> index \<sigma> w < index \<sigma> v"
+    with \<open>index \<sigma> w \<noteq> index \<sigma> v\<close> have "index \<sigma> v < index \<sigma> w"
+      by linarith
+    with rm_M \<open>{u,w} \<in> M\<close> \<open>{u,v} \<in> G\<close>
+    obtain u' where "{u',v} \<in> M" "index \<pi> u' < index \<pi> u"
+      by (auto elim: ranking_matching_earlier_match_onlineE)
+    then have "v \<in> Vs M"
+      by (auto dest: edges_are_Vs)
+    with \<open>v \<notin> Vs M\<close> show False by blast
+  qed
+  qed
   then have "index ?\<sigma>i w \<le> index \<sigma> v"
     by (auto intro: index_less_index_leq_move_to)
 
