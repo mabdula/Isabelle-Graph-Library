@@ -126,11 +126,37 @@ lemma prepath_split2:
 lemma prepath_split3:
   assumes "prepath (xs@ys)" 
     shows "xs \<noteq> [] \<Longrightarrow> ys \<noteq> []  \<Longrightarrow> sndv (last xs) = fstv (hd ys)"
-  apply(induction "xs@ys" arbitrary:  xs ys rule: prepath_induct, simp add: assms)
-  apply(simp add: Cons_eq_append_conv) 
-  apply(metis (no_types, opaque_lifting) append_Cons append_self_conv2 last_ConsL
-          last_ConsR list.inject list.sel(1) neq_Nil_conv)
-  done
+proof -
+  assume xs_nonempty: "xs \<noteq> []"
+  assume ys_nonempty: "ys \<noteq> []"
+  obtain xs' x where xs': "xs = xs' @ [x]"
+  proof (cases xs rule: rev_exhaust)
+    case Nil
+    then show ?thesis using xs_nonempty by simp
+  next
+    case (snoc as a)
+    then show ?thesis using that[of as a] by simp
+  qed
+  obtain y ys' where ys': "ys = y # ys'"
+  proof (cases ys)
+    case Nil
+    then show ?thesis using ys_nonempty by simp
+  next
+    case (Cons b bs)
+    then show ?thesis using that[of b bs] by simp
+  qed
+  have eq: "xs' @ (x # y # ys') = xs @ ys"
+    using xs' ys' by simp
+  have "prepath (xs' @ (x # y # ys'))"
+    using assms eq by simp
+  moreover have "(x # y # ys') \<noteq> []" by simp
+  ultimately have prepath2: "prepath (x # y # ys')"
+    using prepath_split2[of xs' "x # y # ys'"] by blast
+  then have "sndv x = fstv y"
+    using prepath2 prepath_simps[of "x # y # ys'"] by auto
+  then show "sndv (last xs) = fstv (hd ys)"
+    using xs' ys' by simp
+qed
 
 lemma prepath_drop_cycles:
   assumes "prepath es" "set es \<subseteq> D" "\<not> distinct es"
