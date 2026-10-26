@@ -1934,7 +1934,14 @@ proof -
   have 4:"(rev_p p) = (inv (on_odd  p)) \<circ>  not_on_odd p"
     using rev_is_composition assms(1) by auto
   have 5: "evenperm p \<longleftrightarrow> evenperm (on_odd  p) = evenperm (not_on_odd p)" 
-    by (metis 1 2 3 evenperm_comp)
+  proof -
+    have "evenperm (on_odd p \<circ> not_on_odd p) \<longleftrightarrow>
+          (evenperm (on_odd p) = evenperm (not_on_odd p))"
+      using 1 2 by (rule evenperm_comp)
+    moreover have "on_odd p \<circ> not_on_odd p = p"
+      using 3 by (rule sym)
+    ultimately show ?thesis by simp
+  qed
   have "evenperm (rev_p p) \<longleftrightarrow> evenperm (inv (on_odd  p)) = evenperm (not_on_odd p)"
     by (simp add: 1 2 4 evenperm_comp permutation_inverse)
   then show ?thesis 
