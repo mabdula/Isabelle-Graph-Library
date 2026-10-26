@@ -237,8 +237,18 @@ qed
 lemma subsyst_b_i:
   assumes "i < dim_vec (snd (sub_system A b I))"  
   shows "(snd (sub_system A b I)) $ i = b $ (pick I i)" 
-  using nths_list_pick_vec_same sub_system_snd 
-  by (metis (no_types, lifting) assms dim_subsyst_vec index_vec)
+proof -
+  have idx: "i < card {j. j < dim_vec b \<and> j \<in> I}"
+    using assms by (simp add: dim_subsyst_vec)
+  have eq: "snd (sub_system A b I) = vec (card {j. j < dim_vec b \<and> j \<in> I}) (\<lambda>j. b $ pick I j)"
+    by (simp only: sub_system_snd nths_list_pick_vec_same)
+  have "snd (sub_system A b I) $ i
+          = vec (card {j. j < dim_vec b \<and> j \<in> I}) (\<lambda>j. b $ pick I j) $ i"
+    by (simp only: eq)
+  also have "\<dots> = b $ pick I i"
+    using idx by simp
+  finally show ?thesis .
+qed
 
 lemma nths_UNIV_same:
   "nths xs UNIV = xs"
