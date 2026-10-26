@@ -1712,7 +1712,14 @@ proof(induct "card A" arbitrary: A rule: less_induct)
   next
     case False
     then have "card A > 1" 
-      by (metis card.empty less.prems(2) less_one linorder_neqE_nat odd_card_imp_not_empty)
+      proof -
+        have "card A \<noteq> 0"
+          using less.prems(2) by presburger
+        moreover have "card A \<noteq> 1"
+          using False by blast
+        ultimately show ?thesis
+          by linarith
+      qed
     then obtain a b where ab: "a \<in> A \<and> b \<in> A \<and> a \<noteq> b" 
       by (metis Diff_iff One_nat_def card_Suc_Diff1 card_eq_0_iff ex_in_conv less_imp_not_less 
           not_one_less_zero singletonI)
