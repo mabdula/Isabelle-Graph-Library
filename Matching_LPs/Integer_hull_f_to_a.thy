@@ -1871,7 +1871,15 @@ proof -
           have "x $ i \<ge> - 1" 
             by (simp add: "3" \<open>i < n\<close>)
           then have "c $ i * x $ i \<le> - c $ i" using False 
-            by (metis mult_le_cancel_left mult_minus1_right)
+          proof -
+            have c_le: "c $ i \<le> 0"
+              using False by linarith
+            have "c $ i * x $ i \<le> c $ i * (- 1)"
+              by (rule mult_left_mono_neg[OF \<open>- 1 \<le> x $ i\<close> c_le])
+            also have "c $ i * (- 1) = - c $ i"
+              by simp
+            finally show ?thesis .
+          qed
           then show ?thesis by linarith
         qed
       qed
