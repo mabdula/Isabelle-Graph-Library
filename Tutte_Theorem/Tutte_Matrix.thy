@@ -640,7 +640,12 @@ proof(safe)
     qed
     then have "(ys @ [x]) @ zs = ?l" by simp
     then have "path (u_edges p) (ys @ [x])" 
-      by (metis \<open>path (u_edges p) ?l\<close> path_pref)
+      proof -
+        have "path (u_edges p) ((ys @ [x]) @ zs)"
+          using \<open>path (u_edges p) ?l\<close> \<open>(ys @ [x]) @ zs = ?l\<close> by simp
+        then show ?thesis
+          by (rule path_pref)
+      qed
     then have "hd (ys @ [x]) = i" using `hd ?l = i`
       by (metis Nil_is_append_conv \<open>(ys @ [x]) @ zs = ?l\<close> hd_append2 list.distinct(1))
     have "last (ys @ [x]) = x" 
