@@ -1107,7 +1107,7 @@ proof -
             using a_elem notin_set_nthsI by fastforce
           then obtain an where an: "a = (support p x)!an \<and> 
                                     an \<in> {j \<in> {0..<length (support p x)}. even j}" 
-            using a_elem nths_obtain_index[of a "(support p x)"] by (metis (no_types, lifting))
+            using a_elem by (blast elim: nths_obtain_index)
           then have "even an"  
             by blast
           then have 4:"an < (length (support p x)) - 1"
