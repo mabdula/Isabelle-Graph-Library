@@ -1001,9 +1001,16 @@ proof -
       by (rule conjI[OF dims' all_le])
   qed
   have "A *\<^sub>v z \<le> A *\<^sub>v (l \<cdot>\<^sub>v x) + A *\<^sub>v ((1 - l) \<cdot>\<^sub>v y)" 
-    using mult_add_distrib_mat_vec[of A nr n "l \<cdot>\<^sub>v x" "(1 - l) \<cdot>\<^sub>v y"] 
-    using assms(1) assms(2) assms(3) assms(7) smult_carrier_vec 
-    by (metis dual_order.refl)
+  proof -
+    have x': "l \<cdot>\<^sub>v x \<in> carrier_vec n"
+      using assms(2) by simp
+    have y': "(1 - l) \<cdot>\<^sub>v y \<in> carrier_vec n"
+      using assms(3) by simp
+    have "A *\<^sub>v (l \<cdot>\<^sub>v x + (1 - l) \<cdot>\<^sub>v y) = A *\<^sub>v (l \<cdot>\<^sub>v x) + A *\<^sub>v ((1 - l) \<cdot>\<^sub>v y)"
+      using mult_add_distrib_mat_vec[OF assms(1) x' y'] by blast
+    then show ?thesis
+      using assms(7) by simp
+  qed
   also have "\<dots> = l \<cdot>\<^sub>v (A *\<^sub>v x) + (1 - l) \<cdot>\<^sub>v (A *\<^sub>v y)"
     using mult_mat_vec[of A] 
     using assms(1) assms(2) assms(3) by presburger
