@@ -4694,7 +4694,21 @@ proof -
         by (auto elim: ranking_matching_earlier_match_offlineE)
 
       with \<open>{u,w} \<in> M\<close> \<open>v \<notin> Vs M\<close> have "index ?\<sigma>i w' < index ?\<sigma>i w"
-        by (metis edges_are_Vs_2 move_to_others_less)
+      proof -
+        have "w \<in> Vs M"
+          using \<open>{u,w} \<in> M\<close> by (auto dest: edges_are_Vs_2)
+        with \<open>v \<notin> Vs M\<close> have "w \<noteq> v"
+          by blast
+        have "w' \<in> Vs M"
+          using \<open>{u',w'} \<in> M\<close> by (auto dest: edges_are_Vs_2)
+        with \<open>v \<notin> Vs M\<close> have "w' \<noteq> v"
+          by blast
+        have "v \<noteq> w'" using \<open>w' \<noteq> v\<close> by (rule not_sym)
+        moreover have "v \<noteq> w" using \<open>w \<noteq> v\<close> by (rule not_sym)
+        moreover note \<open>index \<sigma> w' < index \<sigma> w\<close>
+        ultimately show ?thesis
+          by (rule move_to_others_less[THEN iffD1])
+      qed
 
       with ranking_matchingE[OF rm_M] rm_M' \<open>{u',w'} \<in> M\<close> \<open>{u',w} \<in> M'\<close>
       obtain u'' where "{u'',w'} \<in> M'" "index \<pi> u'' < index \<pi> u'"
