@@ -1885,8 +1885,24 @@ proof -
       qed
     qed
     then have "\<forall> i < n. c $ i * x $ i \<le> Max (abs ` (vec_set c))" 
-      by (smt (verit) Max_ge assms(5) carrier_vecD dual_order.order_iff_strict finite_imageI 
-          finite_vec_set image_eqI order_less_le_trans vec_setI)
+    proof (intro allI impI)
+      fix i
+      assume i: "i < n"
+      have i_dim: "i < dim_vec c"
+        using i carrier_vecD[OF assms(5)] by simp
+      have mem: "c $ i \<in> vec_set c"
+        using i_dim by (blast intro: vec_setI)
+      have mem_abs: "\<bar>c $ i\<bar> \<in> abs ` (vec_set c)"
+        using mem by (rule imageI)
+      have fin: "finite (abs ` (vec_set c))"
+        by (rule finite_imageI[OF finite_vec_set])
+      have le_max: "\<bar>c $ i\<bar> \<le> Max (abs ` (vec_set c))"
+        by (rule Max_ge[OF fin mem_abs])
+      have prev: "c $ i * x $ i \<le> \<bar>c $ i\<bar>"
+        using \<open>\<forall> i < n. c $ i * x $ i \<le> abs (c $ i)\<close> i by blast
+      show "c $ i * x $ i \<le> Max (abs ` (vec_set c))"
+        using prev le_max by (rule order_trans)
+    qed
     then have "(\<And>i. i \<in> {0..<n} \<Longrightarrow> c $ i * x $ i \<le> Max (abs ` set\<^sub>v c))" by auto
     then have "sum (\<lambda> i. c $ i * x $ i ) {0..<n} \<le> of_int n * Max (abs ` (vec_set c))"
       using sum_bounded_above[of "{0..<n}" "(\<lambda> i. c $ i * x $ i )" "Max (abs ` (vec_set c))"]
