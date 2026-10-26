@@ -4266,8 +4266,28 @@ proof (induction "card G" arbitrary: G M M' \<pi> \<sigma> x rule: less_induct)
     then have "\<nexists>u. {u,x} \<in> M"
       by (auto dest: edges_are_Vs)
 
-    from unmatched less.prems have "M = M'"
-      by (metis ranking_matchingE ranking_matching_online_match ranking_matching_unique online_match_remove_unmatched_vertex_same)
+    have "M = M'"
+    proof -
+      from \<open>ranking_matching G M \<pi> \<sigma>\<close> have bip: "bipartite G (set \<pi>) (set \<sigma>)"
+        by (auto elim: ranking_matchingE)
+      from bip have bip': "bipartite (G \<setminus> {x}) (set \<pi>) (set \<sigma>)"
+        by (auto intro: bipartite_remove_vertices)
+      have M_eq: "M = online_match G \<pi> \<sigma>"
+        by (rule ranking_matching_unique[OF \<open>ranking_matching G M \<pi> \<sigma>\<close>
+                     ranking_matching_online_match[OF bip]])
+      from unmatched M_eq have x_notin: "x \<notin> Vs (online_match G \<pi> \<sigma>)"
+        by simp
+      have online_eq: "online_match G \<pi> \<sigma> = online_match (G \<setminus> {x}) \<pi> \<sigma>"
+        by (rule online_match_remove_unmatched_vertex_same[OF x_notin])
+      have M_eq': "M = online_match (G \<setminus> {x}) \<pi> \<sigma>"
+        by (rule trans[OF M_eq online_eq])
+      have rm_online: "ranking_matching (G \<setminus> {x}) (online_match (G \<setminus> {x}) \<pi> \<sigma>) \<pi> \<sigma>"
+        by (rule ranking_matching_online_match[OF bip'])
+      have "ranking_matching (G \<setminus> {x}) M \<pi> \<sigma>"
+        unfolding M_eq' by (rule rm_online)
+      from ranking_matching_unique[OF this \<open>ranking_matching (G \<setminus> {x}) M' \<pi> \<sigma>\<close>]
+      show "M = M'" .
+    qed
 
     with less.prems \<open>\<nexists>u. {u,x} \<in> M\<close> \<open>matching M\<close> show ?thesis
       by (auto simp: zig.simps)
