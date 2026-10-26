@@ -2672,8 +2672,20 @@ proof-
               subgoal using i by(simp add: alt_list_step alt_list_empty)
               subgoal proof-
                 have rw6: "last (edges_of_path p1) = {last(butlast p1), last p1}"
-                  using len_ge_2
-                  by (metis Suc_1 diff_is_0_eq edges_of_path_snoc length_butlast list.size(3) not_less_eq_eq p1_nempty snoc_eq_iff_butlast)
+                proof (cases p1 rule: rev_cases)
+                case Nil
+                then have False
+                  using len_ge_2 by simp
+                then show ?thesis by simp
+              next
+                case (snoc ys y)
+                have ys_nempty: "ys \<noteq> []"
+                  using len_ge_2 snoc by auto
+                have "edges_of_path p1 = edges_of_path ys @ [{last ys, y}]"
+                  using snoc ys_nempty by (simp add: edges_of_path_snoc)
+                then show ?thesis
+                  using snoc ys_nempty by simp
+              qed
                 then show ?thesis
                   using alt_list_append_1''''[OF matching_augmenting_path_feats(2)[OF quot_aug_path, unfolded rw5[OF len_ge_2]] _ inM]
                   using p1_subset_s inM 
