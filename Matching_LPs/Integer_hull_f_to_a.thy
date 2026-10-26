@@ -926,7 +926,26 @@ proof
       using subsyst_rows_carr  C_d assms(1) by blast
     have "set (rows C) = set (rows A') - {u}" 
       using remove_index_remove_row[of A b i I A' b' C d]
-      by (metis C_d False assms(8) dim_sameAb i j)
+    proof -
+      have rowAi: "row A i = row A' j"
+        using i by blast
+      have rowA'j: "row A' j = u"
+        using j by blast
+      have u_eq: "row A i = u"
+        using rowAi rowA'j by simp
+      have i_in_I: "i \<in> I"
+        using i by blast
+      have i_dim: "i < dim_row A"
+        using i by blast
+      have notin: "row A i \<notin> set (rows C)"
+        using False u_eq by simp
+      have "set (rows C) = set (rows A') - {row A i}"
+        using remove_index_remove_row[of A b i I A' b' C d]
+          dim_sameAb i_dim i_in_I assms(8) C_d notin
+        by auto
+      then show ?thesis
+        using u_eq by simp
+    qed
     then obtain c where "u = lincomb_list c (rows C)" 
       using  `set (rows C) \<subseteq> carrier_vec n`
       by (metis List.finite_set finite_in_span lincomb_then_lincomb_list u)
