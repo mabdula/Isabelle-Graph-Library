@@ -1464,7 +1464,17 @@ proof -
     then have "not_on_odd p y = p y" 
       using not_on_odd_in  \<open>y \<in> ?A\<close> by blast
     then show "x = y" 
-      by (metis \<open>not_on_odd p x = not_on_odd p y\<close> \<open>not_on_odd p x = p x\<close> assms permutes_inv_eq)
+    proof -
+      have inj_p: "inj p"
+        using assms by (rule permutes_inj)
+      have "p x = not_on_odd p y"
+        using \<open>not_on_odd p x = not_on_odd p y\<close> \<open>not_on_odd p x = p x\<close>
+        by simp
+      then have "p x = p y"
+        using \<open>not_on_odd p y = p y\<close> by simp
+      with inj_p show "x = y"
+        by (rule injD)
+    qed
   qed
   then have "inj_on (not_on_odd p) ?A" 
     using inj_on_def by blast
