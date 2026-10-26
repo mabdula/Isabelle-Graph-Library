@@ -1367,7 +1367,20 @@ proof
       using neighbours_of_Vs_bipartite[OF part_bipart_of_cover_matching[OF assms(1) M]] 
         M assms unfolding partitioned_bipartite_def cover_matching_def
       using assms M unfolding partitioned_bipartite_def cover_matching_def
-      by (metis Diff_partition \<open>neighbours_of_Vs M A = Vs G - A\<close>)
+      proof -
+        have bip_M: "partitioned_bipartite M A"
+          using M assms(1,2) part_bipart_of_cover_matching by auto
+        have nvs_M: "neighbours_of_Vs M A = Vs M - A"
+          by (rule neighbours_of_Vs_bipartite[OF bip_M])
+        have A_sub_M: "A \<subseteq> Vs M"
+          using M unfolding cover_matching_def by blast
+        have A_sub_G: "A \<subseteq> Vs G"
+          using assms(1) unfolding partitioned_bipartite_def by blast
+        have "Vs M - A = Vs G - A"
+          using nvs_M \<open>neighbours_of_Vs M A = Vs G - A\<close> by simp
+        then show "Vs G = Vs M"
+          using Diff_partition[OF A_sub_M] Diff_partition[OF A_sub_G] by auto
+      qed
     then show "\<exists>M. perfect_matching G M"
       using \<open>cover_matching G M A\<close> unfolding cover_matching_def perfect_matching_def
       by auto
