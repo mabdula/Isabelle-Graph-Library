@@ -3891,9 +3891,21 @@ lemma stem2vert_path_pref_or_suc:
       by (simp add: last_rev)
     moreover have ii: "w \<in> set (rev C)"
       using assms(4) by auto
+    obtain suf where suf_eq: "find_pfx ((=) w) (rev C) @ suf = butlast (rev C)"
+      using find_pfx_butlast[where Q = "((=) w)", OF i ii] by auto
+    have tlC: "rev suf @ rev (find_pfx ((=) w) (rev C)) = tl C"
+    proof -
+      have "rev (find_pfx ((=) w) (rev C) @ suf) = rev (butlast (rev C))"
+        using suf_eq by (rule arg_cong)
+      moreover have "rev (butlast (rev C)) = tl C"
+        by (cases C) simp_all
+      ultimately show ?thesis
+        by simp
+    qed
+    have key: "\<exists>pref. pref @ rev (find_pfx ((=) w) (rev C)) = tl C"
+      using tlC by blast
     show ?thesis
-      using find_pfx_butlast[where Q = "((=) w)", OF i ii] assms(5)
-      by (metis append_Cons append_Nil butlast_snoc list.exhaust_sel rev_append rev_rev_ident rev_singleton_conv)
+      using key by (auto simp: assms(5)[symmetric])
   qed
   done
 
