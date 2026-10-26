@@ -462,7 +462,17 @@ proof(rule)+
   fix i
   assume "i < dim_row A'"
   have "dim_row A' = dim_vec b'" using assms(1) 
-    by (metis assms(2) dims_subsyst_same prod.sel(1) prod.sel(2))
+  proof -
+    have subsys: "sub_system A b I = (A', b')"
+      using assms(2) by (rule sym)
+    have "dim_row A' = dim_row (fst (sub_system A b I))"
+      by (simp add: subsys)
+    also have "\<dots> = dim_vec (snd (sub_system A b I))"
+      using assms(1) by (rule dims_subsyst_same)
+    also have "\<dots> = dim_vec b'"
+      by (simp add: subsys)
+    finally show ?thesis .
+  qed
   then obtain j where "j \<in> I \<and> j <dim_row A \<and> (row A j) = (row A' i) \<and> b $ j = b' $ i"
     using exist_index_in_A[of A b i] assms(1-2) `i < dim_row A'`
     by (metis fst_conv snd_conv) 
