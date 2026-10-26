@@ -1458,8 +1458,17 @@ proof(safe)
     using \<open>x \<in> carrier_vec n\<close> assms(5) by blast
 }
   show "dim_row (A' @\<^sub>r (-A')) = dim_vec (b' @\<^sub>v (-b'))" 
-    by (metis "1" "2" "3" append_carrier_vec carrier_append_rows carrier_matD(1)
- carrier_vecD uminus_carrier_vec)
+  proof -
+    have b'_dim: "dim_vec b' = dim_row A'"
+      by (rule carrier_vecD[OF 3])
+    have "dim_row (A' @\<^sub>r (- A')) = dim_row A' + dim_row (- A')"
+      unfolding append_rows_def by simp
+    also have "\<dots> = dim_vec b' + dim_vec (- b')"
+      using b'_dim by simp
+    also have "\<dots> = dim_vec (b' @\<^sub>v (- b'))"
+      by simp
+    finally show ?thesis .
+  qed
   show "dim_col (A' @\<^sub>r (-A')) = n" 
     by (meson "1" "2" carrier_append_rows carrier_matD(2))
 qed
