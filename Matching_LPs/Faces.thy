@@ -669,7 +669,32 @@ proof -
   proof(rule ccontr)
     assume "A' *\<^sub>v x \<noteq> b'" 
     then obtain i where "i < dim_vec b'\<and> (A' *\<^sub>v x) $ i < b' $ i"
-      by (metis \<open>A' *\<^sub>v x \<le> b'\<close> antisym less_eq_vec_def linorder_le_less_linear)
+    proof -
+      have dims: "dim_vec (A' *\<^sub>v x) = dim_vec b'"
+        using \<open>A' *\<^sub>v x \<le> b'\<close> by (simp add: less_eq_vec_def)
+      have le: "\<And>i. i < dim_vec b' \<Longrightarrow> (A' *\<^sub>v x) $ i \<le> b' $ i"
+        using \<open>\<forall>i<dim_vec b'. (A' *\<^sub>v x) $ i \<le> b' $ i\<close> by blast
+      have "\<exists>i < dim_vec b'. (A' *\<^sub>v x) $ i \<noteq> b' $ i"
+      proof (rule ccontr)
+        assume "\<not> (\<exists>i < dim_vec b'. (A' *\<^sub>v x) $ i \<noteq> b' $ i)"
+        then have all_eq: "\<And>i. i < dim_vec b' \<Longrightarrow> (A' *\<^sub>v x) $ i = b' $ i"
+          by blast
+        have "A' *\<^sub>v x = b'"
+        proof (rule eq_vecI)
+          fix i assume "i < dim_vec b'"
+          then show "(A' *\<^sub>v x) $ i = b' $ i" by (rule all_eq)
+        next
+          show "dim_vec (A' *\<^sub>v x) = dim_vec b'" by (rule dims)
+        qed
+        then show False using \<open>A' *\<^sub>v x \<noteq> b'\<close> by simp
+      qed
+      then obtain i where i_lt: "i < dim_vec b'"
+                      and i_neq: "(A' *\<^sub>v x) $ i \<noteq> b' $ i"
+        by blast
+      have "(A' *\<^sub>v x) $ i < b' $ i"
+        using le[OF i_lt] i_neq by (simp add: order_less_le)
+      then show thesis using that i_lt by blast
+    qed
     then have "sum (\<lambda> i. (A' *\<^sub>v x) $ i) {0..<dim_vec b'}  < sum (\<lambda> i. b' $ i) {0..<dim_vec b'}"
       by (metis \<open>A' *\<^sub>v x \<le> b'\<close> atLeastLessThan_iff bot_nat_0.extremum carrier_vec_dim_vec
           finite_atLeastLessThan lesseq_vecD sum_strict_mono_ex1)
