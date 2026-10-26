@@ -1521,9 +1521,21 @@ proof -
 qed
   let ?i' = "i + dim_row A'"
   have "row (A' @\<^sub>r (-A')) ?i' = row (-A') i" using append_rows_nth(2) 
-    by (smt (verit, ccfv_threshold) True add.commute add_diff_cancel_right'
-        add_less_le_mono carrier_matI index_uminus_mat(2) index_uminus_mat(3) trans_less_add1 
-        verit_comp_simplify1(2) verit_comp_simplify1(3))
+    proof -
+  have carr1: "A' \<in> carrier_mat (dim_row A') (dim_col A')"
+    unfolding carrier_mat_def by simp
+  have carr2: "- A' \<in> carrier_mat (dim_row A') (dim_col A')"
+    unfolding carrier_mat_def by simp
+  have ge: "dim_row A' \<le> i + dim_row A'"
+    by simp
+  have lt: "i + dim_row A' < dim_row A' + dim_row A'"
+    using True by simp
+  have "row (A' @\<^sub>r (- A')) (i + dim_row A')
+          = row (- A') (i + dim_row A' - dim_row A')"
+    using append_rows_nth(2)[OF carr1 carr2 ge lt] by simp
+  then show ?thesis
+    by simp
+  qed
   then have 2:"row (A' @\<^sub>r (-A')) i = - (row (A' @\<^sub>r (-A')) ?i')" 
     by (metis True \<open>row (A' @\<^sub>r - A') i = row A' i\<close> row_uminus uminus_uminus_vec)
   have "?i' = i + dim_vec b'"
