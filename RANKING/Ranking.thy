@@ -3667,7 +3667,20 @@ proof (rule ccontr)
       by (auto intro: in_remove_verticesI dest: ranking_matchingE)
 
     from \<open>{u',x''} \<in> M\<close> rm_G u_to_u' \<open>{u',x'} \<notin> M\<close> consider (before_x') "index \<sigma> x'' < index \<sigma> x'" | (after_x') "index \<sigma> x' < index \<sigma> x''"
-      by (metis index_eq_index_conv neqE ranking_matching_bipartite_edges shifts_to_only_from_input(2))
+    proof -
+      from u_to_u' have "u' \<in> set \<pi>"
+        by (rule shifts_to_only_from_input(2))
+      with rm_G \<open>{u',x''} \<in> M\<close> have "x'' \<in> set \<sigma>"
+        by (rule ranking_matching_bipartite_edges)
+      have "x'' \<noteq> x'"
+        using \<open>{u',x''} \<in> M\<close> \<open>{u',x'} \<notin> M\<close> by blast
+      with \<open>x'' \<in> set \<sigma>\<close> have "index \<sigma> x'' \<noteq> index \<sigma> x'"
+        by (simp add: index_eq_index_conv)
+      then have "index \<sigma> x'' < index \<sigma> x' \<or> index \<sigma> x' < index \<sigma> x''"
+        by linarith
+      then show thesis
+        using that by blast
+    qed
     then show ?thesis
     proof cases
       case before_x'
