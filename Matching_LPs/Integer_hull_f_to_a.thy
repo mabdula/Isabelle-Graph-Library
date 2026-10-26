@@ -1940,8 +1940,20 @@ proof -
         unfolding replace_col_def 
         using "1" True asmi assms(1) assms(5) by auto
       then show ?thesis 
-        by (metis (no_types, lifting) Ints_vec_def asmi 1 assms(1,2,4) carrier_matD(1) 
-            carrier_vecD dim_row_mat(1) mem_Collect_eq)
+      proof -
+        have dr: "dim_row A = n"
+          by (rule carrier_matD(1)[OF assms(1)])
+        have dv: "dim_vec b = n"
+          by (rule carrier_vecD[OF assms(2)])
+        have "i < dim_row A"
+          using asmi "1" by simp
+        then have "i < dim_vec b"
+          using dr dv by simp
+        then have "b $ i \<in> \<int>"
+          using assms(4) by (auto simp: Ints_vec_def)
+        then show ?thesis
+          using \<open>replace_col A b k $$ (i, j) = b $ i\<close> by simp
+      qed
     next
       case False
       have "replace_col A b k $$ (i, j) = A $$ (i,j)" 
