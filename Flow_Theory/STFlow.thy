@@ -161,10 +161,19 @@ lemma make_pair'_is_make_pair_of_get_old_edge:
 proof-
   obtain Yr where Yr: "X = old_edge ` Yr" 
     using assms by blast
-  show ?thesis
-    unfolding Yr
-    by (metis (no_types, lifting) case_edge_wrapper_make_pair edge_wrapper.simps(5)
-        flow_network.get_old_edge.simps flow_network_axioms image_cong image_image)
+    have get_old_edge_Yr: "get_old_edge ` (old_edge ` Yr) = Yr"
+      by (simp add: image_image get_old_edge.simps)
+    have make_pair'_eq: "\<And>x. make_pair' (old_edge x) = make_pair x"
+      by (simp add: case_edge_wrapper_make_pair[symmetric])
+    have make_pair'_Yr: "make_pair' ` (old_edge ` Yr) = make_pair ` Yr"
+    proof -
+      have "(make_pair' o old_edge) ` Yr = make_pair ` Yr"
+        by (rule image_cong) (simp_all add: comp_def make_pair'_eq make_pair_function)
+      then show ?thesis
+        by (simp add: image_image)
+    qed
+    show ?thesis
+      unfolding Yr get_old_edge_Yr make_pair'_Yr by simp
 qed
 
 lemma map_make_pair'_is_make_pair_of_get_old_edge:
