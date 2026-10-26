@@ -1528,8 +1528,7 @@ proof -
     have "(inv p x) \<in> set (support p (least_odd p))" 
       using asmx assms inv_in_support p_is_permutation by fast
     then have "x \<in> ?A" 
-      using asmx unfolding not_on_odd_def 
-      by (smt (z3) DiffD2 UNIV_I assms image_iff inv_into_f_f permutes_inj )
+      using asmx by (force simp add: not_on_odd_in permutes_inverses(2)[OF assms])
     then show False 
       using \<open>x \<in> set (support p (least_odd p))\<close> by force
   qed
