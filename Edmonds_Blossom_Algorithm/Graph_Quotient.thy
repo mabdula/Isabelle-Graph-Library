@@ -6904,9 +6904,15 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
   then show "butlast C = hd C # tl (butlast C)"
     using C_eq by simp
 qed
+        then have butlast_eq: "butlast C = hd C # tl (butlast C)" .
+        have distinct_stem_butlastC: "distinct (stem @ butlast C)"
+          using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>] .
+        have eq: "stem @ butlast C = (stem @ [hd C]) @ tl (butlast C)"
+          using butlast_eq by simp
+        have "distinct ((stem @ [hd C]) @ tl (butlast C))"
+          using distinct_stem_butlastC[unfolded eq] .
         then show ?thesis
-          using match_blossomD(2)[OF \<open>match_blossom M stem C\<close>]
-          by (metis append_Nil2 disjoint_insert(1) distinct_append distinct_singleton list.simps(15))
+          using distinct_append[of "stem @ [hd C]" "tl (butlast C)"] by blast
       qed
       have path_stem_hdC: "path E (stem @ [hd C])"
         using match_blossom(1) odd_cycle_nempty[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
