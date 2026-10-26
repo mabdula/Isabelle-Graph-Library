@@ -1537,7 +1537,14 @@ next
             proof(cases "row A 0 = 0\<^sub>v n")
               case True
               then have "0\<^sub>v n \<in> (set (rows A))"  
-                by (metis \<open>0 < nr\<close> dim_rowA row_in_set_rows)
+              proof -
+                have "0 < dim_row A"
+                  using \<open>0 < nr\<close> dim_rowA by simp
+                then have "row A 0 \<in> set (rows A)"
+                  by (rule row_in_set_rows)
+                then show ?thesis
+                  using True by simp
+              qed
               then show ?thesis 
                 using assms(4) field.one_not_zero zero_lin_dep by blast
             next
