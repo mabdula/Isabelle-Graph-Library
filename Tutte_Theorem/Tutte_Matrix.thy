@@ -2401,7 +2401,17 @@ proof
     then have "(on_odd  (rev_p p)) (p x) = x" 
       by (simp add: permutes_inverses(2)[OF assms(1)])
     then have "inv ((on_odd  (rev_p p))) x = p x" 
-      by (metis assms(1) on_odd_p_permutes_UNIV permutes_inv_eq rev_p_permutes)
+      proof -
+        assume prev: "on_odd (rev_p p) (p x) = x"
+        have "rev_p p permutes UNIV"
+          using assms(1) rev_p_permutes by blast
+        then have q_perm: "on_odd (rev_p p) permutes UNIV"
+          using on_odd_p_permutes_UNIV by blast
+        have "inv (on_odd (rev_p p)) x = p x \<longleftrightarrow> on_odd (rev_p p) (p x) = x"
+          by (rule permutes_inv_eq[OF q_perm])
+        then show ?thesis
+          using prev by simp
+      qed
     then show "(rev_p (rev_p p)) x = p x" 
       by (simp add: \<open>not_on_odd (rev_p p) x = x\<close> 2)
   next
