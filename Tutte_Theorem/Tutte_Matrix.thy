@@ -729,7 +729,33 @@ proof(safe)
       then have "(p^^(n+1)) i = v" by simp
 
       then show ?thesis 
-        by (metis last_ConsR list.discI path2.hyps(3) path2.prems set_ConsD)
+      proof -
+        have last_eq: "last (v' # vs) = i"
+          using path2.prems by simp
+        have IH: "\<forall>z \<in> set (v' # vs). \<exists>m. (p ^^ m) i = z"
+          using path2.hyps(3) last_eq by blast
+        have "(p ^^ Suc n) i = p ((p ^^ n) i)"
+          by simp
+        then have v_eq: "(p ^^ Suc n) i = v"
+          using True \<open>(p ^^ n) i = v'\<close> by simp
+        show ?thesis
+        proof
+          fix y
+          assume y: "y \<in> set (v # v' # vs)"
+          show "\<exists>m. (p ^^ m) i = y"
+          proof (cases "y = v")
+            case True
+            then have "(p ^^ Suc n) i = y"
+              using v_eq by simp
+            then show ?thesis by blast
+          next
+            case False
+            then have "y \<in> set (v' # vs)"
+              using y by auto
+            then show ?thesis using IH by blast
+          qed
+        qed
+      qed
     next
       case False
       have " v' = p v" 
