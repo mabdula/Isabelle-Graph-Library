@@ -158,10 +158,27 @@ proof -
       then have "path G p" 
         using p_walk unfolding walk_betw_def  by auto
       then have "\<forall>z \<in> set p. z \<in> C"  using `hd p \<in> C`
-        apply (induct p)
-          apply force
-         apply auto[1]
-        by (metis \<open>\<forall>x y. {x, y} \<in> G \<and> x \<in> C \<longrightarrow> y \<in> C\<close> list.sel(1) set_ConsD)
+        proof (induction p)
+          case path0
+          then show ?case by simp
+        next
+          case (path1 v)
+          then show ?case by simp
+        next
+          case (path2 v v' vs)
+          have "v \<in> C"
+            using path2.prems by simp
+          have "{v, v'} \<in> G"
+            using path2.hyps(1) by blast
+          then have "v' \<in> C"
+            using \<open>v \<in> C\<close> \<open>\<forall>x y. {x, y} \<in> G \<and> x \<in> C \<longrightarrow> y \<in> C\<close> by blast
+          then have "hd (v' # vs) \<in> C"
+            by simp
+          then have "\<forall>z \<in> set (v' # vs). z \<in> C"
+            using path2.IH by blast
+          then show ?case
+            using \<open>v \<in> C\<close> by auto
+        qed
       then show "y \<in> C" 
         by (metis last_in_set p_walk walk_betw_def)
     qed   
