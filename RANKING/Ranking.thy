@@ -3517,7 +3517,18 @@ qed
           then obtain u'' where "{u'',x'} \<in> M" by blast
 
           with \<open>{u',x'} \<notin> M\<close> before_u consider (before_u') "index \<pi> u'' < index \<pi> u'" | (after_u') "index \<pi> u' < index \<pi> u''"
-            by (metis index_eq_index_conv index_less_in_set neqE)
+            proof -
+            from \<open>{u'',x'} \<in> M\<close> \<open>{u',x'} \<notin> M\<close> have u_neq: "u'' \<noteq> u'"
+              by blast
+            from before_u have "u' \<in> set \<pi>"
+              using index_less_in_set by fast
+            with u_neq have "index \<pi> u'' \<noteq> index \<pi> u'"
+              by (auto simp: index_eq_index_conv)
+            then have "index \<pi> u'' < index \<pi> u' \<or> index \<pi> u' < index \<pi> u''"
+              by (simp add: nat_neq_iff)
+            then show thesis
+              using that by blast
+          qed
 
           then show ?thesis
           proof cases
