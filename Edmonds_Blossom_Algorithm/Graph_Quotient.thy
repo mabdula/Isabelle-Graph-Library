@@ -3173,8 +3173,21 @@ proof-
             by (auto simp: length_Suc_conv One_nat_def)
           then have False
             using quot_aug_path(1) p'_feats up2_nin_M p2_nempty
-            by (metis (no_types, lifting) insert_iff last.simps last_appendR list.distinct(1)
-                                          list.sel(1) up2_in_M vs_member)
+            proof -
+              have ua_in_M: "{u, a} \<in> quotG M"
+                using up2_in_M[OF p2_nempty] \<open>p2 = [a]\<close>
+                by simp
+              have a_in_Vs: "a \<in> Vs (quotG M)"
+                using ua_in_M
+                unfolding Vs_def
+                by blast
+              have last_p': "last p' = a"
+                using quot_aug_path(1) \<open>p2 = [a]\<close>
+                by (simp add: last_append)
+              show False
+                using p'_feats(4) last_p' a_in_Vs
+                by simp
+            qed
           then show ?thesis by simp
         qed
       qed
