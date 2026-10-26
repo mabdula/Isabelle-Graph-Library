@@ -4041,10 +4041,20 @@ proof-
       by (simp add: hd_append)
     define chv where "chv = (choose_con_vert (set C) a2')"
     have choose_vert_works: "chv \<in> set C" "{a2', chv} \<in> E"
-      unfolding chv_def
-      using choose_vert_works_1[OF cycle(3) _ _ _  _ quot] quot_aug_path
-      by (metis (no_types,lifting)\<open>(p2::'a::type list) \<noteq> []\<close> a2'_def append_Nil)+
-    have "distinct (stem2vert_path C M (hd p2) @ p2)"
+    proof -
+      have u_p2_split: "u # p2 = [] @ u # p2"
+        by simp
+      have cvw: "choose_con_vert (set C) (hd p2) \<in> set C \<and>
+                 {hd p2, choose_con_vert (set C) (hd p2)} \<in> E"
+        by (rule choose_vert_works_1[OF \<open>distinct (tl C)\<close> u_p2_split
+                                        \<open>distinct (u # p2)\<close> \<open>path (quotG E) (u # p2)\<close>
+                                        \<open>p2 \<noteq> []\<close> \<open>s = Vs E - set C\<close>])
+      show "chv \<in> set C"
+        using cvw by (simp add: chv_def a2'_def)
+      show "{a2', chv} \<in> E"
+        using cvw by (simp add: chv_def a2'_def)
+    qed
+     have "distinct (stem2vert_path C M (hd p2) @ p2)"
       unfolding distinct_append
       apply(intro conjI)
       subgoal apply(intro stem2vert_path_distinct[OF cycle(1,2) choose_vert_works(1)] cycle(3))
