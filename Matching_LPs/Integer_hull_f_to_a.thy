@@ -325,8 +325,14 @@ next
       using that by blast
   qed
   obtain C d where C_d: "F = polyhedron C d"  "dim_row C = dim_vec d" "dim_col C = n" 
-    using face_is_polyhedron 
-    by (metis A P_def assms(5) b min_face_elim(1))
+    proof -
+      have face_F: "face P F"
+        using min_face_elim(1)[OF assms(5)] .
+      then have face_F': "face (polyhedron A b) F"
+        unfolding P_def .
+      show thesis
+        using face_is_polyhedron[OF A b face_F'] that by blast
+    qed
   have "\<exists>x\<in>carrier_vec n. C *\<^sub>v x \<le> d" 
     apply (insert assms(5) char_min_face[of A nr b F])
     by(auto simp: \<open>F = polyhedron C d\<close>  A b P_def polyhedron_def)
