@@ -495,7 +495,30 @@ qed
           using neighbours_of_Vs_def asm by force
         then have "\<exists> u. u \<in> (A - X) \<and>  x \<noteq> u \<and> u \<in> e \<and> x\<in> e"
           using e less.prems(1) unfolding partitioned_bipartite_def 
-          by (metis Diff_iff asm insertCI )
+        proof -
+          obtain u v where uv: "e = {u, v}" "u \<in> A" "v \<in> Vs G - A"
+            using less.prems(1) e unfolding partitioned_bipartite_def by meson
+          have "x \<noteq> u"
+            using asm uv(2) by blast
+          have "x = u \<or> x = v"
+            using e uv(1) by blast
+          hence "x = v"
+            using \<open>x \<noteq> u\<close> by blast
+          have "u \<notin> X"
+          proof
+            assume "u \<in> X"
+            hence "x \<in> neighbours_of_Vs G X"
+              using e uv(1) \<open>x \<noteq> u\<close> unfolding neighbours_of_Vs_def by blast
+            thus False
+              using asm by blast
+          qed
+          hence "u \<in> A - X"
+            using uv(2) by blast
+          moreover have "x \<noteq> u \<and> u \<in> e \<and> x \<in> e"
+            using \<open>x \<noteq> u\<close> uv(1) e by blast
+          ultimately show "\<exists>u. u \<in> A - X \<and> x \<noteq> u \<and> u \<in> e \<and> x \<in> e"
+            by blast
+        qed
         then have "e \<in> ?AX_gr"
           using e asm by blast
         then show "x \<in> Vs ?AX_gr"
