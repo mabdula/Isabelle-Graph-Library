@@ -555,8 +555,38 @@ proof -
       using insert_elem_sub_system_fulfills_P[of A b i A' b' I A'' b'' "(\<lambda> r y.   r \<bullet> x = y)"] 
         assms by fast
     then show "A'' *\<^sub>v x = b'' \<longleftrightarrow>  A' *\<^sub>v x = b' \<and> row A i \<bullet> x = b $ i"
-      using eq_for_all_index_then_eq 
-      by (metis dims_subsyst_same' assms(1) assms(3-4) index_mult_mat_vec)
+    proof -
+      have d': "dim_row A' = dim_vec b'"
+        by (rule dims_subsyst_same'[OF assms(1) assms(3)])
+      have d'': "dim_row A'' = dim_vec b''"
+        by (rule dims_subsyst_same'[OF assms(1) assms(4)])
+      have pointwise: "(M *\<^sub>v x = c) = (\<forall>j<dim_row M. row M j \<bullet> x = c $ j)"
+        if dims: "dim_row M = dim_vec c" for M c
+      proof
+        assume eq: "M *\<^sub>v x = c"
+        show "\<forall>j<dim_row M. row M j \<bullet> x = c $ j"
+        proof (intro allI impI)
+          fix j
+          assume j: "j < dim_row M"
+          have "row M j \<bullet> x = (M *\<^sub>v x) $ j"
+            using j by (simp add: index_mult_mat_vec)
+          also have "\<dots> = c $ j"
+            using eq by simp
+          finally show "row M j \<bullet> x = c $ j" .
+        qed
+      next
+        assume "\<forall>j<dim_row M. row M j \<bullet> x = c $ j"
+        then show "M *\<^sub>v x = c"
+          by (rule eq_for_all_index_then_eq[OF dims])
+      qed
+      have key: "(\<forall>k<dim_row A''. row A'' k \<bullet> x = b'' $ k) =
+                 ((\<forall>j<dim_row A'. row A' j \<bullet> x = b' $ j) \<and> row A i \<bullet> x = b $ i)"
+        using insert_elem_sub_system_fulfills_P[of A b i A' b' I A'' b'' "\<lambda>r y. r \<bullet> x = y"]
+          assms by fast
+      show ?thesis
+        unfolding pointwise[OF d''] pointwise[OF d']
+        by (rule key)
+    qed
   qed
   then show ?thesis by presburger
 qed
