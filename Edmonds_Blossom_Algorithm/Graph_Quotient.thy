@@ -7251,9 +7251,27 @@ qed
           qed
           ultimately show ?p2
             using that(1,2,4) matching(1)
-            unfolding matching_def2 Vs_def
-            apply auto
-            by (metis \<open>v \<in> set C\<close> \<open>w \<notin> set C\<close> insert_iff singletonD)
+          proof -
+            have uniq: "\<exists>!e'. e' \<in> M \<and> v \<in> e'"
+              using matching(1)[unfolded matching_def2] v_inM by blast
+            have v_in_e2: "v \<in> {last stem, last C}"
+              using \<open>v = last C\<close> by simp
+            have e_eq: "e = {last stem, last C}"
+              using uniq that(1,2) \<open>{last stem, last C} \<in> M\<close> v_in_e2
+              by blast
+            have w_in_e2: "w \<in> {last stem, last C}"
+              using e_eq that(4) by simp
+            have w_neq_lastC: "w \<noteq> last C"
+            proof
+              assume "w = last C"
+              then have "w = v"
+                using \<open>v = last C\<close> by simp
+              then show False
+                using that(3,5) by blast
+            qed
+            show ?p2
+              using w_in_e2 w_neq_lastC by auto
+          qed
         qed
         then show ?thesis
           apply(intro quot_is_matching[where dume = "{last stem, last C}"] matching(1,2))
