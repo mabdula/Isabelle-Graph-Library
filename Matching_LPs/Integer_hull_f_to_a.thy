@@ -2471,7 +2471,19 @@ proof(rule ccontr)
     then have "has_Maximum {c \<bullet> x | x. x \<in> carrier_vec n \<and> A *\<^sub>v x \<le> b}"
       using 
         strong_duality_theorem_primal_sat_bounded_min_max(2)[OF A b c]
-      by (metis (no_types, lifting) Collect_empty_eq P_def `P \<noteq> {}` local.polyhedron_def) 
+    proof -
+      have "\<exists> x \<in> carrier_vec n. A *\<^sub>v x \<le> b"
+      proof -
+        obtain x where "x \<in> P" using `P \<noteq> {}` by blast
+        then have "x \<in> carrier_vec n \<and> A *\<^sub>v x \<le> b"
+          by (simp add: P_def local.polyhedron_def)
+        then show ?thesis by blast
+      qed
+      then show ?thesis
+        using strong_duality_theorem_primal_sat_bounded_min_max(2)[OF A b c]
+          `\<forall> x \<in> carrier_vec n. A *\<^sub>v x \<le> b \<longrightarrow> c \<bullet> x \<le> Bnd`
+        by blast
+    qed
     then show False using `\<not> has_Maximum {c \<bullet> x |x. x \<in> P}`
       unfolding P_def polyhedron_def 
       by fastforce
