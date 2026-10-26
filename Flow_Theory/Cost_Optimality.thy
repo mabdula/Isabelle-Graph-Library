@@ -454,7 +454,7 @@ proof-
       by fastforce 
   also have " ... = (\<Sum>e\<in>\<E>. difference f' f (F e) *\<c> e) +
                     (\<Sum>e\<in>\<E>. - difference f' f (B e) * \<c> e) "
-    by (smt (verit) \<cc>.simps(1) \<cc>.simps(2) minus_mult_minus prod.collapse sum.cong)
+    by (simp add: \<cc>.simps(1) \<cc>.simps(2))
   also have "... = (\<Sum>e\<in>\<E>.     difference f' f (F e) *\<c> e
                              - difference f' f (B e) * \<c> e) " 
     using sym[OF sum.distrib[of "\<lambda> e. difference f' f (F e) * \<c> e"_ \<E>]] by simp
