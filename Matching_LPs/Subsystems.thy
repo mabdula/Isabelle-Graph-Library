@@ -70,7 +70,7 @@ lemma  dim_subsyst_vec_less_b:
 proof -
   have "{i. i < dim_vec b \<and> i \<in> I} \<subseteq> {0..<dim_vec b}" by auto
   then have "card {i. i < dim_vec b \<and> i \<in> I} \<le> card  {0..<dim_vec b}" 
-    by (metis card_mono finite_atLeastLessThan)
+    by (rule card_mono[OF finite_atLeastLessThan])
   then show ?thesis 
     by (metis card_atLeastLessThan diff_zero dim_subsyst_vec)
 qed
