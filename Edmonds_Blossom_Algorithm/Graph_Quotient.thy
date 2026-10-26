@@ -4929,7 +4929,35 @@ next
       using pref_suf_append_2
       by force
     ultimately show ?thesis
-      by (metis False append_Cons append_Nil pref_suf.simps(2))
+    proof -
+      have neq: "a' \<noteq> v"
+        using False by auto
+      have v_in: "v \<in> set l'"
+        using Cons.prems neq by auto
+      have ih: "l' = fst (pref_suf [] v l') @ v # snd (pref_suf [] v l')"
+        using Cons.IH v_in by blast
+      have nin: "v \<notin> set []"
+        by simp
+      have fst_eq: "fst (pref_suf [a'] v l') = a' # fst (pref_suf [] v l')"
+      proof -
+        have "fst (pref_suf ([a'] @ []) v l') = [a'] @ fst (pref_suf [] v l')"
+          by (rule pref_suf_append_1[OF nin])
+        then show ?thesis by simp
+      qed
+      have snd_eq: "snd (pref_suf [a'] v l') = snd (pref_suf [] v l')"
+        by (rule pref_suf_append_2)
+      have step: "pref_suf [] v (a' # l') = pref_suf [a'] v l'"
+        using neq by simp
+      have "a' # l' = a' # (fst (pref_suf [] v l') @ v # snd (pref_suf [] v l'))"
+        using ih by simp
+      also have "\<dots> = (a' # fst (pref_suf [] v l')) @ v # snd (pref_suf [] v l')"
+        by simp
+      also have "\<dots> = fst (pref_suf [a'] v l') @ v # snd (pref_suf [a'] v l')"
+        using fst_eq snd_eq by simp
+      also have "\<dots> = fst (pref_suf [] v (a' # l')) @ v # snd (pref_suf [] v (a' # l'))"
+        using step by simp
+      finally show ?thesis .
+    qed
   qed
 qed
 
