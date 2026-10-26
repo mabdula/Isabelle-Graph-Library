@@ -846,8 +846,51 @@ proof (intro distinct_same_order_list_eq, goal_cases)
     proof cases
       case 2
       with assms(3) show ?thesis
-        by auto
-           (metis filter_set index_less_size_conv leD leI)+
+      proof -
+        have "x = v"
+          using 2 by blast
+        have index_iff: "\<And>ls. v \<notin> set ls \<Longrightarrow> (index ls v \<le> index ls y) = (y \<notin> set ls)"
+        proof -
+          fix ls
+          assume v_notin: "v \<notin> set ls"
+          show "(index ls v \<le> index ls y) = (y \<notin> set ls)"
+          proof
+            assume le: "index ls v \<le> index ls y"
+            show "y \<notin> set ls"
+            proof
+              assume "y \<in> set ls"
+              then have "index ls y < size ls"
+                by (simp add: index_less_size_conv)
+              moreover from v_notin have "index ls v = size ls"
+                by (simp add: index_conv_size_if_notin)
+              ultimately show False
+                using le by simp
+            qed
+          next
+            assume "y \<notin> set ls"
+            then have "index ls y = size ls"
+              by (simp add: index_conv_size_if_notin)
+            moreover from v_notin have "index ls v = size ls"
+              by (simp add: index_conv_size_if_notin)
+            ultimately show "index ls v \<le> index ls y"
+              by simp
+          qed
+        qed
+        have v_notin_xs: "v \<notin> set [z \<leftarrow> xs. z \<noteq> v]"
+          by simp
+        have v_notin_xs': "v \<notin> set [z \<leftarrow> xs'. z \<noteq> v]"
+          by simp
+        have set_filter_eq: "set [z \<leftarrow> xs. z \<noteq> v] = set [z \<leftarrow> xs'. z \<noteq> v]"
+          by (simp add: filter_set assms(3))
+        have "(index [z \<leftarrow> xs. z \<noteq> v] v \<le> index [z \<leftarrow> xs. z \<noteq> v] y) = (y \<notin> set [z \<leftarrow> xs. z \<noteq> v])"
+          using index_iff v_notin_xs by blast
+        also have "\<dots> = (y \<notin> set [z \<leftarrow> xs'. z \<noteq> v])"
+          using set_filter_eq by simp
+        also have "\<dots> = (index [z \<leftarrow> xs'. z \<noteq> v] v \<le> index [z \<leftarrow> xs'. z \<noteq> v] y)"
+          using index_iff v_notin_xs' by blast
+        finally show ?thesis
+          using \<open>x = v\<close> by simp
+      qed
     next
       case 3
       with assms(3) show ?thesis
