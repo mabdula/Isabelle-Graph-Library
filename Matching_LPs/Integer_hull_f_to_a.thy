@@ -411,7 +411,30 @@ next
         by blast
     qed
     then obtain i where i:"i < n \<and> x $ i \<noteq> y $ i"
-      using eq_vecI x_y carrier_vecD by metis 
+      proof -
+      have xc: "x \<in> carrier_vec n"
+        using x_y \<open>\<forall>x \<in> F. x  \<in> carrier_vec n\<close> by blast
+      have yc: "y \<in> carrier_vec n"
+        using x_y \<open>\<forall>x \<in> F. x  \<in> carrier_vec n\<close> by blast
+      have dx: "dim_vec x = n" using xc by (rule carrier_vecD)
+      have dy: "dim_vec y = n" using yc by (rule carrier_vecD)
+      have "\<exists>i<n. x $ i \<noteq> y $ i"
+      proof (rule ccontr)
+        assume "\<not> (\<exists>i<n. x $ i \<noteq> y $ i)"
+        then have eq: "\<And>i. i < n \<Longrightarrow> x $ i = y $ i" by blast
+        have "x = y"
+        proof (rule eq_vecI)
+          fix i
+          assume "i < dim_vec y"
+          then have "i < n" by (simp add: dy)
+          then show "x $ i = y $ i" by (rule eq)
+        next
+          show "dim_vec x = dim_vec y" by (simp add: dx dy)
+        qed
+        then show False using x_y by simp
+      qed
+      then show thesis using that by blast
+    qed
     have "\<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i" 
       using \<open>\<forall>i<n. \<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i\<close> i by presburger
     then show False 
