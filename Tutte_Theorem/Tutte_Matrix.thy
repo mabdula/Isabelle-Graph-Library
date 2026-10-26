@@ -1721,8 +1721,37 @@ proof(induct "card A" arbitrary: A rule: less_induct)
           by linarith
       qed
     then obtain a b where ab: "a \<in> A \<and> b \<in> A \<and> a \<noteq> b" 
-      by (metis Diff_iff One_nat_def card_Suc_Diff1 card_eq_0_iff ex_in_conv less_imp_not_less 
-          not_one_less_zero singletonI)
+    proof -
+      assume gt: "1 < card A"
+      then have "A \<noteq> {}" by force
+      then obtain x where x: "x \<in> A" by blast
+      have "\<exists>y \<in> A. x \<noteq> y"
+      proof (rule ccontr)
+        assume "\<not> (\<exists>y \<in> A. x \<noteq> y)"
+        have sub: "A \<subseteq> {x}"
+        proof (rule subsetI)
+          fix z
+          assume zA: "z \<in> A"
+          show "z \<in> {x}"
+          proof (rule ccontr)
+            assume "z \<notin> {x}"
+            then have "x \<noteq> z" by simp
+            with zA have "\<exists>y \<in> A. x \<noteq> y" by blast
+            with \<open>\<not> (\<exists>y \<in> A. x \<noteq> y)\<close> show False by blast
+          qed
+        qed
+        have "card A \<le> card {x}"
+        proof (rule card_mono)
+          show "finite {x}" by simp
+          show "A \<subseteq> {x}" using sub by blast
+        qed
+        then have "card A \<le> 1" by simp
+        with gt show False by linarith
+      qed
+      then obtain y where y: "y \<in> A" "x \<noteq> y" by blast
+      have "x \<in> A \<and> y \<in> A \<and> x \<noteq> y" using x y by blast
+      then show thesis by (rule that)
+    qed
     then have "odd (card (A - {a, b}))" 
       by (metis False One_nat_def \<open>finite A\<close> card_Diff_insert card_Diff_singleton card_Suc_Diff1
           even_add even_diff_nat less.prems(2) less_one odd_one singletonD)
