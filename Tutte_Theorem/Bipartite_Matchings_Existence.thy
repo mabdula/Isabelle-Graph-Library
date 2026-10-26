@@ -81,7 +81,15 @@ proof(induct "card A" arbitrary: A G rule: less_induct)
       have 0:"?E_s \<subseteq> G" 
         by force
       have "u \<notin> Vs ?E_s"
-        by (smt (verit, best) DiffD1 DiffD2 mem_Collect_eq vs_member)
+proof (rule notI)
+  assume "u \<in> Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e})"
+  then obtain e where e: "e \<in> G - {e \<in> G. u \<in> e \<or> v \<in> e}" "u \<in> e"
+    by (auto simp: vs_member)
+  then have "e \<in> G" "\<not> (u \<in> e \<or> v \<in> e)"
+    by auto
+  then show False
+    using e(2) by auto
+qed
       then have "u \<notin> ?A_s" by auto
       have "v \<notin> Vs ?E_s"
         by (smt (verit, best) DiffD1 DiffD2 mem_Collect_eq vs_member)
