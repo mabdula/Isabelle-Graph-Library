@@ -84,7 +84,16 @@ proof-
 
   have base: "find_max_matching_dom M" if "\<forall>p. aug_path_search G M \<noteq> Some p" for M
     using that
-    by (metis find_max_matching.domintros)
+    proof -
+      show "find_max_matching_dom M"
+      proof (rule find_max_matching.domintros)
+        fix p
+        assume "aug_path_search G M = Some p"
+        with that have False by fastforce
+        then show "find_max_matching_dom (M \<oplus> set (edges_of_path p))"
+                    by (rule FalseE)
+      qed
+    qed
 
   have step: "\<And>M. find_max_matching_dom (M \<oplus> (set (edges_of_path (the (aug_path_search G M)))))
                    \<Longrightarrow> find_max_matching_dom M"
