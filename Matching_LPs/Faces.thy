@@ -438,9 +438,52 @@ proof -
     using assms complementary_slackness by blast
   also have "\<dots> \<longleftrightarrow>
     (\<forall>i \<in> {i. y $ i > 0 \<and> i < nr} \<inter> {0..<dim_row A}. (row A i) \<bullet> x = b $ i)" 
-    by (smt (verit) A Int_iff assms(3) atLeastLessThan_iff carrier_matD(1) index_zero_vec(1)
-        index_zero_vec(2) le0 less_eq_vec_def less_numeral_extra(3) mem_Collect_eq
-        order_le_imp_less_or_eq)
+  proof -
+    have dimA: "dim_row A = nr"
+      using A by simp
+    have y0: "(0\<^sub>v nr) $ i \<le> y $ i" if "i < nr" for i
+      using assms(3) that unfolding less_eq_vec_def by auto
+    have y_nonneg: "0 \<le> y $ i" if "i < nr" for i
+      using y0[OF that] that by simp
+    show ?thesis
+    proof (rule iffI)
+      assume lhs: "\<forall>i<nr. y $ i = 0 \<or> row A i \<bullet> x = b $ i"
+      show "\<forall>i\<in>{i. y $ i > 0 \<and> i < nr} \<inter> {0..<dim_row A}. row A i \<bullet> x = b $ i"
+      proof (rule ballI)
+        fix i
+        assume "i \<in> {i. y $ i > 0 \<and> i < nr} \<inter> {0..<dim_row A}"
+        then have i_pos: "0 < y $ i" and i_lt: "i < nr"
+          by auto
+        have "y $ i = 0 \<or> row A i \<bullet> x = b $ i"
+          using lhs i_lt by blast
+        then show "row A i \<bullet> x = b $ i"
+          using i_pos by auto
+      qed
+    next
+      assume rhs: "\<forall>i\<in>{i. y $ i > 0 \<and> i < nr} \<inter> {0..<dim_row A}. row A i \<bullet> x = b $ i"
+      show "\<forall>i<nr. y $ i = 0 \<or> row A i \<bullet> x = b $ i"
+      proof (intro allI impI)
+        fix i
+        assume i_lt: "i < nr"
+        show "y $ i = 0 \<or> row A i \<bullet> x = b $ i"
+        proof (cases "y $ i = 0")
+          case True
+          then show ?thesis by blast
+        next
+          case False
+          have "0 < y $ i \<or> 0 = y $ i"
+            using y_nonneg[OF i_lt] by (rule order_le_imp_less_or_eq)
+          then have i_pos: "0 < y $ i"
+            using False by auto
+          have "i \<in> {i. y $ i > 0 \<and> i < nr} \<inter> {0..<dim_row A}"
+            using i_pos i_lt dimA by simp
+          then have "row A i \<bullet> x = b $ i"
+            using rhs by blast
+          then show ?thesis by blast
+        qed
+      qed
+    qed
+  qed
   also have "\<dots> \<longleftrightarrow> (\<forall> i < dim_row ?A'. (row ?A' i) \<bullet> x = ?b' $ i)"
     using subsystem_fulfills_P'[of A b ?A' ?b' _ "(\<lambda> a c. a \<bullet> x = c)"] 
  using subsystem_fulfills_P[of A b ?A' ?b' _ "(\<lambda> a c. a \<bullet> x = c)"]
