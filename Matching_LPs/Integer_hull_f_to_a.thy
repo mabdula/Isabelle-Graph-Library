@@ -2042,9 +2042,23 @@ proof -
     next
       case False
       have 1:"row (A @\<^sub>r B) i = row B (i - nr1)"
-        using False Missing_Matrix.append_rows_nth(2) assms(1) assms(2) 
-        by (metis (no_types, lifting) asmi append_rows_def carrier_matD(1) 
-            index_mat_four_block(2) index_zero_mat(2) not_less)
+      proof -
+        have dimA: "dim_row A = nr1"
+          using assms(1) by (rule carrier_matD(1))
+        have AB: "A @\<^sub>r B \<in> carrier_mat (nr1 + nr2) n"
+          using assms(1) assms(2) by (rule carrier_append_rows)
+        have dimAB: "dim_row (A @\<^sub>r B) = nr1 + nr2"
+          using AB by (rule carrier_matD(1))
+        have i_lt: "i < nr1 + nr2"
+          using asmi dimAB by simp
+        have i_nlt: "\<not> i < nr1"
+          using False dimA by simp
+        have i_ge: "nr1 \<le> i"
+          using i_nlt by linarith
+        show ?thesis
+          using Missing_Matrix.append_rows_nth(2)[OF assms(1) assms(2)] i_lt i_nlt i_ge
+          by blast
+      qed
       have 2:"(A @\<^sub>r B) $$ (i, j) = row (A @\<^sub>r B) i $ j" 
         by (simp add: asmi asmj)
       have "j < dim_col B" 
