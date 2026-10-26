@@ -519,7 +519,33 @@ proof(rule ccontr)
   qed
   obtain i1 where i1:"i1 < dim_row A \<and> i1 \<in> I \<and> row A i1 = row A' j1 \<and>
                       i1 = (pick I j1) \<and> b' $ j1 = b $ i1" 
-    by (metis assms(8) dims_eq dims_subsyst_same exist_index_in_A fst_conv j1j2 snd_conv)
+  proof -
+  have A'_eq: "A' = fst (sub_system A b I)"
+    using assms(8)[symmetric] by simp
+  have b'_eq: "b' = snd (sub_system A b I)"
+    using assms(8)[symmetric] by simp
+  have dims_A'b': "dim_row A' = dim_vec b'"
+    using dims_subsyst_same[OF dims_eq] by (simp add: A'_eq b'_eq)
+  have j1_A': "j1 < dim_row A'"
+    using j1j2 by simp
+  have j1_b': "j1 < dim_vec b'"
+    using j1_A' dims_A'b' by simp
+  have j1_snd: "j1 < dim_vec (snd (sub_system A b I))"
+    using j1_b' by (simp add: b'_eq)
+  obtain i where i_dimB: "i < dim_vec b" and i_I: "i \<in> I"
+    and i_row: "row A' j1 = row A i" and i_pick: "i = pick I j1"
+    and i_b: "b' $ j1 = b $ i"
+    using exist_index_in_A[OF dims_eq j1_snd] by (simp add: A'_eq b'_eq)
+  have i_dim: "i < dim_row A"
+    using i_dimB by (simp add: dims_eq)
+  have i_row': "row A i = row A' j1"
+    using i_row by (rule sym)
+  have i_b': "b $ i = b' $ j1"
+    using i_b by (rule sym)
+  have i_all: "i < dim_row A \<and> i \<in> I \<and> row A i = row A' j1 \<and> i = pick I j1 \<and> b' $ j1 = b $ i"
+    using i_dim i_I i_row' i_pick i_b by simp
+  from i_all show thesis by (rule that)
+  qed
   obtain i2 where i2: "i2 < dim_row A \<and> i2 \<in> I \<and> row A i2 = row A' j2 \<and> 
                        i2 = (pick I j2) \<and> b' $ j2 = b $ i2" 
     by (metis assms(8) dims_eq dims_subsyst_same exist_index_in_A fst_conv j1j2 snd_conv)
