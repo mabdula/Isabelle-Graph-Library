@@ -325,7 +325,16 @@ proof-
     then obtain i j where ij_def: "i < length ES \<and> j < length ES \<and> j \<noteq> i \<and> ES ! i = ES ! j" 
       using distinct_conv_nth by blast
     hence "find_cycle g (card \<V>) v ! (a_len + i) =
-             find_cycle g (card \<V>) v ! (a_len + j)"using ES_prop by metis
+              find_cycle g (card \<V>) v ! (a_len + j)"
+    proof -
+      have i_lt: "i < length ES" and j_lt: "j < length ES" and eq_ij: "ES ! i = ES ! j"
+        using ij_def by auto
+      have i_eq: "fst (ES ! i) = find_cycle g (card \<V>) v ! (a_len + i)"
+        using ES_prop i_lt by blast
+      have j_eq: "fst (ES ! j) = find_cycle g (card \<V>) v ! (a_len + j)"
+        using ES_prop j_lt by blast
+      from i_eq j_eq eq_ij show ?thesis by simp
+    qed
     hence "(as @ [x] @ bs @ [x] @ cs) ! (a_len + i) =
            (as @ [x] @ bs @ [x] @ cs)  ! (a_len + j) " using v_Def by simp
     hence "([x]@bs@[x]@cs) !  i =  ([x]@bs@[x]@cs) ! j" unfolding a_len_def by simp
