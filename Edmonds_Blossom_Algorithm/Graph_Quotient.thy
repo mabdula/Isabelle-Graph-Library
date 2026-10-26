@@ -4382,7 +4382,7 @@ qed
           then have "length p1 = 1"
             using p1_nempty by (cases p1) (simp, force simp: not_le Nat.less_one)
           then obtain a where "p1 = [a]"
-            by (metis One_nat_def add.commute add.right_neutral length_0_conv length_tl list.collapse list.sel(3) list.size(4))
+            by (auto simp: One_nat_def length_Suc_conv)
           then have False
             using quot_aug_path(1) p'_feats up2_nin_M p2_nempty
             by(auto simp add: alt_list_step neq_Nil_conv)
