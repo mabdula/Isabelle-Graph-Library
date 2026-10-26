@@ -856,8 +856,14 @@ proof -
   qed
   have "{i. i < dim_vec b \<and> i \<in> I} = {i. i < dim_vec b} \<inter> I" by auto
   have 2:"dim_vec b'' = card {j. j < dim_vec b \<and> j \<in> (I \<union> {i})}" 
-    using dim_subsyst_vec using assms(4) 
-    by (metis snd_conv)
+    proof -
+      have "snd (A'', b'') = snd (sub_system A b (I \<union> {i}))"
+        using assms(4) by simp
+      then have b''_eq: "b'' = snd (sub_system A b (I \<union> {i}))"
+        by simp
+      show ?thesis
+        unfolding b''_eq by (rule dim_subsyst_vec)
+    qed
   then have "{j. j < dim_vec b \<and> j \<in> (I \<union> {i})} = 
       ({i. i < dim_vec b} \<inter> I) \<union> {i}" using assms(2) by auto
   then have "card {i. i < dim_vec b \<and> i \<in> I} + 1 = card {j. j < dim_vec b \<and> j \<in> (I \<union> {i})}"
