@@ -83,8 +83,12 @@ lemma submatrix_same_I_interesect_rows:
 proof
   show 1:"dim_row (submatrix A I UNIV) = dim_row (submatrix A (I \<inter> {0..<dim_row A}) UNIV)" 
     using dim_submatrix 
-    by (smt (verit) Collect_cong Int_iff atLeastLessThan_iff less_nat_zero_code 
-        linorder_le_less_linear)
+  proof -
+    have eq_sets: "{i. i < dim_row A \<and> i \<in> I} = {i. i < dim_row A \<and> i \<in> I \<inter> {0..<dim_row A}}"
+      by auto
+    show ?thesis
+      unfolding dim_submatrix(1) using eq_sets by simp
+  qed
   show 2:"dim_col (submatrix A I UNIV) = dim_col (submatrix A (I \<inter> {0..<dim_row A}) UNIV)" 
     using dim_submatrix 
     by (smt (verit) Collect_cong Int_iff atLeastLessThan_iff less_nat_zero_code 
