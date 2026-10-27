@@ -252,9 +252,8 @@ proof -
     proof
       fix x
       assume "x \<in> Vs G - A"
-      then obtain e where "e \<in> G \<and> x \<in> e" 
-        using DiffD1 vs_member_elim  by metis
-      then obtain u  where 2:"e = {u, x} \<and> (u \<in> A \<and> x \<in> Vs G - A) \<and> u \<noteq> x" 
+      then have "x \<in> Vs G" by blast
+      then obtain e where "e \<in> G \<and> x \<in> e" by (auto simp: Vs_def)      then obtain u  where 2:"e = {u, x} \<and> (u \<in> A \<and> x \<in> Vs G - A) \<and> u \<noteq> x" 
         using partition \<open>x \<in> Vs G - A\<close> by fastforce
       then have "u \<in> e" 
         by blast
