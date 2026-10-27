@@ -355,7 +355,20 @@ next
     proof (safe, goal_cases)
       case 1
       have "\<And>x y. {x, y} \<subseteq> C \<Longrightarrow> {x, y} \<notin> F"
-        by (metis "1"(1) "1"(2) "1"(3) bot.extremum_uniqueI insert_not_empty subset_insert vs_member_intro)
+      proof -
+  fix x y
+  assume "{x, y} \<subseteq> C"
+  show "{x, y} \<notin> F"
+  proof
+    assume "{x, y} \<in> F"
+    then have "x \<in> Vs F"
+      unfolding Vs_def by blast
+    moreover have "x \<in> {u, v}"
+      using \<open>{x, y} \<subseteq> C\<close> "1"(3) by auto
+    ultimately show False
+      using "1"(1) "1"(2) by auto
+  qed
+qed
       then have "component_edges F C = {}"
         unfolding component_edges_def by blast
       with edges_expr
