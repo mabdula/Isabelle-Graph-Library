@@ -442,7 +442,36 @@ proof (rule ccontr)
         using matching_int_card_is_sum[of M M C]  `matching M`  \<open>finite (Vs M)\<close> by blast
       then have "even (card C)" 
         using \<open>Vs M \<inter> C = C\<close>
-        by (smt (verit) "2" \<open>M \<subseteq> G\<close> e_in_C dvd_sum even_numeral odd_card_imp_not_empty subset_eq)
+        proof -
+          have card_eq: "card C = sum (\<lambda>e. card (e \<inter> C)) M"
+            using \<open>card (Vs M \<inter> C) = sum (\<lambda> e. card (e \<inter> C)) M\<close> \<open>Vs M \<inter> C = C\<close> by simp
+          have dvd_each: "\<And>e. e \<in> M \<Longrightarrow> 2 dvd card (e \<inter> C)"
+          proof -
+            fix e
+            assume eM: "e \<in> M"
+            from e_in_C eM have "e \<inter> C = {} \<or> e \<inter> C = e"
+              by blast
+            then show "2 dvd card (e \<inter> C)"
+            proof
+              assume "e \<inter> C = {}"
+              then show ?thesis by simp
+            next
+              assume eC: "e \<inter> C = e"
+              from eM \<open>M \<subseteq> G\<close> have "e \<in> G"
+                by blast
+              with "2" have "card e = 2"
+                by blast
+              with eC show ?thesis
+                by simp
+            qed
+          qed
+          have "2 dvd sum (\<lambda>e. card (e \<inter> C)) M"
+            using dvd_sum[OF dvd_each] .
+          with card_eq have "2 dvd card C"
+            by simp
+          then show ?thesis
+            by presburger
+        qed
       then show False 
         using diff_odd_compoenent_has_odd_card[of C G X] \<open>C \<in> ?QX\<close> by auto
     qed
