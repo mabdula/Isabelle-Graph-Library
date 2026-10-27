@@ -604,9 +604,17 @@ next
 
   then have "\<forall>x \<in> C. \<exists>y. {x, y} \<subseteq> C \<and> {x, y} \<in> G \<and> x \<in> {x, y}"
      by auto 
-  then show ?case
-    using Complete_Lattices.Union_iff[where ?C = "{{x, y} |x y. {x, y} \<subseteq> C \<and> {x, y} \<in> G}"]
-    by (smt (verit) mem_Collect_eq subsetI)
+  note witness = this
+  show ?case
+  proof (rule subsetI)
+    fix x
+    assume "x \<in> C"
+    with witness
+    obtain y where "{x, y} \<subseteq> C" "{x, y} \<in> G" "x \<in> {x, y}"
+      by blast
+    thus "x \<in> \<Union> {{x, y} |x y. {x, y} \<subseteq> C \<and> {x, y} \<in> G}"
+      by auto
+  qed
 qed 
 
 lemma components_edges_image_Vs:
