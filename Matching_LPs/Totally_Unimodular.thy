@@ -98,8 +98,8 @@ proof -
       using asm(2) by force
     then have "\<forall> i < n. x $ i \<ge> 0" 
       by (simp add: asm(2))
-    then show "0\<^sub>v n \<le> x" 
-      by (metis M.add.one_closed asm(2) index_zero_vec(1) lesseq_vecI)
+    then show "0\<^sub>v n \<le> x"
+      using asm(2) unfolding less_eq_vec_def by (auto simp: index_zero_vec)
   qed
   then show ?thesis unfolding pos_polyhedron_def polyhedron_def by auto
 qed
