@@ -120,7 +120,46 @@ lemma max_subgraph_imp_max_subgraph:
   shows "max_subgraph G P H"
   using assms
   unfolding max_subgraph_def pre_digraph.max_subgraph_def
-  by (metis comp_apply ddfs.arcs_eq subgraph_iff)
+proof -
+  have sub: "subgraph_digraph (ddfs.digraph_of H) (ddfs.digraph_of G)"
+    using assms unfolding pre_digraph.max_subgraph_def by blast
+  have P_arcs: "(P \<circ> arcs) (ddfs.digraph_of H)"
+    using assms unfolding pre_digraph.max_subgraph_def by blast
+  have max: "\<And>H''. H'' \<noteq> ddfs.digraph_of H \<Longrightarrow> subgraph_digraph (ddfs.digraph_of H) H'' \<Longrightarrow>
+               subgraph_digraph H'' (ddfs.digraph_of G) \<Longrightarrow> (P \<circ> arcs) H'' \<Longrightarrow> False"
+    using assms unfolding pre_digraph.max_subgraph_def by blast
+  have subGH: "subgraph H G"
+    using sub by (simp add: subgraph_iff)
+  have PH: "P H"
+    using P_arcs by (simp add: comp_apply ddfs.arcs_eq)
+  have maxH: "False" if asm: "H' \<noteq> H" "subgraph H H'" "subgraph H' G" "P H'" for H'
+  proof -
+    have neq: "ddfs.digraph_of H' \<noteq> ddfs.digraph_of H"
+    proof
+      assume eq: "ddfs.digraph_of H' = ddfs.digraph_of H"
+      have "arcs (ddfs.digraph_of H') = arcs (ddfs.digraph_of H)"
+        by (simp add: eq)
+      hence "H' = H"
+        by (simp add: ddfs.arcs_eq)
+      with asm(1) show False by blast
+    qed
+    have sub1: "subgraph_digraph (ddfs.digraph_of H) (ddfs.digraph_of H')"
+      using asm(2) by (simp add: subgraph_iff)
+    have sub2: "subgraph_digraph (ddfs.digraph_of H') (ddfs.digraph_of G)"
+      using asm(3) by (simp add: subgraph_iff)
+    have P_arcs': "(P \<circ> arcs) (ddfs.digraph_of H')"
+      using asm(4) by (simp add: comp_apply ddfs.arcs_eq)
+    from max[OF neq sub1 sub2 P_arcs'] show False .
+  qed
+  from subGH PH maxH show
+    "subgraph_digraph (ddfs.digraph_of H) (ddfs.digraph_of G) \<and>
+     (P \<circ> arcs) (ddfs.digraph_of H) \<and>
+     (\<forall>H'. H' \<noteq> ddfs.digraph_of H \<and> subgraph_digraph (ddfs.digraph_of H) H' \<longrightarrow>
+            \<not> (subgraph_digraph H' (ddfs.digraph_of G) \<and> (P \<circ> arcs) H'))
+     \<Longrightarrow> subgraph H G \<and> P H \<and>
+     (\<forall>H'. H' \<noteq> H \<and> subgraph H H' \<longrightarrow> \<not> (subgraph H' G \<and> P H'))"
+    by blast
+qed
 
 lemma max_subgraph_imp_max_subgraph_all_verts:
   assumes "max_subgraph G P H"
