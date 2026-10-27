@@ -310,7 +310,7 @@ next
     using \<open>e \<notin> F\<close> by auto
   also have "... = 
     component_edges F C \<union> {{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e}"
-    using component_edges_def by metis
+    unfolding component_edges_def by blast
   finally have edges_expr:
     "component_edges (insert e F) C = component_edges F C \<union> {{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e}" .
   have edges_disj: "component_edges F C \<inter> {{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e} = {}"
