@@ -3738,7 +3738,16 @@ qed
           by simp
         moreover have "card (M - ex) = Suc (card M')"
           using M' finiteM
-          by (metis card_insert_disjoint finite_Diff finite_insert)
+        proof -
+          have "finite (M - ex)"
+            using finiteM by (rule finite_Diff)
+          hence "finite (insert e M')"
+            by (simp only: M'(2))
+          hence "finite M'"
+            by simp
+          thus ?thesis
+            using M'(2) M'(3) by (simp add: card_insert_disjoint)
+        qed
         ultimately have "capacity2 (unlab_osc1 \<union> unlab_osc2) = card (M -ex)"
           by auto
         moreover have "capacity2 (lab_osc \<union> (unlab_osc1 \<union> unlab_osc2)) = capacity2 lab_osc + capacity2 (unlab_osc1 \<union> unlab_osc2)"
