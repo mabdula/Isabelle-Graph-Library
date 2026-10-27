@@ -432,7 +432,12 @@ proof (rule ccontr)
         then show "y \<in> {}"  using \<open>x \<notin> C\<close> by auto
       qed
       have " ((Vs M) \<inter> C) = C" 
-        by (metis Int_absorb1 \<open>C \<in> odd_comps_in_diff G X\<close> \<open>Vs M = Vs G\<close> component_in_E)
+      proof -
+        have "C \<subseteq> Vs G"
+          using \<open>C \<in> odd_comps_in_diff G X\<close> component_in_E by blast
+        then show ?thesis
+          using \<open>Vs M = Vs G\<close> by blast
+      qed
       have "card ((Vs M) \<inter> C) = sum (\<lambda> e. card (e \<inter> C)) M"
         using matching_int_card_is_sum[of M M C]  `matching M`  \<open>finite (Vs M)\<close> by blast
       then have "even (card C)" 
