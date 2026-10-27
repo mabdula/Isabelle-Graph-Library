@@ -2821,7 +2821,7 @@ qed
       using `x \<in> ?P'` unfolding polyhedron_def by auto
     then have "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n)  *\<^sub>v x \<le>  ( 1\<^sub>v n @\<^sub>v 1\<^sub>v n)" 
       using  append_rows_le[of "A" nr n "1\<^sub>m n @\<^sub>r - 1\<^sub>m n" "2*n" "0\<^sub>v nr" x "1\<^sub>v n @\<^sub>v 1\<^sub>v n"] 
-      by (metis A \<open>x \<in> carrier_vec n\<close> carrier_append_rows mult_2 one_carrier_mat 
+      by (fastforce simp: A \<open>x \<in> carrier_vec n\<close> carrier_append_rows mult_2 one_carrier_mat
           uminus_carrier_mat zero_carrier_vec)
     then have " -  1\<^sub>m n *\<^sub>v x \<le> 1\<^sub>v n" 
       using  append_rows_le[of "1\<^sub>m n" n n "- 1\<^sub>m n" n "1\<^sub>v n" x "1\<^sub>v n"] 
