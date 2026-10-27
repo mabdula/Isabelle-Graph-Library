@@ -105,7 +105,26 @@ proof
     assume asmi:"i < dim_row (submatrix A (I \<inter> {0..<dim_row A}) UNIV)" 
     assume asmj:"j < dim_col (submatrix A (I \<inter> {0..<dim_row A}) UNIV)" 
     have 2:"submatrix A I UNIV $$ (i, j) = A $$ (pick I i, pick UNIV j)" using submatrix_index
-      by (metis (no_types, lifting) 1 asmi asmj dim_submatrix(1) dim_submatrix(2))
+proof -
+      have row_bound: "i < card {a. a < dim_row A \<and> a \<in> I}"
+      proof -
+        have "card {a. a < dim_row A \<and> a \<in> I} = dim_row (submatrix A I UNIV)"
+          by (simp add: dim_submatrix(1))
+        also have "... = dim_row (submatrix A (I \<inter> {0..<dim_row A}) UNIV)"
+          using 1 by simp
+        finally have eq: "card {a. a < dim_row A \<and> a \<in> I}
+                         = dim_row (submatrix A (I \<inter> {0..<dim_row A}) UNIV)" .
+        show ?thesis using asmi eq by simp
+      qed
+      have col_bound: "j < card {a. a < dim_col A \<and> a \<in> (UNIV :: nat set)}"
+      proof -
+        have eq: "dim_col (submatrix A (I \<inter> {0..<dim_row A}) UNIV)
+                = card {a. a < dim_col A \<and> a \<in> (UNIV :: nat set)}"
+          by (simp add: dim_submatrix(2))
+        show ?thesis using asmj eq by simp
+      qed
+      from row_bound col_bound show ?thesis by (rule submatrix_index)
+    qed
     have 3:"{a. a < dim_row A \<and> a \<in> I} = (I \<inter> {0..<dim_row A})" 
       by fastforce
     have "i < card {a. a < dim_row A \<and> a \<in> I}"
