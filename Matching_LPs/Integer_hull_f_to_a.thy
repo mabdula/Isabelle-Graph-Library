@@ -3152,8 +3152,24 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
     then show "v + of_int m \<cdot>\<^sub>v ?z' \<in> \<int>\<^sub>v" 
       using v \<open>\<bar>det A'\<bar> \<cdot>\<^sub>v z \<in> carrier_vec n\<close> \<open>v \<in> carrier_vec n\<close> sum_int_is_int by blast
   qed
-  then have "\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> integer_hull P" 
-    by (metis A Diff_iff P_def 11 b gram_schmidt.not_in_int_hull_not_int)
+  have "\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> integer_hull P"
+  proof
+    fix m :: nat
+    have int_part: "v + of_int m \<cdot>\<^sub>v ?z' \<in> \<int>\<^sub>v"
+      using \<open>\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> \<int>\<^sub>v\<close> by blast
+    have in_P: "v + of_int m \<cdot>\<^sub>v ?z' \<in> polyhedron A b"
+      using 11 unfolding P_def by blast
+    show "v + of_int m \<cdot>\<^sub>v ?z' \<in> integer_hull P"
+      unfolding P_def
+    proof (rule ccontr)
+      assume not_in: "v + of_int m \<cdot>\<^sub>v ?z' \<notin> integer_hull (polyhedron A b)"
+      have "v + of_int m \<cdot>\<^sub>v ?z' \<in> polyhedron A b - integer_hull (polyhedron A b)"
+        using in_P not_in by blast
+      then have "v + of_int m \<cdot>\<^sub>v ?z' \<notin> \<int>\<^sub>v"
+        using A b gram_schmidt.not_in_int_hull_not_int by blast
+      with int_part show False by blast
+    qed
+  qed
   have "?c \<bullet> z = \<beta>" 
     using 12 by blast
   then have "?c \<bullet> ?z' = abs (det A') * \<beta>" 
