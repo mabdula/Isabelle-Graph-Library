@@ -483,7 +483,12 @@ proof -
     unfolding `F = polyhedron C d`
     by blast
   obtain A'' b'' where A''_b'': "((A'', b'') = sub_system A b (I' \<union> J))" 
-    by (metis surj_pair)
+    proof -
+      obtain A''' b''' where "sub_system A b (I' \<union> J) = (A''', b''')"
+        by (cases "sub_system A b (I' \<union> J)") auto
+      then show thesis
+        by (intro that[of A''' b''']) simp
+    qed
   have "dim_row A'' = dim_vec b''" 
     by (metis A A''_b'' b carrier_matD(1) carrier_vecD dims_subsyst_same')
   have "dim_row A \<le> dim_row C" using C_d 
