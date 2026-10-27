@@ -1117,8 +1117,17 @@ lemma path_edges_subset:
   by (induction, simp_all)
 
 lemma edges_of_path_symmetric_split:"edges_of_path (xs@[x,y]@ys) = edges_of_path (xs@[x]) @[{x,y}] @ edges_of_path (y#ys)"
-  by (metis append_is_Nil_conv edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append_2 
-           edges_of_path_append_3 hd_append2 last_ConsL last_ConsR list.discI list.sel(1))
+proof -
+  have "edges_of_path (xs @ [x, y] @ ys) = edges_of_path ((xs @ [x]) @ (y # ys))"
+    by simp
+  also have "... = edges_of_path (xs @ [x]) @ edges_of_path (last (xs @ [x]) # (y # ys))"
+    by (rule edges_of_path_append_3) simp
+  also have "... = edges_of_path (xs @ [x]) @ edges_of_path (x # y # ys)"
+    by simp
+  also have "... = edges_of_path (xs @ [x]) @ [{x, y}] @ edges_of_path (y # ys)"
+    by simp
+  finally show ?thesis .
+qed
 
 lemma non_last_vertex_or_even_list_in_even_edge:
   assumes "distinct p" "length p \<ge> 2" "x \<in> set p"
