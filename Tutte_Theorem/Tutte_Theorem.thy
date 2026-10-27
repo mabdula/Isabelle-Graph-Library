@@ -1318,8 +1318,16 @@ proof
       from tutte_conditionE[OF assms(2) this] show ?thesis .
     qed
     then show False 
-      by (metis One_nat_def 3 card.empty card_Diff1_le card_gt_0_iff diff_add_inverse diff_is_0_eq' 
-          le_trans zero_less_Suc)
+    proof -
+      have le1: "card (X - {x}) \<le> card X"
+        by (rule card_Diff1_le)
+      have le2: "card (odd_comps_in_diff G (X - {x})) \<le> card (X - {x})"
+      proof (rule tutte_conditionE)
+        show "tutte_condition G" using assms(2) .
+        show "X - {x} \<subseteq> Vs G" using assms(3) by blast
+      qed
+      from 3 le1 le2 show False by linarith
+    qed
   qed
 qed
 
