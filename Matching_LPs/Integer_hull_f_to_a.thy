@@ -2915,8 +2915,18 @@ qed
   have "1\<^sub>m n \<in> \<int>\<^sub>m" using one_mat_int by auto
   have "- 1\<^sub>m n \<in> \<int>\<^sub>m" using one_mat_int by auto
   have "?fullA \<in> \<int>\<^sub>m" using append_int_mat_is_int
-    by (metis A \<open>- 1\<^sub>m n \<in> \<int>\<^sub>m\<close> assms(6) carrier_append_rows one_carrier_mat 
-        one_mat_int uminus_carrier_mat) 
+    proof -
+      have one_carr: "(1\<^sub>m n) \<in> carrier_mat n n"
+        by (rule one_carrier_mat)
+      have minus_one_carr: "(- 1\<^sub>m n) \<in> carrier_mat n n"
+        by (simp add: uminus_carrier_iff_mat one_carr)
+      have inner_carr: "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n) \<in> carrier_mat (n + n) n"
+        using carrier_append_rows[OF one_carr minus_one_carr] .
+      have inner_int: "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n) \<in> \<int>\<^sub>m"
+        using append_int_mat_is_int[OF one_carr minus_one_carr \<open>1\<^sub>m n \<in> \<int>\<^sub>m\<close> \<open>- 1\<^sub>m n \<in> \<int>\<^sub>m\<close>] .
+      show ?thesis
+        using append_int_mat_is_int[OF A inner_carr AI inner_int] .
+    qed
   have "?fullb \<in> \<int>\<^sub>v" using append_int_vec_is_int one_vec_int 
     by (metis carrier_vec_dim_vec gram_schmidt.zero_vec_is_int)
   have "A' \<in> \<int>\<^sub>m" 
