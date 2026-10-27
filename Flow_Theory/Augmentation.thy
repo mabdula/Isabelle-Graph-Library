@@ -1352,8 +1352,14 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
   also have "... = (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * sum \<cc> (set es) + \<gamma> * \<cc> e"
     using "2.IH" "2.prems"(1) "2.prems"(2) by auto
   also have "... =  (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * sum \<cc> (set (e#es))"
-    by (smt (verit, del_insts) "2.prems"(2) List.finite_set distinct.simps(2) 
-            list.set(2) sum.insert_if sum_distrib_left)
+  proof -
+    have e_notin: "e \<notin> set es"
+      using "2.prems"(2) by simp
+    have "sum \<cc> (set (e # es)) = \<cc> e + sum \<cc> (set es)"
+      using e_notin by (simp add: sum.insert)
+    thus ?thesis
+      by (simp add: algebra_simps)
+  qed
   finally show "(\<Sum>ea\<in>\<E>. augment_edges f \<gamma> (e # es) ea * \<c> ea) =
        (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * sum \<cc> (set (e # es))" by simp
 qed simp
