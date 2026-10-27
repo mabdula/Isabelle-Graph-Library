@@ -456,7 +456,18 @@ proof -
     "dim_row (A @\<^sub>r (A' @\<^sub>r (-A'))) = dim_vec (b @\<^sub>v(b' @\<^sub>v (-b')))"
     "dim_col (A @\<^sub>r(A' @\<^sub>r (-A'))) = n"
     using face_is_polyhedron''2[of A nr b A' b' I' F] 
-    by (smt (verit) A Collect_cong P_def b gram_schmidt.polyhedron_def mem_Collect_eq)
+  proof -
+    have sub: "(A', b') = sub_system A b I'"
+      using A'_b' by simp
+    have FP: "F = {x \<in> carrier_vec n. A' *\<^sub>v x = b' \<and> A *\<^sub>v x \<le> b}"
+      using A'_b' A b unfolding P_def gram_schmidt.polyhedron_def
+      by auto
+    show ?thesis
+      by (rule that[OF refl refl
+            face_is_polyhedron''2(1)[OF A b sub FP]
+            face_is_polyhedron''2(2)[OF A b sub FP]
+            face_is_polyhedron''2(3)[OF A b sub FP]])
+  qed
 
   then obtain C' d' J where C'_d': "((C', d') = sub_system C d J)
                               \<and> F' = {x. C' *\<^sub>v x = d' \<and> x \<in> F}"
