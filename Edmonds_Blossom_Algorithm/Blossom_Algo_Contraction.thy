@@ -1727,7 +1727,23 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
     qed
     have "even (length (edges_of_path ((rev p) @ [last pfx1, last (butlast pfx1)])))"
       using odd_length
-      by (metis One_nat_def append.assoc append_Cons append_Nil edges_of_path.simps(3) edges_of_path_rev length_rev list.size(4) odd_even_add odd_one rev.simps(2))
+    proof -
+      have e1: "length ((last pfx1) # p) = length (edges_of_path ((last pfx1) # p)) + 1"
+        by (intro edges_of_path_length') simp
+      have e2: "length (rev p @ [last pfx1, last (butlast pfx1)])
+                = length (edges_of_path (rev p @ [last pfx1, last (butlast pfx1)])) + 1"
+        by (intro edges_of_path_length') simp
+      have len1: "length (edges_of_path ((last pfx1) # p)) = length p"
+        using e1 by simp
+      have len2: "length (edges_of_path (rev p @ [last pfx1, last (butlast pfx1)])) = length p + 1"
+        using e2 by simp
+      have "odd (length p)"
+        using odd_length len1 by simp
+      then have "even (length p + 1)"
+        by simp
+      then show ?thesis
+        by (simp add: len2)
+    qed
     then have "last (edges_of_path ((rev p) @ [last pfx1, last (butlast pfx1)])) \<in> M"
       using alt_path_pfx1
       by (metis Nil_is_append_conv \<open>p \<noteq> []\<close> alternating_list_even_last edges_of_path.simps(3) edges_of_path_append_3 list.simps(3) rev_is_Nil_conv)
