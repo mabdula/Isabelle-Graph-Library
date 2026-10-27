@@ -865,7 +865,7 @@ proof-
         hence ab_where:"e \<in> \<E>1 \<union> \<E>2" 
           using C_inE \<E>'_def by blast
         obtain C1 C2 where C_split: "C = C1@[e]@C2" 
-          by (metis "1"(1) in_set_conv_decomp_first single_in_append)
+          using split_list[OF "1"(1)] by auto
         hence rotated:"closed_w (make_pair' ` \<E>') (map make_pair' ([e]@ C2@C1))" 
           "set (map make_pair' C) = set (map make_pair'([e]@C2@C1))"
           "closed_w (make_pair' ` \<E>') (map make_pair' (C2@C1@[e]))" 
