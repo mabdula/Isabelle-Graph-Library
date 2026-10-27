@@ -547,7 +547,7 @@ proof-
           by auto
         (*then have "set cyc \<subseteq> Vs G"
           using path_suff subset_path_Vs
-          by metis
+          using cons1(1) by fastforce
         then have "Vs G - s = set cyc"
           unfolding s_def
           by auto
