@@ -1423,7 +1423,18 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       then obtain x y where "x \<in> Vs G \<and> y \<in> Vs G \<and> x \<noteq> y" 
         by (meson card_2_iff')
       then have "{x, y} =  Vs G" using True 
-        by (smt (verit, best) card_2_iff doubleton_eq_iff insert_absorb insert_iff)
+      proof -
+        have xy_facts: "x \<in> Vs G" "y \<in> Vs G" "x \<noteq> y"
+          using \<open>x \<in> Vs G \<and> y \<in> Vs G \<and> x \<noteq> y\<close> by auto
+        have sub: "{x, y} \<subseteq> Vs G"
+          using xy_facts by auto
+        have card_eq: "card {x, y} = card (Vs G)"
+          using xy_facts True by simp
+        have fin: "finite (Vs G)"
+          using less.prems(1) by simp
+        from fin sub card_eq show "{x, y} =  Vs G"
+          by (rule card_subset_eq)
+      qed
       have "\<forall> e \<in> G. e = {x, y}"
       proof
         fix e
