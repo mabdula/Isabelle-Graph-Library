@@ -1054,9 +1054,35 @@ proof
     have "i \<ge> card {i. i < nr1 \<and> i \<in> I}" 
       using "6" by fastforce
     then have "pick I i \<ge> pick I (card {i. i < nr1 \<and> i \<in> I})" 
-      by (smt (verit, best) "5" IntE 16 18 13 basic_trans_rules(21) card_mono dim_submatrix(1)
-          le_eq_less_or_eq linorder_neqE_nat not_le not_less order.refl pick_mono_inf
-          pick_mono_le subsetI)
+    proof -
+      show "pick I i \<ge> pick I (card {i. i < nr1 \<and> i \<in> I})"
+      proof (cases "card {i. i < nr1 \<and> i \<in> I} = i")
+        case True
+        then show ?thesis by simp
+      next
+        case False
+        then have lt: "card {i. i < nr1 \<and> i \<in> I} < i"
+          using \<open>i \<ge> card {i. i < nr1 \<and> i \<in> I}\<close> by linarith
+        have "i < card {i. i < nr1 + nr2 \<and> i \<in> I}"
+          using "5" "16" by presburger
+        then have i_lt: "i < card ({0..<nr1 + nr2} \<inter> I)"
+          using "13" by simp
+        have "i < card I \<or> infinite I"
+        proof (cases "infinite I")
+          case True
+          then show ?thesis by simp
+        next
+          case False
+          then have "finite I" by simp
+          then have "card ({0..<nr1 + nr2} \<inter> I) \<le> card I"
+            using card_mono Int_lower2 by blast
+          with i_lt show ?thesis by linarith
+        qed
+        then have "pick I (card {i. i < nr1 \<and> i \<in> I}) < pick I i"
+          using lt pick_mono_le pick_mono_inf by blast
+        then show ?thesis by linarith
+      qed
+    qed
     have "pick I (card {i. i < nr1 \<and> i \<in> I}) \<ge> nr1"
     proof(cases "infinite I")
       case True
