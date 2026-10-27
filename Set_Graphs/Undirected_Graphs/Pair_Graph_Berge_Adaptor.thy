@@ -560,7 +560,7 @@ next
     proof (rule ccontr, goal_cases)
       case 1
       then obtain p1 p2 where "p = p1 @ [(y, x)] @ p2"
-        by (metis append_Cons append_Nil in_set_conv_decomp_first)
+        by (fastforce dest: split_list_first)
     
       from \<open>awalk D u (e # p) v\<close> have "cas u (e # p) v" unfolding awalk_def by blast
   
