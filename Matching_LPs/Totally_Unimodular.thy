@@ -111,7 +111,20 @@ proof -
   have 1:"pick I (card {a \<in> I. a < k}) = (LEAST a. a \<in> I \<and> k \<le> a)"
     using pick_card by blast
   have 2:"pick I (card {a \<in> I. a < k}) \<in> I" 
-    by (metis (no_types, lifting) Collect_cong assms pick_in_set_inf pick_in_set_le)
+  proof -
+    have "{i. i < k \<and> i \<in> I} = {a \<in> I. a < k}"
+      by auto
+    then consider (fin) "card {a \<in> I. a < k} < card I" | (inf) "infinite I"
+      using assms by auto
+    then show ?thesis
+    proof cases
+      case fin
+      then show ?thesis using pick_in_set_le by blast
+    next
+      case inf
+      then show ?thesis using pick_in_set_inf by blast
+    qed
+  qed
   have "(LEAST a. a \<in> I \<and> k \<le> a) \<in> I" 
     using 1 2 by presburger
   have "(LEAST a. a \<in> I \<and> k \<le> a) \<ge> k"
