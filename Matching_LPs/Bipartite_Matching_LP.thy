@@ -263,7 +263,14 @@ lemma from_nat_into_G_E:
   assumes "i < m"
   obtains l r where "{l,r} \<in> G" "from_nat_into G i = {l,r}" "l \<in> L" "r \<in> R"
   using assms bipartite_graph
-  by (metis bipartite_edgeE from_nat_into_G_E_aux)
+proof -
+  obtain e where e_in_G: "e \<in> G" and e_eq: "from_nat_into G i = e"
+    using from_nat_into_G_E_aux[OF assms] .
+  obtain l r where e_lr: "e = {l,r}" and l_L: "l \<in> L" and r_R: "r \<in> R"
+    using e_in_G bipartite_graph by (auto elim: bipartite_edgeE)
+  from e_in_G e_eq e_lr l_L r_R show thesis
+    by (auto intro!: that)
+qed
 
 lemma Vs_enum_neqI: "\<lbrakk>v \<in> Vs G; v' \<in> Vs G; v \<noteq> v'\<rbrakk> \<Longrightarrow> Vs_enum v \<noteq> Vs_enum v'"
   by (metis Vs_inv_enum)
