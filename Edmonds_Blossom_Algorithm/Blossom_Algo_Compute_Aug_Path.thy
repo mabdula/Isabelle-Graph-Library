@@ -188,8 +188,20 @@ lemma match_blossom_path_rev_stem:
   subgoal apply(rule path_append)
     subgoal using path_suff[OF path] .
     subgoal using rev_path_is_path[OF path_pref[OF path]] .
-    subgoal by (smt match_blossom match_blossomD(3) edge_between_pref_suff hd_rev insert_commute
-                    list.simps(3) odd_cycleD(3) odd_cycle_nempty path)
+    subgoal premises prems
+    proof -
+      have stem_nempty: "stem \<noteq> []"
+        using prems by auto
+      have C_nempty: "C \<noteq> []"
+        using match_blossom match_blossomD(3) odd_cycle_nempty by fastforce
+      have edge_stem_C: "{last stem, hd C} \<in> G"
+        using edge_between_pref_suff[OF stem_nempty C_nempty path] .
+      have hd_rev_stem: "hd (rev stem) = last stem"
+        using stem_nempty by (simp add: hd_rev)
+      show "{last C, hd (rev stem)} \<in> G"
+        using match_blossom match_blossomD(3) odd_cycleD(3) edge_stem_C hd_rev_stem
+        by (fastforce simp: insert_commute)
+    qed
     done
   done
 
