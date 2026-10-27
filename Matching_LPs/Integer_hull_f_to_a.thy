@@ -3128,7 +3128,17 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
         unfolding lhs_eq rhs_eq using le1 le2 by (rule add_mono)
     qed
     then have "A *\<^sub>v (v + of_int m \<cdot>\<^sub>v ?z') \<le> b" 
-      by (metis 10 b right_zero_vec)
+      proof -
+        assume prem: "A *\<^sub>v v + A *\<^sub>v (of_int (int m) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z)) \<le> b + 0\<^sub>v nr"
+        have eq: "A *\<^sub>v (v + of_int m \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z)) =
+                   A *\<^sub>v v + A *\<^sub>v (of_int m \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z))"
+          by (rule 10)
+        also have "\<dots> \<le> b + 0\<^sub>v nr"
+          by (rule prem)
+        also have "\<dots> = b"
+          by (rule right_zero_vec[OF b])
+        finally show ?thesis .
+      qed
     then show "v + of_int (int m) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z) \<in> P"
       unfolding P_def polyhedron_def 
       using \<open>v + of_int (int m) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z) \<in> carrier_vec n\<close> by blast
