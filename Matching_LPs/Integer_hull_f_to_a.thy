@@ -2695,8 +2695,20 @@ qed
           using uminus_scalar_prod[OF unit_vec_carrier y'_carr, symmetric] by simp
       qed
       have "- y' $ i \<le>  Max (abs ` set\<^sub>v y')" 
-        by (metis Max_ge \<open>i < n\<close> abs_le_D2 carrier_vecD finite_imageI 
-            finite_vec_set image_eqI vec_setI y') 
+        proof -
+          have "i < dim_vec y'"
+            using \<open>i < n\<close> y' carrier_vecD by blast
+          then have "y' $ i \<in> set\<^sub>v y'"
+            unfolding vec_set_def by auto
+          then have mem: "\<bar>y' $ i\<bar> \<in> abs ` set\<^sub>v y'"
+            by blast
+          have fin: "finite (abs ` set\<^sub>v y')"
+            using finite_vec_set finite_imageI by blast
+          from fin mem have "\<bar>y' $ i\<bar> \<le> Max (abs ` set\<^sub>v y')"
+            by (rule Max_ge)
+          then show "- y' $ i \<le> Max (abs ` set\<^sub>v y')"
+            using abs_le_D2 by blast
+        qed
       then have "(1 / Max (abs ` set\<^sub>v y')) * (- y' $ i) \<le> 1" 
         by (metis \<open>0 < Max (abs ` set\<^sub>v y')\<close> divide_pos_pos mult_le_cancel_left_pos
             nonzero_eq_divide_eq order_less_irrefl zero_less_one_class.zero_less_one)
