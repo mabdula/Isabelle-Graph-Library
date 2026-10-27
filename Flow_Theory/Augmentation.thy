@@ -1170,7 +1170,22 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
       have "augment_edges f \<gamma> es d = f d"
       using e_not_in_es_flow_not_change[of es d "f" \<gamma> ] 
       using "2.prems"(2) "2.prems"(3) True e_not_in_p_aug 
-      by (metis distinct.simps(2) distinct_length_2_or_more ereal.inject erev.simps(2)  rcap.simps(2) )   
+      proof -
+        have e_notin_es: "e \<notin> set es"
+          using "2.prems"(3) by simp
+        have Bd_notin_es: "B d \<notin> set es"
+          using e_notin_es True by simp
+        have Fd_notin_es: "F d \<notin> set es"
+          using "2.prems"(2) by simp
+        have erev_Bd_notin_es: "erev (B d) \<notin> set es"
+          using Fd_notin_es by (simp add: erev.simps(2))
+        have rcap_eq: "rcap (augment_edges f \<gamma> es) (B d) = rcap f (B d)"
+          using e_not_in_p_aug[of "B d" es f \<gamma>] Bd_notin_es erev_Bd_notin_es by blast
+        hence "ereal (augment_edges f \<gamma> es d) = ereal (f d)"
+          by (simp add: rcap.simps(2))
+        thus ?thesis
+          by (simp add: ereal.inject)
+      qed
     then show ?thesis 
       by(auto simp add: True)
   next
