@@ -1654,7 +1654,22 @@ proof (intro invar_props_intros, goal_cases)
       by force
     with \<open>hd p_x_v = x\<close>
       have "distinct (tl p_x_v @ [x])"
-      by (metis \<open>p_x_v \<noteq> []\<close> distinct1_rotate list.collapse rotate1.simps(2))
+    proof -
+      have p_eq: "p_x_v = x # tl p_x_v"
+      proof (cases p_x_v)
+        case Nil
+        then show ?thesis using \<open>p_x_v \<noteq> []\<close> by simp
+      next
+        case (Cons a as)
+        then show ?thesis using \<open>hd p_x_v = x\<close> by auto
+      qed
+      have "distinct (x # tl p_x_v)"
+        using \<open>distinct p_x_v\<close> p_eq by simp
+      hence "x \<notin> set (tl p_x_v)" "distinct (tl p_x_v)"
+        by simp_all
+      then show "distinct (tl p_x_v @ [x])"
+        by (simp add: distinct_append)
+    qed
     with \<open>tl (awalk_verts x ((edges_of_vwalk p_x_v) @ [(?v, x)])) = tl p_x_v @ [x]\<close>
       have distinct_verts: "distinct (tl (awalk_verts x ((edges_of_vwalk p_x_v) @ [(?v, x)])))"
       by simp
