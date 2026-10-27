@@ -202,7 +202,20 @@ proof
     then show ?thesis by simp
   qed
   then show "snd (sub_system A b I) = snd (sub_system A b (I \<inter> {0..<nr}))"
-    by (metis b carrier_vecD sub_system_snd)
+  proof -
+    assume eq1: "vec_of_list (nths (list_of_vec b) I)
+      = vec_of_list (nths (list_of_vec b) (I \<inter> {0..<dim_vec b}))"
+    have dim_b: "dim_vec b = nr" using b carrier_vecD by blast
+    have "snd (sub_system A b I) = vec_of_list (nths (list_of_vec b) I)"
+      by (simp add: sub_system_snd)
+    also have "\<dots> = vec_of_list (nths (list_of_vec b) (I \<inter> {0..<dim_vec b}))"
+      using eq1 by simp
+    also have "\<dots> = vec_of_list (nths (list_of_vec b) (I \<inter> {0..<nr}))"
+      using dim_b by simp
+    also have "\<dots> = snd (sub_system A b (I \<inter> {0..<nr}))"
+      by (simp add: sub_system_snd)
+    finally show "snd (sub_system A b I) = snd (sub_system A b (I \<inter> {0..<nr}))" .
+  qed
 qed
 
 lemma obtain_I_for_subface:
