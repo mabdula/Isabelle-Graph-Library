@@ -1151,7 +1151,8 @@ proof(intro invar_props_intros, goal_cases)
         hence "length p - 2 \<ge>  distance_set (Graph.digraph_abs G) (t_set srcs) v"
           using \<open>length p > 1\<close>  
           apply (auto simp: eval_nat_numeral)
-          by (metis leD leI Suc_diff_Suc Suc_ile_eq)
+          by (cases "distance_set (Graph.digraph_abs G) (t_set srcs) v" rule: enat.exhaust;
+              simp add: Suc_diff_Suc iless_Suc_eq eval_nat_numeral)
         moreover obtain p' v' where "p = p' @ [v', v]"
           using \<open>length p > 1\<close>
           apply (auto
