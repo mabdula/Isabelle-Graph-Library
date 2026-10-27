@@ -1380,8 +1380,16 @@ proof -
     using union_card_is_sum[of "{a. {a} \<in> A}" ?f] 
     using 1 2 by presburger
   then have "card (\<Union>x\<in>{a. {a} \<in> A}. ?f x) = card {a. {a} \<in> A}" 
-    by (metis (no_types, lifting) One_nat_def card.empty card.insert card_eq_sum empty_iff 
-        finite.intros(1) sum.cong)
+  proof -
+    have card_f: "\<forall>x. card (?f x) = 1"
+      by simp
+    have "sum (\<lambda>x. card (?f x)) {a. {a} \<in> A} = sum (\<lambda>x. (1::nat)) {a. {a} \<in> A}"
+      using card_f by simp
+    also have "\<dots> = card {a. {a} \<in> A}"
+      using 1 by fastforce
+    finally show ?thesis
+      using \<open>card (\<Union>x\<in>{a. {a} \<in> A}. ?f x) = sum (\<lambda>x. (card (?f x))) {a. {a} \<in> A}\<close> by simp
+  qed
   then show "card A = card {a. {a} \<in> A}" 
     using \<open>A = (\<Union>x\<in>{a. {a} \<in> A}. {{x}})\<close> by simp
 qed
