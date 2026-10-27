@@ -746,7 +746,7 @@ proof-
   moreover have "(u, x) \<in> D" using D_def \<open>{u, x} \<in> G\<close> by auto
   ultimately have "awalk D u ?c' u"
     using awalk_Cons_iff
-    by (metis fst_conv snd_conv)
+    by (simp add: awalk_Cons_iff fst_conv snd_conv)
 
   from apath have distinct_verts: "distinct (awalk_verts x (awalk_to_apath D (epath_to_awalk x (tl p))))"
     unfolding apath_def by auto
