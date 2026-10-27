@@ -69,7 +69,16 @@ proof-
     case 2
     from \<open>j < length l\<close> \<open>l ! j = y\<close>
       have "l = (take j l) @ [y] @ (drop (j + 1) l)"
-      by (metis Suc_eq_plus1 append.assoc append_take_drop_id hd_drop_conv_nth take_hd_drop)
+      proof -
+        have drop_eq: "drop j l = l ! j # drop (j + 1) l"
+          using Cons_nth_drop_Suc[OF \<open>j < length l\<close>, symmetric] by simp
+        with drop_eq \<open>l ! j = y\<close> have "drop j l = y # drop (j + 1) l"
+          by (simp only: drop_eq)
+        moreover have "l = take j l @ drop j l"
+          by (simp add: append_take_drop_id)
+        ultimately show "l = (take j l) @ [y] @ (drop (j + 1) l)"
+          by simp
+      qed
 
     have "i \<ge> j + 1" using \<open>j < i\<close> by auto
     with \<open>i < length l\<close> have "x \<in> set (drop (j + 1) l)"
