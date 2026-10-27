@@ -689,10 +689,18 @@ proof(rule ccontr)
     unfolding Vs_def
     by blast
   then have "card ?docX \<le> 2" 
-    by (smt (verit, ccfv_SIG) Int_lower2 Nat.le_diff_conv2 Un_upper1 
-        card2 \<open>finite ?docX\<close> add.commute assms(1-4,6-7) card_Un_disjoint card_mono diff_add_inverse 
-        diff_components_finite finite_Diff finite_Un insert_subset le_antisym nat_le_linear
-        new_components_intersection_old_is_empty)
+  proof -
+    have xC: "{x} \<subseteq> C" using assms(7) by simp
+    have disj: "(odd_comps_in_diff G X - {C}) \<inter> ?docX = {}"
+      using new_components_intersection_old_is_empty[OF assms(1) assms(3) assms(6) xC] .
+    have finA: "finite (odd_comps_in_diff G X - {C})"
+      using diff_components_finite[OF assms(1)] by simp
+    have card_eq: "card ((odd_comps_in_diff G X - {C}) \<union> ?docX) =
+          card (odd_comps_in_diff G X - {C}) + card ?docX"
+      using card_Un_disjoint[OF finA \<open>finite ?docX\<close> disj] .
+    from card_eq card2 show "card ?docX \<le> 2"
+      by linarith
+  qed
   show False
   proof(cases "card ?docX = 2")
     case True
