@@ -1113,7 +1113,42 @@ next
       using cons1(1,2)
       apply (clarsimp simp add: Let_def split: if_splits prod.splits option.splits)
       subgoal using find_pfx_butlast_2 by fastforce
-      subgoal by (metis butlast.simps(2) disj_pref_append1 empty_iff empty_set find_pfx_empty in_set_butlast_appendI)
+      subgoal premises prems for x2a
+      proof -
+        have rec: "longest_disj_pfx (a1' # l1') l2 = (Some pfx1, Some x2a)"
+          using prems by simp
+        have ih: "set (butlast pfx1) \<inter> set x2a = {}"
+          using prems(2)[of pfx1 x2a "a1' # l1'"] rec by simp
+        have a2_notin_l1: "a2 \<notin> set (a1' # l1')"
+        proof (rule notI)
+          assume "a2 \<in> set (a1' # l1')"
+          then have em: "a2 = a1' \<or> a2 \<in> set l1'" by simp
+          then show False
+          proof (cases "a2 = a1'")
+            case True
+            then show False using prems by auto
+          next
+            case False
+            then have in_l1: "a2 \<in> set l1'" using em by simp
+            have las: "last (find_pfx ((=) a2) l1') = a2"
+              using find_pfx_works_1[OF in_l1, of "(=) a2"] by simp
+            have ne: "find_pfx ((=) a2) l1' \<noteq> []"
+              using Graph_Quotient.find_pfx_nempty[OF in_l1, of "(=) a2"] by simp
+            then show False
+              using prems las by auto
+          qed
+        qed
+        obtain l1'' where pfx1_pfx: "a1' # l1' = pfx1 @ l1''"
+          using disj_pref_append1[of pfx1 "Some x2a" "a1' # l1'" l2] rec
+          by fastforce
+        have a2_notin_pfx1: "a2 \<notin> set pfx1"
+          using a2_notin_l1 pfx1_pfx
+          by auto
+        have "a2 \<notin> set (butlast pfx1)"
+          using a2_notin_pfx1 by (blast dest: in_set_butlastD)
+        then show ?thesis
+          using ih by auto
+      qed
       subgoal by (metis butlast.simps(2) cons1.prems disj_pfx_are_disj_1 disjoint_iff_not_equal in_set_butlastD list.set_intros(1) option.sel snd_pfx_nempty)
       done
   qed
