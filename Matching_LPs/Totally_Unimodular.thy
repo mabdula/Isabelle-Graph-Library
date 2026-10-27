@@ -323,7 +323,20 @@ proof -
         card {a\<in>(J - {pick J j}). a < pick J k} + card {pick J j}"
     by force
   then have 4: "card {a\<in>(J - {pick J j}). a < pick J k} + 1 = card {a\<in>J. a < pick J k}"
-    by (metis 2 card_eq_1_iff)
+  proof -
+    have card_union: "card ({a\<in>(J - {pick J j}). a < pick J k} \<union> {pick J j}) =
+          card {a\<in>(J - {pick J j}). a < pick J k} + card {pick J j}"
+      by force
+    have card1: "card {pick J j} = 1" by simp
+    have "card {a\<in>(J - {pick J j}). a < pick J k} + 1 =
+          card {a\<in>(J - {pick J j}). a < pick J k} + card {pick J j}"
+      using card1 by simp
+    also have "... = card ({a\<in>(J - {pick J j}). a < pick J k} \<union> {pick J j})"
+      using card_union by simp
+    also have "... = card {a\<in>J. a < pick J k}"
+      using 2 by simp
+    finally show ?thesis .
+  qed
   then have 5:"card {a\<in>(J - {pick J j}). a < pick J k} = k - 1" 
     using \<open>card {a \<in> J. a < pick J k} = k\<close> by presburger
   then have 3:"pick (J - {pick J j}) (k - 1) = pick J k" using 1 
