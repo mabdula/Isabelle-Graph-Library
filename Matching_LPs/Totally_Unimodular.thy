@@ -37,7 +37,15 @@ proof -
     {   fix x
       assume asm: " A *\<^sub>v x \<le> b" "0\<^sub>v n \<le> x " "x \<in> carrier_vec n"
       then have " \<forall> i < n. x $ i \<ge> 0\<^sub>v n $ i" 
-        by (metis Matrix.less_eq_vec_def carrier_vecD)
+        proof (intro allI impI)
+          fix i
+          assume i: "i < n"
+          from asm(2) have "dim_vec (0\<^sub>v n) = dim_vec x" and "\<forall>i<dim_vec (0\<^sub>v n). 0\<^sub>v n $ i \<le> x $ i"
+            unfolding Matrix.less_eq_vec_def by auto
+          moreover have "dim_vec (0\<^sub>v n) = n" by simp
+          ultimately show "x $ i \<ge> 0\<^sub>v n $ i"
+            using i by simp
+        qed
       then have "\<forall> i < n. x $ i \<ge> 0"
         using asm(2) unfolding zero_vec_def using index_vec[of _ n "(\<lambda>i. 0)"] 
         by simp
