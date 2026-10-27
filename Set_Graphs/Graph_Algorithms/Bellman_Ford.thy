@@ -642,7 +642,20 @@ lemma same_domain_bellman_ford[invar_lemmas]:
 proof(induction l)
   case (Suc l)
  have "set (map snd es) \<subseteq> set vs" 
-    by (smt (verit, best) dVsI'(2) image_iff image_set subset_code(1) vs_and_es)
+  proof (rule subsetI)
+    fix x
+    assume "x \<in> set (map snd es)"
+    then obtain e where e_es: "e \<in> set es" and x_eq: "x = snd e"
+      by auto
+    obtain u v where e_pair: "e = (u, v)"
+      by (cases e) auto
+    have uv_in: "(u, v) \<in> set es"
+      using e_es e_pair by simp
+    have "v \<in> dVs (set es)"
+      using dVsI'(2)[OF uv_in] by simp
+    thus "x \<in> set vs"
+      using vs_and_es x_eq e_pair by simp
+  qed
   hence map_snd_subs:"set (map snd es) \<subseteq> dom (connection_lookup (bellman_ford_init s))"
     using invar_after_Folds vs_is_dom
     by (auto simp add:  connection_axioms(2) bellman_ford_init_def dom_def)
