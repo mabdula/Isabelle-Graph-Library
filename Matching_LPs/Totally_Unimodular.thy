@@ -367,7 +367,20 @@ proof -
       using 3 pred_eq by simp
   qed
   then show "pick (J - {pick J j}) k = pick J (Suc k)" 
-    by (metis Suc_eq_plus1 4 5 \<open>card {a \<in> J. a < pick J k} = k\<close> 6 7)
+  proof -
+    have "Suc (k - 1) = k"
+      using 4 5 \<open>card {a \<in> J. a < pick J k} = k\<close> by linarith
+    hence "pick (J - {pick J j}) k = pick (J - {pick J j}) (Suc (k - 1))"
+      by simp
+    also have "\<dots> = (LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a)"
+      by (rule 6)
+    also have "\<dots> = (LEAST a. a \<in> J \<and> pick J k < a)"
+      by (rule \<open>(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) = 
+              (LEAST a. a \<in> J \<and> pick J k < a)\<close>)
+    also have "\<dots> = pick J (Suc k)"
+      by (simp add: 7)
+    finally show "pick (J - {pick J j}) k = pick J (Suc k)" .
+  qed
 qed
 
 lemma pick_is_Suc_if_one_removed':
