@@ -295,7 +295,7 @@ lemma part_bipartite_diff:
 proof -
   let ?A' = "(A \<inter> Vs (G - X))" 
   have 2: "graph_invar (G - X)" 
-    by (metis Diff_subset assms graph_invar_subset partitioned_bipartite_def)
+    by (rule graph_invar_subset[OF assms(2) Diff_subset])
   have  "A \<subseteq> Vs G" 
     by (metis assms partitioned_bipartite_def)
   have 3: "?A' \<subseteq> Vs (G - X)" by blast 
