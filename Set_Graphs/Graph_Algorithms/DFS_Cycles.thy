@@ -881,7 +881,12 @@ proof (intro invar_props_intros, goal_cases)
       then obtain xs ys zs where "c = xs @ [e2] @ ys @ [e1] @ zs" by blast
       with c_awalk awalk_append_iff
         have "awalk ?G_seen_new u (xs @ [e2]) (awlast u (xs @ [e2]))"
-        by (metis append.assoc)
+      proof -
+        have c_eq: "c = (xs @ [e2]) @ (ys @ [e1] @ zs)"
+          using \<open>c = xs @ [e2] @ ys @ [e1] @ zs\<close> by simp
+        from awalk_append_iff[THEN iffD1, THEN conjunct1, OF c_awalk[unfolded c_eq]]
+          show ?thesis by simp
+      qed
       
       have "awlast u (xs @ [e2]) = snd e2"
         by (auto simp add: awalk_verts_conv)
