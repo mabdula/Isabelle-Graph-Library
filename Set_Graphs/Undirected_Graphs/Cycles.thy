@@ -22,7 +22,7 @@ and decycleD:
 
 lemma decycle_subset:
   "\<lbrakk>decycle G u p; G \<subseteq> G'\<rbrakk> \<Longrightarrow> decycle G' u p"
-  unfolding decycle_def using epath_subset by metis
+  unfolding decycle_def by (auto intro: epath_subset)
 
 lemma decycle_not_subset:
   "\<lbrakk>\<exists>u. decycle G u p; \<nexists>u. decycle G' u p\<rbrakk> \<Longrightarrow> \<not>set p \<subseteq> G'"
