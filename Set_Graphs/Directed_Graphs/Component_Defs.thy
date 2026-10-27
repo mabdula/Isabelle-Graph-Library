@@ -245,9 +245,60 @@ text \<open>
 \<close>
 lemma induced_subgraph_dVs_subset_iff:
   "induced_subgraph H G \<Longrightarrow> induced_subgraph H' G \<Longrightarrow> dVs H \<subset> dVs H' \<longleftrightarrow> H \<subset> H'"
-  unfolding induced_subgraph_def induce_subgraph_def subset_eq
-  apply (auto dest!: dVs_subset)
-  by (smt (verit, best) case_prodD case_prodI mem_Collect_eq subsetD) 
+proof -
+  assume HG_ind: "induced_subgraph H G"
+  assume H'G_ind: "induced_subgraph H' G"
+  have HG: "H = G \<downharpoonright> dVs H"
+    using HG_ind by (simp add: induced_subgraph_def)
+  have H'G: "H' = G \<downharpoonright> dVs H'"
+    using H'G_ind by (simp add: induced_subgraph_def)
+  show "dVs H \<subset> dVs H' \<longleftrightarrow> H \<subset> H'"
+  proof
+    assume dsub: "dVs H \<subset> dVs H'"
+    have subset: "dVs H \<subseteq> dVs H'"
+      using dsub unfolding psubset_eq by blast
+    have neqdVs: "dVs H \<noteq> dVs H'"
+      using dsub unfolding psubset_eq by blast
+    have "H \<subseteq> H'"
+    proof (rule subrelI)
+      fix u v
+      assume mem: "(u,v) \<in> H"
+      then have inG: "(u,v) \<in> G \<downharpoonright> dVs H"
+        using HG by simp
+      then have "(u,v) \<in> G" "u \<in> dVs H" "v \<in> dVs H"
+        by (auto dest: in_induce_subgraphD)
+      then have "u \<in> dVs H'" "v \<in> dVs H'"
+        using subset by auto
+      then show "(u,v) \<in> H'"
+        using \<open>(u,v) \<in> G\<close> H'G by (auto intro: in_induce_subgraphI)
+    qed
+    moreover have "H \<noteq> H'"
+    proof
+      assume "H = H'"
+      then have "dVs H = dVs H'" by simp
+      with neqdVs show False by simp
+    qed
+    ultimately show "H \<subset> H'"
+      unfolding psubset_eq by blast
+  next
+    assume hsub: "H \<subset> H'"
+    have subseteq: "H \<subseteq> H'"
+      using hsub unfolding psubset_eq by blast
+    have neq: "H \<noteq> H'"
+      using hsub unfolding psubset_eq by blast
+    have subsetV: "dVs H \<subseteq> dVs H'"
+      using dVs_subset subseteq by blast
+    have "dVs H \<noteq> dVs H'"
+    proof
+      assume eq: "dVs H = dVs H'"
+      then have "H = H'"
+        using HG H'G by simp
+      with neq show False by simp
+    qed
+    then show "dVs H \<subset> dVs H'"
+      using subsetV unfolding psubset_eq by blast
+  qed
+qed
 
 lemma in_sccs_dVsI[intro]:
   fixes G :: "'a dgraph"
