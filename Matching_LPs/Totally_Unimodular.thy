@@ -142,7 +142,14 @@ proof -
       have "card {a\<in>I. a < pick I (card {i. i < k \<and> i \<in> I})} = card {i. i < k \<and> i \<in> I}"
         using \<open>card {i. i < k \<and> i \<in> I} < card I\<close> card_pick by blast
       then show False 
-        by (metis (mono_tags, lifting) Collect_cong Collect_mem_eq asm 3 not_less order.refl)
+      proof -
+        have "I \<subseteq> {i. i < k}"
+          using asm by fastforce
+        then have "{i. i < k \<and> i \<in> I} = I"
+          by auto
+        with 3 show False
+          by simp
+      qed
     qed
     then obtain t where "t \<in> I \<and> t \<ge> k" by auto
     then show False using LeastI[of "\<lambda> a. a \<in> I \<and> k \<le> a" t] 
