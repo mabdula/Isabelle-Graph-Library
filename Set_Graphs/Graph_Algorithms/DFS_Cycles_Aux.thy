@@ -2298,11 +2298,22 @@ proof-
   show "invar_cycle_false initial_state"
   proof (intro invar_props_intros, goal_cases)
     case 1
-    have "dfs_tree initial_state = {}"
+    have dfs_tree_empty: "dfs_tree initial_state = {}"
       by (auto simp: dfs_tree_def initial_state_def)
-    then show ?case
-      using awalk_def
-      by (metis cycle'_imp_awalk dVs_empty empty_iff)
+    show ?case
+    proof (rule ccontr)
+      assume "\<not> (\<nexists>c. cycle' (dfs_tree initial_state) c)"
+      then obtain c where "cycle' (dfs_tree initial_state) c"
+        by blast
+      with dfs_tree_empty have "cycle' {} c"
+        by simp
+      then obtain u where awalk_u: "awalk {} u c u"
+        using cycle'_imp_awalk by blast
+      from awalk_u have "u \<in> dVs {}"
+        by (simp add: awalk_def)
+      then show False
+        by (simp add: dVs_empty)
+    qed
   qed
   show "invar_cycle_true initial_state"
     by (auto simp: initial_state_def intro!: invar_props_intros)
