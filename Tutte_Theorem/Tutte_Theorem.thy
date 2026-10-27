@@ -1774,7 +1774,11 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
             then have "e \<in> (graph_diff G X)"
               using e graph_diff_def by auto
             then have "z \<in> connected_component (graph_diff G X) v"
-              by (metis \<open>e = {z, v}\<close> in_con_comp_insert insert_Diff insert_commute)
+            proof -
+              have "{v, z} \<in> graph_diff G X"
+                using \<open>e = {z, v}\<close> \<open>e \<in> graph_diff G X\<close> by (simp add: insert_commute)
+              from vertices_edges_in_same_component[OF this] show ?thesis .
+            qed
             then have "z \<in> C" 
               by (simp add: comp_C)
             then show False 
