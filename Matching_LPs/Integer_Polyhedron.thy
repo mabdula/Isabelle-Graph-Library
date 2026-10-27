@@ -549,8 +549,19 @@ qed
     then show "dim_row A' = dim_vec b'"
       using A'_b' dims_subsyst_same' by blast
   qed
-  have "dim_col A' = n" using A'_b' dim_col_subsyst_mat 
-    by (metis A carrier_matD(2) fst_conv) 
+  have "dim_col A' = n"
+  proof -
+    have "A' = fst (sub_system A b I')"
+    proof -
+      have "(A', b') = sub_system A b I'" using A'_b' by simp
+      then have "fst (A', b') = fst (sub_system A b I')" by (rule arg_cong)
+      then show ?thesis by simp
+    qed
+    then have "dim_col A' = dim_col A"
+      by (simp add: dim_col_subsyst_mat)
+    then show ?thesis
+      using A by (simp add: carrier_matD(2))
+  qed
   then have "dim_col (A' @\<^sub>r - A') = n" 
     using A A'_b' b face_is_polyhedron'(3) by blast
   then have "A' @\<^sub>r - A' \<in> carrier_mat (dim_row (A' @\<^sub>r - A')) n" 
