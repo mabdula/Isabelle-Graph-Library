@@ -944,9 +944,34 @@ proof(safe)
     using `x \<in> e \<and> e \<in> (graph_diff G X)`
     by blast
   then have "connected_component (graph_diff G X) x' = C" 
-    by (metis \<open>x \<in> Vs (graph_diff G X) \<and> connected_component (graph_diff G X) x = C \<and> odd (card C)\<close> 
-        \<open>x \<in> e \<and> e \<in> graph_diff G X\<close> connected_components_member_eq insert_iff singletonD 
-        vertices_edges_in_same_component)
+proof -
+  from \<open>x \<in> e \<and> e \<in> graph_diff G X\<close> \<open>e = {x', y}\<close> have "x = x' \<or> x = y"
+    by auto
+  then show "connected_component (graph_diff G X) x' = C"
+  proof
+    assume "x = x'"
+    then show ?thesis
+      using \<open>x \<in> Vs (graph_diff G X) \<and> connected_component (graph_diff G X) x = C \<and> odd (card C)\<close>
+      by simp
+  next
+    assume "x = y"
+    have e_in: "e \<in> graph_diff G X" and x_in_e: "x \<in> e"
+      using \<open>x \<in> e \<and> e \<in> graph_diff G X\<close> by auto
+    have x'_in_e: "x' \<in> e" and y_in_e: "y \<in> e"
+      using \<open>e = {x', y}\<close> by auto
+    have "{x', y} \<in> graph_diff G X"
+      using e_in \<open>e = {x', y}\<close> by simp
+    then have "y \<in> connected_component (graph_diff G X) x'"
+      by (rule vertices_edges_in_same_component)
+    then have "x \<in> connected_component (graph_diff G X) x'"
+      using \<open>x = y\<close> by simp
+    then have "connected_component (graph_diff G X) x = connected_component (graph_diff G X) x'"
+      by (auto dest: connected_components_member_eq)
+    then show ?thesis
+      using \<open>x \<in> Vs (graph_diff G X) \<and> connected_component (graph_diff G X) x = C \<and> odd (card C)\<close>
+      by simp
+  qed
+qed
   then have "connected_component (graph_diff G X) y = C" using ` e = {x', y}`
     by (metis  \<open>x \<in> e \<and> e \<in> graph_diff G X\<close> connected_components_member_eq
         vertices_edges_in_same_component)
