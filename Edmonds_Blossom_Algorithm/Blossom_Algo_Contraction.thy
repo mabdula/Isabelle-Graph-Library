@@ -191,8 +191,13 @@ proof(induction "find_aug_path_meas E" arbitrary: E M rule: nat_less_induct)
     proof(cases "\<exists>p. blos_comp = Path p")
       case T2: True
       then show ?thesis
-        using find_aug_path.domintros blos_comp
-        by (metis match_blossom_res.distinct(1) option.inject)
+      proof -
+        from T2 obtain p where p: "blos_comp = Path p"
+          by blast
+        show ?thesis
+          using blos_comp p
+          by (auto intro: find_aug_path.domintros)
+      qed
     next
       let ?u = "(create_vert (Vs E))"
       case F2: False
