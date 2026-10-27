@@ -766,8 +766,20 @@ proof-
     case 1
     then have "length ?c' \<le> 2" by simp
     with \<open>awalk D u ?c' u\<close> \<open>u \<noteq> x\<close> have "length ?c' = 2"
-      by (metis Suc_1 \<open>awalk D x (awalk_to_apath D (epath_to_awalk x (tl p))) u\<close> awalk_ends diff_is_0_eq'
-      le_antisym length_greater_0_conv length_tl list.sel(3) list.size(3) not_less_eq_eq)
+    proof -
+      have "length ?c' \<ge> 1" by simp
+      moreover have "length ?c' \<noteq> 1"
+      proof
+        assume len1: "length ?c' = 1"
+        then have c'_eq: "?c' = [(u, x)]" by simp
+        from \<open>awalk D u ?c' u\<close> c'_eq have "awalk D u [(u, x)] u" by simp
+        then have "cas u [(u, x)] u" unfolding awalk_def by blast
+        then have "x = u" by simp
+        with \<open>u \<noteq> x\<close> show False by simp
+      qed
+      ultimately show "length ?c' = 2"
+        using \<open>length ?c' \<le> 2\<close> by linarith
+    qed
     then have "length (awalk_to_apath D (epath_to_awalk x (tl p))) = 1" by auto 
     with \<open>awalk D x (awalk_to_apath D (epath_to_awalk x (tl p))) u\<close>
       have "[(x, u)] = (awalk_to_apath D (epath_to_awalk x (tl p)))"
