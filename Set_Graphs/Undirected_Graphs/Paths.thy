@@ -1686,9 +1686,10 @@ proof-
     assume "set (edges_of_path p) \<subseteq> E"
     hence "path E p" 
       using "12" path_subset by blast
-    hence "reachable E u v"
-      unfolding reachable_def walk_betw_def 
-      by (metis p_prop walk_betw_def)
+    hence "walk_betw E u p v" unfolding walk_betw_def
+      using p_prop by (auto dest: walk_between_nonempty_pathD)
+    hence "reachable E u v" unfolding reachable_def
+      by (rule exI[where x=p])
     thus False using asm by simp
   qed
   hence "{a, b} \<in> set (edges_of_path p)" 
