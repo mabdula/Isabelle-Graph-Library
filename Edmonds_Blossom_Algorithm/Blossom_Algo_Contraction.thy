@@ -1470,7 +1470,24 @@ proof-
       using T1
       by simp
     then show ?thesis
-      by (metis Nil_is_append_conv T1 edges_of_path_length' even_add odd_one)
+    proof -
+      have pfx1_nempty: "pfx1 \<noteq> []"
+        using first_pfx_nempty[OF pfxs_are_pfxs] .
+      then have nempty: "(rev pfx1) @ pfx2 \<noteq> []"
+        by simp
+      then obtain k where k_def: "length ((rev pfx1) @ pfx2) = Suc k"
+        by (cases "(rev pfx1) @ pfx2") auto
+      have len_eq: "length (edges_of_path ((rev pfx1) @ pfx2)) = k"
+        using edges_of_path_length'[OF nempty] k_def by simp
+      have "even (length pfx1 + length pfx2)"
+        using T1 by simp
+      then have "even (length ((rev pfx1) @ pfx2))"
+        by simp
+      with k_def have "odd k"
+        by simp
+      with len_eq show ?thesis
+        by simp
+    qed
   next
     case F1: False
     moreover{
