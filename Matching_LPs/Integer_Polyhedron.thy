@@ -769,7 +769,18 @@ qed
         using subsystem_fulfills_P[of A b A'' b'' _ "\<lambda> p q. p \<bullet> x = q"] 
         using A A''_b'' b carrier_vecD by blast
       then have 6:"\<forall>i \<in> J \<inter> {0..<dim_row A}.  (row C i) \<bullet> x = (d $ i)"  
-        by (metis IntD1 IntD2 IntI Un_Int_eq(4) 3 atLeastLessThan_iff sup_commute)
+      proof -
+        show "\<forall>i \<in> J \<inter> {0..<dim_row A}.  (row C i) \<bullet> x = (d $ i)"
+        proof
+          fix i
+          assume "i \<in> J \<inter> {0..<dim_row A}"
+          then have iJ: "i \<in> J" and iA: "i < dim_row A" by auto
+          have iUnion: "i \<in> (J \<union> I') \<inter> {0..<dim_row A}" using iJ iA by auto
+          have eqA: "row A i \<bullet> x = b $ i" using 4 iUnion by blast
+          have eqC: "row C i = row A i \<and> d $ i = b $ i" using 3 iA by blast
+          from eqC eqA show "row C i \<bullet> x = d $ i" by simp
+        qed
+      qed
       have "\<forall>i \<in> I' \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"  
         by (metis IntD1 IntD2 IntI Un_Int_eq(1) 4 sup_commute)
       then have "\<forall> i < dim_row A'. (row A' i) \<bullet> x =  (b' $ i)"
