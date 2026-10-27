@@ -624,7 +624,7 @@ qed
   have " \<forall> x \<in> F. A' *\<^sub>v x = b' "using A'_b' by auto
   then have "\<forall> x \<in> F. \<forall>i < dim_row A'. row A' i \<bullet> x = b' $ i" 
     using index_mult_mat_vec
-    by metis
+    by (auto simp: index_mult_mat_vec)
   then have 2:"\<forall> x \<in> F. \<forall>i \<in> I' \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
     using subsystem_fulfills_P[of A b A' b' I' "\<lambda> p q. p \<bullet> _ = q"] C_d
     using C'_d' 
