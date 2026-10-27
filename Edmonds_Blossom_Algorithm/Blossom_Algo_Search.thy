@@ -3753,9 +3753,17 @@ qed
         moreover have "capacity2 (lab_osc \<union> (unlab_osc1 \<union> unlab_osc2)) = capacity2 lab_osc + capacity2 (unlab_osc1 \<union> unlab_osc2)"
         proof-
           have "flabel v = None" if "v \<in> \<Union>M'" for v
-            using that
-            apply auto
-            by (metis "2.prems"(3) M'(2) subset_eq  subset_insertI unexamined_matched_unlabelled_invar_def)
+          proof -
+            from that obtain e' where e'M': "e' \<in> M'" and vine': "v \<in> e'"
+              using Union_iff by blast
+            from e'M' have "e' \<in> M - ex"
+              using M'(2) by blast
+            then have eM: "e' \<in> M" and enotex: "e' \<notin> ex"
+              by blast+
+            show "flabel v = None"
+              using unexamined_matched_unlabelled_invar_props[OF "2.prems"(3) eM enotex vine']
+              .
+          qed
           moreover have "flabel v2 = None"
             using "2.prems"(3) M'(1) unexamined_matched_unlabelled_invar_props v1v2(1) by fastforce
           ultimately have "lab_osc \<inter> unlab_osc2 = {}"
