@@ -385,7 +385,19 @@ qed
 
 lemma set_edge_isin_vsetorhood_iff:
   "e \<in> set_of_uedge ` uedges G \<longleftrightarrow> (\<exists>u v. e = {u,v} \<and> v \<in>\<^sub>G (\<N>\<^sub>G G u))"
-  using isin_vsetorhood_set_edge set_edge_isin_vsetorhood_elim by metis
+proof
+  assume "e \<in> set_of_uedge ` uedges G"
+  then obtain u v where "e = {u,v}" and "v \<in>\<^sub>G (\<N>\<^sub>G G u)"
+    by (rule set_edge_isin_vsetorhood_elim)
+  thus "\<exists>u v. e = {u,v} \<and> v \<in>\<^sub>G (\<N>\<^sub>G G u)"
+    by blast
+next
+  assume "\<exists>u v. e = {u,v} \<and> v \<in>\<^sub>G (\<N>\<^sub>G G u)"
+  then obtain u v where "e = {u,v}" and "v \<in>\<^sub>G (\<N>\<^sub>G G u)"
+    by blast
+  thus "e \<in> set_of_uedge ` uedges G"
+    using isin_vsetorhood_set_edge by simp
+qed
 
 lemma inj_set_of_uedge:
   "inj_on set_of_uedge (uedges G)"
