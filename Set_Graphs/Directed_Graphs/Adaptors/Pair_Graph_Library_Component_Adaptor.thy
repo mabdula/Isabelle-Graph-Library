@@ -204,10 +204,18 @@ proof-
         by auto
     next
       case False
+      have arcs_eq: "arcs (digraph_of_all_verts H G) = H"
+        by (simp add: digraph_of_all_verts_def pre_digraph.arcs_add_verts ddfs.arcs_eq)
+      have "arcs (digraph_of_all_verts H G) \<subseteq> arcs H'"
+        using that(2) by (auto simp: Digraph_Component.subgraph_def)
+      hence subgraph1: "subgraph H (arcs H')"
+        using arcs_eq by (auto simp: Component_Defs.subgraph_def)
+      have "arcs H' \<subseteq> G"
+        using that(3) by (auto simp: Digraph_Component.subgraph_def)
+      hence subgraph2: "subgraph (arcs H') G"
+        by (auto simp: Component_Defs.subgraph_def)
       show ?thesis
-        using Digraph_Component.subgraphE G_max_sg_H(3)[OF False] Component_Defs.subgraphI
-              ddfs.arcs_eq digraph_of_all_verts_def pre_digraph.arcs_add_verts that(2-4)
-        by metis
+        using G_max_sg_H(3)[OF False subgraph1 subgraph2 that(4)] .
     qed
   ultimately show ?thesis
     unfolding pre_digraph.max_subgraph_def
