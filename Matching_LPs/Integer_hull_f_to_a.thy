@@ -2867,7 +2867,12 @@ qed
     using 2 3 face_contains_min_face[of ?fullA "nr+2*n" ?fullb ?F] 
     by blast
   then obtain z where "z \<in> F" 
-    by (metis ex_in_conv face_non_empty gram_schmidt.min_face_elim(1))
+  proof -
+    have "min_face ?P' F" using F_def by blast
+    then have "face ?P' F" using gram_schmidt.min_face_elim(1) by blast
+    then have "F \<noteq> {}" using face_non_empty by blast
+    then show thesis using that by blast
+  qed
   obtain A' b' I where A'_b':" F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'}"
     "(A', b') = sub_system ?fullA ?fullb I" 
     "dim_vec b' = Min {dim_vec d| C d I. (C, d) = sub_system ?fullA ?fullb I \<and> 
