@@ -1974,8 +1974,27 @@ proof-
   proof(cases "degree C u", goal_cases)
     case (1 nat)
     moreover have "enat nn + 1 + 1 + 1 \<le> 2  \<Longrightarrow> False" for nn
-      by (metis enat_ord_simps(1) iless_Suc_eq le_add2 linorder_not_le one_add_one one_enat_def
-          plus_1_eSuc(2) plus_enat_simps(1))
+    proof -
+      assume assm: "enat nn + 1 + 1 + 1 \<le> 2"
+      have lhs: "enat nn + 1 + 1 + 1 = enat (nn + 3)"
+      proof -
+        have bin: "nn + 1 + 1 + 1 = nn + 3"
+          by simp
+        have "enat nn + 1 + 1 + 1 = enat (nn + 1 + 1 + 1)"
+          by (simp only: one_enat_def plus_enat_simps(1))
+        also have "\<dots> = enat (nn + 3)"
+          by (simp only: bin)
+        finally show ?thesis .
+      qed
+      have rhs: "(2::enat) = enat 2"
+        by (simp add: enat_numeral)
+      from assm have "enat (nn + 3) \<le> enat 2"
+        by (simp only: lhs rhs)
+      hence "nn + 3 \<le> 2"
+        by (simp add: enat_ord_simps(1))
+      thus False
+        by simp
+    qed
     ultimately show ?case 
       using degree_in_p_leq_2[OF uv_in_p(1)] degree_p[OF uv_in_p(1)] 
       by(cases nat rule: nat_cases_up_to_3 )
