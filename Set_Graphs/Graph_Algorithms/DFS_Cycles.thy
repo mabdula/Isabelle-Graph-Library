@@ -22,7 +22,18 @@ proof-
     case 1
     from \<open>i < length l\<close> \<open>l ! i = x\<close>
       have "l = (take i l) @ [x] @ (drop (i + 1) l)"
-      by (metis Suc_eq_plus1 append.assoc append_take_drop_id hd_drop_conv_nth take_hd_drop)
+      proof -
+        have "drop i l = l ! i # drop (Suc i) l"
+          using \<open>i < length l\<close> by (simp add: Cons_nth_drop_Suc)
+        hence "drop i l = [x] @ drop (Suc i) l"
+          using \<open>l ! i = x\<close> by simp
+        moreover have "l = take i l @ drop i l"
+          by (simp add: append_take_drop_id)
+        ultimately have "l = take i l @ [x] @ drop (Suc i) l"
+          by simp
+        then show "l = (take i l) @ [x] @ (drop (i + 1) l)"
+          by simp
+      qed
 
     have "j \<ge> i + 1" using \<open>i < j\<close> by auto
     with \<open>j < length l\<close> have "y \<in> set (drop (i + 1) l)"
