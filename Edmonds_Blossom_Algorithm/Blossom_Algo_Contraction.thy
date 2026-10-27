@@ -156,9 +156,10 @@ assumes
   "path E (stem @ cyc)"
 shows "((Vs E) - set cyc) \<subset> (Vs E)" (is "?s \<subset> _")
 proof-  
-  have "set cyc \<subseteq> Vs E"
-    using path_suff subset_path_Vs assms
-    by metis
+  have "path E cyc"
+    using path_suff[OF assms(3)] .
+  then have "set cyc \<subseteq> Vs E"
+    using subset_path_Vs by blast
   then have "Vs E - ?s = set cyc"
     by auto
   moreover have "?s \<subseteq> Vs E"
