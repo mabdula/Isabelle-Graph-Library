@@ -654,7 +654,19 @@ qed
       using assms(4) face_subset_polyhedron by blast
     then have "x \<in> carrier_vec n" unfolding P_def polyhedron_def by blast
     have "dim_col A' = n" using A'_b' dim_col_subsyst_mat 
-      by (metis A carrier_matD(2) fst_conv) 
+    proof -
+      have "fst (A', b') = fst (sub_system A b I')"
+        using A'_b' by simp
+      hence A'_eq: "A' = fst (sub_system A b I')"
+        by simp
+      have dim_col_eq: "dim_col (fst (sub_system A b I')) = dim_col A"
+        by (rule dim_col_subsyst_mat)
+      have "dim_col A' = dim_col A"
+        using A'_eq dim_col_eq by simp
+      also have "\<dots> = n"
+        using A by (rule carrier_matD(2))
+      finally show ?thesis .
+    qed
     then show "dim_vec x = dim_col A'" 
       using \<open>x \<in> carrier_vec n\<close> carrier_vecD by blast
   qed
