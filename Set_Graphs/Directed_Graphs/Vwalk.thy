@@ -1139,7 +1139,7 @@ next
         using path2
         by auto
       then show ?thesis
-        by metis
+        by auto
     next
       case F2: False
       hence "v \<in> dVs G"
