@@ -1675,7 +1675,7 @@ proof-
             by fastforce
         qed
         then obtain pfx1' where "rev pfx1 = ([last pfx1, last (butlast pfx1)]) @ pfx1'"
-          by metis
+          by blast
         then have revp1_eq: "rev p1 = (rev p @ [last pfx1, last (butlast pfx1)]) @pfx1'"
           using from_tree(1)
           by auto
