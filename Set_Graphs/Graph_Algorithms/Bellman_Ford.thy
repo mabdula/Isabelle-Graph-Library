@@ -1725,10 +1725,36 @@ proof(cases "OPT (length vs - 1) s v")
   hence P_length:"length P \<le> length vs" 
     using sym[OF distinct_card[OF distinct_vs]]  sym[OF distinct_card[OF P_prop(4)]]
     by (auto simp add: card_mono)
-  obtain pp where pp_is:"P = [s]@pp@[v]"  
-    using  assms(2) calculation(2) calculation(3) hd_Nil_eq_last 
-    by(cases P) 
-     (auto, smt (verit, ccfv_SIG) append_butlast_last_id)
+  have "\<exists>pp. P = [s]@pp@[v]"
+  proof(cases P)
+    case Nil
+    hence False
+      using calculation(2) calculation(3) assms(2) hd_Nil_eq_last by force
+    thus ?thesis by blast
+  next
+    case (Cons a list)
+    have a_eq_s: "a = s"
+      using calculation(2) Cons by simp
+    show ?thesis
+    proof(cases "list = []")
+      case True
+      hence "v = a"
+        using calculation(3) Cons by simp
+      hence False
+        using a_eq_s assms(2) by simp
+      thus ?thesis by blast
+    next
+      case False
+      hence last_eq: "last list = v"
+        using calculation(3) Cons by simp
+      have list_eq: "butlast list @ [last list] = list"
+        using False append_butlast_last_id by blast
+      have "P = [s] @ butlast list @ [v]"
+        using Cons a_eq_s last_eq list_eq by simp
+      thus ?thesis by blast
+    qed
+  qed
+  then obtain pp where pp_is:"P = [s]@pp@[v]" by blast
   have "length ([s]@pp@[v]) \<le> length vs"
     using P_length pp_is by blast
   moreover have "weight ([s]@pp@[v]) < PInfty" 
