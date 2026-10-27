@@ -1465,10 +1465,36 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       then show ?thesis
       proof(cases "card (Vs G) = 1")
         case True
-        then show ?thesis 
-          apply(elim card_1_singletonE)
-          by (metis edges_are_Vs graph_invar_edgeD graph_invar_vertex_edgeE' less.prems(1)
-                    singleton_iff)
+        then show ?thesis
+        proof -
+          obtain x where x: "Vs G = {x}"
+            using True card_1_singletonE by blast
+          then have "x \<in> Vs G" by simp
+          then obtain e where e: "e \<in> G" "x \<in> e"
+            by (meson vs_member_elim)
+          have "card e = 2"
+            using e(1) less.prems(1) card_edge by blast
+          then obtain a b where ab: "e = {a, b}" "a \<noteq> b"
+            using card_2_iff[THEN iffD1] by blast
+          obtain y where y: "e = {x, y}" "y \<noteq> x"
+          proof -
+            from ab e(2) consider (is_a) "x = a" | (is_b) "x = b" by auto
+            then show thesis
+            proof cases
+              case is_a
+              with ab show thesis by (intro that[of b]) simp_all
+            next
+              case is_b
+              with ab show thesis by (intro that[of a]) (simp_all add: insert_commute)
+            qed
+          qed
+          have yx: "{y, x} \<in> G"
+            using e(1) y(1) by (simp add: insert_commute)
+          then have "y \<in> Vs G"
+            using edges_are_Vs by blast
+          then have "y = x" using x by simp
+          then show ?thesis using y(2) by blast
+        qed
       next
         case False
         then have "card (Vs G) = 0" 
