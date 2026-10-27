@@ -604,7 +604,19 @@ next
   
     from \<open>(x, y) \<notin> set p\<close> \<open>(y, x) \<notin> set p\<close> e
       have "(undirected e) \<notin> set (map undirected p)"
-      by (metis (no_types, lifting) imageE list.set_map undirected_iff)
+      proof (intro notI)
+        assume "undirected e \<in> set (map undirected p)"
+        then obtain e' where e'_mem: "e' \<in> set p" and eq: "undirected e = undirected e'"
+          by (auto simp: list.set_map)
+        from e have undirected_e: "undirected e = {x, y}"
+          by simp
+        with eq have "undirected e' = {x, y}"
+          by simp
+        then have "e' = (x, y) \<or> e' = (y, x)"
+          using undirected_iff[of e' x y] by simp
+        with e'_mem \<open>(x, y) \<notin> set p\<close> \<open>(y, x) \<notin> set p\<close> show False
+          by auto
+      qed
     moreover have "map undirected (e # p) = undirected e # (map undirected p)" by simp
     ultimately show ?thesis 
       using Cons.IH[OF \<open>awalk D y p v\<close> \<open>distinct (tl (awalk_verts y p))\<close>
