@@ -517,10 +517,7 @@ lemma dist_current_plus_1_new:
 
       ultimately show False
         using \<open>invar_3_4 bfs_state\<close>
-        apply(elim invar_props_elims)
-        apply(drule dist_set_not_inf)
-        using dual_order.trans dist_set_mem
-        by (smt (verit, best))
+        by (fastforce elim!: invar_props_elims)
     qed
     ultimately show ?thesis
       by force
