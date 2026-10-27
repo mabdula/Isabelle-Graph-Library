@@ -226,7 +226,19 @@ lemma Vs_enum_inv_rightE:
   assumes "\<not> i < card L"
   obtains j where "j \<in> R" "Vs_enum_inv i = j"
   using assms
-  by (metis Vs_enum_inv_def add.right_neutral card.empty from_nat_into n_sum)
+proof -
+  from assms(2) have card_le: "card L \<le> i" by simp
+  have lt_R: "i - card L < card R"
+    using geq_L_less_n_less_R[OF card_le assms(1)] .
+  have card_R_pos: "0 < card R" using lt_R by linarith
+  have R_ne: "R \<noteq> {}" using card_R_pos finite_R by (auto simp: card_gt_0_iff)
+  from R_ne have mem_R: "from_nat_into R (i - card L) \<in> R"
+    by (rule from_nat_into)
+  from assms(2) have eq: "Vs_enum_inv i = from_nat_into R (i - card L)"
+    by (simp add: Vs_enum_inv_def)
+  from mem_R eq show thesis
+    by (rule that)
+qed
 
 lemma G_enum_less_m: "e \<in> G \<Longrightarrow> G_enum e < m"
   using finite_E
