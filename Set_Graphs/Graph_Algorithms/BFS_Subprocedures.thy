@@ -176,10 +176,17 @@ proof-
    using assms 
     by (induction xs)(auto split: option.split intro!: Cons)
 
-  thus "vset_inv (next_frontier frontier vis)"
-    apply (subst next_frontier_def)
-    using fold_vset[OF assms(1)]
-    by metis
+  show "vset_inv (next_frontier frontier vis)"
+    unfolding next_frontier_def
+    using fold_vset[where f="\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)" and acc="\<emptyset>\<^sub>N", OF assms(1)]
+  proof (elim exE conjE)
+    fix xs
+    assume "set xs = [frontier]\<^sub>s"
+      and h2: "fold_vset (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) frontier \<emptyset>\<^sub>N = foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N"
+    show "vset_inv (fold_vset (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) frontier \<emptyset>\<^sub>N)"
+      unfolding h2
+      by (rule goal1_gen)
+  qed
 qed
 
 definition expand_tree::"'adjmap \<Rightarrow> 'vset \<Rightarrow> 'vset \<Rightarrow> 'adjmap" where
