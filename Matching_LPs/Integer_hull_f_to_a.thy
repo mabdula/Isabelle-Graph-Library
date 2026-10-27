@@ -3173,8 +3173,14 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
   have "?c \<bullet> z = \<beta>" 
     using 12 by blast
   then have "?c \<bullet> ?z' = abs (det A') * \<beta>" 
-    by (metis \<open>\<bar>det A'\<bar> \<cdot>\<^sub>v z \<in> carrier_vec n\<close> \<open>c \<in> carrier_vec n\<close> carrier_vecD 
-        index_smult_vec(2) scalar_prod_smult_right)
+  proof -
+    have "c \<bullet> (\<bar>det A'\<bar> \<cdot>\<^sub>v z) = \<bar>det A'\<bar> * (c \<bullet> z)"
+      using \<open>c \<in> carrier_vec n\<close> \<open>z \<in> carrier_vec n\<close> carrier_vecD scalar_prod_smult_right
+      by force
+    also have "\<dots> = \<bar>det A'\<bar> * \<beta>"
+      using \<open>c \<bullet> z = \<beta>\<close> by simp
+    finally show ?thesis .
+  qed
   have "v + ?z' \<in> \<int>\<^sub>v" using `\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> \<int>\<^sub>v` 
     using \<open>\<bar>det A'\<bar> \<cdot>\<^sub>v z \<in> \<int>\<^sub>v\<close> \<open>\<bar>det A'\<bar> \<cdot>\<^sub>v z \<in> carrier_vec n\<close> \<open>v \<in> carrier_vec n\<close>
       gram_schmidt.sum_int_is_int v by blast
