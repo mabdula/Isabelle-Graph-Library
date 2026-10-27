@@ -1560,7 +1560,7 @@ proof(induction v' rule: parent.follow_pinduct[OF parent.intro[OF invar(1)]])
       using last_ConsR[OF parent.follow_nempty[OF \<open>parent par\<close>]]
       .
     ultimately show ?thesis
-      by metis
+      by (simp del: follow_simps fun_upd_apply)
   qed
 qed
 
