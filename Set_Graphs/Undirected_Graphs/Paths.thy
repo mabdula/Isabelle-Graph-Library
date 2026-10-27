@@ -243,7 +243,19 @@ qed
 
 lemma walk_betw_Cons_first:
   "\<lbrakk>walk_betw G v p w; {u, v} \<in> G\<rbrakk> \<Longrightarrow> walk_betw G u (u#p) w"
-  by (metis last_ConsR list.collapse list.distinct(1) list.sel(1) path_2 walk_betw_def)
+proof -
+  assume walk: "walk_betw G v p w" and edge: "{u, v} \<in> G"
+  from walk have p_ne: "p \<noteq> []" and path_p: "path G p" and hd_p: "hd p = v" and last_p: "last p = w"
+    by (auto simp: walk_betw_def)
+  obtain vs where p_def: "p = v # vs"
+    using p_ne hd_p by (cases p) auto
+  have path_up: "path G (u # p)"
+    unfolding p_def using edge path_p[unfolded p_def] by auto
+  have last_up: "last (u # p) = w"
+    using last_p by (simp add: p_def)
+  show ?thesis
+    using path_up last_up by (simp add: walk_betw_def)
+qed
 
 lemma walk_betw_length_2_is: 
   "\<lbrakk>walk_betw G v p u; length p = 2\<rbrakk> \<Longrightarrow> p = [v, u]"
