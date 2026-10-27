@@ -210,7 +210,7 @@ proof(induction "find_aug_path_meas E" arbitrary: E M rule: nat_less_induct)
         by auto
       then have "set cyc \<subseteq> Vs E"
         using path_suff subset_path_Vs
-        by metis
+        using path_suff subset_path_Vs by blast
       then have "Vs E - ?s = set cyc"
         by auto
       moreover have "?s \<subseteq> Vs E"
