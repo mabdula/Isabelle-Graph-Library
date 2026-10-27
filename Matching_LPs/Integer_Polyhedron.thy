@@ -247,7 +247,14 @@ proof -
         using C_d(2) \<open>d = C *\<^sub>v x\<close> \<open>x \<in> P\<close> assms(8) by blast
       then have "A' *\<^sub>v x = b'" using assms(5) by auto
       then have "\<forall>i < dim_row A'. row A' i \<bullet> x = b' $ i" 
-        by (metis index_mult_mat_vec)
+        proof (intro allI impI)
+          fix i
+          assume "i < dim_row A'"
+          then have "(A' *\<^sub>v x) $ i = row A' i \<bullet> x"
+            by (rule index_mult_mat_vec)
+          then show "row A' i \<bullet> x = b' $ i"
+            using \<open>A' *\<^sub>v x = b'\<close> by simp
+        qed
       then have "\<forall>i \<in> I \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
         using subsystem_fulfills_P[of A b A' b' I "\<lambda> p q. p \<bullet> x = q"] assms(4)
           `dim_row A = dim_vec b`  by blast
