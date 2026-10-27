@@ -297,7 +297,9 @@ proof -
   have 2: "graph_invar (G - X)" 
     by (rule graph_invar_subset[OF assms(2) Diff_subset])
   have  "A \<subseteq> Vs G" 
-    by (metis assms partitioned_bipartite_def)
+    using assms(1)
+    unfolding partitioned_bipartite_def
+    by blast
   have 3: "?A' \<subseteq> Vs (G - X)" by blast 
   have "( \<forall> e \<in> G - X. \<exists> u v.  e = {u, v} \<and> (u \<in> ?A' \<and> v \<in> Vs (G - X) - ?A'))"
   proof 
