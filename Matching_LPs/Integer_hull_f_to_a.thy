@@ -3058,8 +3058,14 @@ qed
    (\<exists>x. x \<in> integer_hull P \<and> \<alpha> \<bullet> x = Maximum { \<alpha> \<bullet> x | x. x \<in> integer_hull P}  \<and> x \<in> \<int>\<^sub>v)" 
  proof -
     have "integer_hull P = integer_hull (integer_hull P)" 
-      using assms(5) unfolding P_def polyhedron_def 
-      by (metis (no_types, lifting) integer_hull_is_integer_hull mem_Collect_eq subset_iff)
+
+    proof -
+      have subsetP: "P \<subseteq> carrier_vec n"
+        unfolding P_def polyhedron_def by blast
+      from integer_hull_is_integer_hull[OF subsetP]
+      show ?thesis
+        by (simp add: P_def polyhedron_def)
+    qed
     then have "(\<forall> F. face (integer_hull P) F \<longrightarrow> (\<exists> x \<in> F. x \<in> \<int>\<^sub>v))"
       using P_int_then_face_int \<open>integer_hull P \<subseteq> carrier_vec n\<close> by presburger
     then show ?thesis
