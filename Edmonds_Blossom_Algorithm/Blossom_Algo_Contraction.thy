@@ -854,7 +854,7 @@ next
         then show "(x2a = [] \<longrightarrow> last pfx1 = a2) \<and> (x2a \<noteq> [] \<longrightarrow> last pfx1 = last x2a)"
           using ne by blast
       qed
-      subgoal by (metis option.sel)
+      subgoal by (rule cons1.IH[of _ None "a1'#l1'"], simp)
       subgoal by (metis option.sel snd_pfx_nempty)
       done
   qed
