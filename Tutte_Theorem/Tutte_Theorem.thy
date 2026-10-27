@@ -704,15 +704,51 @@ proof(rule ccontr)
   show False
   proof(cases "card ?docX = 2")
     case True
-    then have "card (odd_comps_in_diff G (X\<union>{x})) = card X + 1" 
-      using  new_components_intersection_old_is_empty[of G X C "{x}"] 
-      by (smt (verit, best) Int_lower2 Nat.add_diff_assoc Nat.add_diff_assoc2 One_nat_def Suc_leI 
-          \<open>1 \<le> card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x})\<close> 
-          \<open>Vs (odd_comps_in_diff G X - {C}) \<inter> C = {}\<close> 
-          \<open>card (odd_comps_in_diff G X - {C}) = card X - 1\<close> 
-         odd_diffUn \<open>finite (odd_comps_in_diff (component_edges (graph_diff G X) C) {x})\<close> 
-          assms(1) assms(2) assms(3) assms(4) assms(6) assms(7) barrier_def card_Un_disjoint
-          card_gt_0_iff diff_add_inverse2 finite_Diff finite_subset insert_subsetI one_add_one)
+    have "card (odd_comps_in_diff G (X\<union>{x})) = card X + 1"
+    proof -
+      have Ysub: "{x} \<subseteq> C"
+        using assms(7) by simp
+      have disjAB: "(odd_comps_in_diff G X - {C}) \<inter>
+                     odd_comps_in_diff (component_edges (graph_diff G X) C) {x} = {}"
+        using new_components_intersection_old_is_empty[OF assms(1) assms(3) assms(6) Ysub] .
+      have finA: "finite (odd_comps_in_diff G X - {C})"
+        using diff_components_finite[OF assms(1)] by simp
+      have finB: "finite (odd_comps_in_diff (component_edges (graph_diff G X) C) {x})"
+        using \<open>finite (odd_comps_in_diff (component_edges (graph_diff G X) C) {x})\<close> .
+      have cardA: "card (odd_comps_in_diff G X - {C}) = card X - 1"
+        using \<open>card (odd_comps_in_diff G X - {C}) = card X - 1\<close> .
+      have cardXge1: "1 \<le> card X"
+      proof -
+        have ne: "odd_comps_in_diff G X \<noteq> {}"
+          using assms(6) by blast
+        have fin: "finite (odd_comps_in_diff G X)"
+          using diff_components_finite[OF assms(1)] .
+        have "1 \<le> card (odd_comps_in_diff G X)"
+          using ne fin by (simp add: card_gt_0_iff Suc_leI)
+        then show ?thesis
+          using \<open>card (odd_comps_in_diff G X) = card X\<close> by simp
+      qed
+      have arith_fact: "(card X - 1) + 2 = card X + 1"
+      proof (cases "card X")
+        case 0
+        then show ?thesis using cardXge1 by simp
+      next
+        case (Suc n)
+        then show ?thesis by simp
+      qed
+      have "card (odd_comps_in_diff G (X \<union> {x}))
+          = card (odd_comps_in_diff G X - {C} \<union>
+                  odd_comps_in_diff (component_edges (graph_diff G X) C) {x})"
+        using odd_diffUn by simp
+      also have "\<dots> = card (odd_comps_in_diff G X - {C})
+          + card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x})"
+        using card_Un_disjoint[OF finA finB disjAB] .
+      also have "\<dots> = (card X - 1) + 2"
+        using cardA True by simp
+      also have "\<dots> = card X + 1"
+        using arith_fact by simp
+      finally show "card (odd_comps_in_diff G (X \<union> {x})) = card X + 1" .
+    qed
     then have "card (odd_comps_in_diff G (X\<union>{x})) = card (X\<union>{x})" 
       by (metis One_nat_def Un_insert_right \<open>card (odd_comps_in_diff G X) = card X\<close> 
           add.right_neutral add_Suc_right assms(1) assms(3) card.insert finite_subset 
