@@ -3941,7 +3941,15 @@ qed
             using that card_unlab_osc2
             unfolding lab_osc_def osc_def unlab_osc1_def unlab_osc2_def
             apply auto
-            by (metis card.infinite finite_insert nat.simps(3))
+            proof -
+              assume card: "card (insert v2 (\<Union> M')) = Suc (2 * card M')"
+                and "s = insert v2 (\<Union> M')"
+              from card_Suc_eq_finite[THEN iffD1, OF card] obtain b B
+                where eq: "insert v2 (\<Union> M') = insert b B" and "finite B"
+                by blast
+              hence "finite (insert v2 (\<Union> M'))" using eq by simp
+              thus "finite (\<Union> M')" by (rule finite_insert[THEN iffD1])
+            qed
           ultimately have i: "odd_set_cover osc (G - ex)"
             using graph
             apply(intro odd_set_coverI)
