@@ -252,7 +252,15 @@ next
     case 2
     with assms obtain w c where "decycle (insert {v, v'} Y) w c" by blast
     with decycle_not_subset assms(4)
-    have "\<not> set c \<subseteq> Y" by metis
+    have "\<not> set c \<subseteq> Y"
+    proof -
+      have "\<exists>u. decycle (insert {v, v'} Y) u c"
+        using \<open>decycle (insert {v, v'} Y) w c\<close> by blast
+      moreover have "\<nexists>u. decycle Y u c"
+        using assms(4) by blast
+      ultimately show ?thesis
+        by (rule decycle_not_subset)
+    qed
     moreover have "set c \<subseteq> (insert {v, v'} Y)" 
       using \<open>decycle (insert {v, v'} Y) w c\<close> decycle_def epath_edges_subset by metis
     ultimately have "{v, v'} \<in> set c" by blast
