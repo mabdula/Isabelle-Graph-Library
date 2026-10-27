@@ -260,7 +260,22 @@ proof(rule ccontr)
     by (meson le_less_linear tutte_condition_def)
   then have "X \<subseteq> Vs M" "graph_invar G" "matching M" "M\<subseteq>G" "Vs M = Vs G"
     using \<open>perfect_matching G M\<close> perfect_matchingE assms(2)
-    by metis+ 
+proof -
+  have pm: "M \<subseteq> G" "matching M" "Vs G = Vs M"
+    using \<open>perfect_matching G M\<close> by (simp add: perfect_matching_def)+
+  have X_sub: "X \<subseteq> Vs G"
+    using \<open>X \<subseteq> Vs G \<and> card (odd_comps_in_diff G X) > card X\<close> by blast
+  show "X \<subseteq> Vs M"
+    using X_sub pm(3) by auto
+  show "graph_invar G"
+    using assms(2) by auto
+  show "matching M"
+    using pm(2) by auto
+  show "M \<subseteq> G"
+    using pm(1) by auto
+  show "Vs M = Vs G"
+    using pm(3) by auto
+qed
   then have "finite (Vs M)" by simp
   have "finite M" 
     by (metis Vs_def \<open>Vs M = Vs G\<close> \<open>graph_invar G\<close> finite_UnionD)
