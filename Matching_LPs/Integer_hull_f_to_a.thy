@@ -2553,7 +2553,15 @@ proof(rule ccontr)
       using \<open>n = 0\<close> by blast
   qed
   then have "set\<^sub>v y' \<noteq> {}" 
-    by (metis carrier_vecD equals0D not_gr_zero vec_setI y')
+proof -
+
+    have y'_carr: "y' \<in> carrier_vec n" using y' by simp
+    have "dim_vec y' = n" using y'_carr by (rule carrier_vecD)
+    moreover have "0 < n" using \<open>n \<noteq> 0\<close> by simp
+    ultimately have d: "0 < dim_vec y'" by simp
+    have "y' $ 0 \<in> set\<^sub>v y'" by (rule vec_setI[of y' 0 "y' $ 0"], simp, fact d)
+    then show "set\<^sub>v y' \<noteq> {}" by blast
+  qed
   have "Max (abs ` (vec_set y')) > 0"
   proof(rule ccontr)
     assume "\<not> 0 < Max (abs ` set\<^sub>v y')"
