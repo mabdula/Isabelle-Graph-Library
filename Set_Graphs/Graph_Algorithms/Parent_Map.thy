@@ -471,9 +471,19 @@ proof-
     unfolding parent_spec_def
     by simp
   have "(v3, v2) \<notin> {(x,y) | x y. (Some x = par y)}\<^sup>*"
-    using neq(2) no_ances(2)
-    apply clarsimp
-    by (metis (mono_tags, lifting) converse_rtranclE mem_Collect_eq old.prod.case)
+  proof (rule notI)
+    assume mem: "(v3, v2) \<in> {(x, y) |x y. Some x = par y}\<^sup>*"
+    then show False
+    proof (cases rule: converse_rtranclE)
+      case base
+      then show False using neq(2) by simp
+    next
+      case (step y)
+      from step(1) have "Some v3 = par y" by blast
+      moreover from no_ances(2) have "par y \<noteq> Some v3" by blast
+      ultimately show False by simp
+    qed
+  qed
   moreover have "(v3, v2) \<notin>  {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
     using neq(3) no_ances(2)
     apply clarsimp
