@@ -283,7 +283,12 @@ proof -
     fix x
     assume "x \<in> P" "d' = C' *\<^sub>v x"
     then have "\<forall>i < dim_row C'. row C' i \<bullet> x = d' $ i"
-      by (metis index_mult_mat_vec)
+    proof (intro allI impI)
+      fix i
+      assume "i < dim_row C'"
+      then show "row C' i \<bullet> x = d' $ i"
+        using \<open>d' = C' *\<^sub>v x\<close> by (simp add: index_mult_mat_vec)
+    qed
     then have "\<forall>i \<in> (I \<union> J) \<inter> {0..<dim_row A}. (row A i) \<bullet> x = (b $ i)"
       using subsystem_fulfills_P[of A b C' d' _ "\<lambda> p q. p \<bullet> x = q"] C'_d'
       using \<open>dim_row A = dim_vec b\<close> by blast
