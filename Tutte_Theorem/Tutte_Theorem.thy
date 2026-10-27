@@ -1512,7 +1512,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       assume "odd (card (Vs G))"
       have " {} \<subseteq> G" by auto
       then have "card (odd_comps_in_diff G {}) \<le> card {}" 
-        by (metis "less.prems"(2) bot.extremum card.empty tutte_condition_def)
+        by (simp add: less.prems(1,2) odd_components_in_tutte_graph)
       then have card0:"card (odd_comps_in_diff G {}) = 0"
         by simp
       have "graph_diff G {} = G" 
