@@ -2624,7 +2624,7 @@ proof -
       using \<open>Max (abs ` (vec_set y')) > 0\<close> 
       by (meson divide_nonneg_pos smult_nneg_npos_vec zero_less_one_class.zero_le_one)
     then have "A *\<^sub>v ?y' \<le> 0\<^sub>v nr" 
-      by (metis A mult_mat_vec y')
+      by (simp add: mult_mat_vec[OF A y'[THEN conjunct1]])
     have "\<forall> i < n. row (1\<^sub>m n) i \<bullet> ?y' \<le> 1" 
     proof(safe)
       fix i
