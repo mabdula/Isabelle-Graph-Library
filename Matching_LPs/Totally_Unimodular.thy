@@ -998,9 +998,31 @@ proof
       using False 18 by linarith
     have 30:"(submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) $$ (i, j) =
           (submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) $$ (i - card {i. i < nr1 \<and> i \<in> I}, j)"
-      using append_rows_nth(2)[OF 3 4 6 5] False asmi
-      by (smt (verit, ccfv_threshold) "3" "4" SNF_Missing_Lemmas.append_rows_nth
-          19 21 17 18 27 asmj)
+    proof -
+      let ?SA = "submatrix A I J"
+      let ?SB = "submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J"
+      let ?c = "card {i. i < nr1 \<and> i \<in> I}"
+      have SA_carr: "?SA \<in> carrier_mat (dim_row ?SA) (dim_col ?SA)"
+        by (rule carrier_matI) simp_all
+      have SB_carr: "?SB \<in> carrier_mat (dim_row ?SB) (dim_col ?SA)"
+        by (rule carrier_matI) (simp_all add: 20 23)
+      have dc: "dim_col (?SA @\<^sub>r ?SB) = dim_col ?SA"
+        using carrier_matD(2)[OF carrier_append_rows[OF SA_carr SB_carr]] .
+      have iSB: "i - ?c < dim_row ?SB"
+        using 5 6 27 by linarith
+      have jSA: "j < dim_col ?SA"
+        by (rule asmj[unfolded dc])
+      have jSB: "j < dim_col ?SB"
+        using jSA 20 23 by simp
+      have row_eq: "Matrix.row (?SA @\<^sub>r ?SB) i = Matrix.row ?SB (i - ?c)"
+        using append_rows_nth(2)[OF 3 4 6 5] .
+      have L: "(?SA @\<^sub>r ?SB) $$ (i, j) = Matrix.row (?SA @\<^sub>r ?SB) i $v j"
+        by (rule index_row(1)[symmetric, OF asmi asmj])
+      have R: "?SB $$ (i - ?c, j) = Matrix.row ?SB (i - ?c) $v j"
+        by (rule index_row(1)[symmetric, OF iSB jSB])
+      show "(?SA @\<^sub>r ?SB) $$ (i, j) = ?SB $$ (i - ?c, j)"
+        using L R row_eq by simp
+    qed
     have 32:"(submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) 
               $$ (i - card {i. i < nr1 \<and> i \<in> I}, j) = 
           B $$ (pick ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) (i - card {i. i < nr1 \<and> i \<in> I}), pick J j)"
