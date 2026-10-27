@@ -3598,7 +3598,31 @@ qed
         have "e = {v2, v1}"
           using \<open>e = {v1, v2}\<close> by auto
         then have "v2 \<notin> \<Union> M'"
-          by (metis DiffD1 Diff_insert_absorb M'(2) M'(3) Union_iff matching(1) insertI1 matching_unique_match)
+          proof -
+          {
+            assume "v2 \<in> \<Union> M'"
+            assume "v2 \<in> \<Union> M'"
+            then obtain e' where e': "e' \<in> M'" "v2 \<in> e'"
+              by blast
+            have "e' \<in> M - ex"
+              using M'(2) e'(1) by blast
+            then have "e' \<in> M"
+              by (rule DiffD1)
+            have "e \<in> M - ex"
+              using M'(2) by blast
+            then have "e \<in> M"
+              by (rule DiffD1)
+            have "v2 \<in> e"
+              using \<open>e = {v2, v1}\<close> by simp
+            have "e' = e"
+              using matching_unique_match[OF matching(1)] \<open>e' \<in> M\<close> \<open>e \<in> M\<close> e'(2) \<open>v2 \<in> e\<close>
+              by blast
+            then have False
+              using M'(3) e'(1) by simp
+          }
+          then show "v2 \<notin> \<Union> M'"
+            by blast
+          qed
         define unlab_osc1 where "unlab_osc1  = {{v1}}"
         define unlab_osc2 where "unlab_osc2  = {{v2} \<union> \<Union>M'}"
         define osc where "osc = lab_osc \<union> unlab_osc1 \<union> unlab_osc2"
