@@ -309,7 +309,14 @@ proof-
         qed
         then have "set cyc \<subseteq> Vs G"
           using path_suff subset_path_Vs
-          by metis
+        proof -
+          have "path G (stem @ cyc)"
+            using blossomD(1)[OF blos] .
+          then have "path G cyc"
+            using path_suff by blast
+          then show ?thesis
+            using subset_path_Vs by blast
+        qed
         then have "Vs G - s = set cyc"
           unfolding s_def
           by auto
