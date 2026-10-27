@@ -1610,7 +1610,12 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     moreover have "last p_x_v = ?v"
       using \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>p_x_v \<noteq> []\<close> last_rev
-      by (metis last_appendR)
+    proof -
+      have "last p_x_v = last (rev (stack dfs_aux_state))"
+        using \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>p_x_v \<noteq> []\<close>
+        by (simp add: last_append)
+      then show ?thesis by (simp add: last_rev)
+    qed
     ultimately have "Vwalk.vwalk_bet (Graph.digraph_abs G) x p_x_v ?v"
       using \<open>hd p_x_v = x\<close> \<open>p_x_v \<noteq> []\<close> unfolding vwalk_bet_def by blast
 
