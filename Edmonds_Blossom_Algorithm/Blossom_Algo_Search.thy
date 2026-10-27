@@ -1490,7 +1490,16 @@ proof -
 qed
 
 lemma follow_cons_3': obtains l where "follow v = v # l"
-  by (metis follow_cons follow_nempty list.exhaust)
+proof -
+  obtain x l where x_l: "follow v = x # l"
+    using follow_nempty by (cases "follow v") auto
+  have "x = v"
+    using follow_cons[OF x_l] .
+  with x_l have "follow v = v # l"
+    by simp
+  then show thesis
+    by (rule that)
+qed
 
 lemma follow_cons_4: "parent v = Some v' \<Longrightarrow> follow v = v # (follow v')"
   using follow_psimps
