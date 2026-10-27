@@ -3033,10 +3033,84 @@ proof(induction S)
   then show ?case by simp
 next
   case (insert s S')
-  then show ?case
-    apply simp
-    by (metis add_diff_cancel_left' card_Un_disjoint card_eq_0_iff diff_zero finite_Un finite_Union
-              insert.prems(2) insert_partition mult.commute mult_0_right)
+  have card_s: "card s = k"
+    using insert.prems(1)[of s] by blast
+  have sni: "s \<notin> S'"
+    using insert.hyps by simp
+  have finS': "finite S'"
+    using insert.hyps by simp
+  have card_s': "\<And>sa. sa \<in> S' \<Longrightarrow> card sa = k"
+  proof -
+    fix sa assume "sa \<in> S'"
+    then have "sa \<in> insert s S'" by simp
+    then show "card sa = k" using insert.prems(1) by blast
+  qed
+  have disj_S': "\<And>sa sb. sa \<noteq> sb \<Longrightarrow> sa \<in> S' \<Longrightarrow> sb \<in> S' \<Longrightarrow> sa \<inter> sb = {}"
+  proof -
+    fix sa sb assume "sa \<noteq> sb" "sa \<in> S'" "sb \<in> S'"
+    then have "sa \<in> insert s S'" "sb \<in> insert s S'" by simp_all
+    then show "sa \<inter> sb = {}" using \<open>sa \<noteq> sb\<close> insert.prems(2) by blast
+  qed
+  have IH: "card (\<Union> S') = k * card S'"
+    using insert.IH[OF card_s' disj_S'] .
+  have disj: "s \<inter> \<Union> S' = {}"
+  proof -
+    have "s \<inter> sa = {}" if "sa \<in> S'" for sa
+    proof -
+      have sa_in: "sa \<in> insert s S'" using that by simp
+      have s_in: "s \<in> insert s S'" by simp
+      have "s \<noteq> sa"
+        using sni that by blast
+      then show ?thesis
+        using insert.prems(2)[of s sa] sa_in s_in by blast
+    qed
+    then show ?thesis by auto
+  qed
+  show ?case
+  proof (cases "k = 0")
+    case True
+    show ?thesis
+    proof (cases "s = {}")
+      case True
+      with IH \<open>k = 0\<close> show ?thesis by simp
+    next
+      case False
+      with card_s \<open>k = 0\<close> have cs0: "card s = 0" by simp
+      with False have infs: "infinite s" by (auto simp: card_eq_0_iff)
+      have "s \<subseteq> \<Union> (insert s S')" by auto
+      with infs have "infinite (\<Union> (insert s S'))" using infinite_super by blast
+      then have "card (\<Union> (insert s S')) = 0" by (rule card.infinite)
+      with \<open>k = 0\<close> show ?thesis by simp
+    qed
+  next
+    case False
+    then have kpos: "0 < k" by simp
+    have fin_s: "finite s"
+    proof -
+      from card_s kpos have "0 < card s" by simp
+      then show ?thesis using card_gt_0_iff by blast
+    qed
+    have fin_sa: "\<And>sa. sa \<in> S' \<Longrightarrow> finite sa"
+    proof -
+      fix sa assume "sa \<in> S'"
+      then have "card sa = k" using card_s' by blast
+      with kpos have "0 < card sa" by simp
+      then show "finite sa" using card_gt_0_iff by blast
+    qed
+    have fin_Un: "finite (\<Union> S')"
+      using finite_Union[OF finS' fin_sa] .
+    have "card (\<Union> (insert s S')) = card (s \<union> \<Union> S')"
+      by simp
+    also have "\<dots> = card s + card (\<Union> S')"
+      using card_Un_disjoint[OF fin_s fin_Un disj] .
+    also have "\<dots> = k + k * card S'"
+      using card_s IH by simp
+    also have "\<dots> = k * Suc (card S')"
+      by simp
+    also have "\<dots> = k * card (insert s S')"
+      using sni finS' by simp
+    finally show ?thesis .
+  qed
 qed
 
 lemma capacity1_gt1: "0 < k \<Longrightarrow> card s = Suc (2 * k) \<Longrightarrow> capacity1 s = k"
