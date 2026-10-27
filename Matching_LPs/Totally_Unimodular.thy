@@ -218,7 +218,14 @@ next
   have 3:"pick J (Suc j) > pick J j" 
     using \<open>Suc j < card J\<close> pick_mono_le by blast
   have "pick J (Suc j) \<in> J - {pick J j}" 
-    by (metis Diff_iff False 3 assms nat_neq_iff pick_in_set_le singletonD)
+  proof -
+    have "pick J (Suc j) \<in> J" 
+      using pick_in_set[OF assms] by blast
+    moreover have "pick J (Suc j) \<noteq> pick J j" 
+      using 3 by simp
+    ultimately show ?thesis 
+      by blast
+  qed
   then have 1: "pick (J - {pick J j}) (card {a\<in>(J - {pick J j}). a < pick J (Suc j)}) =
                 pick J (Suc j)"
     using pick_card_in_set 
