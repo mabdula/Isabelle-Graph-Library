@@ -514,7 +514,7 @@ next
 
     from \<open>e # p = [(u, snd e), (snd e, snd (p ! 0)), (snd (p ! 0), v)]\<close>
       have "map undirected (e # p) = [{u, snd e}, {snd e, snd (p ! 0)}, {snd (p ! 0), v}]"
-      by (metis (no_types, lifting) list.simps(8) list.simps(9) undirected.simps)
+      by (cases e; cases "p ! 0"; cases p; simp add: undirected.simps)
     with \<open>distinct [snd e, snd (p ! 0), v]\<close>
       show ?thesis 
       using Cons.prems(3) \<open>awalk_verts u (e # p) = [u, snd e, snd (p ! 0), v]\<close> butlast.simps(2)
