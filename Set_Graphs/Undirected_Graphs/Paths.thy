@@ -1393,9 +1393,41 @@ proof-
   then show ?thesis
   proof cases
     case 1
-    then show ?thesis
-      using assms(3-) v1v2p1p2us(1)
-      by (metis \<open>v1 = v \<or> v2 = v\<close> append_eq_Cons_conv in_set_conv_decomp list.sel(1) list.sel(3))
+    note case1 = this
+    have p_def: "p = p1 @ us"
+      using case1 by simp
+    have us_eq: "us @ v # p' = v # v2 # p2"
+      using case1 by simp
+    have us_empty: "us = []"
+    proof (rule ccontr)
+      assume "us \<noteq> []"
+      then obtain u us' where u_def: "us = u # us'"
+        by (cases us) auto
+      have "u = v"
+        using u_def us_eq by simp
+      hence "v \<in> set us"
+        using u_def by simp
+      with p_def assms(3) show False
+        by auto
+    qed
+    with us_eq have p'_eq: "p' = v2 # p2"
+      by simp
+    hence hd_p': "v2 = hd p'"
+      by simp
+    show ?thesis
+    proof (cases "v1 = v")
+      case True
+      with v1v2p1p2us(1) hd_p' show ?thesis
+        by auto
+    next
+      case False
+      with \<open>v1 = v \<or> v2 = v\<close> have "v2 = v"
+        by blast
+      with hd_p' p'_eq have "v \<in> set p'"
+        by simp
+      with assms(4) show ?thesis
+        by blast
+    qed
   next
     case 2
     then show ?thesis
