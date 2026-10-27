@@ -738,10 +738,16 @@ qed
           also have "... = b $ i" using eq2 by simp
           finally show "row A i \<bullet> x = b $ i" .
         qed
+      note fact_J = this
+      have fact_I': "\<forall>i \<in> I' \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
+        using 2 \<open>x \<in> F\<close> by blast
+      have "\<forall>i \<in> (I' \<union> J) \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
+        unfolding Int_Un_distrib2
+        using fact_I' fact_J by blast
       then have "\<forall> i < dim_row A''. (row A'' i) \<bullet> x =  (b'' $ i)" 
-        using subsystem_fulfills_P'[of A b A'' b'' _ "\<lambda> p q. p \<bullet> x = q"] 
-        using A A''_b'' b carrier_vecD 
-        by (metis IntD1 IntD2 IntI Un_iff 2 \<open>x \<in> F\<close> carrier_matD(1))
+        using subsystem_fulfills_P'[of A b A'' b'' "I' \<union> J" "\<lambda> p q. p \<bullet> x = q"] 
+        using A A''_b'' b carrier_vecD carrier_matD(1)
+        by fastforce
       then show " A'' *\<^sub>v x = b''"
         using eq_for_all_index_then_eq[of A'' b'' x] `dim_row A'' = dim_vec b''` by auto
     }
