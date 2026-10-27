@@ -841,7 +841,7 @@ next
     then show ?thesis
       using cons1 
       apply (clarsimp simp add: Let_def split: if_splits prod.splits option.splits)
-      subgoal by metis
+      subgoal by (rule cons1.IH[of _ None "a1'#l1'"], simp)
       subgoal by (metis option.sel snd_pfx_nempty)
       subgoal by (metis option.sel)
       subgoal by (metis option.sel snd_pfx_nempty)
