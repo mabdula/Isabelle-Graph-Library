@@ -4,7 +4,7 @@ Set_Graphs/Undirected_Graphs
 Set_Graphs/Graph_Algorithms
 Alternating_Lists
 Basic_Matching
-Edmonds_Blossom_Algorithm
+Edmonds_Blossom_Executable
 RANKING
 Primal_Dual_Bipartite_Matching
 Tutte_Theorem
@@ -23,3 +23,5 @@ Push_Relabel
 Imperative
 Data_Structures
 Hungarian_Method
+Micali_Vazirani
+Hopcroft_Karp

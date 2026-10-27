@@ -2,340 +2,15 @@
   Author: Mohammad Abdulaziz
 *)
 
-theory Blossom_Algo_Contraction
-  imports Blossom_Algo_Main_Loop Graph_Quotient
+theory Blossom_Prefixes
+  imports Graph_Quotient Blossom_Misc
 begin
 
 provenance human
 
-subsection\<open>Contracting blossoms and lifting found augmenting paths\<close>
-
-text\<open>We refine the algorithm \<open>aug_path_search\<close>. Here we only handle contracting \<open>match_blossoms\<close> and lifting
-     abstract augmenting paths.\<close>
-
 datatype 'a match_blossom_res =
    Path "'a list" 
 | Blossom (stem_vs: "'a list") (cycle_vs: "'a list")
-
-locale create_vert = 
-  fixes create_vert::"'a set \<Rightarrow> 'a"
-  assumes create_vert_works:
-    "finite vs \<Longrightarrow> create_vert vs \<notin> vs" (*It has to be finite, otherwise that is a contradiction*)
-
-text \<open>Here we cannot fix the graph nor the matching as they change as the algorithm executes.\<close>
-
-locale find_aug_path = choose sel+
-  create_vert create_vert 
-  for sel::"'a set \<Rightarrow> 'a" and create_vert::"'a set \<Rightarrow> 'a" +
-  fixes blos_search::"'a set set \<Rightarrow> 'a set set \<Rightarrow>  ('a match_blossom_res) option"
-  assumes
-    bloss_algo_complete: 
-    "\<lbrakk>graph_invar G; matching M; M \<subseteq> G;
-        (\<exists>p. graph_augmenting_path G M p)\<rbrakk>
-     \<Longrightarrow> (\<exists>blos_comp. blos_search G M = Some blos_comp)" and
-    bloss_algo_sound:
-    "\<lbrakk>graph_invar G; matching M; M \<subseteq> G; blos_search G M = Some (Path p)\<rbrakk> \<Longrightarrow>
-     graph_augmenting_path G M p"
-    "\<lbrakk>graph_invar G; matching M; M \<subseteq> G; blos_search G M = Some (Blossom stem C)\<rbrakk> \<Longrightarrow>
-     blossom G M stem C"
-begin
-
-lemma bloss_algo_sound_2:
-    "\<lbrakk>graph_invar G; matching M; M \<subseteq> G; blos_search G M = Some (Blossom stem C)\<rbrakk> 
-    \<Longrightarrow> (path G (stem @ C) \<and> (matching M \<longrightarrow> match_blossom M stem C))"
-  using bloss_algo_sound
-  by meson
-
-text\<open>A function to contract vertices\<close>
-
-(*abbreviation "quot_fun s u v \<equiv> (if v \<notin> s then u else v)"*)
-
-text\<open>This function is parameterised on another function that computes an augmenting path or a
-     \<open>match_blossom\<close> if either one exists. It returns an optional \<open>match_blossom_comp\<close>, i.e. a \<open>match_blossom\<close> or an
-     augmenting path or nothing.\<close>
-
-function (domintros) find_aug_path where
-  "find_aug_path G M = 
-     (case blos_search G M of Some match_blossom_res \<Rightarrow>
-        case match_blossom_res of Path p \<Rightarrow> Some p
-        | Blossom stem cyc \<Rightarrow>
-            let u = create_vert (Vs G);
-                s = Vs G - (set cyc);
-                quotG = quot.quotG s (create_vert (Vs G));
-                refine = quot.refine sel G s (create_vert (Vs G)) cyc M
-            in (case find_aug_path (quotG G) (quotG M) of Some p' \<Rightarrow> Some (refine p')
-                | _ \<Rightarrow> None)
-      | _ \<Rightarrow> None)"
-  by pat_completeness auto
-
-definition "find_aug_path_meas G = card (Vs G)"
-
-(*lemma quot_sat:
-  assumes "finite vs" "u = (create_vert vs)" "s \<subseteq> vs"
-  shows "quot (quot_fun s u) s u"
-  using assms
-  unfolding quot_def
-  using create_vert_works[OF assms(1)] assms by auto
-*)
-
-context 
-  fixes s::"'a set" and E::"'a set set"
-  assumes quot_assms: "s\<subset>Vs E" "graph_invar E"
-begin
-interpretation quot: quot sel E s "(create_vert (Vs E))"
-  apply(unfold_locales)
-  using quot_assms create_vert_works 
-  by auto
-
-
-lemma card_Vs_lt:
-  assumes "1 < card (Vs E - s)"
-  shows "find_aug_path_meas (quot.quotG E) < find_aug_path_meas E"
-  unfolding find_aug_path_meas_def
-  apply (rule quot.card_Vs_quotG)
-  using quot_assms assms
-  by auto
-
-lemmas matching_quotM=quot.matching_quotM
-
-lemmas doublton_quot = quot.doubleton_quot
-
-lemmas aug_path_works_in_contraction = quot.aug_path_works_in_contraction
-
-lemmas finite_quot = quot.finite_quot
-
-lemmas doubleton_quot = quot.doubleton_quot
-
-lemmas refine = quot.refine
-
-end
-
-lemma find_aug_path_dom_step:
-  assumes "let u = (create_vert (Vs G));
-               s = (Vs G - (set (cycle_vs (the (blos_search G M)))));
-               quotG = quot.quotG s u
-           in find_aug_path_dom (quotG G, quotG M)"
-  shows "find_aug_path_dom (G, M)"
-  using assms
-  by (auto simp add: Let_def intro: find_aug_path.domintros)
-
-lemma blossom_cycle_longer_2:
-  assumes \<open>match_blossom M stem cyc\<close> 
-  shows "card (set cyc) \<ge> 2"
-proof-
-  have "distinct (butlast cyc)"
-    using match_blossomD(2)[OF \<open>match_blossom M stem cyc\<close>] distinct_append
-    by blast
-  then have "length (butlast cyc) = card (set (butlast cyc))"
-    by (simp add: distinct_card)
-  have "length (butlast cyc) = length cyc - 1"
-    using length_butlast by blast
-  then have "length (butlast cyc) \<ge> 2"
-    using odd_cycleD(1)[OF match_blossomD(3)[OF \<open>match_blossom M stem cyc\<close>]] 
-    by auto
-  then have "card (set (butlast cyc)) \<ge> 2"
-    using \<open>length (butlast cyc) = card (set (butlast cyc))\<close>
-    by auto
-  moreover have "set cyc = insert (last cyc) (set (butlast cyc))"
-  proof-
-    have "cyc = (butlast cyc) @ [last cyc]"
-      by (metis \<open>length (butlast cyc) = card (set (butlast cyc))\<close> append_butlast_last_id butlast.simps(1) calculation le_zero_eq list.size(3) zero_neq_numeral)
-    then show ?thesis
-      by (metis list.simps(15) rotate1.simps(2) set_rotate1)
-  qed
-  ultimately show ?thesis
-    using card_insert_le order.trans by fastforce
-qed
-
-lemma blossom_diff: 
-assumes
-  "graph_invar E" 
-  "match_blossom M stem cyc"
-  "path E (stem @ cyc)"
-shows "((Vs E) - set cyc) \<subset> (Vs E)" (is "?s \<subset> _")
-proof-  
-  have "set cyc \<subseteq> Vs E"
-    using path_suff subset_path_Vs assms
-    by metis
-  then have "Vs E - ?s = set cyc"
-    by auto
-  moreover have "?s \<subseteq> Vs E"
-    by auto
-  moreover have "card (set cyc) \<ge> 2"
-    using blossom_cycle_longer_2[OF \<open>match_blossom M stem cyc\<close>] .
-  moreover have "finite (Vs E)"
-    by (simp add: assms)
-  ultimately show ?thesis
-    by auto
-qed
-
-lemma find_aug_path_dom:
-  assumes "matching M" "M \<subseteq> E" "graph_invar E" 
-  shows "find_aug_path_dom (E,M)"
-  using assms
-proof(induction "find_aug_path_meas E" arbitrary: E M rule: nat_less_induct)
-  case 1
-  show ?case
-  proof(cases "(blos_search E M) = None")
-    case T1: True
-    then show ?thesis
-      by (auto intro: find_aug_path.domintros)
-  next
-    case F1: False
-    then obtain blos_comp where blos_comp: "(blos_search E M) = Some blos_comp"
-      by auto
-    show ?thesis
-    proof(cases "\<exists>p. blos_comp = Path p")
-      case T2: True
-      then show ?thesis
-        using find_aug_path.domintros blos_comp
-        by (metis match_blossom_res.distinct(1) option.inject)
-    next
-      let ?u = "(create_vert (Vs E))"
-      case F2: False
-      then obtain stem cyc where stem_cyc: "blos_comp = Blossom stem cyc"
-        using match_blossom_res.exhaust_sel by blast
-      let ?s = "(Vs E - (set cyc))"
-      have "match_blossom M stem cyc"
-        "path E (stem @ cyc)"
-        using bloss_algo_sound(2) blos_comp stem_cyc "1.prems"
-        by auto
-      then have "set cyc \<subseteq> Vs E"
-        using path_suff subset_path_Vs
-        by metis
-      then have "Vs E - ?s = set cyc"
-        by auto
-      moreover have "?s \<subseteq> Vs E"
-        by auto
-      moreover have "card (set cyc) \<ge> 2"
-        using blossom_cycle_longer_2[OF \<open>match_blossom M stem cyc\<close>] .
-      moreover have "finite (Vs E)"
-        by (simp add: "1.prems"(3))
-      ultimately have "find_aug_path_meas (quot.quotG ?s ?u E) < find_aug_path_meas E"
-        using 1              
-        by (fastforce intro!: card_Vs_lt)
-
-      moreover have "finite (quot.quotG ?s ?u E)"
-        using "1.prems"
-        by (metis (no_types, lifting) Diff_empty Vs_def Vs_quot_graph_finite finite_Diff_insert
-                  finite_UnionD)
-      moreover have "((Vs E) - set cyc) \<subset> (Vs E)"
-        using blossom_diff[OF \<open>graph_invar E\<close> \<open>match_blossom M stem cyc\<close> \<open>path E (stem@cyc)\<close>].  
-      hence "dblton_graph (quot.quotG ?s ?u E)"
-        apply(intro doublton_quot[where E = E])
-        using \<open>graph_invar E\<close> create_vert_works
-        by auto
-
-
-      ultimately have dom_quot: "find_aug_path_dom (quot.quotG ?s ?u E, M')" 
-        if "matching M'" "M' \<subseteq> quot.quotG ?s ?u E" for M'
-        using 1 that
-        by (simp add: finite_dbl_finite_verts)
-      moreover have "matching (quot.quotG ?s ?u M)"
-        apply (intro matching_quotM[where s = ?s and stem = stem and C=cyc and E=E])
-        subgoal using \<open>((Vs E) - set cyc) \<subset> (Vs E)\<close> .
-        subgoal using \<open>graph_invar E\<close> .
-        subgoal using \<open>match_blossom M stem cyc\<close> .
-        subgoal using 1(2) .
-        subgoal using "1.prems"(2) by blast
-        subgoal ..
-        done
-      moreover have "(quot.quotG ?s ?u M) \<subseteq> quot.quotG ?s ?u E"
-        by (simp add: "1.prems"(2) Diff_mono graph_subset_quot_subset)
-      ultimately show ?thesis
-        using blos_comp stem_cyc 1(2)
-        by (fastforce intro!: find_aug_path_dom_step)
-    qed
-  qed
-qed
-
-lemma find_aug_path_complete:
-  assumes aug_path: "graph_augmenting_path G M p" and
-    matching: "matching M" "M \<subseteq> G" and
-    graph: "graph_invar G"
-  shows "\<exists>p'. find_aug_path G M = Some p'"
-proof-
-  have "find_aug_path_dom (G,M)"
-    using find_aug_path_dom[OF matching(1,2) \<open>graph_invar G\<close>]
-    by simp
-  then show ?thesis
-    using assms
-  proof (induction arbitrary: p rule: find_aug_path.pinduct)
-    case (1 G M)
-    show ?case
-    proof(cases "(blos_search G M) = None")
-      case T1: True
-      then show ?thesis
-        using 1 bloss_algo_complete
-        by (metis (no_types, lifting) option.distinct(1))
-    next
-      case F1: False
-      then obtain blos_comp where blos_comp: "(blos_search G M) = Some blos_comp"
-        by auto
-      show ?thesis
-      proof(cases "\<exists>p. blos_comp = Path p")
-        case T2: True
-        then show ?thesis
-          apply(simp add: find_aug_path.psimps[OF 1(1)])
-          using blos_comp bloss_algo_sound
-          by force
-      next
-        let ?u = "(create_vert (Vs G))"
-        case F2: False
-        then obtain stem cyc where stem_cyc: "blos_comp = Blossom stem cyc"
-          using match_blossom_res.exhaust_sel by blast
-        define s where "s = (Vs G - (set cyc))"
-        have blos: "blossom G M stem cyc"
-          using bloss_algo_sound(2) blos_comp stem_cyc 1
-          by metis
-        then have "set cyc \<subseteq> Vs G"
-          using path_suff subset_path_Vs
-          by metis
-        then have "Vs G - s = set cyc"
-          unfolding s_def
-          by auto
-        have "((Vs G) - set cyc) \<subset> (Vs G)"
-          using blossom_diff[OF \<open>graph_invar G\<close> blossomD(2,1)[OF blos]] .
-        moreover have "graph_invar G"
-          using \<open>graph_invar G\<close> .
-        moreover have "?u \<notin> Vs G"
-          using create_vert_works \<open>graph_invar G\<close>
-          by simp
-        moreover have "finite M"
-         using graph_invar_finite_Vs[OF \<open>graph_invar G\<close>] graph_invar_dblton[OF\<open>graph_invar G\<close>] \<open>M \<subseteq> G\<close>
-          by (simp add: dblton_graph_finite_Vs finite_subset)
-        ultimately obtain p' where p': "graph_augmenting_path (quot.quotG s ?u G) (quot.quotG s ?u M) p'"
-          using aug_path_works_in_contraction[OF _ _ blos \<open>graph_augmenting_path G M p\<close> \<open>matching M\<close>] 
-          using "1.prems"(3) s_def
-          by auto
-        have "finite (quot.quotG s ?u M)"
-          using finite_quot[OF \<open>((Vs G) - set cyc) \<subset> (Vs G)\<close> \<open>graph_invar G\<close> \<open>finite M\<close>]
-          by (auto simp add: s_def)
-        moreover have "dblton_graph (quot.quotG s ?u G)"
-          using doubleton_quot[OF \<open>((Vs G) - set cyc) \<subset> (Vs G)\<close> \<open>graph_invar G\<close>]
-          by (auto simp: s_def)
-        moreover have "finite (quot.quotG s ?u G)"
-          using quot_graph_finite'[OF graph_invar_finite_Vs[OF \<open>graph_invar G\<close>]]
-          by auto
-        moreover have "(quot.quotG s ?u M) \<subseteq> (quot.quotG s ?u G)"
-          using graph_subset_quot_subset[OF \<open>M \<subseteq> G\<close>]
-          by auto
-        moreover have "matching (quot.quotG s ?u M)"
-          using matching_quotM[OF \<open>((Vs G) - set cyc) \<subset> (Vs G)\<close> \<open>graph_invar G\<close> blossomD(2)[OF blos]] 
-                1 s_def
-          by blast
-        ultimately obtain p'' where "find_aug_path (quot.quotG s ?u G) (quot.quotG s ?u M) = Some p''"
-          using s_def 1(2)[OF blos_comp stem_cyc _ _ _ _ p'] dblton_graph_finite_Vs
-          by fastforce
-        then show ?thesis
-          apply(intro exI[where x="quot.refine sel G s ?u cyc M p''"])
-          by(force simp add: s_def blos_comp stem_cyc find_aug_path.psimps[OF 1(1)] Let_def split: option.splits)
-      qed
-    qed
-  qed
-qed
-
-end
 
 lemma match_blossom_distinct_tl:
   assumes "match_blossom M stem cyc"
@@ -372,158 +47,6 @@ lemma cycle_set_tl_eq_butlast:
   assumes "match_blossom M stem cyc"
   shows "set (tl cyc) = set (butlast cyc)"
   by (metis append_butlast_last_id assms match_blossomD(3) butlast.simps(2) last_tl list.exhaust_sel odd_cycleD(3) odd_cycle_nempty rotate1.simps(2) set_rotate1)
-
-context find_aug_path
-begin
-
-lemma find_aug_path_sound:
-  assumes matching: "matching M" "M \<subseteq> G" "finite M" and
-    graph: "graph_invar G" and
-    find_aug_path: "find_aug_path G M = Some p"
-  shows "graph_augmenting_path G M p"
-proof-
-  have "find_aug_path_dom (G,M)"
-    using find_aug_path_dom[OF matching(1,2) graph]
-    by simp
-  then show ?thesis
-    using assms
-  proof (induction arbitrary: p rule: find_aug_path.pinduct)
-    case (1 G M)
-    show ?case
-    proof(cases "(blos_search G M) = None")
-      case T1: True
-      then show ?thesis
-        using 1(1,7) 
-        by(simp add: find_aug_path.psimps)
-    next
-      case F1: False
-      then obtain blos_comp where blos_comp: "(blos_search G M) = Some blos_comp"
-        by auto
-      show ?thesis
-      proof(cases "\<exists>p. blos_comp = Path p")
-        case T2: True
-        then show ?thesis
-          using 1(1,7)
-          apply(simp add: find_aug_path.psimps)
-          using blos_comp bloss_algo_sound 1
-          by auto
-      next
-        let ?u = "(create_vert (Vs G))"
-        case F2: False
-        then obtain stem cyc where stem_cyc: "blos_comp = Blossom stem cyc"
-          using match_blossom_res.exhaust_sel by blast
-        let ?s = "(Vs G - (set cyc))"
-        have blos: "path G (stem @ cyc)" "match_blossom M stem cyc"
-          using bloss_algo_sound(2) blos_comp stem_cyc 1
-          by auto
-        (*then have "set cyc \<subseteq> Vs G"
-          using path_suff subset_path_Vs
-          by metis
-        then have "Vs G - s = set cyc"
-          unfolding s_def
-          by auto
-        have s_subset_VsG: "s \<subseteq> Vs G"
-          unfolding s_def
-          by auto
-        moreover have "finite (Vs G)"
-          using dblton_graph_finite_Vs \<open>graph_invar G\<close>
-          by auto
-        ultimately have "quot s u"
-          using 1 u_def quotF_def
-          by simp*)
-        have "?s \<subset> (Vs G)"
-          using blossom_diff[OF \<open>graph_invar G\<close> blos(2,1)] .
-        moreover have "graph_invar G"
-          using \<open>graph_invar G\<close> .
-        moreover have "?u \<notin> Vs G"
-          using create_vert_works \<open>graph_invar G\<close>
-          by simp
-       moreover have "finite M"
-         using graph_invar_finite_Vs[OF \<open>graph_invar G\<close>] graph_invar_dblton[OF\<open>graph_invar G\<close>] \<open>M \<subseteq> G\<close>
-          by (simp add: dblton_graph_finite_Vs finite_subset)
-
-        ultimately have "finite (quot.quotG ?s ?u M)"
-          apply(intro finite_quot)
-          by auto
-
-        moreover have "dblton_graph (quot.quotG ?s ?u G)"
-          using doubleton_quot[OF \<open>?s \<subset> Vs G\<close>] 1
-          by simp
-        moreover have "finite (quot.quotG ?s ?u G)"
-          using "1.prems"(4) quot_graph_finite'
-          by auto
-        moreover have "(quot.quotG ?s ?u M) \<subseteq> (quot.quotG ?s ?u G)"
-          by (simp add: "1.prems"(2) Diff_mono graph_subset_quot_subset)
-        moreover have "matching (quot.quotG ?s ?u M)"
-          using matching_quotM[OF \<open>?s \<subset> Vs G\<close> \<open>graph_invar G\<close> blos(2)] 1
-          by blast
-        moreover obtain p' where p': "find_aug_path (quot.quotG ?s ?u G) (quot.quotG ?s ?u M) = Some p'"
-          using 1(7)
-          by (simp add: blos_comp stem_cyc find_aug_path.psimps[OF 1(1)] Let_def split: option.splits)
-        ultimately have "matching_augmenting_path (quot.quotG ?s ?u M) p' \<and>
-                         path (quot.quotG ?s ?u G) p' \<and> distinct p'"
-          using 1(2)[OF blos_comp stem_cyc _ _ _ _]
-          by (meson dblton_graph_finite_Vs)
-        then have "matching_augmenting_path M (quot.refine sel G ?s ?u cyc M p') \<and>
-                   path G (quot.refine sel G ?s ?u cyc M p') \<and>
-                   distinct (quot.refine sel G ?s ?u cyc M p')"
-          using refine[OF \<open>?s \<subset> Vs G\<close>] match_blossomD[OF blos(2)]
-            match_blossom_alt_cycle[OF blos(2)] match_blossom_distinct_tl[OF blos(2)]
-            path_suff[OF blos(1)] 1
-          by(auto simp add: )
-        then show ?thesis
-          using 1(7) p'
-          by(simp add: blos_comp stem_cyc find_aug_path.psimps[OF 1(1)] Let_def split: option.splits)
-      qed
-    qed
-  qed
-qed
-
-end
-
-text\<open>the function terminates on a finite graph\<close>
-
-locale find_aug_path_use = find_aug_path sel +
-  graph_abs E for sel::"'a set \<Rightarrow> 'a" and E::"'a set set"
-begin
-
-interpretation find_max_match_intrp: find_max_match E find_aug_path
-  apply unfold_locales
-  subgoal using find_aug_path_complete[OF _ _ _ graph] by force
-  subgoal using find_aug_path_sound[OF _ _ _ graph] by force
-  done
-(*
-lemma find_max_match_sat:
-  assumes "graph_invar G"
-  shows "find_max_match G find_aug_path"
-  unfolding find_max_match_def
-  using find_aug_path_sound[OF _ _ _ assms] find_aug_path_complete[OF _ _ _ assms]
-    finite_dbl_finite_verts[]
-  by auto
-
-*)
-text\<open>The function can be plugged in the main function from above.\<close>
-
-(*TODO: there must be a better way to use conclusions from the interpretation
-        other than renaming everyithng*) 
-
-abbreviation "find_max_matching \<equiv> find_max_match_intrp.find_max_matching"
-
-lemmas find_max_matching_works = find_max_match_intrp.find_max_matching_works
-(*lemma find_max_matching_2_works:
-  shows "find_max_matching {} \<subseteq> G"
-    "matching (find_max_matching {})"
-    "finite (find_max_matching {})"
-    "\<forall>M. matching M \<and> M \<subseteq> G \<and> finite M \<longrightarrow> card M \<le> card (find_max_matching {})"
-  using find_max_matching_works
-  by auto*)
-
-
-end
-
-lemma creat_vert_fun:
-  "\<And>vs::nat set. finite vs \<Longrightarrow> (\<lambda>vs. Max vs +1) vs \<notin> vs"
-  using Max_ge Suc_le_eq by auto
 
 text\<open>This is a naive function to ascend the given blossom. It takes time quadratic in the size of
      the blossom.\<close>
@@ -1433,5 +956,33 @@ lemma odd_cycle_set_butlast_tl:
 locale match = graph_abs G for G+ 
   fixes M
   assumes matching: "matching M" "M \<subseteq> G"
+
+definition compute_alt_path_spec where 
+  "compute_alt_path_spec G M compute_alt_path =
+   (
+    (\<forall>p1 p2 pref1 x post1 pref2 post2. compute_alt_path = Some (p1, p2) \<longrightarrow>
+        p1 = pref1 @ x # post1 \<and> p2 = pref2 @ x # post2 \<longrightarrow>
+           post1 = post2) \<and>
+    (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow>
+         alt_path M (hd p1 # p2)) \<and>
+    (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow>
+         alt_path M (hd p2 # p1)) \<and>
+    (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow> 
+         last p1 \<notin> Vs M) \<and>
+    (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow> 
+         last p2 \<notin> Vs M) \<and>
+   (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow>
+         hd p1 \<noteq> hd p2) \<and>
+   (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow>
+         odd (length p1)) \<and>
+   (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow>
+         odd (length p2)) \<and>
+   (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow>
+         distinct p1) \<and>
+   (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow>
+        distinct p2) \<and>
+   (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow> path G p1) \<and>
+   (\<forall>p1 p2. compute_alt_path =  Some(p1, p2) \<longrightarrow> path G p2) \<and>
+   (\<forall>p1 p2. compute_alt_path = Some (p1, p2) \<longrightarrow> {hd p1, hd p2} \<in> G))"
 
 end

@@ -1,0 +1,87 @@
+# theory start end [kw=label ...]   all commands on lines start..end -> ai, except listed kw overrides
+Graph_Quotient 60 60
+Graph_Quotient 66 67
+Graph_Quotient 72 78
+Graph_Quotient 83 84
+Graph_Quotient 89 90
+Graph_Quotient 95 105
+Graph_Quotient 495 498 show=human
+Graph_Quotient 635 638
+Graph_Quotient 903 911
+Graph_Quotient 954 955
+Graph_Quotient 991 996 show=human
+Graph_Quotient 1109 1116 show=human
+Graph_Quotient 1241 1244 have@1244=human
+Graph_Quotient 1671 1679 show=human
+Graph_Quotient 1839 1842
+Graph_Quotient 1849 1852
+Graph_Quotient 1854 1855
+Graph_Quotient 1871 1881
+Graph_Quotient 1968 1973
+Graph_Quotient 2364 2373 have@2373=human
+Graph_Quotient 2490 2492
+Graph_Quotient 2593 2593
+Graph_Quotient 2804 2804
+Graph_Quotient 2554 2568
+Graph_Quotient 2660 2661
+Graph_Quotient 2860 2871 show=human
+Graph_Quotient_Lifting 395 396
+Graph_Quotient_Lifting 641 643
+Graph_Quotient_Lifting 744 747 obtain=human
+Graph_Quotient_Lifting 807 809
+Graph_Quotient_Lifting 837 838
+Graph_Quotient_Lifting 840 841
+Graph_Quotient_Lifting 996 1009
+Graph_Quotient_Lifting 1028 1044
+Graph_Quotient_Lifting 1104 1106
+Graph_Quotient_Lifting 1167 1167
+Graph_Quotient_Lifting 1145 1147
+Graph_Quotient_Lifting 1152 1153
+Graph_Quotient_Lifting 1098 1099
+Graph_Quotient_Lifting 1161 1162
+Graph_Quotient_Lifting 1599 1600
+Graph_Quotient_Lifting 1668 1669
+Graph_Quotient_Lifting 2153 2154
+Graph_Quotient_Lifting 2222 2223
+Graph_Quotient_Lifting 1542 1543
+Graph_Quotient_Lifting 1674 1674
+Graph_Quotient_Lifting 1605 1605
+Graph_Quotient_Lifting 1978 1990
+Graph_Quotient_Lifting 1996 1998
+Graph_Quotient_Lifting 2006 2020
+Compute_Alt_Path_Invars 180 185
+Compute_Alt_Path_Invars 187 196
+Compute_Alt_Path_Invars 207 215
+Compute_Alt_Path_Invars 217 225
+Compute_Alt_Path_Invars 410 413
+Compute_Alt_Path_Invars 556 559
+Compute_Alt_Path_Invars 694 703 show=human
+Compute_Alt_Path_Invars 716 719
+Compute_Alt_Path_Invars 749 777
+Compute_Alt_Path_Invars 960 963
+Compute_Alt_Path_Invars 1708 1710
+Compute_Alt_Path_Invars 1864 1866
+Compute_Alt_Path_Invars 2074 2086
+Compute_Alt_Path_Invars 2095 2097
+Compute_Alt_Path_Invars 2311 2313
+Compute_Alt_Path_Invars 2836 2837
+Compute_Alt_Path_Invars 1087 1087
+Compute_Alt_Path_Invars 2302 2303
+Compute_Alt_Path_Invars 2606 2607
+Compute_Alt_Path_Invars 2610 2610
+Compute_Alt_Path_Invars 2614 2614
+Compute_Alt_Path_Invars 2856 2860
+Compute_Alt_Path_Invars 2895 2896
+Compute_Alt_Path_Invars 2908 2916
+Compute_Alt_Path_Invars 2617 2626
+Blossom_Prefixes 19 21
+Blossom_Prefixes 194 195
+Blossom_Prefixes 752 754
+Graph_Quotient_Lifting 1649 1651
+Graph_Quotient_Lifting 1656 1657
+Graph_Quotient_Lifting 2133 2135
+Graph_Quotient_Lifting 2203 2205
+Graph_Quotient_Lifting 2210 2211
+Graph_Quotient_Lifting 2558 2568
+Graph_Quotient_Lifting 2572 2582
+Graph_Quotient 2116 2117

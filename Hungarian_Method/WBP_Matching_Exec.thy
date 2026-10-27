@@ -132,12 +132,13 @@ proof(rule graph_completer_spec.intro, goal_cases)
   case 1
   then show ?case 
     by(auto intro!: Pair_Graph_Specs.intro 
-          simp add: Map_axioms_as_needed map_empty_def RBT_Set.empty_def S_C.Set_Choose_axioms)
+          simp add: Map_axioms_as_needed map_empty_def RBT_Set.empty_def S_C.Set_Choose_axioms
+                    Pair_Graph_Specs_Read_Only_def)
 next
   case 2
   then show ?case 
     by(auto intro!: Pair_Graph_Specs.intro trivial_map
-          simp add: RBT_Set.empty_def S_C.Set_Choose_axioms)
+          simp add: RBT_Set.empty_def S_C.Set_Choose_axioms Pair_Graph_Specs_Read_Only_def)
 next
   case 3
   then show ?case
@@ -307,12 +308,13 @@ proof(rule graph_completer_spec.intro, goal_cases)
   case 1
   then show ?case 
     by(auto intro!: Pair_Graph_Specs.intro 
-          simp add: Map_axioms_as_needed map_empty_def RBT_Set.empty_def S_C.Set_Choose_axioms)
+          simp add: Map_axioms_as_needed map_empty_def RBT_Set.empty_def S_C.Set_Choose_axioms
+                    Pair_Graph_Specs_Read_Only_def)
 next
   case 2
   then show ?case 
     by(auto intro!: Pair_Graph_Specs.intro trivial_map
-          simp add: RBT_Set.empty_def S_C.Set_Choose_axioms)
+          simp add: RBT_Set.empty_def S_C.Set_Choose_axioms Pair_Graph_Specs_Read_Only_def)
 next
   case 3
   then show ?case
@@ -354,8 +356,8 @@ next
        using "1" by(subst RBT.set_isin)(auto dest: G(6) G(5) simp add:  RBT.set_isin vset_inv_def)
      ultimately have "(x, y) \<in> graph_completer_spec_rbt.old_graph.digraph_abs right_neighbs" 
         by(auto simp add: graph_completer_spec_rbt.old_graph.digraph_abs_def oheighbourhood_def
-                          Pair_Graph_Specs.neighbourhood_def[OF 
-                            graph_completer_spec_rbt.old_graph.Pair_Graph_Specs_axioms]
+                          Pair_Graph_Specs_Read_Only.neighbourhood_def[OF 
+                            graph_completer_spec_rbt.old_graph.Pair_Graph_Specs_Read_Only_axioms]
                     dest: G(6)
                    split: option.split)
       thus ?case
@@ -375,8 +377,8 @@ next
         using e
         by(auto simp add: graph_completer_spec_rbt.old_graph.digraph_abs_def
                           oheighbourhood_def N(1)
-                           Pair_Graph_Specs.neighbourhood_def[OF 
-                            graph_completer_spec_rbt.old_graph.Pair_Graph_Specs_axioms])
+                           Pair_Graph_Specs_Read_Only.neighbourhood_def[OF 
+                            graph_completer_spec_rbt.old_graph.Pair_Graph_Specs_Read_Only_axioms])
      ultimately show ?case 
         using e by simp
     qed     

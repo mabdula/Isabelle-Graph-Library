@@ -1,0 +1,10 @@
+session Hopcroft_Karp = Micali_Vazirani +
+  options [timeout = 3600]
+  sessions
+    Basic_Matching
+  theories
+    Hopcroft_Karp_Top_Loop
+    Disjoint_Paths_Search
+    Alt_BFS_Bipartite
+    Hopcroft_Karp_Subprocedures
+    Hopcroft_Karp_Example

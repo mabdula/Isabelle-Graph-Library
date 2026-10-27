@@ -21,22 +21,19 @@ datatype 'v uedge = uEdge 'v 'v
 
 definition "set_of_uedge e = ( case e of uEdge u v \<Rightarrow> {u,v})"
 
-locale Pair_Graph_U_Specs = 
-pair_graph_specs: Pair_Graph_Specs
+subsection \<open>The read-only part\<close>
+
+text \<open>Definitions and lemmas about undirected graphs, represented as symmetric adjacency maps,
+  that only read the graph. The locale \<open>Pair_Graph_U_Specs\<close> below extends it with
+  adding and deleting edges.\<close>
+
+locale Pair_Graph_U_Specs_Read_Only = 
+pair_graph_specs: Pair_Graph_Specs_Read_Only
   where lookup = lookup for lookup :: "'adjmap \<Rightarrow> ('v::linorder) \<Rightarrow> 'vset option"
 begin
 
 abbreviation "neighbourhood' G v == pair_graph_specs.neighbourhood G v"
 notation "neighbourhood'" ("\<N>\<^sub>G _ _" 100)
-abbreviation "add_edge == pair_graph_specs.add_edge"
-abbreviation "delete_edge == pair_graph_specs.delete_edge"
-definition "add_u_edge G u v =  (add_edge (add_edge G u v) v u)"
-definition "delete_u_edge G u v =  (delete_edge (delete_edge G u v) v u)"
-
-lemmas [code] = neighbourhood_def 
-pair_graph_specs.add_edge_def 
-pair_graph_specs.delete_edge_def
-add_u_edge_def
 
 definition "vertices G = {u | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)} \<union> {v | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}" 
 
@@ -63,7 +60,7 @@ lemma ugraph_and_digraph_abs:"ugraph_abs G = {{u, v} | u  v. (u, v) \<in> digrap
  by(simp add: ugraph_abs_def digraph_abs_def)
 
 context
-  includes pair_graph_specs.adjmap.automation and pair_graph_specs.vset.set.automation
+  includes pair_graph_specs.vset.set.automation
 begin
 
 lemma uedges_def2: "uedges G = {rep (uEdge u v) | u v. v \<in>\<^sub>G (\<N>\<^sub>G G u)}"
@@ -73,10 +70,6 @@ lemma isin_uedges: "v \<in>\<^sub>G (\<N>\<^sub>G G u) \<Longrightarrow> rep (uE
   unfolding uedges_def2 by force
 
 lemmas neighbourhood_def=pair_graph_specs.neighbourhood_def
-
-lemma uedges_empty: "uedges empty = {}"
-  unfolding uedges_def digraph_abs_def neighbourhood_def 
-  by (auto)
 
 abbreviation "graph_inv == pair_graph_specs.graph_inv"
 abbreviation "finite_graph == pair_graph_specs.finite_graph"
@@ -432,8 +425,95 @@ lemma card_uedges:
 
 lemmas finite_graphI=pair_graph_specs.finite_graphI
 
+lemmas pair_graph_u_inv = pair_graph_u_invar_G
+
+lemma ugraph_dblton_graph:
+  "dblton_graph (ugraph_abs G)"
+  using graph_irreflexive by (unfold ugraph_abs_def dblton_graph_def) blast
+
+lemma ugraph_finite:
+  "finite (Vs (ugraph_abs G))"
+  using invar_finite_vertices 
+  by(unfold  ugraph_abs_def Vs_def dVs_def digraph_abs_def) simp
+
+lemma graph_abs_ugraph:
+  "graph_abs (ugraph_abs G)"
+  apply (simp add: graph_abs_def)
+  using ugraph_dblton_graph ugraph_finite by force
+
+lemma ugraph_abs_digraph_abs: "graph_abs.D (ugraph_abs G) = digraph_abs G"
+  unfolding graph_abs.D_def ugraph_abs_def digraph_abs_def
+proof-
+  have 1: "{u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<longleftrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v) \<or> v \<in>\<^sub>G (\<N>\<^sub>G G u)" for u v
+    using  doubleton_eq_iff[of u v] by auto
+  have "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v) |u v. {u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}}"
+    using graph_abs.D_def[OF graph_abs_ugraph] ugraph_abs_def by simp
+  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<union> {(u, v) |u v. u \<in>\<^sub>G \<N>\<^sub>G G v}"
+    using 1 by auto
+  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}"
+    using graph_symmetric by blast
+  finally show "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v). v \<in>\<^sub>G \<N>\<^sub>G G u}" by simp
+qed
+end
+end
+
+end text \<open>@{locale Pair_Graph_U_Specs_Read_Only}\<close>
+
+subsection \<open>The read-write specification\<close>
+
+locale Pair_Graph_U_Specs = 
+pair_graph_specs: Pair_Graph_Specs
+  where lookup = lookup +
+Pair_Graph_U_Specs_Read_Only
+  where lookup = lookup for lookup :: "'adjmap \<Rightarrow> ('v::linorder) \<Rightarrow> 'vset option"
+begin
+
+abbreviation "add_edge == pair_graph_specs.add_edge"
+abbreviation "delete_edge == pair_graph_specs.delete_edge"
+definition "add_u_edge G u v =  (add_edge (add_edge G u v) v u)"
+definition "delete_u_edge G u v =  (delete_edge (delete_edge G u v) v u)"
+
+lemmas [code] = neighbourhood_def 
+pair_graph_specs.add_edge_def 
+pair_graph_specs.delete_edge_def
+add_u_edge_def
+
+context
+  includes pair_graph_specs.adjmap.automation and pair_graph_specs.vset.set.automation
+begin
+
+lemma uedges_empty: "uedges empty = {}"
+  unfolding uedges_def digraph_abs_def neighbourhood_def 
+  by (auto)
+
+\<comment> \<open>Inherited from the read-only part, the following facts carry the premise
+  \<open>pair_graph_u_invar ?G\<close>. Inside the context below their attributes are switched
+  off, and premise-free copies for the fixed \<open>G\<close> take their place.\<close>
+bundle pair_graph_u_invar_rules_off =
+  invar_graph_inv[simp del, rule del] invar_finite_graph[simp del, rule del]
+  invar_finite_vsets[simp del, rule del] invar_finite_vertices[rule del]
+  graph_irreflexive[simp del] graph_symmetric[simp del, rule del] graph_abs_symmetric[simp del]
+
+context
+  includes pair_graph_u_invar_rules_off
+  fixes G::'adjmap
+  assumes pair_graph_u_invar_G:"pair_graph_u_invar G"
+begin
+
+\<comment> \<open>The read-only facts about \<open>G\<close>, available here without the premise
+  \<open>pair_graph_u_invar G\<close>.\<close>
+private lemmas invar_G[simp, intro!] =
+  invar_graph_inv[OF pair_graph_u_invar_G]
+  invar_finite_graph[OF pair_graph_u_invar_G]
+  invar_finite_vsets[OF pair_graph_u_invar_G]
+private lemmas invar_finite_vertices_G[intro!] = invar_finite_vertices[OF pair_graph_u_invar_G]
+private lemmas graph_irreflexive_G[simp] = graph_irreflexive[OF pair_graph_u_invar_G]
+private lemmas graph_symmetric_G[simp, intro] = graph_symmetric[OF pair_graph_u_invar_G]
+private lemmas graph_abs_symmetric_G[simp] = graph_abs_symmetric[OF pair_graph_u_invar_G]
+private lemmas digraph_abs_irreflexive_G = digraph_abs_irreflexive[OF pair_graph_u_invar_G]
+
 lemma pair_graph_u_invar_empty: "pair_graph_u_invar \<emptyset>\<^sub>G"
-  by (simp add: finite_graphI graph_inv_def local.neighbourhood_def pair_graph_u_invar_def
+  by (simp add: pair_graph_specs.finite_graphI graph_inv_def local.neighbourhood_def pair_graph_u_invar_def
                 finite_vsets_def)
 
 lemmas digraph_abs_insert= pair_graph_specs.digraph_abs_insert
@@ -462,7 +542,7 @@ proof-
   have finiteG: "finite_graph G" 
     by simp
   have adjmap_invG: "adjmap_inv G"
-    using invar_graph_inv by blast
+    using invar_G(1) by blast
   have adjmap_invg': "adjmap_inv (add_edge G u v)"
     using graph_inv_def by blast
   have set_is':"{v. v \<noteq> u \<longrightarrow> (\<exists>y. lookup G v = Some y)} = Set.insert u {v.  (\<exists>y. lookup G v = Some y)}" by blast
@@ -503,12 +583,12 @@ proof-
     using assms 
     by(auto intro: finite_graph_add_edge finite_vsets_add_edge neighbourhoodD
          simp add: pair_graph_u_invar_def not_Refl_after sym_after
-             dest: neighbourhoodI graph_abs_symmetric)
+             dest: neighbourhoodI graph_abs_symmetric_G)
   show "(\<And> x y. ?assm1 x y \<Longrightarrow> ?assm2 x y) \<Longrightarrow> ?assms2 \<Longrightarrow> ?thesis2" 
   proof(goal_cases)
     case 1
     moreover have "lookup G v = Some vset \<Longrightarrow> vset_inv vset" for vset
-      using graph_invE[OF invar_graph_inv] by auto
+      using graph_invE[OF invar_G(1)] by auto
     moreover have "\<lbrakk>lookup G u = Some x2; lookup G v = None; y = insert v x2; \<emptyset>\<^sub>N = insert v x2\<rbrakk>
                      \<Longrightarrow> False" for x2
       using graph_invE by fastforce
@@ -536,18 +616,18 @@ proof-
              pair_graph_specs.vset.set.set_empty
      by(fastforce simp add: local.neighbourhood_def  pair_graph_u_invar_def)
     have help1:"\<lbrakk>fst e \<noteq> v; snd e \<noteq> v\<rbrakk> \<Longrightarrow> \<exists>y. lookup G (snd e) = Some y" 
-      using "1"(1) "1"(2) adjmap_inv_insert[OF  invar_graph_inv]
-       are_connected_abs[OF  invar_graph_inv, of "snd e" "fst e"] 
-         invar_graph_inv  pair_graph_specs.vset.emptyD(3)
+      using "1"(1) "1"(2) adjmap_inv_insert[OF  invar_G(1)]
+       are_connected_abs[OF  invar_G(1), of "snd e" "fst e"] 
+         invar_G(1)  pair_graph_specs.vset.emptyD(3)
       by(auto simp add:  neighbourhood_def graph_abs_after) 
     have help3: "\<lbrakk>snd e \<noteq> u; v = fst e; lookup G (fst e) = None\<rbrakk> \<Longrightarrow> \<exists>y. lookup G (snd e) = Some y"   
-      using "1"(2) adjmap_inv_insert[OF invar_graph_inv] are_connected_abs[OF invar_graph_inv, of "snd e" "fst e"]
-                invar_graph_inv  pair_graph_specs.vset.emptyD(1)
+      using "1"(2) adjmap_inv_insert[OF invar_G(1)] are_connected_abs[OF invar_G(1), of "snd e" "fst e"]
+                invar_G(1)  pair_graph_specs.vset.emptyD(1)
       by(auto intro: prod.exhaust[of e] 
            simp add: neighbourhood_def graph_abs_after)
     have help4: "\<lbrakk>snd e \<noteq> u; v = fst e; lookup G (fst e) = Some x2\<rbrakk> \<Longrightarrow> \<exists>y. lookup G (snd e) = Some y" for x2 
-      using "1"(2,1) adjmap_inv_insert[OF invar_graph_inv] are_connected_abs[OF invar_graph_inv, of "snd e" "fst e"]
-                invar_graph_inv  pair_graph_specs.vset.emptyD(1)
+      using "1"(2,1) adjmap_inv_insert[OF invar_G(1)] are_connected_abs[OF invar_G(1), of "snd e" "fst e"]
+                invar_G(1)  pair_graph_specs.vset.emptyD(1)
       by(auto intro: prod.exhaust[of e] 
            simp add: neighbourhood_def graph_abs_after )
    show ?case
@@ -567,7 +647,7 @@ lemma pair_graph_u_invar_add_u_edge:
   and   "digraph_abs (add_u_edge G u v) = {(u, v), (v, u)} \<union> digraph_abs G"
   and   "ugraph_abs  (add_u_edge G u v) = Set.insert {u, v} (ugraph_abs G)"
   using  pair_graph_u_invar_add_edge_both[OF assms]
-by(auto simp add:  add_u_edge_def digraph_abs_insert[OF adjmap_inv_insert[OF invar_graph_inv]]
+by(auto simp add:  add_u_edge_def digraph_abs_insert[OF adjmap_inv_insert[OF invar_G(1)]]
                    ugraph_and_digraph_abs)
 
 lemma pair_graph_u_invar_delete_u_edge:
@@ -583,22 +663,22 @@ proof-
   have abstr_concr_double_del_neighb_equiv:
        "(va \<in>\<^sub>G \<N>\<^sub>G delete_edge (delete_edge G u v) v u ua) =
         (va \<in> Pair_Graph.neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) ua)" for ua va
-    by(simp add:  neighbourhood_abs[OF graph_inv_del_del(1)] 
+    by(simp add:  pair_graph_specs.neighbourhood_abs[OF graph_inv_del_del(1)] 
                   pair_graph_specs.digraph_abs_delete[OF graph_inv_del_del(2)]
-                  pair_graph_specs.digraph_abs_delete[OF invar_graph_inv]
+                  pair_graph_specs.digraph_abs_delete[OF invar_G(1)]
                   pair_graph_specs.adjmap_inv_delete )+
   have help1: "\<lbrakk>(\<And> u v. v \<in> Pair_Graph.neighbourhood (digraph_abs G) u 
                   \<Longrightarrow> u \<in> Pair_Graph.neighbourhood (digraph_abs G) v);
                va \<in> Pair_Graph.neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) va\<rbrakk> 
                \<Longrightarrow> False" for va
-   using   digraph_abs_irreflexive 
+   using   digraph_abs_irreflexive_G 
    by(fastforce elim!: in_dVsE(2)[of _  "digraph_abs G - {(u, v)} - {(v, u)}"] 
                  dest: neighbourhoodI[of _ "digraph_abs G - {(u, v)} - {(v, u)}"])
   have help2:"\<lbrakk>(\<And> u v. v \<in> Pair_Graph.neighbourhood (digraph_abs G) u 
               \<Longrightarrow> u \<in> Pair_Graph.neighbourhood (digraph_abs G) v);
               va \<in> Pair_Graph.neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) ua\<rbrakk>
           \<Longrightarrow>ua \<in> Pair_Graph.neighbourhood (digraph_abs G - {(u, v)} - {(v, u)}) va " for ua va
-    by(fastforce intro: neighbourhoodD graph_abs_symmetric 
+    by(fastforce intro: neighbourhoodD graph_abs_symmetric_G 
                   dest: neighbourhoodI[of _ "(digraph_abs G - {(u, v)} - {(v, u)})"])
   show thesis1:?thesis1
     using pair_graph_u_invar_G
@@ -627,13 +707,13 @@ proof-
       by (simp add: delete_u_edge_def neighbourhood_def) 
     thus ?case
       by simp
-  qed (insert neighbourhood_abs[OF graph_inv_del_del(1), of a], auto simp add: neighbourhood_def)
+  qed (insert pair_graph_specs.neighbourhood_abs[OF graph_inv_del_del(1), of a], auto simp add: neighbourhood_def)
   show "?assm3 \<Longrightarrow> ?thesis3"
     using helper3
     by(auto simp add: none_symmetry_def delete_u_edge_def)
   show thesis4: ?thesis4 
     by(auto simp add: delete_u_edge_def pair_graph_specs.digraph_abs_delete[OF graph_inv_del_del(2)] 
-                      pair_graph_specs.digraph_abs_delete[OF  invar_graph_inv])
+                      pair_graph_specs.digraph_abs_delete[OF  invar_G(1)])
   have "{{ua, va} |ua va. (ua, va) \<in> digraph_abs G - {(u, v), (v, u)}}
         \<subseteq> {{u, v} |u v. (u, v) \<in> digraph_abs G} - {{u, v}}"
   proof(rule, goal_cases)
@@ -648,37 +728,8 @@ proof-
   thus "ugraph_abs (delete_u_edge G u v) = ugraph_abs G - {{u, v}}"
     by(auto simp add: ugraph_and_digraph_abs thesis4) 
 qed
-
-lemmas pair_graph_u_inv = pair_graph_u_invar_G
-
-lemma ugraph_dblton_graph:
-  "dblton_graph (ugraph_abs G)"
-  using graph_irreflexive by (unfold ugraph_abs_def dblton_graph_def) blast
-
-lemma ugraph_finite:
-  "finite (Vs (ugraph_abs G))"
-  using invar_finite_vertices 
-  by(unfold  ugraph_abs_def Vs_def dVs_def digraph_abs_def) simp
-
-lemma graph_abs_ugraph:
-  "graph_abs (ugraph_abs G)"
-  apply (simp add: graph_abs_def)
-  using ugraph_dblton_graph ugraph_finite by force
-
-lemma ugraph_abs_digraph_abs: "graph_abs.D (ugraph_abs G) = digraph_abs G"
-  unfolding graph_abs.D_def ugraph_abs_def digraph_abs_def
-proof-
-  have 1: "{u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<longleftrightarrow> u \<in>\<^sub>G (\<N>\<^sub>G G v) \<or> v \<in>\<^sub>G (\<N>\<^sub>G G u)" for u v
-    using  doubleton_eq_iff[of u v] by auto
-  have "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v) |u v. {u, v} \<in> {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}}"
-    using graph_abs.D_def[OF graph_abs_ugraph] ugraph_abs_def by simp
-  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} \<union> {(u, v) |u v. u \<in>\<^sub>G \<N>\<^sub>G G v}"
-    using 1 by auto
-  also have "... = {(u, v) |u v. v \<in>\<^sub>G \<N>\<^sub>G G u}"
-    using graph_symmetric by blast
-  finally show "graph_abs.D {{u, v} |u v. v \<in>\<^sub>G \<N>\<^sub>G G u} = {(u, v). v \<in>\<^sub>G \<N>\<^sub>G G u}" by simp
-qed
 end
 end
 end
 end
+

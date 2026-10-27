@@ -1,11 +1,14 @@
 session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
-  options [document = pdf, document_output = "output"]
 
   sessions
     AI_Provenance
     Verified_SAT_Based_AI_Planning
     Undirected_Set_Graphs
+<<<<<<< HEAD
   directories Refinements
+=======
+    Data_Structures
+>>>>>>> main
   theories
     RBT_Map_Extension
     DFS
@@ -18,6 +21,9 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     DFS_Cycles_Aux
     DFS_Cycles
     DFS_Cycles_Example
+    DFS_Skeleton
+    DFS_DirCycle
+    DFS_DirCycle_Example
     DFS_Time
     Parent_Map
     Bellman_Ford
@@ -32,5 +38,5 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     "Refinements/Dijkstra_Code_Export"
     "Refinements/DFS_by_Iterator_Imperative"
 
-  document_files
-    "root.tex"
+
+

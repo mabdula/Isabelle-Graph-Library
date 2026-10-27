@@ -5,6 +5,11 @@ Humans assign `human` and `ai_human`. You make no judgement between the labels:
 
 - Everything you write from scratch is `ai`: definitions, statements, proofs, and proof steps.
 - Lines that you edit keep their label.
+- `ai` and `ai_human` mean that an LLM made a semantic contribution: a new definition, statement,
+  proof, or proof step. Mechanical work is not an AI contribution, even when you write the new
+  lines yourself. Text that you copy and paste, adapt to renamed or changed constants, restructure
+  without changing the steps of a proof (e.g. a block `{ fix x assume A have B }` turned into
+  `have B if A for x`), or only lay out differently keeps the label of the text it comes from.
 
 ## Syntax
 

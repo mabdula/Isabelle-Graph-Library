@@ -30,7 +30,8 @@ global_interpretation Pair_Graph_U_RBT: Pair_Graph_U_Specs
     isin = isin and t_set = "Tree2.set_tree" and sel = sel
   defines add_edge =Pair_Graph_U_RBT.add_edge
     and  add_u_edge =Pair_Graph_U_RBT.add_u_edge
-  by(simp add: Pair_Graph_U_Specs_def Pair_Graph_Specs_def M.Map_axioms S_C.Set_Choose_axioms)
+  by(simp add: Pair_Graph_U_Specs_def Pair_Graph_Specs_def Pair_Graph_U_Specs_Read_Only_def
+               Pair_Graph_Specs_Read_Only_def M.Map_axioms S_C.Set_Choose_axioms)
 
 text \<open>Instantiations for Greedy\<close>
 
