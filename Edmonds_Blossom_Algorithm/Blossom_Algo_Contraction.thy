@@ -1368,7 +1368,7 @@ proof-
     using assms(1) disj_pref_append1 by fastforce
   moreover have "butlast (rev pfx1 @ pfx2) = (rev pfx1 @ (butlast pfx2))"
     using assms
-    by (metis butlast_append snd_pfx_nempty)
+    by (simp add: butlast_append snd_pfx_nempty[OF pfxs_are_pfxs])
   moreover have "distinct ((rev p1) @ (butlast pfx2))"
     apply(simp add: )
     by (smt Un_iff append_butlast_last_id butlast.simps(1) disj_pfx_are_disj_1 disjoint_iff_not_equal distinct(1) distinct(2) distinct(3) distinct(4) distinct_append option.sel pfxs_are_pfxs set_append)
