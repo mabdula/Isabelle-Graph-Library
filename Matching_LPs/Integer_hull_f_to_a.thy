@@ -3230,7 +3230,11 @@ lemma int_support_hyp_then_int_polyhedron:
 proof(cases "P = {}")
   case True
   then show ?thesis 
-    by (metis A P_def b int_hull_subset subset_empty)
+  proof -
+    have "integer_hull P \<subseteq> P"
+      using A b int_hull_subset unfolding P_def by blast
+    with True show ?thesis by simp
+  qed
 next
   case False
   obtain C d nr' where C_d:"C \<in> carrier_mat nr' n \<and>
