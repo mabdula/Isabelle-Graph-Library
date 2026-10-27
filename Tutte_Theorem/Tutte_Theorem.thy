@@ -1055,7 +1055,7 @@ proof
                {connected_component (graph_diff G X) x', {y'}}"
       by (meson 2 4 assms(5) matching_def)
     then have "y1 = y'" 
-      by (metis (full_types) 3 doubleton_eq_iff)
+      using 3 by (auto simp: doubleton_eq_iff)
     then have "C' = ?C'" 
       using 2 3 by presburger
     then show "z \<in> ?C'" 
