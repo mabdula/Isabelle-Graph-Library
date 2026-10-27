@@ -345,10 +345,18 @@ proof(induction rule: parent_spec.follow.pinduct[OF assms(2)])
   then show ?case
   proof(cases "par v")
     case None
-    then show ?thesis
-      apply( simp add: parent.follow_psimps[OF 1(4)])
-      by (metis (mono_tags, lifting) "1.hyps" "1.prems"(1) assms(1) list.set_intros(1) option.case_eq_if 
-          parent_spec.follow.psimps)
+    then have follow_v: "parent_spec.follow par v = [v]"
+      by (simp add: parent.follow_psimps[OF assms(1)])
+    have v_mem: "v \<in> set (parent_spec.follow par v)"
+      by (simp add: follow_v)
+    have "par v = par' v"
+      using "1.prems"(1) v_mem by blast
+    with None have "par' v = None"
+      by simp
+    then have "parent_spec.follow par' v = [v]"
+      by (simp add: parent.follow_psimps[OF "1.prems"(2)])
+    with follow_v show ?thesis
+      by simp
   next
     case (Some a)
     have "\<forall>v\<in>set (parent_spec.follow par a). par v = par' v"
