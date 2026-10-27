@@ -1400,9 +1400,15 @@ next
                  \<subseteq> (\<lambda>(x,y). {x,y} ) ` ({v. \<exists>y. lookup G v = Some y} \<times>
                                         (\<Union> {t_set N | v N. lookup G v = Some N}))"
     including Graph.adjmap.automation and Graph.vset.set.automation
-    apply (auto simp: Graph.digraph_abs_def Graph.neighbourhood_def image_def
-                split: option.splits)
-    by (metis Graph.graph_invE Graph.vset.set.set_isin graph_inv(1))
+    proof -
+      have vset_inv_lookup: "\<And>v N. lookup G v = Some N \<Longrightarrow> vset_inv N"
+        using graph_inv(1) by (blast elim: Graph.graph_invE)
+      show ?thesis
+        using vset_inv_lookup
+        by (fastforce simp: Graph.digraph_abs_def Graph.neighbourhood_def image_def
+                             Graph.vset.set.set_isin
+                      split: option.splits)
+    qed
   moreover have "{uu. \<exists>v N. uu = t_set N \<and> lookup G v = Some N} = 
                    ((t_set o the o (lookup G)) ` {v | N v. lookup G v = Some N})"
     by (force simp: image_def)
