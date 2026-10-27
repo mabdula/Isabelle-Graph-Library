@@ -1619,9 +1619,23 @@ proof-
   obtain p where p: "path G p" "C = (set p)"
     using assms component_has_path'
     by auto
-  then show ?thesis
-    using remove_cycle_pfx_works_card_ge_2
-    by (metis assms(3) path_suff remove_cycle_pfx_works)
+  have card_ge_2: "2 \<le> card (set p)"
+    using assms(3) p(2) by simp
+  from remove_cycle_pfx_works[of p "last p"] obtain pfx
+    where pfx: "p = pfx @ remove_cycle_pfx (last p) p" by blast
+  have pfx_path: "path G (pfx @ remove_cycle_pfx (last p) p)"
+    using p(1) pfx[symmetric] by simp
+  have path_suffix: "path G (remove_cycle_pfx (last p) p)"
+    using pfx_path path_suff by blast
+  have set_hd_last:
+    "hd (remove_cycle_pfx (last p) p) \<noteq> last (remove_cycle_pfx (last p) p)"
+    "set (remove_cycle_pfx (last p) p) = set p"
+    using remove_cycle_pfx_works_card_ge_2 card_ge_2 by blast+
+  have set_eq: "C = set (remove_cycle_pfx (last p) p)"
+    using p(2) set_hd_last(2) by simp
+  show ?thesis
+    using path_suffix set_eq set_hd_last(1)
+    by (intro exI[where x="remove_cycle_pfx (last p) p"]) simp
 qed
 
 subsection \<open>Path-Shaped Components\<close>
