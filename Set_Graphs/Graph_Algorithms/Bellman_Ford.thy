@@ -309,7 +309,13 @@ lemma finite_weight_set:
 
 lemma finite_lists_length_le1: "finite {xs. length xs \<le> i \<and> set xs \<subseteq> set vs}" for i
   using finite_lists_length_le[ of _ i] 
-  by (metis (no_types, lifting) Collect_cong List.finite_set)
+proof -
+  have eq: "{xs. length xs \<le> i \<and> set xs \<subseteq> set vs} = {xs. set xs \<subseteq> set vs \<and> length xs \<le> i}"
+    by auto
+  show ?thesis
+    unfolding eq
+    by (rule finite_lists_length_le) simp
+qed
 
 lemma finite_lists_length_le2: "finite {xs. length xs + 1 \<le> i \<and> set xs \<subseteq> set vs }" for i
   by (auto intro: finite_subset[OF _ finite_lists_length_le1[of "i"]])
