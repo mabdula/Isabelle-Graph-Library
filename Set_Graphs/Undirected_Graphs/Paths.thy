@@ -1330,7 +1330,7 @@ next
       using \<open>p' \<noteq> []\<close>
       by auto
     ultimately show ?thesis
-      by metis
+      by blast
   qed
 qed
 
