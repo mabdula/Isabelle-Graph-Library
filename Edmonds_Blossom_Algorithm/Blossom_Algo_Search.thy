@@ -3718,7 +3718,12 @@ qed
         moreover have "capacity2 unlab_osc2 = card M'"
         proof-
           have "finite M'"
-            by (metis M'(2) finiteM finite_Diff finite_insert)
+          proof -
+            have "finite (M - ex)"
+              using finiteM by (rule finite_Diff)
+            then show ?thesis
+              using M'(2) by simp
+          qed
           then have "0 < card M'"
             using mult_match_unex M' card_unlab_osc2
             by simp
