@@ -1403,7 +1403,25 @@ then 0 else undefined)"
       proof(rule ballI, goal_cases)
         case (1 v)
         hence "vertex v \<in> dVs \<E>'"
-          by(auto simp add: \<E>'_def \<E>1_def \<E>2_def dVs_def , blast, metis insertI1 insert_commute)
+          proof -
+            obtain a b where ab: "(a, b) \<in> \<E>" and v_ab: "v = a \<or> v = b"
+              using 1 by (auto simp add: dVs_def)
+            show "vertex v \<in> dVs \<E>'"
+            proof (cases "v = a")
+              case True
+              have "(edge (a, b), vertex a) \<in> \<E>'"
+                using ab by (auto simp add: \<E>'_def \<E>1_def)
+              then show ?thesis
+                using True by (auto simp add: dVs_def)
+            next
+              case False
+              with v_ab have vb: "v = b" by simp
+              have "(edge (a, b), vertex b) \<in> \<E>'"
+                using ab by (auto simp add: \<E>'_def \<E>2_def)
+              then show ?thesis
+                using vb by (auto simp add: dVs_def)
+            qed
+          qed
         hence "- (sum f' (multigraph_spec.delta_minus  \<E>' snd (vertex v)) 
                          - sum f' (multigraph_spec.delta_plus \<E>' fst (vertex v))) =
                     \<b> v - real_of_ereal (sum \<u> (multigraph_spec.delta_plus \<E> fst v))"
