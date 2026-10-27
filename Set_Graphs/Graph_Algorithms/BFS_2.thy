@@ -579,7 +579,7 @@ next
       by auto
     ultimately obtain u' where "?d u' + 1 = ?d u" "u \<in> neighbourhood (Graph.digraph_abs G) u'"
       using distance_set_parent'
-      by (metis srcs_invar(1))
+      by (meson srcs_invar(1))
     hence "?d u' = ?d v'"
       using \<open>?d v = ?d v' + 1\<close> \<open>?d v = ?d u\<close>
       by auto
