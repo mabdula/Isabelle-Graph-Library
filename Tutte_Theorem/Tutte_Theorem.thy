@@ -1298,7 +1298,17 @@ proof
       using \<open>x \<in> X\<close> odd_comps_in_diff_not_in_X by blast
     then have "card (odd_comps_in_diff G (X-{x})) = 
         card (odd_comps_in_diff G X) + card {{x}}" 
-      by (metis 2 assms(1) card_Un_disjoint diff_components_finite finite.emptyI finite.insertI)
+    proof -
+      have fin_odd: "finite (odd_comps_in_diff G X)"
+        using diff_components_finite[OF assms(1)] .
+      have fin_single: "finite {{x}}"
+        by simp
+      have "card ((odd_comps_in_diff G X) \<union> {{x}}) =
+            card (odd_comps_in_diff G X) + card {{x}}"
+        using fin_odd fin_single \<open>(odd_comps_in_diff G X) \<inter> {{x}} = {}\<close> card_Un_disjoint
+        by blast
+      with 2 show ?thesis by simp
+    qed
     then have 3:"card (odd_comps_in_diff G (X-{x})) = card X + 1" 
       by (metis One_nat_def assms(4) barrier_def card.empty card.insert finite.emptyI 
           insert_absorb insert_not_empty)
