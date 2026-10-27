@@ -2859,7 +2859,7 @@ qed
   then obtain \<beta> where beta: "\<beta> = Maximum {?c \<bullet> x | x. x \<in> carrier_vec n \<and> ?fullA *\<^sub>v x \<le> ?fullb}"
     by auto
   then have 4:"support_hyp ?P' ?c \<beta>" unfolding support_hyp_def  
-    by (smt (verit, best) c Collect_cong 4 assms(7) mem_Collect_eq polyhedron_def row_carrier)
+  using beta 4 c by (auto simp: polyhedron_def)
   let ?F = " ?P' \<inter> {x |x. ?c \<bullet> x = \<beta>}"
   have "face ?P' ?F" unfolding face_def using 1 4 
     by blast 
