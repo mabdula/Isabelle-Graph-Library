@@ -68,9 +68,24 @@ qed
 
 lemma has_no_cycle_indep_subset:
   "\<lbrakk>has_no_cycle X; Y \<subseteq> X\<rbrakk> \<Longrightarrow> has_no_cycle Y"
-  apply (rule ccontr)
-  using has_no_cycle_def decycle_subset
-  by (metis dual_order.trans)
+proof -
+  assume "has_no_cycle X" and "Y \<subseteq> X"
+  have "X \<subseteq> G"
+    using \<open>has_no_cycle X\<close> has_no_cycle_indep_subset_carrier by blast
+  hence "Y \<subseteq> G"
+    using \<open>Y \<subseteq> X\<close> by blast
+  have no_decycle_X: "\<nexists>u c. decycle X u c"
+    using \<open>has_no_cycle X\<close> unfolding has_no_cycle_def by blast
+  have "\<nexists>u c. decycle Y u c"
+  proof (intro notI, elim exE)
+    fix u c
+    assume "decycle Y u c"
+    from decycle_subset[OF this \<open>Y \<subseteq> X\<close>] have "decycle X u c" .
+    with no_decycle_X show False by blast
+  qed
+  with \<open>Y \<subseteq> G\<close> show "has_no_cycle Y"
+    unfolding has_no_cycle_def by blast
+qed
 
 lemmas graph_abs_subset = graph_abs_mono[OF graph_abs_axioms]
 
