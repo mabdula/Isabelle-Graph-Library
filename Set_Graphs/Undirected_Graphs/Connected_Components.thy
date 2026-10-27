@@ -538,7 +538,18 @@ proof(safe)
   fix e
   assume "e \<in> G" 
   then obtain C where "e \<subseteq> C" "C \<in> connected_components G"
-    by (metis assms dblton_graphE edge_in_component)
+  proof -
+    from assms \<open>e \<in> G\<close> obtain u v where uv: "e = {u, v}" "u \<noteq> v"
+      by (blast elim: dblton_graphE)
+    have "{u, v} \<in> G"
+      using uv \<open>e \<in> G\<close> by simp
+    from edge_in_component[OF this] obtain C where "C \<in> connected_components G" "{u, v} \<subseteq> C"
+      by auto
+    then have "e \<subseteq> C"
+      using uv by simp
+    then show thesis
+      using \<open>C \<in> connected_components G\<close> by (rule that)
+  qed
   moreover then have "e \<in> component_edges G C" 
     by (simp add: \<open>e \<in> G\<close> assms edge_in_component_edges)
   ultimately show "e \<in> \<Union>{component_edges G C |C.  C \<in> connected_components G}" 
