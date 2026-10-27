@@ -192,7 +192,19 @@ proof(cases "infinite J")
         card {a\<in>(J - {pick J j}). a < pick J (Suc j)} + card {pick J j}"
     by force
   then have "card {a\<in>(J - {pick J j}). a < pick J (Suc j)} + 1 = card {a\<in>J. a < pick J (Suc j)}"
-    by (metis 2 card_eq_1_iff)
+  proof -
+    have card_union: "card ({a \<in> (J - {pick J j}). a < pick J (Suc j)} \<union> {pick J j}) =
+          card {a \<in> (J - {pick J j}). a < pick J (Suc j)} + card {pick J j}"
+      by force
+    have card_one: "card {pick J j} = 1"
+      by simp
+    have eq: "card {a \<in> J. a < pick J (Suc j)} =
+          card ({a \<in> (J - {pick J j}). a < pick J (Suc j)} \<union> {pick J j})"
+      using 2 by simp
+    from card_union card_one eq
+    show "card {a \<in> (J - {pick J j}). a < pick J (Suc j)} + 1 = card {a \<in> J. a < pick J (Suc j)}"
+      by simp
+  qed
   then have "card {a\<in>(J - {pick J j}). a < pick J (Suc j)} = (Suc j) - 1" 
     using \<open>card {a \<in> J. a < pick J (Suc j)} = (Suc j)\<close> by presburger
   then have "pick (J - {pick J j}) ((Suc j) - 1) = pick J (Suc j)" 
