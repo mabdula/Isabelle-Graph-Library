@@ -936,7 +936,16 @@ proof
         using L R row_eq by simp
     qed
     have 26:"(submatrix A I J) $$ (i, j) = A $$ (pick I i, pick J j)"
-      by (metis (no_types, lifting) True 19 21 20 asmj dim_submatrix(1-2) submatrix_index)
+    proof -
+      have j_less: "j < dim_col (submatrix A I J)"
+        using asmj 21 19 20 by simp
+      have i_card: "i < card {k. k < dim_row A \<and> k \<in> I}"
+        using True dim_submatrix(1)[of A I J] by simp
+      have j_card: "j < card {k. k < dim_col A \<and> k \<in> J}"
+        using j_less dim_submatrix(2)[of A I J] by simp
+      show ?thesis
+        using submatrix_index[OF i_card j_card] .
+    qed
     have 2: "pick I i < nr1"
       using True dim_submatrix(1) pick_le assms(1) 
       by (simp add: \<open>dim_row (submatrix A I J) = card {i. i < nr1 \<and> i \<in> I}\<close>)
