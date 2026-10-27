@@ -3168,12 +3168,36 @@ proof -
   let ?f = "(\<lambda> p'. (\<Sum>i\<in>(UNIV:: 'a set). Poly_Mapping.single {i, p' i} (1::nat)))"
   have "\<forall>a' \<in> nonzero_perms - {p}.  ?f p  \<noteq> ?f a'" 
     using assms(2) by blast
-  then have 1:"Poly_Mapping.lookup (sum (\<lambda> b. of_int (sign b) * (var_sign b) *
+  have 1:"Poly_Mapping.lookup (sum (\<lambda> b. of_int (sign b) * (var_sign b) *
           (Poly_Mapping.single (?f b) (1::real))) nonzero_perms) (?f p) \<noteq> 0" 
-    using unique_single_sum[of nonzero_perms p ?f var_sign] 
-      \<open>finite nonzero_perms\<close> \<open>p \<in> nonzero_perms\<close> 
-    unfolding var_sign_def 
-    by (smt (verit) insert_iff of_int_1 of_int_minus sum.cong)
+  proof -
+    have mem_int: "\<forall>a' \<in> nonzero_perms. (var_sign a' :: int) \<in> {1, -1}"
+      unfolding var_sign_def by auto
+    have cast_eq: "\<And>b. of_int (var_sign b :: int) = (var_sign b :: real)"
+      unfolding var_sign_def by auto
+    have int_fact: "Poly_Mapping.lookup (sum (\<lambda> b. of_int (sign b) * of_int (var_sign b :: int) *
+          (Poly_Mapping.single (?f b) (1::real))) nonzero_perms) (?f p) \<noteq> 0"
+      by (rule unique_single_sum[OF \<open>finite nonzero_perms\<close> \<open>p \<in> nonzero_perms\<close>
+            \<open>\<forall>a' \<in> nonzero_perms - {p}.  ?f p \<noteq> ?f a'\<close> mem_int])
+    have sum_eq: "sum (\<lambda> b. of_int (sign b) * of_int (var_sign b :: int) *
+          (Poly_Mapping.single (?f b) (1::real))) nonzero_perms =
+        sum (\<lambda> b. of_int (sign b) * (var_sign b) *
+          (Poly_Mapping.single (?f b) (1::real))) nonzero_perms"
+    proof (rule sum.cong[OF refl])
+      fix x
+      assume "x \<in> nonzero_perms"
+      have cast_x: "of_int (var_sign x :: int) =
+            (var_sign x :: (('a set, nat) poly_mapping, real) poly_mapping)"
+        unfolding var_sign_def by auto
+      show "of_int (sign x) * of_int (var_sign x :: int) *
+            (Poly_Mapping.single (?f x) (1::real)) =
+            of_int (sign x) * (var_sign x) *
+            (Poly_Mapping.single (?f x) (1::real))"
+        by (simp add: cast_x)
+    qed
+    then show ?thesis
+      using int_fact by simp
+  qed
   have "\<forall>b \<in> nonzero_perms. (var_sign b)* (Poly_Mapping.single (?f b) (1::real)) =  
                              var_sign b * prod (\<lambda> i. Var\<^sub>0 ({i, b i})) UNIV" 
     by (simp add: nonzero_perms_def product_Var_mapping)
