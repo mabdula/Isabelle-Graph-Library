@@ -134,7 +134,32 @@ next
     case cons2: (Cons v'' follow_v'')
     then show ?thesis
       using cons1
-      by (metis \<open>v' = v\<close> append_eq_Cons_conv follow_cons_2 list.sel(1))
+      proof -
+        have veq: "follow v = v # v'' # follow_v''"
+          using cons1 cons2 \<open>v' = v\<close> by simp
+        have follow_v''_eq: "follow v'' = v'' # follow_v''"
+          using veq follow_cons_2(1) by blast
+        have split: "v # v'' # follow_v'' = p @ u # p'"
+          using veq cons1 by simp
+        show ?thesis
+        proof (cases p)
+          case Nil
+          with split have "v = u" "p' = v'' # follow_v''"
+            by auto
+          then show ?thesis
+            using veq by simp
+        next
+          case (Cons p0 ps)
+          with split have "p0 = v" "v'' # follow_v'' = ps @ u # p'"
+            by auto
+          with follow_v''_eq have follow_v''_split: "follow v'' = ps @ u # p'"
+            by simp
+          have "follow_v' = follow v''"
+            using cons2 follow_v''_eq by simp
+          with cons1 follow_v''_split show ?thesis
+            by fastforce
+        qed
+      qed
   qed
 qed
 
