@@ -36,7 +36,8 @@ next
     by force
   then have "Suc n \<le> length (rev xs)"
     using Suc_le_length_iff
-    by metis
+    using Suc_le_length_iff
+    by blast
   then show  "Suc n \<le> length xs"
     by auto
 qed
