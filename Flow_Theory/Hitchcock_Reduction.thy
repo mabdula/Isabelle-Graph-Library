@@ -1520,7 +1520,16 @@ then 0 else undefined)"
         using 3 C_in_E' \<E>'_def \<E>1_def \<E>2_def by force
       moreover have "snd e = fst d" 
         using 3
-        by (metis awalk_Cons_iff u_props(1))
+        proof -
+          have C_eq: "C = e # d # rest"
+            using 3 by simp
+          have awalk_C: "awalk \<E>' u (e # d # rest) u"
+            using u_props(1) C_eq by simp
+          hence "awalk \<E>' (snd e) (d # rest) u"
+            by (simp add: awalk_Cons_iff)
+          thus "snd e = fst d"
+            by (simp add: awalk_Cons_iff)
+        qed
       ultimately show False by auto  
     qed
   qed
