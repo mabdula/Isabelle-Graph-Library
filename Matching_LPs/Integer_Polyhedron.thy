@@ -236,8 +236,8 @@ proof -
     using A P_def assms(7) b by blast
   obtain C' d' where  C'_d':"((C', d') = sub_system A b (J \<union> I))" 
     using prod.collapse[of "sub_system A b (J \<union> I)"] by blast
-  have "dim_row A = dim_vec b" using A b 
-    by (metis carrier_matD(1) carrier_vecD)
+  have "dim_row A = dim_vec b"
+    using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
   have "{x. C *\<^sub>v x = d \<and> x \<in> P} = {x. C' *\<^sub>v x = d' \<and> x \<in> P}"
   proof(safe)
     {
