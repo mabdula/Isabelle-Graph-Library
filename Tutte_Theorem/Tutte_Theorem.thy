@@ -677,7 +677,14 @@ proof(rule ccontr)
             \<le> card ((odd_comps_in_diff G X) - {C}) + 2" 
     using odd_diffUn by auto
   have "\<forall>C' \<in> (odd_comps_in_diff G X - {C}). C' \<inter> C = {}"
-    by (metis DiffD1 DiffD2  assms(6) diff_component_disjoint insert_iff)
+  proof (intro ballI)
+    fix C'
+    assume "C' \<in> odd_comps_in_diff G X - {C}"
+    then have C'_in: "C' \<in> odd_comps_in_diff G X" and C'_neq: "C' \<noteq> C"
+      by auto
+    show "C' \<inter> C = {}"
+      using diff_component_disjoint [OF C'_in assms(6) C'_neq] .
+  qed
   then have "Vs (odd_comps_in_diff G X - {C}) \<inter> C = {}" 
     by (smt (verit, ccfv_SIG) Int_ac(3) Vs_def assms(1) assms(6)
         diff_component_disjoint disjoint_iff_not_equal insert_Diff insert_partition)
