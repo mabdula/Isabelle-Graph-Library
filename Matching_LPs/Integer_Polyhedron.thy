@@ -543,7 +543,12 @@ qed
       by auto
   qed
   have "dim_row A' = dim_vec b'" 
-    by (metis A A'_b' b carrier_matD(1) carrier_vecD dims_subsyst_same')
+  proof -
+    have "dim_row A = dim_vec b"
+      using A b carrier_matD(1) carrier_vecD by fastforce
+    then show "dim_row A' = dim_vec b'"
+      using A'_b' dims_subsyst_same' by blast
+  qed
   have "dim_col A' = n" using A'_b' dim_col_subsyst_mat 
     by (metis A carrier_matD(2) fst_conv) 
   then have "dim_col (A' @\<^sub>r - A') = n" 
