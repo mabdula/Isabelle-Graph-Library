@@ -1175,9 +1175,7 @@ proof
   finally show ?thesis .
   qed
   show "dim_col (submatrix A I J) = dim_col (submatrix A (I \<inter> {0..<dim_row A}) J)" 
-    using dim_submatrix 
-    by (smt (verit) Collect_cong Int_iff atLeastLessThan_iff 
-        less_nat_zero_code linorder_le_less_linear)
+    by (simp add: dim_submatrix(2))
   fix i j
   assume asmi: "i < dim_row (submatrix A (I \<inter> {0..<dim_row A}) J)" 
   assume asmj: "j < dim_col (submatrix A (I \<inter> {0..<dim_row A}) J)" 
