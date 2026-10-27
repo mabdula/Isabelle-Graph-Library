@@ -140,8 +140,10 @@ proof-
         using cyc_nempty
         by (simp add: append_butlast_last_id)
     qed
+    then have "set cyc = set (butlast cyc @ [last cyc])"
+      by (rule arg_cong)
     then show ?thesis
-      by (metis list.simps(15) rotate1.simps(2) set_rotate1)
+      by simp
   qed
   ultimately show ?thesis
     using card_insert_le order.trans by fastforce
