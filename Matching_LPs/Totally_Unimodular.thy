@@ -276,7 +276,12 @@ proof -
     using pick_mono
     using assms(2) assms(1) by blast    
   then have "pick J k \<in> J - {pick J j}" using pick_in_set[OF assms(1)]
-    by (metis Diff_iff 1 nat_neq_iff pick_in_set singletonD)
+  proof -
+    have j_in: "pick J j \<in> J" using pick_in_set[OF assms(1)] .
+    have k_in: "pick J k \<in> J" using pick_in_set[OF 1] .
+    have "pick J k \<noteq> pick J j" using \<open>pick J k < pick J j\<close> by simp
+    then show "pick J k \<in> J - {pick J j}" using k_in by simp
+  qed
   then have 2: "pick (J - {pick J j}) (card {a\<in>(J - {pick J j}). a < pick J k}) = pick J k" 
     using pick_card_in_set 
     by presburger
