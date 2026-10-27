@@ -406,9 +406,17 @@ next
     by meson+
 
   have "stem = (rev (drop (length (pfx1)) p1))" "C = (rev (pfx1) @ (pfx2))"
-    using \<open>compute_match_blossom = Some (Blossom stem C)\<close>[simplified compute_match_blossom_def] p1p2 pfx12
-     apply(auto simp: Let_def split_beta split: option.splits if_splits)
-    by (metis fstI sndI option.sel)+
+  proof -
+    have pfx_eq: "longest_disj_pfx p1 p2 = (Some pfx1, Some pfx2)"
+      by (rule pfx12[symmetric])
+    have "Some (Blossom stem C) =
+          Some (Blossom (rev (drop (length pfx1) p1)) (rev pfx1 @ pfx2))"
+      using \<open>compute_match_blossom = Some (Blossom stem C)\<close>[simplified compute_match_blossom_def]
+            p1p2 pfx_eq
+      by (auto simp: Let_def split_beta split: option.splits if_splits)
+    then show "stem = rev (drop (length pfx1) p1)" "C = rev pfx1 @ pfx2"
+      by simp_all
+  qed
   then have "path G (stem @ C) \<and> (matching M \<longrightarrow> match_blossom M stem C)"
     using p1 p2
     by auto
