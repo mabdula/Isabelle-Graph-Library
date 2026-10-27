@@ -1209,7 +1209,13 @@ proof(induction  u p v rule: induct_walk_betw)
 next
   case (path2 v v' vs b)
   hence helper: " vs = Nil \<Longrightarrow> v' = b"  
-    by (metis last_ConsL walk_betw_def)
+  proof -
+    assume "vs = Nil"
+    hence "walk_betw G v' [v'] b"
+      using path2.hyps(2) by simp
+    thus "v' = b"
+      by (simp add: walk_betw_def)
+  qed
   show ?case 
   proof(cases vs)
     case Nil
