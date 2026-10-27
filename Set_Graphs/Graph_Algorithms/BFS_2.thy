@@ -644,7 +644,7 @@ proof(intro invar_props_intros, goal_cases)
       using assms
       by(fastforce intro!: dist_current_plus_1_new)
     ultimately show ?thesis
-      by (metis le_iff_add order.trans)
+      by (fastforce intro: order.trans simp: le_iff_add)
   qed
 qed
 
