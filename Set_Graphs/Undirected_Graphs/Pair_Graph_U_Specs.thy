@@ -177,7 +177,7 @@ proof -
   have "rep (uEdge u v) \<in> uedges G"
     using assms by (auto simp: uedges_def2)
   then consider "uEdge u v \<in> uedges G" | "uEdge v u \<in> uedges G"
-    using is_rep by metis
+    using is_rep(2)[of u v] by auto
   then consider "set_of_uedge (uEdge u v) \<in> set_of_uedge ` uedges G" 
     | "set_of_uedge (uEdge v u) \<in> set_of_uedge ` uedges G"
     by cases (auto intro: imageI)
