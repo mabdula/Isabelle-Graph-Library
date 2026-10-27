@@ -2899,10 +2899,8 @@ qed
   have "det A' \<noteq> 0" 
     using bounded_min_faces_det_non_zero[OF 2 3 1 9] F_def A'_b' 10 
     by fast
-  have "dim_row A' = n" 
-    using bounded_min_faces_square_mat[of ?fullA "nr+ 2*n" ?fullb 1 F b' A' I]
-    using A'_b' `\<forall> x \<in> ?P'. \<forall> i < n.  x $ i \<le> 1` 1 2 3 
-    by (smt (verit, ccfv_SIG) Collect_cong F_def)
+  have "dim_row A' = n"
+    using bounded_min_faces_square_mat[OF 2 3 1 9 conjunct1[OF F_def] 10 A'_b'(1) A'_b'(2)] .
   then have "A' \<in> carrier_mat n n" 
     by (metis "2" A'_b'(2) carrier_matD(2) carrier_matI dim_col_subsyst_mat fst_conv)
   have 7:"A' *\<^sub>v z = b' \<longleftrightarrow> z = vec n (\<lambda> k. det (replace_col A' b' k) / det A')" 
