@@ -932,7 +932,23 @@ proof(intro invar_props_intros, goal_cases)
             using v'_in_srcs
             by (fastforce intro: iffD2[OF distance_set_0[where G = "(Graph.digraph_abs G)"]] simp: srcs_in_G)
           then show ?thesis
-            by (metis \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v < distance_set (Graph.digraph_abs (parents bfs_state')) (t_set srcs) v\<close> \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v = distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1\<close> calculation distance_set_neighbourhood leD srcs_invar(1) v'(3))
+            proof -
+              have v'0a: "distance_set (Graph.digraph_abs (parents bfs_state')) (t_set srcs) v' = 0"
+                using calculation(1) .
+              have v'0b: "distance_set (Graph.digraph_abs G) (t_set srcs) v' = 0"
+                using \<open>?dSrcsG v' = 0\<close> .
+              have dv_eq: "distance_set (Graph.digraph_abs G) (t_set srcs) v = 1"
+                using \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v = distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1\<close>
+                      v'0b
+                by simp
+              have dv'_le: "distance_set (Graph.digraph_abs (parents bfs_state')) (t_set srcs) v \<le> 1"
+                using distance_set_neighbourhood[OF v'(3) srcs_invar(1)] v'0a
+                by simp
+              show ?thesis
+                using \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v < distance_set (Graph.digraph_abs (parents bfs_state')) (t_set srcs) v\<close>
+                      dv_eq dv'_le
+                by simp
+            qed
         next
           case v'_not_in_srcs: False
           have "?dSrcsG v = ?dSrcsG v' + 1"
