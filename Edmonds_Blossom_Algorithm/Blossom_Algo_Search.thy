@@ -2307,7 +2307,7 @@ next
   proof(cases "if1_cond flabel ex")
     case True
     obtain v1 v2 v3 r where sel: "(v1,v2,v3,r) = sel_if1 flabel ex" "if1 flabel ex v1 v2 v3 r"
-      using if1_cond_props''''[OF True] by metis
+      using if1_cond_props''''[OF True] by blast
     let ?par' = "par(v2 \<mapsto> v1, v3 \<mapsto> v2)"
     let ?flabel' = "flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r, Even))"
     let ?ex' = "insert {v2, v3} (insert {v1, v2} ex)"
