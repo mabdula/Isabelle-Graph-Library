@@ -341,8 +341,47 @@ proof (rule ccontr)
       using \<open>X \<subseteq> Vs G \<and> card X < card ?QX\<close> by simp
   qed
   have "\<forall> C1 \<in>?QX. \<forall> C2 \<in> ?QX.  C1 \<noteq> C2 \<longrightarrow> ((Vs (?comp_out C1))) \<inter> ((Vs (?comp_out C2))) = {}"
-    by (smt (verit, del_insts) \<open>matching M\<close> diff_component_disjoint odd_comps_in_diff_not_in_X 
-        disjoint_iff_not_equal doubleton_eq_iff matching_unique_match mem_Collect_eq vs_member)
+  proof (intro ballI impI)
+    fix C1 C2
+    assume C1_mem: "C1 \<in> ?QX" and C2_mem: "C2 \<in> ?QX" and neq: "C1 \<noteq> C2"
+    show "Vs (?comp_out C1) \<inter> Vs (?comp_out C2) = {}"
+    proof (rule ccontr)
+      assume "Vs (?comp_out C1) \<inter> Vs (?comp_out C2) \<noteq> {}"
+      then obtain z where "z \<in> Vs (?comp_out C1)" and "z \<in> Vs (?comp_out C2)"
+        by auto
+      then obtain e1 where "z \<in> e1" and e1_mem: "e1 \<in> ?comp_out C1"
+        by (meson vs_member_elim)
+      from \<open>z \<in> Vs (?comp_out C2)\<close> obtain e2 where "z \<in> e2" and e2_mem: "e2 \<in> ?comp_out C2"
+        by (meson vs_member_elim)
+      obtain x1 y1 where e1_eq: "e1 = {x1, y1}" and y1_C1: "y1 \<in> C1" and x1_X: "x1 \<in> X"
+        and e1_M: "e1 \<in> M"
+        using e1_mem by auto
+      obtain x2 y2 where e2_eq: "e2 = {x2, y2}" and y2_C2: "y2 \<in> C2" and x2_X: "x2 \<in> X"
+        and e2_M: "e2 \<in> M"
+        using e2_mem by auto
+      have C1_disj_X: "C1 \<inter> X = {}"
+        using C1_mem odd_comps_in_diff_not_in_X by blast
+      have C2_disj_X: "C2 \<inter> X = {}"
+        using C2_mem odd_comps_in_diff_not_in_X by blast
+      have y2_notX: "y2 \<notin> X"
+        using C2_disj_X y2_C2 by blast
+      have "e1 \<inter> e2 \<noteq> {}"
+        using \<open>z \<in> e1\<close> \<open>z \<in> e2\<close> by auto
+      with \<open>matching M\<close> e1_M e2_M have "e1 = e2"
+        unfolding matching_def by blast
+      with e1_eq e2_eq have pair_eq: "{x1, y1} = {x2, y2}"
+        by simp
+      have "x1 \<noteq> y2"
+        using x1_X y2_notX by blast
+      with pair_eq have xy_eq: "x1 = x2 \<and> y1 = y2"
+        by (auto simp: doubleton_eq_iff)
+      then have "y1 \<in> C1 \<inter> C2"
+        using y1_C1 y2_C2 by auto
+      moreover have "C1 \<inter> C2 = {}"
+        using C1_mem C2_mem neq by (rule diff_component_disjoint)
+      ultimately show False by simp
+    qed
+  qed
   then have "\<forall> C1 \<in>?QX. \<forall> C2 \<in> ?QX. 
     C1 \<noteq> C2 \<longrightarrow> ((Vs (?comp_out C1)) \<inter> X) \<inter> ((Vs (?comp_out C2)) \<inter> X) = {}"   
     by blast
