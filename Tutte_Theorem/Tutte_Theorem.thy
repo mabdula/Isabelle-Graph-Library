@@ -973,8 +973,18 @@ proof -
   qed
 qed
   then have "connected_component (graph_diff G X) y = C" using ` e = {x', y}`
-    by (metis  \<open>x \<in> e \<and> e \<in> graph_diff G X\<close> connected_components_member_eq
-        vertices_edges_in_same_component)
+  proof -
+    have "e \<in> graph_diff G X"
+      using \<open>x \<in> e \<and> e \<in> graph_diff G X\<close> by simp
+    then have "{x', y} \<in> graph_diff G X"
+      using \<open>e = {x', y}\<close> by simp
+    then have "y \<in> connected_component (graph_diff G X) x'"
+      by (rule vertices_edges_in_same_component)
+    then have "connected_component (graph_diff G X) y = connected_component (graph_diff G X) x'"
+      by (auto dest: connected_components_member_eq)
+    then show ?thesis
+      using \<open>connected_component (graph_diff G X) x' = C\<close> by simp
+  qed
   then have "e \<subseteq> C" 
     by (metis \<open>connected_component (graph_diff G X) x' = C\<close> \<open>e = {x', y}\<close> 
         \<open>x \<in> e \<and> e \<in> graph_diff G X\<close> connected_components_member_sym insert_subset singletonD 
