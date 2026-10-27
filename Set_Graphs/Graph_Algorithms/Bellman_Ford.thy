@@ -492,7 +492,7 @@ next
       apply(rule connection_inver_fold_pres[OF assms(1)])
       apply simp
       using Cons[of v] 
-      by (smt (z3) Collect_cong snd_conv)
+      by (auto simp: prod_eq_iff)
   next
     case 1 
     have Cons_applied: 
