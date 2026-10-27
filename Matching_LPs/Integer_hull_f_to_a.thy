@@ -3413,8 +3413,7 @@ proof
       using assms(5) by fastforce
   qed
   show  "P = integer_hull P \<Longrightarrow> \<forall>F. face P F \<longrightarrow> (\<exists>x\<in>F. x \<in> \<int>\<^sub>v)" 
-    using carr_P
-    by (metis P_int_then_face_int)
+    using carr_P P_int_then_face_int by blast
 qed
 
 end
