@@ -794,7 +794,16 @@ qed
         have "x \<in> carrier_vec n" 
           using `x \<in> P`unfolding P_def polyhedron_def by blast
         have "dim_col A' = n" using A'_b' dim_col_subsyst_mat 
-          by (metis A carrier_matD(2) fst_conv) 
+        proof -
+          have AB': "(A', b') = sub_system A b I'"
+            using A'_b' by blast
+          have A'_eq: "A' = fst (sub_system A b I')"
+            by (simp add: AB'[symmetric])
+          have "dim_col A' = dim_col A"
+            using A'_eq dim_col_subsyst_mat by simp
+          then show "dim_col A' = n"
+            using A by (simp add: carrier_matD(2))
+        qed
         then show "dim_vec x = dim_col A'" 
           using \<open>x \<in> carrier_vec n\<close> carrier_vecD by blast
       qed
