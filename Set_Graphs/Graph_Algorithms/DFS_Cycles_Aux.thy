@@ -1703,8 +1703,32 @@ proof (intro invar_props_intros, goal_cases)
 
     with \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>length p_x_v \<ge> 2\<close>
       have "\<exists>ys. p_x_v = ys @ [a, ?v]"
-      by (metis List.butlast_rev \<open>hd p_x_v = x\<close> \<open>p_x_v \<noteq> []\<close> \<open>x \<noteq> ?v\<close> append.right_neutral append_Nil
-      append_butlast_last_cancel butlast_append last_appendR last_rev list.sel(1) local.Cons)
+      proof -
+        obtain ys0 where ys0_def: "rev (stack dfs_aux_state) = ys0 @ [a, ?v]"
+          using \<open>\<exists>ys. rev (stack dfs_aux_state) = ys @ [a, ?v]\<close> by blast
+        have eq: "xs @ p_x_v = ys0 @ [a, ?v]"
+          using ys0_def \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> by simp
+        from eq[unfolded append_eq_append_conv2]
+        obtain us where
+          "(xs = ys0 @ us \<and> us @ p_x_v = [a, ?v]) \<or> (xs @ us = ys0 \<and> p_x_v = us @ [a, ?v])"
+          by blast
+        then show "\<exists>ys. p_x_v = ys @ [a, ?v]"
+        proof
+          assume "xs = ys0 @ us \<and> us @ p_x_v = [a, ?v]"
+          then have us_eq: "us @ p_x_v = [a, ?v]" by blast
+          have len_eq: "length (us @ p_x_v) = length ([a, ?v])"
+            by (simp add: us_eq)
+          have "length us + length p_x_v = 2"
+            using len_eq by simp
+          with \<open>length p_x_v \<ge> 2\<close> have "length us = 0" by linarith
+          then have "us = []" by simp
+          with us_eq have "p_x_v = [a, ?v]" by simp
+          then show ?thesis by auto
+        next
+          assume "xs @ us = ys0 \<and> p_x_v = us @ [a, ?v]"
+          then show ?thesis by blast
+        qed
+      qed
     then obtain ys where "p_x_v = ys @ [a, ?v]" by blast
     with \<open>hd p_x_v = x\<close> \<open>x \<noteq> a\<close>
       have "ys \<noteq> []" by auto
