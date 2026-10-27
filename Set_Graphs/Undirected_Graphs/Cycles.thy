@@ -221,7 +221,12 @@ proof (induction rule: induct_walk_betw)
     case 2
     with assms obtain w c where "decycle (insert {u, v} Y) w c" by blast
     with decycle_not_subset assms(4)
-    have "\<not> set c \<subseteq> Y" by metis
+    have decycle_ex: "\<exists>z. decycle (insert {u, v} Y) z c"
+      using \<open>decycle (insert {u, v} Y) w c\<close> by blast
+    have no_decycle_Y: "\<nexists>z. decycle Y z c"
+      using assms(4) by blast
+    have "\<not> set c \<subseteq> Y"
+      using decycle_not_subset[OF decycle_ex no_decycle_Y] .
     moreover have "set c \<subseteq> (insert {u, v} Y)" 
       using \<open>decycle (insert {u, v} Y) w c\<close> decycle_def epath_edges_subset by metis
     ultimately have "{u, v} \<in> set c" by blast
