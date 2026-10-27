@@ -508,7 +508,7 @@ next
         by simp
     qed
     then have "awalk_verts u (e # p) = [u, snd e, snd (p ! 0), v]"
-      by (metis awalk_verts.simps(1) awalk_verts.simps(2))
+      by (simp del: list.inject prod_eq_iff)
     with \<open>distinct (tl (awalk_verts u (e # p)))\<close>
       have "distinct [snd e, snd (p ! 0), v]" by simp
 
