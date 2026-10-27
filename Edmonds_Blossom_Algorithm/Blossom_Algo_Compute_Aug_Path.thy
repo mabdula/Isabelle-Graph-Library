@@ -403,7 +403,7 @@ next
     apply (intro  common_pfxs_form_match_blossom' [where ?p2.0 = p2 and ?p = p1'] pfx12)
     using that p1p2 compute_alt_path_spec'[where ?p2.0 = p2 and ?p1.0 = p1, OF \<open>compute_alt_path_spec'\<close>]
     using \<open>p1 = pfx1 @ p1'\<close> \<open>p2 = pfx2 @ p2'\<close> \<open>p1' = p2'\<close>
-    by metis+
+    by meson+
 
   have "stem = (rev (drop (length (pfx1)) p1))" "C = (rev (pfx1) @ (pfx2))"
     using \<open>compute_match_blossom = Some (Blossom stem C)\<close>[simplified compute_match_blossom_def] p1p2 pfx12
