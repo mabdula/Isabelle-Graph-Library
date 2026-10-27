@@ -168,7 +168,14 @@ proof(cases "infinite J")
     using True pick_mono_le 
     using lessI pick_mono by presburger
   have "pick J (Suc j) \<in> J - {pick J j}" 
-    by (metis Diff_iff True \<open>pick J j < pick J (Suc j)\<close> nat_neq_iff pick_in_set_inf singletonD)
+  proof -
+    have "pick J (Suc j) \<in> J"
+      using True pick_in_set_inf by blast
+    moreover have "pick J (Suc j) \<noteq> pick J j"
+      using \<open>pick J j < pick J (Suc j)\<close> by simp
+    ultimately show ?thesis
+      by simp
+  qed
   then have 1: "pick (J - {pick J j}) (card {a\<in>(J - {pick J j}). a < pick J (Suc j)}) = 
                 pick J (Suc j)"
     using pick_card_in_set 
