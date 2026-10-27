@@ -626,7 +626,13 @@ proof-
     {\<Union> (component_edges G C) |C. C \<in> connected_components G}" by blast
   also have "... = 
     {C |C. C \<in> connected_components G}"
-    using Vs_component_edges[OF \<open>dblton_graph G\<close>] by (metis Vs_def)
+  proof -
+    have "\<And>C. C \<in> connected_components G \<Longrightarrow> \<Union> (component_edges G C) = C"
+      using Vs_component_edges[OF \<open>dblton_graph G\<close>]
+      by (simp add: Vs_def)
+    thus ?thesis
+      by auto
+  qed
   finally show "\<Union> ` {component_edges G C |C. C \<in> connected_components G} = connected_components G"
     by auto
 qed 
