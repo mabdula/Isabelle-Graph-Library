@@ -901,7 +901,14 @@ proof
   assume asmi: "i < dim_row (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J)"
   assume asmj: "j < dim_col (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J)"
   have 25:"submatrix (A @\<^sub>r B) I J $$ (i, j) = (A @\<^sub>r B) $$ (pick I i, pick J j)"
-    by (metis (no_types, lifting) 21 22 asmi asmj dim_submatrix(1-2) submatrix_index)
+  proof -
+    have i_lt: "i < card {i. i < dim_row (A @\<^sub>r B) \<and> i \<in> I}"
+      using asmi unfolding 22[symmetric] dim_submatrix(1) .
+    have j_lt: "j < card {j. j < dim_col (A @\<^sub>r B) \<and> j \<in> J}"
+      using asmj unfolding 21[symmetric] dim_submatrix(2) .
+    show ?thesis
+      using submatrix_index[OF i_lt j_lt] .
+  qed
   show "submatrix (A @\<^sub>r B) I J $$ (i, j) =
            (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) $$ (i, j)" 
   proof(cases "i < dim_row (submatrix A I J)")
