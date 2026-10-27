@@ -535,7 +535,13 @@ qed
     unfolding C_d(2)
     by (meson index_append_vec(1) trans_less_add1)
   then have 3:"\<forall> i < dim_row A. (row C i) = row A i \<and> d $ i = b $ i" 
-    by (metis A \<open>\<forall>i<dim_row A. row C i = row A i\<close> b carrier_matD(1) carrier_vecD)
+  proof -
+    have "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    then show ?thesis
+      using \<open>\<forall> i < dim_row A. (row C i) = row A i\<close> \<open>\<forall> i < dim_vec b. d $ i = b $ i\<close>
+      by auto
+  qed
   have "dim_row A' = dim_vec b'" 
     by (metis A A'_b' b carrier_matD(1) carrier_vecD dims_subsyst_same')
   have "dim_col A' = n" using A'_b' dim_col_subsyst_mat 
