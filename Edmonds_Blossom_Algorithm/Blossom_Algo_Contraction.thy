@@ -1370,8 +1370,39 @@ proof-
     using assms
     by (simp add: butlast_append snd_pfx_nempty[OF pfxs_are_pfxs])
   moreover have "distinct ((rev p1) @ (butlast pfx2))"
-    apply(simp add: )
-    by (smt Un_iff append_butlast_last_id butlast.simps(1) disj_pfx_are_disj_1 disjoint_iff_not_equal distinct(1) distinct(2) distinct(3) distinct(4) distinct_append option.sel pfxs_are_pfxs set_append)
+  proof -
+    have dist_split: "distinct pfx2 \<and> distinct p' \<and> set pfx2 \<inter> set p' = {}"
+    proof -
+      have "distinct (pfx2 @ p')"
+        using distinct(2) distinct(4) by simp
+      then show ?thesis
+        using distinct_append by blast
+    qed
+    have pfx2_distinct: "distinct pfx2"
+      using dist_split by simp
+    have pfx2_p'_disj: "set pfx2 \<inter> set p' = {}"
+      using dist_split by simp
+    have pfx2_nempty: "pfx2 \<noteq> []"
+      using snd_pfx_nempty pfxs_are_pfxs by auto
+    have butlast_pfx2_distinct: "distinct (butlast pfx2)"
+    proof -
+      show ?thesis
+        using pfx2_distinct distinct_butlast by blast
+    qed
+    have p'_disj: "set p' \<inter> set (butlast pfx2) = {}"
+      using pfx2_p'_disj
+      by (auto dest: in_set_butlastD)
+    have pfx1_disj: "set pfx1 \<inter> set (butlast pfx2) = {}"
+      using disj_pfx_are_disj_1[OF pfxs_are_pfxs] by simp
+    have "set p1 \<inter> set (butlast pfx2) = {}"
+      using pfx1_disj p'_disj distinct(3) by auto
+    then have rev_disj: "set (rev p1) \<inter> set (butlast pfx2) = {}"
+      by simp
+    have rev_p1_distinct: "distinct (rev p1)"
+      using distinct(1) by simp
+    show ?thesis
+      using rev_p1_distinct butlast_pfx2_distinct rev_disj distinct_append by blast
+  qed
   ultimately show ?thesis
     by (metis append.assoc)
 qed
