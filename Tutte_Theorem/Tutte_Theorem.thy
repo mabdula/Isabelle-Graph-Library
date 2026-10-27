@@ -1312,7 +1312,11 @@ proof
     then have 3:"card (odd_comps_in_diff G (X-{x})) = card X + 1" 
       by (simp add: assms(4)[unfolded barrier_def])
     have "card (odd_comps_in_diff G (X-{x})) \<le> card (X-{x})" 
-      by (metis \<open>x \<in> X\<close> assms(2) assms(3) insert_Diff insert_subset tutte_condition_def)
+    proof -
+      have "X - {x} \<subseteq> Vs G"
+        using assms(3) by blast
+      from tutte_conditionE[OF assms(2) this] show ?thesis .
+    qed
     then show False 
       by (metis One_nat_def 3 card.empty card_Diff1_le card_gt_0_iff diff_add_inverse diff_is_0_eq' 
           le_trans zero_less_Suc)
