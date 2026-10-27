@@ -962,8 +962,27 @@ proof
       using pick_le by blast
     then have "(A @\<^sub>r B) $$ (pick I i, pick J j) = A $$ (pick I i, pick J j)"
       using index_row(1) append_rows_nth(1)[OF A B 2]
-      by (metis "2" A \<open>dim_col (A @\<^sub>r B) = dim_col A\<close> \<open>dim_col (A @\<^sub>r B) = n\<close> 
-          \<open>dim_row (A @\<^sub>r B) = nr1 + nr2\<close> carrier_matD(1) trans_less_add1)
+    proof -
+      have dimA_row: "dim_row A = nr1"
+        using carrier_matD(1)[OF A] by blast
+      have dimA_col: "dim_col A = n"
+        using carrier_matD(2)[OF A] by blast
+      have pI_dimA: "pick I i < dim_row A"
+        using "2" dimA_row by simp
+      have pI_dimAB: "pick I i < dim_row (A @\<^sub>r B)"
+        using "2" \<open>dim_row (A @\<^sub>r B) = nr1 + nr2\<close> trans_less_add1 by presburger
+      have pJ_dimA: "pick J j < dim_col A"
+        using \<open>pick J j < n\<close> dimA_col by simp
+      have pJ_dimAB: "pick J j < dim_col (A @\<^sub>r B)"
+        using \<open>pick J j < n\<close> \<open>dim_col (A @\<^sub>r B) = n\<close> by simp
+      have row_eq: "row (A @\<^sub>r B) (pick I i) = row A (pick I i)"
+        using append_rows_nth(1)[OF A B "2"] by blast
+      have e1: "row (A @\<^sub>r B) (pick I i) $ pick J j = (A @\<^sub>r B) $$ (pick I i, pick J j)"
+        using index_row(1)[OF pI_dimAB pJ_dimAB] by blast
+      have e2: "row A (pick I i) $ pick J j = A $$ (pick I i, pick J j)"
+        using index_row(1)[OF pI_dimA pJ_dimA] by blast
+      from e1 e2 row_eq show "(A @\<^sub>r B) $$ (pick I i, pick J j) = A $$ (pick I i, pick J j)" by simp
+    qed
     then show ?thesis 
       using 24 25 26 by presburger
   next
