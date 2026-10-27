@@ -504,7 +504,28 @@ qed
       moreover have
         "{{x, y} |x y. x \<in> (connected_component F u) \<and> y \<in> (connected_component F v) \<and> {x, y} \<in> F} =
          {{x, y} |x y. x \<in> (connected_component F v) \<and> y \<in> (connected_component F u) \<and> {x, y} \<in> F}"
-        by (metis (no_types, opaque_lifting) insert_commute)
+        proof (rule set_eqI)
+          fix e
+          show "e \<in> {{x, y} |x y. x \<in> connected_component F u \<and> y \<in> connected_component F v \<and> {x, y} \<in> F} \<longleftrightarrow>
+                e \<in> {{x, y} |x y. x \<in> connected_component F v \<and> y \<in> connected_component F u \<and> {x, y} \<in> F}"
+          proof
+            assume "e \<in> {{x, y} |x y. x \<in> connected_component F u \<and> y \<in> connected_component F v \<and> {x, y} \<in> F}"
+            then obtain x y where e_eq: "e = {x, y}" and x_u: "x \<in> connected_component F u" and y_v: "y \<in> connected_component F v" and xyF: "{x, y} \<in> F"
+              by blast
+            then have yxF: "{y, x} \<in> F" by (simp add: insert_commute)
+            from xyF have swap: "{x, y} = {y, x}" by (simp add: insert_commute)
+            then show "e \<in> {{x, y} |x y. x \<in> connected_component F v \<and> y \<in> connected_component F u \<and> {x, y} \<in> F}"
+              using e_eq x_u y_v yxF by blast
+          next
+            assume "e \<in> {{x, y} |x y. x \<in> connected_component F v \<and> y \<in> connected_component F u \<and> {x, y} \<in> F}"
+            then obtain x y where e_eq: "e = {x, y}" and x_v: "x \<in> connected_component F v" and y_u: "y \<in> connected_component F u" and xyF: "{x, y} \<in> F"
+              by blast
+            then have yxF: "{y, x} \<in> F" by (simp add: insert_commute)
+            from xyF have swap: "{x, y} = {y, x}" by (simp add: insert_commute)
+            then show "e \<in> {{x, y} |x y. x \<in> connected_component F u \<and> y \<in> connected_component F v \<and> {x, y} \<in> F}"
+              using e_eq x_v y_u yxF by blast
+          qed
+        qed
       ultimately have "component_edges F C =
         {{x, y} |x y. {x, y} \<subseteq> (connected_component F u) \<and> {x, y} \<in> F} \<union>
         {{x, y} |x y. {x, y} \<subseteq> (connected_component F v) \<and> {x, y} \<in> F} \<union>
