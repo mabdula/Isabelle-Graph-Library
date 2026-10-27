@@ -519,10 +519,49 @@ lemma path_can_be_split:
          (\<exists>p1 p2. p1 \<noteq> [] \<and> p2 \<noteq> [] \<and> path G p1 \<and> path G p2 \<and>
                              ((last p1 = w \<and> hd p2 = x) \<or> (last p1 = x \<and> hd p2 = w)) \<and>
                              hd p1 = hd p \<and> last p2 = last p)"
-  using assms
-  using vwalk_betw_can_be_split[OF _ , simplified walk_betw_def, where p = p and u = "hd p" and v = "last p"]
-  apply simp
-  by (smt (verit, ccfv_SIG))
+proof -
+  have pathG': "path (insert {w,x} G) p"
+    using assms(1) by (simp add: assms(2))
+  have walk': "walk_betw (insert {w,x} G) (hd p) p (last p)"
+    by (rule nonempty_path_walk_between[OF pathG' assms(4) refl refl])
+  have wV: "w \<in> Vs G" and xV: "x \<in> Vs G"
+    using assms(3) by auto
+  from vwalk_betw_can_be_split[OF walk' wV xV]
+  consider (whole) q where "walk_betw G (hd p) q (last p)"
+    | (split1) p1 p2 where "walk_betw G (hd p) p1 w" "walk_betw G x p2 (last p)"
+    | (split2) p1 p2 where "walk_betw G (hd p) p1 x" "walk_betw G w p2 (last p)"
+    by blast
+  then show ?thesis
+  proof cases
+    case whole
+    then show ?thesis
+      by (auto dest: walk_between_nonempty_pathD)
+  next
+    case split1
+    then obtain p1 p2
+      where w1: "walk_betw G (hd p) p1 w" and w2: "walk_betw G x p2 (last p)"
+      by blast
+    from w1 have f1: "path G p1 \<and> p1 \<noteq> [] \<and> hd p1 = hd p \<and> last p1 = w"
+      by (auto dest: walk_between_nonempty_pathD(1) walk_between_nonempty_pathD(2)
+                         walk_between_nonempty_pathD(3) walk_between_nonempty_pathD(4))
+    from w2 have f2: "path G p2 \<and> p2 \<noteq> [] \<and> hd p2 = x \<and> last p2 = last p"
+      by (auto dest: walk_between_nonempty_pathD(1) walk_between_nonempty_pathD(2)
+                         walk_between_nonempty_pathD(3) walk_between_nonempty_pathD(4))
+    then show ?thesis using f1 by blast
+  next
+    case split2
+    then obtain p1 p2
+      where w1: "walk_betw G (hd p) p1 x" and w2: "walk_betw G w p2 (last p)"
+      by blast
+    from w1 have f1: "path G p1 \<and> p1 \<noteq> [] \<and> hd p1 = hd p \<and> last p1 = x"
+      by (auto dest: walk_between_nonempty_pathD(1) walk_between_nonempty_pathD(2)
+                         walk_between_nonempty_pathD(3) walk_between_nonempty_pathD(4))
+    from w2 have f2: "path G p2 \<and> p2 \<noteq> [] \<and> hd p2 = w \<and> last p2 = last p"
+      by (auto dest: walk_between_nonempty_pathD(1) walk_between_nonempty_pathD(2)
+                         walk_between_nonempty_pathD(3) walk_between_nonempty_pathD(4))
+    then show ?thesis using f1 by blast
+  qed
+qed
 
 lemma path_can_be_split_2:
   assumes "path (insert {w,x} G) p" "w \<in> Vs G" "x \<notin> Vs G" "p \<noteq> []"
