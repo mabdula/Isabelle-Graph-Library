@@ -2372,8 +2372,16 @@ proof-
    proof-
      have "weight (rev (search_rev_path s connections pred)@[v])
           = weight (butlast (rev (search_rev_path s connections pred))@[pred, v])"
-       apply(rule  vwalk_bet_props[OF vwalk_s_pred])
-       by(metis append_butlast_last_cancel)
+      proof(rule vwalk_bet_props[OF vwalk_s_pred], goal_cases)
+        case 1
+        have "rev (search_rev_path s connections pred) @ [v]
+              = (butlast (rev (search_rev_path s connections pred))
+                  @ [last (rev (search_rev_path s connections pred))]) @ [v]"
+          using 1 by (subst append_butlast_last_cancel) auto
+        also have "\<dots> = butlast (rev (search_rev_path s connections pred)) @ [pred, v]"
+          using 1 by auto
+        finally show ?case by simp
+      qed
      also have "... = weight (butlast (rev (search_rev_path s connections pred))@[pred]) 
                            +  edge_costs pred v"
        using  weight_append_last[of _ pred v, simplified] by simp
