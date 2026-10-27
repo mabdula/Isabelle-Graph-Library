@@ -949,7 +949,41 @@ proof-
     by(intro parent_spec_pres(2)[OF invars(2,3,1) ass] \<open>parent par\<close>[unfolded parent_def])
   moreover  have "\<forall>v''. (par(v2 \<mapsto> v1)) v'' \<noteq> Some v3"
     using flabel_par_invar_props[OF invars(1)] if1_props[OF ass]
-    by (metis flabel_invar_def invars(3) map_upd_Some_unfold option.distinct(1))
+  proof -
+    have flabel_v2_None: "flabel v2 = None"
+      using if1_props(3)[OF ass] .
+    have match_v2_v3: "{v2, v3} \<in> M"
+      using if1_props(4)[OF ass] .
+    have flabel_v3_None: "flabel v3 = None"
+      using invars(3) flabel_v2_None match_v2_v3
+      unfolding flabel_invar_def
+      by blast
+    have v1_ne_v3: "v1 \<noteq> v3"
+      using if1_props(2)[OF ass] flabel_v3_None
+      by auto
+    show "\<forall>v''. (par(v2 \<mapsto> v1)) v'' \<noteq> Some v3"
+    proof (intro allI notI)
+      fix v''
+      assume "(par(v2 \<mapsto> v1)) v'' = Some v3"
+      then show False
+      proof (cases "v'' = v2")
+        case True
+        then have "v1 = v3"
+          using \<open>(par(v2 \<mapsto> v1)) v'' = Some v3\<close>
+          by simp
+        then show False
+          using v1_ne_v3 by simp
+      next
+        case False
+        then have "par v'' = Some v3"
+          using \<open>(par(v2 \<mapsto> v1)) v'' = Some v3\<close>
+          by simp
+        then show False
+          using flabel_par_invar_props(2)[OF invars(1) flabel_v3_None]
+          by blast
+      qed
+    qed
+  qed
   ultimately have "\<forall>v'\<in>set (parent_spec.follow (par(v2 \<mapsto> v1)) v). v' \<noteq> v3"
     apply(intro v2_nin_ancestors neq) .
   then have "\<forall>v'\<in>set (parent_spec.follow (par(v2 \<mapsto> v1)) v). (par(v2 \<mapsto> v1)) v' = (par(v2 \<mapsto> v1, v3 \<mapsto> v2)) v'"
