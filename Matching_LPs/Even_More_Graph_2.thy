@@ -59,7 +59,20 @@ proof -
     unfolding edges_list_def using set_set_to_list 
     using \<open>finite E\<close> by blast
   have "edges_list E ! k \<in> set (edges_list E)" 
-    by (metis \<open>set (edges_list E) = E\<close> assms card_length not_less nth_mem order_trans_rules(23))
+proof -
+  have "distinct (edges_list E)"
+    unfolding edges_list_def using set_set_to_list_distinct \<open>finite E\<close> by blast
+  hence len_eq: "length (edges_list E) = card (set (edges_list E))"
+    by (simp add: distinct_card)
+  have "card (set (edges_list E)) = card E"
+    using \<open>set (edges_list E) = E\<close> by simp
+  hence "length (edges_list E) = card E"
+    using len_eq by simp
+  hence "k < length (edges_list E)"
+    using assms by simp
+  then show "edges_list E ! k \<in> set (edges_list E)"
+    by (rule nth_mem)
+qed
   show ?thesis 
     using \<open>edges_list E ! k \<in> set (edges_list E)\<close> \<open>set (edges_list E) = E\<close> by blast
 qed
