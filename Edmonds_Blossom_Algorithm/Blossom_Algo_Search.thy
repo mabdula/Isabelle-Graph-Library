@@ -3639,7 +3639,18 @@ qed
           qed
           moreover have "card e = 2" if "e \<in> M'" for e
             using graph matching(2)
-            by (metis dblton_graph_def Diff_subset M'(2) card_2_iff insert_subset subset_iff that)
+          proof -
+            have "M' \<subseteq> M"
+              using M'(2) by auto
+            then have "e \<in> M"
+              using that by blast
+            then have "e \<in> G"
+              using matching(2) by blast
+            then obtain v1 v2 where "e = {v1, v2}" "v1 \<noteq> v2"
+              using graph by (blast elim: dblton_graphE)
+            then show "card e = 2"
+              by simp
+          qed
           moreover have "e \<inter> e' = {}" if "e \<in> M'" "e' \<in> M'" "e \<noteq> e'" for e e'
             using matching(1) that
             unfolding matching_def2
