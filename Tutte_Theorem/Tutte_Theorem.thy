@@ -1993,7 +1993,23 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
           using \<open>{x} \<notin> singl_in_diff G X\<close> by force
         then have 9:"odd_comps_in_diff G X \<subset> odd_comps_in_diff G (X \<union> {v})" 
           unfolding odd_comps_in_diff_def 
-          by (metis UnCI \<open>{x} \<in> singl_in_diff G (X \<union> {v})\<close> odd_comps_in_diff_def odd_sub psubsetI)
+        proof -
+          have inv:"{x} \<in> odd_comps_in_diff G (X \<union> {v})"
+            using \<open>{x} \<in> singl_in_diff G (X \<union> {v})\<close>
+            unfolding odd_comps_in_diff_def by blast
+          show "odd_components (graph_diff G X) \<union> singl_in_diff G X
+                \<subset> odd_components (graph_diff G (X \<union> {v})) \<union> singl_in_diff G (X \<union> {v})"
+          proof (rule psubsetI)
+            show "odd_components (graph_diff G X) \<union> singl_in_diff G X
+                  \<subseteq> odd_components (graph_diff G (X \<union> {v})) \<union> singl_in_diff G (X \<union> {v})"
+              by (rule odd_sub[unfolded odd_comps_in_diff_def])
+            show "odd_components (graph_diff G X) \<union> singl_in_diff G X
+                  \<noteq> odd_components (graph_diff G (X \<union> {v})) \<union> singl_in_diff G (X \<union> {v})"
+              using inv[unfolded odd_comps_in_diff_def]
+                \<open>{x} \<notin> odd_comps_in_diff G X\<close>[unfolded odd_comps_in_diff_def]
+              by blast
+          qed
+        qed
         have 7:"finite (connected_components (graph_diff G (X \<union> {v})))"
           by (meson "less.prems"(1) Vs_subset finite_con_comps finite_subset graph_diff_subset)
         have "odd_components (graph_diff G (X \<union> {v})) 
