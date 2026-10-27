@@ -642,7 +642,23 @@ next
       using \<open>i < card I \<or> infinite I\<close> diff_less_mono pick_in_set by presburger
     have 6:"(LEAST a. a\<in>((\<lambda>i. i - k) ` I) \<and> a > pick I i - k) = 
         (LEAST a. a\<in>((\<lambda>i. i - k) ` ( {x. x \<in> I \<and> x > pick I i})))"
-      by (metis (no_types, lifting) 5 mem_Collect_eq)
+    proof -
+      have feq: "(\<lambda>a. a \<in> (\<lambda>i. i - k) ` I \<and> a > pick I i - k) =
+                 (\<lambda>a. a \<in> (\<lambda>i. i - k) ` {x \<in> I. x > pick I i})"
+      proof (intro ext iffI)
+        fix a
+        assume "a \<in> (\<lambda>i. i - k) ` I \<and> a > pick I i - k"
+        thus "a \<in> (\<lambda>i. i - k) ` {x \<in> I. x > pick I i}"
+          using 5 by blast
+      next
+        fix a
+        assume "a \<in> (\<lambda>i. i - k) ` {x \<in> I. x > pick I i}"
+        thus "a \<in> (\<lambda>i. i - k) ` I \<and> a > pick I i - k"
+          using 5 by blast
+      qed
+      show ?thesis
+        using arg_cong[OF feq, of Least] by simp
+    qed
     have 9:"pick I (Suc i) = (LEAST a. a\<in>I \<and> a > pick I i)"
       using DL_Missing_Sublist.pick.simps(2)
       by presburger
