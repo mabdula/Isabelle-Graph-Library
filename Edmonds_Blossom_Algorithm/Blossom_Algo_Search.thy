@@ -1350,7 +1350,40 @@ next
       by simp
   qed
   ultimately have "y \<noteq> v3"
-    by (metis \<open>par' x = Some y\<close> \<open>{v2, v3} \<in> M\<close> ass flabel_invar_def flabel_par_invar_props(2) fun_upd_other if1_props(3) invars(3) invars(4) par')
+  proof -
+    have flabel_v3_none: "flabel v3 = None"
+      using invars(3) \<open>{v2, v3} \<in> M\<close> if1_props(3)[OF ass]
+      unfolding flabel_invar_def
+      by blast
+    have par_not_v3: "\<forall>v'. par v' \<noteq> Some v3"
+      using flabel_par_invar_props(2)[OF invars(4) flabel_v3_none] .
+    have v2_neq_v3: "v2 \<noteq> v3"
+      using \<open>{v2, v3} \<in> M\<close> \<open>\<And>v. {v} \<notin> M\<close> by auto
+    consider (cx3) "x = v3" | (cx2) "x = v2" | (cxo) "x \<noteq> v2 \<and> x \<noteq> v3"
+      by blast
+    then show "y \<noteq> v3"
+    proof cases
+      case cx3
+      then have "y = v2"
+        using \<open>x = v3 \<longrightarrow> y = v2\<close> by blast
+      then show ?thesis
+        using v2_neq_v3 by simp
+    next
+      case cx2
+      then show ?thesis
+        using \<open>x = v2 \<Longrightarrow> y \<noteq> v3\<close> by blast
+    next
+      case cxo
+      then have "x \<noteq> v2" "x \<noteq> v3"
+        by auto
+      then have "par' x = par x"
+        using par' by simp
+      then have "par x = Some y"
+        using \<open>par' x = Some y\<close> by simp
+      then show ?thesis
+        using par_not_v3 by auto
+    qed
+  qed
   moreover have "v3 \<noteq> v2"
     using \<open>\<And>v. {v} \<notin> M\<close> \<open>{v2, v3} \<in> M\<close> by auto
   moreover have "\<forall>v'. par v' \<noteq> Some v2"
