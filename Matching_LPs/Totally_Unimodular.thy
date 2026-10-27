@@ -739,7 +739,14 @@ proof -
     have "i < card I" 
       using assms(1) False by auto
     have "card (I - {i. i < k \<and> i \<in> I}) = card I - card {i. i < k \<and> i \<in> I}" 
-      by (metis (no_types, lifting) False card_Diff_subset finite_subset mem_Collect_eq subsetI)
+    proof -
+      have subset1: "{i. i < k \<and> i \<in> I} \<subseteq> I" by blast
+      have subset2: "{i. i < k \<and> i \<in> I} \<subseteq> {0..<k}" by auto
+      have fin: "finite {i. i < k \<and> i \<in> I}"
+        using finite_subset[OF subset2 finite_atLeastLessThan] by blast
+      show "card (I - {i. i < k \<and> i \<in> I}) = card I - card {i. i < k \<and> i \<in> I}"
+        using card_Diff_subset[OF fin subset1] .
+    qed
     then show ?thesis 
       using False assms(1) assms(2) diff_less_mono by presburger
   qed
