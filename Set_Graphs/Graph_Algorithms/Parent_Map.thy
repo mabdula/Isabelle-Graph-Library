@@ -450,9 +450,18 @@ lemma wf_par':
   shows "parent_spec par'" (is ?g1) "parent_spec (par(v2 := Some v1))" (is ?g2)
 proof-
   have "(v2, v1) \<notin> {(x,y) | x y. (Some x = par y)}\<^sup>*"
-    using neq(1) no_ances(1)
-    apply clarsimp
-    by (metis (mono_tags, lifting) converse_rtranclE mem_Collect_eq old.prod.case)
+  proof (rule notI)
+    assume "(v2, v1) \<in> {(x, y) | x y. (Some x = par y)}\<^sup>*"
+    then show False
+    proof (cases rule: converse_rtranclE)
+      case base
+      then show False using neq(1) by blast
+    next
+      case (step y)
+      then have "Some v2 = par y" by force
+      then show False using no_ances(1) by fastforce
+    qed
+  qed
   then have wf_v2_v1: "wf (insert (v1, v2) {(x,y) | x y. (Some x = par y)})"
     using wf[unfolded parent_spec_def] by blast
   moreover have "{(x, y) |x y. Some x = (par(v2 \<mapsto> v1)) y} = (insert (v1, v2) {(x, y) |x y. Some x = par y})"
