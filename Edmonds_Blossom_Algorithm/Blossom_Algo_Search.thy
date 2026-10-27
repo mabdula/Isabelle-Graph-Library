@@ -2975,7 +2975,39 @@ qed
 
 lemma OSC_union: "odd_set_cover OSC1 G1 \<Longrightarrow> odd_set_cover OSC2 G2 \<Longrightarrow> odd_set_cover (OSC1 \<union> OSC2) (G1 \<union> G2)"
   unfolding odd_set_cover_def
-  by (auto; metis Un_iff)
+proof -
+  assume h1: "finite OSC1 \<and> (\<forall>s\<in>OSC1. odd (card s) \<and> finite s) \<and>
+                (\<forall>e\<in>G1. \<exists>s\<in>OSC1. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s)"
+  assume h2: "finite OSC2 \<and> (\<forall>s\<in>OSC2. odd (card s) \<and> finite s) \<and>
+                (\<forall>e\<in>G2. \<exists>s\<in>OSC2. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s)"
+  have finite_u: "finite (OSC1 \<union> OSC2)"
+    using h1 h2 by auto
+  have odd_fin_u: "\<forall>s\<in>OSC1 \<union> OSC2. odd (card s) \<and> finite s"
+    using h1 h2 by auto
+  have cover_u: "\<forall>e\<in>G1 \<union> G2. \<exists>s\<in>OSC1 \<union> OSC2. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s"
+  proof
+    fix e assume e_mem: "e \<in> G1 \<union> G2"
+    show "\<exists>s\<in>OSC1 \<union> OSC2. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s"
+    proof (cases "e \<in> G1")
+      case True
+      with h1 obtain s where s1: "s \<in> OSC1" and s2: "if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s"
+        by blast
+      have "s \<in> OSC1 \<union> OSC2" using s1 by simp
+      with s2 show ?thesis by blast
+    next
+      case False
+      with e_mem have "e \<in> G2" by simp
+      with h2 obtain s where s1: "s \<in> OSC2" and s2: "if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s"
+        by blast
+      have "s \<in> OSC1 \<union> OSC2" using s1 by simp
+      with s2 show ?thesis by blast
+    qed
+  qed
+  from finite_u odd_fin_u cover_u
+  show "finite (OSC1 \<union> OSC2) \<and> (\<forall>s\<in>OSC1 \<union> OSC2. odd (card s) \<and> finite s) \<and>
+          (\<forall>e\<in>G1 \<union> G2. \<exists>s\<in>OSC1 \<union> OSC2. if card s = 1 then s \<inter> e \<noteq> {} else e \<subseteq> s)"
+    by blast
+qed
 
 lemma OSC_inter: "odd_set_cover OSC G1 \<Longrightarrow> odd_set_cover OSC (G1 \<inter> G2)"
   unfolding odd_set_cover_def
