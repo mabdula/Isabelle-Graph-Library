@@ -1593,7 +1593,15 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
 
     then have "\<exists>xs p_x_v. (rev (stack dfs_aux_state) = xs @ p_x_v \<and> p_x_v \<noteq> [] \<and> hd p_x_v = x)"
-      by (metis list.discI list.sel(1) set_rev split_list)
+    proof -
+      from \<open>x \<in> set (stack (dfs_aux_state))\<close>
+      have "x \<in> set (rev (stack dfs_aux_state))"
+        by (simp add: set_rev)
+      then obtain xs zs where "rev (stack dfs_aux_state) = xs @ x # zs"
+        by (blast dest: split_list)
+      then show ?thesis
+        by (intro exI[of _ xs] exI[of _ "x # zs"]) simp
+    qed
     then obtain xs p_x_v where "rev (stack dfs_aux_state) = xs @ p_x_v" "p_x_v \<noteq> []" "hd p_x_v = x"
       by blast
 
