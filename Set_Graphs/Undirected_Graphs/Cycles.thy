@@ -36,7 +36,10 @@ proof (rule ccontr, goal_cases)
     by blast
 
   with epath_subset_other_set[OF \<open>epath G u p u\<close> \<open>set p \<subseteq> G'\<close>] decycle_def
-    have "decycle G' u p" by metis
+    have "decycle G' u p"
+      unfolding decycle_def
+      using epath_subset_other_set[OF \<open>epath G u p u\<close> \<open>set p \<subseteq> G'\<close>] \<open>length p > 2\<close> \<open>distinct p\<close>
+      by blast
   with \<open>\<nexists>u. decycle G' u p\<close> show ?case by blast
 qed
 
