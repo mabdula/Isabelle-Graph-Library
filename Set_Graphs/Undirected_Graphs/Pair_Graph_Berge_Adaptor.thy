@@ -421,9 +421,35 @@ lemma no_self_loops_2:
 
 lemma awalk_imp_epath:
   "awalk D u p v \<Longrightarrow> epath G u (map undirected p) v"
-  apply (induction p arbitrary: u v)
-  apply fastforce
-  by (metis (no_types, lifting) awalk_Cons_iff edge_iff_edge_1 epath.simps(2) list.simps(9) no_self_loops_1 prod.collapse undirected.simps)
+proof (induction p arbitrary: u v)
+  case Nil
+  then show ?case by fastforce
+next
+  case (Cons e es u v)
+  obtain a b where e_ab: "e = (a, b)"
+    by fastforce
+  from Cons.prems e_ab have u_eq: "u = a" and edge_in_D: "(a, b) \<in> D" and awalk_rest: "awalk D b es v"
+    by (auto simp: awalk_Cons_iff)
+  have edge_in_G: "{a, b} \<in> G"
+    using edge_in_D edge_iff_edge_1 by blast
+  have a_neq_b: "a \<noteq> b"
+    using edge_in_D no_self_loops_1 by fastforce
+  have epath_rest: "epath G b (map undirected es) v"
+    using Cons.IH[OF awalk_rest] .
+  have "epath G a (undirected e # map undirected es) v"
+    unfolding epath.simps(2)
+  proof (intro conjI)
+    show "\<exists>w. a \<noteq> w \<and> {a, w} = undirected e \<and> epath G w (map undirected es) v"
+    proof (intro exI[of _ b] conjI)
+      show "a \<noteq> b" using a_neq_b .
+      show "{a, b} = undirected e" using e_ab by simp
+      show "epath G b (map undirected es) v" using epath_rest .
+    qed
+    show "undirected e \<in> G" using edge_in_G e_ab by simp
+  qed
+  then show ?case
+    using u_eq by simp
+qed
 
 lemma awalk_distinct_imp_epath_distinct:
   "awalk D u p v \<Longrightarrow> distinct (tl (awalk_verts u p)) \<Longrightarrow> distinct (butlast (awalk_verts u p)) \<Longrightarrow>
