@@ -492,7 +492,20 @@ lemma odd_comps_in_diff_connected:
   assumes "C \<in> (odd_comps_in_diff G X)" 
   shows "\<exists>x y. x \<in> C \<and> y \<in> X \<and> {x, y} \<in> G"
   using comp_out_nonempty[of G C X] 
-  by (smt (verit, best) Collect_empty_eq assms(1) assms(2) assms(3) comp_out_def insert_commute)
+proof -
+  have "comp_out G C X \<noteq> {}"
+    using assms comp_out_nonempty[of G C X] by blast
+  then obtain e where "e \<in> comp_out G C X"
+    by blast
+  then have "e \<in> G \<and> (\<exists>x y. e = {x, y} \<and> y \<in> C \<and> x \<in> X)"
+    by (simp add: comp_out_member)
+  then obtain x y where xy: "e = {x, y}" "y \<in> C" "x \<in> X" "e \<in> G"
+    by auto
+  then have "{y, x} \<in> G"
+    by (simp add: insert_commute)
+  then show ?thesis
+    using xy by blast
+qed
 
 definition barrier where
   "barrier G X = ( X \<noteq> {} \<and> card (odd_comps_in_diff G X) = card X)"
