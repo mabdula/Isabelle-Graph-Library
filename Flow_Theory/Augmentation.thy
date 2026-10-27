@@ -1191,9 +1191,14 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
   next
     case False
     hence " augment_edges f \<gamma> (e # es) d = augment_edges f \<gamma> ( es) d"
-      apply(subst augment_edges.simps)
-      by (metis (no_types, lifting) "2.prems"(2) augment_edges.simps(2) e_ot_first_unfold ereal.inject erev.simps(2)
-        erve_erve_id list.set_intros(1) rcap.simps(2))
+    proof -
+      have "e \<noteq> F d"
+        using "2.prems"(2) by auto
+      hence "d \<noteq> oedge e"
+        using False by (cases e) auto
+      thus "augment_edges f \<gamma> (e # es) d = augment_edges f \<gamma> es d"
+        by simp
+    qed
      then show ?thesis 
        using "2.IH" "2.prems"(1) "2.prems"(2) "2.prems"(3) False by auto   
     qed
