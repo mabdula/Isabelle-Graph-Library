@@ -1380,7 +1380,7 @@ proof-
       "p = p1 @ us \<and> us @ v # p' = v1 # v2 # p2 \<or> p @ us = p1 \<and> v # p' = us @ v1 # v2 # p2"
     using in_edges_of_path_split[OF assms(1)]
     apply(simp add: append_eq_append_conv2)
-    by metis
+    by blast
   moreover have "v1 = v \<or> v2 = v"
     using assms(2) v1v2p1p2us
     by auto
