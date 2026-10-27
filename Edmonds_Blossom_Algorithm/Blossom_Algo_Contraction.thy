@@ -1457,7 +1457,7 @@ proof-
       using snd_pfx_nempty pfxs_are_pfxs by auto
     moreover have "hd (rev pfx1) = last pfx2" 
       using hd_rev pfx_common_end pfxs_are_pfxs
-      by (metis option.sel)
+      by (simp add: hd_rev pfx_common_end [of pfx1 "Some pfx2" p1 p2] pfxs_are_pfxs)
     ultimately show ?thesis
       by auto
   qed
