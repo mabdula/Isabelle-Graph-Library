@@ -1505,7 +1505,24 @@ proof(rule, goal_cases)
       qed
     qed
     hence weight_sum:"edge_costs u v + weight r < 0"
-      by (metis ab_semigroup_add_class.add_ac(1) ereal_le_add_self leD leI)
+    proof -
+      assume big: "snd (the (connection_lookup connections u)) + edge_costs u v + weight r
+                   < snd (the (connection_lookup connections u))"
+      show "edge_costs u v + weight r < 0"
+      proof (rule ccontr)
+        assume "\<not> edge_costs u v + weight r < 0"
+        hence h0: "0 \<le> edge_costs u v + weight r"
+          by (simp add: not_less)
+        have "snd (the (connection_lookup connections u))
+              \<le> snd (the (connection_lookup connections u)) + (edge_costs u v + weight r)"
+          using h0 by (rule ereal_le_add_self)
+        hence "snd (the (connection_lookup connections u))
+               \<le> snd (the (connection_lookup connections u)) + edge_costs u v + weight r"
+          by (simp add: ac_simps)
+        from this big show False
+          by simp
+      qed
+    qed
     have lastr:"last r = u" 
       using r_prop(1) by fastforce
     have "edge_costs u v + weight r = weight (r@[v])"
