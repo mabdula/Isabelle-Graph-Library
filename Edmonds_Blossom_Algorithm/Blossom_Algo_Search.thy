@@ -4084,8 +4084,24 @@ proof-
     by auto
   then show "\<And>v r lab. flabel v = Some (r, lab) \<Longrightarrow> alt_labels_invar flabel r (parent_spec.follow par v)"
     using assms  
-    apply auto
-    by (metis Pair_inject option.inject option.simps(3))
+  proof -
+    fix v r lab
+    assume flabel_eq: "flabel v = Some (r, lab)"
+    have par_none: "par v = None"
+      using initialisation(3) by simp
+    have flabel_def: "flabel v = (if v \<in> Vs G \<and> v \<notin> Vs M then Some (v, Even) else None)"
+      using initialisation(1) by simp
+    from flabel_eq flabel_def have in_Vs: "v \<in> Vs G \<and> v \<notin> Vs M"
+      by (auto split: if_splits)
+    with flabel_def have flabel_v_even: "flabel v = Some (v, Even)"
+      by simp
+    from flabel_v_even flabel_eq have "r = v" "lab = Even"
+      by auto
+    then have "alt_labels_invar flabel r [v]"
+      using flabel_v_even by simp
+    then show "alt_labels_invar flabel r (parent_spec.follow par v)"
+      using par_none by simp
+  qed
   show "\<And>v r. flabel v = Some (r, Even) \<Longrightarrow> alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (parent_spec.follow par v)"
     using assms  
     by (auto simp: alt_list_step alt_list_empty)
