@@ -262,7 +262,13 @@ next
         by (rule decycle_not_subset)
     qed
     moreover have "set c \<subseteq> (insert {v, v'} Y)" 
-      using \<open>decycle (insert {v, v'} Y) w c\<close> decycle_def epath_edges_subset by metis
+      proof -
+        have "epath (insert {v, v'} Y) w c w"
+          using \<open>decycle (insert {v, v'} Y) w c\<close>
+          unfolding decycle_def by blast
+        then show "set c \<subseteq> insert {v, v'} Y"
+          by (rule epath_edges_subset)
+      qed
     ultimately have "{v, v'} \<in> set c" by blast
     have "(insert {v, v'} Y) \<subseteq> G"
       using assms(1) assms(2) path2.hyps(1) by blast
