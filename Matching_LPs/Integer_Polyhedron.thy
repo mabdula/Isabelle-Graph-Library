@@ -306,7 +306,15 @@ proof -
   proof
     assume "I \<inter> {0..<nr} = (J \<union> I) \<inter> {0..<nr}" 
     then have "sub_system A b I = sub_system A b (J \<union> I)" 
-      by (metis A b gram_schmidt.same_subsyst_I_intersect_rows)
+    proof -
+      have "sub_system A b I = sub_system A b (I \<inter> {0..<nr})"
+        using same_subsyst_I_intersect_rows[OF A b] .
+      also have "\<dots> = sub_system A b ((J \<union> I) \<inter> {0..<nr})"
+        by (simp only: \<open>I \<inter> {0..<nr} = (J \<union> I) \<inter> {0..<nr}\<close>)
+      also have "\<dots> = sub_system A b (J \<union> I)"
+        using same_subsyst_I_intersect_rows[OF A b] by simp
+      finally show ?thesis .
+    qed
     then have "{x. A' *\<^sub>v x = b' \<and> x \<in> P} = {x. C *\<^sub>v x = d \<and> x \<in> P}" 
       by (metis (no_types, lifting) Pair_inject \<open>(C', d') = sub_system A b (J \<union> I)\<close>
           \<open>{x. C *\<^sub>v x = d \<and> x \<in> P} = {x. C' *\<^sub>v x = d' \<and> x \<in> P}\<close> assms(4))
