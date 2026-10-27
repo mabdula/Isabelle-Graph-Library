@@ -19,7 +19,13 @@ lemma unique_path_backward_determ_acyclic:
 proof(rule ccontr, goal_cases)
   case 1
   have same_lasts: " last p = last q"
-    by(metis assms(2) assms(3) last_of_vwalk_bet)
+  proof -
+    have "v = last p"
+      using assms(2) by (rule last_of_vwalk_bet)
+    moreover have "v = last q"
+      using assms(3) by (rule last_of_vwalk_bet)
+    ultimately show ?thesis by simp
+  qed
   obtain ys p' q' where props:"p = p'@ys" "q = q'@ys"
                                 "\<And>  ys' p' q'. p = p'@ys' \<Longrightarrow> q = q'@ys' \<Longrightarrow> length ys' \<le> length ys"
     using assms(5)  assms(6)  same_lasts
