@@ -495,8 +495,20 @@ proof -
     then show "dim_row A'' = dim_vec b''" using A''_b'' dims_subsyst_same' by blast
   qed
   have "dim_row A \<le> dim_row C" using C_d 
-    by (metis A add_lessD1 b carrier_matD(1) carrier_vecD index_append_vec(2) 
-        linorder_le_less_linear order_less_irrefl)
+proof -
+  have "dim_row C = dim_row (A @\<^sub>r (A' @\<^sub>r (-A')))"
+    using C_d(1) by simp
+  also have "... = dim_vec (b @\<^sub>v (b' @\<^sub>v (-b')))"
+    using C_d(4) by simp
+  also have "... = dim_vec b + dim_vec (b' @\<^sub>v (-b'))"
+    using index_append_vec(2) by simp
+  finally have "dim_row C = dim_vec b + dim_vec (b' @\<^sub>v (-b'))" .
+  moreover have "dim_vec b = nr"
+    using b carrier_vecD by blast
+  moreover have "dim_row A = nr"
+    using A carrier_matD(1) by blast
+  ultimately show "dim_row A \<le> dim_row C" by simp
+qed
   have "\<forall> i < dim_row A. (row C i) = row A i" 
     using C_d(1) append_rows_index_same[of A nr "A' @\<^sub>r - A'" _]  
     by (metis (no_types, lifting) A A'_b' b carrier_matI face_is_polyhedron'(3))
