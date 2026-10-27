@@ -656,8 +656,14 @@ proof(rule ccontr)
       using assms(2) tutte_conditionE by blast
   qed
   then have "card (odd_comps_in_diff G (X\<union>{x}))\<le> card X +1" 
-    by (metis One_nat_def Un_insert_right  add.right_neutral add_Suc_right assms(1) assms(3) 
-        boolean_algebra_cancel.sup0 card.insert finite_subset insert_absorb trans_le_add1)
+  proof -
+    have "card (X \<union> {x}) \<le> card X + card {x}"
+      by (rule card_Un_le)
+    then have "card (odd_comps_in_diff G (X \<union> {x})) \<le> card X + card {x}"
+      using \<open>card (odd_comps_in_diff G (X \<union> {x})) \<le> card (X \<union> {x})\<close> by linarith
+    then show "card (odd_comps_in_diff G (X \<union> {x})) \<le> card X + 1"
+      by simp
+  qed
   have "card (odd_comps_in_diff G X) = card X" 
     using assms(4) barrier_def by blast
   have "card ((odd_comps_in_diff G X) - {C}) = card X - 1" 
