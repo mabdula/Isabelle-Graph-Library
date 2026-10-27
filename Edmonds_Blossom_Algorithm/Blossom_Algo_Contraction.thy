@@ -1185,7 +1185,17 @@ next
     then show ?thesis
       using cons1(1,2)
       apply (clarsimp simp add: Let_def split: if_splits prod.splits option.splits)
-      subgoal by (metis IntI Int_commute Int_empty_right distinct.simps(2) distinct_singleton empty_set find_pfx_empty list.set_intros(1))
+      subgoal premises pre
+      proof -
+        from pre have "l1' = []" by (auto dest: find_pfx_empty)
+        then have a2n: "a2 \<notin> set l1'" by simp
+        from pre(5) have iheq: "(None, None) = longest_disj_pfx (a1' # l1') l2"
+          by (rule sym)
+        have ihdisj: "set (a1' # l1') \<inter> set l2 = {}"
+          using pre iheq by blast
+        from a2n ihdisj show "a2 \<notin> set l1' \<and> a1' \<notin> set l2 \<and> set l1' \<inter> set l2 = {}"
+          by auto
+      qed
       subgoal by (metis IntI empty_iff empty_set find_pfx_empty inf_right_idem list.set_intros(1))
       subgoal by (metis (full_types) find_pfx_works_1 insert_disjoint(1) list.simps(15))
       subgoal by (metis (full_types) find_pfx_works_1 insert_disjoint(2) list.simps(15))
