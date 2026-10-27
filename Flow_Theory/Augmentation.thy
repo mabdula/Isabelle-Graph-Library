@@ -363,7 +363,20 @@ next
                                "(sndv (last es)) = v" "set es \<subseteq> \<EE>"
    by blast
   hence "augpath f (e#es)"
-      by (metis "2.hyps"(1) "2.hyps"(2) augpath_simps list.collapse)
+  proof -
+    have es_ne: "es \<noteq> []"
+      using es_Def(1) by (auto simp add: augpath_def prepath_def)
+    have es_eq: "es = hd es # tl es"
+      using es_ne by simp
+    have sndv_eq: "sndv e = fstv (hd es)"
+      using "2.hyps"(2) es_Def(2) by simp
+    have "augpath f (hd es # tl es)"
+      using es_Def(1) es_eq by simp
+    from augpath_intros(2)[OF "2.hyps"(1) sndv_eq this]
+    have "augpath f (e # hd es # tl es)" .
+    then show "augpath f (e # es)"
+      using es_eq by simp
+  qed
   moreover have "set (e#es) \<subseteq> \<EE>" 
       by (simp add: "2.hyps"(3) es_Def)
   ultimately show ?case 
