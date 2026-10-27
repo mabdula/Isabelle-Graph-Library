@@ -1249,7 +1249,7 @@ proof
     by (meson carrier_append_rows carrier_matD(2) carrier_matI mat_of_rows_carrier(1))
   then have 10:"dim_col (mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j) =
       dim_col B - 1" using mat_delete_dim(2) 
-    by metis 
+    by simp
   have 11:"dim_col (submatrix A I (J - {pick J j})) = 
            card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
     using dim_submatrix(2)[of A I "J - {pick J j}"] 
