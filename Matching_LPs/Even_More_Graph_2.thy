@@ -103,7 +103,17 @@ qed
     unfolding vertices_list_def using set_set_to_list 
     using \<open>finite (Vs E)\<close> by blast
   then have "vertices_list E ! k \<in> set (vertices_list E)" 
-    by (metis assms card_length not_less nth_mem order_trans_rules(23))
+proof -
+  assume E: "set (vertices_list E) = Vs E"
+  have "card (set (vertices_list E)) \<le> length (vertices_list E)"
+    by (rule card_length)
+  with E have "card (Vs E) \<le> length (vertices_list E)"
+    by simp
+  with assms have "k < length (vertices_list E)"
+    by simp
+  then show ?thesis
+    by (rule nth_mem)
+qed
   then show ?thesis 
     using \<open>set (vertices_list E) = Vs E\<close> by blast
 qed
