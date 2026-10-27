@@ -3447,9 +3447,35 @@ qed
                 case none
                 then show ?thesis
                   using "2.prems"(6)
-                  by (smt  DiffD1 Diff_insert_absorb False \<open>M - ex = {e}\<close> \<open>e = {v1, v2}\<close>
-                          \<open>e' = {va, vb}\<close> \<open>va \<noteq> vb\<close> edges_are_Vs insert_absorb insert_commute v2
-                          singletonD singleton_insert_inj_eq' that ulabelled_verts_matched_invar_def)
+                proof -
+                  have vb_Vs: "vb \<in> Vs G"
+                    using that \<open>e' = {va, vb}\<close>
+                    by (auto simp: Vs_def)
+                  obtain e2 where e2_mem: "e2 \<in> M - ex" and vb_e2: "vb \<in> e2"
+                    using none "2.prems"(6) vb_Vs
+                    unfolding ulabelled_verts_matched_invar_def
+                    by blast
+                  have "e2 = e"
+                    using e2_mem \<open>M - ex = {e}\<close>
+                    by simp
+                  then have "vb \<in> {v1, v2}"
+                    using vb_e2 \<open>e = {v1, v2}\<close>
+                    by auto
+                  moreover have "vb \<noteq> v2"
+                    using \<open>va \<noteq> vb\<close> v2
+                    by blast
+                  ultimately have "vb = v1"
+                    by auto
+                  then have "e' = e"
+                    using \<open>e' = {va, vb}\<close> \<open>e = {v1, v2}\<close> v2
+                    by (simp add: insert_commute)
+                  then have "e' \<in> M"
+                    using \<open>M - ex = {e}\<close>
+                    by auto
+                  then show ?thesis
+                    using False
+                    by blast
+                qed
               next
                 case odd
                 then have "\<exists>s\<in>lab_osc. s \<inter> e' \<noteq> {} \<and> card s = 1"
