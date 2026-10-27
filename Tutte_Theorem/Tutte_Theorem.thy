@@ -1582,9 +1582,22 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         }
         then show ?thesis by blast
       qed
+    then have barrier_singletons: "\<forall>x \<in> Vs G. barrier G {x}" .
     then have exBarr:"\<exists> X \<subseteq> Vs G. barrier G X" 
-      by (metis "less.prems"(1) False Suc_leI card.empty finite.simps insertCI insert_is_Un 
-          le_less_linear nat.simps(3) sup_ge1 zero_order(2))
+      proof -
+        have "card (Vs G) > 2"
+          using False by simp
+        then have "Vs G \<noteq> {}"
+          by auto
+        then obtain x where x_in: "x \<in> Vs G"
+          by blast
+        then have "barrier G {x}"
+          using barrier_singletons by blast
+        moreover have "{x} \<subseteq> Vs G"
+          using x_in by blast
+        ultimately show ?thesis
+          by blast
+      qed
     let ?B = "{X. X \<subseteq> Vs G \<and> barrier G X}"
     have "finite (Vs G)" 
       by (simp add: "less.prems"(1))
