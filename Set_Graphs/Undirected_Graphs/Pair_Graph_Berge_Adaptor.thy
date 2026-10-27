@@ -484,7 +484,29 @@ next
 
     from \<open>e # p = [(fst e, snd e), (fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))]\<close>
       have "e # p = [(u, snd e), (snd e, snd (p ! 0)), (snd (p ! 0), v)]"
-      by (metis (no_types, lifting) Cons.prems(1) awalk_Cons_iff awalk_ends prod.collapse)
+    proof -
+      from Cons.prems(1) have e1: "fst e = u" and p1: "awalk D (snd e) p v"
+        by (simp_all add: awalk_Cons_iff)
+      from \<open>length p = 2\<close> obtain x y where p_ab: "p = [x, y]"
+        by (cases p) (auto simp: length_Suc_conv)
+      then have nth0: "p ! 0 = x" and nth1: "p ! 1 = y"
+        by simp_all
+      from p1 p_ab have q1: "awalk D (snd e) [x, y] v"
+        by simp
+      from q1 have e2: "fst x = snd e" and q2: "awalk D (snd x) [y] v"
+        by (simp_all add: awalk_Cons_iff)
+      from q2 have e3: "fst y = snd x" and q3: "awalk D (snd y) [] v"
+        by (simp_all add: awalk_Cons_iff)
+      from q3 have e4: "snd y = v"
+        by (simp add: awalk_Nil_iff)
+      from e1 have "e = (u, snd e)"
+        by (simp add: prod.expand)
+      have p_eq: "p = [(snd e, snd (p ! 0)), (snd (p ! 0), v)]"
+        using e2 e3 e4 nth0 nth1 p_ab by (simp add: prod.expand)
+      from \<open>e = (u, snd e)\<close> p_eq
+      show "e # p = [(u, snd e), (snd e, snd (p ! 0)), (snd (p ! 0), v)]"
+        by simp
+    qed
     then have "awalk_verts u (e # p) = [u, snd e, snd (p ! 0), v]"
       by (metis awalk_verts.simps(1) awalk_verts.simps(2))
     with \<open>distinct (tl (awalk_verts u (e # p)))\<close>
