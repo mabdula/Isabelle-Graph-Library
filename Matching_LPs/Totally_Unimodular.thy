@@ -50,7 +50,7 @@ proof -
         using asm(2) unfolding zero_vec_def using index_vec[of _ n "(\<lambda>i. 0)"] 
         by simp
       then have "\<forall> i < n. unit_vec n i \<bullet> x \<ge> 0 "
-        by (metis M.zero_closed Matrix.less_eq_vec_def asm(2) carrier_dim_vec scalar_prod_left_unit)
+        using asm(3) by (simp add: scalar_prod_left_unit)
       then have "\<forall> i < n. - unit_vec n i \<bullet> x \<le> 0" 
         by (metis M.add.one_closed Matrix.less_eq_vec_def asm(2) carrier_vecD index_unit_vec(3) 
             minus_equation_iff neg_0_le_iff_le scalar_prod_uminus_left)
