@@ -3190,7 +3190,7 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
       using `\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> P` 
       by (insert `\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> P`[THEN spec, of 1], simp add: int_ops(2) scalar_vec_one)
     then show ?thesis 
-      by (metis of_int_hom.hom_one scalar_vec_one)  
+      using of_int_hom.hom_one scalar_vec_one by simp
   qed
   then have "v + ?z' \<in> integer_hull P" 
     by (metis \<open>\<forall>x. v + of_int (int x) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z) \<in> integer_hull P\<close> of_int_hom.hom_one
