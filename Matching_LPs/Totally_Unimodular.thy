@@ -514,7 +514,12 @@ proof(cases "k \<in> I")
       using 7 by presburger
   qed
   have 3: "card {i. i < k \<and> i \<in> I - {i. i < k \<and> i \<in> I}} \<le> i - card {i. i < Suc k \<and> i \<in> I}" 
-    by (metis (no_types, lifting) Collect_empty_eq DiffE card_eq_0_iff mem_Collect_eq zero_le)
+  proof -
+    have e: "{i. i < k \<and> i \<in> I - {i. i < k \<and> i \<in> I}} = {}"
+      by blast
+    then show ?thesis
+      by (subst e, simp)
+  qed
   have 5:"pick (I - {i. i < k \<and> i \<in> I} - {k}) (i - card {i. i < Suc k \<and> i \<in> I}) =
            pick (I - {i. i < k \<and> i \<in> I}) (Suc (i - card {i. i < Suc k \<and> i \<in> I}))"
     using pick_is_Suc_if_one_removed'[OF 1 3 2] 
