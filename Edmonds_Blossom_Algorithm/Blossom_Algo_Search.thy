@@ -2882,9 +2882,38 @@ proof-
         using insert
         by (auto simp add: dblton_graph_def)
       moreover have "\<exists>e1 e2. e1 \<noteq> e2 \<and> e1 \<in> M \<and> e2 \<in> M \<and> e1 \<inter> e2 \<noteq> empty" if "2 \<le> card (M \<inter> ev)"
-        using that 
-        apply(simp add: card_le_Suc_iff numeral_2_eq_2 Int_def ex_in_conv ev_def)
-        by (metis (mono_tags, lifting) insert_iff mem_Collect_eq)
+      proof -
+        have finM: "finite M"
+          using insert.prems(1) insert.prems(3) by (rule rev_finite_subset)
+        have finMev: "finite (M \<inter> ev)"
+          using finM by (auto intro: finite_subset)
+        have "0 < card (M \<inter> ev)"
+          using that by simp
+        then obtain e1 where e1: "e1 \<in> M \<inter> ev"
+          using finMev by (auto simp add: card_gt_0_iff)
+        have card_minus: "card ((M \<inter> ev) - {e1}) = card (M \<inter> ev) - 1"
+          using finMev e1 by (simp add: card_Diff_singleton)
+        have card_ge1: "1 \<le> card ((M \<inter> ev) - {e1})"
+          using that card_minus by simp
+        have finMev1: "finite ((M \<inter> ev) - {e1})"
+          using finMev by auto
+        have "0 < card ((M \<inter> ev) - {e1})"
+          using card_ge1 by simp
+        then obtain e2 where e2: "e2 \<in> (M \<inter> ev) - {e1}"
+          by (auto simp add: card_gt_0_iff)
+        show ?thesis
+        proof (intro exI conjI)
+          show "e1 \<noteq> e2" using e2 by auto
+          show "e1 \<in> M" using e1 by auto
+          show "e2 \<in> M" using e2 by auto
+          show "e1 \<inter> e2 \<noteq> {}"
+          proof -
+            have "v \<in> e1" "v \<in> e2"
+              using e1 e2 by (auto simp add: ev_def)
+            then show ?thesis by auto
+          qed
+        qed
+      qed
       then have "card (M \<inter> ev) \<le> 1"
         using \<open>matching M\<close>
         by(fastforce simp add: matching_def)      
