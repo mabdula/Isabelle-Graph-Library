@@ -2214,7 +2214,7 @@ proof-
       by (simp add: insert_commute)
   qed
   have "{v2, v1} \<in> G"
-    by (metis Diff_iff ass if1_def insert_commute)
+    using if1_props(1)[OF ass] by (simp add: insert_commute)
   then have "v1 \<in> Vs G"
     unfolding Vs_def
     by auto
