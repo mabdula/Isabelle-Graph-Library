@@ -1655,7 +1655,28 @@ proof-
     by(intro v1_neq_v2_neq_v3[OF ass])
   moreover have  "\<forall>v'. (par(v2 \<mapsto> v1)) v' \<noteq> Some v3"
     using \<open>v2 \<noteq> v3\<close>
-    by (metis ass compute_alt_path.if1_props(3) compute_alt_path.if1_props(4) compute_alt_path_axioms flabel_invar_def flabel_par_invar_props(2) fun_upd_apply invars(2) invars(3) option.inject v1_neq_v3)
+  proof -
+    have M23: "{v2, v3} \<in> M" and none2: "flabel v2 = None"
+      using if1_props[OF ass] by blast+
+    have none3: "flabel v3 = None"
+      using flabel_invar_props(1)[OF invars(2) M23 none2] .
+    have no_par3: "\<forall>v'. par v' \<noteq> Some v3"
+      using flabel_par_invar_props(2)[OF invars(3) none3] .
+    have neq13: "v1 \<noteq> v3"
+      using v1_neq_v3[OF ass invars(2)] .
+    show "\<forall>v'. (par(v2 \<mapsto> v1)) v' \<noteq> Some v3"
+    proof
+      fix v'
+      show "(par(v2 \<mapsto> v1)) v' \<noteq> Some v3"
+      proof (cases "v' = v2")
+        case True
+        then show ?thesis using neq13 by simp
+      next
+        case False
+        then show ?thesis using no_par3 by simp
+      qed
+    qed
+  qed
   ultimately
   show ?g3 "\<And>v. ?p2 v \<Longrightarrow> ?g4 v"
     by(intro last_follow_eq[OF _ ] last_follow_eq_2[OF _ ]; simp)+
