@@ -718,7 +718,20 @@ proof-
   from \<open>length p > 2\<close> have "length ?p_tl > 1" by auto
   from \<open>epath G u p u\<close> \<open>length p > 2\<close>
     have "\<exists>x. u \<noteq> x \<and> p = {u, x} # ?p_tl \<and> epath G x ?p_tl u \<and> {u, x} \<in> G"
-    by (metis epath.simps(2) \<open>p \<noteq> []\<close> list.collapse)
+  proof -
+    have p_eq: "p = hd p # tl p"
+      using list.collapse[OF \<open>p \<noteq> []\<close>] by simp
+    from \<open>epath G u p u\<close> p_eq have "epath G u (hd p # tl p) u"
+      by simp
+    then have "(\<exists>w. u \<noteq> w \<and> {u, w} = hd p \<and> epath G w (tl p) u) \<and> hd p \<in> G"
+      by simp
+    then obtain x where x1: "u \<noteq> x" and x2: "{u, x} = hd p"
+      and x3: "epath G x (tl p) u" and x4: "hd p \<in> G"
+      by blast
+    have "p = {u, x} # tl p"
+      using p_eq x2 by simp
+    with x1 x3 x4 x2 show ?thesis by auto
+  qed
   then obtain x where "u \<noteq> x" "p = {u, x} # ?p_tl" "epath G x ?p_tl u" "{u, x} \<in> G" by blast
 
   from \<open>{u, x} \<in> G\<close> have "x \<in> Vs G" by blast
