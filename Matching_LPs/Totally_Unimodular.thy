@@ -1207,7 +1207,22 @@ proof
     using pick_reduce_set[of i "dim_row A" I] 2
     by presburger
   then show " submatrix A I J $$ (i, j) = submatrix A (I \<inter> {0..<dim_row A}) J $$ (i, j)"
-    by (metis (no_types, lifting) asmi asmj 3 dim_submatrix(1-2) submatrix_index)
+  proof -
+    assume pick_eq: "pick (I \<inter> {0..<dim_row A}) i = pick I i"
+    have ci: "i < card {a. a < dim_row A \<and> a \<in> I \<inter> {0..<dim_row A}}"
+      using asmi dim_submatrix(1)[of A "I \<inter> {0..<dim_row A}" J] by simp
+    have cj: "j < card {a. a < dim_col A \<and> a \<in> J}"
+      using asmj dim_submatrix(2)[of A "I \<inter> {0..<dim_row A}" J] by simp
+    have "submatrix A (I \<inter> {0..<dim_row A}) J $$ (i, j) =
+          A $$ (pick (I \<inter> {0..<dim_row A}) i, pick J j)"
+      using submatrix_index[OF ci cj] .
+    also have "\<dots> = A $$ (pick I i, pick J j)"
+      using pick_eq by simp
+    also have "\<dots> = submatrix A I J $$ (i, j)"
+      using 3 by simp
+    finally show "submatrix A I J $$ (i, j) = submatrix A (I \<inter> {0..<dim_row A}) J $$ (i, j)"
+      by simp
+  qed
 qed
 
 lemma mat_delete_index':
