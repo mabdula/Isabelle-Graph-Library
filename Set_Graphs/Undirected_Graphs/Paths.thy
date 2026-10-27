@@ -1474,7 +1474,42 @@ proof-
       by auto
     then have "e = {last us, v}"
       using assms(4) v1v2p1p2us(1)
-      by (metis "3" \<open>v1 = v \<or> v2 = v\<close> hd_append2 last_ConsL list.exhaust_sel list.sel(1) list.sel(3) list.set_intros(1) list.set_sel(2) self_append_conv2 tl_append2)
+    proof -
+      have p_eq: "p = p1 @ us" and eq: "us @ v # p' = v1 # v # p2"
+        using "3" by auto
+      have vnus: "v \<notin> set us"
+        using assms(3) p_eq by auto
+      have us_nempty: "us \<noteq> []"
+      proof
+        assume "us = []"
+        with eq have "p' = v # p2"
+          by auto
+        with assms(4) show False
+          by simp
+      qed
+      then obtain a us' where us_eq: "us = a # us'"
+        by (cases us) auto
+      from eq us_eq have a_v1: "a = v1" and eq': "us' @ v # p' = v # p2"
+        by auto
+      have us'_empty: "us' = []"
+      proof (rule ccontr)
+        assume "us' \<noteq> []"
+        then obtain b us'' where us'_eq: "us' = b # us''"
+          by (cases us') auto
+        with eq' have b_v: "b = v"
+          by auto
+        with vnus us_eq us'_eq show False
+          by simp
+      qed
+      have us_single: "us = [v1]"
+        using us_eq a_v1 us'_empty by simp
+      have v1_neq_v: "v1 \<noteq> v"
+        using vnus us_single by simp
+      have v2_v: "v2 = v"
+        using \<open>v1 = v \<or> v2 = v\<close> v1_neq_v by blast
+      show ?thesis
+        using us_single v2_v v1v2p1p2us(1) by simp
+    qed
     then have "e = {last p, v}"
       by (metis "3" assms(4) last_appendR list.inject list.set_intros(1) self_append_conv2)
     then show ?thesis
