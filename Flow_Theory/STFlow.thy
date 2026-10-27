@@ -1026,7 +1026,7 @@ lemma Rescut_min_cut_max_flow:
   assumes "is_s_t_flow f s t"
     "is_min_cut s t (Rescut f s)"
   shows "is_max_flow s t f" 
-  using assms(2) max_flow_iff_not_resreach[OF assms(1)]
+  using assms(2) max_flow_iff_not_resreach[OF s_in_V t_in_V s_neq_t assms(1)]
   by(auto simp add: is_min_cut_def is_s_t_cut_def Rescut_def)
 
 lemma Rescut_of_max_flow_is_min_cut:
@@ -1036,23 +1036,23 @@ proof-
   have stflow: "is_s_t_flow f s t" 
     using assms by(auto elim: is_max_flowE)
   obtain X where min_cutX:"is_min_cut s t X"
-    using min_cut_exists by auto
+    using min_cut_exists[OF s_in_V t_in_V s_neq_t] by auto
   have s_in_Rescut_f_s: "s \<in> Rescut f s"
-    using assms is_s_t_cutE max_flow_Rescut_s_t_cut by blast
+    using assms s_in_V t_in_V s_neq_t is_s_t_cutE max_flow_Rescut_s_t_cut by blast
   have "(\<Sum>x\<in>Rescut f s. ereal (if x = s then ex\<^bsub>f\<^esub> t else if x = t then - ex\<^bsub>f\<^esub> t else 0)) =
     ereal (ex\<^bsub>f\<^esub> t + 0)"
-    using max_flow_Rescut_s_t_cut[OF assms] 
+    using max_flow_Rescut_s_t_cut[OF s_in_V t_in_V s_neq_t assms]
     by(subst insert_Diff[symmetric, OF s_in_Rescut_f_s])
       (auto intro: is_min_cutE[OF min_cutX]
         elim!:  is_s_t_cutE[of s t "(Rescut f s)"] 
         simp add:  comm_monoid_add_class.sum.neutral 
         comm_monoid_add_class.sum.insert_remove[OF finite_Rescut[OF s_in_V]])
   hence "Cap (Rescut f s) = ereal (ex\<^bsub>f\<^esub> t + 0)"
-    using max_flow_Rescut_s_t_cut[OF assms]    
+    using max_flow_Rescut_s_t_cut[OF s_in_V t_in_V s_neq_t assms]
     by(subst flow_saturates_res_cut[symmetric, OF _ Rescut_around_in_V[OF s_in_V]])
       (auto intro: s_t_flow_is_ex_bflow[OF stflow])
   then show ?thesis 
-    using max_flow_Rescut_s_t_cut[OF assms]  max_flow_min_cut(1)[OF assms min_cutX]
+    using max_flow_Rescut_s_t_cut[OF s_in_V t_in_V s_neq_t assms]  max_flow_min_cut(1)[OF s_in_V t_in_V s_neq_t assms min_cutX]
     by(auto intro: is_min_cutE[OF min_cutX] simp add:  is_min_cut_def)
 qed
 

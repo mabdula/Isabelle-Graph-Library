@@ -32,6 +32,9 @@ definition ars_invar :: "nat \<Rightarrow> 'a ars \<Rightarrow> bool" where
 definition ars_abstract :: "'a ars \<Rightarrow> 'a list" where
   "ars_abstract = (\<lambda> (A, sp). rev (take sp A))"
 
+lemmas ars_defs = ars_invar_def ars_abstract_def ars_empty_def ars_push_def ars_pop_def
+  ars_top_def ars_is_empty_def
+
 lemma ars_bounded_stack:
   "bounded_stack cap (ars_invar cap) ars_abstract (ars_empty cap d) ars_push ars_pop ars_top
      ars_is_empty"

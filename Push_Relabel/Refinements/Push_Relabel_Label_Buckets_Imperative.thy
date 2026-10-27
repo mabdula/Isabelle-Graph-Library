@@ -242,7 +242,7 @@ next
       by (cases "g ((L, B, d), r) v") (auto simp add: N B1_def)
     have "lb_invar (lm_upd L v k', B1, lower B1 d)" "card {x. buckets_abstract B1 x = Some j} \<le> n"
       using Suc.prems(1,4) vj(1,2) k'(2) g1 bi lb_upd_props(1)[of "(L, B, d)" v k'] bucket_finite[of B j]
-      by (simp_all add: B1_def bucket_level_remove card_Diff_singleton)
+      by (simp_all add: B1_def bucket.bucket_level_remove card_Diff_singleton)
     note IH = Suc.IH[OF this(1) Suc.prems(2,3) this(2), of r']
     show ?thesis
       using conjunct2[OF gv] IH

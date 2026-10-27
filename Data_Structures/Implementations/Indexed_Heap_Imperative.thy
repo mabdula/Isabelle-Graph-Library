@@ -155,7 +155,7 @@ lemma hole_fill:
   "\<lbrakk>hole_rel hs i hl pl; i < length hs; distinct hs; set hs \<subseteq> {..<n}\<rbrakk>
     \<Longrightarrow>
     heap_rel hs (hl[i := hs ! i]) (pl[hs ! i := i])"
-  using distinct_length_le[of hs n] nth_mem[of i hs]
+  using More_Lists.distinct_length_le[of hs n] nth_mem[of i hs]
   unfolding heap_rel_def hole_rel_def
   by (auto simp: nth_list_update nth_eq_iff_index_eq subset_eq)
 
@@ -163,7 +163,7 @@ lemma hole_step:
   "\<lbrakk>hole_rel hs i hl pl; i < length hs; p < length hs; p \<noteq> i; distinct hs;
     set hs \<subseteq> {..<n}\<rbrakk> \<Longrightarrow>
     hole_rel (hs[i := hs ! p, p := hs ! i]) p (hl[i := hs ! p]) (pl[hs ! p := i])"
-  using distinct_length_le[of hs n] nth_mem[of p hs]
+  using More_Lists.distinct_length_le[of hs n] nth_mem[of p hs]
   unfolding hole_rel_def
   by (auto simp: nth_list_update nth_eq_iff_index_eq subset_eq)
 
@@ -199,7 +199,7 @@ lemma sift_up_imp_rule:
 proof(induction i arbitrary: hs hl pl rule: less_induct)
   case (less i)
   have "length hl = n" "length pl = n" "length kl = n" "length hs \<le> n" "x < n"
-    using less.prems distinct_length_le[of hs n] nth_mem[of i hs]
+    using less.prems More_Lists.distinct_length_le[of hs n] nth_mem[of i hs]
     by (auto simp: hole_rel_def key_rel_def)
   show ?case
   proof(cases "i = 0")
@@ -248,7 +248,7 @@ lemma min_child_imp_rule:
   shows "<Ha \<mapsto>\<^sub>a hl * Ka \<mapsto>\<^sub>a kl> min_child_imp Ha Ka (length hs) (2 * i + 1)
          <\<lambda>r. Ha \<mapsto>\<^sub>a hl * Ka \<mapsto>\<^sub>a kl *
               \<up>(r = (min_child ks hs i, hs ! min_child ks hs i, kl ! (hs ! min_child ks hs i)))>"
-  using assms distinct_length_le[of hs n] nth_mem[of "2 * i + 1" hs] nth_mem[of "Suc (2 * i + 1)" hs]
+  using assms More_Lists.distinct_length_le[of hs n] nth_mem[of "2 * i + 1" hs] nth_mem[of "Suc (2 * i + 1)" hs]
     key_less_rel[of ks hs kl "hs ! Suc (2 * i + 1)" "hs ! (2 * i + 1)"]
   unfolding min_child_imp_def min_child_def
   by (sep_auto simp: hole_rel_def key_rel_def subset_eq)
@@ -263,7 +263,7 @@ lemma sift_down_imp_rule:
 proof(induction ks hs i arbitrary: hl pl rule: sift_down.induct)
   case (1 ks hs i)
   have "length hl = n" "length pl = n" "length kl = n" "length hs \<le> n" "x < n"
-    using "1.prems" distinct_length_le[of hs n] nth_mem[of i hs]
+    using "1.prems" More_Lists.distinct_length_le[of hs n] nth_mem[of i hs]
     by (auto simp: hole_rel_def key_rel_def)
   moreover have
     "kl ! (hs ! min_child ks hs i) < kx \<longleftrightarrow> ks (hs ! min_child ks hs i) < ks x"
@@ -329,7 +329,7 @@ proof-
     "set (sift_up (ks(x := queue_key k)) (hs @ [x]) (length hs)) = insert x (set hs)"
     "length (hs @ [x]) \<le> n"
     using sift_up_perm[of "length hs" "hs @ [x]" "ks(x := queue_key k)"]
-      distinct_length_le[of "hs @ [x]" n]
+      More_Lists.distinct_length_le[of "hs @ [x]" n]
     by auto
   moreover have [sep_heap_rules]: "\<lbrakk>heap_rel hs hl pl; key_rel ks hs kl\<rbrakk> \<Longrightarrow>
       <Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl[x := k]> sift_up_imp Ha Pa Ka x k (length hs)
@@ -397,7 +397,7 @@ next
     by (cases hs) (auto split: if_splits)
   moreover hence "distinct hs" "set hs \<subseteq> {..<n}" "length hs \<le> n" "hs \<noteq> []"
     "last hs \<in> set hs" "hs ! (length hs - 1) = last hs"
-    using assms U_bound distinct_length_le[of hs n] last_conv_nth[of hs]
+    using assms U_bound More_Lists.distinct_length_le[of hs n] last_conv_nth[of hs]
     by (auto)
   moreover have "length (sift_down ks ((butlast hs)[0 := last hs]) 0) = length hs - 1"
     "set (sift_down ks ((butlast hs)[0 := last hs]) 0) \<subseteq> set hs"
