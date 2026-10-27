@@ -46,7 +46,52 @@ lemma set_butlast_tl:
   assumes "l \<noteq> []" "hd l = last l"
   shows "set (butlast l) = set (tl l)"
   using assms
-  by (metis append_butlast_last_id butlast.simps(2) last_tl list.exhaust_sel rotate1.simps(2) set_rotate1)
+proof -
+  from assms(1) obtain x xs where l_eq: "l = x # xs"
+    by (cases l) auto
+  have hd_l: "hd l = x" and tl_l: "tl l = xs"
+    using l_eq by simp_all
+  show ?thesis
+  proof (cases "xs = []")
+    case True
+    with l_eq tl_l show ?thesis by simp
+  next
+    case False
+    have last_eq: "last l = last xs"
+      using l_eq False by simp
+    have x_eq_last_xs: "x = last xs"
+      using assms(2) hd_l last_eq by simp
+    have x_in_xs: "x \<in> set xs"
+      using x_eq_last_xs last_in_set[OF False] by simp
+    have rotate_eq: "rotate1 l = xs @ [x]"
+      using l_eq by simp
+    have set_l_xs: "set l = set xs"
+    proof -
+      have h1: "set (rotate1 l) = set l" by (rule set_rotate1)
+      have "set (xs @ [x]) = set l" using h1 rotate_eq by simp
+      then show ?thesis using x_in_xs by auto
+    qed
+    have butlast_eq: "butlast l = x # butlast xs"
+      using l_eq False by simp
+    have x_in_butlast: "x \<in> set (butlast l)"
+      using butlast_eq by simp
+    have l_append: "butlast l @ [last l] = l"
+      by (rule append_butlast_last_id[OF assms(1)])
+    have last_l_eq_x: "last l = x"
+      using assms(2) hd_l by simp
+    have set_l_butlast: "set l = set (butlast l)"
+    proof -
+      have "set l = set (butlast l @ [last l])" using l_append by simp
+      also have "... = set (butlast l) \<union> {last l}" by simp
+      also have "... = set (butlast l)" using last_l_eq_x x_in_butlast by (simp add: insert_absorb)
+      finally show ?thesis .
+    qed
+    have "set (butlast l) = set l" using set_l_butlast by simp
+    also have "... = set xs" using set_l_xs by simp
+    also have "... = set (tl l)" using tl_l by simp
+    finally show ?thesis .
+  qed
+qed
 
 fun dist_neq where
   "dist_neq _ [] = True"
