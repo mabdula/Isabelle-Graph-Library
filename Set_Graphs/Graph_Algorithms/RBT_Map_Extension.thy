@@ -453,7 +453,7 @@ proof(subst rbt_map_fold_revinorder, rule exI[of _ "map fst (rev (inorder G))"],
       by(simp add:  lookup_map_of map_of_rev[OF distinct_list, symmetric] list'_def[symmetric] same_fold)+  
   qed
   ultimately show ?case 
-    by (metis distinct_rev rev_map set_rev)
+    by (simp add: rev_map[symmetric] distinct_rev set_rev)
 qed
 
 lemma bst_distinct_inorder:"bst T \<Longrightarrow> distinct (inorder T)"
