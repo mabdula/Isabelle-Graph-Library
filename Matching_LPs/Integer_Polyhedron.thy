@@ -849,7 +849,25 @@ qed
         qed
       qed
       then have "\<forall>i \<in> J \<inter> {0..<dim_row C}.  (row C i) \<bullet> x = (d $ i)" 
-        by (metis IntD1 IntD2 IntI 6 atLeastLessThan_iff le_neq_implies_less nat_le_linear)
+      proof -
+        show "\<forall>i \<in> J \<inter> {0..<dim_row C}.  (row C i) \<bullet> x = (d $ i)"
+        proof (rule ballI)
+          fix i
+          assume "i \<in> J \<inter> {0..<dim_row C}"
+          then have "i \<in> J" and "i < dim_row C" by auto
+          show "row C i \<bullet> x = d $ i"
+          proof (cases "i < dim_row A")
+            case True
+            then have "i \<in> J \<inter> {0..<dim_row A}" using \<open>i \<in> J\<close> by simp
+            then show ?thesis using 6 by blast
+          next
+            case False
+            then have "i \<in> {dim_row A..<dim_row C}" using \<open>i < dim_row C\<close> by (simp add: atLeastLessThan_iff)
+            then show ?thesis
+              using \<open>\<forall>i \<in> {dim_row A..<dim_row C}.  (row C i) \<bullet> x = (d $ i)\<close> by blast
+          qed
+        qed
+      qed
       then have "\<forall> i < dim_row C'. (row C' i) \<bullet> x =  (d' $ i)"
         using subsystem_fulfills_P'[of C d C' d' J "\<lambda> p q. p \<bullet> x = q"] C'_d'   
         using C_d by blast
