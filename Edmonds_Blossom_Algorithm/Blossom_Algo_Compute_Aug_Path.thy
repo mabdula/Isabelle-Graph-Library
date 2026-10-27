@@ -134,7 +134,7 @@ lemma compute_alt_path_res_from_tree:
 proof-
   obtain post1 post2 where "p1 = pfx1 @ post1" "p2 = pfx2 @ post2"
     using disj_pref_append1 disj_pref_append2 pfxs_are_pfxs
-    by metis
+    by blast
   moreover have "pfx1 = (butlast pfx1) @ [last pfx1]"
     "pfx2 = (butlast pfx2) @ [last pfx2]"
     using first_pfx_nempty snd_pfx_nempty pfxs_are_pfxs by force+
