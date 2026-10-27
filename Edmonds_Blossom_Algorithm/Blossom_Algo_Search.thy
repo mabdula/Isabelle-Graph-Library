@@ -2678,7 +2678,24 @@ proof-
     define s' where "s' = s - e"
     consider (one) "card s = 1" | (three) "card s = 3" | (ge_five)"card s \<ge> 5"
       using insert(8)
-      by (metis (no_types, lifting) One_nat_def Suc_leI antisym_conv card_gt_0_iff eval_nat_numeral(3) even_numeral insert.prems(2) not_less_eq_eq numeral_3_eq_3 numeral_4_eq_4 odd_card_imp_not_empty)
+      proof -
+        have "card s = 0 \<or> card s = 1 \<or> card s = 2 \<or> card s = 3 \<or> card s = 4 \<or> 5 \<le> card s"
+          by linarith
+        then show thesis
+        proof (elim disjE)
+          assume "card s = 0" then show thesis using insert(8) by simp
+        next
+          assume "card s = 1" then show thesis using that by blast
+        next
+          assume "card s = 2" then show thesis using insert(8) by simp
+        next
+          assume "card s = 3" then show thesis using that by blast
+        next
+          assume "card s = 4" then show thesis using insert(8) by simp
+        next
+          assume "5 \<le> card s" then show thesis using that by blast
+        qed
+      qed
     then show ?case
     proof cases
       case one
