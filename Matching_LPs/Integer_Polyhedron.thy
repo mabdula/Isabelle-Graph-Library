@@ -625,10 +625,27 @@ qed
   then have "\<forall> x \<in> F. \<forall>i < dim_row A'. row A' i \<bullet> x = b' $ i" 
     using index_mult_mat_vec
     by (auto simp: index_mult_mat_vec)
-  then have 2:"\<forall> x \<in> F. \<forall>i \<in> I' \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
-    using subsystem_fulfills_P[of A b A' b' I' "\<lambda> p q. p \<bullet> _ = q"] C_d
-    using C'_d' 
-    by (metis (no_types, lifting) A A'_b' b carrier_matD(1) carrier_vecD)
+  have 2:"\<forall> x \<in> F. \<forall>i \<in> I' \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
+  proof
+    fix x
+    assume "x \<in> F"
+    then have "A' *\<^sub>v x = b'"
+      using A'_b' by blast
+    have "\<forall>i < dim_row A'. row A' i \<bullet> x = b' $ i"
+    proof (intro allI impI)
+      fix i
+      assume "i < dim_row A'"
+      then have "(A' *\<^sub>v x) $ i = row A' i \<bullet> x"
+        by (simp add: index_mult_mat_vec)
+      then show "row A' i \<bullet> x = b' $ i"
+        using \<open>A' *\<^sub>v x = b'\<close> by simp
+    qed
+    moreover have "dim_row A = dim_vec b"
+      using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
+    ultimately show "\<forall>i \<in> I' \<inter> {0..<dim_row A}. row A i \<bullet> x = b $ i"
+      using subsystem_fulfills_P[of A b A' b' I' "\<lambda> p q. p \<bullet> x = q"] A b A'_b'
+      by blast
+  qed
   have "\<forall>x \<in> F. dim_vec x = dim_col A'" 
   proof
     fix x
