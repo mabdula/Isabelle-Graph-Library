@@ -3983,7 +3983,7 @@ qed
             by simp+
           then show ?thesis
             unfolding osc_def
-            by (metis Un_Diff_Int inf_commute le_sup_iff sup.absorb1 sup_ge1)
+            by (simp add: Un_Diff_Int inf_commute Un_assoc Un_left_commute Un_commute Un_absorb)
         qed
         ultimately show ?thesis
           by metis
