@@ -279,7 +279,17 @@ proof-
           have "vertex x1 \<in> dVs (make_pair' ` \<E>')"
             using "1" vertex by blast
           then obtain a b d where "d \<in> \<E>'" "make_pair' d = (a, b)" "a = vertex x1 \<or> b = vertex x1"
-            by(auto simp add: dVs_def) metis+
+          proof -
+            have "vertex x1 \<in> dVs (make_pair' ` \<E>')"
+              using "1" vertex by blast
+            then obtain d where
+              d_in: "d \<in> \<E>'" and
+              d_endpoint: "fst (make_pair' d) = vertex x1 \<or> snd (make_pair' d) = vertex x1"
+              by (auto simp add: Pair_Graph.dVs_eq)
+            show thesis
+              by (rule that[of d "fst (make_pair' d)" "snd (make_pair' d)"])
+                 (use d_in d_endpoint in auto)
+          qed
           thus ?thesis
             using flow_network.infty_edges_in_E[OF assms(1)] 
             by(cases d)
