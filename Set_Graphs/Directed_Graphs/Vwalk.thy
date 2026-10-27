@@ -1043,7 +1043,36 @@ lemma reachableE[elim?]:
     step: "\<And>x. \<lbrakk> (u,x)\<in>E; reachable E x v\<rbrakk> \<Longrightarrow> P"
   shows "P"
   using assms
-  by (metis converse_tranclE reachable1_reachable reachable_in_dVs(2) reachable_neq_reachable1 reachable_refl)
+proof -
+  have v_dVs: "v \<in> dVs E"
+    using assms(1) by (rule reachable_in_dVs(2))
+  show ?thesis
+  proof (cases "u = v")
+    case True
+    show ?thesis
+      using singleton[OF v_dVs True] .
+  next
+    case False
+    then have R1: "reachable1 E u v"
+      using assms(1) reachable_neq_reachable1 by blast
+    from R1 have cases_disj: "(u,v) \<in> E \<or> (\<exists>y. (u,y) \<in> E \<and> reachable1 E y v)"
+      by (rule converse_tranclE) auto
+    from cases_disj show ?thesis
+    proof
+      assume uv: "(u,v) \<in> E"
+      have vv: "reachable E v v"
+        using v_dVs reachable_refl by blast
+      from step[OF uv vv] show ?thesis .
+    next
+      assume "\<exists>y. (u,y) \<in> E \<and> reachable1 E y v"
+      then obtain y where uy: "(u,y) \<in> E" and yv1: "reachable1 E y v"
+        by blast
+      have yv: "reachable E y v"
+        using yv1 reachable1_reachable by blast
+      from step[OF uy yv] show ?thesis .
+    qed
+  qed
+qed
 
 
 lemma vwalk_insertE[case_names nil sing1 sing2 in_e in_E]:
