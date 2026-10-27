@@ -1090,10 +1090,34 @@ proof
         by blast
     next
       case False
-      have "{i. i < nr1 \<and> i \<in> I} \<subseteq> I" by auto
-      then have "card {i. i < nr1 \<and> i \<in> I} < card I" 
-        by (metis (mono_tags, lifting) "5" "6" Collect_empty_eq False card.empty card_seteq
-            mem_Collect_eq nat_arith.rule0 not_le)
+      have subset_I: "{i. i < nr1 \<and> i \<in> I} \<subseteq> I"
+        by auto
+      have "card {i. i < nr1 \<and> i \<in> I} < card I"
+      proof (rule ccontr)
+        assume "\<not> card {i. i < nr1 \<and> i \<in> I} < card I"
+        then have le: "card I \<le> card {i. i < nr1 \<and> i \<in> I}"
+          by linarith
+        have fin: "finite I"
+          using False by auto
+        have eq: "{i. i < nr1 \<and> i \<in> I} = I"
+          using card_seteq[OF fin subset_I le] .
+        have empty: "{i. nr1 \<le> i \<and> i < nr1 + nr2 \<and> i \<in> I} = {}"
+        proof (rule ccontr)
+          assume "{i. nr1 \<le> i \<and> i < nr1 + nr2 \<and> i \<in> I} \<noteq> {}"
+          then obtain x where x1: "nr1 \<le> x" and x2: "x \<in> I"
+            by blast
+          from x2 eq have "x < nr1" by blast
+          with x1 show False by linarith
+        qed
+        have "i < card {i. i < nr1 \<and> i \<in> I} + card {i. nr1 \<le> i \<and> i < nr1 + nr2 \<and> i \<in> I}"
+          using "5" .
+        also have "\<dots> = card {i. i < nr1 \<and> i \<in> I}"
+          using empty by simp
+        finally have "i < card {i. i < nr1 \<and> i \<in> I}" .
+        moreover have "card {i. i < nr1 \<and> i \<in> I} \<le> i"
+          using "6" .
+        ultimately show False by linarith
+      qed
       then show ?thesis using pick_card_of_elem_ge_elem 
         by blast
     qed
