@@ -2791,8 +2791,18 @@ qed
       using `x \<in> ?P'` unfolding polyhedron_def by auto
     then have "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n)  *\<^sub>v x \<le>  ( 1\<^sub>v n @\<^sub>v 1\<^sub>v n)" 
       using  append_rows_le[of "A" nr n "1\<^sub>m n @\<^sub>r - 1\<^sub>m n" "2*n" "0\<^sub>v nr" x "1\<^sub>v n @\<^sub>v 1\<^sub>v n"] 
-      by (metis A \<open>x \<in> carrier_vec n\<close> carrier_append_rows mult_2 one_carrier_mat 
-          uminus_carrier_mat zero_carrier_vec)
+    proof -
+      have B_carr: "1\<^sub>m n @\<^sub>r - 1\<^sub>m n \<in> carrier_mat (n + n) n"
+        using carrier_append_rows[OF one_carrier_mat uminus_carrier_mat[OF one_carrier_mat]] .
+      have b_carr: "1\<^sub>v n @\<^sub>v 1\<^sub>v n \<in> carrier_vec (n + n)"
+        by simp
+      have prem: "(A @\<^sub>r (1\<^sub>m n @\<^sub>r - 1\<^sub>m n)) *\<^sub>v x \<le> (0\<^sub>v nr @\<^sub>v (1\<^sub>v n @\<^sub>v 1\<^sub>v n))"
+        using \<open>x \<in> ?P'\<close> unfolding polyhedron_def by auto
+      have "(A @\<^sub>r (1\<^sub>m n @\<^sub>r - 1\<^sub>m n)) *\<^sub>v x \<le> (0\<^sub>v nr @\<^sub>v (1\<^sub>v n @\<^sub>v 1\<^sub>v n)) \<longleftrightarrow>
+        A *\<^sub>v x \<le> 0\<^sub>v nr \<and> (1\<^sub>m n @\<^sub>r - 1\<^sub>m n) *\<^sub>v x \<le> (1\<^sub>v n @\<^sub>v 1\<^sub>v n)"
+        using append_rows_le[OF A B_carr zero_carrier_vec \<open>x \<in> carrier_vec n\<close>] .
+      with prem show ?thesis by blast
+    qed
     then have "1\<^sub>m n *\<^sub>v x \<le> 1\<^sub>v n" 
       using  append_rows_le[of "1\<^sub>m n" n n "- 1\<^sub>m n" n "1\<^sub>v n" x "1\<^sub>v n"] 
       by (simp add: \<open>x \<in> carrier_vec n\<close>) 
