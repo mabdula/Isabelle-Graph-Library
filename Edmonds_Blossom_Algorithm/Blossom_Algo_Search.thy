@@ -3910,8 +3910,19 @@ qed
                   finally have "\<Union>(M - ex) - {v1} = {v2} \<union> \<Union> M'".
                   moreover have "va \<in> \<Union>(M - ex)" "vb \<in> \<Union>(M - ex)"
                     using nones
-                    by (metis "2.prems"(6) Union_iff \<open>e' = {va, vb}\<close> \<open>e' \<in> G\<close> edges_are_Vs insertI1 
-                              ulabelled_verts_matched_invar_def insert_commute)+
+                  proof -
+                    have "va \<in> Vs G" "vb \<in> Vs G"
+                      using \<open>e' = {va, vb}\<close> \<open>e' \<in> G\<close>
+                      unfolding Vs_def by auto
+                    moreover have "flabel va = None" "flabel vb = None"
+                      using nones by auto
+                    ultimately have "\<exists>e\<in>(M - ex). va \<in> e" "\<exists>e\<in>(M - ex). vb \<in> e"
+                      using "2.prems"(6)
+                      unfolding ulabelled_verts_matched_invar_def
+                      by blast+
+                    then show "va \<in> \<Union>(M - ex)" "vb \<in> \<Union>(M - ex)"
+                      by blast+
+                  qed
                   then have "{va, vb} \<subseteq> \<Union>(M - ex) - {v1}"
                     using \<open>va \<noteq> v1\<close> \<open>vb \<noteq> v1\<close>
                     by auto
