@@ -231,9 +231,21 @@ proof(rule ccontr)
     by (simp add: \<open>C \<in> odd_comps_in_diff G X\<close>)
   have "C \<in> connected_components G" 
     by (meson \<open>comp_out G C X = {}\<close> assms(2) connected_comp_if_comp_out_empty)
-  then have "C \<in> (odd_comps_in_diff G {})" 
-    by (metis assms(2) diff_odd_compoenent_has_odd_card graph_diff_empty 
-        odd_comps_in_diff_are_componentsI2)
+  have "C \<in> (odd_comps_in_diff G {})"
+  proof -
+    have codd: "odd (card C)"
+      using assms(2) diff_odd_compoenent_has_odd_card by blast
+    obtain v where v: "v \<in> Vs G" "C = connected_component G v"
+      using \<open>C \<in> connected_components G\<close> unfolding connected_components_def by auto
+    have cc: "connected_component G v = connected_component (graph_diff G {}) v"
+      using graph_diff_empty by (rule arg_cong)
+    have "C = connected_component (graph_diff G {}) v"
+      using v(2) cc by simp
+    then have "\<exists>x \<in> Vs G - {}. C = connected_component (graph_diff G {}) x \<and> odd (card C)"
+      using v(1) codd by blast
+    then show "C \<in> odd_comps_in_diff G {}"
+      using odd_comps_in_diff_are_components[of G "{}"] assms(1) by auto
+  qed
   then show False using odd_components_in_tutte_graph[of G]
     by (simp add: assms  odd_components_in_tutte_graph)
 qed
