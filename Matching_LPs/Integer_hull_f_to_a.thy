@@ -3193,8 +3193,12 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
       using of_int_hom.hom_one scalar_vec_one by simp
   qed
   then have "v + ?z' \<in> integer_hull P" 
-    by (metis \<open>\<forall>x. v + of_int (int x) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z) \<in> integer_hull P\<close> of_int_hom.hom_one
-        of_nat_1 scalar_vec_one)
+  proof -
+    have "v + of_int (int (1::nat)) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z) \<in> integer_hull P"
+      using \<open>\<forall>x. v + of_int (int x) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z) \<in> integer_hull P\<close> by blast
+    then show "v + \<bar>det A'\<bar> \<cdot>\<^sub>v z \<in> integer_hull P"
+      by (simp add: scalar_vec_one)
+  qed
   then have "v + ?z' \<in> integer_hull P " 
     using assms(5) by blast
   then have "?c \<bullet> (v + ?z') \<le> Maximum { ?c \<bullet> x | x. x \<in> integer_hull P}" 
