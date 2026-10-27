@@ -273,7 +273,18 @@ proof -
 qed
 
 lemma Vs_enum_neqI: "\<lbrakk>v \<in> Vs G; v' \<in> Vs G; v \<noteq> v'\<rbrakk> \<Longrightarrow> Vs_enum v \<noteq> Vs_enum v'"
-  by (metis Vs_inv_enum)
+proof -
+  assume "v \<in> Vs G" and "v' \<in> Vs G" and "v \<noteq> v'"
+  show "Vs_enum v \<noteq> Vs_enum v'"
+  proof
+    assume "Vs_enum v = Vs_enum v'"
+    from Vs_inv_enum[OF \<open>v \<in> Vs G\<close>] have "Vs_enum_inv (Vs_enum v) = v" .
+    moreover from Vs_inv_enum[OF \<open>v' \<in> Vs G\<close>] have "Vs_enum_inv (Vs_enum v') = v'" .
+    ultimately have "v = v'"
+      using \<open>Vs_enum v = Vs_enum v'\<close> by argo
+    with \<open>v \<noteq> v'\<close> show False by simp
+  qed
+qed
 
 lemma G_enum_neqI: "\<lbrakk>e \<in> G; e' \<in> G; e \<noteq> e'\<rbrakk> \<Longrightarrow> G_enum e \<noteq> G_enum e'"
   by (simp add: countable_finite)
