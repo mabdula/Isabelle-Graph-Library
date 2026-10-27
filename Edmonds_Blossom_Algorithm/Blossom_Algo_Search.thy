@@ -2375,7 +2375,16 @@ next
       using False 2(14) v1v2r(1)
       by (auto simp add: compute_alt_path.psimps[OF 2(1)] Let_def split: if_splits prod.splits)
     moreover have "v1 = hd p1" "v2 = hd p2"
-      by (metis "2.prems"(3,4) calculation(3,2) list.sel(1) parent.follow_cons_3 parent.intro)+
+    proof -
+      have parent_par: "parent par"
+        using "2.prems"(3) by (rule parent.intro)
+      obtain l1 where l1: "parent_spec.follow par v1 = v1 # l1"
+        using parent.follow_cons_3[OF parent_par, of v1] by blast
+      obtain l2 where l2: "parent_spec.follow par v2 = v2 # l2"
+        using parent.follow_cons_3[OF parent_par, of v2] by blast
+      show "v1 = hd p1" "v2 = hd p2"
+        using s(2) s(3) l1 l2 by simp_all
+    qed
     moreover have "\<forall>x pref1 post1 pref2 post2. p1 = pref1 @ x # post1 \<and> p2 = pref2 @ x # post2 \<longrightarrow> post1 = post2"
       using "2.prems"(3) parent.from_tree parent.intro s(2) s(3) by fastforce
     moreover have "(\<forall>v. flabel v \<noteq> None \<longrightarrow> last (parent_spec.follow par v) \<notin> Vs M)"
