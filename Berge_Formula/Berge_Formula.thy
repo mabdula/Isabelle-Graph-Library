@@ -7,6 +7,7 @@ theory Berge_Formula
   imports Tutte_Theorem.Tutte_Theorem
 begin
 
+<<<<<<< HEAD
 provenance human
 
 lemma sum_card_edges2:
@@ -29,6 +30,8 @@ lemma edge_same_comp:
   using assms(1,2,3,4) edge_subset_component in_mono 
   by force
 
+=======
+>>>>>>> weighted_blossom
 lemma left_uncoverred_matching:
   assumes "graph_invar G"
   assumes "graph_matching G M"
@@ -154,12 +157,12 @@ proof -
                 matching_unique_match mem_Collect_eq mk_disjoint_insert odd_comps_in_diff_not_in_X
                 vs_empty)
 
-      then have "e \<in> (graph_diff G X)" 
+      then have "e \<in> (G \<setminus> X)" 
         using \<open>M \<subseteq> G\<close> \<open>e \<in> M\<close> 
         by (simp add: graph_diffI subsetD)
       then have "x \<in> C"
         by (smt (verit, ccfv_SIG) \<open>C \<in> odd_comps_in_diff G X\<close> assms(1) assms_edge(2) assms_edge(4)
-                 assms_edge(5) edge_same_comp graph_invar_diff odd_comps_in_diff_is_component)
+                 assms_edge(5) edge_same_comp graph_invar_remove_vertices odd_comps_in_diff_is_component)
       then show "y \<in> {}"
         using \<open>x \<notin> C\<close> by auto
     qed
@@ -460,15 +463,15 @@ next
           using a y by blast
         then have "{y, a} \<in> ?H" 
           by auto
-        then have "{y, a} \<in> graph_diff ?H Y" 
+        then have "{y, a} \<in> ?H \<setminus> Y" 
           by (simp add: a y graph_diffI)
-        then have 10:"a \<in> Vs (graph_diff ?H Y)" 
+        then have 10:"a \<in> Vs (?H \<setminus> Y)" 
           by auto
-        have 9: "\<forall>x\<in>Vs ?H - Y. x \<in> connected_component (graph_diff ?H Y) a"
+        have 9: "\<forall>x\<in>Vs ?H - Y. x \<in> connected_component (?H \<setminus> Y) a"
         proof
           fix x
           assume asmx:"x \<in> Vs ?H - Y"
-          show "x \<in> connected_component (graph_diff ?H Y) a" 
+          show "x \<in> connected_component (?H \<setminus> Y) a" 
           proof(cases "x \<in> Vs G")
             case True
             then have "{x, a} \<in> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}" 
@@ -486,54 +489,54 @@ next
               using 5 asmx by auto
             then have "{x, y} \<in> ?H" 
               using y by blast
-            then have "{x, y} \<in> graph_diff ?H Y" 
+            then have "{x, y} \<in> ?H \<setminus> Y" 
               using  asmx y  by (simp add: graph_diffI)
             then show ?thesis 
-              by (metis (no_types, lifting) \<open>{y, a} \<in> graph_diff ?H Y\<close> 
+              by (metis (no_types, lifting) \<open>{y, a} \<in> ?H \<setminus> Y\<close> 
                   connected_components_member_sym connected_components_member_trans 
                   vertices_edges_in_same_component)
           qed
         qed
-        have 11:"connected_components (graph_diff ?H Y) = {connected_component (graph_diff ?H Y) a}"
+        have 11:"connected_components (?H \<setminus> Y) = {connected_component (?H \<setminus> Y) a}"
         proof 
-          show "connected_components (graph_diff (G \<union> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}) Y)
-                \<subseteq> {connected_component (graph_diff (G \<union> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}) Y) a}"
+          show "connected_components ((G \<union> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}) \<setminus> Y)
+                \<subseteq> {connected_component ((G \<union> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}) \<setminus> Y) a}"
           proof
             fix C
-            assume "C \<in> connected_components (graph_diff ?H Y)"
-            then obtain c where c: "C = connected_component (graph_diff ?H Y) c \<and> 
-                                    c \<in> (Vs (graph_diff ?H Y))"
+            assume "C \<in> connected_components (?H \<setminus> Y)"
+            then obtain c where c: "C = connected_component (?H \<setminus> Y) c \<and> 
+                                    c \<in> (Vs (?H \<setminus> Y))"
               by (meson connected_comp_has_vert)
             then have "c \<in> Vs ?H - Y" 
               by (meson subsetD vs_graph_diff)
-            then have "C = connected_component (graph_diff ?H Y) a" 
+            then have "C = connected_component (?H \<setminus> Y) a" 
               by (simp add: c 9 connected_components_member_eq)
-            then show "C \<in> {connected_component (graph_diff ?H Y) a}"
+            then show "C \<in> {connected_component (?H \<setminus> Y) a}"
               by auto
           qed
-          then show "{connected_component (graph_diff ?H Y) a} \<subseteq> 
-                connected_components (graph_diff ?H Y)" 
+          then show "{connected_component (?H \<setminus> Y) a} \<subseteq> 
+                connected_components (?H \<setminus> Y)" 
             by (metis (no_types, lifting) 10 empty_iff 
                 own_connected_component_unique subset_singleton_iff)
         qed
-        have 12:"(odd_components (graph_diff ?H Y)) \<subseteq> connected_components (graph_diff ?H Y)" 
+        have 12:"(odd_components (?H \<setminus> Y)) \<subseteq> connected_components (?H \<setminus> Y)" 
           by (simp add: components_is_union_even_and_odd)
         have "singl_in_diff ?H Y = {}" 
         proof(rule ccontr)
           assume " singl_in_diff ?H Y \<noteq> {}"
           then obtain v where v: "{v} \<in> singl_in_diff ?H Y \<and> v \<in> Vs ?H \<and> v \<notin> Y \<and> 
-                                  v \<notin> Vs (graph_diff ?H Y)"
+                                  v \<notin> Vs (?H \<setminus> Y)"
             by (meson ex_in_conv singl_in_diff_member)
-          then have "v \<in> connected_component (graph_diff ?H Y) a" 
+          then have "v \<in> connected_component (?H \<setminus> Y) a" 
             by (simp add: 9)
           then show False 
             using "10" in_connected_component_in_edges v by fastforce
         qed
-        then have "(odd_components (graph_diff ?H Y)) = (odd_comps_in_diff ?H Y)" 
+        then have "(odd_components (?H \<setminus> Y)) = (odd_comps_in_diff ?H Y)" 
           by (simp add: odd_comps_in_diff_def)
-        then have 14:"(odd_comps_in_diff ?H Y) \<subseteq> {connected_component (graph_diff ?H Y) a}" 
+        then have 14:"(odd_comps_in_diff ?H Y) \<subseteq> {connected_component (?H \<setminus> Y) a}" 
           using 11 12 by presburger
-        then have "card (odd_comps_in_diff ?H Y) \<le> card {connected_component (graph_diff ?H Y) a}" 
+        then have "card (odd_comps_in_diff ?H Y) \<le> card {connected_component (?H \<setminus> Y) a}" 
           by (meson card_mono finite.emptyI finite.insertI)
         then have "card (odd_comps_in_diff ?H Y) \<le> 1" 
           by force
@@ -555,7 +558,7 @@ next
                 le0 not_less subset_singleton_iff)
         qed
       qed
-      then have 14:"graph_diff ?H Y = graph_diff G Y" 
+      then have 14:"?H \<setminus> Y = G \<setminus> Y" 
         unfolding graph_diff_def by (safe;blast)
       then have "singl_in_diff ?H Y = singl_in_diff G Y" 
         unfolding singl_in_diff_def
@@ -769,13 +772,13 @@ next
       by (metis (no_types, lifting) 9 10 card_Un_disjoint finite_Un)
     then have "card {e. e \<in> Mh \<and> e \<inter> A = {}} = card Mh - card A" 
       using 11 by presburger
-    then have 12:"card (graph_diff Mh A) = card Mh - card A" 
+    then have 12:"card (Mh \<setminus> A) = card Mh - card A" 
       unfolding graph_diff_def  by blast
-    have "(graph_diff Mh A) \<subseteq> Mh" 
+    have "(Mh \<setminus> A) \<subseteq> Mh" 
       by (simp add: graph_diff_subset)
-    then have "matching (graph_diff Mh A)" 
+    then have "matching (Mh \<setminus> A)" 
       using \<open>matching Mh\<close> unfolding matching_def by (meson subset_eq)
-    have "graph_diff Mh A \<subseteq> G " 
+    have "Mh \<setminus> A \<subseteq> G " 
       unfolding graph_diff_def
     proof(safe)    
       fix e
@@ -787,8 +790,8 @@ next
       then show "e \<in> G" 
         using \<open>e \<in> ?H\<close> by blast
     qed
-    then have "graph_matching G (graph_diff Mh A)" 
-      by (simp add: \<open>matching (graph_diff Mh A)\<close>)
+    then have "graph_matching G (Mh \<setminus> A)" 
+      by (simp add: \<open>matching (Mh \<setminus> A)\<close>)
     then have "card M \<ge> card Mh - card A" 
       by (metis 12 assms(5))
     then have "card M + card M \<ge> card Mh + card Mh - card A - card A" 

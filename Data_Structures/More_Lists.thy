@@ -3,9 +3,13 @@
 *)
 
 theory More_Lists
+<<<<<<< HEAD:Data_Structures/More_Lists.thy
   imports Main "HOL-Library.Extended_Real" AI_Provenance.Provenance
     Data_Structures.Fixed_Univ_Map_Specs
     More_Arith
+=======
+  imports Main "HOL-Library.Extended_Real" "HOL-Eisbach.Eisbach"
+>>>>>>> weighted_blossom:Set_Graphs/Directed_Graphs/More_Lists.thy
 begin
 
 lemma drop_take_Cons_Cons:
@@ -1208,6 +1212,10 @@ lemma list_cases_betw:
 "\<lbrakk>length xs \<ge> 2; \<And> x y. xs = [x,y] \<Longrightarrow> P; \<And> ys x y. xs = [x]@ys@[y] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   by(auto intro: list_cases_both_sides[of xs]) 
 
+lemma list_cases2_both_sides:
+  "\<lbrakk>length xs \<ge> 2; \<And> x y zs. xs = x#zs@[y] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P" for P
+  by(cases xs rule: list_cases_betw) auto
+
 lemma get_longest_common_tail:
 assumes "length p \<ge> 1" "length q \<ge> 1" "last p = last q"
 obtains ys p' q' where "p = p'@ys" "q =q'@ys" 
@@ -1301,6 +1309,12 @@ lemma rev_cases3:
   "\<lbrakk>xs = Nil \<Longrightarrow> P; \<And> x. xs = [x] \<Longrightarrow> P; \<And> ys y x. xs=ys@[y,x] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P" 
   by (metis More_Lists.append_butlast_last_cancel append_Nil neq_Nil_conv_snoc)
 
+
+lemma list_split_off_last_two:
+  assumes "length xs \<ge> 2"
+  obtains ys x y where "xs = ys@[x,y]"
+  using assms by(cases xs rule: rev_cases3) auto
+
 fun itrev_aux :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
 "itrev_aux  [] ys = ys" |
 "itrev_aux  (x #xs) ys = itrev_aux  xs (x #ys)"
@@ -1312,5 +1326,62 @@ lemma itrev_rev_gen:"itrev_aux xs ys = rev xs @ ys"
 lemma itrev_is_rev[simp]: "itrev = rev"
   by(auto simp add: itrev_rev_gen[of _ Nil, simplified] itrev_def)
 
+<<<<<<< HEAD:Data_Structures/More_Lists.thy
+=======
+lemma distinct_indexE:
+   "\<lbrakk>distinct xs; (\<And> i j. \<lbrakk>i < length xs; j < length xs; xs! i = xs ! j\<rbrakk> \<Longrightarrow> i = j) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  and distinct_indexD:
+   "\<lbrakk>distinct xs; i < length xs; j < length xs; xs! i = xs ! j\<rbrakk> \<Longrightarrow> i = j"
+  by (simp add: nth_eq_iff_index_eq)+
+
+lemma list_cases_hd_and_last:
+  "\<lbrakk>xs = Nil \<Longrightarrow> P; \<And> x. xs = [x] \<Longrightarrow> P; \<And> x y xs'. xs = x#xs'@[y] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by(cases xs, all \<open>cases xs rule: rev_cases\<close>) (auto elim!: rev_exhaust)
+
+fun foldl2 :: "('b \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'a list \<Rightarrow> 'b" where
+foldl2_Nil:  "foldl2 f a [] = a" |
+foldl2_Sing:  "foldl2 f a [x] = a" |
+foldl2_Cons: "foldl2 f a (x # y#xs) = foldl2 f (f a x y) (y#xs)"
+
+fun foldr2 :: "('a \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'a list \<Rightarrow> 'b \<Rightarrow> 'b" where
+foldr2_Nil:  "foldr2 f [] = id" |
+foldr2_Sing: "foldr2 f [_] = id"|
+foldr2_Cons: "foldr2 f (x # y# xs) = f x y \<circ> foldr2 f (y#xs)"
+
+lemma list_nempty_induct:
+  "\<lbrakk>xs \<noteq> []; \<And> x. P [x]; \<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)\<rbrakk> \<Longrightarrow> P xs"
+  by (metis list.exhaust list_nonempty_induct)
+
+lemma foldr2_append_one:
+  assumes "xs \<noteq> []"
+  shows "foldr2 (\<lambda>x1 x2 y. f y x2 x1) (xs @ [v']) (f a v v') =
+       foldr2 (\<lambda>x1 x2 y. f y x2 x1) (xs @ [v', v]) a"
+  by(induction rule: list_nempty_induct[OF assms]) simp+
+
+lemma foldl2_conv_foldr2:
+  "foldl2 f a xs = foldr2 (\<lambda>x1 x2 y. f y x2 x1) (rev xs) a"
+proof(induction xs arbitrary: a f rule: list_induct3)
+  case 1
+  then show ?case by simp
+next
+  case (2 v)
+  then show ?case by simp
+next
+  case (3 v v' l)
+  have "foldr2 (\<lambda>x1 x2 y. f y x2 x1) (rev l @ [v']) (f a v v') =
+    foldr2 (\<lambda>x1 x2 y. f y x2 x1) (rev l @ [v', v]) a"
+  proof(cases l)
+    case (Cons a list)
+    then show ?thesis 
+      using foldr2_append_one by fast
+  qed simp
+  thus ?case 
+    by(simp add: 3)
+qed
+
+lemma list_induct_longer_2:
+  "\<lbrakk>length xs \<ge> 2; \<And> x y. P [x, y]; \<And> x y z xs. P (y#z#xs) \<Longrightarrow> P (x#y#z#xs)\<rbrakk> \<Longrightarrow> P xs"
+  by (metis list_induct3_len_geq_2 list_cases3)
+>>>>>>> weighted_blossom:Set_Graphs/Directed_Graphs/More_Lists.thy
 
 end

@@ -570,15 +570,6 @@ lemma scc_disj:
   using assms wf_digraph.scc_disj
   by (force simp add: in_sccs_iff simp flip: ddfs.verts_eq eq_iff_digraph_of_eq)
 
-lemma induce_in_sccs_imp_in_sccs_dVs:
-  assumes "S \<subseteq> dVs G"
-  assumes "G \<downharpoonright> S \<in> sccs G"
-  shows "S \<in> sccs_dVs G"
-  using assms
-  apply (simp add: sccs_dVs_eq in_sccs_iff)
-  oops
-
-
 lemma in_scc_of_self: "u \<in> dVs G \<Longrightarrow> u \<in> scc_of G u"
   by (simp add: scc_of_eq wf_digraph.in_scc_of_self flip: ddfs.verts_eq)
 

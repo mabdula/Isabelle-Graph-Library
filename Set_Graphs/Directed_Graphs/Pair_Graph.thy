@@ -207,4 +207,7 @@ lemma dVs_swap: "dVs (prod.swap ` E) = dVs E"
 lemma insert_edge_dVs: "dVs (insert (x, y) E) = {x, y} \<union> dVs E"
   by(auto simp add: dVs_def)
 
+lemma dVs_rev_all: "dVs {(u, v) |v u. (v, u) \<in> G} = dVs G"
+  by (auto simp add: dVs_def)
+
 end

@@ -5,6 +5,7 @@ sessions
   AI_Provenance
   Undirected_Set_Graphs
   Flow_Theory
+  Laminar_Family
 
 theories
   Path_Aug_Opt
@@ -17,7 +18,6 @@ theories
   Orlins
   Maintain_Forest_Time
   Send_Flow_Time
-  Laminar_Family
   Orlins_Time
   Network_Simplex
   Network_Simplex_Preservation

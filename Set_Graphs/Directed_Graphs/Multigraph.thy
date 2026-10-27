@@ -54,6 +54,7 @@ definition In_edges::"'a set \<Rightarrow> 'edge set" where
 definition "multigraph_path  (es::('edge list)) \<longleftrightarrow> (es = [] \<or> (es \<noteq> [] \<and>
                       awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))))"
 
+<<<<<<< HEAD
 lemma multigraph_pathI: "es = [] \<Longrightarrow> multigraph_path  es"
                 "\<lbrakk>awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)); es \<noteq> []\<rbrakk>
                   \<Longrightarrow> multigraph_path es"
@@ -67,10 +68,42 @@ lemma multigraph_pathE: "\<lbrakk>multigraph_path es; es = [] \<Longrightarrow> 
 lemma multigraph_pathE': "\<lbrakk>multigraph_path es; es = [] \<Longrightarrow> P;
     \<And>d ds. \<lbrakk>es = d#ds; awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))\<rbrakk> \<Longrightarrow> P\<rbrakk>
   \<Longrightarrow> P"
+=======
+lemma multigraph_pathI: 
+  "es = [] \<Longrightarrow> multigraph_path  es"
+  "\<lbrakk>awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)); es \<noteq> []\<rbrakk> 
+  \<Longrightarrow> multigraph_path  es"
+  unfolding multigraph_path_def by auto
+
+lemma multigraph_pathE:
+ "\<lbrakk>multigraph_path es; es = [] \<Longrightarrow> P;
+   \<lbrakk>es \<noteq> [];awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))\<rbrakk> \<Longrightarrow> P\<rbrakk>
+  \<Longrightarrow>P"
+  unfolding multigraph_path_def by auto
+
+lemma multigraph_pathE': 
+  "\<lbrakk>multigraph_path es; es = [] \<Longrightarrow> P;
+    \<And> d ds. \<lbrakk>es = d#ds; awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))\<rbrakk> \<Longrightarrow> P\<rbrakk>
+    \<Longrightarrow>P"
+>>>>>>> weighted_blossom
   unfolding multigraph_path_def by (cases es) auto
 
 lemma deltas_in_E: "delta_plus x \<subseteq> \<E>" "delta_minus x \<subseteq> \<E>"
   by(auto simp add: delta_plus_def delta_minus_def)
+
+text \<open>We define operators for denoting the neighbours.\<close>
+
+definition gamma_plus::"'a \<Rightarrow> 'a set" ("\<gamma>\<^sup>+") where
+    "\<gamma>\<^sup>+ u = {v | v e.  e \<in> \<E> \<and> fst e = u \<and> snd e = v}"
+                                   
+definition gamma_minus::"'a \<Rightarrow> 'a set" ("\<gamma>\<^sup>-") where
+    "\<gamma>\<^sup>- u = {v | v e.  e \<in> \<E> \<and> fst e = v \<and> snd e = u}"
+
+definition Gamma_plus::"'a set \<Rightarrow> 'a set" ("\<Gamma>\<^sup>+") where
+    "\<Gamma>\<^sup>+ X = {v | v e.  e \<in> \<E> \<and> fst e \<in> X \<and> snd e = v \<and> v \<notin> X}"
+                                   
+definition Gamma_minus::"'a set \<Rightarrow> 'a set" ("\<Gamma>\<^sup>-") where
+    "\<Gamma>\<^sup>- X = {v | v e.  e \<in> \<E> \<and> fst e = v \<and> snd e \<in> X \<and> v \<notin> X}"
 
 end
 
@@ -83,7 +116,11 @@ lemma delta_minus_mono:
   by(auto simp add: multigraph_spec.delta_minus_def)
 
 lemma in_delta_plusI: 
+<<<<<<< HEAD
 "\<lbrakk>e \<in> E; fst e = x\<rbrakk> \<Longrightarrow> e \<in> multigraph_spec.delta_plus E fst x" for fst
+=======
+ "\<lbrakk>e \<in> E; fst e = x\<rbrakk> \<Longrightarrow> e \<in> multigraph_spec.delta_plus E fst x" for fst
+>>>>>>> weighted_blossom
   by(auto simp add: multigraph_spec.delta_plus_def)
 
 lemma in_delta_plusD: 
@@ -92,13 +129,25 @@ lemma in_delta_plusD:
   by(auto simp add: multigraph_spec.delta_plus_def)
 
 lemma in_delta_minusI: 
+<<<<<<< HEAD
 "\<lbrakk>e \<in> E; fst e = x\<rbrakk> \<Longrightarrow> e \<in> multigraph_spec.delta_minus E fst x" for fst
+=======
+ "\<lbrakk>e \<in> E; fst e = x\<rbrakk> \<Longrightarrow> e \<in> multigraph_spec.delta_minus E fst x" for fst
+>>>>>>> weighted_blossom
   by(auto simp add: multigraph_spec.delta_minus_def)
 
 lemma in_delta_minusD: 
 "e \<in> multigraph_spec.delta_minus E fst x \<Longrightarrow> e \<in> E"
 "e \<in> multigraph_spec.delta_minus E fst x \<Longrightarrow> fst e = x"for fst
   by(auto simp add: multigraph_spec.delta_minus_def)
+
+lemma finite_gamma_minus:
+  "finite G \<Longrightarrow> finite (multigraph_spec.gamma_minus G fst snd x)" for fst snd
+  by(auto simp add: multigraph_spec.gamma_minus_def)
+
+lemma finite_gamma_plus:
+  "finite G \<Longrightarrow> finite (multigraph_spec.gamma_plus G fst snd x)" for fst snd
+  by(auto simp add: multigraph_spec.gamma_plus_def)
 
 locale multigraph = multigraph_spec where \<E> = "\<E>::'edge set" for \<E> +
 assumes fst_create_edge:"\<And> x y. fst (create_edge x y) = x"

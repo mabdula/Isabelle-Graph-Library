@@ -72,6 +72,7 @@ global_interpretation forest_manipulation_spec_i: forest_manipulation_spec
     and abstract_forest = forest_manipulation_spec_i.abstract_forest
     and extend_forest_even_unclassified =  forest_manipulation_spec_i.extend_forest_even_unclassified
     and empty_forest = forest_manipulation_spec_i.empty_forest
+<<<<<<< HEAD
     and get_path_loop = forest_manipulation_spec_i.get_path_loop
   by(auto intro!: forest_manipulation_spec.intro rbt_fixed_univ_map rbt_fixed_univ_set)
 
@@ -249,6 +250,11 @@ qed
 lemma nb_abstract_is:
   "N v = Some T \<Longrightarrow> nb_abstract N C v = vset_to_set T"
   by(simp add: nb_abstract_def nb_list_def)
+=======
+  by(auto intro!: forest_manipulation_spec.intro aug_a_matching.buddy_map.Map_axioms
+      simp add: RBT_Set.empty_def set.Set_axioms)
+term primal_dual_path_search_spec.search_path
+>>>>>>> weighted_blossom
 
 global_interpretation pd_path_search_spec: primal_dual_path_search_spec
   (*the maps and sets*)
@@ -288,10 +294,19 @@ global_interpretation pd_path_search_spec: primal_dual_path_search_spec
     (*the forest*)
     and evens = evens
     and odds = odds
+<<<<<<< HEAD
     and abstract_forest = "abstract_forest nil"
     and get_path = "get_path nil"
     and extend_forest_even_unclassified = "extend_forest_even_unclassified nil" 
     and empty_forest = empty_forest
+=======
+    and roots = roots
+    and abstract_forest = "abstract_forest"
+    and get_path = "get_path"
+    and extend_forest_even_unclassified = 
+    "extend_forest_even_unclassified" 
+    and empty_forest = "empty_forest vset_iterate1"
+>>>>>>> weighted_blossom
     (*the heap*)
     and heap_insert = queue_insert
     and heap_decrease_key = queue_decrease_key
@@ -302,12 +317,21 @@ global_interpretation pd_path_search_spec: primal_dual_path_search_spec
     and missed_empty = Leaf
     and ben_empty = Leaf
     and vset_is_empty = vset_is_empty
+<<<<<<< HEAD
     and vset_iterate_pot = rbt_iterate
     and vset_iterate_ben = rbt_iterate
     and vset_filter = filter_rbt
     and nil = nil
   for nil G left right buddy_get edge_costs right_neighbs initial_pot
 
+=======
+    and vset_iterate_pot = vset_iterate2
+    and vset_iterate_ben = vset_iterate3
+    and vset_filter = vset_filter
+  for (*the graph*) G left right buddy edge_costs right_neighbs
+    (*the potential*) initial_pot potential_lookup potential_upd
+    (*sets of vertices*) vset_iterate1 vset_iterate2 vset_iterate3 vset_filter
+>>>>>>> weighted_blossom
 defines search_path = pd_path_search_spec.search_path
   and search_path_loop_impl = pd_path_search_spec.search_path_loop_impl
   and new_potential = pd_path_search_spec.new_potential
@@ -472,6 +496,53 @@ assumes G: "bipartite G (vset_to_set left) (vset_to_set right)"
   and nil: "nil \<notin> Vs G"
 begin
 
+<<<<<<< HEAD
+=======
+lemmas parent = 
+  M.invar_empty
+  M.map_empty
+  M.invar_update
+  M.map_update
+
+lemmas potential = parent
+
+lemmas origin = parent
+
+lemmas vset =
+  set.invar_empty[folded RBT_Set.empty_def]
+  set.set_empty[folded RBT_Set.empty_def]
+  set.invar_insert
+  set.set_insert
+  set.set_isin
+
+lemmas missed = origin
+
+lemmas best_even_neighbour = origin
+
+interpretation fmnlp: forest_manipulation
+  where vset_iterate_origin = "\<lambda> f T init. fold_rbt (\<lambda> x y. f y x) init T"
+    and vset_empty = vset_empty
+    and vset_invar = vset_inv
+    and vset_to_set = vset_to_set
+    and vset_insert = vset_insert
+    and vset_isin = isin
+    and vset_delete = vset_delete
+    and parent_empty = Leaf
+    and parent_upd = update
+    and parent_delete = delete
+    and parent_lookup = lookup 
+    and parent_invar = M.invar
+    and origin_empty = Leaf
+    and origin_upd = update
+    and origin_delete = delete
+    and origin_lookup = lookup
+    and origin_invar = M.invar
+  using vset(1-5) 
+  by(auto intro!: forest_manipulation_axioms.intro fold_rbt_as_needed
+      forest_manipulation.intro[OF forest_manipulation_spec_i.forest_manipulation_spec_axioms])
+
+abbreviation "forest_invar == fmnlp.forest_invar"
+>>>>>>> weighted_blossom
 abbreviation "L \<equiv> vset_to_set left"
 abbreviation "R \<equiv> vset_to_set right"
 abbreviation "vset_invar \<equiv> (rbt_set_invar nil)"
@@ -562,6 +633,7 @@ proof-
 qed
 
 interpretation  satisfied_simple:
+<<<<<<< HEAD
   alternating_forest_spec evens odds "get_path nil" "abstract_forest nil"
   forest_invar roots vset_invar vset_to_set
   unfolding abstract_forest_def get_path_def  
@@ -592,6 +664,24 @@ next
 next
   case (13 F M u v) then show ?case by (rule fmnlp.complex_invariant_consequences(2))
 qed
+=======
+  alternating_forest_spec evens odds "get_path" "abstract_forest"
+  forest_invar roots vset_inv vset_to_set
+  unfolding abstract_forest_def get_path_def 
+proof(rule alternating_forest_spec.intro, goal_cases)
+  case (12 F M v v' x p1 p2 p1' p2')
+  then show ?case
+    by(auto intro!: fmnlp.get_path_prefices[of M F p1 x p2 v p1' p2' v'])
+next
+  case (14 F M u v)
+  then show ?case
+    using fmnlp.complex_invariant_consequences(1) by blast
+next
+  case (15 F M u v)
+  then show ?case
+    using fmnlp.complex_invariant_consequences(2) by blast
+qed (simp_all add: fmnlp.simple_invariant_consequences fmnlp.get_path_correct(1,2,3,4,5))
+>>>>>>> weighted_blossom
 
 abbreviation "\<ww> \<equiv> (\<lambda> e. edge_costs (pick_one e) (pick_another e))"
 

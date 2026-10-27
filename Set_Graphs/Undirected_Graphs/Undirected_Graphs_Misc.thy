@@ -12,9 +12,6 @@ provenance human
 
 subsection \<open>Misc\<close>
 
-text\<open>Since one of the matchings is bigger, there must be one edge equivalence class
-  that has more edges from the bigger matching.\<close>
-
 lemma lt_sum:
   "(\<Sum>x\<in>s. g x) < (\<Sum>x\<in>s. f x) \<Longrightarrow> \<exists>(x::'a ) \<in> s. ((g::'a \<Rightarrow> nat) x < f x)"
   by (auto simp add: not_le[symmetric] intro: sum_mono)
@@ -264,4 +261,213 @@ lemma snoc_eq_iff_butlast':
 lemma neq_Nil_conv_snoc: "xs \<noteq> [] \<longleftrightarrow> (\<exists>x ys. xs = ys @ [x])"
   by (auto simp add: snoc_eq_iff_butlast')
 
+lemma card_of_even_numbers_upto:
+  "card {i | i. i < n \<and> even i} = Suc n div 2 "
+proof(induction n)
+  case (Suc n)
+  have rw:"{i |i. i < Suc n \<and> even i} = 
+       (if even n then insert n {i |i. i < n \<and> even i}
+       else {i |i. i < n \<and> even i})" 
+    using less_Suc_eq by auto
+  thus ?case
+    using Suc by auto
+qed simp
+
+lemma card_of_odd_numbers_upto:
+  "card {i | i. i < n \<and> odd i} = n div 2 "
+proof(induction n)
+  case (Suc n)
+  have rw:"{i |i. i < Suc n \<and> odd i} = 
+       (if odd n then insert n {i |i. i < n \<and> odd i}
+       else {i |i. i < n \<and> odd i})" 
+    using less_Suc_eq by auto
+  thus ?case
+    using Suc by auto
+qed simp
+
+lemma card_replace: "\<lbrakk>x \<in> X; y \<notin> X - {x}\<rbrakk> \<Longrightarrow> card (X - {x} \<union> {y}) = card X"
+  using card.remove[of X] by (cases "finite X") auto
+
+lemma domIff': "(m a = None) \<longleftrightarrow> (a \<notin> dom m)"
+  by auto
+
+lemma Collect2D: 
+  "(x, y) \<in> { (x, y) . P x y} \<Longrightarrow> P x y"
+  "(x, y) \<in> { (x, y) | x y . P x y} \<Longrightarrow> P x y"
+  by auto
+
+lemma card_image_subst: "\<lbrakk>inj_on f A; B = f ` A\<rbrakk> \<Longrightarrow> card A = card B"
+  using card_image by force
+
+lemma bij_betwE:
+  "\<lbrakk>bij_betw f A B; \<lbrakk>inj_on f A; f ` A = B\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by(auto simp add: bij_betw_def)
+
+lemma inj_onE: 
+  "\<lbrakk>inj_on f A; (\<And> x y. \<lbrakk>x\<in>A; y\<in>A; f x = f y\<rbrakk> \<Longrightarrow> x = y)\<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by(auto simp add: inj_on_def)
+
+lemma nat_geq_3I: "\<lbrakk>(n::nat) = 0 \<Longrightarrow> False; n = 1 \<Longrightarrow> False; n = 2 \<Longrightarrow> False\<rbrakk> \<Longrightarrow> n \<ge> 3"
+  by fastforce
+
+lemma sum_of_two_things: "x \<noteq> y \<Longrightarrow> sum f {x, y} = f x + f y"
+  by simp
+
+lemma sum_nat_index_shift:
+  "sum f {(a::nat)..<a + b} = sum (\<lambda> i. f (i + a)) {0..<b}"
+  by(auto simp add: comm_monoid_add_class.sum.reindex[of "\<lambda> i. i + a" "{0..<b}", 
+             simplified, symmetric] add.commute)
+
+lemma sum_nat_some_index_shift:
+  "sum f ({(a::nat)..<a + b} \<inter> A) = sum (\<lambda> i. f (i + a)) ({0..<b} \<inter> {x | x. x + a \<in> A})"
+  by(subst comm_monoid_add_class.sum.reindex[of "\<lambda> i. i + a" _ f, simplified, 
+              symmetric])
+    (auto intro!: sum.cong rev_image_eqI[of _ "{0..<b} \<inter> {uu. uu + a \<in> A}" _ "\<lambda>x. x + a", of "x - a" x for x])
+
+lemma finite_unordered_pairs: "finite X \<Longrightarrow> finite {{x,y}| x y. x \<in> X \<and> y \<in> X}"
+  by (simp add: finite_image_set2)
+
+lemma card_ge_1_obtain_two_distinc_elems:
+  assumes "card X > 1"
+  obtains x1 x2 where "x1 \<in> X" "x2 \<in> X" "x1 \<noteq> x2"
+proof(goal_cases)
+  case 1
+  have "\<exists> x1 x2. x1 \<in> X \<and> x2 \<in> X \<and> x1 \<noteq> x2"
+  proof(rule ccontr, goal_cases)
+    case 1
+    hence "X = {} \<or> (\<exists> x. X = {x})" 
+      by blast
+    then show ?case
+      using assms 
+      by auto
+  qed
+  thus ?case
+    using 1 by auto
+qed
+
+lemma at_least_two_in_card_ge_1:
+  assumes "x1 \<in> X" "x2 \<in> X" "x1 \<noteq> x2" "finite X"
+  shows "card X > 1"
+proof(rule ccontr, goal_cases)
+  case 1
+  hence "card X \<le> 1" by auto
+  hence "card X = 0 \<or> card X = 1"
+    by auto
+  hence "X = {} \<or> (\<exists> x. X = {x}) \<or> infinite X"
+    using "1"  card_0_eq[of X] card_1_singletonE[of X] 
+    by blast
+  hence "X = {} \<or> (\<exists> x. X = {x})"
+    using assms(4) by auto
+  then show ?case 
+    using assms(1-3) by blast
+qed
+
+lemma Union_of_singletons_in_set:
+  "\<Union> {{x} | x. x \<in> X} = X"
+  by auto
+
+lemma inj_on_image_subset_iff: "\<lbrakk>inj_on f (A \<union> B)\<rbrakk> \<Longrightarrow> f ` A \<subseteq> f ` B \<longleftrightarrow> A \<subseteq> B"
+  using inj_on_Un_image_eq_iff[of f "A \<union> B" B]
+  by auto
+
+lemma inj_on_card_of_image_leq_iff:
+  "inj_on f (X \<union> Y) \<Longrightarrow> card (f ` X) \<le> card (f ` Y) \<longleftrightarrow> card X \<le> card Y"
+  by (simp add: card_image inj_on_Un)
+
+lemma inj_on_card_of_image_leqI:
+  "\<lbrakk>inj_on f (X \<union> Y); card X \<le> card Y\<rbrakk> \<Longrightarrow> card (f ` X) \<le> card (f ` Y)"
+  by (simp add: card_image inj_on_Un)
+
+lemma Union_of_imaged: "\<Union> ((`) f ` \<D>) = f ` \<Union> \<D>"
+  by auto
+
+lemma image_of_doubleton_is_other_imageE:
+  "\<lbrakk>f ` {v, v'} = f ` e; \<And> x y. \<lbrakk>x \<in> e; y \<in> e; f x = f v; f y = f v'\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+proof(goal_cases)
+  case 1
+  moreover obtain x where "x \<in> e" "f x = f v"
+    using 1(1) by force
+  moreover obtain y where "y \<in> e" "f y = f v'"
+    using 1(1) by force
+  ultimately show ?case
+    by auto
+qed
+
+lemma two_fun_values_is_other_imageE:
+  "\<lbrakk>{f v, f v'} = f ` e; \<And> x y. \<lbrakk>x \<in> e; y \<in> e; f x = f v; f y = f v'\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  using image_of_doubleton_is_other_imageE by force
+
+lemma inj_on_inter:"inj_on f (X \<union> Y) \<Longrightarrow> f ` X \<inter> f ` Y = f ` (X \<inter> Y)"
+  by (simp add: inj_on_image_Int)
+
+lemma select_unique_representative_same_card_and_bijection:
+  assumes "\<And> XX. XX \<in> \<X> \<Longrightarrow> \<exists>! x \<in> X. x \<in> XX"
+    "\<And> x. x \<in> X \<Longrightarrow> \<exists>! XX \<in> \<X>. x \<in> XX"
+    "finite X" "finite \<X>"
+  shows "card X = card \<X> \<and> (\<exists> f. bij_betw f X \<X>)"
+proof-
+  define f1 where "f1 = (\<lambda> x. SOME XX. XX \<in> \<X> \<and> x \<in> XX)"
+  have f1_props: "inj_on f1 X \<and> f1 ` X \<subseteq> \<X>"
+  proof(rule, all \<open>(rule inj_onI) | (rule, elim imageE)\<close>, goal_cases)
+    case (1 x y)
+    then show ?case
+      using someI_ex[of "\<lambda>uub. uub \<in> \<X> \<and> y \<in> uub"] someI_ex[of "\<lambda>uub. uub \<in> \<X> \<and> x \<in> uub"] 
+        assms(1,2) 
+      by (force simp add: f1_def)
+  next
+    case (2 XX x)
+    then show ?case 
+      using  assms(2)[of x]  verit_sko_ex'[of "\<lambda>uub. uub \<in> \<X> \<and> x \<in> uub"
+          "(SOME uub. uub \<in> \<X> \<and> x \<in> uub) \<in> \<X> \<and> x \<in> (SOME uub. uub \<in> \<X> \<and> x \<in> uub)"]
+      by(auto simp add: f1_def)
+  qed
+
+  have card1:  "card X \<le> card \<X>"
+    using card_inj_on_le[where f = f1, OF _ _ assms(4)] f1_props 
+    by simp
+  define f2 where "f2 = (\<lambda> XX. SOME x. x \<in> X \<and> x \<in> XX)"
+  have f2_props:"inj_on f2 \<X> \<and> f2 ` \<X> \<subseteq> X"
+  proof(rule, all \<open>(rule inj_onI) | (rule, elim imageE)\<close>, goal_cases)
+    case (1 XX YY)
+    thus ?case
+      by (metis (lifting) assms(1,2) f2_def someI_ex)
+  next
+    case (2 x XX)
+    then show ?case 
+      using  assms(1)[of XX] someI_ex[of "\<lambda>R. R \<in> X \<and> R \<in> XX"]
+      by(auto simp add: f2_def)
+  qed
+  have card2: "card X \<ge> card \<X>"
+    using card_inj_on_le[where f = f2, OF _ _ assms(3)] f2_props
+    by auto
+  obtain f where "bij_betw f X \<X>"
+    using Schroeder_Bernstein[of f1 X \<X> f2] f1_props f2_props 
+    by auto
+  thus ?thesis 
+    using card1 card2 
+    by auto
+qed
+
+lemma subset_graph_finite:
+  assumes "finite A"
+  shows "finite {{X, Y}| X Y.  X \<subseteq> A \<and> Y \<subseteq> A}" (is "finite ?UA")
+proof -
+  have "finite {(X, Y) |X Y. X \<subseteq> A \<and> Y \<subseteq> A}"
+    using assms by auto
+  let ?f = "(\<lambda>(X, Y). {{X, Y}})" 
+  have "{{X, Y}| X Y.  X \<subseteq> A \<and> Y \<subseteq> A} =  (\<Union>a\<in>{(X, Y) |X Y. X \<subseteq> A \<and> Y \<subseteq> A}. ?f a)"
+  proof(safe)
+  qed (auto)
+  then show ?thesis 
+    using \<open>finite {(X, Y) |X Y. X \<subseteq> A \<and> Y \<subseteq> A}\<close> by auto
+qed
+
+lemma union_of_set_finite:
+  assumes "finite A"
+  assumes "\<forall>a \<in> A. finite a"
+  shows "finite (\<Union>A)" 
+  using assms(1) assms(2) by blast
+
+lemma singleton_not_emptyD:"X = {x} \<Longrightarrow> X \<noteq> {}"
+  by auto
 end

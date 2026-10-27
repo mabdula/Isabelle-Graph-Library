@@ -1,0 +1,10 @@
+session "Edmonds_Gallai_Decomposition" = "HOL" +
+  options [document = pdf]
+  sessions
+    Blossom
+    Berge_Formula
+  theories
+    Edmonds_Gallai_Preps
+    Edmonds_Gallai_Blossoms
+    Edmonds_Gallai_Computation
+    Edmonds_Gallai 

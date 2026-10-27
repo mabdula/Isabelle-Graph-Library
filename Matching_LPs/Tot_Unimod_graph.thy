@@ -82,14 +82,15 @@ lemma at_most_two_ones:
               (\<forall> t < card (Vs E). (t\<noteq>i \<and> t \<noteq> j) \<longrightarrow> incidence_mat $$ (t,k) = 0)"
 proof-
   obtain e where e:"e \<in> E" "G_enum e= k"
-    using assms(2) matching_lp_theorems(20,27) by blast
+    using assms(2) 
+    using matching_lp_theorems(22,29) by blast
   then obtain u v where e_uv: "e = {u, v}" "u \<noteq> v" 
     using assms(1) by auto
   have uv_indices_less:"Vs_enum u < card (Vs E)" "Vs_enum v < card (Vs E)"
     using e_uv  e(1)
-    by(auto intro!: matching_lp_theorems(21))
+    by(auto intro!: matching_lp_theorems(23))
   moreover have "Vs_enum u \<noteq> Vs_enum v"
-    using matching_lp_theorems(17)[of u] matching_lp_theorems(17)[of v]
+    using matching_lp_theorems(26)[of u] matching_lp_theorems(26)[of v]
           e(1) e_uv(1,2) edges_are_Vs[of u v] edges_are_Vs_2[of u v] 
     by force
   moreover have "incidence_mat $$ (Vs_enum u, k) = 1" 
@@ -105,13 +106,13 @@ proof-
   proof(rule ccontr, goal_cases)
     case (1 t)
     then obtain  w where "w \<in> Vs E" "Vs_enum_inv t = v" 
-      using  assms(2) e(1,2) e_uv(1) elems_incidence_one_zero[of t k] matching_lp_theorems(18,19)
+      using  assms(2) e(1,2) e_uv(1) elems_incidence_one_zero[of t k] matching_lp_theorems(20,21)
           one_then_in_edge 
       by fastforce
     hence "{u, v, w} \<subseteq> e" 
-      using "1"(1,3) matching_lp_theorems(19) by auto
+      using "1"(1,3) matching_lp_theorems(21) by auto
     then show ?case
-      using "1"(1,3) \<open>Vs_enum_inv t = v\<close> matching_lp_theorems(19) by force
+      using "1"(1,3) \<open>Vs_enum_inv t = v\<close> matching_lp_theorems(21) by force
   qed
   ultimately show ?thesis
     by blast
@@ -176,13 +177,13 @@ proof safe
       have "{Vs_enum_inv i, Vs_enum_inv j, Vs_enum_inv t} \<subseteq>  G_enum_inv k"
         by (simp add: 1 2 3)
       then show ?thesis
-        using  "1" "2" "3" asm(1,2,3) assms(3,4,5)  matching_lp_theorems(19)[OF assms(3)]
-              matching_lp_theorems(19)[OF assms(4)]  matching_lp_theorems(19)[OF asm(1)] 
+        using  "1" "2" "3" asm(1,2,3) assms(3,4,5)  matching_lp_theorems(21)[OF assms(3)]
+              matching_lp_theorems(21)[OF assms(4)]  matching_lp_theorems(21)[OF asm(1)] 
         unfolding card_2_iff' atomize_ball[symmetric]
         by metis
     qed
     have "G_enum_inv k \<in> E"
-      by (simp add: assms(2) matching_lp_theorems(27)) 
+      by (simp add: assms(2) matching_lp_theorems(29)) 
     then show False 
       using card_edge[of E] \<open>card (G_enum_inv k) \<noteq> 2\<close> assms(1) by fastforce
   qed
@@ -545,14 +546,14 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
                 by (metis (full_types) \<open>pick J t < m\<close> dim_row_incidence_mat dim_submatrix(1) i_j(4) less(2)
                     one_then_in_edge pick_le)
               have 22: "(G_enum_inv (pick J t)) \<in> E"
-                using \<open>pick J t < m\<close> matching_lp_theorems(27) by presburger
+                using \<open>pick J t < m\<close> matching_lp_theorems(29) by presburger
               have 27: "Vs_enum_inv (pick I i) \<noteq> Vs_enum_inv (pick I j)"   
               proof(rule ccontr, goal_cases)
                 case 1
                 hence "pick I j = pick I i" 
                   using dim_row_incidence_mat  i_j(3,4,5) less(2) matching_lp_theorems(7)
                        pick_le dim_submatrix(1)[of incidence_mat I J] 
-                  by(auto intro!: matching_lp_theorems(29) pick_mono_le)
+                  by(auto intro!: matching_lp_theorems(31) pick_mono_le)
                 hence "i = j" 
                   using basic_trans_rules(22) dim_row_mat_less_card_I[of I] i_j(3,4) less(2) not_less_iff_gr_or_eq
                       pick_eq_iff_inf[of I] pick_mono_le[of i I j] pick_mono_le[of j I i] 
