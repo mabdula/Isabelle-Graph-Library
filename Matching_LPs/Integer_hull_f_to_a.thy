@@ -2928,7 +2928,22 @@ qed
         using append_int_mat_is_int[OF A inner_carr AI inner_int] .
     qed
   have "?fullb \<in> \<int>\<^sub>v" using append_int_vec_is_int one_vec_int 
-    by (metis carrier_vec_dim_vec gram_schmidt.zero_vec_is_int)
+    proof -
+      have one_int: "1\<^sub>v n \<in> \<int>\<^sub>v"
+        using one_vec_int by blast
+      have zero_int: "0\<^sub>v nr \<in> \<int>\<^sub>v"
+        using gram_schmidt.zero_vec_is_int by blast
+      have one_carr: "1\<^sub>v n \<in> carrier_vec n"
+        by (rule one_carrier_vec)
+      have zero_carr: "0\<^sub>v nr \<in> carrier_vec nr"
+        by (rule zero_carrier_vec)
+      have inner_int: "1\<^sub>v n @\<^sub>v 1\<^sub>v n \<in> \<int>\<^sub>v"
+        using append_int_vec_is_int[OF one_carr one_carr one_int one_int] by blast
+      have inner_carr: "1\<^sub>v n @\<^sub>v 1\<^sub>v n \<in> carrier_vec (n + n)"
+        by (rule append_carrier_vec[OF one_carr one_carr])
+      show ?thesis
+        using append_int_vec_is_int[OF zero_carr inner_carr zero_int inner_int] by blast
+    qed
   have "A' \<in> \<int>\<^sub>m" 
     using submatrix_int_mat[of ?fullA I UNIV]  A'_b'(2) `?fullA \<in> \<int>\<^sub>m` 
     unfolding sub_system_def 
