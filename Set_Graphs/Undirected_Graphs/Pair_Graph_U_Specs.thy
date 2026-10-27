@@ -117,7 +117,7 @@ lemma pair_graph_u_invar_no_loop:
    "\<lbrakk>pair_graph_u_invar G; x \<in> dom (lookup G); y \<in> t_set (the (lookup G x))\<rbrakk> \<Longrightarrow> x \<noteq> y"
  using  neighbourhood_invars'[of G]   
  by (subst (asm) pair_graph_specs.vset.set.set_isin[of "the (lookup G x)" y, symmetric])
-    (auto simp add: pair_graph_u_invar_def local.neighbourhood_def   option.split, metis option.simps(5))
+    (auto simp add: pair_graph_u_invar_def local.neighbourhood_def option.split, force simp add: pair_graph_u_invar_def local.neighbourhood_def split: option.splits)
 
 context
   fixes G::'adjmap
