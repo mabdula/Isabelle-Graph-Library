@@ -1511,7 +1511,22 @@ proof-
         using us_single v2_v v1v2p1p2us(1) by simp
     qed
     then have "e = {last p, v}"
-      by (metis "3" assms(4) last_appendR list.inject list.set_intros(1) self_append_conv2)
+    proof -
+      from "3" have p_eq: "p = p1 @ us" and eq: "us @ v # p' = v1 # v # p2"
+        by auto
+      have "us \<noteq> []"
+      proof
+        assume "us = []"
+        with eq have "p' = v # p2"
+          by auto
+        with assms(4) show False
+          by simp
+      qed
+      with p_eq have "last p = last us"
+        by (simp add: last_appendR)
+      then show ?thesis
+        using \<open>e = {last us, v}\<close> by simp
+    qed
     then show ?thesis
       by simp
   next
