@@ -782,7 +782,7 @@ qed
         qed
       qed
       have "\<forall>i \<in> I' \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"  
-        by (metis IntD1 IntD2 IntI Un_Int_eq(1) 4 sup_commute)
+        using 4 by auto
       then have "\<forall> i < dim_row A'. (row A' i) \<bullet> x =  (b' $ i)"
         using subsystem_fulfills_P'[of A b A' b' I' "\<lambda> p q. p \<bullet> x = q"] 
           A'_b'
