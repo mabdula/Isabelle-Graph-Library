@@ -253,8 +253,11 @@ lemma G_not_empty_if:
 lemma from_nat_into_G_E_aux:
   assumes "i < m"
   obtains e where "e \<in> G" "from_nat_into G i = e"
-  using assms
-  by (metis G_not_empty_if from_nat_into)
+proof -
+  from assms have ne: "G \<noteq> {}" by (rule G_not_empty_if)
+  have mem: "from_nat_into G i \<in> G" by (rule from_nat_into[OF ne])
+  show thesis by (rule that[OF mem refl])
+qed
 
 lemma from_nat_into_G_E:
   assumes "i < m"
