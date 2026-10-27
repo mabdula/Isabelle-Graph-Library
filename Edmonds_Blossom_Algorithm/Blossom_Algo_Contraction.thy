@@ -433,7 +433,74 @@ qed
 lemma cycle_set_tl_eq_butlast:
   assumes "match_blossom M stem cyc"
   shows "set (tl cyc) = set (butlast cyc)"
-  by (metis append_butlast_last_id assms match_blossomD(3) butlast.simps(2) last_tl list.exhaust_sel odd_cycleD(3) odd_cycle_nempty rotate1.simps(2) set_rotate1)
+proof -
+  have oc: "odd_cycle cyc"
+    using match_blossomD(3)[OF assms] .
+  have nempty: "cyc \<noteq> []"
+    using odd_cycle_nempty[OF oc] .
+  have len_ge3: "3 \<le> length cyc"
+    using odd_cycleD(1)[OF oc] .
+  have hd_eq_last: "hd cyc = last cyc"
+    using odd_cycleD(3)[OF oc] .
+  have tl_nempty: "tl cyc \<noteq> []"
+    using len_ge3 nempty by (cases cyc) auto
+  have bl_nempty: "butlast cyc \<noteq> []"
+    using len_ge3 nempty by (cases cyc) auto
+  have but_eq: "cyc = butlast cyc @ [last cyc]"
+    using nempty by (simp add: append_butlast_last_id)
+  have rot: "rotate1 cyc = tl cyc @ [hd cyc]"
+  proof (cases cyc)
+    case Nil
+    then show ?thesis using nempty by simp
+  next
+    case (Cons x xs)
+    then show ?thesis by (simp add: rotate1.simps(2))
+  qed
+  have set_eq1: "set cyc = set (tl cyc) \<union> {hd cyc}"
+  proof -
+    have "set cyc = set (rotate1 cyc)"
+      by (simp add: set_rotate1)
+    also have "\<dots> = set (tl cyc @ [hd cyc])"
+      by (simp add: rot)
+    also have "\<dots> = set (tl cyc) \<union> {hd cyc}"
+      by simp
+    finally show ?thesis .
+  qed
+  have set_eq2: "set cyc = set (butlast cyc) \<union> {last cyc}"
+    using arg_cong[OF but_eq, of set] by simp
+  have combined: "set (tl cyc) \<union> {hd cyc} = set (butlast cyc) \<union> {hd cyc}"
+    using set_eq1 set_eq2 hd_eq_last by simp
+  have x_in_tl: "hd cyc \<in> set (tl cyc)"
+  proof -
+    have "last (tl cyc) = last cyc"
+      using nempty tl_nempty by (auto simp: last_tl)
+    also have "\<dots> = hd cyc"
+      using hd_eq_last by simp
+    finally have last_tl_eq: "last (tl cyc) = hd cyc" .
+    have "last (tl cyc) \<in> set (tl cyc)"
+      using tl_nempty by (simp add: last_in_set)
+    then show ?thesis
+      using last_tl_eq by simp
+  qed
+  have x_in_bl: "hd cyc \<in> set (butlast cyc)"
+  proof -
+    obtain y ys where y_ys: "butlast cyc = y # ys"
+      using bl_nempty by (cases "butlast cyc") auto
+    then have "cyc = y # (ys @ [last cyc])"
+      using but_eq by simp
+    then have "hd cyc = y"
+      by (cases cyc) auto
+    then show ?thesis
+      using y_ys by simp
+  qed
+  have "set (tl cyc) = set (tl cyc) \<union> {hd cyc}"
+    using x_in_tl by auto
+  also have "\<dots> = set (butlast cyc) \<union> {hd cyc}"
+    using combined by simp
+  also have "\<dots> = set (butlast cyc)"
+    using x_in_bl by auto
+  finally show ?thesis .
+qed
 
 context find_aug_path
 begin
