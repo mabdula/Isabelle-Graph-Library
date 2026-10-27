@@ -1196,7 +1196,7 @@ lemma vwalk_bet_transitive_2:
           (\<exists>(u,v) \<in> set (edges_of_vwalk p). (u,v) \<in> (G - G'))"
    apply (induction rule: vwalk.induct) 
    apply (auto simp: dVs_def)
-   by (metis Suc_leI dVsI(2) length_greater_0_conv vwalk_1)
+   by (case_tac vs) (auto dest: dVsI(2))
 
  lemma vwalk_not_vwalk_elim: 
    "\<lbrakk>vwalk G p; \<not>vwalk G' p\<rbrakk> \<Longrightarrow> 
