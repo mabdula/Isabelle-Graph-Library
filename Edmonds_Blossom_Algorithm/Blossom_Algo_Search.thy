@@ -910,7 +910,7 @@ proof-
     using if1_props[OF assms(1)]
     by auto
   ultimately show ?thesis
-    by metis
+    by auto
 qed
 
 end
