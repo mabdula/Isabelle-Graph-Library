@@ -1704,8 +1704,14 @@ proof-
       by simp
     have "alt_path M (rev p @ [last pfx1])"
       using alt_path_pfx1
-      by (metis alt_list_append_1 edges_of_path_append_2 list.sel(1) list.simps(3))
-    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)))"
+proof -
+  have edges_eq: "edges_of_path (rev p @ [last pfx1, last (butlast pfx1)])
+                = edges_of_path (rev p @ [last pfx1]) @ [{last pfx1, last (butlast pfx1)}]"
+    by (rule edges_of_path_snoc_2)
+  show "alt_path M (rev p @ [last pfx1])"
+    using alt_list_append_1[OF alt_path_pfx1[unfolded edges_eq]]
+    by simp
+qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)))"
     ultimately have "last (edges_of_path ((rev p) @ [last pfx1])) \<notin> M"
       using alternating_list_gt_last[OF alternating_gt_odd]
       by (metis One_nat_def edges_of_path_rev even_Suc length_rev list.size(3) odd_one rev.simps(2))
