@@ -294,8 +294,11 @@ lemma bellman_ford_upd_one:
 
 lemma finite_of_V: "finite {f xs | xs. P xs \<and> length xs \<le> l \<and> set xs \<subseteq> set vs}"
 proof-
-  have "finite {xs. length xs \<le> l \<and> set xs \<subseteq> set vs}"
-    by (metis (no_types, lifting) Collect_cong List.finite_set finite_lists_length_le)
+  have "finite (set vs)" by simp
+  hence "finite {xs. set xs \<subseteq> set vs \<and> length xs \<le> l}"
+    by (rule finite_lists_length_le)
+  hence "finite {xs. length xs \<le> l \<and> set xs \<subseteq> set vs}"
+    by (rule rev_finite_subset, auto)
   thus ?thesis by simp
 qed
 
