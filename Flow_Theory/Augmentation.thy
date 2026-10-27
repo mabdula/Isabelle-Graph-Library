@@ -1321,7 +1321,12 @@ proof-
      by(auto intro: redge_pair_cases simp add:  algebra_simps)
    also have "... = (\<Sum>ea\<in>(\<E>).f ea * \<c> ea)
                        +  \<gamma> * \<cc> e " 
-        by (smt (verit, ccfv_SIG) assms finite_E sum.remove)
+proof -
+      have "(\<Sum>ea\<in>\<E>. f ea * \<c> ea) =
+              f (oedge e) * \<c> (oedge e) + (\<Sum>ea\<in>\<E> - {oedge e}. f ea * \<c> ea)"
+        by (rule sum.remove[OF finite_E assms])
+      thus ?thesis by argo
+    qed
    finally show "(\<Sum>ea\<in>\<E>. augment_edge f \<gamma> e ea * \<c> ea) = (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * \<cc> e" by simp
  qed
 
