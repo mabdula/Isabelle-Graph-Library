@@ -1235,8 +1235,34 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
   next
     case False
     then show ?thesis 
-      by (metis "2.IH" "2.prems" augment_edge_away augment_edges.simps(2) distinct.simps(2) 
-                erev.simps(1) oedge.simps(2) oedge_and_reversed set_ConsD)
+    proof -
+      from "2.prems" have hyps: "F d \<in> set (e # es)" "B d \<in> set (e # es)" "distinct (e # es)"
+        by simp_all
+      have e_ne_Fd: "e \<noteq> F d"
+      proof
+        assume "e = F d"
+        hence "oedge e = d" by simp
+        with False show False by simp
+      qed
+      have e_ne_Bd: "e \<noteq> B d"
+      proof
+        assume "e = B d"
+        hence "oedge e = d" by simp
+        with False show False by simp
+      qed
+      from hyps(1) e_ne_Fd have Fd_es: "F d \<in> set es"
+        using set_ConsD by fastforce
+      from hyps(2) e_ne_Bd have Bd_es: "B d \<in> set es"
+        using set_ConsD by fastforce
+      from hyps(3) have distinct_es: "distinct es"
+        by simp
+      have IH_applied: "augment_edges f \<gamma> es d = f d"
+        using "2.IH" Fd_es Bd_es distinct_es by blast
+      have unaffected: "augment_edge (augment_edges f \<gamma> es) \<gamma> e d = augment_edges f \<gamma> es d"
+        using False by simp
+      show ?thesis
+        using IH_applied augment_edges.simps(2) unaffected by force
+    qed
   qed
 qed simp
 
