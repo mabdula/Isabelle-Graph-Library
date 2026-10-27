@@ -786,7 +786,12 @@ proof-
       using list_decomp_1 by fastforce
     with awalk_to_apath_subset[OF \<open>awalk D x (epath_to_awalk x (tl p)) u\<close>]
       have "(x, u) \<in> set (epath_to_awalk x (tl p))"
-      by (metis in_mono list.set_intros(1))
+  proof -
+    have "(x, u) \<in> set (awalk_to_apath D (epath_to_awalk x (tl p)))"
+      using \<open>[(x, u)] = (awalk_to_apath D (epath_to_awalk x (tl p)))\<close>[symmetric] by simp
+    then show "(x, u) \<in> set (epath_to_awalk x (tl p))"
+      using awalk_to_apath_subset[OF \<open>awalk D x (epath_to_awalk x (tl p)) u\<close>] by blast
+  qed
     then have "undirected (x, u) \<in> set (map undirected (epath_to_awalk x (tl p)))"
       by (metis (no_types, opaque_lifting) image_insert insert_absorb insert_subset list.set_map subset_refl)
     with map_undirected_epath_to_awalk[OF \<open>epath G x (tl p) u\<close>]
