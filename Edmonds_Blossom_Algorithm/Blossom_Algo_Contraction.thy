@@ -1714,7 +1714,17 @@ proof -
 qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)))"
     ultimately have "last (edges_of_path ((rev p) @ [last pfx1])) \<notin> M"
       using alternating_list_gt_last[OF alternating_gt_odd]
-      by (metis One_nat_def edges_of_path_rev even_Suc length_rev list.size(3) odd_one rev.simps(2))
+    proof -
+      have eq1: "rev p @ [last pfx1] = rev (last pfx1 # p)"
+        by simp
+      have len_odd: "odd (length (edges_of_path (rev p @ [last pfx1])))"
+        using odd_length by (simp only: eq1 length_edges_of_path_rev odd_length)
+      have nempty: "edges_of_path (rev p @ [last pfx1]) \<noteq> []"
+        using len_odd odd_pos length_greater_0_conv by blast
+      show ?thesis
+        using \<open>alt_path M (rev p @ [last pfx1])\<close> len_odd nempty alternating_list_odd_last
+        by blast
+    qed
     have "even (length (edges_of_path ((rev p) @ [last pfx1, last (butlast pfx1)])))"
       using odd_length
       by (metis One_nat_def append.assoc append_Cons append_Nil edges_of_path.simps(3) edges_of_path_rev length_rev list.size(4) odd_even_add odd_one rev.simps(2))
