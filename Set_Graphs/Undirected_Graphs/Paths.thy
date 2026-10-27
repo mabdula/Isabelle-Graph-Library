@@ -1312,7 +1312,15 @@ next
     case True
     then show ?thesis
       using Cons
-      by (metis append_Cons)
+    proof -
+      from Cons.IH[OF True] obtain v1 v2 p1 p2
+        where e_def: "e = {v1, v2}" and p'_def: "p' = p1 @ [v1, v2] @ p2"
+        by blast
+      have "v # p' = (v # p1) @ [v1, v2] @ p2"
+        by (simp add: p'_def)
+      with e_def show ?thesis
+        by blast
+    qed
   next
     case False
     then have "e = {v, hd p'}"
