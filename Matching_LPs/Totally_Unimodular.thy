@@ -1133,7 +1133,23 @@ proof
       using append_rows_nth(2)[OF A B 7 8]
       using SNF_Missing_Lemmas.append_rows_nth[OF A B 8] "7" carrier_matD(1)[OF A] not_le by simp
     have "i < card I \<or> infinite I" 
-      by (metis IntE 29 22 asmi basic_trans_rules(21) card_mono not_le subsetI)
+proof (cases "finite I")
+  case True
+  have eq: "dim_row (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) =
+             card ({0..<nr1 + nr2} \<inter> I)"
+    using 22 29 by presburger
+  have i_lt: "i < card ({0..<nr1 + nr2} \<inter> I)"
+    using asmi eq by simp
+  have subs: "{0..<nr1 + nr2} \<inter> I \<subseteq> I" by blast
+  have "card ({0..<nr1 + nr2} \<inter> I) \<le> card I"
+    using True subs card_mono by blast
+  then have "i < card I"
+    using i_lt by simp
+  then show ?thesis by simp
+next
+  case False
+  then show ?thesis by simp
+qed
     then have "B $$ 
               (pick ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) (i - card {i. i < nr1 \<and> i \<in> I}), pick J j) = 
               B $$ (pick I i - nr1, pick J j)" 
