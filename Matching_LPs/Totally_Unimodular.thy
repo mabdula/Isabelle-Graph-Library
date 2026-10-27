@@ -477,10 +477,39 @@ proof(cases "k \<in> I")
     have "Suc ?i < card I - card {i. i < Suc k \<and> i \<in> I} + 1" 
       by (simp add: 8)
     then have "Suc ?i < card I - card {i. i < k \<and> i \<in> I}" 
-      by (smt (verit, del_insts) "2" "3" Diff_iff False 6 7 \<open>{i. i < k \<and> i \<in> I} \<subseteq> I\<close> 
-          basic_trans_rules(22) bot_least card.empty card.infinite card_Diff_insert 
-          card_Diff_subset card_mono card_seteq diff_card_le_card_Diff empty_iff finite.intros(1)
-          less_Suc_eq_le less_diff_conv2 linorder_not_le minus_nat.simps(1) plus_1_eq_Suc)
+    proof -
+      have prev: "Suc ?i < card I - card {i. i < Suc k \<and> i \<in> I} + 1"
+        by (simp add: 8)
+      have subSuck: "{i. i < Suc k \<and> i \<in> I} \<subseteq> I" by auto
+      have cardSuck_eq3: "card (I - {i. i < Suc k \<and> i \<in> I}) =
+                           card I - card {i. i < Suc k \<and> i \<in> I}"
+        using subSuck by (simp add: card_Diff_subset)
+      have cardDiffk: "card ((I - {i. i < k \<and> i \<in> I}) - {k}) =
+                        card (I - {i. i < k \<and> i \<in> I}) - 1"
+        using card_Diff_singleton[OF 2] .
+      have cardSuck_eq: "card (I - {i. i < Suc k \<and> i \<in> I}) =
+                          card (I - {i. i < k \<and> i \<in> I}) - 1"
+        by (simp add: 6 cardDiffk)
+      have key: "card I - card {i. i < Suc k \<and> i \<in> I} =
+                 card I - card {i. i < k \<and> i \<in> I} - 1"
+      proof -
+        have "card I - card {i. i < Suc k \<and> i \<in> I} =
+              card (I - {i. i < Suc k \<and> i \<in> I})"
+          by (simp add: cardSuck_eq3)
+        also have "\<dots> = card (I - {i. i < k \<and> i \<in> I}) - 1"
+          by (simp add: cardSuck_eq)
+        also have "\<dots> = card I - card {i. i < k \<and> i \<in> I} - 1"
+          by (simp add: 7)
+        finally show ?thesis .
+      qed
+      have finI: "finite I" using False by auto
+      have ltI: "card {i. i < k \<and> i \<in> I} < card I"
+      proof (rule psubset_card_mono)
+        show "finite I" using finI .
+        show "{i. i < k \<and> i \<in> I} \<subset> I" using 2 by blast
+      qed
+      from prev key ltI show ?thesis by presburger
+    qed
     then show ?thesis 
       using 7 by presburger
   qed
