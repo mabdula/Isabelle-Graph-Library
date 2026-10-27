@@ -2756,8 +2756,25 @@ qed
     then have "(A @\<^sub>r 1\<^sub>m n @\<^sub>r - 1\<^sub>m n) *\<^sub>v ?y' \<le>  (0\<^sub>v nr @\<^sub>v 1\<^sub>v n @\<^sub>v 1\<^sub>v n)" 
       using `- 1\<^sub>m n *\<^sub>v ?y' \<le> 1\<^sub>v n` 
         append_rows_le[of "A" nr n "1\<^sub>m n @\<^sub>r - 1\<^sub>m n" "2*n" "0\<^sub>v nr" ?y' "1\<^sub>v n @\<^sub>v 1\<^sub>v n"] 
-      by (metis A \<open> A *\<^sub>v (1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') \<le> 0\<^sub>v nr\<close> carrier_append_rows mult.commute
-          mult_2_right one_carrier_mat smult_closed uminus_carrier_iff_mat y' zero_carrier_vec)
+      proof -
+        have B_carr: "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n) \<in> carrier_mat (2 * n) n"
+        proof -
+          have "- 1\<^sub>m n \<in> carrier_mat n n"
+            using one_carrier_mat uminus_carrier_iff_mat by blast
+          then have "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n) \<in> carrier_mat (n + n) n"
+            using one_carrier_mat carrier_append_rows by blast
+          then show ?thesis by (simp add: mult_2)
+        qed
+        have y'_carr: "(1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') \<in> carrier_vec n"
+          using y' smult_closed by blast
+        have b_carr: "(1\<^sub>v n @\<^sub>v 1\<^sub>v n) \<in> carrier_vec (2 * n)"
+          by (simp add: mult_2)
+        show ?thesis
+          using append_rows_le[OF A B_carr zero_carrier_vec y'_carr]
+            \<open>A *\<^sub>v (1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') \<le> 0\<^sub>v nr\<close>
+            \<open>(1\<^sub>m n @\<^sub>r - 1\<^sub>m n) *\<^sub>v (1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') \<le> 1\<^sub>v n @\<^sub>v 1\<^sub>v n\<close>
+          by blast
+      qed
     then show "?y' \<in> ?P'" unfolding polyhedron_def 
       using y' by blast
   qed
