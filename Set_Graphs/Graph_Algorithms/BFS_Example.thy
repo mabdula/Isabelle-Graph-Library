@@ -14,7 +14,14 @@ lemma preorder_witness:"set (map fst (preorder N)) = Tree2.set_tree N \<and> fol
   unfolding fold_rbt_is_foldr_of_preorder prderorder_set by auto
 
 lemma rbt_fold_spec:"vset_inv N \<Longrightarrow> \<exists>xs. set xs = Tree2.set_tree N \<and> fold_rbt f N acc = foldr f xs acc"
-  using preorder_witness by metis
+proof -
+  have seteq: "set (map fst (preorder N)) = Tree2.set_tree N"
+    by (fact prderorder_set)
+  have folds: "fold_rbt f N acc = foldr f (map fst (preorder N)) acc"
+    by (rule conjunct2[OF preorder_witness])
+  show "vset_inv N \<Longrightarrow> \<exists>xs. set xs = Tree2.set_tree N \<and> fold_rbt f N acc = foldr f xs acc"
+    using seteq folds by (auto intro: exI[where x="map fst (preorder N)"])
+qed
 
 
 global_interpretation bfs_subprocedures: BFS_subprocedures
