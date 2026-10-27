@@ -187,7 +187,29 @@ proof (induction rule: induct_walk_betw)
   from subset_edges_G[OF \<open>X \<subseteq> G\<close>]
   have "\<And> e. e \<in> X \<Longrightarrow> \<exists>u v. e = {u, v} \<and> u \<noteq> v" by simp
   with path1 have "\<exists>u. {u, v} \<in> X \<and> u \<noteq> v" unfolding Vs_def
-    by (smt (verit) Union_iff empty_iff insert_commute insert_iff)
+  proof -
+    have "v \<in> \<Union> X"
+      using path1 unfolding Vs_def by blast
+    then obtain e where e_X: "e \<in> X" and v_e: "v \<in> e"
+      by blast
+    obtain a b where e_ab: "e = {a, b}" and ab: "a \<noteq> b"
+      using subset_edges_G[OF \<open>X \<subseteq> G\<close> e_X] by blast
+    show ?thesis
+    proof (cases "v = a")
+      case True
+      then have "{b, v} \<in> X" using e_X e_ab by (simp add: insert_commute)
+      then show ?thesis using ab True by blast
+    next
+      case False
+      then have "v = b" using v_e e_ab by simp
+      then have vb: "v = b" using v_e e_ab by simp
+      then have av: "{a, v} \<in> X" using e_X e_ab by simp
+      show ?thesis
+      proof (rule exI[where x=a])
+        show "{a, v} \<in> X \<and> a \<noteq> v" using av ab vb by simp
+      qed
+    qed
+  qed
   then obtain u where "{u, v} \<in> X" "u \<noteq> v" by blast
   then consider (1) "{u, v} \<in> Y" | (2) "{u, v} \<in> X - Y" by blast
   then show ?case
