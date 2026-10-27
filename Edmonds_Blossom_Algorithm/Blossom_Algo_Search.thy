@@ -1156,7 +1156,43 @@ next
       by simp
   qed
   ultimately have "v2' \<noteq> v3"
-    by (metis \<open>par' v1' = Some v2'\<close> \<open>{v2, v3} \<in> M\<close> ass flabel_invar_def flabel_par_invar_props(2) fun_upd_apply if1_props(3) invars(4) invars(5) par')
+  proof -
+    have flabel_v2_none: "flabel v2 = None"
+      using if1_props(3)[OF ass] .
+    have flabel_v3_none: "flabel v3 = None"
+      using invars(4)[unfolded flabel_invar_def] \<open>{v2, v3} \<in> M\<close> flabel_v2_none
+      by blast
+    have no_par_v3: "\<forall>v'. par v' \<noteq> Some v3"
+      using flabel_par_invar_props(2)[OF invars(5) flabel_v3_none] .
+    have v2_ne_v3: "v2 \<noteq> v3"
+      using v1_neq_v2_neq_v3(2)[OF ass] .
+    consider (a) "v1' = v2" | (b) "v1' = v3" | (c) "v1' \<noteq> v2" "v1' \<noteq> v3"
+      by blast
+    then show "v2' \<noteq> v3"
+    proof cases
+      case a
+      then show ?thesis
+        using \<open>v1' = v2 \<Longrightarrow> v2' \<noteq> v3\<close> by blast
+    next
+      case b
+      then have "v2' = v2"
+        using \<open>v1' = v3 \<longrightarrow> v2' = v2\<close> by blast
+      then show ?thesis
+        using v2_ne_v3 by simp
+    next
+      case c
+      then have ne2: "v1' \<noteq> v2" and ne3: "v1' \<noteq> v3"
+        by auto
+      have "par' v1' = par v1'"
+        using ne2 ne3 by (simp add: par')
+      with \<open>par' v1' = Some v2'\<close> have par_v1': "par v1' = Some v2'"
+        by simp
+      have "par v1' \<noteq> Some v3"
+        using no_par_v3 by blast
+      with par_v1' show ?thesis
+        by auto
+    qed
+  qed
   moreover have "v3 \<noteq> v2"
     using \<open>\<And>v. {v} \<notin> M\<close> \<open>{v2, v3} \<in> M\<close> by auto
   moreover have "\<forall>v'. par v' \<noteq> Some v2"
