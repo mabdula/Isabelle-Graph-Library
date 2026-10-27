@@ -38,7 +38,23 @@ proof-
     have "j \<ge> i + 1" using \<open>i < j\<close> by auto
     with \<open>j < length l\<close> have "y \<in> set (drop (i + 1) l)"
       using \<open>l ! j = y\<close>
-      by (metis Cons_nth_drop_Suc list.set_intros(1) set_drop_subset_set_drop subsetD)
+    proof -
+      have len_le: "i + 1 \<le> length l"
+        using \<open>j \<ge> i + 1\<close> \<open>j < length l\<close> by linarith
+      have sum_eq: "(i + 1) + (j - (i + 1)) = j"
+        using \<open>j \<ge> i + 1\<close> by (simp add: le_add_diff_inverse2)
+      have idx: "j - (i + 1) < length (drop (i + 1) l)"
+      proof -
+        have "length (drop (i + 1) l) = length l - (i + 1)" by simp
+        then show ?thesis
+          using \<open>j \<ge> i + 1\<close> \<open>j < length l\<close> by linarith
+      qed
+      have eq: "drop (i + 1) l ! (j - (i + 1)) = l ! j"
+        using len_le sum_eq by (simp add: nth_drop)
+      have "drop (i + 1) l ! (j - (i + 1)) \<in> set (drop (i + 1) l)"
+        using idx by (rule nth_mem)
+      with eq \<open>l ! j = y\<close> show ?thesis by simp
+    qed
     from \<open>l ! j = y\<close>
       have "\<exists>xs ys. (drop (i + 1) l) = xs @ [y] @ ys"
       by (metis \<open>y \<in> set (drop (i + 1) l)\<close> append_Cons append_Nil in_set_conv_decomp_last)
