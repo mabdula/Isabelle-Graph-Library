@@ -373,7 +373,43 @@ proof-
     by auto
   then have "distinct (tl (butlast cyc))" "hd cyc \<notin> set (tl (butlast cyc))"
     using distinct_tl
-    by (metis \<open>distinct (butlast cyc)\<close> append_butlast_last_id assms distinct.simps(2) empty_iff hd_append2 list.collapse list.sel(2) list.set(1) match_blossomD(3) odd_cycle_nempty)+
+  proof -
+    have cyc_nempty: "cyc \<noteq> []"
+      using match_blossomD(3)[OF assms] odd_cycle_nempty by blast
+    have len_butlast: "length (butlast cyc) \<ge> 2"
+    proof -
+      have "length (butlast cyc) = length cyc - 1"
+        using length_butlast by blast
+      then show ?thesis
+        using odd_cycleD(1)[OF match_blossomD(3)[OF assms]] by auto
+    qed
+    have butlast_nempty: "butlast cyc \<noteq> []"
+    proof
+      assume "butlast cyc = []"
+      then have "length (butlast cyc) = 0" by simp
+      with len_butlast show False by simp
+    qed
+    have cyc_eq: "cyc = butlast cyc @ [last cyc]"
+      using append_butlast_last_id[OF cyc_nempty] by simp
+    have hd_eq: "hd cyc = hd (butlast cyc)"
+    proof -
+      have "hd cyc = hd (butlast cyc @ [last cyc])"
+        by (rule arg_cong[OF cyc_eq])
+      also have "\<dots> = hd (butlast cyc)"
+        by (rule hd_append2[OF butlast_nempty])
+      finally show ?thesis .
+    qed
+    have distinct_consed: "distinct (hd (butlast cyc) # tl (butlast cyc))"
+      using \<open>distinct (butlast cyc)\<close> list.collapse[OF butlast_nempty] by simp
+    have hd_notin: "hd (butlast cyc) \<notin> set (tl (butlast cyc))"
+      using distinct_consed by simp
+    have distinct_tl_butlast: "distinct (tl (butlast cyc))"
+      using distinct_consed by simp
+    show "distinct (tl (butlast cyc))"
+      using distinct_tl_butlast .
+    show "hd cyc \<notin> set (tl (butlast cyc))"
+      using hd_eq hd_notin by simp
+  qed
   then have "distinct ((tl (butlast cyc)) @ [last cyc])"
     using \<open>hd cyc = last cyc\<close>
     by auto
