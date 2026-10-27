@@ -823,7 +823,30 @@ lemma closed_vwalk_bet_decompE:
     "vwalk_bet E y r y"
     "vwalk_bet E y s v"
   using assms
-  by auto (metis Cons_eq_appendI vwalk_bet_vertex_decompE)
+proof -
+  have decomp1: "p = xs @ y # (ys @ y # zs)"
+    using p_decomp by simp
+  obtain q1 r1 where
+    q1_eq: "q1 = xs @ [y]" and
+    r1_eq: "r1 = y # (ys @ y # zs)" and
+    uq1: "vwalk_bet E u q1 y" and
+    r1v: "vwalk_bet E y r1 v"
+    using p_vwalk decomp1 by (blast elim: vwalk_bet_vertex_decompE)
+  have decomp2: "r1 = (y # ys) @ y # zs"
+    using r1_eq by simp
+  obtain q2 r2 where
+    q2_eq: "q2 = (y # ys) @ [y]" and
+    r2_eq: "r2 = y # zs" and
+    yq2: "vwalk_bet E y q2 y" and
+    r2v: "vwalk_bet E y r2 v"
+    using r1v decomp2 by (blast elim: vwalk_bet_vertex_decompE)
+  have q2_eq': "q2 = y # ys @ [y]"
+    using q2_eq by simp
+  have p_eq: "p = q1 @ tl q2 @ tl r2"
+    using p_decomp q1_eq q2_eq r2_eq by simp
+  show thesis
+    by (rule that[OF p_eq q1_eq q2_eq' r2_eq uq1 yq2 r2v])
+qed
 
 lemma closed_vwalk_bet_decomp_is_closed_decomp:
   assumes p_vwalk: "vwalk_bet E u p v"
