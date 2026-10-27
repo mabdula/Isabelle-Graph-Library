@@ -31,7 +31,7 @@ proof (rule ccontr, goal_cases)
   then have "set p \<subseteq> G'" by blast
   from \<open>\<exists>u. decycle G u p\<close> decycle_def
     have "(\<exists>u. epath G u p u \<and> length p > 2 \<and> distinct p)"
-    by metis
+    by (simp add: decycle_def)
   then obtain u where "epath G u p u" "length p > 2" "distinct p"
     by blast
 
