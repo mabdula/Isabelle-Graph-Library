@@ -1131,7 +1131,7 @@ proof
       using pick_le by blast
     then have 9:"(A @\<^sub>r B) $$ (pick I i, pick J j) =  B $$ (pick I i - nr1, pick J j)"
       using append_rows_nth(2)[OF A B 7 8]
-      by (metis "7" "8" B SNF_Missing_Lemmas.append_rows_nth assms(1) carrier_matD(1) not_le)
+      using SNF_Missing_Lemmas.append_rows_nth[OF A B 8] "7" carrier_matD(1)[OF A] not_le by simp
     have "i < card I \<or> infinite I" 
       by (metis IntE 29 22 asmi basic_trans_rules(21) card_mono not_le subsetI)
     then have "B $$ 
