@@ -1663,7 +1663,18 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         then obtain x where x:"xs = {x} \<and> x \<in> Vs G \<and> x \<notin> X \<and> x \<notin> Vs (graph_diff G X)" 
           by presburger
         then have "x \<notin> X \<union> {v}" 
-          by (metis UnE 2 \<open>v \<in> C\<close> in_connected_component_in_edges singletonD)
+        proof -
+          obtain v' where v': "v' \<in> Vs (graph_diff G X)" "connected_component (graph_diff G X) v' = C"
+            using 2 by blast
+          have "v \<in> connected_component (graph_diff G X) v'"
+            using v'(2) \<open>v \<in> C\<close> by blast
+          then have "v \<in> Vs (graph_diff G X) \<or> v = v'"
+            using v'(1) in_connected_component_in_edges by fastforce
+          then have "v \<in> Vs (graph_diff G X)"
+            using v'(1) by auto
+          then show "x \<notin> X \<union> {v}"
+            using x by blast
+        qed
         have "x \<notin> Vs (graph_diff G X)" 
           by (simp add: x)
         then have "x \<notin> Vs (graph_diff G (X \<union> {v}))" 
