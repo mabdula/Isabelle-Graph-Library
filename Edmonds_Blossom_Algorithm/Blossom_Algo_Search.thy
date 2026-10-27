@@ -3629,7 +3629,14 @@ qed
         have card_unlab_osc2: "card ({v2} \<union> \<Union> M') = Suc (2 * card M')"
         proof-
           have "finite M'"
-            by (metis M'(2) finiteM finite_Diff finite_insert)
+          proof -
+            have "finite (M - ex)"
+              using finiteM by (rule finite_Diff)
+            then have "finite (insert e M')"
+              using M'(2) by simp
+            then show "finite M'"
+              by simp
+          qed
           moreover have "card e = 2" if "e \<in> M'" for e
             using graph matching(2)
             by (metis dblton_graph_def Diff_subset M'(2) card_2_iff insert_subset subset_iff that)
