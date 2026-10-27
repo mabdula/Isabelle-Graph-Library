@@ -275,7 +275,13 @@ proof-
       case T1: True
       then show ?thesis
         using 1 bloss_algo_complete
-        by (metis (no_types, lifting) option.distinct(1))
+      proof -
+        obtain blos_comp where "blos_search G M = Some blos_comp"
+          using bloss_algo_complete[OF "1.prems"(4,2,3)] "1.prems"(1)
+          by blast
+        then show ?thesis
+          using T1 by simp
+      qed
     next
       case F1: False
       then obtain blos_comp where blos_comp: "(blos_search G M) = Some blos_comp"
