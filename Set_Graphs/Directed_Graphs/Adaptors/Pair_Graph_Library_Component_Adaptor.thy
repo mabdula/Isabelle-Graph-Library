@@ -237,10 +237,49 @@ lemma max_subgraph_arcs_eq':
   assumes "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) H'"
   shows "arcs H' = H"
   using assms pre_digraph.subgraphI_max_subgraph[OF assms(3)] pre_digraph.max_subgraph_prop[OF assms(3)]
-  by (metis (no_types, lifting) Digraph_Component.subgraphE Digraph_Component.subgraphI
-            compatible_def ddfs.arcs_eq digraph_of_all_verts_def max_subgraph_P_arcs_verts
-            max_subgraph_imp_max_subgraph_all_verts pre_digraph.arcs_add_verts
-            pre_digraph.max_subgraph_subg_eq pre_digraph.subgraphI_max_subgraph)
+proof -
+  from assms(3) have H'_subgraph_G: "subgraph_digraph H' (ddfs.digraph_of G)"
+    by (rule pre_digraph.subgraphI_max_subgraph)
+  from assms(3) have H'_prop: "(P \<circ> arcs) H'"
+    by (rule pre_digraph.max_subgraph_prop)
+  have H'_arcs_prop: "P (arcs H')"
+    using H'_prop by simp
+  from assms(1) have all_verts_max:
+    "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (digraph_of_all_verts H G)"
+    by (rule max_subgraph_imp_max_subgraph_all_verts)
+  have arcs_all_verts: "arcs (digraph_of_all_verts H G) = H"
+    by (simp add: digraph_of_all_verts_def pre_digraph.arcs_add_verts ddfs.arcs_eq)
+  have verts_dVsG_subset: "dVs G \<subseteq> verts (digraph_of_all_verts H G)"
+    by (simp add: digraph_of_all_verts_def pre_digraph.verts_add_verts)
+  have all_verts_subgraph_G: "subgraph_digraph (digraph_of_all_verts H G) (ddfs.digraph_of G)"
+    using all_verts_max by (rule pre_digraph.subgraphI_max_subgraph)
+  have verts_H'_subset: "verts H' \<subseteq> verts (digraph_of_all_verts H G)"
+  proof -
+    from H'_subgraph_G have "verts H' \<subseteq> verts (ddfs.digraph_of G)"
+      by (rule Digraph_Component.subgraph_imp_subverts)
+    then show "verts H' \<subseteq> verts (digraph_of_all_verts H G)"
+      using verts_dVsG_subset by (simp add: ddfs.verts_eq)
+  qed
+  have arcs_H'_subset: "arcs H' \<subseteq> arcs (digraph_of_all_verts H G)"
+    using assms(2) arcs_all_verts by simp
+  have wf_H': "wf_digraph H'"
+    using H'_subgraph_G by (auto elim: Digraph_Component.subgraphE)
+  have wf_all_verts: "wf_digraph (digraph_of_all_verts H G)"
+    using all_verts_subgraph_G by (auto elim: Digraph_Component.subgraphE)
+  have compat: "compatible H' (digraph_of_all_verts H G)"
+    using H'_subgraph_G
+    by (auto elim!: Digraph_Component.subgraphE
+             simp: compatible_def digraph_of_all_verts_def pre_digraph.add_verts_simps)
+  have compat': "compatible (digraph_of_all_verts H G) H'"
+    using compat by (rule compatible_sym)
+  have H'_subgraph_all_verts: "subgraph_digraph H' (digraph_of_all_verts H G)"
+    using verts_H'_subset arcs_H'_subset compat' wf_H' wf_all_verts
+    by (rule Digraph_Component.subgraphI)
+  have "H' = digraph_of_all_verts H G"
+    using pre_digraph.max_subgraph_subg_eq[OF assms(3) all_verts_max H'_subgraph_all_verts] .
+  then show "arcs H' = H"
+    using arcs_all_verts by simp
+qed
 
 lemma max_subgraph_digraph_of_additional_verts_disconnected:
   fixes H' :: "('a, 'a \<times> 'a) pre_digraph"
