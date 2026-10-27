@@ -1587,7 +1587,7 @@ proof(cases "u = v")
 next
   obtain w where w: "w \<in> Vs G" "C = connected_component G w"
     using C_in_comp
-    by (smt connected_components_def mem_Collect_eq)
+    by (fastforce simp add: connected_components_def)
   then obtain pwu where pwu: "pwu \<noteq> []" "path G pwu" "hd pwu = w" "last pwu = u"
     using uC C_in_comp
     unfolding connected_components_def connected_component_def
