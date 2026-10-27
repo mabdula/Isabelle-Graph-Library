@@ -2023,7 +2023,14 @@ proof-
     by (metis add.commute add_numeral_left mult_2 numeral_Bit1_eq_inc_double numeral_One numeral_plus_one
         of_nat_add of_nat_eq_enat one_add_one one_enat_def)
   moreover have "enat (2 * (length p - 2)) + 2 + 1 = enat (2* (length p -2) + 3)"
-    by (metis add.assoc calculation(4) one_add_one)
+  proof -
+    note calc4 = calculation(4)
+    have "enat (2 * (length p - 2)) + 2 + 1 = enat (2 * (length p - 2)) + 1 + 2"
+      by (simp add: ac_simps)
+    also have "... = enat (2 * (length p - 2) + 3)"
+      by (rule calc4)
+    finally show ?thesis .
+  qed
   moreover have "(2 * card C) \<noteq> (2 * (length p - 2) + 3)" 
     by(cases "even (2 * card C)", all \<open>cases "even (2 * (length p - 2) + 3)"\<close>)
       (force+, auto)
