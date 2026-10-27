@@ -930,7 +930,7 @@ proof(intro invar_props_intros, goal_cases)
             by (meson dVsI(1) distance_set_0 neighbourhoodI v'(3))
           moreover have "?dSrcsG v' = 0"
             using v'_in_srcs
-            by (metis \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v = distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1\<close> add.commute add.right_neutral dist_set_inf dist_set_mem distance_0 enat_add_left_cancel le_iff_add local.finite order_antisym)
+            by (fastforce intro: iffD2[OF distance_set_0[where G = "(Graph.digraph_abs G)"]] simp: srcs_in_G)
           then show ?thesis
             by (metis \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v < distance_set (Graph.digraph_abs (parents bfs_state')) (t_set srcs) v\<close> \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v = distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1\<close> calculation distance_set_neighbourhood leD srcs_invar(1) v'(3))
         next
