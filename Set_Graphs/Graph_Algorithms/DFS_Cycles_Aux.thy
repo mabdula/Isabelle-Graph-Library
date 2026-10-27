@@ -107,8 +107,17 @@ proof-
 
   have "edges_of_vwalk (rev l) = (edges_of_vwalk (rev l_tl)) @ [(u, v)]"
     using assms(1) assms(2)
-    by (metis edges_of_vwalk.simps(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 last_rev
-    list.sel(1) list.simps(3) rev.simps(2) rev_is_Nil_conv)
+  proof -
+    have l_tl_ne: "l_tl \<noteq> []" using assms(2) by simp
+    hence rev_l_tl_ne: "rev l_tl \<noteq> []" by simp
+    have hd_l_tl: "hd l_tl = u" using assms(2) by simp
+    have last_rev_l_tl: "last (rev l_tl) = u"
+      using hd_l_tl l_tl_ne last_rev by fastforce
+    have step: "edges_of_vwalk (rev l_tl @ [v]) = edges_of_vwalk (rev l_tl) @ edges_of_vwalk (last (rev l_tl) # [v])"
+      using edges_of_vwalk_append_3[OF rev_l_tl_ne] by simp
+    show ?thesis
+      using step last_rev_l_tl assms(1) by simp
+  qed
   then have 2: "set (edges_of_vwalk (rev l)) = {(u, v)} \<union> set (edges_of_vwalk (rev l_tl))" by simp
 
   have "{(x, y). (x, y) \<in> dG \<and> x \<in> set l_tl \<and> y = v} =
