@@ -576,9 +576,22 @@ next
     with in_connected_component_in_edges \<open>v \<in> \<Union> G\<close> \<open>C = connected_component G v\<close>
       have "x \<in> \<Union> G" using Vs_def by fastforce
     then have "\<exists>e. e \<in> G \<and> x \<in> e" by blast
-    with dblton_graphE[OF \<open>dblton_graph G\<close>] have "\<exists>y. x \<noteq> y \<and> {x, y} \<in> G"
-      using insert_absorb
-      by (smt (verit, ccfv_SIG) empty_iff insert_commute insert_iff)
+    then obtain e where e: "e \<in> G" "x \<in> e"
+      by blast
+    obtain u w where uv: "e = {u, w}" "u \<noteq> w"
+      using \<open>dblton_graph G\<close> e(1) by (rule dblton_graphE)
+    have "\<exists>y. x \<noteq> y \<and> {x, y} \<in> G"
+    proof -
+      from e(2) uv(1) consider "x = u" | "x = w" by auto
+      then show ?thesis
+      proof cases
+        case 1
+        with uv e show ?thesis by (intro exI[of _ w]) auto
+      next
+        case 2
+        with uv e show ?thesis by (intro exI[of _ u]) (auto simp: insert_commute)
+      qed
+    qed
     then obtain y where "x \<noteq> y" "{x, y} \<in> G" by blast
     then have "walk_betw G x [x, y] y" 
       unfolding walk_betw_def by auto
