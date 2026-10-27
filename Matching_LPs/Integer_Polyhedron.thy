@@ -61,7 +61,14 @@ proof-
       by blast
   qed
   then have "dim_vec ?emp_b \<in> ?M" using assms(4) 
-    by (smt (verit, best) Collect_cong mem_Collect_eq prod.collapse)
+    proof -
+      have "(?emp_A, ?emp_b) = sub_system A b {}"
+        by simp
+      moreover have "{x. ?emp_A *\<^sub>v x = ?emp_b \<and> x \<in> P} \<noteq> {}"
+        using \<open>{x. ?emp_A *\<^sub>v x = ?emp_b \<and> x \<in> P} = P\<close> assms(4) by simp
+      ultimately show "dim_vec ?emp_b \<in> ?M"
+        by blast
+    qed
   then have "?M \<noteq> {}"  
     by blast
   then have "Max ?M \<in> ?M \<and> (\<forall>a \<in> ?M. a \<le> (Max ?M))"
