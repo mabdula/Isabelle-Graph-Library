@@ -1692,7 +1692,14 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: call_cond_elims)
     then have "\<exists>ys. rev (stack dfs_aux_state) = ys @ [a, ?v]"
       using Cons rev_append
-      by (smt (verit, ccfv_threshold) list.sel(1) rev_eq_Cons_iff rev_singleton_conv)
+    proof -
+      have stack_split: "stack dfs_aux_state = hd (stack dfs_aux_state) # a # list"
+        using Cons \<open>DFS_Aux_ret_1_conds dfs_aux_state\<close>
+        by (force elim!: call_cond_elims)
+      have "rev (stack dfs_aux_state) = rev list @ [a, hd (stack dfs_aux_state)]"
+        using rev_eq_append_conv stack_split by fastforce
+      then show ?thesis by blast
+    qed
 
     with \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>length p_x_v \<ge> 2\<close>
       have "\<exists>ys. p_x_v = ys @ [a, ?v]"
