@@ -138,7 +138,25 @@ proof -
       using pick_reduce_set[of i "dim_row A" I] 3
       by presburger
     then show " submatrix A I UNIV $$ (i, j) = submatrix A (I \<inter> {0..<dim_row A}) UNIV $$ (i, j)"
-      by (metis (no_types, lifting) asmi asmj 2 dim_submatrix(1) dim_submatrix(2) submatrix_index)
+  proof -
+  have card_row: "i < card {a. a < dim_row A \<and> a \<in> (I \<inter> {0..<dim_row A})}"
+    using asmi by (simp add: dim_submatrix(1))
+  have card_col: "j < card {a. a < dim_col A \<and> a \<in> (UNIV :: nat set)}"
+    using asmj by (simp add: dim_submatrix(2))
+  have set_eq: "{a. a < dim_row A \<and> a \<in> (I \<inter> {0..<dim_row A})} = {a. a < dim_row A \<and> a \<in> I}"
+    by auto
+  have card_I: "i < card {a. a < dim_row A \<and> a \<in> I}"
+    using card_row set_eq by simp
+  have pick_eq: "pick (I \<inter> {0..<dim_row A}) i = pick I i"
+    using pick_reduce_set [OF card_I] 3 by simp
+  have step1: "submatrix A (I \<inter> {0..<dim_row A}) UNIV $$ (i, j)
+        = A $$ (pick (I \<inter> {0..<dim_row A}) i, pick UNIV j)"
+    by (rule submatrix_index [OF card_row card_col])
+  have eq_final: "submatrix A (I \<inter> {0..<dim_row A}) UNIV $$ (i, j) = submatrix A I UNIV $$ (i, j)"
+    using step1 pick_eq 2 by simp
+  show "submatrix A I UNIV $$ (i, j) = submatrix A (I \<inter> {0..<dim_row A}) UNIV $$ (i, j)"
+    by (simp add: eq_final)
+qed
   qed
 qed
 
