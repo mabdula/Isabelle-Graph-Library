@@ -411,9 +411,13 @@ proof -
     case True
     have "pick I (Suc i) = pick (I - {pick I i}) i" 
       using pick_suc_diff_set[OF assms(1)] by auto
-    then show ?thesis 
-      by (metis (no_types, lifting) Suc_lessD \<open>?j \<le> i\<close> 1 assms(1) le_neq_implies_less 
-          pick_is_Suc_if_one_removed)
+    have "pick I i = k"
+    proof -
+      have "i = card {a \<in> I. a < k}" using True by simp
+      then show ?thesis using 1 by simp
+    qed
+    with \<open>pick I (Suc i) = pick (I - {pick I i}) i\<close>
+    show ?thesis by simp
   next
     case False
     then show ?thesis 
