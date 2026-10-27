@@ -725,8 +725,19 @@ qed
         qed
       qed
       have "\<forall>i \<in> J \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
-        using `\<forall> i < dim_row A. (row C i) = row A i \<and> d $ i = b $ i` 
-        by (metis IntD2 \<open>\<forall>i\<in>J \<inter> {0..<dim_row A}. row C i \<bullet> x = d $ i\<close> atLeastLessThan_iff)
+        proof
+          fix i
+          assume i_mem: "i \<in> J \<inter> {0..<dim_row A}"
+          then have i_lt: "i < dim_row A" by simp
+          have eq1: "row C i = row A i" and eq2: "d $ i = b $ i"
+            using i_lt `\<forall> i < dim_row A. (row C i) = row A i \<and> d $ i = b $ i` by auto
+          have eq3: "row C i \<bullet> x = d $ i"
+            using \<open>\<forall>i\<in>J \<inter> {0..<dim_row A}. row C i \<bullet> x = d $ i\<close> i_mem by blast
+          have "row A i \<bullet> x = row C i \<bullet> x" using eq1 by simp
+          also have "... = d $ i" using eq3 by simp
+          also have "... = b $ i" using eq2 by simp
+          finally show "row A i \<bullet> x = b $ i" .
+        qed
       then have "\<forall> i < dim_row A''. (row A'' i) \<bullet> x =  (b'' $ i)" 
         using subsystem_fulfills_P'[of A b A'' b'' _ "\<lambda> p q. p \<bullet> x = q"] 
         using A A''_b'' b carrier_vecD 
