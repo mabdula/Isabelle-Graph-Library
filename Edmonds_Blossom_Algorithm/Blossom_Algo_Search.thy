@@ -2055,7 +2055,16 @@ proof-
   moreover have "parent_spec.follow par v \<noteq> []"
     by (rule parent.follow_nempty[OF parent.intro[OF invars(1)]])
   moreover have "flabel (hd (parent_spec.follow par v)) = Some (r, Even)"
-    by (metis (mono_tags, lifting) alt_list.simps invars(2) list.sel(1) calculation(2))
+  proof -
+    from calculation(2) obtain x xs where x_xs: "parent_spec.follow par v = x # xs"
+      by (cases "parent_spec.follow par v") auto
+    have "alt_list (\<lambda>v. flabel v = Some (r, Even)) (\<lambda>v. flabel v = Some (r, Odd)) (x # xs)"
+      using invars(2) x_xs by simp
+    then have "flabel x = Some (r, Even)"
+      by (simp add: alt_list_step)
+    then show ?thesis
+      using x_xs by simp
+  qed
   ultimately show ?thesis
     by (intro alt_list_length_odd[OF invars(2)])
 qed
