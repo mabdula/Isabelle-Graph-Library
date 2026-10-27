@@ -1846,7 +1846,16 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
                 then have "e \<in> graph_diff G X" 
                   using asme Connected_Components.component_edges_subset by blast
                 have "v \<notin> e" 
-                  by (metis \<open>e \<subseteq> C'\<close> \<open>x \<notin> C\<close> comp_C connected_components_member_sym odd_x subsetD)
+                proof
+                  assume "v \<in> e"
+                  then have "v \<in> C'" using \<open>e \<subseteq> C'\<close> by blast
+                  moreover have "connected_component (graph_diff G X) x = C'" using odd_x by blast
+                  ultimately have "v \<in> connected_component (graph_diff G X) x" by blast
+                  then have "x \<in> connected_component (graph_diff G X) v"
+                    by (rule connected_components_member_sym)
+                  then have "x \<in> C" using comp_C by blast
+                  then show False using \<open>x \<notin> C\<close> by blast
+                qed
                 then have "e \<inter> (X \<union> {v}) = {}" 
                   by (metis Un_insert_right \<open>e \<in> graph_diff G X\<close> disjoint_insert(1) 
                       graph_diffE sup_bot.right_neutral)
