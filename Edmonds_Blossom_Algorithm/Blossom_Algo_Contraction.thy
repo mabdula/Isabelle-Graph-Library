@@ -1014,7 +1014,56 @@ next
         then show ?thesis
           using cons1(1) by blast
       qed
-      subgoal by (metis (mono_tags, opaque_lifting) Un_iff disj_pref_append1 find_pfx_works_1 option.sel set_ConsD set_append) 
+      subgoal premises prems for pfx2'
+      proof -
+        have rec: "longest_disj_pfx (a1' # l1') l2 = (Some pfx1, Some pfx2')"
+          using prems by simp
+        have not_last: "last (find_pfx ((=) a2) (a1' # l1')) \<noteq> a2"
+          using prems by simp
+        have pfx2'_nempty: "pfx2' \<noteq> []"
+          using snd_pfx_nempty[of "Some pfx1" pfx2' "a1' # l1'" l2] rec
+          by simp
+        have a2_notin_l1: "a2 \<notin> set (a1' # l1')"
+        proof (rule notI)
+          assume "a2 \<in> set (a1' # l1')"
+          then have em: "a2 = a1' \<or> a2 \<in> set l1'" by simp
+          then show False
+          proof (cases "a2 = a1'")
+            case True
+            then show False
+              using not_last by simp
+          next
+            case False
+            then have fp: "find_pfx ((=) a2) (a1' # l1') = a1' # find_pfx ((=) a2) l1'"
+              by simp
+            from em have in_l1: "a2 \<in> set l1'"
+              using False by simp
+            have ne: "find_pfx ((=) a2) l1' \<noteq> []"
+              using Graph_Quotient.find_pfx_nempty [OF in_l1, of "(=) a2"] by simp
+            have las: "last (find_pfx ((=) a2) l1') = a2"
+              using find_pfx_works_1 [OF in_l1, of "(=) a2"] by simp
+            have "last (find_pfx ((=) a2) (a1' # l1')) = a2"
+              using fp ne las by simp
+            then show False
+              using not_last by simp
+          qed
+        qed
+        obtain l1'' where pfx1_pfx: "a1' # l1' = pfx1 @ l1''"
+          using disj_pref_append1[of pfx1 "Some pfx2'" "a1' # l1'" l2] rec
+          by fastforce
+        have a2_notin_pfx1: "a2 \<notin> set pfx1"
+          using a2_notin_l1 pfx1_pfx
+          by auto
+        have ih: "set pfx1 \<inter> set (butlast pfx2') = {}"
+          using cons1.IH[of pfx1 "Some pfx2'" "a1' # l1'"] rec
+          by simp
+        have "butlast (a2 # pfx2') = a2 # butlast pfx2'"
+          using pfx2'_nempty
+          by simp
+        then show ?thesis
+          using a2_notin_pfx1 ih prems
+          by auto
+      qed
       done
   qed
 qed
