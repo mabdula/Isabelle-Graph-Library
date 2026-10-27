@@ -48,7 +48,13 @@ lemma edges_list_el_in_E:
   shows "edges_list E ! k \<in> E"
 proof -
   have "finite E" 
-    by (metis assms(1) card.infinite not_less_zero)
+  proof (rule ccontr)
+    assume "\<not> finite E"
+    then have "card E = 0"
+      by (rule card.infinite)
+    with assms(1) show False
+      by simp
+  qed
   have "set (edges_list E) = E" 
     unfolding edges_list_def using set_set_to_list 
     using \<open>finite E\<close> by blast
