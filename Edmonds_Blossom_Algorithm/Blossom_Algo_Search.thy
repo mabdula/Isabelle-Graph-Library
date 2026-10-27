@@ -2918,7 +2918,21 @@ proof-
         using \<open>matching M\<close>
         by(fastforce simp add: matching_def)      
       then have "card M \<le> card (M - ev) + 1"
-        by (metis card_Diff_subset_Int diff_le_mono2 finite_Int insert.prems(1) insert.prems(3) le_diff_conv rev_finite_subset)
+      proof -
+        assume prem: "card (M \<inter> ev) \<le> 1"
+        have finM: "finite M"
+          using insert.prems(1) insert.prems(3) rev_finite_subset by blast
+        have finInt: "finite (M \<inter> ev)"
+          using finM by blast
+        have subInt: "card (M \<inter> ev) \<le> card M"
+          using card_mono[OF finM Int_lower1] .
+        have diffEq: "card (M - ev) = card M - card (M \<inter> ev)"
+          using card_Diff_subset_Int[OF finInt] .
+        have eqCard: "card M = card (M - ev) + card (M \<inter> ev)"
+          using diffEq subInt by simp
+        from prem eqCard show "card M \<le> card (M - ev) + 1"
+          by linarith
+      qed
       moreover have "capacity2 (insert s OSC) = capacity2 OSC + 1"
         using insert(1,2)
         by (simp add: True capacity1_def capacity2_def)
