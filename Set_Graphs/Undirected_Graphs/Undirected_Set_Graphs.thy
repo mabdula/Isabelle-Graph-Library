@@ -562,7 +562,17 @@ lemma graph_invar_finite:
 lemma graph_invar_subset[intro]:
   "\<lbrakk>graph_invar G1; G2 \<subseteq> G1\<rbrakk> \<Longrightarrow> graph_invar G2"
   using dblton_graph_subset
-  by (metis dblton_graph_finite_Vs finite_subset)
+  proof -
+    assume assms: "graph_invar G1" "G2 \<subseteq> G1"
+    have "dblton_graph G2"
+      using assms dblton_graph_subset by blast
+    have "Vs G2 \<subseteq> Vs G1"
+      using assms(2) by (rule Vs_subset)
+    have "finite (Vs G2)"
+      using \<open>Vs G2 \<subseteq> Vs G1\<close> assms(1) finite_subset by blast
+    then show "graph_invar G2"
+      using \<open>dblton_graph G2\<close> by blast
+  qed
 
 lemma graph_invar_diff: "graph_invar G \<Longrightarrow> graph_invar (G - X)"
   using Vs_subset[of "G - X" G]
