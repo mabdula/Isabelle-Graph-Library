@@ -450,7 +450,7 @@ proof -
                               \<and> F = {x. A' *\<^sub>v x = b' \<and> x \<in> P}"
     using char_face1[of A nr b F] assms(1-4) 
     unfolding P_def 
-    by (metis (full_types))
+    by blast
   then obtain C d  where C_d:"C = (A @\<^sub>r(A' @\<^sub>r (-A')))" "d = (b @\<^sub>v (b' @\<^sub>v (-b')))"  
     "F = polyhedron C d"
     "dim_row (A @\<^sub>r (A' @\<^sub>r (-A'))) = dim_vec (b @\<^sub>v(b' @\<^sub>v (-b')))"
