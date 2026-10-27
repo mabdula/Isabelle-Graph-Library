@@ -307,7 +307,7 @@ proof -
     assume "e \<in> G - X"
     then obtain u v where u'_v': "e = {u, v} \<and> u \<noteq> v \<and> (u \<in> A \<and> v \<in> Vs G - A)"
       using `partitioned_bipartite G A` unfolding partitioned_bipartite_def 
-      by (metis (no_types, lifting) Diff_iff \<open>e \<in> G - X\<close>)
+      by blast
 
     then have "u \<in> ?A'" 
       using UnionI u'_v' \<open>e \<in> G - X\<close> by auto
