@@ -1507,7 +1507,15 @@ lemma follow_cons_4: "parent v = Some v' \<Longrightarrow> follow v = v # (follo
 
 lemma follow_pinduct:
   "(\<And>v. (\<And>x2. parent v = Some x2 \<Longrightarrow> P x2) \<Longrightarrow> P v) \<Longrightarrow> P a"
-  by (metis follow.pinduct[OF follow_dom])
+proof -
+  assume IH: "\<And>v. (\<And>x2. parent v = Some x2 \<Longrightarrow> P x2) \<Longrightarrow> P v"
+  show "P a"
+  proof (induction a rule: follow.pinduct[OF follow_dom])
+    case (1 v)
+    then show ?case
+      using IH by blast
+  qed
+qed
 
 end
 
