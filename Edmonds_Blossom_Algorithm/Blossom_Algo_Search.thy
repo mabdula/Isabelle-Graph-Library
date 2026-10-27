@@ -1397,7 +1397,33 @@ next
     case c1
     then show ?thesis
       apply(cases zs)
-      subgoal by (metis "**"(2) "sucsuc.hyps"(3) \<open>x = v\<close> fun_upd_def option.simps(3) par' parent.follow_None parent.follow_cons_2(1))
+      subgoal premises prems
+      proof -
+        have zs_nil: "zs = []"
+          using prems by simp
+        have v_eq3: "v = v3"
+          using c1 \<open>x = v\<close> by simp
+        have follow_eq_v: "parent_spec.follow par' v = [v3, v2]"
+          using sucsuc.hyps(3) c1 zs_nil by simp
+        have follow_eq: "parent_spec.follow par' v3 = [v3, v2]"
+          using follow_eq_v v_eq3 by simp
+        have par'_v3: "par' v3 = Some v2"
+          by (simp add: par')
+        have par'_v2: "par' v2 = Some v1"
+          using \<open>v3 \<noteq> v2\<close> by (simp add: par')
+        have follow_v3: "parent_spec.follow par' v3 = v3 # parent_spec.follow par' v2"
+          using parent.follow_psimps[OF "**"(2)] par'_v3 by simp
+        have follow_v2: "parent_spec.follow par' v2 = v2 # parent_spec.follow par' v1"
+          using parent.follow_psimps[OF "**"(2)] par'_v2 by simp
+        have f2: "parent_spec.follow par' v2 = [v2]"
+          using follow_eq follow_v3 by simp
+        have f1: "parent_spec.follow par' v1 = []"
+          using f2 follow_v2 by simp
+        have False
+          using f1 parent.follow_nempty[OF "**"(2)] by simp
+        then show ?thesis
+          by simp
+      qed
       subgoal by (smt (z3) "**"(2) Pair_inject \<open>x = v\<close> alt_list_step ass compute_alt_path.if1_props(2) compute_alt_path_axioms flabel' map_upd_Some_unfold not_Cons_self2 par' parent.follow_cons_2(1) parent.follow_cons_2(2) sucsuc.hyps(1) sucsuc.hyps(3) sucsuc.prems(2) sucsuc.prems(3) sucsuc.prems(4) sucsuc.prems(5) sucsuc.prems(6))
       done
   next
