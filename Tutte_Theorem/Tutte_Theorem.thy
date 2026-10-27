@@ -1538,7 +1538,20 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       by (meson bot.extremum insert_subsetI tutte_condition_def)
     then  have "\<forall>x \<in> (Vs G). even (card {x} - card (odd_comps_in_diff G {x}))" 
       using `even (card (Vs G))` diff_odd_component_parity
-      by (metis "less.prems"(1) bot.extremum insert_subsetI)
+      proof (intro ballI)
+        fix x
+        assume xV: "x \<in> Vs G"
+        have xsub: "{x} \<subseteq> Vs G"
+          using xV by simp
+        have cardx: "card {x} = 1"
+          by simp
+        have le1: "card (odd_comps_in_diff G {x}) \<le> card {x}"
+          using 1[THEN bspec, OF xV] by simp
+        have par: "even (card {x} - card (odd_comps_in_diff G {x})) = even (card (Vs G))"
+          using diff_odd_component_parity[OF less.prems(1) xsub le1] by simp
+        then show "even (card {x} - card (odd_comps_in_diff G {x}))"
+          using `even (card (Vs G))` by simp
+      qed
     then have 21:"\<forall>x \<in> (Vs G).card (odd_comps_in_diff G {x}) = 1"
       by (metis One_nat_def Suc_leI 1 antisym_conv card.empty card.insert dvd_diffD empty_iff 
           finite.emptyI not_less odd_card_imp_not_empty odd_one zero_order(2))
