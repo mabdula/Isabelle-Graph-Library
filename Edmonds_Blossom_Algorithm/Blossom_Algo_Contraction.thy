@@ -1158,7 +1158,12 @@ lemma disj_pfx_are_disj_3:
   assumes "(Some pfx1, l2_pfx) = (longest_disj_pfx l1 l2)"
   shows "set (butlast pfx1) \<inter> set (butlast (the l2_pfx)) = {}"
   using assms disj_pfx_are_disj_1
-  by (metis IntI Int_emptyI empty_iff in_set_butlastD)
+proof -
+  have "set pfx1 \<inter> set (butlast (the l2_pfx)) = {}"
+    using disj_pfx_are_disj_1[OF assms] .
+  then show ?thesis
+    using in_set_butlastD by fastforce
+qed
 
 lemma disj_pfx_is_complete:
   assumes "(None, l2_pfx) = (longest_disj_pfx l1 l2)"
