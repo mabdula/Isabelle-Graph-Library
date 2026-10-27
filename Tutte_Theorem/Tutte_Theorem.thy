@@ -1980,8 +1980,20 @@ using connected_components_member_eq C unfolding even_components_def
         then  obtain x where x:"x \<in> (C-{v}) \<and> (x \<notin> Vs (graph_diff G (X \<union> {v})))"
           by auto
         then have "x \<in> Vs G"
-          by (metis DiffD1 Diff_insert_absorb Vs_subset 2 connected_component_subset 
-              graph_diff_subset subset_Diff_insert)
+          proof -
+            have xC: "x \<in> C" and xv: "x \<noteq> v"
+              using x by auto
+            then have cc: "x \<in> connected_component (graph_diff G X) v"
+              using comp_C by simp
+            then have "x \<in> Vs (graph_diff G X) \<or> v = x"
+              by (rule in_connected_component_in_edges)
+            then have xin: "x \<in> Vs (graph_diff G X)"
+              using xv by auto
+            have sub: "Vs (graph_diff G X) \<subseteq> Vs G"
+              using graph_diff_subset by (rule Vs_subset)
+            from sub xin show ?thesis
+              by (rule subsetD)
+          qed
         have "x \<notin> X \<and> x \<notin> Vs (graph_diff G (X\<union>{v}))"
           proof (rule conjI)
             have xC: "x \<in> C"
