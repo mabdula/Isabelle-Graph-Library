@@ -260,7 +260,7 @@ next
   then have "pick (J - {pick J j}) ((Suc j) - 1) = pick J (Suc j)"
     using 1 by presburger
   then show ?thesis 
-    by (metis diff_Suc_1)
+    by (simp add: diff_Suc_1)
 qed
 
 lemma pick_same_if_less:
