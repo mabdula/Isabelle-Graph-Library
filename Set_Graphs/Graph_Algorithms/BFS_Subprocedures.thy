@@ -136,7 +136,34 @@ proof-
            [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs' \<emptyset>\<^sub>N]\<^sub>s"
        "distinct xs'"
     using distinct_remdups set_remdups
-    by (metis )
+  proof -
+    have p1: "set (remdups xs) = [frontier]\<^sub>s"
+      using xs_props(1) by (simp add: set_remdups)
+    have p2: "[next_frontier frontier vis]\<^sub>s =
+               [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) (remdups xs) \<emptyset>\<^sub>N]\<^sub>s"
+          proof -
+      have sub_member: "[(\<N>\<^sub>G a -\<^sub>G vis)]\<^sub>s \<subseteq>
+          foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) ys {}" if "a \<in> set ys" for ys a
+        using that
+        by (induction ys) (auto simp add: assms(2) assms(3) goal1_gen in_mono)
+      have eq_rm: "foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) ys {} =
+          foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) (remdups ys) {}" for ys
+        using sub_member
+        by (induction ys) auto
+      have eq_tr: "foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) ys {} =
+          [(foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) ys \<emptyset>\<^sub>N)]\<^sub>s" for ys
+        by (induction ys) (simp add: assms(2) assms(3) goal1_gen)+
+      have eqM: "[(foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) ys \<emptyset>\<^sub>N)]\<^sub>s =
+          [(foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) (remdups ys) \<emptyset>\<^sub>N)]\<^sub>s" for ys
+        by (rule trans[OF trans[OF sym[OF eq_tr] eq_rm] eq_tr])
+      show ?thesis
+        by (rule trans[OF xs_props(2) eqM])
+    qed
+    have p3: "distinct (remdups xs)"
+      by (simp add: distinct_remdups)
+    show thesis
+      by (rule that[OF p1 p2 p3])
+  qed
   moreover have "[foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs' \<emptyset>\<^sub>N]\<^sub>s =
                     \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> set xs'} - [vis]\<^sub>s"
     by(induction xs')
