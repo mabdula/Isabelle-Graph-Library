@@ -132,7 +132,13 @@ lemma diff_verts:
   shows "vertices_list E ! i \<noteq> vertices_list E ! j"
 proof -
   have "finite (Vs E)" 
-    by (metis assms(1) card.infinite less_nat_zero_code)
+    proof (rule ccontr)
+      assume "\<not> finite (Vs E)"
+      then have "card (Vs E) = 0"
+        by (rule card.infinite)
+      then show False
+        using assms(1) by simp
+    qed
   have "distinct (vertices_list E)" 
     by (simp add: \<open>finite (Vs E)\<close> distinct_vert_list)
   then show ?thesis 
