@@ -1970,8 +1970,24 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         then have "{x} \<notin> singl_in_diff G (X)" 
           unfolding singl_in_diff_def by blast
         have "{x} \<notin> odd_components (graph_diff G X)" 
-          using C unfolding odd_components_def odd_component_def even_components_def
-          by (smt (verit, best) DiffD1 connected_components_member_eq insert_compr mem_Collect_eq x)
+        proof (rule notI)
+          assume asm: "{x} \<in> odd_components (graph_diff G X)"
+          then obtain w where w: "w \<in> Vs (graph_diff G X)" "connected_component (graph_diff G X) w = {x}"
+            unfolding odd_components_def odd_component_def by auto
+          have "w \<in> connected_component (graph_diff G X) w"
+            by (rule in_own_connected_component)
+          with w(2) have "w = x" by simp
+          with w(2) have wx: "connected_component (graph_diff G X) x = {x}" by simp
+          have xC: "x \<in> C" and xv: "x \<noteq> v"
+            using x by blast+
+          have xin: "x \<in> connected_component (graph_diff G X) v"
+            using xC comp_C by simp
+          then have "connected_component (graph_diff G X) x = connected_component (graph_diff G X) v"
+            using connected_components_member_eq by fastforce
+          with comp_C have "connected_component (graph_diff G X) x = C" by simp
+          with wx have "C = {x}" by simp
+          with \<open>v \<in> C\<close> xv show False by blast
+        qed
         then have "{x} \<notin> odd_comps_in_diff G X" 
           unfolding odd_comps_in_diff_def
           using \<open>{x} \<notin> singl_in_diff G X\<close> by force
