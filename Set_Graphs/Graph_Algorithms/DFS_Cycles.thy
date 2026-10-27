@@ -892,7 +892,15 @@ proof (intro invar_props_intros, goal_cases)
         by (auto simp add: awalk_verts_conv)
       with \<open>c = xs @ [e2] @ ys @ [e1] @ zs\<close> c_awalk awalk_append_iff
         have "awalk ?G_seen_new (snd e2) (ys @ [e1] @ zs) (awlast (snd e2) (ys @ [e1] @ zs))"
-        by (smt (verit, best) awalkE)
+      proof -
+        have c_eq: "c = (xs @ [e2]) @ (ys @ [e1] @ zs)"
+          using \<open>c = xs @ [e2] @ ys @ [e1] @ zs\<close> by simp
+        from awalk_append_iff[THEN iffD1, THEN conjunct2, OF c_awalk[unfolded c_eq]]
+          have H: "awalk ?G_seen_new (awlast u (xs @ [e2])) (ys @ [e1] @ zs) u" .
+        from H have "u = awlast (awlast u (xs @ [e2])) (ys @ [e1] @ zs)"
+          by (auto elim: awalkE)
+        with H \<open>awlast u (xs @ [e2]) = snd e2\<close> show ?thesis by simp
+      qed
       with awalk_append_iff
         have "awalk ?G_seen_new (snd e2) ys (awlast (snd e2) ys)"
         "awalk ?G_seen_new (awlast (snd e2) ys) ([e1] @ zs) (awlast (snd e2) (ys @ [e1] @ zs))"
