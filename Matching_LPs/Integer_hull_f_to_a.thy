@@ -3188,7 +3188,7 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
   proof -
     have " v + of_int 1 \<cdot>\<^sub>v ?z' \<in> P" 
       using `\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> P` 
-      by (metis int_ops(2))
+      by (insert `\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> P`[THEN spec, of 1], simp add: int_ops(2) scalar_vec_one)
     then show ?thesis 
       by (metis of_int_hom.hom_one scalar_vec_one)  
   qed
