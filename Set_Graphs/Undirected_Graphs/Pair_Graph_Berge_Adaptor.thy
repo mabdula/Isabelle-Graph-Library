@@ -793,7 +793,7 @@ proof-
       using awalk_to_apath_subset[OF \<open>awalk D x (epath_to_awalk x (tl p)) u\<close>] by blast
   qed
     then have "undirected (x, u) \<in> set (map undirected (epath_to_awalk x (tl p)))"
-      by (metis (no_types, opaque_lifting) image_insert insert_absorb insert_subset list.set_map subset_refl)
+      by (force simp: set_map)
     with map_undirected_epath_to_awalk[OF \<open>epath G x (tl p) u\<close>]
       have "{x, u} \<in> set (tl p)" by simp
     with \<open>p = {u, x} # ?p_tl\<close> \<open>distinct p\<close>
