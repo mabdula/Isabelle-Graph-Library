@@ -259,7 +259,7 @@ proof -
         using subsystem_fulfills_P[of A b A' b' I "\<lambda> p q. p \<bullet> x = q"] assms(4)
           `dim_row A = dim_vec b`  by blast
       have "\<forall>i < dim_row C. row C i \<bullet> x = d $ i" using `d = C *\<^sub>v x`
-        by (metis index_mult_mat_vec)
+        by (simp add: index_mult_mat_vec)
       then have "\<forall>i \<in> J \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
         using subsystem_fulfills_P[of A b C d J "\<lambda> p q. p \<bullet> x = q"] C_d
           `dim_row A = dim_vec b`  by blast
