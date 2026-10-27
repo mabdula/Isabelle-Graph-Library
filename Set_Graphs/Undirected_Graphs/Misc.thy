@@ -210,7 +210,30 @@ lemma extract_first_x:
   subgoal for a xs
     apply(cases "P a") 
     apply fastforce
-    by (metis append_Cons set_ConsD)
+  proof -
+    assume notPa: "\<not> P a"
+    assume IH: "x \<in> set xs \<Longrightarrow> P x \<Longrightarrow>
+      \<exists>y ys zs. xs = ys @ [y] @ zs \<and> P y \<and> (\<nexists>z. z \<in> set ys \<and> P z)"
+    assume x_mem: "x \<in> set (a # xs)"
+    assume Px: "P x"
+    from x_mem have "x = a \<or> x \<in> set xs" by simp
+    with notPa Px have x_in_xs: "x \<in> set xs" by auto
+    from IH[OF x_in_xs Px] obtain y ys zs where
+      xs_eq: "xs = ys @ [y] @ zs" and
+      Py: "P y" and
+      none: "\<nexists>z. z \<in> set ys \<and> P z"
+      by blast
+    have a_xs_eq: "a # xs = (a # ys) @ [y] @ zs"
+      using xs_eq by simp
+    have none': "\<nexists>z. z \<in> set (a # ys) \<and> P z"
+      using none notPa by auto
+    show ?thesis
+    proof (intro exI conjI)
+      show "a # xs = (a # ys) @ [y] @ zs" using a_xs_eq .
+      show "P y" using Py .
+      show "\<nexists>z. z \<in> set (a # ys) \<and> P z" using none' .
+    qed
+  qed
   done
 
 lemma induct_list012[case_names nil single sucsuc]:
