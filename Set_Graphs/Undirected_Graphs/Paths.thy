@@ -501,7 +501,17 @@ lemma path_repl_edge:
   assumes "path G' p" "p \<noteq> []" "G' = (insert {w,x} G)" "path G puv" "hd puv = w" "last puv = x" "puv \<noteq> []"
   shows "\<exists>p'. p' \<noteq> [] \<and> path G p' \<and> hd p' = hd p \<and> last p' = last p"
   using assms
-  by (metis walk_betw_repl_edge walk_betw_def)
+proof -
+  have path_ins: "path (insert {w, x} G) p"
+    using assms(1) assms(3) by simp
+  have walk_puv: "walk_betw G w puv x"
+    using assms(4) assms(5) assms(6) assms(7) by (simp add: walk_betw_def)
+  obtain p' where wp: "walk_betw G (hd p) p' (last p)"
+    using walk_betw_repl_edge[OF path_ins assms(2) walk_puv] by blast
+  have "p' \<noteq> [] \<and> path G p' \<and> hd p' = hd p \<and> last p' = last p"
+    using wp by (simp add: walk_betw_def)
+  thus ?thesis by blast
+qed
 
 lemma path_can_be_split:
   assumes "path G' p" "G' = insert {w,x} G" "{w,x} \<subseteq> Vs G" "p \<noteq> []"
