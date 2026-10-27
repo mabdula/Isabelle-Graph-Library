@@ -3572,7 +3572,29 @@ qed
           using matching(2) graph
           by (force elim: dblton_graphE)
         have "v1 \<notin> \<Union> M'" (*as, e is disjoint will edges in M', as M is a matching*)
-          by (metis DiffD1 Diff_insert_absorb M'(2) M'(3) Union_iff matching(1) insertI1 matching_unique_match v1v2(1))
+          proof
+            assume "v1 \<in> \<Union> M'"
+            then obtain e' where e': "e' \<in> M'" "v1 \<in> e'"
+              by blast
+            have "e' \<in> M"
+              using e'(1) M'(2)
+              by blast
+            moreover have "e \<in> M"
+              using M'(1)
+              by blast
+            moreover have "v1 \<in> e"
+              using v1v2(1)
+              by simp
+            ultimately have "e = e'"
+              using matching_unique_match[OF matching(1)] e'(2)
+              by blast
+            then have "e \<in> M'"
+              using e'(1)
+              by simp
+            then show False
+              using M'(3)
+              by simp
+          qed
         have "e = {v2, v1}"
           using \<open>e = {v1, v2}\<close> by auto
         then have "v2 \<notin> \<Union> M'"
