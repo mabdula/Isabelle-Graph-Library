@@ -858,7 +858,27 @@ proof -
     xs_distinct: "distinct xs" and
     y_not_in_xs: "y \<notin> set xs"
     using p_not_distinct not_distinct_decomp    
-    by (smt append.assoc append.simps(2) in_set_conv_decomp_first not_distinct_conv_prefix)
+proof -
+  from p_not_distinct obtain xs' y zs where
+    xs'_distinct: "distinct xs'" and
+    y_in_xs': "y \<in> set xs'" and
+    p_decomp: "p = xs' @ y # zs"
+    using not_distinct_conv_prefix by blast
+  obtain xs ys where
+    xs'_eq: "xs' = xs @ y # ys" and
+    y_notin_xs: "y \<notin> set xs"
+    using y_in_xs' by (auto dest: split_list_first)
+  have xs_distinct: "distinct xs"
+    using xs'_distinct xs'_eq by simp
+  have p_eq: "p = xs @ y # ys @ y # zs"
+    using p_decomp xs'_eq by simp
+  show thesis
+  proof (rule that)
+    show "p = xs @ y # ys @ y # zs" using p_eq .
+    show "distinct xs" using xs_distinct .
+    show "y \<notin> set xs" using y_notin_xs .
+  qed
+qed
   from p_vwalk this(1)
   obtain q r s where
     "p = q @ tl r @ tl s"
