@@ -1806,9 +1806,34 @@ next
     using sym[OF distinct_card[OF distinct_vs]]  sym[OF distinct_card[OF P_prop(4)]]
     by (auto simp add: card_mono)
   obtain pp where pp_is:"P = [s]@pp@[v]"  
-    using  assms(2) calculation(2) calculation(3) hd_Nil_eq_last 
-    by(cases P) 
-     (auto, smt (verit, ccfv_SIG) append_butlast_last_id)
+  proof -
+    have "\<exists>pp. P = [s] @ pp @ [v]"
+    proof(cases P)
+      case Nil
+      then have "hd P = last P" using hd_Nil_eq_last by simp
+      with calculation(2) calculation(3) have "s = v" by simp
+      with assms(2) show ?thesis by simp
+    next
+      case (Cons a list)
+      with calculation(2) have a_eq_s: "a = s" by simp
+      show ?thesis
+      proof(cases "list = []")
+        case True
+        with Cons have "last P = a" by simp
+        with a_eq_s calculation(3) have "s = v" by simp
+        with assms(2) show ?thesis by simp
+      next
+        case False
+        with Cons have "last P = last list" by simp
+        with calculation(3) have last_list: "last list = v" by simp
+        from append_butlast_last_id[OF False] last_list
+        have "list = butlast list @ [v]" by simp
+        with Cons a_eq_s have "P = [s] @ butlast list @ [v]" by simp
+        then show ?thesis by blast
+      qed
+    qed
+    then show thesis using that by blast
+  qed
   have "length ([s]@pp@[v]) \<le> length vs"
     using P_length pp_is by blast
   moreover have "weight ([s]@pp@[v]) \<ge> OPT (length vs - 1) s v" 
