@@ -1307,8 +1307,14 @@ proof
     finally show ?thesis by simp
   qed
   have 15: "(B @\<^sub>r mat_of_rows (dim_col B) [b]) \<in> carrier_mat (dim_row B + 1) (dim_col B)" 
-    by (metis Num.numeral_nat(7) add_0 carrier_append_rows carrier_matI list.size(3) 
-        list.size(4) mat_of_rows_carrier(1))
+  proof -
+    have b_mat: "mat_of_rows (dim_col B) [b] \<in> carrier_mat 1 (dim_col B)"
+      using mat_of_rows_carrier(1)[of "dim_col B" "[b]"] by simp
+    have B_mat: "B \<in> carrier_mat (dim_row B) (dim_col B)"
+      by (intro carrier_matI) simp_all
+    show ?thesis
+      using carrier_append_rows[OF B_mat b_mat] by simp
+  qed
   show "mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j $$ (i, k) =
          submatrix A I (J - {pick J j}) $$ (i, k)"
   proof(cases "dim_col B = 0")
