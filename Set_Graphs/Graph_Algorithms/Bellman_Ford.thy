@@ -1409,9 +1409,12 @@ proof(rule, goal_cases)
         using a_p_prop(1)[simplified 1 p1p2_prop, simplified]  1(2)  vwalk_bet_nonempty_vwalk(3) 
               vwalk_bet_nonempty_vwalk(4) 
         by (intro vwalk_rotate[of _ u Nil v "butlast p2"])fastforce
-      thus ?case 
-        using 1 
-        by (metis append.assoc append_vwalk_pref single_in_append)
+      hence pref: "Vwalk.vwalk (pred_graph (relax connections u v))
+                ((v # butlast p2 @ [u]) @ [v])"
+        by simp
+      thus ?case
+        using 1 pref
+        by (fastforce intro: append_vwalk_pref)
     qed simp
     moreover have "\<lbrakk>p1 = b#pp1; p2= []\<rbrakk> 
          \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v  ([v]@tl p1@[u]) u"
