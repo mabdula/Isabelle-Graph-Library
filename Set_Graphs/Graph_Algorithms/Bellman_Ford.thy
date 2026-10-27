@@ -1469,8 +1469,41 @@ proof(rule, goal_cases)
     hence "snd (the (connection_lookup connections u))
             > snd (the (connection_lookup connections u)) + edge_costs u v + weight r"
       using True 
-      by (smt (verit, del_insts) MInfty_eq_minfinity add.commute weight_not_MInfty
-          ereal_add_le_add_iff2 ereal_plus_eq_PInfty nless_le order.strict_trans2)
+    proof -
+      have dominates: "snd (the (connection_lookup connections v)) + weight r
+                        \<le> snd (the (connection_lookup connections u))"
+        using r_walk_in_old weight_pred_path[OF lengthr assms(5)] by simp
+      have A_not_PInf: "snd (the (connection_lookup connections u)) \<noteq> PInfty"
+      proof
+        assume "snd (the (connection_lookup connections u)) = PInfty"
+        hence "snd (the (connection_lookup connections u)) + edge_costs u v = PInfty"
+          by simp
+        with True show False by simp
+      qed
+      consider (Real) w where "weight r = ereal w"
+        | (PInf) "weight r = PInfty" | (MInf) "weight r = MInfty"
+        by (cases "weight r") auto
+      then show ?thesis
+      proof cases
+        case Real
+        have strict_add: "x < y \<Longrightarrow> x + ereal w < y + ereal w" for x y :: ereal
+          by (cases y; cases x; auto)
+        have "snd (the (connection_lookup connections u)) + edge_costs u v + weight r
+            < snd (the (connection_lookup connections v)) + weight r"
+          using strict_add[OF True] unfolding Real by simp
+        also have "... \<le> snd (the (connection_lookup connections u))"
+          using dominates by simp
+        finally show ?thesis .
+      next
+        case PInf
+        have "PInfty \<le> snd (the (connection_lookup connections u))"
+          using dominates PInf by simp
+        with A_not_PInf show ?thesis by fastforce
+      next
+        case MInf
+        with weight_not_MInfty[of r] show ?thesis by simp
+      qed
+    qed
     hence weight_sum:"edge_costs u v + weight r < 0"
       by (metis ab_semigroup_add_class.add_ac(1) ereal_le_add_self leD leI)
     have lastr:"last r = u" 
