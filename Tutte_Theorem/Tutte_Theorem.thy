@@ -843,20 +843,28 @@ proof -
       then show ?thesis .
     qed
     then show ?thesis 
-      by (smt (verit, ccfv_threshold) IntI Nat.add_diff_assoc2 One_nat_def Suc_leI Un_insert_right 
-         \<open>(odd_comps_in_diff G X - {C}) \<inter> 
-          odd_comps_in_diff (component_edges (graph_diff G X) C) {x} = {}\<close> 
-          \<open>card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x}) = 1\<close> 
-          \<open>card (odd_comps_in_diff G X - {C}) = card X - 1\<close> \<open>card (odd_comps_in_diff G X) = card X\<close> 
-          \<open>odd_comps_in_diff G (X \<union> {x}) = odd_comps_in_diff G X - {C} \<union> 
-          odd_comps_in_diff (component_edges (graph_diff G X) C) {x}\<close>
-          \<open>finite (odd_comps_in_diff (component_edges (graph_diff G X) C) {x})\<close> 
-          add_Suc_right assms(1) assms(2) assms(3) assms(6) assms(7) boolean_algebra_cancel.sup0 
-          card.empty card.insert card_Un_disjoint card_gt_0_iff component_in_E diff_add_inverse2 
-          diff_components_finite diff_is_0_eq' diff_odd_component_parity odd_comps_in_diff_not_in_X 
-          empty_iff finite_Diff insert_subset le_iff_add odd_card_imp_not_empty odd_one subsetD 
-          tutte_condition_def)
-  qed
+    proof -
+      have inv: "graph_invar (component_edges (graph_diff G X) C)"
+        using \<open>graph_invar (component_edges (graph_diff G X) C)\<close> by simp
+      have Vs_eq: "Vs (component_edges (graph_diff G X) C) = C"
+        using \<open>Vs (component_edges (graph_diff G X) C) = C\<close> by simp
+      have docX_card: "card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x}) = 1"
+        using \<open>card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x}) = 1\<close> by simp
+      have subset_x: "{x} \<subseteq> Vs (component_edges (graph_diff G X) C)"
+        using assms(7) Vs_eq by blast
+      have parity: "even (card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x}) + card {x})
+                    = even (card (Vs (component_edges (graph_diff G X) C)))"
+        using diff_odd_component_parity_sum[OF inv subset_x] by simp
+      have card_eq: "card (Vs (component_edges (graph_diff G X) C)) = card C"
+        using Vs_eq by simp
+      have card_x: "card {x} = 1"
+        by simp
+      have "even (card C)"
+        using parity card_eq docX_card card_x by presburger
+      moreover have "odd (card C)"
+        using assms(6) diff_odd_compoenent_has_odd_card by blast
+      ultimately show False by presburger
+    qed  qed
 qed
 
 lemma max_barrier_add_vertex_doesnt_increase_odd_components:
