@@ -1037,7 +1037,7 @@ proof
     then have " z \<in> connected_component (graph_diff G X) x1"
       using C' by auto
     then have " connected_component (graph_diff G X) z = connected_component (graph_diff G X) x1"
-      by (metis (no_types, lifting) connected_components_member_eq)
+      by (rule connected_components_member_eq)
     then have 2:"C' = {c . \<exists> e. e \<in> G \<and> e = {c, y1}  \<and> c \<notin> X
                      \<and> c \<in> connected_component (graph_diff G X) z}  \<and> y1 \<in> X
         \<and> {connected_component (graph_diff G X) z, {y1}} \<in> M'" 
