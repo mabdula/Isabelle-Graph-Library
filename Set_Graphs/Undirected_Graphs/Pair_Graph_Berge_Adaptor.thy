@@ -628,7 +628,24 @@ lemma cycle'_imp_decycle:
   "cycle' D p \<Longrightarrow> \<exists>u. decycle G u (map undirected p)"
   using cycle'_def cycle_def decycle_def
    awalk_imp_epath awalk_distinct_imp_epath_distinct cycle'_imp_awalk_verts_distinct
-  by (metis length_map)
+proof -
+  assume "cycle' D p"
+  then obtain u where awalk: "awalk D u p u"
+    and distinct_tl: "distinct (tl (awalk_verts u p))"
+    and len_gt: "length p > 2"
+    unfolding cycle'_def cycle_def by blast
+  have epath: "epath G u (map undirected p) u"
+    using awalk awalk_imp_epath by blast
+  have distinct_butlast: "distinct (butlast (awalk_verts u p))"
+    using cycle'_imp_awalk_verts_distinct[OF \<open>cycle' D p\<close> awalk] by simp
+  have "distinct (map undirected p)"
+    using awalk distinct_tl distinct_butlast len_gt awalk_distinct_imp_epath_distinct by blast
+  moreover have "length (map undirected p) > 2"
+    using len_gt by simp
+  ultimately have "decycle G u (map undirected p)"
+    unfolding decycle_def using epath by blast
+  then show ?thesis by blast
+qed
 
 
 lemma map_undirected_epath_to_awalk:
