@@ -1316,7 +1316,8 @@ proof-
       by (fastforce simp: eqop_append alt_list_empty intro!: alt_list_append_3)+
   qed
   ultimately show ?thesis
-    by (metis append.assoc)
+    using \<open>alt_path M (rev p1 @ pfx2)\<close> \<open>rev (drop (length pfx1) p1) @ rev pfx1 = rev p1\<close>
+    by (simp only: append.assoc[symmetric])
 qed
 
 lemma pfxs_path:
