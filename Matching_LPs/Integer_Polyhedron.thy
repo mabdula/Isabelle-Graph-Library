@@ -511,7 +511,26 @@ proof -
 qed
   have "\<forall> i < dim_row A. (row C i) = row A i" 
     using C_d(1) append_rows_index_same[of A nr "A' @\<^sub>r - A'" _]  
-    by (metis (no_types, lifting) A A'_b' b carrier_matI face_is_polyhedron'(3))
+  proof -
+    have "dim_col A' = n"
+    proof -
+      have fa: "fst (sub_system A b I') = A'"
+        using arg_cong[where f = fst, OF A'_b'[THEN conjunct1]] by simp
+      have "dim_col (fst (sub_system A b I')) = n"
+        using dim_col_subsyst_mat[of A b I'] carrier_matD(2)[OF A] by simp
+      then show "dim_col A' = n"
+        using fa by simp
+    qed
+    then have "dim_col (A' @\<^sub>r - A') = n"
+      using A A'_b' b face_is_polyhedron'(3) by blast
+    then have "A' @\<^sub>r - A' \<in> carrier_mat (dim_row (A' @\<^sub>r - A')) n"
+      using carrier_matI by blast
+    then have "\<forall> i < dim_row A. row (A @\<^sub>r (A' @\<^sub>r - A')) i = row A i"
+      using A append_rows_index_same[of A nr "A' @\<^sub>r - A'" "dim_row (A' @\<^sub>r - A')"]
+      by blast
+    then show "\<forall> i < dim_row A. (row C i) = row A i"
+      using C_d(1) by simp
+  qed
   have "\<forall> i < dim_vec b. d $ i = b $ i" 
     unfolding C_d(2)
     by (meson index_append_vec(1) trans_less_add1)
