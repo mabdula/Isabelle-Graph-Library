@@ -1266,7 +1266,18 @@ proof-
       using disj_pref_append1 first_pfx_nempty pfxs_are_pfxs by fastforce
     then have eqop_append: "edges_of_path (rev p1 @ pfx2) = edges_of_path (rev p1) @ edges_of_path (hd p1 # pfx2)"
       using edges_of_path_append_2 edges_of_path_rev
-      by (metis (no_types, lifting) rev.simps(2) rev_append rev_rev_ident)
+  proof -
+    have p1_nempty: "p1 \<noteq> []"
+      using disj_pref_append1 first_pfx_nempty pfxs_are_pfxs by fastforce
+    hence rev_p1_nempty: "rev p1 \<noteq> []"
+      by simp
+    hence "edges_of_path (rev p1 @ pfx2) = edges_of_path (rev p1) @ edges_of_path (last (rev p1) # pfx2)"
+      using edges_of_path_append_3[OF rev_p1_nempty, of pfx2] by simp
+    moreover have "last (rev p1) = hd p1"
+      using p1_nempty by (simp add: last_rev)
+    ultimately show ?thesis
+      by simp
+  qed
     case (Cons a' pfx2')
     then have "hd (edges_of_path p1) \<in> M" if "edges_of_path (rev p1) \<noteq> []"
       using alt_paths(1) that[unfolded edges_of_path_rev[symmetric]] \<open>p1 \<noteq> []\<close>
