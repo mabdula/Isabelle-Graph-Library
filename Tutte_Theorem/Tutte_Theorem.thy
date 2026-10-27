@@ -1553,8 +1553,21 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
           using `even (card (Vs G))` by simp
       qed
     then have 21:"\<forall>x \<in> (Vs G).card (odd_comps_in_diff G {x}) = 1"
-      by (metis One_nat_def Suc_leI 1 antisym_conv card.empty card.insert dvd_diffD empty_iff 
-          finite.emptyI not_less odd_card_imp_not_empty odd_one zero_order(2))
+      proof -
+        assume even_card: "\<forall>x \<in> Vs G. even (card {x} - card (odd_comps_in_diff G {x}))"
+        {
+          fix x
+          assume x_in: "x \<in> Vs G"
+          have card_x: "card {x} = 1" by simp
+          have le_fact: "card (odd_comps_in_diff G {x}) \<le> card {x}"
+            using 1 x_in by blast
+          have even_fact: "even (card {x} - card (odd_comps_in_diff G {x}))"
+            using even_card x_in by blast
+          have "card (odd_comps_in_diff G {x}) = 1"
+            using card_x le_fact even_fact by presburger
+        }
+        then show ?thesis by blast
+      qed
     then have "\<forall>x \<in> (Vs G). barrier G {x}"
       by (metis barrier_def insert_not_empty is_singleton_altdef is_singleton_def)
     then have exBarr:"\<exists> X \<subseteq> Vs G. barrier G X" 
