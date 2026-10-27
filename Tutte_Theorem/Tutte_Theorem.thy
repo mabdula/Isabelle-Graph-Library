@@ -1984,7 +1984,24 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
           unfolding singl_in_diff_def
           using x \<open>x \<in> Vs G\<close> by auto
         have "x \<in> Vs (graph_diff G X)" 
-          by (metis "2" Diff_iff in_connected_component_in_edges x)
+        proof -
+          have "x \<in> C" using x by auto
+          obtain u where u1: "u \<in> Vs (graph_diff G X)"
+            and u2: "connected_component (graph_diff G X) u = C"
+            using 2 by auto
+          show "x \<in> Vs (graph_diff G X)"
+          proof (cases "x = u")
+            case True
+            then show ?thesis using u1 by simp
+          next
+            case False
+            have "x \<in> connected_component (graph_diff G X) u"
+              using u2 \<open>x \<in> C\<close> by simp
+            then have "x \<in> Vs (graph_diff G X) \<or> u = x"
+              by (rule in_connected_component_in_edges)
+            then show ?thesis using False by auto
+          qed
+        qed
         then have "{x} \<notin> singl_in_diff G (X)" 
           unfolding singl_in_diff_def by blast
         have "{x} \<notin> odd_components (graph_diff G X)" 
