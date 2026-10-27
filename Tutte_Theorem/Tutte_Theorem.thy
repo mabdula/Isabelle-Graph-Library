@@ -1139,7 +1139,12 @@ lemma new_component_subset_old:
   assumes "graph_invar G"
   assumes "Y \<subseteq> X"
   shows "connected_component (graph_diff G X) u \<subseteq> connected_component (graph_diff G Y) u"
-  by (metis assms(1) assms(2) con_comp_subset graph_diff_subset graph_diff_trans subset_Un_eq)
+proof -
+  have "graph_diff G X \<subseteq> graph_diff G Y"
+    unfolding graph_diff_def using assms(2) by blast
+  then show ?thesis
+    by (rule con_comp_subset)
+qed
 
 lemma new_component_is_old:
   assumes "graph_invar G"
