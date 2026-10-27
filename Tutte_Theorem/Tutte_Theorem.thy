@@ -1155,8 +1155,20 @@ proof
       have 1:"set (edges_of_path p) \<subseteq> (graph_diff G Y)" 
         by (meson p path_edges_subset walk_between_nonempty_pathD(1))
       have "\<forall>x\<in>set p. x \<in>  connected_component (graph_diff G Y) u" 
-        by (metis p asmy connected_components_member_eq path_subset_conn_comp subsetD 
-            walk_between_nonempty_pathD)
+      proof -
+        have path_p: "path (graph_diff G Y) p"
+          by (meson p walk_between_nonempty_pathD(1))
+        have hd_p: "hd p = y"
+          by (meson p walk_between_nonempty_pathD(3))
+        have subs0: "set p \<subseteq> connected_component (graph_diff G Y) (hd p)"
+          by (meson path_p path_subset_conn_comp)
+        then have subs: "set p \<subseteq> connected_component (graph_diff G Y) y"
+          using hd_p by simp
+        have eq: "connected_component (graph_diff G Y) y = connected_component (graph_diff G Y) u"
+          by (meson asmy connected_components_member_eq)
+        show ?thesis
+          using subs eq by blast
+      qed
       then have "\<forall>x\<in>set p. x \<notin> X" 
         using assms(3) by blast
       have "set (edges_of_path p) \<subseteq> (graph_diff G X)" 
