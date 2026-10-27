@@ -1180,12 +1180,19 @@ proof
         then show "e \<in>  (graph_diff G X)" 
           using asme 1 unfolding graph_diff_def by blast
       qed
-      then have "walk_betw (graph_diff G X) y p u" 
-        by (smt (z3) False One_nat_def Suc_1 Suc_leI Suc_lessI p diff_is_0_eq'
-            edges_of_path.simps(1) edges_of_path_Vs edges_of_path_length empty_iff
-            empty_set in_edges_of_path last_in_set length_pos_if_in_set neq0_conv 
-            path_edges_of_path_refl path_subset subset_empty walk_betw_def)
-      then show ?thesis 
+      then have edges_sub: "set (edges_of_path p) \<subseteq> (graph_diff G X)" .
+      have "2 \<le> length p"
+        by (rule walk_betw_length[OF False p])
+      then have path_own: "path (set (edges_of_path p)) p"
+        by (rule path_edges_of_path_refl)
+      have path_X: "path (graph_diff G X) p"
+        by (rule path_subset[OF path_own edges_sub])
+      have "walk_betw (graph_diff G X) y p u"
+        by (rule nonempty_path_walk_between[OF path_X
+               walk_between_nonempty_pathD(2)[OF p]
+               walk_between_nonempty_pathD(3)[OF p]
+               walk_between_nonempty_pathD(4)[OF p]])
+      then show ?thesis
         by (meson connected_components_member_sym has_path_in_connected_component)
     qed
   qed
