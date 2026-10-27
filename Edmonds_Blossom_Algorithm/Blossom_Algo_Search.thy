@@ -3675,9 +3675,24 @@ qed
             using \<open>v2 \<notin> \<Union>M'\<close> by auto
           moreover have "finite (\<Union>M')"
             using matching(2) graph(1) M'(2)
-            by (metis dblton_graph_def Un_Diff_Int Union_Un_distrib Union_insert
-                      finite.simps finite_Un finite_Union finite_insert finite_E
-                      inf.orderE inf_commute)
+          proof -
+            have "M' \<subseteq> M"
+              using M'(2) by auto
+            hence "M' \<subseteq> G"
+              using matching(2) by auto
+            hence subset: "\<Union>M' \<subseteq> \<Union>G"
+              by auto
+            have "finite (\<Union>G)"
+              using finite_E
+            proof (rule finite_Union)
+              fix e
+              assume "e \<in> G"
+              then show "finite e"
+                using graph(1) unfolding dblton_graph_def by auto
+            qed
+            with subset show ?thesis
+              using finite_subset by blast
+          qed
           ultimately have "card ({v2} \<union> \<Union> M') = card {v2} + card (\<Union>M')"
             unfolding unlab_osc2_def
             apply(intro card_Un_disjoint)
