@@ -348,7 +348,24 @@ proof -
     using DL_Missing_Sublist.pick.simps(2) by blast
   have "(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) = 
               (LEAST a. a \<in> J \<and> pick J k < a)" 
-    by (metis Diff_iff 3 \<open>pick J j < pick J k\<close> basic_trans_rules(19) less_not_refl2 singletonD)
+  proof -
+    have pred_eq: "(\<lambda>a. a \<in> J - {pick J j} \<and> pick J k < a) = (\<lambda>a. a \<in> J \<and> pick J k < a)"
+    proof (rule ext, rule iffI)
+      fix a
+      assume "a \<in> J - {pick J j} \<and> pick J k < a"
+      then show "a \<in> J \<and> pick J k < a" by auto
+    next
+      fix a
+      assume "a \<in> J \<and> pick J k < a"
+      then have a_in: "a \<in> J" and a_gt: "pick J k < a" by auto
+      have "a \<noteq> pick J j"
+        using a_gt \<open>pick J j < pick J k\<close> by simp
+      with a_in a_gt show "a \<in> J - {pick J j} \<and> pick J k < a" by auto
+    qed
+    show "(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) = 
+              (LEAST a. a \<in> J \<and> pick J k < a)"
+      using 3 pred_eq by simp
+  qed
   then show "pick (J - {pick J j}) k = pick J (Suc k)" 
     by (metis Suc_eq_plus1 4 5 \<open>card {a \<in> J. a < pick J k} = k\<close> 6 7)
 qed
