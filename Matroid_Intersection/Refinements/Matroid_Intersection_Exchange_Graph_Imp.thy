@@ -1,5 +1,6 @@
 theory Matroid_Intersection_Exchange_Graph_Imp
   imports Matroid_Intersection_Exchange_Graph_CSR Matroid_Intersection_Imp_Loop Exchange_Candidates_Imp
+          Data_Structures.More_Lists
 begin
 
 section \<open>The Exchange Graph Search in Imperative HOL\<close>
@@ -72,14 +73,14 @@ lemma path_rule:
                path_assn n (Some (rev (parent_array.pa_get_path n (BFS_par_state.parent (fin ss)) t)))
                  (Some k) Ra>"
 proof-
-  note t = assms(1)[THEN find_SomeD, THEN conjunct1]
+  note t = find_SomeD[OF assms(1)]
   note card = card_Vs[unfolded Vs_G assms(2)[symmetric]]
   have len: "length (parent_array.pa_get_path n (BFS_par_state.parent (fin ss)) t) \<le> n"
-    using fin_path_length[OF b t] card assms(2)
-    by (simp only:)
+    using fin_path_length[OF b] card assms(2) t by force
   show ?thesis
     unfolding path_assn_def option.case(2)
-    by (rule ht_cons[OF _ _ path_rule[OF b t card]]) (use len assms(2) in sep_auto)+
+    by (rule ht_cons[OF _ _ path_rule[OF b t(1) card]]) 
+       (use len assms(2) in sep_auto)+
 qed
 
 lemma bfs_len_rule:

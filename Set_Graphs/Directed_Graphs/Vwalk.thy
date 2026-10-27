@@ -435,8 +435,8 @@ lemma walk_transfer:
 proof(induction rule: induct_vwalk_bet)
   case (path2 x x' xs b)
   thus ?case
-    using edges_are_vwalk_bet[of x x' E']
-    by auto
+    using edges_are_vwalk_bet[of x x' E'] 
+    by(auto simp add: vwalk_bet_def)
 qed simp
 
 lemma vwalk_append:

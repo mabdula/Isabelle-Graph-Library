@@ -50,8 +50,8 @@ provenance human
     lemma neighbourhood_impl_rule[sep_heap_rules]: 
       "<graph_assn lg lgi> neighbourhood_impl lgi v <\<lambda>r. graph_assn lg lgi * \<up>( r = neighbourhood lg v \<and> distinct r )>"
       unfolding graph_assn_def neighbourhood_impl_def neighbourhood_def
-      by (sep_auto split: option.split)
-      
+      by (sep_auto split: option.split 
+                    simp: More_Logic.the_default_def)
           
     definition add_edge_impl :: "'gimpl \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'gimpl Heap" where "add_edge_impl G u v = do {
       l \<leftarrow> mlookup_impl u G;
@@ -64,10 +64,9 @@ provenance human
     lemma add_edge_impl_rule[sep_heap_rules]: 
       "<graph_assn lg lgi> add_edge_impl lgi u v <\<lambda>r. graph_assn (add_edge lg u v) r>"
       unfolding add_edge_impl_def graph_assn_def
-      apply (sep_auto) 
-      unfolding add_edge_def
-      apply (sep_auto split: option.split)
-      done
+      by sep_auto (sep_auto split: option.split 
+                             simp: add_edge_def More_Logic.the_default_def)
+
 
     definition "from_list_impl xs \<equiv> do { G \<leftarrow> empty_graph_impl; foldM (\<lambda>(u,v) G. add_edge_impl G u v) xs G }"
       
