@@ -910,7 +910,14 @@ proof (intro invar_props_intros, goal_cases)
           by (simp add: rev_rev_ident)
       qed
     have "(?v, u) \<in> (Graph.digraph_abs G)"
-      by (metis \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> local.Cons stack_expr vwalk_2)
+proof -
+  have stack_eq: "stack dfs_aux_state = hd (stack dfs_aux_state) # u # l_tl_tl"
+    using stack_expr local.Cons by simp
+  have "Vwalk.vwalk (Graph.digraph_abs G) (hd (stack dfs_aux_state) # u # l_tl_tl)"
+    using \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> stack_eq by simp
+  thus "(hd (stack dfs_aux_state), u) \<in> Graph.digraph_abs G"
+    by (simp add: vwalk_2)
+qed
     then have edges_in_G: "{(u, ?v), (?v, u)} \<subseteq> (Graph.digraph_abs G)" by auto
 
     have "set (stack dfs_aux_state) \<subseteq> t_set (seen dfs_aux_state)"
