@@ -278,7 +278,14 @@ proof -
 qed
   then have "finite (Vs M)" by simp
   have "finite M" 
-    by (metis Vs_def \<open>Vs M = Vs G\<close> \<open>graph_invar G\<close> finite_UnionD)
+  proof -
+    have "finite (Vs G)"
+      using \<open>graph_invar G\<close> by simp
+    then have "finite (Vs M)"
+      using \<open>Vs M = Vs G\<close> by simp
+    then show "finite M"
+      unfolding Vs_def using finite_UnionD by blast
+  qed
   let ?comp_out  = "\<lambda> C. {e. e \<in> M \<and> (\<exists> x y. e = {x,y} \<and> y \<in> C \<and> x \<in> X)}"
   let ?QX = "(odd_comps_in_diff G X)"
   have 2: "\<forall> e\<in> G. card e = 2" 
