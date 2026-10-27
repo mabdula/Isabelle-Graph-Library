@@ -676,7 +676,17 @@ proof(goal_cases)
     by(auto intro!: card_UN_disjoint[OF \<open>finite (components_edges X)\<close>, of id, simplified])
   also have "... = (\<Sum>C \<in> connected_components X. card (component_edges X C))"
     unfolding components_edges_def using component_edges_distinct
-    by (smt (verit, best) mem_Collect_eq sum.eq_general)
+  proof -
+    have set_eq: "{component_edges X C | C. C \<in> connected_components X}
+                  = component_edges X ` connected_components X"
+      by blast
+    have inj: "inj_on (component_edges X) (connected_components X)"
+      unfolding inj_on_def using component_edges_distinct by blast
+    show "sum card {component_edges X C |C. C \<in> connected_components X}
+          = (\<Sum>C \<in> connected_components X. card (component_edges X C))"
+      unfolding set_eq
+      by (simp add: sum.reindex[OF inj])
+  qed
   also have "... = (\<Sum>C \<in> connected_components X. card C - 1)"
     using cards_CCs by auto
   also have "... = (\<Sum>C \<in> connected_components X. card C) - card (connected_components X)"
