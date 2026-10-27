@@ -3344,10 +3344,18 @@ next
     have "?\<alpha> \<bullet> x \<le> d $ j" 
     proof -
       have "x \<in> polyhedron C d" using C_d `x \<in> integer_hull P` by auto
-      then have "x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d" unfolding polyhedron_def by auto
-      then show ?thesis unfolding mult_mat_vec_def 
-        by (metis C_d \<open>j < nr' \<and> d $ j < row C j \<bullet> y\<close> \<open>x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d\<close>
-            carrier_matD(1) carrier_vecD index_mult_mat_vec less_eq_vec_def)
+      then have Cx: "x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d" unfolding polyhedron_def by auto
+      have j_dim: "j < dim_row C"
+        using \<open>j < nr' \<and> d $ j < row C j \<bullet> y\<close> C_d carrier_matD(1) by auto
+      have j_dim': "j < dim_vec (C *\<^sub>v x)"
+        using j_dim by (simp add: dim_mult_mat_vec)
+      have le_comp: "\<forall>i < dim_vec (C *\<^sub>v x). (C *\<^sub>v x) $ i \<le> d $ i"
+        using Cx C_d by (auto simp: less_eq_vec_def dim_mult_mat_vec)
+      have "(C *\<^sub>v x) $ j \<le> d $ j"
+        using le_comp j_dim' by blast
+      moreover have "(C *\<^sub>v x) $ j = row C j \<bullet> x"
+        using j_dim index_mult_mat_vec by blast
+      ultimately show ?thesis by simp
     qed
     then have "?\<alpha> \<bullet> y \<le> d $ j" 
       using \<open>row C j \<bullet> y \<le> row C j \<bullet> x\<close> by linarith
