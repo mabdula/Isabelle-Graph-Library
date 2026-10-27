@@ -368,9 +368,24 @@ proof -
   have "sub_system A b J = sub_system A b (J \<inter> {0..<nr})"
     using same_subsyst_I_intersect_rows A b 
     by blast
-  then have "dim_row C = card (J \<inter> {0..<nr})" using I_subsys_same_card(2)
-    by (metis (mono_tags, lifting) A assms(5) b carrier_matD(1) carrier_vecD dims_subsyst_same'
-        inf.cobounded2 snd_conv)
+  have "dim_row C = card (J \<inter> {0..<nr})"
+  proof -
+    have same_sub: "sub_system A b J = sub_system A b (J \<inter> {0..<nr})"
+      using same_subsyst_I_intersect_rows A b by blast
+    have pair_eq: "(C, d) = sub_system A b (J \<inter> {0..<nr})"
+      using assms(5) same_sub by simp
+    have subset_J: "J \<inter> {0..<nr} \<subseteq> {0..<nr}"
+      by (rule inf.cobounded2)
+    have snd_eq: "snd (sub_system A b (J \<inter> {0..<nr})) = d"
+      by (simp add: pair_eq[symmetric] snd_conv)
+    have card_eq: "card (J \<inter> {0..<nr}) = dim_vec d"
+      using I_subsys_same_card(2)[OF A b subset_J] snd_eq by simp
+    have dr_eq: "dim_row A = dim_vec b"
+      using A b carrier_matD(1) carrier_vecD by fastforce
+    have "dim_row C = dim_vec d"
+      using dr_eq assms(5) dims_subsyst_same' by blast
+    with card_eq show "dim_row C = card (J \<inter> {0..<nr})" by simp
+  qed
   have "finite (J \<inter> {0..<nr})" 
     by blast
   then have "card (I \<inter> {0..<nr}) < card (J \<inter> {0..<nr})" 
