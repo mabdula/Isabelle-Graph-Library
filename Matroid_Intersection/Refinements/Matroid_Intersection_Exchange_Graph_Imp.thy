@@ -760,8 +760,8 @@ lemma aug_path_imp_rule:
    <\<lambda> res. path_assn n (csr.augmenting_path X) res Ra * gxs X Si Gc * work_assn n Vi Fr Bf Da Pa>"
 proof(cases "find (csr.in_T (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X))")
   case (Some s)
-  have "s \<in> S X"
-    using conjunct2[OF find_SomeD[OF Some]] unfolding csr.srcs(1)[OF X] .
+  have "s \<in> S X" 
+    using find_SomeD Some csr.srcs(1)[OF X] by force
   then have "s < n"
     using S_in_carrier[OF X(3,4)]
     by auto
