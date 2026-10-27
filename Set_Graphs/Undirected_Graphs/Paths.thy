@@ -1430,9 +1430,43 @@ proof-
     qed
   next
     case 2
+    then have vp'_eq: "v # p' = us @ v # v2 # p2"
+      by auto
+    have us_empty: "us = []"
+    proof (cases us)
+      case Nil
+      then show ?thesis by simp
+    next
+      case (Cons c cs)
+      with vp'_eq have "p' = cs @ v # v2 # p2"
+        by auto
+      hence "v \<in> set p'"
+        by auto
+      with assms(4) show ?thesis
+        by blast
+    qed
+    with vp'_eq have p'_eq: "p' = v2 # p2"
+      by auto
+    have p'_nonempty: "p' \<noteq> []"
+      using p'_eq by simp
+    have hd_p': "hd p' = v2"
+      using p'_eq by simp
+    have "v2 \<noteq> v"
+    proof
+      assume v2v: "v2 = v"
+      have "hd p' \<in> set p'"
+        using p'_nonempty by (rule hd_in_set)
+      with hd_p' v2v have "v \<in> set p'"
+        by simp
+      with assms(4) show False
+        by blast
+    qed
+    with \<open>v1 = v \<or> v2 = v\<close> have v1_eq: "v1 = v"
+      by blast
+    have "e = {v, hd p'}"
+      using v1v2p1p2us(1) v1_eq hd_p' by simp
     then show ?thesis
-      using assms(3-) v1v2p1p2us(1)
-      by (metis \<open>v1 = v \<or> v2 = v\<close> append.assoc append_Cons_eq_iff list.sel(1) list.set_intros(1))
+      by simp
   next
     case 3
     then have "v \<notin> set us"
