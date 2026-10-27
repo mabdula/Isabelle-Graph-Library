@@ -1792,9 +1792,48 @@ proof-
     moreover have "v1 \<noteq> v3"
       using v1_neq_v3[OF ass invars(1)].
     ultimately have "{v1', v2'} \<in> insert {v2, v3} (insert {v1, v2} ex)"
-      apply (clarsimp split: if_splits simp add: matching_examined_invar_props[OF invars(2)] insert_commute doubleton_eq_iff)
-      subgoal using matching_examined_invar_props[OF invars(2)] insert_commute by metis
-      done
+    proof -
+      consider (at_v2) "v1' = v2" | (at_v3) "v1' = v3" | (elsewhere) "v1' \<noteq> v2 \<and> v1' \<noteq> v3"
+        by blast
+      then show ?thesis
+      proof cases
+        case at_v2
+        then have e1: "{v2, v2'} \<in> M"
+          using \<open>{v1', v2'} \<in> M\<close> by simp
+        have "v2' = v3"
+          using doubleton_in_matching[OF matching(1)] if1_props(4)[OF ass] e1
+          by blast
+        with at_v2 show ?thesis
+          by simp
+      next
+        case at_v3
+        then have e1: "{v3, v2'} \<in> M"
+          using \<open>{v1', v2'} \<in> M\<close> by simp
+        have C': "{v3, v2} \<in> M"
+          using if1_props(4)[OF ass] by (simp add: insert_commute)
+        have "v2' = v2"
+          using doubleton_in_matching[OF matching(1)] C' e1
+          by blast
+        with at_v3 show ?thesis
+          by (simp add: insert_commute)
+      next
+        case elsewhere
+        then have neq2: "v1' \<noteq> v2" and neq3: "v1' \<noteq> v3"
+          by auto
+        have flabel_eq: "(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab'))) v1' = flabel v1'"
+          using neq2 neq3 by simp
+        have "flabel v1' \<noteq> None"
+          using \<open>(flabel(v2 \<mapsto> (r, lab), v3 \<mapsto> (r', lab'))) v1' \<noteq> None\<close> flabel_eq
+          by simp
+        then obtain rr labl where "flabel v1' = Some (rr, labl)"
+          by auto
+        then have "{v1', v2'} \<in> ex"
+          using matching_examined_invar_props[OF invars(2) \<open>{v1', v2'} \<in> M\<close>]
+          by blast
+        then show ?thesis
+          by blast
+      qed
+    qed
   }
   then show ?thesis
     unfolding matching_examined_invar_def
