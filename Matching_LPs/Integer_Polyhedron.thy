@@ -469,11 +469,19 @@ proof -
             face_is_polyhedron''2(3)[OF A b sub FP]])
   qed
 
-  then obtain C' d' J where C'_d': "((C', d') = sub_system C d J)
+  have C_dims: "dim_row C = dim_vec d"
+    using C_d(1) C_d(2) C_d(4) by simp
+  have C_cols: "dim_col C = n"
+    using C_d(1) C_d(5) by simp
+  have C_carr: "C \<in> carrier_mat (dim_row C) n"
+    using C_cols by blast
+  have d_carr: "d \<in> carrier_vec (dim_row C)"
+    using C_dims by simp
+  obtain C' d' J where C'_d': "((C', d') = sub_system C d J)
                               \<and> F' = {x. C' *\<^sub>v x = d' \<and> x \<in> F}"
-    using char_face1[of C _ d F'] assms(1-5) 
-    unfolding `F = polyhedron C d` 
-    by (smt (verit, best) carrier_matI carrier_vec_dim_vec)
+    using char_face1[of C "dim_row C" d F'] assms(1-5) C_carr d_carr
+    unfolding `F = polyhedron C d`
+    by blast
   obtain A'' b'' where A''_b'': "((A'', b'') = sub_system A b (I' \<union> J))" 
     by (metis surj_pair)
   have "dim_row A'' = dim_vec b''" 
