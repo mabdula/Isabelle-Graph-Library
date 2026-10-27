@@ -964,7 +964,7 @@ lemma face_contains_min_face:
   shows "\<exists> F'. F' \<subseteq> F \<and> min_face P F'"
 proof -
   obtain C d where C_d:"F = polyhedron C d" "dim_row C = dim_vec d" "dim_col C = n"
-    using A P_def assms(4) b face_is_polyhedron by metis
+    using A b P_def assms(4) face_is_polyhedron by blast
   have "F \<noteq> {}" 
     using assms(4) face_non_empty by auto
   obtain F' where "min_face F F'" 
