@@ -27,7 +27,7 @@ proof
     by simp
   then have "(\<exists>x ys. rev xs = x # ys  \<and> n \<le> length ys)"
     using Suc_le_length_iff
-    by metis
+    by blast
   then show "\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys"
     by auto
 next
