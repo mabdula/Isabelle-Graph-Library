@@ -1718,7 +1718,31 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
           fix z
           assume "z \<in> C'" 
           have "z \<noteq> v"
-            by (metis \<open>x \<notin> C\<close> \<open>z \<in> C'\<close> comp_C connected_components_member_sym odd_x)
+          proof (rule ccontr)
+            assume "\<not> z \<noteq> v"
+            then have "z = v" by simp
+            then have "v \<in> C'" using \<open>z \<in> C'\<close> by simp
+            have x_comp: "connected_component (graph_diff G X) x = C'"
+              using odd_x by simp
+            then have "v \<in> connected_component (graph_diff G X) x"
+              using \<open>v \<in> C'\<close> by simp
+            then have "connected_component (graph_diff G X) v = connected_component (graph_diff G X) x"
+              by (rule connected_components_member_eq)
+            also have "\<dots> = C'"
+              using x_comp by simp
+            finally have "connected_component (graph_diff G X) v = C'" .
+            moreover have "connected_component (graph_diff G X) v = C"
+              using comp_C by simp
+            ultimately have "C = C'" by simp
+            have "x \<in> connected_component (graph_diff G X) x"
+              by (rule in_own_connected_component)
+            then have "x \<in> C'"
+              using x_comp by simp
+            then have "x \<in> C"
+              using \<open>C = C'\<close> by simp
+            then show False
+              using \<open>x \<notin> C\<close> by simp
+          qed
           then have "z \<notin> C" 
             by (metis 2 \<open>x \<notin> C\<close> \<open>z \<in> C'\<close> connected_components_member_eq 
                 in_own_connected_component odd_x)
