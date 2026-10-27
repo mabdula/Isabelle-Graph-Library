@@ -2634,9 +2634,22 @@ proof -
       have 1:"unit_vec n i \<bullet> ?y' = ?y' $ i" 
         by (meson \<open>i < n\<close> scalar_prod_left_unit smult_closed y')
       have "y' $ i \<le>  Max (abs ` set\<^sub>v y')" 
-        by (metis (mono_tags, lifting) Max_ge \<open>0 < Max (abs ` set\<^sub>v y')\<close> \<open>i < n\<close> abs_of_pos 
-            carrier_vecD finite_imageI finite_vec_set image_eqI linorder_le_less_linear 
-            order.asym order_less_le_trans vec_setI y')
+        proof -
+  have i_dim: "i < dim_vec y'"
+    using \<open>i < n\<close> y' carrier_vecD by auto
+  have mem: "y' $ i \<in> set\<^sub>v y'"
+    by (rule vec_setI[of y' i "y' $ i", OF refl i_dim])
+  have mem_abs: "\<bar>y' $ i\<bar> \<in> abs ` set\<^sub>v y'"
+    using mem by (rule imageI)
+  have fin: "finite (abs ` set\<^sub>v y')"
+    by (intro finite_imageI finite_vec_set)
+  have le_max: "\<bar>y' $ i\<bar> \<le> Max (abs ` set\<^sub>v y')"
+    using fin mem_abs by (rule Max_ge)
+  have le_abs: "y' $ i \<le> \<bar>y' $ i\<bar>"
+    by simp
+  show "y' $ i \<le> Max (abs ` set\<^sub>v y')"
+    using le_abs le_max by linarith
+qed
       then have "(1 / Max (abs ` set\<^sub>v y')) * (y' $ i) \<le> 1" 
         by (metis \<open>0 < Max (abs ` set\<^sub>v y')\<close> divide_pos_pos mult_le_cancel_left_pos 
             nonzero_eq_divide_eq order_less_irrefl zero_less_one_class.zero_less_one)
