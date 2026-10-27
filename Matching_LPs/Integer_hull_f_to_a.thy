@@ -2742,10 +2742,17 @@ qed
       unfolding mult_mat_vec_def 
       by (simp add: less_eq_vec_def)
     have "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n)  *\<^sub>v ?y' \<le>  ( 1\<^sub>v n @\<^sub>v 1\<^sub>v n)"
-      using `- 1\<^sub>m n *\<^sub>v ?y' \<le> 1\<^sub>v n` `1\<^sub>m n *\<^sub>v ?y' \<le> 1\<^sub>v n` 
-        append_rows_le 
-      by (metis carrier_matI index_one_mat(2) index_one_mat(3) index_uminus_mat(3)
-          one_carrier_vec smult_closed y')
+    proof -
+      have y'_carr: "?y' \<in> carrier_vec n"
+      proof -
+        have "y' \<in> carrier_vec n" using y' by blast
+        then show ?thesis by (simp add: smult_closed)
+      qed
+      show ?thesis
+        using append_rows_le[of "1\<^sub>m n" n n "- 1\<^sub>m n" n "1\<^sub>v n" ?y' "1\<^sub>v n"]
+          `- 1\<^sub>m n *\<^sub>v ?y' \<le> 1\<^sub>v n` `1\<^sub>m n *\<^sub>v ?y' \<le> 1\<^sub>v n` y'_carr
+        by auto
+    qed
     then have "(A @\<^sub>r 1\<^sub>m n @\<^sub>r - 1\<^sub>m n) *\<^sub>v ?y' \<le>  (0\<^sub>v nr @\<^sub>v 1\<^sub>v n @\<^sub>v 1\<^sub>v n)" 
       using `- 1\<^sub>m n *\<^sub>v ?y' \<le> 1\<^sub>v n` 
         append_rows_le[of "A" nr n "1\<^sub>m n @\<^sub>r - 1\<^sub>m n" "2*n" "0\<^sub>v nr" ?y' "1\<^sub>v n @\<^sub>v 1\<^sub>v n"] 
