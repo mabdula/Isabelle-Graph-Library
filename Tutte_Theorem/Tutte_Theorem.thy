@@ -1310,8 +1310,7 @@ proof
       with 2 show ?thesis by simp
     qed
     then have 3:"card (odd_comps_in_diff G (X-{x})) = card X + 1" 
-      by (metis One_nat_def assms(4) barrier_def card.empty card.insert finite.emptyI 
-          insert_absorb insert_not_empty)
+      by (simp add: assms(4)[unfolded barrier_def])
     have "card (odd_comps_in_diff G (X-{x})) \<le> card (X-{x})" 
       by (metis \<open>x \<in> X\<close> assms(2) assms(3) insert_Diff insert_subset tutte_condition_def)
     then show False 
