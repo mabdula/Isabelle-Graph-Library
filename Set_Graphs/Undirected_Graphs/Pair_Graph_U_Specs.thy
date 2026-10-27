@@ -243,7 +243,16 @@ qed
 lemma rep_elim:
   assumes "rep e = rep (uEdge u v)"
   obtains "e = uEdge u v" | "e = uEdge v u"
-  using assms is_rep by (cases e) (metis uedge.inject)
+proof (cases e)
+  case (uEdge a b)
+  with assms have rep_eq: "rep (uEdge a b) = rep (uEdge u v)"
+    by simp
+  from is_rep(2)[of a b] is_rep(2)[of u v] rep_eq
+  have "uEdge a b = uEdge u v \<or> uEdge a b = uEdge v u"
+    by auto
+  with uEdge show ?thesis
+    by (auto intro: that)
+qed
 
 lemma rep_cases:
   assumes "rep e = rep (uEdge u v)"
