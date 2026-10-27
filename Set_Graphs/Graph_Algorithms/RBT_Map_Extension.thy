@@ -321,7 +321,20 @@ next
   case (2 l a uu r)
   have inter_empty:"set (Tree2.inorder l) \<inter> Set.insert a (set (Tree2.inorder r)) = {}"
     using 2(3) bst.simps(2)[simplified Tree2.set_inorder[symmetric]]
-    by (metis (no_types, lifting) Int_emptyI insert_iff not_less_iff_gr_or_eq t_inv_def)
+  proof -
+    have bstX: "bst \<langle>l, (a, uu), r\<rangle>"
+      using 2(3) by (auto simp add: t_inv_def)
+    have l_less: "\<forall>x\<in>set (Tree2.inorder l). x < a"
+      and r_greater: "\<forall>x\<in>set (Tree2.inorder r). a < x"
+      using bstX bst.simps(2)[simplified Tree2.set_inorder[symmetric]] by auto
+    {
+      fix z assume z_mem: "z \<in> set (Tree2.inorder l) \<inter> Set.insert a (set (Tree2.inorder r))"
+      have "z < a" using z_mem l_less by auto
+      moreover have "z = a \<or> a < z" using z_mem r_greater by auto
+      ultimately have False by auto
+    }
+    thus ?thesis by auto
+  qed
   have t_inv_l: "t_inv l" 
     using "2.prems"  bst.simps(2) by(simp add: t_inv_def) 
   have t_inv_r: "t_inv r" 
