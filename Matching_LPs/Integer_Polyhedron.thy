@@ -128,7 +128,12 @@ proof -
     have 3:"{a. a < dim_row A \<and> a \<in> I} = (I \<inter> {0..<dim_row A})" 
       by fastforce
     have "i < card {a. a < dim_row A \<and> a \<in> I}"
-      by (metis 1 asmi dim_submatrix(1))
+    proof -
+      have "i < dim_row (submatrix A I UNIV)"
+        using asmi by (simp add: 1)
+      then show "i < card {a. a < dim_row A \<and> a \<in> I}"
+        by (simp add: dim_submatrix(1))
+    qed
     then have "pick (I  \<inter> {0..<dim_row A}) i= pick I i"
       using pick_reduce_set[of i "dim_row A" I] 3
       by presburger
