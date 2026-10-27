@@ -1166,7 +1166,14 @@ proof (intro invar_props_intros, goal_cases)
         by simp
     qed
     have "(?v, u) \<in> (Graph.digraph_abs G)"
-      by (metis \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> local.Cons stack_expr vwalk_2)
+    proof -
+      have stack_eq: "stack dfs_aux_state = ?v # u # l_tl_tl"
+        using stack_expr local.Cons by simp
+      then have vwalk_cons: "Vwalk.vwalk (Graph.digraph_abs G) (?v # u # l_tl_tl)"
+        using \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> by simp
+      then show "(?v, u) \<in> (Graph.digraph_abs G)"
+        by (rule conjunct1[OF iffD1[OF Vwalk.vwalk_2]])
+    qed
     then have edges_in_G: "{(u, ?v), (?v, u)} \<subseteq> (Graph.digraph_abs G)" by auto
 
     have "set (stack dfs_aux_state) \<subseteq> t_set (seen dfs_aux_state)"
