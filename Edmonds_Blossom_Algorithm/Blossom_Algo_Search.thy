@@ -3259,7 +3259,65 @@ proof-
                    flabel v2 = None \<or> (\<exists>r. flabel v2 = Some (r, Odd))"
           using if2_nholds
           unfolding if2_cond_def
-          by (smt label.exhaust option.exhaust surj_pair that)
+          proof -
+            show ?thesis
+            proof (rule ccontr)
+  assume "\<not> ?thesis"
+  then have v1_ne: "flabel v1 \<noteq> None" and v1_nodd: "\<And>r. flabel v1 \<noteq> Some (r, Odd)"
+    and v2_ne: "flabel v2 \<noteq> None" and v2_nodd: "\<And>r. flabel v2 \<noteq> Some (r, Odd)"
+    by auto
+  have ev1: "\<exists>r. flabel v1 = Some (r, Even)"
+  proof (cases "flabel v1")
+    case None
+    then show ?thesis using v1_ne by simp
+  next
+    case (Some p)
+    obtain r lab where p_def: "p = (r, lab)"
+      by (cases p) auto
+    have flabel_eq: "flabel v1 = Some (r, lab)"
+      using Some p_def by simp
+    have "lab = Even"
+    proof (cases lab)
+      case Even
+      then show ?thesis by simp
+    next
+      case Odd
+      then have "flabel v1 = Some (r, Odd)"
+        using flabel_eq by simp
+      with v1_nodd[of r] show ?thesis by simp
+    qed
+    with flabel_eq show ?thesis by auto
+  qed
+  have ev2: "\<exists>r. flabel v2 = Some (r, Even)"
+  proof (cases "flabel v2")
+    case None
+    then show ?thesis using v2_ne by simp
+  next
+    case (Some p)
+    obtain r lab where p_def: "p = (r, lab)"
+      by (cases p) auto
+    have flabel_eq: "flabel v2 = Some (r, lab)"
+      using Some p_def by simp
+    have "lab = Even"
+    proof (cases lab)
+      case Even
+      then show ?thesis by simp
+    next
+      case Odd
+      then have "flabel v2 = Some (r, Odd)"
+        using flabel_eq by simp
+      with v2_nodd[of r] show ?thesis by simp
+    qed
+    with flabel_eq show ?thesis by auto
+  qed
+  have "{v1, v2} \<in> G"
+    using \<open>e = {v1, v2}\<close> that by simp
+  with ev1 ev2 have "if2_cond flabel"
+    unfolding if2_cond_def by blast
+  then show False
+    using if2_nholds by simp
+qed
+          qed
         moreover have "v1 \<in> e" "v2 \<in> e"
           using \<open>e = {v1, v2}\<close>
           by auto
