@@ -1329,8 +1329,8 @@ next
   have "par' v3 = Some v2"
     by (simp add: par')
   moreover have "par' x = Some y"
-    using sucsuc(3)[symmetric] parent.follow_cons_2(2)[OF **(2)] parent.follow_cons[OF **(2)]
-    by metis
+    using parent.follow_cons_2(2)[OF **(2) sucsuc(3)[symmetric, unfolded \<open>x = v\<close>]] \<open>x = v\<close>
+    by simp
   ultimately have "x = v3 \<longrightarrow> y = v2"
     by auto
   moreover  have "x = v2 \<Longrightarrow> y \<noteq> v3"
