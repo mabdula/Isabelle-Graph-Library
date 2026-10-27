@@ -986,9 +986,18 @@ qed
       using \<open>connected_component (graph_diff G X) x' = C\<close> by simp
   qed
   then have "e \<subseteq> C" 
-    by (metis \<open>connected_component (graph_diff G X) x' = C\<close> \<open>e = {x', y}\<close> 
-        \<open>x \<in> e \<and> e \<in> graph_diff G X\<close> connected_components_member_sym insert_subset singletonD 
-        subsetI vertices_edges_in_same_component)
+  proof -
+    have "x' \<in> connected_component (graph_diff G X) x'"
+      by (rule in_own_connected_component)
+    then have "x' \<in> C"
+      using \<open>connected_component (graph_diff G X) x' = C\<close> by simp
+    moreover have "y \<in> connected_component (graph_diff G X) y"
+      by (rule in_own_connected_component)
+    then have "y \<in> C"
+      using \<open>connected_component (graph_diff G X) y = C\<close> by simp
+    ultimately show "e \<subseteq> C"
+      using \<open>e = {x', y}\<close> by auto
+  qed
   then have "e \<in> (component_edges G C)" unfolding component_edges_def 
     using \<open>e = {x', y}\<close> \<open>x \<in> e \<and> e \<in> graph_diff G X\<close> graph_diff_subset insert_Diff insert_subset 
     by fastforce
