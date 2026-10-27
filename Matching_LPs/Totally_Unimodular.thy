@@ -915,8 +915,26 @@ proof
     case True
     have 24:"(submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) $$ (i, j) = 
           (submatrix A I J) $$ (i, j)" 
-      by (smt (verit, best) Missing_Matrix.append_rows_nth(1) True 19 21 20 23 asmi asmj
-          carrier_matI index_row(1))
+    proof -
+      let ?SA = "submatrix A I J"
+      let ?SB = "submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J"
+      have SA_carr: "?SA \<in> carrier_mat (dim_row ?SA) (dim_col ?SA)"
+        by (rule carrier_matI) simp_all
+      have SB_carr: "?SB \<in> carrier_mat (dim_row ?SB) (dim_col ?SA)"
+        by (rule carrier_matI) (simp_all add: 20 23)
+      have dc: "dim_col (?SA @\<^sub>r ?SB) = dim_col ?SA"
+        using carrier_matD(2)[OF carrier_append_rows[OF SA_carr SB_carr]] .
+      have row_eq: "Matrix.row (?SA @\<^sub>r ?SB) i = Matrix.row ?SA i"
+        using Missing_Matrix.append_rows_nth(1)[OF SA_carr SB_carr True] .
+      have L: "(?SA @\<^sub>r ?SB) $$ (i, j) = Matrix.row (?SA @\<^sub>r ?SB) i $v j"
+        by (rule index_row(1)[symmetric, OF asmi asmj])
+      have jSA: "j < dim_col ?SA"
+        by (rule asmj[unfolded dc])
+      have R: "?SA $$ (i, j) = Matrix.row ?SA i $v j"
+        by (rule index_row(1)[symmetric, OF True jSA])
+      show "(?SA @\<^sub>r ?SB) $$ (i, j) = ?SA $$ (i, j)"
+        using L R row_eq by simp
+    qed
     have 26:"(submatrix A I J) $$ (i, j) = A $$ (pick I i, pick J j)"
       by (metis (no_types, lifting) True 19 21 20 asmj dim_submatrix(1-2) submatrix_index)
     have 2: "pick I i < nr1"
