@@ -321,7 +321,14 @@ proof(rule ccontr, goal_cases)
   hence "follow x = [x]@p2@[x]@p3" 
     by (simp add: follow_append)
   moreover have "follow x = [x]@p3"
-    by (metis append.assoc append_Cons calculation follow_append)
+  proof -
+    have "follow v = (p1 @ [x] @ p2) @ x # p3"
+      using split by simp
+    then have "follow x = x # p3"
+      by (rule follow_append)
+    then show "follow x = [x] @ p3"
+      by simp
+  qed
   ultimately show False 
     by simp
 qed
