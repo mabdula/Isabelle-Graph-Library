@@ -466,7 +466,20 @@ lemma vwalk_ConsE:
   assumes "vwalk E (a # p)" "p \<noteq> []"
   obtains e where "e \<in> E" "e = (a, hd p)" "vwalk E p"
   using assms
-  by (metis vwalk_2 hd_Cons_tl)
+proof -
+  from assms(2) have p_eq: "p = hd p # tl p"
+    by (simp add: hd_Cons_tl)
+  from assms(1) p_eq have aw: "vwalk E (a # hd p # tl p)"
+    by simp
+  from aw have conj: "(a, hd p) \<in> E \<and> vwalk E (hd p # tl p)"
+    by (simp add: vwalk_2)
+  hence edge: "(a, hd p) \<in> E" and walk_tl: "vwalk E (hd p # tl p)"
+    by auto
+  from walk_tl p_eq have walk_p: "vwalk E p"
+    by simp
+  show ?thesis
+    using edge walk_p that[of "(a, hd p)"] by blast
+qed
 
 lemma vwalk_reachable:
   "p \<noteq> [] \<Longrightarrow> vwalk E p \<Longrightarrow> hd p \<rightarrow>\<^sup>*\<^bsub>E\<^esub> last p"
