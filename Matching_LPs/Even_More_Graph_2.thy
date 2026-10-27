@@ -141,9 +141,27 @@ proof -
     qed
   have "distinct (vertices_list E)" 
     by (simp add: \<open>finite (Vs E)\<close> distinct_vert_list)
-  then show ?thesis 
-    unfolding vertices_list_def
-    by (metis \<open>finite (Vs E)\<close> assms distinct_card nth_eq_iff_index_eq set_set_to_list)
+  then show ?thesis
+  proof -
+    have set_eq: "set (vertices_list E) = Vs E"
+      unfolding vertices_list_def
+      using set_set_to_list[OF \<open>finite (Vs E)\<close>] by simp
+    have len_eq: "length (vertices_list E) = card (Vs E)"
+    proof -
+      have "length (vertices_list E) = card (set (vertices_list E))"
+        using distinct_card[OF \<open>distinct (vertices_list E)\<close>] by simp
+      also have "\<dots> = card (Vs E)"
+        by (simp add: set_eq)
+      finally show ?thesis .
+    qed
+    have i_lt: "i < length (vertices_list E)"
+      using assms(1) len_eq by simp
+    have j_lt: "j < length (vertices_list E)"
+      using assms(2) len_eq by simp
+    show ?thesis
+      using nth_eq_iff_index_eq[OF \<open>distinct (vertices_list E)\<close> i_lt j_lt] assms(3)
+      by auto
+  qed
 qed
 
 end
