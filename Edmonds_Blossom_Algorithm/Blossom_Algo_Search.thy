@@ -1140,7 +1140,21 @@ next
   ultimately have "v1' = v3 \<longrightarrow> v2' = v2"
     by auto
   moreover  have "v1' = v2 \<Longrightarrow> v2' \<noteq> v3"
-    by (metis (no_types, lifting) "**"(2) "3.hyps"(2) \<open>v1' = v\<close> assms(1) invars(4) map_upd_Some_unfold not_Cons_self2 par' parent.follow_cons_2(1) parent.follow_cons_2(2) v1_neq_v3)
+  proof -
+    assume "v1' = v2"
+    have "v2 \<noteq> v3"
+      using v1_neq_v2_neq_v3(2)[OF assms(1)] .
+    then have "par' v2 = Some v1"
+      by (simp add: par')
+    with \<open>v1' = v2\<close> have "par' v1' = Some v1"
+      by simp
+    with \<open>par' v1' = Some v2'\<close> have "v2' = v1"
+      by simp
+    moreover have "v1 \<noteq> v3"
+      using v1_neq_v3[OF assms(1) invars(4)] .
+    ultimately show "v2' \<noteq> v3"
+      by simp
+  qed
   ultimately have "v2' \<noteq> v3"
     by (metis \<open>par' v1' = Some v2'\<close> \<open>{v2, v3} \<in> M\<close> ass flabel_invar_def flabel_par_invar_props(2) fun_upd_apply if1_props(3) invars(4) invars(5) par')
   moreover have "v3 \<noteq> v2"
