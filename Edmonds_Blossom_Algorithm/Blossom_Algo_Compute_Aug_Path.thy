@@ -131,18 +131,23 @@ lemma compute_alt_path_res_from_tree:
   assumes compute_alt_path_res: "Some (p1, p2) = compute_alt_path" and
     pfxs_are_pfxs: "(Some pfx1, Some pfx2) = longest_disj_pfx p1 p2"
   shows "\<exists>p. p1 = pfx1 @ p \<and> p2 = pfx2 @ p"
-proof-
-  obtain post1 post2 where "p1 = pfx1 @ post1" "p2 = pfx2 @ post2"
+proof -
+  obtain q1 q2 where q1_eq: "p1 = pfx1 @ q1" and q2_eq: "p2 = pfx2 @ q2"
     using disj_pref_append1 disj_pref_append2 pfxs_are_pfxs
     by blast
-  moreover have "pfx1 = (butlast pfx1) @ [last pfx1]"
-    "pfx2 = (butlast pfx2) @ [last pfx2]"
+  have pfx1_split: "pfx1 = butlast pfx1 @ [last pfx1]"
+    and pfx2_split: "pfx2 = butlast pfx2 @ [last pfx2]"
     using first_pfx_nempty snd_pfx_nempty pfxs_are_pfxs by force+
-  moreover have "last pfx1 = last pfx2"
+  have last_eq: "last pfx1 = last pfx2"
     using pfx_common_end pfxs_are_pfxs by fastforce
-  ultimately show ?thesis
-    using compute_alt_path_res from_tree
-    by (metis (no_types, lifting) append.assoc append_Cons)
+  have p1_split: "p1 = butlast pfx1 @ last pfx1 # q1"
+    using q1_eq pfx1_split by simp
+  have p2_split: "p2 = butlast pfx2 @ last pfx1 # q2"
+    using q2_eq pfx2_split last_eq by simp
+  have "q1 = q2"
+    using from_tree[OF compute_alt_path_res[symmetric] conjI[OF p1_split p2_split]] .
+  then show ?thesis
+    using q1_eq q2_eq by blast
 qed
 
 lemma compute_alt_path_res_neq_lasts:
