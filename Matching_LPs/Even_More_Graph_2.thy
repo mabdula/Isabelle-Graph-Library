@@ -92,7 +92,13 @@ lemma vert_list_el_in_VsE:
   shows "vertices_list E ! k \<in> Vs E"
 proof -
   have "finite (Vs E)" 
-    by (metis assms(1) card.infinite not_less_zero)
+proof (rule ccontr)
+  assume "infinite (Vs E)"
+  then have "card (Vs E) = 0"
+    by (rule card.infinite)
+  with assms(1) show False
+    by simp
+qed
   have "set (vertices_list E) = Vs E" 
     unfolding vertices_list_def using set_set_to_list 
     using \<open>finite (Vs E)\<close> by blast
