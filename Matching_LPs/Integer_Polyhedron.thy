@@ -52,8 +52,14 @@ proof-
   let ?emp_A = "fst (sub_system A b {})"
   let ?emp_b = "snd (sub_system A b {})" 
   have "{x. ?emp_A *\<^sub>v x = ?emp_b \<and> x \<in> P} = P" 
-    by (smt (verit, ccfv_SIG) Collect_cong P_def all_elem_fulfill_empty mem_Collect_eq 
-        polyhedron_def prod.collapse)
+  proof -
+    have "(?emp_A, ?emp_b) = sub_system A b {}"
+      by (simp add: prod.collapse)
+    then have "\<And>x. ?emp_A *\<^sub>v x = ?emp_b"
+      using all_elem_fulfill_empty by blast
+    then show "{x. ?emp_A *\<^sub>v x = ?emp_b \<and> x \<in> P} = P"
+      by blast
+  qed
   then have "dim_vec ?emp_b \<in> ?M" using assms(4) 
     by (smt (verit, best) Collect_cong mem_Collect_eq prod.collapse)
   then have "?M \<noteq> {}"  
