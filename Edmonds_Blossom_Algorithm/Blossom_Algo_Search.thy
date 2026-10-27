@@ -1131,8 +1131,12 @@ next
   have "par' v3 = Some v2"
     by (simp add: par')
   moreover have "par' v1' = Some v2'"
-    using 3(2)[symmetric] parent.follow_cons_2(2)[OF **(2)] parent.follow_cons[OF **(2)]
-    by metis
+  proof -
+    have "parent_spec.follow par' v1' = v1' # v2' # vs"
+      using 3(2)[symmetric] \<open>v1' = v\<close> by simp
+    then show ?thesis
+      using parent.follow_cons_2(2)[OF **(2)] by blast
+  qed
   ultimately have "v1' = v3 \<longrightarrow> v2' = v2"
     by auto
   moreover  have "v1' = v2 \<Longrightarrow> v2' \<noteq> v3"
