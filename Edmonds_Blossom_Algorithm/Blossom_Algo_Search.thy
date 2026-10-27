@@ -2719,8 +2719,49 @@ proof-
         by (auto simp: card_Suc_eq numeral_2_eq_2 subset_iff)
       then have "\<exists>e1 e2. e1 \<noteq> e2 \<and> e1 \<in> M \<and> e2 \<in> M \<and> e1 \<inter> e2 \<noteq> empty" if "2 \<le> card (M \<inter> es s)"
         using that u1u2u3(2-4)
-        apply(simp add: card_le_Suc_iff numeral_2_eq_2 Int_def ex_in_conv)
-        by (smt insert_compr mem_Collect_eq)
+      proof -
+        have es_eq: "es s = {{u1, u2}, {u2, u3}, {u1, u3}}"
+          unfolding es_def using u1u2u3
+          by (auto simp: card_Suc_eq numeral_2_eq_2 subset_iff)
+        have M_es_subset: "M \<inter> es s \<subseteq> {{u1, u2}, {u2, u3}, {u1, u3}}"
+          by (simp add: es_eq)
+        have M_es_finite: "finite (M \<inter> es s)"
+        proof (rule finite_subset)
+          show "M \<inter> es s \<subseteq> {{u1, u2}, {u2, u3}, {u1, u3}}" by (rule M_es_subset)
+          show "finite {{u1, u2}, {u2, u3}, {u1, u3}}" by simp
+        qed
+        have "M \<inter> es s \<noteq> {}"
+          using that by fastforce
+        then obtain e1 where e1: "e1 \<in> M \<inter> es s"
+          by blast
+        have card_diff: "card (M \<inter> es s - {e1}) = card (M \<inter> es s) - 1"
+          using M_es_finite e1 by (simp add: card_Diff_singleton)
+        have "card (M \<inter> es s - {e1}) \<ge> 1"
+          using that card_diff by linarith
+        then have "M \<inter> es s - {e1} \<noteq> {}"
+          by fastforce
+        then obtain e2 where e2: "e2 \<in> M \<inter> es s - {e1}"
+          by blast
+        have e2_props: "e2 \<in> M \<inter> es s" "e2 \<noteq> e1"
+          using e2 by auto
+        have e1_mem: "e1 \<in> {{u1, u2}, {u2, u3}, {u1, u3}}"
+          using e1 M_es_subset by auto
+        have e2_mem: "e2 \<in> {{u1, u2}, {u2, u3}, {u1, u3}}"
+          using e2_props(1) M_es_subset by auto
+        have "e1 \<inter> e2 \<noteq> {}"
+        proof -
+          from e1_mem have "e1 = {u1, u2} \<or> e1 = {u2, u3} \<or> e1 = {u1, u3}"
+            by auto
+          moreover from e2_mem have "e2 = {u1, u2} \<or> e2 = {u2, u3} \<or> e2 = {u1, u3}"
+            by auto
+          ultimately show ?thesis
+            using e2_props(2) by auto
+        qed
+        moreover have "e1 \<noteq> e2" "e1 \<in> M" "e2 \<in> M"
+          using e1 e2_props by auto
+        ultimately show ?thesis
+          by blast
+      qed
       then have "card (M \<inter> es s) \<le> 1"
         using \<open>matching M\<close>
         by(fastforce simp add: matching_def)
