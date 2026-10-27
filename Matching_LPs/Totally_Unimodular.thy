@@ -1026,8 +1026,28 @@ proof
     have 32:"(submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) 
               $$ (i - card {i. i < nr1 \<and> i \<in> I}, j) = 
           B $$ (pick ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) (i - card {i. i < nr1 \<and> i \<in> I}), pick J j)"
-      by (metis (no_types, lifting) False 19 21 23 17 18 add_diff_inverse_nat asmi asmj
-          dim_submatrix(1-2) nat_add_left_cancel_less submatrix_index)
+    proof -
+      have dimB_row: "dim_row B = nr2"
+        using carrier_matD(1)[OF assms(2)] .
+      have dimB_col: "dim_col B = n"
+        using carrier_matD(2)[OF assms(2)] .
+      have 33: "i - card {i. i < nr1 \<and> i \<in> I} <
+                card {k. k < dim_row B \<and> k \<in> ((\<lambda>i. i - nr1) ` (I - {0..<nr1}))}"
+      proof -
+        have eq1: "card {k. k < dim_row B \<and> k \<in> ((\<lambda>i. i - nr1) ` (I - {0..<nr1}))} =
+                   card {i. i < nr2 \<and> i \<in> ((\<lambda>i. i - nr1) ` (I - {0..<nr1}))}"
+          using dimB_row by simp
+        show ?thesis using eq1 15 27 5 6 by presburger
+      qed
+      have 34: "j < card {k. k < dim_col B \<and> k \<in> J}"
+      proof -
+        have eq2: "card {k. k < dim_col B \<and> k \<in> J} = card {j'. j' < n \<and> j' \<in> J}"
+          using dimB_col by simp
+        show ?thesis using eq2 19 21 asmj by presburger
+      qed
+      show ?thesis
+        by (rule submatrix_index; simp add: 33 34)
+    qed
     have 31:"(submatrix (A @\<^sub>r B) I J) $$ (i, j) = (A @\<^sub>r B) $$ (pick I i, pick J j)"
       using \<open>submatrix (A @\<^sub>r B) I J $$ (i, j) = (A @\<^sub>r B) $$ (pick I i, pick J j)\<close>
       by fastforce
