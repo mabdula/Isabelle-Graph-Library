@@ -4,11 +4,8 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     AI_Provenance
     Verified_SAT_Based_AI_Planning
     Undirected_Set_Graphs
-<<<<<<< HEAD
-  directories Refinements
-=======
     Data_Structures
->>>>>>> main
+  directories Refinements
   theories
     RBT_Map_Extension
     DFS
