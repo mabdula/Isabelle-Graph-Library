@@ -850,7 +850,22 @@ proof
   then have 16:"card {i. i < nr1 + nr2  \<and> i \<in> I} = 
         card {i. i < nr1 \<and> i \<in> I} + card {i. i \<ge> nr1 \<and> i < nr1 + nr2 \<and> i \<in> I}"
     using 1 
-    by (metis (mono_tags, lifting) 13 card_Un_disjoint finite_Int finite_Un finite_atLeastLessThan)
+  proof -
+    have fin_all: "finite {i. i < nr1 + nr2 \<and> i \<in> I}"
+      by simp
+    have fin1: "finite {i. i < nr1 \<and> i \<in> I}"
+      by simp
+    have fin2: "finite {i. i \<ge> nr1 \<and> i < nr1 + nr2 \<and> i \<in> I}"
+      by (rule finite_subset[OF _ fin_all]) auto
+    have disj: "{i. i < nr1 \<and> i \<in> I} \<inter> {i. i \<ge> nr1 \<and> i < nr1 + nr2 \<and> i \<in> I} = {}"
+      by fastforce
+    have "card {i. i < nr1 + nr2 \<and> i \<in> I} =
+          card ({i. i < nr1 \<and> i \<in> I} \<union> {i. i \<ge> nr1 \<and> i < nr1 + nr2 \<and> i \<in> I})"
+      using 1 by simp
+  also have "... = card {i. i < nr1 \<and> i \<in> I} + card {i. i \<ge> nr1 \<and> i < nr1 + nr2 \<and> i \<in> I}"
+    using card_Un_disjoint[OF fin1 fin2 disj] .
+  finally show ?thesis .
+  qed
   have 17:"dim_row (submatrix A I J @\<^sub>r submatrix B ((\<lambda> i. i - nr1) ` (I - {0..<nr1})) J) =
          dim_row (submatrix A I J) + dim_row (submatrix B ((\<lambda> i. i - nr1) ` (I - {0..<nr1})) J)"
     by (simp add: append_rows_def)
