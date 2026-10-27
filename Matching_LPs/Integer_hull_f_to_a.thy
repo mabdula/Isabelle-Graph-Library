@@ -2576,7 +2576,22 @@ proof -
     then have "Max (abs ` (vec_set y')) = 0" 
       using \<open>\<not> 0 < Max (abs ` set\<^sub>v y')\<close> by linarith
     then have "\<forall> y' \<in> (abs ` set\<^sub>v y'). y' = 0" 
-      by (metis Max_ge \<open>\<forall>y'\<in>abs ` set\<^sub>v y'. 0 \<le> y'\<close> \<open>finite (abs ` set\<^sub>v y')\<close> order_antisym_conv)
+    proof -
+      assume Max0: "Max (abs ` set\<^sub>v y') = 0"
+      show "\<forall>y' \<in> abs ` set\<^sub>v y'. y' = 0"
+      proof (intro ballI)
+        fix z
+        assume z_mem: "z \<in> abs ` set\<^sub>v y'"
+        have le0: "z \<le> Max (abs ` set\<^sub>v y')"
+          using Max_ge[of "abs ` set\<^sub>v y'" z] z_mem \<open>finite (abs ` set\<^sub>v y')\<close> by blast
+        also have "\<dots> = 0"
+          using Max0 by simp
+        finally have z_le: "z \<le> 0" .
+        have z_ge: "0 \<le> z"
+          using z_mem \<open>\<forall>y \<in> abs ` set\<^sub>v y'. 0 \<le> y\<close> by blast
+        from z_le z_ge show "z = 0" by simp
+      qed
+    qed
     then have "\<forall>y' \<in> set\<^sub>v y'. y' = 0" 
       by auto
     then have "y' = 0\<^sub>v n" unfolding zero_vec_def 
