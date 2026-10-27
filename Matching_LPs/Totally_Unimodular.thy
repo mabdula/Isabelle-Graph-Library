@@ -1271,7 +1271,17 @@ proof
     by force
   then show 14:"dim_col (mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j) =
              dim_col (submatrix A I (J - {pick J j}))" 
-    by (metis 10 11 12)
+  proof -
+    have "dim_col (mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j) = dim_col B - 1"
+      using 10 by simp
+    also have "\<dots> = card {i. i < dim_col A \<and> i \<in> J} - 1"
+      using 12 by simp
+    also have "\<dots> = card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
+      using 21 by simp
+    also have "\<dots> = dim_col (submatrix A I (J - {pick J j}))"
+      using 11 by simp
+    finally show ?thesis .
+  qed
   fix i k
   assume asmi: "i < dim_row (submatrix A I (J - {pick J j}))"
   assume asmk: "k < dim_col (submatrix A I (J - {pick J j}))"
