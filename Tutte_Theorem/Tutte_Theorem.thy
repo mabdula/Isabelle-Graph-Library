@@ -1821,7 +1821,15 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
             then have 4:"C' \<in> connected_components (graph_diff G X)" 
               by (simp add: C' components_is_union_even_and_odd)
             have "hd p \<in> C'" 
-              by (metis \<open>hd p = x\<close> in_own_connected_component odd_x)
+            proof -
+              have eq: "connected_component (graph_diff G X) x = C'"
+                using odd_x by simp
+              have "x \<in> connected_component (graph_diff G X) x"
+                by (rule in_own_connected_component)
+              with eq have "x \<in> C'" by simp
+              then show ?thesis
+                using \<open>hd p = x\<close> by simp
+            qed
             have "(component_edges (graph_diff G X) C') \<noteq> {}" 
               using 3 by auto
             then have "path (component_edges (graph_diff G X) C')  p" 
