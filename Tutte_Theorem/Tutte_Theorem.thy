@@ -1178,7 +1178,7 @@ proof
         then have "e \<inter> X = {}" 
           by (meson Int_emptyI \<open>\<forall>x\<in>set p. x \<notin> X\<close> v_in_edge_in_path_gen)
         then show "e \<in>  (graph_diff G X)" 
-          by (metis (mono_tags, lifting) asme 1 graph_diff_def mem_Collect_eq subsetD)
+          using asme 1 unfolding graph_diff_def by blast
       qed
       then have "walk_betw (graph_diff G X) y p u" 
         by (smt (z3) False One_nat_def Suc_1 Suc_leI Suc_lessI p diff_is_0_eq'
