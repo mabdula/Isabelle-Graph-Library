@@ -802,15 +802,46 @@ proof -
       using  new_components_intersection_old_is_empty[of G X C "{x}"] assms 
       by simp
     then have "Vs (component_edges(graph_diff G X) C) = C" 
-      by (smt (verit, best) IntI Nat.add_diff_assoc2 One_nat_def Suc_leI Un_insert_right 
-         \<open>card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x}) = 1\<close>
-         \<open>card (odd_comps_in_diff G X - {C}) = card X - 1\<close> \<open>card (odd_comps_in_diff G X) = card X\<close>
-        odd_diffUn \<open>finite (odd_comps_in_diff (component_edges (graph_diff G X) C) {x})\<close> 
-        add.right_neutral add_Suc_right assms(1) assms(3) assms(6) assms(7) 
-        boolean_algebra_cancel.sup0 card.empty card.insert card_Un_disjoint card_gt_0_iff 
-        component_in_E diff_add_inverse2 diff_components_finite diff_is_0_eq'
-        diff_odd_component_parity odd_comps_in_diff_not_in_X empty_iff finite_Diff insert_subset
-        nat_le_linear odd_card_imp_not_empty odd_one subsetD)
+    proof -
+      have C_odd_comp: "C \<in> odd_components (graph_diff G X)"
+      proof (rule ccontr)
+        assume "C \<notin> odd_components (graph_diff G X)"
+        then have "C \<in> singl_in_diff G X"
+          using assms(6) unfolding odd_comps_in_diff_def by blast
+        then obtain v where v: "C = {v}"
+          unfolding singl_in_diff_def by blast
+        have ce_empty: "component_edges (graph_diff G X) C = {}"
+        proof (rule ccontr)
+          assume "component_edges (graph_diff G X) C \<noteq> {}"
+          then obtain e where e: "e \<in> component_edges (graph_diff G X) C" by blast
+          then have e_sub: "e \<subseteq> C" unfolding component_edges_def by blast
+          have e_in_gd: "e \<in> graph_diff G X" using e unfolding component_edges_def by blast
+          have "e = {} \<or> e = {v}" using e_sub v by blast
+          then have card_le1: "card e \<le> 1" by auto
+          have e_in_G: "e \<in> G" using e_in_gd graph_diff_subset by blast
+          have card_eq2: "card e = 2" using assms(1) e_in_G card_edge by blast
+          show False using card_le1 card_eq2 by simp
+        qed
+        then have Vs_empty: "Vs (component_edges (graph_diff G X) C) = {}"
+          by (simp add: Vs_def)
+        have "\<exists>D. D \<in> odd_comps_in_diff (component_edges (graph_diff G X) C) {x}"
+          using asm by (simp add: ex_in_conv)
+        then obtain D where D: "D \<in> odd_comps_in_diff (component_edges (graph_diff G X) C) {x}"
+          by blast
+        have D_sub: "D \<subseteq> Vs (component_edges (graph_diff G X) C)"
+          using D component_in_E by blast
+        then have D_empty: "D = {}" using Vs_empty by blast
+        have D_nonempty: "D \<noteq> {}"
+          using D \<open>graph_invar (component_edges (graph_diff G X) C)\<close> odd_components_nonempty by blast
+        show False using D_empty D_nonempty by blast
+      qed
+      have C_cc: "C \<in> connected_components (graph_diff G X)"
+        using C_odd_comp
+        by (auto simp: odd_components_def odd_component_def connected_components_def)
+      have "Vs (component_edges (graph_diff G X) C) = C"
+        using vs_connected_component[OF graph_invar_diff[OF assms(1)] C_cc] by simp
+      then show ?thesis .
+    qed
     then show ?thesis 
       by (smt (verit, ccfv_threshold) IntI Nat.add_diff_assoc2 One_nat_def Suc_leI Un_insert_right 
          \<open>(odd_comps_in_diff G X - {C}) \<inter> 
