@@ -825,8 +825,29 @@ qed
           using split neg \<open>A' *\<^sub>v x = b'\<close> by simp
       qed
       then have "\<forall>i \<in> {dim_row A..<dim_row C}.  (row C i) \<bullet> x = (d $ i)"
-        by (metis A 5 \<open>dim_row C = nr + dim_row (A' @\<^sub>r - A')\<close> add.commute atLeastLessThan_iff 
-            carrier_matD(1) index_mult_mat_vec less_diff_conv2)
+      proof -
+        have dimA: "dim_row A = nr" using A carrier_matD(1) by blast
+        show "\<forall>i \<in> {dim_row A..<dim_row C}.  (row C i) \<bullet> x = (d $ i)"
+        proof
+          fix i
+          assume "i \<in> {dim_row A..<dim_row C}"
+          then have i_range: "i \<ge> nr" "i < dim_row C" using dimA by auto
+          then have i_in: "i \<in> {nr..<dim_row C}" by simp
+          have "row C i = row (A' @\<^sub>r - A') (i - nr) \<and> d $ i = (b' @\<^sub>v (-b')) $ (i - nr)"
+            using 5 i_in by blast
+          then have row_eq: "row C i = row (A' @\<^sub>r - A') (i - nr)"
+            and d_eq: "d $ i = (b' @\<^sub>v (-b')) $ (i - nr)"
+            by auto
+          have i_lt: "i - nr < dim_row (A' @\<^sub>r - A')"
+            using i_range \<open>dim_row C = nr + dim_row (A' @\<^sub>r - A')\<close> by linarith
+          have "((A' @\<^sub>r (-A')) *\<^sub>v x) $ (i - nr) = (b' @\<^sub>v (-b')) $ (i - nr)"
+            using \<open>(A' @\<^sub>r (-A')) *\<^sub>v x = (b' @\<^sub>v (-b'))\<close> by simp
+          then have "row (A' @\<^sub>r - A') (i - nr) \<bullet> x = (b' @\<^sub>v (-b')) $ (i - nr)"
+            using index_mult_mat_vec i_lt by simp
+          then show "(row C i) \<bullet> x = (d $ i)"
+            using row_eq d_eq by simp
+        qed
+      qed
       then have "\<forall>i \<in> J \<inter> {0..<dim_row C}.  (row C i) \<bullet> x = (d $ i)" 
         by (metis IntD1 IntD2 IntI 6 atLeastLessThan_iff le_neq_implies_less nat_le_linear)
       then have "\<forall> i < dim_row C'. (row C' i) \<bullet> x =  (d' $ i)"
