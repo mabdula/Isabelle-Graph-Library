@@ -702,7 +702,7 @@ next
     then show ?thesis
       using cons1
       apply (auto simp add: Let_def split: if_splits prod.splits option.splits)
-      by (metis option.simps(3))+
+      by (drule sym [where s = "longest_disj_pfx (a1' # l1') l2"], drule cons1.IH, simp)+
   qed
 qed
 
