@@ -791,7 +791,12 @@ proof(rule ccontr)
       using \<open>1 \<le> card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x})\<close> 
             \<open>card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x}) \<le> 2\<close> by linarith
     then have "\<exists>!C'. C' \<in> (odd_comps_in_diff (component_edges(graph_diff G X) C) {x})"
-      by (metis card_1_singletonE empty_iff insert_iff)
+proof -
+        obtain C' where "odd_comps_in_diff (component_edges (graph_diff G X) C) {x} = {C'}"
+          using \<open>card (odd_comps_in_diff (component_edges (graph_diff G X) C) {x}) = 1\<close>
+          by (rule card_1_singletonE)
+        then show ?thesis by auto
+      qed
     have "(odd_comps_in_diff G X - {C}) \<inter> 
           odd_comps_in_diff (component_edges (graph_diff G X) C) {x} = {}"
       using  new_components_intersection_old_is_empty[of G X C "{x}"] assms 
