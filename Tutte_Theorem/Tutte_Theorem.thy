@@ -1928,7 +1928,9 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
           using C'indiff e \<open>e \<subseteq> C'\<close> odd_x by fastforce
       qed
       then have odd_sub:"odd_comps_in_diff G X \<subseteq> odd_comps_in_diff G (X \<union> {v})"
-        by (metis 6 odd_comps_in_diff_def sup.mono)
+        unfolding odd_comps_in_diff_def
+        using 6
+        by (rule Un_mono)
       show False
       proof(cases "\<exists>x \<in> (C-{v}). x \<notin> Vs (graph_diff G (X \<union> {v}))")
         case True
