@@ -1603,7 +1603,28 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       by (simp add: "less.prems"(1))
     then  have "finite ?B" by auto
     then  have "\<exists>X \<in> ?B. \<forall> Y \<in> ?B. Y \<noteq> X \<longrightarrow> \<not> (X \<subseteq> Y)" 
-      by (metis (no_types, lifting) exBarr empty_iff finite_has_maximal mem_Collect_eq)
+      proof -
+  have finVs: "finite (Vs G)"
+    using less.prems(1) by simp
+  have Bsub: "?B \<subseteq> Pow (Vs G)"
+    by auto
+  have finPow: "finite (Pow (Vs G))"
+    using finVs by simp
+  have fin: "finite ?B"
+    by (rule finite_subset[OF Bsub finPow])
+  obtain X0 where X0facts: "X0 \<subseteq> Vs G" "barrier G X0"
+    using exBarr by blast
+  have X0B: "X0 \<in> ?B"
+    using X0facts by simp
+  have Bne: "?B \<noteq> {}"
+    using X0B by blast
+  obtain m where mB: "m \<in> ?B" and mmax: "\<forall>b\<in>?B. m \<subseteq> b \<longrightarrow> m = b"
+    using finite_has_maximal[OF fin Bne] by blast
+  have "\<forall>Y\<in>?B. Y \<noteq> m \<longrightarrow> \<not> (m \<subseteq> Y)"
+    using mmax by auto
+  then show "\<exists>X\<in>?B. \<forall>Y\<in>?B. Y \<noteq> X \<longrightarrow> \<not> (X \<subseteq> Y)"
+    using mB by blast
+      qed
     then obtain X where X_max:"X \<in> ?B \<and> ( \<forall> Y \<in> ?B. Y \<noteq> X \<longrightarrow> \<not> (X \<subseteq> Y))"
       by meson
     then have X_barr:"X \<subseteq> Vs G \<and> barrier G X" 
