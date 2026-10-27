@@ -2686,8 +2686,14 @@ qed
         using \<open>i < n\<close> row_one 
         by simp 
       have 3:"- unit_vec n i \<bullet> ?y' = - ?y' $ i" 
-        by (metis \<open>i < n\<close> scalar_prod_left_unit smult_closed 
-            uminus_scalar_prod unit_vec_carrier y')
+      proof -
+        have y'_carr: "?y' \<in> carrier_vec n"
+          using y' by (blast intro: smult_closed)
+        have "unit_vec n i \<bullet> ?y' = ?y' $ i"
+          using \<open>i < n\<close> y'_carr scalar_prod_left_unit by blast
+        then show "- unit_vec n i \<bullet> ?y' = - ?y' $ i"
+          using uminus_scalar_prod[OF unit_vec_carrier y'_carr, symmetric] by simp
+      qed
       have "- y' $ i \<le>  Max (abs ` set\<^sub>v y')" 
         by (metis Max_ge \<open>i < n\<close> abs_le_D2 carrier_vecD finite_imageI 
             finite_vec_set image_eqI vec_setI y') 
