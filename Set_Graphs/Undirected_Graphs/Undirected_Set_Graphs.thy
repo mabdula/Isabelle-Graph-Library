@@ -356,7 +356,8 @@ lemma neighbours_of_Vs_subset:
   assumes "A \<subseteq> X"
   shows "neighbours_of_Vs G A \<subseteq> neighbours_of_Vs G X"
   unfolding neighbours_of_Vs_def 
-  by (smt (verit, best) Collect_mono assms subset_eq)
+  using assms
+  by blast
 
 lemma neighbours_of_Vs_insert: 
   "neighbours_of_Vs M (insert x F) = neighbours_of_Vs M F \<union> neighbours_of_Vs M {x}"
