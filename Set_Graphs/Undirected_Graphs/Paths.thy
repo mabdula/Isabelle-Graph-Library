@@ -567,10 +567,51 @@ lemma path_can_be_split_2:
   assumes "path (insert {w,x} G) p" "w \<in> Vs G" "x \<notin> Vs G" "p \<noteq> []"
   shows "(\<exists>p'. p' \<noteq> [] \<and> path G p' \<and> hd p' = hd p \<and> last p' = last p) \<or>
          (\<exists>p'. path G p' \<and> (p' \<noteq> [] \<longrightarrow> hd p' = w) \<and> ((hd p = last (x # p') \<and> last p = x) \<or> (hd p = x \<and> last p = last (x # p'))))"
-  using vwalk_betw_can_be_split_2[OF _ \<open>w \<in> Vs G\<close> \<open>x \<notin> Vs G\<close>, simplified walk_betw_def, where p = p and u = "hd p" and v = "last p"]
-  using assms
-  apply simp
-  by (smt (verit, del_insts) hd_rev last.simps last_rev path_simps(1) rev_is_Nil_conv rev_path_is_path_iff) 
+proof -
+  have walk: "walk_betw (insert {w,x} G) (hd p) p (last p)"
+    using assms(1) assms(4) by (simp add: walk_betw_def)
+  from vwalk_betw_can_be_split_2[OF walk assms(2) assms(3)]
+  show ?thesis
+  proof (elim disjE exE conjE)
+    fix p'
+    assume "walk_betw G (hd p) p' (last p)"
+    then have "path G p'" "p' \<noteq> []" "hd p' = hd p" "last p' = last p"
+      by (auto dest: walk_between_nonempty_pathD)
+    then show ?thesis
+      by (intro disjI1 exI[of _ p']) auto
+  next
+    fix p'
+    assume w1: "walk_betw G (hd p) p' w" and xlast: "last p = x"
+    have p'path: "path G p'" and p'ne: "p' \<noteq> []"
+      and p'hd: "hd p' = hd p" and p'last: "last p' = w"
+      using w1 by (auto dest: walk_between_nonempty_pathD)
+    note rp_path = rev_path_is_path[OF p'path]
+    have rp_ne: "rev p' \<noteq> []"
+      using p'ne by simp
+    have rp_hd: "hd (rev p') = w"
+      using p'ne p'last by (simp add: hd_rev)
+    have rp_last: "last (x # rev p') = hd p"
+      using rp_ne p'ne p'hd by (simp add: last_rev)
+    show ?thesis
+      using rp_path rp_hd rp_last xlast
+      by (intro disjI2 exI[of _ "rev p'"]) auto
+  next
+    fix p'
+    assume w2: "walk_betw G w p' (last p)" and xhd: "hd p = x"
+    have p'path: "path G p'" and p'ne: "p' \<noteq> []"
+      and p'hd: "hd p' = w" and p'last: "last p' = last p"
+      using w2 by (auto dest: walk_between_nonempty_pathD)
+    have p_last: "last (x # p') = last p"
+      using p'ne p'last by simp
+    show ?thesis
+      using p'path p'hd p_last xhd
+      by (intro disjI2 exI[of _ p']) auto
+  next
+    assume "hd p = x" "last p = x"
+    then show ?thesis
+      by (intro disjI2 exI[of _ "[]"]) auto
+  qed
+qed
 
 lemma path_can_be_split_3:
   assumes "path G' p" "G' = insert {w,x} G" "w \<notin> Vs G" "x \<notin> Vs G" "p \<noteq> []"
