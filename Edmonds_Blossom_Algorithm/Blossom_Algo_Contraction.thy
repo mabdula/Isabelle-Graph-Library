@@ -1007,7 +1007,13 @@ next
         ultimately show ?thesis
           by blast
       qed
-      subgoal by metis
+      subgoal premises prems
+      proof -
+        have eq: "(Some pfx1, None) = longest_disj_pfx (a1' # l1') l2"
+          using prems by simp
+        then show ?thesis
+          using cons1(1) by blast
+      qed
       subgoal by (metis (mono_tags, opaque_lifting) Un_iff disj_pref_append1 find_pfx_works_1 option.sel set_ConsD set_append) 
       done
   qed
