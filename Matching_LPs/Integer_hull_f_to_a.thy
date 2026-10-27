@@ -3250,8 +3250,12 @@ next
     then have "convex_hull (P \<inter> \<int>\<^sub>v) = {}" unfolding integer_hull_def  
       by argo
     then have "P \<inter> \<int>\<^sub>v = {}" using set_in_convex_hull 
-      by (metis A Diff_empty P_def \<open>\<not> integer_hull P \<noteq> {}\<close> b disjoint_iff_not_equal
-          gram_schmidt.not_in_int_hull_not_int)
+    proof -
+      have "P \<subseteq> carrier_vec n" unfolding P_def polyhedron_def by auto
+      hence "P \<inter> \<int>\<^sub>v \<subseteq> carrier_vec n" by auto
+      hence "P \<inter> \<int>\<^sub>v \<subseteq> convex_hull (P \<inter> \<int>\<^sub>v)" using set_in_convex_hull by blast
+      thus "P \<inter> \<int>\<^sub>v = {}" using \<open>convex_hull (P \<inter> \<int>\<^sub>v) = {}\<close> by blast
+    qed
     have "nr > 0"
     proof(rule ccontr)
       assume "\<not> 0 < nr"
