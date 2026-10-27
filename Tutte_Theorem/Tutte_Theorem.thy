@@ -1857,8 +1857,12 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
                   then show False using \<open>x \<notin> C\<close> by blast
                 qed
                 then have "e \<inter> (X \<union> {v}) = {}" 
-                  by (metis Un_insert_right \<open>e \<in> graph_diff G X\<close> disjoint_insert(1) 
-                      graph_diffE sup_bot.right_neutral)
+                  proof -
+                    have "e \<inter> X = {}"
+                      using \<open>e \<in> graph_diff G X\<close> by (simp add: graph_diff_def)
+                    thus "e \<inter> (X \<union> {v}) = {}"
+                      using \<open>v \<notin> e\<close> by blast
+                  qed
                 then have "e \<in> graph_diff G (X \<union> {v})" 
                   by (meson \<open>e \<in> graph_diff G X\<close> graph_diffE graph_diffI)
                 then show "e \<in> (component_edges (graph_diff G (X\<union>{v})) C')" 
