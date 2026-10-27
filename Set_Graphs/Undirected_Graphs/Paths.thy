@@ -798,7 +798,19 @@ proof(induction l arbitrary: u p v rule: less_induct)
     have bulast_p1_subst:"butlast (e # p1) @ [last (e # p1)] = e#p1"
       by simp
     have epath_verbose:"epath G u (butlast (e # p1) @ [last (e # p1), e] @ p2) v"
-      by (metis append.assoc append_Cons append_Nil bulast_p1_subst ep' less.prems(1) p1p2)
+    proof -
+      have "butlast (e # p1) @ [last (e # p1), e] @ p2
+          = (butlast (e # p1) @ [last (e # p1)]) @ ([e] @ p2)"
+        by simp
+      also have "... = (e # p1) @ [e] @ p2"
+        using bulast_p1_subst by simp
+      also have "... = e # p'"
+        using p1p2 by simp
+      also have "... = p"
+        using ep' by simp
+      finally show ?thesis
+        using less.prems(1) by simp
+    qed
     obtain x where x_prop:"epath G u (e#p1) x" 
          "epath G x ([e] @ p2) v" "x \<in> last (e # p1) \<inter> e"
       using epath_find_splitter[OF epath_verbose] by (subst (asm) bulast_p1_subst[symmetric])auto
