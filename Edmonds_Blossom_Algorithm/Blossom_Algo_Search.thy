@@ -3652,9 +3652,23 @@ qed
               by simp
           qed
           moreover have "e \<inter> e' = {}" if "e \<in> M'" "e' \<in> M'" "e \<noteq> e'" for e e'
-            using matching(1) that
-            unfolding matching_def2
-            by (metis Diff_subset Int_emptyI M'(2) in_mono matching(1) matching_unique_match subset_insertI)
+          proof -
+            have subset: "M' \<subseteq> M"
+              using M'(2) by blast
+            have mem: "e \<in> M" "e' \<in> M"
+              using subset that(1) that(2) by blast+
+            show "e \<inter> e' = {}"
+            proof (rule ccontr)
+              assume "e \<inter> e' \<noteq> {}"
+              then obtain v where "v \<in> e" "v \<in> e'"
+                by blast
+              then have "e = e'"
+                using matching(1) mem matching_unique_match
+                by fastforce
+              with that(3) show False
+                by simp
+            qed
+          qed
           ultimately have "card (\<Union>M') = (2 * card M')"
             apply(intro card_UNION_const).
           have "{v2} \<inter> \<Union>M' = {}"
