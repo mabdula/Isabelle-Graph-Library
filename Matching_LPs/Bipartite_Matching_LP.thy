@@ -210,7 +210,16 @@ lemma Vs_enum_inv_leftE:
   assumes "i < card L"
   obtains j where "j \<in> L" "Vs_enum_inv i = j"
   using assms
-  by (metis Vs_enum_inv_def card.empty from_nat_into not_less_zero)
+proof -
+  have "L \<noteq> {}"
+    using assms card.empty by fastforce
+  then have "from_nat_into L i \<in> L"
+    by (rule from_nat_into)
+  moreover have "Vs_enum_inv i = from_nat_into L i"
+    using assms unfolding Vs_enum_inv_def by simp
+  ultimately show thesis
+    by (rule that)
+qed
 
 lemma Vs_enum_inv_rightE:
   assumes "i < n"
