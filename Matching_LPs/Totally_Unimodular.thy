@@ -950,7 +950,12 @@ proof
       using True dim_submatrix(1) pick_le assms(1) 
       by (simp add: \<open>dim_row (submatrix A I J) = card {i. i < nr1 \<and> i \<in> I}\<close>)
     have "dim_col (A @\<^sub>r B) = dim_col A" 
-      by (metis A \<open>dim_col (A @\<^sub>r B) = n\<close> carrier_matD(2))
+    proof -
+      have "dim_col A = n"
+        using carrier_matD(2)[OF A] .
+      then show "dim_col (A @\<^sub>r B) = dim_col A"
+        using \<open>dim_col (A @\<^sub>r B) = n\<close> by simp
+    qed
     have "j < card {j. j < n \<and> j \<in> J}" using asmj 
       using 19 21 by presburger
     then have "pick J j < n" 
