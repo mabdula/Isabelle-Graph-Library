@@ -132,7 +132,14 @@ proof-
   moreover have "set cyc = insert (last cyc) (set (butlast cyc))"
   proof-
     have "cyc = (butlast cyc) @ [last cyc]"
-      by (metis \<open>length (butlast cyc) = card (set (butlast cyc))\<close> append_butlast_last_id butlast.simps(1) calculation le_zero_eq list.size(3) zero_neq_numeral)
+    proof -
+      have cyc_nempty: "cyc \<noteq> []"
+        using match_blossomD(3)[OF \<open>match_blossom M stem cyc\<close>]
+        by (rule odd_cycle_nempty)
+      show ?thesis
+        using cyc_nempty
+        by (simp add: append_butlast_last_id)
+    qed
     then show ?thesis
       by (metis list.simps(15) rotate1.simps(2) set_rotate1)
   qed
