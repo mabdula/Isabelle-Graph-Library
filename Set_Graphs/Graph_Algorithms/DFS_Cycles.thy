@@ -840,7 +840,24 @@ proof (intro invar_props_intros, goal_cases)
         by (auto simp add: awalk_verts_conv)
       with \<open>c = xs @ [e1] @ ys @ [e2] @ zs\<close> c_awalk awalk_append_iff
         have "awalk ?G_seen_new (snd e1) (ys @ [e2] @ zs) (awlast (snd e1) (ys @ [e2] @ zs))"
-        by (smt (verit, best) awalkE)
+      proof -
+        from \<open>c = xs @ [e1] @ ys @ [e2] @ zs\<close> c_awalk
+          have "awalk ?G_seen_new u ((xs @ [e1]) @ (ys @ [e2] @ zs)) u"
+          by simp
+        from \<open>awalk ?G_seen_new u ((xs @ [e1]) @ (ys @ [e2] @ zs)) u\<close>
+          have "awalk ?G_seen_new u (xs @ [e1]) (awlast u (xs @ [e1]))"
+            by (rule awalk_append_iff[THEN iffD1, THEN conjunct1])
+        from \<open>awalk ?G_seen_new u ((xs @ [e1]) @ (ys @ [e2] @ zs)) u\<close>
+          have "awalk ?G_seen_new (awlast u (xs @ [e1])) (ys @ [e2] @ zs) u"
+            by (rule awalk_append_iff[THEN iffD1, THEN conjunct2])
+        with \<open>awlast u (xs @ [e1]) = snd e1\<close>
+          have step: "awalk ?G_seen_new (snd e1) (ys @ [e2] @ zs) u"
+          by simp
+        from step have "u = awlast (snd e1) (ys @ [e2] @ zs)"
+          by (auto elim: awalkE)
+        with step show "awalk ?G_seen_new (snd e1) (ys @ [e2] @ zs) (awlast (snd e1) (ys @ [e2] @ zs))"
+          by simp
+      qed
       with awalk_append_iff
         have "awalk ?G_seen_new (snd e1) ys (awlast (snd e1) ys)"
         "awalk ?G_seen_new (awlast (snd e1) ys) ([e2] @ zs) (awlast (snd e1) (ys @ [e2] @ zs))"
