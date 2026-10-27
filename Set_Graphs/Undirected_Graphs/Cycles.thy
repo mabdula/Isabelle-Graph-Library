@@ -571,10 +571,35 @@ qed
         card (component_edges F (connected_component F u)) +
         card (component_edges F (connected_component F v)) + 1"
         (* TODO later: maybe simplify proof *)
-        by (metis (no_types, lifting) "3"(3) One_nat_def \<open>connected_component F u \<in> connected_components F\<close>
-            \<open>connected_component F v \<in> connected_components F\<close> \<open>{{x, y} |x y. {x, y} \<subseteq> C \<and> {x, y} = e} = {{u, v}}\<close>
-            card.empty card.insert card_Un_disjoint component_edges_disj component_edges_expr component_edges_subset
-            edges_disj empty_iff finite.emptyI finite.insertI finite_subset insert.hyps(1))
+      proof-
+  have finite_A: "finite (component_edges F (connected_component F u))"
+    using finite_subset[OF component_edges_subset[of F "connected_component F u"] insert.hyps(1)] .
+  have finite_B: "finite (component_edges F (connected_component F v))"
+    using finite_subset[OF component_edges_subset[of F "connected_component F v"] insert.hyps(1)] .
+  have disj_AB: "component_edges F (connected_component F u) \<inter> component_edges F (connected_component F v) = {}"
+    using component_edges_disj[OF \<open>connected_component F u \<in> connected_components F\<close>
+        \<open>connected_component F v \<in> connected_components F\<close>
+        \<open>connected_component F u \<noteq> connected_component F v\<close>] .
+  have notin_union: "{u, v} \<notin> component_edges F (connected_component F u) \<union> component_edges F (connected_component F v)"
+    using \<open>{u, v} \<notin> (component_edges F (connected_component F u))\<close>
+          \<open>{u, v} \<notin> (component_edges F (connected_component F v))\<close> by simp
+  have eq_insert: "component_edges F (connected_component F u) \<union> component_edges F (connected_component F v) \<union> {{u, v}}
+      = insert {u, v} (component_edges F (connected_component F u) \<union> component_edges F (connected_component F v))"
+    by auto
+  have "card (component_edges (insert e F) C)
+      = card (component_edges F (connected_component F u) \<union> component_edges F (connected_component F v) \<union> {{u, v}})"
+    using \<open>component_edges (insert e F) C = 
+          (component_edges F (connected_component F u)) \<union>
+          (component_edges F (connected_component F v)) \<union> {{u, v}}\<close>
+    by simp
+  also have "... = card (insert {u, v} (component_edges F (connected_component F u) \<union> component_edges F (connected_component F v)))"
+    using eq_insert by simp
+  also have "... = card (component_edges F (connected_component F u) \<union> component_edges F (connected_component F v)) + 1"
+    using card_insert_disjoint[OF finite_UnI[OF finite_A finite_B] notin_union] by simp
+  also have "... = card (component_edges F (connected_component F u)) + card (component_edges F (connected_component F v)) + 1"
+    using card_Un_disjoint[OF finite_A finite_B disj_AB] by simp
+  finally show ?thesis .
+qed
       from connected_component_finite[OF insert(1) \<open>dblton_graph F\<close>] insert(6) 
         \<open>(connected_component F u) \<in> connected_components F\<close>
       have "finite (connected_component F u)" by blast
