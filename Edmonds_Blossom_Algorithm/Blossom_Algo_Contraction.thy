@@ -225,8 +225,8 @@ proof(induction "find_aug_path_meas E" arbitrary: E M rule: nat_less_induct)
 
       moreover have "finite (quot.quotG ?s ?u E)"
         using "1.prems"
-        by (metis (no_types, lifting) Diff_empty Vs_def Vs_quot_graph_finite finite_Diff_insert
-                  finite_UnionD)
+        using quot_graph_finite'[OF graph_invar_finite_Vs[OF "1.prems"(3)]]
+        by auto
       moreover have "((Vs E) - set cyc) \<subset> (Vs E)"
         using blossom_diff[OF \<open>graph_invar E\<close> \<open>match_blossom M stem cyc\<close> \<open>path E (stem@cyc)\<close>].  
       hence "dblton_graph (quot.quotG ?s ?u E)"
