@@ -18,7 +18,15 @@ definition set_to_list :: "'b set \<Rightarrow> 'b list"
 lemma  set_set_to_list:
   "finite s \<Longrightarrow> set (set_to_list s) = s"
   unfolding set_to_list_def
-  by (metis (mono_tags, lifting) finite_distinct_list someI)
+proof -
+  assume "finite s"
+  then have "\<exists>l. set l = s \<and> distinct l"
+    using finite_distinct_list by blast
+  then have "set (SOME l. set l = s \<and> distinct l) = s \<and> distinct (SOME l. set l = s \<and> distinct l)"
+    by (rule someI_ex)
+  then show "set (SOME l. set l = s \<and> distinct l) = s"
+    by simp
+qed
 
 lemma  set_set_to_list_distinct:
   "finite s \<Longrightarrow> distinct (set_to_list s)"
