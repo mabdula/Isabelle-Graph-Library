@@ -682,7 +682,29 @@ next
       case False
       have 2: "\<exists>x\<in>{x. x \<in> I \<and> x > pick I i}. \<forall>y\<in>{x. x \<in> I \<and> x > pick I i}. x \<le> y" 
         using  Collect_mem_eq False empty_Collect_eq exists_least_iff le_simps(2) not_less_eq
-        by (metis (no_types, lifting))
+      proof -
+        from False obtain x0 where x0: "x0 \<in> {x. x \<in> I \<and> x > pick I i}"
+          by blast
+        define m where "m = (LEAST x. x \<in> I \<and> x > pick I i)"
+        have m_mem: "m \<in> {x. x \<in> I \<and> x > pick I i}"
+        proof -
+          from x0 have "x0 \<in> I \<and> x0 > pick I i" by simp
+          then have "m \<in> I \<and> m > pick I i"
+            unfolding m_def by (rule LeastI)
+          then show ?thesis by simp
+        qed
+        have m_lb: "\<forall>y\<in>{x. x \<in> I \<and> x > pick I i}. m \<le> y"
+        proof
+          fix y
+          assume "y \<in> {x. x \<in> I \<and> x > pick I i}"
+          then have "y \<in> I \<and> y > pick I i" by simp
+          then show "m \<le> y"
+            unfolding m_def by (rule Least_le)
+        qed
+        from m_mem m_lb show
+          "\<exists>x\<in>{x. x \<in> I \<and> x > pick I i}. \<forall>y\<in>{x. x \<in> I \<and> x > pick I i}. x \<le> y"
+          by blast
+      qed
       have " (LEAST a. a\<in> {x. x \<in> I \<and> x > pick I i}) - k = 
       (LEAST a. a\<in>((\<lambda>i. i - k) ` ( {x. x \<in> I \<and> x > pick I i})))"
         using Least_mono[OF \<open>incseq (\<lambda>i. i - k)\<close> 2]  by auto
