@@ -1342,13 +1342,32 @@ lemma in_edges_of_path_hd_or_tl:
       assumes "e \<in> set (edges_of_path p)"
       shows "e = hd (edges_of_path p) \<or> e \<in> set (edges_of_path (tl p))"
 proof-
-  obtain v1 v2 p1 p2 where "e = {v1, v2}" "p = p1 @ [v1, v2] @ p2"
+  obtain v1 v2 p1 p2 where e_def: "e = {v1, v2}" and p_def: "p = p1 @ [v1, v2] @ p2"
     using in_edges_of_path_split[OF assms]
     by auto
-  then show ?thesis
-    apply(cases "p1 = []"; simp)
-    using edges_of_path_append_2
-    by (metis edges_of_path.simps(3) in_set_conv_decomp list.distinct(1))
+  show ?thesis
+  proof(cases p1)
+    case Nil
+    hence "p = v1 # v2 # p2"
+      using p_def by simp
+    hence "edges_of_path p = {v1, v2} # edges_of_path (v2 # p2)"
+      by simp
+    thus ?thesis
+      using e_def by simp
+  next
+    case (Cons c p1')
+    hence "p = c # (p1' @ [v1, v2] @ p2)"
+      using p_def by simp
+    hence tl_p: "tl p = p1' @ [v1, v2] @ p2"
+      by simp
+    have "edges_of_path (p1' @ [v1, v2] @ p2)
+            = edges_of_path (p1' @ [v1]) @ [{v1, v2}] @ edges_of_path (v2 # p2)"
+      using edges_of_path_symmetric_split[of p1' v1 v2 p2] by simp
+    hence "{v1, v2} \<in> set (edges_of_path (tl p))"
+      using tl_p by simp
+    thus ?thesis
+      using e_def by simp
+  qed
 qed
 
 lemma where_is_v:
