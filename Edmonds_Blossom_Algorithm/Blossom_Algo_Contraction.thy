@@ -1505,8 +1505,46 @@ proof-
         by auto
     }
     ultimately show ?thesis
-      by (metis Nil_is_append_conv edges_of_path_length' even_add from_tree(1) from_tree(2) hds_neq
-                length_append length_rev odd_one rev_is_Nil_conv)
+      proof -
+  assume dis: "\<not> (odd (length pfx1) \<and> odd (length pfx2))"
+  assume f1: "even (length pfx1) \<Longrightarrow> odd (length pfx2) \<Longrightarrow> False"
+  assume f2: "odd (length pfx1) \<Longrightarrow> even (length pfx2) \<Longrightarrow> False"
+  have pfx1_nempty: "pfx1 \<noteq> []"
+    using first_pfx_nempty pfxs_are_pfxs by blast
+  have pfx2_nempty: "pfx2 \<noteq> []"
+    using snd_pfx_nempty pfxs_are_pfxs by blast
+  have even1: "even (length pfx1)"
+  proof (rule ccontr)
+    assume "\<not> even (length pfx1)"
+    then have odd1: "odd (length pfx1)"
+      by simp
+    with F1 have "even (length pfx2)"
+      by auto
+    with odd1 show False
+      using f2 by blast
+  qed
+  have even2: "even (length pfx2)"
+  proof (rule ccontr)
+    assume "\<not> even (length pfx2)"
+    then have odd2: "odd (length pfx2)"
+      by simp
+    with even1 show False
+      using f1 by blast
+  qed
+  have len_nempty: "rev pfx1 @ pfx2 \<noteq> []"
+    using pfx1_nempty by simp
+  have edges_len: "length (edges_of_path (rev pfx1 @ pfx2)) = length (rev pfx1 @ pfx2) - 1"
+    using edges_of_path_length'[OF len_nempty] by simp
+  have even_sum: "even (length (rev pfx1 @ pfx2))"
+    using even1 even2
+    by (simp add: length_append length_rev even_add)
+  have nonzero: "length (rev pfx1 @ pfx2) \<noteq> 0"
+    using len_nempty
+    by simp
+  show ?thesis
+    using edges_len even_sum nonzero
+    by presburger
+qed
   qed
   ultimately show ?thesis
     unfolding odd_cycle_def
