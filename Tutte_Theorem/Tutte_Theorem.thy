@@ -1213,8 +1213,47 @@ proof
   proof(rule ccontr)
     assume "\<not> (\<exists>y\<in>Vs G - X.  {x, y} \<in> G)"
     then have "\<forall>e \<in> G. x \<in> e \<longrightarrow> e \<subseteq> X"
-      by (smt (verit) Diff_iff \<open>x \<in> X\<close> assms(1) dblton_graphE insert_Diff insert_commute insert_iff
-              subset_eq vs_member_intro)
+      proof (intro ballI impI)
+        fix e
+        assume "e \<in> G" and "x \<in> e"
+        have card_e: "card e = 2"
+          using assms(1) \<open>e \<in> G\<close> card_edge by blast
+        have fin_e: "finite e"
+        proof (rule ccontr)
+          assume "infinite e"
+          then have "card e = 0" by simp
+          with card_e show False by simp
+        qed
+        have "card (e - {x}) = card e - 1"
+          using fin_e \<open>x \<in> e\<close> by (simp add: card_Diff_singleton)
+        also have "\<dots> = 1"
+          using card_e by simp
+        finally have "card (e - {x}) = 1" .
+        then obtain y where y_def: "e - {x} = {y}"
+          by (rule card_1_singletonE)
+        have e_eq: "e = {x, y}"
+        proof -
+          have "insert x (e - {x}) = e"
+            using \<open>x \<in> e\<close> by (rule insert_Diff)
+          then show ?thesis
+            using y_def by simp
+        qed
+        have y_in_VsG: "y \<in> Vs G"
+        proof -
+          have "y \<in> e" using e_eq by simp
+          then show ?thesis using \<open>e \<in> G\<close> by (meson vs_member_intro)
+        qed
+        have "y \<in> X"
+        proof (rule ccontr)
+          assume "y \<notin> X"
+          then have "y \<in> Vs G - X"
+            using y_in_VsG by blast
+          then show False
+            using \<open>\<not> (\<exists>y\<in>Vs G - X.  {x, y} \<in> G)\<close> e_eq \<open>e \<in> G\<close> by blast
+        qed
+        then show "e \<subseteq> X"
+          using e_eq \<open>x \<in> X\<close> by blast
+      qed
     have diff_same:"(graph_diff G X) = (graph_diff G (X - {x}))"
       unfolding graph_diff_def 
       using \<open>\<forall>e\<in>G. x \<in> e \<longrightarrow> e \<subseteq> X\<close> assms(1) by fastforce
