@@ -167,7 +167,7 @@ proof -
     using zip_snd by force
   then have "filter (\<lambda>p. snd p \<in> I) (zip l [0..<length l]) = 
             filter (\<lambda>p. snd p \<in> {a. a < length l \<and> a \<in> I}) (zip l [0..<length l])"
-    by (metis (mono_tags, lifting) filter_cong)
+    by (intro filter_cong[OF refl]) (use zip_snd in force)
   then show ?thesis 
     unfolding nths_def by argo
 qed
