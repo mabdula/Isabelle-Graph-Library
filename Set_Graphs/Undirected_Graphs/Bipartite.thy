@@ -117,7 +117,7 @@ lemma bipartite_unionI:
 lemma bipartite_reduced_to_vs:
   "bipartite G X Y \<Longrightarrow> bipartite G (X \<inter> Vs G) (Y \<inter> Vs G)"
   unfolding bipartite_def
-  by auto (metis edges_are_Vs insert_commute)
+  by (fastforce simp: Vs_def insert_commute)
 
 lemma bipartite_In_singletons:
   assumes "bipartite G U V"
