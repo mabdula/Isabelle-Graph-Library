@@ -1517,7 +1517,27 @@ proof(goal_cases)
   then have "dblton_graph X" unfolding dblton_graph_def by simp
   from Union_connected_components[OF this]
   have "connected_components X \<inter> ((\<lambda>v. {v}) ` (V - (Vs X))) = {}"
-    by (smt (verit) DiffD2 UnionI disjoint_iff imageE singletonI)
+  proof -
+    have Union_eq: "\<Union> (connected_components X) = Vs X"
+      by fact
+    show ?thesis
+    proof (intro equals0I)
+      fix C
+      assume "C \<in> connected_components X \<inter> ((\<lambda>v. {v}) ` (V - (Vs X)))"
+      then obtain v where C_comp: "C \<in> connected_components X"
+        and v_in: "v \<in> V - Vs X" and C_eq: "C = {v}"
+        by auto
+      have v_notin: "v \<notin> Vs X"
+        using v_in by simp
+      have "C \<subseteq> \<Union> (connected_components X)"
+        using C_comp by (rule Union_upper)
+      also have "\<dots> = Vs X"
+        using Union_eq .
+      finally have "C \<subseteq> Vs X" .
+      with C_eq have "v \<in> Vs X" by auto
+      with v_notin show False by simp
+    qed
+  qed
   have "card ((\<lambda>v. {v}) ` (V - (Vs X))) = card (V - Vs X)"
     by (simp add: card_image)
   have "finite (connected_components X)"
