@@ -3261,7 +3261,16 @@ next
       assume "\<not> 0 < nr"
       then have "nr = 0" by auto
       then have "\<forall> x. A *\<^sub>v x \<le> b" 
-        by (metis A b carrier_matD(1) carrier_vecD leq_for_all_index_then_eq less_nat_zero_code)
+      proof (intro allI)
+        fix x
+        have dimA: "dim_row A = nr" using A carrier_matD(1) by blast
+        have dimb: "dim_vec b = nr" using b carrier_vecD by blast
+        have dimAx: "dim_vec (A *\<^sub>v x) = nr" using dim_mult_mat_vec[of A x] dimA by simp
+        have dims_eq: "dim_vec (A *\<^sub>v x) = dim_vec b" using dimAx dimb by simp
+        have "\<forall>i < dim_vec (A *\<^sub>v x). (A *\<^sub>v x) $ i \<le> b $ i"
+          using dimAx \<open>nr = 0\<close> by simp
+        with dims_eq show "A *\<^sub>v x \<le> b" unfolding less_eq_vec_def by simp
+      qed
       then have "P = carrier_vec n " 
         unfolding P_def polyhedron_def 
         by fast 
