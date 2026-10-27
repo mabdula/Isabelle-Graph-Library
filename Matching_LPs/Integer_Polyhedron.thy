@@ -589,8 +589,38 @@ qed
     using b by auto
   then have 5:"\<forall> i \<in> {nr..<dim_row C}. (row C i) = row  (A' @\<^sub>r - A') (i - nr) 
             \<and> d $ i =  (b' @\<^sub>v (-b')) $ (i - nr)" 
-    by (metis C_d(1) C_d(2) C_d(4) 1 atLeastLessThan_iff b carrier_vecD index_append_vec(1) 
-        index_append_vec(2) order_le_imp_less_or_eq)
+  proof (intro ballI)
+    fix i
+    assume i_mem: "i \<in> {nr..<dim_row C}"
+    then have i_ge: "i \<ge> nr" and i_lt: "i < dim_row C"
+      by auto
+    have row_eq: "row C i = row (A' @\<^sub>r - A') (i - nr)"
+      using 1 i_ge i_lt by blast
+    have dim_row_C: "dim_row C = dim_vec d"
+      using C_d(1) C_d(2) C_d(4) by simp
+    have i_lt_d: "i < dim_vec d"
+      using i_lt dim_row_C by simp
+    have dim_b: "dim_vec b = nr"
+      using b by simp
+    have d_eq: "d $ i = (b' @\<^sub>v (-b')) $ (i - nr)"
+    proof -
+      have dim_sum: "dim_vec d = dim_vec b + dim_vec (b' @\<^sub>v (-b'))"
+        using C_d(2) index_append_vec(2) by simp
+      have i_lt_sum: "i < dim_vec b + dim_vec (b' @\<^sub>v (-b'))"
+        using i_lt_d dim_sum by simp
+      have not_lt: "\<not> i < dim_vec b"
+        using dim_b i_ge by simp
+      have "d $ i = (if i < dim_vec b then b $ i else (b' @\<^sub>v (-b')) $ (i - dim_vec b))"
+        using C_d(2) i_lt_sum index_append_vec(1) by simp
+      also have "... = (b' @\<^sub>v (-b')) $ (i - dim_vec b)"
+        using not_lt by simp
+      also have "... = (b' @\<^sub>v (-b')) $ (i - nr)"
+        using dim_b by simp
+      finally show ?thesis .
+    qed
+    from row_eq d_eq show "row C i = row (A' @\<^sub>r - A') (i - nr) \<and> d $ i = (b' @\<^sub>v (-b')) $ (i - nr)"
+      by blast
+  qed
   have " \<forall> x \<in> F. A' *\<^sub>v x = b' "using A'_b' by auto
   then have "\<forall> x \<in> F. \<forall>i < dim_row A'. row A' i \<bullet> x = b' $ i" 
     using index_mult_mat_vec
