@@ -465,8 +465,20 @@ next
     case a
     then have "length p = 2" by simp
     then have "p = [(fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))]"
-      by (metis (mono_tags, lifting) One_nat_def Suc_eq_plus1 less_2_cases_iff list.size(3) list.size(4)
-        nat_1_add_1 nth_Cons_0 nth_Cons_Suc nth_equalityI prod.collapse)
+      proof -
+        show "p = [(fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))]"
+        proof (rule nth_equalityI)
+          show "length p = length [(fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))]"
+            using \<open>length p = 2\<close> by simp
+        next
+          fix i
+          assume "i < length p"
+          then have "i = 0 \<or> i = 1"
+            using \<open>length p = 2\<close> by auto
+          then show "p ! i = [(fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))] ! i"
+            by (auto simp: prod.collapse)
+        qed
+      qed
     then have "e # p = [(fst e, snd e), (fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))]"
       by simp
 
