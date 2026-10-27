@@ -556,7 +556,7 @@ text \<open>Residual capacities related to edges that have got nothing to do
 lemma e_not_in_p_aug: 
   "\<lbrakk>e \<notin> set es; erev e \<notin> set es\<rbrakk> \<Longrightarrow> rcap (augment_edges f \<gamma> es) e = rcap f e"
   apply(induction f \<gamma> es rule: augment_edges.induct, simp)
-  by(rule redge_pair_cases)(simp, metis  oedge.simps sndv.cases)+
+  by(rule redge_pair_cases)(simp, (rule redge_pair_cases; simp)+)+
 
 text \<open>If we augment a forward residual arc, the flow increases accordingly.\<close>
 
