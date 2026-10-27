@@ -597,7 +597,17 @@ next
   have "mono ?f" 
     by (simp add: diff_le_mono mono_def)
   have "\<exists>x\<in>I. \<forall>y\<in>I. x \<le> y" 
-    by (metis Collect_mem_eq False empty_Collect_eq exists_least_iff le_simps(2) not_less_eq)
+  proof -
+    from False obtain x0 where "x0 \<in> I" by blast
+    define m where "m = (LEAST x. x \<in> I)"
+    have m_in: "m \<in> I" unfolding m_def using LeastI[of "\<lambda>x. x \<in> I" x0] \<open>x0 \<in> I\<close> by blast
+    have m_le: "\<forall>y\<in>I. m \<le> y"
+    proof
+      fix y assume "y \<in> I"
+      then show "m \<le> y" unfolding m_def using Least_le[of "\<lambda>x. x \<in> I" y] by blast
+    qed
+    from m_in m_le show "\<exists>x\<in>I. \<forall>y\<in>I. x \<le> y" by blast
+  qed
   then have 3:"(LEAST a. a\<in>I) - k = (LEAST a. a\<in>(\<lambda>i. i - k) ` I)"
     by (simp add: Least_mono \<open>incseq (\<lambda>i. i - k)\<close>)
   show ?thesis using assms(1)
