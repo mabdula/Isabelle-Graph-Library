@@ -490,7 +490,10 @@ proof -
         by (intro that[of A''' b''']) simp
     qed
   have "dim_row A'' = dim_vec b''" 
-    by (metis A A''_b'' b carrier_matD(1) carrier_vecD dims_subsyst_same')
+  proof -
+    have "dim_row A = dim_vec b" using A b by (simp add: carrier_matD(1) carrier_vecD)
+    then show "dim_row A'' = dim_vec b''" using A''_b'' dims_subsyst_same' by blast
+  qed
   have "dim_row A \<le> dim_row C" using C_d 
     by (metis A add_lessD1 b carrier_matD(1) carrier_vecD index_append_vec(2) 
         linorder_le_less_linear order_less_irrefl)
