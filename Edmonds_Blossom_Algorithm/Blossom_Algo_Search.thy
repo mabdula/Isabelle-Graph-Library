@@ -3954,7 +3954,29 @@ qed
             using graph
             apply(intro odd_set_coverI)
             apply simp_all
-            by (metis inf.absorb_iff2 insert_not_empty dblton_graphE)
+            proof -
+              fix e
+              assume cover: "\<And>e'. e' \<in> G \<and> e' \<notin> ex \<Longrightarrow> \<exists>s\<in>osc. s \<inter> e' \<noteq> {} \<and> card s = Suc 0 \<or> e' \<subseteq> s"
+              assume "finite osc" and "\<And>s. s \<in> osc \<Longrightarrow> odd (card s) \<and> finite s" and "graph_invar G"
+              assume eGex: "e \<in> G \<and> e \<notin> ex"
+              from eGex cover have "\<exists>t\<in>osc. (t \<inter> e \<noteq> {} \<and> card t = Suc 0) \<or> e \<subseteq> t"
+                by blast
+              then obtain t where t: "t \<in> osc" "(t \<inter> e \<noteq> {} \<and> card t = Suc 0) \<or> e \<subseteq> t"
+                by blast
+              have ne: "e \<noteq> {}"
+              proof -
+                from eGex have "e \<in> G" by simp
+                then obtain u v where "e = {u, v}" "u \<noteq> v"
+                  using graph by (blast elim: dblton_graphE)
+                then show "e \<noteq> {}" by simp
+              qed
+              have imp1: "card t = Suc 0 \<longrightarrow> t \<inter> e \<noteq> {}"
+                using t ne by (auto simp: inf.absorb_iff2)
+              have imp2: "card t \<noteq> Suc 0 \<longrightarrow> e \<subseteq> t"
+                using t by auto
+              show "\<exists>s\<in>osc. (card s = Suc 0 \<longrightarrow> s \<inter> e \<noteq> {}) \<and> (card s \<noteq> Suc 0 \<longrightarrow> e \<subseteq> s)"
+                using t(1) imp1 imp2 by blast
+            qed
           hence "odd_set_cover (osc \<union> lab_osc) ((G - ex) \<union> (ex \<inter> G))"
             apply(intro OSC_union)
             using \<open>odd_set_cover lab_osc (ex \<inter> G)\<close>
