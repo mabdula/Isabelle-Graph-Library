@@ -1638,8 +1638,13 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         by auto
       then have 2: "\<exists>v\<in>Vs (graph_diff G X). connected_component (graph_diff G X) v = C"
         by (simp add:  even_components_def)
+      then obtain v0 where v0: "v0 \<in> Vs (graph_diff G X)"
+                           "connected_component (graph_diff G X) v0 = C"
+        by blast
+      then have "v0 \<in> C"
+        using in_own_connected_component by (simp add: v0(2)[symmetric])
       then obtain v where "v \<in> C"
-        by (smt (verit) even_components_def in_own_connected_component mem_Collect_eq)
+        by blast
       then have comp_C:"connected_component (graph_diff G X) v = C"
         by (metis 2 connected_components_member_eq)
       have 6:"singl_in_diff G X \<subseteq> singl_in_diff G (X \<union> {v})"
