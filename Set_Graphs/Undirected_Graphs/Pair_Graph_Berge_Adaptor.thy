@@ -543,8 +543,10 @@ next
     have "(x, y) \<notin> set p"
     proof (rule ccontr, goal_cases)
       case 1
-      then obtain p1 p2 where "p = p1 @ [(x, y)] @ p2"
-        by (metis append_Cons append_Nil in_set_conv_decomp_first)
+      then have "(x, y) \<in> set p" by simp
+      then have "EX ys zs. p = ys @ (x, y) # zs" by (rule split_list)
+      then obtain p1 p2 where "p = p1 @ (x, y) # p2" by blast
+      then have "p = p1 @ [(x, y)] @ p2" by simp
   
       with e awalk_verts_conv'[of "u" "e # p", OF \<open>cas u (e # p) v\<close>]
         have "tl (awalk_verts u (e # p)) = map snd ([(x, y)] @ p1 @ [(x, y)] @ p2)"
