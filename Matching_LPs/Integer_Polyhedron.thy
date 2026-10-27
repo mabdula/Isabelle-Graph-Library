@@ -393,7 +393,12 @@ proof -
   then show "dim_row A' < dim_row C" 
     using \<open>dim_row A' = card (I \<inter> {0..<nr})\<close> \<open>dim_row C = card (J \<inter> {0..<nr})\<close> by presburger
   have "dim_row A' = dim_vec b'" 
-    by (metis A assms(4) b carrier_matD(1) carrier_vecD dims_subsyst_same')
+  proof -
+    have "dim_row A = nr" using A carrier_matD(1) by blast
+    moreover have "dim_vec b = nr" using b carrier_vecD by blast
+    ultimately have "dim_row A = dim_vec b" by simp
+    then show ?thesis using assms(4) dims_subsyst_same' by blast
+  qed
   have "dim_row C = dim_vec d" 
     by (metis A assms(5) b carrier_matD(1) carrier_vecD dims_subsyst_same')
   then show "dim_vec b' < dim_vec d" 
