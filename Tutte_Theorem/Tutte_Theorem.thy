@@ -645,9 +645,16 @@ proof(rule ccontr)
   then have "card ?docX \<ge> 1" 
     by (simp add: Suc_leI asm card_gt_0_iff)
   have "card (odd_comps_in_diff G (X\<union>{x})) \<le> card (X\<union>{x})"
-    using assms(2) unfolding tutte_condition_def 
-    by (metis Un_insert_right assms(3) assms(6) assms(7) boolean_algebra_cancel.sup0 component_in_E 
-        insert_subset subsetD)
+  proof -
+    have "C \<subseteq> Vs G"
+      using assms(6) component_in_E by blast
+    then have "x \<in> Vs G"
+      using assms(7) by blast
+    then have "X \<union> {x} \<subseteq> Vs G"
+      using assms(3) by blast
+    then show "card (odd_comps_in_diff G (X\<union>{x})) \<le> card (X\<union>{x})"
+      using assms(2) tutte_conditionE by blast
+  qed
   then have "card (odd_comps_in_diff G (X\<union>{x}))\<le> card X +1" 
     by (metis One_nat_def Un_insert_right  add.right_neutral add_Suc_right assms(1) assms(3) 
         boolean_algebra_cancel.sup0 card.insert finite_subset insert_absorb trans_le_add1)
