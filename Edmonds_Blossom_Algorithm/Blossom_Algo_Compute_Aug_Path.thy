@@ -364,7 +364,28 @@ next
   let ?pfx2 = "the (snd (longest_disj_pfx p1 p2))"
   obtain pfx1 pfx2 where pfx12: "(Some pfx1, Some pfx2) = (longest_disj_pfx p1 p2)" (is ?pfx12)
     using \<open>set p1 \<inter> set p2 \<noteq> {}\<close>
-    by (metis disj_pfx_is_complete first_pfx_then_snd_pfx option.exhaust prod.collapse)
+  proof -
+    obtain l1 l2 where pair: "longest_disj_pfx p1 p2 = (l1, l2)"
+      by fastforce
+    then show ?thesis
+    proof (cases l1)
+      case None
+      then have "(None, l2) = longest_disj_pfx p1 p2"
+        using pair by simp
+      then have "set p1 \<inter> set p2 = {}"
+        using disj_pfx_is_complete by blast
+      with \<open>set p1 \<inter> set p2 \<noteq> {}\<close> show ?thesis by blast
+    next
+      case (Some pfx1)
+      then have fstX: "(Some pfx1, l2) = longest_disj_pfx p1 p2"
+        using pair by simp
+      then obtain pfx2 where sndX: "l2 = Some pfx2"
+        using first_pfx_then_snd_pfx by blast
+      have "(Some pfx1, Some pfx2) = longest_disj_pfx p1 p2"
+        using fstX sndX by simp
+      then show ?thesis ..
+    qed
+  qed
   then have p1: "path G (rev (drop (length pfx1) p1) @ rev (pfx1) @ pfx2)" (is ?p1)
     apply(intro pfxs_path[where ?p2.0 = p2] paths)
     by auto
