@@ -3208,10 +3208,19 @@ proof-
         fix es
         assume "\<And>e. e \<in> es \<Longrightarrow> \<exists>v \<in> e. \<exists>r. flabel v = Some (r, Odd)"
         then have "\<exists>s\<in>lab_osc. e \<inter> s \<noteq> {}" if "e \<in> es" for e 
-          using \<open>examined_have_odd_verts_invar ex flabel\<close> that
-          unfolding examined_have_odd_verts_invar_def lab_osc_def
-          apply auto
-          by (metis disjoint_insert(2))
+          proof -
+            have "\<exists>v \<in> e. \<exists>r. flabel v = Some (r, Odd)"
+              using \<open>\<And>e. e \<in> es \<Longrightarrow> \<exists>v \<in> e. \<exists>r. flabel v = Some (r, Odd)\<close> that
+              by blast
+            then obtain v where v: "v \<in> e" "\<exists>r. flabel v = Some (r, Odd)"
+              by blast
+            have "{v} \<in> lab_osc"
+              using v(2) unfolding lab_osc_def by force
+            moreover have "e \<inter> {v} \<noteq> {}"
+              using v(1) by auto
+            ultimately show ?thesis
+              by blast
+          qed
         moreover have "finite lab_osc"
           unfolding lab_osc_def
           using \<open>finite_odds_invar flabel\<close> finite_odds_invar_def
