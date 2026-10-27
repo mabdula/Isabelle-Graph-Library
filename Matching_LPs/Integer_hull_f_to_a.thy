@@ -3330,7 +3330,17 @@ next
     then have "?\<alpha> \<bullet> y \<le> ?\<alpha> \<bullet> x" 
       using \<open>has_Maximum {row C j \<bullet> x |x. x \<in> P}\<close> has_MaximumD(2) y by fastforce
     have "x \<in> integer_hull P" unfolding integer_hull_def 
-      by (metis (no_types, lifting) A Diff_iff P_def x b integer_hull_def not_in_int_hull_not_int)
+    proof (rule ccontr)
+      assume "x \<notin> convex_hull (P \<inter> \<int>\<^sub>v)"
+      then have "x \<notin> integer_hull P"
+        unfolding integer_hull_def by blast
+      moreover have "x \<in> P"
+        using x by blast
+      moreover have "x \<in> \<int>\<^sub>v"
+        using x by blast
+      ultimately show False
+        using not_in_int_hull_not_int[OF A b, folded P_def] by blast
+    qed
     have "?\<alpha> \<bullet> x \<le> d $ j" 
     proof -
       have "x \<in> polyhedron C d" using C_d `x \<in> integer_hull P` by auto
