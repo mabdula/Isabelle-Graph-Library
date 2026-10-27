@@ -83,7 +83,27 @@ proof-
     have "i \<ge> j + 1" using \<open>j < i\<close> by auto
     with \<open>i < length l\<close> have "x \<in> set (drop (j + 1) l)"
       using \<open>l ! i = x\<close>
-      by (metis Cons_nth_drop_Suc list.set_intros(1) set_drop_subset_set_drop subsetD)
+      proof -
+        have len_le: "j + 1 \<le> length l"
+          using \<open>j < i\<close> \<open>i < length l\<close> by simp
+        have idx_eq: "(j + 1) + (i - (j + 1)) = i"
+          using \<open>i \<ge> j + 1\<close> by simp
+        have "drop (j + 1) l ! (i - (j + 1)) = l ! ((j + 1) + (i - (j + 1)))"
+          by (rule nth_drop[OF len_le])
+        also have "\<dots> = l ! i"
+          by (rule arg_cong[OF idx_eq])
+        also have "\<dots> = x"
+          using \<open>l ! i = x\<close> .
+        finally have eq: "drop (j + 1) l ! (i - (j + 1)) = x" .
+        have "i - (j + 1) < length l - (j + 1)"
+          using \<open>i < length l\<close> \<open>i \<ge> j + 1\<close> len_le by linarith
+        then have "i - (j + 1) < length (drop (j + 1) l)"
+          by simp
+        then have "drop (j + 1) l ! (i - (j + 1)) \<in> set (drop (j + 1) l)"
+          by (rule nth_mem)
+        with eq show "x \<in> set (drop (j + 1) l)"
+          by simp
+      qed
     from \<open>l ! i = x\<close>
       have "\<exists>xs ys. (drop (j + 1) l) = xs @ [x] @ ys"
       by (metis \<open>x \<in> set (drop (j + 1) l)\<close> append_Cons append_Nil in_set_conv_decomp_last)
