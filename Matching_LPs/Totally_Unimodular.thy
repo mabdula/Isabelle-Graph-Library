@@ -774,8 +774,18 @@ next
   proof(cases "b + n \<in> I")
     case True
     have "n \<in> (\<lambda>i. i - b) ` (I - {0..<b})" 
-      by (metis Diff_iff True add_less_same_cancel1 atLeastLessThan_iff 
-          diff_add_inverse imageI zero_order(3))
+    proof -
+      have "b + n \<notin> {0..<b}"
+        by simp
+      with True have mem: "b + n \<in> I - {0..<b}"
+        by blast
+      have eq: "n = (\<lambda>i. i - b) (b + n)"
+        by simp
+      have img: "(\<lambda>i. i - b) (b + n) \<in> (\<lambda>i. i - b) ` (I - {0..<b})"
+        using imageI[OF mem] .
+      then show "n \<in> (\<lambda>i. i - b) ` (I - {0..<b})"
+        using eq by simp
+    qed
     then have 1:"{i. i < Suc n \<and> i \<in> ((\<lambda> i. i - b) ` (I - {0..<b}))} = 
           {i. i < n \<and> i \<in> ((\<lambda> i. i - b) ` (I - {0..<b}))} \<union> {n}" 
       using less_Suc_eq by blast
