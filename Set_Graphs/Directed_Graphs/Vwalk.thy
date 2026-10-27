@@ -191,7 +191,7 @@ lemma unused_edge_vwalk:
 lemma unused_edge_vwalk_bet:
   "\<lbrakk>Vwalk.vwalk_bet E u p v; e \<notin> set (edges_of_vwalk p); length p \<ge> 2\<rbrakk>
    \<Longrightarrow> Vwalk.vwalk_bet(E-{e}) u p v"
-   by (metis unused_edge_vwalk vwalk_bet_def)
+  unfolding vwalk_bet_def using unused_edge_vwalk by blast
 
 lemma distinct_edges_of_vwalk:
   "distinct p \<Longrightarrow> distinct (edges_of_vwalk p)"
