@@ -967,9 +967,16 @@ proof -
     using A b P_def assms(4) face_is_polyhedron by blast
   have "F \<noteq> {}" 
     using assms(4) face_non_empty by auto
-  obtain F' where "min_face F F'" 
-    using obtain_min_face_polyhedron[of C "dim_row C" d] C_d  
-    by (metis \<open>F \<noteq> {}\<close> carrier_mat_triv carrier_vec_dim_vec) 
+  have C_carrier: "C \<in> carrier_mat (dim_row C) n"
+    using carrier_mat_triv[of C] C_d(3) by blast
+  have d_carrier: "d \<in> carrier_vec (dim_row C)"
+    using carrier_vec_dim_vec[of d] C_d(2) by simp
+  have poly_ne: "polyhedron C d \<noteq> {}"
+    using C_d(1) \<open>F \<noteq> {}\<close> by simp
+  obtain F' where minF: "min_face (polyhedron C d) F'"
+    using obtain_min_face_polyhedron[OF C_carrier d_carrier poly_ne] by blast
+  then have "min_face F F'"
+    using C_d(1) by simp
   have "face P F'" 
     using A P_def \<open>min_face F F'\<close> assms(4) b min_face_elim(1) face_trans by presburger
   have "\<not> (\<exists>S\<subset>F'. face F S)" 
