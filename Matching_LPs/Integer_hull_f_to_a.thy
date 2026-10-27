@@ -2962,7 +2962,7 @@ qed
       using 6 index_vec by blast
     then have "\<forall>k < n.  (\<lambda>i. \<bar>det A'\<bar> * z $v i) k =
      (\<lambda>k. \<bar>det A'\<bar> * det (replace_col A' b' k) / det A') k  " 
-      by (metis times_divide_eq_right)
+      by simp
     then have 8:"?z' =  vec n (\<lambda> k. \<bar>det A'\<bar> * det (replace_col A' b' k) / det A')" 
       unfolding smult_vec_def using 6
       by (auto simp: `dim_vec z = n`) 
