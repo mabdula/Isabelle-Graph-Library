@@ -1260,12 +1260,36 @@ proof
     then have "odd_components (graph_diff G X) = odd_components (graph_diff G (X - {x}))"
       by presburger
     have "(singl_in_diff G X) \<union> {{x}} = singl_in_diff G (X-{x})"
-      unfolding singl_in_diff_def
-      apply safe 
-        apply (simp add: diff_same)+
-       apply (metis Diff_iff diff_same \<open>x \<in> X\<close> assms(3) subsetD vs_graph_diff)
-      using diff_same apply fastforce
-      done
+    proof -
+      have x_notin_diff: "x \<notin> Vs (graph_diff G X)"
+      proof
+        assume "x \<in> Vs (graph_diff G X)"
+        then obtain e where e1: "e \<in> graph_diff G X" and e2: "x \<in> e"
+          by (meson vs_member_elim)
+        have e_props: "e \<in> G \<and> e \<inter> X = {}"
+          using e1 by (auto simp: graph_diff_def)
+        then have "e \<subseteq> X"
+          using \<open>\<forall>e\<in>G. x \<in> e \<longrightarrow> e \<subseteq> X\<close> e2 by blast
+        then have "e = {}"
+          using e_props by blast
+        then show False using e2 by blast
+      qed
+      have x_in_VsG: "x \<in> Vs G"
+        using \<open>x \<in> X\<close> assms(3) by blast
+      have subset1: "singl_in_diff G X \<subseteq> singl_in_diff G (X - {x})"
+        using diff_same by (auto simp: singl_in_diff_def)
+      have mem_x: "{x} \<in> singl_in_diff G (X - {x})"
+        using x_in_VsG x_notin_diff diff_same by (force simp: singl_in_diff_def)
+      have subset2: "singl_in_diff G (X - {x}) \<subseteq> singl_in_diff G X \<union> {{x}}"
+        using diff_same by (auto simp: singl_in_diff_def)
+      show "(singl_in_diff G X) \<union> {{x}} = singl_in_diff G (X-{x})"
+      proof (rule equalityI)
+        show "singl_in_diff G X \<union> {{x}} \<subseteq> singl_in_diff G (X - {x})"
+          using subset1 mem_x by blast
+        show "singl_in_diff G (X - {x}) \<subseteq> singl_in_diff G X \<union> {{x}}"
+          using subset2 by blast
+      qed
+    qed
     then have "(odd_comps_in_diff G X) \<union> {{x}} = odd_comps_in_diff G (X-{x})" 
       unfolding odd_comps_in_diff_def using diff_same by auto
     then have 2:"card (odd_comps_in_diff G (X-{x})) = card ((odd_comps_in_diff G X) \<union> {{x}})" 
