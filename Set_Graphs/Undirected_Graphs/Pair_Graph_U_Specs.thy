@@ -195,7 +195,20 @@ lemma rev_vwalk:
   apply simp
   apply simp
   using vwalk_append_single graph_abs_symmetric last_rev
-  by (metis last_rev list.sel(1) rev.simps(2))
+proof -
+  fix v v' vs
+  assume edge: "(v, v') \<in> digraph_abs G"
+    and walk_tail: "Vwalk.vwalk (digraph_abs G) (v' # vs)"
+    and IH: "Vwalk.vwalk (digraph_abs G) (rev (v' # vs))"
+  have last_eq: "last (rev (v' # vs)) = v'"
+    by (simp add: last_rev)
+  have edge': "(v', v) \<in> digraph_abs G"
+    using edge graph_abs_symmetric by blast
+  have "Vwalk.vwalk (digraph_abs G) (rev (v' # vs) @ [v])"
+    using vwalk_append_single[OF IH] last_eq edge' by simp
+  thus "Vwalk.vwalk (digraph_abs G) (rev (v # v' # vs))"
+    by simp
+qed
 
 lemma rev_vwalk_bet:
   "vwalk_bet (digraph_abs G) u P v \<Longrightarrow> vwalk_bet (digraph_abs G) v (rev P) u"
