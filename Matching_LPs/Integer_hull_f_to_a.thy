@@ -2976,8 +2976,14 @@ qed
     next
       case False
       have "\<bar>det A'\<bar> /det A' = - 1" 
-        using False  \<open>Determinant.det A' \<noteq> 0\<close>  
-        by (metis abs_if divide_eq_minus_1_iff linorder_neqE_linordered_idom)
+        proof -
+          have det_neg: "Determinant.det A' < 0"
+            using False \<open>Determinant.det A' \<noteq> 0\<close> by linarith
+          have abs_eq: "\<bar>Determinant.det A'\<bar> = - Determinant.det A'"
+            using det_neg by simp
+          show "\<bar>Determinant.det A'\<bar> / Determinant.det A' = - 1"
+            using abs_eq \<open>Determinant.det A' \<noteq> 0\<close> by simp
+        qed
       then show ?thesis by auto
     qed
     then have "\<forall>k < n.\<bar>det A'\<bar> * det (replace_col A' b' k) / det A' \<in> \<int>" 
