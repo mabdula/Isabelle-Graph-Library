@@ -993,7 +993,7 @@ proof
                carrier_mat (card {i. i \<ge> nr1 \<and> i < nr1 + nr2 \<and> i \<in> I}) (card {j. j < n \<and> j \<in> J})"
       using 23 27 by blast
     have 5:"i < card {i. i < nr1 \<and> i \<in> I} + card {i. nr1 \<le> i \<and> i < nr1 + nr2 \<and> i \<in> I}"
-      by (metis 18 27 append_rows_def asmi index_mat_four_block(2) index_zero_mat(2))
+      using asmi 17 18 27 by simp
     have 6:"card {i. i < nr1 \<and> i \<in> I} \<le> i"  
       using False 18 by linarith
     have 30:"(submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) $$ (i, j) =
