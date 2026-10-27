@@ -485,9 +485,25 @@ proof-
     qed
   qed
   moreover have "(v3, v2) \<notin>  {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
-    using neq(3) no_ances(2)
-    apply clarsimp
-    by (metis (mono_tags, lifting) converse_rtranclE mem_Collect_eq old.prod.case)
+  proof (rule notI)
+    assume "(v3, v2) \<in> {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
+    hence v3v1: "(v3, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*"
+      by auto
+    show False
+    proof (rule converse_rtranclE[OF v3v1])
+      assume "v3 = v1"
+      then show False
+        using neq(3) by simp
+    next
+      fix y
+      assume "(v3, y) \<in> {(x,y) | x y. (Some x = par y)}"
+        and "(y, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*"
+      then have "Some v3 = par y"
+        by auto
+      then show False
+        using no_ances(2) by fastforce
+    qed
+  qed
   ultimately have "(v3, v2) \<notin> (insert (v1, v2) {(x,y) | x y. (Some x = par y)})\<^sup>*"
     unfolding rtrancl_insert
     by simp
