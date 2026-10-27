@@ -771,11 +771,20 @@ proof(rule ccontr)
       by (simp add: barrier_def)
     have "X \<subseteq> (X\<union>{x})" 
       by auto
-    then show ?thesis using assms(5) `barrier G (X\<union>{x})`  
-      by (metis (no_types, lifting) One_nat_def Un_subset_iff 
-          \<open>card (odd_comps_in_diff G (X \<union> {x})) = card X + 1\<close> diff_is_0_eq'
-          \<open>card (odd_comps_in_diff G (X \<union> {x})) \<le> card (X \<union> {x})\<close> assms(3,6-7) 
-          component_in_E diff_add_inverse insert_Diff insert_is_Un mem_Collect_eq nat.simps(3))
+    have "C \<inter> X = {}"
+      using assms(6) odd_comps_in_diff_not_in_X by blast
+    then have "x \<notin> X"
+      using assms(7) by blast
+    then have neq: "X \<union> {x} \<noteq> X"
+      by blast
+    have "X \<union> {x} \<subseteq> Vs G"
+      using assms(3) assms(6) assms(7) component_in_E by blast
+    then have "X \<union> {x} \<in> {Z. Z \<subseteq> Vs G \<and> barrier G Z}"
+      using \<open>barrier G (X \<union> {x})\<close> by simp
+    then have "\<not> X \<subseteq> X \<union> {x}"
+      using assms(5)[rule_format, of "X \<union> {x}"] neq by blast
+    then show ?thesis
+      using \<open>X \<subseteq> (X \<union> {x})\<close> by blast
   next
     case False
     then have " card (odd_comps_in_diff (component_edges(graph_diff G X) C) {x})  = 1" 
