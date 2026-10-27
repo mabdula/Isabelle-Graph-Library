@@ -1569,7 +1569,19 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         then show ?thesis by blast
       qed
     then have "\<forall>x \<in> (Vs G). barrier G {x}"
-      by (metis barrier_def insert_not_empty is_singleton_altdef is_singleton_def)
+      proof -
+        {
+          fix x
+          assume "x \<in> Vs G"
+          then have "card (odd_comps_in_diff G {x}) = 1"
+            using 21 by blast
+          moreover have "card {x} = 1"
+            by simp
+          ultimately have "barrier G {x}"
+            unfolding barrier_def by simp
+        }
+        then show ?thesis by blast
+      qed
     then have exBarr:"\<exists> X \<subseteq> Vs G. barrier G X" 
       by (metis "less.prems"(1) False Suc_leI card.empty finite.simps insertCI insert_is_Un 
           le_less_linear nat.simps(3) sup_ge1 zero_order(2))
