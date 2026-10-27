@@ -397,7 +397,7 @@ qed
       have "component_edges (insert e F) C = insert {u, v} (component_edges F C)"
         by simp
       have "v' \<notin> (connected_component F u')"
-        by (metis "2"(3) "2"(4) in_connected_component_in_edges)
+        using "2"(3) "2"(4) in_connected_component_in_edges by fastforce
       from edges_disj \<open>{{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e} = {{u, v}}\<close>
       have "{u, v} \<notin> component_edges F C"
         by simp
