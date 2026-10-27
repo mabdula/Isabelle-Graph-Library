@@ -686,8 +686,8 @@ proof(rule ccontr)
       using diff_component_disjoint [OF C'_in assms(6) C'_neq] .
   qed
   then have "Vs (odd_comps_in_diff G X - {C}) \<inter> C = {}" 
-    by (smt (verit, ccfv_SIG) Int_ac(3) Vs_def assms(1) assms(6)
-        diff_component_disjoint disjoint_iff_not_equal insert_Diff insert_partition)
+    unfolding Vs_def
+    by blast
   then have "card ?docX \<le> 2" 
     by (smt (verit, ccfv_SIG) Int_lower2 Nat.le_diff_conv2 Un_upper1 
         card2 \<open>finite ?docX\<close> add.commute assms(1-4,6-7) card_Un_disjoint card_mono diff_add_inverse 
