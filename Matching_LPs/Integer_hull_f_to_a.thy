@@ -3014,8 +3014,22 @@ qed
   have "(1 / Max (abs ` set\<^sub>v y')) > 0" 
     using \<open>0 < Max (abs ` set\<^sub>v y')\<close> zero_less_divide_1_iff by blast
   then have "?c \<bullet> ?y' > 0" using y' 
-    by (metis "4" 9 comm_scalar_prod gram_schmidt.support_hyp_def 
-        ordered_semiring_strict_class.mult_pos_pos)
+  proof -
+  have y'_carr: "y' \<in> carrier_vec n"
+    using y' by blast
+  have y'_pos: "y' \<bullet> c > 0"
+    using y' by blast
+  have comm: "c \<bullet> y' = y' \<bullet> c"
+    using c y'_carr comm_scalar_prod by blast
+  have cy'_pos: "c \<bullet> y' > 0"
+    using comm y'_pos by simp
+  have factor_pos: "(1 / Max (abs ` set\<^sub>v y')) > 0"
+    using \<open>0 < Max (abs ` set\<^sub>v y')\<close> zero_less_divide_1_iff by blast
+  have "0 < (1 / Max (abs ` set\<^sub>v y')) * (c \<bullet> y')"
+    using ordered_semiring_strict_class.mult_pos_pos[OF factor_pos cy'_pos] by simp
+  then show "?c \<bullet> ?y' > 0"
+    using 9 by simp
+qed
   have "\<beta> \<ge> ?c \<bullet> ?y'" using `?y' \<in> ?P'` unfolding polyhedron_def
     using beta 
     using "4" \<open>?y' \<in> ?P'\<close> gram_schmidt.support_hyp_is_valid(1) by blast
