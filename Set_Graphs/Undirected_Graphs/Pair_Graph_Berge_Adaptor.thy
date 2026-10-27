@@ -687,11 +687,22 @@ next
   have "(let v' = (THE v. v \<in> e - {u}) in (u, v')) \<in> D"
     using \<open>e \<in> G\<close> \<open>{u, w} = e\<close> \<open>u \<noteq> w\<close> D_def
     by force
-  from awalk_Cons_iff \<open>(let v' = (THE v. v \<in> e - {u}) in (u, v')) \<in> D\<close>
-    Cons.IH[OF \<open>epath G w p v\<close> \<open>w \<in> Vs G\<close>] show ?case 
-    by (metis \<open>(THE v. v \<in> e - {u}) = w\<close>
-    \<open>epath_to_awalk u (e # p) = (let v' = THE v. v \<in> e - {u} in (u, v') # epath_to_awalk v' p)\<close>
-    fst_conv snd_conv)
+  show ?case
+  proof -
+    have eq: "epath_to_awalk u (e # p) = (u, w) # epath_to_awalk w p"
+      using \<open>epath_to_awalk u (e # p) = (let v' = (THE v. v \<in> e - {u}) in (u, v') # epath_to_awalk v' p)\<close>
+            \<open>(THE v. v \<in> e - {u}) = w\<close>
+      by simp
+    have edge: "(u, w) \<in> D"
+      using \<open>(let v' = (THE v. v \<in> e - {u}) in (u, v')) \<in> D\<close>
+            \<open>(THE v. v \<in> e - {u}) = w\<close>
+      by simp
+    have tail: "awalk D w (epath_to_awalk w p) v"
+      using Cons.IH[OF \<open>epath G w p v\<close> \<open>w \<in> Vs G\<close>] .
+    from edge tail have "awalk D u ((u, w) # epath_to_awalk w p) v"
+      by (simp add: awalk_Cons_iff)
+    with eq show ?case by simp
+  qed
 qed
 
 
