@@ -3408,8 +3408,25 @@ qed
           next
             case 2
             then have "va = v1 \<or> va = v2"
-              by (metis "2.prems"(6) DiffD1 \<open>M - ex = {e}\<close> \<open>e = {v1, v2}\<close> \<open>va \<in> e'\<close>
-                        ulabelled_verts_matched_invar_def insertE singletonD that vs_member_intro)
+            proof -
+              assume va_none: "flabel va = None"
+              have "e' \<in> G"
+                using that by blast
+              with \<open>va \<in> e'\<close> have "va \<in> Vs G"
+                by (auto simp: Vs_def)
+              then have "\<exists>ea\<in>M - ex. va \<in> ea"
+                using "2.prems"(6) va_none
+                unfolding ulabelled_verts_matched_invar_def
+                by blast
+              then obtain ea where "ea \<in> M - ex" "va \<in> ea"
+                by blast
+              then have "ea = e"
+                using \<open>M - ex = {e}\<close> by simp
+              with \<open>va \<in> ea\<close> have "va \<in> e"
+                by simp
+              then show ?thesis
+                using \<open>e = {v1, v2}\<close> by auto
+            qed
             then consider (v1) "va = v1" | (v2) "va = v2"
               by auto
             then show ?thesis
