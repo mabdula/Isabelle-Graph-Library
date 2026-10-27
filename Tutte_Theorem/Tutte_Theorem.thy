@@ -1525,8 +1525,11 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         by simp
       then have "card (odd_components G) \<ge> 1"
         using `odd (card (Vs G))`
-        by (metis even_zero le_less_linear less.prems(1) less_one
-            odd_components_eq_modulo_cardinality)
+      proof -
+        show "card (odd_components G) \<ge> 1"
+          using odd_components_eq_modulo_cardinality[OF less.prems(1)] \<open>odd (card (Vs G))\<close>
+          by presburger
+      qed
       then show False
         using card0 \<open>odd_comps_in_diff G {} = odd_components G\<close> by force
     qed
