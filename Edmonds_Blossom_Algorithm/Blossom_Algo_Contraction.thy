@@ -1627,9 +1627,21 @@ proof-
       have "alt_path M ((rev p) @ [last pfx1, last (butlast pfx1)])"
       proof-
         have "last (edges_of_path ((last pfx1) # p)) = last (edges_of_path p1)"
-          apply( simp add: from_tree(1) edges_of_path_append_2[OF \<open>p \<noteq> []\<close>])
-          using \<open>pfx1 \<noteq> []\<close> \<open>p \<noteq> []\<close>
-          by (metis edges_of_path.simps(3) edges_of_path_append_2 edges_of_path_append_3 last_appendR neq_Nil_conv)
+        proof -
+          have pfx1_eq: "butlast pfx1 @ [last pfx1] = pfx1"
+            using \<open>pfx1 \<noteq> []\<close> by (rule append_butlast_last_id)
+          have consp_nempty: "last pfx1 # p \<noteq> []"
+            by simp
+          have p1_split: "p1 = butlast pfx1 @ (last pfx1 # p)"
+            using from_tree(1) pfx1_eq by simp
+          have edges_split: "edges_of_path p1 = edges_of_path pfx1 @ edges_of_path (last pfx1 # p)"
+            using p1_split pfx1_eq edges_of_path_append_2[OF consp_nempty]
+            by simp
+          have tail_nempty: "edges_of_path (last pfx1 # p) \<noteq> []"
+            using \<open>p \<noteq> []\<close> by (cases p) auto
+          show ?thesis
+            using edges_split tail_nempty by (simp add: last_appendR)
+        qed
         moreover have "last (edges_of_path p1) \<notin> M"
         proof-
           have "(edges_of_path p1) \<noteq> []"
