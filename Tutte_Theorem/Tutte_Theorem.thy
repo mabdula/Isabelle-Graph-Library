@@ -1646,7 +1646,14 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       then obtain v where "v \<in> C"
         by blast
       then have comp_C:"connected_component (graph_diff G X) v = C"
-        by (metis 2 connected_components_member_eq)
+      proof -
+        obtain u where u1: "u \<in> Vs (graph_diff G X)" and u2: "connected_component (graph_diff G X) u = C"
+          using 2 by blast
+        have "v \<in> connected_component (graph_diff G X) u"
+          using u2 \<open>v \<in> C\<close> by simp
+        then show "connected_component (graph_diff G X) v = C"
+          using u2 connected_components_member_eq by fastforce
+      qed
       have 6:"singl_in_diff G X \<subseteq> singl_in_diff G (X \<union> {v})"
       proof
         fix xs
