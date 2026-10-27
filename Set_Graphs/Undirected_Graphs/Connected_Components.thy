@@ -382,7 +382,7 @@ proof-
   have "\<Union> (connected_components X \<union> ((\<lambda>v. {v}) ` (V - (Vs X)))) = 
     \<Union> (connected_components X) \<union> \<Union> ((\<lambda>v. {v}) ` (V - (Vs X)))" by simp  
   also have "... = Vs X \<union> \<Union> ((\<lambda>v. {v}) ` (V - (Vs X)))"
-    using Union_connected_components[OF \<open>dblton_graph X\<close>] by metis
+    using Union_connected_components[OF \<open>dblton_graph X\<close>] by simp
   also have "... = Vs X \<union> (V - Vs X)"
     by auto
   also have "... = V"
