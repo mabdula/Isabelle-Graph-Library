@@ -91,8 +91,12 @@ proof
   qed
   show 2:"dim_col (submatrix A I UNIV) = dim_col (submatrix A (I \<inter> {0..<dim_row A}) UNIV)" 
     using dim_submatrix 
-    by (smt (verit) Collect_cong Int_iff atLeastLessThan_iff less_nat_zero_code 
-        linorder_le_less_linear)
+  proof -
+    have "{i. i < dim_row A \<and> i \<in> I} = {i. i < dim_row A \<and> i \<in> I \<inter> {0..<dim_row A}}"
+      by (auto simp: atLeastLessThan_iff)
+    then show ?thesis
+      unfolding dim_submatrix(2) by simp
+  qed
   show "\<And>i j. i < dim_row (submatrix A (I \<inter> {0..<dim_row A}) UNIV) \<Longrightarrow>
            j < dim_col (submatrix A (I \<inter> {0..<dim_row A}) UNIV) \<Longrightarrow>
            submatrix A I UNIV $$ (i, j) = submatrix A (I \<inter> {0..<dim_row A}) UNIV $$ (i, j)" 
