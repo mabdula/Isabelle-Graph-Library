@@ -1531,9 +1531,20 @@ proof-
       by simp
   next
     case 4
-    then show ?thesis
-      using assms(3-) v1v2p1p2us(1)
-      by (metis Cons_in_lists_iff append.left_neutral append_in_lists_conv in_listsI list.sel(3) same_append_eq tl_append2)
+    then have "v # p' = us @ v1 # v # p2"
+      by auto
+    then have "v \<in> set p'"
+    proof (cases us)
+      case Nil
+      with \<open>v # p' = us @ v1 # v # p2\<close> show ?thesis
+        by auto
+    next
+      case (Cons u0 us')
+      with \<open>v # p' = us @ v1 # v # p2\<close> show ?thesis
+        by auto
+    qed
+    with assms(4) show ?thesis
+      by blast
   qed
 qed
 
