@@ -1479,7 +1479,15 @@ context parent
 begin
 
 lemma follow_cons_3: "\<exists>l. follow v = v # l"
-  by (metis follow_cons follow_nempty list.exhaust)
+proof -
+  have "follow v \<noteq> []"
+    by (rule follow_nempty)
+  then obtain x xs where fx: "follow v = x # xs"
+    by (cases "follow v") auto
+  have "x = v"
+    using follow_cons[OF fx] by simp
+  with fx show ?thesis by blast
+qed
 
 lemma follow_cons_3': obtains l where "follow v = v # l"
   by (metis follow_cons follow_nempty list.exhaust)
