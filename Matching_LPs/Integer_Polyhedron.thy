@@ -193,8 +193,14 @@ proof
     by (simp add: Matrix.length_list_of_vec)
   then have "vec_of_list (nths (list_of_vec b) I) = 
       vec_of_list (nths (list_of_vec b) (I\<inter> {0..<dim_vec b}))" 
-    by (smt (verit, best) Collect_cong Int_iff Matrix.length_list_of_vec atLeastLessThan_iff 
-        nths_intersect_length_same zero_order(1))
+  proof -
+    assume prev: "nths (list_of_vec b) I = nths (list_of_vec b) {a. a < dim_vec b \<and> a \<in> I}"
+    have "{a. a < dim_vec b \<and> a \<in> I} = I \<inter> {0..<dim_vec b}"
+      by fastforce
+    with prev have "nths (list_of_vec b) I = nths (list_of_vec b) (I \<inter> {0..<dim_vec b})"
+      by simp
+    then show ?thesis by simp
+  qed
   then show "snd (sub_system A b I) = snd (sub_system A b (I \<inter> {0..<nr}))"
     by (metis b carrier_vecD sub_system_snd)
 qed
