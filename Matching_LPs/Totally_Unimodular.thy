@@ -525,7 +525,14 @@ proof(cases "k \<in> I")
     using pick_is_Suc_if_one_removed'[OF 1 3 2] 
     by blast
   have "card {i. i < Suc k \<and> i \<in> I} = card ({i. i < k \<and> i \<in> I} \<union> {k})" 
-    by (metis (no_types, lifting) Collect_cong 7)
+  proof -
+    have "{a \<in> I. a < k} = {i. i < k \<and> i \<in> I}"
+      by auto
+    hence eq: "{i. i < k \<and> i \<in> I} \<union> {k} = {i. i < Suc k \<and> i \<in> I}"
+      using 7 by simp
+    from eq show ?thesis
+      by simp
+  qed
   then have "card {i. i < Suc k \<and> i \<in> I} =  card {i. i < k \<and> i \<in> I} + card {k}" 
     by force
   then have "card {i. i < Suc k \<and> i \<in> I} = card {i. i < k \<and> i \<in> I} + 1" 
