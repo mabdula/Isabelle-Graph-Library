@@ -1743,9 +1743,23 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
             then show False
               using \<open>x \<notin> C\<close> by simp
           qed
-          then have "z \<notin> C" 
-            by (metis 2 \<open>x \<notin> C\<close> \<open>z \<in> C'\<close> connected_components_member_eq 
-                in_own_connected_component odd_x)
+          have "z \<notin> C"
+          proof (rule ccontr)
+            assume "\<not> z \<notin> C"
+            then have zC: "z \<in> C" by blast
+            have compx: "connected_component (graph_diff G X) x = C'"
+              using odd_x by blast
+            have compz1: "connected_component (graph_diff G X) z = C'"
+              using compx \<open>z \<in> C'\<close> connected_components_member_eq by fastforce
+            have compz2: "connected_component (graph_diff G X) z = C"
+              using zC comp_C connected_components_member_eq by fastforce
+            have "C' = C"
+              using compz1 compz2 by simp
+            then have "x \<in> C"
+              using compx in_own_connected_component by fastforce
+            then show False
+              using \<open>x \<notin> C\<close> by blast
+          qed
           have "\<exists>e \<in> G. e \<inter> X = {} \<and> z \<in> e" 
             by (smt (z3) odd_x  \<open>z \<in> C'\<close> graph_diff_def in_connected_component_in_edges
                 mem_Collect_eq vs_member)
