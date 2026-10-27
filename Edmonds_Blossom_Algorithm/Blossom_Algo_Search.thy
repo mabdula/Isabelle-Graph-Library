@@ -1975,7 +1975,66 @@ proof-
     by(rule v1_neq_v2_neq_v3[OF ass] v1_neq_v3[OF ass invars(2)])+
   ultimately have "flabel' (last (parent_spec.follow par' v)) = Some (r, Even)" if "flabel' v = Some (r, lab)" for v r lab
     using that
-    by (smt ass flabel'_def if1_props(2) map_upd_Some_unfold prod.inject)
+  proof -
+    have v1_ne_v2: "v1 \<noteq> v2"
+      using v1_neq_v2_neq_v3[OF ass] by blast
+    have v1_ne_v3: "v1 \<noteq> v3"
+      using v1_neq_v3[OF ass invars(2)] by blast
+    have v2_ne_v1: "v2 \<noteq> v1"
+      using v1_ne_v2 by (rule not_sym)
+    have v3_ne_v1: "v3 \<noteq> v1"
+      using v1_ne_v3 by (rule not_sym)
+    have gen: "flabel' (last (parent_spec.follow par' v')) = Some (r', Even)"
+      if "v2 \<noteq> v'" "v3 \<noteq> v'" "flabel' v' = Some (r', lab')" for v' r' lab'
+    proof -
+      have "flabel v' = Some (r', lab')"
+        using that by (auto simp add: flabel'_def)
+      then have "flabel (last (parent_spec.follow par v')) = Some (r', Even)"
+        using last_even_invar_props[OF invars(4), of _ r' lab'] by blast
+      moreover have "\<forall>v''\<in>set (parent_spec.follow par v'). v'' \<noteq> v2"
+        by (intro v2_nin_ancestors[OF parent.intro[OF invars(1)] flabel_par_invar_props(2)[OF invars(3)]]
+                  if1_props[OF ass] that(1))
+      moreover have "\<forall>v''\<in>set (parent_spec.follow par v'). v'' \<noteq> v3"
+        by (intro v2_nin_ancestors[OF parent.intro[OF invars(1)] flabel_par_invar_props(2)[OF invars(3)]]
+                  flabel_invar_props(1)[OF invars(2) if1_props(4,3)[OF ass]] that(2))
+      moreover have "(last (parent_spec.follow par v')) \<in> set (parent_spec.follow par v')"
+        using parent.follow_nempty[OF parent.intro[OF invars(1)]] by simp
+      ultimately have "flabel' (last (parent_spec.follow par v')) = Some (r', Even)"
+        unfolding flabel'_def by simp
+      moreover have "parent_spec.follow par v' = parent_spec.follow par' v'"
+        unfolding par'_def
+        using compute_alt_path_follow_eq[OF ass invars(1,2,3) that(1) that(2)] .
+      ultimately show ?thesis
+        by simp
+    qed
+    from that consider (eq_v2) "v = v2" | (eq_v3) "v = v3" | (other) "v2 \<noteq> v" "v3 \<noteq> v"
+      by blast
+    then show ?thesis
+    proof cases
+      case eq_v2
+      have "flabel' v1 = Some (r, Even)"
+        using that eq_v2 if1_props(2)[OF ass] v1_ne_v2 v1_ne_v3
+        by (auto simp add: flabel'_def split: if_splits)
+      then have "flabel' (last (parent_spec.follow par' v1)) = Some (r, Even)"
+        using gen v2_ne_v1 v3_ne_v1 by blast
+      then show ?thesis
+        using eq_v2 * by simp
+    next
+      case eq_v3
+      have "flabel' v1 = Some (r, Even)"
+        using that eq_v3 if1_props(2)[OF ass] v1_ne_v2 v1_ne_v3
+        by (auto simp add: flabel'_def split: if_splits)
+      then have "flabel' (last (parent_spec.follow par' v1)) = Some (r, Even)"
+        using gen v2_ne_v1 v3_ne_v1 by blast
+      then show ?thesis
+        using eq_v3 \<open>last (parent_spec.follow par' v3) = last (parent_spec.follow par' v1)\<close>
+        by simp
+    next
+      case other
+      then show ?thesis
+        using gen that by blast
+    qed
+  qed
   then show ?thesis
     unfolding flabel'_def par'_def last_even_invar_def
     by simp
