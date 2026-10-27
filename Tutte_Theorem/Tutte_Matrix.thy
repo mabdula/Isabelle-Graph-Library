@@ -3507,7 +3507,8 @@ proof -
         fix x
         assume "x \<in> (UNIV :: 'a set)"
         obtain e where e: "x \<in> e \<and> e \<in> M" 
-          by (metis \<open>Vs M = UNIV\<close> \<open>x \<in> UNIV\<close> vs_member)
+        using \<open>Vs M = UNIV\<close>
+        by (blast dest: vs_member[THEN iffD1])
         then obtain y where y: "e = {x, y}" 
           using \<open>graph_invar M\<close> by fastforce
         then have "y \<in> e \<and> e \<in> M" 
