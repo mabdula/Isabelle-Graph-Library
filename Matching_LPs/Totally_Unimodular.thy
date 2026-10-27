@@ -1199,8 +1199,10 @@ proof
   qed
   have 2:"{a. a < dim_row A \<and> a \<in> I} = (I \<inter> {0..<dim_row A})" 
     by fastforce
-  have "i < card {a. a < dim_row A \<and> a \<in> I}"
-    by (metis 1 asmi dim_submatrix(1))
+  have "i < dim_row (submatrix A I J)"
+      using 1 asmi by simp
+    then have "i < card {a. a < dim_row A \<and> a \<in> I}"
+      using dim_submatrix(1)[of A I J] by simp
   then have "pick (I  \<inter> {0..<dim_row A}) i= pick I i"
     using pick_reduce_set[of i "dim_row A" I] 2
     by presburger
