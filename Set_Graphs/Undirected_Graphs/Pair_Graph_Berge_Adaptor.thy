@@ -798,7 +798,14 @@ proof-
       have "{x, u} \<in> set (tl p)" by simp
     with \<open>p = {u, x} # ?p_tl\<close> \<open>distinct p\<close>
       show ?case 
-      by (metis distinct.simps(2) insert_commute)
+      proof -
+        from \<open>p = {u, x} # ?p_tl\<close> have "distinct ({u, x} # tl p)"
+          using \<open>distinct p\<close> by (rule subst)
+        then have "{u, x} \<notin> set (tl p)"
+          by simp
+        then show ?case
+          using \<open>{x, u} \<in> set (tl p)\<close> by (simp add: insert_commute)
+      qed
   qed
   
   with \<open>awalk D u ?c' u\<close> \<open>distinct (tl (awalk_verts u ?c'))\<close>
