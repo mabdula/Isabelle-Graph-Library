@@ -3469,7 +3469,14 @@ proof -
         then have "{y, a} \<in> M" 
           using insert_Diff by force
         then show "x = y"
-          by (metis M_match \<open>{x, a} \<in> M\<close> doubleton_eq_iff insertCI matching_unique_match)
+        proof -
+          have "{x, a} = {y, a}"
+            using matching_unique_match[of M a "{x, a}" "{y, a}"]
+              M_match \<open>{x, a} \<in> M\<close> \<open>{y, a} \<in> M\<close>
+            by simp
+          then show "x = y"
+            by (auto simp: doubleton_eq_iff)
+        qed
       qed
       show "?f ` UNIV = UNIV"
       proof safe
