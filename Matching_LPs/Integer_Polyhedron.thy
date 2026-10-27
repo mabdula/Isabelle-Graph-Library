@@ -708,7 +708,7 @@ qed
       fix x
       assume "x \<in> F" "d' = C' *\<^sub>v x" 
       have "\<forall>i < dim_row C'. row C' i \<bullet> x = d' $ i" using `d' = C' *\<^sub>v x`
-        by (metis index_mult_mat_vec)
+        by (simp add: index_mult_mat_vec)
       then have "\<forall>i \<in> J \<inter> {0..<dim_row C}.  (row C i) \<bullet> x = (d $ i)"
         using subsystem_fulfills_P[of C d C' d' J "\<lambda> p q. p \<bullet> x = q"] C_d
         using C'_d' by blast
