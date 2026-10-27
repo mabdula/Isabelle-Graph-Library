@@ -203,7 +203,30 @@ lemma flowpath_cases:
 (\<And>e. a2 = [e]\<Longrightarrow> P) \<Longrightarrow>
 (\<And> e es. a2 = e # es  \<Longrightarrow> snd e = fst (hd es) \<Longrightarrow> multigraph_path es \<Longrightarrow> P) \<Longrightarrow>
 P"
-  using multigraph_path_simps by metis
+proof -
+  assume path: "multigraph_path a2"
+  assume A: "a2 = [] \<Longrightarrow> P"
+  assume B: "\<And>e. a2 = [e] \<Longrightarrow> P"
+  assume C: "\<And>e es. a2 = e # es \<Longrightarrow> snd e = fst (hd es) \<Longrightarrow> multigraph_path es \<Longrightarrow> P"
+  have "a2 = [] \<or> (\<exists>e. a2 = [e]) \<or>
+                  (\<exists>e es. a2 = e # es \<and> snd e = fst (hd es) \<and> multigraph_path es)"
+    using multigraph_path_simps[of a2] path by (rule iffD1)
+  then consider (Nil) "a2 = []"
+              | (Single) e where "a2 = [e]"
+              | (Cons) e es where "a2 = e # es" "snd e = fst (hd es)" "multigraph_path es"
+    by blast
+  then show P
+  proof cases
+    case Nil
+    then show P using A by blast
+  next
+    case Single
+    then show P using B by blast
+  next
+    case Cons
+    then show P using C by blast
+  qed
+qed
 
 end
 end
