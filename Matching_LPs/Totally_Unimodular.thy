@@ -422,7 +422,16 @@ proof -
     case False
     then show ?thesis 
       using pick_is_Suc_if_one_removed[of i I ?j] False 
-      by (metis Suc_lessD \<open>?j \<le> i\<close> 1 assms(1) le_neq_implies_less)
+    proof -
+      have i_lt: "i < card I \<or> infinite I"
+        using assms(1) Suc_lessD by blast
+      have j_lt_i: "?j < i"
+        using le_neq_implies_less[OF \<open>?j \<le> i\<close> False] .
+      have step: "pick (I - {pick I ?j}) i = pick I (Suc i)"
+        using pick_is_Suc_if_one_removed[OF i_lt j_lt_i] .
+      then show ?thesis
+        using 1 by simp
+    qed
   qed
 qed
 
