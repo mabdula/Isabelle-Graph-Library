@@ -1404,7 +1404,15 @@ proof-
       using rev_p1_distinct butlast_pfx2_distinct rev_disj distinct_append by blast
   qed
   ultimately show ?thesis
-    by (metis append.assoc)
+  proof -
+    have "rev (drop (length pfx1) p1) @ butlast (rev pfx1 @ pfx2)
+        = (rev (drop (length pfx1) p1) @ rev pfx1) @ butlast pfx2"
+      using \<open>butlast (rev pfx1 @ pfx2) = (rev pfx1 @ (butlast pfx2))\<close> by simp
+    also have "... = rev p1 @ butlast pfx2"
+      using \<open>(rev (drop (length pfx1) p1)) @ rev pfx1 = rev p1\<close> by (rule arg_cong)
+    finally show ?thesis
+      using \<open>distinct ((rev p1) @ (butlast pfx2))\<close> by simp
+  qed
 qed
 
 lemma pfxs_odd_cycle':
