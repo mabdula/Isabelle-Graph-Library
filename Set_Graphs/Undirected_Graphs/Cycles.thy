@@ -61,8 +61,7 @@ lemma has_no_cycle_indep_ex:
 proof-
   have "{} \<subseteq> G" by simp
   moreover have "\<nexists>u c. decycle {} u c"
-    unfolding decycle_def
-    by (metis epath_empty(2) less_zeroE list.size(3))
+    by (fastforce simp: decycle_def dest: epath_empty(2))
   ultimately show "\<exists>X. has_no_cycle X"
     unfolding has_no_cycle_def by auto
 qed
