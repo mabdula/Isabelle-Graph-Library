@@ -408,7 +408,7 @@ proof(subst rbt_map_fold_revinorder, rule exI[of _ "map fst (rev (inorder G))"],
     foldr (\<lambda>x. f x (the (lookup G x))) (map fst (rev (Tree2.inorder G))) S"
   proof-
     have "distinct (map fst list')" 
-      by (metis distinct_list distinct_rev list'_def rev_map)
+      by (simp add: list'_def distinct_list rev_map[symmetric] distinct_rev)
     hence same_fold:"foldr (\<lambda>(x, y). f x y) list' S =
     foldr (\<lambda>x. f x (the (AList_Upd_Del.map_of list' x))) (map fst list') S"
     proof(induction list')
