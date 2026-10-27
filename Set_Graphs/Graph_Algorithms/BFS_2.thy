@@ -1154,12 +1154,37 @@ proof(intro invar_props_intros, goal_cases)
           by (cases "distance_set (Graph.digraph_abs G) (t_set srcs) v" rule: enat.exhaust;
               simp add: Suc_diff_Suc iless_Suc_eq eval_nat_numeral)
         moreover obtain p' v' where "p = p' @ [v', v]"
-          using \<open>length p > 1\<close>
-          apply (auto
-              simp: eval_nat_numeral Suc_le_length_iff Suc_le_eq[symmetric]
-              split: if_splits)
-          by (metis append.right_neutral append_butlast_last_cancel assms(8) length_Cons
-              length_butlast length_tl list.sel(3) list.size(3) nat.simps(3) vwalk_bet_def)
+          proof -
+            have last_p: "last p = v"
+              using assms(8) by (simp add: vwalk_bet_def)
+            have lp: "length p \<ge> 2"
+              using \<open>length p > 1\<close> by simp
+            have pne: "p \<noteq> []"
+              using lp by auto
+            have blen: "length (butlast p) = length p - 1"
+              using pne by (simp add: length_butlast)
+            have bpne: "butlast p \<noteq> []"
+              using lp blen by (cases p; auto)
+            have p_eq1: "p = butlast p @ [last p]"
+              using pne by (simp add: append_butlast_last_id)
+            then have p_eq1: "p = butlast p @ [v]"
+              using last_p by simp
+            have p_eq2: "butlast p = butlast (butlast p) @ [last (butlast p)]"
+              using bpne by simp
+            have "p = butlast (butlast p) @ [last (butlast p), v]"
+            proof -
+              have "butlast p @ [v] =
+                  (butlast (butlast p) @ [last (butlast p)]) @ [v]"
+                using p_eq2 by (rule arg_cong)
+              moreover have "(butlast (butlast p) @ [last (butlast p)]) @ [v] =
+                  butlast (butlast p) @ [last (butlast p), v]"
+                by simp
+              ultimately show ?thesis
+                using p_eq1 by simp
+            qed
+            then show ?thesis
+              using that by blast
+          qed
         have "vwalk_bet (Graph.digraph_abs (parents bfs_state)) u (p' @ [v']) v'"
         proof(rule ccontr, goal_cases)
           case 1
