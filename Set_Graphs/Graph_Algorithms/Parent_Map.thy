@@ -120,7 +120,7 @@ next
   case cons1: (Cons v' follow_v')
   then have "v' = v"
     using follow_cons
-    by metis
+    by (blast intro: follow_cons sym)
   show ?case
   proof (cases follow_v')
     case nil2: Nil
