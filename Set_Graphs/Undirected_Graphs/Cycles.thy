@@ -638,7 +638,7 @@ proof(goal_cases)
     by (simp add: \<open>dblton_graph X\<close> connected_component_finite connected_components_def)
   then have "\<And> C. C \<in> connected_components X \<Longrightarrow> finite (component_edges X C)"
     unfolding component_edges_def using \<open>finite X\<close>
-    by (smt (verit, best) finite_subset mem_Collect_eq subset_eq)
+    by (auto intro: finite_subset[OF _ \<open>finite X\<close>])
   then have "\<And> A. A \<in> (components_edges X) \<Longrightarrow> finite A"
     unfolding components_edges_def by auto
   have "finite (connected_components X)"
