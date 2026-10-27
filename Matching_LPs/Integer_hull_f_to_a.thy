@@ -2502,9 +2502,38 @@ proof(rule ccontr)
   have "(-y) \<bullet> c > 0" 
     using assms(4) y by auto 
   have "A *\<^sub>v (-y) \<le> 0\<^sub>v nr" 
-    by (smt (verit, ccfv_SIG) A carrier_matD(1) class_ring.minus_zero dim_mult_mat_vec
-        minus_mult_minus_one index_uminus_vec(1) index_zero_vec(1) less_eq_vec_def 
-        mult_mat_vec neg_le_iff_le y)
+  proof -
+    have y_carr: "y \<in> carrier_vec n" and Ay_ge: "0\<^sub>v nr \<le> A *\<^sub>v y"
+      using y by auto
+    have Ay_dim: "dim_vec (A *\<^sub>v y) = nr"
+      using dim_mult_mat_vec carrier_matD(1)[OF A] by simp
+    have eq: "A *\<^sub>v (- y) = - (A *\<^sub>v y)"
+    proof -
+      have "A *\<^sub>v (- y) = A *\<^sub>v ((-1) \<cdot>\<^sub>v y)"
+        using minus_mult_minus_one[of y] by simp
+      also have "\<dots> = (-1) \<cdot>\<^sub>v (A *\<^sub>v y)"
+        using mult_mat_vec[of A nr n y "-1"] A y_carr by auto
+      also have "\<dots> = - (A *\<^sub>v y)"
+        using minus_mult_minus_one[of "A *\<^sub>v y"] by simp
+      finally show ?thesis .
+    qed
+    have "- (A *\<^sub>v y) \<le> 0\<^sub>v nr"
+    proof (unfold less_eq_vec_def, safe)
+      show "dim_vec (- (A *\<^sub>v y)) = dim_vec (0\<^sub>v nr)"
+        using Ay_dim by simp
+    next
+      fix i
+      assume "i < dim_vec (0\<^sub>v nr)"
+      then have i_nr: "i < nr"
+        using Ay_dim by simp
+      have "0\<^sub>v nr $ i \<le> (A *\<^sub>v y) $ i"
+        using Ay_ge[unfolded less_eq_vec_def] i_nr Ay_dim by auto
+      then show "(- (A *\<^sub>v y)) $ i \<le> 0\<^sub>v nr $ i"
+        using i_nr Ay_dim by (simp add: index_uminus_vec index_zero_vec)
+    qed
+    then show ?thesis
+      using eq by simp
+  qed
   then obtain y' where y': "y' \<in> carrier_vec n \<and> A *\<^sub>v y' \<le> 0\<^sub>v nr \<and> y' \<bullet> c > 0" 
     using \<open>0 < - y \<bullet> c\<close> uminus_carrier_vec y by blast
   have "y' \<noteq> 0\<^sub>v n"
