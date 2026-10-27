@@ -329,7 +329,12 @@ next
         by (meson reachable_def \<open>C \<in> connected_components F\<close> insert_subset same_con_comp_reachable) 
       then obtain p where "walk_betw F u p v" by blast
       have "has_no_cycle (component_edges (insert e F) C)"
-        using component_edges_subset has_no_cycle_indep_subset insert(4) by metis
+      proof -
+        have "component_edges (insert e F) C \<subseteq> insert e F"
+          by (rule component_edges_subset)
+        from has_no_cycle_indep_subset[OF \<open>has_no_cycle (insert e F)\<close> this]
+        show ?thesis .
+      qed
       from \<open>has_no_cycle (insert e F)\<close> \<open>e = {u, v}\<close> has_no_cycle_def
       have "(insert {u, v} F) \<subseteq> G" by simp
       from \<open>e = {u, v}\<close> has_no_cycle_ex_unique_path[OF this] \<open>has_no_cycle (insert e F)\<close> \<open>e \<notin> F\<close>
