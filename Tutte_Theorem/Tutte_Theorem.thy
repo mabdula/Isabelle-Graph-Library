@@ -1779,8 +1779,32 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
               using \<open>x \<notin> C\<close> by blast
           qed
           have "\<exists>e \<in> G. e \<inter> X = {} \<and> z \<in> e" 
-            by (smt (z3) odd_x  \<open>z \<in> C'\<close> graph_diff_def in_connected_component_in_edges
-                mem_Collect_eq vs_member)
+        proof -
+          have x_in: "x \<in> Vs (graph_diff G X)"
+            using odd_x by blast
+          have C'_eq: "connected_component (graph_diff G X) x = C'"
+            using odd_x by blast
+          have z_in_Vs: "z \<in> Vs (graph_diff G X)"
+          proof (cases "z = x")
+            case True
+            then show ?thesis
+              using x_in by simp
+          next
+            case False
+            have z_in_cc: "z \<in> connected_component (graph_diff G X) x"
+              using C'_eq \<open>z \<in> C'\<close> by simp
+            have "z \<in> Vs (graph_diff G X) \<or> x = z"
+              by (rule in_connected_component_in_edges[OF z_in_cc])
+            then show ?thesis
+              using False by auto
+          qed
+          then obtain e where e: "z \<in> e" "e \<in> graph_diff G X"
+            by (meson vs_member_elim)
+          then have "e \<in> G \<and> e \<inter> X = {}"
+            unfolding graph_diff_def by auto
+          then show ?thesis
+            using e by blast
+        qed
           then obtain e where e: "e\<in>G \<and>  e \<inter> X = {} \<and> z \<in> e" by auto
           have "v \<notin> e" 
           proof(rule ccontr)
