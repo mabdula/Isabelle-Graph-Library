@@ -405,7 +405,23 @@ lemma connected_component_non_empt: "connected_component A x \<noteq> {}"
 lemma unequal_components_disjoint: 
   "\<lbrakk>connected_component E u \<noteq> connected_component E v; u \<in> X; v \<in> X\<rbrakk> 
   \<Longrightarrow> connected_component E u \<inter> connected_component E v = {}"
-  by (metis Int_emptyI connected_components_member_eq)
+proof -
+  assume "connected_component E u \<noteq> connected_component E v" "u \<in> X" "v \<in> X"
+  show "connected_component E u \<inter> connected_component E v = {}"
+  proof (rule ccontr)
+    assume "connected_component E u \<inter> connected_component E v \<noteq> {}"
+    then obtain w where w1: "w \<in> connected_component E u" and w2: "w \<in> connected_component E v"
+      by blast
+    from w1 have eq1: "connected_component E w = connected_component E u"
+      by (rule connected_components_member_eq)
+    from w2 have eq2: "connected_component E w = connected_component E v"
+      by (rule connected_components_member_eq)
+    from eq1 eq2 have "connected_component E u = connected_component E v"
+      by simp
+    with \<open>connected_component E u \<noteq> connected_component E v\<close> show False
+      by contradiction
+  qed
+qed
 
 lemma same_component_set_mono: 
   "\<lbrakk>A \<subseteq> B; connected_component A x = connected_component A y\<rbrakk>
