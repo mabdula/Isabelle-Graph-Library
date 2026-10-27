@@ -594,7 +594,14 @@ proof(rule ccontr)
       new_components_subset_of_old_one[of C' G X C Y] assms(1-3)
      by auto
   have "\<forall>C'\<in>odd_comps_in_diff G X - {C}. C' \<inter> C = {}" 
-    by (metis DiffD2  assms(3) diff_component_disjoint insert_Diff insert_iff)
+  proof
+    fix C'
+    assume "C' \<in> odd_comps_in_diff G X - {C}"
+    then have C'_in: "C' \<in> odd_comps_in_diff G X" and C'_neq: "C' \<noteq> C"
+      by auto
+    then show "C' \<inter> C = {}"
+      using assms(1) assms(3) diff_component_disjoint by fastforce
+  qed
   have "C' \<inter> C = {}" 
     by (meson IntD1 C' \<open>\<forall>C'\<in>odd_comps_in_diff G X - {C}. C' \<inter> C = {}\<close>)
   then have "C' = {}" 
