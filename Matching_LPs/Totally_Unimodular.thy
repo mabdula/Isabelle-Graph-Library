@@ -1163,9 +1163,17 @@ lemma submatrix_inter_rows':
   shows "submatrix A I J = submatrix A (I \<inter> {0..<dim_row A}) J"
 proof
   show 1:"dim_row (submatrix A I J) = dim_row (submatrix A (I \<inter> {0..<dim_row A}) J)" 
-    using dim_submatrix 
-    by (smt (verit) Collect_cong Int_iff atLeastLessThan_iff
-        less_nat_zero_code linorder_le_less_linear)
+  proof -
+  have eq_set: "{i. i < dim_row A \<and> i \<in> I} = {i. i < dim_row A \<and> i \<in> I \<inter> {0..<dim_row A}}"
+    by auto
+  have "dim_row (submatrix A I J) = card {i. i < dim_row A \<and> i \<in> I}"
+    using dim_submatrix(1) by blast
+  also have "\<dots> = card {i. i < dim_row A \<and> i \<in> I \<inter> {0..<dim_row A}}"
+    using eq_set by simp
+  also have "\<dots> = dim_row (submatrix A (I \<inter> {0..<dim_row A}) J)"
+    using dim_submatrix(1)[of A "I \<inter> {0..<dim_row A}" J] by simp
+  finally show ?thesis .
+  qed
   show "dim_col (submatrix A I J) = dim_col (submatrix A (I \<inter> {0..<dim_row A}) J)" 
     using dim_submatrix 
     by (smt (verit) Collect_cong Int_iff atLeastLessThan_iff 
