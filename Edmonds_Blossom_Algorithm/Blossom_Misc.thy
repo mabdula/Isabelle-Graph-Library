@@ -130,8 +130,36 @@ lemma dist_neq_append: "dist_neq n (xs @ ys) \<Longrightarrow> dist_neq n xs"
   by(induction xs; auto)
 
 lemma dist_neq_append2: "dist_neq n (xs @ ys) \<Longrightarrow> dist_neq n ys"
-  apply(induction xs; simp)
-  by (metis dist_neq.elims(3) length_Cons less_Suc_eq trans_less_add2)
+proof (induction xs)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons a xs)
+  show ?case
+  proof (cases "length (xs @ ys) > n")
+    case True
+    from Cons.prems have "(a \<noteq> hd (drop n (xs @ ys))) \<and> dist_neq n (xs @ ys)"
+      using True by simp
+    then have "dist_neq n (xs @ ys)" by (rule conjunct2)
+    with Cons.IH show ?thesis by simp
+  next
+    case False
+    then have len_ys: "length ys \<le> n" by simp
+    show ?thesis
+    proof (cases "ys = []")
+      case True
+      then show ?thesis by simp
+    next
+      case False
+      then obtain y ys' where ys_eq: "ys = y # ys'"
+        by (cases ys) auto
+      have "length ys' < n"
+        using len_ys unfolding ys_eq by simp
+      then have "\<not> length ys' > n" by simp
+      then show ?thesis using ys_eq by simp
+    qed
+  qed
+qed
 
 lemma dist_neq_split_2: "(x \<noteq> z \<and> dist_neq 1 (xs1 @ [x, y]) \<and> dist_neq (Suc 0) (y # z # xs2))
                        \<Longrightarrow> dist_neq (Suc 0) (xs1 @ x # y # z # xs2)"
