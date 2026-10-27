@@ -668,7 +668,16 @@ next
     proof(cases "{x. x \<in> I \<and> x > pick I i} = {}")
       case True
       then show ?thesis 
-        by (metis Suc.prems empty_Collect_eq lessI pick_in_set pick_mono)
+      proof -
+        have "pick I i < pick I (Suc i)"
+          using Suc.prems lessI pick_mono_inf pick_mono_le by presburger
+        moreover have "pick I (Suc i) \<in> I"
+          using Suc.prems pick_in_set by blast
+        ultimately have "pick I (Suc i) \<in> {x. x \<in> I \<and> x > pick I i}"
+          by auto
+        then show ?thesis
+          using True by blast
+      qed
     next
       case False
       have 2: "\<exists>x\<in>{x. x \<in> I \<and> x > pick I i}. \<forall>y\<in>{x. x \<in> I \<and> x > pick I i}. x \<le> y" 
