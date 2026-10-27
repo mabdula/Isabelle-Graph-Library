@@ -334,7 +334,12 @@ qed
   have "\<forall>C \<in> ?QX. finite ((Vs (?comp_out C)) \<inter> X)" 
     by (meson \<open>X \<subseteq> Vs M\<close> \<open>finite (Vs M)\<close> finite_Int finite_subset)
   have "finite ?QX" 
-    by (metis \<open>X \<subseteq> Vs G \<and> card X < card ?QX\<close> card_eq_0_iff card_gt_0_iff less_imp_triv)
+proof (rule ccontr)
+    assume "infinite ?QX"
+    then have "card ?QX = 0" by simp
+    then show False
+      using \<open>X \<subseteq> Vs G \<and> card X < card ?QX\<close> by simp
+  qed
   have "\<forall> C1 \<in>?QX. \<forall> C2 \<in> ?QX.  C1 \<noteq> C2 \<longrightarrow> ((Vs (?comp_out C1))) \<inter> ((Vs (?comp_out C2))) = {}"
     by (smt (verit, del_insts) \<open>matching M\<close> diff_component_disjoint odd_comps_in_diff_not_in_X 
         disjoint_iff_not_equal doubleton_eq_iff matching_unique_match mem_Collect_eq vs_member)
