@@ -885,7 +885,18 @@ proof
     using dim_submatrix(2) assms(2) by blast
   then show 21:"dim_col (submatrix (A @\<^sub>r B) I J) =
     dim_col (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J)"
-    by (smt (verit, best) 19 20 carrier_append_rows carrier_matD(2) carrier_matI)
+  proof -
+    have Acarr: "submatrix A I J \<in> carrier_mat (dim_row (submatrix A I J)) (card {j. j < n \<and> j \<in> J})"
+      using 20 by (intro carrier_matI) auto
+    have Bcarr: "submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J \<in>
+                 carrier_mat (dim_row (submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J))
+                             (card {j. j < n \<and> j \<in> J})"
+      using 23 by (intro carrier_matI) auto
+    have "dim_col (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) =
+          card {j. j < n \<and> j \<in> J}"
+      using carrier_append_rows[OF Acarr Bcarr] carrier_matD(2) by blast
+    with 19 show ?thesis by simp
+  qed
   fix i j
   assume asmi: "i < dim_row (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J)"
   assume asmj: "j < dim_col (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J)"
