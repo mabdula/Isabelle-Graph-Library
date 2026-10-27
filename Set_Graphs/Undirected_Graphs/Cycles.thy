@@ -428,7 +428,31 @@ qed
         {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}" by blast
       moreover have "{{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F} =
         {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}"
-        by (metis (no_types, opaque_lifting) doubleton_eq_iff)
+        proof (intro set_eqI iffI)
+          fix z
+          assume "z \<in> {{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F}"
+          then obtain x y where z_def: "z = {x, y}" and x_in: "x \<in> connected_component F u'"
+            and y_def: "y = v'" and edge_in: "{x, y} \<in> F"
+            by blast
+          have z_eq: "z = {y, x}"
+            using z_def by (simp add: insert_commute)
+          have edge_in': "{y, x} \<in> F"
+            using edge_in by (simp add: insert_commute)
+          show "z \<in> {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}"
+            using z_eq y_def x_in edge_in' by blast
+        next
+          fix z
+          assume "z \<in> {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}"
+          then obtain x y where z_def: "z = {x, y}" and x_def: "x = v'"
+            and y_in: "y \<in> connected_component F u'" and edge_in: "{x, y} \<in> F"
+            by blast
+          have z_eq: "z = {y, x}"
+            using z_def by (simp add: insert_commute)
+          have edge_in': "{y, x} \<in> F"
+            using edge_in by (simp add: insert_commute)
+          show "z \<in> {{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F}"
+            using z_eq x_def y_in edge_in' by blast
+        qed
       ultimately have "component_edges F C =
         {{x, y} |x y. {x, y} \<subseteq> (connected_component F u') \<and> {x, y} \<in> F} \<union>
         {{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F}" by simp
