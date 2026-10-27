@@ -1128,7 +1128,14 @@ proof(intro invar_props_intros, goal_cases)
         case 1
 
         moreover have "vwalk_bet (Graph.digraph_abs G) u p v"
-          by (metis \<open>invar_2 bfs_state'\<close> assms(8) bfs_state'_def invar_2_props vwalk_bet_subset)
+        proof -
+          have "Graph.digraph_abs (parents bfs_state') \<subseteq> Graph.digraph_abs G"
+            using \<open>invar_2 bfs_state'\<close>
+            by (auto elim!: invar_2_props)
+          thus ?thesis
+            using assms(8)
+            by (auto simp: bfs_state'_def intro: vwalk_bet_subset)
+        qed
 
         ultimately have "length p - 1 > distance_set (Graph.digraph_abs G) (t_set srcs) v"
           using \<open>u \<in> t_set srcs\<close> 1
