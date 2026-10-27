@@ -319,7 +319,17 @@ lemma max_subgraph_iff:
   assumes "ddfs.digraph_of H = digraph_of_all_verts H G"
   shows "max_subgraph G P H \<longleftrightarrow> pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (ddfs.digraph_of H)"
   using assms max_subgraph_imp_max_subgraph max_subgraph_imp_max_subgraph_all_verts
-  by metis
+proof (intro iffI)
+  assume "max_subgraph G P H"
+  hence "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (digraph_of_all_verts H G)"
+    using max_subgraph_imp_max_subgraph_all_verts by blast
+  thus "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (ddfs.digraph_of H)"
+    using assms by simp
+next
+  assume "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (ddfs.digraph_of H)"
+  thus "max_subgraph G P H"
+    using max_subgraph_imp_max_subgraph by blast
+qed
 
 lemma dVs_arcs_subset_verts: 
   "wf_digraph H \<Longrightarrow> compatible H (ddfs.digraph_of G)\<Longrightarrow> dVs (arcs H) \<subseteq> verts H"
