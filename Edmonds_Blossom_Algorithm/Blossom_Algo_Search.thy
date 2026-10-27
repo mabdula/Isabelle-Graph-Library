@@ -1205,10 +1205,49 @@ next
   proof(cases )
     case c1
     then show ?thesis
-      apply(simp add: par' \<open> flabel' = flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r, Even))\<close>)
-      by (smt "**"(2) "3.hyps"(1) "3.hyps"(2) "3.prems"(7) "3.prems"(8) Pair_inject \<open>v1' = v\<close>
-              \<open>{v2, v3} \<in> M\<close> alt_labels_invar.simps(3) ass insert_commute invars(1) invars(2)
-              invars(3) invars(4) invars(5) map_upd_Some_unfold par' parent.follow_cons_2(1))
+      proof -
+        have hv1: "v1' = v3" and hv2: "v2' = v2"
+          using c1 by auto
+        have hv: "v = v3"
+          using \<open>v1' = v\<close> hv1 by simp
+        have v2v3: "v2 \<noteq> v3"
+          using v1_neq_v2_neq_v3(2)[OF ass] .
+        have fl_v3: "flabel' v3 = Some (r, Even)"
+          by (simp add: "3.prems"(8))
+        have fl_v2: "flabel' v2 = Some (r, Odd)"
+          using v2v3 by (simp add: "3.prems"(8))
+        obtain lab where hlab: "flabel' v = Some (r', lab)"
+          using "3.prems"(7) by blast
+        have rr: "r' = r \<and> lab = Even"
+          using hlab hv fl_v3 by fastforce
+        then have rr1: "r' = r" by simp
+        have cond: "flabel' v3 = Some (r', Even) \<and> flabel' v2 = Some (r', Odd)"
+          using fl_v3 fl_v2 rr1 by simp
+        have mem: "{v3, v2} \<in> M"
+          using \<open>{v2, v3} \<in> M\<close> by (simp add: insert_commute)
+        have follow_v3: "parent_spec.follow par' v3 = v3 # v2' # vs"
+          using "3.hyps"(2) hv hv1 by simp
+        have follow_v2': "parent_spec.follow par' v2' = v2' # vs"
+          using parent.follow_cons_2(1)[OF "**"(2) follow_v3] .
+        have follow_v2: "parent_spec.follow par' v2 = v2 # vs"
+          using follow_v2' hv2 by simp
+        have exlab: "\<exists>lab. flabel' v2' = Some (r', lab)"
+          using fl_v2 hv2 rr1 by blast
+        have rec: "alt_labels_invar flabel' r' (v2 # vs)"
+        proof -
+          have "alt_labels_invar flabel' r' (parent_spec.follow par' v2')"
+            using "3.hyps"(1)[OF follow_v2'[symmetric] ass invars(1) invars(2) invars(3) invars(4) invars(5)
+                             exlab "3.prems"(8) par'] .
+          then show ?thesis
+            using follow_v2' hv2 by simp
+        qed
+        have goal_eq: "v1' # v2' # vs = v3 # v2 # vs"
+          using hv1 hv2 by simp
+        show ?thesis
+          unfolding "3.hyps"(2)[symmetric] goal_eq alt_labels_invar.simps(3)
+          using cond mem rec
+          by simp
+      qed
   next
     have aa: "{v2, vx} \<in> M \<Longrightarrow> vx = v3" for vx
       using doubleton_in_matching[OF matching(1)] \<open>{v2, v3} \<in> M\<close>
