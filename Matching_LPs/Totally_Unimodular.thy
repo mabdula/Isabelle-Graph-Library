@@ -401,8 +401,11 @@ proof -
   then have "?j < card {i. i < Suc k \<and> i \<in> I}" 
     by (simp add: psubset_card_mono)
   then have "?j \<le> i" 
-    using assms(2) basic_trans_rules(22) 
-    by (smt (verit, best) Collect_cong)
+  proof - 
+    have "{a \<in> I. a < k} = {i. i < k \<and> i \<in> I}"
+      by auto
+    with assms(2) show ?thesis by simp
+  qed
   then show ?thesis 
   proof(cases "?j = i")
     case True
