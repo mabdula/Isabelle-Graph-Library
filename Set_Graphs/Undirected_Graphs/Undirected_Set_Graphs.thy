@@ -690,7 +690,14 @@ proof -
   have 1: "finite (Vs M)"
     by (meson Vs_subset assms(2) assms(1) finite_subset)
   have 2: "(neighbours_of_Vs M X) \<subseteq> Vs M" 
-    by (smt (verit, best) mem_Collect_eq neighbours_of_Vs_def subsetI vs_member)
+  proof
+    fix y
+    assume "y \<in> neighbours_of_Vs M X"
+    then obtain u e where "u \<in> X" "e \<in> M" "y \<noteq> u" "u \<in> e" "y \<in> e"
+      unfolding neighbours_of_Vs_def by blast
+    then show "y \<in> Vs M"
+      by (auto simp: vs_member)
+  qed
   then show ?thesis using  1 2 
     using finite_subset by blast
 qed
