@@ -532,7 +532,29 @@ qed
         {{x, y} |x y. x \<in> (connected_component F u) \<and> y \<in> (connected_component F v) \<and> {x, y} \<in> F}"
         by simp
       moreover have "\<And>x y. x \<in> (connected_component F u) \<and> y \<in> (connected_component F v) \<Longrightarrow> {x, y} \<notin> F"
-        by (metis "3"(3) connected_components_member_eq in_con_comp_insert insert_absorb)
+        proof -
+          fix x y
+          assume "x \<in> connected_component F u \<and> y \<in> connected_component F v"
+          then have x_mem: "x \<in> connected_component F u" and y_mem: "y \<in> connected_component F v"
+            by simp_all
+          show "{x, y} \<notin> F"
+          proof
+            assume xy_in: "{x, y} \<in> F"
+            have absorb: "insert {x, y} F = F"
+              using xy_in by (simp add: insert_absorb)
+            have y_in_x_comp: "y \<in> connected_component F x"
+              using in_con_comp_insert[of y x F] absorb by simp
+            have comp_x_u: "connected_component F x = connected_component F u"
+              using connected_components_member_eq[OF x_mem] by simp
+            have comp_y_v: "connected_component F y = connected_component F v"
+              using connected_components_member_eq[OF y_mem] by simp
+            have comp_y_x: "connected_component F y = connected_component F x"
+              using connected_components_member_eq[OF y_in_x_comp] by simp
+            have "connected_component F u = connected_component F v"
+              using comp_x_u comp_y_v comp_y_x by simp
+            with "3"(3) show False by simp
+          qed
+        qed
       ultimately have component_edges_expr: "component_edges F C =
         component_edges F (connected_component F u) \<union>
         component_edges F (connected_component F v)"
