@@ -326,7 +326,8 @@ lemma invar_2_holds_upd1[invar_holds_intros]:
   "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state\<rbrakk> \<Longrightarrow> invar_2 (BFS_upd1 bfs_state)"
   apply(auto elim!: call_cond_elims invar_1_props invar_2_props intro!: invar_props_intros simp: BFS_upd1_def Let_def)
   apply(auto simp: dVs_def)
-  apply (metis Un_iff dVsI(1) dVs_def in_mono)
+  subgoal premises prems for v1 v2
+    using prems(4) prems(13) prems(15) by blast
   by (metis Un_iff dVsI(2) dVs_def in_mono)
 
 lemma invar_2_holds_ret_1[invar_holds_intros]:
