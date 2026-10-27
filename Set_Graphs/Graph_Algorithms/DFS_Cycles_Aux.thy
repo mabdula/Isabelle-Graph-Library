@@ -902,7 +902,13 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     with vwalk_rev graph_symmetric
       have "Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)"
-      by (metis (no_types, lifting) case_prodI2 rev_rev_ident)
+      proof -
+        have "Vwalk.vwalk (Graph.digraph_abs G) (rev (rev (stack dfs_aux_state)))"
+          using \<open>Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_aux_state))\<close> graph_symmetric
+          by (blast intro: vwalk_rev)
+        then show ?thesis
+          by (simp add: rev_rev_ident)
+      qed
     have "(?v, u) \<in> (Graph.digraph_abs G)"
       by (metis \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> local.Cons stack_expr vwalk_2)
     then have edges_in_G: "{(u, ?v), (?v, u)} \<subseteq> (Graph.digraph_abs G)" by auto
