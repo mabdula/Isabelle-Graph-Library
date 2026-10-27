@@ -990,8 +990,18 @@ proof-
     apply(intro ancestors_unaffected_1[where ?par = "(par(v2 \<mapsto> v1))" and ?v1.0 = v2 and ?v2.0 = v3] neq \<open>parent (par(v2 \<mapsto> v1))\<close>)
     by blast+
   moreover have "v3 \<notin> set (parent_spec.follow par v)"
-    using parent.nin_ancestors
-    by (metis "*" \<open>\<forall>v''. (par(v2 \<mapsto> v1)) v'' \<noteq> Some v3\<close> \<open>parent par\<close> neq(2))
+  proof -
+    have not_v3: "\<forall>v'\<in>set (parent_spec.follow (par(v2 \<mapsto> v1)) v). v' \<noteq> v3"
+      by (rule v2_nin_ancestors[OF \<open>parent (par(v2 \<mapsto> v1))\<close>
+            \<open>\<forall>v''. (par(v2 \<mapsto> v1)) v'' \<noteq> Some v3\<close> neq(2)])
+    have follow_eq: "parent_spec.follow par v = parent_spec.follow (par(v2 \<mapsto> v1)) v"
+      by (rule follow_cong[OF \<open>parent par\<close> parent.follow_dom[OF \<open>parent par\<close>]
+            "*" \<open>parent (par(v2 \<mapsto> v1))\<close>])
+    show ?thesis
+      unfolding follow_eq
+      using not_v3
+      by auto
+  qed
   ultimately show "?par' \<Longrightarrow> ?g1"
     by (simp add: "*")
   have *: "\<forall>v'\<in>set (parent_spec.follow par v). flabel v' = (flabel(v2 \<mapsto> a)) v'"
