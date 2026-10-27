@@ -1397,7 +1397,15 @@ qed
 lemma vertices_path_in_component:
   assumes "walk_betw G u p v"
   shows "\<forall>x\<in> set p. x \<in> connected_component G u"
-  by (metis assms path_subset_conn_comp subsetD walk_between_nonempty_pathD(1,3))
+proof
+  fix x
+  assume x_in: "x \<in> set p"
+  from walk_between_nonempty_pathD(1)[OF assms] have p_path: "path G p" .
+  from walk_between_nonempty_pathD(3)[OF assms] have p_hd: "hd p = u" .
+  from path_subset_conn_comp[OF p_path] have "set p \<subseteq> connected_component G (hd p)" .
+  with p_hd have "set p \<subseteq> connected_component G u" by simp
+  with x_in show "x \<in> connected_component G u" by blast
+qed
 
 lemma tutte2:
   assumes "graph_invar G"
