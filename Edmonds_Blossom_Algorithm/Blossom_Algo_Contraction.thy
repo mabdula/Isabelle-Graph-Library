@@ -1215,7 +1215,29 @@ next
         ultimately show "a2 \<notin> set l1' \<and> a1' \<notin> set l2 \<and> set l1' \<inter> set l2 = {}"
           by auto
       qed
-      subgoal by (metis (full_types) find_pfx_works_1 insert_disjoint(2) list.simps(15))
+      subgoal premises prems
+      proof -
+        from prems have ne: "last (find_pfx ((=) a2) l1') \<noteq> a2" by blast
+        have a2n: "a2 \<notin> set l1'"
+        proof
+          assume "a2 \<in> set l1'"
+          then have "a2 = last (find_pfx ((=) a2) l1')"
+            by (auto intro: find_pfx_works_1)
+          with ne show False by simp
+        qed
+        moreover have ihdisj: "set (a1' # l1') \<inter> set l2 = {}"
+        proof -
+          from prems have "longest_disj_pfx (a1' # l1') l2
+              = (None, snd (longest_disj_pfx (a1' # l1') l2))"
+            by (cases "longest_disj_pfx (a1' # l1') l2") auto
+          then have iheq: "(None, snd (longest_disj_pfx (a1' # l1') l2))
+              = longest_disj_pfx (a1' # l1') l2"
+            by (rule sym)
+          with prems show "set (a1' # l1') \<inter> set l2 = {}" by blast
+        qed
+        ultimately show "a2 \<notin> set l1' \<and> a1' \<notin> set l2 \<and> set l1' \<inter> set l2 = {}"
+          by auto
+      qed
       done
   qed
 qed
