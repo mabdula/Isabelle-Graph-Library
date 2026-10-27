@@ -1676,7 +1676,16 @@ proof (intro invar_props_intros, goal_cases)
 
     from \<open>hd p_x_v = x\<close> \<open>last p_x_v = ?v\<close> \<open>x \<noteq> ?v\<close> \<open>p_x_v \<noteq> []\<close>
       have "length p_x_v \<ge> 2"
-      by (metis Suc_1 diff_is_0_eq' length_0_conv length_tl not_less_eq_eq singleton_hd_last)
+    proof -
+      have "\<not> length p_x_v \<le> 1"
+      proof
+        assume "length p_x_v \<le> 1"
+        with \<open>p_x_v \<noteq> []\<close> have "hd p_x_v = last p_x_v"
+          by (cases p_x_v) auto
+        with \<open>hd p_x_v = x\<close> \<open>last p_x_v = ?v\<close> \<open>x \<noteq> ?v\<close> show False by simp
+      qed
+      then show ?thesis by linarith
+    qed
 
     have "\<exists>ys. stack (dfs_aux_state) = [hd (stack dfs_aux_state), hd (tl (stack dfs_aux_state))] @ ys"
       using Cons \<open>DFS_Aux_ret_1_conds dfs_aux_state\<close>
