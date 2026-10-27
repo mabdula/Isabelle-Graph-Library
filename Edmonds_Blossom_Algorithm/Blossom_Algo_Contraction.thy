@@ -1681,7 +1681,15 @@ proof-
           by auto
         have eop_cat: "edges_of_path ((rev p @ [last pfx1, last (butlast pfx1)]) @ pfx1') = (edges_of_path (rev p @ [last pfx1, last (butlast pfx1)]) @ (edges_of_path ((last (butlast pfx1)) # pfx1')))"
           using edges_of_path_append_2
-          by (smt (verit, best) append_is_Nil_conv edges_of_path_append_3 last.simps last_append list.discI)
+        proof -
+          have nonempty: "rev p @ [last pfx1, last (butlast pfx1)] \<noteq> []"
+            by simp
+          have last_eq: "last (rev p @ [last pfx1, last (butlast pfx1)]) = last (butlast pfx1)"
+            by (simp add: last_append)
+          show ?thesis
+            using edges_of_path_append_3[OF nonempty, of pfx1'] last_eq
+            by simp
+        qed
         show ?thesis
           apply(rule conjunct1[OF alt_list_append_1])
           using revp1_alt
