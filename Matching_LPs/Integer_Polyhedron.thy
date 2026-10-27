@@ -263,8 +263,17 @@ proof -
       then have "\<forall>i \<in> J \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
         using subsystem_fulfills_P[of A b C d J "\<lambda> p q. p \<bullet> x = q"] C_d
           `dim_row A = dim_vec b`  by blast
-      then have "\<forall>i \<in> (I \<union> J) \<inter> {0..<dim_row A}. (row A i) \<bullet> x = (b $ i)"
-        by (metis Int_Un_distrib2 Un_iff \<open>\<forall>i\<in>I \<inter> {0..<dim_row A}. row A i \<bullet> x = b $ i\<close>)
+      have "\<forall>i \<in> (I \<union> J) \<inter> {0..<dim_row A}. (row A i) \<bullet> x = (b $ i)"
+      proof
+        fix i
+        assume "i \<in> (I \<union> J) \<inter> {0..<dim_row A}"
+        then have "i \<in> (I \<inter> {0..<dim_row A}) \<union> (J \<inter> {0..<dim_row A})"
+          by (simp add: Int_Un_distrib2)
+        then show "(row A i) \<bullet> x = (b $ i)"
+          using \<open>\<forall>i\<in>I \<inter> {0..<dim_row A}. row A i \<bullet> x = b $ i\<close>
+            \<open>\<forall>i\<in>J \<inter> {0..<dim_row A}. row A i \<bullet> x = b $ i\<close>
+          by blast
+      qed
       then have "\<forall>i < dim_row C'. row C' i \<bullet> x = d' $ i" 
         using subsystem_fulfills_P'[of A b C' d' _ "\<lambda> p q. p \<bullet> x = q"] C'_d'
         using \<open>dim_row A = dim_vec b\<close> by blast
