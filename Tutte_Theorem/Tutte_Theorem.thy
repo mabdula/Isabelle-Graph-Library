@@ -426,9 +426,22 @@ proof (rule ccontr)
           using \<open>M \<subseteq> G\<close> \<open>e \<in> M\<close> 
           by (simp add: graph_diffI subsetD)
         then have "x \<in> C"
-          by (metis \<open>C \<in> odd_comps_in_diff G X\<close> \<open>e = {x, y}\<close> assms_edge(5) 
-                   connected_components_member_sym odd_comps_in_diff_is_component
-                   vertices_edges_in_same_component)
+          proof -
+            have "{x, y} \<in> graph_diff G X"
+              using \<open>e \<in> (graph_diff G X)\<close> \<open>e = {x, y}\<close> by simp
+            then have "y \<in> connected_component (graph_diff G X) x"
+              by (rule vertices_edges_in_same_component)
+            then have "connected_component (graph_diff G X) y = connected_component (graph_diff G X) x"
+              by (rule connected_components_member_eq)
+            moreover have "connected_component (graph_diff G X) y = C"
+              by (rule odd_comps_in_diff_is_component[OF \<open>C \<in> odd_comps_in_diff G X\<close> assms_edge(5)])
+            ultimately have "connected_component (graph_diff G X) x = C"
+              by simp
+            have xin: "x \<in> connected_component (graph_diff G X) x"
+              by (rule in_own_connected_component)
+            then show "x \<in> C"
+              using \<open>connected_component (graph_diff G X) x = C\<close> by simp
+          qed
         then show "y \<in> {}"  using \<open>x \<notin> C\<close> by auto
       qed
       have " ((Vs M) \<inter> C) = C" 
