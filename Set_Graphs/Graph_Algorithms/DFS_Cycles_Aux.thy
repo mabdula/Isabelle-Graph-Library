@@ -1888,7 +1888,16 @@ proof (intro invar_props_intros, goal_cases)
     have stack_expr: "(stack (DFS_Aux_upd1 dfs_aux_state)) = ?w # stack (dfs_aux_state)"
       by (auto simp add: DFS_Aux_upd1_def Let_def)
     with a show ?thesis
-      by (metis "1"(7) disjoint_insert(2) list.set_sel(1) list.simps(15) vwalk_bet_def)
+    proof -
+      have "p \<noteq> []" and "hd p = v"
+        using "1"(7) by (auto simp: vwalk_bet_def)
+      then have "v \<in> set p"
+        by (cases p) auto
+      with a have "?w \<in> set p" by simp
+      moreover have "?w \<in> set (stack (DFS_Aux_upd1 dfs_aux_state))"
+        by (simp add: stack_expr)
+      ultimately show ?thesis by blast
+    qed
   next
     case b
     with \<open>w \<in> dVs (Graph.digraph_abs G) - t_set (seen dfs_aux_state)\<close> 1(7-8)
