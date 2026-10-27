@@ -697,8 +697,54 @@ proof-
     subgoal 
       by (smt dblton_graph_def Pair_inject doubleton_eq_iff graph in_mono map_upd_Some_unfold 
               matching(2))
-    subgoal 
-      by (smt Pair_inject insert_commute map_upd_Some_unfold)
+    subgoal premises prems for va vb
+    proof -
+      have mem: "{va, vb} \<in> M"
+        using prems by blast
+      obtain ra where vb_odd: "(flabel(v2 := Some (r, Odd), v3 := Some (r, Even))) vb = Some (ra, Odd)"
+        using prems by blast
+      show ?thesis
+      proof (cases "vb = v2")
+        case True
+        with mem have "{va, v2} \<in> M" by simp
+        with prems have "va = v3" by fastforce
+        then show ?thesis by auto
+      next
+        case False
+        note vb_ne_v2 = False
+        show ?thesis
+        proof (cases "vb = v3")
+          case True
+          then show ?thesis using vb_odd by simp
+        next
+          case False
+          note vb_ne_v3 = False
+          with vb_ne_v2 vb_odd have vb_flabel: "flabel vb = Some (ra, Odd)"
+            by simp
+          have va_ne_v2: "va \<noteq> v2"
+          proof
+            assume "va = v2"
+            with mem have "{v2, vb} \<in> M" by simp
+            then have "{vb, v2} \<in> M" by (simp add: insert_commute)
+            with prems have "vb = v3" by fastforce
+            with vb_ne_v3 show False by simp
+          qed
+          have va_ne_v3: "va \<noteq> v3"
+          proof
+            assume "va = v3"
+            with mem have "{v3, vb} \<in> M" by simp
+            then have "{vb, v3} \<in> M" by (simp add: insert_commute)
+            with prems have "vb = v2" by fastforce
+            with vb_ne_v2 show False by simp
+          qed
+          obtain rb where va_flabel: "flabel va = Some (rb, Even)"
+            using prems mem vb_flabel by fastforce
+          then have "(flabel(v2 := Some (r, Odd), v3 := Some (r, Even))) va = Some (rb, Even)"
+            using va_ne_v2 va_ne_v3 by simp
+          then show ?thesis by blast
+        qed
+      qed
+    qed
     done
 qed
 
