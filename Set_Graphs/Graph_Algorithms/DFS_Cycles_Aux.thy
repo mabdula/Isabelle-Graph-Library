@@ -1068,7 +1068,19 @@ proof (intro invar_props_intros, goal_cases)
       have "t_set (seen (dfs_aux_state)) = {?v}"
       using \<open>invar_seen_stack_finished dfs_aux_state\<close>
       unfolding invar_seen_stack_finished_def
-      by (metis list.simps(15) not_Cons_self2 set_empty subset_singleton_iff)
+      proof -
+        from \<open>invar_seen_stack_finished dfs_aux_state\<close>
+          have "set (stack dfs_aux_state) \<subseteq> t_set (seen (dfs_aux_state))"
+          unfolding invar_seen_stack_finished_def by blast
+        have "set (stack dfs_aux_state) = set [?v]"
+          using \<open>(stack dfs_aux_state) = [?v]\<close> by (rule arg_cong)
+        then have "?v \<in> set (stack dfs_aux_state)" by simp
+        then have "?v \<in> t_set (seen (dfs_aux_state))"
+          using \<open>set (stack dfs_aux_state) \<subseteq> t_set (seen (dfs_aux_state))\<close>
+          by auto
+        then show ?thesis
+          using \<open>t_set (seen (dfs_aux_state)) = {s}\<close> by force
+      qed
 
     with seen_expr
       have "t_set (seen (DFS_Aux_upd1 dfs_aux_state)) = {?v, ?w}"
