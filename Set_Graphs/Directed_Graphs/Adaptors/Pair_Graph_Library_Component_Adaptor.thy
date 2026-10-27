@@ -288,9 +288,28 @@ lemma max_subgraph_digraph_of_additional_verts_disconnected:
   assumes "u \<in> verts H'" "u \<notin> dVs H"
   assumes "H \<subseteq> arcs H'" \<comment> \<open>a max subgraph is not unique, therefore we have to enforce that we are talking about the "same" max subgraph in both worlds\<close>
   shows "\<nexists>v. (u \<rightarrow>\<^bsub>H'\<^esub> v \<or> v \<rightarrow>\<^bsub>H'\<^esub> u)"
-  using assms
-  by (auto dest!: max_subgraph_arcs_eq;
-      metis Digraph_Component.subgraphE compatible_digraph_of_arcs_ends dVsI pre_digraph.subgraphI_max_subgraph subgraph_digraph_of_arcs)+
+proof -
+  have arcs_H': "arcs H' = H"
+    using max_subgraph_arcs_eq[OF assms(1) assms(5) assms(2)] .
+  have "subgraph_digraph H' (ddfs.digraph_of G)"
+    using pre_digraph.subgraphI_max_subgraph[OF assms(2)] .
+  hence compat: "compatible H' (ddfs.digraph_of G)"
+    by (auto simp: Digraph_Component.subgraph_def intro: compatible_sym)
+  have arcs_ends_H': "arcs_ends H' = H"
+    using compatible_digraph_of_arcs_ends[OF compat] arcs_H'
+    by simp
+  show ?thesis
+  proof
+    assume "\<exists>v. u \<rightarrow>\<^bsub>H'\<^esub> v \<or> v \<rightarrow>\<^bsub>H'\<^esub> u"
+    then obtain v where "u \<rightarrow>\<^bsub>H'\<^esub> v \<or> v \<rightarrow>\<^bsub>H'\<^esub> u" by blast
+    hence "(u, v) \<in> H \<or> (v, u) \<in> H"
+      using arcs_ends_H' by simp
+    hence "u \<in> dVs H"
+      by (blast intro: Pair_Graph.dVsI)
+    thus False
+      using assms(4) by blast
+  qed
+qed
 
 
 text \<open>
