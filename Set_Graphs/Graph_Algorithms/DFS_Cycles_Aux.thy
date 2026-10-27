@@ -1554,7 +1554,20 @@ proof (intro invar_props_intros, goal_cases)
       using \<open>invar_1 dfs_aux_state\<close> \<open>invar_seen_stack_finished dfs_aux_state\<close>
       by (force elim!: invar_props_elims)
     with Nil have "x = ?v"
-      by (metis emptyE empty_set hd_Cons_tl set_ConsD)
+    proof -
+      have stack_ne: "stack dfs_aux_state \<noteq> []"
+        using \<open>x \<in> set (stack (dfs_aux_state))\<close> by auto
+      have hd_tl: "hd (stack dfs_aux_state) # tl (stack dfs_aux_state) = stack dfs_aux_state"
+        using stack_ne by (rule hd_Cons_tl)
+      with Nil have "stack dfs_aux_state = [?v]"
+        by simp
+      then obtain va where va: "stack dfs_aux_state = [va]"
+        by blast
+      then have "x = va"
+        using \<open>x \<in> set (stack (dfs_aux_state))\<close> by simp
+      then show "x = ?v"
+        using va by simp
+    qed
     with \<open>x \<noteq> ?v\<close> show ?thesis by blast
   next
     case (Cons a list)
