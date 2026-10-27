@@ -2723,8 +2723,18 @@ qed
         finally show ?thesis .
       qed
       have " - (1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') $ i \<le> 1" 
-        by (metis \<open>1 / Max (abs ` set\<^sub>v y') * - y' $ i \<le> 1\<close> \<open>i < n\<close> carrier_vecD index_smult_vec(1)
-            mult_minus_right y')
+      proof -
+        have y'_carr: "y' \<in> carrier_vec n" using y' by blast
+        have i_dim: "i < dim_vec y'"
+          using \<open>i < n\<close> y'_carr carrier_vecD by blast
+        have eq1: "(1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') $ i = 1 / Max (abs ` set\<^sub>v y') * y' $ i"
+          using index_smult_vec(1)[OF i_dim] by simp
+        have "- (1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') $ i = 1 / Max (abs ` set\<^sub>v y') * (- y' $ i)"
+          using eq1 by (simp add: mult_minus_right)
+        also have "\<dots> \<le> 1"
+          using \<open>1 / Max (abs ` set\<^sub>v y') * - y' $ i \<le> 1\<close> by simp
+        finally show ?thesis .
+      qed
       then show "row (- 1\<^sub>m n) i \<bullet> ?y' \<le> 1" 
         by (simp add: \<open>row (- 1\<^sub>m n) i = - unit_vec n i\<close> 3)
     qed
