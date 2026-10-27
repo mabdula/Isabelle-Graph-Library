@@ -2831,8 +2831,16 @@ qed
     then have "\<forall> i < n. - unit_vec n i \<bullet> x \<le> 1" 
       by simp
     then have "\<forall> i < n. - x $ i \<le> 1" 
-      by (metis \<open>x \<in> carrier_vec n\<close> carrier_vecD index_unit_vec(3) 
-          scalar_prod_left_unit scalar_prod_uminus_left)
+    proof (intro allI impI)
+      fix i
+      assume i: "i < n"
+      have eq: "- unit_vec n i \<bullet> x = - x $ i"
+        using \<open>x \<in> carrier_vec n\<close> i
+        by (simp add: scalar_prod_left_unit scalar_prod_uminus_left)
+      from \<open>\<forall>i<n. - unit_vec n i \<bullet> x \<le> 1\<close>[rule_format, OF i]
+      have b: "- unit_vec n i \<bullet> x \<le> 1" by simp
+      from b show "- x $ i \<le> 1" unfolding eq[symmetric] by simp
+    qed
     then show " \<forall> i < n.  x $ i \<ge> - 1" 
       by (simp add: \<open>x \<in> carrier_vec n\<close>)
   qed
