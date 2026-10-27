@@ -52,10 +52,28 @@ lemma dVs_member':
   by (auto dest: symmetric)
 
 lemma vs_member': "v \<in> Vs G \<longleftrightarrow> (\<exists>u. {u, v} \<in> G)"
-  unfolding Vs_def
-  using graph
-  apply (auto simp: dblton_graph_def)
-  by (metis edge_iff_edge_2 emptyE insertE insert_commute) 
+proof
+  assume "v \<in> Vs G"
+  then obtain e where "v \<in> e" and "e \<in> G"
+    unfolding Vs_def by blast
+  then obtain x y where e_eq: "e = {x, y}"
+    using graph by (auto simp: dblton_graph_def)
+  with \<open>v \<in> e\<close> consider (vx) "v = x" | (vy) "v = y" by auto
+  then show "\<exists>u. {u, v} \<in> G"
+  proof cases
+    case vx
+    have "{y, v} = e" using e_eq vx by (simp add: insert_commute)
+    with \<open>e \<in> G\<close> show ?thesis by blast
+  next
+    case vy
+    have "{x, v} = e" using e_eq vy by simp
+    with \<open>e \<in> G\<close> show ?thesis by blast
+  qed
+next
+  assume "\<exists>u. {u, v} \<in> G"
+  then obtain u where "{u, v} \<in> G" by blast
+  then show "v \<in> Vs G" unfolding Vs_def by blast
+qed
                                   
 lemma in_Vs_iff_in_dVs:
   "u \<in> Vs G \<longleftrightarrow> u \<in> dVs D"
