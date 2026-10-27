@@ -106,7 +106,12 @@ proof-
       qed
     from \<open>l ! i = x\<close>
       have "\<exists>xs ys. (drop (j + 1) l) = xs @ [x] @ ys"
-      by (metis \<open>x \<in> set (drop (j + 1) l)\<close> append_Cons append_Nil in_set_conv_decomp_last)
+    proof -
+      from \<open>x \<in> set (drop (j + 1) l)\<close> obtain xs ys
+        where "drop (j + 1) l = xs @ [x] @ ys"
+        by (auto simp: in_set_conv_decomp)
+      then show ?thesis by blast
+    qed
     then obtain xs ys where "(drop (j + 1) l) = xs @ [x] @ ys" by blast
 
     with \<open>l = (take j l) @ [y] @ (drop (j + 1) l)\<close>
