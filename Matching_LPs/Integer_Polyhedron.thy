@@ -316,8 +316,16 @@ proof -
       finally show ?thesis .
     qed
     then have "{x. A' *\<^sub>v x = b' \<and> x \<in> P} = {x. C *\<^sub>v x = d \<and> x \<in> P}" 
-      by (metis (no_types, lifting) Pair_inject \<open>(C', d') = sub_system A b (J \<union> I)\<close>
-          \<open>{x. C *\<^sub>v x = d \<and> x \<in> P} = {x. C' *\<^sub>v x = d' \<and> x \<in> P}\<close> assms(4))
+    proof -
+      have "(A', b') = sub_system A b (J \<union> I)"
+        using assms(4) \<open>sub_system A b I = sub_system A b (J \<union> I)\<close> by simp
+      also have "\<dots> = (C', d')"
+        using \<open>(C', d') = sub_system A b (J \<union> I)\<close> by simp
+      finally have pair_eq: "(A', b') = (C', d')" .
+      then have "A' = C'" "b' = d'" by simp_all
+      then show ?thesis
+        using \<open>{x. C *\<^sub>v x = d \<and> x \<in> P} = {x. C' *\<^sub>v x = d' \<and> x \<in> P}\<close> by simp
+    qed
     then show False using assms(8) 
       using C_d(2) assms(5) by blast
   qed
