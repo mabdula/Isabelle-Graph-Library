@@ -1181,7 +1181,22 @@ proof
   assume asmj: "j < dim_col (submatrix A (I \<inter> {0..<dim_row A}) J)" 
   have 3:"submatrix A I J $$ (i, j) = A $$ (pick I i, pick J j)"
     using submatrix_index
-    by (metis (no_types, lifting) 1 asmi asmj dim_submatrix(1-2))
+  proof -
+    have i': "i < dim_row (submatrix A I J)"
+      using asmi 1 by simp
+    have eq_col: "dim_col (submatrix A I J) = card {j. j < dim_col A \<and> j \<in> J}"
+      by (simp add: dim_submatrix(2))
+    have eq_col': "dim_col (submatrix A (I \<inter> {0..<dim_row A}) J) = card {j. j < dim_col A \<and> j \<in> J}"
+      by (simp add: dim_submatrix(2))
+    have j': "j < dim_col (submatrix A I J)"
+      using asmj eq_col eq_col' by simp
+    have ci: "i < card {a. a < dim_row A \<and> a \<in> I}"
+      using i' dim_submatrix(1)[of A I J] by simp
+    have cj: "j < card {a. a < dim_col A \<and> a \<in> J}"
+      using j' dim_submatrix(2)[of A I J] by simp
+    show ?thesis
+      using submatrix_index[OF ci cj] by simp
+  qed
   have 2:"{a. a < dim_row A \<and> a \<in> I} = (I \<inter> {0..<dim_row A})" 
     by fastforce
   have "i < card {a. a < dim_row A \<and> a \<in> I}"
