@@ -1588,11 +1588,10 @@ next
   obtain w where w: "w \<in> Vs G" "C = connected_component G w"
     using C_in_comp
     by (fastforce simp add: connected_components_def)
+  have w_in_C: "w \<in> C" using w(2) by (simp add: in_own_connected_component)
   then obtain pwu where pwu: "pwu \<noteq> []" "path G pwu" "hd pwu = w" "last pwu = u"
-    using uC C_in_comp
-    unfolding connected_components_def connected_component_def
-    apply simp
-    by (metis (no_types, lifting) C_in_comp in_own_connected_component same_con_comp_path uC w(2))
+    using same_con_comp_path[OF C_in_comp w_in_C uC]
+    by auto
   moreover case False
   ultimately have "path G (pwu @ (tl puv))" "hd (pwu @ (tl puv)) = w" "last (pwu @ (tl puv)) = v"
     apply(intro path_append connected pwu tl_path_is_path; simp)
