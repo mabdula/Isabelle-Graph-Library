@@ -47,7 +47,12 @@ lemma finite_Vs_then_finite:
   assumes "finite (Vs G)"
   shows "finite G"
   using assms
-  by (metis Vs_def finite_UnionD)
+proof -
+  from assms have "finite (\<Union> G)"
+    by (simp add: Vs_def)
+  then show ?thesis
+    by (rule finite_UnionD)
+qed
 
 lemma edge_commute: "{u,v} \<in> G \<Longrightarrow> {v,u} \<in> G"
   by (simp add: insert_commute)
