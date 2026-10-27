@@ -276,7 +276,17 @@ proof safe
   fix X x
   assume "X \<subseteq> A" "x \<in> neighbours_of_Vs G X" "x \<in> X"
   then show "x \<in> {}" 
-    by (metis Diff_iff assms in_mono neighbours_of_Vs_subset neighbours_of_Vs_bipartite)
+  proof -
+    have "neighbours_of_Vs G X \<subseteq> neighbours_of_Vs G A"
+      using neighbours_of_Vs_subset[OF \<open>X \<subseteq> A\<close>] .
+    hence "x \<in> neighbours_of_Vs G A"
+      using \<open>x \<in> neighbours_of_Vs G X\<close> by blast
+    hence "x \<in> Vs G - A"
+      using neighbours_of_Vs_bipartite[OF assms] by simp
+    hence "x \<notin> A" by simp
+    thus "x \<in> {}"
+      using \<open>X \<subseteq> A\<close> \<open>x \<in> X\<close> by blast
+  qed
 qed
 
 lemma part_bipartite_diff:
