@@ -855,7 +855,18 @@ next
           using ne by blast
       qed
       subgoal by (rule cons1.IH[of _ None "a1'#l1'"], simp)
-      subgoal by (metis option.sel snd_pfx_nempty)
+      subgoal premises prems for x2a
+      proof -
+        have rec: "(Some pfx1, Some x2a) = longest_disj_pfx (a1' # l1') l2"
+          using prems by simp
+        hence ne: "x2a \<noteq> []"
+          using snd_pfx_nempty by blast
+        have "last pfx1 = last (the (Some x2a))"
+          using cons1.IH[of pfx1 "Some x2a" "a1'#l1'"] rec by simp
+        then have l': "last pfx1 = last x2a" by simp
+        then show "(x2a = [] \<longrightarrow> last pfx1 = a2) \<and> (x2a \<noteq> [] \<longrightarrow> last pfx1 = last x2a)"
+          using ne by simp
+      qed
       done
   qed
 qed
