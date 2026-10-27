@@ -1910,8 +1910,16 @@ lemma mid_path_deg_ge_2:
     "distinct p"
     "finite G"
   shows "degree G v \<ge> 2"
-  using assms
-  by (metis degree_edges_of_path_ge_2 path_edges_subset subset_edges_less_degree)
+proof -
+  have deg2: "degree (set (edges_of_path p)) v = 2"
+    using degree_edges_of_path_ge_2[OF assms(5) assms(2) assms(3) assms(4)] .
+  have subset: "set (edges_of_path p) \<subseteq> G"
+    using path_edges_subset[OF assms(1)] .
+  have le: "degree (set (edges_of_path p)) v \<le> degree G v"
+    using subset_edges_less_degree[OF subset] .
+  show ?thesis
+    using deg2 le by simp
+qed
 
 lemma degree_edges_of_path_ge_2_all:
   assumes "distinct p" "length p \<ge> 3" "v\<in>set p"
