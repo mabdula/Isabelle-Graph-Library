@@ -3293,7 +3293,19 @@ next
   proof(rule ccontr)
     assume"P \<noteq> integer_hull P"
     then obtain y where y: "y \<in> P - integer_hull P" 
-      by (metis A Diff_iff P_def b int_hull_subset set_eq_subset subset_iff)
+    proof -
+      have subset: "integer_hull P \<subseteq> P"
+        using A P_def b int_hull_subset by blast
+      have "\<not> P \<subseteq> integer_hull P"
+      proof
+        assume "P \<subseteq> integer_hull P"
+        with subset have "P = integer_hull P" by blast
+        with \<open>P \<noteq> integer_hull P\<close> show False by blast
+      qed
+      then obtain z where "z \<in> P" and "z \<notin> integer_hull P" by blast
+      then have "z \<in> P - integer_hull P" by (rule DiffI)
+      then show thesis by (rule that)
+    qed
     then have "y \<in> carrier_vec n" 
       unfolding P_def polyhedron_def 
       by blast
