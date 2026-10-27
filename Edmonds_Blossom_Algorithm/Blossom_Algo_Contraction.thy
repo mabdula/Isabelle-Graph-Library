@@ -1354,7 +1354,7 @@ proof-
       by (simp add: last_rev edges_of_path_rev[symmetric])+
   qed
   ultimately show ?thesis
-    by (metis append.assoc)
+    by (simp add: append.assoc[symmetric])
 qed
 
 lemma pfxs_distinct:
