@@ -228,7 +228,7 @@ proof (induction rule: induct_walk_betw)
     have "\<not> set c \<subseteq> Y"
       using decycle_not_subset[OF decycle_ex no_decycle_Y] .
     moreover have "set c \<subseteq> (insert {u, v} Y)" 
-      using \<open>decycle (insert {u, v} Y) w c\<close> decycle_def epath_edges_subset by metis
+                  by (fact epath_edges_subset[OF decycleD(1)[OF \<open>decycle (insert {u, v} Y) w c\<close>]])
     ultimately have "{u, v} \<in> set c" by blast
     have "(insert {u, v} Y) \<subseteq> G"
       using \<open>{u, v} \<in> X\<close> assms(1) assms(2) by blast
