@@ -1887,7 +1887,16 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
             qed
             then show "path (graph_diff G (X \<union> {v})) p"
               using `path (component_edges (graph_diff G X) C')  p` 
-              by (metis Connected_Components.component_edges_subset path_subset)
+            proof -
+              have "path (component_edges (graph_diff G (X \<union> {v})) C') p"
+                using \<open>path (component_edges (graph_diff G X) C') p\<close>
+                      \<open>component_edges (graph_diff G X) C' = component_edges (graph_diff G (X \<union> {v})) C'\<close>
+                by simp
+              moreover have "component_edges (graph_diff G (X \<union> {v})) C' \<subseteq> graph_diff G (X \<union> {v})"
+                using Connected_Components.component_edges_subset by blast
+              ultimately show "path (graph_diff G (X \<union> {v})) p"
+                using path_subset by blast
+            qed
           qed
           then show "z \<in> connected_component (graph_diff G (X \<union> {v})) x" 
             by (simp add: has_path_in_connected_component)
