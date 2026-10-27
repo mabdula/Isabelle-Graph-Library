@@ -175,7 +175,8 @@ sublocale wgt: key_array "length fs" id "edges fs" h
 sublocale seen: fixed_univ_set_imp "verts fs ts" "\<lambda>S. S \<subseteq> verts fs ts" id "{}" insert
     "\<lambda>x S. S - {x}" "\<lambda>S x. x \<in> S" "bool_array_set_assn n" "Array.new n False"
     bool_array_set_insert_imp bool_array_set_delete_imp bool_array_set_isin_imp
-  using bool_array_set_idx_fixed_univ_set_imp[of id "verts fs ts" n] verts_bound by (simp add: subset_iff)
+  using bool_array_set_idx_fixed_univ_set_imp[of id "verts fs ts" n] verts_bound
+  by (simp add: subset_iff)
 
 
 sublocale hp: indexed_heap_imp n "verts fs ts" h 0
@@ -184,12 +185,14 @@ sublocale hp: indexed_heap_imp n "verts fs ts" h 0
 lemma csr_abstract_delta:
   assumes "v \<in> verts fs ts"
   shows "graph.csr_abstract c v = multigraph_spec.delta_plus (edges fs) (e_src fs) v"
-  using csr_abstract_key[OF assms] by (auto simp: multigraph_spec.delta_plus_def)
+  using csr_abstract_key[OF assms]
+  by (auto simp: multigraph_spec.delta_plus_def)
 
 lemma csr_build_edges_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_edges n (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
-  unfolding csr_build_edges_src[symmetric] by (rule csr_build_rule)
+  unfolding csr_build_edges_src[symmetric]
+  by (rule csr_build_rule)
 
 end
 
@@ -218,7 +221,9 @@ lemma target_isin_rule:
   "v \<in> verts fs ts \<Longrightarrow>
    <bool_array_set_assn n {v. v < n \<and> target v} Ti> bool_array_set_isin_imp Ti v
    <\<lambda>b. bool_array_set_assn n {v. v < n \<and> target v} Ti * \<up>(b = target v)>"
-  unfolding bool_array_set_isin_imp_def bool_array_set_assn_def using verts_bound by sep_auto
+  unfolding bool_array_set_isin_imp_def bool_array_set_assn_def
+  using verts_bound
+  by sep_auto
 
 sublocale dij: dijkstra_impl_refine where
       fst = "e_src fs" and \<E> = "edges fs" and snd = "e_tgt fs ts" and create_edge = "e_new fs"
@@ -266,45 +271,63 @@ sublocale dij: dijkstra_impl_refine where
   and allowed_imp = "\<lambda>Al. Al" and allowed_assn = allowed_assn
   and queue_clear_imp = heap_clear_imp
   and queue_key_of_imp = heap_key_of_imp
-proof (intro_locales, goal_cases)
+proof(intro_locales, goal_cases)
   case 1 show ?case
-  proof (unfold_locales, goal_cases)
+  proof(unfold_locales, goal_cases)
     case 1
     have oi: "outgoing_edge_iterator (edges fs) (e_tgt fs ts) (e_src fs) graph.csr_invar graph.csr_abstract
         graph.csr_current graph.csr_has graph.csr_iterated graph.csr_remaining graph.csr_move
         graph.csr_reset"
-      unfolding outgoing_edge_iterator_def by (rule graph.csr.indexed_iterable_set_axioms)
+      unfolding outgoing_edge_iterator_def
+      by (rule graph.csr.indexed_iterable_set_axioms)
     show ?case
       unfolding outgoing_edge_iterator.out_graph_inv_def[OF oi]
-      using graph.csr_init_invar csr_abstract_delta by auto
+      using graph.csr_init_invar csr_abstract_delta
+      by auto
   next
-    case 2 show ?case by (simp add: lc_invar_def sl_distinct)
+    case 2
+    show ?case
+      by (simp add: lc_invar_def sl_distinct)
   next
-    case 3 show ?case using sl_verts by (simp add: lc_abstract_def)
+    case 3
+    show ?case
+      using sl_verts
+      by (simp add: lc_abstract_def)
   next
     case (4 e)
-    then have "e < length ws" using ws_length by simp
-    then show ?case using ws_nonneg nth_mem by (auto simp: wt_def)
+    then have "e < length ws"
+      using ws_length
+      by simp
+    then show ?case
+      using ws_nonneg nth_mem
+      by (auto simp: wt_def)
   next
-    case (9 v) show ?case by (rule graph.csr_init_iterated)
+    case (9 v)
+    show ?case
+      by (rule graph.csr_init_iterated)
   qed (simp_all add: arr_lookup_def lc_remaining_def lc_abstract_def)
 next
   case 2 show ?case
-  proof (unfold_locales, goal_cases)
-    case (3 e Ei) then show ?case by (intro tgt_imp_rule) (simp_all add: ts_length)
+  proof(unfold_locales, goal_cases)
+    case (3 e Ei)
+    then show ?case
+      by (intro tgt_imp_rule) (simp_all add: ts_length)
   next
-    case (4 e Ei) then show ?case by (intro src_imp_rule) simp
+    case (4 e Ei)
+    then show ?case
+      by (intro src_imp_rule) simp
   qed (simp_all add: arr_lookup_def allowed_imp_rule target_isin_rule)
 qed
 
 text \<open>The code part of this interpretation is the instance of @{locale dijkstra_impl_spec} that is
       globally interpreted, so the correctness of the refined algorithm holds for the global code.\<close>
 
-theorem dijkstra_imp_code_correct:
+lemma dijkstra_imp_code_correct:
   "<dij.state_assn (dij.initial_state :: (nat, _, _, _, _, _, _) dij_state) si>
      dijkstra_imp_code unreached early_stop si
    <\<lambda>r. dij.state_assn dij.dijkstra_compute si * \<up>(r = dij_target dij.dijkstra_compute)>"
-  unfolding dijkstra_imp_code_def by (rule dij.dijkstra_imp_correct)
+  unfolding dijkstra_imp_code_def
+  by (rule dij.dijkstra_imp_correct)
 
 lemma dijkstra_imp_init:
   "<dist.arr_assn (\<lambda>_. -1) Da * bool_array_set_assn n {} Se * par.arr_assn (\<lambda>_. None) Pa *
@@ -321,7 +344,7 @@ lemma dijkstra_imp_init:
            dimp_target = Tg, dimp_allowed = Al\<rparr> *
         \<up>(t = dij_target dij.dijkstra_compute)>"
   (is "<?P> dijkstra_imp_code unreached early_stop ?si <?Q>")
-proof (rule ht_cons_pre[OF _ dijkstra_imp_code_correct[of ?si]])
+proof(rule ht_cons_pre[OF _ dijkstra_imp_code_correct[of ?si]])
   show "?P \<Longrightarrow>\<^sub>A dij.state_assn dij.initial_state ?si"
     unfolding dij.state_assn_def dij.initial_state_def lc_assn_def wgt.arr_assn_def
     by (sep_auto simp: ws_length wt_def ends_assn_def)
@@ -335,12 +358,13 @@ proof-
   have eq: "map (\<lambda>i. i < n \<and> target i) [0..<n] = map target [0..<n]"
     by (rule map_cong) auto
   show ?thesis
-    unfolding bool_array_set_assn_def by (sep_auto simp: eq)
+    unfolding bool_array_set_assn_def
+    by (sep_auto simp: eq)
 qed
 
 text \<open>The whole program computes @{const dij.dijkstra_compute}: the state returned refines it.\<close>
 
-theorem dijkstra_csr_run_compute:
+lemma dijkstra_csr_run_compute:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a map target [0..<n] * allowed_assn Al>
      dijkstra_csr_run n unreached early_stop Fa Ta Wa Sa Tg Al
    <\<lambda>(si, t). dij.state_assn dij.dijkstra_compute si * \<up>(t = dij_target dij.dijkstra_compute)>"
@@ -354,7 +378,8 @@ text \<open>Without early stopping, every reached vertex is settled at the end.\
 lemma dijkstra_compute_reached_seen:
   assumes "\<not> early_stop" "arr_lookup (dij_dist dij.dijkstra_compute) v \<noteq> -1"
   shows "v \<in> dij_seen dij.dijkstra_compute"
-  using dij.dijkstra_compute_reached_seen[OF dij.target_none_compute[OF assms(1)] assms(2)] by simp
+  using dij.dijkstra_compute_reached_seen[OF dij.target_none_compute[OF assms(1)] assms(2)]
+  by simp
 
 text \<open>A distance list is correct if it marks exactly the vertices reachable from a source in the
       subgraph @{term dij.Ea} of allowed edges and holds their shortest-path distances.\<close>
@@ -367,60 +392,22 @@ definition shortest_dists where
 text \<open>Without early stopping, the distance array of the final state holds the shortest
       distances.\<close>
 
-lemma dist_assn_shortest:
-  assumes "\<not> early_stop"
-  shows "dist.arr_assn (dij_dist dij.dijkstra_compute) Da \<Longrightarrow>\<^sub>A
-         (\<exists>\<^sub>Adl. Da \<mapsto>\<^sub>a dl * \<up>(length dl = n \<and> shortest_dists dl))"
-proof -
-  have compl: "arr_lookup (dij_dist dij.dijkstra_compute) v \<noteq> -1 \<longleftrightarrow> (\<exists>s \<in> set sl. dij.ag.reachable s v)"
-    for v using dij.dijkstra_compute_complete[OF assms] by (simp add: lc_abstract_def)
-  have opt: "arr_lookup (dij_dist dij.dijkstra_compute) v \<noteq> -1 \<Longrightarrow>
-      ereal (arr_lookup (dij_dist dij.dijkstra_compute) v) = dij.ag.distance_set wt (set sl) v" for v
-    using dij.dijkstra_compute_optimal dijkstra_compute_reached_seen[OF assms]
-    by (simp add: lc_abstract_def)
-  have P: "shortest_dists dl"
-    if A: "\<forall>v \<in> verts fs ts. h (dl ! v) = arr_lookup (dij_dist dij.dijkstra_compute) v" for dl
-    unfolding shortest_dists_def
-  proof
-    fix v assume v: "v \<in> verts fs ts"
-    have e: "h (dl ! v) = arr_lookup (dij_dist dij.dijkstra_compute) v" using A v by blast
-    have u: "dl ! v \<noteq> unreached \<longleftrightarrow> arr_lookup (dij_dist dij.dijkstra_compute) v \<noteq> -1"
-      using e h_eq_neg1 by metis
-    show "(dl ! v \<noteq> unreached \<longleftrightarrow> (\<exists>s \<in> set sl. dij.ag.reachable s v)) \<and>
-          (dl ! v \<noteq> unreached \<longrightarrow> ereal (h (dl ! v)) = dij.ag.distance_set wt (set sl) v)"
-      using u e compl opt by simp
-  qed
-  have P': "length dl = n \<and> shortest_dists dl"
-    if a: "length dl = n \<and> (\<forall>k \<in> verts fs ts. h (dl ! id k) = dij_dist dij.dijkstra_compute k)" for dl
-  proof -
-    have "\<forall>v \<in> verts fs ts. h (dl ! v) = arr_lookup (dij_dist dij.dijkstra_compute) v"
-      using a unfolding arr_lookup_def id_apply by blast
-    then show ?thesis using a P by blast
-  qed
-  have mono: "(A \<Longrightarrow> B) \<Longrightarrow> X * \<up>A \<Longrightarrow>\<^sub>A X * \<up>B" for X A B
-    by (cases A) simp_all
-  show ?thesis
-    unfolding dist.arr_assn_def
-    by (rule ent_ex_preI, rule ent_ex_postI, rule mono, rule P')
-qed
+lemma dist_compute_shortest:
+  "\<lbrakk>\<not> early_stop; \<forall>v \<in> verts fs ts. h (dl ! v) = dij_dist dij.dijkstra_compute v\<rbrakk> \<Longrightarrow> shortest_dists dl"
+  using dij.dijkstra_compute_complete dij.dijkstra_compute_optimal dijkstra_compute_reached_seen
+  by (auto simp: shortest_dists_def lc_abstract_def arr_lookup_def simp flip: h_eq_neg1)
 
 text \<open>The final correctness theorem for the distances: without early stopping, the program
       computes the shortest distances from the sources in the subgraph @{term dij.Ea}
       of allowed edges.\<close>
 
-theorem dijkstra_csr_run_correct:
+lemma dijkstra_csr_run_correct:
   assumes "\<not> early_stop"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a map target [0..<n] * allowed_assn Al>
            dijkstra_csr_run n unreached early_stop Fa Ta Wa Sa Tg Al
          <\<lambda>(si, t). \<exists>\<^sub>Adl. dimp_dist si \<mapsto>\<^sub>a dl * \<up>(length dl = n \<and> shortest_dists dl)>"
-proof (rule ht_cons[OF ent_refl _ dijkstra_csr_run_compute], goal_cases)
-  case (1 x)
-  obtain si t where x: "x = (si, t)" by (cases x)
-  have drop: "A * B * C * D * E * F * G * H * I * J * \<up>c \<Longrightarrow>\<^sub>A A * true" for A B C D E F G H I J :: assn and c
-    by sep_auto
-  show ?case unfolding x prod.case dij.state_assn_def
-    by (rule ent_trans[OF drop ent_star_mono[OF dist_assn_shortest[OF assms] ent_refl]])
-qed
+  by (rule ht_cons[OF ent_refl _ dijkstra_csr_run_compute])
+    (sep_auto simp: dij.state_assn_def dist.arr_assn_def intro: dist_compute_shortest[OF assms])
 
 subsection \<open>Path reconstruction\<close>
 
@@ -434,51 +421,38 @@ definition shortest_path :: "nat list \<Rightarrow> nat \<Rightarrow> bool" wher
 
 lemma shortest_path_pairwise:
   "shortest_path p v \<Longrightarrow> \<exists>s \<in> set sl. dij.ag.path_bet p s v \<and> ereal (mg.weight wt p) = dij.ag.distance wt s v"
-  unfolding shortest_path_def using dij.ag_distance_set_path_shortest by blast
+  unfolding shortest_path_def
+  using dij.ag_distance_set_path_shortest
+  by blast
 
 lemma card_verts: "card (verts fs ts) \<le> n"
-  using card_mono[OF finite_lessThan verts_bound] by simp
+  using card_mono[OF finite_lessThan verts_bound]
+  by simp
 
 text \<open>The path reconstruction of the global code, @{const dijkstra_path_code}, on a state refining
       the final state of the functional Dijkstra: given an array of at least \<open>n\<close> cells, it writes
       the path to \<open>v\<close> reversed into the first \<open>k\<close> cells and returns \<open>k\<close>. If \<open>v\<close> is reachable from a
       source, this is a shortest path.\<close>
 
-theorem dijkstra_path_code_correct:
+lemma dijkstra_path_code_correct:
   assumes "\<not> early_stop" "v \<in> verts fs ts" "n \<le> length r"
   shows "<dij.state_assn dij.dijkstra_compute si * Ra \<mapsto>\<^sub>a r>
            dijkstra_path_code si Ra v
          <\<lambda>k. dij.state_assn dij.dijkstra_compute si * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(length p = length r \<and>
             k \<le> n \<and> ((\<exists>s \<in> set sl. dij.ag.reachable s v) \<longrightarrow> shortest_path (rev (take k p)) v)))>"
-proof -
-  have c: "card (verts fs ts) \<le> length r" using card_verts assms(3) by linarith
-  have imp: "length p = length r \<and> k \<le> n \<and>
-      ((\<exists>s \<in> set sl. dij.ag.reachable s v) \<longrightarrow> shortest_path (rev (take k p)) v)"
-    if a: "length p = length r \<and> k = length (dij.reconstruct_path dij.dijkstra_compute v) \<and>
-      rev (take k p) = dij.reconstruct_path dij.dijkstra_compute v \<and>
-      (arr_lookup (dij_dist dij.dijkstra_compute) v \<noteq> -1 \<longrightarrow>
-        (\<exists>s \<in> lc_abstract \<lparr>lc_list = sl, lc_pos = 0\<rparr>. dij.ag.path_bet (rev (take k p)) s v \<and>
-           mg.weight wt (rev (take k p)) = arr_lookup (dij_dist dij.dijkstra_compute) v))" for p k
-  proof -
-    have "k \<le> n" using a dij.reconstruct_path_compute_length[of v] card_verts by linarith
-    moreover have "shortest_path (rev (take k p)) v" if re: "\<exists>s \<in> set sl. dij.ag.reachable s v"
-    proof -
-      have "v \<in> dij_seen dij.dijkstra_compute"
-        using dijkstra_compute_reached_seen[OF assms(1)] dij.dijkstra_compute_complete[OF assms(1)] re
-        by (simp add: lc_abstract_def)
-      then show ?thesis
-        using a dij.reconstruct_path_shortest[of v] unfolding shortest_path_def
-        by (auto simp: lc_abstract_def simp del: distinct_rev)
-    qed
-    ultimately show ?thesis using a by blast
-  qed
-  have g: "(\<And>p. A p \<Longrightarrow> B p) \<Longrightarrow>
-           X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(A p)) \<Longrightarrow>\<^sub>A X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(B p)) * true"
-    for X and A B :: "nat list \<Rightarrow> bool"
-    by sep_auto
-  show ?thesis
+proof-
+  have "card (verts fs ts) \<le> length r" "length (dij.reconstruct_path dij.dijkstra_compute v) \<le> n"
+    using card_verts assms(3) dij.reconstruct_path_compute_length[of v]
+    by linarith+
+  moreover have "shortest_path (dij.reconstruct_path dij.dijkstra_compute v) v"
+    if "\<exists>s \<in> set sl. dij.ag.reachable s v"
+    using that dijkstra_compute_reached_seen[OF assms(1)] dij.dijkstra_compute_complete[OF assms(1)]
+      dij.reconstruct_path_shortest[of v]
+    unfolding shortest_path_def
+    by (auto simp: lc_abstract_def simp del: distinct_rev)
+  ultimately show ?thesis
     unfolding dijkstra_path_code_def
-    by (rule ht_cons[OF ent_refl _ dij.path_imp_correct[OF assms(2) c]], rule g, erule imp)
+    by (sep_auto heap: dij.path_imp_correct[OF assms(2)])
 qed
 
 subsection \<open>The parent array\<close>
@@ -492,82 +466,49 @@ definition tight_parent_array :: "nat option list \<Rightarrow> bool" where
      e \<in> dij.Ea \<and> e_tgt fs ts e = v \<and> (\<exists>s \<in> set sl. dij.ag.reachable s (e_src fs e)) \<and>
      dij.ag.distance_set wt (set sl) v = dij.ag.distance_set wt (set sl) (e_src fs e) + ereal (wt e))"
 
-lemma parent_assn_tight:
-  assumes "\<not> early_stop"
-  shows "par.arr_assn (dij_parent dij.dijkstra_compute) Pa \<Longrightarrow>\<^sub>A
-         (\<exists>\<^sub>Apl. Pa \<mapsto>\<^sub>a pl * \<up>(length pl = n \<and> tight_parent_array pl))"
-proof -
-  have P: "length pl = n \<and> tight_parent_array pl"
-    if a: "length pl = n \<and> (\<forall>k \<in> verts fs ts. id (pl ! id k) = dij_parent dij.dijkstra_compute k)"
-    for pl
-    using a dij.dijkstra_compute_tight_parents[OF assms]
-    unfolding tight_parent_array_def dij.tight_parents_def
-    by (auto simp: arr_lookup_def lc_abstract_def simp del: e_nth)
-  have mono: "(A \<Longrightarrow> B) \<Longrightarrow> X * \<up>A \<Longrightarrow>\<^sub>A X * \<up>B" for X A B
-    by (cases A) simp_all
-  show ?thesis
-    unfolding par.arr_assn_def
-    by (rule ent_ex_preI, rule ent_ex_postI, rule mono, rule P)
-qed
+lemma parent_compute_tight:
+  "\<lbrakk>\<not> early_stop; \<forall>v \<in> verts fs ts. pl ! v = dij_parent dij.dijkstra_compute v\<rbrakk> \<Longrightarrow> tight_parent_array pl"
+  using dij.dijkstra_compute_tight_parents
+  unfolding tight_parent_array_def dij.tight_parents_def
+  by (auto simp: arr_lookup_def lc_abstract_def simp del: e_nth)
 
 text \<open>Without early stopping, the parent array of the final state is tight.\<close>
 
-theorem dijkstra_csr_run_parents:
+lemma dijkstra_csr_run_parents:
   assumes "\<not> early_stop"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a map target [0..<n] * allowed_assn Al>
            dijkstra_csr_run n unreached early_stop Fa Ta Wa Sa Tg Al
          <\<lambda>(si, t). \<exists>\<^sub>Apl. dimp_parent si \<mapsto>\<^sub>a pl * \<up>(length pl = n \<and> tight_parent_array pl)>"
-proof (rule ht_cons[OF ent_refl _ dijkstra_csr_run_compute], goal_cases)
-  case (1 x)
-  obtain si t where x: "x = (si, t)" by (cases x)
-  have drop: "A * B * C * D * E * F * G * H * I * J * \<up>c \<Longrightarrow>\<^sub>A C * true" for A B C D E F G H I J :: assn and c
-    by sep_auto
-  show ?case unfolding x prod.case dij.state_assn_def
-    by (rule ent_trans[OF drop ent_star_mono[OF parent_assn_tight[OF assms] ent_refl]])
-qed
+  by (rule ht_cons[OF ent_refl _ dijkstra_csr_run_compute])
+    (sep_auto simp: dij.state_assn_def par.arr_assn_def intro: parent_compute_tight[OF assms])
 
 subsection \<open>Early stopping\<close>
 
 text \<open>With early stopping, a target returned is a vertex reachable from a source, and no target is
       closer to the sources. If none is returned, no target is reachable from a source.\<close>
 
-theorem dijkstra_csr_run_target:
+lemma dijkstra_csr_run_target:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a map target [0..<n] * allowed_assn Al>
      dijkstra_csr_run n unreached early_stop Fa Ta Wa Sa Tg Al
    <\<lambda>(si, t). dij.state_assn dij.dijkstra_compute si * \<up>(t = dij_target dij.dijkstra_compute \<and>
       (\<forall>u. t = Some u \<longrightarrow> target u \<and> u \<in> verts fs ts \<and> (\<exists>s \<in> set sl. dij.ag.reachable s u) \<and>
          (\<forall>x. target x \<longrightarrow> dij.ag.distance_set wt (set sl) u \<le> dij.ag.distance_set wt (set sl) x)) \<and>
       (t = None \<longrightarrow> early_stop \<longrightarrow> (\<forall>v. target v \<longrightarrow> \<not> (\<exists>s \<in> set sl. dij.ag.reachable s v))))>"
-proof (rule ht_cons[OF ent_refl _ dijkstra_csr_run_compute], goal_cases)
-  case (1 x)
-  obtain si t where x: "x = (si, t)" by (cases x)
-  have tg: "target u \<and> u \<in> verts fs ts \<and> (\<exists>s \<in> set sl. dij.ag.reachable s u) \<and>
+proof-
+  have "target u \<and> u \<in> verts fs ts \<and> (\<exists>s \<in> set sl. dij.ag.reachable s u) \<and>
       (\<forall>x. target x \<longrightarrow> dij.ag.distance_set wt (set sl) u \<le> dij.ag.distance_set wt (set sl) x)"
     if "dij_target dij.dijkstra_compute = Some u" for u
-  proof -
-    have a: "target u" "u \<in> verts fs ts"
-        "ereal (arr_lookup (dij_dist dij.dijkstra_compute) u) = dij.ag.distance_set wt (set sl) u"
-        "\<forall>x. target x \<longrightarrow> dij.ag.distance_set wt (set sl) u \<le> dij.ag.distance_set wt (set sl) x"
-      using dij.dijkstra_compute_target[OF that] by (auto simp: lc_abstract_def)
-    have "dij.ag.distance_set wt (set sl) u \<noteq> \<infinity>" unfolding a(3)[symmetric] by simp
-    then have "\<exists>s \<in> set sl. dij.ag.reachable s u"
-      unfolding dij.ag_distance_set_infty_iff by blast
-    then show ?thesis by (intro conjI a(1) a(2) a(4))
-  qed
-  have nt: "early_stop \<Longrightarrow> dij_target dij.dijkstra_compute = None \<Longrightarrow> target v \<Longrightarrow>
-      \<not> (\<exists>s \<in> set sl. dij.ag.reachable s v)" for v
-    using dij.dijkstra_compute_no_target by (auto simp: lc_abstract_def)
-  have g: "P T \<Longrightarrow> X * \<up>(t = T) \<Longrightarrow>\<^sub>A X * \<up>(t = T \<and> P t) * true"
-    for X and t T :: "nat option" and P
-    by sep_auto
-  show ?case unfolding x prod.case
-    by (rule g) (use tg nt in blast)
+    using dij.dijkstra_compute_target[OF that] dij.ag_distance_set_infty_iff[of wt "set sl" u]
+    by (auto simp: lc_abstract_def)
+  then show ?thesis
+    using dij.dijkstra_compute_no_target
+    by (intro ht_cons[OF ent_refl _ dijkstra_csr_run_compute]) (sep_auto simp: lc_abstract_def)
 qed
 
 text \<open>For the target returned, the path reconstruction gives a shortest path from a source, and no
       simple path from a source to any target is shorter.\<close>
 
-theorem dijkstra_path_code_target:
+lemma dijkstra_path_code_target:
   assumes "dij_target dij.dijkstra_compute = Some u" "n \<le> length r"
   shows "<dij.state_assn dij.dijkstra_compute si * Ra \<mapsto>\<^sub>a r>
            dijkstra_path_code si Ra u
@@ -575,30 +516,13 @@ theorem dijkstra_path_code_target:
             k \<le> n \<and> target u \<and> shortest_path (rev (take k p)) u \<and>
             (\<forall>s \<in> set sl. \<forall>x q. target x \<longrightarrow> dij.ag.path_bet q s x \<longrightarrow> distinct q \<longrightarrow>
                mg.weight wt (rev (take k p)) \<le> mg.weight wt q)))>"
-proof -
-  have c: "card (verts fs ts) \<le> length r" using card_verts assms(2) by linarith
-  have imp: "length p = length r \<and> k \<le> n \<and> target u \<and> shortest_path (rev (take k p)) u \<and>
-      (\<forall>s \<in> set sl. \<forall>x q. target x \<longrightarrow> dij.ag.path_bet q s x \<longrightarrow> distinct q \<longrightarrow>
-         mg.weight wt (rev (take k p)) \<le> mg.weight wt q)"
-    if a: "length p = length r \<and> k = length (dij.reconstruct_path dij.dijkstra_compute u) \<and>
-      target u \<and> (\<exists>s \<in> lc_abstract \<lparr>lc_list = sl, lc_pos = 0\<rparr>. dij.ag.path_bet (rev (take k p)) s u \<and>
-        distinct (rev (take k p)) \<and>
-        ereal (mg.weight wt (rev (take k p))) = dij.ag.distance_set wt (lc_abstract \<lparr>lc_list = sl, lc_pos = 0\<rparr>) u \<and>
-        ereal (mg.weight wt (rev (take k p))) = dij.ag.distance wt s u) \<and>
-      (\<forall>s \<in> lc_abstract \<lparr>lc_list = sl, lc_pos = 0\<rparr>. \<forall>x q. target x \<longrightarrow> dij.ag.path_bet q s x \<longrightarrow> distinct q \<longrightarrow>
-         mg.weight wt (rev (take k p)) \<le> mg.weight wt q)"
-    for p k
-  proof -
-    have "k \<le> n" using a dij.reconstruct_path_compute_length[of u] card_verts by linarith
-    then show ?thesis using a unfolding shortest_path_def by (auto simp: lc_abstract_def)
-  qed
-  have g: "(\<And>p. A p \<Longrightarrow> B p) \<Longrightarrow>
-           X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(A p)) \<Longrightarrow>\<^sub>A X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(B p)) * true"
-    for X and A B :: "nat list \<Rightarrow> bool"
-    by sep_auto
-  show ?thesis
+proof-
+  have "card (verts fs ts) \<le> length r" "length (dij.reconstruct_path dij.dijkstra_compute u) \<le> n"
+    using card_verts assms(2) dij.reconstruct_path_compute_length[of u]
+    by linarith+
+  then show ?thesis
     unfolding dijkstra_path_code_def
-    by (rule ht_cons[OF ent_refl _ dij.path_imp_target[OF assms(1) c]], rule g, erule imp)
+    by (sep_auto heap: dij.path_imp_target[OF assms(1)] simp: shortest_path_def lc_abstract_def)
 qed
 
 end
@@ -823,20 +747,29 @@ lemma dijkstra_mark_targets_rule:
   shows "<Tv \<mapsto>\<^sub>a gs * Tg \<mapsto>\<^sub>a bs> dijkstra_mark_targets Tv Tg i
          <\<lambda>_. Tv \<mapsto>\<^sub>a gs * Tg \<mapsto>\<^sub>a map (\<lambda>v. bs ! v \<or> v \<in> set (drop i gs)) [0..<length bs]>"
   using assms
-proof (induction "length gs - i" arbitrary: i bs)
+proof(induction "length gs - i" arbitrary: i bs)
   case 0
-  then show ?case by (subst dijkstra_mark_targets.simps) (sep_auto simp: map_nth)
+  then show ?case
+    by (subst dijkstra_mark_targets.simps) (sep_auto simp: map_nth)
 next
   case (Suc k)
-  have i: "i < length gs" using Suc.hyps(2) by simp
-  have v: "gs ! i < length bs" using i Suc.prems(1) nth_mem by blast
+  have i: "i < length gs"
+    using Suc.hyps(2)
+    by simp
+  have v: "gs ! i < length bs"
+    using i Suc.prems(1) nth_mem
+    by blast
   have e: "map (\<lambda>x. bs[gs ! i := True] ! x \<or> x \<in> set (drop (Suc i) gs)) [0..<length bs] =
            map (\<lambda>x. bs ! x \<or> x \<in> set (drop i gs)) [0..<length bs]"
-    using i v by (auto simp: nth_list_update Cons_nth_drop_Suc[symmetric])
+    using i v
+    by (auto simp: nth_list_update Cons_nth_drop_Suc[symmetric])
   have IH: "<Tv \<mapsto>\<^sub>a gs * Tg \<mapsto>\<^sub>a bs[gs ! i := True]> dijkstra_mark_targets Tv Tg (Suc i)
             <\<lambda>_. Tv \<mapsto>\<^sub>a gs * Tg \<mapsto>\<^sub>a map (\<lambda>x. bs ! x \<or> x \<in> set (drop i gs)) [0..<length bs]>"
-    using Suc.hyps(1)[of "Suc i" "bs[gs ! i := True]"] Suc.hyps(2) Suc.prems(1) i e by simp
-  show ?case using i v by (subst dijkstra_mark_targets.simps) (sep_auto heap: IH)
+    using Suc.hyps(1)[of "Suc i" "bs[gs ! i := True]"] Suc.hyps(2) Suc.prems(1) i e
+    by simp
+  show ?case
+    using i v
+    by (subst dijkstra_mark_targets.simps) (sep_auto heap: IH)
 qed
 
 lemma dijkstra_edge_ids_rule:
@@ -844,21 +777,28 @@ lemma dijkstra_edge_ids_rule:
   shows "<Ra \<mapsto>\<^sub>a r * Pa \<mapsto>\<^sub>a xs> dijkstra_edge_ids Ra Pa k i
          <\<lambda>_. Ra \<mapsto>\<^sub>a r * Pa \<mapsto>\<^sub>a (take i xs @ map (\<lambda>j. r ! (k - Suc j)) [i..<k])>"
   using assms(2,3)
-proof (induction "k - i" arbitrary: i xs)
+proof(induction "k - i" arbitrary: i xs)
   case 0
-  then have "i = k" by simp
-  with 0 show ?case by (subst dijkstra_edge_ids.simps) sep_auto
+  then have "i = k"
+    by simp
+  with 0 show ?case
+    by (subst dijkstra_edge_ids.simps) sep_auto
 next
   case (Suc d)
-  have i: "i < k" using Suc.hyps(2) by simp
+  have i: "i < k"
+    using Suc.hyps(2)
+    by simp
   have e: "take (Suc i) (xs[i := r ! (k - Suc i)]) @ map (\<lambda>j. r ! (k - Suc j)) [Suc i..<k] =
            take i xs @ map (\<lambda>j. r ! (k - Suc j)) [i..<k]"
-    using i Suc.prems(2) by (simp add: take_Suc_conv_app_nth upt_conv_Cons list_update_append)
+    using i Suc.prems(2)
+    by (simp add: take_Suc_conv_app_nth upt_conv_Cons list_update_append)
   have IH: "<Ra \<mapsto>\<^sub>a r * Pa \<mapsto>\<^sub>a xs[i := r ! (k - Suc i)]> dijkstra_edge_ids Ra Pa k (Suc i)
             <\<lambda>_. Ra \<mapsto>\<^sub>a r * Pa \<mapsto>\<^sub>a (take i xs @ map (\<lambda>j. r ! (k - Suc j)) [i..<k])>"
     using Suc.hyps(1)[of "Suc i" "xs[i := r ! (k - Suc i)]"] Suc.hyps(2) Suc.prems(2) i e
     by simp
-  show ?case using i assms(1) Suc.prems(2) by (subst dijkstra_edge_ids.simps) (sep_auto heap: IH)
+  show ?case
+    using i assms(1) Suc.prems(2)
+    by (subst dijkstra_edge_ids.simps) (sep_auto heap: IH)
 qed
 
 text \<open>The indices of a path written by @{const dijkstra_path_code}, for any property @{term A}
@@ -869,10 +809,11 @@ lemma dijkstra_path_ids_rule:
     and "\<And>k p. A k p \<Longrightarrow> k \<le> length p"
   shows "<X * Ra \<mapsto>\<^sub>a r> dijkstra_path_ids si Ra v
          <\<lambda>Pa. X * (\<exists>\<^sub>Ap k. Ra \<mapsto>\<^sub>a p * Pa \<mapsto>\<^sub>a rev (take k p) * \<up>(A k p))>"
-proof -
+proof-
   have m: "map (\<lambda>j. p ! (k - Suc j)) [0..<k] = rev (take k p)"
     if "A k p" for k p
-    using assms(2)[OF that] by (intro nth_equalityI) (simp_all add: rev_nth)
+    using assms(2)[OF that]
+    by (intro nth_equalityI) (simp_all add: rev_nth)
   show ?thesis unfolding dijkstra_path_ids_def
     by (sep_auto heap: assms(1) dijkstra_edge_ids_rule dest: assms(2) simp: m)
 qed
@@ -893,11 +834,13 @@ begin
 lemma shortest_path_ids:
   assumes "all.shortest_path p v"
   shows "\<exists>s \<in> set sl. mg.is_shortest_path wt p s v"
-proof -
+proof-
   obtain s where s: "s \<in> set sl" "mg.path_bet p s v" "ereal (mg.weight wt p) = mg.distance wt s v"
-    using all.shortest_path_pairwise[OF assms] unfolding all_Ea by blast
+    using all.shortest_path_pairwise[OF assms] unfolding all_Ea
+    by blast
   show "\<exists>s \<in> set sl. mg.is_shortest_path wt p s v"
-    using s assms unfolding mg.is_shortest_path_def all.shortest_path_def by auto
+    using s assms unfolding mg.is_shortest_path_def all.shortest_path_def
+    by auto
 qed
 
 text \<open>The indices of the path to the target found.\<close>
@@ -910,15 +853,21 @@ lemma dijkstra_path_ids_target:
                (\<exists>s \<in> set sl. mg.is_shortest_path wt ids s u) \<and>
                (\<forall>s \<in> set sl. \<forall>x q. target x \<longrightarrow> mg.path_bet q s x \<longrightarrow> distinct q \<longrightarrow>
                   mg.weight wt ids \<le> mg.weight wt q)))>"
-proof (rule ht_cons[OF ent_refl _ dijkstra_path_ids_rule[OF all.dijkstra_path_code_target[OF assms]]],
+proof(rule ht_cons[OF ent_refl _ dijkstra_path_ids_rule[OF all.dijkstra_path_code_target[OF assms]]],
     goal_cases)
   case (1 Pa)
   show ?case
-  proof (rule path_ids_post, goal_cases)
-    case (1 p k) then show ?case using shortest_path_ids unfolding all_Ea by blast
+  proof(rule path_ids_post, goal_cases)
+    case (1 p k)
+    then show ?case
+      using shortest_path_ids unfolding all_Ea
+      by blast
   qed
 next
-  case (2 k p) then show ?case using assms(2) by simp
+  case (2 k p)
+  then show ?case
+    using assms(2)
+    by simp
 qed
 
 text \<open>Without early stopping, the indices of a path to a reachable vertex.\<close>
@@ -928,15 +877,21 @@ lemma dijkstra_path_ids_reached:
   shows "<all.dij.state_assn all.dij.dijkstra_compute si * Ra \<mapsto>\<^sub>a r> dijkstra_path_ids si Ra v
          <\<lambda>Pa. all.dij.state_assn all.dij.dijkstra_compute si * (\<exists>\<^sub>Ar'. Ra \<mapsto>\<^sub>a r' * \<up>(length r' = length r)) *
             (\<exists>\<^sub>Aids. Pa \<mapsto>\<^sub>a ids * \<up>(\<exists>s \<in> set sl. mg.is_shortest_path wt ids s v))>"
-proof (rule ht_cons[OF ent_refl _ dijkstra_path_ids_rule[OF all.dijkstra_path_code_correct[OF assms(1-3)]]],
+proof(rule ht_cons[OF ent_refl _ dijkstra_path_ids_rule[OF all.dijkstra_path_code_correct[OF assms(1-3)]]],
     goal_cases)
   case (1 Pa)
   show ?case
-  proof (rule path_ids_post, goal_cases)
-    case (1 p k) then show ?case using shortest_path_ids assms(4) unfolding all_Ea by blast
+  proof(rule path_ids_post, goal_cases)
+    case (1 p k)
+    then show ?case
+      using shortest_path_ids assms(4) unfolding all_Ea
+      by blast
   qed
 next
-  case (2 k p) then show ?case using assms(3) by simp
+  case (2 k p)
+  then show ?case
+    using assms(3)
+    by simp
 qed
 
 subsection \<open>Correctness of the top-level programs\<close>
@@ -957,7 +912,7 @@ text \<open>With early stopping and the targets given by an array, @{const dijks
       returns a shortest path from a source to a target, of weight at most that of any simple
       path from a source to a target, if any target is reachable.\<close>
 
-theorem dijkstra_shortest_path_rule:
+lemma dijkstra_shortest_path_rule:
   assumes "early_stop" "set gs \<subseteq> {..<n}" "\<And>v. target v \<longleftrightarrow> v \<in> set gs"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tv \<mapsto>\<^sub>a gs>
            dijkstra_shortest_path n unreached Fa Ta Wa Sa Tv
@@ -967,15 +922,17 @@ theorem dijkstra_shortest_path_rule:
                (\<exists>s \<in> set sl. mg.is_shortest_path wt ids s t) \<and>
                (\<forall>s \<in> set sl. \<forall>t' \<in> set gs. \<forall>q. mg.path_bet q s t' \<longrightarrow> distinct q \<longrightarrow>
                   mg.weight wt ids \<le> mg.weight wt q))>"
-proof -
+proof-
   have m: "map (\<lambda>v. replicate n False ! v \<or> v \<in> set (drop 0 gs)) [0..<length (replicate n False)] =
            map target [0..<n]"
     by (rule nth_equalityI) (simp_all add: assms(3))
   have mark: "<Tv \<mapsto>\<^sub>a gs * Tg \<mapsto>\<^sub>a replicate n False> dijkstra_mark_targets Tv Tg 0
               <\<lambda>_. Tv \<mapsto>\<^sub>a gs * Tg \<mapsto>\<^sub>a map target [0..<n]>" for Tg
-    using dijkstra_mark_targets_rule[of gs "replicate n False" 0 Tv Tg, unfolded m] assms(2) by simp
+    using dijkstra_mark_targets_rule[of gs "replicate n False" 0 Tv Tg, unfolded m] assms(2)
+    by simp
   have es: "dijkstra_csr_run_all n unreached True = dijkstra_csr_run_all n unreached early_stop"
-    using assms(1) by simp
+    using assms(1)
+    by simp
   have run: "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a map target [0..<n]>
                dijkstra_csr_run_all n unreached early_stop Fa Ta Wa Sa Tg
              <\<lambda>(si, t). all.dij.state_assn all.dij.dijkstra_compute si *
@@ -1002,13 +959,14 @@ definition sp_assn where
   "sp_assn th = (case th of (si, Ra) \<Rightarrow>
      all.dij.state_assn all.dij.dijkstra_compute si * (\<exists>\<^sub>Ar. Ra \<mapsto>\<^sub>a r * \<up>(length r = n)))"
 
-theorem dijkstra_sp_compute_rule:
+lemma dijkstra_sp_compute_rule:
   assumes "\<not> early_stop" "\<And>v. \<not> target v"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl>
            dijkstra_sp_compute n unreached Fa Ta Wa Sa <sp_assn>"
-proof -
+proof-
   have es: "dijkstra_csr_run_all n unreached False = dijkstra_csr_run_all n unreached early_stop"
-    using assms(1) by simp
+    using assms(1)
+    by simp
   have tg: "replicate n False = map target [0..<n]"
     by (rule nth_equalityI) (simp_all add: assms(2))
   have run: "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a replicate n False>
@@ -1022,18 +980,20 @@ qed
 text \<open>A query for a vertex of the graph returns a shortest path from a source to it if it is
       reachable, and nothing otherwise. The state is preserved.\<close>
 
-theorem dijkstra_sp_query_rule:
+lemma dijkstra_sp_query_rule:
   assumes "\<not> early_stop" "v \<in> verts fs ts"
   shows "<sp_assn th> dijkstra_sp_query unreached th v
          <\<lambda>r. sp_assn th * (case r of
              None \<Rightarrow> \<up>(\<forall>s \<in> set sl. \<not> mg.reachable s v)
            | Some Pa \<Rightarrow> \<exists>\<^sub>Aids. Pa \<mapsto>\<^sub>a ids *
                \<up>(\<exists>s \<in> set sl. mg.is_shortest_path wt ids s v))>"
-proof -
-  obtain si Ra where th: "th = (si, Ra)" by (cases th)
+proof-
+  obtain si Ra where th: "th = (si, Ra)"
+    by (cases th)
   have r: "arr_lookup (dij_dist all.dij.dijkstra_compute) v \<noteq> -1 \<longleftrightarrow> (\<exists>s \<in> set sl. mg.reachable s v)"
     using all.dij.dijkstra_compute_complete[OF assms(1), of v]
-    unfolding all_Ea by (simp add: lc_abstract_def)
+    unfolding all_Ea
+    by (simp add: lc_abstract_def)
   have nth: "arr_lookup_imp id (dimp_dist si) v = Array.nth (dimp_dist si) v"
     by (simp add: arr_lookup_imp_def)
   note l = all.dij.dist_lookup_state[where u = v and si = si, OF TrueI assms(2), unfolded nth]
@@ -1043,7 +1003,8 @@ proof -
     by (rule ht_cons[OF ent_refl _ l])
       (sep_auto simp: r[symmetric])
   show ?thesis unfolding th dijkstra_sp_query_def sp_assn_def prod.case
-    using assms by (sep_auto heap: d dijkstra_path_ids_reached)
+    using assms
+    by (sep_auto heap: d dijkstra_path_ids_reached)
 qed
 
 end
@@ -1093,7 +1054,7 @@ definition dijkstra_sp_query_int :: "dijkstra_sp_state \<Rightarrow> nat \<Right
 definition dijkstra_sp_int_assn :: "nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow> nat list \<Rightarrow> dijkstra_sp_state \<Rightarrow> assn" where
   "dijkstra_sp_int_assn n fs ts ws sl = dijkstra_csr_all.sp_assn of_int n fs ts ws sl (\<lambda>_. False) False"
 
-theorem dijkstra_shortest_path_int_correct:
+lemma dijkstra_shortest_path_int_correct:
   assumes "dijkstra_int_input n fs ts ws sl" "set gs \<subseteq> {..<n}"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tv \<mapsto>\<^sub>a gs>
            dijkstra_shortest_path_int n Fa Ta Wa Sa Tv
@@ -1105,26 +1066,29 @@ theorem dijkstra_shortest_path_int_correct:
                (\<forall>s \<in> set sl. \<forall>t' \<in> set gs. \<forall>q. multigraph_spec.path_bet (edges fs) (e_src fs) (e_tgt fs ts) q s t' \<longrightarrow>
                   distinct q \<longrightarrow> multigraph_spec.weight (int_weight ws) ids \<le>
                     multigraph_spec.weight (int_weight ws) q))>"
-proof -
+proof-
   interpret dijkstra_csr_all of_int "-1" n fs ts ws sl "\<lambda>v. v \<in> set gs" True
-    unfolding dijkstra_csr_all_def by (rule dijkstra_int_input_csr[OF assms(1)])
-  have w: "wt = int_weight ws" by (simp add: fun_eq_iff wt_def int_weight_def)
+    unfolding dijkstra_csr_all_def
+    by (rule dijkstra_int_input_csr[OF assms(1)])
+  have w: "wt = int_weight ws"
+    by (simp add: fun_eq_iff wt_def int_weight_def)
   show ?thesis unfolding dijkstra_shortest_path_int_def
     by (rule dijkstra_shortest_path_rule[unfolded w]) (use assms(2) in simp_all)
 qed
 
-theorem dijkstra_sp_compute_int_correct:
+lemma dijkstra_sp_compute_int_correct:
   assumes "dijkstra_int_input n fs ts ws sl"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl>
            dijkstra_sp_compute_int n Fa Ta Wa Sa <dijkstra_sp_int_assn n fs ts ws sl>"
-proof -
+proof-
   interpret dijkstra_csr_all of_int "-1" n fs ts ws sl "\<lambda>_. False" False
-    unfolding dijkstra_csr_all_def by (rule dijkstra_int_input_csr[OF assms(1)])
+    unfolding dijkstra_csr_all_def
+    by (rule dijkstra_int_input_csr[OF assms(1)])
   show ?thesis unfolding dijkstra_sp_compute_int_def dijkstra_sp_int_assn_def
     by (rule dijkstra_sp_compute_rule) simp_all
 qed
 
-theorem dijkstra_sp_query_int_correct:
+lemma dijkstra_sp_query_int_correct:
   assumes "dijkstra_int_input n fs ts ws sl" "v \<in> verts fs ts"
   shows "<dijkstra_sp_int_assn n fs ts ws sl th> dijkstra_sp_query_int th v
          <\<lambda>r. dijkstra_sp_int_assn n fs ts ws sl th * (case r of
@@ -1132,10 +1096,12 @@ theorem dijkstra_sp_query_int_correct:
            | Some Pa \<Rightarrow> \<exists>\<^sub>Aids. Pa \<mapsto>\<^sub>a ids * \<up>(\<exists>s \<in> set sl.
                multigraph_spec.is_shortest_path (edges fs) (e_src fs) (e_tgt fs ts) (int_weight ws)
                  ids s v))>"
-proof -
+proof-
   interpret dijkstra_csr_all of_int "-1" n fs ts ws sl "\<lambda>_. False" False
-    unfolding dijkstra_csr_all_def by (rule dijkstra_int_input_csr[OF assms(1)])
-  have w: "wt = int_weight ws" by (simp add: fun_eq_iff wt_def int_weight_def)
+    unfolding dijkstra_csr_all_def
+    by (rule dijkstra_int_input_csr[OF assms(1)])
+  have w: "wt = int_weight ws"
+    by (simp add: fun_eq_iff wt_def int_weight_def)
   show ?thesis unfolding dijkstra_sp_query_int_def dijkstra_sp_int_assn_def
     by (rule dijkstra_sp_query_rule[unfolded w]) (use assms(2) in simp_all)
 qed

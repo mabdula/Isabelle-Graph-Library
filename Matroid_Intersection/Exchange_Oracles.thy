@@ -12,65 +12,36 @@ text \<open>Characterisation of the exchange graph by independence tests only
   preparation of the current solution.
   Nothing here knows about path search or augmentation.\<close>
 
-subsection \<open>Circuits and Exchanges\<close>
-
-context matroid
-begin
-
-lemma the_circuit_insert_in_X:
-  assumes "indep X" "y \<in> carrier" "x \<in> the_circuit (insert y X) - {y}"
-  shows "x \<in> X"
-  using the_circuit_X_in_X[of "insert y X" "insert y X"] assms indep_subset_carrier
-  by blast
-
-lemma circuit_exchange:
-  assumes "indep X" "x \<in> X" "y \<in> carrier - X"
-  shows "x \<in> the_circuit (insert y X) - {y} \<longleftrightarrow>
-           \<not> indep (insert y X) \<and> indep (insert y (X - {x}))"
-proof-
-  have "insert y X - {x} = insert y (X - {x})"
-    using assms(2,3) by auto
-  thus ?thesis
-    using circuit_extensional[OF assms(1)] assms by auto
-qed
-
-lemma circuit_exchange_gen:
-  assumes "indep X" "y \<in> carrier - X"
-  shows "x \<in> the_circuit (insert y X) - {y} \<longleftrightarrow>
-           x \<in> X \<and> \<not> indep (insert y X) \<and> indep (insert y (X - {x}))"
-  using circuit_exchange[OF assms(1) _ assms(2)] the_circuit_insert_in_X[OF assms(1)] assms(2)
-  by blast
-
-end
-
 subsection \<open>The Exchange Graph via Independence Tests\<close>
 
 context double_matroid
 begin
 
 lemma A1_exchange:
-  assumes "indep1 X"
-  shows "(x, y) \<in> A1 X \<longleftrightarrow>
-           x \<in> X \<and> y \<in> carrier - X \<and> \<not> indep1 (insert y X) \<and> indep1 (insert y (X - {x}))"
-  using matroid1.circuit_exchange_gen[OF assms] by (auto simp add: A1_def)
+  "indep1 X \<Longrightarrow>
+     (x, y) \<in> A1 X \<longleftrightarrow>
+       x \<in> X \<and> y \<in> carrier - X \<and> \<not> indep1 (insert y X) \<and> indep1 (insert y (X - {x}))"
+  using matroid1.circuit_exchange_gen[of X y x]
+  by (auto simp: A1_def)
 
 lemma A2_exchange:
-  assumes "indep2 X"
-  shows "(y, x) \<in> A2 X \<longleftrightarrow>
-           x \<in> X \<and> y \<in> carrier - X \<and> \<not> indep2 (insert y X) \<and> indep2 (insert y (X - {x}))"
-  using matroid2.circuit_exchange_gen[OF assms] by (auto simp add: A2_def)
+  "indep2 X \<Longrightarrow>
+     (y, x) \<in> A2 X \<longleftrightarrow>
+       x \<in> X \<and> y \<in> carrier - X \<and> \<not> indep2 (insert y X) \<and> indep2 (insert y (X - {x}))"
+  using matroid2.circuit_exchange_gen[of X y x]
+  by (auto simp: A2_def)
 
 lemma A1_exchange_char:
-  assumes "indep1 X"
-  shows "A1 X = {(x, y) | x y. x \<in> X \<and> y \<in> carrier - X \<and>
-                   \<not> indep1 (insert y X) \<and> indep1 (insert y (X - {x}))}"
-  using A1_exchange[OF assms] by auto
+  "indep1 X \<Longrightarrow>
+     A1 X = {(x, y) | x y. x \<in> X \<and> y \<in> carrier - X \<and>
+                 \<not> indep1 (insert y X) \<and> indep1 (insert y (X - {x}))}"
+  by (auto simp: A1_exchange)
 
 lemma A2_exchange_char:
-  assumes "indep2 X"
-  shows "A2 X = {(y, x) | x y. x \<in> X \<and> y \<in> carrier - X \<and>
-                   \<not> indep2 (insert y X) \<and> indep2 (insert y (X - {x}))}"
-  using A2_exchange[OF assms] by auto
+  "indep2 X \<Longrightarrow>
+     A2 X = {(y, x) | x y. x \<in> X \<and> y \<in> carrier - X \<and>
+                 \<not> indep2 (insert y X) \<and> indep2 (insert y (X - {x}))}"
+  by (auto simp: A2_exchange)
 
 end
 
@@ -105,10 +76,11 @@ locale indep_oracle =
 begin
 
 lemma exch_orcl_circuit:
-  assumes "set_invar X" "to_set X \<subseteq> carrier" "indep (to_set X)" "y \<in> carrier - to_set X"
-    "x \<in> to_set X" "\<not> indep (insert y (to_set X))"
-  shows "exch_orcl (orcl_prep X) x y \<longleftrightarrow> x \<in> the_circuit (insert y (to_set X)) - {y}"
-  using exch_orcl[OF assms] circuit_exchange[OF assms(3,5,4)] assms(6) by simp
+  "\<lbrakk>set_invar X; to_set X \<subseteq> carrier; indep (to_set X); y \<in> carrier - to_set X; x \<in> to_set X;
+    \<not> indep (insert y (to_set X))\<rbrakk> \<Longrightarrow>
+     exch_orcl (orcl_prep X) x y \<longleftrightarrow> x \<in> the_circuit (insert y (to_set X)) - {y}"
+  using circuit_exchange[of "to_set X" x y]
+  by (simp add: exch_orcl)
 
 end
 
@@ -135,22 +107,14 @@ definition "weak_exch_orcl X x y = weak_orcl y (set_delete x X)"
 
 sublocale indep_oracle id weak_ins_orcl weak_exch_orcl carrier indep to_set set_invar
 proof(unfold_locales, goal_cases)
-  case (1 X y)
-  then show ?case 
-    by (auto simp add: weak_ins_orcl_def weak_orcl)
-next
   case (2 X x y)
-  hence "x \<in> carrier" "to_set (set_delete x X) = to_set X - {x}" 
-    using set_delete(2) by auto
-  moreover have "indep (to_set X - {x})"
-    using 2(3) indep_subset by blast
-  moreover have "set_invar (set_delete x X)" "to_set (set_delete x X) \<subseteq> carrier"
-    using 2(1,2) set_delete(1) calculation(1,2) by auto
-  moreover have "y \<in> carrier" "y \<notin> to_set (set_delete x X)"
-    using 2(4) calculation(2) by auto
-  ultimately show ?case
-    using weak_orcl[of "set_delete x X" y] by (simp add: weak_exch_orcl_def)
-qed
+  hence "x \<in> carrier"
+    by blast
+  thus ?case
+    using 2 weak_orcl[of "set_delete x X" y] set_delete[of X x]
+      indep_subset[of "to_set X" "to_set X - {x}"]
+    by (auto simp: weak_exch_orcl_def)
+qed (auto simp: weak_ins_orcl_def weak_orcl)
 
 end
 
@@ -184,16 +148,11 @@ definition "circ_exch_orcl X x y = set_memb_red x (circuit y X)"
 
 sublocale indep_oracle id circ_ins_orcl circ_exch_orcl carrier indep to_set set_invar
 proof(unfold_locales, goal_cases)
-  case (1 X y)
-  then show ?case 
-    by (auto simp add: circ_ins_orcl_def weak_orcl)
-next
   case (2 X x y)
-  hence "circ_exch_orcl (id X) x y \<longleftrightarrow> x \<in> the_circuit (insert y (to_set X)) - {y}"
-    by (auto simp add: circ_exch_orcl_def set_memb_red circuit)
-  then show ?case
-    using circuit_exchange[OF 2(3,5,4)] 2(6) by simp
-qed
+  thus ?case
+    using circuit_exchange[of "to_set X" x y]
+    by (auto simp: circ_exch_orcl_def set_memb_red circuit)
+qed (auto simp: circ_ins_orcl_def weak_orcl)
 
 end
 

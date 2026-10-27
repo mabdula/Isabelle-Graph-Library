@@ -4,12 +4,10 @@ begin
 
 section \<open>Imperative Exchange Oracles\<close>
 
-text \<open>The imperative counterpart of the oracles of \<open>Exchange_Oracles\<close> for elements below \<open>n\<close>.
-  Insertion and exchange queries are answered directly on the handle of the solution, whose
-  assertion \<open>sol_assn\<close> is that of the solution set; whatever the oracle needs is part of
-  that handle and kept up to date by the operations of the set, so there is no preparation
-  step. They refine a functional oracle on sets of nats. The assertion \<open>ost\<close> holds static data
-  of the oracle (e.g. an array of blocks) and is preserved.\<close>
+text \<open>Imperative insertion and exchange queries on elements below \<open>n\<close> refine functional
+  oracles on sets of nats. They operate directly on the solution handle, with assertion
+  \<open>sol_assn\<close>. Set operations maintain its oracle data, so no preparation step is needed.
+  The assertion \<open>ost\<close> holds preserved static data, such as an array of blocks.\<close>
 
 locale exchange_oracle_imp =
   fixes n :: nat
@@ -27,13 +25,10 @@ locale exchange_oracle_imp =
     "<sol_assn X Si * ost * \<up>(x < n \<and> y < n)> exch_imp Si x y
      <\<lambda> r. sol_assn X Si * ost * \<up>(r = exch_orcl (orcl_prep X) x y)>"
 
-text \<open>Potential exchange partners. Independently of the solution, an oracle names for every
-  element \<open>x\<close> a list \<open>pts x\<close> containing every element that can ever form an exchange pair with
-  \<open>x\<close>, in ascending order. The candidate graph of the exchange graph search is built from these
-  lists once. The lists are read through a static handle \<open>H\<close> of the oracle with assertion
-  \<open>pst H\<close>, one entry at a time: one query returns the length of \<open>pts x\<close>, the other its entry at
-  a position. Every oracle can name all elements; a specific oracle can name fewer, e.g. a partition
-  oracle names the block of \<open>x\<close>, which makes the candidate graph sparse.\<close>
+text \<open>The sorted list \<open>pts x\<close> contains all possible exchange partners of \<open>x\<close>.
+  These lists form a fixed candidate graph. A static handle with assertion \<open>pst H\<close>
+  provides length and indexed-entry queries. An oracle may list every element; a partition
+  oracle lists only the block of \<open>x\<close>, yielding a sparse candidate graph.\<close>
 
 locale exchange_partners_imp =
   fixes n :: nat

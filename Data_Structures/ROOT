@@ -7,6 +7,11 @@ session "Data_Structures" = "HOL-Data_Structures" +
   directories
     Implementations
 
+  theories [document = false]
+    More_Logic
+    More_Arith
+    More_Lists
+
   theories
     Set_Addons
     Map_Addons

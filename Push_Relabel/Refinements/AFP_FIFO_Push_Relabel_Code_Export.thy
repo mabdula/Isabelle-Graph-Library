@@ -11,12 +11,12 @@ text \<open>For comparison with the programs of \<open>Push_Relabel_Code_Export.
   same serialisation of numbers: @{typ nat} and @{typ int} are machine integers (see
   \<open>Code_Target_Machine_Int.thy\<close>).
 
-  The exported program is the AFP's @{const fifo_push_relabel_impl}: given the capacity function
-  \<open>c\<close>, source \<open>s\<close>, sink \<open>t\<close>, the number \<open>N\<close> of vertices and an array of adjacency lists of
-  length \<open>N\<close>, it returns a residual capacity matrix whose flow is maximum (theorem
-  @{thm [source] Network_Impl.fifo_push_relabel_impl_correct}). Also exported are its two phases
-  @{const fifo_push_relabel_init_impl} and @{const fifo_push_relabel_run_impl}, and
-  @{const compute_flow_val_impl}, which computes the flow value from the residual matrix.
+  The exported program is the AFP's @{const fifo_push_relabel_impl}: given the capacity
+  function \<open>c\<close>, source \<open>s\<close>, sink \<open>t\<close>, the number \<open>N\<close> of
+  vertices and an array of adjacency lists of length \<open>N\<close>, it returns a residual capacity
+  matrix whose flow is maximum (theorem @{thm [source] Network_Impl.fifo_push_relabel_impl_correct}).
+  Also exported are its two phases @{const fifo_push_relabel_init_impl} and @{const fifo_push_relabel_run_impl},
+  and @{const compute_flow_val_impl}, which computes the flow value from the residual matrix.
 
   The AFP's network checker \<open>prepareNet\<close>, which computes the capacity function and the
   adjacency lists from an edge list, is not exported: it uses hash maps on diff arrays with
@@ -55,9 +55,9 @@ ML \<open>
 subsection \<open>A Small Test\<close>
 
 text \<open>The test computes the capacity function and the adjacency lists from an edge list, as
-  \<open>prepareNet\<close> would for a valid network, and returns the value of the maximum flow. The first
-  network is the one of \<open>Push_Relabel_Code_Export.thy\<close>, with maximum flow value \<open>5\<close>, the second
-  the one of the AFP's test, with maximum flow value \<open>42\<close>.\<close>
+  \<open>prepareNet\<close> would for a valid network, and returns the value of the maximum flow. The
+  first network is the one of \<open>Push_Relabel_Code_Export.thy\<close>, with maximum flow value
+  \<open>5\<close>, the second the one of the AFP's test, with maximum flow value \<open>42\<close>.\<close>
 
 definition afp_fifo_test :: "(nat \<times> nat \<times> int) list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> int Heap" where
   "afp_fifo_test el N s t = do {

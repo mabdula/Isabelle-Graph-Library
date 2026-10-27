@@ -1,5 +1,5 @@
 theory Array_Map_Set_Addons
-  imports Imp_Map_Set_Addons
+  imports More_Lists Imp_Map_Set_Addons
           Separation_Logic_Imperative_HOL_Partial.Array_Map_Impl
           Separation_Logic_Imperative_HOL_Partial.Array_Set_Impl
 begin
@@ -25,28 +25,19 @@ lemma array_fill_rule:
   "i \<le> length xs \<Longrightarrow>
    <a \<mapsto>\<^sub>a xs> array_fill a x i (length xs) <\<lambda>_. a \<mapsto>\<^sub>a (take i xs @ replicate (length xs - i) x)>"
 proof(induction "length xs - i" arbitrary: i xs)
-  case 0
-  hence "i = length xs" by simp
-  thus ?case by (subst array_fill.simps) sep_auto
-next
   case (Suc d)
-  hence i: "i < length xs" by simp
-  have t: "(take (Suc i) xs)[i := x] = take i xs @ [x]"
-    using i by (simp add: take_Suc_conv_app_nth list_update_append)
-  have r: "length xs - i = Suc (length xs - Suc i)" using i by simp
-  have eq: "(take (Suc i) xs)[i := x] @ replicate (length xs - Suc i) x =
-            take i xs @ replicate (length xs - i) x"
-    unfolding t r by simp
-  note IH = Suc(1)[of "xs[i := x]" "Suc i", simplified, OF _ Suc_leI[OF i]]
-  show ?case
-    using Suc(2) i
-    apply(subst array_fill.simps)
-    by (sep_auto heap: IH simp: eq)
-qed
+  hence "i < length xs" "d = length xs - Suc i"
+    by simp_all
+  thus ?case
+    by (subst array_fill.simps)
+       (sep_auto heap: Suc.hyps(1)[of "xs[i := x]" "Suc i", unfolded length_list_update]
+          simp: take_Suc_conv_app_nth list_update_append replicate_diff_Suc)
+qed (subst array_fill.simps, sep_auto)
 
 lemma array_fill_all_rule:
   "<a \<mapsto>\<^sub>a xs> array_fill a x 0 (length xs) <\<lambda>_. a \<mapsto>\<^sub>a replicate (length xs) x>"
-  using array_fill_rule[of 0 xs a x] by simp
+  using array_fill_rule[of 0 xs a x]
+  by simp
 
 subsection \<open>Clearing\<close>
 
@@ -95,19 +86,12 @@ lemma ias_scan_rule:
    <\<lambda>j. p \<mapsto>\<^sub>a ls * \<up>(i \<le> j \<and> j \<le> length ls \<and> (j < length ls \<longrightarrow> ls ! j) \<and>
                     filter ((!) ls) [i..<length ls] = filter ((!) ls) [j..<length ls])>"
 proof(induction "length ls - i" arbitrary: i)
-  case 0
-  hence "i = length ls" by simp
-  thus ?case by (subst ias_scan.simps) sep_auto
-next
   case (Suc d)
-  hence i: "i < length ls" by simp
-  have split: "[i..<length ls] = i # [Suc i..<length ls]" using i by (simp add: upt_conv_Cons)
-  note IH = Suc(1)[of "Suc i", OF _ Suc_leI[OF i]]
-  show ?case
-    using Suc(2) i
-    apply(subst ias_scan.simps)
-    by (sep_auto heap: IH simp: split)
-qed
+  hence "i < length ls" "d = length ls - Suc i"
+    by simp_all
+  thus ?case
+    by (subst ias_scan.simps) (sep_auto heap: Suc.hyps(1)[of "Suc i"] simp: upt_conv_Cons)
+qed (subst ias_scan.simps, sep_auto)
 
 lemma sorted_list_of_ias: "sorted_list_of_set (ias_of_list ls) = filter ((!) ls) [0..<length ls]"
   by (rule sorted_distinct_set_unique)
@@ -120,36 +104,14 @@ lemma ias_it_init_rule:
 
 lemma ias_it_next_rule:
   "<ias_is_it s p (x # xs) it> ias_it_next it <\<lambda>(y, it'). ias_is_it s p xs it' * \<up>(y = x)>"
-proof -
-  obtain a l i where it: "it = (a, l, i)" by (cases it) auto
-  show ?thesis
-    unfolding it ias_it_next_def ias_is_it_def prod.case
-  proof(rule ht_exEI, rule ht_extract_pre_pure(1), elim conjE)
-    fix ls
-    assume a: "a = p" "l = length ls" "s = ias_of_list ls" "i \<le> l" "i < l \<longrightarrow> ls ! i"
-              "x # xs = filter ((!) ls) [i..<l]"
-    hence i: "i < length ls" by (cases "i < length ls") auto
-    hence split: "[i..<length ls] = i # [Suc i..<length ls]" by (simp add: upt_conv_Cons)
-    have x: "x = i" and xs: "xs = filter ((!) ls) [Suc i..<length ls]"
-      using a(2,5,6) i by (simp_all add: split)
-    show "<p \<mapsto>\<^sub>a ls> ias_scan a l (Suc i) \<bind> (\<lambda>j. return (i, a, l, j))
-          <\<lambda>(y, it'). (case it' of (a, l, i) \<Rightarrow>
-             \<exists>\<^sub>Als. p \<mapsto>\<^sub>a ls * \<up>(a = p \<and> l = length ls \<and> s = ias_of_list ls \<and> i \<le> l \<and>
-                          (i < l \<longrightarrow> ls ! i) \<and> xs = filter ((!) ls) [i..<l])) * \<up>(y = x)>"
-      using i by (sep_auto heap: ias_scan_rule simp: a(1,2,3) x xs)
-  qed
-qed
+  unfolding ias_it_next_def ias_is_it_def
+  by (cases it; cases "snd (snd it) < fst (snd it)")
+     (sep_auto heap: ias_scan_rule simp: upt_conv_Cons)+
 
 lemma ias_it_has_next_rule:
   "<ias_is_it s p xs it> ias_it_has_next it <\<lambda>r. ias_is_it s p xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
-proof -
-  obtain a l i where it: "it = (a, l, i)" by (cases it) auto
-  have "\<lbrakk>i \<le> l; i < l \<longrightarrow> ls ! i\<rbrakk> \<Longrightarrow> (i < l) = (filter ((!) ls) [i..<l] \<noteq> [])" for ls
-    by (cases "i < l") (auto simp: upt_conv_Cons filter_empty_conv)
-  thus ?thesis
-    unfolding it ias_it_has_next_def ias_is_it_def
-    by sep_auto
-qed
+  unfolding ias_it_has_next_def ias_is_it_def
+  by (cases it) (sep_auto simp: upt_conv_Cons filter_empty_conv)
 
 lemma ias_quit_iteration: "ias_is_it s p xs it \<Longrightarrow>\<^sub>A is_ias s p"
   unfolding ias_is_it_def is_ias_def
@@ -158,9 +120,8 @@ lemma ias_quit_iteration: "ias_is_it s p xs it \<Longrightarrow>\<^sub>A is_ias 
 lemma ias_imp_set_ordered_iterate:
   "imp_set_ordered_iterate is_ias sorted_list_of_set ias_is_it ias_it_init ias_it_has_next
      ias_it_next"
-  by (rule imp_set_ordered_iterate.intro[OF sorted_list_of_set_order])
-     (unfold_locales, rule ias_it_init_rule, rule ias_it_next_rule, rule ias_it_has_next_rule,
-      rule ias_quit_iteration)
+  by (intro imp_set_ordered_iterate.intro imp_set_ordered_iterate_axioms.intro sorted_list_of_set_order)
+     (rule ias_it_init_rule ias_it_next_rule ias_it_has_next_rule ias_quit_iteration)+
 
 subsection \<open>Functional Models\<close>
 

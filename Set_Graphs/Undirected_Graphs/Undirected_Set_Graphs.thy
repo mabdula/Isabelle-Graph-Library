@@ -526,6 +526,22 @@ lemma dblton_graph_subset[intro]:
   "\<lbrakk>dblton_graph G1; G2 \<subseteq> G1\<rbrakk> \<Longrightarrow> dblton_graph G2"
   by (auto elim!: dblton_graphE intro!: dblton_graphI) 
 
+subsection \<open>Graph homomorphisms\<close>
+
+lemma Vs_image_image: "Vs ((`) f ` E) = f ` Vs E"
+  by (auto simp: Vs_def)
+
+lemma inj_on_image_edges:
+  assumes "inj_on f (Vs E)" "M \<subseteq> E"
+  shows "inj_on ((`) f) M"
+  using assms
+  by (auto simp: Vs_def intro!: inj_on_image elim!: inj_on_subset)
+
+lemma sum_image_edges:
+  "\<lbrakk>inj_on f (Vs E); M \<subseteq> E\<rbrakk> \<Longrightarrow> sum w ((`) f ` M) = sum (\<lambda>e. w (f ` e)) M"
+  using sum.reindex[OF inj_on_image_edges, of f E M w]
+  by (simp add: comp_def)
+
 lemma doublton_inj:
   "\<lbrakk>inj_on f (Vs E); dblton_graph E\<rbrakk> \<Longrightarrow> dblton_graph ((image f) ` E)"
 proof(rule dblton_graphI, goal_cases)
@@ -539,6 +555,8 @@ proof(rule dblton_graphI, goal_cases)
   ultimately show ?case 
     by auto
 qed
+
+subsection \<open>Graph invariants\<close>
 
 abbreviation "graph_invar G \<equiv> dblton_graph G \<and> finite (Vs G)"
 

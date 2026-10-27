@@ -28,74 +28,41 @@ definition (in flow_network_spec) "adm_pair f l a b = (\<exists> e. admissible f
 context push_relabel_ops_correct
 begin
 
-text \<open>After relabelling \<open>u\<close>, every admissible residual edge not leaving \<open>u\<close> was admissible
-      before, and no residual edge entering \<open>u\<close> is admissible.\<close>
+text \<open>After relabelling \<open>u\<close>, every admissible residual edge not leaving \<open>u\<close> was
+      admissible before, and no residual edge entering \<open>u\<close> is admissible.\<close>
 
 lemma relabel_admissible_tail:
-  assumes "is_preflow s f" "valid_labelling s t f l" "relabel_precond s t f l u"
-          "admissible f (relabel_effect f l u) e" "fstv e \<noteq> u"
-  shows "admissible f l e"
-proof(rule admissible_increased_labels[OF net_assms assms(2) _ _ assms(4)])
-  show "\<And> x. x \<in> \<V> \<Longrightarrow> l x \<le> relabel_effect f l u x"
-    using relabel_mono[OF net_assms assms(1-3)] .
-  show "relabel_effect f l u (fstv e) = l (fstv e)"
-    using assms(5) by (simp add: relabel_effect_def)
-qed
+  "\<lbrakk>is_preflow s f; valid_labelling s t f l; relabel_precond s t f l u;
+    admissible f (relabel_effect f l u) e; fstv e \<noteq> u\<rbrakk>
+   \<Longrightarrow> admissible f l e"
+  by (rule admissible_increased_labels[where l' = "relabel_effect f l u"])
+     (use relabel_mono[of f l u] in \<open>auto simp: relabel_effect_def fun_upd_def\<close>)
 
 lemma relabel_not_admissible_head:
-  assumes "is_preflow s f" "valid_labelling s t f l" "relabel_precond s t f l u" "sndv e = u"
-  shows "\<not> admissible f (relabel_effect f l u) e"
-proof
-  assume "admissible f (relabel_effect f l u) e"
-  hence e: "e \<in> \<EE>" "rcap f e > 0"
-           "relabel_effect f l u (fstv e) = relabel_effect f l u (sndv e) + 1"
-    by (auto elim: admissibleE)
-  note inc = relabel_increases[OF net_assms assms(1-3)]
-  show False
-  proof(cases "fstv e = u")
-    case True
-    thus False
-      using e(3) assms(4) by simp
-  next
-    case False
-    have "l (fstv e) \<le> l (sndv e) + 1"
-      using assms(2) e(1,2) by (auto elim: valid_labellingE)
-    moreover have "relabel_effect f l u (fstv e) = l (fstv e)"
-      using False by (simp add: relabel_effect_def)
-    ultimately show False
-      using e(3) assms(4) inc by simp
-  qed
-qed
+  "\<lbrakk>is_preflow s f; valid_labelling s t f l; relabel_precond s t f l u; sndv e = u\<rbrakk>
+   \<Longrightarrow> \<not> admissible f (relabel_effect f l u) e"
+  using relabel_increases[of f l u]
+  by (cases "fstv e = u") (auto simp: relabel_effect_def elim!: admissibleE valid_labellingE)
 
 lemma push_sorted:
   assumes "push_precond s t f l e" "sorted_wrt (\<lambda> a b. \<not> adm_pair f l b a) xs"
   shows "sorted_wrt (\<lambda> a b. \<not> adm_pair (push_effect f e) l b a) xs"
-  by (rule sorted_wrt_mono_rel[OF _ assms(2)])
-     (auto simp add: adm_pair_def dest: push_admissible[OF net_assms assms(1)])
+  using assms(2)
+  by (rule sorted_wrt_mono_rel[rotated]) (use assms(1) in \<open>auto simp: adm_pair_def dest: push_admissible\<close>)
+
+lemma relabel_sorted_filter:
+  assumes "is_preflow s f" "valid_labelling s t f l" "relabel_precond s t f l u"
+          "sorted_wrt (\<lambda> a b. \<not> adm_pair f l b a) xs"
+  shows "sorted_wrt (\<lambda> a b. \<not> adm_pair f (relabel_effect f l u) b a) (filter (\<lambda> y. u \<noteq> y) xs)"
+  using sorted_wrt_filter[OF assms(4)]
+  by (rule sorted_wrt_mono_rel[rotated]) (use assms(1-3) in \<open>auto simp: adm_pair_def dest: relabel_admissible_tail\<close>)
 
 lemma relabel_sorted:
-  assumes "is_preflow s f" "valid_labelling s t f l" "relabel_precond s t f l u"
-          "distinct xs" "sorted_wrt (\<lambda> a b. \<not> adm_pair f l b a) xs"
-  shows "sorted_wrt (\<lambda> a b. \<not> adm_pair f (relabel_effect f l u) b a) (u # remove1 u xs)"
-proof-
-  have rm: "remove1 u xs = filter (\<lambda> y. u \<noteq> y) xs"
-    by (simp add: distinct_remove1_removeAll[OF assms(4)] removeAll_filter_not_eq)
-  have old: "sorted_wrt (\<lambda> a b. \<not> adm_pair f l b a) (remove1 u xs)"
-    unfolding rm by (rule sorted_wrt_filter[OF assms(5)])
-  have rest: "sorted_wrt (\<lambda> a b. \<not> adm_pair f (relabel_effect f l u) b a) (remove1 u xs)"
-  proof(rule sorted_wrt_mono_rel[OF _ old])
-    fix a b
-    assume ab: "a \<in> set (remove1 u xs)" "b \<in> set (remove1 u xs)" "\<not> adm_pair f l b a"
-    have "b \<noteq> u"
-      using ab(2) assms(4) by simp
-    thus "\<not> adm_pair f (relabel_effect f l u) b a"
-      using ab(3) relabel_admissible_tail[OF assms(1-3)] by (auto simp add: adm_pair_def)
-  qed
-  have "\<forall> y \<in> set (remove1 u xs). \<not> adm_pair f (relabel_effect f l u) y u"
-    using relabel_not_admissible_head[OF assms(1-3)] by (auto simp add: adm_pair_def)
-  thus ?thesis
-    using rest by simp
-qed
+  "\<lbrakk>is_preflow s f; valid_labelling s t f l; relabel_precond s t f l u; distinct xs;
+    sorted_wrt (\<lambda> a b. \<not> adm_pair f l b a) xs\<rbrakk> \<Longrightarrow>
+   sorted_wrt (\<lambda> a b. \<not> adm_pair f (relabel_effect f l u) b a) (u # remove1 u xs)"
+  using relabel_sorted_filter[of f l u xs] relabel_not_admissible_head[of f l u]
+  by (auto simp: distinct_remove1_removeAll removeAll_filter_not_eq adm_pair_def)
 
 end
 
@@ -118,7 +85,8 @@ locale push_relabel_rtf_spec =
   fixes list_vertex_fold :: "('l \<Rightarrow> 'v \<Rightarrow> 'l) \<Rightarrow> 'l \<Rightarrow> 'l"
 begin
 
-text \<open>The first active vertex at or after \<open>u\<close>, looking at no more than \<open>n\<close> vertices.\<close>
+text \<open>The first active vertex at or after \<open>u\<close>, looking at no more than \<open>n\<close>
+      vertices.\<close>
 
 fun rtf_scan where
   "rtf_scan L x 0 u = None"
@@ -126,8 +94,8 @@ fun rtf_scan where
      (if 0 < ex_get x u then Some u
       else case list_next L u of None \<Rightarrow> None | Some w \<Rightarrow> rtf_scan L x n w)"
 
-text \<open>One discharge step on the current vertex \<open>u\<close>. The flag records whether \<open>u\<close> has been
-      relabelled during its discharge.\<close>
+text \<open>One discharge step on the current vertex \<open>u\<close>. The flag records whether \<open>u\<close> has
+      been relabelled during its discharge.\<close>
 
 definition "rtf_discharge L u rel fw bw l og ig =
   (let op = discharge_op False fw bw l og ig u in
@@ -157,10 +125,10 @@ definition "rtf_init_ctx fw bw x l og ig =
 
 lemmas [code] = rtf_scan.simps rtf_discharge_def rtf_select_def rtf_init_step_def rtf_init_ctx_def
 
-text \<open>The invariant for a current vertex \<open>u\<close> in the list \<open>xs\<close>. If \<open>u\<close> has not been relabelled
-      during its discharge, \<open>xs\<close> is sorted topologically with respect to the admissible residual
-      edges and all vertices before \<open>u\<close> are inactive. If \<open>u\<close> has been relabelled, the list
-      obtained by moving \<open>u\<close> to the front is sorted.\<close>
+text \<open>The invariant for a current vertex \<open>u\<close> in the list \<open>xs\<close>. If \<open>u\<close> has
+      not been relabelled during its discharge, \<open>xs\<close> is sorted topologically with respect to
+      the admissible residual edges and all vertices before \<open>u\<close> are inactive. If \<open>u\<close> has
+      been relabelled, the list obtained by moving \<open>u\<close> to the front is sorted.\<close>
 
 definition "rtf_cur_invar f l xs u rel =
   (if rel
@@ -198,361 +166,214 @@ begin
 lemma rtf_scan_props:
   assumes "list_invar L" "list_abstract L = xs @ u # ys" "length (u # ys) \<le> n"
           "\<forall> v \<in> set xs. \<not> 0 < ex_get x v"
-  shows "(rtf_scan L x n u = None \<longrightarrow> (\<forall> v \<in> set (list_abstract L). \<not> 0 < ex_get x v)) \<and>
+  shows "(rtf_scan L x n u = None \<longrightarrow>
+            (\<forall> v \<in> set (list_abstract L). \<not> 0 < ex_get x v)) \<and>
          (\<forall> w. rtf_scan L x n u = Some w \<longrightarrow> 0 < ex_get x w \<and>
-              (\<exists> xs' ys'. list_abstract L = xs' @ w # ys' \<and> (\<forall> v \<in> set xs'. \<not> 0 < ex_get x v)))"
+              (\<exists> xs' ys'. list_abstract L = xs' @ w # ys' \<and>
+                 (\<forall> v \<in> set xs'. \<not> 0 < ex_get x v)))"
   using assms(2-4)
 proof(induction ys arbitrary: xs u n)
   case Nil
-  obtain m where n: "n = Suc m"
-    using Nil.prems(2) by (cases n) auto
-  have nx: "list_next L u = None"
-    using vlist.list_next[OF assms(1) Nil.prems(1)] by simp
-  show ?case
-  proof(cases "0 < ex_get x u")
-    case True
-    thus ?thesis
-      using Nil.prems(1,3) by (auto simp add: n)
-  next
-    case False
-    thus ?thesis
-      using Nil.prems(1,3) nx by (auto simp add: n)
-  qed
+  thus ?case
+    using assms(1) vlist.list_next[of L xs u "[]"]
+    by (cases n) auto
 next
   case (Cons y ys)
-  obtain m where n: "n = Suc m" "length (y # ys) \<le> m"
-    using Cons.prems(2) by (cases n) auto
-  have nx: "list_next L u = Some y"
-    using vlist.list_next[OF assms(1) Cons.prems(1)] by simp
-  show ?case
+  obtain m where "n = Suc m" "length (y # ys) \<le> m"
+    using Cons.prems(2)
+    by (cases n) auto
+  moreover have "list_next L u = Some y"
+    using assms(1) Cons.prems(1) vlist.list_next[of L xs u "y # ys"]
+    by simp
+  ultimately show ?case
   proof(cases "0 < ex_get x u")
-    case True
-    thus ?thesis
-      using Cons.prems(1,3) by (auto simp add: n(1))
-  next
     case False
-    have "list_abstract L = (xs @ [u]) @ y # ys" "\<forall> v \<in> set (xs @ [u]). \<not> 0 < ex_get x v"
-      using Cons.prems(1,3) False by simp_all
-    from Cons.IH[OF this(1) n(2) this(2)] show ?thesis
-      using False nx by (simp add: n(1))
-  qed
+    thus ?thesis
+      using Cons.prems(1,3) Cons.IH[of "xs @ [u]" y m] \<open>n = Suc m\<close> \<open>length (y # ys) \<le> m\<close>
+            \<open>list_next L u = Some y\<close>
+      by simp
+  qed (use Cons.prems(1,3) in auto)
 qed
 
+text \<open>A push from the current vertex and a relabel of it preserve the invariant of the cursor.\<close>
+
+lemma push_adm_pair:
+  "\<lbrakk>push_precond s t f l e; fstv e = u\<rbrakk> \<Longrightarrow> adm_pair f l u (sndv e)"
+  by (auto simp: adm_pair_def push_precond_def)
+
+lemma rtf_cur_invar_push:
+  assumes "push_precond s t f l e" "fstv e = u" "rtf_cur_invar f l xs u rel"
+  shows "rtf_cur_invar (push_effect f e) l xs u rel"
+proof(cases rel)
+  case False
+  then obtain ys zs where "xs = ys @ u # zs" "\<forall> v \<in> set ys. \<not> active_vertex s t f v"
+                          "\<forall> v \<in> set ys. \<not> adm_pair f l u v"
+    using assms(3)
+    by (auto simp: rtf_cur_invar_def sorted_wrt_append)
+  thus ?thesis
+    using False assms push_sorted[of f l e xs] push_active[of f l e] push_adm_pair[of f l e u]
+    by (auto simp: rtf_cur_invar_def)
+qed (use assms push_sorted[of f l e "u # remove1 u xs"] in \<open>simp add: rtf_cur_invar_def\<close>)
+
+lemma rtf_cur_invar_relabel:
+  "\<lbrakk>is_preflow s f; valid_labelling s t f l; relabel_precond s t f l u; distinct xs;
+    rtf_cur_invar f l xs u rel\<rbrakk>
+   \<Longrightarrow> rtf_cur_invar f (relabel_effect f l u) xs u True"
+  using relabel_sorted[of f l u "u # remove1 u xs"] relabel_sorted[of f l u xs]
+  by (auto simp: rtf_cur_invar_def split: if_splits)
+
 lemma rtf_discharge_props:
+  assumes "invar_state st" "active_vertex s t (flow_abs st) u" "distinct xs"
+          "rtf_cur_invar (flow_abs st) (labels_abs st) xs u rel"
+          "discharge_op False (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u = op"
+  shows "rtf_cur_invar (flow_abs (apply_op op st)) (labels_abs (apply_op op st)) xs u
+           (case op of Relabel _ \<Rightarrow> True | _ \<Rightarrow> rel)"
+proof(cases op)
+  case (Push_Fwd d)
+  thus ?thesis
+    using assms discharge_op_props[of st u False op] push_impl_props(2,3)[of st op d "F d"]
+    by (auto simp: good_op_def intro: rtf_cur_invar_push)
+next
+  case (Push_Bwd d)
+  thus ?thesis
+    using assms discharge_op_props[of st u False op] push_impl_props(2,3)[of st op d "B d"]
+    by (auto simp: good_op_def intro: rtf_cur_invar_push)
+next
+  case (Advance v)
+  then obtain e where "v \<in> \<V>" "current_res st v = Some e" "\<not> admissible (flow_abs st) (labels_abs st) e"
+    using assms discharge_op_props[of st u False op]
+    by (auto simp: good_op_def)
+  thus ?thesis
+    using Advance assms(1,4)
+    by (simp add: advance_impl_props(2,3))
+next
+  case (Relabel v)
+  hence "v = u"
+    using assms(5)
+    by (auto simp: discharge_op_def Let_def split: if_splits)
+  thus ?thesis
+    using Relabel assms discharge_op_props[of st u False op] relabel_impl_props(2,3)[of st u]
+    by (auto simp: good_op_def intro: rtf_cur_invar_relabel elim!: invar_props_elims)
+qed (use assms discharge_op_props[of st u False op] in \<open>auto simp: discharge_op_def Let_def split: if_splits\<close>)
+
+lemma rtf_discharge_ctx:
   assumes "invar_state st" "list_invar L" "set (list_abstract L) = \<V> - {s, t}"
           "active_vertex s t (flow_abs st) u"
           "rtf_cur_invar (flow_abs st) (labels_abs st) (list_abstract L) u rel"
           "rtf_discharge L u rel (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) = (op, c)"
-  shows "good_op st op" "rtf_ctx_invar (apply_op op (st\<lparr>pr_ctx := c\<rparr>))"
+  shows "good_op st op \<and> rtf_ctx_invar (apply_op op (st\<lparr>pr_ctx := c\<rparr>))"
+  using assms discharge_op_props[of st u False] vlist.list_universe[of L] rtf_discharge_props[of st u _ rel]
+  by (auto simp: rtf_discharge_def Let_def apply_op_ctx rtf_ctx_invar_def)
+
+lemma rtf_active_iff:
+  "\<lbrakk>invar_state st; set (list_abstract L) = \<V> - {s, t}\<rbrakk>
+   \<Longrightarrow> active_vertex s t (flow_abs st) v \<longleftrightarrow>
+       v \<in> set (list_abstract L) \<and> 0 < ex_get (pr_excess st) v"
+  by (auto simp: active_vertex_def elim!: invar_props_elims)
+
+text \<open>When the discharge of the current vertex \<open>u\<close> ends, the list after the optional move to the
+      front is sorted and has no active vertex before \<open>u\<close>.\<close>
+
+lemma rtf_move_props:
+  assumes "list_invar L" "set (list_abstract L) = \<V> - {s, t}" "rtf_cur_invar f l (list_abstract L) u rel"
+          "L' = (if rel then list_move_to_front L u else L)"
+  shows "list_invar L' \<and> set (list_abstract L') = \<V> - {s, t} \<and>
+         sorted_wrt (\<lambda> a b. \<not> adm_pair f l b a) (list_abstract L') \<and>
+         (\<exists> xs ys. list_abstract L' = xs @ u # ys \<and>
+            (\<forall> v \<in> set xs. \<not> active_vertex s t f v))"
+  using assms vlist.list_move_to_front[of L u] vlist.list_universe[of L]
+  by (cases rel) (auto simp: rtf_cur_invar_def Cons_eq_append_conv)
+
+text \<open>The scan for the next active vertex after \<open>u\<close>.\<close>
+
+lemma rtf_next_props:
+  assumes "invar_state st"
+          "list_invar L \<and> set (list_abstract L) = \<V> - {s, t} \<and>
+           sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a) (list_abstract L) \<and>
+           (\<exists> xs ys. list_abstract L = xs @ u # ys \<and>
+              (\<forall> v \<in> set xs. \<not> active_vertex s t (flow_abs st) v))"
+          "\<not> 0 < ex_get (pr_excess st) u"
+          "(case list_next L u of
+              None \<Rightarrow> (Done, (L, None, False))
+            | Some w \<Rightarrow>
+                (case rtf_scan L (pr_excess st) num_verts w of
+                   None \<Rightarrow> (Done, (L, None, False))
+                 | Some w' \<Rightarrow> rtf_discharge L w' False (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st)
+                                (pr_in st))) = (op, c)"
+  shows "good_op st op \<and>
+         (op \<noteq> Done \<longrightarrow> rtf_ctx_invar (apply_op op (st\<lparr>pr_ctx := c\<rparr>)))"
 proof-
-  note inv = invar_stateD[OF assms(1)]
-  have dL: "distinct (list_abstract L)"
-    using vlist.list_universe[OF assms(2)] by simp
-  define rel' where "rel' = (case op of Relabel _ \<Rightarrow> True | _ \<Rightarrow> rel)"
-  have opd: "discharge_op False (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u = op"
-   and opc: "c = (L, Some u, rel')"
-    using assms(6) by (auto simp add: rtf_discharge_def Let_def rel'_def)
-  note dp = discharge_op_props[OF assms(1,4) opd]
-  have good: "good_op st op"
-    using dp by simp
-  define st' where "st' = apply_op op st"
-  have ctx': "rtf_ctx_invar (st'\<lparr>pr_ctx := c\<rparr>) \<longleftrightarrow>
-              rtf_cur_invar (flow_abs st') (labels_abs st') (list_abstract L) u rel'"
-    using assms(2,3) by (simp add: rtf_ctx_invar_def opc)
-  have push_case: "rtf_cur_invar (flow_abs st') (labels_abs st') (list_abstract L) u rel"
-    if pp: "push_precond s t (flow_abs st) (labels_abs st) e" and fu: "fstv e = u"
-       and fl: "flow_abs st' = push_effect (flow_abs st) e"
-       and lb: "labels_abs st' = labels_abs st" for e
-  proof(cases rel)
-    case True
-    have h: "u \<in> set (list_abstract L) \<and>
-             sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a) (u # remove1 u (list_abstract L))"
-      using assms(5) unfolding rtf_cur_invar_def if_P[OF True] .
-    show ?thesis
-      unfolding rtf_cur_invar_def if_P[OF True] fl lb
-      using conjunct1[OF h] push_sorted[OF pp conjunct2[OF h]] by (rule conjI)
-  next
-    case False
-    then obtain xs ys where I: "sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a)
-                                  (list_abstract L)"
+  obtain xs ys where L: "list_invar L" "set (list_abstract L) = \<V> - {s, t}"
+      "sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a) (list_abstract L)"
       "list_abstract L = xs @ u # ys" "\<forall> v \<in> set xs. \<not> active_vertex s t (flow_abs st) v"
-      using assms(5) by (auto simp add: rtf_cur_invar_def)
-    have sorted': "sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st') (labels_abs st') b a)
-                     (list_abstract L)"
-      using push_sorted[OF pp I(1)] fl lb by simp
-    have pre': "\<forall> v \<in> set xs. \<not> active_vertex s t (flow_abs st') v"
-    proof
-      fix v
-      assume v: "v \<in> set xs"
-      show "\<not> active_vertex s t (flow_abs st') v"
-      proof
-        assume "active_vertex s t (flow_abs st') v"
-        hence "v = sndv e"
-          using push_active[OF net_assms pp] I(3) v fl by auto
-        hence "adm_pair (flow_abs st) (labels_abs st) u v"
-          using pp fu by (auto simp add: adm_pair_def push_precond_def)
-        moreover have "\<not> adm_pair (flow_abs st) (labels_abs st) u v"
-          using I(1,2) v by (auto simp add: sorted_wrt_append)
-        ultimately show False
-          by simp
-      qed
-    qed
+      "\<And> v. active_vertex s t (flow_abs st) v \<longleftrightarrow> v \<in> set (list_abstract L) \<and> 0 < ex_get (pr_excess st) v"
+    using assms(1,2) rtf_active_iff[of st L]
+    by blast
+  have "\<forall> v \<in> set (xs @ [u]). \<not> 0 < ex_get (pr_excess st) v"
+    using L(4-6) assms(3)
+    by auto
+  moreover have "length (list_abstract L) \<le> num_verts"
+    using L(1,2) distinct_card[of "list_abstract L"] vlist.list_universe[of L] \<V>_finite
+          card_mono[of \<V> "\<V> - {s, t}"]
+    by (auto simp: num_verts)
+  ultimately show ?thesis
+  proof(cases ys)
+    case (Cons w ys')
+    have "list_abstract L = (xs @ [u]) @ w # ys'" "length (w # ys') \<le> num_verts"
+      using L(4) Cons \<open>length (list_abstract L) \<le> num_verts\<close>
+      by auto
+    note scan =
+      rtf_scan_props[OF L(1) this \<open>\<forall> v \<in> set (xs @ [u]). \<not> 0 < ex_get (pr_excess st) v\<close>]
     show ?thesis
-      using False sorted' I(2) pre' by (auto simp add: rtf_cur_invar_def)
-  qed
-  have inv': "rtf_cur_invar (flow_abs st') (labels_abs st') (list_abstract L) u rel'"
-  proof(cases op)
-    case (Push_Fwd d)
-    have pp: "push_precond s t (flow_abs st) (labels_abs st) (F d)"
-      using good by (simp add: Push_Fwd good_op_def)
-    have "rtf_cur_invar (flow_abs st') (labels_abs st') (list_abstract L) u rel"
-    proof(rule push_case[OF pp])
-      show "fstv (F d) = u"
-        using dp Push_Fwd by simp
-      show "flow_abs st' = push_effect (flow_abs st) (F d)" "labels_abs st' = labels_abs st"
-        using push_impl_props(2,3)[OF assms(1) _ pp, of op d] Push_Fwd by (simp_all add: st'_def)
-    qed
-    thus ?thesis
-      by (simp add: rel'_def Push_Fwd)
-  next
-    case (Push_Bwd d)
-    have pp: "push_precond s t (flow_abs st) (labels_abs st) (B d)"
-      using good by (simp add: Push_Bwd good_op_def)
-    have "rtf_cur_invar (flow_abs st') (labels_abs st') (list_abstract L) u rel"
-    proof(rule push_case[OF pp])
-      show "fstv (B d) = u"
-        using dp Push_Bwd by simp
-      show "flow_abs st' = push_effect (flow_abs st) (B d)" "labels_abs st' = labels_abs st"
-        using push_impl_props(2,3)[OF assms(1) _ pp, of op d] Push_Bwd by (simp_all add: st'_def)
-    qed
-    thus ?thesis
-      by (simp add: rel'_def Push_Bwd)
-  next
-    case (Advance u')
-    have uV: "u' \<in> \<V>"
-     and ex: "\<exists> e. current_res st u' = Some e \<and> \<not> admissible (flow_abs st) (labels_abs st) e"
-      using good Advance by (simp_all add: good_op_def)
-    from ex obtain e where e: "current_res st u' = Some e" "\<not> admissible (flow_abs st) (labels_abs st) e"
-      by (elim exE conjE) (rule that)
-    note ap = advance_impl_props[OF assms(1) uV e]
-    show ?thesis
-      using assms(5) ap(2,3) by (simp add: st'_def rel'_def Advance)
-  next
-    case (Relabel u')
-    have u': "u' = u"
-      using opd Relabel by (auto simp add: discharge_op_def Let_def split: if_splits)
-    have rp: "relabel_precond s t (flow_abs st) (labels_abs st) u"
-      using good Relabel u' by (simp add: good_op_def)
-    note rip = relabel_impl_props[OF assms(1) rp]
-    have fl: "flow_abs st' = flow_abs st"
-      using rip(3) Relabel u' by (simp add: st'_def)
-    have lb: "labels_abs st' = relabel_effect (flow_abs st) (labels_abs st) u"
-      using rip(2) Relabel u' by (simp add: st'_def)
-    define xs0 where "xs0 = (if rel then u # remove1 u (list_abstract L) else list_abstract L)"
-    have uL: "u \<in> set (list_abstract L)"
-      using assms(5) by (auto simp add: rtf_cur_invar_def split: if_splits)
-    have d0: "distinct xs0"
-      using dL by (simp add: xs0_def)
-    have s0: "sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a) xs0"
-      using assms(5) by (auto simp add: rtf_cur_invar_def xs0_def split: if_splits)
-    have r0: "remove1 u xs0 = remove1 u (list_abstract L)"
-      by (simp add: xs0_def)
-    have "sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st') (labels_abs st') b a)
-            (u # remove1 u (list_abstract L))"
-      using relabel_sorted[OF inv(8,9) rp d0 s0] unfolding r0 fl lb .
-    thus ?thesis
-      using uL by (simp add: rtf_cur_invar_def rel'_def Relabel)
-  next
-    case (Relabel_Gap u')
-    thus ?thesis
-      using opd by (simp add: discharge_op_def Let_def split: if_splits)
-  qed (use dp in simp)
-  show "good_op st op" "rtf_ctx_invar (apply_op op (st\<lparr>pr_ctx := c\<rparr>))"
-    using good inv' ctx' by (simp_all add: st'_def apply_op_ctx)
+    proof(cases "rtf_scan L (pr_excess st) num_verts w")
+      case (Some w')
+      with scan have "active_vertex s t (flow_abs st) w'"
+                     "rtf_cur_invar (flow_abs st) (labels_abs st) (list_abstract L) w' False"
+        using L(3,6)
+        by (auto simp: rtf_cur_invar_def)
+      moreover have "rtf_discharge L w' False (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) = (op, c)"
+        using assms(4) Some Cons L(1,4) vlist.list_next[of L xs u ys]
+        by simp
+      ultimately show ?thesis
+        using assms(1) L(1,2) rtf_discharge_ctx[of st L]
+        by blast
+    qed (use assms(4) Cons scan L(1,4,6) vlist.list_next[of L xs u ys] in \<open>auto simp: good_op_def\<close>)
+  qed (use assms(3,4) L(1,4,6) vlist.list_next[of L xs u ys] in \<open>auto simp: good_op_def\<close>)
 qed
 
 lemma rtf_select_props:
   assumes "invar_state st" "rtf_ctx_invar st"
           "rtf_select (pr_ctx st) (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st) (pr_counts st)
              (pr_out st) (pr_in st) = (op, c)"
-  shows "good_op st op" "op \<noteq> Done \<Longrightarrow> rtf_ctx_invar (apply_op op (st\<lparr>pr_ctx := c\<rparr>))"
+  shows "good_op st op \<and>
+         (op \<noteq> Done \<longrightarrow> rtf_ctx_invar (apply_op op (st\<lparr>pr_ctx := c\<rparr>)))"
 proof-
-  note inv = invar_stateD[OF assms(1)]
-  obtain L cur rel where ctx: "pr_ctx st = (L, cur, rel)"
-    by (cases "pr_ctx st") auto
-  have I: "list_invar L" "set (list_abstract L) = \<V> - {s, t}"
-          "case cur of None \<Rightarrow> \<forall> v. \<not> active_vertex s t (flow_abs st) v
-           | Some u \<Rightarrow> rtf_cur_invar (flow_abs st) (labels_abs st) (list_abstract L) u rel"
-    using assms(2) ctx by (simp_all add: rtf_ctx_invar_def)
-  have act: "\<And> L' v. set (list_abstract L') = \<V> - {s, t} \<Longrightarrow> v \<in> set (list_abstract L') \<Longrightarrow>
-               active_vertex s t (flow_abs st) v \<longleftrightarrow> 0 < ex_get (pr_excess st) v"
-    using inv(6) by (auto simp add: active_vertex_def)
-  have actL: "\<And> L' v. set (list_abstract L') = \<V> - {s, t} \<Longrightarrow> active_vertex s t (flow_abs st) v \<Longrightarrow>
-                v \<in> set (list_abstract L')"
-    by (auto simp add: active_vertex_def)
-  have "good_op st op \<and> (op \<noteq> Done \<longrightarrow> rtf_ctx_invar (apply_op op (st\<lparr>pr_ctx := c\<rparr>)))"
+  obtain L cur rel where ctx: "pr_ctx st = (L, cur, rel)" "list_invar L" "set (list_abstract L) = \<V> - {s, t}"
+    using assms(2)
+    by (cases "pr_ctx st") (auto simp: rtf_ctx_invar_def)
+  show ?thesis
   proof(cases cur)
-    case None
-    hence "op = Done" "\<forall> v. \<not> active_vertex s t (flow_abs st) v"
-      using assms(3) ctx I(3) by (simp_all add: rtf_select_def)
-    thus ?thesis
-      by (simp add: good_op_def)
-  next
     case (Some u)
-    note cS = this
-    have cI: "rtf_cur_invar (flow_abs st) (labels_abs st) (list_abstract L) u rel"
-      using I(3) cS by simp
-    have uL: "u \<in> set (list_abstract L)"
-      using cI by (auto simp add: rtf_cur_invar_def split: if_splits)
+    hence cI: "rtf_cur_invar (flow_abs st) (labels_abs st) (list_abstract L) u rel"
+      using assms(2) ctx(1)
+      by (simp add: rtf_ctx_invar_def)
     show ?thesis
     proof(cases "0 < ex_get (pr_excess st) u")
       case True
-      have sel: "rtf_discharge L u rel (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) =
-                 (op, c)"
-        using assms(3) ctx cS True by (simp add: rtf_select_def)
-      have au: "active_vertex s t (flow_abs st) u"
-        using act[OF I(2) uL] True by simp
-      show ?thesis
-        using rtf_discharge_props[OF assms(1) I(1,2) au cI sel] by simp
+      moreover have "u \<in> set (list_abstract L)"
+        using cI
+        by (auto simp: rtf_cur_invar_def split: if_splits)
+      ultimately show ?thesis
+        using assms ctx Some cI rtf_discharge_ctx[of st L u rel] rtf_active_iff[of st L]
+        by (simp add: rtf_select_def)
     next
       case False
-      define L' where "L' = (if rel then list_move_to_front L u else L)"
-      have sel: "rtf_select (pr_ctx st) (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st)
-                   (pr_counts st) (pr_out st) (pr_in st) =
-                 (case list_next L' u of
-                    None \<Rightarrow> (Done, (L', None, False))
-                  | Some w \<Rightarrow>
-                      (case rtf_scan L' (pr_excess st) num_verts w of
-                         None \<Rightarrow> (Done, (L', None, False))
-                       | Some w' \<Rightarrow> rtf_discharge L' w' False (pr_fwd st) (pr_bwd st) (pr_labels st)
-                                     (pr_out st) (pr_in st)))"
-        unfolding L'_def using ctx cS False by (cases rel) (simp_all add: rtf_select_def Let_def)
-      have L'all: "list_invar L' \<and> set (list_abstract L') = \<V> - {s, t} \<and>
-        sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a) (list_abstract L') \<and>
-        (\<exists> xs ys. list_abstract L' = xs @ u # ys \<and> (\<forall> v \<in> set xs. \<not> 0 < ex_get (pr_excess st) v))"
-      proof(cases rel)
-        case True
-        note mv = vlist.list_move_to_front[OF I(1) uL]
-        have dL: "distinct (list_abstract L)"
-          using vlist.list_universe[OF I(1)] by simp
-        have abs': "list_abstract L' = u # remove1 u (list_abstract L)"
-          using mv(2) by (simp add: L'_def True)
-        have "list_invar L'"
-          using mv(1) by (simp add: L'_def True)
-        moreover have "set (list_abstract L') = \<V> - {s, t}"
-          using dL uL I(2) by (auto simp add: abs')
-        moreover have "sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a) (list_abstract L')"
-          using cI unfolding rtf_cur_invar_def if_P[OF True] abs' by (rule conjunct2)
-        moreover have "\<exists> xs ys. list_abstract L' = xs @ u # ys \<and> (\<forall> v \<in> set xs. \<not> 0 < ex_get (pr_excess st) v)"
-          by (rule exI[of _ "[]"], rule exI[of _ "remove1 u (list_abstract L)"]) (simp add: abs')
-        ultimately show ?thesis
-          by (intro conjI)
-      next
-        case False
-        have L'L: "L' = L"
-          by (simp add: L'_def False)
-        have cI': "sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a) (list_abstract L) \<and>
-                   (\<exists> ys zs. list_abstract L = ys @ u # zs \<and>
-                      (\<forall> v \<in> set ys. \<not> active_vertex s t (flow_abs st) v))"
-          using cI unfolding rtf_cur_invar_def if_not_P[OF False] .
-        then obtain xs ys where xy: "list_abstract L = xs @ u # ys"
-          "\<forall> v \<in> set xs. \<not> active_vertex s t (flow_abs st) v"
-          by (elim conjE exE) (rule that)
-        have ex0: "\<forall> v \<in> set xs. \<not> 0 < ex_get (pr_excess st) v"
-          using xy(1,2) act[OF I(2)] by auto
-        have "\<exists> xs ys. list_abstract L = xs @ u # ys \<and> (\<forall> v \<in> set xs. \<not> 0 < ex_get (pr_excess st) v)"
-          by (rule exI, rule exI, rule conjI[OF xy(1) ex0])
-        thus ?thesis
-          unfolding L'L using I(1,2) conjunct1[OF cI'] by (intro conjI)
-      qed
-      have L': "list_invar L'" "set (list_abstract L') = \<V> - {s, t}"
-        "sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a) (list_abstract L')"
-        "\<exists> xs ys. list_abstract L' = xs @ u # ys \<and> (\<forall> v \<in> set xs. \<not> 0 < ex_get (pr_excess st) v)"
-        using L'all by simp_all
-      obtain xs ys where xy0: "list_abstract L' = xs @ u # ys"
-        "\<forall> v \<in> set xs. \<not> 0 < ex_get (pr_excess st) v"
-        using L'(4) by (elim exE conjE) (rule that)
-      have xy: "list_abstract L' = xs @ u # ys" "\<forall> v \<in> set (xs @ [u]). \<not> 0 < ex_get (pr_excess st) v"
-        using xy0 False by simp_all
-      have dL': "distinct (list_abstract L')"
-        using vlist.list_universe[OF L'(1)] by simp
-      have nx: "list_next L' u = (case ys of [] \<Rightarrow> None | y # _ \<Rightarrow> Some y)"
-        using vlist.list_next[OF L'(1) xy(1)] .
-      show ?thesis
-      proof(cases ys)
-        case Nil
-        have "op = Done"
-          using assms(3) sel nx Nil by simp
-        moreover have "\<forall> v. \<not> active_vertex s t (flow_abs st) v"
-          using xy Nil act[OF L'(2)] actL[OF L'(2)] by auto
-        ultimately show ?thesis
-          by (simp add: good_op_def)
-      next
-        case (Cons w ys')
-        have len: "length (w # ys') \<le> num_verts"
-        proof-
-          have "length (w # ys') \<le> length (list_abstract L')"
-            using xy(1) Cons by simp
-          also have "\<dots> = card (\<V> - {s, t})"
-            using distinct_card[OF dL'] L'(2) by simp
-          also have "\<dots> \<le> card \<V>"
-            by (rule card_mono[OF \<V>_finite]) auto
-          finally show ?thesis
-            by (simp add: num_verts)
-        qed
-        have xy': "list_abstract L' = (xs @ [u]) @ w # ys'"
-          using xy(1) Cons by simp
-        note sc = rtf_scan_props[OF L'(1) xy' len xy(2)]
-        show ?thesis
-        proof(cases "rtf_scan L' (pr_excess st) num_verts w")
-          case None
-          have "op = Done"
-            using assms(3) sel nx Cons None by simp
-          moreover have "\<forall> v. \<not> active_vertex s t (flow_abs st) v"
-          proof
-            fix v
-            have nz: "\<forall> v \<in> set (list_abstract L'). \<not> 0 < ex_get (pr_excess st) v"
-              using sc None by simp
-            show "\<not> active_vertex s t (flow_abs st) v"
-            proof
-              assume a: "active_vertex s t (flow_abs st) v"
-              hence "v \<in> set (list_abstract L')"
-                by (rule actL[OF L'(2)])
-              thus False
-                using a nz act[OF L'(2)] by simp
-            qed
-          qed
-          ultimately show ?thesis
-            by (simp add: good_op_def)
-        next
-          case (Some w')
-          have "0 < ex_get (pr_excess st) w' \<and>
-                (\<exists> xs' ys'. list_abstract L' = xs' @ w' # ys' \<and> (\<forall> v \<in> set xs'. \<not> 0 < ex_get (pr_excess st) v))"
-            using sc Some by simp
-          then obtain xs2 ys2 where w': "0 < ex_get (pr_excess st) w'" "list_abstract L' = xs2 @ w' # ys2"
-            "\<forall> v \<in> set xs2. \<not> 0 < ex_get (pr_excess st) v"
-            by (elim conjE exE) (rule that)
-          have sel': "rtf_discharge L' w' False (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st)
-                        (pr_in st) = (op, c)"
-            using assms(3) sel nx Cons Some by simp
-          have aw: "active_vertex s t (flow_abs st) w'"
-            using act[OF L'(2), of w'] w'(1,2) by simp
-          have ina: "\<forall> v \<in> set xs2. \<not> active_vertex s t (flow_abs st) v"
-            using w'(2,3) act[OF L'(2)] by auto
-          have "\<exists> ys zs. list_abstract L' = ys @ w' # zs \<and> (\<forall> v \<in> set ys. \<not> active_vertex s t (flow_abs st) v)"
-            by (rule exI, rule exI, rule conjI[OF w'(2) ina])
-          hence cI': "rtf_cur_invar (flow_abs st) (labels_abs st) (list_abstract L') w' False"
-            unfolding rtf_cur_invar_def if_False using L'(3) by (intro conjI)
-          show ?thesis
-            using rtf_discharge_props[OF assms(1) L'(1,2) aw cI' sel'] by simp
-        qed
-      qed
+      thus ?thesis
+        using assms(3) ctx(1) Some rtf_next_props[OF assms(1) rtf_move_props[OF ctx(2,3) cI refl] False]
+        by (simp add: rtf_select_def Let_def)
     qed
-  qed
-  thus "good_op st op" "op \<noteq> Done \<Longrightarrow> rtf_ctx_invar (apply_op op (st\<lparr>pr_ctx := c\<rparr>))"
-    by simp_all
+  qed (use assms(2,3) ctx(1) in \<open>simp add: rtf_select_def rtf_ctx_invar_def good_op_def\<close>)
 qed
-
 
 lemma rtf_init_fold:
   assumes "list_invar L" "distinct vs" "set vs \<subseteq> \<V>" "set vs \<inter> set (list_abstract L) = {}"
@@ -560,27 +381,7 @@ lemma rtf_init_fold:
          list_abstract (foldl rtf_init_step L vs) =
          rev (filter (\<lambda> v. v \<noteq> s \<and> v \<noteq> t) vs) @ list_abstract L"
   using assms
-proof(induction vs arbitrary: L)
-  case (Cons v vs)
-  show ?case
-  proof(cases "v \<noteq> s \<and> v \<noteq> t")
-    case True
-    have v: "v \<in> \<V>" "v \<notin> set (list_abstract L)"
-      using Cons.prems(3,4) by auto
-    have p: "list_invar (list_push_front L v)" "list_abstract (list_push_front L v) = v # list_abstract L"
-      using vlist.list_push_front[OF Cons.prems(1) v] by simp_all
-    have "set vs \<inter> set (list_abstract (list_push_front L v)) = {}"
-      using p(2) Cons.prems(2,4) by auto
-    from Cons.IH[OF p(1) _ _ this] Cons.prems(2,3) show ?thesis
-      using True p(2) by (simp add: rtf_init_step_def)
-  next
-    case False
-    have "rtf_init_step L v = L"
-      using False by (auto simp add: rtf_init_step_def)
-    with Cons.IH[OF Cons.prems(1)] Cons.prems(2-4) show ?thesis
-      using False by auto
-  qed
-qed simp
+  by (induction vs arbitrary: L) (auto simp: rtf_init_step_def vlist.list_push_front)
 
 lemma rtf_init_ctx_props:
   assumes "invar_state st" "\<forall> d \<in> \<E>. flow_abs st d = init_flow s d" "labels_abs st = init_labels s"
@@ -588,43 +389,18 @@ lemma rtf_init_ctx_props:
                          (pr_in st)"
   shows "rtf_ctx_invar st"
 proof-
-  obtain vs where vs: "distinct vs" "set vs = \<V>"
-    "list_vertex_fold rtf_init_step list_empty = foldl rtf_init_step list_empty vs"
-    using list_vertex_fold by blast
   define L where "L = list_vertex_fold rtf_init_step list_empty"
-  have L: "list_invar L" "list_abstract L = rev (filter (\<lambda> v. v \<noteq> s \<and> v \<noteq> t) vs)"
-    using rtf_init_fold[OF vlist.list_empty(1) vs(1)] vlist.list_empty(2) vs(2,3)
-    by (simp_all add: L_def)
-  have set: "set (list_abstract L) = \<V> - {s, t}"
-    using L(2) vs(2) by auto
-  have "\<And> a b. \<not> adm_pair (flow_abs st) (labels_abs st) a b"
-    using init_flow_agree(4)[OF assms(2)] assms(3) by (simp add: adm_pair_def)
-  hence sorted: "sorted_wrt (\<lambda> a b. \<not> adm_pair (flow_abs st) (labels_abs st) b a) (list_abstract L)"
-    by simp
-  have ctx: "pr_ctx st = (L, list_first L, False)"
-    using assms(4) by (simp add: rtf_init_ctx_def L_def Let_def)
-  have cur: "case list_first L of None \<Rightarrow> \<forall> v. \<not> active_vertex s t (flow_abs st) v
-             | Some u \<Rightarrow> rtf_cur_invar (flow_abs st) (labels_abs st) (list_abstract L) u False"
-  proof(cases "list_abstract L")
-    case Nil
-    hence "list_first L = None"
-      using vlist.list_first[OF L(1)] by simp
-    moreover have "\<forall> v. \<not> active_vertex s t (flow_abs st) v"
-      using set Nil by (auto simp add: active_vertex_def)
-    ultimately show ?thesis
-      by simp
-  next
-    case (Cons u us)
-    hence "list_first L = Some u"
-      using vlist.list_first[OF L(1)] by simp
-    moreover have "\<exists> ys zs. list_abstract L = ys @ u # zs \<and>
-                     (\<forall> v \<in> set ys. \<not> active_vertex s t (flow_abs st) v)"
-      by (rule exI[of _ "[]"], rule exI[of _ us]) (simp add: Cons)
-    ultimately show ?thesis
-      using sorted by (simp add: rtf_cur_invar_def)
-  qed
-  show ?thesis
-    using L(1) set cur by (simp add: rtf_ctx_invar_def ctx)
+  obtain vs where "distinct vs" "set vs = \<V>" "L = foldl rtf_init_step list_empty vs"
+    using list_vertex_fold[of rtf_init_step list_empty]
+    by (auto simp: L_def)
+  hence "list_invar L" "set (list_abstract L) = \<V> - {s, t}"
+    using rtf_init_fold[of list_empty vs] vlist.list_empty
+    by auto
+  thus ?thesis
+    using assms(2-4) vlist.list_first[of L] init_flow_agree(4)[of "flow_abs st"]
+    by (cases "list_abstract L")
+       (auto simp: rtf_ctx_invar_def rtf_init_ctx_def L_def[symmetric] rtf_cur_invar_def adm_pair_def
+                   active_vertex_def Cons_eq_append_conv)
 qed
 
 end
@@ -640,18 +416,6 @@ text \<open>The relabel-to-front strategy satisfies the contract of the generic 
 
 sublocale push_relabel_rtf \<subseteq> rtf: push_relabel where select = rtf_select
   and init_ctx = rtf_init_ctx and ctx_invar = rtf_ctx_invar
-proof(unfold_locales, goal_cases)
-  case (1 st op c)
-  show ?case
-    by (rule rtf_select_props(1)[OF 1(1,2) 1(3)[unfolded rtf.select_of_def]])
-next
-  case (2 st op c)
-  show ?case
-    by (rule rtf_select_props(2)[OF 2(1,2) 2(3)[unfolded rtf.select_of_def] 2(4)])
-next
-  case (3 st)
-  show ?case
-    by (rule rtf_init_ctx_props[OF 3])
-qed
+  by unfold_locales (simp_all add: rtf.select_of_def rtf_select_props rtf_init_ctx_props)
 
 end

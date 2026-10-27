@@ -1,15 +1,15 @@
 theory CSR_Graph
   imports CSR_Buildup_Imperative Weighted_Neighbourhoods_Imperative_Spec Directed_Set_Graphs.CSR_Graph_Spec
-    Imperative.Array_Range_Iteration
+    Imperative.Array_Range_Iteration Data_Structures.More_Logic
 begin
 
 section \<open>Graphs in CSR Form\<close>
 
 text \<open>The imperative refinement of the CSR graphs of @{theory Directed_Set_Graphs.CSR_Graph_Spec},
       built by @{theory Directed_Set_Graphs.CSR_Buildup_Imperative}: an array \<open>B\<close> of block
-      starts, an array \<open>E\<close> of edges sorted by source, and a cursor array \<open>C\<close>, initially a copy of
-      the start indices. Advancing the iterator of a vertex increments its cursor; resetting it
-      copies the start index back.\<close>
+      starts, an array \<open>E\<close> of edges sorted by source, and a cursor array \<open>C\<close>,
+      initially a copy of the start indices. Advancing the iterator of a vertex increments its
+      cursor; resetting it copies the start index back.\<close>
 
 subsection \<open>The imperative collection\<close>
 
@@ -27,24 +27,29 @@ locale csr_graph_imp = csr_graph n K B E
   for n K B and E :: "'e::heap list"
 sublocale csr_graph_imp \<subseteq> csr_ranges_imp n K B "\<lambda>v. B ! Suc v" E ..
 
-text \<open>The imperative collection: the arrays \<open>B\<close> and \<open>E\<close> and the cursor array \<open>C\<close> of size \<open>n\<close>.
-      The programs are global.\<close>
+text \<open>The imperative collection: the arrays \<open>B\<close> and \<open>E\<close> and the cursor array
+      \<open>C\<close> of size \<open>n\<close>. The programs are global.\<close>
 
-definition csr_has_imp :: "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
+definition csr_has_imp ::
+  "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "csr_has_imp = (\<lambda>(Ba, Ea, Ca) v. do { i \<leftarrow> Array.nth Ca v; e \<leftarrow> Array.nth Ba (Suc v); return (i < e) })"
 
-definition csr_current_imp :: "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> 'e Heap" where
+definition csr_current_imp ::
+  "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> 'e Heap" where
   "csr_current_imp = (\<lambda>(Ba, Ea, Ca) v. do { i \<leftarrow> Array.nth Ca v; Array.nth Ea i })"
 
-definition csr_move_imp :: "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
+definition csr_move_imp ::
+  "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "csr_move_imp = (\<lambda>(Ba, Ea, Ca) v. do { i \<leftarrow> Array.nth Ca v; _ \<leftarrow> Array.upd v (Suc i) Ca; return () })"
 
-definition csr_reset_imp :: "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
+definition csr_reset_imp ::
+  "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "csr_reset_imp = (\<lambda>(Ba, Ea, Ca) v. do { s \<leftarrow> Array.nth Ba v; _ \<leftarrow> Array.upd v s Ca; return () })"
 
-text \<open>One step of the iterator of \<open>v\<close> over a range whose end is read from the array \<open>Ha\<close>: if
-      entries remain, read the current one, advance the cursor and continue with \<open>f\<close>, otherwise
-      continue with \<open>g\<close>. The cursor is read once. The step is inlined at its call sites.\<close>
+text \<open>One step of the iterator of \<open>v\<close> over a range whose end is read from the array
+      \<open>Ha\<close>: if entries remain, read the current one, advance the cursor and continue with
+      \<open>f\<close>, otherwise continue with \<open>g\<close>. The cursor is read once. The step is inlined at
+      its call sites.\<close>
 
 definition csr_step_upto_imp ::
   "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> ('e \<Rightarrow> 'a Heap) \<Rightarrow> 'a Heap
@@ -70,7 +75,8 @@ lemma csr_step_upto_imp_mono[partial_function_mono]:
 
 text \<open>Appending to a range (@{const csr_append}): the end is read once.\<close>
 
-definition csr_append_imp :: "'e::heap array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> 'e \<Rightarrow> unit Heap" where
+definition csr_append_imp ::
+  "'e::heap array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> 'e \<Rightarrow> unit Heap" where
   "csr_append_imp Ea Ha v x = do {
      h \<leftarrow> Array.nth Ha v;
      _ \<leftarrow> Array.upd h x Ea;
@@ -98,7 +104,8 @@ text \<open>Cursors and their reset need no distinct entries.\<close>
 context csr_blocks_imp
 begin
 
-definition csr_assn :: "(nat \<Rightarrow> nat) \<Rightarrow> nat array \<times> 'e array \<times> nat array \<Rightarrow> assn" where
+definition csr_assn ::
+  "(nat \<Rightarrow> nat) \<Rightarrow> nat array \<times> 'e array \<times> nat array \<Rightarrow> assn" where
   "csr_assn c = (\<lambda>(Ba, Ea, Ca). Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E *
      (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = n \<and> (\<forall>v\<in>K. l ! v = c v))))"
 
@@ -108,7 +115,8 @@ text \<open>Arrays become a collection, and a collection gives its arrays back, 
 lemma csr_assn_intro:
   assumes "length l = n" "\<forall>v\<in>K. l ! v = c v"
   shows "Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * Ca \<mapsto>\<^sub>a l \<Longrightarrow>\<^sub>A csr_assn c (Ba, Ea, Ca)"
-  using assms by (sep_auto simp: csr_assn_def)
+  using assms
+  by (sep_auto simp: csr_assn_def)
 
 lemma csr_assn_release:
   "csr_assn c (Ba, Ea, Ca) \<Longrightarrow>\<^sub>A Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = n))"
@@ -118,32 +126,21 @@ lemma csr_current_imp_rule:
   assumes "v \<in> K" "csr_invar c" "csr_remaining c v \<noteq> {}"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_current_imp (Ba, Ea, Ca) v
          <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_current c v)>"
-proof -
-  have "c v < length E"
-    using assms H_hi[OF K_less[OF assms(1)]] B_bound[OF K_less[OF assms(1)]]
-    by (auto simp: remaining_ne)
-  then show ?thesis
-    using K_less[OF assms(1)] assms(1)
-    by (sep_auto simp: csr_assn_def csr_current_imp_def csr_current_def)
-qed
+  using assms H_hi[of v] B_bound[of v] K_less[of v]
+  by (sep_auto simp: csr_assn_def csr_current_imp_def csr_current_def remaining_ne)
 
 lemma csr_move_imp_rule:
   assumes "v \<in> K" "csr_remaining c v \<noteq> {}"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_move_imp (Ba, Ea, Ca) v
          <\<lambda>_. csr_assn (csr_move c v) (Ba, Ea, Ca)>"
-proof -
-  have m: "csr_move c v = c(v := Suc (c v))"
-    using assms(2) by (simp add: csr_move_def remaining_ne)
-  show ?thesis
-    using K_less[OF assms(1)] assms(1)
-    by (sep_auto simp: csr_assn_def csr_move_imp_def m nth_list_update)
-qed
+  using K_less[of v] assms
+  by (sep_auto simp: csr_assn_def csr_move_imp_def csr_move_def remaining_ne nth_list_update)
 
 lemma csr_reset_imp_rule:
   assumes "v \<in> K"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_reset_imp (Ba, Ea, Ca) v
          <\<lambda>_. csr_assn (csr_reset c v) (Ba, Ea, Ca)>"
-  using K_less[OF assms] assms B_length
+  using K_less[of v] assms B_length
   by (sep_auto simp: csr_assn_def csr_reset_imp_def csr_reset_def nth_list_update)
 
 lemma csr_step_upto_imp_rule:
@@ -152,31 +149,30 @@ lemma csr_step_upto_imp_rule:
            <csr_assn (csr_move c v) (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> f (csr_current c v) <Q>"
     and "\<not> csr_has c v \<Longrightarrow> <csr_assn c (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> g <Q>"
   shows "<csr_assn c (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> csr_step_upto_imp (Ba, Ea, Ca) Ha v f g <Q>"
-proof (cases "csr_has c v")
+proof(cases "csr_has c v")
   case True
-  have hv: "c v < H v" using True by (simp add: csr_has_def)
-  have cE: "c v < length E"
-    using hv H_hi[OF K_less[OF assms(1)]] B_bound[OF K_less[OF assms(1)]] by linarith
-  have post: "<csr_assn (c(v := Suc (c v))) (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> f (E ! c v) <Q>"
-    using assms(4)[OF True] hv by (simp add: csr_move_def csr_current_def)
-  show ?thesis
-    using K_less[OF assms(1)] assms(1-3) hv cE
+  hence post: "<csr_assn (fun_upd c v (Suc (c v))) (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> f (E ! c v) <Q>"
+    and "c v < H v"
+    using assms(4)
+    by (simp_all add: csr_move_def csr_current_def csr_has_def)
+  thus ?thesis
+    using K_less[of v] assms(1-3) H_hi[of v] B_bound[of v]
     by (sep_auto simp: csr_step_upto_imp_def csr_assn_def nth_list_update
-                 heap: post[unfolded csr_assn_def prod.case])
+        heap: post[unfolded csr_assn_def prod.case])
 next
   case False
-  have hv: "\<not> c v < H v" using False by (simp add: csr_has_def)
-  show ?thesis
-    using K_less[OF assms(1)] assms(1-3) hv
-    by (sep_auto simp: csr_step_upto_imp_def csr_assn_def
-                 heap: assms(5)[OF False, unfolded csr_assn_def prod.case])
+  thus ?thesis
+    using K_less[of v] assms(1-3)
+    by (sep_auto simp: csr_step_upto_imp_def csr_assn_def csr_has_def
+        heap: assms(5)[OF False, unfolded csr_assn_def prod.case])
 qed
 
 lemma csr_empty_imp_rule:
   assumes "v < n"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_empty_imp Ba v
          <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_empty v)>"
-  using assms B_length by (sep_auto simp: csr_assn_def csr_empty_imp_def csr_empty_def)
+  using assms B_length
+  by (sep_auto simp: csr_assn_def csr_empty_imp_def csr_empty_def)
 
 text \<open>Copying the start indices into the cursor array, from index \<open>i\<close> on.\<close>
 
@@ -184,30 +180,18 @@ lemma csr_cursor_copy_rule:
   assumes "i \<le> n" "length l = n" "\<forall>j<i. l ! j = B ! j"
   shows "<Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a l> copy_prefix_imp n Ba Ca i
          <\<lambda>_. Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a take n B>"
-proof -
-  have "take i l = take i B"
-    using assms B_length by (intro nth_equalityI) auto
-  then show ?thesis
-    using copy_prefix_imp_rule[of i n B l Ba Ca] assms(1,2) B_length by simp
-qed
+  using copy_prefix_imp_rule[of i n B l Ba Ca] assms B_length nth_equalityI[of "take i l" "take i B"]
+  by simp
 
 lemma csr_cursor_init_rule:
   "<Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E> csr_cursor_init n Ba <\<lambda>Ca. csr_assn (\<lambda>v. B ! v) (Ba, Ea, Ca)>"
-proof -
-  have I: "Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * Ca \<mapsto>\<^sub>a take n B \<Longrightarrow>\<^sub>A csr_assn (\<lambda>v. B ! v) (Ba, Ea, Ca)" for Ca
-    by (rule csr_assn_intro) (use B_length K_less in auto)
-  have "<Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E> csr_cursor_init n Ba <\<lambda>Ca. Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * Ca \<mapsto>\<^sub>a take n B>"
-    unfolding csr_cursor_init_def by (sep_auto heap: csr_cursor_copy_rule)
-  then show ?thesis
-    by (rule ht_cons_post) (rule ent_true_drop(2)[OF I])
-qed
+  unfolding csr_cursor_init_def csr_assn_def
+  using B_length K_less
+  by (sep_auto heap: csr_cursor_copy_rule)
 
 sublocale csr_imp: indexed_set_reset_imp csr_invar csr_abstract K csr_iterated csr_remaining
     csr_reset csr_assn csr_reset_imp
-proof (unfold_locales, goal_cases)
-  case (1 C i Ci) then show ?case
-    by (cases Ci) (simp add: csr_reset_imp_rule)
-qed
+  by unfold_locales (auto simp: split_paired_all intro: csr_reset_imp_rule)
 
 end
 
@@ -218,23 +202,14 @@ lemma csr_has_imp_rule:
   assumes "v \<in> K"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_has_imp (Ba, Ea, Ca) v
          <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_has c v)>"
-  using K_less[OF assms] assms B_length
+  using K_less[of v] assms B_length
   by (sep_auto simp: csr_assn_def csr_has_imp_def csr_has_def)
 
 sublocale csr_imp: indexed_iterable_set_imp csr_invar csr_abstract csr_current csr_has
     csr_iterated csr_remaining csr_move csr_reset K csr_assn csr_current_imp csr_has_imp
     csr_move_imp csr_reset_imp
-proof (unfold_locales, goal_cases)
-  case (1 C i Ci) then show ?case
-    by (cases Ci) (simp add: csr_current_imp_rule)
-next
-  case (2 C i Ci) then show ?case
-    by (cases Ci) (simp add: csr_has_imp_rule)
-next
-  case (3 C i Ci) then show ?case
-    by (cases Ci) (simp add: csr_move_imp_rule)
-
-qed
+  by unfold_locales
+    (auto simp: split_paired_all intro: csr_current_imp_rule csr_has_imp_rule csr_move_imp_rule)
 
 end
 
@@ -248,41 +223,6 @@ text \<open>The entries of the block of a vertex can also be folded over directl
       The rule of @{const iterate_range_strict} in @{theory Imperative.Array_Range_Iteration}
       requires the end of the range to be a valid index; the last block ends at the length of
       the array.\<close>
-
-lemma nths_strict_split_off_first_le:
-  assumes "start < end" "end \<le> length list"
-  shows "nths list {start..<end} = list ! start # nths list {Suc start..<end}"
-proof -
-  have "start < length (take end list)"
-    using assms by simp
-  then have "drop start (take end list) = take end list ! start # drop (Suc start) (take end list)"
-    by (rule Cons_nth_drop_Suc[symmetric])
-  then show ?thesis
-    using assms(1) unfolding nths_intervall_strict_as_drop_and_take by simp
-qed
-
-lemma iterate_range_strict_le_rule:
-  assumes "\<And> acc acci x. x \<in> set (nths list {start..<end}) \<Longrightarrow> <acc_assn acc acci * F> fi x acci
-            <\<lambda> r. acc_assn (f acc x) r * F>"
-  shows "<arr \<mapsto>\<^sub>a list * \<up> (end \<le> length list) *F * acc_assn acc acci>
-          iterate_range_strict arr start end fi acci
-         <\<lambda> r. arr \<mapsto>\<^sub>a list * acc_assn (foldl f acc (nths list {start..<end})) r * F>"
-  using assms
-proof(induction arbitrary: start acc acci rule: iterate_range_strict.fixp_induct, goal_cases)
-  case 1
-  then show ?case
-    by simp
-next
-  case 2
-  then show ?case
-    by simp
-next
-  case (3 fi start acc acci)
-  note IH = this
-  show ?case
-     using IH(1)[of "Suc start" "f acc _"] IH(2)
-     by (sep_auto simp: nths_strict_split_off_first_le[of start] split: if_split)
-qed
 
 definition csr_fold_imp ::
   "nat array \<times> 'e::heap array \<Rightarrow> nat \<Rightarrow> ('e \<Rightarrow> 'a \<Rightarrow> 'a Heap) \<Rightarrow> 'a \<Rightarrow> 'a Heap" where
@@ -319,7 +259,8 @@ locale csr_graph_blocks_imp = csr_blocks n K B "\<lambda>v. B ! Suc v" E
   for n K B and E :: "'e::heap list"
 begin
 
-definition csr_blocks_assn :: "(nat \<Rightarrow> nat) \<Rightarrow> nat array \<times> 'e array \<Rightarrow> assn" where
+definition csr_blocks_assn ::
+  "(nat \<Rightarrow> nat) \<Rightarrow> nat array \<times> 'e array \<Rightarrow> assn" where
   "csr_blocks_assn c = (\<lambda>(Ba, Ea). Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E)"
 
 lemma csr_list_nths: "v < n \<Longrightarrow> csr_list v = nths E {B ! v..<B ! Suc v}"
@@ -332,25 +273,22 @@ lemma csr_fold_imp_refine:
            <acc_assn acc acci> fi x acci <\<lambda>r. acc_assn (f x acc) r>"
   shows "<csr_blocks_assn c Ci * acc_assn acc acci> csr_fold_imp Ci v fi acci
          <\<lambda>r. csr_blocks_assn c Ci * acc_assn (csr_fold c v f acc) r>"
-proof -
-  obtain Ba Ea where Ci: "Ci = (Ba, Ea)" by (cases Ci)
-  have v: "v < n" by (rule K_less[OF assms(1)])
-  have xs: "set (nths E {B ! v..<B ! Suc v}) = csr_abstract c v"
-    using csr_list_nths[OF v] csr_list_set by metis
+proof-
+  obtain Ba Ea where Ci: "Ci = (Ba, Ea)"
+    by fastforce
   have "<Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * acc_assn acc acci * emp> csr_fold_imp (Ba, Ea) v fi acci
         <\<lambda>r. Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E *
              acc_assn (foldl (\<lambda>acc x. f x acc) acc (nths E {B ! v..<B ! Suc v})) r * emp>"
-    by (rule csr_fold_imp_rule) (simp_all add: v B_length B_bound xs assms(2))
-  then show ?thesis
-    by (simp add: Ci csr_blocks_assn_def csr_fold_def csr_list_nths[OF v])
+    using K_less[OF assms(1)] csr_list_nths[of v] csr_list_set[of v c]
+    by (intro csr_fold_imp_rule) (simp_all add: B_length B_bound assms(2))
+  thus ?thesis
+    using K_less[OF assms(1)]
+    by (simp add: Ci csr_blocks_assn_def csr_fold_def csr_list_nths)
 qed
 
 sublocale csr_imp: indexed_set_fold_imp csr_invar csr_abstract K csr_fold csr_blocks_assn
     csr_fold_imp
-proof (unfold_locales, goal_cases)
-  case (1 C i acc_assn fi f Ci acc acci)
-  show ?case by (rule csr_fold_imp_refine[where f = f, OF 1(2,3)])
-qed
+  by unfold_locales (rule csr_fold_imp_refine)
 
 end
 
@@ -361,7 +299,8 @@ subsection \<open>Reading the input\<close>
 text \<open>The endpoints of the input edges (@{const e_src}, @{const e_tgt}) are read from the input
       arrays. The arrays are only read, so the assertion for them is carried as a frame.\<close>
 
-definition ends_assn :: "nat list \<Rightarrow> nat list \<Rightarrow> nat array \<times> nat array \<Rightarrow> assn" where
+definition ends_assn ::
+  "nat list \<Rightarrow> nat list \<Rightarrow> nat array \<times> nat array \<Rightarrow> assn" where
   "ends_assn fs ts = (\<lambda>(Fa, Ta). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)"
 
 definition src_imp :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
@@ -451,10 +390,6 @@ definition wnb_reset_all_imp ::
   "nat \<Rightarrow> (nat array \<times> 'e::heap array \<times> nat array) \<times> 'w::heap array \<Rightarrow> unit Heap" where
   "wnb_reset_all_imp n = (\<lambda>((Ba, Ea, Ca), Wa). copy_prefix_imp n Ba Ca 0)"
 
-lemma wnb_handle_cases:
-  obtains Ba Ea Ca Wa where "Ci = ((Ba, Ea, Ca), Wa)"
-  by (cases Ci) (metis prod_cases3)
-
 locale weighted_csr = csr_graph_imp n K B E
   for n K B and E :: "'e::heap list" +
   fixes tgt :: "'e \<Rightarrow> 'a::heap"
@@ -479,89 +414,42 @@ lemma wnb_abstract_eq: "wnb_abstract c v = tgt ` (!) E ` {B ! v..<B ! Suc v}"
 lemma wnb_inj: "v \<in> K \<Longrightarrow> inj_on tgt (csr_abstract c v)"
   by (simp add: csr_abstract_def seg_def tgt_inj)
 
-lemma iterated_sub: "\<lbrakk>csr_invar c; v \<in> K\<rbrakk> \<Longrightarrow> csr_iterated c v \<subseteq> csr_abstract c v"
-  using csr.idx_partition_union by blast
-
-lemma remaining_sub: "\<lbrakk>csr_invar c; v \<in> K\<rbrakk> \<Longrightarrow> csr_remaining c v \<subseteq> csr_abstract c v"
-  using csr.idx_partition_union by blast
-
 lemma wnb_remaining_ne: "wnb_remaining c v \<noteq> {} \<longleftrightarrow> csr_remaining c v \<noteq> {}"
   by (simp add: wnb_remaining_def)
 
 sublocale wnb: indexed_iterable_set csr_invar wnb_abstract wnb_current csr_has
     wnb_iterated wnb_remaining csr_move csr_reset K
-proof (unfold_locales, goal_cases)
+proof(unfold_locales, goal_cases)
   case (1 C i)
-  have "csr_iterated C i \<inter> csr_remaining C i = {}" using 1 by (rule csr.idx_partition_disjoint)
   thus ?case
-    using inj_on_image_Int[OF wnb_inj[OF 1(2)] iterated_sub[OF 1] remaining_sub[OF 1]]
+    using csr.idx_partition_disjoint[OF 1]
+      inj_on_image_Int[OF wnb_inj[OF 1(2)] iterated_sub[OF 1] remaining_sub[OF 1]]
     by (simp add: wnb_iterated_def wnb_remaining_def)
 next
   case (2 C i)
-  thus ?case using csr.idx_partition_union[OF 2]
+  thus ?case
+    using csr.idx_partition_union[OF 2]
     by (simp add: wnb_iterated_def wnb_remaining_def wnb_abstract_def flip: image_Un)
 next
-  case (3 C i)
-  thus ?case using csr.idx_has[OF 3] by (simp add: wnb_remaining_def)
-next
-  case (4 C i)
-  hence r: "csr_remaining C i \<noteq> {}" by (simp add: wnb_remaining_ne)
-  thus ?case using csr.idx_current[OF 4(1,2) r] by (simp add: wnb_current_def wnb_remaining_def)
-next
-  case (5 C i)
-  thus ?case by (rule csr.idx_move_invar)
-next
-  case (6 C i j)
-  hence r: "csr_remaining C i \<noteq> {}" by (simp add: wnb_remaining_ne)
-  thus ?case using csr.idx_move_abstract[OF 6(1,2) r] by (simp add: wnb_abstract_def)
-next
   case (7 C i)
-  hence r: "csr_remaining C i \<noteq> {}" by (simp add: wnb_remaining_ne)
-  have cur: "csr_current C i \<in> csr_remaining C i" using csr.idx_current[OF 7(1,2) r] .
-  have "tgt ` (csr_remaining C i - {csr_current C i}) =
-        tgt ` csr_remaining C i - tgt ` {csr_current C i}"
-    using remaining_sub[OF 7(1,2)] cur
+  hence r: "csr_remaining C i \<noteq> {}"
+    by (simp add: wnb_remaining_ne)
+  have "tgt ` (csr_remaining C i - {csr_current C i})
+        = tgt ` csr_remaining C i - tgt ` {csr_current C i}"
+    using remaining_sub[OF 7(1,2)] csr.idx_current[OF 7(1,2) r]
     by (intro inj_on_image_set_diff[OF wnb_inj[OF 7(2)]]) auto
   thus ?case
     by (simp add: wnb_remaining_def wnb_current_def csr.idx_move_remaining[OF 7(1,2) r])
-next
-  case (8 C i)
-  hence r: "csr_remaining C i \<noteq> {}" by (simp add: wnb_remaining_ne)
-  thus ?case
-    by (simp add: wnb_iterated_def wnb_current_def csr.idx_move_iterated[OF 8(1,2) r])
-next
-  case (9 C i j)
-  hence r: "csr_remaining C i \<noteq> {}" by (simp add: wnb_remaining_ne)
-  thus ?case
-    by (simp add: wnb_remaining_def csr.idx_move_remaining_other[OF 9(1,2) r 9(4)])
-next
-  case (10 C i j)
-  hence r: "csr_remaining C i \<noteq> {}" by (simp add: wnb_remaining_ne)
-  thus ?case
-    by (simp add: wnb_iterated_def csr.idx_move_iterated_other[OF 10(1,2) r 10(4)])
-next
-  case (11 C i)
-  thus ?case by (rule csr.idx_reset_invar)
-next
-  case (12 C i j)
-  thus ?case by (simp add: wnb_abstract_def csr.idx_reset_abstract)
-next
-  case (13 C i)
-  thus ?case by (simp add: wnb_iterated_def csr.idx_reset_iterated)
-next
-  case (14 C i)
-  thus ?case by (simp add: wnb_remaining_def wnb_abstract_def csr.idx_reset_remaining)
-next
-  case (15 C i j)
-  thus ?case by (simp add: wnb_remaining_def csr.idx_reset_remaining_other)
-next
-  case (16 C i j)
-  thus ?case by (simp add: wnb_iterated_def csr.idx_reset_iterated_other)
-qed
+qed (auto simp: wnb_iterated_def wnb_remaining_def wnb_abstract_def wnb_current_def csr.idx_has
+    csr.idx_current csr.idx_move_invar csr.idx_move_abstract csr.idx_move_iterated
+    csr.idx_move_remaining_other csr.idx_move_iterated_other csr.idx_reset_invar
+    csr.idx_reset_abstract csr.idx_reset_iterated csr.idx_reset_remaining
+    csr.idx_reset_remaining_other csr.idx_reset_iterated_other)
 
 subsection \<open>The Imperative Collection\<close>
 
-definition wnb_assn :: "(nat \<Rightarrow> nat) \<Rightarrow> (nat array \<times> 'e array \<times> nat array) \<times> 'w array \<Rightarrow> assn" where
+definition wnb_assn ::
+  "(nat \<Rightarrow> nat) \<Rightarrow> (nat array \<times> 'e array \<times> nat array) \<times> 'w array \<Rightarrow> assn" where
   "wnb_assn c = (\<lambda>(Ci, Wa). csr_assn c Ci * Wa \<mapsto>\<^sub>a W)"
 
 lemma wnb_assn_split: "wnb_assn c (Ci, Wa) = csr_assn c Ci * Wa \<mapsto>\<^sub>a W"
@@ -584,14 +472,15 @@ lemma wnb_current_cost_imp_rule:
   assumes "v \<in> K" "csr_invar c" "csr_remaining c v \<noteq> {}"
   shows "<wnb_assn c ((Ba, Ea, Ca), Wa)> wnb_current_cost_imp ((Ba, Ea, Ca), Wa) v
          <\<lambda>w. wnb_assn c ((Ba, Ea, Ca), Wa) * \<up>(wval w = cost v (wnb_current c v))>"
-proof -
-  have lt: "c v < B ! Suc v" using assms(3) by (simp add: remaining_ne)
-  have ge: "B ! v \<le> c v" using assms(1,2) by (simp add: csr_invar_def)
-  have wl: "c v < length W" using lt B_bound[OF K_less[OF assms(1)]] W_length by simp
-  have wc: "wval (W ! c v) = cost v (wnb_current c v)"
-    using W_cost[OF assms(1) ge lt] by (simp add: wnb_current_def csr_current_def)
-  show ?thesis
-    using K_less[OF assms(1)] assms(1) wl wc
+proof-
+  have "B ! v \<le> c v" "c v < B ! Suc v"
+    using assms
+    by (simp_all add: csr_invar_def remaining_ne)
+  hence "c v < length W" "wval (W ! c v) = cost v (wnb_current c v)"
+    using W_cost[OF assms(1)] B_bound[of v] K_less[of v] assms(1) W_length
+    by (simp_all add: wnb_current_def csr_current_def)
+  thus ?thesis
+    using K_less[OF assms(1)] assms(1)
     by (sep_auto simp: wnb_assn_def csr_assn_def wnb_current_cost_imp_def)
 qed
 
@@ -616,36 +505,10 @@ lemma wnb_reset_all_imp_rule:
 sublocale wnb_imp: weighted_neighbourhoods_imp_spec csr_invar wnb_abstract wnb_current csr_has
     wnb_iterated wnb_remaining csr_move csr_reset K wnb_assn "wnb_current_imp tgt" wnb_has_imp
     wnb_move_imp wnb_reset_imp cost wval "\<lambda>v. B ! v" wnb_current_cost_imp "wnb_reset_all_imp n"
-proof (unfold_locales, goal_cases)
-  case (1 C i Ci)
-  obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
-  have r: "csr_remaining C i \<noteq> {}" using 1(3) by (simp add: wnb_remaining_ne)
-  show ?case unfolding Ci by (rule wnb_current_imp_rule[OF 1(2,1) r])
-next
-  case (2 C i Ci)
-  obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
-  show ?case unfolding Ci by (rule wnb_has_imp_rule[OF 2(2)])
-next
-  case (3 C i Ci)
-  obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
-  have r: "csr_remaining C i \<noteq> {}" using 3(3) by (simp add: wnb_remaining_ne)
-  show ?case unfolding Ci by (rule wnb_move_imp_rule[OF 3(2) r])
-next
-  case (4 C i Ci)
-  obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
-  show ?case unfolding Ci by (rule wnb_reset_imp_rule[OF 4(2)])
-next
-  case 5 show ?case by (rule csr_init_invar)
-next
-  case (6 C i Ci)
-  obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
-  have r: "csr_remaining C i \<noteq> {}" using 6(3) by (simp add: wnb_remaining_ne)
-  show ?case unfolding Ci by (rule wnb_current_cost_imp_rule[OF 6(2,1) r])
-next
-  case (7 C Ci)
-  obtain Ba Ea Ca Wa where Ci: "Ci = ((Ba, Ea, Ca), Wa)" by (rule wnb_handle_cases)
-  show ?case unfolding Ci by (rule wnb_reset_all_imp_rule)
-qed
+  by unfold_locales
+    (auto simp: split_paired_all wnb_remaining_ne csr_init_invar intro: wnb_current_imp_rule
+      wnb_has_imp_rule wnb_move_imp_rule wnb_reset_imp_rule wnb_current_cost_imp_rule
+      wnb_reset_all_imp_rule)
 
 end
 

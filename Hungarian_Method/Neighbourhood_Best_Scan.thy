@@ -61,51 +61,23 @@ definition "best2_inv key pref u S bs =
 
 lemma best_upd_inv:
   "best_inv key pref u S b \<Longrightarrow> best_inv key pref u (insert r S) (best_upd key pref u b r)"
-proof(cases b)
-  case (Some p)
-  moreover obtain y s where "p = (y, s)" by (cases p) auto
-  ultimately show "best_inv key pref u S b \<Longrightarrow> ?thesis"
-    by (cases "better pref (key u r, r) (y, s)")
-       (auto simp: best_inv_def best_upd_def better_def)
-qed (simp add: best_inv_def best_upd_def)
+  by (auto simp: best_inv_def best_upd_def better_def split: option.splits if_splits)
 
 lemma best2_upd_fst: "fst (best2_upd key pref u bs r) = best_upd key pref u (fst bs) r"
   by (cases bs) (simp add: best2_upd_def best_upd_def split: option.splits)
 
+lemma best_inv_Some_in:
+  "best_inv key pref u S (Some (y, j)) \<Longrightarrow> j \<in> S"
+  by (simp add: best_inv_def)
+
 lemma best2_upd_inv:
-  assumes "best2_inv key pref u S bs" "r \<notin> S"
-  shows "best2_inv key pref u (insert r S) (best2_upd key pref u bs r)"
-proof-
-  obtain b s where bs: "bs = (b, s)" by (cases bs) auto
-  have B: "best_inv key pref u S b" using assms(1) by (simp add: best2_inv_def bs)
-  have F: "best_inv key pref u (insert r S) (fst (best2_upd key pref u bs r))"
-    using best_upd_inv[OF B] by (simp add: best2_upd_fst bs)
-  show ?thesis
-  proof(cases b)
-    case None
-    have "S = {}" using B by (simp add: best_inv_def None)
-    thus ?thesis using F by (simp add: best2_inv_def best2_upd_def bs None best_inv_def)
-  next
-    case (Some p)
-    obtain y j where p: "p = (y, j)" by (cases p) auto
-    have j: "j \<in> S" using B by (simp add: best_inv_def Some p)
-    have S2: "best_inv key pref u (S - {j}) s" using assms(1) by (simp add: best2_inv_def bs Some p)
-    show ?thesis
-    proof(cases "better pref (key u r, r) (y, j)")
-      case True
-      have eq: "best2_upd key pref u bs r = (Some (key u r, r), b)"
-        by (simp add: best2_upd_def bs Some p True)
-      have "insert r S - {r} = S" using assms(2) by blast
-      thus ?thesis using F B by (simp add: eq best2_inv_def)
-    next
-      case False
-      have eq: "best2_upd key pref u bs r = (b, best_upd key pref u s r)"
-        by (simp add: best2_upd_def bs Some p False)
-      have "insert r S - {j} = insert r (S - {j})" using assms(2) j by blast
-      thus ?thesis using F best_upd_inv[OF S2, of r] by (simp add: eq best2_inv_def Some p)
-    qed
-  qed
-qed
+  "\<lbrakk>best2_inv key pref u S bs; r \<notin> S\<rbrakk>
+     \<Longrightarrow> best2_inv key pref u (insert r S) (best2_upd key pref u bs r)"
+  using best_upd_inv[of key pref u S "fst bs" r]
+        best_upd_inv[of key pref u "S - {snd (the (fst bs))}" "snd bs" r]
+  by (cases bs; cases "fst bs")
+     (auto simp: best2_inv_def best2_upd_def best_upd_def insert_Diff_if Diff_insert_absorb
+           dest: best_inv_Some_in split: if_splits option.splits)
 
 end
 
@@ -124,35 +96,24 @@ lemma scan_best_props:
   using assms
 proof(induction "card (rnb_remaining C u)" arbitrary: C S bs)
   case 0
-  hence empty: "rnb_remaining C u = {}" by simp
-  hence not_has: "\<not> rnb_has C u" using rnb.idx_has[OF 0(2,3)] by simp
-  show ?case
-    using 0(2,5) by (simp add: scan_best.simps[of key pref u C bs] not_has empty)
+  thus ?case
+    by (simp add: scan_best.simps[of key pref u C bs] rnb.idx_has)
 next
   case (Suc n)
-  hence ne: "rnb_remaining C u \<noteq> {}" by auto
-  hence has: "rnb_has C u" using rnb.idx_has[OF Suc(3,4)] by simp
-  define x where "x = rnb_current C u"
-  define C' where "C' = rnb_move C u"
-  have x_in: "x \<in> rnb_remaining C u" using rnb.idx_current[OF Suc(3,4) ne] by (simp add: x_def)
-  have xS: "x \<notin> S" using disjoint_iff[THEN iffD1, OF Suc(7), rule_format, of x] x_in by auto
-  have C': "rnb_invar C'" "rnb_remaining C' u = rnb_remaining C u - {x}"
-           "rnb_abstract C' = rnb_abstract C"
-    using rnb.idx_move_invar[OF Suc(3,4)] rnb.idx_move_remaining[OF Suc(3,4) ne]
-          rnb.idx_move_abstract[OF Suc(3,4) ne]
-    by (auto simp: C'_def x_def fun_eq_iff)
-  have card: "n = card (rnb_remaining C' u)" using Suc(2,5) x_in by (simp add: C'(2))
-  have disj: "insert x S \<inter> rnb_remaining C' u = {}" using Suc(7) by (auto simp: C'(2))
-  define bs' where "bs' = best2_upd key pref u bs x"
-  have IH: "rnb_invar (fst (scan_best key pref u C' bs')) \<and>
-            rnb_abstract (fst (scan_best key pref u C' bs')) = rnb_abstract C' \<and>
-            best2_inv key pref u (insert x S \<union> rnb_remaining C' u) (snd (scan_best key pref u C' bs'))"
-    using Suc(1)[OF card C'(1) Suc(4) _ best2_upd_inv[OF Suc(6) xS] disj] Suc(5)
-    by (simp add: C'(2) bs'_def)
-  have eq: "scan_best key pref u C bs = scan_best key pref u C' bs'"
-    by (simp add: scan_best.simps[of key pref u C bs] has C'_def x_def bs'_def)
-  have "insert x S \<union> rnb_remaining C' u = S \<union> rnb_remaining C u" using x_in by (auto simp: C'(2))
-  thus ?case using IH by (simp add: eq C'(3))
+  hence "rnb_remaining C u \<noteq> {}"
+    by auto
+  with Suc have "rnb_has C u" "rnb_abstract (rnb_move C u) = rnb_abstract C"
+      "n = card (rnb_remaining (rnb_move C u) u)" "finite (rnb_remaining (rnb_move C u) u)"
+      "rnb_current C u \<notin> S"
+      "insert (rnb_current C u) S \<inter> rnb_remaining (rnb_move C u) u = {}"
+      "insert (rnb_current C u) S \<union> rnb_remaining (rnb_move C u) u = S \<union> rnb_remaining C u"
+    using rnb.idx_current[of C u]
+    by (auto simp: rnb.idx_has rnb.idx_move_abstract rnb.idx_move_remaining fun_eq_iff)
+  thus ?case
+    using Suc(1)[of "rnb_move C u" "insert (rnb_current C u) S"
+                    "best2_upd key pref u bs (rnb_current C u)"] Suc(2-)
+          best2_upd_inv[of key pref u S bs "rnb_current C u"]
+    by (simp add: scan_best.simps[of key pref u C bs] rnb.idx_move_invar)
 qed
 
 lemma best_two_props:
@@ -165,32 +126,9 @@ lemma best_two_props:
         "b = Some (x, j) \<Longrightarrow> s = None \<longleftrightarrow> rnb_abstract C u - {j} = {}"
         "\<lbrakk>b = Some (x, j); s = Some (y, i)\<rbrakk> \<Longrightarrow>
            i \<in> rnb_abstract C u - {j} \<and> y = key u i \<and> (\<forall>r\<in>rnb_abstract C u - {j}. y \<le> key u r)"
-proof-
-  have R: "rnb_invar (rnb_reset C u)" "rnb_remaining (rnb_reset C u) u = rnb_abstract C u"
-          "rnb_abstract (rnb_reset C u) = rnb_abstract C"
-    using rnb.idx_reset_invar[OF assms(1,2)] rnb.idx_reset_remaining[OF assms(1,2)]
-          rnb.idx_reset_abstract[OF assms(1,2)] by (auto simp: fun_eq_iff)
-  have P: "rnb_invar C' \<and> rnb_abstract C' = rnb_abstract C \<and>
-           best2_inv key pref u (rnb_abstract C u) (b, s)"
-    using scan_best_props[OF R(1) assms(2), of key pref "{}" "(None, None)"] assms(3,4)
-    by (simp add: R(2,3) best_two_def best2_inv_def best_inv_def)
-  hence B: "best_inv key pref u (rnb_abstract C u) b"
-       and S: "case b of None \<Rightarrow> s = None
-               | Some (x, j) \<Rightarrow> best_inv key pref u (rnb_abstract C u - {j}) s"
-    by (simp_all add: best2_inv_def)
-  show "rnb_invar C'" "rnb_abstract C' = rnb_abstract C" using P by simp+
-  show "b = None \<longleftrightarrow> rnb_abstract C u = {}"
-    using B by (auto simp: best_inv_def split: option.splits)
-  show "b = Some (x, j) \<Longrightarrow>
-           j \<in> rnb_abstract C u \<and> x = key u j \<and> (\<forall>r\<in>rnb_abstract C u. x \<le> key u r) \<and>
-           (\<forall>r\<in>rnb_abstract C u. key u r = x \<and> pref r \<longrightarrow> pref j)"
-    using B by (auto simp: best_inv_def)
-  show "b = Some (x, j) \<Longrightarrow> s = None \<longleftrightarrow> rnb_abstract C u - {j} = {}"
-    using S by (auto simp: best_inv_def split: option.splits)
-  show "\<lbrakk>b = Some (x, j); s = Some (y, i)\<rbrakk> \<Longrightarrow>
-           i \<in> rnb_abstract C u - {j} \<and> y = key u i \<and> (\<forall>r\<in>rnb_abstract C u - {j}. y \<le> key u r)"
-    using S by (auto simp: best_inv_def)
-qed
+  using scan_best_props[of "rnb_reset C u" u key pref "{}" "(None, None)"] assms
+  by (auto simp: rnb.idx_reset_invar rnb.idx_reset_remaining rnb.idx_reset_abstract fun_eq_iff
+                 best_two_def best2_inv_def best_inv_def split: option.splits)
 
 end
 

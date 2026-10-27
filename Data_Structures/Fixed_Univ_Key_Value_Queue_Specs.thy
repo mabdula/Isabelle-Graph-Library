@@ -38,7 +38,8 @@ locale key_value_queue =
  and queue_insert:
  "\<And> H x k. \<lbrakk>queue_invar H; x \<in> U; \<nexists> k. (x, k) \<in> (queue_abstract H)\<rbrakk>
           \<Longrightarrow> queue_invar (queue_insert H x k)"
- "\<And> H x k.  \<lbrakk>queue_invar H; x \<in> U; \<nexists> k. (x, k) \<in> queue_abstract H\<rbrakk> \<Longrightarrow>
+ "\<And> H x k.  \<lbrakk>queue_invar H; x \<in> U;
+             \<nexists> k. (x, k) \<in> queue_abstract H\<rbrakk> \<Longrightarrow>
            queue_abstract (queue_insert H x k) = queue_abstract H  \<union> {(x, k)}"
  and queue_decrease_key:
  "\<And> H x k k'. \<lbrakk>queue_invar H; x \<in> U; (x, k') \<in>  (queue_abstract H); k < k'\<rbrakk>

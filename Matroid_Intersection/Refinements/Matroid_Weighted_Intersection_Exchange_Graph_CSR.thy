@@ -77,9 +77,7 @@ sublocale csr: weighted_intersection_exchange
     and vset_inv = "\<lambda> _. True" and union = append and inter = "\<lambda> xs ys. filter (\<lambda> y. y \<in> set ys) xs"
     and diff = "\<lambda> xs ys. filter (\<lambda> y. y \<notin> set ys) xs" and vset_inv2 = distinct
     and c_invar = c_invar
-  by (intro weighted_intersection_exchange.intro weighted_intersection_exchange_axioms.intro
-        csr.unweighted_intersection_exchange_axioms)
-     (simp_all add: c_zero c_shift)
+  by (unfold_locales; simp add: c_zero c_shift)
 
 lemmas total_correctness = csr.total_correctness
 

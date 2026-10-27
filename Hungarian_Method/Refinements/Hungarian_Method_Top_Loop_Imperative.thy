@@ -73,6 +73,27 @@ definition "loop_post state r Mi' Pti' Si' =
   pot_assn (potential (hungarian_loop state)) Pti' *
   \<up>(r = result (hungarian_loop state))"
 
+lemma hungarian_loop_unbounded:
+  "search_of state = (Dual_Unbounded, M', \<pi>', c')
+     \<Longrightarrow> hungarian_loop state = state\<lparr>buddies := M', potential := \<pi>', search_ctx := c', result := result.failure\<rparr>"
+  by (simp add: hungarian_loop_simps(1) hungarian_loop_fail_cond_def hungarian_loop_fail_def)
+
+lemma hungarian_loop_matched:
+  "search_of state = (Lefts_Matched, M', \<pi>', c')
+     \<Longrightarrow> hungarian_loop state = state\<lparr>buddies := M', potential := \<pi>', search_ctx := c', result := result.success\<rparr>"
+  by (simp add: hungarian_loop_simps(2) hungarian_loop_succ_cond_def hungarian_loop_succ_def)
+
+lemma hungarian_loop_next:
+  assumes "state_invar state" "search_of state = (Next_Iteration p, M', \<pi>', c')"
+  shows "hungarian_loop_cont_cond state"
+        "hungarian_loop_upd state = state\<lparr>buddies := augment M' p, potential := \<pi>', search_ctx := c'\<rparr>"
+        "loop_post (state\<lparr>buddies := augment M' p, potential := \<pi>', search_ctx := c'\<rparr>) = loop_post state"
+        "matching_invar M'" "graph_augmenting_path G (matching_abstract M') p"
+        "state_invar (state\<lparr>buddies := augment M' p, potential := \<pi>', search_ctx := c'\<rparr>)"
+  using assms hungarian_loop_simps(3)[of state] hungarian_loop_termination[of state] search_of_props(1)[of state]
+        good_searchD(1,5) good_search_resultD(5) path_search_precondD(1) state_invar_pres_one_step[of state]
+  by (fastforce simp: hungarian_loop_cont_cond_def hungarian_loop_upd_def loop_post_def fun_eq_iff)+
+
 lemma main_loop_imp_rule:
   assumes "state_invar state" "len_bound \<le> length xs"
   shows "<scratch_assn (search_ctx state) Si * matching_assn (buddies state) Mi *
@@ -80,81 +101,55 @@ lemma main_loop_imp_rule:
          main_loop_imp Si Mi Pti Ra
          <\<lambda>(r, Mi', Pti', Si'). \<exists>\<^sub>Axs'. Ra \<mapsto>\<^sub>a xs' * \<up>(length xs' = length xs) *
              loop_post state r Mi' Pti' Si'>"
-proof-
-  have "state_invar state \<longrightarrow> (\<forall>Si Mi Pti xs. len_bound \<le> length xs \<longrightarrow>
-         <scratch_assn (search_ctx state) Si * matching_assn (buddies state) Mi *
-          pot_assn (potential state) Pti * Ra \<mapsto>\<^sub>a xs>
-         main_loop_imp Si Mi Pti Ra
-         <\<lambda>(r, Mi', Pti', Si'). \<exists>\<^sub>Axs'. Ra \<mapsto>\<^sub>a xs' * \<up>(length xs' = length xs) *
-             loop_post state r Mi' Pti' Si'>)"
-  proof(induction rule: hungarian_loop_induct[OF hungarian_loop_termination[OF assms(1)]])
-    case (1 state)
-    show ?case
-    proof(intro impI allI)
-      fix Si Mi Pti and xs :: "'v list"
-      assume inv: "state_invar state" and len: "len_bound \<le> length xs"
-      obtain r M' \<pi>' c' where so: "search_of state = (r, M', \<pi>', c')"
-        by (cases "search_of state") auto
-      note ps = path_search_rule[OF state_invarD(1)[OF inv] state_invarD(2)[OF inv]
-                                    so[unfolded search_of_def] len]
-      note gs = search_of_props[OF inv so]
-      show "<scratch_assn (search_ctx state) Si * matching_assn (buddies state) Mi *
-             pot_assn (potential state) Pti * Ra \<mapsto>\<^sub>a xs>
-            main_loop_imp Si Mi Pti Ra
-            <\<lambda>(r, Mi', Pti', Si'). \<exists>\<^sub>Axs'. Ra \<mapsto>\<^sub>a xs' * \<up>(length xs' = length xs) *
-               loop_post state r Mi' Pti' Si'>"
-      proof(cases r)
-        case Dual_Unbounded
-        have hl: "hungarian_loop state =
-                  state\<lparr>buddies := M', potential := \<pi>', search_ctx := c', result := result.failure\<rparr>"
-          by (simp add: hungarian_loop_simps(1) hungarian_loop_fail_cond_def
-                        hungarian_loop_fail_def so Dual_Unbounded)
-        show ?thesis
-          apply(subst main_loop_imp.simps)
-          apply(sep_auto heap: ps simp: Dual_Unbounded)
-          by (sep_auto simp: loop_post_def hl)
-      next
-        case Lefts_Matched
-        have hl: "hungarian_loop state =
-                  state\<lparr>buddies := M', potential := \<pi>', search_ctx := c', result := result.success\<rparr>"
-          by (simp add: hungarian_loop_simps(2) hungarian_loop_succ_cond_def
-                        hungarian_loop_succ_def so Lefts_Matched)
-        show ?thesis
-          apply(subst main_loop_imp.simps)
-          apply(sep_auto heap: ps simp: Lefts_Matched)
-          by (sep_auto simp: loop_post_def hl)
-      next
-        case (Next_Iteration p)
-        have cc: "hungarian_loop_cont_cond state"
-          by (simp add: hungarian_loop_cont_cond_def so Next_Iteration)
-        have pre': "path_search_precond M' \<pi>'" using good_searchD(1)[OF gs(1)] .
-        have aug: "graph_augmenting_path G (matching_abstract M') p"
-          using good_search_resultD(5)[OF good_searchD(5)[OF gs(1) Next_Iteration]] .
-        have upd: "hungarian_loop_upd state =
-                   state\<lparr>buddies := augment M' p, potential := \<pi>', search_ctx := c'\<rparr>"
-          by (simp add: hungarian_loop_upd_def so Next_Iteration)
-        have lp: "loop_post state = loop_post (hungarian_loop_upd state)"
-          by (intro ext) (simp add: loop_post_def hungarian_loop_simps(3)[OF cc 1(1)])
-        have inv': "state_invar (hungarian_loop_upd state)"
-          using state_invar_pres_one_step[OF cc inv] .
-        note IH = 1(2)[OF cc, rule_format, OF inv', unfolded upd, simplified]
-        note lp' = lp[unfolded upd]
-        note au = augment_rule[OF path_search_precondD(1)[OF pre'] aug]
-        show ?thesis
-          apply(subst main_loop_imp.simps)
-          apply(sep_auto heap: ps simp: Next_Iteration)
-          apply(sep_auto heap: au)
-          by (sep_auto heap: IH simp: lp' len split: prod.splits)
-      qed
-    qed
+  using hungarian_loop_termination[OF assms(1)] assms
+proof(induction arbitrary: Si Mi Pti xs rule: hungarian_loop_induct[consumes 1])
+  case (1 state)
+  obtain r M' \<pi>' c' where "search_of state = (r, M', \<pi>', c')"
+    by (cases "search_of state") auto
+  note so = this
+  note ps = path_search_rule[OF state_invarD(1,2)[OF 1(3)] so[unfolded search_of_def] 1(4)]
+  show ?case
+  proof(cases r)
+    case Dual_Unbounded
+    show ?thesis
+      apply(subst main_loop_imp.simps)
+      apply(sep_auto heap: ps simp: Dual_Unbounded)
+      by (sep_auto simp: loop_post_def hungarian_loop_unbounded so Dual_Unbounded)
+  next
+    case Lefts_Matched
+    show ?thesis
+      apply(subst main_loop_imp.simps)
+      apply(sep_auto heap: ps simp: Lefts_Matched)
+      by (sep_auto simp: loop_post_def hungarian_loop_matched so Lefts_Matched)
+  next
+    case (Next_Iteration p)
+    note nx = hungarian_loop_next[OF 1(3) so[unfolded Next_Iteration]]
+    note IH = 1(2)[OF nx(1), unfolded nx(2,3), OF nx(6), simplified]
+    show ?thesis
+      apply(subst main_loop_imp.simps)
+      apply(sep_auto heap: ps simp: Next_Iteration)
+      apply(sep_auto heap: augment_rule[OF nx(4,5)])
+      by (sep_auto heap: IH simp: nx 1(4) split: prod.splits)
   qed
-  thus ?thesis using assms by blast
 qed
 
 text \<open>The imperative Hungarian method returns the same result as the functional one,
       @{term hungarian}, for which @{thm hungarian_correctness} holds.\<close>
 
-theorem hungarian_imp_rule:
+lemma initial_state_fields:
+  "buddies initial_state = empty_matching" "potential initial_state = init_potential"
+  "search_ctx initial_state = init_ctx"
+  by (simp_all add: initial_state_def)
+
+lemma hungarian_initial_result:
+  "card_L = card_R \<Longrightarrow>
+     (result (hungarian_loop initial_state) = result.success \<and>
+        hungarian = Some (buddies (hungarian_loop initial_state))) \<or>
+     (result (hungarian_loop initial_state) = result.failure \<and> hungarian = None)"
+  by (cases "result (hungarian_loop initial_state)")
+     (simp_all add: hungarian_loop_spec.hungarian_def initial_state_loops_same Let_def loop_on_initial_state_result(2))
+
+lemma hungarian_imp_rule:
   assumes "len_bound \<le> length xs"
   shows "<scratch_assn init_ctx Si * matching_assn empty_matching Mi *
           pot_assn init_potential Pti * Ra \<mapsto>\<^sub>a xs>
@@ -164,32 +159,15 @@ theorem hungarian_imp_rule:
              \<up>((r = result.success \<and> hungarian = Some M) \<or> (r = result.failure \<and> hungarian = None))>"
 proof(cases "card_L = card_R")
   case False
-  thus ?thesis by (sep_auto simp: hungarian_imp_def hungarian_def)
+  thus ?thesis
+    by (sep_auto simp: hungarian_imp_def hungarian_def)
 next
   case True
-  define fs where "fs = hungarian_loop initial_state"
-  have res: "result fs \<noteq> notyetterm"
-    using loop_on_initial_state_result(2) by (simp add: fs_def)
-  have hung: "hungarian = (case result fs of result.failure \<Rightarrow> None
-                           | result.success \<Rightarrow> Some (buddies fs))"
-    by (simp add: hungarian_loop_spec.hungarian_def True initial_state_loops_same fs_def Let_def
-                  split: result.splits)
-  have fin: "(result fs = result.success \<and> hungarian = Some (buddies fs)) \<or>
-             (result fs = result.failure \<and> hungarian = None)"
-    using res by (cases "result fs") (simp_all add: hung)
-  have bi: "buddies initial_state = empty_matching" "potential initial_state = init_potential"
-           "search_ctx initial_state = init_ctx"
-    by (simp_all add: initial_state_def)
   note ml = main_loop_imp_rule[OF initial_state_invar assms, of Si Mi Pti Ra,
-                               unfolded loop_post_def, folded fs_def, unfolded bi]
+                               unfolded loop_post_def initial_state_fields]
   show ?thesis
-    apply(simp add: hungarian_imp_def True)
-    apply(rule ht_cons_post[OF ml])
-    apply(clarsimp split: prod.splits)
-    apply(rule ent_ex_preI)
-    apply(rule ent_ex_postI, rule ent_ex_postI[where x = "buddies fs"],
-          rule ent_ex_postI[where x = "potential fs"], rule ent_ex_postI[where x = "search_ctx fs"])
-    using fin[unfolded True] by sep_auto
+    using hungarian_initial_result True
+    by (sep_auto heap: ml simp: hungarian_imp_def True)
 qed
 
 end

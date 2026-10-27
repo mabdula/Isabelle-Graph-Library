@@ -3,6 +3,7 @@ theory Matching_Certificate_Imperative
     Hungarian_Method.Matching_Certificate_Spec
     Separation_Logic_Imperative_HOL_Partial.Sep_Main
     Data_Structures.Fixed_Univ_Set_Iterate_Imp
+    Data_Structures.Fixed_Univ_List_Specs_Imp
 begin
 
 section \<open>Certificate Checkers for Extremal Bipartite Matchings: Imperative Refinement\<close>
@@ -11,13 +12,6 @@ subsection \<open>The Interfaces\<close>
 
 text \<open>Read-only lists with random access. They hold the candidate matching, the potentials, the
       Hall violator and the vertex lists.\<close>
-
-locale imp_rlist =
-  fixes rl_assn :: "'a list \<Rightarrow> 'p \<Rightarrow> assn"
-    and len_imp :: "'p \<Rightarrow> nat Heap"
-    and nth_imp :: "'p \<Rightarrow> nat \<Rightarrow> 'a Heap"
-  assumes len_rule: "<rl_assn xs p> len_imp p <\<lambda>r. rl_assn xs p * \<up>(r = length xs)>"
-    and nth_rule: "i < length xs \<Longrightarrow> <rl_assn xs p> nth_imp p i <\<lambda>r. rl_assn xs p * \<up>(r = xs ! i)>"
 
 text \<open>The edges: an iterable fixed-universe set of edge names
       (@{locale fixed_univ_set_iterate_imp}) with membership, and the left endpoint
@@ -275,104 +269,100 @@ lemma mark_ins_rule:
 lemma edge_bounds:
   assumes "e \<in> E" "n \<le> length ys"
   shows "efst e < length ys" "esnd e < length ys"
-proof -
-  have "efst e \<in> L" "esnd e \<in> R" using fst_in[OF assms(1)] snd_in[OF assms(1)] .
-  thus "efst e < length ys" "esnd e < length ys" using verts_below assms(2) by auto
-qed
+  using assms fst_in snd_in verts_below
+  by fastforce+
 
 lemma vert_bound: "\<lbrakk>x \<in> L \<union> R; n \<le> length ys\<rbrakk> \<Longrightarrow> x < length ys"
-  using verts_below by auto
+  using verts_below
+  by auto
 
 lemma vert_K: "x \<in> L \<union> R \<Longrightarrow> x \<in> K"
-  using verts_below verts_K by auto
+  using verts_below verts_K
+  by auto
 
 lemma edge_K:
   assumes "e \<in> E"
   shows "efst e \<in> K" "esnd e \<in> K"
-  using vert_K fst_in[OF assms] snd_in[OF assms] by auto
+  using assms vert_K fst_in snd_in
+  by auto
+
+lemma below_n_props:
+  "x < n \<Longrightarrow> x \<in> K" "\<not> x < n \<Longrightarrow> x \<notin> L"
+  using verts_K verts_below
+  by auto
+
+lemma elist_sub: "set elist \<subseteq> E"
+  by (simp add: elist_E)
 
 lemma feas_loop_rule:
   assumes "set xs \<subseteq> E" "n \<le> length ys"
   shows "<EA p * yl_assn ys Ya * EI p xs it> code.feas_loop neg t p Ya it
          <\<lambda>r. EA p * yl_assn ys Ya * true * \<up>(r = list_all (feas_ok neg t ys) xs)>"
   using assms(1)
-proof (induction xs arbitrary: it)
+proof(induction xs arbitrary: it)
   case Nil
-  show ?case by (subst code.feas_loop.simps) (sep_auto heap: es.it_has_next_rule)
+  show ?case
+    by (subst code.feas_loop.simps) (sep_auto heap: es.it_has_next_rule)
 next
   case (Cons e xs)
-  have e: "e \<in> E" and xs: "set xs \<subseteq> E" using Cons.prems by simp_all
-  note b = edge_bounds[OF e assms(2)]
-  note ih = Cons.IH[OF xs]
+  note e = Cons.prems[simplified]
   show ?case
     by (subst code.feas_loop.simps)
-       (sep_auto heap: es.it_has_next_rule es.it_next_rule es.fst_rule[OF e] es.snd_rule[OF e]
-                       es.w_rule[OF e] yl.nth_rule ih simp: b feas_ok_def)
+       (sep_auto heap: es.it_has_next_rule es.it_next_rule es.fst_rule[of e] es.snd_rule[of e]
+                       es.w_rule[of e] yl.nth_rule Cons.IH simp: e assms(2) edge_bounds feas_ok_def)
 qed
 
 lemma match_loop_rule:
-  assumes "k = length ms" "n \<le> length ys"
-  shows "i \<le> k \<Longrightarrow>
-         <EA p * yl_assn ys Ya * el_assn ms Ma * mark_assn U Ui> code.match_loop neg t p Ya Ma i k Ui
+  assumes "k = length ms" "n \<le> length ys" "i \<le> k"
+  shows "<EA p * yl_assn ys Ya * el_assn ms Ma * mark_assn U Ui> code.match_loop neg t p Ya Ma i k Ui
          <\<lambda>r. EA p * yl_assn ys Ya * el_assn ms Ma *
               mark_assn (fst (match_list neg t ys U (drop i ms))) Ui *
               \<up>(r = snd (match_list neg t ys U (drop i ms)))>"
-proof (induction "k - i" arbitrary: i U)
-  case 0
-  hence ik: "i = k" by simp
-  show ?case by (subst code.match_loop.simps) (sep_auto simp: ik assms(1))
-next
-  case (Suc d)
-  hence i: "i < k" by simp
-  have dr: "drop i ms = ms ! i # drop (Suc i) ms" using i assms(1) by (simp add: Cons_nth_drop_Suc)
-  have ih: "<EA p * yl_assn ys Ya * el_assn ms Ma * mark_assn U' Ui>
-            code.match_loop neg t p Ya Ma (Suc i) k Ui
-            <\<lambda>r. EA p * yl_assn ys Ya * el_assn ms Ma *
-                 mark_assn (fst (match_list neg t ys U' (drop (Suc i) ms))) Ui *
-                 \<up>(r = snd (match_list neg t ys U' (drop (Suc i) ms)))>" for U'
-    using Suc.hyps(1)[of "Suc i" U'] Suc.hyps(2) i by simp
-  have il: "i < length ms" using i assms(1) by simp
+  using assms(3)
+proof(induction arbitrary: U rule: inc_induct)
+  case base
   show ?case
-  proof (cases "ms ! i \<in> E")
+    by (subst code.match_loop.simps) (sep_auto simp: assms(1))
+next
+  case (step i)
+  show ?case
+  proof(cases "ms ! i \<in> E")
     case False
     show ?thesis
       by (subst code.match_loop.simps)
-         (sep_auto heap: el.nth_rule es.memb_rule simp: i il dr False)
+         (sep_auto heap: el.nth_rule es.memb_rule
+                   simp: step.hyps assms(1)[symmetric] Cons_nth_drop_Suc[symmetric] False)
   next
     case True
-    note b = edge_bounds[OF True assms(2)] and kk = edge_K[OF True]
     show ?thesis
       by (subst code.match_loop.simps)
          (sep_auto heap: el.nth_rule es.memb_rule es.fst_rule[OF True] es.snd_rule[OF True]
-                         es.w_rule[OF True] mark_memb_rule mark_ins_rule yl.nth_rule ih
-                   simp: i il dr True b kk tight_ok_def)
+                         es.w_rule[OF True] mark_memb_rule mark_ins_rule yl.nth_rule step.IH
+                   simp: step.hyps assms(1)[symmetric] assms(2) Cons_nth_drop_Suc[symmetric] True
+                         edge_bounds edge_K tight_ok_def)
   qed
 qed
 
 lemma vert_loop_rule:
-  assumes "k = length xs" "set xs \<subseteq> L \<union> R" "n \<le> length ys"
-  shows "i \<le> k \<Longrightarrow>
-         <yl_assn ys Ya * vl_assn xs Va * mark_assn U Ui> code.vert_loop Ya Va i k Ui
+  assumes "k = length xs" "set xs \<subseteq> L \<union> R" "n \<le> length ys" "i \<le> k"
+  shows "<yl_assn ys Ya * vl_assn xs Va * mark_assn U Ui> code.vert_loop Ya Va i k Ui
          <\<lambda>r. yl_assn ys Ya * vl_assn xs Va * mark_assn U Ui *
               \<up>(r = list_all (vert_ok ys U) (drop i xs))>"
-proof (induction "k - i" arbitrary: i)
-  case 0
-  hence ik: "i = k" by simp
-  show ?case by (subst code.vert_loop.simps) (sep_auto simp: ik assms(1))
-next
-  case (Suc d)
-  hence i: "i < k" by simp
-  have dr: "drop i xs = xs ! i # drop (Suc i) xs" using i assms(1) by (simp add: Cons_nth_drop_Suc)
-  have ih: "<yl_assn ys Ya * vl_assn xs Va * mark_assn U Ui> code.vert_loop Ya Va (Suc i) k Ui
-            <\<lambda>r. yl_assn ys Ya * vl_assn xs Va * mark_assn U Ui *
-                 \<up>(r = list_all (vert_ok ys U) (drop (Suc i) xs))>"
-    using Suc.hyps(1)[of "Suc i"] Suc.hyps(2) i by simp
-  have il: "i < length xs" using i assms(1) by simp
-  have xLR: "xs ! i \<in> L \<union> R" using assms(2) il nth_mem by blast
-  note b = vert_bound[OF xLR assms(3)] and kx = vert_K[OF xLR]
+  using assms(4)
+proof(induction rule: inc_induct)
+  case base
   show ?case
+    by (subst code.vert_loop.simps) (sep_auto simp: assms(1))
+next
+  case (step i)
+  have "xs ! i \<in> L \<union> R"
+    using step.hyps assms(1,2) nth_mem[of i xs]
+    by blast
+  thus ?case
     by (subst code.vert_loop.simps)
-       (sep_auto heap: vl.nth_rule yl.nth_rule mark_memb_rule ih simp: i il dr b kx vert_ok_def)
+       (sep_auto heap: vl.nth_rule yl.nth_rule mark_memb_rule step.IH
+                 simp: step.hyps assms(1)[symmetric] assms(3) Cons_nth_drop_Suc[symmetric] vert_bound
+                       vert_K vert_ok_def)
 qed
 
 lemma certify_alt:
@@ -383,93 +373,83 @@ lemma certify_alt:
           list_all (vert_ok ys (fst (match_list neg t ys {} ms))) rs))"
   by (simp add: certify_sh_def split: prod.split)
 
-theorem certify_sh_imp_rule:
+lemma certify_sh_imp_rule:
   "<EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * mark_assn {} Ui>
    code.certify_sh_imp neg perfect t n p La Ra Ma Ya Ui
    <\<lambda>r. EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * true *
         \<up>(r = certify_sh neg perfect t ms ys)>"
-proof (cases "n \<le> length ys")
+proof(cases "n \<le> length ys")
   case False
-  show ?thesis unfolding code.certify_sh_imp_def by (sep_auto heap: yl.len_rule simp: False certify_alt)
+  thus ?thesis
+    unfolding code.certify_sh_imp_def
+    by (sep_auto heap: yl.len_rule simp: certify_alt)
 next
   case True
-  have el: "set elist \<subseteq> E" using elist_E by simp
-  note init = es.it_init_rule[OF E_invar, folded elist_lst]
-  note feas = feas_loop_rule[OF el True]
-  note match = match_loop_rule[OF refl True, where i = 0]
-  note vls = vert_loop_rule[OF refl _ True, where xs = ls and i = 0]
-   and vrs = vert_loop_rule[OF refl _ True, where xs = rs and i = 0]
-  show ?thesis unfolding code.certify_sh_imp_def
-    by (sep_auto heap: yl.len_rule init feas el.len_rule match vl.len_rule vls vrs
+  note vls = vert_loop_rule[OF refl _ True le0, where xs = ls]
+   and vrs = vert_loop_rule[OF refl _ True le0, where xs = rs]
+  show ?thesis
+    unfolding code.certify_sh_imp_def
+    by (sep_auto heap: yl.len_rule es.it_init_rule[OF E_invar, folded elist_lst] feas_loop_rule[OF elist_sub True]
+                       el.len_rule match_loop_rule[OF refl True le0] vl.len_rule vls vrs
                  simp: True certify_alt)
 qed
 
-theorem certify_imp_rule:
+lemma certify_imp_rule:
   "<EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * mark_assn {} Ui>
    code.certify_imp neg perfect n p La Ra Ma Ya Ui
    <\<lambda>r. EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * true *
         \<up>(r = certify neg perfect ms ys)>"
-  unfolding code.certify_imp_def certify_def by (rule certify_sh_imp_rule)
+  unfolding code.certify_imp_def certify_def
+  by (rule certify_sh_imp_rule)
 
 subsubsection \<open>Hall Violators\<close>
 
 lemma insert_loop_rule:
-  assumes "k = length xs" "set xs \<subseteq> K"
-  shows "i \<le> k \<Longrightarrow>
-         <vl_assn xs Va * mark_assn U Ui> code.insert_loop Va i k Ui
+  assumes "k = length xs" "set xs \<subseteq> K" "i \<le> k"
+  shows "<vl_assn xs Va * mark_assn U Ui> code.insert_loop Va i k Ui
          <\<lambda>_. vl_assn xs Va * mark_assn (U \<union> set (drop i xs)) Ui>"
-proof (induction "k - i" arbitrary: i U)
-  case 0
-  hence ik: "i = k" by simp
-  show ?case by (subst code.insert_loop.simps) (sep_auto simp: ik assms(1))
-next
-  case (Suc d)
-  hence i: "i < k" by simp
-  have dr: "drop i xs = xs ! i # drop (Suc i) xs" using i assms(1) by (simp add: Cons_nth_drop_Suc)
-  have ih: "<vl_assn xs Va * mark_assn U' Ui> code.insert_loop Va (Suc i) k Ui
-            <\<lambda>_. vl_assn xs Va * mark_assn (U' \<union> set (drop (Suc i) xs)) Ui>" for U'
-    using Suc.hyps(1)[of "Suc i" U'] Suc.hyps(2) i by simp
-  have il: "i < length xs" using i assms(1) by simp
-  have kx: "xs ! i \<in> K" using assms(2) il nth_mem by blast
+  using assms(3)
+proof(induction arbitrary: U rule: inc_induct)
+  case base
   show ?case
+    by (subst code.insert_loop.simps) (sep_auto simp: assms(1))
+next
+  case (step i)
+  have "xs ! i \<in> K"
+    using step.hyps assms(1,2)
+    by auto
+  thus ?case
     by (subst code.insert_loop.simps)
-       (sep_auto heap: vl.nth_rule mark_ins_rule ih simp: i il dr kx)
+       (sep_auto heap: vl.nth_rule mark_ins_rule step.IH
+                 simp: step.hyps assms(1)[symmetric] Cons_nth_drop_Suc[symmetric])
 qed
 
 lemma hall_S_loop_rule:
-  assumes "k = length S"
-  shows "i \<le> k \<Longrightarrow>
-         <vl_assn S Sa * mark_assn L Li * mark_assn Sm Si> code.hall_S_loop n Li Sa i k Si c
+  assumes "k = length S" "i \<le> k"
+  shows "<vl_assn S Sa * mark_assn L Li * mark_assn Sm Si> code.hall_S_loop n Li Sa i k Si c
          <\<lambda>(c', ok). vl_assn S Sa * mark_assn L Li * mark_assn (fst (hall_S Sm c (drop i S))) Si *
                      \<up>(c' = fst (snd (hall_S Sm c (drop i S))) \<and>
                        ok = snd (snd (hall_S Sm c (drop i S))))>"
-proof (induction "k - i" arbitrary: i Sm c)
-  case 0
-  hence ik: "i = k" by simp
-  show ?case by (subst code.hall_S_loop.simps) (sep_auto simp: ik assms(1))
-next
-  case (Suc d)
-  hence i: "i < k" by simp
-  have dr: "drop i S = S ! i # drop (Suc i) S" using i assms(1) by (simp add: Cons_nth_drop_Suc)
-  have ih: "<vl_assn S Sa * mark_assn L Li * mark_assn Sm' Si> code.hall_S_loop n Li Sa (Suc i) k Si c'
-            <\<lambda>(c'', ok). vl_assn S Sa * mark_assn L Li *
-                         mark_assn (fst (hall_S Sm' c' (drop (Suc i) S))) Si *
-                         \<up>(c'' = fst (snd (hall_S Sm' c' (drop (Suc i) S))) \<and>
-                           ok = snd (snd (hall_S Sm' c' (drop (Suc i) S))))>" for Sm' c'
-    using Suc.hyps(1)[of "Suc i" Sm' c'] Suc.hyps(2) i by simp
-  have il: "i < length S" using i assms(1) by simp
+  using assms(2)
+proof(induction arbitrary: Sm c rule: inc_induct)
+  case base
   show ?case
-  proof (cases "S ! i < n")
+    by (subst code.hall_S_loop.simps) (sep_auto simp: assms(1))
+next
+  case (step i)
+  show ?case
+  proof(cases "S ! i < n")
     case True
-    have kx: "S ! i \<in> K" using True verts_K by auto
     show ?thesis
       by (subst code.hall_S_loop.simps)
-         (sep_auto heap: vl.nth_rule mark_memb_rule mark_ins_rule ih simp: i il dr True kx)
+         (sep_auto heap: vl.nth_rule mark_memb_rule mark_ins_rule step.IH
+                   simp: step.hyps assms(1)[symmetric] Cons_nth_drop_Suc[symmetric] True below_n_props)
   next
     case False
-    have nL: "S ! i \<notin> L" using False verts_below by auto
     show ?thesis
-      by (subst code.hall_S_loop.simps) (sep_auto heap: vl.nth_rule simp: i il dr False nL)
+      by (subst code.hall_S_loop.simps)
+         (sep_auto heap: vl.nth_rule
+                   simp: step.hyps assms(1)[symmetric] Cons_nth_drop_Suc[symmetric] False below_n_props)
   qed
 qed
 
@@ -479,17 +459,17 @@ lemma hall_N_loop_rule:
          <\<lambda>c'. EA p * mark_assn Sm Si * mark_assn (fst (hall_N Sm Nm c xs)) Ni * true *
               \<up>(c' = snd (hall_N Sm Nm c xs))>"
   using assms
-proof (induction xs arbitrary: it Nm c)
+proof(induction xs arbitrary: it Nm c)
   case Nil
-  show ?case by (subst code.hall_N_loop.simps) (sep_auto heap: es.it_has_next_rule)
+  show ?case
+    by (subst code.hall_N_loop.simps) (sep_auto heap: es.it_has_next_rule)
 next
   case (Cons e xs)
-  have e: "e \<in> E" and xs: "set xs \<subseteq> E" using Cons.prems by simp_all
-  note ih = Cons.IH[OF xs] and kk = edge_K[OF e]
+  note e = Cons.prems[simplified]
   show ?case
     by (subst code.hall_N_loop.simps)
-       (sep_auto heap: es.it_has_next_rule es.it_next_rule es.fst_rule[OF e] es.snd_rule[OF e]
-                       mark_memb_rule mark_ins_rule ih simp: kk)
+       (sep_auto heap: es.it_has_next_rule es.it_next_rule es.fst_rule[of e] es.snd_rule[of e]
+                       mark_memb_rule mark_ins_rule Cons.IH simp: e edge_K)
 qed
 
 lemma hall_check_alt:
@@ -500,22 +480,20 @@ lemma hall_check_alt:
   by (simp add: hall_check_def split: prod.split)
 
 lemma ls_K: "set ls \<subseteq> K"
-  using vert_K by blast
+  using vert_K
+  by blast
 
-theorem hall_imp_rule:
+lemma hall_imp_rule:
   "<EA p * vl_assn ls La * vl_assn rs Ra * vl_assn S Sa * mark_assn {} Li * mark_assn {} Si *
     mark_assn {} Ni>
    code.hall_imp n p La Ra Sa Li Si Ni
    <\<lambda>r. EA p * vl_assn ls La * vl_assn rs Ra * vl_assn S Sa * true * \<up>(r = hall_check S)>"
-proof -
-  have el: "set elist \<subseteq> E" using elist_E by simp
-  note init = es.it_init_rule[OF E_invar, folded elist_lst]
-  note ins = insert_loop_rule[OF refl ls_K, where i = 0 and U = "{}"]
-  note hS = hall_S_loop_rule[OF refl, where i = 0 and Sm = "{}" and c = 0]
-  note hN = hall_N_loop_rule[OF el, where Nm = "{}" and c = 0]
-  show ?thesis unfolding code.hall_imp_def
-    by (sep_auto heap: vl.len_rule ins hS init hN simp: hall_check_alt)
-qed
+  unfolding code.hall_imp_def
+  by (sep_auto heap: vl.len_rule insert_loop_rule[OF refl ls_K le0, where U = "{}"]
+                     hall_S_loop_rule[OF refl le0, where Sm = "{}" and c = 0]
+                     es.it_init_rule[OF E_invar, folded elist_lst]
+                     hall_N_loop_rule[OF elist_sub, where Nm = "{}" and c = 0]
+               simp: hall_check_alt)
 
 subsubsection \<open>Extremal Weight Maximum Cardinality Matchings\<close>
 
@@ -525,22 +503,19 @@ lemma defic_ok_alt:
     length ls + snd (hall_N (fst (hall_S {} 0 S)) {} 0 elist) \<le> length ms + fst (snd (hall_S {} 0 S)))"
   by (simp add: defic_ok_def split: prod.split)
 
-theorem certify_mc_imp_rule:
+lemma certify_mc_imp_rule:
   "<EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * vl_assn S Sa *
     mark_assn {} Ui * mark_assn {} Li * mark_assn {} Si * mark_assn {} Ni>
    code.certify_mc_imp neg n p La Ra Ma Ya t Sa Ui Li Si Ni
    <\<lambda>r. EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * vl_assn S Sa *
         true * \<up>(r = certify_mc neg ms ys t S)>"
-proof -
-  have el: "set elist \<subseteq> E" using elist_E by simp
-  note init = es.it_init_rule[OF E_invar, folded elist_lst]
-  note ins = insert_loop_rule[OF refl ls_K, where i = 0 and U = "{}"]
-  note hS = hall_S_loop_rule[OF refl, where i = 0 and Sm = "{}" and c = 0]
-  note hN = hall_N_loop_rule[OF el, where Nm = "{}" and c = 0]
-  show ?thesis unfolding code.certify_mc_imp_def
-    by (sep_auto heap: certify_sh_imp_rule vl.len_rule ins hS init hN el.len_rule
-                 simp: certify_mc_def defic_ok_alt)
-qed
+  unfolding code.certify_mc_imp_def
+  by (sep_auto heap: certify_sh_imp_rule vl.len_rule insert_loop_rule[OF refl ls_K le0, where U = "{}"]
+                     hall_S_loop_rule[OF refl le0, where Sm = "{}" and c = 0]
+                     es.it_init_rule[OF E_invar, folded elist_lst]
+                     hall_N_loop_rule[OF elist_sub, where Nm = "{}" and c = 0] el.len_rule
+               simp: certify_mc_def defic_ok_alt)
+
 end
 
 end

@@ -49,6 +49,11 @@ locale fixed_univ_buckets =
           buckets_abstract (buckets_move B j j') =
           (\<lambda> x. if buckets_abstract B x = Some j then Some j' else buckets_abstract B x)"
 
+lemma (in fixed_univ_buckets) bucket_level_remove:
+  "\<lbrakk>buckets_invar B; buckets_abstract B v = Some j\<rbrakk> \<Longrightarrow>
+     {x. buckets_abstract (buckets_remove B v j) x = Some j} = {x. buckets_abstract B x = Some j} - {v}"
+  by (auto simp add: buckets_remove)
+
 text \<open>Restricting the elements to a smaller universe @{term U'}: the invariant additionally
       requires that only elements of @{term U'} lie in buckets.\<close>
 
@@ -59,46 +64,10 @@ lemma (in fixed_univ_buckets) fixed_univ_buckets_restrict:
   assumes "U' \<subseteq> U"
   shows "fixed_univ_buckets U' K (restr_buckets_invar U' buckets_invar buckets_abstract)
            buckets_abstract buckets_empty buckets_insert buckets_remove buckets_pick buckets_move"
-proof(unfold_locales, goal_cases)
-  case (1 B x k) then show ?case
-    using buckets_universe by (auto simp add: restr_buckets_invar_def)
-next
-  case 2 show ?case
-    using buckets_empty by (simp add: restr_buckets_invar_def)
-next
-  case 3 show ?case
-    using buckets_empty by simp
-next
-  case (4 B x k)
-  have "x \<in> U"
-    using 4 assms by auto
-  thus ?case
-    using 4 buckets_insert[of B x k] by (auto simp add: restr_buckets_invar_def split: if_splits)
-next
-  case (5 B x k)
-  have "x \<in> U"
-    using 5 assms by auto
-  thus ?case
-    using 5 buckets_insert(2)[of B x k] by (simp add: restr_buckets_invar_def)
-next
-  case (6 B x k) then show ?case
-    using buckets_remove[of B x k] by (auto simp add: restr_buckets_invar_def)
-next
-  case (7 B x k) then show ?case
-    using buckets_remove(2)[of B x k] by (simp add: restr_buckets_invar_def)
-next
-  case (8 B k) then show ?case
-    using buckets_pick(1)[of B k] by (simp add: restr_buckets_invar_def)
-next
-  case (9 B k x) then show ?case
-    using buckets_pick(2)[of B k x] by (simp add: restr_buckets_invar_def)
-next
-  case (10 B j j') then show ?case
-    using buckets_move[of B j j'] by (auto simp add: restr_buckets_invar_def split: if_splits)
-next
-  case (11 B j j') then show ?case
-    using buckets_move(2)[of B j j'] by (simp add: restr_buckets_invar_def)
-qed
+  using assms
+  by unfold_locales
+     (auto simp: restr_buckets_invar_def buckets_empty buckets_insert buckets_remove buckets_pick
+        buckets_move dest: buckets_universe split: if_splits)
 
 end
 

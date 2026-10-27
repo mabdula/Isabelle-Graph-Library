@@ -5,7 +5,8 @@ begin
 section \<open>Weighted Matroid Intersection in Imperative HOL\<close>
 
 text \<open>The complete imperative algorithm for two matroids on the nats below \<open>n\<close>, given by
-  oracles, and weights in an ordered ring \<open>'n\<close>, read in the reals through the embedding \<open>h\<close>. As
+  oracles, and weights in an ordered ring \<open>'n\<close>, read in the reals through the embedding \<open>h\<close>.
+    As
   @{theory Matroid_Intersection.Matroid_Intersection_Imp}, the program builds the CSR of the
   candidate graph, allocates the work arrays of the path search, and runs the loop on them; this is
   the only place where arrays are allocated. The caller provides the handle of the empty solution,
@@ -79,28 +80,26 @@ sublocale wm: weighted_intersection_exchange_imp where n = n and smemb_imp = sme
 
 text \<open>The whole program.\<close>
 
-theorem wmi_imp_correct:
+lemma candidate_frame:
+  "<F * pst1 H1 * pst2 H2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
+   <\<lambda> Gc. F * pst1 H1 * pst2 H2 * (case Gc of (Ba, Ga) \<Rightarrow>
+     Ba \<mapsto>\<^sub>a map (csr_start (nbrs (cand_list pts1 pts2 n))) [0..<Suc n] *
+     Ga \<mapsto>\<^sub>a csr_entries (nbrs (cand_list pts1 pts2 n)) n)>"
+  by (rule ht_frame_ac[OF c.cand_csr_rule, where R = F])
+     (simp only: star_aci, rule ent_refl, sep_auto split: prod.splits)
+
+lemma wmi_imp_correct:
   "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * warr_assn n h c Co *
     len_assn n C1 * len_assn n C2> wmi_imp H1 H2 Si Co C1 C2
    <\<lambda> _. \<exists>\<^sub>A X c1 c2. sol_assn X Si * warr_assn n h c1 C1 * warr_assn n h c2 C2 *
           warr_assn n h c Co * ost1 * ost2 * pst1 H1 * pst2 H2 * true *
           \<up>(weighted_double_matroid.is_opt indep1 indep2 c X)>"
-proof-
-  let ?F = "sol_assn {} Si * ost1 * ost2 * warr_assn n h c Co * len_assn n C1 * len_assn n C2"
-  have cand: "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * warr_assn n h c Co *
-                len_assn n C1 * len_assn n C2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
-              <\<lambda> Gc. ?F * pst1 H1 * pst2 H2 * (case Gc of (Ba, Ga) \<Rightarrow>
-                Ba \<mapsto>\<^sub>a map (csr_start (nbrs (cand_list pts1 pts2 n))) [0..<Suc n] *
-                Ga \<mapsto>\<^sub>a csr_entries (nbrs (cand_list pts1 pts2 n)) n)>"
-    by (rule ht_frame_ac[OF c.cand_csr_rule, where R = ?F])
-       (simp only: star_aci, rule ent_refl, sep_auto split: prod.splits)
-  show ?thesis
-    unfolding wmi_imp_def
-    by (rule ht_bind[OF cand], (rule alloc_bind[OF len_assn_new])+,
-        rule ht_frame_ac[OF wm.loop_correct[where c = c], where R = "pst1 H1 * pst2 H2"])
-       ((simp only: wm.wws_def work_assn_def parr_len star_aci, rule ent_refl),
-        sep_auto)
-qed
+  unfolding wmi_imp_def
+  by (rule ht_cons_pre[OF _ ht_bind[OF candidate_frame[where F =
+        "sol_assn {} Si * ost1 * ost2 * warr_assn n h c Co * len_assn n C1 * len_assn n C2"]]],
+      (simp only: star_aci, rule ent_refl), (rule alloc_bind[OF len_assn_new])+,
+      rule ht_frame_ac[OF wm.loop_correct[where c = c], where R = "pst1 H1 * pst2 H2"])
+     ((simp only: wm.wws_def work_assn_def parr_len star_aci, rule ent_refl), sep_auto)
 
 end
 
@@ -113,7 +112,8 @@ text \<open>As in the unweighted case, the algorithm on the ids runs with every 
 locale weighted_matroid_intersection_imp_spec =
   matroid_intersection_imp_spec n idx elt smemb_imp ins1_imp exch1_imp ins2_imp exch2_imp
     sins_imp sdel_imp npts1_imp pt1_imp npts2_imp pt2_imp
-  for n idx elt and smemb_imp :: "'a \<Rightarrow> 'si \<Rightarrow> bool Heap" and ins1_imp exch1_imp ins2_imp exch2_imp
+  for n idx elt and smemb_imp :: "'a \<Rightarrow> 'si \<Rightarrow> bool Heap" and ins1_imp exch1_imp ins2_imp
+    exch2_imp
     sins_imp sdel_imp npts1_imp pt1_imp npts2_imp pt2_imp
 begin
 
@@ -121,7 +121,7 @@ sublocale wids: weighted_matroid_intersection_imp_ids_spec n "\<lambda> i. smemb
   "\<lambda> Si i. ins1_imp Si (elt i)" "\<lambda> Si i j. exch1_imp Si (elt i) (elt j)"
   "\<lambda> Si i. ins2_imp Si (elt i)" "\<lambda> Si i j. exch2_imp Si (elt i) (elt j)"
   "\<lambda> i. sins_imp (elt i)" "\<lambda> i. sdel_imp (elt i)"
-  "\<lambda> H i. npts1_imp H (elt i)" "pt_ids_imp idx elt pt1_imp" 
+  "\<lambda> H i. npts1_imp H (elt i)" "pt_ids_imp idx elt pt1_imp"
   "\<lambda> H i. npts2_imp H (elt i)" "pt_ids_imp idx elt pt2_imp" .
 
 definition "wmi_imp H1 H2 Si Co C1 C2 = wids.wmi_imp H1 H2 Si Co C1 C2"
@@ -131,47 +131,50 @@ end
 context matroid_ids
 begin
 
-lemma pull_sum: "I \<subseteq> {0..<n} \<Longrightarrow> sum (\<lambda> i. if i < n then c (elt i) else 0) I = sum c (elt ` I)"
-proof-
-  assume I: "I \<subseteq> {0..<n}"
-  have "sum (\<lambda> i. if i < n then c (elt i) else 0) I = sum (c \<circ> elt) I"
-    using I by (intro sum.cong) auto
-  also have "\<dots> = sum c (elt ` I)"
-    by (rule sum.reindex[OF inj_on_subset[OF elt_inj I], symmetric])
-  finally show ?thesis .
-qed
+lemma pull_sum: "I \<subseteq> {0..<n} \<Longrightarrow> sum (\<lambda> i. if i < n then c (elt i) else 0) I = sum c
+    (elt ` I)"
+  by (subst sum.reindex) (auto intro: inj_on_subset[OF elt_inj] intro!: sum.cong)
+
+lemma push_sum:
+  "Y \<subseteq> carrier \<Longrightarrow> sum c Y = sum (\<lambda> i. if i < n then c (elt i) else 0) (idx ` Y)"
+  using elt_surj[of Y] pull_sum[of "idx ` Y" c]
+  by simp
+
+lemma pull_weight_bound:
+  assumes "I \<subseteq> {0..<n}"
+    "\<And> J. \<lbrakk>pull indep1 J; pull indep2 J\<rbrakk> \<Longrightarrow>
+      sum (\<lambda> i. if i < n then c (elt i) else 0) J \<le> sum (\<lambda> i. if i < n then c (elt i) else 0) I"
+    "Y \<subseteq> carrier" "indep1 Y" "indep2 Y"
+  shows "sum c Y \<le> sum c (elt ` I)"
+  using assms elt_surj[of Y] push_sum[of Y c] pull_sum[of I c]
+  by (auto simp: pull_def)
 
 lemma pull_opt:
-  assumes dm: "double_matroid carrier indep1 indep2" "double_matroid {0..<n} (pull indep1) (pull indep2)"
-    and opt: "weighted_double_matroid.is_opt (pull indep1) (pull indep2)
+  assumes "double_matroid carrier indep1 indep2" "double_matroid {0..<n} (pull indep1) (pull indep2)"
+    and "weighted_double_matroid.is_opt (pull indep1) (pull indep2)
                 (\<lambda> i. if i < n then c (elt i) else 0) I"
   shows "weighted_double_matroid.is_opt indep1 indep2 c (elt ` I)"
 proof-
   interpret D: double_matroid carrier indep1 indep2
-    by (rule dm(1))
-  let ?c = "\<lambda> i. if i < n then c (elt i) else 0"
-  have I: "pull indep1 I" "pull indep2 I" "\<And> J. pull indep1 J \<and> pull indep2 J \<Longrightarrow> sum ?c J \<le> sum ?c I"
-    using opt unfolding weighted_double_matroid.is_opt_def[OF weighted_double_matroid.intro[OF dm(2)]]
-    by blast+
-  have Is: "I \<subseteq> {0..<n}"
-    using I(1) by (simp add: pull_def)
-  have Y: "sum c Y \<le> sum c (elt ` I)" if Y: "indep1 Y" "indep2 Y" for Y
-  proof-
-    have J: "idx ` Y \<subseteq> {0..<n}" "elt ` idx ` Y = Y"
-      using elt_surj[OF D.matroid1.indep_subset_carrier[OF Y(1)]] by simp_all
-    have p: "pull indep1 (idx ` Y) \<and> pull indep2 (idx ` Y)"
-      using J Y unfolding pull_def by simp
-    have "sum c Y = sum ?c (idx ` Y)"
-      using pull_sum[OF J(1), of c] J(2) by simp
-    also have "\<dots> \<le> sum ?c I"
-      by (rule I(3)[OF p])
-    also have "\<dots> = sum c (elt ` I)"
-      by (rule pull_sum[OF Is])
-    finally show ?thesis .
-  qed
+    by (rule assms(1))
+  note opt_defs = assms(1,2)[THEN weighted_double_matroid.intro, THEN weighted_double_matroid.is_opt_def]
   show ?thesis
-    unfolding weighted_double_matroid.is_opt_def[OF weighted_double_matroid.intro[OF dm(1)]]
-    using I(1,2) Y by (simp add: pull_def)
+    using assms(3) unfolding opt_defs
+  proof(intro conjI allI impI, goal_cases)
+    case 1
+    then show ?case
+      by (auto simp: pull_def)
+  next
+    case 2
+    then show ?case
+      by (auto simp: pull_def)
+  next
+    case (3 Y)
+    show ?case
+      by (rule pull_weight_bound[where I = I and c = c and Y = Y and ?indep1.0 = indep1 and ?indep2.0 =
+        indep2]; insert 3; auto simp: pull_def dest: D.matroid1.indep_subset_carrier)
+  qed
+
 qed
 
 end
@@ -183,7 +186,7 @@ locale weighted_matroid_intersection_imp =
   for h :: "'n :: {linordered_idom, heap} \<Rightarrow> real"
 begin
 
-theorem wmi_imp_correct:
+lemma wmi_imp_correct:
   "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 *
     warr_assn n h (\<lambda> i. if i < n then c (elt i) else 0) Co * len_assn n C1 * len_assn n C2>
      wmi_imp H1 H2 Si Co C1 C2
@@ -195,34 +198,17 @@ proof-
     "\<lambda> Si i. ins1_imp Si (elt i)" "\<lambda> Si i j. exch1_imp Si (elt i) (elt j)"
     "\<lambda> Si i. ins2_imp Si (elt i)" "\<lambda> Si i j. exch2_imp Si (elt i) (elt j)"
     "\<lambda> i. sins_imp (elt i)" "\<lambda> i. sdel_imp (elt i)"
-    "\<lambda> H i. npts1_imp H (elt i)" "pt_ids_imp idx elt pt1_imp" 
+    "\<lambda> H i. npts1_imp H (elt i)" "pt_ids_imp idx elt pt1_imp"
     "\<lambda> H i. npts2_imp H (elt i)" "pt_ids_imp idx elt pt2_imp" o1.prep_ids o1.ins_ids o1.exch_ids
     o2.prep_ids o2.ins_ids o2.exch_ids "o1.pull indep1" "o1.pull indep2" "o1.sol_ids sol_assn"
     ost1 ost2 o1.pts_ids pst1 o2.pts_ids pst2 h
     by (intro weighted_matroid_intersection_imp_ids.intro ids_imp real_embedding_axioms)
-  have opt: "weighted_double_matroid.is_opt indep1 indep2 c (elt ` I)"
-    if a: "weighted_double_matroid.is_opt (o1.pull indep1) (o1.pull indep2)
-             (\<lambda> i. if i < n then c (elt i) else 0) I" for I
-    by (rule o1.pull_opt[OF double_matroid_axioms m.double_matroid_axioms a])
+  note opt = o1.pull_opt[OF double_matroid_axioms m.double_matroid_axioms]
   show ?thesis
     unfolding wmi_imp_def
-  proof(rule ht_cons[OF _ _ m.wmi_imp_correct[where c = "\<lambda> i. if i < n then c (elt i) else 0"]],
-      goal_cases)
-    case 1
-    then show ?case
-      unfolding o1.sol_ids_def by sep_auto
-  next
-    case (2 r)
-    then show ?case
-      unfolding o1.sol_ids_def
-      apply (rule ent_true_drop(2), (rule ent_ex_preI)+)
-      subgoal for X c1 c2
-        by (cases "weighted_double_matroid.is_opt (o1.pull indep1) (o1.pull indep2)
-                     (\<lambda> i. if i < n then c (elt i) else 0) X")
-           (rule ent_ex_postI[where x = "elt ` X"],
-            rule ent_ex_postI[where x = c1], rule ent_ex_postI[where x = c2], simp only: opt, sep_auto+)
-      done
-  qed
+    by (rule ht_cons[OF _ _ m.wmi_imp_correct[where c = "\<lambda> i. if i < n then c (elt i) else 0"]])
+       (sep_auto simp: o1.sol_ids_def intro: opt)+
+
 qed
 
 end

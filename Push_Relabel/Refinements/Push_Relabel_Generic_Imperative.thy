@@ -340,21 +340,28 @@ definition min_assn :: "(nat \<times> 'e) option \<Rightarrow> ('fi, 'xi, 'li, '
 definition "min_scratch_assn Si = (\<exists>\<^sub>A mb. min_assn mb Si)"
 
 lemma min_clear_rule: "<min_assn mb Si> pi_mf Si := False <\<lambda>_. min_assn None Si>"
-  unfolding min_assn_def by sep_auto
+  unfolding min_assn_def
+  by sep_auto
 
 lemma min_set_rule: "<min_assn mb Si> min_set_imp Si k d <\<lambda>_. min_assn (Some (k, d)) Si>"
-  unfolding min_set_imp_def min_assn_def by sep_auto
+  unfolding min_set_imp_def min_assn_def
+  by sep_auto
 
 lemma min_get_flag_rule: "<min_assn mb Si> !(pi_mf Si) <\<lambda>f. min_assn mb Si * \<up>(f = (mb \<noteq> None))>"
-  unfolding min_assn_def by sep_auto
+  unfolding min_assn_def
+  by sep_auto
 
 lemma min_get_label_rule:
-  "<min_assn mb Si> !(pi_mk Si) <\<lambda>k. min_assn mb Si * \<up>(\<forall> k0 d0. mb = Some (k0, d0) \<longrightarrow> k = k0)>"
-  unfolding min_assn_def by sep_auto
+  "<min_assn mb Si> !(pi_mk Si)
+   <\<lambda>k. min_assn mb Si * \<up>(\<forall> k0 d0. mb = Some (k0, d0) \<longrightarrow> k = k0)>"
+  unfolding min_assn_def
+  by sep_auto
 
 lemma min_get_edge_rule:
-  "<min_assn mb Si> !(pi_md Si) <\<lambda>d. min_assn mb Si * \<up>(\<forall> k0 d0. mb = Some (k0, d0) \<longrightarrow> d = d0)>"
-  unfolding min_assn_def by sep_auto
+  "<min_assn mb Si> !(pi_md Si)
+   <\<lambda>d. min_assn mb Si * \<up>(\<forall> k0 d0. mb = Some (k0, d0) \<longrightarrow> d = d0)>"
+  unfolding min_assn_def
+  by sep_auto
 
 definition state_assn where
   "state_assn st Si =
@@ -370,13 +377,32 @@ lemma state_assn_ctx[simp]: "state_assn (st\<lparr>pr_ctx := c\<rparr>) = state_
 lemma edge_verts: "d \<in> \<E> \<Longrightarrow> fst d \<in> \<V> \<and> snd d \<in> \<V>"
   by (auto intro: fst_E_V snd_E_V)
 
+lemma invar_basic_maps:
+  assumes "invar_basic st"
+  shows "emap_invar (pr_fwd st)" "emap_invar (pr_bwd st)" "ex_invar (pr_excess st)"
+        "label_invar (pr_labels st)" "count_invar (pr_counts st)"
+  using assms
+  by (auto elim: invar_basic_props)
+
+lemma invar_basic_iters:
+  assumes "invar_basic st" "u \<in> \<V>"
+  shows "out_invar (pr_out st)" "in_invar (pr_in st)"
+        "out_abstract (pr_out st) u = \<delta>\<^sup>+ u" "in_abstract (pr_in st) u = \<delta>\<^sup>- u"
+        "finite (out_remaining (pr_out st) u)" "finite (in_remaining (pr_in st) u)"
+  using assms
+  by (auto elim!: invar_basic_props simp: out_graph_inv_delta in_graph_inv_delta)
+
 lemma fst_state_rule:
-  "d \<in> \<E> \<Longrightarrow> <state_assn st Si> fst_imp (pi_ends Si) d <\<lambda>u. state_assn st Si * \<up>(u = fst d)>"
-  unfolding state_assn_def by (sep_auto heap: fst_imp_rule)
+  "d \<in> \<E>
+   \<Longrightarrow> <state_assn st Si> fst_imp (pi_ends Si) d <\<lambda>u. state_assn st Si * \<up>(u = fst d)>"
+  unfolding state_assn_def
+  by (sep_auto heap: fst_imp_rule)
 
 lemma snd_state_rule:
-  "d \<in> \<E> \<Longrightarrow> <state_assn st Si> snd_imp (pi_ends Si) d <\<lambda>v. state_assn st Si * \<up>(v = snd d)>"
-  unfolding state_assn_def by (sep_auto heap: snd_imp_rule)
+  "d \<in> \<E>
+   \<Longrightarrow> <state_assn st Si> snd_imp (pi_ends Si) d <\<lambda>v. state_assn st Si * \<up>(v = snd d)>"
+  unfolding state_assn_def
+  by (sep_auto heap: snd_imp_rule)
 
 subsubsection \<open>Pushing\<close>
 
@@ -385,7 +411,7 @@ lemma admissible_fwd_imp_rule:
   shows "<ends_assn Ei * emap_assn fw Fi * label_assn l Li> admissible_fwd_imp Ei Fi Li d
          <\<lambda>r. ends_assn Ei * emap_assn fw Fi * label_assn l Li *
               \<up>(r = admissible_fwd_impl fw l d)>"
-  using assms edge_verts[OF assms(3)]
+  using assms edge_verts[of d]
   unfolding admissible_fwd_imp_def admissible_fwd_impl_def
   by (sep_auto heap: fst_imp_rule snd_imp_rule simp: eq_commute[of "h _"])
 
@@ -394,7 +420,7 @@ lemma admissible_bwd_imp_rule:
   shows "<ends_assn Ei * emap_assn bw Bi * label_assn l Li> admissible_bwd_imp Ei Bi Li d
          <\<lambda>r. ends_assn Ei * emap_assn bw Bi * label_assn l Li *
               \<up>(r = admissible_bwd_impl bw l d)>"
-  using assms edge_verts[OF assms(3)]
+  using assms edge_verts[of d]
   unfolding admissible_bwd_imp_def admissible_bwd_impl_def
   by (sep_auto heap: fst_imp_rule snd_imp_rule simp: eq_commute[of "h _"])
 
@@ -402,8 +428,8 @@ lemma augment_imp_rule:
   assumes "emap_invar (pr_fwd st)" "emap_invar (pr_bwd st)" "ex_invar (pr_excess st)" "d \<in> \<E>"
   shows "<state_assn st Si> augment_imp d (fst d) (snd d) \<delta> Si
          <\<lambda>_. state_assn (case augment_impl d (h \<delta>) (pr_fwd st) (pr_bwd st) (pr_excess st) of
-                           (fw', bw', x') \<Rightarrow> st\<lparr>pr_fwd := fw', pr_bwd := bw', pr_excess := x'\<rparr>) Si>"
-  using assms edge_verts[OF assms(4)]
+                (fw', bw', x') \<Rightarrow> st\<lparr>pr_fwd := fw', pr_bwd := bw', pr_excess := x'\<rparr>) Si>"
+  using assms edge_verts[of d]
   unfolding state_assn_def augment_imp_def augment_impl_def Let_def
   by (sep_auto simp: ex_map.fixed_univ_map_upd_invar ex_map.fixed_univ_map_upd h_add)
 
@@ -411,32 +437,34 @@ lemma ex_get_state_rule:
   assumes "ex_invar (pr_excess st)" "v \<in> \<V>"
   shows "<state_assn st Si> ex_get_imp (pi_ex Si) v
          <\<lambda>x. state_assn st Si * \<up>(ex_get (pr_excess st) v = h x)>"
-  using assms unfolding state_assn_def by sep_auto
+  using assms unfolding state_assn_def
+  by sep_auto
 
 lemma fwd_get_state_rule:
   assumes "emap_invar (pr_fwd st)" "d \<in> \<E>"
   shows "<state_assn st Si> emap_get_imp (pi_fwd Si) d
          <\<lambda>x. state_assn st Si * \<up>(emap_get (pr_fwd st) d = h x)>"
-  using assms unfolding state_assn_def by sep_auto
+  using assms unfolding state_assn_def
+  by sep_auto
 
 lemma bwd_get_state_rule:
   assumes "emap_invar (pr_bwd st)" "d \<in> \<E>"
   shows "<state_assn st Si> emap_get_imp (pi_bwd Si) d
          <\<lambda>x. state_assn st Si * \<up>(emap_get (pr_bwd st) d = h x)>"
-  using assms unfolding state_assn_def by sep_auto
+  using assms unfolding state_assn_def
+  by sep_auto
 
 lemma push_fwd_imp_rule:
   assumes "invar_basic st" "d \<in> \<E>"
   shows "<state_assn st Si> push_fwd_imp d Si <\<lambda>_. state_assn (push_fwd_impl d st) Si>"
 proof-
-  have I: "emap_invar (pr_fwd st)" "emap_invar (pr_bwd st)" "ex_invar (pr_excess st)"
-    using assms(1) by (simp_all add: invar_basic_def)
+  note I = invar_basic_maps[OF assms(1)]
   show ?thesis
     unfolding push_fwd_imp_def
-    using edge_verts[OF assms(2)]
+    using assms(2) edge_verts[of d]
     by (sep_auto heap: fst_state_rule[OF assms(2)] snd_state_rule[OF assms(2)]
                        ex_get_state_rule[OF I(3)] fwd_get_state_rule[OF I(1) assms(2)]
-                       augment_imp_rule[OF I assms(2)]
+                       augment_imp_rule[OF I(1-3) assms(2)]
                  simp: push_fwd_impl_def Let_def)
 qed
 
@@ -444,18 +472,38 @@ lemma push_bwd_imp_rule:
   assumes "invar_basic st" "d \<in> \<E>"
   shows "<state_assn st Si> push_bwd_imp d Si <\<lambda>_. state_assn (push_bwd_impl d st) Si>"
 proof-
-  have I: "emap_invar (pr_fwd st)" "emap_invar (pr_bwd st)" "ex_invar (pr_excess st)"
-    using assms(1) by (simp_all add: invar_basic_def)
+  note I = invar_basic_maps[OF assms(1)]
   show ?thesis
     unfolding push_bwd_imp_def
-    using edge_verts[OF assms(2)]
+    using assms(2) edge_verts[of d]
     by (sep_auto heap: fst_state_rule[OF assms(2)] snd_state_rule[OF assms(2)]
                        ex_get_state_rule[OF I(3)] bwd_get_state_rule[OF I(2) assms(2)]
-                       augment_imp_rule[OF I assms(2)]
+                       augment_imp_rule[OF I(1-3) assms(2)]
                  simp: push_bwd_impl_def Let_def)
 qed
 
 subsubsection \<open>Advancing\<close>
+
+text \<open>Moving an iterator past its current edge shrinks the remaining edges of the vertex.\<close>
+
+lemma iterator_move_props:
+  assumes "indexed_iterable_set it_invar it_abstract cur has it_iterated it_remaining move it_reset \<V>"
+          "it_invar C" "u \<in> \<V>" "finite (it_remaining C u)" "has C u"
+  shows "it_remaining C u \<noteq> {}" "cur C u \<in> it_abstract C u" "it_invar (move C u)"
+        "card (it_remaining (move C u) u) < card (it_remaining C u)"
+        "finite (it_remaining (move C u) u)" "it_abstract (move C u) u = it_abstract C u"
+proof-
+  interpret it: indexed_iterable_set it_invar it_abstract cur has it_iterated it_remaining move it_reset \<V>
+    by (rule assms(1))
+  show "it_remaining C u \<noteq> {}"
+    using assms(2,3,5)
+    by (simp add: it.idx_has)
+  thus "cur C u \<in> it_abstract C u" "it_invar (move C u)"
+       "card (it_remaining (move C u) u) < card (it_remaining C u)"
+       "finite (it_remaining (move C u) u)" "it_abstract (move C u) u = it_abstract C u"
+    using assms(2-4) it.idx_current[of C u] it.idx_partition_union[of C u]
+    by (auto simp: it.idx_move_invar it.idx_move_remaining it.idx_move_abstract card_gt_0_iff)
+qed
 
 lemma skip_scan_imp_rule:
   assumes it: "indexed_iterable_set_imp it_invar it_abstract cur has it_iterated it_remaining move
@@ -480,98 +528,37 @@ proof-
            (sep_auto heap: it.idx_has_rule[OF less.prems(1,2)] simp: False)
     next
       case True
-      have ne: "it_remaining C u \<noteq> {}"
-        using it.idx_has[OF less.prems(1,2)] True by simp
-      have cr: "cur C u \<in> it_remaining C u"
-        using it.idx_current[OF less.prems(1,2) ne] .
-      have ca: "cur C u \<in> it_abstract C u"
-        using cr it.idx_partition_union[OF less.prems(1,2)] by auto
-      note ad = less.prems(4)[OF ca]
+      note mv = iterator_move_props[OF it.indexed_iterable_set_axioms less.prems(1-3) True]
+      note IH = less.hyps[OF mv(4,3) less.prems(2) mv(5), unfolded mv(6), OF less.prems(4)]
       show ?thesis
-      proof(cases "adm (cur C u)")
-        case True
-        thus ?thesis
-          by (subst skip_scan_imp.simps, subst skip_scan.simps)
-             (sep_auto heap: it.idx_has_rule[OF less.prems(1,2)]
-                             it.idx_current_rule[OF less.prems(1,2) ne] ad simp: \<open>has C u\<close>)
-      next
-        case False
-        define C' where "C' = move C u"
-        have inv': "it_invar C'"
-          using it.idx_move_invar[OF less.prems(1,2)] by (simp add: C'_def)
-        have rem': "it_remaining C' u = it_remaining C u - {cur C u}"
-          using it.idx_move_remaining[OF less.prems(1,2) ne] by (simp add: C'_def)
-        have lt: "card (it_remaining C' u) < card (it_remaining C u)"
-          unfolding rem' using less.prems(3) cr by (rule card_Diff1_less)
-        have fin': "finite (it_remaining C' u)"
-          using rem' less.prems(3) by simp
-        have abs': "it_abstract C' u = it_abstract C u"
-          using it.idx_move_abstract[OF less.prems(1,2) ne] by (simp add: C'_def)
-        have adm': "\<And> e. e \<in> it_abstract C' u \<Longrightarrow> <R> adm_imp e <\<lambda>r. R * \<up>(r = adm e)>"
-          using less.prems(4) abs' by simp
-        note IH = less.hyps[OF lt inv' less.prems(2) fin' adm', unfolded C'_def]
-        show ?thesis
-          by (subst skip_scan_imp.simps, subst skip_scan.simps)
-             (sep_auto heap: it.idx_has_rule[OF less.prems(1,2)]
-                             it.idx_current_rule[OF less.prems(1,2) ne] ad
-                             it.idx_move_rule[OF less.prems(1,2) ne] IH
-                       simp: \<open>has C u\<close> False)
-      qed
+        by (subst skip_scan_imp.simps, subst skip_scan.simps)
+           (sep_auto heap: it.idx_has_rule[OF less.prems(1,2)] it.idx_current_rule[OF less.prems(1,2) mv(1)]
+                           less.prems(4)[OF mv(2)] it.idx_move_rule[OF less.prems(1,2) mv(1)] IH
+                     simp: True)
     qed
   qed
-qed
-
-lemma invar_basic_iters:
-  assumes "invar_basic st" "u \<in> \<V>"
-  shows "emap_invar (pr_fwd st)" "emap_invar (pr_bwd st)" "ex_invar (pr_excess st)"
-        "label_invar (pr_labels st)" "count_invar (pr_counts st)"
-        "out_invar (pr_out st)" "in_invar (pr_in st)"
-        "out_abstract (pr_out st) u = \<delta>\<^sup>+ u" "in_abstract (pr_in st) u = \<delta>\<^sup>- u"
-        "finite (out_remaining (pr_out st) u)" "finite (in_remaining (pr_in st) u)"
-proof-
-  have I: "out_invar (pr_out st)" "in_invar (pr_in st)"
-          "out_abstract (pr_out st) u = \<delta>\<^sup>+ u" "in_abstract (pr_in st) u = \<delta>\<^sup>- u"
-    using assms by (auto simp add: invar_basic_def out_graph_inv_def in_graph_inv_def)
-  show "emap_invar (pr_fwd st)" "emap_invar (pr_bwd st)" "ex_invar (pr_excess st)"
-       "label_invar (pr_labels st)" "count_invar (pr_counts st)"
-    using assms(1) by (simp_all add: invar_basic_def)
-  show "out_invar (pr_out st)" "in_invar (pr_in st)"
-       "out_abstract (pr_out st) u = \<delta>\<^sup>+ u" "in_abstract (pr_in st) u = \<delta>\<^sup>- u"
-    using I by simp_all
-  have "out_remaining (pr_out st) u \<subseteq> \<delta>\<^sup>+ u" "in_remaining (pr_in st) u \<subseteq> \<delta>\<^sup>- u"
-    using outg.idx_partition_union[OF I(1) assms(2)] ing.idx_partition_union[OF I(2) assms(2)] I(3,4)
-    by auto
-  thus "finite (out_remaining (pr_out st) u)" "finite (in_remaining (pr_in st) u)"
-    using finite_delta finite_subset by blast+
 qed
 
 lemma skip_imp_rule:
   assumes "invar_basic st" "u \<in> \<V>"
   shows "<state_assn st Si> skip_imp u Si <\<lambda>_. state_assn (skip_impl u st) Si>"
 proof-
-  note I = invar_basic_iters[OF assms]
+  note M = invar_basic_maps[OF assms(1)] and I = invar_basic_iters[OF assms]
   define og' where "og' = skip_scan out_has out_current out_move
                             (admissible_fwd_impl (pr_fwd st) (pr_labels st)) u (pr_out st)"
   define ig' where "ig' = skip_scan in_has in_current in_move
                             (admissible_bwd_impl (pr_bwd st) (pr_labels st)) u (pr_in st)"
   have og': "out_invar og'"
-    using skip_scan_props(1)[OF outg.indexed_iterable_set_axioms I(6) assms(2) I(10) og'_def[symmetric]] .
-  have a1: "\<And> e. e \<in> out_abstract (pr_out st) u \<Longrightarrow>
-      <ends_assn (pi_ends Si) * emap_assn (pr_fwd st) (pi_fwd Si) * label_assn (pr_labels st) (pi_lab Si)>
-        admissible_fwd_imp (pi_ends Si) (pi_fwd Si) (pi_lab Si) e
-      <\<lambda>r. ends_assn (pi_ends Si) * emap_assn (pr_fwd st) (pi_fwd Si) *
-           label_assn (pr_labels st) (pi_lab Si) *
-           \<up>(r = admissible_fwd_impl (pr_fwd st) (pr_labels st) e)>"
-    using I(8) by (intro admissible_fwd_imp_rule[OF I(1,4)]) (simp add: delta_plus_def)
-  have a2: "\<And> e. e \<in> in_abstract (pr_in st) u \<Longrightarrow>
-      <ends_assn (pi_ends Si) * emap_assn (pr_bwd st) (pi_bwd Si) * label_assn (pr_labels st) (pi_lab Si)>
-        admissible_bwd_imp (pi_ends Si) (pi_bwd Si) (pi_lab Si) e
-      <\<lambda>r. ends_assn (pi_ends Si) * emap_assn (pr_bwd st) (pi_bwd Si) *
-           label_assn (pr_labels st) (pi_lab Si) *
-           \<up>(r = admissible_bwd_impl (pr_bwd st) (pr_labels st) e)>"
-    using I(9) by (intro admissible_bwd_imp_rule[OF I(2,4)]) (simp add: delta_minus_def)
-  note s1 = skip_scan_imp_rule[OF out_imp.indexed_iterable_set_imp_axioms I(6) assms(2) I(10) a1]
-  note s2 = skip_scan_imp_rule[OF in_imp.indexed_iterable_set_imp_axioms I(7) assms(2) I(11) a2]
+    using outg.indexed_iterable_set_axioms I(1) assms(2) I(5) og'_def[symmetric]
+    by (rule skip_scan_props(1))
+  have "\<And> e. e \<in> out_abstract (pr_out st) u \<Longrightarrow> e \<in> \<E>"
+       "\<And> e. e \<in> in_abstract (pr_in st) u \<Longrightarrow> e \<in> \<E>"
+    using I(3,4)
+    by (auto simp: delta_plus_def delta_minus_def)
+  note s1 = skip_scan_imp_rule[OF out_imp.indexed_iterable_set_imp_axioms I(1) assms(2) I(5)
+                                  admissible_fwd_imp_rule[OF M(1,4)], OF this(1)]
+   and s2 = skip_scan_imp_rule[OF in_imp.indexed_iterable_set_imp_axioms I(2) assms(2) I(6)
+                                  admissible_bwd_imp_rule[OF M(2,4)], OF this(2)]
   show ?thesis
   proof(cases "out_has og' u")
     case True
@@ -599,21 +586,24 @@ proof(cases "out_has (pr_out st) u")
   case True
   note I = invar_basic_iters[OF assms(1,2)]
   have ne: "out_remaining (pr_out st) u \<noteq> {}"
-    using outg.idx_has[OF I(6) assms(2)] True by simp
+    using I(1) assms(2) True
+    by (simp add: outg.idx_has)
   show ?thesis
     unfolding move_imp_def state_assn_def
-    by (sep_auto heap: out_imp.idx_has_rule[OF I(6) assms(2)] out_imp.idx_move_rule[OF I(6) assms(2) ne]
+    by (sep_auto heap: out_imp.idx_has_rule[OF I(1) assms(2)] out_imp.idx_move_rule[OF I(1) assms(2) ne]
                  simp: True move_impl_def)
 next
   case False
   note I = invar_basic_iters[OF assms(1,2)]
   have "in_has (pr_in st) u"
-    using assms(3) False by (simp add: current_res_def split: if_splits)
+    using assms(3) False
+    by (simp add: current_res_def split: if_splits)
   hence ne: "in_remaining (pr_in st) u \<noteq> {}"
-    using ing.idx_has[OF I(7) assms(2)] by simp
+    using I(2) assms(2)
+    by (simp add: ing.idx_has)
   show ?thesis
     unfolding move_imp_def state_assn_def
-    by (sep_auto heap: out_imp.idx_has_rule[OF I(6) assms(2)] in_imp.idx_move_rule[OF I(7) assms(2) ne]
+    by (sep_auto heap: out_imp.idx_has_rule[OF I(1) assms(2)] in_imp.idx_move_rule[OF I(2) assms(2) ne]
                  simp: False move_impl_def)
 qed
 
@@ -623,11 +613,12 @@ lemma advance_imp_rule:
   shows "<state_assn st Si> advance_imp u Si <\<lambda>_. state_assn (advance_impl u st) Si>"
 proof-
   have b: "invar_basic st" "invar_basic (move_impl u st)"
-    using assms(1) move_impl_props(1)[OF assms] by (simp_all add: invar_state_def)
+    using assms move_impl_props(1)[of st u e]
+    by (simp_all add: invar_state_def)
   show ?thesis
+    using b assms(2,3)
     unfolding advance_imp_def advance_impl_def
-    by (sep_auto heap: move_imp_rule[OF b(1) assms(2)] skip_imp_rule[OF b(2) assms(2)]
-                 simp: assms(3))
+    by (sep_auto heap: move_imp_rule skip_imp_rule)
 qed
 
 subsubsection \<open>Relabelling\<close>
@@ -656,50 +647,30 @@ proof-
     proof(cases "has C u")
       case False
       have "min_scan has cur move r endp l u C mb = (C, mb)"
-        using False by (simp add: min_scan.simps)
+        using False
+        by (simp add: min_scan.simps)
       thus ?thesis
         by (subst min_scan_imp.simps)
            (sep_auto heap: it.idx_has_rule[OF less.prems(1,2)] simp: False)
     next
       case True
-      have ne: "it_remaining C u \<noteq> {}"
-        using it.idx_has[OF less.prems(1,2)] True by simp
-      define d where "d = cur C u"
-      have cr: "d \<in> it_remaining C u"
-        using it.idx_current[OF less.prems(1,2) ne] by (simp add: d_def)
-      have dE: "d \<in> \<E>" "endp d \<in> \<V>"
-        using cr it.idx_partition_union[OF less.prems(1,2)] less.prems(6) by auto
-      define C' where "C' = move C u"
-      have inv': "it_invar C'"
-        using it.idx_move_invar[OF less.prems(1,2)] by (simp add: C'_def)
-      have rem': "it_remaining C' u = it_remaining C u - {d}"
-        using it.idx_move_remaining[OF less.prems(1,2) ne] by (simp add: C'_def d_def)
-      have lt: "card (it_remaining C' u) < card (it_remaining C u)"
-        unfolding rem' using less.prems(3) cr by (rule card_Diff1_less)
-      have fin': "finite (it_remaining C' u)"
-        using rem' less.prems(3) by simp
-      have abs': "it_abstract C' u = it_abstract C u"
-        using it.idx_move_abstract[OF less.prems(1,2) ne] by (simp add: C'_def)
-      have prem': "\<And> e. e \<in> it_abstract C' u \<Longrightarrow> e \<in> \<E> \<and> endp e \<in> \<V>"
-        using less.prems(6) abs' by simp
-      note IH = less.hyps[OF lt inv' less.prems(2) fin' less.prems(4,5) prem']
-      define imp where
-        "imp = (0 < emap_get r d \<and> (case mb of None \<Rightarrow> True | Some (k', _) \<Rightarrow> label_get l (endp d) < k'))"
-      have step: "min_scan has cur move r endp l u C mb =
-                  min_scan has cur move r endp l u C' (if imp then Some (label_get l (endp d), d) else mb)"
-        using True unfolding imp_def d_def C'_def by (subst min_scan.simps) (simp add: Let_def)
-      have cnd: "\<And> f k'. f = (mb \<noteq> None) \<Longrightarrow> (\<forall> k0 d0. mb = Some (k0, d0) \<longrightarrow> k' = k0) \<Longrightarrow>
-                   (\<not> f \<or> label_get l (endp d) < k') =
-                   (case mb of None \<Rightarrow> True | Some (k', _) \<Rightarrow> label_get l (endp d) < k')"
+      note mv = iterator_move_props[OF it.indexed_iterable_set_axioms less.prems(1-3) True]
+      have dE: "cur C u \<in> \<E>" "endp (cur C u) \<in> \<V>"
+        using mv(2) less.prems(6)
+        by simp_all
+      note IH = less.hyps[OF mv(4,3) less.prems(2) mv(5) less.prems(4,5), unfolded mv(6), OF less.prems(6)]
+      have cnd: "\<And> f k'. \<lbrakk>f = (mb \<noteq> None);
+                             \<forall> k0 d0. mb = Some (k0, d0) \<longrightarrow> k' = k0\<rbrakk>
+                 \<Longrightarrow> (\<not> f \<or> label_get l (endp (cur C u)) < k') =
+                   (case mb of None \<Rightarrow> True | Some (k', _) \<Rightarrow> label_get l (endp (cur C u)) < k')"
         by (cases mb) auto
       show ?thesis
-        unfolding step
+        unfolding min_scan_step[where has = has and C = C and u = u, OF True]
         using True dE less.prems(4,5) cnd IH
-        unfolding imp_def d_def C'_def
         by (subst min_scan_imp.simps)
-           (sep_auto heap: it.idx_has_rule[OF less.prems(1,2)] it.idx_current_rule[OF less.prems(1,2) ne]
-                           it.idx_move_rule[OF less.prems(1,2) ne] min_get_flag_rule min_get_label_rule
-                           min_set_rule IH[unfolded C'_def] endp_imp
+           (sep_auto heap: it.idx_has_rule[OF less.prems(1,2)] it.idx_current_rule[OF less.prems(1,2) mv(1)]
+                           it.idx_move_rule[OF less.prems(1,2) mv(1)] min_get_flag_rule min_get_label_rule
+                           min_set_rule IH endp_imp
                      simp: eq_commute[of "h _"])
     qed
   qed
@@ -709,11 +680,16 @@ lemma new_label_imp_rule:
   assumes "invar_state st" "relabel_precond s t (flow_abs st) (labels_abs st) u"
   shows "<state_assn st Si> new_label_imp u Si
          <\<lambda>k. case new_label (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u of
-               (og', ig', k') \<Rightarrow> state_assn (st\<lparr>pr_out := og', pr_in := ig'\<rparr>) Si * \<up>(k = k')>"
+           (og', ig', k') \<Rightarrow> state_assn (st\<lparr>pr_out := og', pr_in := ig'\<rparr>) Si * \<up>(k = k')>"
 proof-
-  note inv = invar_stateD[OF assms(1)]
   have u: "u \<in> \<V>"
-    using assms(2) by (auto elim!: relabel_precondE active_vertexE)
+    using assms(2)
+    by (auto elim!: relabel_precondE active_vertexE)
+  hence inv: "out_invar (pr_out st)" "in_invar (pr_in st)" "emap_invar (pr_fwd st)"
+             "emap_invar (pr_bwd st)" "label_invar (pr_labels st)" "out_abstract (pr_out st) u = \<delta>\<^sup>+ u"
+             "in_abstract (pr_in st) u = \<delta>\<^sup>- u"
+    using assms(1)
+    by (auto elim!: invar_props_elims out_graph_inv_props in_graph_inv_props)
   obtain og' ig' k' where
     nl: "new_label (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u = (og', ig', k')"
     by (cases "new_label (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u") auto
@@ -724,60 +700,64 @@ proof-
               (in_reset (pr_in st) u) mb1 = (ig1, Some (M, d))" and
     dA: "if (case mb1 of None \<Rightarrow> True | Some (m1, _) \<Rightarrow> M < m1)
          then d \<in> in_abstract ig1 u else d \<in> out_abstract og1 u"
-    using new_label_props(10)[OF assms nl] by blast
+    using assms nl new_label_props(10)[of st u og' ig' k']
+    by blast
   define og0 where "og0 = out_reset (pr_out st) u"
   define ig0 where "ig0 = in_reset (pr_in st) u"
   have og0: "out_invar og0" "out_remaining og0 u = \<delta>\<^sup>+ u" "out_abstract og0 u = \<delta>\<^sup>+ u"
-    using outg.idx_reset_invar[OF inv(5) u] outg.idx_reset_remaining[OF inv(5) u] inv(11)[OF u]
-          outg.idx_reset_abstract[OF inv(5) u]
-    by (simp_all add: og0_def)
+    using inv(1,6) u
+    by (simp_all add: og0_def outg.idx_reset_invar outg.idx_reset_remaining outg.idx_reset_abstract)
   have ig0: "in_invar ig0" "in_remaining ig0 u = \<delta>\<^sup>- u" "in_abstract ig0 u = \<delta>\<^sup>- u"
-    using ing.idx_reset_invar[OF inv(15) u] ing.idx_reset_remaining[OF inv(15) u] inv(16)[OF u]
-          ing.idx_reset_abstract[OF inv(15) u]
-    by (simp_all add: ig0_def)
+    using inv(2,7) u
+    by (simp_all add: ig0_def ing.idx_reset_invar ing.idx_reset_remaining ing.idx_reset_abstract)
   have E0: "\<And> e. e \<in> out_abstract og0 u \<Longrightarrow> e \<in> \<E> \<and> snd e \<in> \<V>"
            "\<And> e. e \<in> in_abstract ig0 u \<Longrightarrow> e \<in> \<E> \<and> fst e \<in> \<V>"
-    using og0(3) ig0(3) edge_verts by (auto simp add: delta_plus_def delta_minus_def)
+    using og0(3) ig0(3) edge_verts
+    by (auto simp add: delta_plus_def delta_minus_def)
   have fin0: "finite (out_remaining og0 u)" "finite (in_remaining ig0 u)"
-    using og0(2) ig0(2) finite_delta by simp_all
+             "finite ({} \<union> scan_labels (pr_fwd st) snd (pr_labels st) (out_remaining og0 u))"
+    using og0(2) ig0(2) finite_delta
+    by (simp_all add: scan_labels_finite)
   have e0: "map_option prod.fst None = min_opt {}"
     by (simp add: min_opt_def)
   note p1 = min_scan_props[OF outg.indexed_iterable_set_axioms og0(1) u fin0(1) finite.emptyI e0
                               scan1[folded og0_def]]
-  note p2 = min_scan_props[OF ing.indexed_iterable_set_axioms ig0(1) u fin0(2)
-                              finite_UnI[OF finite.emptyI scan_labels_finite[OF fin0(1)]] p1(4)
-                              scan2[folded ig0_def]]
+  note p2 = min_scan_props[OF ing.indexed_iterable_set_axioms ig0(1) u fin0(2,3) p1(4) scan2[folded ig0_def]]
   note s1 = min_scan_imp_rule[where mb = None, OF out_imp.indexed_iterable_set_imp_axioms og0(1) u
-                              fin0(1) inv(1,3) E0(1) snd_imp_rule, unfolded og0_def scan1 prod.case]
+                              fin0(1) inv(3,5) E0(1) snd_imp_rule, unfolded og0_def scan1 prod.case]
   note s2 = min_scan_imp_rule[where mb = mb1, OF in_imp.indexed_iterable_set_imp_axioms ig0(1) u
-                              fin0(2) inv(13,3) E0(2) fst_imp_rule, unfolded ig0_def scan2 prod.case]
+                              fin0(2) inv(4,5) E0(2) fst_imp_rule, unfolded ig0_def scan2 prod.case]
   show ?thesis
   proof(cases "case mb1 of None \<Rightarrow> True | Some (m1, _) \<Rightarrow> M < m1")
     case True
     have dI: "d \<in> in_abstract ig1 u"
-      using dA True by simp
+      using dA True
+      by simp
     have "new_label (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u =
           (og1, in_reset_to ig1 u d, M + 1)"
-      using scan1 scan2 True by (simp add: new_label_def)
+      using scan1 scan2 True
+      by (simp add: new_label_def)
     thus ?thesis
       using True
       unfolding new_label_imp_def state_assn_def min_scratch_assn_def
-      by (sep_auto heap: out_imp.idx_reset_rule[OF inv(5) u] min_clear_rule s1 min_get_flag_rule
-                         min_get_label_rule in_imp.idx_reset_rule[OF inv(15) u] s2 min_get_edge_rule
+      by (sep_auto heap: out_imp.idx_reset_rule[OF inv(1) u] min_clear_rule s1 min_get_flag_rule
+                         min_get_label_rule in_imp.idx_reset_rule[OF inv(2) u] s2 min_get_edge_rule
                          in_imp.idx_reset_to_rule[OF p2(1) u dI]
                    split: option.splits)
   next
     case False
     have dO: "d \<in> out_abstract og1 u"
-      using dA False by simp
+      using dA False
+      by simp
     have "new_label (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u =
           (out_reset_to og1 u d, in_reset ig1 u, M + 1)"
-      using scan1 scan2 False by (simp add: new_label_def)
+      using scan1 scan2 False
+      by (simp add: new_label_def)
     thus ?thesis
       using False
       unfolding new_label_imp_def state_assn_def min_scratch_assn_def
-      by (sep_auto heap: out_imp.idx_reset_rule[OF inv(5) u] min_clear_rule s1 min_get_flag_rule
-                         min_get_label_rule in_imp.idx_reset_rule[OF inv(15) u] s2 min_get_edge_rule
+      by (sep_auto heap: out_imp.idx_reset_rule[OF inv(1) u] min_clear_rule s1 min_get_flag_rule
+                         min_get_label_rule in_imp.idx_reset_rule[OF inv(2) u] s2 min_get_edge_rule
                          out_imp.idx_reset_to_rule[OF p1(1) u dO] in_imp.idx_reset_rule[OF p2(1) u]
                    split: option.splits)
   qed
@@ -797,20 +777,25 @@ lemma relabel_imp_rule:
   assumes "invar_state st" "relabel_precond s t (flow_abs st) (labels_abs st) u"
   shows "<state_assn st Si> relabel_imp u Si <\<lambda>_. state_assn (relabel_impl u st) Si>"
 proof-
-  note inv = invar_stateD[OF assms(1)]
+  have inv: "label_invar (pr_labels st)" "count_invar (pr_counts st)"
+    using assms(1)
+    by (auto elim!: invar_props_elims)
   have u: "u \<in> \<V>"
-    using assms(2) by (auto elim!: relabel_precondE active_vertexE)
+    using assms(2)
+    by (auto elim!: relabel_precondE active_vertexE)
   obtain og' ig' k' where
     nl: "new_label (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u = (og', ig', k')"
     by (cases "new_label (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u") auto
   obtain l' cnt' where cl: "change_label (pr_labels st) (pr_counts st) u k' = (l', cnt')"
     by (cases "change_label (pr_labels st) (pr_counts st) u k'") auto
   have st': "relabel_impl u st = st\<lparr>pr_out := og', pr_in := ig', pr_labels := l', pr_counts := cnt'\<rparr>"
-    using nl cl by (simp add: relabel_impl_def)
+    using nl cl
+    by (simp add: relabel_impl_def)
   have kb: "k' < 2 * card \<V>"
-    using relabel_bounds(2)[OF assms] new_label_props(9)[OF assms nl] by simp
+    using assms nl relabel_bounds(2)[of st u] new_label_props(9)[of st u og' ig' k']
+    by simp
   note c = change_label_imp_rule[of "st\<lparr>pr_out := og', pr_in := ig'\<rparr>" u k', simplified,
-                                 OF inv(3,4) u relabel_bounds(1)[OF assms] kb, unfolded cl prod.case]
+                                 OF inv u relabel_bounds(1)[OF assms] kb, unfolded cl prod.case]
   show ?thesis
     unfolding relabel_imp_def st'
     by (sep_auto heap: new_label_imp_rule[OF assms, unfolded nl prod.case] c)
@@ -836,16 +821,19 @@ proof-
     by (cases acc) auto
   have lv: "label_invar l" "label_get l v < 2 * card \<V>" "num_verts + 1 < 2 * card \<V>"
            "k < label_get l v" "label_get l v < num_verts" "card \<V> \<le> num_verts + 1"
-    using assms card_V_ge_2[OF net_assms] by (simp_all add: acc num_verts)
+    using assms card_V_ge_2
+    by (simp_all add: acc num_verts)
   have g: "gap_step k (l, cnt, og, ig) v =
            (case change_label l cnt v (num_verts + 1) of
               (l', cnt') \<Rightarrow> (l', cnt', out_reset og v, in_reset ig v))"
-    using lv(4,5) by (simp add: gap_step_def Let_def)
+    using lv(4,5)
+    by (simp add: gap_step_def Let_def)
   show ?thesis
     unfolding acc fst_conv snd_conv
   proof(intro conjI)
     show "\<exists> k'. card \<V> \<le> k' \<and> prod.fst (gap_step k (l, cnt, og, ig) v) = label_upd l v k'"
-      using lv(6) by (intro exI[of _ "num_verts + 1"]) (simp add: g change_label_def Let_def)
+      using lv(6)
+      by (intro exI[of _ "num_verts + 1"]) (simp add: g change_label_def Let_def)
     show "<label_assn l (pi_lab Si) * gap_frame_assn Si (cnt, og, ig)> gap_step_imp k Si v
           <\<lambda>_. label_assn (prod.fst (gap_step k (l, cnt, og, ig) v)) (pi_lab Si) *
                gap_frame_assn Si (prod.snd (gap_step k (l, cnt, og, ig) v))>"
@@ -880,28 +868,34 @@ lemma label_get_state_rule:
   assumes "label_invar (pr_labels st)" "v \<in> \<V>"
   shows "<state_assn st Si> label_get_imp (pi_lab Si) v
          <\<lambda>x. state_assn st Si * \<up>(x = label_get (pr_labels st) v)>"
-  using assms unfolding state_assn_def by sep_auto
+  using assms unfolding state_assn_def
+  by sep_auto
 
 lemma count_get_state_rule:
   assumes "count_invar (pr_counts st)" "k < 2 * card \<V>"
   shows "<state_assn st Si> count_get_imp (pi_cnt Si) k
          <\<lambda>x. state_assn st Si * \<up>(x = count_get (pr_counts st) k)>"
-  using assms unfolding state_assn_def by sep_auto
+  using assms unfolding state_assn_def
+  by sep_auto
 
 lemma relabel_gap_imp_rule:
   assumes "invar_state st" "relabel_precond s t (flow_abs st) (labels_abs st) u"
   shows "<state_assn st Si> relabel_gap_imp u Si <\<lambda>_. state_assn (relabel_gap_impl u st) Si>"
 proof-
-  note inv = invar_stateD[OF assms(1)]
   have u: "u \<in> \<V>"
-    using assms(2) by (auto elim!: relabel_precondE active_vertexE)
-  note inv' = invar_stateD[OF relabel_impl_props(1)[OF assms]]
+    using assms(2)
+    by (auto elim!: relabel_precondE active_vertexE)
+  have inv: "label_invar (pr_labels st)" "label_invar (pr_labels (relabel_impl u st))"
+            "count_invar (pr_counts (relabel_impl u st))" "out_invar (pr_out (relabel_impl u st))"
+            "in_invar (pr_in (relabel_impl u st))"
+    using assms relabel_impl_props(1)[of st u]
+    by (auto elim!: invar_props_elims out_graph_inv_props in_graph_inv_props)
   have bnd: "\<And> k. k < num_verts \<Longrightarrow> k < 2 * card \<V>"
     by (simp add: num_verts)
   show ?thesis
     unfolding relabel_gap_imp_def relabel_gap_impl_def Let_def
-    by (sep_auto heap: label_get_state_rule[OF inv(3) u] relabel_imp_rule[OF assms]
-                       count_get_state_rule[OF inv'(4) bnd] gap_imp_rule[OF inv'(3,4,5,15)])
+    by (sep_auto heap: label_get_state_rule[OF inv(1) u] relabel_imp_rule[OF assms]
+                       count_get_state_rule[OF inv(3) bnd] gap_imp_rule[OF inv(2-5)])
 qed
 
 subsubsection \<open>Applying an Operation\<close>
@@ -909,54 +903,36 @@ subsubsection \<open>Applying an Operation\<close>
 text \<open>The edge of a valid push is an edge of the network.\<close>
 
 lemma good_op_push_edge:
-  assumes "good_op st (Push_Fwd d) \<or> good_op st (Push_Bwd d)"
-  shows "d \<in> \<E>"
-proof-
-  have "F d \<in> \<EE> \<or> B d \<in> \<EE>"
-    using assms by (auto simp add: good_op_def elim!: push_precondE admissibleE)
-  thus ?thesis
-    using o_edge_res[of "F d"] o_edge_res[of "B d"] by auto
-qed
+  "good_op st (Push_Fwd d) \<or> good_op st (Push_Bwd d) \<Longrightarrow> d \<in> \<E>"
+  using o_edge_res[of "F d"] o_edge_res[of "B d"]
+  by (auto simp: good_op_def elim!: push_precondE admissibleE)
 
 lemma apply_op_imp_rule:
   assumes "invar_state st" "good_op st op"
   shows "<state_assn st Si> apply_op_imp op Si <\<lambda>_. state_assn (apply_op op st) Si>"
 proof(cases op)
   case (Push_Fwd d)
-  have "d \<in> \<E>"
-    using good_op_push_edge[of st d] assms(2) by (simp add: Push_Fwd)
-  moreover have "invar_basic st"
-    using assms(1) by (simp add: invar_state_def)
-  ultimately show ?thesis
-    using push_fwd_imp_rule by (simp add: Push_Fwd)
+  thus ?thesis
+    using assms good_op_push_edge[of st d] push_fwd_imp_rule[of st d]
+    by (simp add: invar_state_def)
 next
   case (Push_Bwd d)
-  have "d \<in> \<E>"
-    using good_op_push_edge[of st d] assms(2) by (simp add: Push_Bwd)
-  moreover have "invar_basic st"
-    using assms(1) by (simp add: invar_state_def)
-  ultimately show ?thesis
-    using push_bwd_imp_rule by (simp add: Push_Bwd)
+  thus ?thesis
+    using assms good_op_push_edge[of st d] push_bwd_imp_rule[of st d]
+    by (simp add: invar_state_def)
 next
   case (Advance u)
-  then obtain e where e: "u \<in> \<V>" "current_res st u = Some e"
-                         "\<not> admissible (flow_abs st) (labels_abs st) e"
-    using assms(2) by (auto simp add: good_op_def)
-  show ?thesis
-    using advance_imp_rule[OF assms(1) e] by (simp add: Advance)
-next
-  case (Relabel u)
+  with assms(2) obtain e where "u \<in> \<V>" "current_res st u = Some e"
+                               "\<not> admissible (flow_abs st) (labels_abs st) e"
+    by (auto simp: good_op_def)
   thus ?thesis
-    using relabel_imp_rule[OF assms(1)] assms(2) by (simp add: good_op_def)
-next
-  case (Relabel_Gap u)
-  thus ?thesis
-    using relabel_gap_imp_rule[OF assms(1)] assms(2) by (simp add: good_op_def)
+    using assms(1) advance_imp_rule[of st u e]
+    by (simp add: Advance)
 next
   case Done
   thus ?thesis
     by sep_auto
-qed
+qed (use assms relabel_imp_rule[of st] relabel_gap_imp_rule[of st] in \<open>simp_all add: good_op_def\<close>)
 end
 
 subsection \<open>Correctness of the Algorithm\<close>
@@ -964,7 +940,8 @@ subsection \<open>Correctness of the Algorithm\<close>
 lemma (in push_relabel_spec) init_state_ctx:
   "pr_ctx init_state = init_ctx (pr_fwd init_state) (pr_bwd init_state) (pr_excess init_state)
                          (pr_labels init_state) (pr_out init_state) (pr_in init_state)"
-  unfolding init_state_def by (simp add: Let_def split: prod.split)
+  unfolding init_state_def
+  by (simp add: Let_def split: prod.split)
 
 text \<open>The strategy is given by its Hoare triples: @{term select_imp} computes the operation and the
       new context selected by @{term select_of}, which is kept in place, and @{term init_ctx_imp}
@@ -1011,8 +988,9 @@ proof-
   obtain fw bw x where acc: "acc = (fw, bw, x)"
     by (cases acc) auto
   have I: "emap_invar fw" "emap_invar bw" "ex_invar x"
-    using assms(1) by (simp_all add: acc init_invar_def)
-  note V = edge_verts[OF assms(2)] s_in_V
+    using assms(1)
+    by (simp_all add: acc init_invar_def)
+  note V = edge_verts[of d] s_in_V
   show ?thesis
     unfolding acc
   proof(intro conjI)
@@ -1029,21 +1007,23 @@ proof-
   qed
 qed
 
-
 lemma init_imp_rule: "<init_assn Si> init_imp Si <\<lambda>_. state_assn init_state Si>"
 proof-
   obtain fw bw x where
     res: "edge_fold init_step (emap_init, emap_init, ex_init) = (fw, bw, x)"
     by (cases "edge_fold init_step (emap_init, emap_init, ex_init)") auto
   have og: "out_invar out_init"
-    using init_adts(8) by (simp add: out_graph_inv_def)
+    using init_adts(8)
+    by (simp add: out_graph_inv_def)
   have i0: "init_invar (emap_init, emap_init, ex_init)"
-    using init_adts(1,2) by (simp add: init_invar_def)
+    using init_adts(1,2)
+    by (simp add: init_invar_def)
   note ef = edge_fold_imp_rule[where g = init_step and g_imp = "init_step_imp Si" and P = init_invar
                                  and R = "init_frame_assn Si" and Oi = "pi_out Si",
                                OF og i0 init_step_imp_rule, unfolded res init_frame_assn_def prod.case]
   have n: "0 < 2 * card \<V>" "num_verts < 2 * card \<V>"
-    using card_V_ge_2[OF net_assms] by (simp_all add: num_verts)
+    using card_V_ge_2
+    by (simp_all add: num_verts)
   show ?thesis
     using init_adts(4,6) s_in_V n
     unfolding init_imp_def init_assn_def state_assn_def init_state_def res prod.case Let_def
@@ -1062,7 +1042,7 @@ proof-
                <\<lambda>_. state_assn (push_relabel_loop st) Si * ctx_assn (pr_ctx (push_relabel_loop st)) Ci>"
     for st :: "(_, _, _, _, _, _) pr_state"
   have "invar_state st \<longrightarrow> ctx_invar st \<longrightarrow> T st"
-  proof(rule push_relabel_induct[OF push_relabel_loop_props(1)[OF assms]])
+  proof(rule push_relabel_induct[where st = st])
     fix st
     assume dom: "push_relabel_loop_dom st"
        and IH: "push_relabel_upd_cond st \<Longrightarrow>
@@ -1078,55 +1058,60 @@ proof-
       proof(cases "op = Done")
         case True
         have ret: "push_relabel_ret_cond st"
-          using sel True by (simp add: push_relabel_ret_cond_def)
+          using sel True
+          by (simp add: push_relabel_ret_cond_def)
         have lp: "push_relabel_loop st = st\<lparr>pr_ctx := c\<rparr>"
-          using push_relabel_simps(1)[OF ret] sel by (simp add: push_relabel_ret_def)
+          using ret sel
+          by (simp add: push_relabel_ret_def push_relabel_simps(1))
         show ?thesis
           unfolding T_def lp
           by (subst push_relabel_loop_imp.simps) (sep_auto heap: sr simp: True)
       next
         case False
         have upd: "push_relabel_upd_cond st"
-          using sel False by (simp add: push_relabel_upd_cond_def)
+          using sel False
+          by (simp add: push_relabel_upd_cond_def)
         have u: "push_relabel_upd st = apply_op op (st\<lparr>pr_ctx := c\<rparr>)"
-          using sel by (simp add: push_relabel_upd_def)
+          using sel
+          by (simp add: push_relabel_upd_def)
         have good: "good_op (st\<lparr>pr_ctx := c\<rparr>) op"
-          using select(1)[OF inv ci sel] by (simp add: good_op_ctx)
+          using inv ci sel
+          by (simp add: good_op_ctx select(1))
         have A: "<state_assn st Si> apply_op_imp op Si <\<lambda>_. state_assn (push_relabel_upd st) Si>"
-          using apply_op_imp_rule[OF _ good] inv by (simp add: u invar_state_ctx)
-        note pu = push_relabel_upd_props[OF inv ci upd]
+          using inv good apply_op_imp_rule[of "st\<lparr>pr_ctx := c\<rparr>" op]
+          by (simp add: u invar_state_ctx)
         have B: "<state_assn (push_relabel_upd st) Si * ctx_assn c Ci> push_relabel_loop_imp Ci Si
                  <\<lambda>_. state_assn (push_relabel_loop st) Si * ctx_assn (pr_ctx (push_relabel_loop st)) Ci>"
-          using IH[OF upd] pu(1,2) push_relabel_simps(2)[OF dom upd]
+          using upd inv ci dom IH invar_state_holds_upd[of st] ctx_invar_holds_upd[of st] push_relabel_simps(2)[of st]
           by (simp add: T_def u apply_op_ctx)
         show ?thesis
           unfolding T_def
           by (subst push_relabel_loop_imp.simps) (sep_auto heap: sr A B simp: False)
       qed
     qed
-  qed
+  qed (intro push_relabel_loop_terminates assms)
   thus ?thesis
-    using assms by (simp add: T_def)
+    using assms
+    by (simp add: T_def)
 qed
 
 text \<open>Started on the initial data structures, the program leaves the result of the functional
       algorithm, a maximum flow by @{thm push_relabel_correct}, in the backward residual
       capacities.\<close>
 
-theorem push_relabel_imp_rule:
+lemma push_relabel_imp_rule:
   "<init_assn Si * ctx_init_assn Ci> push_relabel_imp Ci Si
    <\<lambda>_. ends_assn (pi_ends Si) * emap_assn caps (pi_caps Si) * emap_assn push_relabel (pi_bwd Si) *
         true>"
 proof-
-  note ip = init_state_props
-  note lp = push_relabel_loop_props[OF ip]
   have res: "pr_bwd (push_relabel_loop init_state) = push_relabel"
-    using push_relabel_loop_impl_same[OF lp(1)] by (simp add: push_relabel_def)
+    using init_state_props(3)
+    by (simp add: push_relabel_def push_relabel_loop_impl_same)
   have "<init_assn Si * ctx_init_assn Ci> push_relabel_imp Ci Si
         <\<lambda>_. state_assn (push_relabel_loop init_state) Si *
              ctx_assn (pr_ctx (push_relabel_loop init_state)) Ci>"
     unfolding push_relabel_imp_def
-    by (sep_auto heap: init_imp_rule init_ctx_imp_rule push_relabel_loop_imp_rule[OF ip])
+    by (sep_auto heap: init_imp_rule init_ctx_imp_rule push_relabel_loop_imp_rule[OF init_state_props(1,2)])
   thus ?thesis
     by (rule ht_cons_post) (sep_auto simp: state_assn_def res[symmetric])
 qed

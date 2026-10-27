@@ -2,7 +2,7 @@ theory Bipartite_B_Matching_Imp
   imports Matroid_Intersection_Imp Bipartite_Arrays Capacity_Partition_Oracle_Imp
 begin
 
-(*TODO Once we have more b matching theory, set up own b-matching 
+(*TODO Once we have more b matching theory, set up own b-matching
     theory in Basic_Matching Session and put b-matching defs there.*)
 
 section \<open>Maximum Bipartite b-Matching in Imperative HOL\<close>
@@ -16,20 +16,18 @@ definition b_matching :: "('a \<Rightarrow> nat) \<Rightarrow> 'a graph \<Righta
 
 abbreviation "graph_b_matching G b M \<equiv> b_matching b M \<and> M \<subseteq> G"
 
-definition max_card_b_matching :: "'a graph \<Rightarrow> ('a \<Rightarrow> nat) \<Rightarrow> 'a graph \<Rightarrow> bool" where
-  "max_card_b_matching G b M \<longleftrightarrow> 
-     M \<subseteq> G \<and> b_matching b M \<and> (\<forall> M'. M' \<subseteq> G \<and> b_matching b M' \<longrightarrow> card M' \<le> card M)"
+definition max_card_b_matching :: "'a graph \<Rightarrow> ('a \<Rightarrow> nat) \<Rightarrow> 'a graph \<Rightarrow>
+    bool" where
+  "max_card_b_matching G b M \<longleftrightarrow>
+     M \<subseteq> G \<and> b_matching b M \<and> (\<forall> M'. M' \<subseteq> G \<and> b_matching b M'
+       \<longrightarrow> card M' \<le> card M)"
 
-text \<open>The input graph is given by two arrays of the same length \<open>m\<close>: edge \<open>i\<close> joins the
-  left vertex \<open>fs ! i\<close> and the right vertex \<open>ts ! i\<close>. A third array holds the vertex
-  capacities, and all vertices are below its length. The elements of the matroids are the edges,
-  i.e. their positions, and the matroids are the partition matroids of the left and the right
-  endpoints with these capacities; the algorithm is the generic one of
-  @{theory Matroid_Intersection.Matroid_Intersection_Imp}. The solution handle consists of the
-  Boolean array of the solution, the two arrays counting the solution elements per block, the two
-  input arrays of blocks and the capacity array, which both oracles share since the sides are
-  disjoint; the partner handles hold the edges grouped by block and the range of the block of
-  every edge.\<close>
+text \<open>The two endpoint arrays represent the edges \<open>{fs ! i, ts ! i}\<close>; a third array holds
+  the vertex capacities. The partition matroids group edge positions by their left and right
+  endpoints and enforce these capacities. The generic algorithm of
+  @{theory Matroid_Intersection.Matroid_Intersection_Imp} uses a solution handle with the Boolean
+  solution array, two block counters, both endpoint arrays and the shared capacity array. Partner
+  handles group edges by endpoint and store the range of the block of each edge.\<close>
 
 subsection \<open>Code\<close>
 
@@ -87,7 +85,8 @@ text \<open>The BFS of the library with the iterator fixed at code generation ti
 declare bx.ids.x_inner_code[code] bx.ids.x_outer_code[code] bx.ids.xround_code[code]
   bx.ids.x_loop_code[code] bx.ids.bfs_run_code[code]
 
-text \<open>The edges are \<open>{Fa[i], Ta[i]}\<close>, the capacity of vertex \<open>v\<close> is \<open>Ka[v]\<close>, and all vertices
+text \<open>The edges are \<open>{Fa[i], Ta[i]}\<close>, the capacity of vertex \<open>v\<close> is
+    \<open>Ka[v]\<close>, and all vertices
   are below the length of \<open>Ka\<close>.\<close>
 
 definition "bb_setup_imp Fa Ta Ka k = do { nv \<leftarrow> Array.len Ka; bm_setup_imp nv Fa Ta k }"
@@ -122,7 +121,8 @@ subsection \<open>Correctness\<close>
 subsubsection \<open>The Solution Handle\<close>
 
 fun bb_sol_assn ::
-  "nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> nat set \<Rightarrow> bb_sol \<Rightarrow> assn"
+  "nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> (nat \<Rightarrow> nat)
+    \<Rightarrow> nat set \<Rightarrow> bb_sol \<Rightarrow> assn"
   where
   "bb_sol_assn m nb bl br cap X (Xi, C1, C2, Bl, Br, K) =
      bool_array_set_assn m X Xi * cnt_assn nb bl X C1 * cnt_assn nb br X C2 *
@@ -136,20 +136,14 @@ lemma bb_memb_rule:
 lemma bb_ins_rule:
   "<bb_sol_assn m nb bl br cap X Si * \<up>(x < m)> bb_ins x Si
    <\<lambda> _. bb_sol_assn m nb bl br cap (Set.insert x X) Si>"
-  by (cases Si rule: prod_cases6)
-     (sep_auto simp: bb_ins_def bm_ins_def insert_absorb
-        heap: bool_array_set_memb_rule bool_array_set_upd_rule part_cnt_ins_rule)
+  by (cases Si rule: prod_cases6) (sep_auto simp: bb_ins_def bm_ins_def insert_absorb
+      heap: bool_array_set_memb_rule bool_array_set_upd_rule part_cnt_ins_rule)
 
 lemma bb_del_rule:
   "<bb_sol_assn m nb bl br cap X Si * \<up>(x < m)> bb_del x Si
    <\<lambda> _. bb_sol_assn m nb bl br cap (X - {x}) Si>"
-proof-
-  have "x \<notin> X \<Longrightarrow> X - {x} = X"
-    by blast
-  then show ?thesis
-    by (cases Si rule: prod_cases6)
-       (sep_auto simp: bb_del_def bm_del_def heap: bool_array_set_memb_rule bool_array_set_upd_rule part_cnt_del_rule)
-qed
+  by (cases Si rule: prod_cases6) (sep_auto simp: bb_del_def bm_del_def
+      heap: bool_array_set_memb_rule bool_array_set_upd_rule part_cnt_del_rule)
 
 subsubsection \<open>The Instance\<close>
 
@@ -163,77 +157,62 @@ begin
 abbreviation "sb \<equiv> bb_sol_assn (length fs) (length ks) fs ts (\<lambda> v. ks ! v)"
 
 sublocale lf: cap_partition_oracle "{0..<length fs}" "\<lambda> i. fs ! i" "\<lambda> v. ks ! v"
-  by unfold_locales simp
+  by (unfold_locales; simp)
 
 sublocale rt: cap_partition_oracle "{0..<length fs}" "\<lambda> i. ts ! i" "\<lambda> v. ks ! v"
-  by unfold_locales simp
+  by (unfold_locales; simp)
 
 text \<open>The degree of a vertex in the represented edge set counts the positions with this
   vertex as left or as right endpoint; one of the two counts is zero.\<close>
 
+lemma blocks_disjoint: "X \<subseteq> {0..<length fs} \<Longrightarrow>
+    {i \<in> X. fs ! i = v} \<inter> {i \<in> X. ts ! i = v} = {}"
+  by (rule equals0I, rename_tac i, rule_tac P = "fs ! i = ts ! i" in notE, rule left_right) auto
+
 lemma degree_img:
-  assumes X: "X \<subseteq> {0..<length fs}"
-  shows "degree ((\<lambda> i. {fs ! i, ts ! i}) ` X) v = 
+  assumes "X \<subseteq> {0..<length fs}"
+  shows "degree ((\<lambda> i. {fs ! i, ts ! i}) ` X) v =
            enat (blk_card (\<lambda> i. fs ! i) X v + blk_card (\<lambda> i. ts ! i) X v)"
 proof-
-  have fin: "finite X"
-    by (rule finite_subset[OF X]) simp
-  have img: "{e \<in> (\<lambda> i. {fs ! i, ts ! i}) ` X. v \<in> e} = 
-               (\<lambda> i. {fs ! i, ts ! i}) ` ({i \<in> X. fs ! i = v} \<union> {i \<in> X. ts ! i = v})"
+  note fin = finite_subset[OF assms finite_atLeastLessThan]
+  have img: "{e \<in> (\<lambda> i. {fs ! i, ts ! i}) ` X. v \<in> e} =
+      (\<lambda> i. {fs ! i, ts ! i}) ` ({i \<in> X. fs ! i = v} \<union> {i \<in> X. ts ! i = v})"
     by blast
-  have dis: "{i \<in> X. fs ! i = v} \<inter> {i \<in> X. ts ! i = v} = {}"
-  proof(rule equals0I)
-    fix i
-    assume "i \<in> {i \<in> X. fs ! i = v} \<inter> {i \<in> X. ts ! i = v}"
-    then have "i < length fs" "fs ! i = ts ! i"
-      using X by auto
-    then show False
-      using left_right[of i i] by simp
-  qed
-  have inj: "inj_on (\<lambda> i. {fs ! i, ts ! i}) ({i \<in> X. fs ! i = v} \<union> {i \<in> X. ts ! i = v})"
-    by (rule inj_on_subset[OF dbltn_inj]) (use X in blast)
-  have "card {e \<in> (\<lambda> i. {fs ! i, ts ! i}) ` X. v \<in> e} = 
-          blk_card (\<lambda> i. fs ! i) X v + blk_card (\<lambda> i. ts ! i) X v"
-    unfolding img card_image[OF inj] blk_card_def 
-    by (rule card_Un_disjoint) (use fin dis in simp_all)
-  moreover have "finite {e \<in> (\<lambda> i. {fs ! i, ts ! i}) ` X. v \<in> e}"
-    using fin by simp
-  ultimately show ?thesis
-    unfolding degree_def2 card'_def by simp
+  have "card {e \<in> (\<lambda> i. {fs ! i, ts ! i}) ` X. v \<in> e} =
+      blk_card (\<lambda> i. fs ! i) X v + blk_card (\<lambda> i. ts ! i) X v"
+    unfolding img
+    using assms fin
+    by (subst card_image)
+       (auto intro: inj_on_subset[OF dbltn_inj] simp: blk_card_def card_Un_disjoint blocks_disjoint)
+  then show ?thesis
+    using fin unfolding degree_def2 card'_def
+    by simp
 qed
 
 lemma one_side:
-  assumes X: "X \<subseteq> {0..<length fs}"
+  assumes "X \<subseteq> {0..<length fs}"
   shows "blk_card (\<lambda> i. fs ! i) X v = 0 \<or> blk_card (\<lambda> i. ts ! i) X v = 0"
 proof(rule ccontr)
-
   assume "\<not> (blk_card (\<lambda> i. fs ! i) X v = 0 \<or> blk_card (\<lambda> i. ts ! i) X v = 0)"
-  then have "card {i \<in> X. fs ! i = v} \<noteq> 0" "card {i \<in> X. ts ! i = v} \<noteq> 0"
-    unfolding blk_card_def by simp_all
-  then have "{i \<in> X. fs ! i = v} \<noteq> {}" "{i \<in> X. ts ! i = v} \<noteq> {}"
-    by (intro notI, simp)+
-  then obtain i j where ij: "i \<in> X" "j \<in> X" "fs ! i = v" "ts ! j = v"
-    by blast
-  have "i < length fs" "j < length fs"
-    using X ij(1,2) by auto
+  then obtain i j where "i \<in> X" "j \<in> X" "fs ! i = v" "ts ! j = v"
+    by (auto simp: blk_card_def card_gt_0_iff)
   then show False
-    using left_right[of i j] ij(3,4) by simp
+    using assms left_right[of i j]
+    by (fastforce)
 qed
 
 text \<open>Sets of positions independent in both matroids are those representing b-matchings.\<close>
 
+lemma block_cap_sum: "X \<subseteq> {0..<length fs} \<Longrightarrow>
+    (blk_card (\<lambda> i. fs ! i) X v + blk_card (\<lambda> i. ts ! i) X v \<le> k) =
+    (blk_card (\<lambda> i. fs ! i) X v \<le> k \<and> blk_card (\<lambda> i. ts ! i) X v \<le> k)"
+  by (drule one_side[where v = v]) auto
+
 lemma indep_b_matching:
-  "(lf.cap_indep X \<and> rt.cap_indep X) = 
+  "(lf.cap_indep X \<and> rt.cap_indep X) =
      (X \<subseteq> {0..<length fs} \<and> b_matching (\<lambda> v. ks ! v) ((\<lambda> i. {fs ! i, ts ! i}) ` X))"
-proof(cases "X \<subseteq> {0..<length fs}")
-  case True
-  have "(blk_card (\<lambda> i. fs ! i) X v \<le> ks ! v \<and> blk_card (\<lambda> i. ts ! i) X v \<le> ks ! v) = 
-          (blk_card (\<lambda> i. fs ! i) X v + blk_card (\<lambda> i. ts ! i) X v \<le> ks ! v)" for v
-    using one_side[OF True, of v] by auto
-  then show ?thesis
-    unfolding lf.cap_indep_def rt.cap_indep_def b_matching_def degree_img[OF True]
-    using True by auto
-qed (simp add: lf.cap_indep_def)
+  by (cases "X \<subseteq> {0..<length fs}")
+     (auto simp: lf.cap_indep_def rt.cap_indep_def b_matching_def degree_img block_cap_sum)
 
 lemma ins1_rule:
   "<(sb X Si) * emp * \<up>(y < length fs)> bb_ins1 Si y
@@ -259,41 +238,67 @@ text \<open>The elements are the positions themselves, so the indexation is the 
 
 lemma mi_inst:
   "matroid_intersection_imp (length fs) id id bb_memb bb_ins1 bb_exch1 bb_ins2 bb_exch2 bb_ins bb_del
-     part_npts_imp part_pt_imp part_npts_imp part_pt_imp {0..<length fs} (\<lambda> X. X) lf.cap_ins 
-     lf.cap_exch lf.cap_indep sb emp (part_pts fs) (part_pst (length fs) fs) (\<lambda> X. X) rt.cap_ins 
+     part_npts_imp part_pt_imp part_npts_imp part_pt_imp {0..<length fs} (\<lambda> X. X) lf.cap_ins
+     lf.cap_exch lf.cap_indep sb emp (part_pts fs) (part_pst (length fs) fs) (\<lambda> X. X) rt.cap_ins
      rt.cap_exch rt.cap_indep emp (part_pts ts) (part_pst (length fs) ts)"
-  apply (intro matroid_intersection_imp.intro indexed_oracle_imp.intro matroid_ids.intro
+  apply(intro matroid_intersection_imp.intro indexed_oracle_imp.intro matroid_ids.intro
         indexed_oracle_imp_axioms.intro fixed_univ_set_basic_imp.intro set_fixed_univ_set
         fixed_univ_set_basic_imp_axioms.intro)
-  subgoal by (rule bij_betw_id)
-  subgoal by simp
-  subgoal by (rule lf.indep_oracle_axioms)
-  subgoal using ins1_rule by simp
-  subgoal using exch1_rule by simp
-  subgoal by (simp add: part_pts_sorted)
-  subgoal for x y using part_pts_bound[of y fs x] by simp
-  subgoal by (intro part_pts_cover) (auto simp: lf.cap_exch_def)
-  subgoal using part_npts_rule by simp
-  subgoal using part_pt_rule by simp
-  subgoal by (rule bij_betw_id)
-  subgoal by simp
-  subgoal by (rule rt.indep_oracle_axioms)
-  subgoal using ins2_rule by simp
-  subgoal using exch2_rule by simp
-  subgoal by (simp add: part_pts_sorted)
-  subgoal for x y using part_pts_bound[of y ts x] lengths by simp
-  subgoal using lengths by (intro part_pts_cover) (auto simp: rt.cap_exch_def)
-  subgoal using part_npts_rule by simp
-  subgoal using part_pt_rule by simp
-  subgoal by (sep_auto heap: bb_ins_rule)
-  subgoal by (sep_auto heap: bb_del_rule)
-  subgoal by (sep_auto heap: bb_memb_rule)
+  subgoal
+  by (rule bij_betw_id)
+  subgoal
+  by simp
+  subgoal
+  by (rule lf.indep_oracle_axioms)
+  subgoal
+  by (use ins1_rule in simp)
+  subgoal
+  by (use exch1_rule in simp)
+  subgoal
+  by (simp add: part_pts_sorted)
+  subgoal for x y
+  using part_pts_bound[of y fs x]
+  by simp
+  subgoal
+  by (intro part_pts_cover) (auto simp: lf.cap_exch_def)
+  subgoal
+  by (use part_npts_rule in simp)
+  subgoal
+  by (use part_pt_rule in simp)
+  subgoal
+  by (rule bij_betw_id)
+  subgoal
+  by simp
+  subgoal
+  by (rule rt.indep_oracle_axioms)
+  subgoal
+  by (use ins2_rule in simp)
+  subgoal
+  by (use exch2_rule in simp)
+  subgoal
+  by (simp add: part_pts_sorted)
+  subgoal for x y
+  using part_pts_bound[of y ts x] lengths
+  by simp
+  subgoal
+  using lengths
+  by (intro part_pts_cover) (auto simp: rt.cap_exch_def)
+  subgoal
+  by (use part_npts_rule in simp)
+  subgoal
+  by (use part_pt_rule in simp)
+  subgoal
+  by (sep_auto heap: bb_ins_rule)
+  subgoal
+  by (sep_auto heap: bb_del_rule)
+  subgoal
+  by (sep_auto heap: bb_memb_rule)
   done
 
 interpretation m: matroid_intersection_imp where n = "length fs" and idx = id and elt = id
-  and smemb_imp = bb_memb and ins1_imp = bb_ins1 and exch1_imp = bb_exch1 and ins2_imp = bb_ins2 
-  and exch2_imp = bb_exch2 and sins_imp = bb_ins and sdel_imp = bb_del 
-  and npts1_imp = part_npts_imp and pt1_imp = part_pt_imp and npts2_imp = part_npts_imp 
+  and smemb_imp = bb_memb and ins1_imp = bb_ins1 and exch1_imp = bb_exch1 and ins2_imp = bb_ins2
+  and exch2_imp = bb_exch2 and sins_imp = bb_ins and sdel_imp = bb_del
+  and npts1_imp = part_npts_imp and pt1_imp = part_pt_imp and npts2_imp = part_npts_imp
   and pt2_imp = part_pt_imp and carrier = "{0..<length fs}"
   and sol_assn = sb and ost1 = emp and ost2 = emp
   and orcl_prep1 = "\<lambda> X. X" and ins_orcl1 = lf.cap_ins and exch_orcl1 = lf.cap_exch
@@ -303,52 +308,43 @@ interpretation m: matroid_intersection_imp where n = "length fs" and idx = id an
   and pts2 = "part_pts ts" and pst2 = "part_pst (length fs) ts"
   by (rule mi_inst)
 
+lemma b_matching_indep:
+  assumes "M \<subseteq> (\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}" "b_matching (\<lambda> v. ks ! v) M"
+  obtains Y where "M = (\<lambda> i. {fs ! i, ts ! i}) ` Y" "lf.cap_indep Y" "rt.cap_indep Y"
+proof-
+  obtain Y where "Y \<subseteq> {0..<length fs}" "M = (\<lambda> i. {fs ! i, ts ! i}) ` Y"
+    using assms(1)
+    by (rule subset_imageE)
+  then show ?thesis
+    using assms(2) indep_b_matching[of Y] that[of Y]
+    by auto
+qed
+
+lemma b_matching_card:
+  "lf.cap_indep X \<Longrightarrow> card ((\<lambda> i. {fs ! i, ts ! i}) ` X) = card X"
+  by (rule card_image, rule inj_on_subset[OF dbltn_inj]) (simp add: lf.cap_indep_def)
+
 lemma is_max_b_matching:
   assumes "m.is_max X"
   shows "max_card_b_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) (\<lambda> v. ks ! v)
            ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
-proof-
-  have ind: "lf.cap_indep X" "rt.cap_indep X"
-    and mx: "\<nexists> Y. lf.cap_indep Y \<and> rt.cap_indep Y \<and> card Y > card X"
-    using assms unfolding m.is_max_def by simp_all
-  have "X \<subseteq> {0..<length fs} \<and> b_matching (\<lambda> v. ks ! v) ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
-    unfolding indep_b_matching[symmetric] using ind by (rule conjI)
-  then have X: "X \<subseteq> {0..<length fs}" "b_matching (\<lambda> v. ks ! v) ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
-    by simp_all
-  have card: "card ((\<lambda> i. {fs ! i, ts ! i}) ` Y) = card Y" if "Y \<subseteq> {0..<length fs}" for Y
-    using that by (rule card_image[OF inj_on_subset[OF dbltn_inj]])
-  have le: "card M \<le> card ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
-    if M: "M \<subseteq> (\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}" "b_matching (\<lambda> v. ks ! v) M" for M
-  proof-
-    let ?Y = "{i \<in> {0..<length fs}. {fs ! i, ts ! i} \<in> M}"
-    have img: "M = (\<lambda> i. {fs ! i, ts ! i}) ` ?Y"
-      using M(1) by blast
-    have Y: "?Y \<subseteq> {0..<length fs}"
-      by (rule subsetI) simp
-    have "b_matching (\<lambda> v. ks ! v) ((\<lambda> i. {fs ! i, ts ! i}) ` ?Y)"
-      by (rule subst[where P = "b_matching (\<lambda> v. ks ! v)", OF img M(2)])
-    then have "lf.cap_indep ?Y \<and> rt.cap_indep ?Y"
-      unfolding indep_b_matching by (rule conjI[OF Y])
-    then have le: "card ?Y \<le> card X"
-      using mx by (simp add: not_less)
-    have "card M = card ?Y"
-      using arg_cong[OF img, of card] card[OF Y] by (rule trans)
-    then show ?thesis
-      unfolding card[OF X(1)] using le by simp
-  qed
-  show ?thesis
-    unfolding max_card_b_matching_def
-  proof(intro conjI allI impI)
-    show "(\<lambda> i. {fs ! i, ts ! i}) ` X \<subseteq> (\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}"
-      using X(1) by (rule image_mono)
-    show "b_matching (\<lambda> v. ks ! v) ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
-      by (rule X(2))
-  next
-    fix M
-    assume "M \<subseteq> (\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs} \<and> b_matching (\<lambda> v. ks ! v) M"
-    then show "card M \<le> card ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
-      by (intro le) simp_all
-  qed
+proof(unfold max_card_b_matching_def, intro conjI allI impI, goal_cases)
+  case 1
+  then show ?case
+    using assms unfolding m.is_max_def lf.cap_indep_def
+    by auto
+next
+  case 2
+  show ?case
+    using assms[unfolded m.is_max_def] indep_b_matching[of X]
+    by auto
+next
+  case (3 M)
+  then obtain Y where "M = (\<lambda> i. {fs ! i, ts ! i}) ` Y" "lf.cap_indep Y" "rt.cap_indep Y"
+    by (auto elim: b_matching_indep)
+  then show ?case
+    using assms
+    by (auto simp: m.is_max_def b_matching_card)
 qed
 
 text \<open>The generic algorithm on the allocated handles.\<close>
@@ -359,9 +355,9 @@ theorem handles_correct:
     blocks_assn (length fs) (length ks) fs Fa * blocks_assn (length fs) (length ks) ts Ta *
     caps_assn (length ks) (\<lambda> v. ks ! v) Ka>
      bx_mi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta, Ka)
-   <\<lambda> _. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * blocks_assn (length fs) (length ks) fs Fa * 
+   <\<lambda> _. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * blocks_assn (length fs) (length ks) fs Fa *
               blocks_assn (length fs) (length ks) ts Ta * caps_assn (length ks) (\<lambda> v. ks ! v) Ka *
-              true * 
+              true *
               \<up>(max_card_b_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) (\<lambda> v. ks ! v)
                                      ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
   by (rule ht_cons[OF _ _ m.mi_imp_correct[folded bx_mi_def]])
@@ -376,35 +372,37 @@ lemma caps_in: "Ka \<mapsto>\<^sub>a ks = caps_assn (length ks) (\<lambda> v. ks
 text \<open>The allocation prologue of @{locale bipartite_matching_imp}, after reading the number of
   vertices from the capacity array.\<close>
 
+lemma bb_len_rule:
+  "<F * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks> Array.len Ka
+    <\<lambda> r. F * caps_assn (length ks) (\<lambda> v. ks ! v) Ka * Fa \<mapsto>\<^sub>a fs *
+      Ta \<mapsto>\<^sub>a ts * \<up>(r = length ks)>"
+  by (sep_auto simp: caps_assn_def map_nth)
+
 lemma bb_setup_rule:
-  assumes k: "\<And> H1 H2 Xi C1 C2.
+  assumes "\<And> H1 H2 Xi C1 C2.
     <F * caps_assn (length ks) (\<lambda> v. ks ! v) Ka * part_pst (length fs) fs H1 *
        part_pst (length fs) ts H2 * bool_array_set_assn (length fs) {} Xi *
        cnt_assn (length ks) fs {} C1 * cnt_assn (length ks) ts {} C2 *
        blocks_assn (length fs) (length ks) fs Fa * blocks_assn (length fs) (length ks) ts Ta * true>
       k (length fs) H1 H2 Xi C1 C2 <Q>"
   shows "<F * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks> bb_setup_imp Fa Ta Ka k <Q>"
-proof-
-  have len: "<F * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks> Array.len Ka
-             <\<lambda> r. F * caps_assn (length ks) (\<lambda> v. ks ! v) Ka * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * \<up>(r = length ks)>"
-    by (sep_auto simp: caps_assn_def map_nth)
-  show ?thesis
-    unfolding bb_setup_imp_def
-    by (rule ht_bind[OF len], rule ht_pure_pre, simp only:, rule bm_setup_rule[where F = "F * caps_assn (length ks) (\<lambda> v. ks ! v) Ka"
-          and Fa = Fa and Ta = Ta and k = k, OF k])
-qed
+  unfolding bb_setup_imp_def
+  by (rule ht_bind[OF bb_len_rule], rule ht_pure_pre, simp only:,
+      rule bm_setup_rule[where F = "F * caps_assn (length ks) (\<lambda> v. ks ! v) Ka"
+        and Fa = Fa and Ta = Ta and k = k, OF assms])
 
 theorem b_matching_imp_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks> b_matching_imp Fa Ta Ka
-   <\<lambda> Xi. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * true *
+   <\<lambda> Xi. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta
+     \<mapsto>\<^sub>a ts * Ka \<mapsto>\<^sub>a ks * true *
               \<up>(max_card_b_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) (\<lambda> v. ks ! v)
                                      ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
   unfolding b_matching_imp_def
-  apply (rule ht_cons_pre[OF _ bb_setup_rule[where F = emp]], simp)
-  apply (rule ht_bind[OF ht_frame_ac[OF handles_correct, where R = true]])
-    prefer 3 apply (rule ht_return_wp)
-   apply (simp only: star_aci, rule ent_refl)
-  apply (sep_auto simp: blocks_assn_def caps_assn_def map_nth)
+  apply(rule ht_cons_pre[OF _ bb_setup_rule[where F = emp]], simp)
+  apply(rule ht_bind[OF ht_frame_ac[OF handles_correct, where R = true]])
+    prefer 3 apply(rule ht_return_wp)
+   apply(simp only: star_aci, rule ent_refl)
+  apply(sep_auto simp: blocks_assn_def caps_assn_def map_nth)
   done
 
 end

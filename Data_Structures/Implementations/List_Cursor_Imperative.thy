@@ -22,15 +22,8 @@ definition lc_move_imp :: "'a::heap list_cursor_imp \<Rightarrow> unit Heap" whe
 
 interpretation lc: iterable_set_imp lc_invar lc_abstract lc_current lc_has lc_iterated
     lc_remaining lc_move lc_assn lc_current_imp lc_has_imp lc_move_imp
-proof (unfold_locales, goal_cases)
-  case (1 V Vi) then show ?case
-    by (cases Vi) (sep_auto simp: lc_assn_def lc_current_imp_def lc_current_def lc_remaining_ne)
-next
-  case (2 V Vi) show ?case
-    by (cases Vi) (sep_auto simp: lc_assn_def lc_has_imp_def lc_has_def)
-next
-  case (3 V Vi) show ?case
-    by (cases Vi) (sep_auto simp: lc_assn_def lc_move_imp_def lc_move_def)
-qed
+  by unfold_locales
+     (sep_auto simp: lc_assn_def lc_current_imp_def lc_current_def lc_remaining_ne lc_has_imp_def
+        lc_has_def lc_move_imp_def lc_move_def split: prod.splits)+
 
 end

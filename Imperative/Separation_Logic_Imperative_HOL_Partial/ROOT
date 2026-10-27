@@ -19,6 +19,7 @@ session "Separation_Logic_Imperative_HOL_Partial" = "HOL-Library" +
     Automatic_Refinement.Misc
   theories
     Sep_Main
+    Imperative_HOL_Addons
     "Examples/Imp_List_Spec"
     "Examples/List_Seg"
     "Examples/Open_List"

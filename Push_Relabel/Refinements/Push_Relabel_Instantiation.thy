@@ -310,21 +310,8 @@ definition "cap_of e = (if e \<in> edges fs then h (cs ! e) else 0)"
 
 sublocale flow_network where \<E> = "edges fs" and fst = "e_src fs" and snd = "e_tgt fs ts"
     and create_edge = "e_new fs" and \<u> = "\<lambda> e. ereal (cap_of e)"
-proof(unfold_locales, goal_cases)
-  case (3)
-  show ?case
-    by (simp add: edges_def)
-next
-  case (4)
-  show ?case
-    using s_vert by (auto simp: dVs_def)
-next
-  case (5 e)
-  have "e \<in> edges fs \<Longrightarrow> 0 \<le> cs ! e"
-    using cs_nonneg cs_length by auto
-  thus ?case
-    by (simp add: cap_of_def)
-qed simp_all
+  using s_vert cs_nonneg cs_length
+  by unfold_locales (auto simp: edges_def dVs_def cap_of_def)
 
 text \<open>The edges grouped by their first and by their second endpoints, and the position arrays.\<close>
 
@@ -341,13 +328,13 @@ definition "Pin = csr_pos_list id inc.inp.E_spec (replicate (length fs) 0)"
 
 sublocale out_rt: csr_graph_reset_to n "verts fs ts" out.inp.B_spec out.inp.E_spec id Po
   unfolding Po_def
-  by (rule csr_graph_reset_to_pos_list[OF out.graph.csr_graph_axioms])
-     (simp_all add: out.E_spec_distinct out.E_spec_ids)
+  by (rule csr_graph_reset_to_pos_list)
+     (simp_all add: out.graph.csr_graph_axioms out.E_spec_distinct out.E_spec_ids)
 
 sublocale in_rt: csr_graph_reset_to n "verts fs ts" inc.inp.B_spec inc.inp.E_spec id Pin
   unfolding Pin_def
-  by (rule csr_graph_reset_to_pos_list[OF inc.graph.csr_graph_axioms])
-     (simp_all add: inc.E_spec_distinct inc.E_spec_ids)
+  by (rule csr_graph_reset_to_pos_list)
+     (simp_all add: inc.graph.csr_graph_axioms inc.E_spec_distinct inc.E_spec_ids)
 
 text \<open>The maps: on the edges by edge number, on the vertices by vertex.\<close>
 
@@ -385,19 +372,22 @@ sublocale lb: label_buckets_imp "verts fs ts" nV "\<lambda> _. True" arr_upd arr
     abk_empty abk_insert abk_remove abk_pick abk_move "\<lambda> _. 0" vfold "arr_lookup_imp id"
     "arr_upd_imp id" abk_insert_imp abk_remove_imp abk_pick_imp la.arr_assn "abk_assn n nV"
     "abk_empty_imp n nV" abk_move_imp
-  using V_non_empt by unfold_locales (simp_all add: \<V>_finite vfold arr_lookup_def[abs_def])
+  using V_non_empt
+  by unfold_locales (simp_all add: \<V>_finite vfold arr_lookup_def[abs_def])
 
 subsection \<open>The Generic Algorithm\<close>
 
 lemma out_iterator: "outgoing_edge_iterator (edges fs) (e_tgt fs ts) (e_src fs) out.graph.csr_invar
     out.graph.csr_abstract out.graph.csr_current out.graph.csr_has out.graph.csr_iterated
     out.graph.csr_remaining out.graph.csr_move out.graph.csr_reset"
-  unfolding outgoing_edge_iterator_def by (rule out.graph.csr.indexed_iterable_set_axioms)
+  unfolding outgoing_edge_iterator_def
+  by (rule out.graph.csr.indexed_iterable_set_axioms)
 
 lemma in_iterator: "ingoing_edge_iterator (edges fs) (e_tgt fs ts) (e_src fs) inc.graph.csr_invar
     inc.graph.csr_abstract inc.graph.csr_current inc.graph.csr_has inc.graph.csr_iterated
     inc.graph.csr_remaining inc.graph.csr_move inc.graph.csr_reset"
-  unfolding ingoing_edge_iterator_def by (rule inc.graph.csr.indexed_iterable_set_axioms)
+  unfolding ingoing_edge_iterator_def
+  by (rule inc.graph.csr.indexed_iterable_set_axioms)
 
 sublocale pr: push_relabel_ops_imp where \<E> = "edges fs" and fst = "e_src fs" and snd = "e_tgt fs ts"
     and create_edge = "e_new fs" and \<u> = "\<lambda> e. ereal (cap_of e)"
@@ -434,64 +424,60 @@ sublocale pr: push_relabel_ops_imp where \<E> = "edges fs" and fst = "e_src fs" 
     and count_assn = ca.arr_assn and out_assn = out_rt.csr_rt_assn and in_assn = in_rt.csr_rt_assn
     and fst_imp = src_imp and snd_imp = tgt_imp and ends_assn = "ends_assn fs ts"
 proof(unfold_locales, goal_cases)
-  case (1 A k v) then show ?case
-    by (rule fixed_univ_map.fixed_univ_map_upd[OF lb.lb_fixed_univ_map])
+  case (10 g acc)
+  show ?case
+    using out.E_spec_distinct out.E_spec_edges
+    by blast
 next
-  case (2 A k v) then show ?case
-    by (rule fixed_univ_map.fixed_univ_map_upd_invar[OF lb.lb_fixed_univ_map])
-next
-  case 3 show ?case by (rule s_vert)
-next
-  case 4 show ?case by (rule t_vert)
-next
-  case 5 show ?case by (rule s_neq_t)
-next
-  case (7 d) show ?case by (simp add: arr_lookup_def)
-next
-  case (9 l k g acc) then show ?case
-    by (rule lb.lb_gap_fold)
-next
-  case (10 g acc) show ?case
-    using out.E_spec_distinct out.E_spec_edges by blast
-next
-  case 11 show ?case by (simp add: arr_lookup_def[abs_def])
-next
-  case 12 show ?case by (rule lb.lb_init_props(1))
-next
-  case 13 show ?case by (rule lb.lb_init_props(2))
-next
-  case 14 show ?case by (simp add: arr_lookup_def[abs_def])
-next
-  case 15 show ?case
+  case 15
+  show ?case
     unfolding outgoing_edge_iterator.out_graph_inv_def[OF out_iterator]
-    using out.graph.csr_init_invar by (auto simp: out.csr_abstract_key delta_plus_def)
+    using out.graph.csr_init_invar
+    by (auto simp: out.csr_abstract_key delta_plus_def)
 next
-  case 16 show ?case
+  case 16
+  show ?case
     unfolding ingoing_edge_iterator.in_graph_inv_def[OF in_iterator]
-    using inc.graph.csr_init_invar by (auto simp: inc.csr_abstract_key delta_minus_def)
+    using inc.graph.csr_init_invar
+    by (auto simp: inc.csr_abstract_key delta_minus_def)
 next
-  case (17 A k Ai) then show ?case
-    unfolding pr_lb_get_def by (rule lb.lb_get_imp_rule)
+  case (17 A k Ai)
+  thus ?case
+    unfolding pr_lb_get_def
+    by (rule lb.lb_get_imp_rule)
 next
-  case (18 A k Ai v) then show ?case
-    unfolding pr_lb_upd_def by (rule lb.lb_upd_imp_rule)
+  case (18 A k Ai v)
+  thus ?case
+    unfolding pr_lb_upd_def
+    by (rule lb.lb_upd_imp_rule)
 next
-  case (19 e Ei) then show ?case
-    using src_imp_rule[of e fs ts Ei] by simp
+  case (19 e Ei)
+  thus ?case
+    using src_imp_rule[of e fs ts Ei]
+    by simp
 next
-  case (20 e Ei) then show ?case
-    using tgt_imp_rule[of e fs ts Ei] ts_length by simp
+  case (20 e Ei)
+  thus ?case
+    using tgt_imp_rule[of e fs ts Ei] ts_length
+    by simp
 next
-  case (21 l k g g_imp R r Li) then show ?case
-    unfolding pr_lb_gap_fold_def by (rule lb.lb_gap_fold_imp_rule)
+  case (21 l k g g_imp R r Li)
+  thus ?case
+    unfolding pr_lb_gap_fold_def
+    by (rule lb.lb_gap_fold_imp_rule)
 next
-  case (22 g g_imp P R acc og Oi) then show ?case
-    using out.E_spec_edges by (intro out_rt.csr_rt_edges_fold_imp_rule[where I = P]) auto
-qed simp_all
+  case (22 g g_imp P R acc og Oi)
+  thus ?case
+    using out.E_spec_edges
+    by (intro out_rt.csr_rt_edges_fold_imp_rule[where I = P]) auto
+qed (fact fixed_univ_map.fixed_univ_map_upd[OF lb.lb_fixed_univ_map] s_vert t_vert s_neq_t
+          fixed_univ_map.fixed_univ_map_upd_invar[OF lb.lb_fixed_univ_map] lb.lb_gap_fold lb.lb_init_props
+     | simp add: arr_lookup_def[abs_def])+
 
 text \<open>The imperative vertex fold of the strategies walks the Boolean array of the vertex set.\<close>
 
-lemma vset_fold: "set_fold_imp_rule (verts fs ts) (bool_array_set_assn n (verts fs ts) Vi) vfold (bool_array_set_fold_imp Vi)"
+lemma vset_fold:
+  "set_fold_imp_rule (verts fs ts) (bool_array_set_assn n (verts fs ts) Vi) vfold (bool_array_set_fold_imp Vi)"
   using fixed_univ_set_iterate_imp.iter_set_fold_imp_rule[OF bool_array_set_fixed_univ_set_iterate_imp,
           of "verts fs ts"] out.verts_bound \<V>_finite
   by simp
@@ -541,40 +527,14 @@ sublocale fifo: push_relabel_fifo_imp where \<E> = "edges fs" and fst = "e_src f
     and queue_is_empty_imp = arq_is_empty_imp and vertex_fold_imp = bool_array_set_fold_imp
     and queue_assn = "arq_assn nV" and queue_empty_imp = "arq_empty_imp nV 0"
     and vset_assn = "bool_array_set_assn n (verts fs ts)"
-proof(unfold_locales, goal_cases)
-  case (1 Q) then show ?case by (rule bounded_queue.queue_capacity[OF arq_bounded_queue])
-next
-  case 2 show ?case by (rule bounded_queue.queue_empty(1)[OF arq_bounded_queue])
-next
-  case 3 show ?case by (rule bounded_queue.queue_empty(2)[OF arq_bounded_queue])
-next
-  case (4 Q x) then show ?case by (rule bounded_queue.queue_push(1)[OF arq_bounded_queue])
-next
-  case (5 Q x) then show ?case by (rule bounded_queue.queue_push(2)[OF arq_bounded_queue])
-next
-  case (6 Q) then show ?case by (rule bounded_queue.queue_pop(1)[OF arq_bounded_queue])
-next
-  case (7 Q) then show ?case by (rule bounded_queue.queue_pop(2)[OF arq_bounded_queue])
-next
-  case (8 Q) then show ?case by (rule bounded_queue.queue_pop(3)[OF arq_bounded_queue])
-next
-  case (9 Q) then show ?case by (rule bounded_queue.queue_is_empty[OF arq_bounded_queue])
-next
-  case (11 g acc) show ?case by (rule vfold)
-next
-  case 12 show ?case by (rule bounded_queue_imp.queue_empty_rule[OF arq_bounded_queue_imp])
-next
-  case (13 Q Qi x) then show ?case
-    by (rule bounded_queue_imp.queue_push_rule[OF arq_bounded_queue_imp])
-next
-  case (14 Q Qi) then show ?case
-    by (rule bounded_queue_imp.queue_pop_rule[OF arq_bounded_queue_imp])
-next
-  case (15 Q Qi) then show ?case
-    by (rule bounded_queue_imp.queue_is_empty_rule[OF arq_bounded_queue_imp])
-next
-  case (16 Vi) show ?case by (rule vset_fold)
-qed simp
+  by unfold_locales
+     (fact bounded_queue.queue_capacity[OF arq_bounded_queue] bounded_queue.queue_empty[OF arq_bounded_queue]
+           bounded_queue.queue_push[OF arq_bounded_queue] bounded_queue.queue_pop[OF arq_bounded_queue]
+           bounded_queue.queue_is_empty[OF arq_bounded_queue] vfold vset_fold
+           bounded_queue_imp.queue_empty_rule[OF arq_bounded_queue_imp]
+           bounded_queue_imp.queue_push_rule[OF arq_bounded_queue_imp]
+           bounded_queue_imp.queue_pop_rule[OF arq_bounded_queue_imp]
+           bounded_queue_imp.queue_is_empty_rule[OF arq_bounded_queue_imp] | simp)+
 
 text \<open>Relabel-to-front: the move-to-front list over all vertices below \<open>n\<close>, restricted to the
       vertices of the network.\<close>
@@ -628,14 +588,10 @@ sublocale rtf: push_relabel_rtf_imp where \<E> = "edges fs" and fst = "e_src fs"
     and list_first_imp = amtf_first_imp and list_next_imp = amtf_next_imp
     and vertex_fold_imp = bool_array_set_fold_imp and list_assn = "amtf_assn n"
     and list_empty_imp = "amtf_empty_imp n" and vset_assn = "bool_array_set_assn n (verts fs ts)"
-proof(unfold_locales, goal_cases)
-  case (1 g acc) show ?case by (rule vfold)
-next
-  case (2 Vi) show ?case by (rule vset_fold)
-qed
+  by unfold_locales (fact vfold vset_fold)+
 
-text \<open>Highest label: buckets over all vertices below \<open>n\<close> with \<open>2 * nV\<close> labels, restricted to the
-      vertices of the network.\<close>
+text \<open>Highest label: buckets over all vertices below \<open>n\<close> with \<open>2 * nV\<close> labels,
+      restricted to the vertices of the network.\<close>
 
 sublocale hbk: fixed_univ_buckets_imp "verts fs ts" "{..<2 * nV}"
     "restr_buckets_invar (verts fs ts) (abk_invar n (2 * nV)) (abk_abstract n (2 * nV))"
@@ -688,27 +644,28 @@ sublocale hl: push_relabel_hl_imp where \<E> = "edges fs" and fst = "e_src fs" a
     and buckets_pick_imp = abk_pick_imp and buckets_move_imp = abk_move_imp
     and vertex_fold_imp = bool_array_set_fold_imp and buckets_assn = "abk_assn n (2 * nV)"
     and buckets_empty_imp = "abk_empty_imp n (2 * nV)" and vset_assn = "bool_array_set_assn n (verts fs ts)"
-proof(unfold_locales, goal_cases)
-  case (1 g acc) show ?case by (rule vfold)
-next
-  case (2 Vi) show ?case by (rule vset_fold)
-qed
+  by unfold_locales (fact vfold vset_fold)+
 
 subsection \<open>The Setup\<close>
 
 lemma E_spec_length: "length out.inp.E_spec = length fs" "length inc.inp.E_spec = length fs"
   using distinct_card[OF out.E_spec_distinct] distinct_card[OF inc.E_spec_distinct]
-        out.E_spec_edges inc.E_spec_edges by (simp_all add: edges_def)
+        out.E_spec_edges inc.E_spec_edges
+  by (simp_all add: edges_def)
 
 lemma out_setup_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> pr_csr_setup csr_build_edges n Fa Ta (length fs)
-   <\<lambda> Oi. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * out_rt.csr_rt_assn (\<lambda> v. out.inp.B_spec ! v) Oi>"
+   <\<lambda> Oi. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts *
+         out_rt.csr_rt_assn (\<lambda> v. out.inp.B_spec ! v) Oi>"
 proof-
   have build: "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_edges n (Fa, Ta) 0
-     <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a out.inp.B_spec * Ea \<mapsto>\<^sub>a out.inp.E_spec>"
-    unfolding csr_build_edges_src[symmetric] by (rule out.csr_build_rule)
+     <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a out.inp.B_spec *
+                  Ea \<mapsto>\<^sub>a out.inp.E_spec>"
+    unfolding csr_build_edges_src[symmetric]
+    by (rule out.csr_build_rule)
   have pos: "<Ea \<mapsto>\<^sub>a out.inp.E_spec * Pa \<mapsto>\<^sub>a replicate (length fs) 0>
-               csr_pos_build_imp id Ea Pa (length fs) <\<lambda>_. Ea \<mapsto>\<^sub>a out.inp.E_spec * Pa \<mapsto>\<^sub>a Po>" for Ea Pa
+               csr_pos_build_imp id Ea Pa (length fs)
+             <\<lambda>_. Ea \<mapsto>\<^sub>a out.inp.E_spec * Pa \<mapsto>\<^sub>a Po>" for Ea Pa
     using csr_pos_build_imp_rule[of out.inp.E_spec id "replicate (length fs) 0" Ea Pa]
           out.E_spec_ids
     by (simp add: E_spec_length Po_def)
@@ -719,13 +676,17 @@ qed
 
 lemma in_setup_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> pr_csr_setup csr_build_edges_tgt n Fa Ta (length fs)
-   <\<lambda> Ii. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * in_rt.csr_rt_assn (\<lambda> v. inc.inp.B_spec ! v) Ii>"
+   <\<lambda> Ii. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts *
+         in_rt.csr_rt_assn (\<lambda> v. inc.inp.B_spec ! v) Ii>"
 proof-
   have build: "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_edges_tgt n (Fa, Ta) 0
-     <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inc.inp.B_spec * Ea \<mapsto>\<^sub>a inc.inp.E_spec>"
-    unfolding csr_build_edges_tgt[symmetric] by (rule inc.csr_build_rule)
+     <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inc.inp.B_spec *
+                  Ea \<mapsto>\<^sub>a inc.inp.E_spec>"
+    unfolding csr_build_edges_tgt[symmetric]
+    by (rule inc.csr_build_rule)
   have pos: "<Ea \<mapsto>\<^sub>a inc.inp.E_spec * Pa \<mapsto>\<^sub>a replicate (length fs) 0>
-               csr_pos_build_imp id Ea Pa (length fs) <\<lambda>_. Ea \<mapsto>\<^sub>a inc.inp.E_spec * Pa \<mapsto>\<^sub>a Pin>" for Ea Pa
+               csr_pos_build_imp id Ea Pa (length fs)
+             <\<lambda>_. Ea \<mapsto>\<^sub>a inc.inp.E_spec * Pa \<mapsto>\<^sub>a Pin>" for Ea Pa
     using csr_pos_build_imp_rule[of inc.inp.E_spec id "replicate (length fs) 0" Ea Pa]
           inc.E_spec_ids
     by (simp add: E_spec_length Pin_def)
@@ -742,52 +703,65 @@ proof(cases "u \<in> W")
   case True
   then show ?thesis
     unfolding pr_vertex_count_step_def
-    using assms(1) by (sep_auto heap: bool_array_set_memb_rule simp: insert_absorb)
+    using assms(1)
+    by (sep_auto heap: bool_array_set_memb_rule simp: insert_absorb)
 next
   case False
   then show ?thesis
     unfolding pr_vertex_count_step_def bool_array_set_insert_imp_def
-    using assms by (sep_auto heap: bool_array_set_memb_rule bool_array_set_upd_rule)
+    using assms
+    by (sep_auto heap: bool_array_set_memb_rule bool_array_set_upd_rule)
 qed
 
 lemma pr_vertex_set_imp_rule:
-  "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n {} Vi> pr_vertex_set_imp Fa Ta Vi (length fs)
-   <\<lambda> r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n (verts fs ts) Vi * \<up>(r = nV)>"
+  "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n {} Vi>
+     pr_vertex_set_imp Fa Ta Vi (length fs)
+   <\<lambda> r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n (verts fs ts) Vi *
+         \<up>(r = nV)>"
 proof-
   define W where "W = (\<lambda> j. set (take j fs) \<union> set (take j ts))"
   let ?A = "\<lambda> j (_::unit) r. bool_array_set_assn n (W j) Vi * \<up>(r = card (W j))"
   have "<?A 0 () 0 * (Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)> pr_vertex_set_imp Fa Ta Vi (length fs)
-        <\<lambda> r. ?A (length fs) (foldl (\<lambda> a j. a) () [0..<length fs]) r * (Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)>"
+        <\<lambda> r. ?A (length fs) (foldl (\<lambda> a j. a) () [0..<length fs]) r *
+              (Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)>"
     unfolding pr_vertex_set_imp_def
   proof(rule foldl_range_imp_idx_rule[where A = ?A and g = "\<lambda> _ a. a"
           and F = "Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts"], goal_cases)
     case (1 j a r)
     have j: "j < length fs" "j < length ts" "fs ! j < n" "ts ! j < n"
-      using 1 ts_length fs_bound ts_bound nth_mem by auto
+      using 1 ts_length fs_bound ts_bound nth_mem
+      by auto
     have W: "W (Suc j) = insert (ts ! j) (insert (fs ! j) (W j))"
-      using j(1,2) by (auto simp: W_def take_Suc_conv_app_nth)
+      using j(1,2)
+      by (auto simp: W_def take_Suc_conv_app_nth)
     have fin: "finite (W j)"
       by (simp add: W_def)
     show ?case
-      using j fin by (sep_auto heap: pr_vertex_count_step_rule simp: W)
+      using j fin
+      by (sep_auto heap: pr_vertex_count_step_rule simp: W)
   qed simp
   moreover have "W 0 = {}" "W (length fs) = verts fs ts"
-    using ts_length by (simp_all add: W_def out.verts_eq)
+    using ts_length
+    by (simp_all add: W_def out.verts_eq)
   ultimately show ?thesis
     by (simp add: ac_simps)
 qed
 
 lemma caps_assn: "Ca \<mapsto>\<^sub>a cs \<Longrightarrow>\<^sub>A ea.arr_assn cap_of Ca"
-  unfolding ea.arr_assn_def using cs_length by (sep_auto simp: cap_of_def)
+  unfolding ea.arr_assn_def using cs_length
+  by (sep_auto simp: cap_of_def)
 
 lemma la_new_rule: "<emp> Array.new n 0 <la.arr_assn (\<lambda> _. 0)>"
-  using la.arr_new_rule[of 0] by simp
+  using la.arr_new_rule[of 0]
+  by simp
 
 lemma pr_lb_init_rule:
-  "<bool_array_set_assn n (verts fs ts) Vi * (la.arr_assn (\<lambda> _. 0) La * abk_assn n nV abk_empty Lb * Dr \<mapsto>\<^sub>r d0)>
+  "<bool_array_set_assn n (verts fs ts) Vi *
+    (la.arr_assn (\<lambda> _. 0) La * abk_assn n nV abk_empty Lb * Dr \<mapsto>\<^sub>r d0)>
      pr_lb_init (bool_array_set_fold_imp Vi) (La, Lb, Dr)
    <\<lambda>_. bool_array_set_assn n (verts fs ts) Vi * lb.lb_assn lb.lb_init (La, Lb, Dr)>"
-  unfolding pr_lb_init_def by (rule lb.lb_init_imp_rule[OF vset_fold])
+  unfolding pr_lb_init_def
+  by (intro lb.lb_init_imp_rule vset_fold)
 
 text \<open>The initial state of all three strategies.\<close>
 
@@ -841,14 +815,17 @@ proof(rule ht_bind[OF push_relabel_setup_rule], goal_cases)
   proof(rule ht_extract_pre_pure(1), elim conjE)
     assume "nv = nV" "pi_caps Si = Ca" "pi_ends Si = (Fa, Ta)"
     then show "<setup_assn Si * bool_array_set_assn n (verts fs ts) Vi> body Si Vi nv <Q>"
-      using assms[of Si Vi] by simp
+      using assms[of Si Vi]
+      by simp
   qed
 qed
 
 lemma result_ent:
   assumes "is_max_flow s t P"
-  shows "Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca * ea.arr_assn P Bw * true \<Longrightarrow>\<^sub>A
-         Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca * (\<exists>\<^sub>A f. ea.arr_assn f Bw * \<up>(is_max_flow s t f)) * true"
+  shows "Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca * ea.arr_assn P Bw * true
+         \<Longrightarrow>\<^sub>A
+         Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
+         (\<exists>\<^sub>A f. ea.arr_assn f Bw * \<up>(is_max_flow s t f)) * true"
 proof-
   have "ea.arr_assn P Bw \<Longrightarrow>\<^sub>A (\<exists>\<^sub>A f. ea.arr_assn f Bw * \<up>(is_max_flow s t f))"
     by (rule ent_ex_postI[of _ _ P]) (simp only: assms pure_true mult.right_neutral ent_refl)
@@ -856,7 +833,7 @@ proof-
     by (rule ent_star_mono[OF ent_star_mono[OF ent_refl] ent_refl])
 qed
 
-theorem push_relabel_fifo_run_rule:
+lemma push_relabel_fifo_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs> push_relabel_fifo_run n s t Fa Ta Ca
    <\<lambda> Bw. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
          (\<exists>\<^sub>A f. ea.arr_assn f Bw * \<up>(is_max_flow s t f)) * true>"
@@ -870,10 +847,13 @@ proof-
     using fifo.fifo_imp.push_relabel_imp_rule[of Si Ci]
     unfolding main fifo.fifo_imp.init_assn_def setup_assn_def .
   have ctx: "arq_assn nV (arq_empty 0) Qi * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r (0::nat) *
-             bool_array_set_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A fifo.fifo_ctx_init_assn (Qi, Cf, Cu, Vi)" for Qi Cf Cu Vi
-    unfolding fifo.fifo_ctx_init_assn_def cur_assn_def by sep_auto
+             bool_array_set_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A fifo.fifo_ctx_init_assn (Qi, Cf, Cu, Vi)"
+    for Qi Cf Cu Vi
+    unfolding fifo.fifo_ctx_init_assn_def cur_assn_def
+    by sep_auto
   have opt: "is_max_flow s t fifo.fifo.push_relabel"
-    using fifo.fifo.push_relabel_correct by (simp add: arr_lookup_def[abs_def])
+    using fifo.fifo.push_relabel_correct
+    by (simp add: arr_lookup_def[abs_def])
   show ?thesis
     unfolding push_relabel_fifo_run_def
   proof(rule setup_bind_rule, goal_cases)
@@ -891,7 +871,8 @@ proof-
          (sep_auto heap: bounded_queue_imp.queue_empty_rule[OF arq_bounded_queue_imp] main)
   qed
 qed
-theorem push_relabel_rtf_run_rule:
+
+lemma push_relabel_rtf_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs> push_relabel_rtf_run n s t Fa Ta Ca
    <\<lambda> Bw. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
          (\<exists>\<^sub>A f. ea.arr_assn f Bw * \<up>(is_max_flow s t f)) * true>"
@@ -904,18 +885,22 @@ proof-
     for Si Ci
     using rtf.rtf_imp.push_relabel_imp_rule[of Si Ci]
     unfolding main rtf.rtf_imp.init_assn_def setup_assn_def .
-  have ctx: "amtf_assn n amtf_empty Ls * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r (0::nat) * Rr \<mapsto>\<^sub>r False *
-             bool_array_set_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A rtf.rtf_ctx_init_assn (Ls, Cf, Cu, Rr, Vi)"
+  have ctx: "amtf_assn n amtf_empty Ls * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r (0::nat) *
+             Rr \<mapsto>\<^sub>r False * bool_array_set_assn n (verts fs ts) Vi
+             \<Longrightarrow>\<^sub>A rtf.rtf_ctx_init_assn (Ls, Cf, Cu, Rr, Vi)"
     for Ls Cf Cu Rr Vi
-    unfolding rtf.rtf_ctx_init_assn_def cur_assn_def by sep_auto
+    unfolding rtf.rtf_ctx_init_assn_def cur_assn_def
+    by sep_auto
   have opt: "is_max_flow s t rtf.rtf.push_relabel"
-    using rtf.rtf.push_relabel_correct by (simp add: arr_lookup_def[abs_def])
+    using rtf.rtf.push_relabel_correct
+    by (simp add: arr_lookup_def[abs_def])
   show ?thesis
     unfolding push_relabel_rtf_run_def
   proof(rule setup_bind_rule, goal_cases)
     case (1 Si Vi)
     have main: "<setup_assn Si * (amtf_assn n amtf_empty Ls * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r 0 *
-                   Rr \<mapsto>\<^sub>r False * bool_array_set_assn n (verts fs ts) Vi)> pr_rtf_main s t nV (Ls, Cf, Cu, Rr, Vi) Si
+                   Rr \<mapsto>\<^sub>r False * bool_array_set_assn n (verts fs ts) Vi)>
+                  pr_rtf_main s t nV (Ls, Cf, Cu, Rr, Vi) Si
                 <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
                      ea.arr_assn rtf.rtf.push_relabel (pi_bwd Si) * true>"
       for Ls Cf Cu Rr
@@ -927,7 +912,7 @@ proof-
   qed
 qed
 
-theorem push_relabel_hl_run_rule:
+lemma push_relabel_hl_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs> push_relabel_hl_run n s t Fa Ta Ca
    <\<lambda> Bw. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
          (\<exists>\<^sub>A f. ea.arr_assn f Bw * \<up>(is_max_flow s t f)) * true>"
@@ -940,18 +925,22 @@ proof-
     for Si Ci
     using hl.hl_imp.push_relabel_imp_rule[of Si Ci]
     unfolding main hl.hl_imp.init_assn_def setup_assn_def .
-  have ctx: "abk_assn n (2 * nV) abk_empty Bi * Br \<mapsto>\<^sub>r (0::nat) * Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r (0::nat) *
-             bool_array_set_assn n (verts fs ts) Vi \<Longrightarrow>\<^sub>A hl.hl_ctx_init_assn (Bi, Br, Cf, Cu, Vi)"
+  have ctx: "abk_assn n (2 * nV) abk_empty Bi * Br \<mapsto>\<^sub>r (0::nat) * Cf \<mapsto>\<^sub>r False *
+             Cu \<mapsto>\<^sub>r (0::nat) * bool_array_set_assn n (verts fs ts) Vi
+             \<Longrightarrow>\<^sub>A hl.hl_ctx_init_assn (Bi, Br, Cf, Cu, Vi)"
     for Bi Br Cf Cu Vi
-    unfolding hl.hl_ctx_init_assn_def cur_assn_def by sep_auto
+    unfolding hl.hl_ctx_init_assn_def cur_assn_def
+    by sep_auto
   have opt: "is_max_flow s t hl.hl.push_relabel"
-    using hl.hl.push_relabel_correct by (simp add: arr_lookup_def[abs_def])
+    using hl.hl.push_relabel_correct
+    by (simp add: arr_lookup_def[abs_def])
   show ?thesis
     unfolding push_relabel_hl_run_def
   proof(rule setup_bind_rule, goal_cases)
     case (1 Si Vi)
-    have main: "<setup_assn Si * (abk_assn n (2 * nV) abk_empty Bi * Br \<mapsto>\<^sub>r 0 * Cf \<mapsto>\<^sub>r False *
-                   Cu \<mapsto>\<^sub>r 0 * bool_array_set_assn n (verts fs ts) Vi)> pr_hl_main s t nV (Bi, Br, Cf, Cu, Vi) Si
+    have main: "<setup_assn Si * (abk_assn n (2 * nV) abk_empty Bi * Br \<mapsto>\<^sub>r 0 *
+                   Cf \<mapsto>\<^sub>r False * Cu \<mapsto>\<^sub>r 0 * bool_array_set_assn n (verts fs ts) Vi)>
+                  pr_hl_main s t nV (Bi, Br, Cf, Cu, Vi) Si
                 <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
                      ea.arr_assn hl.hl.push_relabel (pi_bwd Si) * true>"
       for Bi Br Cf Cu

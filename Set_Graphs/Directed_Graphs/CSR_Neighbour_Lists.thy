@@ -28,11 +28,13 @@ lemma length_csr_entries: "length (csr_entries blk n) = csr_start blk n"
   by (simp add: length_concat comp_def)
 
 lemma csr_start_0 [simp]: "csr_start blk 0 = 0"
-  unfolding csr_start_def by simp
+  unfolding csr_start_def
+  by simp
 
 lemma csr_start_Suc:
   "csr_start blk (Suc v) = csr_start blk v + length (blk v)"
-  unfolding csr_start_def by simp
+  unfolding csr_start_def
+  by simp
 
 subsection \<open>Monotonicity of csr\_start\<close>
 
@@ -49,28 +51,14 @@ nths\_intervall\_strict\_as\_drop\_and\_take.
 \<close>
 
 lemma csr_entries_nths:
-  assumes "v < n"
-  shows "nths (csr_entries blk n)
-              {csr_start blk v ..< csr_start blk v + length (blk v)}
-         = blk v"
-proof -
-  let ?A = "concat (map blk [0..<v])"
-  let ?xs = "blk v"
-  let ?B = "concat (map blk [Suc v..<n])"
-  have list_split: "[0..<n] = [0..<v] @ v # [Suc v..<n]"
-    using assms id_take_nth_drop[of v "[0..<n]"] by simp
-  have split: "csr_entries blk n = ?A @ ?xs @ ?B"
-    unfolding csr_entries_def by (simp add: list_split)
-  have lenA: "length ?A = csr_start blk v"
-    unfolding csr_start_def by (simp add: length_concat comp_def)
-  show ?thesis
-    unfolding nths_intervall_strict_as_drop_and_take
-    by (simp add: split lenA[symmetric])
-  qed
+  "v < n \<Longrightarrow> nths (csr_entries blk n) {csr_start blk v ..< csr_start blk v + length (blk v)} = blk v"
+  using upt_add_eq_append[of 0 v "n - v"] upt_conv_Cons[of v n]
+  by (simp add: csr_entries_def csr_start_def nths_intervall_strict_as_drop_and_take length_concat comp_def)
 
 lemma nbrs_append [simp]:
   "nbrs (xs @ ys) v = nbrs xs v @ nbrs ys v"
-  unfolding nbrs_def by (simp add: filter_append)
+  unfolding nbrs_def
+  by simp
 
 subsection \<open>The Concatenated Blocks as a CSR\<close>
 
@@ -82,19 +70,12 @@ locale csr_concat =
 begin
 
 sublocale csr_graph_blocks_imp n "{..<n}" "map (csr_start blk) [0..<Suc n]" "csr_entries blk n"
-proof (unfold_locales, goal_cases)
-  case (3 v)
-  then show ?case by (simp add: csr_start_Suc del: upt_Suc)
-next
-  case (4 v)
-  then show ?case by (simp add: length_csr_entries csr_start_mono del: upt_Suc)
-qed (simp_all del: upt_Suc)
+  using csr_start_mono[of "Suc v" n blk for v, unfolded csr_start_Suc]
+  by unfold_locales (simp_all add: csr_start_Suc length_csr_entries del: upt_Suc)
 
-lemma csr_list_blk:
-  assumes "u < n"
-  shows "csr_list u = blk u"
-  unfolding csr_list_nths[OF assms]
-  using assms csr_entries_nths[OF assms, of blk] by (simp add: csr_start_Suc del: upt_Suc)
+lemma csr_list_blk: "u < n \<Longrightarrow> csr_list u = blk u"
+  using csr_list_nths csr_entries_nths[of u n blk]
+  by (simp add: csr_start_Suc del: upt_Suc)
 
 end
 
@@ -127,14 +108,24 @@ text \<open>Arrays whose entries below \<open>u\<close> are written.\<close>
 definition "prefix_map f u n = map (\<lambda> v. if v < u then f v else (0 :: nat)) [0..<n]"
 
 lemma length_prefix_map [simp]: "length (prefix_map f u n) = n"
-  unfolding prefix_map_def by simp
+  unfolding prefix_map_def
+  by simp
 
-lemma prefix_map_upd: 
+lemma prefix_map_upd:
   "\<lbrakk>u < n; x = f u\<rbrakk> \<Longrightarrow> list_update (prefix_map f u n) u x = prefix_map f (Suc u) n"
-  unfolding prefix_map_def by (rule nth_equalityI) (auto simp: nth_list_update)
+  unfolding prefix_map_def
+  by (auto intro!: nth_equalityI simp: nth_list_update)
 
 lemma prefix_map_n: "prefix_map f n n = map f [0..<n]"
-  unfolding prefix_map_def by simp
+  unfolding prefix_map_def
+  by simp
+
+lemma prefix_map_Suc_0: "f 0 = 0 \<Longrightarrow> prefix_map f (Suc 0) n = replicate n 0"
+  unfolding prefix_map_def
+  by (auto intro!: nth_equalityI simp del: upt_Suc)
+
+lemma csr_entries_Suc: "csr_entries blk (Suc u) = csr_entries blk u @ blk u"
+  by (simp add: csr_entries_def)
 
 locale csr_concat_build =
   fixes blk :: "nat \<Rightarrow> 'x::heap list" and n :: nat and F :: assn and d :: 'x
@@ -150,63 +141,43 @@ lemma csr_concat_starts_rule:
   "<F * Ba \<mapsto>\<^sub>a replicate (Suc n) 0> csr_concat_starts_imp cnt Ba n
    <\<lambda> m. F * Ba \<mapsto>\<^sub>a map (csr_start blk) [0..<Suc n] * \<up>(m = csr_start blk n)>"
 proof-
-  define A where "A = (\<lambda> u (_ :: unit) c. 
+  define A where "A = (\<lambda> u (_ :: unit) c.
      Ba \<mapsto>\<^sub>a prefix_map (csr_start blk) (Suc u) (Suc n) * \<up>(c = csr_start blk u))"
-  have step: "<A u st c * F> 
-     do { c' \<leftarrow> cnt u c; Array.upd (Suc u) c' Ba; return c' }
-     <\<lambda> r. A (Suc u) () r * F>" if u: "u < n" for u st c
-    unfolding A_def
-    using u by (sep_auto heap: cnt_rule simp: prefix_map_upd csr_start_Suc)
-  have run: "<A 0 () 0 * F> csr_concat_starts_imp cnt Ba n
-             <\<lambda> r. A n (foldl (\<lambda> a j. ()) () [0..<n]) r * F>"
+  have "<A 0 () 0 * F> csr_concat_starts_imp cnt Ba n
+        <\<lambda> r. A n (foldl (\<lambda> a j. ()) () [0..<n]) r * F>"
     unfolding csr_concat_starts_imp_def
-    by (rule foldl_range_imp_idx_rule[where A = A and F = F and g = "\<lambda> _ _. ()"]) 
-       (rule step, simp_all)
-  have init: "prefix_map (csr_start blk) (Suc 0) (Suc n) = replicate (Suc n) 0"
-    unfolding prefix_map_def by (rule nth_equalityI) (simp_all del: upt_Suc)
-  show ?thesis
-    by (rule ht_cons_post[OF ht_cons_pre[OF _ run]]) (sep_auto simp: A_def init prefix_map_n)+
+    by (intro foldl_range_imp_idx_rule[where A = A and F = F and g = "\<lambda> _ _. ()"])
+      (sep_auto heap: cnt_rule simp: A_def prefix_map_upd csr_start_Suc)+
+  thus ?thesis
+    by (rule ht_cons_prec[rotated 2]) (sep_auto simp: A_def prefix_map_Suc_0 prefix_map_n)+
 qed
 
 lemma csr_concat_fill_rule:
   "<F * Ga \<mapsto>\<^sub>a replicate (csr_start blk n) d> csr_concat_fill_imp wr Ga n
    <\<lambda> _. F * Ga \<mapsto>\<^sub>a csr_entries blk n>"
 proof-
-  define A where "A = (\<lambda> u (gl :: 'x list) p. 
-     Ga \<mapsto>\<^sub>a gl * \<up>(p = csr_start blk u \<and> length gl = csr_start blk n \<and> 
+  define A where "A = (\<lambda> u (gl :: 'x list) p.
+     Ga \<mapsto>\<^sub>a gl * \<up>(p = csr_start blk u \<and> length gl = csr_start blk n \<and>
                      take p gl = csr_entries blk u))"
-  define g where "g = (\<lambda> u (gl :: 'x list). 
+  define g where "g = (\<lambda> u (gl :: 'x list).
      take (csr_start blk u) gl @ blk u @ drop (csr_start blk (Suc u)) gl)"
-  have step: "<A u gl p * F> wr u Ga p <\<lambda> r. A (Suc u) (g u gl) r * F>"
-    if u: "u < n" for u gl p
+  have step: "<A u gl p * F> wr u Ga p <\<lambda> r. A (Suc u) (g u gl) r * F>" if "u < n" for u gl p
   proof(cases "p = csr_start blk u \<and> length gl = csr_start blk n")
     case True
-    have le: "p + length (blk u) \<le> length gl"
-      using True csr_start_mono[of "Suc u" n blk] u by (simp add: csr_start_Suc)
-    have g: "g u gl = take p gl @ blk u @ drop (p + length (blk u)) gl"
-      using True by (simp add: g_def csr_start_Suc)
-    have entries: "csr_entries blk (Suc u) = csr_entries blk u @ blk u"
-      by (simp add: csr_entries_def)
-    show ?thesis
-      unfolding A_def g
-      using u le True 
-      by (sep_auto heap: wr_rule simp: csr_start_Suc entries length_csr_entries)
-  next
-    case False
-    then show ?thesis
-      unfolding A_def by sep_auto
-  qed
-  have run: "<A 0 (replicate (csr_start blk n) d) 0 * F> csr_concat_fill_imp wr Ga n
-             <\<lambda> r. A n (foldl (\<lambda> a j. g j a) (replicate (csr_start blk n) d) [0..<n]) r * F>"
+    moreover have "p + length (blk u) \<le> length gl"
+      using True csr_start_mono[of "Suc u" n blk] that
+      by (simp add: csr_start_Suc)
+    ultimately show ?thesis
+      using that
+      unfolding A_def g_def
+      by (sep_auto heap: wr_rule simp: csr_start_Suc csr_entries_Suc length_csr_entries)
+  qed (sep_auto simp: A_def)
+  have "<A 0 (replicate (csr_start blk n) d) 0 * F> csr_concat_fill_imp wr Ga n
+        <\<lambda> r. A n (foldl (\<lambda> a j. g j a) (replicate (csr_start blk n) d) [0..<n]) r * F>"
     unfolding csr_concat_fill_imp_def
-    by (rule foldl_range_imp_idx_rule[where A = A and F = F and g = g]) 
-       (rule step, simp_all)
-  have fin: "\<lbrakk>length gl = csr_start blk n; take (csr_start blk n) gl = csr_entries blk n\<rbrakk> \<Longrightarrow> 
-             gl = csr_entries blk n" for gl
-    by simp
-  show ?thesis
-    by (rule ht_cons_post[OF ht_cons_pre[OF _ run]]) 
-       (sep_auto simp: A_def csr_entries_def dest: fin)+
+    by (intro foldl_range_imp_idx_rule[where A = A and F = F and g = g]) (simp_all add: step)
+  thus ?thesis
+    by (rule ht_cons_prec[rotated 2]) (sep_auto simp: A_def csr_entries_def)+
 qed
 
 lemma csr_concat_build_rule:

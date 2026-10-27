@@ -24,12 +24,15 @@ locale bounded_queue =
       "queue_invar queue_empty"
       "queue_abstract queue_empty = []"
   and queue_push:
-      "\<And> Q x. \<lbrakk>queue_invar Q; length (queue_abstract Q) < cap\<rbrakk> \<Longrightarrow> queue_invar (queue_push Q x)"
+      "\<And> Q x. \<lbrakk>queue_invar Q; length (queue_abstract Q) < cap\<rbrakk> \<Longrightarrow>
+          queue_invar (queue_push Q x)"
       "\<And> Q x. \<lbrakk>queue_invar Q; length (queue_abstract Q) < cap\<rbrakk> \<Longrightarrow>
           queue_abstract (queue_push Q x) = queue_abstract Q @ [x]"
   and queue_pop:
-      "\<And> Q. \<lbrakk>queue_invar Q; queue_abstract Q \<noteq> []\<rbrakk> \<Longrightarrow> queue_invar (snd (queue_pop Q))"
-      "\<And> Q. \<lbrakk>queue_invar Q; queue_abstract Q \<noteq> []\<rbrakk> \<Longrightarrow> fst (queue_pop Q) = hd (queue_abstract Q)"
+      "\<And> Q. \<lbrakk>queue_invar Q; queue_abstract Q \<noteq> []\<rbrakk> \<Longrightarrow>
+          queue_invar (snd (queue_pop Q))"
+      "\<And> Q. \<lbrakk>queue_invar Q; queue_abstract Q \<noteq> []\<rbrakk> \<Longrightarrow>
+          fst (queue_pop Q) = hd (queue_abstract Q)"
       "\<And> Q. \<lbrakk>queue_invar Q; queue_abstract Q \<noteq> []\<rbrakk> \<Longrightarrow>
           queue_abstract (snd (queue_pop Q)) = tl (queue_abstract Q)"
   and queue_is_empty:

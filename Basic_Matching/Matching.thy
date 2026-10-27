@@ -7,7 +7,7 @@ section \<open>Basic Theory on Matchings\<close>
 
 theory Matching
   imports Alternating_Lists.Alternating_Lists
-          Directed_Set_Graphs.More_Lists
+          Data_Structures.More_Lists
           Undirected_Set_Graphs.Bipartite
 begin
 
@@ -1498,6 +1498,70 @@ lemma perfect_matching_member[iff?]:
   "perfect_matching G M \<longleftrightarrow> matching M \<and> M \<subseteq> G \<and> Vs M = Vs G"
   unfolding perfect_matching_def by auto
 
+subsection \<open>Graph homomorphisms\<close>
+
+text \<open>From the branch \<open>weighted_blossom\<close>, theory \<open>Matching.thy\<close>.\<close>
+
+lemma matching_image_rev:
+  assumes "matching ((image f) ` M)" "inj_on f (Vs M)"
+  shows "matching M"
+proof(rule matchingI, rule ccontr, goal_cases)
+  case (1 e1 e2)
+  hence f: "f ` e1 \<inter> f ` e2 \<noteq> {}" "f ` e1 \<in> (image f) ` M" "f ` e2 \<in> (image f) ` M"
+        "f ` e1 \<noteq> f ` e2"
+    using "1"(1,2,3) assms(2) Vs_def[of M] Union_upper[of e2 M]
+      Union_upper[of e1 M] inj_on_image_eq_iff[of f "Vs M" e1 e2]
+    by auto
+  have "f ` e1 \<inter> f ` e2 = {}"
+    by (rule matching_def[THEN iffD1, OF assms(1), rule_format, OF f(2,3,4)])
+  thus ?case using f(1) by simp
+qed
+
+lemma perfect_matching_image:
+  assumes "perfect_matching E M" "inj_on f (Vs E)"
+  shows "perfect_matching ((`) f ` E) ((`) f ` M)"
+  using assms matching_image[of M f] inj_on_subset[of f "Vs E" "Vs M"] Vs_subset[of M E]
+  by (auto simp: perfect_matching_def Vs_image_image)
+
+lemma image_edges_preimage:
+  "perfect_matching ((`) f ` E) Mc \<Longrightarrow> (`) f ` {e \<in> E. f ` e \<in> Mc} = Mc"
+  unfolding perfect_matching_def
+  by blast
+
+lemma sum_preimage_edges:
+  assumes "perfect_matching ((`) f ` E) Mc" "inj_on f (Vs E)"
+  shows "sum (\<lambda>e. w (f ` e)) {e \<in> E. f ` e \<in> Mc} = sum w Mc"
+  using assms sum_image_edges[of f E "{e \<in> E. f ` e \<in> Mc}" w] image_edges_preimage[of f E Mc]
+  by simp
+
+lemma Vs_preimage_edges:
+  assumes "perfect_matching ((`) f ` E) Mc" "inj_on f (Vs E)"
+  shows "Vs E \<subseteq> Vs {e \<in> E. f ` e \<in> Mc}"
+proof
+  fix v
+  assume "v \<in> Vs E"
+  moreover hence "f v \<in> Vs Mc"
+    using assms(1)
+    by (auto simp: perfect_matching_def Vs_image_image)
+  moreover then obtain e where "e \<in> E" "f ` e \<in> Mc" "f v \<in> f ` e"
+    using assms(1)
+    unfolding perfect_matching_def Vs_def
+    by (blast)
+  ultimately show "v \<in> Vs {e \<in> E. f ` e \<in> Mc}"
+    using assms(2)
+    unfolding Vs_def inj_on_def
+    by (blast)
+qed
+
+lemma perfect_matching_preimage:
+  assumes "perfect_matching ((`) f ` E) Mc" "inj_on f (Vs E)"
+  shows "perfect_matching E {e \<in> E. f ` e \<in> Mc}"
+  using assms matching_image_rev[of f "{e \<in> E. f ` e \<in> Mc}"] Vs_preimage_edges[of f E Mc]
+        image_edges_preimage[of f E Mc] Vs_subset[of "{e \<in> E. f ` e \<in> Mc}" E]
+  by (auto simp: perfect_matching_def intro: inj_on_subset)
+
+subsection \<open>Cardinality and optimality of perfect matchings\<close>
+
 lemma (in graph_abs) perfect_matching_is_max_card_matching: 
   assumes perfect: "perfect_matching G M"
   shows "max_card_matching G M"
@@ -1940,6 +2004,33 @@ lemma min_weight_max_card_matchingI:
   "\<lbrakk>min_weight_max_card_matching E w M; max_card_matching E M'\<rbrakk> \<Longrightarrow> sum w M' \<ge> sum w M"
   by(auto simp add: min_weight_max_card_matching_def)
 
+lemma neg_min_weight_matching:
+  "min_weight_matching G (\<lambda>e. - w e) M \<longleftrightarrow> max_weight_matching G w M"
+  by (auto simp: min_weight_matching_def max_weight_matching_def sum_negf)
+
+lemma neg_min_weight_max_card_matching:
+  "min_weight_max_card_matching G (\<lambda>e. - w e) M \<longleftrightarrow> max_weight_max_card_matching G w M"
+  by (auto simp: min_weight_max_card_matching_def max_weight_max_card_matching_def sum_negf)
+
+lemma neg_min_weight_perfect_matching:
+  "min_weight_perfect_matching G (\<lambda>e. - w e) M \<longleftrightarrow> max_weight_perfect_matching G w M"
+  by (auto simp: min_weight_perfect_matching_def max_weight_perfect_matching_def sum_negf)
+
+lemma shift_max_card:
+  assumes "min_weight_matching G (\<lambda>d. w d - c) M" "max_card_matching G M"
+  shows "min_weight_max_card_matching G w M"
+proof(rule min_weight_max_card_matchingI[OF assms(2)])
+  fix M'
+  assume "max_card_matching G M'"
+  moreover hence "card M' = card M"
+    by (rule max_card_matchings_same_size[OF _ assms(2)])
+  moreover have "sum (\<lambda>d. w d - c) M \<le> sum (\<lambda>d. w d - c) M'"
+    using assms(1) \<open>max_card_matching G M'\<close>
+    by (auto simp: min_weight_matching_def max_card_matching_def)
+  ultimately show "sum w M \<le> sum w M'"
+    by (simp add: sum_subtractf)
+qed
+
 lemma weighted_matchings_over_coinciding_weights:
   assumes "\<And> e. e \<in> G \<Longrightarrow> w' e = w e"
   shows  "max_weight_matching G w M \<longleftrightarrow> max_weight_matching G w' M"
@@ -1957,6 +2048,18 @@ lemma weighted_matchings_over_coinciding_weights:
                  max_weight_max_card_matchingI min_weight_max_card_matchingI
       simp add: comm_monoid_add_class.sum.cong[OF refl, of _ w' w] subsetD
                 perfect_matching_subgraphD max_card_matching_subgraphD)
+
+lemma min_weight_perfect_matching_cong:
+  assumes "min_weight_perfect_matching E w M" "\<And>e. e \<in> E \<Longrightarrow> w e = w2 e"
+  shows "min_weight_perfect_matching E w2 M"
+proof-
+  have "sum w M' = sum w2 M'" if "perfect_matching E M'" for M'
+    using that assms(2)
+    by (intro sum.cong) (auto simp: perfect_matching_def)
+  thus ?thesis
+    using assms(1)
+    by (auto simp: min_weight_perfect_matching_def)
+qed
 
 (*TODO MOVE*)
 lemma minimiser_of_function_nempty_finite:
@@ -2113,6 +2216,29 @@ lemma obtain_covering_edge:
   by(auto elim!: cover_matchingE 
       simp add: vs_member 
       dest!: subsetD[of X "Vs M" x])
+
+subsection \<open>Graph homomorphisms of weighted matchings\<close>
+
+text \<open>Perfect matchings of minimum weight are preserved under a renaming of the vertices that is
+      injective on the vertices of the graph.\<close>
+
+lemma min_weight_perfect_matching_preimage:
+  assumes "min_weight_perfect_matching ((`) f ` E) w Mc" "inj_on f (Vs E)"
+  shows "min_weight_perfect_matching E (\<lambda>e. w (f ` e)) {e \<in> E. f ` e \<in> Mc}"
+proof(rule min_weight_perfect_matchingI)
+  show "perfect_matching E {e \<in> E. f ` e \<in> Mc}"
+    using assms min_weight_perfect_matchingD(1)
+    by (blast intro: perfect_matching_preimage)
+  fix M2
+  assume "perfect_matching E M2"
+  moreover hence "sum w Mc \<le> sum w ((`) f ` M2)"
+    using assms perfect_matching_image min_weight_perfect_matchingD(2)
+    by (blast)
+  ultimately show "sum (\<lambda>e. w (f ` e)) {e \<in> E. f ` e \<in> Mc} \<le> sum (\<lambda>e. w (f ` e)) M2"
+    using assms sum_image_edges[of f E M2 w] sum_preimage_edges[of f E Mc w]
+          min_weight_perfect_matchingD(1)[of "(`) f ` E" w Mc]
+    by (simp add: perfect_matching_def)
+qed
 
 subsection \<open>Bipartite Matching\<close>
 

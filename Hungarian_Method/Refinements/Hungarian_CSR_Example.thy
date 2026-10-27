@@ -112,13 +112,12 @@ interpretation int_embedding: real_embedding "of_int :: int \<Rightarrow> real"
 
 text \<open>The input satisfies the assumptions of @{locale hungarian_csr_input}.\<close>
 
-interpretation ex: hungarian_csr_input "of_int :: int \<Rightarrow> real" n_ex  fs_ex ts_ex ws_ex ls_ex rs_ex \<theta>
+interpretation ex: hungarian_csr_input "of_int :: int \<Rightarrow> real" n_ex fs_ex ts_ex ws_ex ls_ex rs_ex \<theta>
   cap_ex
-  apply (intro hungarian_csr_input.intro int_embedding.real_embedding_axioms
-               hungarian_csr_input_axioms.intro)
-  apply (simp_all add: fs_ex_def ts_ex_def ws_ex_def ls_ex_def rs_ex_def n_ex_def
-                       edges_and_costs_int_def)
-  by auto
+  by (intro hungarian_csr_input.intro int_embedding.real_embedding_axioms
+            hungarian_csr_input_axioms.intro)
+     (simp_all add: fs_ex_def ts_ex_def ws_ex_def ls_ex_def rs_ex_def n_ex_def
+                    edges_and_costs_int_def, auto)
 
 text \<open>Hence the programs are correct on the example: the perfect matchings are of minimum and of
       maximum weight (on success; on failure, there is no perfect matching), and the matchings of

@@ -5,14 +5,8 @@ theory BFS_Refinement
   Data_Structures.Iterable_Set_Specs_Imp
 begin
 
-lemma triple_res_ht_ex_pre_and_post_I:"(\<And> x. <P x> c <\<lambda> (r1,r2,r3). Q x r1 r2 r3>) 
-           \<Longrightarrow> <\<exists>\<^sub>A x. P x> c <\<lambda> (r1,r2,r3). \<exists>\<^sub>A x. Q x r1 r2 r3>"
-  by sep_auto
+named_theorems bfs_heap_rules "Heap rules for breadth-first search"
 
-lemma "<a \<mapsto>\<^sub>a xs * a' \<mapsto>\<^sub>a xs' * \<up> (i < length xs \<and> j < length xs')>
-       do {Array.upd i x a; Array.upd j x' a'}
-      <\<lambda> r. a \<mapsto>\<^sub>a xs[i:=x] * r \<mapsto>\<^sub>a xs'[j:=x'] * \<up> (i < length xs \<and> j < length xs')>"
-  by sep_auto
 
 record ('imp_dist, 'imp_vis, 'imp_cf, 'imp_par) BFS_state_imp =
      dists:: "'imp_dist" current:: "'imp_cf" visited:: "'imp_vis" current_dist::nat
@@ -131,65 +125,36 @@ lemma round_inv_step:
           "next_frontier_current_parents cf vis par = (cf', vis', par')"
   shows "round_inv cf' vis' par'"
 proof-
-  have pre: "vset_inv2 cf" "vset_inv vis" "t_set cf \<subseteq> t_set vis" "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
-            "parent_invar par" "dVs (parent_abstract par) \<union> roots par = t_set vis"
-    using assms(2) unfolding round_inv_def by blast+
+  have pre: "vset_inv2 cf" "vset_inv vis" "t_set cf \<subseteq> t_set vis"
+       "t_set vis \<subseteq> dVs (Graph.digraph_abs G)" "parent_invar par"
+       "dVs (parent_abstract par) \<union> roots par = t_set vis"
+    using assms(2) by (auto simp: round_inv_def)
   note nf = next_frontier_current_parents[OF pre(1,2) graph_inv(1)[OF assms(1)] pre(3-6) assms(3)]
-  note F = next_frontier(1,2)[OF pre(1,2) graph_inv(1)[OF assms(1)] pre(3) nf(1) pre(4)]
-  note V = next_vis(1,2)[OF pre(1,2) graph_inv(1)[OF assms(1)] pre(3) nf(1) pre(4)]
+  note front = next_frontier[OF pre(1,2) graph_inv(1)[OF assms(1)] pre(3) nf(1) pre(4)]
+  note vis = next_vis[OF pre(1,2) graph_inv(1)[OF assms(1)] pre(3) nf(1) pre(4)]
   obtain E where E: "parent_abstract par' = parent_abstract par \<union> E"
-    "\<forall> x \<in> t_set cf'. \<exists> x' \<in> t_set cf. (x', x) \<in> Graph.digraph_abs G \<and> (x, x') \<in> E"
-    "\<forall> x x'. (x, x') \<in> E \<longrightarrow> x \<in> t_set cf' \<and> x' \<in> t_set cf \<and> (x', x) \<in> Graph.digraph_abs G"
+    "\<forall>x \<in> t_set cf'. \<exists>x' \<in> t_set cf. (x', x) \<in> Graph.digraph_abs G \<and> (x, x') \<in> E"
+    "\<forall>x x'. (x, x') \<in> E \<longrightarrow>
+      x \<in> t_set cf' \<and> x' \<in> t_set cf \<and> (x', x) \<in> Graph.digraph_abs G"
     using nf(3) by blast
-  have front_G: "t_set cf' \<subseteq> dVs (Graph.digraph_abs G)"
-    using F(2) by (auto simp: Pair_Graph.neighbourhood_def dVs_def)
-  have d1: "t_set cf' \<subseteq> dVs E"
-  proof
-    fix x
-    assume "x \<in> t_set cf'"
-    then obtain x' where "(x, x') \<in> E"
-      using E(2) by blast
-    then show "x \<in> dVs E"
-      by (rule dVsI(1))
-  qed
-  have d2: "dVs E \<subseteq> t_set cf' \<union> t_set cf"
-    unfolding dVs_eq
-  proof(rule Un_least; rule subsetI; elim imageE)
-    fix x e
-    assume "x = fst e" "e \<in> E"
-    then show "x \<in> t_set cf' \<union> t_set cf"
-      using E(3)[rule_format, of "fst e" "snd e"] by simp
-  next
-    fix x e
-    assume "x = snd e" "e \<in> E"
-    then show "x \<in> t_set cf' \<union> t_set cf"
-      using E(3)[rule_format, of "fst e" "snd e"] by simp
-  qed
-  have dE: "t_set vis \<union> dVs E = t_set vis \<union> t_set cf'"
-    using d1 d2 pre(3) by blast
-  have "dVs (parent_abstract par') \<union> roots par' = (dVs (parent_abstract par) \<union> roots par) \<union> dVs E"
+  have "t_set cf' \<subseteq> dVs E"
+    using E(2) by (blast intro: dVsI(1))
+  moreover have "dVs E \<subseteq> t_set cf' \<union> t_set cf"
+    using E(3) by (auto simp: dVs_def)
+  ultimately have vertices: "t_set vis \<union> dVs E = t_set vis \<union> t_set cf'"
+    using pre(3) by blast
+  have "dVs (parent_abstract par') \<union> roots par' =
+      (dVs (parent_abstract par) \<union> roots par) \<union> dVs E"
     unfolding E(1) nf(4) dVs_union_distr by (simp only: Un_ac)
-  then have eq: "dVs (parent_abstract par') \<union> roots par' = t_set vis'"
-    by (simp only: pre(6) dE V(2))
-  show ?thesis
-    unfolding round_inv_def
-  proof(intro conjI)
-    show "vset_inv2 cf'"
-      by (rule F(1))
-    show "vset_inv vis'"
-      by (rule V(1))
-    show "t_set cf' \<subseteq> t_set vis'"
-      unfolding V(2) by (rule Un_upper2)
-    show "t_set vis' \<subseteq> dVs (Graph.digraph_abs G)"
-      unfolding V(2) using pre(4) front_G by (rule Un_least)
-    show "parent_invar par'"
-      by (rule nf(2))
-    show "dVs (parent_abstract par') \<union> roots par' = t_set vis'"
-      by (rule eq)
-  qed
+  then have "dVs (parent_abstract par') \<union> roots par' = t_set vis'"
+    by (simp only: pre(6) vertices vis(2))
+  moreover have "t_set cf' \<subseteq> dVs (Graph.digraph_abs G)"
+    using front(2) by (auto simp: Pair_Graph.neighbourhood_def dVs_def)
+  ultimately show ?thesis
+    using nf(2) front(1) vis(1,2) pre(4) by (auto simp: round_inv_def)
 qed
 
-lemma next_frontier_current_parents_imp_round:
+lemma next_frontier_current_parents_imp_round[bfs_heap_rules]:
   "round_inv cf vis par \<Longrightarrow>
     <imp_cf_assn cf imp_cf * imp_vis_assn vis imp_vis * imp_par_assn par imp_par * graph_assn G G_imp>
     next_frontier_current_parents_imp imp_cf imp_vis imp_par
@@ -208,7 +173,7 @@ definition "state_assn (s::('dist, 'vset, 'par) BFS_par_state)
     \<up> (BFS_dist_state.current_dist s = BFS_state_imp.current_dist imp_s \<and>
        round_inv (BFS_dist_state.current s) (BFS_dist_state.visited s) (BFS_par_state.parent s)))"
 
-lemma BFS_refine:
+lemma BFS_refine[bfs_heap_rules]:
   assumes BFS_axiom
   shows
   "<graph_assn G G_imp * state_assn s s_imp >
@@ -246,7 +211,7 @@ next
     done
 qed
 
-lemma initial_refine:
+lemma initial_refine[bfs_heap_rules]:
   assumes BFS_axiom
   shows
  "<imp_vis_assn vset_empty empty_vis* imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
@@ -266,64 +231,57 @@ proof-
     by sep_auto
 qed
 
-lemma BFS_program_behaviour:
-  assumes BFS_axiom
-  shows
-  "<imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
+lemma BFS_program_behaviour[bfs_heap_rules]:
+  "BFS_axiom \<Longrightarrow>
+   <imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
     * imp_par_assn p imp_some_par * graph_assn G G_imp>
    do { si \<leftarrow> initial_state_imp empty_vis srcs_imp imp_some_dist imp_some_par;
         BFS_par_imp si }
    < \<lambda> si'. state_assn (BFS_par_impl initial_par_state) si' * graph_assn G G_imp>"
-  using initial_refine[OF assms] BFS_refine[OF assms] 
-  by sep_auto
+  by (sep_auto heap: bfs_heap_rules simp: state_assn_def)
 
-lemma check_reachable_rule:
-  assumes BFS_axiom "t \<in> dVs (Graph.digraph_abs G)"
-  shows
- "<imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
+lemma check_reachable_rule[bfs_heap_rules]:
+  "\<lbrakk>BFS_axiom;
+    t \<in> dVs (Graph.digraph_abs G)\<rbrakk> \<Longrightarrow>
+   <imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
    * imp_par_assn p imp_some_par * graph_assn G G_imp> 
    check_reachable empty_vis srcs_imp imp_some_dist imp_some_par t
   <\<lambda> b.  graph_assn G G_imp *
-      \<up> (b \<longleftrightarrow> isin (BFS_dist_state.visited (BFS_par_impl initial_par_state)) t)>" 
+      \<up> (b \<longleftrightarrow> isin (BFS_dist_state.visited (BFS_par_impl initial_par_state)) t)>"
   unfolding check_reachable_def
-  using initial_refine[OF assms(1)] BFS_refine[OF assms(1)] in_vis_rule[OF assms(2)]
-  by (sep_auto simp: state_assn_def)
+  by (sep_auto heap: bfs_heap_rules in_vis_rule simp: state_assn_def)
 
-lemma visited_dists_parents_imp_rule:
-  assumes BFS_axiom
-  shows
- "<imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
+lemma visited_dists_parents_imp_rule[bfs_heap_rules]:
+  "BFS_axiom \<Longrightarrow>
+   <imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
    * imp_par_assn p imp_some_par * graph_assn G G_imp> 
    visited_dists_parents_imp empty_vis srcs_imp imp_some_dist imp_some_par
   <\<lambda> (visi, di, pari). graph_assn G G_imp *
       imp_vis_assn (BFS_dist_state.visited (BFS_par_impl initial_par_state)) visi *
       imp_dist_assn (BFS_dist_state.dists (BFS_par_impl initial_par_state)) di *
-      imp_par_assn (BFS_par_state.parent (BFS_par_impl initial_par_state)) pari>" 
+      imp_par_assn (BFS_par_state.parent (BFS_par_impl initial_par_state)) pari>"
   unfolding visited_dists_parents_imp_def
-  using initial_refine[OF assms] BFS_refine[OF assms]
-  by (sep_auto simp: state_assn_def)
+  by (sep_auto heap: bfs_heap_rules simp: state_assn_def)
 
 text \<open>The same, but the final frontier is kept as well, so that its arrays can be reused.\<close>
 
-lemma visited_dists_parents_imp_frontier_rule:
-  assumes BFS_axiom
-  shows
- "<imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
+lemma visited_dists_parents_imp_frontier_rule[bfs_heap_rules]:
+  "BFS_axiom \<Longrightarrow>
+   <imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
    * imp_par_assn p imp_some_par * graph_assn G G_imp> 
    visited_dists_parents_imp empty_vis srcs_imp imp_some_dist imp_some_par
   <\<lambda> (visi, di, pari). graph_assn G G_imp *
       imp_vis_assn (BFS_dist_state.visited (BFS_par_impl initial_par_state)) visi *
       imp_dist_assn (BFS_dist_state.dists (BFS_par_impl initial_par_state)) di *
       imp_par_assn (BFS_par_state.parent (BFS_par_impl initial_par_state)) pari *
-      (\<exists>\<^sub>A cf cfi. imp_cf_assn cf cfi)>" 
+      (\<exists>\<^sub>A cf cfi. imp_cf_assn cf cfi)>"
   unfolding visited_dists_parents_imp_def
-  using initial_refine[OF assms] BFS_refine[OF assms]
-  by (sep_auto simp: state_assn_def)
+  by (sep_auto heap: bfs_heap_rules simp: state_assn_def)
 
 text \<open>The main properties of @{thm [source] BFS_par_correct} carry over to the returned visited
       set, distances and parents.\<close>
 
-theorem visited_dists_parents_imp_correct:
+theorem visited_dists_parents_imp_correct[bfs_heap_rules]:
   assumes BFS_axiom
   shows
  "<imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
@@ -342,15 +300,19 @@ theorem visited_dists_parents_imp_correct:
          (\<forall> x \<in> t_set vis. \<exists>u \<in> t_set srcs.
              vwalk_bet (Graph.digraph_abs G) u (rev (get_path par x)) x \<and>
              length (get_path par x) - 1 = distance_set (Graph.digraph_abs G) (t_set srcs) x))>"
-  using BFS_par_correct[OF assms refl]
-  by (sep_auto heap: visited_dists_parents_imp_rule[OF assms])
+  by (rule ht_cons_post_prec[OF visited_dists_parents_imp_rule[OF assms]],
+      simp only: split_paired_all prod.case,
+      rule ent_ex_postI[where x = "BFS_dist_state.visited (BFS_par_impl initial_par_state)"],
+      rule ent_ex_postI[where x = "BFS_dist_state.dists (BFS_par_impl initial_par_state)"],
+      rule ent_ex_postI[where x = "BFS_par_state.parent (BFS_par_impl initial_par_state)"],
+      use BFS_par_correct[OF assms refl] in sep_auto)
 
 text \<open>Given the final parents and an array with room for at least as many vertices as the graph
       has after position @{term k}, @{term get_path_imp} writes the path from a visited vertex
       @{term v} back to a source into the array from position @{term k} on. Reversed, it is a
       shortest path from the sources.\<close>
 
-theorem get_path_imp_correct:
+theorem get_path_imp_correct[bfs_heap_rules]:
   assumes BFS_axiom "final_state = BFS_par_impl initial_par_state"
           "v \<in> t_set (BFS_dist_state.visited final_state)"
           "k + card (dVs (Graph.digraph_abs G)) \<le> length r"
@@ -375,7 +337,7 @@ qed
 text \<open>The same from position \<open>0\<close> on: the first @{term k} cells of the array hold the path, and
       reversed they are a shortest path from the sources.\<close>
 
-corollary get_path_imp_prefix_correct:
+corollary get_path_imp_prefix_correct[bfs_heap_rules]:
   assumes BFS_axiom "final_state = BFS_par_impl initial_par_state"
           "v \<in> t_set (BFS_dist_state.visited final_state)"
           "card (dVs (Graph.digraph_abs G)) \<le> length r"
@@ -507,14 +469,14 @@ definition "is_visited_set W S visi =
 lemma only_in_univ: "is_visited_set W S visi = is_visited_set W S visi * \<up>(S \<subseteq> W)"
   unfolding is_visited_set_def by (rule ent_iffI) sep_auto+
 
-lemma vis_memb_rule:
+lemma vis_memb_rule[bfs_heap_rules]:
   "W \<subseteq> U \<Longrightarrow>
    <is_visited_set W S visi * \<up>(a \<in> W)> vis_isin_imp visi a
    <\<lambda>r. is_visited_set W S visi * \<up>(r \<longleftrightarrow> a \<in> S)>"
   unfolding is_visited_set_def
   by (sep_auto heap: vis_imp.fixed_univ_set_isin_rule simp: vis_imp.fixed_univ_set_isin)
 
-lemma vis_ins_rule:
+lemma vis_ins_rule[bfs_heap_rules]:
   "W \<subseteq> U \<Longrightarrow>
    <is_visited_set W S visi * \<up>(a \<in> W)> vis_insert_imp a visi
    <\<lambda>_. is_visited_set W (Set.insert a S) visi>"
@@ -522,19 +484,9 @@ lemma vis_ins_rule:
   by (sep_auto heap: vis_imp.fixed_univ_set_insert_rule simp: vis_imp.fixed_univ_set_insert)
 
 lemma Vs_nbs:
-  assumes "x \<in> set (case G u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs)"
-  shows "x \<in> Vs G"
-proof (cases "G u")
-  case (Some vs)
-  have "x \<in> set vs"
-    using assms unfolding Some option.case .
-  then have "{u, x} \<in> {{u, v} | u v vs. G u = Some vs \<and> v \<in> set vs}"
-    using Some by blast
-  then show ?thesis
-    unfolding Vs_def by (rule UnionI) simp
-qed (use assms in simp)
-
-
+  "x \<in> set (case G u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs) \<Longrightarrow>
+   x \<in> Vs G"
+    by (cases "G u") (auto simp: Vs_def)
 
 text \<open>The invariant of the parent map during a round: it is valid, and the vertices of its edges
       together with its roots are the visited vertices.\<close>
@@ -547,16 +499,8 @@ lemma par_extend_step:
         "par_vis_inv (par_extend p u y) (Set.insert y V)"
         "par_abstract (par_extend p u y) = Set.insert (y, u) (par_abstract p)"
         "par_roots (par_extend p u y) = par_roots p"
-proof-
-  show pre: "y \<in> par_U - dVs (par_abstract p) - par_roots p" "u \<in> dVs (par_abstract p) \<union> par_roots p"
-    using assms by (auto simp: par_vis_inv_def)
-  note ext = par_imp.extend[OF conjunct1[OF assms(1)[unfolded par_vis_inv_def]] pre]
-  show "par_abstract (par_extend p u y) = Set.insert (y, u) (par_abstract p)"
-       "par_roots (par_extend p u y) = par_roots p"
-    by (rule ext(2), rule ext(3))
-  show "par_vis_inv (par_extend p u y) (Set.insert y V)"
-    using ext assms(1,2) unfolding par_vis_inv_def dVs_eq by auto
-qed
+  using assms par_imp.extend[of p y u]
+  by (auto simp: par_vis_inv_def dVs_eq)
 
 text \<open>A round on one frontier vertex @{term u}: the newly visited vertices @{term D} get the
       parent @{term u}.\<close>
@@ -607,7 +551,7 @@ next
     then obtain D where D: "set nf' = set (y # nf) \<union> D" "set vis' = set (y # vis) \<union> D"
       "D \<inter> set (y # vis) = {}" "D \<subseteq> set ys"
       "par_abstract p' = par_abstract (par_extend p u y) \<union> (\<lambda> y. (y, u)) ` D"
-      by blast
+      by (elim conjE exE) assumption
     show ?thesis
       using IH D st(4,5)[OF y] False by (intro conjI exI[of _ "Set.insert y D"]) auto
   qed
@@ -668,7 +612,7 @@ definition "front_assn L Fh G vis (front::nat list) fronti frontp =
         rev (take frontp (frontlist)) = front
      \<and> vis \<subseteq> (Vs G) \<and> set front \<subseteq> (Vs G) \<and> length frontlist = L \<and> fronti = Fh))"
 
-lemma inner_loop_rule:
+lemma inner_loop_rule[bfs_heap_rules]:
   assumes "(front', vis', p') = 
           foldl (\<lambda>x y. case x of (nf, vis, p) \<Rightarrow>
                    if y \<notin> set vis then (y # nf, y # vis, par_extend p u y) else (nf, vis, p))
@@ -769,7 +713,7 @@ definition "old_front_assn L G (front::nat list) fronti frontp =
     fronti \<mapsto>\<^sub>a frontlist * \<up> ( frontp < length frontlist \<and> rev (take frontp (frontlist)) = front
     \<and> card (Vs G) < length frontlist \<and> length frontlist = L \<and> set front \<subseteq> Vs G))"
 
-lemma outer_loop_rule:
+lemma outer_loop_rule[bfs_heap_rules]:
   assumes "(front', vis', p') = 
    foldl (\<lambda>(nf, vis, p) u. 
        foldl (\<lambda>x y. case x of (nf, vis, p) \<Rightarrow>
@@ -866,15 +810,15 @@ fun imp_cf_assn where
 
 definition "imp_src_assn = imp_cf_assn"
 
-lemma imp_cf_is_empty_rule:
+lemma imp_cf_is_empty_rule[bfs_heap_rules]:
   "<imp_cf_assn L Fr Bf G S Si> imp_cf_is_empty Si <\<lambda>b. imp_cf_assn L Fr Bf G S Si * \<up> (b = (S = []))>"
   by(cases Si) sep_auto
 
-lemma foldl_insert:"foldl (\<lambda>S x. Set.insert x S) A xs = set xs \<union> A"
+lemma foldl_insert[simp]:"foldl (\<lambda>S x. Set.insert x S) A xs = set xs \<union> A"
   by(induction xs arbitrary: A) auto
 
-lemma set_srcs_visited_rule:
-  assumes VU: "Vs G \<subseteq> U"
+lemma set_srcs_visited_rule[bfs_heap_rules]:
+  assumes "Vs G \<subseteq> U"
   shows "<imp_src_assn L Fr Bf G S Si * is_visited_set (Vs G) {} empty_vis> 
           set_srcs_visited empty_vis Si
         <\<lambda>r. is_visited_set (Vs G) (set S) r * imp_src_assn L Fr Bf G S Si>"
@@ -894,7 +838,7 @@ proof (cases Si)
       have "x \<in> Vs G"
         using x fl(3) unfolding nths by auto
       then show ?thesis
-        by (sep_auto heap: vis_ins_rule[OF VU])
+        by (sep_auto heap: vis_ins_rule[OF assms])
     qed
     note rule = iterate_range_strict_rule[of fl 0 frontp "\<lambda>A (_::unit). is_visited_set (Vs G) A empty_vis"
                   emp "\<lambda>v _. vis_insert_imp v empty_vis" "\<lambda>A x. Set.insert x A" fronti "{}" "()", OF step]
@@ -918,11 +862,11 @@ definition "imp_dist_assn L Da G d di
           \<up>((\<forall> i \<in> Vs G. i < length dlist \<and> d i = dlist ! i) \<and> di = Da \<and> length dlist = L))"
 
 
-lemma foldl_fun_upd_same: "foldl (\<lambda>d x y. if x = y then n else d y) d xs =
+lemma foldl_fun_upd_same[simp]: "foldl (\<lambda>d x y. if x = y then n else d y) d xs =
        (\<lambda> x. if x \<in> set xs then n else d x)"
   by(induction xs arbitrary: d)  auto
 
-lemma set_all_dists_in_front_imp_rule:
+lemma set_all_dists_in_front_imp_rule[bfs_heap_rules]:
   "<imp_dist_assn L' Da G d di * imp_cf_assn L Fr Bf G cf cfi> set_all_dists_in_front_imp di cfi n
     <\<lambda>r. imp_dist_assn L' Da G (\<lambda>y. if y \<in> set cf then n else d y) r * imp_cf_assn L Fr Bf G cf cfi>"
   apply(cases cfi) 
@@ -948,7 +892,12 @@ lemma set_all_dists_in_front_imp_rule:
 lemma verts_rw:
    "\<Union> {{v1, v2} |v1 v2. (v1, v2) \<in> {(u, v). v \<in> set (case G u of None \<Rightarrow> [] | Some vset \<Rightarrow> vset)}} =
     \<Union> {uu. \<exists>u v vs. uu = {u, v} \<and> G u = Some vs \<and> v \<in> set vs}"
-  by auto (metis insert_iff)+
+proof -
+  have "v \<in> set (case G u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs) \<longleftrightarrow>
+    (\<exists>vs. G u = Some vs \<and> v \<in> set vs)" for u v
+    by (cases "G u") auto
+  then show ?thesis by simp
+qed
 
 sublocale BFS_subprocedures_3
   where empty = "\<lambda> x. None"
@@ -1061,7 +1010,7 @@ proof-
     using all by blast+
   obtain Ex where Ex: "par_abstract p' = par_abstract p \<union> Ex" "set cf' = set [] \<union> fst ` Ex"
     "\<forall> y u. (y, u) \<in> Ex \<longrightarrow> u \<in> set (rev cf) \<and> y \<in> set (case G u of None \<Rightarrow> [] | Some ys \<Rightarrow> ys)"
-    using all by blast
+    using all by (elim conjE exE) assumption
   have cf': "set cf' = fst ` Ex"
     using Ex(2) by (simp only: list.set(1) Un_empty_left)
   note E3 = Ex(3)[unfolded set_rev]
@@ -1093,7 +1042,7 @@ proof-
   qed
 qed
 
-lemma next_frontier_current_parents_imp_rule:
+lemma next_frontier_current_parents_imp_rule[bfs_heap_rules]:
   fixes G::"nat \<Rightarrow> nat list option"
   assumes "finite (Vs G)" "next_frontier_current_parents G cf vis p = (cf', vis', p')"
           "nbs_invar G" "Vs G \<subseteq> K" "Vs G \<subseteq> par_U" "par_vis_inv p (set vis)" "set cf \<subseteq> set vis"
@@ -1155,12 +1104,17 @@ text \<open>Introduction of the assertions from arrays allocated by the caller: 
       whose first cells hold the sources, together with a buffer, and an array of distances.\<close>
 
 lemma imp_src_assn_intro:
-  assumes "card (Vs G) < length fl" "card (Vs G) < length bl" "length ss < length fl"
-          "take (length ss) fl = ss" "set ss \<subseteq> Vs G" "length fl = L" "length bl = L"
-  shows "Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl \<Longrightarrow>\<^sub>A imp_src_assn L Fr Bf G (rev ss) (Fr, length ss, Bf)"
+  "\<lbrakk>card (Vs G) < length fl;
+    card (Vs G) < length bl;
+    length ss < length fl;
+    take (length ss) fl = ss;
+    set ss \<subseteq> Vs G;
+    length fl = L;
+    length bl = L\<rbrakk> \<Longrightarrow>
+   Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl \<Longrightarrow>\<^sub>A imp_src_assn L Fr Bf G (rev ss) (Fr, length ss, Bf)"
   unfolding imp_src_assn_def imp_cf_assn.simps
   by (intro ent_ex_postI[where x = fl] ent_ex_postI[where x = bl])
-     (unfold ent_pure_post_iff, use assms in \<open>simp add: ent_refl\<close>)
+     (unfold ent_pure_post_iff, simp add: ent_refl)
 
 lemma imp_dist_assn_intro:
   "\<lbrakk>\<forall>i \<in> Vs G. i < length dl \<and> d i = dl ! i; length dl = L\<rbrakk> \<Longrightarrow> 
@@ -1366,7 +1320,7 @@ next
     if "frontp < length fl" "rev (take frontp fl) = R" for fl
   proof-
     have "set (take frontp fl) = set R"
-      using that(2) set_rev by metis
+      using arg_cong[OF that(2), where f = set] by (simp only: set_rev)
     then show ?thesis
       by (rule par_init_rule[OF 18(2) that(1)])
   qed

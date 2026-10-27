@@ -59,10 +59,12 @@ locale indexed_set_fold =
   for idx_invar     :: "'coll \<Rightarrow> bool"
     and idx_abstract  :: "'coll \<Rightarrow> 'i \<Rightarrow> 'a set"
     and K             :: "'i set" +
-  fixes idx_fold      :: "'coll \<Rightarrow> 'i \<Rightarrow> ('a \<Rightarrow> 'acc \<Rightarrow> 'acc) \<Rightarrow> 'acc \<Rightarrow> 'acc"
+  fixes idx_fold      :: "'coll \<Rightarrow> 'i \<Rightarrow>
+                          ('a \<Rightarrow> 'acc \<Rightarrow> 'acc) \<Rightarrow> 'acc \<Rightarrow> 'acc"
   assumes idx_fold:
       "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow>
-         \<exists>xs. set xs = idx_abstract C i \<and> (\<forall>f acc. idx_fold C i f acc = foldl (\<lambda>acc x. f x acc) acc xs)"
+         \<exists>xs. set xs = idx_abstract C i \<and>
+           (\<forall>f acc. idx_fold C i f acc = foldl (\<lambda>acc x. f x acc) acc xs)"
 
 subsection \<open>Iterating by a cursor\<close>
 
@@ -79,25 +81,34 @@ locale indexed_set_cursor =
     and idx_remaining :: "'coll \<Rightarrow> 'i \<Rightarrow> 'a set"
     and idx_move      :: "'coll \<Rightarrow> 'i \<Rightarrow> 'coll"
   assumes idx_partition_disjoint:
-      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow> idx_iterated C i \<inter> idx_remaining C i = {}"
+      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow>
+          idx_iterated C i \<inter> idx_remaining C i = {}"
     and idx_partition_union:
-      "\<And>C i.\<lbrakk>idx_invar C; i \<in> K\<rbrakk>  \<Longrightarrow> idx_iterated C i \<union> idx_remaining C i = idx_abstract C i"
+      "\<And>C i.\<lbrakk>idx_invar C; i \<in> K\<rbrakk>  \<Longrightarrow>
+          idx_iterated C i \<union> idx_remaining C i = idx_abstract C i"
     and idx_has:
-      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk>  \<Longrightarrow> idx_has C i \<longleftrightarrow> idx_remaining C i \<noteq> {}"
+      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk>  \<Longrightarrow>
+          idx_has C i \<longleftrightarrow> idx_remaining C i \<noteq> {}"
     and idx_current:
-      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K; idx_remaining C i \<noteq> {}\<rbrakk> \<Longrightarrow> idx_current C i \<in> idx_remaining C i"
+      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K; idx_remaining C i \<noteq> {}\<rbrakk> \<Longrightarrow>
+          idx_current C i \<in> idx_remaining C i"
     and idx_move_invar:
       "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow> idx_invar (idx_move C i)"
     and idx_move_abstract:
-      "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K; idx_remaining C i \<noteq> {}\<rbrakk> \<Longrightarrow> idx_abstract (idx_move C i) j = idx_abstract C j"
+      "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K; idx_remaining C i \<noteq> {}\<rbrakk> \<Longrightarrow>
+          idx_abstract (idx_move C i) j = idx_abstract C j"
     and idx_move_remaining:
-      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K; idx_remaining C i \<noteq> {}\<rbrakk> \<Longrightarrow> idx_remaining (idx_move C i) i = idx_remaining C i - {idx_current C i}"
+      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K; idx_remaining C i \<noteq> {}\<rbrakk> \<Longrightarrow>
+          idx_remaining (idx_move C i) i = idx_remaining C i - {idx_current C i}"
     and idx_move_iterated:
-      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K; idx_remaining C i \<noteq> {}\<rbrakk> \<Longrightarrow> idx_iterated (idx_move C i) i = idx_iterated C i \<union> {idx_current C i}"
+      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K; idx_remaining C i \<noteq> {}\<rbrakk> \<Longrightarrow>
+          idx_iterated (idx_move C i) i = idx_iterated C i \<union> {idx_current C i}"
     and idx_move_remaining_other:
-      "\<And>C i j. \<lbrakk>idx_invar C;i \<in> K; idx_remaining C i \<noteq> {}; j \<noteq> i\<rbrakk> \<Longrightarrow> idx_remaining (idx_move C i) j = idx_remaining C j"
+      "\<And>C i j. \<lbrakk>idx_invar C;i \<in> K; idx_remaining C i \<noteq> {};
+          j \<noteq> i\<rbrakk> \<Longrightarrow> idx_remaining (idx_move C i) j = idx_remaining C j"
     and idx_move_iterated_other:
-      "\<And>C i j. \<lbrakk>idx_invar C;i \<in> K; idx_remaining C i \<noteq> {}; j \<noteq> i\<rbrakk> \<Longrightarrow> idx_iterated (idx_move C i) j = idx_iterated C j"
+      "\<And>C i j. \<lbrakk>idx_invar C;i \<in> K; idx_remaining C i \<noteq> {};
+          j \<noteq> i\<rbrakk> \<Longrightarrow> idx_iterated (idx_move C i) j = idx_iterated C j"
 
 subsection \<open>Resetting a cursor\<close>
 
@@ -115,15 +126,19 @@ locale indexed_set_reset =
   assumes idx_reset_invar:
       "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow> idx_invar (idx_reset C i)"
     and idx_reset_abstract:
-      "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow> idx_abstract (idx_reset C i) j = idx_abstract C j"
+      "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow>
+          idx_abstract (idx_reset C i) j = idx_abstract C j"
     and idx_reset_iterated:
       "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow> idx_iterated (idx_reset C i) i = {}"
     and idx_reset_remaining:
-      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow> idx_remaining (idx_reset C i) i = idx_abstract C i"
+      "\<And>C i. \<lbrakk>idx_invar C; i \<in> K\<rbrakk> \<Longrightarrow>
+          idx_remaining (idx_reset C i) i = idx_abstract C i"
     and idx_reset_remaining_other:
-      "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K; j \<noteq> i\<rbrakk> \<Longrightarrow> idx_remaining (idx_reset C i) j = idx_remaining C j"
+      "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K; j \<noteq> i\<rbrakk> \<Longrightarrow>
+          idx_remaining (idx_reset C i) j = idx_remaining C j"
     and idx_reset_iterated_other:
-      "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K; j \<noteq> i\<rbrakk> \<Longrightarrow> idx_iterated (idx_reset C i) j = idx_iterated C j"
+      "\<And>C i j. \<lbrakk>idx_invar C; i \<in> K; j \<noteq> i\<rbrakk> \<Longrightarrow>
+          idx_iterated (idx_reset C i) j = idx_iterated C j"
 
 subsection \<open>Iterable sets: cursor and reset\<close>
 
@@ -199,10 +214,12 @@ locale indexed_set_reset_to =
          idx_current (idx_reset_to C i x) i = x \<and>
          idx_remaining (idx_reset_to C i x) i = idx_remaining C' i"
     and idx_reset_to_iterated_other:
-      "\<And> C i x j. \<lbrakk>idx_invar C; i \<in> K; x \<in> idx_abstract C i; j \<noteq> i\<rbrakk> \<Longrightarrow>
+      "\<And> C i x j. \<lbrakk>idx_invar C; i \<in> K; x \<in> idx_abstract C i;
+         j \<noteq> i\<rbrakk> \<Longrightarrow>
          idx_iterated (idx_reset_to C i x) j = idx_iterated C j"
     and idx_reset_to_remaining_other:
-      "\<And> C i x j. \<lbrakk>idx_invar C; i \<in> K; x \<in> idx_abstract C i; j \<noteq> i\<rbrakk> \<Longrightarrow>
+      "\<And> C i x j. \<lbrakk>idx_invar C; i \<in> K; x \<in> idx_abstract C i;
+         j \<noteq> i\<rbrakk> \<Longrightarrow>
          idx_remaining (idx_reset_to C i x) j = idx_remaining C j"
 
 subsection \<open>Iterable sets with both resets\<close>

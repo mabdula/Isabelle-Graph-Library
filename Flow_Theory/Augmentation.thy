@@ -464,6 +464,20 @@ fun augment_edges::"('edge \<Rightarrow> real) \<Rightarrow> real \<Rightarrow>(
 lemma augment_edges_fold: "augment_edges f \<gamma> es = foldr (\<lambda> e f. augment_edge f \<gamma> e) es f"
   by(induction es) simp+
 
+lemma augment_edges_distinct:
+  "distinct (map oedge es) \<Longrightarrow>
+    augment_edges f \<gamma> es d =
+      (if F d \<in> set es then f d + \<gamma> else if B d \<in> set es then f d - \<gamma> else f d)"
+proof(induction es)
+  case (Cons e es)
+  then have "F (oedge e) \<notin> set es" "B (oedge e) \<notin> set es"
+    using imageI[of "F (oedge e)" "set es" oedge] imageI[of "B (oedge e)" "set es" oedge]
+    by auto
+  then show ?case
+    using Cons
+    by (cases e) auto
+qed simp
+
 text \<open>For convenience during inductions, fist single edge augment, then recursion\<close>
 
 fun augment_edges'::"('edge \<Rightarrow> real) \<Rightarrow> real \<Rightarrow>('edge Redge) list \<Rightarrow> ('edge \<Rightarrow> real)" where
@@ -1182,6 +1196,38 @@ lemma rcap_extr_strict:
  "\<lbrakk>e \<in> set es; \<gamma> < Rcap f (set es)\<rbrakk> \<Longrightarrow> \<gamma> < rcap f e"
   using rcap_extr  dual_order.strict_trans1 by blast
 
+subsection \<open>Residual Reachability in the Vertex Projection\<close>
+
+text \<open>Every walk in the projection of the residual edges of positive capacity lifts to a list of
+such residual edges. Hence residual reachability between distinct vertices is the existence of
+such a walk.\<close>
+
+lemma resreach_iff_vwalk:
+  assumes "u \<noteq> v"
+  shows "resreach f u v \<longleftrightarrow>
+    (\<exists>p. vwalk_bet (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) u p v)"
+proof
+  assume "resreach f u v"
+  then obtain p where "awalk (to_vertex_pair ` \<EE>) u (map to_vertex_pair p) v"
+    "Rcap f (set p) > 0" "p \<noteq> []" "set p \<subseteq> \<EE>"
+    by (rule resreachE)
+  then have "awalk (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) u (map to_vertex_pair p) v"
+    using rcap_extr_strict[of _ p 0 f]
+    by (auto intro!: subset_mono_awalk'[where A = "to_vertex_pair ` \<EE>"] imageI simp: subset_iff)
+  then show "\<exists>p. vwalk_bet (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) u p v"
+    by (blast dest: awalk_imp_vwalk)
+next
+  assume "\<exists>p. vwalk_bet (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) u p v"
+  then obtain p where "vwalk_bet (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) u p v"
+    by (rule exE)
+  moreover from this obtain rs where "map to_vertex_pair rs = edges_of_vwalk p"
+    "set rs \<subseteq> {e | e. e \<in> \<EE> \<and> rcap f e > 0}"
+    by (rule lift_vwalk)
+  ultimately show "resreach f u v"
+    using assms
+    by (intro resreachI Rcap_strictI') (auto simp: awalk_Nil_iff dest!: vwalk_imp_awalk intro: subset_mono_awalk)
+qed
+
 end
 
 context 
@@ -1306,6 +1352,35 @@ lemma integral_ex:
   shows "ex f x \<in> \<int>"
   using assms unfolding ex_def
   by (auto intro!: Ints_diff simp add: is_integral_flow_Ints delta_plus_def delta_minus_def)
+
+lemma Rcap_integral:
+  assumes "is_integral_flow f" "\<And>e. e \<in> \<E> \<Longrightarrow> \<u> e = PInfty \<or> (\<exists>r \<in> \<int>. \<u> e = ereal r)"
+    "set q \<subseteq> \<EE>" "Rcap f (set q) < PInfty"
+  obtains r where "Rcap f (set q) = ereal r" "r \<in> \<int>"
+proof -
+  have fin: "finite {rc. \<exists>e. rc = rcap f e \<and> e \<in> set q}"
+    by (rule finite_subset[of _ "rcap f ` set q"]) auto
+  have "Rcap f (set q) \<in> insert PInfty {rc. \<exists>e. rc = rcap f e \<and> e \<in> set q}"
+    unfolding Rcap_def by (rule Min_in) (use fin in auto)
+  then obtain e where e: "e \<in> set q" "Rcap f (set q) = rcap f e"
+    using assms(4) by auto
+  hence oe: "oedge e \<in> \<E>"
+    using assms(3) o_edge_res by auto
+  show ?thesis
+  proof (cases e)
+    case (F d)
+    hence "\<u> d \<noteq> PInfty"
+      using e assms(4) by auto
+    then obtain r where "r \<in> \<int>" "\<u> d = ereal r"
+      using assms(2) oe F by auto
+    thus ?thesis
+      using that[of "r - f d"] e F assms(1) oe by (auto simp add: is_integral_flow_Ints)
+  next
+    case (B d)
+    thus ?thesis
+      using that[of "f d"] e assms(1) oe by (auto simp add: is_integral_flow_Ints)
+  qed
+qed
 
 text \<open>Augmenting an integral flow by an integer keeps it integral.\<close>
 

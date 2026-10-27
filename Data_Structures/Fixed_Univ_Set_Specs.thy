@@ -16,7 +16,8 @@ locale fixed_univ_set =
       "fixed_univ_set_invar fixed_univ_set_empty"
       "fixed_univ_set_abstract fixed_univ_set_empty = {}"
   and fixed_univ_set_insert:
-      "\<And> x S. \<lbrakk>fixed_univ_set_invar S; x \<in> U\<rbrakk> \<Longrightarrow> fixed_univ_set_invar (fixed_univ_set_insert x S)"
+      "\<And> x S. \<lbrakk>fixed_univ_set_invar S; x \<in> U\<rbrakk> \<Longrightarrow>
+          fixed_univ_set_invar (fixed_univ_set_insert x S)"
       "\<And> x S. \<lbrakk>fixed_univ_set_invar S; x \<in> U\<rbrakk> \<Longrightarrow>
           fixed_univ_set_abstract (fixed_univ_set_insert x S) = insert x (fixed_univ_set_abstract S)"
   and fixed_univ_set_delete:
@@ -24,7 +25,8 @@ locale fixed_univ_set =
       "\<And> x S. fixed_univ_set_invar S \<Longrightarrow>
           fixed_univ_set_abstract (fixed_univ_set_delete x S) = fixed_univ_set_abstract S - {x}"
   and fixed_univ_set_isin:
-      "\<And> x S. fixed_univ_set_invar S \<Longrightarrow> fixed_univ_set_isin S x \<longleftrightarrow> x \<in> fixed_univ_set_abstract S"
+      "\<And> x S. fixed_univ_set_invar S \<Longrightarrow>
+          fixed_univ_set_isin S x \<longleftrightarrow> x \<in> fixed_univ_set_abstract S"
 
 text \<open>A set is its own model, over any universe.\<close>
 

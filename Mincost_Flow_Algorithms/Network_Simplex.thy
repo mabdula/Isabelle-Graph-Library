@@ -595,7 +595,9 @@ definition "entering_edge \<pi> es e in_U \<equiv>
 
 definition "no_entering_edge \<pi> es \<equiv>
   (\<forall> e \<in> \<E>. fst e \<noteq> snd e \<longrightarrow> es_lookup es e = InL \<longrightarrow> reduced_cost \<pi> e \<ge> 0) \<and>
-  (\<forall> e \<in> \<E>. fst e \<noteq> snd e \<longrightarrow> es_lookup es e = InU \<longrightarrow> reduced_cost \<pi> e \<le> 0)"text \<open>The two selection assumptions above are stated on unfolded expressions (a locale cannot refer
+  (\<forall> e \<in> \<E>. fst e \<noteq> snd e \<longrightarrow> es_lookup es e = InU \<longrightarrow> reduced_cost \<pi> e \<le> 0)"
+
+text \<open>The two selection assumptions above are stated on unfolded expressions (a locale cannot refer
       to its own body definitions). The following two rules repackage them in terms of the
       predicates just introduced --- this is the interface the loop and its correctness proof use.
       Whenever the selection precondition holds: a @{term \<open>Some (e, in_U, \<gamma>, sel')\<close>} result yields an
@@ -633,22 +635,7 @@ lemma ns_unbounded_condE:
         get_path_pair (spanning_tree s) (fst_exec e) (snd_exec e) = (p1, p2);
         bottleneck s e in_U p1 p2 = (- 1, is_flip, v, e0fwd, up_side)\<rbrakk> \<Longrightarrow> Q"
   shows Q
-proof -
-  have "ns_select s \<noteq> None"
-    using assms(1) by (auto simp: ns_unbounded_cond_def split: option.splits)
-  then obtain e in_U \<gamma> sel' where sel: "ns_select s = Some (e, in_U, \<gamma>, sel')"
-    by (metis prod_cases4 option.exhaust)
-  obtain p1 p2 where pp: "get_path_pair (spanning_tree s) (fst_exec e) (snd_exec e) = (p1, p2)"
-    by (metis prod.exhaust)
-  obtain \<delta> is_flip v e0fwd up_side
-    where bn: "bottleneck s e in_U p1 p2 = (\<delta>, is_flip, v, e0fwd, up_side)"
-    by (metis prod_cases5)
-  have "\<delta> = - 1"
-    using assms(1) sel pp bn
-    by (auto simp: ns_unbounded_cond_def Let_def split: prod.splits)
-  with bn have "bottleneck s e in_U p1 p2 = (- 1, is_flip, v, e0fwd, up_side)" by simp
-  from assms(2)[OF sel pp this] show Q .
-qed
+  using assms by (auto simp: ns_unbounded_cond_def Let_def split: option.splits prod.splits)
 
 lemma ns_unbounded_condI:
   "\<lbrakk>ns_select s = Some (e, in_U, \<gamma>, sel');
@@ -663,23 +650,7 @@ lemma ns_flip_condE:
         get_path_pair (spanning_tree s) (fst_exec e) (snd_exec e) = (p1, p2);
         bottleneck s e in_U p1 p2 = (\<delta>, True, v, e0fwd, up_side); \<delta> \<noteq> - 1\<rbrakk> \<Longrightarrow> Q"
   shows Q
-proof -
-  have "ns_select s \<noteq> None"
-    using assms(1) by (auto simp: ns_flip_cond_def split: option.splits)
-  then obtain e in_U \<gamma> sel' where sel: "ns_select s = Some (e, in_U, \<gamma>, sel')"
-    by (metis prod_cases4 option.exhaust)
-  obtain p1 p2 where pp: "get_path_pair (spanning_tree s) (fst_exec e) (snd_exec e) = (p1, p2)"
-    by (metis prod.exhaust)
-  obtain \<delta> is_flip v e0fwd up_side
-    where bn: "bottleneck s e in_U p1 p2 = (\<delta>, is_flip, v, e0fwd, up_side)"
-    by (metis prod_cases5)
-  have fl: "\<delta> \<noteq> - 1 \<and> is_flip"
-    using assms(1) sel pp bn
-    by (auto simp: ns_flip_cond_def Let_def split: prod.splits)
-  from fl have dne: "\<delta> \<noteq> - 1" by simp
-  from fl bn have bn': "bottleneck s e in_U p1 p2 = (\<delta>, True, v, e0fwd, up_side)" by simp
-  from assms(2)[OF sel pp bn' dne] show Q .
-qed
+  using assms by (auto simp: ns_flip_cond_def Let_def split: option.splits prod.splits)
 
 lemma ns_flip_condI:
   "\<lbrakk>ns_select s = Some (e, in_U, \<gamma>, sel');
@@ -694,23 +665,7 @@ lemma ns_pivot_condE:
         get_path_pair (spanning_tree s) (fst_exec e) (snd_exec e) = (p1, p2);
         bottleneck s e in_U p1 p2 = (\<delta>, False, v, e0fwd, up_side); \<delta> \<noteq> - 1\<rbrakk> \<Longrightarrow> Q"
   shows Q
-proof -
-  have "ns_select s \<noteq> None"
-    using assms(1) by (auto simp: ns_pivot_cond_def split: option.splits)
-  then obtain e in_U \<gamma> sel' where sel: "ns_select s = Some (e, in_U, \<gamma>, sel')"
-    by (metis prod_cases4 option.exhaust)
-  obtain p1 p2 where pp: "get_path_pair (spanning_tree s) (fst_exec e) (snd_exec e) = (p1, p2)"
-    by (metis prod.exhaust)
-  obtain \<delta> is_flip v e0fwd up_side
-    where bn: "bottleneck s e in_U p1 p2 = (\<delta>, is_flip, v, e0fwd, up_side)"
-    by (metis prod_cases5)
-  have fl: "\<delta> \<noteq> - 1 \<and> \<not> is_flip"
-    using assms(1) sel pp bn
-    by (auto simp: ns_pivot_cond_def Let_def split: prod.splits)
-  from fl have dne: "\<delta> \<noteq> - 1" by simp
-  from fl bn have bn': "bottleneck s e in_U p1 p2 = (\<delta>, False, v, e0fwd, up_side)" by simp
-  from assms(2)[OF sel pp bn' dne] show Q .
-qed
+  using assms by (auto simp: ns_pivot_cond_def Let_def split: option.splits prod.splits)
 
 lemma ns_pivot_condI:
   "\<lbrakk>ns_select s = Some (e, in_U, \<gamma>, sel');
@@ -728,7 +683,7 @@ proof -
   have "ns_success_cond s \<or> ns_unbounded_cond s \<or> ns_flip_cond s \<or> ns_pivot_cond s"
     by (auto simp: ns_success_cond_def ns_unbounded_cond_def ns_flip_cond_def ns_pivot_cond_def
              Let_def split: option.splits prod.splits)
-  thus P using assms by auto
+  then show P using assms by blast
 qed
 
 subsection \<open>One-step unfolding and tailored induction\<close>
@@ -739,31 +694,17 @@ lemma ns_loop_simps:
         "ns_unbounded_cond s \<Longrightarrow> ns_loop s = ns_unbounded_upd s"
         "ns_flip_cond s \<Longrightarrow> ns_loop s = ns_loop (ns_flip_upd s)"
         "ns_pivot_cond s \<Longrightarrow> ns_loop s = ns_loop (ns_pivot_upd s)"
-proof (goal_cases)
-  case 1
-  thus ?case by (auto elim!: ns_success_condE simp: ns_loop.psimps[OF assms])
-next
-  case 2
-  show ?case
-  proof (rule ns_unbounded_condE[OF 2], goal_cases)
-    case (1 e in_U \<gamma> sel' p1 p2)
-    thus ?case by (auto simp: ns_loop.psimps[OF assms] Let_def)
-  qed
-next
-  case 3
-  show ?case
-  proof (rule ns_flip_condE[OF 3], goal_cases)
-    case (1 e in_U \<gamma> sel' p1 p2 \<delta>)
-    thus ?case by (auto simp: ns_loop.psimps[OF assms] ns_flip_upd_def Let_def)
-  qed
-next
-  case 4
-  show ?case
-  proof (rule ns_pivot_condE[OF 4], goal_cases)
-    case (1 e in_U \<gamma> sel' p1 p2 \<delta> v e0fwd up_side)
-    thus ?case by (auto simp: ns_loop.psimps[OF assms] ns_pivot_upd_def Let_def)
-  qed
-qed
+  by (auto elim!: ns_success_condE ns_unbounded_condE ns_flip_condE ns_pivot_condE
+           simp: ns_loop.psimps[OF assms] ns_flip_upd_def ns_pivot_upd_def Let_def)
+
+lemma ns_loop_impl_simps:
+  shows "ns_success_cond s \<Longrightarrow> ns_loop_impl s = ns_optimal s"
+        "ns_unbounded_cond s \<Longrightarrow> ns_loop_impl s = ns_unbounded_upd s"
+        "ns_flip_cond s \<Longrightarrow> ns_loop_impl s = ns_loop_impl (ns_flip_upd s)"
+        "ns_pivot_cond s \<Longrightarrow> ns_loop_impl s = ns_loop_impl (ns_pivot_upd s)"
+  by (subst ns_loop_impl.simps,
+      auto elim!: ns_success_condE ns_unbounded_condE ns_flip_condE ns_pivot_condE
+           simp: ns_flip_upd_def ns_pivot_upd_def Let_def)+
 
 lemma ns_loop_induct:
   assumes "ns_loop_dom s"
@@ -771,22 +712,8 @@ lemma ns_loop_induct:
             ns_flip_cond s \<Longrightarrow> P (ns_flip_upd s);
             ns_pivot_cond s \<Longrightarrow> P (ns_pivot_upd s)\<rbrakk> \<Longrightarrow> P s"
   shows "P s"
-proof (rule ns_loop.pinduct[OF assms(1)], goal_cases)
-  case (1 s)
-  note IH = this
-  show ?case
-  proof (rule assms(2)[OF IH(1)], goal_cases)
-    case 1
-    thus ?case
-      using IH(2)
-      by (auto elim!: ns_flip_condE[of s] simp: ns_flip_upd_def Let_def)
-  next
-    case 2
-    thus ?case
-      using IH(3)
-      by (auto elim!: ns_pivot_condE[of s] simp: ns_pivot_upd_def Let_def)
-  qed
-qed
+  by (rule ns_loop.pinduct[OF assms(1)], rule assms(2))
+     (auto elim!: ns_flip_condE ns_pivot_condE simp: ns_flip_upd_def ns_pivot_upd_def Let_def)
 
 subsection \<open>Agreement of the executable twin with the specification loop\<close>
 
@@ -795,44 +722,7 @@ lemma ns_loop_dom_impl_same:
   shows "ns_loop_impl s = ns_loop s"
 proof (induction rule: ns_loop_induct[OF assms])
   case (1 s)
-  note IH = this
-  show ?case
-  proof (cases s rule: ns_loop_cases)
-    case 1
-    thus ?thesis
-      by (auto elim!: ns_success_condE
-               simp: ns_loop_impl.simps ns_loop.psimps[OF IH(1)])
-  next
-    case 2
-    show ?thesis
-    proof (rule ns_unbounded_condE[OF 2], goal_cases)
-      case (1 e in_U \<gamma> sel' p1 p2)
-      thus ?case
-        by (simp add: ns_loop_impl.simps ns_loop.psimps[OF IH(1)])
-    qed
-  next
-    case 3
-    show ?thesis
-    proof (rule ns_flip_condE[OF 3], goal_cases)
-      case (1 e in_U \<gamma> sel' p1 p2 \<delta>)
-      have "ns_loop_impl s = ns_loop_impl (ns_flip_upd s)"
-        using 1 by (subst ns_loop_impl.simps) (simp add: ns_flip_upd_def)
-      also have "\<dots> = ns_loop (ns_flip_upd s)" using IH(2)[OF 3] .
-      also have "\<dots> = ns_loop s" using ns_loop_simps(3)[OF IH(1) 3] by simp
-      finally show ?case .
-    qed
-  next
-    case 4
-    show ?thesis
-    proof (rule ns_pivot_condE[OF 4], goal_cases)
-      case (1 e in_U \<gamma> sel' p1 p2 \<delta> v e0fwd up_side)
-      have "ns_loop_impl s = ns_loop_impl (ns_pivot_upd s)"
-        using 1 by (subst ns_loop_impl.simps) (simp add: ns_pivot_upd_def)
-      also have "\<dots> = ns_loop (ns_pivot_upd s)" using IH(3)[OF 4] .
-      also have "\<dots> = ns_loop s" using ns_loop_simps(4)[OF IH(1) 4] by simp
-      finally show ?case .
-    qed
-  qed
+  then show ?case by (cases rule: ns_loop_cases[of s]) (simp_all add: ns_loop_impl_simps ns_loop_simps)
 qed
 
 lemma ns_loop_dom_impl_cong:

@@ -1,5 +1,5 @@
 theory Matroid_Intersection_Imp_Loop
-  imports Matroid_Intersection_Path_Loop "Data_Structures.Imp_Bool_Set"
+  imports Matroid_Intersection_Path_Loop Data_Structures.More_Arith "Data_Structures.Imp_Bool_Set"
 begin
 
 section \<open>The Augmentation Loop in Imperative HOL\<close>
@@ -13,24 +13,23 @@ text \<open>The imperative counterpart of @{locale unweighted_intersection_path_
 
 subsection \<open>Paths\<close>
 
-text \<open>A path array of length \<open>n\<close>, and a path result: no path and \<open>None\<close>, or a path written
-  reversed into the first \<open>k\<close> cells and \<open>Some k\<close>.\<close>
+text \<open>A path result is either \<open>None\<close>, or \<open>Some k\<close> with the path written
+  backwards into the first \<open>k\<close> cells of an array of length \<open>n\<close>.\<close>
 
 definition parr_assn :: "nat \<Rightarrow> nat array \<Rightarrow> assn" where
   "parr_assn n Ra = (\<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(length ps = n))"
 
-definition path_assn :: "nat \<Rightarrow> nat list option \<Rightarrow> nat option \<Rightarrow> nat array \<Rightarrow> assn" where
+definition path_assn :: "nat \<Rightarrow> nat list option \<Rightarrow> nat option \<Rightarrow> nat array
+    \<Rightarrow> assn" where
   "path_assn n po ko Ra = (case po of
       None \<Rightarrow> (\<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(length ps = n \<and> ko = None))
     | Some p \<Rightarrow> (\<exists>\<^sub>A k ps. Ra \<mapsto>\<^sub>a ps *
                    \<up>(length ps = n \<and> ko = Some k \<and> k \<le> n \<and> rev (take k ps) = p)))"
 
-lemma nth_in_take: "\<lbrakk>j < k; k \<le> length ps\<rbrakk> \<Longrightarrow> ps ! j \<in> set (take k ps)"
-  using nth_mem[of j "take k ps"] by simp
-
-lemma rev_take_Suc_Suc:
-  "Suc (Suc j) \<le> length ps \<Longrightarrow> rev (take (Suc (Suc j)) ps) = ps ! Suc j # ps ! j # rev (take j ps)"
-  by (simp add: take_Suc_conv_app_nth)
+lemma parr_frame:
+  assumes "<P * parr_assn n Ra * F> c <Q>" "length ps = n"
+  shows "<P * Ra \<mapsto>\<^sub>a ps * F> c <Q>"
+  by (rule ht_cons_pre[OF _ assms(1)]) (unfold parr_assn_def, sep_auto simp: assms(2))
 
 subsection \<open>Augmentation\<close>
 
@@ -60,28 +59,25 @@ locale intersection_augment_imp =
   for n sol_assn smemb_imp sins_imp sdel_imp
 begin
 
+lemma aug_imp_one:
+  "aug_imp Si Ra 1 = do { x \<leftarrow> Array.nth Ra 0; sins_imp x Si }"
+  by (subst aug_imp.simps) simp
+
+lemma aug_imp_step:
+  "aug_imp Si Ra (Suc (Suc j)) =
+   do { x \<leftarrow> Array.nth Ra (Suc j); y \<leftarrow> Array.nth Ra j;
+        sdel_imp y Si; sins_imp x Si; aug_imp Si Ra j }"
+  by (subst aug_imp.simps) simp
+
 lemma aug_imp_rule:
   "\<lbrakk>k \<le> length ps; set (rev (take k ps)) \<subseteq> {..<n}\<rbrakk> \<Longrightarrow>
    <sol_assn X Si * Ra \<mapsto>\<^sub>a ps> aug_imp Si Ra k
    <\<lambda> _. sol_assn (augment X (rev (take k ps))) Si * Ra \<mapsto>\<^sub>a ps>"
 proof(induction k arbitrary: X rule: less_induct)
   case (less k)
-  have tk: "set (take k ps) \<subseteq> {..<n}"
-    using less.prems(2) by simp
   consider "k = 0" | "k = 1" | j where "k = Suc (Suc j)"
-  proof-
-    assume a: "k = 0 \<Longrightarrow> thesis" "k = 1 \<Longrightarrow> thesis" "\<And> j. k = Suc (Suc j) \<Longrightarrow> thesis"
-    show thesis
-    proof(cases k)
-      case 0
-      then show ?thesis
-        by (rule a(1))
-    next
-      case (Suc k')
-      then show ?thesis
-        by (cases k') (auto intro: a(2) a(3))
-    qed
-  qed
+    using nat_zero_one_Suc_Suc[of k]
+    by blast
   then show ?case
   proof cases
     case 1
@@ -90,33 +86,24 @@ proof(induction k arbitrary: X rule: less_induct)
       by sep_auto
   next
     case 2
-    have x: "ps ! 0 < n" "ps \<noteq> []"
-      using tk nth_in_take[of 0 k ps] less.prems(1) 2 by auto
-    have p: "rev (take 1 ps) = [ps ! 0]"
-      using x(2) by (cases ps) simp_all
-    have a: "aug_imp Si Ra 1 = do { x \<leftarrow> Array.nth Ra 0; sins_imp x Si }"
-      by (subst aug_imp.simps) simp
+    have bounds: "ps ! 0 < n" "0 < length ps"
+      using less.prems nth_in_take[of 0 k ps] 2
+      by auto
     show ?thesis
-      unfolding 2 p augment.simps(2) a
-      by (sep_auto heap: sins_rule simp: x)
+      unfolding 2 aug_imp_one
+      by (sep_auto heap: sins_rule simp: bounds take_Suc_conv_app_nth)
   next
     case 3
-    have x: "ps ! Suc j < n" "ps ! j < n" "Suc j < length ps" "j < length ps"
-      using tk nth_in_take[of "Suc j" k ps] nth_in_take[of j k ps] less.prems(1) 3 by auto
-    have p: "rev (take (Suc (Suc j)) ps) = ps ! Suc j # ps ! j # rev (take j ps)"
-      using less.prems(1) 3 by (simp only: rev_take_Suc_Suc)
-    have tj: "set (rev (take j ps)) \<subseteq> {..<n}"
-      using tk set_take_subset_set_take[of j k ps] 3 by simp
-    have IH: "<sol_assn Y Si * Ra \<mapsto>\<^sub>a ps> aug_imp Si Ra j
-               <\<lambda> _. sol_assn (augment Y (rev (take j ps))) Si * Ra \<mapsto>\<^sub>a ps>" for Y
-      by (rule less.IH) (use less.prems(1) 3 tj in simp_all)
-    have a: "aug_imp Si Ra (Suc (Suc j)) =
-               do { x \<leftarrow> Array.nth Ra (Suc j); y \<leftarrow> Array.nth Ra j;
-                    sdel_imp y Si; sins_imp x Si; aug_imp Si Ra j }"
-      by (subst aug_imp.simps) simp
+    have bounds: "ps ! Suc j < n" "ps ! j < n" "Suc (Suc j) \<le> length ps" "j \<le> length ps"
+        "set (rev (take j ps)) \<subseteq> {..<n}"
+      using less.prems nth_in_take[of "Suc j" k ps] nth_in_take[of j k ps]
+        set_take_subset_set_take[of j k ps] 3
+      by auto
+    note IH = less.IH[of j, OF _ bounds(4,5), simplified 3, simplified]
     show ?thesis
-      unfolding 3 p augment.simps(3) a
-      by (sep_auto heap: sdel_rule sins_rule IH simp: x)
+      unfolding 3 aug_imp_step rev_take_Suc_Suc[OF bounds(3)] augment.simps(3)
+      using bounds
+      by (sep_auto heap: sdel_rule sins_rule IH simp: bounds rev_take_Suc_Suc)
   qed
 qed
 
@@ -153,7 +140,8 @@ locale unweighted_intersection_imp_loop =
   for n sol_assn smemb_imp sins_imp sdel_imp aug_path_imp +
   fixes st :: assn
   assumes carrier_bound: "carrier \<subseteq> {..<n}"
-    and aug_path_imp: "\<And> X Si Ra. \<lbrakk>finite X; X \<subseteq> carrier; indep1 X; indep2 X\<rbrakk> \<Longrightarrow>
+    and aug_path_imp: "\<And> X Si Ra. \<lbrakk>finite X; X \<subseteq> carrier; indep1 X; indep2 X\<rbrakk>
+      \<Longrightarrow>
       <sol_assn X Si * parr_assn n Ra * st> aug_path_imp Si Ra
       <\<lambda> res. sol_assn X Si * path_assn n (augmenting_path X) res Ra * st>"
 begin
@@ -174,20 +162,13 @@ lemma path_in_carrier:
   assumes "augmenting_path X = Some p"
   shows "set p \<subseteq> carrier"
 proof-
-  obtain u v where uv: "vwalk_bet (A1 X \<union> A2 X) u p v \<or> (p = [u] \<and> u = v)" "u \<in> S X"
-    using augmenting_path(2)[OF X assms] by blast
-  show ?thesis
-  proof(cases "vwalk_bet (A1 X \<union> A2 X) u p v")
-    case True
-    show ?thesis
-      using vwalk_bet_in_dVs[OF True] dVs_A1A2_carrier[OF X(3,4)] by (rule subset_trans)
-  next
-    case False
-    then have "p = [u]"
-      using uv(1) by simp
-    then show ?thesis
-      using uv(2) S_in_carrier[OF X(3,4)] by auto
-  qed
+  obtain u v where "vwalk_bet (A1 X \<union> A2 X) u p v \<or> (p = [u] \<and> u = v)" "u \<in> S X"
+    using augmenting_path(2)[OF X assms]
+    by blast
+  then show ?thesis
+    using X dVs_A1A2_carrier[of X] S_in_carrier[of X]
+      vwalk_bet_in_vertices[of "A1 X \<union> A2 X" u p v]
+    by auto blast
 qed
 
 lemma aug_path_imp_Some:
@@ -201,7 +182,8 @@ lemma aug_path_imp_Some:
 lemma path_bound:
   assumes "augmenting_path X = Some p"
   shows "set p \<subseteq> {..<n}"
-  using path_in_carrier[OF assms] carrier_bound by (rule subset_trans)
+  using assms path_in_carrier carrier_bound
+  by blast
 
 end
 
@@ -219,54 +201,46 @@ next
   case (2 state)
   define X where "X = solution state"
   have X: "finite X" "X \<subseteq> carrier" "indep1 X" "indep2 X"
-    using 2(3-5) unfolding X_def indep_invar_def by auto
+    using 2(3-5)
+    by (auto simp: X_def indep_invar_def)
   show ?case
   proof(cases "augmenting_path X")
     case None
-    have f: "matroid_intersection state = state"
-      using None unfolding X_def by (simp add: matroid_intersection.psimps[OF 2(1)])
+    note step = matroid_intersection.psimps[OF 2(1), folded X_def, simplified None option.case Let_def]
     show ?thesis
-      unfolding f X_def[symmetric]
+      unfolding step X_def[symmetric]
       by (subst mi_loop_imp.simps) (sep_auto heap: aug_path_imp_None[OF X None])
   next
     case (Some p)
-    have rc: "matroid_intersection_recurse_cond state"
-      using Some unfolding X_def matroid_intersection_recurse_cond_def by simp
-    have upd: "matroid_intersection_recurse_upd state = state \<lparr>solution := augment X p\<rparr>"
-      using Some unfolding X_def matroid_intersection_recurse_upd_def by simp
-    have f: "matroid_intersection state = matroid_intersection (state \<lparr>solution := augment X p\<rparr>)"
-      using Some unfolding X_def by (simp add: matroid_intersection.psimps[OF 2(1)])
-    note inv = indep_invar_recurse_improvement[OF rc 2(3-5), unfolded upd]
-    have IH: "<sol_assn (augment X p) Si * parr_assn n Qa * st> mi_loop_imp Si Qa
-              <\<lambda> _. sol_assn (solution (matroid_intersection
-                        (state \<lparr>solution := augment X p\<rparr>))) Si * parr_assn n Qa * st>" for Qa
-      using 2(2)[OF rc, unfolded upd, OF inv(1-3)] by simp
-    have IH': "<sol_assn (augment X p) Si * Qa \<mapsto>\<^sub>a ps * st> mi_loop_imp Si Qa
-              <\<lambda> _. sol_assn (solution (matroid_intersection
-                        (state \<lparr>solution := augment X p\<rparr>))) Si * parr_assn n Qa * st>"
-      if "length ps = n" for Qa ps
-      by (rule ht_cons_pre[OF _ IH]) (unfold parr_assn_def, sep_auto simp: that)
+    have "matroid_intersection_recurse_cond state"
+      using Some
+      by (simp add: X_def matroid_intersection_recurse_cond_def)
+    note inv = indep_invar_recurse_improvement[OF this 2(3-5)] and recur = 2(2)[OF this]
+    note IH = recur[OF inv(1-3), unfolded matroid_intersection_recurse_upd_def,
+      folded X_def, simplified Some option.sel Let_def solution_remove]
+    note step = matroid_intersection.psimps[OF 2(1), folded X_def, simplified Some option.case Let_def]
     show ?thesis
-      unfolding f X_def[symmetric]
+      unfolding step X_def[symmetric]
       by (subst mi_loop_imp.simps)
-         (sep_auto heap: aug_path_imp_Some[OF X Some] aug_imp_rule IH' simp: path_bound[OF X Some])
+         (sep_auto heap: aug_path_imp_Some[OF X Some] aug_imp_rule parr_frame[OF IH]
+          simp: path_bound[OF X Some])
   qed
 qed
 
-theorem mi_loop_imp_correct:
+lemma mi_loop_imp_correct:
   "<sol_assn {} Si * parr_assn n Ra * st> mi_loop_imp Si Ra
    <\<lambda> _. \<exists>\<^sub>A X. sol_assn X Si * parr_assn n Ra * st * \<up>(is_max X)>"
 proof-
-  have init: "matroid_intersection_dom initial_state" "indep_invar initial_state"
+  have "matroid_intersection_dom initial_state" "indep_invar initial_state"
              "finite (solution initial_state)" "solution initial_state \<subseteq> carrier"
     using matroid_intersection_terminates matroid_intersection_correctness(1)
     by (auto simp: initial_state_def indep_invar_def matroid1.indep_empty matroid2.indep_empty)
-  have loop: "<sol_assn {} Si * parr_assn n Ra * st> mi_loop_imp Si Ra
+  note loop = mi_loop_imp_rule[OF this, folded same_result]
+  have "<sol_assn {} Si * parr_assn n Ra * st> mi_loop_imp Si Ra
          <\<lambda> _. sol_assn (solution (matroid_intersection_impl initial_state)) Si * parr_assn n Ra * st>"
-    unfolding same_result
-    by (rule ht_cons_pre[OF _ mi_loop_imp_rule[OF init]]) (simp add: initial_state_def)
-  show ?thesis
-    by (rule ht_cons_post[OF loop]) (use impl_total_correctness in sep_auto)
+    by (rule ht_cons_pre[OF _ loop]) (simp add: initial_state_def)
+  then show ?thesis
+    by (rule ht_cons_post) (use impl_total_correctness in sep_auto)
 qed
 
 end

@@ -154,149 +154,117 @@ lemma cur_red_imp_rule:
          <\<lambda>(k, r, f). nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi) *
                      \<up>(h k = red \<pi> l r \<and> r = rnb_current C l \<and> f = free M r)>"
   unfolding code.cur_red_imp_def
-  by (sep_auto heap: bs.nb.idx_current_rule bs.nb.current_cost_rule
-               simp: assms red_def free_def)
+  by (sep_auto heap: bs.nb.idx_current_rule bs.nb.current_cost_rule simp: assms red_def free_def)
 
 lemma pot_shift_imp_rule:
   assumes "potential_invar \<pi>" "l \<in> K" "r1 \<in> K" "h v = a" "h d = b"
   shows "<pot_assn \<pi> Pti> code.pot_shift_imp Pti l v r1 d
          <\<lambda>_. pot_assn (pot_shift \<pi> l a r1 b) Pti>"
-proof-
-  have inv1: "potential_invar (potential_upd \<pi> l a)"
-    by (rule potential_map.fixed_univ_map_upd_invar[OF assms(1,2)])
-  have get: "<pot_assn \<pi> Pti> pot_get_imp Pti r1
-             <\<lambda>x. pot_assn \<pi> Pti * \<up>(h x = potential_get \<pi> r1)>"
-    by (rule pot.fixed_univ_map_lookup_rule[OF assms(1,3)])
-  have upd1: "<pot_assn \<pi> Pti> pot_upd_imp Pti l v <\<lambda>_. pot_assn (potential_upd \<pi> l a) Pti>"
-    using pot.fixed_univ_map_upd_rule[OF assms(1,2), of Pti v] assms(4) by simp
-  have upd2: "h w = potential_get \<pi> r1 - b \<Longrightarrow>
-    <pot_assn (potential_upd \<pi> l a) Pti> pot_upd_imp Pti r1 w
-    <\<lambda>_. pot_assn (pot_shift \<pi> l a r1 b) Pti>" for w
-    using pot.fixed_univ_map_upd_rule[OF inv1 assms(3), of Pti w] by (simp add: pot_shift_def)
-  show ?thesis
-    unfolding code.pot_shift_imp_def
-    supply pot.fixed_univ_map_upd_rule[sep_heap_rules del]
-           pot.fixed_univ_map_lookup_rule[sep_heap_rules del]
-    by (sep_auto heap: get upd1 upd2 simp: assms(5))
-qed
+  unfolding code.pot_shift_imp_def
+  by (sep_auto simp: assms pot_shift_def potential_map.fixed_univ_map_upd_invar)
+
+lemma chain_nb_props:
+  assumes "path_search_precond M \<pi>" "rnb_abstract C = rnb_abstract rnb_init" "l \<in> L"
+  shows "matching_invar M" "potential_invar \<pi>" "l \<in> K" "finite (rnb_abstract C l)"
+        "rnb_abstract C l \<subseteq> K"
+  using assms path_search_precondD(1,2) rnb_init(2,3) G(3,4)
+  by (auto intro: edges_are_Vs_2)
+
+lemma edge_right_K: "{l, r} \<in> G \<Longrightarrow> r \<in> K"
+  using G(4)
+  by (auto intro: edges_are_Vs_2)
+
+lemma chain_rematch_props:
+  assumes "path_search_precond M \<pi>" "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
+          "l \<in> L" "l \<notin> Vs (matching_abstract M)" "\<not> free M r1"
+          "best_two (red \<pi>) (free M) l C = (C1, Some (u1, r1), Some (u2, r2))"
+  shows "path_search_precond (rematch M l r1) (pot_shift \<pi> l u2 r1 (u2 - u1))"
+        "rnb_invar C1" "rnb_abstract C1 = rnb_abstract rnb_init" "buddy_get M r1 \<in> L"
+        "buddy_get M r1 \<notin> Vs (matching_abstract (rematch M l r1))"
+        "{buddy_get M r1, r1} \<in> matching_abstract M" "{l, r1} \<in> G" "r1 \<in> K"
+  using best_two_chain_props(1,2)[OF assms(2-4,7)] best_two_chain_props(3)[OF assms(2-4,7) refl]
+        best_two_chain_props(4)[OF assms(2-4,7) refl refl] chain_rematch[of M \<pi> l r1 u1 r2 u2]
+        not_free_matched[of M \<pi> r1] assms(1,4-6) edge_right_K[of l r1]
+  by auto
 
 lemma chain_imp_rule:
   assumes "path_search_precond M \<pi>" "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
-          "l \<in> L" "l \<notin> Vs (matching_abstract M)" "chain k M \<pi> C l = (C', M', \<pi>', res)"
+          "l \<in> L" "l \<notin> Vs (matching_abstract M)"
   shows "<nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi)> code.chain_imp k Ci Pti Bdi l
-         <\<lambda>r. nb_assn C' Ci * (pot_assn \<pi>' Pti * buddy_assn M' Bdi) *
-              \<up>(rel_option path_rel r res)>"
+         <\<lambda>r. case chain k M \<pi> C l of (C', M', \<pi>', res) \<Rightarrow>
+                nb_assn C' Ci * (pot_assn \<pi>' Pti * buddy_assn M' Bdi) * \<up>(rel_option path_rel r res)>"
   using assms
-proof(induction k arbitrary: M \<pi> C l C' M' \<pi>' res rule: less_induct)
+proof(induction k arbitrary: M \<pi> C l rule: less_induct)
   case (less k)
-  note pre = less.prems(1) and l = less.prems(4,5)
-  note P = path_search_precondD[OF pre]
-  have lK: "l \<in> K" using l(1) G(3) by auto
-  have N: "rnb_abstract C l = {r. {l, r} \<in> G}" using rnb_init(2)[OF l(1)] less.prems(3) by simp
-  have fin: "finite (rnb_abstract C l)" using rnb_init(3)[OF l(1)] less.prems(3) by simp
-  have sub: "rnb_abstract C l \<subseteq> K" using N G(4) by (auto intro: edges_are_Vs_2)
-  obtain C1 b s where bt: "best_two (red \<pi>) (free M) l C = (C1, b, s)" by (metis prod_cases3)
-  note B = best_two_props[OF less.prems(2) lK fin bt]
-  have C1: "rnb_invar C1" "rnb_abstract C1 = rnb_abstract rnb_init"
-    using B(1,2) less.prems(3) by simp_all
+  note N = chain_nb_props[OF less.prems(1,3,4)]
+  obtain C1 b s where "best_two (red \<pi>) (free M) l C = (C1, b, s)"
+    by (cases "best_two (red \<pi>) (free M) l C") auto
+  note bt = this
+  note B = best_two_chain_props[OF less.prems(2-4) bt]
   note bo = bs.best_two_imp_rule[where cur = "code.cur_red_imp Pti Bdi"
               and Ctx = "pot_assn \<pi> Pti * buddy_assn M Bdi" and key = "red \<pi>"
               and pref = "free M" and u = l and A = K,
-              OF cur_red_imp_rule[OF _ lK _ _ P(2)] less.prems(2) lK fin sub, unfolded bt]
-  note ch = less.prems(6)[unfolded chain.simps[of k M \<pi> C l] bt]
+              OF cur_red_imp_rule[OF _ N(3) _ _ N(2)] less.prems(2) N(3-5), unfolded bt]
   note simps = bs.best2_rel_def bs.best_rel_None bs.best_rel_Some prod.case_eq_if
+               chain.simps[of k M \<pi> C l] bt
   show ?case
   proof(cases b)
     case None
-    have eq: "C' = C1" "M' = M" "\<pi>' = \<pi>" "res = None" using ch None by auto
     show ?thesis
-      unfolding eq by (subst code.chain_imp.simps) (sep_auto heap: bo simp: None simps)
+      by (subst code.chain_imp.simps) (sep_auto heap: bo simp: None simps)
   next
     case (Some q)
-    note bS = Some
-    obtain u1 r1 where q: "q = (u1, r1)" by (cases q) auto
-    have b1: "r1 \<in> rnb_abstract C l" "u1 = red \<pi> l r1" "\<forall>r\<in>rnb_abstract C l. u1 \<le> red \<pi> l r"
-      using B(4)[OF bS[unfolded q]] by auto
-    have r1G: "{l, r1} \<in> G" using b1(1) N by simp
-    have r1K: "r1 \<in> K" using b1(1) sub by auto
-    have u1min: "\<And>r. {l, r} \<in> G \<Longrightarrow> u1 \<le> red \<pi> l r" using b1(3) N by simp
     show ?thesis
-    proof(cases s)
-      case None
-      note sN = None
+    proof(cases q)
+      case (Pair u1 r1)
       show ?thesis
-      proof(cases "free M r1")
-        case True
-        have eq: "C' = C1" "M' = M" "\<pi>' = potential_upd \<pi> l u1" "res = Some [l, r1]"
-          using ch True by (simp_all add: bS q sN)
-        have upd: "h k1 = u1 \<Longrightarrow>
-          <pot_assn \<pi> Pti> pot_upd_imp Pti l k1 <\<lambda>_. pot_assn (potential_upd \<pi> l u1) Pti>" for k1
-          using pot.fixed_univ_map_upd_rule[OF P(2) lK, of Pti k1] by simp
+      proof(cases s)
+        case None
         show ?thesis
-          unfolding eq
-          supply pot.fixed_univ_map_upd_rule[sep_heap_rules del]
-          by (subst code.chain_imp.simps)
-             (sep_auto heap: bo upd simp: bS q True sN simps path_rel_def)
-      next
-        case False
-        have eq: "C' = C1" "M' = M" "\<pi>' = \<pi>" "res = None" using ch False by (auto simp: bS q sN)
-        show ?thesis
-          unfolding eq by (subst code.chain_imp.simps) (sep_auto heap: bo simp: bS q False sN simps)
-      qed
-    next
-      case (Some q2)
-      note sS = Some
-      obtain u2 r2 where q2: "q2 = (u2, r2)" by (cases q2) auto
-      define \<pi>2 where "\<pi>2 = pot_shift \<pi> l u2 r1 (u2 - u1)"
-      have sh: "\<lbrakk>h v = u2; h d = u2 - u1\<rbrakk> \<Longrightarrow>
-        <pot_assn \<pi> Pti> code.pot_shift_imp Pti l v r1 d <\<lambda>_. pot_assn \<pi>2 Pti>" for v d
-        unfolding \<pi>2_def by (rule pot_shift_imp_rule[OF P(2) lK r1K])
-      show ?thesis
-      proof(cases "free M r1")
-        case True
-        have eq: "C' = C1" "M' = M" "\<pi>' = \<pi>2" "res = Some [l, r1]"
-          using ch True by (simp_all add: bS q sS q2 \<pi>2_def)
-        show ?thesis
-          unfolding eq
-          by (subst code.chain_imp.simps)
-             (sep_auto heap: bo sh simp: bS q True sS q2 simps path_rel_def)
-      next
-        case False
-        have lqe: "{buddy_get M r1, r1} \<in> matching_abstract M"
-          using buddy(2)[OF P(1)] False by (simp add: free_def)
-        have b2: "r2 \<in> rnb_abstract C l - {r1}" "u2 = red \<pi> l r2"
-                 "\<forall>r\<in>rnb_abstract C l - {r1}. u2 \<le> red \<pi> l r"
-          using B(6)[OF bS[unfolded q] sS[unfolded q2]] by auto
-        have r2G: "{l, r2} \<in> G" "r2 \<noteq> r1" using b2(1) N by auto
-        have u2min: "\<And>r. \<lbrakk>{l, r} \<in> G; r \<noteq> r1\<rbrakk> \<Longrightarrow> u2 \<le> red \<pi> l r" using b2(3) N by simp
-        show ?thesis
-        proof(cases k)
-          case 0
-          have eq: "C' = C1" "M' = M" "\<pi>' = \<pi>" "res = None"
-            using ch False 0 by (auto simp: bS q sS q2)
+        proof(cases "free M r1")
+          case True
           show ?thesis
-            unfolding eq 0
-            by (subst code.chain_imp.simps) (sep_auto heap: bo simp: bS q False sS q2 simps)
-        next
-          case (Suc k')
-          note st = rematch_step[OF pre l r1G lqe r2G b1(2) u1min b2(2) u2min \<pi>2_def]
-          have rec: "chain k' (rematch M l r1) \<pi>2 C1 (buddy_get M r1) = (C', M', \<pi>', res)"
-            using ch False by (simp add: bS q sS q2 Suc \<pi>2_def)
-          have IH: "<nb_assn C1 Ci * (pot_assn \<pi>2 Pti * buddy_assn (rematch M l r1) Bdi)>
-                    code.chain_imp k' Ci Pti Bdi (buddy_get M r1)
-                    <\<lambda>r. nb_assn C' Ci * (pot_assn \<pi>' Pti * buddy_assn M' Bdi) *
-                         \<up>(rel_option path_rel r res)>"
-            by (rule less.IH[OF _ st(1) C1 st(3,4) rec]) (simp add: Suc)
-          have rm: "<buddy_assn M Bdi> rematch_imp Bdi l r1
-                    <\<lambda>_. buddy_assn (rematch M l r1) Bdi>"
-            by (rule rematch_rule[OF P(1) lqe l(2) r1G])
-          have bud: "<buddy_assn M Bdi> buddy_imp Bdi r1
-                     <\<lambda>x. buddy_assn M Bdi * \<up>(x = buddy_get M r1)>"
-            by (rule buddy_rule[OF r1K])
-          show ?thesis
-            supply buddy_rule[sep_heap_rules del]
             by (subst code.chain_imp.simps)
-               (sep_auto heap: bo bud sh rm IH simp: bS q False sS q2 Suc simps)
+               (sep_auto heap: bo simp: Some Pair None True simps path_rel_def N(2,3))
+        next
+          case False
+          show ?thesis
+            by (subst code.chain_imp.simps) (sep_auto heap: bo simp: Some Pair None False simps)
+        qed
+      next
+        case (Some q2)
+        show ?thesis
+        proof(cases q2)
+          case (Pair u2 r2)
+          show ?thesis
+          proof(cases "free M r1")
+            case True
+            show ?thesis
+              using B(3)[of u1 r1]
+              by (subst code.chain_imp.simps)
+                 (sep_auto heap: bo pot_shift_imp_rule[OF N(2,3), where a = u2 and b = "u2 - u1"]
+                           simp: \<open>b = Some q\<close> \<open>q = (u1, r1)\<close> Some Pair True simps path_rel_def
+                                 edge_right_K)
+          next
+            case False
+            show ?thesis
+            proof(cases k)
+              case 0
+              show ?thesis
+                by (subst code.chain_imp.simps)
+                   (sep_auto heap: bo simp: \<open>b = Some q\<close> \<open>q = (u1, r1)\<close> Some Pair False 0 simps[unfolded 0])
+            next
+              case (Suc k')
+              note R = chain_rematch_props[OF less.prems False
+                                           bt[unfolded \<open>b = Some q\<close> \<open>q = (u1, r1)\<close> Some Pair]]
+              show ?thesis
+                by (subst code.chain_imp.simps)
+                   (sep_auto heap: bo pot_shift_imp_rule[OF N(2,3) R(8), where a = u2 and b = "u2 - u1"]
+                                   rematch_rule[OF N(1) R(6) less.prems(5) R(7)] less.IH[OF _ R(1-5)]
+                             simp: \<open>b = Some q\<close> \<open>q = (u1, r1)\<close> Some Pair False Suc
+                                   simps[unfolded Suc] R(8))
+            qed
+          qed
         qed
       qed
     qed
@@ -312,56 +280,43 @@ definition "sc_P s =
   (case s of (C, M, \<pi>) \<Rightarrow>
      path_search_precond M \<pi> \<and> rnb_invar C \<and> rnb_abstract C = rnb_abstract rnb_init)"
 
+lemma left_K: "l \<in> L \<Longrightarrow> l \<in> K"
+  using G(3)
+  by blast
+
+lemma sc_P_props:
+  assumes "sc_P (C, M, \<pi>)"
+  shows "path_search_precond M \<pi>" "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
+  using assms
+  by (simp_all add: sc_P_def)
+
 lemma sc_row_P:
   assumes "sc_P s" "l \<in> L"
   shows "sc_P (fst (sc_row s l))"
-proof-
-  obtain C M \<pi> where s: "s = (C, M, \<pi>)" by (metis prod_cases3)
-  have I: "path_search_precond M \<pi>" "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
-    using assms(1) by (simp_all add: sc_P_def s)
-  show ?thesis
-  proof(cases "free M l")
-    case True
-    have lf: "l \<notin> Vs (matching_abstract M)"
-      using True buddy(1)[OF path_search_precondD(1)[OF I(1)]] by (simp add: free_def)
-    obtain C1 M1 \<pi>1 r where ch: "chain cap M \<pi> C l = (C1, M1, \<pi>1, r)" by (metis prod_cases4)
-    show ?thesis
-      using chain_valid[OF I assms(2) lf ch] True by (simp add: sc_P_def sc_row_def s ch)
-  next
-    case False
-    thus ?thesis using assms(1) by (simp add: sc_row_def s)
-  qed
-qed
+  using assms chain_valid[of "fst (snd s)" "snd (snd s)" "fst s" l cap]
+        free_unmatched[of "fst (snd s)" "snd (snd s)" l]
+  by (cases "chain cap (fst (snd s)) (snd (snd s)) (fst s) l")
+     (auto simp: sc_P_def sc_row_def split: prod.splits)
 
 lemma sc_row_imp_rule:
   assumes "sc_P s" "l \<in> L"
   shows "<sc_A Ci Pti Bdi s> code.sc_row_imp Ci Pti Bdi l
          <\<lambda>r. sc_A Ci Pti Bdi (fst (sc_row s l)) * \<up>(rel_option path_rel r (snd (sc_row s l)))>"
-proof-
-  obtain C M \<pi> where s: "s = (C, M, \<pi>)" by (metis prod_cases3)
-  have I: "path_search_precond M \<pi>" "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
-    using assms(1) by (simp_all add: sc_P_def s)
-  have lK: "l \<in> K" using assms(2) G(3) by auto
+proof(cases s rule: prod_cases3)
+  case (fields C M \<pi>)
+  note I = sc_P_props[OF assms(1)[unfolded fields]]
   show ?thesis
   proof(cases "free M l")
     case True
-    have lf: "l \<notin> Vs (matching_abstract M)"
-      using True buddy(1)[OF path_search_precondD(1)[OF I(1)]] by (simp add: free_def)
-    obtain C1 M1 \<pi>1 r where ch: "chain cap M \<pi> C l = (C1, M1, \<pi>1, r)" by (metis prod_cases4)
-    have bud: "<buddy_assn M Bdi> buddy_imp Bdi l <\<lambda>x. buddy_assn M Bdi * \<up>(x = nil)>"
-      using buddy_rule[OF lK, of M Bdi] True by (simp add: free_def)
     show ?thesis
-      unfolding code.sc_row_imp_def sc_A_def s
-      supply buddy_rule[sep_heap_rules del]
-      by (sep_auto heap: bud chain_imp_rule[OF I assms(2) lf ch] simp: sc_row_def True ch)
+      unfolding code.sc_row_imp_def sc_A_def fields
+      by (sep_auto heap: chain_imp_rule[OF I assms(2) free_unmatched[OF I(1) True]]
+                   simp: sc_row_def True True[unfolded free_def] assms(2) left_K prod.case_eq_if)
   next
     case False
-    have bud: "<buddy_assn M Bdi> buddy_imp Bdi l <\<lambda>x. buddy_assn M Bdi * \<up>(x \<noteq> nil)>"
-      using buddy_rule[OF lK, of M Bdi] False unfolding free_def by (sep_auto simp: hoare_triple_def)
     show ?thesis
-      unfolding code.sc_row_imp_def sc_A_def s
-      supply buddy_rule[sep_heap_rules del]
-      by (sep_auto heap: bud simp: sc_row_def False)
+      unfolding code.sc_row_imp_def sc_A_def fields
+      by (sep_auto simp: sc_row_def False False[unfolded free_def] eq_commute[of nil] assms(2) left_K)
   qed
 qed
 
@@ -387,40 +342,38 @@ proof(induction xs arbitrary: s it)
     by (subst code.sc_loop_imp.simps) (sep_auto heap: left.it_has_next_rule)
 next
   case (Cons l xs)
-  have l: "l \<in> L" and xsL: "set xs \<subseteq> L" using Cons.prems(1) by auto
-  obtain s1 r1 where row: "sc_row s l = (s1, r1)" by fastforce
-  have P1: "sc_P s1" using sc_row_P[OF Cons.prems(2) l] row by simp
-  have rowr: "<sc_A Ci Pti Bdi s> code.sc_row_imp Ci Pti Bdi l
-              <\<lambda>r. sc_A Ci Pti Bdi s1 * \<up>(rel_option path_rel r r1)>"
-    using sc_row_imp_rule[OF Cons.prems(2) l] row by simp
+  have "l \<in> L" "set xs \<subseteq> L"
+    using Cons.prems(1)
+    by simp_all
+  note row = sc_row_imp_rule[OF Cons.prems(2) this(1)]
+   and IH = Cons.IH[OF this(2) sc_row_P[OF Cons.prems(2) this(1)]]
   show ?case
-  proof(cases r1)
+  proof(cases "snd (sc_row s l)")
     case None
-    have lp: "sc_loop s (l # xs) = sc_loop s1 xs" by (simp add: row None)
     show ?thesis
-      unfolding lp
       by (subst code.sc_loop_imp.simps)
-         (sep_auto heap: left.it_has_next_rule left.it_next_rule rowr Cons.IH[OF xsL P1]
-                   simp: None)
+         (sep_auto heap: left.it_has_next_rule left.it_next_rule row IH simp: None prod.case_eq_if)
   next
     case (Some p)
-    have lp: "sc_loop s (l # xs) = (s1, Some (l, p), xs)" by (simp add: row Some)
     show ?thesis
-      unfolding lp
       by (subst code.sc_loop_imp.simps)
-         (sep_auto heap: left.it_has_next_rule left.it_next_rule rowr
-                   simp: Some rel_option_path_rel_Some path_rel_def)
+         (sep_auto heap: left.it_has_next_rule left.it_next_rule row
+                   simp: Some prod.case_eq_if rel_option_path_rel_Some path_rel_def)
   qed
 qed
+
+lemma rel_option_path_rel_pair_Some:
+  "rel_option (rel_prod (=) path_rel) r (Some (l, p)) \<longleftrightarrow> (\<exists>u v. r = Some (l, u, v) \<and> p = [u, v])"
+  by (cases r) (auto simp: path_rel_def)
 
 text \<open>The cursors may be anywhere, as long as they belong to the collection of the
       neighbourhoods. The path array keeps its length; on success, it starts with the path.\<close>
 
-theorem shortcut_imp_rule:
+lemma shortcut_imp_rule:
   assumes "path_search_precond M \<pi>" "set xs \<subseteq> L"
       and "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
-      and sc: "sc_loop (C, M, \<pi>) xs = ((C', M', \<pi>'), res, xs')"
-      and len: "res \<noteq> None \<Longrightarrow> 2 \<le> length ys"
+      and "sc_loop (C, M, \<pi>) xs = ((C', M', \<pi>'), res, xs')"
+      and "res \<noteq> None \<Longrightarrow> 2 \<le> length ys"
   shows "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it * nb_assn C Ci *
           buddy_assn M Bdi * pot_assn \<pi> Pti * Ra \<mapsto>\<^sub>a ys>
          code.shortcut_imp Ci Pti Bdi Ra it
@@ -429,44 +382,25 @@ theorem shortcut_imp_rule:
             pot_assn \<pi>' Pti * Ra \<mapsto>\<^sub>a ys' * \<up>(length ys' = length ys) *
             \<up>(case res of None \<Rightarrow> \<not> b | Some (l, p) \<Rightarrow> b \<and> take 2 ys' = p)>"
 proof-
-  have P0: "sc_P (C, M, \<pi>)" using assms(1,3,4) by (simp add: sc_P_def)
-  have loop: "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it *
-                (nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi))>
-      code.sc_loop_imp Ci Pti Bdi it
-      <\<lambda>(r, it'). vset_assn left Li * left_is_it (vset_to_set left) Li xs' it' *
-                  (nb_assn C' Ci * (pot_assn \<pi>' Pti * buddy_assn M' Bdi)) *
-                  \<up>(rel_option (rel_prod (=) path_rel) r res)>"
-    using sc_loop_imp_rule[OF assms(2) P0, of Li it Ci Pti Bdi] by (simp add: sc sc_A_def)
+  have "sc_P (C, M, \<pi>)"
+    using assms(1,3,4)
+    by (simp add: sc_P_def)
+  note loop = sc_loop_imp_rule[OF assms(2) this, of Li it Ci Pti Bdi, unfolded assms(5) sc_A_def, simplified]
   show ?thesis
   proof(cases res)
     case None
-    have loopN: "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it *
-                  (nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi))>
-        code.sc_loop_imp Ci Pti Bdi it
-        <\<lambda>x. vset_assn left Li * left_is_it (vset_to_set left) Li xs' (snd x) *
-             (nb_assn C' Ci * (pot_assn \<pi>' Pti * buddy_assn M' Bdi)) * \<up>(fst x = None)>"
-      using loop by (simp add: None case_prod_beta')
     show ?thesis
       unfolding code.shortcut_imp_def
-      by (sep_auto heap: loopN simp: None)
+      by (sep_auto heap: loop simp: None)
   next
     case (Some a)
-    then obtain l p where a: "res = Some (l, p)" by (cases a) auto
-    have rs: "rel_option (rel_prod (=) path_rel) r (Some (l, p)) \<longleftrightarrow>
-              (\<exists>u v. r = Some (l, u, v) \<and> p = [u, v])"
-      for r by (cases r) (auto simp: path_rel_def split: prod.splits)
-    have loopS: "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it *
-                  (nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi))>
-        code.sc_loop_imp Ci Pti Bdi it
-        <\<lambda>x. vset_assn left Li * left_is_it (vset_to_set left) Li xs' (snd x) *
-             (nb_assn C' Ci * (pot_assn \<pi>' Pti * buddy_assn M' Bdi)) *
-             \<up>(\<exists>u v. fst x = Some (l, u, v) \<and> p = [u, v])>"
-      using loop by (simp add: a rs case_prod_beta')
-    have "Suc 0 < length ys" using len a by auto
-    then obtain y0 y1 zs where ys: "ys = y0 # y1 # zs" by (cases ys; cases "tl ys") auto
-    show ?thesis
+    then obtain l p where "res = Some (l, p)"
+      by (cases a) auto
+    thus ?thesis
+      using assms(6)
       unfolding code.shortcut_imp_def
-      by (sep_auto heap: loopS simp: a ys)
+      by (cases ys rule: remdups_adj.cases)
+         (sep_auto heap: loop simp: rel_option_path_rel_pair_Some)+
   qed
 qed
 

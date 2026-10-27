@@ -25,15 +25,18 @@ locale bounded_stack =
       "stack_invar stack_empty"
       "stack_abstract stack_empty = []"
   and stack_push:
-      "\<And> S x. \<lbrakk>stack_invar S; length (stack_abstract S) < cap\<rbrakk> \<Longrightarrow> stack_invar (stack_push S x)"
+      "\<And> S x. \<lbrakk>stack_invar S; length (stack_abstract S) < cap\<rbrakk> \<Longrightarrow>
+          stack_invar (stack_push S x)"
       "\<And> S x. \<lbrakk>stack_invar S; length (stack_abstract S) < cap\<rbrakk> \<Longrightarrow>
           stack_abstract (stack_push S x) = x # stack_abstract S"
   and stack_pop:
-      "\<And> S. \<lbrakk>stack_invar S; stack_abstract S \<noteq> []\<rbrakk> \<Longrightarrow> stack_invar (stack_pop S)"
+      "\<And> S. \<lbrakk>stack_invar S; stack_abstract S \<noteq> []\<rbrakk> \<Longrightarrow>
+          stack_invar (stack_pop S)"
       "\<And> S. \<lbrakk>stack_invar S; stack_abstract S \<noteq> []\<rbrakk> \<Longrightarrow>
           stack_abstract (stack_pop S) = tl (stack_abstract S)"
   and stack_top:
-      "\<And> S. \<lbrakk>stack_invar S; stack_abstract S \<noteq> []\<rbrakk> \<Longrightarrow> stack_top S = hd (stack_abstract S)"
+      "\<And> S. \<lbrakk>stack_invar S; stack_abstract S \<noteq> []\<rbrakk> \<Longrightarrow>
+          stack_top S = hd (stack_abstract S)"
   and stack_is_empty:
       "\<And> S. stack_invar S \<Longrightarrow> stack_is_empty S \<longleftrightarrow> stack_abstract S = []"
 

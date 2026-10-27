@@ -23,12 +23,14 @@ begin
 lemma buddy_get_rule[sep_heap_rules]:
   "\<lbrakk>buddy_invar M; u \<in> K\<rbrakk> \<Longrightarrow>
    <buddy_assn M Bi> buddy_get_imp Bi u <\<lambda>r. buddy_assn M Bi * \<up>(r = buddy_get M u)>"
-  using bm.fixed_univ_map_lookup_rule[of M u Bi] by simp
+  using bm.fixed_univ_map_lookup_rule[of M u Bi]
+  by simp
 
 lemma buddy_upd_rule[sep_heap_rules]:
   "\<lbrakk>buddy_invar M; u \<in> K\<rbrakk> \<Longrightarrow>
    <buddy_assn M Bi> buddy_upd_imp Bi u v <\<lambda>_. buddy_assn (buddy_upd M u v) Bi>"
-  using bm.fixed_univ_map_upd_rule[of M u Bi v] by simp
+  using bm.fixed_univ_map_upd_rule[of M u Bi v]
+  by simp
 
 partial_function (heap) augment_loop :: "'bi \<Rightarrow> 'v array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "augment_loop Bi Ra i k =
@@ -42,12 +44,6 @@ partial_function (heap) augment_loop :: "'bi \<Rightarrow> 'v array \<Rightarrow
 
 definition "augment_imp Bi Ra k = augment_loop Bi Ra 0 k"
 
-lemma drop_take_Cons_Cons:
-  "\<lbrakk>i + 1 < k; k \<le> length xs\<rbrakk> \<Longrightarrow>
-   drop i (take k xs) = xs ! i # xs ! (i + 1) # drop (i + 2) (take k xs)"
-  using Cons_nth_drop_Suc[of i "take k xs"] Cons_nth_drop_Suc[of "Suc i" "take k xs"]
-  by simp
-
 lemma augment_impl_short:
   "length p \<le> 1 \<Longrightarrow> augment_impl M p = M"
   by (cases "(M, p)" rule: augment_impl.cases) auto
@@ -57,40 +53,26 @@ lemma augment_loop_rule:
    <buddy_assn M Bi * Ra \<mapsto>\<^sub>a xs> augment_loop Bi Ra i k
    <\<lambda>_. buddy_assn (augment_impl M (drop i (take k xs))) Bi * Ra \<mapsto>\<^sub>a xs>"
 proof(induction "k - i" arbitrary: i M rule: less_induct)
-  case less
+  case IH: less
   show ?case
   proof(cases "i + 1 < k")
     case True
-    have dt: "drop i (take k xs) = xs ! i # xs ! (i + 1) # drop (i + 2) (take k xs)"
-      using True less(3) by (rule drop_take_Cons_Cons)
-    have K: "xs ! i \<in> K" "xs ! (i + 1) \<in> K" "set (drop (i + 2) (take k xs)) \<subseteq> K"
-      using less(4) unfolding dt by simp_all
-    define M' where "M' = buddy_upd (buddy_upd M (xs ! i) (xs ! (i + 1))) (xs ! (i + 1)) (xs ! i)"
-    have inv1: "buddy_invar (buddy_upd M (xs ! i) (xs ! (i + 1)))"
-      using less(2) K(1) by (rule buddy_map.fixed_univ_map_upd_invar)
-    have inv2: "buddy_invar M'"
-      unfolding M'_def using inv1 K(2) by (rule buddy_map.fixed_univ_map_upd_invar)
-    have aug: "augment_impl M (drop i (take k xs)) = augment_impl M' (drop (i + 2) (take k xs))"
-      unfolding dt M'_def by simp
-    have IH: "<buddy_assn M' Bi * Ra \<mapsto>\<^sub>a xs> augment_loop Bi Ra (Suc (Suc i)) k
-              <\<lambda>_. buddy_assn (augment_impl M (drop i (take k xs))) Bi * Ra \<mapsto>\<^sub>a xs>"
-      using less(1)[of "i + 2" M', OF _ inv2 less(3) K(3)] True
-      unfolding aug by simp
+    have path: "drop i (take k xs) = xs ! i # xs ! (i + 1) # drop (i + 2) (take k xs)"
+      using True IH.prems
+      by (simp add: drop_take_Cons_Cons)
     show ?thesis
-      apply(subst augment_loop.simps)
-      using True less(3)
-      by (sep_auto heap: IH[unfolded M'_def, simplified] buddy_upd_rule[OF less(2) K(1)]
-                         buddy_upd_rule[OF inv1 K(2)])
+      using True IH.prems
+      by (subst augment_loop.simps)
+         (sep_auto heap: IH.hyps buddy_upd_rule
+                   simp: path buddy_map.fixed_univ_map_upd_invar)
   next
     case False
-    show ?thesis
-      apply(subst augment_loop.simps)
-      using False
-      by (sep_auto simp: augment_impl_short)
+    thus ?thesis
+      by (subst augment_loop.simps) (sep_auto simp: augment_impl_short)
   qed
 qed
 
-theorem augment_imp_rule:
+lemma augment_imp_rule:
   "\<lbrakk>buddy_invar M; k \<le> length xs; set (take k xs) \<subseteq> K\<rbrakk> \<Longrightarrow>
    <buddy_assn M Bi * Ra \<mapsto>\<^sub>a xs> augment_imp Bi Ra k
    <\<lambda>_. buddy_assn (augment_impl M (take k xs)) Bi * Ra \<mapsto>\<^sub>a xs>"
@@ -106,7 +88,7 @@ definition "rematch_imp Bi l r = do {
    buddy_upd_imp Bi r l;
    buddy_upd_imp Bi l r }"
 
-theorem rematch_imp_rule:
+lemma rematch_imp_rule:
   "\<lbrakk>buddy_invar M; l \<in> K; r \<in> K; buddy_get M r \<in> K\<rbrakk> \<Longrightarrow>
    <buddy_assn M Bi> rematch_imp Bi l r <\<lambda>_. buddy_assn (rematch M l r) Bi>"
   unfolding rematch_imp_def rematch_def
@@ -136,7 +118,7 @@ lemma matching_card_imp_rule:
   "<counted_assn M Mi> matching_card_imp Mi <\<lambda>c. counted_assn M Mi * \<up>(c = card (\<M> M))>"
   by (cases Mi) (sep_auto simp: counted_assn_pair matching_card_imp_def)
 
-theorem augment_counted_imp_rule:
+lemma augment_counted_imp_rule:
   "\<lbrakk>buddy_invar M; k \<le> length xs; set (take k xs) \<subseteq> K;
     card (\<M> (augment_impl M (take k xs))) = Suc (card (\<M> M))\<rbrakk> \<Longrightarrow>
    <counted_assn M Mi * Ra \<mapsto>\<^sub>a xs> augment_counted_imp Mi Ra k
@@ -147,7 +129,7 @@ text \<open>Rematching does not change the cardinality, hence the reference is l
 
 definition "rematch_counted_imp = (\<lambda>(Bi, Ki) l r. rematch_imp Bi l r)"
 
-theorem rematch_counted_imp_rule:
+lemma rematch_counted_imp_rule:
   "\<lbrakk>buddy_invar M; l \<in> K; r \<in> K; buddy_get M r \<in> K;
     card (\<M> (rematch M l r)) = card (\<M> M)\<rbrakk> \<Longrightarrow>
    <counted_assn M Mi> rematch_counted_imp Mi l r <\<lambda>_. counted_assn (rematch M l r) Mi>"

@@ -304,12 +304,14 @@ subsection \<open>Reading and Writing the Best Even Neighbours\<close>
 lemma ben_get_rule[sep_heap_rules]:
   "\<lbrakk>ben_invar B; r \<in> K\<rbrakk> \<Longrightarrow>
    <ben_assn B Bi> ben_get_imp Bi r <\<lambda>x. ben_assn B Bi * \<up>(x = ben_get B r)>"
-  using ben.fixed_univ_map_lookup_rule[of B r Bi] by simp
+  using ben.fixed_univ_map_lookup_rule[of B r Bi]
+  by simp
 
 lemma ben_upd_rule[sep_heap_rules]:
   "\<lbrakk>ben_invar B; r \<in> K\<rbrakk> \<Longrightarrow>
    <ben_assn B Bi> ben_upd_imp Bi r l <\<lambda>_. ben_assn (ben_upd B r l) Bi>"
-  using ben.fixed_univ_map_upd_rule[of B r Bi l] by simp
+  using ben.fixed_univ_map_upd_rule[of B r Bi l]
+  by simp
 
 declare ben.fixed_univ_map_lookup_rule[sep_heap_rules del]
         ben.fixed_univ_map_upd_rule[sep_heap_rules del]
@@ -330,15 +332,8 @@ lemma relax_queue_key:
   assumes "scan_inv off l ben queue" "r \<in> rneighbs l" "ben_lookup ben r = Some l'"
   shows "(r, k) \<in> heap_abstract queue \<Longrightarrow> k = w\<^sub>\<pi>_code l' r + off l'"
         "\<nexists>k. (r, k) \<in> heap_abstract queue \<Longrightarrow> \<not> w\<^sub>\<pi>_code l r + off l < w\<^sub>\<pi>_code l' r + off l'"
-proof-
-  note I = scan_invD[OF assms(1)]
-  have code': "w\<^sub>\<pi>_code l' r = w\<^sub>\<pi> l' r"
-    using w\<^sub>\<pi>_code_is[of l' r] I(6,7)[OF assms(3)] by simp
-  show "(r, k) \<in> heap_abstract queue \<Longrightarrow> k = w\<^sub>\<pi>_code l' r + off l'"
-    using I(4)[of r k] assms(3) code' by auto
-  show "\<nexists>k. (r, k) \<in> heap_abstract queue \<Longrightarrow> \<not> w\<^sub>\<pi>_code l r + off l < w\<^sub>\<pi>_code l' r + off l'"
-    using relax_neighbour_Some(2)[OF assms] by blast
-qed
+  using assms scan_invD(4,6,7) w\<^sub>\<pi>_code_is[of l' r] relax_neighbour_Some(2)[OF assms]
+  by fastforce+
 
 lemma relax_new_rule:
   "\<lbrakk>heap_invar queue; ben_invar ben; r \<in> Vs G; \<nexists>k. (r, k) \<in> heap_abstract queue\<rbrakk> \<Longrightarrow>
@@ -349,69 +344,81 @@ lemma relax_new_rule:
 
 lemma relax_old_rule:
   assumes "heap_invar queue" "ben_invar ben" "r \<in> Vs G"
-      and in_heap: "\<And>k. (r, k) \<in> heap_abstract queue \<Longrightarrow> k = K'"
-      and not_in_heap: "\<nexists>k. (r, k) \<in> heap_abstract queue \<Longrightarrow> \<not> h key < K'"
+      and "\<And>k. (r, k) \<in> heap_abstract queue \<Longrightarrow> k = K'"
+      and "\<nexists>k. (r, k) \<in> heap_abstract queue \<Longrightarrow> \<not> h key < K'"
   shows "<queue_assn queue Qi * ben_assn ben Bi> code.relax_old_imp Qi Bi l r key
          <\<lambda>_. if h key < K'
               then queue_assn (heap_decrease_key queue r (h key)) Qi *
                    ben_assn (ben_upd ben r l) Bi
               else queue_assn queue Qi * ben_assn ben Bi>"
-proof-
-  have some: "(r, h k') \<in> heap_abstract queue \<Longrightarrow> h k' = K'" for k'
-    using in_heap by blast
-  have rK: "r \<in> K" using in_K(3)[OF assms(3)] .
-  show ?thesis
-    unfolding code.relax_old_imp_def
-    apply(sep_auto heap: queue.queue_key_of_rule simp: assms(1,3) split: option.splits)
-    subgoal using not_in_heap by (sep_auto)
-    subgoal for ha haa ra k'
-      using some[of k']
-      by (cases "key < k'")
-         (sep_auto heap: queue.queue_decrease_key_rule[of queue r "h k'"] simp: assms(1,2,3) rK)+
-    done
-qed
+  unfolding code.relax_old_imp_def
+  using assms(4,5)
+  by (sep_auto heap: queue.queue_key_of_rule queue.queue_decrease_key_rule
+               simp: assms(1-3) in_K(3) split: option.splits)
+
+lemma relax_key:
+  "\<lbrakk>h c = edge_costs_code l r; h pl = \<pi> l; h ml = off l; h pr = \<pi> r\<rbrakk> \<Longrightarrow>
+     h (c - pl - pr + ml) = w\<^sub>\<pi>_code l r + off l"
+  by (simp add: w\<^sub>\<pi>_code_def h_add)
+
+lemma rneighb_in_K:
+  assumes "scan_inv off l ben queue" "r \<in> rneighbs l"
+  shows "r \<in> Vs G" "r \<in> K"
+  using assms scan_invD(3)[of off l ben queue] rneighbs_in_G[of l r] in_K(3)
+  by (auto intro: edges_are_Vs_2)
+
+lemma relax_old_imp_rule:
+  assumes "scan_inv off l ben queue" "r \<in> rneighbs l" "ben_lookup ben r = Some l'"
+          "h key = w\<^sub>\<pi>_code l r + off l"
+  shows "<queue_assn queue Qi * ben_assn ben Bi> code.relax_old_imp Qi Bi l r key
+         <\<lambda>_. queue_assn (snd (relax_neighbour off l (ben, queue) r)) Qi *
+              ben_assn (fst (relax_neighbour off l (ben, queue) r)) Bi>"
+  apply(rule ht_cons_post[OF relax_old_rule[where K' = "w\<^sub>\<pi>_code l' r + off l'"]])
+  using scan_invD(1,2)[OF assms(1)] rneighb_in_K(1)[OF assms(1,2)] relax_queue_key[OF assms(1-3)] assms(3,4)
+  by (auto simp: relax_neighbour_view split: if_splits intro: ent_refl_true)
 
 lemma relax_imp_rule:
-  assumes inv: "scan_inv off l ben queue" and rn: "r \<in> rneighbs l"
-      and hc: "h c = edge_costs_code l r" and hpl: "h pl = \<pi> l" and hml: "h ml = off l"
+  assumes "scan_inv off l ben queue" "r \<in> rneighbs l" "h c = edge_costs_code l r" "h pl = \<pi> l"
+          "h ml = off l"
   shows "<pot_assn initial_pot Pti * queue_assn queue Qi * ben_assn ben Bi>
          code.relax_imp Pti Qi Bi l pl ml r c
          <\<lambda>_. pot_assn initial_pot Pti *
               queue_assn (snd (relax_neighbour off l (ben, queue) r)) Qi *
               ben_assn (fst (relax_neighbour off l (ben, queue) r)) Bi>"
-proof-
-  note I = scan_invD[OF inv]
-  have rG: "r \<in> Vs G" using rneighbs_in_G[OF I(3) rn] by (auto intro: edges_are_Vs_2)
-  have rK: "r \<in> K" using in_K(3)[OF rG] .
-  have key: "h pr = \<pi> r \<Longrightarrow> h (c - pl - pr + ml) = w\<^sub>\<pi>_code l r + off l" for pr
-    using hc hpl hml by (simp add: w\<^sub>\<pi>_code_def h_add)
+proof(cases "ben_lookup ben r")
+  case None
   show ?thesis
-  proof(cases "ben_lookup ben r")
-    case None
-    note legal = relax_neighbour_None[OF inv rn None]
-    have nil: "ben_get ben r = nil" using None by (simp add: ben_lookup_None)
-    show ?thesis
-      unfolding code.relax_imp_def
-      by (sep_auto heap: relax_new_rule
-                   simp: None nil relax_neighbour_view key I(1,2) rG rK legal(2) potential)
-  next
-    case (Some l')
-    have get: "ben_get ben r = l'" "l' \<noteq> nil" "nil \<noteq> l'" using ben_lookup_Some[OF Some] by auto
-    note qk = relax_queue_key[OF inv rn Some]
-    have old: "h pr = \<pi> r \<Longrightarrow>
-      <queue_assn queue Qi * ben_assn ben Bi> code.relax_old_imp Qi Bi l r (c - pl - pr + ml)
-      <\<lambda>_. queue_assn (snd (relax_neighbour off l (ben, queue) r)) Qi *
-           ben_assn (fst (relax_neighbour off l (ben, queue) r)) Bi>" for pr
-      apply(rule ht_cons_post[OF relax_old_rule[OF I(2,1) rG, of "w\<^sub>\<pi>_code l' r + off l'"]])
-      using qk
-      by (auto simp: key relax_neighbour_view Some split: if_splits intro: ent_refl_true)
-    show ?thesis
-      unfolding code.relax_imp_def
-      by (sep_auto heap: old simp: get I(1) rK potential)
-  qed
+    unfolding code.relax_imp_def
+    using relax_neighbour_None[OF assms(1,2) None] relax_key[of c l r pl ml off, OF assms(3-5)]
+    by (sep_auto heap: relax_new_rule
+                 simp: None None[unfolded ben_lookup_None] relax_neighbour_view scan_invD(1,2)[OF assms(1)]
+                       rneighb_in_K[OF assms(1,2)] potential)
+next
+  case (Some l')
+  show ?thesis
+    unfolding code.relax_imp_def
+    using ben_lookup_Some[OF Some] relax_key[of c l r pl ml off, OF assms(3-5)]
+    by (sep_auto heap: relax_old_imp_rule[OF assms(1,2) Some]
+                 simp: scan_invD(1)[OF assms(1)] rneighb_in_K(2)[OF assms(1,2)] potential)
 qed
 
 subsection \<open>Scanning a Neighbourhood\<close>
+
+lemma scan_remaining_props:
+  assumes "rnb_invar C" "l \<in> L" "rnb_abstract C = rnb_abstract rnb_init"
+  shows "rnb_remaining C l \<subseteq> rneighbs l" "finite (rnb_remaining C l)"
+  using assms rnb.idx_partition_union[of C l] finite_subset[OF _ finite_rneighbs[OF assms(2)]]
+  by auto
+
+lemma scan_move_props:
+  assumes "rnb_invar C" "l \<in> L" "rnb_abstract C = rnb_abstract rnb_init" "rnb_has C l"
+  shows "rnb_remaining C l \<noteq> {}" "rnb_current C l \<in> rneighbs l" "rnb_invar (rnb_move C l)"
+        "rnb_abstract (rnb_move C l) = rnb_abstract rnb_init"
+        "card (rnb_remaining (rnb_move C l) l) < card (rnb_remaining C l)"
+  using assms rnb.idx_has[of C l] rnb.idx_current[of C l] scan_remaining_props[of C l] rnb.idx_move_invar[of C l]
+        rnb.idx_move_remaining[of C l] rnb.idx_move_abstract[of C l]
+        card_Diff1_less[of "rnb_remaining C l" "rnb_current C l"]
+  by (auto simp: fun_eq_iff)
 
 lemma scan_imp_rule:
   assumes "rnb_invar C" "l \<in> L" "rnb_abstract C = rnb_abstract rnb_init"
@@ -425,50 +432,31 @@ lemma scan_imp_rule:
   using assms
 proof(induction "card (rnb_remaining C l)" arbitrary: C ben queue rule: less_induct)
   case less
-  have sub: "rnb_remaining C l \<subseteq> rneighbs l"
-    using rnb.idx_partition_union[OF less.prems(1,2)] less.prems(3) by auto
-  have fin: "finite (rnb_remaining C l)"
-    using finite_rneighbs[OF less.prems(2)] sub by (rule finite_subset[rotated])
   show ?case
   proof(cases "rnb_has C l")
     case True
-    have ne: "rnb_remaining C l \<noteq> {}" using rnb.idx_has[OF less.prems(1,2)] True by simp
-    have x_in: "rnb_current C l \<in> rnb_remaining C l"
-      using rnb.idx_current[OF less.prems(1,2) ne] .
-    have x_rn: "rnb_current C l \<in> rneighbs l" using x_in sub by auto
-    have C': "rnb_invar (rnb_move C l)"
-             "rnb_abstract (rnb_move C l) = rnb_abstract rnb_init"
-             "rnb_remaining (rnb_move C l) l = rnb_remaining C l - {rnb_current C l}"
-      using rnb.idx_move_invar[OF less.prems(1,2)] rnb.idx_move_remaining[OF less.prems(1,2) ne]
-            rnb.idx_move_abstract[OF less.prems(1,2) ne] less.prems(3)
-      by (auto simp: fun_eq_iff)
-    have card_less: "card (rnb_remaining (rnb_move C l) l) < card (rnb_remaining C l)"
-      using card_Diff1_less[OF fin x_in] by (simp add: C'(3))
-    have scan_eq: "scan_neighbours off l C (ben, queue) =
-                   scan_neighbours off l (rnb_move C l)
-                      (relax_neighbour off l (ben, queue) (rnb_current C l))"
-      by (simp add: scan_neighbours.simps[of off l C] True)
-    have inv': "scan_inv off l (fst (relax_neighbour off l (ben, queue) (rnb_current C l)))
-                               (snd (relax_neighbour off l (ben, queue) (rnb_current C l)))"
-      using relax_neighbour_pres(1)[OF less.prems(4) x_rn] .
-    note IH = less.hyps[OF card_less C'(1) less.prems(2) C'(2) inv' less.prems(5,6), simplified]
-    note relax = relax_imp_rule[OF less.prems(4) x_rn _ less.prems(5,6)]
+    note M = scan_move_props[OF less.prems(1-3) True]
+    note IH = less.hyps[OF M(5,3) less.prems(2) M(4) relax_neighbour_pres(1)[OF less.prems(4) M(2)]
+                           less.prems(5,6), simplified]
     show ?thesis
       apply(subst code.scan_imp.simps)
       apply(sep_auto heap: nb.idx_has_rule nb.idx_current_rule nb.current_cost_rule nb.idx_move_rule
-                     simp: less.prems(1,2) True ne)
-      apply(sep_auto heap: relax)
-      by (sep_auto heap: IH simp: scan_eq True)
+                     simp: less.prems(1,2) True M(1))
+      apply(sep_auto heap: relax_imp_rule[OF less.prems(4) M(2) _ less.prems(5,6)])
+      by (sep_auto heap: IH simp: scan_neighbours.simps[of off l C] True)
   next
     case False
-    have scan_eq: "scan_neighbours off l C (ben, queue) = (C, ben, queue)"
-      by (simp add: scan_neighbours.simps[of off l C] False)
     show ?thesis
-      apply(subst code.scan_imp.simps)
-      by (sep_auto heap: nb.idx_has_rule simp: less.prems(1,2) False scan_eq)
+      by (subst code.scan_imp.simps)
+         (sep_auto heap: nb.idx_has_rule simp: less.prems(1,2) False scan_neighbours.simps[of off l C])
   qed
 qed
 
+lemma scan_reset_props:
+  assumes "rnb_invar C" "l \<in> L" "rnb_abstract C = rnb_abstract rnb_init"
+  shows "rnb_invar (rnb_reset C l)" "rnb_abstract (rnb_reset C l) = rnb_abstract rnb_init"
+  using assms rnb.idx_reset_invar rnb.idx_reset_abstract
+  by (auto simp: fun_eq_iff)
 
 lemma update_ben_imp_rule:
   assumes "rnb_invar C" "l \<in> L" "rnb_abstract C = rnb_abstract rnb_init"
@@ -480,16 +468,11 @@ lemma update_ben_imp_rule:
               pot_assn initial_pot Pti * missed_assn M Mi *
               queue_assn (snd (snd (update_best_even_neighbour (missed_get M) C ben queue l))) Qi *
               ben_assn (fst (snd (update_best_even_neighbour (missed_get M) C ben queue l))) Bi>"
-proof-
-  have C0: "rnb_invar (rnb_reset C l)" "rnb_abstract (rnb_reset C l) = rnb_abstract rnb_init"
-    using rnb.idx_reset_invar[OF assms(1,2)] rnb.idx_reset_abstract[OF assms(1,2)] assms(3)
-    by (auto simp: fun_eq_iff)
-  have lK: "l \<in> K" using in_K(1)[OF assms(2)] .
-  note scan = scan_imp_rule[OF C0(1) assms(2) C0(2) assms(5)]
-  show ?thesis
-    unfolding code.update_ben_imp_def update_best_even_neighbour_def
-    by (sep_auto heap: nb.idx_reset_rule scan simp: assms(1,2,4) lK potential)
-qed
+  unfolding code.update_ben_imp_def update_best_even_neighbour_def
+  by (sep_auto heap: nb.idx_reset_rule
+                     scan_imp_rule[OF scan_reset_props(1)[OF assms(1-3)] assms(2)
+                                        scan_reset_props(2)[OF assms(1-3)] assms(5)]
+               simp: assms(1,2,4) in_K(1) potential)
 
 text \<open>Functional preservation facts for a whole scan.\<close>
 
@@ -502,51 +485,27 @@ lemma foldl_relax_pres:
                 (snd (foldl (relax_neighbour off l) (ben, queue) rs)))"
 proof(induction rs arbitrary: ben queue)
   case (Cons r rs)
-  have r: "r \<in> rneighbs l" using Cons.prems(2) by simp
-  obtain ben' queue' where bq': "relax_neighbour off l (ben, queue) r = (ben', queue')"
-    by (cases "relax_neighbour off l (ben, queue) r") auto
-  have inv': "scan_inv off l ben' queue'" "all_in_heap ben queue \<Longrightarrow> all_in_heap ben' queue'"
-    using relax_neighbour_pres[OF Cons.prems(1) r] by (auto simp: bq')
-  show ?case
-    using Cons.IH[OF inv'(1)] Cons.prems(2) inv'(2) by (simp add: bq')
+  thus ?case
+    using Cons.IH[of "fst (relax_neighbour off l (ben, queue) r)" "snd (relax_neighbour off l (ben, queue) r)"]
+          relax_neighbour_pres[OF Cons.prems(1), of r]
+    by simp
 qed simp
 
 lemma ubn_pres:
   assumes "rnb_invar C" "l \<in> L" "rnb_abstract C = rnb_abstract rnb_init"
-      and "scan_inv off l ben queue"
-  shows "rnb_invar (fst (update_best_even_neighbour off C ben queue l))"
-        "rnb_abstract (fst (update_best_even_neighbour off C ben queue l)) = rnb_abstract rnb_init"
-        "scan_inv off l (fst (snd (update_best_even_neighbour off C ben queue l)))
-                        (snd (snd (update_best_even_neighbour off C ben queue l)))"
-        "all_in_heap ben queue \<Longrightarrow>
-         all_in_heap (fst (snd (update_best_even_neighbour off C ben queue l)))
-                     (snd (snd (update_best_even_neighbour off C ben queue l)))"
+          "scan_inv off l ben queue" "update_best_even_neighbour off C ben queue l = (C', ben', queue')"
+  shows "rnb_invar C'" "rnb_abstract C' = rnb_abstract rnb_init" "scan_inv off l ben' queue'"
+        "all_in_heap ben queue \<Longrightarrow> all_in_heap ben' queue'"
 proof-
-  obtain C' ben' queue' where eq: "update_best_even_neighbour off C ben queue l = (C', ben', queue')"
-    by (cases "update_best_even_neighbour off C ben queue l") auto
-  note fl = update_best_even_neighbour_is_foldl[OF assms(1-3) eq[symmetric]]
-  obtain rs where rs: "set rs = rneighbs l" "(ben', queue') = foldl (relax_neighbour off l) (ben, queue) rs"
-    using fl(1) by blast
-  note pres = foldl_relax_pres[OF assms(4), of rs]
-  show "rnb_invar (fst (update_best_even_neighbour off C ben queue l))"
-       "rnb_abstract (fst (update_best_even_neighbour off C ben queue l)) = rnb_abstract rnb_init"
-    using fl(2,3) by (auto simp: eq)
-  show "scan_inv off l (fst (snd (update_best_even_neighbour off C ben queue l)))
-                        (snd (snd (update_best_even_neighbour off C ben queue l)))"
-       "all_in_heap ben queue \<Longrightarrow>
-         all_in_heap (fst (snd (update_best_even_neighbour off C ben queue l)))
-                     (snd (snd (update_best_even_neighbour off C ben queue l)))"
-  proof-
-    have "set rs \<subseteq> rneighbs l" using rs(1) by simp
-    hence "scan_inv off l ben' queue' \<and> (all_in_heap ben queue \<longrightarrow> all_in_heap ben' queue')"
-      using pres unfolding rs(2)[symmetric] by simp
-    thus "scan_inv off l (fst (snd (update_best_even_neighbour off C ben queue l)))
-                        (snd (snd (update_best_even_neighbour off C ben queue l)))"
-       "all_in_heap ben queue \<Longrightarrow>
-         all_in_heap (fst (snd (update_best_even_neighbour off C ben queue l)))
-                     (snd (snd (update_best_even_neighbour off C ben queue l)))"
-      by (simp_all add: eq)
-  qed
+  obtain rs where "set rs = rneighbs l" "(ben', queue') = foldl (relax_neighbour off l) (ben, queue) rs"
+    using update_best_even_neighbour_is_foldl(1)[OF assms(1-3) assms(5)[symmetric]]
+    by blast
+  thus "scan_inv off l ben' queue'" "all_in_heap ben queue \<Longrightarrow> all_in_heap ben' queue'"
+    using foldl_relax_pres[OF assms(4), of rs]
+    by (simp_all add: prod_eq_iff)
+  show "rnb_invar C'" "rnb_abstract C' = rnb_abstract rnb_init"
+    using update_best_even_neighbour_is_foldl(2,3)[OF assms(1-3) assms(5)[symmetric]]
+    by simp_all
 qed
 
 subsection \<open>Clearing\<close>
@@ -600,19 +559,23 @@ lemma scan_inv_zero_other:
    scan_inv (\<lambda>x. 0) l' ben queue"
   by (auto simp: scan_inv_def all_in_heap_def)
 
+lemma init_ok_props:
+  assumes "init_ok cbq" "l \<in> L"
+  shows "rnb_invar (fst cbq)" "rnb_abstract (fst cbq) = rnb_abstract rnb_init"
+        "all_in_heap (fst (snd cbq)) (snd (snd cbq))" "scan_inv (\<lambda>x. 0) l (fst (snd cbq)) (snd (snd cbq))"
+  using assms
+  by (simp_all add: init_ok_def)
+
 lemma init_ok_step:
   assumes "init_ok cbq" "l \<in> L"
   shows "init_ok (update_best_even_neighbour (\<lambda>x. 0) (fst cbq) (fst (snd cbq)) (snd (snd cbq)) l)"
-proof-
-  have c: "rnb_invar (fst cbq)" "rnb_abstract (fst cbq) = rnb_abstract rnb_init"
-          "all_in_heap (fst (snd cbq)) (snd (snd cbq))"
-          "scan_inv (\<lambda>x. 0) l (fst (snd cbq)) (snd (snd cbq))"
-    using assms by (auto simp: init_ok_def)
-  note P = ubn_pres[OF c(1) assms(2) c(2) c(4)]
-  note aih = P(4)[OF c(3)]
+proof(cases "update_best_even_neighbour (\<lambda>x. 0) (fst cbq) (fst (snd cbq)) (snd (snd cbq)) l" rule: prod_cases3)
+  case (fields C' ben' queue')
+  note I = init_ok_props[OF assms]
+  note P = ubn_pres[OF I(1) assms(2) I(2,4) fields]
   show ?thesis
-    unfolding init_ok_def
-    using P(1,2) aih scan_inv_zero_other[OF P(3) aih] scan_invD(1)[OF P(3)] by blast
+    using I P scan_inv_zero_other[OF P(3)] scan_invD(1)[OF P(3)]
+    by (simp add: fields init_ok_def)
 qed
 
 lemma init_ok_init: "init_ok (rnb_init, ben_empty, heap_empty)"
@@ -625,44 +588,27 @@ lemma init_fold_pre:
   "\<lbrakk>set xs \<subseteq> L; init_ok cbq\<rbrakk> \<Longrightarrow> fold_pre init_P init_g (S, cbq, fnd) xs"
 proof(induction xs arbitrary: S cbq fnd)
   case (Cons x xs)
-  have x: "x \<in> L" "set xs \<subseteq> L" using Cons.prems(1) by auto
-  show ?case
-  proof(cases "buddy_get x = nil")
-    case True
-    thus ?thesis
-      using Cons.IH[OF x(2) init_ok_step[OF Cons.prems(2) x(1)]] Cons.prems(2) x(1)
-      by (simp add: init_P_def init_g_def)
-  next
-    case False
-    have eq: "init_g (S, cbq, fnd) x = (S, cbq, fnd)" by (simp add: init_g_def False)
-    show ?thesis
-      using Cons.IH[OF x(2) Cons.prems(2)] Cons.prems(2) x(1)
-      by (simp add: init_P_def eq)
-  qed
+  thus ?case
+    using init_ok_step[OF Cons.prems(2), of x]
+    by (cases "buddy_get x = nil") (simp_all add: init_P_def init_g_def)
 qed simp
 
+lemma unmatched_lefts_set: "vset_to_set unmatched_lefts = L \<inter> Collect (\<lambda>v. buddy_get v = nil)"
+  using G(2) vset_iterations(4)
+  by (simp add: unmatched_lefts_def)
+
+lemma unmatched_lefts_lst:
+  "lst (vset_to_set unmatched_lefts) = filter (\<lambda>v. buddy_get v = nil) (lst L)"
+  "set (filter (\<lambda>v. buddy_get v = nil) (lst L)) = vset_to_set unmatched_lefts"
+  using finite_L forest.lst_filter forest.lst_set unmatched_lefts_set
+  by auto
+
 lemma init_fold_result:
-  defines "res \<equiv> foldl init_g ({}, (rnb_init, ben_empty, heap_empty), False) (lst L)"
-  shows "fst res = vset_to_set forest_roots"
-        "fst (snd res) = init_best_even_neighbour"
-        "snd (snd res) \<longleftrightarrow> \<not> vset_is_empty unmatched_lefts"
-proof-
-  have U: "vset_to_set unmatched_lefts = L \<inter> Collect (\<lambda>v. buddy_get v = nil)"
-    using vset_iterations(4)[OF G(2)] by (simp add: unmatched_lefts_def)
-  have lstU: "lst (vset_to_set unmatched_lefts) = filter (\<lambda>v. buddy_get v = nil) (lst L)"
-    using forest.lst_filter[OF finite_L] U by simp
-  have "set (filter (\<lambda>v. buddy_get v = nil) (lst L)) = vset_to_set unmatched_lefts"
-    using forest.lst_set[OF finite_L] U by auto
-  thus "fst res = vset_to_set forest_roots"
-    by (simp add: res_def init_fold forest_roots_def)
-  show "fst (snd res) = init_best_even_neighbour"
-    by (simp add: res_def init_fold init_best_even_neighbour_def update_best_even_neighbours_def
-                  vset_iterate_ben_lst[OF unmatched_lefts(2)] lstU)
-  have "filter (\<lambda>v. buddy_get v = nil) (lst L) \<noteq> [] \<longleftrightarrow> vset_to_set unmatched_lefts \<noteq> {}"
-    using forest.lst_set[OF finite_L] U by (auto simp: filter_empty_conv)
-  thus "snd (snd res) \<longleftrightarrow> \<not> vset_is_empty unmatched_lefts"
-    by (simp add: res_def init_fold vset_is_empty[OF unmatched_lefts(2)])
-qed
+  "foldl init_g ({}, (rnb_init, ben_empty, heap_empty), False) (lst L) =
+   (vset_to_set forest_roots, init_best_even_neighbour, \<not> vset_is_empty unmatched_lefts)"
+  using unmatched_lefts_lst(2)
+  by (auto simp: init_fold forest_roots_def init_best_even_neighbour_def update_best_even_neighbours_def
+                 unmatched_lefts(2) vset_iterate_ben_lst unmatched_lefts_lst(1) vset_is_empty filter_empty_conv)
 
 subsection \<open>The Initial State: Imperative Part\<close>
 
@@ -678,37 +624,34 @@ definition "init_A Ci Pti Mi Qi Bi Bdi b c = (case b of (S, cbq, fnd) \<Rightarr
    pot_assn initial_pot Pti * missed_assn missed_empty Mi * buddy_assn Bdi *
    \<up>(fndi = fnd))"
 
+lemma init_P_props:
+  assumes "init_P v (S, (C, ben, queue), fnd)"
+  shows "v \<in> L" "v \<in> K" "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
+        "scan_inv (missed_get missed_empty) v ben queue"
+  using assms in_K(1)
+  by (auto simp: init_P_def init_ok_def missed(2))
+
 lemma init_step_rule:
   assumes "init_P v b"
   shows "<init_A Ci Pti Mi Qi Bi Bdi b c> code.init_step Ci Pti Mi Qi Bi Bdi v c
          <init_A Ci Pti Mi Qi Bi Bdi (init_g b v)>"
-proof-
-  obtain S C ben queue fnd where b: "b = (S, (C, ben, queue), fnd)" by (cases b) auto
-  obtain Fi fndi where c: "c = (Fi, fndi)" by (cases c) auto
-  have v: "v \<in> L" and ok: "init_ok (C, ben, queue)" using assms by (auto simp: init_P_def b)
-  have vK: "v \<in> K" using in_K(1)[OF v] .
-  have C: "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
-          "scan_inv (missed_get missed_empty) v ben queue"
-    using ok v by (auto simp: init_ok_def missed(2))
-  note ubi = update_ben_imp_rule[OF C(1) v C(2) missed(1) C(3), unfolded missed(2)]
+proof(cases b rule: prod_cases3)
+  case (fields S cbq fnd)
+  then obtain C ben queue where "b = (S, (C, ben, queue), fnd)"
+    by (cases cbq) auto
+  note P = init_P_props[OF assms[unfolded this]]
   show ?thesis
   proof(cases "buddy_get v = nil")
     case True
-    have bud: "<buddy_assn Bdi> buddy_imp Bdi v <\<lambda>r. buddy_assn Bdi * \<up>(r = nil)>"
-      using buddy_rule[OF vK] by (simp add: True)
     show ?thesis
-      unfolding code.init_step_def init_A_def b c
-      supply buddy_rule[sep_heap_rules del]
-      by (sep_auto heap: bud add_root_insert ubi simp: True vK init_g_def vset(3,4))
+      unfolding code.init_step_def init_A_def \<open>b = (S, (C, ben, queue), fnd)\<close>
+      by (sep_auto heap: add_root_insert update_ben_imp_rule[OF P(3,1,4) missed(1) P(5), unfolded missed(2)]
+                   simp: True P(2) init_g_def vset(3,4) split: prod.splits)
   next
     case False
-    have bud: "<buddy_assn Bdi> buddy_imp Bdi v <\<lambda>r. buddy_assn Bdi * \<up>(r \<noteq> nil)>"
-      using buddy_rule[OF vK] False by (sep_auto simp: hoare_triple_def)
-    have eq: "init_g b v = b" by (simp add: b init_g_def False)
     show ?thesis
-      unfolding code.init_step_def eq unfolding init_A_def b c
-      supply buddy_rule[sep_heap_rules del]
-      by (sep_auto heap: bud)
+      unfolding code.init_step_def init_A_def \<open>b = (S, (C, ben, queue), fnd)\<close>
+      by (sep_auto simp: False init_g_def eq_commute[of nil] P(2) split: prod.splits)
   qed
 qed
 
@@ -730,42 +673,53 @@ lemma init_imp_rule:
        missed_assn missed_empty Mi * buddy_assn Bdi *
        \<up>(fnd \<longleftrightarrow> \<not> vset_is_empty unmatched_lefts)>"
 proof-
-  define b0 where "b0 = ({}::'v set, (rnb_init, ben_empty, heap_empty), False)"
-  have pre: "fold_pre init_P init_g b0 (lst L)"
-    unfolding b0_def
-    by (rule init_fold_pre[OF _ init_ok_init]) (simp add: forest.lst_set[OF finite_L])
   note fold = iter_fold_rule_gen[where I = "\<lambda>xs it. vset_assn left Li * left_is_it L Li xs it"
-                 and Q = "vset_assn left Li"
-                 and A = "init_A Ci Pti Mi Qi Bi Bdi",
-                 OF left.it_has_next_rule left.it_next_rule left.quit_iteration init_step_rule pre]
-  have main: "<vset_assn left Li * init_A Ci Pti Mi Qi Bi Bdi b0 (Fi, False)>
-               code.init_imp Ci Pti Mi Qi Bi Bdi Li Fi
-               <\<lambda>c'. vset_assn left Li * init_A Ci Pti Mi Qi Bi Bdi (foldl init_g b0 (lst L)) c'>"
+                 and Q = "vset_assn left Li" and A = "init_A Ci Pti Mi Qi Bi Bdi",
+                 OF left.it_has_next_rule left.it_next_rule left.quit_iteration init_step_rule
+                    init_fold_pre[OF equalityD1[OF forest.lst_set[OF finite_L]] init_ok_init,
+                                    where S = "{}" and fnd = False],
+                 unfolded init_fold_result]
+  have "<vset_assn left Li * init_A Ci Pti Mi Qi Bi Bdi ({}, (rnb_init, ben_empty, heap_empty), False) (Fi, False)>
+        code.init_imp Ci Pti Mi Qi Bi Bdi Li Fi
+        <\<lambda>c'. vset_assn left Li * init_A Ci Pti Mi Qi Bi Bdi
+                (vset_to_set forest_roots, init_best_even_neighbour, \<not> vset_is_empty unmatched_lefts) c'>"
     unfolding code.init_imp_def
     by (sep_auto heap: left.it_init_rule fold simp: G(2))
-  have res: "foldl init_g b0 (lst L) =
-             (vset_to_set forest_roots, init_best_even_neighbour, \<not> vset_is_empty unmatched_lefts)"
-    using init_fold_result unfolding b0_def by (simp add: prod_eq_iff)
-  show ?thesis
-  proof(rule ht_cons[OF _ _ main], goal_cases)
+  thus ?thesis
+  proof(rule ht_cons[rotated 2], goal_cases)
     case 1
     show ?case
-      by (sep_auto simp: init_A_def b0_def vset(1,2))
+      by (sep_auto simp: init_A_def vset(1,2))
   next
     case (2 c)
-    obtain Fi' fnd where c: "c = (Fi', fnd)" by (cases c) auto
     show ?case
-      unfolding init_A_def res c prod.case
-      apply(simp only: ex_assn_move_out star_aci)
+      unfolding init_A_def
+      apply(cases c)
+      apply(simp only: prod.case ex_assn_move_out star_aci)
       apply(rule ent_ex_preI)
-      subgoal for Rs
-        by (cases fnd; cases "vset_invar Rs \<and> vset_to_set Rs = vset_to_set forest_roots")
-           (sep_auto simp: forest_roots_cong)+
+      subgoal for Fi' fnd Rs
+        by (cases fnd) (sep_auto simp: forest_roots_cong)+
       done
   qed
 qed
 
 subsection \<open>The Loop: Functional Part\<close>
+
+lemma search_invarsD:
+  assumes "search_invars state"
+  shows "invar_basic state" "invar_best_even_neighbour_heap state" "invar_best_even_neighbour_map state"
+        "invar_feasible_potential state" "invar_forest_tight state" "invar_matching_tight state"
+        "invar_out_of_heap state"
+  using assms
+  by (simp_all add: search_invars_def)
+
+lemma invar_basic_props:
+  assumes "invar_basic state"
+  shows "heap_invar (heap state)" "ben_invar (best_even_neighbour state)" "missed_invar (missed state)"
+        "rnb_invar (neighb_coll state)" "rnb_abstract (neighb_coll state) = rnb_abstract rnb_init"
+        "forest_invar \<M> (forest state)"
+  using assms
+  by (auto elim!: invar_basicE)
 
 lemma extract_key:
   assumes "search_invars state" "heap_extract_min (heap state) = (queue0, Some r)"
@@ -773,16 +727,29 @@ lemma extract_key:
   shows "k = w\<^sub>\<pi>_code (ben_get (best_even_neighbour state) r) r +
              missed_at state (ben_get (best_even_neighbour state) r)"
 proof-
-  have I: "invar_basic state" "invar_best_even_neighbour_heap state"
-          "invar_best_even_neighbour_map state"
-    using assms(1) by (auto simp: search_invars_def)
-  note F = extract_facts[OF I assms(2)]
-  obtain l where l: "ben_lookup (best_even_neighbour state) r = Some l" "k = w\<^sub>\<pi> l r + missed_at state l"
-    using invar_best_even_neighbour_heapD[OF I(2)] assms(3) by blast
-  have code: "w\<^sub>\<pi>_code l r = w\<^sub>\<pi> l r"
-    using w\<^sub>\<pi>_code_is[of l r] F(3,4) l(1) F(1) by simp
-  show ?thesis using l code ben_lookup_Some[OF l(1)] by simp
+  note I = search_invarsD[OF assms(1)]
+  obtain l where "ben_lookup (best_even_neighbour state) r = Some l" "k = w\<^sub>\<pi> l r + missed_at state l"
+    using invar_best_even_neighbour_heapD[OF I(2)] assms(3)
+    by blast
+  thus ?thesis
+    using extract_facts(1,3,4)[OF I(1-3) assms(2)] w\<^sub>\<pi>_code_is[of l r] ben_lookup_Some
+    by auto
 qed
+
+lemma extract_min_key_rule:
+  assumes "search_invars state" "heap_extract_min (heap state) = (queue0, Some r)"
+  shows "<queue_assn (heap state) Qi> queue_extract_min_imp Qi
+         <\<lambda>x. \<exists>\<^sub>Ak. queue_assn queue0 Qi *
+              \<up>(x = Some (r, k) \<and> h k = w\<^sub>\<pi>_code (ben_get (best_even_neighbour state) r) r +
+                                       missed_at state (ben_get (best_even_neighbour state) r))>"
+  apply(rule ht_cons_post[OF queue.queue_extract_min_rule])
+  subgoal
+    using assms(1)
+    by (simp add: search_invars_def invar_basic_props(1))
+  subgoal for x
+    using extract_key[OF assms]
+    by (cases x) (sep_auto simp: assms(2))+
+  done
 
 lemma cont_upd_eq:
   assumes "heap_extract_min (heap state) = (queue0, Some r)" "buddy r = Some l'"
@@ -812,32 +779,51 @@ lemma succ_upd_shape:
   "\<exists>a p. search_path_loop_succ_upd state = state\<lparr>acc := a, augpath := p\<rparr>"
   by (auto simp: search_path_loop_succ_upd_def Let_def split: prod.split)
 
+lemma loop_fail:
+  "heap_extract_min (heap state) = (queue0, None) \<Longrightarrow> search_path_loop state = state\<lparr>augpath := None\<rparr>"
+  by (simp add: search_path_loop_simps(1) search_path_loop_fail_cond_def search_path_loop_fail_upd_def)
+
+lemma loop_succ:
+  "\<lbrakk>heap_extract_min (heap state) = (queue0, Some r); buddy r = None\<rbrakk> \<Longrightarrow>
+   search_path_loop state =
+   state\<lparr>acc := w\<^sub>\<pi>_code (ben_get (best_even_neighbour state) r) r +
+                missed_at state (ben_get (best_even_neighbour state) r),
+         augpath := Some (r # get_path (forest state) (ben_get (best_even_neighbour state) r))\<rparr>"
+  by (simp add: search_path_loop_simps(2) search_path_loop_succ_cond_def search_path_loop_succ_upd_def
+                Let_def ben_lookup_def)
+
+lemma buddy_get_props:
+  "buddy r = None \<Longrightarrow> buddy_get r = nil"
+  "buddy r = Some l' \<Longrightarrow> buddy_get r = l' \<and> l' \<noteq> nil"
+  by (auto simp: buddy_def split: if_splits)
+
+lemma ben_lookup_the: "ben_lookup B r = Some l \<Longrightarrow> the (ben_lookup B r) = ben_get B r"
+  by (simp add: ben_lookup_def split: if_splits)
+
 lemma loop_final_basic:
   assumes "search_invars state"
   shows "invar_basic (search_path_loop state)"
-proof-
-  have "search_invars state \<longrightarrow> invar_basic (search_path_loop state)"
-  proof(induction rule: search_path_loop_induct[OF search_invars_dom[OF assms]])
-    case (1 state)
-    show ?case
-    proof(rule, cases state rule: search_path_loop_cases)
-      assume "search_invars state" "search_path_loop_fail_cond state"
-      thus "invar_basic (search_path_loop state)"
-        by (simp add: search_path_loop_simps(1) search_path_loop_fail_upd_def
-                      search_invars_basic invar_basic_upd)
-    next
-      assume "search_invars state" "search_path_loop_succ_cond state"
-      thus "invar_basic (search_path_loop state)"
-        using succ_upd_shape[of state]
-        by (auto simp: search_path_loop_simps(2) search_invars_basic invar_basic_upd)
-    next
-      assume a: "search_invars state" "search_path_loop_cont_cond state"
-      thus "invar_basic (search_path_loop state)"
-        using 1(2)[OF a(2)] search_invars_step[OF a(2,1)]
-        by (simp add: search_path_loop_simps(3)[OF 1(1) a(2)])
-    qed
+  using assms
+proof(induction rule: search_path_loop_induct[OF search_invars_dom[OF assms]])
+  case (1 state)
+  note dom = 1(1) and IH = 1(2) and inv = 1(3)
+  show ?case
+  proof(cases state rule: search_path_loop_cases)
+    case 1
+    thus ?thesis
+      using inv
+      by (simp add: search_path_loop_simps(1) search_path_loop_fail_upd_def search_invars_basic invar_basic_upd)
+  next
+    case 2
+    thus ?thesis
+      using inv succ_upd_shape[of state]
+      by (auto simp: search_path_loop_simps(2) search_invars_basic invar_basic_upd)
+  next
+    case 3
+    thus ?thesis
+      using 3 inv search_invars_step[of state] IH
+      by (simp add: search_path_loop_simps(3)[OF dom 3])
   qed
-  thus ?thesis using assms by simp
 qed
 
 subsection \<open>The Loop: Imperative Part\<close>
@@ -876,156 +862,70 @@ lemma loop_imp_rule:
             loop_post (search_path_loop state) Ci Qi Fi' Bi Mi *
             pot_assn initial_pot Pti * buddy_assn Bdi * Ra \<mapsto>\<^sub>a xs' *
             \<up>(length xs' = length xs \<and> res_rel res av (search_path_loop state) xs')>"
-proof-
-  have "search_invars state \<longrightarrow> (\<forall>Fi xs. card (L \<union> R) \<le> length xs \<longrightarrow>
-         <loop_assn state Ci Qi Fi Bi Mi * pot_assn initial_pot Pti * buddy_assn Bdi *
-          Ra \<mapsto>\<^sub>a xs>
-         code.loop_imp Ci Qi Pti Bdi Ra Bi Mi Fi
-         <\<lambda>(res, av, Fi'). \<exists>\<^sub>Axs'.
-            loop_post (search_path_loop state) Ci Qi Fi' Bi Mi *
-            pot_assn initial_pot Pti * buddy_assn Bdi * Ra \<mapsto>\<^sub>a xs' *
-            \<up>(length xs' = length xs \<and> res_rel res av (search_path_loop state) xs')>)"
-  proof(induction rule: search_path_loop_induct[OF search_invars_dom[OF assms(1)]])
-    case (1 state)
-    show ?case
-    proof(intro impI allI)
-      fix Fi and xs :: "'v list"
-      assume inv: "search_invars state" and len: "card (L \<union> R) \<le> length xs"
-      have I: "invar_basic state" "invar_best_even_neighbour_heap state"
-              "invar_best_even_neighbour_map state"
-        using inv by (auto simp: search_invars_def)
-      have hinv: "heap_invar (heap state)" using I(1) by (auto elim: invar_basicE)
-      have binv: "ben_invar (best_even_neighbour state)" "missed_invar (missed state)"
-        using I(1) by (auto elim: invar_basicE)
-      obtain queue0 hm where ext: "heap_extract_min (heap state) = (queue0, hm)"
-        by (cases "heap_extract_min (heap state)") auto
-      show "<loop_assn state Ci Qi Fi Bi Mi * pot_assn initial_pot Pti * buddy_assn Bdi *
-             Ra \<mapsto>\<^sub>a xs>
-            code.loop_imp Ci Qi Pti Bdi Ra Bi Mi Fi
-            <\<lambda>(res, av, Fi'). \<exists>\<^sub>Axs'.
-               loop_post (search_path_loop state) Ci Qi Fi' Bi Mi *
-               pot_assn initial_pot Pti * buddy_assn Bdi * Ra \<mapsto>\<^sub>a xs' *
-               \<up>(length xs' = length xs \<and> res_rel res av (search_path_loop state) xs')>"
-      proof(cases hm)
-        case None
-        have fail: "search_path_loop_fail_cond state"
-          by (simp add: search_path_loop_fail_cond_def ext None)
-        have sp: "search_path_loop state = state\<lparr>augpath := None\<rparr>"
-          by (simp add: search_path_loop_simps(1)[OF fail] search_path_loop_fail_upd_def)
-        show ?thesis
-          apply(subst code.loop_imp.simps)
-          by (sep_auto heap: queue.queue_extract_min_rule
-                       simp: hinv ext None sp loop_assn_def loop_post_def res_rel_def)
-      next
-        case (Some r)
-        note ext' = ext[unfolded Some]
-        note F0 = extract_facts[OF I ext']
-        define l where "l = ben_get (best_even_neighbour state) r"
-        have bl: "ben_lookup (best_even_neighbour state) r = Some l"
-          using F0(1) ben_lookup_Some[OF F0(1)] by (simp add: l_def)
-        have lthe: "the (ben_lookup (best_even_neighbour state) r) = l" using bl by simp
-        note F = F0[unfolded lthe]
-        have rK: "r \<in> K" using in_K(3)[OF F(7)] .
-        have key: "\<And>k. (r, k) \<in> heap_abstract (heap state) \<Longrightarrow>
-                         k = w\<^sub>\<pi>_code l r + missed_at state l"
-          using extract_key[OF inv ext'] by (simp add: l_def)
-        have ext_rule: "<queue_assn (heap state) Qi> queue_extract_min_imp Qi
-                        <\<lambda>x. \<exists>\<^sub>Ak. queue_assn queue0 Qi *
-                             \<up>(x = Some (r, k) \<and> h k = w\<^sub>\<pi>_code l r + missed_at state l)>"
-          apply(rule ht_cons_post[OF queue.queue_extract_min_rule[OF hinv]])
-          subgoal for x
-            using key by (cases x) (sep_auto simp: ext')+
-          done
-        have ben_r: "<ben_assn (best_even_neighbour state) Bi> ben_get_imp Bi r
-                     <\<lambda>x. ben_assn (best_even_neighbour state) Bi * \<up>(x = l)>"
-          using ben_get_rule[OF binv(1) rK] by (simp add: l_def)
-        show ?thesis
-        proof(cases "buddy r")
-          case None
-          have bud0: "buddy_get r = nil" using None by (simp add: buddy_def split: if_splits)
-          have bud_r: "<buddy_assn Bdi> buddy_imp Bdi r <\<lambda>x. buddy_assn Bdi * \<up>(x = nil)>"
-            using buddy_rule[OF rK] by (simp add: bud0)
-          have succ: "search_path_loop_succ_cond state"
-            by (simp add: search_path_loop_succ_cond_def ext' None)
-          have sp: "search_path_loop state =
-                    state\<lparr>acc := w\<^sub>\<pi>_code l r + missed_at state l,
-                          augpath := Some (r # get_path (forest state) l)\<rparr>"
-            by (simp add: search_path_loop_simps(2)[OF succ] search_path_loop_succ_upd_def
-                          ext' l_def Let_def)
-          have plen: "Suc (length (get_path (forest state) l)) \<le> length xs"
-            using succ_path_length[OF I ext', unfolded lthe] len by simp
-          hence xsne: "xs \<noteq> []" by auto
-          note gp = forest.get_path_rule[OF F(8) F(2), of "Suc 0"]
-          show ?thesis
-            supply buddy_rule[sep_heap_rules del] ben_get_rule[sep_heap_rules del]
-                   forest.get_path_rule[sep_heap_rules del]
-            apply(subst code.loop_imp.simps)
-            apply(sep_auto heap: ext_rule ben_r bud_r gp simp: loop_assn_def xsne plen)
-            subgoal for k a b
-              apply(erule entailsD[rotated])
-              apply(rule ent_ex_postI[where x = "[r] @ get_path (forest state) l @
-                            drop (Suc (length (get_path (forest state) l))) xs"])
-              using xsne plen
-              by (sep_auto simp: sp loop_post_def res_rel_def neq_Nil_conv)
-            subgoal premises p for a b k ha ra haa raa
-              using p(5)[unfolded p(3)] by (rule notE) (rule refl)
-            done
-        next
-          case (Some l')
-          have bud0: "buddy_get r = l'" "l' \<noteq> nil" "nil \<noteq> l'"
-            using Some by (auto simp: buddy_def split: if_splits)
-          have bud_r: "<buddy_assn Bdi> buddy_imp Bdi r <\<lambda>x. buddy_assn Bdi * \<up>(x = l')>"
-            using buddy_rule[OF rK] by (simp add: bud0)
-          have cont: "search_path_loop_cont_cond state"
-            by (simp add: search_path_loop_cont_cond_def ext' Some)
-          have J: "invar_feasible_potential state" "invar_forest_tight state"
-                  "invar_matching_tight state" "invar_out_of_heap state"
-            using inv by (auto simp: search_invars_def)
-          define acc' where "acc' = w\<^sub>\<pi>_code l r + missed_at state l"
-          define missed' where "missed' = missed_upd (missed_upd (missed state) r acc') l' acc'"
-          define U where "U = update_best_even_neighbour (missed_get missed')
-                                (neighb_coll state) (best_even_neighbour state) queue0 l'"
-          note CF = cont_step_facts[OF cont I(1) J(1,2,3) I(2,3) J(4) ext' Some,
-                                    unfolded lthe, folded acc'_def, folded missed'_def]
-          have cu: "search_path_loop_cont_upd state =
-                    state \<lparr> forest := extend_forest_even_unclassified (forest state) l r l',
-                            best_even_neighbour := fst (snd U), neighb_coll := fst U,
-                            heap := snd (snd U), missed := missed', acc := acc' \<rparr>"
-            using cont_upd_eq[OF ext' Some] by (simp add: U_def missed'_def acc'_def l_def)
-          have sp: "search_path_loop state = search_path_loop (search_path_loop_cont_upd state)"
-            using search_path_loop_simps(3)[OF 1(1) cont] .
-          have inv': "search_invars (search_path_loop_cont_upd state)"
-            using search_invars_step[OF cont inv] .
-          note IH = 1(2)[OF cont, rule_format, OF inv' len, unfolded loop_assn_def cu, simplified]
-          have nbI: "rnb_invar (neighb_coll state)"
-                    "rnb_abstract (neighb_coll state) = rnb_abstract rnb_init"
-            using I(1) by (auto elim!: invar_basicE)
-          have l'K: "l' \<in> K" using in_K(1)[OF CF(4)] .
-          have minv: "missed_invar (missed_upd (missed state) r acc')" "missed_invar missed'"
-            using missed(3) binv(2) rK l'K by (auto simp: missed'_def)
-          have mupd1: "h k = acc' \<Longrightarrow>
-            <missed_assn (missed state) Mi> missed_upd_imp Mi r k
-            <\<lambda>_. missed_assn (missed_upd (missed state) r acc') Mi>" for k
-            using missed.fixed_univ_map_upd_rule[OF binv(2) rK, of Mi k] by simp
-          have mupd2: "h k = acc' \<Longrightarrow>
-            <missed_assn (missed_upd (missed state) r acc') Mi> missed_upd_imp Mi l' k
-            <\<lambda>_. missed_assn missed' Mi>" for k
-            using missed.fixed_univ_map_upd_rule[OF minv(1) l'K, of Mi k] by (simp add: missed'_def)
-          note ubi = update_ben_imp_rule[OF nbI(1) CF(4) nbI(2) minv(2) CF(6), folded U_def]
-          note fe = forest.forest_extend_rule[OF CF(5)]
-          show ?thesis
-            supply buddy_rule[sep_heap_rules del] ben_get_rule[sep_heap_rules del]
-                   missed.fixed_univ_map_upd_rule[sep_heap_rules del]
-                   forest.forest_extend_rule[sep_heap_rules del]
-            apply(subst code.loop_imp.simps)
-            apply(sep_auto heap: ext_rule[folded acc'_def] ben_r bud_r mupd1 mupd2 fe ubi IH
-                           simp: loop_assn_def bud0 sp cu)
-            done
-        qed
-      qed
+  using assms
+proof(induction arbitrary: Fi xs rule: search_path_loop_induct[OF search_invars_dom[OF assms(1)]])
+  case (1 state)
+  note I = search_invarsD[OF 1(3)]
+  note B = invar_basic_props[OF I(1)]
+  obtain queue0 hm where "heap_extract_min (heap state) = (queue0, hm)"
+    by (cases "heap_extract_min (heap state)") auto
+  note ext = this
+  show ?case
+  proof(cases hm)
+    case None
+    show ?thesis
+      by (subst code.loop_imp.simps)
+         (sep_auto heap: queue.queue_extract_min_rule
+                   simp: B(1) ext None loop_fail loop_assn_def loop_post_def res_rel_def)
+  next
+    case (Some r)
+    note ext' = ext[unfolded Some]
+    note lthe = ben_lookup_the[OF extract_facts(1)[OF I(1-3) ext']]
+    note F = extract_facts[OF I(1-3) ext', unfolded lthe]
+    note ex = extract_min_key_rule[OF 1(3) ext']
+    show ?thesis
+    proof(cases "buddy r")
+      case None
+      note sp = loop_succ[OF ext' None]
+       and plen = order.trans[OF succ_path_length[OF I(1-3) ext', unfolded lthe] 1(4)]
+      show ?thesis
+        supply buddy_rule[sep_heap_rules del] ben_get_rule[sep_heap_rules del]
+               forest.get_path_rule[sep_heap_rules del]
+        apply(subst code.loop_imp.simps)
+        apply(sep_auto heap: ex ben_get_rule[OF B(2) in_K(3)[OF F(7)]]
+                             buddy_rule[OF in_K(3)[OF F(7)], unfolded buddy_get_props(1)[OF None]]
+                             forest.get_path_rule[OF F(8) F(2), of "Suc 0"]
+                       simp: loop_assn_def plen[simplified])
+        subgoal for k a b
+          apply(erule entailsD[rotated])
+          apply(rule ent_ex_postI[where x = "[r] @ get_path (forest state) (ben_get (best_even_neighbour state) r) @
+                        drop (Suc (length (get_path (forest state) (ben_get (best_even_neighbour state) r)))) xs"])
+          using plen
+          by (sep_auto simp: sp loop_post_def res_rel_def neq_Nil_conv)
+        subgoal premises p for a b k ha ra haa raa
+          using p(5)[unfolded p(3)]
+          by (rule notE) (rule refl)
+        done
+    next
+      case (Some l')
+      have "search_path_loop_cont_cond state"
+        by (simp add: search_path_loop_cont_cond_def ext' Some)
+      note CF = cont_step_facts[OF this I(1,4,5,6,2,3,7) ext' Some, unfolded lthe]
+       and IH = 1(2)[OF this search_invars_step[OF this 1(3)],
+                     unfolded cont_upd_eq[OF ext' Some] loop_assn_def, simplified]
+       and sp = search_path_loop_simps(3)[OF 1(1) this]
+      show ?thesis
+        supply buddy_rule[sep_heap_rules del] ben_get_rule[sep_heap_rules del]
+               missed.fixed_univ_map_upd_rule[sep_heap_rules del] forest.forest_extend_rule[sep_heap_rules del]
+        by (subst code.loop_imp.simps)
+           (sep_auto heap: ex ben_get_rule[OF B(2) in_K(3)[OF F(7)]] buddy_rule[OF in_K(3)[OF F(7)]]
+                           missed.fixed_univ_map_upd_rule[OF B(3) in_K(3)[OF F(7)]]
+                           missed.fixed_univ_map_upd_rule[OF missed(3)[OF B(3) in_K(3)[OF F(7)]] in_K(1)[OF CF(4)]]
+                           forest.forest_extend_rule[OF CF(5)] update_ben_imp_rule[OF B(4) CF(4) B(5) _ CF(6)] IH
+                     simp: loop_assn_def buddy_get_props(2)[OF Some] eq_commute[of nil] sp
+                           cont_upd_eq[OF ext' Some] missed(3) B(3) CF(4) F(7) in_K(1,3) 1(4))
     qed
   qed
-  thus ?thesis using assms by blast
 qed
 
 subsection \<open>The New Potential\<close>
@@ -1052,31 +952,44 @@ lemma pot_step_even_rule:
   assumes "pot_pre v p" "h av = a" "missed_invar M"
   shows "<pot_assn p Pti * missed_assn M Mi> code.pot_step_even Pti Mi av v u
          <\<lambda>_. pot_assn (potential_upd p v (\<pi> v + a - missed_get M v)) Pti * missed_assn M Mi>"
-proof-
-  have p: "potential_invar p" "v \<in> K" "potential_get p v = \<pi> v"
-    using assms(1) by (auto simp: pot_pre_def)
-  have mget: "<missed_assn M Mi> missed_get_imp Mi v
-              <\<lambda>x. missed_assn M Mi * \<up>(h x = missed_get M v)>"
-    using missed.fixed_univ_map_lookup_rule[OF assms(3) p(2)] .
-  show ?thesis
-    unfolding code.pot_step_even_def
-    using assms(2) p by (sep_auto heap: mget simp: h_add)
-qed
+  unfolding code.pot_step_even_def
+  using assms
+  by (sep_auto simp: pot_pre_def h_add)
 
 lemma pot_step_odd_rule:
   assumes "pot_pre v p" "h av = a" "missed_invar M"
   shows "<pot_assn p Pti * missed_assn M Mi> code.pot_step_odd Pti Mi av v u
          <\<lambda>_. pot_assn (potential_upd p v (\<pi> v - a + missed_get M v)) Pti * missed_assn M Mi>"
-proof-
-  have p: "potential_invar p" "v \<in> K" "potential_get p v = \<pi> v"
-    using assms(1) by (auto simp: pot_pre_def)
-  have mget: "<missed_assn M Mi> missed_get_imp Mi v
-              <\<lambda>x. missed_assn M Mi * \<up>(h x = missed_get M v)>"
-    using missed.fixed_univ_map_lookup_rule[OF assms(3) p(2)] .
-  show ?thesis
-    unfolding code.pot_step_odd_def
-    using assms(2) p by (sep_auto heap: mget simp: h_add)
-qed
+  unfolding code.pot_step_odd_def
+  using assms
+  by (sep_auto simp: pot_pre_def h_add)
+
+lemma forest_parts_props:
+  assumes "forest_invar \<M> (forest st)"
+  shows "finite (aevens st)" "finite (aodds st)" "vset_invar (evens (forest st))"
+        "vset_invar (odds (forest st))" "aevens st \<subseteq> K" "aodds st \<subseteq> K" "aevens st \<inter> aodds st = {}"
+  using assms finite_forest(1,2) evens_and_odds(1,2,4) vset.fixed_univ_set_universe
+  by auto
+
+lemma new_potential_foldl:
+  assumes "forest_invar \<M> (forest st)"
+  shows "new_potential st =
+         foldl (\<lambda>p v. potential_upd p v (\<pi> v - acc st + missed_at st v))
+               (foldl (\<lambda>p v. potential_upd p v (\<pi> v + acc st - missed_at st v)) initial_pot (lst (aevens st)))
+               (lst (aodds st))"
+  using forest_parts_props(3,4)[OF assms]
+  by (simp add: new_potential_def vset_iterate_pot_lst)
+
+lemma new_pot_pre:
+  assumes "forest_invar \<M> (forest st)"
+  shows "fold_pre pot_pre (\<lambda>p v. potential_upd p v (\<pi> v + acc st - missed_at st v)) initial_pot
+                  (lst (aevens st))"
+        "fold_pre pot_pre (\<lambda>p v. potential_upd p v (\<pi> v - acc st + missed_at st v))
+           (foldl (\<lambda>p v. potential_upd p v (\<pi> v + acc st - missed_at st v)) initial_pot (lst (aevens st)))
+           (lst (aodds st))"
+  using assms forest_parts_props[of st] forest.lst_distinct forest.lst_set
+        foldl_pot_upd[OF potential, of "lst (aevens st)" "\<lambda>v. \<pi> v + acc st - missed_at st v"]
+  by (auto intro!: fold_pre_pot simp: potential)
 
 lemma new_pot_imp_rule:
   assumes "forest_invar \<M> (forest st)" "h av = acc st" "missed_invar (missed st)"
@@ -1085,56 +998,23 @@ lemma new_pot_imp_rule:
          <\<lambda>_. forest_assn (forest st) Fi * missed_assn (missed st) Mi *
               pot_assn (new_potential st) Pti>"
 proof-
-  define ge where "ge = (\<lambda>p v. potential_upd p v (\<pi> v + acc st - missed_at st v))"
-  define go where "go = (\<lambda>p v. potential_upd p v (\<pi> v - acc st + missed_at st v))"
-  have fin: "finite (aevens st)" "finite (aodds st)"
-    using finite_forest(1,2)[OF assms(1)] by auto
-  have vinv: "vset_invar (evens (forest st))" "vset_invar (odds (forest st))"
-    using evens_and_odds(1,2)[OF assms(1)] by auto
-  have sub: "aevens st \<subseteq> K" "aodds st \<subseteq> K"
-    using vset.fixed_univ_set_universe[OF vinv(1)] vset.fixed_univ_set_universe[OF vinv(2)] .
-  have disj: "aevens st \<inter> aodds st = {}" using evens_and_odds(4)[OF assms(1)] .
-  have NP: "new_potential st = foldl go (foldl ge initial_pot (lst (aevens st))) (lst (aodds st))"
-    by (simp add: new_potential_def vset_iterate_pot_lst[OF vinv(1)]
-                  vset_iterate_pot_lst[OF vinv(2)] ge_def go_def)
-  have pre1: "fold_pre pot_pre ge initial_pot (lst (aevens st))"
-    unfolding ge_def
-    by (rule fold_pre_pot)
-       (auto simp: forest.lst_distinct[OF fin(1)] forest.lst_set[OF fin(1)] sub(1) potential)
-  have P1: "potential_invar (foldl ge initial_pot (lst (aevens st)))"
-           "\<And>w. w \<notin> aevens st \<Longrightarrow> potential_get (foldl ge initial_pot (lst (aevens st))) w = \<pi> w"
-    using foldl_pot_upd[where p = initial_pot and xs = "lst (aevens st)"
-                          and f = "\<lambda>v. \<pi> v + acc st - missed_at st v", OF potential]
-          forest.lst_set[OF fin(1)] sub(1)
-    by (auto simp: ge_def)
-  have P1': "\<forall>w\<in>set (lst (aodds st)). potential_get (foldl ge initial_pot (lst (aevens st))) w = \<pi> w"
-    using P1(2) disj forest.lst_set[OF fin(2)] by blast
-  have pre2: "fold_pre pot_pre go (foldl ge initial_pot (lst (aevens st))) (lst (aodds st))"
-    unfolding go_def
-    by (rule fold_pre_pot)
-       (auto simp: forest.lst_distinct[OF fin(2)] forest.lst_set[OF fin(2)] sub(2) P1(1) P1')
-  have step1: "\<And>v p u. pot_pre v p \<Longrightarrow>
-    <pot_assn p Pti * missed_assn (missed st) Mi> code.pot_step_even Pti Mi av v u
-    <\<lambda>_. pot_assn (ge p v) Pti * missed_assn (missed st) Mi>"
-    unfolding ge_def using pot_step_even_rule[OF _ assms(2,3)] .
-  have step2: "\<And>v p u. pot_pre v p \<Longrightarrow>
-    <pot_assn p Pti * missed_assn (missed st) Mi> code.pot_step_odd Pti Mi av v u
-    <\<lambda>_. pot_assn (go p v) Pti * missed_assn (missed st) Mi>"
-    unfolding go_def using pot_step_odd_rule[OF _ assms(2,3)] .
   note fold1 = iter_fold_rule_gen[where I = "\<lambda>xs it. forest_assn (forest st) Fi *
                                                forest_is_it Evens (aevens st) Fi xs it"
       and Q = "forest_assn (forest st) Fi"
       and A = "\<lambda>p (u::unit). pot_assn p Pti * missed_assn (missed st) Mi",
-      OF forest.ev.it_has_next_rule forest.ev.it_next_rule forest.ev.quit_iteration step1 pre1]
+      OF forest.ev.it_has_next_rule forest.ev.it_next_rule forest.ev.quit_iteration
+         pot_step_even_rule[OF _ assms(2,3)] new_pot_pre(1)[OF assms(1)]]
   note fold2 = iter_fold_rule_gen[where I = "\<lambda>xs it. forest_assn (forest st) Fi *
                                                forest_is_it Odds (aodds st) Fi xs it"
       and Q = "forest_assn (forest st) Fi"
       and A = "\<lambda>p (u::unit). pot_assn p Pti * missed_assn (missed st) Mi",
-      OF forest.od.it_has_next_rule forest.od.it_next_rule forest.od.quit_iteration step2 pre2]
+      OF forest.od.it_has_next_rule forest.od.it_next_rule forest.od.quit_iteration
+         pot_step_odd_rule[OF _ assms(2,3)] new_pot_pre(2)[OF assms(1)]]
   show ?thesis
     unfolding code.new_pot_imp_def
-    by (sep_auto heap: forest.ev.it_init_rule[OF vinv(1)] forest.od.it_init_rule[OF vinv(2)]
-                       fold1 fold2 simp: NP)
+    by (sep_auto heap: forest.ev.it_init_rule[OF forest_parts_props(3)[OF assms(1)]]
+                       forest.od.it_init_rule[OF forest_parts_props(4)[OF assms(1)]] fold1 fold2
+                 simp: new_potential_foldl[OF assms(1)])
 qed
 
 subsection \<open>The Path Search\<close>
@@ -1143,101 +1023,92 @@ lemma init_ok_foldl:
   "\<lbrakk>set xs \<subseteq> L; init_ok cbq\<rbrakk> \<Longrightarrow>
    init_ok (foldl (\<lambda>cbq l. update_best_even_neighbour (\<lambda>x. 0) (fst cbq) (fst (snd cbq))
                               (snd (snd cbq)) l) cbq xs)"
-proof(induction xs arbitrary: cbq)
-  case (Cons x xs)
-  have "init_ok (update_best_even_neighbour (\<lambda>x. 0) (fst cbq) (fst (snd cbq)) (snd (snd cbq)) x)"
-    using init_ok_step[OF Cons.prems(2), of x] Cons.prems(1) by simp
-  from Cons.IH[OF _ this] Cons.prems(1) show ?case by simp
-qed simp
+  by (induction xs arbitrary: cbq) (simp_all add: init_ok_step)
 
 lemma init_ok_initial: "init_ok init_best_even_neighbour"
-proof-
-  have "init_best_even_neighbour =
-        foldl (\<lambda>cbq l. update_best_even_neighbour (\<lambda>x. 0) (fst cbq) (fst (snd cbq))
-                          (snd (snd cbq)) l)
-              (rnb_init, ben_empty, heap_empty) (filter (\<lambda>v. buddy_get v = nil) (lst L))"
-    using init_fold_result(2) by (simp add: init_fold)
-  thus ?thesis
-    using init_ok_foldl[OF _ init_ok_init, of "filter (\<lambda>v. buddy_get v = nil) (lst L)"]
-          forest.lst_set[OF finite_L]
-    by auto
-qed
+  using init_fold_result init_ok_foldl[OF _ init_ok_init, of "filter (\<lambda>v. buddy_get v = nil) (lst L)"]
+        forest.lst_set[OF finite_L]
+  by (auto simp: init_fold)
 
 lemma scratch_assnI:
   "\<lbrakk>rnb_invar C; rnb_abstract C = rnb_abstract rnb_init; ben_invar B; missed_invar M\<rbrakk> \<Longrightarrow>
    nb_assn C Ci * queue_assn H Qi * forest_assn F Fi * ben_assn B Bi * missed_assn M Mi
    \<Longrightarrow>\<^sub>A scratch_assn Ci Qi Fi Bi Mi"
-  unfolding scratch_assn_def by (sep_auto simp: fun_eq_iff)
+  unfolding scratch_assn_def
+  by (sep_auto simp: fun_eq_iff)
 
 text \<open>The result of the imperative search, relative to the functional one.\<close>
 
 definition "search_post Pti res xs' =
   (case search_path of (r, \<pi>') \<Rightarrow> \<up>(imp_result_rel xs' res r) * pot_assn \<pi>' Pti)"
 
-theorem search_imp_rule:
-  assumes len: "card (L \<union> R) \<le> length xs"
+lemma init_ben_props:
+  "rnb_invar (fst init_best_even_neighbour)"
+  "rnb_abstract (fst init_best_even_neighbour) = rnb_abstract rnb_init"
+  "ben_invar (fst (snd init_best_even_neighbour))"
+  using init_ok_initial
+  by (simp_all add: init_ok_def)
+
+lemma search_initial_invars: "\<not> vset_is_empty unmatched_lefts \<Longrightarrow> search_invars initial_state"
+  using unmatched_lefts vset_is_empty search_invars_init
+  by simp
+
+lemma search_path_final:
+  "\<not> vset_is_empty unmatched_lefts \<Longrightarrow>
+   search_path = (case augpath (search_path_loop initial_state) of
+                    None \<Rightarrow> (Dual_Unbounded, initial_pot)
+                  | Some p \<Rightarrow> (Next_Iteration p, new_potential (search_path_loop initial_state)))"
+  using search_invars_dom[OF search_initial_invars]
+  by (simp add: search_path_def search_path_loop_impl_same Let_def)
+
+lemma initial_state_fields:
+  "neighb_coll initial_state = fst init_best_even_neighbour"
+  "heap initial_state = snd (snd init_best_even_neighbour)"
+  "forest initial_state = empty_forest forest_roots"
+  "best_even_neighbour initial_state = fst (snd init_best_even_neighbour)"
+  "missed initial_state = missed_empty"
+  by (simp_all add: initial_state_def)
+
+lemma search_imp_rule:
+  assumes "card (L \<union> R) \<le> length xs"
   shows "<scratch_assn Ci Qi Fi Bi Mi * vset_assn left Li * buddy_assn Bdi *
           pot_assn initial_pot Pti * Ra \<mapsto>\<^sub>a xs>
          code.search_imp Ci Qi Pti Bdi Li Ra Fi Bi Mi
          <\<lambda>(res, Fi'). \<exists>\<^sub>Axs'.
             scratch_assn Ci Qi Fi' Bi Mi * vset_assn left Li * buddy_assn Bdi *
             Ra \<mapsto>\<^sub>a xs' * \<up>(length xs' = length xs) * search_post Pti res xs'>"
-proof-
-  have ok: "rnb_invar (fst init_best_even_neighbour)"
-           "rnb_abstract (fst init_best_even_neighbour) = rnb_abstract rnb_init"
-           "ben_invar (fst (snd init_best_even_neighbour))"
-    using init_ok_initial by (auto simp: init_ok_def)
+proof(cases "vset_is_empty unmatched_lefts")
+  case True
   show ?thesis
-  proof(cases "vset_is_empty unmatched_lefts")
-    case True
-    have sp: "search_path = (Lefts_Matched, initial_pot)" by (simp add: search_path_def True)
+    unfolding code.search_imp_def
+    apply(sep_auto heap: clear_imp_rule init_imp_rule simp: True)
+    using init_ben_props True
+    by (sep_auto simp: scratch_assn_def search_post_def search_path_def fun_eq_iff missed(1))
+next
+  case False
+  note inv = search_initial_invars[OF False]
+  note fb = invar_basic_props[OF loop_final_basic[OF inv]]
+  note lp = loop_imp_rule[OF inv assms, unfolded loop_assn_def initial_state_fields]
+  show ?thesis
+  proof(cases "augpath (search_path_loop initial_state)")
+    case None
     show ?thesis
       unfolding code.search_imp_def
-      apply(sep_auto heap: clear_imp_rule init_imp_rule simp: True)
-      using ok True by (sep_auto simp: scratch_assn_def search_post_def sp fun_eq_iff missed(1))
+      apply(sep_auto heap: clear_imp_rule init_imp_rule lp simp: False)
+      apply(all \<open>clarsimp simp: None res_rel_def False\<close>)
+      using fb(2-5)
+      by (sep_auto simp: loop_post_def scratch_assn_def search_post_def search_path_final False None
+                         fun_eq_iff)
   next
-    case False
-    have ne: "L - Vs \<M> \<noteq> {}"
-      using False vset_is_empty[OF unmatched_lefts(2)] unmatched_lefts(1) by simp
-    have inv0: "search_invars initial_state" using search_invars_init[OF ne] .
-    have dom: "search_path_loop_dom initial_state" using search_invars_dom[OF inv0] .
-    define fin where "fin = search_path_loop initial_state"
-    have basic: "invar_basic fin" using loop_final_basic[OF inv0] by (simp add: fin_def)
-    have fb: "rnb_invar (neighb_coll fin)" "rnb_abstract (neighb_coll fin) = rnb_abstract rnb_init"
-             "forest_invar \<M> (forest fin)" "ben_invar (best_even_neighbour fin)"
-             "missed_invar (missed fin)"
-      using basic by (auto elim!: invar_basicE)
-    have spe: "search_path = (case augpath fin of None \<Rightarrow> (Dual_Unbounded, initial_pot)
-                              | Some p \<Rightarrow> (Next_Iteration p, new_potential fin))"
-      unfolding fin_def
-      by (simp add: search_path_def False search_path_loop_impl_same[OF dom] Let_def)
-    have fields: "neighb_coll initial_state = fst init_best_even_neighbour"
-                 "heap initial_state = snd (snd init_best_even_neighbour)"
-                 "forest initial_state = empty_forest forest_roots"
-                 "best_even_neighbour initial_state = fst (snd init_best_even_neighbour)"
-                 "missed initial_state = missed_empty"
-      by (simp_all add: initial_state_def)
-    note lp = loop_imp_rule[OF inv0 len, unfolded loop_assn_def fields, folded fin_def]
+    case (Some p)
     show ?thesis
-    proof(cases "augpath fin")
-      case None
-      show ?thesis
-        unfolding code.search_imp_def
-        apply(sep_auto heap: clear_imp_rule init_imp_rule lp simp: False)
-        apply(all \<open>clarsimp simp: None res_rel_def False\<close>)
-        using fb(1,2,4,5)
-        by (sep_auto simp: loop_post_def scratch_assn_def search_post_def spe None fun_eq_iff)
-    next
-      case (Some p)
-      note np = new_pot_imp_rule[OF fb(3) _ fb(5)]
-      show ?thesis
-        unfolding code.search_imp_def
-        apply(sep_auto heap: clear_imp_rule init_imp_rule lp simp: False)
-        apply(all \<open>clarsimp simp: Some res_rel_def False\<close>)
-        using fb(1,2,4,5)
-        by (sep_auto heap: np simp: loop_post_def scratch_assn_def search_post_def spe Some
-                                    fun_eq_iff)
-    qed
+      unfolding code.search_imp_def
+      apply(sep_auto heap: clear_imp_rule init_imp_rule lp simp: False)
+      apply(all \<open>clarsimp simp: Some res_rel_def False\<close>)
+      using fb(2-5)
+      by (sep_auto heap: new_pot_imp_rule[OF fb(6) _ fb(3)]
+                   simp: loop_post_def scratch_assn_def search_post_def search_path_final False Some
+                         fun_eq_iff)
   qed
 qed
 

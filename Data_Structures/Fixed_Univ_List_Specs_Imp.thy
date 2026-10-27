@@ -4,6 +4,13 @@ theory Fixed_Univ_List_Specs_Imp
     Fixed_Univ_List_Specs
 begin
 
+locale imp_rlist =
+  fixes rl_assn :: "'a list \<Rightarrow> 'p \<Rightarrow> assn"
+    and len_imp :: "'p \<Rightarrow> nat Heap"
+    and nth_imp :: "'p \<Rightarrow> nat \<Rightarrow> 'a Heap"
+  assumes len_rule: "<rl_assn xs p> len_imp p <\<lambda>r. rl_assn xs p * \<up>(r = length xs)>"
+    and nth_rule: "i < length xs \<Longrightarrow> <rl_assn xs p> nth_imp p i <\<lambda>r. rl_assn xs p * \<up>(r = xs ! i)>"
+
 text \<open>Imperative distinct lists over a fixed universe. Updates work in place; the only allocating
       operation is @{term list_empty_imp}, which is used during initialisation only.\<close>
 
@@ -54,22 +61,9 @@ lemma (in fixed_univ_list_imp) fixed_univ_list_imp_restrict:
   shows "fixed_univ_list_imp U' (restr_list_invar U' list_invar list_abstract) list_abstract
            list_empty list_push_front list_move_to_front list_first list_next list_assn
            list_empty_imp list_push_front_imp list_move_to_front_imp list_first_imp list_next_imp"
-proof(intro fixed_univ_list_imp.intro fixed_univ_list_restrict[OF assms]
-            fixed_univ_list_imp_axioms.intro, goal_cases)
-  case 1 show ?case
-    by (rule list_empty_rule)
-next
-  case (2 L x) then show ?case
-    using assms by (intro list_push_front_rule) (auto simp add: restr_list_invar_def)
-next
-  case (3 L x) then show ?case
-    by (intro list_move_to_front_rule) (simp_all add: restr_list_invar_def)
-next
-  case (4 L) then show ?case
-    by (intro list_first_rule) (simp add: restr_list_invar_def)
-next
-  case (5 L x) then show ?case
-    by (intro list_next_rule) (simp_all add: restr_list_invar_def)
-qed
+  using assms
+  by (intro fixed_univ_list_imp.intro fixed_univ_list_restrict fixed_univ_list_imp_axioms.intro)
+     (auto simp: restr_list_invar_def intro!: list_empty_rule list_push_front_rule
+        list_move_to_front_rule list_first_rule list_next_rule)
 
 end

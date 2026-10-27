@@ -16,41 +16,49 @@ lemma rooted_arborescense_invarI[intro]:
     and "dVs {(y, x) |x y. (Some x = T y)} = V"
   shows "rooted_arborescense_invar r V T"
   unfolding rooted_arborescense_invar_def
-  using assms by auto
+  using assms
+  by auto
 
 lemma rooted_arborescense_invarE[elim]:
   assumes "rooted_arborescense_invar r V T"
   obtains "parent_spec T" "r \<in> V" "dom T = V - {r}" "dVs {(y, x) |x y. (Some x = T y)} = V"
-  using assms unfolding rooted_arborescense_invar_def by auto
+  using assms unfolding rooted_arborescense_invar_def
+  by auto
 
 named_theorems rooted_arborescense_invarD
 
 lemma rooted_arborescense_invar_parent_spec[dest,rooted_arborescense_invarD]:
   "rooted_arborescense_invar r V T \<Longrightarrow> parent_spec T"
-  unfolding rooted_arborescense_invar_def by auto
+  unfolding rooted_arborescense_invar_def
+  by auto
 
 lemma rooted_arborescense_invar_r_in_V[dest,rooted_arborescense_invarD]:
   "rooted_arborescense_invar r V T \<Longrightarrow> r \<in> V"
-  unfolding rooted_arborescense_invar_def by auto
+  unfolding rooted_arborescense_invar_def
+  by auto
 
 lemma rooted_arborescense_invar_dom[dest,rooted_arborescense_invarD]:
   "rooted_arborescense_invar r V T \<Longrightarrow> dom T = V - {r}"
-  unfolding rooted_arborescense_invar_def by auto
+  unfolding rooted_arborescense_invar_def
+  by auto
 
 lemma rooted_arborescense_invar_dVs[dest,rooted_arborescense_invarD]:
   "rooted_arborescense_invar r V T \<Longrightarrow> dVs {(y, x) |x y. (Some x = T y)} = V"
-  unfolding rooted_arborescense_invar_def by auto
+  unfolding rooted_arborescense_invar_def
+  by auto
 
 section \<open>The threaded-tree state (last/size representation)\<close>
 
 text \<open>The structure is a record of the five maps (mirroring the array-of-structs layout of real
       implementations such as LEMON's network simplex, where these are
-      \<open>_parent\<close> / \<open>_thread\<close> / \<open>_rev_thread\<close> / \<open>_last_succ\<close> / \<open>_succ_num\<close>).\<close>
+      \<open>_parent\<close> / \<open>_thread\<close> / \<open>_rev_thread\<close> / \<open>_last_succ\<close> /
+        \<open>_succ_num\<close>).\<close>
 record 'a ndtree =
   prnt :: "'a \<rightharpoonup> 'a"   \<comment> \<open>tree parent map\<close>
   thrd :: "'a \<rightharpoonup> 'a"   \<comment> \<open>thread successor (preorder next)\<close>
   rvth :: "'a \<rightharpoonup> 'a"   \<comment> \<open>thread predecessor (reverse thread)\<close>
-  lsuc :: "'a \<Rightarrow> 'a"    \<comment> \<open>last successor: rightmost descendant of the subtree in the thread\<close>
+  lsuc :: "'a \<Rightarrow> 'a"    \<comment> \<open>last successor: rightmost descendant of the subtree in the
+    thread\<close>
   snum :: "'a \<Rightarrow> nat"   \<comment> \<open>subtree size (number of successors, incl. the node itself)\<close>
 
 definition "arb_invar r V S =
@@ -79,7 +87,9 @@ lemma arb_invarI[intro]:
          = pre @ (case thrd S (lsuc S v) of None \<Rightarrow> [] | Some w \<Rightarrow> follow (thrd S) w) \<and>
        pre \<noteq> [] \<and> last pre = lsuc S v \<and> set pre = children (prnt S) v"
   shows "arb_invar r V S"
-  unfolding arb_invar_def using assms by auto
+  unfolding arb_invar_def
+  using assms
+  by auto
 
 section \<open>The tree-update program (port of LEMON's updateTreeStructure)\<close>
 
@@ -88,7 +98,8 @@ text \<open>The stem loop: walk the path nodes from @{term i} (@{text stm}) up t
       @{text lsx} its last successor, @{text aft} the thread node after that block, @{text drt}
       the list of nodes whose reverse-thread must be refreshed afterwards.\<close>
 partial_function (tailrec) stem_loop ::
-  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a option \<Rightarrow> 'a list \<Rightarrow> 'a
+  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a option \<Rightarrow> 'a list
+    \<Rightarrow> 'a
      \<Rightarrow> ('a ndtree \<times> 'a \<times> 'a \<times> 'a option \<times> 'a list)" where
   "stem_loop S stm pstm lsx aft drt p =
      (if stm = p then (S, pstm, lsx, aft, drt)
@@ -99,7 +110,8 @@ partial_function (tailrec) stem_loop ::
              bef  = the (rvth S1 stm);
              S2   = (case aft of
                        None   \<Rightarrow> S1\<lparr>thrd := (thrd S1)(bef := None)\<rparr>
-                     | Some a \<Rightarrow> S1\<lparr>thrd := (thrd S1)(bef \<mapsto> a), rvth := (rvth S1)(a \<mapsto> bef)\<rparr>);
+                     | Some a \<Rightarrow> S1\<lparr>thrd := (thrd S1)(bef \<mapsto> a), rvth := (rvth S1)(a \<mapsto>
+                       bef)\<rparr>);
              S3   = S2\<lparr>prnt := (prnt S2)(stm \<mapsto> pstm)\<rparr>;
              pstm' = stm;
              stm'  = nxt_stm;
@@ -110,12 +122,14 @@ partial_function (tailrec) stem_loop ::
 text \<open>Refresh the deferred reverse-thread links recorded in @{text drt}.\<close>
 definition dirty_pass :: "'a ndtree \<Rightarrow> 'a list \<Rightarrow> 'a ndtree" where
   "dirty_pass S drt =
-     foldl (\<lambda>S u. case thrd S u of None \<Rightarrow> S | Some w \<Rightarrow> S\<lparr>rvth := (rvth S)(w \<mapsto> u)\<rparr>) S drt"
+     foldl (\<lambda>S u. case thrd S u of None \<Rightarrow> S | Some w \<Rightarrow> S\<lparr>rvth := (rvth S)(w
+       \<mapsto> u)\<rparr>) S drt"
 
 text \<open>Recompute @{const snum} and @{const lsuc} for the stem nodes, walking the (now reversed)
       parents from @{term p} down to @{term i}.  @{text sn0} is the pre-surgery @{const snum}.\<close>
 partial_function (tailrec) stem_num_loop ::
-  "'a ndtree \<Rightarrow> ('a \<Rightarrow> nat) \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a ndtree" where
+  "'a ndtree \<Rightarrow> ('a \<Rightarrow> nat) \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> 'a
+    \<Rightarrow> 'a ndtree" where
   "stem_num_loop S sn0 u iv acc tls =
      (if u = iv then S
       else (case prnt S u of None \<Rightarrow> S
@@ -163,7 +177,8 @@ text \<open>Fused @{term j}-side pass: a single walk of the parent chain from @{
       Each side latches off independently once its guard first fails, so the walk covers the longer of
       the two prefixes.  See for the equivalence to the two loops.\<close>
 partial_function (tailrec) fused_vin_loop ::
-  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> 'a ndtree" where
+  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> bool
+    \<Rightarrow> bool \<Rightarrow> 'a ndtree" where
   "fused_vin_loop S u jv jn lso d la sa =
      (let la' = la \<and> lsuc S u = jv;
           sa' = sa \<and> u \<noteq> jn
@@ -178,7 +193,8 @@ text \<open>Fused @{term v_out}-side pass: one walk from @{term v_out} doing the
       @{const succ_vout_loop} work on @{const snum} (guard @{term sa}: while @{term "u \<noteq> jn"}).  Passing
       @{term "la = False"} runs only the @{const snum} side (the degenerate @{term "S3 = S2"} case).\<close>
 partial_function (tailrec) fused_vout_loop ::
-  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a option \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> 'a ndtree" where
+  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a option \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow>
+    nat \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> 'a ndtree" where
   "fused_vout_loop S u stp gv sv jn d la sa =
      (let la' = la \<and> Some u \<noteq> stp \<and> lsuc S u = gv;
           sa' = sa \<and> u \<noteq> jn
@@ -190,7 +206,8 @@ partial_function (tailrec) fused_vout_loop ::
 
 paragraph \<open>The orchestrator (port of @{text updateTreeStructure}).\<close>
 
-definition update_tree :: "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a ndtree" where
+definition update_tree :: "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow>
+  'a ndtree" where
   "update_tree S0 i j p jn =
    (let v_out    = the (prnt S0 p);
         old_rev  = the (rvth S0 p);
@@ -225,7 +242,8 @@ definition update_tree :: "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightar
                   Sp = Sl\<lparr>prnt := (prnt Sl)(p \<mapsto> pstm)\<rparr>;
                   Sq = (case thread_cont of
                           None   \<Rightarrow> Sp\<lparr>thrd := (thrd Sp)(lsx := None)\<rparr>
-                        | Some a \<Rightarrow> Sp\<lparr>thrd := (thrd Sp)(lsx \<mapsto> a), rvth := (rvth Sp)(a \<mapsto> lsx)\<rparr>);
+                        | Some a \<Rightarrow> Sp\<lparr>thrd := (thrd Sp)(lsx \<mapsto> a), rvth := (rvth Sp)(a
+                          \<mapsto> lsx)\<rparr>);
                   Sr = Sq\<lparr>lsuc := (lsuc Sq)(p := lsx)\<rparr>;
                   Ss = (if old_rev \<noteq> j
                         then (case aft of
@@ -256,7 +274,8 @@ text \<open>Fold @{term f} over the subtree of a node by walking the thread from
       block that starts at the node and ends at its last successor @{const lsuc}.  This is a plain
       recursion on @{const thrd}, stopping once @{const lsuc} of the start node has been processed.\<close>
 partial_function (tailrec) subtree_fold ::
-  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> ('a \<Rightarrow> 'acc \<Rightarrow> 'acc) \<Rightarrow> 'acc \<Rightarrow> 'acc" where
+  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> ('a \<Rightarrow> 'acc \<Rightarrow> 'acc) \<Rightarrow>
+    'acc \<Rightarrow> 'acc" where
   "subtree_fold S stop u f acc =
      (let acc' = f u acc
       in (if u = stop then acc'
@@ -266,7 +285,8 @@ text \<open>The @{term iterate_root_opposed} operation of the arborescence ADT: 
       node whose (unique) path to the root passes through @{term v} --- i.e. over the subtree of
       @{term v}, in thread (preorder) order.\<close>
 definition iterate_root_opposed_impl ::
-  "'a ndtree \<Rightarrow> 'a \<Rightarrow> ('a \<Rightarrow> 'acc \<Rightarrow> 'acc) \<Rightarrow> 'acc \<Rightarrow> 'acc" where
+  "'a ndtree \<Rightarrow> 'a \<Rightarrow> ('a \<Rightarrow> 'acc \<Rightarrow> 'acc) \<Rightarrow> 'acc \<Rightarrow>
+    'acc" where
   "iterate_root_opposed_impl S v f acc = subtree_fold S (lsuc S v) v f acc"
 
 section \<open>The pair-of-paths (join) search\<close>
@@ -277,7 +297,8 @@ text \<open>Find the join (lowest common ancestor) of @{term u} and @{term v} by
       The nodes lifted on the @{term u}-side and the @{term v}-side, recorded bottom-up and then
       reversed, are the two branch paths from @{term u} and @{term v} up to (but excluding) the join.\<close>
 partial_function (tailrec) join_paths_loop ::
-  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> ('a list \<times> 'a list)" where
+  "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> ('a list
+    \<times> 'a list)" where
   "join_paths_loop S u v acc1 acc2 =
      (if u = v then (rev acc1, rev acc2)
       else if snum S u \<le> snum S v
@@ -285,7 +306,8 @@ partial_function (tailrec) join_paths_loop ::
            else join_paths_loop S u (the (prnt S v)) acc1 (v # acc2))"
 
 text \<open>The @{term get_path_pair} operation of the arborescence ADT.\<close>
-definition get_path_pair_impl :: "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> ('a list \<times> 'a list)" where
+definition get_path_pair_impl :: "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> ('a list \<times> 'a list)"
+  where
   "get_path_pair_impl S u v = join_paths_loop S u v [] []"
 
 

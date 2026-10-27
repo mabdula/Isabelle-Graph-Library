@@ -6,120 +6,50 @@ theory Network_Simplex_Initial_Basis_Code
           Data_Structures.List_Cursor
 begin
 
-text \<open>This is the single \<^emph>\<open>code\<close> theory of the initial-basis construction: it collects every executable definition (the CSR builds, Pass A, the free-edge DFS builder, the augmented-network arrays, the arborescence swap, and the whole M-free entering-edge selector) into one assumption-free specification locale \<open>initial_basis_code_spec\<close>.The four downstream theories import it and add only assumptions and proofs.\<close>
+text \<open>This is the single \<^emph>\<open>code\<close> theory of the initial-basis construction: it
+      collects every executable definition (the CSR builds, Pass A, the free-edge DFS builder, the
+      augmented-network arrays, the arborescence swap, and the whole M-free entering-edge selector) into one
+      assumption-free specification locale \<open>initial_basis_code_spec\<close>. The four downstream theories
+      import it and add only assumptions and proofs.\<close>
 
 section \<open>Efficient list-backed arrays and a vertex iterator\<close>
 
-text \<open>The acyclic-flow procedure is stated over abstract data types: two @{locale fixed_univ_map}s
-      (the flow and the three-valued vertex state) and one @{locale iterable_set} (the vertices to
-      scan).  We give the cheapest faithful models, meant to be read as arrays: a flow / state array
-      is a plain list, looked up with @{const nth} and written with @{const list_update} --- both
-      \<open>O(1)\<close> once the list is a genuine array --- and the vertex iterator is the list cursor
-      @{typ \<open>'v list_cursor\<close>}, a vertex list together with a single moving cursor, so
-      @{term current}, @{term has} and @{term move} are a read, a length-compare and an increment.  The set-valued fields (@{term abstract},
-      @{term iterated}, @{term remaining}) are ghosts used only in the proofs and vanish at code
-      generation.\<close>
-
-subsection \<open>A list read as a total array\<close>
-
-text \<open>The @{locale fixed_univ_map} operations are read off a list directly: lookup is @{const nth}
-      and update is @{const list_update} (\<open>xs[k := v]\<close>).  The invariant records that every allowed
-      key is a valid index (\<open>\<forall>k\<in>K. k < length xs\<close>), which is exactly what makes the
-      key-restricted update law hold.\<close>
-
-lemma list_fixed_univ_map:
-  "fixed_univ_map K (\<lambda>xs. \<forall>k\<in>K. k < length xs) list_update nth"
-proof (unfold_locales, goal_cases)
-  case (1 A k v)
-  then have kl: "k < length A" by blast
-  show ?case
-  proof (rule ext)
-    fix i
-    show "(A[k := v]) ! i = (((!) A)(k := v)) i"
-      using kl by (cases "i = k")
-        (simp_all add: nth_list_update_eq nth_list_update_neq)
-  qed
-next
-  case (2 A k v)
-  thus ?case by simp
-qed
-
-lemma nth_fun_list_update:
-  assumes "k < length A"
-  shows "nth (A[k := v]) = (nth A)(k := v)"
-proof (rule ext)
-  fix i
-  show "(A[k := v]) ! i = (((!) A)(k := v)) i"
-    using assms by (cases "i = k")
-      (simp_all add: nth_list_update_eq nth_list_update_neq)
-qed
-
-lemma list_fixed_univ_map_sub:
-  assumes "K \<subseteq> D"
-  shows "fixed_univ_map K (\<lambda>xs. \<forall>k\<in>D. k < length xs) list_update nth"
-proof (unfold_locales, goal_cases)
-  case (1 A k v)
-  then have kl: "k < length A" using assms by blast
-  show ?case
-  proof (rule ext)
-    fix i
-    show "(A[k := v]) ! i = (((!) A)(k := v)) i"
-      using kl by (cases "i = k")
-        (simp_all add: nth_list_update_eq nth_list_update_neq)
-  qed
-next
-  case (2 A k v)
-  thus ?case by simp
-qed
-
-text \<open>A length-pinned variant: when the array's length is exactly @{term n} and the key set lies in
-      @{term \<open>{0..<n}\<close>}, every key is in range and @{const list_update} preserves the length. Making
-      the length part of the invariant is what lets the acyclifier's invariant carry it: the flow it
-      returns is then known to have length @{term m}.\<close>
-
-lemma list_fixed_univ_map_len:
-  assumes "K \<subseteq> {0..<n}"
-  shows "fixed_univ_map K (\<lambda>xs. length xs = n) list_update nth"
-proof (unfold_locales, goal_cases)
-  case (1 A k v)
-  then have kl: "k < length A" using assms by auto
-  show ?case
-  proof (rule ext)
-    fix i
-    show "(A[k := v]) ! i = (((!) A)(k := v)) i"
-      using kl by (cases "i = k")
-        (simp_all add: nth_list_update_eq nth_list_update_neq)
-  qed
-next
-  case (2 A k v)
-  thus ?case by simp
-qed
+text \<open>The acyclic-flow procedure is stated over abstract data types: two @{locale fixed_univ_map}s (the
+      flow and the three-valued vertex state) and one @{locale iterable_set} (the vertices to scan). We give
+      the cheapest faithful models, meant to be read as arrays: a flow / state array is a plain list, looked
+      up with @{const nth} and written with @{const list_update} --- both \<open>O(1)\<close> once the list is
+      a genuine array --- and the vertex iterator is the list cursor @{typ \<open>'v list_cursor\<close>}, a
+      vertex list together with a single moving cursor, so @{term current}, @{term has} and @{term move} are a
+      read, a length-compare and an increment. The set-valued fields (@{term abstract}, @{term iterated},
+      @{term remaining}) are ghosts used only in the proofs and vanish at code generation.\<close>
 
 section \<open>Array-mimicking input lists for the initial basis\<close>
 
 text \<open>The initial-basis construction is driven by a handful of parallel lists that stand in for the
-      arrays a real implementation would be handed.  \<^emph>\<open>Edges are identified by their index\<close>: the four
-      edge lists all have the same length, and the ith edge has capacity @{term \<open>capacity_list ! i\<close>},
-      cost @{term \<open>cost_list ! i\<close>}, tail @{term \<open>fst_list ! i\<close>}, head @{term \<open>snd_list ! i\<close>} and
-      carries flow @{term \<open>flow_list ! i\<close>} (the acyclic flow to be turned into the initial basis).  The
-      number of edges is @{term m}, the common length of the edge lists, so the edges are exactly the
-      indices @{term \<open>{0..<m}\<close>}.  Capacities are non-negative except that @{term \<open>- 1\<close>} encodes an
-      infinite capacity: it is the only negative value a capacity may take.  The
-      vertices are described by two further lists of equal length: the ith vertex has \<^emph>\<open>name\<close>
-      @{term \<open>vs_list ! i\<close>} and balance @{term \<open>b_list ! i\<close>}.  Vertex names are naturals; we reserve
-      @{term \<open>0::nat\<close>} as a non-name (there is no node @{term \<open>0\<close>}), which later lets us use it for
-      the artificial root.  The only structural consistency we demand here is that the endpoints
-      mentioned by the edge lists are exactly the vertices: the union of the tails and heads is the
-      vertex-name set.\<close>
+      arrays a real implementation would be handed.
+      \<^emph>\<open>Edges are identified by their index\<close>: the four edge lists all have the same
+      length, and the ith edge has capacity @{term \<open>capacity_list ! i\<close>}, cost
+      @{term \<open>cost_list ! i\<close>}, tail @{term \<open>fst_list ! i\<close>}, head
+      @{term \<open>snd_list ! i\<close>} and carries flow @{term \<open>flow_list ! i\<close>} (the acyclic
+      flow to be turned into the initial basis). The number of edges is @{term m}, the common length of the
+      edge lists, so the edges are exactly the indices @{term \<open>{0..<m}\<close>}. Capacities are
+      non-negative except that @{term \<open>- 1\<close>} encodes an infinite capacity: it is the only
+      negative value a capacity may take. The vertices are described by two further lists of equal length: the
+      ith vertex has \<^emph>\<open>name\<close> @{term \<open>vs_list ! i\<close>} and balance
+      @{term \<open>b_list ! i\<close>}. Vertex names are naturals; we reserve @{term \<open>0::nat\<close>}
+      as a non-name (there is no node @{term \<open>0\<close>}), which later lets us use it for the artificial
+      root. The only structural consistency we demand here is that the endpoints mentioned by the edge lists
+      are exactly the vertices: the union of the tails and heads is the vertex-name set.\<close>
 
 section \<open>Big-M as a tagged pair, and the DFS builder state\<close>
 
-text \<open>Design notes {\isasymsection}2: a potential / reduced-cost value is a pair of a \<^emph>\<open>tag\<close> --- an integer
-      coefficient of the symbolic big constant \<open>M\<close>, drawn from \<open>{-2..2}\<close> and stored
-      as a five-valued datatype --- and an ordinary real \<open>offset\<close>. The abstraction sends a pair
-      \<open>(t, o)\<close> to \<open>of_mtag t * M + o\<close>; with \<open>M\<close> large enough (\<open>> 6 \<sqdot> \<Sigma>|c|\<close>, chosen in
-      the locale) the tag is recoverable from the abstract value, which is what discharges the
-      conditional \<open>pot_value_*_spec\<close> axioms.\<close>
+text \<open>Design notes {\isasymsection}2: a potential / reduced-cost value is a pair of a
+      \<^emph>\<open>tag\<close> --- an integer coefficient of the symbolic big constant \<open>M\<close>,
+      drawn from \<open>{-2..2}\<close> and stored as a five-valued datatype --- and an ordinary real
+      \<open>offset\<close>. The abstraction sends a pair \<open>(t, o)\<close> to
+      \<open>of_mtag t * M + o\<close>; with \<open>M\<close> large enough
+      (\<open>> 6 \<sqdot> \<Sigma>|c|\<close>, chosen in the locale) the tag is recoverable from the abstract
+      value, which is what discharges the conditional \<open>pot_value_*_spec\<close> axioms.\<close>
 
 datatype mtag = M_m2 | M_m1 | M_0 | M_p1 | M_p2
 
@@ -127,8 +57,9 @@ primrec of_mtag :: "mtag \<Rightarrow> int" where
   "of_mtag M_m2 = - 2" | "of_mtag M_m1 = - 1" | "of_mtag M_0 = 0"
 | "of_mtag M_p1 = 1"   | "of_mtag M_p2 = 2"
 
-text \<open>Reconstruct a tag from an integer coefficient, clamping anything off the range @{term \<open>{- 2..2}\<close>}
-      (the clamped cases never arise for admissible values, but keep the operations total).\<close>
+text \<open>Reconstruct a tag from an integer coefficient, clamping anything off the range
+      @{term \<open>{- 2..2}\<close>} (the clamped cases never arise for admissible values, but keep the
+      operations total).\<close>
 
 definition mtag_of :: "int \<Rightarrow> mtag" where
   "mtag_of i = (if i \<le> - 2 then M_m2 else if i = - 1 then M_m1 else if i = 0 then M_0
@@ -158,18 +89,18 @@ definition pval_negM ::  "mtag \<times> ('n::linordered_idom)" where "pval_negM 
 
 subsection \<open>A dedicated potential-shift iterator over the thread\<close>
 
-text \<open>The potential shift is realised by its \<^emph>\<open>own\<close> tail-recursive walk down the thread block of the
-      pivot vertex, mirroring the imperative @{term shift_pot_imp}: at each visited node the potential
-      is read, shifted by @{term g} and written back --- a single fused read/arith/write, with no
-      higher-order per-node callback.  The walk stops once the last successor @{const lsuc} of the
-      start node has been processed (that node is the rightmost leaf of the subtree in thread order).
+text \<open>The potential shift is realised by its \<^emph>\<open>own\<close> tail-recursive walk down the
+      thread block of the pivot vertex, mirroring the imperative @{term shift_pot_imp}: at each visited node
+      the potential is read, shifted by @{term g} and written back --- a single fused read/arith/write, with
+      no higher-order per-node callback. The walk stops once the last successor @{const lsuc} of the start
+      node has been processed (that node is the rightmost leaf of the subtree in thread order).
 
-      To keep the \<^emph>\<open>inner\<close> loop branch-free, the @{term up} flag is tested \<^emph>\<open>once\<close>, up front: there are
-      two separate loops, one that always adds (\<open>shift_pot_up_loop\<close>) and one that always subtracts
-      (\<open>shift_pot_down_loop\<close>); \<open>shift_pot_impl\<close> picks the loop and never re-checks the flag while
-      iterating.  These are fresh implementations, not the generic
-      @{const iterate_root_opposed_impl}; each is proved equivalent to a @{const subtree_fold} below,
-      which is all the correctness argument needs.\<close>
+      To keep the \<^emph>\<open>inner\<close> loop branch-free, the @{term up} flag is tested
+      \<^emph>\<open>once\<close>, up front: there are two separate loops, one that always adds
+      (\<open>shift_pot_up_loop\<close>) and one that always subtracts (\<open>shift_pot_down_loop\<close>);
+      \<open>shift_pot_impl\<close> picks the loop and never re-checks the flag while iterating. These are
+      fresh implementations, not the generic @{const iterate_root_opposed_impl}; each is proved equivalent to
+      a @{const subtree_fold} below, which is all the correctness argument needs.\<close>
 
 partial_function (tailrec) shift_pot_up_loop ::
   "nat ndtree \<Rightarrow> nat \<Rightarrow> mtag \<times> ('n::linordered_idom) \<Rightarrow> nat \<Rightarrow> (mtag \<times> 'n) list \<Rightarrow> (mtag \<times> 'n) list"
@@ -196,84 +127,49 @@ text \<open>Each branch-free walk agrees with a @{const subtree_fold} over the s
       per-node step is its read/shift/write.  Proved by induction on the block prefix, unfolding both
       tail-recursions in lockstep --- exactly the shape of @{thm [source] subtree_fold_follow}.\<close>
 lemma shift_pot_up_loop_subtree_fold:
-  assumes ps: "parent_spec (thrd S)"
-      and L: "follow (thrd S) u = bl @ stp # rest"
-      and notin: "stp \<notin> set bl"
-  shows "shift_pot_up_loop S stp g u pa
-          = subtree_fold S stp u (\<lambda>x acc. acc[x := pval_plus (acc ! x) g]) pa"
-  using L notin
-proof (induct bl arbitrary: u pa)
+  "\<lbrakk>parent_spec (thrd S); follow (thrd S) u = bl @ stp # rest; stp \<notin> set bl\<rbrakk>
+   \<Longrightarrow> shift_pot_up_loop S stp g u pa
+       = subtree_fold S stp u (\<lambda>x acc. acc[x := pval_plus (acc ! x) g]) pa"
+proof(induction bl arbitrary: u pa)
   case Nil
-  have "hd (follow (thrd S) u) = u" by (rule follow_hd_ps[OF ps])
-  hence ustp: "u = stp" using Nil.prems(1) by simp
-  show ?case
-    by (subst shift_pot_up_loop.simps, subst subtree_fold.simps) (simp add: Let_def ustp)
+  then show ?case
+    using follow_hd_ps[of "thrd S" u]
+    by (subst shift_pot_up_loop.simps, subst subtree_fold.simps) (simp add: Let_def)
 next
   case (Cons b bs)
-  have hd: "u = b" using follow_hd_ps[OF ps, of u] Cons.prems(1) by simp
-  have une: "u \<noteq> stp" using Cons.prems(2) hd by auto
-  have flu: "follow (thrd S) u = u # (bs @ stp # rest)" using Cons.prems(1) hd by simp
-  have tw_ne: "thrd S u \<noteq> None"
-  proof
-    assume "thrd S u = None"
-    hence "follow (thrd S) u = [u]" by (subst follow_ps_simps[OF ps]) simp
-    thus False using flu by simp
-  qed
-  then obtain w where tw: "thrd S u = Some w" by auto
-  have fw: "follow (thrd S) w = bs @ stp # rest"
-    using flu tw follow_ps_simps[OF ps, of u] by simp
-  have notin': "stp \<notin> set bs" using Cons.prems(2) by simp
-  let ?F = "\<lambda>x acc. acc[x := pval_plus (acc ! x) g]"
-  have lhs: "shift_pot_up_loop S stp g u pa = shift_pot_up_loop S stp g w (?F u pa)"
-    using une tw by (subst shift_pot_up_loop.simps) (simp add: Let_def)
-  have rhs: "subtree_fold S stp u ?F pa = subtree_fold S stp w ?F (?F u pa)"
-    using une tw by (subst subtree_fold.simps) (simp add: Let_def)
-  show ?case using lhs rhs Cons.hyps[OF fw notin', of "?F u pa"] by simp
+  then obtain w where "u \<noteq> stp" "thrd S u = Some w" "follow (thrd S) w = bs @ stp # rest"
+    using follow_hd_ps[of "thrd S" u] follow_ps_simps[of "thrd S" u]
+    by (cases "thrd S u") auto
+  with Cons show ?case
+    by (subst shift_pot_up_loop.simps, subst subtree_fold.simps) (simp add: Let_def)
 qed
 
 lemma shift_pot_down_loop_subtree_fold:
-  assumes ps: "parent_spec (thrd S)"
-      and L: "follow (thrd S) u = bl @ stp # rest"
-      and notin: "stp \<notin> set bl"
-  shows "shift_pot_down_loop S stp g u pa
-          = subtree_fold S stp u (\<lambda>x acc. acc[x := pval_minus (acc ! x) g]) pa"
-  using L notin
-proof (induct bl arbitrary: u pa)
+  "\<lbrakk>parent_spec (thrd S); follow (thrd S) u = bl @ stp # rest; stp \<notin> set bl\<rbrakk>
+   \<Longrightarrow> shift_pot_down_loop S stp g u pa
+       = subtree_fold S stp u (\<lambda>x acc. acc[x := pval_minus (acc ! x) g]) pa"
+proof(induction bl arbitrary: u pa)
   case Nil
-  have "hd (follow (thrd S) u) = u" by (rule follow_hd_ps[OF ps])
-  hence ustp: "u = stp" using Nil.prems(1) by simp
-  show ?case
-    by (subst shift_pot_down_loop.simps, subst subtree_fold.simps) (simp add: Let_def ustp)
+  then show ?case
+    using follow_hd_ps[of "thrd S" u]
+    by (subst shift_pot_down_loop.simps, subst subtree_fold.simps) (simp add: Let_def)
 next
   case (Cons b bs)
-  have hd: "u = b" using follow_hd_ps[OF ps, of u] Cons.prems(1) by simp
-  have une: "u \<noteq> stp" using Cons.prems(2) hd by auto
-  have flu: "follow (thrd S) u = u # (bs @ stp # rest)" using Cons.prems(1) hd by simp
-  have tw_ne: "thrd S u \<noteq> None"
-  proof
-    assume "thrd S u = None"
-    hence "follow (thrd S) u = [u]" by (subst follow_ps_simps[OF ps]) simp
-    thus False using flu by simp
-  qed
-  then obtain w where tw: "thrd S u = Some w" by auto
-  have fw: "follow (thrd S) w = bs @ stp # rest"
-    using flu tw follow_ps_simps[OF ps, of u] by simp
-  have notin': "stp \<notin> set bs" using Cons.prems(2) by simp
-  let ?F = "\<lambda>x acc. acc[x := pval_minus (acc ! x) g]"
-  have lhs: "shift_pot_down_loop S stp g u pa = shift_pot_down_loop S stp g w (?F u pa)"
-    using une tw by (subst shift_pot_down_loop.simps) (simp add: Let_def)
-  have rhs: "subtree_fold S stp u ?F pa = subtree_fold S stp w ?F (?F u pa)"
-    using une tw by (subst subtree_fold.simps) (simp add: Let_def)
-  show ?case using lhs rhs Cons.hyps[OF fw notin', of "?F u pa"] by simp
+  then obtain w where "u \<noteq> stp" "thrd S u = Some w" "follow (thrd S) w = bs @ stp # rest"
+    using follow_hd_ps[of "thrd S" u] follow_ps_simps[of "thrd S" u]
+    by (cases "thrd S u") auto
+  with Cons show ?case
+    by (subst shift_pot_down_loop.simps, subst subtree_fold.simps) (simp add: Let_def)
 qed
 
-text \<open>The mutable state carried by the free-edge DFS builder (design notes {\isasymsection}4/{\isasymsection}6.1). Every field is
-      an array read with @{const nth} and written with @{const list_update}; the option-valued pointer
-      maps @{term prnt}/@{term thrd}/@{term rvth} use @{term \<open>0::nat\<close>} as the null sentinel (there is
-      no node \<open>0\<close>). The stack @{term ds_stk} of active vertices makes the recursion explicit, so the
-      later array refinement has exactly the same (while-loop) shape. The iterators over the free
-      outgoing and ingoing ranges of the vertices are the cursor functions @{term ds_oc} and
-      @{term ds_ic} (@{locale csr_ranges}); a vertex's cursors are reset when it is pushed.\<close>
+text \<open>The mutable state carried by the free-edge DFS builder (design notes
+      {\isasymsection}4/{\isasymsection}6.1). Every field is an array read with @{const nth} and written with
+      @{const list_update}; the option-valued pointer maps @{term prnt}/@{term thrd}/@{term rvth} use
+      @{term \<open>0::nat\<close>} as the null sentinel (there is no node \<open>0\<close>). The stack
+      @{term ds_stk} of active vertices makes the recursion explicit, so the later array refinement has
+      exactly the same (while-loop) shape. The iterators over the free outgoing and ingoing ranges of the
+      vertices are the cursor functions @{term ds_oc} and @{term ds_ic} (@{locale csr_ranges}); a vertex's
+      cursors are reset when it is pushed.\<close>
 
 record 'n dfs_state =
   ds_seen :: "bool list"                   \<comment> \<open>visited flag (= in tree)\<close>
@@ -300,14 +196,14 @@ record 'n dfs_state =
 
 subsection \<open>The selector record and the assumed tuning parameters\<close>
 
-text \<open>The candidate shortlist is modelled as a \<^emph>\<open>fixed-capacity array with a length pointer\<close>, to
-      mirror the eventual imperative store exactly: @{term sel_arr} is a backing list of constant
-      length (the capacity @{term max_candidates}), @{term sel_len} is the live-prefix pointer, and
-      the meaningful candidates are the first @{term sel_len} entries of @{term sel_arr} --- the array
-      \<^emph>\<open>up to the pointer\<close>.
-      Everything past the pointer is stale.  Insertion writes at the pointer and bumps it; deletion is
-      swap-with-last; both are @{const list_update} plus pointer arithmetic, so the backing list never
-      changes length and no array is ever allocated after initialisation.\<close>
+text \<open>The candidate shortlist is modelled as a
+      \<^emph>\<open>fixed-capacity array with a length pointer\<close>, to mirror the eventual imperative
+      store exactly: @{term sel_arr} is a backing list of constant length (the capacity
+      @{term max_candidates}), @{term sel_len} is the live-prefix pointer, and the meaningful candidates are
+      the first @{term sel_len} entries of @{term sel_arr} --- the array
+      \<^emph>\<open>up to the pointer\<close>. Everything past the pointer is stale. Insertion writes at the
+      pointer and bumps it; deletion is swap-with-last; both are @{const list_update} plus pointer arithmetic,
+      so the backing list never changes length and no array is ever allocated after initialisation.\<close>
 
 record ns_sel =
   sel_cur :: nat             \<comment> \<open>block-search bookmark into the augmented arc set\<close>
@@ -317,14 +213,15 @@ record ns_sel =
 subsection \<open>M-free sign and violation tests on descriptors\<close>
 
 text \<open>The executable path must never evaluate the symbolic constant @{term bigM}: doing so would
-      reintroduce exactly the floating-point cancellation the tagged-pair descriptor exists to avoid.
-      These three tests work purely on the descriptor  --- the integer big-M coefficient
-      @{term \<open>of_mtag (fst p)\<close>} and the ordinary part @{term \<open>snd p\<close>} --- and mention no @{term M} at
-      all.  \<open>pval_neg\<close> / \<open>pval_pos\<close> give the sign, and \<open>viol_gt\<close> compares
-      violation magnitude (bigger coefficient first, then bigger ordinary part).  Their agreement with
-      the abstraction @{term \<open>pval_abstract bigM\<close>} is a \<^emph>\<open>proof-time\<close> fact (see
-      @{text pval_neg_abstract} / @{text pval_pos_abstract}), needing only the reduced-cost bound; that
-      is the sole place the actual size of @{term bigM} ever matters.\<close>
+      reintroduce exactly the floating-point cancellation the tagged-pair descriptor exists to avoid. These
+      three tests work purely on the descriptor --- the integer big-M coefficient
+      @{term \<open>of_mtag (fst p)\<close>} and the ordinary part @{term \<open>snd p\<close>} --- and
+      mention no @{term M} at all. \<open>pval_neg\<close> / \<open>pval_pos\<close> give the sign, and
+      \<open>viol_gt\<close> compares violation magnitude (bigger coefficient first, then bigger ordinary
+      part). Their agreement with the abstraction @{term \<open>pval_abstract bigM\<close>} is a
+      \<^emph>\<open>proof-time\<close> fact (see @{text pval_neg_abstract} / @{text pval_pos_abstract}),
+      needing only the reduced-cost bound; that is the sole place the actual size of @{term bigM} ever
+      matters.\<close>
 
 definition pval_neg :: "mtag \<times> ('n::linordered_idom) \<Rightarrow> bool" where
   "pval_neg p \<longleftrightarrow> of_mtag (fst p) < 0 \<or> (of_mtag (fst p) = 0 \<and> snd p < 0)"
@@ -339,12 +236,12 @@ definition viol_gt :: "mtag \<times> ('n::linordered_idom)
      \<or> (\<bar>of_mtag (fst g1)\<bar> = \<bar>of_mtag (fst g2)\<bar> \<and> \<bar>snd g1\<bar> > \<bar>snd g2\<bar>)"
 
 text \<open>The running best is carried \<^emph>\<open>without an option\<close> through the loops, as a flat
-      : a \<^emph>\<open>found\<close> flag followed by the edge, its @{term in_U} flag,
-      and its reduced-cost descriptor.  This is what lets \<open>scan_cache\<close> / \<open>scan\<close> thread the
-      accumulator as four plain loop variables --- no @{term Some} is allocated per update --- the option
-      surviving only at the once-per-pivot boundary of the selector, as the ADT demands.
-      The sentinel \<open>no_best\<close> (\<^emph>\<open>found\<close> = @{term False}) starts each scan; its edge fields are
-      dummies never read while the flag is unset.\<close>
+      tuple: a \<^emph>\<open>found\<close> flag followed by the edge, its @{term in_U} flag, and its reduced-cost
+      descriptor. This is what lets \<open>scan_cache\<close> / \<open>scan\<close> thread the accumulator as
+      four plain loop variables --- no @{term Some} is allocated per update --- the option surviving only at
+      the once-per-pivot boundary of the selector, as the ADT demands. The sentinel \<open>no_best\<close>
+      (\<^emph>\<open>found\<close> = @{term False}) starts each scan; its edge fields are dummies never read
+      while the flag is unset.\<close>
 
 type_synonym 'n best_cand = "bool \<times> nat \<times> bool \<times> mtag \<times> 'n"
 
@@ -381,12 +278,12 @@ locale initial_basis_code_spec =
     and max_candidates :: nat
 begin
 
-text \<open>The vertices are the dense range @{term \<open>{Suc 0..n}\<close>}: every name between @{term \<open>1::nat\<close>} and
-      @{term n} is a vertex, @{term \<open>0::nat\<close>} is reserved as the null sentinel, and @{term \<open>Suc n\<close>}
-      (\<open>vcount\<close>) is the artificial root added by the initial basis.  @{term vs_list} is no
-      longer an input; it is this range, materialised once.  Vertices that carry no edge are allowed
-      (their balance is assumed @{term 0} in the proof locale); the lonely-vertex guard keeps them out
-      of the spanning tree.\<close>
+text \<open>The vertices are the dense range @{term \<open>{Suc 0..n}\<close>}: every name between
+      @{term \<open>1::nat\<close>} and @{term n} is a vertex, @{term \<open>0::nat\<close>} is reserved as
+      the null sentinel, and @{term \<open>Suc n\<close>} (\<open>vcount\<close>) is the artificial root added
+      by the initial basis. @{term vs_list} is no longer an input; it is this range, materialised once.
+      Vertices that carry no edge are allowed (their balance is assumed @{term 0} in the proof locale); the
+      lonely-vertex guard keeps them out of the spanning tree.\<close>
 
 definition vs_list :: "nat list" where "vs_list = [Suc 0..<Suc n]"
 
@@ -396,60 +293,40 @@ lemma length_vs_list: "length vs_list = n" by (simp add: vs_list_def)
 lemma distinct_vs_list_code: "distinct vs_list" by (simp add: vs_list_def)
 lemma zero_notin_vs_list: "0 \<notin> set vs_list" by (simp add: vs_list_def)
 
-text \<open>The lists are read as a cost-flow specification (assumption-free): the same instantiation as the network reading in the proof locale, but only the executable structure is fixed and no multigraph axiom is discharged, so the vertex set and the edge data become available for the definitions below.\<close>
-(*
-sublocale original_network: cost_flow_spec
-  where \<E>           = "{0..<m}"
-    and fst          = "\<lambda> e. if e < m then fst_list ! e else Product_Type.fst (prod_decode (e - m))"
-    and snd          = "\<lambda> e. if e < m then snd_list ! e else Product_Type.snd (prod_decode (e - m))"
-    and create_edge  = "\<lambda> u v. m + prod_encode (u, v)"
-    and \<u>           = "\<lambda> e. if e < m then (if capacity_list ! e = - 1 then \<infinity> else ereal (h (capacity_list ! e))) else \<infinity>"
-    and \<c>           = "\<lambda> e. h (cost_list ! e)"
-  by unfold_locales
-*)
+text \<open>The lists are read as a cost-flow specification (assumption-free): the same instantiation as the
+      network reading in the proof locale, but only the executable structure is fixed and no multigraph axiom
+      is discharged, so the vertex set and the edge data become available for the definitions below.\<close>
+
 
 text \<open>@{term vcount} is one past the largest vertex name --- the common length of every vertex-indexed
-      array. The vertex-max is a \<^emph>\<open>left\<close> fold: \<open>fold\<close> is tail-recursive, where the \<open>foldr\<close> it replaces
-      would build a call chain as deep as @{term vs_list}. The two agree because @{term max} is
-      left-commutative (\<open>fold_max_foldr\<close>), so \<open>vcount_foldr\<close> below still presents the \<open>foldr\<close> view to
-      the proofs. The max is computed in this one place and reused by the balance array \<open>b_arr\<close> and
-      the CSR builds.\<close>
-
-lemma fold_max_foldr: "fold max (xs :: nat list) a = foldr max xs a"
-proof -
-  have "foldr max xs = fold max xs"
-    by (rule foldr_fold) (simp add: fun_eq_iff max.left_commute)
-  thus ?thesis by simp
-qed
+      array. The vertex-max is a \<^emph>\<open>left\<close> fold: \<open>fold\<close> is tail-recursive,
+      where the \<open>foldr\<close> it replaces would build a call chain as deep as @{term vs_list}. The two
+      agree because @{term max} is left-commutative, so \<open>vcount_foldr\<close> below still presents the
+      \<open>foldr\<close> view to the proofs. The max is computed in this one place and reused by the balance
+      array \<open>b_arr\<close> and the CSR builds.\<close>
 
 definition vcount :: nat where
   "vcount = Suc (fold max vs_list 0)"
 
 lemma vcount_eq: "vcount = Suc n"
-proof -
-  have s: "set (0 # vs_list) = {0..n}" using set_vs_list by auto
-  have m: "Max {0..n} = n" by (rule Max_eqI) auto
-  have "fold max vs_list 0 = Max (set (0 # vs_list))" by (rule Max.set_eq_fold[symmetric])
-  also have "\<dots> = n" using s m by simp
-  finally show ?thesis by (simp add: vcount_def)
-qed
+  unfolding vcount_def vs_list_def by (induction n) simp_all
 
 lemma vcount_foldr: "vcount = Suc (foldr max vs_list 0)"
-  by (simp add: vcount_def fold_max_foldr)
+  unfolding vcount_def by (simp add: foldr_fold fun_eq_iff max.left_commute)
 
-text \<open>A list used as an array to fetch a balance by the \<^emph>\<open>name\<close> of a vertex.  We start from an
-      all-zero array of length \<open>Suc vcount\<close> and scatter each pair
-      @{term \<open>(vs_list ! i, b_list ! i)\<close>} into it.  Position @{term v} then holds the balance of the
-      vertex named @{term v} (slot @{term \<open>0::nat\<close>} stays a dummy, as there is no node @{term \<open>0\<close>}).
+text \<open>A list used as an array to fetch a balance by the \<^emph>\<open>name\<close> of a vertex. We
+      start from an all-zero array of length \<open>Suc vcount\<close> and scatter each pair
+      @{term \<open>(vs_list ! i, b_list ! i)\<close>} into it. Position @{term v} then holds the balance of
+      the vertex named @{term v} (slot @{term \<open>0::nat\<close>} stays a dummy, as there is no node
+      @{term \<open>0\<close>}).
 
-      The array is one longer than the vertex names it stores.  The extra slot is the artificial root
-      @{term vcount}, which the augmented network of the initial basis adds and which the scatter
-      never touches, since every name in @{term vs_list} is smaller than @{term vcount}.  So its
-      balance reads back as @{term \<open>0::real\<close>}, which is the value the root must have: the balances
-      sum to zero (\<open>balance_sum_zero\<close>), hence so do the imbalances, and the artificial
-      edges carry as much flow into the root as out of it.  With the shorter array the read would run
-      off the end and the root's balance would be unspecified, leaving the augmented \<open>b\<close>-flow
-      obligation unprovable.\<close>
+      The array is one longer than the vertex names it stores. The extra slot is the artificial root
+      @{term vcount}, which the augmented network of the initial basis adds and which the scatter never
+      touches, since every name in @{term vs_list} is smaller than @{term vcount}. So its balance reads back
+      as @{term \<open>0::real\<close>}, which is the value the root must have: the balances sum to zero
+      (\<open>balance_sum_zero\<close>), hence so do the imbalances, and the artificial edges carry as much
+      flow into the root as out of it. With the shorter array the read would run off the end and the root's
+      balance would be unspecified, leaving the augmented \<open>b\<close>-flow obligation unprovable.\<close>
 
 definition b_arr :: "'n list" where
   "b_arr = foldl (\<lambda> arr (v, x). arr[v := x])
@@ -463,25 +340,26 @@ subsection \<open>The graph as two CSRs and the acyclic-flow procedure\<close>
 
 text \<open>Both adjacency structures are the CSR of the edge list built by the counting sort
       @{locale csr_buildup}, with the edges @{term \<open>[0..<length fst_list]\<close>} as elements: the
-      outgoing one keys each edge on its tail (@{term \<open>e_src fst_list\<close>}), the ingoing one on its head
-      (@{term \<open>e_tgt fst_list snd_list\<close>}).  The blocks are indexed by vertex \<^emph>\<open>name\<close>, so the array of
-      block starts \<open>B\<close> has @{term \<open>Suc vcount\<close>} entries, one past the largest name (exactly as
-      @{const b_arr}); names that are not vertices index empty blocks.  The acyclic-flow instance
-      uses the two CSRs as its edge iterators (@{locale csr_graph}, the iterator state being the
-      cursor function), and the initial-basis construction reuses their block starts and
-      overwrites their edge arrays in place with the free edges ({\isasymsection}4, no rebuild, no
-      new allocation).\<close>
+      outgoing one keys each edge on its tail (@{term \<open>e_src fst_list\<close>}), the ingoing one on its
+      head (@{term \<open>e_tgt fst_list snd_list\<close>}). The blocks are indexed by vertex
+      \<^emph>\<open>name\<close>, so the array of block starts \<open>B\<close> has
+      @{term \<open>Suc vcount\<close>} entries, one past the largest name (exactly as @{const b_arr}); names
+      that are not vertices index empty blocks. The acyclic-flow instance uses the two CSRs as its edge
+      iterators (@{locale csr_graph}, the iterator state being the cursor function), and the initial-basis
+      construction reuses their block starts and overwrites their edge arrays in place with the free edges
+      ({\isasymsection}4, no rebuild, no new allocation).\<close>
 
 section \<open>Initial-basis construction: the strongly-feasible spanning tree\<close>
 
 subsection \<open>Pass A: one fused sweep --- status, excess, and the free-edge CSRs\<close>
 
 text \<open>Realising the notes' single pass: one fold over the edges records, per edge, its status
-      (\<open>edge_state\<close>), accumulates the excess (\<open>excess\<close>), and --- for a \<^emph>\<open>free\<close> (tree) edge --- appends
-      it to the range of its tail in the outgoing CSR and to the range of its head in the ingoing CSR
-      (@{const csr_append}), in place. Each range starts empty at the start of its block
-      (\<open>out_lo\<close> / \<open>in_lo\<close>), so each vertex's free edges occupy the front of its block
-      (@{locale csr_ranges}). No list is materialised beyond the ones the notes name.\<close>
+      (\<open>edge_state\<close>), accumulates the excess (\<open>excess\<close>), and --- for a
+      \<^emph>\<open>free\<close> (tree) edge --- appends it to the range of its tail in the outgoing CSR and
+      to the range of its head in the ingoing CSR (@{const csr_append}), in place. Each range starts empty at
+      the start of its block (\<open>out_lo\<close> / \<open>in_lo\<close>), so each vertex's free edges
+      occupy the front of its block (@{locale csr_ranges}). No list is materialised beyond the ones the notes
+      name.\<close>
 
 definition out_lo :: "nat list" where
   "out_lo = butlast (csr_buildup.B_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
@@ -489,9 +367,9 @@ definition out_lo :: "nat list" where
 definition in_lo :: "nat list" where
   "in_lo = butlast (csr_buildup.B_spec (edge_seq fst_list) (e_tgt fst_list snd_list) vcount 0)"
 
-text \<open>A vertex whose blocks are empty in \<^emph>\<open>both\<close> CSRs (@{const csr_blocks.csr_empty}) is an endpoint of
-      no edge --- a \<^emph>\<open>lonely\<close> vertex. The test is two O(1) reads per CSR, so it introduces no extra
-      sweep.\<close>
+text \<open>A vertex whose blocks are empty in \<^emph>\<open>both\<close> CSRs
+      (@{const csr_blocks.csr_empty}) is an endpoint of no edge --- a \<^emph>\<open>lonely\<close> vertex.
+      The test is two O(1) reads per CSR, so it introduces no extra sweep.\<close>
 
 definition is_lonely :: "nat \<Rightarrow> bool" where
   "is_lonely v \<longleftrightarrow>
@@ -547,21 +425,24 @@ text \<open>Vertex v's free outgoing edges are its range in @{term \<open>free_o
       its range in @{term \<open>free_in fl\<close>} (@{locale csr_ranges}, with the block starts of the full CSRs).
       The DFS iterates over these ranges, so no per-vertex edge list is materialised.\<close>
 
-text \<open>The imbalance @{term \<open>imbalance ! v\<close>} = achieved - target balance = the signed amount @{term v}'s
-      artificial edge must ship toward the root (surplus positive); the root carries none. It is the
-      @{const excess} array transformed \<^emph>\<open>in place\<close> (@{const excess} is spent here) --- no new array.\<close>
+text \<open>The imbalance @{term \<open>imbalance ! v\<close>} = achieved - target balance = the signed amount
+      @{term v}'s artificial edge must ship toward the root (surplus positive); the root carries none. It is
+      the @{const excess} array transformed \<^emph>\<open>in place\<close> (@{const excess} is spent here)
+      --- no new array.\<close>
 
 definition imbalance :: "'n list" where
   "imbalance = fold (\<lambda>v arr. arr[v := arr ! v + b_lookup v]) [0..<vcount] excess"
 
 subsection \<open>Artificial-edge orientation and the augmented endpoints\<close>
 
-text \<open>Each vertex @{term v} owns at most one artificial edge. It is oriented \<open>v \<rightarrow> root\<close> (up) iff
-      @{term v} is a surplus/balanced vertex, else \<open>root \<rightarrow> v\<close> (down); it carries
-      @{term \<open>\<bar>imbalance ! v\<bar>\<close>}. A \<^emph>\<open>tree\<close> artificial edge gets a slack \<open>+ 1\<close> toward the root when it
-      points up (strong feasibility); a down one is saturated but legal (\<open>f > 0\<close>). The three functions
-      below are the \<^emph>\<open>build-time formulas\<close>: Phases 1 and 2 evaluate them once per artificial edge to
-      fill the artificial tail of the unified augmented edge arrays (design notes {\isasymsection}1/{\isasymsection}5).\<close>
+text \<open>Each vertex @{term v} owns at most one artificial edge. It is oriented
+      \<open>v \<rightarrow> root\<close> (up) iff @{term v} is a surplus/balanced vertex, else
+      \<open>root \<rightarrow> v\<close> (down); it carries @{term \<open>\<bar>imbalance ! v\<bar>\<close>}.
+      A \<^emph>\<open>tree\<close> artificial edge gets a slack \<open>+ 1\<close> toward the root when it
+      points up (strong feasibility); a down one is saturated but legal (\<open>f > 0\<close>). The three
+      functions below are the \<^emph>\<open>build-time formulas\<close>: Phases 1 and 2 evaluate them once
+      per artificial edge to fill the artificial tail of the unified augmented edge arrays (design notes
+      {\isasymsection}1/{\isasymsection}5).\<close>
 
 definition art_dir :: "nat \<Rightarrow> bool" where
   "art_dir v \<longleftrightarrow> 0 \<le> imbalance ! v"
@@ -572,16 +453,17 @@ definition art_flow :: "nat \<Rightarrow> 'n" where
 definition art_tree_cap :: "nat \<Rightarrow> 'n" where
   "art_tree_cap v = (if art_dir v then art_flow v + 1 else art_flow v)"
 
-text \<open>The augmented network's endpoints, capacity and flow are \<^emph>\<open>single\<close> length-\<open>m + K\<close> arrays --- the
-      real part followed by the artificial tail the phases append --- so the simplex loop reads
-      \<open>fst_all ! e\<close>, \<open>cap_all ! e\<close> etc.\ with no \<open>e < m\<close> comparison on the executable path. These
-      arrays are defined once the phase construction is in place; the earlier per-edge endpoint
-      functions \<open>fst_aug\<close> / \<open>snd_aug\<close> (which branched on \<open>e < m\<close>) are therefore dropped.\<close>
+text \<open>The augmented network's endpoints, capacity and flow are \<^emph>\<open>single\<close>
+      length-\<open>m + K\<close> arrays --- the real part followed by the artificial tail the phases append
+      --- so the simplex loop reads \<open>fst_all ! e\<close>, \<open>cap_all ! e\<close> etc.\ with no
+      \<open>e < m\<close> comparison on the executable path. These arrays are defined once the phase
+      construction is in place; the earlier per-edge endpoint functions \<open>fst_aug\<close> /
+      \<open>snd_aug\<close> (which branched on \<open>e < m\<close>) are therefore dropped.\<close>
 
-text \<open>Design notes {\isasymsection}4/{\isasymsection}6.1. A single depth-first traversal of the free-edge CSRs (built by Pass A)
-      grows the rooted arborescence toward @{term vcount}. The traversal is a genuine recursive
-      function stepping an explicit stack of vertices --- the same shape the later array refinement
-      will have --- iterating over the free outgoing and then the free ingoing range of the top
+text \<open>Design notes {\isasymsection}4/{\isasymsection}6.1. A single depth-first traversal of the
+      free-edge CSRs (built by Pass A) grows the rooted arborescence toward @{term vcount}. The traversal is a
+      genuine recursive function stepping an explicit stack of vertices --- the same shape the later array
+      refinement will have --- iterating over the free outgoing and then the free ingoing range of the top
       vertex with the iterators @{term ds_oc} / @{term ds_ic} of @{locale csr_ranges}.\<close>
 
 text \<open>The initial builder state: nothing visited, the root @{term vcount} seeded (its subtree size
@@ -657,12 +539,12 @@ text \<open>The traversal itself: at the stack top iterate over the free outgoin
       vertex. Termination (each real recursion either marks a fresh vertex or advances an iterator)
       is deferred to a separate measure lemma, as for \<open>AF_DFS\<close>.\<close>
 
-text \<open>The recursion takes the two free ranges of Pass A --- @{term fo} / @{term fi}, each the pair
-      of range ends and edge array --- rather than the flow. This is what keeps the traversal
-      linear: @{const free_out} / @{const free_in} re-run the \<^emph>\<open>whole\<close> of @{const passA}, a fold over
-      all @{term m} edges, so a flow-indexed recursion would redo Pass A at every single DFS step.
-      Taking the ranges as arguments --- they are fixed for the entire traversal --- runs
-      @{const passA} once, in \<open>build_dfs\<close> just below, and shares it across the whole descent.\<close>
+text \<open>The recursion takes the two free ranges of Pass A --- @{term fo} / @{term fi}, each the pair of
+      range ends and edge array --- rather than the flow. This is what keeps the traversal linear:
+      @{const free_out} / @{const free_in} re-run the \<^emph>\<open>whole\<close> of @{const passA}, a fold
+      over all @{term m} edges, so a flow-indexed recursion would redo Pass A at every single DFS step. Taking
+      the ranges as arguments --- they are fixed for the entire traversal --- runs @{const passA} once, in
+      \<open>build_dfs\<close> just below, and shares it across the whole descent.\<close>
 
 function (domintros) build_dfs_a ::
   "nat list \<times> nat list \<Rightarrow> nat list \<times> nat list \<Rightarrow> 'n dfs_state \<Rightarrow> 'n dfs_state" where
@@ -702,8 +584,7 @@ lemma build_dfs_dom_iff:
 text \<open>The flow-indexed unfolding rule, recovered from the range-indexed recursion.\<close>
 
 lemma build_dfs_psimps:
-  assumes "build_dfs_dom (fl, s)"
-  shows "build_dfs fl s =
+  "build_dfs_dom (fl, s) \<Longrightarrow> build_dfs fl s =
     (case ds_stk s of
        [] \<Rightarrow> s
      | v # rest \<Rightarrow>
@@ -717,16 +598,17 @@ lemma build_dfs_psimps:
            in build_dfs fl (if ds_seen s ! w then s1 else dfs_discover s1 v w e))
         else
           build_dfs fl (dfs_finish s v rest))"
-  using assms unfolding build_dfs_unfold build_dfs_dom_iff by (rule build_dfs_a.psimps)
+  unfolding build_dfs_unfold build_dfs_dom_iff by (rule build_dfs_a.psimps)
 
-text \<open>Opening a tree component at an unseen vertex @{term c}: emit @{term c}'s \<^emph>\<open>tree\<close> artificial edge
-      (write its endpoints / capacity / flow into the pre-sized artificial tails at cursor
-      @{term \<open>ds_nxt s\<close>}, tag @{const InTree}),
-      finalise @{term c} as a child of the root @{term vcount}, seed its potential to \<open>\<plusminus> M\<close>
-      (a down edge \<open>r \<rightarrow> c\<close> gives \<open>+ M\<close>, an up edge \<open>- M\<close>), thread-link it, push it on the empty
-      stack, then drain its subtree by @{const build_dfs}. Orientation / flow / capacity are computed
-      inline from a \<^emph>\<open>single\<close> @{term \<open>imbalance ! c\<close>} read (the build-time formulas @{const art_dir} /
-      @{const art_flow} / @{const art_tree_cap}, unfolded to avoid re-reading @{const imbalance}).\<close>
+text \<open>Opening a tree component at an unseen vertex @{term c}: emit @{term c}'s
+      \<^emph>\<open>tree\<close> artificial edge (write its endpoints / capacity / flow into the pre-sized
+      artificial tails at cursor @{term \<open>ds_nxt s\<close>}, tag @{const InTree}), finalise @{term c} as
+      a child of the root @{term vcount}, seed its potential to \<open>\<plusminus> M\<close> (a down edge
+      \<open>r \<rightarrow> c\<close> gives \<open>+ M\<close>, an up edge \<open>- M\<close>), thread-link
+      it, push it on the empty stack, then drain its subtree by @{const build_dfs}. Orientation / flow /
+      capacity are computed inline from a \<^emph>\<open>single\<close> @{term \<open>imbalance ! c\<close>}
+      read (the build-time formulas @{const art_dir} / @{const art_flow} / @{const art_tree_cap}, unfolded to
+      avoid re-reading @{const imbalance}).\<close>
 
 definition open_tree_component :: "'n list \<Rightarrow> 'n dfs_state \<Rightarrow> nat \<Rightarrow> 'n dfs_state" where
   "open_tree_component fl s c =
@@ -751,9 +633,10 @@ definition open_tree_component :: "'n list \<Rightarrow> 'n dfs_state \<Rightarr
                  ds_prev := c,
                  ds_stk  := [] \<rparr>) c))"
 
-text \<open>Emitting a \<^emph>\<open>saturated\<close> @{term U} artificial edge for an already-seen imbalanced vertex
-      @{term v} (design notes {\isasymsection}4, last table row): it carries @{term \<open>art_flow v\<close>} at its bound
-      (capacity = flow), so it is tagged @{const InU} and touches no tree field.\<close>
+text \<open>Emitting a \<^emph>\<open>saturated\<close> @{term U} artificial edge for an already-seen
+      imbalanced vertex @{term v} (design notes {\isasymsection}4, last table row): it carries
+      @{term \<open>art_flow v\<close>} at its bound (capacity = flow), so it is tagged @{const InU} and
+      touches no tree field.\<close>
 
 definition emit_U_edge :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> 'n dfs_state" where
   "emit_U_edge s v =
@@ -788,18 +671,23 @@ definition phase2_step :: "'n list \<Rightarrow> nat \<Rightarrow> 'n dfs_state 
 definition phase2 :: "'n list \<Rightarrow> 'n dfs_state \<Rightarrow> 'n dfs_state" where
   "phase2 fl s = fold (phase2_step fl) vs_list s"
 
-text \<open>The finished builder: run both phases, then the one \<^emph>\<open>root finalisation\<close> the traversal cannot
-      do per-frame --- the root @{term vcount} is never pushed, so it is never popped and its
-      @{term ds_lsuc} slot is never written. Its last successor (rightmost descendant of the whole
-      tree) is the last vertex emitted, i.e.\ the final @{term ds_prev}. This is the ndtree clause
-      @{term \<open>lsuc S r = last P\<close>} (I7 at @{term r}); every non-root \<open>lsuc\<close>/\<open>snum\<close> was already produced
-      at its pop inside @{const build_dfs}, with no extra pass.\<close>
+text \<open>The finished builder: run both phases, then the one \<^emph>\<open>root finalisation\<close> the
+      traversal cannot do per-frame --- the root @{term vcount} is never pushed, so it is never popped and its
+      @{term ds_lsuc} slot is never written. Its last successor (rightmost descendant of the whole tree) is
+      the last vertex emitted, i.e.\ the final @{term ds_prev}. This is the ndtree clause
+      @{term \<open>lsuc S r = last P\<close>} (I7 at @{term r}); every non-root
+      \<open>lsuc\<close>/\<open>snum\<close> was already produced at its pop inside @{const build_dfs}, with
+      no extra pass.\<close>
 
 definition build_tree :: "'n list \<Rightarrow> 'n dfs_state" where
   "build_tree fl = (let s = phase2 fl (phase1 fl dfs_init) in s\<lparr> ds_lsuc := (ds_lsuc s)[vcount := ds_prev s] \<rparr>)"
 
 
-text \<open>The acyclic-flow procedure is available here as an assumption-free specification instance: the two counting-sort CSRs are its edge iterators, the flow and vertex-state arrays are lists, and fst-exec / snd-exec are the constant-time endpoint reads. Interpreting the acyclic-flow specification locale exports the executable acyclifier into this specification locale, so the acyclifier can be executed without discharging any ADT law.\<close>
+text \<open>The acyclic-flow procedure is available here as an assumption-free specification instance: the two
+      counting-sort CSRs are its edge iterators, the flow and vertex-state arrays are lists, and fst-exec /
+      snd-exec are the constant-time endpoint reads. Interpreting the acyclic-flow specification locale
+      exports the executable acyclifier into this specification locale, so the acyclifier can be executed
+      without discharging any ADT law.\<close>
 
 sublocale acyclic_flow_impl_spec
   where out_current = "csr_blocks.csr_current (csr_buildup.E_spec (edge_seq fst_list) (e_src fst_list) vcount 0)"
@@ -828,12 +716,12 @@ sublocale acyclic_flow_impl_spec
 subsection \<open>The acyclified flow the tree is built from\<close>
 
 text \<open>The candidate @{term flow_list} is only capacity-complying; the strongly-feasible tree is built
-      from its \<^emph>\<open>acyclified\<close> form.  @{const make_acyclic} either returns @{term None} --- a negative
-      infinite-capacity free cycle, i.e.\ the instance is unbounded/infeasible and no tree is built ---
-      or @{term \<open>Some f'\<close>} with @{term \<open>f'\<close>} acyclic, capacity-complying and of the same excesses.
-      @{term acyc_flow} is that output, defaulting to @{term flow_list} on the (guarded) @{term None}
-      branch so every downstream array stays total; the orchestrator \<open>solve\<close> below never uses
-      it on that branch.\<close>
+      from its \<^emph>\<open>acyclified\<close> form. @{const make_acyclic} either returns @{term None} --- a
+      negative infinite-capacity free cycle, i.e.\ the instance is unbounded/infeasible and no tree is built
+      --- or @{term \<open>Some f'\<close>} with @{term \<open>f'\<close>} acyclic, capacity-complying and of
+      the same excesses. @{term acyc_flow} is that output, defaulting to @{term flow_list} on the (guarded)
+      @{term None} branch so every downstream array stays total; the orchestrator \<open>solve\<close> below
+      never uses it on that branch.\<close>
 
 definition acyc_flow_opt :: "'n list option" where
   "acyc_flow_opt = make_acyclic flow_list"
@@ -843,18 +731,19 @@ definition acyc_flow :: "'n list" where
 
 subsection \<open>The abstract arborescence read off the builder arrays\<close>
 
-text \<open>The spanning-tree ADT operations act on an @{typ \<open>nat ndtree\<close>}; \<open>tree_st\<close> reads it off the
-      \<^emph>\<open>finished builder state\<close> (parent / thread / reverse-thread / last-successor /
-      subtree-size), with the option-pointer maps sending the null sentinel @{term \<open>0::nat\<close>} and the
-      unseen vertices to @{term None}.  @{term \<open>vseen_st s\<close>} are the discovered real vertices,
-      @{term \<open>varb_st s\<close>} adds the root @{term vcount}.\<close>
+text \<open>The spanning-tree ADT operations act on an @{typ \<open>nat ndtree\<close>};
+      \<open>tree_st\<close> reads it off the \<^emph>\<open>finished builder state\<close> (parent / thread /
+      reverse-thread / last-successor / subtree-size), with the option-pointer maps sending the null sentinel
+      @{term \<open>0::nat\<close>} and the unseen vertices to @{term None}. @{term \<open>vseen_st s\<close>}
+      are the discovered real vertices, @{term \<open>varb_st s\<close>} adds the root @{term vcount}.\<close>
 
-text \<open>The reader is indexed by the builder \<^emph>\<open>state\<close>, not by the flow, and this is what makes it
-      cheap: the five pointer maps of \<open>tree_st\<close> are closures, so had each captured a flow
-      @{term fl} and called @{term \<open>build_tree fl\<close>} itself, \<^emph>\<open>every single pointer lookup\<close> during
-      the simplex would re-run the whole builder.  Taking the finished state as the argument means
-      @{const build_tree} is run once and all five fields share that one result.  The flow-indexed
-      \<open>tree_of\<close> below is just the composition, used to state the initial tree.\<close>
+text \<open>The reader is indexed by the builder \<^emph>\<open>state\<close>, not by the flow, and this is
+      what makes it cheap: the five pointer maps of \<open>tree_st\<close> are closures, so had each captured
+      a flow @{term fl} and called @{term \<open>build_tree fl\<close>} itself,
+      \<^emph>\<open>every single pointer lookup\<close> during the simplex would re-run the whole builder.
+      Taking the finished state as the argument means @{const build_tree} is run once and all five fields
+      share that one result. The flow-indexed \<open>tree_of\<close> below is just the composition, used to
+      state the initial tree.\<close>
 
 definition vseen_st :: "'n dfs_state \<Rightarrow> nat set" where
   "vseen_st s = {y. y < vcount \<and> ds_seen s ! y}"
@@ -876,8 +765,8 @@ definition tree_st :: "'n dfs_state \<Rightarrow> nat ndtree" where
                  lsuc = (\<lambda>v. ds_lsuc s ! v), snum = (\<lambda>v. ds_snum s ! v) \<rparr>"
 
 text \<open>The flow-indexed views: each is its state-indexed counterpart at the finished builder. The
-      equations \<open>vseen_of_eq\<close> {\isasymdots} \<open>tree_of_eq\<close> below recover the original one-step definitions, so the
-      correctness statements are unchanged.\<close>
+      equations \<open>vseen_of_eq\<close> {\isasymdots} \<open>tree_of_eq\<close> below recover the original
+      one-step definitions, so the correctness statements are unchanged.\<close>
 
 definition vseen_of :: "'n list \<Rightarrow> nat set" where
   "vseen_of fl = vseen_st (build_tree fl)"
@@ -931,12 +820,12 @@ text \<open>Executable augmented-network arrays and the arborescence swap operat
       assumption-free code-side locale. The augmented cost array cost-all is not here: its cost uses
       the symbolic Big-M and is therefore proof-only.\<close>
 
-text \<open>\<open>art_tree\<close> names the \<^emph>\<open>finished builder\<close> of the acyclified flow.  Every consumer below reads
-      it --- the artificial-edge count \<open>Kart\<close> and the five augmented arrays, and further down the
-      initial potential / parent / direction arrays and the initial tree handed to the interpreted
-      simplex.  Binding it \<^emph>\<open>once\<close> here means the builder runs once rather than once per consumer.
-      Its unfolding is a simp rule, so every proof still sees @{term \<open>build_tree acyc_flow\<close>} exactly
-      as before.\<close>
+text \<open>\<open>art_tree\<close> names the \<^emph>\<open>finished builder\<close> of the acyclified flow.
+      Every consumer below reads it --- the artificial-edge count \<open>Kart\<close> and the five augmented
+      arrays, and further down the initial potential / parent / direction arrays and the initial tree handed
+      to the interpreted simplex. Binding it \<^emph>\<open>once\<close> here means the builder runs once
+      rather than once per consumer. Its unfolding is a simp rule, so every proof still sees
+      @{term \<open>build_tree acyc_flow\<close>} exactly as before.\<close>
 
 definition art_tree :: "'n dfs_state" where "art_tree = build_tree acyc_flow"
 
@@ -1100,15 +989,15 @@ text \<open>The starting state @{const NSc.init_state} --- the augmented flow / 
       flow, and the fresh entering-edge selector --- is provided by the interpreted @{locale
       network_simplex_init_spec}, not redefined here.\<close>
 
-text \<open>The orchestrator.  First acyclify @{term flow_list}: a @{term None} answer is a negative
-      infinite-capacity cycle, reported as @{const Neg_inf_cycle}.  Otherwise build the strongly-feasible
-      spanning tree and run the network-simplex loop from @{const NSc.init_state}.  Its @{const return}
-      flag distinguishes an @{const unbounded} circuit (again @{const Neg_inf_cycle}) from
-      @{const success} (an optimum of the \<^emph>\<open>augmented\<close> network).  On success we inspect the artificial
-      edges @{term \<open>[m..<m+Kart]\<close>}: if they all carry zero flow the original network is feasible and the
-      minimum-cost @{term b}-flow is the augmented flow \<^emph>\<open>restricted to the original edges\<close>
-      (@{term \<open>take m\<close>}); if any artificial edge still carries flow, no @{term b}-flow exists and the
-      verdict is @{const Infeasible}.\<close>
+text \<open>The orchestrator. First acyclify @{term flow_list}: a @{term None} answer is a negative
+      infinite-capacity cycle, reported as @{const Neg_inf_cycle}. Otherwise build the strongly-feasible
+      spanning tree and run the network-simplex loop from @{const NSc.init_state}. Its @{const return} flag
+      distinguishes an @{const unbounded} circuit (again @{const Neg_inf_cycle}) from @{const success} (an
+      optimum of the \<^emph>\<open>augmented\<close> network). On success we inspect the artificial edges
+      @{term \<open>[m..<m+Kart]\<close>}: if they all carry zero flow the original network is feasible and
+      the minimum-cost @{term b}-flow is the augmented flow
+      \<^emph>\<open>restricted to the original edges\<close> (@{term \<open>take m\<close>}); if any
+      artificial edge still carries flow, no @{term b}-flow exists and the verdict is @{const Infeasible}.\<close>
 
 definition solve :: "'n ns_outcome" where
   "solve =

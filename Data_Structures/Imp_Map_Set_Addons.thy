@@ -2,6 +2,7 @@ theory Imp_Map_Set_Addons
   imports Separation_Logic_Imperative_HOL_Partial.Imp_Set_Spec
           Separation_Logic_Imperative_HOL_Partial.Imp_Map_Spec
           "HOL-Data_Structures.Set_Specs" "HOL-Data_Structures.Map_Specs"
+          More_Lists
 begin
 
 section \<open>Additions to the Imperative Map and Set Interfaces\<close>
@@ -37,12 +38,7 @@ locale set_order =
       and lst_filter: "finite S \<Longrightarrow> lst (S \<inter> Collect P) = filter P (lst S)"
 
 lemma sorted_list_of_set_order: "set_order sorted_list_of_set"
-proof(unfold_locales, goal_cases)
-  case (3 S P)
-  show ?case
-    using 3
-    by (auto intro!: sorted_distinct_set_unique sorted_wrt_filter)
-qed auto
+  by unfold_locales (auto intro!: sorted_distinct_set_unique sorted_wrt_filter)
 
 text \<open>The iterator visits the elements in the order @{term lst}, like
       @{locale imp_map_iterate'} for maps. Leaving the iteration gives back exactly the set.\<close>
@@ -85,104 +81,64 @@ text \<open>The rule for @{const iter_fold}, for an arbitrary iterator assertion
       the list of elements that remain to be visited.\<close>
 
 lemma iter_fold_rule_gen:
-  assumes has_next: "\<And>xs it. <I xs it> has_next it <\<lambda>r. I xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
-      and nxt: "\<And>x xs it. <I (x # xs) it> next it <\<lambda>(y, it'). I xs it' * \<up>(y = x)>"
-      and quit: "\<And>it. I [] it \<Longrightarrow>\<^sub>A Q"
-      and step: "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
-      and pre: "fold_pre P g b xs"
+  assumes "\<And>xs it. <I xs it> has_next it <\<lambda>r. I xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+      and "\<And>x xs it. <I (x # xs) it> next it <\<lambda>(y, it'). I xs it' * \<up>(y = x)>"
+      and "\<And>it. I [] it \<Longrightarrow>\<^sub>A Q"
+      and "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
+      and "fold_pre P g b xs"
     shows "<I xs it * A b c> iter_fold has_next next f it c
            <\<lambda>c'. Q * A (foldl g b xs) c'>"
-  using pre
+  using assms(5)
 proof(induction xs arbitrary: it b c)
   case Nil
   show ?case
-    supply [sep_heap_rules] = has_next
-    apply(subst iter_fold.simps)
-    apply sep_auto
-    apply(sep_frame_fwd rule: quit)
-    by sep_auto
+    by (subst iter_fold.simps, sep_auto heap: assms(1), sep_frame_fwd rule: assms(3), sep_auto)
 next
   case (Cons x xs)
-  from Cons.prems have Px: "P x b" and pre': "fold_pre P g (g b x) xs"
-    by simp_all
-  show ?case
-    supply [sep_heap_rules] = has_next nxt step[OF Px] Cons.IH[OF pre']
-    apply(subst iter_fold.simps)
-    by sep_auto
+  thus ?case
+    by (subst iter_fold.simps) (sep_auto heap: assms(1,2) assms(4)[of x b] Cons.IH)
 qed
 
 partial_function (heap) iter_find ::
-"('it \<Rightarrow> bool Heap) \<Rightarrow> ('it \<Rightarrow> ('a \<times> 'it) Heap) \<Rightarrow> ('a \<Rightarrow> 'b option Heap) \<Rightarrow>
-'it \<Rightarrow> ('a \<times> 'b) option Heap" where
-"iter_find has_next next f it =
-do { b \<leftarrow> has_next it;
-if b then do { (x, it') \<leftarrow> next it;
-r \<leftarrow> f x;
-(case r of None \<Rightarrow> iter_find has_next next f it'
-| Some y \<Rightarrow> return (Some (x, y))) }
-else return None }"
+  "('it \<Rightarrow> bool Heap) \<Rightarrow> ('it \<Rightarrow> ('a \<times> 'it) Heap) \<Rightarrow> ('a \<Rightarrow> 'b option Heap) \<Rightarrow>
+   'it \<Rightarrow> ('a \<times> 'b) option Heap" where
+  "iter_find has_next next f it =
+     do { b \<leftarrow> has_next it;
+          if b then do { (x, it') \<leftarrow> next it;
+                         r \<leftarrow> f x;
+                         (case r of None \<Rightarrow> iter_find has_next next f it'
+                                  | Some y \<Rightarrow> return (Some (x, y))) }
+          else return None }"
 
 lemma iter_find_rule_gen:
-assumes has_next: "\<And>xs it. <I xs it> has_next it <\<lambda>r. I xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
-and nxt: "\<And>x xs it. <I (x # xs) it> next it <\<lambda>(y, it'). I xs it' * \<up>(y = x)>"
-and quit: "\<And>xs it. I xs it \<Longrightarrow>\<^sub>A Q"
-and step: "\<And>x s. \<lbrakk>x \<in> set xs; P s\<rbrakk> \<Longrightarrow>
-<A s> f x <\<lambda>r. A (fst (g s x)) * \<up>(rel_option Rel r (snd (g s x)))>"
-and inv: "\<And>x s. \<lbrakk>x \<in> set xs; P s\<rbrakk> \<Longrightarrow> P (fst (g s x))"
-and pre: "P s"
-shows "<I xs it * A s> iter_find has_next next f it
-<\<lambda>r. Q * A (fst (foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s, None) xs)) *
-\<up>(rel_option (rel_prod (=) Rel) r
-(snd (foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s, None) xs)))>"
-using step inv pre
+  assumes "\<And>xs it. <I xs it> has_next it <\<lambda>r. I xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+      and "\<And>x xs it. <I (x # xs) it> next it <\<lambda>(y, it'). I xs it' * \<up>(y = x)>"
+      and "\<And>xs it. I xs it \<Longrightarrow>\<^sub>A Q"
+      and "\<And>x s. \<lbrakk>x \<in> set xs; P s\<rbrakk> \<Longrightarrow>
+             <A s> f x <\<lambda>r. A (fst (g s x)) * \<up>(rel_option Rel r (snd (g s x)))>"
+      and "\<And>x s. \<lbrakk>x \<in> set xs; P s\<rbrakk> \<Longrightarrow> P (fst (g s x))"
+      and "P s"
+    shows "<I xs it * A s> iter_find has_next next f it
+           <\<lambda>r. Q * A (fst (foldl (\<lambda>(s, r) x. case r of
+                                None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
+                              | Some _ \<Rightarrow> (s, r)) (s, None) xs)) *
+                \<up>(rel_option (rel_prod (=) Rel) r
+                   (snd (foldl (\<lambda>(s, r) x. case r of
+                                  None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
+                                | Some _ \<Rightarrow> (s, r)) (s, None) xs)))>"
+  using assms(4-6)
 proof(induction xs arbitrary: it s)
-case Nil
-show ?case
-supply [sep_heap_rules] = has_next
-apply(subst iter_find.simps)
-apply sep_auto
-apply(sep_frame_fwd rule: quit)
-by sep_auto
+  case Nil
+  show ?case
+    by (subst iter_find.simps, sep_auto heap: assms(1), sep_frame_fwd rule: assms(3), sep_auto)
 next
-case (Cons x xs)
-obtain s' y where g: "g s x = (s', y)" by fastforce
-have st: "<A s> f x <\<lambda>r. A s' * \<up>(rel_option Rel r y)>"
-using Cons.prems(1)[of x s] Cons.prems(3) g by simp
-have P': "P s'" using Cons.prems(2)[of x s] Cons.prems(3) g by simp
-have keep: "\<And>a. foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s', Some a) xs = (s', Some a)"
-by (induction xs) simp_all
-note IH = Cons.IH[OF _ _ P']
-show ?case
-proof(cases y)
-case None
-have IH': "<I xs it' * A s'> iter_find has_next next f it'
-<\<lambda>r. Q * A (fst (foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s', None) xs)) *
-\<up>(rel_option (rel_prod (=) Rel) r
-(snd (foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s', None) xs)))>" for it'
-by (rule IH) (auto intro: Cons.prems(1,2))
-show ?thesis
-supply [sep_heap_rules] = has_next nxt st IH'
-apply(subst iter_find.simps)
-by (sep_auto simp: g None)
-next
-case (Some z)
-show ?thesis
-supply [sep_heap_rules] = has_next nxt st
-apply(subst iter_find.simps)
-apply(sep_auto simp: g Some keep split: option.splits)
-apply(sep_frame_fwd rule: quit)
-by sep_auto
-qed
+  case (Cons x xs)
+  show ?case
+    using Cons.prems(2)[of x s] Cons.prems(3)
+    by (cases "g s x"; cases "snd (g s x)")
+       (subst iter_find.simps, sep_auto heap: assms(1,2) Cons.prems(1)[of x s]
+          Cons.IH[OF Cons.prems(1,2)[OF list.set_intros(2)]] simp: split_beta foldl_fixed,
+        (sep_frame_fwd rule: assms(3), sep_auto)?)+
 qed
 
 context imp_set_ordered_iterate
@@ -191,18 +147,18 @@ begin
 definition "set_fold p f c = do { it \<leftarrow> it_init p; iter_fold it_has_next it_next f it c }"
 
 lemma iter_fold_rule:
-  assumes step: "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
-      and pre: "fold_pre P g b xs"
+  assumes "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
+      and "fold_pre P g b xs"
     shows "<is_it s p xs it * A b c> iter_fold it_has_next it_next f it c
            <\<lambda>c'. is_set s p * A (foldl g b xs) c'>"
-  by (rule iter_fold_rule_gen[OF it_has_next_rule it_next_rule quit_iteration step pre])
+  by (rule iter_fold_rule_gen[OF it_has_next_rule it_next_rule quit_iteration assms])
 
 lemma set_fold_rule:
-  assumes step: "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
-      and pre: "fold_pre P g b (lst s)"
+  assumes "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
+      and "fold_pre P g b (lst s)"
     shows "<is_set s p * A b c> set_fold p f c <\<lambda>c'. is_set s p * A (foldl g b (lst s)) c'>"
   unfolding set_fold_def
-  by (sep_auto heap: iter_fold_rule[OF step pre])
+  by (sep_auto heap: iter_fold_rule[OF assms])
 
 end
 
@@ -237,12 +193,12 @@ lemma set_assn_clear_rule[sep_heap_rules]:
   by (sep_auto simp: set_assn_def set_empty invar_empty)
 
 lemma set_assn_fold_rule:
-  assumes step: "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
-      and pre: "fold_pre P g b (lst (s_set V))"
+  assumes "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
+      and "fold_pre P g b (lst (s_set V))"
     shows "<set_assn V Vi * A b c> set_fold Vi f c
            <\<lambda>c'. set_assn V Vi * A (foldl g b (lst (s_set V))) c'>"
   unfolding set_assn_def
-  by (sep_auto heap: set_fold_rule[OF step pre])
+  by (sep_auto heap: set_fold_rule[OF assms])
 
 end
 
@@ -278,12 +234,9 @@ lemma map_assn_update_rule[sep_heap_rules]:
 lemma map_assn_empty_eq:
   assumes "m_invar m" "\<And>k. m_lookup m k = None"
   shows "map_assn m mi = is_map Map.empty mi"
-proof -
-  have *: "(\<forall>k. rel_option (R k) (mm k) (m_lookup m k)) = (mm = Map.empty)" for mm
-    by (auto simp: assms(2) fun_eq_iff option.rel_sel Option.is_none_def)
-  show ?thesis
-    unfolding map_assn_def * by (rule ent_iffI) (sep_auto simp: assms(1))+
-qed
+  using assms
+  unfolding map_assn_def
+  by (intro ent_iffI) (sep_auto simp: option.rel_sel Option.is_none_def fun_eq_iff[of _ Map.empty, symmetric])+
 
 end
 

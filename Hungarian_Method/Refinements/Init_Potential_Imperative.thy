@@ -90,21 +90,42 @@ sublocale init_potential_imp \<subseteq> code: init_potential_imp_code
 context init_potential_imp
 begin
 
+lemma pot_get_rule:
+  "\<lbrakk>potential_invar \<pi>; u \<in> K\<rbrakk> \<Longrightarrow>
+     <pot_assn \<pi> Pti> pot_get_imp Pti u <\<lambda>r. pot_assn \<pi> Pti * \<up>(potential_get \<pi> u = h r)>"
+  using pot.fixed_univ_map_lookup_rule[of \<pi> u Pti]
+  by (simp add: eq_commute)
+
 lemma upd_min_imp_rule:
   assumes "potential_invar \<pi>" "u \<in> K"
   shows "<pot_assn \<pi> Pti> code.upd_min_imp Pti u c <\<lambda>_. pot_assn (upd_min u (h c) \<pi>) Pti>"
-proof-
-  have get: "<pot_assn \<pi> Pti> pot_get_imp Pti u
-             <\<lambda>r. pot_assn \<pi> Pti * \<up>(potential_get \<pi> u = h r)>"
-    using pot.fixed_univ_map_lookup_rule[OF assms] by (simp add: eq_commute)
-  show ?thesis
-    unfolding code.upd_min_imp_def
-    supply pot.fixed_univ_map_lookup_rule[sep_heap_rules del]
-    using assms by (sep_auto heap: get simp: upd_min_def)
-qed
+  unfolding code.upd_min_imp_def
+  supply pot.fixed_univ_map_lookup_rule[sep_heap_rules del]
+  using assms
+  by (sep_auto heap: pot_get_rule[OF assms] simp: upd_min_def)
 
 lemma upd_min_invar: "\<lbrakk>potential_invar \<pi>; u \<in> K\<rbrakk> \<Longrightarrow> potential_invar (upd_min u c \<pi>)"
   by (auto simp: upd_min_def pot.fixed_univ_map_upd_invar)
+
+lemma rnb_move_props:
+  assumes "rnb_invar C" "u \<in> K" "rnb_has C u" "finite (rnb_remaining C u)"
+  shows "rnb_remaining C u \<noteq> {}" "rnb_invar (rnb_move C u)" "finite (rnb_remaining (rnb_move C u) u)"
+        "card (rnb_remaining (rnb_move C u) u) < card (rnb_remaining C u)"
+  using assms rnb.idx_current[of C u] card_Diff1_less[of "rnb_remaining C u" "rnb_current C u"]
+  by (simp_all add: rnb.idx_has rnb.idx_move_invar rnb.idx_move_remaining)
+
+lemma rnb_reset_props:
+  assumes "rnb_invar C" "u \<in> K" "rnb_abstract C = rnb_abstract C0" "finite (rnb_abstract C0 u)"
+  shows "rnb_invar (rnb_reset C u)" "finite (rnb_remaining (rnb_reset C u) u)"
+  using assms rnb.idx_reset_invar[of C u] rnb.idx_reset_remaining[of C u]
+  by auto
+
+lemma init_step_split:
+  "init_step (C, \<pi>) u =
+     (if rnb_has (rnb_reset C u) u
+      then scan_min u (rnb_move (rnb_reset C u) u) (potential_upd \<pi> u (cost u (rnb_current (rnb_reset C u) u)))
+      else (rnb_reset C u, \<pi>))"
+  by (simp add: init_step_def Let_def)
 
 lemma scan_min_imp_rule:
   assumes "rnb_invar C" "u \<in> K" "finite (rnb_remaining C u)" "potential_invar \<pi>"
@@ -116,32 +137,19 @@ proof(induction "card (rnb_remaining C u)" arbitrary: C \<pi> rule: less_induct)
   show ?case
   proof(cases "rnb_has C u")
     case True
-    have ne: "rnb_remaining C u \<noteq> {}" using rnb.idx_has[OF less.prems(1,2)] True by simp
-    have x_in: "rnb_current C u \<in> rnb_remaining C u"
-      using rnb.idx_current[OF less.prems(1,2) ne] .
-    have C': "rnb_invar (rnb_move C u)"
-             "rnb_remaining (rnb_move C u) u = rnb_remaining C u - {rnb_current C u}"
-      using rnb.idx_move_invar[OF less.prems(1,2)] rnb.idx_move_remaining[OF less.prems(1,2) ne]
-      by auto
-    have card_less: "card (rnb_remaining (rnb_move C u) u) < card (rnb_remaining C u)"
-      using card_Diff1_less[OF less.prems(3) x_in] by (simp add: C'(2))
-    have fin': "finite (rnb_remaining (rnb_move C u) u)" using less.prems(3) by (simp add: C'(2))
-    have eq: "scan_min u C \<pi> = scan_min u (rnb_move C u) (upd_min u (cost u (rnb_current C u)) \<pi>)"
-      by (simp add: scan_min.simps[of u C \<pi>] True)
-    note IH = less.hyps[OF card_less C'(1) less.prems(2) fin' upd_min_invar[OF less.prems(4,2)]]
-    note um = upd_min_imp_rule[OF less.prems(4,2)]
+    note M = rnb_move_props[OF less.prems(1,2) True less.prems(3)]
+    note IH = less.hyps[OF M(4,2) less.prems(2) M(3) upd_min_invar[OF less.prems(4,2)]]
     show ?thesis
       apply(subst code.scan_min_imp.simps)
       apply(sep_auto heap: nb.idx_has_rule nb.current_cost_rule nb.idx_move_rule
-                     simp: less.prems(1,2) True ne)
-      apply(sep_auto heap: um)
-      by (sep_auto heap: IH simp: eq True)
+                     simp: less.prems(1,2) True M(1))
+      apply(sep_auto heap: upd_min_imp_rule[OF less.prems(4,2)])
+      by (sep_auto heap: IH simp: scan_min.simps[of u C \<pi>] True)
   next
     case False
-    have eq: "scan_min u C \<pi> = (C, \<pi>)" by (simp add: scan_min.simps[of u C \<pi>] False)
     show ?thesis
       apply(subst code.scan_min_imp.simps)
-      by (sep_auto heap: nb.idx_has_rule simp: less.prems(1,2) False eq)
+      by (sep_auto heap: nb.idx_has_rule simp: less.prems(1,2) False scan_min.simps[of u C \<pi>])
   qed
 qed
 
@@ -150,59 +158,61 @@ lemma init_pot_step_rule:
           "finite (rnb_abstract C0 u)" "potential_invar \<pi>"
   shows "<nb_assn C Ci * pot_assn \<pi> Pti> code.init_pot_step Ci Pti u x
          <\<lambda>_. nb_assn (fst (init_step (C, \<pi>) u)) Ci * pot_assn (snd (init_step (C, \<pi>) u)) Pti>"
-proof-
-  define C1 where "C1 = rnb_reset C u"
-  have C1: "rnb_invar C1" "finite (rnb_remaining C1 u)"
-    using rnb.idx_reset_invar[OF assms(1,3)] rnb.idx_reset_remaining[OF assms(1,3)] assms(2,4)
-    by (auto simp: C1_def)
+proof(cases "rnb_has (rnb_reset C u) u")
+  case True
+  note R = rnb_reset_props[OF assms(1,3,2,4)]
+  note M = rnb_move_props[OF R(1) assms(3) True R(2)]
+  note sc = scan_min_imp_rule[OF M(2) assms(3) M(3) pot.fixed_univ_map_upd_invar[OF assms(5,3)]]
   show ?thesis
-  proof(cases "rnb_has C1 u")
-    case True
-    have ne: "rnb_remaining C1 u \<noteq> {}" using rnb.idx_has[OF C1(1) assms(3)] True by simp
-    have C2: "rnb_invar (rnb_move C1 u)" "finite (rnb_remaining (rnb_move C1 u) u)"
-      using rnb.idx_move_invar[OF C1(1) assms(3)] rnb.idx_move_remaining[OF C1(1) assms(3) ne]
-            C1(2)
-      by auto
-    have pinv: "potential_invar (potential_upd \<pi> u c)" for c
-      using pot.fixed_univ_map_upd_invar[OF assms(5,3)] .
-    note sc = scan_min_imp_rule[OF C2(1) assms(3) C2(2) pinv]
-    have eq: "init_step (C, \<pi>) u =
-              scan_min u (rnb_move C1 u) (potential_upd \<pi> u (cost u (rnb_current C1 u)))"
-      by (simp add: init_step_def Let_def C1_def[symmetric] True)
-    show ?thesis
-      unfolding code.init_pot_step_def
-      by (sep_auto heap: nb.idx_reset_rule nb.idx_has_rule nb.current_cost_rule nb.idx_move_rule sc
-                   simp: assms(1,3,5) C1_def[symmetric] C1(1) True ne eq)
-  next
-    case False
-    have eq: "init_step (C, \<pi>) u = (C1, \<pi>)"
-      by (simp add: init_step_def Let_def C1_def[symmetric] False)
-    show ?thesis
-      unfolding code.init_pot_step_def
-      by (sep_auto heap: nb.idx_reset_rule nb.idx_has_rule
-                   simp: assms(1,3) C1_def[symmetric] C1(1) False eq)
-  qed
+    unfolding code.init_pot_step_def
+    by (sep_auto heap: nb.idx_reset_rule nb.idx_has_rule nb.current_cost_rule nb.idx_move_rule sc
+                 simp: assms(1,3,5) R(1) True M(1) init_step_split)
+next
+  case False
+  show ?thesis
+    unfolding code.init_pot_step_def
+    using rnb_reset_props[OF assms(1,3,2,4)]
+    by (sep_auto heap: nb.idx_reset_rule nb.idx_has_rule simp: assms(1,3) False init_step_split)
 qed
 
 definition "init_pre C0 u Cp =
   (u \<in> K \<and> finite (rnb_abstract C0 u) \<and> rnb_invar (fst Cp) \<and>
    rnb_abstract (fst Cp) = rnb_abstract C0 \<and> potential_invar (snd Cp))"
 
+lemma init_pot_step_pre_rule:
+  "init_pre C0 u Cp \<Longrightarrow>
+     <nb_assn (fst Cp) Ci * pot_assn (snd Cp) Pti> code.init_pot_step Ci Pti u x
+     <\<lambda>_. nb_assn (fst (init_step Cp u)) Ci * pot_assn (snd (init_step Cp u)) Pti>"
+  by (cases Cp) (simp add: init_pre_def init_pot_step_rule)
+
+lemma init_inv_pre:
+  "\<lbrakk>init_inv C0 pot0 S Cp; u \<in> K; finite (rnb_abstract C0 u)\<rbrakk> \<Longrightarrow> init_pre C0 u Cp"
+  by (simp add: init_pre_def init_inv_def)
+
 lemma init_fold_pre_imp:
   "\<lbrakk>init_inv C0 pot0 S Cp; set xs \<subseteq> K; \<forall>u\<in>set xs. finite (rnb_abstract C0 u)\<rbrakk> \<Longrightarrow>
    fold_pre (init_pre C0) init_step Cp xs"
 proof(induction xs arbitrary: S Cp)
   case (Cons x xs)
-  have "init_inv C0 pot0 (insert x S) (init_step Cp x)"
-    using init_step_inv[OF Cons.prems(1)] Cons.prems(2,3) by simp
-  hence "fold_pre (init_pre C0) init_step (init_step Cp x) xs"
-    using Cons.IH Cons.prems(2,3) by simp
-  moreover have "init_pre C0 x Cp"
-    using Cons.prems by (auto simp: init_pre_def init_inv_def)
-  ultimately show ?case by simp
+  thus ?case
+    using Cons.IH[of "insert x S" "init_step Cp x"] init_step_inv[of C0 pot0 S Cp x]
+    by (simp add: init_inv_pre)
 qed simp
 
-theorem init_pot_imp_rule:
+lemma init_fold_pre_start:
+  assumes "rnb_invar C0" "vset_invar left" "finite (vset_to_set left)"
+          "\<And>u. u \<in> vset_to_set left \<Longrightarrow> finite (rnb_abstract C0 u)"
+  shows "fold_pre (init_pre C0) init_step (C0, potential_empty) (lst (vset_to_set left))"
+  using init_fold_pre_imp[of C0 potential_empty "{}" "(C0, potential_empty)"] assms
+        left.fixed_univ_set_universe[of left] lst_set[of "vset_to_set left"] potential_empty
+  by (auto simp: init_inv_def)
+
+lemma init_potential_coll_lst:
+  "vset_invar left \<Longrightarrow>
+     init_potential_coll C0 potential_empty left = foldl init_step (C0, potential_empty) (lst (vset_to_set left))"
+  by (simp add: init_potential_coll_def vset_iterate_lst)
+
+lemma init_pot_imp_rule:
   assumes "rnb_invar C0" "vset_invar left" "finite (vset_to_set left)"
           "\<And>u. u \<in> vset_to_set left \<Longrightarrow> finite (rnb_abstract C0 u)"
   shows "<nb_assn C0 Ci * pot_assn potential_empty Pti * vset_assn left Li>
@@ -211,29 +221,12 @@ theorem init_pot_imp_rule:
               pot_assn (snd (init_potential_coll C0 potential_empty left)) Pti *
               vset_assn left Li>"
 proof-
-  have sub: "vset_to_set left \<subseteq> K" using left.fixed_univ_set_universe[OF assms(2)] .
-  have i0: "init_inv C0 potential_empty {} (C0, potential_empty)"
-    using assms(1) potential_empty by (auto simp: init_inv_def)
-  have res: "init_potential_coll C0 potential_empty left =
-             foldl init_step (C0, potential_empty) (lst (vset_to_set left))"
-    by (simp add: init_potential_coll_def vset_iterate_lst[OF assms(2)])
-  have pre: "fold_pre (init_pre C0) init_step (C0, potential_empty) (lst (vset_to_set left))"
-    using init_fold_pre_imp[OF i0] sub assms(4) lst_set[OF assms(3)] by auto
-  have step: "\<And>u Cp x. init_pre C0 u Cp \<Longrightarrow>
-     <nb_assn (fst Cp) Ci * pot_assn (snd Cp) Pti> code.init_pot_step Ci Pti u x
-     <\<lambda>_. nb_assn (fst (init_step Cp u)) Ci * pot_assn (snd (init_step Cp u)) Pti>"
-  proof-
-    fix u Cp x assume a: "init_pre C0 u Cp"
-    obtain C \<pi> where Cp: "Cp = (C, \<pi>)" by (cases Cp) auto
-    show "<nb_assn (fst Cp) Ci * pot_assn (snd Cp) Pti> code.init_pot_step Ci Pti u x
-     <\<lambda>_. nb_assn (fst (init_step Cp u)) Ci * pot_assn (snd (init_step Cp u)) Pti>"
-      using a init_pot_step_rule[of C C0 u \<pi> Ci Pti x] by (simp add: init_pre_def Cp)
-  qed
-  note fold = iter_fold_rule_gen[where I = "\<lambda>xs it. vset_assn left Li * left_is_it (vset_to_set left) Li xs it" and Q = "vset_assn left Li"
-      and A = "\<lambda>Cp (x::unit). nb_assn (fst Cp) Ci * pot_assn (snd Cp) Pti",
-      OF left.it_has_next_rule left.it_next_rule left.quit_iteration step pre]
+  note fold = iter_fold_rule_gen[where I = "\<lambda>xs it. vset_assn left Li * left_is_it (vset_to_set left) Li xs it"
+      and Q = "vset_assn left Li" and A = "\<lambda>Cp (x::unit). nb_assn (fst Cp) Ci * pot_assn (snd Cp) Pti",
+      OF left.it_has_next_rule left.it_next_rule left.quit_iteration init_pot_step_pre_rule
+         init_fold_pre_start[OF assms]]
   show ?thesis
-    unfolding code.init_pot_imp_def res
+    unfolding code.init_pot_imp_def init_potential_coll_lst[OF assms(2)]
     by (sep_auto heap: left.it_init_rule fold[simplified] simp: assms(2))
 qed
 

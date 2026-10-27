@@ -17,9 +17,6 @@ session "Directed_Set_Graphs" = "HOL-Eisbach" +
     Refinements
     
   theories [document = false]
-   More_Logic
-   More_Lists
-   More_Arith
    enat_misc
 
   theories

@@ -51,10 +51,10 @@ definition "check_hall n fs ts ws ls rs S = do {
 subsection \<open>A Graph with a Perfect Matching\<close>
 
 text \<open>Left vertices @{text "0, 2, 4"}, right vertices @{text "1, 3, 5"}, and the edges
-      @{text "0: (0, 1, 4), 1: (0, 3, -1), 2: (2, 1, -2), 3: (2, 5, 6), 4: (4, 3, 3), 5: (4, 5, -5)"}.
-      The perfect matchings are @{text "{0, 3, 4}"} (weight @{text 13}) and @{text "{1, 2, 5}"}
-      (weight @{text "-8"}). The latter is also the minimum weight matching, the former the maximum
-      weight matching.\<close>
+      @{text "0: (0, 1, 4), 1: (0, 3, -1), 2: (2, 1, -2), 3: (2, 5, 6), 4: (4, 3, 3)"} and
+      @{text "5: (4, 5, -5)"}. The perfect matchings are @{text "{0, 3, 4}"} (weight @{text 13}) and
+      @{text "{1, 2, 5}"} (weight @{text "-8"}). The latter is also the minimum weight matching, the
+      former the maximum weight matching.\<close>
 
 definition "fsA = [0::nat, 0, 2, 2, 4, 4]"
 definition "tsA = [1::nat, 3, 1, 5, 3, 5]"
@@ -63,18 +63,18 @@ definition "lsA = [0::nat, 2, 4]"
 definition "rsA = [1::nat, 3, 5]"
 
 text \<open>The certificates. A candidate is a list of edge names, a dual a list with one potential per
-      vertex @{text "0, ..., 5"}. For the minimum: @{text "y u + y v \<le> w"} on all edges, with equality
-      on the matching @{text "{1, 2, 5}"}. For the maximum: the same for the negated weights and the
-      matching @{text "{0, 3, 4}"}. Both duals are non-positive and all vertices are matched, so they
-      also certify the minimum and the maximum weight matching.\<close>
+      vertex @{text "0, ..., 5"}. For the minimum: @{text "y u + y v \<le> w"} on all edges, with
+      equality on the matching @{text "{1, 2, 5}"}. For the maximum: the same for the negated
+      weights and the matching @{text "{0, 3, 4}"}. Both duals are non-positive and all vertices are
+      matched, so they also certify the minimum and the maximum weight matching.\<close>
 
 definition "msA_min = [1::nat, 2, 5]"
 definition "ysA_min = [0::int, -2, 0, -1, 0, -5]"
 definition "msA_max = [0::nat, 3, 4]"
 definition "ysA_max = [0::int, -4, 0, -3, 0, -6]"
 
-text \<open>Wrong certificates: a perturbed dual (edge @{text 5} is violated), a repeated edge name, an edge
-      name out of range.\<close>
+text \<open>Wrong certificates: a perturbed dual (edge @{text 5} is violated), a repeated edge name, an
+      edge name out of range.\<close>
 
 definition "ysA_bad = [0::int, -2, 0, -1, 0, -4]"
 definition "msA_dup = [1::nat, 1, 2]"
@@ -125,9 +125,9 @@ text \<open>The certificates. A Hall violator is a list of left vertices; repeti
 definition "hallB = [0::nat, 2]"
 definition "hallB_dup = [0::nat, 2, 0]"
 
-text \<open>The maximum weight matching @{text "{1, 2}"} and its dual for the negated weights: non-positive,
-      @{text "y u + y v \<le> - w"} on all edges, tight on the matching, and zero on the unmatched vertices
-      @{text 0} and @{text 5}.\<close>
+text \<open>The maximum weight matching @{text "{1, 2}"} and its dual for the negated weights:
+      non-positive, @{text "y u + y v \<le> - w"} on all edges, tight on the matching, and zero on the
+      unmatched vertices @{text 0} and @{text 5}.\<close>
 
 definition "msB_max = [1::nat, 2]"
 definition "ysB_max = [0::int, -1, -2, -1, -1, 0]"

@@ -116,23 +116,21 @@ lemma list_next_in:
   shows "w \<in> set (list_abstract L)"
 proof-
   obtain xs ys where xy: "list_abstract L = xs @ u # ys"
-    using split_list[OF assms(2)] by blast
+    using assms(2) split_list[of u "list_abstract L"]
+    by blast
   show ?thesis
-    using vlist.list_next[OF assms(1) xy] assms(3) xy by (cases ys) auto
+    using assms(1,3) xy vlist.list_next[of L xs u ys]
+    by (cases ys) auto
 qed
 
 lemma rtf_scan_in:
   assumes "list_invar L" "u \<in> set (list_abstract L)" "rtf_scan L x n u = Some w"
   shows "w \<in> set (list_abstract L)"
-  using assms(2,3)
-proof(induction n arbitrary: u)
-  case (Suc n)
-  thus ?case
-    using list_next_in[OF assms(1) Suc.prems(1)] by (auto split: if_splits option.splits)
-qed simp
+  using assms
+  by (induction n arbitrary: u) (auto split: if_splits option.splits dest: list_next_in)
 
 lemma rtf_scan_imp_rule:
-  assumes "list_invar L" "set (list_abstract L) \<subseteq> \<V>" "u \<in> set (list_abstract L)"
+  assumes "list_invar L" "set (list_abstract L) = \<V> - {s, t}" "u \<in> set (list_abstract L)"
           "ex_invar (pr_excess st)"
   shows "<state_assn st Si * list_assn L Ls> rtf_scan_imp Ls Si n u
          <\<lambda>r. state_assn st Si * list_assn L Ls * \<up>(r = rtf_scan L (pr_excess st) n u)>"
@@ -144,7 +142,8 @@ proof(induction n arbitrary: u)
 next
   case (Suc n)
   have uV: "u \<in> \<V>"
-    using Suc.prems assms(2) by auto
+    using Suc.prems assms(2)
+    by auto
   show ?case
   proof(cases "list_next L u")
     case None
@@ -154,12 +153,10 @@ next
                          list_imp.list_next_rule[OF assms(1) Suc.prems] simp: None)
   next
     case (Some w)
-    have wL: "w \<in> set (list_abstract L)"
-      by (rule list_next_in[OF assms(1) Suc.prems Some])
     show ?thesis
       by (subst rtf_scan_imp.simps)
-         (sep_auto heap: ex_get_state_rule[OF assms(4) uV]
-                         list_imp.list_next_rule[OF assms(1) Suc.prems] Suc.IH[OF wL] simp: Some)
+         (sep_auto heap: ex_get_state_rule[OF assms(4) uV] list_imp.list_next_rule[OF assms(1) Suc.prems]
+                         Suc.IH[OF list_next_in[OF assms(1) Suc.prems Some]] simp: Some)
   qed
 qed
 
@@ -170,15 +167,15 @@ lemma rtf_discharge_imp_rule:
   shows "<state_assn st Si * Rr \<mapsto>\<^sub>r rel> rtf_discharge_imp Rr Si u
          <\<lambda>r. state_assn st Si * Rr \<mapsto>\<^sub>r rel' * \<up>(r = op \<and> L' = L \<and> cur' = Some u)>"
 proof-
-  have basic: "invar_basic st"
-    using assms(1) by (simp add: invar_state_def)
   have opd: "discharge_op False (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u = op"
     and c: "rel' = (case op of Relabel _ \<Rightarrow> True | _ \<Rightarrow> rel)" "L' = L" "cur' = Some u"
-    using assms(3) by (auto simp add: rtf_discharge_def Let_def)
+    using assms(3)
+    by (auto simp add: rtf_discharge_def Let_def)
   show ?thesis
     unfolding rtf_discharge_imp_def
     by (cases op)
-       (sep_auto heap: discharge_op_imp_rule[OF basic assms(2), where gap = False, unfolded opd]
+       (sep_auto heap: discharge_op_imp_rule[OF assms(1)[unfolded invar_state_def, THEN conjunct1] assms(2),
+                                             where gap = False, unfolded opd]
                  simp: c)+
 qed
 
@@ -194,103 +191,100 @@ lemma rtf_next_imp_rule:
                                (pr_out st) (pr_in st))) = (op, (L', cur', rel'))"
   shows "<state_assn st Si * list_assn L1 Ls * cur_assn cur Cf Cu * Rr \<mapsto>\<^sub>r rel>
            rtf_next_imp Ls Cf Cu Rr Si u
-         <\<lambda>r. state_assn st Si * list_assn L' Ls * cur_assn cur' Cf Cu * Rr \<mapsto>\<^sub>r rel' * \<up>(r = op)>"
+         <\<lambda>r. state_assn st Si * list_assn L' Ls * cur_assn cur' Cf Cu * Rr \<mapsto>\<^sub>r rel' *
+              \<up>(r = op)>"
 proof(cases "list_next L1 u")
   case None
   have "op = Done" "L' = L1" "cur' = None" "rel' = False"
-    using assms(5) None by simp_all
+    using assms(5) None
+    by simp_all
   thus ?thesis
     unfolding rtf_next_imp_def rtf_stop_imp_def
     by (sep_auto heap: list_imp.list_next_rule[OF assms(2,4)] cur_clear_rule simp: None)
 next
   case (Some w)
   note nx = Some
-  have wL: "w \<in> set (list_abstract L1)"
-    by (rule list_next_in[OF assms(2,4) nx])
-  have sc: "<state_assn st Si * list_assn L1 Ls> rtf_scan_imp Ls Si num_verts w
-            <\<lambda>r. state_assn st Si * list_assn L1 Ls *
-                 \<up>(r = rtf_scan L1 (pr_excess st) num_verts w)>"
-    by (rule rtf_scan_imp_rule[OF assms(2) _ wL invar_stateD(2)[OF assms(1)]]) (use assms(3) in auto)
+  note wL = list_next_in[OF assms(2,4) nx]
+  note sc = rtf_scan_imp_rule[OF assms(2,3) wL
+                              invar_basic_maps(3)[OF assms(1)[unfolded invar_state_def, THEN conjunct1]]]
   show ?thesis
   proof(cases "rtf_scan L1 (pr_excess st) num_verts w")
     case None
     have "op = Done" "L' = L1" "cur' = None" "rel' = False"
-      using assms(5) nx None by simp_all
+      using assms(5) nx None
+      by simp_all
     thus ?thesis
       unfolding rtf_next_imp_def rtf_stop_imp_def
       by (sep_auto heap: list_imp.list_next_rule[OF assms(2,4)] sc cur_clear_rule simp: nx None)
   next
     case (Some w')
     have w'V: "w' \<in> \<V>"
-      using rtf_scan_in[OF assms(2) wL Some] assms(3) by auto
-    have dis: "rtf_discharge L1 w' False (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) =
-               (op, (L', cur', rel'))"
-      using assms(5) nx Some by simp
-    note r = rtf_discharge_imp_rule[OF assms(1) w'V dis]
+      using assms(2,3) wL Some rtf_scan_in[of L1 w "pr_excess st" num_verts w']
+      by auto
+    have "rtf_discharge L1 w' False (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) =
+          (op, (L', cur', rel'))"
+      using assms(5) nx Some
+      by simp
+    note r = rtf_discharge_imp_rule[OF assms(1) w'V this]
     show ?thesis
       unfolding rtf_next_imp_def
       by (sep_auto heap: list_imp.list_next_rule[OF assms(2,4)] sc cur_set_rule r simp: nx Some)
   qed
 qed
 
+text \<open>What the context invariant gives the current vertex.\<close>
+
+lemma rtf_ctx_invar_cur:
+  assumes "rtf_ctx_invar st" "pr_ctx st = (L, cur, rel)"
+  shows "list_invar L" "set (list_abstract L) = \<V> - {s, t}"
+        "cur = Some u \<Longrightarrow> rtf_cur_invar (flow_abs st) (labels_abs st) (list_abstract L) u rel"
+        "cur = Some u \<Longrightarrow> u \<in> set (list_abstract L)" "cur = Some u \<Longrightarrow> u \<in> \<V>"
+  using assms
+  by (auto simp: rtf_ctx_invar_def rtf_cur_invar_def split: if_splits)
+
 lemma rtf_select_imp_rule:
   assumes "invar_state st" "rtf_ctx_invar st" "rtf.select_of st = (op, c)"
   shows "<state_assn st Si * rtf_ctx_assn (pr_ctx st) Ci> rtf_select_imp Ci Si
          <\<lambda>r. state_assn st Si * rtf_ctx_assn c Ci * \<up>(r = op)>"
 proof-
-  note inv = invar_stateD[OF assms(1)]
-  obtain L cur rel where ctx: "pr_ctx st = (L, cur, rel)"
-    by (cases "pr_ctx st") auto
-  obtain Ls Cf Cu Rr Vi where Ci: "Ci = (Ls, Cf, Cu, Rr, Vi)"
-    by (cases Ci) auto
-  have I: "list_invar L" "set (list_abstract L) = \<V> - {s, t}"
-          "case cur of None \<Rightarrow> \<forall> v. \<not> active_vertex s t (flow_abs st) v
-           | Some u \<Rightarrow> rtf_cur_invar (flow_abs st) (labels_abs st) (list_abstract L) u rel"
-    using assms(2) ctx by (simp_all add: rtf_ctx_invar_def)
+  obtain L cur rel Ls Cf Cu Rr Vi L' cur' rel' where ctx: "pr_ctx st = (L, cur, rel)"
+    and Ci: "Ci = (Ls, Cf, Cu, Rr, Vi)" and c: "c = (L', cur', rel')"
+    by (cases "pr_ctx st" rule: prod_cases3, cases Ci rule: prod_cases5, cases c rule: prod_cases3) auto
+  note I = rtf_ctx_invar_cur[OF assms(2) ctx]
+   and exi = invar_basic_maps(3)[OF assms(1)[unfolded invar_state_def, THEN conjunct1]]
   have sel: "rtf_select (L, cur, rel) (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st)
                (pr_counts st) (pr_out st) (pr_in st) = (op, c)"
-    using assms(3) ctx by (simp add: rtf.select_of_def)
-  obtain L' cur' rel' where c: "c = (L', cur', rel')"
-    by (cases c) auto
+    using assms(3) ctx
+    by (simp add: rtf.select_of_def)
   show ?thesis
   proof(cases cur)
     case None
     have "op = Done" "L' = L" "cur' = None" "rel' = rel"
-      using sel None c by (simp_all add: rtf_select_def)
+      using sel None c
+      by (simp_all add: rtf_select_def)
     thus ?thesis
       unfolding Ci ctx c rtf_select_imp_def rtf_ctx_assn_def prod.case None
       by (sep_auto heap: cur_flag_rule)
   next
     case (Some u)
-    have uL: "u \<in> set (list_abstract L)"
-      using I(3) Some by (auto simp add: rtf_cur_invar_def split: if_splits)
-    have uV: "u \<in> \<V>"
-      using uL I(2) by auto
     show ?thesis
     proof(cases "0 < ex_get (pr_excess st) u")
       case True
-      have dis: "rtf_discharge L u rel (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) =
-                 (op, (L', cur', rel'))"
-        using sel Some True c by (simp add: rtf_select_def)
-      note r = rtf_discharge_imp_rule[OF assms(1) uV dis]
+      have "rtf_discharge L u rel (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) =
+            (op, (L', cur', rel'))"
+        using sel Some True c
+        by (simp add: rtf_select_def)
+      note r = rtf_discharge_imp_rule[OF assms(1) I(5)[OF Some] this]
       show ?thesis
         unfolding Ci ctx c rtf_select_imp_def rtf_ctx_assn_def prod.case Some
         using True
-        by (sep_auto heap: cur_flag_rule cur_get_rule[of "Some u" u] ex_get_state_rule[OF inv(2) uV] r)
+        by (sep_auto heap: cur_flag_rule cur_get_rule[of "Some u" u] ex_get_state_rule[OF exi I(5)[OF Some]] r)
     next
       case False
       define L1 where "L1 = (if rel then list_move_to_front L u else L)"
-      have L1: "list_invar L1 \<and> set (list_abstract L1) = \<V> - {s, t}"
-      proof(cases rel)
-        case True
-        note mv = vlist.list_move_to_front[OF I(1) uL]
-        have "distinct (list_abstract L)"
-          using vlist.list_universe[OF I(1)] by simp
-        thus ?thesis
-          using mv uL I(2) by (auto simp add: L1_def True)
-      qed (simp add: L1_def I(1,2))
-      have uL1: "u \<in> set (list_abstract L1)"
-        using L1 uL I(2) by simp
+      have L1: "list_invar L1" "set (list_abstract L1) = \<V> - {s, t}" "u \<in> set (list_abstract L1)"
+        using I(1-3) Some L1_def rtf_move_props[of L "flow_abs st" "labels_abs st" u rel L1]
+        by auto
       have sel0: "rtf_select (L, cur, rel) (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st)
                     (pr_counts st) (pr_out st) (pr_in st) =
                   (case list_next L1 u of
@@ -300,33 +294,26 @@ proof-
                           None \<Rightarrow> (Done, (L1, None, False))
                         | Some w' \<Rightarrow> rtf_discharge L1 w' False (pr_fwd st) (pr_bwd st) (pr_labels st)
                                       (pr_out st) (pr_in st)))"
-        unfolding L1_def using Some False by (cases rel) (simp_all add: rtf_select_def Let_def)
-      have sel': "(case list_next L1 u of
-                     None \<Rightarrow> (Done, (L1, None, False))
-                   | Some w \<Rightarrow>
-                       (case rtf_scan L1 (pr_excess st) num_verts w of
-                          None \<Rightarrow> (Done, (L1, None, False))
-                        | Some w' \<Rightarrow> rtf_discharge L1 w' False (pr_fwd st) (pr_bwd st) (pr_labels st)
-                                      (pr_out st) (pr_in st))) = (op, (L', cur', rel'))"
-        using sel c unfolding sel0 by simp
-      note nr = rtf_next_imp_rule[OF assms(1) conjunct1[OF L1] conjunct2[OF L1] uL1 sel']
+        unfolding L1_def
+        using Some False
+        by (cases rel) (simp_all add: rtf_select_def Let_def)
+      note nr = rtf_next_imp_rule[OF assms(1) L1 sel[unfolded sel0 c]]
       show ?thesis
       proof(cases rel)
         case True
-        note nr' = nr[unfolded L1_def if_P[OF True]]
         show ?thesis
           unfolding Ci ctx c rtf_select_imp_def rtf_ctx_assn_def prod.case Some
           using False
-          by (sep_auto heap: cur_flag_rule cur_get_rule[of "Some u" u] ex_get_state_rule[OF inv(2) uV]
-                             list_imp.list_move_to_front_rule[OF I(1) uL] nr' simp: True)
+          by (sep_auto heap: cur_flag_rule cur_get_rule[of "Some u" u] ex_get_state_rule[OF exi I(5)[OF Some]]
+                             list_imp.list_move_to_front_rule[OF I(1) I(4)[OF Some]]
+                             nr[unfolded L1_def if_P[OF True]] simp: True)
       next
         case False
-        note nr' = nr[unfolded L1_def if_not_P[OF False]]
         show ?thesis
           unfolding Ci ctx c rtf_select_imp_def rtf_ctx_assn_def prod.case Some
           using \<open>\<not> 0 < ex_get (pr_excess st) u\<close>
-          by (sep_auto heap: cur_flag_rule cur_get_rule[of "Some u" u] ex_get_state_rule[OF inv(2) uV]
-                             nr' simp: False)
+          by (sep_auto heap: cur_flag_rule cur_get_rule[of "Some u" u] ex_get_state_rule[OF exi I(5)[OF Some]]
+                             nr[unfolded L1_def if_not_P[OF False]] simp: False)
       qed
     qed
   qed
@@ -339,28 +326,32 @@ proof-
   obtain Ls Cf Cu Rr Vi where Ci: "Ci = (Ls, Cf, Cu, Rr, Vi)"
     by (cases Ci) auto
   define P where "P = (\<lambda> W L. list_invar L \<and> set (list_abstract L) = W - {s, t})"
-  have p0: "P {} list_empty"
-    using vlist.list_empty by (simp add: P_def)
   have step: "P (insert v W) (rtf_init_step a v) \<and>
               <list_assn a Ls * \<up>(list_invar a)> rtf_init_step_imp Ls v
               <\<lambda>_. list_assn (rtf_init_step a v) Ls * \<up>(list_invar (rtf_init_step a v))>"
     if a: "P W a" "W \<subseteq> \<V>" "v \<in> \<V>" "v \<notin> W" for W a v
   proof-
     have ai: "list_invar a" "v \<notin> set (list_abstract a)"
-      using a(1,4) by (auto simp add: P_def)
+      using a(1,4)
+      by (auto simp add: P_def)
     note p = vlist.list_push_front[OF ai(1) a(3) ai(2)]
     have "P (insert v W) (rtf_init_step a v)"
-      using p a(1) by (auto simp add: P_def rtf_init_step_def)
+      using p a(1)
+      by (auto simp add: P_def rtf_init_step_def)
     moreover have "<list_assn a Ls * \<up>(list_invar a)> rtf_init_step_imp Ls v
                    <\<lambda>_. list_assn (rtf_init_step a v) Ls * \<up>(list_invar (rtf_init_step a v))>"
       unfolding rtf_init_step_imp_def rtf_init_step_def
-      using p(1) ai(1) by (sep_auto heap: list_imp.list_push_front_rule[OF ai(1) a(3) ai(2)])
+      using p(1) ai(1)
+      by (sep_auto heap: list_imp.list_push_front_rule[OF ai(1) a(3) ai(2)])
     ultimately show ?thesis
       by simp
   qed
+  have "P {} list_empty"
+    using vlist.list_empty
+    by (simp add: P_def)
   note f = set_fold_imp_ruleD[OF list_vertex_fold_imp, where g = rtf_init_step
       and g_imp = "rtf_init_step_imp Ls" and P = P and R = "\<lambda> L. list_assn L Ls * \<up>(list_invar L)",
-      OF p0 step]
+      OF this step]
   have ctx: "pr_ctx rtf.init_state =
              (list_vertex_fold rtf_init_step list_empty,
               list_first (list_vertex_fold rtf_init_step list_empty), False)"
@@ -382,8 +373,8 @@ sublocale push_relabel_rtf_imp \<subseteq> rtf_imp: push_relabel_imp where selec
   and ctx_init_assn = rtf_ctx_init_assn
 proof(unfold_locales, goal_cases)
   case (1 st op c Si Ci)
-  show ?case
-    by (rule rtf_select_imp_rule[OF 1])
+  from 1 show ?case
+    by (rule rtf_select_imp_rule)
 next
   case (2 Si Ci)
   show ?case

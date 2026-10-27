@@ -97,71 +97,54 @@ proof(induction d)
     by (subst lower_imp.simps) sep_auto
 next
   case (Suc d)
-  have IH: "<buckets_assn B Bi> lower_imp Bi d <\<lambda>r. buckets_assn B Bi * \<up>(r = lower B d)>"
-    using Suc by simp
-  show ?case
-    using Suc.prems assms(1)
-    by (subst lower_imp.simps) (sep_auto heap: IH split: option.splits)
+  thus ?case
+    using assms(1)
+    by (subst lower_imp.simps) (sep_auto heap: Suc.IH[OF Suc_lessD[OF Suc.prems]] split: option.splits)
 qed
 
 lemma lb_get_imp_rule:
   assumes "lb_invar A" "v \<in> V"
   shows "<lb_assn A Ai> lb_get_imp Ai v <\<lambda>x. lb_assn A Ai * \<up>(id x = lb_get A v)>"
-proof-
-  obtain L B d where A: "A = (L, B, d)"
-    by (cases A) auto
-  obtain Lai Bi Dr where Ai: "Ai = (Lai, Bi, Dr)"
-    by (cases Ai) auto
-  have "lm_invar L"
-    using assms(1) by (simp add: lb_invar_def A)
-  thus ?thesis
-    using assms(2) unfolding A Ai lb_assn_tuple lb_get_imp_def lb_get_def
-    by sep_auto
-qed
+  using assms
+  unfolding lb_get_imp_def lb_get_def
+  by (cases A rule: prod_cases3, cases Ai rule: prod_cases3) (sep_auto simp: lb_assn_tuple lb_invar_def)
 
 lemma lb_upd_imp_rule:
   assumes "lb_invar A" "v \<in> V"
   shows "<lb_assn A Ai> lb_upd_imp Ai v k' <\<lambda>_. lb_assn (lb_upd A v (id k')) Ai>"
 proof-
-  obtain L B d where A: "A = (L, B, d)"
-    by (cases A) auto
-  obtain Lai Bi Dr where Ai: "Ai = (Lai, Bi, Dr)"
-    by (cases Ai) auto
+  obtain L B d Lai Bi Dr where A: "A = (L, B, d)" and Ai: "Ai = (Lai, Bi, Dr)"
+    by (cases A rule: prod_cases3, cases Ai rule: prod_cases3) auto
   note st = lb_upd_steps[OF assms(1)[unfolded A] assms(2)]
   define k where "k = lm_get L v"
   define B1 where "B1 = (if k < N then buckets_remove B v k else B)"
   define B2 where "B2 = (if k' < N then buckets_insert B1 v k' else B1)"
-  have b1: "buckets_invar B1" "buckets_abstract B1 v = None"
-    using st(6,7)[folded k_def, folded B1_def] by simp_all
-  have e1: "k < N \<Longrightarrow> buckets_remove B v k = B1" "\<not> k < N \<Longrightarrow> B = B1"
-    by (simp_all add: B1_def)
-  have e2: "k' < N \<Longrightarrow> buckets_insert B1 v k' = B2" "\<not> k' < N \<Longrightarrow> B1 = B2"
-    by (simp_all add: B2_def)
+  have b: "buckets_invar B1" "buckets_abstract B1 v = None"
+          "k < N \<Longrightarrow> buckets_remove B v k = B1" "\<not> k < N \<Longrightarrow> B = B1"
+          "k' < N \<Longrightarrow> buckets_insert B1 v k' = B2" "\<not> k' < N \<Longrightarrow> B1 = B2"
+    using st(6,7)[folded k_def, folded B1_def]
+    by (simp_all add: B1_def B2_def)
   note r3 = lower_imp_rule[OF st(8,10)[of k', folded k_def, folded B1_def, folded B2_def]]
-  have lk: "<lm_assn L Lai> lm_get_imp Lai v <\<lambda>x. lm_assn L Lai * \<up>(x = k)>"
-    using label_array_imp.fixed_univ_map_lookup_rule[OF st(2) assms(2), of Lai] by (simp add: k_def)
-  have lu: "<lm_assn L Lai> lm_upd_imp Lai v k' <\<lambda>_. lm_assn (lm_upd L v k') Lai>"
-    using label_array_imp.fixed_univ_map_upd_rule[OF st(2) assms(2), of Lai k'] by simp
+  note lk = label_array_imp.fixed_univ_map_lookup_rule[OF st(2) assms(2), of Lai, unfolded id_apply, folded k_def]
+   and lu = label_array_imp.fixed_univ_map_upd_rule[OF st(2) assms(2), of Lai k', unfolded id_apply]
   show ?thesis
   proof(cases "k' < N")
     case True
-    have r: "<buckets_assn B2 Bi> lower_imp Bi (max d k')
-             <\<lambda>r. buckets_assn B2 Bi * \<up>(r = lower B2 (max d k'))>"
-      using r3 True by simp
+    note r = r3[unfolded if_P[OF True]]
     show ?thesis
-      using st(3) st(5)[folded k_def] b1 assms(2) True
+      using st(3) st(5)[folded k_def] b(1,2) assms(2) True
       unfolding A Ai lb_assn_tuple lb_upd_imp_def prod.case
                 st(1)[of k', folded k_def, folded B1_def, folded B2_def] id_def
-      by (sep_auto heap: lk r lu simp: e1 e2)
+      by (sep_auto heap: lk r lu simp: b(3-6))
   next
     case False
-    have r: "<buckets_assn B2 Bi> lower_imp Bi d <\<lambda>r. buckets_assn B2 Bi * \<up>(r = lower B2 d)>"
-      using r3 False by simp
+    note r = r3[unfolded if_not_P[OF False]]
     show ?thesis
-      using st(3) st(5)[folded k_def] b1 assms(2) False
+      using st(3) st(5)[folded k_def] b(1,2) assms(2) False
       unfolding A Ai lb_assn_tuple lb_upd_imp_def prod.case
                 st(1)[of k', folded k_def, folded B1_def, folded B2_def] id_def
-      by (sep_auto heap: lk r lu simp: e1 e2)
+      by (sep_auto heap: lk r lu simp: b(3-6))
+
   qed
 qed
 
@@ -176,21 +159,40 @@ lemma pick_lb_rule:
   assumes "Li = (Lai, Bi, Dr)" "buckets_invar B" "j < N"
   shows "<lb_assn (L, B, d) Li> buckets_pick_imp Bi j
          <\<lambda>p. lb_assn (L, B, d) Li * \<up>(p = buckets_pick B j)>"
-  using assms(2,3) unfolding assms(1) lb_assn_tuple by sep_auto
+  using assms(2,3) unfolding assms(1) lb_assn_tuple
+  by sep_auto
 
 lemma bound_lb_rule:
   assumes "Li = (Lai, Bi, Dr)"
   shows "<lb_assn (L, B, d) Li> !Dr <\<lambda>x. lb_assn (L, B, d) Li * \<up>(x = d)>"
-  unfolding assms(1) lb_assn_tuple by sep_auto
+  unfolding assms(1) lb_assn_tuple
+  by sep_auto
 
-text \<open>A visited vertex \<open>v\<close> lies in bucket \<open>j\<close>; the step lifts its label to at least the number
-      of vertices, which takes it out of its bucket and leaves the other buckets unchanged.\<close>
+text \<open>A visited vertex \<open>v\<close> lies in bucket \<open>j\<close>; the step lifts its label to at least the
+      number of vertices, which takes it out of its bucket and leaves the other buckets unchanged.\<close>
 
 lemma lb_upd_lift:
   assumes "lb_invar (L, B, d)" "v \<in> V" "lm_get L v < N" "N \<le> k'"
   shows "lb_upd (L, B, d) v k' =
          (lm_upd L v k', buckets_remove B v (lm_get L v), lower (buckets_remove B v (lm_get L v)) d)"
-  using lb_upd_steps(1)[OF assms(1,2), of k'] assms(3,4) by simp
+  using assms lb_upd_steps(1)[where k' = k']
+  by simp
+
+lemma lb_invar_buckets: "lb_invar (L, B, d) \<Longrightarrow> buckets_invar B"
+  by (simp add: lb_invar_def)
+
+lemma lb_pick_props:
+  assumes "lb_invar (L, B, d)" "j < N" "buckets_pick B j = Some v"
+  shows "buckets_abstract B v = Some j" "v \<in> V" "lm_get L v = j"
+proof-
+  note bi = lb_invar_buckets[OF assms(1)]
+  show "buckets_abstract B v = Some j"
+    using bi assms(2,3) bucket.buckets_pick(2)[of B j v]
+    by simp
+  thus "v \<in> V" "lm_get L v = j"
+    using bi assms(1) bucket.buckets_universe[of B v j]
+    by (auto simp: lb_invar_def split: if_splits)
+qed
 
 lemma drain_imp_rule:
   assumes g: "\<And> acc v. \<lbrakk>lb_invar (fst acc); v \<in> V; k < lb_get (fst acc) v;
@@ -200,7 +202,8 @@ lemma drain_imp_rule:
           <\<lambda>_. lb_assn (fst (g acc v)) Li * R (snd (g acc v))>"
       and Li: "Li = (Lai, Bi, Dr)"
       and "lb_invar (L, B, d)" "k < j" "j < N" "card {x. buckets_abstract B x = Some j} \<le> n"
-  shows "(\<exists> L' d'. fst (snd (drain B j n g ((L, B, d), r))) = (L', fst (drain B j n g ((L, B, d), r)), d') \<and>
+  shows "(\<exists> L' d'. fst (snd (drain B j n g ((L, B, d), r))) =
+                    (L', fst (drain B j n g ((L, B, d), r)), d') \<and>
                   lb_invar (L', fst (drain B j n g ((L, B, d), r)), d')) \<and>
          <lb_assn (L, B, d) Li * R r> drain_imp Bi j g_imp
          <\<lambda>_. lb_assn (fst (snd (drain B j n g ((L, B, d), r)))) Li *
@@ -208,22 +211,16 @@ lemma drain_imp_rule:
   using assms(3-6)
 proof(induction n arbitrary: L B d r)
   case 0
-  have bi: "buckets_invar B"
-    using 0(1) by (simp add: lb_invar_def)
-  have fin: "finite {x. buckets_abstract B x = Some j}"
-    using bucket.buckets_universe[OF bi] V_finite by (auto intro: finite_subset)
-  have "\<forall> x. buckets_abstract B x \<noteq> Some j"
-    using 0(4) card_0_eq[OF fin] by auto
-  hence pk: "buckets_pick B j = None"
-    using bucket.buckets_pick(1)[OF bi] 0(3) by simp
-  show ?case
+  note bi = lb_invar_buckets[OF 0(1)]
+  have "buckets_pick B j = None"
+    using 0(3,4) bi bucket.buckets_pick(1)[of B j] bucket_finite[of B j]
+    by auto
+  thus ?case
     using 0(1)
-    by (intro conjI, simp, subst drain_imp.simps)
-       (sep_auto heap: pick_lb_rule[OF Li bi 0(3)] simp: pk)
+    by (intro conjI, simp, subst drain_imp.simps) (sep_auto heap: pick_lb_rule[OF Li bi 0(3)])
 next
   case (Suc n)
-  have bi: "buckets_invar B"
-    using Suc.prems(1) by (simp add: lb_invar_def)
+  note bi = lb_invar_buckets[OF Suc.prems(1)]
   show ?case
   proof(cases "buckets_pick B j")
     case None
@@ -233,55 +230,25 @@ next
          (sep_auto heap: pick_lb_rule[OF Li bi Suc.prems(3)] simp: None)
   next
     case (Some v)
-    have vj: "buckets_abstract B v = Some j"
-      using bucket.buckets_pick(2)[OF bi _ Some] Suc.prems(3) by simp
-    have v: "v \<in> V"
-      using bucket.buckets_universe[OF bi vj] by simp
-    have lv: "lm_get L v = j"
-      using Suc.prems(1) v vj by (auto simp add: lb_invar_def split: if_splits)
-    define acc where "acc = ((L, B, d), r)"
-    have lg: "lb_get (fst acc) v = j"
-      using lv by (simp add: acc_def lb_get_def)
-    have pre: "lb_invar (fst acc)" "k < lb_get (fst acc) v" "lb_get (fst acc) v < card V"
-      using Suc.prems(1,2,3) lg by (simp_all add: acc_def N)
-    obtain k' where k': "card V \<le> k'" "fst (g acc v) = lb_upd (fst acc) v k'"
-      using conjunct1[OF g[OF pre(1) v pre(2,3)]] by blast
-    note gt = conjunct2[OF g[OF pre(1) v pre(2,3)]]
-    define L1 where "L1 = lm_upd L v k'"
+    note vj = lb_pick_props[OF Suc.prems(1,3) Some]
+    note gv = g[of "((L, B, d), r)" v, unfolded fst_conv snd_conv lb_get_def prod.case vj(3),
+                OF Suc.prems(1) vj(2) Suc.prems(2) Suc.prems(3)[unfolded N]]
+    obtain k' where k': "card V \<le> k'" "fst (g ((L, B, d), r) v) = lb_upd (L, B, d) v k'"
+      using gv
+      by (elim conjE exE) (simp add: that)
     define B1 where "B1 = buckets_remove B v j"
-    define d1 where "d1 = lower B1 d"
-    have g1: "fst (g acc v) = (L1, B1, d1)"
-      using k' lb_upd_lift[OF Suc.prems(1) v, of k'] lv Suc.prems(3)
-      by (simp add: acc_def N L1_def B1_def d1_def)
-    have inv1: "lb_invar (L1, B1, d1)"
-      using lb_upd_props(1)[OF pre(1) v, of k'] k'(2) g1 by simp
-    have ab1: "buckets_abstract B1 = fun_upd (buckets_abstract B) v None"
-      using bucket.buckets_remove(2)[OF bi vj] by (simp add: B1_def)
-    have "{x. buckets_abstract B1 x = Some j} = {x. buckets_abstract B x = Some j} - {v}"
-      using ab1 by auto
-    moreover have "finite {x. buckets_abstract B x = Some j}"
-      using bucket.buckets_universe[OF bi] V_finite by (auto intro: finite_subset)
-    ultimately have c1: "card {x. buckets_abstract B1 x = Some j} \<le> n"
-      using Suc.prems(4) vj by (simp add: card_Diff_singleton)
-    note IH = Suc.IH[OF inv1 Suc.prems(2,3) c1, of "snd (g acc v)"]
-    have gv: "g acc v = ((L1, B1, d1), snd (g acc v))"
-      using g1 by (metis prod.collapse)
-    have dr: "drain B j (Suc n) g ((L, B, d), r) = drain B1 j n g ((L1, B1, d1), snd (g acc v))"
-      using Some gv by (simp add: acc_def B1_def)
+    obtain r' where g1: "g ((L, B, d), r) v = ((lm_upd L v k', B1, lower B1 d), r')"
+      using k' Suc.prems(1,3) vj(2,3) lb_upd_lift[of L B d v k']
+      by (cases "g ((L, B, d), r) v") (auto simp add: N B1_def)
+    have "lb_invar (lm_upd L v k', B1, lower B1 d)" "card {x. buckets_abstract B1 x = Some j} \<le> n"
+      using Suc.prems(1,4) vj(1,2) k'(2) g1 bi lb_upd_props(1)[of "(L, B, d)" v k'] bucket_finite[of B j]
+      by (simp_all add: B1_def bucket_level_remove card_Diff_singleton)
+    note IH = Suc.IH[OF this(1) Suc.prems(2,3) this(2), of r']
     show ?thesis
-      unfolding dr
-    proof(intro conjI)
-      show "\<exists> L' d'. fst (snd (drain B1 j n g ((L1, B1, d1), snd (g acc v)))) =
-                     (L', fst (drain B1 j n g ((L1, B1, d1), snd (g acc v))), d') \<and>
-                     lb_invar (L', fst (drain B1 j n g ((L1, B1, d1), snd (g acc v))), d')"
-        using conjunct1[OF IH] .
-      show "<lb_assn (L, B, d) Li * R r> drain_imp Bi j g_imp
-            <\<lambda>_. lb_assn (fst (snd (drain B1 j n g ((L1, B1, d1), snd (g acc v))))) Li *
-                 R (snd (snd (drain B1 j n g ((L1, B1, d1), snd (g acc v)))))>"
-        using gt conjunct2[OF IH] unfolding acc_def g1
-        by (subst drain_imp.simps)
-           (sep_auto heap: pick_lb_rule[OF Li bi Suc.prems(3)] simp: Some g1[unfolded acc_def])
-    qed
+      using conjunct2[OF gv] IH
+      unfolding drain.simps(2) Some option.case B1_def[symmetric] g1
+      by (intro conjI, simp, subst drain_imp.simps)
+         (sep_auto heap: pick_lb_rule[OF Li bi Suc.prems(3)] simp: Some)
   qed
 qed
 
@@ -303,32 +270,33 @@ proof(induction m arbitrary: j L B d r)
     by (subst gap_walk_imp.simps) sep_auto
 next
   case (Suc m)
-  have j: "j < N"
-    using Suc.prems(3) by simp
-  have bi: "buckets_invar B"
-    using Suc.prems(1) by (simp add: lb_invar_def)
-  have cj: "card {x. buckets_abstract B x = Some j} \<le> N"
-    using bucket.buckets_universe[OF bi] V_finite by (auto intro!: card_mono simp add: N)
-  note dr = drain_imp_rule[OF g Li Suc.prems(1,2) j cj, of r]
+  have "j < N"
+    using Suc.prems(3)
+    by simp
+  note dr = drain_imp_rule[OF g Li Suc.prems(1,2) this bucket_card_le[OF lb_invar_buckets[OF Suc.prems(1)]], of r]
   obtain L' d' where e:
     "fst (snd (drain B j N g ((L, B, d), r))) = (L', fst (drain B j N g ((L, B, d), r)), d')"
     "lb_invar (L', fst (drain B j N g ((L, B, d), r)), d')"
-    using conjunct1[OF dr] by blast
+    using dr
+    by blast
   define B' where "B' = fst (drain B j N g ((L, B, d), r))"
   define r' where "r' = snd (snd (drain B j N g ((L, B, d), r)))"
-  have sd: "snd (drain B j N g ((L, B, d), r)) = ((L', B', d'), r')"
-    using e(1) by (metis B'_def r'_def prod.collapse)
-  have m: "0 < m \<Longrightarrow> Suc j + m \<le> N"
-    using Suc.prems(3) by simp
-  note IH = Suc.IH[OF e(2)[folded B'_def] less_SucI[OF Suc.prems(2)] m, of r']
-  have gw: "gap_walk B j (Suc m) g ((L, B, d), r) = gap_walk B' (Suc j) m g ((L', B', d'), r')"
-    using sd by (simp add: case_prod_beta B'_def)
+  have "snd (drain B j N g ((L, B, d), r)) = ((L', B', d'), r')"
+    using e(1)
+    by (simp add: prod_eq_iff B'_def r'_def)
+  hence gw: "gap_walk B j (Suc m) g ((L, B, d), r) = gap_walk B' (Suc j) m g ((L', B', d'), r')"
+    by (simp add: case_prod_beta B'_def)
+  have "0 < m \<Longrightarrow> Suc j + m \<le> N"
+    using Suc.prems(3)
+    by simp
+  note IH = Suc.IH[OF e(2)[folded B'_def] less_SucI[OF Suc.prems(2)] this, of r']
   have t: "<lb_assn (L, B, d) Li * R r> drain_imp Bi j g_imp <\<lambda>_. lb_assn (L', B', d') Li * R r'>"
     using conjunct2[OF dr] unfolding e(1)[folded B'_def] r'_def[symmetric] .
   show ?case
     unfolding gw
     by (subst gap_walk_imp.simps) (sep_auto heap: t IH)
 qed
+
 
 text \<open>The rule required from the gap enumeration of the label map by the generic algorithm.\<close>
 
@@ -342,14 +310,11 @@ lemma lb_gap_fold_imp_rule:
   shows "<lb_assn l Li * R r> lb_gap_fold_imp Li k g_imp
          <\<lambda>_. lb_assn (fst (lb_gap_fold l k g (l, r))) Li * R (snd (lb_gap_fold l k g (l, r)))>"
 proof-
-  obtain L B d where l: "l = (L, B, d)"
-    by (cases l) auto
-  obtain Lai Bi Dr where Li: "Li = (Lai, Bi, Dr)"
-    by (cases Li) auto
-  have "d < N"
-    using assms(1) by (simp add: lb_invar_def l)
-  hence m: "0 < d - k \<Longrightarrow> Suc k + (d - k) \<le> N"
-    by simp
+  obtain L B d Lai Bi Dr where l: "l = (L, B, d)" and Li: "Li = (Lai, Bi, Dr)"
+    by (cases l rule: prod_cases3, cases Li rule: prod_cases3) auto
+  have m: "0 < d - k \<Longrightarrow> Suc k + (d - k) \<le> N"
+    using assms(1)
+    by (simp add: lb_invar_def l)
   note gw = gap_walk_imp_rule[OF g Li assms(1)[unfolded l] lessI m, of r]
   have c: "lb_gap_fold_imp Li k g_imp = do { x \<leftarrow> !Dr; gap_walk_imp Bi (Suc k) (x - k) g_imp }"
     by (simp add: Li lb_gap_fold_imp_def)
@@ -370,25 +335,26 @@ lemma lb_init_imp_rule:
          <\<lambda>_. M * lb_assn lb_init (Lai, Bi, Dr)>"
 proof-
   define P where
-    "P = (\<lambda> W B. buckets_invar B \<and> buckets_abstract B = (\<lambda> x. if x \<in> W then Some (0::nat) else None))"
+    "P = (\<lambda> W B. buckets_invar B \<and>
+                  buckets_abstract B = (\<lambda> x. if x \<in> W then Some (0::nat) else None))"
   have step: "P (insert v W) (buckets_insert a v 0) \<and>
               <buckets_assn a Bi> buckets_insert_imp Bi v 0 <\<lambda>_. buckets_assn (buckets_insert a v 0) Bi>"
     if a: "P W a" "W \<subseteq> V" "v \<in> V" "v \<notin> W" for W a v
   proof-
-    have n: "(0::nat) \<in> {..<N}"
-      using N_pos by simp
+    note n = N_pos[folded lessThan_iff]
     have an: "buckets_invar a" "buckets_abstract a v = None"
-      using a(1,4) by (simp_all add: P_def)
+      using a(1,4)
+      by (simp_all add: P_def)
     show ?thesis
-      using bucket.buckets_insert[OF an(1) a(3) n an(2)]
-            bucket_imp.buckets_insert_rule[OF an(1) a(3) n an(2)] a(1)
+      using an a(1,3) n bucket.buckets_insert[of a v 0] bucket_imp.buckets_insert_rule[of a v 0]
       by (auto simp add: P_def fun_eq_iff)
   qed
-  have p0: "P {} buckets_empty"
-    using bucket.buckets_empty by (simp add: P_def)
+  have "P {} buckets_empty"
+    using bucket.buckets_empty
+    by (simp add: P_def)
   note f = set_fold_imp_ruleD[OF assms, where g = "\<lambda> B v. buckets_insert B v 0"
              and g_imp = "\<lambda> v. buckets_insert_imp Bi v 0" and P = P and R = "\<lambda> B. buckets_assn B Bi",
-             OF p0 step]
+             OF this step]
   show ?thesis
     unfolding lb_init_imp_def lb_init_def prod.case lb_assn_tuple
     by (sep_auto heap: f)

@@ -14,16 +14,19 @@ text \<open>An array of size \<open>N\<close> represents a function on a key set
 definition arr_lookup :: "('k \<Rightarrow> 'b) \<Rightarrow> 'k \<Rightarrow> 'b" where
   "arr_lookup f k = f k"
 
-definition arr_upd :: "('k \<Rightarrow> 'b) \<Rightarrow> 'k \<Rightarrow> 'b \<Rightarrow> ('k \<Rightarrow> 'b)" where
+definition arr_upd ::
+  "('k \<Rightarrow> 'b) \<Rightarrow> 'k \<Rightarrow> 'b \<Rightarrow> ('k \<Rightarrow> 'b)" where
   "arr_upd f k x = fun_upd f k x"
 
 lemma arr_lookup_upd[simp]: "arr_lookup (arr_upd f k x) = fun_upd (arr_lookup f) k x"
   by (simp add: arr_lookup_def arr_upd_def fun_eq_iff)
 
-definition arr_lookup_imp :: "('k \<Rightarrow> nat) \<Rightarrow> 'b::heap array \<Rightarrow> 'k \<Rightarrow> 'b Heap" where
+definition arr_lookup_imp ::
+  "('k \<Rightarrow> nat) \<Rightarrow> 'b::heap array \<Rightarrow> 'k \<Rightarrow> 'b Heap" where
   "arr_lookup_imp ix a k = Array.nth a (ix k)"
 
-definition arr_upd_imp :: "('k \<Rightarrow> nat) \<Rightarrow> 'b::heap array \<Rightarrow> 'k \<Rightarrow> 'b \<Rightarrow> unit Heap" where
+definition arr_upd_imp ::
+  "('k \<Rightarrow> nat) \<Rightarrow> 'b::heap array \<Rightarrow> 'k \<Rightarrow> 'b \<Rightarrow> unit Heap" where
   "arr_upd_imp ix a k x = do { _ \<leftarrow> Array.upd (ix k) x a; return () }"
 
 locale key_array =
@@ -50,7 +53,8 @@ lemma arr_upd_imp_rule:
 
 lemma arr_new_rule:
   "<emp> Array.new N x <\<lambda>a. arr_assn (\<lambda>_. val x) a>"
-  unfolding arr_assn_def by (sep_auto simp: idx_bound)
+  unfolding arr_assn_def
+  by (sep_auto simp: idx_bound)
 
 sublocale arr: fixed_univ_map_imp K "\<lambda>_. True" arr_upd arr_lookup val arr_assn "arr_upd_imp idx"
     "arr_lookup_imp idx"
@@ -114,23 +118,12 @@ lemma vert_key_array: "key_array n id (verts fs ts)"
 
 sublocale ci: imp_csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" key n 0
     edge_has_next edge_cur edge_adv key_imp edge_cur id "\<lambda>s si. si = s" "ends_assn fs ts"
-proof (unfold_locales, goal_cases)
+proof(unfold_locales, goal_cases)
   case (1 s si c)
-  have "(edge_next fs s \<noteq> None) = (s < length fs)" by (simp add: edge_next_def)
-  with 1 show ?case by (cases c) (sep_auto simp: edge_has_next_def ends_assn_def)
-next
-  case (2 s si e s' c) then show ?case
-    by (sep_auto simp: edge_cur_def edge_next_def split: if_splits)
-next
-  case (3 s si e s' c) then show ?case
-    by (sep_auto simp: edge_adv_def edge_next_def split: if_splits)
-next
-  case (4 e c) then show ?case
-    by (sep_auto heap: key_imp_rule simp: edge_seq_def)
-next
-  case (5 e c) then show ?case
-    by (sep_auto simp: edge_cur_def)
-qed
+  thus ?case
+    by (cases c) (sep_auto simp: edge_has_next_def ends_assn_def edge_next_def)
+qed (sep_auto heap: key_imp_rule simp: edge_cur_def edge_adv_def edge_next_def edge_seq_def
+    split: if_splits)+
 
 sublocale graph: csr_graph_imp n "verts fs ts" inp.B_spec inp.E_spec
   by (rule csr_graph_imp.intro[OF graph.csr_graph_axioms])
@@ -138,7 +131,8 @@ sublocale graph: csr_graph_imp n "verts fs ts" inp.B_spec inp.E_spec
 lemma csr_build_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> ci.csr_build_imp (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
-  using ci.csr_build_imp_rule[of "(Fa, Ta)" 0] by (simp add: ends_assn_def)
+  using ci.csr_build_imp_rule[of "(Fa, Ta)" 0]
+  by (simp add: ends_assn_def)
 
 text \<open>The build into arrays allocated by the caller, one cell per edge.\<close>
 
@@ -153,23 +147,15 @@ text \<open>The same buildup storing the second endpoints instead of the edges.\
 
 sublocale ch: imp_csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" key n 0
     edge_has_next edge_cur edge_adv key_imp tgt_imp "e_tgt fs ts" "\<lambda>s si. si = s" "ends_assn fs ts"
-proof (unfold_locales, goal_cases)
-  case (1 s si c) then show ?case by (rule ci.has_next_rule)
-next
-  case (2 s si e s' c) then show ?case by (rule ci.cur_rule)
-next
-  case (3 s si e s' c) then show ?case by (rule ci.adv_rule)
-next
-  case (4 e c) then show ?case by (rule ci.key_rule)
-next
-  case (5 e c) then show ?case
-    using ts_length by (intro tgt_imp_rule) (simp_all add: edge_seq_def)
-qed
+  using ts_length
+  by unfold_locales
+    (rule ci.has_next_rule ci.cur_rule ci.adv_rule ci.key_rule tgt_imp_rule; simp add: edge_seq_def)+
 
 lemma csr_build_heads_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> ch.csr_build_imp (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a map (e_tgt fs ts) inp.E_spec>"
-  using ch.csr_build_imp_rule[of "(Fa, Ta)" 0] by (simp add: ends_assn_def)
+  using ch.csr_build_imp_rule[of "(Fa, Ta)" 0]
+  by (simp add: ends_assn_def)
 
 text \<open>The second endpoints grouped by the key are the blocks of a CSR. They need not be
       distinct.\<close>

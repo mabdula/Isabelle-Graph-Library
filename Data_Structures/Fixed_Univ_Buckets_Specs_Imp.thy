@@ -57,22 +57,9 @@ lemma (in fixed_univ_buckets_imp) fixed_univ_buckets_imp_restrict:
            buckets_abstract buckets_empty buckets_insert buckets_remove buckets_pick buckets_move
            buckets_assn buckets_empty_imp buckets_insert_imp buckets_remove_imp buckets_pick_imp
            buckets_move_imp"
-proof(intro fixed_univ_buckets_imp.intro fixed_univ_buckets_restrict[OF assms]
-            fixed_univ_buckets_imp_axioms.intro, goal_cases)
-  case 1 show ?case
-    by (rule buckets_empty_rule)
-next
-  case (2 B x k) then show ?case
-    using assms by (intro buckets_insert_rule) (auto simp add: restr_buckets_invar_def)
-next
-  case (3 B x k) then show ?case
-    by (intro buckets_remove_rule) (simp_all add: restr_buckets_invar_def)
-next
-  case (4 B k) then show ?case
-    by (intro buckets_pick_rule) (simp_all add: restr_buckets_invar_def)
-next
-  case (5 B j j') then show ?case
-    by (intro buckets_move_rule) (simp_all add: restr_buckets_invar_def)
-qed
+  using assms
+  by (intro fixed_univ_buckets_imp.intro fixed_univ_buckets_restrict fixed_univ_buckets_imp_axioms.intro)
+     (auto simp: restr_buckets_invar_def intro!: buckets_empty_rule buckets_insert_rule
+        buckets_remove_rule buckets_pick_rule buckets_move_rule)
 
 end

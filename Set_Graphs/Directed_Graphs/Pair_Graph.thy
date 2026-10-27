@@ -130,6 +130,37 @@ lemma reachable_neq_reachable1[intro]:
 
 lemmas reachable_neq_reachable1E[elim] = reachable_neq_reachable1[elim_format]
 
+lemma trancl_first_arrival:
+  assumes "(u, z) \<in> E\<^sup>+"
+  shows "\<exists>y. (u, y) \<in> {e \<in> E. snd e \<noteq> z}\<^sup>* \<and> (y, z) \<in> E"
+  using assms
+proof (induction rule: converse_trancl_induct)
+  case (base u)
+  then show ?case
+    by (intro exI[of _ u]) simp
+next
+  case (step u w)
+  then obtain y where y: "(w, y) \<in> {e \<in> E. snd e \<noteq> z}\<^sup>*" "(y, z) \<in> E"
+    by blast
+  show ?case
+  proof (cases "w = z")
+    case True
+    then show ?thesis
+      using step(1) by (intro exI[of _ u]) simp
+  next
+    case False
+    then have uw: "(u, w) \<in> {e \<in> E. snd e \<noteq> z}"
+      using step(1) by simp
+    show ?thesis
+      using converse_rtrancl_into_rtrancl[OF uw y(1)] y(2) by blast
+  qed
+qed
+
+lemma reachable_selfloops:
+  "Pair_Graph.reachable (G \<union> {(s, s) | s. s \<in> S}) u v \<Longrightarrow>
+     u = v \<or> Pair_Graph.reachable G u v"
+  by (induction rule: reachable_induct) (auto intro: reachable_trans)
+
 lemma arc_implies_dominates: "e \<in> E \<Longrightarrow> (fst e, snd e) \<in> E" by auto
 
 (*>*)

@@ -1,7 +1,7 @@
 theory Residual_Buckets
   imports
     Flow_Theory.Residual
-    Directed_Set_Graphs.More_Lists
+    Data_Structures.More_Lists
     "HOL-Data_Structures.Map_Specs"
 begin
 

@@ -6,6 +6,272 @@ theory More_Arith
   imports Main Complex_Main "HOL-Library.Extended_Real" More_Logic
 begin
 
+text \<open>Reindexing the odd positions below an odd \<open>n\<close> by \<open>Suc\<close> gives the positive even
+positions, and reindexing the even positions other than \<open>n - 1\<close> by \<open>Suc\<close> gives the odd
+positions.\<close>
+
+lemma Suc_odds_eq: "odd n \<Longrightarrow> Suc ` {i. i < n \<and> odd i} = {i. i < n \<and> even i} - {0}"
+  by (auto simp: image_iff elim!: oddE evenE) presburger+
+
+lemma Suc_evens_eq:
+  "odd n \<Longrightarrow> Suc ` {i. i < n \<and> even i \<and> i \<noteq> n - 1} = {i. i < n \<and> odd i}"
+  by (auto simp: image_iff elim!: oddE evenE) presburger+
+
+text \<open>Weight telescoping across a tight alternating path. If \<open>n\<close> is odd and successive elements
+across every odd-indexed edge carry equal weight, the total over even indices exceeds that over odd indices by exactly
+\<open>g 0\<close> (the source endpoint).\<close>
+
+lemma sum_evens_odds_tight:
+  fixes g :: "nat \<Rightarrow> 'b :: linordered_ab_group_add"
+  assumes "odd n" "\<And>i. \<lbrakk>i < n; odd i\<rbrakk> \<Longrightarrow> g i = g (Suc i)"
+  shows "sum g {i. i < n \<and> even i} = sum g {i. i < n \<and> odd i} + g 0"
+proof-
+  have "sum g {i. i < n \<and> even i} = g 0 + sum g ({i. i < n \<and> even i} - {0})"
+    using assms(1)
+    by (intro sum.remove) (auto simp: odd_pos)
+  also have "\<dots> = g 0 + sum (g \<circ> Suc) {i. i < n \<and> odd i}"
+    using assms(1)
+    by (simp add: sum.reindex flip: Suc_odds_eq)
+  also have "\<dots> = g 0 + sum g {i. i < n \<and> odd i}"
+    using assms(2)
+    by (auto intro!: sum.cong)
+  finally show ?thesis
+    by (simp add: add.commute)
+qed
+
+text \<open>The symmetric telescoping across the even-indexed edges: the even-index total exceeds the odd-index total
+by \<open>g (n - 1)\<close> (the sink endpoint).\<close>
+
+lemma sum_evens_odds_tight2:
+  fixes g :: "nat \<Rightarrow> 'b :: linordered_ab_group_add"
+  assumes "odd n" "\<And>i. \<lbrakk>Suc i < n; even i\<rbrakk> \<Longrightarrow> g i = g (Suc i)"
+  shows "sum g {i. i < n \<and> even i} = sum g {i. i < n \<and> odd i} + g (n - 1)"
+proof-
+  have "{i. i < n \<and> even i} = insert (n - 1) {i. i < n \<and> even i \<and> i \<noteq> n - 1}"
+    using assms(1)
+    by (auto elim!: oddE)
+  hence "sum g {i. i < n \<and> even i} = g (n - 1) + sum g {i. i < n \<and> even i \<and> i \<noteq> n - 1}"
+    by simp
+  also have "\<dots> = g (n - 1) + sum (g \<circ> Suc) {i. i < n \<and> even i \<and> i \<noteq> n - 1}"
+  proof-
+    have "Suc i < n" if "i < n" "even i" "i \<noteq> n - 1" for i
+      using that assms(1)
+      by presburger
+    thus ?thesis
+      using assms(2)
+      by (auto intro!: sum.cong)
+  qed
+  also have "\<dots> = g (n - 1) + sum g {i. i < n \<and> odd i}"
+    using assms(1)
+    by (simp add: sum.reindex flip: Suc_evens_eq)
+  finally show ?thesis
+    by (simp add: add.commute)
+qed
+
+lemma sum_swap:
+  fixes c :: "'a \<Rightarrow> 'b :: ab_group_add"
+  shows "\<lbrakk>finite Z; u \<in> Z; v \<notin> Z\<rbrakk> \<Longrightarrow> sum c (insert v (Z - {u})) = sum c Z -
+    c u + c v"
+  by (simp add: sum_diff1 algebra_simps)
+
+lemma range_split_first:
+  "{i \<in> {v..<v + Suc k}. P i} = (if P v then {v} else {}) \<union> {i \<in> {Suc v..<Suc v + k}. P i}"
+  by (auto simp: Suc_le_eq order_le_less)
+
+lemma all_range_peel:
+  "(\<forall> j. i \<le> j \<and> j < Suc (i + k) \<longrightarrow> Q j) = (Q i \<and> (\<forall> j. Suc i \<le> j \<and> j < Suc (i + k) \<longrightarrow> Q j))"
+  by (auto simp: Suc_le_eq dest: le_imp_less_or_eq)
+
+lemma drt_push_cap_cnt:
+  assumes "0 \<notin> V" "V \<subseteq> {0..<n}" "finite V" "V \<noteq> {}" "length xs \<le> card V"
+  shows "length xs < n"
+proof-
+  have "V \<subseteq> {Suc 0..<n}"
+    using assms(1,2)
+    by (auto simp: subset_iff Suc_le_eq intro!: gr0I)
+  from card_mono[OF finite_atLeastLessThan this]
+  show ?thesis
+    using assms(3-5)
+    by (cases n) (auto simp: card_0_eq)
+qed
+
+lemma two_le_sum:
+  assumes "finite A" "\<And>e. 0 \<le> f e" "d \<in> A" "d' \<in> A" "d \<noteq> d'" "f d = 1" "f d' = 1"
+  shows "(2::real) \<le> sum f A"
+proof -
+  have "sum f {d, d'} \<le> sum f A"
+    using assms by (intro sum_mono2) auto
+  then show ?thesis
+    using assms(5-7) by simp
+qed
+
+text \<open>A split of a weight into two summands splits its sums.\<close>
+
+lemma split_weight_sum:
+  "\<lbrakk>\<forall>x\<in>C. c1 x + c2 x = c x; Z \<subseteq> C\<rbrakk> \<Longrightarrow>
+     sum c Z = sum c1 Z + sum c2 Z"
+  by (auto simp: sum.distrib[symmetric] intro!: sum.cong)
+
+lemma intervall_rw1:"{0..ed} = {..< Suc ed}"
+  by auto
+
+lemma intervall_rw2:"{j. j \<le> n} = {..<Suc n}"
+  by auto
+
+lemma Collect_less_Suc:
+  "{i. i < Suc j \<and> P i} = (if P j then insert j {i. i < j \<and> P i} else {i. i < j \<and> P i})"
+  by (auto simp: less_Suc_eq)
+
+lemma image_plus_lessThan: "(\<lambda>i. n + i) ` {..<m} = {n..<n + (m::nat)}"
+  using image_add_atLeastLessThan'[of n 0 m]
+  by (simp add: lessThan_atLeast0 add.commute)
+
+lemma mult_add_less: "\<lbrakk>a < k; b < k\<rbrakk> \<Longrightarrow> a * k + b < k * (k::nat)"
+  using mult_le_mono1[of "Suc a" k k]
+  by simp
+
+lemma mult_add_eq_iff:
+  "\<lbrakk>b < k; b' < k\<rbrakk> \<Longrightarrow> a * k + b = a' * k + b' \<longleftrightarrow> a = a' \<and> b = (b'::nat)"
+  by (auto dest: arg_cong[where f = "\<lambda>x. (x div k, x mod k)"])
+
+lemma div_mod_less_square: "j < k * k \<Longrightarrow> j div k < k \<and> j mod k < (k::nat)"
+  by (cases k) (auto simp: less_mult_imp_div_less)
+
+lemma mod_neq_below:
+  fixes h i j cap :: nat
+  assumes "i < j" "j < cap"
+  shows "(h + i) mod cap \<noteq> (h + j) mod cap"
+proof
+  assume "(h + i) mod cap = (h + j) mod cap"
+  hence "cap dvd (h + j) - (h + i)"
+    using mod_eq_dvd_iff_nat[of "h + i" "h + j" cap] assms(1)
+    by simp
+  hence "cap dvd j - i"
+    by simp
+  thus False
+    using assms nat_dvd_not_less[of "j - i" cap]
+    by simp
+qed
+
+text \<open>The smallest index of a minimum: below a nonempty range, some \<open>h\<close> minimises \<open>f\<close>,
+and every smaller index has a strictly larger value.\<close>
+
+lemma least_argmin_index:
+  fixes f :: "nat \<Rightarrow> 'b :: linorder"
+  assumes "0 < n"
+  shows "\<exists>h < n. (\<forall>j < n. f h \<le> f j) \<and> (\<forall>i < h. f h < f i)"
+proof-
+  define P where "P i \<longleftrightarrow> i < n \<and> (\<forall>j < n. f i \<le> f j)" for i
+  obtain m where "m < n" "\<forall>j < n. f m \<le> f j"
+    using assms ex_min_if_finite[of "f ` {..<n}"]
+    by (fastforce simp: not_less)
+  hence "P m"
+    by (simp add: P_def)
+  hence least: "P (LEAST i. P i)"
+    by (rule LeastI)
+  moreover have "f (LEAST i. P i) < f i" if "i < (LEAST i. P i)" for i
+  proof-
+    have "\<not> P i"
+      using that
+      by (rule not_less_Least)
+    moreover have "i < n"
+      using that least
+      by (simp add: P_def)
+    ultimately obtain j where "j < n" "f j < f i"
+      by (auto simp: P_def not_le)
+    thus ?thesis
+      using least
+      unfolding P_def
+      by (blast intro: le_less_trans)
+  qed
+  ultimately show ?thesis
+    by (intro exI[of _ "LEAST i. P i"]) (simp add: P_def)
+qed
+
+text \<open>Reweighting keeps the order of a pair whose boundary gap is at least \<open>\<epsilon>\<close>.\<close>
+
+lemma reweight_order:
+  fixes c :: "'a \<Rightarrow> 'b :: linordered_ab_group_add"
+  assumes "0 < \<epsilon>" "c u \<le> c v" "\<lbrakk>v \<in> R; u \<notin> R\<rbrakk> \<Longrightarrow> \<epsilon>
+    \<le> c v - c u"
+  shows "(if u \<in> R then c u - \<epsilon> else c u) \<le> (if v \<in> R then c v - \<epsilon> else c v)"
+  using assms
+  by (auto simp: le_diff_eq diff_le_eq add.commute intro: add_increasing order.strict_implies_order)
+
+text \<open>Two purely mathematical facts feeding the termination argument of the weighted algorithm. Both concern the
+reweighting step \<open>c \<mapsto> (\<lambda>z. if z \<in> R then c z - \<epsilon> else c z)\<close>. They are stated
+at the function level here (rather than at the executable data-structure level) so that the plain and the circuit
+variant of the algorithm can share them.\<close>
+
+text \<open>Shifting the weight down by \<open>\<epsilon>\<close> on \<open>R\<close> lowers the maximum by exactly
+\<open>\<epsilon>\<close>, provided every element outside \<open>R\<close> is at least \<open>\<epsilon>\<close> below
+the maximum and the argmax lies in \<open>R\<close>: the old argmax drops to \<open>Max - \<epsilon>\<close> and
+everything else stays \<open>\<le> Max - \<epsilon>\<close>.\<close>
+
+lemma argmax_reweight_newmax:
+  fixes c :: "'a \<Rightarrow> 'b :: linordered_ab_group_add"
+  assumes "finite V" "V \<noteq> {}" "0 < e"
+    "\<And>y. \<lbrakk>y \<in> V; y \<notin> R\<rbrakk> \<Longrightarrow> c y \<le> Max (c ` V) - e"
+    "\<And>y. \<lbrakk>y \<in> V; c y = Max (c ` V)\<rbrakk> \<Longrightarrow> y \<in> R"
+  shows "Max ((\<lambda>z. if z \<in> R then c z - e else c z) ` V) = Max (c ` V) - e"
+proof(rule Max_eqI)
+  have "Max (c ` V) \<in> c ` V"
+    using assms(1,2)
+    by (intro Max_in) auto
+  then obtain z where "z \<in> V" "c z = Max (c ` V)"
+    by auto
+  thus "Max (c ` V) - e \<in> (\<lambda>z. if z \<in> R then c z - e else c z) ` V"
+    using assms(5)
+    by force
+qed (use assms(1,4) in auto)
+
+text \<open>Hence the set of maximisers only enlarges: the old maximisers (all in \<open>R\<close>) drop to the new
+maximum \<open>Max - \<epsilon>\<close>.\<close>
+
+lemma argmax_reweight_mono:
+  fixes c :: "'a \<Rightarrow> 'b :: linordered_ab_group_add"
+  assumes "finite V" "0 < e"
+    "\<And>y. \<lbrakk>y \<in> V; y \<notin> R\<rbrakk> \<Longrightarrow> c y \<le> Max (c ` V) - e"
+    "\<And>y. \<lbrakk>y \<in> V; c y = Max (c ` V)\<rbrakk> \<Longrightarrow> y \<in> R"
+  shows "{y \<in> V. c y = Max (c ` V)}
+         \<subseteq> {y \<in> V. (\<lambda>z. if z \<in> R then c z - e else c z) y
+                     = Max ((\<lambda>z. if z \<in> R then c z - e else c z) ` V)}"
+proof(cases "V = {}")
+  case False
+  hence "Max ((\<lambda>z. if z \<in> R then c z - e else c z) ` V) = Max (c ` V) - e"
+    using assms
+    by (intro argmax_reweight_newmax)
+  thus ?thesis
+    using assms(4)
+    by auto
+qed simp
+
+text \<open>The dual increase step: raising the weight by \<open>\<epsilon>\<close> on \<open>R\<close> leaves the
+maximum unchanged, provided the \<open>R\<close>-elements are all at least \<open>\<epsilon>\<close> below it and the
+maximisers lie outside \<open>R\<close> (so they keep their value). Used for the \<open>T\<close>-endpoint case, where
+an unreachable maximiser pins the maximum.\<close>
+
+lemma argmax_reweight_keepmax:
+  fixes c :: "'a \<Rightarrow> 'b :: linordered_ab_group_add"
+  assumes "finite V" "V \<noteq> {}" "0 < e"
+    "\<And>y. \<lbrakk>y \<in> V; y \<in> R\<rbrakk> \<Longrightarrow> c y \<le> Max (c ` V) - e"
+    "\<And>y. \<lbrakk>y \<in> V; c y = Max (c ` V)\<rbrakk> \<Longrightarrow> y \<notin> R"
+  shows "Max ((\<lambda>z. if z \<in> R then c z + e else c z) ` V) = Max (c ` V)"
+proof(rule Max_eqI)
+  have "Max (c ` V) \<in> c ` V"
+    using assms(1,2)
+    by (intro Max_in) auto
+  then obtain z where "z \<in> V" "c z = Max (c ` V)"
+    by auto
+  thus "Max (c ` V) \<in> (\<lambda>z. if z \<in> R then c z + e else c z) ` V"
+    using assms(5)
+    by force
+qed ((insert assms(1,4); auto simp: le_diff_eq)+)
+
+lemma nat_zero_one_Suc_Suc:
+  "k = 0 \<or> k = 1 \<or> (\<exists>j. k = Suc (Suc j))"
+  by (cases k, simp, rename_tac j, case_tac j) auto
+
 provenance human
 
 subsection \<open>Sums\<close>
@@ -13,7 +279,7 @@ subsection \<open>Sums\<close>
 lemma sum_cong_extensive: "\<lbrakk>A = B; \<And> x. \<lbrakk>x \<in> A; x \<in> B\<rbrakk> \<Longrightarrow> f x = g x\<rbrakk> \<Longrightarrow> sum f A = sum g B"
   by simp
 
-lemma add_0_cong_left: "(a::int) = b \<Longrightarrow> c = 0 \<Longrightarrow> c + a = b"
+lemma add_0_cong_left: "\<lbrakk>(a::int) = b; c = 0\<rbrakk> \<Longrightarrow> c + a = b"
   by simp
 
 lemma add_assoc2: "(a::nat) + (b + c) = a + b + c"

@@ -4,11 +4,10 @@ begin
 
 section \<open>Maximum Weight Bipartite Matching in Imperative HOL\<close>
 
-text \<open>The graph is given as in @{theory Matroid_Intersection.Bipartite_Matching_Imp}, and a third
-  array of the same length holds the edge weights, in an ordered ring \<open>'n\<close>. The matroids, the
-  oracles and the solution handle are those of the unweighted instance; the algorithm is the generic
-  one of @{theory Matroid_Intersection.Matroid_Weighted_Intersection_Imp}. The result is the Boolean
-  array of the positions of a maximum weight matching, from the solution handle.\<close>
+text \<open>The graph arrays and matroid handles come from
+  @{theory Matroid_Intersection.Bipartite_Matching_Imp}; a third array holds weights in an ordered ring.
+  @{theory Matroid_Intersection.Matroid_Weighted_Intersection_Imp} returns the Boolean array of
+  positions representing a maximum weight matching.\<close>
 
 subsection \<open>Code\<close>
 
@@ -46,9 +45,8 @@ text \<open>The BFS of the library with the tight iterator fixed at code generat
 declare wmx.wids.t_inner_code[code] wmx.wids.t_outer_code[code] wmx.wids.tround_code[code]
   wmx.wids.t_loop_code[code] wmx.wids.tbfs_run_code[code]
 
-text \<open>The edges are \<open>{Fa[i], Ta[i]}\<close> with weight \<open>Wa[i]\<close>, and all vertices are below \<open>nv\<close>. After the
-  prologue of the unweighted instance, the program allocates the two weight arrays of the
-  algorithm.\<close>
+text \<open>Edge \<open>{Fa[i], Ta[i]}\<close> has weight \<open>Wa[i]\<close>; vertices are below \<open>nv\<close>.
+  After the unweighted prologue, the program allocates its two working weight arrays.\<close>
 
 definition "weighted_matching_imp nv Fa Ta Wa =
    bm_setup_imp nv Fa Ta (\<lambda> m H1 H2 Xi C1 C2. do {
@@ -59,10 +57,9 @@ definition "weighted_matching_imp nv Fa Ta Wa =
 
 export_code weighted_matching_imp checking SML_imp
 
-text \<open>The example of @{theory Matroid_Intersection.Bipartite_Matching_Imp} with weights: the edges
-  of the returned array. The result is \<open>[(1, 10), (3, 6)]\<close>, of weight \<open>9\<close>; every matching with
-  three edges is lighter. The weights are integers, fixed by a monomorphic copy, since the generated
-  function expects the class dictionaries of the weight type.\<close>
+text \<open>The weighted example returns \<open>[(1, 10), (3, 6)]\<close>, of weight \<open>9\<close>; every
+  three-edge matching is lighter. The monomorphic copy below fixes integer weights, since the
+  generated function expects the weight type's class dictionaries.\<close>
 
 definition "weighted_matching_int_imp nv Fa Ta (Wa :: int array) = weighted_matching_imp nv Fa Ta Wa"
 
@@ -96,36 +93,42 @@ interpretation m: weighted_matroid_intersection_imp "length fs" id id bm_memb bm
   rt.part_prep rt.part_ins rt.part_exch rt.part_indep emp "part_pts ts" "part_pst (length fs) ts" h
   by (intro weighted_matroid_intersection_imp.intro mi_inst real_embedding_axioms)
 
+lemma indep_weight_sum: "lf.part_indep X \<Longrightarrow> sum edge_weight ((\<lambda> i. {fs ! i, ts ! i}) ` X) =
+    sum (\<lambda> i. h (ws ! i)) X"
+  by (rule sum_img) (simp add: lf.part_indep_def)
+
+context
+  notes opt_def = weighted_double_matroid.is_opt_def[OF
+    weighted_double_matroid.intro[OF m.double_matroid_axioms]]
+begin
+
+lemma opt_matching:
+  "weighted_double_matroid.is_opt lf.part_indep rt.part_indep (\<lambda> i. h (ws ! i)) X \<Longrightarrow>
+    graph_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
+  unfolding opt_def
+  by (intro indep_matching) auto
+
+lemma matching_weight_bound:
+  assumes "weighted_double_matroid.is_opt lf.part_indep rt.part_indep (\<lambda> i. h (ws ! i)) X"
+    "graph_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) M"
+  shows "sum edge_weight M \<le> sum edge_weight ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
+proof-
+  obtain Y where "M = (\<lambda> i. {fs ! i, ts ! i}) ` Y" "lf.part_indep Y" "rt.part_indep Y"
+    using assms(2)
+    by (auto elim: matching_indep)
+  then show ?thesis
+    using assms(1) unfolding opt_def
+    by (auto simp: indep_weight_sum)
+qed
+
 lemma is_max_weight_matching:
   assumes "weighted_double_matroid.is_opt lf.part_indep rt.part_indep (\<lambda> i. h (ws ! i)) X"
   shows "max_weight_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) edge_weight
            ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
-proof-
-  have X: "lf.part_indep X" "rt.part_indep X"
-    and mx: "\<And> Y. lf.part_indep Y \<and> rt.part_indep Y \<Longrightarrow>
-               sum (\<lambda> i. h (ws ! i)) Y \<le> sum (\<lambda> i. h (ws ! i)) X"
-    using assms unfolding weighted_double_matroid.is_opt_def[OF
-        weighted_double_matroid.intro[OF m.double_matroid_axioms]]
-    by blast+
-  have Xs: "X \<subseteq> {0..<length fs}"
-    using X(1) unfolding lf.part_indep_def by simp
-  show ?thesis
-  proof(rule max_weight_matchingI)
-    show "graph_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
-      by (rule indep_matching[OF X])
-  next
-    fix M
-    assume "graph_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) M"
-    then have M: "M \<subseteq> (\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}" "matching M"
-      by simp_all
-    obtain Y where Y: "M = (\<lambda> i. {fs ! i, ts ! i}) ` Y" "lf.part_indep Y" "rt.part_indep Y"
-      using matching_indep[OF M] .
-    have Ys: "Y \<subseteq> {0..<length fs}"
-      using Y(2) unfolding lf.part_indep_def by simp
-    show "sum edge_weight M \<le> sum edge_weight ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
-      unfolding Y(1) sum_img[OF Ys] sum_img[OF Xs] using Y(2,3) by (intro mx) simp
-  qed
-qed
+  by (intro max_weight_matchingI; insert assms opt_matching[of X];
+      auto intro: matching_weight_bound)
+
+end
 
 text \<open>The generic algorithm on the allocated handles.\<close>
 
@@ -141,34 +144,30 @@ theorem whandles_correct:
               warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa * true *
               \<up>(max_weight_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) edge_weight
                                      ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
-  apply (rule ht_cons[OF _ _ m.wmi_imp_correct[where c = "\<lambda> i. h (ws ! i)", folded wmx_wmi_def]])
-   apply (simp only: bm_sol_assn.simps id_apply star_aci, rule ent_refl)
-  apply (simp only: id_apply image_id)
-  apply (intro ent_ex_preI)
-  apply (sep_auto dest: is_max_weight_matching)
-  done
+  by (rule ht_cons[OF _ _ m.wmi_imp_correct[where c = "\<lambda> i. h (ws ! i)", folded wmx_wmi_def]],
+      (simp only: bm_sol_assn.simps id_apply star_aci, rule ent_refl),
+      simp only: id_apply image_id, intro ent_ex_preI, sep_auto dest: is_max_weight_matching)
 
 subsubsection \<open>The Program\<close>
 
+lemma weights_in:
+  "Wa \<mapsto>\<^sub>a ws = warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa"
+  by (rule warr_of_list[OF real_embedding_axioms, of Wa ws, unfolded ws_length])
+
 theorem weighted_matching_imp_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws> weighted_matching_imp nv Fa Ta Wa
-   <\<lambda> Xi. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * true *
+   <\<lambda> Xi. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta
+     \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * true *
               \<up>(max_weight_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) edge_weight
                                      ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
-proof-
-  have W: "Wa \<mapsto>\<^sub>a ws = warr_assn (length fs) h (\<lambda> i. if i < length fs then h (ws ! i) else 0) Wa"
-    using warr_of_list[OF real_embedding_axioms, of Wa ws] unfolding ws_length .
-  show ?thesis
     unfolding weighted_matching_imp_def
-    apply (rule ht_cons_pre[OF _ bm_setup_rule[where F = "Wa \<mapsto>\<^sub>a ws"]], simp only: star_aci, rule ent_refl)
-    apply (rule alloc_bind[OF len_assn_new])+
-    apply (rule ht_bind[OF ht_frame_ac[OF whandles_correct, where R = true]])
-      prefer 3 apply (rule ht_return_wp)
-     apply (simp only: W star_aci, rule ent_refl)
-    apply (sep_auto simp: blocks_assn_def W[symmetric])
+    apply(rule ht_cons_pre[OF _ bm_setup_rule[where F = "Wa \<mapsto>\<^sub>a ws"]], simp only: star_aci, rule ent_refl)
+    apply(rule alloc_bind[OF len_assn_new])+
+    apply(rule ht_bind[OF ht_frame_ac[OF whandles_correct, where R = true]])
+      prefer 3 apply(rule ht_return_wp)
+     apply(simp only: weights_in star_aci, rule ent_refl)
+    apply(sep_auto simp: blocks_assn_def weights_in[symmetric])
     done
-qed
 
 end
 end
-

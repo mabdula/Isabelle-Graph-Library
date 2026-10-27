@@ -58,9 +58,11 @@ locale indexed_set_fold_imp =
   for idx_invar :: "'coll \<Rightarrow> bool"
     and idx_abstract :: "'coll \<Rightarrow> 'i \<Rightarrow> 'a set"
     and K :: "'i set"
-    and idx_fold :: "'coll \<Rightarrow> 'i \<Rightarrow> ('a \<Rightarrow> 'acc \<Rightarrow> 'acc) \<Rightarrow> 'acc \<Rightarrow> 'acc"
+    and idx_fold :: "'coll \<Rightarrow> 'i \<Rightarrow>
+                     ('a \<Rightarrow> 'acc \<Rightarrow> 'acc) \<Rightarrow> 'acc \<Rightarrow> 'acc"
     and idx_assn :: "'coll \<Rightarrow> 'colli \<Rightarrow> assn" +
-  fixes idx_fold_imp :: "'colli \<Rightarrow> 'i \<Rightarrow> ('a \<Rightarrow> 'acci \<Rightarrow> 'acci Heap) \<Rightarrow> 'acci \<Rightarrow> 'acci Heap"
+  fixes idx_fold_imp :: "'colli \<Rightarrow> 'i \<Rightarrow>
+                         ('a \<Rightarrow> 'acci \<Rightarrow> 'acci Heap) \<Rightarrow> 'acci \<Rightarrow> 'acci Heap"
   assumes idx_fold_rule:
       "\<lbrakk>idx_invar C; i \<in> K;
         \<And>acc acci x. x \<in> idx_abstract C i \<Longrightarrow>

@@ -120,63 +120,8 @@ lemma len_intro: "length l = m \<Longrightarrow> a \<mapsto>\<^sub>a l \<Longrig
 lemma pull_len:
   assumes "\<And> l. length l = m \<Longrightarrow> <a \<mapsto>\<^sub>a l * Fm> c <Q>"
   shows "<len_assn m a * Fm> c <Q>"
-proof-
-  have "<\<exists>\<^sub>A l. a \<mapsto>\<^sub>a l * Fm * \<up>(length l = m)> c <Q>"
-    by (rule ht_ex_pre, rule ht_pure_pre) (rule assms)
-  then show ?thesis
-    by (rule ht_cons_pre[rotated]) (unfold len_assn_def, sep_auto)
-qed
-
-text \<open>The Boolean array of a set below \<open>n\<close> at the fixed handle \<open>Vh\<close>.\<close>
-
-lemma bool_array_set_at:
-  "fixed_univ_set_basic_imp {..<n} (\<lambda>X. X \<subseteq> {..<n}) id {} insert (\<lambda>x X. X - {x}) (\<lambda>X x. x \<in> X)
-     (\<lambda>X a. bool_array_set_assn n X a * \<up>(a = Vh)) bool_array_set_insert_imp
-     bool_array_set_delete_imp bool_array_set_isin_imp"
-proof -
-  interpret ba: fixed_univ_set_basic_imp "{..<n}" "\<lambda>X. X \<subseteq> {..<n}" id "{}" insert "\<lambda>x X. X - {x}"
-    "\<lambda>X x. x \<in> X" "bool_array_set_assn n" bool_array_set_insert_imp bool_array_set_delete_imp
-    bool_array_set_isin_imp
-    by (rule fixed_univ_set_imp.axioms(1)[OF bool_array_set_fixed_univ_set_imp])
-  show ?thesis
-    by (intro fixed_univ_set_basic_imp.intro ba.fixed_univ_set_axioms
-              fixed_univ_set_basic_imp_axioms.intro)
-       (sep_auto heap: ba.fixed_univ_set_insert_rule ba.fixed_univ_set_delete_rule
-                       ba.fixed_univ_set_isin_rule)+
-qed
-
-text \<open>The parent array at the fixed handle \<open>Pa\<close>: the operations of the parent array are
-      correct for it.\<close>
-
-lemma parent_array_at:
-  "Parent_Map_Spec_extend_imp {..<n} parent_array.pa_graph parent_array.pa_extend
-     (parent_array.pa_invar n) parent_array.pa_roots
-     (\<lambda>p pi. parent_array.pa_parent_assn n p pi * \<up>(pi = Pa)) parent_array_extend_imp"
-  "Parent_Map_Spec_static_imp {..<n} parent_array.pa_graph (parent_array.pa_get_path n)
-     (parent_array.pa_invar n) parent_array.pa_roots
-     (\<lambda>p pi. parent_array.pa_parent_assn n p pi * \<up>(pi = Pa)) parent_array_get_path_imp"
-  "\<lbrakk>set R \<subseteq> {..<n}; k < length xs; set (take k xs) = set R\<rbrakk> \<Longrightarrow>
-   <Ra \<mapsto>\<^sub>a xs * (parent_array.pa_parent_assn n \<pi> \<pi>i * \<up>(\<pi>i = Pa))> parent_array_init_imp (Ra, k) \<pi>i
-   <\<lambda>_. Ra \<mapsto>\<^sub>a xs * (parent_array.pa_parent_assn n (parent_array.pa_init R) \<pi>i * \<up>(\<pi>i = Pa))>"
-proof-
-  interpret pa: parent_array n .
-  show "Parent_Map_Spec_extend_imp {..<n} parent_array.pa_graph parent_array.pa_extend
-     (parent_array.pa_invar n) parent_array.pa_roots
-     (\<lambda>p pi. parent_array.pa_parent_assn n p pi * \<up>(pi = Pa)) parent_array_extend_imp"
-    by (intro Parent_Map_Spec_extend_imp.intro Parent_Map_Spec_extend_imp_axioms.intro
-              Parent_Map_Spec_extend_imp.axioms(1)[OF pa.extend_imp.Parent_Map_Spec_extend_imp_axioms])
-       (sep_auto heap: pa.pa_extend_rule)
-  show "Parent_Map_Spec_static_imp {..<n} parent_array.pa_graph (parent_array.pa_get_path n)
-     (parent_array.pa_invar n) parent_array.pa_roots
-     (\<lambda>p pi. parent_array.pa_parent_assn n p pi * \<up>(pi = Pa)) parent_array_get_path_imp"
-    by (intro Parent_Map_Spec_static_imp.intro Parent_Map_Spec_static_imp_axioms.intro
-              Parent_Map_Spec_static_imp.axioms(1)[OF pa.static_imp.Parent_Map_Spec_static_imp_axioms])
-       (sep_auto heap: pa.pa_get_path_rule)
-  show "\<lbrakk>set R \<subseteq> {..<n}; k < length xs; set (take k xs) = set R\<rbrakk> \<Longrightarrow>
-   <Ra \<mapsto>\<^sub>a xs * (parent_array.pa_parent_assn n \<pi> \<pi>i * \<up>(\<pi>i = Pa))> parent_array_init_imp (Ra, k) \<pi>i
-   <\<lambda>_. Ra \<mapsto>\<^sub>a xs * (parent_array.pa_parent_assn n (parent_array.pa_init R) \<pi>i * \<up>(\<pi>i = Pa))>"
-    by (sep_auto heap: pa.pa_init_array_rule)
-qed
+  unfolding len_assn_def
+  by (sep_auto heap: assms)
 
 text \<open>The graph is a map @{term G} of the vertices below @{term n} to their neighbour lists, with
       a finite domain. The iterator @{term nbs} on a handle @{term Gh} folds over the neighbours of
@@ -238,13 +183,7 @@ interpretation sub: BFS_subprocedures_lists where vis_isin_imp = bool_array_set_
      simp_all
 
 lemma Vs_G: "BFS_subprocedures_lists.Vs G = dVs nbs_edges"
-proof -
-  have e: "(\<exists>vs. G u = Some vs \<and> v \<in> set vs) \<longleftrightarrow> (u, v) \<in> nbs_edges" for u v
-    by (cases "G u") (simp_all only: option.case option.distinct option.inject simp_thms list.set
-                                      empty_iff mem_Collect_eq case_prod_conv)
-  show ?thesis
-    unfolding sub.Vs_def dVs_def e[symmetric] by (simp only: ex_simps)
-qed
+  by (simp only: sub.Vs_def dVs_def sub.verts_rw ex_simps)
 
 lemma card_Vs: "card (BFS_subprocedures_lists.Vs G) \<le> n"
   unfolding Vs_G using card_mono[OF finite_lessThan G_bound] by (simp only: card_lessThan)
@@ -277,12 +216,12 @@ interpretation inst: BFS_lists_instance where vis_isin_imp = bool_array_set_isin
             BFS_lists_instance_axioms.intro parent_array_at(3))
      (simp_all only: Vs_G G_bound simp_thms)
 
-lemma code_eqs:
+lemma code_eqs[simp]:
   "inst.imp_bfs.visited_dists_parents_imp Gh = bfs_visited_dists_parents (nbs Gh)"
   by (simp add: bfs_visited_dists_parents_def bfs_src_to_cf_def bfs_set_srcs_visited_def
                 bfs_round_def bfs_cf_is_empty_def bfs_set_dists_def)
 
-lemma digraph_abs_G: "sub.Graph.digraph_abs G = nbs_edges"
+lemma digraph_abs_G[simp]: "sub.Graph.digraph_abs G = nbs_edges"
   unfolding sub.Graph.digraph_abs_def sub.Graph.neighbourhood_def by (rule refl)
 
 text \<open>The functional BFS on the graph, with the parents in a parent array below @{term n}.\<close>
@@ -315,12 +254,10 @@ begin
 
 lemma srcs_length: "length ss \<le> n"
 proof -
-  have s: "distinct ss \<and> ss \<noteq> [] \<and> set ss \<subseteq> dVs nbs_edges"
-    using b unfolding bfs_sources_def .
-  show ?thesis
-    using order.trans[OF card_mono[OF finite_subset[OF G_bound finite_lessThan] conjunct2[OF conjunct2[OF s]]]
-                         card_Vs[unfolded Vs_G]]
-    unfolding distinct_card[OF conjunct1[OF s]] .
+  have "distinct ss" "set ss \<subseteq> {..<n}"
+    using b G_bound unfolding bfs_sources_def by blast+
+  from card_mono[OF finite_lessThan this(2)] show ?thesis
+    by (simp only: card_lessThan distinct_card[OF \<open>distinct ss\<close>])
 qed
 
 lemma BFS_axiom: "inst.imp_bfs.BFS_axiom ss"
@@ -348,28 +285,17 @@ lemmas fin_correct = inst.imp_bfs.BFS_par_correct[OF BFS_axiom fin_def, unfolded
 lemmas fin_path_length = inst.imp_bfs.get_path_length[OF BFS_axiom fin_def, unfolded digraph_abs_G set_rev]
 
 lemma cf_len: "sub.imp_cf_assn (Suc n) Fr Bf G cf cfi \<Longrightarrow>\<^sub>A len_assn (Suc n) Fr * len_assn (Suc n) Bf"
-proof-
-  obtain a b c where cfi: "cfi = (a, b, c)"
-    by (cases cfi rule: prod_cases3)
-  have e: "a \<mapsto>\<^sub>a l1 * c \<mapsto>\<^sub>a l2 \<Longrightarrow>\<^sub>A len_assn (Suc n) Fr * len_assn (Suc n) Bf"
-    if l: "length l1 = Suc n" "length l2 = Suc n" and ac: "a = Fr \<and> c = Bf \<or> a = Bf \<and> c = Fr"
-    for l1 l2
-  proof(cases "a = Fr \<and> c = Bf")
-    case True
-    show ?thesis
-      using ent_star_mono[OF len_intro[OF l(1), of a] len_intro[OF l(2), of c]] True by simp
-  next
-    case False
-    then have "a = Bf" "c = Fr"
-      using ac by blast+
-    then show ?thesis
-      using ent_star_mono[OF len_intro[OF l(2), of c] len_intro[OF l(1), of a]]
-      by (simp add: mult.commute)
-  qed
-  show ?thesis
-    unfolding cfi sub.imp_cf_assn.simps doubleton_eq_iff
-    by (intro ent_ex_preI, unfold ent_pure_pre_iff, intro impI, elim conjE, rule e) assumption+
-qed
+  apply (cases cfi)
+  apply (simp only: sub.imp_cf_assn.simps doubleton_eq_iff)
+  apply (intro ent_ex_preI)
+  apply (unfold ent_pure_pre_iff)
+  apply (intro impI)
+  apply (elim conjE disjE)
+  apply (hypsubst)
+  apply (rule ent_star_mono; rule len_intro; assumption)
+  apply (hypsubst)
+  apply (subst mult.commute)
+  by (rule ent_star_mono; rule len_intro; assumption)
 
 lemma par_intro: "len_assn n Pa \<Longrightarrow>\<^sub>A parent_array.pa_parent_assn n Map.empty Pa * \<up>(Pa = Pa)"
   unfolding len_assn_def parent_array.pa_parent_assn_def by sep_auto
@@ -380,7 +306,7 @@ text \<open>The BFS on the arrays allocated by the caller: the visited array @{t
       the visited array, the distances and the parents are those of the final state @{const fin};
       the frontier and the buffer keep their lengths and can be reused.\<close>
 
-lemma bfs_rule:
+lemma bfs_rule[bfs_heap_rules]:
   assumes "length fl = Suc n" "take (length ss) fl = ss" "length bl = Suc n"
   shows "<bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] *
           len_assn n Pa * ga Gh>
@@ -393,17 +319,13 @@ proof-
   have sV: "set ss \<subseteq> BFS_subprocedures_lists.Vs G"
     using b unfolding bfs_sources_def Vs_G by (elim conjE)
   note ls = srcs_length
-  have ids: "\<forall>i \<in> BFS_subprocedures_lists.Vs G. i < length (map id [0..<n]) \<and> id i = map id [0..<n] ! i"
-  proof
-    fix i
-    assume "i \<in> BFS_subprocedures_lists.Vs G"
-    then have "i < n"
-      unfolding Vs_G using G_bound by (elim subsetD[THEN lessThan_iff[THEN iffD1], rotated])
-    then show "i < length (map id [0..<n]) \<and> id i = map id [0..<n] ! i"
-      by simp
-  qed
+  have ids: "\<forall>i \<in> BFS_subprocedures_lists.Vs G.
+      i < length (map id [0..<n]) \<and> id i = map id [0..<n] ! i"
+    using G_bound by (auto simp only: Vs_G id_def map_ident length_upt diff_zero
+        nth_upt add_0 subset_iff lessThan_iff)
   have v: "bool_array_set_assn n {} Vi \<Longrightarrow>\<^sub>A sub.is_visited_set Vi (BFS_subprocedures_lists.Vs G) (set []) Vi"
-    unfolding sub.is_visited_set_def by sep_auto
+    unfolding sub.is_visited_set_def
+    by (rule ent_ex_postI[where x = "{}"]) sep_auto
   have s: "Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl \<Longrightarrow>\<^sub>A sub.imp_src_assn (Suc n) Fr Bf G (rev ss) (Fr, length ss, Bf)"
     by (rule sub.imp_src_assn_intro) (use assms card_Vs ls sV in simp_all)
   have pre: "bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] *
@@ -436,7 +358,7 @@ qed
 text \<open>The path from the sources to a visited vertex @{term t}, reversed, is written into the
       first cells of an array with room for the vertices of the graph.\<close>
 
-lemma path_rule:
+lemma path_rule[bfs_heap_rules]:
   assumes "t \<in> set (BFS_dist_state.visited fin)" "card (dVs nbs_edges) \<le> length rl"
   shows "<parent_array.pa_parent_assn n (BFS_par_state.parent fin) Pa * Ra \<mapsto>\<^sub>a rl>
            bfs_path Pa Ra t
@@ -472,12 +394,6 @@ lemma bfs_iterator_arrays_graph:
   shows "bfs_iterator_arrays n G (\<lambda>_ _ _ acc. return acc) (\<lambda>_ :: unit. false)"
   by (rule bfs_iterator_arrays.intro[OF assms]) (simp only: star_false_left ht_false)
 
-lemma pure_mid:
-  assumes "b \<Longrightarrow> <P * Fm> c <Q>"
-  shows "<P * \<up>b * Fm> c <Q>"
-  by (rule ht_cons_pre[OF _ ht_pure_pre[OF assms]]) (simp only: star_aci, rule ent_refl)
-
-
 section \<open>Correctness\<close>
 
 text \<open>The input: the number of vertices \<open>n\<close>, the lists \<open>fs\<close> and \<open>ts\<close> of tails and heads of
@@ -510,7 +426,7 @@ sublocale ei: csr_edge_input n fs ts "e_src fs" src_imp
 abbreviation nbs_map :: "nat \<Rightarrow> nat list option" where
   "nbs_map \<equiv> ei.heads.csr_map"
 
-lemma nbs_edge: "v \<in> set (case nbs_map u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs) \<longleftrightarrow> (u, v) \<in> \<E>"
+lemma nbs_edge[simp]: "v \<in> set (case nbs_map u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs) \<longleftrightarrow> (u, v) \<in> \<E>"
 proof (cases "u < n")
   case True
   have "set (ei.heads.csr_list u) =
@@ -529,13 +445,13 @@ qed
 lemma E_bound: "dVs \<E> \<subseteq> {..<n}"
   by (auto simp: dVs_def \<E>_def set_zip ts_length fs_bound ts_bound)
 
-lemma edges_E: "{(u, v). v \<in> set (case nbs_map u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs)} = \<E>"
+lemma edges_E[simp]: "{(u, v). v \<in> set (case nbs_map u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs)} = \<E>"
   unfolding nbs_edge by (rule set_eqI) (simp only: mem_Collect_eq case_prod_beta prod.collapse)
 
 text \<open>The neighbours of a vertex are folded over by @{const csr_fold_imp} in the order of its
       block.\<close>
 
-lemma nbs_rule:
+lemma nbs_rule[bfs_heap_rules]:
   assumes "u < n"
     and "\<And>acc acci x. x \<in> set (case nbs_map u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs) \<Longrightarrow>
            <A acc acci> fi x acci <\<lambda>r. A (f x acc) r>"
@@ -553,13 +469,7 @@ proof -
 qed
 
 lemma finite_dom: "finite (dom nbs_map)"
-proof (rule finite_subset[OF subsetI finite_lessThan])
-  fix x
-  assume "x \<in> dom nbs_map"
-  then show "x \<in> {..<n}"
-    unfolding dom_def mem_Collect_eq ei.heads.csr_map_def lessThan_iff
-    by (cases "x < n") (simp_all only: if_True if_False simp_thms option.distinct)
-qed
+  by (rule finite_subset[where B = "{..<n}"]) (auto simp: ei.heads.csr_map_def split: if_splits)
 
 interpretation it: bfs_iterator_arrays n nbs_map csr_fold_imp
   "ei.heads.csr_blocks_assn (\<lambda>v. ei.inp.B_spec ! v)"
@@ -571,6 +481,8 @@ lemma srcs: "it.bfs_sources ss"
   unfolding it.bfs_sources_def edges_E \<E>_def by (intro conjI srcs_distinct srcs_nonempty srcs_in_graph)
 
 subsection \<open>The result of the BFS\<close>
+
+named_theorems bfs_array_intros "Correctness of the arrays returned by BFS"
 
 text \<open>The arrays returned are correct if, for every vertex of the graph @{term \<E>}, the
       visited array says whether it is reachable from a source, the distance array holds its
@@ -586,67 +498,64 @@ definition bfs_arrays :: "bool list \<Rightarrow> nat list \<Rightarrow> nat lis
      ((vs ! x \<and> x \<notin> \<S>) \<longrightarrow>
         vs ! (ps ! x) \<and> (ps ! x, x) \<in> \<E> \<and> distance_set \<E> \<S> x = distance_set \<E> \<S> (ps ! x) + 1))"
 
-lemma bfs_arrays_intro:
-  assumes V: "\<forall>u \<in> dVs \<E>. u < length l \<and> (l ! u \<longleftrightarrow> u \<in> set vis)"
-    and D: "\<forall>i \<in> dVs \<E>. i < length dl \<and> d i = dl ! i"
-    and P: "\<forall>i \<in> dVs \<E>. i < length pl \<and> p i = pl ! i"
-    and c1: "\<forall>x. x \<in> set vis \<longleftrightarrow> (\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q x)"
-    and c2: "\<forall>x \<in> set vis. enat (d x) = distance_set \<E> \<S> x"
-    and c3: "\<forall>x \<in> set vis - \<S>. p x \<in> set vis \<and> (p x, x) \<in> \<E> \<and>
+lemma bfs_arrays_intro[bfs_array_intros]:
+  assumes "\<forall>u \<in> dVs \<E>. u < length l \<and> (l ! u \<longleftrightarrow> u \<in> set vis)"
+    and "\<forall>i \<in> dVs \<E>. i < length dl \<and> d i = dl ! i"
+    and "\<forall>i \<in> dVs \<E>. i < length pl \<and> p i = pl ! i"
+    and "\<forall>x. x \<in> set vis \<longleftrightarrow> (\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q x)"
+    and "\<forall>x \<in> set vis. enat (d x) = distance_set \<E> \<S> x"
+    and "\<forall>x \<in> set vis - \<S>. p x \<in> set vis \<and> (p x, x) \<in> \<E> \<and>
                distance_set \<E> \<S> x = distance_set \<E> \<S> (p x) + 1"
   shows "bfs_arrays l dl pl"
-  unfolding bfs_arrays_def
-proof
+proof (unfold bfs_arrays_def, intro ballI)
   fix x assume x: "x \<in> dVs \<E>"
-  note lx = bspec[OF V x] and dx = bspec[OF D x] and px = bspec[OF P x]
-  have xv: "x \<in> set vis" if "l ! x"
-    using conjunct2[OF lx] that by (rule iffD1)
-  have par: "l ! (pl ! x) \<and> (pl ! x, x) \<in> \<E> \<and> distance_set \<E> \<S> x = distance_set \<E> \<S> (pl ! x) + 1"
+  note at = bspec[OF assms(1) x] bspec[OF assms(2) x] bspec[OF assms(3) x]
+  have parent: "l ! (pl ! x) \<and> (pl ! x, x) \<in> \<E> \<and>
+      distance_set \<E> \<S> x = distance_set \<E> \<S> (pl ! x) + 1"
     if "l ! x" "x \<notin> \<S>"
-  proof-
-    have c: "p x \<in> set vis" "(p x, x) \<in> \<E>" "distance_set \<E> \<S> x = distance_set \<E> \<S> (p x) + 1"
-      using bspec[OF c3 DiffI[OF xv[OF that(1)] that(2)]] by blast+
+  proof -
+    have step: "p x \<in> set vis" "(p x, x) \<in> \<E>"
+      "distance_set \<E> \<S> x = distance_set \<E> \<S> (p x) + 1"
+      using assms(6) at(1) that by blast+
     show ?thesis
-      unfolding conjunct2[OF px, symmetric] using c bspec[OF V dVsI(1)[OF c(2)]] by blast
+      unfolding conjunct2[OF at(3), symmetric]
+      using step bspec[OF assms(1) dVsI(1)[OF step(2)]] by blast
   qed
   have "enat (dl ! x) = distance_set \<E> \<S> x" if "l ! x"
-    unfolding conjunct2[OF dx, symmetric] by (rule bspec[OF c2 xv[OF that]])
+    unfolding conjunct2[OF at(2), symmetric]
+    using assms(5) at(1) that by blast
   then show "x < length l \<and> x < length dl \<and> x < length pl \<and>
-             (l ! x \<longleftrightarrow> (\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q x)) \<and>
-             (l ! x \<longrightarrow> enat (dl ! x) = distance_set \<E> \<S> x) \<and>
-             ((l ! x \<and> x \<notin> \<S>) \<longrightarrow>
-                l ! (pl ! x) \<and> (pl ! x, x) \<in> \<E> \<and> distance_set \<E> \<S> x = distance_set \<E> \<S> (pl ! x) + 1)"
-    using lx dx px c1 par by blast
+    (l ! x \<longleftrightarrow> (\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q x)) \<and>
+    (l ! x \<longrightarrow> enat (dl ! x) = distance_set \<E> \<S> x) \<and>
+    ((l ! x \<and> x \<notin> \<S>) \<longrightarrow> l ! (pl ! x) \<and> (pl ! x, x) \<in> \<E> \<and>
+      distance_set \<E> \<S> x = distance_set \<E> \<S> (pl ! x) + 1)"
+    using at assms(4) parent by blast
 qed
 
 text \<open>For the parent array, it suffices that every reachable vertex that is not a source has a
       parent in the parent map and that all its parents have these properties.\<close>
 
-lemma bfs_arrays_intro_par:
-  assumes V: "\<forall>u \<in> dVs \<E>. u < length l \<and> (l ! u \<longleftrightarrow> u \<in> set vis)"
-    and D: "\<forall>i \<in> dVs \<E>. i < length dl \<and> d i = dl ! i"
-    and Pl: "length pl = n" and P: "\<forall>v u. p v = Some u \<longrightarrow> pl ! v = u"
-    and c1: "\<forall>x. x \<in> set vis \<longleftrightarrow> (\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q x)"
-    and c2: "\<forall>x \<in> set vis. enat (d x) = distance_set \<E> \<S> x"
-    and c3: "\<forall>x \<in> set vis - \<S>. (\<exists>u. (x, u) \<in> parent_array.pa_graph p) \<and>
+lemma bfs_arrays_intro_par[bfs_array_intros]:
+  assumes "\<forall>u \<in> dVs \<E>. u < length l \<and> (l ! u \<longleftrightarrow> u \<in> set vis)"
+    and "\<forall>i \<in> dVs \<E>. i < length dl \<and> d i = dl ! i"
+    and "length pl = n" and "\<forall>v u. p v = Some u \<longrightarrow> pl ! v = u"
+    and "\<forall>x. x \<in> set vis \<longleftrightarrow> (\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q x)"
+    and "\<forall>x \<in> set vis. enat (d x) = distance_set \<E> \<S> x"
+    and "\<forall>x \<in> set vis - \<S>. (\<exists>u. (x, u) \<in> parent_array.pa_graph p) \<and>
                (\<forall>u. (x, u) \<in> parent_array.pa_graph p \<longrightarrow> u \<in> set vis \<and> (u, x) \<in> \<E> \<and>
                   distance_set \<E> \<S> x = distance_set \<E> \<S> u + 1)"
   shows "bfs_arrays l dl pl"
-proof (rule bfs_arrays_intro[OF V D _ c1 c2, where p = "\<lambda>i. pl ! i"])
+proof (rule bfs_arrays_intro[OF assms(1,2) _ assms(5,6), where p = "\<lambda>i. pl ! i"])
   show "\<forall>i \<in> dVs \<E>. i < length pl \<and> pl ! i = pl ! i"
-    using E_bound Pl by auto
+    using E_bound assms(3) by auto
   show "\<forall>x \<in> set vis - \<S>. pl ! x \<in> set vis \<and> (pl ! x, x) \<in> \<E> \<and>
-          distance_set \<E> \<S> x = distance_set \<E> \<S> (pl ! x) + 1"
+    distance_set \<E> \<S> x = distance_set \<E> \<S> (pl ! x) + 1"
   proof
-    fix x
-    assume x: "x \<in> set vis - \<S>"
-    obtain u where u: "(x, u) \<in> parent_array.pa_graph p"
-      using bspec[OF c3 x] by blast
-    have px: "pl ! x = u"
-      using P u by (simp add: parent_array.pa_graph_def)
+    fix x assume "x \<in> set vis - \<S>"
     show "pl ! x \<in> set vis \<and> (pl ! x, x) \<in> \<E> \<and>
-          distance_set \<E> \<S> x = distance_set \<E> \<S> (pl ! x) + 1"
-      unfolding px by (rule conjunct2[OF bspec[OF c3 x], rule_format, OF u])
+      distance_set \<E> \<S> x = distance_set \<E> \<S> (pl ! x) + 1"
+      using bspec[OF assms(7) \<open>x \<in> set vis - \<S>\<close>] assms(4)
+      by (auto simp: parent_array.pa_graph_def)
   qed
 qed
 
@@ -681,7 +590,7 @@ lemma bfs_arrays_ent:
       rule arrays_ent, rule bfs_arrays_intro_par[OF _ _ _ _ assms],
       (assumption | erule conjunct1 | erule conjunct2)+)
 
-lemma bfs_csr_build_rule:
+lemma bfs_csr_build_rule[bfs_heap_rules]:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_heads n (Fa, Ta) 0
    <\<lambda>Gi. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ei.heads.csr_blocks_assn (\<lambda>v. ei.inp.B_spec ! v) Gi>"
   by (rule ht_cons_post[OF ei.csr_build_heads_rule[of Fa Ta, unfolded csr_build_heads]])
@@ -690,8 +599,8 @@ lemma bfs_csr_build_rule:
 text \<open>The allocations of @{const bfs_csr_run} establish the precondition of the BFS on the
       instance.\<close>
 
-lemma bfs_csr_run_rule:
-  assumes Q: "\<And>Gi Vi Fr Bf Da Pa fl bl. \<lbrakk>length fl = Suc n; take (length ss) fl = ss; length bl = Suc n\<rbrakk> \<Longrightarrow>
+lemma bfs_csr_run_rule[bfs_heap_rules]:
+  assumes "\<And>Gi Vi Fr Bf Da Pa fl bl. \<lbrakk>length fl = Suc n; take (length ss) fl = ss; length bl = Suc n\<rbrakk> \<Longrightarrow>
      <bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] * len_assn n Pa *
       ei.heads.csr_blocks_assn (\<lambda>v. ei.inp.B_spec ! v) Gi>
        bfs_csr_visited_dists_parents Gi Vi (Fr, length ss, Bf) Da Pa <Q Gi Vi Fr Bf Da Pa>"
@@ -712,7 +621,7 @@ proof-
     by (rule ht_cons[OF ent_star_mono[OF ent_star_mono[OF ent_star_mono[OF ent_refl
                           len_intro[OF length_map[of id "[0..<n]", unfolded length_upt minus_nat.diff_0]]]
                           ent_refl] ent_refl] _
-                     ht_frame[OF Q[OF lenF length_replicate], where R = ?I]])
+                     ht_frame[OF assms[OF lenF length_replicate], where R = ?I]])
        sep_auto
   show ?thesis
     unfolding bfs_csr_run_def
@@ -724,31 +633,17 @@ text \<open>The final correctness theorem: the program returns a visited, a dist
 
 lemmas fin_correct = it.fin_correct[OF srcs, unfolded edges_E, folded \<S>_def]
 
-theorem bfs_csr_run_correct:
+theorem bfs_csr_run_correct[bfs_heap_rules]:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Sa \<mapsto>\<^sub>a ss> bfs_csr_run n Fa Ta Sa
    <\<lambda>(Vi, Da, Pa). \<exists>\<^sub>A vs ds ps. Vi \<mapsto>\<^sub>a vs * Da \<mapsto>\<^sub>a ds * Pa \<mapsto>\<^sub>a ps * \<up>(bfs_arrays vs ds ps) * true>"
-proof (rule ht_cons[OF ent_refl _ bfs_csr_run_rule[OF it.bfs_rule[OF srcs, folded bfs_csr_visited_dists_parents_def]]],
-       goal_cases)
-  case (1 r)
-  obtain Vi Da Pa where r: "r = (Vi, Da, Pa)"
-    by (cases r rule: prod_cases3)
-  have c1: "\<forall>x. x \<in> set (BFS_dist_state.visited (it.fin ss)) \<longleftrightarrow> (\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q x)"
-    by (rule allI, rule fin_correct(1))
-  have c2: "\<forall>x \<in> set (BFS_dist_state.visited (it.fin ss)).
-             enat (BFS_dist_state.dists (it.fin ss) x) = distance_set \<E> \<S> x"
-    by (rule ballI, erule fin_correct(2))
-  have c3: "\<forall>x \<in> set (BFS_dist_state.visited (it.fin ss)) - \<S>.
-             (\<exists>u. (x, u) \<in> parent_array.pa_graph (BFS_par_state.parent (it.fin ss))) \<and>
-             (\<forall>u. (x, u) \<in> parent_array.pa_graph (BFS_par_state.parent (it.fin ss)) \<longrightarrow>
-                u \<in> set (BFS_dist_state.visited (it.fin ss)) \<and> (u, x) \<in> \<E> \<and>
-                distance_set \<E> \<S> x = distance_set \<E> \<S> u + 1)"
-    by (rule ballI, erule fin_correct(3))
-  show ?case
-    unfolding r prod.case
-    by (rule ent_true_drop(1), rule ent_true_drop(1), intro ent_ex_preI, unfold ent_pure_pre_iff prod.inject,
-        intro impI, elim conjE, hypsubst, rule ent_true_drop(2), unfold mult.assoc,
-        rule bfs_arrays_ent[OF c1 c2 c3, unfolded mult.assoc])
-qed
+  by (rule ht_cons_post[OF bfs_csr_run_rule[
+        OF it.bfs_rule[OF srcs, folded bfs_csr_visited_dists_parents_def]]], assumption+,
+      simp only: split_paired_all prod.case,
+      rule ent_true_drop(1), rule ent_true_drop(1), intro ent_ex_preI,
+      unfold ent_pure_pre_iff prod.inject, intro impI, elim conjE, hypsubst,
+      rule ent_true_drop(2), unfold mult.assoc,
+      rule bfs_arrays_ent[unfolded mult.assoc])
+     (intro allI ballI; rule fin_correct; assumption?)+
 
 text \<open>Path reconstruction: after the BFS, @{const bfs_path} writes a shortest path from the
       sources to any reachable vertex @{term v}, reversed, into the first cells of an array with
@@ -761,68 +656,29 @@ lemma run_then_path:
   shows "<P * Ra \<mapsto>\<^sub>a r> do { (a, b, d) \<leftarrow> m; m' b d } <\<lambda>k. \<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(q k ps) * true>"
   by (sep_auto heap: assms(1,2))
 
-theorem bfs_csr_path_correct:
-  assumes v: "\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q v" and r: "n \<le> length r"
+theorem bfs_csr_path_correct[bfs_heap_rules]:
+  assumes "\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q v" and "n \<le> length r"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Sa \<mapsto>\<^sub>a ss * Ra \<mapsto>\<^sub>a r>
            do { (Vi, Da, Pa) \<leftarrow> bfs_csr_run n Fa Ta Sa; bfs_path Pa Ra v }
          <\<lambda>k. \<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(length ps = length r \<and>
               (\<exists>u \<in> \<S>. vwalk_bet \<E> u (rev (take k ps)) v \<and> enat (k - 1) = distance_set \<E> \<S> v)) * true>"
 proof-
-  let ?p = "parent_array.pa_get_path n (BFS_par_state.parent (it.fin ss)) v"
-  have vis: "v \<in> set (BFS_dist_state.visited (it.fin ss))"
-    using v by (rule fin_correct(1)[THEN iffD2])
-  have card: "card (dVs it.nbs_edges) \<le> length r"
-    unfolding edges_E by (rule order.trans[OF card_mono[OF finite_lessThan E_bound]]) (simp only: card_lessThan r)
-  have len: "length ?p \<le> length r"
-    by (rule order.trans[OF it.fin_path_length[OF srcs vis] card[folded edges_E]])
-  note pth = it.path_rule[OF srcs vis card, unfolded edges_E, folded \<S>_def]
-  have post: "Ra \<mapsto>\<^sub>a (?p @ drop (length ?p) r) *
-              \<up>(k = length ?p \<and> (\<exists>u \<in> \<S>. vwalk_bet \<E> u (rev ?p) v \<and> length ?p - 1 = distance_set \<E> \<S> v))
-              \<Longrightarrow>\<^sub>A \<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(length ps = length r \<and>
-                 (\<exists>u \<in> \<S>. vwalk_bet \<E> u (rev (take k ps)) v \<and> enat (k - 1) = distance_set \<E> \<S> v))" for k
-    unfolding ent_pure_pre_iff
-    by (intro impI, elim conjE, hypsubst, rule ent_ex_postI[where x = "?p @ drop (length ?p) r"])
-       (use len in simp)
-  have post': "Ra \<mapsto>\<^sub>a (?p @ drop (length ?p) r) *
-              \<up>(k = length ?p \<and> (\<exists>u \<in> \<S>. vwalk_bet \<E> u (rev ?p) v \<and> length ?p - 1 = distance_set \<E> \<S> v)) * F
-              \<Longrightarrow>\<^sub>A \<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(length ps = length r \<and>
-                 (\<exists>u \<in> \<S>. vwalk_bet \<E> u (rev (take k ps)) v \<and> enat (k - 1) = distance_set \<E> \<S> v)) * true"
-    for k F
-    by (rule ent_trans[OF ent_star_mono[OF post ent_true]], unfold ex_distrib_star[symmetric])
-       (intro ent_ex_preI ent_ex_postI ent_refl)
+  have "v \<in> set (BFS_dist_state.visited (it.fin ss))"
+    using assms(1) fin_correct(1) by blast
+  have "card (dVs it.nbs_edges) \<le> length r"
+    unfolding edges_E
+    by (rule order.trans[OF card_mono[OF finite_lessThan E_bound, unfolded card_lessThan] assms(2)])
+  note path = it.path_rule[OF srcs
+      \<open>v \<in> set (BFS_dist_state.visited (it.fin ss))\<close>
+      \<open>card (dVs it.nbs_edges) \<le> length r\<close>, unfolded edges_E, folded \<S>_def]
+  have "length (parent_array.pa_get_path n (BFS_par_state.parent (it.fin ss)) v) \<le> length r"
+    using it.fin_path_length[OF srcs \<open>v \<in> set (BFS_dist_state.visited (it.fin ss))\<close>]
+      \<open>card (dVs it.nbs_edges) \<le> length r\<close> by linarith
   show ?thesis
-  proof (rule run_then_path[OF bfs_csr_run_rule[OF it.bfs_rule[OF srcs, folded bfs_csr_visited_dists_parents_def]]])
-    fix Gi Vi Da Pa a b d and Fr Bf :: "nat array"
-    show "<ei.heads.csr_blocks_assn (\<lambda>v. ei.inp.B_spec ! v) Gi *
-           bool_array_set_assn n (set (BFS_dist_state.visited (it.fin ss))) Vi *
-           BFS_subprocedures_lists.imp_dist_assn n Da nbs_map (BFS_dist_state.dists (it.fin ss)) Da *
-           parent_array.pa_parent_assn n (BFS_par_state.parent (it.fin ss)) Pa *
-           len_assn (Suc n) Fr * len_assn (Suc n) Bf * \<up>((a, b, d) = (Vi, Da, Pa)) * Ra \<mapsto>\<^sub>a r>
-           bfs_path d Ra v
-         <\<lambda>k. \<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(length ps = length r \<and>
-              (\<exists>u \<in> \<S>. vwalk_bet \<E> u (rev (take k ps)) v \<and> enat (k - 1) = distance_set \<E> \<S> v)) * true>"
-    proof (rule pure_mid)
-      let ?R = "ei.heads.csr_blocks_assn (\<lambda>v. ei.inp.B_spec ! v) Gi *
-                bool_array_set_assn n (set (BFS_dist_state.visited (it.fin ss))) Vi *
-                BFS_subprocedures_lists.imp_dist_assn n Da nbs_map (BFS_dist_state.dists (it.fin ss)) Da *
-                len_assn (Suc n) Fr * len_assn (Suc n) Bf"
-      let ?P = "parent_array.pa_parent_assn n (BFS_par_state.parent (it.fin ss)) Pa"
-      assume "(a, b, d) = (Vi, Da, Pa)"
-      then have d: "d = Pa"
-        unfolding prod.inject by (elim conjE)
-      show "<ei.heads.csr_blocks_assn (\<lambda>v. ei.inp.B_spec ! v) Gi *
-             bool_array_set_assn n (set (BFS_dist_state.visited (it.fin ss))) Vi *
-             BFS_subprocedures_lists.imp_dist_assn n Da nbs_map (BFS_dist_state.dists (it.fin ss)) Da *
-             ?P * len_assn (Suc n) Fr * len_assn (Suc n) Bf * Ra \<mapsto>\<^sub>a r>
-             bfs_path d Ra v
-           <\<lambda>k. \<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(length ps = length r \<and>
-                (\<exists>u \<in> \<S>. vwalk_bet \<E> u (rev (take k ps)) v \<and> enat (k - 1) = distance_set \<E> \<S> v)) * true>"
-        unfolding d
-        by (rule ht_frame_ac[OF pth, where R = ?R])
-           (simp only: star_aci, rule ent_refl,
-            rule ent_trans[OF _ post'[of _ "?P * ?R"]], simp only: star_aci, rule ent_refl)
-    qed
-  qed
+    by (rule run_then_path[OF bfs_csr_run_rule[
+          OF it.bfs_rule[OF srcs, folded bfs_csr_visited_dists_parents_def]]])
+       (use \<open>length (parent_array.pa_get_path n (BFS_par_state.parent (it.fin ss)) v) \<le> length r\<close>
+         in \<open>sep_auto heap: path\<close>)
 qed
 
 end

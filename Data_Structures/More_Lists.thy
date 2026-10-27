@@ -4,7 +4,468 @@
 
 theory More_Lists
   imports Main "HOL-Library.Extended_Real" AI_Provenance.Provenance
+    Data_Structures.Fixed_Univ_Map_Specs
+    More_Arith
 begin
+
+lemma drop_take_Cons_Cons:
+  "\<lbrakk>i + 1 < k; k \<le> length xs\<rbrakk> \<Longrightarrow>
+   drop i (take k xs) = xs ! i # xs ! (i + 1) # drop (i + 2) (take k xs)"
+  using Cons_nth_drop_Suc[of i "take k xs"] Cons_nth_drop_Suc[of "Suc i" "take k xs"]
+  by simp
+
+lemma nth_below: "\<lbrakk>set xs \<subseteq> {..<n}; j < length xs\<rbrakk> \<Longrightarrow> xs ! j < (n::nat)"
+  by (simp add: subset_eq)
+
+lemma distinct_length_le: "\<lbrakk>distinct xs; set xs \<subseteq> {..<m}\<rbrakk> \<Longrightarrow> length xs \<le> m"
+  using card_mono[of "{..<m}" "set xs"]
+  by (simp add: distinct_card)
+
+lemma Max_insert_fold: "Max (insert a (set xs)) = fold max xs (a::'a::linorder)"
+  using Max.set_eq_fold[of a xs]
+  by simp
+
+text \<open>The maximum weight of a non-empty list.\<close>
+
+definition "list_max f xs = fold max (map f (tl xs)) (f (hd xs))"
+
+lemma list_max:
+  fixes f :: "'a \<Rightarrow> 'b :: linorder"
+  shows "xs \<noteq> [] \<Longrightarrow> list_max f xs = Max (f ` set xs)"
+  by (cases xs) (simp_all add: list_max_def Max.set_eq_fold[symmetric])
+
+lemmas [code] = list_max_def
+
+lemma take_drop_upd:
+  "\<lbrakk>a < length ys; length xs = length ys; y = ys ! a\<rbrakk> \<Longrightarrow>
+   list_update (take a ys @ drop a xs) a y = take (Suc a) ys @ drop (Suc a) xs"
+  by (simp add: list_update_append take_Suc_conv_app_nth Cons_nth_drop_Suc[symmetric])
+
+lemma take_upd_Suc: "k < length l \<Longrightarrow> take (Suc k) (list_update l k x) = take k l @ [x]"
+  by (subst take_Suc_conv_app_nth) (simp_all add: list_update_beyond)
+
+lemma take_Suc_upd: "k < length l \<Longrightarrow> list_update (take (Suc k) l) k x = take k l @ [x]"
+  using take_upd_Suc[of k l x]
+  by (simp add: take_update_swap)
+
+lemma take_drop_upd_insert:
+  assumes "p < length g"
+  shows "take (Suc p) (g[p := x]) @ M @ drop (Suc p + length M) (g[p := x]) =
+         take p g @ (x # M) @ drop (p + length (x # M)) g"
+  by (simp only: take_upd_Suc[OF assms]) simp
+
+lemma extract_list:
+  assumes "distinct hs" "butlast hs \<noteq> []"
+  shows "distinct ((butlast hs)[0 := last hs])"
+        "set ((butlast hs)[0 := last hs]) = set hs - {hs ! 0}"
+        "length ((butlast hs)[0 := last hs]) = length hs - 1"
+        "\<And>j. \<lbrakk>0 < j; j < length hs - 1\<rbrakk> \<Longrightarrow>
+          (butlast hs)[0 := last hs] ! j = hs ! j"
+proof-
+  obtain a ys z where "hs = a # ys @ [z]"
+    using assms(2)
+    by (cases hs; cases "tl hs" rule: rev_cases; auto split: if_splits)
+  thus "distinct ((butlast hs)[0 := last hs])"
+      "set ((butlast hs)[0 := last hs]) = set hs - {hs ! 0}"
+      "length ((butlast hs)[0 := last hs]) = length hs - 1"
+      "\<And>j. \<lbrakk>0 < j; j < length hs - 1\<rbrakk> \<Longrightarrow>
+        (butlast hs)[0 := last hs] ! j = hs ! j"
+    using assms(1)
+    by (auto simp add: nth_Cons' nth_append butlast_append)
+qed
+
+lemma perm_step_lists:
+  assumes "i < length es" "length xs = length es"
+  shows "list_update (take (Suc i) xs) i (vs ! (es ! i)) = take i xs @ [vs ! (es ! i)]"
+        "drop i (map ((!) vs) es) = vs ! (es ! i) # drop (Suc i) (map ((!) vs) es)"
+        "(map ((!) us) (take i es) @ drop i es) ! i = es ! i"
+        "list_update (map ((!) us) (take i es) @ drop i es) i (us ! (es ! i)) =
+         map ((!) us) (take (Suc i) es) @ drop (Suc i) es"
+  using assms Cons_nth_drop_Suc[of i "map ((!) vs) es", symmetric] Cons_nth_drop_Suc[of i es, symmetric]
+  by (simp_all add: take_Suc_conv_app_nth list_update_append nth_append)
+
+lemma Cons_eq_upt_conv: "(x # xs = [i..<j]) = (i < j \<and> x = i \<and> xs = [Suc i..<j])"
+  by (subst eq_commute) (auto simp: upt_eq_Cons_conv)
+
+lemma replicate_diff_Suc: "i < n \<Longrightarrow> replicate (n - i) x = x # replicate (n - Suc i) x"
+  by (simp add: Suc_diff_Suc flip: replicate_Suc)
+
+text \<open>The even and the odd positions of a list with two leading elements.\<close>
+
+lemma evens_odds_Cons2:
+  "{(x # y # zs) ! i | i. i < length (x # y # zs) \<and> even i}
+     = insert x {zs ! i | i. i < length zs \<and> even i}"
+  "{(x # y # zs) ! i | i. i < length (x # y # zs) \<and> odd i}
+     = insert y {zs ! i | i. i < length zs \<and> odd i}"
+  by (auto simp: less_Suc_eq_0_disj intro: exI[of _ "Suc (Suc i)" for i])
+     (rule exI[of _ 0], simp, rule exI[of _ 1], simp)
+
+lemma nth_set_subset: "{zs ! i | i. i < length zs \<and> P i} \<subseteq> set zs"
+  by auto
+
+text \<open>The pairs of a walk of odd length \<open>p\<close> that the augmentation exchanges: \<open>(p ! (2i+1), p
+! (2i+2))\<close> for the first and \<open>(p ! (2i+1), p ! (2i))\<close> for the second matroid.\<close>
+
+lemma odd_pairs_fst1:
+  "odd (length p) \<Longrightarrow>
+     set (map fst [(p ! (2*i+1), p ! (2*i+2)). i <- [0..<(length p - 1) div 2]])
+       = {p ! i | i. i < length p \<and> odd i}"
+  by (presburger |
+      auto intro!: image_eqI[of "_ i" _ "(i - 1) div 2" for i] image_eqI[of "p ! i" fst for i]
+      intro: less_mult_imp_div_less)+
+
+lemma odd_pairs_snd1:
+  "odd (length p) \<Longrightarrow>
+     set (map snd [(p ! (2*i+1), p ! (2*i+2)). i <- [0..<(length p - 1) div 2]]) \<union> {p ! 0}
+       = {p ! i | i. i < length p \<and> even i}"
+  using not_less_eq_eq
+  by (auto intro!: less_mult_imp_div_less diff_less_mono cong[OF refl, of _ _ "\<lambda> i. p ! i"]
+                   image_eqI[of "_ i" _ "(i - 1) div 2" for i]
+                   image_eqI[of "p ! i" snd
+                   "(p ! Suc (2 * ((i-1) div 2)), p ! Suc (Suc (2 * ((i-1) div 2))))" for i])+
+
+lemma odd_pairs_fst2:
+  "odd (length p) \<Longrightarrow>
+     set (map fst [(p ! (2*i+1), p ! (2*i)). i <- [0..<(length p - 1) div 2]])
+       = {p ! i | i. i < length p \<and> odd i}"
+  by (presburger |
+      auto intro!: image_eqI[of "_ i" _ "(i - 1) div 2" for i] image_eqI[of "p ! i" fst for i]
+      intro: less_mult_imp_div_less)+
+
+lemma odd_pairs_snd2:
+  "odd (length p) \<Longrightarrow>
+     set (map snd [(p ! (2*i+1), p ! (2*i)). i <- [0..<(length p - 1) div 2]]) \<union> {p ! (length p - 1)}
+       = {p ! i | i. i < length p \<and> even i}"
+  by (cases p)
+     (auto intro!: less_mult_imp_div_less diff_less_mono cong[OF refl, of _ _ "\<lambda> i. p ! i"]
+                   image_eqI[of "_ i" _ "(i) div 2" for i]
+                   image_eqI[of "p ! i" snd "(p ! Suc (2 * ((i) div 2)), p ! (2 * ((i) div 2)))" for i]
+        simp: less_Suc_eq)
+
+text \<open>On a walk without repeated vertices the exchanged pairs are injective in both components, and no
+even-position or start vertex is removed.\<close>
+
+lemma odd_pairs_distinct1:
+  "distinct p \<Longrightarrow> distinct (map fst [(p ! (2*i+1), p ! (2*i+2)). i <- [0..<(length p - 1) div 2]])"
+  "distinct p \<Longrightarrow> distinct (map snd [(p ! (2*i+1), p ! (2*i+2)). i <- [0..<(length p - 1) div 2]])"
+  by (auto simp: distinct_conv_nth nth_eq_iff_index_eq)
+
+lemma odd_pairs_distinct2:
+  "distinct p \<Longrightarrow> distinct (map fst [(p ! (2*i+1), p ! (2*i)). i <- [0..<(length p - 1) div 2]])"
+  "distinct p \<Longrightarrow> distinct (map snd [(p ! (2*i+1), p ! (2*i)). i <- [0..<(length p - 1) div 2]])"
+  by (auto simp: distinct_conv_nth nth_eq_iff_index_eq)
+
+lemma odd_pairs_snd_notin1:
+  "\<lbrakk>distinct p; odd (length p); i < length p; odd i \<or> i = 0\<rbrakk> \<Longrightarrow>
+     (a, p ! i) \<notin> set [(p ! (2*i+1), p ! (2*i+2)). i <- [0..<(length p - 1) div 2]]"
+  by (auto simp: nth_eq_iff_index_eq)
+
+lemma odd_pairs_snd_notin2:
+  "\<lbrakk>distinct p; odd (length p); i < length p; odd i \<or> i = length p - 1\<rbrakk> \<Longrightarrow>
+     (a, p ! i) \<notin> set [(p ! (2*i+1), p ! (2*i)). i <- [0..<(length p - 1) div 2]]"
+  by (auto simp: nth_eq_iff_index_eq)
+
+lemma concat_if_dist:
+  "distinct xs \<Longrightarrow> concat (map (\<lambda> x. if x = u then L x else []) xs) = (if u \<in> set xs then L
+    u else [])"
+  by (induction xs) auto
+
+lemma foldr_cons_map: "foldr (\<lambda> y acc. f y # acc) xs a = map f xs @ a"
+  by (induction xs) simp_all
+
+lemma foldr_cons_filter:
+  "foldr (\<lambda> y acc. if p y then f y # acc else acc) xs a = map f (filter p xs) @ a"
+  by (induction xs) simp_all
+
+lemma foldr_pairs:
+  "foldr (\<lambda> x acc. if p x then foldr (\<lambda> y acc. if q x y then (x, y) # acc else acc) ys acc
+                   else acc) xs a =
+   concat (map (\<lambda> x. map (Pair x) (filter (q x) ys)) (filter p xs)) @ a"
+  by (induction xs) (simp_all add: foldr_cons_filter)
+
+lemma foldl_filter_if:
+  "foldl (\<lambda> a x. if p x then f a x else a) a xs = foldl f a (filter p xs)"
+  by (induction xs arbitrary: a) simp_all
+
+lemma zip_foldl_map:
+     "ys = map y xs \<Longrightarrow> foldl (\<lambda>acc a. case a of (x, y) \<Rightarrow> f x y acc) acc (zip xs ys)
+      = foldl (\<lambda>acc x. f x (y x) acc) acc xs"
+  by(induction xs arbitrary: acc ys) auto
+
+lemma foldl_fixed: "(\<And>x. f s x = s) \<Longrightarrow> foldl f s xs = s"
+  by (induction xs) simp_all
+
+lemma foldl_True: "foldl (\<lambda> a x. True) b xs = (b \<or> xs \<noteq> [])"
+  by (induction xs arbitrary: b) simp_all
+
+lemma nth_in_take: "\<lbrakk>j < k; k \<le> length ps\<rbrakk> \<Longrightarrow> ps ! j \<in> set (take k ps)"
+  using nth_mem[of j "take k ps"]
+  by simp
+
+lemma rev_take_Suc_Suc:
+  "Suc (Suc j) \<le> length ps \<Longrightarrow> rev (take (Suc (Suc j)) ps) = ps ! Suc j # ps ! j # rev (take j ps)"
+  by (simp add: take_Suc_conv_app_nth)
+
+lemma map_bcount_upd:
+  assumes "k < nb" "\<And> b. b < nb \<Longrightarrow> g b = (if b = k then v else f b)"
+  shows "(map f [0..<nb])[k := v] = map g [0..<nb]"
+  by (rule nth_equalityI; insert assms; auto simp: nth_list_update)
+
+lemma map_fun_update:
+  "i < n \<Longrightarrow> (map f [0..<n])[i := x] = map (f(i := x)) [0..<n]"
+  by (rule nth_equalityI) (auto simp: nth_list_update)
+
+lemma map_mem_update:
+  "i < n \<Longrightarrow>
+   (map (\<lambda> j. j \<in> X) [0..<n])[i := b] = map (\<lambda> j. j \<in> (if b then insert i X else X - {i})) [0..<n]"
+  by (rule nth_equalityI) (auto simp: nth_list_update)
+
+lemma sum_list_map_zero:
+  "(\<And> u. \<lbrakk>v \<le> u; u < w\<rbrakk> \<Longrightarrow> L ! u = 0)
+     \<Longrightarrow> sum_list (map ((!) L) [v..<w]) = (0 :: 'a :: comm_monoid_add)"
+  by(induction w) auto
+
+lemma bal_zero_iff:
+  "((\<forall> u. Suc 0 \<le> u \<and> u < nn \<longrightarrow> bl ! u \<le> 0)
+    \<and> (\<forall> u. Suc 0 \<le> u \<and> u < nn \<longrightarrow> 0 \<le> bl ! u)
+    \<and> sum_list (map ((!) (list_update bl 0 0)) [Suc 0..<nn]) = (0 :: int))
+   = (\<forall> v. Suc 0 \<le> v \<and> v < nn \<longrightarrow> bl ! v = 0)"
+  by(auto intro: order_antisym sum_list_map_zero)
+
+lemma takeWhile_holds: "x \<in> set (takeWhile P xs) \<Longrightarrow> P x"
+  by (induction xs) (auto split: if_splits)
+
+lemma set_takeWhile_closed:
+  assumes "\<And>us w ws u. \<lbrakk>xs = us @ w # ws; P w; u \<in> set us\<rbrakk> \<Longrightarrow> P u"
+  shows "set (takeWhile P xs) = {x \<in> set xs. P x}"
+proof(intro equalityI subsetI)
+  fix x
+  assume "x \<in> {x \<in> set xs. P x}"
+  then obtain us ws where "xs = us @ x # ws" "P x"
+    by (auto dest: split_list)
+  thus "x \<in> set (takeWhile P xs)"
+    using assms[of us x ws]
+    by simp
+qed (auto dest: set_takeWhileD)
+
+lemma in_dropWhile_neq: "x \<in> set xs \<Longrightarrow> x \<in> set (dropWhile (\<lambda>y. y \<noteq> x) xs)"
+  by (induction xs) auto
+
+lemma notin_takeWhile_dropWhile: "\<lbrakk>x \<in> set xs; x \<notin> set (takeWhile P xs)\<rbrakk> \<Longrightarrow> x
+  \<in> set (dropWhile P xs)"
+  by (induction xs) auto
+
+lemma takeWhile_block_aux:
+  "\<lbrakk>distinct xs; xs = pre @ rest; pre \<noteq> []; last pre = L\<rbrakk> \<Longrightarrow> takeWhile
+    (\<lambda>x. x \<noteq> L) xs @ [L] = pre"
+  by (induction pre arbitrary: xs) (auto split: if_splits)
+
+lemma prefix_mono_set:
+  assumes "distinct ys" "as @ as' = ys" "bs @ bs' = ys" "set as \<subseteq> set bs"
+  shows "\<exists>cs. bs = as @ cs"
+proof(cases "length as \<le> length bs")
+  case True
+  thus ?thesis
+    using arg_cong[OF trans[OF assms(2) assms(3)[symmetric]], of "take (length as)"]
+          append_take_drop_id[of "length as" bs]
+    by (auto intro!: exI[of _ "drop (length as) bs"])
+next
+  case False
+  then obtain x d where "as = bs @ x # d"
+    using arg_cong[OF trans[OF assms(2) assms(3)[symmetric]], of "take (length bs)"]
+          append_take_drop_id[of "length bs" as]
+    by (cases "drop (length bs) as") auto
+  thus ?thesis
+    using assms(1,2,4)
+    by auto
+qed
+
+lemma fold_upd_commute:
+  "x \<notin> g ` set xs \<Longrightarrow>
+     (fold (\<lambda>a T. T(g a := h a)) xs Y)(x := v) = fold (\<lambda>a T. T(g a := h a)) xs (Y(x := v))"
+  by (induction xs arbitrary: Y) (auto simp: fun_upd_twist)
+
+lemma fold_upd_other:
+  "z \<notin> (g ` set xs) \<Longrightarrow> (fold (\<lambda>a T. T(g a := h a)) xs Y) z = Y z"
+  by (induction xs arbitrary: Y) auto
+
+lemma length_foldl_upd [simp]: "length (foldl (\<lambda>W j. list_update W (g j) (f j)) W xs) = length W"
+  by (induction xs arbitrary: W) auto
+
+lemma foldl_upd_nth_miss:
+  "x \<notin> g ` set xs \<Longrightarrow> foldl (\<lambda>W j. list_update W (g j) (f j)) W xs ! x = W ! x"
+  by (induction xs arbitrary: W) auto
+
+text \<open>Updating a list at the positions @{term "g j"} for the elements @{term j} of a list, with
+      @{term g} injective.\<close>
+
+lemma foldl_upd_nth_hit:
+  assumes "inj_on g (set xs)" "i \<in> set xs" "\<And>j. j \<in> set xs \<Longrightarrow> g j < length W"
+  shows "foldl (\<lambda>W j. list_update W (g j) (f j)) W xs ! g i = f i"
+  using assms
+proof(induction xs arbitrary: W)
+  case (Cons a xs)
+  thus ?case
+    by (cases "i \<in> set xs") (auto simp: foldl_upd_nth_miss)+
+qed simp
+
+lemma foldr_upd_range:
+  "k \<le> length l \<Longrightarrow> foldr (\<lambda> j l. list_update l j (p j)) [0..<k] l = map p [0..<k] @ drop k l"
+  by (induction k arbitrary: l) (simp_all add: Cons_nth_drop_Suc[symmetric] drop_update_swap)
+
+lemma foldl_upd_eval:
+  "(foldl (\<lambda>R u. case f u of None \<Rightarrow> R | Some w \<Rightarrow> R(w \<mapsto> u)) R0 ds) x =
+   (if (\<exists>u\<in>set ds. f u = Some x) then Some (last (filter (\<lambda>u. f u = Some x) ds)) else R0 x)"
+  by (induction ds rule: rev_induct) (auto split: option.splits)
+
+lemma filter_eq_self_single: "\<lbrakk>distinct xs; u \<in> set xs\<rbrakk> \<Longrightarrow> filter (\<lambda>x. x = u)
+  xs = [u]"
+  by (induction xs) (auto simp: filter_empty_conv)
+
+lemma find_filter: "find p (filter q xs) = find (\<lambda> x. q x \<and> p x) xs"
+  by (induction xs) simp_all
+
+lemma find_SomeD: "find p xs = Some x \<Longrightarrow> p x \<and> x \<in> set xs"
+  by (induction xs) (simp_all split: if_splits)
+
+lemma list_ex_filter: "list_ex p (filter q xs) = list_ex (\<lambda> x. q x \<and> p x) xs"
+  by (induction xs) simp_all
+
+lemma list_ex_find: "list_ex p xs = (find p xs \<noteq> None)"
+  by (induction xs) simp_all
+
+lemma take_nth_eq: "\<lbrakk>take n xs = ys; k < n\<rbrakk> \<Longrightarrow> xs ! k = ys ! k"
+  by (clarsimp simp: nth_take)
+
+lemma concat_eqI:
+  assumes "length xs = sum_list (map length Ls)"
+      and "\<And>k i. \<lbrakk>k < length Ls; i < length (Ls ! k)\<rbrakk>
+                \<Longrightarrow> xs ! (sum_list (map length (take k Ls)) + i) = Ls ! k ! i"
+  shows "xs = concat Ls"
+  using assms
+proof(induction Ls arbitrary: xs)
+  case (Cons L Ls)
+  have "take (length L) xs = L"
+    using Cons.prems(1) Cons.prems(2)[of 0]
+    by (intro nth_equalityI) auto
+  moreover have "drop (length L) xs = concat Ls"
+    using Cons.prems Cons.prems(2)[of "Suc k" for k]
+    by (intro Cons.IH) (auto simp: add.assoc)
+  ultimately show ?case
+    using append_take_drop_id[of "length L" xs]
+    by simp
+qed simp
+
+lemma map_nth_upt_take_drop:
+  "b \<le> length xs \<Longrightarrow> map ((!) xs) [a..<b] = take (b - a) (drop a xs)"
+  by (rule nth_equalityI) auto
+
+lemma nths_intervall_as_drop_and_take:
+  "nths list {start..ed} = drop (start) (take (Suc ed) list)"
+  apply(induction list arbitrary: start ed)
+  subgoal
+    by simp
+  subgoal for a list start ed
+    apply(cases start)
+     apply(all \<open>cases ed\<close>)
+       apply (auto simp add: nths_Cons)
+    subgoal
+      by(auto simp add: intervall_rw2)
+    by(auto simp add: nths_def)
+  done
+
+lemma nths_intervall_strict_as_drop_and_take:
+  "nths list {start..<ed} = drop (start) (take ed list)"
+  by(cases ed)
+    (simp_all add: atLeastLessThanSuc_atLeastAtMost nths_intervall_as_drop_and_take)
+
+lemma nths_intervall_split_off_first:
+  assumes "start \<le> end" "end < length list"
+  shows "(nths list {start..end}) =  (list ! start # nths list {Suc start..end})"
+  unfolding nths_intervall_as_drop_and_take
+  apply(subst Cons_nth_drop_Suc[of start, symmetric])
+  using assms(1,2)
+  by (auto intro!: arg_cong2[where f = Cons] simp add: assms(1) le_imp_less_Suc)
+
+lemma nths_intervall_strict_split_off_first:
+  assumes "start < end" "end < length list"
+  shows "(nths list {start..<end}) =  (list ! start # nths list {Suc start..<end})"
+  unfolding nths_intervall_strict_as_drop_and_take
+  apply(subst Cons_nth_drop_Suc[of start, symmetric])
+  using assms(1,2)
+  by (auto intro!: arg_cong2[where f = Cons] simp add: assms(1) le_imp_less_Suc)
+
+lemma nths_strict_split_off_first_le:
+  assumes "start < end" "end \<le> length list"
+  shows "nths list {start..<end} = list ! start # nths list {Suc start..<end}"
+  using assms Cons_nth_drop_Suc[of start "take end list"]
+  by (simp add: nths_intervall_strict_as_drop_and_take)
+
+lemma nth_shifted_by_lower_bound_of_nths_intervall:
+  assumes "u < length xs" "i \<ge> l" "i \<le> u"
+  shows "nths xs {l..u} ! (i -l) = xs ! i"
+  unfolding nths_intervall_as_drop_and_take
+  using assms
+  by (subst nth_drop)(auto simp add: le_imp_less_Suc)
+
+lemma nth_of_nths_intervall_shifted_by_lower_bound:
+  assumes "u < length xs" "l + i \<le> u"
+  shows "nths xs {l..u} ! (i) = xs ! (i + l)"
+  unfolding nths_intervall_as_drop_and_take
+  using assms
+  by (subst nth_drop)(auto simp add: le_imp_less_Suc algebra_simps)
+
+lemma length_nths_of_intervall:
+  assumes  "u < length xs"
+  shows "length (nths xs {l..u})  = (u + 1) - l"
+  using assms
+  by(auto simp add: nths_intervall_as_drop_and_take)
+
+lemma foldl_upt_nth: "foldl (\<lambda> a j. g a (xs ! j)) a [0..<length xs] = foldl g a xs"
+  by (subst (2) map_nth[symmetric]) (simp add: foldl_map)
+
+lemma sorted_wrt_rank_distinct: "sorted_wrt (\<lambda> a b. (r::nat \<Rightarrow> nat) b < r a) p \<Longrightarrow> distinct p"
+  by (induction p) auto
+
+lemma foldl_insert_set: "foldl (\<lambda> A x. Set.insert x A) B ys = set ys \<union> B"
+  by (induction ys arbitrary: B) auto
+
+lemma sum_length_filter_key:
+  fixes f :: "'a \<Rightarrow> nat"
+  shows "(\<And>x. x \<in> set xs \<Longrightarrow> f x < n)
+         \<Longrightarrow> (\<Sum>k\<in>{0..<n}. length (filter (\<lambda>x. f x = k) xs)) = length xs"
+proof(induction xs)
+  case (Cons x xs)
+  have "(\<Sum>k\<in>{0..<n}. length (filter (\<lambda>y. f y = k) (x # xs)))
+        = (\<Sum>k\<in>{0..<n}. length (filter (\<lambda>y. f y = k) xs) + (if f x = k then 1 else 0))"
+    by (auto intro: sum.cong)
+  thus ?case
+    using Cons
+    by (simp add: sum.distrib)
+qed simp
+
+lemma foldr_max_some:
+  "xs \<noteq> [] \<Longrightarrow>
+   foldr (\<lambda> x acc. Some (case acc of None \<Rightarrow> f x | Some m \<Rightarrow> max m (f x))) xs None
+     = Some (Max (f ` set xs))"
+proof(induction xs)
+  case Nil
+  then show ?case
+    by simp
+next
+  case (Cons x xs)
+  show ?case
+  proof(cases "xs = []")
+    case True
+    then show ?thesis
+      by simp
+  next
+    case False
+    then show ?thesis
+      using Cons.IH[OF False]
+      by (simp add: Max_insert image_insert max.commute)
+  qed
+qed
 
 provenance human
 
@@ -850,5 +1311,6 @@ lemma itrev_rev_gen:"itrev_aux xs ys = rev xs @ ys"
 
 lemma itrev_is_rev[simp]: "itrev = rev"
   by(auto simp add: itrev_rev_gen[of _ Nil, simplified] itrev_def)
+
 
 end

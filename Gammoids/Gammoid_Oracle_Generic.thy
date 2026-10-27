@@ -18,58 +18,6 @@ hull of the network of all elements, and the search is told by a predicate which
 From a path of nodes, the residual edges are obtained by orienting its pairs, and the flow is
 augmented along them.\<close>
 
-subsection \<open>Walks along an Injection\<close>
-
-lemma vwalk_map:
-  assumes "Vwalk.vwalk {(u, v). (h u, h v) \<in> R} p"
-  shows "Vwalk.vwalk R (map h p)"
-  using assms by (induction p rule: induct_list012) (auto elim!: in_dVsE(1))
-
-lemma vwalk_bet_map:
-  assumes "vwalk_bet {(u, v). (h u, h v) \<in> R} s p t"
-  shows "vwalk_bet R (h s) (map h p) (h t)"
-  using assms vwalk_map unfolding vwalk_bet_def by (auto simp: hd_map last_map)
-
-lemma vwalk_unmap:
-  assumes h: "inj h" "dVs R \<subseteq> range h" and q: "Vwalk.vwalk R q"
-  shows "Vwalk.vwalk {(u, v). (h u, h v) \<in> R} (map (inv h) q)"
-  using q
-proof (induction q rule: induct_list012)
-  case (2 x)
-  then obtain w where w: "(x, w) \<in> R \<or> (w, x) \<in> R"
-    by (auto elim: in_dVsE(1))
-  then have rng: "x \<in> range h" "w \<in> range h"
-    using h(2) by auto
-  show ?case
-    using w
-  proof
-    assume "(x, w) \<in> R"
-    then have "(inv h x, inv h w) \<in> {(u, v). (h u, h v) \<in> R}"
-      using rng by (simp add: f_inv_into_f)
-    then show ?thesis
-      by (simp add: dVsI(1))
-  next
-    assume "(w, x) \<in> R"
-    then have "(inv h w, inv h x) \<in> {(u, v). (h u, h v) \<in> R}"
-      using rng by (simp add: f_inv_into_f)
-    then show ?thesis
-      by (simp add: dVsI(2))
-  qed
-next
-  case (3 x y zs)
-  then have xy: "(x, y) \<in> R" "Vwalk.vwalk R (y # zs)"
-    by simp_all
-  then have "x \<in> range h" "y \<in> range h"
-    using h(2) by auto
-  then show ?case
-    using 3(2)[OF xy(2)] xy(1) by (simp add: f_inv_into_f)
-qed simp
-
-lemma vwalk_bet_unmap:
-  assumes h: "inj h" "dVs R \<subseteq> range h" and q: "vwalk_bet R (h s) q (h t)"
-  shows "vwalk_bet {(u, v). (h u, h v) \<in> R} s (map (inv h) q) t"
-  using q vwalk_unmap[OF h] h(1) unfolding vwalk_bet_def by (auto simp: hd_map last_map)
-
 subsection \<open>Orienting Node Pairs\<close>
 
 text \<open>The networks have no parallel and no antiparallel edges. Hence the kinds of two nodes tell

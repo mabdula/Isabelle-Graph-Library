@@ -42,7 +42,8 @@ subsection \<open>Programs\<close>
 
 text \<open>Count pass, refining @{term "it_fold count_step"}.\<close>
 
-partial_function (heap) count_imp :: "'ci \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> 'si \<Rightarrow> nat Heap" where
+partial_function (heap) count_imp ::
+  "'ci \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> 'si \<Rightarrow> nat Heap" where
   "count_imp c B m si = do {
      b \<leftarrow> it_has_next_impl c si;
      if b then do {
@@ -57,7 +58,8 @@ partial_function (heap) count_imp :: "'ci \<Rightarrow> nat array \<Rightarrow> 
        count_imp c B (Suc m) si' }
      else return m }"
 
-text \<open>Prefix sums, refining @{term "fold prefix_step [j..<Suc n]"}; \<open>acc\<close> holds \<open>B!(j-1)\<close>.\<close>
+text \<open>Prefix sums, refining @{term "fold prefix_step [j..<Suc n]"}; \<open>acc\<close> holds
+      \<open>B!(j-1)\<close>.\<close>
 
 partial_function (heap) prefix_imp :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "prefix_imp B j acc =
@@ -70,7 +72,8 @@ partial_function (heap) prefix_imp :: "nat array \<Rightarrow> nat \<Rightarrow>
 
 text \<open>Fill pass, refining @{term "it_fold fill_step"}; the value of the element is stored.\<close>
 
-partial_function (heap) fill_imp :: "'ci \<Rightarrow> nat array \<Rightarrow> 'x array \<Rightarrow> 'si \<Rightarrow> unit Heap" where
+partial_function (heap) fill_imp ::
+  "'ci \<Rightarrow> nat array \<Rightarrow> 'x array \<Rightarrow> 'si \<Rightarrow> unit Heap" where
   "fill_imp c B E si = do {
      b \<leftarrow> it_has_next_impl c si;
      if b then do {
@@ -101,10 +104,11 @@ definition csr_build_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> (nat array \<ti
      fill_imp c B E si;
      return (B, E) }"
 
-text \<open>The build into arrays allocated by the caller: \<open>B\<close> is zero, \<open>E\<close> has one cell per element.
-      This lets an algorithm allocate all its arrays once at the start.\<close>
+text \<open>The build into arrays allocated by the caller: \<open>B\<close> is zero, \<open>E\<close> has one cell
+      per element. This lets an algorithm allocate all its arrays once at the start.\<close>
 
-definition csr_build_into :: "'ci \<Rightarrow> 'si \<Rightarrow> nat array \<Rightarrow> 'x array \<Rightarrow> unit Heap" where
+definition csr_build_into ::
+  "'ci \<Rightarrow> 'si \<Rightarrow> nat array \<Rightarrow> 'x array \<Rightarrow> unit Heap" where
   "csr_build_into c si B E = do {
      count_imp c B 0 si;
      prefix_imp B 1 0;
@@ -153,100 +157,49 @@ lemma count_imp_rule:
      count_imp c B m si
    <\<lambda>r. input_assn c * B \<mapsto>\<^sub>a fst (it_fold count_step s (Bs, m))
          * \<up>(r = snd (it_fold count_step s (Bs, m)))>"
-proof (induction arbitrary: s si Bs m rule: count_imp.fixp_induct)
-  case 1
-  show ?case by simp
-next
-  case 2
-  show ?case by simp
-next
+proof(induction arbitrary: s si Bs m rule: count_imp.fixp_induct)
   case (3 f)
-  note IH = "3"
   show ?case
-  proof (cases "it_invar s \<and> it_rel s si \<and> set (it_seq s) \<subseteq> set es \<and> length Bs = Suc n")
-    case False
-    thus ?thesis by (intro ht_extract_pre_pure(1)) simp
-  next
+  proof(cases "it_invar s \<and> it_rel s si \<and> set (it_seq s) \<subseteq> set es \<and> length Bs = Suc n")
     case True
-    hence inv: "it_invar s" and rel: "it_rel s si" and sub: "set (it_seq s) \<subseteq> set es"
-      and len: "length Bs = Suc n"
-      by auto
     show ?thesis
-    proof (cases "it_next s")
-      case None
-      have fe: "it_fold count_step s (Bs, m) = (Bs, m)"
-        by (subst it_fold.simps) (simp add: None)
-      thus ?thesis
-        using None by (sep_auto heap: has_next_rule[OF inv rel])
-    next
+    proof(cases "it_next s")
       case (Some a)
-      then obtain e s' where nx: "it_next s = Some (e, s')"
-        by (cases a) auto
-      have inv': "it_invar s'" and seq: "it_seq s = e # it_seq s'"
-        using it_next_Some[OF inv nx] by auto
-      have eE: "e \<in> set (it_seq s0)"
-        using sub seq by (auto simp add: es_def)
-      have sub': "set (it_seq s') \<subseteq> set es"
-        using sub seq by auto
-      have IH': "<input_assn c * B \<mapsto>\<^sub>a Bs' * \<up>(it_rel s' si' \<and> length Bs' = Suc n)> f c B m' si'
-                 <\<lambda>r. input_assn c * B \<mapsto>\<^sub>a fst (it_fold count_step s' (Bs', m'))
-                       * \<up>(r = snd (it_fold count_step s' (Bs', m')))>" for si' Bs' m'
-        using IH[where s1=s' and si1=si' and Bs1=Bs' and m1=m'] inv' sub' by (simp only: simp_thms)
-      have fe: "it_fold count_step s (Bs, m)
-            = it_fold count_step s'
-                (if key e + 2 \<le> n then Bs[key e + 2 := Bs ! (key e + 2) + 1] else Bs, Suc m)"
-        by (subst it_fold.simps) (simp add: nx count_step_def Let_def)
-      show ?thesis
-        using len
-        by (sep_auto heap: has_next_rule[OF inv rel] cur_rule[OF inv rel nx]
-                           adv_rule[OF inv rel nx] key_rule[OF eE] IH'
-                     simp: nx fe)
-    qed
-  qed
-qed
+      then obtain e s' where "it_next s = Some (e, s')" "e \<in> set (it_seq s0)"
+        "it_invar s'" "set (it_seq s') \<subseteq> set es"
+        using True it_next_Some[of s]
+        by (cases a) (auto simp: es_def)
+      thus ?thesis
+        using True
+        by (sep_auto heap: has_next_rule[of s si] cur_rule[of s si e s'] adv_rule[of s si e s'] key_rule[of e]
+            3[where s1=s'] simp: it_fold_Some count_step_def Let_def)
+    qed (use True in \<open>sep_auto heap: has_next_rule[of s si] simp: it_fold_None\<close>)
+  qed (intro ht_extract_pre_pure(1), simp)
+qed simp_all
 
 lemma prefix_imp_rule:
   "<B \<mapsto>\<^sub>a Bs * \<up>(length Bs = Suc n \<and> 0 < j \<and> acc = Bs ! (j - 1))>
      prefix_imp B j acc
    <\<lambda>_. B \<mapsto>\<^sub>a fold prefix_step [j..<Suc n] Bs>"
-proof (induction arbitrary: Bs j acc rule: prefix_imp.fixp_induct)
-  case 1
-  show ?case by simp
-next
-  case 2
-  show ?case by simp
-next
+proof(induction arbitrary: Bs j acc rule: prefix_imp.fixp_induct)
   case (3 f)
-  note IH = "3"
   show ?case
-  proof (cases "length Bs = Suc n \<and> 0 < j \<and> acc = Bs ! (j - 1)")
-    case False
-    thus ?thesis by (intro ht_extract_pre_pure(1)) simp
-  next
+  proof(cases "length Bs = Suc n \<and> 0 < j \<and> acc = Bs ! (j - 1)")
     case True
-    hence len: "length Bs = Suc n" and j: "0 < j" and acc: "acc = Bs ! (j - 1)"
-      by auto
-    show ?thesis
-    proof (cases "j \<le> n")
-      case False
-      thus ?thesis by sep_auto
-    next
-      case True
-      have IH': "<B \<mapsto>\<^sub>a Bs' * \<up>(length Bs' = Suc n \<and> acc' = Bs' ! j)> f B (Suc j) acc'
-                 <\<lambda>_. B \<mapsto>\<^sub>a fold prefix_step [Suc j..<Suc n] Bs'>" for Bs' acc'
-        using IH[where Bs1=Bs' and j1="Suc j" and acc1=acc']
-        by (simp only: zero_less_Suc diff_Suc_1 simp_thms)
-      have "fold prefix_step [j..<Suc n] Bs = fold prefix_step [Suc j..<Suc n] (Bs[j := Bs ! j + acc])"
-        using True by (subst upt_conv_Cons[of j "Suc n"]) (simp_all add: prefix_step_def acc del: upt_Suc)
-      thus ?thesis
-        using True len by (sep_auto heap: IH')
-    qed
-  qed
-qed
+    have "j \<le> n \<Longrightarrow> fold prefix_step [j..<Suc n] Bs
+        = fold prefix_step [Suc j..<Suc n] (list_update Bs j (Bs ! j + acc))"
+      using True
+      by (subst upt_conv_Cons[of j "Suc n"]) (simp_all add: prefix_step_def del: upt_Suc)
+    thus ?thesis
+      using True
+      by (sep_auto heap: 3[where j1="Suc j"])
+  qed (intro ht_extract_pre_pure(1), simp)
+qed simp_all
 
-corollary prefix_sums_imp_rule:
+lemma prefix_sums_imp_rule:
   "<B \<mapsto>\<^sub>a Bs * \<up>(length Bs = Suc n \<and> Bs ! 0 = 0)> prefix_imp B 1 0 <\<lambda>_. B \<mapsto>\<^sub>a prefix_sums Bs>"
-  using prefix_imp_rule[where j=1 and acc=0] by (simp add: prefix_sums_def)
+  using prefix_imp_rule[where j=1 and acc=0]
+  by (simp add: prefix_sums_def)
 
 lemma fill_imp_rule:
   "<input_assn c * B \<mapsto>\<^sub>a Bs * E \<mapsto>\<^sub>a map val Es
@@ -254,129 +207,67 @@ lemma fill_imp_rule:
      fill_imp c B E si
    <\<lambda>_. input_assn c * B \<mapsto>\<^sub>a fst (it_fold fill_step s (Bs, Es))
          * E \<mapsto>\<^sub>a map val (snd (it_fold fill_step s (Bs, Es)))>"
-proof (induction arbitrary: s si xs Bs Es rule: fill_imp.fixp_induct)
-  case 1
-  show ?case by simp
-next
-  case 2
-  show ?case by simp
-next
+proof(induction arbitrary: s si xs Bs Es rule: fill_imp.fixp_induct)
   case (3 f)
-  note IH = "3"
   show ?case
-  proof (cases "it_invar s \<and> it_rel s si \<and> xs @ it_seq s = es \<and> fill_invar xs (Bs, Es)")
-    case False
-    thus ?thesis by (intro ht_extract_pre_pure(1)) simp
-  next
+  proof(cases "it_invar s \<and> it_rel s si \<and> xs @ it_seq s = es \<and> fill_invar xs (Bs, Es)")
     case True
-    hence inv: "it_invar s" and rel: "it_rel s si" and xs: "xs @ it_seq s = es"
-      and finv: "fill_invar xs (Bs, Es)"
-      by auto
     show ?thesis
-    proof (cases "it_next s")
-      case None
-      have "it_fold fill_step s (Bs, Es) = (Bs, Es)"
-        by (subst it_fold.simps) (simp add: None)
-      thus ?thesis
-        using None by (sep_auto heap: has_next_rule[OF inv rel])
-    next
+    proof(cases "it_next s")
       case (Some a)
-      then obtain e s' where nx: "it_next s = Some (e, s')"
+      then obtain e s' where "it_next s = Some (e, s')" "xs @ e # it_seq s' = es" "it_invar s'"
+        using True it_next_Some[of s]
         by (cases a) auto
-      have inv': "it_invar s'" and seq: "it_seq s = e # it_seq s'"
-        using it_next_Some[OF inv nx] by auto
-      have es: "xs @ e # it_seq s' = es"
-        using xs seq by simp
-      have eE: "e \<in> set (it_seq s0)"
-        unfolding es_def[symmetric] es[symmetric] by simp
-      have bnd: "Suc (key e) < length Bs" "Bs ! Suc (key e) < length Es"
-        using fill_step_bounds[OF es finv] by auto
-      have finv': "fill_invar (xs @ [e]) (fill_step e (Bs, Es))"
-        using fill_step_invar[OF es finv] .
-      have fs: "fill_step e (Bs, Es)
-                = (Bs[Suc (key e) := Suc (Bs ! Suc (key e))], Es[Bs ! Suc (key e) := e])"
-        by (simp add: fill_step_def Let_def)
-      have IH': "<input_assn c * B \<mapsto>\<^sub>a fst (fill_step e (Bs, Es))
-                    * E \<mapsto>\<^sub>a map val (snd (fill_step e (Bs, Es))) * \<up>(it_rel s' si')> f c B E si'
-                 <\<lambda>_. input_assn c * B \<mapsto>\<^sub>a fst (it_fold fill_step s' (fill_step e (Bs, Es)))
-                       * E \<mapsto>\<^sub>a map val (snd (it_fold fill_step s' (fill_step e (Bs, Es))))>" for si'
-        using IH[where s1=s' and si1=si' and xs1="xs @ [e]" and Bs1="fst (fill_step e (Bs, Es))"
-                 and Es1="snd (fill_step e (Bs, Es))"]
-              inv' es finv'
-        by (simp only: prod.collapse append_assoc append.simps es simp_thms)
-      have "it_fold fill_step s (Bs, Es)
-            = it_fold fill_step s' (Bs[Suc (key e) := Suc (Bs ! Suc (key e))], Es[Bs ! Suc (key e) := e])"
-        by (subst it_fold.simps) (simp add: nx fs)
-      thus ?thesis
-        using bnd
-        by (sep_auto heap: has_next_rule[OF inv rel] cur_rule[OF inv rel nx]
-                           adv_rule[OF inv rel nx] key_rule[OF eE] val_rule[OF eE]
-                           IH'[unfolded fs fst_conv snd_conv map_update]
-                     simp: nx)
-    qed
-  qed
-qed
+      moreover have "e \<in> set (it_seq s0)"
+        unfolding es_def[symmetric] calculation(2)[symmetric]
+        by simp
+      ultimately show ?thesis
+        using True fill_step_bounds[of xs e "it_seq s'" Bs Es] fill_step_invar[of xs e "it_seq s'" Bs Es]
+        by (sep_auto heap: has_next_rule[of s si] cur_rule[of s si e s'] adv_rule[of s si e s'] key_rule[of e]
+            val_rule[of e] 3[where s1=s' and xs1="xs @ [e]" and Bs1="fst (fill_step e (Bs, Es))"
+              and Es1="snd (fill_step e (Bs, Es))",
+              unfolded fill_step_def Let_def case_prod_conv fst_conv snd_conv map_update]
+            simp: it_fold_Some fill_step_def Let_def)
+    qed (use True in \<open>sep_auto heap: has_next_rule[of s si] simp: it_fold_None\<close>)
+  qed (intro ht_extract_pre_pure(1), simp)
+qed simp_all
 
 lemma init_E_imp_rule:
   "<input_assn c * \<up>(it_rel s0 si)> init_E_imp c si m <\<lambda>E. input_assn c * E \<mapsto>\<^sub>a map val (init_E m)>"
-proof (cases "it_next s0")
-  case None
-  thus ?thesis
-    unfolding init_E_imp_def init_E_def
-    by (sep_auto heap: has_next_rule[OF s0_invar])
-next
+proof(cases "it_next s0")
   case (Some a)
-  then obtain e s' where nx: "it_next s0 = Some (e, s')"
+  then obtain e s' where "it_next s0 = Some (e, s')"
     by (cases a) auto
-  have eE: "e \<in> set (it_seq s0)"
-    using it_next_Some[OF s0_invar nx] by simp
-  show ?thesis
-    using nx
+  thus ?thesis
+    using s0_invar it_next_Some[of s0 e s']
     unfolding init_E_imp_def init_E_def
-    by (sep_auto heap: has_next_rule[OF s0_invar] cur_rule[OF s0_invar _ nx] val_rule[OF eE])
-qed
+    by (sep_auto heap: has_next_rule[of s0] cur_rule[of s0 _ e s'] val_rule)
+qed (sep_auto simp: init_E_imp_def init_E_def s0_invar heap: has_next_rule[of s0])
 
-theorem csr_build_imp_rule:
+lemma csr_build_imp_rule:
   "<input_assn c * \<up>(it_rel s0 si)> csr_build_imp c si
    <\<lambda>(B, E). input_assn c * B \<mapsto>\<^sub>a B_spec * E \<mapsto>\<^sub>a map val E_spec>"
-proof -
-  have c: "it_fold count_step s0 (0 # replicate n 0, 0) = (count_B es, length es)"
-    using count_edges by (simp add: count_edges_def)
-  have fl: "it_fold fill_step s0 (prefix_sums (count_B es), init_E (length es)) = (B_spec, E_spec)"
-    using csr_build_correct by (simp add: csr_build_def count_edges)
-  have seq0: "it_seq s0 = es"
-    by (simp add: es_def)
-  have B0: "count_B es ! 0 = 0"
-    by (simp add: count_B_nth)
-  show ?thesis
-    unfolding csr_build_imp_def
-    by (sep_auto heap: count_imp_rule[where s=s0] prefix_sums_imp_rule init_E_imp_rule
-                       fill_imp_rule[where s=s0 and xs="[]"]
-                 simp: c B0 fl s0_invar seq0 fill_invar_init)
-qed
+  unfolding csr_build_imp_def
+  using count_edges csr_build_correct
+  by (sep_auto heap: count_imp_rule[where s=s0] prefix_sums_imp_rule init_E_imp_rule
+      fill_imp_rule[where s=s0 and xs="[]"]
+      simp: count_edges_def csr_build_def count_B_nth s0_invar es_def[symmetric] fill_invar_init)
 
-theorem csr_build_into_rule:
+lemma csr_build_into_rule:
   "<input_assn c * B \<mapsto>\<^sub>a replicate (Suc n) 0 * E \<mapsto>\<^sub>a map val Es
       * \<up>(it_rel s0 si \<and> length Es = length es)>
      csr_build_into c si B E
    <\<lambda>_. input_assn c * B \<mapsto>\<^sub>a B_spec * E \<mapsto>\<^sub>a map val E_spec>"
-proof -
-  have c: "it_fold count_step s0 (0 # replicate n 0, 0) = (count_B es, length es)"
-    using count_edges by (simp add: count_edges_def)
-  have seq0: "it_seq s0 = es"
-    by (simp add: es_def)
-  have B0: "count_B es ! 0 = 0"
-    by (simp add: count_B_nth)
-  have fi: "fill_invar [] (prefix_sums (count_B es), Es)" if "length Es = length es"
-    using that by (simp add: fill_invar_def prefix_sums_count_B del: upt_Suc)
-  have fl: "it_fold fill_step s0 (prefix_sums (count_B es), Es) = (B_spec, E_spec)"
-    if "length Es = length es"
-    using fill_correct[OF that] by (simp add: it_fold_s0)
-  show ?thesis
+proof-
+  have "fill_invar [] (prefix_sums (count_B es), Es)" if "length Es = length es"
+    using that
+    by (simp add: fill_invar_def prefix_sums_count_B del: upt_Suc)
+  thus ?thesis
     unfolding csr_build_into_def
+    using count_edges fill_correct[of Es]
     by (sep_auto heap: count_imp_rule[where s=s0] prefix_sums_imp_rule
-                       fill_imp_rule[where s=s0 and xs="[]"]
-                 simp: c B0 s0_invar seq0 fi fl)
+        fill_imp_rule[where s=s0 and xs="[]"]
+        simp: count_edges_def count_B_nth s0_invar es_def[symmetric] it_fold_s0)
 qed
 
 end

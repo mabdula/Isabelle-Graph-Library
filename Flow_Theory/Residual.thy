@@ -150,6 +150,29 @@ text \<open>Basically, a flow is a function assigning non-negative reals to edge
 definition ex::"('edge \<Rightarrow> real) \<Rightarrow> 'a \<Rightarrow> real" ("ex\<^bsub>_\<^esub> _")where
 "ex\<^bsub>f\<^esub> v = (\<Sum> e \<in> \<delta>\<^sup>- v. f e) - (\<Sum> e \<in> \<delta>\<^sup>+ v. f e)"
 
+text \<open>The excess of a flow at @{term a} is a signed sum over the edges incident to @{term a}. If
+      two flows have the same excess at @{term a} and agree on all incident edges but @{term e0},
+      they also agree on @{term e0}.\<close>
+
+lemma (in flow_network) excess_determines_edge:
+  assumes "e0 \<in> \<E>" "a \<in> {fst e0, snd e0}" "fst e0 \<noteq> snd e0"
+    "\<And>e. \<lbrakk>e \<in> \<E>; e \<noteq> e0; a \<in> {fst e, snd e}\<rbrakk> \<Longrightarrow> f e = f' e"
+    "ex f a = ex f' a"
+  shows "f e0 = f' e0"
+proof-
+  have "(\<Sum>e\<in>\<delta>\<^sup>+ a. f e - f' e) = (\<Sum>e\<in>\<delta>\<^sup>+ a \<inter> {e0}. f e - f' e)"
+    "(\<Sum>e\<in>\<delta>\<^sup>- a. f e - f' e) = (\<Sum>e\<in>\<delta>\<^sup>- a \<inter> {e0}. f e - f' e)"
+    using assms(4) finite_E
+    by (auto intro!: sum.mono_neutral_right simp: delta_plus_def delta_minus_def) blast+
+  moreover have "\<delta>\<^sup>+ a \<inter> {e0} = (if a = fst e0 then {e0} else {})"
+    "\<delta>\<^sup>- a \<inter> {e0} = (if a = snd e0 then {e0} else {})"
+    using assms(1)
+    by (auto simp: delta_plus_def delta_minus_def)
+  ultimately show ?thesis
+    using assms(2,3,5)
+    by (auto simp: ex_def sum_subtractf)
+qed
+
 text \<open>A circulation is a flow with zero excess everywhere.\<close>
 
 definition is_circ::"('edge \<Rightarrow> real) \<Rightarrow> bool" where
@@ -192,6 +215,11 @@ and isbflowI:
   "\<lbrakk>isuflow f; \<And> v.  v \<in> \<V>  \<Longrightarrow> (- ex f v) = b v\<rbrakk> \<Longrightarrow> f is b flow"
   by(auto simp add: isbflow_def)
 
+
+lemma flow_le_real_capacity:
+  "\<lbrakk>g is b flow; \<forall>e\<in>\<E>. \<u> e \<noteq> \<infinity>; e \<in> \<E>\<rbrakk>
+   \<Longrightarrow> 0 \<le> g e \<and> g e \<le> real_of_ereal (\<u> e)"
+  by (cases "\<u> e") (auto simp: isbflow_def isuflow_def)
 
 text \<open>Unsurprisingly, a balance has somehow to be balanced. 
       This means, that the overall sum of demands and supplies is zero.
@@ -446,6 +474,12 @@ lemma erve_erve_id: "erev (erev e) = e"
 lemma oedge_and_reversed: "oedge (erev e) = oedge e"
   by (metis erev.elims oedge.simps(1) oedge.simps(2))
 
+lemma oedge_eq_cases: "oedge x = oedge y \<Longrightarrow> x = y \<or> x = erev y"
+  by (cases x; cases y) auto
+
+lemma to_vertex_pair_erev: "to_vertex_pair (erev r) = prod.swap (to_vertex_pair r)"
+  by (cases r) (simp_all add: make_pair_def)
+
 lemma redge_erve_cases: 
  "\<lbrakk>d = erev e; (\<And> a. \<lbrakk>e = F a; d = B a\<rbrakk> \<Longrightarrow>P); (\<And> a. \<lbrakk>e = B a; d = F a \<rbrakk> \<Longrightarrow>P)\<rbrakk> \<Longrightarrow> P" for e d P
   by(cases e, auto)
@@ -676,6 +710,13 @@ end
 context 
   flow_network
 begin
+lemma lift_vwalk:
+  assumes "vwalk_bet (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) u p v"
+  obtains rs where "map to_vertex_pair rs = edges_of_vwalk p"
+    "set rs \<subseteq> {e | e. e \<in> \<EE> \<and> rcap f e > 0}"
+  using list_in_image_map[OF vwalk_bet_edges_in_edges[OF assms]]
+  by blast
+
 text \<open>We will use this similarly to an inductive predicate which 
       raises the need for some introduction rules.\<close>
 
@@ -1105,6 +1146,30 @@ lemma finite_Rescut: "x \<in> \<V> \<Longrightarrow> finite (Rescut f x)"
 
 lemma finite_ARescut: "x \<in> \<V> \<Longrightarrow> finite (ARescut f x)"
   by (meson ARescut_around_in_V \<V>_finite rev_finite_subset)
+
+text \<open>A vertex \<open>w\<close> with more inflow than outflow reaches \<open>s\<close> in the residual graph, if \<open>s\<close> is the
+only other vertex that may have more outflow than inflow: otherwise the vertices reachable from
+\<open>w\<close> would form a set into which no flow enters, but whose balances sum up to a negative value.\<close>
+
+lemma neg_balance_resreach:
+  assumes "f is b flow" "w \<in> \<V>" "b w < 0" "s \<noteq> w"
+    "\<And>v. \<lbrakk>v \<in> \<V>; v \<noteq> s; v \<noteq> w\<rbrakk> \<Longrightarrow> b v \<le> 0"
+  shows "resreach f w s"
+proof(rule ccontr)
+  assume "\<not> resreach f w s"
+  then have "sum b (Rescut f w - {w}) \<le> 0" "w \<in> Rescut f w"
+    using Rescut_around_in_V[OF assms(2)] assms(4,5)
+    by (auto intro!: sum_nonpos simp: Rescut_def)
+  then have "sum b (Rescut f w) < 0"
+    using sum.remove[OF finite_Rescut[OF assms(2)], where g = b] assms(3)
+    by simp
+  moreover have "0 \<le> sum f (\<Delta>\<^sup>+ (Rescut f w))"
+    using assms(1)
+    by (intro sum_nonneg) (auto simp: Delta_plus_def isbflow_def isuflow_def)
+  ultimately show False
+    using rescut_all_edges_sat[OF assms(1) Rescut_around_in_V[OF assms(2)]]
+    by simp
+qed
 
 lemma cardV_0:"card \<V> > 0" 
   by (simp add: E_not_empty \<V>_finite card_gt_0_iff)

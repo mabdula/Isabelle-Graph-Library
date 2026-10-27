@@ -6,6 +6,46 @@ theory More_Logic
   imports Complex_Main  "HOL-Eisbach.Eisbach" AI_Provenance.Provenance
 begin
 
+text \<open>Replacing an element by a new one keeps the cardinality; for a rematch.\<close>
+
+lemma card_swap: "\<lbrakk>y \<in> A; x \<notin> A\<rbrakk> \<Longrightarrow> card (A - {y} \<union> {x}) = card A"
+  using card_gt_0_iff[of A]
+  by (cases "finite A"; force)
+
+lemma card_swap_finite: "\<lbrakk>finite Z; u \<in> Z; v \<notin> Z\<rbrakk> \<Longrightarrow> card (insert v (Z - {u})) =
+    card Z"
+  using card_Diff1_less[of Z u]
+  by simp
+
+text \<open>
+  The purely combinatorial core of the submodularity argument: the deleted parts satisfy
+  \<open>|(X \<union> Y) - (A \<union> B)| + |(X \<inter> Y) - (A \<inter> B)| \<le> |X - A| + |Y - B|\<close>.
+\<close>
+
+lemma card_Diff_Un_Int_le:
+  assumes "finite X" "finite Y"
+  shows "card ((X \<union> Y) - (A \<union> B)) + card ((X \<inter> Y) - (A \<inter> B)) \<le> card (X - A) + card (Y
+    - B)"
+proof-
+  have "card ((X \<union> Y) - (A \<union> B)) + card ((X \<inter> Y) - (A \<inter> B))
+          = card (((X \<union> Y) - (A \<union> B)) \<union> ((X \<inter> Y) - (A \<inter> B)))
+            + card (((X \<union> Y) - (A \<union> B)) \<inter> ((X \<inter> Y) - (A \<inter> B)))"
+    using assms
+    by (intro card_Un_Int) auto
+  also have "\<dots> \<le> card ((X - A) \<union> (Y - B)) + card ((X - A) \<inter> (Y - B))"
+    using assms
+    by (intro add_mono card_mono) auto
+  also have "\<dots> = card (X - A) + card (Y - B)"
+    using assms
+    by (intro card_Un_Int[symmetric]) auto
+  finally show ?thesis .
+qed
+
+
+lemma wnb_handle_cases:
+  obtains Ba Ea Ca Wa where "Ci = ((Ba, Ea, Ca), Wa)"
+  by (cases Ci) auto
+
 provenance human
 
 lemma option_Some_theE: 

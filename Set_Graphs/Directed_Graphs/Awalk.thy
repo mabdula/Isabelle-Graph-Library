@@ -15,6 +15,11 @@ no_notation Digraph.dominates ("_ \<rightarrow>\<index> _")
 no_notation Digraph.reachable1 ("_ \<rightarrow>\<^sup>+\<index> _")
 no_notation Digraph.reachable ("_ \<rightarrow>\<^sup>*\<index> _")
 
+lemma cas_hd_last:
+  "\<lbrakk>cas u es v; es \<noteq> []\<rbrakk> \<Longrightarrow> fst (hd es) = u"
+  "\<lbrakk>cas u es v; es \<noteq> []\<rbrakk> \<Longrightarrow> snd (last es) = v"
+  by (induction u es v rule: cas.induct) (auto elim: cas.elims)
+
 lemma cas_simp:
   assumes "es \<noteq> []"
   shows "cas u es v \<longleftrightarrow> fst (hd es) = u \<and> cas (snd (hd es)) (tl es) v"
@@ -37,6 +42,9 @@ lemma
   assumes "cas u p v"
   shows awhd_if_cas: "awhd u p = u" and awlast_if_cas: "awlast u p = v"
   using assms by (induction p arbitrary: u) auto
+
+lemma cas_awlast: "cas u p v \<Longrightarrow> awlast u p = v"
+  by (induction u p v rule: cas.induct) auto
 
 lemma awalk_verts_in_verts:
   assumes "u \<in> dVs E" "set p \<subseteq> E" "v \<in> set (awalk_verts u p)"
@@ -129,6 +137,42 @@ lemma cas_ends:
   assumes "cas u p v" "cas u' p v'"
   shows "(p \<noteq> [] \<and> u = u' \<and> v = v') \<or> (p = [] \<and> u = v \<and> u' = v')"
   using assms by (induction u p v arbitrary: u u' rule: cas.induct) auto
+
+lemma cas_crossing:
+  "\<lbrakk>cas x es y; x \<in> X; y \<notin> X\<rbrakk> \<Longrightarrow> \<exists>e \<in> set es. fst e \<in> X \<and> snd e \<notin> X"
+proof (induction es arbitrary: x)
+  case (Cons e es)
+  thus ?case
+    by (cases e) (auto simp add: cas_simp)
+qed simp
+
+lemma cas_closed_successor:
+  "\<lbrakk>cas u es v; e \<in> set es\<rbrakk> \<Longrightarrow> snd e = v \<or> (\<exists>e' \<in> set es. fst e' = snd e)"
+proof (induction es arbitrary: u)
+  case (Cons e' es)
+  obtain t h where e': "e' = (t, h)"
+    by fastforce
+  hence cas_es: "cas h es v"
+    using Cons.prems(1) by simp
+  show ?case
+  proof (cases "e = e'")
+    case True
+    show ?thesis
+    proof (cases es)
+      case Nil
+      thus ?thesis
+        using cas_es True e' by simp
+    next
+      case (Cons e'' es')
+      thus ?thesis
+        using cas_es True e' by (cases e'') auto
+    qed
+  next
+    case False
+    thus ?thesis
+      using Cons.IH[OF cas_es] Cons.prems(2) by auto
+  qed
+qed simp
 
 lemma awalk_ends:
   assumes "awalk E u p v" "awalk E u' p v'"
@@ -399,6 +443,10 @@ proof -
 qed
 
 subsection \<open>Vertex walks\<close>
+lemma edges_of_vwalk_distinct_swap:
+  "\<lbrakk>distinct p; (u, v) \<in> set (edges_of_vwalk p)\<rbrakk> \<Longrightarrow> (v, u) \<notin> set (edges_of_vwalk p)"
+  by (induction p rule: edges_of_vwalk.induct) (auto dest: v_in_edge_in_vwalk)
+
 lemma awalk_imp_vwalk:
   assumes "awalk E u p v" shows "vwalk_bet E u (awalk_verts u p) v"
   using assms

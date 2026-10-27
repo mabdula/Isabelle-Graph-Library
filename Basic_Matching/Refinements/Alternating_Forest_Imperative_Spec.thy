@@ -87,31 +87,18 @@ definition "forest_fold p Fi f c =
   do { it \<leftarrow> forest_it_init p Fi; iter_fold forest_it_has_next forest_it_next f it c }"
 
 lemma forest_fold_rule:
-  assumes inv: "vset_invar (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)"
-      and step: "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
-      and pre: "fold_pre P g b (lst (part_set F p))"
-    shows "<forest_assn F Fi * A b c> forest_fold p Fi f c
-           <\<lambda>c'. forest_assn F Fi * A (foldl g b (lst (part_set F p))) c'>"
-proof-
-  have init: "<forest_assn F Fi> forest_it_init p Fi
-              <\<lambda>it. forest_assn F Fi * forest_is_it p (part_set F p) Fi (lst (part_set F p)) it>"
-    using inv by (cases p) (auto simp: part_set_def intro: ev.it_init_rule od.it_init_rule)
-  have has_next: "<forest_assn F Fi * forest_is_it p (part_set F p) Fi xs it> forest_it_has_next it
-                  <\<lambda>r. forest_assn F Fi * forest_is_it p (part_set F p) Fi xs it *
-                       \<up>(r \<longleftrightarrow> xs \<noteq> [])>" for xs it
-    by (cases p) (auto simp: part_set_def intro: ev.it_has_next_rule od.it_has_next_rule)
-  have nxt: "<forest_assn F Fi * forest_is_it p (part_set F p) Fi (x # xs) it> forest_it_next it
-             <\<lambda>(y, it'). forest_assn F Fi * forest_is_it p (part_set F p) Fi xs it' * \<up>(y = x)>"
-    for x xs it
-    by (cases p) (auto simp: part_set_def intro: ev.it_next_rule od.it_next_rule)
-  have quit: "forest_assn F Fi * forest_is_it p (part_set F p) Fi xs it \<Longrightarrow>\<^sub>A forest_assn F Fi"
-    for xs it
-    by (cases p) (auto simp: part_set_def intro: ev.quit_iteration od.quit_iteration)
-  show ?thesis
-    unfolding forest_fold_def
-    by (sep_auto heap: init iter_fold_rule_gen[where I = "\<lambda>xs it. forest_assn F Fi *
-                         forest_is_it p (part_set F p) Fi xs it", OF has_next nxt quit step pre])
-qed
+  assumes "vset_invar (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)"
+      and "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
+      and "fold_pre P g b (lst (part_set F p))"
+  shows "<forest_assn F Fi * A b c> forest_fold p Fi f c
+         <\<lambda>c'. forest_assn F Fi * A (foldl g b (lst (part_set F p))) c'>"
+  using assms
+  unfolding forest_fold_def part_set_def
+  by (cases p)
+     (sep_auto heap: iter_fold_rule_gen[where A = A and P = P and g = g,
+                       OF ev.it_has_next_rule ev.it_next_rule ev.quit_iteration assms(2)]
+                     iter_fold_rule_gen[where A = A and P = P and g = g,
+                       OF od.it_has_next_rule od.it_next_rule od.quit_iteration assms(2)])+
 
 end
 

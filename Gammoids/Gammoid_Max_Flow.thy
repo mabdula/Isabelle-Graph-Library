@@ -206,9 +206,6 @@ lemma sum_insert_zero:
 
 end
 
-lemma edge_linkage_mono: "\<lbrakk>edge_linkage G X Y P; G \<subseteq> G'\<rbrakk> \<Longrightarrow> edge_linkage G' X Y P"
-  by (auto simp: edge_linkage_def distinct_vwalk_bet_def intro: vwalk_bet_subset)
-
 context gammoid
 begin
 
@@ -285,53 +282,6 @@ proof (rule edge_separatorI)
 qed
 
 end
-
-subsection \<open>Walks and Transitive Closure\<close>
-
-lemma walk_trancl:
-  assumes "vwalk_bet E u p v" "u \<noteq> v"
-  shows "(u, v) \<in> E\<^sup>+"
-  using reachable_vwalk_betD[OF assms(1)] assms(2) by (rule reachable_neq_reachable1)
-
-lemma trancl_walk:
-  assumes "(u, v) \<in> E\<^sup>+"
-  obtains p where "vwalk_bet E u p v"
-proof -
-  have "\<exists>p. vwalk_bet E u p v"
-    using reachable1_reachable[OF assms] by (simp only: reachable_vwalk_bet_iff)
-  then show ?thesis
-    using that by blast
-qed
-
-lemma trancl_first_arrival:
-  assumes "(u, z) \<in> E\<^sup>+"
-  shows "\<exists>y. (u, y) \<in> {e \<in> E. snd e \<noteq> z}\<^sup>* \<and> (y, z) \<in> E"
-  using assms
-proof (induction rule: converse_trancl_induct)
-  case (base u)
-  then show ?case
-    by (intro exI[of _ u]) simp
-next
-  case (step u w)
-  then obtain y where y: "(w, y) \<in> {e \<in> E. snd e \<noteq> z}\<^sup>*" "(y, z) \<in> E"
-    by blast
-  show ?case
-  proof (cases "w = z")
-    case True
-    then show ?thesis
-      using step(1) by (intro exI[of _ u]) simp
-  next
-    case False
-    then have uw: "(u, w) \<in> {e \<in> E. snd e \<noteq> z}"
-      using step(1) by simp
-    show ?thesis
-      using converse_rtrancl_into_rtrancl[OF uw y(1)] y(2) by blast
-  qed
-qed
-
-lemma edges_of_vwalk_snoc:
-  "p \<noteq> [] \<Longrightarrow> edges_of_vwalk (p @ [z]) = edges_of_vwalk p @ [(last p, z)]"
-  by (induction p rule: induct_list012) auto
 
 subsection \<open>The Network of an Independent Set\<close>
 
@@ -1012,63 +962,6 @@ end
 
 subsection \<open>Walks, and Flows of Unit Shape\<close>
 
-text \<open>An edge \<open>(a, t)\<close> creates a walk from \<open>s\<close> to \<open>t\<close> iff \<open>s\<close> reaches \<open>a\<close>, if there was none before.\<close>
-
-lemma walk_insert_target:
-  assumes no: "\<not> (\<exists>p. vwalk_bet R s p t)" and sa: "s \<noteq> a" and st: "s \<noteq> t"
-  shows "(\<exists>p. vwalk_bet (insert (a, t) R) s p t) \<longleftrightarrow> (\<exists>p. vwalk_bet R s p a)"
-proof
-  assume "\<exists>p. vwalk_bet R s p a"
-  then obtain p where "vwalk_bet R s p a"
-    by blast
-  then have "(s, a) \<in> R\<^sup>+"
-    using sa by (rule walk_trancl)
-  then have "(s, a) \<in> (insert (a, t) R)\<^sup>+"
-    by (rule trancl_mono) blast
-  then have "(s, t) \<in> (insert (a, t) R)\<^sup>+"
-    by (rule trancl_into_trancl) simp
-  then obtain q where "vwalk_bet (insert (a, t) R) s q t"
-    by (rule trancl_walk)
-  then show "\<exists>p. vwalk_bet (insert (a, t) R) s p t"
-    by blast
-next
-  assume "\<exists>p. vwalk_bet (insert (a, t) R) s p t"
-  then obtain q where "vwalk_bet (insert (a, t) R) s q t"
-    by blast
-  then have "(s, t) \<in> (insert (a, t) R)\<^sup>+"
-    using st by (rule walk_trancl)
-  then have "\<exists>y. (s, y) \<in> {e \<in> insert (a, t) R. snd e \<noteq> t}\<^sup>* \<and> (y, t) \<in> insert (a, t) R"
-    by (rule trancl_first_arrival)
-  then obtain y where y: "(s, y) \<in> {e \<in> insert (a, t) R. snd e \<noteq> t}\<^sup>*" "(y, t) \<in> insert (a, t) R"
-    by (elim exE conjE)
-  have sub: "{e \<in> insert (a, t) R. snd e \<noteq> t} \<subseteq> R"
-    by auto
-  have ry: "(s, y) \<in> R\<^sup>*"
-    using rtrancl_mono[OF sub] y(1) by (rule subsetD)
-  show "\<exists>p. vwalk_bet R s p a"
-  proof (cases "y = a")
-    case True
-    then have "(s, a) \<in> R\<^sup>*"
-      using ry by simp
-    then have "(s, a) \<in> R\<^sup>+"
-      using sa by (auto dest: rtranclD)
-    then obtain p where "vwalk_bet R s p a"
-      by (rule trancl_walk)
-    then show ?thesis
-      by blast
-  next
-    case False
-    then have "(y, t) \<in> R"
-      using y(2) by simp
-    with ry have "(s, t) \<in> R\<^sup>+"
-      by (rule rtrancl_into_trancl1)
-    then obtain p where "vwalk_bet R s p t"
-      by (rule trancl_walk)
-    then show ?thesis
-      using no by blast
-  qed
-qed
-
 text \<open>A set of node pairs has unit shape if every node other than the source has at most one
 outgoing pair, and every node other than the sink at most one incoming pair. The support of a unit
 flow has unit shape, which lets implementations store a flow by successors and predecessors.\<close>
@@ -1079,16 +972,6 @@ definition unit_shape :: "('a mnode \<times> 'a mnode) set \<Rightarrow> bool" w
 
 lemma unit_shape_mono: "\<lbrakk>unit_shape P'; P \<subseteq> P'\<rbrakk> \<Longrightarrow> unit_shape P"
   unfolding unit_shape_def by blast
-
-lemma two_le_sum:
-  assumes "finite A" "\<And>e. 0 \<le> f e" "d \<in> A" "d' \<in> A" "d \<noteq> d'" "f d = 1" "f d' = 1"
-  shows "(2::real) \<le> sum f A"
-proof -
-  have "sum f {d, d'} \<le> sum f A"
-    using assms by (intro sum_mono2) auto
-  then show ?thesis
-    using assms(5-7) by simp
-qed
 
 subsection \<open>The Operations of the Oracle on the Abstract State\<close>
 

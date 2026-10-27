@@ -575,7 +575,8 @@ text \<open>@{const scan_up_loop_imp} walking the path-array prefix @{term \<ope
       be a non-root vertex whose parent edge lies in @{term \<E>} (so @{const res_up_imp} is specified).\<close>
 lemma scan_up_loop_imp_rule:
   "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
-    ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
+    ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)).
+      v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
       * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l * rd>
      scan_up_loop_imp si pa i ptr m0 best0
@@ -586,36 +587,25 @@ lemma scan_up_loop_imp_rule:
                 if rr = - 1 then (m, best) else if m = - 1 then (rr, v)
                 else if rr \<le> m then (rr, v) else (m, best)))
              (drop i (take ptr l)) (m0, best0))>"
-proof (induction "ptr - i" arbitrary: i m0 best0)
-  case 0
-  hence le: "ptr \<le> i" by simp
-  show ?case
-    by (subst scan_up_loop_imp.simps) (sep_auto simp: le drop_take)
-next
+proof(induction "ptr - i" arbitrary: i m0 best0)
   case (Suc k)
-  from Suc.hyps(2) have iltptr: "i < ptr" by simp
-  hence niltptr: "\<not> ptr \<le> i" by simp
-  have iltl: "i < length l" using iltptr Suc.prems(4) by simp
-  have lt: "i < length (take ptr l)" using iltptr Suc.prems(4) by simp
-  have dec: "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
-    using lt iltptr by (simp add: Cons_nth_drop_Suc[symmetric] nth_take)
-  have kval: "k = ptr - Suc i" using Suc.hyps(2) iltptr by simp
-  have vin: "l ! i \<in> \<V> - {r}" "par_edge s (l ! i) \<in> \<E>" using Suc.prems(5) dec by auto
-  have subprem: "\<forall>v \<in> set (drop (Suc i) (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
-    using Suc.prems(5) dec by auto
-  note IH = Suc.hyps(1)[OF kval Suc.prems(1) Suc.prems(2) Suc.prems(3) Suc.prems(4) subprem]
-  have vinV: "l ! i \<in> \<V>" and vinr: "l ! i \<noteq> r" using vin(1) by auto
+  have k: "k = ptr - Suc i" "\<not> ptr \<le> i" "i < length l"
+    "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
+    "l ! i \<in> \<V>" "l ! i \<noteq> r" "par_edge s (l ! i) \<in> \<E>"
+    "\<forall>v \<in> set (drop (Suc i) (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
+    using Suc.hyps(2) Suc.prems(4,5)
+    by (auto simp: Cons_nth_drop_Suc[symmetric])
   show ?case
-    by (subst scan_up_loop_imp.simps)
-       (sep_auto simp: niltptr dec iltl vinV vinr vin(2)
-                       Suc.prems(1) Suc.prems(2) Suc.prems(3)
-                 split: if_splits heap: IH)
-qed
+    by (sep_auto simp: scan_up_loop_imp.simps[of si pa i] k(2-7) Suc.prems(1-3)
+      split: if_splits heap: Suc.hyps(1)[OF k(1) Suc.prems(1-4) k(8)])
+qed (subst scan_up_loop_imp.simps, sep_auto simp: drop_take)
 
-text \<open>The downward scan is the mirror image, using @{const res_down} and a \<^emph>\<open>strict\<close> comparison.\<close>
+text \<open>The downward scan is the mirror image, using @{const res_down} and a \<^emph>\<open>strict\<close>
+      comparison.\<close>
 lemma scan_down_loop_imp_rule:
   "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
-    ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
+    ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)).
+      v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
       * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l * rd>
      scan_down_loop_imp si pa i ptr m0 best0
@@ -626,126 +616,65 @@ lemma scan_down_loop_imp_rule:
                 if rr = - 1 then (m, best) else if m = - 1 then (rr, v)
                 else if rr < m then (rr, v) else (m, best)))
              (drop i (take ptr l)) (m0, best0))>"
-proof (induction "ptr - i" arbitrary: i m0 best0)
-  case 0
-  hence le: "ptr \<le> i" by simp
-  show ?case
-    by (subst scan_down_loop_imp.simps) (sep_auto simp: le drop_take)
-next
+proof(induction "ptr - i" arbitrary: i m0 best0)
   case (Suc k)
-  from Suc.hyps(2) have iltptr: "i < ptr" by simp
-  hence niltptr: "\<not> ptr \<le> i" by simp
-  have iltl: "i < length l" using iltptr Suc.prems(4) by simp
-  have lt: "i < length (take ptr l)" using iltptr Suc.prems(4) by simp
-  have dec: "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
-    using lt iltptr by (simp add: Cons_nth_drop_Suc[symmetric] nth_take)
-  have kval: "k = ptr - Suc i" using Suc.hyps(2) iltptr by simp
-  have vin: "l ! i \<in> \<V> - {r}" "par_edge s (l ! i) \<in> \<E>" using Suc.prems(5) dec by auto
-  have subprem: "\<forall>v \<in> set (drop (Suc i) (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
-    using Suc.prems(5) dec by auto
-  note IH = Suc.hyps(1)[OF kval Suc.prems(1) Suc.prems(2) Suc.prems(3) Suc.prems(4) subprem]
-  have vinV: "l ! i \<in> \<V>" and vinr: "l ! i \<noteq> r" using vin(1) by auto
+  have k: "k = ptr - Suc i" "\<not> ptr \<le> i" "i < length l"
+    "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
+    "l ! i \<in> \<V>" "l ! i \<noteq> r" "par_edge s (l ! i) \<in> \<E>"
+    "\<forall>v \<in> set (drop (Suc i) (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
+    using Suc.hyps(2) Suc.prems(4,5)
+    by (auto simp: Cons_nth_drop_Suc[symmetric])
   show ?case
-    by (subst scan_down_loop_imp.simps)
-       (sep_auto simp: niltptr dec iltl vinV vinr vin(2)
-                       Suc.prems(1) Suc.prems(2) Suc.prems(3)
-                 split: if_splits heap: IH)
-qed
-
-text \<open>Snoc recurrences of the two scans (left @{const fold}), and the consequence used below: when a
-      scan reports a finite minimum (first component not the \<open>- 1\<close> sentinel) its minimiser is a genuine
-      element of the scanned path --- hence, under the path precondition, a non-root vertex on which
-      @{const par_up_imp} is specified.\<close>
-lemma scan_up_snoc:
-  "scan_up s (xs @ [x]) =
-     (case scan_up s xs of (m, best) \<Rightarrow>
-        (let rr = res_up s x in
-         if rr = - 1 then (m, best) else if m = - 1 then (rr, x)
-         else if rr \<le> m then (rr, x) else (m, best)))"
-  by (simp add: scan_up_def)
-
-lemma scan_down_snoc:
-  "scan_down s (xs @ [x]) =
-     (case scan_down s xs of (m, best) \<Rightarrow>
-        (let rr = res_down s x in
-         if rr = - 1 then (m, best) else if m = - 1 then (rr, x)
-         else if rr < m then (rr, x) else (m, best)))"
-  by (simp add: scan_down_def)
-
-lemma scan_up_snd_mem:
-  "scan_up s p = (m, best) \<Longrightarrow> m \<noteq> - 1 \<Longrightarrow> best \<in> set p"
-proof (induction p arbitrary: m best rule: rev_induct)
-  case Nil thus ?case by (simp add: scan_up_def)
-next
-  case (snoc x xs)
-  obtain m' best' where mb: "scan_up s xs = (m', best')" by fastforce
-  show ?case
-    using snoc.prems snoc.IH[OF mb] mb
-    by (auto simp: scan_up_snoc Let_def split: if_splits)
-qed
-
-lemma scan_down_snd_mem:
-  "scan_down s p = (m, best) \<Longrightarrow> m \<noteq> - 1 \<Longrightarrow> best \<in> set p"
-proof (induction p arbitrary: m best rule: rev_induct)
-  case Nil thus ?case by (simp add: scan_down_def)
-next
-  case (snoc x xs)
-  obtain m' best' where mb: "scan_down s xs = (m', best')" by fastforce
-  show ?case
-    using snoc.prems snoc.IH[OF mb] mb
-    by (auto simp: scan_down_snoc Let_def split: if_splits)
-qed
+    by (sep_auto simp: scan_down_loop_imp.simps[of si pa i] k(2-7) Suc.prems(1-3)
+      split: if_splits heap: Suc.hyps(1)[OF k(1) Suc.prems(1-4) k(8)])
+qed (subst scan_down_loop_imp.simps, sep_auto simp: drop_take)
 
 text \<open>Seeded at index @{term 0} with @{term \<open>(- 1, r)\<close>}, the loops refine the top-level
       @{const scan_up} / @{const scan_down} on the buffer prefix @{term \<open>take ptr l\<close>}.\<close>
 lemma scan_up_imp_rule:
-  assumes "flow_invar (current_flow s)" "parent_invar (parent_edge s)" "dir_invar (edge_dir s)"
-    "ptr \<le> length l" "\<forall>v \<in> set (take ptr l). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
-  shows "<flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
+  "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
+    ptr \<le> length l; \<forall>v \<in> set (take ptr l).
+      v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
+   <flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
       * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l * rd>
      scan_up_imp si pa ptr
    <\<lambda>res. flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
       * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l * rd * \<up>(res = scan_up s (take ptr l))>"
-proof -
-  have P5: "\<forall>v \<in> set (drop 0 (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
-    using assms(5) by simp
-  show ?thesis
-    unfolding scan_up_imp_def
-    by (rule ht_cons_post[OF scan_up_loop_imp_rule[OF assms(1) assms(2) assms(3) assms(4) P5]])
-       (sep_auto simp: scan_up_def)
-qed
+  unfolding scan_up_imp_def scan_up_def
+  by (sep_auto heap: scan_up_loop_imp_rule[where i = 0])
 
 lemma scan_down_imp_rule:
-  assumes "flow_invar (current_flow s)" "parent_invar (parent_edge s)" "dir_invar (edge_dir s)"
-    "ptr \<le> length l" "\<forall>v \<in> set (take ptr l). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
-  shows "<flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
+  "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
+    ptr \<le> length l; \<forall>v \<in> set (take ptr l).
+      v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
+   <flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
       * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l * rd>
      scan_down_imp si pa ptr
    <\<lambda>res. flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
       * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l * rd * \<up>(res = scan_down s (take ptr l))>"
-proof -
-  have P5: "\<forall>v \<in> set (drop 0 (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
-    using assms(5) by simp
-  show ?thesis
-    unfolding scan_down_imp_def
-    by (rule ht_cons_post[OF scan_down_loop_imp_rule[OF assms(1) assms(2) assms(3) assms(4) P5]])
-       (sep_auto simp: scan_down_def)
-qed
-
-
+  unfolding scan_down_imp_def scan_down_def
+  by (sep_auto heap: scan_down_loop_imp_rule[where i = 0])
 text \<open>If the circuit bottleneck is finite but is attained neither at the entering edge nor on the
       up-path, then the down-path minimum is itself finite --- so its minimiser is a real vertex.\<close>
 lemma bottleneck_down_finite:
-  "mininf r_e (mininf mu md) \<noteq> - 1 \<Longrightarrow> r_e \<noteq> mininf r_e (mininf mu md)
-     \<Longrightarrow> \<not> (mu \<noteq> - 1 \<and> mu = mininf r_e (mininf mu md)) \<Longrightarrow> md \<noteq> - 1"
+  "\<lbrakk>mininf r_e (mininf mu md) \<noteq> - 1; r_e \<noteq> mininf r_e (mininf mu md);
+    \<not> (mu \<noteq> - 1 \<and> mu = mininf r_e (mininf mu md))\<rbrakk> \<Longrightarrow> md \<noteq> - 1"
   by (auto simp: mininf_def split: if_splits)
+
+lemma scan_snd_in_V:
+  "\<lbrakk>scan_up s p = (m, w); m \<noteq> - 1;
+    \<forall>v \<in> set p. v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow> w \<in> \<V> - {r}"
+  "\<lbrakk>scan_down s p = (m, w); m \<noteq> - 1;
+    \<forall>v \<in> set p. v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow> w \<in> \<V> - {r}"
+  using scan_up_snd_mem[of s p m w] scan_down_snd_mem[of s p m w]
+  by auto
 
 text \<open>The whole bottleneck computation refines @{const bottleneck}. It reads the entering edge's
       residual, runs the two scans over the two buffer prefixes (the functional paths
-      @{term \<open>take ptr1 l1\<close>} / @{term \<open>take ptr2 l2\<close>}), and --- when a tree edge leaves --- reads the
-      leaving vertex's orientation. The scans' minimisers are genuine path vertices (by
-      @{thm scan_up_snd_mem} / @{thm scan_down_snd_mem}), hence non-root, so @{const par_up_imp} is
-      specified there.\<close>
+      @{term \<open>take ptr1 l1\<close>} / @{term \<open>take ptr2 l2\<close>}), and --- when a tree edge
+      leaves --- reads the leaving vertex's orientation. The scans' minimisers are genuine path vertices (by
+      @{thm scan_up_snd_mem} / @{thm scan_down_snd_mem}), hence non-root, so @{const par_up_imp} is specified
+      there.\<close>
 lemma bottleneck_imp_rule:
   assumes "flow_invar (current_flow s)" "parent_invar (parent_edge s)" "dir_invar (edge_dir s)"
     "e \<in> \<E>" "ptr1 \<le> length l1" "ptr2 \<le> length l2"
@@ -757,48 +686,25 @@ lemma bottleneck_imp_rule:
    <\<lambda>res. flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
       * dir_assn (edge_dir s) (idir si) * ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2 * rd
       * \<up>(res = bottleneck s e in_U (take ptr1 l1) (take ptr2 l2))>"
-proof -
-  have vmem1: "\<And>m best. scan_up s (take ptr1 l1) = (m, best) \<Longrightarrow> m \<noteq> - 1 \<Longrightarrow> best \<in> \<V> - {r}"
-    using assms(7) by (fastforce dest: scan_up_snd_mem)
-  have vmem1': "\<And>m best. scan_down s (take ptr1 l1) = (m, best) \<Longrightarrow> m \<noteq> - 1 \<Longrightarrow> best \<in> \<V> - {r}"
-    using assms(7) by (fastforce dest: scan_down_snd_mem)
-  have vmem2: "\<And>m best. scan_up s (take ptr2 l2) = (m, best) \<Longrightarrow> m \<noteq> - 1 \<Longrightarrow> best \<in> \<V> - {r}"
-    using assms(8) by (fastforce dest: scan_up_snd_mem)
-  have vmem2': "\<And>m best. scan_down s (take ptr2 l2) = (m, best) \<Longrightarrow> m \<noteq> - 1 \<Longrightarrow> best \<in> \<V> - {r}"
-    using assms(8) by (fastforce dest: scan_down_snd_mem)
-  show ?thesis
-  proof (cases in_U)
-    case True
-    show ?thesis
-      unfolding bottleneck_imp_def bottleneck_def
-      by (sep_auto simp: True if_P[OF True] Let_def mininf_imp_eq
-                         assms(1) assms(2) assms(3) assms(4)
-                 dest: vmem1 vmem2' bottleneck_down_finite
-                 heap: scan_up_imp_rule[OF assms(1) assms(2) assms(3) assms(5) assms(7)]
-                       scan_down_imp_rule[OF assms(1) assms(2) assms(3) assms(6) assms(8)])
-  next
-    case False
-    show ?thesis
-      unfolding bottleneck_imp_def bottleneck_def
-      by (sep_auto simp: False if_not_P[OF False] Let_def mininf_imp_eq
-                         assms(1) assms(2) assms(3) assms(4)
-                 dest: vmem2 vmem1' bottleneck_down_finite
-                 heap: scan_up_imp_rule[OF assms(1) assms(2) assms(3) assms(6) assms(8)]
-                       scan_down_imp_rule[OF assms(1) assms(2) assms(3) assms(5) assms(7)])
-  qed
-qed
+  unfolding bottleneck_imp_def bottleneck_def
+  by (cases in_U; sep_auto simp: Let_def mininf_imp_eq assms(1-4)
+    dest: scan_snd_in_V[OF _ _ assms(7)] scan_snd_in_V[OF _ _ assms(8)] bottleneck_down_finite
+    heap: scan_up_imp_rule[OF assms(1-3,5,7)] scan_up_imp_rule[OF assms(1-3,6,8)]
+      scan_down_imp_rule[OF assms(1-3,5,7)] scan_down_imp_rule[OF assms(1-3,6,8)])
 
 subsection \<open>Refinement of the flow augmentation\<close>
 
 text \<open>@{const aug_loop_imp} folds the parent-edge flow updates over a path-array prefix in place. Since
-      @{const augment_flow_imp} always calls it with a \<^emph>\<open>literal\<close> pass flag, we prove the two instances
-      separately (avoiding a spurious flag/sign case split): with @{term \<open>on_up = True\<close>} (the up-path,
-      sign @{term \<open>if par_up s v then \<delta> else - \<delta>\<close>}) and with @{term \<open>on_up = False\<close>} (the down-path,
-      opposite sign). The flow value is threaded through the induction;
-      @{thm flow_arr.fixed_univ_map_upd_invar} keeps @{term flow_invar} across each update.\<close>
+      @{const augment_flow_imp} always calls it with a \<^emph>\<open>literal\<close> pass flag, we prove the
+      two instances separately (avoiding a spurious flag/sign case split): with
+      @{term \<open>on_up = True\<close>} (the up-path, sign
+      @{term \<open>if par_up s v then \<delta> else - \<delta>\<close>}) and with
+      @{term \<open>on_up = False\<close>} (the down-path, opposite sign). The flow value is threaded through
+      the induction; @{thm flow_arr.fixed_univ_map_upd_invar} keeps @{term flow_invar} across each update.\<close>
 lemma aug_loop_imp_up_rule:
   "\<lbrakk>flow_invar Fl; parent_invar (parent_edge s); dir_invar (edge_dir s);
-    ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
+    ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)).
+      v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn Fl (iflow si) * parent_assn (parent_edge s) (iparent si)
       * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l>
      aug_loop_imp si pa i ptr \<delta> True
@@ -806,38 +712,23 @@ lemma aug_loop_imp_up_rule:
                      flow_upd f a (flow_lookup f a + (if par_up s v then \<delta> else - \<delta>)))
                    (drop i (take ptr l)) Fl) (iflow si)
       * parent_assn (parent_edge s) (iparent si) * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l>"
-proof (induction "ptr - i" arbitrary: i Fl)
-  case 0
-  hence le: "ptr \<le> i" by simp
-  show ?case
-    by (subst aug_loop_imp.simps) (sep_auto simp: le drop_take)
-next
+proof(induction "ptr - i" arbitrary: i Fl)
   case (Suc k)
-  from Suc.hyps(2) have iltptr: "i < ptr" by simp
-  hence niltptr: "\<not> ptr \<le> i" by simp
-  have iltl: "i < length l" using iltptr Suc.prems(4) by simp
-  have lt: "i < length (take ptr l)" using iltptr Suc.prems(4) by simp
-  have dec: "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
-    using lt iltptr by (simp add: Cons_nth_drop_Suc[symmetric] nth_take)
-  have kval: "k = ptr - Suc i" using Suc.hyps(2) iltptr by simp
-  have vin: "l ! i \<in> \<V> - {r}" "par_edge s (l ! i) \<in> \<E>" using Suc.prems(5) dec by auto
-  have vinV: "l ! i \<in> \<V>" and vinr: "l ! i \<noteq> r" using vin(1) by auto
-  have subprem: "\<forall>v \<in> set (drop (Suc i) (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
-    using Suc.prems(5) dec by auto
-  from subprem have subV: "\<And>v. v \<in> set (drop (Suc i) (take ptr l)) \<Longrightarrow> v \<in> \<V>"
-    and subr: "\<And>v. v \<in> set (drop (Suc i) (take ptr l)) \<Longrightarrow> v \<noteq> r" by auto
-  have finvw: "flow_invar (flow_upd Fl (par_edge s (l ! i)) w)" for w
-    by (rule flow_arr.fixed_univ_map_upd_invar[OF Suc.prems(1) vin(2)])
-  note IH = Suc.hyps(1)[OF kval]
+  have k: "k = ptr - Suc i" "\<not> ptr \<le> i" "i < length l"
+    "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
+    "l ! i \<in> \<V>" "l ! i \<noteq> r" "par_edge s (l ! i) \<in> \<E>"
+    "\<forall>v \<in> set (drop (Suc i) (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
+    using Suc.hyps(2) Suc.prems(4,5)
+    by (auto simp: Cons_nth_drop_Suc[symmetric])
   show ?case
-    by (subst aug_loop_imp.simps)
-       (sep_auto simp: niltptr dec vin vinV vinr iltl finvw subprem subV subr Let_def
-                       Suc.prems(1) Suc.prems(2) Suc.prems(3) Suc.prems(4) heap: IH)
-qed
+    by (sep_auto simp: aug_loop_imp.simps[of si pa i] k(2-7) Suc.prems(1-3) Let_def
+      flow_arr.fixed_univ_map_upd_invar[OF Suc.prems(1) k(7)] heap: Suc.hyps(1)[OF k(1) _ Suc.prems(2-4) k(8)])
+qed (subst aug_loop_imp.simps, sep_auto simp: drop_take)
 
 lemma aug_loop_imp_down_rule:
   "\<lbrakk>flow_invar Fl; parent_invar (parent_edge s); dir_invar (edge_dir s);
-    ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
+    ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)).
+      v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn Fl (iflow si) * parent_assn (parent_edge s) (iparent si)
       * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l>
      aug_loop_imp si pa i ptr \<delta> False
@@ -845,53 +736,25 @@ lemma aug_loop_imp_down_rule:
                      flow_upd f a (flow_lookup f a + (if par_up s v then - \<delta> else \<delta>)))
                    (drop i (take ptr l)) Fl) (iflow si)
       * parent_assn (parent_edge s) (iparent si) * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l>"
-proof (induction "ptr - i" arbitrary: i Fl)
-  case 0
-  hence le: "ptr \<le> i" by simp
-  show ?case
-    by (subst aug_loop_imp.simps) (sep_auto simp: le drop_take)
-next
+proof(induction "ptr - i" arbitrary: i Fl)
   case (Suc k)
-  from Suc.hyps(2) have iltptr: "i < ptr" by simp
-  hence niltptr: "\<not> ptr \<le> i" by simp
-  have iltl: "i < length l" using iltptr Suc.prems(4) by simp
-  have lt: "i < length (take ptr l)" using iltptr Suc.prems(4) by simp
-  have dec: "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
-    using lt iltptr by (simp add: Cons_nth_drop_Suc[symmetric] nth_take)
-  have kval: "k = ptr - Suc i" using Suc.hyps(2) iltptr by simp
-  have vin: "l ! i \<in> \<V> - {r}" "par_edge s (l ! i) \<in> \<E>" using Suc.prems(5) dec by auto
-  have vinV: "l ! i \<in> \<V>" and vinr: "l ! i \<noteq> r" using vin(1) by auto
-  have subprem: "\<forall>v \<in> set (drop (Suc i) (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
-    using Suc.prems(5) dec by auto
-  from subprem have subV: "\<And>v. v \<in> set (drop (Suc i) (take ptr l)) \<Longrightarrow> v \<in> \<V>"
-    and subr: "\<And>v. v \<in> set (drop (Suc i) (take ptr l)) \<Longrightarrow> v \<noteq> r" by auto
-  have finvw: "flow_invar (flow_upd Fl (par_edge s (l ! i)) w)" for w
-    by (rule flow_arr.fixed_univ_map_upd_invar[OF Suc.prems(1) vin(2)])
-  note IH = Suc.hyps(1)[OF kval]
+  have k: "k = ptr - Suc i" "\<not> ptr \<le> i" "i < length l"
+    "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
+    "l ! i \<in> \<V>" "l ! i \<noteq> r" "par_edge s (l ! i) \<in> \<E>"
+    "\<forall>v \<in> set (drop (Suc i) (take ptr l)). v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>"
+    using Suc.hyps(2) Suc.prems(4,5)
+    by (auto simp: Cons_nth_drop_Suc[symmetric])
   show ?case
-    by (subst aug_loop_imp.simps)
-       (sep_auto simp: niltptr dec vin vinV vinr iltl finvw subprem subV subr Let_def
-                       Suc.prems(1) Suc.prems(2) Suc.prems(3) Suc.prems(4) heap: IH)
-qed
+    by (sep_auto simp: aug_loop_imp.simps[of si pa i] k(2-7) Suc.prems(1-3) Let_def
+      flow_arr.fixed_univ_map_upd_invar[OF Suc.prems(1) k(7)] heap: Suc.hyps(1)[OF k(1) _ Suc.prems(2-4) k(8)])
+qed (subst aug_loop_imp.simps, sep_auto simp: drop_take)
 
-text \<open>Specialisations at @{term \<open>i = 0\<close>} (the way @{const augment_flow_imp} calls them), with the
-      @{term \<open>drop 0\<close>} reduced to the whole buffer prefix.\<close>
-lemmas aug_loop_imp_up_rule0 = aug_loop_imp_up_rule[where i = 0, simplified]
-lemmas aug_loop_imp_down_rule0 = aug_loop_imp_down_rule[where i = 0, simplified]
 text \<open>Folding parent-edge flow updates preserves @{term flow_invar} (each update is on an edge of
       @{term \<E>}).\<close>
 lemma fold_flow_invar:
-  "flow_invar Fl \<Longrightarrow> \<forall>v \<in> set p. par_edge s v \<in> \<E> \<Longrightarrow>
-   flow_invar (fold (\<lambda> v f. let a = par_edge s v in
-                 flow_upd f a (flow_lookup f a + sg (par_up s v))) p Fl)"
-proof (induction p arbitrary: Fl)
-  case Nil thus ?case by simp
-next
-  case (Cons x xs)
-  have "flow_invar (flow_upd Fl (par_edge s x) (flow_lookup Fl (par_edge s x) + sg (par_up s x)))"
-    by (rule flow_arr.fixed_univ_map_upd_invar[OF Cons.prems(1)]) (use Cons.prems(2) in simp)
-  thus ?case using Cons.prems(2) Cons.IH by (simp add: Let_def)
-qed
+  "\<lbrakk>flow_invar Fl; \<forall>v \<in> set p. par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
+   flow_invar (fold (\<lambda>v f. flow_upd f (par_edge s v) (g f v)) p Fl)"
+  by (induction p arbitrary: Fl) (simp_all add: flow_arr.fixed_univ_map_upd_invar)
 
 text \<open>The whole flow augmentation refines @{const augment_flow}: a degenerate pivot leaves the flow
       untouched; otherwise the entering edge is updated and the flow is pushed along the two circuit
@@ -907,52 +770,13 @@ lemma augment_flow_imp_rule:
    <\<lambda>_. flow_assn (augment_flow s e in_U \<delta> (take ptr1 l1) (take ptr2 l2)) (iflow si)
       * parent_assn (parent_edge s) (iparent si) * dir_assn (edge_dir s) (idir si)
       * ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2>"
-proof (cases "\<delta> \<le> 0")
-  case True
-  show ?thesis
-    unfolding augment_flow_imp_def augment_flow_def by (sep_auto simp: True)
-next
-  case False
-  have f0inv: "flow_invar (flow_upd (current_flow s) e
-                  (flow_lookup (current_flow s) e + (if in_U then - \<delta> else \<delta>)))"
-    by (rule flow_arr.fixed_univ_map_upd_invar[OF assms(1) assms(4)])
-  from assms(7) have a7V: "\<And>v. v \<in> set (take ptr1 l1) \<Longrightarrow> v \<in> \<V>"
-    and a7r: "\<And>v. v \<in> set (take ptr1 l1) \<Longrightarrow> v \<noteq> r" by auto
-  from assms(8) have a8V: "\<And>v. v \<in> set (take ptr2 l2) \<Longrightarrow> v \<in> \<V>"
-    and a8r: "\<And>v. v \<in> set (take ptr2 l2) \<Longrightarrow> v \<noteq> r" by auto
-  show ?thesis
-  proof (cases in_U)
-    case True note inU = this
-    have f0T: "flow_invar (flow_upd (current_flow s) e (flow_lookup (current_flow s) e - \<delta>))"
-      using f0inv inU by simp
-    have f1inv: "flow_invar (fold (\<lambda> v f. let a = par_edge s v in
-                    flow_upd f a (flow_lookup f a + (if par_up s v then \<delta> else - \<delta>)))
-                  (take ptr1 l1)
-                  (flow_upd (current_flow s) e (flow_lookup (current_flow s) e - \<delta>)))"
-      by (rule fold_flow_invar[where sg = "\<lambda> b. if b then \<delta> else - \<delta>", OF f0T]) (use assms(7) in auto)
-    show ?thesis
-      unfolding augment_flow_imp_def augment_flow_def
-      by (sep_auto simp: inU if_P[OF inU] Let_def assms(1) assms(4) assms(7) assms(8)
-                         a7V a7r a8V a8r
-                 heap: aug_loop_imp_up_rule0[OF f0T assms(2) assms(3) assms(5)]
-                       aug_loop_imp_down_rule0[OF f1inv assms(2) assms(3) assms(6)])
-  next
-    case False note ninU = this
-    have f0F: "flow_invar (flow_upd (current_flow s) e (flow_lookup (current_flow s) e + \<delta>))"
-      using f0inv ninU by simp
-    have f1inv: "flow_invar (fold (\<lambda> v f. let a = par_edge s v in
-                    flow_upd f a (flow_lookup f a + (if par_up s v then \<delta> else - \<delta>)))
-                  (take ptr2 l2)
-                  (flow_upd (current_flow s) e (flow_lookup (current_flow s) e + \<delta>)))"
-      by (rule fold_flow_invar[where sg = "\<lambda> b. if b then \<delta> else - \<delta>", OF f0F]) (use assms(8) in auto)
-    show ?thesis
-      unfolding augment_flow_imp_def augment_flow_def
-      by (sep_auto simp: ninU if_not_P[OF ninU] Let_def assms(1) assms(4) assms(7) assms(8)
-                         a7V a7r a8V a8r
-                 heap: aug_loop_imp_up_rule0[OF f0F assms(2) assms(3) assms(6)]
-                       aug_loop_imp_down_rule0[OF f1inv assms(2) assms(3) assms(5)])
-  qed
-qed
+  unfolding augment_flow_imp_def augment_flow_def
+  by (cases in_U; sep_auto simp: Let_def assms(1,4,7,8) flow_arr.fixed_univ_map_upd_invar[OF assms(1,4)]
+      fold_flow_invar[OF flow_arr.fixed_univ_map_upd_invar[OF assms(1,4)]]
+    heap: aug_loop_imp_up_rule[where i = 0, unfolded drop_0, OF _ assms(2,3,5,7)]
+      aug_loop_imp_up_rule[where i = 0, unfolded drop_0, OF _ assms(2,3,6,8)]
+      aug_loop_imp_down_rule[where i = 0, unfolded drop_0, OF _ assms(2,3,5,7)]
+      aug_loop_imp_down_rule[where i = 0, unfolded drop_0, OF _ assms(2,3,6,8)])
 
 subsection \<open>Refinement of the degenerate pivot (flip)\<close>
 
@@ -973,103 +797,70 @@ lemma ns_flip_imp_rule:
       * es_assn (es_upd (edge_state s) e (if in_U then InL else InU)) (iestate si)
       * ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2>"
   unfolding ns_flip_imp_def
-  by (sep_auto simp: assms(4) assms(5)
-             heap: augment_flow_imp_rule[OF assms(1) assms(2) assms(3) assms(5)
-                     assms(6) assms(7) assms(8) assms(9)])
+  by (sep_auto simp: assms(4,5) heap: augment_flow_imp_rule[OF assms(1-3,5-9)])
 
 subsection \<open>Refinement of the re-parenting walk\<close>
 
 text \<open>@{const reparent_walk_imp} reverses the parent pointers along the spine in place. It both
-      \<^emph>\<open>reads and mutates\<close> the parent-edge / direction stores, so its refinement carries a \<^emph>\<open>store
-      agreement invariant\<close>: on the still-unvisited suffix of the spine the mutable stores @{term Pe},
-      @{term D} still agree with the frozen functional state @{term s} --- maintained because the spine
-      is @{term distinct}, so each visited vertex leaves the suffix untouched. The reads therefore see
-      the original @{term \<open>par_edge s\<close>} / @{term \<open>par_up s\<close>} that @{const reparent_walk} threads.\<close>
+      \<^emph>\<open>reads and mutates\<close> the parent-edge / direction stores, so its refinement carries a
+      \<^emph>\<open>store agreement invariant\<close>: on the still-unvisited suffix of the spine the mutable
+      stores @{term Pe}, @{term D} still agree with the frozen functional state @{term s} --- maintained
+      because the spine is @{term distinct}, so each visited vertex leaves the suffix untouched. The reads
+      therefore see the original @{term \<open>par_edge s\<close>} / @{term \<open>par_up s\<close>} that
+      @{const reparent_walk} threads.\<close>
 lemma reparent_walk_imp_rule:
   "\<lbrakk>parent_invar Pe; dir_invar D; ptr \<le> length l; e \<in> \<E>;
     distinct (drop i (take ptr l));
     \<forall>w \<in> set (drop i (take ptr l)). w \<in> \<V> - {r};
-    \<forall>w \<in> set (drop i (take ptr l)). parent_lookup Pe w = par_edge s w \<and> dir_lookup D w = par_up s w\<rbrakk> \<Longrightarrow>
+    \<forall>w \<in> set (drop i (take ptr l)).
+      parent_lookup Pe w = par_edge s w \<and> dir_lookup D w = par_up s w\<rbrakk> \<Longrightarrow>
    <rd * parent_assn Pe (iparent si) * dir_assn D (idir si) * pa \<mapsto>\<^sub>a l>
      reparent_walk_imp si e v first pe pup pa i ptr
    <\<lambda>_. rd * (case reparent_walk s e v first pe pup (drop i (take ptr l)) (Pe, D) of (Pe', D') \<Rightarrow>
           parent_assn Pe' (iparent si) * dir_assn D' (idir si) * pa \<mapsto>\<^sub>a l)>"
-proof (induction "ptr - i" arbitrary: i Pe D first pe pup)
-  case 0
-  hence le: "ptr \<le> i" by simp
-  show ?case
-    by (subst reparent_walk_imp.simps) (sep_auto simp: le drop_take)
-next
+proof(induction "ptr - i" arbitrary: i Pe D first pe pup)
   case (Suc k)
-  from Suc.hyps(2) have iltptr: "i < ptr" by simp
-  hence niltptr: "\<not> ptr \<le> i" by simp
-  have iltl: "i < length l" using iltptr Suc.prems(3) by simp
-  have lt: "i < length (take ptr l)" using iltptr Suc.prems(3) by simp
-  have dec: "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
-    using lt iltptr by (simp add: Cons_nth_drop_Suc[symmetric] nth_take)
-  have kval: "k = ptr - Suc i" using Suc.hyps(2) iltptr by simp
-  have wV: "l ! i \<in> \<V> - {r}" using Suc.prems(6) dec by auto
-  have wVv: "l ! i \<in> \<V>" and wr: "l ! i \<noteq> r" using wV by auto
-  have agrp: "parent_lookup Pe (l ! i) = par_edge s (l ! i)"
-    and agrd: "dir_lookup D (l ! i) = par_up s (l ! i)" using Suc.prems(7) dec by auto
-  have distl: "distinct (drop (Suc i) (take ptr l))"
-    and lni: "l ! i \<notin> set (drop (Suc i) (take ptr l))" using Suc.prems(5) dec by auto
-  have subV: "\<forall>w \<in> set (drop (Suc i) (take ptr l)). w \<in> \<V> - {r}" using Suc.prems(6) dec by auto
-  have pinvw: "parent_invar (parent_upd Pe (l ! i) w')" for w'
-    by (rule parent_arr.fixed_univ_map_upd_invar[OF Suc.prems(1) wV])
-  have dinvw: "dir_invar (dir_upd D (l ! i) w')" for w'
-    by (rule dir_arr.fixed_univ_map_upd_invar[OF Suc.prems(2) wV])
-  have agrec: "\<forall>w \<in> set (drop (Suc i) (take ptr l)).
-      parent_lookup (parent_upd Pe (l ! i) v') w = par_edge s w
-      \<and> dir_lookup (dir_upd D (l ! i) d') w = par_up s w" for v' d'
-  proof (intro ballI conjI)
-    fix w assume w: "w \<in> set (drop (Suc i) (take ptr l))"
-    have wne: "w \<noteq> l ! i" using w lni by auto
-    have win: "w \<in> set (drop i (take ptr l))" using w dec by auto
-    show "parent_lookup (parent_upd Pe (l ! i) v') w = par_edge s w"
-      using parent_arr.fixed_univ_map_upd[OF Suc.prems(1) wV] wne Suc.prems(7) win by simp
-    show "dir_lookup (dir_upd D (l ! i) d') w = par_up s w"
-      using dir_arr.fixed_univ_map_upd[OF Suc.prems(2) wV] wne Suc.prems(7) win by simp
-  qed
-  note IH = Suc.hyps(1)[OF kval _ _ Suc.prems(3) Suc.prems(4) distl subV]
+  have k: "k = ptr - Suc i" "\<not> ptr \<le> i" "i < length l"
+    "drop i (take ptr l) = l ! i # drop (Suc i) (take ptr l)"
+    using Suc.hyps(2) Suc.prems(3)
+    by (simp_all add: Cons_nth_drop_Suc[symmetric])
+  have v: "l ! i \<in> \<V> - {r}" "l ! i \<in> \<V>" "l ! i \<noteq> r"
+    "parent_lookup Pe (l ! i) = par_edge s (l ! i)"
+    "dir_lookup D (l ! i) = par_up s (l ! i)" "distinct (drop (Suc i) (take ptr l))"
+    "\<forall>w \<in> set (drop (Suc i) (take ptr l)). w \<in> \<V> - {r}"
+    "\<forall>w \<in> set (drop (Suc i) (take ptr l)). parent_lookup (parent_upd Pe (l ! i) x) w = par_edge s w
+       \<and> dir_lookup (dir_upd D (l ! i) y) w = par_up s w" for x y
+    using Suc.prems(5-7) k(4)
+    by (auto simp: parent_arr.fixed_univ_map_upd[OF Suc.prems(1)] dir_arr.fixed_univ_map_upd[OF Suc.prems(2)])
+  note IH = Suc.hyps(1)[OF k(1) parent_arr.fixed_univ_map_upd_invar[OF Suc.prems(1) v(1)]
+      dir_arr.fixed_univ_map_upd_invar[OF Suc.prems(2) v(1)] Suc.prems(3,4) v(6,7)]
   show ?case
-    apply (subst reparent_walk_imp.simps)
-    unfolding par_edge_imp_def par_up_imp_def
-    by (sep_auto simp: niltptr dec agrp agrd wVv wr iltl reparent_walk.simps
-                       Suc.prems(1) Suc.prems(2) Suc.prems(4) pinvw dinvw agrec
-                 heap: IH[OF pinvw dinvw] IH[OF pinvw dinvw, simplified])
-qed
+    by (subst reparent_walk_imp.simps; sep_auto simp: par_edge_imp_def par_up_imp_def k(2-4) v(2-5,8)
+      Suc.prems(1,2,4) parent_arr.fixed_univ_map_upd_invar[OF Suc.prems(1) v(1)]
+      dir_arr.fixed_univ_map_upd_invar[OF Suc.prems(2) v(1)] heap: IH IH[simplified])
+qed (subst reparent_walk_imp.simps, sep_auto simp: drop_take)
 
 text \<open>At the top level (@{term \<open>i = 0\<close>}) the stores are the frozen originals, so the agreement
       invariant holds by definition of @{const par_edge} / @{const par_up}.\<close>
-lemmas reparent_walk_imp_rule0 = reparent_walk_imp_rule[where i = 0, simplified]
-
 lemma reparent_imp_rule:
-  assumes "parent_invar (parent_edge s)" "dir_invar (edge_dir s)" "ptr \<le> length l" "e \<in> \<E>"
-    "distinct (take ptr l)" "\<forall>w \<in> set (take ptr l). w \<in> \<V> - {r}"
-  shows "<rd * parent_assn (parent_edge s) (iparent si) * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l>
+  "\<lbrakk>parent_invar (parent_edge s); dir_invar (edge_dir s); ptr \<le> length l; e \<in> \<E>;
+    distinct (take ptr l); \<forall>w \<in> set (take ptr l). w \<in> \<V> - {r}\<rbrakk> \<Longrightarrow>
+   <rd * parent_assn (parent_edge s) (iparent si) * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l>
      reparent_imp si e pa ptr v
    <\<lambda>_. rd * (case reparent s e (take ptr l) v of (Pe', D') \<Rightarrow>
           parent_assn Pe' (iparent si) * dir_assn D' (idir si) * pa \<mapsto>\<^sub>a l)>"
-proof -
-  have agr0: "\<forall>w \<in> set (take ptr l).
-      parent_lookup (parent_edge s) w = par_edge s w \<and> dir_lookup (edge_dir s) w = par_up s w"
-    by (simp add: par_edge_def par_up_def)
-  have m0: "\<forall>w \<in> set (take ptr l). w \<in> \<V> \<and> w \<noteq> r" using assms(6) by auto
-  show ?thesis
-    unfolding reparent_imp_def reparent_def
-    by (rule reparent_walk_imp_rule0[OF assms(1) assms(2) assms(3) assms(4) assms(5) m0 agr0])
-qed
+  unfolding reparent_imp_def reparent_def
+  by (rule reparent_walk_imp_rule[where i = 0, unfolded drop_0]) (simp_all add: par_edge_def par_up_def)
 
 subsection \<open>Refinement of the full pivot\<close>
 
 text \<open>@{const ns_pivot_imp} performs the whole pivot in place: it reads the leaving edge @{term e0}
-      \<^emph>\<open>before\<close> re-parenting overwrites it, augments the flow, shifts the potentials over the far
-      side (reading the \<^emph>\<open>old\<close> tree before the swap), re-parents the spine, swaps the tree edge, and
-      moves @{term e} into the tree and @{term e0} into @{term U}/@{term L}. It refines
+      \<^emph>\<open>before\<close> re-parenting overwrites it, augments the flow, shifts the potentials over
+      the far side (reading the \<^emph>\<open>old\<close> tree before the swap), re-parents the spine, swaps
+      the tree edge, and moves @{term e} into the tree and @{term e0} into @{term U}/@{term L}. It refines
       @{const ns_pivot} on the six mutated stores. The assumptions are the union of the sub-operations'
-      preconditions, including the @{locale arborescense_adt} @{text swap_edge} witnesses (spine
-      @{term psw1}, join arc @{term a}, tail @{term p3}, leaving arc @{term \<open>(v, y)\<close>}).\<close>
+      preconditions, including the @{locale arborescense_adt} @{text swap_edge} witnesses (spine @{term psw1},
+      join arc @{term a}, tail @{term p3}, leaving arc @{term \<open>(v, y)\<close>}).\<close>
 lemma ns_pivot_imp_rule:
   assumes "flow_invar (current_flow s)" "pot_invar (potentials s)"
     "\<And>u. u \<in> \<V> \<Longrightarrow> pot_value_invar (pot_lookup (potentials s) u)"
@@ -1101,580 +892,277 @@ lemma ns_pivot_imp_rule:
       * es_assn (es_upd (es_upd (edge_state s) e InTree) (par_edge s v)
                    (if e0fwd then InU else InL)) (iestate si)
       * ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2>"
-proof -
-  have vV: "v \<in> \<V>" and vr: "v \<noteq> r" using assms(10) by auto
-  have esinv2: "es_invar (es_upd (edge_state s) e InTree)"
-    by (rule es_arr.fixed_univ_map_upd_invar[OF assms(7) assms(8)])
-  have m1: "\<forall>w \<in> set (take ptr1 l1). w \<in> \<V> - {r}" using assms(15) by auto
-  have m2: "\<forall>w \<in> set (take ptr2 l2). w \<in> \<V> - {r}" using assms(16) by auto
-  have eveu: "ev \<noteq> eu" using assms(20) by simp
-  note shiftR = shift_pot_rule[OF assms(4) vV assms(2) assms(3)]
-  note augR = augment_flow_imp_rule[OF assms(1) assms(5) assms(6) assms(8) assms(13) assms(14)
-                assms(15) assms(16)]
-  show ?thesis
-  proof (cases "in_U = up_side")
-    case True note inU = this
-    have gpp: "get_path_pair (spanning_tree s) eu ev = (psw1, psw2)" using assms(19) inU by simp
-    have wlk: "walk_betw (abstract_arborescense (spanning_tree s)) eu (psw1 @ a # p3) r"
-      using assms(21) inU by simp
-    obtain Pe1 D1 where rep1: "reparent s e (take ptr1 l1) v = (Pe1, D1)" by fastforce
-    show ?thesis
-      unfolding ns_pivot_imp_def Let_def
-      by (sep_auto simp: inU assms(5) assms(6) assms(7) assms(8) assms(9) vV vr
-                         assms(15) assms(17) esinv2 rep1
-                 heap: augR shiftR
-                       reparent_imp_rule[OF assms(5) assms(6) assms(13) assms(8) assms(17) m1]
-                       swap_edge_rule[OF assms(4) gpp assms(20) wlk assms(22) assms(23)
-                         assms(24) assms(25)])
-  next
-    case False note ninU = this
-    have gpp: "get_path_pair (spanning_tree s) ev eu = (psw1, psw2)" using assms(19) ninU by simp
-    have wlk: "walk_betw (abstract_arborescense (spanning_tree s)) ev (psw1 @ a # p3) r"
-      using assms(21) ninU by simp
-    obtain Pe2 D2 where rep2: "reparent s e (take ptr2 l2) v = (Pe2, D2)" by fastforce
-    show ?thesis
-      unfolding ns_pivot_imp_def Let_def
-      by (sep_auto simp: ninU assms(5) assms(6) assms(7) assms(8) assms(9) vV vr
-                         assms(16) assms(18) esinv2 rep2
-                 heap: augR shiftR
-                       reparent_imp_rule[OF assms(5) assms(6) assms(14) assms(8) assms(18) m2]
-                       swap_edge_rule[OF assms(4) gpp eveu wlk assms(22) assms(23)
-                         assms(25) assms(24)])
-  qed
+proof(cases "in_U = up_side")
+  case True
+  obtain Pe D where "reparent s e (take ptr1 l1) v = (Pe, D)"
+    by fastforce
+  then show ?thesis
+    unfolding ns_pivot_imp_def Let_def
+    by (sep_auto simp: True assms(5-9,17) assms(10,15,16)[simplified]
+      es_arr.fixed_univ_map_upd_invar[OF assms(7,8)]
+    heap: augment_flow_imp_rule[OF assms(1,5,6,8,13-16)] shift_pot_rule[OF assms(4) _ assms(2,3)]
+      reparent_imp_rule[OF assms(5,6,13,8,17)] swap_edge_rule[OF assms(4) assms(19)[unfolded if_P[OF True]]
+      assms(20) assms(21)[unfolded if_P[OF True]] assms(22-25)])
+next
+  case False
+  obtain Pe D where "reparent s e (take ptr2 l2) v = (Pe, D)"
+    by fastforce
+  then show ?thesis
+    unfolding ns_pivot_imp_def Let_def
+    by (sep_auto simp: False assms(5-9,18) assms(10,15,16)[simplified]
+      es_arr.fixed_univ_map_upd_invar[OF assms(7,8)]
+    heap: augment_flow_imp_rule[OF assms(1,5,6,8,13-16)] shift_pot_rule[OF assms(4) _ assms(2,3)]
+      reparent_imp_rule[OF assms(5,6,14,8,18)] swap_edge_rule[OF assms(4) assms(19)[unfolded if_not_P[OF False]]
+      assms(20)[symmetric] assms(21)[unfolded if_not_P[OF False]] assms(22,23,25,24)])
 qed
 
 subsection \<open>Refinement of the whole loop\<close>
 
-text \<open>The fundamental-circuit spine on the \<^emph>\<open>up\<close> side carries the leaving edge @{term \<open>par_edge s v\<close>}
-      as one of its @{const edges_of_vwalk} arcs --- the well-formedness the \<open>swap_edge\<close> refinement axiom
-      needs. This reconstructs the witness that the preservation proof @{text swap_edge_pivot} builds
-      internally.\<close>
+text \<open>A triple from @{const ns_rel} also holds with the two path buffers opened, for any concrete
+      buffers that are long enough.\<close>
+lemma ns_rel_cont:
+  "\<lbrakk><ns_rel t si> c <Q>; card \<V> - 1 \<le> length l1; card \<V> - 1 \<le> length l2\<rbrakk>
+   \<Longrightarrow> <rd * flow_assn (current_flow t) (iflow si) * pot_assn (potentials t) (ipot si)
+      * tree_assn (spanning_tree t) (itree si) * parent_assn (parent_edge t) (iparent si)
+      * dir_assn (edge_dir t) (idir si) * es_assn (edge_state t) (iestate si)
+      * sel_assn (edge_sel t) (isel si) * ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2> c <Q>"
+  unfolding ns_rel_def
+  by (erule ht_cons_pre[rotated], simp only: ex_assn_move_out)
+    (rule ent_ex_postI[where x = l1], rule ent_ex_postI[where x = l2], sep_auto)
 
-lemma pivot_swap_witness:
-  assumes inv: "ns_invar s"
-    and sel: "ns_select s = Some (e, in_U, \<gamma>, sel')"
-    and pp:  "get_path_pair (spanning_tree s) (fst e) (snd e) = (p1, p2)"
-    and bn:  "bottleneck s e in_U p1 p2 = (\<delta>, False, v, e0fwd, up_side)"
-  shows "\<exists>psw1 psw2 aa p3 y.
-           get_path_pair (spanning_tree s)
-              (if in_U = up_side then fst e else snd e)
-              (if in_U = up_side then snd e else fst e) = (psw1, psw2)
-           \<and> walk_betw (abstract_arborescense (spanning_tree s))
-               (if in_U = up_side then fst e else snd e) (psw1 @ aa # p3) r
-           \<and> distinct (psw1 @ aa # p3)
-           \<and> (v, y) \<in> set (edges_of_vwalk (psw1 @ [aa]))"
-proof -
-  let ?absT = "abstract_arborescense (spanning_tree s)"
-  let ?u = "if in_U = up_side then fst e else snd e"
-  let ?vax = "if in_U = up_side then snd e else fst e"
+text \<open>One loop iteration from a state satisfying @{const ns_invar}: the store invariants, the
+      fundamental-circuit well-formedness and the step-preservation facts all follow from
+      \<open>Network_Simplex_Preservation\<close>. On the \<^emph>\<open>pivot\<close> branch the spine also
+      carries the leaving edge @{term \<open>par_edge s vv\<close>} as one of its @{const edges_of_vwalk} arcs
+      --- the well-formedness the \<open>swap_edge\<close> refinement axiom needs
+      (\<open>loop_step_swap\<close>).\<close>
+
+context
+  fixes s :: "('farr, 'parr, 'arbor, 'pearr, 'darr, 'earr, 'selector) network_simplex_state"
+    and e in_U \<gamma> sel' p1 p2
+  assumes inv: "ns_invar s" and sel: "ns_select s = Some (e, in_U, \<gamma>, sel')"
+    and gpp: "get_path_pair (spanning_tree s) (fst_exec e) (snd_exec e) = (p1, p2)"
+begin
+
+lemma loop_step_entering:
+  "e \<in> \<E>" "get_path_pair (spanning_tree s) (fst e) (snd e) = (p1, p2)" "fst_exec e = fst e" "snd_exec e = snd e"
+  using ns_select_SomeD(2)[OF inv sel] gpp
+  by simp_all
+
+lemma loop_step_facts:
+  "sel_invar (edge_sel s)" "pot_invar (potentials s)" "es_invar (edge_state s)"
+  "flow_invar (current_flow s)" "parent_invar (parent_edge s)" "dir_invar (edge_dir s)"
+  "arborescense_invar (spanning_tree s)" "u \<in> \<V> \<Longrightarrow> pot_value_invar (pot_lookup (potentials s) u)"
+  "fst e \<noteq> snd e" "fst e \<in> \<V>" "snd e \<in> \<V>"
+  "\<forall>w \<in> set p1. w \<in> \<V> - {r} \<and> par_edge s w \<in> \<E>"
+  "\<forall>w \<in> set p2. w \<in> \<V> - {r} \<and> par_edge s w \<in> \<E>"
+  using ns_invar_implD[OF ns_invarD(1)[OF inv]] step_entering(3,8,9)[OF inv sel loop_step_entering(2)]
+    select_path_verts[OF inv sel loop_step_entering(2)] step_path_edges(1,2)[OF inv sel loop_step_entering(2)]
+  unfolding pot_valid_def
+  by blast+
+
+lemma loop_step_distinct: "distinct p1" "distinct p2"
+  using step_paths(3,4)[OF inv sel loop_step_entering(2)]
+  by (cases in_U; simp)+
+
+lemma loop_step_flip:
+  "\<lbrakk>bottleneck s e in_U p1 p2 = (\<delta>, True, vv, e0fwd, up_side); \<delta> \<noteq> - 1\<rbrakk>
+   \<Longrightarrow> ns_invar (ns_flip s e in_U \<gamma> sel' \<delta> p1 p2)"
+  using ns_flip_preservation(1)[OF inv] sel gpp
+  by (simp add: ns_flip_cond_def ns_flip_upd_def)
+
+lemma loop_step_pivot:
+  "\<lbrakk>bottleneck s e in_U p1 p2 = (\<delta>, False, vv, e0fwd, up_side); \<delta> \<noteq> - 1\<rbrakk>
+   \<Longrightarrow> vv \<in> \<V> - {r} \<and> par_edge s vv \<in> \<E>
+     \<and> ns_invar (ns_pivot s e in_U \<gamma> sel' \<delta> vv e0fwd up_side p1 p2)"
+  using pivot_facts(1)[OF inv sel loop_step_entering(2)] ns_invar_tree_edgeD[OF ns_invarD(7)[OF inv]]
+    ns_pivot_preservation(1)[OF inv] sel gpp
+  by (simp add: ns_pivot_cond_def ns_pivot_upd_def)
+
+lemma loop_step_swap:
+  assumes "bottleneck s e in_U p1 p2 = (\<delta>, False, vv, e0fwd, up_side)" "\<delta> \<noteq> - 1"
+  obtains a p3 y where
+    "get_path_pair (spanning_tree s) (if in_U = up_side then fst e else snd e)
+       (if in_U = up_side then snd e else fst e)
+      = (if in_U = up_side then p1 else p2, if in_U = up_side then p2 else p1)"
+    "walk_betw (abstract_arborescense (spanning_tree s)) (if in_U = up_side then fst e else snd e)
+       ((if in_U = up_side then p1 else p2) @ a # p3) r"
+    "distinct ((if in_U = up_side then p1 else p2) @ a # p3)"
+    "(vv, y) \<in> set (edges_of_vwalk ((if in_U = up_side then p1 else p2) @ [a]))"
+proof-
   let ?P = "if in_U = up_side then p1 else p2"
-  have eE: "e \<in> \<E>" using ns_select_SomeD(2)[OF inv sel] .
-  have arb: "arborescense_invar (spanning_tree s)"
-    using ns_invar_implD(7)[OF ns_invarD(1)[OF inv]] .
-  have neq: "fst e \<noteq> snd e" using entering_not_selfloop[OF inv sel] .
-  have fV: "fst e \<in> \<V>" using fst_E_V[OF eE] .
-  have sV: "snd e \<in> \<V>" using snd_E_V[OF eE] .
-  obtain a p3 where
-    w1: "walk_betw ?absT (fst e) (p1 @ a # p3) r" and
-    w2: "walk_betw ?absT (snd e) (p2 @ a # p3) r" and
-    d1: "distinct (p1 @ a # p3)" and d2: "distinct (p2 @ a # p3)"
-    using get_path_pair(1)[OF arb pp neq fV sV] by blast
-  have vP: "v \<in> set ?P" using bottleneck_pivot_facts(1)[OF inv sel pp bn] .
-  have vVr: "v \<in> \<V> - {r}" using bottleneck_pivot_facts(2)[OF inv sel pp bn] .
-  have wP: "walk_betw ?absT ?u (?P @ a # p3) r" using w1 w2 by (cases "in_U = up_side") simp_all
-  have dP: "distinct (?P @ a # p3)" using d1 d2 by (cases "in_U = up_side") simp_all
-  obtain j where jlen: "j < length ?P" and Pj: "?P ! j = v"
-    using vP by (metis in_set_conv_nth)
-  have SjW: "Suc j < length (?P @ a # p3)" using jlen by simp
-  have Wj: "(?P @ a # p3) ! j = v" using jlen Pj by (simp add: nth_append)
-  have Wjr: "(?P @ a # p3) ! j \<in> \<V> - {r}" using Wj vVr by simp
-  have pv_succ: "par_vx s v = (?P @ a # p3) ! Suc j"
-    using walk_succ_is_par_vx[OF inv wP dP SjW Wjr] Wj by simp
-  have qlen: "Suc j < length (?P @ [a])" using jlen by simp
-  have qj: "(?P @ [a]) ! j = v" using jlen Pj by (simp add: nth_append)
-  have qcat: "?P @ a # p3 = (?P @ [a]) @ p3" by simp
-  have qsucc: "(?P @ [a]) ! Suc j = par_vx s v"
-    using pv_succ qlen by (metis nth_append qcat)
-  have eidx: "edges_of_vwalk (?P @ [a]) ! j = (v, par_vx s v)"
-    using edges_of_vwalk_index[OF qlen] qj qsucc by simp
-  have jelen: "j < length (edges_of_vwalk (?P @ [a]))"
-    using jlen by (simp add: edges_of_vwalk_length)
-  have edgemem: "(v, par_vx s v) \<in> set (edges_of_vwalk (?P @ [a]))"
-    using nth_mem[OF jelen] eidx by simp
-  have GP: "get_path_pair (spanning_tree s) ?u ?vax = (?P, if in_U = up_side then p2 else p1)"
-    using pp get_path_pair(2)[OF arb pp neq fV sV] by (cases "in_U = up_side") simp_all
-  show ?thesis using GP wP dP edgemem by blast
+  obtain a p3 where w: "walk_betw (abstract_arborescense (spanning_tree s)) (if in_U = up_side then fst e else snd e)
+      (?P @ a # p3) r" "distinct (?P @ a # p3)"
+    using step_walks(1)[OF inv sel loop_step_entering(2)]
+    by (cases "in_U = up_side") auto
+  obtain j where j: "j < length ?P" "?P ! j = vv"
+    using pivot_facts(5)[OF inv sel loop_step_entering(2) assms]
+    by (auto simp: in_set_conv_nth)
+  then have "(?P @ [a]) ! Suc j = par_vx s vv"
+    using walk_succ_is_par_vx[OF inv w, of j] pivot_facts(1)[OF inv sel loop_step_entering(2) assms]
+    by (cases "Suc j = length ?P") (simp_all add: nth_append)
+  then have "(vv, par_vx s vv) \<in> set (edges_of_vwalk (?P @ [a]))"
+    using edges_of_vwalk_index[of j "?P @ [a]"] nth_mem[of j "edges_of_vwalk (?P @ [a])"] j
+    by (simp add: edges_of_vwalk_length nth_append)
+  then show ?thesis
+    using that[of a p3] w loop_step_entering(2) get_path_pair(2)[OF loop_step_facts(7) loop_step_entering(2)]
+      loop_step_facts(9-11)
+    by (cases "in_U = up_side") auto
 qed
 
-text \<open>The store invariants, the fundamental-circuit well-formedness, and the step-preservation facts
-      that the loop refinement needs are all consequences of the concrete network-simplex invariant
-      @{const ns_invar} --- its data-structure part and the \<open>Network_Simplex_Preservation\<close> development.
-      We package them as six interface lemmas so the loop refinement reads cleanly.\<close>
-
-lemma inv_sel:
-  assumes "ns_invar t"
-  shows "sel_invar (edge_sel t) \<and> pot_invar (potentials t) \<and> es_invar (edge_state t)"
-  using ns_invar_implD[OF ns_invarD(1)[OF assms]] by (auto simp: pot_valid_def)
-
-lemma inv_stores:
-  assumes "ns_invar t"
-  shows "flow_invar (current_flow t) \<and> parent_invar (parent_edge t)
-           \<and> dir_invar (edge_dir t) \<and> arborescense_invar (spanning_tree t)"
-  using ns_invar_implD[OF ns_invarD(1)[OF assms]] by auto
-
-lemma inv_gpp:
-  assumes "ns_invar t" "ns_select t = Some (e, in_U, \<gamma>, sel')"
-  shows "e \<in> \<E> \<and> fst_exec e \<noteq> snd_exec e \<and> fst_exec e \<in> \<V> \<and> snd_exec e \<in> \<V>"
-proof -
-  have eE: "e \<in> \<E>" using ns_select_SomeD(2)[OF assms] .
+text \<open>The rest of an iteration once the two paths sit in the buffers: run the bottleneck scan and
+      take the unbounded, flip or pivot branch, handing the new state to the continuation @{term c}.\<close>
+lemma loop_step_tail:
+  assumes "ptr1 \<le> length l1" "ptr2 \<le> length l2" "take ptr1 l1 = p1" "take ptr2 l2 = p2"
+    "card \<V> - 1 \<le> length l1" "card \<V> - 1 \<le> length l2" "u = fst e" "v = snd e"
+    "\<And>t. ns_invar t \<Longrightarrow> <ns_rel t si> c
+       <\<lambda>res. ns_rel_weak (ns_loop_impl t) si * \<up>(res = network_simplex_state.return (ns_loop_impl t))>"
+  shows "<rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
+      * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
+      * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si) * sel_assn sel' (isel si)
+      * ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2>
+     do {
+       bn \<leftarrow> bottleneck_imp si e in_U ptr1 ptr2;
+       (case bn of (\<delta>, is_flip, vv, e0fwd, up_side) \<Rightarrow>
+          if \<delta> = - 1 then Heap_Monad.return Network_Simplex.unbounded
+          else if is_flip then do { _ \<leftarrow> ns_flip_imp si e in_U \<delta> ptr1 ptr2; c }
+          else do { _ \<leftarrow> ns_pivot_imp si e u v in_U \<gamma> \<delta> vv e0fwd up_side ptr1 ptr2; c })
+     }
+   <\<lambda>res. ns_rel_weak (ns_loop_impl s) si * \<up>(res = network_simplex_state.return (ns_loop_impl s))>"
+proof-
+  obtain \<delta> is_flip vv e0fwd up_side
+    where bn: "bottleneck s e in_U p1 p2 = (\<delta>, is_flip, vv, e0fwd, up_side)"
+    by (cases "bottleneck s e in_U p1 p2") auto
+  note B = bottleneck_imp_rule[OF loop_step_facts(4-6) loop_step_entering(1) assms(1,2)
+      loop_step_facts(12,13)[folded assms(3,4)], where in_U = in_U, unfolded assms(3,4) bn]
+  note F = loop_step_facts loop_step_distinct loop_step_entering bn assms(1-4,7,8)
+    assms(5,6)[unfolded One_nat_def]
   show ?thesis
-    using eE entering_not_selfloop[OF assms] fst_E_V[OF eE] snd_E_V[OF eE]
-    by (simp add: fst_exec_coincide[OF eE] snd_exec_coincide[OF eE])
-qed
-
-lemma inv_paths:
-  assumes "ns_invar t" "ns_select t = Some (e, in_U, \<gamma>, sel')"
-    "get_path_pair (spanning_tree t) (fst_exec e) (snd_exec e) = (p1, p2)"
-  shows "(\<forall>w \<in> set p1. w \<in> \<V> - {r} \<and> par_edge t w \<in> \<E>)
-         \<and> (\<forall>w \<in> set p2. w \<in> \<V> - {r} \<and> par_edge t w \<in> \<E>) \<and> distinct p1 \<and> distinct p2"
-proof -
-  have eE: "e \<in> \<E>" using ns_select_SomeD(2)[OF assms(1,2)] .
-  have neq: "fst e \<noteq> snd e" using entering_not_selfloop[OF assms(1,2)] .
-  have pp': "get_path_pair (spanning_tree t) (fst e) (snd e) = (p1, p2)"
-    using assms(3) by (simp add: fst_exec_coincide[OF eE] snd_exec_coincide[OF eE])
-  have v1: "set p1 \<subseteq> \<V> - {r}" and v2: "set p2 \<subseteq> \<V> - {r}"
-    using get_path_pair_verts[OF assms(1) eE neq pp'] by auto
-  have arb: "arborescense_invar (spanning_tree t)"
-    using ns_invar_implD(7)[OF ns_invarD(1)[OF assms(1)]] .
-  obtain a p3 where d1: "distinct (p1 @ a # p3)" and d2: "distinct (p2 @ a # p3)"
-    using get_path_pair(1)[OF arb pp' neq fst_E_V[OF eE] snd_E_V[OF eE]] by blast
-  have tree: "ns_invar_tree t" using ns_invarD(7)[OF assms(1)] .
-  show ?thesis using v1 v2 d1 d2 ns_invar_tree_edgeD[OF tree] by auto
-qed
-
-lemma inv_flip:
-  assumes "ns_invar t" "ns_select t = Some (e, in_U, \<gamma>, sel')"
-    "get_path_pair (spanning_tree t) (fst_exec e) (snd_exec e) = (p1, p2)"
-    "bottleneck t e in_U p1 p2 = (\<delta>, True, vv, e0fwd, up_side)" "\<delta> \<noteq> - 1"
-  shows "ns_invar (ns_flip t e in_U \<gamma> sel' \<delta> p1 p2)"
-proof -
-  have cond: "ns_flip_cond t" using assms(2,3,4,5) by (simp add: ns_flip_cond_def)
-  have upd: "ns_flip_upd t = ns_flip t e in_U \<gamma> sel' \<delta> p1 p2"
-    using assms(2,3,4) by (simp add: ns_flip_upd_def)
-  show ?thesis using ns_flip_preservation[OF assms(1) cond] upd by simp
-qed
-
-lemma inv_pivot:
-  assumes "ns_invar t" "ns_select t = Some (e, in_U, \<gamma>, sel')"
-    "get_path_pair (spanning_tree t) (fst_exec e) (snd_exec e) = (p1, p2)"
-    "bottleneck t e in_U p1 p2 = (\<delta>, False, vv, e0fwd, up_side)" "\<delta> \<noteq> - 1"
-  shows "(\<forall>u \<in> \<V>. pot_value_invar (pot_lookup (potentials t) u)) \<and> par_edge t vv \<in> \<E>
-         \<and> vv \<in> \<V> - {r}
-         \<and> (\<exists>psw1 psw2 aa p3 y.
-              get_path_pair (spanning_tree t) (if in_U = up_side then fst_exec e else snd_exec e)
-                 (if in_U = up_side then snd_exec e else fst_exec e) = (psw1, psw2)
-              \<and> walk_betw (abstract_arborescense (spanning_tree t))
-                  (if in_U = up_side then fst_exec e else snd_exec e) (psw1 @ aa # p3) r
-              \<and> distinct (psw1 @ aa # p3) \<and> (vv, y) \<in> set (edges_of_vwalk (psw1 @ [aa])))
-         \<and> ns_invar (ns_pivot t e in_U \<gamma> sel' \<delta> vv e0fwd up_side p1 p2)"
-proof -
-  have eE: "e \<in> \<E>" using ns_select_SomeD(2)[OF assms(1,2)] .
-  have pp': "get_path_pair (spanning_tree t) (fst e) (snd e) = (p1, p2)"
-    using assms(3) by (simp add: fst_exec_coincide[OF eE] snd_exec_coincide[OF eE])
-  have pv: "\<forall>u \<in> \<V>. pot_value_invar (pot_lookup (potentials t) u)"
-    using ns_invar_implD(2)[OF ns_invarD(1)[OF assms(1)]] by (simp add: pot_valid_def)
-  have vVr: "vv \<in> \<V> - {r}" using bottleneck_pivot_facts(2)[OF assms(1,2) pp' assms(4)] .
-  have peE: "par_edge t vv \<in> \<E>" using ns_invar_tree_edgeD[OF ns_invarD(7)[OF assms(1)] vVr] .
-  have cond: "ns_pivot_cond t" using assms(2,3,4,5) by (simp add: ns_pivot_cond_def)
-  have upd: "ns_pivot_upd t = ns_pivot t e in_U \<gamma> sel' \<delta> vv e0fwd up_side p1 p2"
-    using assms(2,3,4) by (simp add: ns_pivot_upd_def)
-  have presv: "ns_invar (ns_pivot t e in_U \<gamma> sel' \<delta> vv e0fwd up_side p1 p2)"
-    using ns_pivot_preservation[OF assms(1) cond] upd by simp
-  show ?thesis
-    unfolding fst_exec_coincide[OF eE] snd_exec_coincide[OF eE]
-    using pv peE vVr pivot_swap_witness[OF assms(1,2) pp' assms(4)] presv by blast
-qed
-
-text \<open>The imperative loop @{const ns_loop_imp} refines the functional @{const ns_loop_impl} under the
-      single, natural precondition @{term \<open>ns_invar s\<close>}, by \<^emph>\<open>fixpoint induction\<close> on the heap
-      @{command partial_function}. The six interface lemmas above supply everything each iteration
-      needs; here we only assemble them. Under partial correctness a diverging run makes the triple
-      hold vacuously, so no termination argument is needed.\<close>
-
-lemma ns_loop_imp_rule:
-  shows "ns_invar s \<longrightarrow> <ns_rel s si> ns_loop_imp si
-           <\<lambda>res. ns_rel_weak (ns_loop_impl s) si * \<up>(res = network_simplex_state.return (ns_loop_impl s))>"
-proof (induction arbitrary: s rule: ns_loop_imp.fixp_induct)
-  case 1 show ?case by simp
-next
-  case 2 show ?case by simp
-next
-  case (3 f s)
-  note IH = "3.IH"
-  show ?case
-  proof (intro impI)
-    assume I: "ns_invar s"
-    show "<ns_rel s si> ns_select_imp si \<bind>
-            (\<lambda>sel. case sel of None \<Rightarrow> Heap_Monad.return Network_Simplex.success
-                   | Some (e, in_U, \<gamma>) \<Rightarrow>
-                       fst_exec_imp e \<bind> (\<lambda>u. snd_exec_imp e \<bind> (\<lambda>v.
-                        get_path_pair_imp (itree si) u v (ipath1 si) (ipath2 si) \<bind> (\<lambda>(ptr1, ptr2).
-                        bottleneck_imp si e in_U ptr1 ptr2 \<bind> (\<lambda>bn.
-                        case bn of (\<delta>, is_flip, vv, e0fwd, up_side) \<Rightarrow>
-                          if \<delta> = - 1 then Heap_Monad.return Network_Simplex.unbounded
-                          else if is_flip
-                            then ns_flip_imp si e in_U \<delta> ptr1 ptr2 \<bind> (\<lambda>_. f si)
-                            else ns_pivot_imp si e u v in_U \<gamma> \<delta> vv e0fwd up_side ptr1 ptr2 \<bind> (\<lambda>_. f si))))))
-           <\<lambda>res. ns_rel_weak (ns_loop_impl s) si * \<up>(res = network_simplex_state.return (ns_loop_impl s))>"
-    proof (cases "ns_select s")
-      case None note nsel = this
-      have pre: "sel_invar (edge_sel s)" "pot_invar (potentials s)" "es_invar (edge_state s)"
-        using inv_sel[OF I] by auto
-      have lu: "ns_loop_impl s = ns_optimal s" by (simp add: ns_loop_impl.simps nsel)
-      have selNone: "<sel_assn (edge_sel s) (isel si) * pot_assn (potentials s) (ipot si)
-                       * es_assn (edge_state s) (iestate si) * rd>
-                     ns_select_imp si
-                     <\<lambda>res. (\<exists>\<^sub>A ss. sel_assn ss (isel si)) * pot_assn (potentials s) (ipot si)
-                       * es_assn (edge_state s) (iestate si) * rd * \<up>(res = None)>"
-        by (rule ht_cons_post[OF ns_select_imp_rule[OF pre(1) pre(2) pre(3)]]) (sep_auto simp: nsel)
-      show ?thesis
-        unfolding ns_rel_def ns_rel_weak_def
-        by (sep_auto simp: lu ns_optimal_def heap: selNone)
+  proof(cases "\<delta> = - 1")
+    case True
+    have "ns_loop_impl s = ns_unbounded_upd s"
+      using sel gpp bn True
+      by (simp add: ns_loop_impl_simps(2) ns_unbounded_cond_def)
+    then show ?thesis
+      unfolding ns_rel_weak_def
+      by (sep_auto simp: True F ns_unbounded_upd_def heap: B)
+  next
+    case False
+    show ?thesis
+    proof(cases is_flip)
+      case True
+      have "ns_loop_impl s = ns_loop_impl (ns_flip s e in_U \<gamma> sel' \<delta> p1 p2)"
+        using sel gpp bn True \<open>\<delta> \<noteq> - 1\<close>
+        by (simp add: ns_loop_impl_simps(3) ns_flip_cond_def ns_flip_upd_def)
+      moreover obtain st where st: "(if in_U then InL else InU) = st"
+        by simp
+      ultimately show ?thesis
+        unfolding ns_flip_def st
+        by (sep_auto simp: True \<open>\<delta> \<noteq> - 1\<close> F heap: B
+          ns_flip_imp_rule[OF loop_step_facts(4-6,3) loop_step_entering(1) assms(1,2)
+            loop_step_facts(12,13)[folded assms(3,4)], where in_U = in_U, unfolded assms(3,4) st]
+          ns_rel_cont[OF assms(9)[OF loop_step_flip[OF bn[simplified True] \<open>\<delta> \<noteq> - 1\<close>]]
+            assms(5,6),
+            unfolded ns_flip_def st, simplified])
     next
-      case (Some res0)
-      obtain e in_U \<gamma> sel' where sel: "ns_select s = Some (e, in_U, \<gamma>, sel')"
-        using Some by (cases res0) auto
-      have pre: "sel_invar (edge_sel s)" "pot_invar (potentials s)" "es_invar (edge_state s)"
-        using inv_sel[OF I] by auto
-      have st: "flow_invar (current_flow s)" "parent_invar (parent_edge s)"
-        "dir_invar (edge_dir s)" "arborescense_invar (spanning_tree s)"
-        using inv_stores[OF I] by auto
-      have gp: "e \<in> \<E>" "fst_exec e \<noteq> snd_exec e" "fst_exec e \<in> \<V>" "snd_exec e \<in> \<V>"
-        using inv_gpp[OF I sel] by auto
-      obtain p1 p2 where gpp: "get_path_pair (spanning_tree s) (fst_exec e) (snd_exec e) = (p1, p2)"
+      case False
+      obtain Pe D where rp: "reparent s e (if in_U = up_side then p1 else p2) vv = (Pe, D)"
         by fastforce
-      have paths: "\<forall>w \<in> set p1. w \<in> \<V> - {r} \<and> par_edge s w \<in> \<E>"
-        "\<forall>w \<in> set p2. w \<in> \<V> - {r} \<and> par_edge s w \<in> \<E>" "distinct p1" "distinct p2"
-        using inv_paths[OF I sel gpp] by auto
-      \<comment> \<open>@{thm fst_exec_eq} / @{thm snd_exec_eq} rewrite the endpoint reads to \<open>fst e\<close> /
-          \<open>snd e\<close>; the bridged \<open>gppb\<close> keeps \<open>get_path_pair\<close> matching after that.\<close>
-      have gppb: "get_path_pair (spanning_tree s) (fst e) (snd e) = (p1, p2)"
-        using gpp by (simp add: fst_exec_eq[OF gp(1)] snd_exec_eq[OF gp(1)])
-      have gpb: "fst e \<in> \<V>" "snd e \<in> \<V>" "fst e \<noteq> snd e"
-        using gp by (simp_all add: fst_exec_eq[OF gp(1)] snd_exec_eq[OF gp(1)])
-      obtain \<delta> is_flip vv e0fwd up_side
-        where bn: "bottleneck s e in_U p1 p2 = (\<delta>, is_flip, vv, e0fwd, up_side)"
-        by (metis prod_cases5)
-      have lu: "ns_loop_impl s =
-          (if \<delta> = - 1 then ns_unbounded_upd s
-           else if is_flip then ns_loop_impl (ns_flip s e in_U \<gamma> sel' \<delta> p1 p2)
-           else ns_loop_impl (ns_pivot s e in_U \<gamma> sel' \<delta> vv e0fwd up_side p1 p2))"
-        by (simp add: ns_loop_impl.simps sel gpp bn)
-      \<comment> \<open>Remaining: thread the buffers through \<open>get_path_pair_imp\<close>, run @{const bottleneck_imp},
-          and case-split on @{term \<delta>} / @{term is_flip}, applying @{thm ns_flip_imp_rule} /
-          @{thm ns_pivot_imp_rule} with the invariant facts and the fixpoint IH for the tail. The
-          store invariants (\<open>pre\<close>/\<open>st\<close>), the fundamental-circuit well-formedness (\<open>gp\<close>/\<open>paths\<close>) and
-          the preservation facts (\<open>inv_flip\<close>/\<open>inv_pivot\<close>) are exactly what those rules and the IH need.\<close>
-      note IHr = IH[rule_format]
-      have selSome: "<sel_assn (edge_sel s) (isel si) * pot_assn (potentials s) (ipot si)
-                       * es_assn (edge_state s) (iestate si) * rd>
-                     ns_select_imp si
-                     <\<lambda>res. sel_assn sel' (isel si) * pot_assn (potentials s) (ipot si)
-                       * es_assn (edge_state s) (iestate si) * rd * \<up>(res = Some (e, in_U, \<gamma>))>"
-        by (rule ht_cons_post[OF ns_select_imp_rule[OF pre(1) pre(2) pre(3)]]) (sep_auto simp: sel)
-      \<comment> \<open>Frame the select refinement onto the whole state, landing a \<^emph>\<open>concrete\<close> @{term \<open>Some (e, in_U, \<gamma>)\<close>}.\<close>
-      have selF: "<rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-          * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-          * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-          * sel_assn (edge_sel s) (isel si)
-          * (\<exists>\<^sub>A l1 l2. ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2
-               * \<up>(card \<V> - 1 \<le> length l1 \<and> card \<V> - 1 \<le> length l2))>
-         ns_select_imp si
-        <\<lambda>res. rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-          * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-          * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-          * sel_assn sel' (isel si)
-          * (\<exists>\<^sub>A l1 l2. ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2
-               * \<up>(card \<V> - 1 \<le> length l1 \<and> card \<V> - 1 \<le> length l2))
-          * \<up>(res = Some (e, in_U, \<gamma>))>"
-        by (sep_auto heap: selSome)
-      \<comment> \<open>The Some-branch body with a \<^emph>\<open>concrete\<close> entering edge --- no option-case-split, so the endpoint
-          reads and the path/bottleneck refinements thread cleanly.\<close>
-      have contBody: "<rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-          * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-          * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-          * sel_assn sel' (isel si)
-          * (\<exists>\<^sub>A l1 l2. ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2
-               * \<up>(card \<V> - 1 \<le> length l1 \<and> card \<V> - 1 \<le> length l2))>
-         fst_exec_imp e \<bind> (\<lambda>u. snd_exec_imp e \<bind> (\<lambda>v.
-           get_path_pair_imp (itree si) u v (ipath1 si) (ipath2 si) \<bind> (\<lambda>(ptr1, ptr2).
-           bottleneck_imp si e in_U ptr1 ptr2 \<bind> (\<lambda>bn.
-           case bn of (\<delta>, is_flip, vv, e0fwd, up_side) \<Rightarrow>
-             if \<delta> = - 1 then Heap_Monad.return Network_Simplex.unbounded
-             else if is_flip then ns_flip_imp si e in_U \<delta> ptr1 ptr2 \<bind> (\<lambda>_. f si)
-             else ns_pivot_imp si e u v in_U \<gamma> \<delta> vv e0fwd up_side ptr1 ptr2 \<bind> (\<lambda>_. f si)))))
-        <\<lambda>res. ns_rel_weak (ns_loop_impl s) si * \<up>(res = network_simplex_state.return (ns_loop_impl s))>"
-      proof -
-        \<comment> \<open>Peel the two endpoint reads and the path search with @{thm ht_bind}; each peeled step turns
-            its guarantee into a \<^emph>\<open>top-level\<close> precondition pure, so the fill pointers arrive with the
-            clean facts @{term \<open>take ptr1 l1' = p1\<close>} / @{term \<open>take ptr2 l2' = p2\<close>} that the bottleneck /
-            augmentation refinements need --- a single \<open>sep_auto\<close> never re-normalises them mid-monad.\<close>
-        have fstF: "<rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-            * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-            * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-            * sel_assn sel' (isel si)
-            * (\<exists>\<^sub>A l1 l2. ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2
-                 * \<up>(card \<V> - 1 \<le> length l1 \<and> card \<V> - 1 \<le> length l2))>
-           fst_exec_imp e
-          <\<lambda>u. rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-            * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-            * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-            * sel_assn sel' (isel si)
-            * (\<exists>\<^sub>A l1 l2. ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2
-                 * \<up>(card \<V> - 1 \<le> length l1 \<and> card \<V> - 1 \<le> length l2)) * \<up>(u = fst_exec e)>"
-          by (sep_auto heap: fst_exec_rule[OF gp(1)])
-        have sndF: "\<And>u. <rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-            * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-            * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-            * sel_assn sel' (isel si)
-            * (\<exists>\<^sub>A l1 l2. ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2
-                 * \<up>(card \<V> - 1 \<le> length l1 \<and> card \<V> - 1 \<le> length l2)) * \<up>(u = fst_exec e)>
-           snd_exec_imp e
-          <\<lambda>v. rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-            * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-            * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-            * sel_assn sel' (isel si)
-            * (\<exists>\<^sub>A l1 l2. ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2
-                 * \<up>(card \<V> - 1 \<le> length l1 \<and> card \<V> - 1 \<le> length l2))
-            * \<up>(u = fst_exec e) * \<up>(v = snd_exec e)>"
-          by (sep_auto heap: snd_exec_rule[OF gp(1)])
-        have gppF: "\<And>u v. <rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-            * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-            * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-            * sel_assn sel' (isel si)
-            * (\<exists>\<^sub>A l1 l2. ipath1 si \<mapsto>\<^sub>a l1 * ipath2 si \<mapsto>\<^sub>a l2
-                 * \<up>(card \<V> - 1 \<le> length l1 \<and> card \<V> - 1 \<le> length l2))
-            * \<up>(u = fst_exec e) * \<up>(v = snd_exec e)>
-           get_path_pair_imp (itree si) u v (ipath1 si) (ipath2 si)
-          <\<lambda>(ptr1, ptr2). (\<exists>\<^sub>A l1' l2'.
-             rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-             * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-             * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-             * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'
-             * \<up>(card \<V> - 1 \<le> length l1' \<and> card \<V> - 1 \<le> length l2'
-                 \<and> ptr1 \<le> length l1' \<and> ptr2 \<le> length l2'
-                 \<and> take ptr1 l1' = p1 \<and> take ptr2 l2' = p2)
-             * \<up>(u = fst_exec e) * \<up>(v = snd_exec e))>"
-          by (sep_auto simp: gpp gppb gp gpb st(4) heap: get_path_pair_rule)
-        \<comment> \<open>The bottleneck / augmentation tail, with the fill pointers' guarantees as clean hypotheses.
-            The branch well-formedness and the bottleneck value are derived here by \<^emph>\<open>controlled\<close>
-            rewriting with the path facts --- never a blind \<open>sep_auto\<close> search.\<close>
-        have tailP: "\<lbrakk>u = fst_exec e; v = snd_exec e;
-            card \<V> - 1 \<le> length l1' \<and> card \<V> - 1 \<le> length l2'
-              \<and> ptr1 \<le> length l1' \<and> ptr2 \<le> length l2'
-              \<and> take ptr1 l1' = p1 \<and> take ptr2 l2' = p2\<rbrakk> \<Longrightarrow>
-           <rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-            * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-            * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-            * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'>
-           bottleneck_imp si e in_U ptr1 ptr2 \<bind> (\<lambda>bn.
-             case bn of (\<delta>, is_flip, vv, e0fwd, up_side) \<Rightarrow>
-               if \<delta> = - 1 then Heap_Monad.return Network_Simplex.unbounded
-               else if is_flip then ns_flip_imp si e in_U \<delta> ptr1 ptr2 \<bind> (\<lambda>_. f si)
-               else ns_pivot_imp si e u v in_U \<gamma> \<delta> vv e0fwd up_side ptr1 ptr2 \<bind> (\<lambda>_. f si))
-          <\<lambda>res. ns_rel_weak (ns_loop_impl s) si * \<up>(res = network_simplex_state.return (ns_loop_impl s))>"
-          for u v ptr1 ptr2 l1' l2'
-        proof -
-          assume uv: "u = fst_exec e" "v = snd_exec e"
-            and Cc: "card \<V> - 1 \<le> length l1' \<and> card \<V> - 1 \<le> length l2'
-                     \<and> ptr1 \<le> length l1' \<and> ptr2 \<le> length l2'
-                     \<and> take ptr1 l1' = p1 \<and> take ptr2 l2' = p2"
-          from Cc have A5: "ptr1 \<le> length l1'" and A6: "ptr2 \<le> length l2'"
-            and TA1: "take ptr1 l1' = p1" and TA2: "take ptr2 l2' = p2"
-            and cardL1: "card \<V> - 1 \<le> length l1'" and cardL2: "card \<V> - 1 \<le> length l2'" by auto
-          have af1: "\<forall>w\<in>set (take ptr1 l1'). w \<in> \<V> - {r} \<and> par_edge s w \<in> \<E>"
-            using paths(1) by (simp add: TA1)
-          have af2: "\<forall>w\<in>set (take ptr2 l2'). w \<in> \<V> - {r} \<and> par_edge s w \<in> \<E>"
-            using paths(2) by (simp add: TA2)
-          have d1: "distinct (take ptr1 l1')" using paths(3) by (simp add: TA1)
-          have d2: "distinct (take ptr2 l2')" using paths(4) by (simp add: TA2)
-          have bv: "bottleneck s e in_U (take ptr1 l1') (take ptr2 l2') = (\<delta>, is_flip, vv, e0fwd, up_side)"
-            using bn by (simp add: TA1 TA2)
-          note bottR = bottleneck_imp_rule[OF st(1) st(2) st(3) gp(1) A5 A6 af1 af2]
-          note bottR2 = bottR[unfolded bv]
-          \<comment> \<open>Peel the bottleneck read on its own --- a straight-line \<open>sep_auto\<close> with no \<open>case\<close> / \<open>if\<close>
-              tail, so the self-referential @{thm fst_exec_eq} never fires on the (un-taken) pivot
-              branch.  Its result is the \<^emph>\<open>concrete\<close> bottleneck tuple.\<close>
-          have bottF2: "<rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-              * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-              * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-              * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'>
-             bottleneck_imp si e in_U ptr1 ptr2
-            <\<lambda>res. rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-              * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-              * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-              * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'
-              * \<up>(res = (\<delta>, is_flip, vv, e0fwd, up_side))>"
-            by (sep_auto simp: bv heap: bottR)
-          show "<rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-              * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-              * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-              * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'>
-             bottleneck_imp si e in_U ptr1 ptr2 \<bind> (\<lambda>bn.
-               case bn of (\<delta>, is_flip, vv, e0fwd, up_side) \<Rightarrow>
-                 if \<delta> = - 1 then Heap_Monad.return Network_Simplex.unbounded
-                 else if is_flip then ns_flip_imp si e in_U \<delta> ptr1 ptr2 \<bind> (\<lambda>_. f si)
-                 else ns_pivot_imp si e u v in_U \<gamma> \<delta> vv e0fwd up_side ptr1 ptr2 \<bind> (\<lambda>_. f si))
-            <\<lambda>res. ns_rel_weak (ns_loop_impl s) si
-                     * \<up>(res = network_simplex_state.return (ns_loop_impl s))>"
-          proof (cases "\<delta> = - 1")
-            case True note dne = this
-            have luU: "ns_loop_impl s = ns_unbounded_upd s" using lu dne by simp
-            show ?thesis
-              unfolding ns_rel_weak_def luU ns_unbounded_upd_def
-              apply (rule ht_bind[OF bottF2])
-              apply (rule ht_extract_pre_pure, hypsubst)
-              apply (simp only: prod.case if_P[OF dne])
-              apply (rule ht_cons_post[OF ht_return_sp])
-              apply (simp only: ex_assn_move_out)
-              apply (rule ent_ex_postI[where x = l1'])
-              apply (rule ent_ex_postI[where x = l2'])
-              apply (rule ent_ex_postI[where x = sel'])
-              apply (sep_auto simp: cardL1 cardL2)
-              apply (simp add: cardL1[unfolded One_nat_def])
-              apply (simp add: cardL2[unfolded One_nat_def])
-              apply (simp add: mod_pure_star_dist)
-              done
-          next
-            case False note dne = this
-            show ?thesis
-            proof (cases "is_flip")
-              case True note isf = this
-              have bfl: "bottleneck s e in_U p1 p2 = (\<delta>, True, vv, e0fwd, up_side)"
-                using bn isf by simp
-              have invf: "ns_invar (ns_flip s e in_U \<gamma> sel' \<delta> p1 p2)"
-                using inv_flip[OF I sel gpp bfl dne] .
-              have luF: "ns_loop_impl s = ns_loop_impl (ns_flip s e in_U \<gamma> sel' \<delta> p1 p2)"
-                using lu dne isf by simp
-              have flipF: "<rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-                  * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-                  * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-                  * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'>
-                 ns_flip_imp si e in_U \<delta> ptr1 ptr2
-                <\<lambda>_. rd * flow_assn (augment_flow s e in_U \<delta> p1 p2) (iflow si)
-                  * pot_assn (potentials s) (ipot si) * tree_assn (spanning_tree s) (itree si)
-                  * parent_assn (parent_edge s) (iparent si) * dir_assn (edge_dir s) (idir si)
-                  * es_assn (es_upd (edge_state s) e (if in_U then InL else InU)) (iestate si)
-                  * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'>"
-                by (sep_auto simp: TA1 TA2
-                         heap: ns_flip_imp_rule[OF st(1) st(2) st(3) pre(3) gp(1) A5 A6 af1 af2])
-              have entP: "rd * flow_assn (augment_flow s e in_U \<delta> p1 p2) (iflow si)
-                  * pot_assn (potentials s) (ipot si) * tree_assn (spanning_tree s) (itree si)
-                  * parent_assn (parent_edge s) (iparent si) * dir_assn (edge_dir s) (idir si)
-                  * es_assn (es_upd (edge_state s) e (if in_U then InL else InU)) (iestate si)
-                  * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'
-                 \<Longrightarrow>\<^sub>A ns_rel (ns_flip s e in_U \<gamma> sel' \<delta> p1 p2) si"
-                unfolding ns_rel_def ns_flip_def
-                apply (simp only: ex_assn_move_out)
-                apply (rule ent_ex_postI[where x = l1'])
-                apply (rule ent_ex_postI[where x = l2'])
-                apply (sep_auto simp: cardL1 cardL2)
-                apply (simp_all add: cardL1[unfolded One_nat_def] cardL2[unfolded One_nat_def])
-                done
-              show ?thesis
-                unfolding luF
-                apply (rule ht_bind[OF bottF2])
-                apply (rule ht_extract_pre_pure, hypsubst)
-                apply (simp only: prod.case if_not_P[OF dne] if_P[OF isf])
-                apply (rule ht_bind[OF flipF])
-                apply (rule ht_cons_pre[OF entP IHr[OF invf]])
-                done
-            next
-              case False note isf = this
-              have bnp: "bottleneck s e in_U p1 p2 = (\<delta>, False, vv, e0fwd, up_side)"
-                using bn isf by simp
-              obtain psw1 psw2 aa p3 y where piv:
-                "\<forall>u \<in> \<V>. pot_value_invar (pot_lookup (potentials s) u)"
-                "par_edge s vv \<in> \<E>" "vv \<in> \<V> - {r}"
-                "get_path_pair (spanning_tree s)
-                    (if in_U = up_side then fst_exec e else snd_exec e)
-                    (if in_U = up_side then snd_exec e else fst_exec e) = (psw1, psw2)"
-                "walk_betw (abstract_arborescense (spanning_tree s))
-                    (if in_U = up_side then fst_exec e else snd_exec e) (psw1 @ aa # p3) r"
-                "distinct (psw1 @ aa # p3)" "(vv, y) \<in> set (edges_of_vwalk (psw1 @ [aa]))"
-                and invp: "ns_invar (ns_pivot s e in_U \<gamma> sel' \<delta> vv e0fwd up_side p1 p2)"
-                using inv_pivot[OF I sel gpp bnp dne] by blast
-              obtain Pe1 D1 where rep1:
-                "reparent s e p1 vv = (Pe1, D1)" by fastforce
-              obtain Pe2 D2 where rep2:
-                "reparent s e p2 vv = (Pe2, D2)" by fastforce
-              have luP: "ns_loop_impl s = ns_loop_impl (ns_pivot s e in_U \<gamma> sel' \<delta> vv e0fwd up_side p1 p2)"
-                using lu dne isf by simp
-              have pivF: "<rd * flow_assn (current_flow s) (iflow si) * pot_assn (potentials s) (ipot si)
-                  * tree_assn (spanning_tree s) (itree si) * parent_assn (parent_edge s) (iparent si)
-                  * dir_assn (edge_dir s) (idir si) * es_assn (edge_state s) (iestate si)
-                  * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'>
-                 ns_pivot_imp si e u v in_U \<gamma> \<delta> vv e0fwd up_side ptr1 ptr2
-                <\<lambda>_. rd * flow_assn (augment_flow s e in_U \<delta> (take ptr1 l1') (take ptr2 l2')) (iflow si)
-                  * pot_assn (shift_pot (spanning_tree s) vv (potentials s) \<gamma> (in_U \<noteq> up_side)) (ipot si)
-                  * tree_assn (swap_edge (spanning_tree s) vv (if in_U = up_side then fst_exec e else snd_exec e)
-                                 (if in_U = up_side then snd_exec e else fst_exec e)) (itree si)
-                  * (case reparent s e (if in_U = up_side then take ptr1 l1' else take ptr2 l2') vv of (Pe', D') \<Rightarrow>
-                       parent_assn Pe' (iparent si) * dir_assn D' (idir si))
-                  * es_assn (es_upd (es_upd (edge_state s) e InTree) (par_edge s vv)
-                               (if e0fwd then InU else InL)) (iestate si)
-                  * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'>"
-                unfolding uv(1) uv(2)
-                by (sep_auto heap: ns_pivot_imp_rule[OF st(1) pre(2) piv(1)[rule_format] st(4) st(2) st(3) pre(3)
-                                 gp(1) piv(2) piv(3) refl refl A5 A6 af1 af2 d1 d2 piv(4) gp(2)
-                                 piv(5) piv(6) piv(7) gp(3) gp(4)])
-              have entP: "rd * flow_assn (augment_flow s e in_U \<delta> (take ptr1 l1') (take ptr2 l2')) (iflow si)
-                  * pot_assn (shift_pot (spanning_tree s) vv (potentials s) \<gamma> (in_U \<noteq> up_side)) (ipot si)
-                  * tree_assn (swap_edge (spanning_tree s) vv (if in_U = up_side then fst_exec e else snd_exec e)
-                                 (if in_U = up_side then snd_exec e else fst_exec e)) (itree si)
-                  * (case reparent s e (if in_U = up_side then take ptr1 l1' else take ptr2 l2') vv of (Pe', D') \<Rightarrow>
-                       parent_assn Pe' (iparent si) * dir_assn D' (idir si))
-                  * es_assn (es_upd (es_upd (edge_state s) e InTree) (par_edge s vv)
-                               (if e0fwd then InU else InL)) (iestate si)
-                  * sel_assn sel' (isel si) * ipath1 si \<mapsto>\<^sub>a l1' * ipath2 si \<mapsto>\<^sub>a l2'
-                 \<Longrightarrow>\<^sub>A ns_rel (ns_pivot s e in_U \<gamma> sel' \<delta> vv e0fwd up_side p1 p2) si"
-                unfolding ns_rel_def
-                apply (simp only: ex_assn_move_out)
-                apply (rule ent_ex_postI[where x = l1'])
-                apply (rule ent_ex_postI[where x = l2'])
-                apply (sep_auto simp: rep1 rep2 cardL1 cardL2 ns_pivot_def Let_def TA1 TA2)
-                apply (simp_all add: mult.assoc cardL1[unfolded One_nat_def] cardL2[unfolded One_nat_def])
-                done
-              show ?thesis
-                unfolding luP
-                apply (rule ht_bind[OF bottF2])
-                apply (rule ht_extract_pre_pure, hypsubst)
-                apply (simp only: prod.case if_not_P[OF dne] if_not_P[OF isf])
-                apply (rule ht_bind[OF pivF])
-                apply (rule ht_cons_pre[OF entP IHr[OF invp]])
-                done
-            qed
-          qed
-        qed
-        show ?thesis
-          apply (rule ht_bind[OF fstF], rule ht_bind[OF sndF], rule ht_bind[OF gppF])
-          apply (simp only: split_paired_all prod.case)
-          apply (rule ht_exEI)+
-          apply (rule ht_extract_pre_pure)+
-          apply (rule tailP)
-          apply assumption+
-          done
-      qed
+      obtain a1 b1 st where fo: "(if in_U = up_side then fst e else snd e) = a1"
+        "(if in_U = up_side then snd e else fst e) = b1" "(if e0fwd then InU else InL) = st"
+        by simp
+      note P = loop_step_pivot[OF bn[simplified False] \<open>\<delta> \<noteq> - 1\<close>]
+      have L: "ns_loop_impl s = ns_loop_impl (ns_pivot s e in_U \<gamma> sel' \<delta> vv e0fwd up_side p1 p2)"
+        using sel gpp bn False \<open>\<delta> \<noteq> - 1\<close>
+        by (simp add: ns_loop_impl_simps(4) ns_pivot_cond_def ns_pivot_upd_def)
       show ?thesis
-        unfolding ns_rel_def
-        apply (rule ht_bind[OF selF])
-        apply (rule ht_extract_pre_pure, hypsubst)
-        apply (simp only: option.case prod.case)
-        apply (rule contBody)
-        done
+        unfolding L ns_pivot_def Let_def rp prod.case loop_step_entering(3,4) fo
+      proof(rule loop_step_swap[OF bn[simplified False] \<open>\<delta> \<noteq> - 1\<close>], goal_cases)
+        case (1 a p3 y)
+        show ?case
+          by (sep_auto simp: False \<open>\<delta> \<noteq> - 1\<close> F heap: B
+            ns_pivot_imp_rule[OF loop_step_facts(4,2,8,7,5,6,3) loop_step_entering(1) conjunct1[OF conjunct2[OF P]]
+              conjunct1[OF P] loop_step_entering(3,4)[symmetric] assms(1,2) loop_step_facts(12,13)[folded assms(3,4)]
+              loop_step_distinct[folded assms(3,4)] 1(1) loop_step_facts(9) 1(2-4) loop_step_facts(10,11),
+              where e0fwd = e0fwd, unfolded assms(3,4) rp prod.case fo]
+            ns_rel_cont[OF assms(9)[OF conjunct2[OF conjunct2[OF P]]] assms(5,6),
+              unfolded ns_pivot_def Let_def rp prod.case loop_step_entering(3,4) fo, simplified])
+      qed
     qed
   qed
 qed
+
+end
+
+text \<open>One iteration of @{const ns_loop_imp}, with the recursive call abstracted to @{term c}: if
+      @{term c} refines @{const ns_loop_impl} on every invariant state, so does the loop body.\<close>
+lemma ns_loop_step:
+  assumes "ns_invar s"
+    "\<And>t. ns_invar t \<Longrightarrow> <ns_rel t si> c
+       <\<lambda>res. ns_rel_weak (ns_loop_impl t) si * \<up>(res = network_simplex_state.return (ns_loop_impl t))>"
+  shows "<ns_rel s si>
+     do {
+       sel \<leftarrow> ns_select_imp si;
+       (case sel of
+          None \<Rightarrow> Heap_Monad.return Network_Simplex.success
+        | Some (e, in_U, \<gamma>) \<Rightarrow>
+            do {
+              u \<leftarrow> fst_exec_imp e;
+              v \<leftarrow> snd_exec_imp e;
+              (ptr1, ptr2) \<leftarrow> get_path_pair_imp (itree si) u v (ipath1 si) (ipath2 si);
+              bn \<leftarrow> bottleneck_imp si e in_U ptr1 ptr2;
+              (case bn of (\<delta>, is_flip, vv, e0fwd, up_side) \<Rightarrow>
+                 if \<delta> = - 1 then Heap_Monad.return Network_Simplex.unbounded
+                 else if is_flip then do { _ \<leftarrow> ns_flip_imp si e in_U \<delta> ptr1 ptr2; c }
+                 else do { _ \<leftarrow> ns_pivot_imp si e u v in_U \<gamma> \<delta> vv e0fwd up_side ptr1 ptr2; c })
+            })
+     }
+   <\<lambda>res. ns_rel_weak (ns_loop_impl s) si * \<up>(res = network_simplex_state.return (ns_loop_impl s))>"
+proof(cases "ns_select s")
+  case None
+  then show ?thesis
+    unfolding ns_rel_def ns_rel_weak_def
+    by (sep_auto simp: None ns_loop_impl.simps ns_optimal_def
+      ns_invar_implD(2,5,6)[OF ns_invarD(1)[OF assms(1)], unfolded pot_valid_def]
+      heap: ns_select_imp_rule[of s, unfolded None option.case])
+next
+  case (Some x)
+  obtain e in_U \<gamma> sel' where sel: "ns_select s = Some (e, in_U, \<gamma>, sel')"
+    using Some
+    by (cases x) auto
+  obtain p1 p2 where gpp: "get_path_pair (spanning_tree s) (fst_exec e) (snd_exec e) = (p1, p2)"
+    by fastforce
+  note E = loop_step_entering[OF assms(1) sel gpp]
+  obtain T where T: "\<And>e in_U \<gamma> u v ptr1 ptr2. do {
+       bn \<leftarrow> bottleneck_imp si e in_U ptr1 ptr2;
+       (case bn of (\<delta>, is_flip, vv, e0fwd, up_side) \<Rightarrow>
+          if \<delta> = - 1 then Heap_Monad.return Network_Simplex.unbounded
+          else if is_flip then do { _ \<leftarrow> ns_flip_imp si e in_U \<delta> ptr1 ptr2; c }
+          else do { _ \<leftarrow> ns_pivot_imp si e u v in_U \<gamma> \<delta> vv e0fwd up_side ptr1 ptr2; c })
+     } = T e in_U \<gamma> u v ptr1 ptr2"
+    by (rule that, rule refl)
+  show ?thesis
+    unfolding ns_rel_def T
+    by (sep_auto simp: E loop_step_facts(7,9-11)[OF assms(1) sel gpp]
+      heap: ns_select_imp_rule[OF loop_step_facts(1-3)[OF assms(1) sel gpp], unfolded sel option.case prod.case]
+      loop_step_tail[OF assms(1) sel gpp _ _ _ _ _ _ _ _ assms(2), unfolded T])
+qed
+
+text \<open>The imperative loop @{const ns_loop_imp} refines the functional @{const ns_loop_impl} under the
+      single, natural precondition @{term \<open>ns_invar s\<close>}, by
+      \<^emph>\<open>fixpoint induction\<close> on the heap @{command partial_function}. The six interface
+      lemmas above supply everything each iteration needs; here we only assemble them. Under partial
+      correctness a diverging run makes the triple hold vacuously, so no termination argument is needed.\<close>
+
+lemma ns_loop_imp_rule:
+  "ns_invar s \<longrightarrow> <ns_rel s si> ns_loop_imp si
+     <\<lambda>res. ns_rel_weak (ns_loop_impl s) si * \<up>(res = network_simplex_state.return (ns_loop_impl s))>"
+proof(induction arbitrary: s rule: ns_loop_imp.fixp_induct)
+  case (3 f s)
+  show ?case
+    using ns_loop_step[of s si "f si"] "3.IH"
+    by blast
+qed simp_all
 
 text \<open>The refinement above is stated against the heap @{command partial_function}
       @{const ns_loop_impl}, but the functional correctness theorems live on the @{command function}
@@ -1686,11 +1174,8 @@ lemma ns_loop_imp_correct:
   assumes "ns_invar s"
   shows "<ns_rel s si> ns_loop_imp si
            <\<lambda>res. ns_rel_weak (ns_loop s) si * \<up>(res = network_simplex_state.return (ns_loop s))>"
-proof -
-  have eq: "ns_loop_impl s = ns_loop s"
-    using ns_loop_dom_impl_same[OF ns_loop_dom_of_invar[OF assms]] .
-  show ?thesis using ns_loop_imp_rule[THEN mp, OF assms] unfolding eq .
-qed
+  using assms ns_loop_imp_rule[of s si]
+  by (simp add: ns_loop_dom_impl_same ns_loop_dom_of_invar)
 end
 
 
@@ -1706,15 +1191,17 @@ locale network_simplex_init_impl_refine =
 begin
 
 text \<open>Specialised to the initial basis built by @{locale network_simplex_init}: since
-      @{text init_state_invar} gives @{term \<open>ns_invar init_state\<close>}, the imperative loop started from
-      any heap refining \<open>init_state\<close> refines the functional run @{term \<open>ns_loop init_state\<close>} --- the
-      state on which @{text network_simplex_correct} states optimality / unboundedness.\<close>
+      @{text init_state_invar} gives @{term \<open>ns_invar init_state\<close>}, the imperative loop started
+      from any heap refining \<open>init_state\<close> refines the functional run
+      @{term \<open>ns_loop init_state\<close>} --- the state on which @{text network_simplex_correct} states
+      optimality / unboundedness.\<close>
 
-corollary ns_loop_imp_init:
+lemma ns_loop_imp_init:
   "<ns_rel init_state si> ns_loop_imp si
      <\<lambda>res. ns_rel_weak (ns_loop init_state) si
               * \<up>(res = network_simplex_state.return (ns_loop init_state))>"
-  using ns_loop_imp_correct[OF init_state_invar] .
+  using init_state_invar
+  by (rule ns_loop_imp_correct)
 
 end
 

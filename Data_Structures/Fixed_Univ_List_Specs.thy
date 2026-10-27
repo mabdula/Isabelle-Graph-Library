@@ -48,40 +48,9 @@ lemma (in fixed_univ_list) fixed_univ_list_restrict:
   assumes "U' \<subseteq> U"
   shows "fixed_univ_list U' (restr_list_invar U' list_invar list_abstract) list_abstract list_empty
            list_push_front list_move_to_front list_first list_next"
-proof(unfold_locales, goal_cases)
-  case (1 L) then show ?case
-    using list_universe by (simp add: restr_list_invar_def)
-next
-  case 2 show ?case
-    using list_empty by (simp add: restr_list_invar_def)
-next
-  case 3 show ?case
-    using list_empty by simp
-next
-  case (4 L x)
-  have "x \<in> U" "list_invar L"
-    using 4 assms by (auto simp add: restr_list_invar_def)
-  then show ?case
-    using 4 list_push_front[of L x] by (auto simp add: restr_list_invar_def)
-next
-  case (5 L x)
-  have "x \<in> U" "list_invar L"
-    using 5 assms by (auto simp add: restr_list_invar_def)
-  then show ?case
-    using 5 list_push_front(2)[of L x] by simp
-next
-  case (6 L x) then show ?case
-    using list_move_to_front[of L x] set_remove1_subset[of x "list_abstract L"]
-    by (auto simp add: restr_list_invar_def)
-next
-  case (7 L x) then show ?case
-    using list_move_to_front(2)[of L x] by (simp add: restr_list_invar_def)
-next
-  case (8 L) then show ?case
-    using list_first[of L] by (simp add: restr_list_invar_def)
-next
-  case (9 L xs x ys) then show ?case
-    using list_next[of L xs x ys] by (simp add: restr_list_invar_def)
-qed
+  using assms subsetD[of U']
+  by unfold_locales
+     (auto simp: restr_list_invar_def list_empty list_push_front list_move_to_front list_first
+        list_next dest: list_universe set_remove1_subset[THEN subsetD])
 
 end

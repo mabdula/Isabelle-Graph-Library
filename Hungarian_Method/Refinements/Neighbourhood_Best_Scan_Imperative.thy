@@ -76,11 +76,13 @@ lemma best_rel_None: "best_rel pref bi None \<longleftrightarrow> bi = None"
   by (cases bi) (simp_all add: best_rel_def)
 
 lemma best_rel_Some: "best_rel pref bi (Some (x, j)) \<longleftrightarrow> (\<exists>k. bi = Some (k, j, pref j) \<and> h k = x)"
-proof(cases bi)
-  case (Some a)
-  obtain k r f where a: "a = (k, r, f)" by (cases a) auto
-  show ?thesis by (auto simp: best_rel_def Some a)
-qed (simp add: best_rel_def)
+  by (cases bi) (auto simp: best_rel_def)
+
+lemma best_rel_left:
+  "best_rel pref None b \<longleftrightarrow> b = None"
+  "best_rel pref (Some c) b \<longleftrightarrow>
+     b = Some (h (fst c), fst (snd c)) \<and> snd (snd c) = pref (fst (snd c))"
+  by (auto simp: best_rel_def split: prod.splits)
 
 lemma best_upd_imp_rel:
   "\<lbrakk>best_rel pref bi b; key u r = h k; f = pref r\<rbrakk> \<Longrightarrow>
@@ -89,40 +91,33 @@ lemma best_upd_imp_rel:
      (auto simp: best_rel_def code.best_upd_imp_def best_upd_def code.better_imp_def better_def)
 
 lemma best2_upd_imp_rel:
-  assumes "best2_rel pref bsi bs" "key u r = h k" "f = pref r"
-  shows "best2_rel pref (code.best2_upd_imp bsi (k, r, f)) (best2_upd key pref u bs r)"
-proof-
-  obtain bi si b s where p: "bsi = (bi, si)" "bs = (b, s)" by (cases bsi, cases bs) auto
-  have R: "best_rel pref bi b" "best_rel pref si s" using assms(1) by (simp_all add: best2_rel_def p)
-  show ?thesis
-  proof(cases bi)
-    case None
-    thus ?thesis using R assms(2,3)
-      by (simp add: best2_rel_def best_rel_def p code.best2_upd_imp_def best2_upd_def)
-  next
-    case (Some c)
-    obtain k' r' f' where c: "c = (k', r', f')" by (cases c) auto
-    have b: "b = Some (h k', r')" "f' = pref r'" using R(1) by (simp_all add: best_rel_def Some c)
-    have bt: "code.better_imp (k, r, f) c = better pref (key u r, r) (h k', r')"
-      using assms(2,3) b(2) by (simp add: c code.better_imp_def better_def)
-    show ?thesis
-    proof(cases "better pref (key u r, r) (h k', r')")
-      case True
-      thus ?thesis using R(1) assms(2,3) bt
-        by (simp add: best2_rel_def best_rel_def p Some b(1) code.best2_upd_imp_def best2_upd_def)
-    next
-      case False
-      thus ?thesis using R(1) best_upd_imp_rel[where key = key and u = u, OF R(2) assms(2,3)] bt
-        by (simp add: best2_rel_def p Some b(1) code.best2_upd_imp_def best2_upd_def)
-    qed
-  qed
-qed
+  "\<lbrakk>best2_rel pref bsi bs; key u r = h k; f = pref r\<rbrakk> \<Longrightarrow>
+     best2_rel pref (code.best2_upd_imp bsi (k, r, f)) (best2_upd key pref u bs r)"
+  using best_upd_imp_rel[of pref "snd bsi" "snd bs" key u r k f]
+  by (cases bsi; cases bs)
+     (auto simp: best2_rel_def best_rel_left code.best2_upd_imp_def best2_upd_def code.better_imp_def
+                 better_def split: option.splits)
+
+lemma best_scan_move_props:
+  assumes "rnb_invar C" "u \<in> K" "rnb_has C u" "finite (rnb_remaining C u)" "rnb_remaining C u \<subseteq> A"
+  shows "rnb_remaining C u \<noteq> {}" "rnb_current C u \<in> A" "rnb_invar (rnb_move C u)"
+        "finite (rnb_remaining (rnb_move C u) u)" "rnb_remaining (rnb_move C u) u \<subseteq> A"
+        "card (rnb_remaining (rnb_move C u) u) < card (rnb_remaining C u)"
+  using assms rnb.idx_current[of C u] card_Diff1_less[of "rnb_remaining C u" "rnb_current C u"]
+  by (auto simp: rnb.idx_has rnb.idx_move_invar rnb.idx_move_remaining)
+
+lemma best_scan_reset_props:
+  assumes "rnb_invar C" "u \<in> K" "finite (rnb_abstract C u)" "rnb_abstract C u \<subseteq> A"
+  shows "rnb_invar (rnb_reset C u)" "finite (rnb_remaining (rnb_reset C u) u)"
+        "rnb_remaining (rnb_reset C u) u \<subseteq> A"
+  using assms
+  by (simp_all add: rnb.idx_reset_invar rnb.idx_reset_remaining)
 
 text \<open>The candidate program @{term cur} may rely on the current neighbour being in a set
       @{term A} that contains the neighbourhood.\<close>
 
 lemma scan_best_imp_rule:
-  assumes cur: "\<And>C. \<lbrakk>rnb_invar C; rnb_remaining C u \<noteq> {}; rnb_current C u \<in> A\<rbrakk> \<Longrightarrow>
+  assumes "\<And>C. \<lbrakk>rnb_invar C; rnb_remaining C u \<noteq> {}; rnb_current C u \<in> A\<rbrakk> \<Longrightarrow>
                   <nb_assn C Ci * Ctx> cur Ci u
                   <\<lambda>(k, r, f). nb_assn C Ci * Ctx *
                                \<up>(h k = key u r \<and> r = rnb_current C u \<and> f = pref r)>"
@@ -137,47 +132,23 @@ proof(induction "card (rnb_remaining C u)" arbitrary: C bs bsi rule: less_induct
   show ?case
   proof(cases "rnb_has C u")
     case True
-    have ne: "rnb_remaining C u \<noteq> {}" using rnb.idx_has[OF less.prems(1,2)] True by simp
-    have x_in: "rnb_current C u \<in> rnb_remaining C u"
-      using rnb.idx_current[OF less.prems(1,2) ne] .
-    have xA: "rnb_current C u \<in> A" using x_in less.prems(5) by blast
-    have C': "rnb_invar (rnb_move C u)"
-             "rnb_remaining (rnb_move C u) u = rnb_remaining C u - {rnb_current C u}"
-      using rnb.idx_move_invar[OF less.prems(1,2)] rnb.idx_move_remaining[OF less.prems(1,2) ne]
-      by auto
-    have card_less: "card (rnb_remaining (rnb_move C u) u) < card (rnb_remaining C u)"
-      using card_Diff1_less[OF less.prems(3) x_in] by (simp add: C'(2))
-    have fin': "finite (rnb_remaining (rnb_move C u) u)" using less.prems(3) by (simp add: C'(2))
-    have A': "rnb_remaining (rnb_move C u) u \<subseteq> A" using less.prems(5) by (auto simp: C'(2))
-    define bs' where "bs' = best2_upd key pref u bs (rnb_current C u)"
-    have eq: "scan_best key pref u C bs = scan_best key pref u (rnb_move C u) bs'"
-      by (simp add: scan_best.simps[of key pref u C bs] True bs'_def)
-    have step: "\<And>k. h k = key u (rnb_current C u) \<Longrightarrow>
-       <nb_assn (rnb_move C u) Ci * Ctx>
-        code.scan_best_imp cur Ci u
-          (code.best2_upd_imp bsi (k, rnb_current C u, pref (rnb_current C u)))
-       <\<lambda>bsi'. nb_assn (fst (scan_best key pref u C bs)) Ci * Ctx *
-               \<up>(best2_rel pref bsi' (snd (scan_best key pref u C bs)))>"
-      unfolding eq bs'_def
-      by (rule less.hyps[OF card_less C'(1) less.prems(2) fin' best2_upd_imp_rel[OF less.prems(4)]
-                            A'])
-         simp_all
+    note M = best_scan_move_props[OF less.prems(1,2) True less.prems(3,5)]
+    note IH = less.hyps[OF M(6,3) less.prems(2) M(4)
+                          best2_upd_imp_rel[where key = key and u = u, OF less.prems(4)] M(5)]
     show ?thesis
       apply(subst code.scan_best_imp.simps)
-      by (sep_auto heap: nb.idx_has_rule cur[OF less.prems(1) ne xA] nb.idx_move_rule step
-                   simp: less.prems(1,2) True ne)
+      by (sep_auto heap: nb.idx_has_rule assms(1)[OF less.prems(1) M(1,2)] nb.idx_move_rule IH
+                   simp: less.prems(1,2) True M(1) scan_best.simps[of key pref u C bs])
   next
     case False
-    have eq: "scan_best key pref u C bs = (C, bs)"
-      by (simp add: scan_best.simps[of key pref u C bs] False)
     show ?thesis
       apply(subst code.scan_best_imp.simps)
-      by (sep_auto heap: nb.idx_has_rule simp: less.prems False eq)
+      by (sep_auto heap: nb.idx_has_rule simp: less.prems False scan_best.simps[of key pref u C bs])
   qed
 qed
 
-theorem best_two_imp_rule:
-  assumes cur: "\<And>C. \<lbrakk>rnb_invar C; rnb_remaining C u \<noteq> {}; rnb_current C u \<in> A\<rbrakk> \<Longrightarrow>
+lemma best_two_imp_rule:
+  assumes "\<And>C. \<lbrakk>rnb_invar C; rnb_remaining C u \<noteq> {}; rnb_current C u \<in> A\<rbrakk> \<Longrightarrow>
                   <nb_assn C Ci * Ctx> cur Ci u
                   <\<lambda>(k, r, f). nb_assn C Ci * Ctx *
                                \<up>(h k = key u r \<and> r = rnb_current C u \<and> f = pref r)>"
@@ -186,13 +157,10 @@ theorem best_two_imp_rule:
          <\<lambda>bsi. nb_assn (fst (best_two key pref u C)) Ci * Ctx *
                 \<up>(best2_rel pref bsi (snd (best_two key pref u C)))>"
 proof-
-  have R: "rnb_invar (rnb_reset C u)" "finite (rnb_remaining (rnb_reset C u) u)"
-          "rnb_remaining (rnb_reset C u) u \<subseteq> A"
-    using rnb.idx_reset_invar[OF assms(2,3)] rnb.idx_reset_remaining[OF assms(2,3)] assms(4,5)
-    by auto
+  note R = best_scan_reset_props[OF assms(2-5)]
   note sc = scan_best_imp_rule[where key = key and pref = pref and cur = cur and Ctx = Ctx
                                  and bsi = "(None, None)" and bs = "(None, None)",
-                               OF cur R(1) assms(3) R(2) _ R(3)]
+                               OF assms(1) R(1) assms(3) R(2) _ R(3)]
   show ?thesis
     unfolding code.best_two_imp_def best_two_def
     by (sep_auto heap: nb.idx_reset_rule sc simp: assms(2,3) best2_rel_def best_rel_def)

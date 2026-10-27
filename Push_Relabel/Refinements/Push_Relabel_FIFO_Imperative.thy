@@ -119,26 +119,28 @@ lemma fifo_ctx_upd_imp_rule:
               queue_assn (prod.fst (fifo_ctx_upd op Q u (pr_fwd st) (pr_bwd st) (pr_excess st))) Qi *
               cur_assn (prod.snd (fifo_ctx_upd op Q u (pr_fwd st) (pr_bwd st) (pr_excess st))) Cf Cu>"
 proof-
-  note I = invar_stateD[OF assms(1)]
+  note I = invar_basic_maps[OF assms(1)[unfolded invar_state_def, THEN conjunct1]]
   show ?thesis
   proof(cases op)
     case (Push_Fwd d)
-    have d: "d \<in> \<E>"
-      using good_op_push_edge[of st d] assms(5) by (simp add: Push_Fwd)
+    hence d: "d \<in> \<E>"
+      using good_op_push_edge[of st d] assms(5)
+      by simp
     show ?thesis
       unfolding Push_Fwd fifo_ctx_upd_imp_def fifo_ctx_upd_def pr_op.case
-      using edge_verts[OF d]
-      by (sep_auto heap: fwd_get_state_rule[OF I(1) d] ex_get_state_rule[OF I(2) assms(4)]
-                         snd_state_rule[OF d] fifo_after_push_imp_rule[OF I(2) assms(2,3)])
+      using d edge_verts[of d]
+      by (sep_auto heap: fwd_get_state_rule[OF I(1) d] ex_get_state_rule[OF I(3) assms(4)]
+                         snd_state_rule[OF d] fifo_after_push_imp_rule[OF I(3) assms(2,3)])
   next
     case (Push_Bwd d)
-    have d: "d \<in> \<E>"
-      using good_op_push_edge[of st d] assms(5) by (simp add: Push_Bwd)
+    hence d: "d \<in> \<E>"
+      using good_op_push_edge[of st d] assms(5)
+      by simp
     show ?thesis
       unfolding Push_Bwd fifo_ctx_upd_imp_def fifo_ctx_upd_def pr_op.case
-      using edge_verts[OF d]
-      by (sep_auto heap: bwd_get_state_rule[OF I(13) d] ex_get_state_rule[OF I(2) assms(4)]
-                         fst_state_rule[OF d] fifo_after_push_imp_rule[OF I(2) assms(2,3)])
+      using d edge_verts[of d]
+      by (sep_auto heap: bwd_get_state_rule[OF I(2) d] ex_get_state_rule[OF I(3) assms(4)]
+                         fst_state_rule[OF d] fifo_after_push_imp_rule[OF I(3) assms(2,3)])
   qed (sep_auto simp: fifo_ctx_upd_imp_def fifo_ctx_upd_def
                 heap: cur_set_rule cur_clear_rule queue_imp.queue_push_rule[OF assms(2,3)])+
 qed
@@ -151,54 +153,58 @@ lemma fifo_discharge_imp_rule:
   shows "<state_assn st Si * queue_assn Q Qi * cur_assn cur Cf Cu> fifo_discharge_imp Qi Cf Cu Si u
          <\<lambda>r. state_assn st Si * queue_assn Q' Qi * cur_assn cur' Cf Cu * \<up>(r = op)>"
 proof-
-  have u: "active_vertex s t (flow_abs st) u"
-    using assms(4) by auto
-  hence uV: "u \<in> \<V>"
-    by (simp add: active_vertex_def)
+  have u: "active_vertex s t (flow_abs st) u" "u \<in> \<V>"
+    using assms(4)
+    by (auto simp add: active_vertex_def)
   have opd: "discharge_op True (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u = op"
     and c: "fifo_ctx_upd op Q u (pr_fwd st) (pr_bwd st) (pr_excess st) = (Q', cur')"
-    using assms(5) by (auto simp add: fifo_discharge_def Let_def)
-  have good: "good_op st op"
-    using discharge_op_props[OF assms(1) u opd] by simp
-  have "set (u # queue_abstract Q) \<subseteq> \<V>"
-    using assms(4) by (auto simp add: active_vertex_def)
-  note room = queue_room[OF assms(3) this]
-  have basic: "invar_basic st"
-    using assms(1) by (simp add: invar_state_def)
+    using assms(5)
+    by (auto simp add: fifo_discharge_def Let_def)
+  note good = conjunct1[OF discharge_op_props[OF assms(1) u(1) opd]]
   show ?thesis
     unfolding fifo_discharge_imp_def
-    by (sep_auto heap: discharge_op_imp_rule[OF basic uV, where gap = True, unfolded opd]
-                       fifo_ctx_upd_imp_rule[OF assms(1,2) room uV good] simp: c)
+    by (sep_auto heap: discharge_op_imp_rule[OF assms(1)[unfolded invar_state_def, THEN conjunct1] u(2),
+                                             where gap = True, unfolded opd]
+                       fifo_ctx_upd_imp_rule[OF assms(1,2) queue_room_active[OF assms(3,4)] u(2) good] simp: c)
 qed
+
+text \<open>What the context invariant gives the discharge of the current or of the popped vertex.\<close>
+
+lemma fifo_ctx_invar_cur:
+  assumes "fifo_ctx_invar st" "pr_ctx st = (Q, cur)"
+  shows "queue_invar Q" "cur = Some u \<Longrightarrow> distinct (u # queue_abstract Q)"
+        "cur = Some u \<Longrightarrow> set (u # queue_abstract Q) = {v. active_vertex s t (flow_abs st) v}"
+  using assms
+  by (auto simp: fifo_ctx_invar_def)
+
+lemma fifo_ctx_invar_pop:
+  assumes "fifo_ctx_invar st" "pr_ctx st = (Q, None)" "\<not> queue_is_empty Q" "queue_pop Q = (u, Q0)"
+  shows "queue_abstract Q \<noteq> []" "queue_invar Q0" "distinct (u # queue_abstract Q0)"
+        "set (u # queue_abstract Q0) = {v. active_vertex s t (flow_abs st) v}"
+  using assms queue.queue_is_empty[of Q] queue.queue_pop[of Q] hd_Cons_tl[of "queue_abstract Q"]
+  by (auto simp: fifo_ctx_invar_def)
 
 lemma fifo_select_imp_rule:
   assumes "invar_state st" "fifo_ctx_invar st" "fifo.select_of st = (op, c)"
   shows "<state_assn st Si * fifo_ctx_assn (pr_ctx st) Ci> fifo_select_imp Ci Si
          <\<lambda>r. state_assn st Si * fifo_ctx_assn c Ci * \<up>(r = op)>"
 proof-
-  obtain Q cur where ctx: "pr_ctx st = (Q, cur)"
-    by (cases "pr_ctx st")
-  obtain Qi Cf Cu Vi where Ci: "Ci = (Qi, Cf, Cu, Vi)"
-    by (cases Ci) auto
-  have I: "queue_invar Q" "distinct (queue_abstract Q)"
-          "\<forall> w. cur = Some w \<longrightarrow> w \<notin> set (queue_abstract Q)"
-          "set (queue_abstract Q) \<union> set_option cur = {v. active_vertex s t (flow_abs st) v}"
-    using assms(2) ctx by (simp_all add: fifo_ctx_invar_def)
+  obtain Q cur Qi Cf Cu Vi Q' cur' where ctx: "pr_ctx st = (Q, cur)" and Ci: "Ci = (Qi, Cf, Cu, Vi)"
+                                      and c: "c = (Q', cur')"
+    by (cases "pr_ctx st", cases Ci rule: prod_cases4, cases c) auto
+  note I = fifo_ctx_invar_cur[OF assms(2) ctx]
   have sel: "fifo_select (Q, cur) (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st) (pr_counts st)
                (pr_out st) (pr_in st) = (op, c)"
-    using assms(3) ctx by (simp add: fifo.select_of_def)
-  obtain Q' cur' where c: "c = (Q', cur')"
-    by (cases c)
+    using assms(3) ctx
+    by (simp add: fifo.select_of_def)
   show ?thesis
   proof(cases cur)
     case (Some u)
-    have dis: "fifo_discharge Q u (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st) (pr_out st)
-                 (pr_in st) = (op, (Q', cur'))"
-      using sel Some c by (simp add: fifo_select_def)
-    have "distinct (u # queue_abstract Q)"
-         "set (u # queue_abstract Q) = {v. active_vertex s t (flow_abs st) v}"
-      using I Some by auto
-    note r = fifo_discharge_imp_rule[OF assms(1) I(1) this dis]
+    have "fifo_discharge Q u (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st) (pr_out st)
+            (pr_in st) = (op, (Q', cur'))"
+      using sel Some c
+      by (simp add: fifo_select_def)
+    note r = fifo_discharge_imp_rule[OF assms(1) I(1) I(2,3)[OF Some] this]
     show ?thesis
       unfolding Ci ctx c fifo_select_imp_def fifo_ctx_assn_def prod.case Some
       by (sep_auto heap: cur_flag_rule cur_get_rule[of "Some u" u] r)
@@ -208,29 +214,25 @@ proof-
     proof(cases "queue_is_empty Q")
       case True
       have "op = Done" "Q' = Q" "cur' = None"
-        using sel None True c by (simp_all add: fifo_select_def)
+        using sel None True c
+        by (simp_all add: fifo_select_def)
       thus ?thesis
         unfolding Ci ctx c fifo_select_imp_def fifo_ctx_assn_def prod.case None
         by (sep_auto heap: cur_flag_rule queue_imp.queue_is_empty_rule[OF I(1)] simp: True)
     next
       case False
-      have ne: "queue_abstract Q \<noteq> []"
-        using queue.queue_is_empty[OF I(1)] False by simp
       obtain u Q0 where pop: "queue_pop Q = (u, Q0)"
         by (cases "queue_pop Q")
-      have q: "queue_invar Q0" "u # queue_abstract Q0 = queue_abstract Q"
-        using queue.queue_pop[OF I(1) ne] pop ne by simp_all
-      have dis: "fifo_discharge Q0 u (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st) (pr_out st)
-                   (pr_in st) = (op, (Q', cur'))"
-        using sel None False pop c by (simp add: fifo_select_def)
-      have "distinct (u # queue_abstract Q0)"
-           "set (u # queue_abstract Q0) = {v. active_vertex s t (flow_abs st) v}"
-        using I None unfolding q(2) by simp_all
-      note r = fifo_discharge_imp_rule[OF assms(1) q(1) this dis]
+      note p = fifo_ctx_invar_pop[OF assms(2) ctx[unfolded None] False pop]
+      have "fifo_discharge Q0 u (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st) (pr_out st)
+              (pr_in st) = (op, (Q', cur'))"
+        using sel None False pop c
+        by (simp add: fifo_select_def)
+      note r = fifo_discharge_imp_rule[OF assms(1) p(2-4) this]
       show ?thesis
         unfolding Ci ctx c fifo_select_imp_def fifo_ctx_assn_def prod.case None
         by (sep_auto heap: cur_flag_rule queue_imp.queue_is_empty_rule[OF I(1)]
-                           queue_imp.queue_pop_rule[OF I(1) ne] r simp: False pop)
+                           queue_imp.queue_pop_rule[OF I(1) p(1)] r simp: False pop)
     qed
   qed
 qed
@@ -242,40 +244,33 @@ proof-
   obtain Qi Cf Cu Vi where Ci: "Ci = (Qi, Cf, Cu, Vi)"
     by (cases Ci) auto
   define x where "x = pr_excess fifo.init_state"
-  have exi: "ex_invar x"
-    using invar_stateD(2)[OF fifo.init_state_props(1)] by (simp add: x_def)
+  note exi = invar_basic_maps(3)[OF fifo.init_state_props(1)[unfolded invar_state_def, THEN conjunct1]]
   define P where "P = (\<lambda> W Q. queue_invar Q \<and> distinct (queue_abstract Q) \<and>
                           set (queue_abstract Q) = {v \<in> W. v \<noteq> s \<and> v \<noteq> t \<and> 0 < ex_get x v})"
-  have p0: "P {} queue_empty"
-    using queue.queue_empty by (simp add: P_def)
   have step: "P (insert v W) (fifo_init_step x a v) \<and>
               <state_assn fifo.init_state Si * queue_assn a Qi> fifo_init_step_imp Qi Si v
               <\<lambda>_. state_assn fifo.init_state Si * queue_assn (fifo_init_step x a v) Qi>"
     if a: "P W a" "W \<subseteq> \<V>" "v \<in> \<V>" "v \<notin> W" for W a v
   proof-
-    have aq: "queue_invar a" "distinct (queue_abstract a)" "set (queue_abstract a) \<subseteq> W"
-      using a(1) by (auto simp add: P_def)
-    have "length (queue_abstract a) = card (set (queue_abstract a))"
-      using distinct_card[OF aq(2)] by simp
-    also have "\<dots> \<le> card W"
-      by (rule card_mono[OF finite_subset[OF a(2) \<V>_finite] aq(3)])
-    also have "\<dots> < card \<V>"
-      by (rule psubset_card_mono[OF \<V>_finite]) (use a(2-4) in auto)
-    finally have room: "length (queue_abstract a) < qcap"
-      using qcap by simp
+    have aq: "queue_invar a" "length (queue_abstract a) < qcap"
+      using a queue_room[of v a]
+      by (auto simp add: P_def)
     have "P (insert v W) (fifo_init_step x a v)"
-      using queue.queue_push[OF aq(1) room, of v] a(1,4) by (auto simp add: P_def fifo_init_step_def)
+      using aq a(1,4) queue.queue_push[of a v]
+      by (auto simp add: P_def fifo_init_step_def)
     moreover have "<state_assn fifo.init_state Si * queue_assn a Qi> fifo_init_step_imp Qi Si v
                    <\<lambda>_. state_assn fifo.init_state Si * queue_assn (fifo_init_step x a v) Qi>"
       unfolding fifo_init_step_imp_def fifo_init_step_def x_def
-      by (sep_auto heap: ex_get_state_rule[OF exi[unfolded x_def] a(3)]
-                         queue_imp.queue_push_rule[OF aq(1) room])
+      by (sep_auto heap: ex_get_state_rule[OF exi a(3)] queue_imp.queue_push_rule[OF aq])
     ultimately show ?thesis
       by simp
   qed
+  have "P {} queue_empty"
+    using queue.queue_empty
+    by (simp add: P_def)
   note f = set_fold_imp_ruleD[OF queue_vertex_fold_imp, where g = "fifo_init_step x"
       and g_imp = "fifo_init_step_imp Qi Si" and P = P
-      and R = "\<lambda> Q. state_assn fifo.init_state Si * queue_assn Q Qi", OF p0 step]
+      and R = "\<lambda> Q. state_assn fifo.init_state Si * queue_assn Q Qi", OF this step]
   have ctx: "pr_ctx fifo.init_state = (queue_vertex_fold (fifo_init_step x) queue_empty, None)"
     by (simp only: fifo.init_state_ctx) (simp add: fifo_init_ctx_def x_def)
   show ?thesis

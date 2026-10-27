@@ -2,7 +2,7 @@ theory Init_Potential_Collection
   imports
     Data_Structures.Iterable_Set_Specs
     Data_Structures.Fixed_Univ_Map_Specs
-    Directed_Set_Graphs.More_Arith
+    Data_Structures.More_Arith
 begin
 
 section \<open>The Initial Potential over a Collection of Neighbourhoods\<close>
@@ -61,65 +61,39 @@ begin
 
 abbreviation "fmin u \<equiv> (\<lambda>\<pi> v. upd_min u (cost u v) \<pi>)"
 
-lemma scan_min_is_foldl:
-  assumes "rnb_invar C" "u \<in> K" "finite (rnb_remaining C u)"
-  shows "\<exists>rs. set rs = rnb_remaining C u \<and>
-            snd (scan_min u C \<pi>) = foldl (fmin u) \<pi> rs \<and>
-            rnb_invar (fst (scan_min u C \<pi>)) \<and>
-            rnb_abstract (fst (scan_min u C \<pi>)) = rnb_abstract C"
+lemma upd_min_props:
+  "\<lbrakk>potential_invar \<pi>; u \<in> K\<rbrakk> \<Longrightarrow>
+     potential_invar (upd_min u c \<pi>) \<and> potential_get (upd_min u c \<pi>) u \<le> c \<and>
+     potential_get (upd_min u c \<pi>) u \<le> potential_get \<pi> u \<and>
+     (\<forall>w. w \<noteq> u \<longrightarrow> potential_get (upd_min u c \<pi>) w = potential_get \<pi> w)"
+  by (auto simp: upd_min_def pot.fixed_univ_map_upd pot.fixed_univ_map_upd_invar)
+
+lemma scan_min_props:
+  assumes "rnb_invar C" "u \<in> K" "finite (rnb_remaining C u)" "potential_invar \<pi>"
+  shows "rnb_invar (fst (scan_min u C \<pi>)) \<and> rnb_abstract (fst (scan_min u C \<pi>)) = rnb_abstract C \<and>
+         potential_invar (snd (scan_min u C \<pi>)) \<and>
+         (\<forall>w. w \<noteq> u \<longrightarrow> potential_get (snd (scan_min u C \<pi>)) w = potential_get \<pi> w) \<and>
+         (\<forall>v\<in>rnb_remaining C u. potential_get (snd (scan_min u C \<pi>)) u \<le> cost u v) \<and>
+         potential_get (snd (scan_min u C \<pi>)) u \<le> potential_get \<pi> u"
   using assms
 proof(induction "card (rnb_remaining C u)" arbitrary: C \<pi>)
   case 0
-  hence empty: "rnb_remaining C u = {}" by simp
-  hence not_has: "\<not> rnb_has C u" using rnb.idx_has[OF 0(2,3)] by simp
-  show ?case
-    using 0(2) by (auto intro!: exI[of _ "[]"] simp: scan_min.simps[of u C \<pi>] not_has empty)
+  thus ?case
+    by (simp add: scan_min.simps[of u C \<pi>] rnb.idx_has)
 next
   case (Suc n)
-  hence ne: "rnb_remaining C u \<noteq> {}" by auto
-  hence has: "rnb_has C u" using rnb.idx_has[OF Suc(3,4)] by simp
-  define x where "x = rnb_current C u"
-  define C' where "C' = rnb_move C u"
-  have x_in: "x \<in> rnb_remaining C u" using rnb.idx_current[OF Suc(3,4) ne] by (simp add: x_def)
-  have C': "rnb_invar C'" "rnb_remaining C' u = rnb_remaining C u - {x}"
-           "rnb_abstract C' = rnb_abstract C"
-    using rnb.idx_move_invar[OF Suc(3,4)] rnb.idx_move_remaining[OF Suc(3,4) ne]
-          rnb.idx_move_abstract[OF Suc(3,4) ne]
-    by (auto simp: C'_def x_def fun_eq_iff)
-  have card: "n = card (rnb_remaining C' u)" using Suc(2,5) x_in by (simp add: C'(2))
-  obtain rs where rs: "set rs = rnb_remaining C' u"
-     "snd (scan_min u C' (fmin u \<pi> x)) = foldl (fmin u) (fmin u \<pi> x) rs"
-     "rnb_invar (fst (scan_min u C' (fmin u \<pi> x)))"
-     "rnb_abstract (fst (scan_min u C' (fmin u \<pi> x))) = rnb_abstract C'"
-    using Suc(1)[OF card C'(1) Suc(4)] Suc(5) by (auto simp: C'(2))
-  have eq: "scan_min u C \<pi> = scan_min u C' (fmin u \<pi> x)"
-    by (simp add: scan_min.simps[of u C \<pi>] has C'_def x_def)
-  show ?case
-    using rs x_in by (intro exI[of _ "x # rs"]) (auto simp: eq C'(2,3))
+  hence "rnb_remaining C u \<noteq> {}"
+    by auto
+  with Suc have "rnb_has C u" "rnb_abstract (rnb_move C u) = rnb_abstract C"
+      "n = card (rnb_remaining (rnb_move C u) u)" "finite (rnb_remaining (rnb_move C u) u)"
+      "rnb_remaining C u = insert (rnb_current C u) (rnb_remaining (rnb_move C u) u)"
+    using rnb.idx_current[of C u]
+    by (auto simp: rnb.idx_has rnb.idx_move_abstract rnb.idx_move_remaining fun_eq_iff)
+  thus ?case
+    using Suc(1)[of "rnb_move C u" "fmin u \<pi> (rnb_current C u)"] Suc(2-)
+          upd_min_props[of \<pi> u "cost u (rnb_current C u)"]
+    by (fastforce simp: scan_min.simps[of u C \<pi>] rnb.idx_move_invar)
 qed
-
-lemma foldl_fmin:
-  "\<lbrakk>potential_invar \<pi>; u \<in> K\<rbrakk> \<Longrightarrow>
-   potential_invar (foldl (fmin u) \<pi> rs) \<and>
-   (\<forall>w. w \<noteq> u \<longrightarrow> potential_get (foldl (fmin u) \<pi> rs) w = potential_get \<pi> w) \<and>
-   (\<forall>v\<in>set rs. potential_get (foldl (fmin u) \<pi> rs) u \<le> cost u v) \<and>
-   potential_get (foldl (fmin u) \<pi> rs) u \<le> potential_get \<pi> u"
-proof(induction rs arbitrary: \<pi>)
-  case (Cons v rs)
-  define \<pi>' where "\<pi>' = fmin u \<pi> v"
-  have p': "potential_invar \<pi>'"
-           "\<And>w. w \<noteq> u \<Longrightarrow> potential_get \<pi>' w = potential_get \<pi> w"
-           "potential_get \<pi>' u \<le> cost u v" "potential_get \<pi>' u \<le> potential_get \<pi> u"
-    using Cons.prems
-    by (auto simp: \<pi>'_def upd_min_def pot.fixed_univ_map_upd pot.fixed_univ_map_upd_invar)
-  have IH: "potential_invar (foldl (fmin u) \<pi>' rs)"
-       "\<And>w. w \<noteq> u \<Longrightarrow> potential_get (foldl (fmin u) \<pi>' rs) w = potential_get \<pi>' w"
-       "\<And>v. v\<in>set rs \<Longrightarrow> potential_get (foldl (fmin u) \<pi>' rs) u \<le> cost u v"
-       "potential_get (foldl (fmin u) \<pi>' rs) u \<le> potential_get \<pi>' u"
-    using Cons.IH[OF p'(1) Cons.prems(2)] by auto
-  show ?case
-    using IH p' by (fastforce simp: \<pi>'_def)
-qed simp
 
 text \<open>The invariant of the iteration over the left vertices.\<close>
 
@@ -129,88 +103,41 @@ definition "init_inv C0 pot0 S Cp =
    (\<forall>u\<in>S. \<forall>v\<in>rnb_abstract C0 u. potential_get (snd Cp) u \<le> cost u v) \<and>
    (\<forall>w. w \<notin> S \<longrightarrow> potential_get (snd Cp) w = potential_get pot0 w))"
 
+lemma init_step_props:
+  assumes "rnb_invar C" "u \<in> K" "finite (rnb_abstract C u)" "potential_invar \<pi>"
+          "init_step (C, \<pi>) u = (C', \<pi>')"
+  shows "rnb_invar C' \<and> rnb_abstract C' = rnb_abstract C \<and> potential_invar \<pi>' \<and>
+         (\<forall>v\<in>rnb_abstract C u. potential_get \<pi>' u \<le> cost u v) \<and>
+         (\<forall>w. w \<noteq> u \<longrightarrow> potential_get \<pi>' w = potential_get \<pi> w)"
+proof(cases "rnb_has (rnb_reset C u) u")
+  case True
+  let ?C = "rnb_move (rnb_reset C u) u" and ?x = "rnb_current (rnb_reset C u) u"
+  have "rnb_invar ?C" "?x \<in> rnb_abstract C u" "rnb_remaining ?C u = rnb_abstract C u - {?x}"
+       "rnb_abstract ?C = rnb_abstract C"
+    using assms True rnb.idx_current[of "rnb_reset C u" u]
+    by (auto simp: rnb.idx_has rnb.idx_reset_invar rnb.idx_reset_remaining rnb.idx_reset_abstract
+                   rnb.idx_move_invar rnb.idx_move_remaining rnb.idx_move_abstract fun_eq_iff)
+  moreover have "scan_min u ?C (potential_upd \<pi> u (cost u ?x)) = (C', \<pi>')"
+    using True assms(5)
+    by (simp add: init_step_def Let_def)
+  ultimately show ?thesis
+    using assms(2-4) scan_min_props[of ?C u "potential_upd \<pi> u (cost u ?x)"]
+    by (auto simp: pot.fixed_univ_map_upd pot.fixed_univ_map_upd_invar)
+qed (use assms in \<open>auto simp: init_step_def rnb.idx_has rnb.idx_reset_invar rnb.idx_reset_remaining
+                               rnb.idx_reset_abstract fun_eq_iff\<close>)
+
 lemma init_step_inv:
-  assumes "init_inv C0 pot0 S Cp" "u \<in> K" "finite (rnb_abstract C0 u)"
-  shows "init_inv C0 pot0 (insert u S) (init_step Cp u)"
-proof-
-  obtain C \<pi> where Cp: "Cp = (C, \<pi>)" by (cases Cp) auto
-  have I: "rnb_invar C" "rnb_abstract C = rnb_abstract C0" "potential_invar \<pi>"
-          "\<forall>u\<in>S. \<forall>v\<in>rnb_abstract C0 u. potential_get \<pi> u \<le> cost u v"
-          "\<forall>w. w \<notin> S \<longrightarrow> potential_get \<pi> w = potential_get pot0 w"
-    using assms(1) by (auto simp: init_inv_def Cp)
-  define C1 where "C1 = rnb_reset C u"
-  have C1: "rnb_invar C1" "rnb_remaining C1 u = rnb_abstract C0 u"
-           "rnb_abstract C1 = rnb_abstract C0"
-    using rnb.idx_reset_invar[OF I(1) assms(2)] rnb.idx_reset_remaining[OF I(1) assms(2)]
-          rnb.idx_reset_abstract[OF I(1) assms(2)] I(2)
-    by (auto simp: C1_def fun_eq_iff)
-  show ?thesis
-  proof(cases "rnb_has C1 u")
-    case False
-    hence "rnb_abstract C0 u = {}" 
-      using rnb.idx_has[OF C1(1) assms(2)] C1(2) by simp
-    thus ?thesis 
-      using I C1 False by (auto simp: init_inv_def init_step_def Cp C1_def)
-  next
-    case True
-    define x where "x = rnb_current C1 u"
-    define C2 where "C2 = rnb_move C1 u"
-    have ne: "rnb_remaining C1 u \<noteq> {}" using rnb.idx_has[OF C1(1) assms(2)] True by simp
-    have x_in: "x \<in> rnb_abstract C0 u" 
-      using rnb.idx_current[OF C1(1) assms(2) ne] C1(2) by (simp add: x_def)
-    have C2: "rnb_invar C2" "rnb_remaining C2 u = rnb_abstract C0 u - {x}"
-             "rnb_abstract C2 = rnb_abstract C0"
-      using rnb.idx_move_invar[OF C1(1) assms(2)] rnb.idx_move_remaining[OF C1(1) assms(2) ne]
-            rnb.idx_move_abstract[OF C1(1) assms(2) ne] C1(2,3)
-      by (auto simp: C2_def x_def fun_eq_iff)
-    define \<pi>1 where "\<pi>1 = potential_upd \<pi> u (cost u x)"
-    have p1: "potential_invar \<pi>1" "potential_get \<pi>1 = (potential_get \<pi>)(u := cost u x)"
-      using pot.fixed_univ_map_upd_invar[OF I(3) assms(2)] pot.fixed_univ_map_upd[OF I(3) assms(2)]
-      by (auto simp: \<pi>1_def)
-    obtain rs where rs: "set rs = rnb_abstract C0 u - {x}"
-        "snd (scan_min u C2 \<pi>1) = foldl (fmin u) \<pi>1 rs"
-        "rnb_invar (fst (scan_min u C2 \<pi>1))"
-        "rnb_abstract (fst (scan_min u C2 \<pi>1)) = rnb_abstract C2"
-      using scan_min_is_foldl[OF C2(1) assms(2), of \<pi>1] assms(3) C2(2) by auto
-    note F = foldl_fmin[OF p1(1) assms(2), of rs]
-    have st: "init_step Cp u = scan_min u C2 \<pi>1"
-      by (simp add: init_step_def Cp C1_def[symmetric] True C2_def x_def \<pi>1_def Let_def)
-    show ?thesis
-      unfolding init_inv_def st
-    proof(intro conjI ballI allI impI)
-      show "rnb_invar (fst (scan_min u C2 \<pi>1))" using rs(3) .
-      show "rnb_abstract (fst (scan_min u C2 \<pi>1)) = rnb_abstract C0" using rs(4) C2(3) by simp
-      show "potential_invar (snd (scan_min u C2 \<pi>1))" using F rs(2) by simp
-    next
-      fix u' v assume u': "u' \<in> insert u S" and v: "v \<in> rnb_abstract C0 u'"
-      show "potential_get (snd (scan_min u C2 \<pi>1)) u' \<le> cost u' v"
-      proof(cases "u' = u")
-        case True
-        thus ?thesis using F v rs(1,2) p1(2) by (cases "v = x") fastforce+
-      next
-        case False
-        hence "u' \<in> S" using u' by simp
-        thus ?thesis using F I(4) v False rs(2) p1(2) by auto
-      qed
-    next
-      fix w assume "w \<notin> insert u S"
-      thus "potential_get (snd (scan_min u C2 \<pi>1)) w = potential_get pot0 w"
-        using F I(5) rs(2) p1(2) by auto
-    qed
-  qed
-qed
+  "\<lbrakk>init_inv C0 pot0 S Cp; u \<in> K; finite (rnb_abstract C0 u)\<rbrakk>
+     \<Longrightarrow> init_inv C0 pot0 (insert u S) (init_step Cp u)"
+  using init_step_props[of "fst Cp" u "snd Cp" "fst (init_step Cp u)" "snd (init_step Cp u)"]
+  by (auto simp: init_inv_def)
 
 lemma foldl_init_step_inv:
   "\<lbrakk>init_inv C0 pot0 S Cp; set xs \<subseteq> K; \<forall>u\<in>set xs. finite (rnb_abstract C0 u)\<rbrakk> \<Longrightarrow>
    init_inv C0 pot0 (S \<union> set xs) (foldl init_step Cp xs)"
-proof(induction xs arbitrary: S Cp)
-  case (Cons x xs)
-  have "init_inv C0 pot0 (insert x S) (init_step Cp x)"
-    using init_step_inv[OF Cons.prems(1)] Cons.prems(2,3) by simp
-  from Cons.IH[OF this] Cons.prems(2,3) show ?case by simp
-qed simp
+  by (induction xs arbitrary: S Cp) (simp_all add: init_step_inv flip: Un_insert_left)
 
-theorem init_potential_coll_props:
+lemma init_potential_coll_props:
   assumes "rnb_invar C0" "vset_invar left" "finite (vset_to_set left)"
           "vset_to_set left \<subseteq> K" "\<And>u. u \<in> vset_to_set left \<Longrightarrow> finite (rnb_abstract C0 u)"
   defines "res \<equiv> init_potential_coll C0 potential_empty left"
@@ -219,21 +146,8 @@ theorem init_potential_coll_props:
                potential_get (snd res) u \<le> cost u v"
         "\<And>u. u \<notin> vset_to_set left \<Longrightarrow> potential_get (snd res) u = 0"
         "rnb_invar (fst res)" "rnb_abstract (fst res) = rnb_abstract C0"
-proof-
-  have i0: "init_inv C0 potential_empty {} (C0, potential_empty)"
-    using assms(1) potential_empty by (auto simp: init_inv_def)
-  have res: "res = foldl init_step (C0, potential_empty) (lst (vset_to_set left))"
-    by (simp add: res_def init_potential_coll_def vset_iterate_lst[OF assms(2)])
-  have I: "init_inv C0 potential_empty (vset_to_set left) res"
-    using foldl_init_step_inv[OF i0, of "lst (vset_to_set left)"] assms(4,5)
-          lst_set[OF assms(3)]
-    by (simp add: res)
-  show "potential_invar (snd res)" "rnb_invar (fst res)" "rnb_abstract (fst res) = rnb_abstract C0"
-       "\<And>u v. \<lbrakk>u \<in> vset_to_set left; v \<in> rnb_abstract C0 u\<rbrakk> \<Longrightarrow>
-               potential_get (snd res) u \<le> cost u v"
-       "\<And>u. u \<notin> vset_to_set left \<Longrightarrow> potential_get (snd res) u = 0"
-    using I potential_empty(2) by (auto simp: init_inv_def)
-qed
+  using foldl_init_step_inv[of C0 potential_empty "{}" "(C0, potential_empty)" "lst (vset_to_set left)"] assms
+  by (auto simp: res_def init_potential_coll_def vset_iterate_lst[OF assms(2)] init_inv_def potential_empty lst_set)
 
 end
 

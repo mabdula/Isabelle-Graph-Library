@@ -45,126 +45,110 @@ definition "amtf_invar n L = (\<exists> xs. amtf_good n L xs)"
 
 definition "amtf_abstract n L = (SOME xs. amtf_good n L xs)"
 
-lemma amtf_good_unique: "\<lbrakk>amtf_good n L xs; amtf_good n L ys\<rbrakk> \<Longrightarrow> xs = ys"
+lemma amtf_good_unique:
+  "\<lbrakk>amtf_good n L xs; amtf_good n L ys\<rbrakk> \<Longrightarrow> xs = ys"
   by (cases L) (auto simp add: amtf_good_def intro: seg_unique)
 
 lemma amtf_abstract_good: "amtf_good n L xs \<Longrightarrow> amtf_abstract n L = xs"
-  unfolding amtf_abstract_def using amtf_good_unique by blast
+  by (auto simp add: amtf_abstract_def intro: amtf_good_unique)
 
-lemma amtf_good_set: "amtf_good n L xs \<Longrightarrow> distinct xs \<and> set xs \<subseteq> {..<n}"
+lemma amtf_good_set:
+  "amtf_good n L xs \<Longrightarrow> distinct xs \<and> set xs \<subseteq> {..<n}"
   by (cases L) (simp add: amtf_good_def)
+
+lemma amtf_good_empty: "amtf_good n amtf_empty []"
+  by (simp add: amtf_good_def amtf_empty_def)
+
+lemma amtf_invarI: "amtf_good n L xs \<Longrightarrow> amtf_invar n L"
+  by (auto simp add: amtf_invar_def)
+
+lemma amtf_invarE:
+  assumes "amtf_invar n L"
+  obtains xs where "amtf_good n L xs" "amtf_abstract n L = xs"
+  using assms
+  by (auto simp add: amtf_invar_def amtf_abstract_good)
 
 lemma amtf_push_front_good:
   assumes "amtf_good n L xs" "x < n" "x \<notin> set xs"
   shows "amtf_good n (amtf_push_front L x) (x # xs)"
-proof-
-  obtain F NX PV where L: "L = (F, NX, PV)"
-    by (cases L) auto
-  have I: "seg NX PV None xs None" "F = first_opt xs" "distinct xs" "set xs \<subseteq> {..<n}"
-    using assms(1) by (simp_all add: amtf_good_def L)
-  have "amtf_push_front L x = (Some x, push_nx NX x xs, push_pv PV x xs)"
-    using I(2) by (cases xs) (simp_all add: amtf_push_front_def L push_nx_def push_pv_def)
+proof(cases L)
+  case (fields F NX PV)
   thus ?thesis
-    using seg_push_front[OF I(1,3) assms(3)] I(3,4) assms(2,3) by (simp add: amtf_good_def)
+    using assms seg_push_front[of NX PV xs x]
+    by (cases xs; auto simp add: amtf_good_def amtf_push_front_def push_nx_def push_pv_def)
 qed
 
 lemma amtf_remove_good:
   assumes "amtf_good n L xs" "x \<in> set xs"
   shows "amtf_good n (amtf_remove L x) (remove1 x xs)"
-proof-
-  obtain F NX PV where L: "L = (F, NX, PV)"
-    by (cases L) auto
-  have I: "seg NX PV None xs None" "F = first_opt xs" "distinct xs" "set xs \<subseteq> {..<n}"
-    using assms(1) by (simp_all add: amtf_good_def L)
-  obtain as bs where xs: "xs = as @ x # bs"
-    using split_list[OF assms(2)] by blast
-  have rm: "remove1 x xs = as @ bs"
-    using I(3) xs by (simp add: remove1_append)
-  note m = seg_mid[OF I(1)[unfolded xs]]
-  have F': "(case PV x of None \<Rightarrow> NX x | Some _ \<Rightarrow> F) = first_opt (as @ bs)"
-    using m(1,2) I(2) xs by (cases as rule: rev_cases) (auto simp add: first_opt_append last_opt_def)
-  show ?thesis
-    using seg_remove[OF I(1)[unfolded xs] I(3)[unfolded xs]] F' I(3,4) rm xs
-    by (auto simp add: amtf_good_def amtf_remove_def L)
+proof(cases L)
+  case (fields F NX PV)
+  obtain as bs where "xs = as @ x # bs"
+    using assms(2)
+    by (blast dest: split_list)
+  moreover have "seg NX PV None xs None" "F = first_opt xs"
+    "distinct xs" "set xs \<subseteq> {..<n}"
+    using assms(1) fields
+    by (simp_all add: amtf_good_def)
+  ultimately have "PV x = last_opt as" "NX x = first_opt bs" "F = first_opt (as @ x # bs)"
+    "seg (remove_nx NX PV x) (remove_pv NX PV x) None (as @ bs) None"
+    "distinct (as @ x # bs)" "set (as @ x # bs) \<subseteq> {..<n}"
+    by (simp_all add: seg_mid seg_remove)
+  thus ?thesis
+    using fields \<open>xs = as @ x # bs\<close>
+    by (cases as rule: rev_cases;
+        auto simp add: amtf_good_def amtf_remove_def remove1_append first_opt_append last_opt_def)
 qed
+
+lemma amtf_move_to_front_good:
+  "\<lbrakk>amtf_good n L xs; x \<in> set xs\<rbrakk> \<Longrightarrow>
+    amtf_good n (amtf_move_to_front L x) (x # remove1 x xs)"
+  unfolding amtf_move_to_front_def
+  by (rule amtf_push_front_good[OF amtf_remove_good]) (auto dest: amtf_good_set)
 
 lemma amtf_fixed_univ_list:
   "fixed_univ_list {..<n} (amtf_invar n) (amtf_abstract n) amtf_empty amtf_push_front
      amtf_move_to_front amtf_first amtf_next"
 proof(unfold_locales, goal_cases)
   case (1 L)
-  then obtain xs where "amtf_good n L xs"
-    by (auto simp add: amtf_invar_def)
   thus ?case
-    using amtf_abstract_good by (cases L) (auto simp add: amtf_good_def)
+    by (auto elim!: amtf_invarE dest: amtf_good_set)
 next
   case 2
-  have "amtf_good n amtf_empty []"
-    by (simp add: amtf_good_def amtf_empty_def)
-  thus ?case
-    by (auto simp add: amtf_invar_def)
+  show ?case
+    using amtf_good_empty
+    by (rule amtf_invarI)
 next
   case 3
-  have "amtf_good n amtf_empty []"
-    by (simp add: amtf_good_def amtf_empty_def)
-  thus ?case
+  show ?case
+    using amtf_good_empty
     by (rule amtf_abstract_good)
 next
   case (4 L x)
-  then obtain xs where xs: "amtf_good n L xs"
-    by (auto simp add: amtf_invar_def)
-  have x: "x < n" "x \<notin> set xs"
-    using 4(2,3) amtf_abstract_good[OF xs] by simp_all
-  show ?case
-    unfolding amtf_invar_def using amtf_push_front_good[OF xs x] by blast
+  thus ?case
+    by (auto elim!: amtf_invarE intro: amtf_invarI amtf_push_front_good)
 next
   case (5 L x)
-  then obtain xs where xs: "amtf_good n L xs"
-    by (auto simp add: amtf_invar_def)
-  have x: "x < n" "x \<notin> set xs"
-    using 5(2,3) amtf_abstract_good[OF xs] by simp_all
-  show ?case
-    using amtf_abstract_good[OF amtf_push_front_good[OF xs x]] amtf_abstract_good[OF xs] by simp
+  thus ?case
+    by (auto elim!: amtf_invarE intro: amtf_abstract_good amtf_push_front_good)
 next
   case (6 L x)
-  then obtain xs where xs: "amtf_good n L xs"
-    by (auto simp add: amtf_invar_def)
-  have x: "x \<in> set xs"
-    using 6(2) amtf_abstract_good[OF xs] by simp
-  note R = amtf_remove_good[OF xs x]
-  have "x < n" "x \<notin> set (remove1 x xs)"
-    using x amtf_good_set[OF xs] by auto
-  note P = amtf_push_front_good[OF R this]
-  show ?case
-    unfolding amtf_invar_def amtf_move_to_front_def using P by blast
+  thus ?case
+    by (auto elim!: amtf_invarE intro: amtf_invarI amtf_move_to_front_good)
 next
   case (7 L x)
-  then obtain xs where xs: "amtf_good n L xs"
-    by (auto simp add: amtf_invar_def)
-  have x: "x \<in> set xs"
-    using 7(2) amtf_abstract_good[OF xs] by simp
-  note R = amtf_remove_good[OF xs x]
-  have "x < n" "x \<notin> set (remove1 x xs)"
-    using x amtf_good_set[OF xs] by auto
-  note P = amtf_push_front_good[OF R this]
-  show ?case
-    using amtf_abstract_good[OF xs] amtf_abstract_good[OF P] by (simp add: amtf_move_to_front_def)
+  thus ?case
+    by (auto elim!: amtf_invarE intro: amtf_abstract_good amtf_move_to_front_good)
 next
   case (8 L)
-  then obtain xs where xs: "amtf_good n L xs"
-    by (auto simp add: amtf_invar_def)
   thus ?case
-    using amtf_abstract_good[OF xs] by (cases L; cases xs) (auto simp add: amtf_good_def amtf_first_def)
+    by (cases L) (auto elim!: amtf_invarE simp add: amtf_good_def amtf_first_def first_opt_def)
 next
   case (9 L xs x ys)
-  then obtain zs where zs: "amtf_good n L zs"
-    by (auto simp add: amtf_invar_def)
-  obtain F NX PV where L: "L = (F, NX, PV)"
-    by (cases L) auto
-  have "seg NX PV None (xs @ x # ys) None"
-    using zs 9(2) amtf_abstract_good[OF zs] by (simp add: amtf_good_def L)
   thus ?case
-    using seg_mid(2) by (cases ys) (fastforce simp add: amtf_next_def L)+
+    by (cases L)
+       (auto elim!: amtf_invarE simp add: amtf_good_def amtf_next_def first_opt_def
+         dest!: seg_mid(2))
 qed
 
 section \<open>The Arrays\<close>
@@ -212,19 +196,23 @@ lemma amtf_pointers:
         "\<lbrakk>x \<in> set xs; NX x = Some y\<rbrakk> \<Longrightarrow> y < n"
         "\<lbrakk>x \<in> set xs; PV x = Some y\<rbrakk> \<Longrightarrow> y < n"
 proof-
-  have I: "seg NX PV None xs None" "F = first_opt xs" "set xs \<subseteq> {..<n}"
-    using assms by (simp_all add: amtf_good_def)
   show "F = Some y \<Longrightarrow> y < n"
-    using I(2,3) by (cases xs) auto
-  show "NX x = Some y \<Longrightarrow> y < n" "PV x = Some y \<Longrightarrow> y < n" if x: "x \<in> set xs"
+    using assms
+    by (cases xs; auto simp add: amtf_good_def)
+  show "NX x = Some y \<Longrightarrow> y < n" "PV x = Some y \<Longrightarrow> y < n"
+    if "x \<in> set xs"
   proof-
-    obtain as bs where xs: "xs = as @ x # bs"
-      using split_list[OF x] by blast
-    note m = seg_mid[OF I(1)[unfolded xs]]
-    show "NX x = Some y \<Longrightarrow> y < n"
-      using m(2) I(3) xs by (cases bs) auto
-    show "PV x = Some y \<Longrightarrow> y < n"
-      using m(1) I(3) xs last_in_set[of as] by (cases "as = []") (auto simp add: last_opt_def)
+    obtain as bs where "xs = as @ x # bs"
+      using \<open>x \<in> set xs\<close>
+      by (blast dest: split_list)
+    moreover have "seg NX PV None xs None" "set xs \<subseteq> {..<n}"
+      using assms
+      by (simp_all add: amtf_good_def)
+    ultimately have "PV x = last_opt as" "NX x = first_opt bs"
+      "set (as @ x # bs) \<subseteq> {..<n}"
+      by (simp_all add: seg_mid)
+    thus "NX x = Some y \<Longrightarrow> y < n" "PV x = Some y \<Longrightarrow> y < n"
+      by (cases bs; cases as rule: rev_cases; auto simp add: last_opt_def)+
   qed
 qed
 
@@ -236,15 +224,12 @@ lemma amtf_push_front_rule:
   assumes "amtf_good n L xs" "x < n"
   shows "<amtf_assn n L Li> amtf_push_front_imp Li x <\<lambda> _. amtf_assn n (amtf_push_front L x) Li>"
 proof-
-  obtain F NX PV where L: "L = (F, NX, PV)"
-    by (cases L) auto
-  obtain Fr NXa PVa where Li: "Li = (Fr, NXa, PVa)"
-    by (cases Li) auto
-  have y: "\<And> y. F = Some y \<Longrightarrow> y < n"
-    using amtf_pointers(1)[OF assms(1)[unfolded L]] .
-  show ?thesis
-    unfolding L Li amtf_push_front_imp_def amtf_push_front_def
-    using assms(2) y
+  obtain F NX PV Fr NXa PVa where "L = (F, NX, PV)" "Li = (Fr, NXa, PVa)"
+    by (cases L, cases Li) auto
+  thus ?thesis
+    using assms amtf_pointers(1)[of n F NX PV xs]
+    unfolding amtf_push_front_imp_def amtf_push_front_def
+      \<open>L = (F, NX, PV)\<close> \<open>Li = (Fr, NXa, PVa)\<close>
     by (cases F) (sep_auto heap: array_fun_upd_rule)+
 qed
 
@@ -252,37 +237,23 @@ lemma amtf_remove_rule:
   assumes "amtf_good n L xs" "x \<in> set xs"
   shows "<amtf_assn n L Li> amtf_remove_imp Li x <\<lambda> _. amtf_assn n (amtf_remove L x) Li>"
 proof-
-  obtain F NX PV where L: "L = (F, NX, PV)"
-    by (cases L) auto
-  obtain Fr NXa PVa where Li: "Li = (Fr, NXa, PVa)"
-    by (cases Li) auto
-  have x: "x < n"
-    using assms by (auto simp add: amtf_good_def L)
-  have a: "\<And> a. PV x = Some a \<Longrightarrow> a < n" and b: "\<And> b. NX x = Some b \<Longrightarrow> b < n"
-    using amtf_pointers(2,3)[OF assms(1)[unfolded L] assms(2)] by auto
-  show ?thesis
-    unfolding L Li amtf_remove_imp_def amtf_remove_def
-    using x a b
+  obtain F NX PV Fr NXa PVa where "L = (F, NX, PV)" "Li = (Fr, NXa, PVa)"
+    by (cases L, cases Li) auto
+  thus ?thesis
+    using assms amtf_good_set[OF assms(1)] amtf_pointers(2,3)[of n F NX PV xs x]
+    unfolding amtf_remove_imp_def amtf_remove_def
+      \<open>L = (F, NX, PV)\<close> \<open>Li = (Fr, NXa, PVa)\<close>
     by (cases "PV x"; cases "NX x")
        (sep_auto simp: remove_nx_def remove_pv_def heap: array_fun_lookup_rule array_fun_upd_rule)+
 qed
 
 lemma amtf_move_to_front_rule:
-  assumes "amtf_invar n L" "x \<in> set (amtf_abstract n L)"
-  shows "<amtf_assn n L Li> amtf_move_to_front_imp Li x
-         <\<lambda> _. amtf_assn n (amtf_move_to_front L x) Li>"
-proof-
-  obtain xs where xs: "amtf_good n L xs"
-    using assms(1) by (auto simp add: amtf_invar_def)
-  have x: "x \<in> set xs"
-    using assms(2) amtf_abstract_good[OF xs] by simp
-  have xn: "x < n"
-    using x xs by (cases L) (auto simp add: amtf_good_def)
-  note R = amtf_remove_good[OF xs x]
-  show ?thesis
-    unfolding amtf_move_to_front_imp_def amtf_move_to_front_def
-    by (sep_auto heap: amtf_remove_rule[OF xs x] amtf_push_front_rule[OF R xn])
-qed
+  "\<lbrakk>amtf_invar n L; x \<in> set (amtf_abstract n L)\<rbrakk> \<Longrightarrow>
+    <amtf_assn n L Li> amtf_move_to_front_imp Li x
+    <\<lambda> _. amtf_assn n (amtf_move_to_front L x) Li>"
+  by (elim amtf_invarE)
+     (sep_auto simp: amtf_move_to_front_imp_def amtf_move_to_front_def
+       heap: amtf_remove_rule amtf_push_front_rule intro: amtf_remove_good dest: amtf_good_set)
 
 lemma amtf_first_rule:
   "<amtf_assn n L Li> amtf_first_imp Li <\<lambda> r. amtf_assn n L Li * \<up>(r = amtf_first L)>"
@@ -290,50 +261,17 @@ lemma amtf_first_rule:
   by (cases L; cases Li) sep_auto
 
 lemma amtf_next_rule:
-  assumes "amtf_invar n L" "x \<in> set (amtf_abstract n L)"
-  shows "<amtf_assn n L Li> amtf_next_imp Li x <\<lambda> r. amtf_assn n L Li * \<up>(r = amtf_next L x)>"
-proof-
-  obtain xs where xs: "amtf_good n L xs"
-    using assms(1) by (auto simp add: amtf_invar_def)
-  have "x < n"
-    using assms(2) amtf_abstract_good[OF xs] xs by (cases L) (auto simp add: amtf_good_def)
-  thus ?thesis
-    unfolding amtf_next_imp_def amtf_next_def
-    by (cases L; cases Li) (sep_auto heap: array_fun_lookup_rule)
-qed
+  "\<lbrakk>amtf_invar n L; x \<in> set (amtf_abstract n L)\<rbrakk> \<Longrightarrow>
+    <amtf_assn n L Li> amtf_next_imp Li x <\<lambda> r. amtf_assn n L Li * \<up>(r = amtf_next L x)>"
+  by (elim amtf_invarE, cases L, cases Li)
+     (sep_auto heap: array_fun_lookup_rule simp: amtf_good_def amtf_next_imp_def amtf_next_def)
 
 lemma amtf_fixed_univ_list_imp:
   "fixed_univ_list_imp {..<n} (amtf_invar n) (amtf_abstract n) amtf_empty amtf_push_front
      amtf_move_to_front amtf_first amtf_next (amtf_assn n) (amtf_empty_imp n) amtf_push_front_imp
      amtf_move_to_front_imp amtf_first_imp amtf_next_imp"
-proof-
-  interpret fixed_univ_list "{..<n}" "amtf_invar n" "amtf_abstract n" amtf_empty amtf_push_front
-    amtf_move_to_front amtf_first amtf_next
-    by (rule amtf_fixed_univ_list)
-  show ?thesis
-  proof(unfold_locales, goal_cases)
-    case 1
-    show ?case
-      by (rule amtf_empty_rule)
-  next
-    case (2 L x Li)
-    then obtain xs where "amtf_good n L xs"
-      by (auto simp add: amtf_invar_def)
-    thus ?case
-      using amtf_push_front_rule 2(2) by simp
-  next
-    case (3 L x Li)
-    thus ?case
-      by (rule amtf_move_to_front_rule)
-  next
-    case (4 L Li)
-    show ?case
-      by (rule amtf_first_rule)
-  next
-    case (5 L x Li)
-    thus ?case
-      by (rule amtf_next_rule)
-  qed
-qed
+  by (intro fixed_univ_list_imp.intro amtf_fixed_univ_list fixed_univ_list_imp_axioms.intro)
+     (auto elim!: amtf_invarE intro: amtf_invarI amtf_empty_rule amtf_push_front_rule
+        amtf_move_to_front_rule amtf_first_rule amtf_next_rule)
 
 end

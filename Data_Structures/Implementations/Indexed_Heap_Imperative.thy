@@ -147,101 +147,89 @@ fun heap_assn :: "'a iheap \<Rightarrow> 'ai heap_imp \<Rightarrow> assn" where
      (\<exists>\<^sub>Ahl pl kl. Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl * Sr \<mapsto>\<^sub>r length hs *
         \<up>(heap_rel hs hl pl \<and> key_rel ks hs kl \<and> length hs \<le> n))"
 
-lemma distinct_length_le: "\<lbrakk>distinct xs; set xs \<subseteq> {..<m}\<rbrakk> \<Longrightarrow> length xs \<le> m"
-  by (metis card_lessThan card_mono distinct_card finite_lessThan)
-
 lemma heap_rel_hole: "heap_rel hs hl pl \<Longrightarrow> hole_rel hs i hl pl"
-  unfolding heap_rel_def hole_rel_def by auto
+  unfolding heap_rel_def hole_rel_def
+  by auto
 
 lemma hole_fill:
-  assumes "hole_rel hs i hl pl" "i < length hs" "distinct hs" "set hs \<subseteq> {..<n}"
-  shows "heap_rel hs (hl[i := hs ! i]) (pl[hs ! i := i])"
-  using assms distinct_length_le[OF assms(3,4)] subsetD[OF assms(4) nth_mem[OF assms(2)]] unfolding heap_rel_def hole_rel_def
-  by (auto simp: nth_list_update nth_eq_iff_index_eq)
+  "\<lbrakk>hole_rel hs i hl pl; i < length hs; distinct hs; set hs \<subseteq> {..<n}\<rbrakk>
+    \<Longrightarrow>
+    heap_rel hs (hl[i := hs ! i]) (pl[hs ! i := i])"
+  using distinct_length_le[of hs n] nth_mem[of i hs]
+  unfolding heap_rel_def hole_rel_def
+  by (auto simp: nth_list_update nth_eq_iff_index_eq subset_eq)
 
 lemma hole_step:
-  assumes "hole_rel hs i hl pl" "i < length hs" "p < length hs" "p \<noteq> i" "distinct hs"
-      and "set hs \<subseteq> {..<n}"
-  shows "hole_rel (hs[i := hs ! p, p := hs ! i]) p (hl[i := hs ! p]) (pl[hs ! p := i])"
-  using assms distinct_length_le[OF assms(5,6)] subsetD[OF assms(6) nth_mem[OF assms(3)]] unfolding hole_rel_def
-  by (auto simp: nth_list_update nth_eq_iff_index_eq)
+  "\<lbrakk>hole_rel hs i hl pl; i < length hs; p < length hs; p \<noteq> i; distinct hs;
+    set hs \<subseteq> {..<n}\<rbrakk> \<Longrightarrow>
+    hole_rel (hs[i := hs ! p, p := hs ! i]) p (hl[i := hs ! p]) (pl[hs ! p := i])"
+  using distinct_length_le[of hs n] nth_mem[of p hs]
+  unfolding hole_rel_def
+  by (auto simp: nth_list_update nth_eq_iff_index_eq subset_eq)
 
 lemma key_rel_len: "key_rel ks hs kl \<Longrightarrow> length kl = n"
-  unfolding key_rel_def by simp
+  unfolding key_rel_def
+  by simp
 
 lemma key_rel_perm: "\<lbrakk>key_rel ks hs kl; set hs' = set hs\<rbrakk> \<Longrightarrow> key_rel ks hs' kl"
-  unfolding key_rel_def by simp
+  unfolding key_rel_def
+  by simp
 
 lemma key_rel_upd:
   "\<lbrakk>key_rel ks hs kl; x < n; set hs' \<subseteq> insert x (set hs)\<rbrakk>
    \<Longrightarrow> key_rel (ks(x := queue_key k)) hs' (kl[x := k])"
-  unfolding key_rel_def by (auto simp: nth_list_update)
+  unfolding key_rel_def
+  by (auto simp: nth_list_update)
 
 lemma key_less_rel:
-  "\<lbrakk>key_rel ks hs kl; x \<in> set hs; y \<in> set hs\<rbrakk> \<Longrightarrow> kl ! x < kl ! y \<longleftrightarrow> ks x < ks y"
-  unfolding key_rel_def using key_less_iff by metis
+  "\<lbrakk>key_rel ks hs kl; x \<in> set hs; y \<in> set hs\<rbrakk> \<Longrightarrow>
+    kl ! x < kl ! y \<longleftrightarrow> ks x < ks y"
+  using key_less_iff[of "kl ! x" "kl ! y"]
+  by (simp add: key_rel_def)
 
 subsection \<open>Sifting up\<close>
 
-
-
 lemma sift_up_imp_rule:
   assumes "i < length hs" "hs ! i = x" "distinct hs" "set hs \<subseteq> {..<n}"
-      and "hole_rel hs i hl pl" "key_rel ks hs kl" "queue_key kx = ks x"
+    "hole_rel hs i hl pl" "key_rel ks hs kl" "queue_key kx = ks x"
   shows "<Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl> sift_up_imp Ha Pa Ka x kx i
          <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
               \<up>(heap_rel (sift_up ks hs i) hl' pl')>"
   using assms
-proof (induction i arbitrary: hs hl pl rule: less_induct)
+proof(induction i arbitrary: hs hl pl rule: less_induct)
   case (less i)
-  have x: "x \<in> set hs" "x < n" using less.prems(1,2,4) nth_mem by auto
-  have len: "length hl = n" "length pl = n" using less.prems(5) by (auto simp: hole_rel_def)
-  have iln: "i < n" using distinct_length_le[OF less.prems(3,4)] less.prems(1) by linarith
+  have "length hl = n" "length pl = n" "length kl = n" "length hs \<le> n" "x < n"
+    using less.prems distinct_length_le[of hs n] nth_mem[of i hs]
+    by (auto simp: hole_rel_def key_rel_def)
   show ?case
-  proof (cases "i = 0")
+  proof(cases "i = 0")
     case True
     thus ?thesis
-      using hole_fill[OF less.prems(5,1,3,4)] less.prems(1,2) len x
-      by (subst sift_up_imp.simps) sep_auto
+      using less.prems hole_fill[of hs i hl pl] \<open>length hl = n\<close> \<open>length pl = n\<close> \<open>x < n\<close>
+      by (subst sift_up_imp.simps) (sep_auto)
   next
-    case i0: False
-    let ?p = "parent i"
-    have pi: "?p < i" using i0 by simp
-    have p: "?p < i" "?p < length hs" "?p \<noteq> i" using pi less.prems(1) by auto
-    have y: "hl ! ?p = hs ! ?p" using less.prems(5) p by (auto simp: hole_rel_def)
-    have ys: "hs ! ?p \<in> set hs" "hs ! ?p < n" using p less.prems(4) nth_mem by auto
-    have ky: "kx < kl ! (hs ! ?p) \<longleftrightarrow> ks x < ks (hs ! ?p)"
-      using less.prems(6,7) ys(1) key_less_iff unfolding key_rel_def by metis
-    have plen: "?p < n" "hs ! ?p < length kl" using p iln ys less.prems(6) by (auto simp: key_rel_def)
-    show ?thesis
-    proof (cases "ks x < ks (hs ! ?p)")
-      case lt: True
-      let ?hs = "hs[i := hs ! ?p, ?p := hs ! i]"
-      have IH: "<Ha \<mapsto>\<^sub>a hl[i := hs ! ?p] * Pa \<mapsto>\<^sub>a pl[hs ! ?p := i] * Ka \<mapsto>\<^sub>a kl>
-                  sift_up_imp Ha Pa Ka x kx ?p
-                <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
-                     \<up>(heap_rel (sift_up ks ?hs ?p) hl' pl')>"
-      proof (rule less.IH[OF p(1)])
-        show "?p < length ?hs" "?hs ! ?p = x" "distinct ?hs" "set ?hs \<subseteq> {..<n}"
-          using p less.prems(1-4) by auto
-        show "hole_rel ?hs ?p (hl[i := hs ! ?p]) (pl[hs ! ?p := i])"
-          by (rule hole_step[OF less.prems(5,1) p(2,3) less.prems(3,4)])
-        show "key_rel ks ?hs kl"
-          by (rule key_rel_perm[OF less.prems(6)]) (use p less.prems(1) in simp)
-      qed (rule less.prems(7))
-      have "sift_up ks hs i = sift_up ks ?hs ?p"
-        by (rule sift_up_rec) (use i0 lt less.prems(2) in simp_all)
-      thus ?thesis
-        using IH lt ky y len iln plen i0 ys
-        by (subst sift_up_imp.simps) (sep_auto heap: IH)
-    next
-      case ge: False
-      have "sift_up ks hs i = hs" 
-        using sift_up_stop ge less.prems(2) by metis
-      thus ?thesis
-        using hole_fill[OF less.prems(5,1,3,4)] less.prems(1,2) ge ky y len iln plen i0 x
-        by (subst sift_up_imp.simps) sep_auto
-    qed
+    case False
+    moreover have "kx < kl ! (hs ! parent i) \<longleftrightarrow> ks x < ks (hs ! parent i)"
+      "hl ! parent i = hs ! parent i" "hs ! parent i < n"
+      using less.prems False key_less_iff[of kx "kl ! (hs ! parent i)"] parent_less_trans[of i "length hs"]
+        nth_mem[of "parent i" hs] parent_less[of i, THEN less_imp_neq]
+      by (auto simp: key_rel_def hole_rel_def subset_eq)
+    moreover have [sep_heap_rules]:
+      "<Ha \<mapsto>\<^sub>a hl[i := hs ! parent i] * Pa \<mapsto>\<^sub>a pl[hs ! parent i := i] *
+        Ka \<mapsto>\<^sub>a kl>
+        sift_up_imp Ha Pa Ka x kx (parent i)
+      <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' *
+         Ka \<mapsto>\<^sub>a kl * \<up>(heap_rel
+           (sift_up ks (hs[i := hs ! parent i, parent i := hs ! i]) (parent i)) hl' pl')>"
+      by (intro less.IH)
+         (use less.prems False hole_step[of hs i hl pl "parent i"]
+           parent_less_trans[of i "length hs"] parent_less[of i] parent_less[of i, THEN less_imp_neq] key_rel_perm[of ks hs kl]
+           in \<open>auto\<close>)
+    ultimately show ?thesis
+      using less.prems hole_fill[of hs i hl pl] parent_less_trans[of i "length hs"]
+        \<open>length hl = n\<close> \<open>length pl = n\<close> \<open>length kl = n\<close>
+        \<open>x < n\<close>
+      by (subst sift_up_imp.simps) (sep_auto simp: sift_up_rec sift_up_stop)
   qed
 qed
 
@@ -249,278 +237,193 @@ subsection \<open>Sifting down\<close>
 
 text \<open>The smaller child of the hole, together with its element and key, read once each.\<close>
 
-
-
-lemma key_rel_mono: "\<lbrakk>key_rel ks hs kl; set hs' \<subseteq> set hs\<rbrakk> \<Longrightarrow> key_rel ks hs' kl"
-  unfolding key_rel_def by auto
+lemma key_rel_mono:
+  "\<lbrakk>key_rel ks hs kl; set hs' \<subseteq> set hs\<rbrakk> \<Longrightarrow> key_rel ks hs' kl"
+  unfolding key_rel_def
+  by auto
 
 lemma min_child_imp_rule:
-  assumes l: "2 * i + 1 < length hs" and hs: "distinct hs" "set hs \<subseteq> {..<n}"
-      and rel: "hole_rel hs i hl pl" "key_rel ks hs kl"
+  assumes "2 * i + 1 < length hs" "distinct hs" "set hs \<subseteq> {..<n}" "hole_rel hs i hl pl"
+    "key_rel ks hs kl"
   shows "<Ha \<mapsto>\<^sub>a hl * Ka \<mapsto>\<^sub>a kl> min_child_imp Ha Ka (length hs) (2 * i + 1)
          <\<lambda>r. Ha \<mapsto>\<^sub>a hl * Ka \<mapsto>\<^sub>a kl *
               \<up>(r = (min_child ks hs i, hs ! min_child ks hs i, kl ! (hs ! min_child ks hs i)))>"
-proof -
-  have len: "length hl = n" "length kl = n" using rel by (auto simp: hole_rel_def key_rel_def)
-  have e: "hl ! (2 * i + 1) = hs ! (2 * i + 1)" using rel(1) l by (auto simp: hole_rel_def)
-  have m: "hs ! (2 * i + 1) \<in> set hs" "hs ! (2 * i + 1) < n" using l hs(2) nth_mem by auto
-  have sl: "length hs \<le> n" by (rule distinct_length_le[OF hs])
-  have ln: "2 * i + 1 < n" using l sl by linarith
-  show ?thesis
-  proof (cases "Suc (2 * i + 1) < length hs")
-    case True
-    have e': "hl ! Suc (2 * i + 1) = hs ! Suc (2 * i + 1)" using rel(1) True by (auto simp: hole_rel_def)
-    have m': "hs ! Suc (2 * i + 1) \<in> set hs" "hs ! Suc (2 * i + 1) < n" using True hs(2) nth_mem by auto
-    have "Suc (2 * i + 1) < n" using True sl by linarith
-    moreover have "kl ! (hs ! Suc (2 * i + 1)) < kl ! (hs ! (2 * i + 1)) \<longleftrightarrow>
-                   ks (hs ! Suc (2 * i + 1)) < ks (hs ! (2 * i + 1))"
-      using key_less_rel[OF rel(2) m'(1) m(1)] .
-    ultimately show ?thesis
-      unfolding min_child_imp_def min_child_def
-      using True e e' m m' len ln by sep_auto
-  next
-    case False
-    thus ?thesis
-      unfolding min_child_imp_def min_child_def
-      using e m len ln by sep_auto
-  qed
-qed
-
-
+  using assms distinct_length_le[of hs n] nth_mem[of "2 * i + 1" hs] nth_mem[of "Suc (2 * i + 1)" hs]
+    key_less_rel[of ks hs kl "hs ! Suc (2 * i + 1)" "hs ! (2 * i + 1)"]
+  unfolding min_child_imp_def min_child_def
+  by (sep_auto simp: hole_rel_def key_rel_def subset_eq)
 
 lemma sift_down_imp_rule:
   assumes "i < length hs" "hs ! i = x" "distinct hs" "set hs \<subseteq> {..<n}"
-      and "hole_rel hs i hl pl" "key_rel ks hs kl" "queue_key kx = ks x"
+    "hole_rel hs i hl pl" "key_rel ks hs kl" "queue_key kx = ks x"
   shows "<Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl> sift_down_imp Ha Pa Ka (length hs) x kx i
          <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
               \<up>(heap_rel (sift_down ks hs i) hl' pl')>"
   using assms
-proof (induction ks hs i arbitrary: hl pl rule: sift_down.induct)
+proof(induction ks hs i arbitrary: hl pl rule: sift_down.induct)
   case (1 ks hs i)
-  have x: "x \<in> set hs" "x < n" using "1.prems"(1,2,4) nth_mem by auto
-  have len: "length hl = n" "length pl = n" using "1.prems"(5) by (auto simp: hole_rel_def)
-  have iln: "i < n" using distinct_length_le[OF "1.prems"(3,4)] "1.prems"(1) by linarith
-  have stop: "<Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl>
-                do { Array.upd i x Ha; Array.upd x i Pa; return () }
-              <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl * \<up>(heap_rel hs hl' pl')>"
-    using hole_fill[OF "1.prems"(5,1,3,4)] "1.prems"(2) len x iln by sep_auto
-  show ?case
-  proof (cases "2 * i + 1 < length hs")
-    case False
-    thus ?thesis using sift_down_stop[of i hs ks] stop
-      by (subst sift_down_imp.simps) simp
-  next
-    case l: True
-    let ?c = "min_child ks hs i"
-    have c: "i < ?c" "?c < length hs" "?c \<noteq> i" using min_child_bounds[OF l, of ks] by auto
-    have zs: "hs ! ?c \<in> set hs" "hs ! ?c < n" using c "1.prems"(4) nth_mem by auto
-    have kz: "kl ! (hs ! ?c) < kx \<longleftrightarrow> ks (hs ! ?c) < ks x"
-      using "1.prems"(6,7) zs(1) key_less_iff unfolding key_rel_def by metis
-    note MC = min_child_imp_rule[OF l "1.prems"(3,4,5,6), of Ha]
-    show ?thesis
-    proof (cases "ks (hs ! ?c) < ks x")
-      case lt: True
-      let ?hs = "hs[i := hs ! ?c, ?c := hs ! i]"
-      have cond: "2 * i + 1 < length hs \<and> ks (hs ! ?c) < ks (hs ! i)" using l lt "1.prems"(2) by simp
-      have IH: "<Ha \<mapsto>\<^sub>a hl[i := hs ! ?c] * Pa \<mapsto>\<^sub>a pl[hs ! ?c := i] * Ka \<mapsto>\<^sub>a kl>
-                  sift_down_imp Ha Pa Ka (length hs) x kx ?c
-                <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
-                     \<up>(heap_rel (sift_down ks ?hs ?c) hl' pl')>"
-      proof -
-        have "<Ha \<mapsto>\<^sub>a hl[i := hs ! ?c] * Pa \<mapsto>\<^sub>a pl[hs ! ?c := i] * Ka \<mapsto>\<^sub>a kl>
-                  sift_down_imp Ha Pa Ka (length ?hs) x kx ?c
-                <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
-                     \<up>(heap_rel (sift_down ks ?hs ?c) hl' pl')>"
-        proof (rule "1.IH"[OF cond])
-          show "?c < length ?hs" "?hs ! ?c = x" "distinct ?hs" "set ?hs \<subseteq> {..<n}"
-            using c "1.prems"(1-4) by auto
-          show "hole_rel ?hs ?c (hl[i := hs ! ?c]) (pl[hs ! ?c := i])"
-            by (rule hole_step[OF "1.prems"(5,1) c(2,3) "1.prems"(3,4)])
-          show "key_rel ks ?hs kl"
-            by (rule key_rel_perm[OF "1.prems"(6)]) (use c "1.prems"(1) in simp)
-        qed (rule "1.prems"(7))
-        thus ?thesis by simp
-      qed
-      have "sift_down ks hs i = sift_down ks ?hs ?c"
-        using cond by (subst sift_down.simps) simp
-      thus ?thesis
-        using l lt kz len iln zs c
-        by (subst sift_down_imp.simps) (sep_auto heap: MC IH)
-    next
-      case ge: False
-      have "sift_down ks hs i = hs"
-        using sift_down_stop ge "1.prems"(2) by metis
-      thus ?thesis
-        using l ge kz hole_fill[OF "1.prems"(5,1,3,4)] "1.prems"(2) len x iln
-        by (subst sift_down_imp.simps) (sep_auto heap: MC)
-    qed
-  qed
+  have "length hl = n" "length pl = n" "length kl = n" "length hs \<le> n" "x < n"
+    using "1.prems" distinct_length_le[of hs n] nth_mem[of i hs]
+    by (auto simp: hole_rel_def key_rel_def)
+  moreover have
+    "kl ! (hs ! min_child ks hs i) < kx \<longleftrightarrow> ks (hs ! min_child ks hs i) < ks x"
+    "hs ! min_child ks hs i < n" if "2 * i + 1 < length hs"
+    using "1.prems" that key_less_iff[of "kl ! (hs ! min_child ks hs i)" kx]
+      min_child_bounds[of i hs ks]
+      nth_mem[of "min_child ks hs i" hs]
+    by (auto simp: key_rel_def subset_eq)
+  moreover have [sep_heap_rules]:
+    "<Ha \<mapsto>\<^sub>a hl[i := hs ! min_child ks hs i] * Pa \<mapsto>\<^sub>a pl[hs ! min_child ks hs i := i] *
+      Ka \<mapsto>\<^sub>a kl>
+      sift_down_imp Ha Pa Ka (length hs) x kx (min_child ks hs i)
+    <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
+       \<up>(heap_rel (sift_down ks
+       (hs[i := hs ! min_child ks hs i, min_child ks hs i := hs ! i]) (min_child ks hs i)) hl' pl')>"
+    if "2 * i + 1 < length hs \<and> ks (hs ! min_child ks hs i) < ks x"
+    by (intro "1.IH"[simplified length_list_update])
+       (use "1.prems" that min_child_bounds[of i hs ks] hole_step[of hs i hl pl "min_child ks hs i"]
+         key_rel_perm[of ks hs kl] in \<open>auto\<close>)
+  ultimately show ?case
+    using "1.prems" hole_fill[of hs i hl pl] min_child_bounds[of i hs ks]
+    by (subst sift_down_imp.simps)
+       (sep_auto heap: min_child_imp_rule simp: sift_down_stop sift_down.simps[of ks hs i])
 qed
 
 subsection \<open>Operations\<close>
-
-
 
 lemma heap_empty_imp_rule: "<emp> heap_empty_imp n k0 <\<lambda>Hi. heap_assn heap_empty Hi>"
   unfolding heap_empty_imp_def heap_empty_def
   by (sep_auto simp: heap_rel_def key_rel_def)
 
-lemma heap_insert_imp_rule:
-  assumes "heap_invar U (hs, ks)" "x \<in> U" "x \<notin> set hs"
-  shows "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> heap_insert_imp (Ha, Pa, Ka, Sr) x k
-         <\<lambda>_. heap_assn (heap_insert (hs, ks) x (queue_key k)) (Ha, Pa, Ka, Sr)>"
-proof -
-  let ?ks = "ks(x := queue_key k)" and ?hs = "hs @ [x]"
-  have H: "distinct hs" "set hs \<subseteq> {..<n}" using assms(1) U_bound by auto
-  have xn: "x < n" using assms(2) U_bound by auto
-  have d: "distinct ?hs" "set ?hs \<subseteq> {..<n}" using H xn assms(3) by auto
-  have sl: "length ?hs \<le> n" by (rule distinct_length_le[OF d])
-  have perm: "length (sift_up ?ks ?hs (length hs)) = Suc (length hs)"
-             "set (sift_up ?ks ?hs (length hs)) = insert x (set hs)"
-             "distinct (sift_up ?ks ?hs (length hs))"
-    using sift_up_perm[of "length hs" ?hs ?ks] d by auto
-  have R: "\<And>hl pl kl. \<lbrakk>heap_rel hs hl pl; key_rel ks hs kl\<rbrakk> \<Longrightarrow>
-      <Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl[x := k]> sift_up_imp Ha Pa Ka x k (length hs)
-      <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl[x := k] *
-           \<up>(heap_rel (sift_up ?ks ?hs (length hs)) hl' pl')>"
-  proof (rule sift_up_imp_rule)
-    fix hl pl kl assume rel: "heap_rel hs hl pl" "key_rel ks hs kl"
-    show "length hs < length ?hs" "?hs ! length hs = x" "distinct ?hs" "set ?hs \<subseteq> {..<n}"
-      using d by auto
-    show "hole_rel ?hs (length hs) hl pl"
-      using rel(1) unfolding heap_rel_def hole_rel_def by (auto simp: nth_append)
-    show "key_rel ?ks ?hs (kl[x := k])" by (rule key_rel_upd[OF rel(2) xn]) simp
-    show "queue_key k = ?ks x" by simp
-  qed
-  have K: "\<And>kl. key_rel ks hs kl \<Longrightarrow> key_rel ?ks (sift_up ?ks ?hs (length hs)) (kl[x := k])"
-    using key_rel_upd[OF _ xn] perm(2) by auto
-  show ?thesis
-    unfolding heap_insert_imp_def heap_assn.simps heap_insert.simps
-    using perm sl xn
-    by (sep_auto heap: R simp: K key_rel_len)
-qed
+lemma heap_rel_len: "heap_rel hs hl pl \<Longrightarrow> length hl = n \<and> length pl = n"
+  unfolding heap_rel_def
+  by simp
+
+lemma heap_rel_lengths:
+  "heap_rel hs hl pl \<Longrightarrow> length hl = n" "heap_rel hs hl pl \<Longrightarrow> length pl = n"
+  unfolding heap_rel_def
+  by simp_all
+
+lemma heap_rel_nth: "\<lbrakk>heap_rel hs hl pl; j < length hs\<rbrakk> \<Longrightarrow> hl ! j = hs ! j"
+  unfolding heap_rel_def
+  by simp
 
 lemma heap_rel_pos: "\<lbrakk>heap_rel hs hl pl; x \<in> set hs\<rbrakk> \<Longrightarrow> pl ! x = idx hs x"
-  unfolding heap_rel_def using idx_less idx_nth by metis
+  unfolding heap_rel_def
+  using idx_less[of x hs]
+  by (auto dest: spec[where x = "idx hs x"])
 
-lemma heap_rel_len: "heap_rel hs hl pl \<Longrightarrow> length hl = n \<and> length pl = n"
-  unfolding heap_rel_def by simp
+lemma heap_rel_hole_snoc: "heap_rel hs hl pl \<Longrightarrow> hole_rel (hs @ [x]) (length hs) hl pl"
+  unfolding heap_rel_def hole_rel_def
+  by (auto simp: nth_append)
+
+lemma heap_insert_imp_rule:
+  assumes "heap_invar U (hs, ks)" "x \<in> U" "\<nexists> k. (x, k) \<in> heap_abstract (hs, ks)"
+  shows "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> heap_insert_imp (Ha, Pa, Ka, Sr) x k
+         <\<lambda>_. heap_assn (heap_insert (hs, ks) x (queue_key k)) (Ha, Pa, Ka, Sr)>"
+proof-
+  have "distinct (hs @ [x])" "set (hs @ [x]) \<subseteq> {..<n}" "x < n"
+    using assms U_bound
+    by (auto simp: heap_abstract_iff simp del: heap_abstract.simps)
+  moreover hence "length (sift_up (ks(x := queue_key k)) (hs @ [x]) (length hs)) = Suc (length hs)"
+    "set (sift_up (ks(x := queue_key k)) (hs @ [x]) (length hs)) = insert x (set hs)"
+    "length (hs @ [x]) \<le> n"
+    using sift_up_perm[of "length hs" "hs @ [x]" "ks(x := queue_key k)"]
+      distinct_length_le[of "hs @ [x]" n]
+    by auto
+  moreover have [sep_heap_rules]: "\<lbrakk>heap_rel hs hl pl; key_rel ks hs kl\<rbrakk> \<Longrightarrow>
+      <Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl[x := k]> sift_up_imp Ha Pa Ka x k (length hs)
+      <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl[x := k] *
+           \<up>(heap_rel (sift_up (ks(x := queue_key k)) (hs @ [x]) (length hs)) hl' pl')>" for hl pl kl
+    by (rule sift_up_imp_rule)
+       (use calculation in \<open>auto intro: heap_rel_hole_snoc key_rel_upd\<close>)
+  ultimately show ?thesis
+    unfolding heap_insert_imp_def heap_assn.simps heap_insert.simps
+    by (sep_auto simp: key_rel_len intro: key_rel_upd)
+qed
 
 lemma heap_decrease_key_imp_rule:
-  assumes "heap_invar U (hs, ks)" "x \<in> set hs"
+  assumes "heap_invar U (hs, ks)" "x \<in> U" "(x, k') \<in> heap_abstract (hs, ks)"
+    "queue_key k < k'"
   shows "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> heap_decrease_key_imp (Ha, Pa, Ka, Sr) x k
          <\<lambda>_. heap_assn (heap_decrease_key (hs, ks) x (queue_key k)) (Ha, Pa, Ka, Sr)>"
-proof -
-  let ?ks = "ks(x := queue_key k)" and ?i = "idx hs x"
-  have H: "distinct hs" "set hs \<subseteq> {..<n}" using assms(1) U_bound by auto
-  have xn: "x < n" using assms(2) H(2) by auto
-  have i: "?i < length hs" "hs ! ?i = x" using idx_less[OF assms(2)] assms(2) by auto
-  have perm: "length (sift_up ?ks hs ?i) = length hs" "set (sift_up ?ks hs ?i) = set hs"
-    using sift_up_perm[OF i(1), of ?ks] by auto
-  have R: "\<And>hl pl kl. \<lbrakk>heap_rel hs hl pl; key_rel ks hs kl\<rbrakk> \<Longrightarrow>
-      <Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl[x := k]> sift_up_imp Ha Pa Ka x k ?i
+proof-
+  have "distinct hs" "set hs \<subseteq> {..<n}" "x \<in> set hs" "x < n" "idx hs x < length hs"
+    "hs ! idx hs x = x"
+    using assms U_bound idx_less[of x hs]
+    by (auto simp: heap_abstract_iff simp del: heap_abstract.simps)
+  moreover hence "length (sift_up (ks(x := queue_key k)) hs (idx hs x)) = length hs"
+    "set (sift_up (ks(x := queue_key k)) hs (idx hs x)) = set hs"
+    using sift_up_perm[of "idx hs x" hs "ks(x := queue_key k)"]
+    by auto
+  moreover have [sep_heap_rules]: "\<lbrakk>heap_rel hs hl pl; key_rel ks hs kl\<rbrakk> \<Longrightarrow>
+      <Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl[x := k]> sift_up_imp Ha Pa Ka x k (idx hs x)
       <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl[x := k] *
-           \<up>(heap_rel (sift_up ?ks hs ?i) hl' pl')>"
-  proof (rule sift_up_imp_rule[OF i H])
-    fix hl pl kl assume rel: "heap_rel hs hl pl" "key_rel ks hs kl"
-    show "hole_rel hs ?i hl pl" by (rule heap_rel_hole[OF rel(1)])
-    show "key_rel ?ks hs (kl[x := k])" by (rule key_rel_upd[OF rel(2) xn]) blast
-    show "queue_key k = ?ks x" by simp
-  qed
-  have K: "\<And>kl. key_rel ks hs kl \<Longrightarrow> key_rel ?ks (sift_up ?ks hs ?i) (kl[x := k])"
-    by (rule key_rel_upd[OF _ xn]) (use perm(2) in blast)+
-  show ?thesis
+           \<up>(heap_rel (sift_up (ks(x := queue_key k)) hs (idx hs x)) hl' pl')>" for hl pl kl
+    by (rule sift_up_imp_rule)
+       (use calculation in \<open>auto intro: heap_rel_hole key_rel_upd\<close>)
+  ultimately show ?thesis
     unfolding heap_decrease_key_imp_def heap_assn.simps heap_decrease_key.simps
-    using perm xn assms(2) heap_rel_len
-    by (sep_auto heap: R simp: K key_rel_len heap_rel_pos)
+    by (sep_auto simp: key_rel_len heap_rel_pos intro: key_rel_upd dest: heap_rel_len)
 qed
+
+lemma heap_rel_hole_extract:
+  "\<lbrakk>heap_rel hs hl pl; distinct hs; butlast hs \<noteq> []\<rbrakk> \<Longrightarrow>
+    hole_rel ((butlast hs)[0 := last hs]) 0 hl pl"
+  using extract_list(3,4)[of hs]
+  unfolding heap_rel_def hole_rel_def
+  by (auto)
+
+lemma key_rel_nth: "\<lbrakk>key_rel ks hs kl; x \<in> set hs\<rbrakk> \<Longrightarrow> queue_key (kl ! x) = ks x"
+  unfolding key_rel_def
+  by simp
 
 lemma heap_extract_min_imp_rule:
   assumes "heap_invar U (hs, ks)"
   shows "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> heap_extract_min_imp (Ha, Pa, Ka, Sr)
          <\<lambda>r. heap_assn (fst (heap_extract_min (hs, ks))) (Ha, Pa, Ka, Sr) *
               \<up>(r = snd (heap_extract_min (hs, ks)))>"
-proof -
-  have H: "distinct hs" "set hs \<subseteq> {..<n}" using assms(1) U_bound by auto
-  have sl: "length hs \<le> n" by (rule distinct_length_le[OF H])
-  have h0: "\<And>hl pl. \<lbrakk>heap_rel hs hl pl; hs \<noteq> []\<rbrakk> \<Longrightarrow> hl ! 0 = hs ! 0"
-    unfolding heap_rel_def by auto
-  consider "hs = []" | "hs \<noteq> []" "butlast hs = []" | "butlast hs \<noteq> []" by fastforce
+proof(cases "butlast hs = []")
+  case True
+  hence "hs = [] \<or> (\<exists> a. hs = [a])"
+    by (cases hs) (auto split: if_splits)
   thus ?thesis
-  proof cases
-    case 1 thus ?thesis unfolding heap_extract_min_imp_def by sep_auto
-  next
-    case 2
-    then obtain a where a: "hs = [a]" by (cases hs) (auto split: if_splits)
-    have "\<And>hl pl. heap_rel hs hl pl \<Longrightarrow> heap_rel [] hl pl"
-      unfolding heap_rel_def by simp
-    moreover have "\<And>kl. key_rel ks hs kl \<Longrightarrow> key_rel ks [] kl"
-      unfolding key_rel_def by simp
-    ultimately show ?thesis
-      unfolding heap_extract_min_imp_def using a sl by (sep_auto simp: a heap_rel_def key_rel_def)
-  next
-    case c3: 3
-    let ?hs = "(butlast hs)[0 := last hs]"
-    have ne: "hs \<noteq> []" using c3 by auto
-    note E = extract_list[OF H(1) c3]
-    have l: "0 < length ?hs" "length ?hs = length hs - 1"
-      using c3 E(3) by (cases hs) (auto split: if_splits)
-    have lst: "last hs \<in> set hs" "last hs = hs ! (length hs - 1)" "last hs < n"
-      using ne H(2) last_conv_nth by auto
-    have R: "\<And>hl pl kl. \<lbrakk>heap_rel hs hl pl; key_rel ks hs kl\<rbrakk> \<Longrightarrow>
-        <Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl>
-          sift_down_imp Ha Pa Ka (length hs - 1) (last hs) (kl ! last hs) 0
-        <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
-             \<up>(heap_rel (sift_down ks ?hs 0) hl' pl')>"
-    proof -
-      fix hl pl kl assume rel: "heap_rel hs hl pl" "key_rel ks hs kl"
-      have "<Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl>
-              sift_down_imp Ha Pa Ka (length ?hs) (last hs) (kl ! last hs) 0
-            <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
-                 \<up>(heap_rel (sift_down ks ?hs 0) hl' pl')>"
-      proof (rule sift_down_imp_rule)
-        show "0 < length ?hs" by (rule l(1))
-        show "?hs ! 0 = last hs" using l(1) by simp
-        show "distinct ?hs" "set ?hs \<subseteq> {..<n}" using E(1,2) H(2) by auto
-        show "hole_rel ?hs 0 hl pl"
-          using rel(1) E(3,4) unfolding heap_rel_def hole_rel_def by auto
-        show "key_rel ks ?hs kl" by (rule key_rel_mono[OF rel(2)]) (use E(2) in auto)
-        show "queue_key (kl ! last hs) = ks (last hs)" using rel(2) lst(1) by (simp add: key_rel_def)
-      qed
-      thus "<Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl>
-              sift_down_imp Ha Pa Ka (length hs - 1) (last hs) (kl ! last hs) 0
-            <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
-                 \<up>(heap_rel (sift_down ks ?hs 0) hl' pl')>" using l(2) by simp
-    qed
-    have perm: "length (sift_down ks ?hs 0) = length hs - 1" "set (sift_down ks ?hs 0) \<subseteq> set hs"
-      using sift_down_perm[OF l(1), of ks] l(2) E(2) by auto
-    have K: "\<And>kl. key_rel ks hs kl \<Longrightarrow> key_rel ks (sift_down ks ?hs 0) kl"
-      using key_rel_mono perm(2) by blast
-    have hl: "\<And>hl pl. heap_rel hs hl pl \<Longrightarrow> hl ! (length hs - 1) = last hs"
-      using lst ne unfolding heap_rel_def by auto
-    have ln: "length hs - 1 \<noteq> 0" using c3 by (cases hs) (auto split: if_splits)
-    have ex: "heap_extract_min (hs, ks) = ((sift_down ks ?hs 0, ks), Some (hs ! 0))"
-      using c3 ne by simp
-    have main: "<Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl * Sr \<mapsto>\<^sub>r length hs>
-                  heap_extract_min_imp (Ha, Pa, Ka, Sr)
-                <\<lambda>r. heap_assn (sift_down ks ?hs 0, ks) (Ha, Pa, Ka, Sr) * \<up>(r = Some (hs ! 0))>"
-      if rel: "heap_rel hs hl pl" "key_rel ks hs kl" for hl pl kl
-    proof -
-      have lens: "0 < length hl" "length hs - 1 < length hl" "last hs < length kl"
-        using heap_rel_len[OF rel(1)] key_rel_len[OF rel(2)] sl ne lst(3) by (auto simp: neq_Nil_conv)
-      note R' = R[OF rel]
-      have sd: "key_rel ks (sift_down ks ?hs 0) kl" "length (sift_down ks ?hs 0) = length hs - 1"
-               "length (sift_down ks ?hs 0) \<le> n"
-        using K[OF rel(2)] perm(1) sl by auto
-      show ?thesis
-        unfolding heap_extract_min_imp_def prod.case heap_assn.simps
-        using ne ln lens h0[OF rel(1) ne] hl[OF rel(1)] sd
-        by (sep_auto heap: R')
-    qed
-    show ?thesis
-      unfolding heap_assn.simps ex fst_conv snd_conv
-      by (sep_auto heap: main)
-  qed
+    unfolding heap_extract_min_imp_def
+    by (elim disjE exE) (sep_auto simp: heap_rel_def key_rel_def)+
+next
+  case False
+  have "Suc 0 < length hs"
+    using False
+    by (cases hs) (auto split: if_splits)
+  moreover hence "distinct hs" "set hs \<subseteq> {..<n}" "length hs \<le> n" "hs \<noteq> []"
+    "last hs \<in> set hs" "hs ! (length hs - 1) = last hs"
+    using assms U_bound distinct_length_le[of hs n] last_conv_nth[of hs]
+    by (auto)
+  moreover have "length (sift_down ks ((butlast hs)[0 := last hs]) 0) = length hs - 1"
+    "set (sift_down ks ((butlast hs)[0 := last hs]) 0) \<subseteq> set hs"
+    using calculation sift_down_perm[of 0 "(butlast hs)[0 := last hs]" ks] extract_list(2,3)[of hs] False
+    by (auto)
+  moreover have [sep_heap_rules]: "\<lbrakk>heap_rel hs hl pl; key_rel ks hs kl\<rbrakk> \<Longrightarrow>
+      <Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl>
+        sift_down_imp Ha Pa Ka (length hs - 1) (last hs) (kl ! last hs) 0
+      <\<lambda>_. \<exists>\<^sub>Ahl' pl'. Ha \<mapsto>\<^sub>a hl' * Pa \<mapsto>\<^sub>a pl' * Ka \<mapsto>\<^sub>a kl *
+           \<up>(heap_rel (sift_down ks ((butlast hs)[0 := last hs]) 0) hl' pl')>" for hl pl kl
+    by (rule sift_down_imp_rule[of 0 "(butlast hs)[0 := last hs]",
+          simplified length_list_update length_butlast])
+       (use calculation extract_list(1,2)[of hs] False in
+         \<open>auto intro: heap_rel_hole_extract key_rel_mono simp: key_rel_nth\<close>)
+  moreover have [sep_heap_rules]: "\<lbrakk>heap_rel hs hl pl; key_rel ks hs kl\<rbrakk> \<Longrightarrow>
+      <Ha \<mapsto>\<^sub>a hl * Pa \<mapsto>\<^sub>a pl * Ka \<mapsto>\<^sub>a kl * Sr \<mapsto>\<^sub>r length hs>
+        heap_extract_min_imp (Ha, Pa, Ka, Sr)
+      <\<lambda>r. heap_assn (sift_down ks ((butlast hs)[0 := last hs]) 0, ks) (Ha, Pa, Ka, Sr) *
+         \<up>(r = Some (hs ! 0))>" for hl pl kl
+    using calculation heap_rel_nth[of hs hl pl 0] heap_rel_nth[of hs hl pl "length hs - 1"]
+      key_rel_mono[of ks hs kl "sift_down ks ((butlast hs)[0 := last hs]) 0"]
+    unfolding heap_extract_min_imp_def prod.case heap_assn.simps
+    by (sep_auto simp: heap_rel_lengths key_rel_len subset_eq)
+  ultimately show ?thesis
+    using False
+    by (sep_auto)
 qed
 (*
 subsection \<open>The heap is a key-value queue\<close>
@@ -554,6 +457,7 @@ qed
 qed
 *)
 end
+
 definition heap_clear_imp :: "'ai heap_imp \<Rightarrow> unit Heap" where
   "heap_clear_imp Hi = (case Hi of (Ha, Pa, Ka, Sr) \<Rightarrow> (Sr := 0))"
 
@@ -586,23 +490,13 @@ lemma heap_read_pos_rule:
   "x < n \<Longrightarrow>
    <heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> Array.nth Pa x
    <\<lambda>r. heap_assn (hs, ks) (Ha, Pa, Ka, Sr) * \<up>(x \<in> set hs \<longrightarrow> r = idx hs x)>"
-proof -
-  assume x: "x < n"
-  have "\<And>hl pl. heap_rel hs hl pl \<Longrightarrow> x < length pl \<and> (x \<in> set hs \<longrightarrow> pl ! x = idx hs x)"
-    using x heap_rel_len heap_rel_pos by metis
-  thus ?thesis by sep_auto
-qed
+  by (sep_auto simp: heap_rel_pos dest: heap_rel_len)
 
 lemma heap_read_key_rule:
   "\<lbrakk>x \<in> set hs; x < n\<rbrakk> \<Longrightarrow>
    <heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> Array.nth Ka x
    <\<lambda>r. heap_assn (hs, ks) (Ha, Pa, Ka, Sr) * \<up>(queue_key r = ks x)>"
-proof -
-  assume x: "x \<in> set hs" "x < n"
-  have "\<And>kl. key_rel ks hs kl \<Longrightarrow> x < length kl \<and> queue_key (kl ! x) = ks x"
-    using x unfolding key_rel_def by simp
-  thus ?thesis by sep_auto
-qed
+  by (sep_auto simp: key_rel_def)
 
 subsection \<open>The Additional Operations\<close>
 
@@ -615,34 +509,39 @@ lemma heap_key_of_imp_rule:
   assumes "heap_invar U (hs, ks)" "x \<in> U"
   shows "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> heap_key_of_imp (Ha, Pa, Ka, Sr) x
          <\<lambda>r. heap_assn (hs, ks) (Ha, Pa, Ka, Sr) *
-              \<up>(case r of None \<Rightarrow> x \<notin> set hs | Some k \<Rightarrow> x \<in> set hs \<and> queue_key k = ks x)>"
-proof -
-  have xn: "x < n" using assms(2) U_bound by auto
-  note heap_assn.simps[simp del]
+              \<up>(case r of None \<Rightarrow> (\<nexists>k. (x, k) \<in> heap_abstract (hs, ks))
+                        | Some k \<Rightarrow> (x, queue_key k) \<in> heap_abstract (hs, ks))>"
+proof-
+  note heap_assn.simps[simp del] heap_abstract.simps[simp del]
+  have "x < n"
+    using assms U_bound
+    by auto
   show ?thesis
-  proof (cases "x \<in> set hs")
+  proof(cases "x \<in> set hs")
     case True
-    have i: "idx hs x < length hs" using True by (rule idx_less)
-    have pos: "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> Array.nth Pa x
-               <\<lambda>r. heap_assn (hs, ks) (Ha, Pa, Ka, Sr) * \<up>(r = idx hs x)>"
-      by (sep_auto heap: heap_read_pos_rule[OF xn] simp: True)
-    show ?thesis
+    moreover have [sep_heap_rules]: "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> Array.nth Pa x
+        <\<lambda>r. heap_assn (hs, ks) (Ha, Pa, Ka, Sr) * \<up>(r = idx hs x)>"
+      using True \<open>x < n\<close>
+      by (sep_auto heap: heap_read_pos_rule)
+    ultimately show ?thesis
+      using \<open>x < n\<close> idx_less[of x hs]
       unfolding heap_key_of_imp_def prod.case
-      by (sep_auto heap: heap_read_size_rule pos heap_read_at_rule[OF i]
-                         heap_read_key_rule[OF True xn]
-                   simp: i True)
+      by (sep_auto heap: heap_read_size_rule heap_read_at_rule heap_read_key_rule
+          simp: heap_abstract_iff)
   next
     case False
-    hence nx: "x \<notin> set hs" .
-    have pos: "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> Array.nth Pa x
-               <\<lambda>r. heap_assn (hs, ks) (Ha, Pa, Ka, Sr)>"
-      by (sep_auto heap: heap_read_pos_rule[OF xn])
-    have at: "\<And>i. i < length hs \<Longrightarrow> <heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> Array.nth Ha i
-               <\<lambda>r. heap_assn (hs, ks) (Ha, Pa, Ka, Sr) * \<up>(r \<noteq> x)>"
-      using nx by (sep_auto heap: heap_read_at_rule)
-    show ?thesis
+    moreover have [sep_heap_rules]: "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> Array.nth Pa x
+        <\<lambda>r. heap_assn (hs, ks) (Ha, Pa, Ka, Sr)>"
+      using \<open>x < n\<close>
+      by (sep_auto heap: heap_read_pos_rule)
+    moreover have [sep_heap_rules]:
+      "i < length hs \<Longrightarrow> <heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> Array.nth Ha i
+        <\<lambda>r. heap_assn (hs, ks) (Ha, Pa, Ka, Sr) * \<up>(r \<noteq> x)>" for i
+      using False
+      by (sep_auto heap: heap_read_at_rule)
+    ultimately show ?thesis
       unfolding heap_key_of_imp_def prod.case
-      by (sep_auto heap: heap_read_size_rule pos at simp: nx)
+      by (sep_auto heap: heap_read_size_rule simp: heap_abstract_iff)
   qed
 qed
 
@@ -651,22 +550,16 @@ lemma heap_extract_min_key_imp_rule:
   shows "<heap_assn (hs, ks) (Ha, Pa, Ka, Sr)> heap_extract_min_key_imp (Ha, Pa, Ka, Sr)
          <\<lambda>r. heap_assn (fst (heap_extract_min (hs, ks))) (Ha, Pa, Ka, Sr) *
               \<up>(map_option fst r = snd (heap_extract_min (hs, ks)) \<and>
-                (\<forall>x k. r = Some (x, k) \<longrightarrow> x \<in> set hs \<and> queue_key k = ks x))>"
-proof(cases "hs = []")
-  case True
-  thus ?thesis
-    unfolding heap_extract_min_key_imp_def prod.case
-    by (sep_auto heap: heap_read_size_rule)
-next
-  case False
-  have h0: "hs ! 0 \<in> set hs" using False by simp
-  have h0n: "hs ! 0 < n" using assms h0 U_bound by auto
-  have ex: "snd (heap_extract_min (hs, ks)) = Some (hs ! 0)" using False by simp
+                (\<forall>x k. r = Some (x, k) \<longrightarrow> (x, queue_key k) \<in> heap_abstract (hs, ks)))>"
+proof-
+  note heap_abstract.simps[simp del]
   show ?thesis
+    using assms U_bound nth_mem[of 0 hs]
     unfolding heap_extract_min_key_imp_def prod.case
-    using False
-    by (sep_auto heap: heap_read_size_rule heap_read_at_rule heap_read_key_rule[OF h0 h0n]
-                       heap_extract_min_imp_rule[OF assms] simp: ex)
+    by (cases "hs = []")
+       (sep_auto heap: heap_read_size_rule heap_read_at_rule heap_read_key_rule
+         heap_extract_min_imp_rule
+         simp: heap_abstract_iff subset_eq)+
 qed
 
 subsection \<open>The Heap is a Queue for the Hungarian Method\<close>
@@ -674,51 +567,18 @@ subsection \<open>The Heap is a Queue for the Hungarian Method\<close>
 lemma heap_key_value_queue_hungarian:
   "key_value_queue U heap_empty heap_extract_min heap_decrease_key heap_insert
      (heap_invar U) heap_abstract"
-  using heap_key_value_queue
-  unfolding key_value_queue_def  .
+  by (rule heap_key_value_queue)
 
 sublocale hqueue: key_value_queue_imp U heap_empty heap_extract_min heap_decrease_key
     heap_insert "heap_invar U" heap_abstract queue_key heap_assn "heap_empty_imp n k0"
     heap_clear_imp heap_extract_min_key_imp heap_key_of_imp heap_decrease_key_imp heap_insert_imp
-proof (rule key_value_queue_imp.intro[OF heap_key_value_queue_hungarian], unfold_locales,
-       goal_cases)
-  case 1 show ?case by (rule heap_empty_imp_rule)
-next
-  case (2 H Hi)
-  obtain hs ks where H: "H = (hs, ks)" by fastforce
-  obtain Ha Pa Ka Sr where Hi: "Hi = (Ha, Pa, Ka, Sr)" by (cases Hi) auto
-  show ?case unfolding H Hi by (rule heap_clear_imp_rule)
-next
-  case (3 H Hi)
-  obtain hs ks where H: "H = (hs, ks)" by fastforce
-  obtain Ha Pa Ka Sr where Hi: "Hi = (Ha, Pa, Ka, Sr)" by (cases Hi) auto
-  note heap_assn.simps[simp del]
-  show ?case
-    unfolding H Hi
-    by (rule ht_cons_post[OF heap_extract_min_key_imp_rule[OF 3[unfolded H]]]) sep_auto
-next
-  case (4 H x Hi)
-  obtain hs ks where H: "H = (hs, ks)" by fastforce
-  obtain Ha Pa Ka Sr where Hi: "Hi = (Ha, Pa, Ka, Sr)" by (cases Hi) auto
-  note heap_assn.simps[simp del]
-  show ?case
-    unfolding H Hi
-    by (rule ht_cons_post[OF heap_key_of_imp_rule[OF 4(1)[unfolded H] 4(2)]])
-       (sep_auto split: option.splits)
-next
-  case (5 H x Hi k)
-  obtain hs ks where H: "H = (hs, ks)" by fastforce
-  obtain Ha Pa Ka Sr where Hi: "Hi = (Ha, Pa, Ka, Sr)" by (cases Hi) auto
-  have "x \<notin> set hs" using 5(3) H by auto
-  thus ?case unfolding H Hi by (rule heap_insert_imp_rule[OF 5(1)[unfolded H] 5(2)])
-next
-  case (6 H x k' k Hi)
-  obtain hs ks where H: "H = (hs, ks)" by fastforce
-  obtain Ha Pa Ka Sr where Hi: "Hi = (Ha, Pa, Ka, Sr)" by (cases Hi) auto
-  have "x \<in> set hs" using 6(3) H by auto
-  thus ?case unfolding H Hi by (rule heap_decrease_key_imp_rule[OF 6(1)[unfolded H]])
-qed
-
+  by (intro key_value_queue_imp.intro heap_key_value_queue_hungarian
+      key_value_queue_imp_axioms.intro)
+     (simp_all only: split_paired_all heap_empty_imp_rule heap_clear_imp_rule
+       heap_extract_min_key_imp_rule heap_key_of_imp_rule heap_insert_imp_rule
+       heap_decrease_key_imp_rule
+       not_False_eq_True)
 
 end
+
 end

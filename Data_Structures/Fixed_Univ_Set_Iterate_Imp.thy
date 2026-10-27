@@ -1,6 +1,7 @@
 theory Fixed_Univ_Set_Iterate_Imp
   imports
     Fixed_Univ_Set_Specs_Imp
+    More_Lists
 begin
 
 section \<open>Ordered Iteration over Imperative Fixed-Universe Sets\<close>
@@ -14,12 +15,7 @@ locale set_order =
       and lst_filter: "finite S \<Longrightarrow> lst (S \<inter> Collect P) = filter P (lst S)"
 
 lemma sorted_list_of_set_order: "set_order sorted_list_of_set"
-proof(unfold_locales, goal_cases)
-  case (3 S P)
-  show ?case
-    using 3
-    by (auto intro!: sorted_distinct_set_unique sorted_wrt_filter)
-qed auto
+  by unfold_locales (auto intro!: sorted_distinct_set_unique sorted_wrt_filter)
 
 
 subsection \<open>A Fold Combinator over Iterators\<close>
@@ -44,104 +40,64 @@ text \<open>The rule for @{const iter_fold}, for an arbitrary iterator assertion
       the list of elements that remain to be visited.\<close>
 
 lemma iter_fold_rule_gen:
-  assumes has_next: "\<And>xs it. <I xs it> has_next it <\<lambda>r. I xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
-      and nxt: "\<And>x xs it. <I (x # xs) it> next it <\<lambda>(y, it'). I xs it' * \<up>(y = x)>"
-      and quit: "\<And>it. I [] it \<Longrightarrow>\<^sub>A Q"
-      and step: "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
-      and pre: "fold_pre P g b xs"
+  assumes "\<And>xs it. <I xs it> has_next it <\<lambda>r. I xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+      and "\<And>x xs it. <I (x # xs) it> next it <\<lambda>(y, it'). I xs it' * \<up>(y = x)>"
+      and "\<And>it. I [] it \<Longrightarrow>\<^sub>A Q"
+      and "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
+      and "fold_pre P g b xs"
     shows "<I xs it * A b c> iter_fold has_next next f it c
            <\<lambda>c'. Q * A (foldl g b xs) c'>"
-  using pre
+  using assms(5)
 proof(induction xs arbitrary: it b c)
   case Nil
   show ?case
-    supply [sep_heap_rules] = has_next
-    apply(subst iter_fold.simps)
-    apply sep_auto
-    apply(sep_frame_fwd rule: quit)
-    by sep_auto
+    by (subst iter_fold.simps, sep_auto heap: assms(1), sep_frame_fwd rule: assms(3), sep_auto)
 next
   case (Cons x xs)
-  from Cons.prems have Px: "P x b" and pre': "fold_pre P g (g b x) xs"
-    by simp_all
-  show ?case
-    supply [sep_heap_rules] = has_next nxt step[OF Px] Cons.IH[OF pre']
-    apply(subst iter_fold.simps)
-    by sep_auto
+  thus ?case
+    by (subst iter_fold.simps) (sep_auto heap: assms(1,2) assms(4)[of x b] Cons.IH)
 qed
 
 partial_function (heap) iter_find ::
-"('it \<Rightarrow> bool Heap) \<Rightarrow> ('it \<Rightarrow> ('a \<times> 'it) Heap) \<Rightarrow> ('a \<Rightarrow> 'b option Heap) \<Rightarrow>
-'it \<Rightarrow> ('a \<times> 'b) option Heap" where
-"iter_find has_next next f it =
-do { b \<leftarrow> has_next it;
-if b then do { (x, it') \<leftarrow> next it;
-r \<leftarrow> f x;
-(case r of None \<Rightarrow> iter_find has_next next f it'
-| Some y \<Rightarrow> return (Some (x, y))) }
-else return None }"
+  "('it \<Rightarrow> bool Heap) \<Rightarrow> ('it \<Rightarrow> ('a \<times> 'it) Heap) \<Rightarrow> ('a \<Rightarrow> 'b option Heap) \<Rightarrow>
+   'it \<Rightarrow> ('a \<times> 'b) option Heap" where
+  "iter_find has_next next f it =
+     do { b \<leftarrow> has_next it;
+          if b then do { (x, it') \<leftarrow> next it;
+                         r \<leftarrow> f x;
+                         (case r of None \<Rightarrow> iter_find has_next next f it'
+                                  | Some y \<Rightarrow> return (Some (x, y))) }
+          else return None }"
 
 lemma iter_find_rule_gen:
-assumes has_next: "\<And>xs it. <I xs it> has_next it <\<lambda>r. I xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
-and nxt: "\<And>x xs it. <I (x # xs) it> next it <\<lambda>(y, it'). I xs it' * \<up>(y = x)>"
-and quit: "\<And>xs it. I xs it \<Longrightarrow>\<^sub>A Q"
-and step: "\<And>x s. \<lbrakk>x \<in> set xs; P s\<rbrakk> \<Longrightarrow>
-<A s> f x <\<lambda>r. A (fst (g s x)) * \<up>(rel_option Rel r (snd (g s x)))>"
-and inv: "\<And>x s. \<lbrakk>x \<in> set xs; P s\<rbrakk> \<Longrightarrow> P (fst (g s x))"
-and pre: "P s"
-shows "<I xs it * A s> iter_find has_next next f it
-<\<lambda>r. Q * A (fst (foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s, None) xs)) *
-\<up>(rel_option (rel_prod (=) Rel) r
-(snd (foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s, None) xs)))>"
-using step inv pre
+  assumes "\<And>xs it. <I xs it> has_next it <\<lambda>r. I xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+      and "\<And>x xs it. <I (x # xs) it> next it <\<lambda>(y, it'). I xs it' * \<up>(y = x)>"
+      and "\<And>xs it. I xs it \<Longrightarrow>\<^sub>A Q"
+      and "\<And>x s. \<lbrakk>x \<in> set xs; P s\<rbrakk> \<Longrightarrow>
+             <A s> f x <\<lambda>r. A (fst (g s x)) * \<up>(rel_option Rel r (snd (g s x)))>"
+      and "\<And>x s. \<lbrakk>x \<in> set xs; P s\<rbrakk> \<Longrightarrow> P (fst (g s x))"
+      and "P s"
+    shows "<I xs it * A s> iter_find has_next next f it
+           <\<lambda>r. Q * A (fst (foldl (\<lambda>(s, r) x. case r of
+                                None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
+                              | Some _ \<Rightarrow> (s, r)) (s, None) xs)) *
+                \<up>(rel_option (rel_prod (=) Rel) r
+                   (snd (foldl (\<lambda>(s, r) x. case r of
+                                  None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
+                                | Some _ \<Rightarrow> (s, r)) (s, None) xs)))>"
+  using assms(4-6)
 proof(induction xs arbitrary: it s)
-case Nil
-show ?case
-supply [sep_heap_rules] = has_next
-apply(subst iter_find.simps)
-apply sep_auto
-apply(sep_frame_fwd rule: quit)
-by sep_auto
+  case Nil
+  show ?case
+    by (subst iter_find.simps, sep_auto heap: assms(1), sep_frame_fwd rule: assms(3), sep_auto)
 next
-case (Cons x xs)
-obtain s' y where g: "g s x = (s', y)" by fastforce
-have st: "<A s> f x <\<lambda>r. A s' * \<up>(rel_option Rel r y)>"
-using Cons.prems(1)[of x s] Cons.prems(3) g by simp
-have P': "P s'" using Cons.prems(2)[of x s] Cons.prems(3) g by simp
-have keep: "\<And>a. foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s', Some a) xs = (s', Some a)"
-by (induction xs) simp_all
-note IH = Cons.IH[OF _ _ P']
-show ?case
-proof(cases y)
-case None
-have IH': "<I xs it' * A s'> iter_find has_next next f it'
-<\<lambda>r. Q * A (fst (foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s', None) xs)) *
-\<up>(rel_option (rel_prod (=) Rel) r
-(snd (foldl (\<lambda>(s, r) x. case r of
-None \<Rightarrow> (case g s x of (s', y) \<Rightarrow> (s', map_option (Pair x) y))
-| Some _ \<Rightarrow> (s, r)) (s', None) xs)))>" for it'
-by (rule IH) (auto intro: Cons.prems(1,2))
-show ?thesis
-supply [sep_heap_rules] = has_next nxt st IH'
-apply(subst iter_find.simps)
-by (sep_auto simp: g None)
-next
-case (Some z)
-show ?thesis
-supply [sep_heap_rules] = has_next nxt st
-apply(subst iter_find.simps)
-apply(sep_auto simp: g Some keep split: option.splits)
-apply(sep_frame_fwd rule: quit)
-by sep_auto
-qed
+  case (Cons x xs)
+  show ?case
+    using Cons.prems(2)[of x s] Cons.prems(3)
+    by (cases "g s x"; cases "snd (g s x)")
+       (subst iter_find.simps, sep_auto heap: assms(1,2) Cons.prems(1)[of x s]
+          Cons.IH[OF Cons.prems(1,2)[OF list.set_intros(2)]] simp: split_beta foldl_fixed,
+        (sep_frame_fwd rule: assms(3), sep_auto)?)+
 qed
 
 subsection \<open>Iterators over Fixed-Universe Sets\<close>
@@ -196,14 +152,16 @@ lemma set_fold_imp_ruleI:
                 P (insert v W) (g a v) \<and> <R a> g_imp v <\<lambda>_. R (g a v)>\<rbrakk> \<Longrightarrow>
              <M * R acc> fld_imp g_imp <\<lambda>_. M * R (fld g acc)>"
   shows "set_fold_imp_rule S M fld fld_imp"
-  using assms unfolding set_fold_imp_rule_def by blast
+  using assms
+  by (unfold set_fold_imp_rule_def) blast
 
 lemma set_fold_imp_ruleD:
   assumes "set_fold_imp_rule S M fld fld_imp" "P {} acc"
     "\<And> W a v. \<lbrakk>P W a; W \<subseteq> S; v \<in> S; v \<notin> W\<rbrakk> \<Longrightarrow>
        P (insert v W) (g a v) \<and> <R a> g_imp v <\<lambda>_. R (g a v)>"
   shows "<M * R acc> fld_imp g_imp <\<lambda>_. M * R (fld g acc)>"
-  using assms unfolding set_fold_imp_rule_def by blast
+  using assms
+  by (unfold set_fold_imp_rule_def) blast
 
 lemma fold_pre_visited:
   assumes "distinct xs" "set xs \<inter> W = {}" "W \<union> set xs \<subseteq> S" "P W b"
@@ -218,6 +176,12 @@ proof(induction xs arbitrary: W b)
     by auto
 qed simp
 
+lemma (in set_order) fold_pre_lst:
+  "\<lbrakk>finite S; P {} b;
+    \<And> W a v. \<lbrakk>P W a; W \<subseteq> S; v \<in> S; v \<notin> W\<rbrakk> \<Longrightarrow>
+      P (insert v W) (g a v)\<rbrakk> \<Longrightarrow>
+   fold_pre (\<lambda> x b. \<exists> W. P W b \<and> W \<subseteq> S \<and> x \<in> S \<and> x \<notin> W) g b (lst S)"
+  by (rule fold_pre_visited[where W = "{}"]) (simp_all add: lst_distinct lst_set)
 text \<open>The fold by an iterator over a set.\<close>
 
 definition iter_set_fold_imp ::
@@ -233,26 +197,24 @@ lemma (in fixed_univ_set_iterate_imp) iter_set_fold_imp_rule:
            (iter_set_fold_imp it_init it_has_next it_next Si)"
 proof(rule set_fold_imp_ruleI)
   fix g P R and acc :: 'acc and g_imp :: "'a \<Rightarrow> unit Heap"
-  assume P0: "P {} acc"
+  assume "P {} acc"
     and step: "\<And> W a v. \<lbrakk>P W a; W \<subseteq> set_abstract X; v \<in> set_abstract X; v \<notin> W\<rbrakk> \<Longrightarrow>
                  P (insert v W) (g a v) \<and> <R a> g_imp v <\<lambda>_. R (g a v)>"
-  define Q where "Q = (\<lambda> x b. \<exists> W. P W b \<and> W \<subseteq> set_abstract X \<and> x \<in> set_abstract X \<and> x \<notin> W)"
-  have pre: "fold_pre Q g acc (lst (set_abstract X))"
-    unfolding Q_def
-    by (rule fold_pre_visited[where P = P and W = "{}"])
-       (use P0 step lst_distinct[OF assms(2)] lst_set[OF assms(2)] in auto)
-  have st: "<R b> g_imp x <\<lambda>_. R (g b x)>" if "Q x b" for x b
-    using that step by (auto simp: Q_def)
-  have fold: "<(set_assn X Si * is_it (set_abstract X) Si (lst (set_abstract X)) it) * R acc>
-                iter_fold it_has_next it_next (\<lambda> x _. g_imp x) it ()
-              <\<lambda>_. set_assn X Si * R (foldl g acc (lst (set_abstract X)))>" for it
-    by (rule iter_fold_rule_gen[where I = "\<lambda> xs it. set_assn X Si * is_it (set_abstract X) Si xs it"
-          and P = Q and A = "\<lambda> b (_::unit). R b", OF it_has_next_rule it_next_rule quit_iteration
-          st pre])
-  show "<set_assn X Si * R acc> iter_set_fold_imp it_init it_has_next it_next Si g_imp
+  have "<R b> g_imp x <\<lambda>_. R (g b x)>"
+    if "\<exists> W. P W b \<and> W \<subseteq> set_abstract X \<and> x \<in> set_abstract X \<and> x \<notin> W" for x b
+    using that step
+    by auto
+  moreover have "fold_pre (\<lambda> x b. \<exists> W. P W b \<and> W \<subseteq> set_abstract X \<and> x \<in> set_abstract X \<and> x \<notin> W)
+                   g acc (lst (set_abstract X))"
+    using \<open>P {} acc\<close> step assms(2)
+    by (intro fold_pre_lst) auto
+  ultimately show "<set_assn X Si * R acc> iter_set_fold_imp it_init it_has_next it_next Si g_imp
         <\<lambda>_. set_assn X Si * R (foldl g acc (lst (set_abstract X)))>"
     unfolding iter_set_fold_imp_def
-    by (sep_auto heap: it_init_rule[OF assms(1)] fold)
+    by (sep_auto heap: it_init_rule[OF assms(1)] iter_fold_rule_gen[where
+          I = "\<lambda> xs it. set_assn X Si * is_it (set_abstract X) Si xs it" and A = "\<lambda> b (_::unit). R b"
+          and P = "\<lambda> x b. \<exists> W. P W b \<and> W \<subseteq> set_abstract X \<and> x \<in> set_abstract X \<and> x \<notin> W",
+          OF it_has_next_rule it_next_rule quit_iteration])
 qed
 
 end

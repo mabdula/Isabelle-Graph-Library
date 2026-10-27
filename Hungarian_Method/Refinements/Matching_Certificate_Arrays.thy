@@ -1,7 +1,7 @@
 theory Matching_Certificate_Arrays
   imports
     Matching_Certificate_Imperative
-    Data_Structures.Imp_Bool_Set
+    Data_Structures.Imp_Array_Fun
 begin
 
 section \<open>Certificate Checkers for Extremal Bipartite Matchings on Arrays\<close>
@@ -11,11 +11,6 @@ text \<open>The instance is given by the arrays of the left endpoints, the right
       named by their positions. The candidate matching is an array of edge names, the potential
       an array with one entry per vertex, and the Hall violator an array of left vertices. Mark
       sets are Boolean arrays of length @{term n}.\<close>
-
-subsection \<open>Read-Only Arrays\<close>
-
-lemma array_rlist: "imp_rlist (\<lambda>xs a. a \<mapsto>\<^sub>a xs) Array.len Array.nth"
-  by unfold_locales sep_auto+
 
 subsection \<open>The Edges as an Iterable Set of Positions\<close>
 
@@ -50,9 +45,6 @@ definition arr_it_has_next :: "nat \<times> nat \<Rightarrow> bool Heap" where
 
 definition arr_it_next :: "nat \<times> nat \<Rightarrow> (nat \<times> nat \<times> nat) Heap" where
   "arr_it_next it = return (fst it, Suc (fst it), snd it)"
-
-lemma Cons_eq_upt_conv: "(x # xs = [i..<j]) = (i < j \<and> x = i \<and> xs = [Suc i..<j])"
-  by (subst eq_commute) (auto simp: upt_eq_Cons_conv)
 
 text \<open>The arrays store the edge names below @{term m}.\<close>
 
@@ -142,19 +134,10 @@ definition "G = {{fs ! i, ts ! i} | i. i < length fs}"
 
 lemma cert_mc:
   "matching_cert {0..<length fs} [0..<length fs] ((!) fs) ((!) ts) n ls rs h"
-proof (intro matching_cert.intro real_embedding_axioms matching_cert_axioms.intro)
-  show "set [0..<length fs] = {0..<length fs}" by simp
-  show "(!) fs ` {0..<length fs} = set ls" using fs_ls nth_image[of "length fs" fs] by simp
-  show "(!) ts ` {0..<length fs} = set rs" using ts_rs ts_length nth_image[of "length ts" ts] by simp
-  show "distinct ls" "distinct rs" "set ls \<inter> set rs = {}" "set ls \<union> set rs \<subseteq> {..<n}"
-    by (rule ls_distinct rs_distinct sides_disjoint verts_below)+
-  show "inj_on (\<lambda>i. (fs ! i, ts ! i)) {0..<length fs}"
-  proof (rule inj_onI)
-    fix i j assume ij: "i \<in> {0..<length fs}" "j \<in> {0..<length fs}" "(fs ! i, ts ! i) = (fs ! j, ts ! j)"
-    hence "zip fs ts ! i = zip fs ts ! j" using ts_length by simp
-    thus "i = j" using nth_eq_iff_index_eq[OF no_parallel] ij(1,2) ts_length by simp
-  qed
-qed
+  using fs_ls ts_rs ts_length verts_below nth_image[of "length fs" fs] nth_image[of "length ts" ts]
+        inj_on_nth[OF no_parallel, of "{0..<length fs}"]
+  by (intro matching_cert.intro real_embedding_axioms matching_cert_axioms.intro)
+     (auto simp: inj_on_def ls_distinct rs_distinct sides_disjoint)
 
 sublocale cert: matching_cert_imp "{0..<length fs}" "[0..<length fs]" "(!) fs" "(!) ts" "(!) ws"
   n ls rs h "{..<length fs}" "\<lambda>D. D = {..<length fs}" "arr_es_assn ((!) fs) ((!) ts) ((!) ws)"
@@ -177,17 +160,14 @@ lemma Mat_eq: "cert.Mat ms = {{fs ! i, ts ! i} | i. i \<in> set ms}"
 text \<open>The weight of an edge is the weight at its position.\<close>
 
 lemma wG_eq: "i < length fs \<Longrightarrow> cert.wG {fs ! i, ts ! i} = h (ws ! i)"
-  using cert.wG_edge[of i] by (simp add: cert.cedge_def)
+  using cert.wG_edge[of i]
+  by (simp add: cert.cedge_def)
 
 lemma es_assn_eq: "cert.EA (Fa, Ta, Wa) = Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws"
-proof -
-  have "map ((!) ts) [0..<length fs] = ts" "map ((!) ws) [0..<length fs] = ws"
-    using ts_length ws_length map_nth[of ts] map_nth[of ws] by simp_all
-  moreover have "\<exists>m. {0..<length fs} = {0..<m}" by blast
-  ultimately show ?thesis by (simp add: arr_es_assn_def map_nth)
-qed
+  using ts_length ws_length map_nth[of ts] map_nth[of ws]
+  by (simp add: arr_es_assn_def map_nth atLeast0LessThan)
 
-theorem certify_arrays_rule:
+lemma certify_arrays_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays neg perfect n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys *
@@ -195,7 +175,7 @@ theorem certify_arrays_rule:
   unfolding certify_arrays_def cert_arr_certify_def
   by (sep_auto heap: cert.mark_empty_rule cert.certify_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
 
-theorem hall_arrays_rule:
+lemma hall_arrays_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Sa \<mapsto>\<^sub>a S>
    hall_arrays n Fa Ta Wa La Rv Sa
    <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Sa \<mapsto>\<^sub>a S *
@@ -203,7 +183,7 @@ theorem hall_arrays_rule:
   unfolding hall_arrays_def cert_arr_hall_def
   by (sep_auto heap: cert.mark_empty_rule cert.hall_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
 
-theorem certify_mc_arrays_rule:
+lemma certify_mc_arrays_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * Sa \<mapsto>\<^sub>a S>
    certify_mc_arrays neg n Fa Ta Wa La Rv Ma Ya t Sa
    <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys *
@@ -227,35 +207,35 @@ lemma certify_arrays_post:
          <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true * \<up>(r \<longrightarrow> P)>"
   by (rule ht_cons_post_prec[OF certify_arrays_rule]) (sep_auto intro: assms)
 
-corollary min_weight_perfect_matching_arrays:
+lemma min_weight_perfect_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays False True n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true *
         \<up>(r \<longrightarrow> min_weight_perfect_matching G cert.wG {{fs ! i, ts ! i} | i. i \<in> set ms})>"
   by (rule certify_arrays_post) (use cert.min_weight_perfect_certified in \<open>simp add: G_eq Mat_eq\<close>)
 
-corollary max_weight_perfect_matching_arrays:
+lemma max_weight_perfect_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays True True n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true *
         \<up>(r \<longrightarrow> max_weight_perfect_matching G cert.wG {{fs ! i, ts ! i} | i. i \<in> set ms})>"
   by (rule certify_arrays_post) (use cert.max_weight_perfect_certified in \<open>simp add: G_eq Mat_eq\<close>)
 
-corollary min_weight_matching_arrays:
+lemma min_weight_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays False False n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true *
         \<up>(r \<longrightarrow> min_weight_matching G cert.wG {{fs ! i, ts ! i} | i. i \<in> set ms})>"
   by (rule certify_arrays_post) (use cert.min_weight_matching_certified in \<open>simp add: G_eq Mat_eq\<close>)
 
-corollary max_weight_matching_arrays:
+lemma max_weight_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays True False n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true *
         \<up>(r \<longrightarrow> max_weight_matching G cert.wG {{fs ! i, ts ! i} | i. i \<in> set ms})>"
   by (rule certify_arrays_post) (use cert.max_weight_matching_certified in \<open>simp add: G_eq Mat_eq\<close>)
 
-corollary no_perfect_matching_arrays:
+lemma no_perfect_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Sa \<mapsto>\<^sub>a S>
    hall_arrays n Fa Ta Wa La Rv Sa
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Sa \<mapsto>\<^sub>a S * true * \<up>(r \<longrightarrow> (\<nexists>M. perfect_matching G M))>"

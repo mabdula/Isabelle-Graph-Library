@@ -361,65 +361,64 @@ lemma weight_lookup_imp_rule:
 lemma snd_state[sep_heap_rules]:
   "e \<in> \<E> \<Longrightarrow>
    <state_assn st si> snd_imp (dimp_ends si) e <\<lambda>v. state_assn st si * \<up>(v = snd e)>"
-  unfolding state_assn_def by sep_auto
+  unfolding state_assn_def
+  by sep_auto
 
 lemma dist_lookup_state[sep_heap_rules]:
   "\<lbrakk>dist_invar (dij_dist st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> dist_lookup_imp (dimp_dist si) u
    <\<lambda>d. state_assn st si * \<up>(h d = dist_lookup (dij_dist st) u)>"
-  unfolding state_assn_def by sep_auto
+  unfolding state_assn_def
+  by sep_auto
 
 lemma out_has_state[sep_heap_rules]:
   "\<lbrakk>out_invar (dij_graph st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> out_has_imp (dimp_graph si) u
    <\<lambda>b. state_assn st si * \<up>(b = out_has (dij_graph st) u)>"
-  unfolding state_assn_def by sep_auto
+  unfolding state_assn_def
+  by sep_auto
 
 lemma out_current_state[sep_heap_rules]:
   "\<lbrakk>out_invar (dij_graph st); u \<in> \<V>; out_has (dij_graph st) u\<rbrakk> \<Longrightarrow>
    <state_assn st si> out_current_imp (dimp_graph si) u
    <\<lambda>e. state_assn st si * \<up>(e = out_current (dij_graph st) u)>"
-  unfolding state_assn_def by (sep_auto simp: out_has_remaining)
+  unfolding state_assn_def
+  by (sep_auto simp: out_has_remaining)
 
 lemma out_move_state[sep_heap_rules]:
   "\<lbrakk>out_invar (dij_graph st); u \<in> \<V>; out_has (dij_graph st) u\<rbrakk> \<Longrightarrow>
    <state_assn st si> out_move_imp (dimp_graph si) u
    <\<lambda>_. state_assn (st\<lparr>dij_graph := out_move (dij_graph st) u\<rparr>) si>"
-  unfolding state_assn_def by (sep_auto simp: out_has_remaining)
+  unfolding state_assn_def
+  by (sep_auto simp: out_has_remaining)
 
 lemma out_reset_state[sep_heap_rules]:
   "\<lbrakk>out_invar (dij_graph st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> out_reset_imp (dimp_graph si) u
    <\<lambda>_. state_assn (st\<lparr>dij_graph := out_reset (dij_graph st) u\<rparr>) si>"
-  unfolding state_assn_def by sep_auto
+  unfolding state_assn_def
+  by sep_auto
 
 lemma src_has_state[sep_heap_rules]:
   "src_invar (dij_srcs st) \<Longrightarrow>
    <state_assn st si> src_has_imp (dimp_srcs si)
    <\<lambda>b. state_assn st si * \<up>(b = src_has (dij_srcs st))>"
-  unfolding state_assn_def by sep_auto
+  unfolding state_assn_def
+  by sep_auto
 
 lemma src_current_state[sep_heap_rules]:
   "\<lbrakk>src_invar (dij_srcs st); src_has (dij_srcs st)\<rbrakk> \<Longrightarrow>
    <state_assn st si> src_current_imp (dimp_srcs si)
    <\<lambda>v. state_assn st si * \<up>(v = src_current (dij_srcs st))>"
-proof -
-  assume "src_invar (dij_srcs st)" "src_has (dij_srcs st)"
-  hence "src_remaining (dij_srcs st) \<noteq> {}" using sources.has_current by blast
-  thus ?thesis using \<open>src_invar (dij_srcs st)\<close> unfolding state_assn_def by sep_auto
-qed
+  unfolding state_assn_def
+  by (sep_auto simp: sources.has_current)
 
 lemma src_move_state[sep_heap_rules]:
   "\<lbrakk>src_invar (dij_srcs st); src_has (dij_srcs st)\<rbrakk> \<Longrightarrow>
    <state_assn st si> src_move_imp (dimp_srcs si)
    <\<lambda>_. state_assn (st\<lparr>dij_srcs := src_move (dij_srcs st)\<rparr>) si>"
-proof -
-  assume inv: "src_invar (dij_srcs st)" and "src_has (dij_srcs st)"
-  hence rem: "src_remaining (dij_srcs st) \<noteq> {}" using sources.has_current by blast
-  show ?thesis
-    unfolding state_assn_def
-    by (sep_auto heap: src_imp.move_on_rule[OF inv rem])
-qed
+  unfolding state_assn_def
+  by (sep_auto heap: src_imp.move_on_rule simp: sources.has_current[symmetric])
 
 lemma extract_min_state[sep_heap_rules]:
   "queue_invar (dij_heap st) \<Longrightarrow>
@@ -427,24 +426,28 @@ lemma extract_min_state[sep_heap_rules]:
    <\<lambda>r. state_assn (st\<lparr>dij_heap := Product_Type.fst (queue_extract_min (dij_heap st))\<rparr>) si 
         * \<up>((case r of None \<Rightarrow> None | Some (v, k) \<Rightarrow> Some v) =
             prod.snd (queue_extract_min (dij_heap st)))>"
-  unfolding state_assn_def by (sep_auto split: option.split)
+  unfolding state_assn_def
+  by (sep_auto split: option.split)
 
 lemma seen_isin_state[sep_heap_rules]:
   "\<lbrakk>seen_invar (dij_seen st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> seen_isin_imp (dimp_seen si) u
    <\<lambda>b. state_assn st si * \<up>(b = seen_isin (dij_seen st) u)>"
-  unfolding state_assn_def by sep_auto
+  unfolding state_assn_def
+  by sep_auto
 
 lemma seen_insert_state[sep_heap_rules]:
   "\<lbrakk>seen_invar (dij_seen st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> seen_insert_imp u (dimp_seen si)
    <\<lambda>_. state_assn (st\<lparr>dij_seen := seen_insert u (dij_seen st)\<rparr>) si>"
-  unfolding state_assn_def by sep_auto
+  unfolding state_assn_def
+  by sep_auto
 
 lemma target_test_state[sep_heap_rules]:
   "u \<in> \<V> \<Longrightarrow>
    <state_assn st si> target_test_imp si u <\<lambda>b. state_assn st si * \<up>(b = (early_stop \<and> target u))>"
-  unfolding target_test_imp_def state_assn_def by sep_auto
+  unfolding target_test_imp_def state_assn_def
+  by sep_auto
 
 
 subsection \<open>The single-edge operations\<close>
@@ -457,87 +460,17 @@ lemma relax_edge_imp_rule[sep_heap_rules]:
   assumes "dist_invar (dij_dist st)" "parent_invar (dij_parent st)" "invar_2 st" "e \<in> \<E>" "fst e = u"
   shows "<state_assn st si> relax_edge_imp si u du e
          <\<lambda>_. state_assn (relax_edge u (h du) e st) si>"
-proof -
-  have qi: "queue_invar (dij_heap st)" and sinv: "seen_invar (dij_seen st)"
-    and coup: "\<And>x k. ((x,k) \<in> queue_abstract (dij_heap st)) =
-       (x \<notin> seen_abstract (dij_seen st) \<and> dist_lookup (dij_dist st) x \<noteq> -1 \<and> k = dist_lookup (dij_dist st) x)"
-    using assms(3) by (auto elim!: invar_2_props)
-  have vV: "snd e \<in> \<V>" using snd_E_V[OF assms(4)] .
-  note wrule = weight_lookup_imp_rule[OF assms(4)]
-  note drule = dist_imp.fixed_univ_map_lookup_rule[OF assms(1) vV]
-  show ?thesis
-  proof (cases "seen_isin (dij_seen st) (snd e)")
-    case True
-    then show ?thesis
-      unfolding relax_edge_imp_def relax_edge_def state_assn_def Let_def
-      by (sep_auto simp: assms(4) vV sinv True)
-  next
-    case False
-    note nsn = this
-    hence nin: "snd e \<notin> seen_abstract (dij_seen st)" using seen_set.fixed_univ_set_isin[OF sinv] by simp
-    show ?thesis
-    proof (cases "allowed_edge e")
-      case False
-      then show ?thesis
-        unfolding relax_edge_imp_def relax_edge_def state_assn_def Let_def
-        by (sep_auto simp: assms vV sinv nsn False[unfolded allowed_edge_def assms(5)] heap: wrule)
-    next
-      case True
-      note ae = this
-      note ae' = ae[unfolded allowed_edge_def assms(5)]
-      show ?thesis
-      proof (cases "dist_lookup (dij_dist st) (snd e) = -1")
-        case True
-        note unr = this
-        have notin: "\<nexists>k. (snd e, k) \<in> queue_abstract (dij_heap st)" using coup unr by blast
-        have feq: "relax_edge u (h du) e st =
-            st\<lparr>dij_dist := dist_upd (dij_dist st) (snd e) (h du + w e),
-               dij_parent := parent_upd (dij_parent st) (snd e) (Some e),
-               dij_heap := queue_insert (dij_heap st) (snd e) (h du + w e)\<rparr>"
-          by (simp add: relax_edge_def Let_def nsn ae unr)
-        have drule': "<dist_assn (dij_dist st) (dimp_dist si)> dist_lookup_imp (dimp_dist si) (snd e)
-                      <\<lambda>d. dist_assn (dij_dist st) (dimp_dist si) * \<up>(d = unreached)>"
-          by (rule ht_cons_post[OF drule]) (sep_auto simp: unr)
-        show ?thesis
-          unfolding relax_edge_imp_def feq state_assn_def
-          by (sep_auto simp: assms vV sinv qi notin nsn ae' h_add heap: wrule drule')
-      next
-        case False
-        note reached = this
-        have vin: "(snd e, dist_lookup (dij_dist st) (snd e)) \<in> queue_abstract (dij_heap st)"
-          using coup nin reached by blast
-        have drule': "<dist_assn (dij_dist st) (dimp_dist si)> dist_lookup_imp (dimp_dist si) (snd e)
-                      <\<lambda>d. dist_assn (dij_dist st) (dimp_dist si) *
-                           \<up>(d \<noteq> unreached \<and> h d = dist_lookup (dij_dist st) (snd e))>"
-          using reached by (intro ht_cons_post[OF drule]) (sep_auto simp: eq_commute[of "-1"])
-        have lt_iff: "\<And>a b. h a = w e \<Longrightarrow> h b = dist_lookup (dij_dist st) (snd e) \<Longrightarrow>
-                       (du + a < b) \<longleftrightarrow> (h du + w e < dist_lookup (dij_dist st) (snd e))"
-          by (metis h_add h_less_iff)
-        show ?thesis
-        proof (cases "h du + w e < dist_lookup (dij_dist st) (snd e)")
-          case True
-          note less = this
-          have feq: "relax_edge u (h du) e st =
-              st\<lparr>dij_dist := dist_upd (dij_dist st) (snd e) (h du + w e),
-                 dij_parent := parent_upd (dij_parent st) (snd e) (Some e),
-                 dij_heap := queue_decrease_key (dij_heap st) (snd e) (h du + w e)\<rparr>"
-            by (simp add: relax_edge_def Let_def nsn ae reached less)
-          show ?thesis
-            unfolding relax_edge_imp_def feq state_assn_def
-            by (sep_auto simp: assms vV sinv qi nsn ae' h_add less lt_iff
-                         heap: wrule drule' queue_imp.queue_decrease_key_rule[OF qi vV vin])
-        next
-          case False
-          note nless = this
-          have feq: "relax_edge u (h du) e st = st"
-            by (simp add: relax_edge_def Let_def nsn ae reached nless)
-          show ?thesis
-            unfolding relax_edge_imp_def feq state_assn_def
-            by (sep_auto simp: assms vV sinv qi nsn ae' nless lt_iff heap: wrule drule')
-        qed
-      qed
-    qed
-  qed
+proof-
+  have "queue_invar (dij_heap st)" "seen_invar (dij_seen st)" "snd e \<in> \<V>"
+    "\<And>x k. (x, k) \<in> queue_abstract (dij_heap st) \<longleftrightarrow>
+       x \<notin> seen_abstract (dij_seen st) \<and> dist_lookup (dij_dist st) x \<noteq> -1 \<and> k = dist_lookup (dij_dist st) x"
+    using assms(3,4) snd_E_V
+    by (auto elim!: invar_2_props)
+  then show ?thesis
+    using assms
+    unfolding relax_edge_imp_def relax_edge_def state_assn_def Let_def allowed_edge_def
+    by (sep_auto heap: weight_lookup_imp_rule dist_imp.fixed_univ_map_lookup_rule queue_imp.queue_decrease_key_rule
+        simp: h_add h_less_iff[symmetric] seen_set.fixed_univ_set_isin)
 qed
 
 text \<open>Registering a source preserves the relation.\<close>
@@ -546,13 +479,14 @@ lemma insert_source_imp_rule[sep_heap_rules]:
   assumes "dist_invar (dij_dist st)" "invar_2 st" "v \<in> \<V>" "dist_lookup (dij_dist st) v = -1"
   shows "<state_assn st si> insert_source_imp si v
          <\<lambda>_. state_assn (insert_source v st) si>"
-proof -
-  have qi: "queue_invar (dij_heap st)"
-    and notin: "\<nexists>k. (v, k) \<in> queue_abstract (dij_heap st)"
-    using assms(2,4) by (auto elim!: invar_2_props)
-  show ?thesis
+proof-
+  have "queue_invar (dij_heap st)" "\<nexists>k. (v, k) \<in> queue_abstract (dij_heap st)"
+    using assms(2,4)
+    by (auto elim!: invar_2_props)
+  then show ?thesis
+    using assms
     unfolding insert_source_imp_def insert_source_def state_assn_def
-    by (sep_auto simp: assms qi notin)
+    by sep_auto
 qed
 
 
@@ -570,10 +504,7 @@ lemma dij_imp_invar_step:
   "\<lbrakk>dij_imp_invar st; dijkstra_call_init_conds st\<rbrakk> \<Longrightarrow> dij_imp_invar (dijkstra_upd_init st)"
   "\<lbrakk>dij_imp_invar st; dijkstra_call_settle_conds st\<rbrakk> \<Longrightarrow> dij_imp_invar (dijkstra_upd_settle st)"
   unfolding dij_imp_invar_def
-  by (metis invar_1_holds_relax invar_2_holds_relax invar_3_holds_relax invar_4_holds_relax invar_10_holds_relax,
-      metis invar_1_holds_finish invar_2_holds_finish invar_3_holds_finish invar_4_holds_finish invar_10_holds_finish,
-      metis invar_1_holds_init invar_2_holds_init invar_3_holds_init invar_4_holds_init invar_10_holds_init,
-      metis invar_1_holds_settle invar_2_holds_settle invar_3_holds_settle invar_4_holds_settle invar_10_holds_settle)
+  by (auto intro: invar_holds_intros)
 
 text \<open>One unfolding of the executable functional loop per branch.\<close>
 
@@ -603,120 +534,100 @@ lemma dijkstra_loop_imp_rule:
   "dij_imp_invar st \<longrightarrow>
    <state_assn st si> dijkstra_loop_imp si (dij_curr st)
    <\<lambda>r. state_assn (dijkstra_impl st) si * \<up>(r = dij_target (dijkstra_impl st))>"
-proof (induction arbitrary: st rule: dijkstra_loop_imp.fixp_induct)
-  case 1 show ?case by simp
-next
-  case 2 show ?case by simp
-next
+proof(induction arbitrary: st rule: dijkstra_loop_imp.fixp_induct)
   case (3 f)
   note IH = "3"[rule_format]
   let "?I \<longrightarrow> <?P> ?body <?Q>" = ?case
   show ?case
-  proof (rule impI)
+  proof(rule impI)
     assume I: "dij_imp_invar st"
-    have i1: "invar_1 st" and i2: "invar_2 st" and i3: "invar_3 st" and i10: "invar_10 st"
-      using I by (auto simp: dij_imp_invar_def)
-    have dinv: "dist_invar (dij_dist st)" and pinv: "parent_invar (dij_parent st)"
-      and og: "out_graph_inv (dij_graph st)" and srci: "src_invar (dij_srcs st)"
-      using i1 by (auto elim!: invar_1_props)
-    have oi: "out_invar (dij_graph st)" using og by (simp add: out_graph_inv_def)
-    have qi: "queue_invar (dij_heap st)" and sinv: "seen_invar (dij_seen st)"
-      and curV: "\<And>u. dij_curr st = Some u \<Longrightarrow> u \<in> \<V>"
-      using i2 by (auto elim!: invar_2_props)
-    have tN: "dij_target st = None" using i10 by (simp add: invar_10_def)
-    have i2_upd: "\<And>g. invar_2 (st\<lparr>dij_graph := g\<rparr>)" "\<And>x. invar_2 (st\<lparr>dij_srcs := x\<rparr>)"
-      using i2 by (simp_all add: invar_2_def)
+    then have ds: "dist_invar (dij_dist st)" "parent_invar (dij_parent st)" "out_invar (dij_graph st)"
+        "src_invar (dij_srcs st)" "queue_invar (dij_heap st)" "seen_invar (dij_seen st)"
+        "dij_target st = None" "invar_2 (st\<lparr>dij_graph := g\<rparr>)" "invar_2 (st\<lparr>dij_srcs := x\<rparr>)"
+        "dij_curr st = Some u \<Longrightarrow> u \<in> \<V>"
+        "\<lbrakk>u \<in> \<V>; out_has (dij_graph st) u\<rbrakk> \<Longrightarrow>
+           out_current (dij_graph st) u \<in> \<E> \<and> fst (out_current (dij_graph st) u) = u"
+      for g x u
+      by (auto simp: dij_imp_invar_def invar_2_def invar_10_def invar_1_ds out_current_edge out_current_fst)
     show "<?P> ?body <?Q>"
-    proof (rule dijkstra_cases[of st])
+    proof(rule dijkstra_cases[of st])
       assume c: "dijkstra_call_relax_conds st"
-      then obtain u where cu: "dij_curr st = Some u" and oh: "out_has (dij_graph st) u"
+      then obtain u where "dij_curr st = Some u" "out_has (dij_graph st) u"
         by (auto elim!: dijkstra_call_relax_condsE)
-      have uV: "u \<in> \<V>" using curV[OF cu] .
-      have eE: "out_current (dij_graph st) u \<in> \<E>" using out_current_edge[OF og uV oh] .
-      have IH': "<state_assn (relax_edge u (dist_lookup (dij_dist st) u) (out_current (dij_graph st) u)
+      moreover have IH': "<state_assn (relax_edge u (dist_lookup (dij_dist st) u) (out_current (dij_graph st) u)
                                 (st\<lparr>dij_graph := out_move (dij_graph st) u\<rparr>)) si>
                  f si (Some u) <?Q>"
-        using IH[OF dij_imp_invar_step(1)[OF I c]]
+        using IH[OF dij_imp_invar_step(1)[OF I c]] calculation(1)
         unfolding dijkstra_impl_step(1)[OF c, symmetric]
-        by (simp add: dijkstra_upd_relax_def cu)
-      show ?thesis
-        unfolding cu
-        by (sep_auto heap: IH' simp: oi uV oh dinv pinv i2_upd eE out_current_fst[OF og uV oh])
+        by (simp add: dijkstra_upd_relax_def)
+      ultimately show ?thesis
+        by (sep_auto heap: IH' simp: ds)
     next
       assume c: "dijkstra_call_finish_conds st"
-      then obtain u where cu: "dij_curr st = Some u" and noh: "\<not> out_has (dij_graph st) u"
+      then obtain u where "dij_curr st = Some u" "\<not> out_has (dij_graph st) u"
         by (auto elim!: dijkstra_call_finish_condsE)
-      have uV: "u \<in> \<V>" using curV[OF cu] .
-      have IH': "<state_assn st si> f si None <?Q>"
+      moreover have IH': "<state_assn st si> f si None <?Q>"
         using IH[OF dij_imp_invar_step(2)[OF I c]]
         unfolding dijkstra_impl_step(2)[OF c, symmetric]
         by (simp add: dijkstra_upd_finish_def)
-      show ?thesis
-        unfolding cu
-        by (sep_auto heap: IH' simp: oi uV noh)
+      ultimately show ?thesis
+        by (sep_auto heap: IH' simp: ds)
     next
       assume c: "dijkstra_call_init_conds st"
-      then have cN: "dij_curr st = None" and sh: "src_has (dij_srcs st)"
+      then have "dij_curr st = None" "src_has (dij_srcs st)"
+          "src_current (dij_srcs st) \<in> src_remaining (dij_srcs st)"
+        using ds(4) sources.has_current sources.current_element[OF ds(4)]
         by (auto elim!: dijkstra_call_init_condsE)
-      have rem: "src_remaining (dij_srcs st) \<noteq> {}" using sh srci sources.has_current by blast
-      have vrem: "src_current (dij_srcs st) \<in> src_remaining (dij_srcs st)"
-        using sources.current_element[OF srci rem] .
-      have vV: "src_current (dij_srcs st) \<in> \<V>" and vunr: "dist_lookup (dij_dist st) (src_current (dij_srcs st)) = -1"
-        using i3 vrem sources.iterable_set_abstract(2)[OF srci] by (auto elim!: invar_3_props)
-      have IH': "<state_assn (insert_source (src_current (dij_srcs st))
-                                (st\<lparr>dij_srcs := src_move (dij_srcs st)\<rparr>)) si>
-                 f si None <?Q>"
-        using IH[OF dij_imp_invar_step(3)[OF I c]]
+      moreover have "src_current (dij_srcs st) \<in> \<V>" "dist_lookup (dij_dist st) (src_current (dij_srcs st)) = -1"
+        using I calculation(3) sources.iterable_set_abstract(2)[OF ds(4)]
+        by (auto simp: dij_imp_invar_def elim!: invar_3_props)
+      moreover have IH': "<state_assn (insert_source (src_current (dij_srcs st))
+                                (st\<lparr>dij_srcs := src_move (dij_srcs st)\<rparr>)) si> f si None <?Q>"
+        using IH[OF dij_imp_invar_step(3)[OF I c]] calculation(1)
         unfolding dijkstra_impl_step(3)[OF c, symmetric]
-        by (simp add: dijkstra_upd_init_def cN)
-      show ?thesis
-        unfolding cN
-        by (sep_auto heap: IH' simp: srci sh dinv i2_upd vV vunr)
+        by (simp add: dijkstra_upd_init_def)
+      ultimately show ?thesis
+        by (sep_auto heap: IH' simp: ds)
     next
-      assume c: "dijkstra_call_skip_conds st"
-      then show ?thesis using skip_contra i2 by blast
+      assume "dijkstra_call_skip_conds st"
+      then show ?thesis
+        using I
+        by (auto simp: dij_imp_invar_def dest: skip_contra)
     next
       assume c: "dijkstra_call_settle_conds st"
-      then obtain h2 u where cN: "dij_curr st = None" and nsh: "\<not> src_has (dij_srcs st)"
-        and ex: "queue_extract_min (dij_heap st) = (h2, Some u)"
-        and nsn: "\<not> seen_isin (dij_seen st) u" and nf: "\<not> (early_stop \<and> target u)"
+      then obtain h2 u where "dij_curr st = None" "\<not> src_has (dij_srcs st)"
+          "queue_extract_min (dij_heap st) = (h2, Some u)" "\<not> seen_isin (dij_seen st) u"
+          "\<not> (early_stop \<and> target u)" "u \<in> \<V>"
+        using heap.queue_extract_min_universe[OF ds(5)]
         by (auto elim!: dijkstra_call_settle_condsE)
-      have uV: "u \<in> \<V>" using heap.queue_extract_min_universe[OF qi ex] .
-      have sa: "state_assn (dijkstra_upd_settle st) si =
-          state_assn (st\<lparr>dij_heap := h2, dij_seen := seen_insert u (dij_seen st),
-                         dij_graph := out_reset (dij_graph st) u\<rparr>) si"
-        by (simp add: state_assn_def dijkstra_upd_settle_def ex)
-      have cs: "dij_curr (dijkstra_upd_settle st) = Some u"
-        by (simp add: dijkstra_upd_settle_def ex)
-      have IH': "<state_assn (st\<lparr>dij_heap := h2, dij_seen := seen_insert u (dij_seen st),
-                                  dij_graph := out_reset (dij_graph st) u\<rparr>) si>
-                 f si (Some u) <?Q>"
-        using IH[OF dij_imp_invar_step(4)[OF I c]]
-        unfolding dijkstra_impl_step(4)[OF c, symmetric] sa cs .
-      show ?thesis
-        unfolding cN
-        by (sep_auto heap: IH' simp: srci nsh qi ex sinv uV nsn nf oi)
+      moreover have IH': "<state_assn (st\<lparr>dij_heap := h2, dij_seen := seen_insert u (dij_seen st),
+                                  dij_graph := out_reset (dij_graph st) u\<rparr>) si> f si (Some u) <?Q>"
+        using IH[OF dij_imp_invar_step(4)[OF I c]] calculation(3)
+        unfolding dijkstra_impl_step(4)[OF c, symmetric]
+        by (simp add: dijkstra_upd_settle_def state_assn_def)
+      ultimately show ?thesis
+        by (sep_auto heap: IH' simp: ds)
     next
       assume c: "dijkstra_ret_done_conds st"
-      then obtain h2 where cN: "dij_curr st = None" and nsh: "\<not> src_has (dij_srcs st)"
-        and ex: "queue_extract_min (dij_heap st) = (h2, None)"
+      then obtain h2 where "dij_curr st = None" "\<not> src_has (dij_srcs st)"
+          "queue_extract_min (dij_heap st) = (h2, None)"
         by (auto elim!: dijkstra_ret_done_condsE)
-      show ?thesis
-        unfolding cN dijkstra_impl_step(5)[OF c] dijkstra_ret_done_def
-        by (sep_auto simp: srci nsh qi ex tN)
+      then show ?thesis
+        unfolding dijkstra_impl_step(5)[OF c] dijkstra_ret_done_def
+        by (sep_auto simp: ds)
     next
       assume c: "dijkstra_ret_found_conds st"
-      then obtain h2 u where cN: "dij_curr st = None" and nsh: "\<not> src_has (dij_srcs st)"
-        and ex: "queue_extract_min (dij_heap st) = (h2, Some u)"
-        and nsn: "\<not> seen_isin (dij_seen st) u" and es: early_stop and tu: "target u"
+      then obtain h2 u where found: "dij_curr st = None" "\<not> src_has (dij_srcs st)"
+          "queue_extract_min (dij_heap st) = (h2, Some u)" "\<not> seen_isin (dij_seen st) u" early_stop
+          "target u" "u \<in> \<V>"
+        using heap.queue_extract_min_universe[OF ds(5)]
         by (auto elim!: dijkstra_ret_found_condsE)
-      have uV: "u \<in> \<V>" using heap.queue_extract_min_universe[OF qi ex] .
       show ?thesis
-        unfolding cN dijkstra_impl_step(6)[OF c] dijkstra_ret_found_def ex Let_def
-        by (sep_auto simp: srci nsh qi ex sinv uV nsn es tu)
+        unfolding found(1) dijkstra_impl_step(6)[OF c] dijkstra_ret_found_def found(3) Let_def
+        by (sep_auto simp: ds found)
     qed
   qed
-qed
+qed simp_all
 
 
 text \<open>Under the invariants the functional loop terminates, so the executable @{const dijkstra_impl}
@@ -727,15 +638,12 @@ lemma dijkstra_loop_imp_correct:
   assumes "dij_imp_invar st"
   shows "<state_assn st si> dijkstra_loop_imp si (dij_curr st)
          <\<lambda>r. state_assn (dijkstra st) si * \<up>(r = dij_target (dijkstra st))>"
-proof -
-  have "dijkstra_dom st"
-    using assms by (auto intro: dijkstra_terminates simp: dij_imp_invar_def)
-  then have "dijkstra_impl st = dijkstra st" by (rule dijkstra_impl_same)
-  then show ?thesis using dijkstra_loop_imp_rule[of st si] assms by simp
-qed
+  using dijkstra_loop_imp_rule[of st si] assms
+  by (auto simp: dij_imp_invar_def dijkstra_impl_same dijkstra_terminates)
 
 lemma dij_imp_invar_initial: "dij_imp_invar initial_state"
-  using initial_state_props invar_10_initial by (simp add: dij_imp_invar_def)
+  using initial_state_props invar_10_initial
+  by (simp add: dij_imp_invar_def)
 
 
 subsection \<open>The whole algorithm\<close>
@@ -747,15 +655,12 @@ text \<open>Started on handles representing the initial state -- the distance ar
       components. The result is the target found. The correctness theorems of @{locale dijkstra} about
       @{const dijkstra_compute} therefore carry over.\<close>
 
-theorem dijkstra_imp_correct:
+lemma dijkstra_imp_correct:
   "<state_assn (initial_state :: ('v, _, _, _, _, _, _) dij_state) si> dijkstra_imp si
    <\<lambda>r. state_assn dijkstra_compute si * \<up>(r = dij_target dijkstra_compute)>"
-proof -
-  have c: "dij_curr initial_state = None" by (simp add: initial_state_def)
-  show ?thesis
-    unfolding dijkstra_imp_def dijkstra_compute_def
-    using dijkstra_loop_imp_correct[OF dij_imp_invar_initial, of si, unfolded c] .
-qed
+  using dijkstra_loop_imp_correct[OF dij_imp_invar_initial, of si]
+  unfolding dijkstra_imp_def dijkstra_compute_def
+  by (simp add: initial_state_def)
 
 end
 
@@ -766,115 +671,82 @@ text \<open>Going back from a vertex along the parent edges to a source, @{const
       reads off the path found. On the final state the targets of its edges are distinct, so it has
       at most @{term "card \<V>"} edges.\<close>
 
-lemma take_Suc_upd: "i < length xs \<Longrightarrow> take (Suc i) (xs[i := x]) = take i xs @ [x]"
-  by (simp add: take_Suc_conv_app_nth list_update_append)
 
 context dijkstra
 begin
 
+lemma parent_compute_induct[case_names root edge]:
+  assumes "\<And>v. parent_lookup (dij_parent dijkstra_compute) v = None \<Longrightarrow> P v"
+    "\<And>v e. \<lbrakk>parent_lookup (dij_parent dijkstra_compute) v = Some e; P (fst e)\<rbrakk> \<Longrightarrow> P v"
+  shows "P v"
+proof(induction v rule: wf_induct_rule[OF dijkstra_compute_parent_wf])
+  case (1 v)
+  then show ?case
+    by (cases "parent_lookup (dij_parent dijkstra_compute) v") (auto simp: par_rel_def intro: assms)
+qed
+
 lemma build_path_compute_app:
   "build_path dijkstra_compute v acc = reconstruct_path dijkstra_compute v @ acc"
-proof (induction v arbitrary: acc rule: wf_induct_rule[OF dijkstra_compute_parent_wf])
-  case IH: (1 v)
+proof(induction v arbitrary: acc rule: parent_compute_induct)
+  case (edge v e)
   show ?case
-  proof (cases "parent_lookup (dij_parent dijkstra_compute) v")
-    case None
-    have "build_path dijkstra_compute v a = a" for a
-      by (subst build_path.simps) (simp add: None)
-    then show ?thesis by (simp add: reconstruct_path_def)
-  next
-    case (Some e)
-    have r: "(fst e, v) \<in> par_rel dijkstra_compute" using Some by (auto simp: par_rel_def)
-    have step: "build_path dijkstra_compute v a = build_path dijkstra_compute (fst e) (e # a)" for a
-      by (subst build_path.simps) (simp add: Some)
-    have a: "build_path dijkstra_compute v acc = reconstruct_path dijkstra_compute (fst e) @ e # acc"
-      using step IH[OF r] by simp
-    have b: "reconstruct_path dijkstra_compute v = reconstruct_path dijkstra_compute (fst e) @ [e]"
-      using step[of "[]"] IH[OF r, of "[e]"] by (simp add: reconstruct_path_def)
-    show ?thesis using a b by simp
-  qed
-qed
+    using edge(1) edge(2)[of "e # acc"] edge(2)[of "[e]"]
+    unfolding reconstruct_path_def
+    by (subst (1 2) build_path.simps) simp
+qed (simp add: reconstruct_path_def build_path.simps)
 
 lemma reconstruct_path_compute_simps:
   "reconstruct_path dijkstra_compute v =
      (case parent_lookup (dij_parent dijkstra_compute) v of
         None \<Rightarrow> []
       | Some e \<Rightarrow> reconstruct_path dijkstra_compute (fst e) @ [e])"
-proof (cases "parent_lookup (dij_parent dijkstra_compute) v")
-  case None then show ?thesis
-    unfolding reconstruct_path_def by (subst build_path.simps) (simp add: None)
-next
-  case (Some e)
-  have "build_path dijkstra_compute v [] = build_path dijkstra_compute (fst e) [e]"
-    by (subst build_path.simps) (simp add: Some)
-  then show ?thesis using Some build_path_compute_app[of "fst e" "[e]"]
-    by (simp add: reconstruct_path_def)
-qed
+  unfolding reconstruct_path_def
+  by (subst build_path.simps)
+    (simp add: build_path_compute_app[unfolded reconstruct_path_def, symmetric] split: option.split)
 
 lemma reconstruct_path_compute_anc:
   "e' \<in> set (reconstruct_path dijkstra_compute v) \<Longrightarrow> (snd e', v) \<in> (par_rel dijkstra_compute)\<^sup>*"
-proof (induction v rule: wf_induct_rule[OF dijkstra_compute_parent_wf])
-  case IH: (1 v)
-  show ?case
-  proof (cases "parent_lookup (dij_parent dijkstra_compute) v")
-    case None then show ?thesis using IH.prems reconstruct_path_compute_simps[of v] by simp
-  next
-    case (Some e)
-    have r: "(fst e, v) \<in> par_rel dijkstra_compute" using Some by (auto simp: par_rel_def)
-    have "e' \<in> set (reconstruct_path dijkstra_compute (fst e)) \<or> e' = e"
-      using IH.prems Some reconstruct_path_compute_simps[of v] by auto
-    then show ?thesis
-      using IH(1)[OF r] r invar_tree_D[OF invar_tree_compute Some]
-      by (auto intro: rtrancl_into_rtrancl)
-  qed
-qed
+proof(induction v rule: parent_compute_induct)
+  case (edge v e)
+  then show ?case
+    using invar_tree_D[OF invar_tree_compute edge(1)] reconstruct_path_compute_simps[of v]
+    by (auto simp: par_rel_def intro: rtrancl_into_rtrancl)
+qed (simp add: reconstruct_path_compute_simps)
 
 lemma reconstruct_path_compute_distinct:
   "distinct (map snd (reconstruct_path dijkstra_compute v))"
-proof (induction v rule: wf_induct_rule[OF dijkstra_compute_parent_wf])
-  case IH: (1 v)
-  show ?case
-  proof (cases "parent_lookup (dij_parent dijkstra_compute) v")
-    case None then show ?thesis using reconstruct_path_compute_simps[of v] by simp
-  next
-    case (Some e)
-    have r: "(fst e, v) \<in> par_rel dijkstra_compute" using Some by (auto simp: par_rel_def)
-    have v: "snd e = v" using invar_tree_D[OF invar_tree_compute Some] by blast
-    have "v \<notin> snd ` set (reconstruct_path dijkstra_compute (fst e))"
-    proof
-      assume "v \<in> snd ` set (reconstruct_path dijkstra_compute (fst e))"
-      then have "(v, fst e) \<in> (par_rel dijkstra_compute)\<^sup>*"
-        using reconstruct_path_compute_anc by blast
-      then have "(v, v) \<in> (par_rel dijkstra_compute)\<^sup>+" using r by (rule rtrancl_into_trancl1)
-      then show False using wf_trancl[OF dijkstra_compute_parent_wf] by simp
-    qed
-    then show ?thesis using IH(1)[OF r] v Some reconstruct_path_compute_simps[of v] by simp
-  qed
-qed
+proof(induction v rule: parent_compute_induct)
+  case (edge v e)
+  have "(v, v) \<notin> (par_rel dijkstra_compute)\<^sup>+"
+    using wf_acyclic[OF dijkstra_compute_parent_wf]
+    by (simp add: acyclic_def)
+  moreover have "(fst e, v) \<in> par_rel dijkstra_compute"
+    using edge(1)
+    by (auto simp: par_rel_def)
+  ultimately have "v \<notin> snd ` set (reconstruct_path dijkstra_compute (fst e))"
+    using reconstruct_path_compute_anc
+    by (blast intro: rtrancl_into_trancl1)
+  then show ?case
+    using edge invar_tree_D[OF invar_tree_compute edge(1)] reconstruct_path_compute_simps[of v]
+    by simp
+qed (simp add: reconstruct_path_compute_simps)
 
 lemma reconstruct_path_compute_edges: "set (reconstruct_path dijkstra_compute v) \<subseteq> \<E>"
-proof (induction v rule: wf_induct_rule[OF dijkstra_compute_parent_wf])
-  case IH: (1 v)
-  show ?case
-  proof (cases "parent_lookup (dij_parent dijkstra_compute) v")
-    case None then show ?thesis using reconstruct_path_compute_simps[of v] by simp
-  next
-    case (Some e)
-    have r: "(fst e, v) \<in> par_rel dijkstra_compute" using Some by (auto simp: par_rel_def)
-    then show ?thesis
-      using IH(1)[OF r] invar_tree_D[OF invar_tree_compute Some] Some
-        reconstruct_path_compute_simps[of v]
-      by simp
-  qed
-qed
+proof(induction v rule: parent_compute_induct)
+  case (edge v e)
+  then show ?case
+    using invar_tree_D[OF invar_tree_compute edge(1)] reconstruct_path_compute_simps[of v]
+    by simp
+qed (simp add: reconstruct_path_compute_simps)
 
 lemma reconstruct_path_compute_length: "length (reconstruct_path dijkstra_compute v) \<le> card \<V>"
-proof -
-  have "set (map snd (reconstruct_path dijkstra_compute v)) \<subseteq> \<V>"
-    using reconstruct_path_compute_edges snd_E_V by fastforce
-  then have "card (set (map snd (reconstruct_path dijkstra_compute v))) \<le> card \<V>"
-    using card_mono[OF \<V>_finite] by blast
-  then show ?thesis using distinct_card[OF reconstruct_path_compute_distinct[of v]] by simp
+proof-
+  have "snd ` set (reconstruct_path dijkstra_compute v) \<subseteq> \<V>"
+    using reconstruct_path_compute_edges snd_E_V
+    by fastforce
+  then show ?thesis
+    using distinct_card[OF reconstruct_path_compute_distinct[of v]]
+    by (auto dest!: card_mono[OF \<V>_finite])
 qed
 
 text \<open>Without early stopping, no target is recorded. If none is recorded, the run ended with an
@@ -889,25 +761,32 @@ lemma terminal_compute:
   shows "queue_abstract (dij_heap dijkstra_compute) = {}" "dij_curr dijkstra_compute = None"
     "src_remaining (dij_srcs dijkstra_compute) = {}"
   using dijkstra_terminal[OF initial_state_props(5) initial_state_props(1-4), folded dijkstra_compute_def]
-    assms by (auto simp: terminal_state_def)
+    assms
+  by (auto simp: terminal_state_def)
 
 lemma dijkstra_compute_reached_seen:
   assumes "dij_target dijkstra_compute = None" "dist_lookup (dij_dist dijkstra_compute) v \<noteq> -1"
   shows "v \<in> seen_abstract (dij_seen dijkstra_compute)"
-  using invar_2_compute terminal_compute(1)[OF assms(1)] assms(2) by (auto elim!: invar_2_props)
+  using invar_2_compute terminal_compute(1)[OF assms(1)] assms(2)
+  by (auto elim!: invar_2_props)
 
 lemma dijkstra_compute_reach_seen:
   assumes "dij_target dijkstra_compute = None" "s \<in> src_abstract srcs" "ag.reachable s v"
   shows "v \<in> seen_abstract (dij_seen dijkstra_compute)"
-proof - 
+proof-
   have "dist_lookup (dij_dist dijkstra_compute) s = 0"
-    using invar_9_compute assms(2) terminal_compute(3)[OF assms(1)] by (auto elim!: invar_9_props)
+    using invar_9_compute assms(2) terminal_compute(3)[OF assms(1)]
+    by (auto elim!: invar_9_props)
   then have "s \<in> seen_abstract (dij_seen dijkstra_compute)"
-    using dijkstra_compute_reached_seen[OF assms(1)] by simp
-  moreover obtain p where "ag.path_bet p s v" using assms(3) ag_reachable_iff_path by blast
+    using dijkstra_compute_reached_seen[OF assms(1)]
+    by simp
+  moreover obtain p where "ag.path_bet p s v"
+    using assms(3) ag_reachable_iff_path
+    by blast
   ultimately show ?thesis
     using reach_settled[OF terminal_compute(1,2)[OF assms(1)] assms(1) invar_1_compute
-        invar_2_compute invar_7_compute invar_8_compute] by blast
+        invar_2_compute invar_7_compute invar_8_compute]
+    by blast
 qed 
 
 subsection \<open>The shortest-path tree\<close>
@@ -920,30 +799,29 @@ definition "tight_parents P \<longleftrightarrow> (\<forall>v e. parent_lookup P
    e \<in> Ea \<and> snd e = v \<and> (\<exists>s \<in> src_abstract srcs. ag.reachable s (fst e)) \<and>
    ag.distance_set w (src_abstract srcs) v = ag.distance_set w (src_abstract srcs) (fst e) + ereal (w e))"
 
-theorem dijkstra_compute_tight_parents:
+lemma dijkstra_compute_tight_parents:
   assumes "\<not> early_stop"
   shows "tight_parents (dij_parent dijkstra_compute)"
   unfolding tight_parents_def
-proof (intro allI impI)
-  fix v e assume pe: "parent_lookup (dij_parent dijkstra_compute) v = Some e"
+proof(intro allI impI)
+  fix v e
   let ?d = "dist_lookup (dij_dist dijkstra_compute)"
-  have t: "fst e \<in> seen_abstract (dij_seen dijkstra_compute)" "snd e = v" "e \<in> Ea"
+  assume "parent_lookup (dij_parent dijkstra_compute) v = Some e"
+  then have t: "fst e \<in> seen_abstract (dij_seen dijkstra_compute)" "snd e = v" "e \<in> Ea"
       "?d (fst e) \<noteq> -1" "?d v = ?d (fst e) + w e"
-    using invar_tree_D[OF invar_tree_compute pe] by blast+
-  have "0 \<le> ?d (fst e)" using invar_3_compute t(4) by (auto elim!: invar_3_props)
-  moreover have "0 \<le> w e" using w_nonneg t(3) by blast
-  ultimately have "?d v \<noteq> -1" using t(5) by linarith
-  then have d1: "ereal (?d v) = ag.distance_set w (src_abstract srcs) v"
-    using dijkstra_compute_optimal dijkstra_compute_reached_seen[OF target_none_compute[OF assms]] by blast
-  have d2: "ereal (?d (fst e)) = ag.distance_set w (src_abstract srcs) (fst e)"
-    using dijkstra_compute_optimal[OF t(1)] .
-  have "\<exists>s \<in> src_abstract srcs. ag.reachable s (fst e)"
-    using dijkstra_compute_complete[OF assms] t(4) by blast
-  moreover have "ag.distance_set w (src_abstract srcs) v = ag.distance_set w (src_abstract srcs) (fst e) + ereal (w e)"
-    unfolding d1[symmetric] d2[symmetric] t(5) by simp
-  ultimately show "e \<in> Ea \<and> snd e = v \<and> (\<exists>s \<in> src_abstract srcs. ag.reachable s (fst e)) \<and>
+    using invar_tree_D[OF invar_tree_compute]
+    by blast+
+  have "0 \<le> ?d (fst e) + w e"
+    using invar_3_compute t(3,4) w_nonneg
+    by (auto elim!: invar_3_props intro!: add_nonneg_nonneg)
+  then have "?d v \<noteq> -1"
+    using t(5)
+    by linarith
+  then show "e \<in> Ea \<and> snd e = v \<and> (\<exists>s \<in> src_abstract srcs. ag.reachable s (fst e)) \<and>
       ag.distance_set w (src_abstract srcs) v = ag.distance_set w (src_abstract srcs) (fst e) + ereal (w e)"
-    using t(2,3) by blast
+    using t dijkstra_compute_optimal[symmetric] dijkstra_compute_complete[OF assms, THEN iffD1]
+      dijkstra_compute_reached_seen[OF target_none_compute[OF assms]]
+    by auto
 qed
 
 subsection \<open>The target found by early stopping\<close>
@@ -956,25 +834,6 @@ definition "invar_tgt st \<longleftrightarrow> (case dij_target st of
        (\<forall>x. target x \<longrightarrow> ag.distance_set w (src_abstract srcs) u \<le> ag.distance_set w (src_abstract srcs) x)
    | None \<Rightarrow> early_stop \<longrightarrow> (\<forall>x \<in> seen_abstract (dij_seen st). \<not> target x))"
 
-lemma extract_min_V:
-  assumes "invar_2 st" "queue_extract_min (dij_heap st) = (h2, Some u)"
-  shows "u \<in> \<V>" "u \<notin> seen_abstract (dij_seen st)" "dist_lookup (dij_dist st) u \<noteq> -1"
-    and "seen_abstract (seen_insert u (dij_seen st)) = insert u (seen_abstract (dij_seen st))"
-proof -
-  have qi: "queue_invar (dij_heap st)" and si: "seen_invar (dij_seen st)"
-    and reachV: "\<forall>x. dist_lookup (dij_dist st) x \<noteq> -1 \<longrightarrow> x \<in> \<V>"
-    and coup: "\<forall>x k. ((x,k) \<in> queue_abstract (dij_heap st)) = (x \<notin> seen_abstract (dij_seen st) \<and>
-                 dist_lookup (dij_dist st) x \<noteq> -1 \<and> k = dist_lookup (dij_dist st) x)"
-    using assms(1) by (auto elim!: invar_2_props)
-  obtain k where "(u, k) \<in> queue_abstract (dij_heap st)"
-    using heap.queue_extract_min(2)[OF qi, of u] assms(2) by simp blast
-  then show "u \<notin> seen_abstract (dij_seen st)" and ur: "dist_lookup (dij_dist st) u \<noteq> -1"
-    using coup by blast+
-  show uV: "u \<in> \<V>" using ur reachV by blast
-  show "seen_abstract (seen_insert u (dij_seen st)) = insert u (seen_abstract (dij_seen st))"
-    using seen_set.fixed_univ_set_insert(2)[OF si uV] .
-qed
-
 lemma invar_tgt_steps:
   "\<lbrakk>dijkstra_call_relax_conds st; invar_tgt st\<rbrakk> \<Longrightarrow> invar_tgt (dijkstra_upd_relax st)"
   "\<lbrakk>dijkstra_call_finish_conds st; invar_tgt st\<rbrakk> \<Longrightarrow> invar_tgt (dijkstra_upd_finish st)"
@@ -986,8 +845,8 @@ lemma invar_tgt_steps:
 
 lemma invar_tgt_settle:
   "\<lbrakk>dijkstra_call_settle_conds st; invar_2 st; invar_tgt st\<rbrakk> \<Longrightarrow> invar_tgt (dijkstra_upd_settle st)"
-  by (auto elim!: dijkstra_call_settle_condsE simp: invar_tgt_def dijkstra_upd_settle_def extract_min_V
-      split: option.splits)
+  by (erule dijkstra_call_settle_condsE, frule popped_vertex)
+     (auto simp: invar_tgt_def dijkstra_upd_settle_def dijkstra_ds_simps split: option.splits)
 
 text \<open>When early stopping returns the extracted \<open>u\<close>, no settled vertex is a target, so every other
       target is unsettled, and by @{thm settle_opt_bound} it is not closer than \<open>u\<close>.\<close>
@@ -996,20 +855,24 @@ lemma invar_tgt_found:
   assumes "dijkstra_ret_found_conds st" "invar_1 st" "invar_2 st" "invar_5 st" "invar_7 st"
     "invar_8 st" "invar_9 st" "invar_10 st" "invar_opt st" "invar_tgt st"
   shows "invar_tgt (dijkstra_ret_found st)"
-proof -
+proof-
   obtain h2 u where hu: "dij_curr st = None" "\<not> src_has (dij_srcs st)"
       "queue_extract_min (dij_heap st) = (h2, Some u)" "early_stop" "target u"
-    using assms(1) by (auto elim!: dijkstra_ret_found_condsE)
-  have nt: "\<forall>x \<in> seen_abstract (dij_seen st). \<not> target x"
-    using assms(10)[unfolded invar_tgt_def] assms(8)[unfolded invar_10_def] hu(4) by simp
-  have le: "ag.distance_set w (src_abstract srcs) u \<le> ereal (dist_lookup (dij_dist st) u)"
-    using assms(4) extract_min_V(3)[OF assms(3) hu(3)] by (auto elim!: invar_5_props)
-  have near: "ag.distance_set w (src_abstract srcs) u \<le> ag.distance_set w (src_abstract srcs) x"
+    using assms(1)
+    by (auto elim!: dijkstra_ret_found_condsE)
+  have "\<forall>x \<in> seen_abstract (dij_seen st). \<not> target x"
+    using assms(10)[unfolded invar_tgt_def] assms(8)[unfolded invar_10_def] hu(4)
+    by simp
+  moreover have "ag.distance_set w (src_abstract srcs) u \<le> ereal (dist_lookup (dij_dist st) u)"
+    using assms(4) popped_vertex[OF hu(3) assms(3)]
+    by (auto elim!: invar_5_props)
+  ultimately have "ag.distance_set w (src_abstract srcs) u \<le> ag.distance_set w (src_abstract srcs) x"
     if "target x" for x
-    using order_trans[OF le settle_opt_bound[OF hu(1-3) assms(2-9)]] nt that by blast
-  show ?thesis
-    using hu(3,5) near
-    by (simp add: invar_tgt_def dijkstra_ret_found_def Let_def extract_min_V[OF assms(3) hu(3)])
+    using order_trans settle_opt_bound[OF hu(1-3) assms(2-9)] that
+    by blast
+  thus ?thesis
+    using hu(3,5) popped_vertex[OF hu(3) assms(3)] assms(3)
+    by (auto simp: invar_tgt_def dijkstra_ret_found_def dijkstra_ds_simps)
 qed
 
 lemma invar_tgt_holds:
@@ -1017,10 +880,10 @@ lemma invar_tgt_holds:
     "invar_6 st" "invar_7 st" "invar_8 st" "invar_9 st" "invar_10 st" "invar_opt st" "invar_tgt st"
   shows "invar_tgt (dijkstra st)"
   using assms(2-)
-proof (induction rule: dijkstra_induct[OF assms(1)])
+proof(induction rule: dijkstra_induct[OF assms(1)])
   case IH: (1 st)
   show ?case
-    apply (rule dijkstra_cases[where st = st])
+    apply(rule dijkstra_cases[where st = st])
     by (auto intro!: IH(2-) intro: invar_holds_intros invar_tgt_steps invar_tgt_settle invar_tgt_found
         simp: dijkstra_simps[OF IH(1)])
 qed
@@ -1035,63 +898,78 @@ lemma invar_tgt_compute: "invar_tgt dijkstra_compute"
 text \<open>A target found by early stopping is a reached target, its distance is the shortest distance,
       and no target is closer to the sources.\<close>
 
-theorem dijkstra_compute_target:
+lemma dijkstra_compute_target:
   assumes "dij_target dijkstra_compute = Some u"
   shows "target u \<and> u \<in> \<V> \<and> dist_lookup (dij_dist dijkstra_compute) u \<noteq> -1 \<and>
          ereal (dist_lookup (dij_dist dijkstra_compute) u) = ag.distance_set w (src_abstract srcs) u \<and>
          (\<forall>x. target x \<longrightarrow> ag.distance_set w (src_abstract srcs) u \<le> ag.distance_set w (src_abstract srcs) x)"
-proof -
+proof-
   have s: "target u" "u \<in> seen_abstract (dij_seen dijkstra_compute)"
       "\<forall>x. target x \<longrightarrow> ag.distance_set w (src_abstract srcs) u \<le> ag.distance_set w (src_abstract srcs) x"
-    using invar_tgt_compute assms by (auto simp: invar_tgt_def)
-  have "u \<in> \<V>" using invar_2_compute s(2) by (auto elim!: invar_2_props)
+    using invar_tgt_compute assms
+    by (auto simp: invar_tgt_def)
+  have "u \<in> \<V>"
+    using invar_2_compute s(2)
+    by (auto elim!: invar_2_props)
   moreover have "dist_lookup (dij_dist dijkstra_compute) u \<noteq> -1"
-    using invar_8_compute s(2) by (auto elim!: invar_8_props)
-  ultimately show ?thesis using s dijkstra_compute_optimal[OF s(2)] by blast
+    using invar_8_compute s(2)
+    by (auto elim!: invar_8_props)
+  ultimately show ?thesis
+    using s dijkstra_compute_optimal[OF s(2)]
+    by blast
 qed
 
 text \<open>If early stopping finds no target, no target is reachable from a source.\<close>
 
-theorem dijkstra_compute_no_target:
+lemma dijkstra_compute_no_target:
   assumes "early_stop" "dij_target dijkstra_compute = None" "target v"
   shows "\<forall>s \<in> src_abstract srcs. \<not> ag.reachable s v"
   using invar_tgt_compute[unfolded invar_tgt_def assms(2)] dijkstra_compute_reach_seen[OF assms(2)]
-    assms(1,3) by auto
+    assms(1,3)
+  by auto
 
 text \<open>The path reconstructed to a settled vertex is a simple shortest path from the sources, hence a
       shortest path between its source and the vertex.\<close>
 
-theorem reconstruct_path_shortest:
+lemma reconstruct_path_shortest:
   assumes "v \<in> seen_abstract (dij_seen dijkstra_compute)"
   shows "\<exists>s \<in> src_abstract srcs. ag.path_bet (reconstruct_path dijkstra_compute v) s v \<and>
      distinct (reconstruct_path dijkstra_compute v) \<and>
      ereal (weight w (reconstruct_path dijkstra_compute v)) = ag.distance_set w (src_abstract srcs) v \<and>
      ereal (weight w (reconstruct_path dijkstra_compute v)) = ag.distance w s v"
-proof -
+proof-
   have "dist_lookup (dij_dist dijkstra_compute) v \<noteq> -1"
-    using invar_8_compute assms by (auto elim!: invar_8_props)
+    using invar_8_compute assms
+    by (auto elim!: invar_8_props)
   then obtain s where s: "s \<in> src_abstract srcs" "ag.path_bet (reconstruct_path dijkstra_compute v) s v"
       "weight w (reconstruct_path dijkstra_compute v) = dist_lookup (dij_dist dijkstra_compute) v"
-    using dijkstra_compute_path by blast
+    using dijkstra_compute_path
+    by blast
   have d: "distinct (reconstruct_path dijkstra_compute v)"
-    using reconstruct_path_compute_distinct[of v] by (simp add: distinct_map)
+    using reconstruct_path_compute_distinct[of v]
+    by (simp add: distinct_map)
   have e: "ereal (weight w (reconstruct_path dijkstra_compute v)) = ag.distance_set w (src_abstract srcs) v"
-    using s(3) dijkstra_compute_optimal[OF assms] by simp
-  show ?thesis using s d e ag_distance_set_path_shortest[OF s(1,2) d e] by blast
+    using s(3) dijkstra_compute_optimal[OF assms]
+    by simp
+  show ?thesis
+    using s d e ag_distance_set_path_shortest[OF s(1,2) d e]
+    by blast
 qed
 
 text \<open>The path reconstructed to the target found by early stopping is no heavier than any simple
       path from a source to a target.\<close>
 
-theorem reconstruct_path_target:
+lemma reconstruct_path_target:
   assumes "dij_target dijkstra_compute = Some u" "s \<in> src_abstract srcs" "target x"
     "ag.path_bet q s x" "distinct q"
   shows "weight w (reconstruct_path dijkstra_compute u) \<le> weight w q"
-proof -
+proof-
   have "u \<in> seen_abstract (dij_seen dijkstra_compute)"
-    using invar_tgt_compute assms(1) by (simp add: invar_tgt_def)
+    using invar_tgt_compute assms(1)
+    by (simp add: invar_tgt_def)
   then have "ereal (weight w (reconstruct_path dijkstra_compute u)) = ag.distance_set w (src_abstract srcs) u"
-    using reconstruct_path_shortest by blast
+    using reconstruct_path_shortest
+    by blast
   then show ?thesis
     by (intro ag_distance_set_path_le_targets[of "Collect target"])
       (use dijkstra_compute_target[OF assms(1)] assms in auto)
@@ -1105,43 +983,30 @@ context dijkstra_impl_refine
 begin
 
 lemma parent_invar_compute: "parent_invar (dij_parent dijkstra_compute)"
-  using invar_1_compute by (simp add: invar_1_def)
+  using invar_1_compute
+  by (simp add: invar_1_def)
 
 lemma path_rev_imp_rule:
-  "v \<in> \<V> \<Longrightarrow> k + length (reconstruct_path dijkstra_compute v) \<le> length r \<Longrightarrow>
+  "\<lbrakk>v \<in> \<V>; k + length (reconstruct_path dijkstra_compute v) \<le> length r\<rbrakk> \<Longrightarrow>
    <ends_assn Ei * parent_assn (dij_parent dijkstra_compute) Pa * Ra \<mapsto>\<^sub>a r> path_rev_imp Ei Pa Ra v k
    <\<lambda>k'. ends_assn Ei * parent_assn (dij_parent dijkstra_compute) Pa *
         Ra \<mapsto>\<^sub>a (take k r @ rev (reconstruct_path dijkstra_compute v) @
                  drop (k + length (reconstruct_path dijkstra_compute v)) r) *
         \<up>(k' = k + length (reconstruct_path dijkstra_compute v))>"
-proof (induction v arbitrary: k r rule: wf_induct_rule[OF dijkstra_compute_parent_wf])
-  case IH: (1 v)
-  show ?case
-  proof (cases "parent_lookup (dij_parent dijkstra_compute) v")
-    case None
-    have rp: "reconstruct_path dijkstra_compute v = []"
-      using None reconstruct_path_compute_simps[of v] by simp
-    show ?thesis
-      by (subst path_rev_imp.simps) (sep_auto simp: IH.prems parent_invar_compute None rp)
-  next
-    case (Some e)
-    have r: "(fst e, v) \<in> par_rel dijkstra_compute" using Some by (auto simp: par_rel_def)
-    have eE: "e \<in> \<E>" using invar_tree_D[OF invar_tree_compute Some] by blast
-    have fV: "fst e \<in> \<V>" using fst_E_V[OF eE] .
-    have rp: "reconstruct_path dijkstra_compute v = reconstruct_path dijkstra_compute (fst e) @ [e]"
-      using Some reconstruct_path_compute_simps[of v] by simp
-    have m: "k < length r" using IH.prems(2) rp by simp
-    have m2: "Suc k + length (reconstruct_path dijkstra_compute (fst e)) \<le> length (r[k := e])"
-      using IH.prems(2) rp by simp
-    have tu: "(take (Suc k) r)[k := e] = take k r @ [e]"
-      using m by (simp add: take_Suc_conv_app_nth list_update_append)
-    have dv: "drop (Suc (k + length (reconstruct_path dijkstra_compute (fst e)))) (r[k := e]) =
-              drop (Suc (k + length (reconstruct_path dijkstra_compute (fst e)))) r"
-      by (rule drop_update_cancel) simp
-    show ?thesis using m
-      by (subst path_rev_imp.simps)
-        (sep_auto simp: IH.prems parent_invar_compute Some eE rp tu dv heap: IH(1)[OF r fV m2])
-  qed
+proof(induction v arbitrary: k r rule: parent_compute_induct)
+  case (root v)
+  then show ?case
+    by (subst path_rev_imp.simps) (sep_auto simp: parent_invar_compute reconstruct_path_compute_simps)
+next
+  case (edge v e)
+  have "e \<in> \<E>" "reconstruct_path dijkstra_compute v = reconstruct_path dijkstra_compute (fst e) @ [e]"
+    using edge(1) invar_tree_D[OF invar_tree_compute edge(1)] reconstruct_path_compute_simps[of v]
+    by auto
+  then show ?case
+    using edge.prems
+    by (subst path_rev_imp.simps)
+      (sep_auto simp: edge(1) parent_invar_compute fst_E_V take_Suc_conv_app_nth
+        list_update_append heap: edge(2))
 qed
 
 text \<open>Given the final state and an array of at least @{term "card \<V>"} cells,
@@ -1149,7 +1014,7 @@ text \<open>Given the final state and an array of at least @{term "card \<V>"} c
       into the first cells of the array and returns its length. If @{term v} was reached, this is
       a path from a source whose weight is the distance computed.\<close>
 
-theorem path_imp_correct:
+lemma path_imp_correct:
   assumes "v \<in> \<V>" "card \<V> \<le> length r"
   shows "<state_assn dijkstra_compute si * Ra \<mapsto>\<^sub>a r> path_imp si Ra v
          <\<lambda>k. state_assn dijkstra_compute si * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(length p = length r \<and>
@@ -1158,19 +1023,22 @@ theorem path_imp_correct:
             (dist_lookup (dij_dist dijkstra_compute) v \<noteq> -1 \<longrightarrow>
               (\<exists>s \<in> src_abstract srcs. ag.path_bet (rev (take k p)) s v \<and>
                  weight w (rev (take k p)) = dist_lookup (dij_dist dijkstra_compute) v))))>"
-proof -
+proof-
   have b: "length (reconstruct_path dijkstra_compute v) \<le> length r"
-    using reconstruct_path_compute_length[of v] assms(2) by linarith
+    using reconstruct_path_compute_length[of v] assms(2)
+    by linarith
   have pth: "dist_lookup (dij_dist dijkstra_compute) v \<noteq> -1 \<longrightarrow>
       (\<exists>s \<in> src_abstract srcs. ag.path_bet (reconstruct_path dijkstra_compute v) s v \<and>
          weight w (reconstruct_path dijkstra_compute v) = dist_lookup (dij_dist dijkstra_compute) v)"
-    using dijkstra_compute_path by blast
+    using dijkstra_compute_path
+    by blast
   have t: "<state_assn dijkstra_compute si * Ra \<mapsto>\<^sub>a r> path_imp si Ra v
            <\<lambda>k. state_assn dijkstra_compute si *
                 Ra \<mapsto>\<^sub>a (rev (reconstruct_path dijkstra_compute v) @
                          drop (length (reconstruct_path dijkstra_compute v)) r) *
                 \<up>(k = length (reconstruct_path dijkstra_compute v))>"
-    unfolding path_imp_def state_assn_def using assms(1) b
+    unfolding path_imp_def state_assn_def
+    using assms(1) b
     by (sep_auto heap: path_rev_imp_rule[where k = 0, simplified])
   have g: "P L m \<Longrightarrow> X * Ra \<mapsto>\<^sub>a L * \<up>(k = m) \<Longrightarrow>\<^sub>A X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(P p k)) * true"
     for X L m k and P :: "'e list \<Rightarrow> nat \<Rightarrow> bool"
@@ -1181,11 +1049,11 @@ qed
 
 text \<open>Without early stopping, the parent array of the final state is a tree of tight edges.\<close>
 
-theorem dijkstra_imp_tight_parents:
+lemma dijkstra_imp_tight_parents:
   assumes "\<not> early_stop"
   shows "<state_assn (initial_state :: ('v, _, _, _, _, _, _) dij_state) si> dijkstra_imp si
          <\<lambda>_. state_assn dijkstra_compute si * \<up>(tight_parents (dij_parent dijkstra_compute))>"
-proof -
+proof-
   have g: "c \<Longrightarrow> X * \<up>(r = T) \<Longrightarrow>\<^sub>A X * \<up>c * true" for X c and r T :: "'v option"
     by sep_auto
   show ?thesis
@@ -1195,14 +1063,14 @@ qed
 text \<open>A target returned by early stopping is a reached target with the shortest distance, and no
       target is closer to the sources. If early stopping returns none, no target is reachable.\<close>
 
-theorem dijkstra_imp_target:
+lemma dijkstra_imp_target:
   "<state_assn (initial_state :: ('v, _, _, _, _, _, _) dij_state) si> dijkstra_imp si
    <\<lambda>r. state_assn dijkstra_compute si * \<up>(r = dij_target dijkstra_compute \<and>
       (\<forall>u. r = Some u \<longrightarrow> target u \<and> u \<in> \<V> \<and> dist_lookup (dij_dist dijkstra_compute) u \<noteq> -1 \<and>
          ereal (dist_lookup (dij_dist dijkstra_compute) u) = ag.distance_set w (src_abstract srcs) u \<and>
          (\<forall>x. target x \<longrightarrow> ag.distance_set w (src_abstract srcs) u \<le> ag.distance_set w (src_abstract srcs) x)) \<and>
       (r = None \<longrightarrow> early_stop \<longrightarrow> (\<forall>v. target v \<longrightarrow> (\<forall>s \<in> src_abstract srcs. \<not> ag.reachable s v))))>"
-proof -
+proof-
   have g: "P T \<Longrightarrow> X * \<up>(r = T) \<Longrightarrow>\<^sub>A X * \<up>(r = T \<and> P r) * true"
     for X and r T :: "'v option" and P
     by sep_auto
@@ -1215,7 +1083,7 @@ text \<open>For the target found, @{const dijkstra_impl_spec.path_imp} gives a s
       the sources, which is a shortest path between its source and the target, and no simple path
       from a source to a target is shorter.\<close>
 
-theorem path_imp_target:
+lemma path_imp_target:
   assumes "dij_target dijkstra_compute = Some u" "card \<V> \<le> length r"
   shows "<state_assn dijkstra_compute si * Ra \<mapsto>\<^sub>a r> path_imp si Ra u
          <\<lambda>k. state_assn dijkstra_compute si * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(length p = length r \<and>
@@ -1225,10 +1093,13 @@ theorem path_imp_target:
                ereal (weight w (rev (take k p))) = ag.distance w s u) \<and>
             (\<forall>s \<in> src_abstract srcs. \<forall>x q. target x \<longrightarrow> ag.path_bet q s x \<longrightarrow> distinct q \<longrightarrow>
                weight w (rev (take k p)) \<le> weight w q)))>"
-proof -
-  have tu: "target u" "u \<in> \<V>" using dijkstra_compute_target[OF assms(1)] by blast+
+proof-
+  have tu: "target u" "u \<in> \<V>"
+    using dijkstra_compute_target[OF assms(1)]
+    by blast+
   have us: "u \<in> seen_abstract (dij_seen dijkstra_compute)"
-    using invar_tgt_compute assms(1) by (simp add: invar_tgt_def)
+    using invar_tgt_compute assms(1)
+    by (simp add: invar_tgt_def)
   have g: "(\<And>p. A p \<Longrightarrow> B p) \<Longrightarrow>
            X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(A p)) \<Longrightarrow>\<^sub>A X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(B p)) * true"
     for X and A B :: "'e list \<Rightarrow> bool"

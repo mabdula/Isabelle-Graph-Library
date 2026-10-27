@@ -128,30 +128,17 @@ lemma forest_empty_cong:
   by (auto simp: forest_assn_def vs_assn_def fun_eq_iff)
 
 lemma forest_add_root_imp_rule:
-  assumes "vset_invar R" "vset_invar R'" "vset_to_set R' = insert v (vset_to_set R)"
-  shows "<forest_assn (empty_forest R) Fi> forest_add_root_imp v Fi <forest_assn (empty_forest R')>"
-proof-
-  have "v \<in> K"
-    using vset.fixed_univ_set_universe[OF assms(2)] assms(3) by auto
-  thus ?thesis
-    using assms
-    unfolding forest_add_root_imp_def forest_assn_def vs_assn_def
-    by (sep_auto split: prod.splits simp: vset.fixed_univ_set_insert)
-qed
+  "\<lbrakk>vset_invar R; vset_invar R'; vset_to_set R' = insert v (vset_to_set R)\<rbrakk> \<Longrightarrow>
+   <forest_assn (empty_forest R) Fi> forest_add_root_imp v Fi <forest_assn (empty_forest R')>"
+  unfolding forest_add_root_imp_def forest_assn_def vs_assn_def
+  by (sep_auto split: prod.splits simp: vset.fixed_univ_set_insert dest: vset.fixed_univ_set_universe)
 
 lemma forest_extension_precond_in_K:
   assumes "forest_extension_precond F M x y z"
   shows "y \<in> K" "z \<in> K"
-proof-
-  have VsK: "Vs M \<subseteq> K"
-    by (rule invar_basicD(18)[OF forest_invarD(1)[OF forest_extension_precondD(1)[OF assms]]])
-  have e: "{y, z} \<in> M"
-    by (rule forest_extension_precondD(5)[OF assms])
-  show "y \<in> K"
-    by (rule subsetD[OF VsK edges_are_Vs[OF e]])
-  show "z \<in> K"
-    by (rule subsetD[OF VsK edges_are_Vs_2[OF e]])
-qed
+  using forest_extension_precondD(5)[OF assms]
+        invar_basicD(18)[OF forest_invarD(1)[OF forest_extension_precondD(1)[OF assms]]]
+  by (auto simp: Vs_def)
 
 lemma forest_extend_imp_rule:
   assumes "forest_extension_precond F M x y z"
@@ -180,53 +167,47 @@ text \<open>The iterator of a vertex set refers to its abstraction only, so it i
 
 lemma vs_it_init_rule:
   "<vs_assn V Vi> it_init Vi <\<lambda>it. vs_assn V Vi * is_it (vset_to_set V) Vi (lst (vset_to_set V)) it>"
-proof-
-  have step: "<vset_assn S Vi> it_init Vi
-              <\<lambda>it. vset_assn S Vi * is_it (vset_to_set V) Vi (lst (vset_to_set V)) it>"
-    if "vset_invar S" "vset_to_set S = vset_to_set V" for S
-    using vit.it_init_rule[OF that(1), of Vi] that(2) by simp
-  show ?thesis
-    unfolding vs_assn_def by (sep_auto heap: step)
-qed
+  unfolding vs_assn_def
+  by (sep_auto heap: vit.it_init_rule)
 
 lemma vs_it_next_rule:
   "<vs_assn V Vi * is_it (vset_to_set V) Vi (x # xs) it> it_next it
    <\<lambda>(y, it'). vs_assn V Vi * is_it (vset_to_set V) Vi xs it' * \<up>(y = x)>"
 proof-
-  have step: "<vset_assn S Vi * is_it (vset_to_set V) Vi (x # xs) it> it_next it
-              <\<lambda>(y, it'). vset_assn S Vi * is_it (vset_to_set V) Vi xs it' * \<up>(y = x)>"
+  have "<vset_assn S Vi * is_it (vset_to_set V) Vi (x # xs) it> it_next it
+        <\<lambda>(y, it'). vset_assn S Vi * is_it (vset_to_set V) Vi xs it' * \<up>(y = x)>"
     if "vset_to_set S = vset_to_set V" for S
-    using vit.it_next_rule[of S Vi x xs it] that by simp
-  show ?thesis
-    unfolding vs_assn_def by (sep_auto heap: step)
+    using vit.it_next_rule[of S Vi x xs it] that
+    by simp
+  thus ?thesis
+    unfolding vs_assn_def
+    by sep_auto
 qed
 
 lemma vs_it_has_next_rule:
   "<vs_assn V Vi * is_it (vset_to_set V) Vi xs it> it_has_next it
    <\<lambda>r. vs_assn V Vi * is_it (vset_to_set V) Vi xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
 proof-
-  have step: "<vset_assn S Vi * is_it (vset_to_set V) Vi xs it> it_has_next it
-              <\<lambda>r. vset_assn S Vi * is_it (vset_to_set V) Vi xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
+  have "<vset_assn S Vi * is_it (vset_to_set V) Vi xs it> it_has_next it
+        <\<lambda>r. vset_assn S Vi * is_it (vset_to_set V) Vi xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
     if "vset_to_set S = vset_to_set V" for S
-    using vit.it_has_next_rule[of S Vi xs it] that by simp
-  show ?thesis
-    unfolding vs_assn_def by (sep_auto heap: step)
+    using vit.it_has_next_rule[of S Vi xs it] that
+    by simp
+  thus ?thesis
+    unfolding vs_assn_def
+    by sep_auto
 qed
 
 lemma vs_quit_iteration: "vs_assn V Vi * is_it (vset_to_set V) Vi xs it \<Longrightarrow>\<^sub>A vs_assn V Vi"
   unfolding vs_assn_def ex_distrib_star[symmetric]
-proof(rule ent_ex_preI)
-  fix S
-  have q: "vset_to_set S = vset_to_set V \<Longrightarrow>
-           vset_assn S Vi * is_it (vset_to_set V) Vi xs it \<Longrightarrow>\<^sub>A vset_assn S Vi"
-    using vit.quit_iteration[of S Vi xs it] by simp
-  show "vset_assn S Vi * \<up>(vset_invar S \<and> vset_invar V \<and> vset_to_set S = vset_to_set V) *
-        is_it (vset_to_set V) Vi xs it \<Longrightarrow>\<^sub>A
-        \<exists>\<^sub>AS. vset_assn S Vi * \<up>(vset_invar S \<and> vset_invar V \<and> vset_to_set S = vset_to_set V)"
+proof(rule ent_ex_preI, goal_cases)
+  case (1 S)
+  show ?case
   proof(cases "vset_invar S \<and> vset_invar V \<and> vset_to_set S = vset_to_set V")
     case True
     show ?thesis
-      by (rule ent_ex_postI[where x = S]) (use True q in simp)
+      using True vit.quit_iteration[of S Vi xs it]
+      by (intro ent_ex_postI[where x = S]; simp)
   next
     case False
     show ?thesis
@@ -269,11 +250,9 @@ lemma forest_quit_iteration:
    forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi xs it
    \<Longrightarrow>\<^sub>A forest_assn F Fi"
   unfolding forest_assn_def forest_is_it_def
-  apply(cases p; cases Fi rule: prod_cases3; simp only: prod.case forest_part.case)
-   apply(sep_frame_fwd rule: vs_quit_iteration[of "evens F"])
-   apply sep_auto
-  apply(sep_frame_fwd rule: vs_quit_iteration[of "odds F"])
-  by sep_auto
+  by (cases p; cases Fi rule: prod_cases3; simp only: prod.case forest_part.case)
+     ((sep_frame_fwd rule: vs_quit_iteration[of "evens F"], sep_auto),
+      (sep_frame_fwd rule: vs_quit_iteration[of "odds F"], sep_auto))
 
 lemma get_path_imp_loop_rule:
   assumes "parent_spec_i.follow_dom (parent_lookup P) v"
@@ -284,37 +263,31 @@ lemma get_path_imp_loop_rule:
           \<up>(k' = k + length (follow (parent_lookup P) v))>"
   using assms
 proof(induction arbitrary: k xs rule: parent_spec_i.follow.pinduct)
-  case (1 v)
+  case IH: (1 v)
   show ?case
   proof(cases "parent_lookup P v")
     case None
-    hence fol: "follow (parent_lookup P) v = [v]"
-      by (simp add: parent_spec_i.follow.psimps[OF 1(1)])
-    have get: "parent_get P v = nil"
-      using None by (simp add: parent_lookup_def split: if_splits)
-    have vK: "v \<in> K"
-      using 1(4) by (simp add: fol)
-    show ?thesis
-      using 1(5)
-      apply(subst get_path_imp_loop.simps)
-      by (sep_auto simp: fol get upd_conv_take_nth_drop
-                   heap: par.fixed_univ_map_lookup_rule[OF 1(3) vK])
+    hence path: "follow (parent_lookup P) v = [v]"
+      by (simp add: parent_spec_i.follow.psimps[OF IH(1)])
+    have "parent_get P v = nil"
+      using None
+      by (simp add: parent_lookup_def split: if_splits)
+    thus ?thesis
+      using IH(3-5)
+      by (subst get_path_imp_loop.simps)
+         (sep_auto simp: path upd_conv_take_nth_drop heap: par.fixed_univ_map_lookup_rule)
   next
     case (Some v')
-    hence fol: "follow (parent_lookup P) v = v # follow (parent_lookup P) v'"
-      by (simp add: parent_spec_i.follow.psimps[OF 1(1)])
-    have get: "parent_get P v = v'" "v' \<noteq> nil" "nil \<noteq> v'"
-      using Some by (auto simp: parent_lookup_def split: if_splits)
-    have vK: "v \<in> K" and K': "set (follow (parent_lookup P) v') \<subseteq> K"
-      using 1(4) by (simp_all add: fol)
-    have len: "Suc k + length (follow (parent_lookup P) v') \<le> length (xs[k := v])"
-      using 1(5) by (simp add: fol)
-    note IH = 1(2)[OF Some 1(3) K' len]
+    hence path: "follow (parent_lookup P) v = v # follow (parent_lookup P) v'"
+      by (simp add: parent_spec_i.follow.psimps[OF IH(1)])
+    have lookup: "parent_get P v = v'" "v' \<noteq> nil" "nil \<noteq> v'"
+      using Some
+      by (auto simp: parent_lookup_def split: if_splits)
     show ?thesis
-      using 1(5)
-      apply(subst get_path_imp_loop.simps)
-      apply(sep_auto simp: get fol heap: IH par.fixed_univ_map_lookup_rule[OF 1(3) vK])
-      by (sep_auto simp: fol take_Suc_conv_app_nth list_update_append)
+      using IH(4,5)
+      by (subst get_path_imp_loop.simps;
+          sep_auto heap: IH(2)[OF Some IH(3)] par.fixed_univ_map_lookup_rule[OF IH(3)]
+                   simp: lookup path take_Suc_conv_app_nth list_update_append)
   qed
 qed
 
@@ -323,7 +296,8 @@ lemma get_path_follow:
   shows "get_path F v = follow (parent_lookup (parents F)) v"
 proof-
   interpret parents_here: parent "parent_lookup (parents F)"
-    using assms follow_dom_invar_parent_wf(1) forest_invarD(4) by auto
+    using assms follow_dom_invar_parent_wf(1) forest_invarD(4)
+    by auto
   show ?thesis
     using parents_here.follow_dom[folded follow_def]
     by (simp add: get_path_is_follow_impl
@@ -337,21 +311,19 @@ lemma get_path_imp_rule:
                \<up>(k' = k + length (get_path F v))>"
 proof-
   note basic = invar_basicD[OF forest_invarD(1)[OF assms(1)]]
-  have verts: "verts F \<subseteq> K"
-    using vset.fixed_univ_set_universe[OF basic(2)] vset.fixed_univ_set_universe[OF basic(3)]
-    by (simp add: basic(6)[symmetric])
-  have v_verts: "v \<in> verts F"
-    using assms(2) by (simp add: basic(6)[symmetric])
-  have path_K: "set (follow (parent_lookup (parents F)) v) \<subseteq> K"
-    using path_follow_verts_in_verts_F[OF forest_invarD(1)[OF assms(1)] forest_invarD(6)[OF assms(1)]
-                                          forest_invarD(4)[OF assms(1)] v_verts] verts
-    by (rule subset_trans)
-  show ?thesis
-    using assms(3)
+  have "set (follow (parent_lookup (parents F)) v) \<subseteq> verts F"
+    using assms(1,2) basic(6)
+    by (intro path_follow_verts_in_verts_F[of M]) (auto dest: forest_invarD)
+  moreover have "verts F \<subseteq> K"
+    using basic(2,3,6) vset.fixed_univ_set_universe
+    by blast
+  ultimately have "set (follow (parent_lookup (parents F)) v) \<subseteq> K"
+    by auto
+  thus ?thesis
+    using assms
     unfolding get_path_imp_def forest_assn_def get_path_follow[OF assms(1)]
-    by (sep_auto split: prod.splits
-                 heap: get_path_imp_loop_rule[OF follow_dom_invar_parent_wf(2)[OF forest_invarD(4)[OF assms(1)]]
-                                              _ path_K])
+    by (sep_auto split: prod.splits heap: get_path_imp_loop_rule
+                 intro: follow_dom_invar_parent_wf(2) dest: forest_invarD(4))
 qed
 
 subsection \<open>Interpretation of the Imperative Forest Specification\<close>

@@ -5,8 +5,8 @@
 theory Primal_Dual_Path_Search
   imports
     Basic_Matching.Berge
-    Directed_Set_Graphs.More_Arith
-    Directed_Set_Graphs.More_Logic
+    Data_Structures.More_Arith
+    Data_Structures.More_Logic
     Basic_Matching.Alternating_Forest_Spec
     Data_Structures.Fixed_Univ_Map_Specs
     Data_Structures.Fixed_Univ_Set_Specs
