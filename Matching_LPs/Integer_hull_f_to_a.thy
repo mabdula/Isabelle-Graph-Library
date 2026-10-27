@@ -2710,8 +2710,18 @@ qed
             using abs_le_D2 by blast
         qed
       then have "(1 / Max (abs ` set\<^sub>v y')) * (- y' $ i) \<le> 1" 
-        by (metis \<open>0 < Max (abs ` set\<^sub>v y')\<close> divide_pos_pos mult_le_cancel_left_pos
-            nonzero_eq_divide_eq order_less_irrefl zero_less_one_class.zero_less_one)
+      proof -
+        assume le: "- y' $ i \<le> Max (abs ` set\<^sub>v y')"
+        have "(1 / Max (abs ` set\<^sub>v y')) * (- y' $ i) = - y' $ i / Max (abs ` set\<^sub>v y')"
+          by simp
+        also have "\<dots> \<le> 1"
+        proof -
+          from \<open>0 < Max (abs ` set\<^sub>v y')\<close> have eq: "- y' $ i / Max (abs ` set\<^sub>v y') \<le> 1 \<longleftrightarrow> - y' $ i \<le> 1 * Max (abs ` set\<^sub>v y')"
+            by (rule pos_divide_le_eq)
+          with le show ?thesis by simp
+        qed
+        finally show ?thesis .
+      qed
       have " - (1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') $ i \<le> 1" 
         by (metis \<open>1 / Max (abs ` set\<^sub>v y') * - y' $ i \<le> 1\<close> \<open>i < n\<close> carrier_vecD index_smult_vec(1)
             mult_minus_right y')
