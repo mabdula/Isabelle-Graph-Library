@@ -180,9 +180,13 @@ proof
   have "submatrix A I UNIV = submatrix A (I \<inter> {0..<dim_row A}) UNIV" 
     using submatrix_same_I_interesect_rows by blast
 
-  then show  "fst (sub_system A b I) = fst (sub_system A b (I \<inter> {0..<nr}))" 
-    using A 
-    by (metis carrier_matD(1) sub_system_fst)
+  have dim_eq: "dim_row A = nr" using A by (rule carrier_matD(1))
+  have sub_eq: "submatrix A I UNIV = submatrix A (I \<inter> {0..<dim_row A}) UNIV" 
+    using submatrix_same_I_interesect_rows by blast
+  have "submatrix A I UNIV = submatrix A (I \<inter> {0..<nr}) UNIV" 
+    using sub_eq dim_eq by simp
+  thus "fst (sub_system A b I) = fst (sub_system A b (I \<inter> {0..<nr}))" 
+    by (simp add: sub_system_fst)
   have "(nths (list_of_vec b) I) = (nths (list_of_vec b) {a. a < dim_vec b \<and> a \<in> I})"
     using nths_intersect_length_same 
     by (metis  Matrix.length_list_of_vec)
