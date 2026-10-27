@@ -1939,9 +1939,29 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         then have "x \<in> Vs G"
           by (metis DiffD1 Diff_insert_absorb Vs_subset 2 connected_component_subset 
               graph_diff_subset subset_Diff_insert)
-        then have "x \<notin> X \<and> x \<notin> Vs (graph_diff G (X\<union>{v}))" 
-          by (metis "2" DiffD1 connected_component_subset insert_Diff subsetD 
-              subset_Diff_insert vs_graph_diff x)
+        have "x \<notin> X \<and> x \<notin> Vs (graph_diff G (X\<union>{v}))"
+          proof (rule conjI)
+            have xC: "x \<in> C"
+              using x by auto
+            moreover have xv: "x \<noteq> v"
+              using x by auto
+            ultimately have "x \<in> connected_component (graph_diff G X) v"
+              using comp_C by blast
+            then have "x \<in> Vs (graph_diff G X) \<or> v = x"
+              by (rule in_connected_component_in_edges)
+            then have "x \<in> Vs (graph_diff G X)"
+              using xv by auto
+
+            then obtain e where e: "e \<in> graph_diff G X" "x \<in> e"
+              by (meson vs_member_elim)
+            then have "e \<inter> X = {}"
+              by (simp add: graph_diff_def)
+            then show "x \<notin> X"
+              using e(2) by blast
+          next
+            show "x \<notin> Vs (graph_diff G (X \<union> {v}))"
+              using x by blast
+          qed
         then have "{x} \<in> singl_in_diff G (X \<union> {v})" 
           unfolding singl_in_diff_def
           using x \<open>x \<in> Vs G\<close> by auto
