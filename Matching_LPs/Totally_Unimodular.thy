@@ -52,8 +52,31 @@ proof -
       then have "\<forall> i < n. unit_vec n i \<bullet> x \<ge> 0 "
         using asm(3) by (simp add: scalar_prod_left_unit)
       then have "\<forall> i < n. - unit_vec n i \<bullet> x \<le> 0" 
-        by (metis M.add.one_closed Matrix.less_eq_vec_def asm(2) carrier_vecD index_unit_vec(3) 
-            minus_equation_iff neg_0_le_iff_le scalar_prod_uminus_left)
+      proof (intro allI impI)
+        fix i :: nat
+        assume "i < n"
+        then have h: "unit_vec n i \<bullet> x \<ge> 0"
+          using \<open>\<forall>i<n. unit_vec n i \<bullet> x \<ge> 0\<close> by blast
+        have dim_x: "dim_vec x = n"
+          using asm(3) carrier_vecD by blast
+        have dim_u: "dim_vec (unit_vec n i) = n"
+          using index_unit_vec(3) by blast
+        have dim_mu: "dim_vec (- unit_vec n i) = n"
+          using index_uminus_vec(2) dim_u by simp
+        have "(- unit_vec n i) \<bullet> x = - (unit_vec n i \<bullet> x)"
+        proof -
+          have u_carr: "unit_vec n i \<in> carrier_vec n"
+            using dim_u carrier_vecI by blast
+          have mu_carr: "- unit_vec n i \<in> carrier_vec n"
+            using dim_mu by simp
+          have "(- unit_vec n i) \<bullet> x = - (unit_vec n i \<bullet> x)"
+            using asm(3) u_carr mu_carr dim_x
+            by (simp add: comm_scalar_prod scalar_prod_uminus_right)
+          then show ?thesis .
+        qed
+        with h show "- unit_vec n i \<bullet> x \<le> 0"
+          by simp
+      qed
       then have "\<forall> i < n. row (- 1\<^sub>m n) i \<bullet> x \<le> 0" 
         by simp
       then have "(- 1\<^sub>m n) *\<^sub>v x \<le> 0\<^sub>v n" 
