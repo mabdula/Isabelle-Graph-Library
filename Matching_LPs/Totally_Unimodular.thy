@@ -210,7 +210,7 @@ proof(cases "infinite J")
   then have "pick (J - {pick J j}) ((Suc j) - 1) = pick J (Suc j)" 
     using 1 by presburger
   then show ?thesis 
-    by (metis diff_Suc_1)
+    by simp
 next
   case False
   have "Suc j < card J" 
