@@ -977,7 +977,36 @@ next
       using cons1(1,2)
       apply (clarsimp simp add: Let_def split: if_splits prod.splits option.splits)
       subgoal using cons1.prems by fastforce
-      subgoal by (metis append_eq_Cons_conv append_is_Nil_conv disj_pref_append1 empty_iff empty_set find_pfx_empty option.sel set_ConsD)
+      subgoal premises prems for x2a
+      proof -
+        have "l1' = []"
+          using find_pfx_empty prems by blast
+        moreover have eq: "(Some pfx1, Some x2a) = longest_disj_pfx (a1' # l1') l2"
+          using prems by simp
+        moreover obtain t where t: "a1' # l1' = pfx1 @ t"
+          using disj_pref_append1 eq by blast
+        have "a2 \<notin> set pfx1"
+        proof
+          assume "a2 \<in> set pfx1"
+          then have "a2 \<in> set (pfx1 @ t)"
+            by simp
+          then have "a2 \<in> set (a1' # l1')"
+            using t by simp
+          then have "a2 = a1'"
+            using \<open>l1' = []\<close> by simp
+          then show False
+            using prems by auto
+        qed
+        moreover have "set pfx1 \<inter> set (butlast x2a) = {}"
+        proof -
+          have "set pfx1 \<inter> set (butlast (the (Some x2a))) = {}"
+            using eq prems by blast
+          then show ?thesis
+            by simp
+        qed
+        ultimately show ?thesis
+          by blast
+      qed
       subgoal by metis
       subgoal by (metis (mono_tags, opaque_lifting) Un_iff disj_pref_append1 find_pfx_works_1 option.sel set_ConsD set_append) 
       done
