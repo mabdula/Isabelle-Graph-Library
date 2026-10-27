@@ -1139,8 +1139,14 @@ proof(intro invar_props_intros, goal_cases)
 
         ultimately have "length p - 1 > distance_set (Graph.digraph_abs G) (t_set srcs) v"
           using \<open>u \<in> t_set srcs\<close> 1
-          apply auto
-          by (metis One_nat_def order_neq_le_trans vwalk_bet_dist_set)
+          proof -
+            have le: "distance_set (Graph.digraph_abs G) (t_set srcs) v \<le> enat (length p - 1)"
+              by (rule vwalk_bet_dist_set[OF \<open>vwalk_bet (Graph.digraph_abs G) u p v\<close> \<open>u \<in> t_set srcs\<close>])
+            have neq: "distance_set (Graph.digraph_abs G) (t_set srcs) v \<noteq> enat (length p - 1)"
+              using 1 by auto
+            from neq le show ?thesis
+              by (rule order_neq_le_trans)
+          qed
 
         hence "length p - 2 \<ge>  distance_set (Graph.digraph_abs G) (t_set srcs) v"
           using \<open>length p > 1\<close>  
