@@ -149,7 +149,21 @@ lemma in_singleton: "\<lbrakk>s = {x}; y \<in> s\<rbrakk> \<Longrightarrow> x = 
 
 lemma reverse_pigeonhole:
   "\<lbrakk>finite X; (f ` X) \<subseteq> Y; card X < card Y\<rbrakk> \<Longrightarrow> \<exists>y \<in> Y. \<forall>x \<in> X. y \<noteq> f x"
-  by (metis imageI less_le_not_le subset_eq surj_card_le)
+proof -
+  assume fin: "finite X" and sub: "f ` X \<subseteq> Y" and card_lt: "card X < card Y"
+  show "\<exists>y\<in>Y. \<forall>x\<in>X. y \<noteq> f x"
+  proof (rule ccontr)
+    assume "\<not> (\<exists>y\<in>Y. \<forall>x\<in>X. y \<noteq> f x)"
+    then have Ysub: "Y \<subseteq> f ` X"
+      by blast
+    have "card Y \<le> card (f ` X)"
+      using card_mono[OF finite_imageI[OF fin] Ysub] .
+    also have "\<dots> \<le> card X"
+      using card_image_le[OF fin] .
+    finally show False
+      using card_lt by simp
+  qed
+qed
 
 definition "pair_list_distinct xs = 
 (distinct xs \<and> (\<forall> x \<in> set xs. prod.swap x \<notin> set xs \<or> fst x = snd x))"
