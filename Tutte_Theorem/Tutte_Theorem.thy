@@ -1796,7 +1796,12 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
           fix z
           assume "z\<in>C'"
           then have "\<exists>p. walk_betw (graph_diff G X) x p z"
-            by (metis in_connected_component_has_walk odd_x) 
+          proof -
+            have "z \<in> connected_component (graph_diff G X) x"
+              using odd_x \<open>z \<in> C'\<close> by auto
+            then show "\<exists>p. walk_betw (graph_diff G X) x p z"
+              using odd_x by (blast intro: in_connected_component_has_walk)
+          qed
           then obtain p where p: "walk_betw (graph_diff G X) x p z"
             by auto
           have "walk_betw (graph_diff G (X\<union>{v})) x p z"
