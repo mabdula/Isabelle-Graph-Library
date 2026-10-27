@@ -299,7 +299,19 @@ qed
     have "card (Vs (?comp_out C)) =  sum (\<lambda> e. card e) (?comp_out C)"
       using \<open>finite (Vs M)\<close> \<open>matching M\<close> matching_card_is_sum by fastforce
     also have "\<dots> =  sum (\<lambda> e. 2) (?comp_out C)" 
-      by (smt (verit, del_insts) \<open>M \<subseteq> G\<close> \<open>graph_invar G\<close> card_edge mem_Collect_eq subset_eq sum.cong)
+    proof (rule sum.cong)
+      show "?comp_out C = ?comp_out C"
+        by simp
+    next
+      fix e
+      assume "e \<in> ?comp_out C"
+      then have "e \<in> M"
+        by simp
+      then have "e \<in> G"
+        using \<open>M \<subseteq> G\<close> by blast
+      then show "card e = 2"
+        using \<open>graph_invar G\<close> card_edge by blast
+    qed
     also have "\<dots> = card (?comp_out C) * 2" by simp  
     ultimately show "\<dots> = card (Vs (?comp_out C))" 
       by presburger
