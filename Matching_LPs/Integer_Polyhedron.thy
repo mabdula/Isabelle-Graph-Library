@@ -1140,8 +1140,19 @@ lemma int_hull_subset:
   assumes b: "b \<in> carrier_vec nr"
   defines "P \<equiv> polyhedron A b"
   shows "integer_hull P \<subseteq> P"
-  by (metis A Int_subset_iff P_def b convex_def convex_hull_mono 
-      integer_hull_def order_refl polyhedra_are_convex)
+proof -
+  have subset_int: "P \<inter> \<int>\<^sub>v \<subseteq> P" by blast
+  have convex_P: "convex P"
+    unfolding P_def using A b polyhedra_are_convex by blast
+  have hull_eq: "convex_hull P = P"
+    using convex_P convex_def by blast
+  have hull_mono: "convex_hull (P \<inter> \<int>\<^sub>v) \<subseteq> convex_hull P"
+    using convex_hull_mono subset_int by blast
+  have "convex_hull (P \<inter> \<int>\<^sub>v) \<subseteq> P"
+    using hull_mono hull_eq by simp
+  then show "integer_hull P \<subseteq> P"
+    unfolding integer_hull_def by blast
+qed
 
 lemma not_in_int_hull_not_int:
   fixes A :: "'a :: trivial_conjugatable_linordered_field mat"
