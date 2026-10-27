@@ -348,8 +348,23 @@ proof -
     using same_subsyst_I_intersect_rows A b 
     by blast
   then have "dim_row A' = card (I \<inter> {0..<nr})" using I_subsys_same_card(2)
-    by (metis (mono_tags, lifting) A assms(4) b carrier_matD(1) carrier_vecD dims_subsyst_same' 
-        inf.cobounded2 snd_conv)
+  proof -
+  have eq_sub: "sub_system A b I = sub_system A b (I \<inter> {0..<nr})"
+    using same_subsyst_I_intersect_rows A b by blast
+  have AB': "(A', b') = sub_system A b (I \<inter> {0..<nr})"
+    using assms(4) eq_sub by simp
+  have subs: "I \<inter> {0..<nr} \<subseteq> {0..<nr}"
+    by (rule inf.cobounded2)
+  have dimA: "dim_row A = dim_vec b" using A b by simp
+  have dims_eq: "dim_row A' = dim_vec b'"
+    using dimA assms(4) dims_subsyst_same' by blast
+  have snd_eq: "snd (sub_system A b (I \<inter> {0..<nr})) = b'"
+    by (simp add: AB'[symmetric] snd_conv)
+  have bcard: "dim_vec b' = card (I \<inter> {0..<nr})"
+    using I_subsys_same_card(2)[OF A b subs] snd_eq by simp
+  show "dim_row A' = card (I \<inter> {0..<nr})"
+    using dims_eq bcard by simp
+  qed
   have "sub_system A b J = sub_system A b (J \<inter> {0..<nr})"
     using same_subsyst_I_intersect_rows A b 
     by blast
