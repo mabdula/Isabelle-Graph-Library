@@ -341,7 +341,14 @@ next
     using "2.prems"  bst.simps(2) by(simp add: t_inv_def)
   have a_not_down: "a \<notin> set (Tree2.inorder r)" 
     using 2(3) bst.simps(2)[simplified Tree2.set_inorder[symmetric]] 
-    by (metis not_less_iff_gr_or_eq t_inv_def)
+    proof -
+      from 2(3) have "bst \<langle>l, (a, uu), r\<rangle>"
+        by (simp add: t_inv_def)
+      hence "\<forall>x\<in>set (Tree2.inorder r). a < x"
+        by (simp add: bst.simps(2)[simplified Tree2.set_inorder[symmetric]])
+      thus ?thesis
+        by auto
+    qed
   show ?case 
     using a_not_down inter_empty 
     by(auto  simp add: card_Un_disjoint card_insert_if  2(1)[OF t_inv_l] 2(2)[OF t_inv_r])
