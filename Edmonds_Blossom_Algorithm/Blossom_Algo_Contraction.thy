@@ -1746,7 +1746,17 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
     qed
     then have "last (edges_of_path ((rev p) @ [last pfx1, last (butlast pfx1)])) \<in> M"
       using alt_path_pfx1
-      by (metis Nil_is_append_conv \<open>p \<noteq> []\<close> alternating_list_even_last edges_of_path.simps(3) edges_of_path_append_3 list.simps(3) rev_is_Nil_conv)
+      proof -
+        have "2 \<le> length (rev p @ [last pfx1, last (butlast pfx1)])"
+          by simp
+        then have "edges_of_path (rev p @ [last pfx1, last (butlast pfx1)]) \<noteq> []"
+          by (simp add: edges_of_path_nempty)
+        then show ?thesis
+          using alt_path_pfx1
+                \<open>even (length (edges_of_path (rev p @ [last pfx1, last (butlast pfx1)])))\<close>
+                alternating_list_even_last
+          by blast
+      qed
     then have last_pfx1_matched: "{last pfx1, last (butlast pfx1)} \<in> M"
       by (metis edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append last_snoc)
     have False
