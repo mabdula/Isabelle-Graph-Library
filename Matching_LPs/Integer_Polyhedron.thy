@@ -757,7 +757,14 @@ qed
       fix x
       assume "x \<in> P" "b'' = A'' *\<^sub>v x" 
       then have "\<forall> i < dim_row A''. (row A'' i) \<bullet> x =  (b'' $ i)"
-        by (metis index_mult_mat_vec)
+        proof (intro allI impI)
+          fix i
+          assume "i < dim_row A''"
+          then have "(A'' *\<^sub>v x) $ i = row A'' i \<bullet> x"
+            by (rule index_mult_mat_vec)
+          then show "row A'' i \<bullet> x = b'' $ i"
+            using \<open>b'' = A'' *\<^sub>v x\<close> by simp
+        qed
       then have 4:"\<forall>i \<in> (J \<union> I') \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
         using subsystem_fulfills_P[of A b A'' b'' _ "\<lambda> p q. p \<bullet> x = q"] 
         using A A''_b'' b carrier_vecD by blast
