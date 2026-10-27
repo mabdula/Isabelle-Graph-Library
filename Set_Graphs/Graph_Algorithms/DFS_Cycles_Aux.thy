@@ -1953,10 +1953,19 @@ proof(rule invar_props_intros, elim invar_visited_through_seen_props call_cond_e
         using \<open>vwalk_bet (Graph.digraph_abs G) v p w\<close> 
         by (auto dest!: split_vwalk simp:  neq_Nil_conv)
       hence "hd p2 \<in> t_set (seen dfs_aux_state)"
-        using 1
-        by (metis DFS_Aux.invar_1_props DFS_Aux_axioms DFS_Aux_axioms_def Diff_iff
-         Graph.vset.set.set_empty Graph.neighbourhood_invars' \<open>DFS_Aux_axioms\<close>
-         empty_iff list.sel(1) set_ops.set_diff)
+      proof -
+        have nbhd_inv: "vset_inv (\<N>\<^sub>G v')"
+          using Graph.neighbourhood_invars' graph_inv(1) by blast
+        have seen_inv: "vset_inv (seen dfs_aux_state)"
+          using \<open>invar_1 dfs_aux_state\<close> by (auto elim!: invar_props_elims)
+        have "((\<N>\<^sub>G v') -\<^sub>G (seen dfs_aux_state)) = \<emptyset>\<^sub>N"
+          using \<open>((\<N>\<^sub>G (hd (stack dfs_aux_state))) -\<^sub>G (seen dfs_aux_state)) = \<emptyset>\<^sub>N\<close>
+                \<open>stack dfs_aux_state = v' # stack_tl\<close>
+          by simp
+        hence "t_set (\<N>\<^sub>G v') - t_set (seen dfs_aux_state) = {}"
+          using nbhd_inv seen_inv set_ops.set_diff Graph.vset.set.set_empty by blast
+        with \<open>hd p2 \<in> t_set (\<N>\<^sub>G v')\<close> show ?thesis by blast
+      qed
       
       have "v' \<in> t_set (seen dfs_aux_state)"
         using 1(10) \<open>invar_seen_stack_finished dfs_aux_state\<close>
