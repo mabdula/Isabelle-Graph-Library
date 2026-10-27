@@ -301,7 +301,12 @@ proof-
         define s where "s = (Vs G - (set cyc))"
         have blos: "blossom G M stem cyc"
           using bloss_algo_sound(2) blos_comp stem_cyc 1
-          by metis
+        proof -
+          have blos_search_eq: "blos_search G M = Some (Blossom stem cyc)"
+            using blos_comp stem_cyc by simp
+          show "blossom G M stem cyc"
+            using bloss_algo_sound(2)[OF \<open>graph_invar G\<close> \<open>matching M\<close> \<open>M \<subseteq> G\<close> blos_search_eq] .
+        qed
         then have "set cyc \<subseteq> Vs G"
           using path_suff subset_path_Vs
           by metis
