@@ -31,7 +31,13 @@ qed
 lemma  set_set_to_list_distinct:
   "finite s \<Longrightarrow> distinct (set_to_list s)"
   unfolding set_to_list_def
-  by (metis (mono_tags, lifting) finite_distinct_list someI)
+proof -
+  assume "finite s"
+  then have "\<exists>l. set l = s \<and> distinct l"
+    using finite_distinct_list by blast
+  then show "distinct (SOME l. set l = s \<and> distinct l)"
+    by (rule someI2_ex) simp
+qed
 
 
 definition edges_list :: "'b set set \<Rightarrow> ('b set) list" where
