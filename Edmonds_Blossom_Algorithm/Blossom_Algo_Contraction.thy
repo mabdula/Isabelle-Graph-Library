@@ -919,8 +919,40 @@ next
     case (Cons a1' l1')
     then show ?thesis
       using cons1
-      apply (auto simp add: Let_def split: if_splits prod.splits option.splits)
-      by metis+
+      proof(cases "last (find_pfx ((=) a2) (a1' # l1')) = a2")
+        case True
+        then have "pfx2 = [a2]"
+          using cons1.prems Cons
+          by (auto simp add: Let_def)
+        then show ?thesis
+          by (intro exI[where x = l2]) simp
+      next
+        case False
+        obtain l1_pfx'' l2_pfx'' where rec: "longest_disj_pfx (a1' # l1') l2 = (l1_pfx'', l2_pfx'')"
+          by (rule prod.exhaust)
+        show ?thesis
+        proof(cases l2_pfx'')
+          case None
+          then have "Some pfx2 = None"
+            using cons1.prems Cons False rec
+            by (auto simp add: Let_def)
+          then show ?thesis
+            by simp
+        next
+          case (Some pfx2'')
+          then have pfx2_eq: "pfx2 = a2 # pfx2''"
+            using cons1.prems Cons False rec
+            by (auto simp add: Let_def)
+          have eq2: "(l1_pfx'', Some pfx2'') = longest_disj_pfx (a1' # l1') l2"
+            using rec Some by simp
+          then obtain l2' where "l2 = pfx2'' @ l2'"
+            using cons1.IH by blast
+          then have "a2 # l2 = pfx2 @ l2'"
+            by (simp add: pfx2_eq)
+          then show ?thesis
+            by blast
+        qed
+      qed
   qed
 qed
 
