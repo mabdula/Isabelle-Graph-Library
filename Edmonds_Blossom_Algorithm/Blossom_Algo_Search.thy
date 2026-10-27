@@ -1334,7 +1334,21 @@ next
   ultimately have "x = v3 \<longrightarrow> y = v2"
     by auto
   moreover  have "x = v2 \<Longrightarrow> y \<noteq> v3"
-    by (metis (no_types, lifting) "**"(2) "sucsuc.hyps"(3) \<open>x = v\<close> assms(1) assms(2) invars(3) map_upd_Some_unfold not_Cons_self2 par' parent.follow_cons_2(1) parent.follow_cons_2(2) v1_neq_v3)
+  proof -
+    assume x_eq: "x = v2"
+    have v2v3: "v2 \<noteq> v3"
+      using v1_neq_v2_neq_v3(2)[OF assms(1)] .
+    have "par' v2 = Some v1"
+      using v2v3 by (simp add: par')
+    hence "par' x = Some v1"
+      by (simp add: x_eq)
+    with \<open>par' x = Some y\<close> have "y = v1"
+      by simp
+    moreover have "v1 \<noteq> v3"
+      using v1_neq_v3[OF assms(1) invars(3)] .
+    ultimately show "y \<noteq> v3"
+      by simp
+  qed
   ultimately have "y \<noteq> v3"
     by (metis \<open>par' x = Some y\<close> \<open>{v2, v3} \<in> M\<close> ass flabel_invar_def flabel_par_invar_props(2) fun_upd_other if1_props(3) invars(3) invars(4) par')
   moreover have "v3 \<noteq> v2"
