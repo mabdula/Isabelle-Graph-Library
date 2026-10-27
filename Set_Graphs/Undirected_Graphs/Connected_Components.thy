@@ -1599,7 +1599,17 @@ next
     by fastforce+
   then show ?thesis
     using w
-    by (metis Nil_is_append_conv contra_subsetD last_in_set path_subset_conn_comp pwu(1))
+  proof -
+    assume facts: "path G (pwu @ tl puv)" "hd (pwu @ tl puv) = w" "last (pwu @ tl puv) = v" "w \<in> Vs G" "C = connected_component G w"
+    have "set (pwu @ tl puv) \<subseteq> connected_component G w"
+      using facts path_subset_conn_comp[of G "pwu @ tl puv"] by auto
+    moreover have "v \<in> set (pwu @ tl puv)"
+      using facts(3) pwu(1) by (blast intro: last_in_set)
+    ultimately have "v \<in> connected_component G w"
+      by blast
+    thus ?thesis
+      using w(2) by simp
+  qed
 qed
 
 lemma component_has_path_no_cycle:
