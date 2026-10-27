@@ -1184,7 +1184,14 @@ lemma exists_eq_in_P_for_outside_elem:
 proof(rule ccontr)
   assume "\<not> (\<exists>j<nr. b $ j < row A j \<bullet> y)"
   then have 1: "\<forall>j<dim_row A.  row A j \<bullet> y \<le> b $ j" 
-    by (metis A carrier_matD(1) leI)
+  proof (intro allI impI)
+    fix j
+    assume "j < dim_row A"
+    then have "j < nr" using A by (simp add: carrier_matD(1))
+    then have "\<not> b $ j < row A j \<bullet> y" 
+      using \<open>\<not> (\<exists>j<nr. b $ j < row A j \<bullet> y)\<close> by blast
+    then show "row A j \<bullet> y \<le> b $ j" by (rule leI)
+  qed
   have 2: "dim_row A = dim_vec b" 
     using A b carrier_vecD by blast
   have "A *\<^sub>v y \<le> b" using leq_for_all_index_then_eq 1 2 
