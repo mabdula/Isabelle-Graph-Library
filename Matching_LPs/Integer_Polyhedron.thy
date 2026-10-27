@@ -189,7 +189,8 @@ proof
     by (simp add: sub_system_fst)
   have "(nths (list_of_vec b) I) = (nths (list_of_vec b) {a. a < dim_vec b \<and> a \<in> I})"
     using nths_intersect_length_same 
-    by (metis  Matrix.length_list_of_vec)
+    using nths_intersect_length_same[of "list_of_vec b" I]
+    by (simp add: Matrix.length_list_of_vec)
   then have "vec_of_list (nths (list_of_vec b) I) = 
       vec_of_list (nths (list_of_vec b) (I\<inter> {0..<dim_vec b}))" 
     by (smt (verit, best) Collect_cong Int_iff Matrix.length_list_of_vec atLeastLessThan_iff 
