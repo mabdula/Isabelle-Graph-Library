@@ -912,7 +912,12 @@ proof
             A assms(4) b by blast
     have 1:"dim_vec d \<in> {dim_vec d| C d I. (C, d) = sub_system A b I \<and> 
                                                 {x. C *\<^sub>v x = d \<and> x \<in> P} \<noteq> {}}" 
-      by (smt (verit, best) Collect_cong C_d F' face_non_empty mem_Collect_eq)
+    proof -
+      have "{x. C *\<^sub>v x = d \<and> x \<in> P} \<noteq> {}"
+        using C_d(1) F' face_non_empty by blast
+      then show ?thesis
+        using C_d(1) by blast
+    qed
     have "dim_vec b = nr" using b by auto
     let ?M = "{dim_vec d| C d I. (C, d) = sub_system A b I \<and> {x. C *\<^sub>v x = d \<and> x \<in> P} \<noteq> {}}"
     have "finite ?M"
