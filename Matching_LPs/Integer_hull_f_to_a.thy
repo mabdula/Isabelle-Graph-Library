@@ -2650,9 +2650,19 @@ proof -
   show "y' $ i \<le> Max (abs ` set\<^sub>v y')"
     using le_abs le_max by linarith
 qed
-      then have "(1 / Max (abs ` set\<^sub>v y')) * (y' $ i) \<le> 1" 
-        by (metis \<open>0 < Max (abs ` set\<^sub>v y')\<close> divide_pos_pos mult_le_cancel_left_pos 
-            nonzero_eq_divide_eq order_less_irrefl zero_less_one_class.zero_less_one)
+      then have "(1 / Max (abs ` set\<^sub>v y')) * (y' $ i) \<le> 1"
+      proof -
+        assume le: "y' $ i \<le> Max (abs ` set\<^sub>v y')"
+        have pos: "0 < Max (abs ` set\<^sub>v y')"
+          using \<open>0 < Max (abs ` set\<^sub>v y')\<close> by blast
+        have inv_pos: "0 < 1 / Max (abs ` set\<^sub>v y')"
+          using pos zero_less_divide_1_iff by blast
+        from mult_left_mono[OF le less_imp_le[OF inv_pos]]
+        have "(1 / Max (abs ` set\<^sub>v y')) * (y' $ i) \<le> (1 / Max (abs ` set\<^sub>v y')) * Max (abs ` set\<^sub>v y')" .
+        also have "(1 / Max (abs ` set\<^sub>v y')) * Max (abs ` set\<^sub>v y') = 1"
+          using pos by simp
+        finally show "(1 / Max (abs ` set\<^sub>v y')) * (y' $ i) \<le> 1" .
+      qed
       have "(1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') $ i \<le> 1" 
         by (metis \<open>1 / Max (abs ` set\<^sub>v y') * y' $ i \<le> 1\<close> \<open>i < n\<close> carrier_vecD index_smult_vec(1) y')
       then show "row (1\<^sub>m n) i \<bullet> ?y' \<le> 1" 
