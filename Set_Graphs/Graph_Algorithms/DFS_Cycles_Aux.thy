@@ -29,9 +29,21 @@ proof-
     using assms(1) by simp
 
   have "edges_of_vwalk (rev (w # l)) = (edges_of_vwalk (rev l)) @ [(v, w)]"
-    using assms(1)
-    by (metis edges_of_vwalk.simps(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 last_rev
-    list.sel(1) list.simps(3) rev.simps(2) rev_is_Nil_conv)
+  proof -
+    have l_ne: "l \<noteq> []"
+      using assms(1) by simp
+    have rev_l_ne: "rev l \<noteq> []"
+      using l_ne by simp
+    have last_rev_l: "last (rev l) = v"
+      using assms(1) by (simp add: last_rev)
+    have "rev (w # l) = rev l @ [w]"
+      by simp
+    also have "edges_of_vwalk (rev l @ [w]) = edges_of_vwalk (rev l) @ [(last (rev l), w)]"
+      using edges_of_vwalk_append_3[OF rev_l_ne]
+      by simp
+    finally show "edges_of_vwalk (rev (w # l)) = edges_of_vwalk (rev l) @ [(v, w)]"
+      using last_rev_l by simp
+  qed
   then have 2: "set (edges_of_vwalk (rev (w # l))) = {(v, w)} \<union> set (edges_of_vwalk (rev l))" by simp
 
   from assms(2) assms(3)
