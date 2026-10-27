@@ -2205,7 +2205,14 @@ proof-
     by simp
 
   have "{v3, v2} \<in> G"
-    by (metis ass compute_alt_path.if1_def matching(2) compute_alt_path_axioms in_mono insert_commute)
+  proof -
+    have "{v2, v3} \<in> M"
+      using if1_props(4)[OF ass] .
+    then have "{v2, v3} \<in> G"
+      using matching(2) by blast
+    then show "{v3, v2} \<in> G"
+      by (simp add: insert_commute)
+  qed
   have "{v2, v1} \<in> G"
     by (metis Diff_iff ass if1_def insert_commute)
   then have "v1 \<in> Vs G"
