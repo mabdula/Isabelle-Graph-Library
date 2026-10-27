@@ -343,9 +343,21 @@ next
   next
     case (5 p' v3)
     then show ?case
-     (*TODO: Lukas*)
-      using walk_transitive[OF \<open>walk_betw G u [u, v3] v3\<close>] walk_endpoints(2)
-      by (metis list.sel(3))
+    proof -
+      note u_v3 = 5(4)
+      note v3_walk_full = 5(5)
+      note p_eq = 5(6)
+      have zs_eq: "zs = v3 # p'"
+        using Cons.prems(1) p_eq by (auto dest: walk_between_nonempty_pathD(3))
+      have v3_walk: "walk_betw (insert {w, x} G) v3 zs v"
+        using v3_walk_full zs_eq by simp
+      have v3_Vs: "v3 \<in> Vs G"
+        using walk_endpoints(2)[OF u_v3] .
+      note IH_inst = Cons.IH[OF v3_walk \<open>w \<in> Vs G\<close> \<open>x \<notin> Vs G\<close>]
+      show ?case
+        using IH_inst walk_transitive[OF u_v3] v3_Vs \<open>x \<notin> Vs G\<close>
+        by blast
+    qed
   qed (auto dest: walk_reflexive)+
 qed
 
