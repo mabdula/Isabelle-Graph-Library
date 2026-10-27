@@ -1488,9 +1488,24 @@ proof(rule card_inj[where f = "\<lambda> C. (let x = (SOME x. x \<in> C \<and> x
   show ?case
   proof(rule inj_onI, goal_cases)
     case (1 x y)
+    from "1"(1) obtain x0 where x0: "x0 \<in> X" "x = connected_component A x0"
+      by auto
+    from "1"(2) obtain y0 where y0: "y0 \<in> X" "y = connected_component A y0"
+      by auto
+    define xr where "xr = (SOME z. z \<in> x \<and> z \<in> X)"
+    define yr where "yr = (SOME z. z \<in> y \<and> z \<in> X)"
+    have Ax: "connected_component A xr = x"
+      unfolding xr_def x0(2)
+      using same_connected_component_SOME[OF x0(1)] .
+    have Ay: "connected_component A yr = y"
+      unfolding yr_def y0(2)
+      using same_connected_component_SOME[OF y0(1)] .
+    have B_eq: "connected_component B xr = connected_component B yr"
+      using "1"(3) by (simp add: xr_def yr_def Let_def)
+    have A_eq: "connected_component A xr = connected_component A yr"
+      using same_component_set_mono[OF "2"(1) B_eq] .
     thus ?case
-      using sym[OF same_connected_component_SOME[of _ X A]]
-      by (smt (verit, best) "2"(1) Eps_cong image_iff same_component_set_mono)
+      using Ax Ay by simp
   qed 
 qed simp
 
