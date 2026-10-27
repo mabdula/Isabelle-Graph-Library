@@ -390,8 +390,17 @@ proof (rule ccontr)
     using union_card_is_sum[of "?QX" ?f] `\<forall>C \<in> ?QX. finite ((Vs (?comp_out C)) \<inter> X)`
       `finite ?QX`  by presburger
   then  have "sum (\<lambda> C. card ((Vs (?comp_out C)) \<inter> X)) ?QX \<le> card X" 
-    by (metis (no_types, lifting) \<open>(\<Union>C \<in>?QX. ((Vs (?comp_out C)) \<inter> X)) \<subseteq> X\<close> 
-        \<open>X \<subseteq> Vs M\<close> \<open>finite (Vs M)\<close> card_mono finite_subset)
+  proof -
+    have fin_X: "finite X"
+      using finite_subset[OF \<open>X \<subseteq> Vs M\<close> \<open>finite (Vs M)\<close>] .
+    have le_card: "card (\<Union>C \<in>?QX. ((Vs (?comp_out C)) \<inter> X)) \<le> card X"
+      using card_mono[OF fin_X \<open>(\<Union>C \<in>?QX. ((Vs (?comp_out C)) \<inter> X)) \<subseteq> X\<close>] .
+    show ?thesis
+      using le_card
+        \<open>card (\<Union>C \<in>?QX. ((Vs (?comp_out C)) \<inter> X)) = 
+    sum (\<lambda> C. card (Vs (?comp_out C) \<inter> X)) ?QX\<close>
+      by simp
+  qed
   then have "sum (\<lambda> C. card (?comp_out C)) ?QX \<le> card X" 
     using \<open>\<forall> C \<in> ?QX. card ((Vs (?comp_out C)) \<inter> X) = card (?comp_out C)\<close> by auto
   then have "\<forall> C \<in> ?QX. finite (?comp_out C)" 
