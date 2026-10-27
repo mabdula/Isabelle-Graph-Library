@@ -750,9 +750,23 @@ proof(rule ccontr)
       finally show "card (odd_comps_in_diff G (X \<union> {x})) = card X + 1" .
     qed
     then have "card (odd_comps_in_diff G (X\<union>{x})) = card (X\<union>{x})" 
-      by (metis One_nat_def Un_insert_right \<open>card (odd_comps_in_diff G X) = card X\<close> 
-          add.right_neutral add_Suc_right assms(1) assms(3) card.insert finite_subset 
-          insert_absorb sup_bot_right)
+    proof -
+      have "C \<inter> X = {}"
+        using assms(6) odd_comps_in_diff_not_in_X by blast
+      then have "x \<notin> X"
+        using assms(7) by blast
+      have "finite (Vs G)"
+        by (simp add: assms(1))
+      then have "finite X"
+        using assms(3) finite_subset by blast
+      then have "card (X \<union> {x}) = card X + card {x}"
+        using card_Un_disjoint[of X "{x}"] \<open>x \<notin> X\<close> by auto
+      then have "card (X \<union> {x}) = card X + 1"
+        by simp
+      with \<open>card (odd_comps_in_diff G (X\<union>{x})) = card X + 1\<close>
+      show "card (odd_comps_in_diff G (X\<union>{x})) = card (X\<union>{x})"
+        by simp
+    qed
     then have "barrier G (X\<union>{x})"
       by (simp add: barrier_def)
     have "X \<subseteq> (X\<union>{x})" 
