@@ -2605,7 +2605,16 @@ proof -
   let ?c = "c"
   let ?P' = "polyhedron ?fullA ?fullb"
   have 2:"?fullA \<in> carrier_mat (nr+2*n) n" 
-    by (metis A carrier_append_rows mult_2 one_carrier_mat uminus_carrier_iff_mat)
+    proof -
+      have m1: "1\<^sub>m n \<in> carrier_mat n n" 
+        by (rule one_carrier_mat)
+      have m2: "- 1\<^sub>m n \<in> carrier_mat n n" 
+        by (simp add: uminus_carrier_iff_mat one_carrier_mat)
+      have m12: "(1\<^sub>m n) @\<^sub>r (- 1\<^sub>m n) \<in> carrier_mat (2 * n) n" 
+        using carrier_append_rows[OF m1 m2] by (simp add: mult_2)
+      show "A @\<^sub>r (1\<^sub>m n) @\<^sub>r (- 1\<^sub>m n) \<in> carrier_mat (nr + 2 * n) n" 
+        using carrier_append_rows[OF A m12] by simp
+    qed
   have 3:"?fullb \<in> carrier_vec (nr+2*n)" 
     by (simp add: mult_2)
   have "?y' \<in> ?P'" 
