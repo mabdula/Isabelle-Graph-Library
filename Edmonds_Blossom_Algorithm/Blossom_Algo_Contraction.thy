@@ -743,10 +743,62 @@ next
       by (auto simp add: Let_def)
   next
     case (Cons a1' l1')
-    then show ?thesis
-      using cons1
-      apply (auto simp add: Let_def split: if_splits prod.splits option.splits)
-      by metis+
+    obtain l1_pfx' l2_pfx' where rec: "longest_disj_pfx l1 l2 = (l1_pfx', l2_pfx')"
+      by (cases "longest_disj_pfx l1 l2") auto
+    have unfold: "longest_disj_pfx l1 (a2 # l2) =
+        (if last (find_pfx ((=) a2) (a1' # l1')) = a2
+         then (Some (find_pfx ((=) a2) (a1' # l1')), Some [a2])
+         else (case l2_pfx' of Some pfx2 \<Rightarrow> (l1_pfx', Some (a2 # pfx2)) | None \<Rightarrow> (l1_pfx', l2_pfx')))"
+      using Cons rec
+      by (simp add: Let_def)
+    show ?thesis
+    proof(cases "last (find_pfx ((=) a2) (a1' # l1')) = a2")
+      case True
+      then have "longest_disj_pfx l1 (a2 # l2) = (Some (find_pfx ((=) a2) (a1' # l1')), Some [a2])"
+        using unfold
+        by simp
+      then have "pfx1 = find_pfx ((=) a2) (a1' # l1')"
+        using cons1.prems
+        by simp
+      then show ?thesis
+        by simp
+    next
+      case False
+      then have unfold': "longest_disj_pfx l1 (a2 # l2) =
+          (case l2_pfx' of Some pfx2 \<Rightarrow> (l1_pfx', Some (a2 # pfx2)) | None \<Rightarrow> (l1_pfx', l2_pfx'))"
+        using unfold
+        by simp
+      show ?thesis
+      proof(cases l2_pfx')
+        case (Some pfx2)
+        then have "longest_disj_pfx l1 (a2 # l2) = (l1_pfx', Some (a2 # pfx2))"
+          using unfold'
+          by simp
+        then have "Some pfx1 = l1_pfx'"
+          using cons1.prems
+          by simp
+        then have "(Some pfx1, Some pfx2) = longest_disj_pfx l1 l2"
+          using rec Some
+          by simp
+        then show ?thesis
+          using cons1.IH
+          by blast
+      next
+        case None
+        then have "longest_disj_pfx l1 (a2 # l2) = (l1_pfx', None)"
+          using unfold'
+          by simp
+        then have "Some pfx1 = l1_pfx'"
+          using cons1.prems
+          by simp
+        then have "(Some pfx1, None) = longest_disj_pfx l1 l2"
+          using rec None
+          by simp
+        then show ?thesis
+          using cons1.IH
+          by blast
+      qed
+    qed
   qed
 qed
 
