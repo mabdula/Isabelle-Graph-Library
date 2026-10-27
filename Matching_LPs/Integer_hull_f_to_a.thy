@@ -2887,7 +2887,15 @@ qed
     by blast
   have 10:"dim_vec b' = Min {dim_vec d| C d I.   F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d} \<and>
               (C, d) = sub_system ?fullA ?fullb I}" 
-    by (smt (verit) A'_b'(3) Collect_cong)
+  proof -
+    have "{dim_vec d | C d I. (C, d) = sub_system ?fullA ?fullb I \<and>
+          F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d}}
+      = {dim_vec d | C d I. F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d} \<and>
+          (C, d) = sub_system ?fullA ?fullb I}"
+      by blast
+    then show ?thesis
+      using A'_b'(3) by simp
+  qed
   have "det A' \<noteq> 0" 
     using bounded_min_faces_det_non_zero[OF 2 3 1 9] F_def A'_b' 10 
     by fast
