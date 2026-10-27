@@ -629,7 +629,16 @@ proof(rule ccontr)
  odd_comps_in_diff G X - {C} \<union> odd_comps_in_diff (component_edges (graph_diff G X) C) {x}"
     using add_subset_change_odd_components[of G X C "{x}"] assms by auto
   have "graph_invar (component_edges (graph_diff G X) C)" 
-    by (smt (verit) Connected_Components.component_edges_subset assms(1) graph_diff_subset graph_invar_subset)
+  proof -
+    have "component_edges (graph_diff G X) C \<subseteq> graph_diff G X"
+      using Connected_Components.component_edges_subset by blast
+    moreover have "graph_diff G X \<subseteq> G"
+      using graph_diff_subset by blast
+    ultimately have "component_edges (graph_diff G X) C \<subseteq> G"
+      by (rule subset_trans)
+    then show ?thesis
+      using assms(1) graph_invar_subset by meson
+  qed
   have "finite ?docX" 
     using diff_components_finite[of "(component_edges (graph_diff G X) C)"]
     using \<open>graph_invar (component_edges (graph_diff G X) C)\<close> by blast
