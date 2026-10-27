@@ -1427,7 +1427,45 @@ proof-
     using  connected_components_member_eq[OF v_prop(2)] 
      in_own_connected_component[of v B] same_component_set_mono[OF assms(1)]
       some_value  v_prop(3) f_def  
-    by (metis (no_types, lifting) imageE)
+  proof -
+    assume hx: "connected_component B x \<in> f ` (comps X A)"
+    assume hv: "connected_component B v \<in> f ` (comps X A)"
+    from hx obtain C where C_mem: "C \<in> comps X A" and C_f: "connected_component B x = f C"
+      by (auto elim: imageE)
+    from hv obtain C' where C'_mem: "C' \<in> comps X A" and C'_f: "connected_component B v = f C'"
+      by (auto elim: imageE)
+    define w0 where w0_def: "w0 = (SOME w. C = connected_component A w \<and> w \<in> X)"
+    define w1 where w1_def: "w1 = (SOME w. C' = connected_component A w \<and> w \<in> X)"
+    have C_w0: "C = connected_component A w0"
+      unfolding w0_def using some_value[OF C_mem] by auto
+    have fC_w0: "f C = connected_component B w0"
+      unfolding f_def w0_def by (simp add: Let_def)
+    have C'_w1: "C' = connected_component A w1"
+      unfolding w1_def using some_value[OF C'_mem] by auto
+    have fC'_w1: "f C' = connected_component B w1"
+      unfolding f_def w1_def by (simp add: Let_def)
+    have Bx_eq: "connected_component B w0 = connected_component B x"
+      using C_f fC_w0 by simp
+    have Bv_eq: "connected_component B w1 = connected_component B v"
+      using C'_f fC'_w1 by simp
+    have Ax_eq: "connected_component A w0 = connected_component A x"
+      using same_component_set_mono[OF assms(1) Bx_eq] .
+    have Av_eq: "connected_component A w1 = connected_component A v"
+      using same_component_set_mono[OF assms(1) Bv_eq] .
+    have vx_eq: "connected_component A v = connected_component A x"
+      using connected_components_member_eq[OF v_prop(2)] .
+    have C_is: "C = connected_component A x"
+      using C_w0 Ax_eq by simp
+    have C'_is: "C' = connected_component A x"
+      using C'_w1 Av_eq vx_eq by simp
+    have "C = C'"
+      using C_is C'_is by simp
+    hence "connected_component B x = connected_component B v"
+      using C_f C'_f by simp
+    hence "v \<in> connected_component B x"
+      using in_own_connected_component[of v B] by simp
+    with v_prop(3) show False by blast
+  qed
   hence not_all_b_comp_chosen:"f ` (comps X A) \<subset> (comps X B)"
     using v_prop(1) assms(3) img_subs by(auto simp add: comps_def)
   have "card (comps X A) = card ( f ` (comps X A))"
