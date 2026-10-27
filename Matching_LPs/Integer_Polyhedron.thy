@@ -12,7 +12,10 @@ lemma all_elem_fulfill_empty:
   shows "A' *\<^sub>v x = b'" 
 proof
   have "A' = submatrix A {} UNIV" 
-    by (metis assms fst_conv sub_system_fst)
+  proof -
+    have "fst (A', b') = fst (sub_system A b {})" using assms by simp
+    then show ?thesis using sub_system_fst by simp
+  qed
   then have "dim_row A' = 0" 
     by (simp add: dim_submatrix(1))
   have "b' = vec_of_list (nths (list_of_vec b) {})" 
