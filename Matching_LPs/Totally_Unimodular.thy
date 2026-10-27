@@ -1290,8 +1290,22 @@ proof
   have asmk': "k < dim_col (mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j)" 
     using 14 asmk by presburger
   have k_less_card:"k < card J \<or> infinite J" 
-    by (smt (verit, ccfv_threshold) Diff_iff asmk basic_trans_rules(21) card_mono 
-        dim_submatrix(2) mem_Collect_eq not_less subsetI)
+  proof (cases "infinite J")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    then have fin: "finite J" by simp
+    have subset: "{i. i < dim_col A \<and> i \<in> (J - {pick J j})} \<subseteq> J"
+      by blast
+    have "k < dim_col (submatrix A I (J - {pick J j}))"
+      using asmk .
+    then have "k < card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
+      by (simp add: dim_submatrix(2))
+    also have "\<dots> \<le> card J"
+      using fin subset card_mono by blast
+    finally show ?thesis by simp
+  qed
   have 15: "(B @\<^sub>r mat_of_rows (dim_col B) [b]) \<in> carrier_mat (dim_row B + 1) (dim_col B)" 
     by (metis Num.numeral_nat(7) add_0 carrier_append_rows carrier_matI list.size(3) 
         list.size(4) mat_of_rows_carrier(1))
