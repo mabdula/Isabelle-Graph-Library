@@ -19,7 +19,12 @@ proof
   then have "dim_row A' = 0" 
     by (simp add: dim_submatrix(1))
   have "b' = vec_of_list (nths (list_of_vec b) {})" 
-    by (metis assms snd_conv sub_system_snd)
+  proof -
+    have "b' = snd (A', b')" by (rule snd_conv[symmetric])
+    also have "... = snd (sub_system A b {})" using assms by simp
+    also have "... = vec_of_list (nths (list_of_vec b) {})" by (rule sub_system_snd)
+    finally show "b' = vec_of_list (nths (list_of_vec b) {})" .
+  qed
   then have "dim_vec b' = 0" 
     by fastforce
   show "dim_vec (A' *\<^sub>v x) = dim_vec b'" 
