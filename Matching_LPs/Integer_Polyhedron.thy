@@ -571,7 +571,19 @@ qed
   have 1:"\<forall> i. (i \<ge> nr \<and> i < dim_row C) \<longrightarrow> (row C i) = row  (A' @\<^sub>r - A') (i - nr)" 
     using C_d(1) append_rows_index_same'[of A nr "A' @\<^sub>r - A'" "dim_row (A' @\<^sub>r - A')"] 
       `A' @\<^sub>r - A' \<in> carrier_mat (dim_row (A' @\<^sub>r - A')) n` A
-    by (metis \<open>dim_row C = nr + dim_row (A' @\<^sub>r - A')\<close>)
+  proof (intro allI impI)
+    fix i
+    assume "i \<ge> nr \<and> i < dim_row C"
+    then have i_ge: "i \<ge> nr" and i_lt: "i < dim_row C" by auto
+    then have "i < nr + dim_row (A' @\<^sub>r - A')"
+      using \<open>dim_row C = nr + dim_row (A' @\<^sub>r - A')\<close> by simp
+    then have "row (A @\<^sub>r (A' @\<^sub>r - A')) i = row (A' @\<^sub>r - A') (i - nr)"
+      using append_rows_index_same'[of A nr "A' @\<^sub>r - A'" "dim_row (A' @\<^sub>r - A')" i]
+        \<open>A' @\<^sub>r - A' \<in> carrier_mat (dim_row (A' @\<^sub>r - A')) n\<close> A i_ge
+      by blast
+    then show "row C i = row (A' @\<^sub>r - A') (i - nr)"
+      using C_d(1) by simp
+  qed
   have "\<forall> i. i > nr \<and> i < dim_vec d \<longrightarrow> d $ i =  (b' @\<^sub>v (-b')) $ (i - nr)" 
     unfolding C_d(2) 
     using b by auto
