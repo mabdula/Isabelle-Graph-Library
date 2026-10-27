@@ -3105,7 +3105,28 @@ qed
           smult_closed)
     have "A *\<^sub>v v + A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z') \<le> b + 0\<^sub>v nr"
       using `A *\<^sub>v v \<le> b` `A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z') \<le> 0\<^sub>v nr` using vec_add_mono 
-      by (metis b carrier_vecD index_zero_vec(2))
+proof (unfold less_eq_vec_def, intro conjI allI impI)
+      show "dim_vec (A *\<^sub>v v + A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z')) = dim_vec (b + 0\<^sub>v nr)"
+        using \<open>A *\<^sub>v v \<le> b\<close> \<open>A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z') \<le> 0\<^sub>v nr\<close>
+        unfolding less_eq_vec_def by simp
+    next
+      fix i
+      assume i_lt: "i < dim_vec (b + 0\<^sub>v nr)"
+      have dvb: "dim_vec (A *\<^sub>v v) = dim_vec b"
+        using \<open>A *\<^sub>v v \<le> b\<close> unfolding less_eq_vec_def by blast
+      have i_b: "i < dim_vec b" using i_lt b[THEN carrier_vecD] by simp
+      have i_z: "i < dim_vec (0\<^sub>v nr)" using i_b b carrier_vecD index_zero_vec by fastforce
+      have le1: "(A *\<^sub>v v) $ i \<le> b $ i"
+        using \<open>A *\<^sub>v v \<le> b\<close> i_b unfolding less_eq_vec_def by blast
+      have le2: "(A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z')) $ i \<le> (0\<^sub>v nr) $ i"
+        using \<open>A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z') \<le> 0\<^sub>v nr\<close> i_z unfolding less_eq_vec_def by blast
+      have lhs_eq: "(A *\<^sub>v v + A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z')) $ i = (A *\<^sub>v v) $ i + (A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z')) $ i"
+        using dvb i_b by simp
+      have rhs_eq: "(b + 0\<^sub>v nr) $ i = b $ i + (0\<^sub>v nr) $ i"
+        using i_z by simp
+      show "(A *\<^sub>v v + A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z')) $ i \<le> (b + 0\<^sub>v nr) $ i"
+        unfolding lhs_eq rhs_eq using le1 le2 by (rule add_mono)
+    qed
     then have "A *\<^sub>v (v + of_int m \<cdot>\<^sub>v ?z') \<le> b" 
       by (metis 10 b right_zero_vec)
     then show "v + of_int (int m) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z) \<in> P"
