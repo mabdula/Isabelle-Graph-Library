@@ -713,8 +713,17 @@ qed
         using subsystem_fulfills_P[of C d C' d' J "\<lambda> p q. p \<bullet> x = q"] C_d
         using C'_d' by blast
       then have "\<forall>i \<in> J \<inter> {0..<dim_row A}.  (row C i) \<bullet> x = (d $ i)" 
-        by (metis IntD1 IntD2 IntI \<open>dim_row A \<le> dim_row C\<close> atLeastLessThan_iff inf.absorb_iff2
-            inf.strict_boundedE)
+      proof -
+        show ?thesis
+        proof
+          fix i
+          assume "i \<in> J \<inter> {0..<dim_row A}"
+          then have iC: "i \<in> J \<inter> {0..<dim_row C}"
+            using \<open>dim_row A \<le> dim_row C\<close> by auto
+          then show "row C i \<bullet> x = d $ i"
+            using \<open>\<forall>i\<in>J \<inter> {0..<dim_row C}.  (row C i) \<bullet> x = (d $ i)\<close> by blast
+        qed
+      qed
       have "\<forall>i \<in> J \<inter> {0..<dim_row A}.  (row A i) \<bullet> x = (b $ i)"
         using `\<forall> i < dim_row A. (row C i) = row A i \<and> d $ i = b $ i` 
         by (metis IntD2 \<open>\<forall>i\<in>J \<inter> {0..<dim_row A}. row C i \<bullet> x = d $ i\<close> atLeastLessThan_iff)
