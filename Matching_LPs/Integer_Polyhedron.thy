@@ -431,7 +431,11 @@ lemma append_rows_index_same':
   assumes A: "A \<in> carrier_mat nr1 n"
   assumes "B \<in> carrier_mat nr2 n" 
   shows "\<lbrakk> i \<ge> nr1; i < nr1 + nr2 \<rbrakk> \<Longrightarrow> (row (A @\<^sub>r B)i) = row B (i - nr1)" 
-  by (metis A append_rows_nth(2) assms(2))
+proof -
+  assume i1: "i \<ge> nr1" and i2: "i < nr1 + nr2"
+  show "row (A @\<^sub>r B) i = row B (i - nr1)"
+    using A assms(2) i1 i2 append_rows_nth(2) by blast
+qed
 
 lemma face_trans:
   fixes A :: "'a :: trivial_conjugatable_linordered_field mat"
