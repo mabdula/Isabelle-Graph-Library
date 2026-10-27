@@ -415,7 +415,16 @@ lemma append_rows_index_same:
   assumes A: "A \<in> carrier_mat nr1 n"
   assumes "B \<in> carrier_mat nr2 n" 
   shows "\<forall> i < dim_row A. (row (A @\<^sub>r B)i) = row A i" 
-  by (metis A append_rows_nth(1) assms(2) carrier_matD(1))
+proof (intro allI impI)
+  fix i
+  assume i_lt: "i < dim_row A"
+  have dim_A: "dim_row A = nr1"
+    using A by (rule carrier_matD(1))
+  from i_lt dim_A have i_lt_nr1: "i < nr1"
+    by simp
+  show "row (A @\<^sub>r B) i = row A i"
+    using append_rows_nth(1)[OF A assms(2) i_lt_nr1] by simp
+qed
 
 lemma append_rows_index_same':
   fixes A :: "'a :: trivial_conjugatable_linordered_field mat"
