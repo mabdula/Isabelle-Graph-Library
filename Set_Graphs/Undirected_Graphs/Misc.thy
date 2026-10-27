@@ -255,8 +255,12 @@ lemma element_of_list_cases:
  shows P
 proof-
   obtain p1 p2 where "p = p1@[u]@p2" 
-    by (metis append_Cons append_Nil assms(1) in_set_conv_decomp_first)
-  thus P
+  proof -
+    from assms(1) obtain ys zs where "p = ys @ u # zs"
+      by (auto dest: split_list)
+    then show thesis
+      by (simp add: that)
+  qed  thus P
     by(cases p1 rule: rev_cases, all \<open>cases p2\<close>)
       (auto intro: assms(2-))
 qed
