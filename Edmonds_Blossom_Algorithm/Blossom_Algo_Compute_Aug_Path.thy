@@ -154,8 +154,25 @@ lemma compute_alt_path_res_neq_lasts:
   assumes compute_alt_path_res: "Some (p1, p2) = compute_alt_path" and
     lasts_neq: "last p1 \<noteq> last p2"
   shows "set p1 \<inter> set p2 = {}"
-  using compute_alt_path_res from_tree lasts_neq
-  by (metis Int_emptyI last_appendR list.simps(3) split_list)
+proof (rule Int_emptyI)
+  fix x
+  assume x1: "x \<in> set p1" and x2: "x \<in> set p2"
+  obtain pref1 post1 where p1_split: "p1 = pref1 @ x # post1"
+    using split_list[OF x1] by blast
+  obtain pref2 post2 where p2_split: "p2 = pref2 @ x # post2"
+    using split_list[OF x2] by blast
+  have post_eq: "post1 = post2"
+    using from_tree[OF compute_alt_path_res[symmetric] conjI[OF p1_split p2_split]] .
+  have "last p1 = last (x # post1)"
+    using p1_split by (simp add: last_appendR)
+  also have "\<dots> = last (x # post2)"
+    using post_eq by simp
+  also have "\<dots> = last p2"
+    using p2_split by (simp add: last_appendR)
+  finally have "last p1 = last p2" .
+  then show False
+    using lasts_neq by simp
+qed
 
 end
 
