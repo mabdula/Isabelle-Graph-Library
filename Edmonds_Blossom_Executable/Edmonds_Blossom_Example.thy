@@ -3,7 +3,7 @@ theory Edmonds_Blossom_Example
           Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
-provenance ai
+provenance ai_human
 
 section \<open>The executable blossom algorithm on red-black trees\<close>
 

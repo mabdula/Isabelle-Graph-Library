@@ -2,7 +2,7 @@ theory Graph_Matching_Specs
   imports Directed_Set_Graphs.Pair_Graph_Specs Basic_Matching.Matching_Augmentation_Executable
 begin
 
-provenance ai
+provenance ai_human
 
 section \<open>Graphs and matchings for the executable blossom algorithm\<close>
 
