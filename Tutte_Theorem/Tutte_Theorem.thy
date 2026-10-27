@@ -1089,7 +1089,16 @@ proof
         using Collect_cong by auto
     qed
     then show "z \<in> Vs ?Z2 \<inter> C" 
-      by (metis (no_types, lifting) IntI \<open>z \<in> C\<close> asmz vs_member_intro)
+    proof -
+      have zZ2: "?C' \<in> ?Z2" by fact
+      show "z \<in> Vs ?Z2 \<inter> C"
+      proof (rule IntI)
+        show "z \<in> Vs ?Z2"
+          using asmz zZ2 by (rule vs_member_intro)
+        show "z \<in> C"
+          by (fact \<open>z \<in> C\<close>)
+      qed
+    qed
   qed
 qed
 
