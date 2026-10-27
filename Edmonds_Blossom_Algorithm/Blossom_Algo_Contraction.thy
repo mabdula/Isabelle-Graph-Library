@@ -1579,9 +1579,29 @@ proof-
   have last_pfxs_neq: "last (butlast pfx2) \<noteq> last (butlast pfx1)"
                       if "length pfx1 \<ge> 2" "length pfx2 \<ge> 2" "set (butlast pfx1) \<inter> set pfx2 = {}"
                       for pfx1 pfx2
-    using that
-    by (metis Suc_1 diff_is_0_eq disjoint_iff in_set_butlastD last_in_set length_butlast list.size(3)
-              not_less_eq_eq)
+  proof (rule notI)
+    assume eq: "last (butlast pfx2) = last (butlast pfx1)"
+    have "0 < length (butlast pfx1)"
+      using that(1) length_butlast[of pfx1] by linarith
+    then have "butlast pfx1 \<noteq> []"
+      by (simp add: length_greater_0_conv del: length_butlast)
+    then have last1_in: "last (butlast pfx1) \<in> set (butlast pfx1)"
+      by (rule last_in_set)
+    have "0 < length (butlast pfx2)"
+      using that(2) length_butlast[of pfx2] by linarith
+    then have "butlast pfx2 \<noteq> []"
+      by (simp add: length_greater_0_conv del: length_butlast)
+    then have "last (butlast pfx2) \<in> set (butlast pfx2)"
+      by (rule last_in_set)
+    then have last2_in: "last (butlast pfx2) \<in> set pfx2"
+      by (rule in_set_butlastD)
+    from eq last1_in have "last (butlast pfx2) \<in> set (butlast pfx1)"
+      by simp
+    with last2_in have "last (butlast pfx2) \<in> set (butlast pfx1) \<inter> set pfx2"
+      by simp
+    with that(3) show False
+      by simp
+  qed
 
   {
     fix p1 pfx1 p2 pfx2::"'a list"
