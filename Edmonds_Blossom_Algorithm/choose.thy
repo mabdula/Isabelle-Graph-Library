@@ -5,8 +5,29 @@ begin
 
 lemma neighbourhood_nempty: 
   "\<lbrakk>dblton_graph G; v \<in> Vs G\<rbrakk> \<Longrightarrow> neighbourhood G v \<noteq> {}"
-  apply(auto simp: dblton_graph_def neighbourhood_def Vs_def)
-  by (metis empty_iff insert_iff insert_commute)
+proof -
+  assume asms: "dblton_graph G" "v \<in> Vs G"
+  obtain e where e_mem: "e \<in> G" and v_in_e: "v \<in> e"
+    using asms(2) by (auto simp: Vs_def)
+  obtain u w where e_eq: "e = {u, w}" and neq: "u \<noteq> w"
+    using asms(1) e_mem unfolding dblton_graph_def by auto
+  from v_in_e e_eq have "v = u \<or> v = w"
+    by auto
+  then show "neighbourhood G v \<noteq> {}"
+  proof
+    assume "v = u"
+    then have "w \<in> neighbourhood G v"
+      unfolding neighbourhood_def using e_mem e_eq neq
+      by (auto simp: insert_commute)
+    then show ?thesis by auto
+  next
+    assume "v = w"
+    then have "u \<in> neighbourhood G v"
+      unfolding neighbourhood_def using e_mem e_eq neq
+      by (auto simp: insert_commute)
+    then show ?thesis by auto
+  qed
+qed
 
 lemma neighbourhood_subset_Vs: "neighbourhood G v \<subseteq> Vs G"
   using edges_are_Vs
