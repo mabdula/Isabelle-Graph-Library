@@ -1718,7 +1718,8 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
                                     connected_component (graph_diff G X) x = C' \<and> odd (card C')"
           by auto
         then have "x \<notin> C" 
-          by (smt (verit) C connected_components_member_eq even_components_def mem_Collect_eq)
+using connected_components_member_eq C unfolding even_components_def
+        by fastforce
         then have "x \<noteq> v" 
           using \<open>v \<in> C\<close> by blast
         then have "\<exists>e \<in> (graph_diff G X). x \<in> e" 
