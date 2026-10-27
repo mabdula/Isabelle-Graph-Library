@@ -810,8 +810,20 @@ qed
       then have "A' *\<^sub>v x \<le> b' \<and> (-A') *\<^sub>v x \<le> - b'"
         using eq_system_is_leq_system `A' *\<^sub>v x = b'` by blast
       then have "(A' @\<^sub>r (-A')) *\<^sub>v x = (b' @\<^sub>v (-b'))"  
-        by (smt (verit) \<open>A' *\<^sub>v x = b'\<close> \<open>dim_vec x = dim_col A'\<close> carrier_matI carrier_vec_dim_vec
-            index_uminus_mat(3) mat_mult_append uminus_mult_mat_vec)
+      proof -
+        have xA': "x \<in> carrier_vec (dim_col A')"
+          using carrier_vec_dim_vec[of x] \<open>dim_vec x = dim_col A'\<close> by simp
+        have A'car: "A' \<in> carrier_mat (dim_row A') (dim_col A')"
+          by (rule carrier_mat_triv)
+        have negA'car: "(-A') \<in> carrier_mat (dim_row A') (dim_col A')"
+          using carrier_mat_triv[of "-A'"] by (simp add: index_uminus_mat)
+        have split: "(A' @\<^sub>r (-A')) *\<^sub>v x = (A' *\<^sub>v x) @\<^sub>v ((-A') *\<^sub>v x)"
+          using mat_mult_append[OF A'car negA'car xA'] by simp
+        have neg: "(-A') *\<^sub>v x = - (A' *\<^sub>v x)"
+          using uminus_mult_mat_vec[of x A'] \<open>dim_vec x = dim_col A'\<close> by simp
+        show "(A' @\<^sub>r (-A')) *\<^sub>v x = (b' @\<^sub>v (-b'))"
+          using split neg \<open>A' *\<^sub>v x = b'\<close> by simp
+      qed
       then have "\<forall>i \<in> {dim_row A..<dim_row C}.  (row C i) \<bullet> x = (d $ i)"
         by (metis A 5 \<open>dim_row C = nr + dim_row (A' @\<^sub>r - A')\<close> add.commute atLeastLessThan_iff 
             carrier_matD(1) index_mult_mat_vec less_diff_conv2)
