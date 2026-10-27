@@ -673,8 +673,31 @@ qed
   then have "\<forall> x \<in> F. A' *\<^sub>v x \<le> b' \<and> (-A') *\<^sub>v x \<le> - b'" 
     using `\<forall> x \<in> F. A' *\<^sub>v x = b'` eq_system_is_leq_system by blast 
   then have "\<forall> x \<in> F. (A' @\<^sub>r (-A')) *\<^sub>v x = (b' @\<^sub>v (-b'))" using append_rows_le 
-    by (smt (verit) \<open>\<forall>x\<in>F. A' *\<^sub>v x = b'\<close> \<open>\<forall>x\<in>F. dim_vec x = dim_col A'\<close> carrier_matI 
-        carrier_vec_dim_vec index_uminus_mat(3) mat_mult_append uminus_mult_mat_vec)
+proof (intro ballI)
+  fix x
+  assume "x \<in> F"
+  then have eq: "A' *\<^sub>v x = b'"
+    using \<open>\<forall>x\<in>F. A' *\<^sub>v x = b'\<close> by blast
+  from \<open>x \<in> F\<close> have dimx: "dim_vec x = dim_col A'"
+    using \<open>\<forall>x\<in>F. dim_vec x = dim_col A'\<close> by blast
+  have xcarr: "x \<in> carrier_vec (dim_col A')"
+    unfolding dimx[symmetric] by (rule carrier_vec_dim_vec)
+  have A'carr: "A' \<in> carrier_mat (dim_row A') (dim_col A')"
+    by (rule carrier_mat_triv)
+  have negA'carr: "(-A') \<in> carrier_mat (dim_row A') (dim_col A')"
+  proof -
+    have "dim_row (-A') = dim_row A'" "dim_col (-A') = dim_col A'"
+      by simp_all
+    then show ?thesis using carrier_mat_triv[of "-A'"] by simp
+  qed
+  have negeq: "(-A') *\<^sub>v x = - (A' *\<^sub>v x)"
+    using A'carr xcarr by (simp add: uminus_mult_mat_vec)
+  have "(A' @\<^sub>r (-A')) *\<^sub>v x = (A' *\<^sub>v x) @\<^sub>v ((-A') *\<^sub>v x)"
+    using A'carr negA'carr xcarr by (rule mat_mult_append)
+  also have "\<dots> = b' @\<^sub>v (- b')"
+    using eq negeq by simp
+  finally show "(A' @\<^sub>r (-A')) *\<^sub>v x = (b' @\<^sub>v (-b'))" .
+qed
   have "dim_row C = dim_vec d" 
     using C_d(1) C_d(2) C_d(4) by blast
   have "dim_row C' = dim_vec d'" using C'_d' 
