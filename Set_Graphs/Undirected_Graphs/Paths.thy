@@ -1104,8 +1104,10 @@ lemma edges_of_path_append_subset_2:
   "set (edges_of_path p) \<subseteq> set (edges_of_path (p @ p'))"
 proof(cases p)
   case (Cons a list)
+  have "set (edges_of_path (rev p)) \<subseteq> set (edges_of_path (rev p' @ rev p))"
+    by (rule edges_of_path_append_subset)
   then show ?thesis 
-   by(metis edges_of_path_append_subset edges_of_path_rev rev_append set_rev)
+    by (simp del: rev_append add: rev_append[symmetric] edges_of_path_rev[symmetric] set_rev)
 qed auto
 
 lemma path_edges_subset:
