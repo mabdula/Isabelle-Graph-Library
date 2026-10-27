@@ -1633,7 +1633,16 @@ proof (intro invar_props_intros, goal_cases)
       by (simp add: \<open>p_x_v \<noteq> []\<close> edges_of_vwalk_append_3)
     with awalk_vwalk_id \<open>hd p_x_v = x\<close>
       have "awalk_verts x ((edges_of_vwalk p_x_v) @ [(?v, x)]) = p_x_v @ [x]"
-      by (metis \<open>p_x_v \<noteq> []\<close> append_is_Nil_conv hd_append2)
+      proof -
+        have "hd (p_x_v @ [x]) = hd p_x_v"
+          using \<open>p_x_v \<noteq> []\<close> by (simp add: hd_append2)
+        also have "\<dots> = x"
+          using \<open>hd p_x_v = x\<close> by simp
+        finally have "hd (p_x_v @ [x]) = x" .
+        then show ?thesis
+          using \<open>edges_of_vwalk p_x_v @ [(?v, x)] = edges_of_vwalk (p_x_v @ [x])\<close>
+          by (simp add: awalk_vwalk_id)
+      qed
     with \<open>hd p_x_v = x\<close>
       have "tl (awalk_verts x ((edges_of_vwalk p_x_v) @ [(?v, x)])) = tl p_x_v @ [x]"
       using \<open>p_x_v \<noteq> []\<close> by fastforce
