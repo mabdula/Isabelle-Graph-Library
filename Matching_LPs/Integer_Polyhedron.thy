@@ -1001,7 +1001,7 @@ proof safe
   fix F
   assume "face P F" 
   then obtain F' where "F' \<subseteq> F \<and> min_face P F'"
-    using face_contains_min_face assms by metis
+    using face_contains_min_face[OF A b \<open>face P F\<close>[unfolded P_def], folded P_def] by blast
   then show "\<exists> x \<in> F. x \<in> \<int>\<^sub>v" 
     by (meson assms(4) subset_iff)
 qed
