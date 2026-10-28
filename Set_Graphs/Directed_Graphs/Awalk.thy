@@ -801,7 +801,15 @@ proof (cases "(v, w) = last p")
 
   from \<open>fst (hd p) = u\<close> \<open>u = w\<close> \<open>snd (hd p) \<noteq> v\<close>
     show ?thesis
-    by (metis \<open>(v, w) \<in> set p\<close> list.set_cases list.set_sel(1) list.simps(3) prod.collapse)
+    proof -
+    from \<open>(v, w) \<in> set p\<close> have "p \<noteq> []" by auto
+    then have hd_in: "hd p \<in> set p" using hd_in_set by blast
+    obtain a b where hd_eq: "hd p = (a, b)" by (cases "hd p") auto
+    with \<open>fst (hd p) = u\<close> have "a = u" by simp
+    with hd_eq hd_in have "(u, b) \<in> set p" by simp
+    moreover from hd_eq \<open>snd (hd p) \<noteq> v\<close> have "b \<noteq> v" by simp
+    ultimately show ?thesis using \<open>u = w\<close> by blast
+  qed
 next
   case False
   assume "cycle' E p" "v \<noteq> w" "(v, w) \<in> set p"
