@@ -1600,8 +1600,34 @@ proof-
 
       from card_greater have card_insert_greater: 
         "card (insert y (B1 - {x})) > card B2"
-        by (metis DiffD1 DiffD2 bot_nat_0.extremum_strict card.infinite card.remove
-            card_insert_disjoint ex_x ex_y finite_Diff)
+      proof -
+        have "B1 \<subseteq> E" using ex_B1_B2 assms(2) by blast
+        with assms(1) have "finite B1" using finite_subset by blast
+
+        from ex_x have "x \<in> B1" by blast
+        from ex_y have "y \<notin> B1" by blast
+        then have "y \<notin> B1 - {x}" by blast
+
+        from \<open>finite B1\<close> have "finite (B1 - {x})" by blast
+
+        from \<open>x \<in> B1\<close> have card_diff: "card (B1 - {x}) = card B1 - 1"
+          by (rule card_Diff_singleton)
+
+        from \<open>finite (B1 - {x})\<close> \<open>y \<notin> B1 - {x}\<close>
+        have "card (insert y (B1 - {x})) = card (B1 - {x}) + 1"
+          by (simp add: card_insert_disjoint)
+        also have "... = card B1 - 1 + 1"
+          using card_diff by simp
+        also have "... = card B1"
+        proof -
+          have "B1 \<noteq> {}" using \<open>x \<in> B1\<close> by blast
+          with \<open>finite B1\<close> have "0 < card B1" by (simp add: card_gt_0_iff)
+          then show "card B1 - 1 + 1 = card B1" by simp
+        qed
+        finally have "card (insert y (B1 - {x})) = card B1" .
+
+        with card_greater show "card (insert y (B1 - {x})) > card B2" by simp
+      qed
 
       from ex_y have card_inter_greater: "card ((insert y (B1 - {x})) \<inter> B2) > card (B1 \<inter> B2)"
         by (metis (no_types, lifting) DiffD1 DiffD2 Int_insert_left_if0 Int_insert_left_if1 
