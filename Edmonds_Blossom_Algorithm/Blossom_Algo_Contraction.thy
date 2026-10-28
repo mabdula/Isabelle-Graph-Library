@@ -2032,9 +2032,21 @@ lemma construct_aug_path:
   shows "matching_augmenting_path M ((rev p1) @ p2)"
 proof-
   have "length p1 \<ge> 2"
-    using alt_paths(3,5) nempty
-    apply (auto simp add: Vs_def numeral_2_eq_2 Suc_le_length_iff)
-    by (metis edges_of_path.cases insertI1 last.simps list.sel(1))
+  proof (rule ccontr)
+    assume "\<not> length p1 \<ge> 2"
+    then have nz: "length p1 \<noteq> 0"
+      using nempty(1) by (cases p1) simp_all
+    then have len1: "length p1 = 1"
+      using \<open>\<not> length p1 \<ge> 2\<close> by linarith
+    then have p1_eq: "p1 = [hd p1]"
+      by (cases p1) auto
+    have hd_eq_last: "hd p1 = last p1"
+      by (subst p1_eq) simp
+    have "hd p1 \<in> Vs M"
+      using alt_paths(5) unfolding Vs_def by blast
+    then show False
+      using alt_paths(3) hd_eq_last by simp
+  qed
   then have "last (edges_of_path p1) \<notin> M"
     using alt_paths
     by (meson last_edge_in_last_vert_in)
