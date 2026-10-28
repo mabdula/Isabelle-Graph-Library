@@ -1916,10 +1916,28 @@ proof-
           (to_set (result best_in_greedy_state)))" .
 
       show ?case
-        using \<open>invar_1 best_in_greedy_state\<close> \<open>BestInGreedy_call_2_conds best_in_greedy_state\<close>
-        by (metis BestInGreedy_call_2_conds\<open>matroid.indep_abs indep_fn (insert (hd (carrier_list best_in_greedy_state))
-          (to_set (result best_in_greedy_state)))\<close> inf_sup_aci(5) insert_is_Un invar_1_def local.simps matroid.set.invar_insert
-            matroid.set.set_insert)
+      proof -
+        have result_inv: "set_inv (result best_in_greedy_state)"
+          using \<open>invar_1 best_in_greedy_state\<close> by (simp add: invar_1_def)
+        have not_indep_hd: "\<not> indep' (set_insert (hd (carrier_list best_in_greedy_state))
+            (result best_in_greedy_state))"
+          using \<open>BestInGreedy_call_2_conds best_in_greedy_state\<close> by (auto elim!: call_cond_elims)
+        have to_set_insert: "to_set (set_insert (hd (carrier_list best_in_greedy_state))
+            (result best_in_greedy_state)) =
+            insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state))"
+          using result_inv by (simp add: matroid.set.set_insert)
+        have insert_inv: "set_inv (set_insert (hd (carrier_list best_in_greedy_state))
+            (result best_in_greedy_state))"
+          using result_inv by (simp add: matroid.set.invar_insert)
+        have indep_abs_ins: "matroid.indep_abs indep_fn (to_set (set_insert
+            (hd (carrier_list best_in_greedy_state)) (result best_in_greedy_state)))"
+          using \<open>matroid.indep_abs indep_fn (insert (hd (carrier_list best_in_greedy_state))
+            (to_set (result best_in_greedy_state)))\<close>
+          by (simp add: to_set_insert)
+        have "indep' (set_insert (hd (carrier_list best_in_greedy_state)) (result best_in_greedy_state))"
+          using indep_abs_ins insert_inv by simp
+        with not_indep_hd show ?thesis by simp
+      qed
     qed
 
     with num_iter_not_in_B1 have "num_iter ?c ?order best_in_greedy_state \<ge> length ?l_B1"
