@@ -1986,7 +1986,13 @@ proof (induction n arbitrary: A rule: less_induct)
       proof (cases "n = 1")
         case True
         with \<open>n = card A\<close> assms(4) show ?thesis
-          by (metis \<open>A \<subseteq> X - Y\<close> card_1_singletonE in_mono insertCI)
+        proof -
+          from True \<open>n = card A\<close> have "card A = 1" by simp
+          then obtain a where "A = {a}" by (rule card_1_singletonE)
+          with \<open>A \<subseteq> X - Y\<close> have "a \<in> X - Y" by blast
+          with assms(4) have "r (Y \<union> {a}) = r Y" by blast
+          with \<open>A = {a}\<close> show "r (Y \<union> A) = r Y" by simp
+        qed
       next
         case False
         with Pos have "n \<ge> 2" by auto
