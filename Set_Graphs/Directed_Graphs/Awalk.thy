@@ -507,9 +507,16 @@ lemma edges_of_vwalk_length_geq_2:
 
 lemma awalk_vwalk_id:
   "p \<noteq> [] \<Longrightarrow> hd p = x \<Longrightarrow> awalk_verts x (edges_of_vwalk p) = p"
-  apply (induction p arbitrary: x)
-  apply simp
-  by (smt (verit) Pair_inject awalk_verts.elims edges_of_vwalk.elims list.sel(1) list.sel(3) list.simps(3))
+proof (induction p arbitrary: x rule: edges_of_vwalk.induct)
+  case 1
+  then show ?case by simp
+next
+  case (2 v)
+  then show ?case by simp
+next
+  case (3 v v' vs)
+  show ?case using "3.prems" 3(1)[of v'] by simp
+qed
   
 lemma vwalk_rev:
   "\<forall>(x, y) \<in> E. (y, x) \<in> E \<Longrightarrow> Vwalk.vwalk E p \<Longrightarrow> Vwalk.vwalk E (rev p)"
