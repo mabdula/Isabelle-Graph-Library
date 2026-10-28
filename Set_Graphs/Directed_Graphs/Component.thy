@@ -684,9 +684,14 @@ proof
     interpret ms: max_reachable_set G S using scc
       by (rule max_reachable_set.intro)
 
-    have "S \<in> ?R" using scc not_singleton ms.not_empty
-      by auto
-         (metis image_eqI in_sccs_dVsD_sccs induce_sccs_dVs)
+    have "S \<in> ?R"
+    proof -
+      from ms.not_empty obtain u where u_in: "u \<in> S" by blast
+      note cond = not_singleton[of u]
+      from scc u_in cond have mem: "G \<downharpoonright> S \<in> sccs G" by (rule in_sccs_dVsD_sccs)
+      from scc u_in cond have eq: "dVs (G \<downharpoonright> S) = S" by (rule induce_sccs_dVs)
+      from eq[symmetric] mem show "S \<in> ?R" by (rule image_eqI)
+    qed
   }
   then show "?L \<subseteq> ?R" by blast
 next
