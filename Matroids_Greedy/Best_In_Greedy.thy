@@ -1057,7 +1057,8 @@ proof-
 
   from indep_system.indep_subset[OF indep_system_axioms_abs X_indep] pref_def
   have "\<forall>j \<in> {1..?n}. indep_system.indep_in (matroid.indep_abs indep_fn) (carrier_pref c order j) (pref c order (to_set X) j)"
-    by (metis Int_lower1 Int_lower2 indep_system.indep_in_def indep_system_axioms_abs)
+  by (auto simp: pref_def indep_system.indep_in_def[OF indep_system_axioms_abs]
+      intro: indep_system.indep_subset[OF indep_system_axioms_abs X_indep])
   with carrier_pref_subseteq_carrier indep_system.rank_geq_card_indep_in[OF indep_system_axioms_abs]
   have rank_E_j_geq_X_j:
     "\<forall>j \<in> {1..?n}. card (pref c order (to_set X) j) \<le> indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)"
