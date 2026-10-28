@@ -395,8 +395,18 @@ lemma strongly_connected_induced_is_digraph_of:
   assumes "u \<in> verts H" "verts H \<noteq> {u}"
   shows "ddfs.digraph_of (arcs H) = H"
   using assms
-  by (metis ddfs.verts_eq induced_eq_verts_imp_eq induced_subgraph_digraph_ofE induced_subgraph_iff
-            strongly_connected_induced_is_digraph_of_verts)
+proof -
+  have verts_eq: "verts H = dVs (arcs H)"
+    using strongly_connected_induced_is_digraph_of_verts[OF assms(2) assms(3) assms(1) assms(4)] .
+  obtain H' where H'_def: "H' = arcs H" and ind_H': "induced_subgraph H' G"
+    using assms(2) induced_subgraph_digraph_ofE by blast
+  hence ind_digraph_of_H': "induced_subgraph_digraph (ddfs.digraph_of (arcs H)) (ddfs.digraph_of G)"
+    using induced_subgraph_iff by blast
+  have "verts (ddfs.digraph_of (arcs H)) = verts H"
+    using verts_eq by (simp add: ddfs.verts_eq)
+  from induced_eq_verts_imp_eq[OF ind_digraph_of_H' assms(2) this]
+  show ?thesis .
+qed
 
 lemma nexistsI: "(\<And>x. P x \<Longrightarrow> False) \<Longrightarrow> (\<nexists>x. P x)"
   by auto
