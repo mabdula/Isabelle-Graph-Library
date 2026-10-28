@@ -4740,8 +4740,14 @@ next
   then obtain x where "x \<in> A' - A" "indep_in X (insert x A)" by blast
 
   with Suc.prems(1) have "card (insert x A) = rank_of X - n"
-    by (metis DiffE Suc.prems(2) Suc.prems(3) Suc_diff_le card_insert_disjoint diff_Suc_Suc indep_finite
-        indep_system.indep_in_def indep_system_axioms)
+  proof -
+    have "indep A" using indep_in_indep[OF Suc.prems(3)] .
+    have "finite A" using indep_finite[OF \<open>indep A\<close>] .
+    from \<open>x \<in> A' - A\<close> have "x \<notin> A" by blast
+    have "card (insert x A) = Suc (card A)"
+      using card_insert_disjoint[OF \<open>finite A\<close> \<open>x \<notin> A\<close>] .
+    with Suc.prems(1) Suc.prems(2) show ?thesis by linarith
+  qed
 
   from Suc.prems(2) have "n \<le> rank_of X" by auto
 
