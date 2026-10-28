@@ -4365,8 +4365,21 @@ end
 lemma bound_tight_set_aux:
   "F \<subseteq> carrier' \<Longrightarrow> B1 \<subseteq> F \<Longrightarrow>
     B1 \<subseteq> X \<Longrightarrow> X \<subseteq> carrier' - (F - B1) \<Longrightarrow> (\<exists>Y. X = Y \<union> B1 \<and> Y \<subseteq> carrier' - F)"
-  by (smt (verit) Diff_Un Diff_eq_empty_iff Diff_partition Diff_subset Diff_subset_conv double_diff
-      sup.absorb_iff2 sup_commute)
+proof -
+  assume "F \<subseteq> carrier'" and "B1 \<subseteq> F" and "B1 \<subseteq> X" and "X \<subseteq> carrier' - (F - B1)"
+  have "X = (X - B1) \<union> B1"
+    using \<open>B1 \<subseteq> X\<close> by blast
+  moreover have "X - B1 \<subseteq> carrier' - F"
+  proof
+    fix x
+    assume "x \<in> X - B1"
+    then have "x \<in> X" and "x \<notin> B1" by auto
+    with \<open>X \<subseteq> carrier' - (F - B1)\<close> have "x \<in> carrier'" and "x \<notin> F - B1" by auto
+    then have "x \<notin> F" using \<open>x \<notin> B1\<close> by auto
+    with \<open>x \<in> carrier'\<close> show "x \<in> carrier' - F" by auto
+  qed
+  ultimately show "\<exists>Y. X = Y \<union> B1 \<and> Y \<subseteq> carrier' - F" by blast
+qed
 
 lemma sorted_aux1:
   "distinct xs \<Longrightarrow> sorted_wrt (\<lambda>x1 x2. c x1 \<ge> c x2) xs \<Longrightarrow> (\<forall>x. c x = 1 \<or> c x = 0) \<Longrightarrow>
