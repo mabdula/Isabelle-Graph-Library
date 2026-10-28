@@ -1073,9 +1073,15 @@ qed
     also have "... = p * card J - p * card (K \<inter> J) + card (K \<inter> J)"
       by (simp add: Int_commute \<open>finite J\<close> card_Diff_subset_Int right_diff_distrib')
     also have "... = p * card J - (p - 1) * card (K \<inter> J)"
-      using \<open>p * card J \<ge> p * card (K \<inter> J)\<close> 
-      by (smt (verit) Nat.add_diff_assoc \<open>1 \<le> p\<close> diff_diff_cancel diff_le_self le_add_diff_inverse2
-          left_diff_distrib' nat_mult_1)
+      using \<open>p * card J \<ge> p * card (K \<inter> J)\<close>
+    proof -
+      have distrib: "(p - 1) * card (K \<inter> J) = p * card (K \<inter> J) - card (K \<inter> J)"
+        by (simp add: left_diff_distrib')
+      have le1: "card (K \<inter> J) \<le> p * card (K \<inter> J)"
+        using mult_le_mono1[OF \<open>1 \<le> p\<close>, of "card (K \<inter> J)"] by simp
+      show "p * card J - p * card (K \<inter> J) + card (K \<inter> J) = p * card J - (p - 1) * card (K \<inter> J)"
+        using distrib le1 \<open>p * card J \<ge> p * card (K \<inter> J)\<close> by arith
+    qed
     also have "... \<le> p * card J" by auto
     finally show "card K \<le> p * card J" .
   qed
