@@ -1372,8 +1372,48 @@ lemma all_cards_equal_member_iff_alt:
   assumes "finite E" "\<forall>A1 A2. A1 \<in> S \<longrightarrow> A2 \<in> S \<longrightarrow> card A1 = card A2" "\<forall>A. A \<in> S \<longrightarrow> A \<subseteq> E"
   shows "B \<in> S \<longleftrightarrow> 
     ((B \<subseteq> E \<and> (\<exists>B' \<in> S. B \<subseteq> B')) \<and> (\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B'))))"
-  using assms all_cards_equal_member_iff
-  by (smt (verit, del_insts) subset_trans)
+proof -
+  have iff1: "B \<in> S \<longleftrightarrow>
+    ((\<exists>B' \<in> S. B \<subseteq> B') \<and> (\<forall>x B'. (x \<in> E - B) \<longrightarrow> (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B')))"
+    using all_cards_equal_member_iff[OF assms] by blast
+  show ?thesis
+  proof
+    assume "B \<in> S"
+    with assms(3) have "B \<subseteq> E" by blast
+    from iff1 \<open>B \<in> S\<close>
+    have ex_B': "\<exists>B' \<in> S. B \<subseteq> B'"
+      and forall1: "\<forall>x B'. (x \<in> E - B) \<longrightarrow> (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B')"
+      by blast+
+    have forall2: "\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B'))"
+    proof
+      fix x
+      assume "x \<in> E - B"
+      with forall1 have "\<forall>B'. (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B')" by blast
+      then show "(\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B'))" by blast
+    qed
+    from \<open>B \<subseteq> E\<close> ex_B' forall2
+    show "(B \<subseteq> E \<and> (\<exists>B' \<in> S. B \<subseteq> B')) \<and>
+      (\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B')))"
+      by blast
+  next
+    assume P2: "(B \<subseteq> E \<and> (\<exists>B' \<in> S. B \<subseteq> B')) \<and>
+      (\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B')))"
+    then have "B \<subseteq> E" and ex_B': "\<exists>B' \<in> S. B \<subseteq> B'"
+      and forall2: "\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B'))"
+      by blast+
+    have forall1: "\<forall>x B'. (x \<in> E - B) \<longrightarrow> (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B')"
+    proof (rule allI, rule allI, rule impI, rule impI)
+      fix x B'
+      assume "x \<in> E - B" "B' \<in> S"
+      from \<open>x \<in> E - B\<close> \<open>B \<subseteq> E\<close> have "insert x B \<subseteq> E" by blast
+      with forall2 \<open>x \<in> E - B\<close>
+      have "\<forall> B'. (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B')" by blast
+      with \<open>B' \<in> S\<close> show "\<not>(insert x B) \<subseteq> B'" by blast
+    qed
+    with ex_B' iff1
+    show "B \<in> S" by blast
+  qed
+qed
 
 lemma card_eq1:
   assumes "finite B1" "finite B2" "Y \<subseteq> B2"
