@@ -432,7 +432,22 @@ lemma vwalk_other_edge_set:
 
 lemma vwalk_bet_other_edge_set:
   "Vwalk.vwalk_bet E u p v \<Longrightarrow> \<not>Vwalk.vwalk_bet E' u p v \<Longrightarrow> \<exists>x \<in> dVs (E - E'). x \<in> set p"
-  using vwalk_bet_def vwalk_other_edge_set by metis 
+proof -
+  assume vb: "Vwalk.vwalk_bet E u p v"
+  assume nvb: "\<not> Vwalk.vwalk_bet E' u p v"
+  show "\<exists>x\<in>dVs (E - E'). x \<in> set p"
+  proof (rule ccontr)
+    assume not_ex: "\<not> (\<exists>x\<in>dVs (E - E'). x \<in> set p)"
+    have vwalk: "Vwalk.vwalk E p" using vb by (auto simp: vwalk_bet_def)
+    have hd_eq: "hd p = u" using vb by (auto simp: vwalk_bet_def)
+    have last_eq: "last p = v" using vb by (auto simp: vwalk_bet_def)
+    have nonempty: "p \<noteq> []" using vb by (auto simp: vwalk_bet_def)
+    have no_verts: "\<forall>x\<in>dVs (E - E'). x \<notin> set p" using not_ex by blast
+    have vwalk': "Vwalk.vwalk E' p" by (rule vwalk_other_edge_set[OF vwalk no_verts])
+    have "Vwalk.vwalk_bet E' u p v" using vwalk' hd_eq last_eq nonempty by (auto simp: vwalk_bet_def)
+    then show False using nvb by contradiction
+  qed
+qed
 
 lemma awalk_other_edge_set:
   "u \<noteq> v \<Longrightarrow> awalk E u p v \<Longrightarrow> \<not>awalk E' u p v \<Longrightarrow> \<exists>e. e \<in> (E - E') \<and> e \<in> set p"
