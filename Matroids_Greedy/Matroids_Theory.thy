@@ -3299,8 +3299,9 @@ lemma dual_rank_sat_rank_axioms1:
 proof-
 
   from matroid.rank_of_def[OF assms(2)] have "matroid.rank_of indep {} = 0"
-    by (metis assms(2) card.empty empty_subsetI indep_system.indep_empty matroid.axioms(1)
-        matroid.indep_iff_rank_of)   
+    using indep_system.indep_empty[OF matroid.axioms(1)[OF assms(2)]]
+          matroid.indep_iff_rank_of[OF assms(2) empty_subsetI]
+    by simp
 
   have q_well_def: "\<forall>X \<subseteq> E. card X + matroid.rank_of indep (E - X) \<ge> matroid.rank_of indep E"
     using dual_rank_well_def[OF assms(2)] by blast
