@@ -164,7 +164,14 @@ next
     using  \<open>\<forall>a\<in>F. \<exists>b1\<in>B - {b}. b1 \<in> a\<close> insert.hyps(3) 
     by auto
  then have "card F \<le> card B - 1" 
-   by (metis \<open>b \<in> B \<and> b \<in> x\<close> card_Diff_singleton)
+  proof -
+    have "b \<in> B"
+      using \<open>b \<in> B \<and> b \<in> x\<close> by simp
+    then have "card (B - {b}) = card B - 1"
+      by (simp add: card_Diff_singleton)
+    then show ?thesis
+      using \<open>card F \<le> card (B - {b})\<close> by simp
+  qed
   have "card B \<ge> 1" 
     using \<open>b \<in> B \<and> b \<in> x\<close> card_0_eq insert.prems(1) linorder_le_less_linear by auto
   then have "card F + 1 \<le> card B" 
