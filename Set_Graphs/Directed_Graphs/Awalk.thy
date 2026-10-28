@@ -1064,7 +1064,20 @@ qed
   then have "tl (awalk_verts u p) = [v] @ tl ys @ [fst (last p), snd (last p)]" by simp 
   moreover have "distinct (tl (awalk_verts u p))"
     using \<open>cycle' E p\<close> cycle'_def cycle_def
-    by (metis \<open>awalk E u p u\<close> awalk_ends)
+  proof -
+    have cycle_and_len: "cycle E p \<and> length p > 2"
+      using \<open>cycle' E p\<close>[unfolded cycle'_def] .
+    have cycle_fact: "cycle E p" using cycle_and_len by (rule conjunct1)
+    have len_gt: "length p > 2" using cycle_and_len by (rule conjunct2)
+    have p_nonempty: "p \<noteq> []" using len_gt by auto
+    from cycle_fact[unfolded cycle_def]
+    obtain u' where u'_awalk: "awalk E u' p u'"
+      and u'_dist: "distinct (tl (awalk_verts u' p))"
+      by auto
+    have "u = u'"
+      using awalk_ends[OF \<open>awalk E u p u\<close> u'_awalk] p_nonempty by auto
+    with u'_dist show "distinct (tl (awalk_verts u p))" by simp
+  qed
   ultimately have "fst (last p) \<noteq> v" by auto
 
   from \<open>snd (last p) = u\<close> \<open>u = w\<close> \<open>fst (last p) \<noteq> v\<close>
