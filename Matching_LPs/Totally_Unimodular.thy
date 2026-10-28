@@ -2528,9 +2528,13 @@ lemma row_apend_last_row:
   assumes "b \<in> carrier_vec nc" 
   assumes "B = A @\<^sub>r mat_of_rows nc [b]"
   shows "row B nr = b" 
-  by (smt (verit, del_insts) add.right_neutral add_Suc_right assms(1-3) diff_add_inverse 
-      gram_schmidt.append_rows_index_same' le_refl length_nth_simps(3) lessI list.size(3) 
-      list.size(4) mat_of_rows_carrier(1) mat_of_rows_row)
+proof -
+  have C: "mat_of_rows nc [b] \<in> carrier_mat 1 nc"
+    by (rule carrier_matI) simp_all
+  show ?thesis
+    unfolding assms(3)
+    using gram_schmidt.append_rows_index_same'[OF A C] mat_of_rows_row assms(2) by simp
+qed
 
 lemma tot_unimod_append_unit_vec:
   fixes A :: "'a  mat"
