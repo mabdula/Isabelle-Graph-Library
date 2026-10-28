@@ -721,7 +721,7 @@ proof-
   hence "\<exists> z. z \<in> set rest \<and> P z"
     using assms by auto
   then obtain bs b cs where bsdcs:"rest = bs@[b]@cs \<and> P b \<and> (\<nexists>z. z \<in> set cs \<and> P z)" 
-    by (metis extract_last_x)
+    by (blast dest: extract_last_x)
   thus ?thesis using asarest by force
 qed
 
