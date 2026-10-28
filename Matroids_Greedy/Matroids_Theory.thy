@@ -3680,7 +3680,17 @@ proof-
 
   from \<open>l2 = x # xs\<close> have "length l2 \<ge> 1" by auto
   from \<open>l2 = drop (length l1 - length l2) l1\<close> have "length l2 \<le> length l1"
-    by (metis diff_le_self length_drop)
+  proof -
+    have "length l2 = length (drop (length l1 - length l2) l1)"
+      using \<open>l2 = drop (length l1 - length l2) l1\<close> by (rule arg_cong)
+    also have "... = length l1 - (length l1 - length l2)"
+      by (rule length_drop)
+    finally have len_eq: "length l2 = length l1 - (length l1 - length l2)" .
+    show "length l2 \<le> length l1"
+    proof (subst len_eq)
+      show "length l1 - (length l1 - length l2) \<le> length l1" by (rule diff_le_self)
+    qed
+  qed
 
   have "?j < length l1"
     using \<open>1 \<le> length l2\<close> \<open>length l2 \<le> length l1\<close> by linarith
