@@ -926,7 +926,21 @@ proof-
     using \<open>carrier_pref c order (num_iter c order best_in_greedy_state) \<subseteq> set (carrier_sorted)\<close>
       indep_system.basis_in_indep_in[OF indep_system_axioms_abs]
       indep_system.indep_in_indep[OF indep_system_axioms_abs] 
-    by (metis carrier_sorted_set matroid.carrier_abs_def)
+  proof -
+    fix X
+    assume basis_in_X: "indep_system.basis_in (matroid.indep_abs indep_fn)
+      (carrier_pref c order (num_iter c order best_in_greedy_state)) X"
+    have subset_carrier_abs: "carrier_pref c order (num_iter c order best_in_greedy_state)
+      \<subseteq> matroid.carrier_abs carrier"
+      using \<open>carrier_pref c order (num_iter c order best_in_greedy_state) \<subseteq> set (carrier_sorted)\<close>
+        carrier_sorted_set matroid.carrier_abs_def
+      by simp
+    from indep_system.basis_in_indep_in[OF indep_system_axioms_abs subset_carrier_abs basis_in_X]
+    have indep_in_X: "indep_system.indep_in (matroid.indep_abs indep_fn)
+      (carrier_pref c order (num_iter c order best_in_greedy_state)) X" .
+    show "matroid.indep_abs indep_fn X"
+      using indep_system.indep_in_indep[OF indep_system_axioms_abs indep_in_X] .
+  qed
   moreover have "pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state) = (to_set (result best_in_greedy_state))"
     unfolding pref_def using \<open>invar_3 c order best_in_greedy_state\<close> by (auto elim!: invar_props_elims)
   ultimately have result_indep: "indep' (result best_in_greedy_state)"
