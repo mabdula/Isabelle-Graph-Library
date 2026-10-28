@@ -92,7 +92,7 @@ proof(goal_cases)
             using \<open>xs = ys1' @ [y] @ ys2\<close> \<open>P2 y\<close>
             by auto
           then show ?thesis
-            by metis
+            by blast
         qed
       qed
     next
