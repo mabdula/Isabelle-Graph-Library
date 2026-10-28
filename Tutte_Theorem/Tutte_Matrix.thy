@@ -494,7 +494,18 @@ next
       have "xs!0 \<in> Vs A" 
         using \<open>{(a # xs) ! 0, (a # xs) ! (0 + 1)} \<in> A\<close> nth_Cons' by auto
       have "xs = [xs!0]" 
-        by (metis One_nat_def Suc_length_conv True length_0_conv nth_Cons_0)
+      proof -
+        have len: "length xs = 1" using True by simp
+        show ?thesis
+        proof (rule nth_equalityI)
+          show "length xs = length [xs ! 0]" using len by simp
+        next
+          fix i
+          assume "i < length xs"
+          then have "i = 0" using len by simp
+          then show "xs ! i = [xs ! 0] ! i" by simp
+        qed
+      qed
       have "path A [a, xs!0]" 
         by (simp add: \<open>{a, xs ! 0} \<in> A\<close> \<open>xs ! 0 \<in> Vs A\<close>)
       then show ?thesis 
