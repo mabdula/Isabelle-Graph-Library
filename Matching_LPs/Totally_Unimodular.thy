@@ -3208,8 +3208,15 @@ qed
                     using I_J dim_submatrix(2)
                     by blast
                   then have 26: "dim_col B = (card {ia. ia<n \<and> ia\<in>J})" 
-                    by (metis "12" 25 carrier_vecD index_row(2))
-                  then have "j < card J" 
+                  proof -
+                    assume dim_col_eq: "dim_col B =
+                      card {ia. ia < dim_col (A @\<^sub>r mat_of_rows n [(- unit_vec n i) :: 'a vec]) \<and> ia \<in> J}"
+                    have dim: "dim_col (A @\<^sub>r mat_of_rows n [(- unit_vec n i) :: 'a vec]) = n"
+                      using index_row(2)[of "A @\<^sub>r mat_of_rows n [(- unit_vec n i) :: 'a vec]" nr] 25
+                        12[THEN carrier_vecD] by force
+                    then show "dim_col B = (card {ia. ia<n \<and> ia\<in>J})"
+                      using dim_col_eq by presburger
+                  qed                  then have "j < card J" 
                     by (metis (mono_tags, lifting) \<open>pick J k = pick J j\<close> asm(2) pick_eq_iff_inf
                         basic_trans_rules(21) card_mono j mem_Collect_eq not_less  subsetI)
                   then show ?thesis 
