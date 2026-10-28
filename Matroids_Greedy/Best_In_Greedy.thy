@@ -832,7 +832,8 @@ proof(rule invar_props_intros, goal_cases)
     have
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
       \<subseteq> set (carrier_sorted)"
-      using carrier_pref_def set_take_subset by (metis carrier_pref_expr)
+      unfolding carrier_pref_expr[symmetric]
+      unfolding carrier_pref_def by (rule set_take_subset)
 
     then have insert_subset_carrier:
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
