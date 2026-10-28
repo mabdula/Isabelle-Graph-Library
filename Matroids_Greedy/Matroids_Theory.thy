@@ -3697,7 +3697,7 @@ proof-
 
   have "length l1 - length (tl l2) = (length l1 - length l2) + 1"
     using \<open>length l2 \<le> length l1\<close> \<open>length l2 \<ge> 1\<close>
-    by (metis Nat.add_diff_assoc2 Nat.diff_diff_right length_tl)
+    by (simp add: length_tl; linarith)
   moreover have "set (take (?j + 1) l1) = insert (hd (drop (?j) l1)) (set (take (?j) l1))"
     using take_hd_drop \<open>?j < length l1\<close>
     by (metis Suc_eq_plus1 list.simps(15) rotate1.simps(2) set_rotate1)
