@@ -1760,8 +1760,20 @@ proof
   have asmk': "k < dim_col (mat_delete B i j)" 
     using 21 asmk by presburger
   have k_less_card: "k < card J \<or> infinite J" 
-    by (smt (verit, ccfv_threshold) Diff_iff asmk basic_trans_rules(21) card_mono 
-        dim_submatrix(2) mem_Collect_eq not_less subsetI)
+  proof (cases "infinite J")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    then have finJ: "finite J" by simp
+    have subset: "{j'. j' < dim_col A \<and> j' \<in> (J - {pick J j})} \<subseteq> J"
+      by blast
+    have card_le: "card {j'. j' < dim_col A \<and> j' \<in> (J - {pick J j})} \<le> card J"
+      using card_mono[OF finJ subset] .
+    have "k < card {j'. j' < dim_col A \<and> j' \<in> (J - {pick J j})}"
+      using asmk by (simp add: dim_submatrix(2))
+    with card_le show ?thesis by simp
+  qed
   have t_less_card: "t < card I \<or> infinite I"
     by (smt (verit, ccfv_threshold) Diff_iff asmi basic_trans_rules(21) card_mono 
         dim_submatrix(1) mem_Collect_eq not_less subsetI)
