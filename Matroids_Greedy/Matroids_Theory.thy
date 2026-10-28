@@ -2522,8 +2522,11 @@ proof-
     have "matroid.rank_of ?indep X = Min {card B | B. indep_system.basis_in ?indep X B}"
       using matroid.rank_of_def[OF matroid_props] by auto
     also have "... = card Y"
-      using matroid.basis_in_card[OF matroid_props \<open>X \<subseteq> E\<close>] Y_basis_in
-      by (metis (no_types, lifting) \<open>X \<subseteq> E\<close> calculation matroid.rank_of_eq_card_basis_in matroid_props)
+    proof -
+      have "matroid.rank_of (\<lambda>X. X \<subseteq> E \<and> r X = card X) X = card Y"
+        using matroid.rank_of_eq_card_basis_in[OF matroid_props \<open>X \<subseteq> E\<close> Y_basis_in] .
+      from calculation[symmetric] this show ?thesis by (rule trans)
+    qed
     also have "... = r X"
       using \<open>r X = card Y\<close> by simp
     finally show "r X = matroid.rank_of (\<lambda> X. X \<subseteq> E \<and> r X = card X) X" by auto
