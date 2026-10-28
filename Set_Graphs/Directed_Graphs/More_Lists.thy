@@ -877,7 +877,29 @@ lemma list_induct3_len_geq_2: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. 
 
 lemma list_induct2_len_geq_1: 
   "\<lbrakk>length xs \<ge> 1; \<And> x. P [x]; \<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)\<rbrakk> \<Longrightarrow> P xs" 
-  by (metis One_nat_def length_greater_0_conv less_eq_Suc_le list.exhaust_sel list_nonempty_induct)
+proof -
+  assume len: "length xs \<ge> 1"
+    and base: "\<And>x. P [x]"
+    and step: "\<And>x y xs. P (y # xs) \<Longrightarrow> P (x # y # xs)"
+  from len have "xs \<noteq> []"
+    by (cases xs) auto
+  then show "P xs"
+  proof (induction xs rule: list_nonempty_induct)
+    case (single x)
+    show ?case
+      by (rule base)
+  next
+    case (cons x xs)
+    obtain y ys where xs_eq: "xs = y # ys"
+      using cons.hyps(1) by (cases xs) auto
+    have "P (y # ys)"
+      using cons.IH xs_eq by simp
+    with step have "P (x # y # ys)"
+      by blast
+    then show ?case
+      by (simp add: xs_eq)
+  qed
+qed
 
 lemma snoc_eq_iff_butlast': "ys = xs @ [x] \<longleftrightarrow> (ys \<noteq> [] \<and> butlast ys = xs \<and> last ys = x)"
   by fastforce
