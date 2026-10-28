@@ -3587,7 +3587,7 @@ proof
   qed
   then show 5: "dim_row A = dim_row (submatrix A {0..<nr - 1} UNIV @\<^sub>r 
                          mat_of_rows n [Matrix.row A (nr - 1)])"
-    by (metis assms(1) carrier_matD(1))
+    using 6 carrier_matD(1)[OF assms(1)] by simp
   show 4: "dim_col A = dim_col (submatrix A {0..<nr - 1} UNIV @\<^sub>r
                     mat_of_rows n [Matrix.row A (nr - 1)])" 
     by (metis assms(1) carrier_matD(2) row_apend_last_row index_row(2)
