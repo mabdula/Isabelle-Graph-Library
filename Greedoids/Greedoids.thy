@@ -28,7 +28,7 @@ lemma exists_list_with_first_element:
   shows "\<exists>l. set l = X \<and> (nth l 0) = x \<and> distinct l"
 proof -
   from `finite X` `x \<in> X` obtain l where "set l = X" "distinct l"
-    by (metis finite_distinct_list)
+  using finite_distinct_list by blast
   then have "x \<in> set l" using assms(2) by simp
   then obtain i where "i < length l" and "nth l i = x"
     by (meson in_set_conv_nth)
