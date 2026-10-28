@@ -256,7 +256,24 @@ qed
 lemma indep_subset_carrier_abs_to_impl:
   "(\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier) \<Longrightarrow>
    (\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier)"
-  by (metis carrier_abs_def indep_impl_to_abs invar invarE set.set_subseteq)
+proof -
+  assume A: "\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier"
+  show "\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier"
+  proof (intro allI impI)
+    fix X
+    assume "set_inv X" and "indep_fn X"
+    then have "indep_abs indep_fn (to_set X)"
+      using indep_impl_to_abs by blast
+    with A have "to_set X \<subseteq> carrier_abs carrier"
+      by blast
+    then have subset_fact: "to_set X \<subseteq> to_set carrier"
+      by (simp add: carrier_abs_def)
+    have carrier_inv: "set_inv carrier"
+      using invar[unfolded invar_def] by blast
+    from set.set_subseteq[OF \<open>set_inv X\<close> carrier_inv] subset_fact
+    show "subseteq X carrier" by blast
+  qed
+qed
 
 lemma indep_subset_carrier_abs_equiv:
   "(\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier) = 
