@@ -1178,8 +1178,26 @@ proof-
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) \<ge>  
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
-    using rank_quotient_prod_ineq sum_distrib_left sum_mono
-    by (smt (verit, del_insts) ab_semigroup_mult_class.mult_ac(1))
+  proof -
+    have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+      (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) =
+      (\<Sum>j = 1..?n. indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+        (rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)))"
+      by (simp add: sum_distrib_left)
+    also have "\<dots> = (\<Sum>j = 1..?n. indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+        rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
+      by (simp add: mult.assoc)
+    also have "\<dots> \<le> (\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
+    proof (rule sum_mono)
+      fix j :: nat
+      assume "j \<in> {1..?n}"
+      then show "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+          rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j) \<le>
+          rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)"
+        using rank_quotient_prod_ineq by blast
+    qed
+    finally show ?thesis by simp
+  qed
   moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) \<ge>
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
