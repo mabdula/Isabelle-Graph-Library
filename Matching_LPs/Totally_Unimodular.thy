@@ -1628,7 +1628,17 @@ qed
               card {a\<in>(J - {pick J j}). a < pick J k} + card {pick J j}"
           by force
         then have 24:"card {a\<in>(J - {pick J j}). a < pick J k} + 1 = card {a\<in>J. a < pick J k}"
-          by (metis 22 card_eq_1_iff)
+        proof -
+          have card_union: "card ({a \<in> (J - {pick J j}). a < pick J k} \<union> {pick J j}) =
+                card {a \<in> (J - {pick J j}). a < pick J k} + card {pick J j}"
+            by force
+          have singleton: "card {pick J j} = (1::nat)" by simp
+          have seteq: "{a \<in> J. a < pick J k} = {a \<in> (J - {pick J j}). a < pick J k} \<union> {pick J j}"
+            using 22 by auto
+          have "card {a \<in> J. a < pick J k} = card {a \<in> (J - {pick J j}). a < pick J k} + card {pick J j}"
+            using seteq card_union by simp
+          then show ?thesis using singleton by simp
+        qed
         then have 25:"card {a\<in>(J - {pick J j}). a < pick J k} = k - 1" 
           using \<open>card {a \<in> J. a < pick J k} = k\<close> by presburger
         then have 23: "pick (J - {pick J j}) (k - 1) = pick J k" using 1 
