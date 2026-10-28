@@ -1004,7 +1004,14 @@ proof(induction "length p" arbitrary: p q thesis rule: less_induct)
       by (rule that)
   qed
   from less obtain qb b where q_last:"q = qb@[b]"
-    by (metis append_butlast_last_id list.size(3) not_one_le_zero)
+  proof -
+    have "q \<noteq> []"
+      using less.prems(3) by auto
+    hence "q = butlast q @ [last q]"
+      by (simp add: append_butlast_last_id)
+    thus ?thesis
+      by (rule that)
+  qed
   have butlasts: "butlast p = pa" "butlast q = qb"
     by (auto simp add: p_last q_last)
   have last_q: "last q = a"
