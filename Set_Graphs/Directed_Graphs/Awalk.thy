@@ -592,10 +592,29 @@ qed
 
 lemma cas_rev:
   "cas u p v \<Longrightarrow> cas v (rev (map prod.swap p)) u"
-  apply (induction p arbitrary: u v)
-  apply simp
-  by (smt (verit, best) awlast_if_cas cas.elims(2) cas.simps(1) cas.simps(2) cas_append_iff
-     list.distinct(1) list.sel(3) list.simps(9) rev.simps(2) swap_simp)
+proof (induction p arbitrary: u v)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons e es)
+  obtain a b where e_ab: "e = (a, b)"
+    by (cases e) auto
+  from Cons.prems have ab_props: "u = a \<and> cas b es v"
+    unfolding e_ab by (simp add: cas.simps(2))
+  hence u_eq: "u = a" and cas_es: "cas b es v"
+    by auto
+  have IH': "cas v (rev (map prod.swap es)) b"
+    using Cons.IH[of b v] cas_es by blast
+  have awlast_eq: "awlast v (rev (map prod.swap es)) = b"
+    using awlast_if_cas[OF IH'] .
+  have last_step: "cas b [(b, a)] a"
+    by (simp add: cas.simps)
+  have "cas v (rev (map prod.swap es) @ [(b, a)]) a"
+    using IH' awlast_eq last_step
+    by (simp add: cas_append_iff)
+  then show ?case
+    unfolding u_eq e_ab by (simp add: awlast_eq)
+qed
 
 lemma awalk_rev:
   "\<forall>e \<in> G. prod.swap e \<in> G \<Longrightarrow> awalk G u p v \<Longrightarrow> awalk G v (rev (map prod.swap p)) u"
