@@ -1873,7 +1873,16 @@ qed
         using that by blast
     qed
     have 24:"insert_index i t < dim_row B" 
-      by (metis "4" 19 asmi' basic_trans_rules(20) carrier_matD(1) insert_index_def not_less_eq)
+    proof -
+      have dimB: "dim_row B = Suc (dim_row B - 1)"
+        using 4 by (rule carrier_matD(1))
+      have le1: "insert_index i t \<le> Suc t"
+        unfolding insert_index_def by auto
+      have le2: "Suc t \<le> dim_row B - 1"
+        using 5 by simp
+      show "insert_index i t < dim_row B"
+        using dimB le1 le2 by linarith
+    qed
     obtain t1 where t1: "row A t1 = row (submatrix A I UNIV) (insert_index i t) \<and> 
                          t1 < dim_row A \<and> 
                          t1 = pick I (insert_index i t)" 
