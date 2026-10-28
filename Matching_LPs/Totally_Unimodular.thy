@@ -2798,8 +2798,17 @@ proof rule
                         B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j) =
                         B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
               using only_one_nonzero_is_sum[of "{0..<dim_col B}" j]
-              by (metis (no_types, lifting) atLeast0LessThan finite_atLeastLessThan j lessThan_iff
-                  vector_space_over_itself.scale_eq_0_iff)
+            proof -
+              have fin: "finite {0..<dim_col B}"
+                by simp
+              have j_mem: "j \<in> {0..<dim_col B}"
+                using j by simp
+              have zero_prod: "\<forall>k \<in> {0..<dim_col B}. k \<noteq> j \<longrightarrow>
+                  B $$ (dim_row B - 1, k) * cofactor B (dim_row B - 1) k = 0"
+                using 26 by auto
+              show ?thesis
+                using only_one_nonzero_is_sum[OF fin j_mem zero_prod] .
+            qed
             then have "(\<Sum>j<dim_col B. B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j) =
                        B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
               by (metis atLeast0LessThan)
